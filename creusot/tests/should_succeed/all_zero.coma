@@ -59,15 +59,15 @@ module AllZero_AllZero
   use prelude.prelude.Intrinsic
   
   predicate resolve'2 (self : borrowed (List'0.t_list)) =
-    [%#span5]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   predicate resolve'1 (self : borrowed (List'0.t_list)) =
-    [%#span5]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   use prelude.prelude.UInt32
   
   predicate resolve'0 (self : borrowed uint32) =
-    [%#span5]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   use prelude.prelude.Snapshot
   
@@ -95,43 +95,43 @@ module AllZero_AllZero
       [ s0 =  [ &loop_l <- l ] (any [ any_ (_any:borrowed (List'0.t_list))-> (!  [ &l <- _any ] s1) ] ) | s1 = bb2 ]
       
     | bb2 = bb2
-      [ bb2 = {[@expl:loop invariant] [%#sall_zero1] len'0 ( ^ loop_l) = len'0 ( * loop_l)
-         -> len'0 ( ^ Snapshot.inner old_l) = len'0 ( * Snapshot.inner old_l)}
-        {[@expl:loop invariant] [%#sall_zero1] (forall i : int . 0 <= i /\ i < len'0 ( * loop_l)
-         -> get'0 ( ^ loop_l) i = Option'0.C_Some (0 : uint32))
-         -> (forall i : int . 0 <= i /\ i < len'0 ( * Snapshot.inner old_l)
-         -> get'0 ( ^ Snapshot.inner old_l) i = Option'0.C_Some (0 : uint32))}
+      [ bb2 = {[@expl:loop invariant] [%#sall_zero1] len'0 loop_l.final = len'0 loop_l.current
+         -> len'0 (Snapshot.inner old_l).final = len'0 (Snapshot.inner old_l).current}
+        {[@expl:loop invariant] [%#sall_zero1] (forall i : int . 0 <= i /\ i < len'0 loop_l.current
+         -> get'0 loop_l.final i = Option'0.C_Some (0 : uint32))
+         -> (forall i : int . 0 <= i /\ i < len'0 (Snapshot.inner old_l).current
+         -> get'0 (Snapshot.inner old_l).final i = Option'0.C_Some (0 : uint32))}
         (! s0) [ s0 = bb3 ] 
         [ bb3 = any
-          [ br0 (a:uint32) (b:List'0.t_list)-> { * loop_l = List'0.C_Cons a b} (! bb4)
-          | br1 -> { * loop_l = List'0.C_Nil } (! bb6) ]
+          [ br0 (a:uint32) (b:List'0.t_list)-> {loop_l.current = List'0.C_Cons a b} (! bb4)
+          | br1 -> {loop_l.current = List'0.C_Nil } (! bb6) ]
           
         | bb4 = bb5
         | bb5 = s0
-          [ s0 = List'0.cons { * loop_l}
+          [ s0 = List'0.cons {loop_l.current}
               (fun (r0'0:uint32) (r1'0:List'0.t_list) ->
                 Borrow.borrow_final <uint32> {r0'0} {Borrow.inherit_id (Borrow.get_id loop_l) 1}
                   (fun (_ret':borrowed uint32) ->
                      [ &value <- _ret' ] 
-                    List'0.cons { * loop_l}
+                    List'0.cons {loop_l.current}
                       (fun (l_0'0:uint32) (l_1'0:List'0.t_list) ->
-                         [ &loop_l <- { loop_l with current = List'0.C_Cons ( ^ value) l_1'0 ; } ] 
+                         [ &loop_l <- { loop_l with current = List'0.C_Cons value.final l_1'0 ; } ] 
                         s1)))
-          | s1 = List'0.cons { * loop_l}
+          | s1 = List'0.cons {loop_l.current}
               (fun (r0'1:uint32) (r1'1:List'0.t_list) ->
                 Borrow.borrow_final <List'0.t_list> {r1'1} {Borrow.inherit_id (Borrow.get_id loop_l) 2}
                   (fun (_ret':borrowed (List'0.t_list)) ->
                      [ &next <- _ret' ] 
-                    List'0.cons { * loop_l}
+                    List'0.cons {loop_l.current}
                       (fun (l_0'1:uint32) (l_1'1:List'0.t_list) ->
-                         [ &loop_l <- { loop_l with current = List'0.C_Cons l_0'1 ( ^ next) ; } ] 
+                         [ &loop_l <- { loop_l with current = List'0.C_Cons l_0'1 next.final ; } ] 
                         s2)))
           | s2 =  [ &value <- { value with current = ([%#sall_zero2] (0 : uint32)) ; } ] s3
           | s3 = -{resolve'0 value}- s4
-          | s4 = Borrow.borrow_mut <List'0.t_list> { * next}
+          | s4 = Borrow.borrow_mut <List'0.t_list> {next.current}
               (fun (_ret':borrowed (List'0.t_list)) ->
                  [ &_13 <- _ret' ] 
-                 [ &next <- { next with current = ( ^ _13) ; } ] 
+                 [ &next <- { next with current = _13.final ; } ] 
                 s5)
           | s5 = -{resolve'1 loop_l}- s6
           | s6 =  [ &loop_l <- _13 ] (any [ any_ (_any:borrowed (List'0.t_list))-> (!  [ &_13 <- _any ] s7) ] )
@@ -150,9 +150,9 @@ module AllZero_AllZero
     | & next : borrowed (List'0.t_list) = any_l ()
     | & _13 : borrowed (List'0.t_list) = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#sall_zero4] len'0 ( * l) = len'0 ( ^ l)}
-      {[@expl:postcondition] [%#sall_zero3] forall i : int . 0 <= i /\ i < len'0 ( * l)
-       -> get'0 ( ^ l) i = Option'0.C_Some (0 : uint32)}
+    [ return' (result:())-> {[@expl:postcondition] [%#sall_zero4] len'0 l.current = len'0 l.final}
+      {[@expl:postcondition] [%#sall_zero3] forall i : int . 0 <= i /\ i < len'0 l.current
+       -> get'0 l.final i = Option'0.C_Some (0 : uint32)}
       (! return' {result}) ]
     
 end

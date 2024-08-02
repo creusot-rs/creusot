@@ -1096,13 +1096,13 @@ module Bdd_Impl10_GrowsIsValidBdd_Impl
   
   predicate inv'0 (_x : borrowed (Context'0.t_context))
   
-  axiom inv'0 : forall x : borrowed (Context'0.t_context) . inv'0 x = (inv'1 ( * x) /\ inv'1 ( ^ x))
+  axiom inv'0 : forall x : borrowed (Context'0.t_context) . inv'0 x = (inv'1 x.current /\ inv'1 x.final)
   
   predicate grows'0 [#"../bdd.rs" 296 4 296 35] (self : borrowed (Context'0.t_context)) =
-    [%#span14] UInt64.to_int (Bdd_Context_Type.context_cnt ( * self))
-    <= UInt64.to_int (Bdd_Context_Type.context_cnt ( ^ self))
-    /\ (forall n : NodeLog'0.t_nodelog . match Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons ( * self))) n with
-      | Option'0.C_Some b -> Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons ( ^ self))) n
+    [%#span14] UInt64.to_int (Bdd_Context_Type.context_cnt self.current)
+    <= UInt64.to_int (Bdd_Context_Type.context_cnt self.final)
+    /\ (forall n : NodeLog'0.t_nodelog . match Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons self.current)) n with
+      | Option'0.C_Some b -> Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons self.final)) n
       = Option'0.C_Some b
       | Option'0.C_None -> true
       end)
@@ -1114,7 +1114,7 @@ module Bdd_Impl10_GrowsIsValidBdd_Impl
   function grows_is_valid_bdd [#"../bdd.rs" 336 4 336 56] (self : borrowed (Context'0.t_context)) (b : Bdd'0.t_bdd) : ()
   
   goal vc_grows_is_valid_bdd : ([%#sbdd2] inv'0 self)
-   -> ([%#sbdd1] is_valid_bdd'0 ( * self) b)  -> ([%#sbdd0] grows'0 self)  -> ([%#sbdd3] is_valid_bdd'0 ( ^ self) b)
+   -> ([%#sbdd1] is_valid_bdd'0 self.current b)  -> ([%#sbdd0] grows'0 self)  -> ([%#sbdd3] is_valid_bdd'0 self.final b)
 end
 module Bdd_Impl10_GrowsTrans_Impl
   let%span sbdd0 = "../bdd.rs" 340 15 340 27
@@ -1290,13 +1290,13 @@ module Bdd_Impl10_GrowsTrans_Impl
   
   predicate inv'0 (_x : borrowed (Context'0.t_context))
   
-  axiom inv'0 : forall x : borrowed (Context'0.t_context) . inv'0 x = (inv'1 ( * x) /\ inv'1 ( ^ x))
+  axiom inv'0 : forall x : borrowed (Context'0.t_context) . inv'0 x = (inv'1 x.current /\ inv'1 x.final)
   
   predicate grows'0 [#"../bdd.rs" 296 4 296 35] (self : borrowed (Context'0.t_context)) =
-    [%#span18] UInt64.to_int (Bdd_Context_Type.context_cnt ( * self))
-    <= UInt64.to_int (Bdd_Context_Type.context_cnt ( ^ self))
-    /\ (forall n : NodeLog'0.t_nodelog . match Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons ( * self))) n with
-      | Option'0.C_Some b -> Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons ( ^ self))) n
+    [%#span18] UInt64.to_int (Bdd_Context_Type.context_cnt self.current)
+    <= UInt64.to_int (Bdd_Context_Type.context_cnt self.final)
+    /\ (forall n : NodeLog'0.t_nodelog . match Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons self.current)) n with
+      | Option'0.C_Some b -> Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons self.final)) n
       = Option'0.C_Some b
       | Option'0.C_None -> true
       end)
@@ -1313,8 +1313,9 @@ module Bdd_Impl10_GrowsTrans_Impl
   goal vc_grows_trans : ([%#sbdd6] inv'0 oo)
    -> ([%#sbdd5] inv'0 o)
    -> ([%#sbdd4] inv'0 self)
-   -> ([%#sbdd3]  * self =  * oo /\  ^ self =  ^ oo)
-   -> ([%#sbdd2]  ^ self =  * o)  -> ([%#sbdd1] grows'0 o)  -> ([%#sbdd0] grows'0 self)  -> ([%#sbdd7] grows'0 oo)
+   -> ([%#sbdd3] self.current = oo.current /\ self.final = oo.final)
+   -> ([%#sbdd2] self.final = o.current)
+   -> ([%#sbdd1] grows'0 o)  -> ([%#sbdd0] grows'0 self)  -> ([%#sbdd7] grows'0 oo)
 end
 module Bdd_Impl10_SetIrreleventVar_Impl
   let%span sbdd0 = "../bdd.rs" 348 15 348 35
@@ -2552,13 +2553,13 @@ module Bdd_Impl11_Hashcons
   
   predicate inv'0 (_x : borrowed (Context'0.t_context))
   
-  axiom inv'0 : forall x : borrowed (Context'0.t_context) . inv'0 x = (inv'7 ( * x) /\ inv'7 ( ^ x))
+  axiom inv'0 : forall x : borrowed (Context'0.t_context) . inv'0 x = (inv'7 x.current /\ inv'7 x.final)
   
   predicate grows'0 [#"../bdd.rs" 296 4 296 35] (self : borrowed (Context'0.t_context)) =
-    [%#span20] UInt64.to_int (Bdd_Context_Type.context_cnt ( * self))
-    <= UInt64.to_int (Bdd_Context_Type.context_cnt ( ^ self))
-    /\ (forall n : NodeLog'0.t_nodelog . match Map.get (shallow_model'3 (Bdd_Context_Type.context_hashcons ( * self))) n with
-      | Option'0.C_Some b -> Map.get (shallow_model'3 (Bdd_Context_Type.context_hashcons ( ^ self))) n
+    [%#span20] UInt64.to_int (Bdd_Context_Type.context_cnt self.current)
+    <= UInt64.to_int (Bdd_Context_Type.context_cnt self.final)
+    /\ (forall n : NodeLog'0.t_nodelog . match Map.get (shallow_model'3 (Bdd_Context_Type.context_hashcons self.current)) n with
+      | Option'0.C_Some b -> Map.get (shallow_model'3 (Bdd_Context_Type.context_hashcons self.final)) n
       = Option'0.C_Some b
       | Option'0.C_None -> true
       end)
@@ -2568,7 +2569,7 @@ module Bdd_Impl11_Hashcons
   use prelude.prelude.Intrinsic
   
   predicate resolve'1 (self : borrowed (Context'0.t_context)) =
-    [%#span21]  ^ self =  * self
+    [%#span21] self.final = self.current
   
   use prelude.prelude.Snapshot
   
@@ -2581,26 +2582,26 @@ module Bdd_Impl11_Hashcons
   function shallow_model'4 (self : borrowed (MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd))) : Map.map (NodeLog'0.t_nodelog) (Option'0.t_option (Bdd'0.t_bdd))
     
    =
-    [%#span22] shallow_model'3 ( * self)
+    [%#span22] shallow_model'3 self.current
   
   let rec add'0 (self:borrowed (MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd))) (key:Node'0.t_node) (val':Bdd'0.t_bdd) (return'  (ret:()))= {[@expl:precondition] [%#span24] inv'5 val'}
     {[@expl:precondition] [%#span23] inv'3 key}
     any
     [ return' (result:())-> {[%#span25] forall i : NodeLog'0.t_nodelog . inv'6 i
-       -> Map.get (shallow_model'3 ( ^ self)) i
+       -> Map.get (shallow_model'3 self.final) i
       = (if i = deep_model'1 key then Option'0.C_Some val' else Map.get (shallow_model'4 self) i)}
       (! return' {result}) ]
     
   
   predicate resolve'0 (self : borrowed (Node'0.t_node)) =
-    [%#span21]  ^ self =  * self
+    [%#span21] self.final = self.current
   
   use Bdd_Bumpalo_Bump_Type as Bump'0
   
   let rec alloc'0 (self:Bump'0.t_bump) (val':Node'0.t_node) (return'  (ret:borrowed (Node'0.t_node)))= {[@expl:precondition] [%#span26] inv'3 val'}
     any
     [ return' (result:borrowed (Node'0.t_node))-> {[%#span28] inv'4 result}
-      {[%#span27]  * result = val'}
+      {[%#span27] result.current = val'}
       (! return' {result}) ]
     
   
@@ -2623,29 +2624,29 @@ module Bdd_Impl11_Hashcons
     
   
   let rec hashcons (self:borrowed (Context'0.t_context)) (n:Node'0.t_node) (return'  (ret:Bdd'0.t_bdd))= {[%#sbdd6] inv'0 self}
-    {[%#sbdd5] is_valid_node'0 ( * self) n}
+    {[%#sbdd5] is_valid_node'0 self.current n}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &_11 <- n ] s1
-      | s1 = Context'0.t_context { * self}
+      | s1 = Context'0.t_context {self.current}
           (fun (ralloc'0:Bump'0.t_bump) (rhashcons'0:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (rhashcons_ghost'0:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (rnot_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rand_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rcnt'0:uint64) ->
             get'0 {rhashcons'0} {_11} (fun (_ret':Option'0.t_option (Bdd'0.t_bdd)) ->  [ &_8 <- _ret' ] s2))
       | s2 = bb1 ]
       
     | bb1 = any [ br0 -> {_8 = Option'0.C_None } (! bb4) | br1 (a:Bdd'0.t_bdd)-> {_8 = Option'0.C_Some a} (! bb2) ] 
     | bb4 = s0
-      [ s0 = Context'0.t_context { * self}
+      [ s0 = Context'0.t_context {self.current}
           (fun (ralloc'0:Bump'0.t_bump) (rhashcons'0:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (rhashcons_ghost'0:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (rnot_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rand_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rcnt'0:uint64) ->
             alloc'0 {ralloc'0} {n} (fun (_ret':borrowed (Node'0.t_node)) ->  [ &_19 <- _ret' ] s1))
       | s1 = bb5 ]
       
     | bb5 = s0
-      [ s0 = Context'0.t_context { * self}
+      [ s0 = Context'0.t_context {self.current}
           (fun (ralloc'0:Bump'0.t_bump) (rhashcons'0:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (rhashcons_ghost'0:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (rnot_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rand_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rcnt'0:uint64) ->
-             [ &r1 <- Bdd'0.C_Bdd ( * _19) rcnt'0 ] 
+             [ &r1 <- Bdd'0.C_Bdd (_19.current) rcnt'0 ] 
             s1)
       | s1 = -{resolve'0 _19}- s2
-      | s2 = Context'0.t_context { * self}
+      | s2 = Context'0.t_context {self.current}
           (fun (ralloc'1:Bump'0.t_bump) (rhashcons'1:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (rhashcons_ghost'1:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (rnot_memo'1:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rand_memo'1:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rcnt'1:uint64) ->
             Borrow.borrow_final
               <MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)>
@@ -2653,10 +2654,10 @@ module Bdd_Impl11_Hashcons
               {Borrow.inherit_id (Borrow.get_id self) 2}
               (fun (_ret':borrowed (MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd))) ->
                  [ &_24 <- _ret' ] 
-                Context'0.t_context { * self}
+                Context'0.t_context {self.current}
                   (fun (l_alloc'0:Bump'0.t_bump) (l_hashcons'0:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (l_hashcons_ghost'0:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (l_not_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (l_and_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (l_cnt'0:uint64) ->
                     
-                    [ &self <- { self with current = Context'0.C_Context l_alloc'0 ( ^ _24) l_hashcons_ghost'0 l_not_memo'0 l_and_memo'0 l_cnt'0 ; } ]
+                    [ &self <- { self with current = Context'0.C_Context l_alloc'0 _24.final l_hashcons_ghost'0 l_not_memo'0 l_and_memo'0 l_cnt'0 ; } ]
                     
                     s3)))
       | s3 = add'0 {_24} {n} {r1} (fun (_ret':()) ->  [ &_23 <- _ret' ] s4)
@@ -2664,13 +2665,13 @@ module Bdd_Impl11_Hashcons
       
     | bb6 = s0
       [ s0 = 
-        [ &_27 <- [%#sbdd0] Snapshot.new (Map.set (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost ( * self))) (Bdd_Bdd_Type.bdd_1 r1) (Bdd_Bdd_Type.bdd_0 r1)) ]
+        [ &_27 <- [%#sbdd0] Snapshot.new (Map.set (Snapshot.inner (Bdd_Context_Type.context_hashcons_ghost self.current)) (Bdd_Bdd_Type.bdd_1 r1) (Bdd_Bdd_Type.bdd_0 r1)) ]
         
         s1
       | s1 = bb7 ]
       
     | bb7 = s0
-      [ s0 = Context'0.t_context { * self}
+      [ s0 = Context'0.t_context {self.current}
           (fun (l_alloc'0:Bump'0.t_bump) (l_hashcons'0:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (l_hashcons_ghost'0:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (l_not_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (l_and_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (l_cnt'0:uint64) ->
             
             [ &self <- { self with current = Context'0.C_Context l_alloc'0 l_hashcons'0 _27 l_not_memo'0 l_and_memo'0 l_cnt'0 ; } ]
@@ -2678,7 +2679,7 @@ module Bdd_Impl11_Hashcons
             (any [ any_ (_any:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node)))-> (!  [ &_27 <- _any ] s1) ] ))
       | s1 = UInt64.sub {[%#sbdd1] (18446744073709551615 : uint64)} {[%#sbdd2] (1 : uint64)}
           (fun (_ret':uint64) ->  [ &_32 <- _ret' ] s2)
-      | s2 = Context'0.t_context { * self}
+      | s2 = Context'0.t_context {self.current}
           (fun (ralloc'0:Bump'0.t_bump) (rhashcons'0:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (rhashcons_ghost'0:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (rnot_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rand_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rcnt'0:uint64) ->
             UInt64.gt {rcnt'0} {_32}
               (fun (_ret':bool) ->  [ &_30 <- _ret' ] (any [ any_ (_any:uint64)-> (!  [ &_32 <- _any ] s3) ] )))
@@ -2686,12 +2687,12 @@ module Bdd_Impl11_Hashcons
       
     | bb8 = s0 [ s0 =  [ &old_9_0 <- Snapshot.new self ] s1 | s1 = bb9 ] 
     | bb9 = bb9
-      [ bb9 = {[@expl:loop invariant]  ^ Snapshot.inner old_9_0 =  ^ self}
+      [ bb9 = {[@expl:loop invariant] (Snapshot.inner old_9_0).final = self.final}
         (! s0) [ s0 = bb10 ] 
         [ bb10 = s0
-          [ s0 = Context'0.t_context { * self}
+          [ s0 = Context'0.t_context {self.current}
               (fun (ralloc'0:Bump'0.t_bump) (rhashcons'0:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (rhashcons_ghost'0:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (rnot_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rand_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rcnt'0:uint64) ->
-                Context'0.t_context { * self}
+                Context'0.t_context {self.current}
                   (fun (l_alloc'0:Bump'0.t_bump) (l_hashcons'0:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (l_hashcons_ghost'0:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (l_not_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (l_and_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (l_cnt'0:uint64) ->
                     
                     [ &self <- { self with current = Context'0.C_Context l_alloc'0 l_hashcons'0 l_hashcons_ghost'0 l_not_memo'0 l_and_memo'0 rcnt'0 ; } ]
@@ -2702,11 +2703,11 @@ module Bdd_Impl11_Hashcons
          ]
       
     | bb11 = s0
-      [ s0 = Context'0.t_context { * self}
+      [ s0 = Context'0.t_context {self.current}
           (fun (ralloc'0:Bump'0.t_bump) (rhashcons'0:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (rhashcons_ghost'0:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (rnot_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rand_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rcnt'0:uint64) ->
             UInt64.add {rcnt'0} {[%#sbdd3] (1 : uint64)}
               (fun (_ret':uint64) ->
-                Context'0.t_context { * self}
+                Context'0.t_context {self.current}
                   (fun (l_alloc'0:Bump'0.t_bump) (l_hashcons'0:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (l_hashcons_ghost'0:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (l_not_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (l_and_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (l_cnt'0:uint64) ->
                     
                     [ &self <- { self with current = Context'0.C_Context l_alloc'0 l_hashcons'0 l_hashcons_ghost'0 l_not_memo'0 l_and_memo'0 _ret' ; } ]
@@ -2743,7 +2744,7 @@ module Bdd_Impl11_Hashcons
     | & _32 : uint64 = any_l ()
     | & old_9_0 : Snapshot.snap_ty (borrowed (Context'0.t_context)) = any_l () ]
     
-    [ return' (result:Bdd'0.t_bdd)-> {[@expl:postcondition] [%#sbdd9] is_valid_bdd'0 ( ^ self) result}
+    [ return' (result:Bdd'0.t_bdd)-> {[@expl:postcondition] [%#sbdd9] is_valid_bdd'0 self.final result}
       {[@expl:postcondition] [%#sbdd8] grows'0 self}
       {[@expl:postcondition] [%#sbdd7] Bdd_Bdd_Type.bdd_0 result = n}
       (! return' {result}) ]
@@ -2941,13 +2942,13 @@ module Bdd_Impl11_Node
   
   predicate inv'0 (_x : borrowed (Context'0.t_context))
   
-  axiom inv'0 : forall x : borrowed (Context'0.t_context) . inv'0 x = (inv'1 ( * x) /\ inv'1 ( ^ x))
+  axiom inv'0 : forall x : borrowed (Context'0.t_context) . inv'0 x = (inv'1 x.current /\ inv'1 x.final)
   
   predicate grows'0 [#"../bdd.rs" 296 4 296 35] (self : borrowed (Context'0.t_context)) =
-    [%#span18] UInt64.to_int (Bdd_Context_Type.context_cnt ( * self))
-    <= UInt64.to_int (Bdd_Context_Type.context_cnt ( ^ self))
-    /\ (forall n : NodeLog'0.t_nodelog . match Map.get (shallow_model'1 (Bdd_Context_Type.context_hashcons ( * self))) n with
-      | Option'0.C_Some b -> Map.get (shallow_model'1 (Bdd_Context_Type.context_hashcons ( ^ self))) n
+    [%#span18] UInt64.to_int (Bdd_Context_Type.context_cnt self.current)
+    <= UInt64.to_int (Bdd_Context_Type.context_cnt self.final)
+    /\ (forall n : NodeLog'0.t_nodelog . match Map.get (shallow_model'1 (Bdd_Context_Type.context_hashcons self.current)) n with
+      | Option'0.C_Some b -> Map.get (shallow_model'1 (Bdd_Context_Type.context_hashcons self.final)) n
       = Option'0.C_Some b
       | Option'0.C_None -> true
       end)
@@ -2955,16 +2956,16 @@ module Bdd_Impl11_Node
   use prelude.prelude.Intrinsic
   
   let rec hashcons'0 (self:borrowed (Context'0.t_context)) (n:Node'0.t_node) (return'  (ret:Bdd'0.t_bdd))= {[@expl:precondition] [%#span20] inv'0 self}
-    {[@expl:precondition] [%#span19] is_valid_node'0 ( * self) n}
+    {[@expl:precondition] [%#span19] is_valid_node'0 self.current n}
     any
-    [ return' (result:Bdd'0.t_bdd)-> {[%#span23] is_valid_bdd'0 ( ^ self) result}
+    [ return' (result:Bdd'0.t_bdd)-> {[%#span23] is_valid_bdd'0 self.final result}
       {[%#span22] grows'0 self}
       {[%#span21] Bdd_Bdd_Type.bdd_0 result = n}
       (! return' {result}) ]
     
   
   predicate resolve'0 (self : borrowed (Context'0.t_context)) =
-    [%#span24]  ^ self =  * self
+    [%#span24] self.final = self.current
   
   function deep_model'0 [#"../bdd.rs" 185 4 185 44] (self : Bdd'0.t_bdd) : uint64 =
     [%#span25] Bdd_Bdd_Type.bdd_1 self
@@ -2981,8 +2982,8 @@ module Bdd_Impl11_Node
   
   let rec node (self:borrowed (Context'0.t_context)) (x:uint64) (childt:Bdd'0.t_bdd) (childf:Bdd'0.t_bdd) (return'  (ret:Bdd'0.t_bdd))= {[%#sbdd3] inv'0 self}
     {[%#sbdd2] UInt64.to_int x < leastvar'0 childt /\ UInt64.to_int x < leastvar'0 childf}
-    {[%#sbdd1] is_valid_bdd'0 ( * self) childf}
-    {[%#sbdd0] is_valid_bdd'0 ( * self) childt}
+    {[%#sbdd1] is_valid_bdd'0 self.current childf}
+    {[%#sbdd0] is_valid_bdd'0 self.current childt}
     (! bb0
     [ bb0 = s0 [ s0 = eq'0 {childt} {childf} (fun (_ret':bool) ->  [ &_13 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = any [ br0 -> {_13 = false} (! bb3) | br1 -> {_13} (! bb2) ] 
@@ -2993,12 +2994,12 @@ module Bdd_Impl11_Node
       | s3 = bb5 ]
       
     | bb3 = s0
-      [ s0 = Borrow.borrow_final <Context'0.t_context> { * self} {Borrow.get_id self}
+      [ s0 = Borrow.borrow_final <Context'0.t_context> {self.current} {Borrow.get_id self}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_17 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _17) ; } ] 
+             [ &self <- { self with current = _17.final ; } ] 
             s1)
-      | s1 = -{inv'1 ( ^ _17)}- s2
+      | s1 = -{inv'1 _17.final}- s2
       | s2 =  [ &_18 <- Node'0.C_If x childt childf ] s3
       | s3 = hashcons'0 {_17} {_18} (fun (_ret':Bdd'0.t_bdd) ->  [ &_0 <- _ret' ] s4)
       | s4 = bb4 ]
@@ -3018,7 +3019,7 @@ module Bdd_Impl11_Node
     [ return' (result:Bdd'0.t_bdd)-> {[@expl:postcondition] [%#sbdd7] UInt64.to_int x <= leastvar'0 result}
       {[@expl:postcondition] [%#sbdd6] forall v : Map.map uint64 bool . interp'0 result v
       = (if Map.get v x then interp'0 childt v else interp'0 childf v)}
-      {[@expl:postcondition] [%#sbdd5] is_valid_bdd'0 ( ^ self) result}
+      {[@expl:postcondition] [%#sbdd5] is_valid_bdd'0 self.final result}
       {[@expl:postcondition] [%#sbdd4] grows'0 self}
       (! return' {result}) ]
     
@@ -3079,7 +3080,7 @@ module Bdd_Impl11_True
   
   predicate inv'1 (_x : borrowed (Context'0.t_context))
   
-  axiom inv'1 : forall x : borrowed (Context'0.t_context) . inv'1 x = (inv'0 ( * x) /\ inv'0 ( ^ x))
+  axiom inv'1 : forall x : borrowed (Context'0.t_context) . inv'1 x = (inv'0 x.current /\ inv'0 x.final)
   
   use prelude.prelude.UInt64
   
@@ -3206,10 +3207,10 @@ module Bdd_Impl11_True
     end)
   
   predicate grows'0 [#"../bdd.rs" 296 4 296 35] (self : borrowed (Context'0.t_context)) =
-    [%#span15] UInt64.to_int (Bdd_Context_Type.context_cnt ( * self))
-    <= UInt64.to_int (Bdd_Context_Type.context_cnt ( ^ self))
-    /\ (forall n : NodeLog'0.t_nodelog . match Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons ( * self))) n with
-      | Option'0.C_Some b -> Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons ( ^ self))) n
+    [%#span15] UInt64.to_int (Bdd_Context_Type.context_cnt self.current)
+    <= UInt64.to_int (Bdd_Context_Type.context_cnt self.final)
+    /\ (forall n : NodeLog'0.t_nodelog . match Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons self.current)) n with
+      | Option'0.C_Some b -> Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons self.final)) n
       = Option'0.C_Some b
       | Option'0.C_None -> true
       end)
@@ -3217,12 +3218,12 @@ module Bdd_Impl11_True
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Context'0.t_context)) =
-    [%#span16]  ^ self =  * self
+    [%#span16] self.final = self.current
   
   let rec hashcons'0 (self:borrowed (Context'0.t_context)) (n:Node'0.t_node) (return'  (ret:Bdd'0.t_bdd))= {[@expl:precondition] [%#span18] inv'1 self}
-    {[@expl:precondition] [%#span17] is_valid_node'0 ( * self) n}
+    {[@expl:precondition] [%#span17] is_valid_node'0 self.current n}
     any
-    [ return' (result:Bdd'0.t_bdd)-> {[%#span21] is_valid_bdd'0 ( ^ self) result}
+    [ return' (result:Bdd'0.t_bdd)-> {[%#span21] is_valid_bdd'0 self.final result}
       {[%#span20] grows'0 self}
       {[%#span19] Bdd_Bdd_Type.bdd_0 result = n}
       (! return' {result}) ]
@@ -3231,12 +3232,12 @@ module Bdd_Impl11_True
   let rec true_ (self:borrowed (Context'0.t_context)) (return'  (ret:Bdd'0.t_bdd))= {[%#sbdd0] inv'1 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_final <Context'0.t_context> { * self} {Borrow.get_id self}
+      [ s0 = Borrow.borrow_final <Context'0.t_context> {self.current} {Borrow.get_id self}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_6 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _6) ; } ] 
+             [ &self <- { self with current = _6.final ; } ] 
             s1)
-      | s1 = -{inv'0 ( ^ _6)}- s2
+      | s1 = -{inv'0 _6.final}- s2
       | s2 =  [ &_7 <- Node'0.C_True ] s3
       | s3 = hashcons'0 {_6} {_7} (fun (_ret':Bdd'0.t_bdd) ->  [ &_0 <- _ret' ] s4)
       | s4 = bb1 ]
@@ -3251,7 +3252,7 @@ module Bdd_Impl11_True
     [ return' (result:Bdd'0.t_bdd)-> {[@expl:postcondition] [%#sbdd4] UInt64.to_int (max'0 : uint64) + 1
       = leastvar'0 result}
       {[@expl:postcondition] [%#sbdd3] forall v : Map.map uint64 bool . interp'0 result v}
-      {[@expl:postcondition] [%#sbdd2] is_valid_bdd'0 ( ^ self) result}
+      {[@expl:postcondition] [%#sbdd2] is_valid_bdd'0 self.final result}
       {[@expl:postcondition] [%#sbdd1] grows'0 self}
       (! return' {result}) ]
     
@@ -3312,7 +3313,7 @@ module Bdd_Impl11_False
   
   predicate inv'1 (_x : borrowed (Context'0.t_context))
   
-  axiom inv'1 : forall x : borrowed (Context'0.t_context) . inv'1 x = (inv'0 ( * x) /\ inv'0 ( ^ x))
+  axiom inv'1 : forall x : borrowed (Context'0.t_context) . inv'1 x = (inv'0 x.current /\ inv'0 x.final)
   
   use prelude.prelude.UInt64
   
@@ -3439,10 +3440,10 @@ module Bdd_Impl11_False
     end)
   
   predicate grows'0 [#"../bdd.rs" 296 4 296 35] (self : borrowed (Context'0.t_context)) =
-    [%#span15] UInt64.to_int (Bdd_Context_Type.context_cnt ( * self))
-    <= UInt64.to_int (Bdd_Context_Type.context_cnt ( ^ self))
-    /\ (forall n : NodeLog'0.t_nodelog . match Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons ( * self))) n with
-      | Option'0.C_Some b -> Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons ( ^ self))) n
+    [%#span15] UInt64.to_int (Bdd_Context_Type.context_cnt self.current)
+    <= UInt64.to_int (Bdd_Context_Type.context_cnt self.final)
+    /\ (forall n : NodeLog'0.t_nodelog . match Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons self.current)) n with
+      | Option'0.C_Some b -> Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons self.final)) n
       = Option'0.C_Some b
       | Option'0.C_None -> true
       end)
@@ -3450,12 +3451,12 @@ module Bdd_Impl11_False
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Context'0.t_context)) =
-    [%#span16]  ^ self =  * self
+    [%#span16] self.final = self.current
   
   let rec hashcons'0 (self:borrowed (Context'0.t_context)) (n:Node'0.t_node) (return'  (ret:Bdd'0.t_bdd))= {[@expl:precondition] [%#span18] inv'1 self}
-    {[@expl:precondition] [%#span17] is_valid_node'0 ( * self) n}
+    {[@expl:precondition] [%#span17] is_valid_node'0 self.current n}
     any
-    [ return' (result:Bdd'0.t_bdd)-> {[%#span21] is_valid_bdd'0 ( ^ self) result}
+    [ return' (result:Bdd'0.t_bdd)-> {[%#span21] is_valid_bdd'0 self.final result}
       {[%#span20] grows'0 self}
       {[%#span19] Bdd_Bdd_Type.bdd_0 result = n}
       (! return' {result}) ]
@@ -3464,12 +3465,12 @@ module Bdd_Impl11_False
   let rec false_ (self:borrowed (Context'0.t_context)) (return'  (ret:Bdd'0.t_bdd))= {[%#sbdd0] inv'1 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_final <Context'0.t_context> { * self} {Borrow.get_id self}
+      [ s0 = Borrow.borrow_final <Context'0.t_context> {self.current} {Borrow.get_id self}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_6 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _6) ; } ] 
+             [ &self <- { self with current = _6.final ; } ] 
             s1)
-      | s1 = -{inv'0 ( ^ _6)}- s2
+      | s1 = -{inv'0 _6.final}- s2
       | s2 =  [ &_7 <- Node'0.C_False ] s3
       | s3 = hashcons'0 {_6} {_7} (fun (_ret':Bdd'0.t_bdd) ->  [ &_0 <- _ret' ] s4)
       | s4 = bb1 ]
@@ -3484,7 +3485,7 @@ module Bdd_Impl11_False
     [ return' (result:Bdd'0.t_bdd)-> {[@expl:postcondition] [%#sbdd4] UInt64.to_int (max'0 : uint64) + 1
       = leastvar'0 result}
       {[@expl:postcondition] [%#sbdd3] forall v : Map.map uint64 bool . not interp'0 result v}
-      {[@expl:postcondition] [%#sbdd2] is_valid_bdd'0 ( ^ self) result}
+      {[@expl:postcondition] [%#sbdd2] is_valid_bdd'0 self.final result}
       {[@expl:postcondition] [%#sbdd1] grows'0 self}
       (! return' {result}) ]
     
@@ -3569,7 +3570,7 @@ module Bdd_Impl11_V
   
   predicate inv'1 (_x : borrowed (Context'0.t_context))
   
-  axiom inv'1 : forall x : borrowed (Context'0.t_context) . inv'1 x = (inv'0 ( * x) /\ inv'0 ( ^ x))
+  axiom inv'1 : forall x : borrowed (Context'0.t_context) . inv'1 x = (inv'0 x.current /\ inv'0 x.final)
   
   use prelude.prelude.UInt64
   
@@ -3696,10 +3697,10 @@ module Bdd_Impl11_V
     end)
   
   predicate grows'0 [#"../bdd.rs" 296 4 296 35] (self : borrowed (Context'0.t_context)) =
-    [%#span14] UInt64.to_int (Bdd_Context_Type.context_cnt ( * self))
-    <= UInt64.to_int (Bdd_Context_Type.context_cnt ( ^ self))
-    /\ (forall n : NodeLog'0.t_nodelog . match Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons ( * self))) n with
-      | Option'0.C_Some b -> Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons ( ^ self))) n
+    [%#span14] UInt64.to_int (Bdd_Context_Type.context_cnt self.current)
+    <= UInt64.to_int (Bdd_Context_Type.context_cnt self.final)
+    /\ (forall n : NodeLog'0.t_nodelog . match Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons self.current)) n with
+      | Option'0.C_Some b -> Map.get (shallow_model'0 (Bdd_Context_Type.context_hashcons self.final)) n
       = Option'0.C_Some b
       | Option'0.C_None -> true
       end)
@@ -3707,17 +3708,17 @@ module Bdd_Impl11_V
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Context'0.t_context)) =
-    [%#span15]  ^ self =  * self
+    [%#span15] self.final = self.current
   
   let rec node'0 (self:borrowed (Context'0.t_context)) (x:uint64) (childt:Bdd'0.t_bdd) (childf:Bdd'0.t_bdd) (return'  (ret:Bdd'0.t_bdd))= {[@expl:precondition] [%#span19] inv'1 self}
     {[@expl:precondition] [%#span18] UInt64.to_int x < leastvar'0 childt /\ UInt64.to_int x < leastvar'0 childf}
-    {[@expl:precondition] [%#span17] is_valid_bdd'0 ( * self) childf}
-    {[@expl:precondition] [%#span16] is_valid_bdd'0 ( * self) childt}
+    {[@expl:precondition] [%#span17] is_valid_bdd'0 self.current childf}
+    {[@expl:precondition] [%#span16] is_valid_bdd'0 self.current childt}
     any
     [ return' (result:Bdd'0.t_bdd)-> {[%#span23] UInt64.to_int x <= leastvar'0 result}
       {[%#span22] forall v : Map.map uint64 bool . interp'0 result v
       = (if Map.get v x then interp'0 childt v else interp'0 childf v)}
-      {[%#span21] is_valid_bdd'0 ( ^ self) result}
+      {[%#span21] is_valid_bdd'0 self.final result}
       {[%#span20] grows'0 self}
       (! return' {result}) ]
     
@@ -3726,7 +3727,7 @@ module Bdd_Impl11_V
     any
     [ return' (result:Bdd'0.t_bdd)-> {[%#span28] UInt64.to_int (max'0 : uint64) + 1 = leastvar'0 result}
       {[%#span27] forall v : Map.map uint64 bool . not interp'0 result v}
-      {[%#span26] is_valid_bdd'0 ( ^ self) result}
+      {[%#span26] is_valid_bdd'0 self.final result}
       {[%#span25] grows'0 self}
       (! return' {result}) ]
     
@@ -3735,7 +3736,7 @@ module Bdd_Impl11_V
     any
     [ return' (result:Bdd'0.t_bdd)-> {[%#span33] UInt64.to_int (max'0 : uint64) + 1 = leastvar'0 result}
       {[%#span32] forall v : Map.map uint64 bool . interp'0 result v}
-      {[%#span31] is_valid_bdd'0 ( ^ self) result}
+      {[%#span31] is_valid_bdd'0 self.final result}
       {[%#span30] grows'0 self}
       (! return' {result}) ]
     
@@ -3743,32 +3744,32 @@ module Bdd_Impl11_V
   let rec v (self:borrowed (Context'0.t_context)) (x:uint64) (return'  (ret:Bdd'0.t_bdd))= {[%#sbdd0] inv'1 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_mut <Context'0.t_context> { * self}
+      [ s0 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_7 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _7) ; } ] 
+             [ &self <- { self with current = _7.final ; } ] 
             s1)
-      | s1 = -{inv'0 ( ^ _7)}- s2
+      | s1 = -{inv'0 _7.final}- s2
       | s2 = true'0 {_7} (fun (_ret':Bdd'0.t_bdd) ->  [ &t <- _ret' ] s3)
       | s3 = bb1 ]
       
     | bb1 = s0
-      [ s0 = Borrow.borrow_mut <Context'0.t_context> { * self}
+      [ s0 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_9 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _9) ; } ] 
+             [ &self <- { self with current = _9.final ; } ] 
             s1)
-      | s1 = -{inv'0 ( ^ _9)}- s2
+      | s1 = -{inv'0 _9.final}- s2
       | s2 = false'0 {_9} (fun (_ret':Bdd'0.t_bdd) ->  [ &f <- _ret' ] s3)
       | s3 = bb2 ]
       
     | bb2 = s0
-      [ s0 = Borrow.borrow_final <Context'0.t_context> { * self} {Borrow.get_id self}
+      [ s0 = Borrow.borrow_final <Context'0.t_context> {self.current} {Borrow.get_id self}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_10 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _10) ; } ] 
+             [ &self <- { self with current = _10.final ; } ] 
             s1)
-      | s1 = -{inv'0 ( ^ _10)}- s2
+      | s1 = -{inv'0 _10.final}- s2
       | s2 = node'0 {_10} {x} {t} {f} (fun (_ret':Bdd'0.t_bdd) ->  [ &_0 <- _ret' ] s3)
       | s3 = bb3 ]
       
@@ -3785,7 +3786,7 @@ module Bdd_Impl11_V
     
     [ return' (result:Bdd'0.t_bdd)-> {[@expl:postcondition] [%#sbdd3] forall v : Map.map uint64 bool . interp'0 result v
       = Map.get v x}
-      {[@expl:postcondition] [%#sbdd2] is_valid_bdd'0 ( ^ self) result}
+      {[@expl:postcondition] [%#sbdd2] is_valid_bdd'0 self.final result}
       {[@expl:postcondition] [%#sbdd1] grows'0 self}
       (! return' {result}) ]
     
@@ -4052,7 +4053,7 @@ module Bdd_Impl11_Not
   
   predicate inv'0 (_x : borrowed (Context'0.t_context))
   
-  axiom inv'0 : forall x : borrowed (Context'0.t_context) . inv'0 x = (inv'1 ( * x) /\ inv'1 ( ^ x))
+  axiom inv'0 : forall x : borrowed (Context'0.t_context) . inv'0 x = (inv'1 x.current /\ inv'1 x.final)
   
   function size'0 [#"../bdd.rs" 224 4 224 24] (self : Bdd'0.t_bdd) : int =
     [%#span19] match self with
@@ -4064,10 +4065,10 @@ module Bdd_Impl11_Not
   axiom size'0_spec : forall self : Bdd'0.t_bdd . [%#span18] size'0 self >= 0
   
   predicate grows'0 [#"../bdd.rs" 296 4 296 35] (self : borrowed (Context'0.t_context)) =
-    [%#span20] UInt64.to_int (Bdd_Context_Type.context_cnt ( * self))
-    <= UInt64.to_int (Bdd_Context_Type.context_cnt ( ^ self))
-    /\ (forall n : NodeLog'0.t_nodelog . match Map.get (shallow_model'3 (Bdd_Context_Type.context_hashcons ( * self))) n with
-      | Option'0.C_Some b -> Map.get (shallow_model'3 (Bdd_Context_Type.context_hashcons ( ^ self))) n
+    [%#span20] UInt64.to_int (Bdd_Context_Type.context_cnt self.current)
+    <= UInt64.to_int (Bdd_Context_Type.context_cnt self.final)
+    /\ (forall n : NodeLog'0.t_nodelog . match Map.get (shallow_model'3 (Bdd_Context_Type.context_hashcons self.current)) n with
+      | Option'0.C_Some b -> Map.get (shallow_model'3 (Bdd_Context_Type.context_hashcons self.final)) n
       = Option'0.C_Some b
       | Option'0.C_None -> true
       end)
@@ -4077,7 +4078,7 @@ module Bdd_Impl11_Not
   function shallow_model'2 (self : borrowed (MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd))) : Map.map uint64 (Option'0.t_option (Bdd'0.t_bdd))
     
    =
-    [%#span21] shallow_model'1 ( * self)
+    [%#span21] shallow_model'1 self.current
   
   function deep_model'1 [#"../bdd.rs" 185 4 185 44] (self : Bdd'0.t_bdd) : uint64 =
     [%#span22] Bdd_Bdd_Type.bdd_1 self
@@ -4086,7 +4087,7 @@ module Bdd_Impl11_Not
     {[@expl:precondition] [%#span23] inv'4 key}
     any
     [ return' (result:())-> {[%#span25] forall i : uint64 . inv'5 i
-       -> Map.get (shallow_model'1 ( ^ self)) i
+       -> Map.get (shallow_model'1 self.final) i
       = (if i = deep_model'1 key then Option'0.C_Some val' else Map.get (shallow_model'2 self) i)}
       (! return' {result}) ]
     
@@ -4095,7 +4096,7 @@ module Bdd_Impl11_Not
     any
     [ return' (result:Bdd'0.t_bdd)-> {[%#span30] UInt64.to_int (max'0 : uint64) + 1 = leastvar'0 result}
       {[%#span29] forall v : Map.map uint64 bool . interp'0 result v}
-      {[%#span28] is_valid_bdd'0 ( ^ self) result}
+      {[%#span28] is_valid_bdd'0 self.final result}
       {[%#span27] grows'0 self}
       (! return' {result}) ]
     
@@ -4104,26 +4105,26 @@ module Bdd_Impl11_Not
     any
     [ return' (result:Bdd'0.t_bdd)-> {[%#span35] UInt64.to_int (max'0 : uint64) + 1 = leastvar'0 result}
       {[%#span34] forall v : Map.map uint64 bool . not interp'0 result v}
-      {[%#span33] is_valid_bdd'0 ( ^ self) result}
+      {[%#span33] is_valid_bdd'0 self.final result}
       {[%#span32] grows'0 self}
       (! return' {result}) ]
     
   
   let rec node'0 (self:borrowed (Context'0.t_context)) (x:uint64) (childt:Bdd'0.t_bdd) (childf:Bdd'0.t_bdd) (return'  (ret:Bdd'0.t_bdd))= {[@expl:precondition] [%#span39] inv'0 self}
     {[@expl:precondition] [%#span38] UInt64.to_int x < leastvar'0 childt /\ UInt64.to_int x < leastvar'0 childf}
-    {[@expl:precondition] [%#span37] is_valid_bdd'0 ( * self) childf}
-    {[@expl:precondition] [%#span36] is_valid_bdd'0 ( * self) childt}
+    {[@expl:precondition] [%#span37] is_valid_bdd'0 self.current childf}
+    {[@expl:precondition] [%#span36] is_valid_bdd'0 self.current childt}
     any
     [ return' (result:Bdd'0.t_bdd)-> {[%#span43] UInt64.to_int x <= leastvar'0 result}
       {[%#span42] forall v : Map.map uint64 bool . interp'0 result v
       = (if Map.get v x then interp'0 childt v else interp'0 childf v)}
-      {[%#span41] is_valid_bdd'0 ( ^ self) result}
+      {[%#span41] is_valid_bdd'0 self.final result}
       {[%#span40] grows'0 self}
       (! return' {result}) ]
     
   
   predicate resolve'0 (self : borrowed (Context'0.t_context)) =
-    [%#span44]  ^ self =  * self
+    [%#span44] self.final = self.current
   
   function deep_model'0 (self : Bdd'0.t_bdd) : uint64 =
     [%#span45] deep_model'1 self
@@ -4148,11 +4149,11 @@ module Bdd_Impl11_Not
   use Bdd_Bumpalo_Bump_Type as Bump'0
   
   let rec not' (self:borrowed (Context'0.t_context)) (x:Bdd'0.t_bdd) (return'  (ret:Bdd'0.t_bdd))= {[%#sbdd2] inv'0 self}
-    {[%#sbdd1] is_valid_bdd'0 ( * self) x}
+    {[%#sbdd1] is_valid_bdd'0 self.current x}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &_13 <- x ] s1
-      | s1 = Context'0.t_context { * self}
+      | s1 = Context'0.t_context {self.current}
           (fun (ralloc'0:Bump'0.t_bump) (rhashcons'0:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (rhashcons_ghost'0:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (rnot_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rand_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rcnt'0:uint64) ->
             get'0 {rnot_memo'0} {_13} (fun (_ret':Option'0.t_option (Bdd'0.t_bdd)) ->  [ &_10 <- _ret' ] s2))
       | s2 = bb1 ]
@@ -4180,62 +4181,62 @@ module Bdd_Impl11_Not
           (fun (r0'2:Node'0.t_node) (r1'2:uint64) ->
             Node'0.if' {r0'2}
               (fun (rv'2:uint64) (rchildt'2:Bdd'0.t_bdd) (rchildf'2:Bdd'0.t_bdd) ->  [ &childf <- rchildf'2 ] s3))
-      | s3 = Borrow.borrow_mut <Context'0.t_context> { * self}
+      | s3 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_25 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _25) ; } ] 
+             [ &self <- { self with current = _25.final ; } ] 
             s4)
-      | s4 = -{inv'1 ( ^ _25)}- s5
+      | s4 = -{inv'1 _25.final}- s5
       | s5 = not' {_25} {childt} (fun (_ret':Bdd'0.t_bdd) ->  [ &childt1 <- _ret' ] s6)
       | s6 = bb13 ]
       
     | bb13 = s0
-      [ s0 = Borrow.borrow_mut <Context'0.t_context> { * self}
+      [ s0 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_28 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _28) ; } ] 
+             [ &self <- { self with current = _28.final ; } ] 
             s1)
-      | s1 = -{inv'1 ( ^ _28)}- s2
+      | s1 = -{inv'1 _28.final}- s2
       | s2 = not' {_28} {childf} (fun (_ret':Bdd'0.t_bdd) ->  [ &childf1 <- _ret' ] s3)
       | s3 = bb14 ]
       
     | bb14 = s0
-      [ s0 = Borrow.borrow_mut <Context'0.t_context> { * self}
+      [ s0 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_30 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _30) ; } ] 
+             [ &self <- { self with current = _30.final ; } ] 
             s1)
-      | s1 = -{inv'1 ( ^ _30)}- s2
+      | s1 = -{inv'1 _30.final}- s2
       | s2 = node'0 {_30} {v} {childt1} {childf1} (fun (_ret':Bdd'0.t_bdd) ->  [ &r1 <- _ret' ] s3)
       | s3 = bb15 ]
       
     | bb15 = bb16
     | bb6 = bb9
     | bb9 = s0
-      [ s0 = Borrow.borrow_mut <Context'0.t_context> { * self}
+      [ s0 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_19 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _19) ; } ] 
+             [ &self <- { self with current = _19.final ; } ] 
             s1)
-      | s1 = -{inv'1 ( ^ _19)}- s2
+      | s1 = -{inv'1 _19.final}- s2
       | s2 = false'0 {_19} (fun (_ret':Bdd'0.t_bdd) ->  [ &r1 <- _ret' ] s3)
       | s3 = bb10 ]
       
     | bb10 = bb16
     | bb7 = bb11
     | bb11 = s0
-      [ s0 = Borrow.borrow_mut <Context'0.t_context> { * self}
+      [ s0 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_20 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _20) ; } ] 
+             [ &self <- { self with current = _20.final ; } ] 
             s1)
-      | s1 = -{inv'1 ( ^ _20)}- s2
+      | s1 = -{inv'1 _20.final}- s2
       | s2 = true'0 {_20} (fun (_ret':Bdd'0.t_bdd) ->  [ &r1 <- _ret' ] s3)
       | s3 = bb12 ]
       
     | bb12 = bb16
     | bb16 = s0
-      [ s0 = Context'0.t_context { * self}
+      [ s0 = Context'0.t_context {self.current}
           (fun (ralloc'0:Bump'0.t_bump) (rhashcons'0:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (rhashcons_ghost'0:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (rnot_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rand_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rcnt'0:uint64) ->
             Borrow.borrow_final
               <MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)>
@@ -4243,10 +4244,10 @@ module Bdd_Impl11_Not
               {Borrow.inherit_id (Borrow.get_id self) 4}
               (fun (_ret':borrowed (MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd))) ->
                  [ &_35 <- _ret' ] 
-                Context'0.t_context { * self}
+                Context'0.t_context {self.current}
                   (fun (l_alloc'0:Bump'0.t_bump) (l_hashcons'0:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (l_hashcons_ghost'0:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (l_not_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (l_and_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (l_cnt'0:uint64) ->
                     
-                    [ &self <- { self with current = Context'0.C_Context l_alloc'0 l_hashcons'0 l_hashcons_ghost'0 ( ^ _35) l_and_memo'0 l_cnt'0 ; } ]
+                    [ &self <- { self with current = Context'0.C_Context l_alloc'0 l_hashcons'0 l_hashcons_ghost'0 _35.final l_and_memo'0 l_cnt'0 ; } ]
                     
                     s1)))
       | s1 = add'0 {_35} {x} {r1} (fun (_ret':()) ->  [ &_34 <- _ret' ] s2)
@@ -4287,7 +4288,7 @@ module Bdd_Impl11_Not
     
     [ return' (result:Bdd'0.t_bdd)-> {[@expl:postcondition] [%#sbdd6] leastvar'0 x <= leastvar'0 result}
       {[@expl:postcondition] [%#sbdd5] forall v : Map.map uint64 bool . interp'0 result v = (not interp'0 x v)}
-      {[@expl:postcondition] [%#sbdd4] is_valid_bdd'0 ( ^ self) result}
+      {[@expl:postcondition] [%#sbdd4] is_valid_bdd'0 self.final result}
       {[@expl:postcondition] [%#sbdd3] grows'0 self}
       (! return' {result}) ]
     
@@ -4607,7 +4608,7 @@ module Bdd_Impl11_And
   
   predicate inv'0 (_x : borrowed (Context'0.t_context))
   
-  axiom inv'0 : forall x : borrowed (Context'0.t_context) . inv'0 x = (inv'1 ( * x) /\ inv'1 ( ^ x))
+  axiom inv'0 : forall x : borrowed (Context'0.t_context) . inv'0 x = (inv'1 x.current /\ inv'1 x.final)
   
   function size'0 [#"../bdd.rs" 224 4 224 24] (self : Bdd'0.t_bdd) : int =
     [%#span21] match self with
@@ -4619,10 +4620,10 @@ module Bdd_Impl11_And
   axiom size'0_spec : forall self : Bdd'0.t_bdd . [%#span20] size'0 self >= 0
   
   predicate grows'0 [#"../bdd.rs" 296 4 296 35] (self : borrowed (Context'0.t_context)) =
-    [%#span22] UInt64.to_int (Bdd_Context_Type.context_cnt ( * self))
-    <= UInt64.to_int (Bdd_Context_Type.context_cnt ( ^ self))
-    /\ (forall n : NodeLog'0.t_nodelog . match Map.get (shallow_model'3 (Bdd_Context_Type.context_hashcons ( * self))) n with
-      | Option'0.C_Some b -> Map.get (shallow_model'3 (Bdd_Context_Type.context_hashcons ( ^ self))) n
+    [%#span22] UInt64.to_int (Bdd_Context_Type.context_cnt self.current)
+    <= UInt64.to_int (Bdd_Context_Type.context_cnt self.final)
+    /\ (forall n : NodeLog'0.t_nodelog . match Map.get (shallow_model'3 (Bdd_Context_Type.context_hashcons self.current)) n with
+      | Option'0.C_Some b -> Map.get (shallow_model'3 (Bdd_Context_Type.context_hashcons self.final)) n
       = Option'0.C_Some b
       | Option'0.C_None -> true
       end)
@@ -4632,7 +4633,7 @@ module Bdd_Impl11_And
   function shallow_model'2 (self : borrowed (MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd))) : Map.map (uint64, uint64) (Option'0.t_option (Bdd'0.t_bdd))
     
    =
-    [%#span23] shallow_model'1 ( * self)
+    [%#span23] shallow_model'1 self.current
   
   function deep_model'3 [#"../bdd.rs" 185 4 185 44] (self : Bdd'0.t_bdd) : uint64 =
     [%#span24] Bdd_Bdd_Type.bdd_1 self
@@ -4644,7 +4645,7 @@ module Bdd_Impl11_And
     {[@expl:precondition] [%#span26] inv'4 key}
     any
     [ return' (result:())-> {[%#span28] forall i : (uint64, uint64) . inv'6 i
-       -> Map.get (shallow_model'1 ( ^ self)) i
+       -> Map.get (shallow_model'1 self.final) i
       = (if i = deep_model'2 key then Option'0.C_Some val' else Map.get (shallow_model'2 self) i)}
       (! return' {result}) ]
     
@@ -4653,20 +4654,20 @@ module Bdd_Impl11_And
     any
     [ return' (result:Bdd'0.t_bdd)-> {[%#span33] UInt64.to_int (max'0 : uint64) + 1 = leastvar'0 result}
       {[%#span32] forall v : Map.map uint64 bool . not interp'0 result v}
-      {[%#span31] is_valid_bdd'0 ( ^ self) result}
+      {[%#span31] is_valid_bdd'0 self.final result}
       {[%#span30] grows'0 self}
       (! return' {result}) ]
     
   
   let rec node'0 (self:borrowed (Context'0.t_context)) (x:uint64) (childt:Bdd'0.t_bdd) (childf:Bdd'0.t_bdd) (return'  (ret:Bdd'0.t_bdd))= {[@expl:precondition] [%#span37] inv'0 self}
     {[@expl:precondition] [%#span36] UInt64.to_int x < leastvar'0 childt /\ UInt64.to_int x < leastvar'0 childf}
-    {[@expl:precondition] [%#span35] is_valid_bdd'0 ( * self) childf}
-    {[@expl:precondition] [%#span34] is_valid_bdd'0 ( * self) childt}
+    {[@expl:precondition] [%#span35] is_valid_bdd'0 self.current childf}
+    {[@expl:precondition] [%#span34] is_valid_bdd'0 self.current childt}
     any
     [ return' (result:Bdd'0.t_bdd)-> {[%#span41] UInt64.to_int x <= leastvar'0 result}
       {[%#span40] forall v : Map.map uint64 bool . interp'0 result v
       = (if Map.get v x then interp'0 childt v else interp'0 childf v)}
-      {[%#span39] is_valid_bdd'0 ( ^ self) result}
+      {[%#span39] is_valid_bdd'0 self.final result}
       {[%#span38] grows'0 self}
       (! return' {result}) ]
     
@@ -4689,7 +4690,7 @@ module Bdd_Impl11_And
     [%#span46] resolve'4 (let (a, _) = self in a) /\ resolve'4 (let (_, a) = self in a)
   
   predicate resolve'1 (self : borrowed (Context'0.t_context)) =
-    [%#span47]  ^ self =  * self
+    [%#span47] self.final = self.current
   
   predicate resolve'3 (self : Bdd'0.t_bdd) =
     [%#span45] true
@@ -4720,13 +4721,13 @@ module Bdd_Impl11_And
   use Bdd_Bumpalo_Bump_Type as Bump'0
   
   let rec and (self:borrowed (Context'0.t_context)) (a:Bdd'0.t_bdd) (b:Bdd'0.t_bdd) (return'  (ret:Bdd'0.t_bdd))= {[%#sbdd4] inv'0 self}
-    {[%#sbdd3] is_valid_bdd'0 ( * self) b}
-    {[%#sbdd2] is_valid_bdd'0 ( * self) a}
+    {[%#sbdd3] is_valid_bdd'0 self.current b}
+    {[%#sbdd2] is_valid_bdd'0 self.current a}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &_16 <- (a, b) ] s1
       | s1 =  [ &_15 <- _16 ] s2
-      | s2 = Context'0.t_context { * self}
+      | s2 = Context'0.t_context {self.current}
           (fun (ralloc'0:Bump'0.t_bump) (rhashcons'0:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (rhashcons_ghost'0:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (rnot_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rand_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rcnt'0:uint64) ->
             get'0 {rand_memo'0} {_15} (fun (_ret':Option'0.t_option (Bdd'0.t_bdd)) ->  [ &_12 <- _ret' ] s3))
       | s3 = bb1 ]
@@ -4802,46 +4803,46 @@ module Bdd_Impl11_And
     | bb20 = bb23
     | bb23 = s0
       [ s0 =  [ &v <- vb ] s1
-      | s1 = Borrow.borrow_mut <Context'0.t_context> { * self}
+      | s1 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_49 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _49) ; } ] 
+             [ &self <- { self with current = _49.final ; } ] 
             s2)
-      | s2 = -{inv'1 ( ^ _49)}- s3
+      | s2 = -{inv'1 _49.final}- s3
       | s3 = and {_49} {a} {childtb} (fun (_ret':Bdd'0.t_bdd) ->  [ &_48 <- _ret' ] s4)
       | s4 = bb24 ]
       
     | bb24 = s0
       [ s0 =  [ &childt <- _48 ] (any [ any_ (_any:Bdd'0.t_bdd)-> (!  [ &_48 <- _any ] s1) ] )
-      | s1 = Borrow.borrow_mut <Context'0.t_context> { * self}
+      | s1 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_53 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _53) ; } ] 
+             [ &self <- { self with current = _53.final ; } ] 
             s2)
-      | s2 = -{inv'1 ( ^ _53)}- s3
+      | s2 = -{inv'1 _53.final}- s3
       | s3 = and {_53} {a} {childfb} (fun (_ret':Bdd'0.t_bdd) ->  [ &_52 <- _ret' ] s4)
       | s4 = bb25 ]
       
     | bb25 = s0 [ s0 =  [ &childf <- _52 ] (any [ any_ (_any:Bdd'0.t_bdd)-> (!  [ &_52 <- _any ] s1) ] ) | s1 = bb31 ] 
     | bb22 = s0
       [ s0 =  [ &v <- va ] s1
-      | s1 = Borrow.borrow_mut <Context'0.t_context> { * self}
+      | s1 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_67 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _67) ; } ] 
+             [ &self <- { self with current = _67.final ; } ] 
             s2)
-      | s2 = -{inv'1 ( ^ _67)}- s3
+      | s2 = -{inv'1 _67.final}- s3
       | s3 = and {_67} {childta} {childtb} (fun (_ret':Bdd'0.t_bdd) ->  [ &_66 <- _ret' ] s4)
       | s4 = bb29 ]
       
     | bb29 = s0
       [ s0 =  [ &childt <- _66 ] (any [ any_ (_any:Bdd'0.t_bdd)-> (!  [ &_66 <- _any ] s1) ] )
-      | s1 = Borrow.borrow_mut <Context'0.t_context> { * self}
+      | s1 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_71 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _71) ; } ] 
+             [ &self <- { self with current = _71.final ; } ] 
             s2)
-      | s2 = -{inv'1 ( ^ _71)}- s3
+      | s2 = -{inv'1 _71.final}- s3
       | s3 = and {_71} {childfa} {childfb} (fun (_ret':Bdd'0.t_bdd) ->  [ &_70 <- _ret' ] s4)
       | s4 = bb30 ]
       
@@ -4849,34 +4850,34 @@ module Bdd_Impl11_And
     | bb21 = bb26
     | bb26 = s0
       [ s0 =  [ &v <- va ] s1
-      | s1 = Borrow.borrow_mut <Context'0.t_context> { * self}
+      | s1 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_58 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _58) ; } ] 
+             [ &self <- { self with current = _58.final ; } ] 
             s2)
-      | s2 = -{inv'1 ( ^ _58)}- s3
+      | s2 = -{inv'1 _58.final}- s3
       | s3 = and {_58} {childta} {b} (fun (_ret':Bdd'0.t_bdd) ->  [ &_57 <- _ret' ] s4)
       | s4 = bb27 ]
       
     | bb27 = s0
       [ s0 =  [ &childt <- _57 ] (any [ any_ (_any:Bdd'0.t_bdd)-> (!  [ &_57 <- _any ] s1) ] )
-      | s1 = Borrow.borrow_mut <Context'0.t_context> { * self}
+      | s1 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_62 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _62) ; } ] 
+             [ &self <- { self with current = _62.final ; } ] 
             s2)
-      | s2 = -{inv'1 ( ^ _62)}- s3
+      | s2 = -{inv'1 _62.final}- s3
       | s3 = and {_62} {childfa} {b} (fun (_ret':Bdd'0.t_bdd) ->  [ &_61 <- _ret' ] s4)
       | s4 = bb28 ]
       
     | bb28 = s0 [ s0 =  [ &childf <- _61 ] (any [ any_ (_any:Bdd'0.t_bdd)-> (!  [ &_61 <- _any ] s1) ] ) | s1 = bb31 ] 
     | bb31 = s0
-      [ s0 = Borrow.borrow_mut <Context'0.t_context> { * self}
+      [ s0 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_74 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _74) ; } ] 
+             [ &self <- { self with current = _74.final ; } ] 
             s1)
-      | s1 = -{inv'1 ( ^ _74)}- s2
+      | s1 = -{inv'1 _74.final}- s2
       | s2 = node'0 {_74} {v} {childt} {childf} (fun (_ret':Bdd'0.t_bdd) ->  [ &r1 <- _ret' ] s3)
       | s3 = bb32 ]
       
@@ -4884,12 +4885,12 @@ module Bdd_Impl11_And
     | bb13 = bb16
     | bb16 = s0
       [ s0 = -{resolve'2 _23}- s1
-      | s1 = Borrow.borrow_mut <Context'0.t_context> { * self}
+      | s1 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_31 <- _ret' ] 
-             [ &self <- { self with current = ( ^ _31) ; } ] 
+             [ &self <- { self with current = _31.final ; } ] 
             s2)
-      | s2 = -{inv'1 ( ^ _31)}- s3
+      | s2 = -{inv'1 _31.final}- s3
       | s3 = false'0 {_31} (fun (_ret':Bdd'0.t_bdd) ->  [ &r1 <- _ret' ] s4)
       | s4 = bb17 ]
       
@@ -4899,7 +4900,7 @@ module Bdd_Impl11_And
     | bb6 = bb14
     | bb14 = s0 [ s0 = -{resolve'2 _23}- s1 | s1 =  [ &r1 <- b ] s2 | s2 = bb33 ] 
     | bb33 = s0
-      [ s0 = Context'0.t_context { * self}
+      [ s0 = Context'0.t_context {self.current}
           (fun (ralloc'0:Bump'0.t_bump) (rhashcons'0:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (rhashcons_ghost'0:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (rnot_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rand_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rcnt'0:uint64) ->
             Borrow.borrow_final
               <MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)>
@@ -4907,10 +4908,10 @@ module Bdd_Impl11_And
               {Borrow.inherit_id (Borrow.get_id self) 5}
               (fun (_ret':borrowed (MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd))) ->
                  [ &_79 <- _ret' ] 
-                Context'0.t_context { * self}
+                Context'0.t_context {self.current}
                   (fun (l_alloc'0:Bump'0.t_bump) (l_hashcons'0:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (l_hashcons_ghost'0:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (l_not_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (l_and_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (l_cnt'0:uint64) ->
                     
-                    [ &self <- { self with current = Context'0.C_Context l_alloc'0 l_hashcons'0 l_hashcons_ghost'0 l_not_memo'0 ( ^ _79) l_cnt'0 ; } ]
+                    [ &self <- { self with current = Context'0.C_Context l_alloc'0 l_hashcons'0 l_hashcons_ghost'0 l_not_memo'0 _79.final l_cnt'0 ; } ]
                     
                     s1)))
       | s1 =  [ &_80 <- (a, b) ] s2
@@ -4973,7 +4974,7 @@ module Bdd_Impl11_And
       \/ leastvar'0 b <= leastvar'0 result}
       {[@expl:postcondition] [%#sbdd7] forall v : Map.map uint64 bool . interp'0 result v
       = (interp'0 a v /\ interp'0 b v)}
-      {[@expl:postcondition] [%#sbdd6] is_valid_bdd'0 ( ^ self) result}
+      {[@expl:postcondition] [%#sbdd6] is_valid_bdd'0 self.final result}
       {[@expl:postcondition] [%#sbdd5] grows'0 self}
       (! return' {result}) ]
     

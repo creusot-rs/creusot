@@ -236,7 +236,7 @@ module C11Repeat_Impl0_Next
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Repeat'0.t_repeat a)) =
-    [%#span6]  ^ self =  * self
+    [%#span6] self.final = self.current
   
   let rec clone'0 (self:a) (return'  (ret:a))= {[@expl:precondition] [%#span7] inv'2 self}
     any [ return' (result:a)-> {[%#span9] inv'3 result} {[%#span8] result = self} (! return' {result}) ] 
@@ -244,7 +244,7 @@ module C11Repeat_Impl0_Next
   let rec next (self:borrowed (Repeat'0.t_repeat a)) (return'  (ret:Option'0.t_option a))= {[%#s11_repeat0] inv'0 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = Repeat'0.t_repeat <a> { * self}
+      [ s0 = Repeat'0.t_repeat <a> {self.current}
           (fun (relement'0:a) -> clone'0 {relement'0} (fun (_ret':a) ->  [ &_3 <- _ret' ] s1))
       | s1 = bb1 ]
       
@@ -259,7 +259,7 @@ module C11Repeat_Impl0_Next
     [ return' (result:Option'0.t_option a)-> {[@expl:postcondition] [%#s11_repeat2] inv'1 result}
       {[@expl:postcondition] [%#s11_repeat1] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -361,11 +361,11 @@ module C11Repeat_Impl0
   /\ (forall result : Option'0.t_option a . inv'3 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end
    -> inv'3 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end)
 end

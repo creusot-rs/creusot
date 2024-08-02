@@ -1015,7 +1015,7 @@ impl<'tcx> Statement<'tcx> {
                     Arg::Ty(lower.ty(rhs.ty(lower.ctx.tcx, lower.locals))),
                     Arg::Term(rhs.as_rplace(lower, &mut istmts)),
                 ];
-                let reassign = Exp::Final(Box::new(lhs.as_rplace(lower, &mut istmts)));
+                let reassign = lhs.as_rplace(lower, &mut istmts).field("final");
 
                 let ty = lhs.ty(lower.ctx.tcx, lower.locals);
 
@@ -1045,7 +1045,7 @@ impl<'tcx> Statement<'tcx> {
 
                 let borrow_id =
                     borrow_generated_id(original_borrow, &rhs.projection[deref_index + 1..]);
-                let reassign = Exp::Final(Box::new(lhs.as_rplace(lower, &mut istmts)));
+                let reassign = lhs.as_rplace(lower, &mut istmts).field("final");
 
                 let assign1 = { lower.assignment(&lhs, Exp::var("_ret'")) };
 
@@ -1118,7 +1118,7 @@ impl<'tcx> Statement<'tcx> {
                 );
                 let mut istmts = Vec::new();
 
-                let arg = Exp::Final(Box::new(pl.as_rplace(lower, &mut istmts)));
+                let arg = pl.as_rplace(lower, &mut istmts).field("final");
 
                 istmts.extend(vec![IntermediateStmt::Assume(inv_fun.app_to(arg))]);
                 istmts

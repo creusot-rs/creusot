@@ -585,7 +585,9 @@ impl Print for Exp {
                 }
                 res.braces()
             }
-            Exp::RecField { record, label } => record.pretty(alloc).append(".").append(label),
+            Exp::RecField { record, label } => {
+                parens!(alloc, self.precedence().next(), record).append(".").append(label)
+            }
 
             Exp::Tuple(args) => alloc
                 .intersperse(args.iter().map(|a| parens!(alloc, Precedence::Cast, a)), ", ")

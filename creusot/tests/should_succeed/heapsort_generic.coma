@@ -692,10 +692,10 @@ module HeapsortGeneric_SiftDown
   use prelude.prelude.Intrinsic
   
   predicate resolve'3 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
-    [%#span62]  ^ self =  * self
+    [%#span62] self.final = self.current
   
   predicate resolve'2 (self : borrowed (slice t)) =
-    [%#span62]  ^ self =  * self
+    [%#span62] self.final = self.current
   
   use seq.Permut
   
@@ -709,23 +709,23 @@ module HeapsortGeneric_SiftDown
   && ([%#span64] Seq.length (shallow_model'6 self) <= UIntSize.to_int (max'0 : usize))
   
   function shallow_model'5 (self : borrowed (slice t)) : Seq.seq t =
-    [%#span67] shallow_model'6 ( * self)
+    [%#span67] shallow_model'6 self.current
   
   let rec swap'0 (self:borrowed (slice t)) (a:usize) (b:usize) (return'  (ret:()))= {[@expl:precondition] [%#span70] inv'5 self}
     {[@expl:precondition] [%#span69] UIntSize.to_int b < Seq.length (shallow_model'5 self)}
     {[@expl:precondition] [%#span68] UIntSize.to_int a < Seq.length (shallow_model'5 self)}
     any
-    [ return' (result:())-> {[%#span71] Permut.exchange (shallow_model'6 ( ^ self)) (shallow_model'5 self) (UIntSize.to_int a) (UIntSize.to_int b)}
+    [ return' (result:())-> {[%#span71] Permut.exchange (shallow_model'6 self.final) (shallow_model'5 self) (UIntSize.to_int a) (UIntSize.to_int b)}
       (! return' {result}) ]
     
   
   function shallow_model'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq t =
-    [%#span67] shallow_model'2 ( * self)
+    [%#span67] shallow_model'2 self.current
   
   let rec deref_mut'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (return'  (ret:borrowed (slice t)))= {[@expl:precondition] [%#span72] inv'6 self}
     any
     [ return' (result:borrowed (slice t))-> {[%#span75] inv'5 result}
-      {[%#span74] shallow_model'6 ( ^ result) = shallow_model'2 ( ^ self)}
+      {[%#span74] shallow_model'6 result.final = shallow_model'2 self.final}
       {[%#span73] shallow_model'5 result = shallow_model'0 self}
       (! return' {result}) ]
     
@@ -768,7 +768,7 @@ module HeapsortGeneric_SiftDown
     
   
   function deep_model'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq deep_model_ty'0 =
-    [%#span91] deep_model'1 ( * self)
+    [%#span91] deep_model'1 self.current
   
   use prelude.prelude.Snapshot
   
@@ -802,7 +802,7 @@ module HeapsortGeneric_SiftDown
       | s4 = bb2 ]
       
     | bb2 = bb2
-      [ bb2 = {[@expl:loop invariant]  ^ Snapshot.inner old_2_0 =  ^ v}
+      [ bb2 = {[@expl:loop invariant] (Snapshot.inner old_2_0).final = v.final}
         {[@expl:loop invariant] [%#sheapsort_generic1] let c = 2 * UIntSize.to_int i + 2 in c < UIntSize.to_int end'
         /\ UIntSize.to_int start <= parent'0 (UIntSize.to_int i)
          -> le_log'0 (Seq.get (deep_model'0 v) c) (Seq.get (deep_model'0 v) (parent'0 (parent'0 c)))}
@@ -819,7 +819,7 @@ module HeapsortGeneric_SiftDown
          -> le_log'0 (Seq.get (deep_model'0 v) j) m)}
         {[@expl:loop invariant] [%#sheapsort_generic1] forall j : int . 0 <= j /\ j < UIntSize.to_int start
         \/ UIntSize.to_int end' <= j /\ j < Seq.length (shallow_model'0 v)
-         -> index_logic'0 ( * Snapshot.inner old_v) j = index_logic'0 ( * v) j}
+         -> index_logic'0 (Snapshot.inner old_v).current j = index_logic'0 v.current j}
         {[@expl:loop invariant] [%#sheapsort_generic2] UIntSize.to_int start <= UIntSize.to_int i
         /\ UIntSize.to_int i < UIntSize.to_int end'}
         {[@expl:loop invariant] [%#sheapsort_generic1] permutation_of'0 (shallow_model'0 v) (shallow_model'1 old_v)}
@@ -845,12 +845,12 @@ module HeapsortGeneric_SiftDown
               (fun (_ret':bool) ->  [ &_34 <- _ret' ] (any [ any_ (_any:usize)-> (!  [ &_35 <- _any ] s4) ] ))
           | s4 = any [ br0 -> {_34 = false} (! bb8) | br1 -> {_34} (! bb7) ]  ]
           
-        | bb7 = s0 [ s0 = index'0 { * v} {child} (fun (_ret':t) ->  [ &_40 <- _ret' ] s1) | s1 = bb9 ] 
+        | bb7 = s0 [ s0 = index'0 {v.current} {child} (fun (_ret':t) ->  [ &_40 <- _ret' ] s1) | s1 = bb9 ] 
         | bb9 = s0
           [ s0 = {[@expl:type invariant] inv'2 _40} s1
           | s1 = -{resolve'1 _40}- s2
           | s2 = UIntSize.add {child} {[%#sheapsort_generic8] (1 : usize)} (fun (_ret':usize) ->  [ &_46 <- _ret' ] s3)
-          | s3 = index'0 { * v} {_46} (fun (_ret':t) ->  [ &_44 <- _ret' ] s4)
+          | s3 = index'0 {v.current} {_46} (fun (_ret':t) ->  [ &_44 <- _ret' ] s4)
           | s4 = bb10 ]
           
         | bb10 = s0
@@ -868,11 +868,11 @@ module HeapsortGeneric_SiftDown
         | bb13 = bb14
         | bb8 = bb14
         | bb14 = bb15
-        | bb15 = s0 [ s0 = index'0 { * v} {child} (fun (_ret':t) ->  [ &_51 <- _ret' ] s1) | s1 = bb16 ] 
+        | bb15 = s0 [ s0 = index'0 {v.current} {child} (fun (_ret':t) ->  [ &_51 <- _ret' ] s1) | s1 = bb16 ] 
         | bb16 = s0
           [ s0 = {[@expl:type invariant] inv'2 _51} s1
           | s1 = -{resolve'1 _51}- s2
-          | s2 = index'0 { * v} {i} (fun (_ret':t) ->  [ &_55 <- _ret' ] s3)
+          | s2 = index'0 {v.current} {i} (fun (_ret':t) ->  [ &_55 <- _ret' ] s3)
           | s3 = bb17 ]
           
         | bb17 = s0
@@ -883,19 +883,19 @@ module HeapsortGeneric_SiftDown
           
         | bb18 = any [ br0 -> {_49 = false} (! bb20) | br1 -> {_49} (! bb19) ] 
         | bb20 = s0
-          [ s0 = Borrow.borrow_mut <Vec'0.t_vec t (Global'0.t_global)> { * v}
+          [ s0 = Borrow.borrow_mut <Vec'0.t_vec t (Global'0.t_global)> {v.current}
               (fun (_ret':borrowed (Vec'0.t_vec t (Global'0.t_global))) ->
                  [ &_62 <- _ret' ] 
-                 [ &v <- { v with current = ( ^ _62) ; } ] 
+                 [ &v <- { v with current = _62.final ; } ] 
                 s1)
-          | s1 = -{inv'3 ( ^ _62)}- s2
+          | s1 = -{inv'3 _62.final}- s2
           | s2 = deref_mut'0 {_62} (fun (_ret':borrowed (slice t)) ->  [ &_61 <- _ret' ] s3)
           | s3 = bb21 ]
           
         | bb21 = s0
-          [ s0 = Borrow.borrow_final <slice t> { * _61} {Borrow.get_id _61}
-              (fun (_ret':borrowed (slice t)) ->  [ &_60 <- _ret' ]  [ &_61 <- { _61 with current = ( ^ _60) ; } ] s1)
-          | s1 = -{inv'4 ( ^ _60)}- s2
+          [ s0 = Borrow.borrow_final <slice t> {_61.current} {Borrow.get_id _61}
+              (fun (_ret':borrowed (slice t)) ->  [ &_60 <- _ret' ]  [ &_61 <- { _61 with current = _60.final ; } ] s1)
+          | s1 = -{inv'4 _60.final}- s2
           | s2 = swap'0 {_60} {i} {child} (fun (_ret':()) ->  [ &_59 <- _ret' ] s3)
           | s3 = bb22 ]
           
@@ -941,12 +941,12 @@ module HeapsortGeneric_SiftDown
        -> (forall j : int . UIntSize.to_int start <= j /\ j < UIntSize.to_int end'
        -> le_log'0 (Seq.get (deep_model'0 v) j) m)
        -> (forall j : int . UIntSize.to_int start <= j /\ j < UIntSize.to_int end'
-       -> le_log'0 (Seq.get (deep_model'1 ( ^ v)) j) m)}
+       -> le_log'0 (Seq.get (deep_model'1 v.final) j) m)}
       {[@expl:postcondition] [%#sheapsort_generic16] forall i : int . 0 <= i /\ i < UIntSize.to_int start
       \/ UIntSize.to_int end' <= i /\ i < Seq.length (shallow_model'0 v)
-       -> index_logic'0 ( * v) i = index_logic'0 ( ^ v) i}
-      {[@expl:postcondition] [%#sheapsort_generic15] permutation_of'0 (shallow_model'2 ( ^ v)) (shallow_model'0 v)}
-      {[@expl:postcondition] [%#sheapsort_generic14] heap_frag'0 (deep_model'1 ( ^ v)) (UIntSize.to_int start) (UIntSize.to_int end')}
+       -> index_logic'0 v.current i = index_logic'0 v.final i}
+      {[@expl:postcondition] [%#sheapsort_generic15] permutation_of'0 (shallow_model'2 v.final) (shallow_model'0 v)}
+      {[@expl:postcondition] [%#sheapsort_generic14] heap_frag'0 (deep_model'1 v.final) (UIntSize.to_int start) (UIntSize.to_int end')}
       (! return' {result}) ]
     
 end
@@ -1348,7 +1348,7 @@ module HeapsortGeneric_HeapSort
   use prelude.prelude.Intrinsic
   
   predicate resolve'2 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
-    [%#span69]  ^ self =  * self
+    [%#span69] self.final = self.current
   
   function parent'0 [#"../heapsort_generic.rs" 10 0 10 24] (i : int) : int =
     [%#span70] div (i + 1) 2 - 1
@@ -1367,7 +1367,7 @@ module HeapsortGeneric_HeapSort
    -> ([%#span73] 0 <= i /\ i < end')  -> ([%#span74] inv'7 s)  -> ([%#span75] le_log'0 (Seq.get s i) (Seq.get s 0))
   
   predicate resolve'1 (self : borrowed (slice t)) =
-    [%#span69]  ^ self =  * self
+    [%#span69] self.final = self.current
   
   use seq.Permut
   
@@ -1381,23 +1381,23 @@ module HeapsortGeneric_HeapSort
   && ([%#span79] Seq.length (shallow_model'6 self) <= UIntSize.to_int (max'1 : usize))
   
   function shallow_model'5 (self : borrowed (slice t)) : Seq.seq t =
-    [%#span82] shallow_model'6 ( * self)
+    [%#span82] shallow_model'6 self.current
   
   let rec swap'0 (self:borrowed (slice t)) (a:usize) (b:usize) (return'  (ret:()))= {[@expl:precondition] [%#span85] inv'3 self}
     {[@expl:precondition] [%#span84] UIntSize.to_int b < Seq.length (shallow_model'5 self)}
     {[@expl:precondition] [%#span83] UIntSize.to_int a < Seq.length (shallow_model'5 self)}
     any
-    [ return' (result:())-> {[%#span86] Permut.exchange (shallow_model'6 ( ^ self)) (shallow_model'5 self) (UIntSize.to_int a) (UIntSize.to_int b)}
+    [ return' (result:())-> {[%#span86] Permut.exchange (shallow_model'6 self.final) (shallow_model'5 self) (UIntSize.to_int a) (UIntSize.to_int b)}
       (! return' {result}) ]
     
   
   function shallow_model'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq t =
-    [%#span82] shallow_model'2 ( * self)
+    [%#span82] shallow_model'2 self.current
   
   let rec deref_mut'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (return'  (ret:borrowed (slice t)))= {[@expl:precondition] [%#span87] inv'4 self}
     any
     [ return' (result:borrowed (slice t))-> {[%#span90] inv'3 result}
-      {[%#span89] shallow_model'6 ( ^ result) = shallow_model'2 ( ^ self)}
+      {[%#span89] shallow_model'6 result.final = shallow_model'2 self.final}
       {[%#span88] shallow_model'5 result = shallow_model'0 self}
       (! return' {result}) ]
     
@@ -1408,7 +1408,7 @@ module HeapsortGeneric_HeapSort
     [%#span91] Permut.permut self o 0 (Seq.length self)
   
   function deep_model'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq deep_model_ty'0 =
-    [%#span92] deep_model'1 ( * self)
+    [%#span92] deep_model'1 self.current
   
   let rec sift_down'0 (v:borrowed (Vec'0.t_vec t (Global'0.t_global))) (start:usize) (end':usize) (return'  (ret:()))= {[@expl:precondition] [%#span96] inv'4 v}
     {[@expl:precondition] [%#span95] UIntSize.to_int end' <= Seq.length (shallow_model'0 v)}
@@ -1419,12 +1419,12 @@ module HeapsortGeneric_HeapSort
        -> (forall j : int . UIntSize.to_int start <= j /\ j < UIntSize.to_int end'
        -> le_log'0 (Seq.get (deep_model'0 v) j) m)
        -> (forall j : int . UIntSize.to_int start <= j /\ j < UIntSize.to_int end'
-       -> le_log'0 (Seq.get (deep_model'1 ( ^ v)) j) m)}
+       -> le_log'0 (Seq.get (deep_model'1 v.final) j) m)}
       {[%#span99] forall i : int . 0 <= i /\ i < UIntSize.to_int start
       \/ UIntSize.to_int end' <= i /\ i < Seq.length (shallow_model'0 v)
-       -> index_logic'0 ( * v) i = index_logic'0 ( ^ v) i}
-      {[%#span98] permutation_of'0 (shallow_model'2 ( ^ v)) (shallow_model'0 v)}
-      {[%#span97] heap_frag'0 (deep_model'1 ( ^ v)) (UIntSize.to_int start) (UIntSize.to_int end')}
+       -> index_logic'0 v.current i = index_logic'0 v.final i}
+      {[%#span98] permutation_of'0 (shallow_model'2 v.final) (shallow_model'0 v)}
+      {[%#span97] heap_frag'0 (deep_model'1 v.final) (UIntSize.to_int start) (UIntSize.to_int end')}
       (! return' {result}) ]
     
   
@@ -1457,7 +1457,7 @@ module HeapsortGeneric_HeapSort
     | bb1 = s0
       [ s0 = {[@expl:type invariant] inv'0 old_v} s1
       | s1 = -{resolve'0 old_v}- s2
-      | s2 = len'0 { * v} (fun (_ret':usize) ->  [ &_8 <- _ret' ] s3)
+      | s2 = len'0 {v.current} (fun (_ret':usize) ->  [ &_8 <- _ret' ] s3)
       | s3 = bb2 ]
       
     | bb2 = s0
@@ -1473,12 +1473,12 @@ module HeapsortGeneric_HeapSort
       | s2 = bb4 ]
       
     | bb4 = bb4
-      [ bb4 = {[@expl:loop invariant]  ^ Snapshot.inner old_4_0 =  ^ v}
+      [ bb4 = {[@expl:loop invariant] (Snapshot.inner old_4_0).final = v.final}
         {[@expl:loop invariant] [%#sheapsort_generic7] UIntSize.to_int start <= div (Seq.length (shallow_model'0 v)) 2}
         {[@expl:loop invariant] [%#sheapsort_generic6] heap_frag'0 (deep_model'0 v) (UIntSize.to_int start) (Seq.length (shallow_model'0 v))}
         {[@expl:loop invariant] [%#sheapsort_generic5] permutation_of'0 (shallow_model'0 v) (shallow_model'1 old_v)}
-        {[@expl:loop invariant] [%#sheapsort_generic4]  ^ v =  ^ Snapshot.inner old_v}
-        {[@expl:loop invariant] [%#sheapsort_generic3]  ^ Snapshot.inner old_v =  ^ v}
+        {[@expl:loop invariant] [%#sheapsort_generic4] v.final = (Snapshot.inner old_v).final}
+        {[@expl:loop invariant] [%#sheapsort_generic3] (Snapshot.inner old_v).final = v.final}
         (! s0) [ s0 = bb5 ] 
         [ bb5 = s0
           [ s0 = UIntSize.gt {start} {[%#sheapsort_generic8] (0 : usize)} (fun (_ret':bool) ->  [ &_18 <- _ret' ] s1)
@@ -1487,23 +1487,23 @@ module HeapsortGeneric_HeapSort
         | bb6 = s0
           [ s0 = UIntSize.sub {start} {[%#sheapsort_generic9] (1 : usize)}
               (fun (_ret':usize) ->  [ &start <- _ret' ] s1)
-          | s1 = Borrow.borrow_mut <Vec'0.t_vec t (Global'0.t_global)> { * v}
+          | s1 = Borrow.borrow_mut <Vec'0.t_vec t (Global'0.t_global)> {v.current}
               (fun (_ret':borrowed (Vec'0.t_vec t (Global'0.t_global))) ->
                  [ &_21 <- _ret' ] 
-                 [ &v <- { v with current = ( ^ _21) ; } ] 
+                 [ &v <- { v with current = _21.final ; } ] 
                 s2)
-          | s2 = -{inv'1 ( ^ _21)}- s3
-          | s3 = len'0 { * _21} (fun (_ret':usize) ->  [ &_23 <- _ret' ] s4)
+          | s2 = -{inv'1 _21.final}- s3
+          | s3 = len'0 {_21.current} (fun (_ret':usize) ->  [ &_23 <- _ret' ] s4)
           | s4 = bb7 ]
           
         | bb7 = s0 [ s0 = sift_down'0 {_21} {start} {_23} (fun (_ret':()) ->  [ &_20 <- _ret' ] s1) | s1 = bb8 ] 
         | bb8 = bb4 ]
          ]
       
-    | bb9 = s0 [ s0 = len'0 { * v} (fun (_ret':usize) ->  [ &end' <- _ret' ] s1) | s1 = bb10 ] 
+    | bb9 = s0 [ s0 = len'0 {v.current} (fun (_ret':usize) ->  [ &end' <- _ret' ] s1) | s1 = bb10 ] 
     | bb10 = s0 [ s0 =  [ &old_11_0 <- Snapshot.new v ] s1 | s1 = bb11 ] 
     | bb11 = bb11
-      [ bb11 = {[@expl:loop invariant]  ^ Snapshot.inner old_11_0 =  ^ v}
+      [ bb11 = {[@expl:loop invariant] (Snapshot.inner old_11_0).final = v.final}
         {[@expl:loop invariant] [%#sheapsort_generic12] forall j : int . forall i : int . 0 <= i
         /\ i < UIntSize.to_int end' /\ UIntSize.to_int end' <= j /\ j < Seq.length (shallow_model'0 v)
          -> le_log'0 (Seq.get (deep_model'0 v) i) (Seq.get (deep_model'0 v) j)}
@@ -1511,7 +1511,7 @@ module HeapsortGeneric_HeapSort
         {[@expl:loop invariant] [%#sheapsort_generic13] heap_frag'0 (deep_model'0 v) 0 (UIntSize.to_int end')}
         {[@expl:loop invariant] [%#sheapsort_generic12] permutation_of'0 (shallow_model'0 v) (shallow_model'1 old_v)}
         {[@expl:loop invariant] [%#sheapsort_generic11] UIntSize.to_int end' <= Seq.length (shallow_model'0 v)}
-        {[@expl:loop invariant] [%#sheapsort_generic10]  ^ v =  ^ Snapshot.inner old_v}
+        {[@expl:loop invariant] [%#sheapsort_generic10] v.final = (Snapshot.inner old_v).final}
         (! s0) [ s0 = bb12 ] 
         [ bb12 = s0
           [ s0 = UIntSize.gt {end'} {[%#sheapsort_generic15] (1 : usize)} (fun (_ret':bool) ->  [ &_36 <- _ret' ] s1)
@@ -1519,19 +1519,19 @@ module HeapsortGeneric_HeapSort
           
         | bb13 = s0
           [ s0 = UIntSize.sub {end'} {[%#sheapsort_generic16] (1 : usize)} (fun (_ret':usize) ->  [ &end' <- _ret' ] s1)
-          | s1 = Borrow.borrow_mut <Vec'0.t_vec t (Global'0.t_global)> { * v}
+          | s1 = Borrow.borrow_mut <Vec'0.t_vec t (Global'0.t_global)> {v.current}
               (fun (_ret':borrowed (Vec'0.t_vec t (Global'0.t_global))) ->
                  [ &_41 <- _ret' ] 
-                 [ &v <- { v with current = ( ^ _41) ; } ] 
+                 [ &v <- { v with current = _41.final ; } ] 
                 s2)
-          | s2 = -{inv'1 ( ^ _41)}- s3
+          | s2 = -{inv'1 _41.final}- s3
           | s3 = deref_mut'0 {_41} (fun (_ret':borrowed (slice t)) ->  [ &_40 <- _ret' ] s4)
           | s4 = bb14 ]
           
         | bb14 = s0
-          [ s0 = Borrow.borrow_final <slice t> { * _40} {Borrow.get_id _40}
-              (fun (_ret':borrowed (slice t)) ->  [ &_39 <- _ret' ]  [ &_40 <- { _40 with current = ( ^ _39) ; } ] s1)
-          | s1 = -{inv'2 ( ^ _39)}- s2
+          [ s0 = Borrow.borrow_final <slice t> {_40.current} {Borrow.get_id _40}
+              (fun (_ret':borrowed (slice t)) ->  [ &_39 <- _ret' ]  [ &_40 <- { _40 with current = _39.final ; } ] s1)
+          | s1 = -{inv'2 _39.final}- s2
           | s2 = swap'0 {_39} {[%#sheapsort_generic17] (0 : usize)} {end'} (fun (_ret':()) ->  [ &_38 <- _ret' ] s3)
           | s3 = bb15 ]
           
@@ -1543,12 +1543,12 @@ module HeapsortGeneric_HeapSort
             /\ i < UIntSize.to_int end' /\ UIntSize.to_int end' <= j /\ j < Seq.length (shallow_model'0 v)
              -> le_log'0 (Seq.get (deep_model'0 v) i) (Seq.get (deep_model'0 v) j)}
             s3
-          | s3 = Borrow.borrow_mut <Vec'0.t_vec t (Global'0.t_global)> { * v}
+          | s3 = Borrow.borrow_mut <Vec'0.t_vec t (Global'0.t_global)> {v.current}
               (fun (_ret':borrowed (Vec'0.t_vec t (Global'0.t_global))) ->
                  [ &_46 <- _ret' ] 
-                 [ &v <- { v with current = ( ^ _46) ; } ] 
+                 [ &v <- { v with current = _46.final ; } ] 
                 s4)
-          | s4 = -{inv'1 ( ^ _46)}- s5
+          | s4 = -{inv'1 _46.final}- s5
           | s5 = sift_down'0 {_46} {[%#sheapsort_generic19] (0 : usize)} {end'}
               (fun (_ret':()) ->  [ &_45 <- _ret' ] s6)
           | s6 = bb16 ]
@@ -1579,8 +1579,8 @@ module HeapsortGeneric_HeapSort
     | & old_4_0 : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))) = any_l ()
     | & old_11_0 : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))) = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#sheapsort_generic23] permutation_of'0 (shallow_model'2 ( ^ v)) (shallow_model'0 v)}
-      {[@expl:postcondition] [%#sheapsort_generic22] sorted'0 (deep_model'1 ( ^ v))}
+    [ return' (result:())-> {[@expl:postcondition] [%#sheapsort_generic23] permutation_of'0 (shallow_model'2 v.final) (shallow_model'0 v)}
+      {[@expl:postcondition] [%#sheapsort_generic22] sorted'0 (deep_model'1 v.final)}
       (! return' {result}) ]
     
 end

@@ -397,13 +397,14 @@ module C16Take_Impl0_Next
   predicate completed'1 [#"../common.rs" 11 4 11 36] (self : borrowed i)
   
   predicate resolve'0 (self : borrowed (Take'0.t_take i)) =
-    [%#span17]  ^ self =  * self
+    [%#span17] self.final = self.current
   
   predicate completed'0 [#"../16_take.rs" 22 4 22 35] (self : borrowed (Take'0.t_take i)) =
-    [%#span18] UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) = 0 /\ resolve'0 self
-    \/ UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) > 0
-    /\ UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) = UIntSize.to_int (C16Take_Take_Type.take_n ( ^ self)) + 1
-    /\ completed'1 (Borrow.borrow_logic (C16Take_Take_Type.take_iter ( * self)) (C16Take_Take_Type.take_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1))
+    [%#span18] UIntSize.to_int (C16Take_Take_Type.take_n self.current) = 0 /\ resolve'0 self
+    \/ UIntSize.to_int (C16Take_Take_Type.take_n self.current) > 0
+    /\ UIntSize.to_int (C16Take_Take_Type.take_n self.current)
+    = UIntSize.to_int (C16Take_Take_Type.take_n self.final) + 1
+    /\ completed'1 (Borrow.borrow_logic (C16Take_Take_Type.take_iter self.current) (C16Take_Take_Type.take_iter self.final) (Borrow.inherit_id (Borrow.get_id self) 1))
   
   use prelude.prelude.Intrinsic
   
@@ -412,7 +413,7 @@ module C16Take_Impl0_Next
     [ return' (result:Option'0.t_option item'0)-> {[%#span21] inv'2 result}
       {[%#span20] match result with
         | Option'0.C_None -> completed'1 self
-        | Option'0.C_Some v -> produces'1 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'1 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -422,30 +423,30 @@ module C16Take_Impl0_Next
   let rec next (self:borrowed (Take'0.t_take i)) (return'  (ret:Option'0.t_option item'0))= {[%#s16_take2] inv'1 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = Take'0.t_take <i> { * self}
+      [ s0 = Take'0.t_take <i> {self.current}
           (fun (riter'0:i) (rn'0:usize) ->
             UIntSize.ne {rn'0} {[%#s16_take0] (0 : usize)} (fun (_ret':bool) ->  [ &_3 <- _ret' ] s1))
       | s1 = any [ br0 -> {_3 = false} (! bb3) | br1 -> {_3} (! bb1) ]  ]
       
     | bb1 = s0
-      [ s0 = Take'0.t_take <i> { * self}
+      [ s0 = Take'0.t_take <i> {self.current}
           (fun (riter'0:i) (rn'0:usize) ->
             UIntSize.sub {rn'0} {[%#s16_take1] (1 : usize)}
               (fun (_ret':usize) ->
-                Take'0.t_take <i> { * self}
+                Take'0.t_take <i> {self.current}
                   (fun (l_iter'0:i) (l_n'0:usize) ->
                      [ &self <- { self with current = Take'0.C_Take l_iter'0 _ret' ; } ] 
                     s1)))
-      | s1 = Take'0.t_take <i> { * self}
+      | s1 = Take'0.t_take <i> {self.current}
           (fun (riter'1:i) (rn'1:usize) ->
             Borrow.borrow_final <i> {riter'1} {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed i) ->
                  [ &_5 <- _ret' ] 
-                Take'0.t_take <i> { * self}
+                Take'0.t_take <i> {self.current}
                   (fun (l_iter'1:i) (l_n'1:usize) ->
-                     [ &self <- { self with current = Take'0.C_Take ( ^ _5) l_n'1 ; } ] 
+                     [ &self <- { self with current = Take'0.C_Take _5.final l_n'1 ; } ] 
                     s2)))
-      | s2 = -{inv'0 ( ^ _5)}- s3
+      | s2 = -{inv'0 _5.final}- s3
       | s3 = next'0 {_5} (fun (_ret':Option'0.t_option item'0) ->  [ &_0 <- _ret' ] s4)
       | s4 = bb2 ]
       
@@ -466,7 +467,7 @@ module C16Take_Impl0_Next
     [ return' (result:Option'0.t_option item'0)-> {[@expl:postcondition] [%#s16_take4] inv'2 result}
       {[@expl:postcondition] [%#s16_take3] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -554,25 +555,26 @@ module C16Take_Impl0
   predicate completed'1 [#"../common.rs" 11 4 11 36] (self : borrowed i)
   
   predicate resolve'0 (self : borrowed (Take'0.t_take i)) =
-    [%#span5]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   predicate completed'0 [#"../16_take.rs" 22 4 22 35] (self : borrowed (Take'0.t_take i)) =
-    [%#span6] UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) = 0 /\ resolve'0 self
-    \/ UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) > 0
-    /\ UIntSize.to_int (C16Take_Take_Type.take_n ( * self)) = UIntSize.to_int (C16Take_Take_Type.take_n ( ^ self)) + 1
-    /\ completed'1 (Borrow.borrow_logic (C16Take_Take_Type.take_iter ( * self)) (C16Take_Take_Type.take_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1))
+    [%#span6] UIntSize.to_int (C16Take_Take_Type.take_n self.current) = 0 /\ resolve'0 self
+    \/ UIntSize.to_int (C16Take_Take_Type.take_n self.current) > 0
+    /\ UIntSize.to_int (C16Take_Take_Type.take_n self.current)
+    = UIntSize.to_int (C16Take_Take_Type.take_n self.final) + 1
+    /\ completed'1 (Borrow.borrow_logic (C16Take_Take_Type.take_iter self.current) (C16Take_Take_Type.take_iter self.final) (Borrow.inherit_id (Borrow.get_id self) 1))
   
   goal next_refn : [%#s16_take0] forall self : borrowed (Take'0.t_take i) . inv'0 self
    -> inv'0 self
   /\ (forall result : Option'0.t_option item'0 . inv'1 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end
    -> inv'1 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end)
   
   goal produces_trans_refn : [%#s16_take1] forall a : Take'0.t_take i . forall ab : Seq.seq item'0 . forall b : Take'0.t_take i . forall bc : Seq.seq item'0 . forall c : Take'0.t_take i . inv'2 c

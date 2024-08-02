@@ -185,7 +185,7 @@ module IncSome2Tree_Impl0_TakeSomeRest
   use prelude.prelude.UInt32
   
   function shallow_model'0 (self : borrowed uint32) : int =
-    [%#span8] UInt32.to_int ( * self)
+    [%#span8] UInt32.to_int self.current
   
   use prelude.prelude.Int
   
@@ -200,10 +200,10 @@ module IncSome2Tree_Impl0_TakeSomeRest
   use prelude.prelude.Intrinsic
   
   predicate resolve'2 (self : borrowed uint32) =
-    [%#span10]  ^ self =  * self
+    [%#span10] self.final = self.current
   
   predicate resolve'1 (self : borrowed (Tree'0.t_tree)) =
-    [%#span10]  ^ self =  * self
+    [%#span10] self.final = self.current
   
   let rec random'0 (_1:()) (return'  (ret:bool))= any [ return' (result:bool)-> (! return' {result}) ] 
   
@@ -218,76 +218,88 @@ module IncSome2Tree_Impl0_TakeSomeRest
   axiom lemma_sum_nonneg'0_spec : forall self : Tree'0.t_tree . [%#span11] sum'0 self >= 0
   
   predicate resolve'0 (self : borrowed (Tree'0.t_tree)) =
-    [%#span10]  ^ self =  * self
+    [%#span10] self.final = self.current
   
   let rec take_some_rest (self:borrowed (Tree'0.t_tree)) (return'  (ret:(borrowed uint32, borrowed (Tree'0.t_tree))))= (! bb0
     [ bb0 = any
-      [ br0 (a:Tree'0.t_tree) (b:uint32) (c:Tree'0.t_tree)-> { * self = Tree'0.C_Node a b c} (! bb2)
-      | br1 -> { * self = Tree'0.C_Leaf } (! bb3) ]
+      [ br0 (a:Tree'0.t_tree) (b:uint32) (c:Tree'0.t_tree)-> {self.current = Tree'0.C_Node a b c} (! bb2)
+      | br1 -> {self.current = Tree'0.C_Leaf } (! bb3) ]
       
     | bb1 = s0 [ s0 = -{resolve'0 self}- s1 | s1 = {[%#sinc_some_2_tree0] false} any ] 
     | bb3 = s0 [ s0 = -{resolve'0 self}- s1 | s1 = bb19 ] 
     | bb19 = bb19 [ bb19 = (! bb20) [ bb20 = bb19 ]  ] 
     | bb2 = bb4
     | bb4 = s0
-      [ s0 = Tree'0.node { * self}
+      [ s0 = Tree'0.node {self.current}
           (fun (r0'0:Tree'0.t_tree) (r1'0:uint32) (r2'0:Tree'0.t_tree) ->
             Borrow.borrow_final <Tree'0.t_tree> {r0'0} {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed (Tree'0.t_tree)) ->
                  [ &mtl <- _ret' ] 
-                Tree'0.node { * self}
+                Tree'0.node {self.current}
                   (fun (l_0'0:Tree'0.t_tree) (l_1'0:uint32) (l_2'0:Tree'0.t_tree) ->
-                     [ &self <- { self with current = Tree'0.C_Node ( ^ mtl) l_1'0 l_2'0 ; } ] 
+                     [ &self <- { self with current = Tree'0.C_Node mtl.final l_1'0 l_2'0 ; } ] 
                     s1)))
-      | s1 = Tree'0.node { * self}
+      | s1 = Tree'0.node {self.current}
           (fun (r0'1:Tree'0.t_tree) (r1'1:uint32) (r2'1:Tree'0.t_tree) ->
             Borrow.borrow_final <uint32> {r1'1} {Borrow.inherit_id (Borrow.get_id self) 2}
               (fun (_ret':borrowed uint32) ->
                  [ &ma <- _ret' ] 
-                Tree'0.node { * self}
+                Tree'0.node {self.current}
                   (fun (l_0'1:Tree'0.t_tree) (l_1'1:uint32) (l_2'1:Tree'0.t_tree) ->
-                     [ &self <- { self with current = Tree'0.C_Node l_0'1 ( ^ ma) l_2'1 ; } ] 
+                     [ &self <- { self with current = Tree'0.C_Node l_0'1 ma.final l_2'1 ; } ] 
                     s2)))
-      | s2 = Tree'0.node { * self}
+      | s2 = Tree'0.node {self.current}
           (fun (r0'2:Tree'0.t_tree) (r1'2:uint32) (r2'2:Tree'0.t_tree) ->
             Borrow.borrow_final <Tree'0.t_tree> {r2'2} {Borrow.inherit_id (Borrow.get_id self) 3}
               (fun (_ret':borrowed (Tree'0.t_tree)) ->
                  [ &mtr <- _ret' ] 
-                Tree'0.node { * self}
+                Tree'0.node {self.current}
                   (fun (l_0'2:Tree'0.t_tree) (l_1'2:uint32) (l_2'2:Tree'0.t_tree) ->
-                     [ &self <- { self with current = Tree'0.C_Node l_0'2 l_1'2 ( ^ mtr) ; } ] 
+                     [ &self <- { self with current = Tree'0.C_Node l_0'2 l_1'2 mtr.final ; } ] 
                     s3)))
-      | s3 = {[@expl:assertion] [%#sinc_some_2_tree1] let _ = lemma_sum_nonneg'0 ( * mtl) in let _ = lemma_sum_nonneg'0 ( * mtr) in true}
+      | s3 = {[@expl:assertion] [%#sinc_some_2_tree1] let _ = lemma_sum_nonneg'0 mtl.current in let _ = lemma_sum_nonneg'0 mtr.current in true}
         s4
       | s4 = random'0 {[%#sinc_some_2_tree2] ()} (fun (_ret':bool) ->  [ &_11 <- _ret' ] s5)
       | s5 = bb5 ]
       
     | bb5 = any [ br0 -> {_11 = false} (! bb11) | br1 -> {_11} (! bb6) ] 
     | bb6 = s0
-      [ s0 = Borrow.borrow_final <uint32> { * ma} {Borrow.get_id ma}
-          (fun (_ret':borrowed uint32) ->  [ &_12 <- _ret' ]  [ &ma <- { ma with current = ( ^ _12) ; } ] s1)
+      [ s0 = Borrow.borrow_final <uint32> {ma.current} {Borrow.get_id ma}
+          (fun (_ret':borrowed uint32) ->  [ &_12 <- _ret' ]  [ &ma <- { ma with current = _12.final ; } ] s1)
       | s1 = random'0 {[%#sinc_some_2_tree3] ()} (fun (_ret':bool) ->  [ &_15 <- _ret' ] s2)
       | s2 = bb7 ]
       
     | bb7 = any [ br0 -> {_15 = false} (! bb9) | br1 -> {_15} (! bb8) ] 
     | bb8 = s0
       [ s0 = -{resolve'1 mtr}- s1
-      | s1 = Borrow.borrow_mut <Tree'0.t_tree> { * mtl}
-          (fun (_ret':borrowed (Tree'0.t_tree)) ->  [ &_16 <- _ret' ]  [ &mtl <- { mtl with current = ( ^ _16) ; } ] s2)
-      | s2 = Borrow.borrow_final <Tree'0.t_tree> { * _16} {Borrow.get_id _16}
-          (fun (_ret':borrowed (Tree'0.t_tree)) ->  [ &_14 <- _ret' ]  [ &_16 <- { _16 with current = ( ^ _14) ; } ] s3)
+      | s1 = Borrow.borrow_mut <Tree'0.t_tree> {mtl.current}
+          (fun (_ret':borrowed (Tree'0.t_tree)) ->
+             [ &_16 <- _ret' ] 
+             [ &mtl <- { mtl with current = _16.final ; } ] 
+            s2)
+      | s2 = Borrow.borrow_final <Tree'0.t_tree> {_16.current} {Borrow.get_id _16}
+          (fun (_ret':borrowed (Tree'0.t_tree)) ->
+             [ &_14 <- _ret' ] 
+             [ &_16 <- { _16 with current = _14.final ; } ] 
+            s3)
       | s3 = -{resolve'0 _16}- s4
       | s4 = bb10 ]
       
     | bb9 = s0
       [ s0 = -{resolve'1 mtl}- s1
-      | s1 = Borrow.borrow_mut <Tree'0.t_tree> { * mtr}
-          (fun (_ret':borrowed (Tree'0.t_tree)) ->  [ &_14 <- _ret' ]  [ &mtr <- { mtr with current = ( ^ _14) ; } ] s2)
+      | s1 = Borrow.borrow_mut <Tree'0.t_tree> {mtr.current}
+          (fun (_ret':borrowed (Tree'0.t_tree)) ->
+             [ &_14 <- _ret' ] 
+             [ &mtr <- { mtr with current = _14.final ; } ] 
+            s2)
       | s2 = bb10 ]
       
     | bb10 = s0
-      [ s0 = Borrow.borrow_final <Tree'0.t_tree> { * _14} {Borrow.get_id _14}
-          (fun (_ret':borrowed (Tree'0.t_tree)) ->  [ &_13 <- _ret' ]  [ &_14 <- { _14 with current = ( ^ _13) ; } ] s1)
+      [ s0 = Borrow.borrow_final <Tree'0.t_tree> {_14.current} {Borrow.get_id _14}
+          (fun (_ret':borrowed (Tree'0.t_tree)) ->
+             [ &_13 <- _ret' ] 
+             [ &_14 <- { _14 with current = _13.final ; } ] 
+            s1)
       | s1 =  [ &_0 <- (_12, _13) ] 
         (any
         [ any_ (_any:borrowed uint32)-> (!  [ &_12 <- _any ] 
@@ -304,16 +316,22 @@ module IncSome2Tree_Impl0_TakeSomeRest
     | bb12 = any [ br0 -> {_17 = false} (! bb15) | br1 -> {_17} (! bb13) ] 
     | bb13 = s0
       [ s0 = -{resolve'1 mtr}- s1
-      | s1 = Borrow.borrow_mut <Tree'0.t_tree> { * mtl}
-          (fun (_ret':borrowed (Tree'0.t_tree)) ->  [ &_18 <- _ret' ]  [ &mtl <- { mtl with current = ( ^ _18) ; } ] s2)
+      | s1 = Borrow.borrow_mut <Tree'0.t_tree> {mtl.current}
+          (fun (_ret':borrowed (Tree'0.t_tree)) ->
+             [ &_18 <- _ret' ] 
+             [ &mtl <- { mtl with current = _18.final ; } ] 
+            s2)
       | s2 = take_some_rest {_18} (fun (_ret':(borrowed uint32, borrowed (Tree'0.t_tree))) ->  [ &_0 <- _ret' ] s3)
       | s3 = bb14 ]
       
     | bb14 = bb17
     | bb15 = s0
       [ s0 = -{resolve'1 mtl}- s1
-      | s1 = Borrow.borrow_mut <Tree'0.t_tree> { * mtr}
-          (fun (_ret':borrowed (Tree'0.t_tree)) ->  [ &_19 <- _ret' ]  [ &mtr <- { mtr with current = ( ^ _19) ; } ] s2)
+      | s1 = Borrow.borrow_mut <Tree'0.t_tree> {mtr.current}
+          (fun (_ret':borrowed (Tree'0.t_tree)) ->
+             [ &_19 <- _ret' ] 
+             [ &mtr <- { mtr with current = _19.final ; } ] 
+            s2)
       | s2 = take_some_rest {_19} (fun (_ret':(borrowed uint32, borrowed (Tree'0.t_tree))) ->  [ &_0 <- _ret' ] s3)
       | s3 = bb16 ]
       
@@ -342,13 +360,13 @@ module IncSome2Tree_Impl0_TakeSomeRest
     | & _18 : borrowed (Tree'0.t_tree) = any_l ()
     | & _19 : borrowed (Tree'0.t_tree) = any_l () ]
     
-    [ return' (result:(borrowed uint32, borrowed (Tree'0.t_tree)))-> {[@expl:postcondition] [%#sinc_some_2_tree7] sum'0 ( * (let (_, a) = result in a))
-      <= sum'0 ( * self)}
-      {[@expl:postcondition] [%#sinc_some_2_tree6] shallow_model'0 (let (a, _) = result in a) <= sum'0 ( * self)}
-      {[@expl:postcondition] [%#sinc_some_2_tree5] sum'0 ( ^ self) - sum'0 ( * self)
-      = UInt32.to_int ( ^ (let (a, _) = result in a)) + sum'0 ( ^ (let (_, a) = result in a))
+    [ return' (result:(borrowed uint32, borrowed (Tree'0.t_tree)))-> {[@expl:postcondition] [%#sinc_some_2_tree7] sum'0 (let (_, a) = result in a).current
+      <= sum'0 self.current}
+      {[@expl:postcondition] [%#sinc_some_2_tree6] shallow_model'0 (let (a, _) = result in a) <= sum'0 self.current}
+      {[@expl:postcondition] [%#sinc_some_2_tree5] sum'0 self.final - sum'0 self.current
+      = UInt32.to_int (let (a, _) = result in a).final + sum'0 (let (_, a) = result in a).final
       - shallow_model'0 (let (a, _) = result in a)
-      - sum'0 ( * (let (_, a) = result in a))}
+      - sum'0 (let (_, a) = result in a).current}
       (! return' {result}) ]
     
 end
@@ -392,12 +410,12 @@ module IncSome2Tree_IncSome2Tree
   use prelude.prelude.Borrow
   
   predicate resolve'2 (self : borrowed (Tree'0.t_tree)) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   use prelude.prelude.UInt32
   
   predicate resolve'1 (self : borrowed uint32) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   predicate resolve'0 (self : (borrowed uint32, borrowed (Tree'0.t_tree))) =
     [%#span4] resolve'1 (let (a, _) = self in a) /\ resolve'2 (let (_, a) = self in a)
@@ -405,16 +423,16 @@ module IncSome2Tree_IncSome2Tree
   use prelude.prelude.Int
   
   function shallow_model'0 (self : borrowed uint32) : int =
-    [%#span5] UInt32.to_int ( * self)
+    [%#span5] UInt32.to_int self.current
   
   let rec take_some_rest'0 (self:borrowed (Tree'0.t_tree)) (return'  (ret:(borrowed uint32, borrowed (Tree'0.t_tree))))= any
-    [ return' (result:(borrowed uint32, borrowed (Tree'0.t_tree)))-> {[%#span8] sum'0 ( * (let (_, a) = result in a))
-      <= sum'0 ( * self)}
-      {[%#span7] shallow_model'0 (let (a, _) = result in a) <= sum'0 ( * self)}
-      {[%#span6] sum'0 ( ^ self) - sum'0 ( * self)
-      = UInt32.to_int ( ^ (let (a, _) = result in a)) + sum'0 ( ^ (let (_, a) = result in a))
+    [ return' (result:(borrowed uint32, borrowed (Tree'0.t_tree)))-> {[%#span8] sum'0 (let (_, a) = result in a).current
+      <= sum'0 self.current}
+      {[%#span7] shallow_model'0 (let (a, _) = result in a) <= sum'0 self.current}
+      {[%#span6] sum'0 self.final - sum'0 self.current
+      = UInt32.to_int (let (a, _) = result in a).final + sum'0 (let (_, a) = result in a).final
       - shallow_model'0 (let (a, _) = result in a)
-      - sum'0 ( * (let (_, a) = result in a))}
+      - sum'0 (let (_, a) = result in a).current}
       (! return' {result}) ]
     
   
@@ -430,7 +448,7 @@ module IncSome2Tree_IncSome2Tree
     | bb1 = s0 [ s0 = sum_x'0 {t} (fun (_ret':uint32) ->  [ &sum0 <- _ret' ] s1) | s1 = bb2 ] 
     | bb2 = s0
       [ s0 = Borrow.borrow_mut <Tree'0.t_tree> {t}
-          (fun (_ret':borrowed (Tree'0.t_tree)) ->  [ &_10 <- _ret' ]  [ &t <-  ^ _10 ] s1)
+          (fun (_ret':borrowed (Tree'0.t_tree)) ->  [ &_10 <- _ret' ]  [ &t <- _10.final ] s1)
       | s1 = take_some_rest'0 {_10} (fun (_ret':(borrowed uint32, borrowed (Tree'0.t_tree))) ->  [ &_9 <- _ret' ] s2)
       | s2 = bb3 ]
       
@@ -440,8 +458,8 @@ module IncSome2Tree_IncSome2Tree
       | s1 =  [ &mt <- let (_, r'1) = _9 in r'1 ] 
         (any [ any_ (_any:borrowed (Tree'0.t_tree))-> (!  [ &_9 <- let (l'4, _) = _9 in (l'4, _any) ] s2) ] )
       | s2 = -{resolve'0 _9}- s3
-      | s3 = Borrow.borrow_final <Tree'0.t_tree> { * mt} {Borrow.get_id mt}
-          (fun (_ret':borrowed (Tree'0.t_tree)) ->  [ &_13 <- _ret' ]  [ &mt <- { mt with current = ( ^ _13) ; } ] s4)
+      | s3 = Borrow.borrow_final <Tree'0.t_tree> {mt.current} {Borrow.get_id mt}
+          (fun (_ret':borrowed (Tree'0.t_tree)) ->  [ &_13 <- _ret' ]  [ &mt <- { mt with current = _13.final ; } ] s4)
       | s4 = take_some_rest'0 {_13} (fun (_ret':(borrowed uint32, borrowed (Tree'0.t_tree))) ->  [ &_12 <- _ret' ] s5)
       | s5 = bb4 ]
       
@@ -449,9 +467,9 @@ module IncSome2Tree_IncSome2Tree
       [ s0 =  [ &mb <- let (r'0, _) = _12 in r'0 ] 
         (any [ any_ (_any:borrowed uint32)-> (!  [ &_12 <- let (_, l'2) = _12 in (_any, l'2) ] s1) ] )
       | s1 = -{resolve'0 _12}- s2
-      | s2 = UInt32.add { * ma} {j} (fun (_ret':uint32) ->  [ &ma <- { ma with current = _ret' ; } ] s3)
+      | s2 = UInt32.add {ma.current} {j} (fun (_ret':uint32) ->  [ &ma <- { ma with current = _ret' ; } ] s3)
       | s3 = -{resolve'1 ma}- s4
-      | s4 = UInt32.add { * mb} {k} (fun (_ret':uint32) ->  [ &mb <- { mb with current = _ret' ; } ] s5)
+      | s4 = UInt32.add {mb.current} {k} (fun (_ret':uint32) ->  [ &mb <- { mb with current = _ret' ; } ] s5)
       | s5 = -{resolve'1 mb}- s6
       | s6 = -{resolve'2 mt}- s7
       | s7 = sum_x'0 {t} (fun (_ret':uint32) ->  [ &_18 <- _ret' ] s8)

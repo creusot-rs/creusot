@@ -137,7 +137,7 @@ module C05Map_Impl0_Next
    -> ([%#span4] inv'6 args)
    -> ([%#span5] inv'7 res)
    -> ([%#span6] postcondition_once'0 self args res
-  = (exists s : borrowed f . inv'8 s /\  * s = self /\ postcondition_mut'0 s args res /\ resolve'3 ( ^ s)))
+  = (exists s : borrowed f . inv'8 s /\ s.current = self /\ postcondition_mut'0 s args res /\ resolve'3 s.final))
   
   predicate unnest'0 (self : f) (_2 : f)
   
@@ -155,7 +155,7 @@ module C05Map_Impl0_Next
   
   axiom postcondition_mut_unnest'0_spec : forall self : borrowed f, args : a, res : b . ([%#span15] postcondition_mut'0 self args res)
    -> ([%#span16] inv'8 self)
-   -> ([%#span17] inv'6 args)  -> ([%#span18] inv'7 res)  -> ([%#span19] unnest'0 ( * self) ( ^ self))
+   -> ([%#span17] inv'6 args)  -> ([%#span18] inv'7 res)  -> ([%#span19] unnest'0 self.current self.final)
   
   predicate invariant'8 (self : borrowed f)
   
@@ -175,14 +175,14 @@ module C05Map_Impl0_Next
    -> ([%#span23] postcondition_once'0 self args res = (resolve'3 self /\ postcondition'0 self args res))
   
   predicate resolve'2 (self : borrowed f) =
-    [%#span24]  ^ self =  * self
+    [%#span24] self.final = self.current
   
   function fn_mut'0 (self : borrowed f) (args : a) (res : b) : ()
   
   axiom fn_mut'0_spec : forall self : borrowed f, args : a, res : b . ([%#span25] inv'8 self)
    -> ([%#span26] inv'6 args)
    -> ([%#span27] inv'7 res)
-   -> ([%#span28] postcondition_mut'0 self args res = (resolve'2 self /\ postcondition'0 ( * self) args res))
+   -> ([%#span28] postcondition_mut'0 self args res = (resolve'2 self /\ postcondition'0 self.current args res))
   
   predicate invariant'6 (self : a) =
     [%#span29] true
@@ -249,7 +249,7 @@ module C05Map_Impl0_Next
     [%#span35] true
   
   predicate resolve'0 (self : borrowed (Map'0.t_map i f)) =
-    [%#span24]  ^ self =  * self
+    [%#span24] self.final = self.current
   
   let rec next'0 (self:borrowed i) (return'  (ret:Option'0.t_option a))= {[@expl:precondition] [%#span36] inv'4 self}
     any [ return' (result:Option'0.t_option a)-> {[%#span37] inv'2 result} (! return' {result}) ] 
@@ -257,16 +257,16 @@ module C05Map_Impl0_Next
   let rec next (self:borrowed (Map'0.t_map i f)) (return'  (ret:Option'0.t_option b))= {[%#s05_map1] inv'1 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = Map'0.t_map <i> <f> { * self}
+      [ s0 = Map'0.t_map <i> <f> {self.current}
           (fun (riter'0:i) (rfunc'0:f) ->
             Borrow.borrow_final <i> {riter'0} {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed i) ->
                  [ &_3 <- _ret' ] 
-                Map'0.t_map <i> <f> { * self}
+                Map'0.t_map <i> <f> {self.current}
                   (fun (l_iter'0:i) (l_func'0:f) ->
-                     [ &self <- { self with current = Map'0.C_Map ( ^ _3) l_func'0 ; } ] 
+                     [ &self <- { self with current = Map'0.C_Map _3.final l_func'0 ; } ] 
                     s1)))
-      | s1 = -{inv'0 ( ^ _3)}- s2
+      | s1 = -{inv'0 _3.final}- s2
       | s2 = next'0 {_3} (fun (_ret':Option'0.t_option a) ->  [ &_2 <- _ret' ] s3)
       | s3 = bb1 ]
       
@@ -288,7 +288,7 @@ module C05Map_Impl0_Next
       | s1 = {[@expl:type invariant] inv'2 _2} s2
       | s2 = -{resolve'1 _2}- s3
       | s3 =  [ &_8 <- (e) ] (any [ any_ (_any:a)-> (!  [ &e <- _any ] s4) ] )
-      | s4 = Map'0.t_map <i> <f> { * self}
+      | s4 = Map'0.t_map <i> <f> {self.current}
           (fun (riter'0:i) (rfunc'0:f) -> call'0 {rfunc'0} {_8} (fun (_ret':b) ->  [ &_6 <- _ret' ] s5))
       | s5 = bb6 ]
       

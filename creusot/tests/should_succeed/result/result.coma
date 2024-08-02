@@ -493,14 +493,14 @@ module Result_TestResult
     
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span98]  ^ self =  * self
+    [%#span98] self.final = self.current
   
   let rec cloned'1 (self:Result'0.t_result (borrowed int32) (borrowed int32)) (return'  (ret:Result'0.t_result int32 (borrowed int32)))= {[@expl:precondition] [%#span99] inv'9 self}
     any
     [ return' (result:Result'0.t_result int32 (borrowed int32))-> {[%#span102] inv'11 result}
       {[%#span101] forall e : borrowed int32 . inv'8 e  -> self = Result'0.C_Err e  -> result = Result'0.C_Err e}
       {[%#span100] forall t : borrowed int32 . inv'8 t
-       -> self = Result'0.C_Ok t  -> result = Result'0.C_Ok ( * t) /\ resolve'0 t}
+       -> self = Result'0.C_Ok t  -> result = Result'0.C_Ok (t.current) /\ resolve'0 t}
       (! return' {result}) ]
     
   
@@ -533,7 +533,7 @@ module Result_TestResult
     [ return' (result:Result'0.t_result int32 (borrowed int32))-> {[%#span117] inv'11 result}
       {[%#span116] forall e : borrowed int32 . inv'8 e  -> self = Result'0.C_Err e  -> result = Result'0.C_Err e}
       {[%#span115] forall t : borrowed int32 . inv'8 t
-       -> self = Result'0.C_Ok t  -> result = Result'0.C_Ok ( * t) /\ resolve'0 t}
+       -> self = Result'0.C_Ok t  -> result = Result'0.C_Ok (t.current) /\ resolve'0 t}
       (! return' {result}) ]
     
   
@@ -637,9 +637,10 @@ module Result_TestResult
     any
     [ return' (result:Result'0.t_result (borrowed int32) (borrowed int32))-> {[%#span144] inv'9 result}
       {[%#span143] exists t : borrowed int32 . inv'8 t
-      /\ ( * self = Result'0.C_Ok ( * t) /\  ^ self = Result'0.C_Ok ( ^ t) /\ result = Result'0.C_Ok t
+      /\ (self.current = Result'0.C_Ok (t.current) /\ self.final = Result'0.C_Ok (t.final) /\ result = Result'0.C_Ok t
       \/ (exists e : borrowed int32 . inv'8 e
-      /\  * self = Result'0.C_Err ( * e) /\  ^ self = Result'0.C_Err ( ^ e) /\ result = Result'0.C_Err e))}
+      /\ self.current = Result'0.C_Err (e.current)
+      /\ self.final = Result'0.C_Err (e.final) /\ result = Result'0.C_Err e))}
       (! return' {result}) ]
     
   
@@ -758,7 +759,7 @@ module Result_TestResult
       
     | bb37 = s0
       [ s0 = Borrow.borrow_mut <Result'0.t_result int32 int32> {ok}
-          (fun (_ret':borrowed (Result'0.t_result int32 int32)) ->  [ &_55 <- _ret' ]  [ &ok <-  ^ _55 ] s1)
+          (fun (_ret':borrowed (Result'0.t_result int32 int32)) ->  [ &_55 <- _ret' ]  [ &ok <- _55.final ] s1)
       | s1 = as_mut'0 {_55} (fun (_ret':Result'0.t_result (borrowed int32) (borrowed int32)) ->  [ &_54 <- _ret' ] s2)
       | s2 = bb39 ]
       
@@ -776,7 +777,7 @@ module Result_TestResult
       
     | bb42 = s0
       [ s0 = Borrow.borrow_mut <Result'0.t_result int32 int32> {ok}
-          (fun (_ret':borrowed (Result'0.t_result int32 int32)) ->  [ &_63 <- _ret' ]  [ &ok <-  ^ _63 ] s1)
+          (fun (_ret':borrowed (Result'0.t_result int32 int32)) ->  [ &_63 <- _ret' ]  [ &ok <- _63.final ] s1)
       | s1 = as_mut'0 {_63} (fun (_ret':Result'0.t_result (borrowed int32) (borrowed int32)) ->  [ &_62 <- _ret' ] s2)
       | s2 = bb44 ]
       
@@ -794,7 +795,7 @@ module Result_TestResult
       
     | bb47 = s0
       [ s0 = Borrow.borrow_mut <Result'0.t_result int32 int32> {err}
-          (fun (_ret':borrowed (Result'0.t_result int32 int32)) ->  [ &_71 <- _ret' ]  [ &err <-  ^ _71 ] s1)
+          (fun (_ret':borrowed (Result'0.t_result int32 int32)) ->  [ &_71 <- _ret' ]  [ &err <- _71.final ] s1)
       | s1 = as_mut'0 {_71} (fun (_ret':Result'0.t_result (borrowed int32) (borrowed int32)) ->  [ &_70 <- _ret' ] s2)
       | s2 = bb49 ]
       
@@ -812,7 +813,7 @@ module Result_TestResult
       
     | bb52 = s0
       [ s0 = Borrow.borrow_mut <Result'0.t_result int32 int32> {err}
-          (fun (_ret':borrowed (Result'0.t_result int32 int32)) ->  [ &_79 <- _ret' ]  [ &err <-  ^ _79 ] s1)
+          (fun (_ret':borrowed (Result'0.t_result int32 int32)) ->  [ &_79 <- _ret' ]  [ &err <- _79.final ] s1)
       | s1 = as_mut'0 {_79} (fun (_ret':Result'0.t_result (borrowed int32) (borrowed int32)) ->  [ &_78 <- _ret' ] s2)
       | s2 = bb54 ]
       
@@ -981,7 +982,7 @@ module Result_TestResult
       
     | bb117 = s0
       [ s0 = Borrow.borrow_mut <Result'0.t_result int32 int32> {ok}
-          (fun (_ret':borrowed (Result'0.t_result int32 int32)) ->  [ &_191 <- _ret' ]  [ &ok <-  ^ _191 ] s1)
+          (fun (_ret':borrowed (Result'0.t_result int32 int32)) ->  [ &_191 <- _ret' ]  [ &ok <- _191.final ] s1)
       | s1 = as_mut'0 {_191} (fun (_ret':Result'0.t_result (borrowed int32) (borrowed int32)) ->  [ &_190 <- _ret' ] s2)
       | s2 = bb119 ]
       
@@ -997,7 +998,7 @@ module Result_TestResult
       
     | bb122 = s0
       [ s0 = Borrow.borrow_mut <Result'0.t_result int32 int32> {err}
-          (fun (_ret':borrowed (Result'0.t_result int32 int32)) ->  [ &_199 <- _ret' ]  [ &err <-  ^ _199 ] s1)
+          (fun (_ret':borrowed (Result'0.t_result int32 int32)) ->  [ &_199 <- _ret' ]  [ &err <- _199.final ] s1)
       | s1 = as_mut'0 {_199} (fun (_ret':Result'0.t_result (borrowed int32) (borrowed int32)) ->  [ &_198 <- _ret' ] s2)
       | s2 = bb124 ]
       
@@ -1008,7 +1009,7 @@ module Result_TestResult
     | bb125 = s0 [ s0 = unwrap_err'4 {_197} (fun (_ret':borrowed int32) ->  [ &_196 <- _ret' ] s1) | s1 = bb126 ] 
     | bb126 = s0
       [ s0 = -{resolve'0 _196}- s1
-      | s1 = Int32.eq { * _196} {[%#sresult41] (-1 : int32)} (fun (_ret':bool) ->  [ &_194 <- _ret' ] s2)
+      | s1 = Int32.eq {_196.current} {[%#sresult41] (-1 : int32)} (fun (_ret':bool) ->  [ &_194 <- _ret' ] s2)
       | s2 = any [ br0 -> {_194 = false} (! bb128) | br1 -> {_194} (! bb127) ]  ]
       
     | bb127 = s0
@@ -1036,7 +1037,7 @@ module Result_TestResult
       
     | bb137 = s0
       [ s0 = Borrow.borrow_mut <Result'0.t_result int32 int32> {ok}
-          (fun (_ret':borrowed (Result'0.t_result int32 int32)) ->  [ &_221 <- _ret' ]  [ &ok <-  ^ _221 ] s1)
+          (fun (_ret':borrowed (Result'0.t_result int32 int32)) ->  [ &_221 <- _ret' ]  [ &ok <- _221.final ] s1)
       | s1 = as_mut'0 {_221} (fun (_ret':Result'0.t_result (borrowed int32) (borrowed int32)) ->  [ &_220 <- _ret' ] s2)
       | s2 = bb139 ]
       
@@ -1052,7 +1053,7 @@ module Result_TestResult
       
     | bb142 = s0
       [ s0 = Borrow.borrow_mut <Result'0.t_result int32 int32> {err}
-          (fun (_ret':borrowed (Result'0.t_result int32 int32)) ->  [ &_229 <- _ret' ]  [ &err <-  ^ _229 ] s1)
+          (fun (_ret':borrowed (Result'0.t_result int32 int32)) ->  [ &_229 <- _ret' ]  [ &err <- _229.final ] s1)
       | s1 = as_mut'0 {_229} (fun (_ret':Result'0.t_result (borrowed int32) (borrowed int32)) ->  [ &_228 <- _ret' ] s2)
       | s2 = bb144 ]
       
@@ -1063,7 +1064,7 @@ module Result_TestResult
     | bb145 = s0 [ s0 = unwrap_err'4 {_227} (fun (_ret':borrowed int32) ->  [ &_226 <- _ret' ] s1) | s1 = bb146 ] 
     | bb146 = s0
       [ s0 = -{resolve'0 _226}- s1
-      | s1 = Int32.eq { * _226} {[%#sresult45] (-1 : int32)} (fun (_ret':bool) ->  [ &_224 <- _ret' ] s2)
+      | s1 = Int32.eq {_226.current} {[%#sresult45] (-1 : int32)} (fun (_ret':bool) ->  [ &_224 <- _ret' ] s2)
       | s2 = any [ br0 -> {_224 = false} (! bb148) | br1 -> {_224} (! bb147) ]  ]
       
     | bb147 = s0

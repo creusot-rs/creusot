@@ -207,12 +207,12 @@ module IndexRange_CreateArr
   use seq.Seq
   
   function shallow_model'1 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) : Seq.seq int32 =
-    [%#span14] shallow_model'0 ( * self)
+    [%#span14] shallow_model'0 self.current
   
   let rec push'0 (self:borrowed (Vec'0.t_vec int32 (Global'0.t_global))) (value:int32) (return'  (ret:()))= {[@expl:precondition] [%#span16] inv'2 value}
     {[@expl:precondition] [%#span15] inv'1 self}
     any
-    [ return' (result:())-> {[%#span17] shallow_model'0 ( ^ self) = Seq.snoc (shallow_model'1 self) value}
+    [ return' (result:())-> {[%#span17] shallow_model'0 self.final = Seq.snoc (shallow_model'1 self) value}
       (! return' {result}) ]
     
   
@@ -229,31 +229,31 @@ module IndexRange_CreateArr
       
     | bb1 = s0
       [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_4 <- _ret' ]  [ &arr <-  ^ _4 ] s1)
+          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_4 <- _ret' ]  [ &arr <- _4.final ] s1)
       | s1 = push'0 {_4} {[%#sindex_range1] (0 : int32)} (fun (_ret':()) ->  [ &_3 <- _ret' ] s2)
       | s2 = bb2 ]
       
     | bb2 = s0
       [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_6 <- _ret' ]  [ &arr <-  ^ _6 ] s1)
+          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_6 <- _ret' ]  [ &arr <- _6.final ] s1)
       | s1 = push'0 {_6} {[%#sindex_range2] (1 : int32)} (fun (_ret':()) ->  [ &_5 <- _ret' ] s2)
       | s2 = bb3 ]
       
     | bb3 = s0
       [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_8 <- _ret' ]  [ &arr <-  ^ _8 ] s1)
+          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_8 <- _ret' ]  [ &arr <- _8.final ] s1)
       | s1 = push'0 {_8} {[%#sindex_range3] (2 : int32)} (fun (_ret':()) ->  [ &_7 <- _ret' ] s2)
       | s2 = bb4 ]
       
     | bb4 = s0
       [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_10 <- _ret' ]  [ &arr <-  ^ _10 ] s1)
+          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_10 <- _ret' ]  [ &arr <- _10.final ] s1)
       | s1 = push'0 {_10} {[%#sindex_range4] (3 : int32)} (fun (_ret':()) ->  [ &_9 <- _ret' ] s2)
       | s2 = bb5 ]
       
     | bb5 = s0
       [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_12 <- _ret' ]  [ &arr <-  ^ _12 ] s1)
+          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_12 <- _ret' ]  [ &arr <- _12.final ] s1)
       | s1 = push'0 {_12} {[%#sindex_range5] (4 : int32)} (fun (_ret':()) ->  [ &_11 <- _ret' ] s2)
       | s2 = bb6 ]
       
@@ -719,7 +719,7 @@ module IndexRange_TestRange
     
   
   predicate resolve'0 (self : borrowed (slice int32)) =
-    [%#span91]  ^ self =  * self
+    [%#span91] self.final = self.current
   
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   
@@ -750,17 +750,17 @@ module IndexRange_TestRange
     /\ UIntSize.to_int (Core_Ops_Range_Range_Type.range_end self) <= Seq.length seq
   
   function shallow_model'3 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) : Seq.seq int32 =
-    [%#span99] shallow_model'0 ( * self)
+    [%#span99] shallow_model'0 self.current
   
   let rec index_mut'0 (self:borrowed (Vec'0.t_vec int32 (Global'0.t_global))) (index:Range'0.t_range usize) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] [%#span102] inv'1 index}
     {[@expl:precondition] [%#span101] inv'5 self}
     {[@expl:precondition] [%#span100] in_bounds'0 index (shallow_model'3 self)}
     any
     [ return' (result:borrowed (slice int32))-> {[%#span107] inv'6 result}
-      {[%#span106] Seq.length (shallow_model'0 ( ^ self)) = Seq.length (shallow_model'3 self)}
-      {[%#span105] resolve_elswhere'0 index (shallow_model'3 self) (shallow_model'0 ( ^ self))}
-      {[%#span104] has_value'0 index (shallow_model'0 ( ^ self)) ( ^ result)}
-      {[%#span103] has_value'0 index (shallow_model'3 self) ( * result)}
+      {[%#span106] Seq.length (shallow_model'0 self.final) = Seq.length (shallow_model'3 self)}
+      {[%#span105] resolve_elswhere'0 index (shallow_model'3 self) (shallow_model'0 self.final)}
+      {[%#span104] has_value'0 index (shallow_model'0 self.final) result.final}
+      {[%#span103] has_value'0 index (shallow_model'3 self) result.current}
       (! return' {result}) ]
     
   
@@ -950,15 +950,15 @@ module IndexRange_TestRange
     | bb49 = any [ br0 -> {_84 = false} (! bb51) | br1 -> {_84} (! bb50) ] 
     | bb50 = s0
       [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_94 <- _ret' ]  [ &arr <-  ^ _94 ] s1)
+          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_94 <- _ret' ]  [ &arr <- _94.final ] s1)
       | s1 =  [ &_95 <- Range'0.C_Range ([%#sindex_range33] (1 : usize)) ([%#sindex_range34] (4 : usize)) ] s2
       | s2 = index_mut'0 {_94} {_95} (fun (_ret':borrowed (slice int32)) ->  [ &_93 <- _ret' ] s3)
       | s3 = bb52 ]
       
     | bb52 = s0
-      [ s0 = Borrow.borrow_final <slice int32> { * _93} {Borrow.get_id _93}
-          (fun (_ret':borrowed (slice int32)) ->  [ &s2 <- _ret' ]  [ &_93 <- { _93 with current = ( ^ s2) ; } ] s1)
-      | s1 = len'0 { * s2} (fun (_ret':usize) ->  [ &_98 <- _ret' ] s2)
+      [ s0 = Borrow.borrow_final <slice int32> {_93.current} {Borrow.get_id _93}
+          (fun (_ret':borrowed (slice int32)) ->  [ &s2 <- _ret' ]  [ &_93 <- { _93 with current = s2.final ; } ] s1)
+      | s1 = len'0 {s2.current} (fun (_ret':usize) ->  [ &_98 <- _ret' ] s2)
       | s2 = bb53 ]
       
     | bb53 = s0
@@ -968,36 +968,36 @@ module IndexRange_TestRange
       
     | bb54 = s0
       [ s0 =  [ &_101 <- [%#sindex_range36] (0 : usize) ] s1
-      | s1 =  [ &_102 <- Slice.length ( * s2) ] s2
+      | s1 =  [ &_102 <- Slice.length s2.current ] s2
       | s2 = UIntSize.lt {_101} {_102} (fun (_ret':bool) ->  [ &_103 <- _ret' ] s3)
       | s3 = {[@expl:index in bounds] [%#sindex_range37] _103} s4
       | s4 = bb56 ]
       
     | bb56 = s0
-      [ s0 = Slice.get <int32> { * s2} {_101}
+      [ s0 = Slice.get <int32> {s2.current} {_101}
           (fun (l'0:int32) ->
-            Slice.set <int32> { * s2} {_101} {[%#sindex_range38] (-1 : int32)}
+            Slice.set <int32> {s2.current} {_101} {[%#sindex_range38] (-1 : int32)}
               (fun (l'1:slice int32) ->  [ &s2 <- { s2 with current = l'1 ; } ] s1))
       | s1 =  [ &_104 <- [%#sindex_range39] (1 : usize) ] s2
-      | s2 =  [ &_105 <- Slice.length ( * s2) ] s3
+      | s2 =  [ &_105 <- Slice.length s2.current ] s3
       | s3 = UIntSize.lt {_104} {_105} (fun (_ret':bool) ->  [ &_106 <- _ret' ] s4)
       | s4 = {[@expl:index in bounds] [%#sindex_range40] _106} s5
       | s5 = bb57 ]
       
     | bb57 = s0
-      [ s0 = Slice.get <int32> { * s2} {_104}
+      [ s0 = Slice.get <int32> {s2.current} {_104}
           (fun (l'0:int32) ->
-            Slice.set <int32> { * s2} {_104} {[%#sindex_range41] (-1 : int32)}
+            Slice.set <int32> {s2.current} {_104} {[%#sindex_range41] (-1 : int32)}
               (fun (l'1:slice int32) ->  [ &s2 <- { s2 with current = l'1 ; } ] s1))
       | s1 =  [ &_110 <- [%#sindex_range42] (2 : usize) ] s2
-      | s2 =  [ &_111 <- Slice.length ( * s2) ] s3
+      | s2 =  [ &_111 <- Slice.length s2.current ] s3
       | s3 = UIntSize.lt {_110} {_111} (fun (_ret':bool) ->  [ &_112 <- _ret' ] s4)
       | s4 = {[@expl:index in bounds] [%#sindex_range43] _112} s5
       | s5 = bb58 ]
       
     | bb58 = s0
       [ s0 = -{resolve'0 s2}- s1
-      | s1 = Slice.get <int32> { * s2} {_110}
+      | s1 = Slice.get <int32> {s2.current} {_110}
           (fun (r'0:int32) ->
             Int32.eq {r'0} {[%#sindex_range44] (3 : int32)} (fun (_ret':bool) ->  [ &_108 <- _ret' ] s2))
       | s2 = -{resolve'0 _93}- s3
@@ -1516,7 +1516,7 @@ module IndexRange_TestRangeTo
     
   
   predicate resolve'0 (self : borrowed (slice int32)) =
-    [%#span64]  ^ self =  * self
+    [%#span64] self.final = self.current
   
   use Core_Ops_Range_RangeTo_Type as Core_Ops_Range_RangeTo_Type
   
@@ -1543,17 +1543,17 @@ module IndexRange_TestRangeTo
     [%#span71] UIntSize.to_int (Core_Ops_Range_RangeTo_Type.rangeto_end self) <= Seq.length seq
   
   function shallow_model'3 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) : Seq.seq int32 =
-    [%#span72] shallow_model'0 ( * self)
+    [%#span72] shallow_model'0 self.current
   
   let rec index_mut'0 (self:borrowed (Vec'0.t_vec int32 (Global'0.t_global))) (index:RangeTo'0.t_rangeto usize) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] [%#span75] inv'1 index}
     {[@expl:precondition] [%#span74] inv'5 self}
     {[@expl:precondition] [%#span73] in_bounds'0 index (shallow_model'3 self)}
     any
     [ return' (result:borrowed (slice int32))-> {[%#span80] inv'6 result}
-      {[%#span79] Seq.length (shallow_model'0 ( ^ self)) = Seq.length (shallow_model'3 self)}
-      {[%#span78] resolve_elswhere'0 index (shallow_model'3 self) (shallow_model'0 ( ^ self))}
-      {[%#span77] has_value'0 index (shallow_model'0 ( ^ self)) ( ^ result)}
-      {[%#span76] has_value'0 index (shallow_model'3 self) ( * result)}
+      {[%#span79] Seq.length (shallow_model'0 self.final) = Seq.length (shallow_model'3 self)}
+      {[%#span78] resolve_elswhere'0 index (shallow_model'3 self) (shallow_model'0 self.final)}
+      {[%#span77] has_value'0 index (shallow_model'0 self.final) result.final}
+      {[%#span76] has_value'0 index (shallow_model'3 self) result.current}
       (! return' {result}) ]
     
   
@@ -1671,15 +1671,15 @@ module IndexRange_TestRangeTo
     | bb19 = any [ br0 -> {_30 = false} (! bb21) | br1 -> {_30} (! bb20) ] 
     | bb20 = s0
       [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_40 <- _ret' ]  [ &arr <-  ^ _40 ] s1)
+          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_40 <- _ret' ]  [ &arr <- _40.final ] s1)
       | s1 =  [ &_41 <- RangeTo'0.C_RangeTo ([%#sindex_range12] (3 : usize)) ] s2
       | s2 = index_mut'0 {_40} {_41} (fun (_ret':borrowed (slice int32)) ->  [ &_39 <- _ret' ] s3)
       | s3 = bb22 ]
       
     | bb22 = s0
-      [ s0 = Borrow.borrow_final <slice int32> { * _39} {Borrow.get_id _39}
-          (fun (_ret':borrowed (slice int32)) ->  [ &s1 <- _ret' ]  [ &_39 <- { _39 with current = ( ^ s1) ; } ] s1)
-      | s1 = len'0 { * s1} (fun (_ret':usize) ->  [ &_44 <- _ret' ] s2)
+      [ s0 = Borrow.borrow_final <slice int32> {_39.current} {Borrow.get_id _39}
+          (fun (_ret':borrowed (slice int32)) ->  [ &s1 <- _ret' ]  [ &_39 <- { _39 with current = s1.final ; } ] s1)
+      | s1 = len'0 {s1.current} (fun (_ret':usize) ->  [ &_44 <- _ret' ] s2)
       | s2 = bb23 ]
       
     | bb23 = s0
@@ -1689,36 +1689,36 @@ module IndexRange_TestRangeTo
       
     | bb24 = s0
       [ s0 =  [ &_47 <- [%#sindex_range14] (0 : usize) ] s1
-      | s1 =  [ &_48 <- Slice.length ( * s1) ] s2
+      | s1 =  [ &_48 <- Slice.length s1.current ] s2
       | s2 = UIntSize.lt {_47} {_48} (fun (_ret':bool) ->  [ &_49 <- _ret' ] s3)
       | s3 = {[@expl:index in bounds] [%#sindex_range15] _49} s4
       | s4 = bb26 ]
       
     | bb26 = s0
-      [ s0 = Slice.get <int32> { * s1} {_47}
+      [ s0 = Slice.get <int32> {s1.current} {_47}
           (fun (l'0:int32) ->
-            Slice.set <int32> { * s1} {_47} {[%#sindex_range16] (-1 : int32)}
+            Slice.set <int32> {s1.current} {_47} {[%#sindex_range16] (-1 : int32)}
               (fun (l'1:slice int32) ->  [ &s1 <- { s1 with current = l'1 ; } ] s1))
       | s1 =  [ &_50 <- [%#sindex_range17] (2 : usize) ] s2
-      | s2 =  [ &_51 <- Slice.length ( * s1) ] s3
+      | s2 =  [ &_51 <- Slice.length s1.current ] s3
       | s3 = UIntSize.lt {_50} {_51} (fun (_ret':bool) ->  [ &_52 <- _ret' ] s4)
       | s4 = {[@expl:index in bounds] [%#sindex_range18] _52} s5
       | s5 = bb27 ]
       
     | bb27 = s0
-      [ s0 = Slice.get <int32> { * s1} {_50}
+      [ s0 = Slice.get <int32> {s1.current} {_50}
           (fun (l'0:int32) ->
-            Slice.set <int32> { * s1} {_50} {[%#sindex_range19] (-1 : int32)}
+            Slice.set <int32> {s1.current} {_50} {[%#sindex_range19] (-1 : int32)}
               (fun (l'1:slice int32) ->  [ &s1 <- { s1 with current = l'1 ; } ] s1))
       | s1 =  [ &_56 <- [%#sindex_range20] (1 : usize) ] s2
-      | s2 =  [ &_57 <- Slice.length ( * s1) ] s3
+      | s2 =  [ &_57 <- Slice.length s1.current ] s3
       | s3 = UIntSize.lt {_56} {_57} (fun (_ret':bool) ->  [ &_58 <- _ret' ] s4)
       | s4 = {[@expl:index in bounds] [%#sindex_range21] _58} s5
       | s5 = bb28 ]
       
     | bb28 = s0
       [ s0 = -{resolve'0 s1}- s1
-      | s1 = Slice.get <int32> { * s1} {_56}
+      | s1 = Slice.get <int32> {s1.current} {_56}
           (fun (r'0:int32) ->
             Int32.eq {r'0} {[%#sindex_range22] (1 : int32)} (fun (_ret':bool) ->  [ &_54 <- _ret' ] s2))
       | s2 = -{resolve'0 _39}- s3
@@ -2204,7 +2204,7 @@ module IndexRange_TestRangeFrom
     
   
   predicate resolve'0 (self : borrowed (slice int32)) =
-    [%#span66]  ^ self =  * self
+    [%#span66] self.final = self.current
   
   use Core_Ops_Range_RangeFrom_Type as Core_Ops_Range_RangeFrom_Type
   
@@ -2232,17 +2232,17 @@ module IndexRange_TestRangeFrom
     [%#span73] UIntSize.to_int (Core_Ops_Range_RangeFrom_Type.rangefrom_start self) <= Seq.length seq
   
   function shallow_model'3 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) : Seq.seq int32 =
-    [%#span74] shallow_model'0 ( * self)
+    [%#span74] shallow_model'0 self.current
   
   let rec index_mut'0 (self:borrowed (Vec'0.t_vec int32 (Global'0.t_global))) (index:RangeFrom'0.t_rangefrom usize) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] [%#span77] inv'1 index}
     {[@expl:precondition] [%#span76] inv'5 self}
     {[@expl:precondition] [%#span75] in_bounds'0 index (shallow_model'3 self)}
     any
     [ return' (result:borrowed (slice int32))-> {[%#span82] inv'6 result}
-      {[%#span81] Seq.length (shallow_model'0 ( ^ self)) = Seq.length (shallow_model'3 self)}
-      {[%#span80] resolve_elswhere'0 index (shallow_model'3 self) (shallow_model'0 ( ^ self))}
-      {[%#span79] has_value'0 index (shallow_model'0 ( ^ self)) ( ^ result)}
-      {[%#span78] has_value'0 index (shallow_model'3 self) ( * result)}
+      {[%#span81] Seq.length (shallow_model'0 self.final) = Seq.length (shallow_model'3 self)}
+      {[%#span80] resolve_elswhere'0 index (shallow_model'3 self) (shallow_model'0 self.final)}
+      {[%#span79] has_value'0 index (shallow_model'0 self.final) result.final}
+      {[%#span78] has_value'0 index (shallow_model'3 self) result.current}
       (! return' {result}) ]
     
   
@@ -2368,15 +2368,15 @@ module IndexRange_TestRangeFrom
     | bb24 = any [ br0 -> {_39 = false} (! bb26) | br1 -> {_39} (! bb25) ] 
     | bb25 = s0
       [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_49 <- _ret' ]  [ &arr <-  ^ _49 ] s1)
+          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_49 <- _ret' ]  [ &arr <- _49.final ] s1)
       | s1 =  [ &_50 <- RangeFrom'0.C_RangeFrom ([%#sindex_range13] (2 : usize)) ] s2
       | s2 = index_mut'0 {_49} {_50} (fun (_ret':borrowed (slice int32)) ->  [ &_48 <- _ret' ] s3)
       | s3 = bb27 ]
       
     | bb27 = s0
-      [ s0 = Borrow.borrow_final <slice int32> { * _48} {Borrow.get_id _48}
-          (fun (_ret':borrowed (slice int32)) ->  [ &s1 <- _ret' ]  [ &_48 <- { _48 with current = ( ^ s1) ; } ] s1)
-      | s1 = len'0 { * s1} (fun (_ret':usize) ->  [ &_53 <- _ret' ] s2)
+      [ s0 = Borrow.borrow_final <slice int32> {_48.current} {Borrow.get_id _48}
+          (fun (_ret':borrowed (slice int32)) ->  [ &s1 <- _ret' ]  [ &_48 <- { _48 with current = s1.final ; } ] s1)
+      | s1 = len'0 {s1.current} (fun (_ret':usize) ->  [ &_53 <- _ret' ] s2)
       | s2 = bb28 ]
       
     | bb28 = s0
@@ -2386,36 +2386,36 @@ module IndexRange_TestRangeFrom
       
     | bb29 = s0
       [ s0 =  [ &_56 <- [%#sindex_range15] (0 : usize) ] s1
-      | s1 =  [ &_57 <- Slice.length ( * s1) ] s2
+      | s1 =  [ &_57 <- Slice.length s1.current ] s2
       | s2 = UIntSize.lt {_56} {_57} (fun (_ret':bool) ->  [ &_58 <- _ret' ] s3)
       | s3 = {[@expl:index in bounds] [%#sindex_range16] _58} s4
       | s4 = bb31 ]
       
     | bb31 = s0
-      [ s0 = Slice.get <int32> { * s1} {_56}
+      [ s0 = Slice.get <int32> {s1.current} {_56}
           (fun (l'0:int32) ->
-            Slice.set <int32> { * s1} {_56} {[%#sindex_range17] (-1 : int32)}
+            Slice.set <int32> {s1.current} {_56} {[%#sindex_range17] (-1 : int32)}
               (fun (l'1:slice int32) ->  [ &s1 <- { s1 with current = l'1 ; } ] s1))
       | s1 =  [ &_59 <- [%#sindex_range18] (1 : usize) ] s2
-      | s2 =  [ &_60 <- Slice.length ( * s1) ] s3
+      | s2 =  [ &_60 <- Slice.length s1.current ] s3
       | s3 = UIntSize.lt {_59} {_60} (fun (_ret':bool) ->  [ &_61 <- _ret' ] s4)
       | s4 = {[@expl:index in bounds] [%#sindex_range19] _61} s5
       | s5 = bb32 ]
       
     | bb32 = s0
-      [ s0 = Slice.get <int32> { * s1} {_59}
+      [ s0 = Slice.get <int32> {s1.current} {_59}
           (fun (l'0:int32) ->
-            Slice.set <int32> { * s1} {_59} {[%#sindex_range20] (-1 : int32)}
+            Slice.set <int32> {s1.current} {_59} {[%#sindex_range20] (-1 : int32)}
               (fun (l'1:slice int32) ->  [ &s1 <- { s1 with current = l'1 ; } ] s1))
       | s1 =  [ &_65 <- [%#sindex_range21] (2 : usize) ] s2
-      | s2 =  [ &_66 <- Slice.length ( * s1) ] s3
+      | s2 =  [ &_66 <- Slice.length s1.current ] s3
       | s3 = UIntSize.lt {_65} {_66} (fun (_ret':bool) ->  [ &_67 <- _ret' ] s4)
       | s4 = {[@expl:index in bounds] [%#sindex_range22] _67} s5
       | s5 = bb33 ]
       
     | bb33 = s0
       [ s0 = -{resolve'0 s1}- s1
-      | s1 = Slice.get <int32> { * s1} {_65}
+      | s1 = Slice.get <int32> {s1.current} {_65}
           (fun (r'0:int32) ->
             Int32.eq {r'0} {[%#sindex_range23] (4 : int32)} (fun (_ret':bool) ->  [ &_63 <- _ret' ] s2))
       | s2 = -{resolve'0 _48}- s3
@@ -2856,7 +2856,7 @@ module IndexRange_TestRangeFull
     
   
   predicate resolve'0 (self : borrowed (slice int32)) =
-    [%#span62]  ^ self =  * self
+    [%#span62] self.final = self.current
   
   predicate resolve_elswhere'0 (self : RangeFull'0.t_rangefull) (_old : Seq.seq int32) (_fin : Seq.seq int32) =
     [%#span63] true
@@ -2877,17 +2877,17 @@ module IndexRange_TestRangeFull
     [%#span69] true
   
   function shallow_model'3 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) : Seq.seq int32 =
-    [%#span70] shallow_model'0 ( * self)
+    [%#span70] shallow_model'0 self.current
   
   let rec index_mut'0 (self:borrowed (Vec'0.t_vec int32 (Global'0.t_global))) (index:RangeFull'0.t_rangefull) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] [%#span73] inv'1 index}
     {[@expl:precondition] [%#span72] inv'3 self}
     {[@expl:precondition] [%#span71] in_bounds'0 index (shallow_model'3 self)}
     any
     [ return' (result:borrowed (slice int32))-> {[%#span78] inv'4 result}
-      {[%#span77] Seq.length (shallow_model'0 ( ^ self)) = Seq.length (shallow_model'3 self)}
-      {[%#span76] resolve_elswhere'0 index (shallow_model'3 self) (shallow_model'0 ( ^ self))}
-      {[%#span75] has_value'0 index (shallow_model'0 ( ^ self)) ( ^ result)}
-      {[%#span74] has_value'0 index (shallow_model'3 self) ( * result)}
+      {[%#span77] Seq.length (shallow_model'0 self.final) = Seq.length (shallow_model'3 self)}
+      {[%#span76] resolve_elswhere'0 index (shallow_model'3 self) (shallow_model'0 self.final)}
+      {[%#span75] has_value'0 index (shallow_model'0 self.final) result.final}
+      {[%#span74] has_value'0 index (shallow_model'3 self) result.current}
       (! return' {result}) ]
     
   
@@ -3004,15 +3004,15 @@ module IndexRange_TestRangeFull
       
     | bb14 = s0
       [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_38 <- _ret' ]  [ &arr <-  ^ _38 ] s1)
+          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_38 <- _ret' ]  [ &arr <- _38.final ] s1)
       | s1 =  [ &_39 <- RangeFull'0.C_RangeFull ] s2
       | s2 = index_mut'0 {_38} {_39} (fun (_ret':borrowed (slice int32)) ->  [ &_37 <- _ret' ] s3)
       | s3 = bb22 ]
       
     | bb22 = s0
-      [ s0 = Borrow.borrow_final <slice int32> { * _37} {Borrow.get_id _37}
-          (fun (_ret':borrowed (slice int32)) ->  [ &s1 <- _ret' ]  [ &_37 <- { _37 with current = ( ^ s1) ; } ] s1)
-      | s1 = len'0 { * s1} (fun (_ret':usize) ->  [ &_42 <- _ret' ] s2)
+      [ s0 = Borrow.borrow_final <slice int32> {_37.current} {Borrow.get_id _37}
+          (fun (_ret':borrowed (slice int32)) ->  [ &s1 <- _ret' ]  [ &_37 <- { _37 with current = s1.final ; } ] s1)
+      | s1 = len'0 {s1.current} (fun (_ret':usize) ->  [ &_42 <- _ret' ] s2)
       | s2 = bb23 ]
       
     | bb23 = s0
@@ -3022,26 +3022,26 @@ module IndexRange_TestRangeFull
       
     | bb24 = s0
       [ s0 =  [ &_45 <- [%#sindex_range18] (1 : usize) ] s1
-      | s1 =  [ &_46 <- Slice.length ( * s1) ] s2
+      | s1 =  [ &_46 <- Slice.length s1.current ] s2
       | s2 = UIntSize.lt {_45} {_46} (fun (_ret':bool) ->  [ &_47 <- _ret' ] s3)
       | s3 = {[@expl:index in bounds] [%#sindex_range19] _47} s4
       | s4 = bb26 ]
       
     | bb26 = s0
-      [ s0 = Slice.get <int32> { * s1} {_45}
+      [ s0 = Slice.get <int32> {s1.current} {_45}
           (fun (l'0:int32) ->
-            Slice.set <int32> { * s1} {_45} {[%#sindex_range20] (-1 : int32)}
+            Slice.set <int32> {s1.current} {_45} {[%#sindex_range20] (-1 : int32)}
               (fun (l'1:slice int32) ->  [ &s1 <- { s1 with current = l'1 ; } ] s1))
       | s1 =  [ &_48 <- [%#sindex_range21] (3 : usize) ] s2
-      | s2 =  [ &_49 <- Slice.length ( * s1) ] s3
+      | s2 =  [ &_49 <- Slice.length s1.current ] s3
       | s3 = UIntSize.lt {_48} {_49} (fun (_ret':bool) ->  [ &_50 <- _ret' ] s4)
       | s4 = {[@expl:index in bounds] [%#sindex_range22] _50} s5
       | s5 = bb27 ]
       
     | bb27 = s0
-      [ s0 = Slice.get <int32> { * s1} {_48}
+      [ s0 = Slice.get <int32> {s1.current} {_48}
           (fun (l'0:int32) ->
-            Slice.set <int32> { * s1} {_48} {[%#sindex_range23] (-1 : int32)}
+            Slice.set <int32> {s1.current} {_48} {[%#sindex_range23] (-1 : int32)}
               (fun (l'1:slice int32) ->  [ &s1 <- { s1 with current = l'1 ; } ] s1))
       | s1 = -{resolve'0 s1}- s2
       | s2 = -{resolve'0 _37}- s3
@@ -3517,7 +3517,7 @@ module IndexRange_TestRangeToInclusive
     
   
   predicate resolve'0 (self : borrowed (slice int32)) =
-    [%#span61]  ^ self =  * self
+    [%#span61] self.final = self.current
   
   use Core_Ops_Range_RangeToInclusive_Type as Core_Ops_Range_RangeToInclusive_Type
   
@@ -3547,17 +3547,17 @@ module IndexRange_TestRangeToInclusive
     [%#span68] UIntSize.to_int (Core_Ops_Range_RangeToInclusive_Type.rangetoinclusive_end self) < Seq.length seq
   
   function shallow_model'3 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) : Seq.seq int32 =
-    [%#span69] shallow_model'0 ( * self)
+    [%#span69] shallow_model'0 self.current
   
   let rec index_mut'0 (self:borrowed (Vec'0.t_vec int32 (Global'0.t_global))) (index:RangeToInclusive'0.t_rangetoinclusive usize) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] [%#span72] inv'1 index}
     {[@expl:precondition] [%#span71] inv'5 self}
     {[@expl:precondition] [%#span70] in_bounds'0 index (shallow_model'3 self)}
     any
     [ return' (result:borrowed (slice int32))-> {[%#span77] inv'6 result}
-      {[%#span76] Seq.length (shallow_model'0 ( ^ self)) = Seq.length (shallow_model'3 self)}
-      {[%#span75] resolve_elswhere'0 index (shallow_model'3 self) (shallow_model'0 ( ^ self))}
-      {[%#span74] has_value'0 index (shallow_model'0 ( ^ self)) ( ^ result)}
-      {[%#span73] has_value'0 index (shallow_model'3 self) ( * result)}
+      {[%#span76] Seq.length (shallow_model'0 self.final) = Seq.length (shallow_model'3 self)}
+      {[%#span75] resolve_elswhere'0 index (shallow_model'3 self) (shallow_model'0 self.final)}
+      {[%#span74] has_value'0 index (shallow_model'0 self.final) result.final}
+      {[%#span73] has_value'0 index (shallow_model'3 self) result.current}
       (! return' {result}) ]
     
   
@@ -3664,15 +3664,15 @@ module IndexRange_TestRangeToInclusive
     | bb15 = any [ br0 -> {_22 = false} (! bb17) | br1 -> {_22} (! bb16) ] 
     | bb16 = s0
       [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_32 <- _ret' ]  [ &arr <-  ^ _32 ] s1)
+          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_32 <- _ret' ]  [ &arr <- _32.final ] s1)
       | s1 =  [ &_33 <- RangeToInclusive'0.C_RangeToInclusive ([%#sindex_range10] (2 : usize)) ] s2
       | s2 = index_mut'0 {_32} {_33} (fun (_ret':borrowed (slice int32)) ->  [ &_31 <- _ret' ] s3)
       | s3 = bb18 ]
       
     | bb18 = s0
-      [ s0 = Borrow.borrow_final <slice int32> { * _31} {Borrow.get_id _31}
-          (fun (_ret':borrowed (slice int32)) ->  [ &s1 <- _ret' ]  [ &_31 <- { _31 with current = ( ^ s1) ; } ] s1)
-      | s1 = len'0 { * s1} (fun (_ret':usize) ->  [ &_36 <- _ret' ] s2)
+      [ s0 = Borrow.borrow_final <slice int32> {_31.current} {Borrow.get_id _31}
+          (fun (_ret':borrowed (slice int32)) ->  [ &s1 <- _ret' ]  [ &_31 <- { _31 with current = s1.final ; } ] s1)
+      | s1 = len'0 {s1.current} (fun (_ret':usize) ->  [ &_36 <- _ret' ] s2)
       | s2 = bb19 ]
       
     | bb19 = s0
@@ -3682,36 +3682,36 @@ module IndexRange_TestRangeToInclusive
       
     | bb20 = s0
       [ s0 =  [ &_39 <- [%#sindex_range12] (0 : usize) ] s1
-      | s1 =  [ &_40 <- Slice.length ( * s1) ] s2
+      | s1 =  [ &_40 <- Slice.length s1.current ] s2
       | s2 = UIntSize.lt {_39} {_40} (fun (_ret':bool) ->  [ &_41 <- _ret' ] s3)
       | s3 = {[@expl:index in bounds] [%#sindex_range13] _41} s4
       | s4 = bb22 ]
       
     | bb22 = s0
-      [ s0 = Slice.get <int32> { * s1} {_39}
+      [ s0 = Slice.get <int32> {s1.current} {_39}
           (fun (l'0:int32) ->
-            Slice.set <int32> { * s1} {_39} {[%#sindex_range14] (-1 : int32)}
+            Slice.set <int32> {s1.current} {_39} {[%#sindex_range14] (-1 : int32)}
               (fun (l'1:slice int32) ->  [ &s1 <- { s1 with current = l'1 ; } ] s1))
       | s1 =  [ &_42 <- [%#sindex_range15] (2 : usize) ] s2
-      | s2 =  [ &_43 <- Slice.length ( * s1) ] s3
+      | s2 =  [ &_43 <- Slice.length s1.current ] s3
       | s3 = UIntSize.lt {_42} {_43} (fun (_ret':bool) ->  [ &_44 <- _ret' ] s4)
       | s4 = {[@expl:index in bounds] [%#sindex_range16] _44} s5
       | s5 = bb23 ]
       
     | bb23 = s0
-      [ s0 = Slice.get <int32> { * s1} {_42}
+      [ s0 = Slice.get <int32> {s1.current} {_42}
           (fun (l'0:int32) ->
-            Slice.set <int32> { * s1} {_42} {[%#sindex_range17] (-1 : int32)}
+            Slice.set <int32> {s1.current} {_42} {[%#sindex_range17] (-1 : int32)}
               (fun (l'1:slice int32) ->  [ &s1 <- { s1 with current = l'1 ; } ] s1))
       | s1 =  [ &_48 <- [%#sindex_range18] (1 : usize) ] s2
-      | s2 =  [ &_49 <- Slice.length ( * s1) ] s3
+      | s2 =  [ &_49 <- Slice.length s1.current ] s3
       | s3 = UIntSize.lt {_48} {_49} (fun (_ret':bool) ->  [ &_50 <- _ret' ] s4)
       | s4 = {[@expl:index in bounds] [%#sindex_range19] _50} s5
       | s5 = bb24 ]
       
     | bb24 = s0
       [ s0 = -{resolve'0 s1}- s1
-      | s1 = Slice.get <int32> { * s1} {_48}
+      | s1 = Slice.get <int32> {s1.current} {_48}
           (fun (r'0:int32) ->
             Int32.eq {r'0} {[%#sindex_range20] (1 : int32)} (fun (_ret':bool) ->  [ &_46 <- _ret' ] s2))
       | s2 = -{resolve'0 _31}- s3

@@ -1147,12 +1147,12 @@ module KnapsackFull_Knapsack01Dyn
   function shallow_model'9 (self : borrowed (Vec'0.t_vec (Item'0.t_item name) (Global'0.t_global))) : Seq.seq (Item'0.t_item name)
     
    =
-    [%#span67] shallow_model'3 ( * self)
+    [%#span67] shallow_model'3 self.current
   
   let rec push'0 (self:borrowed (Vec'0.t_vec (Item'0.t_item name) (Global'0.t_global))) (value:Item'0.t_item name) (return'  (ret:()))= {[@expl:precondition] [%#span69] inv'1 value}
     {[@expl:precondition] [%#span68] inv'21 self}
     any
-    [ return' (result:())-> {[%#span70] shallow_model'3 ( ^ self) = Seq.snoc (shallow_model'9 self) value}
+    [ return' (result:())-> {[%#span70] shallow_model'3 self.final = Seq.snoc (shallow_model'9 self) value}
       (! return' {result}) ]
     
   
@@ -1224,10 +1224,10 @@ module KnapsackFull_Knapsack01Dyn
     [%#span86] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'1 self)  -> resolve'7 (index_logic'0 self i)
   
   predicate resolve'4 (self : borrowed (Vec'0.t_vec usize (Global'0.t_global))) =
-    [%#span87]  ^ self =  * self
+    [%#span87] self.final = self.current
   
   predicate resolve'3 (self : borrowed usize) =
-    [%#span87]  ^ self =  * self
+    [%#span87] self.final = self.current
   
   use prelude.prelude.Slice
   
@@ -1242,17 +1242,17 @@ module KnapsackFull_Knapsack01Dyn
     [%#span90] UIntSize.to_int self < Seq.length seq
   
   function shallow_model'8 (self : borrowed (Vec'0.t_vec usize (Global'0.t_global))) : Seq.seq usize =
-    [%#span67] shallow_model'2 ( * self)
+    [%#span67] shallow_model'2 self.current
   
   let rec index_mut'1 (self:borrowed (Vec'0.t_vec usize (Global'0.t_global))) (index:usize) (return'  (ret:borrowed usize))= {[@expl:precondition] [%#span93] inv'6 index}
     {[@expl:precondition] [%#span92] inv'19 self}
     {[@expl:precondition] [%#span91] in_bounds'2 index (shallow_model'8 self)}
     any
     [ return' (result:borrowed usize)-> {[%#span98] inv'20 result}
-      {[%#span97] Seq.length (shallow_model'2 ( ^ self)) = Seq.length (shallow_model'8 self)}
-      {[%#span96] resolve_elswhere'1 index (shallow_model'8 self) (shallow_model'2 ( ^ self))}
-      {[%#span95] has_value'2 index (shallow_model'2 ( ^ self)) ( ^ result)}
-      {[%#span94] has_value'2 index (shallow_model'8 self) ( * result)}
+      {[%#span97] Seq.length (shallow_model'2 self.final) = Seq.length (shallow_model'8 self)}
+      {[%#span96] resolve_elswhere'1 index (shallow_model'8 self) (shallow_model'2 self.final)}
+      {[%#span95] has_value'2 index (shallow_model'2 self.final) result.final}
+      {[%#span94] has_value'2 index (shallow_model'8 self) result.current}
       (! return' {result}) ]
     
   
@@ -1273,17 +1273,17 @@ module KnapsackFull_Knapsack01Dyn
   function shallow_model'7 (self : borrowed (Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global))) : Seq.seq (Vec'0.t_vec usize (Global'0.t_global))
     
    =
-    [%#span67] shallow_model'1 ( * self)
+    [%#span67] shallow_model'1 self.current
   
   let rec index_mut'0 (self:borrowed (Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global))) (index:usize) (return'  (ret:borrowed (Vec'0.t_vec usize (Global'0.t_global))))= {[@expl:precondition] [%#span93] inv'6 index}
     {[@expl:precondition] [%#span92] inv'18 self}
     {[@expl:precondition] [%#span91] in_bounds'1 index (shallow_model'7 self)}
     any
     [ return' (result:borrowed (Vec'0.t_vec usize (Global'0.t_global)))-> {[%#span98] inv'19 result}
-      {[%#span97] Seq.length (shallow_model'1 ( ^ self)) = Seq.length (shallow_model'7 self)}
-      {[%#span96] resolve_elswhere'0 index (shallow_model'7 self) (shallow_model'1 ( ^ self))}
-      {[%#span95] has_value'1 index (shallow_model'1 ( ^ self)) ( ^ result)}
-      {[%#span94] has_value'1 index (shallow_model'7 self) ( * result)}
+      {[%#span97] Seq.length (shallow_model'1 self.final) = Seq.length (shallow_model'7 self)}
+      {[%#span96] resolve_elswhere'0 index (shallow_model'7 self) (shallow_model'1 self.final)}
+      {[%#span95] has_value'1 index (shallow_model'1 self.final) result.final}
+      {[%#span94] has_value'1 index (shallow_model'7 self) result.current}
       (! return' {result}) ]
     
   
@@ -1321,19 +1321,19 @@ module KnapsackFull_Knapsack01Dyn
     
   
   predicate resolve'2 (self : borrowed (RangeInclusive'0.t_rangeinclusive usize)) =
-    [%#span87]  ^ self =  * self
+    [%#span87] self.final = self.current
   
   use seq.Seq
   
   predicate completed'1 (self : borrowed (RangeInclusive'0.t_rangeinclusive usize)) =
-    [%#span106] is_empty_log'0 ( * self) /\ is_empty_log'0 ( ^ self)
+    [%#span106] is_empty_log'0 self.current /\ is_empty_log'0 self.final
   
   let rec next'1 (self:borrowed (RangeInclusive'0.t_rangeinclusive usize)) (return'  (ret:Option'0.t_option usize))= {[@expl:precondition] [%#span107] inv'14 self}
     any
     [ return' (result:Option'0.t_option usize)-> {[%#span109] inv'13 result}
       {[%#span108] match result with
         | Option'0.C_None -> completed'1 self
-        | Option'0.C_Some v -> produces'1 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'1 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -1392,19 +1392,19 @@ module KnapsackFull_Knapsack01Dyn
     
   
   predicate resolve'0 (self : borrowed (Range'0.t_range usize)) =
-    [%#span87]  ^ self =  * self
+    [%#span87] self.final = self.current
   
   predicate completed'0 (self : borrowed (Range'0.t_range usize)) =
     [%#span121] resolve'0 self
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start ( * self))
-    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end ( * self))
+    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self.current)
+    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end self.current)
   
   let rec next'0 (self:borrowed (Range'0.t_range usize)) (return'  (ret:Option'0.t_option usize))= {[@expl:precondition] [%#span122] inv'12 self}
     any
     [ return' (result:Option'0.t_option usize)-> {[%#span123] inv'13 result}
       {[%#span108] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -1533,11 +1533,11 @@ module KnapsackFull_Knapsack01Dyn
         (! s0) [ s0 = bb13 ] 
         [ bb13 = s0
           [ s0 = Borrow.borrow_mut <Range'0.t_range usize> {iter}
-              (fun (_ret':borrowed (Range'0.t_range usize)) ->  [ &_34 <- _ret' ]  [ &iter <-  ^ _34 ] s1)
-          | s1 = Borrow.borrow_final <Range'0.t_range usize> { * _34} {Borrow.get_id _34}
+              (fun (_ret':borrowed (Range'0.t_range usize)) ->  [ &_34 <- _ret' ]  [ &iter <- _34.final ] s1)
+          | s1 = Borrow.borrow_final <Range'0.t_range usize> {_34.current} {Borrow.get_id _34}
               (fun (_ret':borrowed (Range'0.t_range usize)) ->
                  [ &_33 <- _ret' ] 
-                 [ &_34 <- { _34 with current = ( ^ _33) ; } ] 
+                 [ &_34 <- { _34 with current = _33.final ; } ] 
                 s2)
           | s2 = next'0 {_33} (fun (_ret':Option'0.t_option usize) ->  [ &_32 <- _ret' ] s3)
           | s3 = bb14 ]
@@ -1610,12 +1610,12 @@ module KnapsackFull_Knapsack01Dyn
               [ s0 = Borrow.borrow_mut <RangeInclusive'0.t_rangeinclusive usize> {iter1}
                   (fun (_ret':borrowed (RangeInclusive'0.t_rangeinclusive usize)) ->
                      [ &_60 <- _ret' ] 
-                     [ &iter1 <-  ^ _60 ] 
+                     [ &iter1 <- _60.final ] 
                     s1)
-              | s1 = Borrow.borrow_final <RangeInclusive'0.t_rangeinclusive usize> { * _60} {Borrow.get_id _60}
+              | s1 = Borrow.borrow_final <RangeInclusive'0.t_rangeinclusive usize> {_60.current} {Borrow.get_id _60}
                   (fun (_ret':borrowed (RangeInclusive'0.t_rangeinclusive usize)) ->
                      [ &_59 <- _ret' ] 
-                     [ &_60 <- { _60 with current = ( ^ _59) ; } ] 
+                     [ &_60 <- { _60 with current = _59.final ; } ] 
                     s2)
               | s2 = next'1 {_59} (fun (_ret':Option'0.t_option usize) ->  [ &_58 <- _ret' ] s3)
               | s3 = bb32 ]
@@ -1683,7 +1683,7 @@ module KnapsackFull_Knapsack01Dyn
                   {best_value}
                   (fun (_ret':borrowed (Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global))) ->
                      [ &_97 <- _ret' ] 
-                     [ &best_value <-  ^ _97 ] 
+                     [ &best_value <- _97.final ] 
                     s1)
               | s1 = UIntSize.add {i} {[%#sknapsack_full15] (1 : usize)} (fun (_ret':usize) ->  [ &_98 <- _ret' ] s2)
               | s2 = index_mut'0 {_97} {_98}
@@ -1691,10 +1691,10 @@ module KnapsackFull_Knapsack01Dyn
               | s3 = bb48 ]
               
             | bb48 = s0
-              [ s0 = Borrow.borrow_final <Vec'0.t_vec usize (Global'0.t_global)> { * _96} {Borrow.get_id _96}
+              [ s0 = Borrow.borrow_final <Vec'0.t_vec usize (Global'0.t_global)> {_96.current} {Borrow.get_id _96}
                   (fun (_ret':borrowed (Vec'0.t_vec usize (Global'0.t_global))) ->
                      [ &_95 <- _ret' ] 
-                     [ &_96 <- { _96 with current = ( ^ _95) ; } ] 
+                     [ &_96 <- { _96 with current = _95.final ; } ] 
                     s1)
               | s1 = index_mut'1 {_95} {w} (fun (_ret':borrowed usize) ->  [ &_94 <- _ret' ] s2)
               | s2 = bb49 ]
@@ -1792,9 +1792,9 @@ module KnapsackFull_Knapsack01Dyn
           [ s0 = Borrow.borrow_mut <Vec'0.t_vec (Item'0.t_item name) (Global'0.t_global)> {result}
               (fun (_ret':borrowed (Vec'0.t_vec (Item'0.t_item name) (Global'0.t_global))) ->
                  [ &_138 <- _ret' ] 
-                 [ &result <-  ^ _138 ] 
+                 [ &result <- _138.final ] 
                 s1)
-          | s1 = -{inv'5 ( ^ _138)}- s2
+          | s1 = -{inv'5 _138.final}- s2
           | s2 = push'0 {_138} {it1} (fun (_ret':()) ->  [ &_137 <- _ret' ] s3)
           | s3 = bb65 ]
           

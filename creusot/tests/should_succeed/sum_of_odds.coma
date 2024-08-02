@@ -276,19 +276,19 @@ module SumOfOdds_ComputeSumOfOdd
   use seq.Seq
   
   predicate resolve'0 (self : borrowed (Range'0.t_range uint32)) =
-    [%#span32]  ^ self =  * self
+    [%#span32] self.final = self.current
   
   predicate completed'0 (self : borrowed (Range'0.t_range uint32)) =
     [%#span33] resolve'0 self
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start ( * self))
-    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end ( * self))
+    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self.current)
+    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end self.current)
   
   let rec next'0 (self:borrowed (Range'0.t_range uint32)) (return'  (ret:Option'0.t_option uint32))= {[@expl:precondition] [%#span34] inv'1 self}
     any
     [ return' (result:Option'0.t_option uint32)-> {[%#span36] inv'2 result}
       {[%#span35] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -336,11 +336,11 @@ module SumOfOdds_ComputeSumOfOdd
         (! s0) [ s0 = bb5 ] 
         [ bb5 = s0
           [ s0 = Borrow.borrow_mut <Range'0.t_range uint32> {iter}
-              (fun (_ret':borrowed (Range'0.t_range uint32)) ->  [ &_20 <- _ret' ]  [ &iter <-  ^ _20 ] s1)
-          | s1 = Borrow.borrow_final <Range'0.t_range uint32> { * _20} {Borrow.get_id _20}
+              (fun (_ret':borrowed (Range'0.t_range uint32)) ->  [ &_20 <- _ret' ]  [ &iter <- _20.final ] s1)
+          | s1 = Borrow.borrow_final <Range'0.t_range uint32> {_20.current} {Borrow.get_id _20}
               (fun (_ret':borrowed (Range'0.t_range uint32)) ->
                  [ &_19 <- _ret' ] 
-                 [ &_20 <- { _20 with current = ( ^ _19) ; } ] 
+                 [ &_20 <- { _20 with current = _19.final ; } ] 
                 s2)
           | s2 = next'0 {_19} (fun (_ret':Option'0.t_option uint32) ->  [ &_18 <- _ret' ] s3)
           | s3 = bb6 ]

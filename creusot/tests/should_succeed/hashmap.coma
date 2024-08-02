@@ -737,7 +737,7 @@ module Hashmap_Impl5_Add
   function shallow_model'1 (self : borrowed (MyHashMap'0.t_myhashmap k v)) : Map.map deep_model_ty'0 (Option'0.t_option v)
     
    =
-    [%#span25] shallow_model'0 ( * self)
+    [%#span25] shallow_model'0 self.current
   
   use map.Map
   
@@ -762,7 +762,7 @@ module Hashmap_Impl5_Add
     /\ no_double_binding'0 (index_logic'0 (Hashmap_MyHashMap_Type.myhashmap_buckets self) i))
   
   predicate resolve'9 (self : borrowed (MyHashMap'0.t_myhashmap k v)) =
-    [%#span29]  ^ self =  * self
+    [%#span29] self.final = self.current
   
   predicate resolve'8 (self : List'0.t_list (k, v)) =
     [%#span30] true
@@ -772,13 +772,13 @@ module Hashmap_Impl5_Add
   predicate resolve'6 (self : k)
   
   predicate resolve'5 (self : borrowed (List'0.t_list (k, v))) =
-    [%#span29]  ^ self =  * self
+    [%#span29] self.final = self.current
   
   predicate resolve'4 (self : borrowed k) =
-    [%#span29]  ^ self =  * self
+    [%#span29] self.final = self.current
   
   predicate resolve'3 (self : borrowed v) =
-    [%#span29]  ^ self =  * self
+    [%#span29] self.final = self.current
   
   function deep_model'1 (self : k) : deep_model_ty'0 =
     [%#span31] deep_model'0 self
@@ -799,7 +799,7 @@ module Hashmap_Impl5_Add
   use prelude.prelude.Snapshot
   
   predicate resolve'1 (self : borrowed (List'0.t_list (k, v))) =
-    [%#span29]  ^ self =  * self
+    [%#span29] self.final = self.current
   
   use prelude.prelude.Slice
   
@@ -820,17 +820,17 @@ module Hashmap_Impl5_Add
   function shallow_model'3 (self : borrowed (Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global))) : Seq.seq (List'0.t_list (k, v))
     
    =
-    [%#span25] shallow_model'4 ( * self)
+    [%#span25] shallow_model'4 self.current
   
   let rec index_mut'0 (self:borrowed (Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global))) (index:usize) (return'  (ret:borrowed (List'0.t_list (k, v))))= {[@expl:precondition] [%#span40] inv'16 index}
     {[@expl:precondition] [%#span39] inv'15 self}
     {[@expl:precondition] [%#span38] in_bounds'0 index (shallow_model'3 self)}
     any
     [ return' (result:borrowed (List'0.t_list (k, v)))-> {[%#span45] inv'3 result}
-      {[%#span44] Seq.length (shallow_model'4 ( ^ self)) = Seq.length (shallow_model'3 self)}
-      {[%#span43] resolve_elswhere'0 index (shallow_model'3 self) (shallow_model'4 ( ^ self))}
-      {[%#span42] has_value'0 index (shallow_model'4 ( ^ self)) ( ^ result)}
-      {[%#span41] has_value'0 index (shallow_model'3 self) ( * result)}
+      {[%#span44] Seq.length (shallow_model'4 self.final) = Seq.length (shallow_model'3 self)}
+      {[%#span43] resolve_elswhere'0 index (shallow_model'3 self) (shallow_model'4 self.final)}
+      {[%#span42] has_value'0 index (shallow_model'4 self.final) result.final}
+      {[%#span41] has_value'0 index (shallow_model'3 self) result.current}
       (! return' {result}) ]
     
   
@@ -863,13 +863,13 @@ module Hashmap_Impl5_Add
   let rec add (self:borrowed (MyHashMap'0.t_myhashmap k v)) (key:k) (val':v) (return'  (ret:()))= {[%#shashmap11] inv'7 val'}
     {[%#shashmap10] inv'6 key}
     {[%#shashmap9] inv'12 self}
-    {[%#shashmap8] hashmap_inv'0 ( * self)}
+    {[%#shashmap8] hashmap_inv'0 self.current}
     (! bb0
     [ bb0 = s0 [ s0 =  [ &old_self <- [%#shashmap0] Snapshot.new self ] s1 | s1 = bb1 ] 
     | bb1 = s0
       [ s0 = {[@expl:type invariant] inv'0 old_self} s1
       | s1 = -{resolve'0 old_self}- s2
-      | s2 = MyHashMap'0.t_myhashmap <k> <v> { * self}
+      | s2 = MyHashMap'0.t_myhashmap <k> <v> {self.current}
           (fun (rbuckets'0:Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global)) ->
             len'0 {rbuckets'0} (fun (_ret':usize) ->  [ &length <- _ret' ] s3))
       | s3 = bb2 ]
@@ -890,7 +890,7 @@ module Hashmap_Impl5_Add
             (any
             [ any_ (_any:usize)-> (!  [ &_12 <- _any ] (any [ any_ (_any:usize)-> (!  [ &_15 <- _any ] s1) ] )) ]
             ))
-      | s1 = MyHashMap'0.t_myhashmap <k> <v> { * self}
+      | s1 = MyHashMap'0.t_myhashmap <k> <v> {self.current}
           (fun (rbuckets'0:Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global)) ->
             Borrow.borrow_final
               <Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global)>
@@ -898,27 +898,27 @@ module Hashmap_Impl5_Add
               {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed (Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global))) ->
                  [ &_20 <- _ret' ] 
-                MyHashMap'0.t_myhashmap <k> <v> { * self}
+                MyHashMap'0.t_myhashmap <k> <v> {self.current}
                   (fun (l_buckets'0:Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global)) ->
-                     [ &self <- { self with current = MyHashMap'0.C_MyHashMap ( ^ _20) ; } ] 
+                     [ &self <- { self with current = MyHashMap'0.C_MyHashMap _20.final ; } ] 
                     s2)))
-      | s2 = -{inv'1 ( ^ _20)}- s3
+      | s2 = -{inv'1 _20.final}- s3
       | s3 = index_mut'0 {_20} {index} (fun (_ret':borrowed (List'0.t_list (k, v))) ->  [ &_19 <- _ret' ] s4)
       | s4 = bb5 ]
       
     | bb5 = s0
-      [ s0 = Borrow.borrow_final <List'0.t_list (k, v)> { * _19} {Borrow.get_id _19}
+      [ s0 = Borrow.borrow_final <List'0.t_list (k, v)> {_19.current} {Borrow.get_id _19}
           (fun (_ret':borrowed (List'0.t_list (k, v))) ->
              [ &_18 <- _ret' ] 
-             [ &_19 <- { _19 with current = ( ^ _18) ; } ] 
+             [ &_19 <- { _19 with current = _18.final ; } ] 
             s1)
-      | s1 = -{inv'2 ( ^ _18)}- s2
-      | s2 = Borrow.borrow_final <List'0.t_list (k, v)> { * _18} {Borrow.get_id _18}
+      | s1 = -{inv'2 _18.final}- s2
+      | s2 = Borrow.borrow_final <List'0.t_list (k, v)> {_18.current} {Borrow.get_id _18}
           (fun (_ret':borrowed (List'0.t_list (k, v))) ->
              [ &l <- _ret' ] 
-             [ &_18 <- { _18 with current = ( ^ l) ; } ] 
+             [ &_18 <- { _18 with current = l.final ; } ] 
             s3)
-      | s3 = -{inv'2 ( ^ l)}- s4
+      | s3 = -{inv'2 l.final}- s4
       | s4 = {[@expl:type invariant] inv'3 _18} s5
       | s5 = -{resolve'1 _18}- s6
       | s6 =  [ &old_l <- [%#shashmap2] Snapshot.new l ] s7
@@ -927,24 +927,25 @@ module Hashmap_Impl5_Add
     | bb6 = s0 [ s0 = {[@expl:type invariant] inv'4 old_l} s1 | s1 = -{resolve'2 old_l}- s2 | s2 = bb7 ] 
     | bb7 = bb7
       [ bb7 = {[@expl:loop invariant] [%#shashmap4] (forall i : deep_model_ty'0 . inv'5 i
-         -> get'0 ( * l) i = get'0 ( ^ l) i \/ i = deep_model'0 key)
-        /\ no_double_binding'0 ( ^ l)  -> no_double_binding'0 ( ^ Snapshot.inner old_l)}
-        {[@expl:loop invariant] [%#shashmap5] no_double_binding'0 ( * l)}
+         -> get'0 l.current i = get'0 l.final i \/ i = deep_model'0 key)
+        /\ no_double_binding'0 l.final  -> no_double_binding'0 (Snapshot.inner old_l).final}
+        {[@expl:loop invariant] [%#shashmap5] no_double_binding'0 l.current}
         {[@expl:loop invariant] [%#shashmap4] forall i : deep_model_ty'0 . inv'5 i
-         -> get'0 ( ^ l) i = get'0 ( * l) i  -> get'0 ( ^ Snapshot.inner old_l) i = get'0 ( * Snapshot.inner old_l) i}
-        {[@expl:loop invariant] [%#shashmap4] get'0 ( ^ l) (deep_model'0 key) = Option'0.C_Some val'
-         -> get'0 ( ^ Snapshot.inner old_l) (deep_model'0 key) = Option'0.C_Some val'}
-        {[@expl:loop invariant] [%#shashmap4] good_bucket'0 ( * Snapshot.inner old_self) ( ^ l) (UIntSize.to_int index)
-         -> good_bucket'0 ( * Snapshot.inner old_self) ( ^ Snapshot.inner old_l) (UIntSize.to_int index)}
-        {[@expl:loop invariant] [%#shashmap3] good_bucket'0 ( * Snapshot.inner old_self) ( * l) (UIntSize.to_int index)}
+         -> get'0 l.final i = get'0 l.current i
+         -> get'0 (Snapshot.inner old_l).final i = get'0 (Snapshot.inner old_l).current i}
+        {[@expl:loop invariant] [%#shashmap4] get'0 l.final (deep_model'0 key) = Option'0.C_Some val'
+         -> get'0 (Snapshot.inner old_l).final (deep_model'0 key) = Option'0.C_Some val'}
+        {[@expl:loop invariant] [%#shashmap4] good_bucket'0 (Snapshot.inner old_self).current l.final (UIntSize.to_int index)
+         -> good_bucket'0 (Snapshot.inner old_self).current (Snapshot.inner old_l).final (UIntSize.to_int index)}
+        {[@expl:loop invariant] [%#shashmap3] good_bucket'0 (Snapshot.inner old_self).current l.current (UIntSize.to_int index)}
         (! s0) [ s0 = bb8 ] 
         [ bb8 = any
-          [ br0 -> { * l = List'0.C_Nil } (! bb14)
-          | br1 (a:(k, v)) (b:List'0.t_list (k, v))-> { * l = List'0.C_Cons a b} (! bb9) ]
+          [ br0 -> {l.current = List'0.C_Nil } (! bb14)
+          | br1 (a:(k, v)) (b:List'0.t_list (k, v))-> {l.current = List'0.C_Cons a b} (! bb9) ]
           
         | bb9 = bb10
         | bb10 = s0
-          [ s0 = List'0.cons <(k, v)> { * l}
+          [ s0 = List'0.cons <(k, v)> {l.current}
               (fun (r0'0:(k, v)) (r1'0:List'0.t_list (k, v)) ->
                 Borrow.borrow_final
                   <k>
@@ -952,12 +953,12 @@ module Hashmap_Impl5_Add
                   {Borrow.inherit_id (Borrow.inherit_id (Borrow.get_id l) 1) 1}
                   (fun (_ret':borrowed k) ->
                      [ &k <- _ret' ] 
-                    List'0.cons <(k, v)> { * l}
+                    List'0.cons <(k, v)> {l.current}
                       (fun (l_0'0:(k, v)) (l_1'0:List'0.t_list (k, v)) ->
-                         [ &l <- { l with current = List'0.C_Cons (let (_, l'2) = l_0'0 in ( ^ k, l'2)) l_1'0 ; } ] 
+                         [ &l <- { l with current = List'0.C_Cons (let (_, l'2) = l_0'0 in (k.final, l'2)) l_1'0 ; } ] 
                         s1)))
-          | s1 = -{inv'6 ( ^ k)}- s2
-          | s2 = List'0.cons <(k, v)> { * l}
+          | s1 = -{inv'6 k.final}- s2
+          | s2 = List'0.cons <(k, v)> {l.current}
               (fun (r0'1:(k, v)) (r1'1:List'0.t_list (k, v)) ->
                 Borrow.borrow_final
                   <v>
@@ -965,23 +966,23 @@ module Hashmap_Impl5_Add
                   {Borrow.inherit_id (Borrow.inherit_id (Borrow.get_id l) 1) 2}
                   (fun (_ret':borrowed v) ->
                      [ &v <- _ret' ] 
-                    List'0.cons <(k, v)> { * l}
+                    List'0.cons <(k, v)> {l.current}
                       (fun (l_0'1:(k, v)) (l_1'1:List'0.t_list (k, v)) ->
-                         [ &l <- { l with current = List'0.C_Cons (let (l'4, _) = l_0'1 in (l'4,  ^ v)) l_1'1 ; } ] 
+                         [ &l <- { l with current = List'0.C_Cons (let (l'4, _) = l_0'1 in (l'4, v.final)) l_1'1 ; } ] 
                         s3)))
-          | s3 = -{inv'7 ( ^ v)}- s4
-          | s4 = List'0.cons <(k, v)> { * l}
+          | s3 = -{inv'7 v.final}- s4
+          | s4 = List'0.cons <(k, v)> {l.current}
               (fun (r0'2:(k, v)) (r1'2:List'0.t_list (k, v)) ->
                 Borrow.borrow_final <List'0.t_list (k, v)> {r1'2} {Borrow.inherit_id (Borrow.get_id l) 2}
                   (fun (_ret':borrowed (List'0.t_list (k, v))) ->
                      [ &tl <- _ret' ] 
-                    List'0.cons <(k, v)> { * l}
+                    List'0.cons <(k, v)> {l.current}
                       (fun (l_0'2:(k, v)) (l_1'2:List'0.t_list (k, v)) ->
-                         [ &l <- { l with current = List'0.C_Cons l_0'2 ( ^ tl) ; } ] 
+                         [ &l <- { l with current = List'0.C_Cons l_0'2 tl.final ; } ] 
                         s5)))
-          | s5 = -{inv'8 ( ^ tl)}- s6
+          | s5 = -{inv'8 tl.final}- s6
           | s6 =  [ &tl1 <- tl ] (any [ any_ (_any:borrowed (List'0.t_list (k, v)))-> (!  [ &tl <- _any ] s7) ] )
-          | s7 = eq'0 { * k} {key} (fun (_ret':bool) ->  [ &_38 <- _ret' ] s8)
+          | s7 = eq'0 {k.current} {key} (fun (_ret':bool) ->  [ &_38 <- _ret' ] s8)
           | s8 = bb11 ]
           
         | bb11 = any [ br0 -> {_38 = false} (! bb13) | br1 -> {_38} (! bb12) ] 
@@ -990,18 +991,18 @@ module Hashmap_Impl5_Add
           | s1 = -{resolve'3 v}- s2
           | s2 = {[@expl:type invariant] inv'10 k} s3
           | s3 = -{resolve'4 k}- s4
-          | s4 = Borrow.borrow_mut <List'0.t_list (k, v)> { * tl1}
+          | s4 = Borrow.borrow_mut <List'0.t_list (k, v)> {tl1.current}
               (fun (_ret':borrowed (List'0.t_list (k, v))) ->
                  [ &_46 <- _ret' ] 
-                 [ &tl1 <- { tl1 with current = ( ^ _46) ; } ] 
+                 [ &tl1 <- { tl1 with current = _46.final ; } ] 
                 s5)
-          | s5 = -{inv'2 ( ^ _46)}- s6
-          | s6 = Borrow.borrow_final <List'0.t_list (k, v)> { * _46} {Borrow.get_id _46}
+          | s5 = -{inv'2 _46.final}- s6
+          | s6 = Borrow.borrow_final <List'0.t_list (k, v)> {_46.current} {Borrow.get_id _46}
               (fun (_ret':borrowed (List'0.t_list (k, v))) ->
                  [ &_45 <- _ret' ] 
-                 [ &_46 <- { _46 with current = ( ^ _45) ; } ] 
+                 [ &_46 <- { _46 with current = _45.final ; } ] 
                 s7)
-          | s7 = -{inv'2 ( ^ _45)}- s8
+          | s7 = -{inv'2 _45.final}- s8
           | s8 = {[@expl:type invariant] inv'3 l} s9
           | s9 = -{resolve'1 l}- s10
           | s10 =  [ &l <- _45 ] (any [ any_ (_any:borrowed (List'0.t_list (k, v)))-> (!  [ &_45 <- _any ] s11) ] )
@@ -1034,8 +1035,8 @@ module Hashmap_Impl5_Add
     | bb17 = s0
       [ s0 =  [ &l <- { l with current = _50 ; } ] 
         (any [ any_ (_any:List'0.t_list (k, v))-> (!  [ &_50 <- _any ] s1) ] )
-      | s1 = {[@expl:type invariant] inv'2 ( * l)} s2
-      | s2 = -{resolve'8 ( * l)}- s3
+      | s1 = {[@expl:type invariant] inv'2 l.current} s2
+      | s2 = -{resolve'8 l.current}- s3
       | s3 = {[@expl:type invariant] inv'3 l} s4
       | s4 = -{resolve'1 l}- s5
       | s5 = bb19 ]
@@ -1045,7 +1046,7 @@ module Hashmap_Impl5_Add
       | s1 = -{resolve'1 _19}- s2
       | s2 = {[@expl:type invariant] inv'12 self} s3
       | s3 = -{resolve'9 self}- s4
-      | s4 = {[@expl:assertion] [%#shashmap6] hashmap_inv'0 ( * self)} s5
+      | s4 = {[@expl:assertion] [%#shashmap6] hashmap_inv'0 self.current} s5
       | s5 = bb20 ]
       
     | bb12 = s0
@@ -1058,8 +1059,8 @@ module Hashmap_Impl5_Add
       | s6 = {[@expl:type invariant] inv'7 val'} s7
       | s7 = -{resolve'7 val'}- s8
       | s8 =  [ &v <- { v with current = val' ; } ] s9
-      | s9 = {[@expl:type invariant] inv'7 ( * v)} s10
-      | s10 = -{resolve'7 ( * v)}- s11
+      | s9 = {[@expl:type invariant] inv'7 v.current} s10
+      | s10 = -{resolve'7 v.current}- s11
       | s11 = {[@expl:type invariant] inv'9 v} s12
       | s12 = -{resolve'3 v}- s13
       | s13 = {[@expl:type invariant] inv'3 _19} s14
@@ -1068,7 +1069,7 @@ module Hashmap_Impl5_Add
       | s16 = -{resolve'1 l}- s17
       | s17 = {[@expl:type invariant] inv'12 self} s18
       | s18 = -{resolve'9 self}- s19
-      | s19 = {[@expl:assertion] [%#shashmap7] hashmap_inv'0 ( * self)} s20
+      | s19 = {[@expl:assertion] [%#shashmap7] hashmap_inv'0 self.current} s20
       | s20 = bb20 ]
       
     | bb20 = return' {_0} ]
@@ -1101,9 +1102,9 @@ module Hashmap_Impl5_Add
     | & _55 : List'0.t_list (k, v) = any_l () ]
     
     [ return' (result:())-> {[@expl:postcondition] [%#shashmap13] forall i : deep_model_ty'0 . inv'5 i
-       -> Map.get (shallow_model'0 ( ^ self)) i
+       -> Map.get (shallow_model'0 self.final) i
       = (if i = deep_model'0 key then Option'0.C_Some val' else Map.get (shallow_model'1 self) i)}
-      {[@expl:postcondition] [%#shashmap12] hashmap_inv'0 ( ^ self)}
+      {[@expl:postcondition] [%#shashmap12] hashmap_inv'0 self.final}
       (! return' {result}) ]
     
 end
@@ -1857,12 +1858,12 @@ module Hashmap_Impl5_Resize
   function shallow_model'3 (self : borrowed (MyHashMap'0.t_myhashmap k v)) : Map.map deep_model_ty'0 (Option'0.t_option v)
     
    =
-    [%#span29] shallow_model'1 ( * self)
+    [%#span29] shallow_model'1 self.current
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'7 (self : borrowed (MyHashMap'0.t_myhashmap k v)) =
-    [%#span30]  ^ self =  * self
+    [%#span30] self.final = self.current
   
   predicate resolve'6 (self : MyHashMap'0.t_myhashmap k v) =
     [%#span31] true
@@ -1896,12 +1897,12 @@ module Hashmap_Impl5_Resize
   let rec add'0 (self:borrowed (MyHashMap'0.t_myhashmap k v)) (key:k) (val':v) (return'  (ret:()))= {[@expl:precondition] [%#span39] inv'7 val'}
     {[@expl:precondition] [%#span38] inv'6 key}
     {[@expl:precondition] [%#span37] inv'9 self}
-    {[@expl:precondition] [%#span36] hashmap_inv'0 ( * self)}
+    {[@expl:precondition] [%#span36] hashmap_inv'0 self.current}
     any
     [ return' (result:())-> {[%#span41] forall i : deep_model_ty'0 . inv'1 i
-       -> Map.get (shallow_model'1 ( ^ self)) i
+       -> Map.get (shallow_model'1 self.final) i
       = (if i = deep_model'0 key then Option'0.C_Some val' else Map.get (shallow_model'3 self) i)}
-      {[%#span40] hashmap_inv'0 ( ^ self)}
+      {[%#span40] hashmap_inv'0 self.final}
       (! return' {result}) ]
     
   
@@ -1910,14 +1911,14 @@ module Hashmap_Impl5_Resize
   predicate resolve'3 (self : k)
   
   predicate resolve'1 (self : borrowed (List'0.t_list (k, v))) =
-    [%#span30]  ^ self =  * self
+    [%#span30] self.final = self.current
   
   let rec replace'0 (dest:borrowed (List'0.t_list (k, v))) (src:List'0.t_list (k, v)) (return'  (ret:List'0.t_list (k, v)))= {[@expl:precondition] [%#span43] inv'3 src}
     {[@expl:precondition] [%#span42] inv'4 dest}
     any
     [ return' (result:List'0.t_list (k, v))-> {[%#span46] inv'3 result}
-      {[%#span45] result =  * dest}
-      {[%#span44]  ^ dest = src}
+      {[%#span45] result = dest.current}
+      {[%#span44] dest.final = src}
       (! return' {result}) ]
     
   
@@ -1940,17 +1941,17 @@ module Hashmap_Impl5_Resize
   function shallow_model'6 (self : borrowed (Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global))) : Seq.seq (List'0.t_list (k, v))
     
    =
-    [%#span29] shallow_model'2 ( * self)
+    [%#span29] shallow_model'2 self.current
   
   let rec index_mut'0 (self:borrowed (Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global))) (index:usize) (return'  (ret:borrowed (List'0.t_list (k, v))))= {[@expl:precondition] [%#span52] inv'13 index}
     {[@expl:precondition] [%#span51] inv'12 self}
     {[@expl:precondition] [%#span50] in_bounds'0 index (shallow_model'6 self)}
     any
     [ return' (result:borrowed (List'0.t_list (k, v)))-> {[%#span57] inv'4 result}
-      {[%#span56] Seq.length (shallow_model'2 ( ^ self)) = Seq.length (shallow_model'6 self)}
-      {[%#span55] resolve_elswhere'0 index (shallow_model'6 self) (shallow_model'2 ( ^ self))}
-      {[%#span54] has_value'0 index (shallow_model'2 ( ^ self)) ( ^ result)}
-      {[%#span53] has_value'0 index (shallow_model'6 self) ( * result)}
+      {[%#span56] Seq.length (shallow_model'2 self.final) = Seq.length (shallow_model'6 self)}
+      {[%#span55] resolve_elswhere'0 index (shallow_model'6 self) (shallow_model'2 self.final)}
+      {[%#span54] has_value'0 index (shallow_model'2 self.final) result.final}
+      {[%#span53] has_value'0 index (shallow_model'6 self) result.current}
       (! return' {result}) ]
     
   
@@ -1992,14 +1993,14 @@ module Hashmap_Impl5_Resize
   use prelude.prelude.Snapshot
   
   let rec resize (self:borrowed (MyHashMap'0.t_myhashmap k v)) (return'  (ret:()))= {[%#shashmap15] inv'9 self}
-    {[%#shashmap14] hashmap_inv'0 ( * self)}
-    {[%#shashmap13] Seq.length (shallow_model'2 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self))) < 1000}
+    {[%#shashmap14] hashmap_inv'0 self.current}
+    {[%#shashmap13] Seq.length (shallow_model'2 (Hashmap_MyHashMap_Type.myhashmap_buckets self.current)) < 1000}
     (! bb0
     [ bb0 = s0 [ s0 =  [ &old_self <- [%#shashmap0] Snapshot.new self ] s1 | s1 = bb1 ] 
     | bb1 = s0
       [ s0 = {[@expl:type invariant] inv'0 old_self} s1
       | s1 = -{resolve'0 old_self}- s2
-      | s2 = MyHashMap'0.t_myhashmap <k> <v> { * self}
+      | s2 = MyHashMap'0.t_myhashmap <k> <v> {self.current}
           (fun (rbuckets'0:Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global)) ->
             len'0 {rbuckets'0} (fun (_ret':usize) ->  [ &_10 <- _ret' ] s3))
       | s3 = bb2 ]
@@ -2014,27 +2015,27 @@ module Hashmap_Impl5_Resize
     | bb4 = bb5
     | bb5 = s0 [ s0 =  [ &old_6_0 <- Snapshot.new self ] s1 | s1 = bb6 ] 
     | bb6 = bb6
-      [ bb6 = {[@expl:loop invariant]  ^ Snapshot.inner old_6_0 =  ^ self}
+      [ bb6 = {[@expl:loop invariant] (Snapshot.inner old_6_0).final = self.final}
         {[@expl:loop invariant] [%#shashmap6] UIntSize.to_int i
-        <= Seq.length (shallow_model'2 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)))}
-        {[@expl:loop invariant] [%#shashmap5] Seq.length (shallow_model'2 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self)))
-        = Seq.length (shallow_model'2 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)))}
+        <= Seq.length (shallow_model'2 (Hashmap_MyHashMap_Type.myhashmap_buckets self.current))}
+        {[@expl:loop invariant] [%#shashmap5] Seq.length (shallow_model'2 (Hashmap_MyHashMap_Type.myhashmap_buckets (Snapshot.inner old_self).current))
+        = Seq.length (shallow_model'2 (Hashmap_MyHashMap_Type.myhashmap_buckets self.current))}
         {[@expl:loop invariant] [%#shashmap4] hashmap_inv'0 new}
         {[@expl:loop invariant] [%#shashmap3] forall j : int . UIntSize.to_int i <= j
-        /\ j < Seq.length (shallow_model'2 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self)))
-         -> index_logic'0 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self)) j
-        = index_logic'0 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self)) j}
+        /\ j < Seq.length (shallow_model'2 (Hashmap_MyHashMap_Type.myhashmap_buckets (Snapshot.inner old_self).current))
+         -> index_logic'0 (Hashmap_MyHashMap_Type.myhashmap_buckets self.current) j
+        = index_logic'0 (Hashmap_MyHashMap_Type.myhashmap_buckets (Snapshot.inner old_self).current) j}
         {[@expl:loop invariant] [%#shashmap3] forall k : deep_model_ty'0 . inv'1 k
-         -> UIntSize.to_int i <= bucket_ix'0 ( * Snapshot.inner old_self) k
-        /\ bucket_ix'0 ( * Snapshot.inner old_self) k
-        <= Seq.length (shallow_model'2 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self)))
+         -> UIntSize.to_int i <= bucket_ix'0 (Snapshot.inner old_self).current k
+        /\ bucket_ix'0 (Snapshot.inner old_self).current k
+        <= Seq.length (shallow_model'2 (Hashmap_MyHashMap_Type.myhashmap_buckets (Snapshot.inner old_self).current))
          -> Map.get (shallow_model'1 new) k = Option'0.C_None}
         {[@expl:loop invariant] [%#shashmap3] forall k : deep_model_ty'0 . inv'1 k
-         -> bucket_ix'0 ( * Snapshot.inner old_self) k < UIntSize.to_int i
+         -> bucket_ix'0 (Snapshot.inner old_self).current k < UIntSize.to_int i
          -> Map.get (shallow_model'0 old_self) k = Map.get (shallow_model'1 new) k}
         (! s0) [ s0 = bb7 ] 
         [ bb7 = s0
-          [ s0 = MyHashMap'0.t_myhashmap <k> <v> { * self}
+          [ s0 = MyHashMap'0.t_myhashmap <k> <v> {self.current}
               (fun (rbuckets'0:Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global)) ->
                 len'0 {rbuckets'0} (fun (_ret':usize) ->  [ &_23 <- _ret' ] s1))
           | s1 = bb8 ]
@@ -2045,32 +2046,32 @@ module Hashmap_Impl5_Resize
           | s1 = any [ br0 -> {_21 = false} (! bb29) | br1 -> {_21} (! bb9) ]  ]
           
         | bb9 = s0
-          [ s0 = MyHashMap'0.t_myhashmap <k> <v> { * self}
+          [ s0 = MyHashMap'0.t_myhashmap <k> <v> {self.current}
               (fun (rbuckets'0:Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global)) ->
                 Borrow.borrow_mut <Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global)> {rbuckets'0}
                   (fun (_ret':borrowed (Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global))) ->
                      [ &_29 <- _ret' ] 
-                    MyHashMap'0.t_myhashmap <k> <v> { * self}
+                    MyHashMap'0.t_myhashmap <k> <v> {self.current}
                       (fun (l_buckets'0:Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global)) ->
-                         [ &self <- { self with current = MyHashMap'0.C_MyHashMap ( ^ _29) ; } ] 
+                         [ &self <- { self with current = MyHashMap'0.C_MyHashMap _29.final ; } ] 
                         s1)))
-          | s1 = -{inv'2 ( ^ _29)}- s2
+          | s1 = -{inv'2 _29.final}- s2
           | s2 = index_mut'0 {_29} {i} (fun (_ret':borrowed (List'0.t_list (k, v))) ->  [ &_28 <- _ret' ] s3)
           | s3 = bb10 ]
           
         | bb10 = s0
-          [ s0 = Borrow.borrow_final <List'0.t_list (k, v)> { * _28} {Borrow.get_id _28}
+          [ s0 = Borrow.borrow_final <List'0.t_list (k, v)> {_28.current} {Borrow.get_id _28}
               (fun (_ret':borrowed (List'0.t_list (k, v))) ->
                  [ &_27 <- _ret' ] 
-                 [ &_28 <- { _28 with current = ( ^ _27) ; } ] 
+                 [ &_28 <- { _28 with current = _27.final ; } ] 
                 s1)
-          | s1 = -{inv'3 ( ^ _27)}- s2
-          | s2 = Borrow.borrow_final <List'0.t_list (k, v)> { * _27} {Borrow.get_id _27}
+          | s1 = -{inv'3 _27.final}- s2
+          | s2 = Borrow.borrow_final <List'0.t_list (k, v)> {_27.current} {Borrow.get_id _27}
               (fun (_ret':borrowed (List'0.t_list (k, v))) ->
                  [ &_26 <- _ret' ] 
-                 [ &_27 <- { _27 with current = ( ^ _26) ; } ] 
+                 [ &_27 <- { _27 with current = _26.final ; } ] 
                 s3)
-          | s3 = -{inv'3 ( ^ _26)}- s4
+          | s3 = -{inv'3 _26.final}- s4
           | s4 =  [ &_31 <- List'0.C_Nil ] s5
           | s5 = replace'0 {_26} {_31} (fun (_ret':List'0.t_list (k, v)) ->  [ &l <- _ret' ] s6)
           | s6 = bb11 ]
@@ -2088,22 +2089,22 @@ module Hashmap_Impl5_Resize
         | bb15 = bb16
         | bb16 = bb17
         | bb17 = bb17
-          [ bb17 = {[@expl:loop invariant] [%#shashmap10] good_bucket'0 ( * Snapshot.inner old_self) l (UIntSize.to_int i)}
+          [ bb17 = {[@expl:loop invariant] [%#shashmap10] good_bucket'0 (Snapshot.inner old_self).current l (UIntSize.to_int i)}
             {[@expl:loop invariant] [%#shashmap9] no_double_binding'0 l}
             {[@expl:loop invariant] [%#shashmap8] forall k : deep_model_ty'0 . inv'1 k
-             -> bucket_ix'0 ( * Snapshot.inner old_self) k = UIntSize.to_int i
+             -> bucket_ix'0 (Snapshot.inner old_self).current k = UIntSize.to_int i
              -> Map.get (shallow_model'0 old_self) k
             = match get'0 l k with
               | Option'0.C_None -> Map.get (shallow_model'1 new) k
               | Option'0.C_Some v -> Option'0.C_Some v
               end}
             {[@expl:loop invariant] [%#shashmap8] forall k : deep_model_ty'0 . inv'1 k
-             -> UIntSize.to_int i < bucket_ix'0 ( * Snapshot.inner old_self) k
-            /\ bucket_ix'0 ( * Snapshot.inner old_self) k
-            <= Seq.length (shallow_model'2 (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Snapshot.inner old_self)))
+             -> UIntSize.to_int i < bucket_ix'0 (Snapshot.inner old_self).current k
+            /\ bucket_ix'0 (Snapshot.inner old_self).current k
+            <= Seq.length (shallow_model'2 (Hashmap_MyHashMap_Type.myhashmap_buckets (Snapshot.inner old_self).current))
              -> Map.get (shallow_model'1 new) k = Option'0.C_None}
             {[@expl:loop invariant] [%#shashmap8] forall k : deep_model_ty'0 . inv'1 k
-             -> bucket_ix'0 ( * Snapshot.inner old_self) k < UIntSize.to_int i
+             -> bucket_ix'0 (Snapshot.inner old_self).current k < UIntSize.to_int i
              -> Map.get (shallow_model'0 old_self) k = Map.get (shallow_model'1 new) k}
             {[@expl:loop invariant] [%#shashmap7] hashmap_inv'0 new}
             (! s0) [ s0 = bb18 ] 
@@ -2127,8 +2128,8 @@ module Hashmap_Impl5_Resize
               | s3 = {[@expl:type invariant] inv'3 l} s4
               | s4 = -{resolve'2 l}- s5
               | s5 = Borrow.borrow_mut <MyHashMap'0.t_myhashmap k v> {new}
-                  (fun (_ret':borrowed (MyHashMap'0.t_myhashmap k v)) ->  [ &_44 <- _ret' ]  [ &new <-  ^ _44 ] s6)
-              | s6 = -{inv'5 ( ^ _44)}- s7
+                  (fun (_ret':borrowed (MyHashMap'0.t_myhashmap k v)) ->  [ &_44 <- _ret' ]  [ &new <- _44.final ] s6)
+              | s6 = -{inv'5 _44.final}- s7
               | s7 = {[@expl:type invariant] inv'6 k} s8
               | s8 = -{resolve'3 k}- s9
               | s9 = {[@expl:type invariant] inv'7 v} s10
@@ -2148,7 +2149,7 @@ module Hashmap_Impl5_Resize
           [ s0 = {[@expl:type invariant] inv'3 l} s1
           | s1 = -{resolve'2 l}- s2
           | s2 = {[@expl:assertion] [%#shashmap11] forall k : deep_model_ty'0 . inv'1 k
-             -> bucket_ix'0 ( * Snapshot.inner old_self) k = UIntSize.to_int i
+             -> bucket_ix'0 (Snapshot.inner old_self).current k = UIntSize.to_int i
              -> Map.get (shallow_model'0 old_self) k = Map.get (shallow_model'1 new) k}
             s3
           | s3 = bb27 ]
@@ -2163,8 +2164,8 @@ module Hashmap_Impl5_Resize
     | bb30 = s0
       [ s0 =  [ &self <- { self with current = new ; } ] 
         (any [ any_ (_any:MyHashMap'0.t_myhashmap k v)-> (!  [ &new <- _any ] s1) ] )
-      | s1 = {[@expl:type invariant] inv'5 ( * self)} s2
-      | s2 = -{resolve'6 ( * self)}- s3
+      | s1 = {[@expl:type invariant] inv'5 self.current} s2
+      | s2 = -{resolve'6 self.current}- s3
       | s3 = {[@expl:type invariant] inv'9 self} s4
       | s4 = -{resolve'7 self}- s5
       | s5 = bb32 ]
@@ -2195,8 +2196,8 @@ module Hashmap_Impl5_Resize
     | & old_6_0 : Snapshot.snap_ty (borrowed (MyHashMap'0.t_myhashmap k v)) = any_l () ]
     
     [ return' (result:())-> {[@expl:postcondition] [%#shashmap17] forall k : deep_model_ty'0 . inv'1 k
-       -> Map.get (shallow_model'1 ( ^ self)) k = Map.get (shallow_model'3 self) k}
-      {[@expl:postcondition] [%#shashmap16] hashmap_inv'0 ( ^ self)}
+       -> Map.get (shallow_model'1 self.final) k = Map.get (shallow_model'3 self) k}
+      {[@expl:postcondition] [%#shashmap16] hashmap_inv'0 self.final}
       (! return' {result}) ]
     
 end
@@ -2448,7 +2449,7 @@ module Hashmap_Main
   function shallow_model'2 (self : borrowed (MyHashMap'0.t_myhashmap usize isize)) : Map.map int (Option'0.t_option isize)
     
    =
-    [%#span31] shallow_model'0 ( * self)
+    [%#span31] shallow_model'0 self.current
   
   use map.Map
   
@@ -2473,12 +2474,12 @@ module Hashmap_Main
   let rec add'0 (self:borrowed (MyHashMap'0.t_myhashmap usize isize)) (key:usize) (val':isize) (return'  (ret:()))= {[@expl:precondition] [%#span38] inv'6 val'}
     {[@expl:precondition] [%#span37] inv'3 key}
     {[@expl:precondition] [%#span36] inv'5 self}
-    {[@expl:precondition] [%#span35] hashmap_inv'0 ( * self)}
+    {[@expl:precondition] [%#span35] hashmap_inv'0 self.current}
     any
     [ return' (result:())-> {[%#span40] forall i : int . inv'0 i
-       -> Map.get (shallow_model'0 ( ^ self)) i
+       -> Map.get (shallow_model'0 self.final) i
       = (if i = deep_model'0 key then Option'0.C_Some val' else Map.get (shallow_model'2 self) i)}
-      {[%#span39] hashmap_inv'0 ( ^ self)}
+      {[%#span39] hashmap_inv'0 self.final}
       (! return' {result}) ]
     
   
@@ -2535,7 +2536,7 @@ module Hashmap_Main
       
     | bb6 = s0
       [ s0 = Borrow.borrow_mut <MyHashMap'0.t_myhashmap usize isize> {h1}
-          (fun (_ret':borrowed (MyHashMap'0.t_myhashmap usize isize)) ->  [ &_12 <- _ret' ]  [ &h1 <-  ^ _12 ] s1)
+          (fun (_ret':borrowed (MyHashMap'0.t_myhashmap usize isize)) ->  [ &_12 <- _ret' ]  [ &h1 <- _12.final ] s1)
       | s1 = add'0 {_12} {[%#shashmap6] (1 : usize)} {[%#shashmap7] (17 : isize)}
           (fun (_ret':()) ->  [ &_11 <- _ret' ] s2)
       | s2 = bb7 ]
@@ -2562,7 +2563,7 @@ module Hashmap_Main
     | bb11 = s0
       [ s0 =  [ &_t <- _19 ] (any [ any_ (_any:Option'0.t_option isize)-> (!  [ &_19 <- _any ] s1) ] )
       | s1 = Borrow.borrow_mut <MyHashMap'0.t_myhashmap usize isize> {h2}
-          (fun (_ret':borrowed (MyHashMap'0.t_myhashmap usize isize)) ->  [ &_22 <- _ret' ]  [ &h2 <-  ^ _22 ] s2)
+          (fun (_ret':borrowed (MyHashMap'0.t_myhashmap usize isize)) ->  [ &_22 <- _ret' ]  [ &h2 <- _22.final ] s2)
       | s2 = add'0 {_22} {[%#shashmap12] (1 : usize)} {[%#shashmap13] (42 : isize)}
           (fun (_ret':()) ->  [ &_21 <- _ret' ] s3)
       | s3 = bb12 ]

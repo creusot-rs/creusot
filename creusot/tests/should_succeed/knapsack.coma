@@ -592,12 +592,12 @@ module Knapsack_Knapsack01Dyn
   function shallow_model'9 (self : borrowed (Vec'0.t_vec (Item'0.t_item name) (Global'0.t_global))) : Seq.seq (Item'0.t_item name)
     
    =
-    [%#span31] shallow_model'8 ( * self)
+    [%#span31] shallow_model'8 self.current
   
   let rec push'0 (self:borrowed (Vec'0.t_vec (Item'0.t_item name) (Global'0.t_global))) (value:Item'0.t_item name) (return'  (ret:()))= {[@expl:precondition] [%#span33] inv'0 value}
     {[@expl:precondition] [%#span32] inv'15 self}
     any
-    [ return' (result:())-> {[%#span34] shallow_model'8 ( ^ self) = Seq.snoc (shallow_model'9 self) value}
+    [ return' (result:())-> {[%#span34] shallow_model'8 self.final = Seq.snoc (shallow_model'9 self) value}
       (! return' {result}) ]
     
   
@@ -608,10 +608,10 @@ module Knapsack_Knapsack01Dyn
     
   
   predicate resolve'2 (self : borrowed (Vec'0.t_vec usize (Global'0.t_global))) =
-    [%#span37]  ^ self =  * self
+    [%#span37] self.final = self.current
   
   predicate resolve'1 (self : borrowed usize) =
-    [%#span37]  ^ self =  * self
+    [%#span37] self.final = self.current
   
   use prelude.prelude.Slice
   
@@ -626,17 +626,17 @@ module Knapsack_Knapsack01Dyn
     [%#span40] UIntSize.to_int self < Seq.length seq
   
   function shallow_model'7 (self : borrowed (Vec'0.t_vec usize (Global'0.t_global))) : Seq.seq usize =
-    [%#span31] shallow_model'2 ( * self)
+    [%#span31] shallow_model'2 self.current
   
   let rec index_mut'1 (self:borrowed (Vec'0.t_vec usize (Global'0.t_global))) (index:usize) (return'  (ret:borrowed usize))= {[@expl:precondition] [%#span43] inv'3 index}
     {[@expl:precondition] [%#span42] inv'13 self}
     {[@expl:precondition] [%#span41] in_bounds'2 index (shallow_model'7 self)}
     any
     [ return' (result:borrowed usize)-> {[%#span48] inv'14 result}
-      {[%#span47] Seq.length (shallow_model'2 ( ^ self)) = Seq.length (shallow_model'7 self)}
-      {[%#span46] resolve_elswhere'1 index (shallow_model'7 self) (shallow_model'2 ( ^ self))}
-      {[%#span45] has_value'2 index (shallow_model'2 ( ^ self)) ( ^ result)}
-      {[%#span44] has_value'2 index (shallow_model'7 self) ( * result)}
+      {[%#span47] Seq.length (shallow_model'2 self.final) = Seq.length (shallow_model'7 self)}
+      {[%#span46] resolve_elswhere'1 index (shallow_model'7 self) (shallow_model'2 self.final)}
+      {[%#span45] has_value'2 index (shallow_model'2 self.final) result.final}
+      {[%#span44] has_value'2 index (shallow_model'7 self) result.current}
       (! return' {result}) ]
     
   
@@ -657,17 +657,17 @@ module Knapsack_Knapsack01Dyn
   function shallow_model'6 (self : borrowed (Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global))) : Seq.seq (Vec'0.t_vec usize (Global'0.t_global))
     
    =
-    [%#span31] shallow_model'1 ( * self)
+    [%#span31] shallow_model'1 self.current
   
   let rec index_mut'0 (self:borrowed (Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global))) (index:usize) (return'  (ret:borrowed (Vec'0.t_vec usize (Global'0.t_global))))= {[@expl:precondition] [%#span43] inv'3 index}
     {[@expl:precondition] [%#span42] inv'12 self}
     {[@expl:precondition] [%#span41] in_bounds'1 index (shallow_model'6 self)}
     any
     [ return' (result:borrowed (Vec'0.t_vec usize (Global'0.t_global)))-> {[%#span48] inv'13 result}
-      {[%#span47] Seq.length (shallow_model'1 ( ^ self)) = Seq.length (shallow_model'6 self)}
-      {[%#span46] resolve_elswhere'0 index (shallow_model'6 self) (shallow_model'1 ( ^ self))}
-      {[%#span45] has_value'1 index (shallow_model'1 ( ^ self)) ( ^ result)}
-      {[%#span44] has_value'1 index (shallow_model'6 self) ( * result)}
+      {[%#span47] Seq.length (shallow_model'1 self.final) = Seq.length (shallow_model'6 self)}
+      {[%#span46] resolve_elswhere'0 index (shallow_model'6 self) (shallow_model'1 self.final)}
+      {[%#span45] has_value'1 index (shallow_model'1 self.final) result.final}
+      {[%#span44] has_value'1 index (shallow_model'6 self) result.current}
       (! return' {result}) ]
     
   
@@ -893,7 +893,7 @@ module Knapsack_Knapsack01Dyn
                   {best_value}
                   (fun (_ret':borrowed (Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global))) ->
                      [ &_69 <- _ret' ] 
-                     [ &best_value <-  ^ _69 ] 
+                     [ &best_value <- _69.final ] 
                     s1)
               | s1 = UIntSize.add {i} {[%#sknapsack9] (1 : usize)} (fun (_ret':usize) ->  [ &_70 <- _ret' ] s2)
               | s2 = index_mut'0 {_69} {_70}
@@ -901,10 +901,10 @@ module Knapsack_Knapsack01Dyn
               | s3 = bb31 ]
               
             | bb31 = s0
-              [ s0 = Borrow.borrow_final <Vec'0.t_vec usize (Global'0.t_global)> { * _68} {Borrow.get_id _68}
+              [ s0 = Borrow.borrow_final <Vec'0.t_vec usize (Global'0.t_global)> {_68.current} {Borrow.get_id _68}
                   (fun (_ret':borrowed (Vec'0.t_vec usize (Global'0.t_global))) ->
                      [ &_67 <- _ret' ] 
-                     [ &_68 <- { _68 with current = ( ^ _67) ; } ] 
+                     [ &_68 <- { _68 with current = _67.final ; } ] 
                     s1)
               | s1 = index_mut'1 {_67} {w} (fun (_ret':borrowed usize) ->  [ &_66 <- _ret' ] s2)
               | s2 = bb32 ]
@@ -974,9 +974,9 @@ module Knapsack_Knapsack01Dyn
           [ s0 = Borrow.borrow_mut <Vec'0.t_vec (Item'0.t_item name) (Global'0.t_global)> {result}
               (fun (_ret':borrowed (Vec'0.t_vec (Item'0.t_item name) (Global'0.t_global))) ->
                  [ &_111 <- _ret' ] 
-                 [ &result <-  ^ _111 ] 
+                 [ &result <- _111.final ] 
                 s1)
-          | s1 = -{inv'1 ( ^ _111)}- s2
+          | s1 = -{inv'1 _111.final}- s2
           | s2 = push'0 {_111} {it1} (fun (_ret':()) ->  [ &_110 <- _ret' ] s3)
           | s3 = bb47 ]
           

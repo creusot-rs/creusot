@@ -198,19 +198,19 @@ module TwoPhase_Test
     [%#span7] Seq.get (shallow_model'2 self) ix
   
   function shallow_model'0 (self : borrowed (Vec'0.t_vec usize (Global'0.t_global))) : Seq.seq usize =
-    [%#span8] shallow_model'2 ( * self)
+    [%#span8] shallow_model'2 self.current
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Vec'0.t_vec usize (Global'0.t_global))) =
-    [%#span9]  ^ self =  * self
+    [%#span9] self.final = self.current
   
   use seq.Seq
   
   let rec push'0 (self:borrowed (Vec'0.t_vec usize (Global'0.t_global))) (value:usize) (return'  (ret:()))= {[@expl:precondition] [%#span11] inv'2 value}
     {[@expl:precondition] [%#span10] inv'1 self}
     any
-    [ return' (result:())-> {[%#span12] shallow_model'2 ( ^ self) = Seq.snoc (shallow_model'0 self) value}
+    [ return' (result:())-> {[%#span12] shallow_model'2 self.final = Seq.snoc (shallow_model'0 self) value}
       (! return' {result}) ]
     
   
@@ -225,12 +225,12 @@ module TwoPhase_Test
   
   let rec test (v:borrowed (Vec'0.t_vec usize (Global'0.t_global))) (return'  (ret:()))= (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_final <Vec'0.t_vec usize (Global'0.t_global)> { * v} {Borrow.get_id v}
+      [ s0 = Borrow.borrow_final <Vec'0.t_vec usize (Global'0.t_global)> {v.current} {Borrow.get_id v}
           (fun (_ret':borrowed (Vec'0.t_vec usize (Global'0.t_global))) ->
              [ &_4 <- _ret' ] 
-             [ &v <- { v with current = ( ^ _4) ; } ] 
+             [ &v <- { v with current = _4.final ; } ] 
             s1)
-      | s1 = len'0 { * _4} (fun (_ret':usize) ->  [ &_5 <- _ret' ] s2)
+      | s1 = len'0 {_4.current} (fun (_ret':usize) ->  [ &_5 <- _ret' ] s2)
       | s2 = bb1 ]
       
     | bb1 = s0 [ s0 = push'0 {_4} {_5} (fun (_ret':()) ->  [ &_3 <- _ret' ] s1) | s1 = bb2 ] 
@@ -242,7 +242,7 @@ module TwoPhase_Test
     | & _4 : borrowed (Vec'0.t_vec usize (Global'0.t_global)) = any_l ()
     | & _5 : usize = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#stwo_phase0] UIntSize.to_int (index_logic'0 ( ^ v) (Seq.length (shallow_model'0 v)))
+    [ return' (result:())-> {[@expl:postcondition] [%#stwo_phase0] UIntSize.to_int (index_logic'0 v.final (Seq.length (shallow_model'0 v)))
       = Seq.length (shallow_model'0 v)}
       (! return' {result}) ]
     

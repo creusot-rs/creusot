@@ -74,7 +74,7 @@ module InplaceListReversal_Rev
   use prelude.prelude.Intrinsic
   
   predicate resolve'2 (self : borrowed (List'0.t_list t)) =
-    [%#span5]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   predicate resolve'1 (self : List'0.t_list t) =
     [%#span6] true
@@ -93,8 +93,8 @@ module InplaceListReversal_Rev
     {[@expl:precondition] [%#span8] inv'2 dest}
     any
     [ return' (result:List'0.t_list t)-> {[%#span12] inv'1 result}
-      {[%#span11] result =  * dest}
-      {[%#span10]  ^ dest = src}
+      {[%#span11] result = dest.current}
+      {[%#span10] dest.final = src}
       (! return' {result}) ]
     
   
@@ -110,9 +110,9 @@ module InplaceListReversal_Rev
       [ s0 = {[@expl:type invariant] inv'0 old_l} s1
       | s1 = -{resolve'0 old_l}- s2
       | s2 =  [ &prev <- List'0.C_Nil ] s3
-      | s3 = Borrow.borrow_final <List'0.t_list t> { * l} {Borrow.get_id l}
-          (fun (_ret':borrowed (List'0.t_list t)) ->  [ &_7 <- _ret' ]  [ &l <- { l with current = ( ^ _7) ; } ] s4)
-      | s4 = -{inv'1 ( ^ _7)}- s5
+      | s3 = Borrow.borrow_final <List'0.t_list t> {l.current} {Borrow.get_id l}
+          (fun (_ret':borrowed (List'0.t_list t)) ->  [ &_7 <- _ret' ]  [ &l <- { l with current = _7.final ; } ] s4)
+      | s4 = -{inv'1 _7.final}- s5
       | s5 =  [ &_8 <- List'0.C_Nil ] s6
       | s6 = replace'0 {_7} {_8} (fun (_ret':List'0.t_list t) ->  [ &head <- _ret' ] s7)
       | s7 = bb2 ]
@@ -121,7 +121,7 @@ module InplaceListReversal_Rev
     | bb3 = bb4
     | bb4 = bb4
       [ bb4 = {[@expl:loop invariant] [%#sinplace_list_reversal1] rev_append'0 head prev
-        = rev_append'0 ( * Snapshot.inner old_l) (List'0.C_Nil)}
+        = rev_append'0 (Snapshot.inner old_l).current (List'0.C_Nil)}
         (! s0) [ s0 = bb5 ] 
         [ bb5 = any
           [ br0 -> {head = List'0.C_Nil } (! bb19) | br1 (a:(t, List'0.t_list t))-> {head = List'0.C_Cons a} (! bb6) ]
@@ -166,8 +166,8 @@ module InplaceListReversal_Rev
     | bb19 = s0 [ s0 = {[@expl:type invariant] inv'1 head} s1 | s1 = -{resolve'1 head}- s2 | s2 = bb21 ] 
     | bb21 = s0
       [ s0 =  [ &l <- { l with current = prev ; } ] (any [ any_ (_any:List'0.t_list t)-> (!  [ &prev <- _any ] s1) ] )
-      | s1 = {[@expl:type invariant] inv'1 ( * l)} s2
-      | s2 = -{resolve'1 ( * l)}- s3
+      | s1 = {[@expl:type invariant] inv'1 l.current} s2
+      | s2 = -{resolve'1 l.current}- s3
       | s3 = {[@expl:type invariant] inv'2 l} s4
       | s4 = -{resolve'2 l}- s5
       | s5 = bb23 ]
@@ -187,8 +187,8 @@ module InplaceListReversal_Rev
     | & next : List'0.t_list t = any_l ()
     | & _16 : List'0.t_list t = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#sinplace_list_reversal3]  ^ l
-      = rev_append'0 ( * l) (List'0.C_Nil)}
+    [ return' (result:())-> {[@expl:postcondition] [%#sinplace_list_reversal3] l.final
+      = rev_append'0 l.current (List'0.C_Nil)}
       (! return' {result}) ]
     
 end

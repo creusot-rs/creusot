@@ -142,7 +142,7 @@ module C06MapPrecond_Impl1_PreservationInv_Impl
    -> ([%#span7] inv'6 args)
    -> ([%#span8] inv'3 res)
    -> ([%#span9] postcondition_once'0 self args res
-  = (exists s : borrowed f . inv'4 s /\  * s = self /\ postcondition_mut'0 s args res /\ resolve'0 ( ^ s)))
+  = (exists s : borrowed f . inv'4 s /\ s.current = self /\ postcondition_mut'0 s args res /\ resolve'0 s.final))
   
   predicate unnest'0 (self : f) (_2 : f)
   
@@ -161,7 +161,7 @@ module C06MapPrecond_Impl1_PreservationInv_Impl
   
   axiom postcondition_mut_unnest'0_spec : forall self : borrowed f, args : (item'0, Snapshot.snap_ty (Seq.seq item'0)), res : b . ([%#span18] postcondition_mut'0 self args res)
    -> ([%#span19] inv'4 self)
-   -> ([%#span20] inv'6 args)  -> ([%#span21] inv'3 res)  -> ([%#span22] unnest'0 ( * self) ( ^ self))
+   -> ([%#span20] inv'6 args)  -> ([%#span21] inv'3 res)  -> ([%#span22] unnest'0 self.current self.final)
   
   predicate invariant'5 (self : item'0)
   
@@ -228,10 +228,10 @@ module C06MapPrecond_Impl1_PreservationInv_Impl
      -> inv'5 e2
      -> inv'5 e1
      -> inv'2 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new s)
-     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc s e1))
+     -> precondition'0 f.current (e1, Snapshot.new s)
+     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
   
   constant iter  : i
   
@@ -251,11 +251,11 @@ module C06MapPrecond_Impl1_PreservationInv_Impl
    -> inv'5 e2
    -> inv'5 e1
    -> inv'2 s
-   -> unnest'0 func ( * f)
+   -> unnest'0 func f.current
    -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-   -> precondition'0 ( * f) (e1, Snapshot.new (Seq.(++) produced s))
+   -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
    -> postcondition_mut'0 f (e1, Snapshot.new (Seq.(++) produced s)) b
-   -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1)))
+   -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1)))
   = preservation'0 iter func)
 end
 module C06MapPrecond_Impl0_ProducesRefl_Impl
@@ -429,7 +429,7 @@ module C06MapPrecond_Impl0_ProducesRefl_Impl
    -> ([%#span4] inv'7 args)
    -> ([%#span5] inv'8 res)
    -> ([%#span6] postcondition_once'0 self args res
-  = (exists s : borrowed f . inv'6 s /\  * s = self /\ postcondition_mut'0 s args res /\ resolve'0 ( ^ s)))
+  = (exists s : borrowed f . inv'6 s /\ s.current = self /\ postcondition_mut'0 s args res /\ resolve'0 s.final))
   
   predicate unnest'0 (self : f) (_2 : f)
   
@@ -448,7 +448,7 @@ module C06MapPrecond_Impl0_ProducesRefl_Impl
   
   axiom postcondition_mut_unnest'0_spec : forall self : borrowed f, args : (item'0, Snapshot.snap_ty (Seq.seq item'0)), res : b . ([%#span15] postcondition_mut'0 self args res)
    -> ([%#span16] inv'6 self)
-   -> ([%#span17] inv'7 args)  -> ([%#span18] inv'8 res)  -> ([%#span19] unnest'0 ( * self) ( ^ self))
+   -> ([%#span17] inv'7 args)  -> ([%#span18] inv'8 res)  -> ([%#span19] unnest'0 self.current self.final)
   
   use seq.Seq
   
@@ -490,10 +490,10 @@ module C06MapPrecond_Impl0_ProducesRefl_Impl
      -> inv'10 e2
      -> inv'10 e1
      -> inv'1 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new s)
-     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc s e1))
+     -> precondition'0 f.current (e1, Snapshot.new s)
+     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
   
   predicate preservation_inv'0 [#"../06_map_precond.rs" 93 4 93 73] (iter : i) (func : f) (produced : Seq.seq item'0) =
     [%#span36] forall i : i . forall b : b . forall f : borrowed f . forall e2 : item'0 . forall e1 : item'0 . forall s : Seq.seq item'0 . inv'3 i
@@ -502,11 +502,11 @@ module C06MapPrecond_Impl0_ProducesRefl_Impl
      -> inv'10 e2
      -> inv'10 e1
      -> inv'1 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new (Seq.(++) produced s))
+     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
      -> postcondition_mut'0 f (e1, Snapshot.new (Seq.(++) produced s)) b
-     -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
   
   axiom preservation_inv'0_spec : forall iter : i, func : f, produced : Seq.seq item'0 . ([%#span32] inv'3 iter)
    -> ([%#span33] inv'4 func)
@@ -524,7 +524,7 @@ module C06MapPrecond_Impl0_ProducesRefl_Impl
     [%#span37] forall func : f . forall iter : borrowed i . inv'4 func
      -> inv'9 iter
      -> completed'0 iter
-     -> next_precondition'0 ( ^ iter) func (Seq.empty  : Seq.seq item'0) /\ preservation'0 ( ^ iter) func
+     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq item'0) /\ preservation'0 iter.final func
   
   use C06MapPrecond_Map_Type as Map'0
   
@@ -570,16 +570,16 @@ module C06MapPrecond_Impl0_ProducesRefl_Impl
     = Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) s
     /\ (exists fs : Seq.seq (borrowed f) . inv'2 fs
     /\ Seq.length fs = Seq.length visited
-    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i)
+    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
     /\ (if Seq.length visited = 0 then
       C06MapPrecond_Map_Type.map_func self = C06MapPrecond_Map_Type.map_func succ
     else
-       * Seq.get fs 0 = C06MapPrecond_Map_Type.map_func self
-      /\  ^ Seq.get fs (Seq.length visited - 1) = C06MapPrecond_Map_Type.map_func succ
+      (Seq.get fs 0).current = C06MapPrecond_Map_Type.map_func self
+      /\ (Seq.get fs (Seq.length visited - 1)).final = C06MapPrecond_Map_Type.map_func succ
     )
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> unnest'0 (C06MapPrecond_Map_Type.map_func self) ( * Seq.get fs i)
-    /\ precondition'0 ( * Seq.get fs i) (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i)))
+     -> unnest'0 (C06MapPrecond_Map_Type.map_func self) (Seq.get fs i).current
+    /\ precondition'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i)))
     /\ postcondition_mut'0 (Seq.get fs i) (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i))) (Seq.get visited i))))
   
   use seq.Seq
@@ -774,7 +774,7 @@ module C06MapPrecond_Impl0_ProducesTrans_Impl
    -> ([%#span10] inv'8 args)
    -> ([%#span11] inv'9 res)
    -> ([%#span12] postcondition_once'0 self args res
-  = (exists s : borrowed f . inv'7 s /\  * s = self /\ postcondition_mut'0 s args res /\ resolve'0 ( ^ s)))
+  = (exists s : borrowed f . inv'7 s /\ s.current = self /\ postcondition_mut'0 s args res /\ resolve'0 s.final))
   
   predicate unnest'0 (self : f) (_2 : f)
   
@@ -793,7 +793,7 @@ module C06MapPrecond_Impl0_ProducesTrans_Impl
   
   axiom postcondition_mut_unnest'0_spec : forall self : borrowed f, args : (item'0, Snapshot.snap_ty (Seq.seq item'0)), res : b . ([%#span21] postcondition_mut'0 self args res)
    -> ([%#span22] inv'7 self)
-   -> ([%#span23] inv'8 args)  -> ([%#span24] inv'9 res)  -> ([%#span25] unnest'0 ( * self) ( ^ self))
+   -> ([%#span23] inv'8 args)  -> ([%#span24] inv'9 res)  -> ([%#span25] unnest'0 self.current self.final)
   
   use seq.Seq
   
@@ -842,10 +842,10 @@ module C06MapPrecond_Impl0_ProducesTrans_Impl
      -> inv'11 e2
      -> inv'11 e1
      -> inv'2 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new s)
-     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc s e1))
+     -> precondition'0 f.current (e1, Snapshot.new s)
+     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
   
   predicate preservation_inv'0 [#"../06_map_precond.rs" 93 4 93 73] (iter : i) (func : f) (produced : Seq.seq item'0) =
     [%#span42] forall i : i . forall b : b . forall f : borrowed f . forall e2 : item'0 . forall e1 : item'0 . forall s : Seq.seq item'0 . inv'4 i
@@ -854,11 +854,11 @@ module C06MapPrecond_Impl0_ProducesTrans_Impl
      -> inv'11 e2
      -> inv'11 e1
      -> inv'2 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new (Seq.(++) produced s))
+     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
      -> postcondition_mut'0 f (e1, Snapshot.new (Seq.(++) produced s)) b
-     -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
   
   axiom preservation_inv'0_spec : forall iter : i, func : f, produced : Seq.seq item'0 . ([%#span38] inv'4 iter)
    -> ([%#span39] inv'5 func)
@@ -876,7 +876,7 @@ module C06MapPrecond_Impl0_ProducesTrans_Impl
     [%#span43] forall func : f . forall iter : borrowed i . inv'5 func
      -> inv'10 iter
      -> completed'0 iter
-     -> next_precondition'0 ( ^ iter) func (Seq.empty  : Seq.seq item'0) /\ preservation'0 ( ^ iter) func
+     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq item'0) /\ preservation'0 iter.final func
   
   use C06MapPrecond_Map_Type as Map'0
   
@@ -924,16 +924,16 @@ module C06MapPrecond_Impl0_ProducesTrans_Impl
     = Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) s
     /\ (exists fs : Seq.seq (borrowed f) . inv'3 fs
     /\ Seq.length fs = Seq.length visited
-    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i)
+    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
     /\ (if Seq.length visited = 0 then
       C06MapPrecond_Map_Type.map_func self = C06MapPrecond_Map_Type.map_func succ
     else
-       * Seq.get fs 0 = C06MapPrecond_Map_Type.map_func self
-      /\  ^ Seq.get fs (Seq.length visited - 1) = C06MapPrecond_Map_Type.map_func succ
+      (Seq.get fs 0).current = C06MapPrecond_Map_Type.map_func self
+      /\ (Seq.get fs (Seq.length visited - 1)).final = C06MapPrecond_Map_Type.map_func succ
     )
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> unnest'0 (C06MapPrecond_Map_Type.map_func self) ( * Seq.get fs i)
-    /\ precondition'0 ( * Seq.get fs i) (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i)))
+     -> unnest'0 (C06MapPrecond_Map_Type.map_func self) (Seq.get fs i).current
+    /\ precondition'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i)))
     /\ postcondition_mut'0 (Seq.get fs i) (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i))) (Seq.get visited i))))
   
   constant a  : Map'0.t_map i b f item'0
@@ -1167,7 +1167,7 @@ module C06MapPrecond_Impl1_ProducesOne_Impl
    -> ([%#span7] inv'10 args)
    -> ([%#span8] inv'1 res)
    -> ([%#span9] postcondition_once'0 self args res
-  = (exists s : borrowed f . inv'2 s /\  * s = self /\ postcondition_mut'0 s args res /\ resolve'0 ( ^ s)))
+  = (exists s : borrowed f . inv'2 s /\ s.current = self /\ postcondition_mut'0 s args res /\ resolve'0 s.final))
   
   predicate unnest'0 (self : f) (_2 : f)
   
@@ -1186,7 +1186,7 @@ module C06MapPrecond_Impl1_ProducesOne_Impl
   
   axiom postcondition_mut_unnest'0_spec : forall self : borrowed f, args : (item'0, Snapshot.snap_ty (Seq.seq item'0)), res : b . ([%#span18] postcondition_mut'0 self args res)
    -> ([%#span19] inv'2 self)
-   -> ([%#span20] inv'10 args)  -> ([%#span21] inv'1 res)  -> ([%#span22] unnest'0 ( * self) ( ^ self))
+   -> ([%#span20] inv'10 args)  -> ([%#span21] inv'1 res)  -> ([%#span22] unnest'0 self.current self.final)
   
   predicate invariant'3 (self : item'0)
   
@@ -1262,16 +1262,16 @@ module C06MapPrecond_Impl1_ProducesOne_Impl
     = Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) s
     /\ (exists fs : Seq.seq (borrowed f) . inv'5 fs
     /\ Seq.length fs = Seq.length visited
-    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i)
+    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
     /\ (if Seq.length visited = 0 then
       C06MapPrecond_Map_Type.map_func self = C06MapPrecond_Map_Type.map_func succ
     else
-       * Seq.get fs 0 = C06MapPrecond_Map_Type.map_func self
-      /\  ^ Seq.get fs (Seq.length visited - 1) = C06MapPrecond_Map_Type.map_func succ
+      (Seq.get fs 0).current = C06MapPrecond_Map_Type.map_func self
+      /\ (Seq.get fs (Seq.length visited - 1)).final = C06MapPrecond_Map_Type.map_func succ
     )
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> unnest'0 (C06MapPrecond_Map_Type.map_func self) ( * Seq.get fs i)
-    /\ precondition'0 ( * Seq.get fs i) (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i)))
+     -> unnest'0 (C06MapPrecond_Map_Type.map_func self) (Seq.get fs i).current
+    /\ precondition'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i)))
     /\ postcondition_mut'0 (Seq.get fs i) (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i))) (Seq.get visited i))))
   
   function produces_trans'0 [#"../06_map_precond.rs" 38 4 38 90] (a : Map'0.t_map i b f item'0) (ab : Seq.seq b) (b : Map'0.t_map i b f item'0) (bc : Seq.seq b) (c : Map'0.t_map i b f item'0) : ()
@@ -1313,10 +1313,10 @@ module C06MapPrecond_Impl1_ProducesOne_Impl
      -> inv'3 e2
      -> inv'3 e1
      -> inv'4 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new s)
-     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc s e1))
+     -> precondition'0 f.current (e1, Snapshot.new s)
+     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
   
   predicate preservation_inv'0 [#"../06_map_precond.rs" 93 4 93 73] (iter : i) (func : f) (produced : Seq.seq item'0) =
     [%#span52] forall i : i . forall b : b . forall f : borrowed f . forall e2 : item'0 . forall e1 : item'0 . forall s : Seq.seq item'0 . inv'6 i
@@ -1325,11 +1325,11 @@ module C06MapPrecond_Impl1_ProducesOne_Impl
      -> inv'3 e2
      -> inv'3 e1
      -> inv'4 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new (Seq.(++) produced s))
+     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
      -> postcondition_mut'0 f (e1, Snapshot.new (Seq.(++) produced s)) b
-     -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
   
   axiom preservation_inv'0_spec : forall iter : i, func : f, produced : Seq.seq item'0 . ([%#span48] inv'6 iter)
    -> ([%#span49] inv'7 func)
@@ -1343,7 +1343,7 @@ module C06MapPrecond_Impl1_ProducesOne_Impl
     [%#span53] forall func : f . forall iter : borrowed i . inv'7 func
      -> inv'11 iter
      -> completed'0 iter
-     -> next_precondition'0 ( ^ iter) func (Seq.empty  : Seq.seq item'0) /\ preservation'0 ( ^ iter) func
+     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq item'0) /\ preservation'0 iter.final func
   
   predicate invariant'0 [#"../06_map_precond.rs" 157 4 157 30] (self : Map'0.t_map i b f item'0) =
     [%#span54] reinitialize'0 ()
@@ -1371,13 +1371,13 @@ module C06MapPrecond_Impl1_ProducesOne_Impl
    -> ([%#s06_map_precond1] inv'1 visited)
    -> ([%#s06_map_precond0] inv'0 self)
    -> ([%#s06_map_precond3] ([%#s06_map_precond4] exists f : borrowed f . inv'2 f
-  /\  * f = C06MapPrecond_Map_Type.map_func self
-  /\  ^ f = C06MapPrecond_Map_Type.map_func succ
+  /\ f.current = C06MapPrecond_Map_Type.map_func self
+  /\ f.final = C06MapPrecond_Map_Type.map_func succ
   /\ (exists e : item'0 . inv'3 e
   /\ produces'1 (C06MapPrecond_Map_Type.map_iter self) (Seq.singleton e) (C06MapPrecond_Map_Type.map_iter succ)
   /\ Snapshot.inner (C06MapPrecond_Map_Type.map_produced succ)
   = Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e
-  /\ precondition'0 ( * f) (e, C06MapPrecond_Map_Type.map_produced self)
+  /\ precondition'0 f.current (e, C06MapPrecond_Map_Type.map_produced self)
   /\ postcondition_mut'0 f (e, C06MapPrecond_Map_Type.map_produced self) visited))
   = produces'0 self (Seq.singleton visited) succ)
 end
@@ -1576,10 +1576,10 @@ module C06MapPrecond_Impl1_ProducesOneInvariant_Impl
      -> inv'1 e2
      -> inv'1 e1
      -> inv'5 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new s)
-     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc s e1))
+     -> precondition'0 f.current (e1, Snapshot.new s)
+     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
   
   use seq.Seq
   
@@ -1590,11 +1590,11 @@ module C06MapPrecond_Impl1_ProducesOneInvariant_Impl
      -> inv'1 e2
      -> inv'1 e1
      -> inv'5 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new (Seq.(++) produced s))
+     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
      -> postcondition_mut'0 f (e1, Snapshot.new (Seq.(++) produced s)) b
-     -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
   
   axiom preservation_inv'0_spec : forall iter : i, func : f, produced : Seq.seq item'0 . ([%#span14] inv'4 iter)
    -> ([%#span15] inv'6 func)
@@ -1612,7 +1612,7 @@ module C06MapPrecond_Impl1_ProducesOneInvariant_Impl
     [%#span19] forall func : f . forall iter : borrowed i . inv'6 func
      -> inv'9 iter
      -> completed'0 iter
-     -> next_precondition'0 ( ^ iter) func (Seq.empty  : Seq.seq item'0) /\ preservation'0 ( ^ iter) func
+     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq item'0) /\ preservation'0 iter.final func
   
   use C06MapPrecond_Map_Type as Map'0
   
@@ -1639,7 +1639,7 @@ module C06MapPrecond_Impl1_ProducesOneInvariant_Impl
    -> ([%#span22] inv'7 args)
    -> ([%#span23] inv'2 res)
    -> ([%#span24] postcondition_once'0 self args res
-  = (exists s : borrowed f . inv'3 s /\  * s = self /\ postcondition_mut'0 s args res /\ resolve'0 ( ^ s)))
+  = (exists s : borrowed f . inv'3 s /\ s.current = self /\ postcondition_mut'0 s args res /\ resolve'0 s.final))
   
   function unnest_trans'0 (self : f) (b : f) (c : f) : ()
   
@@ -1656,7 +1656,7 @@ module C06MapPrecond_Impl1_ProducesOneInvariant_Impl
   
   axiom postcondition_mut_unnest'0_spec : forall self : borrowed f, args : (item'0, Snapshot.snap_ty (Seq.seq item'0)), res : b . ([%#span33] postcondition_mut'0 self args res)
    -> ([%#span34] inv'3 self)
-   -> ([%#span35] inv'7 args)  -> ([%#span36] inv'2 res)  -> ([%#span37] unnest'0 ( * self) ( ^ self))
+   -> ([%#span35] inv'7 args)  -> ([%#span36] inv'2 res)  -> ([%#span37] unnest'0 self.current self.final)
   
   function produces_trans'0 [#"../common.rs" 21 4 21 91] (a : i) (ab : Seq.seq item'0) (b : i) (bc : Seq.seq item'0) (c : i) : ()
     
@@ -1692,7 +1692,7 @@ module C06MapPrecond_Impl1_ProducesOneInvariant_Impl
    -> ([%#s06_map_precond4] inv'1 e)
    -> ([%#s06_map_precond3] inv'0 self)
    -> ([%#s06_map_precond2] postcondition_mut'0 f (e, C06MapPrecond_Map_Type.map_produced self) r)
-   -> ([%#s06_map_precond1]  * f = C06MapPrecond_Map_Type.map_func self)
+   -> ([%#s06_map_precond1] f.current = C06MapPrecond_Map_Type.map_func self)
    -> ([%#s06_map_precond0] produces'0 (C06MapPrecond_Map_Type.map_iter self) (Seq.singleton e) iter)
    -> ([%#s06_map_precond10] forall i : i . forall e2 : item'0 . forall e1 : item'0 . forall s : Seq.seq item'0 . inv'4 i
    -> inv'1 e2
@@ -1700,8 +1700,8 @@ module C06MapPrecond_Impl1_ProducesOneInvariant_Impl
    -> inv'5 s
    -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
    -> produces'0 (C06MapPrecond_Map_Type.map_iter self) (Seq.snoc (Seq.snoc (Seq.(++) (Seq.singleton e) s) e1) e2) i)
-  && (let _ = () in ([%#s06_map_precond9] next_precondition'0 iter ( ^ f) (Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e))
-  && ([%#s06_map_precond8] preservation_inv'0 iter ( ^ f) (Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e)))
+  && (let _ = () in ([%#s06_map_precond9] next_precondition'0 iter f.final (Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e))
+  && ([%#s06_map_precond8] preservation_inv'0 iter f.final (Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e)))
 end
 module C06MapPrecond_Impl0_Next
   type i
@@ -1921,10 +1921,10 @@ module C06MapPrecond_Impl0_Next
      -> inv'11 e2
      -> inv'11 e1
      -> inv'12 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new s)
-     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc s e1))
+     -> precondition'0 f.current (e1, Snapshot.new s)
+     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
   
   use seq.Seq
   
@@ -1935,11 +1935,11 @@ module C06MapPrecond_Impl0_Next
      -> inv'11 e2
      -> inv'11 e1
      -> inv'12 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new (Seq.(++) produced s))
+     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
      -> postcondition_mut'0 f (e1, Snapshot.new (Seq.(++) produced s)) b
-     -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
   
   axiom preservation_inv'0_spec : forall iter : i, func : f, produced : Seq.seq item'0 . ([%#span11] inv'0 iter)
    -> ([%#span12] inv'3 func)
@@ -1959,7 +1959,7 @@ module C06MapPrecond_Impl0_Next
     [%#span16] forall func : f . forall iter : borrowed i . inv'3 func
      -> inv'6 iter
      -> completed'1 iter
-     -> next_precondition'0 ( ^ iter) func (Seq.empty  : Seq.seq item'0) /\ preservation'0 ( ^ iter) func
+     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq item'0) /\ preservation'0 iter.final func
   
   use C06MapPrecond_Map_Type as Map'0
   
@@ -1992,7 +1992,7 @@ module C06MapPrecond_Impl0_Next
    -> ([%#span19] inv'8 args)
    -> ([%#span20] inv'9 res)
    -> ([%#span21] postcondition_once'0 self args res
-  = (exists s : borrowed f . inv'7 s /\  * s = self /\ postcondition_mut'0 s args res /\ resolve'4 ( ^ s)))
+  = (exists s : borrowed f . inv'7 s /\ s.current = self /\ postcondition_mut'0 s args res /\ resolve'4 s.final))
   
   function unnest_trans'0 (self : f) (b : f) (c : f) : ()
   
@@ -2009,7 +2009,7 @@ module C06MapPrecond_Impl0_Next
   
   axiom postcondition_mut_unnest'0_spec : forall self : borrowed f, args : (item'0, Snapshot.snap_ty (Seq.seq item'0)), res : b . ([%#span30] postcondition_mut'0 self args res)
    -> ([%#span31] inv'7 self)
-   -> ([%#span32] inv'8 args)  -> ([%#span33] inv'9 res)  -> ([%#span34] unnest'0 ( * self) ( ^ self))
+   -> ([%#span32] inv'8 args)  -> ([%#span33] inv'9 res)  -> ([%#span34] unnest'0 self.current self.final)
   
   predicate invariant'8 (self : (item'0, Snapshot.snap_ty (Seq.seq item'0))) =
     [%#span8] true
@@ -2054,7 +2054,7 @@ module C06MapPrecond_Impl0_Next
   
   predicate inv'1 (_x : borrowed (Map'0.t_map i b f item'0))
   
-  axiom inv'1 : forall x : borrowed (Map'0.t_map i b f item'0) . inv'1 x = (inv'10 ( * x) /\ inv'10 ( ^ x))
+  axiom inv'1 : forall x : borrowed (Map'0.t_map i b f item'0) . inv'1 x = (inv'10 x.current /\ inv'10 x.final)
   
   predicate invariant'0 (self : i)
   
@@ -2104,16 +2104,16 @@ module C06MapPrecond_Impl0_Next
     = Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) s
     /\ (exists fs : Seq.seq (borrowed f) . inv'13 fs
     /\ Seq.length fs = Seq.length visited
-    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i)
+    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
     /\ (if Seq.length visited = 0 then
       C06MapPrecond_Map_Type.map_func self = C06MapPrecond_Map_Type.map_func succ
     else
-       * Seq.get fs 0 = C06MapPrecond_Map_Type.map_func self
-      /\  ^ Seq.get fs (Seq.length visited - 1) = C06MapPrecond_Map_Type.map_func succ
+      (Seq.get fs 0).current = C06MapPrecond_Map_Type.map_func self
+      /\ (Seq.get fs (Seq.length visited - 1)).final = C06MapPrecond_Map_Type.map_func succ
     )
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> unnest'0 (C06MapPrecond_Map_Type.map_func self) ( * Seq.get fs i)
-    /\ precondition'0 ( * Seq.get fs i) (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i)))
+     -> unnest'0 (C06MapPrecond_Map_Type.map_func self) (Seq.get fs i).current
+    /\ precondition'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i)))
     /\ postcondition_mut'0 (Seq.get fs i) (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i))) (Seq.get visited i))))
   
   use seq.Seq
@@ -2122,13 +2122,13 @@ module C06MapPrecond_Impl0_Next
     
    =
     [%#span50] exists f : borrowed f . inv'7 f
-    /\  * f = C06MapPrecond_Map_Type.map_func self
-    /\  ^ f = C06MapPrecond_Map_Type.map_func succ
+    /\ f.current = C06MapPrecond_Map_Type.map_func self
+    /\ f.final = C06MapPrecond_Map_Type.map_func succ
     /\ (exists e : item'0 . inv'11 e
     /\ produces'0 (C06MapPrecond_Map_Type.map_iter self) (Seq.singleton e) (C06MapPrecond_Map_Type.map_iter succ)
     /\ Snapshot.inner (C06MapPrecond_Map_Type.map_produced succ)
     = Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e
-    /\ precondition'0 ( * f) (e, C06MapPrecond_Map_Type.map_produced self)
+    /\ precondition'0 f.current (e, C06MapPrecond_Map_Type.map_produced self)
     /\ postcondition_mut'0 f (e, C06MapPrecond_Map_Type.map_produced self) visited)
   
   axiom produces_one'0_spec : forall self : Map'0.t_map i b f item'0, visited : b, succ : Map'0.t_map i b f item'0 . ([%#span46] inv'10 self)
@@ -2137,9 +2137,9 @@ module C06MapPrecond_Impl0_Next
    -> ([%#span49] produces_one'0 self visited succ = produces'1 self (Seq.singleton visited) succ)
   
   predicate completed'0 [#"../06_map_precond.rs" 21 4 21 35] (self : borrowed (Map'0.t_map i b f item'0)) =
-    [%#span51] Snapshot.inner (C06MapPrecond_Map_Type.map_produced ( ^ self)) = (Seq.empty  : Seq.seq item'0)
-    /\ completed'1 (Borrow.borrow_logic (C06MapPrecond_Map_Type.map_iter ( * self)) (C06MapPrecond_Map_Type.map_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1))
-    /\ C06MapPrecond_Map_Type.map_func ( * self) = C06MapPrecond_Map_Type.map_func ( ^ self)
+    [%#span51] Snapshot.inner (C06MapPrecond_Map_Type.map_produced self.final) = (Seq.empty  : Seq.seq item'0)
+    /\ completed'1 (Borrow.borrow_logic (C06MapPrecond_Map_Type.map_iter self.current) (C06MapPrecond_Map_Type.map_iter self.final) (Borrow.inherit_id (Borrow.get_id self) 1))
+    /\ C06MapPrecond_Map_Type.map_func self.current = C06MapPrecond_Map_Type.map_func self.final
   
   use prelude.prelude.Intrinsic
   
@@ -2152,22 +2152,22 @@ module C06MapPrecond_Impl0_Next
     
   
   axiom produces_one_invariant'0_spec : forall self : Map'0.t_map i b f item'0, e : item'0, r : b, f : borrowed f, iter : i . ([%#span53] produces'0 (C06MapPrecond_Map_Type.map_iter self) (Seq.singleton e) iter)
-   -> ([%#span54]  * f = C06MapPrecond_Map_Type.map_func self)
+   -> ([%#span54] f.current = C06MapPrecond_Map_Type.map_func self)
    -> ([%#span55] postcondition_mut'0 f (e, C06MapPrecond_Map_Type.map_produced self) r)
    -> ([%#span56] inv'10 self)
    -> ([%#span57] inv'11 e)
    -> ([%#span58] inv'9 r)
    -> ([%#span59] inv'7 f)
    -> ([%#span60] inv'0 iter)
-   -> ([%#span62] next_precondition'0 iter ( ^ f) (Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e))
-  && ([%#span61] preservation_inv'0 iter ( ^ f) (Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e))
+   -> ([%#span62] next_precondition'0 iter f.final (Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e))
+  && ([%#span61] preservation_inv'0 iter f.final (Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e))
   
   predicate resolve'2 (self : Snapshot.snap_ty (Seq.seq item'0)) =
     [%#span52] true
   
   let rec call_mut'0 (self:borrowed f) (args:(item'0, Snapshot.snap_ty (Seq.seq item'0))) (return'  (ret:b))= {[@expl:precondition] [%#span66] inv'8 args}
     {[@expl:precondition] [%#span65] inv'7 self}
-    {[@expl:precondition] [%#span64] precondition'0 ( * self) args}
+    {[@expl:precondition] [%#span64] precondition'0 self.current args}
     any
     [ return' (result:b)-> {[%#span68] inv'9 result}
       {[%#span67] postcondition_mut'0 self args result}
@@ -2178,14 +2178,14 @@ module C06MapPrecond_Impl0_Next
     [%#span52] true
   
   predicate resolve'0 (self : borrowed (Map'0.t_map i b f item'0)) =
-    [%#span69]  ^ self =  * self
+    [%#span69] self.final = self.current
   
   let rec next'0 (self:borrowed i) (return'  (ret:Option'0.t_option item'0))= {[@expl:precondition] [%#span70] inv'6 self}
     any
     [ return' (result:Option'0.t_option item'0)-> {[%#span72] inv'2 result}
       {[%#span71] match result with
         | Option'0.C_None -> completed'1 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -2193,16 +2193,16 @@ module C06MapPrecond_Impl0_Next
   let rec next (self:borrowed (Map'0.t_map i b f item'0)) (return'  (ret:Option'0.t_option b))= {[%#s06_map_precond5] inv'1 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = Map'0.t_map <i> <b> <f> <item'0> { * self}
+      [ s0 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
           (fun (riter'0:i) (rfunc'0:f) (rproduced'0:Snapshot.snap_ty (Seq.seq item'0)) ->
             Borrow.borrow_final <i> {riter'0} {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed i) ->
                  [ &_4 <- _ret' ] 
-                Map'0.t_map <i> <b> <f> <item'0> { * self}
+                Map'0.t_map <i> <b> <f> <item'0> {self.current}
                   (fun (l_iter'0:i) (l_func'0:f) (l_produced'0:Snapshot.snap_ty (Seq.seq item'0)) ->
-                     [ &self <- { self with current = Map'0.C_Map ( ^ _4) l_func'0 l_produced'0 ; } ] 
+                     [ &self <- { self with current = Map'0.C_Map _4.final l_func'0 l_produced'0 ; } ] 
                     s1)))
-      | s1 = -{inv'0 ( ^ _4)}- s2
+      | s1 = -{inv'0 _4.final}- s2
       | s2 = next'0 {_4} (fun (_ret':Option'0.t_option item'0) ->  [ &_3 <- _ret' ] s3)
       | s3 = bb1 ]
       
@@ -2225,29 +2225,29 @@ module C06MapPrecond_Impl0_Next
             ))
       | s1 = {[@expl:type invariant] inv'2 _3} s2
       | s2 = -{resolve'1 _3}- s3
-      | s3 = {[@expl:assertion] [%#s06_map_precond1] precondition'0 (C06MapPrecond_Map_Type.map_func ( * self)) (v, C06MapPrecond_Map_Type.map_produced ( * self))}
+      | s3 = {[@expl:assertion] [%#s06_map_precond1] precondition'0 (C06MapPrecond_Map_Type.map_func self.current) (v, C06MapPrecond_Map_Type.map_produced self.current)}
         s4
       | s4 = bb6 ]
       
     | bb6 = s0
       [ s0 = 
-        [ &produced <- [%#s06_map_precond2] Snapshot.new (Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced ( * self))) v) ]
+        [ &produced <- [%#s06_map_precond2] Snapshot.new (Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self.current)) v) ]
         
         s1
       | s1 = bb7 ]
       
     | bb7 = s0
-      [ s0 = Map'0.t_map <i> <b> <f> <item'0> { * self}
+      [ s0 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
           (fun (riter'0:i) (rfunc'0:f) (rproduced'0:Snapshot.snap_ty (Seq.seq item'0)) ->
             Borrow.borrow_final <f> {rfunc'0} {Borrow.inherit_id (Borrow.get_id self) 2}
               (fun (_ret':borrowed f) ->
                  [ &_12 <- _ret' ] 
-                Map'0.t_map <i> <b> <f> <item'0> { * self}
+                Map'0.t_map <i> <b> <f> <item'0> {self.current}
                   (fun (l_iter'0:i) (l_func'0:f) (l_produced'0:Snapshot.snap_ty (Seq.seq item'0)) ->
-                     [ &self <- { self with current = Map'0.C_Map l_iter'0 ( ^ _12) l_produced'0 ; } ] 
+                     [ &self <- { self with current = Map'0.C_Map l_iter'0 _12.final l_produced'0 ; } ] 
                     s1)))
-      | s1 = -{inv'3 ( ^ _12)}- s2
-      | s2 = Map'0.t_map <i> <b> <f> <item'0> { * self}
+      | s1 = -{inv'3 _12.final}- s2
+      | s2 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
           (fun (riter'1:i) (rfunc'1:f) (rproduced'1:Snapshot.snap_ty (Seq.seq item'0)) ->
              [ &_13 <- (v, rproduced'1) ] 
             (any [ any_ (_any:item'0)-> (!  [ &v <- _any ] s3) ] ))
@@ -2258,15 +2258,15 @@ module C06MapPrecond_Impl0_Next
     | bb9 = s0
       [ s0 = {[@expl:type invariant] inv'4 produced} s1
       | s1 = -{resolve'2 produced}- s2
-      | s2 = Map'0.t_map <i> <b> <f> <item'0> { * self}
+      | s2 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
           (fun (l_iter'0:i) (l_func'0:f) (l_produced'0:Snapshot.snap_ty (Seq.seq item'0)) ->
              [ &self <- { self with current = Map'0.C_Map l_iter'0 l_func'0 produced ; } ] 
             s3)
-      | s3 = Map'0.t_map <i> <b> <f> <item'0> { * self}
+      | s3 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
           (fun (riter'0:i) (rfunc'0:f) (rproduced'0:Snapshot.snap_ty (Seq.seq item'0)) ->
             {[@expl:type invariant] inv'4 rproduced'0}
             s4)
-      | s4 = Map'0.t_map <i> <b> <f> <item'0> { * self}
+      | s4 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
           (fun (riter'1:i) (rfunc'1:f) (rproduced'1:Snapshot.snap_ty (Seq.seq item'0)) -> -{resolve'2 rproduced'1}- s5)
       | s5 = {[@expl:type invariant] inv'1 self} s6
       | s6 = -{resolve'0 self}- s7
@@ -2288,15 +2288,15 @@ module C06MapPrecond_Impl0_Next
       | s3 = bb14 ]
       
     | bb14 = s0
-      [ s0 = Map'0.t_map <i> <b> <f> <item'0> { * self}
+      [ s0 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
           (fun (l_iter'0:i) (l_func'0:f) (l_produced'0:Snapshot.snap_ty (Seq.seq item'0)) ->
              [ &self <- { self with current = Map'0.C_Map l_iter'0 l_func'0 _20 ; } ] 
             (any [ any_ (_any:Snapshot.snap_ty (Seq.seq item'0))-> (!  [ &_20 <- _any ] s1) ] ))
-      | s1 = Map'0.t_map <i> <b> <f> <item'0> { * self}
+      | s1 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
           (fun (riter'0:i) (rfunc'0:f) (rproduced'0:Snapshot.snap_ty (Seq.seq item'0)) ->
             {[@expl:type invariant] inv'4 rproduced'0}
             s2)
-      | s2 = Map'0.t_map <i> <b> <f> <item'0> { * self}
+      | s2 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
           (fun (riter'1:i) (rfunc'1:f) (rproduced'1:Snapshot.snap_ty (Seq.seq item'0)) -> -{resolve'2 rproduced'1}- s3)
       | s3 = {[@expl:type invariant] inv'1 self} s4
       | s4 = -{resolve'0 self}- s5
@@ -2321,7 +2321,7 @@ module C06MapPrecond_Impl0_Next
     [ return' (result:Option'0.t_option b)-> {[@expl:postcondition] [%#s06_map_precond7] inv'5 result}
       {[@expl:postcondition] [%#s06_map_precond6] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces_one'0 ( * self) v ( ^ self)
+        | Option'0.C_Some v -> produces_one'0 self.current v self.final
         end}
       (! return' {result}) ]
     
@@ -2463,7 +2463,7 @@ module C06MapPrecond_Map
    -> ([%#span10] inv'9 args)
    -> ([%#span11] inv'5 res)
    -> ([%#span12] postcondition_once'0 self args res
-  = (exists s : borrowed f . inv'6 s /\  * s = self /\ postcondition_mut'0 s args res /\ resolve'0 ( ^ s)))
+  = (exists s : borrowed f . inv'6 s /\ s.current = self /\ postcondition_mut'0 s args res /\ resolve'0 s.final))
   
   predicate unnest'0 (self : f) (_2 : f)
   
@@ -2482,7 +2482,7 @@ module C06MapPrecond_Map
   
   axiom postcondition_mut_unnest'0_spec : forall self : borrowed f, args : (item'0, Snapshot.snap_ty (Seq.seq item'0)), res : b . ([%#span21] postcondition_mut'0 self args res)
    -> ([%#span22] inv'6 self)
-   -> ([%#span23] inv'9 args)  -> ([%#span24] inv'5 res)  -> ([%#span25] unnest'0 ( * self) ( ^ self))
+   -> ([%#span23] inv'9 args)  -> ([%#span24] inv'5 res)  -> ([%#span25] unnest'0 self.current self.final)
   
   predicate invariant'7 (self : Seq.seq item'0) =
     [%#span8] true
@@ -2532,10 +2532,10 @@ module C06MapPrecond_Map
      -> inv'1 e2
      -> inv'1 e1
      -> inv'7 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new s)
-     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc s e1))
+     -> precondition'0 f.current (e1, Snapshot.new s)
+     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
   
   use seq.Seq
   
@@ -2546,11 +2546,11 @@ module C06MapPrecond_Map
      -> inv'1 e2
      -> inv'1 e1
      -> inv'7 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new (Seq.(++) produced s))
+     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
      -> postcondition_mut'0 f (e1, Snapshot.new (Seq.(++) produced s)) b
-     -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
   
   axiom preservation_inv'0_spec : forall iter : i, func : f, produced : Seq.seq item'0 . ([%#span28] inv'0 iter)
    -> ([%#span29] inv'2 func)
@@ -2568,7 +2568,7 @@ module C06MapPrecond_Map
     [%#span33] forall func : f . forall iter : borrowed i . inv'2 func
      -> inv'4 iter
      -> completed'0 iter
-     -> next_precondition'0 ( ^ iter) func (Seq.empty  : Seq.seq item'0) /\ preservation'0 ( ^ iter) func
+     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq item'0) /\ preservation'0 iter.final func
   
   use C06MapPrecond_Map_Type as Map'0
   
@@ -2772,7 +2772,7 @@ module C06MapPrecond_Identity_Closure0
   use prelude.prelude.Intrinsic
   
   predicate resolve'1 (self : borrowed (Closure'0.c06mapprecond_identity_closure0 i)) =
-    [%#span13]  ^ self =  * self
+    [%#span13] self.final = self.current
   
   predicate resolve'0 (self : Snapshot.snap_ty (Seq.seq item'0)) =
     [%#span14] true
@@ -2795,7 +2795,7 @@ module C06MapPrecond_Identity_Closure0
     | & _3 : Snapshot.snap_ty (Seq.seq item'0) = _3 ]
     
     [ return' (result:item'0)-> {[@expl:postcondition] [%#s06_map_precond1] inv'1 result}
-      {[@expl:postcondition] unnest'0 ( * _1) ( ^ _1)}
+      {[@expl:postcondition] unnest'0 _1.current _1.final}
       (! return' {result}) ]
     
 end
@@ -2943,7 +2943,7 @@ module C06MapPrecond_Identity
   predicate postcondition_mut'0 [#"../06_map_precond.rs" 178 14 178 20] (self : borrowed (Closure'0.c06mapprecond_identity_closure0 i)) (args : (item'0, Snapshot.snap_ty (Seq.seq item'0))) (result : item'0)
     
    =
-    (let (x, _3) = args in true) /\ unnest'0 ( * self) ( ^ self)
+    (let (x, _3) = args in true) /\ unnest'0 self.current self.final
   
   use seq.Seq
   
@@ -2958,10 +2958,10 @@ module C06MapPrecond_Identity
      -> inv'2 e2
      -> inv'2 e1
      -> inv'6 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new s)
-     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc s e1))
+     -> precondition'0 f.current (e1, Snapshot.new s)
+     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
   
   use seq.Seq
   
@@ -2974,11 +2974,11 @@ module C06MapPrecond_Identity
      -> inv'2 e2
      -> inv'2 e1
      -> inv'6 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new (Seq.(++) produced s))
+     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
      -> postcondition_mut'0 f (e1, Snapshot.new (Seq.(++) produced s)) b
-     -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
   
   axiom preservation_inv'0_spec : forall iter : i, func : Closure'0.c06mapprecond_identity_closure0 i, produced : Seq.seq item'0 . ([%#span4] inv'1 iter)
    -> ([%#span5] inv'3 func)
@@ -2996,7 +2996,7 @@ module C06MapPrecond_Identity
     [%#span9] forall func : Closure'0.c06mapprecond_identity_closure0 i . forall iter : borrowed i . inv'3 func
      -> inv'4 iter
      -> completed'0 iter
-     -> next_precondition'0 ( ^ iter) func (Seq.empty  : Seq.seq item'0) /\ preservation'0 ( ^ iter) func
+     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq item'0) /\ preservation'0 iter.final func
   
   use C06MapPrecond_Map_Type as Map'0
   
@@ -3120,7 +3120,7 @@ module C06MapPrecond_Increment_Closure2
   use prelude.prelude.Int
   
   predicate resolve'0 (self : borrowed (Closure'0.c06mapprecond_increment_closure2 u)) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   let rec c06mapprecond_increment_closure2 (_1:borrowed (Closure'0.c06mapprecond_increment_closure2 u)) (x:uint32) (_3:Snapshot.snap_ty (Seq.seq uint32)) (return'  (ret:uint32))= {[%#s06_map_precond1] UInt32.to_int x
     <= 15}
@@ -3139,7 +3139,7 @@ module C06MapPrecond_Increment_Closure2
     | & res : uint32 = any_l ()
     | & res1 : uint32 = any_l () ]
     
-    [ return' (result:uint32)-> {[@expl:postcondition] unnest'0 ( * _1) ( ^ _1)}
+    [ return' (result:uint32)-> {[@expl:postcondition] unnest'0 _1.current _1.final}
       {[@expl:postcondition] [%#s06_map_precond2] UInt32.to_int result = UInt32.to_int x + 1}
       (! return' {result}) ]
     
@@ -3342,7 +3342,7 @@ module C06MapPrecond_Increment
   predicate postcondition_mut'0 [#"../06_map_precond.rs" 189 8 189 35] (self : borrowed (Closure'0.c06mapprecond_increment_closure2 u)) (args : (uint32, Snapshot.snap_ty (Seq.seq uint32))) (result : uint32)
     
    =
-    (let (x, _3) = args in UInt32.to_int result = UInt32.to_int x + 1) /\ unnest'0 ( * self) ( ^ self)
+    (let (x, _3) = args in UInt32.to_int result = UInt32.to_int x + 1) /\ unnest'0 self.current self.final
   
   predicate precondition'0 [#"../06_map_precond.rs" 189 8 189 35] (self : Closure'0.c06mapprecond_increment_closure2 u) (args : (uint32, Snapshot.snap_ty (Seq.seq uint32)))
     
@@ -3378,16 +3378,16 @@ module C06MapPrecond_Increment
     = Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) s
     /\ (exists fs : Seq.seq (borrowed (Closure'0.c06mapprecond_increment_closure2 u)) . inv'6 fs
     /\ Seq.length fs = Seq.length visited
-    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i)
+    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
     /\ (if Seq.length visited = 0 then
       C06MapPrecond_Map_Type.map_func self = C06MapPrecond_Map_Type.map_func succ
     else
-       * Seq.get fs 0 = C06MapPrecond_Map_Type.map_func self
-      /\  ^ Seq.get fs (Seq.length visited - 1) = C06MapPrecond_Map_Type.map_func succ
+      (Seq.get fs 0).current = C06MapPrecond_Map_Type.map_func self
+      /\ (Seq.get fs (Seq.length visited - 1)).final = C06MapPrecond_Map_Type.map_func succ
     )
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> unnest'0 (C06MapPrecond_Map_Type.map_func self) ( * Seq.get fs i)
-    /\ precondition'0 ( * Seq.get fs i) (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i)))
+     -> unnest'0 (C06MapPrecond_Map_Type.map_func self) (Seq.get fs i).current
+    /\ precondition'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i)))
     /\ postcondition_mut'0 (Seq.get fs i) (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i))) (Seq.get visited i))))
   
   function produces_trans'0 [#"../06_map_precond.rs" 38 4 38 90] (a : Map'0.t_map u uint32 (Closure'0.c06mapprecond_increment_closure2 u) uint32) (ab : Seq.seq uint32) (b : Map'0.t_map u uint32 (Closure'0.c06mapprecond_increment_closure2 u) uint32) (bc : Seq.seq uint32) (c : Map'0.t_map u uint32 (Closure'0.c06mapprecond_increment_closure2 u) uint32) : ()
@@ -3429,10 +3429,10 @@ module C06MapPrecond_Increment
      -> inv'3 e2
      -> inv'3 e1
      -> inv'5 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new s)
-     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc s e1))
+     -> precondition'0 f.current (e1, Snapshot.new s)
+     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
   
   predicate preservation_inv'0 [#"../06_map_precond.rs" 93 4 93 73] (iter : u) (func : Closure'0.c06mapprecond_increment_closure2 u) (produced : Seq.seq uint32)
     
@@ -3443,11 +3443,11 @@ module C06MapPrecond_Increment
      -> inv'3 e2
      -> inv'3 e1
      -> inv'5 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new (Seq.(++) produced s))
+     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
      -> postcondition_mut'0 f (e1, Snapshot.new (Seq.(++) produced s)) b
-     -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
   
   axiom preservation_inv'0_spec : forall iter : u, func : Closure'0.c06mapprecond_increment_closure2 u, produced : Seq.seq uint32 . ([%#span31] inv'2 iter)
    -> ([%#span32] inv'4 func)
@@ -3461,7 +3461,7 @@ module C06MapPrecond_Increment
     [%#span36] forall func : Closure'0.c06mapprecond_increment_closure2 u . forall iter : borrowed u . inv'4 func
      -> inv'1 iter
      -> completed'0 iter
-     -> next_precondition'0 ( ^ iter) func (Seq.empty  : Seq.seq uint32) /\ preservation'0 ( ^ iter) func
+     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq uint32) /\ preservation'0 iter.final func
   
   predicate invariant'0 [#"../06_map_precond.rs" 157 4 157 30] (self : Map'0.t_map u uint32 (Closure'0.c06mapprecond_increment_closure2 u) uint32)
     
@@ -3501,7 +3501,7 @@ module C06MapPrecond_Increment
     {[%#s06_map_precond1] forall done' : borrowed u . inv'1 done'
      -> completed'0 done'
      -> (forall steps : Seq.seq uint32 . forall next : u . inv'2 next
-     -> produces'1 ( ^ done') steps next  -> steps = (Seq.empty  : Seq.seq uint32) /\  ^ done' = next)}
+     -> produces'1 done'.final steps next  -> steps = (Seq.empty  : Seq.seq uint32) /\ done'.final = next)}
     (! bb0
     [ bb0 = bb1
     | bb1 = s0
@@ -3591,7 +3591,7 @@ module C06MapPrecond_Counter_Closure2
   predicate unnest'0 [#"../06_map_precond.rs" 206 8 206 41] (self : Closure'0.c06mapprecond_counter_closure2 i) (_2 : Closure'0.c06mapprecond_counter_closure2 i)
     
    =
-     ^ field_0'0 _2 =  ^ field_0'0 self
+    (field_0'0 _2).final = (field_0'0 self).final
   
   constant max'0 : usize = [%#span3] (18446744073709551615 : usize)
   
@@ -3604,18 +3604,18 @@ module C06MapPrecond_Counter_Closure2
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Closure'0.c06mapprecond_counter_closure2 i)) =
-    [%#span4]  ^ self =  * self
+    [%#span4] self.final = self.current
   
-  let rec c06mapprecond_counter_closure2 (_1:borrowed (Closure'0.c06mapprecond_counter_closure2 i)) (x:uint32) (_prod:Snapshot.snap_ty (Seq.seq uint32)) (return'  (ret:uint32))= {[%#s06_map_precond1] UIntSize.to_int ( * field_0'0 ( * _1))
+  let rec c06mapprecond_counter_closure2 (_1:borrowed (Closure'0.c06mapprecond_counter_closure2 i)) (x:uint32) (_prod:Snapshot.snap_ty (Seq.seq uint32)) (return'  (ret:uint32))= {[%#s06_map_precond1] UIntSize.to_int (field_0'0 _1.current).current
     = Seq.length (Snapshot.inner _prod)
-    /\  * field_0'0 ( * _1) < (max'0 : usize)}
+    /\ (field_0'0 _1.current).current < (max'0 : usize)}
     (! bb0
     [ bb0 = s0
-      [ s0 = Closure'0.c06mapprecond_counter_closure2 <i> { * _1}
+      [ s0 = Closure'0.c06mapprecond_counter_closure2 <i> {_1.current}
           (fun (r'0:borrowed usize) ->
-            UIntSize.add { * r'0} {[%#s06_map_precond0] (1 : usize)}
+            UIntSize.add {r'0.current} {[%#s06_map_precond0] (1 : usize)}
               (fun (_ret':usize) ->
-                Closure'0.c06mapprecond_counter_closure2 <i> { * _1}
+                Closure'0.c06mapprecond_counter_closure2 <i> {_1.current}
                   (fun (l'0:borrowed usize) ->
                     
                     [ &_1 <- { _1 with current = Closure'0.C06mapprecond_counter_closure2 ({ l'0 with current = _ret' ; }) ; } ]
@@ -3634,9 +3634,9 @@ module C06MapPrecond_Counter_Closure2
     | & res : uint32 = any_l ()
     | & res1 : uint32 = any_l () ]
     
-    [ return' (result:uint32)-> {[@expl:postcondition] unnest'0 ( * _1) ( ^ _1)}
-      {[@expl:postcondition] [%#s06_map_precond2] UIntSize.to_int ( * field_0'0 ( ^ _1))
-      = UIntSize.to_int ( * field_0'0 ( * _1)) + 1}
+    [ return' (result:uint32)-> {[@expl:postcondition] unnest'0 _1.current _1.final}
+      {[@expl:postcondition] [%#s06_map_precond2] UIntSize.to_int (field_0'0 _1.final).current
+      = UIntSize.to_int (field_0'0 _1.current).current + 1}
       (! return' {result}) ]
     
 end
@@ -3811,8 +3811,8 @@ module C06MapPrecond_Counter
   predicate precondition'0 [#"../06_map_precond.rs" 206 8 206 41] (self : Closure'0.c06mapprecond_counter_closure2 i) (args : (uint32, Snapshot.snap_ty (Seq.seq uint32)))
     
    =
-    [%#span16] let (x, _prod) = args in UIntSize.to_int ( * field_0'0 self) = Seq.length (Snapshot.inner _prod)
-    /\  * field_0'0 self < (max'0 : usize)
+    [%#span16] let (x, _prod) = args in UIntSize.to_int (field_0'0 self).current = Seq.length (Snapshot.inner _prod)
+    /\ (field_0'0 self).current < (max'0 : usize)
   
   use prelude.prelude.Snapshot
   
@@ -3827,13 +3827,14 @@ module C06MapPrecond_Counter
   predicate unnest'0 [#"../06_map_precond.rs" 206 8 206 41] (self : Closure'0.c06mapprecond_counter_closure2 i) (_2 : Closure'0.c06mapprecond_counter_closure2 i)
     
    =
-     ^ field_0'0 _2 =  ^ field_0'0 self
+    (field_0'0 _2).final = (field_0'0 self).final
   
   predicate postcondition_mut'0 [#"../06_map_precond.rs" 206 8 206 41] (self : borrowed (Closure'0.c06mapprecond_counter_closure2 i)) (args : (uint32, Snapshot.snap_ty (Seq.seq uint32))) (result : uint32)
     
    =
-    (let (x, _prod) = args in UIntSize.to_int ( * field_0'0 ( ^ self)) = UIntSize.to_int ( * field_0'0 ( * self)) + 1)
-    /\ unnest'0 ( * self) ( ^ self)
+    (let (x, _prod) = args in UIntSize.to_int (field_0'0 self.final).current
+    = UIntSize.to_int (field_0'0 self.current).current + 1)
+    /\ unnest'0 self.current self.final
   
   use seq.Seq
   
@@ -3846,10 +3847,10 @@ module C06MapPrecond_Counter
      -> inv'3 e2
      -> inv'3 e1
      -> inv'6 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new s)
-     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc s e1))
+     -> precondition'0 f.current (e1, Snapshot.new s)
+     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
   
   predicate preservation_inv'0 [#"../06_map_precond.rs" 93 4 93 73] (iter : i) (func : Closure'0.c06mapprecond_counter_closure2 i) (produced : Seq.seq uint32)
     
@@ -3860,11 +3861,11 @@ module C06MapPrecond_Counter
      -> inv'3 e2
      -> inv'3 e1
      -> inv'6 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new (Seq.(++) produced s))
+     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
      -> postcondition_mut'0 f (e1, Snapshot.new (Seq.(++) produced s)) b
-     -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
   
   axiom preservation_inv'0_spec : forall iter : i, func : Closure'0.c06mapprecond_counter_closure2 i, produced : Seq.seq uint32 . ([%#span19] inv'2 iter)
    -> ([%#span20] inv'4 func)
@@ -3880,7 +3881,7 @@ module C06MapPrecond_Counter
     [%#span24] forall func : Closure'0.c06mapprecond_counter_closure2 i . forall iter : borrowed i . inv'4 func
      -> inv'1 iter
      -> completed'0 iter
-     -> next_precondition'0 ( ^ iter) func (Seq.empty  : Seq.seq uint32) /\ preservation'0 ( ^ iter) func
+     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq uint32) /\ preservation'0 iter.final func
   
   use C06MapPrecond_Map_Type as Map'0
   
@@ -3923,12 +3924,12 @@ module C06MapPrecond_Counter
     {[%#s06_map_precond1] forall done' : borrowed i . inv'1 done'
      -> completed'0 done'
      -> (forall steps : Seq.seq uint32 . forall next : i . inv'2 next
-     -> produces'0 ( ^ done') steps next  -> steps = (Seq.empty  : Seq.seq uint32) /\  ^ done' = next)}
+     -> produces'0 done'.final steps next  -> steps = (Seq.empty  : Seq.seq uint32) /\ done'.final = next)}
     (! bb0
     [ bb0 = bb1
     | bb1 = s0
       [ s0 =  [ &cnt <- [%#s06_map_precond0] (0 : usize) ] s1
-      | s1 = Borrow.borrow_mut <usize> {cnt} (fun (_ret':borrowed usize) ->  [ &_8 <- _ret' ]  [ &cnt <-  ^ _8 ] s2)
+      | s1 = Borrow.borrow_mut <usize> {cnt} (fun (_ret':borrowed usize) ->  [ &_8 <- _ret' ]  [ &cnt <- _8.final ] s2)
       | s2 =  [ &_7 <- Closure'0.C06mapprecond_counter_closure2 _8 ] 
         (any [ any_ (_any:borrowed usize)-> (!  [ &_8 <- _any ] s3) ] )
       | s3 = map'0 {iter} {_7}
@@ -4077,7 +4078,7 @@ module C06MapPrecond_Impl0
   
   predicate inv'2 (_x : borrowed (Map'0.t_map i b f item'0))
   
-  axiom inv'2 : forall x : borrowed (Map'0.t_map i b f item'0) . inv'2 x = (inv'0 ( * x) /\ inv'0 ( ^ x))
+  axiom inv'2 : forall x : borrowed (Map'0.t_map i b f item'0) . inv'2 x = (inv'0 x.current /\ inv'0 x.final)
   
   predicate invariant'1 (self : Seq.seq b) =
     [%#span3] true
@@ -4113,10 +4114,10 @@ module C06MapPrecond_Impl0
      -> inv'8 e2
      -> inv'8 e1
      -> inv'4 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new s)
-     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc s e1))
+     -> precondition'0 f.current (e1, Snapshot.new s)
+     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
   
   use seq.Seq
   
@@ -4127,11 +4128,11 @@ module C06MapPrecond_Impl0
      -> inv'8 e2
      -> inv'8 e1
      -> inv'4 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new (Seq.(++) produced s))
+     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
      -> postcondition_mut'0 f (e1, Snapshot.new (Seq.(++) produced s)) b
-     -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
   
   axiom preservation_inv'0_spec : forall iter : i, func : f, produced : Seq.seq item'0 . ([%#span6] inv'9 iter)
    -> ([%#span7] inv'10 func)
@@ -4149,7 +4150,7 @@ module C06MapPrecond_Impl0
     [%#span11] forall func : f . forall iter : borrowed i . inv'10 func
      -> inv'12 iter
      -> completed'1 iter
-     -> next_precondition'0 ( ^ iter) func (Seq.empty  : Seq.seq item'0) /\ preservation'0 ( ^ iter) func
+     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq item'0) /\ preservation'0 iter.final func
   
   predicate invariant'0 [#"../06_map_precond.rs" 157 4 157 30] (self : Map'0.t_map i b f item'0) =
     [%#span12] reinitialize'0 ()
@@ -4197,29 +4198,29 @@ module C06MapPrecond_Impl0
     = Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) s
     /\ (exists fs : Seq.seq (borrowed f) . inv'5 fs
     /\ Seq.length fs = Seq.length visited
-    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i)
+    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
     /\ (if Seq.length visited = 0 then
       C06MapPrecond_Map_Type.map_func self = C06MapPrecond_Map_Type.map_func succ
     else
-       * Seq.get fs 0 = C06MapPrecond_Map_Type.map_func self
-      /\  ^ Seq.get fs (Seq.length visited - 1) = C06MapPrecond_Map_Type.map_func succ
+      (Seq.get fs 0).current = C06MapPrecond_Map_Type.map_func self
+      /\ (Seq.get fs (Seq.length visited - 1)).final = C06MapPrecond_Map_Type.map_func succ
     )
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> unnest'0 (C06MapPrecond_Map_Type.map_func self) ( * Seq.get fs i)
-    /\ precondition'0 ( * Seq.get fs i) (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i)))
+     -> unnest'0 (C06MapPrecond_Map_Type.map_func self) (Seq.get fs i).current
+    /\ precondition'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i)))
     /\ postcondition_mut'0 (Seq.get fs i) (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i))) (Seq.get visited i))))
   
   predicate produces_one'0 [#"../06_map_precond.rs" 142 4 142 57] (self : Map'0.t_map i b f item'0) (visited : b) (succ : Map'0.t_map i b f item'0)
     
    =
     [%#span18] exists f : borrowed f . inv'7 f
-    /\  * f = C06MapPrecond_Map_Type.map_func self
-    /\  ^ f = C06MapPrecond_Map_Type.map_func succ
+    /\ f.current = C06MapPrecond_Map_Type.map_func self
+    /\ f.final = C06MapPrecond_Map_Type.map_func succ
     /\ (exists e : item'0 . inv'8 e
     /\ produces'1 (C06MapPrecond_Map_Type.map_iter self) (Seq.singleton e) (C06MapPrecond_Map_Type.map_iter succ)
     /\ Snapshot.inner (C06MapPrecond_Map_Type.map_produced succ)
     = Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e
-    /\ precondition'0 ( * f) (e, C06MapPrecond_Map_Type.map_produced self)
+    /\ precondition'0 f.current (e, C06MapPrecond_Map_Type.map_produced self)
     /\ postcondition_mut'0 f (e, C06MapPrecond_Map_Type.map_produced self) visited)
   
   axiom produces_one'0_spec : forall self : Map'0.t_map i b f item'0, visited : b, succ : Map'0.t_map i b f item'0 . ([%#span14] inv'0 self)
@@ -4228,9 +4229,9 @@ module C06MapPrecond_Impl0
    -> ([%#span17] produces_one'0 self visited succ = produces'0 self (Seq.singleton visited) succ)
   
   predicate completed'0 [#"../06_map_precond.rs" 21 4 21 35] (self : borrowed (Map'0.t_map i b f item'0)) =
-    [%#span19] Snapshot.inner (C06MapPrecond_Map_Type.map_produced ( ^ self)) = (Seq.empty  : Seq.seq item'0)
-    /\ completed'1 (Borrow.borrow_logic (C06MapPrecond_Map_Type.map_iter ( * self)) (C06MapPrecond_Map_Type.map_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1))
-    /\ C06MapPrecond_Map_Type.map_func ( * self) = C06MapPrecond_Map_Type.map_func ( ^ self)
+    [%#span19] Snapshot.inner (C06MapPrecond_Map_Type.map_produced self.final) = (Seq.empty  : Seq.seq item'0)
+    /\ completed'1 (Borrow.borrow_logic (C06MapPrecond_Map_Type.map_iter self.current) (C06MapPrecond_Map_Type.map_iter self.final) (Borrow.inherit_id (Borrow.get_id self) 1))
+    /\ C06MapPrecond_Map_Type.map_func self.current = C06MapPrecond_Map_Type.map_func self.final
   
   use seq.Seq
   
@@ -4249,12 +4250,12 @@ module C06MapPrecond_Impl0
   /\ (forall result : Option'0.t_option b . inv'3 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces_one'0 ( * self) v ( ^ self)
+    | Option'0.C_Some v -> produces_one'0 self.current v self.final
     end
    -> inv'3 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
-    | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end)
   
   goal produces_refl_refn : [%#s06_map_precond2] forall self : Map'0.t_map i b f item'0 . inv'0 self

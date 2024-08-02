@@ -351,11 +351,13 @@ module GhostPtrToken_Test
     
   
   predicate resolve'2 (self : borrowed int32) =
-    [%#span30]  ^ self =  * self
+    [%#span30] self.final = self.current
   
   let rec swap'0 (x:borrowed int32) (y:borrowed int32) (return'  (ret:()))= {[@expl:precondition] [%#span32] inv'1 y}
     {[@expl:precondition] [%#span31] inv'1 x}
-    any [ return' (result:())-> {[%#span34]  ^ y =  * x} {[%#span33]  ^ x =  * y} (! return' {result}) ] 
+    any
+    [ return' (result:())-> {[%#span34] y.final = x.current} {[%#span33] x.final = y.current} (! return' {result}) ]
+    
   
   predicate resolve'3 (self : int32) =
     [%#span35] true
@@ -405,28 +407,28 @@ module GhostPtrToken_Test
   && ([%#span53] len'0 (remove'0 self k) = (if contains'0 self k then len'0 self - 1 else len'0 self))
   && ([%#span52] view'0 (remove'0 self k) = Map.set (view'0 self) k (Option'0.C_None))
   
-  let rec take_mut'0 (self:borrowed (GhostPtrTokenMut'0.t_ghostptrtokenmut int32)) (ptr:opaque_ptr) (return'  (ret:borrowed int32))= {[@expl:precondition] [%#span55] contains'0 (cur'0 ( * self)) ptr}
+  let rec take_mut'0 (self:borrowed (GhostPtrTokenMut'0.t_ghostptrtokenmut int32)) (ptr:opaque_ptr) (return'  (ret:borrowed int32))= {[@expl:precondition] [%#span55] contains'0 (cur'0 self.current) ptr}
     any
     [ return' (result:borrowed int32)-> {[%#span60] inv'1 result}
-      {[%#span59] not contains'0 (fin'0 ( ^ self)) ptr}
-      {[%#span58] fin'0 ( * self) = insert'0 (fin'0 ( ^ self)) ptr ( ^ result)}
-      {[%#span57] cur'0 ( ^ self) = remove'0 (cur'0 ( * self)) ptr}
-      {[%#span56]  * result = lookup_unsized'0 (cur'0 ( * self)) ptr}
+      {[%#span59] not contains'0 (fin'0 self.final) ptr}
+      {[%#span58] fin'0 self.current = insert'0 (fin'0 self.final) ptr result.final}
+      {[%#span57] cur'0 self.final = remove'0 (cur'0 self.current) ptr}
+      {[%#span56] result.current = lookup_unsized'0 (cur'0 self.current) ptr}
       (! return' {result}) ]
     
   
   let rec borrow_mut'0 (self:borrowed (GhostPtrToken'0.t_ghostptrtoken int32)) (return'  (ret:GhostPtrTokenMut'0.t_ghostptrtokenmut int32))= any
     [ return' (result:GhostPtrTokenMut'0.t_ghostptrtokenmut int32)-> {[%#span62] fin'0 result
-      = shallow_model'0 ( ^ self)}
-      {[%#span61] cur'0 result = shallow_model'0 ( * self)}
+      = shallow_model'0 self.final}
+      {[%#span61] cur'0 result = shallow_model'0 self.current}
       (! return' {result}) ]
     
   
   let rec ptr_from_box'0 (self:borrowed (GhostPtrToken'0.t_ghostptrtoken int32)) (val':int32) (return'  (ret:opaque_ptr))= {[@expl:precondition] [%#span63] inv'0 val'}
     any
-    [ return' (result:opaque_ptr)-> {[%#span65] shallow_model'0 ( ^ self)
-      = insert'0 (shallow_model'0 ( * self)) result val'}
-      {[%#span64] not contains'0 (shallow_model'0 ( * self)) result}
+    [ return' (result:opaque_ptr)-> {[%#span65] shallow_model'0 self.final
+      = insert'0 (shallow_model'0 self.current) result val'}
+      {[%#span64] not contains'0 (shallow_model'0 self.current) result}
       (! return' {result}) ]
     
   
@@ -466,7 +468,7 @@ module GhostPtrToken_Test
       
     | bb1 = s0
       [ s0 = Borrow.borrow_mut <GhostPtrToken'0.t_ghostptrtoken int32> {token}
-          (fun (_ret':borrowed (GhostPtrToken'0.t_ghostptrtoken int32)) ->  [ &_3 <- _ret' ]  [ &token <-  ^ _3 ] s1)
+          (fun (_ret':borrowed (GhostPtrToken'0.t_ghostptrtoken int32)) ->  [ &_3 <- _ret' ]  [ &token <- _3.final ] s1)
       | s1 = bb2 ]
       
     | bb2 = s0
@@ -475,7 +477,7 @@ module GhostPtrToken_Test
       
     | bb3 = s0
       [ s0 = Borrow.borrow_mut <GhostPtrToken'0.t_ghostptrtoken int32> {token}
-          (fun (_ret':borrowed (GhostPtrToken'0.t_ghostptrtoken int32)) ->  [ &_6 <- _ret' ]  [ &token <-  ^ _6 ] s1)
+          (fun (_ret':borrowed (GhostPtrToken'0.t_ghostptrtoken int32)) ->  [ &_6 <- _ret' ]  [ &token <- _6.final ] s1)
       | s1 = bb4 ]
       
     | bb4 = s0
@@ -484,7 +486,7 @@ module GhostPtrToken_Test
       
     | bb5 = s0
       [ s0 = Borrow.borrow_mut <GhostPtrToken'0.t_ghostptrtoken int32> {token}
-          (fun (_ret':borrowed (GhostPtrToken'0.t_ghostptrtoken int32)) ->  [ &_9 <- _ret' ]  [ &token <-  ^ _9 ] s1)
+          (fun (_ret':borrowed (GhostPtrToken'0.t_ghostptrtoken int32)) ->  [ &_9 <- _ret' ]  [ &token <- _9.final ] s1)
       | s1 = borrow_mut'0 {_9} (fun (_ret':GhostPtrTokenMut'0.t_ghostptrtokenmut int32) ->  [ &token_mut <- _ret' ] s2)
       | s2 = bb6 ]
       
@@ -492,7 +494,7 @@ module GhostPtrToken_Test
       [ s0 = Borrow.borrow_mut <GhostPtrTokenMut'0.t_ghostptrtokenmut int32> {token_mut}
           (fun (_ret':borrowed (GhostPtrTokenMut'0.t_ghostptrtokenmut int32)) ->
              [ &_11 <- _ret' ] 
-             [ &token_mut <-  ^ _11 ] 
+             [ &token_mut <- _11.final ] 
             s1)
       | s1 = take_mut'0 {_11} {ptr1} (fun (_ret':borrowed int32) ->  [ &m1 <- _ret' ] s2)
       | s2 = bb7 ]
@@ -501,7 +503,7 @@ module GhostPtrToken_Test
       [ s0 = Borrow.borrow_mut <GhostPtrTokenMut'0.t_ghostptrtokenmut int32> {token_mut}
           (fun (_ret':borrowed (GhostPtrTokenMut'0.t_ghostptrtokenmut int32)) ->
              [ &_14 <- _ret' ] 
-             [ &token_mut <-  ^ _14 ] 
+             [ &token_mut <- _14.final ] 
             s1)
       | s1 = take_mut'0 {_14} {ptr2} (fun (_ret':borrowed int32) ->  [ &m2 <- _ret' ] s2)
       | s2 = bb8 ]
@@ -509,7 +511,7 @@ module GhostPtrToken_Test
     | bb8 = s0
       [ s0 = -{resolve'0 token_mut}- s1
       | s1 = promoted3 (fun (pr3:int32) ->  [ &_104 <- pr3 ] s2)
-      | s2 =  [ &_17 <- ( * m1, _104) ] s3
+      | s2 =  [ &_17 <- (m1.current, _104) ] s3
       | s3 =  [ &left_val <- let (r'0, _) = _17 in r'0 ] s4
       | s4 =  [ &right_val <- let (_, r'1) = _17 in r'1 ] s5
       | s5 = -{resolve'1 _17}- s6
@@ -518,7 +520,7 @@ module GhostPtrToken_Test
       
     | bb9 = s0
       [ s0 = promoted2 (fun (pr2:int32) ->  [ &_103 <- pr2 ] s1)
-      | s1 =  [ &_36 <- ( * m2, _103) ] s2
+      | s1 =  [ &_36 <- (m2.current, _103) ] s2
       | s2 =  [ &left_val1 <- let (r'0, _) = _36 in r'0 ] s3
       | s3 =  [ &right_val1 <- let (_, r'1) = _36 in r'1 ] s4
       | s4 = -{resolve'1 _36}- s5
@@ -526,10 +528,10 @@ module GhostPtrToken_Test
       | s6 = any [ br0 -> {_42 = false} (! bb12) | br1 -> {_42} (! bb11) ]  ]
       
     | bb11 = s0
-      [ s0 = Borrow.borrow_final <int32> { * m1} {Borrow.get_id m1}
-          (fun (_ret':borrowed int32) ->  [ &_55 <- _ret' ]  [ &m1 <- { m1 with current = ( ^ _55) ; } ] s1)
-      | s1 = Borrow.borrow_final <int32> { * m2} {Borrow.get_id m2}
-          (fun (_ret':borrowed int32) ->  [ &_56 <- _ret' ]  [ &m2 <- { m2 with current = ( ^ _56) ; } ] s2)
+      [ s0 = Borrow.borrow_final <int32> {m1.current} {Borrow.get_id m1}
+          (fun (_ret':borrowed int32) ->  [ &_55 <- _ret' ]  [ &m1 <- { m1 with current = _55.final ; } ] s1)
+      | s1 = Borrow.borrow_final <int32> {m2.current} {Borrow.get_id m2}
+          (fun (_ret':borrowed int32) ->  [ &_56 <- _ret' ]  [ &m2 <- { m2 with current = _56.final ; } ] s2)
       | s2 = swap'0 {_55} {_56} (fun (_ret':()) ->  [ &_54 <- _ret' ] s3)
       | s3 = bb13 ]
       

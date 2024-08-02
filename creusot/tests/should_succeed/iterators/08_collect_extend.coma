@@ -323,19 +323,19 @@ module C08CollectExtend_Extend
   use prelude.prelude.Intrinsic
   
   predicate resolve'6 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
-    [%#span25]  ^ self =  * self
+    [%#span25] self.final = self.current
   
   predicate resolve'5 (self : i)
   
   use seq.Seq
   
   function shallow_model'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq t =
-    [%#span26] shallow_model'2 ( * self)
+    [%#span26] shallow_model'2 self.current
   
   let rec push'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (value:t) (return'  (ret:()))= {[@expl:precondition] [%#span28] inv'9 value}
     {[@expl:precondition] [%#span27] inv'7 self}
     any
-    [ return' (result:())-> {[%#span29] shallow_model'2 ( ^ self) = Seq.snoc (shallow_model'0 self) value}
+    [ return' (result:())-> {[%#span29] shallow_model'2 self.final = Seq.snoc (shallow_model'0 self) value}
       (! return' {result}) ]
     
   
@@ -345,14 +345,14 @@ module C08CollectExtend_Extend
     [%#span30] true
   
   predicate resolve'3 (self : borrowed i) =
-    [%#span25]  ^ self =  * self
+    [%#span25] self.final = self.current
   
   let rec next'0 (self:borrowed i) (return'  (ret:Option'0.t_option t))= {[@expl:precondition] [%#span31] inv'4 self}
     any
     [ return' (result:Option'0.t_option t)-> {[%#span33] inv'5 result}
       {[%#span32] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -422,18 +422,19 @@ module C08CollectExtend_Extend
     | bb6 = bb7
     | bb7 = s0 [ s0 =  [ &old_8_0 <- Snapshot.new vec ] s1 | s1 = bb8 ] 
     | bb8 = bb8
-      [ bb8 = {[@expl:loop invariant]  ^ Snapshot.inner old_8_0 =  ^ vec}
+      [ bb8 = {[@expl:loop invariant] (Snapshot.inner old_8_0).final = vec.final}
         {[@expl:loop invariant] [%#s08_collect_extend3] Seq.(==) (shallow_model'0 vec) (Seq.(++) (shallow_model'1 old_vec) (Snapshot.inner produced))}
-        {[@expl:loop invariant] [%#s08_collect_extend4]  ^ Snapshot.inner old_vec =  ^ vec}
+        {[@expl:loop invariant] [%#s08_collect_extend4] (Snapshot.inner old_vec).final = vec.final}
         {[@expl:loop invariant] [%#s08_collect_extend3] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter1}
         {[@expl:loop invariant] [%#s08_collect_extend3] inv'3 iter1}
         (! s0) [ s0 = bb9 ] 
         [ bb9 = s0
-          [ s0 = Borrow.borrow_mut <i> {iter1} (fun (_ret':borrowed i) ->  [ &_19 <- _ret' ]  [ &iter1 <-  ^ _19 ] s1)
-          | s1 = -{inv'3 ( ^ _19)}- s2
-          | s2 = Borrow.borrow_final <i> { * _19} {Borrow.get_id _19}
-              (fun (_ret':borrowed i) ->  [ &_18 <- _ret' ]  [ &_19 <- { _19 with current = ( ^ _18) ; } ] s3)
-          | s3 = -{inv'3 ( ^ _18)}- s4
+          [ s0 = Borrow.borrow_mut <i> {iter1}
+              (fun (_ret':borrowed i) ->  [ &_19 <- _ret' ]  [ &iter1 <- _19.final ] s1)
+          | s1 = -{inv'3 _19.final}- s2
+          | s2 = Borrow.borrow_final <i> {_19.current} {Borrow.get_id _19}
+              (fun (_ret':borrowed i) ->  [ &_18 <- _ret' ]  [ &_19 <- { _19 with current = _18.final ; } ] s3)
+          | s3 = -{inv'3 _18.final}- s4
           | s4 = next'0 {_18} (fun (_ret':Option'0.t_option t) ->  [ &_17 <- _ret' ] s5)
           | s5 = bb10 ]
           
@@ -464,12 +465,12 @@ module C08CollectExtend_Extend
           | s2 = -{resolve'2 produced}- s3
           | s3 =  [ &x <- __creusot_proc_iter_elem ] 
             (any [ any_ (_any:t)-> (!  [ &__creusot_proc_iter_elem <- _any ] s4) ] )
-          | s4 = Borrow.borrow_mut <Vec'0.t_vec t (Global'0.t_global)> { * vec}
+          | s4 = Borrow.borrow_mut <Vec'0.t_vec t (Global'0.t_global)> {vec.current}
               (fun (_ret':borrowed (Vec'0.t_vec t (Global'0.t_global))) ->
                  [ &_26 <- _ret' ] 
-                 [ &vec <- { vec with current = ( ^ _26) ; } ] 
+                 [ &vec <- { vec with current = _26.final ; } ] 
                 s5)
-          | s5 = -{inv'6 ( ^ _26)}- s6
+          | s5 = -{inv'6 _26.final}- s6
           | s6 = push'0 {_26} {x} (fun (_ret':()) ->  [ &_25 <- _ret' ] s7)
           | s7 = bb16 ]
           
@@ -521,7 +522,7 @@ module C08CollectExtend_Extend
     [ return' (result:())-> {[@expl:postcondition] [%#s08_collect_extend8] exists prod : Seq.seq t . exists done' : borrowed i . inv'8 prod
       /\ inv'4 done'
       /\ completed'0 done'
-      /\ produces'0 iter prod ( * done') /\ shallow_model'2 ( ^ vec) = Seq.(++) (shallow_model'0 vec) prod}
+      /\ produces'0 iter prod done'.current /\ shallow_model'2 vec.final = Seq.(++) (shallow_model'0 vec) prod}
       (! return' {result}) ]
     
 end
@@ -741,12 +742,12 @@ module C08CollectExtend_Collect
   use seq.Seq
   
   function shallow_model'1 (self : borrowed (Vec'0.t_vec item'0 (Global'0.t_global))) : Seq.seq item'0 =
-    [%#span26] shallow_model'0 ( * self)
+    [%#span26] shallow_model'0 self.current
   
   let rec push'0 (self:borrowed (Vec'0.t_vec item'0 (Global'0.t_global))) (value:item'0) (return'  (ret:()))= {[@expl:precondition] [%#span28] inv'8 value}
     {[@expl:precondition] [%#span27] inv'7 self}
     any
-    [ return' (result:())-> {[%#span29] shallow_model'0 ( ^ self) = Seq.snoc (shallow_model'1 self) value}
+    [ return' (result:())-> {[%#span29] shallow_model'0 self.final = Seq.snoc (shallow_model'1 self) value}
       (! return' {result}) ]
     
   
@@ -756,14 +757,14 @@ module C08CollectExtend_Collect
     [%#span30] true
   
   predicate resolve'2 (self : borrowed i) =
-    [%#span31]  ^ self =  * self
+    [%#span31] self.final = self.current
   
   let rec next'0 (self:borrowed i) (return'  (ret:Option'0.t_option item'0))= {[@expl:precondition] [%#span32] inv'3 self}
     any
     [ return' (result:Option'0.t_option item'0)-> {[%#span34] inv'4 result}
       {[%#span33] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -830,11 +831,12 @@ module C08CollectExtend_Collect
         {[@expl:loop invariant] [%#s08_collect_extend3] inv'2 iter1}
         (! s0) [ s0 = bb10 ] 
         [ bb10 = s0
-          [ s0 = Borrow.borrow_mut <i> {iter1} (fun (_ret':borrowed i) ->  [ &_17 <- _ret' ]  [ &iter1 <-  ^ _17 ] s1)
-          | s1 = -{inv'2 ( ^ _17)}- s2
-          | s2 = Borrow.borrow_final <i> { * _17} {Borrow.get_id _17}
-              (fun (_ret':borrowed i) ->  [ &_16 <- _ret' ]  [ &_17 <- { _17 with current = ( ^ _16) ; } ] s3)
-          | s3 = -{inv'2 ( ^ _16)}- s4
+          [ s0 = Borrow.borrow_mut <i> {iter1}
+              (fun (_ret':borrowed i) ->  [ &_17 <- _ret' ]  [ &iter1 <- _17.final ] s1)
+          | s1 = -{inv'2 _17.final}- s2
+          | s2 = Borrow.borrow_final <i> {_17.current} {Borrow.get_id _17}
+              (fun (_ret':borrowed i) ->  [ &_16 <- _ret' ]  [ &_17 <- { _17 with current = _16.final ; } ] s3)
+          | s3 = -{inv'2 _16.final}- s4
           | s4 = next'0 {_16} (fun (_ret':Option'0.t_option item'0) ->  [ &_15 <- _ret' ] s5)
           | s5 = bb11 ]
           
@@ -872,9 +874,9 @@ module C08CollectExtend_Collect
           | s4 = Borrow.borrow_mut <Vec'0.t_vec item'0 (Global'0.t_global)> {res}
               (fun (_ret':borrowed (Vec'0.t_vec item'0 (Global'0.t_global))) ->
                  [ &_24 <- _ret' ] 
-                 [ &res <-  ^ _24 ] 
+                 [ &res <- _24.final ] 
                 s5)
-          | s5 = -{inv'5 ( ^ _24)}- s6
+          | s5 = -{inv'5 _24.final}- s6
           | s6 = push'0 {_24} {x} (fun (_ret':()) ->  [ &_23 <- _ret' ] s7)
           | s7 = bb17 ]
           
@@ -925,7 +927,7 @@ module C08CollectExtend_Collect
     
     [ return' (result:Vec'0.t_vec item'0 (Global'0.t_global))-> {[@expl:postcondition] [%#s08_collect_extend7] inv'5 result}
       {[@expl:postcondition] [%#s08_collect_extend6] exists prod : Seq.seq item'0 . exists done' : borrowed i . inv'6 prod
-      /\ inv'3 done' /\ completed'0 done' /\ produces'0 iter prod ( * done') /\ shallow_model'0 result = prod}
+      /\ inv'3 done' /\ completed'0 done' /\ produces'0 iter prod done'.current /\ shallow_model'0 result = prod}
       (! return' {result}) ]
     
 end
@@ -1163,16 +1165,16 @@ module C08CollectExtend_ExtendIndex
     [%#span26] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'0 self)  -> resolve'2 (index_logic'0 self i)
   
   predicate resolve'0 (self : borrowed (Vec'0.t_vec uint32 (Global'0.t_global))) =
-    [%#span27]  ^ self =  * self
+    [%#span27] self.final = self.current
   
   function shallow_model'2 (self : borrowed (Vec'0.t_vec uint32 (Global'0.t_global))) : Seq.seq uint32 =
-    [%#span28] shallow_model'0 ( * self)
+    [%#span28] shallow_model'0 self.current
   
   function shallow_model'5 (self : borrowed (IntoIter'0.t_intoiter uint32 (Global'0.t_global))) : Seq.seq uint32 =
-    [%#span28] shallow_model'4 ( * self)
+    [%#span28] shallow_model'4 self.current
   
   predicate resolve'3 (self : borrowed (IntoIter'0.t_intoiter uint32 (Global'0.t_global))) =
-    [%#span27]  ^ self =  * self
+    [%#span27] self.final = self.current
   
   predicate completed'0 (self : borrowed (IntoIter'0.t_intoiter uint32 (Global'0.t_global))) =
     [%#span29] resolve'3 self /\ shallow_model'5 self = (Seq.empty  : Seq.seq uint32)
@@ -1183,7 +1185,7 @@ module C08CollectExtend_ExtendIndex
     [ return' (result:())-> {[%#span32] exists prod : Seq.seq uint32 . exists done' : borrowed (IntoIter'0.t_intoiter uint32 (Global'0.t_global)) . inv'3 prod
       /\ inv'4 done'
       /\ completed'0 done'
-      /\ produces'0 iter prod ( * done') /\ shallow_model'0 ( ^ vec) = Seq.(++) (shallow_model'2 vec) prod}
+      /\ produces'0 iter prod done'.current /\ shallow_model'0 vec.final = Seq.(++) (shallow_model'2 vec) prod}
       (! return' {result}) ]
     
   
@@ -1210,11 +1212,11 @@ module C08CollectExtend_ExtendIndex
     | bb1 = s0 [ s0 =  [ &oldv2 <- [%#s08_collect_extend1] Snapshot.new v2 ] s1 | s1 = bb2 ] 
     | bb2 = s0
       [ s0 = Borrow.borrow_mut <Vec'0.t_vec uint32 (Global'0.t_global)> {v1}
-          (fun (_ret':borrowed (Vec'0.t_vec uint32 (Global'0.t_global))) ->  [ &_9 <- _ret' ]  [ &v1 <-  ^ _9 ] s1)
-      | s1 = Borrow.borrow_final <Vec'0.t_vec uint32 (Global'0.t_global)> { * _9} {Borrow.get_id _9}
+          (fun (_ret':borrowed (Vec'0.t_vec uint32 (Global'0.t_global))) ->  [ &_9 <- _ret' ]  [ &v1 <- _9.final ] s1)
+      | s1 = Borrow.borrow_final <Vec'0.t_vec uint32 (Global'0.t_global)> {_9.current} {Borrow.get_id _9}
           (fun (_ret':borrowed (Vec'0.t_vec uint32 (Global'0.t_global))) ->
              [ &_8 <- _ret' ] 
-             [ &_9 <- { _9 with current = ( ^ _8) ; } ] 
+             [ &_9 <- { _9 with current = _8.final ; } ] 
             s2)
       | s2 = into_iter'0 {v2} (fun (_ret':IntoIter'0.t_intoiter uint32 (Global'0.t_global)) ->  [ &_10 <- _ret' ] s3)
       | s3 = bb3 ]
@@ -1388,7 +1390,7 @@ module C08CollectExtend_CollectExample
     any
     [ return' (result:Vec'0.t_vec uint32 (Global'0.t_global))-> {[%#span24] inv'3 result}
       {[%#span23] exists prod : Seq.seq uint32 . exists done' : borrowed i . inv'1 prod
-      /\ inv'2 done' /\ completed'0 done' /\ produces'0 iter prod ( * done') /\ shallow_model'0 result = prod}
+      /\ inv'2 done' /\ completed'0 done' /\ produces'0 iter prod done'.current /\ shallow_model'0 result = prod}
       (! return' {result}) ]
     
   

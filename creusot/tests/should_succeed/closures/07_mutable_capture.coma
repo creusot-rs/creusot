@@ -49,24 +49,24 @@ module C07MutableCapture_TestFnmut_Closure1
   predicate unnest'0 [#"../07_mutable_capture.rs" 8 8 8 37] (self : Closure'0.c07mutablecapture_testfnmut_closure1) (_2 : Closure'0.c07mutablecapture_testfnmut_closure1)
     
    =
-     ^ field_0'0 _2 =  ^ field_0'0 self
+    (field_0'0 _2).final = (field_0'0 self).final
   
   use prelude.prelude.UInt32
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed Closure'0.c07mutablecapture_testfnmut_closure1) =
-    [%#span4]  ^ self =  * self
+    [%#span4] self.final = self.current
   
-  let rec c07mutablecapture_testfnmut_closure1 (_1:borrowed Closure'0.c07mutablecapture_testfnmut_closure1) (return'  (ret:int32))= {[%#s07_mutable_capture2] UInt32.to_int ( * field_0'0 ( * _1))
+  let rec c07mutablecapture_testfnmut_closure1 (_1:borrowed Closure'0.c07mutablecapture_testfnmut_closure1) (return'  (ret:int32))= {[%#s07_mutable_capture2] UInt32.to_int (field_0'0 _1.current).current
     < 1000000}
     (! bb0
     [ bb0 = s0
-      [ s0 = Closure'0.c07mutablecapture_testfnmut_closure1 { * _1}
+      [ s0 = Closure'0.c07mutablecapture_testfnmut_closure1 {_1.current}
           (fun (r'0:borrowed uint32) ->
-            UInt32.add { * r'0} {[%#s07_mutable_capture0] (1 : uint32)}
+            UInt32.add {r'0.current} {[%#s07_mutable_capture0] (1 : uint32)}
               (fun (_ret':uint32) ->
-                Closure'0.c07mutablecapture_testfnmut_closure1 { * _1}
+                Closure'0.c07mutablecapture_testfnmut_closure1 {_1.current}
                   (fun (l'0:borrowed uint32) ->
                     
                     [ &_1 <- { _1 with current = Closure'0.C07mutablecapture_testfnmut_closure1 ({ l'0 with current = _ret' ; }) ; } ]
@@ -84,9 +84,9 @@ module C07MutableCapture_TestFnmut_Closure1
     | & res : int32 = any_l ()
     | & res1 : int32 = any_l () ]
     
-    [ return' (result:int32)-> {[@expl:postcondition] unnest'0 ( * _1) ( ^ _1)}
-      {[@expl:postcondition] [%#s07_mutable_capture3] UInt32.to_int ( * field_0'0 ( ^ _1))
-      = UInt32.to_int ( * field_0'0 ( * _1)) + 1}
+    [ return' (result:int32)-> {[@expl:postcondition] unnest'0 _1.current _1.final}
+      {[@expl:postcondition] [%#s07_mutable_capture3] UInt32.to_int (field_0'0 _1.final).current
+      = UInt32.to_int (field_0'0 _1.current).current + 1}
       (! return' {result}) ]
     
 end
@@ -110,7 +110,7 @@ module C07MutableCapture_TestFnmut
   use prelude.prelude.UInt32
   
   predicate resolve'2 (self : borrowed uint32) =
-    [%#span2]  ^ self =  * self
+    [%#span2] self.final = self.current
   
   use prelude.prelude.Int
   
@@ -131,33 +131,39 @@ module C07MutableCapture_TestFnmut
   predicate unnest'0 [#"../07_mutable_capture.rs" 8 8 8 37] (self : Closure'0.c07mutablecapture_testfnmut_closure1) (_2 : Closure'0.c07mutablecapture_testfnmut_closure1)
     
    =
-     ^ field_0'0 _2 =  ^ field_0'0 self
+    (field_0'0 _2).final = (field_0'0 self).final
   
   predicate resolve'1 (self : borrowed Closure'0.c07mutablecapture_testfnmut_closure1) =
-    [%#span2]  ^ self =  * self
+    [%#span2] self.final = self.current
   
-  let rec closure1'0 (_1:borrowed Closure'0.c07mutablecapture_testfnmut_closure1) (return'  (ret:int32))= {[@expl:precondition] [%#span3] UInt32.to_int ( * field_0'0 ( * _1))
+  let rec closure1'0 (_1:borrowed Closure'0.c07mutablecapture_testfnmut_closure1) (return'  (ret:int32))= {[@expl:precondition] [%#span3] UInt32.to_int (field_0'0 _1.current).current
     < 1000000}
     any
-    [ return' (result:int32)-> {unnest'0 ( * _1) ( ^ _1)}
-      {[%#span4] UInt32.to_int ( * field_0'0 ( ^ _1)) = UInt32.to_int ( * field_0'0 ( * _1)) + 1}
+    [ return' (result:int32)-> {unnest'0 _1.current _1.final}
+      {[%#span4] UInt32.to_int (field_0'0 _1.final).current = UInt32.to_int (field_0'0 _1.current).current + 1}
       (! return' {result}) ]
     
   
   let rec test_fnmut (x:uint32) (return'  (ret:()))= {[%#s07_mutable_capture1] UInt32.to_int x = 100000}
     (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_mut <uint32> {x} (fun (_ret':borrowed uint32) ->  [ &_4 <- _ret' ]  [ &x <-  ^ _4 ] s1)
+      [ s0 = Borrow.borrow_mut <uint32> {x} (fun (_ret':borrowed uint32) ->  [ &_4 <- _ret' ]  [ &x <- _4.final ] s1)
       | s1 =  [ &c <- Closure'0.C07mutablecapture_testfnmut_closure1 _4 ] 
         (any [ any_ (_any:borrowed uint32)-> (!  [ &_4 <- _any ] s2) ] )
       | s2 = Borrow.borrow_mut <Closure'0.c07mutablecapture_testfnmut_closure1> {c}
-          (fun (_ret':borrowed Closure'0.c07mutablecapture_testfnmut_closure1) ->  [ &_6 <- _ret' ]  [ &c <-  ^ _6 ] s3)
+          (fun (_ret':borrowed Closure'0.c07mutablecapture_testfnmut_closure1) ->
+             [ &_6 <- _ret' ] 
+             [ &c <- _6.final ] 
+            s3)
       | s3 = closure1'0 {_6} (fun (_ret':int32) ->  [ &_5 <- _ret' ] s4)
       | s4 = bb1 ]
       
     | bb1 = s0
       [ s0 = Borrow.borrow_mut <Closure'0.c07mutablecapture_testfnmut_closure1> {c}
-          (fun (_ret':borrowed Closure'0.c07mutablecapture_testfnmut_closure1) ->  [ &_9 <- _ret' ]  [ &c <-  ^ _9 ] s1)
+          (fun (_ret':borrowed Closure'0.c07mutablecapture_testfnmut_closure1) ->
+             [ &_9 <- _ret' ] 
+             [ &c <- _9.final ] 
+            s1)
       | s1 = closure1'0 {_9} (fun (_ret':int32) ->  [ &_8 <- _ret' ] s2)
       | s2 = bb2 ]
       

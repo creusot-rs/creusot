@@ -555,21 +555,21 @@ module C08Haystack_Search
     
   
   predicate resolve'1 (self : borrowed (Range'0.t_range usize)) =
-    [%#span59]  ^ self =  * self
+    [%#span59] self.final = self.current
   
   use seq.Seq
   
   predicate completed'1 (self : borrowed (Range'0.t_range usize)) =
     [%#span60] resolve'1 self
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start ( * self))
-    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end ( * self))
+    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self.current)
+    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end self.current)
   
   let rec next'1 (self:borrowed (Range'0.t_range usize)) (return'  (ret:Option'0.t_option usize))= {[@expl:precondition] [%#span61] inv'6 self}
     any
     [ return' (result:Option'0.t_option usize)-> {[%#span63] inv'5 result}
       {[%#span62] match result with
         | Option'0.C_None -> completed'1 self
-        | Option'0.C_Some v -> produces'1 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'1 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -593,17 +593,17 @@ module C08Haystack_Search
     
   
   predicate resolve'0 (self : borrowed (RangeInclusive'0.t_rangeinclusive usize)) =
-    [%#span59]  ^ self =  * self
+    [%#span59] self.final = self.current
   
   predicate completed'0 (self : borrowed (RangeInclusive'0.t_rangeinclusive usize)) =
-    [%#span69] is_empty_log'0 ( * self) /\ is_empty_log'0 ( ^ self)
+    [%#span69] is_empty_log'0 self.current /\ is_empty_log'0 self.final
   
   let rec next'0 (self:borrowed (RangeInclusive'0.t_rangeinclusive usize)) (return'  (ret:Option'0.t_option usize))= {[@expl:precondition] [%#span70] inv'4 self}
     any
     [ return' (result:Option'0.t_option usize)-> {[%#span71] inv'5 result}
       {[%#span62] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -695,12 +695,12 @@ module C08Haystack_Search
           [ s0 = Borrow.borrow_mut <RangeInclusive'0.t_rangeinclusive usize> {iter}
               (fun (_ret':borrowed (RangeInclusive'0.t_rangeinclusive usize)) ->
                  [ &_26 <- _ret' ] 
-                 [ &iter <-  ^ _26 ] 
+                 [ &iter <- _26.final ] 
                 s1)
-          | s1 = Borrow.borrow_final <RangeInclusive'0.t_rangeinclusive usize> { * _26} {Borrow.get_id _26}
+          | s1 = Borrow.borrow_final <RangeInclusive'0.t_rangeinclusive usize> {_26.current} {Borrow.get_id _26}
               (fun (_ret':borrowed (RangeInclusive'0.t_rangeinclusive usize)) ->
                  [ &_25 <- _ret' ] 
-                 [ &_26 <- { _26 with current = ( ^ _25) ; } ] 
+                 [ &_26 <- { _26 with current = _25.final ; } ] 
                 s2)
           | s2 = next'0 {_25} (fun (_ret':Option'0.t_option usize) ->  [ &_24 <- _ret' ] s3)
           | s3 = bb9 ]
@@ -745,11 +745,11 @@ module C08Haystack_Search
             (! s0) [ s0 = bb20 ] 
             [ bb20 = s0
               [ s0 = Borrow.borrow_mut <Range'0.t_range usize> {iter1}
-                  (fun (_ret':borrowed (Range'0.t_range usize)) ->  [ &_47 <- _ret' ]  [ &iter1 <-  ^ _47 ] s1)
-              | s1 = Borrow.borrow_final <Range'0.t_range usize> { * _47} {Borrow.get_id _47}
+                  (fun (_ret':borrowed (Range'0.t_range usize)) ->  [ &_47 <- _ret' ]  [ &iter1 <- _47.final ] s1)
+              | s1 = Borrow.borrow_final <Range'0.t_range usize> {_47.current} {Borrow.get_id _47}
                   (fun (_ret':borrowed (Range'0.t_range usize)) ->
                      [ &_46 <- _ret' ] 
-                     [ &_47 <- { _47 with current = ( ^ _46) ; } ] 
+                     [ &_47 <- { _47 with current = _46.final ; } ] 
                     s2)
               | s2 = next'1 {_46} (fun (_ret':Option'0.t_option usize) ->  [ &_45 <- _ret' ] s3)
               | s3 = bb21 ]

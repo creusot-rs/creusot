@@ -467,6 +467,10 @@ impl Exp {
         self
     }
 
+    pub fn field(self, field: &str) -> Self {
+        Self::RecField { record: Box::new(self), label: field.into() }
+    }
+
     // Construct an application from this expression and an argument
     pub fn app_to(mut self, arg: Self) -> Self {
         match self {
@@ -718,6 +722,7 @@ pub(crate) enum Precedence {
     Prefix,   // prefix-op
     Abs,      // Function abstraction
     App,      // Function application
+    Field,    // Record field accesses (from observing the why3 parser)
     Brackets, // Brackets ([_])
     Atom,     // Syntactically closed or atomic expressions
     BangOp,   // !
@@ -746,7 +751,8 @@ impl Precedence {
             Precedence::Infix4 => Precedence::Prefix,
             Precedence::Prefix => Precedence::Abs,
             Precedence::Abs => Precedence::App,
-            Precedence::App => Precedence::Brackets,
+            Precedence::App => Precedence::Field,
+            Precedence::Field => Precedence::Brackets,
             Precedence::Brackets => Precedence::Atom,
             Precedence::Atom => Precedence::BangOp,
             Precedence::BangOp => Precedence::BangOp,
@@ -783,7 +789,7 @@ impl Exp {
             Exp::Var(_) => Atom,
             Exp::QVar(_) => Atom,
             Exp::RecUp { .. } => App,
-            Exp::RecField { .. } => Infix4,
+            Exp::RecField { .. } => Field,
             Exp::Tuple(_) => Atom,
             Exp::Constructor { .. } => App,
             // Exp::Seq(_, _) => { Term }

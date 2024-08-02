@@ -21,18 +21,18 @@ module C682_AddSome
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed uint64) =
-    [%#span4]  ^ self =  * self
+    [%#span4] self.final = self.current
   
-  let rec add_some (a:borrowed uint64) (return'  (ret:()))= {[%#s6821]  * a <= div (max'0 : uint64) (2 : uint64)}
+  let rec add_some (a:borrowed uint64) (return'  (ret:()))= {[%#s6821] a.current <= div (max'0 : uint64) (2 : uint64)}
     (! bb0
     [ bb0 = s0
-      [ s0 = UInt64.add { * a} {[%#s6820] (1 : uint64)}
+      [ s0 = UInt64.add {a.current} {[%#s6820] (1 : uint64)}
           (fun (_ret':uint64) ->  [ &a <- { a with current = _ret' ; } ] s1)
       | s1 = -{resolve'0 a}- s2
       | s2 = return' {_0} ]
        ]
     ) [ & _0 : () = any_l () | & a : borrowed uint64 = a ] 
-    [ return' (result:())-> {[@expl:postcondition] [%#s6822]  ^ a >  * a} (! return' {result}) ]
+    [ return' (result:())-> {[@expl:postcondition] [%#s6822] a.final > a.current} (! return' {result}) ]
     
 end
 module C682_Foo
@@ -63,29 +63,31 @@ module C682_Foo
   use prelude.prelude.Borrow
   
   predicate resolve'0 (self : borrowed uint64) =
-    [%#span4]  ^ self =  * self
+    [%#span4] self.final = self.current
   
   use prelude.prelude.Int
   
   constant max'0 : uint64 = [%#span5] (18446744073709551615 : uint64)
   
-  let rec add_some'0 (a:borrowed uint64) (return'  (ret:()))= {[@expl:precondition] [%#span6]  * a
+  let rec add_some'0 (a:borrowed uint64) (return'  (ret:()))= {[@expl:precondition] [%#span6] a.current
     <= div (max'0 : uint64) (2 : uint64)}
-    any [ return' (result:())-> {[%#span7]  ^ a >  * a} (! return' {result}) ] 
+    any [ return' (result:())-> {[%#span7] a.final > a.current} (! return' {result}) ] 
   
   use prelude.prelude.Snapshot
   
-  let rec foo (a:borrowed uint64) (return'  (ret:()))= {[%#s6822]  * a = (3 : uint64)}
+  let rec foo (a:borrowed uint64) (return'  (ret:()))= {[%#s6822] a.current = (3 : uint64)}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &a_p <- [%#s6820] Snapshot.new ( * a) ] s1 | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 =  [ &a_p <- [%#s6820] Snapshot.new a.current ] s1 | s1 = bb1 ] 
     | bb1 = s0
-      [ s0 = Borrow.borrow_final <uint64> { * a} {Borrow.get_id a}
-          (fun (_ret':borrowed uint64) ->  [ &_7 <- _ret' ]  [ &a <- { a with current = ( ^ _7) ; } ] s1)
+      [ s0 = Borrow.borrow_final <uint64> {a.current} {Borrow.get_id a}
+          (fun (_ret':borrowed uint64) ->  [ &_7 <- _ret' ]  [ &a <- { a with current = _7.final ; } ] s1)
       | s1 = add_some'0 {_7} (fun (_ret':()) ->  [ &_6 <- _ret' ] s2)
       | s2 = bb2 ]
       
     | bb2 = s0
-      [ s0 = -{resolve'0 a}- s1 | s1 = {[@expl:assertion] [%#s6821]  * a > Snapshot.inner a_p} s2 | s2 = return' {_0} ]
+      [ s0 = -{resolve'0 a}- s1
+      | s1 = {[@expl:assertion] [%#s6821] a.current > Snapshot.inner a_p} s2
+      | s2 = return' {_0} ]
        ]
     )
     [ & _0 : () = any_l ()
@@ -93,5 +95,5 @@ module C682_Foo
     | & a_p : Snapshot.snap_ty uint64 = any_l ()
     | & _6 : () = any_l ()
     | & _7 : borrowed uint64 = any_l () ]
-     [ return' (result:())-> {[@expl:postcondition] [%#s6823]  ^ a >  * a} (! return' {result}) ] 
+     [ return' (result:())-> {[@expl:postcondition] [%#s6823] a.final > a.current} (! return' {result}) ] 
 end

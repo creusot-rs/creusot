@@ -162,26 +162,26 @@ module C01_IndexMutSlice
   use prelude.prelude.Borrow
   
   function shallow_model'0 (self : borrowed (slice uint32)) : Seq.seq uint32 =
-    [%#span12] shallow_model'1 ( * self)
+    [%#span12] shallow_model'1 self.current
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (slice uint32)) =
-    [%#span13]  ^ self =  * self
+    [%#span13] self.final = self.current
   
   let rec index_mut_slice (a:borrowed (slice uint32)) (return'  (ret:()))= {[%#s013] Seq.length (shallow_model'0 a) = 5}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &_4 <- [%#s010] (2 : usize) ] s1
-      | s1 =  [ &_5 <- Slice.length ( * a) ] s2
+      | s1 =  [ &_5 <- Slice.length a.current ] s2
       | s2 = UIntSize.lt {_4} {_5} (fun (_ret':bool) ->  [ &_6 <- _ret' ] s3)
       | s3 = {[@expl:index in bounds] [%#s011] _6} s4
       | s4 = bb1 ]
       
     | bb1 = s0
-      [ s0 = Slice.get <uint32> { * a} {_4}
+      [ s0 = Slice.get <uint32> {a.current} {_4}
           (fun (l'0:uint32) ->
-            Slice.set <uint32> { * a} {_4} {[%#s012] (3 : uint32)}
+            Slice.set <uint32> {a.current} {_4} {[%#s012] (3 : uint32)}
               (fun (l'1:slice uint32) ->  [ &a <- { a with current = l'1 ; } ] s1))
       | s1 = -{resolve'0 a}- s2
       | s2 = return' {_0} ]
@@ -193,7 +193,7 @@ module C01_IndexMutSlice
     | & _5 : usize = any_l ()
     | & _6 : bool = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#s014] UInt32.to_int (index_logic'0 ( ^ a) 2) = 3}
+    [ return' (result:())-> {[@expl:postcondition] [%#s014] UInt32.to_int (index_logic'0 a.final 2) = 3}
       (! return' {result}) ]
     
 end

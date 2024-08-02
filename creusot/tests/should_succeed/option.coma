@@ -362,14 +362,14 @@ module Option_TestOption
     
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span82]  ^ self =  * self
+    [%#span82] self.final = self.current
   
   let rec cloned'1 (self:Option'0.t_option (borrowed int32)) (return'  (ret:Option'0.t_option int32))= {[@expl:precondition] [%#span83] inv'5 self}
     any
     [ return' (result:Option'0.t_option int32)-> {[%#span85] inv'1 result}
       {[%#span80] self = Option'0.C_None
       \/ (exists t : borrowed int32 . inv'4 t
-      /\ self = Option'0.C_Some t /\ result = Option'0.C_Some ( * t) /\ resolve'0 t)}
+      /\ self = Option'0.C_Some t /\ result = Option'0.C_Some (t.current) /\ resolve'0 t)}
       {[%#span84] self = Option'0.C_None  -> result = Option'0.C_None}
       (! return' {result}) ]
     
@@ -388,7 +388,7 @@ module Option_TestOption
     [ return' (result:Option'0.t_option int32)-> {[%#span91] inv'1 result}
       {[%#span80] self = Option'0.C_None
       \/ (exists t : borrowed int32 . inv'4 t
-      /\ self = Option'0.C_Some t /\ result = Option'0.C_Some ( * t) /\ resolve'0 t)}
+      /\ self = Option'0.C_Some t /\ result = Option'0.C_Some (t.current) /\ resolve'0 t)}
       {[%#span90] self = Option'0.C_None  -> result = Option'0.C_None}
       (! return' {result}) ]
     
@@ -419,14 +419,14 @@ module Option_TestOption
     {[@expl:precondition] [%#span99] inv'3 self}
     any
     [ return' (result:Option'0.t_option int32)-> {[%#span101] inv'1 result}
-      {[%#span80] result =  * self /\  ^ self = Option'0.C_Some value}
+      {[%#span80] result = self.current /\ self.final = Option'0.C_Some value}
       (! return' {result}) ]
     
   
   let rec take'0 (self:borrowed (Option'0.t_option int32)) (return'  (ret:Option'0.t_option int32))= {[@expl:precondition] [%#span102] inv'3 self}
     any
     [ return' (result:Option'0.t_option int32)-> {[%#span103] inv'1 result}
-      {[%#span80] result =  * self /\  ^ self = Option'0.C_None}
+      {[%#span80] result = self.current /\ self.final = Option'0.C_None}
       (! return' {result}) ]
     
   
@@ -482,10 +482,11 @@ module Option_TestOption
   let rec as_mut'0 (self:borrowed (Option'0.t_option int32)) (return'  (ret:Option'0.t_option (borrowed int32)))= {[@expl:precondition] [%#span120] inv'3 self}
     any
     [ return' (result:Option'0.t_option (borrowed int32))-> {[%#span123] inv'5 result}
-      {[%#span122]  * self = Option'0.C_None
+      {[%#span122] self.current = Option'0.C_None
       \/ (exists r : borrowed int32 . inv'4 r
-      /\ result = Option'0.C_Some r /\  * self = Option'0.C_Some ( * r) /\  ^ self = Option'0.C_Some ( ^ r))}
-      {[%#span121]  * self = Option'0.C_None  -> result = Option'0.C_None /\  ^ self = Option'0.C_None}
+      /\ result = Option'0.C_Some r
+      /\ self.current = Option'0.C_Some (r.current) /\ self.final = Option'0.C_Some (r.final))}
+      {[%#span121] self.current = Option'0.C_None  -> result = Option'0.C_None /\ self.final = Option'0.C_None}
       (! return' {result}) ]
     
   
@@ -552,7 +553,7 @@ module Option_TestOption
       
     | bb22 = s0
       [ s0 = Borrow.borrow_mut <Option'0.t_option int32> {none}
-          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_34 <- _ret' ]  [ &none <-  ^ _34 ] s1)
+          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_34 <- _ret' ]  [ &none <- _34.final ] s1)
       | s1 = as_mut'0 {_34} (fun (_ret':Option'0.t_option (borrowed int32)) ->  [ &_33 <- _ret' ] s2)
       | s2 = bb24 ]
       
@@ -560,7 +561,7 @@ module Option_TestOption
     | bb25 = any [ br0 -> {_31 = false} (! bb27) | br1 -> {_31} (! bb26) ] 
     | bb26 = s0
       [ s0 = Borrow.borrow_mut <Option'0.t_option int32> {some}
-          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_38 <- _ret' ]  [ &some <-  ^ _38 ] s1)
+          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_38 <- _ret' ]  [ &some <- _38.final ] s1)
       | s1 = as_mut'0 {_38} (fun (_ret':Option'0.t_option (borrowed int32)) ->  [ &_37 <- _ret' ] s2)
       | s2 = bb28 ]
       
@@ -578,7 +579,7 @@ module Option_TestOption
       
     | bb31 = s0
       [ s0 = Borrow.borrow_mut <Option'0.t_option int32> {some}
-          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_46 <- _ret' ]  [ &some <-  ^ _46 ] s1)
+          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_46 <- _ret' ]  [ &some <- _46.final ] s1)
       | s1 = as_mut'0 {_46} (fun (_ret':Option'0.t_option (borrowed int32)) ->  [ &_45 <- _ret' ] s2)
       | s2 = bb33 ]
       
@@ -661,7 +662,7 @@ module Option_TestOption
       
     | bb76 = s0
       [ s0 = Borrow.borrow_mut <Option'0.t_option int32> {none}
-          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_125 <- _ret' ]  [ &none <-  ^ _125 ] s1)
+          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_125 <- _ret' ]  [ &none <- _125.final ] s1)
       | s1 = take'0 {_125} (fun (_ret':Option'0.t_option int32) ->  [ &_124 <- _ret' ] s2)
       | s2 = bb78 ]
       
@@ -671,7 +672,7 @@ module Option_TestOption
     | bb82 = any [ br0 -> {_128 = false} (! bb84) | br1 -> {_128} (! bb83) ] 
     | bb83 = s0
       [ s0 = Borrow.borrow_mut <Option'0.t_option int32> {some}
-          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_135 <- _ret' ]  [ &some <-  ^ _135 ] s1)
+          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_135 <- _ret' ]  [ &some <- _135.final ] s1)
       | s1 = take'0 {_135} (fun (_ret':Option'0.t_option int32) ->  [ &_134 <- _ret' ] s2)
       | s2 = bb85 ]
       
@@ -687,7 +688,7 @@ module Option_TestOption
       [ s0 =  [ &_141 <- Option'0.C_Some ([%#soption20] (1 : int32)) ] s1
       | s1 =  [ &some <- _141 ] (any [ any_ (_any:Option'0.t_option int32)-> (!  [ &_141 <- _any ] s2) ] )
       | s2 = Borrow.borrow_mut <Option'0.t_option int32> {none}
-          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_146 <- _ret' ]  [ &none <-  ^ _146 ] s3)
+          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_146 <- _ret' ]  [ &none <- _146.final ] s3)
       | s3 = replace'0 {_146} {[%#soption21] (2 : int32)}
           (fun (_ret':Option'0.t_option int32) ->  [ &_145 <- _ret' ] s4)
       | s4 = bb92 ]
@@ -704,7 +705,7 @@ module Option_TestOption
       [ s0 =  [ &_153 <- Option'0.C_None ] s1
       | s1 =  [ &none <- _153 ] (any [ any_ (_any:Option'0.t_option int32)-> (!  [ &_153 <- _any ] s2) ] )
       | s2 = Borrow.borrow_mut <Option'0.t_option int32> {some}
-          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_158 <- _ret' ]  [ &some <-  ^ _158 ] s3)
+          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_158 <- _ret' ]  [ &some <- _158.final ] s3)
       | s3 = replace'0 {_158} {[%#soption23] (2 : int32)}
           (fun (_ret':Option'0.t_option int32) ->  [ &_157 <- _ret' ] s4)
       | s4 = bb99 ]
@@ -723,7 +724,7 @@ module Option_TestOption
       
     | bb104 = s0
       [ s0 = Borrow.borrow_mut <Option'0.t_option int32> {some}
-          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_169 <- _ret' ]  [ &some <-  ^ _169 ] s1)
+          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_169 <- _ret' ]  [ &some <- _169.final ] s1)
       | s1 = replace'0 {_169} {[%#soption26] (1 : int32)}
           (fun (_ret':Option'0.t_option int32) ->  [ &_168 <- _ret' ] s2)
       | s2 = bb106 ]
@@ -766,7 +767,7 @@ module Option_TestOption
       
     | bb127 = s0
       [ s0 = Borrow.borrow_mut <Option'0.t_option int32> {none}
-          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_205 <- _ret' ]  [ &none <-  ^ _205 ] s1)
+          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_205 <- _ret' ]  [ &none <- _205.final ] s1)
       | s1 = as_mut'0 {_205} (fun (_ret':Option'0.t_option (borrowed int32)) ->  [ &_204 <- _ret' ] s2)
       | s2 = bb129 ]
       
@@ -775,7 +776,7 @@ module Option_TestOption
     | bb131 = any [ br0 -> {_201 = false} (! bb133) | br1 -> {_201} (! bb132) ] 
     | bb132 = s0
       [ s0 = Borrow.borrow_mut <Option'0.t_option int32> {some}
-          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_212 <- _ret' ]  [ &some <-  ^ _212 ] s1)
+          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_212 <- _ret' ]  [ &some <- _212.final ] s1)
       | s1 = as_mut'0 {_212} (fun (_ret':Option'0.t_option (borrowed int32)) ->  [ &_211 <- _ret' ] s2)
       | s2 = bb134 ]
       
@@ -800,7 +801,7 @@ module Option_TestOption
       
     | bb147 = s0
       [ s0 = Borrow.borrow_mut <Option'0.t_option int32> {none}
-          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_233 <- _ret' ]  [ &none <-  ^ _233 ] s1)
+          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_233 <- _ret' ]  [ &none <- _233.final ] s1)
       | s1 = as_mut'0 {_233} (fun (_ret':Option'0.t_option (borrowed int32)) ->  [ &_232 <- _ret' ] s2)
       | s2 = bb149 ]
       
@@ -809,7 +810,7 @@ module Option_TestOption
     | bb151 = any [ br0 -> {_229 = false} (! bb153) | br1 -> {_229} (! bb152) ] 
     | bb152 = s0
       [ s0 = Borrow.borrow_mut <Option'0.t_option int32> {some}
-          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_240 <- _ret' ]  [ &some <-  ^ _240 ] s1)
+          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &_240 <- _ret' ]  [ &some <- _240.final ] s1)
       | s1 = as_mut'0 {_240} (fun (_ret':Option'0.t_option (borrowed int32)) ->  [ &_239 <- _ret' ] s2)
       | s2 = bb154 ]
       

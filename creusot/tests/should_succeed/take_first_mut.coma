@@ -160,63 +160,63 @@ module TakeFirstMut_TakeFirstMut
   use prelude.prelude.Intrinsic
   
   predicate resolve'3 (self : borrowed t) =
-    [%#span12]  ^ self =  * self
+    [%#span12] self.final = self.current
   
   predicate resolve'2 (self : borrowed (slice t)) =
-    [%#span12]  ^ self =  * self
+    [%#span12] self.final = self.current
   
   predicate resolve'1 (self : Option'0.t_option (borrowed t, borrowed (slice t))) =
     [%#span13] true
   
   predicate resolve'0 (self : borrowed (borrowed (slice t))) =
-    [%#span12]  ^ self =  * self
+    [%#span12] self.final = self.current
   
   function shallow_model'1 (self : borrowed (slice t)) : Seq.seq t =
-    [%#span14] shallow_model'0 ( * self)
+    [%#span14] shallow_model'0 self.current
   
   let rec split_first_mut'0 (self:borrowed (slice t)) (return'  (ret:Option'0.t_option (borrowed t, borrowed (slice t))))= {[@expl:precondition] [%#span15] inv'0 self}
     any
     [ return' (result:Option'0.t_option (borrowed t, borrowed (slice t)))-> {[%#span17] inv'3 result}
       {[%#span16] match result with
-        | Option'0.C_Some (first, tail) ->  * first = index_logic'0 ( * self) 0
-        /\  ^ first = index_logic'0 ( ^ self) 0
-        /\ Seq.length (shallow_model'0 ( * self)) > 0
-        /\ Seq.length (shallow_model'0 ( ^ self)) > 0
-        /\ shallow_model'0 ( * tail) = tail'0 (shallow_model'0 ( * self))
-        /\ shallow_model'0 ( ^ tail) = tail'0 (shallow_model'0 ( ^ self))
+        | Option'0.C_Some (first, tail) -> first.current = index_logic'0 self.current 0
+        /\ first.final = index_logic'0 self.final 0
+        /\ Seq.length (shallow_model'0 self.current) > 0
+        /\ Seq.length (shallow_model'0 self.final) > 0
+        /\ shallow_model'0 tail.current = tail'0 (shallow_model'0 self.current)
+        /\ shallow_model'0 tail.final = tail'0 (shallow_model'0 self.final)
         | Option'0.C_None -> Seq.length (shallow_model'1 self) = 0
-        /\  ^ self =  * self /\ shallow_model'1 self = (Seq.empty  : Seq.seq t)
+        /\ self.final = self.current /\ shallow_model'1 self = (Seq.empty  : Seq.seq t)
         end}
       (! return' {result}) ]
     
   
   predicate is_default'0 (self : borrowed (slice t)) =
-    [%#span18] shallow_model'1 self = (Seq.empty  : Seq.seq t) /\ shallow_model'0 ( ^ self) = (Seq.empty  : Seq.seq t)
+    [%#span18] shallow_model'1 self = (Seq.empty  : Seq.seq t) /\ shallow_model'0 self.final = (Seq.empty  : Seq.seq t)
   
   let rec take'0 (dest:borrowed (borrowed (slice t))) (return'  (ret:borrowed (slice t)))= {[@expl:precondition] [%#span19] inv'2 dest}
     any
     [ return' (result:borrowed (slice t))-> {[%#span22] inv'0 result}
-      {[%#span21] is_default'0 ( ^ dest)}
-      {[%#span20] result =  * dest}
+      {[%#span21] is_default'0 dest.final}
+      {[%#span20] result = dest.current}
       (! return' {result}) ]
     
   
   let rec take_first_mut (self_:borrowed (borrowed (slice t))) (return'  (ret:Option'0.t_option (borrowed t)))= {[%#stake_first_mut1] inv'2 self_}
     (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_final <borrowed (slice t)> { * self_} {Borrow.get_id self_}
+      [ s0 = Borrow.borrow_final <borrowed (slice t)> {self_.current} {Borrow.get_id self_}
           (fun (_ret':borrowed (borrowed (slice t))) ->
              [ &_6 <- _ret' ] 
-             [ &self_ <- { self_ with current = ( ^ _6) ; } ] 
+             [ &self_ <- { self_ with current = _6.final ; } ] 
             s1)
-      | s1 = -{inv'0 ( ^ _6)}- s2
+      | s1 = -{inv'0 _6.final}- s2
       | s2 = take'0 {_6} (fun (_ret':borrowed (slice t)) ->  [ &_5 <- _ret' ] s3)
       | s3 = bb1 ]
       
     | bb1 = s0
-      [ s0 = Borrow.borrow_final <slice t> { * _5} {Borrow.get_id _5}
-          (fun (_ret':borrowed (slice t)) ->  [ &_4 <- _ret' ]  [ &_5 <- { _5 with current = ( ^ _4) ; } ] s1)
-      | s1 = -{inv'1 ( ^ _4)}- s2
+      [ s0 = Borrow.borrow_final <slice t> {_5.current} {Borrow.get_id _5}
+          (fun (_ret':borrowed (slice t)) ->  [ &_4 <- _ret' ]  [ &_5 <- { _5 with current = _4.final ; } ] s1)
+      | s1 = -{inv'1 _4.final}- s2
       | s2 = split_first_mut'0 {_4}
           (fun (_ret':Option'0.t_option (borrowed t, borrowed (slice t))) ->  [ &_3 <- _ret' ] s3)
       | s3 = bb2 ]
@@ -255,18 +255,18 @@ module TakeFirstMut_TakeFirstMut
             ))
       | s2 = {[@expl:type invariant] inv'3 _3} s3
       | s3 = -{resolve'1 _3}- s4
-      | s4 = Borrow.borrow_final <slice t> { * rem} {Borrow.get_id rem}
-          (fun (_ret':borrowed (slice t)) ->  [ &_11 <- _ret' ]  [ &rem <- { rem with current = ( ^ _11) ; } ] s5)
-      | s5 = -{inv'1 ( ^ _11)}- s6
+      | s4 = Borrow.borrow_final <slice t> {rem.current} {Borrow.get_id rem}
+          (fun (_ret':borrowed (slice t)) ->  [ &_11 <- _ret' ]  [ &rem <- { rem with current = _11.final ; } ] s5)
+      | s5 = -{inv'1 _11.final}- s6
       | s6 =  [ &self_ <- { self_ with current = _11 ; } ] 
         (any [ any_ (_any:borrowed (slice t))-> (!  [ &_11 <- _any ] s7) ] )
-      | s7 = {[@expl:type invariant] inv'0 ( * self_)} s8
-      | s8 = -{resolve'2 ( * self_)}- s9
+      | s7 = {[@expl:type invariant] inv'0 self_.current} s8
+      | s8 = -{resolve'2 self_.current}- s9
       | s9 = {[@expl:type invariant] inv'2 self_} s10
       | s10 = -{resolve'0 self_}- s11
-      | s11 = Borrow.borrow_final <t> { * first} {Borrow.get_id first}
-          (fun (_ret':borrowed t) ->  [ &_12 <- _ret' ]  [ &first <- { first with current = ( ^ _12) ; } ] s12)
-      | s12 = -{inv'4 ( ^ _12)}- s13
+      | s11 = Borrow.borrow_final <t> {first.current} {Borrow.get_id first}
+          (fun (_ret':borrowed t) ->  [ &_12 <- _ret' ]  [ &first <- { first with current = _12.final ; } ] s12)
+      | s12 = -{inv'4 _12.final}- s13
       | s13 =  [ &_0 <- Option'0.C_Some _12 ] (any [ any_ (_any:borrowed t)-> (!  [ &_12 <- _any ] s14) ] )
       | s14 = {[@expl:type invariant] inv'0 rem} s15
       | s15 = -{resolve'2 rem}- s16
@@ -302,16 +302,16 @@ module TakeFirstMut_TakeFirstMut
     
     [ return' (result:Option'0.t_option (borrowed t))-> {[@expl:postcondition] [%#stake_first_mut3] inv'6 result}
       {[@expl:postcondition] [%#stake_first_mut2] match result with
-        | Option'0.C_Some r ->  * r = index_logic'0 ( *  * self_) 0
-        /\  ^ r = index_logic'0 ( ^  * self_) 0
-        /\ Seq.length (shallow_model'0 ( *  * self_)) > 0
-        /\ Seq.length (shallow_model'0 ( ^  * self_)) > 0
-        /\ shallow_model'0 ( *  ^ self_) = tail'0 (shallow_model'0 ( *  * self_))
-        /\ shallow_model'0 ( ^  ^ self_) = tail'0 (shallow_model'0 ( ^  * self_))
-        | Option'0.C_None -> shallow_model'0 ( *  ^ self_) = (Seq.empty  : Seq.seq t)
-        /\ shallow_model'0 ( ^  * self_) = (Seq.empty  : Seq.seq t)
-        /\ shallow_model'0 ( *  * self_) = (Seq.empty  : Seq.seq t)
-        /\ shallow_model'0 ( ^  ^ self_) = (Seq.empty  : Seq.seq t)
+        | Option'0.C_Some r -> r.current = index_logic'0 (self_.current).current 0
+        /\ r.final = index_logic'0 (self_.current).final 0
+        /\ Seq.length (shallow_model'0 (self_.current).current) > 0
+        /\ Seq.length (shallow_model'0 (self_.current).final) > 0
+        /\ shallow_model'0 (self_.final).current = tail'0 (shallow_model'0 (self_.current).current)
+        /\ shallow_model'0 (self_.final).final = tail'0 (shallow_model'0 (self_.current).final)
+        | Option'0.C_None -> shallow_model'0 (self_.final).current = (Seq.empty  : Seq.seq t)
+        /\ shallow_model'0 (self_.current).final = (Seq.empty  : Seq.seq t)
+        /\ shallow_model'0 (self_.current).current = (Seq.empty  : Seq.seq t)
+        /\ shallow_model'0 (self_.final).final = (Seq.empty  : Seq.seq t)
         end}
       (! return' {result}) ]
     

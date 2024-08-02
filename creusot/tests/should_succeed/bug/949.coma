@@ -287,11 +287,11 @@ module C949_Main
   
   use prelude.prelude.Borrow
   
-  let rec ptr_to_box'0 (self:borrowed (GhostPtrToken'0.t_ghostptrtoken int32)) (ptr:opaque_ptr) (return'  (ret:int32))= {[@expl:precondition] [%#span27] contains'0 (shallow_model'0 ( * self)) ptr}
+  let rec ptr_to_box'0 (self:borrowed (GhostPtrToken'0.t_ghostptrtoken int32)) (ptr:opaque_ptr) (return'  (ret:int32))= {[@expl:precondition] [%#span27] contains'0 (shallow_model'0 self.current) ptr}
     any
     [ return' (result:int32)-> {[%#span30] inv'0 result}
-      {[%#span29] shallow_model'0 ( ^ self) = remove'0 (shallow_model'0 ( * self)) ptr}
-      {[%#span28] result = lookup_unsized'0 (shallow_model'0 ( * self)) ptr}
+      {[%#span29] shallow_model'0 self.final = remove'0 (shallow_model'0 self.current) ptr}
+      {[%#span28] result = lookup_unsized'0 (shallow_model'0 self.current) ptr}
       (! return' {result}) ]
     
   
@@ -313,9 +313,9 @@ module C949_Main
   
   let rec ptr_from_box'0 (self:borrowed (GhostPtrToken'0.t_ghostptrtoken int32)) (val':int32) (return'  (ret:opaque_ptr))= {[@expl:precondition] [%#span41] inv'0 val'}
     any
-    [ return' (result:opaque_ptr)-> {[%#span43] shallow_model'0 ( ^ self)
-      = insert'0 (shallow_model'0 ( * self)) result val'}
-      {[%#span42] not contains'0 (shallow_model'0 ( * self)) result}
+    [ return' (result:opaque_ptr)-> {[%#span43] shallow_model'0 self.final
+      = insert'0 (shallow_model'0 self.current) result val'}
+      {[%#span42] not contains'0 (shallow_model'0 self.current) result}
       (! return' {result}) ]
     
   
@@ -339,13 +339,13 @@ module C949_Main
     | bb1 = s0 [ s0 =  [ &b <- [%#s9491] (1 : int32) ] s1 | s1 = bb2 ] 
     | bb2 = s0
       [ s0 = Borrow.borrow_mut <GhostPtrToken'0.t_ghostptrtoken int32> {tok}
-          (fun (_ret':borrowed (GhostPtrToken'0.t_ghostptrtoken int32)) ->  [ &_4 <- _ret' ]  [ &tok <-  ^ _4 ] s1)
+          (fun (_ret':borrowed (GhostPtrToken'0.t_ghostptrtoken int32)) ->  [ &_4 <- _ret' ]  [ &tok <- _4.final ] s1)
       | s1 = ptr_from_box'0 {_4} {b} (fun (_ret':opaque_ptr) ->  [ &p <- _ret' ] s2)
       | s2 = bb3 ]
       
     | bb3 = s0
       [ s0 = Borrow.borrow_mut <GhostPtrToken'0.t_ghostptrtoken int32> {tok}
-          (fun (_ret':borrowed (GhostPtrToken'0.t_ghostptrtoken int32)) ->  [ &_7 <- _ret' ]  [ &tok <-  ^ _7 ] s1)
+          (fun (_ret':borrowed (GhostPtrToken'0.t_ghostptrtoken int32)) ->  [ &_7 <- _ret' ]  [ &tok <- _7.final ] s1)
       | s1 = ptr_to_box'0 {_7} {p} (fun (_ret':int32) ->  [ &r <- _ret' ] s2)
       | s2 = bb4 ]
       

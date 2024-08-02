@@ -351,9 +351,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 })
             }
             // VC( * T, Q) = VC(T, |t| Q(*t))
-            TermKind::Cur { term } => self.build_vc(&term, &|term| k(Exp::Current(Box::new(term)))),
+            TermKind::Cur { term } => self.build_vc(&term, &|term| k(term.field("current"))),
             // VC( ^ T, Q) = VC(T, |t| Q(^t))
-            TermKind::Fin { term } => self.build_vc(&term, &|term| k(Exp::Final(Box::new(term)))),
+            TermKind::Fin { term } => self.build_vc(&term, &|term| k(term.field("final"))),
             // VC(A -> B, Q) = VC(A, VC(B, Q(A -> B)))
             TermKind::Impl { lhs, rhs } => self.build_vc(lhs, &|lhs| {
                 Ok(Exp::if_(lhs, self.build_vc(rhs, k)?, k(Exp::mk_true())?))
