@@ -313,7 +313,7 @@ fn limited_function_encode(
     };
     let lim_call = function_call(&lim_sig);
     lim_sig.trigger = Some(Trigger::single(lim_call.clone()));
-    decls.push(Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig: sig.clone() }));
+    decls.push(Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig: lim_sig }));
     decls.push(Decl::Axiom(definition_axiom(&sig, body, "def")));
     decls.push(Decl::Axiom(definition_axiom(&sig, lim_call, "def_lim")));
 }

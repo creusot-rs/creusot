@@ -2,6 +2,7 @@ use rustc_hir::{def::Namespace, def_id::DefId};
 use why3::{
     declaration::{Contract, Signature},
     exp::{Binder, Trigger},
+    Ident,
 };
 
 use crate::{
@@ -24,9 +25,10 @@ pub(crate) fn signature_of<'tcx, N: Namer<'tcx>>(
     sig_to_why3(ctx, names, &pre_sig, def_id)
 }
 
-pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
+pub(crate) fn named_sig_to_why3<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,
+    name: Ident,
     pre_sig: &PreSignature<'tcx>,
     // FIXME: Get rid of this def id
     // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
@@ -34,8 +36,6 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
 ) -> Signature {
     let contract = names
         .with_vis(CloneLevel::Contract, |names| contract_to_why3(&pre_sig.contract, ctx, names));
-
-    let name = item_name(ctx.tcx, def_id, Namespace::ValueNS);
 
     let span = ctx.tcx.def_span(def_id);
     let args: Vec<Binder> = names.with_vis(CloneLevel::Signature, |names| {
@@ -75,6 +75,18 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
     };
     sig.trigger = trigger;
     sig
+}
+
+pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut N,
+    pre_sig: &PreSignature<'tcx>,
+    // FIXME: Get rid of this def id
+    // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
+    def_id: DefId,
+) -> Signature {
+    let name = item_name(ctx.tcx, def_id, Namespace::ValueNS);
+    named_sig_to_why3(ctx, names, name, pre_sig, def_id)
 }
 
 fn contract_to_why3<'tcx, N: Namer<'tcx>>(
