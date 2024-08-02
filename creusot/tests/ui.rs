@@ -319,7 +319,7 @@ fn print_diff<'a, W: WriteColor>(mut buf: W, diff: TextDiff<'a, 'a, 'a, str>) {
                     }
                     let color = chunk_color(change.tag());
                     buf.set_color(&color).unwrap();
-                    let index = change.old_index().or(change.new_index()).unwrap();
+                    let index = change.old_index().or(change.new_index()).unwrap() + 1;
 
                     for line in change.value().lines() {
                         writeln!(&mut buf, "{} {:>2} ┊ {}", sign, index, line).unwrap();
