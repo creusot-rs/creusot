@@ -5,15 +5,17 @@ INPUTPATH=$(pwd)/$(basename $1)
 popd > /dev/null
 SCRIPTPATH=$(dirname "$BASH_SOURCE")
 pushd $SCRIPTPATH > /dev/null
-rustc \
+eval $(cargo run --bin dev-env)
+cargo run --bin creusot-rustc --  \
+  --why3-config-file "$WHY3CONFIG" \
+  --output-file="${INPUTPATH%.*}.coma" \
+  --span-mode=absolute \
+  -- -Zno-codegen \
+  -Zmacro-backtrace \
   --extern creusot_contracts=./target/debug/libcreusot_contracts.rlib \
   -Ldependency=./target/debug/deps/ \
   --crate-type=lib \
-  -Zcrate-attr="feature(stmt_expr_attributes)" \
-  -Zcrate-attr="feature(proc_macro_hygiene)" \
-  -Zcrate-attr="feature(register_tool)" \
-  -Zcrate-attr="register_tool(creusot)" \
   -Zunpretty=mir \
   -Zdump-mir= \
-  $INPUTPATH
+  "$INPUTPATH"
 popd > /dev/null
