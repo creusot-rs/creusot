@@ -131,6 +131,19 @@ pub enum Terminator<'tcx> {
     Abort(Span),
 }
 
+#[derive(Clone, Debug)]
+pub enum Branches<'tcx> {
+    Int(Vec<(i128, BasicBlock)>, BasicBlock),
+    Uint(Vec<(u128, BasicBlock)>, BasicBlock),
+    Constructor(
+        AdtDef<'tcx>,
+        GenericArgsRef<'tcx>,
+        Vec<(VariantIdx, BasicBlock)>,
+        Option<BasicBlock>,
+    ),
+    Bool(BasicBlock, BasicBlock),
+}
+
 impl<'tcx> Terminator<'tcx> {
     pub fn targets(&self) -> impl Iterator<Item = BasicBlock> + '_ {
         use std::iter::*;
@@ -142,7 +155,7 @@ impl<'tcx> Terminator<'tcx> {
                 Branches::Uint(brs, def) => Box::new(brs.iter().map(|(_, b)| *b).chain(once(*def)))
                     as Box<dyn Iterator<Item = BasicBlock>>,
                 Branches::Constructor(_, _, brs, def) => {
-                    Box::new(brs.iter().map(|(_, b)| *b).chain(once(*def)))
+                    Box::new(brs.iter().map(|(_, b)| *b).chain(*def))
                         as Box<dyn Iterator<Item = BasicBlock>>
                 }
                 Branches::Bool(f, t) => {
@@ -153,14 +166,6 @@ impl<'tcx> Terminator<'tcx> {
             Terminator::Abort(_) => Box::new(empty()) as Box<dyn Iterator<Item = BasicBlock>>,
         }
     }
-}
-
-#[derive(Clone, Debug)]
-pub enum Branches<'tcx> {
-    Int(Vec<(i128, BasicBlock)>, BasicBlock),
-    Uint(Vec<(u128, BasicBlock)>, BasicBlock),
-    Constructor(AdtDef<'tcx>, GenericArgsRef<'tcx>, Vec<(VariantIdx, BasicBlock)>, BasicBlock),
-    Bool(BasicBlock, BasicBlock),
 }
 
 #[derive(Clone, Debug)]
