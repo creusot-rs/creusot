@@ -160,7 +160,7 @@ module C06FnSpecs_Weaken2
    -> ([%#span6] inv'1 args)
    -> ([%#span7] inv'3 res)
    -> ([%#span8] postcondition_once'0 self args res
-  = (exists s : borrowed f . inv'2 s /\  * s = self /\ postcondition_mut'0 s args res /\ resolve'0 ( ^ s)))
+  = (exists s : borrowed f . inv'2 s /\ s.current = self /\ postcondition_mut'0 s args res /\ resolve'0 s.final))
   
   predicate unnest'0 (self : f) (_2 : f)
   
@@ -178,7 +178,7 @@ module C06FnSpecs_Weaken2
   
   axiom postcondition_mut_unnest'0_spec : forall self : borrowed f, args : a, res : output'0 . ([%#span17] postcondition_mut'0 self args res)
    -> ([%#span18] inv'2 self)
-   -> ([%#span19] inv'1 args)  -> ([%#span20] inv'3 res)  -> ([%#span21] unnest'0 ( * self) ( ^ self))
+   -> ([%#span19] inv'1 args)  -> ([%#span20] inv'3 res)  -> ([%#span21] unnest'0 self.current self.final)
   
   predicate invariant'2 (self : borrowed f)
   
@@ -218,7 +218,7 @@ module C06FnSpecs_Weaken2
     ) [ & _0 : output'0 = any_l () | & f : f = f | & a : a = a ] 
     [ return' (result:output'0)-> {[@expl:postcondition] [%#s06_fn_specs4] inv'3 result}
       {[@expl:postcondition] [%#s06_fn_specs3] exists f2 : borrowed f . inv'2 f2
-      /\  * f2 = f /\ postcondition_mut'0 f2 a result /\ resolve'0 ( ^ f2)}
+      /\ f2.current = f /\ postcondition_mut'0 f2 a result /\ resolve'0 f2.final}
       (! return' {result}) ]
     
 end
@@ -323,7 +323,7 @@ module C06FnSpecs_Weaken
    -> ([%#span6] inv'1 args)
    -> ([%#span7] inv'2 res)
    -> ([%#span8] postcondition_once'0 self args res
-  = (exists s : borrowed f . inv'3 s /\  * s = self /\ postcondition_mut'0 s args res /\ resolve'0 ( ^ s)))
+  = (exists s : borrowed f . inv'3 s /\ s.current = self /\ postcondition_mut'0 s args res /\ resolve'0 s.final))
   
   predicate unnest'0 (self : f) (_2 : f)
   
@@ -341,7 +341,7 @@ module C06FnSpecs_Weaken
   
   axiom postcondition_mut_unnest'0_spec : forall self : borrowed f, args : a, res : output'0 . ([%#span17] postcondition_mut'0 self args res)
    -> ([%#span18] inv'3 self)
-   -> ([%#span19] inv'1 args)  -> ([%#span20] inv'2 res)  -> ([%#span21] unnest'0 ( * self) ( ^ self))
+   -> ([%#span19] inv'1 args)  -> ([%#span20] inv'2 res)  -> ([%#span21] unnest'0 self.current self.final)
   
   predicate invariant'3 (self : borrowed f)
   
@@ -361,14 +361,14 @@ module C06FnSpecs_Weaken
    -> ([%#span25] postcondition_once'0 self args res = (resolve'0 self /\ postcondition'0 self args res))
   
   predicate resolve'1 (self : borrowed f) =
-    [%#span26]  ^ self =  * self
+    [%#span26] self.final = self.current
   
   function fn_mut'0 (self : borrowed f) (args : a) (res : output'0) : ()
   
   axiom fn_mut'0_spec : forall self : borrowed f, args : a, res : output'0 . ([%#span27] inv'3 self)
    -> ([%#span28] inv'1 args)
    -> ([%#span29] inv'2 res)
-   -> ([%#span30] postcondition_mut'0 self args res = (resolve'1 self /\ postcondition'0 ( * self) args res))
+   -> ([%#span30] postcondition_mut'0 self args res = (resolve'1 self /\ postcondition'0 self.current args res))
   
   predicate invariant'1 (self : a)
   
@@ -388,7 +388,7 @@ module C06FnSpecs_Weaken
     any
     [ return' (result:output'0)-> {[%#span35] inv'2 result}
       {[%#span34] exists f2 : borrowed f . inv'3 f2
-      /\  * f2 = f /\ postcondition_mut'0 f2 a result /\ resolve'0 ( ^ f2)}
+      /\ f2.current = f /\ postcondition_mut'0 f2 a result /\ resolve'0 f2.final}
       (! return' {result}) ]
     
   
@@ -569,7 +569,7 @@ module C06FnSpecs_Weaken2Std
    -> ([%#span6] inv'1 args)
    -> ([%#span7] inv'3 res)
    -> ([%#span8] postcondition_once'0 self args res
-  = (exists s : borrowed f . inv'2 s /\  * s = self /\ postcondition_mut'0 s args res /\ resolve'0 ( ^ s)))
+  = (exists s : borrowed f . inv'2 s /\ s.current = self /\ postcondition_mut'0 s args res /\ resolve'0 s.final))
   
   predicate unnest'0 (self : f) (_2 : f)
   
@@ -587,7 +587,7 @@ module C06FnSpecs_Weaken2Std
   
   axiom postcondition_mut_unnest'0_spec : forall self : borrowed f, args : a, res : output'0 . ([%#span17] postcondition_mut'0 self args res)
    -> ([%#span18] inv'2 self)
-   -> ([%#span19] inv'1 args)  -> ([%#span20] inv'3 res)  -> ([%#span21] unnest'0 ( * self) ( ^ self))
+   -> ([%#span19] inv'1 args)  -> ([%#span20] inv'3 res)  -> ([%#span21] unnest'0 self.current self.final)
   
   predicate invariant'2 (self : borrowed f)
   
@@ -627,7 +627,7 @@ module C06FnSpecs_Weaken2Std
     ) [ & _0 : output'0 = any_l () | & f : f = f | & a : a = a ] 
     [ return' (result:output'0)-> {[@expl:postcondition] [%#s06_fn_specs4] inv'3 result}
       {[@expl:postcondition] [%#s06_fn_specs3] exists f2 : borrowed f . inv'2 f2
-      /\  * f2 = f /\ postcondition_mut'0 f2 a result /\ resolve'0 ( ^ f2)}
+      /\ f2.current = f /\ postcondition_mut'0 f2 a result /\ resolve'0 f2.final}
       (! return' {result}) ]
     
 end
@@ -732,7 +732,7 @@ module C06FnSpecs_WeakenStd
    -> ([%#span6] inv'1 args)
    -> ([%#span7] inv'2 res)
    -> ([%#span8] postcondition_once'0 self args res
-  = (exists s : borrowed f . inv'3 s /\  * s = self /\ postcondition_mut'0 s args res /\ resolve'0 ( ^ s)))
+  = (exists s : borrowed f . inv'3 s /\ s.current = self /\ postcondition_mut'0 s args res /\ resolve'0 s.final))
   
   predicate unnest'0 (self : f) (_2 : f)
   
@@ -750,7 +750,7 @@ module C06FnSpecs_WeakenStd
   
   axiom postcondition_mut_unnest'0_spec : forall self : borrowed f, args : a, res : output'0 . ([%#span17] postcondition_mut'0 self args res)
    -> ([%#span18] inv'3 self)
-   -> ([%#span19] inv'1 args)  -> ([%#span20] inv'2 res)  -> ([%#span21] unnest'0 ( * self) ( ^ self))
+   -> ([%#span19] inv'1 args)  -> ([%#span20] inv'2 res)  -> ([%#span21] unnest'0 self.current self.final)
   
   predicate invariant'3 (self : borrowed f)
   
@@ -770,14 +770,14 @@ module C06FnSpecs_WeakenStd
    -> ([%#span25] postcondition_once'0 self args res = (resolve'0 self /\ postcondition'0 self args res))
   
   predicate resolve'1 (self : borrowed f) =
-    [%#span26]  ^ self =  * self
+    [%#span26] self.final = self.current
   
   function fn_mut'0 (self : borrowed f) (args : a) (res : output'0) : ()
   
   axiom fn_mut'0_spec : forall self : borrowed f, args : a, res : output'0 . ([%#span27] inv'3 self)
    -> ([%#span28] inv'1 args)
    -> ([%#span29] inv'2 res)
-   -> ([%#span30] postcondition_mut'0 self args res = (resolve'1 self /\ postcondition'0 ( * self) args res))
+   -> ([%#span30] postcondition_mut'0 self args res = (resolve'1 self /\ postcondition'0 self.current args res))
   
   predicate invariant'1 (self : a)
   
@@ -797,7 +797,7 @@ module C06FnSpecs_WeakenStd
     any
     [ return' (result:output'0)-> {[%#span35] inv'2 result}
       {[%#span34] exists f2 : borrowed f . inv'3 f2
-      /\  * f2 = f /\ postcondition_mut'0 f2 a result /\ resolve'0 ( ^ f2)}
+      /\ f2.current = f /\ postcondition_mut'0 f2 a result /\ resolve'0 f2.final}
       (! return' {result}) ]
     
   

@@ -24,8 +24,9 @@ impl<'tcx> LateLintPass<'tcx> for ResolveTrait {
             cx.opt_span_lint(
                 RESOLVE_TRAIT,
                 Some(DUMMY_SP),
-                "the `creusot_contracts` crate is not loaded. You will not be able to verify any code using Creusot until you do so.",
-                |_lint| (),
+                |lint| {
+                    lint.primary_message("the `creusot_contracts` crate is not loaded. You will not be able to verify any code using Creusot until you do so.");
+                },
             );
         }
     }

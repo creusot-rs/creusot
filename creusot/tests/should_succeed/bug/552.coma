@@ -61,24 +61,24 @@ module C552_Impl0_Step
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Machine'0.t_machine)) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   use C552_Transition_Type as Transition'0
   
   let rec transition'0 (self:Machine'0.t_machine) (return'  (ret:Transition'0.t_transition))= {[@expl:precondition] [%#span4] invariants'0 self}
     any [ return' (result:Transition'0.t_transition)-> (! return' {result}) ] 
   
-  let rec step (self:borrowed (Machine'0.t_machine)) (return'  (ret:bool))= {[%#s5521] invariants'0 ( * self)}
+  let rec step (self:borrowed (Machine'0.t_machine)) (return'  (ret:bool))= {[%#s5521] invariants'0 self.current}
     (! bb0
     [ bb0 = s0
-      [ s0 = transition'0 { * self} (fun (_ret':Transition'0.t_transition) ->  [ &_4 <- _ret' ] s1) | s1 = bb1 ]
+      [ s0 = transition'0 {self.current} (fun (_ret':Transition'0.t_transition) ->  [ &_4 <- _ret' ] s1) | s1 = bb1 ]
       
     | bb1 = s0 [ s0 = -{resolve'0 self}- s1 | s1 =  [ &_0 <- [%#s5520] false ] s2 | s2 = return' {_0} ]  ]
     )
     [ & _0 : bool = any_l ()
     | & self : borrowed (Machine'0.t_machine) = self
     | & _4 : Transition'0.t_transition = any_l () ]
-     [ return' (result:bool)-> {[@expl:postcondition] [%#s5521] invariants'0 ( ^ self)} (! return' {result}) ] 
+     [ return' (result:bool)-> {[@expl:postcondition] [%#s5521] invariants'0 self.final} (! return' {result}) ] 
 end
 module C552_Impl0
   let%span s5520 = "../552.rs" 23 4 23 30
@@ -101,6 +101,6 @@ module C552_Impl0
   predicate invariants'0 [#"../552.rs" 18 4 18 31] (self : Machine'0.t_machine) =
     [%#span2] true
   
-  goal step_refn : [%#s5520] forall self : borrowed (Machine'0.t_machine) . inv'0 self /\ invariants'0 ( * self)
-   -> invariants'0 ( * self) /\ (forall result : bool . invariants'0 ( ^ self)  -> invariants'0 ( ^ self))
+  goal step_refn : [%#s5520] forall self : borrowed (Machine'0.t_machine) . inv'0 self /\ invariants'0 self.current
+   -> invariants'0 self.current /\ (forall result : bool . invariants'0 self.final  -> invariants'0 self.final)
 end

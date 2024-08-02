@@ -18,7 +18,7 @@ module C922_G
   use prelude.prelude.Borrow
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span2]  ^ self =  * self
+    [%#span2] self.final = self.current
   
   predicate resolve'2 (self : (int32, borrowed int32)) =
     [%#span3] resolve'3 (let (a, _) = self in a) /\ resolve'0 (let (_, a) = self in a)
@@ -32,18 +32,18 @@ module C922_G
     [ bb0 = s0
       [ s0 = Borrow.borrow_final
           <int32>
-          { * (let (_, r'3) = let (r'2, _) = x in r'2 in r'3)}
+          {(let (_, r'3) = let (r'2, _) = x in r'2 in r'3).current}
           {Borrow.get_id (let (_, r'1) = let (r'0, _) = x in r'0 in r'1)}
           (fun (_ret':borrowed int32) ->
              [ &_4 <- _ret' ] 
             
-            [ &x <- let (_, l'2) = x in ((let (l'4, _) = let (l'0, _) = x in l'0 in (l'4, { (let (_, l'3) = let (l'0, _) = x in l'0 in l'3) with current = ( ^ _4) ; })), l'2) ]
+            [ &x <- let (_, l'2) = x in ((let (l'4, _) = let (l'0, _) = x in l'0 in (l'4, { (let (_, l'3) = let (l'0, _) = x in l'0 in l'3) with current = _4.final ; })), l'2) ]
             
             s1)
-      | s1 = Borrow.borrow_final <int32> { * _4} {Borrow.get_id _4}
-          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_4 <- { _4 with current = ( ^ _2) ; } ] s2)
-      | s2 = Borrow.borrow_final <int32> { * _2} {Borrow.get_id _2}
-          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = ( ^ _0) ; } ] s3)
+      | s1 = Borrow.borrow_final <int32> {_4.current} {Borrow.get_id _4}
+          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_4 <- { _4 with current = _2.final ; } ] s2)
+      | s2 = Borrow.borrow_final <int32> {_2.current} {Borrow.get_id _2}
+          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = _0.final ; } ] s3)
       | s3 = -{resolve'0 _4}- s4
       | s4 = -{resolve'0 _2}- s5
       | s5 = -{resolve'1 x}- s6
@@ -76,26 +76,26 @@ module C922_F1
   use prelude.prelude.Int32
   
   predicate resolve'1 (self : borrowed (int32, borrowed int32)) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   use prelude.prelude.Int
   
   let rec f1 (b:borrowed (int32, borrowed int32)) (return'  (ret:borrowed int32))= (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_mut <int32> { * (let (_, r'0) =  * b in r'0)}
+      [ s0 = Borrow.borrow_mut <int32> {(let (_, r'0) = b.current in r'0).current}
           (fun (_ret':borrowed int32) ->
              [ &_6 <- _ret' ] 
             
-            [ &b <- { b with current = (let (l'1, _) =  * b in (l'1, { (let (_, l'0) =  * b in l'0) with current = ( ^ _6) ; })) ; } ]
+            [ &b <- { b with current = (let (l'1, _) = b.current in (l'1, { (let (_, l'0) = b.current in l'0) with current = _6.final ; })) ; } ]
             
             s1)
-      | s1 = Borrow.borrow_final <int32> { * _6} {Borrow.get_id _6}
-          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_6 <- { _6 with current = ( ^ _2) ; } ] s2)
-      | s2 = Borrow.borrow_final <int32> { * _2} {Borrow.get_id _2}
-          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = ( ^ _0) ; } ] s3)
+      | s1 = Borrow.borrow_final <int32> {_6.current} {Borrow.get_id _6}
+          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_6 <- { _6 with current = _2.final ; } ] s2)
+      | s2 = Borrow.borrow_final <int32> {_2.current} {Borrow.get_id _2}
+          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = _0.final ; } ] s3)
       | s3 = -{resolve'0 _6}- s4
       | s4 = -{resolve'0 _2}- s5
       | s5 = -{resolve'1 b}- s6
@@ -107,10 +107,10 @@ module C922_F1
     | & _2 : borrowed int32 = any_l ()
     | & _6 : borrowed int32 = any_l () ]
     
-    [ return' (result:borrowed int32)-> {[@expl:postcondition] [%#s9222]  ^ (let (_, a) =  * b in a)
-      =  ^ (let (_, a) =  ^ b in a)}
-      {[@expl:postcondition] [%#s9221]  ^ result =  * (let (_, a) =  ^ b in a)}
-      {[@expl:postcondition] [%#s9220]  * result =  * (let (_, a) =  * b in a)}
+    [ return' (result:borrowed int32)-> {[@expl:postcondition] [%#s9222] (let (_, a) = b.current in a).final
+      = (let (_, a) = b.final in a).final}
+      {[@expl:postcondition] [%#s9221] result.final = (let (_, a) = b.final in a).current}
+      {[@expl:postcondition] [%#s9220] result.current = (let (_, a) = b.current in a).current}
       (! return' {result}) ]
     
 end
@@ -130,26 +130,26 @@ module C922_F2
   use prelude.prelude.Int32
   
   predicate resolve'1 (self : borrowed (int32, borrowed int32)) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   use prelude.prelude.Int
   
   let rec f2 (x0:borrowed (int32, borrowed int32)) (return'  (ret:borrowed int32))= (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_mut <int32> { * (let (_, r'0) =  * x0 in r'0)}
+      [ s0 = Borrow.borrow_mut <int32> {(let (_, r'0) = x0.current in r'0).current}
           (fun (_ret':borrowed int32) ->
              [ &_6 <- _ret' ] 
             
-            [ &x0 <- { x0 with current = (let (l'1, _) =  * x0 in (l'1, { (let (_, l'0) =  * x0 in l'0) with current = ( ^ _6) ; })) ; } ]
+            [ &x0 <- { x0 with current = (let (l'1, _) = x0.current in (l'1, { (let (_, l'0) = x0.current in l'0) with current = _6.final ; })) ; } ]
             
             s1)
-      | s1 = Borrow.borrow_final <int32> { * _6} {Borrow.get_id _6}
-          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_6 <- { _6 with current = ( ^ _2) ; } ] s2)
-      | s2 = Borrow.borrow_final <int32> { * _2} {Borrow.get_id _2}
-          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = ( ^ _0) ; } ] s3)
+      | s1 = Borrow.borrow_final <int32> {_6.current} {Borrow.get_id _6}
+          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_6 <- { _6 with current = _2.final ; } ] s2)
+      | s2 = Borrow.borrow_final <int32> {_2.current} {Borrow.get_id _2}
+          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = _0.final ; } ] s3)
       | s3 = -{resolve'0 _6}- s4
       | s4 = -{resolve'0 _2}- s5
       | s5 = -{resolve'1 x0}- s6
@@ -161,10 +161,10 @@ module C922_F2
     | & _2 : borrowed int32 = any_l ()
     | & _6 : borrowed int32 = any_l () ]
     
-    [ return' (result:borrowed int32)-> {[@expl:postcondition] [%#s9222]  ^ (let (_, a) =  * x0 in a)
-      =  ^ (let (_, a) =  ^ x0 in a)}
-      {[@expl:postcondition] [%#s9221]  ^ result =  * (let (_, a) =  ^ x0 in a)}
-      {[@expl:postcondition] [%#s9220]  * result =  * (let (_, a) =  * x0 in a)}
+    [ return' (result:borrowed int32)-> {[@expl:postcondition] [%#s9222] (let (_, a) = x0.current in a).final
+      = (let (_, a) = x0.final in a).final}
+      {[@expl:postcondition] [%#s9221] result.final = (let (_, a) = x0.final in a).current}
+      {[@expl:postcondition] [%#s9220] result.current = (let (_, a) = x0.current in a).current}
       (! return' {result}) ]
     
 end
@@ -184,26 +184,26 @@ module C922_F3
   use prelude.prelude.Int32
   
   predicate resolve'1 (self : borrowed (int32, borrowed int32)) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   use prelude.prelude.Int
   
   let rec f3 (x1:borrowed (int32, borrowed int32)) (return'  (ret:borrowed int32))= (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_mut <int32> { * (let (_, r'0) =  * x1 in r'0)}
+      [ s0 = Borrow.borrow_mut <int32> {(let (_, r'0) = x1.current in r'0).current}
           (fun (_ret':borrowed int32) ->
              [ &_6 <- _ret' ] 
             
-            [ &x1 <- { x1 with current = (let (l'1, _) =  * x1 in (l'1, { (let (_, l'0) =  * x1 in l'0) with current = ( ^ _6) ; })) ; } ]
+            [ &x1 <- { x1 with current = (let (l'1, _) = x1.current in (l'1, { (let (_, l'0) = x1.current in l'0) with current = _6.final ; })) ; } ]
             
             s1)
-      | s1 = Borrow.borrow_final <int32> { * _6} {Borrow.get_id _6}
-          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_6 <- { _6 with current = ( ^ _2) ; } ] s2)
-      | s2 = Borrow.borrow_final <int32> { * _2} {Borrow.get_id _2}
-          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = ( ^ _0) ; } ] s3)
+      | s1 = Borrow.borrow_final <int32> {_6.current} {Borrow.get_id _6}
+          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_6 <- { _6 with current = _2.final ; } ] s2)
+      | s2 = Borrow.borrow_final <int32> {_2.current} {Borrow.get_id _2}
+          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = _0.final ; } ] s3)
       | s3 = -{resolve'0 _6}- s4
       | s4 = -{resolve'0 _2}- s5
       | s5 = -{resolve'1 x1}- s6
@@ -215,10 +215,10 @@ module C922_F3
     | & _2 : borrowed int32 = any_l ()
     | & _6 : borrowed int32 = any_l () ]
     
-    [ return' (result:borrowed int32)-> {[@expl:postcondition] [%#s9222]  ^ (let (_, a) =  * x1 in a)
-      =  ^ (let (_, a) =  ^ x1 in a)}
-      {[@expl:postcondition] [%#s9221]  ^ result =  * (let (_, a) =  ^ x1 in a)}
-      {[@expl:postcondition] [%#s9220]  * result =  * (let (_, a) =  * x1 in a)}
+    [ return' (result:borrowed int32)-> {[@expl:postcondition] [%#s9222] (let (_, a) = x1.current in a).final
+      = (let (_, a) = x1.final in a).final}
+      {[@expl:postcondition] [%#s9221] result.final = (let (_, a) = x1.final in a).current}
+      {[@expl:postcondition] [%#s9220] result.current = (let (_, a) = x1.current in a).current}
       (! return' {result}) ]
     
 end
@@ -238,26 +238,26 @@ module C922_F4
   use prelude.prelude.Int32
   
   predicate resolve'1 (self : borrowed (int32, borrowed int32)) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   use prelude.prelude.Int
   
   let rec f4 (x2:borrowed (int32, borrowed int32)) (return'  (ret:borrowed int32))= (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_mut <int32> { * (let (_, r'0) =  * x2 in r'0)}
+      [ s0 = Borrow.borrow_mut <int32> {(let (_, r'0) = x2.current in r'0).current}
           (fun (_ret':borrowed int32) ->
              [ &_6 <- _ret' ] 
             
-            [ &x2 <- { x2 with current = (let (l'1, _) =  * x2 in (l'1, { (let (_, l'0) =  * x2 in l'0) with current = ( ^ _6) ; })) ; } ]
+            [ &x2 <- { x2 with current = (let (l'1, _) = x2.current in (l'1, { (let (_, l'0) = x2.current in l'0) with current = _6.final ; })) ; } ]
             
             s1)
-      | s1 = Borrow.borrow_final <int32> { * _6} {Borrow.get_id _6}
-          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_6 <- { _6 with current = ( ^ _2) ; } ] s2)
-      | s2 = Borrow.borrow_final <int32> { * _2} {Borrow.get_id _2}
-          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = ( ^ _0) ; } ] s3)
+      | s1 = Borrow.borrow_final <int32> {_6.current} {Borrow.get_id _6}
+          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_6 <- { _6 with current = _2.final ; } ] s2)
+      | s2 = Borrow.borrow_final <int32> {_2.current} {Borrow.get_id _2}
+          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = _0.final ; } ] s3)
       | s3 = -{resolve'0 _6}- s4
       | s4 = -{resolve'0 _2}- s5
       | s5 = -{resolve'1 x2}- s6
@@ -269,10 +269,10 @@ module C922_F4
     | & _2 : borrowed int32 = any_l ()
     | & _6 : borrowed int32 = any_l () ]
     
-    [ return' (result:borrowed int32)-> {[@expl:postcondition] [%#s9222]  ^ (let (_, a) =  * x2 in a)
-      =  ^ (let (_, a) =  ^ x2 in a)}
-      {[@expl:postcondition] [%#s9221]  ^ result =  * (let (_, a) =  ^ x2 in a)}
-      {[@expl:postcondition] [%#s9220]  * result =  * (let (_, a) =  * x2 in a)}
+    [ return' (result:borrowed int32)-> {[@expl:postcondition] [%#s9222] (let (_, a) = x2.current in a).final
+      = (let (_, a) = x2.final in a).final}
+      {[@expl:postcondition] [%#s9221] result.final = (let (_, a) = x2.final in a).current}
+      {[@expl:postcondition] [%#s9220] result.current = (let (_, a) = x2.current in a).current}
       (! return' {result}) ]
     
 end

@@ -110,7 +110,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Rvalue::BinaryOp(BinOp::BitAnd, box (l, _)) if !l.ty(self.body, self.tcx).is_bool() => {
                 self.ctx.crash_and_error(si.span, "bitwise operations are currently unsupported")
             }
-            Rvalue::BinaryOp(op, box (l, r)) | Rvalue::CheckedBinaryOp(op, box (l, r)) => {
+            Rvalue::BinaryOp(op, box (l, r)) => {
                 RValue::BinOp(*op, self.translate_operand(l), self.translate_operand(r))
             }
             Rvalue::UnaryOp(op, v) => RValue::UnaryOp(*op, self.translate_operand(v)),
@@ -169,6 +169,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 Operand::Constant(crate::constant::from_ty_const(
                     self.ctx,
                     *len,
+                    self.ctx.tcx.types.usize,
                     self.param_env(),
                     si.span,
                 )),

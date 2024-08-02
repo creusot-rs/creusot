@@ -11,15 +11,15 @@ module Immut_F
   use prelude.prelude.UInt32
   
   predicate resolve'0 (self : borrowed uint32) =
-    [%#span1]  ^ self =  * self
+    [%#span1] self.final = self.current
   
   use prelude.prelude.Int
   
   let rec f (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &a <- [%#simmut0] (10 : uint32) ] s1
-      | s1 = Borrow.borrow_mut <uint32> {a} (fun (_ret':borrowed uint32) ->  [ &b <- _ret' ]  [ &a <-  ^ b ] s2)
-      | s2 =  [ &_c <-  * b ] s3
+      | s1 = Borrow.borrow_mut <uint32> {a} (fun (_ret':borrowed uint32) ->  [ &b <- _ret' ]  [ &a <- b.final ] s2)
+      | s2 =  [ &_c <- b.current ] s3
       | s3 = -{resolve'0 b}- s4
       | s4 = return' {_0} ]
        ]

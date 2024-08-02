@@ -4,7 +4,7 @@ use crate::{
         dependency::{Dependency, ExtendedId},
         logic::{lower_logical_defn, lower_pure_defn, sigs, spec_axiom},
         program,
-        signature::sig_to_why3,
+        signature::named_sig_to_why3,
         term::lower_pure,
         ty_inv::InvariantElaborator,
         TransId, Why3Generator,
@@ -175,8 +175,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
             names.value(def_id, subst).name
         };
 
-        let mut sig = sig_to_why3(ctx, names, &pre_sig, def_id);
-        sig.name = name;
+        let sig = named_sig_to_why3(ctx, names, name, &pre_sig, def_id);
 
         if CloneLevel::Signature == level_of_item {
             return val(ctx, sig, kind);
@@ -198,17 +197,14 @@ impl<'tcx> SymbolElaborator<'tcx> {
             }
         } else if util::item_type(ctx.tcx, def_id) == ItemType::Constant {
             let uneval = ty::UnevaluatedConst::new(def_id, subst);
-            let constant = Const::new(
-                ctx.tcx,
-                ty::ConstKind::Unevaluated(uneval),
-                ctx.type_of(def_id).instantiate_identity(),
-            );
+            let constant = Const::new(ctx.tcx, ty::ConstKind::Unevaluated(uneval));
+            let ty = ctx.type_of(def_id).instantiate_identity();
 
             let span = ctx.def_span(def_id);
             let body = if is_trusted(ctx.tcx, def_id) {
                 None
             } else {
-                let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, param_env, span);
+                let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, ty, param_env, span);
                 Some(lower_pure(ctx, names, &res))
             };
             vec![Decl::ConstantDecl(Constant { type_: sig.retty.unwrap(), name: sig.name, body })]

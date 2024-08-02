@@ -58,7 +58,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeInitializedLocals {
         _block: BasicBlock,
         return_places: CallReturnPlaces<'_, 'tcx>,
     ) {
-        return_places.for_each(|place| trans.gen(place.local));
+        return_places.for_each(|place| trans.gen_(place.local));
     }
 
     fn domain_size(&self, body: &mir::Body<'tcx>) -> usize {
@@ -95,7 +95,7 @@ where
             PlaceContext::MutatingUse(MutatingUseContext::Deinit) => self.trans.kill(local),
 
             // Otherwise, when a place is mutated, we must consider it possibly initialized.
-            PlaceContext::MutatingUse(_) => self.trans.gen(local),
+            PlaceContext::MutatingUse(_) => self.trans.gen_(local),
 
             // If the local is moved out of, or if it gets marked `StorageDead`, consider it no
             // longer initialized.

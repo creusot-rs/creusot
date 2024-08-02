@@ -66,31 +66,31 @@ module ResolveUninit_InitJoin
   use prelude.prelude.Int32
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   use prelude.prelude.Int
   
   let rec init_join (b:bool) (x:int32) (return'  (ret:()))= (! bb0
     [ bb0 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ] 
     | bb1 = s0
-      [ s0 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &_8 <- _ret' ]  [ &x <-  ^ _8 ] s1)
-      | s1 = Borrow.borrow_final <int32> { * _8} {Borrow.get_id _8}
-          (fun (_ret':borrowed int32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = ( ^ _7) ; } ] s2)
+      [ s0 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &_8 <- _ret' ]  [ &x <- _8.final ] s1)
+      | s1 = Borrow.borrow_final <int32> {_8.current} {Borrow.get_id _8}
+          (fun (_ret':borrowed int32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _7.final ; } ] s2)
       | s2 =  [ &z <- _7 ] (any [ any_ (_any:borrowed int32)-> (!  [ &_7 <- _any ] s3) ] )
       | s3 = -{resolve'0 _8}- s4
-      | s4 = Borrow.borrow_final <int32> { * z} {Borrow.get_id z}
-          (fun (_ret':borrowed int32) ->  [ &_10 <- _ret' ]  [ &z <- { z with current = ( ^ _10) ; } ] s5)
-      | s5 = Borrow.borrow_final <int32> { * _10} {Borrow.get_id _10}
-          (fun (_ret':borrowed int32) ->  [ &_9 <- _ret' ]  [ &_10 <- { _10 with current = ( ^ _9) ; } ] s6)
+      | s4 = Borrow.borrow_final <int32> {z.current} {Borrow.get_id z}
+          (fun (_ret':borrowed int32) ->  [ &_10 <- _ret' ]  [ &z <- { z with current = _10.final ; } ] s5)
+      | s5 = Borrow.borrow_final <int32> {_10.current} {Borrow.get_id _10}
+          (fun (_ret':borrowed int32) ->  [ &_9 <- _ret' ]  [ &_10 <- { _10 with current = _9.final ; } ] s6)
       | s6 =  [ &y <- _9 ] (any [ any_ (_any:borrowed int32)-> (!  [ &_9 <- _any ] s7) ] )
       | s7 = -{resolve'0 _10}- s8
       | s8 = bb7 ]
       
     | bb7 = s0 [ s0 = -{resolve'0 z}- s1 | s1 = bb3 ] 
     | bb2 = s0
-      [ s0 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &_12 <- _ret' ]  [ &x <-  ^ _12 ] s1)
-      | s1 = Borrow.borrow_final <int32> { * _12} {Borrow.get_id _12}
-          (fun (_ret':borrowed int32) ->  [ &_11 <- _ret' ]  [ &_12 <- { _12 with current = ( ^ _11) ; } ] s2)
+      [ s0 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &_12 <- _ret' ]  [ &x <- _12.final ] s1)
+      | s1 = Borrow.borrow_final <int32> {_12.current} {Borrow.get_id _12}
+          (fun (_ret':borrowed int32) ->  [ &_11 <- _ret' ]  [ &_12 <- { _12 with current = _11.final ; } ] s2)
       | s2 =  [ &y <- _11 ] (any [ any_ (_any:borrowed int32)-> (!  [ &_11 <- _any ] s3) ] )
       | s3 = -{resolve'0 _12}- s4
       | s4 = bb3 ]

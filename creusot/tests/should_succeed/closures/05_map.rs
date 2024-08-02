@@ -6,6 +6,7 @@ pub trait FakeIterator {
     fn next(&mut self) -> Option<Self::Item>;
 }
 
+#[allow(dead_code)]
 pub struct Map<I, F> {
     iter: I,
     func: F,

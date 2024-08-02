@@ -30,9 +30,7 @@ module Core_Result_Result_Type
     
 end
 module Projections_CopyOutOfSum
-  let%span sprojections0 = "../projections.rs" 10 10 10 11
-  
-  let%span span1 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span0 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
   use prelude.prelude.Intrinsic
   
@@ -41,7 +39,7 @@ module Projections_CopyOutOfSum
   use prelude.prelude.UInt32
   
   predicate resolve'0 (self : borrowed uint32) =
-    [%#span1]  ^ self =  * self
+    [%#span0] self.final = self.current
   
   use Core_Result_Result_Type as Result'0
   
@@ -52,7 +50,6 @@ module Projections_CopyOutOfSum
       [ br0 (a:borrowed uint32)-> {x = Result'0.C_Ok a} (! bb2)
       | br1 (a:borrowed uint32)-> {x = Result'0.C_Err a} (! bb3) ]
       
-    | bb1 = {[%#sprojections0] false} any
     | bb3 = s0
       [ s0 = Result'0.err <borrowed uint32> <borrowed uint32> {x}
           (fun (r0'0:borrowed uint32) ->
@@ -61,7 +58,7 @@ module Projections_CopyOutOfSum
             [ any_ (_any:borrowed uint32)-> (! Result'0.err <borrowed uint32> <borrowed uint32> {x}
                 (fun (l_0'0:borrowed uint32) ->  [ &x <- Result'0.C_Err _any ] s1)) ]
             ))
-      | s1 =  [ &_0 <-  * y ] s2
+      | s1 =  [ &_0 <- y.current ] s2
       | s2 = -{resolve'0 y}- s3
       | s3 = bb5 ]
       
@@ -74,7 +71,7 @@ module Projections_CopyOutOfSum
             [ any_ (_any:borrowed uint32)-> (! Result'0.ok <borrowed uint32> <borrowed uint32> {x}
                 (fun (l_0'0:borrowed uint32) ->  [ &x <- Result'0.C_Ok _any ] s1)) ]
             ))
-      | s1 =  [ &_0 <-  * x1 ] s2
+      | s1 =  [ &_0 <- x1.current ] s2
       | s2 = -{resolve'0 x1}- s3
       | s3 = bb5 ]
       
@@ -103,11 +100,9 @@ module Core_Option_Option_Type
     
 end
 module Projections_WriteIntoSum
-  let%span sprojections0 = "../projections.rs" 17 10 17 11
+  let%span sprojections0 = "../projections.rs" 18 24 18 26
   
-  let%span sprojections1 = "../projections.rs" 18 24 18 26
-  
-  let%span span2 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span1 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
   use prelude.prelude.Intrinsic
   
@@ -115,34 +110,35 @@ module Projections_WriteIntoSum
   
   use prelude.prelude.UInt32
   
-  predicate resolve'1 (self : borrowed uint32) =
-    [%#span2]  ^ self =  * self
-  
   use Core_Option_Option_Type as Option'0
   
-  predicate resolve'0 (self : borrowed (Option'0.t_option uint32)) =
-    [%#span2]  ^ self =  * self
+  predicate resolve'1 (self : borrowed (Option'0.t_option uint32)) =
+    [%#span1] self.final = self.current
+  
+  predicate resolve'0 (self : borrowed uint32) =
+    [%#span1] self.final = self.current
   
   use prelude.prelude.Int
   
   let rec write_into_sum (x:borrowed (Option'0.t_option uint32)) (return'  (ret:()))= (! bb0
-    [ bb0 = any [ br0 -> { * x = Option'0.C_None } (! bb3) | br1 (a:uint32)-> { * x = Option'0.C_Some a} (! bb2) ] 
-    | bb1 = s0 [ s0 = -{resolve'0 x}- s1 | s1 = {[%#sprojections0] false} any ] 
+    [ bb0 = any
+      [ br0 -> {x.current = Option'0.C_None } (! bb3) | br1 (a:uint32)-> {x.current = Option'0.C_Some a} (! bb2) ]
+      
     | bb2 = bb4
     | bb4 = s0
-      [ s0 = Option'0.some <uint32> { * x}
+      [ s0 = Option'0.some <uint32> {x.current}
           (fun (r0'0:uint32) ->
             Borrow.borrow_final <uint32> {r0'0} {Borrow.inherit_id (Borrow.get_id x) 1}
               (fun (_ret':borrowed uint32) ->
                  [ &y <- _ret' ] 
-                Option'0.some <uint32> { * x}
-                  (fun (l_0'0:uint32) ->  [ &x <- { x with current = Option'0.C_Some ( ^ y) ; } ] s1)))
-      | s1 =  [ &y <- { y with current = ([%#sprojections1] (10 : uint32)) ; } ] s2
-      | s2 = -{resolve'1 y}- s3
-      | s3 = -{resolve'0 x}- s4
+                Option'0.some <uint32> {x.current}
+                  (fun (l_0'0:uint32) ->  [ &x <- { x with current = Option'0.C_Some y.final ; } ] s1)))
+      | s1 =  [ &y <- { y with current = ([%#sprojections0] (10 : uint32)) ; } ] s2
+      | s2 = -{resolve'0 y}- s3
+      | s3 = -{resolve'1 x}- s4
       | s4 = bb5 ]
       
-    | bb3 = s0 [ s0 = -{resolve'0 x}- s1 | s1 = bb5 ] 
+    | bb3 = s0 [ s0 = -{resolve'1 x}- s1 | s1 = bb5 ] 
     | bb5 = return' {_0} ]
     ) [ & _0 : () = any_l () | & x : borrowed (Option'0.t_option uint32) = x | & y : borrowed uint32 = any_l () ] 
     [ return' (result:())-> (! return' {result}) ]
@@ -151,11 +147,9 @@ end
 module Projections_F
   let%span sprojections0 = "../projections.rs" 24 15 24 17
   
-  let%span sprojections1 = "../projections.rs" 24 10 24 18
+  let%span sprojections1 = "../projections.rs" 25 24 25 25
   
-  let%span sprojections2 = "../projections.rs" 25 24 25 25
-  
-  let%span sprojections3 = "../projections.rs" 26 16 26 21
+  let%span sprojections2 = "../projections.rs" 26 16 26 21
   
   use prelude.prelude.Intrinsic
   
@@ -170,14 +164,13 @@ module Projections_F
       [ s0 =  [ &_2 <- Option'0.C_Some ([%#sprojections0] (10 : int32)) ] s1
       | s1 = any [ br0 -> {_2 = Option'0.C_None } (! bb3) | br1 (a:int32)-> {_2 = Option'0.C_Some a} (! bb2) ]  ]
       
-    | bb1 = {[%#sprojections1] false} any
     | bb2 = bb4
     | bb4 = s0
       [ s0 = Option'0.some <int32> {_2} (fun (r0'0:int32) ->  [ &x <- r0'0 ] s1)
-      | s1 = Int32.eq {x} {[%#sprojections2] (0 : int32)} (fun (_ret':bool) ->  [ &_1 <- _ret' ] s2)
+      | s1 = Int32.eq {x} {[%#sprojections1] (0 : int32)} (fun (_ret':bool) ->  [ &_1 <- _ret' ] s2)
       | s2 = bb5 ]
       
-    | bb3 = s0 [ s0 =  [ &_1 <- [%#sprojections3] false ] s1 | s1 = bb5 ] 
+    | bb3 = s0 [ s0 =  [ &_1 <- [%#sprojections2] false ] s1 | s1 = bb5 ] 
     | bb5 = return' {_0} ]
     )
     [ & _0 : () = any_l ()

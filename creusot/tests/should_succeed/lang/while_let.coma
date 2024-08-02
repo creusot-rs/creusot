@@ -15,21 +15,12 @@ module Core_Option_Option_Type
     | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
     
 end
-module CreusotContracts_Snapshot_Snapshot_Type
-  type t_snapshot 't
-end
 module WhileLet_F
   let%span swhile_let0 = "../while_let.rs" 5 21 5 23
   
   let%span swhile_let1 = "../while_let.rs" 8 16 8 20
   
-  let%span span2 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
-  
-  let%span span3 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
-  
-  let%span span4 = "../../../../../creusot-contracts/src/snapshot.rs" 45 15 45 16
-  
-  let%span span5 = "../../../../../creusot-contracts/src/snapshot.rs" 43 14 43 28
+  let%span span2 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
   use prelude.prelude.Int32
   
@@ -37,27 +28,16 @@ module WhileLet_F
   
   use prelude.prelude.Borrow
   
-  predicate invariant'0 (self : borrowed (Option'0.t_option int32)) =
-    [%#span2] true
-  
-  predicate inv'0 (_x : borrowed (Option'0.t_option int32))
-  
-  axiom inv'0 : forall x : borrowed (Option'0.t_option int32) . inv'0 x = true
-  
-  use CreusotContracts_Snapshot_Snapshot_Type as Snapshot'0
+  use prelude.prelude.Snapshot
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Option'0.t_option int32)) =
-    [%#span3]  ^ self =  * self
+    [%#span2] self.final = self.current
   
-  function deref'0 (self : Snapshot'0.t_snapshot (borrowed (Option'0.t_option int32))) : borrowed (Option'0.t_option int32)
-    
+  use prelude.prelude.Snapshot
   
-  function new'0 (x : borrowed (Option'0.t_option int32)) : Snapshot'0.t_snapshot (borrowed (Option'0.t_option int32))
-  
-  axiom new'0_spec : forall x : borrowed (Option'0.t_option int32) . ([%#span4] inv'0 x)
-   -> ([%#span5] deref'0 (new'0 x) = x)
+  use prelude.prelude.Snapshot
   
   use prelude.prelude.Int
   
@@ -65,15 +45,17 @@ module WhileLet_F
     [ bb0 = s0
       [ s0 =  [ &a <- Option'0.C_Some ([%#swhile_let0] (10 : int32)) ] s1
       | s1 = Borrow.borrow_mut <Option'0.t_option int32> {a}
-          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &b <- _ret' ]  [ &a <-  ^ b ] s2)
-      | s2 =  [ &old_1_0 <- new'0 b ] s3
+          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &b <- _ret' ]  [ &a <- b.final ] s2)
+      | s2 =  [ &old_1_0 <- Snapshot.new b ] s3
       | s3 = bb1 ]
       
     | bb1 = bb1
-      [ bb1 = {[@expl:loop invariant]  ^ deref'0 old_1_0 =  ^ b}
+      [ bb1 = {[@expl:loop invariant] (Snapshot.inner old_1_0).final = b.final}
         {[@expl:loop invariant] [%#swhile_let1] true}
         (! s0) [ s0 = bb2 ] 
-        [ bb2 = any [ br0 -> { * b = Option'0.C_None } (! bb5) | br1 (a:int32)-> { * b = Option'0.C_Some a} (! bb3) ] 
+        [ bb2 = any
+          [ br0 -> {b.current = Option'0.C_None } (! bb5) | br1 (a:int32)-> {b.current = Option'0.C_Some a} (! bb3) ]
+          
         | bb3 = bb4
         | bb4 = s0
           [ s0 =  [ &_6 <- Option'0.C_None ] s1
@@ -89,6 +71,6 @@ module WhileLet_F
     | & a : Option'0.t_option int32 = any_l ()
     | & b : borrowed (Option'0.t_option int32) = any_l ()
     | & _6 : Option'0.t_option int32 = any_l ()
-    | & old_1_0 : Snapshot'0.t_snapshot (borrowed (Option'0.t_option int32)) = any_l () ]
+    | & old_1_0 : Snapshot.snap_ty (borrowed (Option'0.t_option int32)) = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end

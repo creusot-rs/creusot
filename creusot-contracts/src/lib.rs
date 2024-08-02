@@ -46,7 +46,8 @@ mod macros {
     /// fn push(&mut self, v: T) { /* ... */ }
     /// ```
     ///
-    /// But the length of a vector [cannot overflow `isize::MAX`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.push). This is a very annoying condition to require, so we don't.
+    /// But the length of a vector [cannot overflow `isize::MAX`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.push).
+    /// This is a very annoying condition to require, so we don't.
     /// In exchange, this means `Vec::push` might panic in some cases, even though your
     /// code passed Creusot's verification.
     ///

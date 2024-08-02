@@ -1,4 +1,5 @@
 use crate::*;
+use ::std::cmp::Ordering;
 pub use ::std::option::*;
 
 impl<T: DeepModel> DeepModel for Option<T> {
@@ -145,6 +146,21 @@ impl<T> Default for Option<T> {
     fn is_default(self) -> bool {
         pearlite! { self == None }
     }
+}
+
+impl<T: OrdLogic> OrdLogic for Option<T> {
+    #[logic]
+    #[open]
+    fn cmp_log(self, o: Self) -> Ordering {
+        match (self, o) {
+            (None, None) => Ordering::Equal,
+            (None, Some(_)) => Ordering::Less,
+            (Some(_), None) => Ordering::Greater,
+            (Some(x), Some(y)) => x.cmp_log(y),
+        }
+    }
+
+    ord_laws_impl! {}
 }
 
 impl<T> ShallowModel for IntoIter<T> {
