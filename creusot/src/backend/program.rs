@@ -670,7 +670,7 @@ impl<'tcx> Terminator<'tcx> {
                     };
                     for (_, bb) in brs {
                         if *bb == from {
-                            *bb = from
+                            *bb = to
                         }
                     }
                 }
@@ -680,7 +680,7 @@ impl<'tcx> Terminator<'tcx> {
                     };
                     for (_, bb) in brs {
                         if *bb == from {
-                            *bb = from
+                            *bb = to
                         }
                     }
                 }
@@ -690,7 +690,7 @@ impl<'tcx> Terminator<'tcx> {
                     };
                     for (_, bb) in brs {
                         if *bb == from {
-                            *bb = from
+                            *bb = to
                         }
                     }
                 }
