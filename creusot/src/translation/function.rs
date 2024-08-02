@@ -205,14 +205,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
             self.translate_terminator(bbd.terminator(), loc);
 
-            if let Some(resolver) = &mut self.resolver
-                && bbd.terminator().successors().next().is_none()
-            {
-                let mut resolved = resolver.need_resolve_locals_before(loc);
-                resolved.remove(Local::from_usize(0)); // do not resolve return local
-                self.resolve_locals(resolved);
-            }
-
             let block = fmir::Block {
                 invariants,
                 variant,
@@ -307,7 +299,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         let resolved_between = pred_blocks
             .iter()
-            .map(|&pred| { resolver.resolved_locals_between_blocks(pred, bb) })
+            .map(|&pred| resolver.resolved_locals_between_blocks(pred, bb))
             .collect::<Vec<_>>();
 
         // If we have multiple predecessors (join point) but all of them agree on the deaths, then don't introduce a dedicated block.

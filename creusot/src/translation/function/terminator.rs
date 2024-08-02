@@ -17,8 +17,8 @@ use rustc_infer::{
 };
 use rustc_middle::{
     mir::{
-        self, AssertKind, BasicBlock, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo,
-        StatementKind, SwitchTargets,
+        self, AssertKind, BasicBlock, BasicBlockData, Local, Location, Operand, Place, Rvalue,
+        SourceInfo, StatementKind, SwitchTargets,
         TerminatorKind::{self, *},
     },
     ty::{self, AssocItem, GenericArgKind, GenericArgsRef, ParamEnv, Predicate, Ty, TyKind},
@@ -62,7 +62,15 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
                 self.emit_terminator(switch);
             }
-            Return => self.emit_terminator(Terminator::Return),
+            Return => {
+                if let Some(resolver) = &mut self.resolver {
+                    let mut resolved = resolver.need_resolve_locals_before(location);
+                    resolved.remove(Local::from_usize(0)); // do not resolve return local
+                    self.resolve_locals(resolved);
+                }
+
+                self.emit_terminator(Terminator::Return)
+            }
             Unreachable => self.emit_terminator(Terminator::Abort(terminator.source_info.span)),
             Call { func, args, destination, mut target, fn_span, .. } => {
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");

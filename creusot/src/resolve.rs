@@ -151,8 +151,10 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         // Some locals are resolved because of the terminator (e.g., a function call) itself.
         // We would like a location which is at the end of the terminator but before branching,
         // but this does not exist. We use the first location of the next block instead.
-        let mut resolved = self
-            .resolved_locals_in_range(ExtendedLocation::Start(term), ExtendedLocation::Start(start));
+        let mut resolved = self.resolved_locals_in_range(
+            ExtendedLocation::Start(term),
+            ExtendedLocation::Start(start),
+        );
 
         // if some locals still need to be resolved at the end of the current block
         // but not at the start of the next block, we also need to resolve them now
