@@ -60,9 +60,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
                 self.emit_terminator(switch);
             }
-            UnwindTerminate(_) => {
-                self.emit_terminator(Terminator::Abort(terminator.source_info.span))
-            }
             Return => self.emit_terminator(Terminator::Return),
             Unreachable => self.emit_terminator(Terminator::Abort(terminator.source_info.span)),
             Call { func, args, destination, target, .. } => {
@@ -170,7 +167,12 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             FalseUnwind { real_target, .. } => {
                 self.emit_terminator(mk_goto(*real_target));
             }
-            CoroutineDrop | UnwindResume | Yield { .. } | InlineAsm { .. } | TailCall { .. } => {
+            CoroutineDrop
+            | UnwindResume
+            | UnwindTerminate { .. }
+            | Yield { .. }
+            | InlineAsm { .. }
+            | TailCall { .. } => {
                 unreachable!("{:?}", terminator.kind)
             }
         }
