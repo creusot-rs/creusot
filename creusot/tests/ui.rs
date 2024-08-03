@@ -86,6 +86,21 @@ fn run_creusot(
         creusot_contract_path.to_str().expect("invalid utf-8 in contract path");
     let creusot_contract_path = normalize_file_path(creusot_contract_path);
 
+    // Magic comment with instructions for creusot
+    let header_line = BufReader::new(File::open(file).unwrap()).lines().nth(0).unwrap().unwrap();
+    // Find comment chunks of the form CREUSOT_ARG=ARGUMENT. Does not support spaces in arguments currently (would require real parser)
+    let args: Vec<_> = header_line
+        .split(" ")
+        .filter_map(|chunk| {
+            let (first, rest) = chunk.split_once("=")?;
+            if first != "CREUSOT_ARG" {
+                None
+            } else {
+                Some(rest)
+            }
+        })
+        .collect();
+
     cmd.args(&[
         "--stdout",
         "--export-metadata=false",
@@ -93,6 +108,7 @@ fn run_creusot(
         // we will write the coma output next to the .rs file
         "--spans-relative-to=.",
     ]);
+    cmd.args(args);
     cmd.args(&[
         "--creusot-extern",
         &format!("creusot_contracts={}", normalize_file_path(contracts)),
