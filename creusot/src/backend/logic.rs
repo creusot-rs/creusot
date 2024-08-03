@@ -185,9 +185,9 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
     );
 
     if has_axioms {
-        if sig.uses_simple_triggers() {
+        if sig.uses_simple_triggers() && !sig_contract.contract.variant.is_empty() {
             let lim_name = Ident::from_string(format!("{}_lim", &*sig.name));
-            let mut lim_sig = sig.clone();
+            let mut lim_sig = sig_contract;
             lim_sig.name = lim_name;
             lim_sig.trigger = Some(Trigger::single(function_call(&lim_sig)));
             lim_sig.attrs = vec![];
