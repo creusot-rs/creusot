@@ -1,7 +1,7 @@
 use crate::*;
-use ::std::any::Any;
 use ::core::fmt;
 pub use ::core::panicking::*;
+use ::std::any::Any;
 
 extern_spec! {
     mod core {

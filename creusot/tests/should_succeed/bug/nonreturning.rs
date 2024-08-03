@@ -3,7 +3,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 fn f() -> ! {
-    loop { }
+    loop {}
 }
 
 #[allow(unreachable_code)]
