@@ -91,8 +91,14 @@ fn run_creusot(
     // Find comment chunks of the form CREUSOT_ARG=ARGUMENT. Does not support spaces in arguments currently (would require real parser)
     let args: Vec<_> = header_line
         .split(" ")
-        .filter(|chunk| chunk.contains("CREUSOT_ARG"))
-        .flat_map(|chunk| chunk.split("=").nth(1))
+        .filter_map(|chunk| {
+            let (first, rest) = chunk.split_once("=")?;
+            if first != "CREUSOT_ARG" {
+                None
+            } else {
+                Some(rest)
+            }
+        })
         .collect();
 
     cmd.args(&[
