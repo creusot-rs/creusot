@@ -29,6 +29,7 @@ impl<T: ?Sized> ShallowModel for GhostPtrToken<T> {
 
     #[trusted]
     #[logic]
+    #[ensures(result.get(GhostPtr::null_logic()) == None)]
     #[open(self)]
     fn shallow_model(self) -> Self::ShallowModelTy {
         absurd
@@ -132,7 +133,6 @@ impl<T: ?Sized> GhostPtrExt<T> for GhostPtr<T> {
     #[trusted]
     #[open(self)]
     #[logic]
-    #[ensures(forall<t: GhostPtrToken<T>> !t@.contains(result))]
     #[ensures(result.addr_logic() == 0)]
     #[ensures(forall<ptr: GhostPtr<T>> ptr.addr_logic() == result.addr_logic() ==> ptr == result)]
     fn null_logic() -> Self {
@@ -153,6 +153,7 @@ impl<'a, T: ?Sized> ShallowModel for GhostPtrTokenRef<'a, T> {
     #[trusted]
     #[logic]
     #[open(self)]
+    #[ensures(result.get(GhostPtr::null_logic()) == None)]
     fn shallow_model(self) -> Self::ShallowModelTy {
         absurd
     }
@@ -197,6 +198,7 @@ impl<'a, T: ?Sized> GhostPtrTokenMut<'a, T> {
     #[trusted]
     #[logic]
     #[open(self)]
+    #[ensures(result.get(GhostPtr::null_logic()) == None)]
     pub fn cur(self) -> FMap<GhostPtr<T>, T> {
         absurd
     }
@@ -204,6 +206,7 @@ impl<'a, T: ?Sized> GhostPtrTokenMut<'a, T> {
     #[trusted]
     #[logic(prophetic)]
     #[open(self)]
+    #[ensures(result.get(GhostPtr::null_logic()) == None)]
     pub fn fin(self) -> FMap<GhostPtr<T>, T> {
         absurd
     }
