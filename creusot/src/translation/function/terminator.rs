@@ -18,9 +18,10 @@ use rustc_infer::{
 use rustc_middle::{
     mir::{
         self, AssertKind, BasicBlock, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo,
-        StatementKind, SwitchTargets, TerminatorKind, TerminatorKind::*,
+        StatementKind, SwitchTargets,
+        TerminatorKind::{self, *},
     },
-    ty::{self, GenericArgKind, GenericArgsRef, ParamEnv, Predicate, Ty, TyKind},
+    ty::{self, AssocItem, GenericArgKind, GenericArgsRef, ParamEnv, Predicate, Ty, TyKind},
 };
 use rustc_span::{Span, Symbol};
 use rustc_trait_selection::{
@@ -62,14 +63,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Return => self.emit_terminator(Terminator::Return),
             Unreachable => self.emit_terminator(Terminator::Abort(terminator.source_info.span)),
-            Call { func, args, destination, target, .. } => {
-                if target.is_none() {
-                    // If we have no target block after the call, then we cannot move past it.
-                    self.emit_terminator(Terminator::Abort(terminator.source_info.span));
-                    return;
-                }
-
+            Call { func, args, destination, mut target, .. } => {
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
+
                 if self.tcx.is_diagnostic_item(Symbol::intern("snapshot_from_fn"), fun_def_id) {
                     let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() else { panic!() };
                     let TyKind::Closure(def_id, _) = ty.kind() else { panic!() };
@@ -77,59 +73,72 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     assertion.subst(&inv_subst(self.body, &self.locals, terminator.source_info));
                     self.check_ghost_term(&assertion, location);
                     self.emit_ghost_assign(*destination, assertion, span);
-                    self.emit_terminator(Terminator::Goto(target.unwrap()));
-                    return;
-                }
-
-                let predicates = self
-                    .ctx
-                    .extern_spec(fun_def_id)
-                    .map(|p| p.predicates_for(self.tcx, subst))
-                    .unwrap_or_else(Vec::new);
-
-                let infcx = self.tcx.infer_ctxt().ignoring_regions().build();
-                let res =
-                    evaluate_additional_predicates(&infcx, predicates, self.param_env(), span);
-                if let Err(errs) = res {
-                    infcx.err_ctxt().report_fulfillment_errors(errs);
-                }
-
-                let mut func_args: Vec<_> =
-                    args.iter().map(|arg| self.translate_operand(&arg.node)).collect();
-
-                if func_args.is_empty() {
-                    // TODO: Remove this, push the 0-ary handling down to why3 backend
-                    // We use tuple as a dummy argument for 0-ary functions
-                    func_args.push(fmir::Operand::Constant(Term {
-                        kind: TermKind::Tuple { fields: Vec::new() },
-                        ty: self.ctx.types.unit,
-                        span,
-                    }))
-                }
-                let (loc, bb) = (destination, target.unwrap());
-
-                if self.is_box_new(fun_def_id) {
-                    assert_eq!(func_args.len(), 1);
-
-                    self.emit_assignment(&loc, RValue::Operand(func_args.remove(0)), span);
                 } else {
-                    let (fun_def_id, subst) =
-                        resolve_function(self.ctx, self.param_env(), fun_def_id, subst, span);
-                    let subst = self
-                        .ctx
-                        .try_normalize_erasing_regions(self.param_env(), subst)
-                        .unwrap_or(subst);
+                    let mut func_args: Vec<_> =
+                        args.iter().map(|arg| self.translate_operand(&arg.node)).collect();
+                    if func_args.is_empty() {
+                        // TODO: Remove this, push the 0-ary handling down to why3 backend
+                        // We use tuple as a dummy argument for 0-ary functions
+                        func_args.push(fmir::Operand::Constant(Term {
+                            kind: TermKind::Tuple { fields: Vec::new() },
+                            ty: self.ctx.types.unit,
+                            span,
+                        }))
+                    }
 
-                    self.emit_statement(Statement::Call(
-                        self.translate_place(*loc),
-                        fun_def_id,
-                        subst,
-                        func_args,
-                        span.source_callsite(),
-                    ));
-                };
+                    if self.is_box_new(fun_def_id) {
+                        assert_eq!(func_args.len(), 1);
 
-                self.emit_terminator(Terminator::Goto(bb));
+                        self.emit_assignment(
+                            &destination,
+                            RValue::Operand(func_args.remove(0)),
+                            span,
+                        );
+                    } else {
+                        let predicates = self
+                            .ctx
+                            .extern_spec(fun_def_id)
+                            .map(|p| p.predicates_for(self.tcx, subst))
+                            .unwrap_or_else(Vec::new);
+
+                        let infcx = self.tcx.infer_ctxt().ignoring_regions().build();
+                        let res = evaluate_additional_predicates(
+                            &infcx,
+                            predicates,
+                            self.param_env(),
+                            span,
+                        );
+                        if let Err(errs) = res {
+                            infcx.err_ctxt().report_fulfillment_errors(errs);
+                        }
+
+                        let (fun_def_id, subst) =
+                            resolve_function(self.ctx, self.param_env(), fun_def_id, subst, span);
+
+                        if self.ctx.sig(fun_def_id).contract.is_requires_false() {
+                            target = None
+                        } else {
+                            let subst = self
+                                .ctx
+                                .try_normalize_erasing_regions(self.param_env(), subst)
+                                .unwrap_or(subst);
+
+                            self.emit_statement(Statement::Call(
+                                self.translate_place(*destination),
+                                fun_def_id,
+                                subst,
+                                func_args,
+                                span.source_callsite(),
+                            ));
+                        }
+                    }
+                }
+
+                if let Some(bb) = target {
+                    self.emit_terminator(Terminator::Goto(bb));
+                } else {
+                    self.emit_terminator(Terminator::Abort(terminator.source_info.span));
+                }
             }
             Assert { cond, expected, msg, target, unwind: _ } => {
                 let msg = self.get_explanation(msg);
@@ -201,29 +210,23 @@ pub(crate) fn resolve_function<'tcx>(
     subst: GenericArgsRef<'tcx>,
     sp: Span,
 ) -> (DefId, GenericArgsRef<'tcx>) {
-    if let Some(it) = ctx.opt_associated_item(def_id) {
-        if let ty::TraitContainer = it.container {
-            let method = traits::resolve_assoc_item_opt(ctx.tcx, param_env, def_id, subst)
-                .expect("could not find instance");
-
-            if !method.0.is_local() && ctx.sig(method.0).contract.is_false() {
-                ctx.warn(sp, "calling an external function with no contract will yield an impossible precondition").emit();
-            }
-
-            return method;
-        }
+    let res;
+    if let Some(AssocItem { container: ty::TraitContainer, .. }) = ctx.opt_associated_item(def_id) {
+        res = traits::resolve_assoc_item_opt(ctx.tcx, param_env, def_id, subst)
+            .expect("could not find instance");
+    } else {
+        res = (def_id, subst)
     }
 
-    if !def_id.is_local() && ctx.sig(def_id).contract.is_false() {
+    if ctx.sig(res.0).contract.extern_no_spec {
         ctx.warn(
             sp,
             "calling an external function with no contract will yield an impossible precondition",
         )
         .emit();
     }
-    // ctx.translate(def_id);
 
-    (def_id, subst)
+    res
 }
 
 // Try to extract a function defid from an operand
