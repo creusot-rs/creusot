@@ -7,8 +7,8 @@ use creusot_contracts::{
 
 #[derive(Clone, PartialEq)]
 pub struct Product<A, B> {
-    a: A,
-    b: B,
+    pub a: A,
+    pub b: B,
 }
 
 impl<A, B> DeepModel for Product<A, B>
@@ -48,9 +48,9 @@ impl<A: DeepModel, B: DeepModel> DeepModel for Sum<A, B> {
 
 #[derive(Resolve)]
 pub struct Product2<'a, A> {
-    a: &'a mut A,
-    b: bool,
-    c: Vec<u32>,
+    pub a: &'a mut A,
+    pub b: bool,
+    pub c: Vec<u32>,
 }
 
 #[derive(Resolve)]

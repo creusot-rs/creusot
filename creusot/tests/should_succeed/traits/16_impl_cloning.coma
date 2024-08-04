@@ -122,17 +122,20 @@ module C16ImplCloning_Test
   
   let%span s16_impl_cloning1 = "../16_impl_cloning.rs" 16 10 16 21
   
-  let%span span2 = "../16_impl_cloning.rs" 12 8 12 14
+  let%span span2 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span3 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span3 = "../16_impl_cloning.rs" 12 8 12 14
   
-  let%span span4 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span4 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  
+  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
   use C16ImplCloning_Vec_Type as Vec'0
   
   use prelude.prelude.Borrow
   
-  predicate invariant'0 (self : borrowed (Vec'0.t_vec t))
+  predicate invariant'0 (self : borrowed (Vec'0.t_vec t)) =
+    [%#span2] true
   
   predicate inv'0 (_x : borrowed (Vec'0.t_vec t))
   
@@ -143,18 +146,18 @@ module C16ImplCloning_Test
   function shallow_model'1 [#"../16_impl_cloning.rs" 11 4 11 50] (self : Vec'0.t_vec t) : Seq.seq t
   
   function shallow_model'0 (self : borrowed (Vec'0.t_vec t)) : Seq.seq t =
-    [%#span3] shallow_model'1 ( * self)
+    [%#span4] shallow_model'1 self.current
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Vec'0.t_vec t)) =
-    [%#span4]  ^ self =  * self
+    [%#span5] self.final = self.current
   
   let rec test (x:borrowed (Vec'0.t_vec t)) (return'  (ret:()))= {[%#s16_impl_cloning0] inv'0 x}
     (! bb0 [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'0 x} s1 | s1 = -{resolve'0 x}- s2 | s2 = return' {_0} ]  ] )
     [ & _0 : () = any_l () | & x : borrowed (Vec'0.t_vec t) = x ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#s16_impl_cloning1] shallow_model'0 x = shallow_model'1 ( * x)}
+    [ return' (result:())-> {[@expl:postcondition] [%#s16_impl_cloning1] shallow_model'0 x = shallow_model'1 x.current}
       (! return' {result}) ]
     
 end

@@ -287,14 +287,14 @@ module C12GhostCode_GhostIsCopy
   use prelude.prelude.Snapshot
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   use prelude.prelude.Int
   
   let rec ghost_is_copy (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &x <- [%#s12_ghost_code0] (0 : int32) ] s1
-      | s1 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &r <- _ret' ]  [ &x <-  ^ r ] s2)
+      | s1 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &r <- _ret' ]  [ &x <- r.final ] s2)
       | s2 = -{resolve'0 r}- s3
       | s3 =  [ &g <- [%#s12_ghost_code1] Snapshot.new r ] s4
       | s4 = bb1 ]
@@ -451,12 +451,12 @@ module C12GhostCode_GhostCheck
   use seq.Seq
   
   function shallow_model'1 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) : Seq.seq int32 =
-    [%#span17] shallow_model'0 ( * self)
+    [%#span17] shallow_model'0 self.current
   
   let rec push'0 (self:borrowed (Vec'0.t_vec int32 (Global'0.t_global))) (value:int32) (return'  (ret:()))= {[@expl:precondition] [%#span19] inv'2 value}
     {[@expl:precondition] [%#span18] inv'1 self}
     any
-    [ return' (result:())-> {[%#span20] shallow_model'0 ( ^ self) = Seq.snoc (shallow_model'1 self) value}
+    [ return' (result:())-> {[%#span20] shallow_model'0 self.final = Seq.snoc (shallow_model'1 self) value}
       (! return' {result}) ]
     
   
@@ -479,7 +479,7 @@ module C12GhostCode_GhostCheck
     | bb1 = s0 [ s0 =  [ &_2 <- [%#s12_ghost_code1] Snapshot.new (let _ = logi_drop'0 x in ()) ] s1 | s1 = bb2 ] 
     | bb2 = s0
       [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {x}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_5 <- _ret' ]  [ &x <-  ^ _5 ] s1)
+          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_5 <- _ret' ]  [ &x <- _5.final ] s1)
       | s1 = push'0 {_5} {[%#s12_ghost_code2] (0 : int32)} (fun (_ret':()) ->  [ &_4 <- _ret' ] s2)
       | s2 = bb3 ]
       

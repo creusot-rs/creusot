@@ -20,13 +20,15 @@ module FilterPositive_NumOfPos_Impl
   
   function num_of_pos [#"../filter_positive.rs" 37 0 37 49] (i : int) (j : int) (t : Seq.seq int32) : int
   
-  goal vc_num_of_pos : match i >= j with
-    | True -> true
-    | False -> match Int32.to_int (Seq.get t (j - 1)) > 0 with
-      | True -> 0 <= ([%#sfilter_positive0] j - i) /\ ([%#sfilter_positive0] j - 1 - i) < ([%#sfilter_positive0] j - i)
-      | False -> 0 <= ([%#sfilter_positive0] j - i) /\ ([%#sfilter_positive0] j - 1 - i) < ([%#sfilter_positive0] j - i)
-      end
-    end
+  goal vc_num_of_pos : if i >= j then
+    true
+  else
+    if Int32.to_int (Seq.get t (j - 1)) > 0 then
+      0 <= ([%#sfilter_positive0] j - i) /\ ([%#sfilter_positive0] j - 1 - i) < ([%#sfilter_positive0] j - i)
+    else
+      0 <= ([%#sfilter_positive0] j - i) /\ ([%#sfilter_positive0] j - 1 - i) < ([%#sfilter_positive0] j - i)
+    
+  
 end
 module FilterPositive_LemmaNumOfPosIncreasing_Impl
   let%span sfilter_positive0 = "../filter_positive.rs" 62 11 62 17
@@ -70,13 +72,14 @@ module FilterPositive_LemmaNumOfPosIncreasing_Impl
     
   
   goal vc_lemma_num_of_pos_increasing : ([%#sfilter_positive0] j <= k)
-   -> match j < k with
-    | True -> (([%#sfilter_positive0] j + 1 <= k)
+   -> (if j < k then
+    (([%#sfilter_positive0] j + 1 <= k)
     /\ 0 <= ([%#sfilter_positive2] k - j) /\ ([%#sfilter_positive2] k - (j + 1)) < ([%#sfilter_positive2] k - j))
     /\ (([%#sfilter_positive1] num_of_pos'0 i (j + 1) t <= num_of_pos'0 i k t)
      -> ([%#sfilter_positive1] num_of_pos'0 i j t <= num_of_pos'0 i k t))
-    | False -> [%#sfilter_positive1] num_of_pos'0 i j t <= num_of_pos'0 i k t
-    end
+  else
+    [%#sfilter_positive1] num_of_pos'0 i j t <= num_of_pos'0 i k t
+  )
 end
 module FilterPositive_LemmaNumOfPosStrictlyIncreasing_Impl
   let%span sfilter_positive0 = "../filter_positive.rs" 76 11 76 32
@@ -442,7 +445,7 @@ module FilterPositive_M
     [%#span26] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'0 self)  -> resolve'2 (index_logic'0 self i)
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span27]  ^ self =  * self
+    [%#span27] self.final = self.current
   
   use prelude.prelude.Slice
   
@@ -457,17 +460,17 @@ module FilterPositive_M
     [%#span30] UIntSize.to_int self < Seq.length seq
   
   function shallow_model'2 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) : Seq.seq int32 =
-    [%#span31] shallow_model'0 ( * self)
+    [%#span31] shallow_model'0 self.current
   
   let rec index_mut'0 (self:borrowed (Vec'0.t_vec int32 (Global'0.t_global))) (index:usize) (return'  (ret:borrowed int32))= {[@expl:precondition] [%#span34] inv'3 index}
     {[@expl:precondition] [%#span33] inv'6 self}
     {[@expl:precondition] [%#span32] in_bounds'0 index (shallow_model'2 self)}
     any
     [ return' (result:borrowed int32)-> {[%#span39] inv'7 result}
-      {[%#span38] Seq.length (shallow_model'0 ( ^ self)) = Seq.length (shallow_model'2 self)}
-      {[%#span37] resolve_elswhere'0 index (shallow_model'2 self) (shallow_model'0 ( ^ self))}
-      {[%#span36] has_value'0 index (shallow_model'0 ( ^ self)) ( ^ result)}
-      {[%#span35] has_value'0 index (shallow_model'2 self) ( * result)}
+      {[%#span38] Seq.length (shallow_model'0 self.final) = Seq.length (shallow_model'2 self)}
+      {[%#span37] resolve_elswhere'0 index (shallow_model'2 self) (shallow_model'0 self.final)}
+      {[%#span36] has_value'0 index (shallow_model'0 self.final) result.final}
+      {[%#span35] has_value'0 index (shallow_model'2 self) result.current}
       (! return' {result}) ]
     
   
@@ -607,7 +610,10 @@ module FilterPositive_M
         | bb22 = s0 [ s0 = index'0 {t} {i} (fun (_ret':int32) ->  [ &_43 <- _ret' ] s1) | s1 = bb23 ] 
         | bb23 = s0
           [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {u}
-              (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_47 <- _ret' ]  [ &u <-  ^ _47 ] s1)
+              (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->
+                 [ &_47 <- _ret' ] 
+                 [ &u <- _47.final ] 
+                s1)
           | s1 = index_mut'0 {_47} {count} (fun (_ret':borrowed int32) ->  [ &_46 <- _ret' ] s2)
           | s2 = bb24 ]
           

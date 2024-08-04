@@ -49,12 +49,12 @@ module C09Maintains_Test2
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (A'0.t_a)) =
-    [%#span2]  ^ self =  * self
+    [%#span2] self.final = self.current
   
-  let rec test_2 (a:borrowed (A'0.t_a)) (b:bool) (c:uint64) (return'  (ret:()))= {[%#s09_maintains0] invariant'0 ( * a) b c}
+  let rec test_2 (a:borrowed (A'0.t_a)) (b:bool) (c:uint64) (return'  (ret:()))= {[%#s09_maintains0] invariant'0 a.current b c}
     (! bb0 [ bb0 = s0 [ s0 = -{resolve'0 a}- s1 | s1 = return' {_0} ]  ] )
     [ & _0 : () = any_l () | & a : borrowed (A'0.t_a) = a ]
-     [ return' (result:())-> {[@expl:postcondition] [%#s09_maintains0] invariant'0 ( ^ a) b c} (! return' {result}) ] 
+     [ return' (result:())-> {[@expl:postcondition] [%#s09_maintains0] invariant'0 a.final b c} (! return' {result}) ] 
 end
 module C09Maintains_Test3
   let%span s09_maintains0 = "../09_maintains.rs" 33 0 33 41
@@ -77,16 +77,16 @@ module C09Maintains_Test3
   use prelude.prelude.Intrinsic
   
   predicate resolve'1 (self : borrowed (A'0.t_a)) =
-    [%#span2]  ^ self =  * self
+    [%#span2] self.final = self.current
   
   predicate resolve'0 (self : borrowed bool) =
-    [%#span2]  ^ self =  * self
+    [%#span2] self.final = self.current
   
-  let rec test_3 (a:borrowed (A'0.t_a)) (b:borrowed bool) (c:uint64) (return'  (ret:()))= {[%#s09_maintains0] invariant'0 ( * a) ( * b) c}
+  let rec test_3 (a:borrowed (A'0.t_a)) (b:borrowed bool) (c:uint64) (return'  (ret:()))= {[%#s09_maintains0] invariant'0 a.current b.current c}
     (! bb0 [ bb0 = s0 [ s0 = -{resolve'0 b}- s1 | s1 = -{resolve'1 a}- s2 | s2 = return' {_0} ]  ] )
     [ & _0 : () = any_l () | & a : borrowed (A'0.t_a) = a | & b : borrowed bool = b ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#s09_maintains0] invariant'0 ( ^ a) ( ^ b) c}
+    [ return' (result:())-> {[@expl:postcondition] [%#s09_maintains0] invariant'0 a.final b.final c}
       (! return' {result}) ]
     
 end

@@ -190,7 +190,7 @@ module VecInv_Vec
   
   predicate inv'4 (_x : borrowed (SumTo10'0.t_sumto10))
   
-  axiom inv'4 : forall x : borrowed (SumTo10'0.t_sumto10) . inv'4 x = (inv'5 ( * x) /\ inv'5 ( ^ x))
+  axiom inv'4 : forall x : borrowed (SumTo10'0.t_sumto10) . inv'4 x = (inv'5 x.current /\ inv'5 x.final)
   
   use prelude.prelude.Slice
   
@@ -277,7 +277,7 @@ module VecInv_Vec
     [%#span16] Seq.get (shallow_model'0 self) ix
   
   predicate resolve'1 (self : borrowed (SumTo10'0.t_sumto10)) =
-    [%#span17]  ^ self =  * self
+    [%#span17] self.final = self.current
   
   predicate resolve'0 (self : Vec'0.t_vec (borrowed (SumTo10'0.t_sumto10)) (Global'0.t_global)) =
     [%#span18] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'0 self)  -> resolve'1 (index_logic'0 self i)
@@ -287,8 +287,8 @@ module VecInv_Vec
     (! bb0
     [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'0 x} s1 | s1 = -{resolve'0 x}- s2 | s2 = bb1 ] 
     | bb1 = s0
-      [ s0 = {[@expl:assertion] [%#svec_inv0] Int32.to_int (VecInv_SumTo10_Type.sumto10_a ( * index_logic'0 x 0))
-        + Int32.to_int (VecInv_SumTo10_Type.sumto10_b ( * index_logic'0 x 0))
+      [ s0 = {[@expl:assertion] [%#svec_inv0] Int32.to_int (VecInv_SumTo10_Type.sumto10_a (index_logic'0 x 0).current)
+        + Int32.to_int (VecInv_SumTo10_Type.sumto10_b (index_logic'0 x 0).current)
         = 10}
         s1
       | s1 = bb2 ]

@@ -390,6 +390,8 @@ module SelectionSortGeneric_SelectionSort
   
   let%span span114 = "../../../../creusot-contracts/src/std/vec.rs" 78 26 78 48
   
+  let%span span115 = "../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  
   type deep_model_ty'0
   
   predicate invariant'14 (self : deep_model_ty'0)
@@ -409,13 +411,15 @@ module SelectionSortGeneric_SelectionSort
   
   axiom inv'13 : forall x : Seq.seq usize . inv'13 x = true
   
-  predicate invariant'12 (self : Seq.seq t)
+  predicate invariant'12 (self : Seq.seq t) =
+    [%#span18] true
   
   predicate inv'12 (_x : Seq.seq t)
   
   axiom inv'12 : forall x : Seq.seq t . inv'12 x = true
   
-  predicate invariant'11 (self : Seq.seq deep_model_ty'0)
+  predicate invariant'11 (self : Seq.seq deep_model_ty'0) =
+    [%#span18] true
   
   predicate inv'11 (_x : Seq.seq deep_model_ty'0)
   
@@ -452,13 +456,15 @@ module SelectionSortGeneric_SelectionSort
   
   use Alloc_Vec_Vec_Type as Vec'0
   
-  predicate invariant'7 (self : Vec'0.t_vec t (Global'0.t_global))
+  predicate invariant'7 (self : Vec'0.t_vec t (Global'0.t_global)) =
+    [%#span18] true
   
   predicate inv'7 (_x : Vec'0.t_vec t (Global'0.t_global))
   
   axiom inv'7 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'7 x = true
   
-  predicate invariant'6 (self : borrowed (Vec'0.t_vec t (Global'0.t_global)))
+  predicate invariant'6 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
+    [%#span18] true
   
   predicate inv'6 (_x : borrowed (Vec'0.t_vec t (Global'0.t_global)))
   
@@ -466,13 +472,15 @@ module SelectionSortGeneric_SelectionSort
   
   use prelude.prelude.Slice
   
-  predicate invariant'5 (self : borrowed (slice t))
+  predicate invariant'5 (self : borrowed (slice t)) =
+    [%#span18] true
   
   predicate inv'5 (_x : borrowed (slice t))
   
   axiom inv'5 : forall x : borrowed (slice t) . inv'5 x = true
   
-  predicate invariant'4 (self : slice t)
+  predicate invariant'4 (self : slice t) =
+    [%#span18] true
   
   predicate inv'4 (_x : slice t)
   
@@ -616,7 +624,8 @@ module SelectionSortGeneric_SelectionSort
   
   use prelude.prelude.Snapshot
   
-  predicate invariant'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))))
+  predicate invariant'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global)))) =
+    [%#span18] true
   
   predicate inv'0 (_x : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))))
   
@@ -652,10 +661,10 @@ module SelectionSortGeneric_SelectionSort
   use prelude.prelude.Intrinsic
   
   predicate resolve'4 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
-    [%#span74]  ^ self =  * self
+    [%#span74] self.final = self.current
   
   predicate resolve'3 (self : borrowed (slice t)) =
-    [%#span74]  ^ self =  * self
+    [%#span74] self.final = self.current
   
   use seq.Permut
   
@@ -669,23 +678,23 @@ module SelectionSortGeneric_SelectionSort
   && ([%#span76] Seq.length (shallow_model'6 self) <= UIntSize.to_int (max'0 : usize))
   
   function shallow_model'5 (self : borrowed (slice t)) : Seq.seq t =
-    [%#span79] shallow_model'6 ( * self)
+    [%#span79] shallow_model'6 self.current
   
   let rec swap'0 (self:borrowed (slice t)) (a:usize) (b:usize) (return'  (ret:()))= {[@expl:precondition] [%#span82] inv'5 self}
     {[@expl:precondition] [%#span81] UIntSize.to_int b < Seq.length (shallow_model'5 self)}
     {[@expl:precondition] [%#span80] UIntSize.to_int a < Seq.length (shallow_model'5 self)}
     any
-    [ return' (result:())-> {[%#span83] Permut.exchange (shallow_model'6 ( ^ self)) (shallow_model'5 self) (UIntSize.to_int a) (UIntSize.to_int b)}
+    [ return' (result:())-> {[%#span83] Permut.exchange (shallow_model'6 self.final) (shallow_model'5 self) (UIntSize.to_int a) (UIntSize.to_int b)}
       (! return' {result}) ]
     
   
   function shallow_model'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq t =
-    [%#span79] shallow_model'2 ( * self)
+    [%#span79] shallow_model'2 self.current
   
   let rec deref_mut'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (return'  (ret:borrowed (slice t)))= {[@expl:precondition] [%#span84] inv'6 self}
     any
     [ return' (result:borrowed (slice t))-> {[%#span87] inv'5 result}
-      {[%#span86] shallow_model'6 ( ^ result) = shallow_model'2 ( ^ self)}
+      {[%#span86] shallow_model'6 result.final = shallow_model'2 self.final}
       {[%#span85] shallow_model'5 result = shallow_model'0 self}
       (! return' {result}) ]
     
@@ -723,19 +732,19 @@ module SelectionSortGeneric_SelectionSort
   use seq.Seq
   
   predicate resolve'1 (self : borrowed (Range'0.t_range usize)) =
-    [%#span74]  ^ self =  * self
+    [%#span74] self.final = self.current
   
   predicate completed'0 (self : borrowed (Range'0.t_range usize)) =
     [%#span100] resolve'1 self
-    /\ deep_model'2 (Core_Ops_Range_Range_Type.range_start ( * self))
-    >= deep_model'2 (Core_Ops_Range_Range_Type.range_end ( * self))
+    /\ deep_model'2 (Core_Ops_Range_Range_Type.range_start self.current)
+    >= deep_model'2 (Core_Ops_Range_Range_Type.range_end self.current)
   
   let rec next'0 (self:borrowed (Range'0.t_range usize)) (return'  (ret:Option'0.t_option usize))= {[@expl:precondition] [%#span101] inv'8 self}
     any
     [ return' (result:Option'0.t_option usize)-> {[%#span103] inv'9 result}
       {[%#span102] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -749,7 +758,7 @@ module SelectionSortGeneric_SelectionSort
   use prelude.prelude.Snapshot
   
   function deep_model'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq deep_model_ty'0 =
-    [%#span105] deep_model'1 ( * self)
+    [%#span105] deep_model'1 self.current
   
   use seq.Permut
   
@@ -790,7 +799,8 @@ module SelectionSortGeneric_SelectionSort
       (! return' {result}) ]
     
   
-  predicate resolve'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))))
+  predicate resolve'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global)))) =
+    [%#span115] true
   
   use prelude.prelude.Snapshot
   
@@ -800,7 +810,7 @@ module SelectionSortGeneric_SelectionSort
     | bb1 = s0
       [ s0 = {[@expl:type invariant] inv'0 old_v} s1
       | s1 = -{resolve'0 old_v}- s2
-      | s2 = len'0 { * v} (fun (_ret':usize) ->  [ &_8 <- _ret' ] s3)
+      | s2 = len'0 {v.current} (fun (_ret':usize) ->  [ &_8 <- _ret' ] s3)
       | s3 = bb2 ]
       
     | bb2 = s0
@@ -815,7 +825,7 @@ module SelectionSortGeneric_SelectionSort
       
     | bb5 = s0 [ s0 =  [ &old_6_0 <- Snapshot.new v ] s1 | s1 = bb6 ] 
     | bb6 = bb6
-      [ bb6 = {[@expl:loop invariant]  ^ Snapshot.inner old_6_0 =  ^ v}
+      [ bb6 = {[@expl:loop invariant] (Snapshot.inner old_6_0).final = v.final}
         {[@expl:loop invariant] [%#sselection_sort_generic6] partition'0 (deep_model'0 v) (Seq.length (Snapshot.inner produced))}
         {[@expl:loop invariant] [%#sselection_sort_generic5] sorted_range'0 (deep_model'0 v) 0 (Seq.length (Snapshot.inner produced))}
         {[@expl:loop invariant] [%#sselection_sort_generic4] permutation_of'0 (shallow_model'0 v) (shallow_model'1 old_v)}
@@ -824,11 +834,11 @@ module SelectionSortGeneric_SelectionSort
         (! s0) [ s0 = bb7 ] 
         [ bb7 = s0
           [ s0 = Borrow.borrow_mut <Range'0.t_range usize> {iter}
-              (fun (_ret':borrowed (Range'0.t_range usize)) ->  [ &_22 <- _ret' ]  [ &iter <-  ^ _22 ] s1)
-          | s1 = Borrow.borrow_final <Range'0.t_range usize> { * _22} {Borrow.get_id _22}
+              (fun (_ret':borrowed (Range'0.t_range usize)) ->  [ &_22 <- _ret' ]  [ &iter <- _22.final ] s1)
+          | s1 = Borrow.borrow_final <Range'0.t_range usize> {_22.current} {Borrow.get_id _22}
               (fun (_ret':borrowed (Range'0.t_range usize)) ->
                  [ &_21 <- _ret' ] 
-                 [ &_22 <- { _22 with current = ( ^ _21) ; } ] 
+                 [ &_22 <- { _22 with current = _21.final ; } ] 
                 s2)
           | s2 = next'0 {_21} (fun (_ret':Option'0.t_option usize) ->  [ &_20 <- _ret' ] s3)
           | s3 = bb8 ]
@@ -855,7 +865,7 @@ module SelectionSortGeneric_SelectionSort
           | s2 =  [ &min <- i ] s3
           | s3 = UIntSize.add {i} {[%#sselection_sort_generic8] (1 : usize)}
               (fun (_ret':usize) ->  [ &_32 <- _ret' ] s4)
-          | s4 = len'0 { * v} (fun (_ret':usize) ->  [ &_34 <- _ret' ] s5)
+          | s4 = len'0 {v.current} (fun (_ret':usize) ->  [ &_34 <- _ret' ] s5)
           | s5 = bb14 ]
           
         | bb14 = s0
@@ -881,11 +891,11 @@ module SelectionSortGeneric_SelectionSort
             (! s0) [ s0 = bb19 ] 
             [ bb19 = s0
               [ s0 = Borrow.borrow_mut <Range'0.t_range usize> {iter1}
-                  (fun (_ret':borrowed (Range'0.t_range usize)) ->  [ &_46 <- _ret' ]  [ &iter1 <-  ^ _46 ] s1)
-              | s1 = Borrow.borrow_final <Range'0.t_range usize> { * _46} {Borrow.get_id _46}
+                  (fun (_ret':borrowed (Range'0.t_range usize)) ->  [ &_46 <- _ret' ]  [ &iter1 <- _46.final ] s1)
+              | s1 = Borrow.borrow_final <Range'0.t_range usize> {_46.current} {Borrow.get_id _46}
                   (fun (_ret':borrowed (Range'0.t_range usize)) ->
                      [ &_45 <- _ret' ] 
-                     [ &_46 <- { _46 with current = ( ^ _45) ; } ] 
+                     [ &_46 <- { _46 with current = _45.final ; } ] 
                     s2)
               | s2 = next'0 {_45} (fun (_ret':Option'0.t_option usize) ->  [ &_44 <- _ret' ] s3)
               | s3 = bb20 ]
@@ -909,13 +919,13 @@ module SelectionSortGeneric_SelectionSort
               [ s0 =  [ &produced1 <- _49 ] 
                 (any [ any_ (_any:Snapshot.snap_ty (Seq.seq usize))-> (!  [ &_49 <- _any ] s1) ] )
               | s1 =  [ &j <- __creusot_proc_iter_elem1 ] s2
-              | s2 = index'0 { * v} {j} (fun (_ret':t) ->  [ &_54 <- _ret' ] s3)
+              | s2 = index'0 {v.current} {j} (fun (_ret':t) ->  [ &_54 <- _ret' ] s3)
               | s3 = bb26 ]
               
             | bb26 = s0
               [ s0 = {[@expl:type invariant] inv'2 _54} s1
               | s1 = -{resolve'2 _54}- s2
-              | s2 = index'0 { * v} {min} (fun (_ret':t) ->  [ &_58 <- _ret' ] s3)
+              | s2 = index'0 {v.current} {min} (fun (_ret':t) ->  [ &_58 <- _ret' ] s3)
               | s3 = bb27 ]
               
             | bb27 = s0
@@ -931,19 +941,19 @@ module SelectionSortGeneric_SelectionSort
              ]
           
         | bb23 = s0
-          [ s0 = Borrow.borrow_mut <Vec'0.t_vec t (Global'0.t_global)> { * v}
+          [ s0 = Borrow.borrow_mut <Vec'0.t_vec t (Global'0.t_global)> {v.current}
               (fun (_ret':borrowed (Vec'0.t_vec t (Global'0.t_global))) ->
                  [ &_66 <- _ret' ] 
-                 [ &v <- { v with current = ( ^ _66) ; } ] 
+                 [ &v <- { v with current = _66.final ; } ] 
                 s1)
-          | s1 = -{inv'3 ( ^ _66)}- s2
+          | s1 = -{inv'3 _66.final}- s2
           | s2 = deref_mut'0 {_66} (fun (_ret':borrowed (slice t)) ->  [ &_65 <- _ret' ] s3)
           | s3 = bb32 ]
           
         | bb32 = s0
-          [ s0 = Borrow.borrow_final <slice t> { * _65} {Borrow.get_id _65}
-              (fun (_ret':borrowed (slice t)) ->  [ &_64 <- _ret' ]  [ &_65 <- { _65 with current = ( ^ _64) ; } ] s1)
-          | s1 = -{inv'4 ( ^ _64)}- s2
+          [ s0 = Borrow.borrow_final <slice t> {_65.current} {Borrow.get_id _65}
+              (fun (_ret':borrowed (slice t)) ->  [ &_64 <- _ret' ]  [ &_65 <- { _65 with current = _64.final ; } ] s1)
+          | s1 = -{inv'4 _64.final}- s2
           | s2 = swap'0 {_64} {i} {min} (fun (_ret':()) ->  [ &_63 <- _ret' ] s3)
           | s3 = bb33 ]
           
@@ -958,16 +968,6 @@ module SelectionSortGeneric_SelectionSort
           | s3 = bb6 ]
            ]
          ]
-      
-    | bb9 = s0
-      [ s0 = {[@expl:type invariant] inv'6 v} s1
-      | s1 = -{resolve'4 v}- s2
-      | s2 = {[%#sselection_sort_generic4] false} any ]
-      
-    | bb21 = s0
-      [ s0 = {[@expl:type invariant] inv'6 v} s1
-      | s1 = -{resolve'4 v}- s2
-      | s2 = {[%#sselection_sort_generic11] false} any ]
       
     | bb11 = s0 [ s0 = {[@expl:type invariant] inv'6 v} s1 | s1 = -{resolve'4 v}- s2 | s2 = return' {_0} ]  ]
     )
@@ -1007,8 +1007,8 @@ module SelectionSortGeneric_SelectionSort
     | & _66 : borrowed (Vec'0.t_vec t (Global'0.t_global)) = any_l ()
     | & old_6_0 : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))) = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#sselection_sort_generic17] permutation_of'0 (shallow_model'2 ( ^ v)) (shallow_model'0 v)}
-      {[@expl:postcondition] [%#sselection_sort_generic16] sorted'0 (deep_model'1 ( ^ v))}
+    [ return' (result:())-> {[@expl:postcondition] [%#sselection_sort_generic17] permutation_of'0 (shallow_model'2 v.final) (shallow_model'0 v)}
+      {[@expl:postcondition] [%#sselection_sort_generic16] sorted'0 (deep_model'1 v.final)}
       (! return' {result}) ]
     
 end

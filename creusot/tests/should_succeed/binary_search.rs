@@ -56,7 +56,7 @@ impl<T> List<T> {
                 return t;
             }
         }
-        std::process::abort()
+        panic!()
     }
 
     // Temporary until support for usize::MAX is added

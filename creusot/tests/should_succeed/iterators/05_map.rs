@@ -9,9 +9,9 @@ use common::Iterator;
 // FIXME: make it Map<I, F> again
 pub struct Map<I: Iterator, B, F: FnMut(I::Item) -> B> {
     // The inner iterator
-    iter: I,
+    pub iter: I,
     // The mapper
-    func: F,
+    pub func: F,
 }
 
 impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, B, F> {

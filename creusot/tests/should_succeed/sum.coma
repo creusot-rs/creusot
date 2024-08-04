@@ -251,17 +251,17 @@ module Sum_SumFirstN
   use seq.Seq
   
   predicate resolve'0 (self : borrowed (RangeInclusive'0.t_rangeinclusive uint32)) =
-    [%#span29]  ^ self =  * self
+    [%#span29] self.final = self.current
   
   predicate completed'0 (self : borrowed (RangeInclusive'0.t_rangeinclusive uint32)) =
-    [%#span30] is_empty_log'0 ( * self) /\ is_empty_log'0 ( ^ self)
+    [%#span30] is_empty_log'0 self.current /\ is_empty_log'0 self.final
   
   let rec next'0 (self:borrowed (RangeInclusive'0.t_rangeinclusive uint32)) (return'  (ret:Option'0.t_option uint32))= {[@expl:precondition] [%#span31] inv'2 self}
     any
     [ return' (result:Option'0.t_option uint32)-> {[%#span33] inv'3 result}
       {[%#span32] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -327,12 +327,12 @@ module Sum_SumFirstN
           [ s0 = Borrow.borrow_mut <RangeInclusive'0.t_rangeinclusive uint32> {iter}
               (fun (_ret':borrowed (RangeInclusive'0.t_rangeinclusive uint32)) ->
                  [ &_19 <- _ret' ] 
-                 [ &iter <-  ^ _19 ] 
+                 [ &iter <- _19.final ] 
                 s1)
-          | s1 = Borrow.borrow_final <RangeInclusive'0.t_rangeinclusive uint32> { * _19} {Borrow.get_id _19}
+          | s1 = Borrow.borrow_final <RangeInclusive'0.t_rangeinclusive uint32> {_19.current} {Borrow.get_id _19}
               (fun (_ret':borrowed (RangeInclusive'0.t_rangeinclusive uint32)) ->
                  [ &_18 <- _ret' ] 
-                 [ &_19 <- { _19 with current = ( ^ _18) ; } ] 
+                 [ &_19 <- { _19 with current = _18.final ; } ] 
                 s2)
           | s2 = next'0 {_18} (fun (_ret':Option'0.t_option uint32) ->  [ &_17 <- _ret' ] s3)
           | s3 = bb7 ]
@@ -361,7 +361,6 @@ module Sum_SumFirstN
            ]
          ]
       
-    | bb8 = {[%#ssum4] false} any
     | bb10 = s0 [ s0 =  [ &_0 <- sum ] s1 | s1 = return' {_0} ]  ]
     )
     [ & _0 : uint32 = any_l ()

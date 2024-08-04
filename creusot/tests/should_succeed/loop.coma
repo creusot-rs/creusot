@@ -15,14 +15,14 @@ module Loop_F
   use prelude.prelude.Int32
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   use prelude.prelude.Int
   
   let rec f (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &a <- [%#sloop0] (10 : int32) ] s1
-      | s1 = Borrow.borrow_mut <int32> {a} (fun (_ret':borrowed int32) ->  [ &b <- _ret' ]  [ &a <-  ^ b ] s2)
+      | s1 = Borrow.borrow_mut <int32> {a} (fun (_ret':borrowed int32) ->  [ &b <- _ret' ]  [ &a <- b.final ] s2)
       | s2 =  [ &b <- { b with current = ([%#sloop1] (5 : int32)) ; } ] s3
       | s3 = -{resolve'0 b}- s4
       | s4 = bb1 ]

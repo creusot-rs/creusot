@@ -29,7 +29,7 @@ module C869_Unsound
   use prelude.prelude.Snapshot
   
   predicate resolve'0 (self : borrowed (Snapshot.snap_ty bool)) =
-    [%#span7]  ^ self =  * self
+    [%#span7] self.final = self.current
   
   use prelude.prelude.Snapshot
   
@@ -37,22 +37,22 @@ module C869_Unsound
     [ bb0 = s0 [ s0 =  [ &x <- [%#s8690] Snapshot.new true ] s1 | s1 = bb1 ] 
     | bb1 = s0
       [ s0 = Borrow.borrow_mut <Snapshot.snap_ty bool> {x}
-          (fun (_ret':borrowed (Snapshot.snap_ty bool)) ->  [ &_4 <- _ret' ]  [ &x <-  ^ _4 ] s1)
-      | s1 = Borrow.borrow_final <Snapshot.snap_ty bool> { * _4} {Borrow.get_id _4}
+          (fun (_ret':borrowed (Snapshot.snap_ty bool)) ->  [ &_4 <- _ret' ]  [ &x <- _4.final ] s1)
+      | s1 = Borrow.borrow_final <Snapshot.snap_ty bool> {_4.current} {Borrow.get_id _4}
           (fun (_ret':borrowed (Snapshot.snap_ty bool)) ->
              [ &xm <- _ret' ] 
-             [ &_4 <- { _4 with current = ( ^ xm) ; } ] 
+             [ &_4 <- { _4 with current = xm.final ; } ] 
             s2)
       | s2 = -{resolve'0 _4}- s3
-      | s3 = Borrow.borrow_mut <Snapshot.snap_ty bool> { * xm}
+      | s3 = Borrow.borrow_mut <Snapshot.snap_ty bool> {xm.current}
           (fun (_ret':borrowed (Snapshot.snap_ty bool)) ->
              [ &_6 <- _ret' ] 
-             [ &xm <- { xm with current = ( ^ _6) ; } ] 
+             [ &xm <- { xm with current = _6.final ; } ] 
             s4)
-      | s4 = Borrow.borrow_final <Snapshot.snap_ty bool> { * _6} {Borrow.get_id _6}
+      | s4 = Borrow.borrow_final <Snapshot.snap_ty bool> {_6.current} {Borrow.get_id _6}
           (fun (_ret':borrowed (Snapshot.snap_ty bool)) ->
              [ &b <- _ret' ] 
-             [ &_6 <- { _6 with current = ( ^ b) ; } ] 
+             [ &_6 <- { _6 with current = b.final ; } ] 
             s5)
       | s5 = -{resolve'0 b}- s6
       | s6 = -{resolve'0 _6}- s7
@@ -60,21 +60,21 @@ module C869_Unsound
       | s8 = bb2 ]
       
     | bb2 = s0
-      [ s0 = {[@expl:assertion] [%#s8692] Snapshot.inner ( * Snapshot.inner bg) = true
-        /\ Snapshot.inner ( ^ Snapshot.inner bg) = true}
+      [ s0 = {[@expl:assertion] [%#s8692] Snapshot.inner (Snapshot.inner bg).current = true
+        /\ Snapshot.inner (Snapshot.inner bg).final = true}
         s1
-      | s1 = Borrow.borrow_final <Snapshot.snap_ty bool> { * xm} {Borrow.get_id xm}
+      | s1 = Borrow.borrow_final <Snapshot.snap_ty bool> {xm.current} {Borrow.get_id xm}
           (fun (_ret':borrowed (Snapshot.snap_ty bool)) ->
              [ &_12 <- _ret' ] 
-             [ &xm <- { xm with current = ( ^ _12) ; } ] 
+             [ &xm <- { xm with current = _12.final ; } ] 
             s2)
-      | s2 = Borrow.borrow_final <Snapshot.snap_ty bool> { * _12} {Borrow.get_id _12}
+      | s2 = Borrow.borrow_final <Snapshot.snap_ty bool> {_12.current} {Borrow.get_id _12}
           (fun (_ret':borrowed (Snapshot.snap_ty bool)) ->
              [ &evil <- _ret' ] 
-             [ &_12 <- { _12 with current = ( ^ evil) ; } ] 
+             [ &_12 <- { _12 with current = evil.final ; } ] 
             s3)
       | s3 = -{resolve'0 _12}- s4
-      | s4 = {[@expl:assertion] [%#s8693] (evil = Snapshot.inner bg) = (Snapshot.inner ( ^ evil) = true)} s5
+      | s4 = {[@expl:assertion] [%#s8693] (evil = Snapshot.inner bg) = (Snapshot.inner evil.final = true)} s5
       | s5 =  [ &_15 <- [%#s8694] Snapshot.new (if evil = Snapshot.inner bg then false else true) ] s6
       | s6 = bb3 ]
       
@@ -83,8 +83,8 @@ module C869_Unsound
         (any [ any_ (_any:Snapshot.snap_ty bool)-> (!  [ &_15 <- _any ] s1) ] )
       | s1 = -{resolve'0 evil}- s2
       | s2 = -{resolve'0 xm}- s3
-      | s3 = {[@expl:assertion] [%#s8695] Snapshot.inner ( * evil) = (not Snapshot.inner ( ^ evil))} s4
-      | s4 = {[@expl:assertion] [%#s8696] Snapshot.inner ( * evil) = (not Snapshot.inner ( * evil))} s5
+      | s3 = {[@expl:assertion] [%#s8695] Snapshot.inner evil.current = (not Snapshot.inner evil.final)} s4
+      | s4 = {[@expl:assertion] [%#s8696] Snapshot.inner evil.current = (not Snapshot.inner evil.current)} s5
       | s5 = return' {_0} ]
        ]
     )

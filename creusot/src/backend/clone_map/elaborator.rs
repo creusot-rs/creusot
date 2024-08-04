@@ -1,9 +1,10 @@
+use super::{CloneNames, DepNode, Kind};
 use crate::{
     backend::{
         dependency::{Dependency, ExtendedId},
         logic::{lower_logical_defn, lower_pure_defn, sigs, spec_axiom},
         program,
-        signature::sig_to_why3,
+        signature::named_sig_to_why3,
         term::lower_pure,
         ty_inv::InvariantElaborator,
         TransId, Why3Generator,
@@ -22,8 +23,6 @@ use why3::{
     declaration::{Attribute, Axiom, Constant, Decl, LetKind, Signature, Use, ValDecl},
     QName,
 };
-
-use super::{CloneNames, DepNode, Kind};
 
 /// The symbol elaborator expands required definitions as symbols and definitions, effectively performing the clones itself.
 pub(super) struct SymbolElaborator<'tcx> {
@@ -176,8 +175,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
             names.value(def_id, subst).name
         };
 
-        let mut sig = sig_to_why3(ctx, names, &pre_sig, def_id);
-        sig.name = name;
+        let sig = named_sig_to_why3(ctx, names, name, &pre_sig, def_id);
 
         if CloneLevel::Signature == level_of_item {
             return val(ctx, sig, kind);
@@ -199,14 +197,11 @@ impl<'tcx> SymbolElaborator<'tcx> {
             }
         } else if util::item_type(ctx.tcx, def_id) == ItemType::Constant {
             let uneval = ty::UnevaluatedConst::new(def_id, subst);
-            let constant = Const::new(
-                ctx.tcx,
-                ty::ConstKind::Unevaluated(uneval),
-                ctx.type_of(def_id).instantiate_identity(),
-            );
+            let constant = Const::new(ctx.tcx, ty::ConstKind::Unevaluated(uneval));
+            let ty = ctx.type_of(def_id).instantiate_identity();
 
             let span = ctx.def_span(def_id);
-            let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, param_env, span);
+            let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, ty, param_env, span);
 
             let res = lower_pure(ctx, names, &res);
             vec![Decl::ConstantDecl(Constant {

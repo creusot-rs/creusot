@@ -454,12 +454,12 @@ module C06KnightsTour_Impl1_New_Closure3
     
   
   predicate resolve'0 (self : borrowed Closure'0.c06knightstour_impl1_new_closure3) =
-    [%#span13]  ^ self =  * self
+    [%#span13] self.final = self.current
   
   let rec c06knightstour_impl1_new_closure3 (_1:borrowed Closure'0.c06knightstour_impl1_new_closure3) (_2:usize) (_3:Snapshot.snap_ty (Seq.seq usize)) (return'  (ret:Vec'0.t_vec usize (Global'0.t_global)))= (! bb0
     [ bb0 = s0
       [ s0 = -{resolve'0 _1}- s1
-      | s1 = Closure'0.c06knightstour_impl1_new_closure3 { * _1}
+      | s1 = Closure'0.c06knightstour_impl1_new_closure3 {_1.current}
           (fun (r'0:usize) ->
             from_elem'0 {[%#s06_knights_tour0] (0 : usize)} {r'0}
               (fun (_ret':Vec'0.t_vec usize (Global'0.t_global)) ->  [ &res <- _ret' ] s2))
@@ -476,9 +476,9 @@ module C06KnightsTour_Impl1_New_Closure3
     | & _1 : borrowed Closure'0.c06knightstour_impl1_new_closure3 = _1
     | & res : Vec'0.t_vec usize (Global'0.t_global) = any_l () ]
     
-    [ return' (result:Vec'0.t_vec usize (Global'0.t_global))-> {[@expl:postcondition] unnest'0 ( * _1) ( ^ _1)}
+    [ return' (result:Vec'0.t_vec usize (Global'0.t_global))-> {[@expl:postcondition] unnest'0 _1.current _1.final}
       {[@expl:postcondition] [%#s06_knights_tour1] Seq.length (shallow_model'0 result)
-      = UIntSize.to_int (field_0'0 ( ^ _1))}
+      = UIntSize.to_int (field_0'0 _1.final)}
       (! return' {result}) ]
     
 end
@@ -729,8 +729,8 @@ module C06KnightsTour_Impl1_New
   predicate postcondition_mut'0 [#"../06_knights_tour.rs" 43 16 43 50] (self : borrowed Closure'0.c06knightstour_impl1_new_closure3) (args : (usize, Snapshot.snap_ty (Seq.seq usize))) (result : Vec'0.t_vec usize (Global'0.t_global))
     
    =
-    (let (_2, _3) = args in Seq.length (shallow_model'1 result) = UIntSize.to_int (field_0'0 ( ^ self)))
-    /\ unnest'0 ( * self) ( ^ self)
+    (let (_2, _3) = args in Seq.length (shallow_model'1 result) = UIntSize.to_int (field_0'0 self.final))
+    /\ unnest'0 self.current self.final
   
   use seq.Seq
   
@@ -786,17 +786,17 @@ module C06KnightsTour_Impl1_New
     = Seq.(++) (Snapshot.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) s
     /\ (exists fs : Seq.seq (borrowed Closure'0.c06knightstour_impl1_new_closure3) . inv'11 fs
     /\ Seq.length fs = Seq.length visited
-    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i)
+    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
     /\ (if Seq.length visited = 0 then
       CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self
       = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func succ
     else
-       * Seq.get fs 0 = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self
-      /\  ^ Seq.get fs (Seq.length visited - 1) = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func succ
+      (Seq.get fs 0).current = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self
+      /\ (Seq.get fs (Seq.length visited - 1)).final = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func succ
     )
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> unnest'0 (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self) ( * Seq.get fs i)
-    /\ precondition'0 ( * Seq.get fs i) (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) (SeqExt.subsequence s 0 i)))
+     -> unnest'0 (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self) (Seq.get fs i).current
+    /\ precondition'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) (SeqExt.subsequence s 0 i)))
     /\ postcondition_mut'0 (Seq.get fs i) (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) (SeqExt.subsequence s 0 i))) (Seq.get visited i))))
   
   function produces_trans'2 (a : MapInv'0.t_mapinv (Range'0.t_range usize) usize Closure'0.c06knightstour_impl1_new_closure3) (ab : Seq.seq (Vec'0.t_vec usize (Global'0.t_global))) (b : MapInv'0.t_mapinv (Range'0.t_range usize) usize Closure'0.c06knightstour_impl1_new_closure3) (bc : Seq.seq (Vec'0.t_vec usize (Global'0.t_global))) (c : MapInv'0.t_mapinv (Range'0.t_range usize) usize Closure'0.c06knightstour_impl1_new_closure3) : ()
@@ -826,7 +826,7 @@ module C06KnightsTour_Impl1_New
     
   
   axiom inv'5 : forall x : borrowed (MapInv'0.t_mapinv (Range'0.t_range usize) usize Closure'0.c06knightstour_impl1_new_closure3) . inv'5 x
-  = (inv'3 ( * x) /\ inv'3 ( ^ x))
+  = (inv'3 x.current /\ inv'3 x.final)
   
   predicate invariant'4 (self : Seq.seq (Vec'0.t_vec usize (Global'0.t_global))) =
     [%#span4] true
@@ -854,10 +854,10 @@ module C06KnightsTour_Impl1_New
      -> inv'1 e2
      -> inv'1 e1
      -> inv'7 s
-     -> unnest'0 func ( * f)
+     -> unnest'0 func f.current
      -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 ( * f) (e1, Snapshot.new s)
-     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 ( ^ f) (e2, Snapshot.new (Seq.snoc s e1))
+     -> precondition'0 f.current (e1, Snapshot.new s)
+     -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
   
   use seq.Seq
   
@@ -873,18 +873,18 @@ module C06KnightsTour_Impl1_New
    -> preservation_inv'0 iter func produced = preservation'0 iter func)
   
   predicate resolve'3 (self : borrowed (Range'0.t_range usize)) =
-    [%#span29]  ^ self =  * self
+    [%#span29] self.final = self.current
   
   predicate completed'1 (self : borrowed (Range'0.t_range usize)) =
     [%#span30] resolve'3 self
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start ( * self))
-    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end ( * self))
+    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self.current)
+    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end self.current)
   
   predicate reinitialize'0 (_1 : ()) =
     [%#span31] forall func : Closure'0.c06knightstour_impl1_new_closure3 . forall iter : borrowed (Range'0.t_range usize) . inv'2 func
      -> inv'8 iter
      -> completed'1 iter
-     -> next_precondition'0 ( ^ iter) func (Seq.empty  : Seq.seq usize) /\ preservation'0 ( ^ iter) func
+     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq usize) /\ preservation'0 iter.final func
   
   predicate invariant'3 (self : MapInv'0.t_mapinv (Range'0.t_range usize) usize Closure'0.c06knightstour_impl1_new_closure3)
     
@@ -967,11 +967,11 @@ module C06KnightsTour_Impl1_New
   predicate completed'0 (self : borrowed (MapInv'0.t_mapinv (Range'0.t_range usize) usize Closure'0.c06knightstour_impl1_new_closure3))
     
    =
-    [%#span55] Snapshot.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced ( ^ self))
+    [%#span55] Snapshot.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self.final)
     = (Seq.empty  : Seq.seq usize)
-    /\ completed'1 (Borrow.borrow_logic (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter ( * self)) (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter ( ^ self)) (Borrow.inherit_id (Borrow.get_id self) 1))
-    /\ CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func ( * self)
-    = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func ( ^ self)
+    /\ completed'1 (Borrow.borrow_logic (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self.current) (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self.final) (Borrow.inherit_id (Borrow.get_id self) 1))
+    /\ CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self.current
+    = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self.final
   
   predicate resolve'2 [#"../06_knights_tour.rs" 43 16 43 50] (_1 : Closure'0.c06knightstour_impl1_new_closure3) =
     true
@@ -990,7 +990,8 @@ module C06KnightsTour_Impl1_New
     [ return' (result:Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global))-> {[%#span60] inv'6 result}
       {[%#span59] exists prod : Seq.seq (Vec'0.t_vec usize (Global'0.t_global)) . exists done' : borrowed (MapInv'0.t_mapinv (Range'0.t_range usize) usize Closure'0.c06knightstour_impl1_new_closure3) . inv'4 prod
       /\ inv'5 done'
-      /\ resolve'0 ( ^ done') /\ completed'0 done' /\ produces'1 self prod ( * done') /\ from_iter_post'0 prod result}
+      /\ resolve'0 done'.final
+      /\ completed'0 done' /\ produces'1 self prod done'.current /\ from_iter_post'0 prod result}
       (! return' {result}) ]
     
   
@@ -1723,12 +1724,12 @@ module C06KnightsTour_Impl1_CountDegree
   use seq.Seq
   
   predicate resolve'0 (self : borrowed (IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global))) =
-    [%#span43]  ^ self =  * self
+    [%#span43] self.final = self.current
   
   function shallow_model'4 (self : borrowed (IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global))) : Seq.seq (isize, isize)
     
    =
-    [%#span44] shallow_model'1 ( * self)
+    [%#span44] shallow_model'1 self.current
   
   predicate completed'0 (self : borrowed (IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global))) =
     [%#span45] resolve'0 self /\ shallow_model'4 self = (Seq.empty  : Seq.seq (isize, isize))
@@ -1738,7 +1739,7 @@ module C06KnightsTour_Impl1_CountDegree
     [ return' (result:Option'0.t_option (isize, isize))-> {[%#span48] inv'3 result}
       {[%#span47] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -1815,15 +1816,15 @@ module C06KnightsTour_Impl1_CountDegree
           [ s0 = Borrow.borrow_mut <IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global)> {iter}
               (fun (_ret':borrowed (IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global))) ->
                  [ &_19 <- _ret' ] 
-                 [ &iter <-  ^ _19 ] 
+                 [ &iter <- _19.final ] 
                 s1)
           | s1 = Borrow.borrow_final
               <IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global)>
-              { * _19}
+              {_19.current}
               {Borrow.get_id _19}
               (fun (_ret':borrowed (IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global))) ->
                  [ &_18 <- _ret' ] 
-                 [ &_19 <- { _19 with current = ( ^ _18) ; } ] 
+                 [ &_19 <- { _19 with current = _18.final ; } ] 
                 s2)
           | s2 = next'0 {_18} (fun (_ret':Option'0.t_option (isize, isize)) ->  [ &_17 <- _ret' ] s3)
           | s3 = bb9 ]
@@ -1867,7 +1868,6 @@ module C06KnightsTour_Impl1_CountDegree
         | bb19 = bb7 ]
          ]
       
-    | bb10 = s0 [ s0 = -{resolve'2 iter}- s1 | s1 = {[%#s06_knights_tour4] false} any ] 
     | bb12 = s0 [ s0 = -{resolve'2 iter}- s1 | s1 = bb20 ] 
     | bb20 = s0 [ s0 =  [ &_0 <- count ] s1 | s1 = return' {_0} ]  ]
     )
@@ -2069,13 +2069,13 @@ module C06KnightsTour_Impl1_Set
   use prelude.prelude.Intrinsic
   
   predicate resolve'2 (self : borrowed (Board'0.t_board)) =
-    [%#span13]  ^ self =  * self
+    [%#span13] self.final = self.current
   
   predicate resolve'1 (self : borrowed (Vec'0.t_vec usize (Global'0.t_global))) =
-    [%#span13]  ^ self =  * self
+    [%#span13] self.final = self.current
   
   predicate resolve'0 (self : borrowed usize) =
-    [%#span13]  ^ self =  * self
+    [%#span13] self.final = self.current
   
   use prelude.prelude.Slice
   
@@ -2092,17 +2092,17 @@ module C06KnightsTour_Impl1_Set
     [%#span16] UIntSize.to_int self < Seq.length seq
   
   function shallow_model'2 (self : borrowed (Vec'0.t_vec usize (Global'0.t_global))) : Seq.seq usize =
-    [%#span17] shallow_model'3 ( * self)
+    [%#span17] shallow_model'3 self.current
   
   let rec index_mut'1 (self:borrowed (Vec'0.t_vec usize (Global'0.t_global))) (index:usize) (return'  (ret:borrowed usize))= {[@expl:precondition] [%#span20] inv'1 index}
     {[@expl:precondition] [%#span19] inv'2 self}
     {[@expl:precondition] [%#span18] in_bounds'2 index (shallow_model'2 self)}
     any
     [ return' (result:borrowed usize)-> {[%#span25] inv'3 result}
-      {[%#span24] Seq.length (shallow_model'3 ( ^ self)) = Seq.length (shallow_model'2 self)}
-      {[%#span23] resolve_elswhere'1 index (shallow_model'2 self) (shallow_model'3 ( ^ self))}
-      {[%#span22] has_value'1 index (shallow_model'3 ( ^ self)) ( ^ result)}
-      {[%#span21] has_value'1 index (shallow_model'2 self) ( * result)}
+      {[%#span24] Seq.length (shallow_model'3 self.final) = Seq.length (shallow_model'2 self)}
+      {[%#span23] resolve_elswhere'1 index (shallow_model'2 self) (shallow_model'3 self.final)}
+      {[%#span22] has_value'1 index (shallow_model'3 self.final) result.final}
+      {[%#span21] has_value'1 index (shallow_model'2 self) result.current}
       (! return' {result}) ]
     
   
@@ -2123,27 +2123,27 @@ module C06KnightsTour_Impl1_Set
   function shallow_model'0 (self : borrowed (Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global))) : Seq.seq (Vec'0.t_vec usize (Global'0.t_global))
     
    =
-    [%#span17] shallow_model'1 ( * self)
+    [%#span17] shallow_model'1 self.current
   
   let rec index_mut'0 (self:borrowed (Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global))) (index:usize) (return'  (ret:borrowed (Vec'0.t_vec usize (Global'0.t_global))))= {[@expl:precondition] [%#span20] inv'1 index}
     {[@expl:precondition] [%#span19] inv'0 self}
     {[@expl:precondition] [%#span18] in_bounds'1 index (shallow_model'0 self)}
     any
     [ return' (result:borrowed (Vec'0.t_vec usize (Global'0.t_global)))-> {[%#span25] inv'2 result}
-      {[%#span24] Seq.length (shallow_model'1 ( ^ self)) = Seq.length (shallow_model'0 self)}
-      {[%#span23] resolve_elswhere'0 index (shallow_model'0 self) (shallow_model'1 ( ^ self))}
-      {[%#span22] has_value'0 index (shallow_model'1 ( ^ self)) ( ^ result)}
-      {[%#span21] has_value'0 index (shallow_model'0 self) ( * result)}
+      {[%#span24] Seq.length (shallow_model'1 self.final) = Seq.length (shallow_model'0 self)}
+      {[%#span23] resolve_elswhere'0 index (shallow_model'0 self) (shallow_model'1 self.final)}
+      {[%#span22] has_value'0 index (shallow_model'1 self.final) result.final}
+      {[%#span21] has_value'0 index (shallow_model'0 self) result.current}
       (! return' {result}) ]
     
   
   use prelude.prelude.IntSize
   
-  let rec set (self:borrowed (Board'0.t_board)) (p:Point'0.t_point) (v:usize) (return'  (ret:()))= {[%#s06_knights_tour1] in_bounds'0 ( * self) p}
-    {[%#s06_knights_tour0] wf'0 ( * self)}
+  let rec set (self:borrowed (Board'0.t_board)) (p:Point'0.t_point) (v:usize) (return'  (ret:()))= {[%#s06_knights_tour1] in_bounds'0 self.current p}
+    {[%#s06_knights_tour0] wf'0 self.current}
     (! bb0
     [ bb0 = s0
-      [ s0 = Board'0.t_board { * self}
+      [ s0 = Board'0.t_board {self.current}
           (fun (rsize'0:usize) (rfield'0:Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global)) ->
             Borrow.borrow_final
               <Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global)>
@@ -2151,9 +2151,9 @@ module C06KnightsTour_Impl1_Set
               {Borrow.inherit_id (Borrow.get_id self) 2}
               (fun (_ret':borrowed (Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global))) ->
                  [ &_12 <- _ret' ] 
-                Board'0.t_board { * self}
+                Board'0.t_board {self.current}
                   (fun (l_size'0:usize) (l_field'0:Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global)) ->
-                     [ &self <- { self with current = Board'0.C_Board l_size'0 ( ^ _12) ; } ] 
+                     [ &self <- { self with current = Board'0.C_Board l_size'0 _12.final ; } ] 
                     s1)))
       | s1 = Point'0.t_point {p}
           (fun (rx'0:isize) (ry'0:isize) ->
@@ -2163,10 +2163,10 @@ module C06KnightsTour_Impl1_Set
       | s3 = bb1 ]
       
     | bb1 = s0
-      [ s0 = Borrow.borrow_final <Vec'0.t_vec usize (Global'0.t_global)> { * _11} {Borrow.get_id _11}
+      [ s0 = Borrow.borrow_final <Vec'0.t_vec usize (Global'0.t_global)> {_11.current} {Borrow.get_id _11}
           (fun (_ret':borrowed (Vec'0.t_vec usize (Global'0.t_global))) ->
              [ &_10 <- _ret' ] 
-             [ &_11 <- { _11 with current = ( ^ _10) ; } ] 
+             [ &_11 <- { _11 with current = _10.final ; } ] 
             s1)
       | s1 = Point'0.t_point {p}
           (fun (rx'0:isize) (ry'0:isize) ->
@@ -2193,9 +2193,9 @@ module C06KnightsTour_Impl1_Set
     | & _13 : usize = any_l ()
     | & _15 : usize = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#s06_knights_tour3] C06KnightsTour_Board_Type.board_size ( ^ self)
-      = C06KnightsTour_Board_Type.board_size ( * self)}
-      {[@expl:postcondition] [%#s06_knights_tour2] wf'0 ( ^ self)}
+    [ return' (result:())-> {[@expl:postcondition] [%#s06_knights_tour3] C06KnightsTour_Board_Type.board_size self.final
+      = C06KnightsTour_Board_Type.board_size self.current}
+      {[@expl:postcondition] [%#s06_knights_tour2] wf'0 self.final}
       (! return' {result}) ]
     
 end
@@ -2232,79 +2232,77 @@ module C06KnightsTour_Min
   
   let%span s06_knights_tour3 = "../06_knights_tour.rs" 113 4 114 74
   
-  let%span s06_knights_tour4 = "../06_knights_tour.rs" 116 14 116 17
+  let%span s06_knights_tour4 = "../06_knights_tour.rs" 109 0 110 62
   
-  let%span s06_knights_tour5 = "../06_knights_tour.rs" 109 0 110 62
+  let%span span5 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span6 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span6 = "" 0 0 0 0
   
-  let%span span7 = "" 0 0 0 0
+  let%span span7 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
   
-  let%span span8 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
+  let%span span8 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   
-  let%span span9 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span span9 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
   
-  let%span span10 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
+  let%span span10 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
   
-  let%span span11 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
+  let%span span11 = "../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25
   
-  let%span span12 = "../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25
+  let%span span12 = "../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41
   
-  let%span span13 = "../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41
+  let%span span13 = "../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42
   
-  let%span span14 = "../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42
+  let%span span14 = "../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50
   
-  let%span span15 = "../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50
+  let%span span15 = "../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31
   
-  let%span span16 = "../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31
+  let%span span16 = "../../../../../creusot-contracts/src/model.rs" 90 8 90 31
   
-  let%span span17 = "../../../../../creusot-contracts/src/model.rs" 90 8 90 31
+  let%span span17 = "../../../../../creusot-contracts/src/std/slice.rs" 91 19 91 23
   
-  let%span span18 = "../../../../../creusot-contracts/src/std/slice.rs" 91 19 91 23
+  let%span span18 = "../../../../../creusot-contracts/src/std/slice.rs" 89 14 89 41
   
-  let%span span19 = "../../../../../creusot-contracts/src/std/slice.rs" 89 14 89 41
+  let%span span19 = "../../../../../creusot-contracts/src/std/slice.rs" 90 4 90 82
   
-  let%span span20 = "../../../../../creusot-contracts/src/std/slice.rs" 90 4 90 82
+  let%span span20 = "../../../../../creusot-contracts/src/std/slice.rs" 91 4 91 35
   
-  let%span span21 = "../../../../../creusot-contracts/src/std/slice.rs" 91 4 91 35
+  let%span span21 = "../../../../../creusot-contracts/src/std/slice.rs" 399 12 399 66
   
-  let%span span22 = "../../../../../creusot-contracts/src/std/slice.rs" 399 12 399 66
+  let%span span22 = "../../../../../creusot-contracts/src/std/slice.rs" 410 15 410 32
   
-  let%span span23 = "../../../../../creusot-contracts/src/std/slice.rs" 410 15 410 32
+  let%span span23 = "../../../../../creusot-contracts/src/std/slice.rs" 411 15 411 32
   
-  let%span span24 = "../../../../../creusot-contracts/src/std/slice.rs" 411 15 411 32
+  let%span span24 = "../../../../../creusot-contracts/src/std/slice.rs" 413 31 413 33
   
-  let%span span25 = "../../../../../creusot-contracts/src/std/slice.rs" 413 31 413 33
+  let%span span25 = "../../../../../creusot-contracts/src/std/slice.rs" 413 61 413 63
   
-  let%span span26 = "../../../../../creusot-contracts/src/std/slice.rs" 413 61 413 63
+  let%span span26 = "../../../../../creusot-contracts/src/std/slice.rs" 412 14 412 42
   
-  let%span span27 = "../../../../../creusot-contracts/src/std/slice.rs" 412 14 412 42
+  let%span span27 = "../../../../../creusot-contracts/src/std/slice.rs" 408 4 408 10
   
-  let%span span28 = "../../../../../creusot-contracts/src/std/slice.rs" 408 4 408 10
+  let%span span28 = "../../../../../creusot-contracts/src/std/slice.rs" 405 14 405 45
   
-  let%span span29 = "../../../../../creusot-contracts/src/std/slice.rs" 405 14 405 45
+  let%span span29 = "../../../../../creusot-contracts/src/std/slice.rs" 403 4 403 10
   
-  let%span span30 = "../../../../../creusot-contracts/src/std/slice.rs" 403 4 403 10
+  let%span span30 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span31 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span31 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
   
-  let%span span32 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span32 = "../../../../../creusot-contracts/src/std/slice.rs" 392 20 392 61
   
-  let%span span33 = "../../../../../creusot-contracts/src/std/slice.rs" 392 20 392 61
+  let%span span33 = "../../../../../creusot-contracts/src/std/iter.rs" 95 26 98 17
   
-  let%span span34 = "../../../../../creusot-contracts/src/std/iter.rs" 95 26 98 17
+  let%span span34 = "" 0 0 0 0
   
-  let%span span35 = "" 0 0 0 0
+  let%span span35 = "../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
   
-  let%span span36 = "../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
+  let%span span36 = "../../../../../creusot-contracts/src/std/vec.rs" 205 20 205 34
   
-  let%span span37 = "../../../../../creusot-contracts/src/std/vec.rs" 205 20 205 34
+  let%span span37 = "../../../../../creusot-contracts/src/std/vec.rs" 199 20 199 24
   
-  let%span span38 = "../../../../../creusot-contracts/src/std/vec.rs" 199 20 199 24
+  let%span span38 = "../../../../../creusot-contracts/src/std/iter.rs" 89 0 175 1
   
-  let%span span39 = "../../../../../creusot-contracts/src/std/iter.rs" 89 0 175 1
-  
-  let%span span40 = "" 0 0 0 0
+  let%span span39 = "" 0 0 0 0
   
   use C06KnightsTour_Point_Type as Point'0
   
@@ -2313,7 +2311,7 @@ module C06KnightsTour_Min
   use prelude.prelude.Slice
   
   predicate invariant'7 (self : slice (usize, Point'0.t_point)) =
-    [%#span6] true
+    [%#span5] true
   
   predicate inv'7 (_x : slice (usize, Point'0.t_point))
   
@@ -2322,7 +2320,7 @@ module C06KnightsTour_Min
   use seq.Seq
   
   predicate invariant'6 (self : Seq.seq (usize, Point'0.t_point)) =
-    [%#span6] true
+    [%#span5] true
   
   predicate inv'6 (_x : Seq.seq (usize, Point'0.t_point))
   
@@ -2336,7 +2334,7 @@ module C06KnightsTour_Min
   
   use prelude.prelude.Int
   
-  constant max'0 : usize = [%#span7] (18446744073709551615 : usize)
+  constant max'0 : usize = [%#span6] (18446744073709551615 : usize)
   
   use seq.Seq
   
@@ -2345,24 +2343,24 @@ module C06KnightsTour_Min
   function shallow_model'2 (self : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global)) : Seq.seq (usize, Point'0.t_point)
     
   
-  axiom shallow_model'2_spec : forall self : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global) . ([%#span8] inv'5 self)
-   -> ([%#span10] inv'6 (shallow_model'2 self))
-  && ([%#span9] Seq.length (shallow_model'2 self) <= UIntSize.to_int (max'0 : usize))
+  axiom shallow_model'2_spec : forall self : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global) . ([%#span7] inv'5 self)
+   -> ([%#span9] inv'6 (shallow_model'2 self))
+  && ([%#span8] Seq.length (shallow_model'2 self) <= UIntSize.to_int (max'0 : usize))
   
   predicate invariant'5 (self : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global)) =
-    [%#span11] inv'6 (shallow_model'2 self)
+    [%#span10] inv'6 (shallow_model'2 self)
   
   axiom inv'5 : forall x : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global) . inv'5 x = true
   
   predicate invariant'4 (self : slice (usize, Point'0.t_point)) =
-    [%#span6] true
+    [%#span5] true
   
   predicate inv'4 (_x : slice (usize, Point'0.t_point))
   
   axiom inv'4 : forall x : slice (usize, Point'0.t_point) . inv'4 x = true
   
   predicate invariant'3 (self : Seq.seq (usize, Point'0.t_point)) =
-    [%#span6] true
+    [%#span5] true
   
   predicate inv'3 (_x : Seq.seq (usize, Point'0.t_point))
   
@@ -2371,14 +2369,14 @@ module C06KnightsTour_Min
   use Core_Option_Option_Type as Option'0
   
   predicate invariant'2 (self : Option'0.t_option (usize, Point'0.t_point)) =
-    [%#span6] true
+    [%#span5] true
   
   predicate inv'2 (_x : Option'0.t_option (usize, Point'0.t_point))
   
   axiom inv'2 : forall x : Option'0.t_option (usize, Point'0.t_point) . inv'2 x = true
   
   predicate invariant'1 (self : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global)) =
-    [%#span6] true
+    [%#span5] true
   
   predicate inv'1 (_x : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global))
   
@@ -2396,55 +2394,55 @@ module C06KnightsTour_Min
   
   function shallow_model'5 (self : slice (usize, Point'0.t_point)) : Seq.seq (usize, Point'0.t_point)
   
-  axiom shallow_model'5_spec : forall self : slice (usize, Point'0.t_point) . ([%#span12] inv'7 self)
-   -> ([%#span15] inv'6 (shallow_model'5 self))
-  && ([%#span14] shallow_model'5 self = Slice.id self)
-  && ([%#span13] Seq.length (shallow_model'5 self) <= UIntSize.to_int (max'0 : usize))
+  axiom shallow_model'5_spec : forall self : slice (usize, Point'0.t_point) . ([%#span11] inv'7 self)
+   -> ([%#span14] inv'6 (shallow_model'5 self))
+  && ([%#span13] shallow_model'5 self = Slice.id self)
+  && ([%#span12] Seq.length (shallow_model'5 self) <= UIntSize.to_int (max'0 : usize))
   
   function index_logic'1 [@inline:trivial] (self : slice (usize, Point'0.t_point)) (ix : int) : (usize, Point'0.t_point)
    =
-    [%#span16] Seq.get (shallow_model'5 self) ix
+    [%#span15] Seq.get (shallow_model'5 self) ix
   
   use seq.Seq
   
   function shallow_model'3 (self : slice (usize, Point'0.t_point)) : Seq.seq (usize, Point'0.t_point) =
-    [%#span17] shallow_model'5 self
+    [%#span16] shallow_model'5 self
   
   use seq.Seq
   
   function to_ref_seq'0 (self : slice (usize, Point'0.t_point)) : Seq.seq (usize, Point'0.t_point)
   
-  axiom to_ref_seq'0_spec : forall self : slice (usize, Point'0.t_point) . ([%#span18] inv'4 self)
-   -> ([%#span21] inv'3 (to_ref_seq'0 self))
-  && ([%#span20] forall i : int . 0 <= i /\ i < Seq.length (to_ref_seq'0 self)
+  axiom to_ref_seq'0_spec : forall self : slice (usize, Point'0.t_point) . ([%#span17] inv'4 self)
+   -> ([%#span20] inv'3 (to_ref_seq'0 self))
+  && ([%#span19] forall i : int . 0 <= i /\ i < Seq.length (to_ref_seq'0 self)
    -> Seq.get (to_ref_seq'0 self) i = index_logic'1 self i)
-  && ([%#span19] Seq.length (to_ref_seq'0 self) = Seq.length (shallow_model'3 self))
+  && ([%#span18] Seq.length (to_ref_seq'0 self) = Seq.length (shallow_model'3 self))
   
   function shallow_model'1 (self : Iter'0.t_iter (usize, Point'0.t_point)) : slice (usize, Point'0.t_point)
   
   predicate produces'0 (self : Iter'0.t_iter (usize, Point'0.t_point)) (visited : Seq.seq (usize, Point'0.t_point)) (tl : Iter'0.t_iter (usize, Point'0.t_point))
     
    =
-    [%#span22] to_ref_seq'0 (shallow_model'1 self) = Seq.(++) visited (to_ref_seq'0 (shallow_model'1 tl))
+    [%#span21] to_ref_seq'0 (shallow_model'1 self) = Seq.(++) visited (to_ref_seq'0 (shallow_model'1 tl))
   
   function produces_trans'0 (a : Iter'0.t_iter (usize, Point'0.t_point)) (ab : Seq.seq (usize, Point'0.t_point)) (b : Iter'0.t_iter (usize, Point'0.t_point)) (bc : Seq.seq (usize, Point'0.t_point)) (c : Iter'0.t_iter (usize, Point'0.t_point)) : ()
     
    =
-    [%#span28] ()
+    [%#span27] ()
   
-  axiom produces_trans'0_spec : forall a : Iter'0.t_iter (usize, Point'0.t_point), ab : Seq.seq (usize, Point'0.t_point), b : Iter'0.t_iter (usize, Point'0.t_point), bc : Seq.seq (usize, Point'0.t_point), c : Iter'0.t_iter (usize, Point'0.t_point) . ([%#span23] produces'0 a ab b)
-   -> ([%#span24] produces'0 b bc c)
-   -> ([%#span25] inv'3 ab)  -> ([%#span26] inv'3 bc)  -> ([%#span27] produces'0 a (Seq.(++) ab bc) c)
+  axiom produces_trans'0_spec : forall a : Iter'0.t_iter (usize, Point'0.t_point), ab : Seq.seq (usize, Point'0.t_point), b : Iter'0.t_iter (usize, Point'0.t_point), bc : Seq.seq (usize, Point'0.t_point), c : Iter'0.t_iter (usize, Point'0.t_point) . ([%#span22] produces'0 a ab b)
+   -> ([%#span23] produces'0 b bc c)
+   -> ([%#span24] inv'3 ab)  -> ([%#span25] inv'3 bc)  -> ([%#span26] produces'0 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
   function produces_refl'0 (self : Iter'0.t_iter (usize, Point'0.t_point)) : () =
-    [%#span30] ()
+    [%#span29] ()
   
-  axiom produces_refl'0_spec : forall self : Iter'0.t_iter (usize, Point'0.t_point) . [%#span29] produces'0 self (Seq.empty  : Seq.seq (usize, Point'0.t_point)) self
+  axiom produces_refl'0_spec : forall self : Iter'0.t_iter (usize, Point'0.t_point) . [%#span28] produces'0 self (Seq.empty  : Seq.seq (usize, Point'0.t_point)) self
   
   predicate invariant'0 (self : Iter'0.t_iter (usize, Point'0.t_point)) =
-    [%#span6] true
+    [%#span5] true
   
   predicate inv'0 (_x : Iter'0.t_iter (usize, Point'0.t_point))
   
@@ -2457,22 +2455,22 @@ module C06KnightsTour_Min
   use seq.Seq
   
   predicate resolve'0 (self : borrowed (Iter'0.t_iter (usize, Point'0.t_point))) =
-    [%#span31]  ^ self =  * self
+    [%#span30] self.final = self.current
   
   use seq.Seq
   
   function shallow_model'4 (self : borrowed (Iter'0.t_iter (usize, Point'0.t_point))) : slice (usize, Point'0.t_point) =
-    [%#span32] shallow_model'1 ( * self)
+    [%#span31] shallow_model'1 self.current
   
   predicate completed'0 (self : borrowed (Iter'0.t_iter (usize, Point'0.t_point))) =
-    [%#span33] resolve'0 self
+    [%#span32] resolve'0 self
     /\ shallow_model'5 (shallow_model'4 self) = (Seq.empty  : Seq.seq (usize, Point'0.t_point))
   
   let rec next'0 (self:borrowed (Iter'0.t_iter (usize, Point'0.t_point))) (return'  (ret:Option'0.t_option (usize, Point'0.t_point)))= any
-    [ return' (result:Option'0.t_option (usize, Point'0.t_point))-> {[%#span35] inv'2 result}
-      {[%#span34] match result with
+    [ return' (result:Option'0.t_option (usize, Point'0.t_point))-> {[%#span34] inv'2 result}
+      {[%#span33] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -2480,12 +2478,12 @@ module C06KnightsTour_Min
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global)) (ix : int) : (usize, Point'0.t_point)
     
    =
-    [%#span36] Seq.get (shallow_model'2 self) ix
+    [%#span35] Seq.get (shallow_model'2 self) ix
   
   function shallow_model'0 (self : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global)) : Seq.seq (usize, Point'0.t_point)
     
    =
-    [%#span17] shallow_model'2 self
+    [%#span16] shallow_model'2 self
   
   use prelude.prelude.Snapshot
   
@@ -2498,15 +2496,15 @@ module C06KnightsTour_Min
   predicate into_iter_post'0 (self : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global)) (res : Iter'0.t_iter (usize, Point'0.t_point))
     
    =
-    [%#span37] shallow_model'0 self = shallow_model'3 (shallow_model'1 res)
+    [%#span36] shallow_model'0 self = shallow_model'3 (shallow_model'1 res)
   
   predicate into_iter_pre'0 (self : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global)) =
-    [%#span38] true
+    [%#span37] true
   
-  let rec into_iter'0 (self:Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global)) (return'  (ret:Iter'0.t_iter (usize, Point'0.t_point)))= {[@expl:precondition] [%#span40] inv'1 self}
-    {[@expl:precondition] [%#span39] into_iter_pre'0 self}
+  let rec into_iter'0 (self:Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global)) (return'  (ret:Iter'0.t_iter (usize, Point'0.t_point)))= {[@expl:precondition] [%#span39] inv'1 self}
+    {[@expl:precondition] [%#span38] into_iter_pre'0 self}
     any
-    [ return' (result:Iter'0.t_iter (usize, Point'0.t_point))-> {[%#span39] into_iter_post'0 self result}
+    [ return' (result:Iter'0.t_iter (usize, Point'0.t_point))-> {[%#span38] into_iter_post'0 self result}
       (! return' {result}) ]
     
   
@@ -2533,12 +2531,12 @@ module C06KnightsTour_Min
           [ s0 = Borrow.borrow_mut <Iter'0.t_iter (usize, Point'0.t_point)> {iter}
               (fun (_ret':borrowed (Iter'0.t_iter (usize, Point'0.t_point))) ->
                  [ &_17 <- _ret' ] 
-                 [ &iter <-  ^ _17 ] 
+                 [ &iter <- _17.final ] 
                 s1)
-          | s1 = Borrow.borrow_final <Iter'0.t_iter (usize, Point'0.t_point)> { * _17} {Borrow.get_id _17}
+          | s1 = Borrow.borrow_final <Iter'0.t_iter (usize, Point'0.t_point)> {_17.current} {Borrow.get_id _17}
               (fun (_ret':borrowed (Iter'0.t_iter (usize, Point'0.t_point))) ->
                  [ &_16 <- _ret' ] 
-                 [ &_17 <- { _17 with current = ( ^ _16) ; } ] 
+                 [ &_17 <- { _17 with current = _16.final ; } ] 
                 s2)
           | s2 = next'0 {_16} (fun (_ret':Option'0.t_option (usize, Point'0.t_point)) ->  [ &_15 <- _ret' ] s3)
           | s3 = bb6 ]
@@ -2594,8 +2592,6 @@ module C06KnightsTour_Min
         | bb19 = bb4 ]
          ]
       
-    | bb7 = {[%#s06_knights_tour2] false} any
-    | bb12 = {[%#s06_knights_tour4] false} any
     | bb9 = s0 [ s0 =  [ &_0 <- min ] s1 | s1 = return' {_0} ]  ]
     )
     [ & _0 : Option'0.t_option (usize, Point'0.t_point) = any_l ()
@@ -2615,7 +2611,7 @@ module C06KnightsTour_Min
     | & _28 : bool = any_l ()
     | & _31 : Option'0.t_option (usize, Point'0.t_point) = any_l () ]
     
-    [ return' (result:Option'0.t_option (usize, Point'0.t_point))-> {[@expl:postcondition] [%#s06_knights_tour5] forall r : (usize, Point'0.t_point) . result
+    [ return' (result:Option'0.t_option (usize, Point'0.t_point))-> {[@expl:postcondition] [%#s06_knights_tour4] forall r : (usize, Point'0.t_point) . result
       = Option'0.C_Some r  -> (exists i : int . 0 <= i /\ i < Seq.length (shallow_model'0 v) /\ index_logic'0 v i = r)}
       (! return' {result}) ]
     
@@ -2671,190 +2667,188 @@ module C06KnightsTour_KnightsTour
   
   let%span s06_knights_tour15 = "../06_knights_tour.rs" 148 8 149 54
   
-  let%span s06_knights_tour16 = "../06_knights_tour.rs" 157 14 157 30
+  let%span s06_knights_tour16 = "../06_knights_tour.rs" 133 11 133 37
   
-  let%span s06_knights_tour17 = "../06_knights_tour.rs" 133 11 133 37
+  let%span s06_knights_tour17 = "../06_knights_tour.rs" 134 11 134 19
   
-  let%span s06_knights_tour18 = "../06_knights_tour.rs" 134 11 134 19
+  let%span s06_knights_tour18 = "../06_knights_tour.rs" 135 11 135 19
   
-  let%span s06_knights_tour19 = "../06_knights_tour.rs" 135 11 135 19
+  let%span span19 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span20 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span20 = "" 0 0 0 0
   
-  let%span span21 = "" 0 0 0 0
+  let%span span21 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
   
-  let%span span22 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
+  let%span span22 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   
-  let%span span23 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span span23 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
   
-  let%span span24 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
+  let%span span24 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
   
-  let%span span25 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
+  let%span span25 = "../../../../../creusot-contracts/src/std/vec.rs" 254 12 254 41
   
-  let%span span26 = "../../../../../creusot-contracts/src/std/vec.rs" 254 12 254 41
+  let%span span26 = "../../../../../creusot-contracts/src/std/vec.rs" 265 15 265 32
   
-  let%span span27 = "../../../../../creusot-contracts/src/std/vec.rs" 265 15 265 32
+  let%span span27 = "../../../../../creusot-contracts/src/std/vec.rs" 266 15 266 32
   
-  let%span span28 = "../../../../../creusot-contracts/src/std/vec.rs" 266 15 266 32
+  let%span span28 = "../../../../../creusot-contracts/src/std/vec.rs" 268 22 268 23
   
-  let%span span29 = "../../../../../creusot-contracts/src/std/vec.rs" 268 22 268 23
+  let%span span29 = "../../../../../creusot-contracts/src/std/vec.rs" 268 31 268 33
   
-  let%span span30 = "../../../../../creusot-contracts/src/std/vec.rs" 268 31 268 33
+  let%span span30 = "../../../../../creusot-contracts/src/std/vec.rs" 268 43 268 44
   
-  let%span span31 = "../../../../../creusot-contracts/src/std/vec.rs" 268 43 268 44
+  let%span span31 = "../../../../../creusot-contracts/src/std/vec.rs" 268 52 268 54
   
-  let%span span32 = "../../../../../creusot-contracts/src/std/vec.rs" 268 52 268 54
+  let%span span32 = "../../../../../creusot-contracts/src/std/vec.rs" 268 64 268 65
   
-  let%span span33 = "../../../../../creusot-contracts/src/std/vec.rs" 268 64 268 65
+  let%span span33 = "../../../../../creusot-contracts/src/std/vec.rs" 267 14 267 42
   
-  let%span span34 = "../../../../../creusot-contracts/src/std/vec.rs" 267 14 267 42
+  let%span span34 = "../../../../../creusot-contracts/src/std/vec.rs" 263 4 263 10
   
-  let%span span35 = "../../../../../creusot-contracts/src/std/vec.rs" 263 4 263 10
+  let%span span35 = "../../../../../creusot-contracts/src/std/vec.rs" 261 21 261 25
   
-  let%span span36 = "../../../../../creusot-contracts/src/std/vec.rs" 261 21 261 25
+  let%span span36 = "../../../../../creusot-contracts/src/std/vec.rs" 260 14 260 45
   
-  let%span span37 = "../../../../../creusot-contracts/src/std/vec.rs" 260 14 260 45
+  let%span span37 = "../../../../../creusot-contracts/src/std/vec.rs" 258 4 258 10
   
-  let%span span38 = "../../../../../creusot-contracts/src/std/vec.rs" 258 4 258 10
+  let%span span38 = "../../../../../creusot-contracts/src/std/num.rs" 22 16 22 35
   
-  let%span span39 = "../../../../../creusot-contracts/src/std/num.rs" 22 16 22 35
+  let%span span39 = "../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9
   
-  let%span span40 = "../../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9
+  let%span span40 = "../../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32
   
-  let%span span41 = "../../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32
+  let%span span41 = "../../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32
   
-  let%span span42 = "../../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32
+  let%span span42 = "../../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23
   
-  let%span span43 = "../../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23
+  let%span span43 = "../../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33
   
-  let%span span44 = "../../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33
+  let%span span44 = "../../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53
   
-  let%span span45 = "../../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53
+  let%span span45 = "../../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63
   
-  let%span span46 = "../../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63
+  let%span span46 = "../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83
   
-  let%span span47 = "../../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83
+  let%span span47 = "../../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42
   
-  let%span span48 = "../../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42
+  let%span span48 = "../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25
   
-  let%span span49 = "../../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25
+  let%span span49 = "../../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 45
   
-  let%span span50 = "../../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 45
+  let%span span50 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
   
-  let%span span51 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  let%span span51 = "../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60
   
-  let%span span52 = "../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60
+  let%span span52 = "../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
   
-  let%span span53 = "../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
+  let%span span53 = "../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85
   
-  let%span span54 = "../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85
+  let%span span54 = "../../../../../creusot-contracts/src/model.rs" 90 8 90 31
   
-  let%span span55 = "../../../../../creusot-contracts/src/model.rs" 90 8 90 31
+  let%span span55 = "../06_knights_tour.rs" 109 0 110 62
   
-  let%span span56 = "../06_knights_tour.rs" 109 0 110 62
+  let%span span56 = "../../../../../creusot-contracts/src/std/vec.rs" 239 8 239 85
   
-  let%span span57 = "../../../../../creusot-contracts/src/std/vec.rs" 239 8 239 85
+  let%span span57 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
   
-  let%span span58 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span58 = "" 0 0 0 0
   
   let%span span59 = "" 0 0 0 0
   
-  let%span span60 = "" 0 0 0 0
+  let%span span60 = "../../../../../creusot-contracts/src/std/vec.rs" 82 26 82 51
   
-  let%span span61 = "../../../../../creusot-contracts/src/std/vec.rs" 82 26 82 51
+  let%span span61 = "../06_knights_tour.rs" 63 12 63 75
   
-  let%span span62 = "../06_knights_tour.rs" 63 12 63 75
+  let%span span62 = "../06_knights_tour.rs" 31 8 35 9
   
-  let%span span63 = "../06_knights_tour.rs" 31 8 35 9
+  let%span span63 = "../06_knights_tour.rs" 68 15 68 24
   
-  let%span span64 = "../06_knights_tour.rs" 68 15 68 24
+  let%span span64 = "../06_knights_tour.rs" 69 15 69 32
   
-  let%span span65 = "../06_knights_tour.rs" 69 15 69 32
+  let%span span65 = "../06_knights_tour.rs" 50 15 50 24
   
-  let%span span66 = "../06_knights_tour.rs" 50 15 50 24
+  let%span span66 = "../06_knights_tour.rs" 51 4 51 44
   
-  let%span span67 = "../06_knights_tour.rs" 51 4 51 44
+  let%span span67 = "../06_knights_tour.rs" 12 15 12 52
   
-  let%span span68 = "../06_knights_tour.rs" 12 15 12 52
+  let%span span68 = "../06_knights_tour.rs" 13 15 13 52
   
-  let%span span69 = "../06_knights_tour.rs" 13 15 13 52
+  let%span span69 = "../06_knights_tour.rs" 14 15 14 46
   
-  let%span span70 = "../06_knights_tour.rs" 14 15 14 46
+  let%span span70 = "../06_knights_tour.rs" 15 15 15 46
   
-  let%span span71 = "../06_knights_tour.rs" 15 15 15 46
+  let%span span71 = "../06_knights_tour.rs" 16 14 16 41
   
-  let%span span72 = "../06_knights_tour.rs" 16 14 16 41
+  let%span span72 = "../06_knights_tour.rs" 17 14 17 41
   
-  let%span span73 = "../06_knights_tour.rs" 17 14 17 41
+  let%span span73 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span74 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span74 = "../../../../../creusot-contracts/src/std/vec.rs" 247 20 247 57
   
-  let%span span75 = "../../../../../creusot-contracts/src/std/vec.rs" 247 20 247 57
+  let%span span75 = "" 0 0 0 0
   
-  let%span span76 = "" 0 0 0 0
+  let%span span76 = "../../../../../creusot-contracts/src/std/iter.rs" 95 26 98 17
   
-  let%span span77 = "../../../../../creusot-contracts/src/std/iter.rs" 95 26 98 17
+  let%span span77 = "" 0 0 0 0
   
-  let%span span78 = "" 0 0 0 0
+  let%span span78 = "../../../../../creusot-contracts/src/std/vec.rs" 191 20 191 33
   
-  let%span span79 = "../../../../../creusot-contracts/src/std/vec.rs" 191 20 191 33
+  let%span span79 = "../../../../../creusot-contracts/src/std/vec.rs" 185 20 185 24
   
-  let%span span80 = "../../../../../creusot-contracts/src/std/vec.rs" 185 20 185 24
+  let%span span80 = "../../../../../creusot-contracts/src/std/iter.rs" 89 0 175 1
   
-  let%span span81 = "../../../../../creusot-contracts/src/std/iter.rs" 89 0 175 1
+  let%span span81 = "" 0 0 0 0
   
   let%span span82 = "" 0 0 0 0
   
-  let%span span83 = "" 0 0 0 0
+  let%span span83 = "../06_knights_tour.rs" 93 10 93 28
   
-  let%span span84 = "../06_knights_tour.rs" 93 10 93 28
+  let%span span84 = "../06_knights_tour.rs" 94 0 94 130
   
-  let%span span85 = "../06_knights_tour.rs" 94 0 94 130
+  let%span span85 = "../../../../../creusot-contracts/src/std/vec.rs" 69 26 69 44
   
-  let%span span86 = "../../../../../creusot-contracts/src/std/vec.rs" 69 26 69 44
+  let%span span86 = "" 0 0 0 0
   
-  let%span span87 = "" 0 0 0 0
+  let%span span87 = "../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78
   
-  let%span span88 = "../../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78
+  let%span span88 = "" 0 0 0 0
   
   let%span span89 = "" 0 0 0 0
   
-  let%span span90 = "" 0 0 0 0
+  let%span span90 = "../../../../../creusot-contracts/src/std/iter.rs" 80 8 80 19
   
-  let%span span91 = "../../../../../creusot-contracts/src/std/iter.rs" 80 8 80 19
+  let%span span91 = "../../../../../creusot-contracts/src/std/iter.rs" 74 20 74 24
   
-  let%span span92 = "../../../../../creusot-contracts/src/std/iter.rs" 74 20 74 24
+  let%span span92 = "" 0 0 0 0
   
   let%span span93 = "" 0 0 0 0
   
-  let%span span94 = "" 0 0 0 0
+  let%span span94 = "../06_knights_tour.rs" 129 11 129 22
   
-  let%span span95 = "../06_knights_tour.rs" 129 11 129 22
+  let%span span95 = "../06_knights_tour.rs" 130 10 130 30
   
-  let%span span96 = "../06_knights_tour.rs" 130 10 130 30
+  let%span span96 = "../06_knights_tour.rs" 128 0 128 8
   
-  let%span span97 = "../06_knights_tour.rs" 128 0 128 8
+  let%span span97 = "../06_knights_tour.rs" 83 15 83 24
   
-  let%span span98 = "../06_knights_tour.rs" 83 15 83 24
+  let%span span98 = "../06_knights_tour.rs" 84 15 84 32
   
-  let%span span99 = "../06_knights_tour.rs" 84 15 84 32
+  let%span span99 = "../06_knights_tour.rs" 85 14 85 26
   
-  let%span span100 = "../06_knights_tour.rs" 85 14 85 26
+  let%span span100 = "../06_knights_tour.rs" 86 14 86 42
   
-  let%span span101 = "../06_knights_tour.rs" 86 14 86 42
+  let%span span101 = "../06_knights_tour.rs" 37 15 37 28
   
-  let%span span102 = "../06_knights_tour.rs" 37 15 37 28
+  let%span span102 = "../06_knights_tour.rs" 38 14 38 33
   
-  let%span span103 = "../06_knights_tour.rs" 38 14 38 33
-  
-  let%span span104 = "../06_knights_tour.rs" 39 14 39 25
+  let%span span103 = "../06_knights_tour.rs" 39 14 39 25
   
   use prelude.prelude.IntSize
   
   use seq.Seq
   
   predicate invariant'15 (self : Seq.seq (isize, isize)) =
-    [%#span20] true
+    [%#span19] true
   
   predicate inv'15 (_x : Seq.seq (isize, isize))
   
@@ -2872,7 +2866,7 @@ module C06KnightsTour_KnightsTour
   
   use prelude.prelude.Int
   
-  constant max'0 : usize = [%#span21] (18446744073709551615 : usize)
+  constant max'0 : usize = [%#span20] (18446744073709551615 : usize)
   
   use seq.Seq
   
@@ -2880,17 +2874,17 @@ module C06KnightsTour_KnightsTour
   
   function shallow_model'2 (self : Vec'0.t_vec usize (Global'0.t_global)) : Seq.seq usize
   
-  axiom shallow_model'2_spec : forall self : Vec'0.t_vec usize (Global'0.t_global) . ([%#span22] inv'14 self)
-   -> ([%#span24] inv'11 (shallow_model'2 self))
-  && ([%#span23] Seq.length (shallow_model'2 self) <= UIntSize.to_int (max'0 : usize))
+  axiom shallow_model'2_spec : forall self : Vec'0.t_vec usize (Global'0.t_global) . ([%#span21] inv'14 self)
+   -> ([%#span23] inv'11 (shallow_model'2 self))
+  && ([%#span22] Seq.length (shallow_model'2 self) <= UIntSize.to_int (max'0 : usize))
   
   predicate invariant'14 (self : Vec'0.t_vec usize (Global'0.t_global)) =
-    [%#span25] inv'11 (shallow_model'2 self)
+    [%#span24] inv'11 (shallow_model'2 self)
   
   axiom inv'14 : forall x : Vec'0.t_vec usize (Global'0.t_global) . inv'14 x = true
   
   predicate invariant'13 (self : Seq.seq (Vec'0.t_vec usize (Global'0.t_global))) =
-    [%#span20] true
+    [%#span19] true
   
   predicate inv'13 (_x : Seq.seq (Vec'0.t_vec usize (Global'0.t_global)))
   
@@ -2903,24 +2897,24 @@ module C06KnightsTour_KnightsTour
   function shallow_model'1 (self : Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global)) : Seq.seq (Vec'0.t_vec usize (Global'0.t_global))
     
   
-  axiom shallow_model'1_spec : forall self : Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global) . ([%#span22] inv'12 self)
-   -> ([%#span24] inv'13 (shallow_model'1 self))
-  && ([%#span23] Seq.length (shallow_model'1 self) <= UIntSize.to_int (max'0 : usize))
+  axiom shallow_model'1_spec : forall self : Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global) . ([%#span21] inv'12 self)
+   -> ([%#span23] inv'13 (shallow_model'1 self))
+  && ([%#span22] Seq.length (shallow_model'1 self) <= UIntSize.to_int (max'0 : usize))
   
   predicate invariant'12 (self : Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global)) =
-    [%#span25] inv'13 (shallow_model'1 self)
+    [%#span24] inv'13 (shallow_model'1 self)
   
   axiom inv'12 : forall x : Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global) . inv'12 x = true
   
   predicate invariant'11 (self : Seq.seq usize) =
-    [%#span20] true
+    [%#span19] true
   
   axiom inv'11 : forall x : Seq.seq usize . inv'11 x = true
   
   use C06KnightsTour_Point_Type as Point'0
   
   predicate invariant'10 (self : (usize, Point'0.t_point)) =
-    [%#span20] true
+    [%#span19] true
   
   predicate inv'10 (_x : (usize, Point'0.t_point))
   
@@ -2929,7 +2923,7 @@ module C06KnightsTour_KnightsTour
   use prelude.prelude.Borrow
   
   predicate invariant'9 (self : borrowed (Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global))) =
-    [%#span20] true
+    [%#span19] true
   
   predicate inv'9 (_x : borrowed (Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global)))
   
@@ -2938,7 +2932,7 @@ module C06KnightsTour_KnightsTour
   use Core_Option_Option_Type as Option'0
   
   predicate invariant'8 (self : Option'0.t_option (isize, isize)) =
-    [%#span20] true
+    [%#span19] true
   
   predicate inv'8 (_x : Option'0.t_option (isize, isize))
   
@@ -2947,14 +2941,14 @@ module C06KnightsTour_KnightsTour
   use Alloc_Vec_IntoIter_IntoIter_Type as IntoIter'0
   
   predicate invariant'7 (self : borrowed (IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global))) =
-    [%#span20] true
+    [%#span19] true
   
   predicate inv'7 (_x : borrowed (IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global)))
   
   axiom inv'7 : forall x : borrowed (IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global)) . inv'7 x = true
   
   predicate invariant'6 (self : Seq.seq (usize, Point'0.t_point)) =
-    [%#span20] true
+    [%#span19] true
   
   predicate inv'6 (_x : Seq.seq (usize, Point'0.t_point))
   
@@ -2966,12 +2960,12 @@ module C06KnightsTour_KnightsTour
   
   function shallow_model'3 (self : Vec'0.t_vec (isize, isize) (Global'0.t_global)) : Seq.seq (isize, isize)
   
-  axiom shallow_model'3_spec : forall self : Vec'0.t_vec (isize, isize) (Global'0.t_global) . ([%#span22] inv'5 self)
-   -> ([%#span24] inv'15 (shallow_model'3 self))
-  && ([%#span23] Seq.length (shallow_model'3 self) <= UIntSize.to_int (max'0 : usize))
+  axiom shallow_model'3_spec : forall self : Vec'0.t_vec (isize, isize) (Global'0.t_global) . ([%#span21] inv'5 self)
+   -> ([%#span23] inv'15 (shallow_model'3 self))
+  && ([%#span22] Seq.length (shallow_model'3 self) <= UIntSize.to_int (max'0 : usize))
   
   predicate invariant'5 (self : Vec'0.t_vec (isize, isize) (Global'0.t_global)) =
-    [%#span25] inv'15 (shallow_model'3 self)
+    [%#span24] inv'15 (shallow_model'3 self)
   
   axiom inv'5 : forall x : Vec'0.t_vec (isize, isize) (Global'0.t_global) . inv'5 x = true
   
@@ -2982,17 +2976,17 @@ module C06KnightsTour_KnightsTour
   function shallow_model'0 (self : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global)) : Seq.seq (usize, Point'0.t_point)
     
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global) . ([%#span22] inv'4 self)
-   -> ([%#span24] inv'6 (shallow_model'0 self))
-  && ([%#span23] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
+  axiom shallow_model'0_spec : forall self : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global) . ([%#span21] inv'4 self)
+   -> ([%#span23] inv'6 (shallow_model'0 self))
+  && ([%#span22] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
   
   predicate invariant'4 (self : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global)) =
-    [%#span25] inv'6 (shallow_model'0 self)
+    [%#span24] inv'6 (shallow_model'0 self)
   
   axiom inv'4 : forall x : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global) . inv'4 x = true
   
   predicate invariant'3 (self : Option'0.t_option usize) =
-    [%#span20] true
+    [%#span19] true
   
   predicate inv'3 (_x : Option'0.t_option usize)
   
@@ -3001,7 +2995,7 @@ module C06KnightsTour_KnightsTour
   use Core_Ops_Range_Range_Type as Range'0
   
   predicate invariant'2 (self : borrowed (Range'0.t_range usize)) =
-    [%#span20] true
+    [%#span19] true
   
   predicate inv'2 (_x : borrowed (Range'0.t_range usize))
   
@@ -3016,30 +3010,30 @@ module C06KnightsTour_KnightsTour
   predicate produces'1 (self : IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global)) (visited : Seq.seq (isize, isize)) (rhs : IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global))
     
    =
-    [%#span26] shallow_model'4 self = Seq.(++) visited (shallow_model'4 rhs)
+    [%#span25] shallow_model'4 self = Seq.(++) visited (shallow_model'4 rhs)
   
   function produces_trans'1 (a : IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global)) (ab : Seq.seq (isize, isize)) (b : IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global)) (bc : Seq.seq (isize, isize)) (c : IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global)) : ()
     
    =
-    [%#span35] ()
+    [%#span34] ()
   
-  axiom produces_trans'1_spec : forall a : IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global), ab : Seq.seq (isize, isize), b : IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global), bc : Seq.seq (isize, isize), c : IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global) . ([%#span27] produces'1 a ab b)
-   -> ([%#span28] produces'1 b bc c)
-   -> ([%#span29] inv'1 a)
-   -> ([%#span30] inv'15 ab)
-   -> ([%#span31] inv'1 b)
-   -> ([%#span32] inv'15 bc)  -> ([%#span33] inv'1 c)  -> ([%#span34] produces'1 a (Seq.(++) ab bc) c)
+  axiom produces_trans'1_spec : forall a : IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global), ab : Seq.seq (isize, isize), b : IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global), bc : Seq.seq (isize, isize), c : IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global) . ([%#span26] produces'1 a ab b)
+   -> ([%#span27] produces'1 b bc c)
+   -> ([%#span28] inv'1 a)
+   -> ([%#span29] inv'15 ab)
+   -> ([%#span30] inv'1 b)
+   -> ([%#span31] inv'15 bc)  -> ([%#span32] inv'1 c)  -> ([%#span33] produces'1 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
   function produces_refl'1 (self : IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global)) : () =
-    [%#span38] ()
+    [%#span37] ()
   
-  axiom produces_refl'1_spec : forall self : IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global) . ([%#span36] inv'1 self)
-   -> ([%#span37] produces'1 self (Seq.empty  : Seq.seq (isize, isize)) self)
+  axiom produces_refl'1_spec : forall self : IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global) . ([%#span35] inv'1 self)
+   -> ([%#span36] produces'1 self (Seq.empty  : Seq.seq (isize, isize)) self)
   
   predicate invariant'1 (self : IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global)) =
-    [%#span20] true
+    [%#span19] true
   
   axiom inv'1 : forall x : IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global) . inv'1 x = true
   
@@ -3052,12 +3046,12 @@ module C06KnightsTour_KnightsTour
   use seq.Seq
   
   function deep_model'0 (self : usize) : int =
-    [%#span39] UIntSize.to_int self
+    [%#span38] UIntSize.to_int self
   
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   
   predicate produces'0 (self : Range'0.t_range usize) (visited : Seq.seq usize) (o : Range'0.t_range usize) =
-    [%#span40] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o
+    [%#span39] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o
     /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
     <= deep_model'0 (Core_Ops_Range_Range_Type.range_start o)
     /\ (Seq.length visited > 0
@@ -3070,22 +3064,22 @@ module C06KnightsTour_KnightsTour
   function produces_trans'0 (a : Range'0.t_range usize) (ab : Seq.seq usize) (b : Range'0.t_range usize) (bc : Seq.seq usize) (c : Range'0.t_range usize) : ()
     
   
-  axiom produces_trans'0_spec : forall a : Range'0.t_range usize, ab : Seq.seq usize, b : Range'0.t_range usize, bc : Seq.seq usize, c : Range'0.t_range usize . ([%#span41] produces'0 a ab b)
-   -> ([%#span42] produces'0 b bc c)
-   -> ([%#span43] inv'0 a)
-   -> ([%#span44] inv'11 ab)
-   -> ([%#span45] inv'0 b)
-   -> ([%#span46] inv'11 bc)  -> ([%#span47] inv'0 c)  -> ([%#span48] produces'0 a (Seq.(++) ab bc) c)
+  axiom produces_trans'0_spec : forall a : Range'0.t_range usize, ab : Seq.seq usize, b : Range'0.t_range usize, bc : Seq.seq usize, c : Range'0.t_range usize . ([%#span40] produces'0 a ab b)
+   -> ([%#span41] produces'0 b bc c)
+   -> ([%#span42] inv'0 a)
+   -> ([%#span43] inv'11 ab)
+   -> ([%#span44] inv'0 b)
+   -> ([%#span45] inv'11 bc)  -> ([%#span46] inv'0 c)  -> ([%#span47] produces'0 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
   function produces_refl'0 (self : Range'0.t_range usize) : ()
   
-  axiom produces_refl'0_spec : forall self : Range'0.t_range usize . ([%#span49] inv'0 self)
-   -> ([%#span50] produces'0 self (Seq.empty  : Seq.seq usize) self)
+  axiom produces_refl'0_spec : forall self : Range'0.t_range usize . ([%#span48] inv'0 self)
+   -> ([%#span49] produces'0 self (Seq.empty  : Seq.seq usize) self)
   
   predicate invariant'0 (self : Range'0.t_range usize) =
-    [%#span20] true
+    [%#span19] true
   
   axiom inv'0 : forall x : Range'0.t_range usize . inv'0 x = true
   
@@ -3096,45 +3090,45 @@ module C06KnightsTour_KnightsTour
   use C06KnightsTour_Board_Type as Board'0
   
   predicate resolve'8 (self : Point'0.t_point) =
-    [%#span51] true
+    [%#span50] true
   
   predicate resolve'7 (self : usize) =
-    [%#span51] true
+    [%#span50] true
   
   predicate resolve'6 (self : (usize, Point'0.t_point)) =
-    [%#span52] resolve'7 (let (a, _) = self in a) /\ resolve'8 (let (_, a) = self in a)
+    [%#span51] resolve'7 (let (a, _) = self in a) /\ resolve'8 (let (_, a) = self in a)
   
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global)) (ix : int) : (usize, Point'0.t_point)
     
    =
-    [%#span53] Seq.get (shallow_model'0 self) ix
+    [%#span52] Seq.get (shallow_model'0 self) ix
   
   predicate resolve'4 (self : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global)) =
-    [%#span54] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'0 self)  -> resolve'6 (index_logic'0 self i)
+    [%#span53] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'0 self)  -> resolve'6 (index_logic'0 self i)
   
   function shallow_model'6 (self : Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global)) : Seq.seq (usize, Point'0.t_point)
     
    =
-    [%#span55] shallow_model'0 self
+    [%#span54] shallow_model'0 self
   
   let rec min'0 (v:Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global)) (return'  (ret:Option'0.t_option (usize, Point'0.t_point)))= any
-    [ return' (result:Option'0.t_option (usize, Point'0.t_point))-> {[%#span56] forall r : (usize, Point'0.t_point) . result
+    [ return' (result:Option'0.t_option (usize, Point'0.t_point))-> {[%#span55] forall r : (usize, Point'0.t_point) . result
       = Option'0.C_Some r  -> (exists i : int . 0 <= i /\ i < Seq.length (shallow_model'6 v) /\ index_logic'0 v i = r)}
       (! return' {result}) ]
     
   
   predicate resolve'5 (self : isize) =
-    [%#span51] true
+    [%#span50] true
   
   predicate resolve'2 (self : (isize, isize)) =
-    [%#span52] resolve'5 (let (a, _) = self in a) /\ resolve'5 (let (_, a) = self in a)
+    [%#span51] resolve'5 (let (a, _) = self in a) /\ resolve'5 (let (_, a) = self in a)
   
   use seq.Seq
   
   predicate resolve'3 (self : IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global)) =
-    [%#span57] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'4 self)
+    [%#span56] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'4 self)
      -> resolve'2 (Seq.get (shallow_model'4 self) i)
   
   use seq.Seq
@@ -3142,12 +3136,12 @@ module C06KnightsTour_KnightsTour
   function shallow_model'5 (self : borrowed (Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global))) : Seq.seq (usize, Point'0.t_point)
     
    =
-    [%#span58] shallow_model'0 ( * self)
+    [%#span57] shallow_model'0 self.current
   
-  let rec push'0 (self:borrowed (Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global))) (value:(usize, Point'0.t_point)) (return'  (ret:()))= {[@expl:precondition] [%#span60] inv'10 value}
-    {[@expl:precondition] [%#span59] inv'9 self}
+  let rec push'0 (self:borrowed (Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global))) (value:(usize, Point'0.t_point)) (return'  (ret:()))= {[@expl:precondition] [%#span59] inv'10 value}
+    {[@expl:precondition] [%#span58] inv'9 self}
     any
-    [ return' (result:())-> {[%#span61] shallow_model'0 ( ^ self) = Seq.snoc (shallow_model'5 self) value}
+    [ return' (result:())-> {[%#span60] shallow_model'0 self.final = Seq.snoc (shallow_model'5 self) value}
       (! return' {result}) ]
     
   
@@ -3158,7 +3152,7 @@ module C06KnightsTour_KnightsTour
   use prelude.prelude.IntSize
   
   predicate in_bounds'0 [#"../06_knights_tour.rs" 61 4 61 40] (self : Board'0.t_board) (p : Point'0.t_point) =
-    [%#span62] 0 <= IntSize.to_int (C06KnightsTour_Point_Type.point_x p)
+    [%#span61] 0 <= IntSize.to_int (C06KnightsTour_Point_Type.point_x p)
     /\ IntSize.to_int (C06KnightsTour_Point_Type.point_x p)
     < UIntSize.to_int (C06KnightsTour_Board_Type.board_size self)
     /\ 0 <= IntSize.to_int (C06KnightsTour_Point_Type.point_y p)
@@ -3170,36 +3164,36 @@ module C06KnightsTour_KnightsTour
   function index_logic'1 [@inline:trivial] (self : Vec'0.t_vec (Vec'0.t_vec usize (Global'0.t_global)) (Global'0.t_global)) (ix : int) : Vec'0.t_vec usize (Global'0.t_global)
     
    =
-    [%#span53] Seq.get (shallow_model'1 self) ix
+    [%#span52] Seq.get (shallow_model'1 self) ix
   
   predicate wf'0 [#"../06_knights_tour.rs" 30 4 30 23] (self : Board'0.t_board) =
-    [%#span63] UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) <= 1000
+    [%#span62] UIntSize.to_int (C06KnightsTour_Board_Type.board_size self) <= 1000
     /\ Seq.length (shallow_model'1 (C06KnightsTour_Board_Type.board_field self))
     = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self)
     /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (C06KnightsTour_Board_Type.board_size self)
      -> Seq.length (shallow_model'2 (index_logic'1 (C06KnightsTour_Board_Type.board_field self) i))
     = UIntSize.to_int (C06KnightsTour_Board_Type.board_size self))
   
-  let rec count_degree'0 (self:Board'0.t_board) (p:Point'0.t_point) (return'  (ret:usize))= {[@expl:precondition] [%#span65] in_bounds'0 self p}
-    {[@expl:precondition] [%#span64] wf'0 self}
+  let rec count_degree'0 (self:Board'0.t_board) (p:Point'0.t_point) (return'  (ret:usize))= {[@expl:precondition] [%#span64] in_bounds'0 self p}
+    {[@expl:precondition] [%#span63] wf'0 self}
     any [ return' (result:usize)-> (! return' {result}) ] 
   
-  let rec available'0 (self:Board'0.t_board) (p:Point'0.t_point) (return'  (ret:bool))= {[@expl:precondition] [%#span66] wf'0 self}
-    any [ return' (result:bool)-> {[%#span67] result  -> in_bounds'0 self p} (! return' {result}) ] 
+  let rec available'0 (self:Board'0.t_board) (p:Point'0.t_point) (return'  (ret:bool))= {[@expl:precondition] [%#span65] wf'0 self}
+    any [ return' (result:bool)-> {[%#span66] result  -> in_bounds'0 self p} (! return' {result}) ] 
   
-  let rec mov'0 (self:Point'0.t_point) (p:(isize, isize)) (return'  (ret:Point'0.t_point))= {[@expl:precondition] [%#span71] - 10000
+  let rec mov'0 (self:Point'0.t_point) (p:(isize, isize)) (return'  (ret:Point'0.t_point))= {[@expl:precondition] [%#span70] - 10000
     <= IntSize.to_int (let (_, a) = p in a)
     /\ IntSize.to_int (let (_, a) = p in a) <= 10000}
-    {[@expl:precondition] [%#span70] - 10000 <= IntSize.to_int (let (a, _) = p in a)
+    {[@expl:precondition] [%#span69] - 10000 <= IntSize.to_int (let (a, _) = p in a)
     /\ IntSize.to_int (let (a, _) = p in a) <= 10000}
-    {[@expl:precondition] [%#span69] - 10000 <= IntSize.to_int (C06KnightsTour_Point_Type.point_y self)
+    {[@expl:precondition] [%#span68] - 10000 <= IntSize.to_int (C06KnightsTour_Point_Type.point_y self)
     /\ IntSize.to_int (C06KnightsTour_Point_Type.point_y self) <= 10000}
-    {[@expl:precondition] [%#span68] - 10000 <= IntSize.to_int (C06KnightsTour_Point_Type.point_x self)
+    {[@expl:precondition] [%#span67] - 10000 <= IntSize.to_int (C06KnightsTour_Point_Type.point_x self)
     /\ IntSize.to_int (C06KnightsTour_Point_Type.point_x self) <= 10000}
     any
-    [ return' (result:Point'0.t_point)-> {[%#span73] IntSize.to_int (C06KnightsTour_Point_Type.point_y result)
+    [ return' (result:Point'0.t_point)-> {[%#span72] IntSize.to_int (C06KnightsTour_Point_Type.point_y result)
       = IntSize.to_int (C06KnightsTour_Point_Type.point_y self) + IntSize.to_int (let (_, a) = p in a)}
-      {[%#span72] IntSize.to_int (C06KnightsTour_Point_Type.point_x result)
+      {[%#span71] IntSize.to_int (C06KnightsTour_Point_Type.point_x result)
       = IntSize.to_int (C06KnightsTour_Point_Type.point_x self) + IntSize.to_int (let (a, _) = p in a)}
       (! return' {result}) ]
     
@@ -3207,22 +3201,22 @@ module C06KnightsTour_KnightsTour
   use seq.Seq
   
   predicate resolve'1 (self : borrowed (IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global))) =
-    [%#span74]  ^ self =  * self
+    [%#span73] self.final = self.current
   
   function shallow_model'7 (self : borrowed (IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global))) : Seq.seq (isize, isize)
     
    =
-    [%#span58] shallow_model'4 ( * self)
+    [%#span57] shallow_model'4 self.current
   
   predicate completed'1 (self : borrowed (IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global))) =
-    [%#span75] resolve'1 self /\ shallow_model'7 self = (Seq.empty  : Seq.seq (isize, isize))
+    [%#span74] resolve'1 self /\ shallow_model'7 self = (Seq.empty  : Seq.seq (isize, isize))
   
-  let rec next'1 (self:borrowed (IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global))) (return'  (ret:Option'0.t_option (isize, isize)))= {[@expl:precondition] [%#span76] inv'7 self}
+  let rec next'1 (self:borrowed (IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global))) (return'  (ret:Option'0.t_option (isize, isize)))= {[@expl:precondition] [%#span75] inv'7 self}
     any
-    [ return' (result:Option'0.t_option (isize, isize))-> {[%#span78] inv'8 result}
-      {[%#span77] match result with
+    [ return' (result:Option'0.t_option (isize, isize))-> {[%#span77] inv'8 result}
+      {[%#span76] match result with
         | Option'0.C_None -> completed'1 self
-        | Option'0.C_Some v -> produces'1 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'1 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -3238,56 +3232,56 @@ module C06KnightsTour_KnightsTour
   predicate into_iter_post'1 (self : Vec'0.t_vec (isize, isize) (Global'0.t_global)) (res : IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global))
     
    =
-    [%#span79] shallow_model'3 self = shallow_model'4 res
+    [%#span78] shallow_model'3 self = shallow_model'4 res
   
   predicate into_iter_pre'1 (self : Vec'0.t_vec (isize, isize) (Global'0.t_global)) =
-    [%#span80] true
+    [%#span79] true
   
-  let rec into_iter'1 (self:Vec'0.t_vec (isize, isize) (Global'0.t_global)) (return'  (ret:IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global)))= {[@expl:precondition] [%#span82] inv'5 self}
-    {[@expl:precondition] [%#span81] into_iter_pre'1 self}
+  let rec into_iter'1 (self:Vec'0.t_vec (isize, isize) (Global'0.t_global)) (return'  (ret:IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global)))= {[@expl:precondition] [%#span81] inv'5 self}
+    {[@expl:precondition] [%#span80] into_iter_pre'1 self}
     any
-    [ return' (result:IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global))-> {[%#span83] inv'1 result}
-      {[%#span81] into_iter_post'1 self result}
+    [ return' (result:IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global))-> {[%#span82] inv'1 result}
+      {[%#span80] into_iter_post'1 self result}
       (! return' {result}) ]
     
   
   function index_logic'2 [@inline:trivial] (self : Vec'0.t_vec (isize, isize) (Global'0.t_global)) (ix : int) : (isize, isize)
     
    =
-    [%#span53] Seq.get (shallow_model'3 self) ix
+    [%#span52] Seq.get (shallow_model'3 self) ix
   
   let rec moves'0 (_1:()) (return'  (ret:Vec'0.t_vec (isize, isize) (Global'0.t_global)))= any
-    [ return' (result:Vec'0.t_vec (isize, isize) (Global'0.t_global))-> {[%#span85] forall i : int . 0 <= i /\ i < 8
+    [ return' (result:Vec'0.t_vec (isize, isize) (Global'0.t_global))-> {[%#span84] forall i : int . 0 <= i /\ i < 8
        -> - 2 <= IntSize.to_int (let (a, _) = index_logic'2 result i in a)
       /\ IntSize.to_int (let (a, _) = index_logic'2 result i in a) <= 2
       /\ - 2 <= IntSize.to_int (let (_, a) = index_logic'2 result i in a)
       /\ IntSize.to_int (let (_, a) = index_logic'2 result i in a) <= 2}
-      {[%#span84] Seq.length (shallow_model'3 result) = 8}
+      {[%#span83] Seq.length (shallow_model'3 result) = 8}
       (! return' {result}) ]
     
   
   let rec new'1 (_1:()) (return'  (ret:Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global)))= any
-    [ return' (result:Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global))-> {[%#span87] inv'4 result}
-      {[%#span86] Seq.length (shallow_model'0 result) = 0}
+    [ return' (result:Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global))-> {[%#span86] inv'4 result}
+      {[%#span85] Seq.length (shallow_model'0 result) = 0}
       (! return' {result}) ]
     
   
   use seq.Seq
   
   predicate resolve'0 (self : borrowed (Range'0.t_range usize)) =
-    [%#span74]  ^ self =  * self
+    [%#span73] self.final = self.current
   
   predicate completed'0 (self : borrowed (Range'0.t_range usize)) =
-    [%#span88] resolve'0 self
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start ( * self))
-    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end ( * self))
+    [%#span87] resolve'0 self
+    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self.current)
+    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end self.current)
   
-  let rec next'0 (self:borrowed (Range'0.t_range usize)) (return'  (ret:Option'0.t_option usize))= {[@expl:precondition] [%#span89] inv'2 self}
+  let rec next'0 (self:borrowed (Range'0.t_range usize)) (return'  (ret:Option'0.t_option usize))= {[@expl:precondition] [%#span88] inv'2 self}
     any
-    [ return' (result:Option'0.t_option usize)-> {[%#span90] inv'3 result}
-      {[%#span77] match result with
+    [ return' (result:Option'0.t_option usize)-> {[%#span89] inv'3 result}
+      {[%#span76] match result with
         | Option'0.C_None -> completed'0 self
-        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
@@ -3301,48 +3295,48 @@ module C06KnightsTour_KnightsTour
   use prelude.prelude.Snapshot
   
   predicate into_iter_post'0 (self : Range'0.t_range usize) (res : Range'0.t_range usize) =
-    [%#span91] self = res
+    [%#span90] self = res
   
   predicate into_iter_pre'0 (self : Range'0.t_range usize) =
-    [%#span92] true
+    [%#span91] true
   
-  let rec into_iter'0 (self:Range'0.t_range usize) (return'  (ret:Range'0.t_range usize))= {[@expl:precondition] [%#span93] inv'0 self}
-    {[@expl:precondition] [%#span81] into_iter_pre'0 self}
+  let rec into_iter'0 (self:Range'0.t_range usize) (return'  (ret:Range'0.t_range usize))= {[@expl:precondition] [%#span92] inv'0 self}
+    {[@expl:precondition] [%#span80] into_iter_pre'0 self}
     any
-    [ return' (result:Range'0.t_range usize)-> {[%#span94] inv'0 result}
-      {[%#span81] into_iter_post'0 self result}
+    [ return' (result:Range'0.t_range usize)-> {[%#span93] inv'0 result}
+      {[%#span80] into_iter_post'0 self result}
       (! return' {result}) ]
     
   
   use prelude.prelude.Snapshot
   
   function dumb_nonlinear_arith'0 [#"../06_knights_tour.rs" 131 0 131 33] (a : usize) : () =
-    [%#span97] ()
+    [%#span96] ()
   
-  axiom dumb_nonlinear_arith'0_spec : forall a : usize . ([%#span95] UIntSize.to_int a <= 1000)
-   -> ([%#span96] UIntSize.to_int a * UIntSize.to_int a <= 1000000)
+  axiom dumb_nonlinear_arith'0_spec : forall a : usize . ([%#span94] UIntSize.to_int a <= 1000)
+   -> ([%#span95] UIntSize.to_int a * UIntSize.to_int a <= 1000000)
   
-  let rec set'0 (self:borrowed (Board'0.t_board)) (p:Point'0.t_point) (v:usize) (return'  (ret:()))= {[@expl:precondition] [%#span99] in_bounds'0 ( * self) p}
-    {[@expl:precondition] [%#span98] wf'0 ( * self)}
+  let rec set'0 (self:borrowed (Board'0.t_board)) (p:Point'0.t_point) (v:usize) (return'  (ret:()))= {[@expl:precondition] [%#span98] in_bounds'0 self.current p}
+    {[@expl:precondition] [%#span97] wf'0 self.current}
     any
-    [ return' (result:())-> {[%#span101] C06KnightsTour_Board_Type.board_size ( ^ self)
-      = C06KnightsTour_Board_Type.board_size ( * self)}
-      {[%#span100] wf'0 ( ^ self)}
+    [ return' (result:())-> {[%#span100] C06KnightsTour_Board_Type.board_size self.final
+      = C06KnightsTour_Board_Type.board_size self.current}
+      {[%#span99] wf'0 self.final}
       (! return' {result}) ]
     
   
-  let rec new'0 (size:usize) (return'  (ret:Board'0.t_board))= {[@expl:precondition] [%#span102] UIntSize.to_int size
+  let rec new'0 (size:usize) (return'  (ret:Board'0.t_board))= {[@expl:precondition] [%#span101] UIntSize.to_int size
     <= 1000}
     any
-    [ return' (result:Board'0.t_board)-> {[%#span104] wf'0 result}
-      {[%#span103] C06KnightsTour_Board_Type.board_size result = size}
+    [ return' (result:Board'0.t_board)-> {[%#span103] wf'0 result}
+      {[%#span102] C06KnightsTour_Board_Type.board_size result = size}
       (! return' {result}) ]
     
   
-  let rec knights_tour (size:usize) (x:usize) (y:usize) (return'  (ret:Option'0.t_option (Board'0.t_board)))= {[%#s06_knights_tour19] y
+  let rec knights_tour (size:usize) (x:usize) (y:usize) (return'  (ret:Option'0.t_option (Board'0.t_board)))= {[%#s06_knights_tour18] y
     < size}
-    {[%#s06_knights_tour18] x < size}
-    {[%#s06_knights_tour17] 0 < UIntSize.to_int size /\ UIntSize.to_int size <= 1000}
+    {[%#s06_knights_tour17] x < size}
+    {[%#s06_knights_tour16] 0 < UIntSize.to_int size /\ UIntSize.to_int size <= 1000}
     (! bb0
     [ bb0 = s0 [ s0 = new'0 {size} (fun (_ret':Board'0.t_board) ->  [ &board <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0
@@ -3351,7 +3345,7 @@ module C06KnightsTour_KnightsTour
       | s2 =  [ &p <- Point'0.C_Point _10 _12 ] 
         (any [ any_ (_any:isize)-> (!  [ &_10 <- _any ] (any [ any_ (_any:isize)-> (!  [ &_12 <- _any ] s3) ] )) ] )
       | s3 = Borrow.borrow_mut <Board'0.t_board> {board}
-          (fun (_ret':borrowed (Board'0.t_board)) ->  [ &_15 <- _ret' ]  [ &board <-  ^ _15 ] s4)
+          (fun (_ret':borrowed (Board'0.t_board)) ->  [ &_15 <- _ret' ]  [ &board <- _15.final ] s4)
       | s4 = set'0 {_15} {p} {[%#s06_knights_tour0] (1 : usize)} (fun (_ret':()) ->  [ &_14 <- _ret' ] s5)
       | s5 = bb2 ]
       
@@ -3377,11 +3371,11 @@ module C06KnightsTour_KnightsTour
         (! s0) [ s0 = bb10 ] 
         [ bb10 = s0
           [ s0 = Borrow.borrow_mut <Range'0.t_range usize> {iter}
-              (fun (_ret':borrowed (Range'0.t_range usize)) ->  [ &_37 <- _ret' ]  [ &iter <-  ^ _37 ] s1)
-          | s1 = Borrow.borrow_final <Range'0.t_range usize> { * _37} {Borrow.get_id _37}
+              (fun (_ret':borrowed (Range'0.t_range usize)) ->  [ &_37 <- _ret' ]  [ &iter <- _37.final ] s1)
+          | s1 = Borrow.borrow_final <Range'0.t_range usize> {_37.current} {Borrow.get_id _37}
               (fun (_ret':borrowed (Range'0.t_range usize)) ->
                  [ &_36 <- _ret' ] 
-                 [ &_37 <- { _37 with current = ( ^ _36) ; } ] 
+                 [ &_37 <- { _37 with current = _36.final ; } ] 
                 s2)
           | s2 = next'0 {_36} (fun (_ret':Option'0.t_option usize) ->  [ &_35 <- _ret' ] s3)
           | s3 = bb11 ]
@@ -3439,15 +3433,15 @@ module C06KnightsTour_KnightsTour
               [ s0 = Borrow.borrow_mut <IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global)> {iter1}
                   (fun (_ret':borrowed (IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global))) ->
                      [ &_56 <- _ret' ] 
-                     [ &iter1 <-  ^ _56 ] 
+                     [ &iter1 <- _56.final ] 
                     s1)
               | s1 = Borrow.borrow_final
                   <IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global)>
-                  { * _56}
+                  {_56.current}
                   {Borrow.get_id _56}
                   (fun (_ret':borrowed (IntoIter'0.t_intoiter (isize, isize) (Global'0.t_global))) ->
                      [ &_55 <- _ret' ] 
-                     [ &_56 <- { _56 with current = ( ^ _55) ; } ] 
+                     [ &_56 <- { _56 with current = _55.final ; } ] 
                     s2)
               | s2 = next'1 {_55} (fun (_ret':Option'0.t_option (isize, isize)) ->  [ &_54 <- _ret' ] s3)
               | s3 = bb27 ]
@@ -3491,7 +3485,7 @@ module C06KnightsTour_KnightsTour
               [ s0 = Borrow.borrow_mut <Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global)> {candidates}
                   (fun (_ret':borrowed (Vec'0.t_vec (usize, Point'0.t_point) (Global'0.t_global))) ->
                      [ &_73 <- _ret' ] 
-                     [ &candidates <-  ^ _73 ] 
+                     [ &candidates <- _73.final ] 
                     s1)
               | s1 =  [ &_74 <- (degree, adj) ] s2
               | s2 = push'0 {_73} {_74} (fun (_ret':()) ->  [ &_72 <- _ret' ] s3)
@@ -3519,7 +3513,7 @@ module C06KnightsTour_KnightsTour
           | s1 = -{resolve'4 candidates}- s2
           | s2 =  [ &p <- adj1 ] s3
           | s3 = Borrow.borrow_mut <Board'0.t_board> {board}
-              (fun (_ret':borrowed (Board'0.t_board)) ->  [ &_87 <- _ret' ]  [ &board <-  ^ _87 ] s4)
+              (fun (_ret':borrowed (Board'0.t_board)) ->  [ &_87 <- _ret' ]  [ &board <- _87.final ] s4)
           | s4 = set'0 {_87} {p} {step} (fun (_ret':()) ->  [ &_86 <- _ret' ] s5)
           | s5 = bb46 ]
           
@@ -3527,11 +3521,6 @@ module C06KnightsTour_KnightsTour
         | bb47 = bb9 ]
          ]
       
-    | bb12 = {[%#s06_knights_tour5] false} any
-    | bb28 = s0
-      [ s0 = -{resolve'3 iter1}- s1 | s1 = -{resolve'4 candidates}- s2 | s2 = {[%#s06_knights_tour14] false} any ]
-      
-    | bb42 = s0 [ s0 = -{resolve'4 candidates}- s1 | s1 = {[%#s06_knights_tour16] false} any ] 
     | bb44 = s0 [ s0 =  [ &_0 <- Option'0.C_None ] s1 | s1 = -{resolve'4 candidates}- s2 | s2 = bb50 ] 
     | bb50 = bb51
     | bb51 = bb52

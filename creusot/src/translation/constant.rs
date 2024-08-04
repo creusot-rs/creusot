@@ -16,20 +16,20 @@ use super::pearlite::{Term, TermKind};
 
 pub(crate) fn from_mir_constant<'tcx>(
     env: ParamEnv<'tcx>,
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     c: &rustc_middle::mir::ConstOperand<'tcx>,
 ) -> fmir::Operand<'tcx> {
     from_mir_constant_kind(ctx, c.const_, env, c.span)
 }
 
 fn from_mir_constant_kind<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     ck: mir::Const<'tcx>,
     env: ParamEnv<'tcx>,
     span: Span,
 ) -> fmir::Operand<'tcx> {
-    if let mir::Const::Ty(c) = ck {
-        return Operand::Constant(from_ty_const(ctx, c, env, span));
+    if let mir::Const::Ty(ty, c) = ck {
+        return Operand::Constant(from_ty_const(ctx, c, ty, env, span));
     }
 
     if ck.ty().is_unit() {
@@ -72,8 +72,9 @@ fn from_mir_constant_kind<'tcx>(
 }
 
 pub(crate) fn from_ty_const<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     c: Const<'tcx>,
+    ty: Ty<'tcx>,
     env: ParamEnv<'tcx>,
     span: Span,
 ) -> Term<'tcx> {
@@ -82,18 +83,18 @@ pub(crate) fn from_ty_const<'tcx>(
     if let ConstKind::Unevaluated(u) = c.kind()
         && let Some(_) = get_builtin(ctx.tcx, u.def)
     {
-        return Term { kind: TermKind::Lit(Literal::Function(u.def, u.args)), ty: c.ty(), span };
+        return Term { kind: TermKind::Lit(Literal::Function(u.def, u.args)), ty, span };
     };
 
     if let ConstKind::Param(_) = c.kind() {
         ctx.crash_and_error(span, "const generic parameters are not yet supported");
     }
 
-    return Term { kind: TermKind::Lit(try_to_bits(ctx, env, c.ty(), span, c)), ty: c.ty(), span };
+    return Term { kind: TermKind::Lit(try_to_bits(ctx, env, ty, span, c)), ty: ty, span };
 }
 
 fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     // names: &mut CloneMap<'tcx>,
     env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,

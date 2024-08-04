@@ -72,7 +72,7 @@ pub(crate) fn lplace_to_expr<'tcx>(
                             RecUp { record: Box::new(f), updates: vec![("current".into(), t)] },
                         )
                     });
-                    focus = Exp::Current(Box::new(focus))
+                    focus = focus.field("current")
                 }
             }
             Field(ix, _) => match place_ty.ty.kind() {
@@ -267,7 +267,7 @@ pub(crate) fn rplace_to_expr<'tcx>(
             Deref => {
                 let mutable = place_ty.ty.is_mutable_ptr();
                 if mutable {
-                    focus = Exp::Current(Box::new(focus))
+                    focus = focus.field("current")
                 }
             }
             Field(ix, _) => match place_ty.ty.kind() {

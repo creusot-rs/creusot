@@ -299,6 +299,8 @@ module C02Gnome_GnomeSort
   
   let%span span87 = "../../../../../creusot-contracts/src/model.rs" 99 8 99 28
   
+  let%span span88 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  
   type deep_model_ty'0
   
   predicate invariant'10 (self : deep_model_ty'0)
@@ -309,13 +311,15 @@ module C02Gnome_GnomeSort
   
   use seq.Seq
   
-  predicate invariant'9 (self : Seq.seq t)
+  predicate invariant'9 (self : Seq.seq t) =
+    [%#span13] true
   
   predicate inv'9 (_x : Seq.seq t)
   
   axiom inv'9 : forall x : Seq.seq t . inv'9 x = true
   
-  predicate invariant'8 (self : Seq.seq deep_model_ty'0)
+  predicate invariant'8 (self : Seq.seq deep_model_ty'0) =
+    [%#span13] true
   
   predicate inv'8 (_x : Seq.seq deep_model_ty'0)
   
@@ -334,7 +338,8 @@ module C02Gnome_GnomeSort
   
   use Alloc_Vec_Vec_Type as Vec'0
   
-  predicate invariant'6 (self : Vec'0.t_vec t (Global'0.t_global))
+  predicate invariant'6 (self : Vec'0.t_vec t (Global'0.t_global)) =
+    [%#span13] true
   
   predicate inv'6 (_x : Vec'0.t_vec t (Global'0.t_global))
   
@@ -403,7 +408,8 @@ module C02Gnome_GnomeSort
   
   use prelude.prelude.Borrow
   
-  predicate invariant'5 (self : borrowed (Vec'0.t_vec t (Global'0.t_global)))
+  predicate invariant'5 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
+    [%#span13] true
   
   predicate inv'5 (_x : borrowed (Vec'0.t_vec t (Global'0.t_global)))
   
@@ -411,13 +417,15 @@ module C02Gnome_GnomeSort
   
   use prelude.prelude.Slice
   
-  predicate invariant'4 (self : borrowed (slice t))
+  predicate invariant'4 (self : borrowed (slice t)) =
+    [%#span13] true
   
   predicate inv'4 (_x : borrowed (slice t))
   
   axiom inv'4 : forall x : borrowed (slice t) . inv'4 x = true
   
-  predicate invariant'3 (self : slice t)
+  predicate invariant'3 (self : slice t) =
+    [%#span13] true
   
   predicate inv'3 (_x : slice t)
   
@@ -452,7 +460,8 @@ module C02Gnome_GnomeSort
   
   use prelude.prelude.Snapshot
   
-  predicate invariant'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))))
+  predicate invariant'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global)))) =
+    [%#span13] true
   
   predicate inv'0 (_x : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))))
   
@@ -486,10 +495,10 @@ module C02Gnome_GnomeSort
   use prelude.prelude.Intrinsic
   
   predicate resolve'3 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
-    [%#span57]  ^ self =  * self
+    [%#span57] self.final = self.current
   
   predicate resolve'2 (self : borrowed (slice t)) =
-    [%#span57]  ^ self =  * self
+    [%#span57] self.final = self.current
   
   use seq.Permut
   
@@ -503,23 +512,23 @@ module C02Gnome_GnomeSort
   && ([%#span59] Seq.length (shallow_model'6 self) <= UIntSize.to_int (max'0 : usize))
   
   function shallow_model'5 (self : borrowed (slice t)) : Seq.seq t =
-    [%#span62] shallow_model'6 ( * self)
+    [%#span62] shallow_model'6 self.current
   
   let rec swap'0 (self:borrowed (slice t)) (a:usize) (b:usize) (return'  (ret:()))= {[@expl:precondition] [%#span65] inv'4 self}
     {[@expl:precondition] [%#span64] UIntSize.to_int b < Seq.length (shallow_model'5 self)}
     {[@expl:precondition] [%#span63] UIntSize.to_int a < Seq.length (shallow_model'5 self)}
     any
-    [ return' (result:())-> {[%#span66] Permut.exchange (shallow_model'6 ( ^ self)) (shallow_model'5 self) (UIntSize.to_int a) (UIntSize.to_int b)}
+    [ return' (result:())-> {[%#span66] Permut.exchange (shallow_model'6 self.final) (shallow_model'5 self) (UIntSize.to_int a) (UIntSize.to_int b)}
       (! return' {result}) ]
     
   
   function shallow_model'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq t =
-    [%#span62] shallow_model'2 ( * self)
+    [%#span62] shallow_model'2 self.current
   
   let rec deref_mut'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (return'  (ret:borrowed (slice t)))= {[@expl:precondition] [%#span67] inv'5 self}
     any
     [ return' (result:borrowed (slice t))-> {[%#span70] inv'4 result}
-      {[%#span69] shallow_model'6 ( ^ result) = shallow_model'2 ( ^ self)}
+      {[%#span69] shallow_model'6 result.final = shallow_model'2 self.final}
       {[%#span68] shallow_model'5 result = shallow_model'0 self}
       (! return' {result}) ]
     
@@ -574,9 +583,10 @@ module C02Gnome_GnomeSort
     [%#span86] shallow_model'3 (Snapshot.inner self)
   
   function deep_model'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq deep_model_ty'0 =
-    [%#span87] deep_model'1 ( * self)
+    [%#span87] deep_model'1 self.current
   
-  predicate resolve'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))))
+  predicate resolve'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global)))) =
+    [%#span88] true
   
   use prelude.prelude.Snapshot
   
@@ -591,12 +601,12 @@ module C02Gnome_GnomeSort
       | s4 = bb2 ]
       
     | bb2 = bb2
-      [ bb2 = {[@expl:loop invariant]  ^ Snapshot.inner old_2_0 =  ^ v}
-        {[@expl:loop invariant] [%#s02_gnome4]  ^ v =  ^ Snapshot.inner old_v}
+      [ bb2 = {[@expl:loop invariant] (Snapshot.inner old_2_0).final = v.final}
+        {[@expl:loop invariant] [%#s02_gnome4] v.final = (Snapshot.inner old_v).final}
         {[@expl:loop invariant] [%#s02_gnome3] permutation_of'0 (shallow_model'0 v) (shallow_model'1 old_v)}
         {[@expl:loop invariant] [%#s02_gnome2] sorted_range'0 (deep_model'0 v) 0 (UIntSize.to_int i)}
         (! s0) [ s0 = bb3 ] 
-        [ bb3 = s0 [ s0 = len'0 { * v} (fun (_ret':usize) ->  [ &_13 <- _ret' ] s1) | s1 = bb4 ] 
+        [ bb3 = s0 [ s0 = len'0 {v.current} (fun (_ret':usize) ->  [ &_13 <- _ret' ] s1) | s1 = bb4 ] 
         | bb4 = s0
           [ s0 = UIntSize.lt {i} {_13}
               (fun (_ret':bool) ->  [ &_11 <- _ret' ] (any [ any_ (_any:usize)-> (!  [ &_13 <- _any ] s1) ] ))
@@ -609,13 +619,13 @@ module C02Gnome_GnomeSort
         | bb6 = bb12
         | bb7 = s0
           [ s0 = UIntSize.sub {i} {[%#s02_gnome6] (1 : usize)} (fun (_ret':usize) ->  [ &_21 <- _ret' ] s1)
-          | s1 = index'0 { * v} {_21} (fun (_ret':t) ->  [ &_19 <- _ret' ] s2)
+          | s1 = index'0 {v.current} {_21} (fun (_ret':t) ->  [ &_19 <- _ret' ] s2)
           | s2 = bb8 ]
           
         | bb8 = s0
           [ s0 = {[@expl:type invariant] inv'1 _19} s1
           | s1 = -{resolve'1 _19}- s2
-          | s2 = index'0 { * v} {i} (fun (_ret':t) ->  [ &_25 <- _ret' ] s3)
+          | s2 = index'0 {v.current} {i} (fun (_ret':t) ->  [ &_25 <- _ret' ] s3)
           | s3 = bb9 ]
           
         | bb9 = s0
@@ -633,19 +643,19 @@ module C02Gnome_GnomeSort
           [ s0 = UIntSize.add {i} {[%#s02_gnome7] (1 : usize)} (fun (_ret':usize) ->  [ &i <- _ret' ] s1) | s1 = bb16 ]
           
         | bb13 = s0
-          [ s0 = Borrow.borrow_mut <Vec'0.t_vec t (Global'0.t_global)> { * v}
+          [ s0 = Borrow.borrow_mut <Vec'0.t_vec t (Global'0.t_global)> {v.current}
               (fun (_ret':borrowed (Vec'0.t_vec t (Global'0.t_global))) ->
                  [ &_31 <- _ret' ] 
-                 [ &v <- { v with current = ( ^ _31) ; } ] 
+                 [ &v <- { v with current = _31.final ; } ] 
                 s1)
-          | s1 = -{inv'2 ( ^ _31)}- s2
+          | s1 = -{inv'2 _31.final}- s2
           | s2 = deref_mut'0 {_31} (fun (_ret':borrowed (slice t)) ->  [ &_30 <- _ret' ] s3)
           | s3 = bb14 ]
           
         | bb14 = s0
-          [ s0 = Borrow.borrow_final <slice t> { * _30} {Borrow.get_id _30}
-              (fun (_ret':borrowed (slice t)) ->  [ &_29 <- _ret' ]  [ &_30 <- { _30 with current = ( ^ _29) ; } ] s1)
-          | s1 = -{inv'3 ( ^ _29)}- s2
+          [ s0 = Borrow.borrow_final <slice t> {_30.current} {Borrow.get_id _30}
+              (fun (_ret':borrowed (slice t)) ->  [ &_29 <- _ret' ]  [ &_30 <- { _30 with current = _29.final ; } ] s1)
+          | s1 = -{inv'3 _29.final}- s2
           | s2 = UIntSize.sub {i} {[%#s02_gnome8] (1 : usize)} (fun (_ret':usize) ->  [ &_32 <- _ret' ] s3)
           | s3 = swap'0 {_29} {_32} {i} (fun (_ret':()) ->  [ &_28 <- _ret' ] s4)
           | s4 = bb15 ]
@@ -680,8 +690,8 @@ module C02Gnome_GnomeSort
     | & _32 : usize = any_l ()
     | & old_2_0 : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))) = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#s02_gnome12] permutation_of'0 (shallow_model'2 ( ^ v)) (shallow_model'0 v)}
-      {[@expl:postcondition] [%#s02_gnome11] sorted'0 (deep_model'1 ( ^ v))}
+    [ return' (result:())-> {[@expl:postcondition] [%#s02_gnome12] permutation_of'0 (shallow_model'2 v.final) (shallow_model'0 v)}
+      {[@expl:postcondition] [%#s02_gnome11] sorted'0 (deep_model'1 v.final)}
       (! return' {result}) ]
     
 end

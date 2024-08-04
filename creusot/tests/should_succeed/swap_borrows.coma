@@ -8,9 +8,12 @@ module SwapBorrows_Swap
   
   let%span sswap_borrows2 = "../swap_borrows.rs" 5 25 5 31
   
-  let%span span3 = "../../../../creusot-contracts/src/resolve.rs" 17 8 17 60
+  let%span span3 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  predicate invariant'0 (self : (t, t))
+  let%span span4 = "../../../../creusot-contracts/src/resolve.rs" 17 8 17 60
+  
+  predicate invariant'0 (self : (t, t)) =
+    [%#span3] true
   
   predicate inv'0 (_x : (t, t))
   
@@ -21,7 +24,7 @@ module SwapBorrows_Swap
   predicate resolve'1 (self : t)
   
   predicate resolve'0 (self : (t, t)) =
-    [%#span3] resolve'1 (let (a, _) = self in a) /\ resolve'1 (let (_, a) = self in a)
+    [%#span4] resolve'1 (let (a, _) = self in a) /\ resolve'1 (let (_, a) = self in a)
   
   let rec swap (x:(t, t)) (return'  (ret:(t, t)))= {[%#sswap_borrows0] inv'0 x}
     (! bb0
@@ -84,7 +87,7 @@ module SwapBorrows_F
   use prelude.prelude.Intrinsic
   
   predicate resolve'1 (self : borrowed uint32) =
-    [%#span6]  ^ self =  * self
+    [%#span6] self.final = self.current
   
   predicate resolve'2 (self : (borrowed uint32, borrowed uint32)) =
     [%#span7] resolve'1 (let (a, _) = self in a) /\ resolve'1 (let (_, a) = self in a)
@@ -110,10 +113,10 @@ module SwapBorrows_F
       | s1 =  [ &a <- let (r'0, _) = _3 in r'0 ] s2
       | s2 =  [ &b <- let (_, r'1) = _3 in r'1 ] s3
       | s3 = -{resolve'0 _3}- s4
-      | s4 = Borrow.borrow_mut <uint32> {a} (fun (_ret':borrowed uint32) ->  [ &_6 <- _ret' ]  [ &a <-  ^ _6 ] s5)
-      | s5 = Borrow.borrow_mut <uint32> {b} (fun (_ret':borrowed uint32) ->  [ &_8 <- _ret' ]  [ &b <-  ^ _8 ] s6)
-      | s6 = Borrow.borrow_final <uint32> { * _8} {Borrow.get_id _8}
-          (fun (_ret':borrowed uint32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = ( ^ _7) ; } ] s7)
+      | s4 = Borrow.borrow_mut <uint32> {a} (fun (_ret':borrowed uint32) ->  [ &_6 <- _ret' ]  [ &a <- _6.final ] s5)
+      | s5 = Borrow.borrow_mut <uint32> {b} (fun (_ret':borrowed uint32) ->  [ &_8 <- _ret' ]  [ &b <- _8.final ] s6)
+      | s6 = Borrow.borrow_final <uint32> {_8.current} {Borrow.get_id _8}
+          (fun (_ret':borrowed uint32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _7.final ; } ] s7)
       | s7 =  [ &_5 <- (_6, _7) ] 
         (any
         [ any_ (_any:borrowed uint32)-> (!  [ &_6 <- _any ] 

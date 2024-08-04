@@ -6,7 +6,16 @@
     feature(print_internals, fmt_internals, fmt_helpers_for_derive)
 )]
 #![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns))]
-#![feature(step_trait, allocator_api, unboxed_closures, tuple_trait, strict_provenance)]
+#![feature(
+    step_trait,
+    allocator_api,
+    unboxed_closures,
+    tuple_trait,
+    strict_provenance,
+    panic_internals,
+    libstd_sys_internals,
+    rt
+)]
 #![cfg_attr(not(creusot), feature(rustc_attrs))]
 #![cfg_attr(not(creusot), allow(internal_features))]
 
@@ -46,7 +55,8 @@ mod macros {
     /// fn push(&mut self, v: T) { /* ... */ }
     /// ```
     ///
-    /// But the length of a vector [cannot overflow `isize::MAX`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.push). This is a very annoying condition to require, so we don't.
+    /// But the length of a vector [cannot overflow `isize::MAX`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.push).
+    /// This is a very annoying condition to require, so we don't.
     /// In exchange, this means `Vec::push` might panic in some cases, even though your
     /// code passed Creusot's verification.
     ///

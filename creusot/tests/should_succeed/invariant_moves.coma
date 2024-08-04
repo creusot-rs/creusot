@@ -217,23 +217,23 @@ module InvariantMoves_TestInvariantMove
     [%#span9] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'0 self)  -> resolve'2 (index_logic'0 self i)
   
   predicate resolve'0 (self : borrowed (Vec'0.t_vec uint32 (Global'0.t_global))) =
-    [%#span10]  ^ self =  * self
+    [%#span10] self.final = self.current
   
   use seq.Seq
   
   use prelude.seq_ext.SeqExt
   
   function shallow_model'1 (self : borrowed (Vec'0.t_vec uint32 (Global'0.t_global))) : Seq.seq uint32 =
-    [%#span11] shallow_model'0 ( * self)
+    [%#span11] shallow_model'0 self.current
   
   let rec pop'0 (self:borrowed (Vec'0.t_vec uint32 (Global'0.t_global))) (return'  (ret:Option'0.t_option uint32))= {[@expl:precondition] [%#span12] inv'0 self}
     any
     [ return' (result:Option'0.t_option uint32)-> {[%#span14] inv'1 result}
       {[%#span13] match result with
-        | Option'0.C_Some t -> shallow_model'0 ( ^ self)
+        | Option'0.C_Some t -> shallow_model'0 self.final
         = SeqExt.subsequence (shallow_model'1 self) 0 (Seq.length (shallow_model'1 self) - 1)
-        /\ shallow_model'1 self = Seq.snoc (shallow_model'0 ( ^ self)) t
-        | Option'0.C_None ->  * self =  ^ self /\ Seq.length (shallow_model'1 self) = 0
+        /\ shallow_model'1 self = Seq.snoc (shallow_model'0 self.final) t
+        | Option'0.C_None -> self.current = self.final /\ Seq.length (shallow_model'1 self) = 0
         end}
       (! return' {result}) ]
     
@@ -246,11 +246,14 @@ module InvariantMoves_TestInvariantMove
         (! s0) [ s0 = bb3 ] 
         [ bb3 = s0
           [ s0 = Borrow.borrow_mut <Vec'0.t_vec uint32 (Global'0.t_global)> {x}
-              (fun (_ret':borrowed (Vec'0.t_vec uint32 (Global'0.t_global))) ->  [ &_6 <- _ret' ]  [ &x <-  ^ _6 ] s1)
-          | s1 = Borrow.borrow_final <Vec'0.t_vec uint32 (Global'0.t_global)> { * _6} {Borrow.get_id _6}
+              (fun (_ret':borrowed (Vec'0.t_vec uint32 (Global'0.t_global))) ->
+                 [ &_6 <- _ret' ] 
+                 [ &x <- _6.final ] 
+                s1)
+          | s1 = Borrow.borrow_final <Vec'0.t_vec uint32 (Global'0.t_global)> {_6.current} {Borrow.get_id _6}
               (fun (_ret':borrowed (Vec'0.t_vec uint32 (Global'0.t_global))) ->
                  [ &_5 <- _ret' ] 
-                 [ &_6 <- { _6 with current = ( ^ _5) ; } ] 
+                 [ &_6 <- { _6 with current = _5.final ; } ] 
                 s2)
           | s2 = pop'0 {_5} (fun (_ret':Option'0.t_option uint32) ->  [ &_4 <- _ret' ] s3)
           | s3 = bb4 ]

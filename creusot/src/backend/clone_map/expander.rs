@@ -82,8 +82,12 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             }
 
             if let Some((did, subst)) = key.did() {
-                // If this item could potentially be specialized we must avoid depending on its details
-                if traits::still_specializable(ctx.tcx, self.param_env, did, subst) {
+                // If this trait item could potentially be specialized we must avoid depending on its default impl
+                // Note that a trait item impl that can be specialized is always inserted as a dependency as the
+                // corresponding trait impl did, so we only consider trait impls here.
+                if ctx.tcx.trait_of_item(did).is_some()
+                    && traits::still_specializable(ctx.tcx, self.param_env, did, subst)
+                {
                     self.clone_graph.info_mut(key).opaque();
                 }
 

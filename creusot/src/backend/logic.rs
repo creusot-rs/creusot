@@ -185,9 +185,9 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
     );
 
     if has_axioms {
-        if sig.uses_simple_triggers() {
+        if sig.uses_simple_triggers() && !sig_contract.contract.variant.is_empty() {
             let lim_name = Ident::from_string(format!("{}_lim", &*sig.name));
-            let mut lim_sig = sig.clone();
+            let mut lim_sig = sig_contract;
             lim_sig.name = lim_name;
             lim_sig.trigger = Some(Trigger::single(function_call(&lim_sig)));
             lim_sig.attrs = vec![];
@@ -313,7 +313,7 @@ fn limited_function_encode(
     };
     let lim_call = function_call(&lim_sig);
     lim_sig.trigger = Some(Trigger::single(lim_call.clone()));
-    decls.push(Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig: sig.clone() }));
+    decls.push(Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig: lim_sig }));
     decls.push(Decl::Axiom(definition_axiom(&sig, body, "def")));
     decls.push(Decl::Axiom(definition_axiom(&sig, lim_call, "def_lim")));
 }
@@ -395,7 +395,7 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
 
     let func_call = function_call(sig);
     let trigger = sig.trigger.clone().into_iter().collect();
-    condition.subst(&[("result".into(), func_call.clone())].into_iter().collect());
+    condition.subst(&mut [("result".into(), func_call.clone())].into_iter().collect());
     let args: Vec<(_, _)> = sig
         .args
         .iter()

@@ -33,7 +33,7 @@ module WhileLet_F
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Option'0.t_option int32)) =
-    [%#span2]  ^ self =  * self
+    [%#span2] self.final = self.current
   
   use prelude.prelude.Snapshot
   
@@ -45,15 +45,17 @@ module WhileLet_F
     [ bb0 = s0
       [ s0 =  [ &a <- Option'0.C_Some ([%#swhile_let0] (10 : int32)) ] s1
       | s1 = Borrow.borrow_mut <Option'0.t_option int32> {a}
-          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &b <- _ret' ]  [ &a <-  ^ b ] s2)
+          (fun (_ret':borrowed (Option'0.t_option int32)) ->  [ &b <- _ret' ]  [ &a <- b.final ] s2)
       | s2 =  [ &old_1_0 <- Snapshot.new b ] s3
       | s3 = bb1 ]
       
     | bb1 = bb1
-      [ bb1 = {[@expl:loop invariant]  ^ Snapshot.inner old_1_0 =  ^ b}
+      [ bb1 = {[@expl:loop invariant] (Snapshot.inner old_1_0).final = b.final}
         {[@expl:loop invariant] [%#swhile_let1] true}
         (! s0) [ s0 = bb2 ] 
-        [ bb2 = any [ br0 -> { * b = Option'0.C_None } (! bb5) | br1 (a:int32)-> { * b = Option'0.C_Some a} (! bb3) ] 
+        [ bb2 = any
+          [ br0 -> {b.current = Option'0.C_None } (! bb5) | br1 (a:int32)-> {b.current = Option'0.C_Some a} (! bb3) ]
+          
         | bb3 = bb4
         | bb4 = s0
           [ s0 =  [ &_6 <- Option'0.C_None ] s1

@@ -13,14 +13,14 @@ module MovePath_F
   use prelude.prelude.Int32
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span2]  ^ self =  * self
+    [%#span2] self.final = self.current
   
   use prelude.prelude.Int
   
   let rec f (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &x <- [%#smove_path0] (1 : int32) ] s1
-      | s1 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &y <- _ret' ]  [ &x <-  ^ y ] s2)
+      | s1 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &y <- _ret' ]  [ &x <- y.final ] s2)
       | s2 =  [ &d <- y ] (any [ any_ (_any:borrowed int32)-> (!  [ &y <- _any ] s3) ] )
       | s3 =  [ &z <- d ] (any [ any_ (_any:borrowed int32)-> (!  [ &d <- _any ] s4) ] )
       | s4 =  [ &z <- { z with current = ([%#smove_path1] (2 : int32)) ; } ] s5

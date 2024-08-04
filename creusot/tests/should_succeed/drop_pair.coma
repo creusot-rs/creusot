@@ -19,7 +19,7 @@ module DropPair_DropPair
   use prelude.prelude.Intrinsic
   
   predicate resolve'1 (self : borrowed uint32) =
-    [%#span3]  ^ self =  * self
+    [%#span3] self.final = self.current
   
   predicate resolve'0 (self : (borrowed uint32, borrowed uint32)) =
     [%#span4] resolve'1 (let (a, _) = self in a) /\ resolve'1 (let (_, a) = self in a)
@@ -27,9 +27,9 @@ module DropPair_DropPair
   let rec drop_pair (_x:(borrowed uint32, borrowed uint32)) (return'  (ret:()))= (! bb0
     [ bb0 = s0 [ s0 = -{resolve'0 _x}- s1 | s1 = return' {_0} ]  ]
     ) [ & _0 : () = any_l () | & _x : (borrowed uint32, borrowed uint32) = _x ] 
-    [ return' (result:())-> {[@expl:postcondition] [%#sdrop_pair2]  ^ (let (_, a) = _x in a)
-      =  * (let (_, a) = _x in a)}
-      {[@expl:postcondition] [%#sdrop_pair1]  ^ (let (a, _) = _x in a) =  * (let (a, _) = _x in a)}
+    [ return' (result:())-> {[@expl:postcondition] [%#sdrop_pair2] (let (_, a) = _x in a).final
+      = (let (_, a) = _x in a).current}
+      {[@expl:postcondition] [%#sdrop_pair1] (let (a, _) = _x in a).final = (let (a, _) = _x in a).current}
       {[@expl:postcondition] [%#sdrop_pair0] resolve'0 _x}
       (! return' {result}) ]
     
@@ -48,7 +48,7 @@ module DropPair_DropPair2
   use prelude.prelude.Intrinsic
   
   predicate resolve'1 (self : borrowed uint32) =
-    [%#span0]  ^ self =  * self
+    [%#span0] self.final = self.current
   
   predicate resolve'0 (self : (borrowed uint32, borrowed uint32)) =
     [%#span1] resolve'1 (let (a, _) = self in a) /\ resolve'1 (let (_, a) = self in a)
@@ -71,13 +71,13 @@ module DropPair_Drop
   use prelude.prelude.Int
   
   predicate resolve'0 (self : borrowed uint32) =
-    [%#span0]  ^ self =  * self
+    [%#span0] self.final = self.current
   
   let rec drop (_x:borrowed uint32) (y:borrowed uint32) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 = -{resolve'0 _x}- s1
-      | s1 = Borrow.borrow_final <uint32> { * y} {Borrow.get_id y}
-          (fun (_ret':borrowed uint32) ->  [ &_3 <- _ret' ]  [ &y <- { y with current = ( ^ _3) ; } ] s2)
+      | s1 = Borrow.borrow_final <uint32> {y.current} {Borrow.get_id y}
+          (fun (_ret':borrowed uint32) ->  [ &_3 <- _ret' ]  [ &y <- { y with current = _3.final ; } ] s2)
       | s2 =  [ &_x <- _3 ] (any [ any_ (_any:borrowed uint32)-> (!  [ &_3 <- _any ] s3) ] )
       | s3 = -{resolve'0 _x}- s4
       | s4 = -{resolve'0 y}- s5
