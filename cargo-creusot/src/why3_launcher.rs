@@ -49,8 +49,11 @@ impl Why3Launcher {
         std::fs::create_dir(&prelude_dir)?;
 
         PRELUDE
-            .extract(prelude_dir)
+            .extract(&prelude_dir)
             .expect("can't launch why3, could extract prelude into temp dir");
+
+        let mut conf_path = prelude_dir;
+        conf_path.push("creusot-why3.conf");
 
         let mut command =
             if let Some(p) = &self.why3_path { Command::new(p) } else { Command::new("why3") };
@@ -63,7 +66,9 @@ impl Why3Launcher {
                 "-L",
             ])
             .arg(temp_dir.as_os_str())
-            .arg(&self.output_file);
+            .arg(&self.output_file)
+            .arg("--extra-config")
+            .arg(conf_path.as_os_str());
         if let Some(cfg) = &self.config_file {
             command.arg("-C").arg(cfg);
         }
