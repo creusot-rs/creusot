@@ -47,7 +47,7 @@ impl<T: ?Sized> Snapshot<T> {
     }
 
     #[logic]
-    #[open(self)]
+    #[open]
     #[rustc_diagnostic_item = "snapshot_inner"]
     pub fn inner(self) -> T
     where
