@@ -9,10 +9,14 @@ pub mod ord;
 #[cfg(feature = "why3_seq")]
 mod seq;
 
-#[cfg(not(feature = "why3_seq"))]
+#[cfg(all(not(feature = "why3_seq"), not(feature = "extensional_seq")))]
 mod seq2;
-#[cfg(not(feature = "why3_seq"))]
+#[cfg(all(not(feature = "why3_seq"), not(feature = "extensional_seq")))]
 use seq2 as seq;
+#[cfg(all(not(feature = "why3_seq"), feature = "extensional_seq"))]
+mod seq3;
+#[cfg(all(not(feature = "why3_seq"), feature = "extensional_seq"))]
+use seq3 as seq;
 mod set;
 
 pub use fmap::FMap;
