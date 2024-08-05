@@ -1,8 +1,6 @@
 use super::BodyTranslator;
 use crate::{
-    ctx::TranslationCtx,
-    fmir,
-    translation::{
+    ctx::TranslationCtx, fmir, translation::{
         fmir::*,
         pearlite::{Term, TermKind, UnOp},
         specification::inv_subst,
@@ -13,23 +11,19 @@ use crate::{
 use itertools::Itertools;
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
-use rustc_infer::{
-    infer::{InferCtxt, TyCtxtInferExt},
-    traits::{Obligation, ObligationCause, TraitEngine},
-};
+use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
     mir::{
         self, AssertKind, BasicBlock, BasicBlockData, Local, Location, Operand, Place, Rvalue,
         SourceInfo, StatementKind, SwitchTargets,
         TerminatorKind::{self, *},
     },
-    ty::{self, AssocItem, GenericArgKind, GenericArgsRef, ParamEnv, Predicate, Ty, TyKind},
+    ty::{self, AssocItem, GenericArgKind, GenericArgsRef, ParamEnv, Ty, TyKind},
 };
 use rustc_span::{source_map::Spanned, Span, Symbol};
 use rustc_trait_selection::{
     error_reporting::InferCtxtErrorExt,
     infer::InferCtxtExt,
-    traits::{FulfillmentError, TraitEngineExt},
 };
 use std::collections::{HashMap, HashSet};
 
@@ -40,7 +34,7 @@ use std::collections::{HashMap, HashSet};
 // patterns in match expressions.
 
 impl<'tcx> BodyTranslator<'_, 'tcx> {
-    pub(crate) fn translate_terminator(
+    pub fn translate_terminator(
         &mut self,
         terminator: &mir::Terminator<'tcx>,
         location: Location,
@@ -128,7 +122,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             .unwrap_or_else(Vec::new);
 
                         let infcx = self.ctx.infer_ctxt().ignoring_regions().build();
-                        let res = evaluate_additional_predicates(
+                        let res = traits::evaluate_additional_predicates(
                             &infcx,
                             predicates,
                             self.param_env(),
@@ -384,7 +378,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
     }
 }
 
-pub(crate) fn resolve_function<'tcx>(
+fn resolve_function<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
@@ -420,30 +414,8 @@ fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<(DefId, GenericArgsRef<'tcx>)>
     }
 }
 
-pub(crate) fn evaluate_additional_predicates<'tcx>(
-    infcx: &InferCtxt<'tcx>,
-    p: Vec<Predicate<'tcx>>,
-    param_env: ParamEnv<'tcx>,
-    sp: Span,
-) -> Result<(), Vec<FulfillmentError<'tcx>>> {
-    let mut fulfill_cx = <dyn TraitEngine<'tcx, _>>::new(infcx);
-    for predicate in p {
-        let predicate = infcx.tcx.erase_regions(predicate);
-        let cause = ObligationCause::dummy_with_span(sp);
-        let obligation = Obligation { cause, param_env, recursion_depth: 0, predicate };
-        // holds &= infcx.predicate_may_hold(&obligation);
-        fulfill_cx.register_predicate_obligation(&infcx, obligation);
-    }
-    let errors = fulfill_cx.select_all_or_error(&infcx);
-    if !errors.is_empty() {
-        return Err(errors);
-    } else {
-        return Ok(());
-    }
-}
-
 // Find the place being discriminated, if there is one
-pub(crate) fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Option<Place<'tcx>> {
+fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Option<Place<'tcx>> {
     let discr = if let TerminatorKind::SwitchInt { discr, .. } = &bbd.terminator().kind {
         discr
     } else {
@@ -463,7 +435,7 @@ pub(crate) fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Opti
     }
 }
 
-pub(crate) fn make_switch<'tcx>(
+fn make_switch<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     si: SourceInfo,
     switch_ty: Ty<'tcx>,

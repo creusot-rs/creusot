@@ -20,7 +20,7 @@ use rustc_middle::{
 use rustc_mir_dataflow::ResultsCursor;
 
 impl<'tcx> BodyTranslator<'_, 'tcx> {
-    pub(crate) fn translate_statement(
+    pub fn translate_statement(
         &mut self,
         not_final_borrows: &mut ResultsCursor<'_, 'tcx, NotFinalPlaces<'tcx>>,
         statement: &'_ Statement<'tcx>,

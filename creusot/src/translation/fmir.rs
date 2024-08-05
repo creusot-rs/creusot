@@ -96,14 +96,6 @@ impl<'tcx> RValue<'tcx> {
     }
 }
 
-// TODO Inline `Expr` in to `RValue`
-#[derive(Clone, Debug)]
-pub struct Expr<'tcx> {
-    pub kind: (),
-    pub ty: Ty<'tcx>,
-    pub span: Span,
-}
-
 #[derive(Clone, Debug)]
 pub enum Operand<'tcx> {
     Move(Place<'tcx>),
@@ -197,10 +189,6 @@ impl LocalIdent {
             LocalIdent::User(id) => Symbol::intern(&format!("{}", &*ident_of(*id))),
             LocalIdent::Anon(loc) => Symbol::intern(&format!("_{}", loc.index())),
         }
-    }
-
-    pub(crate) fn is_anon(&self) -> bool {
-        matches!(self, LocalIdent::Anon(_))
     }
 }
 

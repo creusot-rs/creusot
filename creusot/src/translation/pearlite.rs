@@ -13,8 +13,7 @@ use std::{
 
 use crate::{
     error::{CreusotResult, Error, InternalError},
-    projection_vec::{visit_projections, visit_projections_mut, ProjectionVec},
-    translation::TranslationCtx,
+    translation::{TranslationCtx, projection_vec::*},
     util::{self, is_snap_ty},
 };
 use itertools::Itertools;

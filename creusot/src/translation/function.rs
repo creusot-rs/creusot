@@ -37,7 +37,7 @@ use std::{collections::HashMap, iter, rc::Rc};
 // use why3::declaration::*;
 
 mod statement;
-pub(crate) mod terminator;
+mod terminator;
 
 /// Translate a function from rustc's MIR to fMIR.
 pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, body_id: BodyId) -> fmir::Body<'tcx> {
@@ -341,7 +341,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     // Useful helper to translate an operand
-    pub(crate) fn translate_operand(&self, operand: &Operand<'tcx>) -> fmir::Operand<'tcx> {
+    fn translate_operand(&self, operand: &Operand<'tcx>) -> fmir::Operand<'tcx> {
         let kind = match operand {
             Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(*pl)),
             Operand::Move(pl) => fmir::Operand::Move(self.translate_place(*pl)),
@@ -473,7 +473,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 }
 
-pub(crate) fn closure_contract<'tcx>(
+fn closure_contract<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> ClosureContract<'tcx> {
@@ -708,7 +708,7 @@ fn closure_resolve<'tcx>(
     (sig, resolve)
 }
 
-pub(crate) fn closure_unnest<'tcx>(
+fn closure_unnest<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
@@ -752,7 +752,7 @@ pub(crate) fn closure_unnest<'tcx>(
     unnest
 }
 
-pub(crate) fn resolve_predicate_of<'tcx>(
+fn resolve_predicate_of<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     param_env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,
