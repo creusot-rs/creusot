@@ -9,6 +9,7 @@ use crate::{
     util::{self, snapshot_closure_id},
 };
 use rustc_borrowck::borrow_set::TwoPhaseActivation;
+use rustc_index::bit_set::BitSet;
 use rustc_middle::{
     mir::{
         BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
@@ -25,7 +26,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         statement: &'_ Statement<'tcx>,
         loc: Location,
     ) {
-        let mut resolved_during = self.resolver.as_mut().map(|r| r.resolved_locals_during(loc));
+        let mut resolved_during =
+            self.resolver.as_mut().map_or(BitSet::new_empty(self.body.local_decls.len()), |r| {
+                r.resolved_locals_during(loc)
+            });
 
         use StatementKind::*;
         match statement.kind {
@@ -36,9 +40,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
                 // if the lhs local becomes resolved during the assignment,
                 // we cannot resolve it afterwards.
-                if let Some(resolved_during) = &mut resolved_during
-                    && !pl.is_indirect()
-                {
+                if !pl.is_indirect() {
                     resolved_during.remove(pl.local);
                 }
             }
@@ -62,9 +64,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                    //     .crash_and_error(statement.source_info.span, "inline assembly is not supported"),
         }
 
-        if let Some(resolved_during) = resolved_during {
-            self.resolve_locals(resolved_during);
-        }
+        self.resolve_locals(resolved_during);
     }
 
     fn translate_assign(
@@ -216,7 +216,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
         if let Some(resolver) = &mut self.resolver {
             let need_resolve_before = resolver.need_resolve_locals_before(loc);
-            let live_after = resolver.live_locals_after(loc);
+            let live_after = resolver.live_locals_before(loc.successor_within_block());
 
             if !place.is_indirect() && need_resolve_before.contains(place.local) {
                 self.emit_resolve(*place);

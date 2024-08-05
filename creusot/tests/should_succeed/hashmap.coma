@@ -601,17 +601,17 @@ module Hashmap_Impl5_Add
   
   axiom inv'11 : forall x : borrowed (List'0.t_list (k, v)) . inv'11 x = true
   
-  predicate invariant'10 (self : borrowed k)
+  predicate invariant'10 (self : borrowed v)
   
-  predicate inv'10 (_x : borrowed k)
+  predicate inv'10 (_x : borrowed v)
   
-  axiom inv'10 : forall x : borrowed k . inv'10 x = true
+  axiom inv'10 : forall x : borrowed v . inv'10 x = true
   
-  predicate invariant'9 (self : borrowed v)
+  predicate invariant'9 (self : borrowed k)
   
-  predicate inv'9 (_x : borrowed v)
+  predicate inv'9 (_x : borrowed k)
   
-  axiom inv'9 : forall x : borrowed v . inv'9 x = true
+  axiom inv'9 : forall x : borrowed k . inv'9 x = true
   
   predicate invariant'8 (self : List'0.t_list (k, v)) =
     [%#span14] true
@@ -774,10 +774,10 @@ module Hashmap_Impl5_Add
   predicate resolve'5 (self : borrowed (List'0.t_list (k, v))) =
     [%#span29] self.final = self.current
   
-  predicate resolve'4 (self : borrowed k) =
+  predicate resolve'4 (self : borrowed v) =
     [%#span29] self.final = self.current
   
-  predicate resolve'3 (self : borrowed v) =
+  predicate resolve'3 (self : borrowed k) =
     [%#span29] self.final = self.current
   
   function deep_model'1 (self : k) : deep_model_ty'0 =
@@ -985,32 +985,34 @@ module Hashmap_Impl5_Add
           | s7 = eq'0 {k.current} {key} (fun (_ret':bool) ->  [ &_38 <- _ret' ] s8)
           | s8 = bb11 ]
           
-        | bb11 = any [ br0 -> {_38 = false} (! bb13) | br1 -> {_38} (! bb12) ] 
+        | bb11 = s0
+          [ s0 = {[@expl:type invariant] inv'9 k} s1
+          | s1 = -{resolve'3 k}- s2
+          | s2 = any [ br0 -> {_38 = false} (! bb13) | br1 -> {_38} (! bb12) ]  ]
+          
         | bb13 = s0
-          [ s0 = {[@expl:type invariant] inv'9 v} s1
-          | s1 = -{resolve'3 v}- s2
-          | s2 = {[@expl:type invariant] inv'10 k} s3
-          | s3 = -{resolve'4 k}- s4
-          | s4 = Borrow.borrow_mut <List'0.t_list (k, v)> {tl1.current}
+          [ s0 = {[@expl:type invariant] inv'10 v} s1
+          | s1 = -{resolve'4 v}- s2
+          | s2 = Borrow.borrow_mut <List'0.t_list (k, v)> {tl1.current}
               (fun (_ret':borrowed (List'0.t_list (k, v))) ->
                  [ &_46 <- _ret' ] 
                  [ &tl1 <- { tl1 with current = _46.final ; } ] 
-                s5)
-          | s5 = -{inv'2 _46.final}- s6
-          | s6 = Borrow.borrow_final <List'0.t_list (k, v)> {_46.current} {Borrow.get_id _46}
+                s3)
+          | s3 = -{inv'2 _46.final}- s4
+          | s4 = Borrow.borrow_final <List'0.t_list (k, v)> {_46.current} {Borrow.get_id _46}
               (fun (_ret':borrowed (List'0.t_list (k, v))) ->
                  [ &_45 <- _ret' ] 
                  [ &_46 <- { _46 with current = _45.final ; } ] 
-                s7)
-          | s7 = -{inv'2 _45.final}- s8
-          | s8 = {[@expl:type invariant] inv'3 l} s9
-          | s9 = -{resolve'1 l}- s10
-          | s10 =  [ &l <- _45 ] (any [ any_ (_any:borrowed (List'0.t_list (k, v)))-> (!  [ &_45 <- _any ] s11) ] )
-          | s11 = {[@expl:type invariant] inv'3 _46} s12
-          | s12 = -{resolve'1 _46}- s13
-          | s13 = {[@expl:type invariant] inv'11 tl1} s14
-          | s14 = -{resolve'5 tl1}- s15
-          | s15 = bb7 ]
+                s5)
+          | s5 = -{inv'2 _45.final}- s6
+          | s6 = {[@expl:type invariant] inv'3 l} s7
+          | s7 = -{resolve'1 l}- s8
+          | s8 =  [ &l <- _45 ] (any [ any_ (_any:borrowed (List'0.t_list (k, v)))-> (!  [ &_45 <- _any ] s9) ] )
+          | s9 = {[@expl:type invariant] inv'3 _46} s10
+          | s10 = -{resolve'1 _46}- s11
+          | s11 = {[@expl:type invariant] inv'11 tl1} s12
+          | s12 = -{resolve'5 tl1}- s13
+          | s13 = bb7 ]
            ]
          ]
       
@@ -1039,38 +1041,33 @@ module Hashmap_Impl5_Add
       | s2 = -{resolve'8 l.current}- s3
       | s3 = {[@expl:type invariant] inv'3 l} s4
       | s4 = -{resolve'1 l}- s5
-      | s5 = bb19 ]
+      | s5 = {[@expl:type invariant] inv'3 _19} s6
+      | s6 = -{resolve'1 _19}- s7
+      | s7 = {[@expl:type invariant] inv'12 self} s8
+      | s8 = -{resolve'9 self}- s9
+      | s9 = bb19 ]
       
-    | bb19 = s0
-      [ s0 = {[@expl:type invariant] inv'3 _19} s1
-      | s1 = -{resolve'1 _19}- s2
-      | s2 = {[@expl:type invariant] inv'12 self} s3
-      | s3 = -{resolve'9 self}- s4
-      | s4 = {[@expl:assertion] [%#shashmap6] hashmap_inv'0 self.current} s5
-      | s5 = bb20 ]
-      
+    | bb19 = s0 [ s0 = {[@expl:assertion] [%#shashmap6] hashmap_inv'0 self.current} s1 | s1 = bb20 ] 
     | bb12 = s0
       [ s0 = {[@expl:type invariant] inv'11 tl1} s1
       | s1 = -{resolve'5 tl1}- s2
-      | s2 = {[@expl:type invariant] inv'10 k} s3
-      | s3 = -{resolve'4 k}- s4
-      | s4 = {[@expl:type invariant] inv'6 key} s5
-      | s5 = -{resolve'6 key}- s6
-      | s6 = {[@expl:type invariant] inv'7 val'} s7
-      | s7 = -{resolve'7 val'}- s8
-      | s8 =  [ &v <- { v with current = val' ; } ] s9
-      | s9 = {[@expl:type invariant] inv'7 v.current} s10
-      | s10 = -{resolve'7 v.current}- s11
-      | s11 = {[@expl:type invariant] inv'9 v} s12
-      | s12 = -{resolve'3 v}- s13
-      | s13 = {[@expl:type invariant] inv'3 _19} s14
-      | s14 = -{resolve'1 _19}- s15
-      | s15 = {[@expl:type invariant] inv'3 l} s16
-      | s16 = -{resolve'1 l}- s17
-      | s17 = {[@expl:type invariant] inv'12 self} s18
-      | s18 = -{resolve'9 self}- s19
-      | s19 = {[@expl:assertion] [%#shashmap7] hashmap_inv'0 self.current} s20
-      | s20 = bb20 ]
+      | s2 = {[@expl:type invariant] inv'6 key} s3
+      | s3 = -{resolve'6 key}- s4
+      | s4 = {[@expl:type invariant] inv'7 val'} s5
+      | s5 = -{resolve'7 val'}- s6
+      | s6 =  [ &v <- { v with current = val' ; } ] s7
+      | s7 = {[@expl:type invariant] inv'7 v.current} s8
+      | s8 = -{resolve'7 v.current}- s9
+      | s9 = {[@expl:type invariant] inv'10 v} s10
+      | s10 = -{resolve'4 v}- s11
+      | s11 = {[@expl:type invariant] inv'3 _19} s12
+      | s12 = -{resolve'1 _19}- s13
+      | s13 = {[@expl:type invariant] inv'3 l} s14
+      | s14 = -{resolve'1 l}- s15
+      | s15 = {[@expl:type invariant] inv'12 self} s16
+      | s16 = -{resolve'9 self}- s17
+      | s17 = {[@expl:assertion] [%#shashmap7] hashmap_inv'0 self.current} s18
+      | s18 = bb20 ]
       
     | bb20 = return' {_0} ]
     )

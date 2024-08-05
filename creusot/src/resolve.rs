@@ -98,46 +98,24 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         resolved
     }
 
-    fn resolved_locals_at(&mut self, loc: ExtendedLocation) -> BitSet<Local> {
-        trace!("location: {loc:?}");
-
-        if loc.is_entry_loc() {
-            // At function entry, no locals are resolved
-            // Thus, never live, initialized locals are resolved at mid of the entry location
-            return BitSet::new_empty(self.body.local_decls.len());
+    pub fn need_resolve_locals_before(&mut self, loc: Location) -> BitSet<Local> {
+        self.seek_to(ExtendedLocation::Start(loc));
+        if matches!(loc, Location::START) {
+            self.def_init_locals()
+        } else {
+            self.need_resolve_locals()
         }
+    }
 
-        self.seek_to(loc);
+    fn resolved_locals_afert(&mut self, loc: Location) -> BitSet<Local> {
+        self.seek_to(ExtendedLocation::Mid(loc));
         self.resolved_locals()
     }
 
-    fn resolved_locals_in_range(
-        &mut self,
-        start: ExtendedLocation,
-        end: ExtendedLocation,
-    ) -> BitSet<Local> {
-        let resolved_at_start = self.resolved_locals_at(start);
-        let resolved_at_end = self.resolved_locals_at(end);
-
-        let mut resolved = resolved_at_end;
-        resolved.subtract(&resolved_at_start);
-        resolved
-    }
-
     pub fn resolved_locals_during(&mut self, loc: Location) -> BitSet<Local> {
-        self.resolved_locals_in_range(ExtendedLocation::Start(loc), ExtendedLocation::Mid(loc))
-    }
-
-    /// Only valid if loc is not a terminator.
-    pub fn live_locals_after(&mut self, loc: Location) -> BitSet<Local> {
-        let next_loc = loc.successor_within_block();
-        ExtendedLocation::Start(next_loc).seek_to(&mut self.local_live);
-        self.live_locals()
-    }
-
-    pub fn frozen_locals_before(&mut self, loc: Location) -> BitSet<Local> {
-        ExtendedLocation::Start(loc).seek_to(&mut self.frozen_places);
-        self.frozen_locals()
+        let mut resolved = self.need_resolve_locals_before(loc);
+        resolved.intersect(&self.resolved_locals_afert(loc));
+        resolved
     }
 
     pub fn resolved_locals_between_blocks(
@@ -148,33 +126,24 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         let term = self.body.terminator_loc(from);
         let start = to.start_location();
 
-        // Some locals are resolved because of the terminator (e.g., a function call) itself.
-        // We would like a location which is at the end of the terminator but before branching,
-        // but this does not exist. We use the first location of the next block instead.
-        let mut resolved = self.resolved_locals_in_range(
-            ExtendedLocation::Start(term),
-            ExtendedLocation::Start(start),
-        );
-
         // if some locals still need to be resolved at the end of the current block
         // but not at the start of the next block, we also need to resolve them now
         // see the init_join function in the resolve_uninit test
         self.seek_to(ExtendedLocation::Mid(term));
-        let need_resolve_at_term = self.need_resolve_locals();
+        let mut res = self.need_resolve_locals();
         self.seek_to(ExtendedLocation::Start(start));
-        let need_resolve_at_start = self.need_resolve_locals();
-
-        let mut need_resolve = need_resolve_at_term;
-        need_resolve.subtract(&need_resolve_at_start);
-
-        resolved.union(&need_resolve);
-
-        resolved
+        res.subtract(&self.need_resolve_locals());
+        res
     }
 
-    pub fn need_resolve_locals_before(&mut self, loc: Location) -> BitSet<Local> {
-        self.seek_to(ExtendedLocation::Start(loc));
-        self.need_resolve_locals()
+    pub fn live_locals_before(&mut self, loc: Location) -> BitSet<Local> {
+        ExtendedLocation::Start(loc).seek_to(&mut self.local_live);
+        self.live_locals()
+    }
+
+    pub fn frozen_locals_before(&mut self, loc: Location) -> BitSet<Local> {
+        ExtendedLocation::Start(loc).seek_to(&mut self.frozen_places);
+        self.frozen_locals()
     }
 
     #[allow(dead_code)]

@@ -243,11 +243,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         self.current_block.1 = Some(t);
     }
 
-    fn emit_goto(&mut self, bb: BasicBlock) {
-        assert!(self.current_block.1.is_none());
-        self.current_block.1 = Some(fmir::Terminator::Goto(bb))
-    }
-
     /// # Parameters
     ///
     /// `is_final` signals that the emitted borrow should be final: see [`NotFinalPlaces`].
@@ -455,6 +450,10 @@ fn translate_vars<'tcx>(
         );
     }
     (vars, locals)
+}
+
+fn mk_goto<'tcx>(bb: BasicBlock) -> fmir::Terminator<'tcx> {
+    fmir::Terminator::Goto(bb)
 }
 
 #[derive(Clone)]
@@ -772,3 +771,4 @@ pub(crate) fn resolve_predicate_of<'tcx>(
 
     Some(resolve_impl)
 }
+

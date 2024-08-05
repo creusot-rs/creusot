@@ -7,10 +7,12 @@ use crate::{
         pearlite::{Term, TermKind, UnOp},
         specification::inv_subst,
         traits,
+        function::mk_goto,
     },
 };
 use itertools::Itertools;
 use rustc_hir::def_id::DefId;
+use rustc_index::bit_set::BitSet;
 use rustc_infer::{
     infer::{InferCtxt, TyCtxtInferExt},
     traits::{Obligation, ObligationCause, TraitEngine},
@@ -43,9 +45,15 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         terminator: &mir::Terminator<'tcx>,
         location: Location,
     ) {
+        let mut resolved_during =
+            self.resolver.as_mut().map_or(BitSet::new_empty(self.body.local_decls.len()), |r| {
+                r.resolved_locals_during(location)
+            });
+        let term;
+
         let span = terminator.source_info.span;
         match &terminator.kind {
-            Goto { target } => self.emit_goto(*target),
+            Goto { target } => term = mk_goto(*target),
             SwitchInt { discr, targets, .. } => {
                 let real_discr = discriminator_for_switch(&self.body.basic_blocks[location.block])
                     .map(Operand::Move)
@@ -59,8 +67,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     targets,
                     discriminant,
                 );
-
-                self.emit_terminator(switch);
+                term = switch;
             }
             Return => {
                 if let Some(resolver) = &mut self.resolver {
@@ -69,11 +76,16 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     self.resolve_locals(resolved);
                 }
 
-                self.emit_terminator(Terminator::Return)
+                term = Terminator::Return
             }
-            Unreachable => self.emit_terminator(Terminator::Abort(terminator.source_info.span)),
+            Unreachable => term = Terminator::Abort(terminator.source_info.span),
             Call { func, args, destination, mut target, fn_span, .. } => {
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
+
+                // The assignement may, in theory, modify a variable that needs to be resolved.
+                // Hence we resolve before the call.
+                self.resolve_locals(resolved_during);
+                resolved_during = BitSet::new_empty(self.body.local_decls.len());
 
                 if self.ctx.is_diagnostic_item(Symbol::intern("snapshot_from_fn"), fun_def_id) {
                     let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() else {
@@ -164,9 +176,19 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
 
                 if let Some(bb) = target {
-                    self.emit_goto(bb);
+                    // Check if the local is a zombie:
+                    // if result local is dead after the call, emit resolve
+                    if let Some(resolver) = &mut self.resolver
+                        && !resolver
+                            .live_locals_before(target.unwrap().start_location())
+                            .contains(destination.local)
+                    {
+                        self.emit_resolve(*destination);
+                    }
+
+                    term = mk_goto(bb);
                 } else {
-                    self.emit_terminator(Terminator::Abort(terminator.source_info.span));
+                    term = Terminator::Abort(terminator.source_info.span);
                 }
             }
             Assert { cond, expected, msg, target, unwind: _ } => {
@@ -195,23 +217,23 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     };
                 }
                 self.emit_statement(Statement::Assertion { cond, msg });
-                self.emit_goto(*target)
+                term = mk_goto(*target)
             }
 
-            FalseEdge { real_target, .. } => self.emit_goto(*real_target),
+            FalseEdge { real_target, .. } => term = mk_goto(*real_target),
 
             // TODO: Do we really need to do anything more?
-            Drop { target, .. } => self.emit_goto(*target),
-            FalseUnwind { real_target, .. } => self.emit_goto(*real_target),
+            Drop { target, .. } => term = mk_goto(*target),
+            FalseUnwind { real_target, .. } => term = mk_goto(*real_target),
             CoroutineDrop
             | UnwindResume
             | UnwindTerminate { .. }
             | Yield { .. }
             | InlineAsm { .. }
-            | TailCall { .. } => {
-                unreachable!("{:?}", terminator.kind)
-            }
+            | TailCall { .. } => unreachable!("{:?}", terminator.kind),
         }
+        self.resolve_locals(resolved_during);
+        self.emit_terminator(term)
     }
 
     fn is_box_new(&self, def_id: DefId) -> bool {
