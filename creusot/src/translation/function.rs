@@ -473,10 +473,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 }
 
-fn closure_contract<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> ClosureContract<'tcx> {
+fn closure_contract<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> ClosureContract<'tcx> {
     let TyKind::Closure(_, subst) = ctx.type_of(def_id).instantiate_identity().kind() else {
         unreachable!()
     };

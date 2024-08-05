@@ -1,11 +1,13 @@
 use super::BodyTranslator;
 use crate::{
-    ctx::TranslationCtx, fmir, translation::{
+    ctx::TranslationCtx,
+    fmir,
+    translation::{
         fmir::*,
+        function::mk_goto,
         pearlite::{Term, TermKind, UnOp},
         specification::inv_subst,
         traits,
-        function::mk_goto,
     },
 };
 use itertools::Itertools;
@@ -21,10 +23,7 @@ use rustc_middle::{
     ty::{self, AssocItem, GenericArgKind, GenericArgsRef, ParamEnv, Ty, TyKind},
 };
 use rustc_span::{source_map::Spanned, Span, Symbol};
-use rustc_trait_selection::{
-    error_reporting::InferCtxtErrorExt,
-    infer::InferCtxtExt,
-};
+use rustc_trait_selection::{error_reporting::InferCtxtErrorExt, infer::InferCtxtExt};
 use std::collections::{HashMap, HashSet};
 
 // Translate the terminator of a basic block.
@@ -34,11 +33,7 @@ use std::collections::{HashMap, HashSet};
 // patterns in match expressions.
 
 impl<'tcx> BodyTranslator<'_, 'tcx> {
-    pub fn translate_terminator(
-        &mut self,
-        terminator: &mir::Terminator<'tcx>,
-        location: Location,
-    ) {
+    pub fn translate_terminator(&mut self, terminator: &mir::Terminator<'tcx>, location: Location) {
         let mut resolved_during =
             self.resolver.as_mut().map_or(BitSet::new_empty(self.body.local_decls.len()), |r| {
                 r.resolved_locals_during(location)
