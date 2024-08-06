@@ -273,7 +273,7 @@ impl<'a, T: ?Sized> DerefMut for GhostPtrTokenMut<'a, T> {
 }
 
 #[trusted]
-impl<'a, T> Resolve for GhostPtrTokenMut<'a, T> {
+impl<'a, T: ?Sized> Resolve for GhostPtrTokenMut<'a, T> {
     #[predicate(prophetic)]
     #[open]
     fn resolve(self) -> bool {
