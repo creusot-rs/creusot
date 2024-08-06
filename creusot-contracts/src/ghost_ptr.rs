@@ -267,6 +267,7 @@ impl<'a, T: ?Sized> DerefMut for GhostPtrTokenMut<'a, T> {
     #[trusted]
     #[ensures((*result)@ == (*self).cur())]
     #[ensures((^self).cur() == (^result)@)]
+    #[ensures((^self).fin() == (*self).fin())]
     fn deref_mut(&mut self) -> &mut Self::Target {
         Box::leak(Box::new(GhostPtrToken(PhantomData)))
     }
