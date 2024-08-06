@@ -39,9 +39,10 @@ end
 
 module Borrow
   type borrowed 'a = { current : 'a; final : 'a; id : int }
+  meta "encoding:ignore_polymorphism_ts" type borrowed
 
-  function ( *_ ) (x : borrowed 'a) : 'a = x.current
-  function ( ^_ ) (x : borrowed 'a) : 'a = x.final
+  function ( *_ ) [@inline:trivial] (x : borrowed 'a) : 'a = x.current
+  function ( ^_ ) [@inline:trivial] (x : borrowed 'a) : 'a = x.final
 
   let borrow_final < 'a > (a : 'a) (id : int) (ret (result : borrowed 'a)) =
     any [ ret' (fin : 'a) -> (! ret { { current = a; final = fin; id = id } })]
@@ -49,9 +50,9 @@ module Borrow
   let borrow_mut < 'a > (a : 'a) (ret (result : borrowed 'a)) =
     any [ ret (fin : 'a) (id: int) -> (! ret { { current = a; final = fin; id = id } })]
 
-  function borrow_logic (cur fin : 'a) (id : int) : borrowed 'a = { current = cur; final = fin; id = id }
+  function borrow_logic [@inline:trivial] (cur fin : 'a) (id : int) : borrowed 'a = { current = cur; final = fin; id = id }
 
-  function get_id (x : borrowed 'a) : int = x.id
+  function get_id [@inline:trivial] (x : borrowed 'a) : int = x.id
   function inherit_id (old_id inherit_path: int) : int
 end
 
@@ -733,7 +734,9 @@ end
 
 module Slice
   type slice 'a
+  meta "encoding:ignore_polymorphism_ts" type slice
   type array 'a = slice 'a
+  meta "encoding:ignore_polymorphism_ts" type array
 end
 
 module Cast
