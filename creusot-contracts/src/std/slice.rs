@@ -15,7 +15,6 @@ impl<T> ShallowModel for [T] {
     #[open(self)]
     #[trusted]
     #[ensures(result.len() <= usize::MAX@)]
-    #[ensures(result == slice_model(&self))]
     fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! { absurd }
     }
@@ -32,20 +31,6 @@ impl<T: DeepModel> DeepModel for [T] {
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { absurd }
     }
-}
-
-#[logic]
-#[trusted]
-#[creusot::builtins = "prelude.prelude.Slice.id"]
-fn slice_model<T>(_: &[T]) -> Seq<T> {
-    pearlite! { absurd }
-}
-
-#[logic]
-#[open]
-#[rustc_diagnostic_item = "slice_len_logic"]
-pub fn slice_len<T>(x: [T]) -> Int {
-    pearlite! { x@.len() }
 }
 
 impl<T> Default for &mut [T] {
