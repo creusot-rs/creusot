@@ -83,6 +83,7 @@ impl Print for Decl {
             Decl::Let(l) => l.pretty(alloc),
             Decl::ConstantDecl(c) => c.pretty(alloc),
             Decl::Coma(d) => d.pretty(alloc),
+            Decl::Meta(d) => d.pretty(alloc),
             Decl::LetSpan(nm, f, l1, c1, l2, c2) => docs![
                 alloc,
                 "let%span",
@@ -190,6 +191,20 @@ impl Print for declaration::Constant {
                 Some(b) => alloc.text(" = ").append(b.pretty(alloc)),
                 None => alloc.nil(),
             }
+        ]
+    }
+}
+
+impl Print for MetaDecl {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        docs![
+            alloc,
+            "meta",
+            format!("{:?}", self.name),
+            alloc.concat(self.args.iter().map(|a| a.pretty(alloc)))
         ]
     }
 }

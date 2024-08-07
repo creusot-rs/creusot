@@ -43,6 +43,7 @@ pub enum Decl {
     ConstantDecl(Constant),
     Coma(coma::Defn),
     LetSpan(Ident, String, usize, usize, usize, usize),
+    Meta(MetaDecl)
 }
 
 impl Decl {
@@ -366,6 +367,13 @@ pub struct Use {
     pub name: QName,
     pub as_: Option<QName>,
     pub export: bool,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct MetaDecl {
+    pub name: String,
+    pub args: Vec<Exp>,
 }
 
 #[derive(Debug, Clone)]
