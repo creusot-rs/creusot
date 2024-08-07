@@ -1,5 +1,5 @@
 use crate::extended_location::ExtendedLocation;
-use rustc_index::bit_set::BitSet;
+use rustc_index::bit_set::ChunkedBitSet;
 use rustc_middle::{
     mir::{
         self, visit::Visitor, BasicBlock, Body, CallReturnPlaces, Location, Place, PlaceElem,
@@ -45,7 +45,7 @@ pub struct NotFinalPlaces<'tcx> {
     tcx: TyCtxt<'tcx>,
     /// Mapping from a place to its ID
     ///
-    /// This is necessary to use a `BitSet<PlaceId>`.
+    /// This is necessary to use a `ChunkedBitSet<PlaceId>`.
     places: HashMap<PlaceRef<'tcx>, PlaceId>,
     /// Contains the places that dereference a mutable ref.
     ///
@@ -58,7 +58,7 @@ pub struct NotFinalPlaces<'tcx> {
     /// *y;       // does not have dereference
     /// y.field;  // does not have dereference
     /// ```
-    has_dereference: BitSet<PlaceId>,
+    has_dereference: ChunkedBitSet<PlaceId>,
     /// Maps each place to the set of its subplaces.
     ///
     /// A `p1` is a subplace of `p2` if they refer to the same local variable, and
@@ -95,7 +95,7 @@ impl<'tcx> NotFinalPlaces<'tcx> {
         let mut visitor = VisitAllPlaces(HashMap::new());
         visitor.visit_body(body);
         let places = visitor.0;
-        let mut has_dereference = BitSet::new_empty(places.len());
+        let mut has_dereference = ChunkedBitSet::new_empty(places.len());
         let mut subplaces = vec![Vec::new(); places.len()];
         let mut conflicting_places = vec![Vec::new(); places.len()];
         for (&place, &id) in &places {
@@ -436,10 +436,10 @@ fn place_projection_conflict<'tcx>(
     }
 }
 
-impl<'tcx> DebugWithContext<NotFinalPlaces<'tcx>> for BitSet<PlaceId> {}
+impl<'tcx> DebugWithContext<NotFinalPlaces<'tcx>> for ChunkedBitSet<PlaceId> {}
 
 impl<'tcx> AnalysisDomain<'tcx> for NotFinalPlaces<'tcx> {
-    type Domain = BitSet<PlaceId>;
+    type Domain = ChunkedBitSet<PlaceId>;
 
     type Direction = Backward;
 
@@ -447,7 +447,7 @@ impl<'tcx> AnalysisDomain<'tcx> for NotFinalPlaces<'tcx> {
 
     fn bottom_value(&self, _: &mir::Body<'tcx>) -> Self::Domain {
         // start with every place "dead"
-        BitSet::new_empty(self.places.len())
+        ChunkedBitSet::new_empty(self.places.len())
     }
 
     // no initialization, because we are doing backward analysis.
