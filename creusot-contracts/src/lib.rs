@@ -197,18 +197,18 @@ pub mod ghost {
 
     impl<T: ?Sized> GhostBox<T> {
         #[doc(hidden)]
-        pub fn from_fn(_: fn() -> T) -> Self {
+        pub fn from_fn(_: impl Fn() -> T) -> Self {
             GhostBox(std::marker::PhantomData)
         }
     }
 
-    impl<T: ?Sized> Clone for GhostBox<T> {
+    impl<T: ?Sized + Clone> Clone for GhostBox<T> {
         fn clone(&self) -> Self {
             GhostBox(std::marker::PhantomData)
         }
     }
 
-    impl<T: ?Sized> Copy for GhostBox<T> {}
+    impl<T: ?Sized + Copy> Copy for GhostBox<T> {}
 }
 
 #[cfg(not(creusot))]

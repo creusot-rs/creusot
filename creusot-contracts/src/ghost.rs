@@ -22,25 +22,33 @@ use crate::{
 /// let value: i32 = *b; // compile error !
 /// ```
 #[rustc_diagnostic_item = "ghost_box"]
-pub struct GhostBox<T: ?Sized>(Box<T>);
+pub struct GhostBox<T: ?Sized>(T);
+
+impl<T: Clone + ?Sized> Clone for GhostBox<T> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
+impl<T: Copy + ?Sized> Copy for GhostBox<T> {}
 
 impl<T: ?Sized> Deref for GhostBox<T> {
     type Target = T;
 
     // This function can only be called in `ghost!` context
     #[pure]
-    #[ensures(*(*self).0 == *result)]
+    #[ensures((*self).0 == *result)]
     fn deref(&self) -> &Self::Target {
-        &(*self.0)
+        &self.0
     }
 }
 impl<T: ?Sized> DerefMut for GhostBox<T> {
     // This function can only be called in `ghost!` context
     #[pure]
-    #[ensures(*(^self).0 == ^result)]
-    #[ensures(*(*self).0 == *result)]
+    #[ensures((^self).0 == ^result)]
+    #[ensures((*self).0 == *result)]
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut (*self.0)
+        &mut self.0
     }
 }
 
@@ -49,7 +57,7 @@ impl<T: ShallowModel + ?Sized> ShallowModel for GhostBox<T> {
     #[logic]
     #[open]
     fn shallow_model(self) -> Self::ShallowModelTy {
-        (*self.0).shallow_model()
+        self.0.shallow_model()
     }
 }
 
@@ -58,23 +66,23 @@ impl<T: ?Sized> Resolve for GhostBox<T> {
     #[predicate(prophetic)]
     #[open]
     fn resolve(self) -> bool {
-        Resolve::resolve(*self.0)
+        Resolve::resolve(self.0)
     }
 }
 
 impl<T> GhostBox<T> {
     #[rustc_diagnostic_item = "ghost_box_new"]
     #[pure]
-    #[ensures(*result.0 == x)]
+    #[ensures(result.0 == x)]
     pub fn new(x: T) -> Self {
-        Self(Box::new(x))
+        Self(x)
     }
 
     #[trusted]
     #[logic]
     #[open(self)]
-    #[ensures(result == *self.0)]
+    #[ensures(result == self.0)]
     pub fn inner(self) -> T {
-        *self.0
+        self.0
     }
 }
