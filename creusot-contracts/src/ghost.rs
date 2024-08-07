@@ -27,6 +27,7 @@ pub struct GhostBox<T: ?Sized>(Box<T>);
 impl<T: ?Sized> Deref for GhostBox<T> {
     type Target = T;
 
+    // This function can only be called in `ghost!` context
     #[pure]
     #[ensures(*(*self).0 == *result)]
     fn deref(&self) -> &Self::Target {
@@ -34,6 +35,7 @@ impl<T: ?Sized> Deref for GhostBox<T> {
     }
 }
 impl<T: ?Sized> DerefMut for GhostBox<T> {
+    // This function can only be called in `ghost!` context
     #[pure]
     #[ensures(*(^self).0 == ^result)]
     #[ensures(*(*self).0 == *result)]
