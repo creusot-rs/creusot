@@ -200,10 +200,6 @@ pub mod ghost {
         pub fn from_fn(_: fn() -> T) -> Self {
             GhostBox(std::marker::PhantomData)
         }
-
-        pub fn uninit() -> Self {
-            Self(std::marker::PhantomData)
-        }
     }
 
     impl<T: ?Sized> Clone for GhostBox<T> {

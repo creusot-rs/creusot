@@ -34,8 +34,9 @@ pub fn snapshot(_: TS1) -> TS1 {
 }
 
 #[proc_macro]
-pub fn ghost(_: TS1) -> TS1 {
-    quote::quote! { GhostBox::from_fn(|| { loop {} }) }.into()
+pub fn ghost(body: TS1) -> TS1 {
+    let body = proc_macro2::TokenStream::from(body);
+    quote::quote! { GhostBox::from_fn(|| { #body }) }.into()
 }
 
 #[proc_macro_attribute]

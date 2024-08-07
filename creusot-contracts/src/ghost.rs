@@ -71,14 +71,6 @@ impl<T> GhostBox<T> {
     }
 
     #[trusted]
-    #[pure]
-    #[requires(true)]
-    #[ensures(true)]
-    pub fn uninit() -> Self {
-        loop {}
-    }
-
-    #[trusted]
     #[logic]
     #[open(self)]
     #[ensures(result == *self.0)]
