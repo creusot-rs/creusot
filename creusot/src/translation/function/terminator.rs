@@ -235,7 +235,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             };
             let GenericArgKind::Type(ty) = ty.unpack() else { unreachable!() };
             let TyKind::Closure(ghost_def_id, ghost_args_ty) = ty.kind() else { unreachable!() };
-            debug_assert!(self.ghosts.remove(ghost_def_id));
 
             // Check that all captures are `GhostBox`s
             let param_env = self.tcx.param_env(ghost_def_id);

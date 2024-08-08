@@ -19,7 +19,7 @@ use crate::{
     },
     util::{self, PreSignature},
 };
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexMap;
 use rustc_borrowck::borrow_set::BorrowSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
@@ -76,8 +76,6 @@ pub struct BodyTranslator<'body, 'tcx> {
     assertions: IndexMap<DefId, Term<'tcx>>,
     /// Map of the `snapshot!` blocks to their translated version.
     snapshots: IndexMap<DefId, Term<'tcx>>,
-    /// All of the `ghost!` blocks.
-    ghosts: IndexSet<DefId>,
     /// Indicate that the current function is a `ghost!` closure.
     is_ghost_closure: bool,
     /// Offset to add to each use of a `BasicBlock`
@@ -131,7 +129,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         basic_block_offset: usize,
     ) -> Self {
         let invariants = corrected_invariant_names_and_locations(ctx, &body);
-        let SpecClosures { assertions, snapshots, ghosts } = SpecClosures::collect(ctx, &body);
+        let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, &body);
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
@@ -175,7 +173,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             invariants,
             assertions,
             snapshots,
-            ghosts,
             is_ghost_closure,
             basic_block_offset,
             borrows,
@@ -189,7 +186,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         assert!(self.assertions.is_empty(), "unused assertions");
         assert!(self.snapshots.is_empty(), "unused snapshots");
-        assert!(self.ghosts.is_empty(), "unused ghosts");
         assert!(self.invariants.is_empty(), "unused invariants");
 
         fmir::Body { locals: self.vars, arg_count, blocks: self.past_blocks }
