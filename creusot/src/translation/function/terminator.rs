@@ -23,9 +23,10 @@ use rustc_middle::{
     },
     ty::{self, AssocItem, GenericArgKind, GenericArgsRef, ParamEnv, Predicate, Ty, TyKind},
 };
-use rustc_span::{Span, Symbol};
+use rustc_span::{source_map::Spanned, Span, Symbol};
 use rustc_trait_selection::{
     error_reporting::InferCtxtErrorExt,
+    infer::InferCtxtExt,
     traits::{FulfillmentError, TraitEngineExt},
 };
 use std::collections::{HashMap, HashSet};
@@ -44,7 +45,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
     ) {
         let span = terminator.source_info.span;
         match &terminator.kind {
-            Goto { target } => self.emit_terminator(mk_goto(*target)),
+            Goto { target } => self.emit_goto(*target),
             SwitchInt { discr, targets, .. } => {
                 let real_discr = discriminator_for_switch(&self.body.basic_blocks[location.block])
                     .map(Operand::Move)
@@ -63,17 +64,22 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Return => self.emit_terminator(Terminator::Return),
             Unreachable => self.emit_terminator(Terminator::Abort(terminator.source_info.span)),
-            Call { func, args, destination, mut target, .. } => {
+            Call { func, args, destination, mut target, fn_span, .. } => {
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
 
                 if self.tcx.is_diagnostic_item(Symbol::intern("snapshot_from_fn"), fun_def_id) {
-                    let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() else { panic!() };
-                    let TyKind::Closure(def_id, _) = ty.kind() else { panic!() };
+                    let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() else {
+                        unreachable!()
+                    };
+                    let TyKind::Closure(def_id, _) = ty.kind() else { unreachable!() };
                     let mut assertion = self.snapshots.remove(def_id).unwrap();
                     assertion.subst(&inv_subst(self.body, &self.locals, terminator.source_info));
                     self.check_ghost_term(&assertion, location);
                     self.emit_ghost_assign(*destination, assertion, span);
                 } else {
+                    let call_ghost = self.check_ghost_call(fun_def_id, subst);
+                    self.check_no_ghost_in_program(args, *fn_span, fun_def_id, subst);
+
                     let mut func_args: Vec<_> =
                         args.iter().map(|arg| self.translate_operand(&arg.node)).collect();
                     if func_args.is_empty() {
@@ -112,8 +118,23 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             infcx.err_ctxt().report_fulfillment_errors(errs);
                         }
 
-                        let (fun_def_id, subst) =
-                            resolve_function(self.ctx, self.param_env(), fun_def_id, subst, span);
+                        let (fun_def_id, subst) = if let Some((ghost_def_id, ghost_args_ty)) =
+                            call_ghost
+                        {
+                            // Directly call the ghost closure
+
+                            assert_eq!(func_args.len(), 2);
+
+                            resolve_function(
+                                self.ctx,
+                                self.param_env(),
+                                ghost_def_id,
+                                ghost_args_ty,
+                                span,
+                            )
+                        } else {
+                            resolve_function(self.ctx, self.param_env(), fun_def_id, subst, span)
+                        };
 
                         if self.ctx.sig(fun_def_id).contract.is_requires_false() {
                             target = None
@@ -135,7 +156,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
 
                 if let Some(bb) = target {
-                    self.emit_terminator(Terminator::Goto(bb));
+                    self.emit_goto(bb);
                 } else {
                     self.emit_terminator(Terminator::Abort(terminator.source_info.span));
                 }
@@ -166,16 +187,14 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     };
                 }
                 self.emit_statement(Statement::Assertion { cond, msg });
-                self.emit_terminator(mk_goto(*target))
+                self.emit_goto(*target)
             }
 
-            FalseEdge { real_target, .. } => self.emit_terminator(mk_goto(*real_target)),
+            FalseEdge { real_target, .. } => self.emit_goto(*real_target),
 
             // TODO: Do we really need to do anything more?
-            Drop { target, .. } => self.emit_terminator(mk_goto(*target)),
-            FalseUnwind { real_target, .. } => {
-                self.emit_terminator(mk_goto(*real_target));
-            }
+            Drop { target, .. } => self.emit_goto(*target),
+            FalseUnwind { real_target, .. } => self.emit_goto(*real_target),
             CoroutineDrop
             | UnwindResume
             | UnwindTerminate { .. }
@@ -189,6 +208,138 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
     fn is_box_new(&self, def_id: DefId) -> bool {
         self.tcx.def_path_str(def_id) == "std::boxed::Box::<T>::new"
+    }
+
+    /// Determine if the given type `ty` is a `GhostBox`.
+    fn is_ghost_box(&self, ty: Ty<'tcx>) -> bool {
+        let ghost_box_id = self.tcx.get_diagnostic_item(Symbol::intern("ghost_box")).unwrap();
+        match ty.kind() {
+            rustc_type_ir::TyKind::Adt(containing_type, _) => containing_type.did() == ghost_box_id,
+            _ => false,
+        }
+    }
+
+    /// If the function we are calling represents a `ghost!` block, we need to:
+    /// - Check that all the captures of the ghost closure are correct with respect to
+    /// the ghost restrictions.
+    /// - Call the ghost closure directly. Here we return the function to call and its
+    /// type parameters.
+    fn check_ghost_call(
+        &mut self,
+        fun_def_id: DefId,
+        subst: GenericArgsRef<'tcx>,
+    ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
+        if self.tcx.is_diagnostic_item(Symbol::intern("ghost_from_fn"), fun_def_id) {
+            let &[_, ty] = subst.as_slice() else {
+                unreachable!();
+            };
+            let GenericArgKind::Type(ty) = ty.unpack() else { unreachable!() };
+            let TyKind::Closure(ghost_def_id, ghost_args_ty) = ty.kind() else { unreachable!() };
+            debug_assert!(self.ghosts.remove(ghost_def_id));
+
+            // Check that all captures are `GhostBox`s
+            let param_env = self.tcx.param_env(ghost_def_id);
+            let captures = self.ctx.closure_captures(ghost_def_id.expect_local());
+            for capture in captures.into_iter().rev() {
+                let copy_allowed = match capture.info.capture_kind {
+                    ty::UpvarCapture::ByRef(
+                        ty::BorrowKind::MutBorrow | ty::BorrowKind::UniqueImmBorrow,
+                    ) => false,
+                    _ => true,
+                };
+                let place_ty = capture.place.ty();
+
+                let is_ghost = self.is_ghost_box(place_ty);
+                let is_copy = copy_allowed && place_ty.is_copy_modulo_regions(self.tcx, param_env);
+
+                if !is_ghost && !is_copy {
+                    let mut error = self.ctx.error(
+                        capture.get_path_span(self.tcx),
+                        &format!("not a ghost variable: {}", capture.var_ident.as_str()),
+                    );
+                    error.span_note(capture.var_ident.span, String::from("variable defined here"));
+                    error.emit();
+                }
+            }
+
+            Some((*ghost_def_id, ghost_args_ty))
+        } else {
+            None
+        }
+    }
+
+    /// This function will raise errors if we are in program code, and the function we
+    /// are calling is ghost-only.
+    ///
+    /// Ghost-only functions are `GhostBox::new` and `GhostBox::deref`.
+    fn check_no_ghost_in_program(
+        &self,
+        args: &[Spanned<Operand>],
+        fn_span: Span,
+        fun_def_id: DefId,
+        subst: GenericArgsRef<'tcx>,
+    ) {
+        if self.is_ghost_closure {
+            return;
+        }
+        // We are indeed in program code.
+        let func_param_env = self.tcx.param_env(fun_def_id);
+
+        // Check that we do not create/dereference a ghost variable in normal code.
+        if self.tcx.is_diagnostic_item(Symbol::intern("deref_method"), fun_def_id)
+            || self.tcx.is_diagnostic_item(Symbol::intern("deref_mut_method"), fun_def_id)
+        {
+            let GenericArgKind::Type(ty) = subst.get(0).unwrap().unpack() else { unreachable!() };
+            if self.is_ghost_box(ty) {
+                self.ctx
+                    .error(fn_span, "dereference of a ghost variable in program context")
+                    .with_span_suggestion(
+                        fn_span,
+                        "try wrapping this expression in a ghost block",
+                        format!(
+                            "ghost!{{ {} }}",
+                            self.ctx.sess.source_map().span_to_snippet(fn_span).unwrap()
+                        ),
+                        rustc_errors::Applicability::MachineApplicable,
+                    )
+                    .emit();
+            }
+        } else if self.tcx.is_diagnostic_item(Symbol::intern("ghost_box_new"), fun_def_id) {
+            self.ctx
+                .error(fn_span, "cannot create a ghost variable in program context")
+                .with_span_suggestion(
+                    fn_span,
+                    "try wrapping this expression in `gh!` instead",
+                    format!(
+                        "gh!{{ {} }}",
+                        self.ctx.sess.source_map().span_to_snippet(args[0].span).unwrap()
+                    ),
+                    rustc_errors::Applicability::MachineApplicable,
+                )
+                .emit();
+        } else {
+            // Check and reject instantiation of a <T: Deref> with a ghost parameter.
+            let deref_trait_id = self.tcx.get_diagnostic_item(Symbol::intern("Deref")).unwrap();
+            let infer_ctx = self.tcx.infer_ctxt().build();
+            for bound in func_param_env.caller_bounds() {
+                let Some(trait_clause) = bound.as_trait_clause() else { continue };
+                if trait_clause.def_id() != deref_trait_id {
+                    continue;
+                }
+                let ty = trait_clause.self_ty().skip_binder();
+                let caller_ty = ty::EarlyBinder::bind(trait_clause.self_ty())
+                    .instantiate(self.tcx, subst)
+                    .skip_binder();
+                let deref_in_callee = infer_ctx
+                    .type_implements_trait(deref_trait_id, std::iter::once(ty), func_param_env)
+                    .may_apply();
+                let ghost_in_caller = self.is_ghost_box(caller_ty);
+                let ghost_in_callee = self.is_ghost_box(ty);
+                if deref_in_callee && ghost_in_caller && !ghost_in_callee {
+                    self.ctx.error(fn_span, &format!("Cannot instantiate a generic type {ty} implementing `Deref` with the ghost type {caller_ty}")).emit();
+                }
+            }
+        }
     }
 
     fn get_explanation(&mut self, msg: &mir::AssertKind<Operand<'tcx>>) -> String {
@@ -336,8 +487,4 @@ pub(crate) fn make_switch<'tcx>(
         }
         ty => unimplemented!("{ty:?}"),
     }
-}
-
-fn mk_goto<'tcx>(bb: BasicBlock) -> Terminator<'tcx> {
-    Terminator::Goto(bb)
 }

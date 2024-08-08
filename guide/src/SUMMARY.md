@@ -15,4 +15,5 @@
 - [Shallow model](./shallow_model.md)
 - [Termination](./termination.md)
 - [Snapshots](snapshots.md)
+- [Ghost code](ghost.md)
 - [Type invariants](./type_invariants.md)
