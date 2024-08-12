@@ -1,10 +1,9 @@
 use super::{program::borrow_generated_id, Why3Generator};
 use crate::{
-    backend::ty::{floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty},
+    backend::{program::{int_to_prelude, uint_to_prelude}, ty::{floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty}},
     ctx::*,
     pearlite::{self, Literal, Pattern, Term, TermKind},
-    util,
-    util::get_builtin,
+    util::{self, get_builtin},
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};
@@ -68,6 +67,32 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 match op {
                     Div => Exp::var("div").app(vec![lhs, rhs]),
                     Rem => Exp::var("mod").app(vec![lhs, rhs]),
+                    BitAnd | BitOr | BitXor | Shl | Shr => {
+                        let ty_kind = term.creusot_ty().kind();
+                        let prelude: PreludeModule = match ty_kind {
+                            TyKind::Int(ity) => int_to_prelude(*ity),
+                            TyKind::Uint(uty) => uint_to_prelude(*uty),
+                            _ => unreachable!("the bitwise operator are only available on integer"),
+                        };
+
+                        self.names.import_prelude_module(prelude);
+
+                        let func_name = match (op, ty_kind) {
+                            (BitAnd, _) => "bw_and",
+                            (BitOr, _) => "bw_or",
+                            (BitXor, _) => "bw_xor",
+                            (Shl, _) => "lsl_bv",
+                            (Shr, TyKind::Int(_)) => "asr_bv",
+                            (Shr, TyKind::Uint(_)) => "lsr_bv",
+                            _ => unreachable!("this is not an executable path"),
+                        };
+
+                        let mut module = prelude.qname();
+                        module.push_ident(func_name);
+                        let fname = module.without_search_path();
+
+                        Exp::qvar(fname).app(vec![lhs, rhs])
+                    },
                     _ => Exp::BinaryOp(binop_to_binop(*op), Box::new(lhs), Box::new(rhs)),
                 }
             }
@@ -307,6 +332,11 @@ pub(crate) fn binop_to_binop(op: pearlite::BinOp) -> why3::exp::BinOp {
         pearlite::BinOp::Ne => BinOp::Ne,
         pearlite::BinOp::And => BinOp::LogAnd,
         pearlite::BinOp::Or => BinOp::LogOr,
+        pearlite::BinOp::BitAnd => BinOp::BitAnd,
+        pearlite::BinOp::BitOr => BinOp::BitOr,
+        pearlite::BinOp::BitXor => BinOp::BitXor,
+        pearlite::BinOp::Shl => BinOp::Shl,
+        pearlite::BinOp::Shr => BinOp::Shr,
         pearlite::BinOp::Div => todo!("Refactor binop_to_binop to support Div"),
         pearlite::BinOp::Rem => todo!("Refactor binop_to_binop to support Rem"),
     }

@@ -480,7 +480,29 @@ impl<'tcx> RValue<'tcx> {
                 // // Hack
                 // translate_ty(ctx, names, DUMMY_SP, op_ty);
             }
-            RValue::UnaryOp(UnOp::Not, arg) => arg.to_why(lower, istmts).not(),
+            RValue::UnaryOp(UnOp::Not, arg) => {
+                let a_ty = arg.ty(lower.ctx.tcx, lower.locals);
+                match a_ty.kind() {
+                    TyKind::Bool => arg.to_why(lower, istmts).not(),
+                    TyKind::Int(_) | TyKind::Uint(_) => {
+                        let prelude: PreludeModule = match a_ty.kind() {
+                            TyKind::Int(ity) => int_to_prelude(*ity),
+                            TyKind::Uint(uty) => uint_to_prelude(*uty),
+                            _ => unreachable!("this is not an executable path {ty:?}"),
+                        };
+
+                        lower.names.import_prelude_module(prelude);
+                        let mut module = prelude.qname();
+                        module.push_ident("bw_not");
+                        let fname = module.without_search_path();
+                        let call = coma::Expr::Symbol(fname);
+                        let args = vec![Arg::Term(arg.to_why(lower, istmts))];
+                        istmts.push(IntermediateStmt::call("_ret'".into(), lower.ty(ty), call, args));
+                        Exp::var("_ret'")
+                    }
+                    _ => unreachable!("the not operator is not supported for {ty:?}"),
+                }
+            },
             RValue::UnaryOp(UnOp::Neg, arg) => {
                 let prelude: PreludeModule = match ty.kind() {
                     TyKind::Int(ity) => int_to_prelude(*ity),

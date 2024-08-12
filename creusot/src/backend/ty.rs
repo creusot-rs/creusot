@@ -931,19 +931,19 @@ pub(crate) fn single_ty() -> MlT {
 }
 
 pub(crate) fn u8_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint8").unwrap())
+    MlT::TConstructor(QName::from_string("UInt8.t").unwrap())
 }
 
 pub(crate) fn u16_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint16").unwrap())
+    MlT::TConstructor(QName::from_string("UInt16.t").unwrap())
 }
 
 pub(crate) fn u32_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint32").unwrap())
+    MlT::TConstructor(QName::from_string("UInt32.t").unwrap())
 }
 
 pub(crate) fn u64_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint64").unwrap())
+    MlT::TConstructor(QName::from_string("UInt64.t").unwrap())
 }
 
 pub(crate) fn u128_ty() -> MlT {

@@ -382,217 +382,225 @@ end
 
 (* Unsigned Integers *)
 module UInt8
-  use int.Int
+    use export bv.BV8
+    use bv.BV128 as BV128
+    use bv.BVConverter_8_128
+    use int.Int
+    use int.EuclideanDivision as ED
 
-  type uint8 = < range -0x0 0xff >
+    constant max_uint : t = 0xFF
+    function uto_bv128 (x: t) : BV128.t = toBig x
+    constant max_uint_as_bv128 : BV128.t = uto_bv128 max_uint
 
-  constant min : int = - 0x0
-  constant max : int =   0xff
+    function to_uint(x:t): int = t'int x
 
-  function to_int (x : uint8) : int = uint8'int x
-  meta coercion function to_int
-  meta "model_projection" function to_int
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_uint a = to_uint b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <> to_uint b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <= to_uint b }  { result <-> ule a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a < to_uint b } { result <-> ult a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_uint a >= to_uint b } { result <-> uge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a > to_uint b } { result <-> ugt a b }) = any
 
-  predicate in_bounds (n:int) = min <= n <= max
+    let add (a:t) (b:t)
+        { [@expl:arithmetic overflow] to_uint a + to_uint b < two_power_size \/ BV128.ule (BV128.add (uto_bv128 a) (uto_bv128 b)) max_uint_as_bv128 }
+        (ret (result :t)  { to_uint result = to_uint a + to_uint b } { result = add a b })
+        = any
+    let sub (a:t)  (b:t)
+        { [@expl:arithmetic overflow] to_uint a >= to_uint b \/ uge a b }
+        (ret (result: t) { to_uint result = to_uint a - to_uint b } { result = sub a b })
+        = any
+    let mul (a:t) (b:t)
+        { [@expl:arithmetic overflow] to_uint a * to_uint b < two_power_size \/ BV128.ule (BV128.mul (uto_bv128 a) (uto_bv128 b)) max_uint_as_bv128 }
+        (ret (result: t) { result = mul a b } { to_int result = to_uint a * to_uint b })
+        = any
+    let div (a:t) (b:t)
+        { [@expl:division by zero] b <> zeros \/ to_uint b <> 0 }
+        (ret (result: t) { to_uint result = ED.div (to_uint a) (to_uint b) } { result = udiv a b })
+        = any
+    let rem (a:t) (b:t)
+        { [@expl:remainder by zero] b <> zeros  \/ to_uint b <> 0 }
+        (ret (result: t) { to_uint result = ED.mod (to_uint a) (to_uint b) } { result = urem a b })
+        = any
 
-  axiom to_int_in_bounds: forall n:uint8. in_bounds n
-
-  let of_int (n:int) { [@expl:integer overflow] in_bounds n }
-    (ret (result : uint8) { result = n }) = any
-
-  let add (a:uint8) (b:uint8) { [@expl:integer overflow] in_bounds (a + b) } (ret (result : uint8) { result = a + b }) = any
-
-  let sub (a:uint8) (b:uint8) { [@expl:integer overflow] in_bounds (a - b) } (ret (result : uint8) { result = a - b }) = any
-
-  let mul (a:uint8) (b:uint8) { [@expl:integer overflow] in_bounds (a * b) } (ret (result : uint8) { result = a * b }) = any
-
-  let neg (a:uint8) { [@expl:integer overflow] in_bounds (- a) } (ret (result : uint8) { result = - a }) = any
-
-  axiom extensionality: forall x y: uint8. to_int x = to_int y -> x = y
-
-  let eq (a:uint8) (b:uint8) (ret (result : bool) { result <-> a = b } { to_int a = to_int b -> result }) = any
-
-  let ne (a:uint8) (b:uint8) (ret (result : bool) { result <-> a <> b } { to_int a <> to_int b -> result }) = any
-
-  let le (a:uint8) (b:uint8) (ret (result : bool) { result <-> to_int a <= to_int b }) = any
-
-  let lt (a:uint8) (b:uint8) (ret (result : bool) { result <-> to_int a < to_int b }) = any
-
-  let ge (a:uint8) (b:uint8) (ret (result : bool) { result <-> to_int a >= to_int b }) = any
-
-  let gt (a:uint8) (b:uint8) (ret (result : bool) { result <-> to_int a > to_int b }) = any
-
-  use int.ComputerDivision
-
-  let div (a:uint8) (b:uint8)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (div a b) }
-    (ret (result : uint8) { result = div a b }) = any
-
-  let rem (a:uint8) (b:uint8)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (mod a b) }
-    (ret (result : uint8) { result = mod a b }) = any
+    let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
+    let bw_or (a:t) (b:t) (ret (result :t)) = ret { bw_or a b }
+    let bw_xor (a:t) (b:t) (ret (result :t)) = ret { bw_xor a b }
+    let bw_not (a:t) (ret (result :t)) = ret { bw_not a }
+    let shl (a:t) (b:t)
+        { [@expl:out-of-bounds shifting] ult b size_bv \/ to_uint b < size  }
+        (ret (result :t) { result = lsl_bv a b } { result = lsl a (to_uint b) })
+        = any
+    let shr (a:t) (b:t)
+        { [@expl:out-of-bounds shifting] ult b size_bv \/ to_uint b < size }
+        (ret (result :t) { result = lsr_bv a b } { result = lsr a (to_uint b) })
+        = any
 end
 module UInt16
-  use int.Int
+    use export bv.BV16
+    use bv.BV128 as BV128
+    use bv.BVConverter_16_128
+    use int.Int
+    use int.EuclideanDivision as ED
 
-  type uint16 = < range -0x0 0xffff >
+    constant max_uint : t = 0xFFFF
+    function uto_bv128 (x: t) : BV128.t = toBig x
+    constant max_uint_as_bv128 : BV128.t = uto_bv128 max_uint
 
-  constant min : int = - 0x0
-  constant max : int =   0xffff
+    function to_uint(x:t): int = t'int x
 
-  function to_int (x : uint16) : int = uint16'int x
-  meta coercion function to_int
-  meta "model_projection" function to_int
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_uint a = to_uint b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <> to_uint b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <= to_uint b }  { result <-> ule a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a < to_uint b } { result <-> ult a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_uint a >= to_uint b } { result <-> uge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a > to_uint b } { result <-> ugt a b }) = any
 
-  predicate in_bounds (n:int) = min <= n <= max
+    let add (a:t) (b:t)
+        { [@expl:arithmetic overflow] to_uint a + to_uint b < two_power_size \/ BV128.ule (BV128.add (uto_bv128 a) (uto_bv128 b)) max_uint_as_bv128 }
+        (ret (result :t)  { to_uint result = to_uint a + to_uint b } { result = add a b })
+        = any
+    let sub (a:t)  (b:t)
+        { [@expl:arithmetic overflow] to_uint a >= to_uint b \/ uge a b }
+        (ret (result: t) { to_uint result = to_uint a - to_uint b } { result = sub a b })
+        = any
+    let mul (a:t) (b:t)
+        { [@expl:arithmetic overflow] to_uint a * to_uint b < two_power_size \/ BV128.ule (BV128.mul (uto_bv128 a) (uto_bv128 b)) max_uint_as_bv128 }
+        (ret (result: t) { result = mul a b } { to_int result = to_uint a * to_uint b })
+        = any
+    let div (a:t) (b:t)
+        { [@expl:division by zero] b <> zeros \/ to_uint b <> 0 }
+        (ret (result: t) { to_uint result = ED.div (to_uint a) (to_uint b) } { result = udiv a b })
+        = any
+    let rem (a:t) (b:t)
+        { [@expl:remainder by zero] b <> zeros  \/ to_uint b <> 0 }
+        (ret (result: t) { to_uint result = ED.mod (to_uint a) (to_uint b) } { result = urem a b })
+        = any
 
-  axiom to_int_in_bounds: forall n:uint16. in_bounds n
-
-  let of_int (n:int) { [@expl:integer overflow] in_bounds n }
-    (ret (result :uint16) { result = n }) = any
-
-  let add (a:uint16) (b:uint16) { [@expl:integer overflow] in_bounds (a + b) } (ret (result :uint16) { result = a + b }) = any
-
-  let sub (a:uint16) (b:uint16) { [@expl:integer overflow] in_bounds (a - b) } (ret (result :uint16) { result = a - b }) = any
-
-  let mul (a:uint16) (b:uint16) { [@expl:integer overflow] in_bounds (a * b) } (ret (result :uint16) { result = a * b }) = any
-
-  let neg (a:uint16) { [@expl:integer overflow] in_bounds (- a) } (ret (result :uint16) { result = - a }) = any
-
-  axiom extensionality: forall x y: uint16. to_int x = to_int y -> x = y
-
-  let eq (a:uint16) (b:uint16) (ret (result : bool) { result <-> a = b } { to_int a = to_int b -> result }) = any
-
-  let ne (a:uint16) (b:uint16) (ret (result : bool) { result <-> a <> b } { to_int a <> to_int b -> result }) = any
-
-  let le (a:uint16) (b:uint16) (ret (result : bool) { result <-> to_int a <= to_int b }) = any
-
-  let lt (a:uint16) (b:uint16) (ret (result : bool) { result <-> to_int a < to_int b }) = any
-
-  let ge (a:uint16) (b:uint16) (ret (result : bool) { result <-> to_int a >= to_int b }) = any
-
-  let gt (a:uint16) (b:uint16) (ret (result : bool) { result <-> to_int a > to_int b }) = any
-
-  use int.ComputerDivision
-
-  let div (a:uint16) (b:uint16)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (div a b) }
-    (ret (result :uint16) { result = div a b }) = any
-
-  let rem (a:uint16) (b:uint16)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (mod a b) }
-    (ret (result :uint16) { result = mod a b }) = any
+    let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
+    let bw_or (a:t) (b:t) (ret (result :t)) = ret { bw_or a b }
+    let bw_xor (a:t) (b:t) (ret (result :t)) = ret { bw_xor a b }
+    let bw_not (a:t) (ret (result :t)) = ret { bw_not a }
+    let shl (a:t) (b:t)
+        { [@expl:out-of-bounds shifting] ult b size_bv \/ to_uint b < size  }
+        (ret (result :t) { result = lsl_bv a b } { result = lsl a (to_uint b) })
+        = any
+    let shr (a:t) (b:t)
+        { [@expl:out-of-bounds shifting] ult b size_bv \/ to_uint b < size }
+        (ret (result :t) { result = lsr_bv a b } { result = lsr a (to_uint b) })
+        = any
 end
 module UInt32
-  use int.Int
+    use export bv.BV32
+    use bv.BV128 as BV128
+    use bv.BVConverter_32_128
+    use int.Int
+    use int.EuclideanDivision as ED
 
-  type uint32 = < range -0x0 0xffff_ffff >
+    constant max_uint : t = 0xFFFFFFFF
+    function uto_bv128 (x: t) : BV128.t = toBig x
+    constant max_uint_as_bv128 : BV128.t = uto_bv128 max_uint
 
-  constant min : int = - 0x0
-  constant max : int =   0xffff_ffff
+    function to_uint(x:t): int = t'int x
 
-  function to_int (x : uint32) : int = uint32'int x
-  meta coercion function to_int
-  meta "model_projection" function to_int
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_uint a = to_uint b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <> to_uint b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <= to_uint b }  { result <-> ule a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a < to_uint b } { result <-> ult a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_uint a >= to_uint b } { result <-> uge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a > to_uint b } { result <-> ugt a b }) = any
 
-  predicate in_bounds (n:int) = min <= n <= max
+    let add (a:t) (b:t)
+        { [@expl:arithmetic overflow] to_uint a + to_uint b < two_power_size \/ BV128.ule (BV128.add (uto_bv128 a) (uto_bv128 b)) max_uint_as_bv128 }
+        (ret (result :t)  { to_uint result = to_uint a + to_uint b } { result = add a b })
+        = any
+    let sub (a:t)  (b:t)
+        { [@expl:arithmetic overflow] to_uint a >= to_uint b \/ uge a b }
+        (ret (result: t) { to_uint result = to_uint a - to_uint b } { result = sub a b })
+        = any
+    let mul (a:t) (b:t)
+        { [@expl:arithmetic overflow] to_uint a * to_uint b < two_power_size \/ BV128.ule (BV128.mul (uto_bv128 a) (uto_bv128 b)) max_uint_as_bv128 }
+        (ret (result: t) { result = mul a b } { to_int result = to_uint a * to_uint b })
+        = any
+    let div (a:t) (b:t)
+        { [@expl:division by zero] b <> zeros \/ to_uint b <> 0 }
+        (ret (result: t) { to_uint result = ED.div (to_uint a) (to_uint b) } { result = udiv a b })
+        = any
+    let rem (a:t) (b:t)
+        { [@expl:remainder by zero] b <> zeros  \/ to_uint b <> 0 }
+        (ret (result: t) { to_uint result = ED.mod (to_uint a) (to_uint b) } { result = urem a b })
+        = any
 
-  axiom to_int_in_bounds: forall n:uint32. in_bounds n
-
-  let of_int (n:int) { [@expl:integer overflow] in_bounds n }
-    (ret (result :uint32) { result = n }) = any
-
-  let add (a:uint32) (b:uint32) { [@expl:integer overflow] in_bounds (a + b) } (ret (result :uint32) { result = a + b }) = any
-
-  let sub (a:uint32) (b:uint32) { [@expl:integer overflow] in_bounds (a - b) } (ret (result :uint32) { result = a - b }) = any
-
-  let mul (a:uint32) (b:uint32) { [@expl:integer overflow] in_bounds (a * b) } (ret (result :uint32) { result = a * b }) = any
-
-  let neg (a:uint32) { [@expl:integer overflow] in_bounds (- a) } (ret (result :uint32) { result = - a }) = any
-
-  axiom extensionality: forall x y: uint32. to_int x = to_int y -> x = y
-
-  let eq (a:uint32) (b:uint32) (ret (result : bool) { result <-> a = b } { to_int a = to_int b -> result }) = any
-
-  let ne (a:uint32) (b:uint32) (ret (result : bool) { result <-> a <> b } { to_int a <> to_int b -> result }) = any
-
-  let le (a:uint32) (b:uint32) (ret (result : bool) { result <-> to_int a <= to_int b }) = any
-
-  let lt (a:uint32) (b:uint32) (ret (result : bool) { result <-> to_int a < to_int b }) = any
-
-  let ge (a:uint32) (b:uint32) (ret (result : bool) { result <-> to_int a >= to_int b }) = any
-
-  let gt (a:uint32) (b:uint32) (ret (result : bool) { result <-> to_int a > to_int b }) = any
-
-  use int.ComputerDivision
-
-  let div (a:uint32) (b:uint32)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (div a b) }
-    (ret (result :uint32) { result = div a b }) = any
-
-  let rem (a:uint32) (b:uint32)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (mod a b) }
-    (ret (result :uint32) { result = mod a b }) = any
+    let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
+    let bw_or (a:t) (b:t) (ret (result :t)) = ret { bw_or a b }
+    let bw_xor (a:t) (b:t) (ret (result :t)) = ret { bw_xor a b }
+    let bw_not (a:t) (ret (result :t)) = ret { bw_not a }
+    let shl (a:t) (b:t)
+        { [@expl:out-of-bounds shifting] ult b size_bv \/ to_uint b < size  }
+        (ret (result :t) { result = lsl_bv a b } { result = lsl a (to_uint b) })
+        = any
+    let shr (a:t) (b:t)
+        { [@expl:out-of-bounds shifting] ult b size_bv \/ to_uint b < size }
+        (ret (result :t) { result = lsr_bv a b } { result = lsr a (to_uint b) })
+        = any
 end
 module UInt64
-  use int.Int
+    use export bv.BV64
+    use bv.BV128 as BV128
+    use bv.BVConverter_64_128
+    use int.Int
+    use int.EuclideanDivision as ED
 
-  type uint64 = < range -0x0 0xffff_ffff_ffff_ffff >
+    constant max_uint : t = 0xFFFFFFFFFFFFFFFF
+    function uto_bv128 (x: t) : BV128.t = toBig x
+    constant max_uint_as_bv128 : BV128.t = uto_bv128 max_uint
 
-  constant min : int = - 0x0
-  constant max : int =   0xffff_ffff_ffff_ffff
+    function to_uint(x:t): int = t'int x
 
-  function to_int (x : uint64) : int = uint64'int x
-  meta coercion function to_int
-  meta "model_projection" function to_int
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_uint a = to_uint b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <> to_uint b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <= to_uint b }  { result <-> ule a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a < to_uint b } { result <-> ult a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_uint a >= to_uint b } { result <-> uge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a > to_uint b } { result <-> ugt a b }) = any
 
-  predicate in_bounds (n:int) = min <= n <= max
+    let add (a:t) (b:t)
+        { [@expl:arithmetic overflow] to_uint a + to_uint b < two_power_size \/ BV128.ule (BV128.add (uto_bv128 a) (uto_bv128 b)) max_uint_as_bv128 }
+        (ret (result :t)  { to_uint result = to_uint a + to_uint b } { result = add a b })
+        = any
+    let sub (a:t)  (b:t)
+        { [@expl:arithmetic overflow] to_uint a >= to_uint b \/ uge a b }
+        (ret (result: t) { to_uint result = to_uint a - to_uint b } { result = sub a b })
+        = any
+    let mul (a:t) (b:t)
+        { [@expl:arithmetic overflow] to_uint a * to_uint b < two_power_size \/ BV128.ule (BV128.mul (uto_bv128 a) (uto_bv128 b)) max_uint_as_bv128 }
+        (ret (result: t) { result = mul a b } { to_int result = to_uint a * to_uint b })
+        = any
+    let div (a:t) (b:t)
+        { [@expl:division by zero] b <> zeros \/ to_uint b <> 0 }
+        (ret (result: t) { to_uint result = ED.div (to_uint a) (to_uint b) } { result = udiv a b })
+        = any
+    let rem (a:t) (b:t)
+        { [@expl:remainder by zero] b <> zeros  \/ to_uint b <> 0 }
+        (ret (result: t) { to_uint result = ED.mod (to_uint a) (to_uint b) } { result = urem a b })
+        = any
 
-  axiom to_int_in_bounds: forall n:uint64. in_bounds n
-
-  let of_int (n:int) { [@expl:integer overflow] in_bounds n }
-    (ret (result :uint64) { result = n }) = any
-
-  let add (a:uint64) (b:uint64) { [@expl:integer overflow] in_bounds (a + b) } (ret (result :uint64) { result = a + b }) = any
-
-  let sub (a:uint64) (b:uint64) { [@expl:integer overflow] in_bounds (a - b) } (ret (result :uint64) { result = a - b }) = any
-
-  let mul (a:uint64) (b:uint64) { [@expl:integer overflow] in_bounds (a * b) } (ret (result :uint64) { result = a * b }) = any
-
-  let neg (a:uint64) { [@expl:integer overflow] in_bounds (- a) } (ret (result :uint64) { result = - a }) = any
-
-  axiom extensionality: forall x y: uint64. to_int x = to_int y -> x = y
-
-  let eq (a:uint64) (b:uint64) (ret (result : bool) { result <-> a = b } { to_int a = to_int b -> result }) = any
-
-  let ne (a:uint64) (b:uint64) (ret (result : bool) { result <-> a <> b } { to_int a <> to_int b -> result }) = any
-
-  let le (a:uint64) (b:uint64) (ret (result : bool) { result <-> to_int a <= to_int b }) = any
-
-  let lt (a:uint64) (b:uint64) (ret (result : bool) { result <-> to_int a < to_int b }) = any
-
-  let ge (a:uint64) (b:uint64) (ret (result : bool) { result <-> to_int a >= to_int b }) = any
-
-  let gt (a:uint64) (b:uint64) (ret (result : bool) { result <-> to_int a > to_int b }) = any
-
-  use int.ComputerDivision
-
-  let div (a:uint64) (b:uint64)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (div a b) }
-    (ret (result :uint64) { result = div a b }) = any
-
-  let rem (a:uint64) (b:uint64)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (mod a b) }
-    (ret (result :uint64) { result = mod a b }) = any
+    let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
+    let bw_or (a:t) (b:t) (ret (result :t)) = ret { bw_or a b }
+    let bw_xor (a:t) (b:t) (ret (result :t)) = ret { bw_xor a b }
+    let bw_not (a:t) (ret (result :t)) = ret { bw_not a }
+    let shl (a:t) (b:t)
+        { [@expl:out-of-bounds shifting] ult b size_bv \/ to_uint b < size  }
+        (ret (result :t) { result = lsl_bv a b } { result = lsl a (to_uint b) })
+        = any
+    let shr (a:t) (b:t)
+        { [@expl:out-of-bounds shifting] ult b size_bv \/ to_uint b < size }
+        (ret (result :t) { result = lsr_bv a b } { result = lsr a (to_uint b) })
+        = any
 end
+
+
+
+
 module UInt128
   use int.Int
 
