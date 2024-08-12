@@ -1,38 +1,44 @@
 
 module C04AssocPrec_RespectPrec
-  use prelude.UInt32
-  use prelude.Int
-  use prelude.Intrinsic
+  let%span s04_assoc_prec0 = "../04_assoc_prec.rs" 7 0 7 33
+  
+  let%span s04_assoc_prec1 = "../04_assoc_prec.rs" 8 10 8 35
+  
+  let%span s04_assoc_prec2 = "../04_assoc_prec.rs" 9 10 9 20
+  
+  let%span span3 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  
+  let%span span4 = "../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60
+  
+  use prelude.prelude.UInt32
+  
+  use prelude.prelude.Int
+  
+  use prelude.prelude.Intrinsic
+  
   predicate resolve'1 (self : uint32) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12] true
-  let rec resolve'1 (self:uint32) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = resolve'1 self} (! return' {result}) ]
-    
+    [%#span3] true
+  
   predicate resolve'0 (self : (uint32, uint32)) =
-    [#"../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60] resolve'1 (let (a, _) = self in a)
-    /\ resolve'1 (let (_, a) = self in a)
-  let rec resolve'0 (self:(uint32, uint32)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
-    
+    [%#span4] resolve'1 (let (a, _) = self in a) /\ resolve'1 (let (_, a) = self in a)
+  
   let rec respect_prec (x:(uint32, uint32)) (return'  (ret:()))= (! bb0
-    [ bb0 = s0
-      [ s0 = -{resolve'0 x}- s1 | s1 =  [ &_0 <- [#"../04_assoc_prec.rs" 10 35 10 37] () ] s2 | s2 = return' {_0} ]
-       ]
-    ) [ & _0 : () = any_l () : () | & x : (uint32, uint32) = x ] 
-    [ return' (result:())-> {[@expl:postcondition] [#"../04_assoc_prec.rs" 9 10 9 20] (let (a, _) = x in a)
-      = (let (_, a) = x in a)}
-      {[@expl:postcondition] [#"../04_assoc_prec.rs" 8 10 8 35] div (5 * 3) 2 <> 4 * (40 + 1)}
-      {[@expl:postcondition] [#"../04_assoc_prec.rs" 7 0 7 33] 5 = 3  -> 2 + 1 = 3}
+    [ bb0 = s0 [ s0 = -{resolve'0 x}- s1 | s1 = return' {_0} ]  ]
+    ) [ & _0 : () = any_l () | & x : (uint32, uint32) = x ] 
+    [ return' (result:())-> {[@expl:postcondition] [%#s04_assoc_prec2] (let (a, _) = x in a) = (let (_, a) = x in a)}
+      {[@expl:postcondition] [%#s04_assoc_prec1] div (5 * 3) 2 <> 4 * (40 + 1)}
+      {[@expl:postcondition] [%#s04_assoc_prec0] 5 = 3  -> 2 + 1 = 3}
       (! return' {result}) ]
     
 end
 module C04AssocPrec_RespectAssoc
-  use prelude.Int
-  use prelude.Intrinsic
-  let rec respect_assoc (_1:()) (return'  (ret:()))= (! bb0
-    [ bb0 = s0 [ s0 =  [ &_0 <- [#"../04_assoc_prec.rs" 13 23 13 25] () ] s1 | s1 = return' {_0} ]  ]
-    ) [ & _0 : () = any_l () : () ] 
-    [ return' (result:())-> {[@expl:postcondition] [#"../04_assoc_prec.rs" 12 10 12 28] 0 + 1 = 0}
-      (! return' {result}) ]
+  let%span s04_assoc_prec0 = "../04_assoc_prec.rs" 12 10 12 28
+  
+  use prelude.prelude.Int
+  
+  use prelude.prelude.Intrinsic
+  
+  let rec respect_assoc (_1:()) (return'  (ret:()))= (! bb0 [ bb0 = return' {_0} ] ) [ & _0 : () = any_l () ] 
+    [ return' (result:())-> {[@expl:postcondition] [%#s04_assoc_prec0] 0 + 1 = 0} (! return' {result}) ]
     
 end

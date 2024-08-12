@@ -1,10 +1,12 @@
 
 module Core_Ptr_NonNull_NonNull_Type
-  use prelude.Opaque
+  use prelude.prelude.Opaque
+  
   type t_nonnull 't =
     | C_NonNull opaque_ptr
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
     [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
     | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
@@ -13,76 +15,87 @@ end
 module Core_Marker_PhantomData_Type
   type t_phantomdata 't =
     | C_PhantomData
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
     [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
     
 end
 module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
-  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  use Core_Marker_PhantomData_Type as PhantomData'0
+  
+  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  
   type t_unique 't =
-    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
-    
+    | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
+  
   function any_l (_ : 'b) : 'a
-  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (_marker:Core_Marker_PhantomData_Type.t_phantomdata 't))= any
-    [ good (pointer:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (_marker:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique pointer _marker
+  
+  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
+    [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
       = input}
       (! ret {pointer} {_marker})
-    | bad (pointer:Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (_marker:Core_Marker_PhantomData_Type.t_phantomdata 't)-> {C_Unique pointer _marker
+    | bad (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
       <> input}
       {false}
       any ]
     
 end
 module Alloc_RawVec_Cap_Type
-  use prelude.UIntSize
-  use prelude.Int
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
   type t_cap  =
     | C_Cap usize
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec t_cap (input:t_cap) (ret  (field_0:usize))= any
     [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
     | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
     
 end
 module Alloc_RawVec_RawVec_Type
-  use Alloc_RawVec_Cap_Type as Alloc_RawVec_Cap_Type
-  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  use Alloc_RawVec_Cap_Type as Cap'0
+  
+  use Core_Ptr_Unique_Unique_Type as Unique'0
+  
   type t_rawvec 't 'a =
-    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) (Alloc_RawVec_Cap_Type.t_cap) 'a
-    
+    | C_RawVec (Unique'0.t_unique 't) (Cap'0.t_cap) 'a
+  
   function any_l (_ : 'b) : 'a
-  let rec t_rawvec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (ptr:Core_Ptr_Unique_Unique_Type.t_unique 't) (cap:Alloc_RawVec_Cap_Type.t_cap) (alloc:'a))= any
-    [ good (ptr:Core_Ptr_Unique_Unique_Type.t_unique 't) (cap:Alloc_RawVec_Cap_Type.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc
-      = input}
+  
+  let rec t_rawvec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a))= any
+    [ good (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
       (! ret {ptr} {cap} {alloc})
-    | bad (ptr:Core_Ptr_Unique_Unique_Type.t_unique 't) (cap:Alloc_RawVec_Cap_Type.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc
-      <> input}
-      {false}
-      any ]
+    | bad (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
     
 end
 module Alloc_Vec_Vec_Type
-  use prelude.UIntSize
-  use prelude.Int
-  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  use Alloc_RawVec_RawVec_Type as RawVec'0
+  
   type t_vec 't 'a =
-    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
-    
+    | C_Vec (RawVec'0.t_rawvec 't 'a) usize
+  
   function any_l (_ : 'b) : 'a
-  let rec t_vec < 't > < 'a > (input:t_vec 't 'a) (ret  (buf:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (len:usize))= any
-    [ good (buf:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
-    | bad (buf:Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+  
+  let rec t_vec < 't > < 'a > (input:t_vec 't 'a) (ret  (buf:RawVec'0.t_rawvec 't 'a) (len:usize))= any
+    [ good (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
+    | bad (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
     
 end
 module Alloc_Alloc_Global_Type
   type t_global  =
     | C_Global
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec t_global (input:t_global) (ret  )= any
     [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
     
@@ -90,16 +103,19 @@ end
 module Core_Ops_Range_Range_Type
   type t_range 'idx =
     | C_Range 'idx 'idx
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec t_range < 'idx > (input:t_range 'idx) (ret  (start:'idx) (end':'idx))= any
     [ good (start:'idx) (end':'idx)-> {C_Range start end' = input} (! ret {start} {end'})
     | bad (start:'idx) (end':'idx)-> {C_Range start end' <> input} {false} any ]
     
+  
   function range_end (self : t_range 'idx) : 'idx =
     match self with
       | C_Range _ a -> a
       end
+  
   function range_start (self : t_range 'idx) : 'idx =
     match self with
       | C_Range a _ -> a
@@ -109,163 +125,275 @@ module Core_Option_Option_Type
   type t_option 't =
     | C_None
     | C_Some 't
-    
+  
   function any_l (_ : 'b) : 'a
+  
   let rec none < 't > (input:t_option 't) (ret  )= any
     [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ]
     
+  
   let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
     | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
     
 end
 module C100doors_F
-  use prelude.UIntSize
+  let%span s100doors0 = "../100doors.rs" 19 40 19 45
+  
+  let%span s100doors1 = "../100doors.rs" 19 47 19 50
+  
+  let%span s100doors2 = "../100doors.rs" 21 16 21 17
+  
+  let%span s100doors3 = "../100doors.rs" 21 19 21 22
+  
+  let%span s100doors4 = "../100doors.rs" 20 4 20 41
+  
+  let%span s100doors5 = "../100doors.rs" 20 4 20 41
+  
+  let%span s100doors6 = "../100doors.rs" 20 4 20 41
+  
+  let%span s100doors7 = "../100doors.rs" 20 16 20 39
+  
+  let%span s100doors8 = "../100doors.rs" 20 4 20 41
+  
+  let%span s100doors9 = "../100doors.rs" 23 20 23 54
+  
+  let%span s100doors10 = "../100doors.rs" 24 20 24 43
+  
+  let%span s100doors11 = "../100doors.rs" 25 22 25 25
+  
+  let%span s100doors12 = "../100doors.rs" 26 52 26 53
+  
+  let%span s100doors13 = "../100doors.rs" 26 29 26 30
+  
+  let%span span14 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  
+  let%span span15 = "" 0 0 0 0
+  
+  let%span span16 = "../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
+  
+  let%span span17 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  
+  let%span span18 = "../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
+  
+  let%span span19 = "../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
+  
+  let%span span20 = "../../../../creusot-contracts/src/std/num.rs" 22 16 22 35
+  
+  let%span span21 = "../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9
+  
+  let%span span22 = "../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32
+  
+  let%span span23 = "../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32
+  
+  let%span span24 = "../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23
+  
+  let%span span25 = "../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33
+  
+  let%span span26 = "../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53
+  
+  let%span span27 = "../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63
+  
+  let%span span28 = "../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83
+  
+  let%span span29 = "../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42
+  
+  let%span span30 = "../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25
+  
+  let%span span31 = "../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 45
+  
+  let%span span32 = "../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  
+  let%span span33 = "../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
+  
+  let%span span34 = "../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85
+  
+  let%span span35 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  
+  let%span span36 = "../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96
+  
+  let%span span37 = "../../../../creusot-contracts/src/std/slice.rs" 122 20 122 37
+  
+  let%span span38 = "../../../../creusot-contracts/src/std/slice.rs" 115 20 115 37
+  
+  let%span span39 = "../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  
+  let%span span40 = "../../../../creusot-contracts/src/std/vec.rs" 146 27 146 46
+  
+  let%span span41 = "" 0 0 0 0
+  
+  let%span span42 = "" 0 0 0 0
+  
+  let%span span43 = "../../../../creusot-contracts/src/std/vec.rs" 147 26 147 54
+  
+  let%span span44 = "../../../../creusot-contracts/src/std/vec.rs" 148 26 148 57
+  
+  let%span span45 = "../../../../creusot-contracts/src/std/vec.rs" 149 26 149 62
+  
+  let%span span46 = "../../../../creusot-contracts/src/std/vec.rs" 150 26 150 55
+  
+  let%span span47 = "" 0 0 0 0
+  
+  let%span span48 = "../../../../creusot-contracts/src/model.rs" 90 8 90 31
+  
+  let%span span49 = "../../../../creusot-contracts/src/std/vec.rs" 156 27 156 46
+  
+  let%span span50 = "" 0 0 0 0
+  
+  let%span span51 = "" 0 0 0 0
+  
+  let%span span52 = "../../../../creusot-contracts/src/std/vec.rs" 157 26 157 54
+  
+  let%span span53 = "" 0 0 0 0
+  
+  let%span span54 = "../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78
+  
+  let%span span55 = "" 0 0 0 0
+  
+  let%span span56 = "../../../../creusot-contracts/src/std/iter.rs" 95 26 98 17
+  
+  let%span span57 = "" 0 0 0 0
+  
+  let%span span58 = "../../../../creusot-contracts/src/std/iter.rs" 80 8 80 19
+  
+  let%span span59 = "../../../../creusot-contracts/src/std/iter.rs" 74 20 74 24
+  
+  let%span span60 = "../../../../creusot-contracts/src/std/iter.rs" 89 0 175 1
+  
+  let%span span61 = "" 0 0 0 0
+  
+  let%span span62 = "" 0 0 0 0
+  
+  let%span span63 = "" 0 0 0 0
+  
+  let%span span64 = "../../../../creusot-contracts/src/std/vec.rs" 174 22 174 41
+  
+  let%span span65 = "../../../../creusot-contracts/src/std/vec.rs" 175 12 175 78
+  
+  let%span span66 = "" 0 0 0 0
+  
+  use prelude.prelude.UIntSize
+  
   use seq.Seq
+  
   predicate invariant'11 (self : Seq.seq usize) =
-    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant'11 (self:Seq.seq usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'11 self} (! return' {result}) ]
-    
+    [%#span14] true
+  
   predicate inv'11 (_x : Seq.seq usize)
-  let rec inv'11 (_x:Seq.seq usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'11 _x} (! return' {result}) ]
-    
+  
   axiom inv'11 : forall x : Seq.seq usize . inv'11 x = true
-  use prelude.Borrow
+  
+  use prelude.prelude.Borrow
+  
   predicate invariant'10 (self : borrowed bool) =
-    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant'10 (self:borrowed bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'10 self} (! return' {result}) ]
-    
+    [%#span14] true
+  
   predicate inv'10 (_x : borrowed bool)
-  let rec inv'10 (_x:borrowed bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'10 _x} (! return' {result}) ]
-    
+  
   axiom inv'10 : forall x : borrowed bool . inv'10 x = true
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  predicate invariant'9 (self : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) =
-    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant'9 (self:borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'9 self} (! return' {result}) ]
-    
-  predicate inv'9 (_x : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)))
-  let rec inv'9 (_x:borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'9 _x} (! return' {result}) ]
-    
-  axiom inv'9 : forall x : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) . inv'9 x = true
+  
+  use Alloc_Alloc_Global_Type as Global'0
+  
+  use Alloc_Vec_Vec_Type as Vec'0
+  
+  predicate invariant'9 (self : borrowed (Vec'0.t_vec bool (Global'0.t_global))) =
+    [%#span14] true
+  
+  predicate inv'9 (_x : borrowed (Vec'0.t_vec bool (Global'0.t_global)))
+  
+  axiom inv'9 : forall x : borrowed (Vec'0.t_vec bool (Global'0.t_global)) . inv'9 x = true
+  
   predicate invariant'8 (self : bool) =
-    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant'8 (self:bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'8 self} (! return' {result}) ]
-    
+    [%#span14] true
+  
   predicate inv'8 (_x : bool)
-  let rec inv'8 (_x:bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'8 _x} (! return' {result}) ]
-    
+  
   axiom inv'8 : forall x : bool . inv'8 x = true
+  
   predicate invariant'7 (self : usize) =
-    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant'7 (self:usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'7 self} (! return' {result}) ]
-    
+    [%#span14] true
+  
   predicate inv'7 (_x : usize)
-  let rec inv'7 (_x:usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'7 _x} (! return' {result}) ]
-    
+  
   axiom inv'7 : forall x : usize . inv'7 x = true
-  predicate invariant'6 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant'6 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'6 self} (! return' {result}) ]
-    
-  predicate inv'6 (_x : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))
-  let rec inv'6 (_x:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'6 _x} (! return' {result}) ]
-    
-  axiom inv'6 : forall x : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global) . inv'6 x = true
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  predicate invariant'5 (self : Core_Option_Option_Type.t_option usize) =
-    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant'5 (self:Core_Option_Option_Type.t_option usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'5 self} (! return' {result}) ]
-    
-  predicate inv'5 (_x : Core_Option_Option_Type.t_option usize)
-  let rec inv'5 (_x:Core_Option_Option_Type.t_option usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'5 _x} (! return' {result}) ]
-    
-  axiom inv'5 : forall x : Core_Option_Option_Type.t_option usize . inv'5 x = true
-  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
-  predicate invariant'4 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
-    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant'4 (self:borrowed (Core_Ops_Range_Range_Type.t_range usize)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'4 self} (! return' {result}) ]
-    
-  predicate inv'4 (_x : borrowed (Core_Ops_Range_Range_Type.t_range usize))
-  let rec inv'4 (_x:borrowed (Core_Ops_Range_Range_Type.t_range usize)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'4 _x} (! return' {result}) ]
-    
-  axiom inv'4 : forall x : borrowed (Core_Ops_Range_Range_Type.t_range usize) . inv'4 x = true
+  
+  predicate invariant'6 (self : Vec'0.t_vec bool (Global'0.t_global)) =
+    [%#span14] true
+  
+  predicate inv'6 (_x : Vec'0.t_vec bool (Global'0.t_global))
+  
+  axiom inv'6 : forall x : Vec'0.t_vec bool (Global'0.t_global) . inv'6 x = true
+  
+  use Core_Option_Option_Type as Option'0
+  
+  predicate invariant'5 (self : Option'0.t_option usize) =
+    [%#span14] true
+  
+  predicate inv'5 (_x : Option'0.t_option usize)
+  
+  axiom inv'5 : forall x : Option'0.t_option usize . inv'5 x = true
+  
+  use Core_Ops_Range_Range_Type as Range'0
+  
+  predicate invariant'4 (self : borrowed (Range'0.t_range usize)) =
+    [%#span14] true
+  
+  predicate inv'4 (_x : borrowed (Range'0.t_range usize))
+  
+  axiom inv'4 : forall x : borrowed (Range'0.t_range usize) . inv'4 x = true
+  
   predicate invariant'3 (self : Seq.seq bool) =
-    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant'3 (self:Seq.seq bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'3 self} (! return' {result}) ]
-    
+    [%#span14] true
+  
   predicate inv'3 (_x : Seq.seq bool)
-  let rec inv'3 (_x:Seq.seq bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'3 _x} (! return' {result}) ]
-    
+  
   axiom inv'3 : forall x : Seq.seq bool . inv'3 x = true
-  use prelude.UIntSize
-  use prelude.Int
-  constant max'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  constant max'0 : usize = [%#span15] (18446744073709551615 : usize)
+  
   use seq.Seq
-  predicate inv'2 (_x : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))
-  let rec inv'2 (_x:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'2 _x} (! return' {result}) ]
-    
-  function shallow_model'0 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) : Seq.seq bool
-  let rec shallow_model'0 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq bool))= {[@expl:precondition] [#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv'2 self}
-    any [ return' (result:Seq.seq bool)-> {result = shallow_model'0 self} (! return' {result}) ] 
-  axiom shallow_model'0_spec : forall self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global) . ([#"../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25] inv'2 self)
-   -> ([#"../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36] inv'3 (shallow_model'0 self))
-  && ([#"../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41] Seq.length (shallow_model'0 self)
-  <= UIntSize.to_int (max'0 : usize))
-  predicate invariant'2 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41] inv'3 (shallow_model'0 self)
-  let rec invariant'2 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'2 self} (! return' {result}) ]
-    
-  axiom inv'2 : forall x : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global) . inv'2 x = true
+  
+  predicate inv'2 (_x : Vec'0.t_vec bool (Global'0.t_global))
+  
+  function shallow_model'0 (self : Vec'0.t_vec bool (Global'0.t_global)) : Seq.seq bool
+  
+  axiom shallow_model'0_spec : forall self : Vec'0.t_vec bool (Global'0.t_global) . ([%#span16] inv'2 self)
+   -> ([%#span18] inv'3 (shallow_model'0 self))
+  && ([%#span17] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
+  
+  predicate invariant'2 (self : Vec'0.t_vec bool (Global'0.t_global)) =
+    [%#span19] inv'3 (shallow_model'0 self)
+  
+  axiom inv'2 : forall x : Vec'0.t_vec bool (Global'0.t_global) . inv'2 x = true
+  
   predicate invariant'1 (self : bool) =
-    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant'1 (self:bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'1 self} (! return' {result}) ]
-    
+    [%#span14] true
+  
   predicate inv'1 (_x : bool)
-  let rec inv'1 (_x:bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'1 _x} (! return' {result}) ]
-    
+  
   axiom inv'1 : forall x : bool . inv'1 x = true
+  
   use seq.Seq
-  predicate inv'0 (_x : Core_Ops_Range_Range_Type.t_range usize)
-  let rec inv'0 (_x:Core_Ops_Range_Range_Type.t_range usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = inv'0 _x} (! return' {result}) ]
-    
-  use prelude.Int
+  
+  predicate inv'0 (_x : Range'0.t_range usize)
+  
+  use prelude.prelude.Int
+  
   use seq.Seq
+  
   use seq.Seq
+  
   function deep_model'0 (self : usize) : int =
-    [#"../../../../creusot-contracts/src/std/num.rs" 22 16 22 35] UIntSize.to_int self
-  let rec deep_model'0 (self:usize) (return'  (ret:int))= any
-    [ return' (result:int)-> {result = deep_model'0 self} (! return' {result}) ]
-    
-  predicate produces'0 (self : Core_Ops_Range_Range_Type.t_range usize) (visited : Seq.seq usize) (o : Core_Ops_Range_Range_Type.t_range usize)
-    
-   =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9] Core_Ops_Range_Range_Type.range_end self
-    = Core_Ops_Range_Range_Type.range_end o
+    [%#span20] UIntSize.to_int self
+  
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  
+  predicate produces'0 (self : Range'0.t_range usize) (visited : Seq.seq usize) (o : Range'0.t_range usize) =
+    [%#span21] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o
     /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
     <= deep_model'0 (Core_Ops_Range_Range_Type.range_start o)
     /\ (Seq.length visited > 0
@@ -274,230 +402,178 @@ module C100doors_F
     = deep_model'0 (Core_Ops_Range_Range_Type.range_start o) - deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'0 (Seq.get visited i) = deep_model'0 (Core_Ops_Range_Range_Type.range_start self) + i)
-  let rec produces'0 (self:Core_Ops_Range_Range_Type.t_range usize) (visited:Seq.seq usize) (o:Core_Ops_Range_Range_Type.t_range usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = produces'0 self visited o} (! return' {result}) ]
+  
+  function produces_trans'0 (a : Range'0.t_range usize) (ab : Seq.seq usize) (b : Range'0.t_range usize) (bc : Seq.seq usize) (c : Range'0.t_range usize) : ()
     
-  function produces_trans'0 (a : Core_Ops_Range_Range_Type.t_range usize) (ab : Seq.seq usize) (b : Core_Ops_Range_Range_Type.t_range usize) (bc : Seq.seq usize) (c : Core_Ops_Range_Range_Type.t_range usize) : ()
-    
-  let rec produces_trans'0 (a:Core_Ops_Range_Range_Type.t_range usize) (ab:Seq.seq usize) (b:Core_Ops_Range_Range_Type.t_range usize) (bc:Seq.seq usize) (c:Core_Ops_Range_Range_Type.t_range usize) (return'  (ret:()))= {[@expl:precondition] [#"../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv'0 c}
-    {[@expl:precondition] [#"../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv'11 bc}
-    {[@expl:precondition] [#"../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv'0 b}
-    {[@expl:precondition] [#"../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv'11 ab}
-    {[@expl:precondition] [#"../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv'0 a}
-    {[@expl:precondition] [#"../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces'0 b bc c}
-    {[@expl:precondition] [#"../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces'0 a ab b}
-    any [ return' (result:())-> {result = produces_trans'0 a ab b bc c} (! return' {result}) ] 
-  axiom produces_trans'0_spec : forall a : Core_Ops_Range_Range_Type.t_range usize, ab : Seq.seq usize, b : Core_Ops_Range_Range_Type.t_range usize, bc : Seq.seq usize, c : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32] produces'0 a ab b)
-   -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32] produces'0 b bc c)
-   -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23] inv'0 a)
-   -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33] inv'11 ab)
-   -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53] inv'0 b)
-   -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63] inv'11 bc)
-   -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83] inv'0 c)
-   -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42] produces'0 a (Seq.(++) ab bc) c)
+  
+  axiom produces_trans'0_spec : forall a : Range'0.t_range usize, ab : Seq.seq usize, b : Range'0.t_range usize, bc : Seq.seq usize, c : Range'0.t_range usize . ([%#span22] produces'0 a ab b)
+   -> ([%#span23] produces'0 b bc c)
+   -> ([%#span24] inv'0 a)
+   -> ([%#span25] inv'11 ab)
+   -> ([%#span26] inv'0 b)
+   -> ([%#span27] inv'11 bc)  -> ([%#span28] inv'0 c)  -> ([%#span29] produces'0 a (Seq.(++) ab bc) c)
+  
   use seq.Seq
-  function produces_refl'0 (self : Core_Ops_Range_Range_Type.t_range usize) : ()
-  let rec produces_refl'0 (self:Core_Ops_Range_Range_Type.t_range usize) (return'  (ret:()))= {[@expl:precondition] [#"../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv'0 self}
-    any [ return' (result:())-> {result = produces_refl'0 self} (! return' {result}) ] 
-  axiom produces_refl'0_spec : forall self : Core_Ops_Range_Range_Type.t_range usize . ([#"../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25] inv'0 self)
-   -> ([#"../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 45] produces'0 self (Seq.empty  : Seq.seq usize) self)
-  predicate invariant'0 (self : Core_Ops_Range_Range_Type.t_range usize) =
-    [#"../../../../creusot-contracts/src/invariant.rs" 8 8 8 12] true
-  let rec invariant'0 (self:Core_Ops_Range_Range_Type.t_range usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = invariant'0 self} (! return' {result}) ]
-    
-  axiom inv'0 : forall x : Core_Ops_Range_Range_Type.t_range usize . inv'0 x = true
-  use prelude.Intrinsic
+  
+  function produces_refl'0 (self : Range'0.t_range usize) : ()
+  
+  axiom produces_refl'0_spec : forall self : Range'0.t_range usize . ([%#span30] inv'0 self)
+   -> ([%#span31] produces'0 self (Seq.empty  : Seq.seq usize) self)
+  
+  predicate invariant'0 (self : Range'0.t_range usize) =
+    [%#span14] true
+  
+  axiom inv'0 : forall x : Range'0.t_range usize . inv'0 x = true
+  
+  use prelude.prelude.Snapshot
+  
+  use prelude.prelude.Intrinsic
+  
   predicate resolve'3 (self : bool) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 46 8 46 12] true
-  let rec resolve'3 (self:bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = resolve'3 self} (! return' {result}) ]
-    
+    [%#span32] true
+  
   use seq.Seq
-  function index_logic'0 [@inline:trivial] (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (ix : int) : bool
-    
-   =
-    [#"../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31] Seq.get (shallow_model'0 self) ix
-  let rec index_logic'0 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (ix:int) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = index_logic'0 self ix} (! return' {result}) ]
-    
-  predicate resolve'2 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) =
-    [#"../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85] forall i : int . 0 <= i
-    /\ i < Seq.length (shallow_model'0 self)  -> resolve'3 (index_logic'0 self i)
-  let rec resolve'2 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = resolve'2 self} (! return' {result}) ]
-    
+  
+  function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec bool (Global'0.t_global)) (ix : int) : bool =
+    [%#span33] Seq.get (shallow_model'0 self) ix
+  
+  predicate resolve'2 (self : Vec'0.t_vec bool (Global'0.t_global)) =
+    [%#span34] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'0 self)  -> resolve'3 (index_logic'0 self i)
+  
   predicate resolve'1 (self : borrowed bool) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
-  let rec resolve'1 (self:borrowed bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = resolve'1 self} (! return' {result}) ]
-    
-  use prelude.Slice
+    [%#span35] self.final = self.current
+  
+  use prelude.prelude.Slice
+  
   predicate resolve_elswhere'0 [@inline:trivial] (self : usize) (old' : Seq.seq bool) (fin : Seq.seq bool) =
-    [#"../../../../creusot-contracts/src/std/slice.rs" 129 8 129 96] forall i : int . 0 <= i
-    /\ i <> UIntSize.to_int self /\ i < Seq.length old'  -> Seq.get old' i = Seq.get fin i
-  let rec resolve_elswhere'0 (self:usize) (old':Seq.seq bool) (fin:Seq.seq bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = resolve_elswhere'0 self old' fin} (! return' {result}) ]
-    
+    [%#span36] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
+     -> Seq.get old' i = Seq.get fin i
+  
   predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq bool) (out : bool) =
-    [#"../../../../creusot-contracts/src/std/slice.rs" 122 20 122 37] Seq.get seq (UIntSize.to_int self) = out
-  let rec has_value'0 (self:usize) (seq:Seq.seq bool) (out:bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = has_value'0 self seq out} (! return' {result}) ]
-    
+    [%#span37] Seq.get seq (UIntSize.to_int self) = out
+  
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq bool) =
-    [#"../../../../creusot-contracts/src/std/slice.rs" 115 20 115 37] UIntSize.to_int self < Seq.length seq
-  let rec in_bounds'0 (self:usize) (seq:Seq.seq bool) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = in_bounds'0 self seq} (! return' {result}) ]
-    
-  function shallow_model'2 (self : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) : Seq.seq bool
-    
-   =
-    [#"../../../../creusot-contracts/src/model.rs" 108 8 108 31] shallow_model'0 ( * self)
-  let rec shallow_model'2 (self:borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) (return'  (ret:Seq.seq bool))= any
-    [ return' (result:Seq.seq bool)-> {result = shallow_model'2 self} (! return' {result}) ]
-    
-  let rec index_mut'0 (self:borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) (index:usize) (return'  (ret:borrowed bool))= {[@expl:precondition] inv'7 index}
-    {[@expl:precondition] inv'9 self}
-    {[@expl:precondition] [#"../../../../creusot-contracts/src/std/vec.rs" 146 27 146 46] in_bounds'0 index (shallow_model'2 self)}
+    [%#span38] UIntSize.to_int self < Seq.length seq
+  
+  function shallow_model'2 (self : borrowed (Vec'0.t_vec bool (Global'0.t_global))) : Seq.seq bool =
+    [%#span39] shallow_model'0 self.current
+  
+  let rec index_mut'0 (self:borrowed (Vec'0.t_vec bool (Global'0.t_global))) (index:usize) (return'  (ret:borrowed bool))= {[@expl:precondition] [%#span42] inv'7 index}
+    {[@expl:precondition] [%#span41] inv'9 self}
+    {[@expl:precondition] [%#span40] in_bounds'0 index (shallow_model'2 self)}
     any
-    [ return' (result:borrowed bool)-> {inv'10 result}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 150 26 150 55] Seq.length (shallow_model'0 ( ^ self))
-      = Seq.length (shallow_model'2 self)}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 149 26 149 62] resolve_elswhere'0 index (shallow_model'2 self) (shallow_model'0 ( ^ self))}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 148 26 148 57] has_value'0 index (shallow_model'0 ( ^ self)) ( ^ result)}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 147 26 147 54] has_value'0 index (shallow_model'2 self) ( * result)}
+    [ return' (result:borrowed bool)-> {[%#span47] inv'10 result}
+      {[%#span46] Seq.length (shallow_model'0 self.final) = Seq.length (shallow_model'2 self)}
+      {[%#span45] resolve_elswhere'0 index (shallow_model'2 self) (shallow_model'0 self.final)}
+      {[%#span44] has_value'0 index (shallow_model'0 self.final) result.final}
+      {[%#span43] has_value'0 index (shallow_model'2 self) result.current}
       (! return' {result}) ]
     
-  function shallow_model'1 (self : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) : Seq.seq bool =
-    [#"../../../../creusot-contracts/src/model.rs" 90 8 90 31] shallow_model'0 self
-  let rec shallow_model'1 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (return'  (ret:Seq.seq bool))= any
-    [ return' (result:Seq.seq bool)-> {result = shallow_model'1 self} (! return' {result}) ]
-    
-  let rec index'0 (self:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) (index:usize) (return'  (ret:bool))= {[@expl:precondition] inv'7 index}
-    {[@expl:precondition] inv'6 self}
-    {[@expl:precondition] [#"../../../../creusot-contracts/src/std/vec.rs" 156 27 156 46] in_bounds'0 index (shallow_model'1 self)}
+  
+  function shallow_model'1 (self : Vec'0.t_vec bool (Global'0.t_global)) : Seq.seq bool =
+    [%#span48] shallow_model'0 self
+  
+  let rec index'0 (self:Vec'0.t_vec bool (Global'0.t_global)) (index:usize) (return'  (ret:bool))= {[@expl:precondition] [%#span51] inv'7 index}
+    {[@expl:precondition] [%#span50] inv'6 self}
+    {[@expl:precondition] [%#span49] in_bounds'0 index (shallow_model'1 self)}
     any
-    [ return' (result:bool)-> {inv'8 result}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 157 26 157 54] has_value'0 index (shallow_model'1 self) result}
+    [ return' (result:bool)-> {[%#span53] inv'8 result}
+      {[%#span52] has_value'0 index (shallow_model'1 self) result}
       (! return' {result}) ]
     
+  
   use seq.Seq
-  predicate resolve'0 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
-    [#"../../../../creusot-contracts/src/resolve.rs" 26 20 26 34]  ^ self =  * self
-  let rec resolve'0 (self:borrowed (Core_Ops_Range_Range_Type.t_range usize)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = resolve'0 self} (! return' {result}) ]
-    
-  predicate completed'0 (self : borrowed (Core_Ops_Range_Range_Type.t_range usize)) =
-    [#"../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78] resolve'0 self
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start ( * self))
-    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end ( * self))
-  let rec completed'0 (self:borrowed (Core_Ops_Range_Range_Type.t_range usize)) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = completed'0 self} (! return' {result}) ]
-    
-  let rec next'0 (self:borrowed (Core_Ops_Range_Range_Type.t_range usize)) (return'  (ret:Core_Option_Option_Type.t_option usize))= {[@expl:precondition] inv'4 self}
+  
+  predicate resolve'0 (self : borrowed (Range'0.t_range usize)) =
+    [%#span35] self.final = self.current
+  
+  predicate completed'0 (self : borrowed (Range'0.t_range usize)) =
+    [%#span54] resolve'0 self
+    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self.current)
+    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end self.current)
+  
+  let rec next'0 (self:borrowed (Range'0.t_range usize)) (return'  (ret:Option'0.t_option usize))= {[@expl:precondition] [%#span55] inv'4 self}
     any
-    [ return' (result:Core_Option_Option_Type.t_option usize)-> {inv'5 result}
-      {[#"../../../../creusot-contracts/src/std/iter.rs" 95 26 98 17] match result with
-        | Core_Option_Option_Type.C_None -> completed'0 self
-        | Core_Option_Option_Type.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+    [ return' (result:Option'0.t_option usize)-> {[%#span57] inv'5 result}
+      {[%#span56] match result with
+        | Option'0.C_None -> completed'0 self
+        | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
     
-  use prelude.Snapshot
-  use prelude.Snapshot
-  use prelude.Snapshot
-  use prelude.Snapshot
-  use prelude.Snapshot
-  predicate into_iter_post'0 (self : Core_Ops_Range_Range_Type.t_range usize) (res : Core_Ops_Range_Range_Type.t_range usize)
-    
-   =
-    [#"../../../../creusot-contracts/src/std/iter.rs" 80 8 80 19] self = res
-  let rec into_iter_post'0 (self:Core_Ops_Range_Range_Type.t_range usize) (res:Core_Ops_Range_Range_Type.t_range usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = into_iter_post'0 self res} (! return' {result}) ]
-    
-  predicate into_iter_pre'0 (self : Core_Ops_Range_Range_Type.t_range usize) =
-    [#"../../../../creusot-contracts/src/std/iter.rs" 74 20 74 24] true
-  let rec into_iter_pre'0 (self:Core_Ops_Range_Range_Type.t_range usize) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {result = into_iter_pre'0 self} (! return' {result}) ]
-    
-  let rec into_iter'0 (self:Core_Ops_Range_Range_Type.t_range usize) (return'  (ret:Core_Ops_Range_Range_Type.t_range usize))= {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [#"../../../../creusot-contracts/src/std/iter.rs" 89 0 175 1] into_iter_pre'0 self}
+  
+  use prelude.prelude.Snapshot
+  
+  use prelude.prelude.Snapshot
+  
+  use prelude.prelude.Snapshot
+  
+  use prelude.prelude.Snapshot
+  
+  predicate into_iter_post'0 (self : Range'0.t_range usize) (res : Range'0.t_range usize) =
+    [%#span58] self = res
+  
+  predicate into_iter_pre'0 (self : Range'0.t_range usize) =
+    [%#span59] true
+  
+  let rec into_iter'0 (self:Range'0.t_range usize) (return'  (ret:Range'0.t_range usize))= {[@expl:precondition] [%#span61] inv'0 self}
+    {[@expl:precondition] [%#span60] into_iter_pre'0 self}
     any
-    [ return' (result:Core_Ops_Range_Range_Type.t_range usize)-> {inv'0 result}
-      {[#"../../../../creusot-contracts/src/std/iter.rs" 89 0 175 1] into_iter_post'0 self result}
+    [ return' (result:Range'0.t_range usize)-> {[%#span62] inv'0 result}
+      {[%#span60] into_iter_post'0 self result}
       (! return' {result}) ]
     
-  let rec from_elem'0 (elem:bool) (n:usize) (return'  (ret:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)))= {[@expl:precondition] inv'1 elem}
+  
+  let rec from_elem'0 (elem:bool) (n:usize) (return'  (ret:Vec'0.t_vec bool (Global'0.t_global)))= {[@expl:precondition] [%#span63] inv'1 elem}
     any
-    [ return' (result:Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))-> {inv'2 result}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 175 12 175 78] forall i : int . 0 <= i /\ i < UIntSize.to_int n
-       -> index_logic'0 result i = elem}
-      {[#"../../../../creusot-contracts/src/std/vec.rs" 174 22 174 41] Seq.length (shallow_model'0 result)
-      = UIntSize.to_int n}
+    [ return' (result:Vec'0.t_vec bool (Global'0.t_global))-> {[%#span66] inv'2 result}
+      {[%#span65] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
+      {[%#span64] Seq.length (shallow_model'0 result) = UIntSize.to_int n}
       (! return' {result}) ]
     
+  
   let rec f (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
-      [ s0 = from_elem'0 {[#"../100doors.rs" 19 40 19 45] false} {[#"../100doors.rs" 19 47 19 50] (100 : usize)}
-          (fun (_ret':Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) ->  [ &door_open <- _ret' ] s1)
+      [ s0 = from_elem'0 {[%#s100doors0] false} {[%#s100doors1] (100 : usize)}
+          (fun (_ret':Vec'0.t_vec bool (Global'0.t_global)) ->  [ &door_open <- _ret' ] s1)
       | s1 = bb1 ]
       
     | bb1 = s0
-      [ s0 = 
-        [ &_3 <- Core_Ops_Range_Range_Type.C_Range ([#"../100doors.rs" 21 16 21 17] (1 : usize)) ([#"../100doors.rs" 21 19 21 22] (101 : usize)) : Core_Ops_Range_Range_Type.t_range usize ]
-        
-        s1
-      | s1 = into_iter'0 {_3} (fun (_ret':Core_Ops_Range_Range_Type.t_range usize) ->  [ &iter <- _ret' ] s2)
+      [ s0 =  [ &_3 <- Range'0.C_Range ([%#s100doors2] (1 : usize)) ([%#s100doors3] (101 : usize)) ] s1
+      | s1 = into_iter'0 {_3} (fun (_ret':Range'0.t_range usize) ->  [ &iter <- _ret' ] s2)
       | s2 = bb2 ]
       
-    | bb2 = s0
-      [ s0 = 
-        [ &iter_old <- ([#"../100doors.rs" 20 4 20 41] Snapshot.new iter) : Snapshot.snap_ty (Core_Ops_Range_Range_Type.t_range usize) ]
-        
-        s1
-      | s1 = bb3 ]
-      
-    | bb3 = s0
-      [ s0 = 
-        [ &produced <- ([#"../100doors.rs" 20 4 20 41] Snapshot.new (Seq.empty  : Seq.seq usize)) : Snapshot.snap_ty (Seq.seq usize) ]
-        
-        s1
-      | s1 = bb4 ]
-      
-    | bb4 = s0 [ s0 = bb5 ] 
-    | bb5 = s0 [ s0 = bb6 ] 
+    | bb2 = s0 [ s0 =  [ &iter_old <- [%#s100doors4] Snapshot.new iter ] s1 | s1 = bb3 ] 
+    | bb3 = s0 [ s0 =  [ &produced <- [%#s100doors5] Snapshot.new (Seq.empty  : Seq.seq usize) ] s1 | s1 = bb4 ] 
+    | bb4 = bb5
+    | bb5 = bb6
     | bb6 = bb6
-      [ bb6 = {[@expl:loop invariant] [#"../100doors.rs" 20 16 20 39] Seq.length (shallow_model'0 door_open) = 100}
-        {[@expl:loop invariant] [#"../100doors.rs" 20 4 20 41] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
-        {[@expl:loop invariant] [#"../100doors.rs" 20 4 20 41] inv'0 iter}
+      [ bb6 = {[@expl:loop invariant] [%#s100doors7] Seq.length (shallow_model'0 door_open) = 100}
+        {[@expl:loop invariant] [%#s100doors6] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
+        {[@expl:loop invariant] [%#s100doors6] inv'0 iter}
         (! s0) [ s0 = bb7 ] 
         [ bb7 = s0
-          [ s0 = Borrow.borrow_mut <Core_Ops_Range_Range_Type.t_range usize> {iter}
-              (fun (_ret':borrowed (Core_Ops_Range_Range_Type.t_range usize)) ->
-                 [ &_14 <- _ret' ] 
-                 [ &iter <-  ^ _14 ] 
-                s1)
-          | s1 = Borrow.borrow_final <Core_Ops_Range_Range_Type.t_range usize> { * _14} {Borrow.get_id _14}
-              (fun (_ret':borrowed (Core_Ops_Range_Range_Type.t_range usize)) ->
+          [ s0 = Borrow.borrow_mut <Range'0.t_range usize> {iter}
+              (fun (_ret':borrowed (Range'0.t_range usize)) ->  [ &_14 <- _ret' ]  [ &iter <- _14.final ] s1)
+          | s1 = Borrow.borrow_final <Range'0.t_range usize> {_14.current} {Borrow.get_id _14}
+              (fun (_ret':borrowed (Range'0.t_range usize)) ->
                  [ &_13 <- _ret' ] 
-                 [ &_14 <- { _14 with current = ( ^ _13) ; } ] 
+                 [ &_14 <- { _14 with current = _13.final ; } ] 
                 s2)
-          | s2 = next'0 {_13} (fun (_ret':Core_Option_Option_Type.t_option usize) ->  [ &_12 <- _ret' ] s3)
+          | s2 = next'0 {_13} (fun (_ret':Option'0.t_option usize) ->  [ &_12 <- _ret' ] s3)
           | s3 = bb8 ]
           
         | bb8 = s0
           [ s0 = -{resolve'0 _14}- s1
           | s1 = any
-            [ br0 -> {_12 = Core_Option_Option_Type.C_None } (! bb11)
-            | br1 (a:usize)-> {_12 = Core_Option_Option_Type.C_Some a} (! bb10) ]
+            [ br0 -> {_12 = Option'0.C_None } (! bb11) | br1 (a:usize)-> {_12 = Option'0.C_Some a} (! bb10) ]
              ]
           
-        | bb10 = s0 [ s0 = bb12 ] 
+        | bb10 = bb12
         | bb12 = s0
-          [ s0 = Core_Option_Option_Type.some <usize> {_12}
-              (fun (r0'0:usize) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
+          [ s0 = Option'0.some <usize> {_12} (fun (r0'0:usize) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
           | s1 = 
-            [ &_17 <- ([#"../100doors.rs" 20 4 20 41] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem))) : Snapshot.snap_ty (Seq.seq usize) ]
+            [ &_17 <- [%#s100doors8] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
             
             s2
           | s2 = bb13 ]
@@ -509,31 +585,28 @@ module C100doors_F
           | s2 =  [ &door <- pass ] s3
           | s3 = bb14 ]
           
-        | bb14 = s0 [ s0 = bb15 ] 
+        | bb14 = bb15
         | bb15 = bb15
-          [ bb15 = {[@expl:loop invariant] [#"../100doors.rs" 24 20 24 43] Seq.length (shallow_model'0 door_open) = 100}
-            {[@expl:loop invariant] [#"../100doors.rs" 23 20 23 54] 1 <= UIntSize.to_int door
+          [ bb15 = {[@expl:loop invariant] [%#s100doors10] Seq.length (shallow_model'0 door_open) = 100}
+            {[@expl:loop invariant] [%#s100doors9] 1 <= UIntSize.to_int door
             /\ UIntSize.to_int door <= 100 + UIntSize.to_int pass}
             (! s0) [ s0 = bb16 ] 
             [ bb16 = s0
-              [ s0 = UIntSize.le {door} {[#"../100doors.rs" 25 22 25 25] (100 : usize)}
-                  (fun (_ret':bool) ->  [ &_23 <- _ret' ] s1)
+              [ s0 = UIntSize.le {door} {[%#s100doors11] (100 : usize)} (fun (_ret':bool) ->  [ &_23 <- _ret' ] s1)
               | s1 = any [ br0 -> {_23 = false} (! bb20) | br1 -> {_23} (! bb17) ]  ]
               
             | bb17 = s0
-              [ s0 = UIntSize.sub {door} {[#"../100doors.rs" 26 52 26 53] (1 : usize)}
-                  (fun (_ret':usize) ->  [ &_28 <- _ret' ] s1)
+              [ s0 = UIntSize.sub {door} {[%#s100doors12] (1 : usize)} (fun (_ret':usize) ->  [ &_28 <- _ret' ] s1)
               | s1 = index'0 {door_open} {_28} (fun (_ret':bool) ->  [ &_26 <- _ret' ] s2)
               | s2 = bb18 ]
               
             | bb18 = s0
-              [ s0 = Borrow.borrow_mut <Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)> {door_open}
-                  (fun (_ret':borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))) ->
+              [ s0 = Borrow.borrow_mut <Vec'0.t_vec bool (Global'0.t_global)> {door_open}
+                  (fun (_ret':borrowed (Vec'0.t_vec bool (Global'0.t_global))) ->
                      [ &_31 <- _ret' ] 
-                     [ &door_open <-  ^ _31 ] 
+                     [ &door_open <- _31.final ] 
                     s1)
-              | s1 = UIntSize.sub {door} {[#"../100doors.rs" 26 29 26 30] (1 : usize)}
-                  (fun (_ret':usize) ->  [ &_32 <- _ret' ] s2)
+              | s1 = UIntSize.sub {door} {[%#s100doors13] (1 : usize)} (fun (_ret':usize) ->  [ &_32 <- _ret' ] s2)
               | s2 = index_mut'0 {_31} {_32} (fun (_ret':borrowed bool) ->  [ &_30 <- _ret' ] s3)
               | s3 = bb19 ]
               
@@ -541,37 +614,34 @@ module C100doors_F
               [ s0 =  [ &_30 <- { _30 with current = (not _26) ; } ] s1
               | s1 = -{resolve'1 _30}- s2
               | s2 = UIntSize.add {door} {pass} (fun (_ret':usize) ->  [ &door <- _ret' ] s3)
-              | s3 =  [ &_11 <- [#"../100doors.rs" 25 26 28 9] () ] s4
-              | s4 = bb15 ]
+              | s3 = bb15 ]
                ]
              ]
           
-        | bb20 = s0 [ s0 =  [ &_11 <- [#"../100doors.rs" 25 8 28 9] () ] s1 | s1 = bb6 ]  ]
+        | bb20 = bb6 ]
          ]
       
-    | bb9 = s0 [ s0 = -{resolve'2 door_open}- s1 | s1 = {[#"../100doors.rs" 20 4 20 41] false} any ] 
-    | bb11 = s0 [ s0 = -{resolve'2 door_open}- s1 | s1 =  [ &_0 <- [#"../100doors.rs" 20 4 20 41] () ] s2 | s2 = bb21 ] 
-    | bb21 = s0 [ s0 = return' {_0} ]  ]
+    | bb11 = s0 [ s0 = -{resolve'2 door_open}- s1 | s1 = bb21 ] 
+    | bb21 = return' {_0} ]
     )
-    [ & _0 : () = any_l () : ()
-    | & door_open : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global) = any_l () : Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)
-    | & iter : Core_Ops_Range_Range_Type.t_range usize = any_l () : Core_Ops_Range_Range_Type.t_range usize
-    | & _3 : Core_Ops_Range_Range_Type.t_range usize = any_l () : Core_Ops_Range_Range_Type.t_range usize
-    | & iter_old : Snapshot.snap_ty (Core_Ops_Range_Range_Type.t_range usize) = any_l () : Snapshot.snap_ty (Core_Ops_Range_Range_Type.t_range usize)
-    | & produced : Snapshot.snap_ty (Seq.seq usize) = any_l () : Snapshot.snap_ty (Seq.seq usize)
-    | & _11 : () = any_l () : ()
-    | & _12 : Core_Option_Option_Type.t_option usize = any_l () : Core_Option_Option_Type.t_option usize
-    | & _13 : borrowed (Core_Ops_Range_Range_Type.t_range usize) = any_l () : borrowed (Core_Ops_Range_Range_Type.t_range usize)
-    | & _14 : borrowed (Core_Ops_Range_Range_Type.t_range usize) = any_l () : borrowed (Core_Ops_Range_Range_Type.t_range usize)
-    | & __creusot_proc_iter_elem : usize = any_l () : usize
-    | & _17 : Snapshot.snap_ty (Seq.seq usize) = any_l () : Snapshot.snap_ty (Seq.seq usize)
-    | & pass : usize = any_l () : usize
-    | & door : usize = any_l () : usize
-    | & _23 : bool = any_l () : bool
-    | & _26 : bool = any_l () : bool
-    | & _28 : usize = any_l () : usize
-    | & _30 : borrowed bool = any_l () : borrowed bool
-    | & _31 : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global)) = any_l () : borrowed (Alloc_Vec_Vec_Type.t_vec bool (Alloc_Alloc_Global_Type.t_global))
-    | & _32 : usize = any_l () : usize ]
+    [ & _0 : () = any_l ()
+    | & door_open : Vec'0.t_vec bool (Global'0.t_global) = any_l ()
+    | & iter : Range'0.t_range usize = any_l ()
+    | & _3 : Range'0.t_range usize = any_l ()
+    | & iter_old : Snapshot.snap_ty (Range'0.t_range usize) = any_l ()
+    | & produced : Snapshot.snap_ty (Seq.seq usize) = any_l ()
+    | & _12 : Option'0.t_option usize = any_l ()
+    | & _13 : borrowed (Range'0.t_range usize) = any_l ()
+    | & _14 : borrowed (Range'0.t_range usize) = any_l ()
+    | & __creusot_proc_iter_elem : usize = any_l ()
+    | & _17 : Snapshot.snap_ty (Seq.seq usize) = any_l ()
+    | & pass : usize = any_l ()
+    | & door : usize = any_l ()
+    | & _23 : bool = any_l ()
+    | & _26 : bool = any_l ()
+    | & _28 : usize = any_l ()
+    | & _30 : borrowed bool = any_l ()
+    | & _31 : borrowed (Vec'0.t_vec bool (Global'0.t_global)) = any_l ()
+    | & _32 : usize = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end

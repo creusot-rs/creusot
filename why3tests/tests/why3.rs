@@ -132,7 +132,7 @@ fn main() {
 
             // There is a session directory. Try to replay the session.
             command.arg("replay");
-            command.args(&["-L", "../prelude"]);
+            command.args(&["-L", ".."]);
 
             match args.replay {
                 ReplayLevel::None => {
@@ -171,7 +171,7 @@ fn main() {
         } else {
             // No session directory. Simply parse the file using "why3 prove".
             command.arg("prove");
-            command.args(&["-L", "../prelude", "-F", "coma"]);
+            command.args(&["-L", "..", "-F", "coma"]);
             command.arg(file);
             output = command.ok();
             if output.is_ok() {

@@ -331,26 +331,27 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let lhs = self.expr_term(lhs)?;
                 let rhs = self.expr_term(rhs)?;
 
-                use rustc_middle::mir;
+                use rustc_middle::mir::BinOp::*;
                 let op = match op {
-                    mir::BinOp::Add | mir::BinOp::AddUnchecked => BinOp::Add,
-                    mir::BinOp::Sub | mir::BinOp::SubUnchecked => BinOp::Sub,
-                    mir::BinOp::Mul | mir::BinOp::MulUnchecked => BinOp::Mul,
-                    mir::BinOp::Div => BinOp::Div,
-                    mir::BinOp::Rem => BinOp::Rem,
-                    mir::BinOp::BitXor => BinOp::BitXor,
-                    mir::BinOp::BitAnd => BinOp::BitAnd,
-                    mir::BinOp::BitOr => BinOp::BitOr,
-                    mir::BinOp::Shl | mir::BinOp::ShlUnchecked => BinOp::Shl,
-                    mir::BinOp::Shr | mir::BinOp::ShrUnchecked => BinOp::Shr,
-                    mir::BinOp::Lt => BinOp::Lt,
-                    mir::BinOp::Le => BinOp::Le,
-                    mir::BinOp::Ge => BinOp::Ge,
-                    mir::BinOp::Gt => BinOp::Gt,
-                    mir::BinOp::Ne => unreachable!(),
-                    mir::BinOp::Eq => unreachable!(),
-                    mir::BinOp::Offset => todo!(),
-                    mir::BinOp::Cmp => todo!(),
+                    Add | AddUnchecked => BinOp::Add,
+                    Sub | SubUnchecked => BinOp::Sub,
+                    Mul | MulUnchecked => BinOp::Mul,
+                    Div => BinOp::Div,
+                    Rem => BinOp::Rem,
+                    BitXor => BinOp::BitXor,
+                    BitAnd => BinOp::BitAnd,
+                    BitOr => BinOp::BitOr,
+                    Shl | ShlUnchecked => BinOp::Shl,
+                    Shr | ShrUnchecked => BinOp::Shr,
+                    Lt => BinOp::Lt,
+                    Le => BinOp::Le,
+                    Ge => BinOp::Ge,
+                    Gt => BinOp::Gt,
+                    Ne => unreachable!(),
+                    Eq => unreachable!(),
+                    Offset => todo!(),
+                    Cmp => todo!(),
+                    AddWithOverflow | SubWithOverflow | MulWithOverflow => todo!(),
                 };
                 Ok(Term {
                     ty,
@@ -373,9 +374,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             }
             ExprKind::Unary { op, arg } => {
                 let arg = self.expr_term(arg)?;
+                use rustc_middle::mir::UnOp::*;
                 let op = match op {
-                    rustc_middle::mir::UnOp::Not => UnOp::Not,
-                    rustc_middle::mir::UnOp::Neg => UnOp::Neg,
+                    Not => UnOp::Not,
+                    Neg => UnOp::Neg,
+                    PtrMetadata => todo!(),
                 };
                 Ok(Term { ty, span, kind: TermKind::Unary { op, arg: Box::new(arg) } })
             }
@@ -553,7 +556,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                             Term {
                                 ty: variant.fields[missing_field.into()].ty(self.ctx.tcx, args),
                                 span: DUMMY_SP,
-                                kind: self.mk_projection(base.clone(), missing_field.into())?,
+                                kind: mk_projection(base.clone(), missing_field.into()),
                             },
                         ));
                     }
@@ -612,7 +615,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             }
             ExprKind::Field { lhs, name, .. } => {
                 let lhs = self.expr_term(lhs)?;
-                Ok(Term { ty, span, kind: self.mk_projection(lhs, name)? })
+                Ok(Term { ty, span, kind: mk_projection(lhs, name) })
             }
             ExprKind::Tuple { ref fields } => {
                 let fields: Vec<_> =
@@ -863,8 +866,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Field { lhs, variant_index: _, name } => {
                 let (cur, fin) = self.logical_reborrow_inner(*lhs)?;
                 Ok((
-                    Term { ty, span, kind: self.mk_projection(cur, *name)? },
-                    Term { ty, span, kind: self.mk_projection(fin, *name)? },
+                    Term { ty, span, kind: mk_projection(cur, *name) },
+                    Term { ty, span, kind: mk_projection(fin, *name) },
                 ))
             }
             ExprKind::Deref { arg } => {
@@ -995,27 +998,10 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
         sub[0].as_type().map(|ty| is_snap_ty(self.ctx.tcx, ty)).unwrap_or(false)
     }
+}
 
-    fn mk_projection(&self, lhs: Term<'tcx>, name: FieldIdx) -> Result<TermKind<'tcx>, Error> {
-        let pat = field_pattern(lhs.ty, name).expect("mk_projection: no term for field");
-
-        match &lhs.ty.kind() {
-            TyKind::Adt(_def, _substs) => Ok(TermKind::Projection { lhs: Box::new(lhs), name }),
-            TyKind::Tuple(_) => {
-                Ok(TermKind::Let {
-                    pattern: pat,
-                    // this is the wrong type
-                    body: Box::new(Term {
-                        ty: lhs.ty,
-                        span: rustc_span::DUMMY_SP,
-                        kind: TermKind::Var(Symbol::intern("a")),
-                    }),
-                    arg: Box::new(lhs),
-                })
-            }
-            _ => unreachable!(),
-        }
-    }
+pub(crate) fn mk_projection<'tcx>(lhs: Term<'tcx>, name: FieldIdx) -> TermKind<'tcx> {
+    TermKind::Projection { lhs: Box::new(lhs), name }
 }
 
 pub(crate) fn type_invariant_term<'tcx>(
@@ -1091,33 +1077,6 @@ pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stu
     }
 }
 
-fn field_pattern(ty: Ty, field: FieldIdx) -> Option<Pattern> {
-    match ty.kind() {
-        TyKind::Tuple(fields) => {
-            let mut fields: Vec<_> = (0..fields.len()).map(|_| Pattern::Wildcard).collect();
-            fields[field.as_usize()] = Pattern::Binder(Symbol::intern("a"));
-
-            Some(Pattern::Tuple(fields))
-        }
-        TyKind::Adt(ref adt, substs) => {
-            assert!(adt.is_struct(), "can only access fields of struct types");
-            assert_eq!(adt.variants().len(), 1, "expected a single variant");
-            let variant = &adt.variants()[0u32.into()];
-
-            let mut fields: Vec<_> = (0..variant.fields.len()).map(|_| Pattern::Wildcard).collect();
-            fields[field.as_usize()] = Pattern::Binder(Symbol::intern("a"));
-
-            Some(Pattern::Constructor {
-                adt: variant.def_id,
-                substs,
-                variant: 0usize.into(),
-                fields,
-            })
-        }
-        _ => unreachable!("field_pattern: {:?}", ty),
-    }
-}
-
 fn not_spec(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: StmtId) -> bool {
     match thir[id].kind {
         StmtKind::Expr { expr, .. } => not_spec_expr(tcx, thir, expr),
@@ -1144,6 +1103,13 @@ fn not_spec_expr(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: ExprId) -> bool {
 use rustc_hir;
 
 impl<'tcx> Pattern<'tcx> {
+    pub(crate) fn get_bool(&self) -> Option<bool> {
+        match self {
+            Pattern::Boolean(b) => Some(*b),
+            _ => None,
+        }
+    }
+
     pub(crate) fn binds(&self, binders: &mut HashSet<Symbol>) {
         match self {
             Pattern::Constructor { fields, .. } => fields.iter().for_each(|f| f.binds(binders)),

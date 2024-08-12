@@ -39,14 +39,11 @@ use std::{collections::HashMap, iter, rc::Rc};
 mod statement;
 pub(crate) mod terminator;
 
+/// Translate a function from rustc's MIR to fMIR.
 pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, body_id: BodyId) -> fmir::Body<'tcx> {
     let body = ctx.body(body_id).clone();
 
-    // crate::debug::debug(ctx.tcx, ctx.tcx.optimized_mir(def_id));
-    // crate::debug::debug(ctx.tcx, &body);
-
-    let func_translator = BodyTranslator::build_context(ctx.tcx, ctx, &body, body_id);
-    func_translator.translate()
+    BodyTranslator::to_fmir(ctx.tcx, ctx, &body, body_id)
 }
 
 // Split this into several sub-contexts: Core, Analysis, Results?
@@ -59,10 +56,10 @@ pub struct BodyTranslator<'body, 'tcx> {
 
     resolver: Option<EagerResolver<'body, 'tcx>>,
 
-    // Spec / Snapshot variables
+    /// Spec / Snapshot variables
     erased_locals: BitSet<Local>,
 
-    // Current block being generated
+    /// Current block being generated
     current_block: (Vec<fmir::Statement<'tcx>>, Option<fmir::Terminator<'tcx>>),
 
     past_blocks: IndexMap<BasicBlock, fmir::Block<'tcx>>,
@@ -79,6 +76,12 @@ pub struct BodyTranslator<'body, 'tcx> {
     assertions: IndexMap<DefId, Term<'tcx>>,
     /// Map of the `snapshot!` blocks to their translated version.
     snapshots: IndexMap<DefId, Term<'tcx>>,
+    /// Indicate that the current function is a `ghost!` closure.
+    is_ghost_closure: bool,
+    /// Offset to add to each use of a `BasicBlock`
+    ///
+    /// This exists to allow the inlining of ghost closures.
+    basic_block_offset: usize,
 
     borrows: Option<Rc<BorrowSet<'tcx>>>,
 
@@ -89,11 +92,41 @@ pub struct BodyTranslator<'body, 'tcx> {
 }
 
 impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
+    /// Translate a function body to fmir
+    fn to_fmir(
+        tcx: TyCtxt<'tcx>,
+        ctx: &'body mut TranslationCtx<'tcx>,
+        body: &'body Body<'tcx>,
+        body_id: BodyId,
+    ) -> fmir::Body<'tcx> {
+        let vars = LocalDecls::with_capacity(body.local_decls.len());
+        let is_ghost_closure = util::is_ghost_closure(tcx, body_id.def_id());
+        let fresh_id = body.basic_blocks.len();
+        let past_blocks = IndexMap::new();
+        let this = BodyTranslator::build_context(
+            tcx,
+            ctx,
+            body,
+            body_id,
+            vars,
+            fresh_id,
+            past_blocks,
+            is_ghost_closure,
+            0,
+        );
+        this.translate()
+    }
+
     fn build_context(
         tcx: TyCtxt<'tcx>,
         ctx: &'body mut TranslationCtx<'tcx>,
         body: &'body Body<'tcx>,
         body_id: BodyId,
+        mut vars: IndexMap<Symbol, LocalDecl<'tcx>>,
+        fresh_id: usize,
+        past_blocks: IndexMap<BasicBlock, fmir::Block<'tcx>>,
+        is_ghost_closure: bool,
+        basic_block_offset: usize,
     ) -> Self {
         let invariants = corrected_invariant_names_and_locations(ctx, &body);
         let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, &body);
@@ -123,7 +156,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             Some(_) => (None, None),
         };
 
-        let (vars, locals) = translate_vars(&body, &erased_locals);
+        let locals = translate_vars(&body, &erased_locals, &mut vars);
 
         BodyTranslator {
             tcx,
@@ -134,12 +167,14 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             vars,
             erased_locals,
             current_block: (Vec::new(), None),
-            past_blocks: Default::default(),
+            past_blocks,
             ctx,
-            fresh_id: body.basic_blocks.len(),
+            fresh_id,
             invariants,
             assertions,
             snapshots,
+            is_ghost_closure,
+            basic_block_offset,
             borrows,
         }
     }
@@ -220,7 +255,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 terminator: std::mem::replace(&mut self.current_block.1, None).unwrap(),
             };
 
-            self.past_blocks.insert(bb, block);
+            self.past_blocks.insert(bb + self.basic_block_offset, block);
         }
     }
 
@@ -249,6 +284,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         assert!(self.current_block.1.is_none());
 
         self.current_block.1 = Some(t);
+    }
+
+    fn emit_goto(&mut self, bb: BasicBlock) {
+        assert!(self.current_block.1.is_none());
+        self.current_block.1 = Some(fmir::Terminator::Goto(bb + self.basic_block_offset))
     }
 
     /// # Parameters
@@ -348,7 +388,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     // Useful helper to translate an operand
-    pub(crate) fn translate_operand(&mut self, operand: &Operand<'tcx>) -> fmir::Operand<'tcx> {
+    pub(crate) fn translate_operand(&self, operand: &Operand<'tcx>) -> fmir::Operand<'tcx> {
         let kind = match operand {
             Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(*pl)),
             Operand::Move(pl) => fmir::Operand::Move(self.translate_place(*pl)),
@@ -357,8 +397,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         kind
     }
 
-    fn translate_place(&self, _pl: mir::Place<'tcx>) -> fmir::Place<'tcx> {
-        let projection = _pl
+    fn translate_place(&self, pl: mir::Place<'tcx>) -> fmir::Place<'tcx> {
+        let projection = pl
             .projection
             .into_iter()
             .map(|p| match p {
@@ -376,7 +416,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 mir::ProjectionElem::Subtype(ty) => mir::ProjectionElem::Subtype(ty),
             })
             .collect();
-        fmir::Place { local: self.locals[&_pl.local], projection }
+        fmir::Place { local: self.locals[&pl.local], projection }
     }
 
     fn check_ghost_term(&mut self, term: &Term<'tcx>, location: Location) {
@@ -393,11 +433,17 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 }
 
+/// # Returns
+/// - The mapping of mir locals to the symbol used in fmir.
+/// - If `is_inlined` is `true`, the symbol of the inlined function argument (only
+/// functions with 1 arg are inlined).
+///
+/// Additionally, this adds [`LocalDecl`] information about the new fmir symbols to `vars`.
 fn translate_vars<'tcx>(
     body: &Body<'tcx>,
     erased_locals: &BitSet<Local>,
-) -> (LocalDecls<'tcx>, HashMap<Local, Symbol>) {
-    let mut vars = LocalDecls::with_capacity(body.local_decls.len());
+    vars: &mut LocalDecls<'tcx>,
+) -> HashMap<Local, Symbol> {
     let mut locals = HashMap::new();
 
     use mir::VarDebugInfoContents::Place;
@@ -431,19 +477,26 @@ fn translate_vars<'tcx>(
             sym
         };
 
-        locals.insert(loc, sym.symbol());
+        let symbol = sym.symbol();
+        let mut i = 0;
+        let mut s = symbol;
+        while vars.contains_key(&s) {
+            s = Symbol::intern(&format!("{}_{i}", symbol.as_str()));
+            i += 1;
+        }
+        locals.insert(loc, s);
+        let is_arg = 0 < loc.index() && loc.index() <= body.arg_count;
         vars.insert(
-            sym.symbol(),
+            s,
             LocalDecl {
-                mir_local: loc,
                 span: d.source_info.span,
                 ty: d.ty,
                 temp: !d.is_user_variable(),
-                arg: 0 < loc.index() && loc.index() <= body.arg_count,
+                arg: is_arg,
             },
         );
     }
-    (vars, locals)
+    locals
 }
 
 #[derive(Clone)]
@@ -750,7 +803,7 @@ pub(crate) fn resolve_predicate_of<'tcx>(
     let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method"))?;
     let subst = ctx.mk_args(&[GenericArg::from(ty)]);
 
-    let resolve_impl = traits::resolve_opt(ctx.tcx, param_env, trait_meth_id, subst)?;
+    let resolve_impl = traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, subst)?;
     use rustc_middle::ty::TypeVisitableExt;
     if !ty.still_further_specializable()
         && ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), resolve_impl.0)

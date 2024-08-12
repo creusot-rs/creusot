@@ -6,7 +6,7 @@ impl<T, const N: usize> ShallowModel for [T; N] {
     #[logic]
     #[trusted]
     #[open]
-    #[creusot::builtins = "prelude.Slice.id"]
+    #[creusot::builtins = "prelude.prelude.Slice.id"]
     // TODO:
     // #[ensures(result.len() == N@)]
     // Warning: #[ensures] and #[trusted] are incompatible, so this might require

@@ -33,19 +33,19 @@ macro_rules! mach_int {
     };
 }
 
-mach_int!(u8, "prelude.UInt8.to_uint", 0u8);
-mach_int!(u16, "prelude.UInt16.to_uint", 0u16);
-mach_int!(u32, "prelude.UInt32.to_uint", 0u32);
-mach_int!(u64, "prelude.UInt64.to_uint", 0u64);
-mach_int!(u128, "prelude.UInt128.to_uint", 0u128);
-mach_int!(usize, "prelude.UIntSize.to_uint", 0usize);
+mach_int!(u8, "prelude.prelude.UInt8.to_uint", 0u8);
+mach_int!(u16, "prelude.prelude.UInt16.to_uint", 0u16);
+mach_int!(u32, "prelude.prelude.UInt32.to_uint", 0u32);
+mach_int!(u64, "prelude.prelude.UInt64.to_uint", 0u64);
+mach_int!(u128, "prelude.prelude.UInt128.to_uint", 0u128);
+mach_int!(usize, "prelude.prelude.UIntSize.to_uint", 0usize);
 
-mach_int!(i8, "prelude.Int8.to_int", 0i8);
-mach_int!(i16, "prelude.Int16.to_int", 0i16);
-mach_int!(i32, "prelude.Int32.to_int", 0i32);
-mach_int!(i64, "prelude.Int64.to_int", 0i64);
-mach_int!(i128, "prelude.Int128.to_int", 0i128);
-mach_int!(isize, "prelude.IntSize.to_int", 9isize);
+mach_int!(i8, "prelude.prelude.Int8.to_int", 0i8);
+mach_int!(i16, "prelude.prelude.Int16.to_int", 0i16);
+mach_int!(i32, "prelude.prelude.Int32.to_int", 0i32);
+mach_int!(i64, "prelude.prelude.Int64.to_int", 0i64);
+mach_int!(i128, "prelude.prelude.Int128.to_int", 0i128);
+mach_int!(isize, "prelude.prelude.IntSize.to_int", 9isize);
 
 /// Adds specifications for checked, wrapping, saturating, and overflowing operations on the given
 /// integer type

@@ -45,15 +45,15 @@ fn main() -> Result<()> {
             // subcommand analysis:
             //   we want to launch Why3 Ide in cargo-creusot not by creusot-rustc.
             //   however we want to keep the current behavior for other commands: prove and replay
-            let (creusot_rustc_subcmd, launch_why3) = if let Some(CreusotSubCommand::Why3 {
-                command: Why3SubCommand::Ide,
-                ..
-            }) = subcmd
-            {
-                (None, true)
-            } else {
-                (subcmd, false)
-            };
+            let (creusot_rustc_subcmd, launch_why3) =
+                if let Some(CreusotSubCommand::Why3 {
+                    command: Why3SubCommand::Ide, args, ..
+                }) = subcmd
+                {
+                    (None, Some(args))
+                } else {
+                    (subcmd, None)
+                };
 
             let config_args = setup::status_for_creusot()?;
             let creusot_args = CreusotArgs {
@@ -66,7 +66,7 @@ fn main() -> Result<()> {
 
             invoke_cargo(&creusot_args);
 
-            if launch_why3 {
+            if let Some(args) = launch_why3 {
                 // why3 configuration
                 let mut b = Why3LauncherBuilder::new();
                 b.why3_path(config_args.why3_path);
@@ -74,16 +74,12 @@ fn main() -> Result<()> {
                 b.output_file(coma_filename);
                 // temporary: for the moment we only launch why3 via cargo-creusot in Ide mode
                 b.mode(Why3Mode::Ide);
-                if let Some(subcmd) = &creusot_rustc_subcmd {
-                    let CreusotSubCommand::Why3 { args, .. } = subcmd;
-                    b.args(args.clone());
-                }
+                b.args(args);
 
                 let why3 = b.build()?;
                 let prelude_dir =
                     TempDir::new("creusot_why3_prelude").expect("could not create temp dir");
                 let mut command = why3.make(prelude_dir.path())?;
-
                 command.status().expect("could not run why3");
             }
 

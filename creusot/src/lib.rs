@@ -22,6 +22,7 @@ extern crate rustc_middle;
 extern crate rustc_mir_build;
 extern crate rustc_mir_dataflow;
 extern crate rustc_mir_transform;
+extern crate rustc_next_trait_solver;
 extern crate rustc_resolve;
 extern crate rustc_serialize;
 extern crate rustc_session;

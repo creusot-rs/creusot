@@ -5,6 +5,7 @@ use creusot_contracts::{logic::Seq, *};
 mod common;
 use common::Iterator;
 
+#[allow(dead_code)]
 struct Zip<A: Iterator, B: Iterator> {
     a: A,
     b: B,

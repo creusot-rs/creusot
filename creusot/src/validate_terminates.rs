@@ -27,9 +27,9 @@ use petgraph::{graph, visit::EdgeRef as _};
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_middle::{
     thir,
-    ty::{EarlyBinder, FnDef, GenericArgs, ParamEnv, TyCtxt},
+    ty::{EarlyBinder, FnDef, GenericArgKind, GenericArgs, ParamEnv, TyCtxt, TyKind},
 };
-use rustc_span::Span;
+use rustc_span::{Span, Symbol};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 struct FunctionInstance<'tcx> {
@@ -181,48 +181,65 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
                 }
                 // Function defined in another crate: assume all the functions corresponding to its trait bounds can be called.
                 ToVisit::Extern { caller_def_id, function_def_id, generic_args } => {
-                    for bound in ctx.tcx.param_env(function_def_id).caller_bounds() {
-                        let Some(clause) = bound.as_trait_clause() else { continue };
-                        let tcx = ctx.tcx;
-                        let param_env = tcx.param_env(caller_def_id);
+                    if ctx.tcx.is_diagnostic_item(Symbol::intern("ghost_from_fn"), function_def_id)
+                    {
+                        // This is a `ghost!` call, so it needs special handling.
+                        let &[_, ty] = generic_args.as_slice() else {
+                            unreachable!();
+                        };
+                        let GenericArgKind::Type(ty) = ty.unpack() else { unreachable!() };
+                        let TyKind::Closure(ghost_def_id, ghost_args_ty) = ty.kind() else {
+                            unreachable!()
+                        };
+                        build_call_graph.insert_instance(
+                            caller_def_id,
+                            FunctionInstance { def_id: *ghost_def_id, generic_args: ghost_args_ty },
+                        );
+                    } else {
+                        for bound in ctx.tcx.param_env(function_def_id).caller_bounds() {
+                            let Some(clause) = bound.as_trait_clause() else { continue };
+                            let tcx = ctx.tcx;
+                            let param_env = tcx.param_env(caller_def_id);
 
-                        for &item_id in
-                            tcx.associated_item_def_ids(clause.skip_binder().trait_ref.def_id)
-                        {
-                            if !tcx.def_kind(item_id).is_fn_like() {
-                                continue;
-                            }
-                            let subst = EarlyBinder::bind(
-                                tcx.erase_regions(clause.skip_binder().trait_ref.args),
-                            )
-                            .instantiate(tcx, generic_args);
-                            let (def_id, generic_args) = match tcx
-                                .try_normalize_erasing_regions(param_env, subst)
+                            for &item_id in
+                                tcx.associated_item_def_ids(clause.skip_binder().trait_ref.def_id)
                             {
-                                Ok(subst) => {
-                                    match tcx.resolve_instance(param_env.and((item_id, subst))) {
-                                        Ok(Some(instance)) => {
-                                            (instance.def.def_id(), instance.args)
-                                        }
-                                        _ => (item_id, subst),
-                                    }
+                                if !tcx.def_kind(item_id).is_fn_like() {
+                                    continue;
                                 }
-                                Err(_) => (item_id, subst),
-                            };
+                                let subst = EarlyBinder::bind(
+                                    tcx.erase_regions(clause.skip_binder().trait_ref.args),
+                                )
+                                .instantiate(tcx, generic_args);
+                                let (def_id, generic_args) =
+                                    match tcx.try_normalize_erasing_regions(param_env, subst) {
+                                        Ok(subst) => {
+                                            match tcx.resolve_instance_raw(
+                                                param_env.and((item_id, subst)),
+                                            ) {
+                                                Ok(Some(instance)) => {
+                                                    (instance.def.def_id(), instance.args)
+                                                }
+                                                _ => (item_id, subst),
+                                            }
+                                        }
+                                        Err(_) => (item_id, subst),
+                                    };
 
-                            // Else, we could not find a concrete function to call,
-                            // so we don't consider this to be an actual call: we cannot resolve it to any concrete function yet.
-                            if def_id != item_id {
-                                let span = ctx.tcx.def_span(function_def_id);
-                                let next_node = build_call_graph.insert_instance(
-                                    function_def_id,
-                                    FunctionInstance { def_id, generic_args },
-                                );
+                                // Else, we could not find a concrete function to call,
+                                // so we don't consider this to be an actual call: we cannot resolve it to any concrete function yet.
+                                if def_id != item_id {
+                                    let span = ctx.tcx.def_span(function_def_id);
+                                    let next_node = build_call_graph.insert_instance(
+                                        function_def_id,
+                                        FunctionInstance { def_id, generic_args },
+                                    );
 
-                                build_call_graph.graph.add_edge(caller_node, next_node, span);
+                                    build_call_graph.graph.add_edge(caller_node, next_node, span);
 
-                                build_call_graph.additional_data[&next_node].has_variant =
-                                    util::has_variant_clause(ctx.tcx, item_id);
+                                    build_call_graph.additional_data[&next_node].has_variant =
+                                        util::has_variant_clause(ctx.tcx, item_id);
+                                }
                             }
                         }
                     }
@@ -257,7 +274,11 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
         };
         if let Some(loop_span) = additional_data[&fun_index].has_loops {
             let fun_span = ctx.tcx.def_span(def_id);
-            let mut error = ctx.error(fun_span, "`#[terminates]` function must not contain loops.");
+            let mut error = if util::is_ghost_closure(ctx.tcx, def_id) {
+                ctx.error(fun_span, "`ghost!` block must not contain loops.")
+            } else {
+                ctx.error(fun_span, "`#[terminates]` function must not contain loops.")
+            };
             error.span_note(loop_span, "looping occurs here");
             error.emit();
         }
@@ -376,17 +397,19 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tc
                 if let &FnDef(def_id, subst) = self.thir[fun].ty.kind() {
                     let subst = EarlyBinder::bind(self.tcx.erase_regions(subst))
                         .instantiate(self.tcx, self.generic_args);
-                    let (def_id, args) =
-                        match self.tcx.try_normalize_erasing_regions(self.param_env, subst) {
-                            Ok(subst) => {
-                                match self.tcx.resolve_instance(self.param_env.and((def_id, subst)))
-                                {
-                                    Ok(Some(instance)) => (instance.def.def_id(), instance.args),
-                                    _ => (def_id, subst),
-                                }
+                    let (def_id, args) = match self
+                        .tcx
+                        .try_normalize_erasing_regions(self.param_env, subst)
+                    {
+                        Ok(subst) => {
+                            match self.tcx.resolve_instance_raw(self.param_env.and((def_id, subst)))
+                            {
+                                Ok(Some(instance)) => (instance.def.def_id(), instance.args),
+                                _ => (def_id, subst),
                             }
-                            Err(_) => (def_id, subst),
-                        };
+                        }
+                        Err(_) => (def_id, subst),
+                    };
                     self.calls.insert((def_id, fn_span, args));
                 }
             }

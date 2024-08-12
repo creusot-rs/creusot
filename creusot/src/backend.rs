@@ -17,7 +17,6 @@ use std::{
 
 use crate::{options::SpanMode, run_why3::SpanMap};
 pub(crate) use clone_map::*;
-use why3::Exp;
 
 use self::{
     dependency::{Dependency, ExtendedId},
@@ -37,7 +36,7 @@ pub(crate) mod term;
 pub(crate) mod traits;
 pub(crate) mod ty;
 pub(crate) mod ty_inv;
-mod wto;
+pub(crate) mod wto;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub(crate) enum TransId {
@@ -407,14 +406,6 @@ impl<'tcx> Why3Generator<'tcx> {
             hi.line,
             hi.col_display,
         ))
-    }
-
-    pub(crate) fn attach_span(&mut self, span: Span, exp: Exp) -> Exp {
-        if let Some(attr) = self.span_attr(span) {
-            Exp::Attr(attr, Box::new(exp))
-        } else {
-            exp
-        }
     }
 }
 

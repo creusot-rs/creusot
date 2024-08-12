@@ -31,8 +31,8 @@ use super::program::{IntermediateStmt, LoweringState};
 
 /// [(_1 as Some).0] = X   ---> let _1 = (let Some(a) = _1 in Some(X))
 /// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
-pub(crate) fn create_assign_inner<'tcx>(
-    lower: &mut LoweringState<'_, 'tcx>,
+pub(crate) fn create_assign_inner<'tcx, N: Namer<'tcx>>(
+    lower: &mut LoweringState<'_, 'tcx, N>,
     lhs: &fmir::Place<'tcx>,
     rhs: Exp,
     _: Span,
@@ -43,8 +43,8 @@ pub(crate) fn create_assign_inner<'tcx>(
     stmts
 }
 
-pub(crate) fn lplace_to_expr<'tcx>(
-    lower: &mut LoweringState<'_, 'tcx>,
+pub(crate) fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
+    lower: &mut LoweringState<'_, 'tcx, N>,
     loc: Symbol,
     proj: &[mir::ProjectionElem<Symbol, Ty<'tcx>>],
     rhs: coma::Term,
@@ -56,7 +56,7 @@ pub(crate) fn lplace_to_expr<'tcx>(
         Box::new(|_, x| x);
     let mut istmts = Vec::new();
 
-    let fresh_vars = |lower: &mut LoweringState, n| -> Vec<_> {
+    let fresh_vars = |lower: &mut LoweringState<'_, 'tcx, _>, n| -> Vec<_> {
         (0..n).map(|_| lower.fresh_from("l")).collect()
     };
 
@@ -72,7 +72,7 @@ pub(crate) fn lplace_to_expr<'tcx>(
                             RecUp { record: Box::new(f), updates: vec![("current".into(), t)] },
                         )
                     });
-                    focus = Exp::Current(Box::new(focus))
+                    focus = focus.field("current")
                 }
             }
             Field(ix, _) => match place_ty.ty.kind() {
@@ -117,13 +117,12 @@ pub(crate) fn lplace_to_expr<'tcx>(
                         params,
                     ));
                     let constr = Exp::qvar(lower.names.constructor(variant.def_id, subst));
-                    let ty = lower.ty(place_ty.ty);
                     constructor = Box::new(|is, t| {
                         let mut fields: Vec<_> =
                             fields.into_iter().map(|f| Exp::var(f.as_term().0.clone())).collect();
                         fields[ix.as_usize()] = t;
                         // TODO: Only emit type if the constructor would otherwise be ambiguous
-                        constructor(is, constr.app(fields).ascribe(ty))
+                        constructor(is, constr.app(fields))
                     });
                     focus = new_focus;
                 }
@@ -180,13 +179,12 @@ pub(crate) fn lplace_to_expr<'tcx>(
                     istmts.push(IntermediateStmt::Call(fields, Expr::Symbol(acc_name), params));
 
                     let constr = Exp::qvar(lower.names.constructor(*id, subst));
-                    let ty = lower.ty(place_ty.ty);
                     constructor = Box::new(|is, t| {
                         let mut fields: Vec<_> =
                             field_names.into_iter().map(|f| Exp::var(f)).collect();
                         fields[ix.as_usize()] = t;
                         // TODO: Only emit type if the constructor would otherwise be ambiguous
-                        constructor(is, constr.app(fields).ascribe(ty))
+                        constructor(is, constr.app(fields))
                     });
                     focus = new_focus;
                 }
@@ -247,8 +245,8 @@ pub(crate) fn lplace_to_expr<'tcx>(
     (term, istmts)
 }
 
-pub(crate) fn rplace_to_expr<'tcx>(
-    lower: &mut LoweringState<'_, 'tcx>,
+pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
+    lower: &mut LoweringState<'_, 'tcx, N>,
     loc: Symbol,
     proj: &[mir::ProjectionElem<Symbol, Ty<'tcx>>],
 ) -> (Exp, Vec<IntermediateStmt>) {
@@ -259,7 +257,7 @@ pub(crate) fn rplace_to_expr<'tcx>(
     use rustc_middle::mir::ProjectionElem::*;
     let mut place_ty = PlaceTy::from_ty(lower.locals[&loc].ty);
 
-    let fresh_vars = |lower: &mut LoweringState, n| -> Vec<_> {
+    let fresh_vars = |lower: &mut LoweringState<'_, 'tcx, _>, n| -> Vec<_> {
         (0..n).map(|_| lower.fresh_from("r")).collect()
     };
 
@@ -269,7 +267,7 @@ pub(crate) fn rplace_to_expr<'tcx>(
             Deref => {
                 let mutable = place_ty.ty.is_mutable_ptr();
                 if mutable {
-                    focus = Exp::Current(Box::new(focus))
+                    focus = focus.field("current")
                 }
             }
             Field(ix, _) => match place_ty.ty.kind() {

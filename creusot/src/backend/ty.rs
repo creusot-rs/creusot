@@ -23,7 +23,7 @@ use why3::{
         AdtDecl, ConstructorDecl, Contract, Decl, Field, Logic, Module, Signature, TyDecl, Use,
         ValDecl,
     },
-    exp::{Binder, Exp, Pattern, Trigger},
+    exp::{Binder, Exp, Pattern},
     ty::Type as MlT,
     Ident, QName,
 };
@@ -319,27 +319,6 @@ impl<'tcx> Why3Generator<'tcx> {
             }
         }
         v
-    }
-}
-
-/// Get the generic paramer of a type.  Given `F<T>` return `T`.
-/// Panics if the type doesn't have 1 generic parameter.
-pub fn generic_of_ty<'tcx>(ty: Ty<'tcx>) -> Ty<'tcx> {
-    match ty.kind() {
-        Adt(_, args) if args.len() == 1 => args.type_at(0),
-        _ => panic!(
-            "`generic_of_ty` is called on type `{:?}` which doesn't have 1 generic parameter",
-            ty
-        ),
-    }
-}
-
-/// Get the generic paramer of a type.  Given `F<T>` return `T`.
-/// Panics if the type doesn't have 1 generic parameter.
-pub fn has_generics<'tcx>(ty: Ty<'tcx>) -> bool {
-    match ty.kind() {
-        Adt(_, args) => args.len() > 0,
-        _ => false,
     }
 }
 
@@ -718,16 +697,14 @@ pub(crate) fn build_accessor(
     variant_ix: usize,
     variant_arities: &[(QName, usize)],
     target_field: (usize, MlT, bool),
-    ctx: &TranslationCtx<'_>,
+    _: &TranslationCtx<'_>,
 ) -> Decl {
     let field_ty = target_field.1;
     let field_ix = target_field.0;
 
-    let trigger = if ctx.opts.simple_triggers { None } else { Some(Trigger::NONE) };
-
     let sig = Signature {
         name: acc_name.clone(),
-        trigger,
+        trigger: None,
         attrs: Vec::new(),
         args: vec![Binder::typed("self".into(), this.clone())],
         retty: Some(field_ty.clone()),
@@ -916,7 +893,7 @@ pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
     }
 }
 
-pub fn int_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, names: &mut Dependencies<'tcx>) -> MlT {
+pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &mut Why3Generator<'tcx>, names: &mut N) -> MlT {
     let int_id = ctx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap();
     let ty = ctx.type_of(int_id).skip_binder();
     translate_ty(ctx, names, DUMMY_SP, ty)

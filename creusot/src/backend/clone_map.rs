@@ -1,4 +1,3 @@
-#![allow(deprecated)]
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
 use rustc_hir::{
@@ -9,10 +8,13 @@ use rustc_middle::ty::{
     self, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable,
     TypeVisitor,
 };
-use rustc_span::Symbol;
+use rustc_span::{FileName, Span, Symbol};
 use rustc_target::abi::FieldIdx;
 
-use why3::{declaration::Decl, Ident, QName};
+use why3::{
+    declaration::{Attribute, Decl},
+    Ident, QName,
+};
 
 use crate::{
     backend::{
@@ -62,105 +64,71 @@ pub enum PreludeModule {
 impl PreludeModule {
     pub fn qname(&self) -> QName {
         match self {
-            PreludeModule::Float32 => QName::from_string("prelude.Float32").unwrap(),
-            PreludeModule::Float64 => QName::from_string("prelude.Float64").unwrap(),
-            PreludeModule::Int => QName::from_string("prelude.Int").unwrap(),
-            PreludeModule::Int8 => QName::from_string("prelude.Int8").unwrap(),
-            PreludeModule::Int16 => QName::from_string("prelude.Int16").unwrap(),
-            PreludeModule::Int32 => QName::from_string("prelude.Int32").unwrap(),
-            PreludeModule::Int64 => QName::from_string("prelude.Int64").unwrap(),
-            PreludeModule::Int128 => QName::from_string("prelude.Int128").unwrap(),
-            PreludeModule::UInt8 => QName::from_string("prelude.UInt8").unwrap(),
-            PreludeModule::UInt16 => QName::from_string("prelude.UInt16").unwrap(),
-            PreludeModule::UInt32 => QName::from_string("prelude.UInt32").unwrap(),
-            PreludeModule::UInt64 => QName::from_string("prelude.UInt64").unwrap(),
-            PreludeModule::UInt128 => QName::from_string("prelude.UInt128").unwrap(),
-            PreludeModule::Char => QName::from_string("prelude.Char").unwrap(),
-            PreludeModule::Opaque => QName::from_string("prelude.Opaque").unwrap(),
+            PreludeModule::Float32 => QName::from_string("prelude.prelude.Float32").unwrap(),
+            PreludeModule::Float64 => QName::from_string("prelude.prelude.Float64").unwrap(),
+            PreludeModule::Int => QName::from_string("prelude.prelude.Int").unwrap(),
+            PreludeModule::Int8 => QName::from_string("prelude.prelude.Int8").unwrap(),
+            PreludeModule::Int16 => QName::from_string("prelude.prelude.Int16").unwrap(),
+            PreludeModule::Int32 => QName::from_string("prelude.prelude.Int32").unwrap(),
+            PreludeModule::Int64 => QName::from_string("prelude.prelude.Int64").unwrap(),
+            PreludeModule::Int128 => QName::from_string("prelude.prelude.Int128").unwrap(),
+            PreludeModule::UInt8 => QName::from_string("prelude.prelude.UInt8").unwrap(),
+            PreludeModule::UInt16 => QName::from_string("prelude.prelude.UInt16").unwrap(),
+            PreludeModule::UInt32 => QName::from_string("prelude.prelude.UInt32").unwrap(),
+            PreludeModule::UInt64 => QName::from_string("prelude.prelude.UInt64").unwrap(),
+            PreludeModule::UInt128 => QName::from_string("prelude.prelude.UInt128").unwrap(),
+            PreludeModule::Char => QName::from_string("prelude.prelude.Char").unwrap(),
+            PreludeModule::Opaque => QName::from_string("prelude.prelude.Opaque").unwrap(),
             PreludeModule::Ref => QName::from_string("Ref").unwrap(),
-            PreludeModule::Seq => QName::from_string("prelude.Seq").unwrap(),
+            PreludeModule::Seq => QName::from_string("prelude.prelude.Seq").unwrap(),
             PreludeModule::Type => QName::from_string("Type").unwrap(),
-            PreludeModule::Isize => QName::from_string("prelude.IntSize").unwrap(),
-            PreludeModule::Usize => QName::from_string("prelude.UIntSize").unwrap(),
-            PreludeModule::Bool => QName::from_string("prelude.Bool").unwrap(),
-            PreludeModule::Borrow => QName::from_string("prelude.Borrow").unwrap(),
-            PreludeModule::Slice => QName::from_string("prelude.Slice").unwrap(),
-            PreludeModule::Intrinsic => QName::from_string("prelude.Intrinsic").unwrap(),
+            PreludeModule::Isize => QName::from_string("prelude.prelude.IntSize").unwrap(),
+            PreludeModule::Usize => QName::from_string("prelude.prelude.UIntSize").unwrap(),
+            PreludeModule::Bool => QName::from_string("prelude.prelude.Bool").unwrap(),
+            PreludeModule::Borrow => QName::from_string("prelude.prelude.Borrow").unwrap(),
+            PreludeModule::Slice => QName::from_string("prelude.prelude.Slice").unwrap(),
+            PreludeModule::Intrinsic => QName::from_string("prelude.prelude.Intrinsic").unwrap(),
         }
     }
 }
 
 pub(crate) trait Namer<'tcx> {
-    fn value(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName;
-
-    fn ty(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName;
-
-    fn constructor(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName;
-
-    fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName;
-
-    /// Creates a name for a type or closure projection ie: x.field1
-    /// This also includes projections from `enum` types
-    ///
-    /// * `def_id` - The id of the type or closure being projected
-    /// * `subst` - Substitution that type is being accessed at
-    /// * `variant` - The constructor being used. For closures this is always 0
-    /// * `ix` - The field in that constructor being accessed.
-    fn accessor(
-        &mut self,
-        def_id: DefId,
-        subst: GenericArgsRef<'tcx>,
-        variant: usize,
-        ix: FieldIdx,
-    ) -> QName;
-
-    fn eliminator(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName;
-
-    fn normalize<T: TypeFoldable<TyCtxt<'tcx>> + Copy>(
-        &self,
-        ctx: &TranslationCtx<'tcx>,
-        ty: T,
-    ) -> T;
-
-    fn import_prelude_module(&mut self, _: PreludeModule);
-
-    fn with_vis<F, A>(&mut self, vis: CloneLevel, f: F) -> A
-    where
-        F: FnOnce(&mut Self) -> A;
-}
-
-impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
     fn value(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
-        let node = DepNode::new(self.tcx, (def_id, subst));
-
-        // TODO(xavier): removing `to_snake_case` seemingly caused no issues... Investigate
+        let node = DepNode::new(self.tcx(), (def_id, subst));
         self.insert(node).qname()
     }
 
     fn ty(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
-        let mut node = DepNode::new(self.tcx, (def_id, subst));
+        let mut node = DepNode::new(self.tcx(), (def_id, subst));
 
-        if self.tcx.is_closure_like(def_id) {
-            node = DepNode::Type(Ty::new_closure(self.tcx, def_id, subst));
+        if self.tcx().is_closure_like(def_id) {
+            node = DepNode::Type(Ty::new_closure(self.tcx(), def_id, subst));
         }
 
-        match self.tcx.def_kind(def_id) {
+        match self.tcx().def_kind(def_id) {
             DefKind::AssocTy => self.insert(node).qname(),
             _ => self.insert(node).qname(),
         }
     }
 
     fn constructor(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
-        let type_id = match self.tcx.def_kind(def_id) {
+        let type_id = match self.tcx().def_kind(def_id) {
             DefKind::Closure | DefKind::Struct | DefKind::Enum | DefKind::Union => def_id,
-            DefKind::Variant => self.tcx.parent(def_id),
+            DefKind::Variant => self.tcx().parent(def_id),
             _ => unreachable!("Not a type or constructor"),
         };
-        let mut name = item_name(self.tcx, def_id, Namespace::ValueNS);
+        let mut name = item_name(self.tcx(), def_id, Namespace::ValueNS);
         name.capitalize();
         let mut qname = self.ty(type_id, subst);
         qname.name = name.into();
         qname
+    }
+
+    fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName {
+        let def_id =
+            self.tcx().get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
+        let subst = self.tcx().mk_args(&[ty::GenericArg::from(ty)]);
+        self.value(def_id, subst)
     }
 
     /// Creates a name for a type or closure projection ie: x.field1
@@ -177,14 +145,13 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
         variant: usize,
         ix: FieldIdx,
     ) -> QName {
-        let tcx = self.tcx;
-        assert!(matches!(util::item_type(self.tcx, def_id), ItemType::Type | ItemType::Closure));
+        let tcx = self.tcx();
         let node = match util::item_type(tcx, def_id) {
             ItemType::Closure => {
                 DepNode::Hacked(ExtendedId::Accessor(ix.as_u32() as u8), def_id, subst)
             }
             ItemType::Type => {
-                let adt = self.tcx.adt_def(def_id);
+                let adt = tcx.adt_def(def_id);
                 let field_did = adt.variants()[variant.into()].fields[ix].did;
                 DepNode::new(tcx, (field_did, subst))
             }
@@ -200,7 +167,7 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
     }
 
     fn eliminator(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
-        let tcx = self.tcx;
+        let tcx = self.tcx();
 
         match tcx.def_kind(def_id) {
             DefKind::Variant => {
@@ -212,10 +179,10 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
                 qname
             }
             DefKind::Closure | DefKind::Struct | DefKind::Union => {
-                let mut node = DepNode::new(self.tcx, (def_id, subst));
+                let mut node = DepNode::new(tcx, (def_id, subst));
 
-                if self.tcx.is_closure_like(def_id) {
-                    node = DepNode::Type(Ty::new_closure(self.tcx, def_id, subst));
+                if tcx.is_closure_like(def_id) {
+                    node = DepNode::Type(Ty::new_closure(tcx, def_id, subst));
                 }
 
                 self.insert(node).qname()
@@ -223,24 +190,34 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
             _ => unreachable!(),
         }
     }
+    fn normalize<T: TypeFoldable<TyCtxt<'tcx>> + Copy>(
+        &self,
+        ctx: &TranslationCtx<'tcx>,
+        ty: T,
+    ) -> T;
 
-    fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName {
-        let def_id =
-            self.tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
-        let subst = self.tcx.mk_args(&[ty::GenericArg::from(ty)]);
-        self.value(def_id, subst)
+    fn import_prelude_module(&mut self, module: PreludeModule) {
+        self.insert(DepNode::Builtin(module));
     }
 
+    fn with_vis<F, A>(&mut self, vis: CloneLevel, f: F) -> A
+    where
+        F: FnOnce(&mut Self) -> A;
+
+    fn insert(&mut self, dep: DepNode<'tcx>) -> Kind;
+
+    fn tcx(&self) -> TyCtxt<'tcx>;
+
+    fn span(&mut self, span: Span) -> Option<why3::declaration::Attribute>;
+}
+
+impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
     fn normalize<T: TypeFoldable<TyCtxt<'tcx>> + Copy>(
         &self,
         ctx: &TranslationCtx<'tcx>,
         ty: T,
     ) -> T {
-        self.tcx.try_normalize_erasing_regions(self.param_env(ctx), ty).unwrap_or(ty)
-    }
-
-    fn import_prelude_module(&mut self, module: PreludeModule) {
-        self.insert(DepNode::Builtin(module));
+        self.tcx().try_normalize_erasing_regions(self.param_env(ctx), ty).unwrap_or(ty)
     }
 
     fn with_vis<F, A>(&mut self, vis: CloneLevel, f: F) -> A
@@ -251,6 +228,43 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
         let ret = f(self);
         self.dep_level = public;
         ret
+    }
+
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.tcx
+    }
+
+    fn insert(&mut self, key: DepNode<'tcx>) -> Kind {
+        let key = key.erase_regions(self.tcx).closure_hack(self.tcx);
+        self.levels
+            .entry(key)
+            .and_modify(|l| {
+                *l = (*l).min(self.dep_level);
+            })
+            .or_insert(self.dep_level);
+
+        self.names.insert(key)
+    }
+
+    fn span(&mut self, span: Span) -> Option<Attribute> {
+        if span.is_dummy() {
+            return None;
+        }
+        let cnt = self.names.spans.len();
+        let name = self.names.spans.entry(span).or_insert_with(|| {
+            let lo = self.tcx.sess.source_map().lookup_char_pos(span.lo());
+            if span.is_dummy() {
+                return Symbol::intern(&format!("dummy{cnt}"));
+            }
+
+            if let FileName::Real(real_name) = &lo.file.name {
+                let path = real_name.local_path_if_available();
+                Symbol::intern(&format!("s{}{cnt}", path.file_stem().unwrap().to_str().unwrap()))
+            } else {
+                Symbol::intern(&format!("span{cnt}"))
+            }
+        });
+        Some(Attribute::NamedSpan(name.to_string()))
     }
 }
 
@@ -283,8 +297,16 @@ pub(crate) struct NameSupply {
 #[derive(Clone)]
 struct CloneNames<'tcx> {
     tcx: TyCtxt<'tcx>,
+    /// Freshens a symbol by appending a number to the end
     counts: NameSupply,
+    /// Tracks the name given to each dependency
     names: IndexMap<DepNode<'tcx>, Kind>,
+    /// Identifies ADTs using only their name and not their substitutions
+    /// This is allowed because ADTs are still polymorphic: we have a single
+    /// module that we import even if we use multiple instantiations in Creusot.
+    adt_names: IndexMap<DefId, Symbol>,
+    /// Maps spans to a unique name
+    spans: IndexMap<Span, Symbol>,
 }
 
 impl std::fmt::Debug for CloneNames<'_> {
@@ -299,8 +321,15 @@ impl std::fmt::Debug for CloneNames<'_> {
 
 impl<'tcx> CloneNames<'tcx> {
     fn new(tcx: TyCtxt<'tcx>) -> Self {
-        CloneNames { tcx, counts: Default::default(), names: Default::default() }
+        CloneNames {
+            tcx,
+            counts: Default::default(),
+            names: Default::default(),
+            adt_names: Default::default(),
+            spans: Default::default(),
+        }
     }
+
     fn insert(&mut self, key: DepNode<'tcx>) -> Kind {
         *self.names.entry(key).or_insert_with(|| match key {
             DepNode::Item(id, _) if util::item_type(self.tcx, id) == ItemType::Field => {
@@ -321,9 +350,17 @@ impl<'tcx> CloneNames<'tcx> {
                         (Symbol::intern(&modl), Symbol::intern(&*name))
                     } else {
                         let modl: Symbol = if util::item_type(self.tcx, did) == ItemType::Closure {
-                            Symbol::intern(&format!("{}_Type", module_name(self.tcx, did)))
+                            self.counts.freshen(Symbol::intern("Closure"))
                         } else {
-                            module_name(self.tcx, did)
+                            match self.adt_names.get(&did) {
+                                Some(nm) => *nm,
+                                None => {
+                                    let name = self.tcx.item_name(did);
+                                    let fresh = self.counts.freshen(name);
+                                    self.adt_names.insert(did, fresh);
+                                    fresh
+                                }
+                            }
                         };
 
                         let name = Symbol::intern(&*item_name(self.tcx, did, Namespace::TypeNS));
@@ -526,18 +563,6 @@ impl<'tcx> Dependencies<'tcx> {
         self.hidden.insert(node);
     }
 
-    fn insert(&mut self, key: DepNode<'tcx>) -> Kind {
-        let key = key.erase_regions(self.tcx).closure_hack(self.tcx);
-        self.levels
-            .entry(key)
-            .and_modify(|l| {
-                *l = (*l).min(self.dep_level);
-            })
-            .or_insert(self.dep_level);
-
-        self.names.insert(key)
-    }
-
     fn self_key(&self) -> DepNode<'tcx> {
         DepNode::from_trans_id(self.tcx, self.self_id)
     }
@@ -593,7 +618,7 @@ impl<'tcx> Dependencies<'tcx> {
             }
         }
 
-        let mut elab = SymbolElaborator::new(param_env);
+        let mut elab = SymbolElaborator::new(param_env, self.tcx);
         let mut cloned = IndexSet::new();
 
         for p in &clone_graph.builtins {
@@ -629,7 +654,21 @@ impl<'tcx> Dependencies<'tcx> {
             decls.extend(decl);
         }
 
-        // debug_assert!(topo.finished.len() >= self.names.len(), "missed a clone in {:?}", self.self_id);
+        let mut spans: Vec<_> = self
+            .names
+            .spans
+            .into_iter()
+            .map(|(sp, name)| {
+                let (nm, l1, c1, l2, c2) =
+                    if let Some(Attribute::Span(nm, l1, c1, l2, c2)) = ctx.span_attr(sp) {
+                        (nm, l1, c1, l2, c2)
+                    } else {
+                        ("".into(), 0, 0, 0, 0)
+                    };
+
+                Decl::LetSpan(name.as_str().into(), nm, l1, c1, l2, c2)
+            })
+            .collect();
 
         // Only return the roots (direct dependencies) of the graph as dependencies
         let summary: CloneSummary<'tcx> = roots
@@ -638,7 +677,8 @@ impl<'tcx> Dependencies<'tcx> {
             .map(|r| (r, clone_graph.info(r).clone()))
             .collect();
 
-        let dependencies = decls;
+        spans.extend(decls);
+        let dependencies = spans;
         (dependencies, summary)
     }
 }

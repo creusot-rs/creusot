@@ -254,18 +254,3 @@ impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
 
     ord_laws_impl! {}
 }
-
-impl<T: OrdLogic> OrdLogic for Option<T> {
-    #[logic]
-    #[open]
-    fn cmp_log(self, o: Self) -> Ordering {
-        match (self, o) {
-            (None, None) => Ordering::Equal,
-            (None, Some(_)) => Ordering::Less,
-            (Some(_), None) => Ordering::Greater,
-            (Some(x), Some(y)) => x.cmp_log(y),
-        }
-    }
-
-    ord_laws_impl! {}
-}

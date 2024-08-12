@@ -97,23 +97,14 @@ pub enum UnOp {
     FloatNeg,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub(crate) enum Purity {
-    Logic,
-    Program,
-}
-
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 // TODO: multi-trigger/multiple triggers
-pub struct Trigger(pub Option<Box<Exp>>);
+pub struct Trigger(pub Vec<Exp>);
 
 impl Trigger {
-    pub const NONE: Trigger = Trigger(None);
-
     pub fn single(exp: Exp) -> Self {
-        Trigger(Some(Box::new(exp)))
+        Trigger(vec![exp])
     }
 }
 
@@ -171,8 +162,8 @@ pub enum Exp {
     Old(Box<Exp>),
     Absurd,
     Impl(Box<Exp>, Box<Exp>),
-    Forall(Vec<(Ident, Type)>, Trigger, Box<Exp>),
-    Exists(Vec<(Ident, Type)>, Trigger, Box<Exp>),
+    Forall(Vec<(Ident, Type)>, Vec<Trigger>, Box<Exp>),
+    Exists(Vec<(Ident, Type)>, Vec<Trigger>, Box<Exp>),
     FnLit(Box<Exp>),
 }
 
@@ -243,11 +234,11 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
             f.visit_mut(r)
         }
         Exp::Forall(_, t, e) => {
-            f.visit_trigger_mut(t);
+            t.iter_mut().for_each(|t| f.visit_trigger_mut(t));
             f.visit_mut(e)
         }
         Exp::Exists(_, t, e) => {
-            f.visit_trigger_mut(t);
+            t.iter_mut().for_each(|t| f.visit_trigger_mut(t));
             f.visit_mut(e)
         }
         Exp::Attr(_, e) => f.visit_mut(e),
@@ -261,10 +252,7 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
 }
 
 pub fn super_visit_mut_trigger<T: ExpMutVisitor>(f: &mut T, trigger: &mut Trigger) {
-    match &mut trigger.0 {
-        None => {}
-        Some(exp) => f.visit_mut(exp),
-    }
+    trigger.0.iter_mut().for_each(|t| f.visit_mut(t))
 }
 
 impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
@@ -333,7 +321,7 @@ impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
 
                 let mut s = &subst;
                 s.visit_mut(exp);
-                s.visit_trigger_mut(trig);
+                trig.iter_mut().for_each(|t| s.visit_trigger_mut(t));
             }
             Exp::Exists(binders, trig, exp) => {
                 let mut subst = self.clone();
@@ -356,7 +344,7 @@ impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
 
                 let mut s = &subst;
                 s.visit_mut(exp);
-                s.visit_trigger_mut(trig);
+                trig.iter_mut().for_each(|t| s.visit_trigger_mut(t));
             }
             _ => super_visit_mut(self, exp),
         }
@@ -421,11 +409,11 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
             f.visit(r)
         }
         Exp::Forall(_, t, e) => {
-            f.visit_trigger(t);
+            t.iter().for_each(|t| f.visit_trigger(t));
             f.visit(e)
         }
         Exp::Exists(_, t, e) => {
-            f.visit_trigger(t);
+            t.iter().for_each(|t| f.visit_trigger(t));
             f.visit(e)
         }
         Exp::Attr(_, e) => f.visit(e),
@@ -439,10 +427,7 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
 }
 
 pub fn super_visit_trigger<T: ExpVisitor>(f: &mut T, trigger: &Trigger) {
-    match &trigger.0 {
-        None => {}
-        Some(exp) => f.visit(exp),
-    }
+    trigger.0.iter().for_each(|t| f.visit(t))
 }
 
 impl Exp {
@@ -490,6 +475,10 @@ impl Exp {
             _ => self = Exp::Call(Box::new(self), arg),
         }
         self
+    }
+
+    pub fn field(self, field: &str) -> Self {
+        Self::RecField { record: Box::new(self), label: field.into() }
     }
 
     // Construct an application from this expression and an argument
@@ -561,7 +550,7 @@ impl Exp {
     /// Builds a quantifier with explicit trigger
     ///
     /// Simplfies ∀ x, True into True
-    pub fn forall_trig(bound: Vec<(Ident, Type)>, trigger: Trigger, body: Exp) -> Self {
+    pub fn forall_trig(bound: Vec<(Ident, Type)>, trigger: Vec<Trigger>, body: Exp) -> Self {
         if body.is_true() {
             body
         } else {
@@ -573,15 +562,19 @@ impl Exp {
     ///
     /// Simplfies ∀ x, True into True
     pub fn forall(bound: Vec<(Ident, Type)>, body: Exp) -> Self {
-        Exp::forall_trig(bound, Trigger::NONE, body)
+        Exp::forall_trig(bound, Vec::new(), body)
     }
 
-    pub fn exists_trig(bound: Vec<(Ident, Type)>, trigger: Trigger, body: Exp) -> Self {
+    pub fn exists_trig(bound: Vec<(Ident, Type)>, trigger: Vec<Trigger>, body: Exp) -> Self {
         Exp::Exists(bound, trigger, Box::new(body))
     }
 
     pub fn exists(bound: Vec<(Ident, Type)>, body: Exp) -> Self {
-        Exp::exists_trig(bound, Trigger::NONE, body)
+        Exp::exists_trig(bound, Vec::new(), body)
+    }
+
+    pub fn with_attr(self, attr: Attribute) -> Self {
+        Exp::Attr(attr, Box::new(self))
     }
 
     pub fn is_true(&self) -> bool {
@@ -624,7 +617,7 @@ impl Exp {
             body
         // Remove this if performance is a concern
         } else if occurences[&ident] == 1 {
-            body.subst(&[(ident, arg)].into_iter().collect());
+            body.subst(&mut [(ident, arg)].into_iter().collect());
             body
         } else {
             Exp::Let { pattern: Pattern::VarP(ident), arg: Box::new(arg), body: Box::new(body) }
@@ -739,6 +732,7 @@ pub(crate) enum Precedence {
     Prefix,   // prefix-op
     Abs,      // Function abstraction
     App,      // Function application
+    Field,    // Record field accesses (from observing the why3 parser)
     Brackets, // Brackets ([_])
     Atom,     // Syntactically closed or atomic expressions
     BangOp,   // !
@@ -767,7 +761,8 @@ impl Precedence {
             Precedence::Infix4 => Precedence::Prefix,
             Precedence::Prefix => Precedence::Abs,
             Precedence::Abs => Precedence::App,
-            Precedence::App => Precedence::Brackets,
+            Precedence::App => Precedence::Field,
+            Precedence::Field => Precedence::Brackets,
             Precedence::Brackets => Precedence::Atom,
             Precedence::Atom => Precedence::BangOp,
             Precedence::BangOp => Precedence::BangOp,
@@ -804,7 +799,7 @@ impl Exp {
             Exp::Var(_) => Atom,
             Exp::QVar(_) => Atom,
             Exp::RecUp { .. } => App,
-            Exp::RecField { .. } => Infix4,
+            Exp::RecField { .. } => Field,
             Exp::Tuple(_) => Atom,
             Exp::Constructor { .. } => App,
             // Exp::Seq(_, _) => { Term }
@@ -867,7 +862,7 @@ impl Exp {
                     Exp::Forall(bnds, trig, exp) => {
                         let mut fvs = std::mem::take(&mut self.occurs);
                         self.visit(exp);
-                        self.visit_trigger(trig);
+                        trig.iter().for_each(|t| self.visit_trigger(t));
                         bnds.iter().for_each(|(l, _)| {
                             self.occurs.remove(l);
                         });
@@ -876,7 +871,7 @@ impl Exp {
                     Exp::Exists(bnds, trig, exp) => {
                         let mut fvs = std::mem::take(&mut self.occurs);
                         self.visit(exp);
-                        self.visit_trigger(trig);
+                        trig.iter().for_each(|t| self.visit_trigger(t));
                         bnds.iter().for_each(|(l, _)| {
                             self.occurs.remove(l);
                         });
@@ -919,8 +914,132 @@ impl Exp {
         qfvs.qfvs
     }
 
-    pub fn subst(&mut self, mut subst: &HashMap<Ident, Exp>) {
+    pub fn subst(&mut self, subst: &mut Environment) {
         subst.visit_mut(self);
+    }
+}
+
+#[derive(Default)]
+pub struct Environment {
+    substs: Vec<HashMap<Ident, Exp>>,
+}
+
+impl Environment {
+    pub fn add_subst(&mut self, substs: HashMap<Ident, Exp>) {
+        self.substs.push(substs);
+    }
+
+    pub fn pop_subst(&mut self) {
+        self.substs.pop();
+    }
+
+    pub fn get(&self, id: &Ident) -> Option<Exp> {
+        for sub in self.substs.iter().rev() {
+            if let Some(e) = sub.get(id) {
+                return Some(e.clone());
+            }
+        }
+        None
+    }
+
+    pub fn occ(&self, id: &Ident) -> usize {
+        let mut occ = 0;
+        for sub in self.substs.iter() {
+            if sub.get(id).is_some() {
+                occ += 1;
+            }
+        }
+
+        occ
+    }
+}
+
+impl FromIterator<(Ident, Exp)> for Environment {
+    fn from_iter<T: IntoIterator<Item = (Ident, Exp)>>(iter: T) -> Self {
+        Environment { substs: vec![iter.into_iter().collect()] }
+    }
+}
+
+impl ExpMutVisitor for Environment {
+    fn visit_mut(&mut self, exp: &mut Exp) {
+        match exp {
+            Exp::Var(v) => {
+                if let Some(e) = self.get(v) {
+                    *exp = e.clone()
+                }
+            }
+            Exp::Abs(binders, body) => {
+                let mut bound_here = HashMap::default();
+
+                for binder in binders {
+                    binder.fvs().into_iter().for_each(|id| {
+                        bound_here.insert(id.clone(), Exp::var(id));
+                    });
+                }
+
+                self.add_subst(bound_here);
+                self.visit_mut(body);
+                self.pop_subst();
+            }
+
+            Exp::Let { pattern, arg, body } => {
+                self.visit_mut(arg);
+
+                let mut bound = pattern.binders();
+
+                let mut bound_here = HashMap::default();
+                bound.drain(..).for_each(|k| {
+                    bound_here.insert(k.clone(), Exp::var(k));
+                });
+
+                self.add_subst(bound_here);
+                self.visit_mut(body);
+                self.pop_subst();
+            }
+            Exp::Match(scrut, brs) => {
+                self.visit_mut(scrut);
+
+                for (pat, br) in brs {
+                    let mut bound_here = HashMap::default();
+                    pat.binders().drain(..).for_each(|k| {
+                        bound_here.insert(k.clone(), Exp::var(k));
+                    });
+
+                    self.add_subst(bound_here);
+                    self.visit_mut(br);
+                    self.pop_subst();
+                }
+            }
+            Exp::Forall(binders, trig, exp) => {
+                let mut bound_here = HashMap::default();
+
+                binders.iter().for_each(|k| {
+                    bound_here.insert(k.0.clone(), Exp::var(k.0.clone()));
+                });
+
+                self.add_subst(bound_here);
+                self.visit_mut(exp);
+                trig.iter_mut().for_each(|t| self.visit_trigger_mut(t));
+                self.pop_subst();
+            }
+            Exp::Exists(binders, trig, exp) => {
+                let mut bound_here = HashMap::default();
+
+                binders.iter().for_each(|k| {
+                    bound_here.insert(k.0.clone(), Exp::var(k.0.clone()));
+                });
+
+                self.add_subst(bound_here);
+                self.visit_mut(exp);
+                trig.iter_mut().for_each(|t| self.visit_trigger_mut(t));
+                self.pop_subst();
+            }
+            _ => super_visit_mut(self, exp),
+        }
+    }
+
+    fn visit_trigger_mut(&mut self, trig: &mut Trigger) {
+        super_visit_mut_trigger(self, trig)
     }
 }
 

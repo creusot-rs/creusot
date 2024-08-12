@@ -5,13 +5,20 @@ use crate::{
     util::{is_law, is_spec},
 };
 use rustc_hir::def_id::DefId;
-use rustc_infer::infer::TyCtxtInferExt;
-use rustc_middle::ty::{
-    AssocItem, AssocItemContainer, AssocItemContainer::*, EarlyBinder, GenericArgs, GenericArgsRef,
-    ParamEnv, TraitRef, TyCtxt, TypeVisitableExt,
+use rustc_infer::{
+    infer::{DefineOpaqueTypes, InferCtxt, TyCtxtInferExt},
+    traits::ObligationCause,
 };
-use rustc_span::Symbol;
-use rustc_trait_selection::traits::ImplSource;
+use rustc_middle::ty::{
+    AssocItem, AssocItemContainer, Const, ConstKind, EarlyBinder, GenericArgs, GenericArgsRef,
+    ParamConst, ParamEnv, ParamTy, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder,
+};
+use rustc_span::{Symbol, DUMMY_SP};
+use rustc_trait_selection::{
+    error_reporting::InferCtxtErrorExt,
+    traits::{orphan_check_trait_ref, ImplSource, InCrate},
+};
+use rustc_type_ir::fold::TypeSuperFoldable;
 use std::collections::HashMap;
 
 #[derive(Clone)]
@@ -92,7 +99,6 @@ impl<'tcx> TranslationCtx<'tcx> {
                 self.param_env(impl_item),
                 self.def_span(impl_item),
             );
-            use rustc_trait_selection::traits::error_reporting::TypeErrCtxtExt;
             if let Err(errs) = res {
                 infcx.err_ctxt().report_fulfillment_errors(errs);
                 self.crash_and_error(rustc_span::DUMMY_SP, "error above");
@@ -163,88 +169,38 @@ fn logic_refinement_term<'tcx>(
 
     // Goal { name: format!("{}_spec", &*name).into(), goal: refn }
 }
+
 pub(crate) fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = &AssocItem> {
     tcx.associated_items(def_id)
         .in_definition_order()
         .filter(move |item| !is_spec(tcx, item.def_id))
 }
 
-pub(crate) fn resolve_impl_source_opt<'tcx>(
+fn resolve_impl_source_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
-    def_id: DefId,
-    substs: GenericArgsRef<'tcx>,
+    trait_ref: TraitRef<'tcx>,
 ) -> Option<&'tcx ImplSource<'tcx, ()>> {
-    trace!("resolve_impl_source_opt={def_id:?} {substs:?}");
-    let substs = tcx.normalize_erasing_regions(param_env, substs);
-
-    let trait_ref = if let Some(assoc) = tcx.opt_associated_item(def_id) {
-        match assoc.container {
-            ImplContainer => tcx.impl_trait_ref(assoc.container_id(tcx))?.instantiate(tcx, substs),
-            TraitContainer => TraitRef::new(tcx, assoc.container_id(tcx), substs),
-        }
-    } else {
-        if tcx.is_trait(def_id) {
-            TraitRef::new(tcx, def_id, substs)
-        } else {
-            return None;
-        }
-    };
-
+    trace!("resolve_impl_source_opt={trait_ref:?}");
+    let trait_ref = tcx.normalize_erasing_regions(param_env, trait_ref);
     let source = tcx.codegen_select_candidate((param_env, trait_ref));
-
     match source {
         Ok(src) => Some(src),
         Err(_) => {
             trace!("resolve_impl_source_opt error");
-
             return None;
         }
-    }
-}
-
-pub(crate) fn resolve_opt<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    param_env: ParamEnv<'tcx>,
-    def_id: DefId,
-    substs: GenericArgsRef<'tcx>,
-) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-    trace!("resolve_opt={def_id:?} {substs:?}");
-    if tcx.is_trait(def_id) {
-        resolve_trait_opt(tcx, param_env, def_id, substs)
-    } else {
-        resolve_assoc_item_opt(tcx, param_env, def_id, substs)
-    }
-}
-
-pub(crate) fn resolve_trait_opt<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    param_env: ParamEnv<'tcx>,
-    def_id: DefId,
-    substs: GenericArgsRef<'tcx>,
-) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-    trace!("resolve_trait_opt={def_id:?} {substs:?}");
-    if tcx.is_trait(def_id) {
-        let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs);
-        debug!("impl_source={:?}", impl_source);
-        match resolve_impl_source_opt(tcx, param_env, def_id, substs)? {
-            ImplSource::UserDefined(impl_data) => Some((impl_data.impl_def_id, impl_data.args)),
-            ImplSource::Param(_) => Some((def_id, substs)),
-            _ => None,
-        }
-    } else {
-        None
     }
 }
 
 pub(crate) fn resolve_assoc_item_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
-    def_id: DefId,
+    trait_item_def_id: DefId,
     substs: GenericArgsRef<'tcx>,
 ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-    trace!("resolve_assoc_item_opt {:?} {:?}", def_id, substs);
-    let assoc = tcx.opt_associated_item(def_id)?;
+    trace!("resolve_assoc_item_opt {:?} {:?}", trait_item_def_id, substs);
+    let assoc = tcx.opt_associated_item(trait_item_def_id)?;
 
     // If we're given an associated item that is already on an instance,
     // we don't need to resolve at all!
@@ -254,34 +210,32 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
         return None;
     }
 
-    let trait_ref = TraitRef::from_method(tcx, tcx.trait_of_item(def_id).unwrap(), substs);
+    let trait_ref =
+        TraitRef::from_method(tcx, tcx.trait_of_item(trait_item_def_id).unwrap(), substs);
 
-    let source = resolve_impl_source_opt(tcx, param_env, def_id, substs)?;
+    let source = resolve_impl_source_opt(tcx, param_env, trait_ref)?;
     trace!("resolve_assoc_item_opt {source:?}",);
 
     match source {
         ImplSource::UserDefined(impl_data) => {
-            let trait_def_id = tcx.trait_id_of_impl(impl_data.impl_def_id).unwrap();
-            let trait_def = tcx.trait_def(trait_def_id);
+            if still_specializable(tcx, param_env, trait_item_def_id, substs) {
+                return Some((trait_item_def_id, substs));
+            }
+
+            let trait_def = tcx.trait_def(trait_ref.def_id);
             // Find the id of the actual associated method we will be running
             let leaf_def = trait_def
                 .ancestors(tcx, impl_data.impl_def_id)
                 .unwrap()
-                // .leaf_def(tcx, assoc.ident, assoc.kind)
                 .leaf_def(tcx, assoc.def_id)
                 .unwrap_or_else(|| {
                     panic!("{:?} not found in {:?}", assoc, impl_data.impl_def_id);
                 });
 
-            if !leaf_def.is_final() && trait_ref.still_further_specializable() {
-                return Some((def_id, substs));
-            }
-
             // Translate the original substitution into one on the selected impl method
             let infcx = tcx.infer_ctxt().build();
 
-            let param_env = param_env.with_reveal_all_normalized(tcx);
-            let substs = substs.rebase_onto(tcx, trait_def_id, impl_data.args);
+            let substs = substs.rebase_onto(tcx, trait_ref.def_id, impl_data.args);
             let substs = rustc_trait_selection::traits::translate_args(
                 &infcx,
                 param_env,
@@ -293,7 +247,7 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
 
             Some((leaf_def.item.def_id, leaf_substs))
         }
-        ImplSource::Param(_) => Some((def_id, substs)),
+        ImplSource::Param(_) => Some((trait_item_def_id, substs)),
         ImplSource::Builtin(_, _) => match *substs.type_at(0).kind() {
             rustc_middle::ty::Closure(closure_def_id, closure_substs) => {
                 Some((closure_def_id, closure_substs))
@@ -303,40 +257,115 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
     }
 }
 
-// | Final | Still Spec (Ty)| Res |
-// | T | _ | F |
-// | F | T | T |
-// | F | F | F |
+fn instantiate_params_with_infer<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
+    ctx: &InferCtxt<'tcx>,
+    value: T,
+) -> T {
+    struct Folder<'a, 'tcx> {
+        ctx: &'a InferCtxt<'tcx>,
+        tys: HashMap<ParamTy, Ty<'tcx>>,
+        consts: HashMap<ParamConst, Const<'tcx>>,
+    }
+    impl<'a, 'tcx> TypeFolder<TyCtxt<'tcx>> for Folder<'a, 'tcx> {
+        fn cx(&self) -> TyCtxt<'tcx> {
+            self.ctx.tcx
+        }
 
-// We consider an item to be further specializable if it is provided by a parameter bound (ie: `I : Iterator`).
+        fn fold_ty(&mut self, t: Ty<'tcx>) -> Ty<'tcx> {
+            match *t.kind() {
+                TyKind::Param(param) => {
+                    *self.tys.entry(param).or_insert_with(|| self.ctx.next_ty_var(DUMMY_SP))
+                }
+                _ => t.super_fold_with(self),
+            }
+        }
+
+        fn fold_const(&mut self, c: Const<'tcx>) -> Const<'tcx> {
+            match c.kind() {
+                ConstKind::Param(param) => {
+                    *self.consts.entry(param).or_insert_with(|| self.ctx.next_const_var(DUMMY_SP))
+                }
+                _ => c.super_fold_with(self),
+            }
+        }
+    }
+    value.fold_with(&mut Folder { ctx, tys: Default::default(), consts: Default::default() })
+}
+
 pub(crate) fn still_specializable<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
-    def_id: DefId,
+    trait_item_def_id: DefId,
     substs: GenericArgsRef<'tcx>,
 ) -> bool {
-    if let Some(trait_id) = tcx.trait_of_item(def_id) {
-        let is_final = if let Some(ImplSource::UserDefined(ud)) =
-            resolve_impl_source_opt(tcx, param_env, def_id, substs)
+    let trait_ref =
+        TraitRef::from_method(tcx, tcx.trait_of_item(trait_item_def_id).unwrap(), substs);
+    let trait_ref = tcx.normalize_erasing_regions(param_env, trait_ref);
+
+    let start_node;
+    let graph = tcx.specialization_graph_of(trait_ref.def_id).unwrap();
+
+    // Search for the least specialized node that applies to this trait_ref
+    if let Some(ImplSource::UserDefined(ud)) = resolve_impl_source_opt(tcx, param_env, trait_ref) {
+        let trait_def = tcx.trait_def(trait_ref.def_id);
+        let leaf = trait_def
+            .ancestors(tcx, ud.impl_def_id)
+            .unwrap()
+            .leaf_def(tcx, trait_item_def_id)
+            .unwrap();
+        if !(leaf.item.defaultness(tcx).is_default()
+            || tcx.defaultness(leaf.defining_node.def_id()).is_default())
         {
-            let trait_def = tcx.trait_def(trait_id);
-            let leaf =
-                trait_def.ancestors(tcx, ud.impl_def_id).unwrap().leaf_def(tcx, def_id).unwrap();
+            // The leaf node is not marked as default => cannot be specialized
+            return false;
+        }
 
-            leaf.is_final()
-        } else {
-            false
-        };
-
-        let trait_generics = substs.truncate_to(tcx, tcx.generics_of(trait_id));
-        !is_final && trait_generics.still_further_specializable()
-    } else if let Some(impl_id) = tcx.impl_of_method(def_id)
-        && tcx.trait_id_of_impl(impl_id).is_some()
-    {
-        let is_final = tcx.defaultness(def_id).is_final();
-        let trait_ref = tcx.impl_trait_ref(impl_id).unwrap();
-        !is_final && trait_ref.instantiate(tcx, substs).still_further_specializable()
+        start_node = leaf.defining_node.def_id();
     } else {
-        false
+        start_node = trait_ref.def_id;
     }
+
+    // Check whether we know all the nodes.
+    // We take inspiration from rustc_next_solver::cohenrence::trait_ref_is_knowable,
+    // but ignore future-compatiility.
+    let infcx = tcx.infer_ctxt().ignoring_regions().intercrate(true).build();
+    let (param_env, trait_ref) =
+        instantiate_params_with_infer(&infcx, param_env.and(trait_ref)).into_parts();
+    if orphan_check_trait_ref(&infcx, trait_ref, InCrate::Remote, |ty| Ok::<_, !>(ty))
+        .unwrap()
+        .is_ok()
+    {
+        // A downstream or cousin crate is allowed to implement some
+        // generic parameters of this trait-ref.
+        return true;
+    }
+
+    // Check wether on of the descendent of start_node applies too
+    let def_children = Default::default();
+    let get_children = |node| {
+        let ch = graph.children.get(&node).unwrap_or(&def_children);
+        let nonblanket = ch.non_blanket_impls.iter().flat_map(|(_, v)| v.iter());
+        ch.blanket_impls.iter().chain(nonblanket).cloned().collect::<Vec<DefId>>()
+    };
+
+    let mut stack = get_children(start_node);
+    while let Some(node) = stack.pop() {
+        let infcx = infcx.fork();
+
+        let args = infcx.fresh_args_for_item(DUMMY_SP, node);
+        let trait_ref_node = tcx.impl_trait_ref(node).unwrap().instantiate(tcx, args);
+        if infcx
+            .at(&ObligationCause::dummy(), param_env)
+            .eq(DefineOpaqueTypes::Yes, trait_ref_node, trait_ref)
+            .is_err()
+        {
+            continue;
+        }
+        if tcx.impl_item_implementor_ids(node).get(&trait_item_def_id).is_some() {
+            return true;
+        }
+        stack.extend(get_children(node));
+    }
+
+    return false;
 }

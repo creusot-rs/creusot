@@ -6,7 +6,16 @@
     feature(print_internals, fmt_internals, fmt_helpers_for_derive)
 )]
 #![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns))]
-#![feature(step_trait, allocator_api, unboxed_closures, tuple_trait, strict_provenance)]
+#![feature(
+    step_trait,
+    allocator_api,
+    unboxed_closures,
+    tuple_trait,
+    strict_provenance,
+    panic_internals,
+    libstd_sys_internals,
+    rt
+)]
 #![cfg_attr(not(creusot), feature(rustc_attrs))]
 #![cfg_attr(not(creusot), allow(internal_features))]
 
@@ -27,6 +36,23 @@ mod macros {
 
     pub use base_macros::snapshot;
 
+    /// Opens a 'ghost block'.
+    ///
+    /// Ghost blocks are used to execute ghost code: code that will be erased in the
+    /// normal execution of the program, but could influence the proof.
+    ///
+    /// Note that ghost blocks are subject to some constraints, that ensure the behavior
+    /// of the code stays the same with and without ghost blocks:
+    /// - They may not contain code that crashes or runs indefinitely. In other words,
+    /// they can only call [`pure`] functions.
+    /// - All variables that are read in the ghost block must either be [`Copy`], or a
+    ///  [`GhostBox`](crate::ghost::GhostBox).
+    /// - All variables that are modified in the ghost block must be
+    ///  [`GhostBox`](crate::ghost::GhostBox)s.
+    /// - The variable returned by the ghost block will automatically be wrapped in a
+    /// [`GhostBox`](crate::ghost::GhostBox).
+    pub use base_macros::ghost;
+
     /// Indicate that the function terminates: fullfilling the `requires` clauses
     /// ensures that this function will not loop indefinitively.
     pub use base_macros::terminates;
@@ -46,7 +72,8 @@ mod macros {
     /// fn push(&mut self, v: T) { /* ... */ }
     /// ```
     ///
-    /// But the length of a vector [cannot overflow `isize::MAX`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.push). This is a very annoying condition to require, so we don't.
+    /// But the length of a vector [cannot overflow `isize::MAX`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.push).
+    /// This is a very annoying condition to require, so we don't.
     /// In exchange, this means `Vec::push` might panic in some cases, even though your
     /// code passed Creusot's verification.
     ///
@@ -157,7 +184,32 @@ pub mod std;
 pub mod num_rational;
 
 #[cfg(creusot)]
+pub mod ghost;
+
+#[cfg(creusot)]
 pub mod snapshot;
+
+#[cfg(not(creusot))]
+pub mod ghost {
+    pub struct GhostBox<T>(std::marker::PhantomData<T>)
+    where
+        T: ?Sized;
+
+    impl<T: ?Sized> GhostBox<T> {
+        #[doc(hidden)]
+        pub fn from_fn(_: impl Fn() -> T) -> Self {
+            GhostBox(std::marker::PhantomData)
+        }
+    }
+
+    impl<T: ?Sized + Clone> Clone for GhostBox<T> {
+        fn clone(&self) -> Self {
+            GhostBox(std::marker::PhantomData)
+        }
+    }
+
+    impl<T: ?Sized + Copy> Copy for GhostBox<T> {}
+}
 
 #[cfg(not(creusot))]
 pub mod snapshot {
@@ -190,6 +242,7 @@ pub mod well_founded;
 // We add some common things at the root of the creusot-contracts library
 mod base_prelude {
     pub use crate::{
+        ghost::GhostBox,
         logic::{IndexLogic as _, Int, OrdLogic, Seq},
         model::{DeepModel, ShallowModel},
         resolve::Resolve,

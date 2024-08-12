@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::{invariant::Invariant, *};
 
-pub struct NonZero(i32);
+pub struct NonZero(pub i32);
 
 impl Invariant for NonZero {
     #[predicate]
@@ -76,8 +76,8 @@ pub fn frozen_dead<'a>(mut x: &'a mut NonZero, y: &'a mut NonZero) {
 }
 
 pub struct SumTo10 {
-    a: i32,
-    b: i32,
+    pub a: i32,
+    pub b: i32,
 }
 
 impl Invariant for SumTo10 {

@@ -9,6 +9,10 @@ use crate::translation::{
     pearlite::{super_visit_term, Term, TermKind, TermVisitor},
 };
 
+pub mod invariants;
+
+pub use invariants::*;
+
 pub(crate) struct LocalUsage<'a, 'tcx> {
     locals: &'a LocalDecls<'tcx>,
     pub(crate) usages: HashMap<Symbol, Usage>,
