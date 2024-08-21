@@ -237,8 +237,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         RT::Impl(TermImpl { hyp, cons, .. }) => {
             let hyp = match &**hyp {
                 Term::Paren(TermParen { expr, .. }) => match &**expr {
-                    Term::Exists(_) => expr,
-                    Term::Forall(_) => expr,
+                    Term::Quant(_) => expr,
                     _ => hyp,
                 },
                 _ => hyp,
@@ -249,23 +248,11 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                 ::creusot_contracts::__stubs::implication(#hyp, #cons)
             })
         }
-        RT::Forall(TermForall { args, term, .. }) => {
+        RT::Quant(TermQuant { quant_token, args, term, .. }) => {
             let mut ts = encode_term(term)?;
             for arg in args {
                 ts = quote! {
-                    ::creusot_contracts::__stubs::forall(
-                        #[creusot::no_translate]
-                        |#arg|{ #ts }
-                    )
-                }
-            }
-            Ok(ts)
-        }
-        RT::Exists(TermExists { args, term, .. }) => {
-            let mut ts = encode_term(term)?;
-            for arg in args {
-                ts = quote! {
-                    ::creusot_contracts::__stubs::exists(
+                    ::creusot_contracts::__stubs::#quant_token(
                         #[creusot::no_translate]
                         |#arg|{ #ts }
                     )

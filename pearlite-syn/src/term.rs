@@ -117,11 +117,8 @@ ast_enum_of_structs! {
         /// Logical implication
         Impl(TermImpl),
 
-        /// Logical universal quantification
-        Forall(TermForall),
-
-        /// Logical existential quantification
-        Exists(TermExists),
+        /// Logical quantification
+        Quant(TermQuant),
 
         /// Logical absurdity
         Absurd(TermAbsurd),
@@ -435,20 +432,17 @@ ast_struct! {
     }
 }
 
-ast_struct! {
-    pub struct TermForall {
-        pub forall_token: kw::forall,
-        pub lt_token: Token![<],
-        pub args: Punctuated<QuantArg, Token![,]>,
-        pub gt_token: Token![>],
-
-        pub term: Box<Term>
+ast_enum! {
+    #[derive(Debug)]
+    pub enum QuantToken {
+        Forall(kw::forall),
+        Exists(kw::exists),
     }
 }
 
 ast_struct! {
-    pub struct TermExists {
-        pub exists_token: kw::exists,
+    pub struct TermQuant {
+        pub quant_token: QuantToken,
         pub lt_token: Token![<],
         pub args: Punctuated<QuantArg, Token![,]>,
         pub gt_token: Token![>],
@@ -1158,10 +1152,8 @@ pub(crate) mod parsing {
             input.call(term_let).map(Term::Let)
         } else if input.peek(Token![if]) {
             input.parse().map(Term::If)
-        } else if input.peek(kw::forall) {
-            input.parse().map(Term::Forall)
-        } else if input.peek(kw::exists) {
-            input.parse().map(Term::Exists)
+        } else if input.peek(kw::forall) || input.peek(kw::exists) {
+            input.parse().map(Term::Quant)
         } else if input.peek(kw::absurd) {
             input.parse().map(Term::Absurd)
         } else if input.peek(kw::pearlite) {
@@ -1392,34 +1384,19 @@ pub(crate) mod parsing {
         }
     }
 
-    impl Parse for TermForall {
+    impl Parse for QuantToken {
         fn parse(input: ParseStream) -> Result<Self> {
-            let forall_token = input.parse()?;
-            let lt_token: Token![<] = input.parse()?;
-
-            let mut args = Punctuated::new();
-            while !input.peek(Token![>]) {
-                let quantarg = input.parse()?;
-                args.push_value(quantarg);
-                if input.peek(Token![>]) {
-                    break;
-                }
-
-                let punct = input.parse()?;
-                args.push_punct(punct);
+            if input.peek(kw::forall) {
+                Ok(QuantToken::Forall(input.parse()?))
+            } else {
+                Ok(QuantToken::Exists(input.parse()?))
             }
-
-            let gt_token: Token![>] = input.parse()?;
-
-            let term = input.parse()?;
-
-            Ok(TermForall { forall_token, lt_token, args, gt_token, term })
         }
     }
 
-    impl Parse for TermExists {
+    impl Parse for TermQuant {
         fn parse(input: ParseStream) -> Result<Self> {
-            let exists_token = input.parse()?;
+            let quant_token = input.parse()?;
             let lt_token: Token![<] = input.parse()?;
 
             let mut args = Punctuated::new();
@@ -1438,7 +1415,7 @@ pub(crate) mod parsing {
 
             let term = input.parse()?;
 
-            Ok(TermExists { exists_token, lt_token, args, gt_token, term })
+            Ok(TermQuant { quant_token, lt_token, args, gt_token, term })
         }
     }
 
@@ -1932,6 +1909,15 @@ pub(crate) mod printing {
         }
     }
 
+    impl ToTokens for QuantToken {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            match self {
+                QuantToken::Forall(t) => t.to_tokens(tokens),
+                QuantToken::Exists(t) => t.to_tokens(tokens),
+            }
+        }
+    }
+
     impl ToTokens for TermImpl {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             self.hyp.to_tokens(tokens);
@@ -1941,21 +1927,9 @@ pub(crate) mod printing {
         }
     }
 
-    impl ToTokens for TermForall {
+    impl ToTokens for TermQuant {
         fn to_tokens(&self, tokens: &mut TokenStream) {
-            self.forall_token.to_tokens(tokens);
-            self.lt_token.to_tokens(tokens);
-            for input in self.args.pairs() {
-                input.to_tokens(tokens);
-            }
-            self.gt_token.to_tokens(tokens);
-            self.term.to_tokens(tokens);
-        }
-    }
-
-    impl ToTokens for TermExists {
-        fn to_tokens(&self, tokens: &mut TokenStream) {
-            self.exists_token.to_tokens(tokens);
+            self.quant_token.to_tokens(tokens);
             self.lt_token.to_tokens(tokens);
             for input in self.args.pairs() {
                 input.to_tokens(tokens);

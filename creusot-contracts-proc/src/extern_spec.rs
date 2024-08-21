@@ -379,8 +379,7 @@ fn escape_self_in_term(t: &mut Term) {
             escape_self_in_term(hyp);
             escape_self_in_term(cons);
         }
-        Term::Forall(TermForall { term, .. }) => escape_self_in_term(term),
-        Term::Exists(TermExists { term, .. }) => escape_self_in_term(term),
+        Term::Quant(TermQuant { term, .. }) => escape_self_in_term(term),
         Term::Absurd(TermAbsurd { .. }) => {}
         Term::Pearlite(TermPearlite { block, .. }) => escape_self_in_tblock(block),
         Term::Lit(TermLit { .. }) => {}
