@@ -128,14 +128,7 @@ fn is_structurally_recursive(ctx: &mut Why3Generator<'_>, self_id: DefId, t: &Te
                         }
                     }
                 }
-                TermKind::Exists { binder, body } => {
-                    let old_smaller = self.smaller_than.clone();
-                    self.smaller_than.remove(&binder.0);
-                    self.visit_term(body);
-                    self.smaller_than = old_smaller;
-                }
-
-                TermKind::Forall { binder, body } => {
+                TermKind::Quant { binder, body, .. } => {
                     let old_smaller = self.smaller_than.clone();
                     self.smaller_than.remove(&binder.0);
                     self.visit_term(body);
@@ -318,7 +311,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // // the dual rule should be the one below but that seems weird...
             // // VC(forall<x> P(x), Q) => (exists<x> VC(P, false)) \/ Q(forall<x>P(x))
             // // Instead, I think the rule should just be the same as for the existential quantifiers?
-            TermKind::Forall { binder, body } => {
+            TermKind::Quant { kind: QuantKind::Forall, binder, body } => {
                 let forall_pre = self.build_vc(body, &|_| Ok(Exp::mk_true()))?;
                 let ty = self.ty(binder.1);
 
@@ -327,7 +320,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 Ok(forall_pre.log_and(k(forall_pure)?))
             }
             // // VC(exists<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(exists<x>P(x))
-            TermKind::Exists { binder, body } => {
+            TermKind::Quant { kind: QuantKind::Exists, binder, body } => {
                 let exists_pre = self.build_vc(body, &|_| Ok(Exp::mk_true()))?;
                 let ty = self.ty(binder.1);
 

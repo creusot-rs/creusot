@@ -3,6 +3,7 @@ use crate::{
     backend::ty::{floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty},
     ctx::*,
     pearlite::{self, Literal, Pattern, Term, TermKind},
+    translation::pearlite::QuantKind,
     util,
     util::get_builtin,
 };
@@ -102,14 +103,14 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     Exp::qvar(clone).app(args)
                 })
             }
-            TermKind::Forall { binder, box body } => {
+            TermKind::Quant { kind, binder, box body } => {
                 let ty = self.lower_ty(binder.1);
-
-                Exp::forall(vec![(binder.0.to_string().into(), ty)], self.lower_term(body))
-            }
-            TermKind::Exists { binder, box body } => {
-                let ty = self.lower_ty(binder.1);
-                Exp::exists(vec![(binder.0.to_string().into(), ty)], self.lower_term(body))
+                let bound = vec![(binder.0.to_string().into(), ty)];
+                let body = self.lower_term(body);
+                match kind {
+                    QuantKind::Forall => Exp::forall(bound, body),
+                    QuantKind::Exists => Exp::exists(bound, body),
+                }
             }
             TermKind::Constructor { typ, variant, fields } => {
                 self.ctx.translate(*typ);

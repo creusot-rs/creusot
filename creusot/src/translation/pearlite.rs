@@ -8,7 +8,7 @@
 use std::{
     collections::HashSet,
     fmt::{Display, Formatter},
-    unreachable,
+    mem, unreachable,
 };
 
 use crate::{
@@ -75,6 +75,14 @@ pub struct Term<'tcx> {
     pub span: Span,
 }
 
+#[derive(
+    Copy, Clone, Debug, Eq, PartialEq, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable,
+)]
+pub enum QuantKind {
+    Forall,
+    Exists,
+}
+
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum TermKind<'tcx> {
     Var(Symbol),
@@ -92,11 +100,8 @@ pub enum TermKind<'tcx> {
         op: UnOp,
         arg: Box<Term<'tcx>>,
     },
-    Forall {
-        binder: (Symbol, Ty<'tcx>),
-        body: Box<Term<'tcx>>,
-    },
-    Exists {
+    Quant {
+        kind: QuantKind,
         binder: (Symbol, Ty<'tcx>),
         body: Box<Term<'tcx>>,
     },
@@ -443,7 +448,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Call { ty: f_ty, ref args, fun, .. } => {
                 use Stub::*;
                 match pearlite_stub(self.ctx.tcx, f_ty) {
-                    Some(Forall) => {
+                    Some(s @ (Forall | Exists)) => {
+                        let kind =
+                            if let Forall = s { QuantKind::Forall } else { QuantKind::Exists };
                         let (binder, body) = self.quant_term(args[0])?;
                         if let Some(inv_term) = type_invariant_term(
                             self.ctx,
@@ -452,23 +459,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                             span,
                             binder.1.tuple_fields()[0],
                         ) {
-                            Ok(body.guarded_forall(binder, inv_term).span(span))
+                            Ok(body.guarded_quant(kind, binder, inv_term).span(span))
                         } else {
-                            Ok(body.forall(binder).span(span))
-                        }
-                    }
-                    Some(Exists) => {
-                        let (binder, body) = self.quant_term(args[0])?;
-                        if let Some(inv_term) = type_invariant_term(
-                            self.ctx,
-                            self.item_id.to_def_id(),
-                            binder.0,
-                            span,
-                            binder.1.tuple_fields()[0],
-                        ) {
-                            Ok(body.guarded_exists(binder, inv_term).span(span))
-                        } else {
-                            Ok(body.exists(binder).span(span))
+                            Ok(body.quant(kind, binder).span(span))
                         }
                     }
                     Some(Fin) => {
@@ -1158,8 +1151,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
             visitor.visit_term(&*rhs);
         }
         TermKind::Unary { op: _, arg } => visitor.visit_term(&*arg),
-        TermKind::Forall { binder: _, body } => visitor.visit_term(&*body),
-        TermKind::Exists { binder: _, body } => visitor.visit_term(&*body),
+        TermKind::Quant { body, .. } => visitor.visit_term(&*body),
         TermKind::Call { id: _, subst: _, args } => {
             args.iter().for_each(|a| visitor.visit_term(&*a))
         }
@@ -1212,8 +1204,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
             visitor.visit_mut_term(&mut *rhs);
         }
         TermKind::Unary { op: _, arg } => visitor.visit_mut_term(&mut *arg),
-        TermKind::Forall { binder: _, body } => visitor.visit_mut_term(&mut *body),
-        TermKind::Exists { binder: _, body } => visitor.visit_mut_term(&mut *body),
+        TermKind::Quant { body, .. } => visitor.visit_mut_term(&mut *body),
         TermKind::Call { id: _, subst: _, args } => {
             args.iter_mut().for_each(|a| visitor.visit_mut_term(&mut *a))
         }
@@ -1361,63 +1352,61 @@ impl<'tcx> Term<'tcx> {
     }
 
     pub(crate) fn forall(self, binder: (Symbol, Ty<'tcx>)) -> Self {
-        assert!(self.ty.is_bool());
-
-        // ∀ x . ⟙ = ⟙
-        if let TermKind::Lit(Literal::Bool(true)) = self.kind {
-            return self;
-        };
-
-        Term {
-            ty: self.ty,
-            kind: TermKind::Forall { binder, body: Box::new(self) },
-            span: DUMMY_SP,
-        }
+        self.quant(QuantKind::Forall, binder)
     }
 
     /// Creates a term like `forall<binder> guard ==> self`.
-    pub(crate) fn guarded_forall(mut self, binder: (Symbol, Ty<'tcx>), guard: Self) -> Self {
+    pub(crate) fn guarded_quant(
+        mut self,
+        quant_kind: QuantKind,
+        binder: (Symbol, Ty<'tcx>),
+        guard: Self,
+    ) -> Self {
         assert!(self.ty.is_bool() && guard.ty.is_bool());
 
         let mut inner = &mut self;
-        while let TermKind::Forall { ref mut body, .. } = inner.kind {
-            // TODO check binder not free in guard
-            inner = body
+        match quant_kind {
+            QuantKind::Forall => {
+                while let TermKind::Quant { kind: QuantKind::Forall, ref mut body, .. } = inner.kind
+                {
+                    // TODO check binder not free in guard
+                    inner = body
+                }
+            }
+            QuantKind::Exists => {
+                while let TermKind::Quant { kind: QuantKind::Exists, ref mut body, .. } = inner.kind
+                {
+                    // TODO check binder not free in guard
+                    inner = body
+                }
+            }
         }
 
-        *inner = guard.implies(inner.clone());
-        self.forall(binder)
+        let old_inner =
+            mem::replace(inner, Term { ty: inner.ty, kind: TermKind::Absurd, span: DUMMY_SP });
+
+        *inner = match quant_kind {
+            QuantKind::Forall => guard.implies(old_inner),
+            QuantKind::Exists => guard.conj(old_inner),
+        };
+        self.quant(quant_kind, binder)
     }
 
-    pub(crate) fn exists(self, binder: (Symbol, Ty<'tcx>)) -> Self {
+    pub(crate) fn quant(self, quant_kind: QuantKind, binder: (Symbol, Ty<'tcx>)) -> Self {
         assert!(self.ty.is_bool());
 
-        // ∃ x . ⟘ = ⟘
-        if let TermKind::Lit(Literal::Bool(false)) = self.kind {
-            return self;
-        };
-
-        Term {
-            ty: self.ty,
-            kind: TermKind::Exists { binder, body: Box::new(self) },
-            span: DUMMY_SP,
+        match (&self.kind, quant_kind) {
+            // ∀ x . ⟙ = ⟙
+            (TermKind::Lit(Literal::Bool(true)), QuantKind::Forall) => self,
+            // ∃ x . ⟘ = ⟘
+            (TermKind::Lit(Literal::Bool(false)), QuantKind::Exists) => self,
+            _ => Term {
+                ty: self.ty,
+                kind: TermKind::Quant { kind: quant_kind, binder, body: Box::new(self) },
+                span: DUMMY_SP,
+            },
         }
     }
-
-    /// Creates a term like `exists<binder> guard && self`.
-    pub(crate) fn guarded_exists(mut self, binder: (Symbol, Ty<'tcx>), guard: Self) -> Self {
-        assert!(self.ty.is_bool() && guard.ty.is_bool());
-
-        let mut inner = &mut self;
-        while let TermKind::Exists { ref mut body, .. } = inner.kind {
-            // TODO check binder not free in guard
-            inner = body
-        }
-
-        *inner = guard.conj(inner.clone());
-        self.exists(binder)
-    }
-
     pub(crate) fn span(mut self, sp: Span) -> Self {
         self.span = sp;
         self
@@ -1453,13 +1442,7 @@ impl<'tcx> Term<'tcx> {
                 rhs.subst_with_inner(bound, inv_subst)
             }
             TermKind::Unary { arg, .. } => arg.subst_with_inner(bound, inv_subst),
-            TermKind::Forall { binder, body } => {
-                let mut bound = bound.clone();
-                bound.insert(binder.0);
-
-                body.subst_with_inner(&bound, inv_subst);
-            }
-            TermKind::Exists { binder, body } => {
+            TermKind::Quant { binder, body, .. } => {
                 let mut bound = bound.clone();
                 bound.insert(binder.0);
 
@@ -1531,13 +1514,7 @@ impl<'tcx> Term<'tcx> {
                 rhs.free_vars_inner(bound, free)
             }
             TermKind::Unary { arg, .. } => arg.free_vars_inner(bound, free),
-            TermKind::Forall { binder, body } => {
-                let mut bound = bound.clone();
-                bound.insert(binder.0);
-
-                body.free_vars_inner(&bound, free);
-            }
-            TermKind::Exists { binder, body } => {
+            TermKind::Quant { binder, body, .. } => {
                 let mut bound = bound.clone();
                 bound.insert(binder.0);
 
