@@ -21,7 +21,7 @@
 //! }
 //! ```
 
-use crate::{ctx::TranslationCtx, specification::contract_of, util};
+use crate::{backend::is_trusted_function, ctx::TranslationCtx, specification::contract_of, util};
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graph, visit::EdgeRef as _};
 use rustc_hir::def_id::{DefId, LocalDefId};
@@ -134,7 +134,8 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
 
     while let Some((visit, caller_node)) = build_call_graph.to_visit.pop() {
         let caller_def_id = visit.def_id();
-        if util::is_trusted(ctx.tcx, caller_def_id) || util::is_no_translate(ctx.tcx, caller_def_id)
+        if is_trusted_function(ctx.tcx, caller_def_id)
+            || util::is_no_translate(ctx.tcx, caller_def_id)
         {
             // FIXME: does this work with trait functions marked `#[terminates]`/`#[pure]` ?
             build_call_graph.additional_data[&caller_node] =
