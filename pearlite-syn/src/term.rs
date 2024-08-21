@@ -432,14 +432,6 @@ ast_struct! {
     }
 }
 
-ast_enum! {
-    #[derive(Debug)]
-    pub enum QuantToken {
-        Forall(kw::forall),
-        Exists(kw::exists),
-    }
-}
-
 ast_struct! {
     pub struct TermQuant {
         pub quant_token: QuantToken,
@@ -448,6 +440,14 @@ ast_struct! {
         pub gt_token: Token![>],
 
         pub term: Box<Term>
+    }
+}
+
+use kw::{exists, forall};
+ast_enum_of_structs! {
+    pub enum QuantToken {
+        Forall(forall),
+        Exists(exists),
     }
 }
 
@@ -1906,15 +1906,6 @@ pub(crate) mod printing {
             self.eqeq_token.to_tokens(tokens);
             self.eq_token.to_tokens(tokens);
             self.rhs.to_tokens(tokens);
-        }
-    }
-
-    impl ToTokens for QuantToken {
-        fn to_tokens(&self, tokens: &mut TokenStream) {
-            match self {
-                QuantToken::Forall(t) => t.to_tokens(tokens),
-                QuantToken::Exists(t) => t.to_tokens(tokens),
-            }
         }
     }
 

@@ -79,9 +79,7 @@ fn test_model() {
 fn test_forall() {
     snapshot!(quote!(forall<x : u32> true) as Term, @r###"
     TermQuant {
-        quant_token: Forall(
-            Keyword [forall],
-        ),
+        quant_token: Keyword [forall],
         lt_token: Lt,
         args: [
             QuantArg {
@@ -119,9 +117,7 @@ fn test_forall() {
 fn test_exists() {
     snapshot!(quote!(exists<x : u32> true) as Term, @r###"
     TermQuant {
-        quant_token: Exists(
-            Keyword [exists],
-        ),
+        quant_token: Keyword [exists],
         lt_token: Lt,
         args: [
             QuantArg {
