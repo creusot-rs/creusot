@@ -39,9 +39,10 @@ end
 
 module Borrow
   type borrowed 'a = { current : 'a; final : 'a; id : int }
+  meta "encoding:ignore_polymorphism_ts" type borrowed
 
-  function ( *_ ) (x : borrowed 'a) : 'a = x.current
-  function ( ^_ ) (x : borrowed 'a) : 'a = x.final
+  function ( *_ ) [@inline:trivial] (x : borrowed 'a) : 'a = x.current
+  function ( ^_ ) [@inline:trivial] (x : borrowed 'a) : 'a = x.final
 
   let borrow_final < 'a > (a : 'a) (id : int) (ret (result : borrowed 'a)) =
     any [ ret' (fin : 'a) -> (! ret { { current = a; final = fin; id = id } })]
@@ -49,9 +50,9 @@ module Borrow
   let borrow_mut < 'a > (a : 'a) (ret (result : borrowed 'a)) =
     any [ ret (fin : 'a) (id: int) -> (! ret { { current = a; final = fin; id = id } })]
 
-  function borrow_logic (cur fin : 'a) (id : int) : borrowed 'a = { current = cur; final = fin; id = id }
+  function borrow_logic [@inline:trivial] (cur fin : 'a) (id : int) : borrowed 'a = { current = cur; final = fin; id = id }
 
-  function get_id (x : borrowed 'a) : int = x.id
+  function get_id [@inline:trivial] (x : borrowed 'a) : int = x.id
   function inherit_id (old_id inherit_path: int) : int
 end
 
@@ -730,68 +731,14 @@ module Char
   axiom chr_code: forall c. chr (code c) = c
 end
 
-module Snapshot
-  type snap_ty 't
-
-  function new (x : 't) : snap_ty 't
-  function inner (x : snap_ty 't) : 't
-
-  axiom new_spec: forall x: 't [new x]. inner (new x) = x
-  axiom inner_spec: forall x: snap_ty 't [inner x]. new (inner x) = x
-end
 
 module Slice
-  use seq.Seq
-  use UIntSize
-  use int.Int
-
-  type slice 'a =
-    { elts : seq 'a }
-    invariant { Seq.length elts <= UIntSize.max }
-  axiom slice_ext :
-    forall x y: slice 'a. x.elts = y.elts -> x = y
-
+  type slice 'a
+  meta "encoding:ignore_polymorphism_ts" type slice
   type array 'a = slice 'a
+  meta "encoding:ignore_polymorphism_ts" type array
+end
 
-  function length (s : slice 'a) : usize
-  axiom spec : forall s : slice 'a . (length s) = Seq.length s.elts
-  (*
-  : usize = of_int (Seq.length s.elts)
-  *)
-
-  let get < 'a > (s : slice 'a) (ix : usize) (ret (res : 'a)) =
-    { ix < Seq.length s.elts }
-    ret {Seq.get s.elts (to_int ix)}
-
-
-  let set < 'a > (s : slice 'a) (ix : usize) (v : 'a)
-    { 0 <= ix < Seq.length s.elts }
-    (ret (result : slice 'a)
-      { Seq.length result.elts = Seq.length s.elts }
-      { result.elts[ix] = v }
-      { forall j. 0 <= j < Seq.length s.elts /\ j <> ix -> result.elts[j] = s.elts[j] }
-    ) = any
-
-
-  let create < 'a > (len : usize) (f : int -> 'a)
-    { 0 <= len }
-  (ret (result : slice 'a )
-    { Seq.length result.elts = len }
-    { forall i . 0 <= i < len -> result.elts[i] = f i }
-  ) = any
-
-
-  (*
-  let function get < 'a > (s : slice 'a) (ix : usize) : 'a =
-    requires { ix < Seq.length s.elts }
-    Seq.get s.elts (to_int ix)
-
-  let set (s : slice 'a) (ix : usize) (v : 'a) : slice 'a =
-    requires { 0 <= ix < Seq.length s.elts }
-    ensures { Seq.length result.elts = Seq.length s.elts }
-    ensures { result.elts[ix] = v }
-    ensures { forall j. 0 <= j < Seq.length s.elts /\ j <> ix -> result.elts[j] = s.elts[j] }
-    { elts = Seq.set s.elts (to_int ix) v }
-  *)
-  function id (s : slice 'a) : seq 'a = s.elts
+module Cast
+  function id [@inline:trivial] (x : 't) : 't = x
 end

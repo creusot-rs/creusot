@@ -14,7 +14,7 @@ use crate::{
         pearlite::{normalize, Term},
         specification::PreContract,
     },
-    util::{self, get_builtin, PreSignature},
+    util::{self, get_builtin, is_trusted, PreSignature},
 };
 use indexmap::IndexSet;
 use rustc_middle::ty::{self, Const, EarlyBinder, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable};
@@ -201,14 +201,13 @@ impl<'tcx> SymbolElaborator<'tcx> {
             let ty = ctx.type_of(def_id).instantiate_identity();
 
             let span = ctx.def_span(def_id);
-            let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, ty, param_env, span);
-
-            let res = lower_pure(ctx, names, &res);
-            vec![Decl::ConstantDecl(Constant {
-                type_: sig.retty.unwrap(),
-                name: sig.name,
-                body: Some(res),
-            })]
+            let body = if is_trusted(ctx.tcx, def_id) {
+                None
+            } else {
+                let res = crate::constant::from_ty_const(&mut ctx.ctx, constant, ty, param_env, span);
+                Some(lower_pure(ctx, names, &res))
+            };
+            vec![Decl::ConstantDecl(Constant { type_: sig.retty.unwrap(), name: sig.name, body })]
         } else if util::is_ghost_closure(ctx.tcx, def_id) {
             // Inline the body of ghost closures
             let mut coma = program::to_why(

@@ -1028,7 +1028,9 @@ impl Print for TyDecl {
                         alloc.space(),
                     ));
                 }
-                decl
+                decl.append(alloc.hardline())
+                    .append("meta \"encoding:ignore_polymorphism_ts\" type ")
+                    .append(ty_name.pretty(alloc))
             }
             TyDecl::Alias { ty_name, ty_params, alias } => alloc
                 .text("type ")
@@ -1039,14 +1041,15 @@ impl Print for TyDecl {
                     alloc.space(),
                 ))
                 .append(alloc.text(" =").append(alloc.hardline()))
-                .append(alias.pretty(alloc).indent(2)),
+                .append(alias.pretty(alloc).indent(2))
+                .append(alloc.hardline())
+                .append("meta \"encoding:ignore_polymorphism_ts\" type ")
+                .append(ty_name.pretty(alloc)),
             TyDecl::Adt { tys } => {
                 use std::iter::*;
                 let header = once("type").chain(repeat("with"));
 
-                let mut decls = Vec::new();
-
-                for (hdr, ty_decl) in header.zip(tys.iter()) {
+                let decls = header.zip(tys.iter()).map(|(hdr, ty_decl)| {
                     let decl = alloc
                         .nil()
                         .append(hdr)
@@ -1071,13 +1074,21 @@ impl Print for TyDecl {
                         alloc.hardline(),
                     );
 
-                    let decl = decl
-                        .append(alloc.text(" =").append(alloc.hardline()))
-                        .append(inner_doc.indent(2));
-                    decls.push(decl);
-                }
+                    decl.append(alloc.text(" =").append(alloc.hardline()))
+                        .append(inner_doc.indent(2))
+                });
 
-                alloc.intersperse(decls, alloc.hardline())
+                let metas = tys.iter().map(|ty| {
+                    alloc
+                        .nil()
+                        .append("meta \"encoding:ignore_polymorphism_ts\" type ")
+                        .append(ty.ty_name.pretty(alloc))
+                });
+
+                alloc
+                    .intersperse(decls, alloc.hardline())
+                    .append(alloc.hardline())
+                    .append(alloc.intersperse(metas, alloc.hardline()))
             }
         };
 

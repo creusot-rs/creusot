@@ -141,7 +141,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     }
 
     #[logic]
-    #[open]
+    #[open(self)]
     #[ensures(result ==> self == other)]
     #[ensures((forall<k: K> self.get(k) == other.get(k)) ==> result)]
     pub fn ext_eq(self, other: Self) -> bool {

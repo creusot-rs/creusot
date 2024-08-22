@@ -1,9 +1,10 @@
+use super::pearlite::{Term, TermKind};
 use crate::{
     ctx::TranslationCtx,
     fmir::{self, Operand},
     traits::resolve_assoc_item_opt,
     translation::pearlite::Literal,
-    util::get_builtin,
+    util::{get_builtin, is_trusted},
 };
 use rustc_middle::{
     mir::{self, interpret::AllocRange, ConstValue, UnevaluatedConst},
@@ -11,8 +12,6 @@ use rustc_middle::{
 };
 use rustc_span::Span;
 use rustc_target::abi::Size;
-
-use super::pearlite::{Term, TermKind};
 
 pub(crate) fn from_mir_constant<'tcx>(
     env: ParamEnv<'tcx>,
@@ -81,7 +80,7 @@ pub(crate) fn from_ty_const<'tcx>(
     // Check if a constant is builtin and thus should not be evaluated further
     // Builtin constants are given a body which panics
     if let ConstKind::Unevaluated(u) = c.kind()
-        && let Some(_) = get_builtin(ctx.tcx, u.def)
+        && (get_builtin(ctx.tcx, u.def).is_some() || is_trusted(ctx.tcx, u.def))
     {
         return Term { kind: TermKind::Lit(Literal::Function(u.def, u.args)), ty, span };
     };

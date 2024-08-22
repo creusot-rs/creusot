@@ -17,7 +17,7 @@ use rustc_span::{
 use serde_json::Deserializer;
 use std::{
     collections::{hash_map::Entry, HashMap},
-    fmt::{Display, Formatter, Write},
+    fmt::Write,
     io::BufReader,
     path::PathBuf,
     process::{Command, Stdio},
@@ -27,12 +27,12 @@ use why3::ce_models::{ConcreteTerm, FunLitElt, Goal, Loc, ProverResult, TBool, T
 
 static PRELUDE: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/../prelude");
 
-impl Display for Why3Sub {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl Why3Sub {
+    fn to_str(&self) -> &str {
         match self {
-            Why3Sub::Prove => f.write_str("prove"),
-            Why3Sub::Ide => f.write_str("ide"),
-            Why3Sub::Replay => f.write_str("replay"),
+            Why3Sub::Prove => "prove",
+            Why3Sub::Ide => "ide",
+            Why3Sub::Replay => "replay",
         }
     }
 }
@@ -51,6 +51,8 @@ pub(super) fn run_why3<'tcx>(ctx: &Why3Generator<'tcx>, file: Option<PathBuf>) {
     std::fs::create_dir(&prelude_dir).unwrap();
 
     PRELUDE.extract(&prelude_dir).expect("could extract prelude into temp dir");
+    let mut conf_path = prelude_dir;
+    conf_path.push("creusot-why3.conf");
     let mut command = Command::new(&why3_cmd.path);
     command
         .args([
@@ -59,11 +61,13 @@ pub(super) fn run_why3<'tcx>(ctx: &Why3Generator<'tcx>, file: Option<PathBuf>) {
             "--warn-off=unused_variable",
             "--warn-off=clone_not_abstract",
             "--warn-off=axiom_abstract",
-            &why3_cmd.sub.to_string(),
+            why3_cmd.sub.to_str(),
             "-L",
         ])
         .arg(temp_dir.path().as_os_str())
         .arg(&output_file)
+        .arg("--extra-config")
+        .arg(conf_path.as_os_str())
         .args(why3_cmd.args.split_ascii_whitespace());
 
     if matches!(why3_cmd.sub, Why3Sub::Prove) {
