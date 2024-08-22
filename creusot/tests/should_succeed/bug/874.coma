@@ -271,9 +271,9 @@ module C874_CanExtend
   
   use seq.Seq
   
-  predicate inv'3 (_x : Seq.seq int32)
+  predicate inv'5 (_x : Seq.seq int32)
   
-  predicate inv'5 (_x : IntoIter'0.t_intoiter int32 (Global'0.t_global))
+  predicate inv'3 (_x : IntoIter'0.t_intoiter int32 (Global'0.t_global))
   
   function shallow_model'4 (self : IntoIter'0.t_intoiter int32 (Global'0.t_global)) : Seq.seq int32
   
@@ -289,23 +289,23 @@ module C874_CanExtend
   
   axiom produces_trans'0_spec : forall a : IntoIter'0.t_intoiter int32 (Global'0.t_global), ab : Seq.seq int32, b : IntoIter'0.t_intoiter int32 (Global'0.t_global), bc : Seq.seq int32, c : IntoIter'0.t_intoiter int32 (Global'0.t_global) . ([%#span15] produces'0 a ab b)
    -> ([%#span16] produces'0 b bc c)
-   -> ([%#span17] inv'5 a)
-   -> ([%#span18] inv'3 ab)
-   -> ([%#span19] inv'5 b)
-   -> ([%#span20] inv'3 bc)  -> ([%#span21] inv'5 c)  -> ([%#span22] produces'0 a (Seq.(++) ab bc) c)
+   -> ([%#span17] inv'3 a)
+   -> ([%#span18] inv'5 ab)
+   -> ([%#span19] inv'3 b)
+   -> ([%#span20] inv'5 bc)  -> ([%#span21] inv'3 c)  -> ([%#span22] produces'0 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
   function produces_refl'0 (self : IntoIter'0.t_intoiter int32 (Global'0.t_global)) : () =
     [%#span26] ()
   
-  axiom produces_refl'0_spec : forall self : IntoIter'0.t_intoiter int32 (Global'0.t_global) . ([%#span24] inv'5 self)
+  axiom produces_refl'0_spec : forall self : IntoIter'0.t_intoiter int32 (Global'0.t_global) . ([%#span24] inv'3 self)
    -> ([%#span25] produces'0 self (Seq.empty  : Seq.seq int32) self)
   
-  predicate invariant'5 (self : IntoIter'0.t_intoiter int32 (Global'0.t_global)) =
+  predicate invariant'5 (self : Seq.seq int32) =
     [%#span13] true
   
-  axiom inv'5 : forall x : IntoIter'0.t_intoiter int32 (Global'0.t_global) . inv'5 x = true
+  axiom inv'5 : forall x : Seq.seq int32 . inv'5 x = true
   
   use prelude.prelude.Borrow
   
@@ -316,10 +316,10 @@ module C874_CanExtend
   
   axiom inv'4 : forall x : borrowed (IntoIter'0.t_intoiter int32 (Global'0.t_global)) . inv'4 x = true
   
-  predicate invariant'3 (self : Seq.seq int32) =
+  predicate invariant'3 (self : IntoIter'0.t_intoiter int32 (Global'0.t_global)) =
     [%#span13] true
   
-  axiom inv'3 : forall x : Seq.seq int32 . inv'3 x = true
+  axiom inv'3 : forall x : IntoIter'0.t_intoiter int32 (Global'0.t_global) . inv'3 x = true
   
   use Alloc_Vec_Vec_Type as Vec'0
   
@@ -345,11 +345,11 @@ module C874_CanExtend
   function shallow_model'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) : Seq.seq int32
   
   axiom shallow_model'0_spec : forall self : Vec'0.t_vec int32 (Global'0.t_global) . ([%#span28] inv'1 self)
-   -> ([%#span30] inv'3 (shallow_model'0 self))
+   -> ([%#span30] inv'5 (shallow_model'0 self))
   && ([%#span29] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
   
   predicate invariant'1 (self : Vec'0.t_vec int32 (Global'0.t_global)) =
-    [%#span31] inv'3 (shallow_model'0 self)
+    [%#span31] inv'5 (shallow_model'0 self)
   
   axiom inv'1 : forall x : Vec'0.t_vec int32 (Global'0.t_global) . inv'1 x = true
   
@@ -399,9 +399,9 @@ module C874_CanExtend
     {[@expl:precondition] [%#span41] inv'2 self}
     {[@expl:precondition] [%#span40] into_iter_pre'0 iter}
     any
-    [ return' (result:())-> {[%#span43] exists prod : Seq.seq int32 . exists done' : borrowed (IntoIter'0.t_intoiter int32 (Global'0.t_global)) . exists start_ : IntoIter'0.t_intoiter int32 (Global'0.t_global) . inv'3 prod
+    [ return' (result:())-> {[%#span43] exists start_ : IntoIter'0.t_intoiter int32 (Global'0.t_global), done' : borrowed (IntoIter'0.t_intoiter int32 (Global'0.t_global)), prod : Seq.seq int32 . inv'3 start_
       /\ inv'4 done'
-      /\ inv'5 start_
+      /\ inv'5 prod
       /\ into_iter_post'0 iter start_
       /\ completed'0 done'
       /\ produces'0 start_ prod done'.current /\ shallow_model'0 self.final = Seq.(++) (shallow_model'2 self) prod}
@@ -413,7 +413,7 @@ module C874_CanExtend
   function shallow_model'3 (self : slice int32) : Seq.seq int32
   
   axiom shallow_model'3_spec : forall self : slice int32 . ([%#span44] inv'6 self)
-   -> ([%#span47] inv'3 (shallow_model'3 self))
+   -> ([%#span47] inv'5 (shallow_model'3 self))
   && ([%#span46] shallow_model'3 self = Slice.id self)
   && ([%#span45] Seq.length (shallow_model'3 self) <= UIntSize.to_int (max'0 : usize))
   

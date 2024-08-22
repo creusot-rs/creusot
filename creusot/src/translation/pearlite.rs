@@ -8,7 +8,7 @@
 use std::{
     collections::HashSet,
     fmt::{Display, Formatter},
-    unreachable,
+    mem, unreachable,
 };
 
 use crate::{
@@ -33,11 +33,11 @@ use rustc_middle::{
     },
     ty::{
         int_ty, uint_ty, CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, Ty, TyCtxt,
-        TyKind, TypeFoldable, TypeVisitable, TypeVisitableExt, UpvarArgs, UserType,
+        TyKind, TypeFoldable, TypeVisitable, TypeVisitableExt, UserType,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
-use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_span::{symbol::Ident, Span, Symbol, DUMMY_SP};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
 
@@ -75,6 +75,19 @@ pub struct Term<'tcx> {
     pub span: Span,
 }
 
+#[derive(
+    Copy, Clone, Debug, Eq, PartialEq, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable,
+)]
+pub enum QuantKind {
+    Forall,
+    Exists,
+}
+
+#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
+pub struct Trigger<'tcx>(pub(crate) Vec<Term<'tcx>>);
+
+pub type QuantBinder<'tcx> = (Vec<Ident>, Ty<'tcx>);
+
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum TermKind<'tcx> {
     Var(Symbol),
@@ -92,12 +105,10 @@ pub enum TermKind<'tcx> {
         op: UnOp,
         arg: Box<Term<'tcx>>,
     },
-    Forall {
-        binder: (Symbol, Ty<'tcx>),
-        body: Box<Term<'tcx>>,
-    },
-    Exists {
-        binder: (Symbol, Ty<'tcx>),
+    Quant {
+        kind: QuantKind,
+        binder: QuantBinder<'tcx>,
+        trigger: Vec<Trigger<'tcx>>,
         body: Box<Term<'tcx>>,
     },
     // TODO: Get rid of (id, subst).
@@ -252,10 +263,23 @@ pub enum Pattern<'tcx> {
     Boolean(bool),
 }
 
+const TRIGGER_ERROR: &str = "Triggers can only be used inside quantifiers";
 pub(crate) fn pearlite<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
 ) -> CreusotResult<Term<'tcx>> {
+    let (triggers, term) = pearlite_with_triggers(ctx, id)?;
+    if !triggers.is_empty() {
+        Err(Error::new(ctx.def_span(id), TRIGGER_ERROR))
+    } else {
+        Ok(term)
+    }
+}
+
+pub(crate) fn pearlite_with_triggers<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    id: LocalDefId,
+) -> CreusotResult<(Vec<Trigger<'tcx>>, Term<'tcx>)> {
     let (thir, expr) = ctx.thir_body(id).map_err(|_| InternalError("Cannot fetch THIR body"))?;
     let thir = thir.borrow();
     if thir.exprs.is_empty() {
@@ -276,7 +300,9 @@ struct ThirTerm<'a, 'tcx> {
 // TODO: Ensure that types are correct during this translation, in particular
 // - Box, & and &mut
 impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
-    fn body_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
+    fn body_term(&self, expr: ExprId) -> CreusotResult<(Vec<Trigger<'tcx>>, Term<'tcx>)> {
+        let mut triggers = vec![];
+        let expr = self.collect_triggers(expr, &mut triggers)?;
         let body = self.expr_term(expr)?;
         let owner_id = util::param_def_id(self.ctx.tcx, self.item_id.into());
         let (thir, _) =
@@ -299,8 +325,40 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         kind: TermKind::Let { pattern, arg, body: Box::new(body) },
                     }
                 }
-            });
-        res
+            })?;
+        Ok((triggers, res))
+    }
+
+    fn collect_triggers(
+        &self,
+        expr: ExprId,
+        triggers: &mut Vec<Trigger<'tcx>>,
+    ) -> CreusotResult<ExprId> {
+        match &self.thir[expr].kind {
+            ExprKind::Call { ty: f_ty, ref args, .. } => {
+                if let Some(Stub::Trigger) = pearlite_stub(self.ctx.tcx, *f_ty) {
+                    let trigger = self.expr_term(args[0])?;
+                    if let TermKind::Tuple { fields } = trigger.kind {
+                        triggers.push(Trigger(fields));
+                        self.collect_triggers(args[1], triggers)
+                    } else {
+                        let span = self.thir[args[0]].span;
+                        Err(Error::new(span, "Triggers must be tuples"))
+                    }
+                } else {
+                    Ok(expr)
+                }
+            }
+            ExprKind::Block { block } => {
+                if let Block { stmts: box [], expr: Some(expr), .. } = self.thir[*block] {
+                    self.collect_triggers(expr, triggers)
+                } else {
+                    Ok(expr)
+                }
+            }
+            ExprKind::Scope { value, .. } => self.collect_triggers(*value, triggers),
+            _ => Ok(expr),
+        }
     }
 
     fn expr_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
@@ -443,32 +501,22 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Call { ty: f_ty, ref args, fun, .. } => {
                 use Stub::*;
                 match pearlite_stub(self.ctx.tcx, f_ty) {
-                    Some(Forall) => {
-                        let (binder, body) = self.quant_term(args[0])?;
-                        if let Some(inv_term) = type_invariant_term(
-                            self.ctx,
-                            self.item_id.to_def_id(),
-                            binder.0,
-                            span,
-                            binder.1.tuple_fields()[0],
-                        ) {
-                            Ok(body.guarded_forall(binder, inv_term).span(span))
+                    Some(s @ (Forall | Exists)) => {
+                        let kind =
+                            if let Forall = s { QuantKind::Forall } else { QuantKind::Exists };
+                        let (binder, (trigger, body)) = self.quant_term(args[0])?;
+                        let arg_tuple_ty = if let TyKind::FnDef(_, subst) = f_ty.kind() {
+                            subst[0].as_type().unwrap()
                         } else {
-                            Ok(body.forall(binder).span(span))
-                        }
-                    }
-                    Some(Exists) => {
-                        let (binder, body) = self.quant_term(args[0])?;
-                        if let Some(inv_term) = type_invariant_term(
-                            self.ctx,
-                            self.item_id.to_def_id(),
-                            binder.0,
-                            span,
-                            binder.1.tuple_fields()[0],
-                        ) {
-                            Ok(body.guarded_exists(binder, inv_term).span(span))
+                            unreachable!()
+                        };
+                        let binder = (binder, arg_tuple_ty);
+                        if let Some(inv_term) =
+                            type_invariant_terms(self.ctx, self.item_id.to_def_id(), span, &binder)
+                        {
+                            Ok(body.guarded_quant(kind, binder, trigger, inv_term).span(span))
                         } else {
-                            Ok(body.exists(binder).span(span))
+                            Ok(body.quant(kind, binder, trigger).span(span))
                         }
                     }
                     Some(Fin) => {
@@ -524,6 +572,10 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         Ok(Term { ty, span, kind: TermKind::Tuple { fields: vec![] } })
                     }
                     Some(Absurd) => Ok(Term { ty, span, kind: TermKind::Absurd }),
+                    Some(Trigger) => Err(Error::new(
+                        span,
+                        "Triggers can only be used directly inside quantifiers",
+                    )),
                     None => {
                         let args = args
                             .iter()
@@ -820,20 +872,17 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         }
     }
 
-    fn quant_term(&self, body: ExprId) -> Result<((Symbol, Ty<'tcx>), Term<'tcx>), Error> {
+    fn quant_term(
+        &self,
+        body: ExprId,
+    ) -> Result<(Vec<Ident>, (Vec<Trigger<'tcx>>, Term<'tcx>)), Error> {
         trace!("{:?}", self.thir[body].kind);
         match self.thir[body].kind {
             ExprKind::Scope { value, .. } => self.quant_term(value),
-            ExprKind::Closure(box ClosureExpr { closure_id, args, .. }) => {
-                let sig = match args {
-                    UpvarArgs::Closure(subst) => subst.as_closure().sig(),
-                    _ => unreachable!(),
-                };
+            ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
+                let names = self.ctx.fn_arg_names(closure_id);
 
-                let name = self.ctx.fn_arg_names(closure_id)[0];
-                let ty = sig.input(0).skip_binder();
-
-                Ok(((name.name, ty), pearlite(self.ctx, closure_id)?))
+                Ok((names.to_vec(), pearlite_with_triggers(self.ctx, closure_id)?))
             }
             _ => Err(Error::new(self.thir[body].span, "unexpected error in quantifier")),
         }
@@ -1024,6 +1073,23 @@ pub(crate) fn mk_projection<'tcx>(lhs: Term<'tcx>, name: FieldIdx) -> TermKind<'
     TermKind::Projection { lhs: Box::new(lhs), name }
 }
 
+pub(crate) fn type_invariant_terms<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    env_did: DefId,
+    span: Span,
+    binder: &QuantBinder<'tcx>,
+) -> Option<Term<'tcx>> {
+    zip_binder(binder).fold(None, |acc, (name, ty)| {
+        let curr = type_invariant_term(ctx, env_did, name, span, ty);
+        match (acc, curr) {
+            (None, None) => None,
+            (None, Some(x)) => Some(x),
+            (Some(x), None) => Some(x),
+            (Some(x), Some(y)) => Some(x.conj(y)),
+        }
+    })
+}
+
 pub(crate) fn type_invariant_term<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     env_did: DefId,
@@ -1049,6 +1115,7 @@ pub(crate) fn type_invariant_term<'tcx>(
 pub(crate) enum Stub {
     Forall,
     Exists,
+    Trigger,
     Fin,
     Impl,
     Equals,
@@ -1066,6 +1133,9 @@ pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stu
         }
         if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("exists")) {
             return Some(Stub::Exists);
+        }
+        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("trigger")) {
+            return Some(Stub::Trigger);
         }
         if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("fin")) {
             return Some(Stub::Fin);
@@ -1120,6 +1190,12 @@ fn not_spec_expr(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: ExprId) -> bool {
     }
 }
 
+pub fn zip_binder<'a, 'tcx>(
+    binder: &'a QuantBinder<'tcx>,
+) -> impl Iterator<Item = (Symbol, Ty<'tcx>)> + 'a {
+    binder.0.iter().map(|x| x.name).zip(binder.1.tuple_fields())
+}
+
 use rustc_hir;
 
 impl<'tcx> Pattern<'tcx> {
@@ -1158,8 +1234,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
             visitor.visit_term(&*rhs);
         }
         TermKind::Unary { op: _, arg } => visitor.visit_term(&*arg),
-        TermKind::Forall { binder: _, body } => visitor.visit_term(&*body),
-        TermKind::Exists { binder: _, body } => visitor.visit_term(&*body),
+        TermKind::Quant { body, .. } => visitor.visit_term(&*body),
         TermKind::Call { id: _, subst: _, args } => {
             args.iter().for_each(|a| visitor.visit_term(&*a))
         }
@@ -1212,8 +1287,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
             visitor.visit_mut_term(&mut *rhs);
         }
         TermKind::Unary { op: _, arg } => visitor.visit_mut_term(&mut *arg),
-        TermKind::Forall { binder: _, body } => visitor.visit_mut_term(&mut *body),
-        TermKind::Exists { binder: _, body } => visitor.visit_mut_term(&mut *body),
+        TermKind::Quant { body, .. } => visitor.visit_mut_term(&mut *body),
         TermKind::Call { id: _, subst: _, args } => {
             args.iter_mut().for_each(|a| visitor.visit_mut_term(&mut *a))
         }
@@ -1360,64 +1434,69 @@ impl<'tcx> Term<'tcx> {
         }
     }
 
-    pub(crate) fn forall(self, binder: (Symbol, Ty<'tcx>)) -> Self {
-        assert!(self.ty.is_bool());
-
-        // ∀ x . ⟙ = ⟙
-        if let TermKind::Lit(Literal::Bool(true)) = self.kind {
-            return self;
-        };
-
-        Term {
-            ty: self.ty,
-            kind: TermKind::Forall { binder, body: Box::new(self) },
-            span: DUMMY_SP,
-        }
+    pub(crate) fn forall(self, tcx: TyCtxt<'tcx>, binder: (Symbol, Ty<'tcx>)) -> Self {
+        let ty = Ty::new_tup(tcx, &[binder.1]);
+        self.quant(QuantKind::Forall, (vec![Ident::new(binder.0, DUMMY_SP)], ty), vec![])
     }
 
     /// Creates a term like `forall<binder> guard ==> self`.
-    pub(crate) fn guarded_forall(mut self, binder: (Symbol, Ty<'tcx>), guard: Self) -> Self {
+    pub(crate) fn guarded_quant(
+        mut self,
+        quant_kind: QuantKind,
+        binder: QuantBinder<'tcx>,
+        trigger: Vec<Trigger<'tcx>>,
+        guard: Self,
+    ) -> Self {
         assert!(self.ty.is_bool() && guard.ty.is_bool());
 
         let mut inner = &mut self;
-        while let TermKind::Forall { ref mut body, .. } = inner.kind {
-            // TODO check binder not free in guard
-            inner = body
+        match quant_kind {
+            QuantKind::Forall => {
+                while let TermKind::Quant { kind: QuantKind::Forall, ref mut body, .. } = inner.kind
+                {
+                    // TODO check binder not free in guard
+                    inner = body
+                }
+            }
+            QuantKind::Exists => {
+                while let TermKind::Quant { kind: QuantKind::Exists, ref mut body, .. } = inner.kind
+                {
+                    // TODO check binder not free in guard
+                    inner = body
+                }
+            }
         }
 
-        *inner = guard.implies(inner.clone());
-        self.forall(binder)
+        let old_inner =
+            mem::replace(inner, Term { ty: inner.ty, kind: TermKind::Absurd, span: DUMMY_SP });
+
+        *inner = match quant_kind {
+            QuantKind::Forall => guard.implies(old_inner),
+            QuantKind::Exists => guard.conj(old_inner),
+        };
+        self.quant(quant_kind, binder, trigger)
     }
 
-    pub(crate) fn exists(self, binder: (Symbol, Ty<'tcx>)) -> Self {
+    pub(crate) fn quant(
+        self,
+        quant_kind: QuantKind,
+        binder: QuantBinder<'tcx>,
+        trigger: Vec<Trigger<'tcx>>,
+    ) -> Self {
         assert!(self.ty.is_bool());
 
-        // ∃ x . ⟘ = ⟘
-        if let TermKind::Lit(Literal::Bool(false)) = self.kind {
-            return self;
-        };
-
-        Term {
-            ty: self.ty,
-            kind: TermKind::Exists { binder, body: Box::new(self) },
-            span: DUMMY_SP,
+        match (&self.kind, quant_kind) {
+            // ∀ x . ⟙ = ⟙
+            (TermKind::Lit(Literal::Bool(true)), QuantKind::Forall) => self,
+            // ∃ x . ⟘ = ⟘
+            (TermKind::Lit(Literal::Bool(false)), QuantKind::Exists) => self,
+            _ => Term {
+                ty: self.ty,
+                kind: TermKind::Quant { kind: quant_kind, binder, body: Box::new(self), trigger },
+                span: DUMMY_SP,
+            },
         }
     }
-
-    /// Creates a term like `exists<binder> guard && self`.
-    pub(crate) fn guarded_exists(mut self, binder: (Symbol, Ty<'tcx>), guard: Self) -> Self {
-        assert!(self.ty.is_bool() && guard.ty.is_bool());
-
-        let mut inner = &mut self;
-        while let TermKind::Exists { ref mut body, .. } = inner.kind {
-            // TODO check binder not free in guard
-            inner = body
-        }
-
-        *inner = guard.conj(inner.clone());
-        self.exists(binder)
-    }
-
     pub(crate) fn span(mut self, sp: Span) -> Self {
         self.span = sp;
         self
@@ -1453,15 +1532,11 @@ impl<'tcx> Term<'tcx> {
                 rhs.subst_with_inner(bound, inv_subst)
             }
             TermKind::Unary { arg, .. } => arg.subst_with_inner(bound, inv_subst),
-            TermKind::Forall { binder, body } => {
+            TermKind::Quant { binder, body, .. } => {
                 let mut bound = bound.clone();
-                bound.insert(binder.0);
-
-                body.subst_with_inner(&bound, inv_subst);
-            }
-            TermKind::Exists { binder, body } => {
-                let mut bound = bound.clone();
-                bound.insert(binder.0);
+                for name in &binder.0 {
+                    bound.insert(name.name);
+                }
 
                 body.subst_with_inner(&bound, inv_subst);
             }
@@ -1531,15 +1606,11 @@ impl<'tcx> Term<'tcx> {
                 rhs.free_vars_inner(bound, free)
             }
             TermKind::Unary { arg, .. } => arg.free_vars_inner(bound, free),
-            TermKind::Forall { binder, body } => {
+            TermKind::Quant { binder, body, .. } => {
                 let mut bound = bound.clone();
-                bound.insert(binder.0);
-
-                body.free_vars_inner(&bound, free);
-            }
-            TermKind::Exists { binder, body } => {
-                let mut bound = bound.clone();
-                bound.insert(binder.0);
+                for name in &binder.0 {
+                    bound.insert(name.name);
+                }
 
                 body.free_vars_inner(&bound, free);
             }

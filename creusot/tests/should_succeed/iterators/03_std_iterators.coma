@@ -1531,7 +1531,7 @@ module C03StdIterators_SkipTake
   
   use seq.Seq
   
-  predicate inv'6 (_x : Seq.seq item'0)
+  predicate inv'5 (_x : Seq.seq item'0)
   
   predicate inv'2 (_x : i)
   
@@ -1542,9 +1542,9 @@ module C03StdIterators_SkipTake
   axiom produces_trans'2_spec : forall a : i, ab : Seq.seq item'0, b : i, bc : Seq.seq item'0, c : i . ([%#span2] produces'2 a ab b)
    -> ([%#span3] produces'2 b bc c)
    -> ([%#span4] inv'2 a)
-   -> ([%#span5] inv'6 ab)
+   -> ([%#span5] inv'5 ab)
    -> ([%#span6] inv'2 b)
-   -> ([%#span7] inv'6 bc)  -> ([%#span8] inv'2 c)  -> ([%#span9] produces'2 a (Seq.(++) ab bc) c)
+   -> ([%#span7] inv'5 bc)  -> ([%#span8] inv'2 c)  -> ([%#span9] produces'2 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
@@ -1583,26 +1583,26 @@ module C03StdIterators_SkipTake
   axiom produces_trans'1_spec : forall a : Take'0.t_take i, ab : Seq.seq item'0, b : Take'0.t_take i, bc : Seq.seq item'0, c : Take'0.t_take i . ([%#span16] produces'1 a ab b)
    -> ([%#span17] produces'1 b bc c)
    -> ([%#span18] inv'3 a)
-   -> ([%#span19] inv'6 ab)
+   -> ([%#span19] inv'5 ab)
    -> ([%#span20] inv'3 b)
-   -> ([%#span21] inv'6 bc)  -> ([%#span22] inv'3 c)  -> ([%#span23] produces'1 a (Seq.(++) ab bc) c)
+   -> ([%#span21] inv'5 bc)  -> ([%#span22] inv'3 c)  -> ([%#span23] produces'1 a (Seq.(++) ab bc) c)
   
   function produces_refl'1 (self : Take'0.t_take i) : ()
   
   axiom produces_refl'1_spec : forall self : Take'0.t_take i . ([%#span24] inv'3 self)
    -> ([%#span25] produces'1 self (Seq.empty  : Seq.seq item'0) self)
   
-  predicate invariant'6 (self : Seq.seq item'0) =
+  predicate invariant'6 (self : borrowed (Take'0.t_take i)) =
     [%#span26] true
   
-  axiom inv'6 : forall x : Seq.seq item'0 . inv'6 x = true
+  predicate inv'6 (_x : borrowed (Take'0.t_take i))
   
-  predicate invariant'5 (self : borrowed (Take'0.t_take i)) =
+  axiom inv'6 : forall x : borrowed (Take'0.t_take i) . inv'6 x = true
+  
+  predicate invariant'5 (self : Seq.seq item'0) =
     [%#span26] true
   
-  predicate inv'5 (_x : borrowed (Take'0.t_take i))
-  
-  axiom inv'5 : forall x : borrowed (Take'0.t_take i) . inv'5 x = true
+  axiom inv'5 : forall x : Seq.seq item'0 . inv'5 x = true
   
   use Core_Iter_Adapters_Skip_Skip_Type as Skip'0
   
@@ -1625,7 +1625,7 @@ module C03StdIterators_SkipTake
     [%#span29] visited = (Seq.empty  : Seq.seq item'0) /\ self = o
     \/ n'1 o = 0
     /\ Seq.length visited > 0
-    /\ (exists s : Seq.seq item'0 . inv'6 s
+    /\ (exists s : Seq.seq item'0 . inv'5 s
     /\ Seq.length s = n'1 self
     /\ produces'1 (iter'1 self) (Seq.(++) s visited) (iter'1 o)
     /\ (forall i : int . 0 <= i /\ i < Seq.length s  -> resolve'3 (Seq.get s i)))
@@ -1636,9 +1636,9 @@ module C03StdIterators_SkipTake
   axiom produces_trans'0_spec : forall a : Skip'0.t_skip (Take'0.t_take i), ab : Seq.seq item'0, b : Skip'0.t_skip (Take'0.t_take i), bc : Seq.seq item'0, c : Skip'0.t_skip (Take'0.t_take i) . ([%#span30] produces'0 a ab b)
    -> ([%#span31] produces'0 b bc c)
    -> ([%#span32] inv'0 a)
-   -> ([%#span33] inv'6 ab)
+   -> ([%#span33] inv'5 ab)
    -> ([%#span34] inv'0 b)
-   -> ([%#span35] inv'6 bc)  -> ([%#span36] inv'0 c)  -> ([%#span37] produces'0 a (Seq.(++) ab bc) c)
+   -> ([%#span35] inv'5 bc)  -> ([%#span36] inv'0 c)  -> ([%#span37] produces'0 a (Seq.(++) ab bc) c)
   
   function produces_refl'0 (self : Skip'0.t_skip (Take'0.t_take i)) : ()
   
@@ -1694,7 +1694,7 @@ module C03StdIterators_SkipTake
   
   function iter_mut'0 (self : borrowed (Take'0.t_take i)) : borrowed i
   
-  axiom iter_mut'0_spec : forall self : borrowed (Take'0.t_take i) . ([%#span43] inv'5 self)
+  axiom iter_mut'0_spec : forall self : borrowed (Take'0.t_take i) . ([%#span43] inv'6 self)
    -> ([%#span45] inv'7 (iter_mut'0 self))
   && ([%#span44] iter'0 self.current = (iter_mut'0 self).current /\ iter'0 self.final = (iter_mut'0 self).final)
   
@@ -1707,8 +1707,8 @@ module C03StdIterators_SkipTake
   
   predicate completed'0 (self : borrowed (Skip'0.t_skip (Take'0.t_take i))) =
     [%#span48] n'1 self.final = 0
-    /\ (exists i : borrowed (Take'0.t_take i) . exists s : Seq.seq item'0 . inv'5 i
-    /\ inv'6 s
+    /\ (exists s : Seq.seq item'0, i : borrowed (Take'0.t_take i) . inv'5 s
+    /\ inv'6 i
     /\ Seq.length s <= n'1 self.current
     /\ produces'1 (iter'1 self.current) s i.current
     /\ (forall i : int . 0 <= i /\ i < Seq.length s  -> resolve'3 (Seq.get s i))
@@ -2115,19 +2115,19 @@ module C03StdIterators_Counter
   
   axiom inv'13 : forall x : Seq.seq (borrowed Closure'0.c03stditerators_counter_closure0) . inv'13 x = true
   
-  predicate invariant'12 (self : borrowed Closure'0.c03stditerators_counter_closure0) =
+  predicate invariant'12 (self : uint32) =
     [%#span4] true
   
-  predicate inv'12 (_x : borrowed Closure'0.c03stditerators_counter_closure0)
+  predicate inv'12 (_x : uint32)
   
-  axiom inv'12 : forall x : borrowed Closure'0.c03stditerators_counter_closure0 . inv'12 x = true
+  axiom inv'12 : forall x : uint32 . inv'12 x = true
   
-  predicate invariant'11 (self : uint32) =
+  predicate invariant'11 (self : borrowed Closure'0.c03stditerators_counter_closure0) =
     [%#span4] true
   
-  predicate inv'11 (_x : uint32)
+  predicate inv'11 (_x : borrowed Closure'0.c03stditerators_counter_closure0)
   
-  axiom inv'11 : forall x : uint32 . inv'11 x = true
+  axiom inv'11 : forall x : borrowed Closure'0.c03stditerators_counter_closure0 . inv'11 x = true
   
   use Core_Slice_Iter_Iter_Type as Iter'0
   
@@ -2145,7 +2145,7 @@ module C03StdIterators_Counter
   
   axiom inv'9 : forall x : Seq.seq uint32 . inv'9 x = true
   
-  predicate inv'6 (_x : Seq.seq uint32)
+  predicate inv'7 (_x : Seq.seq uint32)
   
   use Alloc_Alloc_Global_Type as Global'0
   
@@ -2164,11 +2164,11 @@ module C03StdIterators_Counter
   function shallow_model'0 (self : Vec'0.t_vec uint32 (Global'0.t_global)) : Seq.seq uint32
   
   axiom shallow_model'0_spec : forall self : Vec'0.t_vec uint32 (Global'0.t_global) . ([%#span6] inv'8 self)
-   -> ([%#span8] inv'6 (shallow_model'0 self))
+   -> ([%#span8] inv'7 (shallow_model'0 self))
   && ([%#span7] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
   
   predicate invariant'8 (self : Vec'0.t_vec uint32 (Global'0.t_global)) =
-    [%#span9] inv'6 (shallow_model'0 self)
+    [%#span9] inv'7 (shallow_model'0 self)
   
   axiom inv'8 : forall x : Vec'0.t_vec uint32 (Global'0.t_global) . inv'8 x = true
   
@@ -2229,7 +2229,7 @@ module C03StdIterators_Counter
   function shallow_model'4 (self : slice uint32) : Seq.seq uint32
   
   axiom shallow_model'4_spec : forall self : slice uint32 . ([%#span11] inv'14 self)
-   -> ([%#span14] inv'6 (shallow_model'4 self))
+   -> ([%#span14] inv'7 (shallow_model'4 self))
   && ([%#span13] shallow_model'4 self = Slice.id self)
   && ([%#span12] Seq.length (shallow_model'4 self) <= UIntSize.to_int (max'0 : usize))
   
@@ -2284,9 +2284,9 @@ module C03StdIterators_Counter
   axiom produces_trans'2_spec : forall a : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0, ab : Seq.seq uint32, b : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0, bc : Seq.seq uint32, c : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0 . ([%#span23] produces'1 a ab b)
    -> ([%#span24] produces'1 b bc c)
    -> ([%#span25] inv'5 a)
-   -> ([%#span26] inv'6 ab)
+   -> ([%#span26] inv'7 ab)
    -> ([%#span27] inv'5 b)
-   -> ([%#span28] inv'6 bc)  -> ([%#span29] inv'5 c)  -> ([%#span30] produces'1 a (Seq.(++) ab bc) c)
+   -> ([%#span28] inv'7 bc)  -> ([%#span29] inv'5 c)  -> ([%#span30] produces'1 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
@@ -2296,43 +2296,39 @@ module C03StdIterators_Counter
   axiom produces_refl'2_spec : forall self : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0 . ([%#span31] inv'5 self)
    -> ([%#span32] produces'1 self (Seq.empty  : Seq.seq uint32) self)
   
-  predicate invariant'7 (self : borrowed (MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0))
+  predicate invariant'7 (self : Seq.seq uint32) =
+    [%#span4] true
+  
+  axiom inv'7 : forall x : Seq.seq uint32 . inv'7 x = true
+  
+  predicate invariant'6 (self : borrowed (MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0))
     
    =
     [%#span4] true
   
-  predicate inv'7 (_x : borrowed (MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0))
+  predicate inv'6 (_x : borrowed (MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0))
     
   
-  axiom inv'7 : forall x : borrowed (MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0) . inv'7 x
+  axiom inv'6 : forall x : borrowed (MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0) . inv'6 x
   = (inv'5 x.current /\ inv'5 x.final)
-  
-  predicate invariant'6 (self : Seq.seq uint32) =
-    [%#span4] true
-  
-  axiom inv'6 : forall x : Seq.seq uint32 . inv'6 x = true
   
   use seq.Seq
   
-  predicate inv'3 (_x : uint32)
+  predicate inv'3 (_x : Iter'0.t_iter uint32)
   
-  predicate inv'2 (_x : Iter'0.t_iter uint32)
+  predicate inv'2 (_x : uint32)
   
   predicate next_precondition'0 (iter : Iter'0.t_iter uint32) (func : Closure'0.c03stditerators_counter_closure0) (produced : Seq.seq uint32)
     
    =
-    [%#span33] forall i : Iter'0.t_iter uint32 . forall e : uint32 . inv'2 i
-     -> inv'3 e  -> produces'0 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
+    [%#span33] forall e : uint32, i : Iter'0.t_iter uint32 . inv'2 e /\ inv'3 i
+     -> produces'0 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
   
   use seq.Seq
   
   predicate preservation'0 (iter : Iter'0.t_iter uint32) (func : Closure'0.c03stditerators_counter_closure0) =
-    [%#span34] forall i : Iter'0.t_iter uint32 . forall b : uint32 . forall f : borrowed Closure'0.c03stditerators_counter_closure0 . forall e2 : uint32 . forall e1 : uint32 . forall s : Seq.seq uint32 . inv'2 i
-     -> inv'11 b
-     -> inv'12 f
-     -> inv'3 e2
-     -> inv'3 e1
-     -> inv'9 s
+    [%#span34] forall s : Seq.seq uint32, e1 : uint32, e2 : uint32, f : borrowed Closure'0.c03stditerators_counter_closure0, b : uint32, i : Iter'0.t_iter uint32 . inv'9 s
+    /\ inv'2 e1 /\ inv'2 e2 /\ inv'11 f /\ inv'12 b /\ inv'3 i
      -> unnest'0 func f.current
      -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
      -> precondition'0 f.current (e1, Snapshot.new s)
@@ -2345,7 +2341,7 @@ module C03StdIterators_Counter
   predicate preservation_inv'0 (iter : Iter'0.t_iter uint32) (func : Closure'0.c03stditerators_counter_closure0) (produced : Seq.seq uint32)
     
   
-  axiom preservation_inv'0_spec : forall iter : Iter'0.t_iter uint32, func : Closure'0.c03stditerators_counter_closure0, produced : Seq.seq uint32 . ([%#span35] inv'2 iter)
+  axiom preservation_inv'0_spec : forall iter : Iter'0.t_iter uint32, func : Closure'0.c03stditerators_counter_closure0, produced : Seq.seq uint32 . ([%#span35] inv'3 iter)
    -> ([%#span36] inv'4 func)
    -> ([%#span37] inv'9 produced)
    -> ([%#span38] produced = (Seq.empty  : Seq.seq uint32)
@@ -2361,8 +2357,8 @@ module C03StdIterators_Counter
     [%#span41] resolve'5 self /\ shallow_model'4 (shallow_model'5 self) = (Seq.empty  : Seq.seq uint32)
   
   predicate reinitialize'0 (_1 : ()) =
-    [%#span42] forall func : Closure'0.c03stditerators_counter_closure0 . forall iter : borrowed (Iter'0.t_iter uint32) . inv'4 func
-     -> inv'10 iter
+    [%#span42] forall iter : borrowed (Iter'0.t_iter uint32), func : Closure'0.c03stditerators_counter_closure0 . inv'10 iter
+    /\ inv'4 func
      -> completed'1 iter
      -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq uint32) /\ preservation'0 iter.final func
   
@@ -2394,15 +2390,15 @@ module C03StdIterators_Counter
   
   axiom produces_refl'1_spec : forall self : Iter'0.t_iter uint32 . [%#span49] produces'0 self (Seq.empty  : Seq.seq uint32) self
   
-  predicate invariant'3 (self : uint32) =
+  predicate invariant'3 (self : Iter'0.t_iter uint32) =
     [%#span4] true
   
-  axiom inv'3 : forall x : uint32 . inv'3 x = true
+  axiom inv'3 : forall x : Iter'0.t_iter uint32 . inv'3 x = true
   
-  predicate invariant'2 (self : Iter'0.t_iter uint32) =
+  predicate invariant'2 (self : uint32) =
     [%#span4] true
   
-  axiom inv'2 : forall x : Iter'0.t_iter uint32 . inv'2 x = true
+  axiom inv'2 : forall x : uint32 . inv'2 x = true
   
   predicate invariant'1 (self : slice uint32) =
     [%#span4] true
@@ -2421,14 +2417,14 @@ module C03StdIterators_Counter
   
   axiom produces_trans'0_spec : forall a : Iter'0.t_iter uint32, ab : Seq.seq uint32, b : Iter'0.t_iter uint32, bc : Seq.seq uint32, c : Iter'0.t_iter uint32 . ([%#span51] produces'0 a ab b)
    -> ([%#span52] produces'0 b bc c)
-   -> ([%#span53] inv'2 a)
+   -> ([%#span53] inv'3 a)
    -> ([%#span54] inv'9 ab)
-   -> ([%#span55] inv'2 b)
-   -> ([%#span56] inv'9 bc)  -> ([%#span57] inv'2 c)  -> ([%#span58] produces'0 a (Seq.(++) ab bc) c)
+   -> ([%#span55] inv'3 b)
+   -> ([%#span56] inv'9 bc)  -> ([%#span57] inv'3 c)  -> ([%#span58] produces'0 a (Seq.(++) ab bc) c)
   
   function produces_refl'0 (self : Iter'0.t_iter uint32) : ()
   
-  axiom produces_refl'0_spec : forall self : Iter'0.t_iter uint32 . ([%#span59] inv'2 self)
+  axiom produces_refl'0_spec : forall self : Iter'0.t_iter uint32 . ([%#span59] inv'3 self)
    -> ([%#span60] produces'0 self (Seq.empty  : Seq.seq uint32) self)
   
   use prelude.prelude.Intrinsic
@@ -2474,19 +2470,18 @@ module C03StdIterators_Counter
   let rec collect'0 (self:MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0) (return'  (ret:Vec'0.t_vec uint32 (Global'0.t_global)))= {[@expl:precondition] [%#span67] inv'5 self}
     any
     [ return' (result:Vec'0.t_vec uint32 (Global'0.t_global))-> {[%#span69] inv'8 result}
-      {[%#span68] exists prod : Seq.seq uint32 . exists done' : borrowed (MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0) . inv'6 prod
-      /\ inv'7 done'
+      {[%#span68] exists done' : borrowed (MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0), prod : Seq.seq uint32 . inv'6 done'
+      /\ inv'7 prod
       /\ resolve'1 done'.final
       /\ completed'0 done' /\ produces'1 self prod done'.current /\ from_iter_post'0 prod result}
       (! return' {result}) ]
     
   
   let rec map_inv'0 (self:Iter'0.t_iter uint32) (func:Closure'0.c03stditerators_counter_closure0) (return'  (ret:MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0))= {[@expl:precondition] [%#span74] inv'4 func}
-    {[@expl:precondition] [%#span73] inv'2 self}
+    {[@expl:precondition] [%#span73] inv'3 self}
     {[@expl:precondition] [%#span72] preservation'0 self func}
     {[@expl:precondition] [%#span71] reinitialize'0 ()}
-    {[@expl:precondition] [%#span70] forall i2 : Iter'0.t_iter uint32 . forall e : uint32 . inv'2 i2
-     -> inv'3 e
+    {[@expl:precondition] [%#span70] forall e : uint32, i2 : Iter'0.t_iter uint32 . inv'2 e /\ inv'3 i2
      -> produces'0 self (Seq.singleton e) i2  -> precondition'0 func (e, Snapshot.new (Seq.empty  : Seq.seq uint32))}
     any
     [ return' (result:MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0)-> {[%#span76] inv'5 result}
@@ -3601,8 +3596,8 @@ module C03StdIterators_MyReverse
   predicate produces'0 (self : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)) (visited : Seq.seq (usize, usize)) (o : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize))
     
    =
-    [%#span33] exists p2 : Seq.seq usize . exists p1 : Seq.seq usize . inv'6 p2
-    /\ inv'6 p1
+    [%#span33] exists p1 : Seq.seq usize, p2 : Seq.seq usize . inv'6 p1
+    /\ inv'6 p2
     /\ Seq.length p1 = Seq.length p2
     /\ Seq.length p2 = Seq.length visited
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited  -> Seq.get visited i = (Seq.get p1 i, Seq.get p2 i))
@@ -3704,8 +3699,8 @@ module C03StdIterators_MyReverse
     >= deep_model'0 (Core_Ops_Range_Range_Type.range_end self.current)
   
   predicate completed'0 (self : borrowed (Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize))) =
-    [%#span60] exists b : borrowed (Range'0.t_range usize) . exists a : borrowed (Range'0.t_range usize) . inv'11 b
-    /\ inv'11 a
+    [%#span60] exists a : borrowed (Range'0.t_range usize), b : borrowed (Range'0.t_range usize) . inv'11 a
+    /\ inv'11 b
     /\ a.current = itera'0 self.current
     /\ b.current = iterb'0 self.current
     /\ a.final = itera'0 self.final
