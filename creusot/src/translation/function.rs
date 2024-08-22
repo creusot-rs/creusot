@@ -225,14 +225,14 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn emit_resolve(&mut self, pl: Place<'tcx>) {
+        let p = self.translate_place(pl);
         let place_ty = pl.ty(self.body, self.tcx()).ty;
+
+        if let Some(_) = self.ctx.type_invariant(self.body_id.def_id(), place_ty) {
+            self.emit_statement(fmir::Statement::AssertTyInv(p.clone()));
+        }
+
         if let Some((id, subst)) = resolve_predicate_of(self.ctx, self.param_env(), place_ty) {
-            let p = self.translate_place(pl);
-
-            if let Some(_) = self.ctx.type_invariant(self.body_id.def_id(), place_ty) {
-                self.emit_statement(fmir::Statement::AssertTyInv(p.clone()));
-            }
-
             self.emit_statement(fmir::Statement::Resolve(id, subst, p));
         }
     }
@@ -768,4 +768,3 @@ fn resolve_predicate_of<'tcx>(
 
     Some(resolve_impl)
 }
-
