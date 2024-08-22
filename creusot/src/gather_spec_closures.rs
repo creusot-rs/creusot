@@ -1,10 +1,9 @@
-use indexmap::{IndexMap, IndexSet};
-
 use crate::{
     ctx::TranslationCtx,
     pearlite::Term,
     util::{self, snapshot_closure_id},
 };
+use indexmap::{IndexMap, IndexSet};
 use rustc_data_structures::graph::Successors;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{

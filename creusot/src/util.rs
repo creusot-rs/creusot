@@ -74,14 +74,17 @@ pub(crate) fn is_snapshot_closure(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "snapshot"]).is_some()
 }
 
+pub(crate) fn is_ghost_closure(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "ghost"]).is_some()
+}
+
 pub(crate) fn snapshot_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
-    if let TyKind::Closure(def_id, _) = ty.peel_refs().kind()
-        && is_snapshot_closure(tcx, *def_id)
-    {
-        Some(*def_id)
-    } else {
-        None
+    if let TyKind::Closure(def_id, _) = ty.peel_refs().kind() {
+        if is_snapshot_closure(tcx, *def_id) {
+            return Some(*def_id);
+        }
     }
+    None
 }
 
 pub(crate) fn is_snap_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
@@ -714,16 +717,11 @@ impl<'tcx> TermVisitorMut<'tcx> for ClosureSubst<'tcx> {
                     }
                 }
             }
-            TermKind::Forall { binder, .. } => {
+            TermKind::Quant { binder, .. } => {
                 let mut bound = self.bound.clone();
-                bound.insert(binder.0);
-                std::mem::swap(&mut self.bound, &mut bound);
-                super_visit_mut_term(term, self);
-                std::mem::swap(&mut self.bound, &mut bound);
-            }
-            TermKind::Exists { binder, .. } => {
-                let mut bound = self.bound.clone();
-                bound.insert(binder.0);
+                for name in &binder.0 {
+                    bound.insert(name.name);
+                }
                 std::mem::swap(&mut self.bound, &mut bound);
                 super_visit_mut_term(term, self);
                 std::mem::swap(&mut self.bound, &mut bound);

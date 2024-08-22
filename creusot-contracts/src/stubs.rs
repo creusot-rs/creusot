@@ -16,16 +16,21 @@ pub fn neq<T: ?Sized>(_: T, _: T) -> bool {
     panic!();
 }
 
-// FIXME : T should be ?Sized
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "exists"]
-pub fn exists<T, F: Fn(T) -> bool>(_: F) -> bool {
+pub fn exists<Tup: std::marker::Tuple, F: Fn<Tup, Output = bool>>(_: F) -> bool {
     panic!()
 }
 
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "forall"]
-pub fn forall<T, F: Fn(T) -> bool>(_: F) -> bool {
+pub fn forall<Tup: std::marker::Tuple, F: Fn<Tup, Output = bool>>(_: F) -> bool {
+    panic!()
+}
+
+#[creusot::no_translate]
+#[rustc_diagnostic_item = "trigger"]
+pub fn trigger<T, Trigger>(_: Trigger, _: T) -> T {
     panic!()
 }
 
@@ -61,6 +66,13 @@ pub fn closure_result<R: ?Sized>(_: R, _: R) {}
 #[rustc_diagnostic_item = "snapshot_from_fn"]
 pub fn snapshot_from_fn<T: ?Sized, F: Fn() -> crate::Snapshot<T>>(_: F) -> crate::Snapshot<T> {
     panic!()
+}
+
+#[crate::pure]
+#[creusot::no_translate]
+#[rustc_diagnostic_item = "ghost_from_fn"]
+pub fn ghost_from_fn<T, F: FnOnce() -> T>(f: F, _arg: ()) -> T {
+    f()
 }
 
 #[creusot::no_translate]

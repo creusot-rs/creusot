@@ -893,7 +893,7 @@ pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
     }
 }
 
-pub fn int_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, names: &mut Dependencies<'tcx>) -> MlT {
+pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &mut Why3Generator<'tcx>, names: &mut N) -> MlT {
     let int_id = ctx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap();
     let ty = ctx.type_of(int_id).skip_binder();
     translate_ty(ctx, names, DUMMY_SP, ty)

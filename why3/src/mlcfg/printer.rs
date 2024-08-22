@@ -822,7 +822,7 @@ impl Print for Terminator {
         match self {
             Goto(tgt) => alloc.text("goto ").append(tgt.pretty(alloc)),
             Absurd => alloc.text("absurd"),
-            Return => alloc.text("return _0"),
+            Return(exp) => alloc.text("return ").append(exp.pretty(alloc)),
             Switch(discr, brs) => alloc
                 .text("switch ")
                 .append(discr.pretty(alloc).parens())

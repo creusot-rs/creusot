@@ -31,8 +31,8 @@ use super::program::{IntermediateStmt, LoweringState};
 
 /// [(_1 as Some).0] = X   ---> let _1 = (let Some(a) = _1 in Some(X))
 /// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
-pub(crate) fn create_assign_inner<'tcx>(
-    lower: &mut LoweringState<'_, 'tcx>,
+pub(crate) fn create_assign_inner<'tcx, N: Namer<'tcx>>(
+    lower: &mut LoweringState<'_, 'tcx, N>,
     lhs: &fmir::Place<'tcx>,
     rhs: Exp,
     _: Span,
@@ -43,8 +43,8 @@ pub(crate) fn create_assign_inner<'tcx>(
     stmts
 }
 
-pub(crate) fn lplace_to_expr<'tcx>(
-    lower: &mut LoweringState<'_, 'tcx>,
+pub(crate) fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
+    lower: &mut LoweringState<'_, 'tcx, N>,
     loc: Symbol,
     proj: &[mir::ProjectionElem<Symbol, Ty<'tcx>>],
     rhs: coma::Term,
@@ -56,7 +56,7 @@ pub(crate) fn lplace_to_expr<'tcx>(
         Box::new(|_, x| x);
     let mut istmts = Vec::new();
 
-    let fresh_vars = |lower: &mut LoweringState, n| -> Vec<_> {
+    let fresh_vars = |lower: &mut LoweringState<'_, 'tcx, _>, n| -> Vec<_> {
         (0..n).map(|_| lower.fresh_from("l")).collect()
     };
 
@@ -245,8 +245,8 @@ pub(crate) fn lplace_to_expr<'tcx>(
     (term, istmts)
 }
 
-pub(crate) fn rplace_to_expr<'tcx>(
-    lower: &mut LoweringState<'_, 'tcx>,
+pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
+    lower: &mut LoweringState<'_, 'tcx, N>,
     loc: Symbol,
     proj: &[mir::ProjectionElem<Symbol, Ty<'tcx>>],
 ) -> (Exp, Vec<IntermediateStmt>) {
@@ -257,7 +257,7 @@ pub(crate) fn rplace_to_expr<'tcx>(
     use rustc_middle::mir::ProjectionElem::*;
     let mut place_ty = PlaceTy::from_ty(lower.locals[&loc].ty);
 
-    let fresh_vars = |lower: &mut LoweringState, n| -> Vec<_> {
+    let fresh_vars = |lower: &mut LoweringState<'_, 'tcx, _>, n| -> Vec<_> {
         (0..n).map(|_| lower.fresh_from("r")).collect()
     };
 
