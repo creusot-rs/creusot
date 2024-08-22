@@ -14,6 +14,7 @@ mod kw {
     syn::custom_keyword!(exists);
     syn::custom_keyword!(absurd);
     syn::custom_keyword!(pearlite);
+    syn::custom_keyword!(trigger);
 }
 
 ast_enum_of_structs! {
@@ -438,7 +439,7 @@ ast_struct! {
         pub lt_token: Token![<],
         pub args: Punctuated<QuantArg, Token![,]>,
         pub gt_token: Token![>],
-
+        pub trigger: Vec<Trigger>,
         pub term: Box<Term>
     }
 }
@@ -456,6 +457,16 @@ ast_struct! {
         pub ident: Ident,
         pub colon_token: Token![:],
         pub ty: Box<Type>,
+    }
+}
+
+ast_struct! {
+    pub struct Trigger {
+        pub pound_token: Token![#],
+        pub bang_token: Token![!],
+        pub bracket_token: token::Bracket,
+        pub trigger_token: kw::trigger,
+        pub terms: Punctuated<Term, Token![,]>,
     }
 }
 
@@ -1384,16 +1395,6 @@ pub(crate) mod parsing {
         }
     }
 
-    impl Parse for QuantToken {
-        fn parse(input: ParseStream) -> Result<Self> {
-            if input.peek(kw::forall) {
-                Ok(QuantToken::Forall(input.parse()?))
-            } else {
-                Ok(QuantToken::Exists(input.parse()?))
-            }
-        }
-    }
-
     impl Parse for TermQuant {
         fn parse(input: ParseStream) -> Result<Self> {
             let quant_token = input.parse()?;
@@ -1413,9 +1414,25 @@ pub(crate) mod parsing {
 
             let gt_token: Token![>] = input.parse()?;
 
+            let mut trigger = vec![];
+
+            while input.peek(Token![#]) {
+                trigger.push(input.parse()?)
+            }
+
             let term = input.parse()?;
 
-            Ok(TermQuant { quant_token, lt_token, args, gt_token, term })
+            Ok(TermQuant { quant_token, lt_token, args, gt_token, trigger, term })
+        }
+    }
+
+    impl Parse for QuantToken {
+        fn parse(input: ParseStream) -> Result<Self> {
+            if input.peek(kw::forall) {
+                Ok(QuantToken::Forall(input.parse()?))
+            } else {
+                Ok(QuantToken::Exists(input.parse()?))
+            }
         }
     }
 
@@ -1425,6 +1442,19 @@ pub(crate) mod parsing {
             let colon_token = input.parse()?;
             let ty = input.parse()?;
             Ok(QuantArg { ident, colon_token, ty })
+        }
+    }
+
+    impl Parse for Trigger {
+        fn parse(input: ParseStream) -> Result<Self> {
+            let content;
+            Ok(Trigger {
+                pound_token: input.parse()?,
+                bang_token: input.parse()?,
+                bracket_token: bracketed!(content in input),
+                trigger_token: content.parse()?,
+                terms: Punctuated::parse_terminated(&content)?,
+            })
         }
     }
 
@@ -1926,6 +1956,9 @@ pub(crate) mod printing {
                 input.to_tokens(tokens);
             }
             self.gt_token.to_tokens(tokens);
+            for trigger in self.trigger.iter() {
+                trigger.to_tokens(tokens);
+            }
             self.term.to_tokens(tokens);
         }
     }
@@ -1935,6 +1968,19 @@ pub(crate) mod printing {
             self.ident.to_tokens(tokens);
             self.colon_token.to_tokens(tokens);
             self.ty.to_tokens(tokens);
+        }
+    }
+
+    impl ToTokens for Trigger {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            self.pound_token.to_tokens(tokens);
+            self.bang_token.to_tokens(tokens);
+            self.bracket_token.surround(tokens, |tokens| {
+                self.trigger_token.to_tokens(tokens);
+                for pair in self.terms.pairs() {
+                    pair.to_tokens(tokens)
+                }
+            })
         }
     }
 

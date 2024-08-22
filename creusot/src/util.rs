@@ -716,7 +716,9 @@ impl<'tcx> TermVisitorMut<'tcx> for ClosureSubst<'tcx> {
             }
             TermKind::Quant { binder, .. } => {
                 let mut bound = self.bound.clone();
-                bound.insert(binder.0);
+                for name in &binder.0 {
+                    bound.insert(name.name);
+                }
                 std::mem::swap(&mut self.bound, &mut bound);
                 super_visit_mut_term(term, self);
                 std::mem::swap(&mut self.bound, &mut bound);

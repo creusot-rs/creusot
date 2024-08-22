@@ -3,7 +3,7 @@ use crate::{
     backend::ty::{floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty},
     ctx::*,
     pearlite::{self, Literal, Pattern, Term, TermKind},
-    translation::pearlite::QuantKind,
+    translation::pearlite::{zip_binder, QuantKind, Trigger},
     util,
     util::get_builtin,
 };
@@ -103,13 +103,15 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     Exp::qvar(clone).app(args)
                 })
             }
-            TermKind::Quant { kind, binder, box body } => {
-                let ty = self.lower_ty(binder.1);
-                let bound = vec![(binder.0.to_string().into(), ty)];
+            TermKind::Quant { kind, binder, box body, trigger } => {
+                let bound = zip_binder(binder)
+                    .map(|(s, t)| (s.to_string().into(), self.lower_ty(t)))
+                    .collect();
                 let body = self.lower_term(body);
+                let trigger = self.lower_trigger(trigger);
                 match kind {
-                    QuantKind::Forall => Exp::forall(bound, body),
-                    QuantKind::Exists => Exp::exists(bound, body),
+                    QuantKind::Forall => Exp::forall_trig(bound, trigger, body),
+                    QuantKind::Exists => Exp::exists_trig(bound, trigger, body),
                 }
             }
             TermKind::Constructor { typ, variant, fields } => {
@@ -270,6 +272,13 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             return Some(Exp::qvar(builtin.without_search_path()).app(args.clone()));
         }
         None
+    }
+
+    fn lower_trigger(&mut self, triggers: &[Trigger<'tcx>]) -> Vec<why3::exp::Trigger> {
+        triggers
+            .iter()
+            .map(|x| why3::exp::Trigger(x.0.iter().map(|x| self.lower_term(x)).collect()))
+            .collect()
     }
 }
 
