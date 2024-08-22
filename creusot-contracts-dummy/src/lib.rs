@@ -33,6 +33,12 @@ pub fn snapshot(_: TS1) -> TS1 {
         .into()
 }
 
+#[proc_macro]
+pub fn ghost(body: TS1) -> TS1 {
+    let body = proc_macro2::TokenStream::from(body);
+    quote::quote! { GhostBox::from_fn(|| { #body }) }.into()
+}
+
 #[proc_macro_attribute]
 pub fn terminates(_: TS1, _: TS1) -> TS1 {
     TS1::new()

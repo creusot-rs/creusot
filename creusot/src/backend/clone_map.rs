@@ -670,8 +670,6 @@ impl<'tcx> Dependencies<'tcx> {
             })
             .collect();
 
-        // debug_assert!(topo.finished.len() >= self.names.len(), "missed a clone in {:?}", self.self_id);
-
         // Only return the roots (direct dependencies) of the graph as dependencies
         let summary: CloneSummary<'tcx> = roots
             .into_iter()
