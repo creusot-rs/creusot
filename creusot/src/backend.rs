@@ -458,7 +458,12 @@ pub fn is_trusted_function(tcx: TyCtxt, mut def_id: DefId) -> bool {
         return true;
     }
     while let Some(parent) = tcx.opt_parent(def_id) {
-        if util::is_trusted(tcx, def_id) {
+        if util::is_trusted(tcx, def_id)
+            && matches!(
+                tcx.def_kind(def_id),
+                DefKind::Mod | DefKind::AssocFn | DefKind::Fn | DefKind::Closure
+            )
+        {
             return true;
         }
         def_id = parent;
