@@ -290,11 +290,9 @@ module C05BinarySearchGeneric_BinarySearch
   
   let%span span74 = "../../../../../creusot-contracts/src/std/vec.rs" 33 4 33 44
   
-  let%span span75 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  let%span span75 = "" 0 0 0 0
   
-  let%span span76 = "" 0 0 0 0
-  
-  let%span span77 = "../../../../../creusot-contracts/src/std/vec.rs" 78 26 78 48
+  let%span span76 = "../../../../../creusot-contracts/src/std/vec.rs" 78 26 78 48
   
   type deep_model_ty'0
   
@@ -347,18 +345,25 @@ module C05BinarySearchGeneric_BinarySearch
   
   axiom inv'4 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'4 x = true
   
-  predicate invariant'3 (self : usize) =
+  predicate invariant'3 (self : t)
+  
+  predicate inv'3 (_x : t)
+  
+  axiom inv'3 : forall x : t . inv'3 x = true
+  
+  predicate invariant'2 (self : usize) =
     [%#span16] true
   
-  predicate inv'3 (_x : usize)
+  predicate inv'2 (_x : usize)
   
-  axiom inv'3 : forall x : usize . inv'3 x = true
+  axiom inv'2 : forall x : usize . inv'2 x = true
   
-  predicate invariant'2 (self : t)
+  predicate invariant'1 (self : Vec'0.t_vec t (Global'0.t_global)) =
+    [%#span16] true
   
-  predicate inv'2 (_x : t)
+  predicate inv'1 (_x : Vec'0.t_vec t (Global'0.t_global))
   
-  axiom inv'2 : forall x : t . inv'2 x = true
+  axiom inv'1 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'1 x = true
   
   use Core_Cmp_Ordering_Type as Ordering'0
   
@@ -421,13 +426,6 @@ module C05BinarySearchGeneric_BinarySearch
   axiom cmp_le_log'0_spec : forall x : deep_model_ty'0, y : deep_model_ty'0 . ([%#span50] inv'7 x)
    -> ([%#span51] inv'7 y)  -> ([%#span52] le_log'0 x y = (cmp_log'0 x y <> Ordering'0.C_Greater))
   
-  predicate invariant'1 (self : Vec'0.t_vec t (Global'0.t_global)) =
-    [%#span16] true
-  
-  predicate inv'1 (_x : Vec'0.t_vec t (Global'0.t_global))
-  
-  axiom inv'1 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'1 x = true
-  
   predicate invariant'0 (self : t)
   
   predicate inv'0 (_x : t)
@@ -452,8 +450,8 @@ module C05BinarySearchGeneric_BinarySearch
   
   function deep_model'1 (self : t) : deep_model_ty'0
   
-  let rec cmp'0 (self:t) (other:t) (return'  (ret:Ordering'0.t_ordering))= {[@expl:precondition] [%#span56] inv'2 other}
-    {[@expl:precondition] [%#span55] inv'2 self}
+  let rec cmp'0 (self:t) (other:t) (return'  (ret:Ordering'0.t_ordering))= {[@expl:precondition] [%#span56] inv'3 other}
+    {[@expl:precondition] [%#span55] inv'3 self}
     any
     [ return' (result:Ordering'0.t_ordering)-> {[%#span57] result = cmp_log'0 (deep_model'1 self) (deep_model'1 other)}
       (! return' {result}) ]
@@ -462,14 +460,12 @@ module C05BinarySearchGeneric_BinarySearch
   function deep_model'3 (self : t) : deep_model_ty'0 =
     [%#span58] deep_model'1 self
   
-  let rec gt'0 (self:t) (other:t) (return'  (ret:bool))= {[@expl:precondition] [%#span60] inv'2 other}
-    {[@expl:precondition] [%#span59] inv'2 self}
+  let rec gt'0 (self:t) (other:t) (return'  (ret:bool))= {[@expl:precondition] [%#span60] inv'3 other}
+    {[@expl:precondition] [%#span59] inv'3 self}
     any
     [ return' (result:bool)-> {[%#span61] result = gt_log'0 (deep_model'3 self) (deep_model'3 other)}
       (! return' {result}) ]
     
-  
-  predicate resolve'2 (self : t)
   
   use prelude.prelude.Slice
   
@@ -484,11 +480,11 @@ module C05BinarySearchGeneric_BinarySearch
   function shallow_model'0 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t =
     [%#span64] shallow_model'1 self
   
-  let rec index'0 (self:Vec'0.t_vec t (Global'0.t_global)) (index:usize) (return'  (ret:t))= {[@expl:precondition] [%#span67] inv'3 index}
+  let rec index'0 (self:Vec'0.t_vec t (Global'0.t_global)) (index:usize) (return'  (ret:t))= {[@expl:precondition] [%#span67] inv'2 index}
     {[@expl:precondition] [%#span66] inv'1 self}
     {[@expl:precondition] [%#span65] in_bounds'0 index (shallow_model'0 self)}
     any
-    [ return' (result:t)-> {[%#span69] inv'2 result}
+    [ return' (result:t)-> {[%#span69] inv'3 result}
       {[%#span68] has_value'0 index (shallow_model'0 self) result}
       (! return' {result}) ]
     
@@ -509,14 +505,11 @@ module C05BinarySearchGeneric_BinarySearch
   
   use Core_Result_Result_Type as Result'0
   
-  predicate resolve'1 (self : Vec'0.t_vec t (Global'0.t_global)) =
-    [%#span75] true
-  
   predicate resolve'0 (self : t)
   
-  let rec len'0 (self:Vec'0.t_vec t (Global'0.t_global)) (return'  (ret:usize))= {[@expl:precondition] [%#span76] inv'1 self}
+  let rec len'0 (self:Vec'0.t_vec t (Global'0.t_global)) (return'  (ret:usize))= {[@expl:precondition] [%#span75] inv'1 self}
     any
-    [ return' (result:usize)-> {[%#span77] UIntSize.to_int result = Seq.length (shallow_model'0 self)}
+    [ return' (result:usize)-> {[%#span76] UIntSize.to_int result = Seq.length (shallow_model'0 self)}
       (! return' {result}) ]
     
   
@@ -537,10 +530,8 @@ module C05BinarySearchGeneric_BinarySearch
     | bb5 = s0
       [ s0 = {[@expl:type invariant] inv'0 elem} s1
       | s1 = -{resolve'0 elem}- s2
-      | s2 = {[@expl:type invariant] inv'1 arr} s3
-      | s3 = -{resolve'1 arr}- s4
-      | s4 =  [ &_0 <- Result'0.C_Err ([%#s05_binary_search_generic1] (0 : usize)) ] s5
-      | s5 = bb29 ]
+      | s2 =  [ &_0 <- Result'0.C_Err ([%#s05_binary_search_generic1] (0 : usize)) ] s3
+      | s3 = bb29 ]
       
     | bb6 = s0 [ s0 = len'0 {arr} (fun (_ret':usize) ->  [ &size <- _ret' ] s1) | s1 = bb7 ] 
     | bb7 = s0 [ s0 =  [ &base <- [%#s05_binary_search_generic2] (0 : usize) ] s1 | s1 = bb8 ] 
@@ -575,12 +566,7 @@ module C05BinarySearchGeneric_BinarySearch
           | s2 = index'0 {arr} {mid} (fun (_ret':t) ->  [ &_32 <- _ret' ] s3)
           | s3 = bb14 ]
           
-        | bb14 = s0
-          [ s0 = {[@expl:type invariant] inv'2 _32} s1
-          | s1 = -{resolve'2 _32}- s2
-          | s2 = gt'0 {_32} {elem} (fun (_ret':bool) ->  [ &_30 <- _ret' ] s3)
-          | s3 = bb15 ]
-          
+        | bb14 = s0 [ s0 = gt'0 {_32} {elem} (fun (_ret':bool) ->  [ &_30 <- _ret' ] s1) | s1 = bb15 ] 
         | bb15 = any [ br0 -> {_30 = false} (! bb17) | br1 -> {_30} (! bb16) ] 
         | bb16 = s0 [ s0 =  [ &_29 <- base ] s1 | s1 = bb18 ] 
         | bb17 = s0 [ s0 =  [ &_29 <- mid ] s1 | s1 = bb18 ] 
@@ -591,23 +577,12 @@ module C05BinarySearchGeneric_BinarySearch
            ]
          ]
       
-    | bb19 = s0
-      [ s0 = {[@expl:type invariant] inv'1 arr} s1
-      | s1 = -{resolve'1 arr}- s2
-      | s2 = index'0 {arr} {base} (fun (_ret':t) ->  [ &_41 <- _ret' ] s3)
-      | s3 = bb20 ]
-      
+    | bb19 = s0 [ s0 = index'0 {arr} {base} (fun (_ret':t) ->  [ &_41 <- _ret' ] s1) | s1 = bb20 ] 
     | bb20 = s0
-      [ s0 = {[@expl:type invariant] inv'2 _41} s1
-      | s1 = -{resolve'2 _41}- s2
-      | s2 =  [ &cmp <- _41 ] s3
-      | s3 = {[@expl:type invariant] inv'2 cmp} s4
-      | s4 = -{resolve'2 cmp}- s5
-      | s5 =  [ &_47 <- elem ] s6
-      | s6 = {[@expl:type invariant] inv'2 _47} s7
-      | s7 = -{resolve'2 _47}- s8
-      | s8 = cmp'0 {cmp} {_47} (fun (_ret':Ordering'0.t_ordering) ->  [ &_44 <- _ret' ] s9)
-      | s9 = bb21 ]
+      [ s0 =  [ &cmp <- _41 ] s1
+      | s1 =  [ &_47 <- elem ] s2
+      | s2 = cmp'0 {cmp} {_47} (fun (_ret':Ordering'0.t_ordering) ->  [ &_44 <- _ret' ] s3)
+      | s3 = bb21 ]
       
     | bb21 = s0
       [ s0 = {[@expl:type invariant] inv'0 elem} s1

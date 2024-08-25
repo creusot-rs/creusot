@@ -37,16 +37,9 @@ module C06_Test
   let rec ix'0 (self:t) (ix:usize) (return'  (ret:tgt'0))= {[@expl:precondition] [%#span3] inv'0 self}
     any [ return' (result:tgt'0)-> {[%#span4] inv'1 result} (! return' {result}) ] 
   
-  predicate resolve'0 (self : t)
-  
   let rec test (a:t) (return'  (ret:tgt'0))= {[%#s061] inv'0 a}
     (! bb0
-    [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv'0 a} s1
-      | s1 = -{resolve'0 a}- s2
-      | s2 = ix'0 {a} {[%#s060] (0 : usize)} (fun (_ret':tgt'0) ->  [ &_0 <- _ret' ] s3)
-      | s3 = bb1 ]
-      
+    [ bb0 = s0 [ s0 = ix'0 {a} {[%#s060] (0 : usize)} (fun (_ret':tgt'0) ->  [ &_0 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = return' {_0} ]
     ) [ & _0 : tgt'0 = any_l () | & a : t = a ] 
     [ return' (result:tgt'0)-> {[@expl:postcondition] [%#s062] inv'1 result} (! return' {result}) ]

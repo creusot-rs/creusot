@@ -31,8 +31,6 @@ module Own_Impl0_IsOk
   
   let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
-  
   predicate invariant'1 (self : t)
   
   predicate inv'1 (_x : t)
@@ -52,18 +50,9 @@ module Own_Impl0_IsOk
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'0 (self : OwnResult'0.t_ownresult t e) =
-    [%#span5] true
-  
   let rec is_ok (self:OwnResult'0.t_ownresult t e) (return'  (ret:bool))= {[%#sown2] inv'0 self}
     (! bb0
-    [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv'0 self} s1
-      | s1 = -{resolve'0 self}- s2
-      | s2 = any
-        [ br0 (a:t)-> {self = OwnResult'0.C_Ok a} (! bb2) | br1 (a:e)-> {self = OwnResult'0.C_Err a} (! bb1) ]
-         ]
-      
+    [ bb0 = any [ br0 (a:t)-> {self = OwnResult'0.C_Ok a} (! bb2) | br1 (a:e)-> {self = OwnResult'0.C_Err a} (! bb1) ] 
     | bb1 = s0 [ s0 =  [ &_0 <- [%#smod0] false ] s1 | s1 = bb4 ] 
     | bb2 = bb3
     | bb3 = s0 [ s0 =  [ &_0 <- [%#smod1] true ] s1 | s1 = bb4 ] 
@@ -88,8 +77,6 @@ module Own_Impl0_IsErr
   let%span span3 = "../own.rs" 25 18 25 22
   
   let%span span4 = "../own.rs" 24 14 24 62
-  
-  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
   
   predicate invariant'2 (self : t)
   
@@ -122,17 +109,9 @@ module Own_Impl0_IsErr
       (! return' {result}) ]
     
   
-  predicate resolve'0 (self : OwnResult'0.t_ownresult t e) =
-    [%#span5] true
-  
   let rec is_err (self:OwnResult'0.t_ownresult t e) (return'  (ret:bool))= {[%#sown0] inv'0 self}
     (! bb0
-    [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv'0 self} s1
-      | s1 = -{resolve'0 self}- s2
-      | s2 = is_ok'0 {self} (fun (_ret':bool) ->  [ &_3 <- _ret' ] s3)
-      | s3 = bb1 ]
-      
+    [ bb0 = s0 [ s0 = is_ok'0 {self} (fun (_ret':bool) ->  [ &_3 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0 [ s0 =  [ &_0 <- not _3 ] (any [ any_ (_any:bool)-> (!  [ &_3 <- _any ] s1) ] ) | s1 = return' {_0} ]  ]
     ) [ & _0 : bool = any_l () | & self : OwnResult'0.t_ownresult t e = self | & _3 : bool = any_l () ] 
     [ return' (result:bool)-> {[@expl:postcondition] [%#sown1] result
@@ -367,8 +346,6 @@ module Own_Impl0_AsRef
   
   let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
-  
   use Own_OwnResult_Type as OwnResult'0
   
   predicate invariant'3 (self : OwnResult'0.t_ownresult t e) =
@@ -378,17 +355,17 @@ module Own_Impl0_AsRef
   
   axiom inv'3 : forall x : OwnResult'0.t_ownresult t e . inv'3 x = true
   
-  predicate invariant'2 (self : t)
+  predicate invariant'2 (self : e)
   
-  predicate inv'2 (_x : t)
+  predicate inv'2 (_x : e)
   
-  axiom inv'2 : forall x : t . inv'2 x = true
+  axiom inv'2 : forall x : e . inv'2 x = true
   
-  predicate invariant'1 (self : e)
+  predicate invariant'1 (self : t)
   
-  predicate inv'1 (_x : e)
+  predicate inv'1 (_x : t)
   
-  axiom inv'1 : forall x : e . inv'1 x = true
+  axiom inv'1 : forall x : t . inv'1 x = true
   
   predicate invariant'0 (self : OwnResult'0.t_ownresult t e) =
     [%#span4] true
@@ -401,34 +378,19 @@ module Own_Impl0_AsRef
   
   use prelude.prelude.Borrow
   
-  predicate resolve'2 (self : t)
-  
-  predicate resolve'1 (self : e)
-  
-  predicate resolve'0 (self : OwnResult'0.t_ownresult t e) =
-    [%#span5] true
-  
   let rec as_ref (self:OwnResult'0.t_ownresult t e) (return'  (ret:OwnResult'0.t_ownresult t e))= {[%#sown0] inv'0 self}
     (! bb0
     [ bb0 = any [ br0 (a:t)-> {self = OwnResult'0.C_Ok a} (! bb2) | br1 (a:e)-> {self = OwnResult'0.C_Err a} (! bb3) ] 
     | bb3 = s0
-      [ s0 = {[@expl:type invariant] inv'0 self} s1
-      | s1 = -{resolve'0 self}- s2
-      | s2 = OwnResult'0.err <t> <e> {self} (fun (r0'0:e) ->  [ &x1 <- r0'0 ] s3)
-      | s3 = {[@expl:type invariant] inv'1 x1} s4
-      | s4 = -{resolve'1 x1}- s5
-      | s5 =  [ &_0 <- OwnResult'0.C_Err x1 ] s6
-      | s6 = bb5 ]
+      [ s0 = OwnResult'0.err <t> <e> {self} (fun (r0'0:e) ->  [ &x1 <- r0'0 ] s1)
+      | s1 =  [ &_0 <- OwnResult'0.C_Err x1 ] s2
+      | s2 = bb5 ]
       
     | bb2 = bb4
     | bb4 = s0
-      [ s0 = {[@expl:type invariant] inv'0 self} s1
-      | s1 = -{resolve'0 self}- s2
-      | s2 = OwnResult'0.ok <t> <e> {self} (fun (r0'0:t) ->  [ &x <- r0'0 ] s3)
-      | s3 = {[@expl:type invariant] inv'2 x} s4
-      | s4 = -{resolve'2 x}- s5
-      | s5 =  [ &_0 <- OwnResult'0.C_Ok x ] s6
-      | s6 = bb5 ]
+      [ s0 = OwnResult'0.ok <t> <e> {self} (fun (r0'0:t) ->  [ &x <- r0'0 ] s1)
+      | s1 =  [ &_0 <- OwnResult'0.C_Ok x ] s2
+      | s2 = bb5 ]
       
     | bb5 = return' {_0} ]
     )
@@ -438,9 +400,9 @@ module Own_Impl0_AsRef
     | & x1 : e = any_l () ]
     
     [ return' (result:OwnResult'0.t_ownresult t e)-> {[@expl:postcondition] [%#sown3] inv'3 result}
-      {[@expl:postcondition] [%#sown2] forall e : e . inv'1 e
+      {[@expl:postcondition] [%#sown2] forall e : e . inv'2 e
        -> self = OwnResult'0.C_Err e  -> result = OwnResult'0.C_Err e}
-      {[@expl:postcondition] [%#sown1] forall t : t . inv'2 t
+      {[@expl:postcondition] [%#sown1] forall t : t . inv'1 t
        -> self = OwnResult'0.C_Ok t  -> result = OwnResult'0.C_Ok t}
       (! return' {result}) ]
     
@@ -1256,8 +1218,6 @@ module Own_Impl1_Copied
   
   let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span5 = "../own.rs" 16 8 19 9
-  
   use Own_OwnResult_Type as OwnResult'0
   
   predicate invariant'3 (self : OwnResult'0.t_ownresult t e) =
@@ -1288,16 +1248,6 @@ module Own_Impl1_Copied
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'1 (self : t)
-  
-  predicate resolve'2 (self : e)
-  
-  predicate resolve'0 [#"../own.rs" 15 4 15 28] (self : OwnResult'0.t_ownresult t e) =
-    [%#span5] match self with
-      | OwnResult'0.C_Ok t -> resolve'1 t
-      | OwnResult'0.C_Err e -> resolve'2 e
-      end
-  
   use prelude.prelude.Borrow
   
   let rec copied (self:OwnResult'0.t_ownresult t e) (return'  (ret:OwnResult'0.t_ownresult t e))= {[%#sown0] inv'0 self}
@@ -1320,21 +1270,9 @@ module Own_Impl1_Copied
     | bb8 = bb9
     | bb4 = bb6
     | bb6 = s0
-      [ s0 = {[@expl:type invariant] match self with
-          | OwnResult'0.C_Ok _ -> inv'0 self
-          | _ -> true
-          end}
-        s1
-      | s1 = -{match self with
-          | OwnResult'0.C_Ok _ -> resolve'0 self
-          | _ -> true
-          end}-
-        s2
-      | s2 = OwnResult'0.ok <t> <e> {self} (fun (r0'0:t) ->  [ &t <- r0'0 ] s3)
-      | s3 = {[@expl:type invariant] inv'1 t} s4
-      | s4 = -{resolve'1 t}- s5
-      | s5 =  [ &_0 <- OwnResult'0.C_Ok t ] s6
-      | s6 = bb9 ]
+      [ s0 = OwnResult'0.ok <t> <e> {self} (fun (r0'0:t) ->  [ &t <- r0'0 ] s1)
+      | s1 =  [ &_0 <- OwnResult'0.C_Ok t ] s2
+      | s2 = bb9 ]
       
     | bb9 = bb10
     | bb10 = return' {_0} ]
@@ -1372,8 +1310,6 @@ module Own_Impl1_Cloned
   let%span span6 = "../../../../../creusot-contracts/src/std/clone.rs" 7 0 20 1
   
   let%span span7 = "" 0 0 0 0
-  
-  let%span span8 = "../own.rs" 16 8 19 9
   
   predicate invariant'4 (self : t)
   
@@ -1416,16 +1352,6 @@ module Own_Impl1_Cloned
   let rec clone'0 (self:t) (return'  (ret:t))= {[@expl:precondition] [%#span5] inv'1 self}
     any [ return' (result:t)-> {[%#span7] inv'4 result} {[%#span6] result = self} (! return' {result}) ] 
   
-  predicate resolve'1 (self : t)
-  
-  predicate resolve'2 (self : e)
-  
-  predicate resolve'0 [#"../own.rs" 15 4 15 28] (self : OwnResult'0.t_ownresult t e) =
-    [%#span8] match self with
-      | OwnResult'0.C_Ok t -> resolve'1 t
-      | OwnResult'0.C_Err e -> resolve'2 e
-      end
-  
   let rec cloned (self:OwnResult'0.t_ownresult t e) (return'  (ret:OwnResult'0.t_ownresult t e))= {[%#sown0] inv'0 self}
     (! bb0
     [ bb0 = bb1
@@ -1446,21 +1372,9 @@ module Own_Impl1_Cloned
     | bb10 = bb11
     | bb4 = bb6
     | bb6 = s0
-      [ s0 = {[@expl:type invariant] match self with
-          | OwnResult'0.C_Ok _ -> inv'0 self
-          | _ -> true
-          end}
-        s1
-      | s1 = -{match self with
-          | OwnResult'0.C_Ok _ -> resolve'0 self
-          | _ -> true
-          end}-
-        s2
-      | s2 = OwnResult'0.ok <t> <e> {self} (fun (r0'0:t) ->  [ &t <- r0'0 ] s3)
-      | s3 = {[@expl:type invariant] inv'1 t} s4
-      | s4 = -{resolve'1 t}- s5
-      | s5 = clone'0 {t} (fun (_ret':t) ->  [ &_6 <- _ret' ] s6)
-      | s6 = bb7 ]
+      [ s0 = OwnResult'0.ok <t> <e> {self} (fun (r0'0:t) ->  [ &t <- r0'0 ] s1)
+      | s1 = clone'0 {t} (fun (_ret':t) ->  [ &_6 <- _ret' ] s2)
+      | s2 = bb7 ]
       
     | bb7 = s0 [ s0 =  [ &_0 <- OwnResult'0.C_Ok _6 ] (any [ any_ (_any:t)-> (!  [ &_6 <- _any ] s1) ] ) | s1 = bb8 ] 
     | bb8 = bb11

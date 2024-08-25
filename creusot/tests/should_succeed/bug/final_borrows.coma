@@ -1267,12 +1267,6 @@ module FinalBorrows_SharedBorrowNoGen
   
   use prelude.prelude.Borrow
   
-  predicate invariant'2 (self : borrowed t)
-  
-  predicate inv'2 (_x : borrowed t)
-  
-  axiom inv'2 : forall x : borrowed t . inv'2 x = true
-  
   predicate invariant'1 (self : borrowed t)
   
   predicate inv'1 (_x : borrowed t)
@@ -1287,8 +1281,6 @@ module FinalBorrows_SharedBorrowNoGen
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'1 (self : borrowed t)
-  
   predicate resolve'0 (self : borrowed t) =
     [%#span2] self.final = self.current
   
@@ -1301,12 +1293,10 @@ module FinalBorrows_SharedBorrowNoGen
       | s2 = {[@expl:type invariant] inv'1 b1} s3
       | s3 = -{resolve'0 b1}- s4
       | s4 =  [ &_shared <- bor ] s5
-      | s5 = {[@expl:type invariant] inv'2 _shared} s6
-      | s6 = -{resolve'1 _shared}- s7
-      | s7 = {[@expl:type invariant] inv'1 bor} s8
-      | s8 = -{resolve'0 bor}- s9
-      | s9 = {[@expl:assertion] [%#sfinal_borrows0] b1 = bor} s10
-      | s10 = return' {_0} ]
+      | s5 = {[@expl:type invariant] inv'1 bor} s6
+      | s6 = -{resolve'0 bor}- s7
+      | s7 = {[@expl:assertion] [%#sfinal_borrows0] b1 = bor} s8
+      | s8 = return' {_0} ]
        ]
     )
     [ & _0 : () = any_l ()

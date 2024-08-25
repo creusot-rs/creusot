@@ -32,7 +32,7 @@ use rustc_middle::{
     },
     ty::{
         ClosureKind::*, EarlyBinder, GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
-        UpvarCapture,
+        TypeVisitableExt, UpvarCapture,
     },
 };
 use rustc_mir_dataflow::{
@@ -319,17 +319,40 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         has_downcast.then_some(pat)
     }
 
+    // These types cannot contain mutable borrows and thus do not need to be resolved.
+    fn skip_resolve_type(&self, ty: Ty<'tcx>) -> bool {
+        ty.is_copy_modulo_regions(self.tcx(), self.param_env())
+            || !(ty.has_free_regions()
+                || ty.has_erased_regions()
+                || ty.still_further_specializable())
+    }
+
     fn emit_resolve(&mut self, cond: bool, pl: PlaceRef<'tcx>) {
+        let place_ty = pl.ty(self.body, self.tcx());
+
+        if self.skip_resolve_type(place_ty.ty) {
+            return;
+        }
+        if let TyKind::Adt(adt_def, subst) = place_ty.ty.kind()
+            && let Some(vi) = place_ty.variant_index
+            && adt_def
+                .variant(vi)
+                .fields
+                .iter()
+                .all(|f| self.skip_resolve_type(f.ty(self.tcx(), subst)))
+        {
+            return;
+        }
+
         let p = self.translate_place(pl);
         let pat = if cond { self.pattern_of_downcasts(pl) } else { None };
-        let place_ty = pl.ty(self.body, self.tcx()).ty;
 
-        if let Some(_) = self.ctx.type_invariant(self.body_id.def_id(), place_ty) {
+        if let Some(_) = self.ctx.type_invariant(self.body_id.def_id(), place_ty.ty) {
             let pat = pat.clone();
             self.emit_statement(fmir::Statement::AssertTyInv { pl: p.clone(), pat });
         }
 
-        if let Some((did, subst)) = resolve_predicate_of(self.ctx, self.param_env(), place_ty) {
+        if let Some((did, subst)) = resolve_predicate_of(self.ctx, self.param_env(), place_ty.ty) {
             self.emit_statement(fmir::Statement::Resolve { did, subst, pl: p, pat });
         }
     }
@@ -625,14 +648,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                                 insert(self.ctx.mk_place_field(pl, fi, fd.ty(self.tcx(), subst)));
                             }
                         } else {
-                            for (i, var) in adt_def.variants().iter().enumerate() {
-                                if var.fields.len() != 0 {
-                                    insert(self.ctx.mk_place_downcast(
-                                        pl,
-                                        *adt_def,
-                                        VariantIdx::new(i),
-                                    ))
-                                }
+                            for (i, _var) in adt_def.variants().iter().enumerate() {
+                                insert(self.ctx.mk_place_downcast(pl, *adt_def, VariantIdx::new(i)))
                             }
                         }
                     } else {
