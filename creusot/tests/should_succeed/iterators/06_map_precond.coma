@@ -1836,9 +1836,9 @@ module C06MapPrecond_Impl0_Next
   
   use prelude.prelude.Snapshot
   
-  predicate inv'3 (_x : Snapshot.snap_ty (Seq.seq item'0))
+  predicate inv'2 (_x : Snapshot.snap_ty (Seq.seq item'0))
   
-  predicate inv'2 (_x : f)
+  predicate inv'1 (_x : f)
   
   predicate inv'0 (_x : i)
   
@@ -1886,7 +1886,7 @@ module C06MapPrecond_Impl0_Next
      -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
   
   axiom preservation_inv'0_spec : forall iter : i, func : f, produced : Seq.seq item'0 . ([%#span10] inv'0 iter)
-   -> ([%#span11] inv'2 func)
+   -> ([%#span11] inv'1 func)
    -> ([%#span12] inv'12 produced)
    -> ([%#span13] produced = (Seq.empty  : Seq.seq item'0)
    -> preservation_inv'0 iter func produced = preservation'0 iter func)
@@ -1900,7 +1900,7 @@ module C06MapPrecond_Impl0_Next
   predicate inv'6 (_x : borrowed i)
   
   predicate reinitialize'0 [#"../06_map_precond.rs" 117 4 117 29] (_1 : ()) =
-    [%#span15] forall iter : borrowed i, func : f . inv'6 iter /\ inv'2 func
+    [%#span15] forall iter : borrowed i, func : f . inv'6 iter /\ inv'1 func
      -> completed'1 iter
      -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq item'0) /\ preservation'0 iter.final func
   
@@ -1931,7 +1931,7 @@ module C06MapPrecond_Impl0_Next
   
   function fn_mut_once'0 (self : f) (args : (item'0, Snapshot.snap_ty (Seq.seq item'0))) (res : b) : ()
   
-  axiom fn_mut_once'0_spec : forall self : f, args : (item'0, Snapshot.snap_ty (Seq.seq item'0)), res : b . ([%#span17] inv'2 self)
+  axiom fn_mut_once'0_spec : forall self : f, args : (item'0, Snapshot.snap_ty (Seq.seq item'0)), res : b . ([%#span17] inv'1 self)
    -> ([%#span18] inv'8 args)
    -> ([%#span19] inv'9 res)
    -> ([%#span20] postcondition_once'0 self args res
@@ -1941,11 +1941,11 @@ module C06MapPrecond_Impl0_Next
   
   axiom unnest_trans'0_spec : forall self : f, b : f, c : f . ([%#span21] unnest'0 self b)
    -> ([%#span22] unnest'0 b c)
-   -> ([%#span23] inv'2 self)  -> ([%#span24] inv'2 b)  -> ([%#span25] inv'2 c)  -> ([%#span26] unnest'0 self c)
+   -> ([%#span23] inv'1 self)  -> ([%#span24] inv'1 b)  -> ([%#span25] inv'1 c)  -> ([%#span26] unnest'0 self c)
   
   function unnest_refl'0 (self : f) : ()
   
-  axiom unnest_refl'0_spec : forall self : f . ([%#span27] inv'2 self)  -> ([%#span28] unnest'0 self self)
+  axiom unnest_refl'0_spec : forall self : f . ([%#span27] inv'1 self)  -> ([%#span28] unnest'0 self self)
   
   function postcondition_mut_unnest'0 (self : borrowed f) (args : (item'0, Snapshot.snap_ty (Seq.seq item'0))) (res : b) : ()
     
@@ -1976,28 +1976,28 @@ module C06MapPrecond_Impl0_Next
   
   axiom inv'5 : forall x : Option'0.t_option b . inv'5 x = true
   
-  predicate invariant'4 (self : borrowed (Map'0.t_map i b f item'0)) =
+  predicate invariant'4 (self : Option'0.t_option item'0) =
     [%#span7] true
   
-  predicate inv'4 (_x : borrowed (Map'0.t_map i b f item'0))
+  predicate inv'4 (_x : Option'0.t_option item'0)
   
-  axiom inv'4 : forall x : borrowed (Map'0.t_map i b f item'0) . inv'4 x = (inv'10 x.current /\ inv'10 x.final)
+  axiom inv'4 : forall x : Option'0.t_option item'0 . inv'4 x = true
   
-  predicate invariant'3 (self : Snapshot.snap_ty (Seq.seq item'0)) =
+  predicate invariant'3 (self : borrowed (Map'0.t_map i b f item'0)) =
     [%#span7] true
   
-  axiom inv'3 : forall x : Snapshot.snap_ty (Seq.seq item'0) . inv'3 x = true
+  predicate inv'3 (_x : borrowed (Map'0.t_map i b f item'0))
   
-  predicate invariant'2 (self : f)
+  axiom inv'3 : forall x : borrowed (Map'0.t_map i b f item'0) . inv'3 x = (inv'10 x.current /\ inv'10 x.final)
   
-  axiom inv'2 : forall x : f . inv'2 x = true
-  
-  predicate invariant'1 (self : Option'0.t_option item'0) =
+  predicate invariant'2 (self : Snapshot.snap_ty (Seq.seq item'0)) =
     [%#span7] true
   
-  predicate inv'1 (_x : Option'0.t_option item'0)
+  axiom inv'2 : forall x : Snapshot.snap_ty (Seq.seq item'0) . inv'2 x = true
   
-  axiom inv'1 : forall x : Option'0.t_option item'0 . inv'1 x = true
+  predicate invariant'1 (self : f)
+  
+  axiom inv'1 : forall x : f . inv'1 x = true
   
   predicate invariant'0 (self : i)
   
@@ -2086,7 +2086,10 @@ module C06MapPrecond_Impl0_Next
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'3 (self : Snapshot.snap_ty ()) =
+  predicate resolve'3 (self : Option'0.t_option item'0) =
+    [%#span51] true
+  
+  predicate resolve'2 (self : Snapshot.snap_ty ()) =
     [%#span51] true
   
   use prelude.prelude.Snapshot
@@ -2105,10 +2108,10 @@ module C06MapPrecond_Impl0_Next
    -> ([%#span61] next_precondition'0 iter f.final (Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e))
   && ([%#span60] preservation_inv'0 iter f.final (Seq.snoc (Snapshot.inner (C06MapPrecond_Map_Type.map_produced self)) e))
   
-  predicate resolve'2 (self : borrowed (Map'0.t_map i b f item'0)) =
+  predicate resolve'1 (self : borrowed (Map'0.t_map i b f item'0)) =
     [%#span63] self.final = self.current
   
-  predicate resolve'1 (self : Snapshot.snap_ty (Seq.seq item'0)) =
+  predicate resolve'0 (self : Snapshot.snap_ty (Seq.seq item'0)) =
     [%#span51] true
   
   let rec call_mut'0 (self:borrowed f) (args:(item'0, Snapshot.snap_ty (Seq.seq item'0))) (return'  (ret:b))= {[@expl:precondition] [%#span66] inv'8 args}
@@ -2120,12 +2123,9 @@ module C06MapPrecond_Impl0_Next
       (! return' {result}) ]
     
   
-  predicate resolve'0 (self : Option'0.t_option item'0) =
-    [%#span51] true
-  
   let rec next'0 (self:borrowed i) (return'  (ret:Option'0.t_option item'0))= {[@expl:precondition] [%#span69] inv'6 self}
     any
-    [ return' (result:Option'0.t_option item'0)-> {[%#span71] inv'1 result}
+    [ return' (result:Option'0.t_option item'0)-> {[%#span71] inv'4 result}
       {[%#span70] match result with
         | Option'0.C_None -> completed'1 self
         | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
@@ -2133,7 +2133,7 @@ module C06MapPrecond_Impl0_Next
       (! return' {result}) ]
     
   
-  let rec next (self:borrowed (Map'0.t_map i b f item'0)) (return'  (ret:Option'0.t_option b))= {[%#s06_map_precond4] inv'4 self}
+  let rec next (self:borrowed (Map'0.t_map i b f item'0)) (return'  (ret:Option'0.t_option b))= {[%#s06_map_precond4] inv'3 self}
     (! bb0
     [ bb0 = s0
       [ s0 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
@@ -2159,11 +2159,9 @@ module C06MapPrecond_Impl0_Next
             [ any_ (_any:item'0)-> (! Option'0.some <item'0> {_3}
                 (fun (l_0'0:item'0) ->  [ &_3 <- Option'0.C_Some _any ] s1)) ]
             ))
-      | s1 = {[@expl:type invariant] inv'1 _3} s2
-      | s2 = -{resolve'0 _3}- s3
-      | s3 = {[@expl:assertion] [%#s06_map_precond0] precondition'0 (C06MapPrecond_Map_Type.map_func self.current) (v, C06MapPrecond_Map_Type.map_produced self.current)}
-        s4
-      | s4 = bb6 ]
+      | s1 = {[@expl:assertion] [%#s06_map_precond0] precondition'0 (C06MapPrecond_Map_Type.map_func self.current) (v, C06MapPrecond_Map_Type.map_produced self.current)}
+        s2
+      | s2 = bb6 ]
       
     | bb6 = s0
       [ s0 = 
@@ -2182,7 +2180,7 @@ module C06MapPrecond_Impl0_Next
                   (fun (l_iter'0:i) (l_func'0:f) (l_produced'0:Snapshot.snap_ty (Seq.seq item'0)) ->
                      [ &self <- { self with current = Map'0.C_Map l_iter'0 _12.final l_produced'0 ; } ] 
                     s1)))
-      | s1 = -{inv'2 _12.final}- s2
+      | s1 = -{inv'1 _12.final}- s2
       | s2 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
           (fun (riter'1:i) (rfunc'1:f) (rproduced'1:Snapshot.snap_ty (Seq.seq item'0)) ->
              [ &_13 <- (v, rproduced'1) ] 
@@ -2192,22 +2190,22 @@ module C06MapPrecond_Impl0_Next
       
     | bb8 = bb9
     | bb9 = s0
-      [ s0 = {[@expl:type invariant] inv'3 produced} s1
-      | s1 = -{resolve'1 produced}- s2
+      [ s0 = {[@expl:type invariant] inv'2 produced} s1
+      | s1 = -{resolve'0 produced}- s2
       | s2 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
-          (fun (l_iter'0:i) (l_func'0:f) (l_produced'0:Snapshot.snap_ty (Seq.seq item'0)) ->
-             [ &self <- { self with current = Map'0.C_Map l_iter'0 l_func'0 produced ; } ] 
+          (fun (riter'0:i) (rfunc'0:f) (rproduced'0:Snapshot.snap_ty (Seq.seq item'0)) ->
+            {[@expl:type invariant] inv'2 rproduced'0}
             s3)
       | s3 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
-          (fun (riter'0:i) (rfunc'0:f) (rproduced'0:Snapshot.snap_ty (Seq.seq item'0)) ->
-            {[@expl:type invariant] inv'3 rproduced'0}
-            s4)
+          (fun (riter'1:i) (rfunc'1:f) (rproduced'1:Snapshot.snap_ty (Seq.seq item'0)) -> -{resolve'0 rproduced'1}- s4)
       | s4 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
-          (fun (riter'1:i) (rfunc'1:f) (rproduced'1:Snapshot.snap_ty (Seq.seq item'0)) -> -{resolve'1 rproduced'1}- s5)
-      | s5 = {[@expl:type invariant] inv'4 self} s6
-      | s6 = -{resolve'2 self}- s7
+          (fun (l_iter'0:i) (l_func'0:f) (l_produced'0:Snapshot.snap_ty (Seq.seq item'0)) ->
+             [ &self <- { self with current = Map'0.C_Map l_iter'0 l_func'0 produced ; } ] 
+            s5)
+      | s5 = {[@expl:type invariant] inv'3 self} s6
+      | s6 = -{resolve'1 self}- s7
       | s7 =  [ &_17 <- [%#s06_map_precond2] Snapshot.new () ] s8
-      | s8 = -{resolve'3 _17}- s9
+      | s8 = -{resolve'2 _17}- s9
       | s9 = bb10 ]
       
     | bb10 = s0 [ s0 =  [ &_0 <- Option'0.C_Some r ] (any [ any_ (_any:b)-> (!  [ &r <- _any ] s1) ] ) | s1 = bb11 ] 
@@ -2215,24 +2213,24 @@ module C06MapPrecond_Impl0_Next
     | bb12 = bb13
     | bb13 = bb15
     | bb4 = s0
-      [ s0 = {[@expl:type invariant] inv'1 _3} s1
-      | s1 = -{resolve'0 _3}- s2
+      [ s0 = {[@expl:type invariant] inv'4 _3} s1
+      | s1 = -{resolve'3 _3}- s2
       | s2 =  [ &_20 <- [%#s06_map_precond3] Snapshot.new (Seq.empty  : Seq.seq item'0) ] s3
       | s3 = bb14 ]
       
     | bb14 = s0
       [ s0 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
+          (fun (riter'0:i) (rfunc'0:f) (rproduced'0:Snapshot.snap_ty (Seq.seq item'0)) ->
+            {[@expl:type invariant] inv'2 rproduced'0}
+            s1)
+      | s1 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
+          (fun (riter'1:i) (rfunc'1:f) (rproduced'1:Snapshot.snap_ty (Seq.seq item'0)) -> -{resolve'0 rproduced'1}- s2)
+      | s2 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
           (fun (l_iter'0:i) (l_func'0:f) (l_produced'0:Snapshot.snap_ty (Seq.seq item'0)) ->
              [ &self <- { self with current = Map'0.C_Map l_iter'0 l_func'0 _20 ; } ] 
-            (any [ any_ (_any:Snapshot.snap_ty (Seq.seq item'0))-> (!  [ &_20 <- _any ] s1) ] ))
-      | s1 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
-          (fun (riter'0:i) (rfunc'0:f) (rproduced'0:Snapshot.snap_ty (Seq.seq item'0)) ->
-            {[@expl:type invariant] inv'3 rproduced'0}
-            s2)
-      | s2 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
-          (fun (riter'1:i) (rfunc'1:f) (rproduced'1:Snapshot.snap_ty (Seq.seq item'0)) -> -{resolve'1 rproduced'1}- s3)
-      | s3 = {[@expl:type invariant] inv'4 self} s4
-      | s4 = -{resolve'2 self}- s5
+            (any [ any_ (_any:Snapshot.snap_ty (Seq.seq item'0))-> (!  [ &_20 <- _any ] s3) ] ))
+      | s3 = {[@expl:type invariant] inv'3 self} s4
+      | s4 = -{resolve'1 self}- s5
       | s5 =  [ &_0 <- Option'0.C_None ] s6
       | s6 = bb15 ]
       
@@ -2651,15 +2649,6 @@ module C06MapPrecond_Identity_Closure0
   
   axiom inv'1 : forall x : item'0 . inv'1 x = true
   
-  use prelude.prelude.Snapshot
-  
-  predicate invariant'0 (self : Snapshot.snap_ty (Seq.seq item'0)) =
-    [%#span2] true
-  
-  predicate inv'0 (_x : Snapshot.snap_ty (Seq.seq item'0))
-  
-  axiom inv'0 : forall x : Snapshot.snap_ty (Seq.seq item'0) . inv'0 x = true
-  
   use seq.Seq
   
   predicate produces'0 [#"../common.rs" 8 4 8 65] (self : i) (visited : Seq.seq item'0) (o : i)
@@ -2680,6 +2669,15 @@ module C06MapPrecond_Identity_Closure0
   
   axiom produces_refl'0_spec : forall self : i . ([%#span11] inv'2 self)
    -> ([%#span12] produces'0 self (Seq.empty  : Seq.seq item'0) self)
+  
+  use prelude.prelude.Snapshot
+  
+  predicate invariant'0 (self : Snapshot.snap_ty (Seq.seq item'0)) =
+    [%#span2] true
+  
+  predicate inv'0 (_x : Snapshot.snap_ty (Seq.seq item'0))
+  
+  axiom inv'0 : forall x : Snapshot.snap_ty (Seq.seq item'0) . inv'0 x = true
   
   use prelude.prelude.Int16
   
@@ -2704,10 +2702,10 @@ module C06MapPrecond_Identity_Closure0
     {[%#s06_map_precond0] inv'1 x}
     (! bb0
     [ bb0 = s0
-      [ s0 =  [ &_0 <- x ] (any [ any_ (_any:item'0)-> (!  [ &x <- _any ] s1) ] )
-      | s1 = {[@expl:type invariant] inv'0 _3} s2
-      | s2 = -{resolve'0 _3}- s3
-      | s3 = -{resolve'1 _1}- s4
+      [ s0 = {[@expl:type invariant] inv'0 _3} s1
+      | s1 = -{resolve'0 _3}- s2
+      | s2 = -{resolve'1 _1}- s3
+      | s3 =  [ &_0 <- x ] (any [ any_ (_any:item'0)-> (!  [ &x <- _any ] s4) ] )
       | s4 = bb1 ]
       
     | bb1 = return' {_0} ]

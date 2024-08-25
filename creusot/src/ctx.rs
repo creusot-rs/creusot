@@ -28,7 +28,7 @@ use rustc_hir::{
 };
 use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
-    mir::{Body, Promoted},
+    mir::{Body, Promoted, TerminatorKind},
     thir,
     ty::{
         Clause, GenericArg, GenericArgs, GenericArgsRef, ParamEnv, Predicate, Ty, TyCtxt,
@@ -195,13 +195,20 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
     pub(crate) fn body_with_facts(&mut self, def_id: LocalDefId) -> &BodyWithBorrowckFacts<'tcx> {
         if !self.bodies.contains_key(&def_id) {
-            let body = callbacks::get_body(self.tcx, def_id)
+            let mut body = callbacks::get_body(self.tcx, def_id)
                 .unwrap_or_else(|| panic!("did not find body for {def_id:?}"));
 
-            // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
-            // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
-            // CleanupPostBorrowck.run_pass(self.tcx, &mut body.body);
-            // SimplifyCfg::new("verify").run_pass(self.tcx, &mut body.body);
+            // We need to remove false edges. They are used in compilation of pattern matchings
+            // in ways that may result in move paths that are marked live and uninitilized at the
+            // same time. We cannot handle this in the generation of resolution.
+            // On the other hand, it is necessary to keep false unwind edges, because they are needed
+            // by liveness analysis.
+            for bbd in body.body.basic_blocks_mut().iter_mut() {
+                let term = bbd.terminator_mut();
+                if let TerminatorKind::FalseEdge { real_target, .. } = term.kind {
+                    term.kind = TerminatorKind::Goto { target: real_target };
+                }
+            }
 
             self.bodies.insert(def_id, body);
         };

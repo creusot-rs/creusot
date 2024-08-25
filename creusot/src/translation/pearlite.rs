@@ -251,9 +251,8 @@ pub enum Literal<'tcx> {
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum Pattern<'tcx> {
     Constructor {
-        adt: DefId,
+        variant: DefId,
         substs: GenericArgsRef<'tcx>,
-        variant: VariantIdx,
         fields: Vec<Pattern<'tcx>>,
     },
     Tuple(Vec<Pattern<'tcx>>),
@@ -763,9 +762,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     .collect();
 
                 Ok(Pattern::Constructor {
-                    adt: adt_def.variants()[*variant_index].def_id,
+                    variant: adt_def.variants()[*variant_index].def_id,
                     substs: args,
-                    variant: *variant_index,
                     fields,
                 })
             }
@@ -794,9 +792,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         .map(|el| el.reduce(|_, a| a).1)
                         .collect();
                     Ok(Pattern::Constructor {
-                        adt: adt_def.variants()[0usize.into()].def_id,
+                        variant: adt_def.variants()[0usize.into()].def_id,
                         substs,
-                        variant: 0u32.into(),
                         fields,
                     })
                 }

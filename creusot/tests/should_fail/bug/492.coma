@@ -74,15 +74,11 @@ module C492_Test
   
   let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span6 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  let%span span6 = "../492.rs" 5 25 5 26
   
-  let%span span7 = "../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60
+  let%span span7 = "../492.rs" 4 10 4 27
   
-  let%span span8 = "../492.rs" 5 25 5 26
-  
-  let%span span9 = "../492.rs" 4 10 4 27
-  
-  let%span span10 = "../492.rs" 5 39 5 52
+  let%span span8 = "../492.rs" 5 39 5 52
   
   use prelude.prelude.UInt32
   
@@ -106,21 +102,15 @@ module C492_Test
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'1 (self : borrowed int32) =
+  predicate resolve'0 (self : borrowed int32) =
     [%#span5] self.final = self.current
-  
-  predicate resolve'2 (self : uint32) =
-    [%#span6] true
-  
-  predicate resolve'0 (self : (borrowed int32, uint32)) =
-    [%#span7] resolve'1 (let (a, _) = self in a) /\ resolve'2 (let (_, a) = self in a)
   
   use prelude.prelude.Int
   
-  let rec reborrow_tuple'0 (x:borrowed int32) (return'  (ret:(borrowed int32, uint32)))= {[@expl:precondition] [%#span8] inv'0 x}
+  let rec reborrow_tuple'0 (x:borrowed int32) (return'  (ret:(borrowed int32, uint32)))= {[@expl:precondition] [%#span6] inv'0 x}
     any
-    [ return' (result:(borrowed int32, uint32))-> {[%#span10] inv'1 result}
-      {[%#span9] (let (a, _) = result in a).current = x.current}
+    [ return' (result:(borrowed int32, uint32))-> {[%#span8] inv'1 result}
+      {[%#span7] (let (a, _) = result in a).current = x.current}
       (! return' {result}) ]
     
   
@@ -136,12 +126,11 @@ module C492_Test
     | bb1 = s0
       [ s0 =  [ &res <- let (r'0, _) = _4 in r'0 ] 
         (any [ any_ (_any:borrowed int32)-> (!  [ &_4 <- let (_, l'2) = _4 in (_any, l'2) ] s1) ] )
-      | s1 = -{resolve'0 _4}- s2
-      | s2 = -{resolve'1 _6}- s3
-      | s3 = {[@expl:assertion] [%#s4921] res.final = (5 : int32)} s4
-      | s4 =  [ &res <- { res with current = ([%#s4922] (10 : int32)) ; } ] s5
-      | s5 = -{resolve'1 res}- s6
-      | s6 = return' {_0} ]
+      | s1 = -{resolve'0 _6}- s2
+      | s2 = {[@expl:assertion] [%#s4921] res.final = (5 : int32)} s3
+      | s3 =  [ &res <- { res with current = ([%#s4922] (10 : int32)) ; } ] s4
+      | s4 = -{resolve'0 res}- s5
+      | s5 = return' {_0} ]
        ]
     )
     [ & _0 : () = any_l ()

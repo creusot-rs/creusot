@@ -173,15 +173,15 @@ module C08CollectExtend_Extend
   
   let%span span25 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span26 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span26 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
   
-  let%span span27 = "" 0 0 0 0
+  let%span span27 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
   
   let%span span28 = "" 0 0 0 0
   
-  let%span span29 = "../../../../../creusot-contracts/src/std/vec.rs" 82 26 82 51
+  let%span span29 = "" 0 0 0 0
   
-  let%span span30 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  let%span span30 = "../../../../../creusot-contracts/src/std/vec.rs" 82 26 82 51
   
   let%span span31 = "" 0 0 0 0
   
@@ -231,6 +231,15 @@ module C08CollectExtend_Extend
   
   axiom inv'7 : forall x : borrowed (Vec'0.t_vec t (Global'0.t_global)) . inv'7 x = true
   
+  use Core_Option_Option_Type as Option'0
+  
+  predicate invariant'6 (self : Option'0.t_option t) =
+    [%#span9] true
+  
+  predicate inv'6 (_x : Option'0.t_option t)
+  
+  axiom inv'6 : forall x : Option'0.t_option t . inv'6 x = true
+  
   use prelude.prelude.UIntSize
   
   use prelude.prelude.UIntSize
@@ -241,27 +250,18 @@ module C08CollectExtend_Extend
   
   use seq.Seq
   
-  predicate inv'6 (_x : Vec'0.t_vec t (Global'0.t_global))
+  predicate inv'5 (_x : Vec'0.t_vec t (Global'0.t_global))
   
   function shallow_model'2 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t
   
-  axiom shallow_model'2_spec : forall self : Vec'0.t_vec t (Global'0.t_global) . ([%#span11] inv'6 self)
+  axiom shallow_model'2_spec : forall self : Vec'0.t_vec t (Global'0.t_global) . ([%#span11] inv'5 self)
    -> ([%#span13] inv'8 (shallow_model'2 self))
   && ([%#span12] Seq.length (shallow_model'2 self) <= UIntSize.to_int (max'0 : usize))
   
-  predicate invariant'6 (self : Vec'0.t_vec t (Global'0.t_global)) =
+  predicate invariant'5 (self : Vec'0.t_vec t (Global'0.t_global)) =
     [%#span14] inv'8 (shallow_model'2 self)
   
-  axiom inv'6 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'6 x = true
-  
-  use Core_Option_Option_Type as Option'0
-  
-  predicate invariant'5 (self : Option'0.t_option t) =
-    [%#span9] true
-  
-  predicate inv'5 (_x : Option'0.t_option t)
-  
-  axiom inv'5 : forall x : Option'0.t_option t . inv'5 x = true
+  axiom inv'5 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'5 x = true
   
   predicate invariant'4 (self : borrowed i)
   
@@ -327,29 +327,29 @@ module C08CollectExtend_Extend
   
   predicate resolve'5 (self : i)
   
+  predicate resolve'4 (self : Option'0.t_option t) =
+    [%#span26] true
+  
   use seq.Seq
   
   function shallow_model'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq t =
-    [%#span26] shallow_model'2 self.current
+    [%#span27] shallow_model'2 self.current
   
-  let rec push'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (value:t) (return'  (ret:()))= {[@expl:precondition] [%#span28] inv'9 value}
-    {[@expl:precondition] [%#span27] inv'7 self}
+  let rec push'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (value:t) (return'  (ret:()))= {[@expl:precondition] [%#span29] inv'9 value}
+    {[@expl:precondition] [%#span28] inv'7 self}
     any
-    [ return' (result:())-> {[%#span29] shallow_model'2 self.final = Seq.snoc (shallow_model'0 self) value}
+    [ return' (result:())-> {[%#span30] shallow_model'2 self.final = Seq.snoc (shallow_model'0 self) value}
       (! return' {result}) ]
     
   
   use seq.Seq
-  
-  predicate resolve'4 (self : Option'0.t_option t) =
-    [%#span30] true
   
   predicate resolve'3 (self : borrowed i) =
     [%#span25] self.final = self.current
   
   let rec next'0 (self:borrowed i) (return'  (ret:Option'0.t_option t))= {[@expl:precondition] [%#span31] inv'4 self}
     any
-    [ return' (result:Option'0.t_option t)-> {[%#span33] inv'5 result}
+    [ return' (result:Option'0.t_option t)-> {[%#span33] inv'6 result}
       {[%#span32] match result with
         | Option'0.C_None -> completed'0 self
         | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
@@ -374,12 +374,12 @@ module C08CollectExtend_Extend
   use prelude.prelude.Snapshot
   
   predicate resolve'2 (self : Snapshot.snap_ty (Seq.seq t)) =
-    [%#span30] true
+    [%#span26] true
   
   use prelude.prelude.Snapshot
   
   predicate resolve'1 (self : Snapshot.snap_ty i) =
-    [%#span30] true
+    [%#span26] true
   
   use prelude.prelude.Snapshot
   
@@ -396,7 +396,7 @@ module C08CollectExtend_Extend
     
   
   predicate resolve'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global)))) =
-    [%#span30] true
+    [%#span26] true
   
   use prelude.prelude.Snapshot
   
@@ -451,13 +451,11 @@ module C08CollectExtend_Extend
                 (any
                 [ any_ (_any:t)-> (! Option'0.some <t> {_17} (fun (l_0'0:t) ->  [ &_17 <- Option'0.C_Some _any ] s1)) ]
                 ))
-          | s1 = {[@expl:type invariant] inv'5 _17} s2
-          | s2 = -{resolve'4 _17}- s3
-          | s3 = 
+          | s1 = 
             [ &_22 <- [%#s08_collect_extend5] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
             
-            s4
-          | s4 = bb15 ]
+            s2
+          | s2 = bb15 ]
           
         | bb15 = s0
           [ s0 =  [ &produced <- _22 ] (any [ any_ (_any:Snapshot.snap_ty (Seq.seq t))-> (!  [ &_22 <- _any ] s1) ] )
@@ -470,7 +468,7 @@ module C08CollectExtend_Extend
                  [ &_26 <- _ret' ] 
                  [ &vec <- { vec with current = _26.final ; } ] 
                 s5)
-          | s5 = -{inv'6 _26.final}- s6
+          | s5 = -{inv'5 _26.final}- s6
           | s6 = push'0 {_26} {x} (fun (_ret':()) ->  [ &_25 <- _ret' ] s7)
           | s7 = bb16 ]
           
@@ -481,7 +479,7 @@ module C08CollectExtend_Extend
          ]
       
     | bb13 = s0
-      [ s0 = {[@expl:type invariant] inv'5 _17} s1
+      [ s0 = {[@expl:type invariant] inv'6 _17} s1
       | s1 = -{resolve'4 _17}- s2
       | s2 = {[@expl:type invariant] inv'3 iter1} s3
       | s3 = -{resolve'5 iter1}- s4
@@ -568,15 +566,15 @@ module C08CollectExtend_Collect
   
   let%span span23 = "../../../../../creusot-contracts/src/std/iter.rs" 34 14 34 45
   
-  let%span span24 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span24 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
   
-  let%span span25 = "" 0 0 0 0
+  let%span span25 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
   
   let%span span26 = "" 0 0 0 0
   
-  let%span span27 = "../../../../../creusot-contracts/src/std/vec.rs" 82 26 82 51
+  let%span span27 = "" 0 0 0 0
   
-  let%span span28 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  let%span span28 = "../../../../../creusot-contracts/src/std/vec.rs" 82 26 82 51
   
   let%span span29 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
@@ -630,6 +628,15 @@ module C08CollectExtend_Collect
   
   axiom inv'6 : forall x : Seq.seq item'0 . inv'6 x = true
   
+  use Core_Option_Option_Type as Option'0
+  
+  predicate invariant'5 (self : Option'0.t_option item'0) =
+    [%#span8] true
+  
+  predicate inv'5 (_x : Option'0.t_option item'0)
+  
+  axiom inv'5 : forall x : Option'0.t_option item'0 . inv'5 x = true
+  
   use prelude.prelude.UIntSize
   
   use prelude.prelude.UIntSize
@@ -640,27 +647,18 @@ module C08CollectExtend_Collect
   
   use seq.Seq
   
-  predicate inv'5 (_x : Vec'0.t_vec item'0 (Global'0.t_global))
+  predicate inv'4 (_x : Vec'0.t_vec item'0 (Global'0.t_global))
   
   function shallow_model'0 (self : Vec'0.t_vec item'0 (Global'0.t_global)) : Seq.seq item'0
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_vec item'0 (Global'0.t_global) . ([%#span10] inv'5 self)
+  axiom shallow_model'0_spec : forall self : Vec'0.t_vec item'0 (Global'0.t_global) . ([%#span10] inv'4 self)
    -> ([%#span12] inv'6 (shallow_model'0 self))
   && ([%#span11] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
   
-  predicate invariant'5 (self : Vec'0.t_vec item'0 (Global'0.t_global)) =
+  predicate invariant'4 (self : Vec'0.t_vec item'0 (Global'0.t_global)) =
     [%#span13] inv'6 (shallow_model'0 self)
   
-  axiom inv'5 : forall x : Vec'0.t_vec item'0 (Global'0.t_global) . inv'5 x = true
-  
-  use Core_Option_Option_Type as Option'0
-  
-  predicate invariant'4 (self : Option'0.t_option item'0) =
-    [%#span8] true
-  
-  predicate inv'4 (_x : Option'0.t_option item'0)
-  
-  axiom inv'4 : forall x : Option'0.t_option item'0 . inv'4 x = true
+  axiom inv'4 : forall x : Vec'0.t_vec item'0 (Global'0.t_global) . inv'4 x = true
   
   predicate invariant'3 (self : borrowed i)
   
@@ -716,29 +714,29 @@ module C08CollectExtend_Collect
   
   predicate resolve'4 (self : i)
   
+  predicate resolve'3 (self : Option'0.t_option item'0) =
+    [%#span24] true
+  
   use seq.Seq
   
   function shallow_model'1 (self : borrowed (Vec'0.t_vec item'0 (Global'0.t_global))) : Seq.seq item'0 =
-    [%#span24] shallow_model'0 self.current
+    [%#span25] shallow_model'0 self.current
   
-  let rec push'0 (self:borrowed (Vec'0.t_vec item'0 (Global'0.t_global))) (value:item'0) (return'  (ret:()))= {[@expl:precondition] [%#span26] inv'8 value}
-    {[@expl:precondition] [%#span25] inv'7 self}
+  let rec push'0 (self:borrowed (Vec'0.t_vec item'0 (Global'0.t_global))) (value:item'0) (return'  (ret:()))= {[@expl:precondition] [%#span27] inv'8 value}
+    {[@expl:precondition] [%#span26] inv'7 self}
     any
-    [ return' (result:())-> {[%#span27] shallow_model'0 self.final = Seq.snoc (shallow_model'1 self) value}
+    [ return' (result:())-> {[%#span28] shallow_model'0 self.final = Seq.snoc (shallow_model'1 self) value}
       (! return' {result}) ]
     
   
   use seq.Seq
-  
-  predicate resolve'3 (self : Option'0.t_option item'0) =
-    [%#span28] true
   
   predicate resolve'2 (self : borrowed i) =
     [%#span29] self.final = self.current
   
   let rec next'0 (self:borrowed i) (return'  (ret:Option'0.t_option item'0))= {[@expl:precondition] [%#span30] inv'3 self}
     any
-    [ return' (result:Option'0.t_option item'0)-> {[%#span32] inv'4 result}
+    [ return' (result:Option'0.t_option item'0)-> {[%#span32] inv'5 result}
       {[%#span31] match result with
         | Option'0.C_None -> completed'0 self
         | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
@@ -755,12 +753,12 @@ module C08CollectExtend_Collect
   use prelude.prelude.Snapshot
   
   predicate resolve'1 (self : Snapshot.snap_ty (Seq.seq item'0)) =
-    [%#span28] true
+    [%#span24] true
   
   use prelude.prelude.Snapshot
   
   predicate resolve'0 (self : Snapshot.snap_ty i) =
-    [%#span28] true
+    [%#span24] true
   
   use prelude.prelude.Snapshot
   
@@ -777,7 +775,7 @@ module C08CollectExtend_Collect
     
   
   let rec new'0 (_1:()) (return'  (ret:Vec'0.t_vec item'0 (Global'0.t_global)))= any
-    [ return' (result:Vec'0.t_vec item'0 (Global'0.t_global))-> {[%#span39] inv'5 result}
+    [ return' (result:Vec'0.t_vec item'0 (Global'0.t_global))-> {[%#span39] inv'4 result}
       {[%#span38] Seq.length (shallow_model'0 result) = 0}
       (! return' {result}) ]
     
@@ -833,13 +831,11 @@ module C08CollectExtend_Collect
                 [ any_ (_any:item'0)-> (! Option'0.some <item'0> {_15}
                     (fun (l_0'0:item'0) ->  [ &_15 <- Option'0.C_Some _any ] s1)) ]
                 ))
-          | s1 = {[@expl:type invariant] inv'4 _15} s2
-          | s2 = -{resolve'3 _15}- s3
-          | s3 = 
+          | s1 = 
             [ &_20 <- [%#s08_collect_extend4] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
             
-            s4
-          | s4 = bb16 ]
+            s2
+          | s2 = bb16 ]
           
         | bb16 = s0
           [ s0 =  [ &produced <- _20 ] 
@@ -853,7 +849,7 @@ module C08CollectExtend_Collect
                  [ &_24 <- _ret' ] 
                  [ &res <- _24.final ] 
                 s5)
-          | s5 = -{inv'5 _24.final}- s6
+          | s5 = -{inv'4 _24.final}- s6
           | s6 = push'0 {_24} {x} (fun (_ret':()) ->  [ &_23 <- _ret' ] s7)
           | s7 = bb17 ]
           
@@ -864,7 +860,7 @@ module C08CollectExtend_Collect
          ]
       
     | bb14 = s0
-      [ s0 = {[@expl:type invariant] inv'4 _15} s1
+      [ s0 = {[@expl:type invariant] inv'5 _15} s1
       | s1 = -{resolve'3 _15}- s2
       | s2 = {[@expl:type invariant] inv'2 iter1} s3
       | s3 = -{resolve'4 iter1}- s4
@@ -893,7 +889,7 @@ module C08CollectExtend_Collect
     | & _23 : () = any_l ()
     | & _24 : borrowed (Vec'0.t_vec item'0 (Global'0.t_global)) = any_l () ]
     
-    [ return' (result:Vec'0.t_vec item'0 (Global'0.t_global))-> {[@expl:postcondition] [%#s08_collect_extend7] inv'5 result}
+    [ return' (result:Vec'0.t_vec item'0 (Global'0.t_global))-> {[@expl:postcondition] [%#s08_collect_extend7] inv'4 result}
       {[@expl:postcondition] [%#s08_collect_extend6] exists done' : borrowed i, prod : Seq.seq item'0 . inv'3 done'
       /\ inv'6 prod /\ completed'0 done' /\ produces'0 iter prod done'.current /\ shallow_model'0 result = prod}
       (! return' {result}) ]

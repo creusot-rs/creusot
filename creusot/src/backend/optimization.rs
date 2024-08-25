@@ -92,9 +92,9 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
                 }
                 self.visit_rvalue(r)
             }
-            Statement::Resolve(_, _, p) => {
-                self.read_place(p);
-                self.read_place(p)
+            Statement::Resolve { pl, .. } => {
+                self.read_place(pl);
+                self.read_place(pl)
             }
             Statement::Assertion { cond, msg: _ } => {
                 // Make assertions stop propagation because it would require Expr -> Term translation
@@ -102,7 +102,7 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
                 self.visit_term(cond);
             }
             Statement::AssumeBorrowInv(p) => self.read_place(p),
-            Statement::AssertTyInv(p) => self.read_place(p),
+            Statement::AssertTyInv { pl, .. } => self.read_place(pl),
             Statement::Call(dest, _, _, args, _) => {
                 self.write_place(dest);
                 args.iter().for_each(|a| self.visit_operand(a));
@@ -257,7 +257,7 @@ impl<'tcx> SimplePropagator<'tcx> {
                 Statement::Assignment(ref l, ref r, _) if self.should_erase(l.local) && r.is_pure() => {
                       self.dead.insert(l.local);
                 }
-                Statement::Resolve(_,_, ref p) => {
+                Statement::Resolve{ pl: ref p, .. } => {
                   if let Some(l) = p.as_symbol() && self.dead.contains(&l) {
                   } else {
                     out_stmts.push(s)
@@ -279,8 +279,8 @@ impl<'tcx> SimplePropagator<'tcx> {
     fn visit_statement(&mut self, s: &mut Statement<'tcx>) {
         match s {
             Statement::Assignment(_, r, _) => self.visit_rvalue(r),
-            Statement::Resolve(_, _, p) => {
-                if let Some(l) = p.as_symbol()
+            Statement::Resolve{pl, ..} => {
+                if let Some(l) = pl.as_symbol()
                     && self.dead.contains(&l)
                 {}
             }
@@ -289,7 +289,7 @@ impl<'tcx> SimplePropagator<'tcx> {
                 args.iter_mut().for_each(|a| self.visit_operand(a))
             }
             Statement::AssumeBorrowInv(_) => {}
-            Statement::AssertTyInv(_) => {}
+            Statement::AssertTyInv { .. } => {}
         }
     }
 

@@ -1,5 +1,3 @@
-use std::{fmt, rc::Rc};
-
 use rustc_borrowck::{
     borrow_set::BorrowSet,
     consumers::{
@@ -8,6 +6,7 @@ use rustc_borrowck::{
     },
 };
 use rustc_data_structures::fx::FxIndexMap;
+use std::fmt;
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
@@ -19,35 +18,32 @@ use rustc_middle::{
 };
 use rustc_mir_dataflow::{fmt::DebugWithContext, AnalysisDomain, GenKill, GenKillAnalysis};
 
-pub struct FrozenPlaces<'body, 'tcx> {
+pub struct Borrows<'a, 'mir, 'tcx> {
     tcx: TyCtxt<'tcx>,
-    body: &'body Body<'tcx>,
+    body: &'mir Body<'tcx>,
 
-    borrow_set: Rc<BorrowSet<'tcx>>,
-    borrows_out_of_scope_at_location: FxIndexMap<Location, Vec<BorrowIndex>>,
+    borrow_set: &'a BorrowSet<'tcx>,
+    pub borrows_out_of_scope_at_location: FxIndexMap<Location, Vec<BorrowIndex>>,
 }
 
 // This analysis collects the active borrows at each program location.
 // It is mostly identical to rustc's rustc_borrowck::dataflow::Borrow, except
-// for two changes:
+// for one change:
 //   - Rustc calls `kill_loans_out_of_scope_at_location` in the "before effects",
 //     while we do it at the start of the "primary effects". Our before effects
 //     are no-ops. This is important that before effect be no-ops, because we
 //     want to observe the evolution of the analysis state through instructions.
-//   - The borrow_set field is an Rc pointer, while rusct uses a borrow. This is
-//     mostly to make the use of this data structure easier in our code. Nothing
-//     really fundamental.
 
-impl<'body, 'tcx> FrozenPlaces<'body, 'tcx> {
+impl<'a, 'mir, 'tcx> Borrows<'a, 'mir, 'tcx> {
     pub fn new(
         tcx: TyCtxt<'tcx>,
-        body: &'body Body<'tcx>,
+        body: &'mir Body<'tcx>,
         regioncx: &RegionInferenceContext<'tcx>,
-        borrow_set: Rc<BorrowSet<'tcx>>,
+        borrow_set: &'a BorrowSet<'tcx>,
     ) -> Self {
         let borrows_out_of_scope_at_location =
             calculate_borrows_out_of_scope_at_location(body, regioncx, &*borrow_set);
-        FrozenPlaces { tcx, body, borrow_set, borrows_out_of_scope_at_location }
+        Borrows { tcx, body, borrow_set, borrows_out_of_scope_at_location }
     }
 
     pub fn location(&self, idx: BorrowIndex) -> &Location {
@@ -117,7 +113,7 @@ impl<'body, 'tcx> FrozenPlaces<'body, 'tcx> {
     }
 }
 
-impl<'tcx> AnalysisDomain<'tcx> for FrozenPlaces<'_, 'tcx> {
+impl<'tcx> AnalysisDomain<'tcx> for Borrows<'_, '_, 'tcx> {
     type Domain = BitSet<BorrowIndex>;
 
     const NAME: &'static str = "borrows";
@@ -133,7 +129,7 @@ impl<'tcx> AnalysisDomain<'tcx> for FrozenPlaces<'_, 'tcx> {
     }
 }
 
-impl<'tcx> GenKillAnalysis<'tcx> for FrozenPlaces<'_, 'tcx> {
+impl<'tcx> GenKillAnalysis<'tcx> for Borrows<'_, '_, 'tcx> {
     type Idx = BorrowIndex;
 
     fn domain_size(&self, _: &mir::Body<'tcx>) -> usize {
@@ -151,23 +147,22 @@ impl<'tcx> GenKillAnalysis<'tcx> for FrozenPlaces<'_, 'tcx> {
         match &stmt.kind {
             mir::StatementKind::Assign(box (lhs, rhs)) => {
                 if let mir::Rvalue::Ref(_, _, place) = rhs {
-                    if place.ignore_borrow(
+                    if !place.ignore_borrow(
                         self.tcx,
                         self.body,
                         &self.borrow_set.locals_state_at_exit,
                     ) {
-                        return;
-                    }
-                    let index = self
-                        .borrow_set
-                        .location_map
-                        .get_index_of(&location)
-                        .map(BorrowIndex::from)
-                        .unwrap_or_else(|| {
-                            panic!("could not find BorrowIndex for location {:?}", location);
-                        });
+                        let index = self
+                            .borrow_set
+                            .location_map
+                            .get_index_of(&location)
+                            .map(BorrowIndex::from)
+                            .unwrap_or_else(|| {
+                                panic!("could not find BorrowIndex for location {:?}", location);
+                            });
 
-                    trans.gen_(index);
+                        trans.gen_(index);
+                    }
                 }
 
                 // Make sure there are no remaining borrows for variables
@@ -175,7 +170,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for FrozenPlaces<'_, 'tcx> {
                 self.kill_borrows_on_place(trans, *lhs);
             }
 
-            mir::StatementKind::StorageDead(local) => {
+            mir::StatementKind::StorageDead(local) | mir::StatementKind::StorageLive(local) => {
                 // Make sure there are no remaining borrows for locals that
                 // are gone out of scope.
                 self.kill_borrows_on_place(trans, Place::from(*local));
@@ -184,7 +179,6 @@ impl<'tcx> GenKillAnalysis<'tcx> for FrozenPlaces<'_, 'tcx> {
             mir::StatementKind::FakeRead(..)
             | mir::StatementKind::SetDiscriminant { .. }
             | mir::StatementKind::Deinit(..)
-            | mir::StatementKind::StorageLive(..)
             | mir::StatementKind::Retag { .. }
             | mir::StatementKind::PlaceMention(..)
             | mir::StatementKind::AscribeUserType(..)
@@ -224,8 +218,8 @@ impl<'tcx> GenKillAnalysis<'tcx> for FrozenPlaces<'_, 'tcx> {
     }
 }
 
-impl DebugWithContext<FrozenPlaces<'_, '_>> for BorrowIndex {
-    fn fmt_with(&self, ctxt: &FrozenPlaces<'_, '_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl DebugWithContext<Borrows<'_, '_, '_>> for BorrowIndex {
+    fn fmt_with(&self, ctxt: &Borrows<'_, '_, '_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", ctxt.location(*self))
     }
 }

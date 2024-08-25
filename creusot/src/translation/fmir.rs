@@ -8,6 +8,8 @@ use rustc_middle::{
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::VariantIdx;
 
+use super::pearlite::Pattern;
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Place<'tcx> {
     pub(crate) local: Symbol,
@@ -37,11 +39,11 @@ impl<'tcx> Place<'tcx> {
 #[derive(Clone, Debug)]
 pub enum Statement<'tcx> {
     Assignment(Place<'tcx>, RValue<'tcx>, Span),
-    Resolve(DefId, GenericArgsRef<'tcx>, Place<'tcx>),
+    Resolve { did: DefId, subst: GenericArgsRef<'tcx>, pl: Place<'tcx>, pat: Option<Pattern<'tcx>> },
     Assertion { cond: Term<'tcx>, msg: String },
     AssumeBorrowInv(Place<'tcx>),
     // Todo: fold into `Assertion`
-    AssertTyInv(Place<'tcx>),
+    AssertTyInv { pl: Place<'tcx>, pat: Option<Pattern<'tcx>> },
     Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Vec<Operand<'tcx>>, Span),
 }
 
@@ -271,8 +273,8 @@ pub(crate) fn super_visit_stmt<'tcx, V: FmirVisitor<'tcx>>(
             visitor.visit_place(place);
             visitor.visit_rvalue(rval);
         }
-        Statement::Resolve(_, _, place) => {
-            visitor.visit_place(place);
+        Statement::Resolve{ pl, .. } => {
+            visitor.visit_place(pl);
         }
         Statement::Assertion { cond, .. } => {
             visitor.visit_term(cond);
@@ -280,8 +282,8 @@ pub(crate) fn super_visit_stmt<'tcx, V: FmirVisitor<'tcx>>(
         Statement::AssumeBorrowInv(place) => {
             visitor.visit_place(place);
         }
-        Statement::AssertTyInv(place) => {
-            visitor.visit_place(place);
+        Statement::AssertTyInv { pl, .. } => {
+            visitor.visit_place(pl);
         }
         Statement::Call(place, _, _, operands, _) => {
             visitor.visit_place(place);

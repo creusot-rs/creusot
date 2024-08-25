@@ -1,7 +1,9 @@
 use super::BodyTranslator;
 use crate::{
     ctx::TranslationCtx,
+    extended_location::ExtendedLocation,
     fmir,
+    resolve::HasMoveDataExt,
     translation::{
         fmir::*,
         function::mk_goto,
@@ -12,7 +14,6 @@ use crate::{
 };
 use itertools::Itertools;
 use rustc_hir::def_id::DefId;
-use rustc_index::bit_set::BitSet;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
     mir::{
@@ -21,6 +22,10 @@ use rustc_middle::{
         TerminatorKind::{self, *},
     },
     ty::{self, AssocItem, GenericArgKind, GenericArgsRef, ParamEnv, Ty, TyKind},
+};
+use rustc_mir_dataflow::{
+    move_paths::{HasMoveData, LookupResult},
+    on_all_children_bits,
 };
 use rustc_span::{source_map::Spanned, Span, Symbol};
 use rustc_trait_selection::{error_reporting::InferCtxtErrorExt, infer::InferCtxtExt};
@@ -34,10 +39,10 @@ use std::collections::{HashMap, HashSet};
 
 impl<'tcx> BodyTranslator<'_, 'tcx> {
     pub fn translate_terminator(&mut self, terminator: &mir::Terminator<'tcx>, location: Location) {
-        let mut resolved_during =
-            self.resolver.as_mut().map_or(BitSet::new_empty(self.body.local_decls.len()), |r| {
-                r.resolved_locals_during(location)
-            });
+        let mut resolved_during = self
+            .resolver
+            .as_mut()
+            .map(|r| r.resolved_places_during(ExtendedLocation::End(location)));
         let term;
 
         let span = terminator.source_info.span;
@@ -60,9 +65,16 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Return => {
                 if let Some(resolver) = &mut self.resolver {
-                    let mut resolved = resolver.need_resolve_locals_before(location);
-                    resolved.remove(Local::from_usize(0)); // do not resolve return local
-                    self.resolve_locals(resolved);
+                    let (mut need, resolved) =
+                        resolver.need_resolve_resolved_places_at(ExtendedLocation::Start(location));
+                    // do not resolve return local
+                    for mp in need.clone().iter() {
+                        if self.move_data().base_local(mp) == Local::from_usize(0) {
+                            need.remove(mp);
+                        }
+                    }
+                    self.resolve_places(need, &resolved, true);
+                    resolved_during = None;
                 }
 
                 term = Terminator::Return
@@ -70,11 +82,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Unreachable => term = Terminator::Abort(terminator.source_info.span),
             Call { func, args, destination, mut target, fn_span, .. } => {
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
-
-                // The assignement may, in theory, modify a variable that needs to be resolved.
-                // Hence we resolve before the call.
-                self.resolve_locals(resolved_during);
-                resolved_during = BitSet::new_empty(self.body.local_decls.len());
+                if let Some((need, resolved)) = resolved_during.take() {
+                    self.resolve_before_assignment(need, &resolved, location, *destination)
+                }
 
                 if self.ctx.is_diagnostic_item(Symbol::intern("snapshot_from_fn"), fun_def_id) {
                     let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() else {
@@ -154,7 +164,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 .unwrap_or(subst);
 
                             self.emit_statement(Statement::Call(
-                                self.translate_place(*destination),
+                                self.translate_place(destination.as_ref()),
                                 fun_def_id,
                                 subst,
                                 func_args,
@@ -165,14 +175,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
 
                 if let Some(bb) = target {
-                    // Check if the local is a zombie:
-                    // if result local is dead after the call, emit resolve
-                    if let Some(resolver) = &mut self.resolver
-                        && !resolver
-                            .live_locals_before(target.unwrap().start_location())
-                            .contains(destination.local)
-                    {
-                        self.emit_resolve(*destination);
+                    if self.resolver.is_some() {
+                        self.resolve_after_assignment(
+                            target.unwrap().start_location(),
+                            *destination,
+                        );
                     }
 
                     term = mk_goto(bb);
@@ -208,20 +215,44 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 self.emit_statement(Statement::Assertion { cond, msg });
                 term = mk_goto(*target)
             }
+            Drop { target, place, .. } => {
+                if self.resolver.is_some() {
+                    // place may need to be resolved since it may be frozen.
+                    if let LookupResult::Exact(mp) =
+                        self.move_data().rev_lookup.find(place.as_ref())
+                    {
+                        let (need_start, resolved) = self
+                            .resolver
+                            .as_mut()
+                            .unwrap()
+                            .need_resolve_resolved_places_at(ExtendedLocation::Start(location));
+                        let mut to_resolve = self.empty_bitset();
+                        on_all_children_bits(self.move_data(), mp, |mpi| {
+                            if need_start.contains(mpi) {
+                                to_resolve.insert(mpi);
+                            }
+                        });
+                        self.resolve_places(to_resolve, &resolved, true);
+                    } else {
+                        // If the place we drop is not a move path, then the MaybeUninit analysis ignores it. So we do not miss a resolve.
+                    }
+                }
 
-            FalseEdge { real_target, .. } => term = mk_goto(*real_target),
+                term = mk_goto(*target);
+            }
 
-            // TODO: Do we really need to do anything more?
-            Drop { target, .. } => term = mk_goto(*target),
             FalseUnwind { real_target, .. } => term = mk_goto(*real_target),
-            CoroutineDrop
+            FalseEdge { .. }
+            | CoroutineDrop
             | UnwindResume
             | UnwindTerminate { .. }
             | Yield { .. }
             | InlineAsm { .. }
             | TailCall { .. } => unreachable!("{:?}", terminator.kind),
         }
-        self.resolve_locals(resolved_during);
+        if let Some((need, resolved)) = resolved_during {
+            self.resolve_places(need, &resolved, true);
+        }
         self.emit_terminator(term)
     }
 

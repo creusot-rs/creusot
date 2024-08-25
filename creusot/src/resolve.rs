@@ -1,153 +1,283 @@
 use std::rc::Rc;
 
-use crate::analysis::{FrozenPlaces, MaybeLiveExceptDrop, MaybeUninitializedLocals};
-use rustc_borrowck::{borrow_set::BorrowSet, consumers::RegionInferenceContext};
-use rustc_index::bit_set::BitSet;
-use rustc_middle::{
-    mir::{traversal, BasicBlock, Body, Local, Location},
-    ty::TyCtxt,
+use crate::analysis::{Borrows, MaybeLiveExceptDrop};
+use either::Either;
+use rustc_borrowck::{
+    borrow_set::BorrowSet,
+    consumers::{BorrowIndex, PlaceExt, RegionInferenceContext},
 };
-use rustc_mir_dataflow::{Analysis, ResultsCursor};
+use rustc_index::bit_set::{BitSet, ChunkedBitSet};
+use rustc_middle::{
+    mir::{
+        traversal, BasicBlock, Body, Location, PlaceRef, ProjectionElem, Rvalue, Statement,
+        StatementKind, TerminatorEdges,
+    },
+    ty::{TyCtxt, TyKind},
+};
+use rustc_mir_dataflow::{
+    impls::MaybeUninitializedPlaces,
+    move_paths::{HasMoveData, LookupResult, MoveData, MovePathIndex},
+    on_all_children_bits, Analysis, GenKillAnalysis, MoveDataParamEnv, ResultsCursor,
+};
 
 use crate::extended_location::ExtendedLocation;
 
-pub struct EagerResolver<'body, 'tcx> {
-    local_live: ResultsCursor<'body, 'tcx, MaybeLiveExceptDrop>,
-
-    local_uninit: ResultsCursor<'body, 'tcx, MaybeUninitializedLocals>,
-
-    frozen_places: ResultsCursor<'body, 'tcx, FrozenPlaces<'body, 'tcx>>,
-
-    borrow_set: Rc<BorrowSet<'tcx>>,
-
-    body: &'body Body<'tcx>,
+pub struct EagerResolver<'a, 'tcx> {
+    live: ResultsCursor<'a, 'tcx, MaybeLiveExceptDrop<'a, 'tcx>>,
+    uninit: ResultsCursor<'a, 'tcx, MaybeUninitializedPlaces<'a, 'a, 'tcx>>,
+    borrows: ResultsCursor<'a, 'tcx, Borrows<'a, 'a, 'tcx>>,
+    borrow_set: &'a BorrowSet<'tcx>,
+    mdpe: &'a MoveDataParamEnv<'tcx>,
+    body: &'a Body<'tcx>,
+    tcx: TyCtxt<'tcx>,
 }
 
-impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
+impl<'a, 'tcx> HasMoveData<'tcx> for EagerResolver<'a, 'tcx> {
+    fn move_data(&self) -> &MoveData<'tcx> {
+        &self.mdpe.move_data
+    }
+}
+
+pub trait HasMoveDataExt<'tcx>: HasMoveData<'tcx> {
+    fn empty_bitset(&self) -> BitSet<MovePathIndex>;
+    fn filled_bitset(&self) -> BitSet<MovePathIndex>;
+}
+
+impl<'tcx, T: HasMoveData<'tcx>> HasMoveDataExt<'tcx> for T {
+    fn empty_bitset(&self) -> BitSet<MovePathIndex> {
+        BitSet::new_empty(self.move_data().move_paths.len())
+    }
+    fn filled_bitset(&self) -> BitSet<MovePathIndex> {
+        BitSet::new_filled(self.move_data().move_paths.len())
+    }
+}
+
+#[derive(Debug)]
+struct State {
+    live: ChunkedBitSet<MovePathIndex>,
+    uninit: ChunkedBitSet<MovePathIndex>,
+    borrows: BitSet<BorrowIndex>,
+}
+
+impl<'a, 'tcx> EagerResolver<'a, 'tcx> {
     pub(crate) fn new(
         tcx: TyCtxt<'tcx>,
-        body: &'body Body<'tcx>,
-        borrow_set: Rc<BorrowSet<'tcx>>,
+        body: &'a Body<'tcx>,
+        borrow_set: &'a BorrowSet<'tcx>,
         regioncx: Rc<RegionInferenceContext<'tcx>>,
-    ) -> Self {
-        let local_uninit = MaybeUninitializedLocals
+        mdpe: &'a MoveDataParamEnv<'tcx>,
+    ) -> EagerResolver<'a, 'tcx> {
+        let uninit = MaybeUninitializedPlaces::new(tcx, body, mdpe)
+            .mark_inactive_variants_as_uninit()
             .into_engine(tcx, body)
             .iterate_to_fixpoint()
             .into_results_cursor(body);
 
         // MaybeLiveExceptDrop ignores `drop` for the purpose of resolve liveness... unclear that this can
         // be sound.
-        let local_live = MaybeLiveExceptDrop
+        let live = MaybeLiveExceptDrop::new(body, mdpe, tcx)
             .into_engine(tcx, body)
             .iterate_to_fixpoint()
             .into_results_cursor(body);
 
-        let frozen_places = FrozenPlaces::new(tcx, body, &regioncx, borrow_set.clone())
+        let borrows = Borrows::new(tcx, body, &regioncx, borrow_set)
             .into_engine(tcx, body)
             .iterate_to_fixpoint()
             .into_results_cursor(body);
 
-        EagerResolver { local_live, local_uninit, frozen_places, borrow_set, body }
+        EagerResolver { live, uninit, borrows, borrow_set, mdpe, body, tcx }
     }
 
-    fn seek_to(&mut self, loc: ExtendedLocation) {
-        loc.seek_to(&mut self.local_live);
-        loc.seek_to(&mut self.local_uninit);
-        loc.seek_to(&mut self.frozen_places);
-    }
-
-    fn def_init_locals(&self) -> BitSet<Local> {
-        let mut uninit: BitSet<_> = BitSet::new_empty(self.body.local_decls.len());
-        uninit.union(self.local_uninit.get());
-
-        let mut def_init = BitSet::new_filled(self.body.local_decls.len());
-        def_init.subtract(&uninit);
-        def_init
-    }
-
-    fn live_locals(&self) -> BitSet<Local> {
-        let mut live: BitSet<_> = BitSet::new_empty(self.body.local_decls.len());
-        live.union(self.local_live.get());
-        live
-    }
-
-    fn frozen_locals(&self) -> BitSet<Local> {
-        let mut frozen: BitSet<_> = BitSet::new_empty(self.body.local_decls.len());
-        for bi in self.frozen_places.get().iter() {
-            let l = self.borrow_set[bi].borrowed_place.local;
-            frozen.insert(l);
+    fn frozen_of_borrows(&self, borrows: &BitSet<BorrowIndex>) -> BitSet<MovePathIndex> {
+        let mut frozen = self.empty_bitset();
+        for bi in borrows.iter() {
+            let place = self.borrow_set[bi].borrowed_place;
+            match self.move_data().rev_lookup.find(place.as_ref()) {
+                LookupResult::Exact(mp) => on_all_children_bits(&self.move_data(), mp, |mp| {
+                    frozen.insert(mp);
+                }),
+                LookupResult::Parent(mp) => drop(frozen.insert(mp.unwrap())),
+            };
         }
         frozen
     }
 
-    /// Locals that need to be resolved eventually
+    /// Places that need to be resolved eventually
     /// = (live ∪ frozen) ∩ initialized
-    fn need_resolve_locals(&self) -> BitSet<Local> {
-        let mut should_resolve = self.live_locals();
-        should_resolve.union(&self.frozen_locals());
-        should_resolve.intersect(&self.def_init_locals());
+    fn need_resolve_places(&self, st: &State) -> BitSet<MovePathIndex> {
+        let mut should_resolve = self.frozen_of_borrows(&st.borrows);
+        should_resolve.union(&st.live);
+
+        let mut x = self.empty_bitset();
+        x.union(&st.uninit);
+        should_resolve.subtract(&x);
         should_resolve
     }
 
-    /// Locals that have already been resolved
+    /// Places that have already been resolved
     /// = not live ∩ not frozen ∩ initialized
-    fn resolved_locals(&self) -> BitSet<Local> {
-        let mut resolved = self.def_init_locals();
-        resolved.subtract(&self.frozen_locals());
-        resolved.subtract(&self.live_locals());
+    /// = initialized - need_resolve_places
+    fn resolved_places(&self, st: &State) -> BitSet<MovePathIndex> {
+        let mut x = self.frozen_of_borrows(&st.borrows);
+        x.union(&st.live);
+        x.union(&st.uninit);
+
+        let mut resolved = self.filled_bitset();
+        resolved.subtract(&x);
         resolved
     }
 
-    pub fn need_resolve_locals_before(&mut self, loc: Location) -> BitSet<Local> {
-        self.seek_to(ExtendedLocation::Start(loc));
-        if matches!(loc, Location::START) {
-            self.def_init_locals()
-        } else {
-            self.need_resolve_locals()
+    fn state_at_loc(&mut self, loc: ExtendedLocation) -> State {
+        let (mut uninit, mut live, mut borrows);
+        match loc {
+            ExtendedLocation::Mid(loc) if self.body.stmt_at(loc).is_left() => {
+                // TODO : this is copying bits of the various analyses. Move this there,
+                // and factor what can be factored.
+                self.uninit.seek_before_primary_effect(loc);
+                uninit = self.uninit.get().clone();
+                for mi in &self.move_data().loc_map[loc] {
+                    let path = mi.move_path_index(self.move_data());
+                    on_all_children_bits(self.move_data(), path, |mpi| {
+                        uninit.insert(mpi);
+                    })
+                }
+
+                self.live.seek_before_primary_effect(loc);
+                live = self.live.get().clone();
+                let lhs_pl = match self.body.stmt_at(loc).left() {
+                    Some(Statement { kind: StatementKind::Assign(box (pl, _)), .. }) => pl,
+                    _ => unreachable!(),
+                };
+                match self.move_data().rev_lookup.find(lhs_pl.as_ref()) {
+                    LookupResult::Exact(mp) => on_all_children_bits(self.move_data(), mp, |mpi| {
+                        live.remove(mpi);
+                    }),
+                    LookupResult::Parent(Some(mp)) => {
+                        if place_contains_borrow_deref(lhs_pl.as_ref(), self.body, self.tcx) {
+                            live.insert(mp);
+                        }
+                    }
+                    LookupResult::Parent(None) => unreachable!(),
+                }
+
+                self.borrows.seek_before_primary_effect(loc);
+                borrows = self.borrows.get().clone();
+                if let Some(indices) =
+                    self.borrows.analysis().borrows_out_of_scope_at_location.get(&loc)
+                {
+                    for bi in indices {
+                        borrows.remove(*bi);
+                    }
+                }
+                if let Some(Statement {
+                    kind: StatementKind::Assign(box (_, Rvalue::Ref(_, _, place))),
+                    ..
+                }) = self.body.stmt_at(loc).left()
+                {
+                    if !place.ignore_borrow(
+                        self.tcx,
+                        self.body,
+                        &self.borrow_set.locals_state_at_exit,
+                    ) {
+                        let index = BorrowIndex::from(
+                            self.borrow_set.location_map.get_index_of(&loc).unwrap(),
+                        );
+                        borrows.insert(index);
+                    }
+                }
+            }
+            ExtendedLocation::End(loc) if let Either::Right(term) = self.body.stmt_at(loc) => {
+                if let TerminatorEdges::AssignOnReturn { return_, place, .. } = term.edges() {
+                    self.uninit.seek_after_primary_effect(loc);
+                    uninit = self.uninit.get().clone();
+                    self.uninit.mut_analysis().call_return_effect(&mut uninit, loc.block, place);
+
+                    self.borrows.seek_before_primary_effect(loc);
+                    borrows = self.borrows.get().clone();
+                    self.borrows.mut_analysis().call_return_effect(&mut borrows, loc.block, place);
+
+                    if return_.len() == 1 {
+                        self.live.seek_after_primary_effect(return_[0].start_location());
+                        live = self.live.get().clone();
+                    } else {
+                        assert_eq!(return_.len(), 0);
+                        live = ChunkedBitSet::new_empty(self.move_data().move_paths.len());
+                    }
+                } else {
+                    return self.state_at_loc(ExtendedLocation::Mid(loc));
+                }
+            }
+            _ => {
+                loc.seek_to(&mut self.uninit);
+                uninit = self.uninit.get().clone();
+
+                loc.seek_to(&mut self.live);
+                live = self.live.get().clone();
+
+                loc.seek_to(&mut self.borrows);
+                borrows = self.borrows.get().clone();
+            }
         }
+        State { uninit, live, borrows }
     }
 
-    fn resolved_locals_afert(&mut self, loc: Location) -> BitSet<Local> {
-        self.seek_to(ExtendedLocation::Mid(loc));
-        self.resolved_locals()
+    pub fn need_resolve_resolved_places_at(
+        &mut self,
+        loc: ExtendedLocation,
+    ) -> (BitSet<MovePathIndex>, BitSet<MovePathIndex>) {
+        let st = self.state_at_loc(loc);
+        (self.need_resolve_places(&st), self.resolved_places(&st))
     }
 
-    pub fn resolved_locals_during(&mut self, loc: Location) -> BitSet<Local> {
-        let mut resolved = self.need_resolve_locals_before(loc);
-        resolved.intersect(&self.resolved_locals_afert(loc));
-        resolved
+    pub fn resolved_places_during(
+        &mut self,
+        loc: ExtendedLocation,
+    ) -> (BitSet<MovePathIndex>, BitSet<MovePathIndex>) {
+        let (mut res, resolved) =
+            self.need_resolve_resolved_places_at(ExtendedLocation::Start(loc.loc()));
+        let st_after = self.state_at_loc(loc);
+        res.intersect(&self.resolved_places(&st_after));
+        (res, resolved)
     }
 
-    pub fn resolved_locals_between_blocks(
+    pub fn resolved_places_between_blocks(
         &mut self,
         from: BasicBlock,
         to: BasicBlock,
-    ) -> BitSet<Local> {
-        let term = self.body.terminator_loc(from);
-        let start = to.start_location();
-
-        // if some locals still need to be resolved at the end of the current block
+    ) -> (BitSet<MovePathIndex>, BitSet<MovePathIndex>) {
+        // if some places still need to be resolved at the end of the current block
         // but not at the start of the next block, we also need to resolve them now
         // see the init_join function in the resolve_uninit test
-        self.seek_to(ExtendedLocation::Mid(term));
-        let mut res = self.need_resolve_locals();
-        self.seek_to(ExtendedLocation::Start(start));
-        res.subtract(&self.need_resolve_locals());
-        res
+
+        let from_loc = ExtendedLocation::End(self.body.terminator_loc(from));
+        let to_loc = ExtendedLocation::Start(to.start_location());
+
+        let state_from = self.state_at_loc(from_loc);
+        let state_to = self.state_at_loc(to_loc);
+
+        let mut res = self.need_resolve_places(&state_from);
+        res.subtract(&self.need_resolve_places(&state_to));
+
+        (res, self.resolved_places(&state_from))
     }
 
-    pub fn live_locals_before(&mut self, loc: Location) -> BitSet<Local> {
-        ExtendedLocation::Start(loc).seek_to(&mut self.local_live);
-        self.live_locals()
+    pub fn uninit_places_before(&mut self, loc: Location) -> ChunkedBitSet<MovePathIndex> {
+        ExtendedLocation::Start(loc).seek_to(&mut self.uninit);
+        self.uninit.get().clone()
     }
 
-    pub fn frozen_locals_before(&mut self, loc: Location) -> BitSet<Local> {
-        ExtendedLocation::Start(loc).seek_to(&mut self.frozen_places);
-        self.frozen_locals()
+    pub fn live_places_before(&mut self, loc: Location) -> ChunkedBitSet<MovePathIndex> {
+        ExtendedLocation::Start(loc).seek_to(&mut self.live);
+        self.live.get().clone()
+    }
+
+    pub fn frozen_places_before(&mut self, loc: Location) -> BitSet<MovePathIndex> {
+        ExtendedLocation::Start(loc).seek_to(&mut self.borrows);
+        self.frozen_of_borrows(self.borrows.get())
     }
 
     #[allow(dead_code)]
-    pub(crate) fn debug(&mut self, _regioncx: Rc<RegionInferenceContext<'tcx>>) {
+    pub(crate) fn debug(&mut self) {
         let body = self.body.clone();
         for (bb, bbd) in traversal::preorder(&body) {
             if bbd.is_cleanup {
@@ -156,19 +286,19 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
             eprintln!("{:?}", bb);
             let mut loc = bb.start_location();
             for statement in &bbd.statements {
-                self.seek_to(ExtendedLocation::Start(loc));
-                let live1 = self.local_live.get().iter().collect::<Vec<_>>();
-                let uninit1 = self.local_uninit.get().iter().collect::<Vec<_>>();
-                let frozen1 = self.frozen_locals();
-                let resolved1 = self.resolved_locals();
+                let state1 = self.state_at_loc(ExtendedLocation::Start(loc));
+                let live1 = state1.live.iter().collect::<Vec<_>>();
+                let uninit1 = state1.uninit.iter().collect::<Vec<_>>();
+                let frozen1 = self.frozen_of_borrows(&state1.borrows).iter().collect::<Vec<_>>();
+                let need_resolve1 = self.need_resolve_places(&state1);
 
-                self.seek_to(ExtendedLocation::Mid(loc));
-                let live2 = self.local_live.get().iter().collect::<Vec<_>>();
-                let uninit2 = self.local_uninit.get().iter().collect::<Vec<_>>();
-                let frozen2 = self.frozen_locals();
-                let resolved2 = self.resolved_locals();
+                let state2 = self.state_at_loc(ExtendedLocation::End(loc));
+                let live2 = state2.live.iter().collect::<Vec<_>>();
+                let uninit2 = state2.uninit.iter().collect::<Vec<_>>();
+                let frozen2 = self.frozen_of_borrows(&state2.borrows).iter().collect::<Vec<_>>();
+                let resolved2 = self.resolved_places(&state2);
 
-                eprintln!("  {statement:?} {resolved1:?} -> {resolved2:?}");
+                eprintln!("  {statement:?} {need_resolve1:?} -> {resolved2:?}");
                 eprintln!(
                     "    live={live1:?} -> {live2:?} frozen={frozen1:?} -> {frozen2:?} uninit={uninit1:?} -> {uninit2:?}",
                 );
@@ -176,23 +306,34 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
                 loc = loc.successor_within_block();
             }
 
-            self.seek_to(ExtendedLocation::Start(loc));
-            let live1 = self.local_live.get().iter().collect::<Vec<_>>();
-            let uninit1 = self.local_uninit.get().iter().collect::<Vec<_>>();
-            let frozen1 = self.frozen_locals();
-            let resolved1 = self.resolved_locals();
+            let state1 = self.state_at_loc(ExtendedLocation::Start(loc));
+            let live1 = state1.live.iter().collect::<Vec<_>>();
+            let uninit1 = state1.uninit.iter().collect::<Vec<_>>();
+            let frozen1 = self.frozen_of_borrows(&state1.borrows).iter().collect::<Vec<_>>();
+            let need_resolve1 = self.need_resolve_places(&state1);
 
-            self.seek_to(ExtendedLocation::Mid(loc));
-            let live2 = self.local_live.get().iter().collect::<Vec<_>>();
-            let uninit2 = self.local_uninit.get().iter().collect::<Vec<_>>();
-            let frozen2 = self.frozen_locals();
-            let resolved2 = self.resolved_locals();
+            let state2 = self.state_at_loc(ExtendedLocation::End(loc));
+            let live2 = state2.live.iter().collect::<Vec<_>>();
+            let uninit2 = state2.uninit.iter().collect::<Vec<_>>();
+            let frozen2 = self.frozen_of_borrows(&state2.borrows).iter().collect::<Vec<_>>();
+            let resolved2 = self.resolved_places(&state2);
 
-            eprintln!("  {:?} {resolved1:?} -> {resolved2:?}", bbd.terminator().kind);
+            eprintln!("  {:?} {need_resolve1:?} -> {resolved2:?}", bbd.terminator().kind);
             eprintln!(
                 "    live={live1:?} -> {live2:?} frozen={frozen1:?} -> {frozen2:?} uninit={uninit1:?} -> {uninit2:?}",
             );
         }
         eprintln!();
     }
+}
+
+pub fn place_contains_borrow_deref<'tcx>(
+    place: PlaceRef<'tcx>,
+    body: &Body<'tcx>,
+    tcx: TyCtxt<'tcx>,
+) -> bool {
+    place.iter_projections().any(|(pl, proj)| {
+        proj == ProjectionElem::Deref
+            && matches!(pl.ty(&body.local_decls, tcx).ty.kind(), TyKind::Ref(..))
+    })
 }

@@ -782,9 +782,8 @@ pub(crate) fn build_closure_accessor<'tcx>(
         ty: out_ty,
         kind: TermKind::Let {
             pattern: pearlite::Pattern::Constructor {
-                adt: closure,
+                variant: closure,
                 substs,
-                variant: 0u32.into(),
                 fields,
             },
             arg: Box::new(self_),

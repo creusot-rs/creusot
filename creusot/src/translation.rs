@@ -1,5 +1,6 @@
 pub(crate) mod constant;
 pub(crate) mod external;
+#[allow(dead_code)]
 pub(crate) mod fmir;
 pub(crate) mod function;
 pub(crate) mod pearlite;

@@ -1,24 +1,51 @@
 use rustc_index::bit_set::ChunkedBitSet;
-use rustc_middle::mir::{
-    self,
-    visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor},
-    CallReturnPlaces, Local, Location, Place, TerminatorEdges,
+use rustc_middle::{
+    mir::{
+        self,
+        visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor},
+        CallReturnPlaces, Local, Location, Place, TerminatorEdges,
+    },
+    ty::TyCtxt,
 };
-use rustc_mir_dataflow::{AnalysisDomain, Backward, GenKill, GenKillAnalysis};
+use rustc_mir_dataflow::{
+    move_paths::{HasMoveData, LookupResult, MoveData, MovePathIndex},
+    on_all_children_bits, AnalysisDomain, Backward, GenKill, GenKillAnalysis, MoveDataParamEnv,
+};
 
-/// A liveness analysis which ignores `drop`. This is meant to be used exclusively for `Resolve`.
-/// FIXME: Replace this if any unsoundness seems to occur with borrows.
-pub struct MaybeLiveExceptDrop;
+use crate::resolve::place_contains_borrow_deref;
 
-impl<'tcx> AnalysisDomain<'tcx> for MaybeLiveExceptDrop {
-    type Domain = ChunkedBitSet<Local>;
+/// A liveness analysis used for insertion of "resolve" statements.
+/// It differs from Rustc's :
+/// - It's based on move paths, and not on locals
+/// - It ignores `drop`. This is meant to be used exclusively for `Resolve`.
+///   FIXME: Replace this if any unsoundness seems to occur with borrows.
+/// - Dereferencing boxes for writing is considered as a "Def". Dereferencing mutable
+///   borrows for writing is still considered as a Use.
+pub struct MaybeLiveExceptDrop<'a, 'tcx> {
+    body: &'a mir::Body<'tcx>,
+    mdpe: &'a MoveDataParamEnv<'tcx>,
+    tcx: TyCtxt<'tcx>,
+}
+
+impl<'a, 'tcx> MaybeLiveExceptDrop<'a, 'tcx> {
+    pub fn new(
+        body: &'a mir::Body<'tcx>,
+        mdpe: &'a MoveDataParamEnv<'tcx>,
+        tcx: TyCtxt<'tcx>,
+    ) -> Self {
+        MaybeLiveExceptDrop { body, mdpe, tcx }
+    }
+}
+
+impl<'a, 'tcx> AnalysisDomain<'tcx> for MaybeLiveExceptDrop<'a, 'tcx> {
+    type Domain = ChunkedBitSet<MovePathIndex>;
     type Direction = Backward;
 
     const NAME: &'static str = "liveness-two";
 
-    fn bottom_value(&self, body: &mir::Body<'tcx>) -> Self::Domain {
+    fn bottom_value(&self, _body: &mir::Body<'tcx>) -> Self::Domain {
         // bottom = not live
-        ChunkedBitSet::new_empty(body.local_decls.len())
+        ChunkedBitSet::new_empty(self.move_data().move_paths.len())
     }
 
     fn initialize_start_block(&self, _: &mir::Body<'tcx>, _: &mut Self::Domain) {
@@ -26,8 +53,18 @@ impl<'tcx> AnalysisDomain<'tcx> for MaybeLiveExceptDrop {
     }
 }
 
-impl<'tcx> GenKillAnalysis<'tcx> for MaybeLiveExceptDrop {
-    type Idx = Local;
+impl<'a, 'tcx> HasMoveData<'tcx> for MaybeLiveExceptDrop<'a, 'tcx> {
+    fn move_data(&self) -> &MoveData<'tcx> {
+        &self.mdpe.move_data
+    }
+}
+
+impl<'a, 'tcx> GenKillAnalysis<'tcx> for MaybeLiveExceptDrop<'a, 'tcx> {
+    type Idx = MovePathIndex;
+
+    fn domain_size(&self, _body: &mir::Body<'tcx>) -> usize {
+        self.move_data().move_paths.len()
+    }
 
     fn statement_effect(
         &mut self,
@@ -35,7 +72,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeLiveExceptDrop {
         statement: &mir::Statement<'tcx>,
         location: Location,
     ) {
-        TransferFunction(trans).visit_statement(statement, location);
+        TransferFunction(trans, self).visit_statement(statement, location);
     }
 
     fn terminator_effect<'mir>(
@@ -44,7 +81,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeLiveExceptDrop {
         terminator: &'mir mir::Terminator<'tcx>,
         location: Location,
     ) -> TerminatorEdges<'mir, 'tcx> {
-        TransferFunction(trans).visit_terminator(terminator, location);
+        TransferFunction(trans, self).visit_terminator(terminator, location);
         terminator.edges()
     }
 
@@ -55,59 +92,50 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeLiveExceptDrop {
         return_places: CallReturnPlaces<'_, 'tcx>,
     ) {
         return_places.for_each(|place| {
-            if let Some(local) = place.as_local() {
-                trans.kill(local);
-            }
+            let du = if place_contains_borrow_deref(place.as_ref(), self.body, self.tcx) {
+                // Treat derefs of (mutable) borrows as a use of the base local.
+                //`*p = 4` is not a def of `p` but a use.
+                DefUse::Use
+            } else {
+                DefUse::Def
+            };
+            du.apply(trans, &place, self.move_data())
         });
-    }
-
-    fn domain_size(&self, body: &mir::Body<'tcx>) -> usize {
-        body.local_decls.len()
     }
 }
 
-struct TransferFunction<'a, T>(&'a mut T);
+struct TransferFunction<'a, 'tcx, T>(&'a mut T, &'a MaybeLiveExceptDrop<'a, 'tcx>);
 
-impl<'tcx, T> Visitor<'tcx> for TransferFunction<'_, T>
+impl<'a, 'tcx, T> Visitor<'tcx> for TransferFunction<'a, 'tcx, T>
 where
-    T: GenKill<Local>,
+    T: GenKill<MovePathIndex>,
 {
     fn visit_place(&mut self, place: &mir::Place<'tcx>, context: PlaceContext, location: Location) {
-        if let PlaceContext::MutatingUse(MutatingUseContext::Yield) = context {
-            // The resume place is evaluated and assigned to only after generator resumes, so its
-            // effect is handled separately in `yield_resume_effect`.
-            return;
+        if matches!(
+            context,
+            PlaceContext::MutatingUse(
+                MutatingUseContext::Call
+                    | MutatingUseContext::Yield
+                    | MutatingUseContext::AsmOutput,
+            )
+        ) {
+            // For the associated terminators, we handle this case separately in
+            // `call_return_effect` above.
+            ()
         }
 
-        match DefUse::for_place(*place, context) {
-            Some(DefUse::Def) => {
-                if let PlaceContext::MutatingUse(
-                    MutatingUseContext::Call | MutatingUseContext::AsmOutput,
-                ) = context
-                {
-                    // For the associated terminators, this is only a `Def` when the terminator returns
-                    // "successfully." As such, we handle this case separately in `call_return_effect`
-                    // above. However, if the place looks like `*_5`, this is still unconditionally a use of
-                    // `_5`.
-                } else {
-                    self.0.kill(place.local);
-                }
-            }
-            Some(DefUse::Use) => self.0.gen_(place.local),
-            None => {}
-        }
+        DefUse::for_place(place, context, self.1).apply(self.0, place, &self.1.mdpe.move_data);
 
+        // Visit indices of arrays/slices, which appear as locals
         self.visit_projection(place.as_ref(), context, location);
     }
 
-    fn visit_terminator(&mut self, terminator: &mir::Terminator<'tcx>, location: Location) {
-        match &terminator.kind {
-            _ => self.super_terminator(terminator, location),
-        }
-    }
-
     fn visit_local(&mut self, local: Local, context: PlaceContext, _: Location) {
-        DefUse::apply(self.0, local.into(), context);
+        DefUse::for_place(&local.into(), context, self.1).apply(
+            self.0,
+            &local.into(),
+            self.1.move_data(),
+        )
     }
 }
 
@@ -115,20 +143,39 @@ where
 enum DefUse {
     Def,
     Use,
+    None,
 }
 
 impl DefUse {
-    fn apply(trans: &mut impl GenKill<Local>, place: Place<'_>, context: PlaceContext) {
-        match DefUse::for_place(place, context) {
-            Some(DefUse::Def) => trans.kill(place.local),
-            Some(DefUse::Use) => trans.gen_(place.local),
-            None => {}
+    fn apply<'tcx>(
+        self,
+        trans: &mut impl GenKill<MovePathIndex>,
+        place: &Place<'tcx>,
+        md: &MoveData<'tcx>,
+    ) {
+        match self {
+            DefUse::Def => {
+                if let LookupResult::Exact(mp) = md.rev_lookup.find(place.as_ref()) {
+                    on_all_children_bits(md, mp, |mpi| trans.kill(mpi));
+                }
+                // Is LookupResult::Parent even possible here??
+                // It may appear for Index places ?
+            }
+            DefUse::Use => match md.rev_lookup.find(place.as_ref()) {
+                LookupResult::Exact(mp) => on_all_children_bits(md, mp, |mpi| trans.gen_(mpi)),
+                LookupResult::Parent(mp) => trans.gen_(mp.unwrap()),
+            },
+            DefUse::None => {}
         }
     }
 
-    fn for_place(place: Place<'_>, context: PlaceContext) -> Option<DefUse> {
+    fn for_place<'tcx>(
+        place: &Place<'tcx>,
+        context: PlaceContext,
+        ctx: &MaybeLiveExceptDrop<'_, 'tcx>,
+    ) -> DefUse {
         match context {
-            PlaceContext::NonUse(_) => None,
+            PlaceContext::NonUse(_) => DefUse::None,
 
             PlaceContext::MutatingUse(
                 MutatingUseContext::Call
@@ -137,21 +184,23 @@ impl DefUse {
                 | MutatingUseContext::Store
                 | MutatingUseContext::Deinit,
             ) => {
-                if place.is_indirect() {
-                    // Treat derefs as a use of the base local. `*p = 4` is not a def of `p` but a
-                    // use.
-                    Some(DefUse::Use)
-                } else if place.projection.is_empty() {
-                    Some(DefUse::Def)
+                if place_contains_borrow_deref(place.as_ref(), &ctx.body, ctx.tcx) {
+                    // Treat derefs of (mutable) borrows as a use of the base local.
+                    //`*p = 4` is not a def of `p` but a use.
+                    DefUse::Use
                 } else {
-                    None
+                    DefUse::Def
                 }
             }
 
             // Setting the discriminant is not a use because it does no reading, but it is also not
             // a def because it does not overwrite the whole place
             PlaceContext::MutatingUse(MutatingUseContext::SetDiscriminant) => {
-                place.is_indirect().then_some(DefUse::Use)
+                if place_contains_borrow_deref(place.as_ref(), &ctx.body, ctx.tcx) {
+                    DefUse::Use
+                } else {
+                    DefUse::None
+                }
             }
 
             // All other contexts are uses...
@@ -168,8 +217,8 @@ impl DefUse {
                 | NonMutatingUseContext::FakeBorrow
                 | NonMutatingUseContext::SharedBorrow
                 | NonMutatingUseContext::PlaceMention,
-            ) => Some(DefUse::Use),
-            PlaceContext::MutatingUse(MutatingUseContext::Drop) => None,
+            ) => DefUse::Use,
+            PlaceContext::MutatingUse(MutatingUseContext::Drop) => DefUse::None,
 
             PlaceContext::MutatingUse(MutatingUseContext::Projection)
             | PlaceContext::NonMutatingUse(NonMutatingUseContext::Projection) => {

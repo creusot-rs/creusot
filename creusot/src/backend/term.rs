@@ -30,12 +30,20 @@ pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
     }
 }
 
-pub(super) struct Lower<'a, 'tcx, N: Namer<'tcx>> {
-    pub(super) ctx: &'a mut Why3Generator<'tcx>,
-    pub(super) names: &'a mut N,
+pub(crate) fn lower_pat<'tcx, N: Namer<'tcx>>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut N,
+    pat: &Pattern<'tcx>,
+) -> Pat {
+    Lower { ctx, names }.lower_pat(pat)
+}
+
+struct Lower<'a, 'tcx, N: Namer<'tcx>> {
+    ctx: &'a mut Why3Generator<'tcx>,
+    names: &'a mut N,
 }
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
-    pub(crate) fn lower_term(&mut self, term: &Term<'tcx>) -> Exp {
+    fn lower_term(&mut self, term: &Term<'tcx>) -> Exp {
         match &term.kind {
             TermKind::Lit(l) => lower_literal(self.ctx, self.names, l),
             // FIXME: this is a weird dance.
@@ -231,9 +239,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
     fn lower_pat(&mut self, pat: &Pattern<'tcx>) -> Pat {
         match pat {
-            Pattern::Constructor { adt, variant: _, fields, substs } => {
+            Pattern::Constructor { variant, fields, substs } => {
                 let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
-                Pat::ConsP(self.names.constructor(*adt, substs), fields)
+                Pat::ConsP(self.names.constructor(*variant, substs), fields)
             }
             Pattern::Wildcard => Pat::Wildcard,
             Pattern::Binder(name) => Pat::VarP(name.to_string().into()),

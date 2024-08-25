@@ -396,9 +396,9 @@ module C15Enumerate_Impl0_Next
   
   let%span span18 = "../15_enumerate.rs" 23 8 23 43
   
-  let%span span19 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span19 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
   
-  let%span span20 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  let%span span20 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
   let%span span21 = "../common.rs" 27 17 27 21
   
@@ -471,19 +471,19 @@ module C15Enumerate_Impl0_Next
   
   axiom inv'3 : forall x : Option'0.t_option (usize, item'0) . inv'3 x = true
   
-  predicate invariant'2 (self : borrowed (Enumerate'0.t_enumerate i)) =
+  predicate invariant'2 (self : Option'0.t_option item'0) =
     [%#span6] true
   
-  predicate inv'2 (_x : borrowed (Enumerate'0.t_enumerate i))
+  predicate inv'2 (_x : Option'0.t_option item'0)
   
-  axiom inv'2 : forall x : borrowed (Enumerate'0.t_enumerate i) . inv'2 x = (inv'6 x.current /\ inv'6 x.final)
+  axiom inv'2 : forall x : Option'0.t_option item'0 . inv'2 x = true
   
-  predicate invariant'1 (self : Option'0.t_option item'0) =
+  predicate invariant'1 (self : borrowed (Enumerate'0.t_enumerate i)) =
     [%#span6] true
   
-  predicate inv'1 (_x : Option'0.t_option item'0)
+  predicate inv'1 (_x : borrowed (Enumerate'0.t_enumerate i))
   
-  axiom inv'1 : forall x : Option'0.t_option item'0 . inv'1 x = true
+  axiom inv'1 : forall x : borrowed (Enumerate'0.t_enumerate i) . inv'1 x = (inv'6 x.current /\ inv'6 x.final)
   
   use seq.Seq
   
@@ -533,17 +533,17 @@ module C15Enumerate_Impl0_Next
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'1 (self : borrowed (Enumerate'0.t_enumerate i)) =
-    [%#span19] self.final = self.current
+  predicate resolve'1 (self : Option'0.t_option item'0) =
+    [%#span19] true
   
-  predicate resolve'0 (self : Option'0.t_option item'0) =
-    [%#span20] true
+  predicate resolve'0 (self : borrowed (Enumerate'0.t_enumerate i)) =
+    [%#span20] self.final = self.current
   
   use seq.Seq
   
   let rec next'0 (self:borrowed i) (return'  (ret:Option'0.t_option item'0))= {[@expl:precondition] [%#span21] inv'4 self}
     any
-    [ return' (result:Option'0.t_option item'0)-> {[%#span23] inv'1 result}
+    [ return' (result:Option'0.t_option item'0)-> {[%#span23] inv'2 result}
       {[%#span22] match result with
         | Option'0.C_None -> completed'1 self
         | Option'0.C_Some v -> produces'1 self.current (Seq.singleton v) self.final
@@ -551,7 +551,7 @@ module C15Enumerate_Impl0_Next
       (! return' {result}) ]
     
   
-  let rec next (self:borrowed (Enumerate'0.t_enumerate i)) (return'  (ret:Option'0.t_option (usize, item'0)))= {[%#s15_enumerate1] inv'2 self}
+  let rec next (self:borrowed (Enumerate'0.t_enumerate i)) (return'  (ret:Option'0.t_option (usize, item'0)))= {[%#s15_enumerate1] inv'1 self}
     (! bb0
     [ bb0 = s0
       [ s0 = Enumerate'0.t_enumerate <i> {self.current}
@@ -576,21 +576,19 @@ module C15Enumerate_Impl0_Next
             [ any_ (_any:item'0)-> (! Option'0.some <item'0> {_3}
                 (fun (l_0'0:item'0) ->  [ &_3 <- Option'0.C_Some _any ] s1)) ]
             ))
-      | s1 = {[@expl:type invariant] inv'1 _3} s2
-      | s2 = -{resolve'0 _3}- s3
-      | s3 = Enumerate'0.t_enumerate <i> {self.current} (fun (riter'0:i) (rcount'0:usize) ->  [ &n <- rcount'0 ] s4)
-      | s4 = Enumerate'0.t_enumerate <i> {self.current}
+      | s1 = Enumerate'0.t_enumerate <i> {self.current} (fun (riter'0:i) (rcount'0:usize) ->  [ &n <- rcount'0 ] s2)
+      | s2 = Enumerate'0.t_enumerate <i> {self.current}
           (fun (riter'1:i) (rcount'1:usize) ->
             UIntSize.add {rcount'1} {[%#s15_enumerate0] (1 : usize)}
               (fun (_ret':usize) ->
                 Enumerate'0.t_enumerate <i> {self.current}
                   (fun (l_iter'0:i) (l_count'0:usize) ->
                      [ &self <- { self with current = Enumerate'0.C_Enumerate l_iter'0 _ret' ; } ] 
-                    s5)))
-      | s5 = {[@expl:type invariant] inv'2 self} s6
-      | s6 = -{resolve'1 self}- s7
-      | s7 =  [ &_8 <- (n, x) ] (any [ any_ (_any:item'0)-> (!  [ &x <- _any ] s8) ] )
-      | s8 = bb6 ]
+                    s3)))
+      | s3 = {[@expl:type invariant] inv'1 self} s4
+      | s4 = -{resolve'0 self}- s5
+      | s5 =  [ &_8 <- (n, x) ] (any [ any_ (_any:item'0)-> (!  [ &x <- _any ] s6) ] )
+      | s6 = bb6 ]
       
     | bb6 = s0
       [ s0 =  [ &_0 <- Option'0.C_Some _8 ] (any [ any_ (_any:(usize, item'0))-> (!  [ &_8 <- _any ] s1) ] )
@@ -598,15 +596,14 @@ module C15Enumerate_Impl0_Next
       
     | bb7 = bb8
     | bb8 = bb9
-    | bb3 = bb5
-    | bb5 = s0
-      [ s0 = {[@expl:type invariant] inv'1 _3} s1
-      | s1 = -{resolve'0 _3}- s2
-      | s2 = {[@expl:type invariant] inv'2 self} s3
-      | s3 = -{resolve'1 self}- s4
-      | s4 =  [ &_0 <- Option'0.C_None ] s5
-      | s5 = bb9 ]
+    | bb3 = s0
+      [ s0 = {[@expl:type invariant] inv'2 _3} s1
+      | s1 = -{resolve'1 _3}- s2
+      | s2 = {[@expl:type invariant] inv'1 self} s3
+      | s3 = -{resolve'0 self}- s4
+      | s4 = bb5 ]
       
+    | bb5 = s0 [ s0 =  [ &_0 <- Option'0.C_None ] s1 | s1 = bb9 ] 
     | bb9 = bb10
     | bb10 = return' {_0} ]
     )

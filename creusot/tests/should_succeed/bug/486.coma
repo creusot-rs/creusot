@@ -22,6 +22,8 @@ module C486_Test
   
   let%span s4861 = "../486.rs" 6 10 6 22
   
+  let%span span2 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  
   use prelude.prelude.UInt32
   
   use prelude.prelude.UInt32
@@ -31,6 +33,9 @@ module C486_Test
   use prelude.prelude.Intrinsic
   
   use prelude.prelude.Borrow
+  
+  predicate resolve'0 (self : borrowed uint32) =
+    [%#span2] self.final = self.current
   
   use C486_HasMutRef_Type as HasMutRef'0
   
@@ -42,7 +47,8 @@ module C486_Test
           (fun (l_0'0:borrowed uint32) ->
              [ &x <- HasMutRef'0.C_HasMutRef ({ l_0'0 with current = ([%#s4860] (5 : uint32)) ; }) ] 
             s1)
-      | s1 = return' {_0} ]
+      | s1 = HasMutRef'0.t_hasmutref <uint32> {x} (fun (r0'0:borrowed uint32) -> -{resolve'0 r0'0}- s2)
+      | s2 = return' {_0} ]
        ]
     ) [ & _0 : () = any_l () | & x : HasMutRef'0.t_hasmutref uint32 = x ] 
     [ return' (result:())-> {[@expl:postcondition] [%#s4861] UInt32.to_int (C486_HasMutRef_Type.hasmutref_0 x).final
