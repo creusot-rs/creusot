@@ -28,7 +28,7 @@ use rustc_index::{bit_set::BitSet, Idx};
 use rustc_middle::{
     mir::{
         self, traversal::reverse_postorder, BasicBlock, Body, HasLocalDecls, Local, Location,
-        Operand, Place, PlaceRef, ProjectionElem, START_BLOCK,
+        Operand, Place, PlaceRef, ProjectionElem, TerminatorKind, START_BLOCK,
     },
     ty::{
         ClosureKind::*, EarlyBinder, GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
@@ -41,11 +41,13 @@ use rustc_mir_dataflow::{
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_target::abi::{FieldIdx, VariantIdx};
+use rustc_type_ir::inherent::SliceLike;
 use std::{
     collections::HashMap,
     iter::{self, repeat},
     ops::FnOnce,
 };
+use terminator::discriminator_for_switch;
 
 mod statement;
 mod terminator;
@@ -470,10 +472,57 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             return;
         }
 
-        let resolved_between = pred_blocks
+        let mut resolved_between = pred_blocks
             .iter()
             .map(|&pred| resolver.resolved_places_between_blocks(pred, bb))
             .collect::<Vec<_>>();
+
+        for (pred, resolved) in iter::zip(pred_blocks, resolved_between.iter_mut()) {
+            // We do not need to resolve move path that we know are inactive
+            // because of a preceding switch.
+
+            let bbd = &self.body.basic_blocks[*pred];
+            let _: Option<()> = try {
+                let discr_pl = discriminator_for_switch(bbd)?;
+                let discr_mp = if let LookupResult::Exact(mp) =
+                    self.move_data().rev_lookup.find(discr_pl.as_ref())
+                {
+                    mp
+                } else {
+                    continue;
+                };
+                let adt = discr_pl.ty(self.body, self.tcx()).ty.ty_adt_def()?;
+                let targets =
+                    if let TerminatorKind::SwitchInt { targets, .. } = &bbd.terminator().kind {
+                        targets
+                    } else {
+                        unreachable!()
+                    };
+                if targets.otherwise() == bb {
+                    continue;
+                }
+
+                let mut inactive_mps = self.empty_bitset();
+                on_all_children_bits(self.move_data(), discr_mp, |mpi| {
+                    inactive_mps.insert(mpi);
+                });
+
+                let mut discrs = adt.discriminants(self.tcx());
+                for discr in targets.iter().filter_map(|(val, tgt)| (tgt == bb).then_some(val)) {
+                    let var = discrs.find(|d| d.1.val == discr).unwrap().0;
+                    let pl = self.ctx.mk_place_downcast(discr_pl, adt, var);
+                    if let LookupResult::Exact(mp) = self.move_data().rev_lookup.find(pl.as_ref()) {
+                        on_all_children_bits(self.move_data(), mp, |mpi| {
+                            inactive_mps.remove(mpi);
+                        })
+                    } else {
+                        inactive_mps.remove(discr_mp);
+                    }
+                }
+
+                resolved.0.subtract(&inactive_mps);
+            };
+        }
 
         // If we have multiple predecessors (join point) but all of them agree on the deaths, then don't introduce a dedicated block.
         if resolved_between.windows(2).all(|r| r[0] == r[1]) {

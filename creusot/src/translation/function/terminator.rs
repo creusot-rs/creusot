@@ -441,7 +441,7 @@ fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<(DefId, GenericArgsRef<'tcx>)>
 }
 
 // Find the place being discriminated, if there is one
-fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Option<Place<'tcx>> {
+pub(super) fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Option<Place<'tcx>> {
     let discr = if let TerminatorKind::SwitchInt { discr, .. } = &bbd.terminator().kind {
         discr
     } else {
