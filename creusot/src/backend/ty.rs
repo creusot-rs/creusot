@@ -781,11 +781,7 @@ pub(crate) fn build_closure_accessor<'tcx>(
     let term = Term {
         ty: out_ty,
         kind: TermKind::Let {
-            pattern: pearlite::Pattern::Constructor {
-                variant: closure,
-                substs,
-                fields,
-            },
+            pattern: pearlite::Pattern::Constructor { variant: closure, substs, fields },
             arg: Box::new(self_),
             body: Box::new(res),
         },

@@ -250,11 +250,7 @@ pub enum Literal<'tcx> {
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum Pattern<'tcx> {
-    Constructor {
-        variant: DefId,
-        substs: GenericArgsRef<'tcx>,
-        fields: Vec<Pattern<'tcx>>,
-    },
+    Constructor { variant: DefId, substs: GenericArgsRef<'tcx>, fields: Vec<Pattern<'tcx>> },
     Tuple(Vec<Pattern<'tcx>>),
     Wildcard,
     Binder(Symbol),

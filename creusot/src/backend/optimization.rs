@@ -279,7 +279,7 @@ impl<'tcx> SimplePropagator<'tcx> {
     fn visit_statement(&mut self, s: &mut Statement<'tcx>) {
         match s {
             Statement::Assignment(_, r, _) => self.visit_rvalue(r),
-            Statement::Resolve{pl, ..} => {
+            Statement::Resolve { pl, .. } => {
                 if let Some(l) = pl.as_symbol()
                     && self.dead.contains(&l)
                 {}

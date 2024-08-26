@@ -320,11 +320,7 @@ impl<'tcx> InvariantElaborator<'tcx> {
             }
 
             arms.push((
-                Pattern::Constructor {
-                    variant: var_def.def_id,
-                    substs: subst,
-                    fields: pats,
-                },
+                Pattern::Constructor { variant: var_def.def_id, substs: subst, fields: pats },
                 exp,
             ));
         }

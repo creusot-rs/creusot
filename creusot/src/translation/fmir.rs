@@ -273,7 +273,7 @@ pub(crate) fn super_visit_stmt<'tcx, V: FmirVisitor<'tcx>>(
             visitor.visit_place(place);
             visitor.visit_rvalue(rval);
         }
-        Statement::Resolve{ pl, .. } => {
+        Statement::Resolve { pl, .. } => {
             visitor.visit_place(pl);
         }
         Statement::Assertion { cond, .. } => {
