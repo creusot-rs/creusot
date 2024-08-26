@@ -71,6 +71,9 @@ impl<T: ?Sized> Resolve for GhostBox<T> {
 }
 
 impl<T> GhostBox<T> {
+    /// Creates a new ghost variable.
+    ///
+    /// This function can only be called in ghost code.
     #[rustc_diagnostic_item = "ghost_box_new"]
     #[pure]
     #[ensures(result.0 == x)]
@@ -78,7 +81,7 @@ impl<T> GhostBox<T> {
         Self(x)
     }
 
-    #[trusted]
+    /// Returns the inner value of the `GhostBox`.
     #[logic]
     #[open(self)]
     #[ensures(result == self.0)]
