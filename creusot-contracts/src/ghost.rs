@@ -70,6 +70,22 @@ impl<T: ?Sized> Resolve for GhostBox<T> {
     }
 }
 
+impl<T: ?Sized> GhostBox<T> {
+    /// Transforms a `&GhostBox<T>` into a `GhostBox<&T>`.
+    #[pure]
+    #[ensures(result.0 == &self.0)]
+    pub fn borrow(&self) -> GhostBox<&T> {
+        GhostBox(&self.0)
+    }
+
+    /// Transforms a `&mut GhostBox<T>` into a `GhostBox<&mut T>`.
+    #[pure]
+    #[ensures(result.0 == &mut self.0)]
+    pub fn borrow_mut(&mut self) -> GhostBox<&mut T> {
+        GhostBox(&mut self.0)
+    }
+}
+
 impl<T> GhostBox<T> {
     /// Creates a new ghost variable.
     ///
