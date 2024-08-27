@@ -1,5 +1,6 @@
 mod ghost_box;
 mod ghost_map;
+mod ghost_vec;
 
 /// A type that can be used in `ghost` context.
 ///
@@ -21,3 +22,4 @@ mod ghost_map;
 /// ```
 pub use ghost_box::GhostBox;
 pub use ghost_map::GhostMap;
+pub use ghost_vec::GhostVec;
