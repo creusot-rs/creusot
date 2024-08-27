@@ -1,3 +1,5 @@
+#![cfg_attr(not(creusot), allow(unused_variables))]
+
 use crate::{
     std::ops::{Deref, DerefMut},
     *,
@@ -22,7 +24,11 @@ use crate::{
 /// let value: i32 = *b; // compile error !
 /// ```
 #[rustc_diagnostic_item = "ghost_box"]
+#[cfg(creusot)]
 pub struct GhostBox<T: ?Sized>(T);
+
+#[cfg(not(creusot))]
+pub struct GhostBox<T: ?Sized>(std::marker::PhantomData<T>);
 
 impl<T: Clone + ?Sized> Clone for GhostBox<T> {
     fn clone(&self) -> Self {
@@ -39,7 +45,14 @@ impl<T: ?Sized> Deref for GhostBox<T> {
     #[pure]
     #[ensures((*self).0 == *result)]
     fn deref(&self) -> &Self::Target {
-        &self.0
+        #[cfg(creusot)]
+        {
+            &self.0
+        }
+        #[cfg(not(creusot))]
+        {
+            panic!()
+        }
     }
 }
 impl<T: ?Sized> DerefMut for GhostBox<T> {
@@ -48,7 +61,14 @@ impl<T: ?Sized> DerefMut for GhostBox<T> {
     #[ensures((^self).0 == ^result)]
     #[ensures((*self).0 == *result)]
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+        #[cfg(creusot)]
+        {
+            &mut self.0
+        }
+        #[cfg(not(creusot))]
+        {
+            panic!()
+        }
     }
 }
 
@@ -75,14 +95,28 @@ impl<T: ?Sized> GhostBox<T> {
     #[pure]
     #[ensures(result.0 == &self.0)]
     pub fn borrow(&self) -> GhostBox<&T> {
-        GhostBox(&self.0)
+        #[cfg(creusot)]
+        {
+            GhostBox(&self.0)
+        }
+        #[cfg(not(creusot))]
+        {
+            panic!()
+        }
     }
 
     /// Transforms a `&mut GhostBox<T>` into a `GhostBox<&mut T>`.
     #[pure]
     #[ensures(result.0 == &mut self.0)]
     pub fn borrow_mut(&mut self) -> GhostBox<&mut T> {
-        GhostBox(&mut self.0)
+        #[cfg(creusot)]
+        {
+            GhostBox(&mut self.0)
+        }
+        #[cfg(not(creusot))]
+        {
+            panic!()
+        }
     }
 }
 
@@ -94,7 +128,28 @@ impl<T> GhostBox<T> {
     #[pure]
     #[ensures(result.0 == x)]
     pub fn new(x: T) -> Self {
-        Self(x)
+        #[cfg(creusot)]
+        {
+            Self(x)
+        }
+        #[cfg(not(creusot))]
+        {
+            Self(std::marker::PhantomData)
+        }
+    }
+
+    // Internal function to easily create a GhostBox in non-creusot mode.
+    #[requires(false)]
+    #[doc(hidden)]
+    pub fn from_fn(_f: impl Fn() -> T) -> Self {
+        #[cfg(creusot)]
+        {
+            panic!()
+        }
+        #[cfg(not(creusot))]
+        {
+            GhostBox(std::marker::PhantomData)
+        }
     }
 
     /// Returns the inner value of the `GhostBox`.
