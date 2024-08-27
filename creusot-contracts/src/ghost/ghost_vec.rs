@@ -35,7 +35,7 @@ impl<T> GhostVec<T> {
     #[pure]
     #[ensures(result@.len() == 0)]
     pub fn new() -> GhostBox<Self> {
-        loop {}
+        GhostBox::from_fn(|| loop {})
     }
 
     /// Returns the number of elements in the vector, also referred to as its 'length'.
@@ -93,7 +93,9 @@ impl<T> GhostVec<T> {
     ///     v.push(10);
     ///     v.push(40);
     ///     v.push(30);
-    ///     (v.get(*Int::new(1)), v.get(*Int::new(3)))
+    ///     let get1 = v.get(*Int::new(1));
+    ///     let get2 = v.get(*Int::new(3));
+    ///     (get1, get2)
     /// };
     /// proof_assert!(gets.inner().0 == Some(&40i32));
     /// proof_assert!(gets.inner().1 == None);

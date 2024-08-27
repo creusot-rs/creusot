@@ -122,11 +122,14 @@ impl<T> GhostBox<T> {
 
     // Internal function to easily create a GhostBox in non-creusot mode.
     #[requires(false)]
+    #[trusted]
+    #[pure]
     #[doc(hidden)]
-    pub fn from_fn(_f: impl Fn() -> T) -> Self {
+    pub fn from_fn(f: impl FnOnce() -> T) -> Self {
+        let _ = f;
         #[cfg(creusot)]
         {
-            panic!()
+            loop {}
         }
         #[cfg(not(creusot))]
         {

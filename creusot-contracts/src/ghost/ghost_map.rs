@@ -40,7 +40,7 @@ impl<K, V> GhostMap<K, V> {
     #[ensures(result@.is_empty())]
     /// Create a new, empty map on the ghost heap.
     pub fn new() -> GhostBox<Self> {
-        loop {}
+        GhostBox::from_fn(|| loop {})
     }
 
     /// Returns the number of elements in the map.
@@ -49,12 +49,17 @@ impl<K, V> GhostMap<K, V> {
     /// ```rust,creusot
     /// use creusot_contracts::{ghost::GhostMap, *};
     ///
-    /// let mut a = GhostMap::new();
-    /// ghost! {
-    ///     proof_assert!(a.len() == 0);
-    ///     a.insert(1, 42);
-    ///     assert_eq!(a.len() == 1);
+    /// let mut map = GhostMap::new();
+    /// let lengths = ghost! {
+    ///     let len1 = map.len();
+    ///     map.insert(1, 21);
+    ///     map.insert(1, 42);
+    ///     map.insert(2, 50);
+    ///     let len2 = map.len();
+    ///     (len1, len2)
     /// };
+    /// proof_assert!(length.inner().0 == 0);
+    /// proof_assert!(length.inner().1 == 2);
     /// ```
     #[trusted]
     #[pure]
@@ -70,11 +75,12 @@ impl<K, V> GhostMap<K, V> {
     /// use creusot_contracts::{ghost::GhostMap, *};
     ///
     /// let mut map = GhostMap::new();
-    /// ghost! {
+    /// let contains = ghost! {
     ///     map.insert(1, 42);
-    ///     proof_assert!(map.contains(&1));
-    ///     proof_assert!(!map.contains(&2));
-    /// }
+    ///     (map.contains(&1), map.contains(&2))
+    /// };
+    /// proof_assert!(contains.inner().0);
+    /// proof_assert!(!contains.inner().1);
     /// ```
     #[pure]
     #[ensures(self@.contains(*key))]
