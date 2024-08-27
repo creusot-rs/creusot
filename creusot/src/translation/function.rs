@@ -277,8 +277,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 ProjectionElem::Deref => {
                     assert!(ty.ty.is_box())
                 }
-                ProjectionElem::Field(fidx, _) => {
-                    if let TyKind::Adt(adt, substs) = ty.ty.kind() {
+                ProjectionElem::Field(fidx, _) => match ty.ty.kind() {
+                    TyKind::Adt(adt, substs) => {
                         let variant_def =
                             &adt.variants()[ty.variant_index.unwrap_or(VariantIdx::ZERO)];
                         let fields_len = variant_def.fields.len();
@@ -286,14 +286,24 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                         let mut fields = vec![Pattern::Wildcard; fields_len];
                         fields[fidx.as_usize()] = pat;
                         pat = Pattern::Constructor { variant, substs, fields }
-                    } else if let TyKind::Tuple(tys) = ty.ty.kind() {
+                    }
+                    TyKind::Tuple(tys) => {
                         let mut fields = vec![Pattern::Wildcard; tys.len()];
                         fields[fidx.as_usize()] = pat;
                         pat = Pattern::Tuple(fields)
-                    } else {
-                        unreachable!()
-                    };
-                }
+                    }
+                    TyKind::Closure(did, substs) => {
+                        let mut fields: Vec<_> = substs
+                            .as_closure()
+                            .upvar_tys()
+                            .iter()
+                            .map(|_| pearlite::Pattern::Wildcard)
+                            .collect();
+                        fields[fidx.as_usize()] = pat;
+                        pat = Pattern::Constructor { variant: *did, substs, fields }
+                    }
+                    _ => unreachable!(),
+                },
                 ProjectionElem::Downcast(_, variant) => {
                     if first {
                         let (adt, substs) = if let TyKind::Adt(adt, substs) = ty.ty.kind() {
@@ -667,6 +677,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     }
                 }
 
+                TyKind::Closure(_did, substs) => {
+                    for (i, ty) in substs.as_closure().upvar_tys().iter().enumerate() {
+                        insert(self.ctx.mk_place_field(pl, FieldIdx::new(i), ty));
+                    }
+                }
+
                 TyKind::Array(_, _) | TyKind::Slice(_) | TyKind::Pat(_, _) => todo!(),
 
                 TyKind::Bool
@@ -687,7 +703,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 | TyKind::FnDef(_, _)
                 | TyKind::FnPtr(_)
                 | TyKind::Dynamic(_, _, _)
-                | TyKind::Closure(_, _)
                 | TyKind::CoroutineClosure(_, _)
                 | TyKind::Coroutine(_, _)
                 | TyKind::CoroutineWitness(_, _)
