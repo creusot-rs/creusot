@@ -11,7 +11,7 @@ use crate::{
     extended_location::ExtendedLocation,
     fmir,
     gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind, SpecClosures},
-    resolve::{place_contains_borrow_deref, EagerResolver, HasMoveDataExt},
+    resolve::{place_contains_borrow_deref, HasMoveDataExt, Resolver},
     translation::{
         fmir::LocalDecl,
         pearlite::{self, TermKind, TermVisitorMut},
@@ -27,8 +27,8 @@ use rustc_index::{bit_set::BitSet, Idx};
 
 use rustc_middle::{
     mir::{
-        self, traversal::reverse_postorder, BasicBlock, Body, HasLocalDecls, Local, Location,
-        Operand, Place, PlaceRef, ProjectionElem, TerminatorKind, START_BLOCK,
+        self, traversal::reverse_postorder, BasicBlock, Body, Local, Location, Operand, Place,
+        PlaceRef, ProjectionElem, TerminatorKind, START_BLOCK,
     },
     ty::{
         ClosureKind::*, EarlyBinder, GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
@@ -42,11 +42,7 @@ use rustc_mir_dataflow::{
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_type_ir::inherent::SliceLike;
-use std::{
-    collections::HashMap,
-    iter::{self, repeat},
-    ops::FnOnce,
-};
+use std::{collections::HashMap, iter, ops::FnOnce};
 use terminator::discriminator_for_switch;
 
 mod statement;
@@ -64,7 +60,7 @@ struct BodyTranslator<'a, 'tcx> {
 
     body: &'a Body<'tcx>,
 
-    resolver: Option<EagerResolver<'a, 'tcx>>,
+    resolver: Option<Resolver<'a, 'tcx>>,
 
     mdpe: &'a MoveDataParamEnv<'tcx>,
 
@@ -140,7 +136,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 bor = with_facts.borrow_set.clone();
                 let borrows = bor.as_ref();
                 #[allow(unused_mut)]
-                let mut resolver = EagerResolver::new(
+                let mut resolver = Resolver::new(
                     tcx,
                     body,
                     borrows,
@@ -265,14 +261,28 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         self.current_block.0.push(s);
     }
 
-    // We assume pl is a move path
+    /// We assume pl is syntactically a move path (i.e., it may not appear in move_data, but it
+    /// does not contain deref of borrows, or things like indexing).
     fn pattern_of_downcasts(&self, pl: PlaceRef<'tcx>) -> Option<Pattern<'tcx>> {
         let mut pat = Pattern::Wildcard;
+
+        if let Some((pl, ProjectionElem::Downcast(_, variant))) = pl.last_projection() {
+            let (adt, substs) =
+                if let TyKind::Adt(adt, substs) = pl.ty(self.body, self.tcx()).ty.kind() {
+                    (adt, substs)
+                } else {
+                    unreachable!()
+                };
+            let variant_def = &adt.variants()[variant];
+            let fields_len = variant_def.fields.len();
+            let variant = variant_def.def_id;
+            let fields = vec![Pattern::Wildcard; fields_len];
+            pat = Pattern::Constructor { variant, substs, fields }
+        }
+
         let mut has_downcast = false;
-        for ((pl, el), first) in
-            pl.iter_projections().rev().zip([true].into_iter().chain(repeat(false)))
-        {
-            let ty = pl.ty(self.body.local_decls(), self.tcx());
+        for (pl, el) in pl.iter_projections().rev() {
+            let ty = pl.ty(self.body, self.tcx());
             match el {
                 ProjectionElem::Deref => {
                     assert!(ty.ty.is_box())
@@ -304,32 +314,25 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     }
                     _ => unreachable!(),
                 },
-                ProjectionElem::Downcast(_, variant) => {
-                    if first {
-                        let (adt, substs) = if let TyKind::Adt(adt, substs) = ty.ty.kind() {
-                            (adt, substs)
-                        } else {
-                            unreachable!()
-                        };
-                        let variant_def = &adt.variants()[variant];
-                        let fields_len = variant_def.fields.len();
-                        let variant = variant_def.def_id;
-                        let fields = vec![Pattern::Wildcard; fields_len];
-                        pat = Pattern::Constructor { variant, substs, fields }
-                    }
+                ProjectionElem::Downcast(_, _) => {
                     has_downcast = true;
                 }
-                ProjectionElem::ConstantIndex { .. } => todo!(),
-                ProjectionElem::Subslice { .. } => todo!(),
+
+                ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. } => {
+                    todo!("Array and slice patterns are currently not supported")
+                }
+
                 ProjectionElem::Index(_)
                 | ProjectionElem::OpaqueCast(_)
-                | ProjectionElem::Subtype(_) => unreachable!(),
+                | ProjectionElem::Subtype(_) => {
+                    unreachable!("These ProjectionElem should not be move paths")
+                }
             }
         }
         has_downcast.then_some(pat)
     }
 
-    // These types cannot contain mutable borrows and thus do not need to be resolved.
+    /// These types cannot contain mutable borrows and thus do not need to be resolved.
     fn skip_resolve_type(&self, ty: Ty<'tcx>) -> bool {
         ty.is_copy_modulo_regions(self.tcx(), self.param_env())
             || !(ty.has_free_regions()
@@ -423,7 +426,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         // We resolve the destination place, if necessary
         match self.move_data().rev_lookup.find(destination.as_ref()) {
-            LookupResult::Parent(None) => unreachable!(),
+            LookupResult::Parent(None) => {
+                // for the kind of move data we ask, all the locals should be move paths, so
+                // we know we find something here.
+                unreachable!()
+            }
             LookupResult::Parent(Some(mp)) => {
                 let uninit = self.resolver.as_mut().unwrap().uninit_places_before(location);
                 // My understanding is that if the destination is not a move path, then it has to
@@ -466,7 +473,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             .need_resolve_resolved_places_at(ExtendedLocation::Start(next_loc));
         let dest = destination.as_ref();
         match self.move_data().rev_lookup.find(dest) {
-            LookupResult::Parent(None) => unreachable!(),
+            LookupResult::Parent(None) => {
+                // for the kind of move data we ask, all the locals should be move paths, so
+                // we know we find something here.
+                unreachable!()
+            }
             LookupResult::Parent(Some(mp)) => {
                 if !live.contains(mp) {
                     if place_contains_borrow_deref(dest, self.body, self.tcx()) {
@@ -529,6 +540,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     if let TerminatorKind::SwitchInt { targets, .. } = &bbd.terminator().kind {
                         targets
                     } else {
+                        // discriminator_for_switch returned true above
                         unreachable!()
                     };
                 if targets.otherwise() == bb {
@@ -536,10 +548,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 }
 
                 let mut inactive_mps = self.empty_bitset();
+                // We first insert all the move paths of the discriminator..
                 on_all_children_bits(self.move_data(), discr_mp, |mpi| {
                     inactive_mps.insert(mpi);
                 });
 
+                // ..and then remove everything which is active in this branch
                 let mut discrs = adt.discriminants(self.tcx());
                 for discr in targets.iter().filter_map(|(val, tgt)| (tgt == bb).then_some(val)) {
                     let var = discrs.find(|d| d.1.val == discr).unwrap().0;
@@ -592,6 +606,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         id
     }
 
+    /// We try to coalesce resolutions for places, if possible
+    /// TODO: We may actually want to do the opposite: resolve as deeply as possible,
+    /// but taking care of type opacity and recursive types.
     fn resolve_places(
         &mut self,
         to_resolve: BitSet<MovePathIndex>,
@@ -651,7 +668,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                         if let Some(vid) = ty.variant_index {
                             let var = adt_def.variant(vid);
                             // TODO: honor access rights for these fields.
-                            // I.e., we should not resolve provate fields.
+                            // I.e., we should not resolve private fields.
                             // Problem: it's unclear what to do if we need to resolve a private
                             // field, but not the whole struct/enum
                             for (fi, fd) in var.fields.iter_enumerated() {

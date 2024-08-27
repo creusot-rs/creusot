@@ -22,7 +22,7 @@ use rustc_mir_dataflow::{
 
 use crate::extended_location::ExtendedLocation;
 
-pub struct EagerResolver<'a, 'tcx> {
+pub struct Resolver<'a, 'tcx> {
     live: ResultsCursor<'a, 'tcx, MaybeLiveExceptDrop<'a, 'tcx>>,
     uninit: ResultsCursor<'a, 'tcx, MaybeUninitializedPlaces<'a, 'a, 'tcx>>,
     borrows: ResultsCursor<'a, 'tcx, Borrows<'a, 'a, 'tcx>>,
@@ -32,7 +32,7 @@ pub struct EagerResolver<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
 }
 
-impl<'a, 'tcx> HasMoveData<'tcx> for EagerResolver<'a, 'tcx> {
+impl<'a, 'tcx> HasMoveData<'tcx> for Resolver<'a, 'tcx> {
     fn move_data(&self) -> &MoveData<'tcx> {
         &self.mdpe.move_data
     }
@@ -59,14 +59,14 @@ struct State {
     borrows: BitSet<BorrowIndex>,
 }
 
-impl<'a, 'tcx> EagerResolver<'a, 'tcx> {
+impl<'a, 'tcx> Resolver<'a, 'tcx> {
     pub(crate) fn new(
         tcx: TyCtxt<'tcx>,
         body: &'a Body<'tcx>,
         borrow_set: &'a BorrowSet<'tcx>,
         regioncx: Rc<RegionInferenceContext<'tcx>>,
         mdpe: &'a MoveDataParamEnv<'tcx>,
-    ) -> EagerResolver<'a, 'tcx> {
+    ) -> Resolver<'a, 'tcx> {
         let uninit = MaybeUninitializedPlaces::new(tcx, body, mdpe)
             .mark_inactive_variants_as_uninit()
             .into_engine(tcx, body)
@@ -85,9 +85,12 @@ impl<'a, 'tcx> EagerResolver<'a, 'tcx> {
             .iterate_to_fixpoint()
             .into_results_cursor(body);
 
-        EagerResolver { live, uninit, borrows, borrow_set, mdpe, body, tcx }
+        Resolver { live, uninit, borrows, borrow_set, mdpe, body, tcx }
     }
 
+    /// Get the set of frozen move paths corresponding to the given set of borrows.
+    /// If both components of a tuple are borrowed, then each component is
+    /// considered frozen independently, and not the parent move path.
     fn frozen_of_borrows(&self, borrows: &BitSet<BorrowIndex>) -> BitSet<MovePathIndex> {
         let mut frozen = self.empty_bitset();
         for bi in borrows.iter() {
@@ -127,6 +130,15 @@ impl<'a, 'tcx> EagerResolver<'a, 'tcx> {
         resolved
     }
 
+    /// This function computes resolver state corresponding to the given extended location.
+    /// It forwards the query to the underlying analyses, but treats specially two cases, by manually
+    /// an partially applying parts of the transfer functions.
+    ///    - If we ask for the mid state of a statement, then this statement is required to
+    ///      be an assignment. In this case, we manually compute the state after RHS is evaluated
+    ///      but before LHS is assigned (this more or less matches the mid state for a function call).
+    ///    - If we ask to the end state of a terminator, then this statement is required to be a function
+    ///      call. In this case, we manually compute the state after the assignement of the return place, but
+    ///      before joining with other edges that would end up in the same block.
     fn state_at_loc(&mut self, loc: ExtendedLocation) -> State {
         let (mut uninit, mut live, mut borrows);
         match loc {
