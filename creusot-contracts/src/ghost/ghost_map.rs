@@ -16,9 +16,9 @@ use crate::{logic::FMap, *};
 /// ```
 ///
 /// This type is designed for this use-case, with no restriction on the capacity.
-pub struct GhostMap<K, V>(FMap<K, V>);
+pub struct GhostMap<K, V: ?Sized>(FMap<K, V>);
 
-impl<K, V> ShallowModel for GhostMap<K, V> {
+impl<K, V: ?Sized> ShallowModel for GhostMap<K, V> {
     type ShallowModelTy = FMap<K, V>;
 
     #[logic]
@@ -28,7 +28,7 @@ impl<K, V> ShallowModel for GhostMap<K, V> {
     }
 }
 
-impl<K, V> GhostMap<K, V> {
+impl<K, V: ?Sized> GhostMap<K, V> {
     #[predicate(prophetic)]
     #[open]
     pub fn unmodified_key(&mut self, key: K) -> bool {
@@ -104,7 +104,10 @@ impl<K, V> GhostMap<K, V> {
     #[trusted]
     #[pure]
     #[ensures(if self@.contains(*key) {
-        result == Some(&self@.lookup(*key))
+        match result {
+            None => false,
+            Some(r) => *self@.lookup_unsized(*key) == *r,
+        }
     } else {
         result == None
     })]
@@ -133,7 +136,8 @@ impl<K, V> GhostMap<K, V> {
     #[ensures(if self@.contains(*key) {
         match result {
             None => false,
-            Some(r) => self@.lookup(*key) == *r && (^self)@.lookup(*key) == ^r,
+            Some(r) => *(*self)@.lookup_unsized(*key) == *r &&
+                       *(^self)@.lookup_unsized(*key) == ^r,
         }
     } else {
         result == None
@@ -171,7 +175,25 @@ impl<K, V> GhostMap<K, V> {
     } else {
         result == None
     })]
-    pub fn insert(&mut self, key: K, value: V) -> Option<V> {
+    pub fn insert(&mut self, key: K, value: V) -> Option<V>
+    where
+        V: Sized,
+    {
+        let _ = key;
+        let _ = value;
+        loop {}
+    }
+
+    /// Same as [`Self::insert`], but for unsized values.
+    #[trusted]
+    #[pure]
+    #[ensures((^self)@ == (*self)@.insert(key, *value))]
+    #[ensures(if self@.contains(key) {
+        result == Some((*self)@.lookup_unsized(key))
+    } else {
+        result == None
+    })]
+    pub fn insert_unsized(&mut self, key: K, value: Box<V>) -> Option<Box<V>> {
         let _ = key;
         let _ = value;
         loop {}
@@ -197,7 +219,20 @@ impl<K, V> GhostMap<K, V> {
         None => result == None,
         Some(v) => result == Some(*v),
     })]
-    pub fn remove(&mut self, key: &K) -> Option<V> {
+    pub fn remove(&mut self, key: &K) -> Option<V>
+    where
+        V: Sized,
+    {
+        let _ = key;
+        loop {}
+    }
+
+    /// Same as [`Self::remove`], but for unsized values.
+    #[trusted]
+    #[pure]
+    #[ensures((^self)@ == (*self)@.remove(*key))]
+    #[ensures(self@.get(*key))]
+    pub fn remove_unsized(&mut self, key: &K) -> Option<Box<V>> {
         let _ = key;
         loop {}
     }
