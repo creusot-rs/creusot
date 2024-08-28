@@ -179,7 +179,7 @@ impl<'tcx> InvariantElaborator<'tcx> {
 
         let lhs = Term::call(ctx.tcx, inv_id, subst, vec![subject]);
 
-        Term::forall(Term::eq(ctx.tcx, lhs, term), (Symbol::intern("x"), ty))
+        Term::forall(Term::eq(ctx.tcx, lhs, term), ctx.tcx, (Symbol::intern("x"), ty))
     }
 
     fn structural_invariant(
@@ -396,7 +396,10 @@ impl<'tcx> InvariantElaborator<'tcx> {
             span: DUMMY_SP,
         };
 
-        lower_bound.implies(upper_bound).implies(call_term).forall((Symbol::intern("i"), int_ty))
+        lower_bound
+            .implies(upper_bound)
+            .implies(call_term)
+            .forall(ctx.tcx, (Symbol::intern("i"), int_ty))
     }
 }
 

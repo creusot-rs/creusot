@@ -122,8 +122,7 @@ module C15Enumerate_Impl0_ProducesRefl_Impl
   use C15Enumerate_Enumerate_Type as Enumerate'0
   
   predicate invariant'0 [#"../15_enumerate.rs" 71 4 71 30] (self : Enumerate'0.t_enumerate i) =
-    [%#span14] (forall i : i . forall s : Seq.seq item'0 . inv'2 i
-     -> inv'1 s
+    [%#span14] (forall s : Seq.seq item'0, i : i . inv'1 s /\ inv'2 i
      -> produces'1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s i
      -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int max'0)
     /\ (forall i : borrowed i . inv'3 i
@@ -283,8 +282,7 @@ module C15Enumerate_Impl0_ProducesTrans_Impl
   use C15Enumerate_Enumerate_Type as Enumerate'0
   
   predicate invariant'0 [#"../15_enumerate.rs" 71 4 71 30] (self : Enumerate'0.t_enumerate i) =
-    [%#span20] (forall i : i . forall s : Seq.seq item'0 . inv'3 i
-     -> inv'2 s
+    [%#span20] (forall s : Seq.seq item'0, i : i . inv'2 s /\ inv'3 i
      -> produces'1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s i
      -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int max'0)
     /\ (forall i : borrowed i . inv'4 i
@@ -441,8 +439,7 @@ module C15Enumerate_Impl0_Next
   use C15Enumerate_Enumerate_Type as Enumerate'0
   
   predicate invariant'6 [#"../15_enumerate.rs" 71 4 71 30] (self : Enumerate'0.t_enumerate i) =
-    [%#span5] (forall i : i . forall s : Seq.seq item'0 . inv'0 i
-     -> inv'5 s
+    [%#span5] (forall s : Seq.seq item'0, i : i . inv'5 s /\ inv'0 i
      -> produces'1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s i
      -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int max'0)
     /\ (forall i : borrowed i . inv'4 i
@@ -668,7 +665,7 @@ module C15Enumerate_Enumerate
   
   let%span span17 = "../common.rs" 14 14 14 45
   
-  predicate inv'1 (_x : i)
+  predicate inv'2 (_x : i)
   
   use prelude.prelude.UIntSize
   
@@ -696,13 +693,12 @@ module C15Enumerate_Enumerate
   
   predicate produces'0 [#"../common.rs" 8 4 8 65] (self : i) (visited : Seq.seq item'0) (o : i)
   
-  predicate inv'2 (_x : Seq.seq item'0)
+  predicate inv'1 (_x : Seq.seq item'0)
   
   use C15Enumerate_Enumerate_Type as Enumerate'0
   
   predicate invariant'3 [#"../15_enumerate.rs" 71 4 71 30] (self : Enumerate'0.t_enumerate i) =
-    [%#span6] (forall i : i . forall s : Seq.seq item'0 . inv'1 i
-     -> inv'2 s
+    [%#span6] (forall s : Seq.seq item'0, i : i . inv'1 s /\ inv'2 i
      -> produces'0 (C15Enumerate_Enumerate_Type.enumerate_iter self) s i
      -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int max'0)
     /\ (forall i : borrowed i . inv'0 i
@@ -716,14 +712,14 @@ module C15Enumerate_Enumerate
     | Enumerate'0.C_Enumerate iter count -> true
     end)
   
-  predicate invariant'2 (self : Seq.seq item'0) =
+  predicate invariant'2 (self : i)
+  
+  axiom inv'2 : forall x : i . inv'2 x = true
+  
+  predicate invariant'1 (self : Seq.seq item'0) =
     [%#span7] true
   
-  axiom inv'2 : forall x : Seq.seq item'0 . inv'2 x = true
-  
-  predicate invariant'1 (self : i)
-  
-  axiom inv'1 : forall x : i . inv'1 x = true
+  axiom inv'1 : forall x : Seq.seq item'0 . inv'1 x = true
   
   use seq.Seq
   
@@ -732,14 +728,14 @@ module C15Enumerate_Enumerate
   
   axiom produces_trans'0_spec : forall a : i, ab : Seq.seq item'0, b : i, bc : Seq.seq item'0, c : i . ([%#span8] produces'0 a ab b)
    -> ([%#span9] produces'0 b bc c)
-   -> ([%#span10] inv'1 a)
-   -> ([%#span11] inv'2 ab)
-   -> ([%#span12] inv'1 b)
-   -> ([%#span13] inv'2 bc)  -> ([%#span14] inv'1 c)  -> ([%#span15] produces'0 a (Seq.(++) ab bc) c)
+   -> ([%#span10] inv'2 a)
+   -> ([%#span11] inv'1 ab)
+   -> ([%#span12] inv'2 b)
+   -> ([%#span13] inv'1 bc)  -> ([%#span14] inv'2 c)  -> ([%#span15] produces'0 a (Seq.(++) ab bc) c)
   
   function produces_refl'0 [#"../common.rs" 15 4 15 27] (self : i) : ()
   
-  axiom produces_refl'0_spec : forall self : i . ([%#span16] inv'1 self)
+  axiom produces_refl'0_spec : forall self : i . ([%#span16] inv'2 self)
    -> ([%#span17] produces'0 self (Seq.empty  : Seq.seq item'0) self)
   
   predicate invariant'0 (self : borrowed i)
@@ -748,9 +744,9 @@ module C15Enumerate_Enumerate
   
   use prelude.prelude.Intrinsic
   
-  let rec enumerate (iter:i) (return'  (ret:Enumerate'0.t_enumerate i))= {[%#s15_enumerate3] inv'1 iter}
-    {[%#s15_enumerate2] forall i : i . forall s : Seq.seq item'0 . inv'1 i
-     -> inv'2 s  -> produces'0 iter s i  -> Seq.length s < UIntSize.to_int max'0}
+  let rec enumerate (iter:i) (return'  (ret:Enumerate'0.t_enumerate i))= {[%#s15_enumerate3] inv'2 iter}
+    {[%#s15_enumerate2] forall s : Seq.seq item'0, i : i . inv'1 s /\ inv'2 i
+     -> produces'0 iter s i  -> Seq.length s < UIntSize.to_int max'0}
     {[%#s15_enumerate1] forall i : borrowed i . inv'0 i
      -> completed'0 i  -> produces'0 i.current (Seq.empty  : Seq.seq item'0) i.final}
     (! bb0
@@ -857,8 +853,7 @@ module C15Enumerate_Impl0
   predicate produces'1 [#"../common.rs" 8 4 8 65] (self : i) (visited : Seq.seq item'0) (o : i)
   
   predicate invariant'0 [#"../15_enumerate.rs" 71 4 71 30] (self : Enumerate'0.t_enumerate i) =
-    [%#span5] (forall i : i . forall s : Seq.seq item'0 . inv'5 i
-     -> inv'4 s
+    [%#span5] (forall s : Seq.seq item'0, i : i . inv'4 s /\ inv'5 i
      -> produces'1 (C15Enumerate_Enumerate_Type.enumerate_iter self) s i
      -> UIntSize.to_int (C15Enumerate_Enumerate_Type.enumerate_count self) + Seq.length s < UIntSize.to_int max'0)
     /\ (forall i : borrowed i . inv'6 i

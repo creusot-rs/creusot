@@ -837,7 +837,7 @@ module ListReversalLasso_Impl4_ListReversalList
     /\ (forall i : int . l <= i /\ i < h
      -> nonnull_ptr'0 self (Seq.get s i)
     /\ index_logic'0 self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
-    /\ (forall j : int . forall i : int . l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j  -> Seq.get s i <> Seq.get s j)
+    /\ (forall i : int, j : int . l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j  -> Seq.get s i <> Seq.get s j)
   
   constant null'0 : usize = [%#span19] (18446744073709551615 : usize)
   
@@ -1120,7 +1120,7 @@ module ListReversalLasso_Impl4_ListReversalLoop
     /\ (forall i : int . l <= i /\ i < h
      -> nonnull_ptr'0 self (Seq.get s i)
     /\ index_logic'1 self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
-    /\ (forall j : int . forall i : int . l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j  -> Seq.get s i <> Seq.get s j)
+    /\ (forall i : int, j : int . l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j  -> Seq.get s i <> Seq.get s j)
   
   predicate loop'0 [#"../list_reversal_lasso.rs" 116 4 116 55] (self : Memory'0.t_memory) (first : usize) (s : Seq.seq usize)
     
@@ -1427,13 +1427,13 @@ module ListReversalLasso_Impl4_ListReversalLasso
     /\ (forall i : int . l <= i /\ i < h
      -> nonnull_ptr'0 self (Seq.get s i)
     /\ index_logic'1 self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
-    /\ (forall j : int . forall i : int . l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j  -> Seq.get s i <> Seq.get s j)
+    /\ (forall i : int, j : int . l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j  -> Seq.get s i <> Seq.get s j)
   
   predicate lasso'0 [#"../list_reversal_lasso.rs" 151 4 151 70] (self : Memory'0.t_memory) (first : usize) (s1 : Seq.seq usize) (s2 : Seq.seq usize)
     
    =
     [%#span18] let mid = if Seq.length s2 = 0 then Seq.get s1 (Seq.length s1 - 1) else Seq.get s2 0 in Seq.length s1 > 0
-    /\ (forall j : int . forall i : int . 0 <= i /\ i < Seq.length s1 /\ 0 <= j /\ j < Seq.length s2
+    /\ (forall i : int, j : int . 0 <= i /\ i < Seq.length s1 /\ 0 <= j /\ j < Seq.length s2
      -> Seq.get s1 i <> Seq.get s2 j)
     /\ list_seg'0 self first s1 mid 0 (Seq.length s1)
     /\ list_seg'0 self mid s2 (Seq.get s1 (Seq.length s1 - 1)) 0 (Seq.length s2)
@@ -1739,7 +1739,7 @@ module ListReversalLasso_Impl4_Pigeon_Impl
   
   function pigeon [#"../list_reversal_lasso.rs" 219 4 219 42] (s : Seq.seq usize) (n : int) : bool
   
-  goal vc_pigeon : ([%#slist_reversal_lasso2] forall j : int . forall i : int . 0 <= i
+  goal vc_pigeon : ([%#slist_reversal_lasso2] forall i : int, j : int . 0 <= i
   /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j  -> Seq.get s i <> Seq.get s j)
    -> ([%#slist_reversal_lasso1] forall i : int . 0 <= i /\ i < Seq.length s  -> UIntSize.to_int (Seq.get s i) < n)
    -> ([%#slist_reversal_lasso0] 0 <= n)
@@ -1752,7 +1752,7 @@ module ListReversalLasso_Impl4_Pigeon_Impl
       | Option'0.C_Some j -> 0 <= j /\ j < Seq.length s /\ UIntSize.to_int (Seq.get s j) = n - 1
       end)
      -> match find_ptr_in_seq'0 s 0 (n - 1) with
-      | Option'0.C_None -> ((([%#slist_reversal_lasso2] forall j : int . forall i : int . 0 <= i
+      | Option'0.C_None -> ((([%#slist_reversal_lasso2] forall i : int, j : int . 0 <= i
       /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j  -> Seq.get s i <> Seq.get s j)
       && ([%#slist_reversal_lasso1] forall i : int . 0 <= i /\ i < Seq.length s
        -> UIntSize.to_int (Seq.get s i) < n - 1)
@@ -1766,7 +1766,7 @@ module ListReversalLasso_Impl4_Pigeon_Impl
         | Option'0.C_Some j -> i + 1 <= j /\ j < Seq.length s /\ UIntSize.to_int (Seq.get s j) = n - 1
         end)
        -> match find_ptr_in_seq'0 s (i + 1) (n - 1) with
-        | Option'0.C_None -> ((([%#slist_reversal_lasso2] forall j : int . forall i' : int . 0 <= i'
+        | Option'0.C_None -> ((([%#slist_reversal_lasso2] forall i' : int, j : int . 0 <= i'
         /\ i' < Seq.length (Seq.(++) (SeqExt.subsequence s 0 i) (SeqExt.subsequence s (i + 1) (Seq.length s)))
         /\ 0 <= j
         /\ j < Seq.length (Seq.(++) (SeqExt.subsequence s 0 i) (SeqExt.subsequence s (i + 1) (Seq.length s))) /\ i' <> j
@@ -1946,7 +1946,7 @@ module ListReversalLasso_Impl4_FindLassoAux_Impl
   
   axiom pigeon'0_spec : forall s : Seq.seq usize, n : int . ([%#slist_reversal_lasso11] 0 <= n)
    -> ([%#slist_reversal_lasso12] forall i : int . 0 <= i /\ i < Seq.length s  -> UIntSize.to_int (Seq.get s i) < n)
-   -> ([%#slist_reversal_lasso13] forall j : int . forall i : int . 0 <= i
+   -> ([%#slist_reversal_lasso13] forall i : int, j : int . 0 <= i
   /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j  -> Seq.get s i <> Seq.get s j)
    -> ([%#slist_reversal_lasso15] pigeon'0 s n) && ([%#slist_reversal_lasso14] Seq.length s <= n)
   
@@ -1962,13 +1962,13 @@ module ListReversalLasso_Impl4_FindLassoAux_Impl
     /\ (forall i : int . l <= i /\ i < h
      -> nonnull_ptr'0 self (Seq.get s i)
     /\ index_logic'0 self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
-    /\ (forall j : int . forall i : int . l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j  -> Seq.get s i <> Seq.get s j)
+    /\ (forall i : int, j : int . l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j  -> Seq.get s i <> Seq.get s j)
   
   predicate lasso'0 [#"../list_reversal_lasso.rs" 151 4 151 70] (self : Memory'0.t_memory) (first : usize) (s1 : Seq.seq usize) (s2 : Seq.seq usize)
     
    =
     [%#span26] let mid = if Seq.length s2 = 0 then Seq.get s1 (Seq.length s1 - 1) else Seq.get s2 0 in Seq.length s1 > 0
-    /\ (forall j : int . forall i : int . 0 <= i /\ i < Seq.length s1 /\ 0 <= j /\ j < Seq.length s2
+    /\ (forall i : int, j : int . 0 <= i /\ i < Seq.length s1 /\ 0 <= j /\ j < Seq.length s2
      -> Seq.get s1 i <> Seq.get s2 j)
     /\ list_seg'0 self first s1 mid 0 (Seq.length s1)
     /\ list_seg'0 self mid s2 (Seq.get s1 (Seq.length s1 - 1)) 0 (Seq.length s2)
@@ -2015,7 +2015,7 @@ module ListReversalLasso_Impl4_FindLassoAux_Impl
       /\ (([%#svec10] inv'1 (shallow_model'0 (ListReversalLasso_Memory_Type.memory_0 self)))
       && ([%#svec9] Seq.length (shallow_model'0 (ListReversalLasso_Memory_Type.memory_0 self))
       <= UIntSize.to_int (max'0 : usize))
-       -> (([%#slist_reversal_lasso13] forall j : int . forall i : int . 0 <= i
+       -> (([%#slist_reversal_lasso13] forall i : int, j : int . 0 <= i
       /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j  -> Seq.get s i <> Seq.get s j)
       && ([%#slist_reversal_lasso12] forall i : int . 0 <= i /\ i < Seq.length s
        -> UIntSize.to_int (Seq.get s i) < Seq.length (shallow_model'0 (ListReversalLasso_Memory_Type.memory_0 self)))
@@ -2185,7 +2185,7 @@ module ListReversalLasso_Impl4_FindLasso_Impl
     /\ (forall i : int . l <= i /\ i < h
      -> nonnull_ptr'0 self (Seq.get s i)
     /\ index_logic'0 self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
-    /\ (forall j : int . forall i : int . l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j  -> Seq.get s i <> Seq.get s j)
+    /\ (forall i : int, j : int . l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j  -> Seq.get s i <> Seq.get s j)
   
   use prelude.prelude.Int
   
@@ -2231,14 +2231,14 @@ module ListReversalLasso_Impl4_FindLasso_Impl
   
   axiom pigeon'0_spec : forall s : Seq.seq usize, n : int . ([%#span22] 0 <= n)
    -> ([%#span23] forall i : int . 0 <= i /\ i < Seq.length s  -> UIntSize.to_int (Seq.get s i) < n)
-   -> ([%#span24] forall j : int . forall i : int . 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j
+   -> ([%#span24] forall i : int, j : int . 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j
    -> Seq.get s i <> Seq.get s j)  -> ([%#span26] pigeon'0 s n) && ([%#span25] Seq.length s <= n)
   
   predicate lasso'0 [#"../list_reversal_lasso.rs" 151 4 151 70] (self : Memory'0.t_memory) (first : usize) (s1 : Seq.seq usize) (s2 : Seq.seq usize)
     
    =
     [%#span29] let mid = if Seq.length s2 = 0 then Seq.get s1 (Seq.length s1 - 1) else Seq.get s2 0 in Seq.length s1 > 0
-    /\ (forall j : int . forall i : int . 0 <= i /\ i < Seq.length s1 /\ 0 <= j /\ j < Seq.length s2
+    /\ (forall i : int, j : int . 0 <= i /\ i < Seq.length s1 /\ 0 <= j /\ j < Seq.length s2
      -> Seq.get s1 i <> Seq.get s2 j)
     /\ list_seg'0 self first s1 mid 0 (Seq.length s1)
     /\ list_seg'0 self mid s2 (Seq.get s1 (Seq.length s1 - 1)) 0 (Seq.length s2)
