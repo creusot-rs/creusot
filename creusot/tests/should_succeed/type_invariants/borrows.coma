@@ -549,57 +549,53 @@ module Borrows_PartialMove
   
   let%span sborrows3 = "../borrows.rs" 53 20 53 21
   
-  let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span4 = "../borrows.rs" 10 20 10 32
   
-  let%span span5 = "../borrows.rs" 10 20 10 32
+  let%span span5 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
   let%span span6 = "" 0 0 0 0
   
   let%span span7 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span8 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  let%span span8 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
   
-  let%span span9 = "../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60
+  let%span span9 = "../borrows.rs" 99 11 99 25
   
-  let%span span10 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
-  
-  let%span span11 = "../borrows.rs" 99 11 99 25
-  
-  let%span span12 = "../borrows.rs" 100 10 100 25
-  
-  use Borrows_NonZero_Type as NonZero'0
-  
-  use prelude.prelude.Borrow
-  
-  predicate invariant'2 (self : borrowed (NonZero'0.t_nonzero)) =
-    [%#span4] true
-  
-  predicate inv'1 (_x : NonZero'0.t_nonzero)
-  
-  predicate inv'2 (_x : borrowed (NonZero'0.t_nonzero))
-  
-  axiom inv'2 : forall x : borrowed (NonZero'0.t_nonzero) . inv'2 x = (inv'1 x.current /\ inv'1 x.final)
+  let%span span10 = "../borrows.rs" 100 10 100 25
   
   use prelude.prelude.Int32
   
   use Borrows_NonZero_Type as Borrows_NonZero_Type
   
-  predicate invariant'1 [#"../borrows.rs" 9 4 9 30] (self : NonZero'0.t_nonzero) =
-    [%#span5] Int32.to_int (Borrows_NonZero_Type.nonzero_0 self) <> 0
+  use Borrows_NonZero_Type as NonZero'0
   
-  axiom inv'1 : forall x : NonZero'0.t_nonzero . inv'1 x
-  = (invariant'1 x
+  predicate invariant'2 [#"../borrows.rs" 9 4 9 30] (self : NonZero'0.t_nonzero) =
+    [%#span4] Int32.to_int (Borrows_NonZero_Type.nonzero_0 self) <> 0
+  
+  predicate inv'2 (_x : NonZero'0.t_nonzero)
+  
+  axiom inv'2 : forall x : NonZero'0.t_nonzero . inv'2 x
+  = (invariant'2 x
   /\ match x with
     | NonZero'0.C_NonZero a_0 -> true
     end)
   
-  predicate invariant'0 (self : (NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero))) =
-    [%#span4] true
+  use prelude.prelude.Borrow
   
-  predicate inv'0 (_x : (NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero)))
+  predicate invariant'1 (self : (NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero))) =
+    [%#span5] true
   
-  axiom inv'0 : forall x : (NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero)) . inv'0 x
-  = (let (a, b) = x in inv'1 a /\ inv'2 b)
+  predicate inv'0 (_x : borrowed (NonZero'0.t_nonzero))
+  
+  predicate inv'1 (_x : (NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero)))
+  
+  axiom inv'1 : forall x : (NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero)) . inv'1 x
+  = (let (a, b) = x in inv'2 a /\ inv'0 b)
+  
+  predicate invariant'0 (self : borrowed (NonZero'0.t_nonzero)) =
+    [%#span5] true
+  
+  axiom inv'0 : forall x : borrowed (NonZero'0.t_nonzero) . inv'0 x = (inv'2 x.current /\ inv'2 x.final)
   
   use prelude.prelude.Int32
   
@@ -609,14 +605,8 @@ module Borrows_PartialMove
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'3 (self : borrowed (NonZero'0.t_nonzero)) =
+  predicate resolve'1 (self : borrowed (NonZero'0.t_nonzero)) =
     [%#span7] self.final = self.current
-  
-  predicate resolve'2 (self : NonZero'0.t_nonzero) =
-    [%#span8] true
-  
-  predicate resolve'1 (self : (NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero))) =
-    [%#span9] resolve'2 (let (a, _) = self in a) /\ resolve'3 (let (_, a) = self in a)
   
   predicate resolve'0 (self : borrowed int32) =
     [%#span7] self.final = self.current
@@ -624,13 +614,13 @@ module Borrows_PartialMove
   use prelude.prelude.Int
   
   function shallow_model'0 (self : borrowed int32) : int =
-    [%#span10] Int32.to_int self.current
+    [%#span8] Int32.to_int self.current
   
-  let rec inc'0 (x:borrowed int32) (return'  (ret:()))= {[@expl:precondition] [%#span11] shallow_model'0 x
+  let rec inc'0 (x:borrowed int32) (return'  (ret:()))= {[@expl:precondition] [%#span9] shallow_model'0 x
     < Int32.to_int (max'0 : int32)}
-    any [ return' (result:())-> {[%#span12] Int32.to_int x.final = shallow_model'0 x + 1} (! return' {result}) ] 
+    any [ return' (result:())-> {[%#span10] Int32.to_int x.final = shallow_model'0 x + 1} (! return' {result}) ] 
   
-  let rec partial_move (x:(NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero))) (return'  (ret:()))= {[%#sborrows3] inv'0 x}
+  let rec partial_move (x:(NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero))) (return'  (ret:()))= {[%#sborrows3] inv'1 x}
     {[%#sborrows2] Int32.to_int (Borrows_NonZero_Type.nonzero_0 (let (_, a) = x in a).current) <> - 1}
     {[%#sborrows1] Int32.to_int (Borrows_NonZero_Type.nonzero_0 (let (_, a) = x in a).current)
     < Int32.to_int (max'0 : int32)}
@@ -656,8 +646,8 @@ module Borrows_PartialMove
       
     | bb1 = s0
       [ s0 = -{resolve'0 _7}- s1
-      | s1 = {[@expl:type invariant] inv'0 x} s2
-      | s2 = -{resolve'1 x}- s3
+      | s1 = {[@expl:type invariant] inv'0 (let (_, r'0) = x in r'0)} s2
+      | s2 = -{resolve'1 (let (_, r'1) = x in r'1)}- s3
       | s3 = NonZero'0.t_nonzero {a}
           (fun (l_0'0:int32) ->  [ &a <- NonZero'0.C_NonZero ([%#sborrows0] (0 : int32)) ] s4)
       | s4 = return' {_0} ]
@@ -694,10 +684,6 @@ module Borrows_Destruct
   
   let%span span10 = "../borrows.rs" 100 10 100 25
   
-  let%span span11 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
-  
-  let%span span12 = "../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60
-  
   use prelude.prelude.Int32
   
   use Borrows_NonZero_Type as Borrows_NonZero_Type
@@ -717,20 +703,20 @@ module Borrows_Destruct
   
   use prelude.prelude.Borrow
   
-  predicate invariant'1 (self : borrowed (NonZero'0.t_nonzero)) =
+  predicate invariant'1 (self : (NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero))) =
     [%#span5] true
   
-  predicate inv'1 (_x : borrowed (NonZero'0.t_nonzero))
+  predicate inv'0 (_x : borrowed (NonZero'0.t_nonzero))
   
-  axiom inv'1 : forall x : borrowed (NonZero'0.t_nonzero) . inv'1 x = (inv'2 x.current /\ inv'2 x.final)
+  predicate inv'1 (_x : (NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero)))
   
-  predicate invariant'0 (self : (NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero))) =
+  axiom inv'1 : forall x : (NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero)) . inv'1 x
+  = (let (a, b) = x in inv'2 a /\ inv'0 b)
+  
+  predicate invariant'0 (self : borrowed (NonZero'0.t_nonzero)) =
     [%#span5] true
   
-  predicate inv'0 (_x : (NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero)))
-  
-  axiom inv'0 : forall x : (NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero)) . inv'0 x
-  = (let (a, b) = x in inv'2 a /\ inv'1 b)
+  axiom inv'0 : forall x : borrowed (NonZero'0.t_nonzero) . inv'0 x = (inv'2 x.current /\ inv'2 x.final)
   
   use prelude.prelude.Int32
   
@@ -740,10 +726,10 @@ module Borrows_Destruct
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'2 (self : borrowed (NonZero'0.t_nonzero)) =
+  predicate resolve'1 (self : borrowed (NonZero'0.t_nonzero)) =
     [%#span7] self.final = self.current
   
-  predicate resolve'1 (self : borrowed int32) =
+  predicate resolve'0 (self : borrowed int32) =
     [%#span7] self.final = self.current
   
   use prelude.prelude.Int
@@ -755,13 +741,7 @@ module Borrows_Destruct
     < Int32.to_int (max'0 : int32)}
     any [ return' (result:())-> {[%#span10] Int32.to_int x.final = shallow_model'0 x + 1} (! return' {result}) ] 
   
-  predicate resolve'3 (self : NonZero'0.t_nonzero) =
-    [%#span11] true
-  
-  predicate resolve'0 (self : (NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero))) =
-    [%#span12] resolve'3 (let (a, _) = self in a) /\ resolve'2 (let (_, a) = self in a)
-  
-  let rec destruct (x:(NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero))) (return'  (ret:()))= {[%#sborrows3] inv'0 x}
+  let rec destruct (x:(NonZero'0.t_nonzero, borrowed (NonZero'0.t_nonzero))) (return'  (ret:()))= {[%#sborrows3] inv'1 x}
     {[%#sborrows2] Int32.to_int (Borrows_NonZero_Type.nonzero_0 (let (_, a) = x in a).current) <> - 1}
     {[%#sborrows1] Int32.to_int (Borrows_NonZero_Type.nonzero_0 (let (_, a) = x in a).current)
     < Int32.to_int (max'0 : int32)}
@@ -771,26 +751,24 @@ module Borrows_Destruct
         (any [ any_ (_any:NonZero'0.t_nonzero)-> (!  [ &x <- let (_, l'2) = x in (_any, l'2) ] s1) ] )
       | s1 =  [ &b <- let (_, r'1) = x in r'1 ] 
         (any [ any_ (_any:borrowed (NonZero'0.t_nonzero))-> (!  [ &x <- let (l'4, _) = x in (l'4, _any) ] s2) ] )
-      | s2 = {[@expl:type invariant] inv'0 x} s3
-      | s3 = -{resolve'0 x}- s4
-      | s4 = NonZero'0.t_nonzero {a}
-          (fun (l_0'0:int32) ->  [ &a <- NonZero'0.C_NonZero ([%#sborrows0] (0 : int32)) ] s5)
-      | s5 = NonZero'0.t_nonzero {b.current}
+      | s2 = NonZero'0.t_nonzero {a}
+          (fun (l_0'0:int32) ->  [ &a <- NonZero'0.C_NonZero ([%#sborrows0] (0 : int32)) ] s3)
+      | s3 = NonZero'0.t_nonzero {b.current}
           (fun (r0'0:int32) ->
             Borrow.borrow_final <int32> {r0'0} {Borrow.inherit_id (Borrow.get_id b) 1}
               (fun (_ret':borrowed int32) ->
                  [ &_8 <- _ret' ] 
                 NonZero'0.t_nonzero {b.current}
-                  (fun (l_0'1:int32) ->  [ &b <- { b with current = NonZero'0.C_NonZero _8.final ; } ] s6)))
-      | s6 = Borrow.borrow_final <int32> {_8.current} {Borrow.get_id _8}
-          (fun (_ret':borrowed int32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _7.final ; } ] s7)
-      | s7 = inc'0 {_7} (fun (_ret':()) ->  [ &_6 <- _ret' ] s8)
-      | s8 = bb1 ]
+                  (fun (l_0'1:int32) ->  [ &b <- { b with current = NonZero'0.C_NonZero _8.final ; } ] s4)))
+      | s4 = Borrow.borrow_final <int32> {_8.current} {Borrow.get_id _8}
+          (fun (_ret':borrowed int32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _7.final ; } ] s5)
+      | s5 = inc'0 {_7} (fun (_ret':()) ->  [ &_6 <- _ret' ] s6)
+      | s6 = bb1 ]
       
     | bb1 = s0
-      [ s0 = -{resolve'1 _8}- s1
-      | s1 = {[@expl:type invariant] inv'1 b} s2
-      | s2 = -{resolve'2 b}- s3
+      [ s0 = -{resolve'0 _8}- s1
+      | s1 = {[@expl:type invariant] inv'0 b} s2
+      | s2 = -{resolve'1 b}- s3
       | s3 = return' {_0} ]
        ]
     )

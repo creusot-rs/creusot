@@ -178,34 +178,31 @@ module C07ReadWrite_ReadWrite
   
   axiom inv'7 : forall x : Seq.seq t . inv'7 x = true
   
+  predicate invariant'6 (self : t)
+  
+  predicate inv'6 (_x : t)
+  
+  axiom inv'6 : forall x : t . inv'6 x = true
+  
   use Alloc_Alloc_Global_Type as Global'0
   
   use Alloc_Vec_Vec_Type as Vec'0
   
-  predicate invariant'6 (self : Vec'0.t_vec t (Global'0.t_global)) =
+  predicate invariant'5 (self : Vec'0.t_vec t (Global'0.t_global)) =
     [%#span4] true
   
-  predicate inv'6 (_x : Vec'0.t_vec t (Global'0.t_global))
+  predicate inv'5 (_x : Vec'0.t_vec t (Global'0.t_global))
   
-  axiom inv'6 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'6 x = true
+  axiom inv'5 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'5 x = true
   
   use prelude.prelude.UIntSize
   
-  predicate invariant'5 (self : usize) =
+  predicate invariant'4 (self : usize) =
     [%#span4] true
   
-  predicate inv'5 (_x : usize)
+  predicate inv'4 (_x : usize)
   
-  axiom inv'5 : forall x : usize . inv'5 x = true
-  
-  use prelude.prelude.Borrow
-  
-  predicate invariant'4 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
-    [%#span4] true
-  
-  predicate inv'4 (_x : borrowed (Vec'0.t_vec t (Global'0.t_global)))
-  
-  axiom inv'4 : forall x : borrowed (Vec'0.t_vec t (Global'0.t_global)) . inv'4 x = true
+  axiom inv'4 : forall x : usize . inv'4 x = true
   
   predicate invariant'3 (self : t)
   
@@ -213,17 +210,20 @@ module C07ReadWrite_ReadWrite
   
   axiom inv'3 : forall x : t . inv'3 x = true
   
-  predicate invariant'2 (self : borrowed t)
+  use prelude.prelude.Borrow
   
-  predicate inv'2 (_x : borrowed t)
+  predicate invariant'2 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
+    [%#span4] true
   
-  axiom inv'2 : forall x : borrowed t . inv'2 x = true
+  predicate inv'2 (_x : borrowed (Vec'0.t_vec t (Global'0.t_global)))
   
-  predicate invariant'1 (self : t)
+  axiom inv'2 : forall x : borrowed (Vec'0.t_vec t (Global'0.t_global)) . inv'2 x = true
   
-  predicate inv'1 (_x : t)
+  predicate invariant'1 (self : borrowed t)
   
-  axiom inv'1 : forall x : t . inv'1 x = true
+  predicate inv'1 (_x : borrowed t)
+  
+  axiom inv'1 : forall x : borrowed t . inv'1 x = true
   
   use prelude.prelude.UIntSize
   
@@ -251,7 +251,7 @@ module C07ReadWrite_ReadWrite
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'3 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
+  predicate resolve'1 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
     [%#span11] self.final = self.current
   
   type deep_model_ty'0
@@ -261,11 +261,9 @@ module C07ReadWrite_ReadWrite
   function deep_model'0 (self : t) : deep_model_ty'0 =
     [%#span12] deep_model'1 self
   
-  let rec eq'0 (self:t) (other:t) (return'  (ret:bool))= {[@expl:precondition] [%#span14] inv'3 other}
-    {[@expl:precondition] [%#span13] inv'3 self}
+  let rec eq'0 (self:t) (other:t) (return'  (ret:bool))= {[@expl:precondition] [%#span14] inv'6 other}
+    {[@expl:precondition] [%#span13] inv'6 self}
     any [ return' (result:bool)-> {[%#span15] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ] 
-  
-  predicate resolve'2 (self : t)
   
   use prelude.prelude.Slice
   
@@ -280,29 +278,27 @@ module C07ReadWrite_ReadWrite
   function shallow_model'2 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t =
     [%#span18] shallow_model'1 self
   
-  let rec index'0 (self:Vec'0.t_vec t (Global'0.t_global)) (index:usize) (return'  (ret:t))= {[@expl:precondition] [%#span21] inv'5 index}
-    {[@expl:precondition] [%#span20] inv'6 self}
+  let rec index'0 (self:Vec'0.t_vec t (Global'0.t_global)) (index:usize) (return'  (ret:t))= {[@expl:precondition] [%#span21] inv'4 index}
+    {[@expl:precondition] [%#span20] inv'5 self}
     {[@expl:precondition] [%#span19] in_bounds'0 index (shallow_model'2 self)}
     any
-    [ return' (result:t)-> {[%#span23] inv'3 result}
+    [ return' (result:t)-> {[%#span23] inv'6 result}
       {[%#span22] has_value'0 index (shallow_model'2 self) result}
       (! return' {result}) ]
     
   
-  predicate resolve'1 (self : borrowed t) =
+  predicate resolve'0 (self : borrowed t) =
     [%#span11] self.final = self.current
-  
-  predicate resolve'0 (self : t)
   
   predicate resolve_elswhere'0 [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t) =
     [%#span24] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
   
-  let rec index_mut'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (index:usize) (return'  (ret:borrowed t))= {[@expl:precondition] [%#span27] inv'5 index}
-    {[@expl:precondition] [%#span26] inv'4 self}
+  let rec index_mut'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (index:usize) (return'  (ret:borrowed t))= {[@expl:precondition] [%#span27] inv'4 index}
+    {[@expl:precondition] [%#span26] inv'2 self}
     {[@expl:precondition] [%#span25] in_bounds'0 index (shallow_model'0 self)}
     any
-    [ return' (result:borrowed t)-> {[%#span32] inv'2 result}
+    [ return' (result:borrowed t)-> {[%#span32] inv'1 result}
       {[%#span31] Seq.length (shallow_model'1 self.final) = Seq.length (shallow_model'0 self)}
       {[%#span30] resolve_elswhere'0 index (shallow_model'0 self) (shallow_model'1 self.final)}
       {[%#span29] has_value'0 index (shallow_model'1 self.final) result.final}
@@ -310,8 +306,8 @@ module C07ReadWrite_ReadWrite
       (! return' {result}) ]
     
   
-  let rec read_write (a:borrowed (Vec'0.t_vec t (Global'0.t_global))) (i:usize) (x:t) (return'  (ret:()))= {[%#s07_read_write3] inv'1 x}
-    {[%#s07_read_write2] inv'4 a}
+  let rec read_write (a:borrowed (Vec'0.t_vec t (Global'0.t_global))) (i:usize) (x:t) (return'  (ret:()))= {[%#s07_read_write3] inv'3 x}
+    {[%#s07_read_write2] inv'2 a}
     {[%#s07_read_write1] UIntSize.to_int i < Seq.length (shallow_model'0 a)}
     (! bb0
     [ bb0 = s0
@@ -326,34 +322,19 @@ module C07ReadWrite_ReadWrite
       
     | bb1 = s0
       [ s0 =  [ &_6 <- { _6 with current = x ; } ] s1
-      | s1 = {[@expl:type invariant] inv'1 _6.current} s2
-      | s2 = -{resolve'0 _6.current}- s3
-      | s3 = {[@expl:type invariant] inv'2 _6} s4
-      | s4 = -{resolve'1 _6}- s5
-      | s5 = index'0 {a.current} {i} (fun (_ret':t) ->  [ &_12 <- _ret' ] s6)
-      | s6 = bb2 ]
+      | s1 = {[@expl:type invariant] inv'1 _6} s2
+      | s2 = -{resolve'0 _6}- s3
+      | s3 = index'0 {a.current} {i} (fun (_ret':t) ->  [ &_12 <- _ret' ] s4)
+      | s4 = bb2 ]
       
-    | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv'3 _12} s1
-      | s1 = -{resolve'2 _12}- s2
-      | s2 = eq'0 {_12} {x} (fun (_ret':bool) ->  [ &_10 <- _ret' ] s3)
-      | s3 = bb3 ]
+    | bb2 = s0 [ s0 = eq'0 {_12} {x} (fun (_ret':bool) ->  [ &_10 <- _ret' ] s1) | s1 = bb3 ] 
+    | bb3 = s0
+      [ s0 = {[@expl:type invariant] inv'2 a} s1
+      | s1 = -{resolve'1 a}- s2
+      | s2 = any [ br0 -> {_10 = false} (! bb5) | br1 -> {_10} (! bb4) ]  ]
       
-    | bb3 = any [ br0 -> {_10 = false} (! bb5) | br1 -> {_10} (! bb4) ] 
-    | bb4 = s0
-      [ s0 = {[@expl:type invariant] inv'1 x} s1
-      | s1 = -{resolve'0 x}- s2
-      | s2 = {[@expl:type invariant] inv'4 a} s3
-      | s3 = -{resolve'3 a}- s4
-      | s4 = return' {_0} ]
-      
-    | bb5 = s0
-      [ s0 = {[@expl:type invariant] inv'1 x} s1
-      | s1 = -{resolve'0 x}- s2
-      | s2 = {[@expl:type invariant] inv'4 a} s3
-      | s3 = -{resolve'3 a}- s4
-      | s4 = {[%#s07_read_write0] false} any ]
-       ]
+    | bb4 = return' {_0}
+    | bb5 = {[%#s07_read_write0] false} any ]
     )
     [ & _0 : () = any_l ()
     | & a : borrowed (Vec'0.t_vec t (Global'0.t_global)) = a

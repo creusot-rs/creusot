@@ -395,9 +395,11 @@ module FinalBorrows_ReallyNestedFields
       | s7 = -{inv'0 _0.final}- s8
       | s8 = {[@expl:type invariant] inv'1 _2} s9
       | s9 = -{resolve'0 _2}- s10
-      | s10 = bb2 ]
+      | s10 = {[@expl:type invariant] inv'2 x} s11
+      | s11 = -{resolve'1 x}- s12
+      | s12 = bb2 ]
       
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'2 x} s1 | s1 = -{resolve'1 x}- s2 | s2 = return' {_0} ]  ]
+    | bb2 = return' {_0} ]
     )
     [ & _0 : borrowed t = any_l ()
     | & x : (borrowed (t, t), t) = x
@@ -521,22 +523,20 @@ module FinalBorrows_SelectField
       | s7 = -{resolve'1 _4}- s8
       | s8 = bb5 ]
       
-    | bb2 = bb4
+    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'3 _4} s1 | s1 = -{resolve'1 _4}- s2 | s2 = bb4 ] 
     | bb4 = s0
-      [ s0 = {[@expl:type invariant] inv'3 _4} s1
-      | s1 = -{resolve'1 _4}- s2
-      | s2 = Borrow.borrow_final <t> {let (_, r'0) = x.current in r'0} {Borrow.inherit_id (Borrow.get_id x) 2}
+      [ s0 = Borrow.borrow_final <t> {let (_, r'0) = x.current in r'0} {Borrow.inherit_id (Borrow.get_id x) 2}
           (fun (_ret':borrowed t) ->
              [ &_8 <- _ret' ] 
              [ &x <- { x with current = (let (l'1, _) = x.current in (l'1, _8.final)) ; } ] 
-            s3)
-      | s3 = -{inv'1 _8.final}- s4
-      | s4 = Borrow.borrow_final <t> {_8.current} {Borrow.get_id _8}
-          (fun (_ret':borrowed t) ->  [ &_0 <- _ret' ]  [ &_8 <- { _8 with current = _0.final ; } ] s5)
-      | s5 = -{inv'1 _0.final}- s6
-      | s6 = {[@expl:type invariant] inv'2 _8} s7
-      | s7 = -{resolve'0 _8}- s8
-      | s8 = bb5 ]
+            s1)
+      | s1 = -{inv'1 _8.final}- s2
+      | s2 = Borrow.borrow_final <t> {_8.current} {Borrow.get_id _8}
+          (fun (_ret':borrowed t) ->  [ &_0 <- _ret' ]  [ &_8 <- { _8 with current = _0.final ; } ] s3)
+      | s3 = -{inv'1 _0.final}- s4
+      | s4 = {[@expl:type invariant] inv'2 _8} s5
+      | s5 = -{resolve'0 _8}- s6
+      | s6 = bb5 ]
       
     | bb5 = s0 [ s0 = {[@expl:type invariant] inv'4 x} s1 | s1 = -{resolve'2 x}- s2 | s2 = return' {_0} ]  ]
     )
@@ -693,8 +693,8 @@ module FinalBorrows_Branching
       [ s0 = Borrow.borrow_final <int32> {r1.current} {Borrow.get_id r1}
           (fun (_ret':borrowed int32) ->  [ &r21 <- _ret' ]  [ &r1 <- { r1 with current = r21.final ; } ] s1)
       | s1 = -{resolve'0 r21}- s2
-      | s2 =  [ &y <- r21.current ] s3
-      | s3 = -{resolve'0 r1}- s4
+      | s2 = -{resolve'0 r1}- s3
+      | s3 =  [ &y <- r21.current ] s4
       | s4 = bb3 ]
       
     | bb3 = s0 [ s0 =  [ &_0 <- y ] s1 | s1 = return' {_0} ]  ]
@@ -849,8 +849,6 @@ module FinalBorrows_BoxDeref
   
   let%span sfinal_borrows2 = "../final_borrows.rs" 94 34 94 35
   
-  let%span span3 = "../../../../../creusot-contracts/src/resolve.rs" 35 8 35 31
-  
   predicate invariant'1 (self : t)
   
   predicate inv'1 (_x : t)
@@ -865,20 +863,10 @@ module FinalBorrows_BoxDeref
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'1 (self : t)
-  
-  predicate resolve'0 (self : t) =
-    [%#span3] resolve'1 self
-  
   let rec box_deref (x:t) (return'  (ret:t))= {[%#sfinal_borrows0] inv'0 x}
     (! bb0
     [ bb0 = bb1
-    | bb1 = s0
-      [ s0 =  [ &_0 <- x ] (any [ any_ (_any:t)-> (!  [ &x <- _any ] s1) ] )
-      | s1 = {[@expl:type invariant] inv'0 x} s2
-      | s2 = -{resolve'0 x}- s3
-      | s3 = bb2 ]
-      
+    | bb1 = s0 [ s0 =  [ &_0 <- x ] (any [ any_ (_any:t)-> (!  [ &x <- _any ] s1) ] ) | s1 = bb2 ] 
     | bb2 = return' {_0} ]
     ) [ & _0 : t = any_l () | & x : t = x ] 
     [ return' (result:t)-> {[@expl:postcondition] [%#sfinal_borrows2] inv'1 result}
@@ -1002,9 +990,9 @@ module FinalBorrows_BoxReborrowIndirect
       | s3 = -{inv'0 borrow.final}- s4
       | s4 = {[@expl:type invariant] inv'1 _4} s5
       | s5 = -{resolve'0 _4}- s6
-      | s6 =  [ &_0 <- borrow.current ] s7
-      | s7 = {[@expl:type invariant] inv'1 borrow} s8
-      | s8 = -{resolve'0 borrow}- s9
+      | s6 = {[@expl:type invariant] inv'1 borrow} s7
+      | s7 = -{resolve'0 borrow}- s8
+      | s8 =  [ &_0 <- borrow.current ] s9
       | s9 = {[@expl:type invariant] inv'2 x} s10
       | s10 = -{resolve'1 x}- s11
       | s11 = return' {_0} ]
@@ -1052,8 +1040,8 @@ module FinalBorrows_BoxReborrowInStruct
       | s1 = Borrow.borrow_final <int32> {_5.current} {Borrow.get_id _5}
           (fun (_ret':borrowed int32) ->  [ &borrow <- _ret' ]  [ &_5 <- { _5 with current = borrow.final ; } ] s2)
       | s2 = -{resolve'0 _5}- s3
-      | s3 =  [ &_0 <- borrow.current ] s4
-      | s4 = -{resolve'0 borrow}- s5
+      | s3 = -{resolve'0 borrow}- s4
+      | s4 =  [ &_0 <- borrow.current ] s5
       | s5 = -{resolve'1 x}- s6
       | s6 = return' {_0} ]
        ]
@@ -1124,9 +1112,11 @@ module FinalBorrows_BorrowInBox
       | s7 = -{resolve'0 _4}- s8
       | s8 = {[@expl:type invariant] inv'1 _2} s9
       | s9 = -{resolve'0 _2}- s10
-      | s10 = bb1 ]
+      | s10 = {[@expl:type invariant] inv'2 x} s11
+      | s11 = -{resolve'1 x}- s12
+      | s12 = bb1 ]
       
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'2 x} s1 | s1 = -{resolve'1 x}- s2 | s2 = return' {_0} ]  ]
+    | bb1 = return' {_0} ]
     )
     [ & _0 : borrowed t = any_l ()
     | & x : borrowed t = x
@@ -1186,8 +1176,8 @@ module FinalBorrows_BorrowInBoxTuple1
       | s1 = Borrow.borrow_final <int32> {_5.current} {Borrow.get_id _5}
           (fun (_ret':borrowed int32) ->  [ &borrow <- _ret' ]  [ &_5 <- { _5 with current = borrow.final ; } ] s2)
       | s2 = -{resolve'0 _5}- s3
-      | s3 =  [ &_0 <- borrow.current ] s4
-      | s4 = -{resolve'0 borrow}- s5
+      | s3 = -{resolve'0 borrow}- s4
+      | s4 =  [ &_0 <- borrow.current ] s5
       | s5 = -{resolve'1 x}- s6
       | s6 = bb2 ]
       
@@ -1250,8 +1240,8 @@ module FinalBorrows_BorrowInBoxTuple2
       | s1 = Borrow.borrow_final <int32> {_5.current} {Borrow.get_id _5}
           (fun (_ret':borrowed int32) ->  [ &borrow <- _ret' ]  [ &_5 <- { _5 with current = borrow.final ; } ] s2)
       | s2 = -{resolve'0 _5}- s3
-      | s3 =  [ &_0 <- borrow.current ] s4
-      | s4 = -{resolve'0 borrow}- s5
+      | s3 = -{resolve'0 borrow}- s4
+      | s4 =  [ &_0 <- borrow.current ] s5
       | s5 = -{resolve'1 x}- s6
       | s6 = bb2 ]
       
@@ -1277,12 +1267,6 @@ module FinalBorrows_SharedBorrowNoGen
   
   use prelude.prelude.Borrow
   
-  predicate invariant'2 (self : borrowed t)
-  
-  predicate inv'2 (_x : borrowed t)
-  
-  axiom inv'2 : forall x : borrowed t . inv'2 x = true
-  
   predicate invariant'1 (self : borrowed t)
   
   predicate inv'1 (_x : borrowed t)
@@ -1297,8 +1281,6 @@ module FinalBorrows_SharedBorrowNoGen
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'1 (self : borrowed t)
-  
   predicate resolve'0 (self : borrowed t) =
     [%#span2] self.final = self.current
   
@@ -1311,12 +1293,10 @@ module FinalBorrows_SharedBorrowNoGen
       | s2 = {[@expl:type invariant] inv'1 b1} s3
       | s3 = -{resolve'0 b1}- s4
       | s4 =  [ &_shared <- bor ] s5
-      | s5 = {[@expl:type invariant] inv'2 _shared} s6
-      | s6 = -{resolve'1 _shared}- s7
-      | s7 = {[@expl:type invariant] inv'1 bor} s8
-      | s8 = -{resolve'0 bor}- s9
-      | s9 = {[@expl:assertion] [%#sfinal_borrows0] b1 = bor} s10
-      | s10 = return' {_0} ]
+      | s5 = {[@expl:type invariant] inv'1 bor} s6
+      | s6 = -{resolve'0 bor}- s7
+      | s7 = {[@expl:assertion] [%#sfinal_borrows0] b1 = bor} s8
+      | s8 = return' {_0} ]
        ]
     )
     [ & _0 : () = any_l ()

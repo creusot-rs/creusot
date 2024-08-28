@@ -453,10 +453,10 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
     ) -> why3::exp::Pattern {
         use why3::exp::Pattern as Pat;
         match pat {
-            Pattern::Constructor { adt, variant: _, fields, substs } => {
+            Pattern::Constructor { variant, fields, substs } => {
                 let fields =
                     fields.into_iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect();
-                Pat::ConsP(self.names.borrow_mut().constructor(*adt, substs), fields)
+                Pat::ConsP(self.names.borrow_mut().constructor(*variant, substs), fields)
             }
             Pattern::Wildcard => Pat::Wildcard,
             Pattern::Binder(name) => {

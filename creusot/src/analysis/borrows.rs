@@ -1,11 +1,12 @@
-use std::{fmt, rc::Rc};
-
-use dataflow::fmt::DebugWithContext;
 use rustc_borrowck::{
     borrow_set::BorrowSet,
-    consumers::{BorrowIndex, PlaceConflictBias, PlaceExt},
+    consumers::{
+        calculate_borrows_out_of_scope_at_location, BorrowIndex, PlaceConflictBias, PlaceExt,
+        RegionInferenceContext,
+    },
 };
 use rustc_data_structures::fx::FxIndexMap;
+use std::fmt;
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
@@ -15,22 +16,33 @@ use rustc_middle::{
     mir::{self, Body, CallReturnPlaces, Location, Place, TerminatorEdges},
     ty::TyCtxt,
 };
-use rustc_mir_dataflow::{self as dataflow, GenKill};
+use rustc_mir_dataflow::{fmt::DebugWithContext, AnalysisDomain, GenKill, GenKillAnalysis};
 
-pub struct Borrows<'body, 'tcx> {
+pub struct Borrows<'a, 'mir, 'tcx> {
     tcx: TyCtxt<'tcx>,
-    body: &'body Body<'tcx>,
-    borrow_set: Rc<BorrowSet<'tcx>>,
-    borrows_out_of_scope_at_location: FxIndexMap<Location, Vec<BorrowIndex>>,
+    body: &'mir Body<'tcx>,
+
+    borrow_set: &'a BorrowSet<'tcx>,
+    pub borrows_out_of_scope_at_location: FxIndexMap<Location, Vec<BorrowIndex>>,
 }
 
-impl<'body, 'tcx> Borrows<'body, 'tcx> {
+// This analysis collects the active borrows at each program location.
+// It is mostly identical to rustc's rustc_borrowck::dataflow::Borrow, except
+// for one change:
+//   - Rustc calls `kill_loans_out_of_scope_at_location` in the "before effects",
+//     while we do it at the start of the "primary effects". Our before effects
+//     are no-ops. This is important that before effect be no-ops, because we
+//     want to observe the evolution of the analysis state through instructions.
+
+impl<'a, 'mir, 'tcx> Borrows<'a, 'mir, 'tcx> {
     pub fn new(
         tcx: TyCtxt<'tcx>,
-        body: &'body Body<'tcx>,
-        borrow_set: Rc<BorrowSet<'tcx>>,
-        borrows_out_of_scope_at_location: FxIndexMap<Location, Vec<BorrowIndex>>,
+        body: &'mir Body<'tcx>,
+        regioncx: &RegionInferenceContext<'tcx>,
+        borrow_set: &'a BorrowSet<'tcx>,
     ) -> Self {
+        let borrows_out_of_scope_at_location =
+            calculate_borrows_out_of_scope_at_location(body, regioncx, &*borrow_set);
         Borrows { tcx, body, borrow_set, borrows_out_of_scope_at_location }
     }
 
@@ -101,14 +113,14 @@ impl<'body, 'tcx> Borrows<'body, 'tcx> {
     }
 }
 
-impl<'tcx> dataflow::AnalysisDomain<'tcx> for Borrows<'_, 'tcx> {
+impl<'tcx> AnalysisDomain<'tcx> for Borrows<'_, '_, 'tcx> {
     type Domain = BitSet<BorrowIndex>;
 
     const NAME: &'static str = "borrows";
 
     fn bottom_value(&self, _: &mir::Body<'tcx>) -> Self::Domain {
         // bottom = nothing is reserved or activated yet;
-        BitSet::new_empty(self.borrow_set.len() * 2)
+        BitSet::new_empty(self.borrow_set.len())
     }
 
     fn initialize_start_block(&self, _: &mir::Body<'tcx>, _: &mut Self::Domain) {
@@ -117,15 +129,11 @@ impl<'tcx> dataflow::AnalysisDomain<'tcx> for Borrows<'_, 'tcx> {
     }
 }
 
-impl<'tcx> dataflow::GenKillAnalysis<'tcx> for Borrows<'_, 'tcx> {
+impl<'tcx> GenKillAnalysis<'tcx> for Borrows<'_, '_, 'tcx> {
     type Idx = BorrowIndex;
 
-    fn before_statement_effect(
-        &mut self,
-        _trans: &mut impl GenKill<Self::Idx>,
-        _statement: &mir::Statement<'tcx>,
-        _location: Location,
-    ) {
+    fn domain_size(&self, _: &mir::Body<'tcx>) -> usize {
+        self.borrow_set.len()
     }
 
     fn statement_effect(
@@ -139,23 +147,22 @@ impl<'tcx> dataflow::GenKillAnalysis<'tcx> for Borrows<'_, 'tcx> {
         match &stmt.kind {
             mir::StatementKind::Assign(box (lhs, rhs)) => {
                 if let mir::Rvalue::Ref(_, _, place) = rhs {
-                    if place.ignore_borrow(
+                    if !place.ignore_borrow(
                         self.tcx,
                         self.body,
                         &self.borrow_set.locals_state_at_exit,
                     ) {
-                        return;
-                    }
-                    let index = self
-                        .borrow_set
-                        .location_map
-                        .get_index_of(&location)
-                        .map(BorrowIndex::from)
-                        .unwrap_or_else(|| {
-                            panic!("could not find BorrowIndex for location {:?}", location);
-                        });
+                        let index = self
+                            .borrow_set
+                            .location_map
+                            .get_index_of(&location)
+                            .map(BorrowIndex::from)
+                            .unwrap_or_else(|| {
+                                panic!("could not find BorrowIndex for location {:?}", location);
+                            });
 
-                    trans.gen_(index);
+                        trans.gen_(index);
+                    }
                 }
 
                 // Make sure there are no remaining borrows for variables
@@ -163,7 +170,7 @@ impl<'tcx> dataflow::GenKillAnalysis<'tcx> for Borrows<'_, 'tcx> {
                 self.kill_borrows_on_place(trans, *lhs);
             }
 
-            mir::StatementKind::StorageDead(local) => {
+            mir::StatementKind::StorageDead(local) | mir::StatementKind::StorageLive(local) => {
                 // Make sure there are no remaining borrows for locals that
                 // are gone out of scope.
                 self.kill_borrows_on_place(trans, Place::from(*local));
@@ -172,7 +179,6 @@ impl<'tcx> dataflow::GenKillAnalysis<'tcx> for Borrows<'_, 'tcx> {
             mir::StatementKind::FakeRead(..)
             | mir::StatementKind::SetDiscriminant { .. }
             | mir::StatementKind::Deinit(..)
-            | mir::StatementKind::StorageLive(..)
             | mir::StatementKind::Retag { .. }
             | mir::StatementKind::PlaceMention(..)
             | mir::StatementKind::AscribeUserType(..)
@@ -181,14 +187,6 @@ impl<'tcx> dataflow::GenKillAnalysis<'tcx> for Borrows<'_, 'tcx> {
             | mir::StatementKind::ConstEvalCounter
             | mir::StatementKind::Nop => {}
         }
-    }
-
-    fn before_terminator_effect(
-        &mut self,
-        _trans: &mut Self::Domain,
-        _terminator: &mir::Terminator<'tcx>,
-        _location: Location,
-    ) {
     }
 
     fn terminator_effect<'mir>(
@@ -218,14 +216,10 @@ impl<'tcx> dataflow::GenKillAnalysis<'tcx> for Borrows<'_, 'tcx> {
         _return_places: CallReturnPlaces<'_, 'tcx>,
     ) {
     }
-
-    fn domain_size(&self, _: &mir::Body<'tcx>) -> usize {
-        self.borrow_set.len() * 2
-    }
 }
 
-impl DebugWithContext<Borrows<'_, '_>> for BorrowIndex {
-    fn fmt_with(&self, ctxt: &Borrows<'_, '_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl DebugWithContext<Borrows<'_, '_, '_>> for BorrowIndex {
+    fn fmt_with(&self, ctxt: &Borrows<'_, '_, '_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", ctxt.location(*self))
     }
 }

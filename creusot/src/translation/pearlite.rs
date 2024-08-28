@@ -13,8 +13,7 @@ use std::{
 
 use crate::{
     error::{CreusotResult, Error, InternalError},
-    projection_vec::{visit_projections, visit_projections_mut, ProjectionVec},
-    translation::TranslationCtx,
+    translation::{projection_vec::*, TranslationCtx},
     util::{self, is_snap_ty},
 };
 use itertools::Itertools;
@@ -251,12 +250,7 @@ pub enum Literal<'tcx> {
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum Pattern<'tcx> {
-    Constructor {
-        adt: DefId,
-        substs: GenericArgsRef<'tcx>,
-        variant: VariantIdx,
-        fields: Vec<Pattern<'tcx>>,
-    },
+    Constructor { variant: DefId, substs: GenericArgsRef<'tcx>, fields: Vec<Pattern<'tcx>> },
     Tuple(Vec<Pattern<'tcx>>),
     Wildcard,
     Binder(Symbol),
@@ -764,9 +758,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     .collect();
 
                 Ok(Pattern::Constructor {
-                    adt: adt_def.variants()[*variant_index].def_id,
+                    variant: adt_def.variants()[*variant_index].def_id,
                     substs: args,
-                    variant: *variant_index,
                     fields,
                 })
             }
@@ -795,9 +788,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         .map(|el| el.reduce(|_, a| a).1)
                         .collect();
                     Ok(Pattern::Constructor {
-                        adt: adt_def.variants()[0usize.into()].def_id,
+                        variant: adt_def.variants()[0usize.into()].def_id,
                         substs,
-                        variant: 0u32.into(),
                         fields,
                     })
                 }

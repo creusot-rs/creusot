@@ -299,7 +299,7 @@ impl<'tcx> InvariantElaborator<'tcx> {
 
         let mut arms: Vec<(_, Term<'tcx>)> = vec![];
 
-        for (var_idx, var_def) in adt_def.variants().iter().enumerate() {
+        for var_def in adt_def.variants() {
             let tuple_var = var_def.ctor.is_some();
 
             let mut pats: Vec<Pattern<'tcx>> = vec![];
@@ -320,12 +320,7 @@ impl<'tcx> InvariantElaborator<'tcx> {
             }
 
             arms.push((
-                Pattern::Constructor {
-                    adt: var_def.def_id,
-                    substs: subst,
-                    variant: var_idx.into(),
-                    fields: pats,
-                },
+                Pattern::Constructor { variant: var_def.def_id, substs: subst, fields: pats },
                 exp,
             ));
         }

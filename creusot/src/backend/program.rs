@@ -4,7 +4,7 @@ use super::{
     is_trusted_function,
     place::rplace_to_expr,
     signature::{sig_to_why3, signature_of},
-    term::lower_pure,
+    term::{lower_pat, lower_pure},
     ty::{destructor, int_ty},
     CloneSummary, GraphDepth, NameSupply, Namer, TransId, Why3Generator,
 };
@@ -34,7 +34,7 @@ use rustc_type_ir::{FloatTy, IntTy, UintTy};
 use why3::{
     coma::{self, Arg, Defn, Expr, Param, Term},
     declaration::{Attribute, Contract, Decl, Module, Signature},
-    exp::{Binder, Constant, Exp},
+    exp::{Binder, Constant, Exp, Pattern},
     ty::Type,
     Ident, QName,
 };
@@ -1099,15 +1099,25 @@ impl<'tcx> Statement<'tcx> {
                 istmts.extend(assign);
                 istmts
             }
-            Statement::Resolve(id, subst, pl) => {
-                lower.ctx.translate(id);
+            Statement::Resolve { did, subst, pl, pat } => {
+                lower.ctx.translate(did);
                 let mut istmts = Vec::new();
 
-                let rp = Exp::qvar(lower.names.value(id, subst));
+                let rp = Exp::qvar(lower.names.value(did, subst));
+                let loc = pl.local;
 
-                let assume = rp.app_to(pl.as_rplace(lower, &mut istmts));
+                let mut exp = rp.app_to(pl.as_rplace(lower, &mut istmts));
+                if let Some(pat) = pat {
+                    exp = Exp::Match(
+                        Box::new(Exp::var(util::ident_of(loc))),
+                        vec![
+                            (lower_pat(lower.ctx, lower.names, &pat), exp),
+                            (Pattern::Wildcard, Exp::mk_true()),
+                        ],
+                    )
+                }
 
-                istmts.extend([IntermediateStmt::Assume(assume)]);
+                istmts.extend([IntermediateStmt::Assume(exp)]);
                 istmts
             }
             Statement::Assertion { cond, msg } => {
@@ -1129,15 +1139,24 @@ impl<'tcx> Statement<'tcx> {
                 istmts.extend(vec![IntermediateStmt::Assume(inv_fun.app_to(arg))]);
                 istmts
             }
-            Statement::AssertTyInv(pl) => {
-                let inv_fun = Exp::qvar(lower.names.ty_inv(pl.ty(lower.ctx.tcx, lower.locals)));
+            Statement::AssertTyInv { pl, pat } => {
                 let mut istmts = Vec::new();
 
-                let arg = pl.as_rplace(lower, &mut istmts);
-                let exp = Exp::Attr(
-                    Attribute::Attr(format!("expl:type invariant")),
-                    Box::new(inv_fun.app_to(arg)),
-                );
+                let inv_fun = Exp::qvar(lower.names.ty_inv(pl.ty(lower.ctx.tcx, lower.locals)));
+                let loc = pl.local;
+
+                let mut exp = inv_fun.app_to(pl.as_rplace(lower, &mut istmts));
+                if let Some(pat) = pat {
+                    exp = Exp::Match(
+                        Box::new(Exp::var(util::ident_of(loc))),
+                        vec![
+                            (lower_pat(lower.ctx, lower.names, &pat), exp),
+                            (Pattern::Wildcard, Exp::mk_true()),
+                        ],
+                    )
+                }
+
+                let exp = Exp::Attr(Attribute::Attr(format!("expl:type invariant")), Box::new(exp));
 
                 istmts.extend(vec![IntermediateStmt::Assert(exp)]);
                 istmts

@@ -15,6 +15,57 @@ module InplaceListReversal_List_Type
     | bad (field_0:('t, t_list 't))-> {C_Cons field_0 <> input} {false} any ]
     
 end
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.prelude.Opaque
+  
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
+    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
+    | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
+    
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
+    [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
+    
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type as PhantomData'0
+  
+  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  
+  type t_unique 't =
+    | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
+    [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+      = input}
+      (! ret {pointer} {_marker})
+    | bad (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+      <> input}
+      {false}
+      any ]
+    
+end
+module Alloc_Boxed_Box_Type
+  use Core_Ptr_Unique_Unique_Type as Unique'0
+  
+  type t_box 't 'a =
+    | C_Box (Unique'0.t_unique 't) 'a
+  
+  function any_l (_ : 'b) : 'a
+end
 module InplaceListReversal_Rev
   type t
   
@@ -32,17 +83,21 @@ module InplaceListReversal_Rev
   
   let%span span6 = "../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
   
-  let%span span7 = "../inplace_list_reversal.rs" 17 4 20 5
+  let%span span7 = "../../../../creusot-contracts/src/resolve.rs" 17 8 17 60
   
-  let%span span8 = "" 0 0 0 0
+  let%span span8 = "../../../../creusot-contracts/src/resolve.rs" 35 8 35 31
   
-  let%span span9 = "" 0 0 0 0
+  let%span span9 = "../inplace_list_reversal.rs" 17 4 20 5
   
-  let%span span10 = "../../../../creusot-contracts/src/std/mem.rs" 8 22 8 34
+  let%span span10 = "" 0 0 0 0
   
-  let%span span11 = "../../../../creusot-contracts/src/std/mem.rs" 9 22 9 37
+  let%span span11 = "" 0 0 0 0
   
-  let%span span12 = "" 0 0 0 0
+  let%span span12 = "../../../../creusot-contracts/src/std/mem.rs" 8 22 8 34
+  
+  let%span span13 = "../../../../creusot-contracts/src/std/mem.rs" 9 22 9 37
+  
+  let%span span14 = "" 0 0 0 0
   
   use InplaceListReversal_List_Type as List'0
   
@@ -55,21 +110,21 @@ module InplaceListReversal_Rev
   
   axiom inv'2 : forall x : borrowed (List'0.t_list t) . inv'2 x = true
   
-  predicate invariant'1 (self : List'0.t_list t) =
+  predicate invariant'1 (self : (t, List'0.t_list t)) =
     [%#span4] true
   
-  predicate inv'1 (_x : List'0.t_list t)
+  predicate inv'1 (_x : (t, List'0.t_list t))
   
-  axiom inv'1 : forall x : List'0.t_list t . inv'1 x = true
+  axiom inv'1 : forall x : (t, List'0.t_list t) . inv'1 x = true
+  
+  predicate invariant'0 (self : List'0.t_list t) =
+    [%#span4] true
+  
+  predicate inv'0 (_x : List'0.t_list t)
+  
+  axiom inv'0 : forall x : List'0.t_list t . inv'0 x = true
   
   use prelude.prelude.Snapshot
-  
-  predicate invariant'0 (self : Snapshot.snap_ty (borrowed (List'0.t_list t))) =
-    [%#span4] true
-  
-  predicate inv'0 (_x : Snapshot.snap_ty (borrowed (List'0.t_list t)))
-  
-  axiom inv'0 : forall x : Snapshot.snap_ty (borrowed (List'0.t_list t)) . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
@@ -79,27 +134,32 @@ module InplaceListReversal_Rev
   predicate resolve'1 (self : List'0.t_list t) =
     [%#span6] true
   
+  predicate resolve'4 (self : t)
+  
+  predicate resolve'3 (self : (t, List'0.t_list t)) =
+    [%#span7] resolve'4 (let (a, _) = self in a) /\ resolve'1 (let (_, a) = self in a)
+  
+  predicate resolve'0 (self : (t, List'0.t_list t)) =
+    [%#span8] resolve'3 self
+  
   use prelude.prelude.Snapshot
   
   function rev_append'0 [#"../inplace_list_reversal.rs" 16 0 16 55] (n : List'0.t_list t) (o : List'0.t_list t) : List'0.t_list t
     
    =
-    [%#span7] match n with
+    [%#span9] match n with
       | List'0.C_Nil -> o
       | List'0.C_Cons (hd, tl) -> rev_append'0 tl (List'0.C_Cons (hd, o))
       end
   
-  let rec replace'0 (dest:borrowed (List'0.t_list t)) (src:List'0.t_list t) (return'  (ret:List'0.t_list t))= {[@expl:precondition] [%#span9] inv'1 src}
-    {[@expl:precondition] [%#span8] inv'2 dest}
+  let rec replace'0 (dest:borrowed (List'0.t_list t)) (src:List'0.t_list t) (return'  (ret:List'0.t_list t))= {[@expl:precondition] [%#span11] inv'0 src}
+    {[@expl:precondition] [%#span10] inv'2 dest}
     any
-    [ return' (result:List'0.t_list t)-> {[%#span12] inv'1 result}
-      {[%#span11] result = dest.current}
-      {[%#span10] dest.final = src}
+    [ return' (result:List'0.t_list t)-> {[%#span14] inv'0 result}
+      {[%#span13] result = dest.current}
+      {[%#span12] dest.final = src}
       (! return' {result}) ]
     
-  
-  predicate resolve'0 (self : Snapshot.snap_ty (borrowed (List'0.t_list t))) =
-    [%#span6] true
   
   use prelude.prelude.Snapshot
   
@@ -107,15 +167,13 @@ module InplaceListReversal_Rev
     (! bb0
     [ bb0 = s0 [ s0 =  [ &old_l <- [%#sinplace_list_reversal0] Snapshot.new l ] s1 | s1 = bb1 ] 
     | bb1 = s0
-      [ s0 = {[@expl:type invariant] inv'0 old_l} s1
-      | s1 = -{resolve'0 old_l}- s2
-      | s2 =  [ &prev <- List'0.C_Nil ] s3
-      | s3 = Borrow.borrow_final <List'0.t_list t> {l.current} {Borrow.get_id l}
-          (fun (_ret':borrowed (List'0.t_list t)) ->  [ &_7 <- _ret' ]  [ &l <- { l with current = _7.final ; } ] s4)
-      | s4 = -{inv'1 _7.final}- s5
-      | s5 =  [ &_8 <- List'0.C_Nil ] s6
-      | s6 = replace'0 {_7} {_8} (fun (_ret':List'0.t_list t) ->  [ &head <- _ret' ] s7)
-      | s7 = bb2 ]
+      [ s0 =  [ &prev <- List'0.C_Nil ] s1
+      | s1 = Borrow.borrow_final <List'0.t_list t> {l.current} {Borrow.get_id l}
+          (fun (_ret':borrowed (List'0.t_list t)) ->  [ &_7 <- _ret' ]  [ &l <- { l with current = _7.final ; } ] s2)
+      | s2 = -{inv'0 _7.final}- s3
+      | s3 =  [ &_8 <- List'0.C_Nil ] s4
+      | s4 = replace'0 {_7} {_8} (fun (_ret':List'0.t_list t) ->  [ &head <- _ret' ] s5)
+      | s5 = bb2 ]
       
     | bb2 = bb3
     | bb3 = bb4
@@ -135,11 +193,9 @@ module InplaceListReversal_Rev
                 [ any_ (_any:(t, List'0.t_list t))-> (! List'0.cons <t> {head}
                     (fun (l_0'0:(t, List'0.t_list t)) ->  [ &head <- List'0.C_Cons _any ] s1)) ]
                 ))
-          | s1 = {[@expl:type invariant] inv'1 head} s2
-          | s2 = -{resolve'1 head}- s3
-          | s3 =  [ &next <- let (_, r'0) = curr in r'0 ] 
-            (any [ any_ (_any:List'0.t_list t)-> (!  [ &curr <- let (l'1, _) = curr in (l'1, _any) ] s4) ] )
-          | s4 = bb8 ]
+          | s1 =  [ &next <- let (_, r'0) = curr in r'0 ] 
+            (any [ any_ (_any:List'0.t_list t)-> (!  [ &curr <- let (l'1, _) = curr in (l'1, _any) ] s2) ] )
+          | s2 = bb8 ]
           
         | bb8 = s0
           [ s0 =  [ &curr <- let (l'1, _) = curr in (l'1, prev) ] 
@@ -163,11 +219,27 @@ module InplaceListReversal_Rev
         | bb20 = bb4 ]
          ]
       
-    | bb19 = s0 [ s0 = {[@expl:type invariant] inv'1 head} s1 | s1 = -{resolve'1 head}- s2 | s2 = bb21 ] 
+    | bb19 = s0
+      [ s0 = List'0.cons <t> {head}
+          (fun (r0'0:(t, List'0.t_list t)) ->
+            {[@expl:type invariant] match head with
+              | List'0.C_Cons _ -> inv'1 r0'0
+              | _ -> true
+              end}
+            s1)
+      | s1 = List'0.cons <t> {head}
+          (fun (r0'1:(t, List'0.t_list t)) ->
+            -{match head with
+              | List'0.C_Cons _ -> resolve'0 r0'1
+              | _ -> true
+              end}-
+            s2)
+      | s2 = bb21 ]
+      
     | bb21 = s0
-      [ s0 =  [ &l <- { l with current = prev ; } ] (any [ any_ (_any:List'0.t_list t)-> (!  [ &prev <- _any ] s1) ] )
-      | s1 = {[@expl:type invariant] inv'1 l.current} s2
-      | s2 = -{resolve'1 l.current}- s3
+      [ s0 = {[@expl:type invariant] inv'0 l.current} s1
+      | s1 = -{resolve'1 l.current}- s2
+      | s2 =  [ &l <- { l with current = prev ; } ] (any [ any_ (_any:List'0.t_list t)-> (!  [ &prev <- _any ] s3) ] )
       | s3 = {[@expl:type invariant] inv'2 l} s4
       | s4 = -{resolve'2 l}- s5
       | s5 = bb23 ]

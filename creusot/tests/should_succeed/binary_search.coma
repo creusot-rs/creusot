@@ -85,24 +85,15 @@ module BinarySearch_Impl0_Index
   
   let%span span9 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span10 = "../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  let%span span10 = "../binary_search.rs" 31 8 40 9
   
-  let%span span11 = "../binary_search.rs" 31 8 40 9
+  let%span span11 = "../binary_search.rs" 22 17 22 21
   
-  let%span span12 = "../binary_search.rs" 22 17 22 21
+  let%span span12 = "../binary_search.rs" 21 14 21 25
   
-  let%span span13 = "../binary_search.rs" 21 14 21 25
-  
-  let%span span14 = "../binary_search.rs" 23 8 26 9
+  let%span span13 = "../binary_search.rs" 23 8 26 9
   
   use BinarySearch_List_Type as List'0
-  
-  predicate invariant'3 (self : List'0.t_list t) =
-    [%#span9] true
-  
-  predicate inv'3 (_x : List'0.t_list t)
-  
-  axiom inv'3 : forall x : List'0.t_list t . inv'3 x = true
   
   predicate invariant'2 (self : List'0.t_list t) =
     [%#span9] true
@@ -130,45 +121,31 @@ module BinarySearch_Impl0_Index
   
   use prelude.prelude.Borrow
   
-  predicate resolve'2 (self : List'0.t_list t) =
-    [%#span10] true
-  
-  predicate resolve'1 (self : t)
-  
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
   function get'0 [#"../binary_search.rs" 30 4 30 38] (self : List'0.t_list t) (ix : int) : Option'0.t_option t =
-    [%#span11] match self with
+    [%#span10] match self with
       | List'0.C_Cons t ls -> if ix = 0 then Option'0.C_Some t else get'0 ls (ix - 1)
       | List'0.C_Nil -> Option'0.C_None
       end
   
   function len_logic'0 [#"../binary_search.rs" 22 4 22 29] (self : List'0.t_list t) : int =
-    [%#span14] match self with
+    [%#span13] match self with
       | List'0.C_Cons _ ls -> 1 + len_logic'0 ls
       | List'0.C_Nil -> 0
       end
   
-  axiom len_logic'0_spec : forall self : List'0.t_list t . ([%#span12] inv'3 self)
-   -> ([%#span13] len_logic'0 self >= 0)
+  axiom len_logic'0_spec : forall self : List'0.t_list t . ([%#span11] inv'2 self)
+   -> ([%#span12] len_logic'0 self >= 0)
   
   use prelude.prelude.UIntSize
-  
-  predicate resolve'0 (self : List'0.t_list t) =
-    [%#span10] true
   
   let rec index (self:List'0.t_list t) (ix:usize) (return'  (ret:t))= {[%#sbinary_search6] inv'0 self}
     {[%#sbinary_search5] UIntSize.to_int ix < len_logic'0 self}
     (! bb0
-    [ bb0 = s0
-      [ s0 =  [ &orig_ix <- ix ] s1
-      | s1 =  [ &l <- self ] s2
-      | s2 = {[@expl:type invariant] inv'0 self} s3
-      | s3 = -{resolve'0 self}- s4
-      | s4 = bb1 ]
-      
+    [ bb0 = s0 [ s0 =  [ &orig_ix <- ix ] s1 | s1 =  [ &l <- self ] s2 | s2 = bb1 ] 
     | bb1 = bb1
       [ bb1 = {[@expl:loop invariant] [%#sbinary_search1] get'0 self (UIntSize.to_int orig_ix)
         = get'0 l (UIntSize.to_int ix)}
@@ -181,34 +158,19 @@ module BinarySearch_Impl0_Index
         | bb4 = s0
           [ s0 = List'0.cons <t> {l} (fun (r0'0:t) (r1'0:List'0.t_list t) ->  [ &t <- r0'0 ] s1)
           | s1 = List'0.cons <t> {l} (fun (r0'1:t) (r1'1:List'0.t_list t) ->  [ &ls <- r1'1 ] s2)
-          | s2 = {[@expl:type invariant] inv'0 l} s3
-          | s3 = -{resolve'0 l}- s4
-          | s4 = UIntSize.gt {ix} {[%#sbinary_search2] (0 : usize)} (fun (_ret':bool) ->  [ &_14 <- _ret' ] s5)
-          | s5 = any [ br0 -> {_14 = false} (! bb6) | br1 -> {_14} (! bb5) ]  ]
+          | s2 = UIntSize.gt {ix} {[%#sbinary_search2] (0 : usize)} (fun (_ret':bool) ->  [ &_14 <- _ret' ] s3)
+          | s3 = any [ br0 -> {_14 = false} (! bb6) | br1 -> {_14} (! bb5) ]  ]
           
         | bb5 = s0
-          [ s0 = {[@expl:type invariant] inv'1 t} s1
-          | s1 = -{resolve'1 t}- s2
-          | s2 =  [ &_17 <- ls ] s3
-          | s3 = {[@expl:type invariant] inv'2 ls} s4
-          | s4 = -{resolve'2 ls}- s5
-          | s5 = {[@expl:type invariant] inv'2 _17} s6
-          | s6 = -{resolve'2 _17}- s7
-          | s7 =  [ &l <- _17 ] s8
-          | s8 = UIntSize.sub {ix} {[%#sbinary_search3] (1 : usize)} (fun (_ret':usize) ->  [ &ix <- _ret' ] s9)
-          | s9 = bb1 ]
+          [ s0 =  [ &_17 <- ls ] s1
+          | s1 =  [ &l <- _17 ] s2
+          | s2 = UIntSize.sub {ix} {[%#sbinary_search3] (1 : usize)} (fun (_ret':usize) ->  [ &ix <- _ret' ] s3)
+          | s3 = bb1 ]
            ]
          ]
       
-    | bb7 = s0 [ s0 = {[@expl:type invariant] inv'0 l} s1 | s1 = -{resolve'0 l}- s2 | s2 = {[%#spanic4] false} any ] 
-    | bb6 = s0
-      [ s0 = {[@expl:type invariant] inv'2 ls} s1
-      | s1 = -{resolve'2 ls}- s2
-      | s2 =  [ &_0 <- t ] s3
-      | s3 = {[@expl:type invariant] inv'1 t} s4
-      | s4 = -{resolve'1 t}- s5
-      | s5 = return' {_0} ]
-       ]
+    | bb7 = {[%#spanic4] false} any
+    | bb6 = s0 [ s0 =  [ &_0 <- t ] s1 | s1 = return' {_0} ]  ]
     )
     [ & _0 : t = any_l ()
     | & self : List'0.t_list t = self
@@ -244,22 +206,13 @@ module BinarySearch_Impl0_Len
   
   let%span span7 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span8 = "../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  let%span span8 = "../binary_search.rs" 22 17 22 21
   
-  let%span span9 = "../binary_search.rs" 22 17 22 21
+  let%span span9 = "../binary_search.rs" 21 14 21 25
   
-  let%span span10 = "../binary_search.rs" 21 14 21 25
-  
-  let%span span11 = "../binary_search.rs" 23 8 26 9
+  let%span span10 = "../binary_search.rs" 23 8 26 9
   
   use BinarySearch_List_Type as List'0
-  
-  predicate invariant'2 (self : List'0.t_list t) =
-    [%#span7] true
-  
-  predicate inv'2 (_x : List'0.t_list t)
-  
-  axiom inv'2 : forall x : List'0.t_list t . inv'2 x = true
   
   predicate invariant'1 (self : List'0.t_list t) =
     [%#span7] true
@@ -279,36 +232,24 @@ module BinarySearch_Impl0_Len
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'1 (self : List'0.t_list t) =
-    [%#span8] true
-  
   use prelude.prelude.Int
   
   function len_logic'0 [#"../binary_search.rs" 22 4 22 29] (self : List'0.t_list t) : int =
-    [%#span11] match self with
+    [%#span10] match self with
       | List'0.C_Cons _ ls -> 1 + len_logic'0 ls
       | List'0.C_Nil -> 0
       end
   
-  axiom len_logic'0_spec : forall self : List'0.t_list t . ([%#span9] inv'2 self)  -> ([%#span10] len_logic'0 self >= 0)
+  axiom len_logic'0_spec : forall self : List'0.t_list t . ([%#span8] inv'1 self)  -> ([%#span9] len_logic'0 self >= 0)
   
   use prelude.prelude.UIntSize
-  
-  predicate resolve'0 (self : List'0.t_list t) =
-    [%#span8] true
   
   use prelude.prelude.UIntSize
   
   let rec len (self:List'0.t_list t) (return'  (ret:usize))= {[%#sbinary_search4] inv'0 self}
     {[%#sbinary_search3] len_logic'0 self <= 1000000}
     (! bb0
-    [ bb0 = s0
-      [ s0 =  [ &len <- [%#sbinary_search0] (0 : usize) ] s1
-      | s1 =  [ &l <- self ] s2
-      | s2 = {[@expl:type invariant] inv'0 self} s3
-      | s3 = -{resolve'0 self}- s4
-      | s4 = bb1 ]
-      
+    [ bb0 = s0 [ s0 =  [ &len <- [%#sbinary_search0] (0 : usize) ] s1 | s1 =  [ &l <- self ] s2 | s2 = bb1 ] 
     | bb1 = bb1
       [ bb1 = {[@expl:loop invariant] [%#sbinary_search1] UIntSize.to_int len + len_logic'0 l = len_logic'0 self}
         (! s0) [ s0 = bb2 ] 
@@ -318,22 +259,13 @@ module BinarySearch_Impl0_Len
         | bb3 = bb4
         | bb4 = s0
           [ s0 = List'0.cons <t> {l} (fun (r0'0:t) (r1'0:List'0.t_list t) ->  [ &ls <- r1'0 ] s1)
-          | s1 = {[@expl:type invariant] inv'0 l} s2
-          | s2 = -{resolve'0 l}- s3
-          | s3 = UIntSize.add {len} {[%#sbinary_search2] (1 : usize)} (fun (_ret':usize) ->  [ &len <- _ret' ] s4)
-          | s4 = {[@expl:type invariant] inv'1 ls} s5
-          | s5 = -{resolve'1 ls}- s6
-          | s6 =  [ &l <- ls ] s7
-          | s7 = bb1 ]
+          | s1 = UIntSize.add {len} {[%#sbinary_search2] (1 : usize)} (fun (_ret':usize) ->  [ &len <- _ret' ] s2)
+          | s2 =  [ &l <- ls ] s3
+          | s3 = bb1 ]
            ]
          ]
       
-    | bb5 = s0
-      [ s0 = {[@expl:type invariant] inv'0 l} s1
-      | s1 = -{resolve'0 l}- s2
-      | s2 =  [ &_0 <- len ] s3
-      | s3 = return' {_0} ]
-       ]
+    | bb5 = s0 [ s0 =  [ &_0 <- len ] s1 | s1 = return' {_0} ]  ]
     )
     [ & _0 : usize = any_l ()
     | & self : List'0.t_list t = self

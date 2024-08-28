@@ -1,37 +1,38 @@
-use rustc_mir_dataflow::Analysis;
+use rustc_mir_dataflow::{
+    impls::DefinitelyInitializedPlaces, move_paths::MoveData, Analysis, MoveDataParamEnv,
+};
 
 use rustc_middle::{
     mir::{traversal::preorder, Body},
     ty::TyCtxt,
 };
 
-use crate::analysis::{MaybeInitializedLocals, MaybeLiveExceptDrop, MaybeUninitializedLocals};
+use crate::analysis::MaybeLiveExceptDrop;
 
 pub fn debug<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) {
-    let mut init = MaybeInitializedLocals
+    let param_env = tcx.param_env(body.source.def_id());
+    let move_data = MoveData::gather_moves(body, tcx, param_env, |_| true);
+    let mdpe = MoveDataParamEnv { move_data, param_env };
+
+    let mut init = DefinitelyInitializedPlaces::new(body, &mdpe)
         .into_engine(tcx, body)
         .iterate_to_fixpoint()
         .into_results_cursor(body);
 
-    let mut init2 = MaybeInitializedLocals
+    let mut init2 = DefinitelyInitializedPlaces::new(body, &mdpe)
         .into_engine(tcx, body)
         .iterate_to_fixpoint()
         .into_results_cursor(body);
 
-    let mut uninit = MaybeUninitializedLocals
+    let mut live = MaybeLiveExceptDrop::new(body, &mdpe, tcx)
         .into_engine(tcx, body)
         .iterate_to_fixpoint()
         .into_results_cursor(body);
 
-    let mut uninit2 = MaybeUninitializedLocals
+    let mut live2 = MaybeLiveExceptDrop::new(body, &mdpe, tcx)
         .into_engine(tcx, body)
         .iterate_to_fixpoint()
         .into_results_cursor(body);
-
-    let mut live =
-        MaybeLiveExceptDrop.into_engine(tcx, body).iterate_to_fixpoint().into_results_cursor(body);
-    let mut live2 =
-        MaybeLiveExceptDrop.into_engine(tcx, body).iterate_to_fixpoint().into_results_cursor(body);
 
     for (bb, bbd) in preorder(body) {
         if bbd.is_cleanup {
@@ -42,18 +43,14 @@ pub fn debug<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) {
         for statement in &bbd.statements {
             init.seek_before_primary_effect(loc);
             init2.seek_after_primary_effect(loc);
-            uninit.seek_before_primary_effect(loc);
-            uninit2.seek_after_primary_effect(loc);
             live.seek_before_primary_effect(loc);
             live2.seek_after_primary_effect(loc);
 
             println!(
-                "{:<45} uninit={:?} -> {:?} init={:?} -> {:?} live={:?} <- {:?}",
+                "{:<45} init={:?} -> {:?} live={:?} <- {:?}",
                 format!("{:?}", statement),
-                uninit.get().iter().collect::<Vec<_>>(),
-                uninit2.get().iter().collect::<Vec<_>>(),
-                init.get(),
-                init2.get(),
+                init.get().0.iter().collect::<Vec<_>>(),
+                init2.get().0.iter().collect::<Vec<_>>(),
                 live.get().iter().collect::<Vec<_>>(),
                 live2.get().iter().collect::<Vec<_>>(),
             );
@@ -62,18 +59,14 @@ pub fn debug<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) {
 
         init.seek_before_primary_effect(loc);
         init2.seek_after_primary_effect(loc);
-        uninit.seek_before_primary_effect(loc);
-        uninit2.seek_after_primary_effect(loc);
         live.seek_before_primary_effect(loc);
         live2.seek_after_primary_effect(loc);
 
         println!(
-            "{:<45} uninit={:?} -> {:?} init={:?} -> {:?} live={:?} <- {:?}",
+            "{:<45} init={:?} -> {:?} live={:?} <- {:?}",
             format!("{:?}", bbd.terminator().kind),
-            uninit.get().iter().collect::<Vec<_>>(),
-            uninit2.get().iter().collect::<Vec<_>>(),
-            init.get(),
-            init2.get(),
+            init.get().0.iter().collect::<Vec<_>>(),
+            init2.get().0.iter().collect::<Vec<_>>(),
             live.get().iter().collect::<Vec<_>>(),
             live2.get().iter().collect::<Vec<_>>(),
         );
