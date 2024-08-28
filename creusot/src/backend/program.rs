@@ -1,6 +1,7 @@
 use super::{
     clone_map::PreludeModule,
     dependency::ExtendedId,
+    is_trusted_function,
     place::rplace_to_expr,
     signature::{sig_to_why3, signature_of},
     term::lower_pure,
@@ -180,12 +181,14 @@ fn collect_body_ids<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> Option<(BodyId, Vec<BodyId>)> {
-    let body_id =
-        if def_id.is_local() && util::has_body(ctx, def_id) && !util::is_trusted(ctx.tcx, def_id) {
-            BodyId::new(def_id.expect_local(), None)
-        } else {
-            return None;
-        };
+    let body_id = if def_id.is_local()
+        && util::has_body(ctx, def_id)
+        && !is_trusted_function(ctx.tcx, def_id)
+    {
+        BodyId::new(def_id.expect_local(), None)
+    } else {
+        return None;
+    };
 
     let tcx = ctx.tcx;
     let promoted = ctx

@@ -15,7 +15,9 @@ mod vcgen;
 
 use self::vcgen::vc;
 
-use super::{signature::signature_of, term::lower_pure, CloneSummary, Why3Generator};
+use super::{
+    is_trusted_function, signature::signature_of, term::lower_pure, CloneSummary, Why3Generator,
+};
 
 pub(crate) fn binders_to_args(
     ctx: &mut Why3Generator,
@@ -143,7 +145,7 @@ fn body_decls<'tcx, N: Namer<'tcx>>(
     let mut decls: Vec<_> = Vec::new();
 
     // let (mut sig, val_sig) = sigs(ctx, sig);
-    if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
+    if is_trusted_function(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
         let mut sig = signature_of(ctx, names, def_id);
         sig.contract.variant = Vec::new();
 
@@ -319,7 +321,7 @@ fn limited_function_encode(
 }
 
 fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
-    if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
+    if is_trusted_function(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
         return None;
     }
 
