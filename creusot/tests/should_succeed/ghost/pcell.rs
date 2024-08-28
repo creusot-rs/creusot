@@ -1,12 +1,14 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-pub struct Id(()); // TODO: use a why3 abstract type instead ?
+#[trusted]
+pub struct Id(());
 
 impl Id {
     /// Generate a fresh id.
     ///
     /// To ensure that it is different from previously generated ids, see [`Self::differentiate`].
+    #[trusted]
     #[pure]
     #[requires(true)]
     #[ensures(true)]
