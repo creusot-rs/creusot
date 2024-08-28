@@ -30,7 +30,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         use StatementKind::*;
         match statement.kind {
             Assign(box (ref pl, ref rv)) => {
-                if !rv.ty(self.body, self.tcx).is_unit() {
+                if !rv.ty(self.body, self.tcx()).is_unit() {
                     self.translate_assign(not_final_borrows, statement.source_info, pl, rv, loc);
                 };
 
@@ -75,13 +75,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         rvalue: &'_ Rvalue<'tcx>,
         loc: Location,
     ) {
-        let _ty = rvalue.ty(self.body, self.tcx);
+        let _ty = rvalue.ty(self.body, self.tcx());
         let span = si.span;
         let rval: RValue<'tcx> = match rvalue {
             Rvalue::Use(op) => match op {
                 Move(_pl) | Copy(_pl) => RValue::Operand(self.translate_operand(op)),
                 Constant(box c) => {
-                    if snapshot_closure_id(self.tcx, c.const_.ty()).is_some() {
+                    if snapshot_closure_id(self.tcx(), c.const_.ty()).is_some() {
                         return;
                     };
                     RValue::Operand(self.translate_operand(op))
@@ -107,7 +107,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
             },
             Rvalue::Discriminant(_) => return,
-            Rvalue::BinaryOp(BinOp::BitAnd, box (l, _)) if !l.ty(self.body, self.tcx).is_bool() => {
+            Rvalue::BinaryOp(BinOp::BitAnd, box (l, _))
+                if !l.ty(self.body, self.tcx()).is_bool() =>
+            {
                 self.ctx.crash_and_error(si.span, "bitwise operations are currently unsupported")
             }
             Rvalue::BinaryOp(op, box (l, r)) => {
@@ -122,16 +124,16 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     Tuple => RValue::Tuple(fields),
                     Adt(adt, varix, subst, _, _) => {
                         // self.ctx.translate(*adt);
-                        let variant = self.tcx.adt_def(*adt).variant(*varix).def_id;
+                        let variant = self.ctx.adt_def(*adt).variant(*varix).def_id;
 
                         RValue::Constructor(variant, subst, fields)
                     }
                     Closure(def_id, subst) => {
-                        if util::is_invariant(self.tcx, *def_id)
-                            || util::is_variant(self.tcx, *def_id)
+                        if util::is_invariant(self.tcx(), *def_id)
+                            || util::is_variant(self.tcx(), *def_id)
                         {
                             return;
-                        } else if util::is_assertion(self.tcx, *def_id) {
+                        } else if util::is_assertion(self.tcx(), *def_id) {
                             let mut assertion = self
                                 .assertions
                                 .remove(def_id)
@@ -143,7 +145,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 msg: "assertion".to_owned(),
                             });
                             return;
-                        } else if util::is_spec(self.tcx, *def_id) {
+                        } else if util::is_spec(self.tcx(), *def_id) {
                             return;
                         } else {
                             RValue::Constructor(*def_id, subst, fields)
@@ -161,7 +163,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 RValue::Len(e)
             }
             Rvalue::Cast(CastKind::IntToInt | CastKind::PtrToPtr, op, cast_ty) => {
-                let op_ty = op.ty(self.body, self.tcx);
+                let op_ty = op.ty(self.body, self.tcx());
                 RValue::Cast(self.translate_operand(op), op_ty, *cast_ty)
             }
             Rvalue::Repeat(op, len) => RValue::Repeat(
@@ -169,7 +171,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 Operand::Constant(crate::constant::from_ty_const(
                     self.ctx,
                     *len,
-                    self.ctx.tcx.types.usize,
+                    self.ctx.types.usize,
                     self.param_env(),
                     si.span,
                 )),
