@@ -334,10 +334,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     /// These types cannot contain mutable borrows and thus do not need to be resolved.
     fn skip_resolve_type(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.ctx.normalize_erasing_regions(self.param_env(), ty);
         ty.is_copy_modulo_regions(self.tcx(), self.param_env())
-            || !(ty.has_free_regions()
-                || ty.has_erased_regions()
-                || ty.still_further_specializable())
+            || !(ty.has_erased_regions() || ty.still_further_specializable())
     }
 
     fn emit_resolve(&mut self, cond: bool, pl: PlaceRef<'tcx>) {
