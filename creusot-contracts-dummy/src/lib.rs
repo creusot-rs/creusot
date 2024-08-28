@@ -3,13 +3,41 @@ extern crate proc_macro;
 use proc_macro::TokenStream as TS1;
 
 #[proc_macro_attribute]
-pub fn requires(_: TS1, tokens: TS1) -> TS1 {
-    tokens
+pub fn requires(precondition: TS1, tokens: TS1) -> TS1 {
+    let tokens = proc_macro2::TokenStream::from(tokens);
+    let mut precondition = precondition.to_string();
+    precondition = if precondition.contains('\n') {
+        precondition = precondition.replace('\n', "\n> > ");
+        format!("> > ```pearlite\n> > {precondition}\n> > ```")
+    } else {
+        format!("> > `{precondition}`")
+    };
+    quote::quote! {
+        #[doc = "> <span style=\"color:Tomato;\">requires</span>"]
+        #[doc = #precondition]
+        #[doc = ""]
+        #tokens
+    }
+    .into()
 }
 
 #[proc_macro_attribute]
-pub fn ensures(_: TS1, tokens: TS1) -> TS1 {
-    tokens
+pub fn ensures(postcondition: TS1, tokens: TS1) -> TS1 {
+    let tokens = proc_macro2::TokenStream::from(tokens);
+    let mut postcondition = postcondition.to_string();
+    postcondition = if postcondition.contains('\n') {
+        postcondition = postcondition.replace('\n', "\n> > ");
+        format!("> > ```pearlite\n> > {postcondition}\n> > ```")
+    } else {
+        format!("> > `{postcondition}`")
+    };
+    quote::quote! {
+        #[doc = "> <span style=\"color:MediumSeaGreen;\">ensures</span>"]
+        #[doc = #postcondition]
+        #[doc = ""]
+        #tokens
+    }
+    .into()
 }
 
 #[proc_macro_attribute]
@@ -40,13 +68,13 @@ pub fn ghost(body: TS1) -> TS1 {
 }
 
 #[proc_macro_attribute]
-pub fn terminates(_: TS1, _: TS1) -> TS1 {
-    TS1::new()
+pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
+    tokens
 }
 
 #[proc_macro_attribute]
-pub fn pure(_: TS1, _: TS1) -> TS1 {
-    TS1::new()
+pub fn pure(_: TS1, tokens: TS1) -> TS1 {
+    tokens
 }
 
 #[proc_macro_attribute]
