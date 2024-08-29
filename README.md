@@ -74,7 +74,7 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
    ```
    $ eval $(opam env)
    $ opam update
-   $ opam install .
+   $ opam pin . -y
    ```
 3. Rebuild and reinstall Creusot:
    ```
