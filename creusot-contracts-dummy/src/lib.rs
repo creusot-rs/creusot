@@ -6,16 +6,11 @@ use proc_macro::TokenStream as TS1;
 pub fn requires(precondition: TS1, tokens: TS1) -> TS1 {
     let tokens = proc_macro2::TokenStream::from(tokens);
     let mut precondition = precondition.to_string();
-    precondition = if precondition.contains('\n') {
-        precondition = precondition.replace('\n', "\n> > ");
-        format!("> > ```pearlite\n> > {precondition}\n> > ```")
-    } else {
-        format!("> > `{precondition}`")
-    };
+    precondition = precondition.replace('\n', "\n> > ");
+    precondition = format!("> > ```\n> > {precondition}\n> > ```");
     quote::quote! {
-        #[doc = "> <span style=\"color:Tomato;\">requires</span>"]
-        #[doc = #precondition]
-        #[doc = ""]
+        #[cfg_attr(not(doctest), doc = "> <span style=\"color:Tomato;\">requires</span>")]
+        #[cfg_attr(not(doctest), doc = #precondition)]
         #tokens
     }
     .into()
@@ -25,16 +20,11 @@ pub fn requires(precondition: TS1, tokens: TS1) -> TS1 {
 pub fn ensures(postcondition: TS1, tokens: TS1) -> TS1 {
     let tokens = proc_macro2::TokenStream::from(tokens);
     let mut postcondition = postcondition.to_string();
-    postcondition = if postcondition.contains('\n') {
-        postcondition = postcondition.replace('\n', "\n> > ");
-        format!("> > ```pearlite\n> > {postcondition}\n> > ```")
-    } else {
-        format!("> > `{postcondition}`")
-    };
+    postcondition = postcondition.replace('\n', "\n> > ");
+    postcondition = format!("> > ```\n> > {postcondition}\n> > ```");
     quote::quote! {
-        #[doc = "> <span style=\"color:MediumSeaGreen;\">ensures</span>"]
-        #[doc = #postcondition]
-        #[doc = ""]
+        #[cfg_attr(not(doctest), doc = "> <span style=\"color:DodgerBlue;\">ensures</span>")]
+        #[cfg_attr(not(doctest), doc = #postcondition)]
         #tokens
     }
     .into()
