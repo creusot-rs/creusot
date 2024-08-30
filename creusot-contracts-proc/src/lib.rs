@@ -170,6 +170,7 @@ fn spec_attrs(tag: &Ident) -> TokenStream {
          #[creusot::no_translate]
          #[creusot::item=#name_tag]
          #[creusot::spec]
+         #[doc(hidden)]
     }
 }
 
