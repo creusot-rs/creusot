@@ -6,8 +6,8 @@ use ::std::{
 };
 
 /// Models a fragment of the heap that maps the [`GhostPtr`]s it has permission to their value.
-/// At most one [`GhostToken`] has permission to each [`GhostPtr`]
-/// No [`GhostToken`] has permission to a dangling [`GhostPtr`]
+/// At most one [`GhostPtrToken`] has permission to each [`GhostPtr`]
+/// No [`GhostPtrToken`] has permission to a dangling [`GhostPtr`]
 #[trusted]
 pub struct GhostPtrToken<T: ?Sized>(PhantomData<T>);
 
@@ -62,7 +62,7 @@ impl<T: ?Sized> GhostPtrToken<T> {
     }
 
     /// Casts `val` into a raw pointer and gives `self` permission to it
-    // Safety this pointer was owned by a box so no other GhostToken could have permission to it
+    // Safety this pointer was owned by a box so no other GhostPtrToken could have permission to it
     #[trusted]
     #[ensures(!(*self)@.contains(result))]
     // Since we had full permission to `val` and all of the entries in `self` simultaneously,
@@ -304,8 +304,8 @@ extern_spec! {
 
     mod std {
         mod ptr {
-            /// Creates a null pointer that no GhostToken has permission to
-            // Safety even though this pointer is dangling no GhostToken has permission to it so it's okay
+            /// Creates a null pointer that no GhostPtrToken has permission to
+            // Safety even though this pointer is dangling no GhostPtrToken has permission to it so it's okay
             #[trusted]
             #[ensures(result == GhostPtr::<T>::null_logic())]
             fn null<T>() -> *const T
