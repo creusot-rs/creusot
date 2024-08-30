@@ -3,31 +3,13 @@ extern crate proc_macro;
 use proc_macro::TokenStream as TS1;
 
 #[proc_macro_attribute]
-pub fn requires(precondition: TS1, tokens: TS1) -> TS1 {
-    let tokens = proc_macro2::TokenStream::from(tokens);
-    let mut precondition = precondition.to_string();
-    precondition = precondition.replace('\n', "\n> > ");
-    precondition = format!("> > ```\n> > {precondition}\n> > ```");
-    quote::quote! {
-        #[cfg_attr(not(doctest), doc = "> <span style=\"color:Tomato;\">requires</span>")]
-        #[cfg_attr(not(doctest), doc = #precondition)]
-        #tokens
-    }
-    .into()
+pub fn requires(_: TS1, tokens: TS1) -> TS1 {
+    tokens
 }
 
 #[proc_macro_attribute]
-pub fn ensures(postcondition: TS1, tokens: TS1) -> TS1 {
-    let tokens = proc_macro2::TokenStream::from(tokens);
-    let mut postcondition = postcondition.to_string();
-    postcondition = postcondition.replace('\n', "\n> > ");
-    postcondition = format!("> > ```\n> > {postcondition}\n> > ```");
-    quote::quote! {
-        #[cfg_attr(not(doctest), doc = "> <span style=\"color:DodgerBlue;\">ensures</span>")]
-        #[cfg_attr(not(doctest), doc = #postcondition)]
-        #tokens
-    }
-    .into()
+pub fn ensures(_: TS1, tokens: TS1) -> TS1 {
+    tokens
 }
 
 #[proc_macro_attribute]
