@@ -144,7 +144,8 @@ mod macros {
     pub use base_macros::trusted;
 
     /// Declares a variant for a function, this is primarily used in combination with logical functions
-    /// The variant must be an expression which returns a type implementing [WellFounded]
+    /// The variant must be an expression which returns a type implementing
+    /// [`WellFounded`](crate::WellFounded).
     pub use base_macros::variant;
 
     /// Enables Pearlite syntax, granting access to Pearlite specific operators and syntax

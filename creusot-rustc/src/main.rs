@@ -12,6 +12,7 @@ use options::CreusotArgsExt as _;
 extern crate log;
 
 use creusot::callbacks::*;
+use creusot_args::CREUSOT_RUSTC_ARGS;
 use options::CreusotArgs;
 use rustc_driver::RunCompiler;
 use rustc_session::{config::ErrorOutputType, EarlyDiagCtxt};
@@ -68,18 +69,9 @@ fn setup_plugin() {
     if normal_rustc || !(user_asked_for || has_contracts) {
         return RunCompiler::new(&args, &mut DefaultCallbacks {}).run().unwrap();
     } else {
-        args.push("-Cpanic=abort".to_owned());
-        args.push("-Coverflow-checks=off".to_owned());
-        args.push("-Zcrate-attr=feature(register_tool)".to_owned());
-        args.push("-Zcrate-attr=register_tool(creusot)".to_owned());
-        args.push("-Zcrate-attr=register_tool(why3)".to_owned());
-        args.push("-Zcrate-attr=feature(stmt_expr_attributes)".to_owned());
-        args.push("-Zcrate-attr=feature(proc_macro_hygiene)".to_owned());
-        args.push("-Zcrate-attr=feature(rustc_attrs)".to_owned());
-        args.push("-Zcrate-attr=feature(unsized_fn_params)".to_owned());
-        args.push("--allow=internal_features".to_owned());
-        args.push("-Zdump-mir=speccleanup".to_owned());
-        args.extend(["--cfg", "creusot"].into_iter().map(str::to_owned));
+        for &arg in CREUSOT_RUSTC_ARGS {
+            args.push(arg.to_owned());
+        }
         debug!("creusot args={:?}", args);
 
         let opts = match CreusotArgs::to_options(creusot) {

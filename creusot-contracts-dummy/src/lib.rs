@@ -40,13 +40,13 @@ pub fn ghost(body: TS1) -> TS1 {
 }
 
 #[proc_macro_attribute]
-pub fn terminates(_: TS1, _: TS1) -> TS1 {
-    TS1::new()
+pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
+    tokens
 }
 
 #[proc_macro_attribute]
-pub fn pure(_: TS1, _: TS1) -> TS1 {
-    TS1::new()
+pub fn pure(_: TS1, tokens: TS1) -> TS1 {
+    tokens
 }
 
 #[proc_macro_attribute]
