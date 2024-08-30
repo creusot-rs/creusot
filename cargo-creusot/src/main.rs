@@ -1,4 +1,4 @@
-use creusot_args::options::*;
+use creusot_args::{options::*, CREUSOT_RUSTC_ARGS};
 use creusot_setup as setup;
 use std::{
     env,
@@ -112,7 +112,16 @@ fn invoke_cargo(args: &CreusotArgs) {
         .with_file_name("creusot-rustc");
 
     let cargo_path = env::var("CARGO_PATH").unwrap_or_else(|_| "cargo".to_string());
-    let cargo_cmd = if std::env::var_os("CREUSOT_CONTINUE").is_some() { "build" } else { "check" };
+    let cargo_cmd = match &args.subcommand {
+        Some(CreusotSubCommand::Doc { .. }) => "doc",
+        _ => {
+            if std::env::var_os("CREUSOT_CONTINUE").is_some() {
+                "build"
+            } else {
+                "check"
+            }
+        }
+    };
     let toolchain = toolchain_channel()
         .expect("Expected `cargo-creusot` to be built with a valid toolchain file");
     let mut cmd = Command::new(cargo_path);
@@ -121,6 +130,16 @@ fn invoke_cargo(args: &CreusotArgs) {
         .args(args.rust_flags.clone())
         .env("RUSTC_WRAPPER", creusot_rustc_path)
         .env("CARGO_CREUSOT", "1");
+
+    if matches!(&args.subcommand, Some(CreusotSubCommand::Doc { .. })) {
+        let mut rustdocflags = String::new();
+        for &arg in CREUSOT_RUSTC_ARGS {
+            rustdocflags.push_str(arg);
+            rustdocflags.push(' ');
+        }
+        rustdocflags.pop();
+        cmd.env("RUSTDOCFLAGS", rustdocflags);
+    }
 
     cmd.env("CREUSOT_ARGS", serde_json::to_string(&args).unwrap());
 
