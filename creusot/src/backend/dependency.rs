@@ -229,6 +229,9 @@ fn resolve_item<'tcx>(
     {
         resolved
     } else {
+        // May happen:
+        //    - if this is not a trait method, or
+        //    - if we are resolving a type invariant
         (item, substs)
     };
 
