@@ -110,17 +110,17 @@ module InferredInvarianrs_Swapper
     | bb1 = bb1
       [ bb1 = (! bb2)
         [ bb2 = s0
-          [ s0 =  [ &c <- x ] (any [ any_ (_any:borrowed t)-> (!  [ &x <- _any ] s1) ] )
+          [ s0 =  [ &c <- x ] s1
           | s1 = Borrow.borrow_final <t> {y.current} {Borrow.get_id y}
               (fun (_ret':borrowed t) ->  [ &_6 <- _ret' ]  [ &y <- { y with current = _6.final ; } ] s2)
           | s2 = -{inv'0 _6.final}- s3
-          | s3 =  [ &x <- _6 ] (any [ any_ (_any:borrowed t)-> (!  [ &_6 <- _any ] s4) ] )
+          | s3 =  [ &x <- _6 ] s4
           | s4 = Borrow.borrow_final <t> {c.current} {Borrow.get_id c}
               (fun (_ret':borrowed t) ->  [ &_7 <- _ret' ]  [ &c <- { c with current = _7.final ; } ] s5)
           | s5 = -{inv'0 _7.final}- s6
           | s6 = {[@expl:type invariant] inv'1 y} s7
           | s7 = -{resolve'0 y}- s8
-          | s8 =  [ &y <- _7 ] (any [ any_ (_any:borrowed t)-> (!  [ &_7 <- _any ] s9) ] )
+          | s8 =  [ &y <- _7 ] s9
           | s9 = {[@expl:type invariant] inv'1 c} s10
           | s10 = -{resolve'0 c}- s11
           | s11 = bb1 ]
@@ -160,14 +160,7 @@ module InferredInvarianrs_Tuple
     (! bb0
     [ bb0 = bb1
     | bb1 = bb1
-      [ bb1 = (! bb2)
-        [ bb2 = s0
-          [ s0 =  [ &c <- d ] (any [ any_ (_any:(borrowed t, bool))-> (!  [ &d <- _any ] s1) ] )
-          | s1 =  [ &d <- e ] (any [ any_ (_any:(borrowed t, bool))-> (!  [ &e <- _any ] s2) ] )
-          | s2 =  [ &e <- c ] (any [ any_ (_any:(borrowed t, bool))-> (!  [ &c <- _any ] s3) ] )
-          | s3 = bb1 ]
-           ]
-         ]
+      [ bb1 = (! bb2) [ bb2 = s0 [ s0 =  [ &c <- d ] s1 | s1 =  [ &d <- e ] s2 | s2 =  [ &e <- c ] s3 | s3 = bb1 ]  ]  ]
        ]
     ) [ & d : (borrowed t, bool) = d | & e : (borrowed t, bool) = e | & c : (borrowed t, bool) = any_l () ] 
     [ return' (result:())-> (! return' {result}) ]
@@ -205,11 +198,11 @@ module InferredInvarianrs_TempMove
     | bb1 = bb1
       [ bb1 = (! bb2)
         [ bb2 = s0
-          [ s0 =  [ &c <- x ] (any [ any_ (_any:borrowed t)-> (!  [ &x <- _any ] s1) ] )
+          [ s0 =  [ &c <- x ] s1
           | s1 = Borrow.borrow_final <t> {c.current} {Borrow.get_id c}
               (fun (_ret':borrowed t) ->  [ &_5 <- _ret' ]  [ &c <- { c with current = _5.final ; } ] s2)
           | s2 = -{inv'0 _5.final}- s3
-          | s3 =  [ &x <- _5 ] (any [ any_ (_any:borrowed t)-> (!  [ &_5 <- _any ] s4) ] )
+          | s3 =  [ &x <- _5 ] s4
           | s4 = {[@expl:type invariant] inv'1 c} s5
           | s5 = -{resolve'0 c}- s6
           | s6 = bb1 ]
@@ -522,8 +515,7 @@ module InferredInvarianrs_Y
         (! s0) [ s0 = bb3 ] 
         [ bb3 = s0 [ s0 = len'0 {v.current} (fun (_ret':usize) ->  [ &_11 <- _ret' ] s1) | s1 = bb4 ] 
         | bb4 = s0
-          [ s0 = UIntSize.lt {i} {_11}
-              (fun (_ret':bool) ->  [ &_9 <- _ret' ] (any [ any_ (_any:usize)-> (!  [ &_11 <- _any ] s1) ] ))
+          [ s0 = UIntSize.lt {i} {_11} (fun (_ret':bool) ->  [ &_9 <- _ret' ] s1)
           | s1 = any [ br0 -> {_9 = false} (! bb7) | br1 -> {_9} (! bb5) ]  ]
           
         | bb5 = s0

@@ -557,17 +557,7 @@ module Bdd_Impl14_Clone
       | s1 = clone'1 {_15} (fun (_ret':Bdd'0.t_bdd) ->  [ &_13 <- _ret' ] s2)
       | s2 = bb9 ]
       
-    | bb9 = s0
-      [ s0 =  [ &_0 <- Node'0.C_If _7 _10 _13 ] 
-        (any
-        [ any_ (_any:uint64)-> (!  [ &_7 <- _any ] 
-          (any
-          [ any_ (_any:Bdd'0.t_bdd)-> (!  [ &_10 <- _any ] 
-            (any [ any_ (_any:Bdd'0.t_bdd)-> (!  [ &_13 <- _any ] s1) ] )) ]
-          )) ]
-        )
-      | s1 = bb10 ]
-      
+    | bb9 = s0 [ s0 =  [ &_0 <- Node'0.C_If _7 _10 _13 ] s1 | s1 = bb10 ] 
     | bb3 = bb6
     | bb6 = s0 [ s0 =  [ &_0 <- Node'0.C_True ] s1 | s1 = bb10 ] 
     | bb2 = bb5
@@ -2199,11 +2189,11 @@ module Bdd_Impl11_New
     | Context'0.C_Context alloc hashcons hashcons_ghost not_memo and_memo cnt -> true
     end)
   
+  use prelude.prelude.Snapshot
+  
   use Bdd_Bumpalo_Bump_Type as Bump'0
   
   use prelude.prelude.Intrinsic
-  
-  use prelude.prelude.Snapshot
   
   use map.Const
   
@@ -2259,20 +2249,7 @@ module Bdd_Impl11_New
       | s1 = bb4 ]
       
     | bb4 = s0
-      [ s0 =  [ &_0 <- Context'0.C_Context alloc _5 _6 _8 _9 ([%#sbdd4] (0 : uint64)) ] 
-        (any
-        [ any_ (_any:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd))-> (!  [ &_5 <- _any ] 
-          (any
-          [ any_ (_any:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node)))-> (!  [ &_6 <- _any ] 
-            (any
-            [ any_ (_any:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd))-> (!  [ &_8 <- _any ] 
-              (any
-              [ any_ (_any:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd))-> (!  [ &_9 <- _any ] s1) ]
-              )) ]
-            )) ]
-          )) ]
-        )
-      | s1 = return' {_0} ]
+      [ s0 =  [ &_0 <- Context'0.C_Context alloc _5 _6 _8 _9 ([%#sbdd4] (0 : uint64)) ] s1 | s1 = return' {_0} ]
        ]
     )
     [ & _0 : Context'0.t_context = any_l ()
@@ -2652,13 +2629,12 @@ module Bdd_Impl11_Hashcons
             
             [ &self <- { self with current = Context'0.C_Context l_alloc'0 l_hashcons'0 _27 l_not_memo'0 l_and_memo'0 l_cnt'0 ; } ]
             
-            (any [ any_ (_any:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node)))-> (!  [ &_27 <- _any ] s1) ] ))
+            s1)
       | s1 = UInt64.sub {[%#sbdd1] (18446744073709551615 : uint64)} {[%#sbdd2] (1 : uint64)}
           (fun (_ret':uint64) ->  [ &_32 <- _ret' ] s2)
       | s2 = Context'0.t_context {self.current}
           (fun (ralloc'0:Bump'0.t_bump) (rhashcons'0:MyHashMap'0.t_myhashmap (Node'0.t_node) (Bdd'0.t_bdd)) (rhashcons_ghost'0:Snapshot.snap_ty (Map.map uint64 (Node'0.t_node))) (rnot_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rand_memo'0:MyHashMap'0.t_myhashmap (Bdd'0.t_bdd, Bdd'0.t_bdd) (Bdd'0.t_bdd)) (rcnt'0:uint64) ->
-            UInt64.gt {rcnt'0} {_32}
-              (fun (_ret':bool) ->  [ &_30 <- _ret' ] (any [ any_ (_any:uint64)-> (!  [ &_32 <- _any ] s3) ] )))
+            UInt64.gt {rcnt'0} {_32} (fun (_ret':bool) ->  [ &_30 <- _ret' ] s3))
       | s3 = any [ br0 -> {_30 = false} (! bb11) | br1 -> {_30} (! bb8) ]  ]
       
     | bb8 = s0 [ s0 =  [ &old_9_0 <- Snapshot.new self ] s1 | s1 = bb9 ] 
@@ -4754,7 +4730,7 @@ module Bdd_Impl11_And
       | s4 = bb24 ]
       
     | bb24 = s0
-      [ s0 =  [ &childt <- _48 ] (any [ any_ (_any:Bdd'0.t_bdd)-> (!  [ &_48 <- _any ] s1) ] )
+      [ s0 =  [ &childt <- _48 ] s1
       | s1 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_53 <- _ret' ] 
@@ -4764,7 +4740,7 @@ module Bdd_Impl11_And
       | s3 = and {_53} {a} {childfb} (fun (_ret':Bdd'0.t_bdd) ->  [ &_52 <- _ret' ] s4)
       | s4 = bb25 ]
       
-    | bb25 = s0 [ s0 =  [ &childf <- _52 ] (any [ any_ (_any:Bdd'0.t_bdd)-> (!  [ &_52 <- _any ] s1) ] ) | s1 = bb31 ] 
+    | bb25 = s0 [ s0 =  [ &childf <- _52 ] s1 | s1 = bb31 ] 
     | bb22 = s0
       [ s0 =  [ &v <- va ] s1
       | s1 = Borrow.borrow_mut <Context'0.t_context> {self.current}
@@ -4777,7 +4753,7 @@ module Bdd_Impl11_And
       | s4 = bb29 ]
       
     | bb29 = s0
-      [ s0 =  [ &childt <- _66 ] (any [ any_ (_any:Bdd'0.t_bdd)-> (!  [ &_66 <- _any ] s1) ] )
+      [ s0 =  [ &childt <- _66 ] s1
       | s1 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_71 <- _ret' ] 
@@ -4787,7 +4763,7 @@ module Bdd_Impl11_And
       | s3 = and {_71} {childfa} {childfb} (fun (_ret':Bdd'0.t_bdd) ->  [ &_70 <- _ret' ] s4)
       | s4 = bb30 ]
       
-    | bb30 = s0 [ s0 =  [ &childf <- _70 ] (any [ any_ (_any:Bdd'0.t_bdd)-> (!  [ &_70 <- _any ] s1) ] ) | s1 = bb31 ] 
+    | bb30 = s0 [ s0 =  [ &childf <- _70 ] s1 | s1 = bb31 ] 
     | bb21 = bb26
     | bb26 = s0
       [ s0 =  [ &v <- va ] s1
@@ -4801,7 +4777,7 @@ module Bdd_Impl11_And
       | s4 = bb27 ]
       
     | bb27 = s0
-      [ s0 =  [ &childt <- _57 ] (any [ any_ (_any:Bdd'0.t_bdd)-> (!  [ &_57 <- _any ] s1) ] )
+      [ s0 =  [ &childt <- _57 ] s1
       | s1 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->
              [ &_62 <- _ret' ] 
@@ -4811,7 +4787,7 @@ module Bdd_Impl11_And
       | s3 = and {_62} {childfa} {b} (fun (_ret':Bdd'0.t_bdd) ->  [ &_61 <- _ret' ] s4)
       | s4 = bb28 ]
       
-    | bb28 = s0 [ s0 =  [ &childf <- _61 ] (any [ any_ (_any:Bdd'0.t_bdd)-> (!  [ &_61 <- _any ] s1) ] ) | s1 = bb31 ] 
+    | bb28 = s0 [ s0 =  [ &childf <- _61 ] s1 | s1 = bb31 ] 
     | bb31 = s0
       [ s0 = Borrow.borrow_mut <Context'0.t_context> {self.current}
           (fun (_ret':borrowed (Context'0.t_context)) ->

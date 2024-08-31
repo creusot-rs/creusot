@@ -442,11 +442,6 @@ impl<'tcx> Operand<'tcx> {
             }
         }
     }
-    fn invalidated_places(&self, places: &mut Vec<fmir::Place<'tcx>>) {
-        if let Operand::Move(pl) = self {
-            places.push(pl.clone())
-        }
-    }
 }
 
 impl<'tcx> RValue<'tcx> {
@@ -631,29 +626,6 @@ impl<'tcx> RValue<'tcx> {
         };
 
         e
-    }
-
-    /// Gather the set of places which are moved out of by an expression
-    fn invalidated_places(&self, places: &mut Vec<fmir::Place<'tcx>>) {
-        match &self {
-            RValue::Operand(op) => op.invalidated_places(places),
-            RValue::BinOp(_, l, r) => {
-                l.invalidated_places(places);
-                r.invalidated_places(places)
-            }
-            RValue::UnaryOp(_, e) => e.invalidated_places(places),
-            RValue::Constructor(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
-            RValue::Cast(e, _, _) => e.invalidated_places(places),
-            RValue::Tuple(es) => es.iter().for_each(|e| e.invalidated_places(places)),
-            RValue::Len(e) => e.invalidated_places(places),
-            RValue::Array(f) => f.iter().for_each(|f| f.invalidated_places(places)),
-            RValue::Repeat(e, len) => {
-                e.invalidated_places(places);
-                len.invalidated_places(places)
-            }
-            RValue::Ghost(_) => {}
-            RValue::Borrow(_, _) => {}
-        }
     }
 }
 
@@ -1077,13 +1049,9 @@ impl<'tcx> Statement<'tcx> {
             Statement::Assignment(lhs, e, span) => {
                 let mut istmts = Vec::new();
 
-                let mut invalid = Vec::new();
-                e.invalidated_places(&mut invalid);
-
                 let rhs = e.to_why(lower, lhs.ty(lower.ctx.tcx, lower.locals), &mut istmts);
                 let assign = lower.assignment(&lhs, rhs);
                 istmts.extend(assign);
-                invalidate_places(lower, span, invalid, &mut istmts);
 
                 istmts
             }
@@ -1162,23 +1130,6 @@ impl<'tcx> Statement<'tcx> {
                 istmts
             }
         }
-    }
-}
-
-fn invalidate_places<'tcx, N: Namer<'tcx>>(
-    lower: &mut LoweringState<'_, 'tcx, N>,
-    _span: Span,
-    invalid: Vec<Place<'tcx>>,
-    out: &mut Vec<IntermediateStmt>,
-) {
-    // any (x -> lhs = x )
-    for pl in invalid {
-        let ty = pl.ty(lower.ctx.tcx, lower.locals);
-        let ty = lower.ty(ty);
-
-        let assign = lower.assignment(&pl, Exp::var("_any"));
-        out.push(IntermediateStmt::Any("_any".into(), ty));
-        out.extend(assign);
     }
 }
 

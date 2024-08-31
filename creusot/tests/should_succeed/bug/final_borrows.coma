@@ -683,7 +683,7 @@ module FinalBorrows_Branching
       | s1 = Borrow.borrow_mut <int32> {y} (fun (_ret':borrowed int32) ->  [ &_11 <- _ret' ]  [ &y <- _11.final ] s2)
       | s2 = Borrow.borrow_final <int32> {_11.current} {Borrow.get_id _11}
           (fun (_ret':borrowed int32) ->  [ &_10 <- _ret' ]  [ &_11 <- { _11 with current = _10.final ; } ] s3)
-      | s3 =  [ &r1 <- _10 ] (any [ any_ (_any:borrowed int32)-> (!  [ &_10 <- _any ] s4) ] )
+      | s3 =  [ &r1 <- _10 ] s4
       | s4 = -{resolve'0 _11}- s5
       | s5 = -{resolve'0 r1}- s6
       | s6 =  [ &y <- r1.current ] s7
@@ -864,11 +864,9 @@ module FinalBorrows_BoxDeref
   use prelude.prelude.Intrinsic
   
   let rec box_deref (x:t) (return'  (ret:t))= {[%#sfinal_borrows0] inv'0 x}
-    (! bb0
-    [ bb0 = bb1
-    | bb1 = s0 [ s0 =  [ &_0 <- x ] (any [ any_ (_any:t)-> (!  [ &x <- _any ] s1) ] ) | s1 = bb2 ] 
-    | bb2 = return' {_0} ]
-    ) [ & _0 : t = any_l () | & x : t = x ] 
+    (! bb0 [ bb0 = bb1 | bb1 = s0 [ s0 =  [ &_0 <- x ] s1 | s1 = bb2 ]  | bb2 = return' {_0} ] )
+    [ & _0 : t = any_l () | & x : t = x ]
+    
     [ return' (result:t)-> {[@expl:postcondition] [%#sfinal_borrows2] inv'1 result}
       {[@expl:postcondition] [%#sfinal_borrows1] result = x}
       (! return' {result}) ]

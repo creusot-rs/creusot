@@ -22,14 +22,7 @@ module SwapBorrows_Swap
   let rec swap (x:(t, t)) (return'  (ret:(t, t)))= {[%#sswap_borrows0] inv'0 x}
     (! bb0
     [ bb0 = bb1
-    | bb1 = s0
-      [ s0 =  [ &_0 <- ((let (_, r'0) = x in r'0), (let (r'1, _) = x in r'1)) ] 
-        (any
-        [ any_ (_any:t)-> (!  [ &x <- let (l'1, _) = x in (l'1, _any) ] 
-          (any [ any_ (_any:t)-> (!  [ &x <- let (_, l'5) = x in (_any, l'5) ] s1) ] )) ]
-        )
-      | s1 = bb2 ]
-      
+    | bb1 = s0 [ s0 =  [ &_0 <- ((let (_, r'0) = x in r'0), (let (r'1, _) = x in r'1)) ] s1 | s1 = bb2 ] 
     | bb2 = bb3
     | bb3 = bb4
     | bb4 = return' {_0} ]
@@ -94,11 +87,7 @@ module SwapBorrows_F
       | s4 = Borrow.borrow_mut <uint32> {b} (fun (_ret':borrowed uint32) ->  [ &_8 <- _ret' ]  [ &b <- _8.final ] s5)
       | s5 = Borrow.borrow_final <uint32> {_8.current} {Borrow.get_id _8}
           (fun (_ret':borrowed uint32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _7.final ; } ] s6)
-      | s6 =  [ &_5 <- (_6, _7) ] 
-        (any
-        [ any_ (_any:borrowed uint32)-> (!  [ &_6 <- _any ] 
-          (any [ any_ (_any:borrowed uint32)-> (!  [ &_7 <- _any ] s7) ] )) ]
-        )
+      | s6 =  [ &_5 <- (_6, _7) ] s7
       | s7 = swap'0 {_5} (fun (_ret':(borrowed uint32, borrowed uint32)) ->  [ &p <- _ret' ] s8)
       | s8 = bb1 ]
       

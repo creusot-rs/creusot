@@ -401,14 +401,8 @@ module Hashmap_Impl5_New
           (fun (_ret':Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global)) ->  [ &_6 <- _ret' ] s2)
       | s2 = bb1 ]
       
-    | bb1 = s0
-      [ s0 =  [ &res <- MyHashMap'0.C_MyHashMap _6 ] 
-        (any [ any_ (_any:Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global))-> (!  [ &_6 <- _any ] s1) ] )
-      | s1 = bb2 ]
-      
-    | bb2 = s0
-      [ s0 =  [ &_0 <- res ] (any [ any_ (_any:MyHashMap'0.t_myhashmap k v)-> (!  [ &res <- _any ] s1) ] ) | s1 = bb3 ]
-      
+    | bb1 = s0 [ s0 =  [ &res <- MyHashMap'0.C_MyHashMap _6 ] s1 | s1 = bb2 ] 
+    | bb2 = s0 [ s0 =  [ &_0 <- res ] s1 | s1 = bb3 ] 
     | bb3 = return' {_0} ]
     )
     [ & _0 : MyHashMap'0.t_myhashmap k v = any_l ()
@@ -845,20 +839,14 @@ module Hashmap_Impl5_Add
       
     | bb2 = s0 [ s0 = hash'0 {key} (fun (_ret':uint64) ->  [ &_13 <- _ret' ] s1) | s1 = bb3 ] 
     | bb3 = s0
-      [ s0 = UIntSize.of_int {UInt64.to_int _13}
-          (fun (_res:usize) ->  [ &_12 <- _res ] (any [ any_ (_any:uint64)-> (!  [ &_13 <- _any ] s1) ] ))
+      [ s0 = UIntSize.of_int {UInt64.to_int _13} (fun (_res:usize) ->  [ &_12 <- _res ] s1)
       | s1 =  [ &_15 <- length ] s2
       | s2 = UIntSize.eq {_15} {[%#shashmap1] (0 : usize)} (fun (_ret':bool) ->  [ &_16 <- _ret' ] s3)
       | s3 = {[@expl:remainder by zero] [%#shashmap1] not _16} s4
       | s4 = bb4 ]
       
     | bb4 = s0
-      [ s0 = UIntSize.rem {_12} {_15}
-          (fun (_ret':usize) ->
-             [ &index <- _ret' ] 
-            (any
-            [ any_ (_any:usize)-> (!  [ &_12 <- _any ] (any [ any_ (_any:usize)-> (!  [ &_15 <- _any ] s1) ] )) ]
-            ))
+      [ s0 = UIntSize.rem {_12} {_15} (fun (_ret':usize) ->  [ &index <- _ret' ] s1)
       | s1 = MyHashMap'0.t_myhashmap <k> <v> {self.current}
           (fun (rbuckets'0:Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global)) ->
             Borrow.borrow_final
@@ -950,7 +938,7 @@ module Hashmap_Impl5_Add
                          [ &l <- { l with current = List'0.C_Cons l_0'2 tl.final ; } ] 
                         s5)))
           | s5 = -{inv'6 tl.final}- s6
-          | s6 =  [ &tl1 <- tl ] (any [ any_ (_any:borrowed (List'0.t_list (k, v)))-> (!  [ &tl <- _any ] s7) ] )
+          | s6 =  [ &tl1 <- tl ] s7
           | s7 = eq'0 {k.current} {key} (fun (_ret':bool) ->  [ &_38 <- _ret' ] s8)
           | s8 = bb11 ]
           
@@ -976,7 +964,7 @@ module Hashmap_Impl5_Add
           | s5 = -{inv'1 _45.final}- s6
           | s6 = {[@expl:type invariant] inv'2 l} s7
           | s7 = -{resolve'0 l}- s8
-          | s8 =  [ &l <- _45 ] (any [ any_ (_any:borrowed (List'0.t_list (k, v)))-> (!  [ &_45 <- _any ] s9) ] )
+          | s8 =  [ &l <- _45 ] s9
           | s9 = {[@expl:type invariant] inv'2 _46} s10
           | s10 = -{resolve'0 _46}- s11
           | s11 = {[@expl:type invariant] inv'9 tl1} s12
@@ -986,19 +974,11 @@ module Hashmap_Impl5_Add
          ]
       
     | bb14 = s0 [ s0 =  [ &_51 <- (key, val') ] s1 | s1 =  [ &_55 <- List'0.C_Nil ] s2 | s2 = bb15 ] 
-    | bb15 = s0
-      [ s0 =  [ &_50 <- List'0.C_Cons _51 _55 ] 
-        (any
-        [ any_ (_any:(k, v))-> (!  [ &_51 <- _any ] 
-          (any [ any_ (_any:List'0.t_list (k, v))-> (!  [ &_55 <- _any ] s1) ] )) ]
-        )
-      | s1 = bb16 ]
-      
+    | bb15 = s0 [ s0 =  [ &_50 <- List'0.C_Cons _51 _55 ] s1 | s1 = bb16 ] 
     | bb16 = bb17
     | bb17 = s0
       [ s0 = {[@expl:type invariant] inv'1 l.current} s1
-      | s1 =  [ &l <- { l with current = _50 ; } ] 
-        (any [ any_ (_any:List'0.t_list (k, v))-> (!  [ &_50 <- _any ] s2) ] )
+      | s1 =  [ &l <- { l with current = _50 ; } ] s2
       | s2 = {[@expl:type invariant] inv'2 l} s3
       | s3 = -{resolve'0 l}- s4
       | s4 = {[@expl:type invariant] inv'2 _19} s5
@@ -1362,8 +1342,7 @@ module Hashmap_Impl5_Get
     (! bb0
     [ bb0 = s0 [ s0 = hash'0 {key} (fun (_ret':uint64) ->  [ &_8 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0
-      [ s0 = UIntSize.of_int {UInt64.to_int _8}
-          (fun (_res:usize) ->  [ &_7 <- _res ] (any [ any_ (_any:uint64)-> (!  [ &_8 <- _any ] s1) ] ))
+      [ s0 = UIntSize.of_int {UInt64.to_int _8} (fun (_res:usize) ->  [ &_7 <- _res ] s1)
       | s1 = MyHashMap'0.t_myhashmap <k> <v> {self}
           (fun (rbuckets'0:Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global)) ->
             len'0 {rbuckets'0} (fun (_ret':usize) ->  [ &_10 <- _ret' ] s2))
@@ -1375,10 +1354,7 @@ module Hashmap_Impl5_Get
       | s2 = bb3 ]
       
     | bb3 = s0
-      [ s0 = UIntSize.rem {_7} {_10}
-          (fun (_ret':usize) ->
-             [ &index <- _ret' ] 
-            (any [ any_ (_any:usize)-> (!  [ &_7 <- _any ] (any [ any_ (_any:usize)-> (!  [ &_10 <- _any ] s1) ] )) ] ))
+      [ s0 = UIntSize.rem {_7} {_10} (fun (_ret':usize) ->  [ &index <- _ret' ] s1)
       | s1 = MyHashMap'0.t_myhashmap <k> <v> {self}
           (fun (rbuckets'0:Vec'0.t_vec (List'0.t_list (k, v)) (Global'0.t_global)) ->
             index'0 {rbuckets'0} {index} (fun (_ret':List'0.t_list (k, v)) ->  [ &_14 <- _ret' ] s2))
@@ -1857,8 +1833,7 @@ module Hashmap_Impl5_Resize
       | s1 = bb2 ]
       
     | bb2 = s0
-      [ s0 = UIntSize.mul {_10} {[%#shashmap1] (2 : usize)}
-          (fun (_ret':usize) ->  [ &_9 <- _ret' ] (any [ any_ (_any:usize)-> (!  [ &_10 <- _any ] s1) ] ))
+      [ s0 = UIntSize.mul {_10} {[%#shashmap1] (2 : usize)} (fun (_ret':usize) ->  [ &_9 <- _ret' ] s1)
       | s1 = new'0 {_9} (fun (_ret':MyHashMap'0.t_myhashmap k v) ->  [ &new <- _ret' ] s2)
       | s2 = bb3 ]
       
@@ -1892,8 +1867,7 @@ module Hashmap_Impl5_Resize
           | s1 = bb8 ]
           
         | bb8 = s0
-          [ s0 = UIntSize.lt {i} {_23}
-              (fun (_ret':bool) ->  [ &_21 <- _ret' ] (any [ any_ (_any:usize)-> (!  [ &_23 <- _any ] s1) ] ))
+          [ s0 = UIntSize.lt {i} {_23} (fun (_ret':bool) ->  [ &_21 <- _ret' ] s1)
           | s1 = any [ br0 -> {_21 = false} (! bb29) | br1 -> {_21} (! bb9) ]  ]
           
         | bb9 = s0
@@ -1969,13 +1943,7 @@ module Hashmap_Impl5_Resize
                   (fun (r0'0:(k, v)) (r1'0:List'0.t_list (k, v)) ->  [ &k <- let (r'0, _) = r0'0 in r'0 ] s1)
               | s1 = List'0.cons <(k, v)> {l}
                   (fun (r0'1:(k, v)) (r1'1:List'0.t_list (k, v)) ->  [ &v <- let (_, r'1) = r0'1 in r'1 ] s2)
-              | s2 = List'0.cons <(k, v)> {l}
-                  (fun (r0'2:(k, v)) (r1'2:List'0.t_list (k, v)) ->
-                     [ &tl <- r1'2 ] 
-                    (any
-                    [ any_ (_any:List'0.t_list (k, v))-> (! List'0.cons <(k, v)> {l}
-                        (fun (l_0'0:(k, v)) (l_1'0:List'0.t_list (k, v)) ->  [ &l <- List'0.C_Cons l_0'0 _any ] s3)) ]
-                    ))
+              | s2 = List'0.cons <(k, v)> {l} (fun (r0'2:(k, v)) (r1'2:List'0.t_list (k, v)) ->  [ &tl <- r1'2 ] s3)
               | s3 = Borrow.borrow_mut <MyHashMap'0.t_myhashmap k v> {new}
                   (fun (_ret':borrowed (MyHashMap'0.t_myhashmap k v)) ->  [ &_44 <- _ret' ]  [ &new <- _44.final ] s4)
               | s4 = -{inv'4 _44.final}- s5
@@ -1983,9 +1951,7 @@ module Hashmap_Impl5_Resize
               | s6 = bb21 ]
               
             | bb21 = bb22
-            | bb22 = s0
-              [ s0 =  [ &l <- tl ] (any [ any_ (_any:List'0.t_list (k, v))-> (!  [ &tl <- _any ] s1) ] ) | s1 = bb24 ]
-              
+            | bb22 = s0 [ s0 =  [ &l <- tl ] s1 | s1 = bb24 ] 
             | bb24 = bb26
             | bb26 = bb17 ]
              ]
@@ -2011,8 +1977,7 @@ module Hashmap_Impl5_Resize
     | bb29 = bb30
     | bb30 = s0
       [ s0 = {[@expl:type invariant] inv'4 self.current} s1
-      | s1 =  [ &self <- { self with current = new ; } ] 
-        (any [ any_ (_any:MyHashMap'0.t_myhashmap k v)-> (!  [ &new <- _any ] s2) ] )
+      | s1 =  [ &self <- { self with current = new ; } ] s2
       | s2 = {[@expl:type invariant] inv'5 self} s3
       | s3 = -{resolve'1 self}- s4
       | s4 = bb32 ]
@@ -2393,22 +2358,22 @@ module Hashmap_Main
       | s1 = bb8 ]
       
     | bb8 = s0
-      [ s0 =  [ &_x <- _13 ] (any [ any_ (_any:Option'0.t_option isize)-> (!  [ &_13 <- _any ] s1) ] )
+      [ s0 =  [ &_x <- _13 ] s1
       | s1 = get'0 {h1} {[%#shashmap9] (2 : usize)} (fun (_ret':Option'0.t_option isize) ->  [ &_15 <- _ret' ] s2)
       | s2 = bb9 ]
       
     | bb9 = s0
-      [ s0 =  [ &_y <- _15 ] (any [ any_ (_any:Option'0.t_option isize)-> (!  [ &_15 <- _any ] s1) ] )
+      [ s0 =  [ &_y <- _15 ] s1
       | s1 = get'0 {h2} {[%#shashmap10] (1 : usize)} (fun (_ret':Option'0.t_option isize) ->  [ &_17 <- _ret' ] s2)
       | s2 = bb10 ]
       
     | bb10 = s0
-      [ s0 =  [ &_z <- _17 ] (any [ any_ (_any:Option'0.t_option isize)-> (!  [ &_17 <- _any ] s1) ] )
+      [ s0 =  [ &_z <- _17 ] s1
       | s1 = get'0 {h2} {[%#shashmap11] (2 : usize)} (fun (_ret':Option'0.t_option isize) ->  [ &_19 <- _ret' ] s2)
       | s2 = bb11 ]
       
     | bb11 = s0
-      [ s0 =  [ &_t <- _19 ] (any [ any_ (_any:Option'0.t_option isize)-> (!  [ &_19 <- _any ] s1) ] )
+      [ s0 =  [ &_t <- _19 ] s1
       | s1 = Borrow.borrow_mut <MyHashMap'0.t_myhashmap usize isize> {h2}
           (fun (_ret':borrowed (MyHashMap'0.t_myhashmap usize isize)) ->  [ &_22 <- _ret' ]  [ &h2 <- _22.final ] s2)
       | s2 = add'0 {_22} {[%#shashmap12] (1 : usize)} {[%#shashmap13] (42 : isize)}
@@ -2420,23 +2385,21 @@ module Hashmap_Main
       | s1 = bb13 ]
       
     | bb13 = s0
-      [ s0 =  [ &_x <- _23 ] (any [ any_ (_any:Option'0.t_option isize)-> (!  [ &_23 <- _any ] s1) ] )
+      [ s0 =  [ &_x <- _23 ] s1
       | s1 = get'0 {h1} {[%#shashmap15] (2 : usize)} (fun (_ret':Option'0.t_option isize) ->  [ &_25 <- _ret' ] s2)
       | s2 = bb14 ]
       
     | bb14 = s0
-      [ s0 =  [ &_y <- _25 ] (any [ any_ (_any:Option'0.t_option isize)-> (!  [ &_25 <- _any ] s1) ] )
+      [ s0 =  [ &_y <- _25 ] s1
       | s1 = get'0 {h2} {[%#shashmap16] (1 : usize)} (fun (_ret':Option'0.t_option isize) ->  [ &_27 <- _ret' ] s2)
       | s2 = bb15 ]
       
     | bb15 = s0
-      [ s0 =  [ &_z <- _27 ] (any [ any_ (_any:Option'0.t_option isize)-> (!  [ &_27 <- _any ] s1) ] )
+      [ s0 =  [ &_z <- _27 ] s1
       | s1 = get'0 {h2} {[%#shashmap17] (2 : usize)} (fun (_ret':Option'0.t_option isize) ->  [ &_29 <- _ret' ] s2)
       | s2 = bb16 ]
       
-    | bb16 = s0
-      [ s0 =  [ &_t <- _29 ] (any [ any_ (_any:Option'0.t_option isize)-> (!  [ &_29 <- _any ] s1) ] ) | s1 = bb17 ]
-      
+    | bb16 = s0 [ s0 =  [ &_t <- _29 ] s1 | s1 = bb17 ] 
     | bb17 = bb18
     | bb18 = return' {_0} ]
     )

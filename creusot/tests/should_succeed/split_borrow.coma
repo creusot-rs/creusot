@@ -55,11 +55,7 @@ module SplitBorrow_F
     [ bb0 = s0
       [ s0 =  [ &_2 <- MyInt'0.C_MyInt ([%#ssplit_borrow0] (1 : usize)) ] s1
       | s1 =  [ &_3 <- MyInt'0.C_MyInt ([%#ssplit_borrow1] (2 : usize)) ] s2
-      | s2 =  [ &x <- (_2, _3) ] 
-        (any
-        [ any_ (_any:MyInt'0.t_myint)-> (!  [ &_2 <- _any ] 
-          (any [ any_ (_any:MyInt'0.t_myint)-> (!  [ &_3 <- _any ] s3) ] )) ]
-        )
+      | s2 =  [ &x <- (_2, _3) ] s3
       | s3 = Borrow.borrow_mut <(MyInt'0.t_myint, MyInt'0.t_myint)> {x}
           (fun (_ret':borrowed (MyInt'0.t_myint, MyInt'0.t_myint)) ->  [ &y <- _ret' ]  [ &x <- y.final ] s4)
       | s4 = z'0 {[%#ssplit_borrow2] ()} (fun (_ret':bool) ->  [ &_6 <- _ret' ] s5)
@@ -68,14 +64,12 @@ module SplitBorrow_F
     | bb1 = any [ br0 -> {_6 = false} (! bb3) | br1 -> {_6} (! bb2) ] 
     | bb2 = s0
       [ s0 =  [ &_7 <- MyInt'0.C_MyInt ([%#ssplit_borrow3] (4 : usize)) ] s1
-      | s1 =  [ &y <- { y with current = (let (l'1, _) = y.current in (l'1, _7)) ; } ] 
-        (any [ any_ (_any:MyInt'0.t_myint)-> (!  [ &_7 <- _any ] s2) ] )
+      | s1 =  [ &y <- { y with current = (let (l'1, _) = y.current in (l'1, _7)) ; } ] s2
       | s2 = bb4 ]
       
     | bb3 = s0
       [ s0 =  [ &_8 <- MyInt'0.C_MyInt ([%#ssplit_borrow4] (10 : usize)) ] s1
-      | s1 =  [ &y <- { y with current = (let (_, l'2) = y.current in (_8, l'2)) ; } ] 
-        (any [ any_ (_any:MyInt'0.t_myint)-> (!  [ &_8 <- _any ] s2) ] )
+      | s1 =  [ &y <- { y with current = (let (_, l'2) = y.current in (_8, l'2)) ; } ] s2
       | s2 = bb4 ]
       
     | bb4 = s0 [ s0 = -{resolve'0 y}- s1 | s1 = return' {_0} ]  ]
@@ -119,11 +113,7 @@ module SplitBorrow_G
     [ bb0 = s0
       [ s0 =  [ &_2 <- MyInt'0.C_MyInt ([%#ssplit_borrow0] (1 : usize)) ] s1
       | s1 =  [ &_3 <- MyInt'0.C_MyInt ([%#ssplit_borrow1] (2 : usize)) ] s2
-      | s2 =  [ &a <- (_2, _3) ] 
-        (any
-        [ any_ (_any:MyInt'0.t_myint)-> (!  [ &_2 <- _any ] 
-          (any [ any_ (_any:MyInt'0.t_myint)-> (!  [ &_3 <- _any ] s3) ] )) ]
-        )
+      | s2 =  [ &a <- (_2, _3) ] s3
       | s3 = Borrow.borrow_mut <(MyInt'0.t_myint, MyInt'0.t_myint)> {a}
           (fun (_ret':borrowed (MyInt'0.t_myint, MyInt'0.t_myint)) ->  [ &x <- _ret' ]  [ &a <- x.final ] s4)
       | s4 = Borrow.borrow_final
@@ -136,8 +126,7 @@ module SplitBorrow_G
             s5)
       | s5 = -{resolve'0 _z}- s6
       | s6 =  [ &_6 <- MyInt'0.C_MyInt ([%#ssplit_borrow2] (3 : usize)) ] s7
-      | s7 =  [ &x <- { x with current = (let (_, l'5) = x.current in (_6, l'5)) ; } ] 
-        (any [ any_ (_any:MyInt'0.t_myint)-> (!  [ &_6 <- _any ] s8) ] )
+      | s7 =  [ &x <- { x with current = (let (_, l'5) = x.current in (_6, l'5)) ; } ] s8
       | s8 = -{resolve'1 x}- s9
       | s9 = return' {_0} ]
        ]
