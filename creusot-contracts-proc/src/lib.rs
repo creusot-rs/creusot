@@ -1,6 +1,7 @@
-#![feature(box_patterns, extract_if, extend_one, proc_macro_def_site)]
+#![feature(box_patterns, extract_if, extend_one, proc_macro_def_site, proc_macro_span)]
+
 extern crate proc_macro;
-use extern_spec::ExternSpecs;
+
 use pearlite_syn::*;
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
@@ -12,12 +13,15 @@ use syn::{
     *,
 };
 
+mod derive;
+mod doc;
 mod extern_spec;
 mod invariant;
 mod maintains;
 mod pretyping;
 
-mod derive;
+use doc::document_spec;
+use extern_spec::ExternSpecs;
 
 trait FilterAttrs<'a> {
     type Ret: Iterator<Item = &'a Attribute>;
@@ -198,33 +202,6 @@ fn sig_spec_item(tag: Ident, mut sig: Signature, p: Term) -> TokenStream {
     quote! {
         #attrs
         #sig { #req_body }
-    }
-}
-
-/// Generates a piece of documentation corresponding to the spec.
-fn document_spec(spec_name: &str, spec: TS1) -> proc_macro2::TokenStream {
-    let spec_color = match spec_name {
-        "requires" => "Tomato",
-        "ensures" => "DodgerBlue",
-        "terminates" | "pure" | "logic" | "logic(prophetic)" => "Violet",
-        _ => "LightGray",
-    };
-    let spec_name =
-        format!("> <span style=\"color:{spec_color};\"><samp>{spec_name}</samp></span>");
-    if spec.is_empty() {
-        return quote::quote! {
-            #[cfg_attr(not(doctest), doc = "")]
-            #[cfg_attr(not(doctest), doc = #spec_name)]
-            #[cfg_attr(not(doctest), doc = "")]
-        };
-    }
-    let mut spec = spec.to_string();
-    spec = spec.replace('\n', "\n> > ");
-    spec = format!("> > ```\n> > {spec}\n> > ```");
-    quote::quote! {
-        #[cfg_attr(not(doctest), doc = "")]
-        #[cfg_attr(not(doctest), doc = #spec_name)]
-        #[cfg_attr(not(doctest), doc = #spec)]
     }
 }
 
@@ -537,8 +514,13 @@ pub fn logic(prophetic: TS1, tokens: TS1) -> TS1 {
         }
     };
     let log = parse_macro_input!(tokens as LogicInput);
-    let documentation =
-        document_spec(if prophetic.is_some() { "logic(prophetic)" } else { "logic" }, TS1::new());
+    let documentation = document_spec(
+        if prophetic.is_some() { "logic(prophetic)" } else { "logic" },
+        match &log {
+            LogicInput::Item(log_item) => log_item.body.to_token_stream().into(),
+            LogicInput::Sig(_) => TS1::new(),
+        },
+    );
     match log {
         LogicInput::Item(log) => logic_item(log, prophetic, documentation),
         LogicInput::Sig(sig) => logic_sig(sig, prophetic, documentation),
@@ -628,8 +610,13 @@ pub fn predicate(prophetic: TS1, tokens: TS1) -> TS1 {
             .into();
     };
 
-    let documentation =
-        document_spec(if prophetic.is_some() { "logic(prophetic)" } else { "logic" }, TS1::new());
+    let documentation = document_spec(
+        if prophetic.is_some() { "logic(prophetic)" } else { "logic" },
+        match &pred {
+            LogicInput::Item(log_item) => log_item.body.to_token_stream().into(),
+            LogicInput::Sig(_) => TS1::new(),
+        },
+    );
 
     match pred {
         LogicInput::Item(log) => predicate_item(log, prophetic, documentation),
