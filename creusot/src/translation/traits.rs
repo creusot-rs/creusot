@@ -217,6 +217,12 @@ fn resolve_impl_source_opt<'tcx>(
     }
 }
 
+/// Returns:
+///    - None if no instance is found
+///    - Some((trait_item_def_id, ...)) if an instance is found, but we do not know which
+///          instance is going to be used at runtime.
+///    - Some((did, ...)) with did the def id of the instance if an instance is found,
+///           which we know is going to be used.
 pub(crate) fn resolve_assoc_item_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
@@ -224,15 +230,9 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
     substs: GenericArgsRef<'tcx>,
 ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
     trace!("resolve_assoc_item_opt {:?} {:?}", trait_item_def_id, substs);
-    let assoc = tcx.opt_associated_item(trait_item_def_id)?;
+    let assoc = tcx.opt_associated_item(trait_item_def_id).unwrap();
 
-    // If we're given an associated item that is already on an instance,
-    // we don't need to resolve at all!
-    //
-    // FIXME: not true given specialization!
-    if let AssocItemContainer::ImplContainer = assoc.container {
-        return None;
-    }
+    assert!(assoc.container == AssocItemContainer::TraitContainer);
 
     let trait_ref =
         TraitRef::from_method(tcx, tcx.trait_of_item(trait_item_def_id).unwrap(), substs);

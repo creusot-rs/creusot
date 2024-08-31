@@ -12,6 +12,7 @@ use crate::{
     fmir,
     gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind, SpecClosures},
     resolve::{place_contains_borrow_deref, HasMoveDataExt, Resolver},
+    traits::still_specializable,
     translation::{
         fmir::LocalDecl,
         pearlite::{self, TermKind, TermVisitorMut},
@@ -1151,14 +1152,14 @@ fn resolve_predicate_of<'tcx>(
     param_env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,
 ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-    let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method"))?;
-    let subst = ctx.mk_args(&[GenericArg::from(ty)]);
+    let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
+    let substs = ctx.mk_args(&[GenericArg::from(ty)]);
 
-    let resolve_impl = traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, subst)?;
-    use rustc_middle::ty::TypeVisitableExt;
-    if !ty.still_further_specializable()
-        && ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), resolve_impl.0)
+    let resolve_impl =
+        traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, substs).unwrap();
+    if ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), resolve_impl.0)
         && !resolve_impl.1.type_at(0).is_closure()
+        && !still_specializable(ctx.tcx, param_env, trait_meth_id, substs)
     {
         return None;
     }
