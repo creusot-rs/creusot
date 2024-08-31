@@ -696,12 +696,9 @@ module C02IterMut_Impl2_IntoIter
   use prelude.prelude.Intrinsic
   
   let rec into_iter (self:IterMut'0.t_itermut t) (return'  (ret:IterMut'0.t_itermut t))= {[%#s02_iter_mut0] inv'0 self}
-    (! bb0
-    [ bb0 = s0
-      [ s0 =  [ &_0 <- self ] (any [ any_ (_any:IterMut'0.t_itermut t)-> (!  [ &self <- _any ] s1) ] )
-      | s1 = return' {_0} ]
-       ]
-    ) [ & _0 : IterMut'0.t_itermut t = any_l () | & self : IterMut'0.t_itermut t = self ] 
+    (! bb0 [ bb0 = s0 [ s0 =  [ &_0 <- self ] s1 | s1 = return' {_0} ]  ] )
+    [ & _0 : IterMut'0.t_itermut t = any_l () | & self : IterMut'0.t_itermut t = self ]
+    
     [ return' (result:IterMut'0.t_itermut t)-> {[@expl:postcondition] [%#s02_iter_mut2] inv'0 result}
       {[@expl:postcondition] [%#s02_iter_mut1] result = self}
       (! return' {result}) ]
@@ -1029,7 +1026,7 @@ module C02IterMut_IterMut
       | s2 = Borrow.borrow_final <slice t> {_6.current} {Borrow.get_id _6}
           (fun (_ret':borrowed (slice t)) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _5.final ; } ] s3)
       | s3 = -{inv'1 _5.final}- s4
-      | s4 =  [ &_0 <- IterMut'0.C_IterMut _5 ] (any [ any_ (_any:borrowed (slice t))-> (!  [ &_5 <- _any ] s5) ] )
+      | s4 =  [ &_0 <- IterMut'0.C_IterMut _5 ] s5
       | s5 = {[@expl:type invariant] inv'2 _7} s6
       | s6 = -{resolve'0 _7}- s7
       | s7 = {[@expl:type invariant] inv'2 _6} s8
@@ -1435,19 +1432,12 @@ module C02IterMut_AllZero
           
         | bb9 = bb11
         | bb11 = s0
-          [ s0 = Option'0.some <borrowed usize> {_15}
-              (fun (r0'0:borrowed usize) ->
-                 [ &x <- r0'0 ] 
-                (any
-                [ any_ (_any:borrowed usize)-> (! Option'0.some <borrowed usize> {_15}
-                    (fun (l_0'0:borrowed usize) ->  [ &_15 <- Option'0.C_Some _any ] s1)) ]
-                ))
+          [ s0 = Option'0.some <borrowed usize> {_15} (fun (r0'0:borrowed usize) ->  [ &x <- r0'0 ] s1)
           | s1 =  [ &_19 <- [%#s02_iter_mut5] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton x)) ] s2
           | s2 = bb12 ]
           
         | bb12 = s0
-          [ s0 =  [ &produced <- _19 ] 
-            (any [ any_ (_any:Snapshot.snap_ty (Seq.seq (borrowed usize)))-> (!  [ &_19 <- _any ] s1) ] )
+          [ s0 =  [ &produced <- _19 ] s1
           | s1 =  [ &x <- { x with current = ([%#s02_iter_mut6] (0 : usize)) ; } ] s2
           | s2 = -{resolve'0 x}- s3
           | s3 = bb5 ]

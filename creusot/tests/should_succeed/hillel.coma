@@ -280,8 +280,7 @@ module Hillel_RightPad
         (! s0) [ s0 = bb3 ] 
         [ bb3 = s0 [ s0 = len'0 {str.current} (fun (_ret':usize) ->  [ &_20 <- _ret' ] s1) | s1 = bb4 ] 
         | bb4 = s0
-          [ s0 = UIntSize.lt {_20} {len}
-              (fun (_ret':bool) ->  [ &_19 <- _ret' ] (any [ any_ (_any:usize)-> (!  [ &_20 <- _any ] s1) ] ))
+          [ s0 = UIntSize.lt {_20} {len} (fun (_ret':bool) ->  [ &_19 <- _ret' ] s1)
           | s1 = any [ br0 -> {_19 = false} (! bb7) | br1 -> {_19} (! bb5) ]  ]
           
         | bb5 = s0
@@ -452,14 +451,14 @@ module Hillel_LeftPad
   
   axiom inv'0 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'0 x = true
   
+  use prelude.prelude.Int
+  
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
     [%#span20] self.final = self.current
-  
-  use prelude.prelude.Int
   
   use seq.Seq
   
@@ -529,8 +528,7 @@ module Hillel_LeftPad
         (! s0) [ s0 = bb4 ] 
         [ bb4 = s0 [ s0 = len'0 {str.current} (fun (_ret':usize) ->  [ &_21 <- _ret' ] s1) | s1 = bb5 ] 
         | bb5 = s0
-          [ s0 = UIntSize.lt {_21} {len}
-              (fun (_ret':bool) ->  [ &_20 <- _ret' ] (any [ any_ (_any:usize)-> (!  [ &_21 <- _any ] s1) ] ))
+          [ s0 = UIntSize.lt {_21} {len} (fun (_ret':bool) ->  [ &_20 <- _ret' ] s1)
           | s1 = any [ br0 -> {_20 = false} (! bb9) | br1 -> {_20} (! bb6) ]  ]
           
         | bb6 = s0
@@ -544,9 +542,7 @@ module Hillel_LeftPad
           | s3 = bb7 ]
           
         | bb7 = s0 [ s0 =  [ &_27 <- [%#shillel7] Snapshot.new (1 + Snapshot.inner c) ] s1 | s1 = bb8 ] 
-        | bb8 = s0
-          [ s0 =  [ &c <- _27 ] (any [ any_ (_any:Snapshot.snap_ty int)-> (!  [ &_27 <- _any ] s1) ] ) | s1 = bb3 ]
-           ]
+        | bb8 = s0 [ s0 =  [ &c <- _27 ] s1 | s1 = bb3 ]  ]
          ]
       
     | bb9 = s0 [ s0 = {[@expl:type invariant] inv'1 str} s1 | s1 = -{resolve'0 str}- s2 | s2 = return' {_0} ]  ]
@@ -1192,7 +1188,7 @@ module Hillel_InsertUnique
           | s2 = bb19 ]
           
         | bb19 = s0
-          [ s0 =  [ &produced <- _33 ] (any [ any_ (_any:Snapshot.snap_ty (Seq.seq t))-> (!  [ &_33 <- _any ] s1) ] )
+          [ s0 =  [ &produced <- _33 ] s1
           | s1 =  [ &e <- __creusot_proc_iter_elem ] s2
           | s2 = {[@expl:assertion] [%#shillel7] e
             = index_logic'1 (Snapshot.inner ghost_vec).current (Seq.length (Snapshot.inner produced) - 1)}
@@ -1742,8 +1738,7 @@ module Hillel_Unique
     | bb1 = s0 [ s0 =  [ &sub_str <- [%#shillel1] Snapshot.new (Seq.empty  : Seq.seq t) ] s1 | s1 = bb2 ] 
     | bb2 = s0 [ s0 = len'0 {str} (fun (_ret':usize) ->  [ &_11 <- _ret' ] s1) | s1 = bb3 ] 
     | bb3 = s0
-      [ s0 =  [ &_10 <- Range'0.C_Range ([%#shillel2] (0 : usize)) _11 ] 
-        (any [ any_ (_any:usize)-> (!  [ &_11 <- _any ] s1) ] )
+      [ s0 =  [ &_10 <- Range'0.C_Range ([%#shillel2] (0 : usize)) _11 ] s1
       | s1 = into_iter'0 {_10} (fun (_ret':Range'0.t_range usize) ->  [ &iter <- _ret' ] s2)
       | s2 = bb4 ]
       
@@ -1787,8 +1782,7 @@ module Hillel_Unique
           | s2 = bb17 ]
           
         | bb17 = s0
-          [ s0 =  [ &produced <- _28 ] 
-            (any [ any_ (_any:Snapshot.snap_ty (Seq.seq usize))-> (!  [ &_28 <- _any ] s1) ] )
+          [ s0 =  [ &produced <- _28 ] s1
           | s1 =  [ &i <- __creusot_proc_iter_elem ] s2
           | s2 =  [ &_32 <- i ] s3
           | s3 =  [ &_33 <- Slice.length str ] s4
@@ -1819,10 +1813,7 @@ module Hillel_Unique
           | s2 =  [ &_39 <- [%#shillel11] Snapshot.new (Seq.snoc (Snapshot.inner sub_str) elem) ] s3
           | s3 = bb20 ]
           
-        | bb20 = s0
-          [ s0 =  [ &sub_str <- _39 ] (any [ any_ (_any:Snapshot.snap_ty (Seq.seq t))-> (!  [ &_39 <- _any ] s1) ] )
-          | s1 = bb10 ]
-           ]
+        | bb20 = s0 [ s0 =  [ &sub_str <- _39 ] s1 | s1 = bb10 ]  ]
          ]
       
     | bb15 = s0
@@ -1833,7 +1824,7 @@ module Hillel_Unique
     | bb21 = s0
       [ s0 = {[@expl:assertion] [%#shillel13] Seq.(==) (SeqExt.subsequence (deep_model'1 str) 0 (Seq.length (shallow_model'0 str))) (deep_model'1 str)}
         s1
-      | s1 =  [ &_0 <- unique ] (any [ any_ (_any:Vec'0.t_vec t (Global'0.t_global))-> (!  [ &unique <- _any ] s2) ] )
+      | s1 =  [ &_0 <- unique ] s2
       | s2 = bb22 ]
       
     | bb22 = return' {_0} ]
@@ -2579,8 +2570,7 @@ module Hillel_Fulcrum
           | s2 = bb11 ]
           
         | bb11 = s0
-          [ s0 =  [ &produced <- _24 ] 
-            (any [ any_ (_any:Snapshot.snap_ty (Seq.seq uint32))-> (!  [ &_24 <- _any ] s1) ] )
+          [ s0 =  [ &produced <- _24 ] s1
           | s1 =  [ &x <- __creusot_proc_iter_elem ] s2
           | s2 = UInt32.add {total} {x} (fun (_ret':uint32) ->  [ &total <- _ret' ] s3)
           | s3 = bb4 ]
@@ -2598,8 +2588,7 @@ module Hillel_Fulcrum
       | s5 = bb12 ]
       
     | bb12 = s0
-      [ s0 =  [ &_36 <- Range'0.C_Range ([%#shillel10] (0 : usize)) _37 ] 
-        (any [ any_ (_any:usize)-> (!  [ &_37 <- _any ] s1) ] )
+      [ s0 =  [ &_36 <- Range'0.C_Range ([%#shillel10] (0 : usize)) _37 ] s1
       | s1 = into_iter'1 {_36} (fun (_ret':Range'0.t_range usize) ->  [ &iter1 <- _ret' ] s2)
       | s2 = bb13 ]
       
@@ -2647,8 +2636,7 @@ module Hillel_Fulcrum
           | s2 = bb23 ]
           
         | bb23 = s0
-          [ s0 =  [ &produced1 <- _55 ] 
-            (any [ any_ (_any:Snapshot.snap_ty (Seq.seq usize))-> (!  [ &_55 <- _any ] s1) ] )
+          [ s0 =  [ &produced1 <- _55 ] s1
           | s1 =  [ &i <- __creusot_proc_iter_elem1 ] s2
           | s2 = UInt32.sub {total} {sum} (fun (_ret':uint32) ->  [ &_60 <- _ret' ] s3)
           | s3 = abs_diff'0 {sum} {_60} (fun (_ret':uint32) ->  [ &dist <- _ret' ] s4)

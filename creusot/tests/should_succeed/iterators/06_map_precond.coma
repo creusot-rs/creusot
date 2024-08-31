@@ -2141,13 +2141,7 @@ module C06MapPrecond_Impl0_Next
     | bb1 = any [ br0 -> {_3 = Option'0.C_None } (! bb4) | br1 (a:item'0)-> {_3 = Option'0.C_Some a} (! bb3) ] 
     | bb3 = bb5
     | bb5 = s0
-      [ s0 = Option'0.some <item'0> {_3}
-          (fun (r0'0:item'0) ->
-             [ &v <- r0'0 ] 
-            (any
-            [ any_ (_any:item'0)-> (! Option'0.some <item'0> {_3}
-                (fun (l_0'0:item'0) ->  [ &_3 <- Option'0.C_Some _any ] s1)) ]
-            ))
+      [ s0 = Option'0.some <item'0> {_3} (fun (r0'0:item'0) ->  [ &v <- r0'0 ] s1)
       | s1 = {[@expl:assertion] [%#s06_map_precond0] precondition'0 (C06MapPrecond_Map_Type.map_func self.current) (v, C06MapPrecond_Map_Type.map_produced self.current)}
         s2
       | s2 = bb6 ]
@@ -2173,7 +2167,7 @@ module C06MapPrecond_Impl0_Next
       | s2 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
           (fun (riter'1:i) (rfunc'1:f) (rproduced'1:Snapshot.snap_ty (Seq.seq item'0)) ->
              [ &_13 <- (v, rproduced'1) ] 
-            (any [ any_ (_any:item'0)-> (!  [ &v <- _any ] s3) ] ))
+            s3)
       | s3 = call_mut'0 {_12} {_13} (fun (_ret':b) ->  [ &r <- _ret' ] s4)
       | s4 = bb8 ]
       
@@ -2188,7 +2182,7 @@ module C06MapPrecond_Impl0_Next
       | s3 =  [ &_17 <- [%#s06_map_precond2] Snapshot.new () ] s4
       | s4 = bb10 ]
       
-    | bb10 = s0 [ s0 =  [ &_0 <- Option'0.C_Some r ] (any [ any_ (_any:b)-> (!  [ &r <- _any ] s1) ] ) | s1 = bb11 ] 
+    | bb10 = s0 [ s0 =  [ &_0 <- Option'0.C_Some r ] s1 | s1 = bb11 ] 
     | bb11 = bb12
     | bb12 = bb13
     | bb13 = bb15
@@ -2197,7 +2191,7 @@ module C06MapPrecond_Impl0_Next
       [ s0 = Map'0.t_map <i> <b> <f> <item'0> {self.current}
           (fun (l_iter'0:i) (l_func'0:f) (l_produced'0:Snapshot.snap_ty (Seq.seq item'0)) ->
              [ &self <- { self with current = Map'0.C_Map l_iter'0 l_func'0 _20 ; } ] 
-            (any [ any_ (_any:Snapshot.snap_ty (Seq.seq item'0))-> (!  [ &_20 <- _any ] s1) ] ))
+            s1)
       | s1 = {[@expl:type invariant] inv'2 self} s2
       | s2 = -{resolve'0 self}- s3
       | s3 =  [ &_0 <- Option'0.C_None ] s4
@@ -2516,17 +2510,7 @@ module C06MapPrecond_Map
     | bb1 = bb2
     | bb2 = bb3
     | bb3 = s0 [ s0 =  [ &_9 <- [%#s06_map_precond0] Snapshot.new (Seq.empty  : Seq.seq item'0) ] s1 | s1 = bb4 ] 
-    | bb4 = s0
-      [ s0 =  [ &_0 <- Map'0.C_Map iter func _9 ] 
-        (any
-        [ any_ (_any:i)-> (!  [ &iter <- _any ] 
-          (any
-          [ any_ (_any:f)-> (!  [ &func <- _any ] 
-            (any [ any_ (_any:Snapshot.snap_ty (Seq.seq item'0))-> (!  [ &_9 <- _any ] s1) ] )) ]
-          )) ]
-        )
-      | s1 = bb5 ]
-      
+    | bb4 = s0 [ s0 =  [ &_0 <- Map'0.C_Map iter func _9 ] s1 | s1 = bb5 ] 
     | bb5 = bb6
     | bb6 = bb7
     | bb7 = bb8
@@ -2664,14 +2648,7 @@ module C06MapPrecond_Identity_Closure0
   
   let rec c06mapprecond_identity_closure0 (_1:borrowed (Closure'0.c06mapprecond_identity_closure0 i)) (x:item'0) (_3:Snapshot.snap_ty (Seq.seq item'0)) (return'  (ret:item'0))= {inv'1 _3}
     {[%#s06_map_precond0] inv'0 x}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = -{resolve'0 _1}- s1
-      | s1 =  [ &_0 <- x ] (any [ any_ (_any:item'0)-> (!  [ &x <- _any ] s2) ] )
-      | s2 = bb1 ]
-      
-    | bb1 = return' {_0} ]
-    )
+    (! bb0 [ bb0 = s0 [ s0 = -{resolve'0 _1}- s1 | s1 =  [ &_0 <- x ] s2 | s2 = bb1 ]  | bb1 = return' {_0} ] )
     [ & _0 : item'0 = any_l () | & _1 : borrowed (Closure'0.c06mapprecond_identity_closure0 i) = _1 | & x : item'0 = x ]
     
     [ return' (result:item'0)-> {[@expl:postcondition] [%#s06_map_precond1] inv'0 result}
@@ -3765,8 +3742,7 @@ module C06MapPrecond_Counter
     | bb1 = s0
       [ s0 =  [ &cnt <- [%#s06_map_precond0] (0 : usize) ] s1
       | s1 = Borrow.borrow_mut <usize> {cnt} (fun (_ret':borrowed usize) ->  [ &_8 <- _ret' ]  [ &cnt <- _8.final ] s2)
-      | s2 =  [ &_7 <- Closure'0.C06mapprecond_counter_closure2 _8 ] 
-        (any [ any_ (_any:borrowed usize)-> (!  [ &_8 <- _any ] s3) ] )
+      | s2 =  [ &_7 <- Closure'0.C06mapprecond_counter_closure2 _8 ] s3
       | s3 = map'0 {iter} {_7}
           (fun (_ret':Map'0.t_map i uint32 (Closure'0.c06mapprecond_counter_closure2 i) uint32) ->  [ &_5 <- _ret' ] s4)
       | s4 = {[@expl:type invariant] inv'0 _5} s5
