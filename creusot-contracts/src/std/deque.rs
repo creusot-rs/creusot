@@ -50,6 +50,15 @@ impl<T, A: Allocator> IndexLogic<usize> for VecDeque<T, A> {
     }
 }
 
+#[trusted]
+impl<T> Resolve for VecDeque<T> {
+    #[predicate(prophetic)]
+    #[open]
+    fn resolve(self) -> bool {
+        pearlite! { forall<i : Int> 0 <= i && i < self@.len() ==> self[i].resolve() }
+    }
+}
+
 extern_spec! {
     mod std {
         mod collections {
