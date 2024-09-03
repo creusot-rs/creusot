@@ -1,6 +1,9 @@
 use crate::{invariant::Invariant, logic::IndexLogic, std::alloc::Allocator, *};
-use ::std::collections::vec_deque::Iter;
 pub use ::std::collections::VecDeque;
+use ::std::{
+    collections::vec_deque::Iter,
+    ops::{Index, IndexMut},
+};
 
 impl<T, A: Allocator> ShallowModel for VecDeque<T, A> {
     type ShallowModelTy = Seq<T>;
@@ -111,6 +114,17 @@ extern_spec! {
                 #[terminates] // can OOM
                 #[ensures((^self)@ == self@.push(value))]
                 fn push_back(&mut self, value: T);
+            }
+
+            impl<T, A: Allocator> Index<usize> for VecDeque<T> {
+                #[ensures(*result == self@[i@])]
+                fn index(&self, i: usize) -> &T;
+            }
+
+            impl<T, A: Allocator> IndexMut<usize> for VecDeque<T> {
+                #[ensures(*result == (*self)@[i@])]
+                #[ensures(^result == (^self)@[i@])]
+                fn index_mut(&mut self, i: usize) -> &mut T;
             }
         }
     }
