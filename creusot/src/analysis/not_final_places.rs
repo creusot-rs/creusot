@@ -154,16 +154,16 @@ impl<'tcx> NotFinalPlaces<'tcx> {
         place: &Place<'tcx>,
         location: Location,
     ) -> Option<usize> {
-        let deref_position =
-            match Self::place_get_first_deref(place.as_ref(), cursor.body(), cursor.analysis().tcx)
-            {
-                Some(p) => p,
-                // `p` is not a reborrow
-                None => return None,
-            };
+        let body = cursor.body();
+        let tcx = cursor.analysis().tcx;
 
+        let deref_position = match Self::place_get_first_deref(place.as_ref(), body, tcx) {
+            Some(p) => p,
+            // `p` is not a reborrow
+            None => return None,
+        };
         if place.iter_projections().skip(deref_position + 1).any(|(pl, proj)| match proj {
-            ProjectionElem::Deref => !pl.ty(cursor.body(), cursor.analysis().tcx).ty.is_box(),
+            ProjectionElem::Deref => !pl.ty(body, tcx).ty.is_box(),
             ProjectionElem::Index(_)
             | ProjectionElem::ConstantIndex { .. }
             | ProjectionElem::Subslice { .. }
@@ -222,6 +222,11 @@ impl<'tcx> AnalysisDomain<'tcx> for NotFinalPlaces<'tcx> {
     fn initialize_start_block(&self, _: &mir::Body<'tcx>, _: &mut Self::Domain) {}
 }
 
+// The NotFinalPlaces analysis computes, for each location, places which either:
+// - do not contain a mutable borrow deref and may be moved or borrowed in the future
+//      i.e., if such a place contains a borrow, then this borrow may be written to before its resolution
+// - do contain one or more mutable borrow deref, and may be written to in the future
+
 impl<'tcx> GenKillAnalysis<'tcx> for NotFinalPlaces<'tcx> {
     type Idx = PlaceId;
 
@@ -273,7 +278,7 @@ fn place_context_gen(context: PlaceContext) -> bool {
         // let bor = &mut x;
         // let r1 = &mut *bor;
         // // ...
-        // let r2 = &mut *bor; // r1 is not final !
+        // let r2 = &mut bor; // r1 is not final !
         // ```
         | PlaceContext::MutatingUse(MutatingUseContext::Borrow) => true,
         _ => false,
