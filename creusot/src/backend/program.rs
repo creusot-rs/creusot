@@ -18,7 +18,7 @@ use crate::{
     },
     ctx::{BodyId, Dependencies, TranslationCtx},
     fmir::{Body, BorrowKind, Operand},
-    translation::fmir::{self, Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
+    translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
     util::{self, module_name},
 };
 
@@ -28,7 +28,7 @@ use rustc_middle::{
     mir::{self, BasicBlock, BinOp, ProjectionElem, UnOp, START_BLOCK},
     ty::{AdtDef, GenericArgsRef, Ty, TyKind},
 };
-use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_span::{Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, UintTy};
 use why3::{
@@ -1046,7 +1046,7 @@ impl<'tcx> Statement<'tcx> {
                 istmts.extend(assign2);
                 istmts
             }
-            Statement::Assignment(lhs, e, span) => {
+            Statement::Assignment(lhs, e, _span) => {
                 let mut istmts = Vec::new();
 
                 let rhs = e.to_why(lower, lhs.ty(lower.ctx.tcx, lower.locals), &mut istmts);
