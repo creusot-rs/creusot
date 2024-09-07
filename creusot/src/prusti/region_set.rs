@@ -4,7 +4,7 @@ use rustc_middle::{
     bug,
     ty::{EarlyParamRegion, Region, RegionKind, TyCtxt},
 };
-use rustc_span::{def_id::CRATE_DEF_ID, symbol::kw};
+use rustc_span::symbol::kw;
 use std::fmt::{Debug, Formatter};
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
@@ -53,8 +53,7 @@ impl StateSet {
     }
 
     pub fn into_region(self, tcx: TyCtxt<'_>) -> Region<'_> {
-        let reg =
-            EarlyParamRegion { index: self.0, def_id: CRATE_DEF_ID.to_def_id(), name: kw::In };
+        let reg = EarlyParamRegion { index: self.0, name: kw::In };
         Region::new_early_param(tcx, reg)
     }
 

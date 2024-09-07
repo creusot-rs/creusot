@@ -63,7 +63,6 @@ fn bound_reg_to_span(tcx: TyCtxt<'_>, r: BoundRegionKind) -> Span {
 
 pub fn reg_to_span<'tcx>(tcx: TyCtxt<'tcx>, r: Region<'tcx>) -> Span {
     match r.kind() {
-        RegionKind::ReEarlyParam(x) => def_id_to_span(tcx, x.def_id),
         RegionKind::ReBound(_, x) => bound_reg_to_span(tcx, x.kind),
         RegionKind::ReLateParam(x) => bound_reg_to_span(tcx, x.bound_region),
         RegionKind::RePlaceholder(x) => bound_reg_to_span(tcx, x.bound.kind),
@@ -193,7 +192,7 @@ struct VarInfo<'tcx> {
 struct VarFolder<'a, 'tcx>(&'a VarInfo<'tcx>, CtxRef<'a, 'tcx>);
 
 impl<'a, 'tcx> TypeFolder<TyCtxt<'tcx>> for VarFolder<'a, 'tcx> {
-    fn interner(&self) -> TyCtxt<'tcx> {
+    fn cx(&self) -> TyCtxt<'tcx> {
         self.1.tcx
     }
 
@@ -551,7 +550,7 @@ pub(crate) fn try_resolve<'tcx>(
     def_id: DefId,
     args: GenericArgsRef<'tcx>,
 ) -> (DefId, GenericArgsRef<'tcx>) {
-    match Instance::resolve(ctx.tcx, ctx.param_env(), def_id, args) {
+    match Instance::try_resolve(ctx.tcx, ctx.param_env(), def_id, args) {
         Err(_) | Ok(None) => (def_id, args), // Can't specialize
         Ok(Some(inst)) => (inst.def.def_id(), inst.args),
     }
@@ -781,7 +780,7 @@ pub(super) fn mk_zombie<'tcx>(ty: ty::Ty<'tcx>, ctx: CtxRef<'_, 'tcx>) -> (ty::T
         let mut infcx = ctx.tcx.infer_ctxt().ignoring_regions().build();
         let ty_gen = ty.super_fold_with(&mut ZombieGenFolder(&mut infcx));
         let mut need_copy = BitSet::new_empty(infcx.num_ty_vars());
-        let ocx = ObligationCtxt::new(&infcx);
+        let ocx = ObligationCtxt::new_with_diagnostics(&infcx);
         ocx.register_bound(ObligationCause::dummy(), param_env, ty_gen, copy_id);
         for ob in ocx.select_all_or_error() {
             match ob.obligation.predicate.kind().skip_binder() {
@@ -821,7 +820,7 @@ pub(super) fn mk_zombie<'tcx>(ty: ty::Ty<'tcx>, ctx: CtxRef<'_, 'tcx>) -> (ty::T
 struct ZombieFolder<'a, 'tcx>(CtxRef<'a, 'tcx>, usize, BitSet<TyVid>);
 
 impl<'a, 'tcx> TypeFolder<TyCtxt<'tcx>> for ZombieFolder<'a, 'tcx> {
-    fn interner(&self) -> TyCtxt<'tcx> {
+    fn cx(&self) -> TyCtxt<'tcx> {
         self.0.tcx
     }
 
@@ -835,7 +834,7 @@ impl<'a, 'tcx> TypeFolder<TyCtxt<'tcx>> for ZombieFolder<'a, 'tcx> {
 struct ZombieGenFolder<'a, 'tcx>(&'a mut InferCtxt<'tcx>);
 
 impl<'a, 'tcx> TypeFolder<TyCtxt<'tcx>> for ZombieGenFolder<'a, 'tcx> {
-    fn interner(&self) -> TyCtxt<'tcx> {
+    fn cx(&self) -> TyCtxt<'tcx> {
         self.0.tcx
     }
 

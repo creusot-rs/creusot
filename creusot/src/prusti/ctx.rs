@@ -172,7 +172,9 @@ impl<'a, 'tcx> BaseCtx<'a, 'tcx> {
 
     pub(crate) fn lint(&self, lint: &'static Lint, span: Span, msg: impl Into<String>) {
         let hir_id = self.tcx.local_def_id_to_hir_id(self.owner_id);
-        self.tcx.node_span_lint(lint, hir_id, span, msg.into(), |_| {});
+        self.tcx.node_span_lint(lint, hir_id, span, |diag| {
+            diag.primary_message(msg.into());
+        });
     }
 
     fn new(
