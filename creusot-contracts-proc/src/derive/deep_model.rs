@@ -30,7 +30,7 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
             );
             let deep_model_ty = deep_model_ty(&ident, &generics, &input.data);
 
-            (ident.into(), Some(quote! { #vis #deep_model_ty}))
+            (ident.into(), Some(quote! { #vis #deep_model_ty }))
         };
 
     let eq = deep_model(&name, &deep_model_ty_name, &input.data);
@@ -55,7 +55,6 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
         }
     };
 
-    // eprintln!("{expanded}");
     proc_macro::TokenStream::from(expanded)
 }
 
@@ -106,7 +105,7 @@ fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
                 }
             });
             quote! {
-                 (#(#recurse),*)
+                 (#(#recurse),*) ;
             }
         }
         Fields::Unit => quote! {},
