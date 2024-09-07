@@ -34,6 +34,16 @@ pub fn snapshot(_: TS1) -> TS1 {
 }
 
 #[proc_macro_attribute]
+pub fn terminates(_: TS1, _: TS1) -> TS1 {
+    TS1::new()
+}
+
+#[proc_macro_attribute]
+pub fn pure(_: TS1, _: TS1) -> TS1 {
+    TS1::new()
+}
+
+#[proc_macro_attribute]
 pub fn logic(_: TS1, _: TS1) -> TS1 {
     TS1::new()
 }

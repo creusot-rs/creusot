@@ -170,7 +170,6 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
         )]
         #[invariant(forall<j : Int> i@ <= j && j < old_self.buckets@.len() ==> self.buckets[j] == old_self.buckets[j])]
         #[invariant(new.hashmap_inv())]
-        #[invariant(^old_self.inner() == ^self)]
         #[invariant(old_self.buckets@.len() == self.buckets@.len())]
         #[invariant(i@ <= self.buckets@.len())]
         while i < self.buckets.len() {

@@ -2,7 +2,6 @@ use rustc_hir::{def::Namespace, def_id::DefId};
 use why3::{
     declaration::{Contract, Signature},
     exp::{Binder, Trigger},
-    ty::Type,
 };
 
 use crate::{
@@ -13,7 +12,7 @@ use crate::{
     },
 };
 
-use super::{term::lower_pure, CloneLevel, Namer, Why3Generator};
+use super::{logic::function_call, term::lower_pure, CloneLevel, Namer, Why3Generator};
 
 pub(crate) fn signature_of<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
@@ -68,15 +67,14 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
         backend::ty::translate_ty(ctx, names, span, pre_sig.output)
     });
 
-    let trigger = if ctx.opts.simple_triggers
-        && should_replace_trigger(ctx.tcx, def_id)
-        && retty != Type::UNIT
-    {
-        None
+    let mut sig = Signature { name, trigger: None, attrs, retty: Some(retty), args, contract };
+    let trigger = if ctx.opts.simple_triggers && should_replace_trigger(ctx.tcx, def_id) {
+        Some(Trigger::single(function_call(&sig)))
     } else {
-        Some(Trigger::NONE)
+        None
     };
-    Signature { name, trigger, attrs, retty: Some(retty), args, contract }
+    sig.trigger = trigger;
+    sig
 }
 
 fn contract_to_why3<'tcx, N: Namer<'tcx>>(

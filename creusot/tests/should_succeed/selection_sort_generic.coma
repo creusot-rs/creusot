@@ -1,0 +1,1024 @@
+
+module Core_Cmp_Ordering_Type
+  type t_ordering  =
+    | C_Less
+    | C_Equal
+    | C_Greater
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec less (input:t_ordering) (ret  )= any
+    [ good -> {C_Less  = input} (! ret) | bad -> {C_Less  <> input} {false} any ]
+    
+  
+  let rec equal (input:t_ordering) (ret  )= any
+    [ good -> {C_Equal  = input} (! ret) | bad -> {C_Equal  <> input} {false} any ]
+    
+  
+  let rec greater (input:t_ordering) (ret  )= any
+    [ good -> {C_Greater  = input} (! ret) | bad -> {C_Greater  <> input} {false} any ]
+    
+end
+module Core_Ops_Range_Range_Type
+  type t_range 'idx =
+    | C_Range 'idx 'idx
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_range < 'idx > (input:t_range 'idx) (ret  (start:'idx) (end':'idx))= any
+    [ good (start:'idx) (end':'idx)-> {C_Range start end' = input} (! ret {start} {end'})
+    | bad (start:'idx) (end':'idx)-> {C_Range start end' <> input} {false} any ]
+    
+  
+  function range_end (self : t_range 'idx) : 'idx =
+    match self with
+      | C_Range _ a -> a
+      end
+  
+  function range_start (self : t_range 'idx) : 'idx =
+    match self with
+      | C_Range a _ -> a
+      end
+end
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec none < 't > (input:t_option 't) (ret  )= any
+    [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ]
+    
+  
+  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any
+    [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
+    | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
+    
+end
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.prelude.Opaque
+  
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
+    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
+    | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
+    
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
+    [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
+    
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type as PhantomData'0
+  
+  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  
+  type t_unique 't =
+    | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
+    [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+      = input}
+      (! ret {pointer} {_marker})
+    | bad (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+      <> input}
+      {false}
+      any ]
+    
+end
+module Alloc_RawVec_Cap_Type
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  type t_cap  =
+    | C_Cap usize
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_cap (input:t_cap) (ret  (field_0:usize))= any
+    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
+    | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Cap'0
+  
+  use Core_Ptr_Unique_Unique_Type as Unique'0
+  
+  type t_rawvec 't 'a =
+    | C_RawVec (Unique'0.t_unique 't) (Cap'0.t_cap) 'a
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_rawvec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a))= any
+    [ good (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
+      (! ret {ptr} {cap} {alloc})
+    | bad (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
+    
+end
+module Alloc_Vec_Vec_Type
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  use Alloc_RawVec_RawVec_Type as RawVec'0
+  
+  type t_vec 't 'a =
+    | C_Vec (RawVec'0.t_rawvec 't 'a) usize
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_vec < 't > < 'a > (input:t_vec 't 'a) (ret  (buf:RawVec'0.t_rawvec 't 'a) (len:usize))= any
+    [ good (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
+    | bad (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+    
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_global (input:t_global) (ret  )= any
+    [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
+    
+end
+module SelectionSortGeneric_SelectionSort
+  type t
+  
+  let%span sselection_sort_generic0 = "../selection_sort_generic.rs" 34 16 34 31
+  
+  let%span sselection_sort_generic1 = "../selection_sort_generic.rs" 39 13 39 14
+  
+  let%span sselection_sort_generic2 = "../selection_sort_generic.rs" 36 4 36 43
+  
+  let%span sselection_sort_generic3 = "../selection_sort_generic.rs" 36 4 36 43
+  
+  let%span sselection_sort_generic4 = "../selection_sort_generic.rs" 36 4 36 43
+  
+  let%span sselection_sort_generic5 = "../selection_sort_generic.rs" 37 16 37 63
+  
+  let%span sselection_sort_generic6 = "../selection_sort_generic.rs" 38 16 38 57
+  
+  let%span sselection_sort_generic7 = "../selection_sort_generic.rs" 36 4 36 43
+  
+  let%span sselection_sort_generic8 = "../selection_sort_generic.rs" 44 22 44 23
+  
+  let%span sselection_sort_generic9 = "../selection_sort_generic.rs" 42 8 42 121
+  
+  let%span sselection_sort_generic10 = "../selection_sort_generic.rs" 42 8 42 121
+  
+  let%span sselection_sort_generic11 = "../selection_sort_generic.rs" 42 8 42 121
+  
+  let%span sselection_sort_generic12 = "../selection_sort_generic.rs" 43 20 43 64
+  
+  let%span sselection_sort_generic13 = "../selection_sort_generic.rs" 42 8 42 121
+  
+  let%span sselection_sort_generic14 = "../selection_sort_generic.rs" 50 8 51 63
+  
+  let%span sselection_sort_generic15 = "../selection_sort_generic.rs" 30 42 30 43
+  
+  let%span sselection_sort_generic16 = "../selection_sort_generic.rs" 28 10 28 35
+  
+  let%span sselection_sort_generic17 = "../selection_sort_generic.rs" 29 0 29 36
+  
+  let%span span18 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  
+  let%span span19 = "" 0 0 0 0
+  
+  let%span span20 = "../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
+  
+  let%span span21 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  
+  let%span span22 = "../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
+  
+  let%span span23 = "../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
+  
+  let%span span24 = "../../../../creusot-contracts/src/logic/ord.rs" 70 14 70 15
+  
+  let%span span25 = "../../../../creusot-contracts/src/logic/ord.rs" 70 23 70 24
+  
+  let%span span26 = "../../../../creusot-contracts/src/logic/ord.rs" 69 14 69 59
+  
+  let%span span27 = "../../../../creusot-contracts/src/logic/ord.rs" 64 15 64 48
+  
+  let%span span28 = "../../../../creusot-contracts/src/logic/ord.rs" 66 16 66 17
+  
+  let%span span29 = "../../../../creusot-contracts/src/logic/ord.rs" 66 25 66 26
+  
+  let%span span30 = "../../../../creusot-contracts/src/logic/ord.rs" 65 14 65 44
+  
+  let%span span31 = "../../../../creusot-contracts/src/logic/ord.rs" 59 15 59 45
+  
+  let%span span32 = "../../../../creusot-contracts/src/logic/ord.rs" 61 16 61 17
+  
+  let%span span33 = "../../../../creusot-contracts/src/logic/ord.rs" 61 25 61 26
+  
+  let%span span34 = "../../../../creusot-contracts/src/logic/ord.rs" 60 14 60 47
+  
+  let%span span35 = "../../../../creusot-contracts/src/logic/ord.rs" 53 15 53 32
+  
+  let%span span36 = "../../../../creusot-contracts/src/logic/ord.rs" 54 15 54 32
+  
+  let%span span37 = "../../../../creusot-contracts/src/logic/ord.rs" 56 13 56 14
+  
+  let%span span38 = "../../../../creusot-contracts/src/logic/ord.rs" 56 22 56 23
+  
+  let%span span39 = "../../../../creusot-contracts/src/logic/ord.rs" 56 31 56 32
+  
+  let%span span40 = "../../../../creusot-contracts/src/logic/ord.rs" 55 14 55 31
+  
+  let%span span41 = "../../../../creusot-contracts/src/logic/ord.rs" 50 12 50 13
+  
+  let%span span42 = "../../../../creusot-contracts/src/logic/ord.rs" 49 14 49 45
+  
+  let%span span43 = "../../../../creusot-contracts/src/logic/ord.rs" 46 18 46 19
+  
+  let%span span44 = "../../../../creusot-contracts/src/logic/ord.rs" 46 27 46 28
+  
+  let%span span45 = "../../../../creusot-contracts/src/logic/ord.rs" 45 14 45 64
+  
+  let%span span46 = "../../../../creusot-contracts/src/logic/ord.rs" 36 18 36 19
+  
+  let%span span47 = "../../../../creusot-contracts/src/logic/ord.rs" 36 27 36 28
+  
+  let%span span48 = "../../../../creusot-contracts/src/logic/ord.rs" 35 14 35 61
+  
+  let%span span49 = "../../../../creusot-contracts/src/logic/ord.rs" 26 18 26 19
+  
+  let%span span50 = "../../../../creusot-contracts/src/logic/ord.rs" 26 27 26 28
+  
+  let%span span51 = "../../../../creusot-contracts/src/logic/ord.rs" 25 14 25 61
+  
+  let%span span52 = "../../../../creusot-contracts/src/logic/ord.rs" 16 18 16 19
+  
+  let%span span53 = "../../../../creusot-contracts/src/logic/ord.rs" 16 27 16 28
+  
+  let%span span54 = "../../../../creusot-contracts/src/logic/ord.rs" 15 14 15 64
+  
+  let%span span55 = "../../../../creusot-contracts/src/std/num.rs" 22 16 22 35
+  
+  let%span span56 = "../../../../creusot-contracts/src/std/iter/range.rs" 21 8 27 9
+  
+  let%span span57 = "../../../../creusot-contracts/src/std/iter/range.rs" 37 15 37 32
+  
+  let%span span58 = "../../../../creusot-contracts/src/std/iter/range.rs" 38 15 38 32
+  
+  let%span span59 = "../../../../creusot-contracts/src/std/iter/range.rs" 40 22 40 23
+  
+  let%span span60 = "../../../../creusot-contracts/src/std/iter/range.rs" 40 31 40 33
+  
+  let%span span61 = "../../../../creusot-contracts/src/std/iter/range.rs" 40 52 40 53
+  
+  let%span span62 = "../../../../creusot-contracts/src/std/iter/range.rs" 40 61 40 63
+  
+  let%span span63 = "../../../../creusot-contracts/src/std/iter/range.rs" 40 82 40 83
+  
+  let%span span64 = "../../../../creusot-contracts/src/std/iter/range.rs" 39 14 39 42
+  
+  let%span span65 = "../../../../creusot-contracts/src/std/iter/range.rs" 33 21 33 25
+  
+  let%span span66 = "../../../../creusot-contracts/src/std/iter/range.rs" 32 14 32 45
+  
+  let%span span67 = "../selection_sort_generic.rs" 11 4 13 5
+  
+  let%span span68 = "../selection_sort_generic.rs" 19 8 19 35
+  
+  let%span span69 = "../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
+  
+  let%span span70 = "../../../../creusot-contracts/src/std/vec.rs" 33 18 33 22
+  
+  let%span span71 = "../../../../creusot-contracts/src/std/vec.rs" 30 14 30 56
+  
+  let%span span72 = "../../../../creusot-contracts/src/std/vec.rs" 31 4 32 53
+  
+  let%span span73 = "../../../../creusot-contracts/src/std/vec.rs" 33 4 33 44
+  
+  let%span span74 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  
+  let%span span75 = "../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25
+  
+  let%span span76 = "../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41
+  
+  let%span span77 = "../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42
+  
+  let%span span78 = "../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50
+  
+  let%span span79 = "../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  
+  let%span span80 = "../../../../creusot-contracts/src/std/slice.rs" 250 19 250 35
+  
+  let%span span81 = "../../../../creusot-contracts/src/std/slice.rs" 251 19 251 35
+  
+  let%span span82 = "" 0 0 0 0
+  
+  let%span span83 = "../../../../creusot-contracts/src/std/slice.rs" 252 8 252 52
+  
+  let%span span84 = "" 0 0 0 0
+  
+  let%span span85 = "../../../../creusot-contracts/src/std/vec.rs" 169 26 169 42
+  
+  let%span span86 = "../../../../creusot-contracts/src/std/vec.rs" 170 26 170 48
+  
+  let%span span87 = "" 0 0 0 0
+  
+  let%span span88 = "../../../../creusot-contracts/src/model.rs" 81 8 81 28
+  
+  let%span span89 = "" 0 0 0 0
+  
+  let%span span90 = "" 0 0 0 0
+  
+  let%span span91 = "../../../../creusot-contracts/src/std/cmp.rs" 33 26 33 76
+  
+  let%span span92 = "../../../../creusot-contracts/src/std/slice.rs" 122 20 122 37
+  
+  let%span span93 = "../../../../creusot-contracts/src/std/slice.rs" 115 20 115 37
+  
+  let%span span94 = "../../../../creusot-contracts/src/model.rs" 90 8 90 31
+  
+  let%span span95 = "../../../../creusot-contracts/src/std/vec.rs" 156 27 156 46
+  
+  let%span span96 = "" 0 0 0 0
+  
+  let%span span97 = "" 0 0 0 0
+  
+  let%span span98 = "../../../../creusot-contracts/src/std/vec.rs" 157 26 157 54
+  
+  let%span span99 = "" 0 0 0 0
+  
+  let%span span100 = "../../../../creusot-contracts/src/std/iter/range.rs" 14 12 14 78
+  
+  let%span span101 = "" 0 0 0 0
+  
+  let%span span102 = "../../../../creusot-contracts/src/std/iter.rs" 95 26 98 17
+  
+  let%span span103 = "" 0 0 0 0
+  
+  let%span span104 = "../selection_sort_generic.rs" 25 4 25 106
+  
+  let%span span105 = "../../../../creusot-contracts/src/model.rs" 99 8 99 28
+  
+  let%span span106 = "../../../../creusot-contracts/src/logic/seq.rs" 107 8 107 37
+  
+  let%span span107 = "../../../../creusot-contracts/src/snapshot.rs" 28 20 28 48
+  
+  let%span span108 = "../../../../creusot-contracts/src/std/iter.rs" 80 8 80 19
+  
+  let%span span109 = "../../../../creusot-contracts/src/std/iter.rs" 74 20 74 24
+  
+  let%span span110 = "../../../../creusot-contracts/src/std/iter.rs" 89 0 175 1
+  
+  let%span span111 = "" 0 0 0 0
+  
+  let%span span112 = "" 0 0 0 0
+  
+  let%span span113 = "" 0 0 0 0
+  
+  let%span span114 = "../../../../creusot-contracts/src/std/vec.rs" 78 26 78 48
+  
+  let%span span115 = "../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  
+  type deep_model_ty'0
+  
+  predicate invariant'14 (self : deep_model_ty'0)
+  
+  predicate inv'14 (_x : deep_model_ty'0)
+  
+  axiom inv'14 : forall x : deep_model_ty'0 . inv'14 x = true
+  
+  use prelude.prelude.UIntSize
+  
+  use seq.Seq
+  
+  predicate invariant'13 (self : Seq.seq usize) =
+    [%#span18] true
+  
+  predicate inv'13 (_x : Seq.seq usize)
+  
+  axiom inv'13 : forall x : Seq.seq usize . inv'13 x = true
+  
+  predicate invariant'12 (self : Seq.seq t) =
+    [%#span18] true
+  
+  predicate inv'12 (_x : Seq.seq t)
+  
+  axiom inv'12 : forall x : Seq.seq t . inv'12 x = true
+  
+  predicate invariant'11 (self : Seq.seq deep_model_ty'0) =
+    [%#span18] true
+  
+  predicate inv'11 (_x : Seq.seq deep_model_ty'0)
+  
+  axiom inv'11 : forall x : Seq.seq deep_model_ty'0 . inv'11 x = true
+  
+  predicate invariant'10 (self : usize) =
+    [%#span18] true
+  
+  predicate inv'10 (_x : usize)
+  
+  axiom inv'10 : forall x : usize . inv'10 x = true
+  
+  use Core_Option_Option_Type as Option'0
+  
+  predicate invariant'9 (self : Option'0.t_option usize) =
+    [%#span18] true
+  
+  predicate inv'9 (_x : Option'0.t_option usize)
+  
+  axiom inv'9 : forall x : Option'0.t_option usize . inv'9 x = true
+  
+  use Core_Ops_Range_Range_Type as Range'0
+  
+  use prelude.prelude.Borrow
+  
+  predicate invariant'8 (self : borrowed (Range'0.t_range usize)) =
+    [%#span18] true
+  
+  predicate inv'8 (_x : borrowed (Range'0.t_range usize))
+  
+  axiom inv'8 : forall x : borrowed (Range'0.t_range usize) . inv'8 x = true
+  
+  use Alloc_Alloc_Global_Type as Global'0
+  
+  use Alloc_Vec_Vec_Type as Vec'0
+  
+  predicate invariant'7 (self : Vec'0.t_vec t (Global'0.t_global)) =
+    [%#span18] true
+  
+  predicate inv'7 (_x : Vec'0.t_vec t (Global'0.t_global))
+  
+  axiom inv'7 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'7 x = true
+  
+  predicate invariant'6 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
+    [%#span18] true
+  
+  predicate inv'6 (_x : borrowed (Vec'0.t_vec t (Global'0.t_global)))
+  
+  axiom inv'6 : forall x : borrowed (Vec'0.t_vec t (Global'0.t_global)) . inv'6 x = true
+  
+  use prelude.prelude.Slice
+  
+  predicate invariant'5 (self : borrowed (slice t)) =
+    [%#span18] true
+  
+  predicate inv'5 (_x : borrowed (slice t))
+  
+  axiom inv'5 : forall x : borrowed (slice t) . inv'5 x = true
+  
+  predicate invariant'4 (self : slice t) =
+    [%#span18] true
+  
+  predicate inv'4 (_x : slice t)
+  
+  axiom inv'4 : forall x : slice t . inv'4 x = true
+  
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  constant max'0 : usize = [%#span19] (18446744073709551615 : usize)
+  
+  use seq.Seq
+  
+  predicate inv'3 (_x : Vec'0.t_vec t (Global'0.t_global))
+  
+  function shallow_model'2 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t
+  
+  axiom shallow_model'2_spec : forall self : Vec'0.t_vec t (Global'0.t_global) . ([%#span20] inv'3 self)
+   -> ([%#span22] inv'12 (shallow_model'2 self))
+  && ([%#span21] Seq.length (shallow_model'2 self) <= UIntSize.to_int (max'0 : usize))
+  
+  predicate invariant'3 (self : Vec'0.t_vec t (Global'0.t_global)) =
+    [%#span23] inv'12 (shallow_model'2 self)
+  
+  axiom inv'3 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'3 x = true
+  
+  predicate invariant'2 (self : t)
+  
+  predicate inv'2 (_x : t)
+  
+  axiom inv'2 : forall x : t . inv'2 x = true
+  
+  use Core_Cmp_Ordering_Type as Ordering'0
+  
+  function cmp_log'0 (self : deep_model_ty'0) (_2 : deep_model_ty'0) : Ordering'0.t_ordering
+  
+  function eq_cmp'0 (x : deep_model_ty'0) (y : deep_model_ty'0) : ()
+  
+  axiom eq_cmp'0_spec : forall x : deep_model_ty'0, y : deep_model_ty'0 . ([%#span24] inv'14 x)
+   -> ([%#span25] inv'14 y)  -> ([%#span26] (x = y) = (cmp_log'0 x y = Ordering'0.C_Equal))
+  
+  function antisym2'0 (x : deep_model_ty'0) (y : deep_model_ty'0) : ()
+  
+  axiom antisym2'0_spec : forall x : deep_model_ty'0, y : deep_model_ty'0 . ([%#span27] cmp_log'0 x y
+  = Ordering'0.C_Greater)
+   -> ([%#span28] inv'14 x)  -> ([%#span29] inv'14 y)  -> ([%#span30] cmp_log'0 y x = Ordering'0.C_Less)
+  
+  function antisym1'0 (x : deep_model_ty'0) (y : deep_model_ty'0) : ()
+  
+  axiom antisym1'0_spec : forall x : deep_model_ty'0, y : deep_model_ty'0 . ([%#span31] cmp_log'0 x y
+  = Ordering'0.C_Less)
+   -> ([%#span32] inv'14 x)  -> ([%#span33] inv'14 y)  -> ([%#span34] cmp_log'0 y x = Ordering'0.C_Greater)
+  
+  function trans'0 (x : deep_model_ty'0) (y : deep_model_ty'0) (z : deep_model_ty'0) (o : Ordering'0.t_ordering) : ()
+  
+  axiom trans'0_spec : forall x : deep_model_ty'0, y : deep_model_ty'0, z : deep_model_ty'0, o : Ordering'0.t_ordering . ([%#span35] cmp_log'0 x y
+  = o)
+   -> ([%#span36] cmp_log'0 y z = o)
+   -> ([%#span37] inv'14 x)  -> ([%#span38] inv'14 y)  -> ([%#span39] inv'14 z)  -> ([%#span40] cmp_log'0 x z = o)
+  
+  function refl'0 (x : deep_model_ty'0) : ()
+  
+  axiom refl'0_spec : forall x : deep_model_ty'0 . ([%#span41] inv'14 x)
+   -> ([%#span42] cmp_log'0 x x = Ordering'0.C_Equal)
+  
+  function gt_log'0 (self : deep_model_ty'0) (o : deep_model_ty'0) : bool
+  
+  function cmp_gt_log'0 (x : deep_model_ty'0) (y : deep_model_ty'0) : ()
+  
+  axiom cmp_gt_log'0_spec : forall x : deep_model_ty'0, y : deep_model_ty'0 . ([%#span43] inv'14 x)
+   -> ([%#span44] inv'14 y)  -> ([%#span45] gt_log'0 x y = (cmp_log'0 x y = Ordering'0.C_Greater))
+  
+  function ge_log'0 (self : deep_model_ty'0) (o : deep_model_ty'0) : bool
+  
+  function cmp_ge_log'0 (x : deep_model_ty'0) (y : deep_model_ty'0) : ()
+  
+  axiom cmp_ge_log'0_spec : forall x : deep_model_ty'0, y : deep_model_ty'0 . ([%#span46] inv'14 x)
+   -> ([%#span47] inv'14 y)  -> ([%#span48] ge_log'0 x y = (cmp_log'0 x y <> Ordering'0.C_Less))
+  
+  function lt_log'0 (self : deep_model_ty'0) (o : deep_model_ty'0) : bool
+  
+  function cmp_lt_log'0 (x : deep_model_ty'0) (y : deep_model_ty'0) : ()
+  
+  axiom cmp_lt_log'0_spec : forall x : deep_model_ty'0, y : deep_model_ty'0 . ([%#span49] inv'14 x)
+   -> ([%#span50] inv'14 y)  -> ([%#span51] lt_log'0 x y = (cmp_log'0 x y = Ordering'0.C_Less))
+  
+  function le_log'0 (self : deep_model_ty'0) (o : deep_model_ty'0) : bool
+  
+  function cmp_le_log'0 (x : deep_model_ty'0) (y : deep_model_ty'0) : ()
+  
+  axiom cmp_le_log'0_spec : forall x : deep_model_ty'0, y : deep_model_ty'0 . ([%#span52] inv'14 x)
+   -> ([%#span53] inv'14 y)  -> ([%#span54] le_log'0 x y = (cmp_log'0 x y <> Ordering'0.C_Greater))
+  
+  use seq.Seq
+  
+  predicate inv'1 (_x : Range'0.t_range usize)
+  
+  use prelude.prelude.Int
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  function deep_model'2 (self : usize) : int =
+    [%#span55] UIntSize.to_int self
+  
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  
+  predicate produces'0 (self : Range'0.t_range usize) (visited : Seq.seq usize) (o : Range'0.t_range usize) =
+    [%#span56] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o
+    /\ deep_model'2 (Core_Ops_Range_Range_Type.range_start self)
+    <= deep_model'2 (Core_Ops_Range_Range_Type.range_start o)
+    /\ (Seq.length visited > 0
+     -> deep_model'2 (Core_Ops_Range_Range_Type.range_start o) <= deep_model'2 (Core_Ops_Range_Range_Type.range_end o))
+    /\ Seq.length visited
+    = deep_model'2 (Core_Ops_Range_Range_Type.range_start o) - deep_model'2 (Core_Ops_Range_Range_Type.range_start self)
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> deep_model'2 (Seq.get visited i) = deep_model'2 (Core_Ops_Range_Range_Type.range_start self) + i)
+  
+  function produces_trans'0 (a : Range'0.t_range usize) (ab : Seq.seq usize) (b : Range'0.t_range usize) (bc : Seq.seq usize) (c : Range'0.t_range usize) : ()
+    
+  
+  axiom produces_trans'0_spec : forall a : Range'0.t_range usize, ab : Seq.seq usize, b : Range'0.t_range usize, bc : Seq.seq usize, c : Range'0.t_range usize . ([%#span57] produces'0 a ab b)
+   -> ([%#span58] produces'0 b bc c)
+   -> ([%#span59] inv'1 a)
+   -> ([%#span60] inv'13 ab)
+   -> ([%#span61] inv'1 b)
+   -> ([%#span62] inv'13 bc)  -> ([%#span63] inv'1 c)  -> ([%#span64] produces'0 a (Seq.(++) ab bc) c)
+  
+  use seq.Seq
+  
+  function produces_refl'0 (self : Range'0.t_range usize) : ()
+  
+  axiom produces_refl'0_spec : forall self : Range'0.t_range usize . ([%#span65] inv'1 self)
+   -> ([%#span66] produces'0 self (Seq.empty  : Seq.seq usize) self)
+  
+  predicate invariant'1 (self : Range'0.t_range usize) =
+    [%#span18] true
+  
+  axiom inv'1 : forall x : Range'0.t_range usize . inv'1 x = true
+  
+  use prelude.prelude.Snapshot
+  
+  predicate invariant'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global)))) =
+    [%#span18] true
+  
+  predicate inv'0 (_x : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))))
+  
+  axiom inv'0 : forall x : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))) . inv'0 x = true
+  
+  use seq.Seq
+  
+  predicate sorted_range'0 [#"../selection_sort_generic.rs" 10 0 10 63] (s : Seq.seq deep_model_ty'0) (l : int) (u : int)
+    
+   =
+    [%#span67] forall j : int . forall i : int . l <= i /\ i < j /\ j < u  -> le_log'0 (Seq.get s i) (Seq.get s j)
+  
+  use seq.Seq
+  
+  predicate sorted'0 [#"../selection_sort_generic.rs" 17 0 17 41] (s : Seq.seq deep_model_ty'0) =
+    [%#span68] sorted_range'0 s 0 (Seq.length s)
+  
+  function deep_model'4 (self : t) : deep_model_ty'0
+  
+  use seq.Seq
+  
+  function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec t (Global'0.t_global)) (ix : int) : t =
+    [%#span69] Seq.get (shallow_model'2 self) ix
+  
+  function deep_model'1 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq deep_model_ty'0
+  
+  axiom deep_model'1_spec : forall self : Vec'0.t_vec t (Global'0.t_global) . ([%#span70] inv'3 self)
+   -> ([%#span73] inv'11 (deep_model'1 self))
+  && ([%#span72] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'2 self)
+   -> Seq.get (deep_model'1 self) i = deep_model'4 (index_logic'0 self i))
+  && ([%#span71] Seq.length (shallow_model'2 self) = Seq.length (deep_model'1 self))
+  
+  use prelude.prelude.Intrinsic
+  
+  predicate resolve'4 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
+    [%#span74]  ^ self =  * self
+  
+  predicate resolve'3 (self : borrowed (slice t)) =
+    [%#span74]  ^ self =  * self
+  
+  use seq.Permut
+  
+  use prelude.prelude.Slice
+  
+  function shallow_model'6 (self : slice t) : Seq.seq t
+  
+  axiom shallow_model'6_spec : forall self : slice t . ([%#span75] inv'4 self)
+   -> ([%#span78] inv'12 (shallow_model'6 self))
+  && ([%#span77] shallow_model'6 self = Slice.id self)
+  && ([%#span76] Seq.length (shallow_model'6 self) <= UIntSize.to_int (max'0 : usize))
+  
+  function shallow_model'5 (self : borrowed (slice t)) : Seq.seq t =
+    [%#span79] shallow_model'6 ( * self)
+  
+  let rec swap'0 (self:borrowed (slice t)) (a:usize) (b:usize) (return'  (ret:()))= {[@expl:precondition] [%#span82] inv'5 self}
+    {[@expl:precondition] [%#span81] UIntSize.to_int b < Seq.length (shallow_model'5 self)}
+    {[@expl:precondition] [%#span80] UIntSize.to_int a < Seq.length (shallow_model'5 self)}
+    any
+    [ return' (result:())-> {[%#span83] Permut.exchange (shallow_model'6 ( ^ self)) (shallow_model'5 self) (UIntSize.to_int a) (UIntSize.to_int b)}
+      (! return' {result}) ]
+    
+  
+  function shallow_model'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq t =
+    [%#span79] shallow_model'2 ( * self)
+  
+  let rec deref_mut'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (return'  (ret:borrowed (slice t)))= {[@expl:precondition] [%#span84] inv'6 self}
+    any
+    [ return' (result:borrowed (slice t))-> {[%#span87] inv'5 result}
+      {[%#span86] shallow_model'6 ( ^ result) = shallow_model'2 ( ^ self)}
+      {[%#span85] shallow_model'5 result = shallow_model'0 self}
+      (! return' {result}) ]
+    
+  
+  function deep_model'3 (self : t) : deep_model_ty'0 =
+    [%#span88] deep_model'4 self
+  
+  let rec lt'0 (self:t) (other:t) (return'  (ret:bool))= {[@expl:precondition] [%#span90] inv'2 other}
+    {[@expl:precondition] [%#span89] inv'2 self}
+    any
+    [ return' (result:bool)-> {[%#span91] result = lt_log'0 (deep_model'3 self) (deep_model'3 other)}
+      (! return' {result}) ]
+    
+  
+  predicate resolve'2 (self : t)
+  
+  predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
+    [%#span92] Seq.get seq (UIntSize.to_int self) = out
+  
+  predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq t) =
+    [%#span93] UIntSize.to_int self < Seq.length seq
+  
+  function shallow_model'3 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t =
+    [%#span94] shallow_model'2 self
+  
+  let rec index'0 (self:Vec'0.t_vec t (Global'0.t_global)) (index:usize) (return'  (ret:t))= {[@expl:precondition] [%#span97] inv'10 index}
+    {[@expl:precondition] [%#span96] inv'7 self}
+    {[@expl:precondition] [%#span95] in_bounds'0 index (shallow_model'3 self)}
+    any
+    [ return' (result:t)-> {[%#span99] inv'2 result}
+      {[%#span98] has_value'0 index (shallow_model'3 self) result}
+      (! return' {result}) ]
+    
+  
+  use seq.Seq
+  
+  predicate resolve'1 (self : borrowed (Range'0.t_range usize)) =
+    [%#span74]  ^ self =  * self
+  
+  predicate completed'0 (self : borrowed (Range'0.t_range usize)) =
+    [%#span100] resolve'1 self
+    /\ deep_model'2 (Core_Ops_Range_Range_Type.range_start ( * self))
+    >= deep_model'2 (Core_Ops_Range_Range_Type.range_end ( * self))
+  
+  let rec next'0 (self:borrowed (Range'0.t_range usize)) (return'  (ret:Option'0.t_option usize))= {[@expl:precondition] [%#span101] inv'8 self}
+    any
+    [ return' (result:Option'0.t_option usize)-> {[%#span103] inv'9 result}
+      {[%#span102] match result with
+        | Option'0.C_None -> completed'0 self
+        | Option'0.C_Some v -> produces'0 ( * self) (Seq.singleton v) ( ^ self)
+        end}
+      (! return' {result}) ]
+    
+  
+  use prelude.prelude.Snapshot
+  
+  predicate partition'0 [#"../selection_sort_generic.rs" 24 0 24 52] (v : Seq.seq deep_model_ty'0) (i : int) =
+    [%#span104] forall k2 : int . forall k1 : int . 0 <= k1 /\ k1 < i /\ i <= k2 /\ k2 < Seq.length v
+     -> le_log'0 (Seq.get v k1) (Seq.get v k2)
+  
+  use prelude.prelude.Snapshot
+  
+  function deep_model'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq deep_model_ty'0 =
+    [%#span105] deep_model'1 ( * self)
+  
+  use seq.Permut
+  
+  predicate permutation_of'0 (self : Seq.seq t) (o : Seq.seq t) =
+    [%#span106] Permut.permut self o 0 (Seq.length self)
+  
+  function shallow_model'4 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq t =
+    [%#span94] shallow_model'0 self
+  
+  function shallow_model'1 (self : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global)))) : Seq.seq t =
+    [%#span107] shallow_model'4 (Snapshot.inner self)
+  
+  use prelude.prelude.Snapshot
+  
+  use prelude.prelude.Snapshot
+  
+  use prelude.prelude.Snapshot
+  
+  use prelude.prelude.Snapshot
+  
+  predicate into_iter_post'0 (self : Range'0.t_range usize) (res : Range'0.t_range usize) =
+    [%#span108] self = res
+  
+  predicate into_iter_pre'0 (self : Range'0.t_range usize) =
+    [%#span109] true
+  
+  let rec into_iter'0 (self:Range'0.t_range usize) (return'  (ret:Range'0.t_range usize))= {[@expl:precondition] [%#span111] inv'1 self}
+    {[@expl:precondition] [%#span110] into_iter_pre'0 self}
+    any
+    [ return' (result:Range'0.t_range usize)-> {[%#span112] inv'1 result}
+      {[%#span110] into_iter_post'0 self result}
+      (! return' {result}) ]
+    
+  
+  let rec len'0 (self:Vec'0.t_vec t (Global'0.t_global)) (return'  (ret:usize))= {[@expl:precondition] [%#span113] inv'7 self}
+    any
+    [ return' (result:usize)-> {[%#span114] UIntSize.to_int result = Seq.length (shallow_model'3 self)}
+      (! return' {result}) ]
+    
+  
+  predicate resolve'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global)))) =
+    [%#span115] true
+  
+  use prelude.prelude.Snapshot
+  
+  let rec selection_sort (v:borrowed (Vec'0.t_vec t (Global'0.t_global))) (return'  (ret:()))= {[%#sselection_sort_generic15] inv'6 v}
+    (! bb0
+    [ bb0 = s0 [ s0 =  [ &old_v <- [%#sselection_sort_generic0] Snapshot.new v ] s1 | s1 = bb1 ] 
+    | bb1 = s0
+      [ s0 = {[@expl:type invariant] inv'0 old_v} s1
+      | s1 = -{resolve'0 old_v}- s2
+      | s2 = len'0 { * v} (fun (_ret':usize) ->  [ &_8 <- _ret' ] s3)
+      | s3 = bb2 ]
+      
+    | bb2 = s0
+      [ s0 =  [ &_7 <- Range'0.C_Range ([%#sselection_sort_generic1] (0 : usize)) _8 ] 
+        (any [ any_ (_any:usize)-> (!  [ &_8 <- _any ] s1) ] )
+      | s1 = into_iter'0 {_7} (fun (_ret':Range'0.t_range usize) ->  [ &iter <- _ret' ] s2)
+      | s2 = bb3 ]
+      
+    | bb3 = s0 [ s0 =  [ &iter_old <- [%#sselection_sort_generic2] Snapshot.new iter ] s1 | s1 = bb4 ] 
+    | bb4 = s0
+      [ s0 =  [ &produced <- [%#sselection_sort_generic3] Snapshot.new (Seq.empty  : Seq.seq usize) ] s1 | s1 = bb5 ]
+      
+    | bb5 = s0 [ s0 =  [ &old_6_0 <- Snapshot.new v ] s1 | s1 = bb6 ] 
+    | bb6 = bb6
+      [ bb6 = {[@expl:loop invariant]  ^ Snapshot.inner old_6_0 =  ^ v}
+        {[@expl:loop invariant] [%#sselection_sort_generic6] partition'0 (deep_model'0 v) (Seq.length (Snapshot.inner produced))}
+        {[@expl:loop invariant] [%#sselection_sort_generic5] sorted_range'0 (deep_model'0 v) 0 (Seq.length (Snapshot.inner produced))}
+        {[@expl:loop invariant] [%#sselection_sort_generic4] permutation_of'0 (shallow_model'0 v) (shallow_model'1 old_v)}
+        {[@expl:loop invariant] [%#sselection_sort_generic4] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
+        {[@expl:loop invariant] [%#sselection_sort_generic4] inv'1 iter}
+        (! s0) [ s0 = bb7 ] 
+        [ bb7 = s0
+          [ s0 = Borrow.borrow_mut <Range'0.t_range usize> {iter}
+              (fun (_ret':borrowed (Range'0.t_range usize)) ->  [ &_22 <- _ret' ]  [ &iter <-  ^ _22 ] s1)
+          | s1 = Borrow.borrow_final <Range'0.t_range usize> { * _22} {Borrow.get_id _22}
+              (fun (_ret':borrowed (Range'0.t_range usize)) ->
+                 [ &_21 <- _ret' ] 
+                 [ &_22 <- { _22 with current = ( ^ _21) ; } ] 
+                s2)
+          | s2 = next'0 {_21} (fun (_ret':Option'0.t_option usize) ->  [ &_20 <- _ret' ] s3)
+          | s3 = bb8 ]
+          
+        | bb8 = s0
+          [ s0 = -{resolve'1 _22}- s1
+          | s1 = any
+            [ br0 -> {_20 = Option'0.C_None } (! bb11) | br1 (a:usize)-> {_20 = Option'0.C_Some a} (! bb10) ]
+             ]
+          
+        | bb10 = bb12
+        | bb12 = s0
+          [ s0 = Option'0.some <usize> {_20} (fun (r0'0:usize) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
+          | s1 = 
+            [ &_25 <- [%#sselection_sort_generic7] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
+            
+            s2
+          | s2 = bb13 ]
+          
+        | bb13 = s0
+          [ s0 =  [ &produced <- _25 ] 
+            (any [ any_ (_any:Snapshot.snap_ty (Seq.seq usize))-> (!  [ &_25 <- _any ] s1) ] )
+          | s1 =  [ &i <- __creusot_proc_iter_elem ] s2
+          | s2 =  [ &min <- i ] s3
+          | s3 = UIntSize.add {i} {[%#sselection_sort_generic8] (1 : usize)}
+              (fun (_ret':usize) ->  [ &_32 <- _ret' ] s4)
+          | s4 = len'0 { * v} (fun (_ret':usize) ->  [ &_34 <- _ret' ] s5)
+          | s5 = bb14 ]
+          
+        | bb14 = s0
+          [ s0 =  [ &_31 <- Range'0.C_Range _32 _34 ] 
+            (any [ any_ (_any:usize)-> (!  [ &_32 <- _any ] (any [ any_ (_any:usize)-> (!  [ &_34 <- _any ] s1) ] )) ] )
+          | s1 = into_iter'0 {_31} (fun (_ret':Range'0.t_range usize) ->  [ &iter1 <- _ret' ] s2)
+          | s2 = bb15 ]
+          
+        | bb15 = s0 [ s0 =  [ &iter_old1 <- [%#sselection_sort_generic9] Snapshot.new iter1 ] s1 | s1 = bb16 ] 
+        | bb16 = s0
+          [ s0 =  [ &produced1 <- [%#sselection_sort_generic10] Snapshot.new (Seq.empty  : Seq.seq usize) ] s1
+          | s1 = bb17 ]
+          
+        | bb17 = bb18
+        | bb18 = bb18
+          [ bb18 = {[@expl:loop invariant] [%#sselection_sort_generic12] UIntSize.to_int i <= UIntSize.to_int min
+            /\ UIntSize.to_int min < Seq.length (Snapshot.inner produced1) + UIntSize.to_int i + 1}
+            {[@expl:loop invariant] [%#sselection_sort_generic11] forall k : int . UIntSize.to_int i <= k
+            /\ k < Seq.length (Snapshot.inner produced1) + UIntSize.to_int i + 1
+             -> le_log'0 (Seq.get (deep_model'0 v) (UIntSize.to_int min)) (Seq.get (deep_model'0 v) k)}
+            {[@expl:loop invariant] [%#sselection_sort_generic11] produces'0 (Snapshot.inner iter_old1) (Snapshot.inner produced1) iter1}
+            {[@expl:loop invariant] [%#sselection_sort_generic11] inv'1 iter1}
+            (! s0) [ s0 = bb19 ] 
+            [ bb19 = s0
+              [ s0 = Borrow.borrow_mut <Range'0.t_range usize> {iter1}
+                  (fun (_ret':borrowed (Range'0.t_range usize)) ->  [ &_46 <- _ret' ]  [ &iter1 <-  ^ _46 ] s1)
+              | s1 = Borrow.borrow_final <Range'0.t_range usize> { * _46} {Borrow.get_id _46}
+                  (fun (_ret':borrowed (Range'0.t_range usize)) ->
+                     [ &_45 <- _ret' ] 
+                     [ &_46 <- { _46 with current = ( ^ _45) ; } ] 
+                    s2)
+              | s2 = next'0 {_45} (fun (_ret':Option'0.t_option usize) ->  [ &_44 <- _ret' ] s3)
+              | s3 = bb20 ]
+              
+            | bb20 = s0
+              [ s0 = -{resolve'1 _46}- s1
+              | s1 = any
+                [ br0 -> {_44 = Option'0.C_None } (! bb23) | br1 (a:usize)-> {_44 = Option'0.C_Some a} (! bb22) ]
+                 ]
+              
+            | bb22 = bb24
+            | bb24 = s0
+              [ s0 = Option'0.some <usize> {_44} (fun (r0'0:usize) ->  [ &__creusot_proc_iter_elem1 <- r0'0 ] s1)
+              | s1 = 
+                [ &_49 <- [%#sselection_sort_generic13] Snapshot.new (Seq.(++) (Snapshot.inner produced1) (Seq.singleton __creusot_proc_iter_elem1)) ]
+                
+                s2
+              | s2 = bb25 ]
+              
+            | bb25 = s0
+              [ s0 =  [ &produced1 <- _49 ] 
+                (any [ any_ (_any:Snapshot.snap_ty (Seq.seq usize))-> (!  [ &_49 <- _any ] s1) ] )
+              | s1 =  [ &j <- __creusot_proc_iter_elem1 ] s2
+              | s2 = index'0 { * v} {j} (fun (_ret':t) ->  [ &_54 <- _ret' ] s3)
+              | s3 = bb26 ]
+              
+            | bb26 = s0
+              [ s0 = {[@expl:type invariant] inv'2 _54} s1
+              | s1 = -{resolve'2 _54}- s2
+              | s2 = index'0 { * v} {min} (fun (_ret':t) ->  [ &_58 <- _ret' ] s3)
+              | s3 = bb27 ]
+              
+            | bb27 = s0
+              [ s0 = {[@expl:type invariant] inv'2 _58} s1
+              | s1 = -{resolve'2 _58}- s2
+              | s2 = lt'0 {_54} {_58} (fun (_ret':bool) ->  [ &_52 <- _ret' ] s3)
+              | s3 = bb28 ]
+              
+            | bb28 = any [ br0 -> {_52 = false} (! bb30) | br1 -> {_52} (! bb29) ] 
+            | bb29 = s0 [ s0 =  [ &min <- j ] s1 | s1 = bb31 ] 
+            | bb30 = bb31
+            | bb31 = bb18 ]
+             ]
+          
+        | bb23 = s0
+          [ s0 = Borrow.borrow_mut <Vec'0.t_vec t (Global'0.t_global)> { * v}
+              (fun (_ret':borrowed (Vec'0.t_vec t (Global'0.t_global))) ->
+                 [ &_66 <- _ret' ] 
+                 [ &v <- { v with current = ( ^ _66) ; } ] 
+                s1)
+          | s1 = -{inv'3 ( ^ _66)}- s2
+          | s2 = deref_mut'0 {_66} (fun (_ret':borrowed (slice t)) ->  [ &_65 <- _ret' ] s3)
+          | s3 = bb32 ]
+          
+        | bb32 = s0
+          [ s0 = Borrow.borrow_final <slice t> { * _65} {Borrow.get_id _65}
+              (fun (_ret':borrowed (slice t)) ->  [ &_64 <- _ret' ]  [ &_65 <- { _65 with current = ( ^ _64) ; } ] s1)
+          | s1 = -{inv'4 ( ^ _64)}- s2
+          | s2 = swap'0 {_64} {i} {min} (fun (_ret':()) ->  [ &_63 <- _ret' ] s3)
+          | s3 = bb33 ]
+          
+        | bb33 = s0
+          [ s0 = {[@expl:type invariant] inv'5 _65} s1
+          | s1 = -{resolve'3 _65}- s2
+          | s2 = {[@expl:assertion] [%#sselection_sort_generic14] let i = Seq.length (Snapshot.inner produced) in forall k2 : int . forall k1 : int . 0
+            <= k1
+            /\ k1 < i /\ i <= k2 /\ k2 < Seq.length (deep_model'0 v)
+             -> le_log'0 (Seq.get (deep_model'0 v) k1) (Seq.get (deep_model'0 v) k2)}
+            s3
+          | s3 = bb6 ]
+           ]
+         ]
+      
+    | bb9 = s0
+      [ s0 = {[@expl:type invariant] inv'6 v} s1
+      | s1 = -{resolve'4 v}- s2
+      | s2 = {[%#sselection_sort_generic4] false} any ]
+      
+    | bb21 = s0
+      [ s0 = {[@expl:type invariant] inv'6 v} s1
+      | s1 = -{resolve'4 v}- s2
+      | s2 = {[%#sselection_sort_generic11] false} any ]
+      
+    | bb11 = s0 [ s0 = {[@expl:type invariant] inv'6 v} s1 | s1 = -{resolve'4 v}- s2 | s2 = return' {_0} ]  ]
+    )
+    [ & _0 : () = any_l ()
+    | & v : borrowed (Vec'0.t_vec t (Global'0.t_global)) = v
+    | & old_v : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))) = any_l ()
+    | & iter : Range'0.t_range usize = any_l ()
+    | & _7 : Range'0.t_range usize = any_l ()
+    | & _8 : usize = any_l ()
+    | & iter_old : Snapshot.snap_ty (Range'0.t_range usize) = any_l ()
+    | & produced : Snapshot.snap_ty (Seq.seq usize) = any_l ()
+    | & _20 : Option'0.t_option usize = any_l ()
+    | & _21 : borrowed (Range'0.t_range usize) = any_l ()
+    | & _22 : borrowed (Range'0.t_range usize) = any_l ()
+    | & __creusot_proc_iter_elem : usize = any_l ()
+    | & _25 : Snapshot.snap_ty (Seq.seq usize) = any_l ()
+    | & i : usize = any_l ()
+    | & min : usize = any_l ()
+    | & iter1 : Range'0.t_range usize = any_l ()
+    | & _31 : Range'0.t_range usize = any_l ()
+    | & _32 : usize = any_l ()
+    | & _34 : usize = any_l ()
+    | & iter_old1 : Snapshot.snap_ty (Range'0.t_range usize) = any_l ()
+    | & produced1 : Snapshot.snap_ty (Seq.seq usize) = any_l ()
+    | & _44 : Option'0.t_option usize = any_l ()
+    | & _45 : borrowed (Range'0.t_range usize) = any_l ()
+    | & _46 : borrowed (Range'0.t_range usize) = any_l ()
+    | & __creusot_proc_iter_elem1 : usize = any_l ()
+    | & _49 : Snapshot.snap_ty (Seq.seq usize) = any_l ()
+    | & j : usize = any_l ()
+    | & _52 : bool = any_l ()
+    | & _54 : t = any_l ()
+    | & _58 : t = any_l ()
+    | & _63 : () = any_l ()
+    | & _64 : borrowed (slice t) = any_l ()
+    | & _65 : borrowed (slice t) = any_l ()
+    | & _66 : borrowed (Vec'0.t_vec t (Global'0.t_global)) = any_l ()
+    | & old_6_0 : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))) = any_l () ]
+    
+    [ return' (result:())-> {[@expl:postcondition] [%#sselection_sort_generic17] permutation_of'0 (shallow_model'2 ( ^ v)) (shallow_model'0 v)}
+      {[@expl:postcondition] [%#sselection_sort_generic16] sorted'0 (deep_model'1 ( ^ v))}
+      (! return' {result}) ]
+    
+end

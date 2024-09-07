@@ -123,7 +123,7 @@ impl<'tcx> NotFinalPlaces<'tcx> {
     /// # Returns
     /// - If the reborrow is final, return the position of the dereference of the
     /// original borrow in `place.projection`.
-    ///   
+    ///
     ///   For example, if the reborrow `&mut (*x.0)` is final, then the projections are
     /// `[Field(0), Deref]`, and so we return `Some(1)`.
     ///
@@ -533,7 +533,7 @@ where
             // let r2 = &mut *bor; // r1 is not final !
             // ```
             | PlaceContext::MutatingUse(MutatingUseContext::Borrow) => {
-                self.trans.gen(self.mapping.places[&place.as_ref()])
+                self.trans.gen_(self.mapping.places[&place.as_ref()])
             }
             PlaceContext::MutatingUse(MutatingUseContext::Store)
             | PlaceContext::MutatingUse(MutatingUseContext::Call)
@@ -541,8 +541,8 @@ where
             | PlaceContext::MutatingUse(MutatingUseContext::AsmOutput) => {
                 let id = self.mapping.places[&place.as_ref()];
                 if self.mapping.has_dereference.contains(id) {
-                    // We are writing under a dereference, so this changes the prophecy of the underlying borrow. 
-                    self.trans.gen(id);
+                    // We are writing under a dereference, so this changes the prophecy of the underlying borrow.
+                    self.trans.gen_(id);
                 }
             }
             _ => {}

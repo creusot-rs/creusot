@@ -1,0 +1,44 @@
+
+module Unnest_Unnest
+  let%span sunnest0 = "../unnest.rs" 5 10 5 24
+  
+  let%span sunnest1 = "../unnest.rs" 6 10 6 24
+  
+  let%span sunnest2 = "../unnest.rs" 7 10 7 20
+  
+  let%span span3 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  
+  use prelude.prelude.Intrinsic
+  
+  use prelude.prelude.UInt32
+  
+  use prelude.prelude.Borrow
+  
+  predicate resolve'1 (self : borrowed (borrowed uint32)) =
+    [%#span3]  ^ self =  * self
+  
+  predicate resolve'0 (self : borrowed uint32) =
+    [%#span3]  ^ self =  * self
+  
+  use prelude.prelude.Int
+  
+  let rec unnest (x:borrowed (borrowed uint32)) (return'  (ret:borrowed uint32))= (! bb0
+    [ bb0 = s0
+      [ s0 = Borrow.borrow_mut <uint32> { *  * x}
+          (fun (_ret':borrowed uint32) ->
+             [ &_2 <- _ret' ] 
+             [ &x <- { x with current = { ( * x) with current = ( ^ _2) ; } ; } ] 
+            s1)
+      | s1 = Borrow.borrow_final <uint32> { * _2} {Borrow.get_id _2}
+          (fun (_ret':borrowed uint32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = ( ^ _0) ; } ] s2)
+      | s2 = -{resolve'0 _2}- s3
+      | s3 = -{resolve'1 x}- s4
+      | s4 = return' {_0} ]
+       ]
+    ) [ & _0 : borrowed uint32 = any_l () | & x : borrowed (borrowed uint32) = x | & _2 : borrowed uint32 = any_l () ] 
+    [ return' (result:borrowed uint32)-> {[@expl:postcondition] [%#sunnest2]  ^  * x =  ^  ^ x}
+      {[@expl:postcondition] [%#sunnest1]  ^ result =  *  ^ x}
+      {[@expl:postcondition] [%#sunnest0]  * result =  *  * x}
+      (! return' {result}) ]
+    
+end

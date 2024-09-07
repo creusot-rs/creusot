@@ -98,28 +98,34 @@ extern_spec! {
                 })]
                 fn next(&mut self) -> Option<Self::Item>;
 
+                #[pure]
                 #[ensures(result.iter() == self && result.n() == n@)]
                 fn skip(self, n: usize) -> Skip<Self>;
 
+                #[pure]
                 #[ensures(result.iter() == self && result.n() == n@)]
                 fn take(self, n: usize) -> Take<Self>;
 
+                #[pure]
                 #[ensures(result.iter() == self)]
                 fn cloned<'a, T>(self) -> Cloned<Self>
                     where T : 'a + Clone,
                         Self: Sized + Iterator<Item = &'a T>;
 
+                #[pure]
                 #[ensures(result.iter() == self)]
                 fn copied<'a, T>(self) -> Copied<Self>
                     where T : 'a + Copy,
                         Self: Sized + Iterator<Item = &'a T>;
 
+                #[pure]
                 #[ensures(result.iter() == self && result.n() == 0)]
                 fn enumerate(self) -> Enumerate<Self>;
 
                 #[ensures(result@ == Some(self))]
                 fn fuse(self) -> Fuse<Self>;
 
+                #[pure]
                 #[requires(other.into_iter_pre())]
                 #[ensures(result.itera() == self)]
                 #[ensures(other.into_iter_post(result.iterb()))]
@@ -154,11 +160,14 @@ extern_spec! {
                     where T: IntoIterator<Item = A>, T::IntoIter: Iterator;
             }
 
+            #[pure]
             fn empty<T>() -> Empty<T>;
 
+            #[pure]
             #[ensures(result@ == Some(value))]
             fn once<T>(value: T) -> Once<T>;
 
+            #[pure]
             #[ensures(result@ == elt)]
             fn repeat<T: Clone>(elt: T) -> Repeat<T>;
         }

@@ -78,7 +78,6 @@ impl Callbacks for ToWhy {
             let mut ctx = ctx::TranslationCtx::new(tcx, self.opts.clone());
             let _ = crate::translation::before_analysis(&mut ctx);
             let _ = tcx.analysis(());
-
             let _ = crate::translation::after_analysis(ctx);
         });
 

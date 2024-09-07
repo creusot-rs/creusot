@@ -44,7 +44,13 @@ impl Why3Launcher {
 
     pub fn make(&self, temp_dir: &Path) -> Result<Command> {
         let mode = self.mode.to_string();
-        PRELUDE.extract(temp_dir).expect("can't launch why3, could extract prelude into temp dir");
+        let mut prelude_dir: PathBuf = temp_dir.into();
+        prelude_dir.push("prelude");
+        std::fs::create_dir(&prelude_dir)?;
+
+        PRELUDE
+            .extract(prelude_dir)
+            .expect("can't launch why3, could extract prelude into temp dir");
 
         let mut command =
             if let Some(p) = &self.why3_path { Command::new(p) } else { Command::new("why3") };
@@ -116,10 +122,10 @@ impl Why3LauncherBuilder {
     }
 
     pub fn build(self) -> Result<Why3Launcher> {
-        let Some(mlcfg_file) = self.output_file else {
-            return Err(anyhow!("can't launch why3, no mlcfg_file specify"));
+        let Some(coma_file) = self.output_file else {
+            return Err(anyhow!("can't launch why3, no coma_file specify"));
         };
 
-        Ok(Why3Launcher::new(self.mode, self.why3_path, self.config_file, self.args, mlcfg_file))
+        Ok(Why3Launcher::new(self.mode, self.why3_path, self.config_file, self.args, coma_file))
     }
 }

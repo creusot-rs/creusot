@@ -1,4 +1,5 @@
 use crate::*;
+use ::std::cmp::Ordering;
 pub use ::std::option::*;
 
 impl<T: DeepModel> DeepModel for Option<T> {
@@ -30,24 +31,30 @@ extern_spec! {
     mod std {
         mod option {
             impl<T> Option<T> {
+                #[pure]
                 #[ensures(result == (*self != None))]
                 fn is_some(&self) -> bool;
 
+                #[pure]
                 #[ensures(result == (*self == None))]
                 fn is_none(&self) -> bool;
 
+                #[pure]
                 #[requires(self != None)]
                 #[ensures(Some(result) == self)]
                 fn unwrap(self) -> T;
 
+                #[pure]
                 #[requires(self != None)]
                 #[ensures(Some(result) == self)]
                 fn expect(self, msg: &str) -> T;
 
+                #[pure]
                 #[ensures(self == None ==> result == default)]
                 #[ensures(self == None || self == Some(result))]
                 fn unwrap_or(self, default: T) -> T;
 
+                #[pure]
                 #[ensures(*self == None ==> result == None && ^self == None)]
                 #[ensures(
                     *self == None
@@ -55,23 +62,28 @@ extern_spec! {
                 )]
                 fn as_mut(&mut self) -> Option<&mut T>;
 
+                #[pure]
                 #[ensures(*self == None ==> result == None)]
                 #[ensures(
                     *self == None || exists<r: &T> result == Some(r) && *self == Some(*r)
                 )]
                 fn as_ref(&self) -> Option<&T>;
 
+                #[pure]
                 #[ensures(self == None ==> result == None)]
                 #[ensures(self == None || result == optb)]
                 fn and<U>(self, optb: Option<U>) -> Option<U>;
 
+                #[pure]
                 #[ensures(self == None ==> result == optb)]
                 #[ensures(self == None || result == self)]
                 fn or(self, optb: Option<T>) -> Option<T>;
 
+                #[pure]
                 #[ensures(result == *self && ^self == None)]
                 fn take(&mut self) -> Option<T>;
 
+                #[pure]
                 #[ensures(result == *self && ^self == Some(value))]
                 fn replace(&mut self, value: T) -> Option<T>;
 
@@ -83,6 +95,7 @@ extern_spec! {
             }
 
             impl<T> Option<&T> {
+                #[pure]
                 #[ensures(self == None ==> result == None)]
                 #[ensures(self == None || exists<t: &T> self == Some(t) && result == Some(*t))]
                 fn copied(self) -> Option<T>
@@ -97,6 +110,7 @@ extern_spec! {
             }
 
             impl<T> Option<&mut T> {
+                #[pure]
                 #[ensures(self == None ==> result == None)]
                 #[ensures(
                     self == None
@@ -117,6 +131,7 @@ extern_spec! {
             }
 
             impl<T> Option<Option<T>> {
+                #[pure]
                 #[ensures(self == None ==> result == None)]
                 #[ensures(self == None || self == Some(result))]
                 fn flatten(self) -> Option<T>;
@@ -131,6 +146,21 @@ impl<T> Default for Option<T> {
     fn is_default(self) -> bool {
         pearlite! { self == None }
     }
+}
+
+impl<T: OrdLogic> OrdLogic for Option<T> {
+    #[logic]
+    #[open]
+    fn cmp_log(self, o: Self) -> Ordering {
+        match (self, o) {
+            (None, None) => Ordering::Equal,
+            (None, Some(_)) => Ordering::Less,
+            (Some(_), None) => Ordering::Greater,
+            (Some(x), Some(y)) => x.cmp_log(y),
+        }
+    }
+
+    ord_laws_impl! {}
 }
 
 impl<T> ShallowModel for IntoIter<T> {

@@ -14,7 +14,6 @@ pub struct GhostPtrToken<T: ?Sized>(PhantomData<T>);
 /// ZST equivalent of [`&'a GhostPtrToken<T>`](GhostPtrToken)
 /// Can be created using [`GhostPtrToken::borrow`]
 #[trusted]
-#[derive(Copy, Clone)]
 pub struct GhostPtrTokenRef<'a, T: ?Sized>(PhantomData<&'a T>);
 
 /// ZST equivalent of [`&'a mut GhostPtrToken<T>`](GhostPtrToken)
@@ -69,6 +68,7 @@ impl<T: ?Sized> GhostPtrToken<T> {
     // it couldn't have already been contained in `self`
     #[ensures((^self)@ == (*self)@.insert(result, *val))]
     pub fn ptr_from_box(&mut self, val: Box<T>) -> *const T {
+        assert!(core::mem::size_of_val::<T>(&*val) > 0, "GhostPtrToken doesn't support ZSTs");
         Box::into_raw(val)
     }
 
@@ -161,10 +161,9 @@ impl<'a, T: ?Sized> ShallowModel for GhostPtrTokenRef<'a, T> {
 impl<'a, T: ?Sized> Deref for GhostPtrTokenRef<'a, T> {
     type Target = GhostPtrToken<T>;
 
-    #[trusted]
     #[ensures(result@ == self@)]
     fn deref(&self) -> &Self::Target {
-        &GhostPtrToken(PhantomData)
+        self.to_ref()
     }
 }
 
@@ -177,6 +176,21 @@ impl<'a, T: ?Sized> GhostPtrTokenRef<'a, T> {
     pub fn shrink_token_ref(self, new_model: Snapshot<FMap<*const T, T>>) -> Self {
         self
     }
+
+    #[trusted]
+    #[ensures(result@ == self@)]
+    pub fn to_ref(self) -> &'a GhostPtrToken<T> {
+        &GhostPtrToken(PhantomData)
+    }
+}
+
+impl<'a, T: ?Sized> Copy for GhostPtrTokenRef<'a, T> {}
+
+impl<'a, T: ?Sized> Clone for GhostPtrTokenRef<'a, T> {
+    #[ensures(result == *self)]
+    fn clone(&self) -> Self {
+        *self
+    }
 }
 
 impl<'a, T: ?Sized> GhostPtrTokenMut<'a, T> {
@@ -188,7 +202,7 @@ impl<'a, T: ?Sized> GhostPtrTokenMut<'a, T> {
     }
 
     #[trusted]
-    #[logic]
+    #[logic(prophetic)]
     #[open(self)]
     pub fn fin(self) -> FMap<GhostPtr<T>, T> {
         absurd
@@ -257,7 +271,7 @@ impl<'a, T> DerefMut for GhostPtrTokenMut<'a, T> {
 
 #[trusted]
 impl<'a, T> Resolve for GhostPtrTokenMut<'a, T> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
     fn resolve(self) -> bool {
         self.cur() == self.fin()

@@ -6,8 +6,9 @@ use super::{
 use crate::{
     analysis::NotFinalPlaces,
     backend::ty::closure_accessors,
+    constant::from_mir_constant,
     ctx::*,
-    fmir::{self},
+    fmir,
     gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind, SpecClosures},
     resolve::EagerResolver,
     translation::{
@@ -35,7 +36,6 @@ use rustc_span::{Span, Symbol, DUMMY_SP};
 use std::{collections::HashMap, iter, rc::Rc};
 // use why3::declaration::*;
 
-pub(crate) mod promoted;
 mod statement;
 pub(crate) mod terminator;
 
@@ -349,14 +349,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     // Useful helper to translate an operand
     pub(crate) fn translate_operand(&mut self, operand: &Operand<'tcx>) -> fmir::Operand<'tcx> {
-        let kind =
-            match operand {
-                Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(*pl)),
-                Operand::Move(pl) => fmir::Operand::Move(self.translate_place(*pl)),
-                Operand::Constant(c) => fmir::Operand::Constant(
-                    crate::constant::from_mir_constant(self.param_env(), self.ctx, c),
-                ),
-            };
+        let kind = match operand {
+            Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(*pl)),
+            Operand::Move(pl) => fmir::Operand::Move(self.translate_place(*pl)),
+            Operand::Constant(c) => from_mir_constant(self.param_env(), self.ctx, c),
+        };
         kind
     }
 
@@ -438,7 +435,6 @@ fn translate_vars<'tcx>(
         vars.insert(
             sym.symbol(),
             LocalDecl {
-                mir_local: loc,
                 span: d.source_info.span,
                 ty: d.ty,
                 temp: !d.is_user_variable(),
@@ -753,7 +749,7 @@ pub(crate) fn resolve_predicate_of<'tcx>(
     let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method"))?;
     let subst = ctx.mk_args(&[GenericArg::from(ty)]);
 
-    let resolve_impl = traits::resolve_opt(ctx.tcx, param_env, trait_meth_id, subst)?;
+    let resolve_impl = traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, subst)?;
     use rustc_middle::ty::TypeVisitableExt;
     if !ty.still_further_specializable()
         && ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), resolve_impl.0)

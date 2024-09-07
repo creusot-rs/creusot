@@ -4,10 +4,12 @@ pub use ::std::mem::*;
 extern_spec! {
     mod std {
         mod mem {
+            #[pure]
             #[ensures(^dest == src)]
             #[ensures(result == *dest)]
             fn replace<T>(dest: &mut T, src: T) -> T;
 
+            #[pure]
             #[ensures(^x == *y)]
             #[ensures(^y == *x)]
             fn swap<T>(x: &mut T, y: &mut T);

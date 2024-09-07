@@ -129,7 +129,7 @@ pub(crate) fn val_decl<'tcx, N: Namer<'tcx>>(
 
     sig.contract
         .ensures
-        // = vec!(Exp::pure_var("result".into()).eq(Exp::pure_var(sig.name.clone()).app(val_args)));
+        // = vec!(Exp::var("result".into()).eq(Exp::var(sig.name.clone()).app(val_args)));
         .push(Exp::var("result").eq(Exp::var(sig.name.clone()).app(val_args)));
     sig.args = val_binders;
     Decl::ValDecl(ValDecl { sig, ghost: false, val: true, kind: None })
@@ -170,7 +170,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
     let has_axioms = !sig.contract.ensures.is_empty();
 
     let sig_contract = sig.clone();
-    let (mut sig, val_sig) = sigs(ctx, sig);
+    let (mut sig, _) = sigs(ctx, sig);
     if let Some(LetKind::Predicate) = kind {
         sig.retty = None;
     }
@@ -184,14 +184,12 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
         body,
     );
 
-    decls.push(Decl::val(val_sig));
-
     if has_axioms {
         if sig.uses_simple_triggers() {
             let lim_name = Ident::from_string(format!("{}_lim", &*sig.name));
             let mut lim_sig = sig.clone();
             lim_sig.name = lim_name;
-            lim_sig.trigger = None;
+            lim_sig.trigger = Some(Trigger::single(function_call(&lim_sig)));
             lim_sig.attrs = vec![];
 
             let lim_spec = spec_axiom(&lim_sig);
@@ -305,7 +303,7 @@ fn limited_function_encode(
 ) {
     let lim_name = Ident::from_string(format!("{}_lim", &*sig.name));
     subst_qname(&mut body, &sig.name, &lim_name);
-    let lim_sig = Signature {
+    let mut lim_sig = Signature {
         name: lim_name,
         trigger: None,
         attrs: vec![],
@@ -314,6 +312,7 @@ fn limited_function_encode(
         contract: sig.contract.clone(),
     };
     let lim_call = function_call(&lim_sig);
+    lim_sig.trigger = Some(Trigger::single(lim_call.clone()));
     decls.push(Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig: sig.clone() }));
     decls.push(Decl::Axiom(definition_axiom(&sig, body, "def")));
     decls.push(Decl::Axiom(definition_axiom(&sig, lim_call, "def_lim")));
@@ -395,8 +394,8 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
     let mut condition = preconditions.rfold(postcondition, |acc, arg| arg.implies(acc));
 
     let func_call = function_call(sig);
-    let trigger = sig.trigger.clone().unwrap_or_else(|| Trigger::single(func_call.clone()));
-    condition.subst(&[("result".into(), func_call.clone())].into_iter().collect());
+    let trigger = sig.trigger.clone().into_iter().collect();
+    condition.subst(&mut [("result".into(), func_call.clone())].into_iter().collect());
     let args: Vec<(_, _)> = sig
         .args
         .iter()
@@ -411,7 +410,7 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
     Axiom { name: format!("{}_spec", &*sig.name).into(), rewrite: false, axiom }
 }
 
-fn function_call(sig: &Signature) -> Exp {
+pub fn function_call(sig: &Signature) -> Exp {
     let mut args: Vec<_> = sig
         .args
         .iter()
@@ -429,7 +428,7 @@ fn function_call(sig: &Signature) -> Exp {
 
 fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
     let call = function_call(sig);
-    let trigger = sig.trigger.clone().unwrap_or_else(|| Trigger::single(call.clone()));
+    let trigger = sig.trigger.clone().into_iter().collect();
 
     let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
 

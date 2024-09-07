@@ -1,6 +1,6 @@
 use super::{
     term::lower_pure,
-    ty::{translate_ty, ty_param_names},
+    ty::{translate_ty, ty_params},
     CloneSummary, Dependencies, TransId, Why3Generator,
 };
 use crate::{
@@ -77,12 +77,12 @@ impl TyInvKind {
         }
     }
 
-    pub(crate) fn generics(self, tcx: TyCtxt) -> Vec<Ident> {
+    pub(crate) fn generics(self, ctx: &mut Why3Generator) -> Vec<Ident> {
         match self {
             TyInvKind::Trivial | TyInvKind::Borrow(_) | TyInvKind::Box | TyInvKind::Slice => {
                 vec!["t".into()]
             }
-            TyInvKind::Adt(def_id) => ty_param_names(tcx, def_id).collect(),
+            TyInvKind::Adt(def_id) => ty_params(ctx, def_id).collect(),
             TyInvKind::Tuple(arity) => (0..arity).map(|i| format!["t{i}"].into()).collect(),
         }
     }
@@ -405,7 +405,7 @@ pub(crate) fn build_inv_module<'tcx>(
     inv_kind: TyInvKind,
 ) -> CloneSummary<'tcx> {
     let mut names = Dependencies::new(ctx.tcx, [TransId::TyInv(inv_kind)]);
-    let generics = inv_kind.generics(ctx.tcx);
+    let generics = inv_kind.generics(ctx);
     let inv_axiom =
         names.with_vis(CloneLevel::Contract, |names| build_inv_axiom(ctx, names, inv_kind));
 
@@ -475,7 +475,7 @@ fn build_inv_axiom<'tcx>(
     };
     let trivial = rhs.is_true();
     let trigger =
-        if ctx.opts.simple_triggers { Trigger::single(lhs.clone()) } else { Trigger::NONE };
+        if ctx.opts.simple_triggers { vec![Trigger::single(lhs.clone())] } else { Vec::new() };
 
     let axiom = Exp::forall_trig(
         vec![("x".into(), translate_ty(ctx, names, DUMMY_SP, ty))],
@@ -504,7 +504,7 @@ fn resolve_user_inv<'tcx>(
     let subst = tcx.try_normalize_erasing_regions(param_env, subst).unwrap_or(subst);
 
     // if inv resolved to the default impl and is not specializable, ignore
-    if impl_did == trait_did && !traits::still_specializable(tcx, param_env, impl_did, subst) {
+    if impl_did == trait_did && !traits::still_specializable(tcx, param_env, trait_did, subst) {
         None
     } else {
         Some((impl_did, subst))

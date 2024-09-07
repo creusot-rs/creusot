@@ -22,17 +22,17 @@ impl Error {
 }
 
 #[derive(Debug, Clone)]
-pub struct CrErr;
+pub struct InternalError(pub &'static str);
 
-impl From<CrErr> for Error {
-    fn from(_: CrErr) -> Error {
-        Error::new(DUMMY_SP, "internal error")
+impl From<InternalError> for Error {
+    fn from(err: InternalError) -> Error {
+        Error::new(DUMMY_SP, format!("internal error: {}", err.0))
     }
 }
 
-impl std::fmt::Display for CrErr {
+impl std::fmt::Display for InternalError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "encountered errors during translation")
+        write!(f, "encountered errors during translation: '{}'", self.0)
     }
 }
-impl std::error::Error for CrErr {}
+impl std::error::Error for InternalError {}

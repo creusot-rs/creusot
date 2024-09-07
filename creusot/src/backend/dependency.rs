@@ -225,7 +225,7 @@ fn resolve_item<'tcx>(
     param_env: ParamEnv<'tcx>,
 ) -> Dependency<'tcx> {
     let resolved = if tcx.trait_of_item(item).is_some()
-        && let Some(resolved) = traits::resolve_opt(tcx, param_env, item, substs)
+        && let Some(resolved) = traits::resolve_assoc_item_opt(tcx, param_env, item, substs)
     {
         resolved
     } else {

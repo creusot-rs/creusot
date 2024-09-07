@@ -22,16 +22,16 @@ use Subcommand::*;
 
 fn main() -> Result<()> {
     let cargo_md = make_cargo_metadata()?;
-    let mlcfg_filename: PathBuf; //  mlcfg output file name container
+    let coma_filename: PathBuf; //  coma output file name container
 
     let mut cargs = CargoCreusotArgs::parse_from(std::env::args().skip(1));
 
-    // select mlcfg output file name
+    // select coma output file name
     if let Some(f) = &cargs.options.output_file {
-        mlcfg_filename = f.into();
+        coma_filename = f.into();
     } else {
-        mlcfg_filename = make_mlcfg_filename(&cargo_md)?;
-        cargs.options.output_file = Some(mlcfg_filename.to_string_lossy().into_owned());
+        coma_filename = make_coma_filename(&cargo_md)?;
+        cargs.options.output_file = Some(coma_filename.to_string_lossy().into_owned());
     }
 
     let subcommand = match cargs.subcommand {
@@ -71,7 +71,7 @@ fn main() -> Result<()> {
                 let mut b = Why3LauncherBuilder::new();
                 b.why3_path(config_args.why3_path);
                 b.config_file(config_args.why3_config);
-                b.output_file(mlcfg_filename);
+                b.output_file(coma_filename);
                 // temporary: for the moment we only launch why3 via cargo-creusot in Ide mode
                 b.mode(Why3Mode::Ide);
                 if let Some(subcmd) = &creusot_rustc_subcmd {
@@ -90,7 +90,7 @@ fn main() -> Result<()> {
             Ok(())
         }
         Setup(SetupSubCommand::Status) => setup::status(),
-        Setup(SetupSubCommand::Install { external, no_check_version }) => {
+        Setup(SetupSubCommand::Install { provers_parallelism, external, no_check_version }) => {
             let extflag =
                 |name| setup::ExternalFlag { check_version: !no_check_version.contains(&name) };
             let managedflag = |name, mname| setup::ManagedFlag {
@@ -98,6 +98,7 @@ fn main() -> Result<()> {
                 external: external.contains(&mname),
             };
             let flags = setup::InstallFlags {
+                provers_parallelism,
                 why3: extflag(SetupTool::Why3),
                 altergo: extflag(SetupTool::AltErgo),
                 z3: managedflag(SetupTool::Z3, SetupManagedTool::Z3),

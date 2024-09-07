@@ -1,6 +1,6 @@
 use crate::{
     pearlite::{self, Literal, Term, TermKind},
-    translation::traits::resolve_opt,
+    traits::resolve_assoc_item_opt,
     util::get_builtin,
 };
 use rustc_hir::def_id::DefId;
@@ -24,9 +24,9 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
         match &mut term.kind {
             TermKind::Call { id, subst, args } => {
                 let method = if self.tcx.trait_of_item(*id).is_some() {
-                    resolve_opt(self.tcx, self.param_env, *id, subst).unwrap_or_else(|| {
-                        panic!("could not resolve trait instance {:?}", (*id, *subst))
-                    })
+                    resolve_assoc_item_opt(self.tcx, self.param_env, *id, subst).unwrap_or_else(
+                        || panic!("could not resolve trait instance {:?}", (*id, *subst)),
+                    )
                 } else {
                     // TODO dont' do this
                     (*id, *subst)
@@ -47,9 +47,9 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
             }
             TermKind::Item(id, subst) => {
                 let method = if self.tcx.trait_of_item(*id).is_some() {
-                    resolve_opt(self.tcx, self.param_env, *id, subst).unwrap_or_else(|| {
-                        panic!("could not resolve trait instance {:?}", (*id, *subst))
-                    })
+                    resolve_assoc_item_opt(self.tcx, self.param_env, *id, subst).unwrap_or_else(
+                        || panic!("could not resolve trait instance {:?}", (*id, *subst)),
+                    )
                 } else {
                     // TODO dont' do this
                     (*id, *subst)
@@ -137,46 +137,46 @@ fn optimize_builtin<'tcx>(
             lhs: Box::new(args.remove(0)),
             rhs: Box::new(args.remove(0)),
         })
-    } else if builtin_attr == Some(Symbol::intern("prelude.UInt8.to_int"))
+    } else if builtin_attr == Some(Symbol::intern("prelude.prelude.UInt8.to_int"))
         && let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind
     {
         Some(TermKind::Lit(Literal::Integer(c as i128)))
-    } else if builtin_attr == Some(Symbol::intern("prelude.UInt16.to_int"))
+    } else if builtin_attr == Some(Symbol::intern("prelude.prelude.UInt16.to_int"))
         && let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind
     {
         Some(TermKind::Lit(Literal::Integer(c as i128)))
-    } else if builtin_attr == Some(Symbol::intern("prelude.UInt32.to_int"))
+    } else if builtin_attr == Some(Symbol::intern("prelude.prelude.UInt32.to_int"))
         && let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind
     {
         Some(TermKind::Lit(Literal::Integer(c as i128)))
-    } else if builtin_attr == Some(Symbol::intern("prelude.UInt64.to_int"))
+    } else if builtin_attr == Some(Symbol::intern("prelude.prelude.UInt64.to_int"))
         && let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind
     {
         Some(TermKind::Lit(Literal::Integer(c as i128)))
-    } else if builtin_attr == Some(Symbol::intern("prelude.UInt128.to_int"))
+    } else if builtin_attr == Some(Symbol::intern("prelude.prelude.UInt128.to_int"))
         && let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind
     {
         if c > isize::MAX as u128 {
             panic!("integer constant too large")
         }
         Some(TermKind::Lit(Literal::Integer(c as i128)))
-    } else if builtin_attr == Some(Symbol::intern("prelude.Int8.to_int"))
+    } else if builtin_attr == Some(Symbol::intern("prelude.prelude.Int8.to_int"))
         && let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind
     {
         Some(TermKind::Lit(Literal::Integer(c as i128)))
-    } else if builtin_attr == Some(Symbol::intern("prelude.Int16.to_int"))
+    } else if builtin_attr == Some(Symbol::intern("prelude.prelude.Int16.to_int"))
         && let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind
     {
         Some(TermKind::Lit(Literal::Integer(c as i128)))
-    } else if builtin_attr == Some(Symbol::intern("prelude.Int32.to_int"))
+    } else if builtin_attr == Some(Symbol::intern("prelude.prelude.Int32.to_int"))
         && let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind
     {
         Some(TermKind::Lit(Literal::Integer(c as i128)))
-    } else if builtin_attr == Some(Symbol::intern("prelude.Int64.to_int"))
+    } else if builtin_attr == Some(Symbol::intern("prelude.prelude.Int64.to_int"))
         && let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind
     {
         Some(TermKind::Lit(Literal::Integer(c as i128)))
-    } else if builtin_attr == Some(Symbol::intern("prelude.Int128.to_int"))
+    } else if builtin_attr == Some(Symbol::intern("prelude.prelude.Int128.to_int"))
         && let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind
     {
         Some(TermKind::Lit(Literal::Integer(c as i128)))

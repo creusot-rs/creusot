@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-// Check that module paths are properly printed in MLCFG.
+// Check that module paths are properly printed in coma.
 
 mod a {
     pub struct T(pub u32);

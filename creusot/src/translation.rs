@@ -10,9 +10,8 @@ pub(crate) mod traits;
 
 use crate::{
     backend::{TransId, Why3Generator},
-    ctx,
-    ctx::load_extern_specs,
-    error::CrErr,
+    ctx::{self, load_extern_specs},
+    error::InternalError,
     metadata,
     options::OutputFile,
     validate::{validate_impls, validate_opacity, validate_traits},
@@ -20,14 +19,13 @@ use crate::{
 use ctx::TranslationCtx;
 use heck::ToUpperCamelCase;
 use rustc_hir::{def::DefKind, def_id::LOCAL_CRATE};
-use rustc_middle::ty::Ty;
 use std::{error::Error, io::Write};
 use why3::{declaration::Module, mlcfg, Print};
 
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
     ctx.load_metadata();
-    load_extern_specs(ctx).map_err(|_| Box::new(CrErr))?;
+    load_extern_specs(ctx).map_err(|_| Box::new(InternalError("Failed to load extern specs")))?;
 
     for def_id in ctx.tcx.hir().body_owners() {
         ctx.check_purity(def_id);
@@ -41,6 +39,7 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
             validate_opacity(ctx, def_id);
         }
     }
+    crate::validate_terminates::validate_terminates(ctx);
 
     // Check that all trait laws are well-formed
     validate_traits(ctx);
@@ -82,7 +81,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
     let start = Instant::now();
 
     if why3.dcx().has_errors().is_some() {
-        return Err(Box::new(CrErr));
+        return Err(Box::new(InternalError("Failed to generate correct why3")));
     }
 
     if why3.should_export() {
@@ -123,95 +122,6 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
     debug!("after_analysis_dump: {:?}", start.elapsed());
 
     Ok(())
-}
-use rustc_middle::mir;
-
-pub(crate) fn binop_to_binop(ctx: &mut TranslationCtx, ty: Ty, op: mir::BinOp) -> why3::exp::BinOp {
-    use why3::exp::BinOp;
-    match op {
-        mir::BinOp::Add => {
-            if ty.is_floating_point() {
-                BinOp::FloatAdd
-            } else {
-                BinOp::Add
-            }
-        }
-        mir::BinOp::Sub => {
-            if ty.is_floating_point() {
-                BinOp::FloatSub
-            } else {
-                BinOp::Sub
-            }
-        }
-        mir::BinOp::Mul => {
-            if ty.is_floating_point() {
-                BinOp::FloatMul
-            } else {
-                BinOp::Mul
-            }
-        }
-        mir::BinOp::Div => {
-            if ty.is_floating_point() {
-                BinOp::FloatDiv
-            } else {
-                BinOp::Div
-            }
-        }
-        mir::BinOp::Eq => {
-            if ty.is_floating_point() {
-                BinOp::FloatEq
-            } else {
-                BinOp::Eq
-            }
-        }
-        mir::BinOp::Lt => {
-            if ty.is_floating_point() {
-                BinOp::FloatLt
-            } else {
-                BinOp::Lt
-            }
-        }
-        mir::BinOp::Le => {
-            if ty.is_floating_point() {
-                BinOp::FloatLe
-            } else {
-                BinOp::Le
-            }
-        }
-        mir::BinOp::Gt => {
-            if ty.is_floating_point() {
-                BinOp::FloatGt
-            } else {
-                BinOp::Gt
-            }
-        }
-        mir::BinOp::Ge => {
-            if ty.is_floating_point() {
-                BinOp::FloatGe
-            } else {
-                BinOp::Ge
-            }
-        }
-        mir::BinOp::Ne => BinOp::Ne,
-        mir::BinOp::Rem => BinOp::Mod,
-        _ => ctx.crash_and_error(
-            rustc_span::DUMMY_SP,
-            &format!("unsupported binary operation: {:?}", op),
-        ),
-    }
-}
-
-pub(crate) fn unop_to_unop(ty: Ty, op: rustc_middle::mir::UnOp) -> why3::exp::UnOp {
-    match op {
-        rustc_middle::mir::UnOp::Not => why3::exp::UnOp::Not,
-        rustc_middle::mir::UnOp::Neg => {
-            if ty.is_floating_point() {
-                why3::exp::UnOp::FloatNeg
-            } else {
-                why3::exp::UnOp::Neg
-            }
-        }
-    }
 }
 
 fn print_crate<W, I: Iterator<Item = Module>>(

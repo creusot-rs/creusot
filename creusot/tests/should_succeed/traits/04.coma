@@ -1,0 +1,84 @@
+
+module C04_User
+  type t
+  
+  let%span s040 = "../04.rs" 13 4 13 42
+  
+  let%span s041 = "../04.rs" 12 18 12 19
+  
+  let%span s042 = "../04.rs" 12 25 12 26
+  
+  let%span s043 = "../04.rs" 11 10 11 25
+  
+  let%span span4 = "../04.rs" 8 14 8 18
+  
+  let%span span5 = "../04.rs" 8 20 8 21
+  
+  let%span span6 = "../04.rs" 7 14 7 18
+  
+  let%span span7 = "../04.rs" 7 20 7 21
+  
+  let%span span8 = "../04.rs" 6 14 6 18
+  
+  let%span span9 = "../04.rs" 6 20 6 21
+  
+  predicate invariant'0 (self : t)
+  
+  predicate inv'0 (_x : t)
+  
+  axiom inv'0 : forall x : t . inv'0 x = true
+  
+  use prelude.prelude.Borrow
+  
+  use prelude.prelude.Intrinsic
+  
+  let rec func3'0 (self:t) (o:t) (return'  (ret:bool))= {[@expl:precondition] [%#span5] inv'0 o}
+    {[@expl:precondition] [%#span4] inv'0 self}
+    any [ return' (result:bool)-> (! return' {result}) ] 
+  
+  predicate resolve'0 (self : t)
+  
+  let rec func2'0 (self:t) (o:t) (return'  (ret:bool))= {[@expl:precondition] [%#span7] inv'0 o}
+    {[@expl:precondition] [%#span6] inv'0 self}
+    any [ return' (result:bool)-> (! return' {result}) ] 
+  
+  let rec func1'0 (self:t) (o:t) (return'  (ret:bool))= {[@expl:precondition] [%#span9] inv'0 o}
+    {[@expl:precondition] [%#span8] inv'0 self}
+    any [ return' (result:bool)-> (! return' {result}) ] 
+  
+  let rec user (a:t) (b:t) (return'  (ret:bool))= {[%#s042] inv'0 b}
+    {[%#s041] inv'0 a}
+    (! bb0
+    [ bb0 = s0 [ s0 = func1'0 {a} {b} (fun (_ret':bool) ->  [ &_4 <- _ret' ] s1) | s1 = bb1 ] 
+    | bb1 = any [ br0 -> {_4 = false} (! bb6) | br1 -> {_4} (! bb2) ] 
+    | bb2 = s0 [ s0 = func2'0 {b} {a} (fun (_ret':bool) ->  [ &_7 <- _ret' ] s1) | s1 = bb3 ] 
+    | bb3 = any [ br0 -> {_7 = false} (! bb5) | br1 -> {_7} (! bb4) ] 
+    | bb4 = s0
+      [ s0 = {[@expl:type invariant] inv'0 a} s1
+      | s1 = -{resolve'0 a}- s2
+      | s2 = {[@expl:type invariant] inv'0 b} s3
+      | s3 = -{resolve'0 b}- s4
+      | s4 = func3'0 {a} {b} (fun (_ret':bool) ->  [ &_0 <- _ret' ] s5)
+      | s5 = bb8 ]
+      
+    | bb8 = bb9
+    | bb5 = s0
+      [ s0 = {[@expl:type invariant] inv'0 b} s1
+      | s1 = -{resolve'0 b}- s2
+      | s2 = {[@expl:type invariant] inv'0 a} s3
+      | s3 = -{resolve'0 a}- s4
+      | s4 = bb7 ]
+      
+    | bb6 = s0
+      [ s0 = {[@expl:type invariant] inv'0 b} s1
+      | s1 = -{resolve'0 b}- s2
+      | s2 = {[@expl:type invariant] inv'0 a} s3
+      | s3 = -{resolve'0 a}- s4
+      | s4 = bb7 ]
+      
+    | bb7 = s0 [ s0 =  [ &_0 <- [%#s040] false ] s1 | s1 = bb9 ] 
+    | bb9 = return' {_0} ]
+    ) [ & _0 : bool = any_l () | & a : t = a | & b : t = b | & _4 : bool = any_l () | & _7 : bool = any_l () ] 
+    [ return' (result:bool)-> {[@expl:postcondition] [%#s043] result = false} (! return' {result}) ]
+    
+end

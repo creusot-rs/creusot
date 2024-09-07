@@ -6,7 +6,7 @@ use crate::{
     util,
     util::get_builtin,
 };
-use rustc_hir::def_id::DefId;
+use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat},
@@ -22,7 +22,11 @@ pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
     let span = term.span;
     let mut term = Lower { ctx, names }.lower_term(term);
     term.reassociate();
-    ctx.attach_span(span, term)
+    if let Some(attr) = names.span(span) {
+        term.with_attr(attr)
+    } else {
+        term
+    }
 }
 
 pub(super) struct Lower<'a, 'tcx, N: Namer<'tcx>> {
@@ -37,14 +41,23 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Item(id, subst) => {
                 let method = (*id, *subst);
                 debug!("resolved_method={:?}", method);
-                self.lookup_builtin(method, &Vec::new()).unwrap_or_else(|| {
+                let is_constant = matches!(self.ctx.def_kind(*id), DefKind::AssocConst);
+                let item = self.lookup_builtin(method, &Vec::new()).unwrap_or_else(|| {
                     // eprintln!("{id:?} {subst:?}");
                     let clone = self.names.value(*id, subst);
                     match self.ctx.type_of(id).instantiate_identity().kind() {
                         TyKind::FnDef(_, _) => Exp::Tuple(Vec::new()),
                         _ => Exp::qvar(clone),
                     }
-                })
+                });
+
+                // eprintln!("{id:?} {:?} {is_constant:?}", self.ctx.def_kind(*id));
+                if is_constant {
+                    let ty = translate_ty(self.ctx, self.names, term.span, term.ty);
+                    item.ascribe(ty)
+                } else {
+                    item
+                }
             }
             TermKind::Var(v) => Exp::var(util::ident_of(*v)),
             TermKind::Binary { op, box lhs, box rhs } => {
@@ -162,6 +175,16 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     TyKind::Adt(def, substs) => {
                         self.ctx.translate_accessor(def.variants()[0u32.into()].fields[*name].did);
                         self.names.accessor(def.did(), substs, 0, *name)
+                    }
+                    TyKind::Tuple(f) => {
+                        let mut fields = vec![Pat::Wildcard; f.len()];
+                        fields[name.as_usize()] = Pat::VarP("a".into());
+
+                        return Exp::Let {
+                            pattern: Pat::TupleP(fields),
+                            arg: Box::new(lhs),
+                            body: Box::new(Exp::var("a")),
+                        };
                     }
                     k => unreachable!("Projection from {k:?}"),
                 };

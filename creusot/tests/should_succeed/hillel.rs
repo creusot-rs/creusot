@@ -16,6 +16,7 @@ use creusot_contracts::{
 fn right_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     let old_str = snapshot! { str };
 
+    #[invariant(^str == ^*old_str)]
     #[invariant(old_str@.len() <= str@.len())]
     #[invariant(old_str@.len() < len@ ==> str@.len() <= len@)]
     #[invariant(str@.len() > len@ ==> str@.len() == old_str@.len())]
@@ -32,17 +33,18 @@ fn right_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
 #[ensures(forall<i: Int> 0 <= i && i < str@.len() ==> (^str)[i + ((^str)@.len() - str@.len())] == str[i])]
 fn left_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     let old_str = snapshot! { str };
-    let mut c: Snapshot<usize> = snapshot! { 0usize };
+    let mut c: Snapshot<Int> = snapshot! { 0 };
 
+    #[invariant(^str == ^*old_str)]
     #[invariant(old_str@.len() <= str@.len())]
     #[invariant(old_str@.len() < len@ ==> str@.len() <= len@)]
     #[invariant(str@.len() > len@ ==> str@.len() == old_str@.len())]
-    #[invariant(c@ == str@.len() - old_str@.len())]
-    #[invariant(forall<i: Int> c@ <= i && i < str@.len() ==> str[i] == old_str[i - c@])]
-    #[invariant(forall<i: Int> 0 <= i && i < c@ ==> str[i] == pad)]
+    #[invariant(*c == str@.len() - old_str@.len())]
+    #[invariant(forall<i: Int> *c <= i && i < str@.len() ==> str[i] == old_str[i - *c])]
+    #[invariant(forall<i: Int> 0 <= i && i < *c ==> str[i] == pad)]
     while str.len() < len {
         str.insert(0, pad);
-        c = snapshot! { 1usize + *c };
+        c = snapshot! { 1 + *c };
     }
 }
 
@@ -79,7 +81,7 @@ fn subset_push<T>(s: Seq<T>, elem: T) {}
 fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
     snapshot! { subset_push::<T::DeepModelTy> };
     proof_assert! { is_subset(vec.deep_model(), vec.deep_model().push(elem.deep_model())) };
-    let ghost_vec = snapshot! { *vec };
+    let ghost_vec = snapshot! { vec };
 
     #[invariant(forall<j: Int> 0 <= j && j < produced.len() ==> produced[j].deep_model() != elem.deep_model())]
     for e in vec.iter() {
@@ -90,6 +92,7 @@ fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
         }
     }
 
+    proof_assert!(^vec == ^*ghost_vec);
     proof_assert! { is_unique(vec.deep_model().push(elem.deep_model())) };
     vec.push(elem);
 }

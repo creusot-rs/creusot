@@ -22,7 +22,7 @@ To avoid first installing the `cargo-creusot` binary before running `cargo
 
 ## Running the testsuite
 
-- Test the output of creusot (mlcfg files) against reference files:
+- Test the output of creusot (coma files) against reference files:
 ```
 cargo test --test ui
 ```

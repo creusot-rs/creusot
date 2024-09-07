@@ -82,10 +82,16 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             }
 
             if let Some((did, subst)) = key.did() {
-                if traits::still_specializable(ctx.tcx, self.param_env, did, subst) {
+                // If this trait item could potentially be specialized we must avoid depending on its default impl
+                // Note that a trait item impl that can be specialized is always inserted as a dependency as the
+                // corresponding trait impl did, so we only consider trait impls here.
+                if ctx.tcx.trait_of_item(did).is_some()
+                    && traits::still_specializable(ctx.tcx, self.param_env, did, subst)
+                {
                     self.clone_graph.info_mut(key).opaque();
                 }
 
+                // Alternatively, if we don't have `open(..)` permission to see its body
                 if self_key
                     .did()
                     .is_some_and(|(self_did, _)| !ctx.is_transparent_from(did, self_did))
@@ -93,12 +99,14 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                     self.clone_graph.info_mut(key).opaque();
                 }
 
+                // Check if its a built in. TODO: is this still necessary here?
                 if matches!(key, DepNode::Item(_, _)) && get_builtin(ctx.tcx, did).is_some() {
                     continue;
                 }
 
                 ctx.translate(did);
 
+                // Something obscure related to type invariants. TODO: clean up / remove
                 if util::is_inv_internal(ctx.tcx, did) && depth == GraphDepth::Deep {
                     let ty = subst.type_at(0);
                     let ty = ctx.try_normalize_erasing_regions(self.param_env, ty).unwrap_or(ty);
@@ -108,7 +116,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 self.expand_laws(ctx, did, subst, depth);
             }
 
-            self.expand_subst(ctx, key);
+            self.expand_node(ctx, key);
             self.expand_projections(ctx, key);
             self.expand_dependencies(ctx, key);
         }
@@ -142,13 +150,12 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         }
     }
 
-    fn expand_subst(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
-        let Some((_, key_subst)) = key.did() else {
-            return;
-        };
+    /// Adds dependencies for types occuring in the node itself. That is either because the node *is* a type
+    /// or because it contains a substitution (and thus types)
+    fn expand_node(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
         let key_public = self.clone_graph.info(key).level;
-        // Check the substitution for node dependencies on closures
-        walk_types(key_subst, |t| {
+
+        walk_types(key, |t| {
             let node = match t.kind() {
                 TyKind::Alias(AliasTyKind::Projection, pty) => {
                     let node = DepNode::new(ctx.tcx, (pty.def_id, pty.args));
@@ -171,19 +178,16 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         });
     }
 
+    /// Expands the graph with explicitly registered dependencies of `key`.
+    /// Only items have dependencies, and they must have been precalculated (hence the call to `translate` above).
     fn expand_dependencies(&mut self, ctx: &mut Why3Generator<'tcx>, key: DepNode<'tcx>) {
         let key_public = self.clone_graph.info(key).level;
 
-        if let DepNode::TyInv(_, _) = key {
-            // eprintln!("deps of{key:?} {:#?} ", ctx.dependencies(key));
-        }
         for (dep, info) in ctx.dependencies(key).iter().flat_map(|i| i.iter()) {
             trace!("adding dependency {:?} {:?}", dep, info.level);
 
-            // eprintln!("substituted {:?}", dep.subst(ctx.tcx, key));
             let dep = self.resolve_dep(ctx, dep.subst(ctx.tcx, key));
 
-            // eprintln!("inserting dependency {:?} {:?}", key, dep);
             self.add_node(dep, key_public.max(info.level));
 
             // Skip reflexive edges

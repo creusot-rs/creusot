@@ -13,5 +13,6 @@
 - [Pearlite](./pearlite.md)
 - [Logic functions](logic_functions.md)
 - [Shallow model](./shallow_model.md)
+- [Termination](./termination.md)
 - [Snapshots](snapshots.md)
 - [Type invariants](./type_invariants.md)

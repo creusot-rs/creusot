@@ -7,8 +7,8 @@ use creusot_contracts::{
 
 #[derive(Clone, PartialEq)]
 pub struct Product<A, B> {
-    a: A,
-    b: B,
+    pub a: A,
+    pub b: B,
 }
 
 impl<A, B> DeepModel for Product<A, B>
@@ -48,9 +48,9 @@ impl<A: DeepModel, B: DeepModel> DeepModel for Sum<A, B> {
 
 #[derive(Resolve)]
 pub struct Product2<'a, A> {
-    a: &'a mut A,
-    b: bool,
-    c: Vec<u32>,
+    pub a: &'a mut A,
+    pub b: bool,
+    pub c: Vec<u32>,
 }
 
 #[derive(Resolve)]
@@ -59,14 +59,53 @@ pub enum Sum2<A, B> {
     Y { a: bool, x: B },
 }
 
-#[derive(DeepModel)]
 pub struct List<T> {
     pub elem: T,
     pub tail: Option<Box<List<T>>>,
 }
 
-#[derive(DeepModel)]
+pub struct ListDeepModel<T: DeepModel> {
+    pub elem: <T as DeepModel>::DeepModelTy,
+    pub tail: Option<Box<ListDeepModel<T>>>,
+}
+
+impl<T: DeepModel> DeepModel for List<T> {
+    type DeepModelTy = ListDeepModel<T>;
+
+    #[open]
+    #[logic]
+    fn deep_model(self) -> Self::DeepModelTy {
+        ListDeepModel {
+            elem: self.elem.deep_model(),
+            tail: match self.tail {
+                None => None,
+                Some(tail) => Some(Box::new((*tail).deep_model())),
+            },
+        }
+    }
+}
+
 pub enum Expr<V> {
     Var(V),
     Add(Box<Expr<V>>, Box<Expr<V>>),
+}
+
+pub enum ExprDeepModel<V: DeepModel> {
+    Var(<V as DeepModel>::DeepModelTy),
+    Add(Box<ExprDeepModel<V>>, Box<ExprDeepModel<V>>),
+}
+
+impl<V: DeepModel> DeepModel for Expr<V> {
+    type DeepModelTy = ExprDeepModel<V>;
+
+    #[open]
+    #[logic]
+    fn deep_model(self) -> Self::DeepModelTy {
+        match self {
+            Expr::Var(v) => ExprDeepModel::Var(v.deep_model()),
+            Expr::Add(e1, e2) => {
+                ExprDeepModel::Add(Box::new((*e1).deep_model()), Box::new((*e2).deep_model()))
+            }
+        }
+    }
 }

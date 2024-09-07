@@ -83,6 +83,24 @@ impl Print for Decl {
             Decl::Let(l) => l.pretty(alloc),
             Decl::ConstantDecl(c) => c.pretty(alloc),
             Decl::Coma(d) => d.pretty(alloc),
+            Decl::LetSpan(nm, f, l1, c1, l2, c2) => docs![
+                alloc,
+                "let%span",
+                alloc.space(),
+                nm.pretty(alloc),
+                alloc.space(),
+                alloc.text("="),
+                alloc.space(),
+                alloc.text(f).double_quotes(),
+                alloc.space(),
+                alloc.as_string(l1),
+                alloc.space(),
+                alloc.as_string(c1),
+                alloc.space(),
+                alloc.as_string(l2),
+                alloc.space(),
+                alloc.as_string(c2),
+            ],
         }
     }
 }
@@ -98,7 +116,10 @@ impl Print for Module {
             .append(alloc.hardline())
             .append(
                 alloc
-                    .intersperse(self.decls.iter().map(|decl| decl.pretty(alloc)), alloc.hardline())
+                    .intersperse(
+                        self.decls.iter().map(|decl| decl.pretty(alloc)),
+                        alloc.hardline().append(alloc.hardline()),
+                    )
                     .indent(2),
             )
             .append(alloc.hardline())
@@ -159,13 +180,17 @@ impl Print for declaration::Constant {
     where
         A::Doc: Clone,
     {
-        alloc
-            .text("constant ")
-            .append(self.name.pretty(alloc))
-            .append(" : ")
-            .append(self.type_.pretty(alloc))
-            .append(" = ")
-            .append(self.body.pretty(alloc))
+        docs![
+            alloc,
+            "constant ",
+            self.name.pretty(alloc),
+            " : ",
+            self.type_.pretty(alloc),
+            match &self.body {
+                Some(b) => alloc.text(" = ").append(b.pretty(alloc)),
+                None => alloc.nil(),
+            }
+        ]
     }
 }
 
@@ -213,6 +238,7 @@ impl Print for Attribute {
     {
         match &self {
             Attribute::Attr(s) => alloc.text("@").append(s),
+            Attribute::NamedSpan(s) => alloc.text("%#").append(s),
             Attribute::Span(f, ls, cs, le, ce) => alloc
                 .text("#")
                 .append(alloc.text(f).double_quotes())
@@ -522,10 +548,7 @@ impl Print for Trigger {
     where
         A::Doc: Clone,
     {
-        match &self.0 {
-            None => alloc.nil(),
-            Some(exp) => exp.pretty(alloc).brackets(),
-        }
+        alloc.intersperse(self.0.iter().map(|t| t.pretty(alloc)), ", ")
     }
 }
 
@@ -639,32 +662,44 @@ impl Print for Exp {
                 .append("else")
                 .append(alloc.line().append(e.pretty(alloc)).nest(2).append(alloc.line_()))
                 .group(),
-            Exp::Forall(binders, trig, exp) => alloc
-                .text("forall ")
-                .append(
+            Exp::Forall(binders, trig, exp) => {
+                let mut res = alloc.text("forall ").append(
                     alloc.intersperse(
                         binders
                             .iter()
                             .map(|(b, t)| b.pretty(alloc).append(" : ").append(t.pretty(alloc))),
                         ", ",
                     ),
-                )
-                .append(trig.pretty(alloc))
-                .append(" . ")
-                .append(exp.pretty(alloc)),
-            Exp::Exists(binders, trig, exp) => alloc
-                .text("exists ")
-                .append(
+                );
+
+                if trig.iter().fold(false, |acc, t| acc || !t.0.is_empty()) {
+                    res = res
+                        .append(" [")
+                        .append(alloc.intersperse(trig.iter().map(|t| t.pretty(alloc)), " | "))
+                        .append("]");
+                }
+
+                res.append(" . ").append(exp.pretty(alloc))
+            }
+            Exp::Exists(binders, trig, exp) => {
+                let mut res = alloc.text("exists ").append(
                     alloc.intersperse(
                         binders
                             .iter()
                             .map(|(b, t)| b.pretty(alloc).append(" : ").append(t.pretty(alloc))),
                         ", ",
                     ),
-                )
-                .append(trig.pretty(alloc))
-                .append(" . ")
-                .append(exp.pretty(alloc)),
+                );
+
+                if trig.iter().fold(false, |acc, t| acc || !t.0.is_empty()) {
+                    res = res
+                        .append(" [")
+                        .append(alloc.intersperse(trig.iter().map(|t| t.pretty(alloc)), " | "))
+                        .append("]");
+                }
+
+                res.append(" . ").append(exp.pretty(alloc))
+            }
             Exp::Impl(hyp, exp) => {
                 let hyp = parens!(alloc, self, hyp);
                 let impl_ = alloc
@@ -1006,10 +1041,12 @@ impl Print for TyDecl {
             TyDecl::Adt { tys } => {
                 use std::iter::*;
                 let header = once("type").chain(repeat("with"));
-                let mut decl = alloc.nil();
+
+                let mut decls = Vec::new();
 
                 for (hdr, ty_decl) in header.zip(tys.iter()) {
-                    decl = decl
+                    let decl = alloc
+                        .nil()
                         .append(hdr)
                         .append(" ")
                         .append(ty_decl.ty_name.pretty(alloc))
@@ -1024,32 +1061,25 @@ impl Print for TyDecl {
                             ),
                         );
 
-                    let mut inner_doc = alloc.nil();
-                    for cons in &ty_decl.constrs {
-                        let ty_cons = alloc.text("| ").append(cons.pretty(alloc));
-                        inner_doc = inner_doc.append(ty_cons.append(alloc.hardline()))
-                    }
-                    decl = decl
+                    let inner_doc = alloc.intersperse(
+                        ty_decl
+                            .constrs
+                            .iter()
+                            .map(|cons| alloc.text("| ").append(cons.pretty(alloc))),
+                        alloc.hardline(),
+                    );
+
+                    let decl = decl
                         .append(alloc.text(" =").append(alloc.hardline()))
-                        .append(inner_doc.indent(2))
+                        .append(inner_doc.indent(2));
+                    decls.push(decl);
                 }
-                decl
+
+                alloc.intersperse(decls, alloc.hardline())
             }
         };
 
-        // let mut ty_decl =
-        //     alloc.text("type ").append(self.ty_name.pretty(alloc)).append(" ").append(
-        //         alloc.intersperse(
-        //             self.ty_params.iter().map(|p| alloc.text("'").append(p.pretty(alloc))),
-        //             alloc.space(),
-        //         ),
-        //     );
-
-        // if !matches!(self, TyDecl::Opaque { .. }) {
-        //     ty_decl = ty_decl.append(alloc.text(" =").append(alloc.hardline()));
-        // }
         ty_decl
-        // ty_decl.append(self.kind.pretty(alloc).indent(2))
     }
 }
 

@@ -1,0 +1,147 @@
+
+module C256_U8Safe
+  let%span s2560 = "../256.rs" 4 16 4 17
+  
+  use prelude.prelude.Intrinsic
+  
+  use prelude.prelude.Int
+  
+  use prelude.prelude.UInt8
+  
+  let rec u8_safe (u:uint8) (return'  (ret:()))= (! bb0
+    [ bb0 = s0
+      [ s0 = UInt8.add {u} {[%#s2560] (0 : uint8)} (fun (_ret':uint8) ->  [ &_2 <- _ret' ] s1) | s1 = return' {_0} ]
+       ]
+    ) [ & _0 : () = any_l () | & u : uint8 = u | & _2 : uint8 = any_l () ] 
+    [ return' (result:())-> (! return' {result}) ]
+    
+end
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.prelude.Opaque
+  
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
+    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
+    | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
+    
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
+    [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
+    
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type as PhantomData'0
+  
+  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  
+  type t_unique 't =
+    | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
+    [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+      = input}
+      (! ret {pointer} {_marker})
+    | bad (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+      <> input}
+      {false}
+      any ]
+    
+end
+module Alloc_RawVec_Cap_Type
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  type t_cap  =
+    | C_Cap usize
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_cap (input:t_cap) (ret  (field_0:usize))= any
+    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
+    | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use Alloc_RawVec_Cap_Type as Cap'0
+  
+  use Core_Ptr_Unique_Unique_Type as Unique'0
+  
+  type t_rawvec 't 'a =
+    | C_RawVec (Unique'0.t_unique 't) (Cap'0.t_cap) 'a
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_rawvec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a))= any
+    [ good (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
+      (! ret {ptr} {cap} {alloc})
+    | bad (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
+    
+end
+module Alloc_Vec_Vec_Type
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  use Alloc_RawVec_RawVec_Type as RawVec'0
+  
+  type t_vec 't 'a =
+    | C_Vec (RawVec'0.t_rawvec 't 'a) usize
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_vec < 't > < 'a > (input:t_vec 't 'a) (ret  (buf:RawVec'0.t_rawvec 't 'a) (len:usize))= any
+    [ good (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
+    | bad (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+    
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_global (input:t_global) (ret  )= any
+    [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
+    
+end
+module Alloc_String_String_Type
+  use Alloc_Alloc_Global_Type as Global'0
+  
+  use prelude.prelude.UInt8
+  
+  use prelude.prelude.Int
+  
+  use Alloc_Vec_Vec_Type as Vec'0
+  
+  type t_string  =
+    | C_String (Vec'0.t_vec uint8 (Global'0.t_global))
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_string (input:t_string) (ret  (vec:Vec'0.t_vec uint8 (Global'0.t_global)))= any
+    [ good (vec:Vec'0.t_vec uint8 (Global'0.t_global))-> {C_String vec = input} (! ret {vec})
+    | bad (vec:Vec'0.t_vec uint8 (Global'0.t_global))-> {C_String vec <> input} {false} any ]
+    
+end
+module C256_Bug256
+  use Alloc_String_String_Type as String'0
+  
+  use prelude.prelude.Intrinsic
+  
+  let rec bug_256 (_x:String'0.t_string) (return'  (ret:()))= (! bb0 [ bb0 = bb1 | bb1 = return' {_0} ] )
+    [ & _0 : () = any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end

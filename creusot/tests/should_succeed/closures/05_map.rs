@@ -1,12 +1,13 @@
 extern crate creusot_contracts;
 
-trait FakeIterator {
+pub trait FakeIterator {
     type Item;
 
     fn next(&mut self) -> Option<Self::Item>;
 }
 
-struct Map<I, F> {
+#[allow(dead_code)]
+pub struct Map<I, F> {
     iter: I,
     func: F,
 }

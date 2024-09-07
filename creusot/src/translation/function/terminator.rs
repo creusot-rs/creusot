@@ -13,7 +13,7 @@ use itertools::Itertools;
 use rustc_hir::def_id::DefId;
 use rustc_infer::{
     infer::{InferCtxt, TyCtxtInferExt},
-    traits::{FulfillmentError, Obligation, ObligationCause, TraitEngine},
+    traits::{Obligation, ObligationCause, TraitEngine},
 };
 use rustc_middle::{
     mir::{
@@ -23,7 +23,10 @@ use rustc_middle::{
     ty::{self, GenericArgKind, GenericArgsRef, ParamEnv, Predicate, Ty, TyKind},
 };
 use rustc_span::{Span, Symbol};
-use rustc_trait_selection::traits::{error_reporting::TypeErrCtxtExt, TraitEngineExt};
+use rustc_trait_selection::{
+    error_reporting::InferCtxtErrorExt,
+    traits::{FulfillmentError, TraitEngineExt},
+};
 use std::collections::HashMap;
 
 // Translate the terminator of a basic block.
@@ -167,7 +170,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             FalseUnwind { real_target, .. } => {
                 self.emit_terminator(mk_goto(*real_target));
             }
-            CoroutineDrop | UnwindResume | Yield { .. } | InlineAsm { .. } => {
+            CoroutineDrop | UnwindResume | Yield { .. } | InlineAsm { .. } | TailCall { .. } => {
                 unreachable!("{:?}", terminator.kind)
             }
         }
@@ -237,7 +240,7 @@ pub(crate) fn evaluate_additional_predicates<'tcx>(
     param_env: ParamEnv<'tcx>,
     sp: Span,
 ) -> Result<(), Vec<FulfillmentError<'tcx>>> {
-    let mut fulfill_cx = <dyn TraitEngine<'tcx>>::new(infcx);
+    let mut fulfill_cx = <dyn TraitEngine<'tcx, _>>::new(infcx);
     for predicate in p {
         let predicate = infcx.tcx.erase_regions(predicate);
         let cause = ObligationCause::dummy_with_span(sp);
@@ -245,7 +248,6 @@ pub(crate) fn evaluate_additional_predicates<'tcx>(
         // holds &= infcx.predicate_may_hold(&obligation);
         fulfill_cx.register_predicate_obligation(&infcx, obligation);
     }
-    use rustc_infer::traits::TraitEngineExt;
     let errors = fulfill_cx.select_all_or_error(&infcx);
     if !errors.is_empty() {
         return Err(errors);

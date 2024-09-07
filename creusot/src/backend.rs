@@ -17,7 +17,6 @@ use std::{
 
 use crate::{options::SpanMode, run_why3::SpanMap};
 pub(crate) use clone_map::*;
-use why3::Exp;
 
 use self::{
     dependency::{Dependency, ExtendedId},
@@ -37,6 +36,7 @@ pub(crate) mod term;
 pub(crate) mod traits;
 pub(crate) mod ty;
 pub(crate) mod ty_inv;
+pub(crate) mod wto;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub(crate) enum TransId {
@@ -179,7 +179,10 @@ impl<'tcx> Why3Generator<'tcx> {
                         .insert(repr, TranslatedItem::Type { modl, accessors: Default::default() });
                 }
             }
-            ItemType::Field => self.translate_accessor(def_id),
+            ItemType::Field => unreachable!(),
+            ItemType::Variant => {
+                self.translate(self.ctx.parent(def_id));
+            }
             ItemType::Unsupported(dk) => self.crash_and_error(
                 self.tcx.def_span(def_id),
                 &format!("unsupported definition kind {:?} {:?}", def_id, dk),
@@ -387,7 +390,7 @@ impl<'tcx> Why3Generator<'tcx> {
                 let path = to_absolute(path);
                 let base = to_absolute(base);
                 // Why3 treats the spans as relative to the session, not the source file,
-                // and the session is in a subdirectory next to the mlcfg file, so we need
+                // and the session is in a subdirectory next to the coma file, so we need
                 // to add an extra ".."
                 let p = std::path::PathBuf::from("..");
                 let diff = pathdiff::diff_paths(&path, &base)?;
@@ -403,14 +406,6 @@ impl<'tcx> Why3Generator<'tcx> {
             hi.line,
             hi.col_display,
         ))
-    }
-
-    pub(crate) fn attach_span(&mut self, span: Span, exp: Exp) -> Exp {
-        if let Some(attr) = self.span_attr(span) {
-            Exp::Attr(attr, Box::new(exp))
-        } else {
-            exp
-        }
     }
 }
 

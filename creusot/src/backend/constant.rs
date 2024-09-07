@@ -17,17 +17,15 @@ impl<'tcx> Why3Generator<'tcx> {
     ) -> (TranslatedItem, CloneSummary<'tcx>) {
         let subst = GenericArgs::identity_for_item(self.tcx, def_id);
         let uneval = ty::UnevaluatedConst::new(def_id, subst);
-        let constant = Const::new(
-            self.tcx,
-            ty::ConstKind::Unevaluated(uneval),
-            self.type_of(def_id).instantiate_identity(),
-        );
+        let constant = Const::new(self.tcx, ty::ConstKind::Unevaluated(uneval));
+        let ty = self.tcx.type_of(def_id).instantiate(self.tcx, subst);
 
         let param_env = self.param_env(def_id);
         let span = self.def_span(def_id);
-        let res = from_ty_const(&mut self.ctx, constant, param_env, span);
+        let res = from_ty_const(&mut self.ctx, constant, ty, param_env, span);
         let mut names = Dependencies::new(self.tcx, [def_id]);
         let _ = lower_pure(self, &mut names, &res);
+
         let _ = signature_of(self, &mut names, def_id);
         let (_, summary) = names.provide_deps(self, GraphDepth::Shallow);
 
