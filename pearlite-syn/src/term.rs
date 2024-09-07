@@ -1977,8 +1977,9 @@ pub(crate) mod printing {
             self.bang_token.to_tokens(tokens);
             self.bracket_token.surround(tokens, |tokens| {
                 self.trigger_token.to_tokens(tokens);
-                for pair in self.terms.pairs() {
-                    pair.to_tokens(tokens)
+                self.terms.to_tokens(tokens);
+                if !self.terms.empty_or_trailing() {
+                    <Token![,] as Default>::default().to_tokens(tokens)
                 }
             })
         }
