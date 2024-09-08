@@ -108,7 +108,7 @@ fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
                  (#(#recurse),*) ;
             }
         }
-        Fields::Unit => quote! {},
+        Fields::Unit => quote! { ; },
     }
 }
 

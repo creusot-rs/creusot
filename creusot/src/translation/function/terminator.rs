@@ -422,7 +422,7 @@ fn resolve_function<'tcx>(
     if ctx.sig(res.0).contract.extern_no_spec {
         ctx.warn(
             sp,
-            "calling an external function with no contract will yield an impossible precondition",
+            &format!("calling external function `{}` with no contract will yield an impossible precondition", ctx.def_path_str(def_id))
         )
         .emit();
     }
