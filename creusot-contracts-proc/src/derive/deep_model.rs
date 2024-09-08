@@ -75,7 +75,6 @@ fn add_trait_bounds(mut generics: Generics) -> Generics {
     for param in &mut generics.params {
         if let GenericParam::Type(ref mut type_param) = *param {
             type_param.bounds.push(parse_quote!(::creusot_contracts::DeepModel));
-            // type_param.bounds.push(parse_quote!(::creusot_contracts::model::DeepModel));
         }
     }
     generics
@@ -105,18 +104,19 @@ fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
                 }
             });
             quote! {
-                 (#(#recurse),*) ;
+                 (#(#recurse),*)
             }
         }
-        Fields::Unit => quote! { ; },
+        Fields::Unit => quote! {},
     }
 }
 
 fn deep_model_ty(base_ident: &Ident, generics: &Generics, data: &Data) -> TokenStream {
     match data {
         Data::Struct(ref data) => {
+            let semi_colon = data.semi_token;
             let data = deep_model_ty_fields(&data.fields);
-            quote! { struct #base_ident #generics #data }
+            quote! { struct #base_ident #generics #data #semi_colon }
         }
         Data::Enum(ref data) => {
             let arms = data.variants.iter().map(|v| {
