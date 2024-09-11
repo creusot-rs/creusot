@@ -959,9 +959,17 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     ));
                 };
 
-                let inner = self.expr_term(*arg)?;
 
-                Ok((inner.clone().cur().span(span), inner.fin().span(span)))
+                match self.thir[*arg].ty.kind() {
+                    TyKind::Ref(_, _, Mutability::Mut) => {
+                        let inner = self.expr_term(*arg)?;
+                        Ok((inner.clone().cur().span(span), inner.fin().span(span)))
+                    }
+                    TyKind::Adt(adtdef, _) if adtdef.is_box() => {
+                        self.logical_reborrow_inner(*arg)
+                    }
+                    _ => unreachable!("Unexpected deref type: {ty:?}.")
+                }
             }
             ExprKind::Call { ty: fn_ty, args, .. } if fn_ty.is_fn() => {
                 let index_logic_method =
@@ -1031,10 +1039,17 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         term,
                         projections,
                     ));
-                };
+                }
 
-                let inner = self.expr_term(*arg)?;
-                Ok((inner, Vec::new()))
+                match self.thir[*arg].ty.kind() {
+                    TyKind::Ref(_, _, Mutability::Mut) => Ok((self.expr_term(*arg)?, Vec::new())),
+                    TyKind::Adt(adtdef, _) if adtdef.is_box() => {
+                        let mut res = self.logical_reborrow_inner_project(*arg)?;
+                        res.1.push(ProjectionElem::Deref);
+                        Ok(res)
+                    }
+                    _ => unreachable!("Unexpected deref type: {ty:?}.")
+                }
             }
             ExprKind::Call { ty: fn_ty, args, .. } if fn_ty.is_fn() => {
                 let index_logic_method = self.ctx.get_diagnostic_item(Symbol::intern("index_logic_method")).unwrap();

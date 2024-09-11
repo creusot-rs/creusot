@@ -135,6 +135,11 @@ pub fn borrow_in_box_tuple_2(x: (i32, Box<&mut i32>)) -> i32 {
     *borrow
 }
 
+#[ensures(result == &mut **x)]
+pub fn reborrow_in_box<T>(x: &mut Box<T>) -> &mut T {
+    &mut **x
+}
+
 //=========================================
 //=========== NON-MUTATING USES ===========
 //=========================================
