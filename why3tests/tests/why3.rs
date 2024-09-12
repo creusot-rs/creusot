@@ -113,15 +113,15 @@ fn main() {
                 continue;
             };
 
-            if !proved {
-                let color = if should_fail { Color::Green } else { orange };
-                out.set_color(ColorSpec::new().set_fg(Some(color))).unwrap();
+            if !proved && !should_fail {
+                out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
                 writeln!(&mut out, "not proved").unwrap();
                 out.reset().unwrap();
 
-                success &= should_fail;
+                success = false;
                 continue;
-            } else if should_fail {
+            }
+            if proved && should_fail {
                 out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
                 writeln!(&mut out, "proof exists").unwrap();
                 out.reset().unwrap();
