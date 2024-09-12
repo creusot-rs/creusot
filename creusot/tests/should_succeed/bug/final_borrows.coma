@@ -620,7 +620,7 @@ module FinalBorrows_NotFinalBorrowWorks
     [ bb0 = s0
       [ s0 =  [ &x <- [%#sfinal_borrows0] (1 : int32) ] s1
       | s1 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &r <- _ret' ]  [ &x <- r.final ] s2)
-      | s2 = Borrow.borrow_final <int32> {r.current} {Borrow.get_id r}
+      | s2 = Borrow.borrow_mut <int32> {r.current}
           (fun (_ret':borrowed int32) ->  [ &r1 <- _ret' ]  [ &r <- { r with current = r1.final ; } ] s3)
       | s3 = Borrow.borrow_final <int32> {r1.current} {Borrow.get_id r1}
           (fun (_ret':borrowed int32) ->  [ &_7 <- _ret' ]  [ &r1 <- { r1 with current = _7.final ; } ] s4)
@@ -980,7 +980,7 @@ module FinalBorrows_BoxReborrowIndirect
   let rec box_reborrow_indirect (x:borrowed t) (return'  (ret:t))= {[%#sfinal_borrows0] inv'2 x}
     (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_mut <t> {x.current}
+      [ s0 = Borrow.borrow_final <t> {x.current} {Borrow.get_id x}
           (fun (_ret':borrowed t) ->  [ &_4 <- _ret' ]  [ &x <- { x with current = _4.final ; } ] s1)
       | s1 = -{inv'0 _4.final}- s2
       | s2 = Borrow.borrow_final <t> {_4.current} {Borrow.get_id _4}

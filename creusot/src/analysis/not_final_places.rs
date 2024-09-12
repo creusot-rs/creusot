@@ -13,7 +13,7 @@ use rustc_middle::{
 use rustc_mir_dataflow::{
     fmt::DebugWithContext, AnalysisDomain, Backward, GenKill, GenKillAnalysis, ResultsCursor,
 };
-use std::collections::HashMap;
+use std::collections::{hash_map, HashMap};
 
 pub type PlaceId = usize;
 
@@ -69,7 +69,7 @@ pub struct NotFinalPlaces<'tcx> {
     subplaces: Vec<Vec<PlaceRef<'tcx>>>,
     /// Maps each place to the set of conflicting subplaces.
     ///
-    /// Two places `p1` and `p2` are conflicting if one is a subplace of the other.
+    /// Two places `p1` and `p2` are conflicting if they may refer to the same memory location
     conflicting_places: Vec<Vec<PlaceRef<'tcx>>>,
 }
 
@@ -93,9 +93,7 @@ impl<'tcx> NotFinalPlaces<'tcx> {
                     std::iter::once(place_ref).chain(place_ref.iter_projections().map(|(p, _)| p))
                 {
                     let idx = self.places.len();
-                    if let std::collections::hash_map::Entry::Vacant(entry) =
-                        self.places.entry(place)
-                    {
+                    if let hash_map::Entry::Vacant(entry) = self.places.entry(place) {
                         entry.insert(idx);
                     }
                 }
@@ -163,9 +161,15 @@ impl<'tcx> NotFinalPlaces<'tcx> {
                 // `p` is not a reborrow
                 None => return None,
             };
-        let borrowed =
-            PlaceRef { local: place.local, projection: &place.projection[deref_position + 1..] };
-        if Self::has_indirection(borrowed, cursor.body(), cursor.analysis().tcx) {
+
+        if place.iter_projections().skip(deref_position + 1).any(|(pl, proj)| match proj {
+            ProjectionElem::Deref => !pl.ty(cursor.body(), cursor.analysis().tcx).ty.is_box(),
+            ProjectionElem::Index(_)
+            | ProjectionElem::ConstantIndex { .. }
+            | ProjectionElem::Subslice { .. }
+            | ProjectionElem::OpaqueCast(_) => true,
+            _ => false,
+        }) {
             // some type of indirection
             // Examples:
             // - &mut **x  // unnesting
@@ -176,27 +180,15 @@ impl<'tcx> NotFinalPlaces<'tcx> {
         ExtendedLocation::Start(location.successor_within_block()).seek_to(cursor);
         let analysis: &Self = cursor.analysis();
 
-        let place_borrow = PlaceRef { local: place.local, projection: &place.projection };
-
-        let id = analysis.places[&place_borrow];
-        for place in std::iter::once(&place_borrow).chain(analysis.conflicting_places[id].iter()) {
+        let id = analysis.places[&place.as_ref()];
+        for place in std::iter::once(&place.as_ref()).chain(analysis.conflicting_places[id].iter())
+        {
             let id = analysis.places[place];
             if cursor.contains(id) {
                 return None;
             }
         }
         Some(deref_position)
-    }
-
-    fn has_indirection(place: PlaceRef<'tcx>, body: &mir::Body<'tcx>, tcx: TyCtxt<'tcx>) -> bool {
-        place.iter_projections().any(|(pl, proj)| match proj {
-            ProjectionElem::Deref => !pl.ty(&body.local_decls, tcx).ty.is_box(),
-            ProjectionElem::Index(_)
-            | ProjectionElem::ConstantIndex { .. }
-            | ProjectionElem::Subslice { .. }
-            | ProjectionElem::OpaqueCast(_) => true,
-            _ => false,
-        })
     }
 
     /// Helper function: gets the index of the first projection of `place` that is a deref,
@@ -239,7 +231,8 @@ impl<'tcx> GenKillAnalysis<'tcx> for NotFinalPlaces<'tcx> {
         statement: &Statement<'tcx>,
         location: Location,
     ) {
-        PlaceVisitorKill { mapping: self, trans }.visit_statement(statement, location)
+        PlaceVisitorKill { mapping: self, trans }.visit_statement(statement, location);
+        PlaceVisitorGen { mapping: self, trans }.visit_statement(statement, location);
     }
 
     fn terminator_effect<'mir>(
@@ -249,6 +242,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for NotFinalPlaces<'tcx> {
         location: Location,
     ) -> TerminatorEdges<'mir, 'tcx> {
         PlaceVisitorKill { mapping: self, trans }.visit_terminator(terminator, location);
+        PlaceVisitorGen { mapping: self, trans }.visit_terminator(terminator, location);
         terminator.edges()
     }
 
@@ -258,25 +252,6 @@ impl<'tcx> GenKillAnalysis<'tcx> for NotFinalPlaces<'tcx> {
         _block: BasicBlock,
         _return_places: CallReturnPlaces<'_, 'tcx>,
     ) {
-    }
-
-    // We use `before_*_effect` to ensure that reads are processed _before_ writes.
-    fn before_statement_effect(
-        &mut self,
-        trans: &mut impl GenKill<Self::Idx>,
-        statement: &mir::Statement<'tcx>,
-        location: Location,
-    ) {
-        PlaceVisitorGen { mapping: self, trans }.visit_statement(statement, location)
-    }
-
-    fn before_terminator_effect(
-        &mut self,
-        trans: &mut Self::Domain,
-        terminator: &mir::Terminator<'tcx>,
-        location: Location,
-    ) {
-        PlaceVisitorGen { mapping: self, trans }.visit_terminator(terminator, location)
     }
 
     fn domain_size(&self, _: &mir::Body<'tcx>) -> usize {
@@ -289,7 +264,7 @@ fn place_context_gen(context: PlaceContext) -> bool {
     match context {
         // Although they read the borrow, most `NonMutatingUse` are fine, because they can't influence the prophecized value.
         // The only non-mutating uses we need to consider are:
-        // - `Move`: the borrow may be used somewhere else to change its prophecy.
+        // - `Move`: the borrow may be used somewhere else to change its value.
         // - 'Copy': cannot be emitted for a mutable borrow
         PlaceContext::NonMutatingUse(NonMutatingUseContext::Move)
         // Note that a borrow triggers a gen

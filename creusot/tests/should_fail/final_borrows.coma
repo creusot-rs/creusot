@@ -85,7 +85,7 @@ module FinalBorrows_StoreChangesProphecy
     {[%#sfinal_borrows1] inv'1 bor}
     (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_final <t> {bor.current} {Borrow.get_id bor}
+      [ s0 = Borrow.borrow_mut <t> {bor.current}
           (fun (_ret':borrowed t) ->  [ &b1 <- _ret' ]  [ &bor <- { bor with current = b1.final ; } ] s1)
       | s1 = -{inv'0 b1.final}- s2
       | s2 = {[@expl:type invariant] inv'1 b1} s3
@@ -141,7 +141,7 @@ module FinalBorrows_CallChangesProphecy
   
   let rec call_changes_prophecy (bor:borrowed int32) (return'  (ret:()))= (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_final <int32> {bor.current} {Borrow.get_id bor}
+      [ s0 = Borrow.borrow_mut <int32> {bor.current}
           (fun (_ret':borrowed int32) ->  [ &b1 <- _ret' ]  [ &bor <- { bor with current = b1.final ; } ] s1)
       | s1 = -{resolve'0 b1}- s2
       | s2 = inner'0 {[%#sfinal_borrows0] ()} (fun (_ret':int32) ->  [ &_3 <- _ret' ] s3)
@@ -233,193 +233,6 @@ module FinalBorrows_UnnestingFails
     [ return' (result:borrowed t)-> {[@expl:postcondition] [%#sfinal_borrows2] inv'1 result}
       {[@expl:postcondition] [%#sfinal_borrows1] result
       = Borrow.borrow_logic (let (a, _) = (x.current).current in a) (let (a, _) = (x.current).final in a) (Borrow.inherit_id (Borrow.get_id x.current) 1)}
-      (! return' {result}) ]
-    
-end
-module FinalBorrows_Indexing
-  type t
-  
-  let%span sfinal_borrows0 = "../final_borrows.rs" 38 11 38 12
-  
-  let%span sfinal_borrows1 = "../final_borrows.rs" 38 9 38 13
-  
-  let%span sfinal_borrows2 = "../final_borrows.rs" 35 11 35 24
-  
-  let%span sfinal_borrows3 = "../final_borrows.rs" 37 19 37 20
-  
-  let%span sfinal_borrows4 = "../final_borrows.rs" 36 10 36 37
-  
-  let%span sfinal_borrows5 = "../final_borrows.rs" 37 35 37 41
-  
-  let%span span6 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
-  
-  let%span span7 = "" 0 0 0 0
-  
-  let%span span8 = "../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25
-  
-  let%span span9 = "../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41
-  
-  let%span span10 = "../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42
-  
-  let%span span11 = "../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50
-  
-  let%span span12 = "../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31
-  
-  let%span span13 = "../../../../creusot-contracts/src/model.rs" 108 8 108 31
-  
-  let%span span14 = "../../../../creusot-contracts/src/std/slice.rs" 82 23 82 27
-  
-  let%span span15 = "../../../../creusot-contracts/src/std/slice.rs" 79 14 79 41
-  
-  let%span span16 = "../../../../creusot-contracts/src/std/slice.rs" 80 4 80 82
-  
-  let%span span17 = "../../../../creusot-contracts/src/std/slice.rs" 81 4 81 85
-  
-  let%span span18 = "../../../../creusot-contracts/src/std/slice.rs" 82 4 82 43
-  
-  let%span span19 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
-  
-  use seq.Seq
-  
-  predicate invariant'5 (self : Seq.seq t) =
-    [%#span6] true
-  
-  predicate inv'5 (_x : Seq.seq t)
-  
-  axiom inv'5 : forall x : Seq.seq t . inv'5 x = true
-  
-  use prelude.prelude.Slice
-  
-  predicate invariant'4 (self : slice t) =
-    [%#span6] true
-  
-  predicate inv'4 (_x : slice t)
-  
-  axiom inv'4 : forall x : slice t . inv'4 x = true
-  
-  use prelude.prelude.Borrow
-  
-  predicate invariant'3 (self : Seq.seq (borrowed t)) =
-    [%#span6] true
-  
-  predicate inv'3 (_x : Seq.seq (borrowed t))
-  
-  axiom inv'3 : forall x : Seq.seq (borrowed t) . inv'3 x = true
-  
-  predicate invariant'2 (self : borrowed (slice t)) =
-    [%#span6] true
-  
-  predicate inv'2 (_x : borrowed (slice t))
-  
-  axiom inv'2 : forall x : borrowed (slice t) . inv'2 x = true
-  
-  predicate invariant'1 (self : borrowed t)
-  
-  predicate inv'1 (_x : borrowed t)
-  
-  axiom inv'1 : forall x : borrowed t . inv'1 x = true
-  
-  predicate invariant'0 (self : t)
-  
-  predicate inv'0 (_x : t)
-  
-  axiom inv'0 : forall x : t . inv'0 x = true
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use prelude.prelude.Slice
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  constant max'0 : usize = [%#span7] (18446744073709551615 : usize)
-  
-  use seq.Seq
-  
-  function shallow_model'1 (self : slice t) : Seq.seq t
-  
-  axiom shallow_model'1_spec : forall self : slice t . ([%#span8] inv'4 self)
-   -> ([%#span11] inv'5 (shallow_model'1 self))
-  && ([%#span10] shallow_model'1 self = Slice.id self)
-  && ([%#span9] Seq.length (shallow_model'1 self) <= UIntSize.to_int (max'0 : usize))
-  
-  function index_logic'0 [@inline:trivial] (self : slice t) (ix : int) : t =
-    [%#span12] Seq.get (shallow_model'1 self) ix
-  
-  function shallow_model'0 (self : borrowed (slice t)) : Seq.seq t =
-    [%#span13] shallow_model'1 self.current
-  
-  use seq.Seq
-  
-  function to_mut_seq'0 (self : borrowed (slice t)) : Seq.seq (borrowed t)
-  
-  axiom to_mut_seq'0_spec : forall self : borrowed (slice t) . ([%#span14] inv'2 self)
-   -> ([%#span18] inv'3 (to_mut_seq'0 self))
-  && ([%#span17] forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq'0 self)
-   -> (Seq.get (to_mut_seq'0 self) i).final = index_logic'0 self.final i)
-  && ([%#span16] forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq'0 self)
-   -> (Seq.get (to_mut_seq'0 self) i).current = index_logic'0 self.current i)
-  && ([%#span15] Seq.length (to_mut_seq'0 self) = Seq.length (shallow_model'0 self))
-  
-  use prelude.prelude.Intrinsic
-  
-  predicate resolve'1 (self : borrowed (slice t)) =
-    [%#span19] self.final = self.current
-  
-  predicate resolve'0 (self : borrowed t) =
-    [%#span19] self.final = self.current
-  
-  let rec indexing (x:borrowed (slice t)) (return'  (ret:borrowed t))= {[%#sfinal_borrows3] inv'2 x}
-    {[%#sfinal_borrows2] Seq.length (shallow_model'0 x) >= 1}
-    (! bb0
-    [ bb0 = s0
-      [ s0 =  [ &_6 <- [%#sfinal_borrows0] (0 : usize) ] s1
-      | s1 =  [ &_7 <- Slice.length x.current ] s2
-      | s2 = UIntSize.lt {_6} {_7} (fun (_ret':bool) ->  [ &_8 <- _ret' ] s3)
-      | s3 = {[@expl:index in bounds] [%#sfinal_borrows1] _8} s4
-      | s4 = bb1 ]
-      
-    | bb1 = s0
-      [ s0 = Slice.get <t> {x.current} {_6}
-          (fun (r'0:t) ->
-            Borrow.borrow_mut <t> {r'0}
-              (fun (_ret':borrowed t) ->
-                 [ &_5 <- _ret' ] 
-                Slice.get <t> {x.current} {_6}
-                  (fun (l'0:t) ->
-                    Slice.set <t> {x.current} {_6} {_5.final}
-                      (fun (l'1:slice t) ->  [ &x <- { x with current = l'1 ; } ] s1))))
-      | s1 = -{inv'0 _5.final}- s2
-      | s2 = Borrow.borrow_final <t> {_5.current} {Borrow.get_id _5}
-          (fun (_ret':borrowed t) ->  [ &_2 <- _ret' ]  [ &_5 <- { _5 with current = _2.final ; } ] s3)
-      | s3 = -{inv'0 _2.final}- s4
-      | s4 = Borrow.borrow_final <t> {_2.current} {Borrow.get_id _2}
-          (fun (_ret':borrowed t) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = _0.final ; } ] s5)
-      | s5 = -{inv'0 _0.final}- s6
-      | s6 = {[@expl:type invariant] inv'1 _5} s7
-      | s7 = -{resolve'0 _5}- s8
-      | s8 = {[@expl:type invariant] inv'1 _2} s9
-      | s9 = -{resolve'0 _2}- s10
-      | s10 = {[@expl:type invariant] inv'2 x} s11
-      | s11 = -{resolve'1 x}- s12
-      | s12 = return' {_0} ]
-       ]
-    )
-    [ & _0 : borrowed t = any_l ()
-    | & x : borrowed (slice t) = x
-    | & _2 : borrowed t = any_l ()
-    | & _5 : borrowed t = any_l ()
-    | & _6 : usize = any_l ()
-    | & _7 : usize = any_l ()
-    | & _8 : bool = any_l () ]
-    
-    [ return' (result:borrowed t)-> {[@expl:postcondition] [%#sfinal_borrows5] inv'1 result}
-      {[@expl:postcondition] [%#sfinal_borrows4] result = Seq.get (to_mut_seq'0 x) 0}
       (! return' {result}) ]
     
 end
