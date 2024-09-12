@@ -159,7 +159,7 @@ pub enum TermKind<'tcx> {
         body: Box<Term<'tcx>>,
     },
     Reborrow {
-        term: Box<Term<'tcx>>,
+        inner: Box<Term<'tcx>>,
         cur: Box<Term<'tcx>>,
         fin: Box<Term<'tcx>>,
         projection: ProjectionVec<Term<'tcx>, Ty<'tcx>>,
@@ -914,18 +914,21 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         };
         // eprintln!("{}", PrintExpr(self.thir, rebor_id));
         // Handle every other case.
-        let (cur, fin) = self.logical_reborrow_inner(rebor_id)?;
-        let (term, projection) = self.logical_reborrow_inner_project(rebor_id)?;
+        let (cur, fin, inner, projection) = self.logical_reborrow_inner(rebor_id)?;
 
         Ok(TermKind::Reborrow {
             cur: Box::new(cur),
             fin: Box::new(fin),
-            term: Box::new(term),
+            inner: Box::new(inner),
             projection,
         })
     }
 
-    fn logical_reborrow_inner(&self, rebor_id: ExprId) -> Result<(Term<'tcx>, Term<'tcx>), Error> {
+    fn logical_reborrow_inner(
+        &self,
+        rebor_id: ExprId,
+    ) -> Result<(Term<'tcx>, Term<'tcx>, Term<'tcx>, ProjectionVec<Term<'tcx>, Ty<'tcx>>), Error>
+    {
         let ty = self.thir[rebor_id].ty;
         let span = self.thir[rebor_id].span;
         match &self.thir[rebor_id].kind {
@@ -936,10 +939,13 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 self.logical_reborrow_inner(expr.unwrap())
             }
             ExprKind::Field { lhs, variant_index: _, name } => {
-                let (cur, fin) = self.logical_reborrow_inner(*lhs)?;
+                let (cur, fin, inner, mut proj) = self.logical_reborrow_inner(*lhs)?;
+                proj.push(ProjectionElem::Field(*name, ty));
                 Ok((
                     Term { ty, span, kind: mk_projection(cur, *name) },
                     Term { ty, span, kind: mk_projection(fin, *name) },
+                    inner,
+                    proj
                 ))
             }
             ExprKind::Deref { arg } => {
@@ -948,7 +954,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     let ExprKind::Call { args, .. } = &self.thir[*arg].kind else { unreachable!() };
                     let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } = self.thir[args[0]].kind else { unreachable!() };
 
-                    let (cur, fin) = self.logical_reborrow_inner(arg)?;
+                    let (cur, fin, inner, proj) = self.logical_reborrow_inner(arg)?;
                     let deref_method =
                         self.ctx.get_diagnostic_item(Symbol::intern("snapshot_inner")).unwrap();
                     // Extract the `T` from `Snapshot<T>`
@@ -956,23 +962,43 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     return Ok((
                         Term::call(self.ctx.tcx, deref_method, subst, vec![cur]),
                         Term::call(self.ctx.tcx, deref_method, subst, vec![fin]),
+                        inner,
+                        proj
                     ));
                 };
 
-                let inner = self.expr_term(*arg)?;
 
-                Ok((inner.clone().cur().span(span), inner.fin().span(span)))
+                match self.thir[*arg].ty.kind() {
+                    TyKind::Ref(_, _, Mutability::Mut) => {
+                        let inner = self.expr_term(*arg)?;
+                        Ok((inner.clone().cur().span(span), inner.clone().fin().span(span), inner.span(span), Vec::new()))
+                    }
+                    TyKind::Adt(adtdef, _) if adtdef.is_box() => {
+                        let mut res = self.logical_reborrow_inner(*arg)?;
+                        res.3.push(ProjectionElem::Deref);
+                        Ok(res)
+                    }
+                    _ => unreachable!("Unexpected deref type: {ty:?}.")
+                }
             }
-            ExprKind::Call { ty: fn_ty, args, .. } if fn_ty.is_fn() => {
+            e @ ExprKind::Call { ty: fn_ty, args, .. } if fn_ty.is_fn() => {
                 let index_logic_method =
                     self.ctx.get_diagnostic_item(Symbol::intern("index_logic_method")).unwrap();
 
                 let TyKind::FnDef(id,_) = fn_ty.kind() else { panic!("expected function type") };
 
-                let (cur, fin) = self.logical_reborrow_inner(args[0])?;
+                let (cur, fin, inner, mut proj) = self.logical_reborrow_inner(args[0])?;
+
+                if !matches!(self.thir[args[0]].ty.kind(), TyKind::Str | TyKind::Array(_, _) | TyKind::Slice(_)) {
+                    return Err(Error::new(
+                        span,
+                        format!("unsupported logical reborrow of indexing {e:?}, only slice indexing is supported"),
+                    ))
+                }
 
                 if id == &index_logic_method {
                     let index = self.expr_term(args[1])?;
+                    proj.push(ProjectionElem::Index(index.clone()));
 
                     let subst =
                         self.ctx.mk_args(&[GenericArg::from(cur.ty), GenericArg::from(index.ty)]);
@@ -988,8 +1014,10 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                             self.ctx.tcx,
                             index_logic_method,
                             subst,
-                            vec![fin, index.clone()],
+                            vec![fin, index],
                         ),
+                        inner,
+                        proj
                     ))
                 } else {
                     return Err(Error::new(span, format!("unsupported projection {id:?}")));
@@ -997,64 +1025,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             }
             e => Err(Error::new(
                 span,
-                format!("unsupported logical reborrow {e:?}, only simple field projections are supported"),
-            )),
-        }
-    }
-
-    fn logical_reborrow_inner_project(
-        &self,
-        rebor_id: ExprId,
-    ) -> Result<(Term<'tcx>, ProjectionVec<Term<'tcx>, Ty<'tcx>>), Error> {
-        let ty = self.thir[rebor_id].ty;
-        let span = self.thir[rebor_id].span;
-        match &self.thir[rebor_id].kind {
-            ExprKind::Scope { value, .. } => self.logical_reborrow_inner_project(*value),
-            ExprKind::Block { block } => {
-                let Block { stmts, expr, .. } = &self.thir[*block];
-                assert!(stmts.is_empty());
-                self.logical_reborrow_inner_project(expr.unwrap())
-            }
-            ExprKind::Field { lhs, variant_index: _, name } => {
-                let mut res = self.logical_reborrow_inner_project(*lhs)?;
-                res.1.push(ProjectionElem::Field(*name, ty));
-                Ok(res)
-            }
-            ExprKind::Deref { arg } => {
-                // Detect * snapshot_deref & and treat that as a single 'projection'
-                if self.is_snapshot_deref(*arg) {
-                    let ExprKind::Call { args, .. } = &self.thir[*arg].kind else { unreachable!() };
-                    let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } = self.thir[args[0]].kind else { unreachable!() };
-
-                    let (term, projections) = self.logical_reborrow_inner_project(arg)?;
-                    return Ok((
-                        term,
-                        projections,
-                    ));
-                };
-
-                let inner = self.expr_term(*arg)?;
-                Ok((inner, Vec::new()))
-            }
-            ExprKind::Call { ty: fn_ty, args, .. } if fn_ty.is_fn() => {
-                let index_logic_method = self.ctx.get_diagnostic_item(Symbol::intern("index_logic_method")).unwrap();
-
-                let TyKind::FnDef(id,_) = fn_ty.kind() else { panic!("expected function type") };
-
-                let (term, mut projections) = self.logical_reborrow_inner_project(args[0])?;
-
-                if id == &index_logic_method {
-                    let index = self.expr_term(args[1])?;
-
-                    projections.push(ProjectionElem::Index(index));
-                    Ok((term, projections))
-                } else {
-                    return Err(Error::new(span, format!("unsupported projection {id:?}")));
-                }
-            }
-            e => Err(Error::new(
-                span,
-                format!("unsupported logical reborrow {e:?}, only simple field projections are supported"),
+                format!("unsupported logical reborrow {e:?}, only field projections and slice indexing are supported"),
             )),
         }
     }
@@ -1266,10 +1237,10 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         TermKind::Old { term } => visitor.visit_term(&*term),
         TermKind::Closure { body } => visitor.visit_term(&*body),
         TermKind::Absurd => {}
-        TermKind::Reborrow { cur, fin, term, projection } => {
+        TermKind::Reborrow { cur, fin, inner, projection } => {
             visitor.visit_term(&*cur);
             visitor.visit_term(&*fin);
-            visitor.visit_term(&*term);
+            visitor.visit_term(&*inner);
             visit_projections(projection, |term| visitor.visit_term(term))
         }
         TermKind::Assert { cond } => visitor.visit_term(&*cond),
@@ -1324,10 +1295,10 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         TermKind::Old { term } => visitor.visit_mut_term(&mut *term),
         TermKind::Closure { body } => visitor.visit_mut_term(&mut *body),
         TermKind::Absurd => {}
-        TermKind::Reborrow { cur, fin, term, projection } => {
+        TermKind::Reborrow { cur, fin, inner, projection } => {
             visitor.visit_mut_term(&mut *cur);
             visitor.visit_mut_term(&mut *fin);
-            visitor.visit_mut_term(&mut *term);
+            visitor.visit_mut_term(&mut *inner);
             visit_projections_mut(projection, |term| visitor.visit_mut_term(term))
         }
         TermKind::Assert { cond } => visitor.visit_mut_term(&mut *cond),
@@ -1585,10 +1556,10 @@ impl<'tcx> Term<'tcx> {
                 body.subst_with_inner(&bound, inv_subst);
             }
             TermKind::Absurd => {}
-            TermKind::Reborrow { cur, fin, term, projection } => {
+            TermKind::Reborrow { cur, fin, inner, projection } => {
                 cur.subst_with_inner(bound, inv_subst);
                 fin.subst_with_inner(bound, inv_subst);
-                term.subst_with_inner(bound, inv_subst);
+                inner.subst_with_inner(bound, inv_subst);
                 visit_projections_mut(projection, |term| term.subst_with_inner(bound, inv_subst))
             }
             TermKind::Assert { cond } => cond.subst_with_inner(bound, inv_subst),
@@ -1665,10 +1636,10 @@ impl<'tcx> Term<'tcx> {
                 body.free_vars_inner(&bound, free);
             }
             TermKind::Absurd => {}
-            TermKind::Reborrow { cur, fin, term, projection } => {
+            TermKind::Reborrow { cur, fin, inner, projection } => {
                 cur.free_vars_inner(bound, free);
                 fin.free_vars_inner(bound, free);
-                term.free_vars_inner(bound, free);
+                inner.free_vars_inner(bound, free);
                 visit_projections(projection, |term| term.free_vars_inner(bound, free))
             }
             TermKind::Assert { cond } => cond.free_vars_inner(bound, free),

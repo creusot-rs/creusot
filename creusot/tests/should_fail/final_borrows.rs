@@ -30,10 +30,3 @@ pub fn call_changes_prophecy(bor: &mut i32) {
 pub fn unnesting_fails<'a: 'b, 'b, T>(x: &'a mut &'b mut (T, T)) -> &'b mut T {
     &mut (**x).0
 }
-
-// Right now, we don't reason about the indices when tracking reborrows
-#[requires(x@.len() >= 1)]
-#[ensures(result == x.to_mut_seq()[0])]
-pub fn indexing<T>(x: &mut [T]) -> &mut T {
-    &mut x[0]
-}

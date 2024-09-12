@@ -241,7 +241,7 @@ fn compare_str(buf: &mut Buffer, got: &str, expect: &str) -> bool {
     // let result = TextDiff::from_lines(expect, got);
     if result.ratio() == 1.0 {
         buf.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
-        write!(buf, "  <Differences in spans an line ending only.>").unwrap();
+        write!(buf, "  <Differences in spans and line ending only.>").unwrap();
         buf.reset().unwrap();
         writeln!(buf).unwrap();
         false

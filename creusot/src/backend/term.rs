@@ -219,9 +219,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::Abs(binders, Box::new(body))
             }
             TermKind::Absurd => Exp::Absurd,
-            TermKind::Reborrow { cur, fin, term, projection } => {
-                let inner = self.lower_term(&*term);
-                let borrow_id = borrow_generated_id(inner, &projection);
+            TermKind::Reborrow { cur, fin, inner, projection } => {
+                let inner = self.lower_term(&*inner);
+                let borrow_id = borrow_generated_id(inner, &projection, |x| self.lower_term(x));
 
                 Exp::qvar("Borrow.borrow_logic".into()).app(vec![
                     self.lower_term(&*cur),
