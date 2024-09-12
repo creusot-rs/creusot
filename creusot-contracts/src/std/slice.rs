@@ -77,8 +77,8 @@ impl<T> SliceExt<T> for [T] {
     #[trusted]
     #[open(self)]
     #[ensures(result.len() == self@.len())]
-    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> *result[i] == self[i])]
-    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> ^result[i] == (^self)[i])]
+    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> result[i] == &mut self[i])]
+    // TODO: replace with a map function applied on a sequence
     fn to_mut_seq(&mut self) -> Seq<&mut T> {
         pearlite! { absurd }
     }
@@ -87,7 +87,7 @@ impl<T> SliceExt<T> for [T] {
     #[open(self)]
     #[trusted]
     #[ensures(result.len() == self@.len())]
-    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> *result[i] == self[i])]
+    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> result[i] == &self[i])]
     fn to_ref_seq(&self) -> Seq<&T> {
         pearlite! { absurd }
     }
