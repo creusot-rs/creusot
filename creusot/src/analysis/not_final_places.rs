@@ -163,11 +163,13 @@ impl<'tcx> NotFinalPlaces<'tcx> {
             None => return None,
         };
         if place.iter_projections().skip(deref_position + 1).any(|(pl, proj)| match proj {
+            // pearlite does not know how to generate logical reborrowing for these ProjectionElem,
+            // so there is no need to consider these reborrows final.
             ProjectionElem::Deref => !pl.ty(body, tcx).ty.is_box(),
-            ProjectionElem::Index(_)
-            | ProjectionElem::ConstantIndex { .. }
+            ProjectionElem::ConstantIndex { .. }  /* TODO */
             | ProjectionElem::Subslice { .. }
-            | ProjectionElem::OpaqueCast(_) => true,
+            | ProjectionElem::OpaqueCast(_)
+            | ProjectionElem::Downcast(_, _) => true,
             _ => false,
         }) {
             // some type of indirection

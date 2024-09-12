@@ -981,13 +981,20 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     _ => unreachable!("Unexpected deref type: {ty:?}.")
                 }
             }
-            ExprKind::Call { ty: fn_ty, args, .. } if fn_ty.is_fn() => {
+            e @ ExprKind::Call { ty: fn_ty, args, .. } if fn_ty.is_fn() => {
                 let index_logic_method =
                     self.ctx.get_diagnostic_item(Symbol::intern("index_logic_method")).unwrap();
 
                 let TyKind::FnDef(id,_) = fn_ty.kind() else { panic!("expected function type") };
 
                 let (cur, fin, inner, mut proj) = self.logical_reborrow_inner(args[0])?;
+
+                if !matches!(self.thir[args[0]].ty.kind(), TyKind::Str | TyKind::Array(_, _) | TyKind::Slice(_)) {
+                    return Err(Error::new(
+                        span,
+                        format!("unsupported logical reborrow of indexing {e:?}, only slice indexing is supported"),
+                    ))
+                }
 
                 if id == &index_logic_method {
                     let index = self.expr_term(args[1])?;
@@ -1018,7 +1025,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             }
             e => Err(Error::new(
                 span,
-                format!("unsupported logical reborrow {e:?}, only simple field projections are supported"),
+                format!("unsupported logical reborrow {e:?}, only field projections and slice indexing are supported"),
             )),
         }
     }

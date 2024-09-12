@@ -31,6 +31,7 @@ use rustc_middle::{
 use rustc_span::{Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, UintTy};
+use std::fmt::Debug;
 use why3::{
     coma::{self, Arg, Defn, Expr, Param, Term},
     declaration::{Attribute, Contract, Decl, Module, Signature},
@@ -924,9 +925,10 @@ impl<'tcx> Place<'tcx> {
     }
 }
 
-pub(crate) fn borrow_generated_id<V: std::fmt::Debug, T: std::fmt::Debug>(
+pub(crate) fn borrow_generated_id<V: Debug, T: Debug>(
     original_borrow: Exp,
     projection: &[ProjectionElem<V, T>],
+    mut translate_index: impl FnMut(&V) -> Exp,
 ) -> Exp {
     let mut borrow_id = Exp::Call(
         Box::new(Exp::qvar(QName::from_string("Borrow.get_id").unwrap())),
@@ -943,14 +945,19 @@ pub(crate) fn borrow_generated_id<V: std::fmt::Debug, T: std::fmt::Debug>(
                     vec![borrow_id, Exp::Const(Constant::Int(idx.as_u32() as i128 + 1, None))],
                 );
             }
-            ProjectionElem::Downcast(_, _) => {
-                // since only one variant can be active at a time, there is no need to change the borrow index further
+            ProjectionElem::Index(x) => {
+                borrow_id = Exp::Call(
+                    Box::new(Exp::qvar(QName::from_string("Borrow.inherit_id").unwrap())),
+                    vec![borrow_id, translate_index(x)],
+                );
             }
-            ProjectionElem::Index(_)
+
+            ProjectionElem::Downcast(_, _)
             | ProjectionElem::ConstantIndex { .. }
             | ProjectionElem::Subslice { .. }
             | ProjectionElem::OpaqueCast(_) => {
-                // Should only appear in logic, so we can ignore them.
+                // Nor logical reborrowing nor final borrows can generate such a projection
+                unreachable!("unexepected proj elem to generate a borrow id: {proj:?}")
             }
             ProjectionElem::Subtype(_) => {}
         }
@@ -1021,8 +1028,11 @@ impl<'tcx> Statement<'tcx> {
 
                 let ty = lhs.ty(lower.ctx.tcx, lower.locals);
 
-                let borrow_id =
-                    borrow_generated_id(original_borrow, &rhs.projection[deref_index + 1..]);
+                let borrow_id = borrow_generated_id(
+                    original_borrow,
+                    &rhs.projection[deref_index + 1..],
+                    |sym| Exp::var(util::ident_of(*sym)),
+                );
                 let reassign = lhs.as_rplace(lower, &mut istmts).field("final");
 
                 let assign1 = { lower.assignment(&lhs, Exp::var("_ret'")) };
