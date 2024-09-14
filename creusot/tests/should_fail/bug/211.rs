@@ -1,3 +1,5 @@
+extern crate creusot_contracts;
+
 pub enum E {
     A,
     B,

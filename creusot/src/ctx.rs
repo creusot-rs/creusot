@@ -228,7 +228,8 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             None
         } else {
             debug!("resolving type invariant of {ty:?} in {def_id:?}");
-            let inv_did = self.get_diagnostic_item(Symbol::intern("creusot_invariant_internal"))?;
+            let inv_did =
+                self.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
             let substs = self.mk_args(&[GenericArg::from(ty)]);
             Some((inv_did, substs))
         }

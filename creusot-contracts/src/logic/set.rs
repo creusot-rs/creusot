@@ -1,5 +1,6 @@
 use crate::*;
 
+#[trusted]
 #[cfg_attr(creusot, creusot::builtins = "set.Set.set")]
 pub struct Set<T: ?Sized>(std::marker::PhantomData<T>);
 
@@ -17,6 +18,7 @@ impl<T: ?Sized> Set<T> {
     }
 
     #[doc(hidden)]
+    #[trusted]
     #[logic]
     #[open(self)]
     #[creusot::builtins = "set.Set.mem"]
@@ -32,6 +34,7 @@ impl<T: ?Sized> Set<T> {
     }
 
     #[doc(hidden)]
+    #[trusted]
     #[logic]
     #[open(self)]
     #[creusot::builtins = "set.Set.add"]
@@ -39,6 +42,7 @@ impl<T: ?Sized> Set<T> {
         pearlite! { absurd }
     }
 
+    #[trusted]
     #[open(self)]
     #[predicate]
     #[creusot::builtins = "set.Set.is_empty"]
@@ -54,17 +58,19 @@ impl<T: ?Sized> Set<T> {
     }
 
     #[doc(hidden)]
+    #[trusted]
     #[logic]
     #[open(self)]
     #[creusot::builtins = "set.Set.remove"]
     pub fn rem(_: T, _: Self) -> Self {
-        pearlite! { absurd}
+        pearlite! { absurd }
     }
 
+    #[trusted]
     #[open(self)]
     #[logic]
     #[creusot::builtins = "set.Set.union"]
     pub fn union(self, _: Self) -> Self {
-        pearlite! { absurd}
+        pearlite! { absurd }
     }
 }

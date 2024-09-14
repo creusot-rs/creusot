@@ -1,4 +1,5 @@
 use crate::{
+    invariant::*,
     std::{
         alloc::Allocator,
         ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
@@ -460,4 +461,13 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
+
+impl<T> Invariant for [T] {
+    #[predicate(prophetic)]
+    #[open]
+    #[creusot::structural_inv]
+    fn invariant(self) -> bool {
+        pearlite! { inv(self@) }
+    }
 }

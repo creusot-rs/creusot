@@ -2,7 +2,7 @@ use ::std::alloc::Allocator;
 
 use crate::*;
 
-pub trait IndexLogic<I> {
+pub trait IndexLogic<I: ?Sized> {
     type Item;
 
     #[logic]

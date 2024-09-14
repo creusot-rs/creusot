@@ -100,93 +100,118 @@ module Alloc_Alloc_Global_Type
     [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
     
 end
+module Alloc_Boxed_Box_Type
+  use Core_Ptr_Unique_Unique_Type as Unique'0
+  
+  type t_box 't 'a =
+    | C_Box (Unique'0.t_unique 't) 'a
+  
+  function any_l (_ : 'b) : 'a
+end
 module TwoPhase_Test
   let%span stwo_phase0 = "../two_phase.rs" 5 10 5 37
   
-  let%span span1 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span1 = "../../../../../creusot-contracts/src/std/boxed.rs" 27 8 27 18
   
-  let%span span2 = "" 0 0 0 0
+  let%span span2 = "../../../../../creusot-contracts/src/logic/seq.rs" 197 8 197 97
   
-  let%span span3 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
+  let%span span3 = "" 0 0 0 0
   
-  let%span span4 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span span4 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
   
-  let%span span5 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
+  let%span span5 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   
-  let%span span6 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
+  let%span span6 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
   
-  let%span span7 = "../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
+  let%span span7 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
   
-  let%span span8 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span8 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span9 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span9 = "../../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
   
-  let%span span10 = "" 0 0 0 0
+  let%span span10 = "../../../../../creusot-contracts/src/invariant.rs" 26 8 26 18
   
-  let%span span11 = "" 0 0 0 0
+  let%span span11 = "../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
   
-  let%span span12 = "../../../../../creusot-contracts/src/std/vec.rs" 82 26 82 51
+  let%span span12 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
   
-  let%span span13 = "../../../../../creusot-contracts/src/model.rs" 90 8 90 31
+  let%span span13 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
   let%span span14 = "" 0 0 0 0
   
-  let%span span15 = "../../../../../creusot-contracts/src/std/vec.rs" 78 26 78 48
+  let%span span15 = "" 0 0 0 0
+  
+  let%span span16 = "../../../../../creusot-contracts/src/std/vec.rs" 82 26 82 51
+  
+  let%span span17 = "../../../../../creusot-contracts/src/model.rs" 90 8 90 31
+  
+  let%span span18 = "" 0 0 0 0
+  
+  let%span span19 = "../../../../../creusot-contracts/src/std/vec.rs" 78 26 78 48
   
   use prelude.prelude.UIntSize
+  
+  predicate inv'2 (_x : usize)
+  
+  use Alloc_Alloc_Global_Type as Global'0
+  
+  predicate invariant'5 (self : usize) =
+    [%#span1] inv'2 self
+  
+  predicate inv'5 (_x : usize)
+  
+  axiom inv'5 : forall x : usize . inv'5 x = true
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use prelude.prelude.Int
   
   use seq.Seq
   
   predicate invariant'4 (self : Seq.seq usize) =
-    [%#span1] true
+    [%#span2] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'5 (Seq.get self i)
   
   predicate inv'4 (_x : Seq.seq usize)
   
   axiom inv'4 : forall x : Seq.seq usize . inv'4 x = true
   
-  use Alloc_Alloc_Global_Type as Global'0
-  
   use Alloc_Vec_Vec_Type as Vec'0
   
   use prelude.prelude.UIntSize
   
-  use prelude.prelude.Int
-  
-  constant max'0 : usize = [%#span2] (18446744073709551615 : usize)
-  
-  use seq.Seq
+  constant max'0 : usize = [%#span3] (18446744073709551615 : usize)
   
   predicate inv'3 (_x : Vec'0.t_vec usize (Global'0.t_global))
   
   function shallow_model'2 (self : Vec'0.t_vec usize (Global'0.t_global)) : Seq.seq usize
   
-  axiom shallow_model'2_spec : forall self : Vec'0.t_vec usize (Global'0.t_global) . ([%#span3] inv'3 self)
-   -> ([%#span5] inv'4 (shallow_model'2 self))
-  && ([%#span4] Seq.length (shallow_model'2 self) <= UIntSize.to_int (max'0 : usize))
+  axiom shallow_model'2_spec : forall self : Vec'0.t_vec usize (Global'0.t_global) . ([%#span4] inv'3 self)
+   -> ([%#span6] inv'4 (shallow_model'2 self))
+  && ([%#span5] Seq.length (shallow_model'2 self) <= UIntSize.to_int (max'0 : usize))
   
   predicate invariant'3 (self : Vec'0.t_vec usize (Global'0.t_global)) =
-    [%#span6] inv'4 (shallow_model'2 self)
+    [%#span7] inv'4 (shallow_model'2 self)
   
   axiom inv'3 : forall x : Vec'0.t_vec usize (Global'0.t_global) . inv'3 x = true
   
   predicate invariant'2 (self : usize) =
-    [%#span1] true
-  
-  predicate inv'2 (_x : usize)
+    [%#span8] true
   
   axiom inv'2 : forall x : usize . inv'2 x = true
   
   use prelude.prelude.Borrow
   
   predicate invariant'1 (self : borrowed (Vec'0.t_vec usize (Global'0.t_global))) =
-    [%#span1] true
+    [%#span9] inv'3 self.current /\ inv'3 self.final
   
   predicate inv'1 (_x : borrowed (Vec'0.t_vec usize (Global'0.t_global)))
   
   axiom inv'1 : forall x : borrowed (Vec'0.t_vec usize (Global'0.t_global)) . inv'1 x = true
   
   predicate invariant'0 (self : Vec'0.t_vec usize (Global'0.t_global)) =
-    [%#span1] true
+    [%#span10] inv'3 self
   
   predicate inv'0 (_x : Vec'0.t_vec usize (Global'0.t_global))
   
@@ -195,31 +220,31 @@ module TwoPhase_Test
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec usize (Global'0.t_global)) (ix : int) : usize =
-    [%#span7] Seq.get (shallow_model'2 self) ix
+    [%#span11] Seq.get (shallow_model'2 self) ix
   
   function shallow_model'0 (self : borrowed (Vec'0.t_vec usize (Global'0.t_global))) : Seq.seq usize =
-    [%#span8] shallow_model'2 self.current
+    [%#span12] shallow_model'2 self.current
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Vec'0.t_vec usize (Global'0.t_global))) =
-    [%#span9] self.final = self.current
+    [%#span13] self.final = self.current
   
   use seq.Seq
   
-  let rec push'0 (self:borrowed (Vec'0.t_vec usize (Global'0.t_global))) (value:usize) (return'  (ret:()))= {[@expl:precondition] [%#span11] inv'2 value}
-    {[@expl:precondition] [%#span10] inv'1 self}
+  let rec push'0 (self:borrowed (Vec'0.t_vec usize (Global'0.t_global))) (value:usize) (return'  (ret:()))= {[@expl:precondition] [%#span15] inv'2 value}
+    {[@expl:precondition] [%#span14] inv'1 self}
     any
-    [ return' (result:())-> {[%#span12] shallow_model'2 self.final = Seq.snoc (shallow_model'0 self) value}
+    [ return' (result:())-> {[%#span16] shallow_model'2 self.final = Seq.snoc (shallow_model'0 self) value}
       (! return' {result}) ]
     
   
   function shallow_model'1 (self : Vec'0.t_vec usize (Global'0.t_global)) : Seq.seq usize =
-    [%#span13] shallow_model'2 self
+    [%#span17] shallow_model'2 self
   
-  let rec len'0 (self:Vec'0.t_vec usize (Global'0.t_global)) (return'  (ret:usize))= {[@expl:precondition] [%#span14] inv'0 self}
+  let rec len'0 (self:Vec'0.t_vec usize (Global'0.t_global)) (return'  (ret:usize))= {[@expl:precondition] [%#span18] inv'0 self}
     any
-    [ return' (result:usize)-> {[%#span15] UIntSize.to_int result = Seq.length (shallow_model'1 self)}
+    [ return' (result:usize)-> {[%#span19] UIntSize.to_int result = Seq.length (shallow_model'1 self)}
       (! return' {result}) ]
     
   

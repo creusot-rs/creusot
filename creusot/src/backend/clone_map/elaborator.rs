@@ -54,8 +54,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
                 vec![Decl::UseDecl(Use { name: b.qname(), as_: None, export: false })]
             }
             DepNode::TyInv(ty, kind) => {
-                let term =
-                    InvariantElaborator::new(param_env, true).elaborate_inv(ctx, ty, Some(kind));
+                let term = InvariantElaborator::new(param_env, true).elaborate_inv(ctx, ty, kind);
                 let exp = lower_pure(ctx, names, &term);
                 let axiom = Axiom { name: names.ty_inv(ty).name, rewrite: false, axiom: exp };
                 vec![Decl::Axiom(axiom)]

@@ -1,4 +1,4 @@
-use crate::{invariant::Invariant, logic::IndexLogic, std::alloc::Allocator, *};
+use crate::{logic::IndexLogic, std::alloc::Allocator, *};
 pub use ::std::collections::VecDeque;
 use ::std::{
     collections::vec_deque::Iter,
@@ -154,8 +154,6 @@ impl<'a, T> ShallowModel for Iter<'a, T> {
         absurd
     }
 }
-
-impl<'a, T> Invariant for Iter<'a, T> {}
 
 impl<'a, T> Iterator for Iter<'a, T> {
     #[predicate(prophetic)]

@@ -1,3 +1,5 @@
+extern crate creusot_contracts;
+
 enum Option<T> {
     Some(T),
     None,

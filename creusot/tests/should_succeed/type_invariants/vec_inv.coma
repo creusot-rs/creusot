@@ -125,6 +125,14 @@ module Alloc_Alloc_Global_Type
     [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
     
 end
+module Alloc_Boxed_Box_Type
+  use Core_Ptr_Unique_Unique_Type as Unique'0
+  
+  type t_box 't 'a =
+    | C_Box (Unique'0.t_unique 't) 'a
+  
+  function any_l (_ : 'b) : 'a
+end
 module VecInv_Vec
   let%span svec_inv0 = "../vec_inv.rs" 19 20 19 43
   
@@ -134,35 +142,27 @@ module VecInv_Vec
   
   let%span span3 = "../vec_inv.rs" 13 20 13 43
   
-  let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
   
-  let%span span5 = "" 0 0 0 0
+  let%span span5 = "../../../../../creusot-contracts/src/std/boxed.rs" 27 8 27 18
   
-  let%span span6 = "../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25
+  let%span span6 = "../../../../../creusot-contracts/src/logic/seq.rs" 197 8 197 97
   
-  let%span span7 = "../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41
+  let%span span7 = "" 0 0 0 0
   
-  let%span span8 = "../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42
+  let%span span8 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
   
-  let%span span9 = "../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50
+  let%span span9 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   
-  let%span span10 = "../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31
+  let%span span10 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
   
-  let%span span11 = "../../../../../creusot-contracts/src/std/slice.rs" 48 4 48 26
+  let%span span11 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
   
-  let%span span12 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
+  let%span span12 = "../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
   
-  let%span span13 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span span13 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span14 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
-  
-  let%span span15 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
-  
-  let%span span16 = "../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
-  
-  let%span span17 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
-  
-  let%span span18 = "../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85
+  let%span span14 = "../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85
   
   use prelude.prelude.Int
   
@@ -175,9 +175,9 @@ module VecInv_Vec
   predicate invariant'4 [#"../vec_inv.rs" 12 4 12 30] (self : SumTo10'0.t_sumto10) =
     [%#span3] Int32.to_int (VecInv_SumTo10_Type.sumto10_a self) + Int32.to_int (VecInv_SumTo10_Type.sumto10_b self) = 10
   
-  predicate inv'5 (_x : SumTo10'0.t_sumto10)
+  predicate inv'4 (_x : SumTo10'0.t_sumto10)
   
-  axiom inv'5 : forall x : SumTo10'0.t_sumto10 . inv'5 x
+  axiom inv'4 : forall x : SumTo10'0.t_sumto10 . inv'4 x
   = (invariant'4 x
   /\ match x with
     | SumTo10'0.C_SumTo10 a b -> true
@@ -186,101 +186,70 @@ module VecInv_Vec
   use prelude.prelude.Borrow
   
   predicate invariant'3 (self : borrowed (SumTo10'0.t_sumto10)) =
-    [%#span4] true
+    [%#span4] inv'4 self.current /\ inv'4 self.final
   
-  predicate inv'4 (_x : borrowed (SumTo10'0.t_sumto10))
+  predicate inv'3 (_x : borrowed (SumTo10'0.t_sumto10))
   
-  axiom inv'4 : forall x : borrowed (SumTo10'0.t_sumto10) . inv'4 x = (inv'5 x.current /\ inv'5 x.final)
-  
-  use prelude.prelude.Slice
-  
-  predicate invariant'1 (self : slice (borrowed (SumTo10'0.t_sumto10))) =
-    [%#span4] true
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  predicate inv'1 (_x : Seq.seq (borrowed (SumTo10'0.t_sumto10)))
-  
-  use prelude.prelude.Slice
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.UIntSize
-  
-  constant max'0 : usize = [%#span5] (18446744073709551615 : usize)
-  
-  use seq.Seq
-  
-  predicate inv'3 (_x : slice (borrowed (SumTo10'0.t_sumto10)))
-  
-  function shallow_model'1 (self : slice (borrowed (SumTo10'0.t_sumto10))) : Seq.seq (borrowed (SumTo10'0.t_sumto10))
-  
-  axiom shallow_model'1_spec : forall self : slice (borrowed (SumTo10'0.t_sumto10)) . ([%#span6] inv'3 self)
-   -> ([%#span9] inv'1 (shallow_model'1 self))
-  && ([%#span8] shallow_model'1 self = Slice.id self)
-  && ([%#span7] Seq.length (shallow_model'1 self) <= UIntSize.to_int (max'0 : usize))
-  
-  function index_logic'1 [@inline:trivial] (self : slice (borrowed (SumTo10'0.t_sumto10))) (ix : int) : borrowed (SumTo10'0.t_sumto10)
-    
-   =
-    [%#span10] Seq.get (shallow_model'1 self) ix
-  
-  function slice_len'0 (x : slice (borrowed (SumTo10'0.t_sumto10))) : int =
-    [%#span11] Seq.length (shallow_model'1 x)
-  
-  use prelude.prelude.UInt64
-  
-  axiom inv'3 : forall x : slice (borrowed (SumTo10'0.t_sumto10)) . inv'3 x
-  = (forall i : uint64 . 0 <= i  -> i < slice_len'0 x  -> inv'4 (index_logic'1 x i))
+  axiom inv'3 : forall x : borrowed (SumTo10'0.t_sumto10) . inv'3 x = invariant'3 x
   
   use Alloc_Alloc_Global_Type as Global'0
   
-  use Alloc_RawVec_RawVec_Type as RawVec'0
+  predicate invariant'2 (self : borrowed (SumTo10'0.t_sumto10)) =
+    [%#span5] inv'3 self
   
-  predicate invariant'2 (self : RawVec'0.t_rawvec (borrowed (SumTo10'0.t_sumto10)) (Global'0.t_global)) =
-    [%#span4] true
+  predicate inv'2 (_x : borrowed (SumTo10'0.t_sumto10))
   
-  predicate inv'2 (_x : RawVec'0.t_rawvec (borrowed (SumTo10'0.t_sumto10)) (Global'0.t_global))
+  axiom inv'2 : forall x : borrowed (SumTo10'0.t_sumto10) . inv'2 x = invariant'2 x
   
-  axiom inv'2 : forall x : RawVec'0.t_rawvec (borrowed (SumTo10'0.t_sumto10)) (Global'0.t_global) . inv'2 x = true
+  use seq.Seq
   
-  axiom inv'1 : forall x : Seq.seq (borrowed (SumTo10'0.t_sumto10)) . inv'1 x
-  = (forall i : int . 0 <= i  -> i < Seq.length x  -> inv'4 (Seq.get x i))
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate invariant'1 (self : Seq.seq (borrowed (SumTo10'0.t_sumto10))) =
+    [%#span6] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'2 (Seq.get self i)
+  
+  predicate inv'1 (_x : Seq.seq (borrowed (SumTo10'0.t_sumto10)))
+  
+  axiom inv'1 : forall x : Seq.seq (borrowed (SumTo10'0.t_sumto10)) . inv'1 x = invariant'1 x
   
   use Alloc_Vec_Vec_Type as Vec'0
+  
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.UIntSize
+  
+  constant max'0 : usize = [%#span7] (18446744073709551615 : usize)
   
   predicate inv'0 (_x : Vec'0.t_vec (borrowed (SumTo10'0.t_sumto10)) (Global'0.t_global))
   
   function shallow_model'0 (self : Vec'0.t_vec (borrowed (SumTo10'0.t_sumto10)) (Global'0.t_global)) : Seq.seq (borrowed (SumTo10'0.t_sumto10))
     
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_vec (borrowed (SumTo10'0.t_sumto10)) (Global'0.t_global) . ([%#span12] inv'0 self)
-   -> ([%#span14] inv'1 (shallow_model'0 self))
-  && ([%#span13] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
+  axiom shallow_model'0_spec : forall self : Vec'0.t_vec (borrowed (SumTo10'0.t_sumto10)) (Global'0.t_global) . ([%#span8] inv'0 self)
+   -> ([%#span10] inv'1 (shallow_model'0 self))
+  && ([%#span9] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
   
   predicate invariant'0 (self : Vec'0.t_vec (borrowed (SumTo10'0.t_sumto10)) (Global'0.t_global)) =
-    [%#span15] inv'1 (shallow_model'0 self)
+    [%#span11] inv'1 (shallow_model'0 self)
   
-  axiom inv'0 : forall x : Vec'0.t_vec (borrowed (SumTo10'0.t_sumto10)) (Global'0.t_global) . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | Vec'0.C_Vec buf len -> true
-    end)
+  axiom inv'0 : forall x : Vec'0.t_vec (borrowed (SumTo10'0.t_sumto10)) (Global'0.t_global) . inv'0 x = invariant'0 x
   
   use prelude.prelude.Intrinsic
+  
+  use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec (borrowed (SumTo10'0.t_sumto10)) (Global'0.t_global)) (ix : int) : borrowed (SumTo10'0.t_sumto10)
     
    =
-    [%#span16] Seq.get (shallow_model'0 self) ix
+    [%#span12] Seq.get (shallow_model'0 self) ix
   
   predicate resolve'1 (self : borrowed (SumTo10'0.t_sumto10)) =
-    [%#span17] self.final = self.current
+    [%#span13] self.final = self.current
   
   predicate resolve'0 (self : Vec'0.t_vec (borrowed (SumTo10'0.t_sumto10)) (Global'0.t_global)) =
-    [%#span18] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'0 self)  -> resolve'1 (index_logic'0 self i)
+    [%#span14] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'0 self)  -> resolve'1 (index_logic'0 self i)
   
   let rec vec (x:Vec'0.t_vec (borrowed (SumTo10'0.t_sumto10)) (Global'0.t_global)) (return'  (ret:()))= {[%#svec_inv2] inv'0 x}
     {[%#svec_inv1] Seq.length (shallow_model'0 x) > 0}

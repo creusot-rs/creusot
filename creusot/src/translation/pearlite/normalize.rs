@@ -5,7 +5,7 @@ use crate::{
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{ParamEnv, TyCtxt};
-use rustc_span::{symbol::sym, Symbol};
+use rustc_span::Symbol;
 
 use super::{super_visit_mut_term, BinOp, TermVisitorMut};
 

@@ -1,9 +1,10 @@
 use crate::{logic::Mapping, util::*, *};
 
+#[cfg_attr(not(creusot), allow(dead_code))]
 type PMap<K, V> = Mapping<K, Option<SizedW<V>>>;
 
-#[trusted] //opaque
-pub struct FMap<K, V: ?Sized>(PMap<K, V>);
+#[trusted]
+pub struct FMap<K, V: ?Sized>(std::marker::PhantomData<K>, std::marker::PhantomData<V>);
 
 impl<K, V: ?Sized> FMap<K, V> {
     #[trusted]

@@ -12,7 +12,9 @@ module C492_ReborrowTuple
   
   let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span5 = "../../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  
+  let%span span6 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
   use prelude.prelude.UInt32
   
@@ -25,7 +27,10 @@ module C492_ReborrowTuple
   
   axiom inv'2 : forall x : (borrowed t, uint32) . inv'2 x = true
   
-  predicate invariant'1 (self : borrowed t)
+  predicate inv'0 (_x : t)
+  
+  predicate invariant'1 (self : borrowed t) =
+    [%#span5] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'1 (_x : borrowed t)
   
@@ -33,14 +38,12 @@ module C492_ReborrowTuple
   
   predicate invariant'0 (self : t)
   
-  predicate inv'0 (_x : t)
-  
   axiom inv'0 : forall x : t . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed t) =
-    [%#span5] self.final = self.current
+    [%#span6] self.final = self.current
   
   use prelude.prelude.Int
   
@@ -72,17 +75,26 @@ module C492_Test
   
   let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span5 = "../../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
   
-  let%span span6 = "../492.rs" 5 25 5 26
+  let%span span6 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span7 = "../492.rs" 4 10 4 27
+  let%span span7 = "../492.rs" 5 25 5 26
   
-  let%span span8 = "../492.rs" 5 39 5 52
+  let%span span8 = "../492.rs" 4 10 4 27
   
-  use prelude.prelude.UInt32
+  let%span span9 = "../492.rs" 5 39 5 52
   
   use prelude.prelude.Int32
+  
+  predicate invariant'2 (self : int32) =
+    [%#span4] true
+  
+  predicate inv'2 (_x : int32)
+  
+  axiom inv'2 : forall x : int32 . inv'2 x = true
+  
+  use prelude.prelude.UInt32
   
   use prelude.prelude.Borrow
   
@@ -94,7 +106,7 @@ module C492_Test
   axiom inv'1 : forall x : (borrowed int32, uint32) . inv'1 x = true
   
   predicate invariant'0 (self : borrowed int32) =
-    [%#span4] true
+    [%#span5] inv'2 self.current /\ inv'2 self.final
   
   predicate inv'0 (_x : borrowed int32)
   
@@ -103,14 +115,14 @@ module C492_Test
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed int32) =
-    [%#span5] self.final = self.current
+    [%#span6] self.final = self.current
   
   use prelude.prelude.Int
   
-  let rec reborrow_tuple'0 (x:borrowed int32) (return'  (ret:(borrowed int32, uint32)))= {[@expl:precondition] [%#span6] inv'0 x}
+  let rec reborrow_tuple'0 (x:borrowed int32) (return'  (ret:(borrowed int32, uint32)))= {[@expl:precondition] [%#span7] inv'0 x}
     any
-    [ return' (result:(borrowed int32, uint32))-> {[%#span8] inv'1 result}
-      {[%#span7] (let (a, _) = result in a).current = x.current}
+    [ return' (result:(borrowed int32, uint32))-> {[%#span9] inv'1 result}
+      {[%#span8] (let (a, _) = result in a).current = x.current}
       (! return' {result}) ]
     
   

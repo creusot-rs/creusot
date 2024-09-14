@@ -2,7 +2,7 @@ use crate::{
     backend::ty_inv::TyInvKind,
     ctx::*,
     translation::{
-        pearlite::{self, super_visit_mut_term, Literal, Term, TermKind, TermVisitorMut},
+        pearlite::{self, super_visit_mut_term, Term, TermKind, TermVisitorMut},
         specification::PreContract,
     },
 };
@@ -10,7 +10,7 @@ use indexmap::IndexMap;
 use itertools::izip;
 use rustc_ast::{
     ast::{AttrArgs, AttrArgsEq},
-    AttrItem, AttrKind, Attribute, Mutability,
+    AttrItem, AttrKind, Attribute,
 };
 use rustc_hir::{
     def::{DefKind, Namespace},
@@ -141,13 +141,11 @@ pub(crate) fn is_user_tyinv(tcx: TyCtxt, def_id: DefId) -> bool {
         return false;
     };
 
-    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user"))
-        .is_some_and(|inv_did| inv_did == trait_item_did)
+    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap() == trait_item_did
 }
 
 pub(crate) fn is_inv_internal(tcx: TyCtxt, def_id: DefId) -> bool {
-    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal"))
-        .is_some_and(|did| did == def_id)
+    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap() == def_id
 }
 
 pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
@@ -250,13 +248,10 @@ pub(crate) fn ident_of(sym: Symbol) -> Ident {
 
 pub(crate) fn inv_module_name(tcx: TyCtxt, kind: TyInvKind) -> Ident {
     match kind {
+        TyInvKind::NotStructural => "TyInv_NotStructural".into(),
         TyInvKind::Trivial => "TyInv_Trivial".into(),
-        TyInvKind::Borrow(Mutability::Not) => "TyInv_Borrow_Shared".into(),
-        TyInvKind::Borrow(Mutability::Mut) => "TyInv_Borrow".into(),
-        TyInvKind::Box => "TyInv_Box".into(),
         TyInvKind::Adt(adt_did) => format!("{}_Inv", ident_path(tcx, adt_did)).into(),
         TyInvKind::Tuple(arity) => format!("TyInv_Tuple{arity}").into(),
-        TyInvKind::Slice => format!("TyInv_Slice").into(),
     }
 }
 
@@ -270,7 +265,7 @@ pub(crate) fn module_name(tcx: TyCtxt, def_id: DefId) -> Symbol {
     }
 }
 
-pub fn ident_path(tcx: TyCtxt, def_id: DefId) -> Symbol {
+pub(crate) fn ident_path(tcx: TyCtxt, def_id: DefId) -> Symbol {
     use heck::ToUpperCamelCase;
 
     let def_path = tcx.def_path(def_id);
@@ -457,13 +452,6 @@ pub(crate) fn pre_sig_of<'tcx>(
     let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
 
     let mut contract = crate::specification::contract_of(ctx, def_id);
-    if output.is_never() {
-        contract.ensures.push(Term {
-            kind: TermKind::Lit(Literal::Bool(false)),
-            ty: ctx.types.bool,
-            span: DUMMY_SP,
-        });
-    }
 
     let fn_ty = ctx.tcx.type_of(def_id).instantiate_identity();
 

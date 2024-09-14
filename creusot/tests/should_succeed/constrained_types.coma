@@ -22,19 +22,30 @@ end
 module ConstrainedTypes_UsesConcreteInstance
   let%span span0 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span1 = "../../../../creusot-contracts/src/logic/ord.rs" 240 20 240 67
+  let%span span1 = "../../../../creusot-contracts/src/invariant.rs" 26 8 26 18
   
-  let%span span2 = "../../../../creusot-contracts/src/std/num.rs" 22 16 22 35
+  let%span span2 = "../../../../creusot-contracts/src/logic/ord.rs" 240 20 240 67
   
-  let%span span3 = "../../../../creusot-contracts/src/std/tuples.rs" 29 28 29 57
+  let%span span3 = "../../../../creusot-contracts/src/std/num.rs" 22 16 22 35
   
-  let%span span4 = "../../../../creusot-contracts/src/model.rs" 81 8 81 28
+  let%span span4 = "../../../../creusot-contracts/src/std/tuples.rs" 29 28 29 57
   
-  let%span span5 = "" 0 0 0 0
+  let%span span5 = "../../../../creusot-contracts/src/model.rs" 81 8 81 28
   
   let%span span6 = "" 0 0 0 0
   
-  let%span span7 = "../constrained_types.rs" 9 18 9 68
+  let%span span7 = "" 0 0 0 0
+  
+  let%span span8 = "../constrained_types.rs" 9 18 9 68
+  
+  use prelude.prelude.UInt32
+  
+  predicate invariant'1 (self : (uint32, uint32)) =
+    [%#span0] true
+  
+  predicate inv'1 (_x : (uint32, uint32))
+  
+  axiom inv'1 : forall x : (uint32, uint32) . inv'1 x = true
   
   use prelude.prelude.Int
   
@@ -58,10 +69,10 @@ module ConstrainedTypes_UsesConcreteInstance
   
   function cmp_le_log'0 (_1 : (int, int)) (_2 : (int, int)) : ()
   
-  use prelude.prelude.UInt32
+  use prelude.prelude.Borrow
   
   predicate invariant'0 (self : (uint32, uint32)) =
-    [%#span0] true
+    [%#span1] inv'1 self
   
   predicate inv'0 (_x : (uint32, uint32))
   
@@ -71,29 +82,27 @@ module ConstrainedTypes_UsesConcreteInstance
   
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Borrow
-  
   use int.Int
   
   function lt_log'0 (self : (int, int)) (o : (int, int)) : bool =
-    [%#span1] (let (a, _) = self in a) = (let (a, _) = o in a) /\ (let (_, a) = self in a) < (let (_, a) = o in a)
+    [%#span2] (let (a, _) = self in a) = (let (a, _) = o in a) /\ (let (_, a) = self in a) < (let (_, a) = o in a)
     \/ (let (a, _) = self in a) < (let (a, _) = o in a)
   
   use prelude.prelude.UInt32
   
   function deep_model'2 (self : uint32) : int =
-    [%#span2] UInt32.to_int self
+    [%#span3] UInt32.to_int self
   
   function deep_model'1 (self : (uint32, uint32)) : (int, int) =
-    [%#span3] (deep_model'2 (let (a, _) = self in a), deep_model'2 (let (_, a) = self in a))
+    [%#span4] (deep_model'2 (let (a, _) = self in a), deep_model'2 (let (_, a) = self in a))
   
   function deep_model'0 (self : (uint32, uint32)) : (int, int) =
-    [%#span4] deep_model'1 self
+    [%#span5] deep_model'1 self
   
-  let rec lt'0 (self:(uint32, uint32)) (other:(uint32, uint32)) (return'  (ret:bool))= {[@expl:precondition] [%#span6] inv'0 other}
-    {[@expl:precondition] [%#span5] inv'0 self}
+  let rec lt'0 (self:(uint32, uint32)) (other:(uint32, uint32)) (return'  (ret:bool))= {[@expl:precondition] [%#span7] inv'0 other}
+    {[@expl:precondition] [%#span6] inv'0 self}
     any
-    [ return' (result:bool)-> {[%#span7] result = lt_log'0 (deep_model'0 self) (deep_model'0 other)}
+    [ return' (result:bool)-> {[%#span8] result = lt_log'0 (deep_model'0 self) (deep_model'0 other)}
       (! return' {result}) ]
     
   

@@ -11,17 +11,22 @@ module C766_Trait_Goo
   
   let%span s7660 = "../766.rs" 10 16 10 20
   
-  let%span span1 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span1 = "../../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
   
-  let%span span2 = "../../../../../creusot-contracts/src/model.rs" 99 8 99 28
+  let%span span2 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span3 = "../766.rs" 8 14 8 18
+  let%span span3 = "../../../../../creusot-contracts/src/model.rs" 99 8 99 28
   
-  let%span span4 = "../766.rs" 7 14 7 52
+  let%span span4 = "../766.rs" 8 14 8 18
+  
+  let%span span5 = "../766.rs" 7 14 7 52
+  
+  predicate inv'0 (_x : self)
   
   use prelude.prelude.Borrow
   
-  predicate invariant'1 (self : borrowed self)
+  predicate invariant'1 (self : borrowed self) =
+    [%#span1] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'1 (_x : borrowed self)
   
@@ -29,14 +34,12 @@ module C766_Trait_Goo
   
   predicate invariant'0 (self : self)
   
-  predicate inv'0 (_x : self)
-  
   axiom inv'0 : forall x : self . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed self) =
-    [%#span1] self.final = self.current
+    [%#span2] self.final = self.current
   
   type deep_model_ty'1
   
@@ -47,10 +50,10 @@ module C766_Trait_Goo
   function deep_model'1 (self : self) : FMap'0.t_fmap deep_model_ty'0 deep_model_ty'1
   
   function deep_model'0 (self : borrowed self) : FMap'0.t_fmap deep_model_ty'0 deep_model_ty'1 =
-    [%#span2] deep_model'1 self.current
+    [%#span3] deep_model'1 self.current
   
-  let rec f'0 (self:borrowed self) (return'  (ret:()))= {[@expl:precondition] [%#span3] inv'1 self}
-    any [ return' (result:())-> {[%#span4] deep_model'0 self = deep_model'0 self} (! return' {result}) ] 
+  let rec f'0 (self:borrowed self) (return'  (ret:()))= {[@expl:precondition] [%#span4] inv'1 self}
+    any [ return' (result:())-> {[%#span5] deep_model'0 self = deep_model'0 self} (! return' {result}) ] 
   
   let rec goo (self:borrowed self) (return'  (ret:()))= {[%#s7660] inv'1 self}
     (! bb0

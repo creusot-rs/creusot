@@ -3,6 +3,7 @@ use crate::{
     *,
 };
 
+#[trusted]
 #[cfg_attr(
     creusot,
     rustc_diagnostic_item = "creusot_int",
@@ -66,6 +67,7 @@ impl Int {
 #[cfg(creusot)]
 impl Add<Int> for Int {
     type Output = Int;
+    #[trusted]
     #[creusot::no_translate]
     #[creusot::builtins = "add_int"]
     fn add(self, _: Int) -> Self {
@@ -76,6 +78,7 @@ impl Add<Int> for Int {
 #[cfg(creusot)]
 impl Sub<Int> for Int {
     type Output = Int;
+    #[trusted]
     #[creusot::no_translate]
     #[creusot::builtins = "sub_int"]
     fn sub(self, _: Int) -> Self {
@@ -86,6 +89,7 @@ impl Sub<Int> for Int {
 #[cfg(creusot)]
 impl Mul<Int> for Int {
     type Output = Int;
+    #[trusted]
     #[creusot::no_translate]
     #[creusot::builtins = "mul_int"]
     fn mul(self, _: Int) -> Self {
@@ -96,6 +100,7 @@ impl Mul<Int> for Int {
 #[cfg(creusot)]
 impl Div<Int> for Int {
     type Output = Int;
+    #[trusted]
     #[creusot::no_translate]
     #[creusot::builtins = "div_int"]
     fn div(self, _: Int) -> Self {
@@ -106,6 +111,7 @@ impl Div<Int> for Int {
 #[cfg(creusot)]
 impl Rem<Int> for Int {
     type Output = Int;
+    #[trusted]
     #[creusot::no_translate]
     #[creusot::builtins = "rem_int"]
     fn rem(self, _: Int) -> Self {
@@ -116,6 +122,7 @@ impl Rem<Int> for Int {
 #[cfg(creusot)]
 impl Neg for Int {
     type Output = Int;
+    #[trusted]
     #[creusot::no_translate]
     #[creusot::builtins = "neg_int"]
     fn neg(self) -> Self {
