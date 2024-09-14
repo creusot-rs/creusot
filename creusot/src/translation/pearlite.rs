@@ -1035,7 +1035,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
         let TyKind::FnDef(id, sub) = ty.kind() else { panic!("expected function type") };
 
-        if Some(*id) != self.ctx.get_diagnostic_item(Symbol::intern("deref_method")) {
+        if *id != self.ctx.get_diagnostic_item(Symbol::intern("deref_method")).unwrap() {
             return false;
         }
 
@@ -1101,38 +1101,38 @@ pub(crate) enum Stub {
 }
 
 pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
-    if let TyKind::FnDef(id, _) = ty.kind() {
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("forall")) {
+    if let TyKind::FnDef(id, _) = *ty.kind() {
+        if id == tcx.get_diagnostic_item(Symbol::intern("forall")).unwrap() {
             return Some(Stub::Forall);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("exists")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("exists")).unwrap() {
             return Some(Stub::Exists);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("trigger")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("trigger")).unwrap() {
             return Some(Stub::Trigger);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("fin")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("fin")).unwrap() {
             return Some(Stub::Fin);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("implication")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("implication")).unwrap() {
             return Some(Stub::Impl);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("equal")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("equal")).unwrap() {
             return Some(Stub::Equals);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("neq")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("neq")).unwrap() {
             return Some(Stub::Neq);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("variant_check")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("variant_check")).unwrap() {
             return Some(Stub::VariantCheck);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("old")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("old")).unwrap() {
             return Some(Stub::Old);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("absurd")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("absurd")).unwrap() {
             return Some(Stub::Absurd);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("closure_result_constraint")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("closure_result_constraint")).unwrap() {
             return Some(Stub::ResultCheck);
         }
         None
@@ -1384,13 +1384,6 @@ impl<'tcx> Term<'tcx> {
 
     pub(crate) fn eq(tcx: TyCtxt<'tcx>, lhs: Self, rhs: Self) -> Self {
         lhs.bin_op(tcx, BinOp::Eq, rhs)
-    }
-
-    pub(crate) fn int(tcx: TyCtxt<'tcx>, val: i128) -> Self {
-        let ty = tcx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap();
-        let ty = tcx.type_of(ty).skip_binder();
-
-        Term { ty, kind: TermKind::Lit(Literal::Integer(val)), span: DUMMY_SP }
     }
 
     pub(crate) fn implies(self, rhs: Self) -> Self {

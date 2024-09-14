@@ -1,3 +1,5 @@
+use crate::*;
+
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "fin"]
 pub fn fin<T: ?Sized>(_: &mut T) -> Box<T> {
@@ -75,6 +77,7 @@ pub fn ghost_from_fn<T, F: FnOnce() -> T>(f: F, _arg: ()) -> T {
     f()
 }
 
+#[trusted]
 #[creusot::no_translate]
 #[creusot::builtins = "prelude.prelude.Mapping.from_fn"]
 pub fn mapping_from_fn<A, B, F: FnOnce(A) -> B>(_: F) -> crate::logic::Mapping<A, B> {

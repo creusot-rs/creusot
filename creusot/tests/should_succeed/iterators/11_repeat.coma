@@ -61,6 +61,67 @@ module C11Repeat_Impl0_ProducesRefl_Impl
   goal vc_produces_refl : ([%#s11_repeat0] inv'0 self)
    -> ([%#s11_repeat1] produces'0 self (Seq.empty  : Seq.seq a) self)
 end
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.prelude.Opaque
+  
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
+    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
+    | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
+    
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
+    [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
+    
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type as PhantomData'0
+  
+  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  
+  type t_unique 't =
+    | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
+    [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+      = input}
+      (! ret {pointer} {_marker})
+    | bad (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+      <> input}
+      {false}
+      any ]
+    
+end
+module Alloc_Boxed_Box_Type
+  use Core_Ptr_Unique_Unique_Type as Unique'0
+  
+  type t_box 't 'a =
+    | C_Box (Unique'0.t_unique 't) 'a
+  
+  function any_l (_ : 'b) : 'a
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_global (input:t_global) (ret  )= any
+    [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
+    
+end
 module C11Repeat_Impl0_ProducesTrans_Impl
   type a
   
@@ -80,14 +141,39 @@ module C11Repeat_Impl0_ProducesTrans_Impl
   
   let%span s11_repeat7 = "../11_repeat.rs" 39 14 39 42
   
-  let%span span8 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span8 = "../../../../../creusot-contracts/src/std/boxed.rs" 27 8 27 18
   
-  let%span span9 = "../11_repeat.rs" 24 8 27 9
+  let%span span9 = "../../../../../creusot-contracts/src/logic/seq.rs" 197 8 197 97
+  
+  let%span span10 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  
+  let%span span11 = "../11_repeat.rs" 24 8 27 9
+  
+  predicate invariant'3 (self : a)
+  
+  predicate inv'3 (_x : a)
+  
+  axiom inv'3 : forall x : a . inv'3 x = true
+  
+  use Alloc_Alloc_Global_Type as Global'0
+  
+  predicate invariant'2 (self : a) =
+    [%#span8] inv'3 self
+  
+  predicate inv'2 (_x : a)
+  
+  axiom inv'2 : forall x : a . inv'2 x = true
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use prelude.prelude.Int
   
   use seq.Seq
   
   predicate invariant'1 (self : Seq.seq a) =
-    [%#span8] true
+    [%#span9] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'2 (Seq.get self i)
   
   predicate inv'1 (_x : Seq.seq a)
   
@@ -96,7 +182,7 @@ module C11Repeat_Impl0_ProducesTrans_Impl
   use C11Repeat_Repeat_Type as Repeat'0
   
   predicate invariant'0 (self : Repeat'0.t_repeat a) =
-    [%#span8] true
+    [%#span10] true
   
   predicate inv'0 (_x : Repeat'0.t_repeat a)
   
@@ -108,14 +194,10 @@ module C11Repeat_Impl0_ProducesTrans_Impl
   
   use seq.Seq
   
-  use seq.Seq
-  
-  use prelude.prelude.Int
-  
   predicate produces'0 [#"../11_repeat.rs" 23 4 23 64] (self : Repeat'0.t_repeat a) (visited : Seq.seq a) (o : Repeat'0.t_repeat a)
     
    =
-    [%#span9] self = o
+    [%#span11] self = o
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> Seq.get visited i = C11Repeat_Repeat_Type.repeat_element self)
   
@@ -167,17 +249,30 @@ module C11Repeat_Impl0_Next
   
   let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span4 = "../11_repeat.rs" 24 8 27 9
+  let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 26 8 26 18
   
-  let%span span5 = "../11_repeat.rs" 18 20 18 25
+  let%span span5 = "../../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
   
-  let%span span6 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span6 = "../11_repeat.rs" 24 8 27 9
   
-  let%span span7 = "" 0 0 0 0
+  let%span span7 = "../11_repeat.rs" 18 20 18 25
   
-  let%span span8 = "../../../../../creusot-contracts/src/std/clone.rs" 7 0 20 1
+  let%span span8 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
   let%span span9 = "" 0 0 0 0
+  
+  let%span span10 = "../../../../../creusot-contracts/src/std/clone.rs" 7 0 20 1
+  
+  let%span span11 = "" 0 0 0 0
+  
+  use C11Repeat_Repeat_Type as Repeat'0
+  
+  predicate invariant'4 (self : Repeat'0.t_repeat a) =
+    [%#span3] true
+  
+  predicate inv'4 (_x : Repeat'0.t_repeat a)
+  
+  axiom inv'4 : forall x : Repeat'0.t_repeat a . inv'4 x = true
   
   predicate invariant'3 (self : a)
   
@@ -185,7 +280,10 @@ module C11Repeat_Impl0_Next
   
   axiom inv'3 : forall x : a . inv'3 x = true
   
-  predicate invariant'2 (self : a)
+  use prelude.prelude.Borrow
+  
+  predicate invariant'2 (self : a) =
+    [%#span4] inv'3 self
   
   predicate inv'2 (_x : a)
   
@@ -200,12 +298,8 @@ module C11Repeat_Impl0_Next
   
   axiom inv'1 : forall x : Option'0.t_option a . inv'1 x = true
   
-  use C11Repeat_Repeat_Type as Repeat'0
-  
-  use prelude.prelude.Borrow
-  
   predicate invariant'0 (self : borrowed (Repeat'0.t_repeat a)) =
-    [%#span3] true
+    [%#span5] inv'4 self.current /\ inv'4 self.final
   
   predicate inv'0 (_x : borrowed (Repeat'0.t_repeat a))
   
@@ -224,22 +318,22 @@ module C11Repeat_Impl0_Next
   predicate produces'0 [#"../11_repeat.rs" 23 4 23 64] (self : Repeat'0.t_repeat a) (visited : Seq.seq a) (o : Repeat'0.t_repeat a)
     
    =
-    [%#span4] self = o
+    [%#span6] self = o
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> Seq.get visited i = C11Repeat_Repeat_Type.repeat_element self)
   
   use seq.Seq
   
   predicate completed'0 [#"../11_repeat.rs" 17 4 17 35] (self : borrowed (Repeat'0.t_repeat a)) =
-    [%#span5] false
+    [%#span7] false
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Repeat'0.t_repeat a)) =
-    [%#span6] self.final = self.current
+    [%#span8] self.final = self.current
   
-  let rec clone'0 (self:a) (return'  (ret:a))= {[@expl:precondition] [%#span7] inv'2 self}
-    any [ return' (result:a)-> {[%#span9] inv'3 result} {[%#span8] result = self} (! return' {result}) ] 
+  let rec clone'0 (self:a) (return'  (ret:a))= {[@expl:precondition] [%#span9] inv'2 self}
+    any [ return' (result:a)-> {[%#span11] inv'3 result} {[%#span10] result = self} (! return' {result}) ] 
   
   let rec next (self:borrowed (Repeat'0.t_repeat a)) (return'  (ret:Option'0.t_option a))= {[%#s11_repeat0] inv'0 self}
     (! bb0
@@ -273,16 +367,37 @@ module C11Repeat_Impl0
   
   let%span s11_repeat2 = "../11_repeat.rs" 46 4 46 35
   
-  let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span3 = "../../../../../creusot-contracts/src/std/boxed.rs" 27 8 27 18
   
-  let%span span4 = "../11_repeat.rs" 18 20 18 25
+  let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span5 = "../11_repeat.rs" 24 8 27 9
+  let%span span5 = "../../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  
+  let%span span6 = "../../../../../creusot-contracts/src/logic/seq.rs" 197 8 197 97
+  
+  let%span span7 = "../11_repeat.rs" 18 20 18 25
+  
+  let%span span8 = "../11_repeat.rs" 24 8 27 9
+  
+  predicate invariant'5 (self : a)
+  
+  predicate inv'5 (_x : a)
+  
+  axiom inv'5 : forall x : a . inv'5 x = true
+  
+  use Alloc_Alloc_Global_Type as Global'0
+  
+  predicate invariant'4 (self : a) =
+    [%#span3] inv'5 self
+  
+  predicate inv'4 (_x : a)
+  
+  axiom inv'4 : forall x : a . inv'4 x = true
   
   use Core_Option_Option_Type as Option'0
   
   predicate invariant'3 (self : Option'0.t_option a) =
-    [%#span3] true
+    [%#span4] true
   
   predicate inv'3 (_x : Option'0.t_option a)
   
@@ -290,10 +405,12 @@ module C11Repeat_Impl0
   
   use C11Repeat_Repeat_Type as Repeat'0
   
+  predicate inv'0 (_x : Repeat'0.t_repeat a)
+  
   use prelude.prelude.Borrow
   
   predicate invariant'2 (self : borrowed (Repeat'0.t_repeat a)) =
-    [%#span3] true
+    [%#span5] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'2 (_x : borrowed (Repeat'0.t_repeat a))
   
@@ -301,24 +418,28 @@ module C11Repeat_Impl0
   
   use seq.Seq
   
+  use seq.Seq
+  
+  use prelude.prelude.Int
+  
+  use seq.Seq
+  
   predicate invariant'1 (self : Seq.seq a) =
-    [%#span3] true
+    [%#span6] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
   
   predicate inv'1 (_x : Seq.seq a)
   
   axiom inv'1 : forall x : Seq.seq a . inv'1 x = true
   
   predicate invariant'0 (self : Repeat'0.t_repeat a) =
-    [%#span3] true
-  
-  predicate inv'0 (_x : Repeat'0.t_repeat a)
+    [%#span4] true
   
   axiom inv'0 : forall x : Repeat'0.t_repeat a . inv'0 x = true
   
   use seq.Seq
   
   predicate completed'0 [#"../11_repeat.rs" 17 4 17 35] (self : borrowed (Repeat'0.t_repeat a)) =
-    [%#span4] false
+    [%#span7] false
   
   use seq.Seq
   
@@ -328,14 +449,10 @@ module C11Repeat_Impl0
   
   use seq.Seq
   
-  use seq.Seq
-  
-  use prelude.prelude.Int
-  
   predicate produces'0 [#"../11_repeat.rs" 23 4 23 64] (self : Repeat'0.t_repeat a) (visited : Seq.seq a) (o : Repeat'0.t_repeat a)
     
    =
-    [%#span5] self = o
+    [%#span8] self = o
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> Seq.get visited i = C11Repeat_Repeat_Type.repeat_element self)
   

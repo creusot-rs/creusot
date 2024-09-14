@@ -8,9 +8,17 @@ module C06_Test
   
   let%span s062 = "../06.rs" 9 29 9 35
   
-  let%span span3 = "../06.rs" 6 11 6 15
+  let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 26 8 26 18
   
-  let%span span4 = "../06.rs" 6 31 6 40
+  let%span span4 = "../06.rs" 6 11 6 15
+  
+  let%span span5 = "../06.rs" 6 31 6 40
+  
+  predicate invariant'2 (self : t)
+  
+  predicate inv'2 (_x : t)
+  
+  axiom inv'2 : forall x : t . inv'2 x = true
   
   type tgt'0
   
@@ -20,13 +28,14 @@ module C06_Test
   
   axiom inv'1 : forall x : tgt'0 . inv'1 x = true
   
-  predicate invariant'0 (self : t)
+  use prelude.prelude.Borrow
+  
+  predicate invariant'0 (self : t) =
+    [%#span3] inv'2 self
   
   predicate inv'0 (_x : t)
   
   axiom inv'0 : forall x : t . inv'0 x = true
-  
-  use prelude.prelude.Borrow
   
   use prelude.prelude.Intrinsic
   
@@ -34,8 +43,8 @@ module C06_Test
   
   use prelude.prelude.Int
   
-  let rec ix'0 (self:t) (ix:usize) (return'  (ret:tgt'0))= {[@expl:precondition] [%#span3] inv'0 self}
-    any [ return' (result:tgt'0)-> {[%#span4] inv'1 result} (! return' {result}) ] 
+  let rec ix'0 (self:t) (ix:usize) (return'  (ret:tgt'0))= {[@expl:precondition] [%#span4] inv'0 self}
+    any [ return' (result:tgt'0)-> {[%#span5] inv'1 result} (! return' {result}) ] 
   
   let rec test (a:t) (return'  (ret:tgt'0))= {[%#s061] inv'0 a}
     (! bb0

@@ -100,6 +100,14 @@ module Alloc_Alloc_Global_Type
     [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
     
 end
+module Alloc_Boxed_Box_Type
+  use Core_Ptr_Unique_Unique_Type as Unique'0
+  
+  type t_box 't 'a =
+    | C_Box (Unique'0.t_unique 't) 'a
+  
+  function any_l (_ : 'b) : 'a
+end
 module C09Capacity_ChangeCapacity
   type t
   
@@ -115,57 +123,82 @@ module C09Capacity_ChangeCapacity
   
   let%span s09_capacity5 = "../09_capacity.rs" 5 0 5 69
   
-  let%span span6 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span6 = "../../../../../creusot-contracts/src/std/boxed.rs" 27 8 27 18
   
-  let%span span7 = "" 0 0 0 0
+  let%span span7 = "../../../../../creusot-contracts/src/logic/seq.rs" 197 8 197 97
   
-  let%span span8 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
+  let%span span8 = "../../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
   
-  let%span span9 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span span9 = "" 0 0 0 0
   
-  let%span span10 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
+  let%span span10 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
   
-  let%span span11 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
+  let%span span11 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   
-  let%span span12 = "../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
+  let%span span12 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
   
-  let%span span13 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span13 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
   
-  let%span span14 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span14 = "../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
   
-  let%span span15 = "" 0 0 0 0
+  let%span span15 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
   
-  let%span span16 = "../../../../../creusot-contracts/src/std/vec.rs" 125 26 125 43
+  let%span span16 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
   let%span span17 = "" 0 0 0 0
   
-  let%span span18 = "../../../../../creusot-contracts/src/std/vec.rs" 121 26 121 43
+  let%span span18 = "../../../../../creusot-contracts/src/std/vec.rs" 125 26 125 43
   
   let%span span19 = "" 0 0 0 0
   
-  let%span span20 = "../../../../../creusot-contracts/src/std/vec.rs" 117 26 117 43
+  let%span span20 = "../../../../../creusot-contracts/src/std/vec.rs" 121 26 121 43
   
   let%span span21 = "" 0 0 0 0
   
-  let%span span22 = "../../../../../creusot-contracts/src/std/vec.rs" 113 26 113 43
+  let%span span22 = "../../../../../creusot-contracts/src/std/vec.rs" 117 26 117 43
+  
+  let%span span23 = "" 0 0 0 0
+  
+  let%span span24 = "../../../../../creusot-contracts/src/std/vec.rs" 113 26 113 43
+  
+  predicate invariant'4 (self : t)
+  
+  predicate inv'4 (_x : t)
+  
+  axiom inv'4 : forall x : t . inv'4 x = true
+  
+  use Alloc_Alloc_Global_Type as Global'0
+  
+  predicate invariant'3 (self : t) =
+    [%#span6] inv'4 self
+  
+  predicate inv'3 (_x : t)
+  
+  axiom inv'3 : forall x : t . inv'3 x = true
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use prelude.prelude.Int
   
   use seq.Seq
   
   predicate invariant'2 (self : Seq.seq t) =
-    [%#span6] true
+    [%#span7] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'3 (Seq.get self i)
   
   predicate inv'2 (_x : Seq.seq t)
   
   axiom inv'2 : forall x : Seq.seq t . inv'2 x = true
   
-  use Alloc_Alloc_Global_Type as Global'0
-  
   use Alloc_Vec_Vec_Type as Vec'0
+  
+  predicate inv'0 (_x : Vec'0.t_vec t (Global'0.t_global))
   
   use prelude.prelude.Borrow
   
   predicate invariant'1 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
-    [%#span6] true
+    [%#span8] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'1 (_x : borrowed (Vec'0.t_vec t (Global'0.t_global)))
   
@@ -175,49 +208,43 @@ module C09Capacity_ChangeCapacity
   
   use prelude.prelude.UIntSize
   
-  use prelude.prelude.Int
-  
-  constant max'0 : usize = [%#span7] (18446744073709551615 : usize)
-  
-  use seq.Seq
-  
-  predicate inv'0 (_x : Vec'0.t_vec t (Global'0.t_global))
+  constant max'0 : usize = [%#span9] (18446744073709551615 : usize)
   
   function shallow_model'0 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_vec t (Global'0.t_global) . ([%#span8] inv'0 self)
-   -> ([%#span10] inv'2 (shallow_model'0 self))
-  && ([%#span9] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
+  axiom shallow_model'0_spec : forall self : Vec'0.t_vec t (Global'0.t_global) . ([%#span10] inv'0 self)
+   -> ([%#span12] inv'2 (shallow_model'0 self))
+  && ([%#span11] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
   
   predicate invariant'0 (self : Vec'0.t_vec t (Global'0.t_global)) =
-    [%#span11] inv'2 (shallow_model'0 self)
+    [%#span13] inv'2 (shallow_model'0 self)
   
   axiom inv'0 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'0 x = true
   
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec t (Global'0.t_global)) (ix : int) : t =
-    [%#span12] Seq.get (shallow_model'0 self) ix
+    [%#span14] Seq.get (shallow_model'0 self) ix
   
   function shallow_model'1 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq t =
-    [%#span13] shallow_model'0 self.current
+    [%#span15] shallow_model'0 self.current
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
-    [%#span14] self.final = self.current
+    [%#span16] self.final = self.current
   
-  let rec shrink_to'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (min_capacity:usize) (return'  (ret:()))= {[@expl:precondition] [%#span15] inv'1 self}
-    any [ return' (result:())-> {[%#span16] shallow_model'0 self.final = shallow_model'1 self} (! return' {result}) ] 
-  
-  let rec shrink_to_fit'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (return'  (ret:()))= {[@expl:precondition] [%#span17] inv'1 self}
+  let rec shrink_to'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (min_capacity:usize) (return'  (ret:()))= {[@expl:precondition] [%#span17] inv'1 self}
     any [ return' (result:())-> {[%#span18] shallow_model'0 self.final = shallow_model'1 self} (! return' {result}) ] 
   
-  let rec reserve_exact'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (additional:usize) (return'  (ret:()))= {[@expl:precondition] [%#span19] inv'1 self}
+  let rec shrink_to_fit'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (return'  (ret:()))= {[@expl:precondition] [%#span19] inv'1 self}
     any [ return' (result:())-> {[%#span20] shallow_model'0 self.final = shallow_model'1 self} (! return' {result}) ] 
   
-  let rec reserve'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (additional:usize) (return'  (ret:()))= {[@expl:precondition] [%#span21] inv'1 self}
+  let rec reserve_exact'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (additional:usize) (return'  (ret:()))= {[@expl:precondition] [%#span21] inv'1 self}
     any [ return' (result:())-> {[%#span22] shallow_model'0 self.final = shallow_model'1 self} (! return' {result}) ] 
+  
+  let rec reserve'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (additional:usize) (return'  (ret:()))= {[@expl:precondition] [%#span23] inv'1 self}
+    any [ return' (result:())-> {[%#span24] shallow_model'0 self.final = shallow_model'1 self} (! return' {result}) ] 
   
   let rec change_capacity (v:borrowed (Vec'0.t_vec t (Global'0.t_global))) (return'  (ret:()))= {[%#s09_capacity3] inv'1 v}
     (! bb0
@@ -287,41 +314,66 @@ module C09Capacity_ClearVec
   
   let%span s09_capacity1 = "../09_capacity.rs" 13 10 13 26
   
-  let%span span2 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span2 = "../../../../../creusot-contracts/src/std/boxed.rs" 27 8 27 18
   
-  let%span span3 = "" 0 0 0 0
+  let%span span3 = "../../../../../creusot-contracts/src/logic/seq.rs" 197 8 197 97
   
-  let%span span4 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
+  let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
   
-  let%span span5 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span span5 = "" 0 0 0 0
   
-  let%span span6 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
+  let%span span6 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
   
-  let%span span7 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
+  let%span span7 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   
-  let%span span8 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span8 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
   
-  let%span span9 = "" 0 0 0 0
+  let%span span9 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
   
-  let%span span10 = "../../../../../creusot-contracts/src/std/vec.rs" 129 26 129 45
+  let%span span10 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  
+  let%span span11 = "" 0 0 0 0
+  
+  let%span span12 = "../../../../../creusot-contracts/src/std/vec.rs" 129 26 129 45
+  
+  predicate invariant'4 (self : t)
+  
+  predicate inv'4 (_x : t)
+  
+  axiom inv'4 : forall x : t . inv'4 x = true
+  
+  use Alloc_Alloc_Global_Type as Global'0
+  
+  predicate invariant'3 (self : t) =
+    [%#span2] inv'4 self
+  
+  predicate inv'3 (_x : t)
+  
+  axiom inv'3 : forall x : t . inv'3 x = true
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use prelude.prelude.Int
   
   use seq.Seq
   
   predicate invariant'2 (self : Seq.seq t) =
-    [%#span2] true
+    [%#span3] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'3 (Seq.get self i)
   
   predicate inv'2 (_x : Seq.seq t)
   
   axiom inv'2 : forall x : Seq.seq t . inv'2 x = true
   
-  use Alloc_Alloc_Global_Type as Global'0
-  
   use Alloc_Vec_Vec_Type as Vec'0
+  
+  predicate inv'0 (_x : Vec'0.t_vec t (Global'0.t_global))
   
   use prelude.prelude.Borrow
   
   predicate invariant'1 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
-    [%#span2] true
+    [%#span4] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'1 (_x : borrowed (Vec'0.t_vec t (Global'0.t_global)))
   
@@ -331,32 +383,26 @@ module C09Capacity_ClearVec
   
   use prelude.prelude.UIntSize
   
-  use prelude.prelude.Int
-  
-  constant max'0 : usize = [%#span3] (18446744073709551615 : usize)
-  
-  use seq.Seq
-  
-  predicate inv'0 (_x : Vec'0.t_vec t (Global'0.t_global))
+  constant max'0 : usize = [%#span5] (18446744073709551615 : usize)
   
   function shallow_model'0 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_vec t (Global'0.t_global) . ([%#span4] inv'0 self)
-   -> ([%#span6] inv'2 (shallow_model'0 self))
-  && ([%#span5] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
+  axiom shallow_model'0_spec : forall self : Vec'0.t_vec t (Global'0.t_global) . ([%#span6] inv'0 self)
+   -> ([%#span8] inv'2 (shallow_model'0 self))
+  && ([%#span7] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
   
   predicate invariant'0 (self : Vec'0.t_vec t (Global'0.t_global)) =
-    [%#span7] inv'2 (shallow_model'0 self)
+    [%#span9] inv'2 (shallow_model'0 self)
   
   axiom inv'0 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
-    [%#span8] self.final = self.current
+    [%#span10] self.final = self.current
   
-  let rec clear'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (return'  (ret:()))= {[@expl:precondition] [%#span9] inv'1 self}
-    any [ return' (result:())-> {[%#span10] Seq.length (shallow_model'0 self.final) = 0} (! return' {result}) ] 
+  let rec clear'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (return'  (ret:()))= {[@expl:precondition] [%#span11] inv'1 self}
+    any [ return' (result:())-> {[%#span12] Seq.length (shallow_model'0 self.final) = 0} (! return' {result}) ] 
   
   let rec clear_vec (v:borrowed (Vec'0.t_vec t (Global'0.t_global))) (return'  (ret:()))= {[%#s09_capacity0] inv'1 v}
     (! bb0

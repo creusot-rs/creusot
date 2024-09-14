@@ -127,6 +127,14 @@ module Specialize_F
     [ return' (result:())-> (! return' {result}) ]
     
 end
+module Alloc_Boxed_Box_Type
+  use Core_Ptr_Unique_Unique_Type as Unique'0
+  
+  type t_box 't 'a =
+    | C_Box (Unique'0.t_unique 't) 'a
+  
+  function any_l (_ : 'b) : 'a
+end
 module Specialize_G
   type t
   
@@ -134,30 +142,51 @@ module Specialize_G
   
   let%span sspecialize1 = "../specialize.rs" 27 8 27 9
   
-  let%span span2 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span2 = "../../../../../creusot-contracts/src/std/boxed.rs" 27 8 27 18
   
-  let%span span3 = "" 0 0 0 0
+  let%span span3 = "../../../../../creusot-contracts/src/logic/seq.rs" 197 8 197 97
   
-  let%span span4 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
+  let%span span4 = "" 0 0 0 0
   
-  let%span span5 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span span5 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
   
-  let%span span6 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
+  let%span span6 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   
-  let%span span7 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
+  let%span span7 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
   
-  let%span span8 = "../specialize.rs" 6 9 6 13
+  let%span span8 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
+  
+  let%span span9 = "../specialize.rs" 6 9 6 13
+  
+  predicate invariant'3 (self : t)
+  
+  predicate inv'3 (_x : t)
+  
+  axiom inv'3 : forall x : t . inv'3 x = true
+  
+  use Alloc_Alloc_Global_Type as Global'0
+  
+  predicate invariant'2 (self : t) =
+    [%#span2] inv'3 self
+  
+  predicate inv'2 (_x : t)
+  
+  axiom inv'2 : forall x : t . inv'2 x = true
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use prelude.prelude.Int
   
   use seq.Seq
   
   predicate invariant'1 (self : Seq.seq t) =
-    [%#span2] true
+    [%#span3] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'2 (Seq.get self i)
   
   predicate inv'1 (_x : Seq.seq t)
   
   axiom inv'1 : forall x : Seq.seq t . inv'1 x = true
-  
-  use Alloc_Alloc_Global_Type as Global'0
   
   use Alloc_Vec_Vec_Type as Vec'0
   
@@ -165,28 +194,24 @@ module Specialize_G
   
   use prelude.prelude.UIntSize
   
-  use prelude.prelude.Int
-  
-  constant max'0 : usize = [%#span3] (18446744073709551615 : usize)
-  
-  use seq.Seq
+  constant max'0 : usize = [%#span4] (18446744073709551615 : usize)
   
   predicate inv'0 (_x : Vec'0.t_vec t (Global'0.t_global))
   
   function shallow_model'0 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_vec t (Global'0.t_global) . ([%#span4] inv'0 self)
-   -> ([%#span6] inv'1 (shallow_model'0 self))
-  && ([%#span5] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
+  axiom shallow_model'0_spec : forall self : Vec'0.t_vec t (Global'0.t_global) . ([%#span5] inv'0 self)
+   -> ([%#span7] inv'1 (shallow_model'0 self))
+  && ([%#span6] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
   
   predicate invariant'0 (self : Vec'0.t_vec t (Global'0.t_global)) =
-    [%#span7] inv'1 (shallow_model'0 self)
+    [%#span8] inv'1 (shallow_model'0 self)
   
   axiom inv'0 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
-  let rec x'0 (self:Vec'0.t_vec t (Global'0.t_global)) (return'  (ret:()))= {[@expl:precondition] [%#span8] inv'0 self}
+  let rec x'0 (self:Vec'0.t_vec t (Global'0.t_global)) (return'  (ret:()))= {[@expl:precondition] [%#span9] inv'0 self}
     any [ return' (result:())-> (! return' {result}) ] 
   
   let rec g (v:Vec'0.t_vec t (Global'0.t_global)) (return'  (ret:()))= {[%#sspecialize1] inv'0 v}
@@ -203,32 +228,56 @@ module Specialize_H
   
   let%span span1 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span2 = "" 0 0 0 0
+  let%span span2 = "../../../../../creusot-contracts/src/std/boxed.rs" 27 8 27 18
   
-  let%span span3 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
+  let%span span3 = "../../../../../creusot-contracts/src/logic/seq.rs" 197 8 197 97
   
-  let%span span4 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span span4 = "" 0 0 0 0
   
-  let%span span5 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
+  let%span span5 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
   
-  let%span span6 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
+  let%span span6 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   
-  let%span span7 = "../specialize.rs" 12 17 12 21
+  let%span span7 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
   
-  let%span span8 = "../specialize.rs" 11 14 11 19
+  let%span span8 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
+  
+  let%span span9 = "../specialize.rs" 12 17 12 21
+  
+  let%span span10 = "../specialize.rs" 11 14 11 19
   
   use prelude.prelude.Int32
+  
+  predicate invariant'3 (self : int32) =
+    [%#span1] true
+  
+  predicate inv'3 (_x : int32)
+  
+  axiom inv'3 : forall x : int32 . inv'3 x = true
+  
+  use Alloc_Alloc_Global_Type as Global'0
+  
+  predicate invariant'2 (self : int32) =
+    [%#span2] inv'3 self
+  
+  predicate inv'2 (_x : int32)
+  
+  axiom inv'2 : forall x : int32 . inv'2 x = true
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use prelude.prelude.Int
   
   use seq.Seq
   
   predicate invariant'1 (self : Seq.seq int32) =
-    [%#span1] true
+    [%#span3] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'2 (Seq.get self i)
   
   predicate inv'1 (_x : Seq.seq int32)
   
   axiom inv'1 : forall x : Seq.seq int32 . inv'1 x = true
-  
-  use Alloc_Alloc_Global_Type as Global'0
   
   use Alloc_Vec_Vec_Type as Vec'0
   
@@ -236,29 +285,25 @@ module Specialize_H
   
   use prelude.prelude.UIntSize
   
-  use prelude.prelude.Int
-  
-  constant max'0 : usize = [%#span2] (18446744073709551615 : usize)
-  
-  use seq.Seq
+  constant max'0 : usize = [%#span4] (18446744073709551615 : usize)
   
   predicate inv'0 (_x : Vec'0.t_vec int32 (Global'0.t_global))
   
   function shallow_model'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) : Seq.seq int32
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_vec int32 (Global'0.t_global) . ([%#span3] inv'0 self)
-   -> ([%#span5] inv'1 (shallow_model'0 self))
-  && ([%#span4] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
+  axiom shallow_model'0_spec : forall self : Vec'0.t_vec int32 (Global'0.t_global) . ([%#span5] inv'0 self)
+   -> ([%#span7] inv'1 (shallow_model'0 self))
+  && ([%#span6] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
   
   predicate invariant'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) =
-    [%#span6] inv'1 (shallow_model'0 self)
+    [%#span8] inv'1 (shallow_model'0 self)
   
   axiom inv'0 : forall x : Vec'0.t_vec int32 (Global'0.t_global) . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
-  let rec x'0 (self:Vec'0.t_vec int32 (Global'0.t_global)) (return'  (ret:()))= {[@expl:precondition] [%#span7] inv'0 self}
-    any [ return' (result:())-> {[%#span8] false} (! return' {result}) ] 
+  let rec x'0 (self:Vec'0.t_vec int32 (Global'0.t_global)) (return'  (ret:()))= {[@expl:precondition] [%#span9] inv'0 self}
+    any [ return' (result:())-> {[%#span10] false} (! return' {result}) ] 
   
   let rec h (v:Vec'0.t_vec int32 (Global'0.t_global)) (return'  (ret:()))= (! bb0
     [ bb0 = s0 [ s0 = x'0 {v} (fun (_ret':()) ->  [ &_2 <- _ret' ] s1) | s1 = bb1 ] 
@@ -273,28 +318,49 @@ module Specialize_Impl0
   
   let%span sspecialize0 = "../specialize.rs" 12 4 12 22
   
-  let%span span1 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span1 = "../../../../../creusot-contracts/src/std/boxed.rs" 27 8 27 18
   
-  let%span span2 = "" 0 0 0 0
+  let%span span2 = "../../../../../creusot-contracts/src/logic/seq.rs" 197 8 197 97
   
-  let%span span3 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
+  let%span span3 = "" 0 0 0 0
   
-  let%span span4 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span span4 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
   
-  let%span span5 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
+  let%span span5 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   
-  let%span span6 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
+  let%span span6 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
+  
+  let%span span7 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
+  
+  predicate invariant'3 (self : u)
+  
+  predicate inv'3 (_x : u)
+  
+  axiom inv'3 : forall x : u . inv'3 x = true
+  
+  use Alloc_Alloc_Global_Type as Global'0
+  
+  predicate invariant'2 (self : u) =
+    [%#span1] inv'3 self
+  
+  predicate inv'2 (_x : u)
+  
+  axiom inv'2 : forall x : u . inv'2 x = true
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use prelude.prelude.Int
   
   use seq.Seq
   
   predicate invariant'1 (self : Seq.seq u) =
-    [%#span1] true
+    [%#span2] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'2 (Seq.get self i)
   
   predicate inv'1 (_x : Seq.seq u)
   
   axiom inv'1 : forall x : Seq.seq u . inv'1 x = true
-  
-  use Alloc_Alloc_Global_Type as Global'0
   
   use Alloc_Vec_Vec_Type as Vec'0
   
@@ -302,22 +368,18 @@ module Specialize_Impl0
   
   use prelude.prelude.UIntSize
   
-  use prelude.prelude.Int
-  
-  constant max'0 : usize = [%#span2] (18446744073709551615 : usize)
-  
-  use seq.Seq
+  constant max'0 : usize = [%#span3] (18446744073709551615 : usize)
   
   predicate inv'0 (_x : Vec'0.t_vec u (Global'0.t_global))
   
   function shallow_model'0 (self : Vec'0.t_vec u (Global'0.t_global)) : Seq.seq u
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_vec u (Global'0.t_global) . ([%#span3] inv'0 self)
-   -> ([%#span5] inv'1 (shallow_model'0 self))
-  && ([%#span4] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
+  axiom shallow_model'0_spec : forall self : Vec'0.t_vec u (Global'0.t_global) . ([%#span4] inv'0 self)
+   -> ([%#span6] inv'1 (shallow_model'0 self))
+  && ([%#span5] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
   
   predicate invariant'0 (self : Vec'0.t_vec u (Global'0.t_global)) =
-    [%#span6] inv'1 (shallow_model'0 self)
+    [%#span7] inv'1 (shallow_model'0 self)
   
   axiom inv'0 : forall x : Vec'0.t_vec u (Global'0.t_global) . inv'0 x = true
   

@@ -6,27 +6,37 @@ module EqPanic_Omg
   
   let%span seq_panic1 = "../eq_panic.rs" 6 37 6 38
   
-  let%span span2 = "../../../../../creusot-contracts/src/model.rs" 81 8 81 28
+  let%span span2 = "../../../../../creusot-contracts/src/invariant.rs" 26 8 26 18
   
-  let%span span3 = "" 0 0 0 0
+  let%span span3 = "../../../../../creusot-contracts/src/model.rs" 81 8 81 28
   
   let%span span4 = "" 0 0 0 0
   
-  let%span span5 = "../../../../../creusot-contracts/src/std/cmp.rs" 11 26 11 75
+  let%span span5 = "" 0 0 0 0
   
-  predicate invariant'1 (self : t)
+  let%span span6 = "../../../../../creusot-contracts/src/std/cmp.rs" 11 26 11 75
+  
+  predicate invariant'2 (self : t)
+  
+  predicate inv'2 (_x : t)
+  
+  axiom inv'2 : forall x : t . inv'2 x = true
+  
+  predicate inv'0 (_x : t)
+  
+  use prelude.prelude.Borrow
+  
+  predicate invariant'1 (self : t) =
+    [%#span2] inv'0 self
   
   predicate inv'1 (_x : t)
   
   axiom inv'1 : forall x : t . inv'1 x = true
   
-  predicate invariant'0 (self : t)
-  
-  predicate inv'0 (_x : t)
+  predicate invariant'0 (self : t) =
+    [%#span2] inv'2 self
   
   axiom inv'0 : forall x : t . inv'0 x = true
-  
-  use prelude.prelude.Borrow
   
   use prelude.prelude.Intrinsic
   
@@ -35,14 +45,14 @@ module EqPanic_Omg
   function deep_model'2 (self : t) : deep_model_ty'0
   
   function deep_model'1 (self : t) : deep_model_ty'0 =
-    [%#span2] deep_model'2 self
+    [%#span3] deep_model'2 self
   
   function deep_model'0 (self : t) : deep_model_ty'0 =
-    [%#span2] deep_model'1 self
+    [%#span3] deep_model'1 self
   
-  let rec eq'0 (self:t) (other:t) (return'  (ret:bool))= {[@expl:precondition] [%#span4] inv'1 other}
-    {[@expl:precondition] [%#span3] inv'1 self}
-    any [ return' (result:bool)-> {[%#span5] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ] 
+  let rec eq'0 (self:t) (other:t) (return'  (ret:bool))= {[@expl:precondition] [%#span5] inv'1 other}
+    {[@expl:precondition] [%#span4] inv'1 self}
+    any [ return' (result:bool)-> {[%#span6] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ] 
   
   let rec omg (x:t) (y:t) (return'  (ret:bool))= {[%#seq_panic1] inv'0 y}
     {[%#seq_panic0] inv'0 x}

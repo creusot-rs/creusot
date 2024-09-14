@@ -14,7 +14,9 @@
     strict_provenance,
     panic_internals,
     libstd_sys_internals,
-    rt
+    rt,
+    never_type,
+    ptr_metadata
 )]
 #![cfg_attr(not(creusot), feature(rustc_attrs))]
 #![cfg_attr(not(creusot), allow(internal_features))]

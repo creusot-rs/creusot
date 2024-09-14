@@ -14,16 +14,22 @@ use crate::{
     error::InternalError,
     metadata,
     options::OutputFile,
-    validate::{validate_impls, validate_opacity, validate_traits},
+    validate::{validate_impls, validate_opacity, validate_traits, validate_trusted},
 };
 use ctx::TranslationCtx;
 use heck::ToUpperCamelCase;
 use rustc_hir::{def::DefKind, def_id::LOCAL_CRATE};
+use rustc_span::{Symbol, DUMMY_SP};
 use std::{error::Error, io::Write};
 use why3::{declaration::Module, mlcfg, Print};
 
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
+
+    if ctx.get_diagnostic_item(Symbol::intern("creusot_resolve")) == None {
+        ctx.fatal_error(DUMMY_SP, "The `creusot_contracts` crate is not loaded. You will not be able to verify any code using Creusot until you do so.").emit();
+    }
+
     ctx.load_metadata();
     load_extern_specs(ctx).map_err(|_| Box::new(InternalError("Failed to load extern specs")))?;
 
@@ -44,6 +50,7 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
     // Check that all trait laws are well-formed
     validate_traits(ctx);
     validate_impls(ctx);
+    validate_trusted(ctx);
 
     debug!("before_analysis: {:?}", start.elapsed());
     Ok(())

@@ -41,11 +41,9 @@ pub fn infer_proph_invariants<'tcx>(
 
     let res = borrow_prophecy_analysis(ctx, self_id, &body, &wto);
 
-    let Some(snap_ty) = ctx.get_diagnostic_item(Symbol::intern("snapshot_ty")) else { return };
-    let Some(snap_new) = ctx.get_diagnostic_item(Symbol::intern("snapshot_new")) else { return };
-    let Some(snap_deref) = ctx.get_diagnostic_item(Symbol::intern("snapshot_deref")) else {
-        return;
-    };
+    let snap_ty = ctx.get_diagnostic_item(Symbol::intern("snapshot_ty")).unwrap();
+    let snap_new = ctx.get_diagnostic_item(Symbol::intern("snapshot_new")).unwrap();
+    let snap_deref = ctx.get_diagnostic_item(Symbol::intern("snapshot_deref")).unwrap();
     let tcx = ctx.tcx;
     for (k, unchanged) in res.iter() {
         let inc = graph.neighbors_directed(*k, Direction::Incoming);

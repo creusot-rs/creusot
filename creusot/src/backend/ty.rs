@@ -882,7 +882,7 @@ pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(
 
 pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
     if let TyKind::Adt(def, _) = ty.kind() {
-        Some(def.did()) == tcx.get_diagnostic_item(Symbol::intern("creusot_int"))
+        def.did() == tcx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap()
     } else {
         false
     }

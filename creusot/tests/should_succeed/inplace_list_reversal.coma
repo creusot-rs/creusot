@@ -66,6 +66,16 @@ module Alloc_Boxed_Box_Type
   
   function any_l (_ : 'b) : 'a
 end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_global (input:t_global) (ret  )= any
+    [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
+    
+end
 module InplaceListReversal_Rev
   type t
   
@@ -79,39 +89,54 @@ module InplaceListReversal_Rev
   
   let%span span4 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span5 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span5 = "../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
   
-  let%span span6 = "../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  let%span span6 = "../../../../creusot-contracts/src/std/boxed.rs" 27 8 27 18
   
-  let%span span7 = "../../../../creusot-contracts/src/resolve.rs" 17 8 17 60
+  let%span span7 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span8 = "../../../../creusot-contracts/src/resolve.rs" 35 8 35 31
+  let%span span8 = "../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
   
-  let%span span9 = "../inplace_list_reversal.rs" 17 4 20 5
+  let%span span9 = "../../../../creusot-contracts/src/resolve.rs" 17 8 17 60
   
-  let%span span10 = "" 0 0 0 0
+  let%span span10 = "../../../../creusot-contracts/src/resolve.rs" 35 8 35 31
   
-  let%span span11 = "" 0 0 0 0
+  let%span span11 = "../inplace_list_reversal.rs" 17 4 20 5
   
-  let%span span12 = "../../../../creusot-contracts/src/std/mem.rs" 8 22 8 34
+  let%span span12 = "" 0 0 0 0
   
-  let%span span13 = "../../../../creusot-contracts/src/std/mem.rs" 9 22 9 37
+  let%span span13 = "" 0 0 0 0
   
-  let%span span14 = "" 0 0 0 0
+  let%span span14 = "../../../../creusot-contracts/src/std/mem.rs" 8 22 8 34
+  
+  let%span span15 = "../../../../creusot-contracts/src/std/mem.rs" 9 22 9 37
+  
+  let%span span16 = "" 0 0 0 0
   
   use InplaceListReversal_List_Type as List'0
+  
+  predicate invariant'3 (self : (t, List'0.t_list t)) =
+    [%#span4] true
+  
+  predicate inv'3 (_x : (t, List'0.t_list t))
+  
+  axiom inv'3 : forall x : (t, List'0.t_list t) . inv'3 x = true
+  
+  predicate inv'0 (_x : List'0.t_list t)
   
   use prelude.prelude.Borrow
   
   predicate invariant'2 (self : borrowed (List'0.t_list t)) =
-    [%#span4] true
+    [%#span5] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'2 (_x : borrowed (List'0.t_list t))
   
   axiom inv'2 : forall x : borrowed (List'0.t_list t) . inv'2 x = true
   
+  use Alloc_Alloc_Global_Type as Global'0
+  
   predicate invariant'1 (self : (t, List'0.t_list t)) =
-    [%#span4] true
+    [%#span6] inv'3 self
   
   predicate inv'1 (_x : (t, List'0.t_list t))
   
@@ -120,8 +145,6 @@ module InplaceListReversal_Rev
   predicate invariant'0 (self : List'0.t_list t) =
     [%#span4] true
   
-  predicate inv'0 (_x : List'0.t_list t)
-  
   axiom inv'0 : forall x : List'0.t_list t . inv'0 x = true
   
   use prelude.prelude.Snapshot
@@ -129,35 +152,35 @@ module InplaceListReversal_Rev
   use prelude.prelude.Intrinsic
   
   predicate resolve'1 (self : borrowed (List'0.t_list t)) =
-    [%#span5] self.final = self.current
+    [%#span7] self.final = self.current
   
   predicate resolve'4 (self : List'0.t_list t) =
-    [%#span6] true
+    [%#span8] true
   
   predicate resolve'3 (self : t)
   
   predicate resolve'2 (self : (t, List'0.t_list t)) =
-    [%#span7] resolve'3 (let (a, _) = self in a) /\ resolve'4 (let (_, a) = self in a)
+    [%#span9] resolve'3 (let (a, _) = self in a) /\ resolve'4 (let (_, a) = self in a)
   
   predicate resolve'0 (self : (t, List'0.t_list t)) =
-    [%#span8] resolve'2 self
+    [%#span10] resolve'2 self
   
   use prelude.prelude.Snapshot
   
   function rev_append'0 [#"../inplace_list_reversal.rs" 16 0 16 55] (n : List'0.t_list t) (o : List'0.t_list t) : List'0.t_list t
     
    =
-    [%#span9] match n with
+    [%#span11] match n with
       | List'0.C_Nil -> o
       | List'0.C_Cons (hd, tl) -> rev_append'0 tl (List'0.C_Cons (hd, o))
       end
   
-  let rec replace'0 (dest:borrowed (List'0.t_list t)) (src:List'0.t_list t) (return'  (ret:List'0.t_list t))= {[@expl:precondition] [%#span11] inv'0 src}
-    {[@expl:precondition] [%#span10] inv'2 dest}
+  let rec replace'0 (dest:borrowed (List'0.t_list t)) (src:List'0.t_list t) (return'  (ret:List'0.t_list t))= {[@expl:precondition] [%#span13] inv'0 src}
+    {[@expl:precondition] [%#span12] inv'2 dest}
     any
-    [ return' (result:List'0.t_list t)-> {[%#span14] inv'0 result}
-      {[%#span13] result = dest.current}
-      {[%#span12] dest.final = src}
+    [ return' (result:List'0.t_list t)-> {[%#span16] inv'0 result}
+      {[%#span15] result = dest.current}
+      {[%#span14] dest.final = src}
       (! return' {result}) ]
     
   

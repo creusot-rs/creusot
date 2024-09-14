@@ -1,4 +1,13 @@
-use crate::*;
+use crate::{invariant::*, *};
+
+impl<T, const N: usize> Invariant for [T; N] {
+    #[predicate(prophetic)]
+    #[open]
+    #[creusot::structural_inv]
+    fn invariant(self) -> bool {
+        pearlite! { inv(self@) }
+    }
+}
 
 impl<T, const N: usize> ShallowModel for [T; N] {
     type ShallowModelTy = Seq<T>;

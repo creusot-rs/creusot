@@ -1,7 +1,5 @@
 use super::{
-    term::lower_pure,
-    ty::{translate_ty, ty_params},
-    CloneSummary, Dependencies, TransId, Why3Generator,
+    term::lower_pure, ty::translate_ty, CloneSummary, Dependencies, TransId, Why3Generator,
 };
 use crate::{
     ctx::*,
@@ -12,78 +10,58 @@ use crate::{
     util,
 };
 use indexmap::IndexSet;
-use rustc_ast::Mutability;
-use rustc_hir::{def::Namespace, def_id::DefId};
+use rustc_hir::def_id::DefId;
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
-use why3::{
-    declaration::{Axiom, Decl, TyDecl},
-    exp::{Exp, Trigger},
-    Ident,
-};
+use why3::exp::Exp;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, TypeVisitable, TypeFoldable)]
 pub(crate) enum TyInvKind {
+    NotStructural,
     Trivial,
-    Borrow(Mutability),
-    Box,
     Adt(DefId),
     Tuple(usize),
-    Slice,
 }
 
 impl TyInvKind {
-    pub(crate) fn from_ty(tcx: TyCtxt<'_>, ty: Ty) -> Option<Self> {
+    pub(crate) fn from_ty<'tcx>(
+        ty: Ty<'tcx>,
+        param_env: ParamEnv<'tcx>,
+        ctx: &TranslationCtx<'tcx>,
+        param_is_trivial: bool,
+    ) -> Self {
+        if is_tyinv_trivial(ctx.tcx, param_env, ty, param_is_trivial) {
+            return TyInvKind::NotStructural;
+        }
+        if let Some((uinv_did, _)) = resolve_user_inv(ctx.tcx, ty, param_env)
+            && util::is_structural_ty_inv(ctx.tcx, uinv_did)
+        {
+            return TyInvKind::NotStructural;
+        }
         match ty.kind() {
-            TyKind::Bool | TyKind::Char | TyKind::Int(_) | TyKind::Uint(_) | TyKind::Float(_) => {
-                Some(TyInvKind::Trivial)
-            }
-            TyKind::Ref(_, _, m) => Some(TyInvKind::Borrow(*m)),
-            TyKind::Adt(adt_def, _) if adt_def.is_box() => Some(TyInvKind::Box),
             TyKind::Adt(adt_def, _) => {
-                if let Some(builtin) = util::get_builtin(tcx, adt_def.did()) {
-                    match builtin.as_str() {
-                        "seq.Seq.seq" => Some(TyInvKind::Slice),
-                        _ => Some(TyInvKind::Adt(adt_def.did())),
-                    }
+                let adt_did = adt_def.did();
+                if util::is_trusted(ctx.tcx, adt_did) {
+                    TyInvKind::NotStructural
                 } else {
-                    Some(TyInvKind::Adt(adt_def.did()))
+                    TyInvKind::Adt(adt_did)
                 }
             }
-            TyKind::Tuple(tys) => Some(TyInvKind::Tuple(tys.len())),
-            TyKind::Slice(_) => Some(TyInvKind::Slice),
-            _ => None, // TODO
+            TyKind::Tuple(tys) => TyInvKind::Tuple(tys.len()),
+            _ => unimplemented!("{ty:?}"), // TODO
         }
     }
 
     pub(crate) fn to_skeleton_ty<'tcx>(self, tcx: TyCtxt<'tcx>) -> Ty<'tcx> {
-        let param = Ty::new_param(tcx, 0, Symbol::intern("T"));
         match self {
-            TyInvKind::Trivial => param,
-            TyInvKind::Borrow(Mutability::Not) => {
-                Ty::new_imm_ref(tcx, tcx.lifetimes.re_erased, param)
-            }
-            TyInvKind::Borrow(Mutability::Mut) => {
-                Ty::new_mut_ref(tcx, tcx.lifetimes.re_erased, param)
-            }
-            TyInvKind::Box => Ty::new_box(tcx, param),
+            TyInvKind::NotStructural => Ty::new_param(tcx, 0, Symbol::intern("T")),
+            TyInvKind::Trivial => Ty::new_param(tcx, 0, Symbol::intern("T")),
             TyInvKind::Adt(did) => tcx.type_of(did).instantiate_identity(),
             TyInvKind::Tuple(arity) => Ty::new_tup_from_iter(
                 tcx,
                 (0..arity).map(|i| Ty::new_param(tcx, i as _, Symbol::intern(&format!("T{i}")))),
             ),
-            TyInvKind::Slice => Ty::new_slice(tcx, param),
-        }
-    }
-
-    pub(crate) fn generics(self, ctx: &mut Why3Generator) -> Vec<Ident> {
-        match self {
-            TyInvKind::Trivial | TyInvKind::Borrow(_) | TyInvKind::Box | TyInvKind::Slice => {
-                vec!["t".into()]
-            }
-            TyInvKind::Adt(def_id) => ty_params(ctx, def_id).collect(),
-            TyInvKind::Tuple(arity) => (0..arity).map(|i| format!["t{i}"].into()).collect(),
         }
     }
 
@@ -93,15 +71,12 @@ impl TyInvKind {
         ty: Ty<'tcx>,
     ) -> GenericArgsRef<'tcx> {
         match (self, ty.kind()) {
+            (TyInvKind::NotStructural, _) => tcx.mk_args(&[GenericArg::from(ty)]),
             (TyInvKind::Trivial, _) => tcx.mk_args(&[GenericArg::from(ty)]),
-            (TyInvKind::Borrow(_), TyKind::Ref(_, ty, _))
-            | (TyInvKind::Slice, TyKind::Slice(ty)) => tcx.mk_args(&[GenericArg::from(*ty)]),
-            (TyInvKind::Box, TyKind::Adt(_, adt_substs)) => tcx.mk_args(&adt_substs[..1]),
             (TyInvKind::Adt(_), TyKind::Adt(_, adt_substs)) => adt_substs,
             (TyInvKind::Tuple(_), TyKind::Tuple(tys)) => {
                 tcx.mk_args_from_iter(tys.iter().map(GenericArg::from))
             }
-            (TyInvKind::Slice, TyKind::Adt(_, subst)) => subst,
             a => unreachable!("{a:?}"),
         }
     }
@@ -128,6 +103,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
         // OR ty is a param or alias AND we default to considering them trivial
         if user_inv == Some(false)
             || (!param_is_trivial && matches!(ty.kind(), TyKind::Param(_) | TyKind::Alias(_, _)))
+            || matches!(ty.kind(), TyKind::Never)
         {
             return false;
         }
@@ -168,38 +144,29 @@ impl<'tcx> InvariantElaborator<'tcx> {
         &self,
         ctx: &mut Why3Generator<'tcx>,
         ty: Ty<'tcx>,
-        kind: Option<TyInvKind>,
+        kind: TyInvKind,
     ) -> Term<'tcx> {
         let subject = Term::var(Symbol::intern("x"), ty);
 
-        let term = self.inv_rhs(ctx, ty, kind);
+        let rhs = self.inv_rhs(ctx, ty, kind);
 
         let inv_id = ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
         let subst = ctx.mk_args(&[GenericArg::from(subject.ty)]);
 
         let lhs = Term::call(ctx.tcx, inv_id, subst, vec![subject]);
 
-        Term::forall(Term::eq(ctx.tcx, lhs, term), ctx.tcx, (Symbol::intern("x"), ty))
+        Term::forall(Term::eq(ctx.tcx, lhs, rhs), ctx.tcx, (Symbol::intern("x"), ty))
     }
 
     fn structural_invariant(
         &self,
         ctx: &mut Why3Generator<'tcx>,
         term: Term<'tcx>,
-        inv_kind: Option<TyInvKind>,
+        inv_kind: TyInvKind,
     ) -> Term<'tcx> {
-        let tcx = ctx.tcx;
-        let Some(inv_kind) = inv_kind else {
-            return self.mk_inv_call(ctx, term);
-        };
-
         match inv_kind {
-            TyInvKind::Trivial => Term::mk_true(tcx),
-            TyInvKind::Borrow(Mutability::Not) => self.mk_inv_call(ctx, term.cur()),
-            TyInvKind::Borrow(Mutability::Mut) => {
-                self.mk_inv_call(ctx, term.clone().cur()).conj(self.mk_inv_call(ctx, term.fin()))
-            }
-            TyInvKind::Box => self.mk_inv_call(ctx, term.cur()),
+            TyInvKind::Trivial => Term::mk_true(ctx.tcx),
+            TyInvKind::NotStructural => Term::mk_true(ctx.tcx),
             TyInvKind::Adt(_) => {
                 self.build_inv_term_adt(ctx, term).unwrap_or_else(|| Term::mk_true(ctx.tcx))
             }
@@ -233,17 +200,11 @@ impl<'tcx> InvariantElaborator<'tcx> {
                     span: DUMMY_SP,
                 }
             }
-            TyInvKind::Slice => self.build_inv_term_seq(ctx, term),
         }
     }
 
-    fn inv_rhs(
-        &self,
-        ctx: &mut Why3Generator<'tcx>,
-        ty: Ty<'tcx>,
-        kind: Option<TyInvKind>,
-    ) -> Term<'tcx> {
-        if let Some(TyInvKind::Trivial) = kind {
+    fn inv_rhs(&self, ctx: &mut Why3Generator<'tcx>, ty: Ty<'tcx>, kind: TyInvKind) -> Term<'tcx> {
+        if let TyInvKind::Trivial = kind {
             return Term::mk_true(ctx.tcx);
         }
 
@@ -335,67 +296,6 @@ impl<'tcx> InvariantElaborator<'tcx> {
 
         Some(exp)
     }
-
-    fn build_inv_term_seq(&self, ctx: &mut Why3Generator<'tcx>, term: Term<'tcx>) -> Term<'tcx> {
-        let elt_ty;
-        let seq_len;
-        let seq_get;
-        let int_ty;
-
-        match term.ty.kind() {
-            TyKind::Slice(ty) => {
-                seq_len = ctx.get_diagnostic_item(Symbol::intern("slice_len_logic")).unwrap();
-                seq_get = ctx.get_diagnostic_item(Symbol::intern("slice_index_logic")).unwrap();
-                int_ty = ctx.types.u64;
-
-                elt_ty = *ty;
-            }
-            TyKind::Adt(_, subst) => {
-                seq_len = ctx.get_diagnostic_item(Symbol::intern("seq_len")).unwrap();
-                seq_get = ctx.get_diagnostic_item(Symbol::intern("seq_index")).unwrap();
-
-                let int_id = ctx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap();
-                int_ty = ctx.type_of(int_id).skip_binder();
-                elt_ty = subst.type_at(0);
-            }
-            _ => unreachable!("asked to build Seq invariant for non-Seq type"),
-        };
-
-        let index = Term::var(Symbol::intern("i"), int_ty);
-
-        let subst = ctx.mk_args(&[GenericArg::from(elt_ty)]);
-
-        let mut index_call = Term::call(ctx.tcx, seq_get, subst, vec![term.clone(), index.clone()]);
-        index_call.ty = elt_ty;
-        let call_term = self.mk_inv_call(ctx, index_call);
-
-        let lower_bound = Term {
-            kind: TermKind::Binary {
-                op: crate::translation::pearlite::BinOp::Le,
-                lhs: Box::new(Term::int(ctx.tcx, 0)),
-                rhs: Box::new(index.clone()),
-            },
-            ty: ctx.types.bool,
-            span: DUMMY_SP,
-        };
-
-        let len = Term::call(ctx.tcx, seq_len, subst, vec![term.clone()]);
-
-        let upper_bound = Term {
-            kind: TermKind::Binary {
-                op: crate::translation::pearlite::BinOp::Lt,
-                rhs: Box::new(len),
-                lhs: Box::new(index.clone()),
-            },
-            ty: ctx.types.bool,
-            span: DUMMY_SP,
-        };
-
-        lower_bound
-            .implies(upper_bound)
-            .implies(call_term)
-            .forall(ctx.tcx, (Symbol::intern("i"), int_ty))
-    }
 }
 
 pub(crate) fn build_inv_module<'tcx>(
@@ -403,8 +303,7 @@ pub(crate) fn build_inv_module<'tcx>(
     inv_kind: TyInvKind,
 ) -> CloneSummary<'tcx> {
     let mut names = Dependencies::new(ctx.tcx, [TransId::TyInv(inv_kind)]);
-    let generics = inv_kind.generics(ctx);
-    let inv_axiom =
+    let _inv_axiom =
         names.with_vis(CloneLevel::Contract, |names| build_inv_axiom(ctx, names, inv_kind));
 
     {
@@ -412,82 +311,44 @@ pub(crate) fn build_inv_module<'tcx>(
             if let TyInvKind::Adt(did) = inv_kind { ctx.param_env(did) } else { ParamEnv::empty() };
 
         let ty = inv_kind.to_skeleton_ty(ctx.tcx);
-        if let Some((id, subst)) =
-            resolve_user_inv(ctx.tcx, ty, param_env).or(user_inv_item(ctx.tcx, ty))
-        {
-            names.value(id, subst);
-        }
+        let (id, subst) =
+            resolve_user_inv(ctx.tcx, ty, param_env).unwrap_or(user_inv_item(ctx.tcx, ty));
+        names.value(id, subst);
     }
 
-    let mut decls = vec![];
-    decls.extend(
-        generics
-            .into_iter()
-            .map(|ty_name| Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: vec![] })),
-    );
-
-    let (clones, summary) = names.provide_deps(ctx, GraphDepth::Shallow);
+    let (_, summary) = names.provide_deps(ctx, GraphDepth::Shallow);
     // eprintln!("summary of {inv_kind:?} -> {summary:#?}");
-    decls.extend(clones);
-
-    decls.push(Decl::Axiom(inv_axiom));
 
     summary
-}
-
-fn axiom_name(ctx: &Why3Generator<'_>, inv_kind: TyInvKind) -> Ident {
-    match inv_kind {
-        TyInvKind::Trivial => "inv_trivial".into(),
-        TyInvKind::Borrow(Mutability::Not) => "inv_borrow_shared".into(),
-        TyInvKind::Borrow(Mutability::Mut) => "inv_borrow".into(),
-        TyInvKind::Box => "inv_box".into(),
-        TyInvKind::Adt(did) => {
-            let ty_name = util::item_name(ctx.tcx, did, Namespace::TypeNS);
-            format!("inv_{}", &*ty_name).into()
-        }
-        TyInvKind::Tuple(arity) => format!("inv_tuple{arity}").into(),
-        TyInvKind::Slice => "inv_slice".into(),
-    }
 }
 
 fn build_inv_axiom<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut Dependencies<'tcx>,
     inv_kind: TyInvKind,
-) -> Axiom {
-    let name = axiom_name(ctx, inv_kind);
-
+) {
     let param_env =
         if let TyInvKind::Adt(did) = inv_kind { ctx.param_env(did) } else { ParamEnv::empty() };
 
     let ty = inv_kind.to_skeleton_ty(ctx.tcx);
-    let kind = TyInvKind::from_ty(ctx.tcx, ty);
     // TODO : Refactor and push binding down
     let lhs: Exp = Exp::qvar(names.ty_inv(ty)).app_to(Exp::var("x"));
     let rhs = if TyInvKind::Trivial == inv_kind {
         Exp::mk_true()
     } else {
-        let inv_term = InvariantElaborator::new(param_env, false).elaborate_inv(ctx, ty, kind);
+        let inv_term = InvariantElaborator::new(param_env, false).elaborate_inv(ctx, ty, inv_kind);
         let inv_term = lower_pure(ctx, names, &inv_term);
         inv_term
     };
-    let trivial = rhs.is_true();
-    let trigger =
-        if ctx.opts.simple_triggers { vec![Trigger::single(lhs.clone())] } else { Vec::new() };
-
-    let axiom = Exp::forall_trig(
-        vec![("x".into(), translate_ty(ctx, names, DUMMY_SP, ty))],
-        trigger,
-        lhs.eq(rhs),
-    );
-    Axiom { name, rewrite: !trivial, axiom }
+    let _axiom =
+        Exp::forall(vec![("x".into(), translate_ty(ctx, names, DUMMY_SP, ty))], lhs.eq(rhs));
 }
 
 // TODO: Handle missing defid gracefully
-fn user_inv_item<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-    let trait_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user"))?;
+fn user_inv_item<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> (DefId, GenericArgsRef<'tcx>) {
+    let trait_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap();
 
-    Some((trait_did, tcx.mk_args(&[GenericArg::from(ty)])))
+    (trait_did, tcx.mk_args(&[GenericArg::from(ty)]))
 }
 
 fn resolve_user_inv<'tcx>(
@@ -495,7 +356,7 @@ fn resolve_user_inv<'tcx>(
     ty: Ty<'tcx>,
     param_env: ParamEnv<'tcx>,
 ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-    let (trait_did, subst) = user_inv_item(tcx, ty)?;
+    let (trait_did, subst) = user_inv_item(tcx, ty);
 
     // eprintln!("resolving inv for {ty}, {param_env:?}");
     let (impl_did, subst) = traits::resolve_assoc_item_opt(tcx, param_env, trait_did, subst)?;

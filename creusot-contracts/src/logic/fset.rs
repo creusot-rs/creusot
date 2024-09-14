@@ -1,5 +1,6 @@
 use crate::*;
 
+#[trusted]
 #[cfg_attr(creusot, creusot::builtins = "set.Fset.fset")]
 pub struct FSet<T: ?Sized>(std::marker::PhantomData<T>);
 
@@ -17,6 +18,7 @@ impl<T: ?Sized> FSet<T> {
     }
 
     #[doc(hidden)]
+    #[trusted]
     #[logic]
     #[open(self)]
     #[creusot::builtins = "set.Fset.mem"]
@@ -32,6 +34,7 @@ impl<T: ?Sized> FSet<T> {
     }
 
     #[doc(hidden)]
+    #[trusted]
     #[logic]
     #[open(self)]
     #[creusot::builtins = "set.Fset.add"]
@@ -39,6 +42,7 @@ impl<T: ?Sized> FSet<T> {
         pearlite! { absurd }
     }
 
+    #[trusted]
     #[predicate]
     #[open(self)]
     #[creusot::builtins = "set.Fset.is_empty"]
@@ -54,6 +58,7 @@ impl<T: ?Sized> FSet<T> {
     }
 
     #[doc(hidden)]
+    #[trusted]
     #[logic]
     #[open(self)]
     #[creusot::builtins = "set.Fset.remove"]
@@ -61,6 +66,7 @@ impl<T: ?Sized> FSet<T> {
         pearlite! { absurd }
     }
 
+    #[trusted]
     #[logic]
     #[open(self)]
     #[creusot::builtins = "set.Fset.union"]
@@ -68,6 +74,7 @@ impl<T: ?Sized> FSet<T> {
         pearlite! { absurd }
     }
 
+    #[trusted]
     #[predicate]
     #[open(self)]
     #[creusot::builtins = "set.Fset.subset"]
@@ -82,6 +89,7 @@ impl<T: ?Sized> FSet<T> {
         Self::is_subset(other, self)
     }
 
+    #[trusted]
     #[logic]
     #[open(self)]
     #[creusot::builtins = "set.Fset.cardinal"]
@@ -89,6 +97,7 @@ impl<T: ?Sized> FSet<T> {
         pearlite! { absurd }
     }
 
+    #[trusted]
     #[logic]
     #[open(self)]
     #[creusot::builtins = "set.Fset.pick"]

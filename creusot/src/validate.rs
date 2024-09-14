@@ -11,6 +11,19 @@ use crate::{
     util::{self, is_law},
 };
 
+pub(crate) fn validate_trusted(ctx: &mut TranslationCtx) {
+    for def_id in ctx.hir_crate_items(()).definitions() {
+        let def_id = def_id.to_def_id();
+        if util::get_builtin(ctx.tcx, def_id).is_some() && !util::is_trusted(ctx.tcx, def_id) {
+            ctx.error(
+                ctx.def_span(def_id),
+                "Builtin declarations should be annotated with #[trusted].",
+            )
+            .emit();
+        }
+    }
+}
+
 pub(crate) fn validate_opacity(ctx: &mut TranslationCtx, item: DefId) -> Option<()> {
     struct OpacityVisitor<'a, 'tcx> {
         ctx: &'a TranslationCtx<'tcx>,
@@ -78,7 +91,7 @@ pub(crate) fn validate_opacity(ctx: &mut TranslationCtx, item: DefId) -> Option<
 }
 
 // Validate that laws have no additional generic parameters.
-//  TODO(xavier): Why was this necessary?
+// This is because laws are auto-loaded, and we do not want to generate polymorphic WhyML code
 pub(crate) fn validate_traits(ctx: &mut TranslationCtx) {
     let mut law_violations = Vec::new();
 

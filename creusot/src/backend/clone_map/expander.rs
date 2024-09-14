@@ -209,7 +209,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         let inv_kind = if ty_inv::is_tyinv_trivial(ctx.tcx, param_env, ty, true) {
             TyInvKind::Trivial
         } else {
-            TyInvKind::from_ty(ctx.tcx, ty).unwrap_or(TyInvKind::Trivial)
+            TyInvKind::from_ty(ty, param_env, ctx, true)
         };
 
         if let Some(TransId::TyInv(self_kind)) = self.self_key.to_trans_id()
