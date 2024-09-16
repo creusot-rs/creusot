@@ -589,8 +589,7 @@ module FinalBorrows_SelectField
       {[@expl:postcondition] [%#sfinal_borrows1] match let (a, _) = x.current in a with
         | Option'0.C_None -> result
         = Borrow.borrow_logic (let (_, a) = x.current in a) (let (_, a) = x.final in a) (Borrow.inherit_id (Borrow.get_id x) 2)
-        | Option'0.C_Some _ -> exists r : borrowed t . inv'2 r
-        /\ result = r
+        | Option'0.C_Some _ -> exists r : borrowed t . result = r
         /\ (let (a, _) = x.current in a) = Option'0.C_Some (r.current)
         /\ (let (a, _) = x.final in a) = Option'0.C_Some (r.final)
         end}
@@ -1680,23 +1679,19 @@ module FinalBorrows_IndexMutSlice
   
   let%span span8 = "" 0 0 0 0
   
-  let%span span9 = "../../../../../creusot-contracts/src/std/slice.rs" 20 21 20 25
+  let%span span9 = "../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41
   
-  let%span span10 = "../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 41
+  let%span span10 = "../../../../../creusot-contracts/src/std/slice.rs" 19 14 19 42
   
-  let%span span11 = "../../../../../creusot-contracts/src/std/slice.rs" 19 14 19 42
+  let%span span11 = "../../../../../creusot-contracts/src/std/slice.rs" 471 20 471 30
   
-  let%span span12 = "../../../../../creusot-contracts/src/std/slice.rs" 20 4 20 50
+  let%span span12 = "../../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
   
-  let%span span13 = "../../../../../creusot-contracts/src/std/slice.rs" 471 20 471 30
+  let%span span13 = "../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31
   
-  let%span span14 = "../../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  let%span span14 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
   
-  let%span span15 = "../../../../../creusot-contracts/src/logic/ops.rs" 43 8 43 31
-  
-  let%span span16 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
-  
-  let%span span17 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span15 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
   predicate inv'0 (_x : t)
   
@@ -1734,31 +1729,29 @@ module FinalBorrows_IndexMutSlice
   
   constant max'0 : usize = [%#span8] (18446744073709551615 : usize)
   
-  predicate inv'3 (_x : slice t)
-  
   function shallow_model'1 (self : slice t) : Seq.seq t
   
-  axiom shallow_model'1_spec : forall self : slice t . ([%#span9] inv'3 self)
-   -> ([%#span12] inv'4 (shallow_model'1 self))
-  && ([%#span11] shallow_model'1 self = Slice.id self)
-  && ([%#span10] Seq.length (shallow_model'1 self) <= UIntSize.to_int (max'0 : usize))
+  axiom shallow_model'1_spec : forall self : slice t . ([%#span10] shallow_model'1 self = Slice.id self)
+  && ([%#span9] Seq.length (shallow_model'1 self) <= UIntSize.to_int (max'0 : usize))
   
   predicate invariant'3 (self : slice t) =
-    [%#span13] inv'4 (shallow_model'1 self)
+    [%#span11] inv'4 (shallow_model'1 self)
+  
+  predicate inv'3 (_x : slice t)
   
   axiom inv'3 : forall x : slice t . inv'3 x = true
   
   use prelude.prelude.Borrow
   
   predicate invariant'2 (self : borrowed (slice t)) =
-    [%#span14] inv'3 self.current /\ inv'3 self.final
+    [%#span12] inv'3 self.current /\ inv'3 self.final
   
   predicate inv'2 (_x : borrowed (slice t))
   
   axiom inv'2 : forall x : borrowed (slice t) . inv'2 x = true
   
   predicate invariant'1 (self : borrowed t) =
-    [%#span14] inv'0 self.current /\ inv'0 self.final
+    [%#span12] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'1 (_x : borrowed t)
   
@@ -1771,18 +1764,18 @@ module FinalBorrows_IndexMutSlice
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : slice t) (ix : int) : t =
-    [%#span15] Seq.get (shallow_model'1 self) ix
+    [%#span13] Seq.get (shallow_model'1 self) ix
   
   function shallow_model'0 (self : borrowed (slice t)) : Seq.seq t =
-    [%#span16] shallow_model'1 self.current
+    [%#span14] shallow_model'1 self.current
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'1 (self : borrowed (slice t)) =
-    [%#span17] self.final = self.current
+    [%#span15] self.final = self.current
   
   predicate resolve'0 (self : borrowed t) =
-    [%#span17] self.final = self.current
+    [%#span15] self.final = self.current
   
   let rec index_mut_slice (v:borrowed (slice t)) (return'  (ret:borrowed t))= {[%#sfinal_borrows3] inv'2 v}
     {[%#sfinal_borrows2] Seq.length (shallow_model'0 v) = 42}

@@ -180,19 +180,19 @@ module ListIndexMut_IndexMut
   
   use prelude.prelude.Borrow
   
-  predicate invariant'2 (self : Option'0.t_option (borrowed (List'0.t_list))) =
-    [%#span13] true
-  
-  predicate inv'2 (_x : Option'0.t_option (borrowed (List'0.t_list)))
-  
-  axiom inv'2 : forall x : Option'0.t_option (borrowed (List'0.t_list)) . inv'2 x = true
-  
-  predicate invariant'1 (self : borrowed (List'0.t_list)) =
+  predicate invariant'2 (self : borrowed (List'0.t_list)) =
     [%#span15] inv'4 self.current /\ inv'4 self.final
   
-  predicate inv'1 (_x : borrowed (List'0.t_list))
+  predicate inv'2 (_x : borrowed (List'0.t_list))
   
-  axiom inv'1 : forall x : borrowed (List'0.t_list) . inv'1 x = true
+  axiom inv'2 : forall x : borrowed (List'0.t_list) . inv'2 x = true
+  
+  predicate invariant'1 (self : Option'0.t_option (borrowed (List'0.t_list))) =
+    [%#span13] true
+  
+  predicate inv'1 (_x : Option'0.t_option (borrowed (List'0.t_list)))
+  
+  axiom inv'1 : forall x : Option'0.t_option (borrowed (List'0.t_list)) . inv'1 x = true
   
   predicate invariant'0 (self : borrowed (Option'0.t_option (List'0.t_list))) =
     [%#span15] inv'3 self.current /\ inv'3 self.final
@@ -218,20 +218,19 @@ module ListIndexMut_IndexMut
   predicate resolve'0 (self : borrowed (List'0.t_list)) =
     [%#span16] self.final = self.current
   
-  let rec unwrap'0 (self:Option'0.t_option (borrowed (List'0.t_list))) (return'  (ret:borrowed (List'0.t_list)))= {[@expl:precondition] [%#span18] inv'2 self}
+  let rec unwrap'0 (self:Option'0.t_option (borrowed (List'0.t_list))) (return'  (ret:borrowed (List'0.t_list)))= {[@expl:precondition] [%#span18] inv'1 self}
     {[@expl:precondition] [%#span17] self <> Option'0.C_None}
     any
-    [ return' (result:borrowed (List'0.t_list))-> {[%#span19] inv'1 result}
+    [ return' (result:borrowed (List'0.t_list))-> {[%#span19] inv'2 result}
       {[%#span17] Option'0.C_Some result = self}
       (! return' {result}) ]
     
   
   let rec as_mut'0 (self:borrowed (Option'0.t_option (List'0.t_list))) (return'  (ret:Option'0.t_option (borrowed (List'0.t_list))))= {[@expl:precondition] [%#span20] inv'0 self}
     any
-    [ return' (result:Option'0.t_option (borrowed (List'0.t_list)))-> {[%#span23] inv'2 result}
+    [ return' (result:Option'0.t_option (borrowed (List'0.t_list)))-> {[%#span23] inv'1 result}
       {[%#span22] self.current = Option'0.C_None
-      \/ (exists r : borrowed (List'0.t_list) . inv'1 r
-      /\ result = Option'0.C_Some r
+      \/ (exists r : borrowed (List'0.t_list) . result = Option'0.C_Some r
       /\ self.current = Option'0.C_Some (r.current) /\ self.final = Option'0.C_Some (r.final))}
       {[%#span21] self.current = Option'0.C_None  -> result = Option'0.C_None /\ self.final = Option'0.C_None}
       (! return' {result}) ]

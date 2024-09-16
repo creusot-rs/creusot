@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{invariant::*, *};
 pub use ::std::iter::*;
 
 mod cloned;
@@ -31,10 +31,14 @@ pub trait Iterator: ::std::iter::Iterator {
     fn completed(&mut self) -> bool;
 
     #[law]
+    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self);
 
     #[law]
+    #[requires(inv(a))]
+    #[requires(inv(b))]
+    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

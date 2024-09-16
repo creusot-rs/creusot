@@ -1,4 +1,4 @@
-use crate::{std::iter::Zip, *};
+use crate::{invariant::*, std::iter::Zip, *};
 
 pub trait ZipExt<A: Iterator, B: Iterator> {
     #[logic]
@@ -12,6 +12,7 @@ impl<A: Iterator, B: Iterator> ZipExt<A, B> for Zip<A, B> {
     #[logic]
     #[open(self)]
     #[trusted]
+    #[ensures(inv(self) ==> inv(result))]
     fn itera(self) -> A {
         pearlite! { absurd }
     }
@@ -19,6 +20,7 @@ impl<A: Iterator, B: Iterator> ZipExt<A, B> for Zip<A, B> {
     #[logic]
     #[open(self)]
     #[trusted]
+    #[ensures(inv(self) ==> inv(result))]
     fn iterb(self) -> B {
         pearlite! { absurd }
     }
@@ -29,11 +31,11 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
     #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-            exists<a: &mut A, b: &mut B>
-                   *a == (*self).itera() && *b == (*self).iterb()
+            exists<a: &mut A, b: &mut B> inv(a) && inv(b)
+                && *a == (*self).itera() && *b == (*self).iterb()
                 && ^a == (^self).itera() && ^b == (^self).iterb()
                 && (a.completed() && b.resolve()
-                    || exists<x: A::Item> a.produces(Seq::singleton(x), ^a) &&
+                    || exists<x: A::Item> inv(x) && a.produces(Seq::singleton(x), ^a) &&
                                           x.resolve() && b.completed())
         }
     }
@@ -43,10 +45,10 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             // Using an `unzip` definition doesn't work well because of issues related to datatypes and `match`
-            exists<p1 : Seq<_>, p2 : Seq<_>>
-                p1.len() == p2.len() && p2.len() == visited.len() &&
-                (forall<i :_> 0 <= i && i < visited.len() ==> visited[i] == (p1[i], p2[i])) &&
-                self.itera().produces(p1, o.itera()) && self.iterb().produces(p2, o.iterb())
+            exists<p1 : Seq<_>, p2 : Seq<_>> inv(p1) && inv(p2)
+                && p1.len() == p2.len() && p2.len() == visited.len()
+                && (forall<i :_> 0 <= i && i < visited.len() ==> visited[i] == (p1[i], p2[i]))
+                && self.itera().produces(p1, o.itera()) && self.iterb().produces(p2, o.iterb())
         }
     }
 

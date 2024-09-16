@@ -46,57 +46,6 @@ module C09Empty_Impl0_ProducesRefl_Impl
   
   goal vc_produces_refl : [%#s09_empty0] produces'0 self (Seq.empty  : Seq.seq t) self
 end
-module Core_Ptr_NonNull_NonNull_Type
-  use prelude.prelude.Opaque
-  
-  type t_nonnull 't =
-    | C_NonNull opaque_ptr
-  
-  function any_l (_ : 'b) : 'a
-  
-  let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
-    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
-    | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
-    
-end
-module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type as PhantomData'0
-  
-  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
-  
-  type t_unique 't =
-    | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
-  
-  function any_l (_ : 'b) : 'a
-  
-  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
-    [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
-      = input}
-      (! ret {pointer} {_marker})
-    | bad (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
-      <> input}
-      {false}
-      any ]
-    
-end
-module Alloc_Boxed_Box_Type
-  use Core_Ptr_Unique_Unique_Type as Unique'0
-  
-  type t_box 't 'a =
-    | C_Box (Unique'0.t_unique 't) 'a
-  
-  function any_l (_ : 'b) : 'a
-end
-module Alloc_Alloc_Global_Type
-  type t_global  =
-    | C_Global
-  
-  function any_l (_ : 'b) : 'a
-  
-  let rec t_global (input:t_global) (ret  )= any
-    [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
-    
-end
 module C09Empty_Impl0_ProducesTrans_Impl
   type t
   
@@ -104,47 +53,11 @@ module C09Empty_Impl0_ProducesTrans_Impl
   
   let%span s09_empty1 = "../09_empty.rs" 33 15 33 32
   
-  let%span s09_empty2 = "../09_empty.rs" 35 31 35 33
+  let%span s09_empty2 = "../09_empty.rs" 34 14 34 42
   
-  let%span s09_empty3 = "../09_empty.rs" 35 61 35 63
-  
-  let%span s09_empty4 = "../09_empty.rs" 34 14 34 42
-  
-  let%span span5 = "../../../../../creusot-contracts/src/std/boxed.rs" 27 8 27 18
-  
-  let%span span6 = "../../../../../creusot-contracts/src/logic/seq.rs" 197 8 197 97
-  
-  let%span span7 = "../09_empty.rs" 22 20 22 54
-  
-  predicate invariant'2 (self : t)
-  
-  predicate inv'2 (_x : t)
-  
-  axiom inv'2 : forall x : t . inv'2 x = true
-  
-  use Alloc_Alloc_Global_Type as Global'0
-  
-  predicate invariant'1 (self : t) =
-    [%#span5] inv'2 self
-  
-  predicate inv'1 (_x : t)
-  
-  axiom inv'1 : forall x : t . inv'1 x = true
+  let%span span3 = "../09_empty.rs" 22 20 22 54
   
   use seq.Seq
-  
-  use seq.Seq
-  
-  use prelude.prelude.Int
-  
-  use seq.Seq
-  
-  predicate invariant'0 (self : Seq.seq t) =
-    [%#span6] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'1 (Seq.get self i)
-  
-  predicate inv'0 (_x : Seq.seq t)
-  
-  axiom inv'0 : forall x : Seq.seq t . inv'0 x = true
   
   use C09Empty_Empty_Type as Empty'0
   
@@ -155,7 +68,7 @@ module C09Empty_Impl0_ProducesTrans_Impl
   predicate produces'0 [#"../09_empty.rs" 21 4 21 64] (self : Empty'0.t_empty t) (visited : Seq.seq t) (o : Empty'0.t_empty t)
     
    =
-    [%#span7] visited = (Seq.empty  : Seq.seq t) /\ self = o
+    [%#span3] visited = (Seq.empty  : Seq.seq t) /\ self = o
   
   constant a  : Empty'0.t_empty t
   
@@ -170,10 +83,8 @@ module C09Empty_Impl0_ProducesTrans_Impl
   function produces_trans [#"../09_empty.rs" 35 4 35 90] (a : Empty'0.t_empty t) (ab : Seq.seq t) (b : Empty'0.t_empty t) (bc : Seq.seq t) (c : Empty'0.t_empty t) : ()
     
   
-  goal vc_produces_trans : ([%#s09_empty3] inv'0 bc)
-   -> ([%#s09_empty2] inv'0 ab)
-   -> ([%#s09_empty1] produces'0 b bc c)
-   -> ([%#s09_empty0] produces'0 a ab b)  -> ([%#s09_empty4] produces'0 a (Seq.(++) ab bc) c)
+  goal vc_produces_trans : ([%#s09_empty1] produces'0 b bc c)
+   -> ([%#s09_empty0] produces'0 a ab b)  -> ([%#s09_empty2] produces'0 a (Seq.(++) ab bc) c)
 end
 module Core_Option_Option_Type
   type t_option 't =
@@ -258,43 +169,24 @@ module C09Empty_Impl0
   
   let%span s09_empty2 = "../09_empty.rs" 41 4 41 35
   
-  let%span span3 = "../../../../../creusot-contracts/src/std/boxed.rs" 27 8 27 18
+  let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
   
-  let%span span5 = "../../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span6 = "../../../../../creusot-contracts/src/logic/seq.rs" 197 8 197 97
+  let%span span6 = "../09_empty.rs" 16 20 16 34
   
-  let%span span7 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
-  
-  let%span span8 = "../09_empty.rs" 16 20 16 34
-  
-  let%span span9 = "../09_empty.rs" 22 20 22 54
-  
-  predicate invariant'5 (self : t)
-  
-  predicate inv'5 (_x : t)
-  
-  axiom inv'5 : forall x : t . inv'5 x = true
-  
-  use Alloc_Alloc_Global_Type as Global'0
-  
-  predicate invariant'4 (self : t) =
-    [%#span3] inv'5 self
-  
-  predicate inv'4 (_x : t)
-  
-  axiom inv'4 : forall x : t . inv'4 x = true
+  let%span span7 = "../09_empty.rs" 22 20 22 54
   
   use Core_Option_Option_Type as Option'0
   
-  predicate invariant'3 (self : Option'0.t_option t) =
-    [%#span4] true
+  predicate invariant'2 (self : Option'0.t_option t) =
+    [%#span3] true
   
-  predicate inv'3 (_x : Option'0.t_option t)
+  predicate inv'2 (_x : Option'0.t_option t)
   
-  axiom inv'3 : forall x : Option'0.t_option t . inv'3 x = true
+  axiom inv'2 : forall x : Option'0.t_option t . inv'2 x = true
   
   use C09Empty_Empty_Type as Empty'0
   
@@ -302,40 +194,27 @@ module C09Empty_Impl0
   
   use prelude.prelude.Borrow
   
-  predicate invariant'2 (self : borrowed (Empty'0.t_empty t)) =
-    [%#span5] inv'0 self.current /\ inv'0 self.final
+  predicate invariant'1 (self : borrowed (Empty'0.t_empty t)) =
+    [%#span4] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'2 (_x : borrowed (Empty'0.t_empty t))
+  predicate inv'1 (_x : borrowed (Empty'0.t_empty t))
   
-  axiom inv'2 : forall x : borrowed (Empty'0.t_empty t) . inv'2 x = true
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use prelude.prelude.Int
-  
-  use seq.Seq
-  
-  predicate invariant'1 (self : Seq.seq t) =
-    [%#span6] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
-  
-  predicate inv'1 (_x : Seq.seq t)
-  
-  axiom inv'1 : forall x : Seq.seq t . inv'1 x = true
+  axiom inv'1 : forall x : borrowed (Empty'0.t_empty t) . inv'1 x = true
   
   predicate invariant'0 (self : Empty'0.t_empty t) =
-    [%#span4] true
+    [%#span3] true
   
   axiom inv'0 : forall x : Empty'0.t_empty t . inv'0 x = true
   
   use seq.Seq
   
   predicate resolve'0 (self : borrowed (Empty'0.t_empty t)) =
-    [%#span7] self.final = self.current
+    [%#span5] self.final = self.current
   
   predicate completed'0 [#"../09_empty.rs" 15 4 15 35] (self : borrowed (Empty'0.t_empty t)) =
-    [%#span8] resolve'0 self
+    [%#span6] resolve'0 self
+  
+  use seq.Seq
   
   use seq.Seq
   
@@ -346,26 +225,24 @@ module C09Empty_Impl0
   predicate produces'0 [#"../09_empty.rs" 21 4 21 64] (self : Empty'0.t_empty t) (visited : Seq.seq t) (o : Empty'0.t_empty t)
     
    =
-    [%#span9] visited = (Seq.empty  : Seq.seq t) /\ self = o
+    [%#span7] visited = (Seq.empty  : Seq.seq t) /\ self = o
   
   goal produces_refl_refn : [%#s09_empty0] forall self : Empty'0.t_empty t . inv'0 self
    -> (forall result : () . produces'0 self (Seq.empty  : Seq.seq t) self
    -> produces'0 self (Seq.empty  : Seq.seq t) self)
   
-  goal produces_trans_refn : [%#s09_empty1] forall a : Empty'0.t_empty t . forall ab : Seq.seq t . forall b : Empty'0.t_empty t . forall bc : Seq.seq t . forall c : Empty'0.t_empty t . inv'0 c
-  /\ inv'1 bc /\ inv'0 b /\ inv'1 ab /\ inv'0 a /\ produces'0 b bc c /\ produces'0 a ab b
-   -> inv'1 bc
-  /\ inv'1 ab
-  /\ produces'0 b bc c
+  goal produces_trans_refn : [%#s09_empty1] forall a : Empty'0.t_empty t . forall ab : Seq.seq t . forall b : Empty'0.t_empty t . forall bc : Seq.seq t . forall c : Empty'0.t_empty t . produces'0 b bc c
+  /\ produces'0 a ab b /\ inv'0 c /\ inv'0 b /\ inv'0 a
+   -> produces'0 b bc c
   /\ produces'0 a ab b /\ (forall result : () . produces'0 a (Seq.(++) ab bc) c  -> produces'0 a (Seq.(++) ab bc) c)
   
-  goal next_refn : [%#s09_empty2] forall self : borrowed (Empty'0.t_empty t) . inv'2 self
-   -> (forall result : Option'0.t_option t . inv'3 result
+  goal next_refn : [%#s09_empty2] forall self : borrowed (Empty'0.t_empty t) . inv'1 self
+   -> (forall result : Option'0.t_option t . inv'2 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
     | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end
-   -> inv'3 result
+   -> inv'2 result
   /\ match result with
     | Option'0.C_None -> completed'0 self
     | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final

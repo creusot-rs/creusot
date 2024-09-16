@@ -22,12 +22,12 @@ where
     fn completed(&mut self) -> bool {
         pearlite! {
             (^self).n@ == 0 &&
-            exists<s: Seq<Self::Item>, i: &mut I>
-                s.len() <= self.n@ &&
-                self.iter.produces(s, *i) &&
-                (forall<i: Int> 0 <= i && i < s.len() ==> s[i].resolve()) &&
-                i.completed() &&
-                ^i == (^self).iter
+            exists<s: Seq<Self::Item>, i: &mut I> inv(s) && inv(i)
+                && s.len() <= self.n@
+                && self.iter.produces(s, *i)
+                && (forall<i: Int> 0 <= i && i < s.len() ==> s[i].resolve())
+                && i.completed()
+                && ^i == (^self).iter
         }
     }
 
@@ -36,21 +36,25 @@ where
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::EMPTY && self == o ||
-            o.n@ == 0 && visited.len() > 0 &&
-            exists<s: Seq<Self::Item>>
-                s.len() == self.n@ &&
-                self.iter.produces(s.concat(visited), o.iter) &&
-                forall<i: Int> 0 <= i && i < s.len() ==> s[i].resolve()
+            o.n@ == 0 && visited.len() > 0
+            && exists<s: Seq<Self::Item>> inv(s)
+                && s.len() == self.n@
+                && self.iter.produces(s.concat(visited), o.iter)
+                && forall<i: Int> 0 <= i && i < s.len() ==> s[i].resolve()
         }
     }
 
     #[law]
     #[open]
+    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
     #[open]
+    #[requires(inv(a))]
+    #[requires(inv(b))]
+    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

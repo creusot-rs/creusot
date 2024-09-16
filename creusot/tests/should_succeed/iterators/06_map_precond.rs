@@ -1,7 +1,10 @@
 #![feature(unboxed_closures)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{invariant::Invariant, *};
+use creusot_contracts::{
+    invariant::{inv, Invariant},
+    *,
+};
 
 mod common;
 use common::Iterator;
@@ -27,11 +30,15 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator fo
 
     #[law]
     #[open]
+    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
     #[open]
+    #[requires(inv(a))]
+    #[requires(inv(b))]
+    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -43,9 +50,9 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator fo
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             self.func.unnest(succ.func)
-            && exists<s : Seq<I::Item>> s.len() == visited.len() && self.iter.produces(s, succ.iter)
+            && exists<s : Seq<I::Item>> inv(s) && s.len() == visited.len() && self.iter.produces(s, succ.iter)
             && succ.produced.inner() == self.produced.concat(s)
-            && exists<fs: Seq<&mut F>> fs.len() == visited.len()
+            && exists<fs: Seq<&mut F>> inv(fs) && fs.len() == visited.len()
             && (forall<i : Int> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == * fs[i])
             && if visited.len() == 0 { self.func == succ.func }
                else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
@@ -124,6 +131,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, B, F
     }
 
     #[logic]
+    #[requires(inv(self))]
     #[requires(self.iter.produces(Seq::singleton(e), iter))]
     #[requires(*f == self.func)]
     #[requires(f.postcondition_mut((e, self.produced), r) )]
@@ -141,11 +149,12 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, B, F
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
     fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {
-            exists<f: &mut F> *f == self.func && ^f == succ.func
-            && { exists<e: I::Item> self.iter.produces(Seq::singleton(e), succ.iter)
-                 && succ.produced.inner() == self.produced.push(e)
-                 && (*f).precondition((e, self.produced))
-                 && f.postcondition_mut((e, self.produced), visited) }
+            exists<f: &mut F> inv(f) && *f == self.func && ^f == succ.func
+            && exists<e: I::Item> inv(e)
+                && self.iter.produces(Seq::singleton(e), succ.iter)
+                && succ.produced.inner() == self.produced.push(e)
+                && (*f).precondition((e, self.produced))
+                && f.postcondition_mut((e, self.produced), visited)
         }
     }
 }

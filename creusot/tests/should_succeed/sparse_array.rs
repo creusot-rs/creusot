@@ -13,7 +13,7 @@
 
 extern crate creusot_contracts;
 use creusot_contracts::{
-    invariant::Invariant,
+    invariant::{inv, Invariant},
     logic::{Int, Seq},
     vec, *,
 };
@@ -98,6 +98,7 @@ impl<T> Sparse<T> {
     /* A key lemma to prove for safety of access in `set()`
      */
     #[logic]
+    #[requires(inv(self))]
     #[requires(self.n == self.size)]
     #[requires(0 <= i && i < self.size@)]
     #[ensures(self.is_elt(i))]

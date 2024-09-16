@@ -17,7 +17,7 @@ use crate::{
         specification::{ContractClauses, Purity, PurityVisitor},
         traits::TraitImpl,
     },
-    util::{self, pre_sig_of, PreSignature},
+    util::{self, gather_params_open_inv, pre_sig_of, PreSignature},
 };
 use indexmap::{IndexMap, IndexSet};
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
@@ -98,6 +98,7 @@ pub struct TranslationCtx<'tcx> {
     bodies: HashMap<LocalDefId, BodyWithBorrowckFacts<'tcx>>,
     opacity: HashMap<DefId, Opacity>,
     closure_contract: HashMap<DefId, ClosureContract<'tcx>>,
+    params_open_inv: HashMap<DefId, Vec<usize>>,
 }
 
 #[derive(Copy, Clone)]
@@ -122,6 +123,7 @@ impl<'tcx> Deref for TranslationCtx<'tcx> {
 
 impl<'tcx, 'sess> TranslationCtx<'tcx> {
     pub(crate) fn new(tcx: TyCtxt<'tcx>, opts: Options) -> Self {
+        let params_open_inv = gather_params_open_inv(tcx);
         let creusot_items = creusot_items::local_creusot_items(tcx);
 
         Self {
@@ -141,6 +143,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             bodies: Default::default(),
             opacity: Default::default(),
             closure_contract: Default::default(),
+            params_open_inv,
         }
     }
 
@@ -179,10 +182,17 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         }
     }
 
+    pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&Vec<usize>> {
+        if !def_id.is_local() {
+            return self.externs.params_open_inv(def_id);
+        }
+        self.params_open_inv.get(&def_id)
+    }
+
     queryish!(sig, &PreSignature<'tcx>, |ctx: &mut Self, key| {
-        let mut term = pre_sig_of(&mut *ctx, key);
-        term = term.normalize(ctx.tcx, ctx.param_env(key));
-        term
+        let mut pre_sig = pre_sig_of(&mut *ctx, key);
+        pre_sig = pre_sig.normalize(ctx.tcx, ctx.param_env(key));
+        pre_sig
     });
 
     pub(crate) fn body(&mut self, body_id: BodyId) -> &Body<'tcx> {
@@ -323,7 +333,12 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn metadata(&self) -> BinaryMetadata<'tcx> {
-        BinaryMetadata::from_parts(&self.terms, &self.creusot_items, &self.extern_specs)
+        BinaryMetadata::from_parts(
+            &self.terms,
+            &self.creusot_items,
+            &self.extern_specs,
+            &self.params_open_inv,
+        )
     }
 
     pub(crate) fn creusot_item(&self, name: Symbol) -> Option<DefId> {

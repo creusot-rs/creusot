@@ -666,8 +666,16 @@ fn predicate_item(
 }
 
 #[proc_macro_attribute]
+pub fn open_inv_result(_: TS1, tokens: TS1) -> TS1 {
+    let tokens = TokenStream::from(tokens);
+    TS1::from(quote! {
+        #[creusot::decl::open_inv_result]
+        #tokens
+    })
+}
+
+#[proc_macro_attribute]
 pub fn trusted(_: TS1, tokens: TS1) -> TS1 {
-    // let p: ItemFn = parse_macro_input!(tokens);
     let tokens = TokenStream::from(tokens);
     TS1::from(quote! {
         #[creusot::decl::trusted]

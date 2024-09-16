@@ -34,6 +34,11 @@ impl<'tcx> Metadata<'tcx> {
         self.get(def_id.krate)?.term(def_id)
     }
 
+    pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&Vec<usize>> {
+        assert!(!def_id.is_local());
+        self.get(def_id.krate)?.params_open_inv(def_id)
+    }
+
     pub(crate) fn creusot_item(&self, sym: Symbol) -> Option<DefId> {
         for cmeta in &self.crates {
             if cmeta.1.creusot_item(sym).is_some() {
@@ -64,16 +69,26 @@ impl<'tcx> Metadata<'tcx> {
 pub struct CrateMetadata<'tcx> {
     terms: IndexMap<DefId, Term<'tcx>>,
     creusot_items: CreusotItems,
+    params_open_inv: HashMap<DefId, Vec<usize>>,
 }
 
 impl<'tcx> CrateMetadata<'tcx> {
     pub(crate) fn new() -> Self {
-        Self { terms: Default::default(), creusot_items: Default::default() }
+        Self {
+            terms: Default::default(),
+            creusot_items: Default::default(),
+            params_open_inv: Default::default(),
+        }
     }
 
     pub(crate) fn term(&self, def_id: DefId) -> Option<&Term<'tcx>> {
         assert!(!def_id.is_local());
         self.terms.get(&def_id)
+    }
+
+    pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&Vec<usize>> {
+        assert!(!def_id.is_local());
+        self.params_open_inv.get(&def_id)
     }
 
     pub(crate) fn creusot_item(&self, sym: Symbol) -> Option<DefId> {
@@ -102,6 +117,7 @@ impl<'tcx> CrateMetadata<'tcx> {
             }
 
             meta.creusot_items = metadata.creusot_items;
+            meta.params_open_inv = metadata.params_open_inv;
 
             externs = metadata.extern_specs;
         }
@@ -117,10 +133,9 @@ impl<'tcx> CrateMetadata<'tcx> {
 #[derive(TyDecodable, TyEncodable)]
 pub(crate) struct BinaryMetadata<'tcx> {
     terms: Vec<(DefId, Term<'tcx>)>,
-
     creusot_items: CreusotItems,
-
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
+    params_open_inv: HashMap<DefId, Vec<usize>>,
 }
 
 impl<'tcx> BinaryMetadata<'tcx> {
@@ -128,6 +143,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
         terms: &IndexMap<DefId, Term<'tcx>>,
         items: &CreusotItems,
         extern_specs: &HashMap<DefId, ExternSpec<'tcx>>,
+        params_open_inv: &HashMap<DefId, Vec<usize>>,
     ) -> Self {
         let terms = terms
             .iter()
@@ -135,7 +151,12 @@ impl<'tcx> BinaryMetadata<'tcx> {
             .map(|(id, t)| (*id, t.clone()))
             .collect();
 
-        BinaryMetadata { terms, creusot_items: items.clone(), extern_specs: extern_specs.clone() }
+        BinaryMetadata {
+            terms,
+            creusot_items: items.clone(),
+            extern_specs: extern_specs.clone(),
+            params_open_inv: params_open_inv.clone(),
+        }
     }
 }
 
