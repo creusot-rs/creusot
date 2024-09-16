@@ -1,7 +1,10 @@
 #![feature(slice_take)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{invariant::Invariant, *};
+use creusot_contracts::{
+    invariant::{inv, Invariant},
+    *,
+};
 
 mod common;
 use common::Iterator;
@@ -28,7 +31,8 @@ where
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited.len() == o.count@ - self.count@
-            && exists<s: Seq<I::Item>> self.iter.produces(s, o.iter)
+            && exists<s: Seq<I::Item>> inv(s)
+                && self.iter.produces(s, o.iter)
                 && visited.len() == s.len()
                 && forall<i: Int> 0 <= i && i < s.len() ==> visited[i].0@ == self.count@ + i && visited[i].1 == s[i]
         }
@@ -36,11 +40,15 @@ where
 
     #[law]
     #[open]
+    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
     #[open]
+    #[requires(inv(a))]
+    #[requires(inv(b))]
+    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

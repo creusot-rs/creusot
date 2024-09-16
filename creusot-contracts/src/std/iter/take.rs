@@ -1,4 +1,4 @@
-use crate::{std::iter::Take, *};
+use crate::{invariant::*, std::iter::Take, *};
 
 pub trait TakeExt<I> {
     #[logic]
@@ -15,6 +15,7 @@ impl<I> TakeExt<I> for Take<I> {
     #[logic]
     #[trusted]
     #[open(self)]
+    #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
         pearlite! { absurd }
     }
@@ -67,11 +68,15 @@ impl<I: Iterator> Iterator for Take<I> {
 
     #[law]
     #[open(self)]
+    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
     #[open(self)]
+    #[requires(inv(a))]
+    #[requires(inv(b))]
+    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

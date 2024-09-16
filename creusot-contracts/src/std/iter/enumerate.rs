@@ -1,4 +1,4 @@
-use crate::{invariant::Invariant, std::iter::Enumerate, *};
+use crate::{invariant::*, std::iter::Enumerate, *};
 
 pub trait EnumerateExt<I> {
     #[logic]
@@ -12,6 +12,7 @@ impl<I> EnumerateExt<I> for Enumerate<I> {
     #[trusted]
     #[logic]
     #[open(self)]
+    #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
         absurd
     }
@@ -53,7 +54,12 @@ where
     #[open]
     #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { exists<inner : &mut _> *inner == self.iter() && ^inner == (^self).iter() && inner.completed() }
+        pearlite! {
+            exists<inner : &mut _> inv(inner)
+                && *inner == self.iter()
+                && ^inner == (^self).iter()
+                && inner.completed()
+        }
     }
 
     #[open]
@@ -61,7 +67,8 @@ where
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited.len() == o.n() - self.n()
-            && exists<s: Seq<I::Item>> self.iter().produces(s, o.iter())
+            && exists<s: Seq<I::Item>> inv(s)
+                && self.iter().produces(s, o.iter())
                 && visited.len() == s.len()
                 && forall<i: Int> 0 <= i && i < s.len() ==> visited[i].0@ == self.n() + i && visited[i].1 == s[i]
         }
@@ -69,11 +76,15 @@ where
 
     #[law]
     #[open(self)]
+    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
     #[open(self)]
+    #[requires(inv(a))]
+    #[requires(inv(b))]
+    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

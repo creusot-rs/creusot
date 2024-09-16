@@ -1,6 +1,4 @@
-use super::{
-    term::lower_pure, ty::translate_ty, CloneSummary, Dependencies, TransId, Why3Generator,
-};
+use super::{term::lower_pure, CloneSummary, Dependencies, TransId, Why3Generator};
 use crate::{
     ctx::*,
     translation::{
@@ -14,7 +12,6 @@ use rustc_hir::def_id::DefId;
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
-use why3::exp::Exp;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, TypeVisitable, TypeFoldable)]
 pub(crate) enum TyInvKind {
@@ -303,8 +300,7 @@ pub(crate) fn build_inv_module<'tcx>(
     inv_kind: TyInvKind,
 ) -> CloneSummary<'tcx> {
     let mut names = Dependencies::new(ctx.tcx, [TransId::TyInv(inv_kind)]);
-    let _inv_axiom =
-        names.with_vis(CloneLevel::Contract, |names| build_inv_axiom(ctx, names, inv_kind));
+    build_inv_axiom(ctx, &mut names, inv_kind);
 
     {
         let param_env =
@@ -317,8 +313,7 @@ pub(crate) fn build_inv_module<'tcx>(
     }
 
     let (_, summary) = names.provide_deps(ctx, GraphDepth::Shallow);
-    // eprintln!("summary of {inv_kind:?} -> {summary:#?}");
-
+    //eprintln!("{inv_kind:?} ====> {summary:#?}\n\n");
     summary
 }
 
@@ -331,17 +326,8 @@ fn build_inv_axiom<'tcx>(
         if let TyInvKind::Adt(did) = inv_kind { ctx.param_env(did) } else { ParamEnv::empty() };
 
     let ty = inv_kind.to_skeleton_ty(ctx.tcx);
-    // TODO : Refactor and push binding down
-    let lhs: Exp = Exp::qvar(names.ty_inv(ty)).app_to(Exp::var("x"));
-    let rhs = if TyInvKind::Trivial == inv_kind {
-        Exp::mk_true()
-    } else {
-        let inv_term = InvariantElaborator::new(param_env, false).elaborate_inv(ctx, ty, inv_kind);
-        let inv_term = lower_pure(ctx, names, &inv_term);
-        inv_term
-    };
-    let _axiom =
-        Exp::forall(vec![("x".into(), translate_ty(ctx, names, DUMMY_SP, ty))], lhs.eq(rhs));
+    let inv_term = InvariantElaborator::new(param_env, false).elaborate_inv(ctx, ty, inv_kind);
+    lower_pure(ctx, names, &inv_term);
 }
 
 // TODO: Handle missing defid gracefully

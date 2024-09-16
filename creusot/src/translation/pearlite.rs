@@ -8,7 +8,7 @@
 use std::{
     collections::HashSet,
     fmt::{Display, Formatter},
-    mem, unreachable,
+    unreachable,
 };
 
 use crate::{
@@ -505,13 +505,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                             unreachable!()
                         };
                         let binder = (binder, arg_tuple_ty);
-                        if let Some(inv_term) =
-                            type_invariant_terms(self.ctx, self.item_id.to_def_id(), span, &binder)
-                        {
-                            Ok(body.guarded_quant(kind, binder, trigger, inv_term).span(span))
-                        } else {
-                            Ok(body.quant(kind, binder, trigger).span(span))
-                        }
+                        Ok(body.quant(kind, binder, trigger).span(span))
                     }
                     Some(Fin) => {
                         let term = self.expr_term(args[0])?;
@@ -1047,23 +1041,6 @@ pub(crate) fn mk_projection<'tcx>(lhs: Term<'tcx>, name: FieldIdx) -> TermKind<'
     TermKind::Projection { lhs: Box::new(lhs), name }
 }
 
-pub(crate) fn type_invariant_terms<'tcx>(
-    ctx: &TranslationCtx<'tcx>,
-    env_did: DefId,
-    span: Span,
-    binder: &QuantBinder<'tcx>,
-) -> Option<Term<'tcx>> {
-    zip_binder(binder).fold(None, |acc, (name, ty)| {
-        let curr = type_invariant_term(ctx, env_did, name, span, ty);
-        match (acc, curr) {
-            (None, None) => None,
-            (None, Some(x)) => Some(x),
-            (Some(x), None) => Some(x),
-            (Some(x), Some(y)) => Some(x.conj(y)),
-        }
-    })
-}
-
 pub(crate) fn type_invariant_term<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     env_did: DefId,
@@ -1410,44 +1387,6 @@ impl<'tcx> Term<'tcx> {
     pub(crate) fn forall(self, tcx: TyCtxt<'tcx>, binder: (Symbol, Ty<'tcx>)) -> Self {
         let ty = Ty::new_tup(tcx, &[binder.1]);
         self.quant(QuantKind::Forall, (vec![Ident::new(binder.0, DUMMY_SP)], ty), vec![])
-    }
-
-    /// Creates a term like `forall<binder> guard ==> self`.
-    pub(crate) fn guarded_quant(
-        mut self,
-        quant_kind: QuantKind,
-        binder: QuantBinder<'tcx>,
-        trigger: Vec<Trigger<'tcx>>,
-        guard: Self,
-    ) -> Self {
-        assert!(self.ty.is_bool() && guard.ty.is_bool());
-
-        let mut inner = &mut self;
-        match quant_kind {
-            QuantKind::Forall => {
-                while let TermKind::Quant { kind: QuantKind::Forall, ref mut body, .. } = inner.kind
-                {
-                    // TODO check binder not free in guard
-                    inner = body
-                }
-            }
-            QuantKind::Exists => {
-                while let TermKind::Quant { kind: QuantKind::Exists, ref mut body, .. } = inner.kind
-                {
-                    // TODO check binder not free in guard
-                    inner = body
-                }
-            }
-        }
-
-        let old_inner =
-            mem::replace(inner, Term { ty: inner.ty, kind: TermKind::Absurd, span: DUMMY_SP });
-
-        *inner = match quant_kind {
-            QuantKind::Forall => guard.implies(old_inner),
-            QuantKind::Exists => guard.conj(old_inner),
-        };
-        self.quant(quant_kind, binder, trigger)
     }
 
     pub(crate) fn quant(

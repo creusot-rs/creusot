@@ -172,6 +172,10 @@ mod macros {
     /// A body can only be visible in contexts where all the symbols used in the body are also visible.
     /// This means you cannot `#[open]` a body which refers to a `pub(crate)` symbol.
     pub use base_macros::open;
+
+    /// This attribute can be used on a function or closure to instruct Creusot not to ensure as a postcondition that the
+    /// return value of the function satisfies its type invariant.
+    pub use base_macros::open_inv_result;
 }
 
 #[cfg(creusot)]

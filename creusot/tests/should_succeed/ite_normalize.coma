@@ -555,56 +555,40 @@ module IteNormalize_Impl5_SimplifyHelper
   
   use Core_Option_Option_Type as Option'0
   
-  predicate invariant'6 (self : Option'0.t_option bool) =
+  predicate invariant'4 (self : Option'0.t_option bool) =
     [%#span6] true
   
-  predicate inv'6 (_x : Option'0.t_option bool)
+  predicate inv'4 (_x : Option'0.t_option bool)
   
-  axiom inv'6 : forall x : Option'0.t_option bool . inv'6 x = true
+  axiom inv'4 : forall x : Option'0.t_option bool . inv'4 x = true
   
-  use prelude.prelude.Int
-  
-  predicate invariant'5 (self : int) =
+  predicate invariant'3 (self : bool) =
     [%#span6] true
   
-  predicate inv'5 (_x : int)
+  predicate inv'3 (_x : bool)
   
-  axiom inv'5 : forall x : int . inv'5 x = true
-  
-  predicate invariant'4 (self : bool) =
-    [%#span6] true
-  
-  predicate inv'4 (_x : bool)
-  
-  axiom inv'4 : forall x : bool . inv'4 x = true
+  axiom inv'3 : forall x : bool . inv'3 x = true
   
   use prelude.prelude.UIntSize
   
-  predicate invariant'3 (self : usize) =
+  predicate invariant'2 (self : usize) =
     [%#span6] true
   
-  predicate inv'3 (_x : usize)
+  predicate inv'2 (_x : usize)
   
-  axiom inv'3 : forall x : usize . inv'3 x = true
+  axiom inv'2 : forall x : usize . inv'2 x = true
   
-  predicate invariant'2 (self : Option'0.t_option bool) =
+  predicate invariant'1 (self : Option'0.t_option bool) =
     [%#span6] true
   
-  predicate inv'2 (_x : Option'0.t_option bool)
+  predicate inv'1 (_x : Option'0.t_option bool)
   
-  axiom inv'2 : forall x : Option'0.t_option bool . inv'2 x = true
+  axiom inv'1 : forall x : Option'0.t_option bool . inv'1 x = true
   
   use prelude.prelude.Borrow
   
-  predicate invariant'1 (self : bool) =
-    [%#span7] inv'4 self
-  
-  predicate inv'1 (_x : bool)
-  
-  axiom inv'1 : forall x : bool . inv'1 x = true
-  
   predicate invariant'0 (self : usize) =
-    [%#span7] inv'3 self
+    [%#span7] inv'2 self
   
   predicate inv'0 (_x : usize)
   
@@ -633,6 +617,8 @@ module IteNormalize_Impl5_SimplifyHelper
   use map.Map
   
   use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
   
   use map.Map
   
@@ -663,12 +649,11 @@ module IteNormalize_Impl5_SimplifyHelper
   function deep_model'1 (self : usize) : int =
     [%#span13] UIntSize.to_int self
   
-  let rec insert'0 (self:borrowed (BTreeMap'0.t_btreemap usize bool)) (key:usize) (value:bool) (return'  (ret:Option'0.t_option bool))= {[@expl:precondition] [%#span15] inv'4 value}
-    {[@expl:precondition] [%#span14] inv'3 key}
+  let rec insert'0 (self:borrowed (BTreeMap'0.t_btreemap usize bool)) (key:usize) (value:bool) (return'  (ret:Option'0.t_option bool))= {[@expl:precondition] [%#span15] inv'3 value}
+    {[@expl:precondition] [%#span14] inv'2 key}
     any
-    [ return' (result:Option'0.t_option bool)-> {[%#span17] inv'6 result}
-      {[%#span16] forall i : int . inv'5 i
-       -> Map.get (shallow_model'0 self.final) i
+    [ return' (result:Option'0.t_option bool)-> {[%#span17] inv'4 result}
+      {[%#span16] forall i : int . Map.get (shallow_model'0 self.final) i
       = (if i = deep_model'1 key then Option'0.C_Some value else Map.get (shallow_model'2 self) i)}
       (! return' {result}) ]
     
@@ -685,9 +670,9 @@ module IteNormalize_Impl5_SimplifyHelper
   
   let rec get'0 (self:BTreeMap'0.t_btreemap usize bool) (key:usize) (return'  (ret:Option'0.t_option bool))= {[@expl:precondition] [%#span21] inv'0 key}
     any
-    [ return' (result:Option'0.t_option bool)-> {[%#span24] inv'2 result}
-      {[%#span23] forall v : bool . inv'1 v
-       -> result = Option'0.C_Some v  -> Map.get (shallow_model'1 self) (deep_model'0 key) = Option'0.C_Some v}
+    [ return' (result:Option'0.t_option bool)-> {[%#span24] inv'1 result}
+      {[%#span23] forall v : bool . result = Option'0.C_Some v
+       -> Map.get (shallow_model'1 self) (deep_model'0 key) = Option'0.C_Some v}
       {[%#span22] result = Option'0.C_None  -> Map.get (shallow_model'1 self) (deep_model'0 key) = Option'0.C_None}
       (! return' {result}) ]
     

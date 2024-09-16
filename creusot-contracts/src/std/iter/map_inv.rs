@@ -1,4 +1,4 @@
-use crate::{invariant::Invariant, *};
+use crate::{invariant::*, *};
 
 pub struct MapInv<I, B, F> {
     pub iter: I,
@@ -20,11 +20,15 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator
 
     #[law]
     #[open(self)]
+    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
     #[open(self)]
+    #[requires(inv(a))]
+    #[requires(inv(b))]
+    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -36,9 +40,9 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             self.func.unnest(succ.func)
-            && exists<s : Seq<I::Item>> s.len() == visited.len() && self.iter.produces(s, succ.iter)
+            && exists<s : Seq<I::Item>> inv(s) && s.len() == visited.len() && self.iter.produces(s, succ.iter)
             && succ.produced.inner() == self.produced.concat(s)
-            && exists<fs: Seq<&mut F>> fs.len() == visited.len()
+            && exists<fs: Seq<&mut F>> inv(fs) && fs.len() == visited.len()
             && (forall<i : Int> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == * fs[i])
             && if visited.len() == 0 { self.func == succ.func }
                else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
@@ -154,6 +158,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I
     }
 
     #[logic]
+    #[requires(inv(self))]
     #[requires(self.iter.produces(Seq::singleton(e), iter))]
     #[requires(*f == self.func)]
     #[requires(f.postcondition_mut((e, self.produced), r) )]
@@ -172,11 +177,12 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
     fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {
-            exists<f: &mut F> *f == self.func && ^f == succ.func
-            && { exists<e: I::Item> self.iter.produces(Seq::singleton(e), succ.iter)
-                 && succ.produced.inner() == self.produced.push(e)
-                 && (*f).precondition((e, self.produced))
-                 && f.postcondition_mut((e, self.produced), visited) }
+            exists<f: &mut F> inv(f) && *f == self.func && ^f == succ.func
+            && exists<e: I::Item> inv(e)
+                && self.iter.produces(Seq::singleton(e), succ.iter)
+                && succ.produced.inner() == self.produced.push(e)
+                && (*f).precondition((e, self.produced))
+                && f.postcondition_mut((e, self.produced), visited)
         }
     }
 }

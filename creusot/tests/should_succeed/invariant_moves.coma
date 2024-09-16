@@ -135,25 +135,21 @@ module InvariantMoves_TestInvariantMove
   
   let%span span4 = "" 0 0 0 0
   
-  let%span span5 = "../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
+  let%span span5 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   
-  let%span span6 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span span6 = "../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
   
-  let%span span7 = "../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
+  let%span span7 = "../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
   
-  let%span span8 = "../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
+  let%span span8 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span9 = "../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  let%span span9 = "../../../../creusot-contracts/src/model.rs" 108 8 108 31
   
-  let%span span10 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span10 = "" 0 0 0 0
   
-  let%span span11 = "../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span11 = "../../../../creusot-contracts/src/std/vec.rs" 86 26 91 17
   
   let%span span12 = "" 0 0 0 0
-  
-  let%span span13 = "../../../../creusot-contracts/src/std/vec.rs" 86 26 91 17
-  
-  let%span span14 = "" 0 0 0 0
   
   use prelude.prelude.UInt32
   
@@ -196,16 +192,15 @@ module InvariantMoves_TestInvariantMove
   
   constant max'0 : usize = [%#span4] (18446744073709551615 : usize)
   
-  predicate inv'2 (_x : Vec'0.t_vec uint32 (Global'0.t_global))
-  
   function shallow_model'0 (self : Vec'0.t_vec uint32 (Global'0.t_global)) : Seq.seq uint32
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_vec uint32 (Global'0.t_global) . ([%#span5] inv'2 self)
-   -> ([%#span7] inv'3 (shallow_model'0 self))
-  && ([%#span6] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
+  axiom shallow_model'0_spec : forall self : Vec'0.t_vec uint32 (Global'0.t_global) . [%#span5] Seq.length (shallow_model'0 self)
+  <= UIntSize.to_int (max'0 : usize)
   
   predicate invariant'2 (self : Vec'0.t_vec uint32 (Global'0.t_global)) =
-    [%#span8] inv'3 (shallow_model'0 self)
+    [%#span6] inv'3 (shallow_model'0 self)
+  
+  predicate inv'2 (_x : Vec'0.t_vec uint32 (Global'0.t_global))
   
   axiom inv'2 : forall x : Vec'0.t_vec uint32 (Global'0.t_global) . inv'2 x = true
   
@@ -221,7 +216,7 @@ module InvariantMoves_TestInvariantMove
   use prelude.prelude.Borrow
   
   predicate invariant'0 (self : borrowed (Vec'0.t_vec uint32 (Global'0.t_global))) =
-    [%#span9] inv'2 self.current /\ inv'2 self.final
+    [%#span7] inv'2 self.current /\ inv'2 self.final
   
   predicate inv'0 (_x : borrowed (Vec'0.t_vec uint32 (Global'0.t_global)))
   
@@ -230,19 +225,19 @@ module InvariantMoves_TestInvariantMove
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Vec'0.t_vec uint32 (Global'0.t_global))) =
-    [%#span10] self.final = self.current
+    [%#span8] self.final = self.current
   
   use seq.Seq
   
   use prelude.seq_ext.SeqExt
   
   function shallow_model'1 (self : borrowed (Vec'0.t_vec uint32 (Global'0.t_global))) : Seq.seq uint32 =
-    [%#span11] shallow_model'0 self.current
+    [%#span9] shallow_model'0 self.current
   
-  let rec pop'0 (self:borrowed (Vec'0.t_vec uint32 (Global'0.t_global))) (return'  (ret:Option'0.t_option uint32))= {[@expl:precondition] [%#span12] inv'0 self}
+  let rec pop'0 (self:borrowed (Vec'0.t_vec uint32 (Global'0.t_global))) (return'  (ret:Option'0.t_option uint32))= {[@expl:precondition] [%#span10] inv'0 self}
     any
-    [ return' (result:Option'0.t_option uint32)-> {[%#span14] inv'1 result}
-      {[%#span13] match result with
+    [ return' (result:Option'0.t_option uint32)-> {[%#span12] inv'1 result}
+      {[%#span11] match result with
         | Option'0.C_Some t -> shallow_model'0 self.final
         = SeqExt.subsequence (shallow_model'1 self) 0 (Seq.length (shallow_model'1 self) - 1)
         /\ shallow_model'1 self = Seq.snoc (shallow_model'0 self.final) t

@@ -10,7 +10,8 @@ use indexmap::IndexMap;
 use itertools::izip;
 use rustc_ast::{
     ast::{AttrArgs, AttrArgsEq},
-    AttrItem, AttrKind, Attribute,
+    visit::{walk_fn, FnKind, Visitor},
+    AttrItem, AttrKind, Attribute, FnSig, NodeId,
 };
 use rustc_hir::{
     def::{DefKind, Namespace},
@@ -19,8 +20,8 @@ use rustc_hir::{
 };
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
-    self, BorrowKind, ClosureKind, EarlyBinder, GenericArg, GenericArgs, GenericArgsRef, Ty,
-    TyCtxt, TyKind, UpvarCapture,
+    self, BorrowKind, ClosureKind, EarlyBinder, GenericArg, GenericArgs, GenericArgsRef,
+    ResolverAstLowering, Ty, TyCtxt, TyKind, UpvarCapture,
 };
 use rustc_span::{symbol, symbol::kw, Span, Symbol, DUMMY_SP};
 use std::{
@@ -132,16 +133,8 @@ pub(crate) fn has_variant_clause(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "clause", "variant"]).is_some()
 }
 
-pub(crate) fn is_user_tyinv(tcx: TyCtxt, def_id: DefId) -> bool {
-    let Some(assoc_item) = tcx.opt_associated_item(def_id) else { return false };
-    let Some(trait_item_did) = (match assoc_item.container {
-        ty::AssocItemContainer::TraitContainer => Some(def_id),
-        ty::AssocItemContainer::ImplContainer => assoc_item.trait_item_def_id,
-    }) else {
-        return false;
-    };
-
-    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap() == trait_item_did
+pub(crate) fn is_open_inv_result(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "open_inv_result"]).is_some()
 }
 
 pub(crate) fn is_inv_internal(tcx: TyCtxt, def_id: DefId) -> bool {
@@ -526,17 +519,23 @@ fn elaborate_type_invariants<'tcx>(
     def_id: DefId,
     pre_sig: &mut PreSignature<'tcx>,
 ) {
-    if is_user_tyinv(ctx.tcx, def_id)
-        || is_inv_internal(ctx.tcx, def_id)
-        || (is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
-            && pre_sig.contract.ensures.is_empty()
-    {
+    if is_pearlite(ctx.tcx, def_id) {
         return;
     }
 
     let subst = GenericArgs::identity_for_item(ctx.tcx, def_id);
 
-    for (name, span, ty) in pre_sig.inputs.iter() {
+    let params_open_inv: HashSet<usize> = ctx
+        .params_open_inv(def_id)
+        .iter()
+        .copied()
+        .flatten()
+        .map(|&i| if ctx.tcx.is_closure_like(def_id) { i + 1 } else { i })
+        .collect();
+    for (i, (name, span, ty)) in pre_sig.inputs.iter().enumerate() {
+        if params_open_inv.contains(&i) {
+            continue;
+        }
         if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
             let term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
             pre_sig.contract.requires.push(term);
@@ -544,13 +543,15 @@ fn elaborate_type_invariants<'tcx>(
     }
 
     let ret_ty_span: Option<Span> = try { ctx.tcx.hir().get_fn_output(def_id.as_local()?)?.span() };
-    if let Some(term) = pearlite::type_invariant_term(
-        ctx,
-        def_id,
-        Symbol::intern("result"),
-        ret_ty_span.unwrap_or_else(|| ctx.tcx.def_span(def_id)),
-        pre_sig.output,
-    ) {
+    if !is_open_inv_result(ctx.tcx, def_id)
+        && let Some(term) = pearlite::type_invariant_term(
+            ctx,
+            def_id,
+            Symbol::intern("result"),
+            ret_ty_span.unwrap_or_else(|| ctx.tcx.def_span(def_id)),
+            pre_sig.output,
+        )
+    {
         let term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
         pre_sig.contract.ensures.push(term);
     }
@@ -786,4 +787,31 @@ impl Display for AnonymousParamName {
 pub(crate) fn anonymous_param_symbol(idx: usize) -> Symbol {
     let name = format!("{}", AnonymousParamName(idx)); // Allocate on stack?
     Symbol::intern(&name)
+}
+
+pub(crate) fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, Vec<usize>> {
+    struct VisitFns<'a>(HashMap<DefId, Vec<usize>>, &'a ResolverAstLowering);
+    impl<'a> Visitor<'a> for VisitFns<'a> {
+        fn visit_fn(&mut self, fk: FnKind<'a>, _: Span, node: NodeId) {
+            let decl = match fk {
+                FnKind::Fn(_, _, FnSig { decl, .. }, _, _, _) => decl,
+                FnKind::Closure(_, decl, _) => decl,
+            };
+            let mut open_inv_params = vec![];
+            for (i, p) in decl.inputs.iter().enumerate() {
+                if get_attr(&p.attrs, &["creusot", "open_inv"]).is_some() {
+                    open_inv_params.push(i);
+                }
+            }
+            let defid = self.1.node_id_to_def_id[&node].to_def_id();
+            assert!(self.0.insert(defid, open_inv_params).is_none());
+            walk_fn(self, fk)
+        }
+    }
+
+    let (resolver, cr) = &*tcx.resolver_for_lowering().borrow();
+
+    let mut visit = VisitFns(HashMap::new(), &resolver);
+    visit.visit_crate(&*cr);
+    visit.0
 }

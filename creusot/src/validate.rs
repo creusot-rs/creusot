@@ -8,7 +8,7 @@ use crate::{
         pearlite::{super_visit_term, TermKind, TermVisitor},
         specification::is_overloaded_item,
     },
-    util::{self, is_law},
+    util::{self, is_law, is_open_inv_result},
 };
 
 pub(crate) fn validate_trusted(ctx: &mut TranslationCtx) {
@@ -140,32 +140,57 @@ pub(crate) fn validate_impls(ctx: &mut TranslationCtx) {
 
         let implementors =
             ctx.with_stable_hashing_context(|hcx| implementors.to_sorted(&hcx, true));
-        for (trait_item, impl_item) in implementors {
-            if is_overloaded_item(ctx.tcx, *trait_item) {
+        for (&trait_item, &impl_item) in implementors {
+            if let Some(open_inv_trait) = ctx.params_open_inv(trait_item) {
+                let open_inv_impl = ctx.params_open_inv(impl_item).unwrap();
+                for &i in open_inv_trait {
+                    if !open_inv_impl.contains(&i) {
+                        let name_param = ctx.fn_arg_names(impl_item)[i];
+                        ctx.error(
+                            ctx.def_span(impl_item),
+                            &format!(
+                                "Parameter `{name_param}` has the `#[creusot::open_inv]` attribute in the trait declaration, but not in the implementation."
+                            ),
+                        ).emit();
+                    }
+                }
+            }
+
+            if is_open_inv_result(ctx.tcx, impl_item) && !is_open_inv_result(ctx.tcx, trait_item) {
+                ctx.error(
+                    ctx.def_span(impl_item),
+                    &format!(
+                        "Function `{}` should not have the `#[open_inv_result]` attribute, as specified by the trait declaration",
+                        ctx.item_name(impl_item),
+                    ),
+                ).emit();
+            }
+
+            if is_overloaded_item(ctx.tcx, trait_item) {
                 continue;
             };
 
-            let item_type = util::item_type(ctx.tcx, *impl_item);
-            let trait_type = util::item_type(ctx.tcx, *trait_item);
+            let item_type = util::item_type(ctx.tcx, impl_item);
+            let trait_type = util::item_type(ctx.tcx, trait_item);
             if !item_type.can_implement(trait_type) {
                 ctx.error(
                     ctx.def_span(impl_item),
                     &format!(
                         "Expected `{}` to be a {} as specified by the trait declaration",
-                        ctx.item_name(*impl_item),
+                        ctx.item_name(impl_item),
                         trait_type.to_str()
                     ),
                 )
                 .emit();
             } else {
-                let item_contract = crate::specification::contract_of(ctx, *impl_item);
-                let trait_contract = crate::specification::contract_of(ctx, *trait_item);
+                let item_contract = crate::specification::contract_of(ctx, impl_item);
+                let trait_contract = crate::specification::contract_of(ctx, trait_item);
                 if trait_contract.no_panic && !item_contract.no_panic {
                     ctx.error(
                         ctx.def_span(impl_item),
                         &format!(
                             "Expected `{}` to be `#[pure]` as specified by the trait declaration",
-                            ctx.item_name(*impl_item),
+                            ctx.item_name(impl_item),
                         ),
                     )
                     .emit();
@@ -174,7 +199,7 @@ pub(crate) fn validate_impls(ctx: &mut TranslationCtx) {
                         ctx.def_span(impl_item),
                         &format!(
                             "Expected `{}` to be `#[terminates]` as specified by the trait declaration",
-                            ctx.item_name(*impl_item),
+                            ctx.item_name(impl_item),
                         ),
                     )
                     .emit();
