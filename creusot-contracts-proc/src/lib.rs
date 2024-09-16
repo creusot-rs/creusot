@@ -674,7 +674,6 @@ pub fn open_inv_result(_: TS1, tokens: TS1) -> TS1 {
     })
 }
 
-
 #[proc_macro_attribute]
 pub fn trusted(_: TS1, tokens: TS1) -> TS1 {
     let tokens = TokenStream::from(tokens);
