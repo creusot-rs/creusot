@@ -3,7 +3,7 @@ use crate::{invariant::*, *};
 impl<T, const N: usize> Invariant for [T; N] {
     #[predicate(prophetic)]
     #[open]
-    #[creusot::structural_inv]
+    #[creusot::trusted_ignore_structural_inv]
     fn invariant(self) -> bool {
         pearlite! { inv(self@) }
     }

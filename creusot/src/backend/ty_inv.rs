@@ -32,7 +32,7 @@ impl TyInvKind {
             return TyInvKind::NotStructural;
         }
         if let Some((uinv_did, _)) = resolve_user_inv(ctx.tcx, ty, param_env)
-            && util::is_structural_ty_inv(ctx.tcx, uinv_did)
+            && util::is_ignore_structural_inv(ctx.tcx, uinv_did)
         {
             return TyInvKind::NotStructural;
         }
@@ -94,7 +94,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
     let mut stack = vec![ty];
     while let Some(ty) = stack.pop() {
         let user_inv = resolve_user_inv(tcx, ty, param_env)
-            .map(|(uinv_did, _)| util::is_structural_ty_inv(tcx, uinv_did));
+            .map(|(uinv_did, _)| util::is_ignore_structural_inv(tcx, uinv_did));
 
         // IF there is a user invariant AND it is not structural
         // OR ty is a param or alias AND we default to considering them trivial
@@ -208,19 +208,17 @@ impl<'tcx> InvariantElaborator<'tcx> {
         let subject = Term::var(Symbol::intern("x"), ty);
 
         // eprintln!("searching for {ty:?} in {param_env:?}");
-        let user_inv: Option<Term<'_>> =
-            resolve_user_inv(ctx.tcx, ty, self.param_env).map(|(uinv_did, uinv_subst)| {
+        let user_inv = resolve_user_inv(ctx.tcx, ty, self.param_env)
+            .map(|(uinv_did, uinv_subst)| {
                 Term::call(ctx.tcx, uinv_did, uinv_subst, vec![subject.clone()])
-            });
+            })
+            .unwrap_or(Term::mk_true(ctx.tcx));
 
         // eprintln!("user inv of {kind:?} is {user_inv:?}");
 
         let struct_inv = self.structural_invariant(ctx, subject, kind);
 
-        match user_inv {
-            Some(inv) => inv.conj(struct_inv),
-            _ => struct_inv,
-        }
+        user_inv.conj(struct_inv)
     }
 
     // TODO: Use a param env to determine whether this specific invaraint call should ne trivial
@@ -330,11 +328,9 @@ fn build_inv_axiom<'tcx>(
     lower_pure(ctx, names, &inv_term);
 }
 
-// TODO: Handle missing defid gracefully
 fn user_inv_item<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> (DefId, GenericArgsRef<'tcx>) {
-    let trait_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap();
-
-    (trait_did, tcx.mk_args(&[GenericArg::from(ty)]))
+    let trait_item_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap();
+    (trait_item_did, tcx.mk_args(&[GenericArg::from(ty)]))
 }
 
 fn resolve_user_inv<'tcx>(

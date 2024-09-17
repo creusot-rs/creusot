@@ -12,7 +12,7 @@ pub trait Invariant {
 impl Invariant for ! {
     #[predicate(prophetic)]
     #[open]
-    #[creusot::structural_inv]
+    #[creusot::trusted_ignore_structural_inv]
     fn invariant(self) -> bool {
         false
     }
@@ -21,7 +21,7 @@ impl Invariant for ! {
 impl<T: ?Sized> Invariant for &T {
     #[predicate(prophetic)]
     #[open]
-    #[creusot::structural_inv]
+    #[creusot::trusted_ignore_structural_inv]
     fn invariant(self) -> bool {
         inv(*self)
     }
@@ -30,7 +30,7 @@ impl<T: ?Sized> Invariant for &T {
 impl<T: ?Sized> Invariant for &mut T {
     #[predicate(prophetic)]
     #[open]
-    #[creusot::structural_inv]
+    #[creusot::trusted_ignore_structural_inv]
     fn invariant(self) -> bool {
         pearlite! { inv(*self) && inv(^self) }
     }
@@ -39,6 +39,6 @@ impl<T: ?Sized> Invariant for &mut T {
 #[predicate(prophetic)]
 #[open(self)]
 #[rustc_diagnostic_item = "creusot_invariant_internal"]
-pub fn inv<T: ?Sized>(_x: T) -> bool {
+pub fn inv<T: ?Sized>(_: T) -> bool {
     true
 }
