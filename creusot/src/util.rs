@@ -570,12 +570,8 @@ pub(crate) fn get_attr<'a>(attrs: &'a [Attribute], path: &[&str]) -> Option<&'a 
             continue;
         }
 
-        let matches = attr
-            .path
-            .segments
-            .iter()
-            .zip(path.iter())
-            .fold(true, |acc, (seg, s)| acc && &*seg.ident.as_str() == *s);
+        let matches =
+            attr.path.segments.iter().zip(path.iter()).all(|(seg, s)| &*seg.ident.as_str() == *s);
 
         if matches {
             return Some(attr);
@@ -598,12 +594,8 @@ pub(crate) fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a At
             continue;
         }
 
-        let matches = item
-            .path
-            .segments
-            .iter()
-            .zip(path.iter())
-            .fold(true, |acc, (seg, s)| acc && &*seg.ident.as_str() == *s);
+        let matches =
+            item.path.segments.iter().zip(path.iter()).all(|(seg, s)| &*seg.ident.as_str() == *s);
 
         if matches {
             matched.push(attr)
