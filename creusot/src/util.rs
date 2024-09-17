@@ -1,5 +1,4 @@
 use crate::{
-    backend::ty_inv::TyInvKind,
     ctx::*,
     translation::{
         pearlite::{self, super_visit_mut_term, Term, TermKind, TermVisitorMut},
@@ -237,15 +236,6 @@ pub(crate) fn ident_of(sym: Symbol) -> Ident {
     } else {
         id += &"'";
         Ident::build(&id)
-    }
-}
-
-pub(crate) fn inv_module_name(tcx: TyCtxt, kind: TyInvKind) -> Ident {
-    match kind {
-        TyInvKind::NotStructural => "TyInv_NotStructural".into(),
-        TyInvKind::Trivial => "TyInv_Trivial".into(),
-        TyInvKind::Adt(adt_did) => format!("{}_Inv", ident_path(tcx, adt_did)).into(),
-        TyInvKind::Tuple(arity) => format!("TyInv_Tuple{arity}").into(),
     }
 }
 

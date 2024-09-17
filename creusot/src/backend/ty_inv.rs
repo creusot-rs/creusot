@@ -5,13 +5,14 @@ use crate::{
         pearlite::{Pattern, Term, TermKind},
         traits,
     },
-    util,
+    util::{self, ident_path},
 };
 use indexmap::IndexSet;
 use rustc_hir::def_id::DefId;
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
+use why3::Ident;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, TypeVisitable, TypeFoldable)]
 pub(crate) enum TyInvKind {
@@ -275,6 +276,15 @@ impl<'tcx> InvariantElaborator<'tcx> {
             ty: ctx.types.bool,
             span: DUMMY_SP,
         }
+    }
+}
+
+pub(crate) fn inv_module_name(tcx: TyCtxt, kind: TyInvKind) -> Ident {
+    match kind {
+        TyInvKind::NotStructural => "TyInv_NotStructural".into(),
+        TyInvKind::Trivial => "TyInv_Trivial".into(),
+        TyInvKind::Adt(adt_did) => format!("{}_Inv", ident_path(tcx, adt_did)).into(),
+        TyInvKind::Tuple(arity) => format!("TyInv_Tuple{arity}").into(),
     }
 }
 
