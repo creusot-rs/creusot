@@ -1,5 +1,4 @@
 use crate::{
-    backend::ty_inv::TyInvKind,
     ctx::*,
     translation::{
         pearlite::{self, super_visit_mut_term, Term, TermKind, TermVisitorMut},
@@ -125,8 +124,9 @@ pub(crate) fn is_extern_spec(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "extern_spec"]).is_some()
 }
 
-pub(crate) fn is_structural_ty_inv(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "structural_inv"]).is_some()
+pub(crate) fn is_ignore_structural_inv(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "trusted_ignore_structural_inv"])
+        .is_some()
 }
 
 pub(crate) fn has_variant_clause(tcx: TyCtxt, def_id: DefId) -> bool {
@@ -236,15 +236,6 @@ pub(crate) fn ident_of(sym: Symbol) -> Ident {
     } else {
         id += &"'";
         Ident::build(&id)
-    }
-}
-
-pub(crate) fn inv_module_name(tcx: TyCtxt, kind: TyInvKind) -> Ident {
-    match kind {
-        TyInvKind::NotStructural => "TyInv_NotStructural".into(),
-        TyInvKind::Trivial => "TyInv_Trivial".into(),
-        TyInvKind::Adt(adt_did) => format!("{}_Inv", ident_path(tcx, adt_did)).into(),
-        TyInvKind::Tuple(arity) => format!("TyInv_Tuple{arity}").into(),
     }
 }
 
@@ -569,12 +560,8 @@ pub(crate) fn get_attr<'a>(attrs: &'a [Attribute], path: &[&str]) -> Option<&'a 
             continue;
         }
 
-        let matches = attr
-            .path
-            .segments
-            .iter()
-            .zip(path.iter())
-            .fold(true, |acc, (seg, s)| acc && &*seg.ident.as_str() == *s);
+        let matches =
+            attr.path.segments.iter().zip(path.iter()).all(|(seg, s)| &*seg.ident.as_str() == *s);
 
         if matches {
             return Some(attr);
@@ -597,12 +584,8 @@ pub(crate) fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a At
             continue;
         }
 
-        let matches = item
-            .path
-            .segments
-            .iter()
-            .zip(path.iter())
-            .fold(true, |acc, (seg, s)| acc && &*seg.ident.as_str() == *s);
+        let matches =
+            item.path.segments.iter().zip(path.iter()).all(|(seg, s)| &*seg.ident.as_str() == *s);
 
         if matches {
             matched.push(attr)

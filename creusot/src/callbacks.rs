@@ -73,7 +73,6 @@ impl Callbacks for ToWhy {
     }
 
     fn after_expansion<'tcx>(&mut self, c: &Compiler, queries: &'tcx Queries<'tcx>) -> Compilation {
-        queries.global_ctxt().unwrap();
         let _ = queries.global_ctxt().unwrap().enter(|tcx| {
             let mut ctx = ctx::TranslationCtx::new(tcx, self.opts.clone());
             let _ = crate::translation::before_analysis(&mut ctx);
@@ -91,7 +90,7 @@ impl Callbacks for ToWhy {
     }
 }
 
-/// Trys to retrieve the promoted MIR for a body from a thread local cache.
+/// Try to retrieve the promoted MIR for a body from a thread local cache.
 /// The cache is populated when rustc runs the `mir_borrowck` query.
 /// After a body was retrieved, calling this function again for the same `def_id` will return `None`.
 pub fn get_body<'tcx>(

@@ -9,10 +9,13 @@ use rustc_type_ir::{fold::TypeFoldable, visit::TypeVisitable, AliasTyKind, Inter
 use crate::{
     ctx::TranslationCtx,
     translation::traits,
-    util::{self, inv_module_name, item_symb, ItemType},
+    util::{self, item_symb, ItemType},
 };
 
-use super::{ty_inv::TyInvKind, PreludeModule, TransId};
+use super::{
+    ty_inv::{inv_module_name, TyInvKind},
+    PreludeModule, TransId,
+};
 
 /// Dependencies between items and the resolution logic to find the 'monomorphic' forms accounting
 /// for various Creusot hacks like the handling of closures.

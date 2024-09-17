@@ -14,7 +14,9 @@ use crate::{
     error::InternalError,
     metadata,
     options::OutputFile,
-    validate::{validate_impls, validate_opacity, validate_traits, validate_trusted},
+    validate::{
+        validate_impls, validate_opacity, validate_purity, validate_traits, validate_trusted,
+    },
 };
 use ctx::TranslationCtx;
 use heck::ToUpperCamelCase;
@@ -34,7 +36,7 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
     load_extern_specs(ctx).map_err(|_| Box::new(InternalError("Failed to load extern specs")))?;
 
     for def_id in ctx.tcx.hir().body_owners() {
-        ctx.check_purity(def_id);
+        validate_purity(ctx, def_id);
 
         let def_id = def_id.to_def_id();
         if crate::util::is_spec(ctx.tcx, def_id)

@@ -5,13 +5,14 @@ use crate::{
         pearlite::{Pattern, Term, TermKind},
         traits,
     },
-    util,
+    util::{self, ident_path},
 };
 use indexmap::IndexSet;
 use rustc_hir::def_id::DefId;
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
+use why3::Ident;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, TypeVisitable, TypeFoldable)]
 pub(crate) enum TyInvKind {
@@ -32,7 +33,7 @@ impl TyInvKind {
             return TyInvKind::NotStructural;
         }
         if let Some((uinv_did, _)) = resolve_user_inv(ctx.tcx, ty, param_env)
-            && util::is_structural_ty_inv(ctx.tcx, uinv_did)
+            && util::is_ignore_structural_inv(ctx.tcx, uinv_did)
         {
             return TyInvKind::NotStructural;
         }
@@ -94,7 +95,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
     let mut stack = vec![ty];
     while let Some(ty) = stack.pop() {
         let user_inv = resolve_user_inv(tcx, ty, param_env)
-            .map(|(uinv_did, _)| util::is_structural_ty_inv(tcx, uinv_did));
+            .map(|(uinv_did, _)| util::is_ignore_structural_inv(tcx, uinv_did));
 
         // IF there is a user invariant AND it is not structural
         // OR ty is a param or alias AND we default to considering them trivial
@@ -164,9 +165,7 @@ impl<'tcx> InvariantElaborator<'tcx> {
         match inv_kind {
             TyInvKind::Trivial => Term::mk_true(ctx.tcx),
             TyInvKind::NotStructural => Term::mk_true(ctx.tcx),
-            TyInvKind::Adt(_) => {
-                self.build_inv_term_adt(ctx, term).unwrap_or_else(|| Term::mk_true(ctx.tcx))
-            }
+            TyInvKind::Adt(_) => self.build_inv_term_adt(ctx, term),
             TyInvKind::Tuple(l) => {
                 let TyKind::Tuple(tys) = term.ty.kind() else { unreachable!() };
 
@@ -207,23 +206,20 @@ impl<'tcx> InvariantElaborator<'tcx> {
 
         let subject = Term::var(Symbol::intern("x"), ty);
 
-        // eprintln!("searching for {ty:?} in {param_env:?}");
-        let user_inv: Option<Term<'_>> =
-            resolve_user_inv(ctx.tcx, ty, self.param_env).map(|(uinv_did, uinv_subst)| {
+        //eprintln!("searching for {ty:?} in {:?}", self.param_env);
+        let user_inv = resolve_user_inv(ctx.tcx, ty, self.param_env)
+            .map(|(uinv_did, uinv_subst)| {
                 Term::call(ctx.tcx, uinv_did, uinv_subst, vec![subject.clone()])
-            });
-
+            })
+            .unwrap_or(Term::mk_true(ctx.tcx));
         // eprintln!("user inv of {kind:?} is {user_inv:?}");
 
         let struct_inv = self.structural_invariant(ctx, subject, kind);
 
-        match user_inv {
-            Some(inv) => inv.conj(struct_inv),
-            _ => struct_inv,
-        }
+        user_inv.conj(struct_inv)
     }
 
-    // TODO: Use a param env to determine whether this specific invaraint call should ne trivial
+    // TODO: Use a param env to determine whether this specific invariant call should be trivial
     // TODO: Cache the result of invariant trivial checks
     pub(crate) fn mk_inv_call(
         &self,
@@ -240,20 +236,12 @@ impl<'tcx> InvariantElaborator<'tcx> {
         call_term
     }
 
-    fn build_inv_term_adt(
-        &self,
-        ctx: &mut Why3Generator<'tcx>,
-        term: Term<'tcx>,
-    ) -> Option<Term<'tcx>> {
+    fn build_inv_term_adt(&self, ctx: &mut Why3Generator<'tcx>, term: Term<'tcx>) -> Term<'tcx> {
         let TyKind::Adt(adt_def, subst) = term.ty.kind() else {
             unreachable!("asked to build ADT invariant for non-ADT type {:?}", term.ty)
         };
 
         use crate::pearlite::*;
-        // trusted types are opaque and thus have no structual invariant
-        if util::is_trusted(ctx.tcx, adt_def.did()) {
-            return None;
-        }
 
         let mut arms: Vec<(_, Term<'tcx>)> = vec![];
 
@@ -282,16 +270,21 @@ impl<'tcx> InvariantElaborator<'tcx> {
                 exp,
             ));
         }
-        let exp = {
-            let self_ = term;
-            Term {
-                kind: TermKind::Match { scrutinee: Box::new(self_), arms },
-                ty: ctx.types.bool,
-                span: DUMMY_SP,
-            }
-        };
 
-        Some(exp)
+        Term {
+            kind: TermKind::Match { scrutinee: Box::new(term), arms },
+            ty: ctx.types.bool,
+            span: DUMMY_SP,
+        }
+    }
+}
+
+pub(crate) fn inv_module_name(tcx: TyCtxt, kind: TyInvKind) -> Ident {
+    match kind {
+        TyInvKind::NotStructural => "TyInv_NotStructural".into(),
+        TyInvKind::Trivial => "TyInv_Trivial".into(),
+        TyInvKind::Adt(adt_did) => format!("{}_Inv", ident_path(tcx, adt_did)).into(),
+        TyInvKind::Tuple(arity) => format!("TyInv_Tuple{arity}").into(),
     }
 }
 
@@ -330,11 +323,9 @@ fn build_inv_axiom<'tcx>(
     lower_pure(ctx, names, &inv_term);
 }
 
-// TODO: Handle missing defid gracefully
 fn user_inv_item<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> (DefId, GenericArgsRef<'tcx>) {
-    let trait_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap();
-
-    (trait_did, tcx.mk_args(&[GenericArg::from(ty)]))
+    let trait_item_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap();
+    (trait_item_did, tcx.mk_args(&[GenericArg::from(ty)]))
 }
 
 fn resolve_user_inv<'tcx>(

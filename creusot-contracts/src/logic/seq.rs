@@ -192,7 +192,7 @@ impl<T> IndexLogic<Int> for Seq<T> {
 impl<T: ?Sized> Invariant for Seq<T> {
     #[predicate(prophetic)]
     #[open]
-    #[creusot::structural_inv]
+    #[creusot::trusted_ignore_structural_inv]
     fn invariant(self) -> bool {
         pearlite! { forall<i:Int> 0 <= i && i < self.len() ==> inv(self.index_logic_unsized(i)) }
     }

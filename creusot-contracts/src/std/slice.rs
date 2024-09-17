@@ -8,6 +8,15 @@ use crate::{
 };
 pub use ::std::slice::*;
 
+impl<T> Invariant for [T] {
+    #[predicate(prophetic)]
+    #[open]
+    #[creusot::trusted_ignore_structural_inv]
+    fn invariant(self) -> bool {
+        pearlite! { inv(self@) }
+    }
+}
+
 impl<T> ShallowModel for [T] {
     type ShallowModelTy = Seq<T>;
 
@@ -44,7 +53,6 @@ fn slice_model<T>(_: &[T]) -> Seq<T> {
 
 #[logic]
 #[open]
-#[rustc_diagnostic_item = "slice_len_logic"]
 pub fn slice_len<T>(x: [T]) -> Int {
     pearlite! { x@.len() }
 }
@@ -461,13 +469,4 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
-}
-
-impl<T> Invariant for [T] {
-    #[predicate(prophetic)]
-    #[open]
-    #[creusot::structural_inv]
-    fn invariant(self) -> bool {
-        pearlite! { inv(self@) }
-    }
 }

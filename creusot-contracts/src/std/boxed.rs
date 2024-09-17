@@ -22,7 +22,7 @@ impl<T: ShallowModel + ?Sized, A: Allocator> ShallowModel for Box<T, A> {
 impl<T: ?Sized, A: Allocator> Invariant for Box<T, A> {
     #[predicate(prophetic)]
     #[open]
-    #[creusot::structural_inv]
+    #[creusot::trusted_ignore_structural_inv]
     fn invariant(self) -> bool {
         inv(*self)
     }
