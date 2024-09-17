@@ -505,6 +505,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                             unreachable!()
                         };
                         let binder = (binder, arg_tuple_ty);
+
                         Ok(body.quant(kind, binder, trigger).span(span))
                     }
                     Some(Fin) => {
@@ -1409,6 +1410,7 @@ impl<'tcx> Term<'tcx> {
             },
         }
     }
+
     pub(crate) fn span(mut self, sp: Span) -> Self {
         self.span = sp;
         self
