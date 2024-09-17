@@ -5,7 +5,7 @@ use crate::{
     backend::{ty::ty_binding_group, ty_inv},
     callbacks,
     creusot_items::{self, CreusotItems},
-    error::{CreusotResult, Error, InternalError},
+    error::CreusotResult,
     metadata::{BinaryMetadata, Metadata},
     options::Options,
     translation::{
@@ -14,7 +14,7 @@ use crate::{
         fmir,
         function::ClosureContract,
         pearlite::{self, Term},
-        specification::{ContractClauses, Purity, PurityVisitor},
+        specification::ContractClauses,
         traits::TraitImpl,
     },
     util::{self, gather_params_open_inv, pre_sig_of, PreSignature},
@@ -29,7 +29,6 @@ use rustc_hir::{
 use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
     mir::{Body, Promoted, TerminatorKind},
-    thir,
     ty::{
         Clause, GenericArg, GenericArgs, GenericArgsRef, ParamEnv, Predicate, Ty, TyCtxt,
         Visibility,
@@ -392,29 +391,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         } else {
             self.tcx.param_env(def_id)
         }
-    }
-
-    pub(crate) fn check_purity(&mut self, def_id: LocalDefId) {
-        let (thir, expr) = self.tcx.thir_body(def_id).unwrap_or_else(|_| {
-            Error::from(InternalError("Cannot fetch THIR body")).emit(self.tcx)
-        });
-        let thir = thir.borrow();
-        if thir.exprs.is_empty() {
-            Error::new(self.tcx.def_span(def_id), "type checking failed").emit(self.tcx);
-        }
-
-        let def_id = def_id.to_def_id();
-        let purity = Purity::of_def_id(self, def_id);
-        if matches!(purity, Purity::Program { .. })
-            && crate::util::is_no_translate(self.tcx, def_id)
-        {
-            return;
-        }
-
-        thir::visit::walk_expr(
-            &mut PurityVisitor { ctx: self, thir: &thir, context: purity },
-            &thir[expr],
-        );
     }
 }
 
