@@ -164,9 +164,7 @@ impl<'tcx> InvariantElaborator<'tcx> {
         match inv_kind {
             TyInvKind::Trivial => Term::mk_true(ctx.tcx),
             TyInvKind::NotStructural => Term::mk_true(ctx.tcx),
-            TyInvKind::Adt(_) => {
-                self.build_inv_term_adt(ctx, term).unwrap_or_else(|| Term::mk_true(ctx.tcx))
-            }
+            TyInvKind::Adt(_) => self.build_inv_term_adt(ctx, term),
             TyInvKind::Tuple(l) => {
                 let TyKind::Tuple(tys) = term.ty.kind() else { unreachable!() };
 
@@ -207,13 +205,12 @@ impl<'tcx> InvariantElaborator<'tcx> {
 
         let subject = Term::var(Symbol::intern("x"), ty);
 
-        // eprintln!("searching for {ty:?} in {param_env:?}");
+        //eprintln!("searching for {ty:?} in {:?}", self.param_env);
         let user_inv = resolve_user_inv(ctx.tcx, ty, self.param_env)
             .map(|(uinv_did, uinv_subst)| {
                 Term::call(ctx.tcx, uinv_did, uinv_subst, vec![subject.clone()])
             })
             .unwrap_or(Term::mk_true(ctx.tcx));
-
         // eprintln!("user inv of {kind:?} is {user_inv:?}");
 
         let struct_inv = self.structural_invariant(ctx, subject, kind);
@@ -221,7 +218,7 @@ impl<'tcx> InvariantElaborator<'tcx> {
         user_inv.conj(struct_inv)
     }
 
-    // TODO: Use a param env to determine whether this specific invaraint call should ne trivial
+    // TODO: Use a param env to determine whether this specific invariant call should be trivial
     // TODO: Cache the result of invariant trivial checks
     pub(crate) fn mk_inv_call(
         &self,
@@ -238,20 +235,12 @@ impl<'tcx> InvariantElaborator<'tcx> {
         call_term
     }
 
-    fn build_inv_term_adt(
-        &self,
-        ctx: &mut Why3Generator<'tcx>,
-        term: Term<'tcx>,
-    ) -> Option<Term<'tcx>> {
+    fn build_inv_term_adt(&self, ctx: &mut Why3Generator<'tcx>, term: Term<'tcx>) -> Term<'tcx> {
         let TyKind::Adt(adt_def, subst) = term.ty.kind() else {
             unreachable!("asked to build ADT invariant for non-ADT type {:?}", term.ty)
         };
 
         use crate::pearlite::*;
-        // trusted types are opaque and thus have no structual invariant
-        if util::is_trusted(ctx.tcx, adt_def.did()) {
-            return None;
-        }
 
         let mut arms: Vec<(_, Term<'tcx>)> = vec![];
 
@@ -280,16 +269,12 @@ impl<'tcx> InvariantElaborator<'tcx> {
                 exp,
             ));
         }
-        let exp = {
-            let self_ = term;
-            Term {
-                kind: TermKind::Match { scrutinee: Box::new(self_), arms },
-                ty: ctx.types.bool,
-                span: DUMMY_SP,
-            }
-        };
 
-        Some(exp)
+        Term {
+            kind: TermKind::Match { scrutinee: Box::new(term), arms },
+            ty: ctx.types.bool,
+            span: DUMMY_SP,
+        }
     }
 }
 
