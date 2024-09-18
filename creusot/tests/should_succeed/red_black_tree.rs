@@ -178,6 +178,49 @@ impl<K: DeepModel, V> ShallowModel for Tree<K, V> {
     }
 }
 
+impl<K: DeepModel, V> Resolve for Tree<K, V> {
+    #[open(self)]
+    #[predicate(prophetic)]
+    fn resolve(self) -> bool {
+        pearlite! {
+            forall<k: K, v: V> self.has_mapping(k.deep_model(), v) ==> resolve(&v)
+        }
+    }
+
+    #[open(self)]
+    #[logic(prophetic)]
+    #[requires(structural_resolve(&self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self)
+    where
+        Self: Sized,
+    {
+    }
+}
+
+impl<K: DeepModel, V> Resolve for Node<K, V> {
+    #[open(self)]
+    #[predicate(prophetic)]
+    fn resolve(self) -> bool {
+        pearlite! {
+            forall<k: K, v: V> self.has_mapping(k.deep_model(), v) ==> resolve(&v)
+        }
+    }
+
+    #[open(self)]
+    #[logic(prophetic)]
+    #[requires(structural_resolve(&self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self)
+    where
+        Self: Sized,
+    {
+        let Node { left, right, key, val, .. } = self;
+
+        proof_assert!(forall<k : K, v: _> self.has_mapping(k.deep_model(), v) ==> k.deep_model() == key.deep_model() && v == val || left.has_mapping(k.deep_model(), v) || right.has_mapping(k.deep_model(), v));
+    }
+}
+
 /*******************************  The BST invariant ***************************/
 
 impl<K: DeepModel, V> Node<K, V>
@@ -233,7 +276,7 @@ fn cpn(c: Color, l: CP, r: CP) -> CP {
 
 impl CP {
     #[predicate]
-    fn match_t<K, V>(self, tree: Tree<K, V>) -> bool {
+    fn match_t<K: DeepModel, V>(self, tree: Tree<K, V>) -> bool {
         pearlite! {
             match self {
                 CPL(color) => tree.color() == color && tree.color_invariant(),
@@ -245,7 +288,7 @@ impl CP {
     }
 
     #[predicate]
-    fn match_n<K, V>(self, node: Node<K, V>) -> bool {
+    fn match_n<K: DeepModel, V>(self, node: Node<K, V>) -> bool {
         pearlite! {
             match self {
                 CPL(color) => node.color == color && node.color_invariant(),
@@ -255,7 +298,7 @@ impl CP {
     }
 }
 
-impl<K, V> Tree<K, V> {
+impl<K: DeepModel, V> Tree<K, V> {
     #[logic]
     fn color(self) -> Color {
         pearlite! {
@@ -280,7 +323,7 @@ impl<K, V> Tree<K, V> {
     }
 }
 
-impl<K, V> Node<K, V> {
+impl<K: DeepModel, V> Node<K, V> {
     #[predicate]
     fn color_invariant_here(self) -> bool {
         pearlite! { self.right.color() == Black && (self.color == Black || self.left.color() == Black) }
@@ -294,7 +337,7 @@ impl<K, V> Node<K, V> {
 
 /*****************************  The height invariant  *************************/
 
-impl<K, V> Tree<K, V> {
+impl<K: DeepModel, V> Tree<K, V> {
     #[logic]
     #[ensures(result >= 0)]
     fn height(self) -> Int {
@@ -325,7 +368,7 @@ impl<K, V> Tree<K, V> {
     }
 }
 
-impl<K, V> Node<K, V> {
+impl<K: DeepModel, V> Node<K, V> {
     #[logic]
     #[ensures(forall<node: Box<Node<K, V>>>
               self == *node ==> result == Tree{ node: Some(node) }.height())]

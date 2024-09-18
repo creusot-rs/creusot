@@ -131,6 +131,13 @@ pub(crate) trait Namer<'tcx> {
         self.value(def_id, subst)
     }
 
+    fn structural_resolve(&mut self, ty: Ty<'tcx>) -> QName {
+        let def_id =
+            self.tcx().get_diagnostic_item(Symbol::intern("creusot_structural_resolve")).unwrap();
+        let subst = self.tcx().mk_args(&[ty::GenericArg::from(ty)]);
+        self.value(def_id, subst)
+    }
+
     /// Creates a name for a type or closure projection ie: x.field1
     /// This also includes projections from `enum` types
     ///
@@ -236,7 +243,7 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
     }
 
     fn insert(&mut self, key: Dependency<'tcx>) -> Kind {
-        let key = key.erase_regions(self.tcx).closure_hack(self.tcx);
+        let key = key.erase_regions(self.tcx).identify_overloads(self.tcx);
         self.levels
             .entry(key)
             .and_modify(|l| {
@@ -575,7 +582,7 @@ impl<'tcx> Dependencies<'tcx> {
     fn param_env(&self, ctx: &TranslationCtx<'tcx>) -> ParamEnv<'tcx> {
         match self.self_id {
             TransId::Item(did) => ctx.param_env(did),
-            TransId::TyInv(ty) => ty
+            TransId::StructuralResolve(ty) | TransId::TyInv(ty) => ty
                 .ty_adt_def()
                 .map(|adt_def| ctx.param_env(adt_def.did()))
                 .unwrap_or_else(|| ParamEnv::empty()),

@@ -4,6 +4,7 @@ use crate::{
     backend::{
         is_trusted_function,
         program::{int_to_prelude, uint_to_prelude},
+        structural_resolve::{self},
         ty_inv::tyinv_head_and_subst,
     },
     translation::traits,
@@ -137,6 +138,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
                 self.expand_laws(ctx, did, subst, depth);
             }
+            self.expand_struct_resolve_deps(ctx, key);
 
             self.expand_node(ctx, key);
             self.expand_projections(ctx, key);
@@ -223,6 +225,16 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
             self.clone_graph.add_graph_edge(key, dep, info.level);
         }
+    }
+
+    fn expand_struct_resolve_deps(&mut self, ctx: &mut Why3Generator<'tcx>, key: Dependency<'tcx>) {
+        let Dependency::StructuralResolve(ty) = key else { return };
+
+        if self.self_key != key {
+            ctx.translate_structural_resolve(structural_resolve::head_and_subst(ctx.tcx, ty).0);
+        }
+
+        self.add_node(Dependency::StructuralResolve(ty), CloneLevel::Body);
     }
 
     fn expand_ty_inv(&mut self, ctx: &mut Why3Generator<'tcx>, ty: Ty<'tcx>) {

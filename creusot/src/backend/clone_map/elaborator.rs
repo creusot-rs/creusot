@@ -5,7 +5,9 @@ use crate::{
         logic::{lower_logical_defn, lower_pure_defn, sigs, spec_axiom},
         program,
         signature::named_sig_to_why3,
+        structural_resolve::structural_resolve,
         term::lower_pure,
+        ty::translate_ty,
         ty_inv::InvariantElaborator,
         TransId, Why3Generator,
     },
@@ -15,13 +17,14 @@ use crate::{
         pearlite::{normalize, Term},
         specification::PreContract,
     },
-    util::{self, get_builtin, PreSignature},
+    util::{self, get_builtin, ident_of, PreSignature},
 };
 use indexmap::IndexSet;
 use rustc_middle::ty::{self, Const, EarlyBinder, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable};
-use rustc_span::{Span, Symbol};
+use rustc_span::{Span, Symbol, DUMMY_SP};
 use why3::{
-    declaration::{Attribute, Axiom, Constant, Decl, LetKind, Signature, Use, ValDecl},
+    declaration::{Attribute, Axiom, Constant, Contract, Decl, LetKind, Signature, Use, ValDecl},
+    exp::Binder,
     QName,
 };
 
@@ -64,6 +67,31 @@ impl<'tcx> SymbolElaborator<'tcx> {
             }
             Dependency::Item(_, _) | Dependency::Hacked(_, _, _) => {
                 self.elaborate_item(ctx, names, param_env, level_of_item, item)
+            }
+            Dependency::StructuralResolve(ty) => {
+                let (binder, term) = structural_resolve(ctx, ty);
+
+                let exp = if let Some(mut term) = term {
+                    normalize(ctx.tcx, param_env, &mut term);
+                    Some(lower_pure(ctx, names, &term))
+                } else {
+                    None
+                };
+
+                let binder =
+                    Binder::typed(ident_of(binder.0), translate_ty(ctx, names, DUMMY_SP, binder.1));
+                let sig = Signature {
+                    name: names.structural_resolve(ty).name,
+                    trigger: None,
+                    attrs: vec![],
+                    retty: None,
+                    args: vec![binder],
+                    contract: Contract::default(),
+                };
+
+                let pred = Decl::predicate(sig, exp);
+
+                vec![pred]
             }
         }
     }
@@ -317,6 +345,7 @@ fn sig<'tcx>(
             ExtendedId::Resolve => ctx.closure_contract(id).resolve.0.clone(),
             ExtendedId::Accessor(ix) => ctx.closure_contract(id).accessors[ix as usize].0.clone(),
         },
+        TransId::StructuralResolve(_) => unreachable!(),
     }
 }
 
@@ -331,7 +360,7 @@ struct ImmutDeps<'a, 'tcx> {
 
 impl<'a, 'tcx> ImmutDeps<'a, 'tcx> {
     fn get(&self, ix: Dependency<'tcx>) -> &Kind {
-        let n = ix.closure_hack(self.tcx);
+        let n = ix.identify_overloads(self.tcx);
         let n = self.tcx.try_normalize_erasing_regions(self.param_env, n).unwrap_or(n);
         self.names.names.get(&n).unwrap_or_else(|| {
             panic!("Could not find {ix:?} -> {n:?}");

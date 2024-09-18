@@ -1,4 +1,4 @@
-use crate::{invariant::*, std::iter::Skip, *};
+use crate::{invariant::*, resolve::structural_resolve, std::iter::Skip, *};
 
 pub trait SkipExt<I> {
     #[logic]
@@ -26,7 +26,6 @@ impl<I> SkipExt<I> for Skip<I> {
     }
 }
 
-#[trusted]
 impl<I> Resolve for Skip<I> {
     #[open]
     #[predicate(prophetic)]
@@ -34,6 +33,17 @@ impl<I> Resolve for Skip<I> {
         pearlite! {
             resolve(&self.iter())
         }
+    }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(&self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self)
+    where
+        Self: Sized,
+    {
     }
 }
 

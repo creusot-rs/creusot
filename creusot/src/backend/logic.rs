@@ -145,7 +145,7 @@ fn body_decls<'tcx, N: Namer<'tcx>>(
     let mut decls: Vec<_> = Vec::new();
 
     // let (mut sig, val_sig) = sigs(ctx, sig);
-    if is_trusted_function(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
+    if !util::has_body(ctx, def_id) {
         let mut sig = signature_of(ctx, names, def_id);
         sig.contract.variant = Vec::new();
 

@@ -1,4 +1,4 @@
-use crate::{invariant::*, *};
+use crate::{invariant::*, resolve::structural_resolve, *};
 
 pub struct MapInv<I, B, F> {
     pub iter: I,
@@ -55,12 +55,22 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator
     }
 }
 
-#[trusted]
 impl<I, B, F> Resolve for MapInv<I, B, F> {
     #[open]
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
         resolve(&self.iter) && resolve(&self.func)
+    }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(&self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self)
+    where
+        Self: Sized,
+    {
     }
 }
 

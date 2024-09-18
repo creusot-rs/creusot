@@ -2,13 +2,13 @@
 extern crate creusot_contracts;
 
 use creusot_contracts::*;
+use resolve::structural_resolve;
 
 pub enum OwnResult<T, E> {
     Ok(T),
     Err(E),
 }
 
-#[trusted]
 impl<T, E> Resolve for OwnResult<T, E> {
     #[open]
     #[predicate(prophetic)]
@@ -18,6 +18,23 @@ impl<T, E> Resolve for OwnResult<T, E> {
             OwnResult::Err(e) => resolve(&e),
         }
     }
+
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(&self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self)
+    where
+        Self: Sized,
+    {
+    }
+}
+
+#[open]
+#[logic(prophetic)]
+#[ensures(true)]
+pub fn omg<T>(x: T) {
+    proof_assert!(structural_resolve(&(x, 2)));
 }
 
 impl<T, E> OwnResult<T, E> {
