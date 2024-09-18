@@ -12,10 +12,7 @@ use crate::{
     util::{self, item_symb, ItemType},
 };
 
-use super::{
-    ty_inv::{inv_module_name, TyInvKind},
-    PreludeModule, TransId,
-};
+use super::{ty_inv::TyInvKind, PreludeModule, TransId};
 
 /// Dependencies between items and the resolution logic to find the 'monomorphic' forms accounting
 /// for various Creusot hacks like the handling of closures.
@@ -206,7 +203,6 @@ impl<'tcx> Dependency<'tcx> {
                 };
                 Symbol::intern(&base.as_str().to_snake_case())
             }
-            Dependency::TyInv(_, inv_kind) => Symbol::intern(&*inv_module_name(tcx, inv_kind)),
             Dependency::Hacked(hacked_id, _, _) => match hacked_id {
                 ExtendedId::PostconditionOnce => Symbol::intern("postcondition_once"),
                 ExtendedId::PostconditionMut => Symbol::intern("postcondition_mut"),
@@ -216,6 +212,7 @@ impl<'tcx> Dependency<'tcx> {
                 ExtendedId::Resolve => Symbol::intern("resolve"),
                 ExtendedId::Accessor(ix) => Symbol::intern(&format!("field_{ix}")),
             },
+            Dependency::TyInv(..) => Symbol::intern("tyinv_should_not_appear"),
             Dependency::Builtin(_) => Symbol::intern("builtin_should_not_appear"),
         }
     }
