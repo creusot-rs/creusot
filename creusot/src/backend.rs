@@ -264,7 +264,6 @@ impl<'tcx> Why3Generator<'tcx> {
 
         let deps = ty_inv::build_inv_module(self, inv_kind);
         self.dependencies.insert(tid, deps);
-        self.functions.insert(tid, TranslatedItem::TyInv {});
     }
 
     // pub(crate) fn item(&self, def_id: DefId) -> Option<&TranslatedItem> {
