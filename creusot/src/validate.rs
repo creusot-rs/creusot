@@ -260,12 +260,14 @@ impl Purity {
 
     fn can_call(self, other: Purity) -> bool {
         match (self, other) {
-            (Purity::Logic { prophetic: true }, Purity::Logic { prophetic: false }) => true,
+            (Purity::Logic { prophetic }, Purity::Logic { prophetic: prophetic2 }) => {
+                prophetic || !prophetic2
+            }
             (
                 Purity::Program { no_panic, terminates },
                 Purity::Program { no_panic: no_panic2, terminates: terminates2 },
             ) => no_panic <= no_panic2 && terminates <= terminates2,
-            (ctx, call) => ctx == call,
+            (_, _) => false,
         }
     }
 
