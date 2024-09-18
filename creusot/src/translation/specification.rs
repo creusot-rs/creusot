@@ -7,7 +7,7 @@ use rustc_ast::{
 use rustc_hir::def_id::DefId;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
-    mir::{Body, Local, SourceInfo, SourceScope, OUTERMOST_SOURCE_SCOPE},
+    mir::{self, Body, Local, SourceInfo, SourceScope, OUTERMOST_SOURCE_SCOPE},
     ty::{EarlyBinder, GenericArgs, GenericArgsRef, ParamEnv, TyCtxt},
 };
 use rustc_span::Symbol;
@@ -123,18 +123,20 @@ impl ContractClauses {
 }
 
 #[derive(Debug)]
-struct ScopeTree(HashMap<SourceScope, (HashSet<(Symbol, Local)>, Option<SourceScope>)>);
+struct ScopeTree<'tcx>(
+    HashMap<SourceScope, (HashSet<(Symbol, mir::Place<'tcx>)>, Option<SourceScope>)>,
+);
 
-impl ScopeTree {
-    fn build<'tcx>(body: &Body<'tcx>) -> Self {
+impl<'tcx> ScopeTree<'tcx> {
+    fn build(body: &Body<'tcx>) -> Self {
         use rustc_middle::mir::VarDebugInfoContents::Place;
         let mut scope_tree: HashMap<SourceScope, (HashSet<_>, Option<_>)> = Default::default();
 
         for var_info in &body.var_debug_info {
             // All variables in the DebugVarInfo should be user variables and thus be just locals
-            let loc = match var_info.value {
-                Place(p) => p.as_local().unwrap(),
-                _ => panic!(),
+            let p = match var_info.value {
+                Place(p) => p,
+                _ => continue,
             };
             let info = var_info.source_info;
 
@@ -144,7 +146,7 @@ impl ScopeTree {
             let entry = scope_tree.entry(scope).or_default();
 
             let name = var_info.name;
-            entry.0.insert((name, loc));
+            entry.0.insert((name, p));
 
             if let Some(parent) = scope_data.parent_scope {
                 entry.1 = Some(parent);
@@ -166,7 +168,7 @@ impl ScopeTree {
         ScopeTree(scope_tree)
     }
 
-    fn visible_locals(&self, scope: SourceScope) -> HashMap<Symbol, Local> {
+    fn visible_locals(&self, scope: SourceScope) -> HashMap<Symbol, mir::Place<'tcx>> {
         let mut locals = HashMap::new();
         let mut to_visit = Some(scope);
 
@@ -184,23 +186,50 @@ impl ScopeTree {
 
 // Turn a typing context into a substition.
 pub(crate) fn inv_subst<'tcx>(
+    tcx: TyCtxt<'tcx>,
     body: &Body<'tcx>,
     locals: &HashMap<Local, Symbol>,
     info: SourceInfo,
 ) -> HashMap<Symbol, Term<'tcx>> {
-    // let local_map = real_locals(tcx, body);
     let mut args = HashMap::new();
 
     let tree = ScopeTree::build(body);
 
-    for (k, v) in tree.visible_locals(info.scope) {
-        let loc = v;
-        let ty = body.local_decls[loc].ty;
-        let span = body.local_decls[loc].source_info.span;
-        args.insert(k, Term { ty, span, kind: TermKind::Var(locals[&loc]) });
+    for (k, p) in tree.visible_locals(info.scope) {
+        args.insert(k, place_to_term(tcx, p, locals, body));
     }
 
-    return args;
+    args
+}
+
+fn place_to_term<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    p: mir::Place<'tcx>,
+    locals: &HashMap<Local, Symbol>,
+    body: &Body<'tcx>,
+) -> Term<'tcx> {
+    let ty = p.ty(&body.local_decls, tcx).ty;
+    let span = body.local_decls[p.local].source_info.span;
+    let mut kind = TermKind::Var(locals[&p.local]);
+    for (place_ref, proj) in p.iter_projections() {
+        let ty = place_ref.ty(&body.local_decls, tcx).ty;
+        let term = Term { ty, span, kind };
+        kind = match proj {
+            mir::ProjectionElem::Deref => TermKind::Cur { term: Box::new(term) },
+            mir::ProjectionElem::Field(field_idx, _) => {
+                TermKind::Projection { lhs: Box::new(term), name: field_idx }
+            }
+            mir::ProjectionElem::Index(_) => todo!("make this work!"),
+            mir::ProjectionElem::ConstantIndex { .. }
+            | mir::ProjectionElem::Subslice { .. }
+            | mir::ProjectionElem::OpaqueCast(_)
+            | mir::ProjectionElem::Subtype(_) => {
+                unimplemented!("projection {:?} is not supported in logic", proj)
+            }
+            mir::ProjectionElem::Downcast(..) => term.kind,
+        };
+    }
+    Term { ty, span, kind }
 }
 
 #[derive(Debug)]

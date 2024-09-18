@@ -87,7 +87,6 @@ impl<'tcx> MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
                             if let Some(loc) = place.as_local() {
                                 self.unused.insert(loc);
                             }
-                            // *p = Operand::Copy(place);
                         }
                     });
                     *substs = IndexVec::new();

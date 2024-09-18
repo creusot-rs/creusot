@@ -55,7 +55,8 @@ pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, body_id: BodyId) -> fmi
     BodyTranslator::with_context(ctx, &body, body_id, |func_translator| func_translator.translate())
 }
 
-// Split this into several sub-contexts: Core, Analysis, Results?
+/// Translate a MIR body (rustc) to FMIR (creusot).
+// TODO: Split this into several sub-contexts: Core, Analysis, Results?
 struct BodyTranslator<'a, 'tcx> {
     body_id: BodyId,
 
@@ -211,6 +212,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
             for (kind, mut body) in self.invariants.remove(&bb).unwrap_or_else(Vec::new) {
                 body.subst(&inv_subst(
+                    self.tcx(),
                     self.body,
                     &self.locals,
                     *self.body.source_info(bb.start_location()),
@@ -784,12 +786,14 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 }
 
+/// Find a fmir name for each variable in `body`.
+///
+/// This will skip mir variables that are in `erased_locals`.
+///
 /// # Returns
 /// - The mapping of mir locals to the symbol used in fmir.
-/// - If `is_inlined` is `true`, the symbol of the inlined function argument (only
-/// functions with 1 arg are inlined).
-///
-/// Additionally, this adds [`LocalDecl`] information about the new fmir symbols to `vars`.
+/// - Each (unique) fmir symbol is then mapped to the [`LocalDecl`] information of the
+///   mir local (the `vars` variable).
 fn translate_vars<'tcx>(
     body: &Body<'tcx>,
     erased_locals: &BitSet<Local>,
