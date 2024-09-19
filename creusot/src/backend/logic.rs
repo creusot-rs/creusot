@@ -447,5 +447,5 @@ fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
 }
 
 pub(crate) fn impl_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
-    format!("{}_Impl", module_name(ctx.tcx, def_id)).into()
+    format!("{}__Impl", module_name(ctx.tcx, def_id)).into()
 }
