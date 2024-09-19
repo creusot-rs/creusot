@@ -152,7 +152,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 .assertions
                                 .remove(def_id)
                                 .expect("Could not find body of assertion");
-                            assertion.subst(&inv_subst(&self.body, &self.locals, si));
+                            assertion.subst(&inv_subst(self.tcx(), &self.body, &self.locals, si));
                             self.check_frozen_in_logic(&assertion, loc);
                             self.emit_statement(fmir::Statement::Assertion {
                                 cond: assertion,

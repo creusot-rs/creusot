@@ -6,7 +6,6 @@ use crate::{
     },
 };
 use indexmap::IndexMap;
-use itertools::izip;
 use rustc_ast::{
     ast::{AttrArgs, AttrArgsEq},
     visit::{walk_fn, FnKind, Visitor},
@@ -751,7 +750,7 @@ pub(crate) fn closure_capture_subst<'tcx>(
 
     let self_ = Term::var(self_name, ty);
 
-    let subst = izip!(captures, cs.as_closure().upvar_tys())
+    let subst = std::iter::zip(captures, cs.as_closure().upvar_tys())
         .enumerate()
         .map(|(ix, (cap, ty))| (cap.to_symbol(), (cap.info.capture_kind, ty, ix.into())))
         .collect();
