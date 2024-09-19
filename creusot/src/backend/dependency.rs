@@ -12,7 +12,7 @@ use crate::{
     util::{self, item_symb, ItemType},
 };
 
-use super::{ty_inv::TyInvKind, PreludeModule, TransId};
+use super::{ty_inv::tyinv_head_and_subst, PreludeModule, TransId};
 
 /// Dependencies between items and the resolution logic to find the 'monomorphic' forms accounting
 /// for various Creusot hacks like the handling of closures.
@@ -24,7 +24,7 @@ use super::{ty_inv::TyInvKind, PreludeModule, TransId};
 pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
     Item(DefId, GenericArgsRef<'tcx>),
-    TyInv(Ty<'tcx>, TyInvKind),
+    TyInv(Ty<'tcx>),
     Hacked(ExtendedId, DefId, GenericArgsRef<'tcx>),
     Builtin(PreludeModule),
 }
@@ -66,7 +66,7 @@ impl<'tcx> Dependency<'tcx> {
         }
     }
 
-    pub(crate) fn from_trans_id(tcx: TyCtxt<'tcx>, trans_id: TransId) -> Self {
+    pub(crate) fn from_trans_id(tcx: TyCtxt<'tcx>, trans_id: TransId<'tcx>) -> Self {
         match trans_id {
             TransId::Item(self_id) => {
                 let subst = match tcx.def_kind(self_id) {
@@ -79,7 +79,7 @@ impl<'tcx> Dependency<'tcx> {
 
                 Dependency::new(tcx, (self_id, subst)).erase_regions(tcx)
             }
-            TransId::TyInv(inv_kind) => Dependency::TyInv(inv_kind.to_skeleton_ty(tcx), inv_kind),
+            TransId::TyInv(ty) => Dependency::TyInv(ty),
             TransId::Hacked(h, self_id) => {
                 let subst = match tcx.def_kind(self_id) {
                     DefKind::Closure => match tcx.type_of(self_id).instantiate_identity().kind() {
@@ -93,11 +93,18 @@ impl<'tcx> Dependency<'tcx> {
         }
     }
 
-    pub(crate) fn to_trans_id(self) -> Option<TransId> {
+    pub(crate) fn to_trans_id(
+        self,
+        tcx: TyCtxt<'tcx>,
+        param_env: ParamEnv<'tcx>,
+    ) -> Option<TransId<'tcx>> {
         match self {
             Dependency::Type(_) => None,
             Dependency::Item(id, _) => Some(TransId::Item(id)),
-            Dependency::TyInv(_, k) => Some(TransId::TyInv(k)),
+            Dependency::TyInv(ty) => {
+                let ty = tyinv_head_and_subst(tcx, ty, param_env).0;
+                Some(TransId::TyInv(ty))
+            }
             Dependency::Hacked(h, id, _) => Some(TransId::Hacked(h, id)),
             Dependency::Builtin(_) => None,
         }
@@ -125,7 +132,7 @@ impl<'tcx> Dependency<'tcx> {
                 _ => None,
             },
             Dependency::Hacked(_, id, substs) => Some((id, substs)),
-            Dependency::TyInv(..) | Dependency::Builtin(_) => None,
+            Dependency::TyInv(_) | Dependency::Builtin(_) => None,
         }
     }
 
@@ -139,9 +146,14 @@ impl<'tcx> Dependency<'tcx> {
     }
 
     #[inline]
-    pub(crate) fn subst(self, tcx: TyCtxt<'tcx>, other: Dependency<'tcx>) -> Self {
-        let substs = if let Dependency::TyInv(ty, inv_kind) = other {
-            inv_kind.tyinv_substs(tcx, ty)
+    pub(crate) fn subst(
+        self,
+        tcx: TyCtxt<'tcx>,
+        other: Dependency<'tcx>,
+        param_env: ParamEnv<'tcx>,
+    ) -> Self {
+        let substs = if let Dependency::TyInv(ty) = other {
+            tyinv_head_and_subst(tcx, ty, param_env).1
         } else if let Some((_, substs)) = other.did() {
             substs
         } else {

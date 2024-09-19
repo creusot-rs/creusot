@@ -1,6 +1,6 @@
 use indexmap::{IndexMap, IndexSet};
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::{AliasTy, GenericParamDef, GenericParamDefKind, TyCtxt};
+use rustc_middle::ty::{AliasTy, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt};
 use rustc_span::{RealFileName, Span, DUMMY_SP};
 use why3::declaration::{Decl, TyDecl};
 
@@ -18,10 +18,7 @@ use std::{
 use crate::{options::SpanMode, run_why3::SpanMap};
 pub(crate) use clone_map::*;
 
-use self::{
-    dependency::{Dependency, ExtendedId},
-    ty_inv::TyInvKind,
-};
+use self::dependency::{Dependency, ExtendedId};
 
 pub(crate) mod clone_map;
 pub(crate) mod constant;
@@ -39,13 +36,13 @@ pub(crate) mod ty_inv;
 pub(crate) mod wto;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub(crate) enum TransId {
+pub(crate) enum TransId<'tcx> {
     Item(DefId),
-    TyInv(TyInvKind),
+    TyInv(Ty<'tcx>),
     Hacked(ExtendedId, DefId),
 }
 
-impl From<DefId> for TransId {
+impl<'tcx> From<DefId> for TransId<'tcx> {
     fn from(def_id: DefId) -> Self {
         TransId::Item(def_id)
     }
@@ -53,11 +50,11 @@ impl From<DefId> for TransId {
 
 pub struct Why3Generator<'tcx> {
     ctx: TranslationCtx<'tcx>,
-    dependencies: IndexMap<TransId, CloneSummary<'tcx>>,
+    dependencies: IndexMap<TransId<'tcx>, CloneSummary<'tcx>>,
     projections_in_ty: HashMap<DefId, Vec<AliasTy<'tcx>>>,
-    functions: IndexMap<TransId, TranslatedItem>,
-    translated_items: IndexSet<TransId>,
-    in_translation: Vec<IndexSet<TransId>>,
+    functions: IndexMap<TransId<'tcx>, TranslatedItem>,
+    translated_items: IndexSet<TransId<'tcx>>,
+    in_translation: Vec<IndexSet<TransId<'tcx>>>,
     pub(crate) span_map: SpanMap,
 }
 
@@ -88,7 +85,7 @@ impl<'tcx> Why3Generator<'tcx> {
         }
     }
 
-    fn term(&mut self, id: impl Into<TransId>) -> Option<&Term<'tcx>> {
+    fn term(&mut self, id: impl Into<TransId<'tcx>>) -> Option<&Term<'tcx>> {
         match id.into() {
             TransId::Item(id) => self.ctx.term(id),
             // For the moment at least
@@ -109,7 +106,7 @@ impl<'tcx> Why3Generator<'tcx> {
     }
 
     // Checks if we are allowed to recurse into
-    fn safe_cycle(&self, trans_id: TransId) -> bool {
+    fn safe_cycle(&self, trans_id: TransId<'tcx>) -> bool {
         self.in_translation.last().map(|l| l.contains(&trans_id)).unwrap_or_default()
     }
 
@@ -252,33 +249,23 @@ impl<'tcx> Why3Generator<'tcx> {
         // self.types[&repr_id].accessors;
     }
 
-    pub(crate) fn translate_tyinv(&mut self, inv_kind: TyInvKind) {
-        let tid = TransId::TyInv(inv_kind);
+    pub(crate) fn translate_tyinv(&mut self, ty: Ty<'tcx>) {
+        let tid = TransId::TyInv(ty);
         if self.dependencies.contains_key(&tid) {
             return;
         }
 
-        if let TyInvKind::Adt(adt_did) = inv_kind {
-            self.translate(adt_did);
+        if let Some(adt) = ty.ty_adt_def() && !adt.is_box() {
+            self.translate(adt.did());
         }
 
-        let deps = ty_inv::build_inv_module(self, inv_kind);
+        let deps = ty_inv::record_tyinv_deps(self, ty);
         self.dependencies.insert(tid, deps);
     }
 
-    // pub(crate) fn item(&self, def_id: DefId) -> Option<&TranslatedItem> {
-    //     let tid: TransId = if matches!(util::item_type(***self, def_id), ItemType::Type) {
-    //         self.representative_type(def_id)
-    //     } else {
-    //         def_id
-    //     }
-    //     .into();
-    //     self.functions.get(&tid)
-    // }
-
     pub(crate) fn modules<'a>(
         &'a mut self,
-    ) -> impl Iterator<Item = (TransId, TranslatedItem)> + 'a {
+    ) -> impl Iterator<Item = (TransId<'tcx>, TranslatedItem)> + 'a {
         self.functions.drain(..)
     }
 
@@ -325,8 +312,12 @@ impl<'tcx> Why3Generator<'tcx> {
         self.translated_items.insert(tid);
     }
 
-    pub(crate) fn dependencies(&self, key: Dependency<'tcx>) -> Option<&CloneSummary<'tcx>> {
-        let tid = key.to_trans_id()?;
+    pub(crate) fn dependencies(
+        &self,
+        param_env: ParamEnv<'tcx>,
+        key: Dependency<'tcx>,
+    ) -> Option<&CloneSummary<'tcx>> {
+        let tid = key.to_trans_id(self.tcx, param_env)?;
         self.dependencies.get(&tid)
     }
 
