@@ -45,7 +45,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
     fn self_did(&self) -> Option<DefId> {
         match self.self_key.to_trans_id() {
-            Some(TransId::Item(did) | TransId::TyInv(TyInvKind::Adt(did))) => Some(did),
+            Some(TransId::Item(did)) => Some(did),
             _ => None,
         }
     }

@@ -118,14 +118,14 @@ impl<'tcx> Dependency<'tcx> {
     pub(crate) fn did(self) -> Option<(DefId, GenericArgsRef<'tcx>)> {
         match self {
             Dependency::Item(def_id, subst) => Some((def_id, subst)),
-            Dependency::Type(t) | Dependency::TyInv(t, _) => match t.kind() {
+            Dependency::Type(t) => match t.kind() {
                 TyKind::Adt(def, substs) => Some((def.did(), substs)),
                 TyKind::Closure(id, substs) => Some((*id, substs)),
                 TyKind::Alias(AliasTyKind::Projection, aty) => Some((aty.def_id, aty.args)),
                 _ => None,
             },
             Dependency::Hacked(_, id, substs) => Some((id, substs)),
-            Dependency::Builtin(_) => None,
+            Dependency::TyInv(..) | Dependency::Builtin(_) => None,
         }
     }
 
