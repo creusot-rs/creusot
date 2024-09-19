@@ -255,7 +255,9 @@ impl<'tcx> Why3Generator<'tcx> {
             return;
         }
 
-        if let Some(adt) = ty.ty_adt_def() && !adt.is_box() {
+        if let Some(adt) = ty.ty_adt_def()
+            && !adt.is_box()
+        {
             self.translate(adt.did());
         }
 

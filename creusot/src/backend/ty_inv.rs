@@ -43,9 +43,7 @@ pub(crate) fn tyinv_head_and_subst<'tcx>(
         TyKind::Adt(adt_def, subst) => {
             (Ty::new_adt(tcx, *adt_def, GenericArgs::identity_for_item(tcx, adt_def.did())), subst)
         }
-        TyKind::Closure(did, subst) => {
-            (Ty::new_closure(tcx, *did, GenericArgs::identity_for_item(tcx, *did)), subst)
-        }
+        TyKind::Closure(did, _) => (ty, GenericArgs::identity_for_item(tcx, tcx.parent(*did))),
         TyKind::Tuple(tys) => {
             let params = (0..tys.len())
                 .map(|i| Ty::new_param(tcx, i as _, Symbol::intern(&format!("T{i}"))));
@@ -64,10 +62,6 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
     ty: Ty<'tcx>,
     param_is_trivial: bool,
 ) -> bool {
-    if ty.is_closure() {
-        return true;
-    }
-
     // we cannot use a TypeWalker as it does not visit ADT field types
     let mut visited_adts = IndexSet::new();
     let mut stack = vec![ty];
@@ -88,19 +82,20 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
         match ty.kind() {
             TyKind::Ref(_, ty, _) | TyKind::Slice(ty) => stack.push(*ty),
             TyKind::Tuple(tys) => stack.extend(*tys),
-            TyKind::Adt(def, substs) if def.is_box() => stack.push(substs.type_at(0)),
-            TyKind::Adt(def, substs)
+            TyKind::Adt(def, subst) if def.is_box() => stack.push(subst.type_at(0)),
+            TyKind::Adt(def, subst)
                 if util::get_builtin(tcx, def.did()).is_some() || user_inv == Some(true) =>
             {
                 // if the ADT has a structural user invariant, do not look into fields but only consider substs
-                stack.extend(substs.types())
+                stack.extend(subst.types())
             }
-            TyKind::Adt(def, substs) => {
+            TyKind::Adt(def, subst) => {
                 let did = def.did();
                 if util::get_builtin(tcx, did).is_none() && visited_adts.insert(did) {
-                    stack.extend(def.all_fields().map(|f| f.ty(tcx, substs)))
+                    stack.extend(def.all_fields().map(|f| f.ty(tcx, subst)))
                 }
             }
+            TyKind::Closure(_, subst) => stack.extend(subst.as_closure().upvar_tys()),
             _ => {}
         }
     }
@@ -133,11 +128,7 @@ impl<'tcx> InvariantElaborator<'tcx> {
             if no_struct {
                 user_inv
             } else {
-                user_inv.conj(self.structural_invariant(
-                    ctx,
-                    subject.clone(),
-                    ty,
-                ))
+                user_inv.conj(self.structural_invariant(ctx, subject.clone(), ty))
             }
         };
 
@@ -185,6 +176,38 @@ impl<'tcx> InvariantElaborator<'tcx> {
                         .map(Pattern::Binder)
                         .collect(),
                 );
+                Term {
+                    kind: TermKind::Let {
+                        pattern,
+                        arg: Box::new(term),
+                        body: Box::new(ids.into_iter().enumerate().fold(
+                            Term::mk_true(ctx.tcx),
+                            |acc, (ix, id)| {
+                                acc.conj(self.mk_inv_call(
+                                    ctx,
+                                    Term::var(Symbol::intern(&id.to_string()), tys[ix]),
+                                ))
+                            },
+                        )),
+                    },
+                    ty: ctx.types.bool,
+                    span: DUMMY_SP,
+                }
+            }
+            TyKind::Closure(clos_did, substs) => {
+                let tys = substs.as_closure().upvar_tys();
+                let ids = ('a'..).take(tys.len());
+
+                let pattern = Pattern::Constructor {
+                    variant: *clos_did,
+                    substs,
+                    fields: ids
+                        .clone()
+                        .into_iter()
+                        .map(|id| Symbol::intern(&id.to_string()))
+                        .map(Pattern::Binder)
+                        .collect(),
+                };
                 Term {
                     kind: TermKind::Let {
                         pattern,
