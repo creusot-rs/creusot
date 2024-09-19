@@ -56,7 +56,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
             DepNode::TyInv(ty, kind) => {
                 let term = InvariantElaborator::new(param_env, true).elaborate_inv(ctx, ty, kind);
                 let exp = lower_pure(ctx, names, &term);
-                let axiom = Axiom { name: names.ty_inv(ty).name, rewrite: false, axiom: exp };
+                let axiom = Axiom { name: names.ty_inv(ty).name, rewrite: true, axiom: exp };
                 vec![Decl::Axiom(axiom)]
             }
             DepNode::Item(_, _) | DepNode::Hacked(_, _, _) => {
