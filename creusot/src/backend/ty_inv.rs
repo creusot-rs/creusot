@@ -303,10 +303,6 @@ pub(crate) fn record_tyinv_deps<'tcx>(
     let inv_term = InvariantElaborator::new(param_env, false).elaborate_inv(ctx, ty);
     lower_pure(ctx, &mut names, &inv_term);
 
-    let (id, subst) =
-        resolve_user_inv(ctx.tcx, ty, param_env).unwrap_or(user_inv_item(ctx.tcx, ty));
-    names.value(id, subst);
-
     let (_, summary) = names.provide_deps(ctx, GraphDepth::Shallow);
     summary
 }
