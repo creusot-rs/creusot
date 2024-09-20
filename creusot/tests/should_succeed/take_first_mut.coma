@@ -1,82 +1,82 @@
 
-module Core_Option_Option_Type
-  type t_option 't =
+module T_core__option__Option
+  type t_Option 't =
     | C_None
     | C_Some 't
   
   function any_l (_ : 'b) : 'a
   
-  let rec none < 't > (input:t_option 't) (ret  )= any
+  let rec v_None < 't > (input:t_Option 't) (ret  )= any
     [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ]
     
   
-  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any
+  let rec v_Some < 't > (input:t_Option 't) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
     | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
     
 end
-module Core_Ptr_NonNull_NonNull_Type
+module T_core__ptr__non_null__NonNull
   use prelude.prelude.Opaque
   
-  type t_nonnull 't =
+  type t_NonNull 't =
     | C_NonNull opaque_ptr
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
+  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
     [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
     | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
     
 end
-module Core_Marker_PhantomData_Type
-  type t_phantomdata 't =
+module T_core__marker__PhantomData
+  type t_PhantomData 't =
     | C_PhantomData
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
+  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any
     [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
     
 end
-module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type as PhantomData'0
+module T_core__ptr__unique__Unique
+  use T_core__marker__PhantomData as PhantomData'0
   
-  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  use T_core__ptr__non_null__NonNull as NonNull'0
   
-  type t_unique 't =
-    | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
+  type t_Unique 't =
+    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
-    [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
+    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       = input}
       (! ret {pointer} {_marker})
-    | bad (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+    | bad (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       <> input}
       {false}
       any ]
     
 end
-module Alloc_Boxed_Box_Type
-  use Core_Ptr_Unique_Unique_Type as Unique'0
+module T_alloc__boxed__Box
+  use T_core__ptr__unique__Unique as Unique'0
   
-  type t_box 't 'a =
-    | C_Box (Unique'0.t_unique 't) 'a
+  type t_Box 't 'a =
+    | C_Box (Unique'0.t_Unique 't) 'a
   
   function any_l (_ : 'b) : 'a
 end
-module Alloc_Alloc_Global_Type
-  type t_global  =
+module T_alloc__alloc__Global
+  type t_Global  =
     | C_Global
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_global (input:t_global) (ret  )= any
+  let rec t_Global (input:t_Global) (ret  )= any
     [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
     
 end
-module TakeFirstMut_TakeFirstMut
+module M_take_first_mut__take_first_mut
   type t
   
   let%span stake_first_mut0 = "../take_first_mut.rs" 14 29 14 34
@@ -127,7 +127,7 @@ module TakeFirstMut_TakeFirstMut
   
   predicate inv'3 (_1 : t)
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'8 (self : t) =
     [%#span3] inv'3 self
@@ -155,21 +155,21 @@ module TakeFirstMut_TakeFirstMut
   
   use prelude.prelude.Borrow
   
-  use Core_Option_Option_Type as Option'0
+  use T_core__option__Option as Option'0
   
-  predicate invariant'6 (self : Option'0.t_option (borrowed t, borrowed (slice t))) =
+  predicate invariant'6 (self : Option'0.t_Option (borrowed t, borrowed (slice t))) =
     [%#span5] true
   
-  predicate inv'6 (_1 : Option'0.t_option (borrowed t, borrowed (slice t)))
+  predicate inv'6 (_1 : Option'0.t_Option (borrowed t, borrowed (slice t)))
   
-  axiom inv'6 : forall x : Option'0.t_option (borrowed t, borrowed (slice t)) . inv'6 x = true
+  axiom inv'6 : forall x : Option'0.t_Option (borrowed t, borrowed (slice t)) . inv'6 x = true
   
-  predicate invariant'5 (self : Option'0.t_option (borrowed t)) =
+  predicate invariant'5 (self : Option'0.t_Option (borrowed t)) =
     [%#span5] true
   
-  predicate inv'5 (_1 : Option'0.t_option (borrowed t))
+  predicate inv'5 (_1 : Option'0.t_Option (borrowed t))
   
-  axiom inv'5 : forall x : Option'0.t_option (borrowed t) . inv'5 x = true
+  axiom inv'5 : forall x : Option'0.t_Option (borrowed t) . inv'5 x = true
   
   predicate invariant'4 (self : borrowed t) =
     [%#span6] inv'3 self.current /\ inv'3 self.final
@@ -197,12 +197,12 @@ module TakeFirstMut_TakeFirstMut
   
   use prelude.prelude.UIntSize
   
-  constant max'0 : usize = [%#span7] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span7] (18446744073709551615 : usize)
   
   function shallow_model'0 (self : slice t) : Seq.seq t
   
   axiom shallow_model'0_spec : forall self : slice t . ([%#span9] shallow_model'0 self = Slice.id self)
-  && ([%#span8] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
+  && ([%#span8] Seq.length (shallow_model'0 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'1 (self : slice t) =
     [%#span10] inv'7 (shallow_model'0 self)
@@ -242,9 +242,9 @@ module TakeFirstMut_TakeFirstMut
   function shallow_model'1 (self : borrowed (slice t)) : Seq.seq t =
     [%#span14] shallow_model'0 self.current
   
-  let rec split_first_mut'0 (self:borrowed (slice t)) (return'  (ret:Option'0.t_option (borrowed t, borrowed (slice t))))= {[@expl:precondition] [%#span15] inv'0 self}
+  let rec split_first_mut'0 (self:borrowed (slice t)) (return'  (ret:Option'0.t_Option (borrowed t, borrowed (slice t))))= {[@expl:precondition] [%#span15] inv'0 self}
     any
-    [ return' (result:Option'0.t_option (borrowed t, borrowed (slice t)))-> {[%#span17] inv'6 result}
+    [ return' (result:Option'0.t_Option (borrowed t, borrowed (slice t)))-> {[%#span17] inv'6 result}
       {[%#span16] match result with
         | Option'0.C_Some (first, tail) -> first.current = index_logic'0 self.current 0
         /\ first.final = index_logic'0 self.final 0
@@ -269,7 +269,7 @@ module TakeFirstMut_TakeFirstMut
       (! return' {result}) ]
     
   
-  let rec take_first_mut (self_:borrowed (borrowed (slice t))) (return'  (ret:Option'0.t_option (borrowed t)))= {[%#stake_first_mut0] inv'2 self_}
+  let rec take_first_mut (self_:borrowed (borrowed (slice t))) (return'  (ret:Option'0.t_Option (borrowed t)))= {[%#stake_first_mut0] inv'2 self_}
     (! bb0
     [ bb0 = s0
       [ s0 = Borrow.borrow_mut <borrowed (slice t)> {self_.current}
@@ -286,7 +286,7 @@ module TakeFirstMut_TakeFirstMut
           (fun (_ret':borrowed (slice t)) ->  [ &_4 <- _ret' ]  [ &_5 <- { _5 with current = _4.final ; } ] s1)
       | s1 = -{inv'1 _4.final}- s2
       | s2 = split_first_mut'0 {_4}
-          (fun (_ret':Option'0.t_option (borrowed t, borrowed (slice t))) ->  [ &_3 <- _ret' ] s3)
+          (fun (_ret':Option'0.t_Option (borrowed t, borrowed (slice t))) ->  [ &_3 <- _ret' ] s3)
       | s3 = bb2 ]
       
     | bb2 = any
@@ -294,9 +294,9 @@ module TakeFirstMut_TakeFirstMut
       | br1 (a:(borrowed t, borrowed (slice t)))-> {_3 = Option'0.C_Some a} (! bb5) ]
       
     | bb5 = s0
-      [ s0 = Option'0.some <(borrowed t, borrowed (slice t))> {_3}
+      [ s0 = Option'0.v_Some <(borrowed t, borrowed (slice t))> {_3}
           (fun (r0'0:(borrowed t, borrowed (slice t))) ->  [ &first <- let (r'0, _) = r0'0 in r'0 ] s1)
-      | s1 = Option'0.some <(borrowed t, borrowed (slice t))> {_3}
+      | s1 = Option'0.v_Some <(borrowed t, borrowed (slice t))> {_3}
           (fun (r0'1:(borrowed t, borrowed (slice t))) ->  [ &rem <- let (_, r'1) = r0'1 in r'1 ] s2)
       | s2 = Borrow.borrow_final <slice t> {rem.current} {Borrow.get_id rem}
           (fun (_ret':borrowed (slice t)) ->  [ &_11 <- _ret' ]  [ &rem <- { rem with current = _11.final ; } ] s3)
@@ -327,9 +327,9 @@ module TakeFirstMut_TakeFirstMut
       
     | bb7 = return' {_0} ]
     )
-    [ & _0 : Option'0.t_option (borrowed t) = any_l ()
+    [ & _0 : Option'0.t_Option (borrowed t) = any_l ()
     | & self_ : borrowed (borrowed (slice t)) = self_
-    | & _3 : Option'0.t_option (borrowed t, borrowed (slice t)) = any_l ()
+    | & _3 : Option'0.t_Option (borrowed t, borrowed (slice t)) = any_l ()
     | & _4 : borrowed (slice t) = any_l ()
     | & _5 : borrowed (slice t) = any_l ()
     | & _6 : borrowed (borrowed (slice t)) = any_l ()
@@ -338,7 +338,7 @@ module TakeFirstMut_TakeFirstMut
     | & _11 : borrowed (slice t) = any_l ()
     | & _12 : borrowed t = any_l () ]
     
-    [ return' (result:Option'0.t_option (borrowed t))-> {[@expl:postcondition] [%#stake_first_mut2] inv'5 result}
+    [ return' (result:Option'0.t_Option (borrowed t))-> {[@expl:postcondition] [%#stake_first_mut2] inv'5 result}
       {[@expl:postcondition] [%#stake_first_mut1] match result with
         | Option'0.C_Some r -> r.current = index_logic'0 (self_.current).current 0
         /\ r.final = index_logic'0 (self_.current).final 0

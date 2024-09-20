@@ -1,114 +1,114 @@
 
-module Core_Ptr_NonNull_NonNull_Type
+module T_core__ptr__non_null__NonNull
   use prelude.prelude.Opaque
   
-  type t_nonnull 't =
+  type t_NonNull 't =
     | C_NonNull opaque_ptr
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
+  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
     [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
     | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
     
 end
-module Core_Marker_PhantomData_Type
-  type t_phantomdata 't =
+module T_core__marker__PhantomData
+  type t_PhantomData 't =
     | C_PhantomData
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
+  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any
     [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
     
 end
-module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type as PhantomData'0
+module T_core__ptr__unique__Unique
+  use T_core__marker__PhantomData as PhantomData'0
   
-  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  use T_core__ptr__non_null__NonNull as NonNull'0
   
-  type t_unique 't =
-    | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
+  type t_Unique 't =
+    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
-    [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
+    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       = input}
       (! ret {pointer} {_marker})
-    | bad (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+    | bad (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       <> input}
       {false}
       any ]
     
 end
-module Alloc_RawVec_Cap_Type
+module T_alloc__raw_vec__Cap
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  type t_cap  =
+  type t_Cap  =
     | C_Cap usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_cap (input:t_cap) (ret  (field_0:usize))= any
+  let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
     [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
     | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
     
 end
-module Alloc_RawVec_RawVec_Type
-  use Alloc_RawVec_Cap_Type as Cap'0
+module T_alloc__raw_vec__RawVec
+  use T_alloc__raw_vec__Cap as Cap'0
   
-  use Core_Ptr_Unique_Unique_Type as Unique'0
+  use T_core__ptr__unique__Unique as Unique'0
   
-  type t_rawvec 't 'a =
-    | C_RawVec (Unique'0.t_unique 't) (Cap'0.t_cap) 'a
+  type t_RawVec 't 'a =
+    | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_rawvec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a))= any
-    [ good (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
+  let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
+    [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
       (! ret {ptr} {cap} {alloc})
-    | bad (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
+    | bad (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
     
 end
-module Alloc_Vec_Vec_Type
+module T_alloc__vec__Vec
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  use Alloc_RawVec_RawVec_Type as RawVec'0
+  use T_alloc__raw_vec__RawVec as RawVec'0
   
-  type t_vec 't 'a =
-    | C_Vec (RawVec'0.t_rawvec 't 'a) usize
+  type t_Vec 't 'a =
+    | C_Vec (RawVec'0.t_RawVec 't 'a) usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_vec < 't > < 'a > (input:t_vec 't 'a) (ret  (buf:RawVec'0.t_rawvec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
-    | bad (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
+    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
+    | bad (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
     
 end
-module Alloc_Alloc_Global_Type
-  type t_global  =
+module T_alloc__alloc__Global
+  type t_Global  =
     | C_Global
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_global (input:t_global) (ret  )= any
+  let rec t_Global (input:t_Global) (ret  )= any
     [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
     
 end
-module Alloc_Boxed_Box_Type
-  use Core_Ptr_Unique_Unique_Type as Unique'0
+module T_alloc__boxed__Box
+  use T_core__ptr__unique__Unique as Unique'0
   
-  type t_box 't 'a =
-    | C_Box (Unique'0.t_unique 't) 'a
+  type t_Box 't 'a =
+    | C_Box (Unique'0.t_Unique 't) 'a
   
   function any_l (_ : 'b) : 'a
 end
-module Hillel_RightPad
+module M_hillel__right_pad
   type t
   
   let%span shillel0 = "../hillel.rs" 17 18 17 35
@@ -171,7 +171,7 @@ module Hillel_RightPad
   
   predicate inv'2 (_1 : t)
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'5 (self : t) =
     [%#span12] inv'2 self
@@ -195,69 +195,69 @@ module Hillel_RightPad
   
   axiom inv'4 : forall x : Seq.seq t . inv'4 x = true
   
-  use Alloc_Vec_Vec_Type as Vec'0
+  use T_alloc__vec__Vec as Vec'0
   
-  predicate inv'0 (_1 : Vec'0.t_vec t (Global'0.t_global))
+  predicate inv'0 (_1 : Vec'0.t_Vec t (Global'0.t_Global))
   
   use prelude.prelude.Borrow
   
-  predicate invariant'3 (self : Vec'0.t_vec t (Global'0.t_global)) =
+  predicate invariant'3 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
     [%#span14] inv'0 self
   
-  predicate inv'3 (_1 : Vec'0.t_vec t (Global'0.t_global))
+  predicate inv'3 (_1 : Vec'0.t_Vec t (Global'0.t_Global))
   
-  axiom inv'3 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'3 x = true
+  axiom inv'3 : forall x : Vec'0.t_Vec t (Global'0.t_Global) . inv'3 x = true
   
   predicate invariant'2 (self : t)
   
   axiom inv'2 : forall x : t . inv'2 x = true
   
-  predicate invariant'1 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
+  predicate invariant'1 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) =
     [%#span15] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'1 (_1 : borrowed (Vec'0.t_vec t (Global'0.t_global)))
+  predicate inv'1 (_1 : borrowed (Vec'0.t_Vec t (Global'0.t_Global)))
   
-  axiom inv'1 : forall x : borrowed (Vec'0.t_vec t (Global'0.t_global)) . inv'1 x = true
-  
-  use prelude.prelude.UIntSize
+  axiom inv'1 : forall x : borrowed (Vec'0.t_Vec t (Global'0.t_Global)) . inv'1 x = true
   
   use prelude.prelude.UIntSize
   
-  constant max'0 : usize = [%#span16] (18446744073709551615 : usize)
+  use prelude.prelude.UIntSize
   
-  function shallow_model'2 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t
+  constant v_MAX'0 : usize = [%#span16] (18446744073709551615 : usize)
   
-  axiom shallow_model'2_spec : forall self : Vec'0.t_vec t (Global'0.t_global) . [%#span17] Seq.length (shallow_model'2 self)
-  <= UIntSize.to_int (max'0 : usize)
+  function shallow_model'2 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
   
-  predicate invariant'0 (self : Vec'0.t_vec t (Global'0.t_global)) =
+  axiom shallow_model'2_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#span17] Seq.length (shallow_model'2 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  predicate invariant'0 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
     [%#span18] inv'4 (shallow_model'2 self)
   
-  axiom inv'0 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'0 x = true
+  axiom inv'0 : forall x : Vec'0.t_Vec t (Global'0.t_Global) . inv'0 x = true
   
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
+  predicate resolve'0 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) =
     [%#span19] self.final = self.current
   
   use seq.Seq
   
-  function shallow_model'1 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq t =
+  function shallow_model'1 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t =
     [%#span20] shallow_model'2 self.current
   
-  let rec push'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (value:t) (return'  (ret:()))= {[@expl:precondition] [%#span22] inv'2 value}
+  let rec push'0 (self:borrowed (Vec'0.t_Vec t (Global'0.t_Global))) (value:t) (return'  (ret:()))= {[@expl:precondition] [%#span22] inv'2 value}
     {[@expl:precondition] [%#span21] inv'1 self}
     any
     [ return' (result:())-> {[%#span23] shallow_model'2 self.final = Seq.snoc (shallow_model'1 self) value}
       (! return' {result}) ]
     
   
-  function shallow_model'4 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t =
+  function shallow_model'4 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t =
     [%#span24] shallow_model'2 self
   
-  let rec len'0 (self:Vec'0.t_vec t (Global'0.t_global)) (return'  (ret:usize))= {[@expl:precondition] [%#span25] inv'3 self}
+  let rec len'0 (self:Vec'0.t_Vec t (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] [%#span25] inv'3 self}
     any
     [ return' (result:usize)-> {[%#span26] UIntSize.to_int result = Seq.length (shallow_model'4 self)}
       (! return' {result}) ]
@@ -265,20 +265,20 @@ module Hillel_RightPad
   
   use seq.Seq
   
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec t (Global'0.t_global)) (ix : int) : t =
+  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec t (Global'0.t_Global)) (ix : int) : t =
     [%#span27] Seq.get (shallow_model'2 self) ix
   
-  function shallow_model'3 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq t =
+  function shallow_model'3 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t =
     [%#span24] shallow_model'1 self
   
   use prelude.prelude.Snapshot
   
-  function shallow_model'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global)))) : Seq.seq t =
+  function shallow_model'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_Vec t (Global'0.t_Global)))) : Seq.seq t =
     [%#span28] shallow_model'3 (Snapshot.inner self)
   
   use prelude.prelude.Snapshot
   
-  let rec right_pad (str:borrowed (Vec'0.t_vec t (Global'0.t_global))) (len:usize) (pad:t) (return'  (ret:()))= {[%#shillel5] inv'2 pad}
+  let rec right_pad (str:borrowed (Vec'0.t_Vec t (Global'0.t_Global))) (len:usize) (pad:t) (return'  (ret:()))= {[%#shillel5] inv'2 pad}
     {[%#shillel4] inv'1 str}
     (! bb0
     [ bb0 = s0 [ s0 =  [ &old_str <- [%#shillel0] Snapshot.new str ] s1 | s1 = bb1 ] 
@@ -302,8 +302,8 @@ module Hillel_RightPad
           | s1 = any [ br0 -> {_19 = false} (! bb7) | br1 -> {_19} (! bb5) ]  ]
           
         | bb5 = s0
-          [ s0 = Borrow.borrow_mut <Vec'0.t_vec t (Global'0.t_global)> {str.current}
-              (fun (_ret':borrowed (Vec'0.t_vec t (Global'0.t_global))) ->
+          [ s0 = Borrow.borrow_mut <Vec'0.t_Vec t (Global'0.t_Global)> {str.current}
+              (fun (_ret':borrowed (Vec'0.t_Vec t (Global'0.t_Global))) ->
                  [ &_24 <- _ret' ] 
                  [ &str <- { str with current = _24.final ; } ] 
                 s1)
@@ -317,15 +317,15 @@ module Hillel_RightPad
     | bb7 = s0 [ s0 = {[@expl:type invariant] inv'1 str} s1 | s1 = -{resolve'0 str}- s2 | s2 = return' {_0} ]  ]
     )
     [ & _0 : () = any_l ()
-    | & str : borrowed (Vec'0.t_vec t (Global'0.t_global)) = str
+    | & str : borrowed (Vec'0.t_Vec t (Global'0.t_Global)) = str
     | & len : usize = len
     | & pad : t = pad
-    | & old_str : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))) = any_l ()
+    | & old_str : Snapshot.snap_ty (borrowed (Vec'0.t_Vec t (Global'0.t_Global))) = any_l ()
     | & _19 : bool = any_l ()
     | & _20 : usize = any_l ()
     | & _23 : () = any_l ()
-    | & _24 : borrowed (Vec'0.t_vec t (Global'0.t_global)) = any_l ()
-    | & old_2_0 : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))) = any_l () ]
+    | & _24 : borrowed (Vec'0.t_Vec t (Global'0.t_Global)) = any_l ()
+    | & old_2_0 : Snapshot.snap_ty (borrowed (Vec'0.t_Vec t (Global'0.t_Global))) = any_l () ]
     
     [ return' (result:())-> {[@expl:postcondition] [%#shillel11] forall i : int . Seq.length (shallow_model'1 str) <= i
       /\ i < UIntSize.to_int len  -> index_logic'0 str.final i = pad}
@@ -342,7 +342,7 @@ module Hillel_RightPad
       (! return' {result}) ]
     
 end
-module Hillel_LeftPad
+module M_hillel__left_pad
   type t
   
   let%span shillel0 = "../hillel.rs" 35 18 35 35
@@ -415,7 +415,7 @@ module Hillel_LeftPad
   
   predicate inv'2 (_1 : t)
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'5 (self : t) =
     [%#span14] inv'2 self
@@ -439,45 +439,45 @@ module Hillel_LeftPad
   
   axiom inv'4 : forall x : Seq.seq t . inv'4 x = true
   
-  use Alloc_Vec_Vec_Type as Vec'0
+  use T_alloc__vec__Vec as Vec'0
   
-  predicate inv'0 (_1 : Vec'0.t_vec t (Global'0.t_global))
+  predicate inv'0 (_1 : Vec'0.t_Vec t (Global'0.t_Global))
   
   use prelude.prelude.Borrow
   
-  predicate invariant'3 (self : Vec'0.t_vec t (Global'0.t_global)) =
+  predicate invariant'3 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
     [%#span16] inv'0 self
   
-  predicate inv'3 (_1 : Vec'0.t_vec t (Global'0.t_global))
+  predicate inv'3 (_1 : Vec'0.t_Vec t (Global'0.t_Global))
   
-  axiom inv'3 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'3 x = true
+  axiom inv'3 : forall x : Vec'0.t_Vec t (Global'0.t_Global) . inv'3 x = true
   
   predicate invariant'2 (self : t)
   
   axiom inv'2 : forall x : t . inv'2 x = true
   
-  predicate invariant'1 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
+  predicate invariant'1 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) =
     [%#span17] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'1 (_1 : borrowed (Vec'0.t_vec t (Global'0.t_global)))
+  predicate inv'1 (_1 : borrowed (Vec'0.t_Vec t (Global'0.t_Global)))
   
-  axiom inv'1 : forall x : borrowed (Vec'0.t_vec t (Global'0.t_global)) . inv'1 x = true
-  
-  use prelude.prelude.UIntSize
+  axiom inv'1 : forall x : borrowed (Vec'0.t_Vec t (Global'0.t_Global)) . inv'1 x = true
   
   use prelude.prelude.UIntSize
   
-  constant max'0 : usize = [%#span18] (18446744073709551615 : usize)
+  use prelude.prelude.UIntSize
   
-  function shallow_model'2 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t
+  constant v_MAX'0 : usize = [%#span18] (18446744073709551615 : usize)
   
-  axiom shallow_model'2_spec : forall self : Vec'0.t_vec t (Global'0.t_global) . [%#span19] Seq.length (shallow_model'2 self)
-  <= UIntSize.to_int (max'0 : usize)
+  function shallow_model'2 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
   
-  predicate invariant'0 (self : Vec'0.t_vec t (Global'0.t_global)) =
+  axiom shallow_model'2_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#span19] Seq.length (shallow_model'2 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  predicate invariant'0 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
     [%#span20] inv'4 (shallow_model'2 self)
   
-  axiom inv'0 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'0 x = true
+  axiom inv'0 : forall x : Vec'0.t_Vec t (Global'0.t_Global) . inv'0 x = true
   
   use prelude.prelude.Int
   
@@ -485,18 +485,18 @@ module Hillel_LeftPad
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
+  predicate resolve'0 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) =
     [%#span21] self.final = self.current
   
   use seq.Seq
   
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec t (Global'0.t_global)) (ix : int) : t =
+  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec t (Global'0.t_Global)) (ix : int) : t =
     [%#span22] Seq.get (shallow_model'2 self) ix
   
-  function shallow_model'1 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq t =
+  function shallow_model'1 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t =
     [%#span23] shallow_model'2 self.current
   
-  let rec insert'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (index:usize) (element:t) (return'  (ret:()))= {[@expl:precondition] [%#span25] inv'2 element}
+  let rec insert'0 (self:borrowed (Vec'0.t_Vec t (Global'0.t_Global))) (index:usize) (element:t) (return'  (ret:()))= {[@expl:precondition] [%#span25] inv'2 element}
     {[@expl:precondition] [%#span24] inv'1 self}
     any
     [ return' (result:())-> {[%#span29] forall i : int . UIntSize.to_int index < i
@@ -509,10 +509,10 @@ module Hillel_LeftPad
       (! return' {result}) ]
     
   
-  function shallow_model'4 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t =
+  function shallow_model'4 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t =
     [%#span30] shallow_model'2 self
   
-  let rec len'0 (self:Vec'0.t_vec t (Global'0.t_global)) (return'  (ret:usize))= {[@expl:precondition] [%#span31] inv'3 self}
+  let rec len'0 (self:Vec'0.t_Vec t (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] [%#span31] inv'3 self}
     any
     [ return' (result:usize)-> {[%#span32] UIntSize.to_int result = Seq.length (shallow_model'4 self)}
       (! return' {result}) ]
@@ -520,19 +520,19 @@ module Hillel_LeftPad
   
   use prelude.prelude.Snapshot
   
-  function shallow_model'3 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq t =
+  function shallow_model'3 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t =
     [%#span30] shallow_model'1 self
   
   use prelude.prelude.Snapshot
   
-  function shallow_model'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global)))) : Seq.seq t =
+  function shallow_model'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_Vec t (Global'0.t_Global)))) : Seq.seq t =
     [%#span33] shallow_model'3 (Snapshot.inner self)
   
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
   
-  let rec left_pad (str:borrowed (Vec'0.t_vec t (Global'0.t_global))) (len:usize) (pad:t) (return'  (ret:()))= {[%#shillel9] inv'2 pad}
+  let rec left_pad (str:borrowed (Vec'0.t_Vec t (Global'0.t_Global))) (len:usize) (pad:t) (return'  (ret:()))= {[%#shillel9] inv'2 pad}
     {[%#shillel8] inv'1 str}
     (! bb0
     [ bb0 = s0 [ s0 =  [ &old_str <- [%#shillel0] Snapshot.new str ] s1 | s1 = bb1 ] 
@@ -560,8 +560,8 @@ module Hillel_LeftPad
           | s1 = any [ br0 -> {_20 = false} (! bb9) | br1 -> {_20} (! bb6) ]  ]
           
         | bb6 = s0
-          [ s0 = Borrow.borrow_mut <Vec'0.t_vec t (Global'0.t_global)> {str.current}
-              (fun (_ret':borrowed (Vec'0.t_vec t (Global'0.t_global))) ->
+          [ s0 = Borrow.borrow_mut <Vec'0.t_Vec t (Global'0.t_Global)> {str.current}
+              (fun (_ret':borrowed (Vec'0.t_Vec t (Global'0.t_Global))) ->
                  [ &_25 <- _ret' ] 
                  [ &str <- { str with current = _25.final ; } ] 
                 s1)
@@ -576,17 +576,17 @@ module Hillel_LeftPad
     | bb9 = s0 [ s0 = {[@expl:type invariant] inv'1 str} s1 | s1 = -{resolve'0 str}- s2 | s2 = return' {_0} ]  ]
     )
     [ & _0 : () = any_l ()
-    | & str : borrowed (Vec'0.t_vec t (Global'0.t_global)) = str
+    | & str : borrowed (Vec'0.t_Vec t (Global'0.t_Global)) = str
     | & len : usize = len
     | & pad : t = pad
-    | & old_str : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))) = any_l ()
+    | & old_str : Snapshot.snap_ty (borrowed (Vec'0.t_Vec t (Global'0.t_Global))) = any_l ()
     | & c : Snapshot.snap_ty int = any_l ()
     | & _20 : bool = any_l ()
     | & _21 : usize = any_l ()
     | & _24 : () = any_l ()
-    | & _25 : borrowed (Vec'0.t_vec t (Global'0.t_global)) = any_l ()
+    | & _25 : borrowed (Vec'0.t_Vec t (Global'0.t_Global)) = any_l ()
     | & _27 : Snapshot.snap_ty int = any_l ()
-    | & old_3_0 : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))) = any_l () ]
+    | & old_3_0 : Snapshot.snap_ty (borrowed (Vec'0.t_Vec t (Global'0.t_Global))) = any_l () ]
     
     [ return' (result:())-> {[@expl:postcondition] [%#shillel13] forall i : int . 0 <= i
       /\ i < Seq.length (shallow_model'1 str)
@@ -602,7 +602,7 @@ module Hillel_LeftPad
       (! return' {result}) ]
     
 end
-module Hillel_SubsetPush_Impl
+module M_hillel__subset_push__Impl
   type t
   
   let%span shillel0 = "../hillel.rs" 73 10 73 36
@@ -635,47 +635,47 @@ module Hillel_SubsetPush_Impl
   
   goal vc_subset_push : [%#shillel0] is_subset'0 s (Seq.snoc s elem)
 end
-module Core_Slice_Iter_Iter_Type
+module T_core__slice__iter__Iter
   use prelude.prelude.Borrow
   
-  use Core_Marker_PhantomData_Type as PhantomData'0
+  use T_core__marker__PhantomData as PhantomData'0
   
   use prelude.prelude.Opaque
   
-  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  use T_core__ptr__non_null__NonNull as NonNull'0
   
-  type t_iter 't =
-    | C_Iter (NonNull'0.t_nonnull 't) opaque_ptr (PhantomData'0.t_phantomdata 't)
+  type t_Iter 't =
+    | C_Iter (NonNull'0.t_NonNull 't) opaque_ptr (PhantomData'0.t_PhantomData 't)
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_iter < 't > (input:t_iter 't) (ret  (ptr:NonNull'0.t_nonnull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_phantomdata 't))= any
-    [ good (ptr:NonNull'0.t_nonnull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Iter ptr end_or_len _marker
+  let rec t_Iter < 't > (input:t_Iter 't) (ret  (ptr:NonNull'0.t_NonNull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_PhantomData 't))= any
+    [ good (ptr:NonNull'0.t_NonNull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Iter ptr end_or_len _marker
       = input}
       (! ret {ptr} {end_or_len} {_marker})
-    | bad (ptr:NonNull'0.t_nonnull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Iter ptr end_or_len _marker
+    | bad (ptr:NonNull'0.t_NonNull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Iter ptr end_or_len _marker
       <> input}
       {false}
       any ]
     
 end
-module Core_Option_Option_Type
-  type t_option 't =
+module T_core__option__Option
+  type t_Option 't =
     | C_None
     | C_Some 't
   
   function any_l (_ : 'b) : 'a
   
-  let rec none < 't > (input:t_option 't) (ret  )= any
+  let rec v_None < 't > (input:t_Option 't) (ret  )= any
     [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ]
     
   
-  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any
+  let rec v_Some < 't > (input:t_Option 't) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
     | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
     
 end
-module Hillel_InsertUnique
+module M_hillel__insert_unique
   type t
   
   let%span shillel0 = "../hillel.rs" 82 4 82 47
@@ -824,7 +824,7 @@ module Hillel_InsertUnique
   
   predicate inv'1 (_1 : t)
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'11 (self : t) =
     [%#span18] inv'1 self
@@ -856,14 +856,14 @@ module Hillel_InsertUnique
   
   use prelude.prelude.Int
   
-  constant max'0 : usize = [%#span20] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span20] (18446744073709551615 : usize)
   
   use seq.Seq
   
   function shallow_model'5 (self : slice t) : Seq.seq t
   
   axiom shallow_model'5_spec : forall self : slice t . ([%#span22] shallow_model'5 self = Slice.id self)
-  && ([%#span21] Seq.length (shallow_model'5 self) <= UIntSize.to_int (max'0 : usize))
+  && ([%#span21] Seq.length (shallow_model'5 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'9 (self : slice t) =
     [%#span23] inv'8 (shallow_model'5 self)
@@ -886,14 +886,14 @@ module Hillel_InsertUnique
   
   axiom inv'7 : forall x : t . inv'7 x = true
   
-  use Core_Option_Option_Type as Option'0
+  use T_core__option__Option as Option'0
   
-  predicate invariant'6 (self : Option'0.t_option t) =
+  predicate invariant'6 (self : Option'0.t_Option t) =
     [%#span25] true
   
-  predicate inv'6 (_1 : Option'0.t_option t)
+  predicate inv'6 (_1 : Option'0.t_Option t)
   
-  axiom inv'6 : forall x : Option'0.t_option t . inv'6 x = true
+  axiom inv'6 : forall x : Option'0.t_Option t . inv'6 x = true
   
   predicate invariant'5 (self : slice t) =
     [%#span19] inv'9 self
@@ -902,39 +902,39 @@ module Hillel_InsertUnique
   
   axiom inv'5 : forall x : slice t . inv'5 x = true
   
-  use Alloc_Vec_Vec_Type as Vec'0
+  use T_alloc__vec__Vec as Vec'0
   
-  predicate inv'3 (_1 : Vec'0.t_vec t (Global'0.t_global))
+  predicate inv'3 (_1 : Vec'0.t_Vec t (Global'0.t_Global))
   
-  predicate invariant'4 (self : Vec'0.t_vec t (Global'0.t_global)) =
+  predicate invariant'4 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
     [%#span19] inv'3 self
   
-  predicate inv'4 (_1 : Vec'0.t_vec t (Global'0.t_global))
+  predicate inv'4 (_1 : Vec'0.t_Vec t (Global'0.t_Global))
   
-  axiom inv'4 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'4 x = true
+  axiom inv'4 : forall x : Vec'0.t_Vec t (Global'0.t_Global) . inv'4 x = true
   
-  function shallow_model'3 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t
+  function shallow_model'3 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
   
-  axiom shallow_model'3_spec : forall self : Vec'0.t_vec t (Global'0.t_global) . [%#span26] Seq.length (shallow_model'3 self)
-  <= UIntSize.to_int (max'0 : usize)
+  axiom shallow_model'3_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#span26] Seq.length (shallow_model'3 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
   
-  predicate invariant'3 (self : Vec'0.t_vec t (Global'0.t_global)) =
+  predicate invariant'3 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
     [%#span27] inv'8 (shallow_model'3 self)
   
-  axiom inv'3 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'3 x = true
+  axiom inv'3 : forall x : Vec'0.t_Vec t (Global'0.t_Global) . inv'3 x = true
   
-  predicate invariant'2 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
+  predicate invariant'2 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) =
     [%#span28] inv'3 self.current /\ inv'3 self.final
   
-  predicate inv'2 (_1 : borrowed (Vec'0.t_vec t (Global'0.t_global)))
+  predicate inv'2 (_1 : borrowed (Vec'0.t_Vec t (Global'0.t_Global)))
   
-  axiom inv'2 : forall x : borrowed (Vec'0.t_vec t (Global'0.t_global)) . inv'2 x = true
+  axiom inv'2 : forall x : borrowed (Vec'0.t_Vec t (Global'0.t_Global)) . inv'2 x = true
   
   predicate invariant'1 (self : t)
   
   axiom inv'1 : forall x : t . inv'1 x = true
   
-  use Core_Slice_Iter_Iter_Type as Iter'0
+  use T_core__slice__iter__Iter as Iter'0
   
   use seq.Seq
   
@@ -956,47 +956,47 @@ module Hillel_InsertUnique
   /\ i < Seq.length (to_ref_seq'0 self)  -> Seq.get (to_ref_seq'0 self) i = index_logic'2 self i)
   && ([%#span31] Seq.length (to_ref_seq'0 self) = Seq.length (shallow_model'0 self))
   
-  function shallow_model'2 (self : Iter'0.t_iter t) : slice t
+  function shallow_model'2 (self : Iter'0.t_Iter t) : slice t
   
-  predicate produces'0 (self : Iter'0.t_iter t) (visited : Seq.seq t) (tl : Iter'0.t_iter t) =
+  predicate produces'0 (self : Iter'0.t_Iter t) (visited : Seq.seq t) (tl : Iter'0.t_Iter t) =
     [%#span33] to_ref_seq'0 (shallow_model'2 self) = Seq.(++) visited (to_ref_seq'0 (shallow_model'2 tl))
   
-  function produces_trans'0 (a : Iter'0.t_iter t) (ab : Seq.seq t) (b : Iter'0.t_iter t) (bc : Seq.seq t) (c : Iter'0.t_iter t) : ()
+  function produces_trans'0 (a : Iter'0.t_Iter t) (ab : Seq.seq t) (b : Iter'0.t_Iter t) (bc : Seq.seq t) (c : Iter'0.t_Iter t) : ()
     
    =
     [%#span37] ()
   
-  axiom produces_trans'0_spec : forall a : Iter'0.t_iter t, ab : Seq.seq t, b : Iter'0.t_iter t, bc : Seq.seq t, c : Iter'0.t_iter t . ([%#span34] produces'0 a ab b)
+  axiom produces_trans'0_spec : forall a : Iter'0.t_Iter t, ab : Seq.seq t, b : Iter'0.t_Iter t, bc : Seq.seq t, c : Iter'0.t_Iter t . ([%#span34] produces'0 a ab b)
    -> ([%#span35] produces'0 b bc c)  -> ([%#span36] produces'0 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
-  function produces_refl'0 (self : Iter'0.t_iter t) : () =
+  function produces_refl'0 (self : Iter'0.t_Iter t) : () =
     [%#span39] ()
   
-  axiom produces_refl'0_spec : forall self : Iter'0.t_iter t . [%#span38] produces'0 self (Seq.empty  : Seq.seq t) self
+  axiom produces_refl'0_spec : forall self : Iter'0.t_Iter t . [%#span38] produces'0 self (Seq.empty  : Seq.seq t) self
   
-  predicate invariant'0 (self : Iter'0.t_iter t) =
+  predicate invariant'0 (self : Iter'0.t_Iter t) =
     [%#span25] true
   
-  predicate inv'0 (_1 : Iter'0.t_iter t)
+  predicate inv'0 (_1 : Iter'0.t_Iter t)
   
-  axiom inv'0 : forall x : Iter'0.t_iter t . inv'0 x = true
+  axiom inv'0 : forall x : Iter'0.t_Iter t . inv'0 x = true
   
-  type deep_model_ty'0
+  type t_DeepModelTy'0
   
-  function deep_model'1 (self : t) : deep_model_ty'0
+  function deep_model'1 (self : t) : t_DeepModelTy'0
   
-  function index_logic'1 [@inline:trivial] (self : Vec'0.t_vec t (Global'0.t_global)) (ix : int) : t =
+  function index_logic'1 [@inline:trivial] (self : Vec'0.t_Vec t (Global'0.t_Global)) (ix : int) : t =
     [%#span40] Seq.get (shallow_model'3 self) ix
   
   use seq.Seq
   
   use seq.Seq
   
-  function deep_model'3 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq deep_model_ty'0
+  function deep_model'3 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t_DeepModelTy'0
   
-  axiom deep_model'3_spec : forall self : Vec'0.t_vec t (Global'0.t_global) . ([%#span42] forall i : int . 0 <= i
+  axiom deep_model'3_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . ([%#span42] forall i : int . 0 <= i
   /\ i < Seq.length (shallow_model'3 self)  -> Seq.get (deep_model'3 self) i = deep_model'1 (index_logic'1 self i))
   && ([%#span41] Seq.length (shallow_model'3 self) = Seq.length (deep_model'3 self))
   
@@ -1006,32 +1006,32 @@ module Hillel_InsertUnique
   
   use seq.Seq
   
-  function shallow_model'4 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq t =
+  function shallow_model'4 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t =
     [%#span43] shallow_model'3 self.current
   
-  let rec push'0 (self:borrowed (Vec'0.t_vec t (Global'0.t_global))) (value:t) (return'  (ret:()))= {[@expl:precondition] [%#span45] inv'1 value}
+  let rec push'0 (self:borrowed (Vec'0.t_Vec t (Global'0.t_Global))) (value:t) (return'  (ret:()))= {[@expl:precondition] [%#span45] inv'1 value}
     {[@expl:precondition] [%#span44] inv'2 self}
     any
     [ return' (result:())-> {[%#span46] shallow_model'3 self.final = Seq.snoc (shallow_model'4 self) value}
       (! return' {result}) ]
     
   
-  predicate is_unique'0 [#"../hillel.rs" 52 0 52 34] (s : Seq.seq deep_model_ty'0) =
+  predicate is_unique'0 [#"../hillel.rs" 52 0 52 34] (s : Seq.seq t_DeepModelTy'0) =
     [%#span47] forall i : int, j : int . 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s
      -> Seq.get s i = Seq.get s j  -> i = j
   
-  predicate contains'0 [#"../hillel.rs" 59 0 59 44] (seq : Seq.seq deep_model_ty'0) (elem : deep_model_ty'0) =
+  predicate contains'0 [#"../hillel.rs" 59 0 59 44] (seq : Seq.seq t_DeepModelTy'0) (elem : t_DeepModelTy'0) =
     [%#span48] exists i : int . 0 <= i /\ i < Seq.length seq /\ Seq.get seq i = elem
   
-  predicate resolve'2 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
+  predicate resolve'2 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) =
     [%#span49] self.final = self.current
   
   predicate resolve'1 (self : t)
   
-  function deep_model'2 (self : t) : deep_model_ty'0 =
+  function deep_model'2 (self : t) : t_DeepModelTy'0 =
     [%#span50] deep_model'1 self
   
-  function deep_model'4 (self : t) : deep_model_ty'0 =
+  function deep_model'4 (self : t) : t_DeepModelTy'0 =
     [%#span50] deep_model'2 self
   
   let rec eq'0 (self:t) (other:t) (return'  (ret:bool))= {[@expl:precondition] [%#span52] inv'7 other}
@@ -1042,19 +1042,19 @@ module Hillel_InsertUnique
   
   use seq.Seq
   
-  predicate resolve'0 (self : borrowed (Iter'0.t_iter t)) =
+  predicate resolve'0 (self : borrowed (Iter'0.t_Iter t)) =
     [%#span49] self.final = self.current
   
   use seq.Seq
   
-  function shallow_model'6 (self : borrowed (Iter'0.t_iter t)) : slice t =
+  function shallow_model'6 (self : borrowed (Iter'0.t_Iter t)) : slice t =
     [%#span43] shallow_model'2 self.current
   
-  predicate completed'0 (self : borrowed (Iter'0.t_iter t)) =
+  predicate completed'0 (self : borrowed (Iter'0.t_Iter t)) =
     [%#span54] resolve'0 self /\ shallow_model'5 (shallow_model'6 self) = (Seq.empty  : Seq.seq t)
   
-  let rec next'0 (self:borrowed (Iter'0.t_iter t)) (return'  (ret:Option'0.t_option t))= any
-    [ return' (result:Option'0.t_option t)-> {[%#span56] inv'6 result}
+  let rec next'0 (self:borrowed (Iter'0.t_Iter t)) (return'  (ret:Option'0.t_Option t))= any
+    [ return' (result:Option'0.t_Option t)-> {[%#span56] inv'6 result}
       {[%#span55] match result with
         | Option'0.C_None -> completed'0 self
         | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
@@ -1075,27 +1075,27 @@ module Hillel_InsertUnique
   
   use prelude.prelude.Snapshot
   
-  predicate into_iter_post'0 (self : Iter'0.t_iter t) (res : Iter'0.t_iter t) =
+  predicate into_iter_post'0 (self : Iter'0.t_Iter t) (res : Iter'0.t_Iter t) =
     [%#span58] self = res
   
-  predicate into_iter_pre'0 (self : Iter'0.t_iter t) =
+  predicate into_iter_pre'0 (self : Iter'0.t_Iter t) =
     [%#span59] true
   
-  let rec into_iter'0 (self:Iter'0.t_iter t) (return'  (ret:Iter'0.t_iter t))= {[@expl:precondition] [%#span61] inv'0 self}
+  let rec into_iter'0 (self:Iter'0.t_Iter t) (return'  (ret:Iter'0.t_Iter t))= {[@expl:precondition] [%#span61] inv'0 self}
     {[@expl:precondition] [%#span60] into_iter_pre'0 self}
     any
-    [ return' (result:Iter'0.t_iter t)-> {[%#span62] inv'0 result}
+    [ return' (result:Iter'0.t_Iter t)-> {[%#span62] inv'0 result}
       {[%#span60] into_iter_post'0 self result}
       (! return' {result}) ]
     
   
-  let rec iter'0 (self:slice t) (return'  (ret:Iter'0.t_iter t))= {[@expl:precondition] [%#span63] inv'5 self}
-    any [ return' (result:Iter'0.t_iter t)-> {[%#span64] shallow_model'2 result = self} (! return' {result}) ] 
+  let rec iter'0 (self:slice t) (return'  (ret:Iter'0.t_Iter t))= {[@expl:precondition] [%#span63] inv'5 self}
+    any [ return' (result:Iter'0.t_Iter t)-> {[%#span64] shallow_model'2 result = self} (! return' {result}) ] 
   
-  function shallow_model'1 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t =
+  function shallow_model'1 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t =
     [%#span30] shallow_model'3 self
   
-  let rec deref'0 (self:Vec'0.t_vec t (Global'0.t_global)) (return'  (ret:slice t))= {[@expl:precondition] [%#span65] inv'4 self}
+  let rec deref'0 (self:Vec'0.t_Vec t (Global'0.t_Global)) (return'  (ret:slice t))= {[@expl:precondition] [%#span65] inv'4 self}
     any
     [ return' (result:slice t)-> {[%#span67] inv'5 result}
       {[%#span66] shallow_model'0 result = shallow_model'1 self}
@@ -1104,22 +1104,22 @@ module Hillel_InsertUnique
   
   use prelude.prelude.Snapshot
   
-  predicate is_subset'0 [#"../hillel.rs" 66 0 66 49] (sub : Seq.seq deep_model_ty'0) (sup : Seq.seq deep_model_ty'0) =
+  predicate is_subset'0 [#"../hillel.rs" 66 0 66 49] (sub : Seq.seq t_DeepModelTy'0) (sup : Seq.seq t_DeepModelTy'0) =
     [%#span68] forall i : int . 0 <= i /\ i < Seq.length sub  -> contains'0 sup (Seq.get sub i)
   
   use seq.Seq
   
-  function deep_model'0 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq deep_model_ty'0 =
+  function deep_model'0 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t_DeepModelTy'0 =
     [%#span69] deep_model'3 self.current
   
   use prelude.prelude.Snapshot
   
-  function subset_push'0 [#"../hillel.rs" 74 0 74 37] (s : Seq.seq deep_model_ty'0) (elem : deep_model_ty'0) : () =
+  function subset_push'0 [#"../hillel.rs" 74 0 74 37] (s : Seq.seq t_DeepModelTy'0) (elem : t_DeepModelTy'0) : () =
     [%#span71] ()
   
-  axiom subset_push'0_spec : forall s : Seq.seq deep_model_ty'0, elem : deep_model_ty'0 . [%#span70] is_subset'0 s (Seq.snoc s elem)
+  axiom subset_push'0_spec : forall s : Seq.seq t_DeepModelTy'0, elem : t_DeepModelTy'0 . [%#span70] is_subset'0 s (Seq.snoc s elem)
   
-  let rec insert_unique (vec:borrowed (Vec'0.t_vec t (Global'0.t_global))) (elem:t) (return'  (ret:()))= {[%#shillel13] inv'1 elem}
+  let rec insert_unique (vec:borrowed (Vec'0.t_Vec t (Global'0.t_Global))) (elem:t) (return'  (ret:()))= {[%#shillel13] inv'1 elem}
     {[%#shillel12] inv'2 vec}
     {[%#shillel11] is_unique'0 (deep_model'0 vec)}
     (! bb0
@@ -1133,8 +1133,8 @@ module Hillel_InsertUnique
       
     | bb4 = s0 [ s0 =  [ &ghost_vec <- [%#shillel2] Snapshot.new vec ] s1 | s1 = bb5 ] 
     | bb5 = s0 [ s0 = deref'0 {vec.current} (fun (_ret':slice t) ->  [ &_18 <- _ret' ] s1) | s1 = bb6 ] 
-    | bb6 = s0 [ s0 = iter'0 {_18} (fun (_ret':Iter'0.t_iter t) ->  [ &_16 <- _ret' ] s1) | s1 = bb7 ] 
-    | bb7 = s0 [ s0 = into_iter'0 {_16} (fun (_ret':Iter'0.t_iter t) ->  [ &iter <- _ret' ] s1) | s1 = bb8 ] 
+    | bb6 = s0 [ s0 = iter'0 {_18} (fun (_ret':Iter'0.t_Iter t) ->  [ &_16 <- _ret' ] s1) | s1 = bb7 ] 
+    | bb7 = s0 [ s0 = into_iter'0 {_16} (fun (_ret':Iter'0.t_Iter t) ->  [ &iter <- _ret' ] s1) | s1 = bb8 ] 
     | bb8 = s0 [ s0 =  [ &iter_old <- [%#shillel3] Snapshot.new iter ] s1 | s1 = bb9 ] 
     | bb9 = s0 [ s0 =  [ &produced <- [%#shillel4] Snapshot.new (Seq.empty  : Seq.seq t) ] s1 | s1 = bb10 ] 
     | bb10 = bb11
@@ -1146,14 +1146,14 @@ module Hillel_InsertUnique
         {[@expl:loop invariant] [%#shillel5] inv'0 iter}
         (! s0) [ s0 = bb13 ] 
         [ bb13 = s0
-          [ s0 = Borrow.borrow_mut <Iter'0.t_iter t> {iter}
-              (fun (_ret':borrowed (Iter'0.t_iter t)) ->  [ &_30 <- _ret' ]  [ &iter <- _30.final ] s1)
-          | s1 = Borrow.borrow_final <Iter'0.t_iter t> {_30.current} {Borrow.get_id _30}
-              (fun (_ret':borrowed (Iter'0.t_iter t)) ->
+          [ s0 = Borrow.borrow_mut <Iter'0.t_Iter t> {iter}
+              (fun (_ret':borrowed (Iter'0.t_Iter t)) ->  [ &_30 <- _ret' ]  [ &iter <- _30.final ] s1)
+          | s1 = Borrow.borrow_final <Iter'0.t_Iter t> {_30.current} {Borrow.get_id _30}
+              (fun (_ret':borrowed (Iter'0.t_Iter t)) ->
                  [ &_29 <- _ret' ] 
                  [ &_30 <- { _30 with current = _29.final ; } ] 
                 s2)
-          | s2 = next'0 {_29} (fun (_ret':Option'0.t_option t) ->  [ &_28 <- _ret' ] s3)
+          | s2 = next'0 {_29} (fun (_ret':Option'0.t_Option t) ->  [ &_28 <- _ret' ] s3)
           | s3 = bb14 ]
           
         | bb14 = s0
@@ -1162,7 +1162,7 @@ module Hillel_InsertUnique
           
         | bb16 = bb18
         | bb18 = s0
-          [ s0 = Option'0.some <t> {_28} (fun (r0'0:t) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
+          [ s0 = Option'0.v_Some <t> {_28} (fun (r0'0:t) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
           | s1 = 
             [ &_33 <- [%#shillel6] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
             
@@ -1197,8 +1197,8 @@ module Hillel_InsertUnique
       | s2 = bb24 ]
       
     | bb24 = s0
-      [ s0 = Borrow.borrow_final <Vec'0.t_vec t (Global'0.t_global)> {vec.current} {Borrow.get_id vec}
-          (fun (_ret':borrowed (Vec'0.t_vec t (Global'0.t_global))) ->
+      [ s0 = Borrow.borrow_final <Vec'0.t_Vec t (Global'0.t_Global)> {vec.current} {Borrow.get_id vec}
+          (fun (_ret':borrowed (Vec'0.t_Vec t (Global'0.t_Global))) ->
              [ &_51 <- _ret' ] 
              [ &vec <- { vec with current = _51.final ; } ] 
             s1)
@@ -1210,24 +1210,24 @@ module Hillel_InsertUnique
     | bb26 = return' {_0} ]
     )
     [ & _0 : () = any_l ()
-    | & vec : borrowed (Vec'0.t_vec t (Global'0.t_global)) = vec
+    | & vec : borrowed (Vec'0.t_Vec t (Global'0.t_Global)) = vec
     | & elem : t = elem
     | & _8 : Snapshot.snap_ty () = any_l ()
-    | & ghost_vec : Snapshot.snap_ty (borrowed (Vec'0.t_vec t (Global'0.t_global))) = any_l ()
-    | & iter : Iter'0.t_iter t = any_l ()
-    | & _16 : Iter'0.t_iter t = any_l ()
+    | & ghost_vec : Snapshot.snap_ty (borrowed (Vec'0.t_Vec t (Global'0.t_Global))) = any_l ()
+    | & iter : Iter'0.t_Iter t = any_l ()
+    | & _16 : Iter'0.t_Iter t = any_l ()
     | & _18 : slice t = any_l ()
-    | & iter_old : Snapshot.snap_ty (Iter'0.t_iter t) = any_l ()
+    | & iter_old : Snapshot.snap_ty (Iter'0.t_Iter t) = any_l ()
     | & produced : Snapshot.snap_ty (Seq.seq t) = any_l ()
-    | & _28 : Option'0.t_option t = any_l ()
-    | & _29 : borrowed (Iter'0.t_iter t) = any_l ()
-    | & _30 : borrowed (Iter'0.t_iter t) = any_l ()
+    | & _28 : Option'0.t_Option t = any_l ()
+    | & _29 : borrowed (Iter'0.t_Iter t) = any_l ()
+    | & _30 : borrowed (Iter'0.t_Iter t) = any_l ()
     | & __creusot_proc_iter_elem : t = any_l ()
     | & _33 : Snapshot.snap_ty (Seq.seq t) = any_l ()
     | & e : t = any_l ()
     | & _38 : bool = any_l ()
     | & _50 : () = any_l ()
-    | & _51 : borrowed (Vec'0.t_vec t (Global'0.t_global)) = any_l () ]
+    | & _51 : borrowed (Vec'0.t_Vec t (Global'0.t_Global)) = any_l () ]
     
     [ return' (result:())-> {[@expl:postcondition] [%#shillel17] contains'0 (deep_model'3 vec.final) (deep_model'1 elem)}
       {[@expl:postcondition] [%#shillel16] is_subset'0 (deep_model'3 vec.final) (Seq.snoc (deep_model'0 vec) (deep_model'1 elem))}
@@ -1236,28 +1236,28 @@ module Hillel_InsertUnique
       (! return' {result}) ]
     
 end
-module Core_Ops_Range_Range_Type
-  type t_range 'idx =
+module T_core__ops__range__Range
+  type t_Range 'idx =
     | C_Range 'idx 'idx
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_range < 'idx > (input:t_range 'idx) (ret  (start:'idx) (end':'idx))= any
+  let rec t_Range < 'idx > (input:t_Range 'idx) (ret  (start:'idx) (end':'idx))= any
     [ good (start:'idx) (end':'idx)-> {C_Range start end' = input} (! ret {start} {end'})
     | bad (start:'idx) (end':'idx)-> {C_Range start end' <> input} {false} any ]
     
   
-  function range_end (self : t_range 'idx) : 'idx =
+  function t_Range__end (self : t_Range 'idx) : 'idx =
     match self with
       | C_Range _ a -> a
       end
   
-  function range_start (self : t_range 'idx) : 'idx =
+  function t_Range__start (self : t_Range 'idx) : 'idx =
     match self with
       | C_Range a _ -> a
       end
 end
-module Hillel_Unique
+module M_hillel__unique
   type t
   
   let%span shillel0 = "../hillel.rs" 104 21 104 31
@@ -1408,7 +1408,7 @@ module Hillel_Unique
   
   predicate inv'6 (_1 : t)
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'9 (self : t) =
     [%#span19] inv'6 self
@@ -1431,14 +1431,14 @@ module Hillel_Unique
   
   use prelude.prelude.Int
   
-  constant max'0 : usize = [%#span20] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span20] (18446744073709551615 : usize)
   
   use seq.Seq
   
   function shallow_model'2 (self : slice t) : Seq.seq t
   
   axiom shallow_model'2_spec : forall self : slice t . ([%#span22] shallow_model'2 self = Slice.id self)
-  && ([%#span21] Seq.length (shallow_model'2 self) <= UIntSize.to_int (max'0 : usize))
+  && ([%#span21] Seq.length (shallow_model'2 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'8 (self : slice t) =
     [%#span23] inv'7 (shallow_model'2 self)
@@ -1458,27 +1458,27 @@ module Hillel_Unique
   
   axiom inv'6 : forall x : t . inv'6 x = true
   
-  use Core_Option_Option_Type as Option'0
+  use T_core__option__Option as Option'0
   
-  predicate invariant'5 (self : Option'0.t_option usize) =
+  predicate invariant'5 (self : Option'0.t_Option usize) =
     [%#span25] true
   
-  predicate inv'5 (_1 : Option'0.t_option usize)
+  predicate inv'5 (_1 : Option'0.t_Option usize)
   
-  axiom inv'5 : forall x : Option'0.t_option usize . inv'5 x = true
+  axiom inv'5 : forall x : Option'0.t_Option usize . inv'5 x = true
   
-  use Core_Ops_Range_Range_Type as Range'0
+  use T_core__ops__range__Range as Range'0
   
-  predicate inv'0 (_1 : Range'0.t_range usize)
+  predicate inv'0 (_1 : Range'0.t_Range usize)
   
   use prelude.prelude.Borrow
   
-  predicate invariant'4 (self : borrowed (Range'0.t_range usize)) =
+  predicate invariant'4 (self : borrowed (Range'0.t_Range usize)) =
     [%#span26] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'4 (_1 : borrowed (Range'0.t_range usize))
+  predicate inv'4 (_1 : borrowed (Range'0.t_Range usize))
   
-  axiom inv'4 : forall x : borrowed (Range'0.t_range usize) . inv'4 x = true
+  axiom inv'4 : forall x : borrowed (Range'0.t_Range usize) . inv'4 x = true
   
   predicate invariant'3 (self : slice t) =
     [%#span27] inv'8 self
@@ -1487,26 +1487,26 @@ module Hillel_Unique
   
   axiom inv'3 : forall x : slice t . inv'3 x = true
   
-  use Alloc_Vec_Vec_Type as Vec'0
+  use T_alloc__vec__Vec as Vec'0
   
-  predicate inv'1 (_1 : Vec'0.t_vec t (Global'0.t_global))
+  predicate inv'1 (_1 : Vec'0.t_Vec t (Global'0.t_Global))
   
-  predicate invariant'2 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
+  predicate invariant'2 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) =
     [%#span26] inv'1 self.current /\ inv'1 self.final
   
-  predicate inv'2 (_1 : borrowed (Vec'0.t_vec t (Global'0.t_global)))
+  predicate inv'2 (_1 : borrowed (Vec'0.t_Vec t (Global'0.t_Global)))
   
-  axiom inv'2 : forall x : borrowed (Vec'0.t_vec t (Global'0.t_global)) . inv'2 x = true
+  axiom inv'2 : forall x : borrowed (Vec'0.t_Vec t (Global'0.t_Global)) . inv'2 x = true
   
-  function shallow_model'1 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t
+  function shallow_model'1 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
   
-  axiom shallow_model'1_spec : forall self : Vec'0.t_vec t (Global'0.t_global) . [%#span28] Seq.length (shallow_model'1 self)
-  <= UIntSize.to_int (max'0 : usize)
+  axiom shallow_model'1_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#span28] Seq.length (shallow_model'1 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
   
-  predicate invariant'1 (self : Vec'0.t_vec t (Global'0.t_global)) =
+  predicate invariant'1 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
     [%#span29] inv'7 (shallow_model'1 self)
   
-  axiom inv'1 : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'1 x = true
+  axiom inv'1 : forall x : Vec'0.t_Vec t (Global'0.t_Global) . inv'1 x = true
   
   use seq.Seq
   
@@ -1519,38 +1519,40 @@ module Hillel_Unique
   function deep_model'2 (self : usize) : int =
     [%#span30] UIntSize.to_int self
   
-  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  use T_core__ops__range__Range as T_core__ops__range__Range
   
-  predicate produces'0 (self : Range'0.t_range usize) (visited : Seq.seq usize) (o : Range'0.t_range usize) =
-    [%#span31] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o
-    /\ deep_model'2 (Core_Ops_Range_Range_Type.range_start self)
-    <= deep_model'2 (Core_Ops_Range_Range_Type.range_start o)
+  predicate produces'0 (self : Range'0.t_Range usize) (visited : Seq.seq usize) (o : Range'0.t_Range usize) =
+    [%#span31] T_core__ops__range__Range.t_Range__end self = T_core__ops__range__Range.t_Range__end o
+    /\ deep_model'2 (T_core__ops__range__Range.t_Range__start self)
+    <= deep_model'2 (T_core__ops__range__Range.t_Range__start o)
     /\ (Seq.length visited > 0
-     -> deep_model'2 (Core_Ops_Range_Range_Type.range_start o) <= deep_model'2 (Core_Ops_Range_Range_Type.range_end o))
+     -> deep_model'2 (T_core__ops__range__Range.t_Range__start o)
+    <= deep_model'2 (T_core__ops__range__Range.t_Range__end o))
     /\ Seq.length visited
-    = deep_model'2 (Core_Ops_Range_Range_Type.range_start o) - deep_model'2 (Core_Ops_Range_Range_Type.range_start self)
+    = deep_model'2 (T_core__ops__range__Range.t_Range__start o)
+    - deep_model'2 (T_core__ops__range__Range.t_Range__start self)
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> deep_model'2 (Seq.get visited i) = deep_model'2 (Core_Ops_Range_Range_Type.range_start self) + i)
+     -> deep_model'2 (Seq.get visited i) = deep_model'2 (T_core__ops__range__Range.t_Range__start self) + i)
   
-  function produces_trans'0 (a : Range'0.t_range usize) (ab : Seq.seq usize) (b : Range'0.t_range usize) (bc : Seq.seq usize) (c : Range'0.t_range usize) : ()
+  function produces_trans'0 (a : Range'0.t_Range usize) (ab : Seq.seq usize) (b : Range'0.t_Range usize) (bc : Seq.seq usize) (c : Range'0.t_Range usize) : ()
     
   
-  axiom produces_trans'0_spec : forall a : Range'0.t_range usize, ab : Seq.seq usize, b : Range'0.t_range usize, bc : Seq.seq usize, c : Range'0.t_range usize . ([%#span32] inv'0 a)
+  axiom produces_trans'0_spec : forall a : Range'0.t_Range usize, ab : Seq.seq usize, b : Range'0.t_Range usize, bc : Seq.seq usize, c : Range'0.t_Range usize . ([%#span32] inv'0 a)
    -> ([%#span33] inv'0 b)
    -> ([%#span34] inv'0 c)
    -> ([%#span35] produces'0 a ab b)  -> ([%#span36] produces'0 b bc c)  -> ([%#span37] produces'0 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
-  function produces_refl'0 (self : Range'0.t_range usize) : ()
+  function produces_refl'0 (self : Range'0.t_Range usize) : ()
   
-  axiom produces_refl'0_spec : forall self : Range'0.t_range usize . ([%#span38] inv'0 self)
+  axiom produces_refl'0_spec : forall self : Range'0.t_Range usize . ([%#span38] inv'0 self)
    -> ([%#span39] produces'0 self (Seq.empty  : Seq.seq usize) self)
   
-  predicate invariant'0 (self : Range'0.t_range usize) =
+  predicate invariant'0 (self : Range'0.t_Range usize) =
     [%#span25] true
   
-  axiom inv'0 : forall x : Range'0.t_range usize . inv'0 x = true
+  axiom inv'0 : forall x : Range'0.t_Range usize . inv'0 x = true
   
   use prelude.prelude.Snapshot
   
@@ -1565,44 +1567,44 @@ module Hillel_Unique
   
   use prelude.prelude.Snapshot
   
-  predicate resolve'1 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) =
+  predicate resolve'1 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) =
     [%#span41] self.final = self.current
   
-  type deep_model_ty'0
+  type t_DeepModelTy'0
   
   use seq.Seq
   
   use seq.Seq
   
-  predicate contains'0 [#"../hillel.rs" 59 0 59 44] (seq : Seq.seq deep_model_ty'0) (elem : deep_model_ty'0) =
+  predicate contains'0 [#"../hillel.rs" 59 0 59 44] (seq : Seq.seq t_DeepModelTy'0) (elem : t_DeepModelTy'0) =
     [%#span42] exists i : int . 0 <= i /\ i < Seq.length seq /\ Seq.get seq i = elem
   
   use seq.Seq
   
-  function deep_model'3 (self : t) : deep_model_ty'0
+  function deep_model'3 (self : t) : t_DeepModelTy'0
   
-  predicate is_subset'0 [#"../hillel.rs" 66 0 66 49] (sub : Seq.seq deep_model_ty'0) (sup : Seq.seq deep_model_ty'0) =
+  predicate is_subset'0 [#"../hillel.rs" 66 0 66 49] (sub : Seq.seq t_DeepModelTy'0) (sup : Seq.seq t_DeepModelTy'0) =
     [%#span43] forall i : int . 0 <= i /\ i < Seq.length sub  -> contains'0 sup (Seq.get sub i)
   
   use seq.Seq
   
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec t (Global'0.t_global)) (ix : int) : t =
+  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec t (Global'0.t_Global)) (ix : int) : t =
     [%#span44] Seq.get (shallow_model'1 self) ix
   
-  function deep_model'0 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq deep_model_ty'0
+  function deep_model'0 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t_DeepModelTy'0
   
-  axiom deep_model'0_spec : forall self : Vec'0.t_vec t (Global'0.t_global) . ([%#span46] forall i : int . 0 <= i
+  axiom deep_model'0_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . ([%#span46] forall i : int . 0 <= i
   /\ i < Seq.length (shallow_model'1 self)  -> Seq.get (deep_model'0 self) i = deep_model'3 (index_logic'0 self i))
   && ([%#span45] Seq.length (shallow_model'1 self) = Seq.length (deep_model'0 self))
   
-  predicate is_unique'0 [#"../hillel.rs" 52 0 52 34] (s : Seq.seq deep_model_ty'0) =
+  predicate is_unique'0 [#"../hillel.rs" 52 0 52 34] (s : Seq.seq t_DeepModelTy'0) =
     [%#span47] forall i : int, j : int . 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s
      -> Seq.get s i = Seq.get s j  -> i = j
   
-  function deep_model'5 (self : borrowed (Vec'0.t_vec t (Global'0.t_global))) : Seq.seq deep_model_ty'0 =
+  function deep_model'5 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t_DeepModelTy'0 =
     [%#span48] deep_model'0 self.current
   
-  let rec insert_unique'0 (vec:borrowed (Vec'0.t_vec t (Global'0.t_global))) (elem:t) (return'  (ret:()))= {[@expl:precondition] [%#span51] inv'6 elem}
+  let rec insert_unique'0 (vec:borrowed (Vec'0.t_Vec t (Global'0.t_Global))) (elem:t) (return'  (ret:()))= {[@expl:precondition] [%#span51] inv'6 elem}
     {[@expl:precondition] [%#span50] inv'2 vec}
     {[@expl:precondition] [%#span49] is_unique'0 (deep_model'5 vec)}
     any
@@ -1615,17 +1617,17 @@ module Hillel_Unique
   
   use seq.Seq
   
-  predicate resolve'0 (self : borrowed (Range'0.t_range usize)) =
+  predicate resolve'0 (self : borrowed (Range'0.t_Range usize)) =
     [%#span41] self.final = self.current
   
-  predicate completed'0 (self : borrowed (Range'0.t_range usize)) =
+  predicate completed'0 (self : borrowed (Range'0.t_Range usize)) =
     [%#span56] resolve'0 self
-    /\ deep_model'2 (Core_Ops_Range_Range_Type.range_start self.current)
-    >= deep_model'2 (Core_Ops_Range_Range_Type.range_end self.current)
+    /\ deep_model'2 (T_core__ops__range__Range.t_Range__start self.current)
+    >= deep_model'2 (T_core__ops__range__Range.t_Range__end self.current)
   
-  let rec next'0 (self:borrowed (Range'0.t_range usize)) (return'  (ret:Option'0.t_option usize))= {[@expl:precondition] [%#span57] inv'4 self}
+  let rec next'0 (self:borrowed (Range'0.t_Range usize)) (return'  (ret:Option'0.t_Option usize))= {[@expl:precondition] [%#span57] inv'4 self}
     any
-    [ return' (result:Option'0.t_option usize)-> {[%#span59] inv'5 result}
+    [ return' (result:Option'0.t_Option usize)-> {[%#span59] inv'5 result}
       {[%#span58] match result with
         | Option'0.C_None -> completed'0 self
         | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
@@ -1640,13 +1642,13 @@ module Hillel_Unique
   function index_logic'1 [@inline:trivial] (self : slice t) (ix : int) : t =
     [%#span60] Seq.get (shallow_model'2 self) ix
   
-  function deep_model'4 (self : slice t) : Seq.seq deep_model_ty'0
+  function deep_model'4 (self : slice t) : Seq.seq t_DeepModelTy'0
   
   axiom deep_model'4_spec : forall self : slice t . ([%#span62] forall i : int . 0 <= i
   /\ i < Seq.length (deep_model'4 self)  -> Seq.get (deep_model'4 self) i = deep_model'3 (index_logic'1 self i))
   && ([%#span61] Seq.length (shallow_model'0 self) = Seq.length (deep_model'4 self))
   
-  function deep_model'1 (self : slice t) : Seq.seq deep_model_ty'0 =
+  function deep_model'1 (self : slice t) : Seq.seq t_DeepModelTy'0 =
     [%#span63] deep_model'4 self
   
   use prelude.prelude.Snapshot
@@ -1657,16 +1659,16 @@ module Hillel_Unique
   
   use prelude.prelude.Snapshot
   
-  predicate into_iter_post'0 (self : Range'0.t_range usize) (res : Range'0.t_range usize) =
+  predicate into_iter_post'0 (self : Range'0.t_Range usize) (res : Range'0.t_Range usize) =
     [%#span64] self = res
   
-  predicate into_iter_pre'0 (self : Range'0.t_range usize) =
+  predicate into_iter_pre'0 (self : Range'0.t_Range usize) =
     [%#span65] true
   
-  let rec into_iter'0 (self:Range'0.t_range usize) (return'  (ret:Range'0.t_range usize))= {[@expl:precondition] [%#span67] inv'0 self}
+  let rec into_iter'0 (self:Range'0.t_Range usize) (return'  (ret:Range'0.t_Range usize))= {[@expl:precondition] [%#span67] inv'0 self}
     {[@expl:precondition] [%#span66] into_iter_pre'0 self}
     any
-    [ return' (result:Range'0.t_range usize)-> {[%#span68] inv'0 result}
+    [ return' (result:Range'0.t_Range usize)-> {[%#span68] inv'0 result}
       {[%#span66] into_iter_post'0 self result}
       (! return' {result}) ]
     
@@ -1681,23 +1683,23 @@ module Hillel_Unique
   
   use seq.Seq
   
-  let rec new'0 (_1:()) (return'  (ret:Vec'0.t_vec t (Global'0.t_global)))= any
-    [ return' (result:Vec'0.t_vec t (Global'0.t_global))-> {[%#span72] inv'1 result}
+  let rec new'0 (_1:()) (return'  (ret:Vec'0.t_Vec t (Global'0.t_Global)))= any
+    [ return' (result:Vec'0.t_Vec t (Global'0.t_Global))-> {[%#span72] inv'1 result}
       {[%#span71] Seq.length (shallow_model'1 result) = 0}
       (! return' {result}) ]
     
   
-  let rec unique (str:slice t) (return'  (ret:Vec'0.t_vec t (Global'0.t_global)))= {[%#shillel14] inv'3 str}
+  let rec unique (str:slice t) (return'  (ret:Vec'0.t_Vec t (Global'0.t_Global)))= {[%#shillel14] inv'3 str}
     (! bb0
     [ bb0 = s0
-      [ s0 = new'0 {[%#shillel0] ()} (fun (_ret':Vec'0.t_vec t (Global'0.t_global)) ->  [ &unique <- _ret' ] s1)
+      [ s0 = new'0 {[%#shillel0] ()} (fun (_ret':Vec'0.t_Vec t (Global'0.t_Global)) ->  [ &unique <- _ret' ] s1)
       | s1 = bb1 ]
       
     | bb1 = s0 [ s0 =  [ &sub_str <- [%#shillel1] Snapshot.new (Seq.empty  : Seq.seq t) ] s1 | s1 = bb2 ] 
     | bb2 = s0 [ s0 = len'0 {str} (fun (_ret':usize) ->  [ &_11 <- _ret' ] s1) | s1 = bb3 ] 
     | bb3 = s0
       [ s0 =  [ &_10 <- Range'0.C_Range ([%#shillel2] (0 : usize)) _11 ] s1
-      | s1 = into_iter'0 {_10} (fun (_ret':Range'0.t_range usize) ->  [ &iter <- _ret' ] s2)
+      | s1 = into_iter'0 {_10} (fun (_ret':Range'0.t_Range usize) ->  [ &iter <- _ret' ] s2)
       | s2 = bb4 ]
       
     | bb4 = s0 [ s0 =  [ &iter_old <- [%#shillel3] Snapshot.new iter ] s1 | s1 = bb5 ] 
@@ -1714,14 +1716,14 @@ module Hillel_Unique
         {[@expl:loop invariant] [%#shillel5] inv'0 iter}
         (! s0) [ s0 = bb11 ] 
         [ bb11 = s0
-          [ s0 = Borrow.borrow_mut <Range'0.t_range usize> {iter}
-              (fun (_ret':borrowed (Range'0.t_range usize)) ->  [ &_25 <- _ret' ]  [ &iter <- _25.final ] s1)
-          | s1 = Borrow.borrow_final <Range'0.t_range usize> {_25.current} {Borrow.get_id _25}
-              (fun (_ret':borrowed (Range'0.t_range usize)) ->
+          [ s0 = Borrow.borrow_mut <Range'0.t_Range usize> {iter}
+              (fun (_ret':borrowed (Range'0.t_Range usize)) ->  [ &_25 <- _ret' ]  [ &iter <- _25.final ] s1)
+          | s1 = Borrow.borrow_final <Range'0.t_Range usize> {_25.current} {Borrow.get_id _25}
+              (fun (_ret':borrowed (Range'0.t_Range usize)) ->
                  [ &_24 <- _ret' ] 
                  [ &_25 <- { _25 with current = _24.final ; } ] 
                 s2)
-          | s2 = next'0 {_24} (fun (_ret':Option'0.t_option usize) ->  [ &_23 <- _ret' ] s3)
+          | s2 = next'0 {_24} (fun (_ret':Option'0.t_Option usize) ->  [ &_23 <- _ret' ] s3)
           | s3 = bb12 ]
           
         | bb12 = s0
@@ -1732,7 +1734,7 @@ module Hillel_Unique
           
         | bb14 = bb16
         | bb16 = s0
-          [ s0 = Option'0.some <usize> {_23} (fun (r0'0:usize) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
+          [ s0 = Option'0.v_Some <usize> {_23} (fun (r0'0:usize) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
           | s1 = 
             [ &_28 <- [%#shillel9] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
             
@@ -1750,14 +1752,14 @@ module Hillel_Unique
           
         | bb18 = s0
           [ s0 = Slice.get <t> {str} {_32} (fun (r'0:t) ->  [ &elem <- r'0 ] s1)
-          | s1 = Borrow.borrow_mut <Vec'0.t_vec t (Global'0.t_global)> {unique}
-              (fun (_ret':borrowed (Vec'0.t_vec t (Global'0.t_global))) ->
+          | s1 = Borrow.borrow_mut <Vec'0.t_Vec t (Global'0.t_Global)> {unique}
+              (fun (_ret':borrowed (Vec'0.t_Vec t (Global'0.t_Global))) ->
                  [ &_37 <- _ret' ] 
                  [ &unique <- _37.final ] 
                 s2)
           | s2 = -{inv'1 _37.final}- s3
-          | s3 = Borrow.borrow_final <Vec'0.t_vec t (Global'0.t_global)> {_37.current} {Borrow.get_id _37}
-              (fun (_ret':borrowed (Vec'0.t_vec t (Global'0.t_global))) ->
+          | s3 = Borrow.borrow_final <Vec'0.t_Vec t (Global'0.t_Global)> {_37.current} {Borrow.get_id _37}
+              (fun (_ret':borrowed (Vec'0.t_Vec t (Global'0.t_Global))) ->
                  [ &_36 <- _ret' ] 
                  [ &_37 <- { _37 with current = _36.final ; } ] 
                 s4)
@@ -1787,18 +1789,18 @@ module Hillel_Unique
       
     | bb22 = return' {_0} ]
     )
-    [ & _0 : Vec'0.t_vec t (Global'0.t_global) = any_l ()
+    [ & _0 : Vec'0.t_Vec t (Global'0.t_Global) = any_l ()
     | & str : slice t = str
-    | & unique : Vec'0.t_vec t (Global'0.t_global) = any_l ()
+    | & unique : Vec'0.t_Vec t (Global'0.t_Global) = any_l ()
     | & sub_str : Snapshot.snap_ty (Seq.seq t) = any_l ()
-    | & iter : Range'0.t_range usize = any_l ()
-    | & _10 : Range'0.t_range usize = any_l ()
+    | & iter : Range'0.t_Range usize = any_l ()
+    | & _10 : Range'0.t_Range usize = any_l ()
     | & _11 : usize = any_l ()
-    | & iter_old : Snapshot.snap_ty (Range'0.t_range usize) = any_l ()
+    | & iter_old : Snapshot.snap_ty (Range'0.t_Range usize) = any_l ()
     | & produced : Snapshot.snap_ty (Seq.seq usize) = any_l ()
-    | & _23 : Option'0.t_option usize = any_l ()
-    | & _24 : borrowed (Range'0.t_range usize) = any_l ()
-    | & _25 : borrowed (Range'0.t_range usize) = any_l ()
+    | & _23 : Option'0.t_Option usize = any_l ()
+    | & _24 : borrowed (Range'0.t_Range usize) = any_l ()
+    | & _25 : borrowed (Range'0.t_Range usize) = any_l ()
     | & __creusot_proc_iter_elem : usize = any_l ()
     | & _28 : Snapshot.snap_ty (Seq.seq usize) = any_l ()
     | & i : usize = any_l ()
@@ -1807,18 +1809,18 @@ module Hillel_Unique
     | & _33 : usize = any_l ()
     | & _34 : bool = any_l ()
     | & _35 : () = any_l ()
-    | & _36 : borrowed (Vec'0.t_vec t (Global'0.t_global)) = any_l ()
-    | & _37 : borrowed (Vec'0.t_vec t (Global'0.t_global)) = any_l ()
+    | & _36 : borrowed (Vec'0.t_Vec t (Global'0.t_Global)) = any_l ()
+    | & _37 : borrowed (Vec'0.t_Vec t (Global'0.t_Global)) = any_l ()
     | & _39 : Snapshot.snap_ty (Seq.seq t) = any_l () ]
     
-    [ return' (result:Vec'0.t_vec t (Global'0.t_global))-> {[@expl:postcondition] [%#shillel18] inv'1 result}
+    [ return' (result:Vec'0.t_Vec t (Global'0.t_Global))-> {[@expl:postcondition] [%#shillel18] inv'1 result}
       {[@expl:postcondition] [%#shillel17] is_subset'0 (deep_model'1 str) (deep_model'0 result)}
       {[@expl:postcondition] [%#shillel16] is_subset'0 (deep_model'0 result) (deep_model'1 str)}
       {[@expl:postcondition] [%#shillel15] is_unique'0 (deep_model'0 result)}
       (! return' {result}) ]
     
 end
-module Hillel_SumRange_Impl
+module M_hillel__sum_range__Impl
   let%span shillel0 = "../hillel.rs" 123 11 123 53
   
   let%span shillel1 = "../hillel.rs" 124 10 124 21
@@ -1855,7 +1857,7 @@ module Hillel_SumRange_Impl
     [%#shillel1] 0 >= 0
   )
 end
-module Hillel_SumRangeSplit_Impl
+module M_hillel__sum_range_split__Impl
   let%span shillel0 = "../hillel.rs" 135 11 135 63
   
   let%span shillel1 = "../hillel.rs" 136 10 136 85
@@ -1911,7 +1913,7 @@ module Hillel_SumRangeSplit_Impl
     [%#shillel1] sum_range'0 seq from to' = sum_range'0 seq from i + sum_range'0 seq i to'
   )
 end
-module Hillel_Score_Impl
+module M_hillel__score__Impl
   let%span shillel0 = "../hillel.rs" 144 11 144 35
   
   let%span shillel1 = "../hillel.rs" 145 10 145 64
@@ -1986,7 +1988,7 @@ module Hillel_Score_Impl
   \/ i = Seq.length seq  -> result = sum_range'0 seq 0 (Seq.length seq))
   && ([%#shillel1] 0 <= result /\ result <= sum_range'0 seq 0 (Seq.length seq)))))))
 end
-module Hillel_Fulcrum
+module M_hillel__fulcrum
   let%span shillel0 = "../hillel.rs" 160 25 160 26
   
   let%span shillel1 = "../hillel.rs" 162 4 162 60
@@ -2168,7 +2170,7 @@ module Hillel_Fulcrum
   
   axiom inv'9 : forall x : uint32 . inv'9 x = true
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'8 (self : uint32) =
     [%#span25] inv'9 self
@@ -2200,12 +2202,12 @@ module Hillel_Fulcrum
   
   use prelude.prelude.UIntSize
   
-  constant max'0 : usize = [%#span27] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span27] (18446744073709551615 : usize)
   
   function shallow_model'2 (self : slice uint32) : Seq.seq uint32
   
   axiom shallow_model'2_spec : forall self : slice uint32 . ([%#span29] shallow_model'2 self = Slice.id self)
-  && ([%#span28] Seq.length (shallow_model'2 self) <= UIntSize.to_int (max'0 : usize))
+  && ([%#span28] Seq.length (shallow_model'2 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'6 (self : slice uint32) =
     [%#span30] inv'7 (shallow_model'2 self)
@@ -2214,34 +2216,34 @@ module Hillel_Fulcrum
   
   axiom inv'6 : forall x : slice uint32 . inv'6 x = true
   
-  use Core_Option_Option_Type as Option'0
+  use T_core__option__Option as Option'0
   
-  predicate invariant'5 (self : Option'0.t_option usize) =
+  predicate invariant'5 (self : Option'0.t_Option usize) =
     [%#span24] true
   
-  predicate inv'5 (_1 : Option'0.t_option usize)
+  predicate inv'5 (_1 : Option'0.t_Option usize)
   
-  axiom inv'5 : forall x : Option'0.t_option usize . inv'5 x = true
+  axiom inv'5 : forall x : Option'0.t_Option usize . inv'5 x = true
   
-  use Core_Ops_Range_Range_Type as Range'0
+  use T_core__ops__range__Range as Range'0
   
-  predicate inv'1 (_1 : Range'0.t_range usize)
+  predicate inv'1 (_1 : Range'0.t_Range usize)
   
   use prelude.prelude.Borrow
   
-  predicate invariant'4 (self : borrowed (Range'0.t_range usize)) =
+  predicate invariant'4 (self : borrowed (Range'0.t_Range usize)) =
     [%#span31] inv'1 self.current /\ inv'1 self.final
   
-  predicate inv'4 (_1 : borrowed (Range'0.t_range usize))
+  predicate inv'4 (_1 : borrowed (Range'0.t_Range usize))
   
-  axiom inv'4 : forall x : borrowed (Range'0.t_range usize) . inv'4 x = true
+  axiom inv'4 : forall x : borrowed (Range'0.t_Range usize) . inv'4 x = true
   
-  predicate invariant'3 (self : Option'0.t_option uint32) =
+  predicate invariant'3 (self : Option'0.t_Option uint32) =
     [%#span24] true
   
-  predicate inv'3 (_1 : Option'0.t_option uint32)
+  predicate inv'3 (_1 : Option'0.t_Option uint32)
   
-  axiom inv'3 : forall x : Option'0.t_option uint32 . inv'3 x = true
+  axiom inv'3 : forall x : Option'0.t_Option uint32 . inv'3 x = true
   
   predicate invariant'2 (self : slice uint32) =
     [%#span32] inv'6 self
@@ -2261,40 +2263,42 @@ module Hillel_Fulcrum
   function deep_model'0 (self : usize) : int =
     [%#span33] UIntSize.to_int self
   
-  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  use T_core__ops__range__Range as T_core__ops__range__Range
   
-  predicate produces'1 (self : Range'0.t_range usize) (visited : Seq.seq usize) (o : Range'0.t_range usize) =
-    [%#span34] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
-    <= deep_model'0 (Core_Ops_Range_Range_Type.range_start o)
+  predicate produces'1 (self : Range'0.t_Range usize) (visited : Seq.seq usize) (o : Range'0.t_Range usize) =
+    [%#span34] T_core__ops__range__Range.t_Range__end self = T_core__ops__range__Range.t_Range__end o
+    /\ deep_model'0 (T_core__ops__range__Range.t_Range__start self)
+    <= deep_model'0 (T_core__ops__range__Range.t_Range__start o)
     /\ (Seq.length visited > 0
-     -> deep_model'0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model'0 (Core_Ops_Range_Range_Type.range_end o))
+     -> deep_model'0 (T_core__ops__range__Range.t_Range__start o)
+    <= deep_model'0 (T_core__ops__range__Range.t_Range__end o))
     /\ Seq.length visited
-    = deep_model'0 (Core_Ops_Range_Range_Type.range_start o) - deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
+    = deep_model'0 (T_core__ops__range__Range.t_Range__start o)
+    - deep_model'0 (T_core__ops__range__Range.t_Range__start self)
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> deep_model'0 (Seq.get visited i) = deep_model'0 (Core_Ops_Range_Range_Type.range_start self) + i)
+     -> deep_model'0 (Seq.get visited i) = deep_model'0 (T_core__ops__range__Range.t_Range__start self) + i)
   
-  function produces_trans'1 (a : Range'0.t_range usize) (ab : Seq.seq usize) (b : Range'0.t_range usize) (bc : Seq.seq usize) (c : Range'0.t_range usize) : ()
+  function produces_trans'1 (a : Range'0.t_Range usize) (ab : Seq.seq usize) (b : Range'0.t_Range usize) (bc : Seq.seq usize) (c : Range'0.t_Range usize) : ()
     
   
-  axiom produces_trans'1_spec : forall a : Range'0.t_range usize, ab : Seq.seq usize, b : Range'0.t_range usize, bc : Seq.seq usize, c : Range'0.t_range usize . ([%#span35] inv'1 a)
+  axiom produces_trans'1_spec : forall a : Range'0.t_Range usize, ab : Seq.seq usize, b : Range'0.t_Range usize, bc : Seq.seq usize, c : Range'0.t_Range usize . ([%#span35] inv'1 a)
    -> ([%#span36] inv'1 b)
    -> ([%#span37] inv'1 c)
    -> ([%#span38] produces'1 a ab b)  -> ([%#span39] produces'1 b bc c)  -> ([%#span40] produces'1 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
-  function produces_refl'1 (self : Range'0.t_range usize) : ()
+  function produces_refl'1 (self : Range'0.t_Range usize) : ()
   
-  axiom produces_refl'1_spec : forall self : Range'0.t_range usize . ([%#span41] inv'1 self)
+  axiom produces_refl'1_spec : forall self : Range'0.t_Range usize . ([%#span41] inv'1 self)
    -> ([%#span42] produces'1 self (Seq.empty  : Seq.seq usize) self)
   
-  predicate invariant'1 (self : Range'0.t_range usize) =
+  predicate invariant'1 (self : Range'0.t_Range usize) =
     [%#span24] true
   
-  axiom inv'1 : forall x : Range'0.t_range usize . inv'1 x = true
+  axiom inv'1 : forall x : Range'0.t_Range usize . inv'1 x = true
   
-  use Core_Slice_Iter_Iter_Type as Iter'0
+  use T_core__slice__iter__Iter as Iter'0
   
   use seq.Seq
   
@@ -2316,32 +2320,32 @@ module Hillel_Fulcrum
   /\ i < Seq.length (to_ref_seq'0 self)  -> Seq.get (to_ref_seq'0 self) i = index_logic'0 self i)
   && ([%#span45] Seq.length (to_ref_seq'0 self) = Seq.length (shallow_model'0 self))
   
-  function shallow_model'1 (self : Iter'0.t_iter uint32) : slice uint32
+  function shallow_model'1 (self : Iter'0.t_Iter uint32) : slice uint32
   
-  predicate produces'0 (self : Iter'0.t_iter uint32) (visited : Seq.seq uint32) (tl : Iter'0.t_iter uint32) =
+  predicate produces'0 (self : Iter'0.t_Iter uint32) (visited : Seq.seq uint32) (tl : Iter'0.t_Iter uint32) =
     [%#span47] to_ref_seq'0 (shallow_model'1 self) = Seq.(++) visited (to_ref_seq'0 (shallow_model'1 tl))
   
-  function produces_trans'0 (a : Iter'0.t_iter uint32) (ab : Seq.seq uint32) (b : Iter'0.t_iter uint32) (bc : Seq.seq uint32) (c : Iter'0.t_iter uint32) : ()
+  function produces_trans'0 (a : Iter'0.t_Iter uint32) (ab : Seq.seq uint32) (b : Iter'0.t_Iter uint32) (bc : Seq.seq uint32) (c : Iter'0.t_Iter uint32) : ()
     
    =
     [%#span51] ()
   
-  axiom produces_trans'0_spec : forall a : Iter'0.t_iter uint32, ab : Seq.seq uint32, b : Iter'0.t_iter uint32, bc : Seq.seq uint32, c : Iter'0.t_iter uint32 . ([%#span48] produces'0 a ab b)
+  axiom produces_trans'0_spec : forall a : Iter'0.t_Iter uint32, ab : Seq.seq uint32, b : Iter'0.t_Iter uint32, bc : Seq.seq uint32, c : Iter'0.t_Iter uint32 . ([%#span48] produces'0 a ab b)
    -> ([%#span49] produces'0 b bc c)  -> ([%#span50] produces'0 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
-  function produces_refl'0 (self : Iter'0.t_iter uint32) : () =
+  function produces_refl'0 (self : Iter'0.t_Iter uint32) : () =
     [%#span53] ()
   
-  axiom produces_refl'0_spec : forall self : Iter'0.t_iter uint32 . [%#span52] produces'0 self (Seq.empty  : Seq.seq uint32) self
+  axiom produces_refl'0_spec : forall self : Iter'0.t_Iter uint32 . [%#span52] produces'0 self (Seq.empty  : Seq.seq uint32) self
   
-  predicate invariant'0 (self : Iter'0.t_iter uint32) =
+  predicate invariant'0 (self : Iter'0.t_Iter uint32) =
     [%#span24] true
   
-  predicate inv'0 (_1 : Iter'0.t_iter uint32)
+  predicate inv'0 (_1 : Iter'0.t_Iter uint32)
   
-  axiom inv'0 : forall x : Iter'0.t_iter uint32 . inv'0 x = true
+  axiom inv'0 : forall x : Iter'0.t_Iter uint32 . inv'0 x = true
   
   use prelude.prelude.Snapshot
   
@@ -2360,17 +2364,17 @@ module Hillel_Fulcrum
   
   use seq.Seq
   
-  predicate resolve'1 (self : borrowed (Range'0.t_range usize)) =
+  predicate resolve'1 (self : borrowed (Range'0.t_Range usize)) =
     [%#span56] self.final = self.current
   
-  predicate completed'1 (self : borrowed (Range'0.t_range usize)) =
+  predicate completed'1 (self : borrowed (Range'0.t_Range usize)) =
     [%#span57] resolve'1 self
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self.current)
-    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end self.current)
+    /\ deep_model'0 (T_core__ops__range__Range.t_Range__start self.current)
+    >= deep_model'0 (T_core__ops__range__Range.t_Range__end self.current)
   
-  let rec next'1 (self:borrowed (Range'0.t_range usize)) (return'  (ret:Option'0.t_option usize))= {[@expl:precondition] [%#span58] inv'4 self}
+  let rec next'1 (self:borrowed (Range'0.t_Range usize)) (return'  (ret:Option'0.t_Option usize))= {[@expl:precondition] [%#span58] inv'4 self}
     any
-    [ return' (result:Option'0.t_option usize)-> {[%#span60] inv'5 result}
+    [ return' (result:Option'0.t_Option usize)-> {[%#span60] inv'5 result}
       {[%#span59] match result with
         | Option'0.C_None -> completed'1 self
         | Option'0.C_Some v -> produces'1 self.current (Seq.singleton v) self.final
@@ -2413,16 +2417,16 @@ module Hillel_Fulcrum
   
   use prelude.prelude.Snapshot
   
-  predicate into_iter_post'1 (self : Range'0.t_range usize) (res : Range'0.t_range usize) =
+  predicate into_iter_post'1 (self : Range'0.t_Range usize) (res : Range'0.t_Range usize) =
     [%#span73] self = res
   
-  predicate into_iter_pre'1 (self : Range'0.t_range usize) =
+  predicate into_iter_pre'1 (self : Range'0.t_Range usize) =
     [%#span74] true
   
-  let rec into_iter'1 (self:Range'0.t_range usize) (return'  (ret:Range'0.t_range usize))= {[@expl:precondition] [%#span76] inv'1 self}
+  let rec into_iter'1 (self:Range'0.t_Range usize) (return'  (ret:Range'0.t_Range usize))= {[@expl:precondition] [%#span76] inv'1 self}
     {[@expl:precondition] [%#span75] into_iter_pre'1 self}
     any
-    [ return' (result:Range'0.t_range usize)-> {[%#span77] inv'1 result}
+    [ return' (result:Range'0.t_Range usize)-> {[%#span77] inv'1 result}
       {[%#span75] into_iter_post'1 self result}
       (! return' {result}) ]
     
@@ -2435,19 +2439,19 @@ module Hillel_Fulcrum
   
   use seq.Seq
   
-  predicate resolve'0 (self : borrowed (Iter'0.t_iter uint32)) =
+  predicate resolve'0 (self : borrowed (Iter'0.t_Iter uint32)) =
     [%#span56] self.final = self.current
   
   use seq.Seq
   
-  function shallow_model'3 (self : borrowed (Iter'0.t_iter uint32)) : slice uint32 =
+  function shallow_model'3 (self : borrowed (Iter'0.t_Iter uint32)) : slice uint32 =
     [%#span80] shallow_model'1 self.current
   
-  predicate completed'0 (self : borrowed (Iter'0.t_iter uint32)) =
+  predicate completed'0 (self : borrowed (Iter'0.t_Iter uint32)) =
     [%#span81] resolve'0 self /\ shallow_model'2 (shallow_model'3 self) = (Seq.empty  : Seq.seq uint32)
   
-  let rec next'0 (self:borrowed (Iter'0.t_iter uint32)) (return'  (ret:Option'0.t_option uint32))= any
-    [ return' (result:Option'0.t_option uint32)-> {[%#span82] inv'3 result}
+  let rec next'0 (self:borrowed (Iter'0.t_Iter uint32)) (return'  (ret:Option'0.t_Option uint32))= any
+    [ return' (result:Option'0.t_Option uint32)-> {[%#span82] inv'3 result}
       {[%#span59] match result with
         | Option'0.C_None -> completed'0 self
         | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
@@ -2465,22 +2469,22 @@ module Hillel_Fulcrum
   
   use prelude.prelude.Snapshot
   
-  predicate into_iter_post'0 (self : slice uint32) (res : Iter'0.t_iter uint32) =
+  predicate into_iter_post'0 (self : slice uint32) (res : Iter'0.t_Iter uint32) =
     [%#span83] self = shallow_model'1 res
   
   predicate into_iter_pre'0 (self : slice uint32) =
     [%#span84] true
   
-  let rec into_iter'0 (self:slice uint32) (return'  (ret:Iter'0.t_iter uint32))= {[@expl:precondition] [%#span85] inv'2 self}
+  let rec into_iter'0 (self:slice uint32) (return'  (ret:Iter'0.t_Iter uint32))= {[@expl:precondition] [%#span85] inv'2 self}
     {[@expl:precondition] [%#span75] into_iter_pre'0 self}
-    any [ return' (result:Iter'0.t_iter uint32)-> {[%#span75] into_iter_post'0 self result} (! return' {result}) ] 
+    any [ return' (result:Iter'0.t_Iter uint32)-> {[%#span75] into_iter_post'0 self result} (! return' {result}) ] 
   
   let rec fulcrum (s:slice uint32) (return'  (ret:usize))= {[%#shillel21] Seq.length (shallow_model'0 s) > 0}
     {[%#shillel20] sum_range'0 (shallow_model'0 s) 0 (Seq.length (shallow_model'0 s)) <= 1000}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &total <- [%#shillel0] (0 : uint32) ] s1
-      | s1 = into_iter'0 {s} (fun (_ret':Iter'0.t_iter uint32) ->  [ &iter <- _ret' ] s2)
+      | s1 = into_iter'0 {s} (fun (_ret':Iter'0.t_Iter uint32) ->  [ &iter <- _ret' ] s2)
       | s2 = bb1 ]
       
     | bb1 = s0 [ s0 =  [ &iter_old <- [%#shillel1] Snapshot.new iter ] s1 | s1 = bb2 ] 
@@ -2495,14 +2499,14 @@ module Hillel_Fulcrum
         {[@expl:loop invariant] [%#shillel3] inv'0 iter}
         (! s0) [ s0 = bb5 ] 
         [ bb5 = s0
-          [ s0 = Borrow.borrow_mut <Iter'0.t_iter uint32> {iter}
-              (fun (_ret':borrowed (Iter'0.t_iter uint32)) ->  [ &_21 <- _ret' ]  [ &iter <- _21.final ] s1)
-          | s1 = Borrow.borrow_final <Iter'0.t_iter uint32> {_21.current} {Borrow.get_id _21}
-              (fun (_ret':borrowed (Iter'0.t_iter uint32)) ->
+          [ s0 = Borrow.borrow_mut <Iter'0.t_Iter uint32> {iter}
+              (fun (_ret':borrowed (Iter'0.t_Iter uint32)) ->  [ &_21 <- _ret' ]  [ &iter <- _21.final ] s1)
+          | s1 = Borrow.borrow_final <Iter'0.t_Iter uint32> {_21.current} {Borrow.get_id _21}
+              (fun (_ret':borrowed (Iter'0.t_Iter uint32)) ->
                  [ &_20 <- _ret' ] 
                  [ &_21 <- { _21 with current = _20.final ; } ] 
                 s2)
-          | s2 = next'0 {_20} (fun (_ret':Option'0.t_option uint32) ->  [ &_19 <- _ret' ] s3)
+          | s2 = next'0 {_20} (fun (_ret':Option'0.t_Option uint32) ->  [ &_19 <- _ret' ] s3)
           | s3 = bb6 ]
           
         | bb6 = s0
@@ -2511,7 +2515,7 @@ module Hillel_Fulcrum
           
         | bb8 = bb10
         | bb10 = s0
-          [ s0 = Option'0.some <uint32> {_19} (fun (r0'0:uint32) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
+          [ s0 = Option'0.v_Some <uint32> {_19} (fun (r0'0:uint32) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
           | s1 = 
             [ &_24 <- [%#shillel6] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
             
@@ -2538,7 +2542,7 @@ module Hillel_Fulcrum
       
     | bb12 = s0
       [ s0 =  [ &_36 <- Range'0.C_Range ([%#shillel10] (0 : usize)) _37 ] s1
-      | s1 = into_iter'1 {_36} (fun (_ret':Range'0.t_range usize) ->  [ &iter1 <- _ret' ] s2)
+      | s1 = into_iter'1 {_36} (fun (_ret':Range'0.t_Range usize) ->  [ &iter1 <- _ret' ] s2)
       | s2 = bb13 ]
       
     | bb13 = s0 [ s0 =  [ &iter_old1 <- [%#shillel11] Snapshot.new iter1 ] s1 | s1 = bb14 ] 
@@ -2559,14 +2563,14 @@ module Hillel_Fulcrum
         {[@expl:loop invariant] [%#shillel13] inv'1 iter1}
         (! s0) [ s0 = bb17 ] 
         [ bb17 = s0
-          [ s0 = Borrow.borrow_mut <Range'0.t_range usize> {iter1}
-              (fun (_ret':borrowed (Range'0.t_range usize)) ->  [ &_52 <- _ret' ]  [ &iter1 <- _52.final ] s1)
-          | s1 = Borrow.borrow_final <Range'0.t_range usize> {_52.current} {Borrow.get_id _52}
-              (fun (_ret':borrowed (Range'0.t_range usize)) ->
+          [ s0 = Borrow.borrow_mut <Range'0.t_Range usize> {iter1}
+              (fun (_ret':borrowed (Range'0.t_Range usize)) ->  [ &_52 <- _ret' ]  [ &iter1 <- _52.final ] s1)
+          | s1 = Borrow.borrow_final <Range'0.t_Range usize> {_52.current} {Borrow.get_id _52}
+              (fun (_ret':borrowed (Range'0.t_Range usize)) ->
                  [ &_51 <- _ret' ] 
                  [ &_52 <- { _52 with current = _51.final ; } ] 
                 s2)
-          | s2 = next'1 {_51} (fun (_ret':Option'0.t_option usize) ->  [ &_50 <- _ret' ] s3)
+          | s2 = next'1 {_51} (fun (_ret':Option'0.t_Option usize) ->  [ &_50 <- _ret' ] s3)
           | s3 = bb18 ]
           
         | bb18 = s0
@@ -2577,7 +2581,7 @@ module Hillel_Fulcrum
           
         | bb20 = bb22
         | bb22 = s0
-          [ s0 = Option'0.some <usize> {_50} (fun (r0'0:usize) ->  [ &__creusot_proc_iter_elem1 <- r0'0 ] s1)
+          [ s0 = Option'0.v_Some <usize> {_50} (fun (r0'0:usize) ->  [ &__creusot_proc_iter_elem1 <- r0'0 ] s1)
           | s1 = 
             [ &_55 <- [%#shillel18] Snapshot.new (Seq.(++) (Snapshot.inner produced1) (Seq.singleton __creusot_proc_iter_elem1)) ]
             
@@ -2616,26 +2620,26 @@ module Hillel_Fulcrum
     [ & _0 : usize = any_l ()
     | & s : slice uint32 = s
     | & total : uint32 = any_l ()
-    | & iter : Iter'0.t_iter uint32 = any_l ()
-    | & iter_old : Snapshot.snap_ty (Iter'0.t_iter uint32) = any_l ()
+    | & iter : Iter'0.t_Iter uint32 = any_l ()
+    | & iter_old : Snapshot.snap_ty (Iter'0.t_Iter uint32) = any_l ()
     | & produced : Snapshot.snap_ty (Seq.seq uint32) = any_l ()
-    | & _19 : Option'0.t_option uint32 = any_l ()
-    | & _20 : borrowed (Iter'0.t_iter uint32) = any_l ()
-    | & _21 : borrowed (Iter'0.t_iter uint32) = any_l ()
+    | & _19 : Option'0.t_Option uint32 = any_l ()
+    | & _20 : borrowed (Iter'0.t_Iter uint32) = any_l ()
+    | & _21 : borrowed (Iter'0.t_Iter uint32) = any_l ()
     | & __creusot_proc_iter_elem : uint32 = any_l ()
     | & _24 : Snapshot.snap_ty (Seq.seq uint32) = any_l ()
     | & x : uint32 = any_l ()
     | & min_i : usize = any_l ()
     | & min_dist : uint32 = any_l ()
     | & sum : uint32 = any_l ()
-    | & iter1 : Range'0.t_range usize = any_l ()
-    | & _36 : Range'0.t_range usize = any_l ()
+    | & iter1 : Range'0.t_Range usize = any_l ()
+    | & _36 : Range'0.t_Range usize = any_l ()
     | & _37 : usize = any_l ()
-    | & iter_old1 : Snapshot.snap_ty (Range'0.t_range usize) = any_l ()
+    | & iter_old1 : Snapshot.snap_ty (Range'0.t_Range usize) = any_l ()
     | & produced1 : Snapshot.snap_ty (Seq.seq usize) = any_l ()
-    | & _50 : Option'0.t_option usize = any_l ()
-    | & _51 : borrowed (Range'0.t_range usize) = any_l ()
-    | & _52 : borrowed (Range'0.t_range usize) = any_l ()
+    | & _50 : Option'0.t_Option usize = any_l ()
+    | & _51 : borrowed (Range'0.t_Range usize) = any_l ()
+    | & _52 : borrowed (Range'0.t_Range usize) = any_l ()
     | & __creusot_proc_iter_elem1 : usize = any_l ()
     | & _55 : Snapshot.snap_ty (Seq.seq usize) = any_l ()
     | & i : usize = any_l ()

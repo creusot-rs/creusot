@@ -1,5 +1,5 @@
 
-module C01_IndexSlice
+module M_01__index_slice
   let%span s010 = "../01.rs" 7 6 7 8
   
   let%span s011 = "../01.rs" 7 4 7 9
@@ -30,12 +30,12 @@ module C01_IndexSlice
   
   use prelude.prelude.Int
   
-  constant max'0 : usize = [%#span3] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span3] (18446744073709551615 : usize)
   
   function shallow_model'1 (self : slice uint32) : Seq.seq uint32
   
   axiom shallow_model'1_spec : forall self : slice uint32 . ([%#span5] shallow_model'1 self = Slice.id self)
-  && ([%#span4] Seq.length (shallow_model'1 self) <= UIntSize.to_int (max'0 : usize))
+  && ([%#span4] Seq.length (shallow_model'1 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   use prelude.prelude.Borrow
   
@@ -62,7 +62,7 @@ module C01_IndexSlice
     | & _5 : bool = any_l () ]
      [ return' (result:uint32)-> (! return' {result}) ] 
 end
-module C01_IndexMutSlice
+module M_01__index_mut_slice
   let%span s010 = "../01.rs" 13 6 13 7
   
   let%span s011 = "../01.rs" 13 4 13 8
@@ -103,14 +103,14 @@ module C01_IndexMutSlice
   
   use prelude.prelude.Int
   
-  constant max'0 : usize = [%#span5] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span5] (18446744073709551615 : usize)
   
   use seq.Seq
   
   function shallow_model'1 (self : slice uint32) : Seq.seq uint32
   
   axiom shallow_model'1_spec : forall self : slice uint32 . ([%#span7] shallow_model'1 self = Slice.id self)
-  && ([%#span6] Seq.length (shallow_model'1 self) <= UIntSize.to_int (max'0 : usize))
+  && ([%#span6] Seq.length (shallow_model'1 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   function index_logic'0 [@inline:trivial] (self : slice uint32) (ix : int) : uint32 =
     [%#span8] Seq.get (shallow_model'1 self) ix
@@ -153,84 +153,84 @@ module C01_IndexMutSlice
       (! return' {result}) ]
     
 end
-module Core_Option_Option_Type
-  type t_option 't =
+module T_core__option__Option
+  type t_Option 't =
     | C_None
     | C_Some 't
   
   function any_l (_ : 'b) : 'a
   
-  let rec none < 't > (input:t_option 't) (ret  )= any
+  let rec v_None < 't > (input:t_Option 't) (ret  )= any
     [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ]
     
   
-  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any
+  let rec v_Some < 't > (input:t_Option 't) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
     | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
     
 end
-module Core_Ptr_NonNull_NonNull_Type
+module T_core__ptr__non_null__NonNull
   use prelude.prelude.Opaque
   
-  type t_nonnull 't =
+  type t_NonNull 't =
     | C_NonNull opaque_ptr
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
+  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
     [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
     | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
     
 end
-module Core_Marker_PhantomData_Type
-  type t_phantomdata 't =
+module T_core__marker__PhantomData
+  type t_PhantomData 't =
     | C_PhantomData
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
+  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any
     [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
     
 end
-module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type as PhantomData'0
+module T_core__ptr__unique__Unique
+  use T_core__marker__PhantomData as PhantomData'0
   
-  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  use T_core__ptr__non_null__NonNull as NonNull'0
   
-  type t_unique 't =
-    | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
+  type t_Unique 't =
+    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
-    [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
+    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       = input}
       (! ret {pointer} {_marker})
-    | bad (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+    | bad (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       <> input}
       {false}
       any ]
     
 end
-module Alloc_Boxed_Box_Type
-  use Core_Ptr_Unique_Unique_Type as Unique'0
+module T_alloc__boxed__Box
+  use T_core__ptr__unique__Unique as Unique'0
   
-  type t_box 't 'a =
-    | C_Box (Unique'0.t_unique 't) 'a
+  type t_Box 't 'a =
+    | C_Box (Unique'0.t_Unique 't) 'a
   
   function any_l (_ : 'b) : 'a
 end
-module Alloc_Alloc_Global_Type
-  type t_global  =
+module T_alloc__alloc__Global
+  type t_Global  =
     | C_Global
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_global (input:t_global) (ret  )= any
+  let rec t_Global (input:t_Global) (ret  )= any
     [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
     
 end
-module C01_SliceFirst
+module M_01__slice_first
   type t
   
   let%span s010 = "../01.rs" 21 17 21 18
@@ -275,7 +275,7 @@ module C01_SliceFirst
   
   axiom inv'5 : forall x : t . inv'5 x = true
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'4 (self : t) =
     [%#span6] inv'5 self
@@ -307,12 +307,12 @@ module C01_SliceFirst
   
   use prelude.prelude.UIntSize
   
-  constant max'0 : usize = [%#span8] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span8] (18446744073709551615 : usize)
   
   function shallow_model'1 (self : slice t) : Seq.seq t
   
   axiom shallow_model'1_spec : forall self : slice t . ([%#span10] shallow_model'1 self = Slice.id self)
-  && ([%#span9] Seq.length (shallow_model'1 self) <= UIntSize.to_int (max'0 : usize))
+  && ([%#span9] Seq.length (shallow_model'1 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'2 (self : slice t) =
     [%#span11] inv'3 (shallow_model'1 self)
@@ -321,14 +321,14 @@ module C01_SliceFirst
   
   axiom inv'2 : forall x : slice t . inv'2 x = true
   
-  use Core_Option_Option_Type as Option'0
+  use T_core__option__Option as Option'0
   
-  predicate invariant'1 (self : Option'0.t_option t) =
+  predicate invariant'1 (self : Option'0.t_Option t) =
     [%#span12] true
   
-  predicate inv'1 (_1 : Option'0.t_option t)
+  predicate inv'1 (_1 : Option'0.t_Option t)
   
-  axiom inv'1 : forall x : Option'0.t_option t . inv'1 x = true
+  axiom inv'1 : forall x : Option'0.t_Option t . inv'1 x = true
   
   use prelude.prelude.Borrow
   
@@ -355,7 +355,7 @@ module C01_SliceFirst
       (! return' {result}) ]
     
   
-  let rec slice_first (a:slice t) (return'  (ret:Option'0.t_option t))= {[%#s013] inv'0 a}
+  let rec slice_first (a:slice t) (return'  (ret:Option'0.t_Option t))= {[%#s013] inv'0 a}
     (! bb0
     [ bb0 = s0 [ s0 = len'0 {a} (fun (_ret':usize) ->  [ &_4 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0
@@ -377,7 +377,7 @@ module C01_SliceFirst
     | bb4 = s0 [ s0 =  [ &_0 <- Option'0.C_None ] s1 | s1 = bb5 ] 
     | bb5 = return' {_0} ]
     )
-    [ & _0 : Option'0.t_option t = any_l ()
+    [ & _0 : Option'0.t_Option t = any_l ()
     | & a : slice t = a
     | & _3 : bool = any_l ()
     | & _4 : usize = any_l ()
@@ -386,7 +386,7 @@ module C01_SliceFirst
     | & _9 : usize = any_l ()
     | & _10 : bool = any_l () ]
     
-    [ return' (result:Option'0.t_option t)-> {[@expl:postcondition] [%#s015] inv'1 result}
+    [ return' (result:Option'0.t_Option t)-> {[@expl:postcondition] [%#s015] inv'1 result}
       {[@expl:postcondition] [%#s014] match result with
         | Option'0.C_Some v -> v = index_logic'0 a 0
         | Option'0.C_None -> Seq.length (shallow_model'0 a) = 0
