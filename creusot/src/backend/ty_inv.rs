@@ -7,11 +7,10 @@ use crate::{
     },
     util,
 };
-use indexmap::IndexSet;
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{GenericArg, GenericArgs, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
-use std::iter;
+use std::{collections::HashSet, iter};
 
 // Rewrite a type as a "head type" and a ssusbtitution, such that the head type applied to the substitution
 // equals the type.
@@ -29,7 +28,7 @@ pub(crate) fn tyinv_head_and_subst<'tcx>(
         )
     };
 
-    if let Some((uinv_did, _)) = resolve_user_inv(tcx, ty, param_env)
+    if let Some((uinv_did, _, _)) = resolve_user_inv(tcx, ty, param_env)
         && util::is_ignore_structural_inv(tcx, uinv_did)
     {
         return def();
@@ -63,40 +62,51 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
     param_is_trivial: bool,
 ) -> bool {
     // we cannot use a TypeWalker as it does not visit ADT field types
-    let mut visited_adts = IndexSet::new();
+    let mut visited_tys = HashSet::new();
     let mut stack = vec![ty];
     while let Some(ty) = stack.pop() {
-        let (trait_did, subst) = user_inv_item(tcx, ty);
-        let user_inv = traits::resolve_assoc_item_opt(tcx, param_env, trait_did, subst)
-            .map(|(uinv_did, _)| util::is_ignore_structural_inv(tcx, uinv_did));
+        if !visited_tys.insert(ty.clone()) {
+            continue;
+        }
 
-        // IF there is a user invariant AND it is not structural
-        // OR ty is a param or alias AND we default to considering them trivial
-        if user_inv == Some(false)
-            || !param_is_trivial && matches!(ty.kind(), TyKind::Param(_) | TyKind::Alias(_, _))
-            || matches!(ty.kind(), TyKind::Never)
+        let user_inv = resolve_user_inv(tcx, ty, param_env);
+        if let Some((uinv_did, _, false)) = user_inv
+            && !util::is_tyinv_trivial_if_param_trivial(tcx, uinv_did)
         {
             return false;
         }
 
         match ty.kind() {
-            TyKind::Ref(_, ty, _) | TyKind::Slice(ty) => stack.push(*ty),
+            TyKind::Ref(_, ty, _) | TyKind::Slice(ty) | TyKind::Array(ty, _) => stack.push(*ty),
             TyKind::Tuple(tys) => stack.extend(*tys),
-            TyKind::Adt(def, subst) if def.is_box() => stack.push(subst.type_at(0)),
-            TyKind::Adt(def, subst)
-                if util::get_builtin(tcx, def.did()).is_some() || user_inv == Some(true) =>
-            {
-                // if the ADT has a structural user invariant, do not look into fields but only consider substs
-                stack.extend(subst.types())
+            TyKind::Adt(_, substs) if matches!(user_inv, Some((_, _, false))) => {
+                assert!(util::is_tyinv_trivial_if_param_trivial(tcx, user_inv.unwrap().0));
+                stack.extend(substs.types())
             }
-            TyKind::Adt(def, subst) => {
-                let did = def.did();
-                if util::get_builtin(tcx, did).is_none() && visited_adts.insert(did) {
-                    stack.extend(def.all_fields().map(|f| f.ty(tcx, subst)))
+            TyKind::Adt(def, substs) => {
+                if user_inv
+                    .is_some_and(|(uinv_did, _, _)| util::is_ignore_structural_inv(tcx, uinv_did))
+                    || util::is_trusted(tcx, def.did())
+                {
+                    continue;
                 }
+                stack.extend(def.all_fields().map(|f| f.ty(tcx, substs)))
             }
             TyKind::Closure(_, subst) => stack.extend(subst.as_closure().upvar_tys()),
-            _ => {}
+            TyKind::Never => return false,
+            TyKind::Param(_) | TyKind::Alias(_, _) if !param_is_trivial => return false,
+            TyKind::Bool
+            | TyKind::Char
+            | TyKind::Int(_)
+            | TyKind::Uint(_)
+            | TyKind::Float(_)
+            | TyKind::Str
+            | TyKind::FnDef(_, _)
+            | TyKind::FnPtr(_)
+            | TyKind::RawPtr(_, _)
+            | TyKind::Param(_)
+            | TyKind::Alias(_, _) => (),
+            _ => unimplemented!("{ty:?}"),
         }
     }
     true
@@ -121,7 +131,7 @@ impl<'tcx> InvariantElaborator<'tcx> {
             Term::mk_true(ctx.tcx)
         } else {
             let user_inv = resolve_user_inv(ctx.tcx, ty, self.param_env)
-                .map(|(uinv_did, uinv_subst)| {
+                .map(|(uinv_did, uinv_subst, _)| {
                     Term::call(ctx.tcx, uinv_did, uinv_subst, vec![subject.clone()])
                 })
                 .unwrap_or(Term::mk_true(ctx.tcx));
@@ -151,7 +161,7 @@ impl<'tcx> InvariantElaborator<'tcx> {
         term: Term<'tcx>,
         ty: Ty<'tcx>,
     ) -> Term<'tcx> {
-        if let Some((uinv_did, _)) = resolve_user_inv(ctx.tcx, ty, self.param_env)
+        if let Some((uinv_did, _, _)) = resolve_user_inv(ctx.tcx, ty, self.param_env)
             && util::is_ignore_structural_inv(ctx.tcx, uinv_did)
         {
             return Term::mk_true(ctx.tcx);
@@ -316,13 +326,15 @@ fn resolve_user_inv<'tcx>(
     tcx: TyCtxt<'tcx>,
     ty: Ty<'tcx>,
     param_env: ParamEnv<'tcx>,
-) -> Option<(DefId, GenericArgsRef<'tcx>)> {
+) -> Option<(DefId, GenericArgsRef<'tcx>, bool)> {
     let (trait_did, subst) = user_inv_item(tcx, ty);
-    traits::resolve_assoc_item_opt(tcx, param_env, trait_did, subst).or_else(|| {
-        if traits::still_specializable(tcx, param_env, trait_did, subst) {
-            Some((trait_did, subst))
-        } else {
-            None
-        }
-    })
+    traits::resolve_assoc_item_opt(tcx, param_env, trait_did, subst)
+        .map(|(id, subst)| (id, subst, false))
+        .or_else(|| {
+            if traits::still_specializable(tcx, param_env, trait_did, subst) {
+                Some((trait_did, subst, true))
+            } else {
+                None
+            }
+        })
 }

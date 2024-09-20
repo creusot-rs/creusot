@@ -40,6 +40,7 @@ impl<T: ?Sized> Invariant for GhostPtrToken<T> {
     #[predicate(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
+    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { forall<ptr: GhostPtr<T>, x: _> self@.get(ptr) == Some(x) ==> inv(*x) }
     }
