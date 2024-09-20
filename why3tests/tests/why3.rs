@@ -169,7 +169,17 @@ fn main() {
                 out.reset().unwrap();
             }
         } else {
-            // No session directory. Simply parse the file using "why3 prove".
+            // No session directory. Check that this is expected.
+            if !header_line.contains("NO_REPLAY") {
+                out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
+                writeln!(&mut out, "missing why3 session").unwrap();
+                out.reset().unwrap();
+
+                success = false;
+                continue;
+            }
+
+            // Simply parse the file using "why3 prove".
             command.arg("prove");
             command.args(&["-L", "..", "-F", "coma"]);
             command.arg(file);

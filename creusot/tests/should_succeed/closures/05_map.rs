@@ -1,3 +1,5 @@
+// NO_REPLAY
+
 extern crate creusot_contracts;
 
 pub trait FakeIterator {
