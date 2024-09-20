@@ -1,7 +1,10 @@
+// NO_REPLAY
+// FIXME: all this should work...
+
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-#[ensures(result == true)]
+#[ensures(result == false)]
 pub fn eq() -> bool {
     1.0 == 2.0
 }

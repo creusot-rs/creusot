@@ -20,31 +20,32 @@ impl DeepModel for Duration {
     type DeepModelTy = Int;
 
     #[logic]
-    #[open(self)]
-    #[trusted]
-    #[ensures(result >= 0 && result <= secs_to_nanos(u64::MAX@) + 999_999_999)]
-    #[ensures(result == self.shallow_model())]
+    #[open]
     fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { absurd }
+        self.shallow_model()
     }
 }
 
 #[logic]
-fn nanos_to_micros(nanos: Int) -> Int {
+#[open]
+pub fn nanos_to_micros(nanos: Int) -> Int {
     nanos / 1_000
 }
 #[logic]
-fn nanos_to_millis(nanos: Int) -> Int {
+#[open]
+pub fn nanos_to_millis(nanos: Int) -> Int {
     nanos / 1_000_000
 }
 
 #[logic]
-fn nanos_to_secs(nanos: Int) -> Int {
+#[open]
+pub fn nanos_to_secs(nanos: Int) -> Int {
     nanos / 1_000_000_000
 }
 
 #[logic]
-fn secs_to_nanos(secs: Int) -> Int {
+#[open]
+pub fn secs_to_nanos(secs: Int) -> Int {
     secs * 1_000_000_000
 }
 
@@ -64,12 +65,9 @@ impl DeepModel for Instant {
     type DeepModelTy = Int;
 
     #[logic]
-    #[open(self)]
-    #[trusted]
-    #[ensures(result >= 0)]
-    #[ensures(result == self.shallow_model())]
+    #[open]
     fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { absurd }
+        self.shallow_model()
     }
 }
 

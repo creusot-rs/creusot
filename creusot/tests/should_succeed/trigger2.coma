@@ -6,7 +6,11 @@ module Trigger2_ResolveSeq_Impl
   
   let%span strigger21 = "../trigger2.rs" 7 4 10 5
   
-  let%span span2 = "../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  let%span span2 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  
+  let%span span3 = "../../../../creusot-contracts/src/resolve.rs" 35 8 35 31
+  
+  let%span span4 = "../../../../creusot-contracts/src/logic/seq.rs" 206 8 206 102
   
   use seq.Seq
   
@@ -18,15 +22,23 @@ module Trigger2_ResolveSeq_Impl
   
   use seq.Seq
   
+  predicate resolve'2 (self : borrowed t) =
+    [%#span2] self.final = self.current
+  
+  predicate resolve'1 (self : borrowed t) =
+    [%#span3] resolve'2 self
+  
+  use seq.Seq
+  
   predicate resolve'0 (self : Seq.seq (borrowed t)) =
-    [%#span2] true
+    [%#span4] forall i : int . 0 <= i /\ i < Seq.length self  -> resolve'1 (Seq.get self i)
   
   constant seq  : Seq.seq (borrowed t)
   
   predicate resolve_seq [#"../trigger2.rs" 6 0 6 43] (seq : Seq.seq (borrowed t))
   
   goal vc_resolve_seq : [%#strigger20] resolve'0 seq
-   -> ([%#strigger21] forall i : int [Seq.get seq i] . 0 < i /\ i <= Seq.length seq
+   -> ([%#strigger21] forall i : int [Seq.get seq i] . 0 <= i /\ i < Seq.length seq
    -> (Seq.get seq i).current = (Seq.get seq i).final)
 end
 module Trigger2_ResolveSeq2_Impl
@@ -36,9 +48,13 @@ module Trigger2_ResolveSeq2_Impl
   
   let%span strigger21 = "../trigger2.rs" 5 0 5 36
   
-  let%span span2 = "../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  let%span span2 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span3 = "../trigger2.rs" 7 4 10 5
+  let%span span3 = "../../../../creusot-contracts/src/resolve.rs" 35 8 35 31
+  
+  let%span span4 = "../../../../creusot-contracts/src/logic/seq.rs" 206 8 206 102
+  
+  let%span span5 = "../trigger2.rs" 7 4 10 5
   
   use seq.Seq
   
@@ -50,11 +66,19 @@ module Trigger2_ResolveSeq2_Impl
   
   use seq.Seq
   
+  predicate resolve'2 (self : borrowed t) =
+    [%#span2] self.final = self.current
+  
+  predicate resolve'1 (self : borrowed t) =
+    [%#span3] resolve'2 self
+  
+  use seq.Seq
+  
   predicate resolve'0 (self : Seq.seq (borrowed t)) =
-    [%#span2] true
+    [%#span4] forall i : int . 0 <= i /\ i < Seq.length self  -> resolve'1 (Seq.get self i)
   
   predicate resolve_seq'0 [#"../trigger2.rs" 6 0 6 43] (seq : Seq.seq (borrowed t)) =
-    [%#span3] forall i : int [Seq.get seq i] . 0 < i /\ i <= Seq.length seq
+    [%#span5] forall i : int [Seq.get seq i] . 0 <= i /\ i < Seq.length seq
      -> (Seq.get seq i).current = (Seq.get seq i).final
   
   axiom resolve_seq'0_spec : forall seq : Seq.seq (borrowed t) . [%#strigger21] resolve'0 seq  -> resolve_seq'0 seq

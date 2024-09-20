@@ -5,7 +5,7 @@ use creusot_contracts::*;
 #[ensures(seq.resolve() ==> result)]
 fn resolve_seq<T>(seq: Seq<&mut T>) -> bool {
     pearlite! {
-        forall<i: Int> #![trigger seq[i]] 0 < i && i <= seq.len() ==>
+        forall<i: Int> #![trigger seq[i]] 0 <= i && i < seq.len() ==>
             *seq[i] == ^seq[i]
     }
 }
