@@ -9,15 +9,17 @@ use include_dir::{include_dir, Dir};
 
 static PRELUDE: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/../prelude");
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Why3Mode {
     Ide,
+    Replay,
 }
 
 impl std::fmt::Display for Why3Mode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Why3Mode::Ide => f.write_str("ide"),
+            Why3Mode::Replay => f.write_str("replay"),
         }
     }
 }
@@ -43,6 +45,13 @@ impl Why3Launcher {
     }
 
     pub fn make(&self, temp_dir: &Path) -> Result<Command> {
+        let mut cmd_output_file = self.output_file.clone();
+
+        //
+        if self.mode == Why3Mode::Replay {
+            cmd_output_file.set_extension("");
+        }
+
         let mode = self.mode.to_string();
         let mut prelude_dir: PathBuf = temp_dir.into();
         prelude_dir.push("prelude");
@@ -63,7 +72,8 @@ impl Why3Launcher {
                 "-L",
             ])
             .arg(temp_dir.as_os_str())
-            .arg(&self.output_file);
+            .arg(&cmd_output_file);
+
         if let Some(cfg) = &self.config_file {
             command.arg("-C").arg(cfg);
         }

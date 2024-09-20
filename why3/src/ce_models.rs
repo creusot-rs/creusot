@@ -11,7 +11,7 @@ pub enum Loc {
 }
 
 #[allow(dead_code)]
-#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", derive(Deserialize, Debug))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
 pub struct Why3Span {
     pub file_name: String,
@@ -344,7 +344,7 @@ pub enum ConcreteTerm {
     Unknown(Json),
 }
 
-#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", derive(Deserialize, Debug))]
 pub struct Goal {
     pub term: GoalTerm,
     #[cfg_attr(feature = "serde", serde(alias = "prover-result"))]
