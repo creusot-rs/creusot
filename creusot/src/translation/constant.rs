@@ -104,7 +104,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
     use rustc_middle::ty::{FloatTy, IntTy, UintTy};
     use rustc_type_ir::TyKind::{Bool, Float, FnDef, Int, Uint};
     let Some(bits) = c.get_bits(ctx.tcx, env, ty) else {
-        ctx.fatal_error(span, &format!("Could determine value of constant. Creusot currently does not support generic associated constants.")).emit()
+        ctx.fatal_error(span, &format!("Could not determine value of constant. Creusot currently does not support generic associated constants.")).emit()
     };
     match ty.kind() {
         Int(ity) => {
