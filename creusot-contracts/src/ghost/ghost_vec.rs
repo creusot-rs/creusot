@@ -45,13 +45,13 @@ impl<T> GhostVec<T> {
     /// use creusot_contracts::{ghost::GhostVec, *};
     ///
     /// let mut vec = GhostVec::new();
-    /// let length = ghost! {
+    /// ghost! {
     ///     vec.push(1);
     ///     vec.push(2);
     ///     vec.push(3);
-    ///     vec.len()
+    ///     let length = vec.len();
+    ///     proof_assert!(length == 3);
     /// };
-    /// proof_assert!(length.inner() == 3);
     /// ```
     #[trusted]
     #[pure]
@@ -71,8 +71,8 @@ impl<T> GhostVec<T> {
     ///     vec.push(1);
     ///     vec.push(2);
     ///     vec.push(3);
+    ///     proof_assert!(v@[0] == 1i32 && v@[1] == 2i32 && v@[2] == 3i32);
     /// };
-    /// proof_assert!(v@[0] == 1i32 && v@[1] == 2i32 && v@[2] == 3i32);
     /// ```
     #[trusted]
     #[pure]
@@ -89,16 +89,15 @@ impl<T> GhostVec<T> {
     /// use creusot_contracts::{ghost::GhostVec, *};
     ///
     /// let mut v = GhostVec::new();
-    /// let gets = ghost! {
+    /// ghost! {
     ///     v.push(10);
     ///     v.push(40);
     ///     v.push(30);
     ///     let get1 = v.get(*Int::new(1));
     ///     let get2 = v.get(*Int::new(3));
-    ///     (get1, get2)
+    ///     proof_assert!(get1 == Some(&40i32));
+    ///     proof_assert!(get2 == None);
     /// };
-    /// proof_assert!(gets.inner().0 == Some(&40i32));
-    /// proof_assert!(gets.inner().1 == None);
     /// ```
     #[trusted]
     #[pure]
@@ -126,8 +125,8 @@ impl<T> GhostVec<T> {
     ///     if let Some(elem) = v.get_mut(*Int::new(1)) {
     ///         *elem = 42;
     ///     }
+    ///     proof_assert!(v@[0] == 0i32 && v@[1] == 42i32 && v@[2] == 2i32);
     /// };
-    /// proof_assert!(v@[0] == 0i32 && v@[1] == 42i32 && v@[2] == 2i32);
     /// ```
     #[trusted]
     #[pure]
@@ -153,14 +152,14 @@ impl<T> GhostVec<T> {
     /// use creusot_contracts::{ghost::GhostVec, *};
     ///
     /// let mut vec = GhostVec::new();
-    /// let popped = ghost! {
+    /// ghost! {
     ///     vec.push(1);
     ///     vec.push(2);
     ///     vec.push(3);
-    ///     vec.pop()
+    ///     let popped = vec.pop();
+    ///     proof_assert!(popped == Some(3i32));
+    ///     proof_assert!(vec@[0] == 1i32 && vec@[1] == 2i32);
     /// };
-    /// proof_assert!(popped == Some(3i32));
-    /// proof_assert!(vec@[0] == 1i32 && vec@[1] == 2i32);
     /// ```
     #[trusted]
     #[pure]

@@ -50,16 +50,15 @@ impl<K, V: ?Sized> GhostMap<K, V> {
     /// use creusot_contracts::{ghost::GhostMap, *};
     ///
     /// let mut map = GhostMap::new();
-    /// let lengths = ghost! {
+    /// ghost! {
     ///     let len1 = map.len();
     ///     map.insert(1, 21);
     ///     map.insert(1, 42);
     ///     map.insert(2, 50);
     ///     let len2 = map.len();
-    ///     (len1, len2)
+    ///     proof_assert!(len1 == 0);
+    ///     proof_assert!(len2 == 2);
     /// };
-    /// proof_assert!(length.inner().0 == 0);
-    /// proof_assert!(length.inner().1 == 2);
     /// ```
     #[trusted]
     #[pure]
@@ -77,10 +76,11 @@ impl<K, V: ?Sized> GhostMap<K, V> {
     /// let mut map = GhostMap::new();
     /// let contains = ghost! {
     ///     map.insert(1, 42);
-    ///     (map.contains(&1), map.contains(&2))
+    ///     let contains1 = map.contains(&1);
+    ///     let contains2 = map.contains(&2);
+    ///     proof_assert!(contains1);
+    ///     proof_assert!(!contains2);
     /// };
-    /// proof_assert!(contains.inner().0);
-    /// proof_assert!(!contains.inner().1);
     /// ```
     #[pure]
     #[ensures(self@.contains(*key))]
@@ -97,8 +97,10 @@ impl<K, V: ?Sized> GhostMap<K, V> {
     /// let mut map = GhostMap::new();
     /// ghost! {
     ///     map.insert(1, 2);
-    ///     proof_assert!(map.get(&1) == Some(&2));
-    ///     proof_assert!(map.get(&2) == None);
+    ///     let res1 = map.get(&1);
+    ///     let res2 = map.get(&2);
+    ///     proof_assert!(res1 == Some(&2));
+    ///     proof_assert!(res2 == None);
     /// };
     /// ```
     #[trusted]
@@ -128,8 +130,8 @@ impl<K, V: ?Sized> GhostMap<K, V> {
     ///     if let Some(x) = map.get_mut(&1) {
     ///         *x = 42;
     ///     }
+    ///     proof_assert!(map@.lookup(1i32) == 42i32);
     /// };
-    /// proof_assert!(map@.lookup(1i32) == 42i32);
     /// ```
     #[trusted]
     #[pure]
@@ -159,12 +161,13 @@ impl<K, V: ?Sized> GhostMap<K, V> {
     ///
     /// let mut map = GhostMap::new();
     /// ghost! {
-    ///     proof_assert!(map.insert(37, 41) == None);
-    ///     proof_assert!(map.is_empty() == false);
+    ///     let insert1 = map.insert(37, 41);
+    ///     proof_assert!(insert1 == None);
+    ///     proof_assert!(map@.lookup(37i32) == 41i32);
     ///
-    ///     map.insert(37, 42);
-    ///     proof_assert!(map.insert(37, 43) == Some(42));
-    ///     proof_assert!(map.get(&37) == Some(&43));
+    ///     let insert2 = map.insert(37, 42);
+    ///     proof_assert!(insert2 == Some(42i32));
+    ///     proof_assert!(map@.lookup(37i32) == 42i32);
     /// };
     /// ```
     #[trusted]
@@ -208,8 +211,10 @@ impl<K, V: ?Sized> GhostMap<K, V> {
     /// let mut map = GhostMap::new();
     /// ghost! {
     ///     map.insert(1, 42);
-    ///     proof_assert!(map.remove(&1) == Some(42));
-    ///     proof_assert!(map.remove(&1) == None);
+    ///     let removed1 = map.remove(&1);
+    ///     let removed2 = map.remove(&1);
+    ///     proof_assert!(removed1 == Some(42i32));
+    ///     proof_assert!(removed2 == None);
     /// };
     /// ```
     #[trusted]
