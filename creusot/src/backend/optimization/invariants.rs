@@ -19,7 +19,7 @@ use crate::{
 };
 use petgraph::Direction;
 
-use crate::translation::fmir::{FmirVisitor, Place, RValue, Statement};
+use crate::translation::fmir::{Block, FmirVisitor, Place, RValue, Statement, Terminator};
 
 /// fMIR transformations
 ///
@@ -50,6 +50,8 @@ pub fn infer_proph_invariants<'tcx>(
         let incoming = &inc.collect::<IndexSet<_>>() - &backs[k];
 
         for (ix, u) in unchanged.iter().enumerate() {
+            let Some(pterm) = place_to_term(u, tcx, &body.locals) else { continue };
+
             let local = Symbol::intern(&format!("old_{}_{ix}", k.as_u32()));
             let subst = ctx.mk_args(&[u.ty(tcx, &body.locals).into()]);
             let ty = Ty::new_adt(ctx.tcx, ctx.adt_def(snap_ty), subst);
@@ -57,10 +59,34 @@ pub fn infer_proph_invariants<'tcx>(
             body.locals
                 .insert(local, fmir::LocalDecl { span: DUMMY_SP, ty, temp: true, arg: false });
 
-            let Some(pterm) = place_to_term(u, tcx, &body.locals) else { break };
             for p in &incoming {
-                let block = body.blocks.get_mut(p).unwrap();
-                block.stmts.push(Statement::Assignment(
+                let mut prev_block = body.blocks.get_mut(p).unwrap();
+                if let Terminator::Switch(_, branches) = &mut prev_block.terminator {
+                    let new_block = BasicBlock::from(body.fresh);
+                    body.fresh += 1;
+                    for tgt in branches.targets_mut() {
+                        if *tgt == *k {
+                            *tgt = new_block;
+                        }
+                    }
+                    body.blocks.insert(
+                        new_block,
+                        Block {
+                            invariants: vec![],
+                            variant: None,
+                            stmts: vec![],
+                            terminator: Terminator::Goto(*k),
+                        },
+                    );
+                    prev_block = body.blocks.get_mut(&new_block).unwrap();
+                }
+                if let Terminator::Goto(t) = prev_block.terminator
+                    && t == *k
+                {
+                } else {
+                    panic!()
+                }
+                prev_block.stmts.push(Statement::Assignment(
                     Place { local, projection: Vec::new() },
                     RValue::Ghost(Term::call(tcx, snap_new, subst, vec![pterm.clone()])),
                     DUMMY_SP,
@@ -113,7 +139,10 @@ fn place_to_term<'tcx>(
     Some(t)
 }
 
-fn descendants(e: &mut IndexMap<BasicBlock, IndexSet<BasicBlock>>, comps: &[Component<BasicBlock>]) {
+fn descendants(
+    e: &mut IndexMap<BasicBlock, IndexSet<BasicBlock>>,
+    comps: &[Component<BasicBlock>],
+) {
     for comp in comps {
         match comp {
             Component::Vertex(_) => (),

@@ -184,7 +184,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         assert!(self.snapshots.is_empty(), "unused snapshots");
         assert!(self.invariants.is_empty(), "unused invariants");
 
-        fmir::Body { locals: self.vars, arg_count, blocks: self.past_blocks }
+        fmir::Body { locals: self.vars, arg_count, blocks: self.past_blocks, fresh: self.fresh_id }
     }
 
     fn translate_body(&mut self) {

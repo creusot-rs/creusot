@@ -139,25 +139,34 @@ pub enum Branches<'tcx> {
 }
 
 impl<'tcx> Terminator<'tcx> {
-    pub fn targets(&self) -> impl Iterator<Item = BasicBlock> + '_ {
+    pub fn targets(&self) -> Box<dyn Iterator<Item = BasicBlock> + '_> {
         use std::iter::*;
         match self {
-            Terminator::Goto(bb) => Box::new(once(*bb)) as Box<dyn Iterator<Item = BasicBlock>>,
+            Terminator::Goto(bb) => Box::new(once(*bb)),
             Terminator::Switch(_, brs) => match brs {
-                Branches::Int(brs, def) => Box::new(brs.iter().map(|(_, b)| *b).chain(once(*def)))
-                    as Box<dyn Iterator<Item = BasicBlock>>,
-                Branches::Uint(brs, def) => Box::new(brs.iter().map(|(_, b)| *b).chain(once(*def)))
-                    as Box<dyn Iterator<Item = BasicBlock>>,
+                Branches::Int(brs, def) => Box::new(brs.iter().map(|(_, b)| *b).chain(once(*def))),
+                Branches::Uint(brs, def) => Box::new(brs.iter().map(|(_, b)| *b).chain(once(*def))),
                 Branches::Constructor(_, _, brs, def) => {
                     Box::new(brs.iter().map(|(_, b)| *b).chain(*def))
-                        as Box<dyn Iterator<Item = BasicBlock>>
                 }
-                Branches::Bool(f, t) => {
-                    Box::new([*f, *t].into_iter()) as Box<dyn Iterator<Item = BasicBlock>>
-                }
+                Branches::Bool(f, t) => Box::new([*f, *t].into_iter()),
             },
-            Terminator::Return => Box::new(empty()) as Box<dyn Iterator<Item = BasicBlock>>,
-            Terminator::Abort(_) => Box::new(empty()) as Box<dyn Iterator<Item = BasicBlock>>,
+            Terminator::Return => Box::new(empty()),
+            Terminator::Abort(_) => Box::new(empty()),
+        }
+    }
+}
+
+impl<'tcx> Branches<'tcx> {
+    pub fn targets_mut(&mut self) -> Box<dyn Iterator<Item = &mut BasicBlock> + '_> {
+        use std::iter::*;
+        match self {
+            Branches::Int(brs, def) => Box::new(brs.iter_mut().map(|(_, b)| b).chain(once(def))),
+            Branches::Uint(brs, def) => Box::new(brs.iter_mut().map(|(_, b)| b).chain(once(def))),
+            Branches::Constructor(_, _, brs, def) => {
+                Box::new(brs.iter_mut().map(|(_, b)| b).chain(def.as_mut()))
+            }
+            Branches::Bool(f, t) => Box::new([f, t].into_iter()),
         }
     }
 }
@@ -214,6 +223,7 @@ pub struct Body<'tcx> {
     pub(crate) locals: LocalDecls<'tcx>,
     pub(crate) arg_count: usize,
     pub(crate) blocks: IndexMap<BasicBlock, Block<'tcx>>,
+    pub(crate) fresh: usize
 }
 
 pub(crate) trait FmirVisitor<'tcx>: Sized {
