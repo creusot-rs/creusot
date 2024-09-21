@@ -49,7 +49,7 @@ fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
     names.insert_hidden_type(ctx.type_of(def_id).instantiate_identity());
     let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
 
-    let d = destructor(ctx, &mut names, def_id, ty, 0u32.into());
+    let d = destructor(ctx, &mut names, ty, 0u32.into());
 
     let (clones, _) = names.provide_deps(ctx, GraphDepth::Deep);
     decls.extend(

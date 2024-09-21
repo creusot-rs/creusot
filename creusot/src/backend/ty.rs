@@ -381,9 +381,13 @@ pub(crate) fn translate_tydecl(
             let adt_def = ctx.adt_def(*did);
 
             adt_def.variants().indices().for_each(|vix| {
-                let d = destructor(ctx, &mut names, *did, ctx.type_of(*did).skip_binder(), vix);
+                // If a constructor is invisible to us (only possible for structs or wholly-private enums)
+                // Then we won't need the associated mir destructor.
+                if ctx.visibility(adt_def.variants()[vix].def_id).is_visible_locally() {
+                    let d = destructor(ctx, &mut names, ctx.type_of(*did).skip_binder(), vix);
 
-                destructors.push(d)
+                    destructors.push(d)
+                }
             })
         });
     }
@@ -421,7 +425,7 @@ pub(crate) fn field_names_and_tys<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     ty: Ty<'tcx>,
     variant: VariantIdx,
-) -> Vec<(Symbol, Ty<'tcx>)> {
+) -> Vec<(bool, Symbol, Ty<'tcx>)> {
     match ty.kind() {
         Adt(def, subst) => {
             let variant = &def.variants()[variant];
@@ -431,10 +435,11 @@ pub(crate) fn field_names_and_tys<'tcx>(
                 .iter()
                 .map(|fld| {
                     let fld_ty = fld.ty(ctx.tcx, subst);
+                    let vis = ctx.visibility(fld.did).is_visible_locally();
                     if fld.name.as_str().as_bytes()[0].is_ascii_digit() {
-                        (Symbol::intern(&format!("field_{}", fld.name)), fld_ty)
+                        (vis, Symbol::intern(&format!("field_{}", fld.name)), fld_ty)
                     } else {
-                        (fld.name, fld_ty)
+                        (vis, fld.name, fld_ty)
                     }
                 })
                 .collect();
@@ -447,7 +452,7 @@ pub(crate) fn field_names_and_tys<'tcx>(
             captures
                 .iter()
                 .zip(cs.as_closure().upvar_tys())
-                .map(|(cap, ty)| (cap.to_symbol(), ty))
+                .map(|(cap, ty)| (true, cap.to_symbol(), ty))
                 .collect()
         }
         _ => vec![],
@@ -476,7 +481,6 @@ fn variant_id<'tcx>(parent: Ty<'tcx>, variant_ix: VariantIdx) -> DefId {
 pub(crate) fn destructor<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut Dependencies<'tcx>,
-    _: DefId,
     base_ty: Ty<'tcx>,
     variant: VariantIdx,
 ) -> Decl {
@@ -487,9 +491,18 @@ pub(crate) fn destructor<'tcx>(
     let decl = TyTranslation::Declaration(ty_id);
     let fields: Vec<_> = field_names_and_tys(ctx, base_ty, variant)
         .into_iter()
-        .map(|(nm, ty)| {
+        .map(|(vis, nm, ty)| {
             let ty = names.normalize(ctx, ty);
-            (Ident::build(nm.as_str()), translate_ty_inner(decl, ctx, names, DUMMY_SP, ty))
+
+            let inner_ty = if !vis {
+                names.import_prelude_module(PreludeModule::Opaque);
+                let opaque_ty = QName::from_string("opaque_ptr").unwrap();
+                MlT::TConstructor(opaque_ty)
+            } else {
+                translate_ty_inner(decl, ctx, names, DUMMY_SP, ty)
+            };
+
+            (Ident::build(nm.as_str()), inner_ty)
         })
         .collect();
 
@@ -557,14 +570,25 @@ fn build_ty_decl<'tcx>(
         let mut ml_ty_def = Vec::new();
 
         for var_def in adt.variants().iter() {
-            let field_tys: Vec<_> = var_def
-                .fields
-                .iter()
-                .map(|f| {
-                    let ty = field_ty(ctx, names, param_env, did, f, substs);
-                    Field { ty, ghost: false }
-                })
-                .collect();
+            if !ctx.visibility(var_def.def_id).is_visible_locally() {
+                continue;
+            }
+
+            // If all fields are invisible from here, leave just a single opaque field.
+            let mut field_tys = Vec::new();
+
+            // Check if a field is visible to us, if it isn't then replace it with an opaque_ptr type value
+            for field in &var_def.fields {
+                let ty = if !ctx.visibility(field.did).is_visible_locally() {
+                    names.import_prelude_module(PreludeModule::Opaque);
+                    let opaque_ty = QName::from_string("opaque_ptr").unwrap();
+                    MlT::TConstructor(opaque_ty)
+                } else {
+                    field_ty(ctx, names, param_env, did, field, substs)
+                };
+                field_tys.push(Field { ty, ghost: false })
+            }
+
             let var_name = names.constructor(var_def.def_id, substs);
 
             ml_ty_def.push(ConstructorDecl { name: var_name.name, fields: field_tys });

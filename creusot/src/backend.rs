@@ -179,7 +179,9 @@ impl<'tcx> Why3Generator<'tcx> {
                         .insert(repr, TranslatedItem::Type { modl, accessors: Default::default() });
                 }
             }
-            ItemType::Field => unreachable!(),
+            ItemType::Field => {
+                unreachable!("field")
+            }
             ItemType::Variant => {
                 self.translate(self.ctx.parent(def_id));
             }
@@ -233,6 +235,9 @@ impl<'tcx> Why3Generator<'tcx> {
         if !self.translated_items.insert(field_id.into()) {
             return;
         }
+        if !self.visibility(field_id).is_visible_locally() {
+            return;
+        };
 
         let parent = self.tcx.parent(field_id);
         let (adt_did, variant_did) = match self.tcx.def_kind(parent) {

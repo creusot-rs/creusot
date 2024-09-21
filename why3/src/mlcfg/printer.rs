@@ -1047,7 +1047,7 @@ impl Print for TyDecl {
                 let mut decls = Vec::new();
 
                 for (hdr, ty_decl) in header.zip(tys.iter()) {
-                    let decl = alloc
+                    let mut decl = alloc
                         .nil()
                         .append(hdr)
                         .append(" ")
@@ -1071,9 +1071,11 @@ impl Print for TyDecl {
                         alloc.hardline(),
                     );
 
-                    let decl = decl
-                        .append(alloc.text(" =").append(alloc.hardline()))
-                        .append(inner_doc.indent(2));
+                    if ty_decl.constrs.len() > 0 {
+                        decl = decl
+                            .append(alloc.text(" =").append(alloc.hardline()))
+                            .append(inner_doc.indent(2))
+                    }
                     decls.push(decl);
                 }
 
