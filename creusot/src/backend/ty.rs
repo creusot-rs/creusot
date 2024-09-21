@@ -492,13 +492,15 @@ pub(crate) fn destructor<'tcx>(
 
     let Some((ty_id, subst)) = id_of_ty(base_ty) else { unreachable!() };
 
+    let allowed_to_hide = ["std", "core", "alloc"].contains(&ctx.crate_name(ty_id.krate).as_str());
+
     let decl = TyTranslation::Declaration(ty_id);
     let fields: Vec<_> = field_names_and_tys(ctx, base_ty, variant)
         .into_iter()
         .map(|(vis, nm, ty)| {
             let ty = names.normalize(ctx, ty);
 
-            let inner_ty = if !vis {
+            let inner_ty = if allowed_to_hide && !vis {
                 names.import_prelude_module(PreludeModule::Opaque);
                 let opaque_ty = QName::from_string("hidden_field").unwrap();
                 MlT::TConstructor(opaque_ty)

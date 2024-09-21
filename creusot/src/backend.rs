@@ -235,9 +235,6 @@ impl<'tcx> Why3Generator<'tcx> {
         if !self.translated_items.insert(field_id.into()) {
             return;
         }
-        if !self.visibility(field_id).is_visible_locally() {
-            return;
-        };
 
         let parent = self.tcx.parent(field_id);
         let (adt_did, variant_did) = match self.tcx.def_kind(parent) {
