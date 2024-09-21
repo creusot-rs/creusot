@@ -5,7 +5,7 @@ use crate::{
         pearlite::{Pattern, Term, TermKind},
         traits,
     },
-    util::{self, ident_path},
+    util::{self, upper_ident_path},
 };
 use indexmap::IndexSet;
 use rustc_hir::def_id::DefId;
@@ -283,7 +283,7 @@ pub(crate) fn inv_module_name(tcx: TyCtxt, kind: TyInvKind) -> Ident {
     match kind {
         TyInvKind::NotStructural => "TyInv_NotStructural".into(),
         TyInvKind::Trivial => "TyInv_Trivial".into(),
-        TyInvKind::Adt(adt_did) => format!("{}_Inv", ident_path(tcx, adt_did)).into(),
+        TyInvKind::Adt(adt_did) => format!("{}_Inv", upper_ident_path(tcx, adt_did)).into(),
         TyInvKind::Tuple(arity) => format!("TyInv_Tuple{arity}").into(),
     }
 }

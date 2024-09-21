@@ -5,7 +5,7 @@ use crate::{
         pearlite::{self, Term, TermKind},
         specification::PreContract,
     },
-    util::{self, get_builtin, item_name, module_name, PreSignature},
+    util::{self, get_builtin, item_name, module_name, translate_accessor_name, PreSignature},
 };
 use indexmap::IndexSet;
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
@@ -659,7 +659,7 @@ pub(crate) fn translate_accessor(
     let substs = GenericArgs::identity_for_item(ctx.tcx, adt_did);
     let mut names = Dependencies::new(ctx.tcx, ctx.binding_group(adt_did).iter().copied());
 
-    let acc_name = format!("{}_{}", variant.name.as_str().to_ascii_lowercase(), field.name);
+    let acc_name = translate_accessor_name(variant.name.as_str(), field.name.as_str());
 
     let param_env = ctx.param_env(adt_did);
     let target_ty =

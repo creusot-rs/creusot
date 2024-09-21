@@ -14,12 +14,12 @@ use crate::{
     error::InternalError,
     metadata,
     options::OutputFile,
+    util::translate_name,
     validate::{
         validate_impls, validate_opacity, validate_purity, validate_traits, validate_trusted,
     },
 };
 use ctx::TranslationCtx;
-use heck::ToUpperCamelCase;
 use rustc_hir::{def::DefKind, def_id::LOCAL_CRATE};
 use rustc_span::{Symbol, DUMMY_SP};
 use std::{error::Error, io::Write};
@@ -123,7 +123,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
             }
         });
 
-        let crate_name = tcx.crate_name(LOCAL_CRATE).to_string().to_upper_camel_case();
+        let crate_name = translate_name(&tcx.crate_name(LOCAL_CRATE).to_string());
         print_crate(&mut out, crate_name, modules)?;
         drop(out); //flush the buffer before running why3
         run_why3(&why3, file);

@@ -1,5 +1,5 @@
 
-module FinalBorrows_NotFinalBorrow
+module M_final_borrows__not_final_borrow
   type t
   
   let%span sfinal_borrows0 = "../final_borrows.rs" 8 18 8 27
@@ -52,7 +52,7 @@ module FinalBorrows_NotFinalBorrow
     [ & _0 : () = any_l () | & bor : borrowed t = bor | & b1 : borrowed t = any_l () | & _b2 : borrowed t = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
-module FinalBorrows_StoreChangesProphecy
+module M_final_borrows__store_changes_prophecy
   type t
   
   let%span sfinal_borrows0 = "../final_borrows.rs" 16 18 16 27
@@ -102,7 +102,7 @@ module FinalBorrows_StoreChangesProphecy
     [ return' (result:())-> (! return' {result}) ]
     
 end
-module FinalBorrows_StoreChangesProphecy2
+module M_final_borrows__store_changes_prophecy_2
   type t
   
   let%span sfinal_borrows0 = "../final_borrows.rs" 24 18 24 27
@@ -155,7 +155,7 @@ module FinalBorrows_StoreChangesProphecy2
     [ return' (result:())-> (! return' {result}) ]
     
 end
-module FinalBorrows_CallChangesProphecy
+module M_final_borrows__call_changes_prophecy
   let%span sfinal_borrows0 = "../final_borrows.rs" 33 19 33 33
   
   let%span sfinal_borrows1 = "../final_borrows.rs" 35 18 35 31
@@ -224,7 +224,7 @@ module FinalBorrows_CallChangesProphecy
     | & _8 : int32 = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
-module FinalBorrows_UnnestingFails
+module M_final_borrows__unnesting_fails
   let%span sfinal_borrows0 = "../final_borrows.rs" 43 16 43 17
   
   let%span sfinal_borrows1 = "../final_borrows.rs" 49 18 49 34
@@ -277,68 +277,68 @@ module FinalBorrows_UnnestingFails
     | & rebor2 : borrowed int32 = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
-module Core_Ptr_NonNull_NonNull_Type
+module T_core__ptr__non_null__NonNull
   use prelude.prelude.Opaque
   
-  type t_nonnull 't =
+  type t_NonNull 't =
     | C_NonNull opaque_ptr
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
+  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
     [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
     | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
     
 end
-module Core_Marker_PhantomData_Type
-  type t_phantomdata 't =
+module T_core__marker__PhantomData
+  type t_PhantomData 't =
     | C_PhantomData
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
+  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any
     [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
     
 end
-module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type as PhantomData'0
+module T_core__ptr__unique__Unique
+  use T_core__marker__PhantomData as PhantomData'0
   
-  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  use T_core__ptr__non_null__NonNull as NonNull'0
   
-  type t_unique 't =
-    | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
+  type t_Unique 't =
+    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
-    [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
+    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       = input}
       (! ret {pointer} {_marker})
-    | bad (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+    | bad (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       <> input}
       {false}
       any ]
     
 end
-module Alloc_Boxed_Box_Type
-  use Core_Ptr_Unique_Unique_Type as Unique'0
+module T_alloc__boxed__Box
+  use T_core__ptr__unique__Unique as Unique'0
   
-  type t_box 't 'a =
-    | C_Box (Unique'0.t_unique 't) 'a
+  type t_Box 't 'a =
+    | C_Box (Unique'0.t_Unique 't) 'a
   
   function any_l (_ : 'b) : 'a
 end
-module Alloc_Alloc_Global_Type
-  type t_global  =
+module T_alloc__alloc__Global
+  type t_Global  =
     | C_Global
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_global (input:t_global) (ret  )= any
+  let rec t_Global (input:t_Global) (ret  )= any
     [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
     
 end
-module FinalBorrows_MovePlaceWithoutDeref
+module M_final_borrows__move_place_without_deref
   type t
   
   let%span sfinal_borrows0 = "../final_borrows.rs" 59 18 59 28
@@ -359,7 +359,7 @@ module FinalBorrows_MovePlaceWithoutDeref
   
   predicate inv'1 (_1 : borrowed t)
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'2 (self : borrowed t) =
     [%#span2] inv'1 self

@@ -1,183 +1,183 @@
 
-module Core_Ptr_NonNull_NonNull_Type
+module T_core__ptr__non_null__NonNull
   use prelude.prelude.Opaque
   
-  type t_nonnull 't =
+  type t_NonNull 't =
     | C_NonNull opaque_ptr
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
+  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
     [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
     | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
     
 end
-module Core_Marker_PhantomData_Type
-  type t_phantomdata 't =
+module T_core__marker__PhantomData
+  type t_PhantomData 't =
     | C_PhantomData
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
+  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any
     [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
     
 end
-module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type as PhantomData'0
+module T_core__ptr__unique__Unique
+  use T_core__marker__PhantomData as PhantomData'0
   
-  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  use T_core__ptr__non_null__NonNull as NonNull'0
   
-  type t_unique 't =
-    | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
+  type t_Unique 't =
+    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
-    [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
+    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       = input}
       (! ret {pointer} {_marker})
-    | bad (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+    | bad (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       <> input}
       {false}
       any ]
     
 end
-module Alloc_RawVec_Cap_Type
+module T_alloc__raw_vec__Cap
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  type t_cap  =
+  type t_Cap  =
     | C_Cap usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_cap (input:t_cap) (ret  (field_0:usize))= any
+  let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
     [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
     | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
     
 end
-module Alloc_RawVec_RawVec_Type
-  use Alloc_RawVec_Cap_Type as Cap'0
+module T_alloc__raw_vec__RawVec
+  use T_alloc__raw_vec__Cap as Cap'0
   
-  use Core_Ptr_Unique_Unique_Type as Unique'0
+  use T_core__ptr__unique__Unique as Unique'0
   
-  type t_rawvec 't 'a =
-    | C_RawVec (Unique'0.t_unique 't) (Cap'0.t_cap) 'a
+  type t_RawVec 't 'a =
+    | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_rawvec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a))= any
-    [ good (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
+  let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
+    [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
       (! ret {ptr} {cap} {alloc})
-    | bad (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
+    | bad (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
     
 end
-module Alloc_Vec_Vec_Type
+module T_alloc__vec__Vec
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  use Alloc_RawVec_RawVec_Type as RawVec'0
+  use T_alloc__raw_vec__RawVec as RawVec'0
   
-  type t_vec 't 'a =
-    | C_Vec (RawVec'0.t_rawvec 't 'a) usize
+  type t_Vec 't 'a =
+    | C_Vec (RawVec'0.t_RawVec 't 'a) usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_vec < 't > < 'a > (input:t_vec 't 'a) (ret  (buf:RawVec'0.t_rawvec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
-    | bad (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
+    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
+    | bad (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
     
 end
-module Alloc_Alloc_Global_Type
-  type t_global  =
+module T_alloc__alloc__Global
+  type t_Global  =
     | C_Global
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_global (input:t_global) (ret  )= any
+  let rec t_Global (input:t_Global) (ret  )= any
     [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
     
 end
-module Core_Ops_Range_RangeInclusive_Type
-  type t_rangeinclusive 'idx =
+module T_core__ops__range__RangeInclusive
+  type t_RangeInclusive 'idx =
     | C_RangeInclusive 'idx 'idx bool
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_rangeinclusive < 'idx > (input:t_rangeinclusive 'idx) (ret  (start:'idx) (end':'idx) (exhausted:bool))= any
+  let rec t_RangeInclusive < 'idx > (input:t_RangeInclusive 'idx) (ret  (start:'idx) (end':'idx) (exhausted:bool))= any
     [ good (start:'idx) (end':'idx) (exhausted:bool)-> {C_RangeInclusive start end' exhausted = input}
       (! ret {start} {end'} {exhausted})
     | bad (start:'idx) (end':'idx) (exhausted:bool)-> {C_RangeInclusive start end' exhausted <> input} {false} any ]
     
 end
-module Core_Cmp_Ordering_Type
-  type t_ordering  =
+module T_core__cmp__Ordering
+  type t_Ordering  =
     | C_Less
     | C_Equal
     | C_Greater
   
   function any_l (_ : 'b) : 'a
   
-  let rec less (input:t_ordering) (ret  )= any
+  let rec v_Less (input:t_Ordering) (ret  )= any
     [ good -> {C_Less  = input} (! ret) | bad -> {C_Less  <> input} {false} any ]
     
   
-  let rec equal (input:t_ordering) (ret  )= any
+  let rec v_Equal (input:t_Ordering) (ret  )= any
     [ good -> {C_Equal  = input} (! ret) | bad -> {C_Equal  <> input} {false} any ]
     
   
-  let rec greater (input:t_ordering) (ret  )= any
+  let rec v_Greater (input:t_Ordering) (ret  )= any
     [ good -> {C_Greater  = input} (! ret) | bad -> {C_Greater  <> input} {false} any ]
     
 end
-module Core_Option_Option_Type
-  type t_option 't =
+module T_core__option__Option
+  type t_Option 't =
     | C_None
     | C_Some 't
   
   function any_l (_ : 'b) : 'a
   
-  let rec none < 't > (input:t_option 't) (ret  )= any
+  let rec v_None < 't > (input:t_Option 't) (ret  )= any
     [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ]
     
   
-  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any
+  let rec v_Some < 't > (input:t_Option 't) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
     | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
     
 end
-module Core_Ops_Range_Range_Type
-  type t_range 'idx =
+module T_core__ops__range__Range
+  type t_Range 'idx =
     | C_Range 'idx 'idx
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_range < 'idx > (input:t_range 'idx) (ret  (start:'idx) (end':'idx))= any
+  let rec t_Range < 'idx > (input:t_Range 'idx) (ret  (start:'idx) (end':'idx))= any
     [ good (start:'idx) (end':'idx)-> {C_Range start end' = input} (! ret {start} {end'})
     | bad (start:'idx) (end':'idx)-> {C_Range start end' <> input} {false} any ]
     
   
-  function range_end (self : t_range 'idx) : 'idx =
+  function t_Range__end (self : t_Range 'idx) : 'idx =
     match self with
       | C_Range _ a -> a
       end
   
-  function range_start (self : t_range 'idx) : 'idx =
+  function t_Range__start (self : t_Range 'idx) : 'idx =
     match self with
       | C_Range a _ -> a
       end
 end
-module Alloc_Boxed_Box_Type
-  use Core_Ptr_Unique_Unique_Type as Unique'0
+module T_alloc__boxed__Box
+  use T_core__ptr__unique__Unique as Unique'0
   
-  type t_box 't 'a =
-    | C_Box (Unique'0.t_unique 't) 'a
+  type t_Box 't 'a =
+    | C_Box (Unique'0.t_Unique 't) 'a
   
   function any_l (_ : 'b) : 'a
 end
-module C08Haystack_Search
+module M_08_haystack__search
   let%span s08_haystack0 = "../08_haystack.rs" 23 17 23 18
   
   let%span s08_haystack1 = "../08_haystack.rs" 22 4 22 112
@@ -330,7 +330,7 @@ module C08Haystack_Search
   
   predicate inv'9 (_1 : uint8)
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'11 (self : uint8) =
     [%#span15] inv'9 self
@@ -359,25 +359,25 @@ module C08Haystack_Search
   
   axiom inv'9 : forall x : uint8 . inv'9 x = true
   
-  use Alloc_Vec_Vec_Type as Vec'0
+  use T_alloc__vec__Vec as Vec'0
   
   use prelude.prelude.UIntSize
   
   use prelude.prelude.UIntSize
   
-  constant max'0 : usize = [%#span18] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span18] (18446744073709551615 : usize)
   
-  function shallow_model'1 (self : Vec'0.t_vec uint8 (Global'0.t_global)) : Seq.seq uint8
+  function shallow_model'1 (self : Vec'0.t_Vec uint8 (Global'0.t_Global)) : Seq.seq uint8
   
-  axiom shallow_model'1_spec : forall self : Vec'0.t_vec uint8 (Global'0.t_global) . [%#span19] Seq.length (shallow_model'1 self)
-  <= UIntSize.to_int (max'0 : usize)
+  axiom shallow_model'1_spec : forall self : Vec'0.t_Vec uint8 (Global'0.t_Global) . [%#span19] Seq.length (shallow_model'1 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
   
-  predicate invariant'8 (self : Vec'0.t_vec uint8 (Global'0.t_global)) =
+  predicate invariant'8 (self : Vec'0.t_Vec uint8 (Global'0.t_Global)) =
     [%#span20] inv'10 (shallow_model'1 self)
   
-  predicate inv'8 (_1 : Vec'0.t_vec uint8 (Global'0.t_global))
+  predicate inv'8 (_1 : Vec'0.t_Vec uint8 (Global'0.t_Global))
   
-  axiom inv'8 : forall x : Vec'0.t_vec uint8 (Global'0.t_global) . inv'8 x = true
+  axiom inv'8 : forall x : Vec'0.t_Vec uint8 (Global'0.t_Global) . inv'8 x = true
   
   use prelude.prelude.Borrow
   
@@ -388,36 +388,36 @@ module C08Haystack_Search
   
   axiom inv'7 : forall x : uint8 . inv'7 x = true
   
-  use Core_Ops_Range_Range_Type as Range'0
+  use T_core__ops__range__Range as Range'0
   
-  predicate inv'1 (_1 : Range'0.t_range usize)
+  predicate inv'1 (_1 : Range'0.t_Range usize)
   
-  predicate invariant'6 (self : borrowed (Range'0.t_range usize)) =
+  predicate invariant'6 (self : borrowed (Range'0.t_Range usize)) =
     [%#span22] inv'1 self.current /\ inv'1 self.final
   
-  predicate inv'6 (_1 : borrowed (Range'0.t_range usize))
+  predicate inv'6 (_1 : borrowed (Range'0.t_Range usize))
   
-  axiom inv'6 : forall x : borrowed (Range'0.t_range usize) . inv'6 x = true
+  axiom inv'6 : forall x : borrowed (Range'0.t_Range usize) . inv'6 x = true
   
-  use Core_Option_Option_Type as Option'0
+  use T_core__option__Option as Option'0
   
-  predicate invariant'5 (self : Option'0.t_option usize) =
+  predicate invariant'5 (self : Option'0.t_Option usize) =
     [%#span17] true
   
-  predicate inv'5 (_1 : Option'0.t_option usize)
+  predicate inv'5 (_1 : Option'0.t_Option usize)
   
-  axiom inv'5 : forall x : Option'0.t_option usize . inv'5 x = true
+  axiom inv'5 : forall x : Option'0.t_Option usize . inv'5 x = true
   
-  use Core_Ops_Range_RangeInclusive_Type as RangeInclusive'0
+  use T_core__ops__range__RangeInclusive as RangeInclusive'0
   
-  predicate inv'0 (_1 : RangeInclusive'0.t_rangeinclusive usize)
+  predicate inv'0 (_1 : RangeInclusive'0.t_RangeInclusive usize)
   
-  predicate invariant'4 (self : borrowed (RangeInclusive'0.t_rangeinclusive usize)) =
+  predicate invariant'4 (self : borrowed (RangeInclusive'0.t_RangeInclusive usize)) =
     [%#span22] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'4 (_1 : borrowed (RangeInclusive'0.t_rangeinclusive usize))
+  predicate inv'4 (_1 : borrowed (RangeInclusive'0.t_RangeInclusive usize))
   
-  axiom inv'4 : forall x : borrowed (RangeInclusive'0.t_rangeinclusive usize) . inv'4 x = true
+  axiom inv'4 : forall x : borrowed (RangeInclusive'0.t_RangeInclusive usize) . inv'4 x = true
   
   predicate invariant'3 (self : usize) =
     [%#span17] true
@@ -426,12 +426,12 @@ module C08Haystack_Search
   
   axiom inv'3 : forall x : usize . inv'3 x = true
   
-  predicate invariant'2 (self : Vec'0.t_vec uint8 (Global'0.t_global)) =
+  predicate invariant'2 (self : Vec'0.t_Vec uint8 (Global'0.t_Global)) =
     [%#span21] inv'8 self
   
-  predicate inv'2 (_1 : Vec'0.t_vec uint8 (Global'0.t_global))
+  predicate inv'2 (_1 : Vec'0.t_Vec uint8 (Global'0.t_Global))
   
-  axiom inv'2 : forall x : Vec'0.t_vec uint8 (Global'0.t_global) . inv'2 x = true
+  axiom inv'2 : forall x : Vec'0.t_Vec uint8 (Global'0.t_Global) . inv'2 x = true
   
   use seq.Seq
   
@@ -444,57 +444,59 @@ module C08Haystack_Search
   function deep_model'0 (self : usize) : int =
     [%#span23] UIntSize.to_int self
   
-  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  use T_core__ops__range__Range as T_core__ops__range__Range
   
-  predicate produces'1 (self : Range'0.t_range usize) (visited : Seq.seq usize) (o : Range'0.t_range usize) =
-    [%#span24] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
-    <= deep_model'0 (Core_Ops_Range_Range_Type.range_start o)
+  predicate produces'1 (self : Range'0.t_Range usize) (visited : Seq.seq usize) (o : Range'0.t_Range usize) =
+    [%#span24] T_core__ops__range__Range.t_Range__end self = T_core__ops__range__Range.t_Range__end o
+    /\ deep_model'0 (T_core__ops__range__Range.t_Range__start self)
+    <= deep_model'0 (T_core__ops__range__Range.t_Range__start o)
     /\ (Seq.length visited > 0
-     -> deep_model'0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model'0 (Core_Ops_Range_Range_Type.range_end o))
+     -> deep_model'0 (T_core__ops__range__Range.t_Range__start o)
+    <= deep_model'0 (T_core__ops__range__Range.t_Range__end o))
     /\ Seq.length visited
-    = deep_model'0 (Core_Ops_Range_Range_Type.range_start o) - deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
+    = deep_model'0 (T_core__ops__range__Range.t_Range__start o)
+    - deep_model'0 (T_core__ops__range__Range.t_Range__start self)
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> deep_model'0 (Seq.get visited i) = deep_model'0 (Core_Ops_Range_Range_Type.range_start self) + i)
+     -> deep_model'0 (Seq.get visited i) = deep_model'0 (T_core__ops__range__Range.t_Range__start self) + i)
   
-  function produces_trans'1 (a : Range'0.t_range usize) (ab : Seq.seq usize) (b : Range'0.t_range usize) (bc : Seq.seq usize) (c : Range'0.t_range usize) : ()
+  function produces_trans'1 (a : Range'0.t_Range usize) (ab : Seq.seq usize) (b : Range'0.t_Range usize) (bc : Seq.seq usize) (c : Range'0.t_Range usize) : ()
     
   
-  axiom produces_trans'1_spec : forall a : Range'0.t_range usize, ab : Seq.seq usize, b : Range'0.t_range usize, bc : Seq.seq usize, c : Range'0.t_range usize . ([%#span25] inv'1 a)
+  axiom produces_trans'1_spec : forall a : Range'0.t_Range usize, ab : Seq.seq usize, b : Range'0.t_Range usize, bc : Seq.seq usize, c : Range'0.t_Range usize . ([%#span25] inv'1 a)
    -> ([%#span26] inv'1 b)
    -> ([%#span27] inv'1 c)
    -> ([%#span28] produces'1 a ab b)  -> ([%#span29] produces'1 b bc c)  -> ([%#span30] produces'1 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
-  function produces_refl'1 (self : Range'0.t_range usize) : ()
+  function produces_refl'1 (self : Range'0.t_Range usize) : ()
   
-  axiom produces_refl'1_spec : forall self : Range'0.t_range usize . ([%#span31] inv'1 self)
+  axiom produces_refl'1_spec : forall self : Range'0.t_Range usize . ([%#span31] inv'1 self)
    -> ([%#span32] produces'1 self (Seq.empty  : Seq.seq usize) self)
   
-  predicate invariant'1 (self : Range'0.t_range usize) =
+  predicate invariant'1 (self : Range'0.t_Range usize) =
     [%#span17] true
   
-  axiom inv'1 : forall x : Range'0.t_range usize . inv'1 x = true
+  axiom inv'1 : forall x : Range'0.t_Range usize . inv'1 x = true
   
-  function start_log'0 (self : RangeInclusive'0.t_rangeinclusive usize) : usize
+  function start_log'0 (self : RangeInclusive'0.t_RangeInclusive usize) : usize
   
-  function end_log'0 (self : RangeInclusive'0.t_rangeinclusive usize) : usize
+  function end_log'0 (self : RangeInclusive'0.t_RangeInclusive usize) : usize
   
   use int.Int
   
-  function is_empty_log'0 (self : RangeInclusive'0.t_rangeinclusive usize) : bool
+  function is_empty_log'0 (self : RangeInclusive'0.t_RangeInclusive usize) : bool
   
-  axiom is_empty_log'0_spec : forall self : RangeInclusive'0.t_rangeinclusive usize . [%#span33] not is_empty_log'0 self
+  axiom is_empty_log'0_spec : forall self : RangeInclusive'0.t_RangeInclusive usize . [%#span33] not is_empty_log'0 self
    -> deep_model'0 (start_log'0 self) <= deep_model'0 (end_log'0 self)
   
-  function range_inclusive_len'0 (r : RangeInclusive'0.t_rangeinclusive usize) : int =
+  function range_inclusive_len'0 (r : RangeInclusive'0.t_RangeInclusive usize) : int =
     [%#span35] if is_empty_log'0 r then 0 else deep_model'0 (end_log'0 r) - deep_model'0 (start_log'0 r) + 1
   
-  axiom range_inclusive_len'0_spec : forall r : RangeInclusive'0.t_rangeinclusive usize . [%#span34] is_empty_log'0 r
+  axiom range_inclusive_len'0_spec : forall r : RangeInclusive'0.t_RangeInclusive usize . [%#span34] is_empty_log'0 r
   = (range_inclusive_len'0 r = 0)
   
-  predicate produces'0 (self : RangeInclusive'0.t_rangeinclusive usize) (visited : Seq.seq usize) (o : RangeInclusive'0.t_rangeinclusive usize)
+  predicate produces'0 (self : RangeInclusive'0.t_RangeInclusive usize) (visited : Seq.seq usize) (o : RangeInclusive'0.t_RangeInclusive usize)
     
    =
     [%#span36] Seq.length visited = range_inclusive_len'0 self - range_inclusive_len'0 o
@@ -503,23 +505,23 @@ module C08Haystack_Search
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'0 (Seq.get visited i) = deep_model'0 (start_log'0 self) + i)
   
-  function produces_trans'0 (a : RangeInclusive'0.t_rangeinclusive usize) (ab : Seq.seq usize) (b : RangeInclusive'0.t_rangeinclusive usize) (bc : Seq.seq usize) (c : RangeInclusive'0.t_rangeinclusive usize) : ()
+  function produces_trans'0 (a : RangeInclusive'0.t_RangeInclusive usize) (ab : Seq.seq usize) (b : RangeInclusive'0.t_RangeInclusive usize) (bc : Seq.seq usize) (c : RangeInclusive'0.t_RangeInclusive usize) : ()
     
    =
     [%#span40] ()
   
-  axiom produces_trans'0_spec : forall a : RangeInclusive'0.t_rangeinclusive usize, ab : Seq.seq usize, b : RangeInclusive'0.t_rangeinclusive usize, bc : Seq.seq usize, c : RangeInclusive'0.t_rangeinclusive usize . ([%#span37] produces'0 a ab b)
+  axiom produces_trans'0_spec : forall a : RangeInclusive'0.t_RangeInclusive usize, ab : Seq.seq usize, b : RangeInclusive'0.t_RangeInclusive usize, bc : Seq.seq usize, c : RangeInclusive'0.t_RangeInclusive usize . ([%#span37] produces'0 a ab b)
    -> ([%#span38] produces'0 b bc c)  -> ([%#span39] produces'0 a (Seq.(++) ab bc) c)
   
-  function produces_refl'0 (self : RangeInclusive'0.t_rangeinclusive usize) : () =
+  function produces_refl'0 (self : RangeInclusive'0.t_RangeInclusive usize) : () =
     [%#span42] ()
   
-  axiom produces_refl'0_spec : forall self : RangeInclusive'0.t_rangeinclusive usize . [%#span41] produces'0 self (Seq.empty  : Seq.seq usize) self
+  axiom produces_refl'0_spec : forall self : RangeInclusive'0.t_RangeInclusive usize . [%#span41] produces'0 self (Seq.empty  : Seq.seq usize) self
   
-  predicate invariant'0 (self : RangeInclusive'0.t_rangeinclusive usize) =
+  predicate invariant'0 (self : RangeInclusive'0.t_RangeInclusive usize) =
     [%#span17] true
   
-  axiom inv'0 : forall x : RangeInclusive'0.t_rangeinclusive usize . inv'0 x = true
+  axiom inv'0 : forall x : RangeInclusive'0.t_RangeInclusive usize . inv'0 x = true
   
   use prelude.prelude.Snapshot
   
@@ -535,10 +537,10 @@ module C08Haystack_Search
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq uint8) =
     [%#span44] UIntSize.to_int self < Seq.length seq
   
-  function shallow_model'0 (self : Vec'0.t_vec uint8 (Global'0.t_global)) : Seq.seq uint8 =
+  function shallow_model'0 (self : Vec'0.t_Vec uint8 (Global'0.t_Global)) : Seq.seq uint8 =
     [%#span45] shallow_model'1 self
   
-  let rec index'0 (self:Vec'0.t_vec uint8 (Global'0.t_global)) (index:usize) (return'  (ret:uint8))= {[@expl:precondition] [%#span48] inv'3 index}
+  let rec index'0 (self:Vec'0.t_Vec uint8 (Global'0.t_Global)) (index:usize) (return'  (ret:uint8))= {[@expl:precondition] [%#span48] inv'3 index}
     {[@expl:precondition] [%#span47] inv'2 self}
     {[@expl:precondition] [%#span46] in_bounds'0 index (shallow_model'0 self)}
     any
@@ -547,19 +549,19 @@ module C08Haystack_Search
       (! return' {result}) ]
     
   
-  predicate resolve'1 (self : borrowed (Range'0.t_range usize)) =
+  predicate resolve'1 (self : borrowed (Range'0.t_Range usize)) =
     [%#span51] self.final = self.current
   
   use seq.Seq
   
-  predicate completed'1 (self : borrowed (Range'0.t_range usize)) =
+  predicate completed'1 (self : borrowed (Range'0.t_Range usize)) =
     [%#span52] resolve'1 self
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self.current)
-    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end self.current)
+    /\ deep_model'0 (T_core__ops__range__Range.t_Range__start self.current)
+    >= deep_model'0 (T_core__ops__range__Range.t_Range__end self.current)
   
-  let rec next'1 (self:borrowed (Range'0.t_range usize)) (return'  (ret:Option'0.t_option usize))= {[@expl:precondition] [%#span53] inv'6 self}
+  let rec next'1 (self:borrowed (Range'0.t_Range usize)) (return'  (ret:Option'0.t_Option usize))= {[@expl:precondition] [%#span53] inv'6 self}
     any
-    [ return' (result:Option'0.t_option usize)-> {[%#span55] inv'5 result}
+    [ return' (result:Option'0.t_Option usize)-> {[%#span55] inv'5 result}
       {[%#span54] match result with
         | Option'0.C_None -> completed'1 self
         | Option'0.C_Some v -> produces'1 self.current (Seq.singleton v) self.final
@@ -571,29 +573,29 @@ module C08Haystack_Search
   
   use prelude.prelude.Snapshot
   
-  predicate into_iter_post'1 (self : Range'0.t_range usize) (res : Range'0.t_range usize) =
+  predicate into_iter_post'1 (self : Range'0.t_Range usize) (res : Range'0.t_Range usize) =
     [%#span56] self = res
   
-  predicate into_iter_pre'1 (self : Range'0.t_range usize) =
+  predicate into_iter_pre'1 (self : Range'0.t_Range usize) =
     [%#span57] true
   
-  let rec into_iter'1 (self:Range'0.t_range usize) (return'  (ret:Range'0.t_range usize))= {[@expl:precondition] [%#span59] inv'1 self}
+  let rec into_iter'1 (self:Range'0.t_Range usize) (return'  (ret:Range'0.t_Range usize))= {[@expl:precondition] [%#span59] inv'1 self}
     {[@expl:precondition] [%#span58] into_iter_pre'1 self}
     any
-    [ return' (result:Range'0.t_range usize)-> {[%#span60] inv'1 result}
+    [ return' (result:Range'0.t_Range usize)-> {[%#span60] inv'1 result}
       {[%#span58] into_iter_post'1 self result}
       (! return' {result}) ]
     
   
-  predicate resolve'0 (self : borrowed (RangeInclusive'0.t_rangeinclusive usize)) =
+  predicate resolve'0 (self : borrowed (RangeInclusive'0.t_RangeInclusive usize)) =
     [%#span51] self.final = self.current
   
-  predicate completed'0 (self : borrowed (RangeInclusive'0.t_rangeinclusive usize)) =
+  predicate completed'0 (self : borrowed (RangeInclusive'0.t_RangeInclusive usize)) =
     [%#span61] is_empty_log'0 self.current /\ is_empty_log'0 self.final
   
-  let rec next'0 (self:borrowed (RangeInclusive'0.t_rangeinclusive usize)) (return'  (ret:Option'0.t_option usize))= {[@expl:precondition] [%#span62] inv'4 self}
+  let rec next'0 (self:borrowed (RangeInclusive'0.t_RangeInclusive usize)) (return'  (ret:Option'0.t_Option usize))= {[@expl:precondition] [%#span62] inv'4 self}
     any
-    [ return' (result:Option'0.t_option usize)-> {[%#span63] inv'5 result}
+    [ return' (result:Option'0.t_Option usize)-> {[%#span63] inv'5 result}
       {[%#span54] match result with
         | Option'0.C_None -> completed'0 self
         | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
@@ -601,10 +603,10 @@ module C08Haystack_Search
       (! return' {result}) ]
     
   
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec uint8 (Global'0.t_global)) (ix : int) : uint8 =
+  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec uint8 (Global'0.t_Global)) (ix : int) : uint8 =
     [%#span64] Seq.get (shallow_model'1 self) ix
   
-  predicate match_at'0 [#"../08_haystack.rs" 7 0 7 77] (needle : Vec'0.t_vec uint8 (Global'0.t_global)) (haystack : Vec'0.t_vec uint8 (Global'0.t_global)) (pos : int) (len : int)
+  predicate match_at'0 [#"../08_haystack.rs" 7 0 7 77] (needle : Vec'0.t_Vec uint8 (Global'0.t_Global)) (haystack : Vec'0.t_Vec uint8 (Global'0.t_Global)) (pos : int) (len : int)
     
    =
     [%#span65] len <= Seq.length (shallow_model'0 needle)
@@ -621,39 +623,39 @@ module C08Haystack_Search
   
   use prelude.prelude.Snapshot
   
-  predicate into_iter_post'0 (self : RangeInclusive'0.t_rangeinclusive usize) (res : RangeInclusive'0.t_rangeinclusive usize)
+  predicate into_iter_post'0 (self : RangeInclusive'0.t_RangeInclusive usize) (res : RangeInclusive'0.t_RangeInclusive usize)
     
    =
     [%#span56] self = res
   
-  predicate into_iter_pre'0 (self : RangeInclusive'0.t_rangeinclusive usize) =
+  predicate into_iter_pre'0 (self : RangeInclusive'0.t_RangeInclusive usize) =
     [%#span57] true
   
-  let rec into_iter'0 (self:RangeInclusive'0.t_rangeinclusive usize) (return'  (ret:RangeInclusive'0.t_rangeinclusive usize))= {[@expl:precondition] [%#span59] inv'0 self}
+  let rec into_iter'0 (self:RangeInclusive'0.t_RangeInclusive usize) (return'  (ret:RangeInclusive'0.t_RangeInclusive usize))= {[@expl:precondition] [%#span59] inv'0 self}
     {[@expl:precondition] [%#span58] into_iter_pre'0 self}
     any
-    [ return' (result:RangeInclusive'0.t_rangeinclusive usize)-> {[%#span60] inv'0 result}
+    [ return' (result:RangeInclusive'0.t_RangeInclusive usize)-> {[%#span60] inv'0 result}
       {[%#span58] into_iter_post'0 self result}
       (! return' {result}) ]
     
   
-  let rec new'0 (start:usize) (end':usize) (return'  (ret:RangeInclusive'0.t_rangeinclusive usize))= {[@expl:precondition] [%#span67] inv'3 end'}
+  let rec new'0 (start:usize) (end':usize) (return'  (ret:RangeInclusive'0.t_RangeInclusive usize))= {[@expl:precondition] [%#span67] inv'3 end'}
     {[@expl:precondition] [%#span66] inv'3 start}
     any
-    [ return' (result:RangeInclusive'0.t_rangeinclusive usize)-> {[%#span71] inv'0 result}
+    [ return' (result:RangeInclusive'0.t_RangeInclusive usize)-> {[%#span71] inv'0 result}
       {[%#span70] deep_model'0 start <= deep_model'0 end'  -> not is_empty_log'0 result}
       {[%#span69] end_log'0 result = end'}
       {[%#span68] start_log'0 result = start}
       (! return' {result}) ]
     
   
-  let rec len'0 (self:Vec'0.t_vec uint8 (Global'0.t_global)) (return'  (ret:usize))= {[@expl:precondition] [%#span72] inv'2 self}
+  let rec len'0 (self:Vec'0.t_Vec uint8 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] [%#span72] inv'2 self}
     any
     [ return' (result:usize)-> {[%#span73] UIntSize.to_int result = Seq.length (shallow_model'0 self)}
       (! return' {result}) ]
     
   
-  let rec search (needle:Vec'0.t_vec uint8 (Global'0.t_global)) (haystack:Vec'0.t_vec uint8 (Global'0.t_global)) (return'  (ret:usize))= {[%#s08_haystack11] Seq.length (shallow_model'0 needle)
+  let rec search (needle:Vec'0.t_Vec uint8 (Global'0.t_Global)) (haystack:Vec'0.t_Vec uint8 (Global'0.t_Global)) (return'  (ret:usize))= {[%#s08_haystack11] Seq.length (shallow_model'0 needle)
     >= 1
     /\ Seq.length (shallow_model'0 needle) <= Seq.length (shallow_model'0 haystack)}
     (! bb0
@@ -662,11 +664,11 @@ module C08Haystack_Search
     | bb2 = s0
       [ s0 = UIntSize.sub {_12} {_14} (fun (_ret':usize) ->  [ &_11 <- _ret' ] s1)
       | s1 = new'0 {[%#s08_haystack0] (0 : usize)} {_11}
-          (fun (_ret':RangeInclusive'0.t_rangeinclusive usize) ->  [ &_10 <- _ret' ] s2)
+          (fun (_ret':RangeInclusive'0.t_RangeInclusive usize) ->  [ &_10 <- _ret' ] s2)
       | s2 = bb3 ]
       
     | bb3 = s0
-      [ s0 = into_iter'0 {_10} (fun (_ret':RangeInclusive'0.t_rangeinclusive usize) ->  [ &iter <- _ret' ] s1)
+      [ s0 = into_iter'0 {_10} (fun (_ret':RangeInclusive'0.t_RangeInclusive usize) ->  [ &iter <- _ret' ] s1)
       | s1 = bb4 ]
       
     | bb4 = s0 [ s0 =  [ &iter_old <- [%#s08_haystack1] Snapshot.new iter ] s1 | s1 = bb5 ] 
@@ -680,17 +682,17 @@ module C08Haystack_Search
         {[@expl:loop invariant] [%#s08_haystack3] inv'0 iter}
         (! s0) [ s0 = bb8 ] 
         [ bb8 = s0
-          [ s0 = Borrow.borrow_mut <RangeInclusive'0.t_rangeinclusive usize> {iter}
-              (fun (_ret':borrowed (RangeInclusive'0.t_rangeinclusive usize)) ->
+          [ s0 = Borrow.borrow_mut <RangeInclusive'0.t_RangeInclusive usize> {iter}
+              (fun (_ret':borrowed (RangeInclusive'0.t_RangeInclusive usize)) ->
                  [ &_26 <- _ret' ] 
                  [ &iter <- _26.final ] 
                 s1)
-          | s1 = Borrow.borrow_final <RangeInclusive'0.t_rangeinclusive usize> {_26.current} {Borrow.get_id _26}
-              (fun (_ret':borrowed (RangeInclusive'0.t_rangeinclusive usize)) ->
+          | s1 = Borrow.borrow_final <RangeInclusive'0.t_RangeInclusive usize> {_26.current} {Borrow.get_id _26}
+              (fun (_ret':borrowed (RangeInclusive'0.t_RangeInclusive usize)) ->
                  [ &_25 <- _ret' ] 
                  [ &_26 <- { _26 with current = _25.final ; } ] 
                 s2)
-          | s2 = next'0 {_25} (fun (_ret':Option'0.t_option usize) ->  [ &_24 <- _ret' ] s3)
+          | s2 = next'0 {_25} (fun (_ret':Option'0.t_Option usize) ->  [ &_24 <- _ret' ] s3)
           | s3 = bb9 ]
           
         | bb9 = s0
@@ -701,7 +703,7 @@ module C08Haystack_Search
           
         | bb11 = bb13
         | bb13 = s0
-          [ s0 = Option'0.some <usize> {_24} (fun (r0'0:usize) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
+          [ s0 = Option'0.v_Some <usize> {_24} (fun (r0'0:usize) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
           | s1 = 
             [ &_29 <- [%#s08_haystack4] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
             
@@ -716,7 +718,7 @@ module C08Haystack_Search
           
         | bb15 = s0
           [ s0 =  [ &_35 <- Range'0.C_Range ([%#s08_haystack5] (0 : usize)) _36 ] s1
-          | s1 = into_iter'1 {_35} (fun (_ret':Range'0.t_range usize) ->  [ &iter1 <- _ret' ] s2)
+          | s1 = into_iter'1 {_35} (fun (_ret':Range'0.t_Range usize) ->  [ &iter1 <- _ret' ] s2)
           | s2 = bb16 ]
           
         | bb16 = s0 [ s0 =  [ &iter_old1 <- [%#s08_haystack6] Snapshot.new iter1 ] s1 | s1 = bb17 ] 
@@ -730,14 +732,14 @@ module C08Haystack_Search
             {[@expl:loop invariant] [%#s08_haystack8] inv'1 iter1}
             (! s0) [ s0 = bb20 ] 
             [ bb20 = s0
-              [ s0 = Borrow.borrow_mut <Range'0.t_range usize> {iter1}
-                  (fun (_ret':borrowed (Range'0.t_range usize)) ->  [ &_47 <- _ret' ]  [ &iter1 <- _47.final ] s1)
-              | s1 = Borrow.borrow_final <Range'0.t_range usize> {_47.current} {Borrow.get_id _47}
-                  (fun (_ret':borrowed (Range'0.t_range usize)) ->
+              [ s0 = Borrow.borrow_mut <Range'0.t_Range usize> {iter1}
+                  (fun (_ret':borrowed (Range'0.t_Range usize)) ->  [ &_47 <- _ret' ]  [ &iter1 <- _47.final ] s1)
+              | s1 = Borrow.borrow_final <Range'0.t_Range usize> {_47.current} {Borrow.get_id _47}
+                  (fun (_ret':borrowed (Range'0.t_Range usize)) ->
                      [ &_46 <- _ret' ] 
                      [ &_47 <- { _47 with current = _46.final ; } ] 
                     s2)
-              | s2 = next'1 {_46} (fun (_ret':Option'0.t_option usize) ->  [ &_45 <- _ret' ] s3)
+              | s2 = next'1 {_46} (fun (_ret':Option'0.t_Option usize) ->  [ &_45 <- _ret' ] s3)
               | s3 = bb21 ]
               
             | bb21 = s0
@@ -748,7 +750,7 @@ module C08Haystack_Search
               
             | bb23 = bb25
             | bb25 = s0
-              [ s0 = Option'0.some <usize> {_45} (fun (r0'0:usize) ->  [ &__creusot_proc_iter_elem1 <- r0'0 ] s1)
+              [ s0 = Option'0.v_Some <usize> {_45} (fun (r0'0:usize) ->  [ &__creusot_proc_iter_elem1 <- r0'0 ] s1)
               | s1 = 
                 [ &_50 <- [%#s08_haystack10] Snapshot.new (Seq.(++) (Snapshot.inner produced1) (Seq.singleton __creusot_proc_iter_elem1)) ]
                 
@@ -782,29 +784,29 @@ module C08Haystack_Search
     | bb32 = return' {_0} ]
     )
     [ & _0 : usize = any_l ()
-    | & needle : Vec'0.t_vec uint8 (Global'0.t_global) = needle
-    | & haystack : Vec'0.t_vec uint8 (Global'0.t_global) = haystack
-    | & iter : RangeInclusive'0.t_rangeinclusive usize = any_l ()
-    | & _10 : RangeInclusive'0.t_rangeinclusive usize = any_l ()
+    | & needle : Vec'0.t_Vec uint8 (Global'0.t_Global) = needle
+    | & haystack : Vec'0.t_Vec uint8 (Global'0.t_Global) = haystack
+    | & iter : RangeInclusive'0.t_RangeInclusive usize = any_l ()
+    | & _10 : RangeInclusive'0.t_RangeInclusive usize = any_l ()
     | & _11 : usize = any_l ()
     | & _12 : usize = any_l ()
     | & _14 : usize = any_l ()
-    | & iter_old : Snapshot.snap_ty (RangeInclusive'0.t_rangeinclusive usize) = any_l ()
+    | & iter_old : Snapshot.snap_ty (RangeInclusive'0.t_RangeInclusive usize) = any_l ()
     | & produced : Snapshot.snap_ty (Seq.seq usize) = any_l ()
-    | & _24 : Option'0.t_option usize = any_l ()
-    | & _25 : borrowed (RangeInclusive'0.t_rangeinclusive usize) = any_l ()
-    | & _26 : borrowed (RangeInclusive'0.t_rangeinclusive usize) = any_l ()
+    | & _24 : Option'0.t_Option usize = any_l ()
+    | & _25 : borrowed (RangeInclusive'0.t_RangeInclusive usize) = any_l ()
+    | & _26 : borrowed (RangeInclusive'0.t_RangeInclusive usize) = any_l ()
     | & __creusot_proc_iter_elem : usize = any_l ()
     | & _29 : Snapshot.snap_ty (Seq.seq usize) = any_l ()
     | & i : usize = any_l ()
-    | & iter1 : Range'0.t_range usize = any_l ()
-    | & _35 : Range'0.t_range usize = any_l ()
+    | & iter1 : Range'0.t_Range usize = any_l ()
+    | & _35 : Range'0.t_Range usize = any_l ()
     | & _36 : usize = any_l ()
-    | & iter_old1 : Snapshot.snap_ty (Range'0.t_range usize) = any_l ()
+    | & iter_old1 : Snapshot.snap_ty (Range'0.t_Range usize) = any_l ()
     | & produced1 : Snapshot.snap_ty (Seq.seq usize) = any_l ()
-    | & _45 : Option'0.t_option usize = any_l ()
-    | & _46 : borrowed (Range'0.t_range usize) = any_l ()
-    | & _47 : borrowed (Range'0.t_range usize) = any_l ()
+    | & _45 : Option'0.t_Option usize = any_l ()
+    | & _46 : borrowed (Range'0.t_Range usize) = any_l ()
+    | & _47 : borrowed (Range'0.t_Range usize) = any_l ()
     | & __creusot_proc_iter_elem1 : usize = any_l ()
     | & _50 : Snapshot.snap_ty (Seq.seq usize) = any_l ()
     | & j : usize = any_l ()
