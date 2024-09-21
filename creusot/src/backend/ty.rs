@@ -330,14 +330,18 @@ pub(crate) fn translate_ty_param(p: Symbol) -> Ident {
     Ident::build(&p.to_string().to_lowercase())
 }
 
-// Translate a Rust type declation to an ML one
-// Rust tuple-like types are translated as one would expect, to product types in WhyML
-// However, Rust struct types are *not* translated to WhyML records, instead we 'forget' the field names
-// and also translate them to product types.
-//
-// Additionally, types are not translated one by one but rather as a *binding group*, so that mutually
-// recursive types are properly translated.
-// Results are accumulated and can be collected at once by consuming the `Ctx`
+/// Translate a Rust type declation to an ML one
+/// Rust tuple-like types are translated as one would expect, to product types in WhyML
+/// However, Rust struct types are *not* translated to WhyML records, instead we 'forget' the field names
+/// and also translate them to product types.
+///
+/// Additionally, types are not translated one by one but rather as a *binding group*, so that mutually
+/// recursive types are properly translated.
+///
+/// We also generate a *destructor* for each constrctor of the type which is used to access components of
+/// the constructor in Coma code.
+///
+/// We attempt to respect visibility of fields and constructors, at least for `std` types.
 pub(crate) fn translate_tydecl(
     ctx: &mut Why3Generator<'_>,
     bg: &IndexSet<DefId>,
@@ -496,7 +500,7 @@ pub(crate) fn destructor<'tcx>(
 
             let inner_ty = if !vis {
                 names.import_prelude_module(PreludeModule::Opaque);
-                let opaque_ty = QName::from_string("opaque_ptr").unwrap();
+                let opaque_ty = QName::from_string("hidden_field").unwrap();
                 MlT::TConstructor(opaque_ty)
             } else {
                 translate_ty_inner(decl, ctx, names, DUMMY_SP, ty)
@@ -559,6 +563,11 @@ fn build_ty_decl<'tcx>(
     let adt = ctx.tcx.adt_def(did);
     let substs = GenericArgs::identity_for_item(ctx.tcx, did);
 
+    // Currently, there is no way to query for the dependencies of a crate in rustc as
+    // the relevant `CStore` apis are crate-local. So for the moment we only allow
+    // std / alloc / core to be eligible for hiding of data type internals.
+    let allowed_to_hide = ["std", "core", "alloc"].contains(&ctx.crate_name(did.krate).as_str());
+
     // HACK(xavier): Clean up
     let ty_name = names.ty(did, substs).name;
 
@@ -566,38 +575,35 @@ fn build_ty_decl<'tcx>(
     let ty_args: Vec<_> = ty_params(ctx, did).collect();
 
     let param_env = ctx.param_env(did);
-    let kind = {
-        let mut ml_ty_def = Vec::new();
 
-        for var_def in adt.variants().iter() {
-            if !ctx.visibility(var_def.def_id).is_visible_locally() {
-                continue;
-            }
+    let mut ml_ty_def = Vec::new();
 
-            // If all fields are invisible from here, leave just a single opaque field.
-            let mut field_tys = Vec::new();
-
-            // Check if a field is visible to us, if it isn't then replace it with an opaque_ptr type value
-            for field in &var_def.fields {
-                let ty = if !ctx.visibility(field.did).is_visible_locally() {
-                    names.import_prelude_module(PreludeModule::Opaque);
-                    let opaque_ty = QName::from_string("opaque_ptr").unwrap();
-                    MlT::TConstructor(opaque_ty)
-                } else {
-                    field_ty(ctx, names, param_env, did, field, substs)
-                };
-                field_tys.push(Field { ty, ghost: false })
-            }
-
-            let var_name = names.constructor(var_def.def_id, substs);
-
-            ml_ty_def.push(ConstructorDecl { name: var_name.name, fields: field_tys });
+    for var_def in adt.variants().iter() {
+        if allowed_to_hide && !ctx.visibility(var_def.def_id).is_visible_locally() {
+            continue;
         }
 
-        AdtDecl { ty_name, ty_params: ty_args, constrs: ml_ty_def }
-    };
+        // If all fields are invisible from here, leave just a single opaque field.
+        let mut field_tys = Vec::new();
 
-    kind
+        // Check if a field is visible to us, if it isn't then replace it with an opaque_ptr type value
+        for field in &var_def.fields {
+            let ty = if allowed_to_hide && !ctx.visibility(field.did).is_visible_locally() {
+                names.import_prelude_module(PreludeModule::Opaque);
+                let opaque_ty = QName::from_string("hidden_field").unwrap();
+                MlT::TConstructor(opaque_ty)
+            } else {
+                field_ty(ctx, names, param_env, did, field, substs)
+            };
+            field_tys.push(Field { ty, ghost: false })
+        }
+
+        let var_name = names.constructor(var_def.def_id, substs);
+
+        ml_ty_def.push(ConstructorDecl { name: var_name.name, fields: field_tys });
+    }
+
+    AdtDecl { ty_name, ty_params: ty_args, constrs: ml_ty_def }
 }
 use rustc_data_structures::captures::Captures;
 
