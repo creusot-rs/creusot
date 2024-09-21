@@ -37,7 +37,7 @@ pub fn infer_proph_invariants<'tcx>(
 
     let wto = weak_topological_order(&graph, START_BLOCK);
     let mut backs = IndexMap::new();
-    backedges(&mut backs, &wto);
+    descendants(&mut backs, &wto);
 
     let res = borrow_prophecy_analysis(ctx, self_id, &body, &wto);
 
@@ -113,30 +113,26 @@ fn place_to_term<'tcx>(
     Some(t)
 }
 
-fn backedges(e: &mut IndexMap<BasicBlock, IndexSet<BasicBlock>>, comps: &[Component<BasicBlock>]) {
+fn descendants(e: &mut IndexMap<BasicBlock, IndexSet<BasicBlock>>, comps: &[Component<BasicBlock>]) {
     for comp in comps {
         match comp {
             Component::Vertex(_) => (),
             Component::Component(l, members) => {
-                e.entry(*l).or_default().extend(ids(members));
-                backedges(e, members);
+                descendants(e, members);
+                for mem in members {
+                    match mem {
+                        Component::Vertex(b) => {
+                            e.entry(*l).or_default().insert(*b);
+                        }
+                        Component::Component(b, _) => {
+                            let s = e[b].clone();
+                            e.entry(*l).or_default().union(&s);
+                        }
+                    }
+                }
             }
         }
     }
-}
-
-fn ids(comps: &[Component<BasicBlock>]) -> Vec<BasicBlock> {
-    let mut blks = Vec::new();
-    for c in comps {
-        match c {
-            Component::Vertex(b) => blks.push(*b),
-            Component::Component(l, members) => {
-                blks.push(*l);
-                blks.extend(ids(&members))
-            }
-        }
-    }
-    blks
 }
 
 fn borrow_prophecy_analysis<'tcx>(
