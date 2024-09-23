@@ -277,7 +277,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     optimization::simplify_fmir(usage, &mut body);
 
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
-    infer_proph_invariants(ctx, body_id.def_id(), &mut body);
+    infer_proph_invariants(ctx, &mut body);
 
     let blocks: Vec<Defn> =
         wto.into_iter().map(|c| component_to_defn(&mut body, ctx, names, c)).collect();

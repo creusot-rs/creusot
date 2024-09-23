@@ -1,5 +1,4 @@
 use indexmap::{IndexMap, IndexSet};
-use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{tcx::PlaceTy, BasicBlock, ProjectionElem, START_BLOCK},
     ty::{Ty, TyCtxt},
@@ -19,7 +18,7 @@ use crate::{
 };
 use petgraph::Direction;
 
-use crate::translation::fmir::{FmirVisitor, Place, RValue, Statement};
+use crate::translation::fmir::{Block, FmirVisitor, Place, RValue, Statement, Terminator};
 
 /// fMIR transformations
 ///
@@ -28,18 +27,14 @@ use crate::translation::fmir::{FmirVisitor, Place, RValue, Statement};
 /// (1) types with invariants being mutated inside of a loop
 /// (2) mutable borrows being mutated inside of a loop.
 
-pub fn infer_proph_invariants<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    self_id: DefId,
-    body: &mut fmir::Body<'tcx>,
-) {
+pub fn infer_proph_invariants<'tcx>(ctx: &mut TranslationCtx<'tcx>, body: &mut fmir::Body<'tcx>) {
     let graph = node_graph(body);
 
     let wto = weak_topological_order(&graph, START_BLOCK);
     let mut backs = IndexMap::new();
-    backedges(&mut backs, &wto);
+    descendants(&mut backs, &wto);
 
-    let res = borrow_prophecy_analysis(ctx, self_id, &body, &wto);
+    let res = borrow_prophecy_analysis(ctx, &body, &wto);
 
     let snap_ty = ctx.get_diagnostic_item(Symbol::intern("snapshot_ty")).unwrap();
     let snap_new = ctx.get_diagnostic_item(Symbol::intern("snapshot_new")).unwrap();
@@ -50,6 +45,8 @@ pub fn infer_proph_invariants<'tcx>(
         let incoming = &inc.collect::<IndexSet<_>>() - &backs[k];
 
         for (ix, u) in unchanged.iter().enumerate() {
+            let Some(pterm) = place_to_term(u, tcx, &body.locals) else { continue };
+
             let local = Symbol::intern(&format!("old_{}_{ix}", k.as_u32()));
             let subst = ctx.mk_args(&[u.ty(tcx, &body.locals).into()]);
             let ty = Ty::new_adt(ctx.tcx, ctx.adt_def(snap_ty), subst);
@@ -57,10 +54,34 @@ pub fn infer_proph_invariants<'tcx>(
             body.locals
                 .insert(local, fmir::LocalDecl { span: DUMMY_SP, ty, temp: true, arg: false });
 
-            let Some(pterm) = place_to_term(u, tcx, &body.locals) else { break };
             for p in &incoming {
-                let block = body.blocks.get_mut(p).unwrap();
-                block.stmts.push(Statement::Assignment(
+                let mut prev_block = body.blocks.get_mut(p).unwrap();
+                if let Terminator::Switch(_, branches) = &mut prev_block.terminator {
+                    let new_block = BasicBlock::from(body.fresh);
+                    body.fresh += 1;
+                    for tgt in branches.targets_mut() {
+                        if *tgt == *k {
+                            *tgt = new_block;
+                        }
+                    }
+                    body.blocks.insert(
+                        new_block,
+                        Block {
+                            invariants: vec![],
+                            variant: None,
+                            stmts: vec![],
+                            terminator: Terminator::Goto(*k),
+                        },
+                    );
+                    prev_block = body.blocks.get_mut(&new_block).unwrap();
+                }
+                if let Terminator::Goto(t) = prev_block.terminator
+                    && t == *k
+                {
+                } else {
+                    panic!()
+                }
+                prev_block.stmts.push(Statement::Assignment(
                     Place { local, projection: Vec::new() },
                     RValue::Ghost(Term::call(tcx, snap_new, subst, vec![pterm.clone()])),
                     DUMMY_SP,
@@ -70,11 +91,8 @@ pub fn infer_proph_invariants<'tcx>(
             let old = Term::var(local, ty);
             let blk = body.blocks.get_mut(k).unwrap();
 
-            let snap_old = Term::call(ctx.tcx, snap_deref, subst, vec![old]);
-            let mut snap_old = ctx
-                .try_normalize_erasing_regions(ctx.param_env(self_id), snap_old.clone())
-                .unwrap_or(snap_old);
-            snap_old.ty = snap_old.ty.builtin_deref(true).unwrap();
+            let mut snap_old = Term::call(ctx.tcx, snap_deref, subst, vec![old]);
+            snap_old.ty = u.ty(tcx, &body.locals);
             blk.invariants.push(snap_old.fin().bin_op(tcx, BinOp::Eq, pterm.fin()));
         }
     }
@@ -113,64 +131,83 @@ fn place_to_term<'tcx>(
     Some(t)
 }
 
-fn backedges(e: &mut IndexMap<BasicBlock, IndexSet<BasicBlock>>, comps: &[Component<BasicBlock>]) {
+fn descendants(
+    e: &mut IndexMap<BasicBlock, IndexSet<BasicBlock>>,
+    comps: &[Component<BasicBlock>],
+) {
     for comp in comps {
         match comp {
             Component::Vertex(_) => (),
             Component::Component(l, members) => {
-                e.entry(*l).or_default().extend(ids(members));
-                backedges(e, members);
+                descendants(e, members);
+                for mem in members {
+                    match mem {
+                        Component::Vertex(b) => {
+                            e.entry(*l).or_default().insert(*b);
+                        }
+                        Component::Component(b, _) => {
+                            let s = e[b].clone();
+                            e.entry(*l).or_default().union(&s);
+                        }
+                    }
+                }
             }
         }
     }
-}
-
-fn ids(comps: &[Component<BasicBlock>]) -> Vec<BasicBlock> {
-    let mut blks = Vec::new();
-    for c in comps {
-        match c {
-            Component::Vertex(b) => blks.push(*b),
-            Component::Component(l, members) => {
-                blks.push(*l);
-                blks.extend(ids(&members))
-            }
-        }
-    }
-    blks
 }
 
 fn borrow_prophecy_analysis<'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    self_id: DefId,
     body: &fmir::Body<'tcx>,
     c: &[Component<BasicBlock>],
 ) -> IndexMap<BasicBlock, IndexSet<Place<'tcx>>> {
-    let mut state = BorrowProph::initialize(ctx, self_id, &body.locals);
+    let mut unchanged_prophs = Default::default();
+    let mut state = BorrowProph::initialize(ctx, &body.locals, &mut unchanged_prophs);
 
     for comp in c {
-        borrow_prophecy_analysis_inner(&mut state, ctx, self_id, body, comp);
+        borrow_prophecy_analysis_inner(&mut state, ctx, body, comp);
     }
-    state.unchanged_prophs
+
+    unchanged_prophs
 }
 
 fn borrow_prophecy_analysis_inner<'a, 'tcx>(
-    vals: &mut BorrowProph<'a, 'tcx>,
+    state_parent: &mut BorrowProph<'a, 'tcx>,
     ctx: &'a TranslationCtx<'tcx>,
-    self_id: DefId,
     body: &'a fmir::Body<'tcx>,
     c: &Component<BasicBlock>,
 ) {
     match c {
-        Component::Vertex(b) => vals.visit_block(&body.blocks[b]),
+        Component::Vertex(b) => state_parent.visit_block(&body.blocks[b]),
         Component::Component(h, l) => {
-            let mut state = BorrowProph::initialize(ctx, self_id, &body.locals);
+            let mut state =
+                BorrowProph::initialize(ctx, &body.locals, state_parent.unchanged_prophs);
             state.visit_block(&body.blocks[h]);
 
             for b in l {
-                borrow_prophecy_analysis_inner(&mut state, ctx, self_id, body, b)
+                borrow_prophecy_analysis_inner(&mut state, ctx, body, b)
             }
 
-            vals.unchanged_prophs.insert(*h, &state.active_borrows - &state.overwritten_values);
+            let mut unchanged_prophs_here = IndexSet::new();
+            'active_borrows: for b in &state.active_borrows {
+                let mut p = b.clone();
+                loop {
+                    if state.overwritten_values.contains(&p) {
+                        continue 'active_borrows;
+                    }
+
+                    if p.projection.pop() == None {
+                        break;
+                    }
+                }
+
+                unchanged_prophs_here.insert(b.clone());
+            }
+
+            state_parent.active_borrows.extend(state.active_borrows);
+            state_parent.overwritten_values.extend(state.overwritten_values);
+
+            state_parent.unchanged_prophs.insert(*h, unchanged_prophs_here);
         }
     }
 }
@@ -179,41 +216,38 @@ struct BorrowProph<'a, 'tcx> {
     active_borrows: IndexSet<Place<'tcx>>,
     overwritten_values: IndexSet<Place<'tcx>>,
     locals: &'a fmir::LocalDecls<'tcx>,
-    unchanged_prophs: IndexMap<BasicBlock, IndexSet<Place<'tcx>>>,
-    tcx: TyCtxt<'tcx>, // values: MutatedVals<'a, 'tcx>,
+    unchanged_prophs: &'a mut IndexMap<BasicBlock, IndexSet<Place<'tcx>>>,
+    tcx: TyCtxt<'tcx>,
+}
+
+impl<'a, 'tcx> BorrowProph<'a, 'tcx> {
+    fn record_write_to(&mut self, pl: &Place<'tcx>) {
+        self.overwritten_values.insert(pl.clone());
+
+        let mut b = Place { local: pl.local, projection: vec![] };
+        let mut bty = PlaceTy::from_ty(self.locals[&pl.local].ty);
+        for &pr in &pl.projection {
+            if matches!(pr, ProjectionElem::Deref) && bty.ty.is_ref() && bty.ty.is_mutable_ptr() {
+                self.active_borrows.insert(b.clone());
+            }
+            b.projection.push(pr);
+            bty = projection_ty(bty, self.tcx, pr);
+        }
+    }
 }
 
 impl<'a, 'tcx> FmirVisitor<'tcx> for BorrowProph<'a, 'tcx> {
     fn visit_stmt(&mut self, stmt: &fmir::Statement<'tcx>) {
         match stmt {
             fmir::Statement::Assignment(l, r, _) => {
-                self.overwritten_values.insert(l.clone());
-                for_place_tys(self.tcx, l, self.locals, |projs, ty| {
-                    if ty.is_mutable_ptr() && ty.is_ref() {
-                        let mut pl = l.clone();
-                        pl.projection = projs.to_vec();
-                        self.active_borrows.insert(pl);
-                        false
-                    } else {
-                        true
-                    }
-                });
+                self.record_write_to(l);
 
-                if let RValue::Borrow(BorrowKind::Mut, r) = &r {
-                    for_place_tys(self.tcx, r, self.locals, |projs, ty| {
-                        if ty.is_mutable_ptr() && ty.is_ref() {
-                            let mut pl = r.clone();
-                            pl.projection = projs.to_vec();
-                            self.active_borrows.insert(pl);
-                            false
-                        } else {
-                            true
-                        }
-                    })
+                if let RValue::Borrow(BorrowKind::Mut, r) = r {
+                    self.record_write_to(r);
                 }
             }
             fmir::Statement::Call(r, _, _, _, _) => {
-                self.overwritten_values.insert(r.clone());
+                self.record_write_to(r);
             }
             _ => (),
         }
@@ -223,8 +257,8 @@ impl<'a, 'tcx> FmirVisitor<'tcx> for BorrowProph<'a, 'tcx> {
 impl<'a, 'tcx> BorrowProph<'a, 'tcx> {
     fn initialize(
         ctx: &'a TranslationCtx<'tcx>,
-        _: DefId,
         locals: &'a fmir::LocalDecls<'tcx>,
+        unchanged_prophs: &'a mut IndexMap<BasicBlock, IndexSet<Place<'tcx>>>,
     ) -> Self {
         {
             Self {
@@ -232,32 +266,8 @@ impl<'a, 'tcx> BorrowProph<'a, 'tcx> {
                 locals,
                 active_borrows: Default::default(),
                 overwritten_values: Default::default(),
-                unchanged_prophs: Default::default(),
-                // values: MutatedVals::initialize(ctx, self_id, locals),
+                unchanged_prophs: unchanged_prophs,
             }
-        }
-    }
-}
-
-fn for_place_tys<'tcx, F: FnMut(&[ProjectionElem<Symbol, Ty<'tcx>>], Ty<'tcx>) -> bool>(
-    tcx: TyCtxt<'tcx>,
-    place: &Place<'tcx>,
-    locals: &fmir::LocalDecls<'tcx>,
-    mut f: F,
-) {
-    let mut pty = PlaceTy::from_ty(locals[&place.local].ty);
-    let mut ix = 0;
-
-    if !f(&place.projection[..ix], pty.ty) {
-        return;
-    }
-
-    for p in &place.projection {
-        pty = projection_ty(pty, tcx, *p);
-        ix += 1;
-
-        if !f(&place.projection[..ix], pty.ty) {
-            break;
         }
     }
 }

@@ -24,7 +24,6 @@ pub fn insertion_sort(array: &mut [i32]) {
     #[invariant(sorted_range(array@, 0, produced.len() + 1))]
     #[invariant(array@.len() == n@)]
     #[invariant(original@.permutation_of(array@))]
-    #[invariant(^array == ^*original)]
     for i in 1..n {
         let mut j = i;
         #[invariant(j <= i)]
@@ -32,7 +31,6 @@ pub fn insertion_sort(array: &mut [i32]) {
         #[invariant(original@.permutation_of(array@))]
         #[invariant(forall< a : Int, b : Int> 0 <= a && a <= b && b <= i@ ==> a != j@ ==> b != j@ ==> array[a] <= array[b])]
         #[invariant(forall< a : _> j@ + 1 <= a && a <= i@ ==> array[j] < array[a])]
-        #[invariant(^array == ^*original)]
         while j > 0 {
             if array[j - 1] > array[j] {
                 array.swap(j - 1, j);
