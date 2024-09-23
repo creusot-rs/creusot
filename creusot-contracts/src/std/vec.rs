@@ -44,7 +44,7 @@ impl<T> Default for Vec<T> {
 }
 
 #[trusted]
-impl<T> Resolve for Vec<T> {
+impl<T, A: Allocator> Resolve for Vec<T, A> {
     #[predicate(prophetic)]
     #[open]
     fn resolve(self) -> bool {
@@ -53,9 +53,9 @@ impl<T> Resolve for Vec<T> {
 }
 
 impl<T, A: Allocator> Invariant for Vec<T, A> {
-    #[predicate]
+    #[predicate(prophetic)]
     #[open]
-    #[creusot::structural_inv]
+    #[creusot::trusted_ignore_structural_inv]
     fn invariant(self) -> bool {
         pearlite! { invariant::inv(self@) }
     }

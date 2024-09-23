@@ -135,6 +135,11 @@ pub fn borrow_in_box_tuple_2(x: (i32, Box<&mut i32>)) -> i32 {
     *borrow
 }
 
+#[ensures(result == &mut **x)]
+pub fn reborrow_in_box<T>(x: &mut Box<T>) -> &mut T {
+    &mut **x
+}
+
 //=========================================
 //=========== NON-MUTATING USES ===========
 //=========================================
@@ -176,4 +181,20 @@ pub fn shallow_borrow_no_gen(x: &mut Option<i32>) {
         }
         _ => {}
     }
+}
+
+//=============================
+//=========== SLICE ===========
+//=============================
+
+#[requires(v@.len() == 42)]
+#[ensures(result == &mut v[12])]
+pub fn index_mut_slice<T>(v: &mut [T]) -> &mut T {
+    &mut v[12]
+}
+
+#[requires(v@.len() == 31)] // FIXME
+#[ensures(result == &mut v[12usize])]
+pub fn index_mut_array<T>(v: &mut [T; 31]) -> &mut T {
+    &mut v[12]
 }

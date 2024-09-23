@@ -1,4 +1,5 @@
 use crate::{
+    invariant::*,
     std::{
         alloc::Allocator,
         ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
@@ -6,6 +7,15 @@ use crate::{
     *,
 };
 pub use ::std::slice::*;
+
+impl<T> Invariant for [T] {
+    #[predicate(prophetic)]
+    #[open]
+    #[creusot::trusted_ignore_structural_inv]
+    fn invariant(self) -> bool {
+        pearlite! { inv(self@) }
+    }
+}
 
 impl<T> ShallowModel for [T] {
     type ShallowModelTy = Seq<T>;
@@ -43,7 +53,6 @@ fn slice_model<T>(_: &[T]) -> Seq<T> {
 
 #[logic]
 #[open]
-#[rustc_diagnostic_item = "slice_len_logic"]
 pub fn slice_len<T>(x: [T]) -> Int {
     pearlite! { x@.len() }
 }
@@ -77,8 +86,8 @@ impl<T> SliceExt<T> for [T] {
     #[trusted]
     #[open(self)]
     #[ensures(result.len() == self@.len())]
-    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> *result[i] == self[i])]
-    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> ^result[i] == (^self)[i])]
+    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> result[i] == &mut self[i])]
+    // TODO: replace with a map function applied on a sequence
     fn to_mut_seq(&mut self) -> Seq<&mut T> {
         pearlite! { absurd }
     }
@@ -87,7 +96,7 @@ impl<T> SliceExt<T> for [T] {
     #[open(self)]
     #[trusted]
     #[ensures(result.len() == self@.len())]
-    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> *result[i] == self[i])]
+    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> result[i] == &self[i])]
     fn to_ref_seq(&self) -> Seq<&T> {
         pearlite! { absurd }
     }

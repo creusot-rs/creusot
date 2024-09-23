@@ -1,7 +1,11 @@
 // UNSTABLE
 extern crate creusot_contracts;
 
-use creusot_contracts::{invariant::Invariant, logic::Mapping, Clone, PartialEq, *};
+use creusot_contracts::{
+    invariant::{inv, Invariant},
+    logic::Mapping,
+    Clone, PartialEq, *,
+};
 use std::cmp::Ordering::*;
 
 /* Axiomatization of bumpalo */
@@ -345,6 +349,7 @@ impl<'arena> Context<'arena> {
     pub fn grows_trans(&mut self, o: &mut Self, oo: &mut Self) {}
 
     #[logic]
+    #[requires(inv(self))]
     #[requires(self.is_valid_bdd(a))]
     #[requires(x@ < a.leastvar())]
     #[ensures(a.interp(v) == a.interp(v.set(x, b)))]
@@ -361,6 +366,7 @@ impl<'arena> Context<'arena> {
     }
 
     #[logic]
+    #[requires(inv(self))]
     #[requires(self.is_valid_bdd(a))]
     #[requires(self.is_valid_bdd(b))]
     #[requires(a != b)]
@@ -410,6 +416,7 @@ impl<'arena> Context<'arena> {
 
     #[logic]
     #[open(self)]
+    #[requires(inv(self))]
     #[requires(self.is_valid_bdd(a))]
     #[requires(self.is_valid_bdd(b))]
     #[requires(forall<v: _> a.interp(v) == b.interp(v))]

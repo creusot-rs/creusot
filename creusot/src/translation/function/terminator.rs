@@ -1,9 +1,12 @@
 use super::BodyTranslator;
 use crate::{
     ctx::TranslationCtx,
+    extended_location::ExtendedLocation,
     fmir,
+    resolve::HasMoveDataExt,
     translation::{
         fmir::*,
+        function::mk_goto,
         pearlite::{Term, TermKind, UnOp},
         specification::inv_subst,
         traits,
@@ -11,24 +14,21 @@ use crate::{
 };
 use itertools::Itertools;
 use rustc_hir::def_id::DefId;
-use rustc_infer::{
-    infer::{InferCtxt, TyCtxtInferExt},
-    traits::{Obligation, ObligationCause, TraitEngine},
-};
+use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
     mir::{
-        self, AssertKind, BasicBlock, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo,
-        StatementKind, SwitchTargets,
+        self, AssertKind, BasicBlock, BasicBlockData, Local, Location, Operand, Place, Rvalue,
+        SourceInfo, StatementKind, SwitchTargets,
         TerminatorKind::{self, *},
     },
-    ty::{self, AssocItem, GenericArgKind, GenericArgsRef, ParamEnv, Predicate, Ty, TyKind},
+    ty::{self, AssocItem, GenericArgKind, GenericArgsRef, ParamEnv, Ty, TyKind},
+};
+use rustc_mir_dataflow::{
+    move_paths::{HasMoveData, LookupResult},
+    on_all_children_bits,
 };
 use rustc_span::{source_map::Spanned, Span, Symbol};
-use rustc_trait_selection::{
-    error_reporting::InferCtxtErrorExt,
-    infer::InferCtxtExt,
-    traits::{FulfillmentError, TraitEngineExt},
-};
+use rustc_trait_selection::{error_reporting::InferCtxtErrorExt, infer::InferCtxtExt};
 use std::collections::{HashMap, HashSet};
 
 // Translate the terminator of a basic block.
@@ -38,14 +38,16 @@ use std::collections::{HashMap, HashSet};
 // patterns in match expressions.
 
 impl<'tcx> BodyTranslator<'_, 'tcx> {
-    pub(crate) fn translate_terminator(
-        &mut self,
-        terminator: &mir::Terminator<'tcx>,
-        location: Location,
-    ) {
+    pub fn translate_terminator(&mut self, terminator: &mir::Terminator<'tcx>, location: Location) {
+        let mut resolved_during = self
+            .resolver
+            .as_mut()
+            .map(|r| r.resolved_places_during(ExtendedLocation::End(location)));
+        let term;
+
         let span = terminator.source_info.span;
         match &terminator.kind {
-            Goto { target } => self.emit_goto(*target),
+            Goto { target } => term = mk_goto(*target),
             SwitchInt { discr, targets, .. } => {
                 let real_discr = discriminator_for_switch(&self.body.basic_blocks[location.block])
                     .map(Operand::Move)
@@ -55,26 +57,48 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 let switch = make_switch(
                     self.ctx,
                     terminator.source_info,
-                    real_discr.ty(self.body, self.tcx),
+                    real_discr.ty(self.body, self.tcx()),
                     targets,
                     discriminant,
                 );
-
-                self.emit_terminator(switch);
+                term = switch;
             }
-            Return => self.emit_terminator(Terminator::Return),
-            Unreachable => self.emit_terminator(Terminator::Abort(terminator.source_info.span)),
+            Return => {
+                if let Some(resolver) = &mut self.resolver {
+                    let (mut need, resolved) =
+                        resolver.need_resolve_resolved_places_at(ExtendedLocation::Start(location));
+                    // do not resolve return local
+                    for mp in need.clone().iter() {
+                        if self.move_data().base_local(mp) == Local::from_usize(0) {
+                            need.remove(mp);
+                        }
+                    }
+                    self.resolve_places(need, &resolved, true);
+                    resolved_during = None;
+                }
+
+                term = Terminator::Return
+            }
+            Unreachable => term = Terminator::Abort(terminator.source_info.span),
             Call { func, args, destination, mut target, fn_span, .. } => {
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
+                if let Some((need, resolved)) = resolved_during.take() {
+                    self.resolve_before_assignment(need, &resolved, location, *destination)
+                }
 
-                if self.tcx.is_diagnostic_item(Symbol::intern("snapshot_from_fn"), fun_def_id) {
+                if self.ctx.is_diagnostic_item(Symbol::intern("snapshot_from_fn"), fun_def_id) {
                     let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() else {
                         unreachable!()
                     };
                     let TyKind::Closure(def_id, _) = ty.kind() else { unreachable!() };
                     let mut assertion = self.snapshots.remove(def_id).unwrap();
-                    assertion.subst(&inv_subst(self.body, &self.locals, terminator.source_info));
-                    self.check_ghost_term(&assertion, location);
+                    assertion.subst(&inv_subst(
+                        self.tcx(),
+                        self.body,
+                        &self.locals,
+                        terminator.source_info,
+                    ));
+                    self.check_frozen_in_logic(&assertion, location);
                     self.emit_ghost_assign(*destination, assertion, span);
                 } else {
                     let call_ghost = self.check_ghost_call(fun_def_id, subst);
@@ -104,11 +128,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         let predicates = self
                             .ctx
                             .extern_spec(fun_def_id)
-                            .map(|p| p.predicates_for(self.tcx, subst))
+                            .map(|p| p.predicates_for(self.tcx(), subst))
                             .unwrap_or_else(Vec::new);
 
-                        let infcx = self.tcx.infer_ctxt().ignoring_regions().build();
-                        let res = evaluate_additional_predicates(
+                        let infcx = self.ctx.infer_ctxt().ignoring_regions().build();
+                        let res = traits::evaluate_additional_predicates(
                             &infcx,
                             predicates,
                             self.param_env(),
@@ -145,7 +169,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 .unwrap_or(subst);
 
                             self.emit_statement(Statement::Call(
-                                self.translate_place(*destination),
+                                self.translate_place(destination.as_ref()),
                                 fun_def_id,
                                 subst,
                                 func_args,
@@ -156,9 +180,16 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
 
                 if let Some(bb) = target {
-                    self.emit_goto(bb);
+                    if self.resolver.is_some() {
+                        self.resolve_after_assignment(
+                            target.unwrap().start_location(),
+                            *destination,
+                        );
+                    }
+
+                    term = mk_goto(bb);
                 } else {
-                    self.emit_terminator(Terminator::Abort(terminator.source_info.span));
+                    term = Terminator::Abort(terminator.source_info.span);
                 }
             }
             Assert { cond, expected, msg, target, unwind: _ } => {
@@ -171,7 +202,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 // hack
                                 kind: TermKind::Var(self.locals[&locl]),
                                 span,
-                                ty: cond.ty(self.body, self.tcx),
+                                ty: cond.ty(self.body, self.tcx()),
                             }
                         } else {
                             unreachable!("assertion contains something other than local")
@@ -187,32 +218,56 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     };
                 }
                 self.emit_statement(Statement::Assertion { cond, msg });
-                self.emit_goto(*target)
+                term = mk_goto(*target)
+            }
+            Drop { target, place, .. } => {
+                if self.resolver.is_some() {
+                    // place may need to be resolved since it may be frozen.
+                    if let LookupResult::Exact(mp) =
+                        self.move_data().rev_lookup.find(place.as_ref())
+                    {
+                        let (need_start, resolved) = self
+                            .resolver
+                            .as_mut()
+                            .unwrap()
+                            .need_resolve_resolved_places_at(ExtendedLocation::Start(location));
+                        let mut to_resolve = self.empty_bitset();
+                        on_all_children_bits(self.move_data(), mp, |mpi| {
+                            if need_start.contains(mpi) {
+                                to_resolve.insert(mpi);
+                            }
+                        });
+                        self.resolve_places(to_resolve, &resolved, true);
+                    } else {
+                        // If the place we drop is not a move path, then the MaybeUninit analysis ignores it. So we do not miss a resolve.
+                    }
+                }
+
+                term = mk_goto(*target);
             }
 
-            FalseEdge { real_target, .. } => self.emit_goto(*real_target),
-
-            // TODO: Do we really need to do anything more?
-            Drop { target, .. } => self.emit_goto(*target),
-            FalseUnwind { real_target, .. } => self.emit_goto(*real_target),
-            CoroutineDrop
+            FalseUnwind { real_target, .. } => term = mk_goto(*real_target),
+            FalseEdge { .. }
+            | CoroutineDrop
             | UnwindResume
             | UnwindTerminate { .. }
             | Yield { .. }
             | InlineAsm { .. }
-            | TailCall { .. } => {
-                unreachable!("{:?}", terminator.kind)
-            }
+            | TailCall { .. } => unreachable!("{:?}", terminator.kind),
         }
+        if let Some((need, resolved)) = resolved_during {
+            self.resolve_places(need, &resolved, true);
+        }
+        self.emit_terminator(term)
     }
 
     fn is_box_new(&self, def_id: DefId) -> bool {
-        self.tcx.def_path_str(def_id) == "std::boxed::Box::<T>::new"
+        self.ctx.def_path_str(def_id) == "std::boxed::Box::<T>::new"
     }
 
     /// Determine if the given type `ty` is a `GhostBox`.
     fn is_ghost_box(&self, ty: Ty<'tcx>) -> bool {
-        let ghost_box_id = self.tcx.get_diagnostic_item(Symbol::intern("ghost_box")).unwrap();
+        let ghost_box_id = self.ctx.get_diagnostic_item(Symbol::intern("ghost_box")).unwrap();
         match ty.kind() {
             rustc_type_ir::TyKind::Adt(containing_type, _) => containing_type.did() == ghost_box_id,
             _ => false,
@@ -229,7 +284,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         fun_def_id: DefId,
         subst: GenericArgsRef<'tcx>,
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-        if self.tcx.is_diagnostic_item(Symbol::intern("ghost_from_fn"), fun_def_id) {
+        if self.ctx.is_diagnostic_item(Symbol::intern("ghost_from_fn"), fun_def_id) {
             let &[_, ty] = subst.as_slice() else {
                 unreachable!();
             };
@@ -237,7 +292,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             let TyKind::Closure(ghost_def_id, ghost_args_ty) = ty.kind() else { unreachable!() };
 
             // Check that all captures are `GhostBox`s
-            let param_env = self.tcx.param_env(ghost_def_id);
+            let param_env = self.ctx.param_env(*ghost_def_id);
             let captures = self.ctx.closure_captures(ghost_def_id.expect_local());
             for capture in captures.into_iter().rev() {
                 let copy_allowed = match capture.info.capture_kind {
@@ -249,11 +304,12 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 let place_ty = capture.place.ty();
 
                 let is_ghost = self.is_ghost_box(place_ty);
-                let is_copy = copy_allowed && place_ty.is_copy_modulo_regions(self.tcx, param_env);
+                let is_copy =
+                    copy_allowed && place_ty.is_copy_modulo_regions(self.tcx(), param_env);
 
                 if !is_ghost && !is_copy {
                     let mut error = self.ctx.error(
-                        capture.get_path_span(self.tcx),
+                        capture.get_path_span(self.tcx()),
                         &format!("not a ghost variable: {}", capture.var_ident.as_str()),
                     );
                     error.span_note(capture.var_ident.span, String::from("variable defined here"));
@@ -282,11 +338,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             return;
         }
         // We are indeed in program code.
-        let func_param_env = self.tcx.param_env(fun_def_id);
+        let func_param_env = self.ctx.param_env(fun_def_id);
 
         // Check that we do not create/dereference a ghost variable in normal code.
-        if self.tcx.is_diagnostic_item(Symbol::intern("deref_method"), fun_def_id)
-            || self.tcx.is_diagnostic_item(Symbol::intern("deref_mut_method"), fun_def_id)
+        if self.ctx.is_diagnostic_item(Symbol::intern("deref_method"), fun_def_id)
+            || self.ctx.is_diagnostic_item(Symbol::intern("deref_mut_method"), fun_def_id)
         {
             let GenericArgKind::Type(ty) = subst.get(0).unwrap().unpack() else { unreachable!() };
             if self.is_ghost_box(ty) {
@@ -303,7 +359,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     )
                     .emit();
             }
-        } else if self.tcx.is_diagnostic_item(Symbol::intern("ghost_box_new"), fun_def_id) {
+        } else if self.ctx.is_diagnostic_item(Symbol::intern("ghost_box_new"), fun_def_id) {
             self.ctx
                 .error(fn_span, "cannot create a ghost variable in program context")
                 .with_span_suggestion(
@@ -318,8 +374,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 .emit();
         } else {
             // Check and reject instantiation of a <T: Deref> with a ghost parameter.
-            let deref_trait_id = self.tcx.get_diagnostic_item(Symbol::intern("Deref")).unwrap();
-            let infer_ctx = self.tcx.infer_ctxt().build();
+            let deref_trait_id = self.ctx.get_diagnostic_item(Symbol::intern("Deref")).unwrap();
+            let infer_ctx = self.ctx.infer_ctxt().build();
             for bound in func_param_env.caller_bounds() {
                 let Some(trait_clause) = bound.as_trait_clause() else { continue };
                 if trait_clause.def_id() != deref_trait_id {
@@ -327,7 +383,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
                 let ty = trait_clause.self_ty().skip_binder();
                 let caller_ty = ty::EarlyBinder::bind(trait_clause.self_ty())
-                    .instantiate(self.tcx, subst)
+                    .instantiate(self.tcx(), subst)
                     .skip_binder();
                 let deref_in_callee = infer_ctx
                     .type_implements_trait(deref_trait_id, std::iter::once(ty), func_param_env)
@@ -353,7 +409,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
     }
 }
 
-pub(crate) fn resolve_function<'tcx>(
+fn resolve_function<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
@@ -371,7 +427,7 @@ pub(crate) fn resolve_function<'tcx>(
     if ctx.sig(res.0).contract.extern_no_spec {
         ctx.warn(
             sp,
-            "calling an external function with no contract will yield an impossible precondition",
+            &format!("calling external function `{}` with no contract will yield an impossible precondition", ctx.def_path_str(def_id))
         )
         .emit();
     }
@@ -389,30 +445,8 @@ fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<(DefId, GenericArgsRef<'tcx>)>
     }
 }
 
-pub(crate) fn evaluate_additional_predicates<'tcx>(
-    infcx: &InferCtxt<'tcx>,
-    p: Vec<Predicate<'tcx>>,
-    param_env: ParamEnv<'tcx>,
-    sp: Span,
-) -> Result<(), Vec<FulfillmentError<'tcx>>> {
-    let mut fulfill_cx = <dyn TraitEngine<'tcx, _>>::new(infcx);
-    for predicate in p {
-        let predicate = infcx.tcx.erase_regions(predicate);
-        let cause = ObligationCause::dummy_with_span(sp);
-        let obligation = Obligation { cause, param_env, recursion_depth: 0, predicate };
-        // holds &= infcx.predicate_may_hold(&obligation);
-        fulfill_cx.register_predicate_obligation(&infcx, obligation);
-    }
-    let errors = fulfill_cx.select_all_or_error(&infcx);
-    if !errors.is_empty() {
-        return Err(errors);
-    } else {
-        return Ok(());
-    }
-}
-
 // Find the place being discriminated, if there is one
-pub(crate) fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Option<Place<'tcx>> {
+pub(super) fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Option<Place<'tcx>> {
     let discr = if let TerminatorKind::SwitchInt { discr, .. } = &bbd.terminator().kind {
         discr
     } else {
@@ -432,7 +466,7 @@ pub(crate) fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Opti
     }
 }
 
-pub(crate) fn make_switch<'tcx>(
+fn make_switch<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     si: SourceInfo,
     switch_ty: Ty<'tcx>,

@@ -4,7 +4,7 @@ pub(crate) mod external;
 pub(crate) mod fmir;
 pub(crate) mod function;
 pub(crate) mod pearlite;
-pub(crate) mod projection_vec;
+mod projection_vec;
 pub(crate) mod specification;
 pub(crate) mod traits;
 
@@ -14,21 +14,29 @@ use crate::{
     error::InternalError,
     metadata,
     options::OutputFile,
-    validate::{validate_impls, validate_opacity, validate_traits},
+    util::translate_name,
+    validate::{
+        validate_impls, validate_opacity, validate_purity, validate_traits, validate_trusted,
+    },
 };
 use ctx::TranslationCtx;
-use heck::ToUpperCamelCase;
 use rustc_hir::{def::DefKind, def_id::LOCAL_CRATE};
+use rustc_span::{Symbol, DUMMY_SP};
 use std::{error::Error, io::Write};
 use why3::{declaration::Module, mlcfg, Print};
 
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
+
+    if ctx.get_diagnostic_item(Symbol::intern("creusot_resolve")) == None {
+        ctx.fatal_error(DUMMY_SP, "The `creusot_contracts` crate is not loaded. You will not be able to verify any code using Creusot until you do so.").emit();
+    }
+
     ctx.load_metadata();
     load_extern_specs(ctx).map_err(|_| Box::new(InternalError("Failed to load extern specs")))?;
 
     for def_id in ctx.tcx.hir().body_owners() {
-        ctx.check_purity(def_id);
+        validate_purity(ctx, def_id);
 
         let def_id = def_id.to_def_id();
         if crate::util::is_spec(ctx.tcx, def_id)
@@ -44,6 +52,7 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
     // Check that all trait laws are well-formed
     validate_traits(ctx);
     validate_impls(ctx);
+    validate_trusted(ctx);
 
     debug!("before_analysis: {:?}", start.elapsed());
     Ok(())
@@ -114,7 +123,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
             }
         });
 
-        let crate_name = tcx.crate_name(LOCAL_CRATE).to_string().to_upper_camel_case();
+        let crate_name = translate_name(&tcx.crate_name(LOCAL_CRATE).to_string());
         print_crate(&mut out, crate_name, modules)?;
         drop(out); //flush the buffer before running why3
         run_why3(&why3, file);

@@ -5,7 +5,7 @@ use crate::{
         pearlite::{self, Term, TermKind},
         specification::PreContract,
     },
-    util::{self, get_builtin, item_name, module_name, PreSignature},
+    util::{self, get_builtin, item_name, module_name, translate_accessor_name, PreSignature},
 };
 use indexmap::IndexSet;
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
@@ -659,7 +659,7 @@ pub(crate) fn translate_accessor(
     let substs = GenericArgs::identity_for_item(ctx.tcx, adt_did);
     let mut names = Dependencies::new(ctx.tcx, ctx.binding_group(adt_did).iter().copied());
 
-    let acc_name = format!("{}_{}", variant.name.as_str().to_ascii_lowercase(), field.name);
+    let acc_name = translate_accessor_name(variant.name.as_str(), field.name.as_str());
 
     let param_env = ctx.param_env(adt_did);
     let target_ty =
@@ -781,12 +781,7 @@ pub(crate) fn build_closure_accessor<'tcx>(
     let term = Term {
         ty: out_ty,
         kind: TermKind::Let {
-            pattern: pearlite::Pattern::Constructor {
-                adt: closure,
-                substs,
-                variant: 0u32.into(),
-                fields,
-            },
+            pattern: pearlite::Pattern::Constructor { variant: closure, substs, fields },
             arg: Box::new(self_),
             body: Box::new(res),
         },
@@ -887,7 +882,7 @@ pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(
 
 pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
     if let TyKind::Adt(def, _) = ty.kind() {
-        Some(def.did()) == tcx.get_diagnostic_item(Symbol::intern("creusot_int"))
+        def.did() == tcx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap()
     } else {
         false
     }

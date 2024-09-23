@@ -1,6 +1,7 @@
-#![feature(box_patterns, extract_if, extend_one, proc_macro_def_site)]
+#![feature(box_patterns, extract_if, extend_one, proc_macro_def_site, proc_macro_span)]
+
 extern crate proc_macro;
-use extern_spec::ExternSpecs;
+
 use pearlite_syn::*;
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
@@ -12,12 +13,15 @@ use syn::{
     *,
 };
 
+mod derive;
+mod doc;
 mod extern_spec;
 mod invariant;
 mod maintains;
 mod pretyping;
 
-mod derive;
+use doc::document_spec;
+use extern_spec::ExternSpecs;
 
 trait FilterAttrs<'a> {
     type Ret: Iterator<Item = &'a Attribute>;
@@ -170,6 +174,7 @@ fn spec_attrs(tag: &Ident) -> TokenStream {
          #[creusot::no_translate]
          #[creusot::item=#name_tag]
          #[creusot::spec]
+         #[doc(hidden)]
     }
 }
 
@@ -202,6 +207,8 @@ fn sig_spec_item(tag: Ident, mut sig: Signature, p: Term) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
+    let documentation = document_spec("requires", attr.clone());
+
     let mut item = parse_macro_input!(tokens as ContractSubject);
     let term = parse_macro_input!(attr as Term);
     item.mark_unused();
@@ -216,6 +223,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
             TS1::from(quote! {
               #requires_tokens
               #[creusot::clause::requires=#name_tag]
+              #documentation
               #fn_or_meth
             })
         }
@@ -225,6 +233,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
             f.body.as_mut().map(|b| b.stmts.insert(0, Stmt::Item(Item::Verbatim(requires_tokens))));
             TS1::from(quote! {
               #[creusot::clause::requires=#name_tag]
+              #documentation
               #f
             })
         }
@@ -242,6 +251,8 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
 #[proc_macro_attribute]
 pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
+    let documentation = document_spec("ensures", attr.clone());
+
     let mut item = parse_macro_input!(tokens as ContractSubject);
     let term = parse_macro_input!(attr as Term);
     item.mark_unused();
@@ -262,6 +273,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
             TS1::from(quote! {
               #ensures_tokens
               #[creusot::clause::ensures=#name_tag]
+              #documentation
               #s
             })
         }
@@ -275,6 +287,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
             f.body.as_mut().map(|b| b.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens))));
             TS1::from(quote! {
                 #[creusot::clause::ensures=#name_tag]
+                #documentation
                 #f
             })
         }
@@ -412,15 +425,18 @@ pub fn snapshot(assertion: TS1) -> TS1 {
 
 #[proc_macro_attribute]
 pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
-    let mut result = TS1::from(quote! { #[creusot::clause::terminates] });
+    let documentation = document_spec("terminates", TS1::new());
+    let mut result = TS1::from(quote! { #[creusot::clause::terminates] #documentation });
     result.extend(tokens);
     result
 }
 
 #[proc_macro_attribute]
 pub fn pure(_: TS1, tokens: TS1) -> TS1 {
-    let mut result =
-        TS1::from(quote! { #[creusot::clause::no_panic] #[creusot::clause::terminates] });
+    let documentation = document_spec("pure", TS1::new());
+    let mut result = TS1::from(
+        quote! { #[creusot::clause::no_panic] #[creusot::clause::terminates] #documentation },
+    );
     result.extend(tokens);
     result
 }
@@ -498,24 +514,36 @@ pub fn logic(prophetic: TS1, tokens: TS1) -> TS1 {
         }
     };
     let log = parse_macro_input!(tokens as LogicInput);
+    let documentation = document_spec(
+        if prophetic.is_some() { "logic(prophetic)" } else { "logic" },
+        match &log {
+            LogicInput::Item(log_item) => log_item.body.to_token_stream().into(),
+            LogicInput::Sig(_) => TS1::new(),
+        },
+    );
     match log {
-        LogicInput::Item(log) => logic_item(log, prophetic),
-        LogicInput::Sig(sig) => logic_sig(sig, prophetic),
+        LogicInput::Item(log) => logic_item(log, prophetic, documentation),
+        LogicInput::Sig(sig) => logic_sig(sig, prophetic, documentation),
     }
 }
 
-fn logic_sig(sig: TraitItemSignature, prophetic: Option<TokenStream>) -> TS1 {
+fn logic_sig(
+    sig: TraitItemSignature,
+    prophetic: Option<TokenStream>,
+    documentation: TokenStream,
+) -> TS1 {
     let span = sig.span();
 
     TS1::from(quote_spanned! {span =>
         #[::creusot_contracts::pure]
         #[creusot::decl::logic]
         #prophetic
+        #documentation
         #sig
     })
 }
 
-fn logic_item(log: LogicItem, prophetic: Option<TokenStream>) -> TS1 {
+fn logic_item(log: LogicItem, prophetic: Option<TokenStream>, documentation: TokenStream) -> TS1 {
     let span = log.sig.span();
 
     let term = log.body;
@@ -529,6 +557,7 @@ fn logic_item(log: LogicItem, prophetic: Option<TokenStream>) -> TS1 {
         #[::creusot_contracts::pure]
         #[creusot::decl::logic]
         #prophetic
+        #documentation
         #(#attrs)*
         #vis #def #sig {
             #req_body
@@ -581,23 +610,40 @@ pub fn predicate(prophetic: TS1, tokens: TS1) -> TS1 {
             .into();
     };
 
+    let documentation = document_spec(
+        if prophetic.is_some() { "logic(prophetic)" } else { "logic" },
+        match &pred {
+            LogicInput::Item(log_item) => log_item.body.to_token_stream().into(),
+            LogicInput::Sig(_) => TS1::new(),
+        },
+    );
+
     match pred {
-        LogicInput::Item(log) => predicate_item(log, prophetic),
-        LogicInput::Sig(sig) => predicate_sig(sig, prophetic),
+        LogicInput::Item(log) => predicate_item(log, prophetic, documentation),
+        LogicInput::Sig(sig) => predicate_sig(sig, prophetic, documentation),
     }
 }
 
-fn predicate_sig(sig: TraitItemSignature, prophetic: Option<TokenStream>) -> TS1 {
+fn predicate_sig(
+    sig: TraitItemSignature,
+    prophetic: Option<TokenStream>,
+    documentation: TokenStream,
+) -> TS1 {
     let span = sig.span();
     TS1::from(quote_spanned! {span =>
         #[::creusot_contracts::pure]
         #[creusot::decl::predicate]
         #prophetic
+        #documentation
         #sig
     })
 }
 
-fn predicate_item(log: LogicItem, prophetic: Option<TokenStream>) -> TS1 {
+fn predicate_item(
+    log: LogicItem,
+    prophetic: Option<TokenStream>,
+    documentation: TokenStream,
+) -> TS1 {
     let span = log.sig.span();
     let term = log.body;
     let vis = log.vis;
@@ -611,6 +657,7 @@ fn predicate_item(log: LogicItem, prophetic: Option<TokenStream>) -> TS1 {
         #[::creusot_contracts::pure]
         #[creusot::decl::predicate]
         #prophetic
+        #documentation
         #(#attrs)*
         #vis #def #sig {
             #req_body
@@ -619,8 +666,16 @@ fn predicate_item(log: LogicItem, prophetic: Option<TokenStream>) -> TS1 {
 }
 
 #[proc_macro_attribute]
+pub fn open_inv_result(_: TS1, tokens: TS1) -> TS1 {
+    let tokens = TokenStream::from(tokens);
+    TS1::from(quote! {
+        #[creusot::decl::open_inv_result]
+        #tokens
+    })
+}
+
+#[proc_macro_attribute]
 pub fn trusted(_: TS1, tokens: TS1) -> TS1 {
-    // let p: ItemFn = parse_macro_input!(tokens);
     let tokens = TokenStream::from(tokens);
     TS1::from(quote! {
         #[creusot::decl::trusted]

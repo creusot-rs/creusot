@@ -14,7 +14,9 @@
     strict_provenance,
     panic_internals,
     libstd_sys_internals,
-    rt
+    rt,
+    never_type,
+    ptr_metadata
 )]
 #![cfg_attr(not(creusot), feature(rustc_attrs))]
 #![cfg_attr(not(creusot), allow(internal_features))]
@@ -144,7 +146,8 @@ mod macros {
     pub use base_macros::trusted;
 
     /// Declares a variant for a function, this is primarily used in combination with logical functions
-    /// The variant must be an expression which returns a type implementing [WellFounded]
+    /// The variant must be an expression which returns a type implementing
+    /// [`WellFounded`](crate::WellFounded).
     pub use base_macros::variant;
 
     /// Enables Pearlite syntax, granting access to Pearlite specific operators and syntax
@@ -169,6 +172,10 @@ mod macros {
     /// A body can only be visible in contexts where all the symbols used in the body are also visible.
     /// This means you cannot `#[open]` a body which refers to a `pub(crate)` symbol.
     pub use base_macros::open;
+
+    /// This attribute can be used on a function or closure to instruct Creusot not to ensure as a postcondition that the
+    /// return value of the function satisfies its type invariant.
+    pub use base_macros::open_inv_result;
 }
 
 #[cfg(creusot)]

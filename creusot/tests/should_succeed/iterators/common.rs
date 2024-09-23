@@ -1,5 +1,5 @@
 // UISKIP WHY3SKIP
-use creusot_contracts::{logic::Seq, *};
+use creusot_contracts::{invariant::inv, logic::Seq, *};
 
 pub trait Iterator {
     type Item;
@@ -11,10 +11,14 @@ pub trait Iterator {
     fn completed(&mut self) -> bool;
 
     #[law]
+    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self);
 
     #[law]
+    #[requires(inv(a))]
+    #[requires(inv(b))]
+    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

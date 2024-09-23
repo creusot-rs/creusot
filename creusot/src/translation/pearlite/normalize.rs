@@ -5,7 +5,7 @@ use crate::{
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{ParamEnv, TyCtxt};
-use rustc_span::{symbol::sym, Symbol};
+use rustc_span::Symbol;
 
 use super::{super_visit_mut_term, BinOp, TermVisitorMut};
 
@@ -182,10 +182,6 @@ fn optimize_builtin<'tcx>(
         Some(TermKind::Lit(Literal::Integer(c as i128)))
     } else if builtin_attr == Some(Symbol::intern("identity")) {
         Some(args.remove(0).kind)
-    } else if Some(def_id) == tcx.get_diagnostic_item(sym::unreachable) {
-        Some(TermKind::Absurd)
-    } else if Some(def_id) == tcx.get_diagnostic_item(sym::abort) {
-        Some(TermKind::Absurd)
     } else {
         None
     }

@@ -14,6 +14,7 @@ mod kw {
     syn::custom_keyword!(exists);
     syn::custom_keyword!(absurd);
     syn::custom_keyword!(pearlite);
+    syn::custom_keyword!(trigger);
 }
 
 ast_enum_of_structs! {
@@ -117,11 +118,8 @@ ast_enum_of_structs! {
         /// Logical implication
         Impl(TermImpl),
 
-        /// Logical universal quantification
-        Forall(TermForall),
-
-        /// Logical existential quantification
-        Exists(TermExists),
+        /// Logical quantification
+        Quant(TermQuant),
 
         /// Logical absurdity
         Absurd(TermAbsurd),
@@ -436,24 +434,21 @@ ast_struct! {
 }
 
 ast_struct! {
-    pub struct TermForall {
-        pub forall_token: kw::forall,
+    pub struct TermQuant {
+        pub quant_token: QuantToken,
         pub lt_token: Token![<],
         pub args: Punctuated<QuantArg, Token![,]>,
         pub gt_token: Token![>],
-
+        pub trigger: Vec<Trigger>,
         pub term: Box<Term>
     }
 }
 
-ast_struct! {
-    pub struct TermExists {
-        pub exists_token: kw::exists,
-        pub lt_token: Token![<],
-        pub args: Punctuated<QuantArg, Token![,]>,
-        pub gt_token: Token![>],
-
-        pub term: Box<Term>
+use kw::{exists, forall};
+ast_enum_of_structs! {
+    pub enum QuantToken {
+        Forall(forall),
+        Exists(exists),
     }
 }
 
@@ -462,6 +457,16 @@ ast_struct! {
         pub ident: Ident,
         pub colon_token: Token![:],
         pub ty: Box<Type>,
+    }
+}
+
+ast_struct! {
+    pub struct Trigger {
+        pub pound_token: Token![#],
+        pub bang_token: Token![!],
+        pub bracket_token: token::Bracket,
+        pub trigger_token: kw::trigger,
+        pub terms: Punctuated<Term, Token![,]>,
     }
 }
 
@@ -1158,10 +1163,8 @@ pub(crate) mod parsing {
             input.call(term_let).map(Term::Let)
         } else if input.peek(Token![if]) {
             input.parse().map(Term::If)
-        } else if input.peek(kw::forall) {
-            input.parse().map(Term::Forall)
-        } else if input.peek(kw::exists) {
-            input.parse().map(Term::Exists)
+        } else if input.peek(kw::forall) || input.peek(kw::exists) {
+            input.parse().map(Term::Quant)
         } else if input.peek(kw::absurd) {
             input.parse().map(Term::Absurd)
         } else if input.peek(kw::pearlite) {
@@ -1392,9 +1395,9 @@ pub(crate) mod parsing {
         }
     }
 
-    impl Parse for TermForall {
+    impl Parse for TermQuant {
         fn parse(input: ParseStream) -> Result<Self> {
-            let forall_token = input.parse()?;
+            let quant_token = input.parse()?;
             let lt_token: Token![<] = input.parse()?;
 
             let mut args = Punctuated::new();
@@ -1411,34 +1414,25 @@ pub(crate) mod parsing {
 
             let gt_token: Token![>] = input.parse()?;
 
+            let mut trigger = vec![];
+
+            while input.peek(Token![#]) {
+                trigger.push(input.parse()?)
+            }
+
             let term = input.parse()?;
 
-            Ok(TermForall { forall_token, lt_token, args, gt_token, term })
+            Ok(TermQuant { quant_token, lt_token, args, gt_token, trigger, term })
         }
     }
 
-    impl Parse for TermExists {
+    impl Parse for QuantToken {
         fn parse(input: ParseStream) -> Result<Self> {
-            let exists_token = input.parse()?;
-            let lt_token: Token![<] = input.parse()?;
-
-            let mut args = Punctuated::new();
-            while !input.peek(Token![>]) {
-                let quantarg = input.parse()?;
-                args.push_value(quantarg);
-                if input.peek(Token![>]) {
-                    break;
-                }
-
-                let punct = input.parse()?;
-                args.push_punct(punct);
+            if input.peek(kw::forall) {
+                Ok(QuantToken::Forall(input.parse()?))
+            } else {
+                Ok(QuantToken::Exists(input.parse()?))
             }
-
-            let gt_token: Token![>] = input.parse()?;
-
-            let term = input.parse()?;
-
-            Ok(TermExists { exists_token, lt_token, args, gt_token, term })
         }
     }
 
@@ -1448,6 +1442,19 @@ pub(crate) mod parsing {
             let colon_token = input.parse()?;
             let ty = input.parse()?;
             Ok(QuantArg { ident, colon_token, ty })
+        }
+    }
+
+    impl Parse for Trigger {
+        fn parse(input: ParseStream) -> Result<Self> {
+            let content;
+            Ok(Trigger {
+                pound_token: input.parse()?,
+                bang_token: input.parse()?,
+                bracket_token: bracketed!(content in input),
+                trigger_token: content.parse()?,
+                terms: Punctuated::parse_terminated(&content)?,
+            })
         }
     }
 
@@ -1941,26 +1948,17 @@ pub(crate) mod printing {
         }
     }
 
-    impl ToTokens for TermForall {
+    impl ToTokens for TermQuant {
         fn to_tokens(&self, tokens: &mut TokenStream) {
-            self.forall_token.to_tokens(tokens);
+            self.quant_token.to_tokens(tokens);
             self.lt_token.to_tokens(tokens);
             for input in self.args.pairs() {
                 input.to_tokens(tokens);
             }
             self.gt_token.to_tokens(tokens);
-            self.term.to_tokens(tokens);
-        }
-    }
-
-    impl ToTokens for TermExists {
-        fn to_tokens(&self, tokens: &mut TokenStream) {
-            self.exists_token.to_tokens(tokens);
-            self.lt_token.to_tokens(tokens);
-            for input in self.args.pairs() {
-                input.to_tokens(tokens);
+            for trigger in self.trigger.iter() {
+                trigger.to_tokens(tokens);
             }
-            self.gt_token.to_tokens(tokens);
             self.term.to_tokens(tokens);
         }
     }
@@ -1970,6 +1968,20 @@ pub(crate) mod printing {
             self.ident.to_tokens(tokens);
             self.colon_token.to_tokens(tokens);
             self.ty.to_tokens(tokens);
+        }
+    }
+
+    impl ToTokens for Trigger {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            self.pound_token.to_tokens(tokens);
+            self.bang_token.to_tokens(tokens);
+            self.bracket_token.surround(tokens, |tokens| {
+                self.trigger_token.to_tokens(tokens);
+                self.terms.to_tokens(tokens);
+                if !self.terms.empty_or_trailing() {
+                    <Token![,] as Default>::default().to_tokens(tokens)
+                }
+            })
         }
     }
 

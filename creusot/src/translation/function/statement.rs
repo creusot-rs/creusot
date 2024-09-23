@@ -1,6 +1,7 @@
 use super::BodyTranslator;
 use crate::{
     analysis::NotFinalPlaces,
+    extended_location::ExtendedLocation,
     fmir::Operand,
     translation::{
         fmir::{self, RValue},
@@ -19,51 +20,62 @@ use rustc_middle::{
 use rustc_mir_dataflow::ResultsCursor;
 
 impl<'tcx> BodyTranslator<'_, 'tcx> {
-    pub(crate) fn translate_statement(
+    pub fn translate_statement(
         &mut self,
         not_final_borrows: &mut ResultsCursor<'_, 'tcx, NotFinalPlaces<'tcx>>,
         statement: &'_ Statement<'tcx>,
         loc: Location,
     ) {
-        let mut resolved_during = self.resolver.as_mut().map(|r| r.resolved_locals_during(loc));
-
         use StatementKind::*;
         match statement.kind {
-            Assign(box (ref pl, ref rv)) => {
-                if !rv.ty(self.body, self.tcx).is_unit() {
-                    self.translate_assign(not_final_borrows, statement.source_info, pl, rv, loc);
-                };
+            Assign(box (pl, ref rv)) => {
+                if let Some(resolver) = &mut self.resolver {
+                    let (need, resolved) =
+                        resolver.resolved_places_during(ExtendedLocation::Mid(loc));
+                    self.resolve_before_assignment(need, &resolved, loc, pl);
+                }
 
-                // if the lhs local becomes resolved during the assignment,
-                // we cannot resolve it afterwards.
-                if let Some(resolved_during) = &mut resolved_during
-                    && !pl.is_indirect()
-                {
-                    resolved_during.remove(pl.local);
+                self.translate_assign(not_final_borrows, statement.source_info, &pl, rv, loc);
+
+                if self.resolver.is_some() {
+                    self.resolve_after_assignment(loc.successor_within_block(), pl)
                 }
             }
-            SetDiscriminant { .. } => {
-                // TODO: implement support for set discriminant
-                self.ctx
-                    .crash_and_error(statement.source_info.span, "SetDiscriminant is not supported")
+
+            // All these instructions are no-opsin the dynamic semantics, but may trigger resolution
+            Nop
+            | StorageDead(_)
+            | StorageLive(_)
+            | FakeRead(_)
+            | AscribeUserType(_, _)
+            | Retag(_, _)
+            | Coverage(_)
+            | PlaceMention(_)
+            | ConstEvalCounter => {
+                if let Some(resolver) = &mut self.resolver {
+                    let (mut need, resolved) =
+                        resolver.resolved_places_during(ExtendedLocation::End(loc));
+                    if let StorageDead(local) | StorageLive(local) = statement.kind {
+                        // These instructions signals that a local goes out of scope. We resolve any needed
+                        // move path it contains. These are typically frozen places.
+                        let (need_start, _) =
+                            resolver.need_resolve_resolved_places_at(ExtendedLocation::Start(loc));
+                        for mp in need_start.clone().iter() {
+                            if self.mdpe.move_data.base_local(mp) == local {
+                                need.insert(mp);
+                            }
+                        }
+                    }
+                    self.resolve_places(need, &resolved, true);
+                }
             }
-            // Erase Storage markers and Nops
-            StorageDead(_) | StorageLive(_) | Nop => {}
-            // Not real instructions
-            FakeRead(_) | AscribeUserType(_, _) | Retag(_, _) | Coverage(_) => {}
+            SetDiscriminant { .. } => self
+                .ctx
+                .crash_and_error(statement.source_info.span, "SetDiscriminant is not supported"),
             Intrinsic(_) => {
                 self.ctx.crash_and_error(statement.source_info.span, "intrinsics are not supported")
             }
             Deinit(_) => unreachable!("Deinit unsupported"),
-            PlaceMention(_) => {}
-            ConstEvalCounter => {} // No assembly!
-                                   // LlvmInlineAsm(_) => self
-                                   //     .ctx
-                                   //     .crash_and_error(statement.source_info.span, "inline assembly is not supported"),
-        }
-
-        if let Some(resolved_during) = resolved_during {
-            self.resolve_locals(resolved_during);
         }
     }
 
@@ -75,13 +87,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         rvalue: &'_ Rvalue<'tcx>,
         loc: Location,
     ) {
-        let _ty = rvalue.ty(self.body, self.tcx);
+        let ty = rvalue.ty(self.body, self.tcx());
         let span = si.span;
         let rval: RValue<'tcx> = match rvalue {
             Rvalue::Use(op) => match op {
                 Move(_pl) | Copy(_pl) => RValue::Operand(self.translate_operand(op)),
                 Constant(box c) => {
-                    if snapshot_closure_id(self.tcx, c.const_.ty()).is_some() {
+                    if snapshot_closure_id(self.tcx(), c.const_.ty()).is_some() {
                         return;
                     };
                     RValue::Operand(self.translate_operand(op))
@@ -93,7 +105,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         return;
                     }
 
-                    let op = Operand::Copy(self.translate_place(self.compute_ref_place(*pl, loc)));
+                    let op = Operand::Copy(
+                        self.translate_place(self.compute_ref_place(*pl, loc).as_ref()),
+                    );
                     RValue::Operand(op)
                 }
                 Mut { .. } => {
@@ -119,28 +133,28 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     Tuple => RValue::Tuple(fields),
                     Adt(adt, varix, subst, _, _) => {
                         // self.ctx.translate(*adt);
-                        let variant = self.tcx.adt_def(*adt).variant(*varix).def_id;
+                        let variant = self.ctx.adt_def(*adt).variant(*varix).def_id;
 
                         RValue::Constructor(variant, subst, fields)
                     }
                     Closure(def_id, subst) => {
-                        if util::is_invariant(self.tcx, *def_id)
-                            || util::is_variant(self.tcx, *def_id)
+                        if util::is_invariant(self.tcx(), *def_id)
+                            || util::is_variant(self.tcx(), *def_id)
                         {
                             return;
-                        } else if util::is_assertion(self.tcx, *def_id) {
+                        } else if util::is_assertion(self.tcx(), *def_id) {
                             let mut assertion = self
                                 .assertions
                                 .remove(def_id)
                                 .expect("Could not find body of assertion");
-                            assertion.subst(&inv_subst(&self.body, &self.locals, si));
-                            self.check_ghost_term(&assertion, loc);
+                            assertion.subst(&inv_subst(self.tcx(), &self.body, &self.locals, si));
+                            self.check_frozen_in_logic(&assertion, loc);
                             self.emit_statement(fmir::Statement::Assertion {
                                 cond: assertion,
                                 msg: "assertion".to_owned(),
                             });
                             return;
-                        } else if util::is_spec(self.tcx, *def_id) {
+                        } else if util::is_spec(self.tcx(), *def_id) {
                             return;
                         } else {
                             RValue::Constructor(*def_id, subst, fields)
@@ -154,11 +168,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
             }
             Rvalue::Len(pl) => {
-                let e = Operand::Copy(self.translate_place(*pl));
+                let e = Operand::Copy(self.translate_place(pl.as_ref()));
                 RValue::Len(e)
             }
             Rvalue::Cast(CastKind::IntToInt | CastKind::PtrToPtr, op, cast_ty) => {
-                let op_ty = op.ty(self.body, self.tcx);
+                let op_ty = op.ty(self.body, self.tcx());
                 RValue::Cast(self.translate_operand(op), op_ty, *cast_ty)
             }
             Rvalue::Repeat(op, len) => RValue::Repeat(
@@ -166,7 +180,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 Operand::Constant(crate::constant::from_ty_const(
                     self.ctx,
                     *len,
-                    self.ctx.tcx.types.usize,
+                    self.ctx.types.usize,
                     self.param_env(),
                     si.span,
                 )),
@@ -209,22 +223,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             ),
         };
 
-        if let Some(resolver) = &mut self.resolver {
-            let need_resolve_before = resolver.need_resolve_locals_before(loc);
-            let dead_after = resolver.dead_locals_after(loc);
-
-            if !place.is_indirect() && need_resolve_before.contains(place.local) {
-                self.emit_resolve(*place);
-            }
-
-            self.emit_assignment(place, rval, span);
-
-            // Check if the local is a zombie:
-            // if lhs local is dead after the assignment, emit resolve
-            if dead_after.contains(place.local) {
-                self.emit_resolve(*place);
-            }
-        } else {
+        if !ty.is_unit() {
             self.emit_assignment(place, rval, span);
         }
     }

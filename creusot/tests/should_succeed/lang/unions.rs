@@ -1,4 +1,5 @@
 // Checks that unions don't cause a crash
+// FIXME: this is unsound, of course.
 
 extern crate creusot_contracts;
 

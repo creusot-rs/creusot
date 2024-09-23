@@ -5,7 +5,7 @@ use crate::{
     backend::{ty::ty_binding_group, ty_inv},
     callbacks,
     creusot_items::{self, CreusotItems},
-    error::{CreusotResult, Error, InternalError},
+    error::CreusotResult,
     metadata::{BinaryMetadata, Metadata},
     options::Options,
     translation::{
@@ -14,10 +14,10 @@ use crate::{
         fmir,
         function::ClosureContract,
         pearlite::{self, Term},
-        specification::{ContractClauses, Purity, PurityVisitor},
+        specification::ContractClauses,
         traits::TraitImpl,
     },
-    util::{self, pre_sig_of, PreSignature},
+    util::{self, gather_params_open_inv, pre_sig_of, PreSignature},
 };
 use indexmap::{IndexMap, IndexSet};
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
@@ -28,8 +28,7 @@ use rustc_hir::{
 };
 use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
-    mir::{Body, Promoted},
-    thir,
+    mir::{Body, Promoted, TerminatorKind},
     ty::{
         Clause, GenericArg, GenericArgs, GenericArgsRef, ParamEnv, Predicate, Ty, TyCtxt,
         Visibility,
@@ -98,6 +97,7 @@ pub struct TranslationCtx<'tcx> {
     bodies: HashMap<LocalDefId, BodyWithBorrowckFacts<'tcx>>,
     opacity: HashMap<DefId, Opacity>,
     closure_contract: HashMap<DefId, ClosureContract<'tcx>>,
+    params_open_inv: HashMap<DefId, Vec<usize>>,
 }
 
 #[derive(Copy, Clone)]
@@ -122,6 +122,7 @@ impl<'tcx> Deref for TranslationCtx<'tcx> {
 
 impl<'tcx, 'sess> TranslationCtx<'tcx> {
     pub(crate) fn new(tcx: TyCtxt<'tcx>, opts: Options) -> Self {
+        let params_open_inv = gather_params_open_inv(tcx);
         let creusot_items = creusot_items::local_creusot_items(tcx);
 
         Self {
@@ -141,6 +142,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             bodies: Default::default(),
             opacity: Default::default(),
             closure_contract: Default::default(),
+            params_open_inv,
         }
     }
 
@@ -179,10 +181,17 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         }
     }
 
+    pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&Vec<usize>> {
+        if !def_id.is_local() {
+            return self.externs.params_open_inv(def_id);
+        }
+        self.params_open_inv.get(&def_id)
+    }
+
     queryish!(sig, &PreSignature<'tcx>, |ctx: &mut Self, key| {
-        let mut term = pre_sig_of(&mut *ctx, key);
-        term = term.normalize(ctx.tcx, ctx.param_env(key));
-        term
+        let mut pre_sig = pre_sig_of(&mut *ctx, key);
+        pre_sig = pre_sig.normalize(ctx.tcx, ctx.param_env(key));
+        pre_sig
     });
 
     pub(crate) fn body(&mut self, body_id: BodyId) -> &Body<'tcx> {
@@ -195,13 +204,20 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
     pub(crate) fn body_with_facts(&mut self, def_id: LocalDefId) -> &BodyWithBorrowckFacts<'tcx> {
         if !self.bodies.contains_key(&def_id) {
-            let body = callbacks::get_body(self.tcx, def_id)
+            let mut body = callbacks::get_body(self.tcx, def_id)
                 .unwrap_or_else(|| panic!("did not find body for {def_id:?}"));
 
-            // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
-            // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
-            // CleanupPostBorrowck.run_pass(self.tcx, &mut body.body);
-            // SimplifyCfg::new("verify").run_pass(self.tcx, &mut body.body);
+            // We need to remove false edges. They are used in compilation of pattern matchings
+            // in ways that may result in move paths that are marked live and uninitilized at the
+            // same time. We cannot handle this in the generation of resolution.
+            // On the other hand, it is necessary to keep false unwind edges, because they are needed
+            // by liveness analysis.
+            for bbd in body.body.basic_blocks_mut().iter_mut() {
+                let term = bbd.terminator_mut();
+                if let TerminatorKind::FalseEdge { real_target, .. } = term.kind {
+                    term.kind = TerminatorKind::Goto { target: real_target };
+                }
+            }
 
             self.bodies.insert(def_id, body);
         };
@@ -221,7 +237,8 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             None
         } else {
             debug!("resolving type invariant of {ty:?} in {def_id:?}");
-            let inv_did = self.get_diagnostic_item(Symbol::intern("creusot_invariant_internal"))?;
+            let inv_did =
+                self.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
             let substs = self.mk_args(&[GenericArg::from(ty)]);
             Some((inv_did, substs))
         }
@@ -315,7 +332,12 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn metadata(&self) -> BinaryMetadata<'tcx> {
-        BinaryMetadata::from_parts(&self.terms, &self.creusot_items, &self.extern_specs)
+        BinaryMetadata::from_parts(
+            &self.terms,
+            &self.creusot_items,
+            &self.extern_specs,
+            &self.params_open_inv,
+        )
     }
 
     pub(crate) fn creusot_item(&self, name: Symbol) -> Option<DefId> {
@@ -369,29 +391,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         } else {
             self.tcx.param_env(def_id)
         }
-    }
-
-    pub(crate) fn check_purity(&mut self, def_id: LocalDefId) {
-        let (thir, expr) = self.tcx.thir_body(def_id).unwrap_or_else(|_| {
-            Error::from(InternalError("Cannot fetch THIR body")).emit(self.tcx)
-        });
-        let thir = thir.borrow();
-        if thir.exprs.is_empty() {
-            Error::new(self.tcx.def_span(def_id), "type checking failed").emit(self.tcx);
-        }
-
-        let def_id = def_id.to_def_id();
-        let purity = Purity::of_def_id(self, def_id);
-        if matches!(purity, Purity::Program { .. })
-            && crate::util::is_no_translate(self.tcx, def_id)
-        {
-            return;
-        }
-
-        thir::visit::walk_expr(
-            &mut PurityVisitor { ctx: self, thir: &thir, context: purity },
-            &thir[expr],
-        );
     }
 }
 

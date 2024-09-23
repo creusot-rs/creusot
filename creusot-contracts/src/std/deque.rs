@@ -1,6 +1,9 @@
-use crate::{invariant::Invariant, logic::IndexLogic, std::alloc::Allocator, *};
-use ::std::collections::vec_deque::Iter;
+use crate::{logic::IndexLogic, std::alloc::Allocator, *};
 pub use ::std::collections::VecDeque;
+use ::std::{
+    collections::vec_deque::Iter,
+    ops::{Index, IndexMut},
+};
 
 impl<T, A: Allocator> ShallowModel for VecDeque<T, A> {
     type ShallowModelTy = Seq<T>;
@@ -47,6 +50,15 @@ impl<T, A: Allocator> IndexLogic<usize> for VecDeque<T, A> {
     #[why3::attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
         pearlite! { self@[ix@] }
+    }
+}
+
+#[trusted]
+impl<T> Resolve for VecDeque<T> {
+    #[predicate(prophetic)]
+    #[open]
+    fn resolve(self) -> bool {
+        pearlite! { forall<i : Int> 0 <= i && i < self@.len() ==> self[i].resolve() }
     }
 }
 
@@ -103,6 +115,17 @@ extern_spec! {
                 #[ensures((^self)@ == self@.push(value))]
                 fn push_back(&mut self, value: T);
             }
+
+            impl<T, A: Allocator> Index<usize> for VecDeque<T> {
+                #[ensures(*result == self@[i@])]
+                fn index(&self, i: usize) -> &T;
+            }
+
+            impl<T, A: Allocator> IndexMut<usize> for VecDeque<T> {
+                #[ensures(*result == (*self)@[i@])]
+                #[ensures(^result == (^self)@[i@])]
+                fn index_mut(&mut self, i: usize) -> &mut T;
+            }
         }
     }
 }
@@ -131,8 +154,6 @@ impl<'a, T> ShallowModel for Iter<'a, T> {
         absurd
     }
 }
-
-impl<'a, T> Invariant for Iter<'a, T> {}
 
 impl<'a, T> Iterator for Iter<'a, T> {
     #[predicate(prophetic)]

@@ -1,9 +1,5 @@
-use super::pearlite::{normalize, pearlite_stub, Literal, Stub, Term, TermKind};
-use crate::{
-    ctx::*,
-    error::{Error, InternalError},
-    util::{self, is_spec},
-};
+use super::pearlite::{normalize, Literal, Term, TermKind};
+use crate::{ctx::*, util};
 use rustc_ast::{
     ast::{AttrArgs, AttrArgsEq},
     AttrItem,
@@ -11,9 +7,8 @@ use rustc_ast::{
 use rustc_hir::def_id::DefId;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
-    mir::{Body, Local, SourceInfo, SourceScope, OUTERMOST_SOURCE_SCOPE},
-    thir::{self, ClosureExpr, ExprKind, Thir},
-    ty::{self, EarlyBinder, GenericArgs, GenericArgsRef, ParamEnv, TyCtxt},
+    mir::{self, Body, Local, SourceInfo, SourceScope, OUTERMOST_SOURCE_SCOPE},
+    ty::{EarlyBinder, GenericArgs, GenericArgsRef, ParamEnv, TyCtxt, TyKind},
 };
 use rustc_span::Symbol;
 use std::collections::{HashMap, HashSet};
@@ -128,17 +123,21 @@ impl ContractClauses {
 }
 
 #[derive(Debug)]
-struct ScopeTree(HashMap<SourceScope, (HashSet<(Symbol, Local)>, Option<SourceScope>)>);
+struct ScopeTree<'tcx>(
+    HashMap<SourceScope, (HashSet<(Symbol, mir::Place<'tcx>)>, Option<SourceScope>)>,
+);
 
-impl ScopeTree {
-    fn build<'tcx>(body: &Body<'tcx>) -> Self {
+impl<'tcx> ScopeTree<'tcx> {
+    fn build(body: &Body<'tcx>) -> Self {
         use rustc_middle::mir::VarDebugInfoContents::Place;
         let mut scope_tree: HashMap<SourceScope, (HashSet<_>, Option<_>)> = Default::default();
 
         for var_info in &body.var_debug_info {
-            // All variables in the DebugVarInfo should be user variables and thus be just locals
-            let loc = match var_info.value {
-                Place(p) => p.as_local().unwrap(),
+            // All variables in the DebugVarInfo should be user variables and thus be just places
+            // If the variable is local to the function the place will have no projections.
+            // Else this is a captured variable.
+            let p = match var_info.value {
+                Place(p) => p,
                 _ => panic!(),
             };
             let info = var_info.source_info;
@@ -149,7 +148,7 @@ impl ScopeTree {
             let entry = scope_tree.entry(scope).or_default();
 
             let name = var_info.name;
-            entry.0.insert((name, loc));
+            entry.0.insert((name, p));
 
             if let Some(parent) = scope_data.parent_scope {
                 entry.1 = Some(parent);
@@ -171,7 +170,7 @@ impl ScopeTree {
         ScopeTree(scope_tree)
     }
 
-    fn visible_locals(&self, scope: SourceScope) -> HashMap<Symbol, Local> {
+    fn visible_places(&self, scope: SourceScope) -> HashMap<Symbol, mir::Place<'tcx>> {
         let mut locals = HashMap::new();
         let mut to_visit = Some(scope);
 
@@ -189,23 +188,64 @@ impl ScopeTree {
 
 // Turn a typing context into a substition.
 pub(crate) fn inv_subst<'tcx>(
+    tcx: TyCtxt<'tcx>,
     body: &Body<'tcx>,
     locals: &HashMap<Local, Symbol>,
     info: SourceInfo,
 ) -> HashMap<Symbol, Term<'tcx>> {
-    // let local_map = real_locals(tcx, body);
     let mut args = HashMap::new();
 
     let tree = ScopeTree::build(body);
 
-    for (k, v) in tree.visible_locals(info.scope) {
-        let loc = v;
-        let ty = body.local_decls[loc].ty;
-        let span = body.local_decls[loc].source_info.span;
-        args.insert(k, Term { ty, span, kind: TermKind::Var(locals[&loc]) });
+    for (k, p) in tree.visible_places(info.scope) {
+        args.insert(k, place_to_term(tcx, p, locals, body));
     }
 
-    return args;
+    args
+}
+
+/// Translate a place to a term. The place must represent a single named variable, so it can be
+/// - A simple `mir::Local`.
+/// - A capture. In this case, the place will simply be a local (the capture's envirnoment)
+/// followed by
+///   + a `Deref` projection if the closure is FnMut.
+///   + a `Field` projection.
+///   + a `Deref` projection if the capture is mutable.
+fn place_to_term<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    p: mir::Place<'tcx>,
+    locals: &HashMap<Local, Symbol>,
+    body: &Body<'tcx>,
+) -> Term<'tcx> {
+    let ty = p.ty(&body.local_decls, tcx).ty;
+    let span = body.local_decls[p.local].source_info.span;
+    let mut kind = TermKind::Var(locals[&p.local]);
+    for (place_ref, proj) in p.iter_projections() {
+        let ty = place_ref.ty(&body.local_decls, tcx).ty;
+        match proj {
+            mir::ProjectionElem::Deref => {
+                let mutable = match ty.kind() {
+                    TyKind::Ref(_, _, mutability) => mutability.is_mut(),
+                    _ => continue,
+                };
+                if mutable {
+                    kind = TermKind::Cur { term: Box::new(Term { ty, span, kind }) };
+                }
+            }
+            mir::ProjectionElem::Field(field_idx, _) => {
+                kind = TermKind::Projection {
+                    lhs: Box::new(Term { ty, span, kind }),
+                    name: field_idx,
+                };
+            }
+            // The rest are impossible for a place generated by a closure capture.
+            // FIXME: is this still true in 2021 (with partial captures) ?
+            _ => {
+                tcx.dcx().struct_span_err(span, "Partial captures are not supported here").emit();
+            }
+        };
+    }
+    Term { ty, span, kind }
 }
 
 #[derive(Debug)]
@@ -323,162 +363,5 @@ pub(crate) fn contract_of<'tcx>(
         }
 
         contract
-    }
-}
-
-// These methods are allowed to cheat the purity restrictions because they are lang items we cannot redefine
-pub(crate) fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
-    let def_path = tcx.def_path_str(def_id);
-
-    def_path.ends_with("::ops::Mul::mul")
-        || def_path.ends_with("::ops::Add::add")
-        || def_path.ends_with("::ops::Sub::sub")
-        || def_path.ends_with("::ops::Div::div")
-        || def_path.ends_with("::ops::Rem::rem")
-        || def_path.ends_with("::ops::Neg::neg")
-        || def_path.ends_with("::boxed::Box::<T>::new")
-        || def_path.ends_with("::ops::Deref::deref")
-        || def_path.ends_with("::ops::DerefMut::deref_mut")
-        || def_path.ends_with("Snapshot::<T>::from_fn")
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum Purity {
-    Program { terminates: bool, no_panic: bool },
-    Logic { prophetic: bool },
-}
-
-impl Purity {
-    pub(crate) fn of_def_id<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Self {
-        let is_snapshot = util::is_snapshot_closure(ctx.tcx, def_id);
-        if (util::is_predicate(ctx.tcx, def_id) && util::is_prophetic(ctx.tcx, def_id))
-            || (util::is_logic(ctx.tcx, def_id) && util::is_prophetic(ctx.tcx, def_id))
-            || (util::is_spec(ctx.tcx, def_id) && !is_snapshot)
-        {
-            Purity::Logic { prophetic: true }
-        } else if util::is_predicate(ctx.tcx, def_id)
-            || util::is_logic(ctx.tcx, def_id)
-            || is_snapshot
-        {
-            Purity::Logic { prophetic: false }
-        } else {
-            let contract = contract_of(ctx, def_id);
-            let terminates = contract.terminates;
-            let no_panic = contract.no_panic;
-            Purity::Program { terminates, no_panic }
-        }
-    }
-
-    fn can_call(self, other: Purity) -> bool {
-        match (self, other) {
-            (Purity::Logic { prophetic: true }, Purity::Logic { prophetic: false }) => true,
-            (
-                Purity::Program { no_panic, terminates },
-                Purity::Program { no_panic: no_panic2, terminates: terminates2 },
-            ) => no_panic <= no_panic2 && terminates <= terminates2,
-            (ctx, call) => ctx == call,
-        }
-    }
-}
-
-impl Purity {
-    fn as_str(&self) -> &'static str {
-        match self {
-            Purity::Program { terminates, no_panic } => match (*terminates, *no_panic) {
-                (true, true) => "program (pure)",
-                (true, false) => "program (terminates)",
-                (false, true) => "program (no panic)",
-                (false, false) => "program",
-            },
-            Purity::Logic { prophetic: false } => "logic",
-            Purity::Logic { prophetic: true } => "prophetic logic",
-        }
-    }
-}
-
-pub(crate) struct PurityVisitor<'a, 'tcx> {
-    pub(crate) ctx: &'a mut TranslationCtx<'tcx>,
-    pub(crate) thir: &'a Thir<'tcx>,
-    pub(crate) context: Purity,
-}
-
-impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
-    fn purity(&mut self, fun: thir::ExprId, func_did: DefId) -> Purity {
-        let stub = pearlite_stub(self.ctx.tcx, self.thir[fun].ty);
-
-        if matches!(stub, Some(Stub::Fin))
-            || (util::is_predicate(self.ctx.tcx, func_did)
-                && util::is_prophetic(self.ctx.tcx, func_did))
-            || (util::is_logic(self.ctx.tcx, func_did)
-                && util::is_prophetic(self.ctx.tcx, func_did))
-        {
-            Purity::Logic { prophetic: true }
-        } else if util::is_predicate(self.ctx.tcx, func_did)
-            || util::is_logic(self.ctx.tcx, func_did)
-            || util::get_builtin(self.ctx.tcx, func_did).is_some()
-            || stub.is_some()
-        {
-            Purity::Logic { prophetic: false }
-        } else {
-            let contract = contract_of(self.ctx, func_did);
-            let terminates = contract.terminates;
-            let no_panic = contract.no_panic;
-            Purity::Program { terminates, no_panic }
-        }
-    }
-}
-
-impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
-    fn thir(&self) -> &'a thir::Thir<'tcx> {
-        self.thir
-    }
-
-    fn visit_expr(&mut self, expr: &'a thir::Expr<'tcx>) {
-        match expr.kind {
-            ExprKind::Call { fun, .. } => {
-                // FIXME: like in detect_recursion (MIR visitor), we would need to specialize the trait functions.
-                if let &ty::FnDef(func_did, _) = self.thir[fun].ty.kind() {
-                    let fn_purity = self.purity(fun, func_did);
-                    if !self.context.can_call(fn_purity)
-                        && !is_overloaded_item(self.ctx.tcx, func_did)
-                    {
-                        let (caller, callee) = match (self.context, fn_purity) {
-                            (Purity::Program { .. }, Purity::Program { .. })
-                            | (Purity::Logic { .. }, Purity::Logic { .. }) => {
-                                (self.context.as_str(), fn_purity.as_str())
-                            }
-                            (Purity::Program { .. }, Purity::Logic { .. }) => ("program", "logic"),
-                            (Purity::Logic { .. }, Purity::Program { .. }) => ("logic", "program"),
-                        };
-                        let msg = format!(
-                            "called {callee} function `{}` in {caller} context",
-                            self.ctx.def_path_str(func_did),
-                        );
-
-                        self.ctx.dcx().span_err(self.thir[fun].span, msg);
-                    }
-                } else if !matches!(self.context, Purity::Program { .. }) {
-                    // TODO Add a "code" back in
-                    self.ctx.dcx().span_fatal(expr.span, "non function call in logical context")
-                }
-            }
-            ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
-                if is_spec(self.ctx.tcx, closure_id.into()) {
-                    return;
-                }
-
-                let (thir, expr) = self.ctx.thir_body(closure_id).unwrap_or_else(|_| {
-                    Error::from(InternalError("Cannot fetch THIR body")).emit(self.ctx.tcx)
-                });
-                let thir = thir.borrow();
-
-                thir::visit::walk_expr(
-                    &mut PurityVisitor { ctx: self.ctx, thir: &thir, context: self.context },
-                    &thir[expr],
-                );
-            }
-            _ => {}
-        }
-        thir::visit::walk_expr(self, expr)
     }
 }

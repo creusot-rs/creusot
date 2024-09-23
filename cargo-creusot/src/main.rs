@@ -1,4 +1,4 @@
-use creusot_args::options::*;
+use creusot_args::{options::*, CREUSOT_RUSTC_ARGS};
 use creusot_setup as setup;
 use std::{
     env,
@@ -11,7 +11,6 @@ mod helpers;
 use helpers::*;
 mod why3_launcher;
 use why3_launcher::*;
-
 enum Subcommand {
     // subcommand to pass on to creusot-rustc
     Creusot(Option<CreusotSubCommand>),
@@ -43,17 +42,17 @@ fn main() -> Result<()> {
     match subcommand {
         Creusot(subcmd) => {
             // subcommand analysis:
-            //   we want to launch Why3 Ide in cargo-creusot not by creusot-rustc.
-            //   however we want to keep the current behavior for other commands: prove and replay
-            let (creusot_rustc_subcmd, launch_why3) =
-                if let Some(CreusotSubCommand::Why3 {
-                    command: Why3SubCommand::Ide, args, ..
-                }) = subcmd
-                {
+            //   we want to launch Why3 Ide and replay in cargo-creusot not by creusot-rustc.
+            //   however we want to keep the current behavior for other commands: prove
+            let (creusot_rustc_subcmd, launch_why3) = match subcmd {
+                Some(CreusotSubCommand::Why3 { command: Why3SubCommand::Ide, args, .. }) => {
                     (None, Some(args))
-                } else {
-                    (subcmd, None)
-                };
+                }
+                Some(CreusotSubCommand::Why3 { command: Why3SubCommand::Replay, args, .. }) => {
+                    (None, Some(args))
+                }
+                _ => (subcmd, None),
+            };
 
             let config_args = setup::status_for_creusot()?;
             let creusot_args = CreusotArgs {
@@ -72,7 +71,7 @@ fn main() -> Result<()> {
                 b.why3_path(config_args.why3_path);
                 b.config_file(config_args.why3_config);
                 b.output_file(coma_filename);
-                // temporary: for the moment we only launch why3 via cargo-creusot in Ide mode
+                // temporary: for the moment we only launch why3 via cargo-creusot in Ide and Replay mode
                 b.mode(Why3Mode::Ide);
                 b.args(args);
 
@@ -112,7 +111,16 @@ fn invoke_cargo(args: &CreusotArgs) {
         .with_file_name("creusot-rustc");
 
     let cargo_path = env::var("CARGO_PATH").unwrap_or_else(|_| "cargo".to_string());
-    let cargo_cmd = if std::env::var_os("CREUSOT_CONTINUE").is_some() { "build" } else { "check" };
+    let cargo_cmd = match &args.subcommand {
+        Some(CreusotSubCommand::Doc { .. }) => "doc",
+        _ => {
+            if std::env::var_os("CREUSOT_CONTINUE").is_some() {
+                "build"
+            } else {
+                "check"
+            }
+        }
+    };
     let toolchain = toolchain_channel()
         .expect("Expected `cargo-creusot` to be built with a valid toolchain file");
     let mut cmd = Command::new(cargo_path);
@@ -121,6 +129,16 @@ fn invoke_cargo(args: &CreusotArgs) {
         .args(args.rust_flags.clone())
         .env("RUSTC_WRAPPER", creusot_rustc_path)
         .env("CARGO_CREUSOT", "1");
+
+    if matches!(&args.subcommand, Some(CreusotSubCommand::Doc { .. })) {
+        let mut rustdocflags = String::new();
+        for &arg in CREUSOT_RUSTC_ARGS {
+            rustdocflags.push_str(arg);
+            rustdocflags.push(' ');
+        }
+        rustdocflags.pop();
+        cmd.env("RUSTDOCFLAGS", rustdocflags);
+    }
 
     cmd.env("CREUSOT_ARGS", serde_json::to_string(&args).unwrap());
 

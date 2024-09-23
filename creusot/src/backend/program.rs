@@ -1,9 +1,10 @@
 use super::{
     clone_map::PreludeModule,
     dependency::ExtendedId,
+    is_trusted_function,
     place::rplace_to_expr,
     signature::{sig_to_why3, signature_of},
-    term::lower_pure,
+    term::{lower_pat, lower_pure},
     ty::{destructor, int_ty},
     CloneSummary, GraphDepth, NameSupply, Namer, TransId, Why3Generator,
 };
@@ -17,7 +18,7 @@ use crate::{
     },
     ctx::{BodyId, Dependencies, TranslationCtx},
     fmir::{Body, BorrowKind, Operand},
-    translation::fmir::{self, Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
+    translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
     util::{self, module_name},
 };
 
@@ -27,13 +28,14 @@ use rustc_middle::{
     mir::{self, BasicBlock, BinOp, ProjectionElem, UnOp, START_BLOCK},
     ty::{AdtDef, GenericArgsRef, Ty, TyKind},
 };
-use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_span::{Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, UintTy};
+use std::fmt::Debug;
 use why3::{
     coma::{self, Arg, Defn, Expr, Param, Term},
     declaration::{Attribute, Contract, Decl, Module, Signature},
-    exp::{Binder, Constant, Exp},
+    exp::{Binder, Constant, Exp, Pattern},
     ty::Type,
     Ident, QName,
 };
@@ -180,12 +182,14 @@ fn collect_body_ids<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> Option<(BodyId, Vec<BodyId>)> {
-    let body_id =
-        if def_id.is_local() && util::has_body(ctx, def_id) && !util::is_trusted(ctx.tcx, def_id) {
-            BodyId::new(def_id.expect_local(), None)
-        } else {
-            return None;
-        };
+    let body_id = if def_id.is_local()
+        && util::has_body(ctx, def_id)
+        && !is_trusted_function(ctx.tcx, def_id)
+    {
+        BodyId::new(def_id.expect_local(), None)
+    } else {
+        return None;
+    };
 
     let tcx = ctx.tcx;
     let promoted = ctx
@@ -439,11 +443,6 @@ impl<'tcx> Operand<'tcx> {
             }
         }
     }
-    fn invalidated_places(&self, places: &mut Vec<fmir::Place<'tcx>>) {
-        if let Operand::Move(pl) = self {
-            places.push(pl.clone())
-        }
-    }
 }
 
 impl<'tcx> RValue<'tcx> {
@@ -687,29 +686,6 @@ impl<'tcx> RValue<'tcx> {
         };
 
         e
-    }
-
-    /// Gather the set of places which are moved out of by an expression
-    fn invalidated_places(&self, places: &mut Vec<fmir::Place<'tcx>>) {
-        match &self {
-            RValue::Operand(op) => op.invalidated_places(places),
-            RValue::BinOp(_, l, r) => {
-                l.invalidated_places(places);
-                r.invalidated_places(places)
-            }
-            RValue::UnaryOp(_, e) => e.invalidated_places(places),
-            RValue::Constructor(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
-            RValue::Cast(e, _, _) => e.invalidated_places(places),
-            RValue::Tuple(es) => es.iter().for_each(|e| e.invalidated_places(places)),
-            RValue::Len(e) => e.invalidated_places(places),
-            RValue::Array(f) => f.iter().for_each(|f| f.invalidated_places(places)),
-            RValue::Repeat(e, len) => {
-                e.invalidated_places(places);
-                len.invalidated_places(places)
-            }
-            RValue::Ghost(_) => {}
-            RValue::Borrow(_, _) => {}
-        }
     }
 }
 
@@ -1008,9 +984,10 @@ impl<'tcx> Place<'tcx> {
     }
 }
 
-pub(crate) fn borrow_generated_id<V: std::fmt::Debug, T: std::fmt::Debug>(
+pub(crate) fn borrow_generated_id<V: Debug, T: Debug>(
     original_borrow: Exp,
     projection: &[ProjectionElem<V, T>],
+    mut translate_index: impl FnMut(&V) -> Exp,
 ) -> Exp {
     let mut borrow_id = Exp::Call(
         Box::new(Exp::qvar(QName::from_string("Borrow.get_id").unwrap())),
@@ -1027,14 +1004,19 @@ pub(crate) fn borrow_generated_id<V: std::fmt::Debug, T: std::fmt::Debug>(
                     vec![borrow_id, Exp::Const(Constant::Int(idx.as_u32() as i128 + 1, None))],
                 );
             }
-            ProjectionElem::Downcast(_, _) => {
-                // since only one variant can be active at a time, there is no need to change the borrow index further
+            ProjectionElem::Index(x) => {
+                borrow_id = Exp::Call(
+                    Box::new(Exp::qvar(QName::from_string("Borrow.inherit_id").unwrap())),
+                    vec![borrow_id, translate_index(x)],
+                );
             }
-            ProjectionElem::Index(_)
+
+            ProjectionElem::Downcast(_, _)
             | ProjectionElem::ConstantIndex { .. }
             | ProjectionElem::Subslice { .. }
             | ProjectionElem::OpaqueCast(_) => {
-                // Should only appear in logic, so we can ignore them.
+                // Nor logical reborrowing nor final borrows can generate such a projection
+                unreachable!("unexepected proj elem to generate a borrow id: {proj:?}")
             }
             ProjectionElem::Subtype(_) => {}
         }
@@ -1105,8 +1087,11 @@ impl<'tcx> Statement<'tcx> {
 
                 let ty = lhs.ty(lower.ctx.tcx, lower.locals);
 
-                let borrow_id =
-                    borrow_generated_id(original_borrow, &rhs.projection[deref_index + 1..]);
+                let borrow_id = borrow_generated_id(
+                    original_borrow,
+                    &rhs.projection[deref_index + 1..],
+                    |sym| Exp::var(util::ident_of(*sym)),
+                );
                 let reassign = lhs.as_rplace(lower, &mut istmts).field("final");
 
                 let assign1 = { lower.assignment(&lhs, Exp::var("_ret'")) };
@@ -1130,16 +1115,12 @@ impl<'tcx> Statement<'tcx> {
                 istmts.extend(assign2);
                 istmts
             }
-            Statement::Assignment(lhs, e, span) => {
+            Statement::Assignment(lhs, e, _span) => {
                 let mut istmts = Vec::new();
-
-                let mut invalid = Vec::new();
-                e.invalidated_places(&mut invalid);
 
                 let rhs = e.to_why(lower, lhs.ty(lower.ctx.tcx, lower.locals), &mut istmts);
                 let assign = lower.assignment(&lhs, rhs);
                 istmts.extend(assign);
-                invalidate_places(lower, span, invalid, &mut istmts);
 
                 istmts
             }
@@ -1155,15 +1136,25 @@ impl<'tcx> Statement<'tcx> {
                 istmts.extend(assign);
                 istmts
             }
-            Statement::Resolve(id, subst, pl) => {
-                lower.ctx.translate(id);
+            Statement::Resolve { did, subst, pl, pat } => {
+                lower.ctx.translate(did);
                 let mut istmts = Vec::new();
 
-                let rp = Exp::qvar(lower.names.value(id, subst));
+                let rp = Exp::qvar(lower.names.value(did, subst));
+                let loc = pl.local;
 
-                let assume = rp.app_to(pl.as_rplace(lower, &mut istmts));
+                let mut exp = rp.app_to(pl.as_rplace(lower, &mut istmts));
+                if let Some(pat) = pat {
+                    exp = Exp::Match(
+                        Box::new(Exp::var(util::ident_of(loc))),
+                        vec![
+                            (lower_pat(lower.ctx, lower.names, &pat), exp),
+                            (Pattern::Wildcard, Exp::mk_true()),
+                        ],
+                    )
+                }
 
-                istmts.extend([IntermediateStmt::Assume(assume)]);
+                istmts.extend([IntermediateStmt::Assume(exp)]);
                 istmts
             }
             Statement::Assertion { cond, msg } => {
@@ -1185,37 +1176,29 @@ impl<'tcx> Statement<'tcx> {
                 istmts.extend(vec![IntermediateStmt::Assume(inv_fun.app_to(arg))]);
                 istmts
             }
-            Statement::AssertTyInv(pl) => {
-                let inv_fun = Exp::qvar(lower.names.ty_inv(pl.ty(lower.ctx.tcx, lower.locals)));
+            Statement::AssertTyInv { pl, pat } => {
                 let mut istmts = Vec::new();
 
-                let arg = pl.as_rplace(lower, &mut istmts);
-                let exp = Exp::Attr(
-                    Attribute::Attr(format!("expl:type invariant")),
-                    Box::new(inv_fun.app_to(arg)),
-                );
+                let inv_fun = Exp::qvar(lower.names.ty_inv(pl.ty(lower.ctx.tcx, lower.locals)));
+                let loc = pl.local;
+
+                let mut exp = inv_fun.app_to(pl.as_rplace(lower, &mut istmts));
+                if let Some(pat) = pat {
+                    exp = Exp::Match(
+                        Box::new(Exp::var(util::ident_of(loc))),
+                        vec![
+                            (lower_pat(lower.ctx, lower.names, &pat), exp),
+                            (Pattern::Wildcard, Exp::mk_true()),
+                        ],
+                    )
+                }
+
+                let exp = Exp::Attr(Attribute::Attr(format!("expl:type invariant")), Box::new(exp));
 
                 istmts.extend(vec![IntermediateStmt::Assert(exp)]);
                 istmts
             }
         }
-    }
-}
-
-fn invalidate_places<'tcx, N: Namer<'tcx>>(
-    lower: &mut LoweringState<'_, 'tcx, N>,
-    _span: Span,
-    invalid: Vec<Place<'tcx>>,
-    out: &mut Vec<IntermediateStmt>,
-) {
-    // any (x -> lhs = x )
-    for pl in invalid {
-        let ty = pl.ty(lower.ctx.tcx, lower.locals);
-        let ty = lower.ty(ty);
-
-        let assign = lower.assignment(&pl, Exp::var("_any"));
-        out.push(IntermediateStmt::Any("_any".into(), ty));
-        out.extend(assign);
     }
 }
 

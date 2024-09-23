@@ -237,8 +237,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         RT::Impl(TermImpl { hyp, cons, .. }) => {
             let hyp = match &**hyp {
                 Term::Paren(TermParen { expr, .. }) => match &**expr {
-                    Term::Exists(_) => expr,
-                    Term::Forall(_) => expr,
+                    Term::Quant(_) => expr,
                     _ => hyp,
                 },
                 _ => hyp,
@@ -249,28 +248,15 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                 ::creusot_contracts::__stubs::implication(#hyp, #cons)
             })
         }
-        RT::Forall(TermForall { args, term, .. }) => {
+        RT::Quant(TermQuant { quant_token, args, trigger, term, .. }) => {
             let mut ts = encode_term(term)?;
-            for arg in args {
-                ts = quote! {
-                    ::creusot_contracts::__stubs::forall(
-                        #[creusot::no_translate]
-                        |#arg|{ #ts }
-                    )
-                }
-            }
-            Ok(ts)
-        }
-        RT::Exists(TermExists { args, term, .. }) => {
-            let mut ts = encode_term(term)?;
-            for arg in args {
-                ts = quote! {
-                    ::creusot_contracts::__stubs::exists(
-                        #[creusot::no_translate]
-                        |#arg|{ #ts }
-                    )
-                }
-            }
+            ts = encode_trigger(&trigger, ts)?;
+            ts = quote! {
+                ::creusot_contracts::__stubs::#quant_token(
+                    #[creusot::no_translate]
+                    |#args| { #ts }
+                )
+            };
             Ok(ts)
         }
         RT::Absurd(_) => Ok(quote_spanned! {sp=> *::creusot_contracts::__stubs::abs() }),
@@ -286,6 +272,22 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         }
         RT::__Nonexhaustive => todo!(),
     }
+}
+
+fn encode_trigger(
+    mut trigger: &[Trigger],
+    mut ts: TokenStream,
+) -> Result<TokenStream, EncodeError> {
+    while let [rest @ .., last] = trigger {
+        trigger = rest;
+        let mut last_trigger = TokenStream::new();
+        for pair in last.terms.pairs() {
+            last_trigger.extend(encode_term(pair.value())?);
+            pair.punct().to_tokens(&mut last_trigger)
+        }
+        ts = quote!(::creusot_contracts::__stubs::trigger((#last_trigger), #ts))
+    }
+    Ok(ts)
 }
 
 pub fn encode_block(block: &Vec<TermStmt>) -> Result<TokenStream, EncodeError> {

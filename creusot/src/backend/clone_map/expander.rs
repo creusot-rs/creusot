@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 
 use crate::{
     backend::{
+        is_trusted_function,
         program::{int_to_prelude, uint_to_prelude},
         ty_inv,
     },
@@ -208,7 +209,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         let inv_kind = if ty_inv::is_tyinv_trivial(ctx.tcx, param_env, ty, true) {
             TyInvKind::Trivial
         } else {
-            TyInvKind::from_ty(ctx.tcx, ty).unwrap_or(TyInvKind::Trivial)
+            TyInvKind::from_ty(ty, param_env, ctx, true)
         };
 
         if let Some(TransId::TyInv(self_kind)) = self.self_key.to_trans_id()
@@ -245,7 +246,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         // TODO: Push out of graph expansion
         // If the function we are cloning into is `#[trusted]` there is no need for laws.
         // Similarily, if it has no body, there will be no proofs.
-        if util::is_trusted(ctx.tcx, self_did) || !util::has_body(ctx, self_did) {
+        if is_trusted_function(ctx.tcx, self_did) || !util::has_body(ctx, self_did) {
             return;
         }
 

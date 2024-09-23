@@ -13,13 +13,12 @@ use std::{
 
 use crate::{
     error::{CreusotResult, Error, InternalError},
-    projection_vec::{visit_projections, visit_projections_mut, ProjectionVec},
-    translation::TranslationCtx,
+    translation::{projection_vec::*, TranslationCtx},
     util::{self, is_snap_ty},
 };
 use itertools::Itertools;
 use log::*;
-use rustc_ast::{visit::VisitorResult, LitIntType, LitKind};
+use rustc_ast::{visit::VisitorResult, ByRef, LitIntType, LitKind, Mutability};
 use rustc_hir::{
     def_id::{DefId, LocalDefId},
     HirId, OwnerId,
@@ -33,11 +32,11 @@ use rustc_middle::{
     },
     ty::{
         int_ty, uint_ty, CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, Ty, TyCtxt,
-        TyKind, TypeFoldable, TypeVisitable, TypeVisitableExt, UpvarArgs, UserType,
+        TyKind, TypeFoldable, TypeVisitable, TypeVisitableExt, UserType,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
-use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_span::{symbol::Ident, Span, Symbol, DUMMY_SP};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
 
@@ -80,6 +79,19 @@ pub struct Term<'tcx> {
     pub span: Span,
 }
 
+#[derive(
+    Copy, Clone, Debug, Eq, PartialEq, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable,
+)]
+pub enum QuantKind {
+    Forall,
+    Exists,
+}
+
+#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
+pub struct Trigger<'tcx>(pub(crate) Vec<Term<'tcx>>);
+
+pub type QuantBinder<'tcx> = (Vec<Ident>, Ty<'tcx>);
+
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum TermKind<'tcx> {
     Var(Symbol),
@@ -97,12 +109,10 @@ pub enum TermKind<'tcx> {
         op: UnOp,
         arg: Box<Term<'tcx>>,
     },
-    Forall {
-        binder: (Symbol, Ty<'tcx>),
-        body: Box<Term<'tcx>>,
-    },
-    Exists {
-        binder: (Symbol, Ty<'tcx>),
+    Quant {
+        kind: QuantKind,
+        binder: QuantBinder<'tcx>,
+        trigger: Vec<Trigger<'tcx>>,
         body: Box<Term<'tcx>>,
     },
     // TODO: Get rid of (id, subst).
@@ -154,7 +164,7 @@ pub enum TermKind<'tcx> {
         body: Box<Term<'tcx>>,
     },
     Reborrow {
-        term: Box<Term<'tcx>>,
+        inner: Box<Term<'tcx>>,
         cur: Box<Term<'tcx>>,
         fin: Box<Term<'tcx>>,
         projection: ProjectionVec<Term<'tcx>, Ty<'tcx>>,
@@ -245,22 +255,30 @@ pub enum Literal<'tcx> {
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum Pattern<'tcx> {
-    Constructor {
-        adt: DefId,
-        substs: GenericArgsRef<'tcx>,
-        variant: VariantIdx,
-        fields: Vec<Pattern<'tcx>>,
-    },
+    Constructor { variant: DefId, substs: GenericArgsRef<'tcx>, fields: Vec<Pattern<'tcx>> },
     Tuple(Vec<Pattern<'tcx>>),
     Wildcard,
     Binder(Symbol),
     Boolean(bool),
 }
 
+const TRIGGER_ERROR: &str = "Triggers can only be used inside quantifiers";
 pub(crate) fn pearlite<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
 ) -> CreusotResult<Term<'tcx>> {
+    let (triggers, term) = pearlite_with_triggers(ctx, id)?;
+    if !triggers.is_empty() {
+        Err(Error::new(ctx.def_span(id), TRIGGER_ERROR))
+    } else {
+        Ok(term)
+    }
+}
+
+pub(crate) fn pearlite_with_triggers<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    id: LocalDefId,
+) -> CreusotResult<(Vec<Trigger<'tcx>>, Term<'tcx>)> {
     let (thir, expr) = ctx.thir_body(id).map_err(|_| InternalError("Cannot fetch THIR body"))?;
     let thir = thir.borrow();
     if thir.exprs.is_empty() {
@@ -281,7 +299,9 @@ struct ThirTerm<'a, 'tcx> {
 // TODO: Ensure that types are correct during this translation, in particular
 // - Box, & and &mut
 impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
-    fn body_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
+    fn body_term(&self, expr: ExprId) -> CreusotResult<(Vec<Trigger<'tcx>>, Term<'tcx>)> {
+        let mut triggers = vec![];
+        let expr = self.collect_triggers(expr, &mut triggers)?;
         let body = self.expr_term(expr)?;
         let owner_id = util::param_def_id(self.ctx.tcx, self.item_id.into());
         let (thir, _) =
@@ -292,7 +312,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             .iter()
             .enumerate()
             .filter_map(|(idx, param)| {
-                Some(self.pattern_term(&*param.pat.as_ref()?).map(|pat| (idx, param.ty, pat)))
+                Some(self.pattern_term(&*param.pat.as_ref()?, true).map(|pat| (idx, param.ty, pat)))
             })
             .fold_ok(body, |body, (idx, ty, pattern)| match pattern {
                 Pattern::Binder(_) | Pattern::Wildcard => body,
@@ -304,8 +324,40 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         kind: TermKind::Let { pattern, arg, body: Box::new(body) },
                     }
                 }
-            });
-        res
+            })?;
+        Ok((triggers, res))
+    }
+
+    fn collect_triggers(
+        &self,
+        expr: ExprId,
+        triggers: &mut Vec<Trigger<'tcx>>,
+    ) -> CreusotResult<ExprId> {
+        match &self.thir[expr].kind {
+            ExprKind::Call { ty: f_ty, ref args, .. } => {
+                if let Some(Stub::Trigger) = pearlite_stub(self.ctx.tcx, *f_ty) {
+                    let trigger = self.expr_term(args[0])?;
+                    if let TermKind::Tuple { fields } = trigger.kind {
+                        triggers.push(Trigger(fields));
+                        self.collect_triggers(args[1], triggers)
+                    } else {
+                        let span = self.thir[args[0]].span;
+                        Err(Error::new(span, "Triggers must be tuples"))
+                    }
+                } else {
+                    Ok(expr)
+                }
+            }
+            ExprKind::Block { block } => {
+                if let Block { stmts: box [], expr: Some(expr), .. } = self.thir[*block] {
+                    self.collect_triggers(expr, triggers)
+                } else {
+                    Ok(expr)
+                }
+            }
+            ExprKind::Scope { value, .. } => self.collect_triggers(*value, triggers),
+            _ => Ok(expr),
+        }
     }
 
     fn expr_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
@@ -423,33 +475,18 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Call { ty: f_ty, ref args, fun, .. } => {
                 use Stub::*;
                 match pearlite_stub(self.ctx.tcx, f_ty) {
-                    Some(Forall) => {
-                        let (binder, body) = self.quant_term(args[0])?;
-                        if let Some(inv_term) = type_invariant_term(
-                            self.ctx,
-                            self.item_id.to_def_id(),
-                            binder.0,
-                            span,
-                            binder.1.tuple_fields()[0],
-                        ) {
-                            Ok(body.guarded_forall(binder, inv_term).span(span))
+                    Some(s @ (Forall | Exists)) => {
+                        let kind =
+                            if let Forall = s { QuantKind::Forall } else { QuantKind::Exists };
+                        let (binder, (trigger, body)) = self.quant_term(args[0])?;
+                        let arg_tuple_ty = if let TyKind::FnDef(_, subst) = f_ty.kind() {
+                            subst[0].as_type().unwrap()
                         } else {
-                            Ok(body.forall(binder).span(span))
-                        }
-                    }
-                    Some(Exists) => {
-                        let (binder, body) = self.quant_term(args[0])?;
-                        if let Some(inv_term) = type_invariant_term(
-                            self.ctx,
-                            self.item_id.to_def_id(),
-                            binder.0,
-                            span,
-                            binder.1.tuple_fields()[0],
-                        ) {
-                            Ok(body.guarded_exists(binder, inv_term).span(span))
-                        } else {
-                            Ok(body.exists(binder).span(span))
-                        }
+                            unreachable!()
+                        };
+                        let binder = (binder, arg_tuple_ty);
+
+                        Ok(body.quant(kind, binder, trigger).span(span))
                     }
                     Some(Fin) => {
                         let term = self.expr_term(args[0])?;
@@ -504,6 +541,10 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         Ok(Term { ty, span, kind: TermKind::Tuple { fields: vec![] } })
                     }
                     Some(Absurd) => Ok(Term { ty, span, kind: TermKind::Absurd }),
+                    Some(Trigger) => Err(Error::new(
+                        span,
+                        "Triggers can only be used directly inside quantifiers",
+                    )),
                     None => {
                         let args = args
                             .iter()
@@ -665,21 +706,32 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             return Err(Error::new(arm.span, "match guards are unsupported"));
         }
 
-        let pattern = self.pattern_term(&arm.pattern)?;
+        let pattern = self.pattern_term(&arm.pattern, false)?;
         let body = self.expr_term(arm.body)?;
 
         Ok((pattern, body))
     }
 
-    fn pattern_term(&self, pat: &Pat<'tcx>) -> CreusotResult<Pattern<'tcx>> {
+    fn pattern_term(&self, pat: &Pat<'tcx>, mut_allowed: bool) -> CreusotResult<Pattern<'tcx>> {
         trace!("{:?}", pat);
         match &pat.kind {
             PatKind::Wild => Ok(Pattern::Wildcard),
-            PatKind::Binding { name, .. } => Ok(Pattern::Binder(*name)),
+            PatKind::Binding { name, mode, .. } => {
+                if mode.0 == ByRef::Yes(Mutability::Mut) {
+                    return Err(Error::new(
+                        pat.span,
+                        "mut ref binders are not supported in pearlite",
+                    ));
+                }
+                if !mut_allowed && mode.1 == Mutability::Mut {
+                    return Err(Error::new(pat.span, "mut binders are not supported in pearlite"));
+                }
+                Ok(Pattern::Binder(*name))
+            }
             PatKind::Variant { subpatterns, adt_def, variant_index, args, .. } => {
                 let mut fields: Vec<_> = subpatterns
                     .iter()
-                    .map(|pat| Ok((pat.field, self.pattern_term(&pat.pattern)?)))
+                    .map(|pat| Ok((pat.field, self.pattern_term(&pat.pattern, mut_allowed)?)))
                     .collect::<Result<_, Error>>()?;
                 fields.sort_by_key(|f| f.0);
 
@@ -692,16 +744,15 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     .collect();
 
                 Ok(Pattern::Constructor {
-                    adt: adt_def.variants()[*variant_index].def_id,
+                    variant: adt_def.variants()[*variant_index].def_id,
                     substs: args,
-                    variant: *variant_index,
                     fields,
                 })
             }
             PatKind::Leaf { subpatterns } => {
                 let mut fields: Vec<_> = subpatterns
                     .iter()
-                    .map(|pat| Ok((pat.field, self.pattern_term(&pat.pattern)?)))
+                    .map(|pat| Ok((pat.field, self.pattern_term(&pat.pattern, mut_allowed)?)))
                     .collect::<Result<_, Error>>()?;
                 fields.sort_by_key(|f| f.0);
 
@@ -723,9 +774,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         .map(|el| el.reduce(|_, a| a).1)
                         .collect();
                     Ok(Pattern::Constructor {
-                        adt: adt_def.variants()[0usize.into()].def_id,
+                        variant: adt_def.variants()[0usize.into()].def_id,
                         substs,
-                        variant: 0u32.into(),
                         fields,
                     })
                 }
@@ -738,7 +788,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     ));
                 }
 
-                self.pattern_term(subpattern)
+                self.pattern_term(subpattern, mut_allowed)
             }
             PatKind::Constant { value } => {
                 if !pat.ty.is_bool() {
@@ -775,7 +825,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 })
             }
             StmtKind::Let { pattern, initializer, init_scope, .. } => {
-                let pattern = self.pattern_term(pattern)?;
+                let pattern = self.pattern_term(pattern, false)?;
                 if let Some(initializer) = initializer {
                     let initializer = self.expr_term(*initializer)?;
                     let span =
@@ -800,20 +850,17 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         }
     }
 
-    fn quant_term(&self, body: ExprId) -> Result<((Symbol, Ty<'tcx>), Term<'tcx>), Error> {
+    fn quant_term(
+        &self,
+        body: ExprId,
+    ) -> Result<(Vec<Ident>, (Vec<Trigger<'tcx>>, Term<'tcx>)), Error> {
         trace!("{:?}", self.thir[body].kind);
         match self.thir[body].kind {
             ExprKind::Scope { value, .. } => self.quant_term(value),
-            ExprKind::Closure(box ClosureExpr { closure_id, args, .. }) => {
-                let sig = match args {
-                    UpvarArgs::Closure(subst) => subst.as_closure().sig(),
-                    _ => unreachable!(),
-                };
+            ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
+                let names = self.ctx.fn_arg_names(closure_id);
 
-                let name = self.ctx.fn_arg_names(closure_id)[0];
-                let ty = sig.input(0).skip_binder();
-
-                Ok(((name.name, ty), pearlite(self.ctx, closure_id)?))
+                Ok((names.to_vec(), pearlite_with_triggers(self.ctx, closure_id)?))
             }
             _ => Err(Error::new(self.thir[body].span, "unexpected error in quantifier")),
         }
@@ -842,18 +889,21 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         };
         // eprintln!("{}", PrintExpr(self.thir, rebor_id));
         // Handle every other case.
-        let (cur, fin) = self.logical_reborrow_inner(rebor_id)?;
-        let (term, projection) = self.logical_reborrow_inner_project(rebor_id)?;
+        let (cur, fin, inner, projection) = self.logical_reborrow_inner(rebor_id)?;
 
         Ok(TermKind::Reborrow {
             cur: Box::new(cur),
             fin: Box::new(fin),
-            term: Box::new(term),
+            inner: Box::new(inner),
             projection,
         })
     }
 
-    fn logical_reborrow_inner(&self, rebor_id: ExprId) -> Result<(Term<'tcx>, Term<'tcx>), Error> {
+    fn logical_reborrow_inner(
+        &self,
+        rebor_id: ExprId,
+    ) -> Result<(Term<'tcx>, Term<'tcx>, Term<'tcx>, ProjectionVec<Term<'tcx>, Ty<'tcx>>), Error>
+    {
         let ty = self.thir[rebor_id].ty;
         let span = self.thir[rebor_id].span;
         match &self.thir[rebor_id].kind {
@@ -864,10 +914,13 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 self.logical_reborrow_inner(expr.unwrap())
             }
             ExprKind::Field { lhs, variant_index: _, name } => {
-                let (cur, fin) = self.logical_reborrow_inner(*lhs)?;
+                let (cur, fin, inner, mut proj) = self.logical_reborrow_inner(*lhs)?;
+                proj.push(ProjectionElem::Field(*name, ty));
                 Ok((
                     Term { ty, span, kind: mk_projection(cur, *name) },
                     Term { ty, span, kind: mk_projection(fin, *name) },
+                    inner,
+                    proj
                 ))
             }
             ExprKind::Deref { arg } => {
@@ -876,7 +929,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     let ExprKind::Call { args, .. } = &self.thir[*arg].kind else { unreachable!() };
                     let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } = self.thir[args[0]].kind else { unreachable!() };
 
-                    let (cur, fin) = self.logical_reborrow_inner(arg)?;
+                    let (cur, fin, inner, proj) = self.logical_reborrow_inner(arg)?;
                     let deref_method =
                         self.ctx.get_diagnostic_item(Symbol::intern("snapshot_inner")).unwrap();
                     // Extract the `T` from `Snapshot<T>`
@@ -884,23 +937,43 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     return Ok((
                         Term::call(self.ctx.tcx, deref_method, subst, vec![cur]),
                         Term::call(self.ctx.tcx, deref_method, subst, vec![fin]),
+                        inner,
+                        proj
                     ));
                 };
 
-                let inner = self.expr_term(*arg)?;
 
-                Ok((inner.clone().cur().span(span), inner.fin().span(span)))
+                match self.thir[*arg].ty.kind() {
+                    TyKind::Ref(_, _, Mutability::Mut) => {
+                        let inner = self.expr_term(*arg)?;
+                        Ok((inner.clone().cur().span(span), inner.clone().fin().span(span), inner.span(span), Vec::new()))
+                    }
+                    TyKind::Adt(adtdef, _) if adtdef.is_box() => {
+                        let mut res = self.logical_reborrow_inner(*arg)?;
+                        res.3.push(ProjectionElem::Deref);
+                        Ok(res)
+                    }
+                    _ => unreachable!("Unexpected deref type: {ty:?}.")
+                }
             }
-            ExprKind::Call { ty: fn_ty, args, .. } if fn_ty.is_fn() => {
+            e @ ExprKind::Call { ty: fn_ty, args, .. } if fn_ty.is_fn() => {
                 let index_logic_method =
                     self.ctx.get_diagnostic_item(Symbol::intern("index_logic_method")).unwrap();
 
                 let TyKind::FnDef(id,_) = fn_ty.kind() else { panic!("expected function type") };
 
-                let (cur, fin) = self.logical_reborrow_inner(args[0])?;
+                let (cur, fin, inner, mut proj) = self.logical_reborrow_inner(args[0])?;
+
+                if !matches!(self.thir[args[0]].ty.kind(), TyKind::Str | TyKind::Array(_, _) | TyKind::Slice(_)) {
+                    return Err(Error::new(
+                        span,
+                        format!("unsupported logical reborrow of indexing {e:?}, only slice indexing is supported"),
+                    ))
+                }
 
                 if id == &index_logic_method {
                     let index = self.expr_term(args[1])?;
+                    proj.push(ProjectionElem::Index(index.clone()));
 
                     let subst =
                         self.ctx.mk_args(&[GenericArg::from(cur.ty), GenericArg::from(index.ty)]);
@@ -916,8 +989,10 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                             self.ctx.tcx,
                             index_logic_method,
                             subst,
-                            vec![fin, index.clone()],
+                            vec![fin, index],
                         ),
+                        inner,
+                        proj
                     ))
                 } else {
                     return Err(Error::new(span, format!("unsupported projection {id:?}")));
@@ -925,64 +1000,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             }
             e => Err(Error::new(
                 span,
-                format!("unsupported logical reborrow {e:?}, only simple field projections are supported"),
-            )),
-        }
-    }
-
-    fn logical_reborrow_inner_project(
-        &self,
-        rebor_id: ExprId,
-    ) -> Result<(Term<'tcx>, ProjectionVec<Term<'tcx>, Ty<'tcx>>), Error> {
-        let ty = self.thir[rebor_id].ty;
-        let span = self.thir[rebor_id].span;
-        match &self.thir[rebor_id].kind {
-            ExprKind::Scope { value, .. } => self.logical_reborrow_inner_project(*value),
-            ExprKind::Block { block } => {
-                let Block { stmts, expr, .. } = &self.thir[*block];
-                assert!(stmts.is_empty());
-                self.logical_reborrow_inner_project(expr.unwrap())
-            }
-            ExprKind::Field { lhs, variant_index: _, name } => {
-                let mut res = self.logical_reborrow_inner_project(*lhs)?;
-                res.1.push(ProjectionElem::Field(*name, ty));
-                Ok(res)
-            }
-            ExprKind::Deref { arg } => {
-                // Detect * snapshot_deref & and treat that as a single 'projection'
-                if self.is_snapshot_deref(*arg) {
-                    let ExprKind::Call { args, .. } = &self.thir[*arg].kind else { unreachable!() };
-                    let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } = self.thir[args[0]].kind else { unreachable!() };
-
-                    let (term, projections) = self.logical_reborrow_inner_project(arg)?;
-                    return Ok((
-                        term,
-                        projections,
-                    ));
-                };
-
-                let inner = self.expr_term(*arg)?;
-                Ok((inner, Vec::new()))
-            }
-            ExprKind::Call { ty: fn_ty, args, .. } if fn_ty.is_fn() => {
-                let index_logic_method = self.ctx.get_diagnostic_item(Symbol::intern("index_logic_method")).unwrap();
-
-                let TyKind::FnDef(id,_) = fn_ty.kind() else { panic!("expected function type") };
-
-                let (term, mut projections) = self.logical_reborrow_inner_project(args[0])?;
-
-                if id == &index_logic_method {
-                    let index = self.expr_term(args[1])?;
-
-                    projections.push(ProjectionElem::Index(index));
-                    Ok((term, projections))
-                } else {
-                    return Err(Error::new(span, format!("unsupported projection {id:?}")));
-                }
-            }
-            e => Err(Error::new(
-                span,
-                format!("unsupported logical reborrow {e:?}, only simple field projections are supported"),
+                format!("unsupported logical reborrow {e:?}, only field projections and slice indexing are supported"),
             )),
         }
     }
@@ -992,7 +1010,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
         let TyKind::FnDef(id, sub) = ty.kind() else { panic!("expected function type") };
 
-        if Some(*id) != self.ctx.get_diagnostic_item(Symbol::intern("deref_method")) {
+        if *id != self.ctx.get_diagnostic_item(Symbol::intern("deref_method")).unwrap() {
             return false;
         }
 
@@ -1029,6 +1047,7 @@ pub(crate) fn type_invariant_term<'tcx>(
 pub(crate) enum Stub {
     Forall,
     Exists,
+    Trigger,
     Fin,
     Impl,
     Equals,
@@ -1040,35 +1059,38 @@ pub(crate) enum Stub {
 }
 
 pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
-    if let TyKind::FnDef(id, _) = ty.kind() {
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("forall")) {
+    if let TyKind::FnDef(id, _) = *ty.kind() {
+        if id == tcx.get_diagnostic_item(Symbol::intern("forall")).unwrap() {
             return Some(Stub::Forall);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("exists")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("exists")).unwrap() {
             return Some(Stub::Exists);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("fin")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("trigger")).unwrap() {
+            return Some(Stub::Trigger);
+        }
+        if id == tcx.get_diagnostic_item(Symbol::intern("fin")).unwrap() {
             return Some(Stub::Fin);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("implication")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("implication")).unwrap() {
             return Some(Stub::Impl);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("equal")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("equal")).unwrap() {
             return Some(Stub::Equals);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("neq")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("neq")).unwrap() {
             return Some(Stub::Neq);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("variant_check")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("variant_check")).unwrap() {
             return Some(Stub::VariantCheck);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("old")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("old")).unwrap() {
             return Some(Stub::Old);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("absurd")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("absurd")).unwrap() {
             return Some(Stub::Absurd);
         }
-        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("closure_result_constraint")) {
+        if id == tcx.get_diagnostic_item(Symbol::intern("closure_result_constraint")).unwrap() {
             return Some(Stub::ResultCheck);
         }
         None
@@ -1098,6 +1120,12 @@ fn not_spec_expr(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: ExprId) -> bool {
         }
         _ => true,
     }
+}
+
+pub fn zip_binder<'a, 'tcx>(
+    binder: &'a QuantBinder<'tcx>,
+) -> impl Iterator<Item = (Symbol, Ty<'tcx>)> + 'a {
+    binder.0.iter().map(|x| x.name).zip(binder.1.tuple_fields())
 }
 
 use rustc_hir;
@@ -1138,8 +1166,10 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
             visitor.visit_term(&*rhs);
         }
         TermKind::Unary { op: _, arg } => visitor.visit_term(&*arg),
-        TermKind::Forall { binder: _, body } => visitor.visit_term(&*body),
-        TermKind::Exists { binder: _, body } => visitor.visit_term(&*body),
+        TermKind::Quant { body, trigger, .. } => {
+            trigger.iter().flat_map(|x| &x.0).for_each(|x| visitor.visit_term(x));
+            visitor.visit_term(&*body)
+        }
         TermKind::Call { id: _, subst: _, args } => {
             args.iter().for_each(|a| visitor.visit_term(&*a))
         }
@@ -1165,10 +1195,10 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         TermKind::Old { term } => visitor.visit_term(&*term),
         TermKind::Closure { body } => visitor.visit_term(&*body),
         TermKind::Absurd => {}
-        TermKind::Reborrow { cur, fin, term, projection } => {
+        TermKind::Reborrow { cur, fin, inner, projection } => {
             visitor.visit_term(&*cur);
             visitor.visit_term(&*fin);
-            visitor.visit_term(&*term);
+            visitor.visit_term(&*inner);
             visit_projections(projection, |term| visitor.visit_term(term))
         }
         TermKind::Assert { cond } => visitor.visit_term(&*cond),
@@ -1192,8 +1222,10 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
             visitor.visit_mut_term(&mut *rhs);
         }
         TermKind::Unary { op: _, arg } => visitor.visit_mut_term(&mut *arg),
-        TermKind::Forall { binder: _, body } => visitor.visit_mut_term(&mut *body),
-        TermKind::Exists { binder: _, body } => visitor.visit_mut_term(&mut *body),
+        TermKind::Quant { body, trigger, .. } => {
+            trigger.iter_mut().flat_map(|x| &mut x.0).for_each(|x| visitor.visit_mut_term(x));
+            visitor.visit_mut_term(&mut *body)
+        }
         TermKind::Call { id: _, subst: _, args } => {
             args.iter_mut().for_each(|a| visitor.visit_mut_term(&mut *a))
         }
@@ -1221,10 +1253,10 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         TermKind::Old { term } => visitor.visit_mut_term(&mut *term),
         TermKind::Closure { body } => visitor.visit_mut_term(&mut *body),
         TermKind::Absurd => {}
-        TermKind::Reborrow { cur, fin, term, projection } => {
+        TermKind::Reborrow { cur, fin, inner, projection } => {
             visitor.visit_mut_term(&mut *cur);
             visitor.visit_mut_term(&mut *fin);
-            visitor.visit_mut_term(&mut *term);
+            visitor.visit_mut_term(&mut *inner);
             visit_projections_mut(projection, |term| visitor.visit_mut_term(term))
         }
         TermKind::Assert { cond } => visitor.visit_mut_term(&mut *cond),
@@ -1312,13 +1344,6 @@ impl<'tcx> Term<'tcx> {
         lhs.bin_op(tcx, BinOp::Eq, rhs)
     }
 
-    pub(crate) fn int(tcx: TyCtxt<'tcx>, val: i128) -> Self {
-        let ty = tcx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap();
-        let ty = tcx.type_of(ty).skip_binder();
-
-        Term { ty, kind: TermKind::Lit(Literal::Integer(val)), span: DUMMY_SP }
-    }
-
     pub(crate) fn implies(self, rhs: Self) -> Self {
         // A → ⟙ = ⟙
         if let TermKind::Lit(Literal::Bool(true)) = rhs.kind {
@@ -1340,62 +1365,30 @@ impl<'tcx> Term<'tcx> {
         }
     }
 
-    pub(crate) fn forall(self, binder: (Symbol, Ty<'tcx>)) -> Self {
+    pub(crate) fn forall(self, tcx: TyCtxt<'tcx>, binder: (Symbol, Ty<'tcx>)) -> Self {
+        let ty = Ty::new_tup(tcx, &[binder.1]);
+        self.quant(QuantKind::Forall, (vec![Ident::new(binder.0, DUMMY_SP)], ty), vec![])
+    }
+
+    pub(crate) fn quant(
+        self,
+        quant_kind: QuantKind,
+        binder: QuantBinder<'tcx>,
+        trigger: Vec<Trigger<'tcx>>,
+    ) -> Self {
         assert!(self.ty.is_bool());
 
-        // ∀ x . ⟙ = ⟙
-        if let TermKind::Lit(Literal::Bool(true)) = self.kind {
-            return self;
-        };
-
-        Term {
-            ty: self.ty,
-            kind: TermKind::Forall { binder, body: Box::new(self) },
-            span: DUMMY_SP,
+        match (&self.kind, quant_kind) {
+            // ∀ x . ⟙ = ⟙
+            (TermKind::Lit(Literal::Bool(true)), QuantKind::Forall) => self,
+            // ∃ x . ⟘ = ⟘
+            (TermKind::Lit(Literal::Bool(false)), QuantKind::Exists) => self,
+            _ => Term {
+                ty: self.ty,
+                kind: TermKind::Quant { kind: quant_kind, binder, body: Box::new(self), trigger },
+                span: DUMMY_SP,
+            },
         }
-    }
-
-    /// Creates a term like `forall<binder> guard ==> self`.
-    pub(crate) fn guarded_forall(mut self, binder: (Symbol, Ty<'tcx>), guard: Self) -> Self {
-        assert!(self.ty.is_bool() && guard.ty.is_bool());
-
-        let mut inner = &mut self;
-        while let TermKind::Forall { ref mut body, .. } = inner.kind {
-            // TODO check binder not free in guard
-            inner = body
-        }
-
-        *inner = guard.implies(inner.clone());
-        self.forall(binder)
-    }
-
-    pub(crate) fn exists(self, binder: (Symbol, Ty<'tcx>)) -> Self {
-        assert!(self.ty.is_bool());
-
-        // ∃ x . ⟘ = ⟘
-        if let TermKind::Lit(Literal::Bool(false)) = self.kind {
-            return self;
-        };
-
-        Term {
-            ty: self.ty,
-            kind: TermKind::Exists { binder, body: Box::new(self) },
-            span: DUMMY_SP,
-        }
-    }
-
-    /// Creates a term like `exists<binder> guard && self`.
-    pub(crate) fn guarded_exists(mut self, binder: (Symbol, Ty<'tcx>), guard: Self) -> Self {
-        assert!(self.ty.is_bool() && guard.ty.is_bool());
-
-        let mut inner = &mut self;
-        while let TermKind::Exists { ref mut body, .. } = inner.kind {
-            // TODO check binder not free in guard
-            inner = body
-        }
-
-        *inner = guard.conj(inner.clone());
-        self.exists(binder)
     }
 
     pub(crate) fn span(mut self, sp: Span) -> Self {
@@ -1403,6 +1396,14 @@ impl<'tcx> Term<'tcx> {
         self
     }
 
+    /// For each `(var, term)` in `inv_subst`, replace `var` by `term` in `self` (as
+    /// long as `var` is not bound).
+    ///
+    /// # Example
+    ///
+    /// If `inv_subst` containts `("x", 5)`:
+    /// - If `self` is `x == 1`, `self.subst(inv_subst)` is `5 + 1`
+    /// - If `self` is `forall<x: Int> x == 1`, `self.subst(inv_subst)` is still `forall<x: Int> x == 1`
     pub(crate) fn subst(&mut self, inv_subst: &std::collections::HashMap<Symbol, Term<'tcx>>) {
         self.subst_with(|k| inv_subst.get(&k).cloned());
     }
@@ -1433,15 +1434,11 @@ impl<'tcx> Term<'tcx> {
                 rhs.subst_with_inner(bound, inv_subst)
             }
             TermKind::Unary { arg, .. } => arg.subst_with_inner(bound, inv_subst),
-            TermKind::Forall { binder, body } => {
+            TermKind::Quant { binder, body, .. } => {
                 let mut bound = bound.clone();
-                bound.insert(binder.0);
-
-                body.subst_with_inner(&bound, inv_subst);
-            }
-            TermKind::Exists { binder, body } => {
-                let mut bound = bound.clone();
-                bound.insert(binder.0);
+                for name in &binder.0 {
+                    bound.insert(name.name);
+                }
 
                 body.subst_with_inner(&bound, inv_subst);
             }
@@ -1481,10 +1478,10 @@ impl<'tcx> Term<'tcx> {
                 body.subst_with_inner(&bound, inv_subst);
             }
             TermKind::Absurd => {}
-            TermKind::Reborrow { cur, fin, term, projection } => {
+            TermKind::Reborrow { cur, fin, inner, projection } => {
                 cur.subst_with_inner(bound, inv_subst);
                 fin.subst_with_inner(bound, inv_subst);
-                term.subst_with_inner(bound, inv_subst);
+                inner.subst_with_inner(bound, inv_subst);
                 visit_projections_mut(projection, |term| term.subst_with_inner(bound, inv_subst))
             }
             TermKind::Assert { cond } => cond.subst_with_inner(bound, inv_subst),
@@ -1511,15 +1508,11 @@ impl<'tcx> Term<'tcx> {
                 rhs.free_vars_inner(bound, free)
             }
             TermKind::Unary { arg, .. } => arg.free_vars_inner(bound, free),
-            TermKind::Forall { binder, body } => {
+            TermKind::Quant { binder, body, .. } => {
                 let mut bound = bound.clone();
-                bound.insert(binder.0);
-
-                body.free_vars_inner(&bound, free);
-            }
-            TermKind::Exists { binder, body } => {
-                let mut bound = bound.clone();
-                bound.insert(binder.0);
+                for name in &binder.0 {
+                    bound.insert(name.name);
+                }
 
                 body.free_vars_inner(&bound, free);
             }
@@ -1565,10 +1558,10 @@ impl<'tcx> Term<'tcx> {
                 body.free_vars_inner(&bound, free);
             }
             TermKind::Absurd => {}
-            TermKind::Reborrow { cur, fin, term, projection } => {
+            TermKind::Reborrow { cur, fin, inner, projection } => {
                 cur.free_vars_inner(bound, free);
                 fin.free_vars_inner(bound, free);
-                term.free_vars_inner(bound, free);
+                inner.free_vars_inner(bound, free);
                 visit_projections(projection, |term| term.free_vars_inner(bound, free))
             }
             TermKind::Assert { cond } => cond.free_vars_inner(bound, free),

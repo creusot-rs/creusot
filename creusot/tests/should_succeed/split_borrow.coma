@@ -1,5 +1,5 @@
 
-module SplitBorrow_Z
+module M_split_borrow__z
   let%span ssplit_borrow0 = "../split_borrow.rs" 6 4 6 8
   
   use prelude.prelude.Intrinsic
@@ -8,22 +8,22 @@ module SplitBorrow_Z
     [ bb0 = s0 [ s0 =  [ &_0 <- [%#ssplit_borrow0] true ] s1 | s1 = return' {_0} ]  ]
     ) [ & _0 : bool = any_l () ]  [ return' (result:bool)-> (! return' {result}) ] 
 end
-module SplitBorrow_MyInt_Type
+module T_split_borrow__MyInt
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  type t_myint  =
+  type t_MyInt  =
     | C_MyInt usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_myint (input:t_myint) (ret  (field_0:usize))= any
+  let rec t_MyInt (input:t_MyInt) (ret  (field_0:usize))= any
     [ good (field_0:usize)-> {C_MyInt field_0 = input} (! ret {field_0})
     | bad (field_0:usize)-> {C_MyInt field_0 <> input} {false} any ]
     
 end
-module SplitBorrow_F
+module M_split_borrow__f
   let%span ssplit_borrow0 = "../split_borrow.rs" 10 23 10 24
   
   let%span ssplit_borrow1 = "../split_borrow.rs" 10 33 10 34
@@ -34,26 +34,16 @@ module SplitBorrow_F
   
   let%span ssplit_borrow4 = "../split_borrow.rs" 16 23 16 25
   
-  let%span span5 = "../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
-  
-  let%span span6 = "../../../../creusot-contracts/src/resolve.rs" 17 8 17 60
-  
-  let%span span7 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span5 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
   use prelude.prelude.Intrinsic
   
-  use SplitBorrow_MyInt_Type as MyInt'0
-  
-  predicate resolve'2 (self : MyInt'0.t_myint) =
-    [%#span5] true
-  
-  predicate resolve'1 (self : (MyInt'0.t_myint, MyInt'0.t_myint)) =
-    [%#span6] resolve'2 (let (a, _) = self in a) /\ resolve'2 (let (_, a) = self in a)
-  
   use prelude.prelude.Borrow
   
-  predicate resolve'0 (self : borrowed (MyInt'0.t_myint, MyInt'0.t_myint)) =
-    [%#span7] self.final = self.current
+  use T_split_borrow__MyInt as MyInt'0
+  
+  predicate resolve'0 (self : borrowed (MyInt'0.t_MyInt, MyInt'0.t_MyInt)) =
+    [%#span5] self.final = self.current
   
   let rec z'0 (_1:()) (return'  (ret:bool))= any [ return' (result:bool)-> (! return' {result}) ] 
   
@@ -65,71 +55,55 @@ module SplitBorrow_F
     [ bb0 = s0
       [ s0 =  [ &_2 <- MyInt'0.C_MyInt ([%#ssplit_borrow0] (1 : usize)) ] s1
       | s1 =  [ &_3 <- MyInt'0.C_MyInt ([%#ssplit_borrow1] (2 : usize)) ] s2
-      | s2 =  [ &x <- (_2, _3) ] 
-        (any
-        [ any_ (_any:MyInt'0.t_myint)-> (!  [ &_2 <- _any ] 
-          (any [ any_ (_any:MyInt'0.t_myint)-> (!  [ &_3 <- _any ] s3) ] )) ]
-        )
-      | s3 = Borrow.borrow_mut <(MyInt'0.t_myint, MyInt'0.t_myint)> {x}
-          (fun (_ret':borrowed (MyInt'0.t_myint, MyInt'0.t_myint)) ->  [ &y <- _ret' ]  [ &x <- y.final ] s4)
+      | s2 =  [ &x <- (_2, _3) ] s3
+      | s3 = Borrow.borrow_mut <(MyInt'0.t_MyInt, MyInt'0.t_MyInt)> {x}
+          (fun (_ret':borrowed (MyInt'0.t_MyInt, MyInt'0.t_MyInt)) ->  [ &y <- _ret' ]  [ &x <- y.final ] s4)
       | s4 = z'0 {[%#ssplit_borrow2] ()} (fun (_ret':bool) ->  [ &_6 <- _ret' ] s5)
       | s5 = bb1 ]
       
     | bb1 = any [ br0 -> {_6 = false} (! bb3) | br1 -> {_6} (! bb2) ] 
     | bb2 = s0
       [ s0 =  [ &_7 <- MyInt'0.C_MyInt ([%#ssplit_borrow3] (4 : usize)) ] s1
-      | s1 =  [ &y <- { y with current = (let (l'1, _) = y.current in (l'1, _7)) ; } ] 
-        (any [ any_ (_any:MyInt'0.t_myint)-> (!  [ &_7 <- _any ] s2) ] )
+      | s1 =  [ &y <- { y with current = (let (l'1, _) = y.current in (l'1, _7)) ; } ] s2
       | s2 = bb4 ]
       
     | bb3 = s0
       [ s0 =  [ &_8 <- MyInt'0.C_MyInt ([%#ssplit_borrow4] (10 : usize)) ] s1
-      | s1 =  [ &y <- { y with current = (let (_, l'2) = y.current in (_8, l'2)) ; } ] 
-        (any [ any_ (_any:MyInt'0.t_myint)-> (!  [ &_8 <- _any ] s2) ] )
+      | s1 =  [ &y <- { y with current = (let (_, l'2) = y.current in (_8, l'2)) ; } ] s2
       | s2 = bb4 ]
       
-    | bb4 = s0 [ s0 = -{resolve'0 y}- s1 | s1 = -{resolve'1 x}- s2 | s2 = return' {_0} ]  ]
+    | bb4 = s0 [ s0 = -{resolve'0 y}- s1 | s1 = return' {_0} ]  ]
     )
     [ & _0 : () = any_l ()
-    | & x : (MyInt'0.t_myint, MyInt'0.t_myint) = any_l ()
-    | & _2 : MyInt'0.t_myint = any_l ()
-    | & _3 : MyInt'0.t_myint = any_l ()
-    | & y : borrowed (MyInt'0.t_myint, MyInt'0.t_myint) = any_l ()
+    | & x : (MyInt'0.t_MyInt, MyInt'0.t_MyInt) = any_l ()
+    | & _2 : MyInt'0.t_MyInt = any_l ()
+    | & _3 : MyInt'0.t_MyInt = any_l ()
+    | & y : borrowed (MyInt'0.t_MyInt, MyInt'0.t_MyInt) = any_l ()
     | & _6 : bool = any_l ()
-    | & _7 : MyInt'0.t_myint = any_l ()
-    | & _8 : MyInt'0.t_myint = any_l () ]
+    | & _7 : MyInt'0.t_MyInt = any_l ()
+    | & _8 : MyInt'0.t_MyInt = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
-module SplitBorrow_G
+module M_split_borrow__g
   let%span ssplit_borrow0 = "../split_borrow.rs" 24 23 24 24
   
   let%span ssplit_borrow1 = "../split_borrow.rs" 24 33 24 34
   
   let%span ssplit_borrow2 = "../split_borrow.rs" 29 19 29 20
   
-  let%span span3 = "../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
-  
-  let%span span4 = "../../../../creusot-contracts/src/resolve.rs" 17 8 17 60
-  
-  let%span span5 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span3 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
   use prelude.prelude.Intrinsic
   
-  use SplitBorrow_MyInt_Type as MyInt'0
-  
-  predicate resolve'3 (self : MyInt'0.t_myint) =
-    [%#span3] true
-  
-  predicate resolve'2 (self : (MyInt'0.t_myint, MyInt'0.t_myint)) =
-    [%#span4] resolve'3 (let (a, _) = self in a) /\ resolve'3 (let (_, a) = self in a)
-  
   use prelude.prelude.Borrow
   
-  predicate resolve'1 (self : borrowed (MyInt'0.t_myint, MyInt'0.t_myint)) =
-    [%#span5] self.final = self.current
+  use T_split_borrow__MyInt as MyInt'0
   
-  predicate resolve'0 (self : borrowed (MyInt'0.t_myint)) =
-    [%#span5] self.final = self.current
+  predicate resolve'1 (self : borrowed (MyInt'0.t_MyInt, MyInt'0.t_MyInt)) =
+    [%#span3] self.final = self.current
+  
+  predicate resolve'0 (self : borrowed (MyInt'0.t_MyInt)) =
+    [%#span3] self.final = self.current
   
   use prelude.prelude.UIntSize
   
@@ -139,36 +113,30 @@ module SplitBorrow_G
     [ bb0 = s0
       [ s0 =  [ &_2 <- MyInt'0.C_MyInt ([%#ssplit_borrow0] (1 : usize)) ] s1
       | s1 =  [ &_3 <- MyInt'0.C_MyInt ([%#ssplit_borrow1] (2 : usize)) ] s2
-      | s2 =  [ &a <- (_2, _3) ] 
-        (any
-        [ any_ (_any:MyInt'0.t_myint)-> (!  [ &_2 <- _any ] 
-          (any [ any_ (_any:MyInt'0.t_myint)-> (!  [ &_3 <- _any ] s3) ] )) ]
-        )
-      | s3 = Borrow.borrow_mut <(MyInt'0.t_myint, MyInt'0.t_myint)> {a}
-          (fun (_ret':borrowed (MyInt'0.t_myint, MyInt'0.t_myint)) ->  [ &x <- _ret' ]  [ &a <- x.final ] s4)
+      | s2 =  [ &a <- (_2, _3) ] s3
+      | s3 = Borrow.borrow_mut <(MyInt'0.t_MyInt, MyInt'0.t_MyInt)> {a}
+          (fun (_ret':borrowed (MyInt'0.t_MyInt, MyInt'0.t_MyInt)) ->  [ &x <- _ret' ]  [ &a <- x.final ] s4)
       | s4 = Borrow.borrow_final
-          <MyInt'0.t_myint>
+          <MyInt'0.t_MyInt>
           {let (_, r'0) = x.current in r'0}
           {Borrow.inherit_id (Borrow.get_id x) 2}
-          (fun (_ret':borrowed (MyInt'0.t_myint)) ->
+          (fun (_ret':borrowed (MyInt'0.t_MyInt)) ->
              [ &_z <- _ret' ] 
              [ &x <- { x with current = (let (l'1, _) = x.current in (l'1, _z.final)) ; } ] 
             s5)
       | s5 = -{resolve'0 _z}- s6
       | s6 =  [ &_6 <- MyInt'0.C_MyInt ([%#ssplit_borrow2] (3 : usize)) ] s7
-      | s7 =  [ &x <- { x with current = (let (_, l'5) = x.current in (_6, l'5)) ; } ] 
-        (any [ any_ (_any:MyInt'0.t_myint)-> (!  [ &_6 <- _any ] s8) ] )
+      | s7 =  [ &x <- { x with current = (let (_, l'5) = x.current in (_6, l'5)) ; } ] s8
       | s8 = -{resolve'1 x}- s9
-      | s9 = -{resolve'2 a}- s10
-      | s10 = return' {_0} ]
+      | s9 = return' {_0} ]
        ]
     )
     [ & _0 : () = any_l ()
-    | & a : (MyInt'0.t_myint, MyInt'0.t_myint) = any_l ()
-    | & _2 : MyInt'0.t_myint = any_l ()
-    | & _3 : MyInt'0.t_myint = any_l ()
-    | & x : borrowed (MyInt'0.t_myint, MyInt'0.t_myint) = any_l ()
-    | & _z : borrowed (MyInt'0.t_myint) = any_l ()
-    | & _6 : MyInt'0.t_myint = any_l () ]
+    | & a : (MyInt'0.t_MyInt, MyInt'0.t_MyInt) = any_l ()
+    | & _2 : MyInt'0.t_MyInt = any_l ()
+    | & _3 : MyInt'0.t_MyInt = any_l ()
+    | & x : borrowed (MyInt'0.t_MyInt, MyInt'0.t_MyInt) = any_l ()
+    | & _z : borrowed (MyInt'0.t_MyInt) = any_l ()
+    | & _6 : MyInt'0.t_MyInt = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end

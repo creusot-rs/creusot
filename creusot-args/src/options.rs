@@ -66,6 +66,12 @@ pub enum CreusotSubCommand {
         #[clap(last = true)]
         rust_flags: Vec<String>,
     },
+    /// Generates the documentation, including specs, logical functions, etc.
+    Doc {
+        /// Arguments to forward to `cargo doc`.
+        #[clap(trailing_var_arg = true)]
+        rust_flags: Vec<String>,
+    },
 }
 
 #[derive(Debug, Parser)]
@@ -156,6 +162,7 @@ impl CreusotArgs {
         let rust_flags = match &mut self.subcommand {
             None => return,
             Some(CreusotSubCommand::Why3 { rust_flags, .. }) => rust_flags,
+            Some(CreusotSubCommand::Doc { rust_flags }) => rust_flags,
         };
         let rust_flags = std::mem::take(rust_flags);
         assert!(self.rust_flags.is_empty());
@@ -175,6 +182,9 @@ impl CargoCreusotArgs {
             Some(CargoCreusotSubCommand::Creusot(CreusotSubCommand::Why3 {
                 rust_flags, ..
             })) => rust_flags,
+            Some(CargoCreusotSubCommand::Creusot(CreusotSubCommand::Doc { rust_flags })) => {
+                rust_flags
+            }
             _ => return,
         };
         let rust_flags = std::mem::take(rust_flags);

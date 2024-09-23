@@ -1,5 +1,5 @@
 
-module C492_ReborrowTuple
+module M_492__reborrow_tuple
   type t
   
   let%span s4920 = "../492.rs" 6 8 6 10
@@ -12,7 +12,9 @@ module C492_ReborrowTuple
   
   let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span5 = "../../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  
+  let%span span6 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
   use prelude.prelude.UInt32
   
@@ -21,26 +23,27 @@ module C492_ReborrowTuple
   predicate invariant'2 (self : (borrowed t, uint32)) =
     [%#span4] true
   
-  predicate inv'2 (_x : (borrowed t, uint32))
+  predicate inv'2 (_1 : (borrowed t, uint32))
   
   axiom inv'2 : forall x : (borrowed t, uint32) . inv'2 x = true
   
-  predicate invariant'1 (self : borrowed t)
+  predicate inv'0 (_1 : t)
   
-  predicate inv'1 (_x : borrowed t)
+  predicate invariant'1 (self : borrowed t) =
+    [%#span5] inv'0 self.current /\ inv'0 self.final
+  
+  predicate inv'1 (_1 : borrowed t)
   
   axiom inv'1 : forall x : borrowed t . inv'1 x = true
   
   predicate invariant'0 (self : t)
-  
-  predicate inv'0 (_x : t)
   
   axiom inv'0 : forall x : t . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed t) =
-    [%#span5] self.final = self.current
+    [%#span6] self.final = self.current
   
   use prelude.prelude.Int
   
@@ -50,7 +53,7 @@ module C492_ReborrowTuple
       [ s0 = Borrow.borrow_final <t> {x.current} {Borrow.get_id x}
           (fun (_ret':borrowed t) ->  [ &_3 <- _ret' ]  [ &x <- { x with current = _3.final ; } ] s1)
       | s1 = -{inv'0 _3.final}- s2
-      | s2 =  [ &_0 <- (_3, ([%#s4920] (32 : uint32))) ] (any [ any_ (_any:borrowed t)-> (!  [ &_3 <- _any ] s3) ] )
+      | s2 =  [ &_0 <- (_3, ([%#s4920] (32 : uint32))) ] s3
       | s3 = {[@expl:type invariant] inv'1 x} s4
       | s4 = -{resolve'0 x}- s5
       | s5 = return' {_0} ]
@@ -61,7 +64,7 @@ module C492_ReborrowTuple
       (! return' {result}) ]
     
 end
-module C492_Test
+module M_492__test
   let%span s4920 = "../492.rs" 11 16 11 17
   
   let%span s4921 = "../492.rs" 13 18 13 30
@@ -72,55 +75,54 @@ module C492_Test
   
   let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span5 = "../../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
   
-  let%span span6 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  let%span span6 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span7 = "../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60
+  let%span span7 = "../492.rs" 5 25 5 26
   
-  let%span span8 = "../492.rs" 5 25 5 26
+  let%span span8 = "../492.rs" 4 10 4 27
   
-  let%span span9 = "../492.rs" 4 10 4 27
-  
-  let%span span10 = "../492.rs" 5 39 5 52
-  
-  use prelude.prelude.UInt32
+  let%span span9 = "../492.rs" 5 39 5 52
   
   use prelude.prelude.Int32
+  
+  predicate invariant'2 (self : int32) =
+    [%#span4] true
+  
+  predicate inv'2 (_1 : int32)
+  
+  axiom inv'2 : forall x : int32 . inv'2 x = true
+  
+  use prelude.prelude.UInt32
   
   use prelude.prelude.Borrow
   
   predicate invariant'1 (self : (borrowed int32, uint32)) =
     [%#span4] true
   
-  predicate inv'1 (_x : (borrowed int32, uint32))
+  predicate inv'1 (_1 : (borrowed int32, uint32))
   
   axiom inv'1 : forall x : (borrowed int32, uint32) . inv'1 x = true
   
   predicate invariant'0 (self : borrowed int32) =
-    [%#span4] true
+    [%#span5] inv'2 self.current /\ inv'2 self.final
   
-  predicate inv'0 (_x : borrowed int32)
+  predicate inv'0 (_1 : borrowed int32)
   
   axiom inv'0 : forall x : borrowed int32 . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'1 (self : borrowed int32) =
-    [%#span5] self.final = self.current
-  
-  predicate resolve'2 (self : uint32) =
-    [%#span6] true
-  
-  predicate resolve'0 (self : (borrowed int32, uint32)) =
-    [%#span7] resolve'1 (let (a, _) = self in a) /\ resolve'2 (let (_, a) = self in a)
+  predicate resolve'0 (self : borrowed int32) =
+    [%#span6] self.final = self.current
   
   use prelude.prelude.Int
   
-  let rec reborrow_tuple'0 (x:borrowed int32) (return'  (ret:(borrowed int32, uint32)))= {[@expl:precondition] [%#span8] inv'0 x}
+  let rec reborrow_tuple'0 (x:borrowed int32) (return'  (ret:(borrowed int32, uint32)))= {[@expl:precondition] [%#span7] inv'0 x}
     any
-    [ return' (result:(borrowed int32, uint32))-> {[%#span10] inv'1 result}
-      {[%#span9] (let (a, _) = result in a).current = x.current}
+    [ return' (result:(borrowed int32, uint32))-> {[%#span9] inv'1 result}
+      {[%#span8] (let (a, _) = result in a).current = x.current}
       (! return' {result}) ]
     
   
@@ -134,14 +136,12 @@ module C492_Test
       | s4 = bb1 ]
       
     | bb1 = s0
-      [ s0 =  [ &res <- let (r'0, _) = _4 in r'0 ] 
-        (any [ any_ (_any:borrowed int32)-> (!  [ &_4 <- let (_, l'2) = _4 in (_any, l'2) ] s1) ] )
-      | s1 = -{resolve'0 _4}- s2
-      | s2 = -{resolve'1 _6}- s3
-      | s3 = {[@expl:assertion] [%#s4921] res.final = (5 : int32)} s4
-      | s4 =  [ &res <- { res with current = ([%#s4922] (10 : int32)) ; } ] s5
-      | s5 = -{resolve'1 res}- s6
-      | s6 = return' {_0} ]
+      [ s0 =  [ &res <- let (r'0, _) = _4 in r'0 ] s1
+      | s1 = -{resolve'0 _6}- s2
+      | s2 = {[@expl:assertion] [%#s4921] res.final = (5 : int32)} s3
+      | s3 =  [ &res <- { res with current = ([%#s4922] (10 : int32)) ; } ] s4
+      | s4 = -{resolve'0 res}- s5
+      | s5 = return' {_0} ]
        ]
     )
     [ & _0 : () = any_l ()

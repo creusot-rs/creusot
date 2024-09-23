@@ -1,7 +1,6 @@
-use crate::{std::alloc::Allocator, *};
+use crate::{invariant::*, std::alloc::Allocator, *};
 pub use ::std::boxed::*;
 
-#[cfg(creusot)]
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
     type DeepModelTy = Box<T::DeepModelTy>;
     #[logic]
@@ -11,13 +10,21 @@ impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
     }
 }
 
-#[cfg(creusot)]
 impl<T: ShallowModel + ?Sized, A: Allocator> ShallowModel for Box<T, A> {
     type ShallowModelTy = T::ShallowModelTy;
     #[logic]
     #[open]
     fn shallow_model(self) -> Self::ShallowModelTy {
         (*self).shallow_model()
+    }
+}
+
+impl<T: ?Sized, A: Allocator> Invariant for Box<T, A> {
+    #[predicate(prophetic)]
+    #[open]
+    #[creusot::trusted_ignore_structural_inv]
+    fn invariant(self) -> bool {
+        inv(*self)
     }
 }
 

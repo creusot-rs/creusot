@@ -11,7 +11,9 @@ fn why3_command(
     config_file: PathBuf,
     cmd: CreusotSubCommand,
 ) -> options::Why3Command {
-    let CreusotSubCommand::Why3 { command, args, .. } = cmd;
+    let CreusotSubCommand::Why3 { command, args, .. } = cmd else {
+        unreachable!();
+    };
     let sub = match command {
         Why3SubCommand::Prove => options::Why3Sub::Prove,
         Why3SubCommand::Ide => options::Why3Sub::Ide,
@@ -58,9 +60,12 @@ impl CreusotArgsExt for CreusotArgs {
             span_mode,
             match_str: self.options.focus_on,
             simple_triggers: self.options.simple_triggers,
-            why3_cmd: self
-                .subcommand
-                .map(|cmd| why3_command(self.why3_path, self.why3_config_file, cmd)),
+            why3_cmd: match self.subcommand {
+                Some(cmd @ CreusotSubCommand::Why3 { .. }) => {
+                    Some(why3_command(self.why3_path, self.why3_config_file, cmd))
+                }
+                _ => None,
+            },
         })
     }
 }

@@ -1,3 +1,5 @@
+use crate::*;
+
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "fin"]
 pub fn fin<T: ?Sized>(_: &mut T) -> Box<T> {
@@ -16,16 +18,21 @@ pub fn neq<T: ?Sized>(_: T, _: T) -> bool {
     panic!();
 }
 
-// FIXME : T should be ?Sized
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "exists"]
-pub fn exists<T, F: Fn(T) -> bool>(_: F) -> bool {
+pub fn exists<Tup: std::marker::Tuple, F: Fn<Tup, Output = bool>>(_: F) -> bool {
     panic!()
 }
 
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "forall"]
-pub fn forall<T, F: Fn(T) -> bool>(_: F) -> bool {
+pub fn forall<Tup: std::marker::Tuple, F: Fn<Tup, Output = bool>>(_: F) -> bool {
+    panic!()
+}
+
+#[creusot::no_translate]
+#[rustc_diagnostic_item = "trigger"]
+pub fn trigger<T, Trigger>(_: Trigger, _: T) -> T {
     panic!()
 }
 
@@ -70,6 +77,7 @@ pub fn ghost_from_fn<T, F: FnOnce() -> T>(f: F, _arg: ()) -> T {
     f()
 }
 
+#[trusted]
 #[creusot::no_translate]
 #[creusot::builtins = "prelude.prelude.Mapping.from_fn"]
 pub fn mapping_from_fn<A, B, F: FnOnce(A) -> B>(_: F) -> crate::logic::Mapping<A, B> {

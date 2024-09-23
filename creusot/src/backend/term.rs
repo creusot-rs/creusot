@@ -3,7 +3,9 @@ use crate::{
     backend::{program::{int_to_prelude, uint_to_prelude}, ty::{floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty}},
     ctx::*,
     pearlite::{self, Literal, Pattern, Term, TermKind},
-    util::{self, get_builtin},
+    translation::pearlite::{zip_binder, QuantKind, Trigger},
+    util,
+    util::get_builtin,
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};
@@ -28,12 +30,20 @@ pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
     }
 }
 
-pub(super) struct Lower<'a, 'tcx, N: Namer<'tcx>> {
-    pub(super) ctx: &'a mut Why3Generator<'tcx>,
-    pub(super) names: &'a mut N,
+pub(crate) fn lower_pat<'tcx, N: Namer<'tcx>>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut N,
+    pat: &Pattern<'tcx>,
+) -> Pat {
+    Lower { ctx, names }.lower_pat(pat)
+}
+
+struct Lower<'a, 'tcx, N: Namer<'tcx>> {
+    ctx: &'a mut Why3Generator<'tcx>,
+    names: &'a mut N,
 }
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
-    pub(crate) fn lower_term(&mut self, term: &Term<'tcx>) -> Exp {
+    fn lower_term(&mut self, term: &Term<'tcx>) -> Exp {
         match &term.kind {
             TermKind::Lit(l) => lower_literal(self.ctx, self.names, l),
             // FIXME: this is a weird dance.
@@ -127,14 +137,16 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     Exp::qvar(clone).app(args)
                 })
             }
-            TermKind::Forall { binder, box body } => {
-                let ty = self.lower_ty(binder.1);
-
-                Exp::forall(vec![(binder.0.to_string().into(), ty)], self.lower_term(body))
-            }
-            TermKind::Exists { binder, box body } => {
-                let ty = self.lower_ty(binder.1);
-                Exp::exists(vec![(binder.0.to_string().into(), ty)], self.lower_term(body))
+            TermKind::Quant { kind, binder, box body, trigger } => {
+                let bound = zip_binder(binder)
+                    .map(|(s, t)| (s.to_string().into(), self.lower_ty(t)))
+                    .collect();
+                let body = self.lower_term(body);
+                let trigger = self.lower_trigger(trigger);
+                match kind {
+                    QuantKind::Forall => Exp::forall_trig(bound, trigger, body),
+                    QuantKind::Exists => Exp::exists_trig(bound, trigger, body),
+                }
             }
             TermKind::Constructor { typ, variant, fields } => {
                 self.ctx.translate(*typ);
@@ -233,9 +245,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::Abs(binders, Box::new(body))
             }
             TermKind::Absurd => Exp::Absurd,
-            TermKind::Reborrow { cur, fin, term, projection } => {
-                let inner = self.lower_term(&*term);
-                let borrow_id = borrow_generated_id(inner, &projection);
+            TermKind::Reborrow { cur, fin, inner, projection } => {
+                let inner = self.lower_term(&*inner);
+                let borrow_id = borrow_generated_id(inner, &projection, |x| self.lower_term(x));
 
                 Exp::qvar("Borrow.borrow_logic".into()).app(vec![
                     self.lower_term(&*cur),
@@ -253,9 +265,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
     fn lower_pat(&mut self, pat: &Pattern<'tcx>) -> Pat {
         match pat {
-            Pattern::Constructor { adt, variant: _, fields, substs } => {
+            Pattern::Constructor { variant, fields, substs } => {
                 let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
-                Pat::ConsP(self.names.constructor(*adt, substs), fields)
+                Pat::ConsP(self.names.constructor(*variant, substs), fields)
             }
             Pattern::Wildcard => Pat::Wildcard,
             Pattern::Binder(name) => Pat::VarP(name.to_string().into()),
@@ -294,6 +306,13 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             return Some(Exp::qvar(builtin.without_search_path()).app(args.clone()));
         }
         None
+    }
+
+    fn lower_trigger(&mut self, triggers: &[Trigger<'tcx>]) -> Vec<why3::exp::Trigger> {
+        triggers
+            .iter()
+            .map(|x| why3::exp::Trigger(x.0.iter().map(|x| self.lower_term(x)).collect()))
+            .collect()
     }
 }
 

@@ -25,7 +25,7 @@ pub struct BlockId(pub usize);
 pub enum Terminator {
     Goto(BlockId),
     Absurd,
-    Return,
+    Return(Exp),
     Switch(Exp, Vec<(Pattern, Terminator)>),
 }
 

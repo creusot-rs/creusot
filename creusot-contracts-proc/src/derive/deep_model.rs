@@ -30,7 +30,7 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
             );
             let deep_model_ty = deep_model_ty(&ident, &generics, &input.data);
 
-            (ident.into(), Some(quote! { #vis #deep_model_ty}))
+            (ident.into(), Some(quote! { #vis #deep_model_ty }))
         };
 
     let eq = deep_model(&name, &deep_model_ty_name, &input.data);
@@ -55,7 +55,6 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
         }
     };
 
-    // eprintln!("{expanded}");
     proc_macro::TokenStream::from(expanded)
 }
 
@@ -76,7 +75,6 @@ fn add_trait_bounds(mut generics: Generics) -> Generics {
     for param in &mut generics.params {
         if let GenericParam::Type(ref mut type_param) = *param {
             type_param.bounds.push(parse_quote!(::creusot_contracts::DeepModel));
-            // type_param.bounds.push(parse_quote!(::creusot_contracts::model::DeepModel));
         }
     }
     generics
@@ -116,8 +114,9 @@ fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
 fn deep_model_ty(base_ident: &Ident, generics: &Generics, data: &Data) -> TokenStream {
     match data {
         Data::Struct(ref data) => {
+            let semi_colon = data.semi_token;
             let data = deep_model_ty_fields(&data.fields);
-            quote! { struct #base_ident #generics #data }
+            quote! { struct #base_ident #generics #data #semi_colon }
         }
         Data::Enum(ref data) => {
             let arms = data.variants.iter().map(|v| {

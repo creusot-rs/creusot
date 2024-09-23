@@ -1,153 +1,153 @@
 
-module Core_Ptr_NonNull_NonNull_Type
+module T_core__ptr__non_null__NonNull
   use prelude.prelude.Opaque
   
-  type t_nonnull 't =
+  type t_NonNull 't =
     | C_NonNull opaque_ptr
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
+  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
     [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
     | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
     
 end
-module Core_Marker_PhantomData_Type
-  type t_phantomdata 't =
+module T_core__marker__PhantomData
+  type t_PhantomData 't =
     | C_PhantomData
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
+  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any
     [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
     
 end
-module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type as PhantomData'0
+module T_core__ptr__unique__Unique
+  use T_core__marker__PhantomData as PhantomData'0
   
-  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  use T_core__ptr__non_null__NonNull as NonNull'0
   
-  type t_unique 't =
-    | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
+  type t_Unique 't =
+    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
-    [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
+    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       = input}
       (! ret {pointer} {_marker})
-    | bad (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+    | bad (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       <> input}
       {false}
       any ]
     
 end
-module Alloc_RawVec_Cap_Type
+module T_alloc__raw_vec__Cap
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  type t_cap  =
+  type t_Cap  =
     | C_Cap usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_cap (input:t_cap) (ret  (field_0:usize))= any
+  let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
     [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
     | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
     
 end
-module Alloc_RawVec_RawVec_Type
-  use Alloc_RawVec_Cap_Type as Cap'0
+module T_alloc__raw_vec__RawVec
+  use T_alloc__raw_vec__Cap as Cap'0
   
-  use Core_Ptr_Unique_Unique_Type as Unique'0
+  use T_core__ptr__unique__Unique as Unique'0
   
-  type t_rawvec 't 'a =
-    | C_RawVec (Unique'0.t_unique 't) (Cap'0.t_cap) 'a
+  type t_RawVec 't 'a =
+    | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_rawvec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a))= any
-    [ good (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
+  let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
+    [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
       (! ret {ptr} {cap} {alloc})
-    | bad (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
+    | bad (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
     
 end
-module Alloc_Vec_Vec_Type
+module T_alloc__vec__Vec
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  use Alloc_RawVec_RawVec_Type as RawVec'0
+  use T_alloc__raw_vec__RawVec as RawVec'0
   
-  type t_vec 't 'a =
-    | C_Vec (RawVec'0.t_rawvec 't 'a) usize
+  type t_Vec 't 'a =
+    | C_Vec (RawVec'0.t_RawVec 't 'a) usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_vec < 't > < 'a > (input:t_vec 't 'a) (ret  (buf:RawVec'0.t_rawvec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
-    | bad (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
+    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
+    | bad (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
     
 end
-module Alloc_Alloc_Global_Type
-  type t_global  =
+module T_alloc__alloc__Global
+  type t_Global  =
     | C_Global
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_global (input:t_global) (ret  )= any
+  let rec t_Global (input:t_Global) (ret  )= any
     [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
     
 end
-module Core_Mem_ManuallyDrop_ManuallyDrop_Type
-  type t_manuallydrop 't =
+module T_core__mem__manually_drop__ManuallyDrop
+  type t_ManuallyDrop 't =
     | C_ManuallyDrop 't
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_manuallydrop < 't > (input:t_manuallydrop 't) (ret  (value:'t))= any
+  let rec t_ManuallyDrop < 't > (input:t_ManuallyDrop 't) (ret  (value:'t))= any
     [ good (value:'t)-> {C_ManuallyDrop value = input} (! ret {value})
     | bad (value:'t)-> {C_ManuallyDrop value <> input} {false} any ]
     
 end
-module Alloc_Vec_IntoIter_IntoIter_Type
+module T_alloc__vec__into_iter__IntoIter
   use prelude.prelude.Opaque
   
-  use Core_Mem_ManuallyDrop_ManuallyDrop_Type as ManuallyDrop'0
+  use T_core__mem__manually_drop__ManuallyDrop as ManuallyDrop'0
   
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  use Core_Marker_PhantomData_Type as PhantomData'0
+  use T_core__marker__PhantomData as PhantomData'0
   
-  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  use T_core__ptr__non_null__NonNull as NonNull'0
   
-  type t_intoiter 't 'a =
-    | C_IntoIter (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't) usize (ManuallyDrop'0.t_manuallydrop 'a) (NonNull'0.t_nonnull 't) opaque_ptr
+  type t_IntoIter 't 'a =
+    | C_IntoIter (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't) usize (ManuallyDrop'0.t_ManuallyDrop 'a) (NonNull'0.t_NonNull 't) opaque_ptr
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_intoiter < 't > < 'a > (input:t_intoiter 't 'a) (ret  (buf:NonNull'0.t_nonnull 't) (phantom:PhantomData'0.t_phantomdata 't) (cap:usize) (alloc:ManuallyDrop'0.t_manuallydrop 'a) (ptr:NonNull'0.t_nonnull 't) (end':opaque_ptr))= any
-    [ good (buf:NonNull'0.t_nonnull 't) (phantom:PhantomData'0.t_phantomdata 't) (cap:usize) (alloc:ManuallyDrop'0.t_manuallydrop 'a) (ptr:NonNull'0.t_nonnull 't) (end':opaque_ptr)-> {C_IntoIter buf phantom cap alloc ptr end'
+  let rec t_IntoIter < 't > < 'a > (input:t_IntoIter 't 'a) (ret  (buf:NonNull'0.t_NonNull 't) (phantom:PhantomData'0.t_PhantomData 't) (cap:usize) (alloc:ManuallyDrop'0.t_ManuallyDrop 'a) (ptr:NonNull'0.t_NonNull 't) (end':opaque_ptr))= any
+    [ good (buf:NonNull'0.t_NonNull 't) (phantom:PhantomData'0.t_PhantomData 't) (cap:usize) (alloc:ManuallyDrop'0.t_ManuallyDrop 'a) (ptr:NonNull'0.t_NonNull 't) (end':opaque_ptr)-> {C_IntoIter buf phantom cap alloc ptr end'
       = input}
       (! ret {buf} {phantom} {cap} {alloc} {ptr} {end'})
-    | bad (buf:NonNull'0.t_nonnull 't) (phantom:PhantomData'0.t_phantomdata 't) (cap:usize) (alloc:ManuallyDrop'0.t_manuallydrop 'a) (ptr:NonNull'0.t_nonnull 't) (end':opaque_ptr)-> {C_IntoIter buf phantom cap alloc ptr end'
+    | bad (buf:NonNull'0.t_NonNull 't) (phantom:PhantomData'0.t_PhantomData 't) (cap:usize) (alloc:ManuallyDrop'0.t_ManuallyDrop 'a) (ptr:NonNull'0.t_NonNull 't) (end':opaque_ptr)-> {C_IntoIter buf phantom cap alloc ptr end'
       <> input}
       {false}
       any ]
     
 end
-module Alloc_Boxed_Box_Type
-  use Core_Ptr_Unique_Unique_Type as Unique'0
+module T_alloc__boxed__Box
+  use T_core__ptr__unique__Unique as Unique'0
   
-  type t_box 't 'a =
-    | C_Box (Unique'0.t_unique 't) 'a
+  type t_Box 't 'a =
+    | C_Box (Unique'0.t_Unique 't) 'a
   
   function any_l (_ : 'b) : 'a
 end
-module C874_CanExtend
+module M_874__can_extend
   let%span s8740 = "../874.rs" 5 21 5 22
   
   let%span s8741 = "../874.rs" 5 24 5 25
@@ -176,187 +176,172 @@ module C874_CanExtend
   
   let%span span13 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
-  let%span span14 = "../../../../../creusot-contracts/src/std/vec.rs" 254 12 254 41
+  let%span span14 = "../../../../../creusot-contracts/src/std/boxed.rs" 27 8 27 18
   
-  let%span span15 = "../../../../../creusot-contracts/src/std/vec.rs" 265 15 265 32
+  let%span span15 = "../../../../../creusot-contracts/src/logic/seq.rs" 197 8 197 97
   
-  let%span span16 = "../../../../../creusot-contracts/src/std/vec.rs" 266 15 266 32
+  let%span span16 = "" 0 0 0 0
   
-  let%span span17 = "../../../../../creusot-contracts/src/std/vec.rs" 268 22 268 23
+  let%span span17 = "../../../../../creusot-contracts/src/std/slice.rs" 27 14 27 41
   
-  let%span span18 = "../../../../../creusot-contracts/src/std/vec.rs" 268 31 268 33
+  let%span span18 = "../../../../../creusot-contracts/src/std/slice.rs" 28 14 28 42
   
-  let%span span19 = "../../../../../creusot-contracts/src/std/vec.rs" 268 43 268 44
+  let%span span19 = "../../../../../creusot-contracts/src/std/slice.rs" 16 20 16 30
   
-  let%span span20 = "../../../../../creusot-contracts/src/std/vec.rs" 268 52 268 54
+  let%span span20 = "../../../../../creusot-contracts/src/std/vec.rs" 254 12 254 41
   
-  let%span span21 = "../../../../../creusot-contracts/src/std/vec.rs" 268 64 268 65
+  let%span span21 = "../../../../../creusot-contracts/src/std/vec.rs" 265 15 265 32
   
-  let%span span22 = "../../../../../creusot-contracts/src/std/vec.rs" 267 14 267 42
+  let%span span22 = "../../../../../creusot-contracts/src/std/vec.rs" 266 15 266 32
   
-  let%span span23 = "../../../../../creusot-contracts/src/std/vec.rs" 263 4 263 10
+  let%span span23 = "../../../../../creusot-contracts/src/std/vec.rs" 267 14 267 42
   
-  let%span span24 = "../../../../../creusot-contracts/src/std/vec.rs" 261 21 261 25
+  let%span span24 = "../../../../../creusot-contracts/src/std/vec.rs" 263 4 263 10
   
   let%span span25 = "../../../../../creusot-contracts/src/std/vec.rs" 260 14 260 45
   
   let%span span26 = "../../../../../creusot-contracts/src/std/vec.rs" 258 4 258 10
   
-  let%span span27 = "" 0 0 0 0
+  let%span span27 = "../../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
   
-  let%span span28 = "../../../../../creusot-contracts/src/std/vec.rs" 19 21 19 25
+  let%span span28 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   
-  let%span span29 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span span29 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
   
-  let%span span30 = "../../../../../creusot-contracts/src/std/vec.rs" 19 4 19 36
+  let%span span30 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
   
-  let%span span31 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
+  let%span span31 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span32 = "../../../../../creusot-contracts/src/resolve.rs" 46 8 46 12
+  let%span span32 = "../../../../../creusot-contracts/src/std/vec.rs" 247 20 247 57
   
-  let%span span33 = "../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
+  let%span span33 = "../../../../../creusot-contracts/src/std/vec.rs" 191 20 191 33
   
-  let%span span34 = "../../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85
+  let%span span34 = "../../../../../creusot-contracts/src/std/vec.rs" 185 20 185 24
   
-  let%span span35 = "../../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span35 = "../../../../../creusot-contracts/src/std/vec.rs" 134 27 134 47
   
-  let%span span36 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span36 = "" 0 0 0 0
   
-  let%span span37 = "../../../../../creusot-contracts/src/std/vec.rs" 247 20 247 57
+  let%span span37 = "" 0 0 0 0
   
-  let%span span38 = "../../../../../creusot-contracts/src/std/vec.rs" 191 20 191 33
+  let%span span38 = "../../../../../creusot-contracts/src/std/vec.rs" 135 16 138 18
   
-  let%span span39 = "../../../../../creusot-contracts/src/std/vec.rs" 185 20 185 24
+  let%span span39 = "../../../../../creusot-contracts/src/std/boxed.rs" 18 8 18 31
   
-  let%span span40 = "../../../../../creusot-contracts/src/std/vec.rs" 134 27 134 47
+  let%span span40 = "" 0 0 0 0
   
-  let%span span41 = "" 0 0 0 0
+  let%span span41 = "../../../../../creusot-contracts/src/std/slice.rs" 334 18 334 35
   
   let%span span42 = "" 0 0 0 0
   
-  let%span span43 = "../../../../../creusot-contracts/src/std/vec.rs" 135 16 138 18
-  
-  let%span span44 = "../../../../../creusot-contracts/src/std/slice.rs" 19 21 19 25
-  
-  let%span span45 = "../../../../../creusot-contracts/src/std/slice.rs" 17 14 17 41
-  
-  let%span span46 = "../../../../../creusot-contracts/src/std/slice.rs" 18 14 18 42
-  
-  let%span span47 = "../../../../../creusot-contracts/src/std/slice.rs" 19 4 19 50
-  
-  let%span span48 = "../../../../../creusot-contracts/src/std/boxed.rs" 20 8 20 31
-  
-  let%span span49 = "" 0 0 0 0
-  
-  let%span span50 = "../../../../../creusot-contracts/src/std/slice.rs" 325 18 325 35
-  
-  let%span span51 = "" 0 0 0 0
-  
   use prelude.prelude.Int32
   
-  use prelude.prelude.Slice
-  
-  predicate invariant'6 (self : slice int32) =
+  predicate invariant'6 (self : int32) =
     [%#span13] true
   
-  predicate inv'6 (_x : slice int32)
+  predicate inv'6 (_1 : int32)
   
-  axiom inv'6 : forall x : slice int32 . inv'6 x = true
+  axiom inv'6 : forall x : int32 . inv'6 x = true
+  
+  use T_alloc__alloc__Global as Global'0
+  
+  predicate invariant'5 (self : int32) =
+    [%#span14] inv'6 self
+  
+  predicate inv'5 (_1 : int32)
+  
+  axiom inv'5 : forall x : int32 . inv'5 x = true
   
   use seq.Seq
   
-  use Alloc_Alloc_Global_Type as Global'0
-  
-  use Alloc_Vec_IntoIter_IntoIter_Type as IntoIter'0
-  
   use seq.Seq
-  
-  predicate inv'3 (_x : Seq.seq int32)
-  
-  predicate inv'5 (_x : IntoIter'0.t_intoiter int32 (Global'0.t_global))
-  
-  function shallow_model'4 (self : IntoIter'0.t_intoiter int32 (Global'0.t_global)) : Seq.seq int32
-  
-  predicate produces'0 (self : IntoIter'0.t_intoiter int32 (Global'0.t_global)) (visited : Seq.seq int32) (rhs : IntoIter'0.t_intoiter int32 (Global'0.t_global))
-    
-   =
-    [%#span14] shallow_model'4 self = Seq.(++) visited (shallow_model'4 rhs)
-  
-  function produces_trans'0 (a : IntoIter'0.t_intoiter int32 (Global'0.t_global)) (ab : Seq.seq int32) (b : IntoIter'0.t_intoiter int32 (Global'0.t_global)) (bc : Seq.seq int32) (c : IntoIter'0.t_intoiter int32 (Global'0.t_global)) : ()
-    
-   =
-    [%#span23] ()
-  
-  axiom produces_trans'0_spec : forall a : IntoIter'0.t_intoiter int32 (Global'0.t_global), ab : Seq.seq int32, b : IntoIter'0.t_intoiter int32 (Global'0.t_global), bc : Seq.seq int32, c : IntoIter'0.t_intoiter int32 (Global'0.t_global) . ([%#span15] produces'0 a ab b)
-   -> ([%#span16] produces'0 b bc c)
-   -> ([%#span17] inv'5 a)
-   -> ([%#span18] inv'3 ab)
-   -> ([%#span19] inv'5 b)
-   -> ([%#span20] inv'3 bc)  -> ([%#span21] inv'5 c)  -> ([%#span22] produces'0 a (Seq.(++) ab bc) c)
-  
-  use seq.Seq
-  
-  function produces_refl'0 (self : IntoIter'0.t_intoiter int32 (Global'0.t_global)) : () =
-    [%#span26] ()
-  
-  axiom produces_refl'0_spec : forall self : IntoIter'0.t_intoiter int32 (Global'0.t_global) . ([%#span24] inv'5 self)
-   -> ([%#span25] produces'0 self (Seq.empty  : Seq.seq int32) self)
-  
-  predicate invariant'5 (self : IntoIter'0.t_intoiter int32 (Global'0.t_global)) =
-    [%#span13] true
-  
-  axiom inv'5 : forall x : IntoIter'0.t_intoiter int32 (Global'0.t_global) . inv'5 x = true
-  
-  use prelude.prelude.Borrow
-  
-  predicate invariant'4 (self : borrowed (IntoIter'0.t_intoiter int32 (Global'0.t_global))) =
-    [%#span13] true
-  
-  predicate inv'4 (_x : borrowed (IntoIter'0.t_intoiter int32 (Global'0.t_global)))
-  
-  axiom inv'4 : forall x : borrowed (IntoIter'0.t_intoiter int32 (Global'0.t_global)) . inv'4 x = true
-  
-  predicate invariant'3 (self : Seq.seq int32) =
-    [%#span13] true
-  
-  axiom inv'3 : forall x : Seq.seq int32 . inv'3 x = true
-  
-  use Alloc_Vec_Vec_Type as Vec'0
-  
-  predicate invariant'2 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) =
-    [%#span13] true
-  
-  predicate inv'2 (_x : borrowed (Vec'0.t_vec int32 (Global'0.t_global)))
-  
-  axiom inv'2 : forall x : borrowed (Vec'0.t_vec int32 (Global'0.t_global)) . inv'2 x = true
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  constant max'0 : usize = [%#span27] (18446744073709551615 : usize)
+  use seq.Seq
+  
+  predicate invariant'4 (self : Seq.seq int32) =
+    [%#span15] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'5 (Seq.get self i)
+  
+  predicate inv'4 (_1 : Seq.seq int32)
+  
+  axiom inv'4 : forall x : Seq.seq int32 . inv'4 x = true
+  
+  use prelude.prelude.Slice
+  
+  use prelude.prelude.Slice
+  
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.UIntSize
+  
+  constant v_MAX'0 : usize = [%#span16] (18446744073709551615 : usize)
+  
+  function shallow_model'3 (self : slice int32) : Seq.seq int32
+  
+  axiom shallow_model'3_spec : forall self : slice int32 . ([%#span18] shallow_model'3 self = Slice.id self)
+  && ([%#span17] Seq.length (shallow_model'3 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  
+  predicate invariant'3 (self : slice int32) =
+    [%#span19] inv'4 (shallow_model'3 self)
+  
+  predicate inv'3 (_1 : slice int32)
+  
+  axiom inv'3 : forall x : slice int32 . inv'3 x = true
+  
+  use T_alloc__vec__into_iter__IntoIter as IntoIter'0
   
   use seq.Seq
   
-  predicate inv'1 (_x : Vec'0.t_vec int32 (Global'0.t_global))
+  function shallow_model'4 (self : IntoIter'0.t_IntoIter int32 (Global'0.t_Global)) : Seq.seq int32
   
-  function shallow_model'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) : Seq.seq int32
+  predicate produces'0 (self : IntoIter'0.t_IntoIter int32 (Global'0.t_Global)) (visited : Seq.seq int32) (rhs : IntoIter'0.t_IntoIter int32 (Global'0.t_Global))
+    
+   =
+    [%#span20] shallow_model'4 self = Seq.(++) visited (shallow_model'4 rhs)
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_vec int32 (Global'0.t_global) . ([%#span28] inv'1 self)
-   -> ([%#span30] inv'3 (shallow_model'0 self))
-  && ([%#span29] Seq.length (shallow_model'0 self) <= UIntSize.to_int (max'0 : usize))
+  function produces_trans'0 (a : IntoIter'0.t_IntoIter int32 (Global'0.t_Global)) (ab : Seq.seq int32) (b : IntoIter'0.t_IntoIter int32 (Global'0.t_Global)) (bc : Seq.seq int32) (c : IntoIter'0.t_IntoIter int32 (Global'0.t_Global)) : ()
+    
+   =
+    [%#span24] ()
   
-  predicate invariant'1 (self : Vec'0.t_vec int32 (Global'0.t_global)) =
-    [%#span31] inv'3 (shallow_model'0 self)
+  axiom produces_trans'0_spec : forall a : IntoIter'0.t_IntoIter int32 (Global'0.t_Global), ab : Seq.seq int32, b : IntoIter'0.t_IntoIter int32 (Global'0.t_Global), bc : Seq.seq int32, c : IntoIter'0.t_IntoIter int32 (Global'0.t_Global) . ([%#span21] produces'0 a ab b)
+   -> ([%#span22] produces'0 b bc c)  -> ([%#span23] produces'0 a (Seq.(++) ab bc) c)
   
-  axiom inv'1 : forall x : Vec'0.t_vec int32 (Global'0.t_global) . inv'1 x = true
+  use seq.Seq
+  
+  function produces_refl'0 (self : IntoIter'0.t_IntoIter int32 (Global'0.t_Global)) : () =
+    [%#span26] ()
+  
+  axiom produces_refl'0_spec : forall self : IntoIter'0.t_IntoIter int32 (Global'0.t_Global) . [%#span25] produces'0 self (Seq.empty  : Seq.seq int32) self
+  
+  use T_alloc__vec__Vec as Vec'0
+  
+  predicate inv'1 (_1 : Vec'0.t_Vec int32 (Global'0.t_Global))
+  
+  use prelude.prelude.Borrow
+  
+  predicate invariant'2 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) =
+    [%#span27] inv'1 self.current /\ inv'1 self.final
+  
+  predicate inv'2 (_1 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)))
+  
+  axiom inv'2 : forall x : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) . inv'2 x = true
+  
+  function shallow_model'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32
+  
+  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec int32 (Global'0.t_Global) . [%#span28] Seq.length (shallow_model'0 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  predicate invariant'1 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) =
+    [%#span29] inv'4 (shallow_model'0 self)
+  
+  axiom inv'1 : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) . inv'1 x = true
   
   predicate invariant'0 (self : slice int32) =
-    [%#span13] true
+    [%#span14] inv'3 self
   
-  predicate inv'0 (_x : slice int32)
+  predicate inv'0 (_1 : slice int32)
   
   axiom inv'0 : forall x : slice int32 . inv'0 x = true
   
@@ -364,66 +349,43 @@ module C874_CanExtend
   
   use seq.Seq
   
-  predicate resolve'1 (self : int32) =
-    [%#span32] true
+  function shallow_model'2 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) : Seq.seq int32 =
+    [%#span30] shallow_model'0 self.current
   
-  use seq.Seq
+  function shallow_model'5 (self : borrowed (IntoIter'0.t_IntoIter int32 (Global'0.t_Global))) : Seq.seq int32 =
+    [%#span30] shallow_model'4 self.current
   
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec int32 (Global'0.t_global)) (ix : int) : int32 =
-    [%#span33] Seq.get (shallow_model'0 self) ix
+  predicate resolve'0 (self : borrowed (IntoIter'0.t_IntoIter int32 (Global'0.t_Global))) =
+    [%#span31] self.final = self.current
   
-  predicate resolve'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) =
-    [%#span34] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'0 self)  -> resolve'1 (index_logic'0 self i)
+  predicate completed'0 (self : borrowed (IntoIter'0.t_IntoIter int32 (Global'0.t_Global))) =
+    [%#span32] resolve'0 self /\ shallow_model'5 self = (Seq.empty  : Seq.seq int32)
   
-  function shallow_model'2 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) : Seq.seq int32 =
-    [%#span35] shallow_model'0 self.current
-  
-  function shallow_model'5 (self : borrowed (IntoIter'0.t_intoiter int32 (Global'0.t_global))) : Seq.seq int32 =
-    [%#span35] shallow_model'4 self.current
-  
-  predicate resolve'2 (self : borrowed (IntoIter'0.t_intoiter int32 (Global'0.t_global))) =
-    [%#span36] self.final = self.current
-  
-  predicate completed'0 (self : borrowed (IntoIter'0.t_intoiter int32 (Global'0.t_global))) =
-    [%#span37] resolve'2 self /\ shallow_model'5 self = (Seq.empty  : Seq.seq int32)
-  
-  predicate into_iter_post'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) (res : IntoIter'0.t_intoiter int32 (Global'0.t_global))
+  predicate into_iter_post'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) (res : IntoIter'0.t_IntoIter int32 (Global'0.t_Global))
     
    =
-    [%#span38] shallow_model'0 self = shallow_model'4 res
+    [%#span33] shallow_model'0 self = shallow_model'4 res
   
-  predicate into_iter_pre'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) =
-    [%#span39] true
+  predicate into_iter_pre'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) =
+    [%#span34] true
   
-  let rec extend'0 (self:borrowed (Vec'0.t_vec int32 (Global'0.t_global))) (iter:Vec'0.t_vec int32 (Global'0.t_global)) (return'  (ret:()))= {[@expl:precondition] [%#span42] inv'1 iter}
-    {[@expl:precondition] [%#span41] inv'2 self}
-    {[@expl:precondition] [%#span40] into_iter_pre'0 iter}
+  let rec extend'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (iter:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:()))= {[@expl:precondition] [%#span37] inv'1 iter}
+    {[@expl:precondition] [%#span36] inv'2 self}
+    {[@expl:precondition] [%#span35] into_iter_pre'0 iter}
     any
-    [ return' (result:())-> {[%#span43] exists prod : Seq.seq int32 . exists done' : borrowed (IntoIter'0.t_intoiter int32 (Global'0.t_global)) . exists start_ : IntoIter'0.t_intoiter int32 (Global'0.t_global) . inv'3 prod
-      /\ inv'4 done'
-      /\ inv'5 start_
-      /\ into_iter_post'0 iter start_
+    [ return' (result:())-> {[%#span38] exists start_ : IntoIter'0.t_IntoIter int32 (Global'0.t_Global), done' : borrowed (IntoIter'0.t_IntoIter int32 (Global'0.t_Global)), prod : Seq.seq int32 . into_iter_post'0 iter start_
       /\ completed'0 done'
       /\ produces'0 start_ prod done'.current /\ shallow_model'0 self.final = Seq.(++) (shallow_model'2 self) prod}
       (! return' {result}) ]
     
   
-  use prelude.prelude.Slice
-  
-  function shallow_model'3 (self : slice int32) : Seq.seq int32
-  
-  axiom shallow_model'3_spec : forall self : slice int32 . ([%#span44] inv'6 self)
-   -> ([%#span47] inv'3 (shallow_model'3 self))
-  && ([%#span46] shallow_model'3 self = Slice.id self)
-  && ([%#span45] Seq.length (shallow_model'3 self) <= UIntSize.to_int (max'0 : usize))
-  
   function shallow_model'1 (self : slice int32) : Seq.seq int32 =
-    [%#span48] shallow_model'3 self
+    [%#span39] shallow_model'3 self
   
-  let rec into_vec'0 (self:slice int32) (return'  (ret:Vec'0.t_vec int32 (Global'0.t_global)))= {[@expl:precondition] [%#span49] inv'0 self}
+  let rec into_vec'0 (self:slice int32) (return'  (ret:Vec'0.t_Vec int32 (Global'0.t_Global)))= {[@expl:precondition] [%#span40] inv'0 self}
     any
-    [ return' (result:Vec'0.t_vec int32 (Global'0.t_global))-> {[%#span51] inv'1 result}
-      {[%#span50] shallow_model'0 result = shallow_model'1 self}
+    [ return' (result:Vec'0.t_Vec int32 (Global'0.t_Global))-> {[%#span42] inv'1 result}
+      {[%#span41] shallow_model'0 result = shallow_model'1 self}
       (! return' {result}) ]
     
   
@@ -440,7 +402,7 @@ module C874_CanExtend
       
     | bb1 = bb2
     | bb2 = s0
-      [ s0 = into_vec'0 {_4} (fun (_ret':Vec'0.t_vec int32 (Global'0.t_global)) ->  [ &v <- _ret' ] s1) | s1 = bb3 ]
+      [ s0 = into_vec'0 {_4} (fun (_ret':Vec'0.t_Vec int32 (Global'0.t_Global)) ->  [ &v <- _ret' ] s1) | s1 = bb3 ]
       
     | bb3 = s0
       [ s0 = any
@@ -454,17 +416,16 @@ module C874_CanExtend
       
     | bb4 = bb5
     | bb5 = s0
-      [ s0 = into_vec'0 {_8} (fun (_ret':Vec'0.t_vec int32 (Global'0.t_global)) ->  [ &w <- _ret' ] s1) | s1 = bb6 ]
+      [ s0 = into_vec'0 {_8} (fun (_ret':Vec'0.t_Vec int32 (Global'0.t_Global)) ->  [ &w <- _ret' ] s1) | s1 = bb6 ]
       
     | bb6 = s0
-      [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {v}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_10 <- _ret' ]  [ &v <- _10.final ] s1)
+      [ s0 = Borrow.borrow_mut <Vec'0.t_Vec int32 (Global'0.t_Global)> {v}
+          (fun (_ret':borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) ->  [ &_10 <- _ret' ]  [ &v <- _10.final ] s1)
       | s1 = extend'0 {_10} {w} (fun (_ret':()) ->  [ &_9 <- _ret' ] s2)
       | s2 = bb7 ]
       
     | bb7 = s0
-      [ s0 = -{resolve'0 v}- s1
-      | s1 = any
+      [ s0 = any
         [ any_ (__arr_temp:array int32)-> (! -{Seq.get __arr_temp.elts 0 = ([%#s8746] (1 : int32))
           /\ Seq.get __arr_temp.elts 1 = ([%#s8747] (2 : int32))
           /\ Seq.get __arr_temp.elts 2 = ([%#s8748] (3 : int32))
@@ -472,32 +433,28 @@ module C874_CanExtend
           /\ Seq.get __arr_temp.elts 4 = ([%#s87410] (5 : int32))
           /\ Seq.get __arr_temp.elts 5 = ([%#s87411] (6 : int32)) /\ Seq.length __arr_temp.elts = 6}-
            [ &_15 <- __arr_temp ] 
-          s2) ]
+          s1) ]
         
-      | s2 = bb8 ]
+      | s1 = bb8 ]
       
     | bb8 = bb9
     | bb9 = s0
-      [ s0 = into_vec'0 {_15} (fun (_ret':Vec'0.t_vec int32 (Global'0.t_global)) ->  [ &z <- _ret' ] s1) | s1 = bb10 ]
+      [ s0 = into_vec'0 {_15} (fun (_ret':Vec'0.t_Vec int32 (Global'0.t_Global)) ->  [ &z <- _ret' ] s1) | s1 = bb10 ]
       
-    | bb10 = s0
-      [ s0 = -{resolve'0 z}- s1
-      | s1 = {[@expl:assertion] [%#s87412] Seq.(==) (shallow_model'0 z) (shallow_model'0 v)} s2
-      | s2 = bb11 ]
-      
+    | bb10 = s0 [ s0 = {[@expl:assertion] [%#s87412] Seq.(==) (shallow_model'0 z) (shallow_model'0 v)} s1 | s1 = bb11 ] 
     | bb11 = bb12
     | bb12 = bb13
     | bb13 = bb14
     | bb14 = return' {_0} ]
     )
     [ & _0 : () = any_l ()
-    | & v : Vec'0.t_vec int32 (Global'0.t_global) = any_l ()
+    | & v : Vec'0.t_Vec int32 (Global'0.t_Global) = any_l ()
     | & _4 : array int32 = any_l ()
-    | & w : Vec'0.t_vec int32 (Global'0.t_global) = any_l ()
+    | & w : Vec'0.t_Vec int32 (Global'0.t_Global) = any_l ()
     | & _8 : array int32 = any_l ()
     | & _9 : () = any_l ()
-    | & _10 : borrowed (Vec'0.t_vec int32 (Global'0.t_global)) = any_l ()
-    | & z : Vec'0.t_vec int32 (Global'0.t_global) = any_l ()
+    | & _10 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) = any_l ()
+    | & z : Vec'0.t_Vec int32 (Global'0.t_Global) = any_l ()
     | & _15 : array int32 = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end

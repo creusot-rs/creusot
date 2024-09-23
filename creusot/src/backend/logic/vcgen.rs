@@ -128,16 +128,11 @@ fn is_structurally_recursive(ctx: &mut Why3Generator<'_>, self_id: DefId, t: &Te
                         }
                     }
                 }
-                TermKind::Exists { binder, body } => {
+                TermKind::Quant { binder, body, .. } => {
                     let old_smaller = self.smaller_than.clone();
-                    self.smaller_than.remove(&binder.0);
-                    self.visit_term(body);
-                    self.smaller_than = old_smaller;
-                }
-
-                TermKind::Forall { binder, body } => {
-                    let old_smaller = self.smaller_than.clone();
-                    self.smaller_than.remove(&binder.0);
+                    for name in &binder.0 {
+                        self.smaller_than.remove(&name.name);
+                    }
                     self.visit_term(body);
                     self.smaller_than = old_smaller;
                 }
@@ -318,20 +313,24 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // // the dual rule should be the one below but that seems weird...
             // // VC(forall<x> P(x), Q) => (exists<x> VC(P, false)) \/ Q(forall<x>P(x))
             // // Instead, I think the rule should just be the same as for the existential quantifiers?
-            TermKind::Forall { binder, body } => {
+            TermKind::Quant { kind: QuantKind::Forall, binder, body, .. } => {
                 let forall_pre = self.build_vc(body, &|_| Ok(Exp::mk_true()))?;
-                let ty = self.ty(binder.1);
 
-                let forall_pre = Exp::forall(vec![(binder.0.to_string().into(), ty)], forall_pre);
+                let forall_pre = Exp::forall(
+                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.ty(t))).collect(),
+                    forall_pre,
+                );
                 let forall_pure = self.lower_pure(t);
                 Ok(forall_pre.log_and(k(forall_pure)?))
             }
             // // VC(exists<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(exists<x>P(x))
-            TermKind::Exists { binder, body } => {
+            TermKind::Quant { kind: QuantKind::Exists, binder, body, .. } => {
                 let exists_pre = self.build_vc(body, &|_| Ok(Exp::mk_true()))?;
-                let ty = self.ty(binder.1);
 
-                let exists_pre = Exp::forall(vec![(binder.0.to_string().into(), ty)], exists_pre);
+                let exists_pre = Exp::forall(
+                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.ty(t))).collect(),
+                    exists_pre,
+                );
                 let exists_pure = self.lower_pure(t);
                 Ok(exists_pre.log_and(k(exists_pure)?))
             }
@@ -454,10 +453,10 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
     ) -> why3::exp::Pattern {
         use why3::exp::Pattern as Pat;
         match pat {
-            Pattern::Constructor { adt, variant: _, fields, substs } => {
+            Pattern::Constructor { variant, fields, substs } => {
                 let fields =
                     fields.into_iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect();
-                Pat::ConsP(self.names.borrow_mut().constructor(*adt, substs), fields)
+                Pat::ConsP(self.names.borrow_mut().constructor(*variant, substs), fields)
             }
             Pattern::Wildcard => Pat::Wildcard,
             Pattern::Binder(name) => {

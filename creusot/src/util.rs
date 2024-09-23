@@ -1,16 +1,15 @@
 use crate::{
-    backend::ty_inv::TyInvKind,
     ctx::*,
     translation::{
-        pearlite::{self, super_visit_mut_term, Literal, Term, TermKind, TermVisitorMut},
+        pearlite::{self, super_visit_mut_term, Term, TermKind, TermVisitorMut},
         specification::PreContract,
     },
 };
 use indexmap::IndexMap;
-use itertools::izip;
 use rustc_ast::{
     ast::{AttrArgs, AttrArgsEq},
-    AttrItem, AttrKind, Attribute, Mutability,
+    visit::{walk_fn, FnKind, Visitor},
+    AttrItem, AttrKind, Attribute, FnSig, NodeId,
 };
 use rustc_hir::{
     def::{DefKind, Namespace},
@@ -19,8 +18,8 @@ use rustc_hir::{
 };
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
-    self, BorrowKind, ClosureKind, EarlyBinder, GenericArg, GenericArgs, GenericArgsRef, Ty,
-    TyCtxt, TyKind, UpvarCapture,
+    self, BorrowKind, ClosureKind, EarlyBinder, GenericArg, GenericArgs, GenericArgsRef,
+    ResolverAstLowering, Ty, TyCtxt, TyKind, UpvarCapture,
 };
 use rustc_span::{symbol, symbol::kw, Span, Symbol, DUMMY_SP};
 use std::{
@@ -124,30 +123,21 @@ pub(crate) fn is_extern_spec(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "extern_spec"]).is_some()
 }
 
-pub(crate) fn is_structural_ty_inv(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "structural_inv"]).is_some()
+pub(crate) fn is_ignore_structural_inv(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "trusted_ignore_structural_inv"])
+        .is_some()
 }
 
 pub(crate) fn has_variant_clause(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "clause", "variant"]).is_some()
 }
 
-pub(crate) fn is_user_tyinv(tcx: TyCtxt, def_id: DefId) -> bool {
-    let Some(assoc_item) = tcx.opt_associated_item(def_id) else { return false };
-    let Some(trait_item_did) = (match assoc_item.container {
-        ty::AssocItemContainer::TraitContainer => Some(def_id),
-        ty::AssocItemContainer::ImplContainer => assoc_item.trait_item_def_id,
-    }) else {
-        return false;
-    };
-
-    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user"))
-        .is_some_and(|inv_did| inv_did == trait_item_did)
+pub(crate) fn is_open_inv_result(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "open_inv_result"]).is_some()
 }
 
 pub(crate) fn is_inv_internal(tcx: TyCtxt, def_id: DefId) -> bool {
-    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal"))
-        .is_some_and(|did| did == def_id)
+    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap() == def_id
 }
 
 pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
@@ -213,25 +203,48 @@ pub(crate) fn item_name(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Ident {
     item_symb(tcx, def_id, ns).to_string().into()
 }
 
+// Why3 value names must start with a lower case letter.
+// Rust function names conventionally start with a lower case letter,
+// but that is not mandatory, in which case we insert a prefix `v_`.
+// To make this encoding injective, also insert `v_` if the source name already starts with an `v_`.
+// This makes decoding simple: if the name starts with `v_`, just strip it.
+pub fn value_name(name: &str) -> String {
+    if name.starts_with(|c: char| c.is_ascii_lowercase()) && !name.starts_with("v_") {
+        name.to_string()
+    } else {
+        format!("v_{}", name)
+    }
+}
+
+pub fn type_name(name: &str) -> String {
+    if name.starts_with(|c: char| c.is_ascii_lowercase()) && !name.starts_with("t_") {
+        name.to_string()
+    } else {
+        format!("t_{}", name)
+    }
+}
+
+pub fn translate_accessor_name(variant: &str, field: &str) -> String {
+    format!("{}__{}", type_name(&translate_name(variant)), translate_name(field))
+}
+
+// The result should be a valid Why3 identifier.
 pub(crate) fn item_symb(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Symbol {
     use rustc_hir::def::DefKind::*;
 
     match tcx.def_kind(def_id) {
-        AssocTy => tcx.item_name(def_id),
-        Ctor(_, _) => Symbol::intern(&format!("C_{}", tcx.item_name(def_id))),
+        AssocTy => tcx.item_name(def_id), // TODO: is this used (the test suite passes if I replace this with panic!)?
+        Ctor(_, _) => {
+            Symbol::intern(&format!("C_{}", translate_name(tcx.item_name(def_id).as_str())))
+        }
         Struct | Variant | Union if ns == Namespace::ValueNS => {
-            Symbol::intern(&format!("C_{}", tcx.item_name(def_id)))
+            Symbol::intern(&format!("C_{}", translate_name(tcx.item_name(def_id).as_str())))
         }
         Variant | Struct | Enum | Union => {
-            Symbol::intern(&format!("t_{}", tcx.item_name(def_id).as_str().to_ascii_lowercase()))
+            Symbol::intern(&format!("t_{}", translate_name(tcx.item_name(def_id).as_str())))
         }
-        Closure => {
-            let mut id = ident_path(tcx, def_id).to_string();
-            id = id.to_ascii_lowercase().into();
-            Symbol::intern(&id)
-        }
-
-        _ => tcx.item_name(def_id),
+        Closure => lower_ident_path(tcx, def_id),
+        _ => Symbol::intern(&value_name(&translate_name(tcx.item_name(def_id).as_str()))),
     }
 }
 
@@ -248,53 +261,80 @@ pub(crate) fn ident_of(sym: Symbol) -> Ident {
     }
 }
 
-pub(crate) fn inv_module_name(tcx: TyCtxt, kind: TyInvKind) -> Ident {
-    match kind {
-        TyInvKind::Trivial => "TyInv_Trivial".into(),
-        TyInvKind::Borrow(Mutability::Not) => "TyInv_Borrow_Shared".into(),
-        TyInvKind::Borrow(Mutability::Mut) => "TyInv_Borrow".into(),
-        TyInvKind::Box => "TyInv_Box".into(),
-        TyInvKind::Adt(adt_did) => format!("{}_Inv", ident_path(tcx, adt_did)).into(),
-        TyInvKind::Tuple(arity) => format!("TyInv_Tuple{arity}").into(),
-        TyInvKind::Slice => format!("TyInv_Slice").into(),
-    }
-}
-
 pub(crate) fn module_name(tcx: TyCtxt, def_id: DefId) -> Symbol {
     let kind = tcx.def_kind(def_id);
     use rustc_hir::def::DefKind::*;
 
     match kind {
         Ctor(_, _) | Variant => module_name(tcx, tcx.parent(def_id)),
-        _ => ident_path(tcx, def_id),
+        _ => upper_ident_path(tcx, def_id),
     }
 }
 
-pub fn ident_path(tcx: TyCtxt, def_id: DefId) -> Symbol {
-    use heck::ToUpperCamelCase;
-
-    let def_path = tcx.def_path(def_id);
-
-    let mut segments = Vec::new();
-
-    let mut crate_name = tcx.crate_name(def_id.krate).to_string().to_upper_camel_case();
-    if crate_name.chars().next().unwrap().is_numeric() {
-        crate_name = format!("C{}", crate_name);
+// Translate a name to be a valid fragment of a Why3 identifier
+// Escape initial and final underscores, double underscores, non-ascii characters,
+// and "qy" sequences (because "qy" is the escape sequence).
+// "qy123z" encodes the code point 123.
+fn push_translate_name(n: &str, dest: &mut String) -> () {
+    let mut chars = n.chars().peekable();
+    // Escape initial underscore
+    if chars.peek() == Some(&'_') {
+        let _ = chars.next();
+        dest.push_str("qy95z");
     }
-
-    segments.push(crate_name);
-
-    for seg in def_path.data[..].iter() {
-        match seg.data {
-            _ => segments.push(format!("{}", seg).to_upper_camel_case()),
+    while let Some(c) = chars.next() {
+        let is_qy = c == 'q' && chars.peek() == Some(&'y');
+        if c == '_' {
+            match chars.peek() {
+                None | Some('_') => dest.push_str("qy95z"),
+                _ => dest.push('_'),
+            }
+        } else if c.is_ascii_alphanumeric() && !is_qy {
+            dest.push(c);
+        } else {
+            dest.push_str(&format!("qy{}z", c as u32));
         }
     }
+}
+
+pub fn translate_name(n: &str) -> String {
+    let mut dest = String::new();
+    push_translate_name(n, &mut dest);
+    dest
+}
+
+// This function must be injective: distinct source constructs
+// must have different names in the output.
+fn ident_path(upper_initial: bool, tcx: TyCtxt, def_id: DefId) -> Symbol {
+    let def_path = tcx.def_path(def_id);
+
+    let mut dest = String::new();
 
     if let Some(Namespace::TypeNS) = tcx.def_kind(def_id).ns() {
-        segments.push("Type".into());
+        dest.push_str(if upper_initial { "T_" } else { "t_" });
+    } else {
+        dest.push_str(if upper_initial { "M_" } else { "m_" });
     }
 
-    Symbol::intern(&segments.join("_"))
+    let crate_name = tcx.crate_name(def_id.krate);
+    push_translate_name(crate_name.as_str(), &mut dest);
+
+    for seg in def_path.data[..].iter() {
+        dest.push_str("__");
+        push_translate_name(&format!("{}", seg), &mut dest);
+    }
+
+    Symbol::intern(&dest)
+}
+
+// Coma module names must start with an upper case letter.
+pub(crate) fn upper_ident_path(tcx: TyCtxt, def_id: DefId) -> Symbol {
+    ident_path(true, tcx, def_id)
+}
+
+// Function and type names must start with a lower case letter.
+pub(crate) fn lower_ident_path(tcx: TyCtxt, def_id: DefId) -> Symbol {
+    ident_path(false, tcx, def_id)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -457,13 +497,6 @@ pub(crate) fn pre_sig_of<'tcx>(
     let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
 
     let mut contract = crate::specification::contract_of(ctx, def_id);
-    if output.is_never() {
-        contract.ensures.push(Term {
-            kind: TermKind::Lit(Literal::Bool(false)),
-            ty: ctx.types.bool,
-            span: DUMMY_SP,
-        });
-    }
 
     let fn_ty = ctx.tcx.type_of(def_id).instantiate_identity();
 
@@ -538,17 +571,23 @@ fn elaborate_type_invariants<'tcx>(
     def_id: DefId,
     pre_sig: &mut PreSignature<'tcx>,
 ) {
-    if is_user_tyinv(ctx.tcx, def_id)
-        || is_inv_internal(ctx.tcx, def_id)
-        || (is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
-            && pre_sig.contract.ensures.is_empty()
-    {
+    if is_pearlite(ctx.tcx, def_id) {
         return;
     }
 
     let subst = GenericArgs::identity_for_item(ctx.tcx, def_id);
 
-    for (name, span, ty) in pre_sig.inputs.iter() {
+    let params_open_inv: HashSet<usize> = ctx
+        .params_open_inv(def_id)
+        .iter()
+        .copied()
+        .flatten()
+        .map(|&i| if ctx.tcx.is_closure_like(def_id) { i + 1 } else { i })
+        .collect();
+    for (i, (name, span, ty)) in pre_sig.inputs.iter().enumerate() {
+        if params_open_inv.contains(&i) {
+            continue;
+        }
         if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
             let term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
             pre_sig.contract.requires.push(term);
@@ -556,13 +595,15 @@ fn elaborate_type_invariants<'tcx>(
     }
 
     let ret_ty_span: Option<Span> = try { ctx.tcx.hir().get_fn_output(def_id.as_local()?)?.span() };
-    if let Some(term) = pearlite::type_invariant_term(
-        ctx,
-        def_id,
-        Symbol::intern("result"),
-        ret_ty_span.unwrap_or_else(|| ctx.tcx.def_span(def_id)),
-        pre_sig.output,
-    ) {
+    if !is_open_inv_result(ctx.tcx, def_id)
+        && let Some(term) = pearlite::type_invariant_term(
+            ctx,
+            def_id,
+            Symbol::intern("result"),
+            ret_ty_span.unwrap_or_else(|| ctx.tcx.def_span(def_id)),
+            pre_sig.output,
+        )
+    {
         let term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
         pre_sig.contract.ensures.push(term);
     }
@@ -580,12 +621,8 @@ pub(crate) fn get_attr<'a>(attrs: &'a [Attribute], path: &[&str]) -> Option<&'a 
             continue;
         }
 
-        let matches = attr
-            .path
-            .segments
-            .iter()
-            .zip(path.iter())
-            .fold(true, |acc, (seg, s)| acc && &*seg.ident.as_str() == *s);
+        let matches =
+            attr.path.segments.iter().zip(path.iter()).all(|(seg, s)| &*seg.ident.as_str() == *s);
 
         if matches {
             return Some(attr);
@@ -608,12 +645,8 @@ pub(crate) fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a At
             continue;
         }
 
-        let matches = item
-            .path
-            .segments
-            .iter()
-            .zip(path.iter())
-            .fold(true, |acc, (seg, s)| acc && &*seg.ident.as_str() == *s);
+        let matches =
+            item.path.segments.iter().zip(path.iter()).all(|(seg, s)| &*seg.ident.as_str() == *s);
 
         if matches {
             matched.push(attr)
@@ -717,16 +750,11 @@ impl<'tcx> TermVisitorMut<'tcx> for ClosureSubst<'tcx> {
                     }
                 }
             }
-            TermKind::Forall { binder, .. } => {
+            TermKind::Quant { binder, .. } => {
                 let mut bound = self.bound.clone();
-                bound.insert(binder.0);
-                std::mem::swap(&mut self.bound, &mut bound);
-                super_visit_mut_term(term, self);
-                std::mem::swap(&mut self.bound, &mut bound);
-            }
-            TermKind::Exists { binder, .. } => {
-                let mut bound = self.bound.clone();
-                bound.insert(binder.0);
+                for name in &binder.0 {
+                    bound.insert(name.name);
+                }
                 std::mem::swap(&mut self.bound, &mut bound);
                 super_visit_mut_term(term, self);
                 std::mem::swap(&mut self.bound, &mut bound);
@@ -784,7 +812,7 @@ pub(crate) fn closure_capture_subst<'tcx>(
 
     let self_ = Term::var(self_name, ty);
 
-    let subst = izip!(captures, cs.as_closure().upvar_tys())
+    let subst = std::iter::zip(captures, cs.as_closure().upvar_tys())
         .enumerate()
         .map(|(ix, (cap, ty))| (cap.to_symbol(), (cap.info.capture_kind, ty, ix.into())))
         .collect();
@@ -803,4 +831,31 @@ impl Display for AnonymousParamName {
 pub(crate) fn anonymous_param_symbol(idx: usize) -> Symbol {
     let name = format!("{}", AnonymousParamName(idx)); // Allocate on stack?
     Symbol::intern(&name)
+}
+
+pub(crate) fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, Vec<usize>> {
+    struct VisitFns<'a>(HashMap<DefId, Vec<usize>>, &'a ResolverAstLowering);
+    impl<'a> Visitor<'a> for VisitFns<'a> {
+        fn visit_fn(&mut self, fk: FnKind<'a>, _: Span, node: NodeId) {
+            let decl = match fk {
+                FnKind::Fn(_, _, FnSig { decl, .. }, _, _, _) => decl,
+                FnKind::Closure(_, decl, _) => decl,
+            };
+            let mut open_inv_params = vec![];
+            for (i, p) in decl.inputs.iter().enumerate() {
+                if get_attr(&p.attrs, &["creusot", "open_inv"]).is_some() {
+                    open_inv_params.push(i);
+                }
+            }
+            let defid = self.1.node_id_to_def_id[&node].to_def_id();
+            assert!(self.0.insert(defid, open_inv_params).is_none());
+            walk_fn(self, fk)
+        }
+    }
+
+    let (resolver, cr) = &*tcx.resolver_for_lowering().borrow();
+
+    let mut visit = VisitFns(HashMap::new(), &resolver);
+    visit.visit_crate(&*cr);
+    visit.0
 }

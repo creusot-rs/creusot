@@ -1,22 +1,22 @@
 use super::pearlite::{Term, TermKind};
 use crate::{
     ctx::*,
-    translation::function::terminator::evaluate_additional_predicates,
     util::{is_law, is_spec},
 };
 use rustc_hir::def_id::DefId;
 use rustc_infer::{
     infer::{DefineOpaqueTypes, InferCtxt, TyCtxtInferExt},
-    traits::ObligationCause,
+    traits::{Obligation, ObligationCause, TraitEngine},
 };
 use rustc_middle::ty::{
     AssocItem, AssocItemContainer, Const, ConstKind, EarlyBinder, GenericArgs, GenericArgsRef,
-    ParamConst, ParamEnv, ParamTy, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder,
+    ParamConst, ParamEnv, ParamTy, Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable,
+    TypeFolder,
 };
-use rustc_span::{Symbol, DUMMY_SP};
+use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::{
     error_reporting::InferCtxtErrorExt,
-    traits::{orphan_check_trait_ref, ImplSource, InCrate},
+    traits::{orphan_check_trait_ref, FulfillmentError, ImplSource, InCrate, TraitEngineExt},
 };
 use rustc_type_ir::fold::TypeSuperFoldable;
 use std::collections::HashMap;
@@ -116,6 +116,28 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 }
 
+pub(crate) fn evaluate_additional_predicates<'tcx>(
+    infcx: &InferCtxt<'tcx>,
+    p: Vec<Predicate<'tcx>>,
+    param_env: ParamEnv<'tcx>,
+    sp: Span,
+) -> Result<(), Vec<FulfillmentError<'tcx>>> {
+    let mut fulfill_cx = <dyn TraitEngine<'tcx, _>>::new(infcx);
+    for predicate in p {
+        let predicate = infcx.tcx.erase_regions(predicate);
+        let cause = ObligationCause::dummy_with_span(sp);
+        let obligation = Obligation { cause, param_env, recursion_depth: 0, predicate };
+        // holds &= infcx.predicate_may_hold(&obligation);
+        fulfill_cx.register_predicate_obligation(&infcx, obligation);
+    }
+    let errors = fulfill_cx.select_all_or_error(&infcx);
+    if !errors.is_empty() {
+        return Err(errors);
+    } else {
+        return Ok(());
+    }
+}
+
 fn logic_refinement_term<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     impl_item_id: DefId,
@@ -153,14 +175,16 @@ fn logic_refinement_term<'tcx>(
 
     let retty = impl_sig.output;
 
-    let post_refn =
-        impl_postcond.implies(trait_postcond).forall((Symbol::intern("result"), retty)).span(span);
+    let post_refn = impl_postcond
+        .implies(trait_postcond)
+        .forall(ctx.tcx, (Symbol::intern("result"), retty))
+        .span(span);
 
     let mut refn = trait_precond.implies(impl_precond.conj(post_refn));
     refn = if args.is_empty() {
         refn
     } else {
-        args.into_iter().rfold(refn, |acc, r| acc.forall(r).span(span))
+        args.into_iter().rfold(refn, |acc, r| acc.forall(ctx.tcx, r).span(span))
     };
 
     refn
@@ -193,6 +217,12 @@ fn resolve_impl_source_opt<'tcx>(
     }
 }
 
+/// Returns:
+///    - None if no instance is found
+///    - Some((trait_item_def_id, ...)) if an instance is found, but we do not know which
+///          instance is going to be used at runtime.
+///    - Some((did, ...)) with did the def id of the instance if an instance is found,
+///           which we know is going to be used.
 pub(crate) fn resolve_assoc_item_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
@@ -200,15 +230,9 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
     substs: GenericArgsRef<'tcx>,
 ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
     trace!("resolve_assoc_item_opt {:?} {:?}", trait_item_def_id, substs);
-    let assoc = tcx.opt_associated_item(trait_item_def_id)?;
+    let assoc = tcx.opt_associated_item(trait_item_def_id).unwrap();
 
-    // If we're given an associated item that is already on an instance,
-    // we don't need to resolve at all!
-    //
-    // FIXME: not true given specialization!
-    if let AssocItemContainer::ImplContainer = assoc.container {
-        return None;
-    }
+    assert!(assoc.container == AssocItemContainer::TraitContainer);
 
     let trait_ref =
         TraitRef::from_method(tcx, tcx.trait_of_item(trait_item_def_id).unwrap(), substs);

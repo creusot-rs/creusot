@@ -1,5 +1,5 @@
 
-module C06_Test
+module M_06__test
   type t
   
   let%span s060 = "../06.rs" 13 9 13 10
@@ -8,25 +8,34 @@ module C06_Test
   
   let%span s062 = "../06.rs" 9 29 9 35
   
-  let%span span3 = "../06.rs" 6 11 6 15
+  let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 26 8 26 18
   
-  let%span span4 = "../06.rs" 6 31 6 40
+  let%span span4 = "../06.rs" 6 11 6 15
   
-  type tgt'0
+  let%span span5 = "../06.rs" 6 31 6 40
   
-  predicate invariant'1 (self : tgt'0)
+  predicate invariant'2 (self : t)
   
-  predicate inv'1 (_x : tgt'0)
+  predicate inv'2 (_1 : t)
   
-  axiom inv'1 : forall x : tgt'0 . inv'1 x = true
+  axiom inv'2 : forall x : t . inv'2 x = true
   
-  predicate invariant'0 (self : t)
+  type t_Tgt'0
   
-  predicate inv'0 (_x : t)
+  predicate invariant'1 (self : t_Tgt'0)
   
-  axiom inv'0 : forall x : t . inv'0 x = true
+  predicate inv'1 (_1 : t_Tgt'0)
+  
+  axiom inv'1 : forall x : t_Tgt'0 . inv'1 x = true
   
   use prelude.prelude.Borrow
+  
+  predicate invariant'0 (self : t) =
+    [%#span3] inv'2 self
+  
+  predicate inv'0 (_1 : t)
+  
+  axiom inv'0 : forall x : t . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
@@ -34,21 +43,14 @@ module C06_Test
   
   use prelude.prelude.Int
   
-  let rec ix'0 (self:t) (ix:usize) (return'  (ret:tgt'0))= {[@expl:precondition] [%#span3] inv'0 self}
-    any [ return' (result:tgt'0)-> {[%#span4] inv'1 result} (! return' {result}) ] 
+  let rec ix'0 (self:t) (ix:usize) (return'  (ret:t_Tgt'0))= {[@expl:precondition] [%#span4] inv'0 self}
+    any [ return' (result:t_Tgt'0)-> {[%#span5] inv'1 result} (! return' {result}) ] 
   
-  predicate resolve'0 (self : t)
-  
-  let rec test (a:t) (return'  (ret:tgt'0))= {[%#s061] inv'0 a}
+  let rec test (a:t) (return'  (ret:t_Tgt'0))= {[%#s061] inv'0 a}
     (! bb0
-    [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv'0 a} s1
-      | s1 = -{resolve'0 a}- s2
-      | s2 = ix'0 {a} {[%#s060] (0 : usize)} (fun (_ret':tgt'0) ->  [ &_0 <- _ret' ] s3)
-      | s3 = bb1 ]
-      
+    [ bb0 = s0 [ s0 = ix'0 {a} {[%#s060] (0 : usize)} (fun (_ret':t_Tgt'0) ->  [ &_0 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = return' {_0} ]
-    ) [ & _0 : tgt'0 = any_l () | & a : t = a ] 
-    [ return' (result:tgt'0)-> {[@expl:postcondition] [%#s062] inv'1 result} (! return' {result}) ]
+    ) [ & _0 : t_Tgt'0 = any_l () | & a : t = a ] 
+    [ return' (result:t_Tgt'0)-> {[@expl:postcondition] [%#s062] inv'1 result} (! return' {result}) ]
     
 end

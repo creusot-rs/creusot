@@ -1,3 +1,5 @@
+// NO_REPLAY
+
 extern crate creusot_contracts;
 use creusot_contracts::{logic::Mapping, *};
 
@@ -95,19 +97,19 @@ pub fn reborrow_index_projection2<'a, 'b, T>(a: &'a &'b [T]) -> &'a T {
 
 #[open(self)]
 #[logic]
-pub fn test3<'a, T>(a: Snapshot<&'a mut Vec<T>>) -> &'a mut T {
+pub fn test3<'a, T>(a: Snapshot<&'a mut [T]>) -> &'a mut T {
     &mut a[0]
 }
 
 #[open(self)]
 #[logic]
-pub fn test4<'a, T>(a: &'a mut Snapshot<Vec<T>>) -> &'a mut T {
+pub fn test4<'a, T>(a: &'a mut Snapshot<[T]>) -> &'a mut T {
     &mut a[0]
 }
 
 #[open(self)]
 #[logic]
-pub fn test5<'a, T>(a: &'a mut &mut &mut Vec<T>) -> &'a mut T {
+pub fn test5<'a, T>(a: &'a mut &mut &mut [T]) -> &'a mut T {
     &mut a[0]
 }
 
