@@ -11,10 +11,7 @@ use crate::{
     util::{self, item_symb, translate_accessor_name, type_name, value_name, ItemType},
 };
 
-use super::{
-    ty_inv::{inv_module_name, TyInvKind},
-    PreludeModule, TransId,
-};
+use super::{ty_inv::tyinv_head_and_subst, PreludeModule, TransId};
 
 /// Dependencies between items and the resolution logic to find the 'monomorphic' forms accounting
 /// for various Creusot hacks like the handling of closures.
@@ -26,7 +23,7 @@ use super::{
 pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
     Item(DefId, GenericArgsRef<'tcx>),
-    TyInv(Ty<'tcx>, TyInvKind),
+    TyInv(Ty<'tcx>),
     Hacked(ExtendedId, DefId, GenericArgsRef<'tcx>),
     Builtin(PreludeModule),
 }
@@ -68,7 +65,7 @@ impl<'tcx> Dependency<'tcx> {
         }
     }
 
-    pub(crate) fn from_trans_id(tcx: TyCtxt<'tcx>, trans_id: TransId) -> Self {
+    pub(crate) fn from_trans_id(tcx: TyCtxt<'tcx>, trans_id: TransId<'tcx>) -> Self {
         match trans_id {
             TransId::Item(self_id) => {
                 let subst = match tcx.def_kind(self_id) {
@@ -81,7 +78,7 @@ impl<'tcx> Dependency<'tcx> {
 
                 Dependency::new(tcx, (self_id, subst)).erase_regions(tcx)
             }
-            TransId::TyInv(inv_kind) => Dependency::TyInv(inv_kind.to_skeleton_ty(tcx), inv_kind),
+            TransId::TyInv(ty) => Dependency::TyInv(ty),
             TransId::Hacked(h, self_id) => {
                 let subst = match tcx.def_kind(self_id) {
                     DefKind::Closure => match tcx.type_of(self_id).instantiate_identity().kind() {
@@ -95,11 +92,18 @@ impl<'tcx> Dependency<'tcx> {
         }
     }
 
-    pub(crate) fn to_trans_id(self) -> Option<TransId> {
+    pub(crate) fn to_trans_id(
+        self,
+        tcx: TyCtxt<'tcx>,
+        param_env: ParamEnv<'tcx>,
+    ) -> Option<TransId<'tcx>> {
         match self {
             Dependency::Type(_) => None,
             Dependency::Item(id, _) => Some(TransId::Item(id)),
-            Dependency::TyInv(_, k) => Some(TransId::TyInv(k)),
+            Dependency::TyInv(ty) => {
+                let ty = tyinv_head_and_subst(tcx, ty, param_env).0;
+                Some(TransId::TyInv(ty))
+            }
             Dependency::Hacked(h, id, _) => Some(TransId::Hacked(h, id)),
             Dependency::Builtin(_) => None,
         }
@@ -120,14 +124,14 @@ impl<'tcx> Dependency<'tcx> {
     pub(crate) fn did(self) -> Option<(DefId, GenericArgsRef<'tcx>)> {
         match self {
             Dependency::Item(def_id, subst) => Some((def_id, subst)),
-            Dependency::Type(t) | Dependency::TyInv(t, _) => match t.kind() {
+            Dependency::Type(t) => match t.kind() {
                 TyKind::Adt(def, substs) => Some((def.did(), substs)),
                 TyKind::Closure(id, substs) => Some((*id, substs)),
                 TyKind::Alias(AliasTyKind::Projection, aty) => Some((aty.def_id, aty.args)),
                 _ => None,
             },
             Dependency::Hacked(_, id, substs) => Some((id, substs)),
-            Dependency::Builtin(_) => None,
+            Dependency::TyInv(_) | Dependency::Builtin(_) => None,
         }
     }
 
@@ -141,9 +145,14 @@ impl<'tcx> Dependency<'tcx> {
     }
 
     #[inline]
-    pub(crate) fn subst(self, tcx: TyCtxt<'tcx>, other: Dependency<'tcx>) -> Self {
-        let substs = if let Dependency::TyInv(ty, inv_kind) = other {
-            inv_kind.tyinv_substs(tcx, ty)
+    pub(crate) fn subst(
+        self,
+        tcx: TyCtxt<'tcx>,
+        other: Dependency<'tcx>,
+        param_env: ParamEnv<'tcx>,
+    ) -> Self {
+        let substs = if let Dependency::TyInv(ty) = other {
+            tyinv_head_and_subst(tcx, ty, param_env).1
         } else if let Some((_, substs)) = other.did() {
             substs
         } else {
@@ -200,7 +209,6 @@ impl<'tcx> Dependency<'tcx> {
                     _ => Symbol::intern(&value_name(tcx.item_name(did).as_str())),
                 }
             }
-            Dependency::TyInv(_, inv_kind) => Symbol::intern(&*inv_module_name(tcx, inv_kind)),
             Dependency::Hacked(hacked_id, _, _) => match hacked_id {
                 ExtendedId::PostconditionOnce => Symbol::intern("postcondition_once"),
                 ExtendedId::PostconditionMut => Symbol::intern("postcondition_mut"),
@@ -210,6 +218,7 @@ impl<'tcx> Dependency<'tcx> {
                 ExtendedId::Resolve => Symbol::intern("resolve"),
                 ExtendedId::Accessor(ix) => Symbol::intern(&format!("field_{ix}")),
             },
+            Dependency::TyInv(..) => Symbol::intern("tyinv_should_not_appear"),
             Dependency::Builtin(_) => Symbol::intern("builtin_should_not_appear"),
         }
     }

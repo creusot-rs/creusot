@@ -128,6 +128,14 @@ pub(crate) fn is_ignore_structural_inv(tcx: TyCtxt, def_id: DefId) -> bool {
         .is_some()
 }
 
+pub(crate) fn is_tyinv_trivial_if_param_trivial(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(
+        tcx.get_attrs_unchecked(def_id),
+        &["creusot", "trusted_is_tyinv_trivial_if_param_trivial"],
+    )
+    .is_some()
+}
+
 pub(crate) fn has_variant_clause(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "clause", "variant"]).is_some()
 }

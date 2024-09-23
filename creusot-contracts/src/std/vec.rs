@@ -56,6 +56,7 @@ impl<T, A: Allocator> Invariant for Vec<T, A> {
     #[predicate(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
+    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { invariant::inv(self@) }
     }

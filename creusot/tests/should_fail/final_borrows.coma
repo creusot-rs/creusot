@@ -6,7 +6,7 @@ module M_final_borrows__not_final_borrow
   
   let%span sfinal_borrows1 = "../final_borrows.rs" 5 33 5 36
   
-  let%span span2 = "../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  let%span span2 = "../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
   
   let%span span3 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
@@ -19,11 +19,11 @@ module M_final_borrows__not_final_borrow
   
   predicate inv'1 (_1 : borrowed t)
   
-  axiom inv'1 : forall x : borrowed t . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed t . inv'1 x = true
   
   predicate invariant'0 (self : t)
   
-  axiom inv'0 : forall x : t . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
@@ -59,7 +59,7 @@ module M_final_borrows__store_changes_prophecy
   
   let%span sfinal_borrows1 = "../final_borrows.rs" 11 39 11 42
   
-  let%span span2 = "../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  let%span span2 = "../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
   
   let%span span3 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
@@ -72,11 +72,11 @@ module M_final_borrows__store_changes_prophecy
   
   predicate inv'1 (_1 : borrowed t)
   
-  axiom inv'1 : forall x : borrowed t . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed t . inv'1 x = true
   
   predicate invariant'0 (self : t)
   
-  axiom inv'0 : forall x : t . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
@@ -111,7 +111,7 @@ module M_final_borrows__store_changes_prophecy_2
   
   let%span sfinal_borrows2 = "../final_borrows.rs" 19 54 19 55
   
-  let%span span3 = "../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  let%span span3 = "../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
   
   let%span span4 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
@@ -124,11 +124,11 @@ module M_final_borrows__store_changes_prophecy_2
   
   predicate inv'1 (_1 : borrowed t)
   
-  axiom inv'1 : forall x : borrowed t . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed t . inv'1 x = true
   
   predicate invariant'0 (self : t)
   
-  axiom inv'0 : forall x : t . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
@@ -277,57 +277,6 @@ module M_final_borrows__unnesting_fails
     | & rebor2 : borrowed int32 = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
-module T_core__ptr__non_null__NonNull
-  use prelude.prelude.Opaque
-  
-  type t_NonNull 't =
-    | C_NonNull opaque_ptr
-  
-  function any_l (_ : 'b) : 'a
-  
-  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
-    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
-    | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
-    
-end
-module T_core__marker__PhantomData
-  type t_PhantomData 't =
-    | C_PhantomData
-  
-  function any_l (_ : 'b) : 'a
-  
-  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any
-    [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
-    
-end
-module T_core__ptr__unique__Unique
-  use T_core__marker__PhantomData as PhantomData'0
-  
-  use T_core__ptr__non_null__NonNull as NonNull'0
-  
-  type t_Unique 't =
-    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
-  
-  function any_l (_ : 'b) : 'a
-  
-  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
-    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
-      = input}
-      (! ret {pointer} {_marker})
-    | bad (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
-      <> input}
-      {false}
-      any ]
-    
-end
-module T_alloc__boxed__Box
-  use T_core__ptr__unique__Unique as Unique'0
-  
-  type t_Box 't 'a =
-    | C_Box (Unique'0.t_Unique 't) 'a
-  
-  function any_l (_ : 'b) : 'a
-end
 module T_alloc__alloc__Global
   type t_Global  =
     | C_Global
@@ -345,9 +294,9 @@ module M_final_borrows__move_place_without_deref
   
   let%span sfinal_borrows1 = "../final_borrows.rs" 53 35 53 38
   
-  let%span span2 = "../../../../creusot-contracts/src/std/boxed.rs" 27 8 27 18
+  let%span span2 = "../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
-  let%span span3 = "../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  let%span span3 = "../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
   
   let%span span4 = "../final_borrows.rs" 56 16 56 17
   
@@ -366,18 +315,18 @@ module M_final_borrows__move_place_without_deref
   
   predicate inv'2 (_1 : borrowed t)
   
-  axiom inv'2 : forall x : borrowed t . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : borrowed t . inv'2 x = true
   
   predicate inv'0 (_1 : t)
   
   predicate invariant'1 (self : borrowed t) =
     [%#span3] inv'0 self.current /\ inv'0 self.final
   
-  axiom inv'1 : forall x : borrowed t . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed t . inv'1 x = true
   
   predicate invariant'0 (self : t)
   
-  axiom inv'0 : forall x : t . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   

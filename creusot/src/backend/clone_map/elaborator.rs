@@ -1,7 +1,7 @@
-use super::{CloneNames, DepNode, Kind};
+use super::{CloneNames, Dependency, Kind};
 use crate::{
     backend::{
-        dependency::{Dependency, ExtendedId},
+        dependency::ExtendedId,
         logic::{lower_logical_defn, lower_pure_defn, sigs, spec_axiom},
         program,
         signature::named_sig_to_why3,
@@ -27,20 +27,20 @@ use why3::{
 /// The symbol elaborator expands required definitions as symbols and definitions, effectively performing the clones itself.
 pub(super) struct SymbolElaborator<'tcx> {
     used_types: IndexSet<Symbol>,
-    _param_env: ParamEnv<'tcx>,
+    param_env: ParamEnv<'tcx>,
     tcx: TyCtxt<'tcx>,
 }
 
 impl<'tcx> SymbolElaborator<'tcx> {
     pub fn new(param_env: ParamEnv<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
-        Self { used_types: Default::default(), _param_env: param_env, tcx }
+        Self { used_types: Default::default(), param_env, tcx }
     }
 
     pub fn build_clone(
         &mut self,
         ctx: &mut Why3Generator<'tcx>,
         names: &mut Dependencies<'tcx>,
-        item: DepNode<'tcx>,
+        item: Dependency<'tcx>,
         level_of_item: CloneLevel,
     ) -> Vec<Decl> {
         let param_env = names.param_env(ctx);
@@ -49,17 +49,17 @@ impl<'tcx> SymbolElaborator<'tcx> {
         let names = &mut names;
 
         match item {
-            DepNode::Type(ty) => self.elaborate_ty(ctx, names, ty),
-            DepNode::Builtin(b) => {
+            Dependency::Type(ty) => self.elaborate_ty(ctx, names, ty),
+            Dependency::Builtin(b) => {
                 vec![Decl::UseDecl(Use { name: b.qname(), as_: None, export: false })]
             }
-            DepNode::TyInv(ty, kind) => {
-                let term = InvariantElaborator::new(param_env, true).elaborate_inv(ctx, ty, kind);
+            Dependency::TyInv(ty) => {
+                let term = InvariantElaborator::new(param_env, true).elaborate_inv(ctx, ty);
                 let exp = lower_pure(ctx, names, &term);
-                let axiom = Axiom { name: names.ty_inv(ty).name, rewrite: false, axiom: exp };
+                let axiom = Axiom { name: names.ty_inv(ty).name, rewrite: true, axiom: exp };
                 vec![Decl::Axiom(axiom)]
             }
-            DepNode::Item(_, _) | DepNode::Hacked(_, _, _) => {
+            Dependency::Item(_, _) | Dependency::Hacked(_, _, _) => {
                 self.elaborate_item(ctx, names, param_env, level_of_item, item)
             }
         }
@@ -71,14 +71,14 @@ impl<'tcx> SymbolElaborator<'tcx> {
         names: &mut ImmutDeps<'_, 'tcx>,
         ty: Ty<'tcx>,
     ) -> Vec<Decl> {
-        let Some((def_id, subst)) = DepNode::Type(ty).did() else { return Vec::new() };
+        let Some((def_id, subst)) = Dependency::Type(ty).did() else { return Vec::new() };
 
         match ty.kind() {
             TyKind::Alias(_, _) => vec![ctx.assoc_ty_decl(names, def_id, subst)],
             _ => {
                 if let Some(why3_modl) = util::get_builtin(ctx.tcx, def_id) {
                     let qname = QName::from_string(why3_modl.as_str()).unwrap();
-                    let Kind::Used(modl, _) = names.insert(DepNode::Type(ty)) else {
+                    let Kind::Used(modl, _) = names.insert(Dependency::Type(ty)) else {
                         return vec![];
                     };
 
@@ -92,7 +92,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
                         })
                         .unwrap_or_default()
                 } else {
-                    self.emit_use(names, DepNode::Type(ty))
+                    self.emit_use(names, Dependency::Type(ty))
                 }
             }
         }
@@ -132,7 +132,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
         names: &mut ImmutDeps<'_, 'tcx>,
         param_env: ParamEnv<'tcx>,
         level_of_item: CloneLevel,
-        item: DepNode<'tcx>,
+        item: Dependency<'tcx>,
     ) -> Vec<Decl> {
         let Some((def_id, subst)) = item.did() else { unreachable!("{item:?}") };
 
@@ -148,10 +148,12 @@ impl<'tcx> SymbolElaborator<'tcx> {
             return self.emit_use(names, item);
         };
 
-        let mut pre_sig = EarlyBinder::bind(sig(ctx, item)).instantiate(ctx.tcx, subst);
+        let mut pre_sig =
+            EarlyBinder::bind(sig(ctx, self.param_env, item)).instantiate(ctx.tcx, subst);
         pre_sig = pre_sig.normalize(ctx.tcx, param_env);
 
-        let is_accessor = item.to_trans_id().is_some_and(|i| ctx.is_accessor(i));
+        let is_accessor =
+            item.to_trans_id(self.tcx, self.param_env).is_some_and(|i| ctx.is_accessor(i));
         let kind = if item.is_hacked() {
             if is_accessor {
                 Some(LetKind::Function)
@@ -168,7 +170,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
             pre_sig.contract = PreContract::default();
         }
 
-        let name = if let DepNode::Hacked(_, _, _) = item {
+        let name = if let Dependency::Hacked(_, _, _) = item {
             names.insert(item).ident()
         } else {
             names.value(def_id, subst).name
@@ -183,7 +185,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
         };
 
         if item.is_hacked() || ctx.is_logical(def_id) {
-            let Some(term) = term(ctx, item) else { return Vec::new() };
+            let Some(term) = term(ctx, param_env, item) else { return Vec::new() };
             let mut term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
             normalize(ctx.tcx, param_env, &mut term);
             if is_accessor {
@@ -257,12 +259,20 @@ fn val<'tcx>(
     }
 }
 
-fn term<'tcx>(ctx: &mut Why3Generator<'tcx>, dep: DepNode<'tcx>) -> Option<Term<'tcx>> {
-    ctx.term(dep.to_trans_id()?).cloned()
+fn term<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    dep: Dependency<'tcx>,
+) -> Option<Term<'tcx>> {
+    ctx.term(dep.to_trans_id(ctx.tcx, param_env)?).cloned()
 }
 
-fn sig<'tcx>(ctx: &mut Why3Generator<'tcx>, dep: DepNode<'tcx>) -> PreSignature<'tcx> {
-    match dep.to_trans_id().unwrap() {
+fn sig<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    dep: Dependency<'tcx>,
+) -> PreSignature<'tcx> {
+    match dep.to_trans_id(ctx.tcx, param_env).unwrap() {
         TransId::Item(id) => ctx.sig(id).clone(),
         // In future change this
         TransId::TyInv(_) => unreachable!(),
@@ -294,7 +304,7 @@ struct ImmutDeps<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> ImmutDeps<'a, 'tcx> {
-    fn get(&self, ix: DepNode<'tcx>) -> &Kind {
+    fn get(&self, ix: Dependency<'tcx>) -> &Kind {
         let n = ix.closure_hack(self.tcx);
         let n = self.tcx.try_normalize_erasing_regions(self.param_env, n).unwrap_or(n);
         self.names.names.get(&n).unwrap_or_else(|| {
@@ -304,7 +314,7 @@ impl<'a, 'tcx> ImmutDeps<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> Namer<'tcx> for ImmutDeps<'a, 'tcx> {
-    fn insert(&mut self, ix: DepNode<'tcx>) -> Kind {
+    fn insert(&mut self, ix: Dependency<'tcx>) -> Kind {
         *self.get(ix)
     }
 
