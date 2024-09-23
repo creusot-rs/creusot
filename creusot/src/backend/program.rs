@@ -472,10 +472,38 @@ impl<'tcx> RValue<'tcx> {
             }
             RValue::BinOp(op, l, r) => {
                 let l_ty = l.ty(lower.ctx.tcx, lower.locals);
+                
                 let fname = binop_to_binop(lower.names, l_ty, op);
                 let call = coma::Expr::Symbol(fname);
+
+                // some operator need to convert the right operand
+                let r = match op {
+                    // right operand must be converted to integer
+                    BinOp::Shl | BinOp::ShlUnchecked | BinOp::Shr | BinOp::ShrUnchecked => {
+                        let r_ty = r.ty(lower.ctx.tcx, lower.locals);
+
+                        // rust allows shifting by a value of any integer type
+                        // so we need to import the prelude for the right operand
+                        let prelude: PreludeModule = match r_ty.kind() {
+                            TyKind::Int(ity) => int_to_prelude(*ity),
+                            TyKind::Uint(uty) => uint_to_prelude(*uty),
+                            _ => unreachable!("right operande, non-integer type for binary operation {op:?} {ty:?}"),
+                        };
+                        lower.names.import_prelude_module(prelude); 
+
+                        // convert the right operand to an logical integer
+                        let mut module = prelude.qname();
+                        module.push_ident("to_int");
+                        module = module.without_search_path();
+
+                        // build the expression for this convertion
+                        Exp::qvar(module).app_to(r.to_why(lower, istmts))
+                    }
+                    _ => r.to_why(lower, istmts)
+                };
+
                 let args =
-                    vec![Arg::Term(l.to_why(lower, istmts)), Arg::Term(r.to_why(lower, istmts))];
+                    vec![Arg::Term(l.to_why(lower, istmts)), Arg::Term(r)];
                 istmts.extend([IntermediateStmt::call("_ret'".into(), lower.ty(ty), call, args)]);
                 // let ty = l.ty(lower.ctx.tcx, locals);
                 // // Hack
@@ -546,46 +574,55 @@ impl<'tcx> RValue<'tcx> {
                 Exp::Tuple(f.into_iter().map(|f| f.to_why(lower, istmts)).collect())
             }
             RValue::Cast(e, source, target) => {
-                let to_int = match source.kind() {
+                let bv256_ty = Type::TConstructor(QName::from_string("BV256.t").unwrap());
+
+                let to_fname = match source.kind() {
                     TyKind::Int(ity) => {
                         lower.names.import_prelude_module(int_to_prelude(*ity));
-                        int_to_int(ity)
+                        int_to_bv256(ity)
                     }
                     TyKind::Uint(uty) => {
                         lower.names.import_prelude_module(uint_to_prelude(*uty));
-                        uint_to_int(uty)
+                        uint_to_bv256(uty)
                     }
-                    TyKind::Bool => {
-                        lower.names.import_prelude_module(PreludeModule::Bool);
-                        Exp::qvar(QName::from_string("Bool.to_int").unwrap())
-                    }
+                    // Laurent Todo: remettre le cast bool operationnelle
+                    // TyKind::Bool => {
+                    //     lower.names.import_prelude_module(PreludeModule::Bool);
+                    //     Exp::qvar(QName::from_string("Bool.to_int").unwrap())
+                    // }
                     _ => lower
                         .ctx
                         .crash_and_error(DUMMY_SP, "Non integral casts are currently unsupported"),
                 };
 
-                let from_int = match target.kind() {
-                    TyKind::Int(ity) => int_from_int(ity),
-                    TyKind::Uint(uty) => uint_from_int(uty),
-                    TyKind::Char => {
-                        lower.names.import_prelude_module(PreludeModule::Char);
-                        QName::from_string("Char.chr").unwrap()
-                    }
-                    _ => lower
-                        .ctx
-                        .crash_and_error(DUMMY_SP, "Non integral casts are currently unsupported"),
-                };
-
-                let int = to_int.app_to(e.to_why(lower, istmts));
-
+                // convert source to BV256.t
+                let to_ret_id: Ident = "_ret_to".into();
+                let to_arg = Arg::Term(e.to_why(lower, istmts));
                 istmts.push(IntermediateStmt::call(
-                    "_res".into(),
-                    lower.ty(ty),
-                    Expr::Symbol(from_int),
-                    vec![Arg::Term(int)],
+                    to_ret_id.clone(),
+                    bv256_ty.clone(),
+                    Expr::Symbol(to_fname),
+                    vec![to_arg],
                 ));
+    
+                // convert BV256.t to target
+                let of_ret_id: Ident = "_ret_from".into();
+                let of_fname = match target.kind() {
+                    TyKind::Int(ity) => int_from_bv256(ity),
+                    TyKind::Uint(uty) => uint_from_bv256(uty),
+                    // Laurent Todo: remettre le char bool operationnelle
+                    // TyKind::Char => {
+                    //     lower.names.import_prelude_module(PreludeModule::Char);
+                    //     QName::from_string("Char.chr").unwrap()
+                    // }
+                    _ => lower
+                        .ctx
+                        .crash_and_error(DUMMY_SP, "Non integral casts are currently unsupported"),
+                };
 
-                Exp::var("_res")
+                // create final statement
+                istmts.extend([IntermediateStmt::call(of_ret_id.clone(), lower.ty(ty), Expr::Symbol(of_fname), vec![Arg::Term(Term::Var(to_ret_id))])]);
+                Exp::var(of_ret_id)
             }
             RValue::Len(pl) => {
                 let len_call = Exp::qvar(QName::from_string("Slice.length").unwrap())
@@ -1279,46 +1316,46 @@ pub(crate) fn uint_to_prelude(ity: UintTy) -> PreludeModule {
     }
 }
 
-pub(crate) fn int_from_int(ity: &IntTy) -> QName {
+pub(crate) fn int_from_bv256(ity: &IntTy) -> QName {
     match ity {
-        IntTy::Isize => QName::from_string("IntSize.of_int").unwrap(),
-        IntTy::I8 => QName::from_string("Int8.of_int").unwrap(),
-        IntTy::I16 => QName::from_string("Int16.of_int").unwrap(),
-        IntTy::I32 => QName::from_string("Int32.of_int").unwrap(),
-        IntTy::I64 => QName::from_string("Int64.of_int").unwrap(),
-        IntTy::I128 => QName::from_string("Int128.of_int").unwrap(),
+        IntTy::Isize => QName::from_string("IntSize.of_bv256").unwrap(),
+        IntTy::I8 => QName::from_string("Int8.of_bv256").unwrap(),
+        IntTy::I16 => QName::from_string("Int16.of_bv256").unwrap(),
+        IntTy::I32 => QName::from_string("Int32.of_bv256").unwrap(),
+        IntTy::I64 => QName::from_string("Int64.of_bv256").unwrap(),
+        IntTy::I128 => QName::from_string("Int128.of_bv256").unwrap(),
     }
 }
 
-pub(crate) fn uint_from_int(uty: &UintTy) -> QName {
+pub(crate) fn uint_from_bv256(uty: &UintTy) -> QName {
     match uty {
-        UintTy::Usize => QName::from_string("UIntSize.of_int").unwrap(),
-        UintTy::U8 => QName::from_string("UInt8.of_int").unwrap(),
-        UintTy::U16 => QName::from_string("UInt16.of_int").unwrap(),
-        UintTy::U32 => QName::from_string("UInt32.of_int").unwrap(),
-        UintTy::U64 => QName::from_string("UInt64.of_int").unwrap(),
-        UintTy::U128 => QName::from_string("UInt128.of_int").unwrap(),
+        UintTy::Usize => QName::from_string("UIntSize.of_bv256").unwrap(),
+        UintTy::U8 => QName::from_string("UInt8.of_bv256").unwrap(),
+        UintTy::U16 => QName::from_string("UInt16.of_bv256").unwrap(),
+        UintTy::U32 => QName::from_string("UInt32.of_bv256").unwrap(),
+        UintTy::U64 => QName::from_string("UInt64.of_bv256").unwrap(),
+        UintTy::U128 => QName::from_string("UInt128.of_bv256").unwrap(),
     }
 }
 
-pub(crate) fn int_to_int(ity: &IntTy) -> Exp {
+pub(crate) fn int_to_bv256(ity: &IntTy) -> QName {
     match ity {
-        IntTy::Isize => Exp::qvar(QName::from_string("IntSize.to_int").unwrap()),
-        IntTy::I8 => Exp::qvar(QName::from_string("Int8.to_int").unwrap()),
-        IntTy::I16 => Exp::qvar(QName::from_string("Int16.to_int").unwrap()),
-        IntTy::I32 => Exp::qvar(QName::from_string("Int32.to_int").unwrap()),
-        IntTy::I64 => Exp::qvar(QName::from_string("Int64.to_int").unwrap()),
-        IntTy::I128 => Exp::qvar(QName::from_string("Int128.to_int").unwrap()),
+        IntTy::Isize => QName::from_string("IntSize.to_bv256").unwrap(),
+        IntTy::I8 => QName::from_string("Int8.to_bv256").unwrap(),
+        IntTy::I16 => QName::from_string("Int16.to_bv256").unwrap(),
+        IntTy::I32 => QName::from_string("Int32.to_bv256").unwrap(),
+        IntTy::I64 => QName::from_string("Int64.to_bv256").unwrap(),
+        IntTy::I128 => QName::from_string("Int128.to_bv256").unwrap(),
     }
 }
 
-pub(crate) fn uint_to_int(uty: &UintTy) -> Exp {
+pub(crate) fn uint_to_bv256(uty: &UintTy) -> QName {
     match uty {
-        UintTy::Usize => Exp::qvar(QName::from_string("UIntSize.to_int").unwrap()),
-        UintTy::U8 => Exp::qvar(QName::from_string("UInt8.to_int").unwrap()),
-        UintTy::U16 => Exp::qvar(QName::from_string("UInt16.to_int").unwrap()),
-        UintTy::U32 => Exp::qvar(QName::from_string("UInt32.to_int").unwrap()),
-        UintTy::U64 => Exp::qvar(QName::from_string("UInt64.to_int").unwrap()),
-        UintTy::U128 => Exp::qvar(QName::from_string("UInt128.to_int").unwrap()),
+        UintTy::Usize => QName::from_string("UIntSize.to_bv256").unwrap(),
+        UintTy::U8 => QName::from_string("UInt8.to_bv256").unwrap(),
+        UintTy::U16 => QName::from_string("UInt16.to_bv256").unwrap(),
+        UintTy::U32 => QName::from_string("UInt32.to_bv256").unwrap(),
+        UintTy::U64 => QName::from_string("UInt64.to_bv256").unwrap(),
+        UintTy::U128 => QName::from_string("UInt128.to_bv256").unwrap(),
     }
 }
