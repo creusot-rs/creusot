@@ -56,14 +56,18 @@ pub fn nested_loops(x: &mut i32) {
 
     #[invariant(*x == 0i32)]
     loop {
-        if i > 10 { break }
+        if i > 10 {
+            break;
+        }
         i += 1;
 
         let mut j = 0;
 
         #[invariant(*x == 0i32)]
         loop {
-            if j > 10 { break }
+            if j > 10 {
+                break;
+            }
             j += 1;
             *x = 0;
         }
@@ -78,7 +82,9 @@ pub fn nested_borrows<'a, 'b>(x: &'a mut &'b mut i32, y: &'b mut i32) {
 
     #[invariant(**x == 0i32)]
     loop {
-        if i > 10 { break }
+        if i > 10 {
+            break;
+        }
         i += 1;
 
         **x = 0;

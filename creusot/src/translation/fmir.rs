@@ -223,7 +223,7 @@ pub struct Body<'tcx> {
     pub(crate) locals: LocalDecls<'tcx>,
     pub(crate) arg_count: usize,
     pub(crate) blocks: IndexMap<BasicBlock, Block<'tcx>>,
-    pub(crate) fresh: usize
+    pub(crate) fresh: usize,
 }
 
 pub(crate) trait FmirVisitor<'tcx>: Sized {
