@@ -1,53 +1,53 @@
 
-module Core_Time_Nanoseconds_Type
+module T_core__time__Nanoseconds
   use prelude.prelude.UInt32
   
   use prelude.prelude.Int
   
-  type t_nanoseconds  =
+  type t_Nanoseconds  =
     | C_Nanoseconds uint32
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_nanoseconds (input:t_nanoseconds) (ret  (field_0:uint32))= any
+  let rec t_Nanoseconds (input:t_Nanoseconds) (ret  (field_0:uint32))= any
     [ good (field_0:uint32)-> {C_Nanoseconds field_0 = input} (! ret {field_0})
     | bad (field_0:uint32)-> {C_Nanoseconds field_0 <> input} {false} any ]
     
 end
-module Core_Time_Duration_Type
-  use Core_Time_Nanoseconds_Type as Nanoseconds'0
+module T_core__time__Duration
+  use T_core__time__Nanoseconds as Nanoseconds'0
   
   use prelude.prelude.UInt64
   
   use prelude.prelude.Int
   
-  type t_duration  =
-    | C_Duration uint64 (Nanoseconds'0.t_nanoseconds)
+  type t_Duration  =
+    | C_Duration uint64 (Nanoseconds'0.t_Nanoseconds)
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_duration (input:t_duration) (ret  (secs:uint64) (nanos:Nanoseconds'0.t_nanoseconds))= any
-    [ good (secs:uint64) (nanos:Nanoseconds'0.t_nanoseconds)-> {C_Duration secs nanos = input} (! ret {secs} {nanos})
-    | bad (secs:uint64) (nanos:Nanoseconds'0.t_nanoseconds)-> {C_Duration secs nanos <> input} {false} any ]
+  let rec t_Duration (input:t_Duration) (ret  (secs:uint64) (nanos:Nanoseconds'0.t_Nanoseconds))= any
+    [ good (secs:uint64) (nanos:Nanoseconds'0.t_Nanoseconds)-> {C_Duration secs nanos = input} (! ret {secs} {nanos})
+    | bad (secs:uint64) (nanos:Nanoseconds'0.t_Nanoseconds)-> {C_Duration secs nanos <> input} {false} any ]
     
 end
-module Core_Option_Option_Type
-  type t_option 't =
+module T_core__option__Option
+  type t_Option 't =
     | C_None
     | C_Some 't
   
   function any_l (_ : 'b) : 'a
   
-  let rec none < 't > (input:t_option 't) (ret  )= any
+  let rec v_None < 't > (input:t_Option 't) (ret  )= any
     [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ]
     
   
-  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any
+  let rec v_Some < 't > (input:t_Option 't) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
     | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
     
 end
-module Duration_TestDuration
+module M_duration__test_duration
   let%span sduration0 = "../duration.rs" 8 29 8 30
   
   let%span sduration1 = "../duration.rs" 8 32 8 33
@@ -218,25 +218,25 @@ module Duration_TestDuration
   
   let%span span84 = "../../../../creusot-contracts/src/std/time.rs" 80 26 80 66
   
-  use Core_Time_Duration_Type as Duration'0
+  use T_core__time__Duration as Duration'0
   
-  use Core_Option_Option_Type as Option'0
+  use T_core__option__Option as Option'0
   
-  predicate invariant'1 (self : Option'0.t_option (Duration'0.t_duration)) =
+  predicate invariant'1 (self : Option'0.t_Option (Duration'0.t_Duration)) =
     [%#span42] true
   
-  predicate inv'1 (_1 : Option'0.t_option (Duration'0.t_duration))
+  predicate inv'1 (_1 : Option'0.t_Option (Duration'0.t_Duration))
   
-  axiom inv'1 [@rewrite] : forall x : Option'0.t_option (Duration'0.t_duration) . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : Option'0.t_Option (Duration'0.t_Duration) . inv'1 x = true
   
   use prelude.prelude.Borrow
   
-  predicate invariant'0 (self : Option'0.t_option (Duration'0.t_duration)) =
+  predicate invariant'0 (self : Option'0.t_Option (Duration'0.t_Duration)) =
     [%#span43] inv'1 self
   
-  predicate inv'0 (_1 : Option'0.t_option (Duration'0.t_duration))
+  predicate inv'0 (_1 : Option'0.t_Option (Duration'0.t_Duration))
   
-  axiom inv'0 [@rewrite] : forall x : Option'0.t_option (Duration'0.t_duration) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Option'0.t_Option (Duration'0.t_Duration) . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
@@ -249,27 +249,27 @@ module Duration_TestDuration
   
   use prelude.prelude.UInt64
   
-  constant max'0 : uint64 = [%#span45] (18446744073709551615 : uint64)
+  constant v_MAX'0 : uint64 = [%#span45] (18446744073709551615 : uint64)
   
-  function shallow_model'0 (self : Duration'0.t_duration) : int
+  function shallow_model'0 (self : Duration'0.t_Duration) : int
   
-  axiom shallow_model'0_spec : forall self : Duration'0.t_duration . [%#span46] shallow_model'0 self >= 0
-  /\ shallow_model'0 self <= secs_to_nanos'0 (UInt64.to_int (max'0 : uint64)) + 999999999
+  axiom shallow_model'0_spec : forall self : Duration'0.t_Duration . [%#span46] shallow_model'0 self >= 0
+  /\ shallow_model'0 self <= secs_to_nanos'0 (UInt64.to_int (v_MAX'0 : uint64)) + 999999999
   
-  let rec sub'0 (self:Duration'0.t_duration) (rhs:Duration'0.t_duration) (return'  (ret:Duration'0.t_duration))= {[@expl:precondition] [%#span47] shallow_model'0 self
+  let rec sub'0 (self:Duration'0.t_Duration) (rhs:Duration'0.t_Duration) (return'  (ret:Duration'0.t_Duration))= {[@expl:precondition] [%#span47] shallow_model'0 self
     - shallow_model'0 rhs
     >= 0}
     any
-    [ return' (result:Duration'0.t_duration)-> {[%#span47] shallow_model'0 self - shallow_model'0 rhs
+    [ return' (result:Duration'0.t_Duration)-> {[%#span47] shallow_model'0 self - shallow_model'0 rhs
       = shallow_model'0 result}
       (! return' {result}) ]
     
   
-  let rec add'0 (self:Duration'0.t_duration) (rhs:Duration'0.t_duration) (return'  (ret:Duration'0.t_duration))= {[@expl:precondition] [%#span47] shallow_model'0 self
+  let rec add'0 (self:Duration'0.t_Duration) (rhs:Duration'0.t_Duration) (return'  (ret:Duration'0.t_Duration))= {[@expl:precondition] [%#span47] shallow_model'0 self
     + shallow_model'0 rhs
-    <= secs_to_nanos'0 (UInt64.to_int (max'0 : uint64)) + 999999999}
+    <= secs_to_nanos'0 (UInt64.to_int (v_MAX'0 : uint64)) + 999999999}
     any
-    [ return' (result:Duration'0.t_duration)-> {[%#span47] shallow_model'0 self + shallow_model'0 rhs
+    [ return' (result:Duration'0.t_Duration)-> {[%#span47] shallow_model'0 self + shallow_model'0 rhs
       = shallow_model'0 result}
       (! return' {result}) ]
     
@@ -278,10 +278,10 @@ module Duration_TestDuration
   
   use prelude.prelude.UInt32
   
-  function deep_model'1 (self : Duration'0.t_duration) : int =
+  function deep_model'1 (self : Duration'0.t_Duration) : int =
     [%#span48] shallow_model'0 self
   
-  function deep_model'0 (self : Option'0.t_option (Duration'0.t_duration)) : Option'0.t_option int =
+  function deep_model'0 (self : Option'0.t_Option (Duration'0.t_Duration)) : Option'0.t_Option int =
     [%#span49] match self with
       | Option'0.C_Some t -> Option'0.C_Some (deep_model'1 t)
       | Option'0.C_None -> Option'0.C_None
@@ -289,8 +289,8 @@ module Duration_TestDuration
   
   use prelude.prelude.UInt32
   
-  let rec checked_div'0 (self:Duration'0.t_duration) (rhs:uint32) (return'  (ret:Option'0.t_option (Duration'0.t_duration)))= any
-    [ return' (result:Option'0.t_option (Duration'0.t_duration))-> {[%#span51] rhs <> (0 : uint32)
+  let rec checked_div'0 (self:Duration'0.t_Duration) (rhs:uint32) (return'  (ret:Option'0.t_Option (Duration'0.t_Duration)))= any
+    [ return' (result:Option'0.t_Option (Duration'0.t_Duration))-> {[%#span51] rhs <> (0 : uint32)
        -> deep_model'0 result = Option'0.C_Some (div (shallow_model'0 self) (UInt32.to_int rhs))}
       {[%#span50] rhs = (0 : uint32)  -> result = Option'0.C_None}
       (! return' {result}) ]
@@ -299,36 +299,36 @@ module Duration_TestDuration
   function nanos_to_secs'0 (nanos : int) : int =
     [%#span52] div nanos 1000000000
   
-  let rec checked_mul'0 (self:Duration'0.t_duration) (rhs:uint32) (return'  (ret:Option'0.t_option (Duration'0.t_duration)))= any
-    [ return' (result:Option'0.t_option (Duration'0.t_duration))-> {[%#span54] nanos_to_secs'0 (shallow_model'0 self
+  let rec checked_mul'0 (self:Duration'0.t_Duration) (rhs:uint32) (return'  (ret:Option'0.t_Option (Duration'0.t_Duration)))= any
+    [ return' (result:Option'0.t_Option (Duration'0.t_Duration))-> {[%#span54] nanos_to_secs'0 (shallow_model'0 self
       * UInt32.to_int rhs)
-      <= UInt64.to_int (max'0 : uint64)
+      <= UInt64.to_int (v_MAX'0 : uint64)
        -> deep_model'0 result = Option'0.C_Some (shallow_model'0 self * UInt32.to_int rhs)}
-      {[%#span53] nanos_to_secs'0 (shallow_model'0 self * UInt32.to_int rhs) > UInt64.to_int (max'0 : uint64)
+      {[%#span53] nanos_to_secs'0 (shallow_model'0 self * UInt32.to_int rhs) > UInt64.to_int (v_MAX'0 : uint64)
        -> result = Option'0.C_None}
       (! return' {result}) ]
     
   
-  let rec checked_sub'0 (self:Duration'0.t_duration) (rhs:Duration'0.t_duration) (return'  (ret:Option'0.t_option (Duration'0.t_duration)))= any
-    [ return' (result:Option'0.t_option (Duration'0.t_duration))-> {[%#span56] shallow_model'0 self
+  let rec checked_sub'0 (self:Duration'0.t_Duration) (rhs:Duration'0.t_Duration) (return'  (ret:Option'0.t_Option (Duration'0.t_Duration)))= any
+    [ return' (result:Option'0.t_Option (Duration'0.t_Duration))-> {[%#span56] shallow_model'0 self
       - shallow_model'0 rhs
       >= 0  -> deep_model'0 result = Option'0.C_Some (shallow_model'0 self - shallow_model'0 rhs)}
       {[%#span55] shallow_model'0 self - shallow_model'0 rhs < 0  -> result = Option'0.C_None}
       (! return' {result}) ]
     
   
-  let rec is_some'0 (self:Option'0.t_option (Duration'0.t_duration)) (return'  (ret:bool))= {[@expl:precondition] [%#span57] inv'0 self}
+  let rec is_some'0 (self:Option'0.t_Option (Duration'0.t_Duration)) (return'  (ret:bool))= {[@expl:precondition] [%#span57] inv'0 self}
     any [ return' (result:bool)-> {[%#span58] result = (self <> Option'0.C_None)} (! return' {result}) ] 
   
-  let rec is_none'0 (self:Option'0.t_option (Duration'0.t_duration)) (return'  (ret:bool))= {[@expl:precondition] [%#span59] inv'0 self}
+  let rec is_none'0 (self:Option'0.t_Option (Duration'0.t_Duration)) (return'  (ret:bool))= {[@expl:precondition] [%#span59] inv'0 self}
     any [ return' (result:bool)-> {[%#span60] result = (self = Option'0.C_None)} (! return' {result}) ] 
   
-  let rec checked_add'0 (self:Duration'0.t_duration) (rhs:Duration'0.t_duration) (return'  (ret:Option'0.t_option (Duration'0.t_duration)))= any
-    [ return' (result:Option'0.t_option (Duration'0.t_duration))-> {[%#span62] nanos_to_secs'0 (shallow_model'0 self
+  let rec checked_add'0 (self:Duration'0.t_Duration) (rhs:Duration'0.t_Duration) (return'  (ret:Option'0.t_Option (Duration'0.t_Duration)))= any
+    [ return' (result:Option'0.t_Option (Duration'0.t_Duration))-> {[%#span62] nanos_to_secs'0 (shallow_model'0 self
       + shallow_model'0 rhs)
-      <= UInt64.to_int (max'0 : uint64)
+      <= UInt64.to_int (v_MAX'0 : uint64)
        -> deep_model'0 result = Option'0.C_Some (shallow_model'0 self + shallow_model'0 rhs)}
-      {[%#span61] nanos_to_secs'0 (shallow_model'0 self + shallow_model'0 rhs) > UInt64.to_int (max'0 : uint64)
+      {[%#span61] nanos_to_secs'0 (shallow_model'0 self + shallow_model'0 rhs) > UInt64.to_int (v_MAX'0 : uint64)
        -> result = Option'0.C_None}
       (! return' {result}) ]
     
@@ -338,12 +338,12 @@ module Duration_TestDuration
   function nanos_to_micros'0 (nanos : int) : int =
     [%#span63] div nanos 1000
   
-  function shallow_model'1 (self : Duration'0.t_duration) : int =
+  function shallow_model'1 (self : Duration'0.t_Duration) : int =
     [%#span64] shallow_model'0 self
   
   use prelude.prelude.UInt128
   
-  let rec as_micros'0 (self:Duration'0.t_duration) (return'  (ret:uint128))= any
+  let rec as_micros'0 (self:Duration'0.t_Duration) (return'  (ret:uint128))= any
     [ return' (result:uint128)-> {[%#span65] UInt128.to_int result = nanos_to_micros'0 (shallow_model'1 self)}
       (! return' {result}) ]
     
@@ -351,73 +351,73 @@ module Duration_TestDuration
   function nanos_to_millis'0 (nanos : int) : int =
     [%#span66] div nanos 1000000
   
-  let rec as_millis'0 (self:Duration'0.t_duration) (return'  (ret:uint128))= any
+  let rec as_millis'0 (self:Duration'0.t_Duration) (return'  (ret:uint128))= any
     [ return' (result:uint128)-> {[%#span67] UInt128.to_int result = nanos_to_millis'0 (shallow_model'1 self)}
       (! return' {result}) ]
     
   
-  let rec subsec_nanos'0 (self:Duration'0.t_duration) (return'  (ret:uint32))= any
+  let rec subsec_nanos'0 (self:Duration'0.t_Duration) (return'  (ret:uint32))= any
     [ return' (result:uint32)-> {[%#span69] result < (1000000000 : uint32)}
       {[%#span68] UInt32.to_int result = mod (shallow_model'1 self) 1000000000}
       (! return' {result}) ]
     
   
-  let rec subsec_micros'0 (self:Duration'0.t_duration) (return'  (ret:uint32))= any
+  let rec subsec_micros'0 (self:Duration'0.t_Duration) (return'  (ret:uint32))= any
     [ return' (result:uint32)-> {[%#span71] result < (1000000 : uint32)}
       {[%#span70] UInt32.to_int result = mod (nanos_to_micros'0 (shallow_model'1 self)) 1000000}
       (! return' {result}) ]
     
   
-  let rec subsec_millis'0 (self:Duration'0.t_duration) (return'  (ret:uint32))= any
+  let rec subsec_millis'0 (self:Duration'0.t_Duration) (return'  (ret:uint32))= any
     [ return' (result:uint32)-> {[%#span73] result < (1000 : uint32)}
       {[%#span72] UInt32.to_int result = mod (nanos_to_millis'0 (shallow_model'1 self)) 1000}
       (! return' {result}) ]
     
   
-  let rec as_secs'0 (self:Duration'0.t_duration) (return'  (ret:uint64))= any
+  let rec as_secs'0 (self:Duration'0.t_Duration) (return'  (ret:uint64))= any
     [ return' (result:uint64)-> {[%#span74] UInt64.to_int result = nanos_to_secs'0 (shallow_model'1 self)}
       (! return' {result}) ]
     
   
-  let rec is_zero'0 (self:Duration'0.t_duration) (return'  (ret:bool))= any
+  let rec is_zero'0 (self:Duration'0.t_Duration) (return'  (ret:bool))= any
     [ return' (result:bool)-> {[%#span76] shallow_model'1 self <> 0  -> result = false}
       {[%#span75] shallow_model'1 self = 0  -> result = true}
       (! return' {result}) ]
     
   
-  let rec from_nanos'0 (nanos:uint64) (return'  (ret:Duration'0.t_duration))= any
-    [ return' (result:Duration'0.t_duration)-> {[%#span77] shallow_model'0 result = UInt64.to_int nanos}
+  let rec from_nanos'0 (nanos:uint64) (return'  (ret:Duration'0.t_Duration))= any
+    [ return' (result:Duration'0.t_Duration)-> {[%#span77] shallow_model'0 result = UInt64.to_int nanos}
       (! return' {result}) ]
     
   
-  let rec from_micros'0 (micros:uint64) (return'  (ret:Duration'0.t_duration))= any
-    [ return' (result:Duration'0.t_duration)-> {[%#span78] shallow_model'0 result = UInt64.to_int micros * 1000}
+  let rec from_micros'0 (micros:uint64) (return'  (ret:Duration'0.t_Duration))= any
+    [ return' (result:Duration'0.t_Duration)-> {[%#span78] shallow_model'0 result = UInt64.to_int micros * 1000}
       (! return' {result}) ]
     
   
-  let rec from_millis'0 (millis:uint64) (return'  (ret:Duration'0.t_duration))= any
-    [ return' (result:Duration'0.t_duration)-> {[%#span79] shallow_model'0 result = UInt64.to_int millis * 1000000}
+  let rec from_millis'0 (millis:uint64) (return'  (ret:Duration'0.t_Duration))= any
+    [ return' (result:Duration'0.t_Duration)-> {[%#span79] shallow_model'0 result = UInt64.to_int millis * 1000000}
       (! return' {result}) ]
     
   
-  let rec from_secs'0 (secs:uint64) (return'  (ret:Duration'0.t_duration))= any
-    [ return' (result:Duration'0.t_duration)-> {[%#span80] shallow_model'0 result
+  let rec from_secs'0 (secs:uint64) (return'  (ret:Duration'0.t_Duration))= any
+    [ return' (result:Duration'0.t_Duration)-> {[%#span80] shallow_model'0 result
       = secs_to_nanos'0 (UInt64.to_int secs)}
       (! return' {result}) ]
     
   
-  let rec as_nanos'0 (self:Duration'0.t_duration) (return'  (ret:uint128))= any
+  let rec as_nanos'0 (self:Duration'0.t_Duration) (return'  (ret:uint128))= any
     [ return' (result:uint128)-> {[%#span82] UInt128.to_int result
-      <= secs_to_nanos'0 (UInt64.to_int (max'0 : uint64)) + 999999999}
+      <= secs_to_nanos'0 (UInt64.to_int (v_MAX'0 : uint64)) + 999999999}
       {[%#span81] UInt128.to_int result = shallow_model'1 self}
       (! return' {result}) ]
     
   
-  let rec new'0 (secs:uint64) (nanos:uint32) (return'  (ret:Duration'0.t_duration))= {[@expl:precondition] [%#span83] UInt64.to_int secs
+  let rec new'0 (secs:uint64) (nanos:uint32) (return'  (ret:Duration'0.t_Duration))= {[@expl:precondition] [%#span83] UInt64.to_int secs
     + nanos_to_secs'0 (UInt32.to_int nanos)
-    <= UInt64.to_int (max'0 : uint64)}
+    <= UInt64.to_int (v_MAX'0 : uint64)}
     any
-    [ return' (result:Duration'0.t_duration)-> {[%#span84] shallow_model'0 result
+    [ return' (result:Duration'0.t_Duration)-> {[%#span84] shallow_model'0 result
       = secs_to_nanos'0 (UInt64.to_int secs) + UInt32.to_int nanos}
       (! return' {result}) ]
     
@@ -425,7 +425,7 @@ module Duration_TestDuration
   let rec test_duration (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 = new'0 {[%#sduration0] (0 : uint64)} {[%#sduration1] (0 : uint32)}
-          (fun (_ret':Duration'0.t_duration) ->  [ &zero <- _ret' ] s1)
+          (fun (_ret':Duration'0.t_Duration) ->  [ &zero <- _ret' ] s1)
       | s1 = bb1 ]
       
     | bb1 = s0
@@ -439,29 +439,29 @@ module Duration_TestDuration
       
     | bb3 = s0
       [ s0 = new'0 {[%#sduration4] (18446744073709551615 : uint64)} {[%#sduration5] (999999999 : uint32)}
-          (fun (_ret':Duration'0.t_duration) ->  [ &max <- _ret' ] s1)
+          (fun (_ret':Duration'0.t_Duration) ->  [ &max <- _ret' ] s1)
       | s1 = bb5 ]
       
     | bb5 = s0
-      [ s0 = from_secs'0 {[%#sduration6] (1 : uint64)} (fun (_ret':Duration'0.t_duration) ->  [ &d_secs <- _ret' ] s1)
+      [ s0 = from_secs'0 {[%#sduration6] (1 : uint64)} (fun (_ret':Duration'0.t_Duration) ->  [ &d_secs <- _ret' ] s1)
       | s1 = bb6 ]
       
     | bb6 = s0
       [ s0 = {[@expl:assertion] [%#sduration7] shallow_model'0 d_secs = 1000000000} s1
       | s1 = from_millis'0 {[%#sduration8] (1 : uint64)}
-          (fun (_ret':Duration'0.t_duration) ->  [ &d_millis <- _ret' ] s2)
+          (fun (_ret':Duration'0.t_Duration) ->  [ &d_millis <- _ret' ] s2)
       | s2 = bb7 ]
       
     | bb7 = s0
       [ s0 = {[@expl:assertion] [%#sduration9] shallow_model'0 d_millis = 1000000} s1
       | s1 = from_micros'0 {[%#sduration10] (1 : uint64)}
-          (fun (_ret':Duration'0.t_duration) ->  [ &d_micros <- _ret' ] s2)
+          (fun (_ret':Duration'0.t_Duration) ->  [ &d_micros <- _ret' ] s2)
       | s2 = bb8 ]
       
     | bb8 = s0
       [ s0 = {[@expl:assertion] [%#sduration11] shallow_model'0 d_micros = 1000} s1
       | s1 = from_nanos'0 {[%#sduration12] (1 : uint64)}
-          (fun (_ret':Duration'0.t_duration) ->  [ &d_nanos <- _ret' ] s2)
+          (fun (_ret':Duration'0.t_Duration) ->  [ &d_nanos <- _ret' ] s2)
       | s2 = bb9 ]
       
     | bb9 = s0
@@ -525,65 +525,65 @@ module Duration_TestDuration
       
     | bb38 = s0
       [ s0 = checked_add'0 {d_secs} {max}
-          (fun (_ret':Option'0.t_option (Duration'0.t_duration)) ->  [ &_77 <- _ret' ] s1)
+          (fun (_ret':Option'0.t_Option (Duration'0.t_Duration)) ->  [ &_77 <- _ret' ] s1)
       | s1 = bb40 ]
       
     | bb40 = s0 [ s0 = is_none'0 {_77} (fun (_ret':bool) ->  [ &_75 <- _ret' ] s1) | s1 = bb41 ] 
     | bb41 = any [ br0 -> {_75 = false} (! bb43) | br1 -> {_75} (! bb42) ] 
     | bb42 = s0
       [ s0 = checked_add'0 {d_secs} {d_secs}
-          (fun (_ret':Option'0.t_option (Duration'0.t_duration)) ->  [ &_84 <- _ret' ] s1)
+          (fun (_ret':Option'0.t_Option (Duration'0.t_Duration)) ->  [ &_84 <- _ret' ] s1)
       | s1 = bb44 ]
       
     | bb44 = s0 [ s0 = is_some'0 {_84} (fun (_ret':bool) ->  [ &_82 <- _ret' ] s1) | s1 = bb45 ] 
     | bb45 = any [ br0 -> {_82 = false} (! bb47) | br1 -> {_82} (! bb46) ] 
     | bb46 = s0
       [ s0 = checked_sub'0 {d_secs} {max}
-          (fun (_ret':Option'0.t_option (Duration'0.t_duration)) ->  [ &_91 <- _ret' ] s1)
+          (fun (_ret':Option'0.t_Option (Duration'0.t_Duration)) ->  [ &_91 <- _ret' ] s1)
       | s1 = bb48 ]
       
     | bb48 = s0 [ s0 = is_none'0 {_91} (fun (_ret':bool) ->  [ &_89 <- _ret' ] s1) | s1 = bb49 ] 
     | bb49 = any [ br0 -> {_89 = false} (! bb51) | br1 -> {_89} (! bb50) ] 
     | bb50 = s0
       [ s0 = checked_sub'0 {d_secs} {d_millis}
-          (fun (_ret':Option'0.t_option (Duration'0.t_duration)) ->  [ &_98 <- _ret' ] s1)
+          (fun (_ret':Option'0.t_Option (Duration'0.t_Duration)) ->  [ &_98 <- _ret' ] s1)
       | s1 = bb52 ]
       
     | bb52 = s0 [ s0 = is_some'0 {_98} (fun (_ret':bool) ->  [ &_96 <- _ret' ] s1) | s1 = bb53 ] 
     | bb53 = any [ br0 -> {_96 = false} (! bb55) | br1 -> {_96} (! bb54) ] 
     | bb54 = s0
       [ s0 = checked_mul'0 {max} {[%#sduration19] (2 : uint32)}
-          (fun (_ret':Option'0.t_option (Duration'0.t_duration)) ->  [ &_105 <- _ret' ] s1)
+          (fun (_ret':Option'0.t_Option (Duration'0.t_Duration)) ->  [ &_105 <- _ret' ] s1)
       | s1 = bb56 ]
       
     | bb56 = s0 [ s0 = is_none'0 {_105} (fun (_ret':bool) ->  [ &_103 <- _ret' ] s1) | s1 = bb57 ] 
     | bb57 = any [ br0 -> {_103 = false} (! bb59) | br1 -> {_103} (! bb58) ] 
     | bb58 = s0
       [ s0 = checked_mul'0 {d_secs} {[%#sduration20] (10 : uint32)}
-          (fun (_ret':Option'0.t_option (Duration'0.t_duration)) ->  [ &_111 <- _ret' ] s1)
+          (fun (_ret':Option'0.t_Option (Duration'0.t_Duration)) ->  [ &_111 <- _ret' ] s1)
       | s1 = bb60 ]
       
     | bb60 = s0 [ s0 = is_some'0 {_111} (fun (_ret':bool) ->  [ &_109 <- _ret' ] s1) | s1 = bb61 ] 
     | bb61 = any [ br0 -> {_109 = false} (! bb63) | br1 -> {_109} (! bb62) ] 
     | bb62 = s0
       [ s0 = checked_div'0 {d_secs} {[%#sduration21] (0 : uint32)}
-          (fun (_ret':Option'0.t_option (Duration'0.t_duration)) ->  [ &_117 <- _ret' ] s1)
+          (fun (_ret':Option'0.t_Option (Duration'0.t_Duration)) ->  [ &_117 <- _ret' ] s1)
       | s1 = bb64 ]
       
     | bb64 = s0 [ s0 = is_none'0 {_117} (fun (_ret':bool) ->  [ &_115 <- _ret' ] s1) | s1 = bb65 ] 
     | bb65 = any [ br0 -> {_115 = false} (! bb67) | br1 -> {_115} (! bb66) ] 
     | bb66 = s0
       [ s0 = checked_div'0 {d_secs} {[%#sduration22] (10 : uint32)}
-          (fun (_ret':Option'0.t_option (Duration'0.t_duration)) ->  [ &_123 <- _ret' ] s1)
+          (fun (_ret':Option'0.t_Option (Duration'0.t_Duration)) ->  [ &_123 <- _ret' ] s1)
       | s1 = bb68 ]
       
     | bb68 = s0 [ s0 = is_some'0 {_123} (fun (_ret':bool) ->  [ &_121 <- _ret' ] s1) | s1 = bb69 ] 
     | bb69 = any [ br0 -> {_121 = false} (! bb71) | br1 -> {_121} (! bb70) ] 
     | bb70 = s0
-      [ s0 = add'0 {d_millis} {d_micros} (fun (_ret':Duration'0.t_duration) ->  [ &sum <- _ret' ] s1) | s1 = bb72 ]
+      [ s0 = add'0 {d_millis} {d_micros} (fun (_ret':Duration'0.t_Duration) ->  [ &sum <- _ret' ] s1) | s1 = bb72 ]
       
     | bb72 = s0
-      [ s0 = sub'0 {d_millis} {d_micros} (fun (_ret':Duration'0.t_duration) ->  [ &difference <- _ret' ] s1)
+      [ s0 = sub'0 {d_millis} {d_micros} (fun (_ret':Duration'0.t_Duration) ->  [ &difference <- _ret' ] s1)
       | s1 = bb73 ]
       
     | bb73 = s0
@@ -610,14 +610,14 @@ module Duration_TestDuration
     | bb4 = {[%#sduration41] false} any ]
     )
     [ & _0 : () = any_l ()
-    | & zero : Duration'0.t_duration = any_l ()
+    | & zero : Duration'0.t_Duration = any_l ()
     | & _5 : bool = any_l ()
     | & _6 : uint128 = any_l ()
-    | & max : Duration'0.t_duration = any_l ()
-    | & d_secs : Duration'0.t_duration = any_l ()
-    | & d_millis : Duration'0.t_duration = any_l ()
-    | & d_micros : Duration'0.t_duration = any_l ()
-    | & d_nanos : Duration'0.t_duration = any_l ()
+    | & max : Duration'0.t_Duration = any_l ()
+    | & d_secs : Duration'0.t_Duration = any_l ()
+    | & d_millis : Duration'0.t_Duration = any_l ()
+    | & d_micros : Duration'0.t_Duration = any_l ()
+    | & d_nanos : Duration'0.t_Duration = any_l ()
     | & _23 : bool = any_l ()
     | & _27 : bool = any_l ()
     | & _31 : bool = any_l ()
@@ -641,22 +641,22 @@ module Duration_TestDuration
     | & _69 : uint32 = any_l ()
     | & _71 : uint128 = any_l ()
     | & _75 : bool = any_l ()
-    | & _77 : Option'0.t_option (Duration'0.t_duration) = any_l ()
+    | & _77 : Option'0.t_Option (Duration'0.t_Duration) = any_l ()
     | & _82 : bool = any_l ()
-    | & _84 : Option'0.t_option (Duration'0.t_duration) = any_l ()
+    | & _84 : Option'0.t_Option (Duration'0.t_Duration) = any_l ()
     | & _89 : bool = any_l ()
-    | & _91 : Option'0.t_option (Duration'0.t_duration) = any_l ()
+    | & _91 : Option'0.t_Option (Duration'0.t_Duration) = any_l ()
     | & _96 : bool = any_l ()
-    | & _98 : Option'0.t_option (Duration'0.t_duration) = any_l ()
+    | & _98 : Option'0.t_Option (Duration'0.t_Duration) = any_l ()
     | & _103 : bool = any_l ()
-    | & _105 : Option'0.t_option (Duration'0.t_duration) = any_l ()
+    | & _105 : Option'0.t_Option (Duration'0.t_Duration) = any_l ()
     | & _109 : bool = any_l ()
-    | & _111 : Option'0.t_option (Duration'0.t_duration) = any_l ()
+    | & _111 : Option'0.t_Option (Duration'0.t_Duration) = any_l ()
     | & _115 : bool = any_l ()
-    | & _117 : Option'0.t_option (Duration'0.t_duration) = any_l ()
+    | & _117 : Option'0.t_Option (Duration'0.t_Duration) = any_l ()
     | & _121 : bool = any_l ()
-    | & _123 : Option'0.t_option (Duration'0.t_duration) = any_l ()
-    | & sum : Duration'0.t_duration = any_l ()
-    | & difference : Duration'0.t_duration = any_l () ]
+    | & _123 : Option'0.t_Option (Duration'0.t_Duration) = any_l ()
+    | & sum : Duration'0.t_Duration = any_l ()
+    | & difference : Duration'0.t_Duration = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end

@@ -1,121 +1,121 @@
 
-module Core_Ptr_NonNull_NonNull_Type
+module T_core__ptr__non_null__NonNull
   use prelude.prelude.Opaque
   
-  type t_nonnull 't =
+  type t_NonNull 't =
     | C_NonNull opaque_ptr
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
+  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
     [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
     | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
     
 end
-module Core_Marker_PhantomData_Type
-  type t_phantomdata 't =
+module T_core__marker__PhantomData
+  type t_PhantomData 't =
     | C_PhantomData
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
+  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any
     [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
     
 end
-module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type as PhantomData'0
+module T_core__ptr__unique__Unique
+  use T_core__marker__PhantomData as PhantomData'0
   
-  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  use T_core__ptr__non_null__NonNull as NonNull'0
   
-  type t_unique 't =
-    | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
+  type t_Unique 't =
+    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
-    [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
+    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       = input}
       (! ret {pointer} {_marker})
-    | bad (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+    | bad (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       <> input}
       {false}
       any ]
     
 end
-module Alloc_RawVec_Cap_Type
+module T_alloc__raw_vec__Cap
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  type t_cap  =
+  type t_Cap  =
     | C_Cap usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_cap (input:t_cap) (ret  (field_0:usize))= any
+  let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
     [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
     | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
     
 end
-module Alloc_RawVec_RawVec_Type
-  use Alloc_RawVec_Cap_Type as Cap'0
+module T_alloc__raw_vec__RawVec
+  use T_alloc__raw_vec__Cap as Cap'0
   
-  use Core_Ptr_Unique_Unique_Type as Unique'0
+  use T_core__ptr__unique__Unique as Unique'0
   
-  type t_rawvec 't 'a =
-    | C_RawVec (Unique'0.t_unique 't) (Cap'0.t_cap) 'a
+  type t_RawVec 't 'a =
+    | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_rawvec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a))= any
-    [ good (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
+  let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
+    [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
       (! ret {ptr} {cap} {alloc})
-    | bad (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
+    | bad (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
     
 end
-module Alloc_Vec_Vec_Type
+module T_alloc__vec__Vec
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  use Alloc_RawVec_RawVec_Type as RawVec'0
+  use T_alloc__raw_vec__RawVec as RawVec'0
   
-  type t_vec 't 'a =
-    | C_Vec (RawVec'0.t_rawvec 't 'a) usize
+  type t_Vec 't 'a =
+    | C_Vec (RawVec'0.t_RawVec 't 'a) usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_vec < 't > < 'a > (input:t_vec 't 'a) (ret  (buf:RawVec'0.t_rawvec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
-    | bad (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
+    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
+    | bad (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
     
 end
-module Alloc_Alloc_Global_Type
-  type t_global  =
+module T_alloc__alloc__Global
+  type t_Global  =
     | C_Global
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_global (input:t_global) (ret  )= any
+  let rec t_Global (input:t_Global) (ret  )= any
     [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
     
 end
-module C16ImplCloning_Vec_Type
-  use Alloc_Alloc_Global_Type as Global'0
+module T_16_impl_cloning__Vec
+  use T_alloc__alloc__Global as Global'0
   
-  use Alloc_Vec_Vec_Type as Vec'0
+  use T_alloc__vec__Vec as Vec'0
   
-  type t_vec 't =
-    | C_Vec (Vec'0.t_vec 't (Global'0.t_global))
+  type t_Vec 't =
+    | C_Vec (Vec'0.t_Vec 't (Global'0.t_Global))
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_vec < 't > (input:t_vec 't) (ret  (field_0:Vec'0.t_vec 't (Global'0.t_global)))= any
-    [ good (field_0:Vec'0.t_vec 't (Global'0.t_global))-> {C_Vec field_0 = input} (! ret {field_0})
-    | bad (field_0:Vec'0.t_vec 't (Global'0.t_global))-> {C_Vec field_0 <> input} {false} any ]
+  let rec t_Vec < 't > (input:t_Vec 't) (ret  (field_0:Vec'0.t_Vec 't (Global'0.t_Global)))= any
+    [ good (field_0:Vec'0.t_Vec 't (Global'0.t_Global))-> {C_Vec field_0 = input} (! ret {field_0})
+    | bad (field_0:Vec'0.t_Vec 't (Global'0.t_Global))-> {C_Vec field_0 <> input} {false} any ]
     
 end
-module C16ImplCloning_Test
+module M_16_impl_cloning__test
   type t
   
   let%span s16_impl_cloning0 = "../16_impl_cloning.rs" 17 15 17 16
@@ -132,44 +132,44 @@ module C16ImplCloning_Test
   
   let%span span6 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  use C16ImplCloning_Vec_Type as Vec'0
+  use T_16_impl_cloning__Vec as Vec'0
   
-  predicate invariant'1 (self : Vec'0.t_vec t) =
+  predicate invariant'1 (self : Vec'0.t_Vec t) =
     [%#span2] true
   
-  predicate inv'1 (_1 : Vec'0.t_vec t)
+  predicate inv'1 (_1 : Vec'0.t_Vec t)
   
-  axiom inv'1 [@rewrite] : forall x : Vec'0.t_vec t . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : Vec'0.t_Vec t . inv'1 x = true
   
   use prelude.prelude.Borrow
   
-  predicate invariant'0 (self : borrowed (Vec'0.t_vec t)) =
+  predicate invariant'0 (self : borrowed (Vec'0.t_Vec t)) =
     [%#span3] inv'1 self.current /\ inv'1 self.final
   
-  predicate inv'0 (_1 : borrowed (Vec'0.t_vec t))
+  predicate inv'0 (_1 : borrowed (Vec'0.t_Vec t))
   
-  axiom inv'0 [@rewrite] : forall x : borrowed (Vec'0.t_vec t) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : borrowed (Vec'0.t_Vec t) . inv'0 x = true
   
   use seq.Seq
   
-  function shallow_model'1 [#"../16_impl_cloning.rs" 11 4 11 50] (self : Vec'0.t_vec t) : Seq.seq t
+  function shallow_model'1 [#"../16_impl_cloning.rs" 11 4 11 50] (self : Vec'0.t_Vec t) : Seq.seq t
   
-  function shallow_model'0 (self : borrowed (Vec'0.t_vec t)) : Seq.seq t =
+  function shallow_model'0 (self : borrowed (Vec'0.t_Vec t)) : Seq.seq t =
     [%#span5] shallow_model'1 self.current
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'0 (self : borrowed (Vec'0.t_vec t)) =
+  predicate resolve'0 (self : borrowed (Vec'0.t_Vec t)) =
     [%#span6] self.final = self.current
   
-  let rec test (x:borrowed (Vec'0.t_vec t)) (return'  (ret:()))= {[%#s16_impl_cloning0] inv'0 x}
+  let rec test (x:borrowed (Vec'0.t_Vec t)) (return'  (ret:()))= {[%#s16_impl_cloning0] inv'0 x}
     (! bb0 [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'0 x} s1 | s1 = -{resolve'0 x}- s2 | s2 = return' {_0} ]  ] )
-    [ & _0 : () = any_l () | & x : borrowed (Vec'0.t_vec t) = x ]
+    [ & _0 : () = any_l () | & x : borrowed (Vec'0.t_Vec t) = x ]
     
     [ return' (result:())-> {[@expl:postcondition] [%#s16_impl_cloning1] shallow_model'0 x = shallow_model'1 x.current}
       (! return' {result}) ]
     
 end
-module C16ImplCloning_Impl0
+module M_16_impl_cloning__qy123zimplqy35z0qy125z
   type t
 end

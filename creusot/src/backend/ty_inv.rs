@@ -5,7 +5,7 @@ use crate::{
         pearlite::{Pattern, Term, TermKind},
         traits,
     },
-    util,
+    util::{self},
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{GenericArg, GenericArgs, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};

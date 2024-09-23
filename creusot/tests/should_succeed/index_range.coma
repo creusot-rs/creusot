@@ -1,106 +1,106 @@
 
-module Core_Ptr_NonNull_NonNull_Type
+module T_core__ptr__non_null__NonNull
   use prelude.prelude.Opaque
   
-  type t_nonnull 't =
+  type t_NonNull 't =
     | C_NonNull opaque_ptr
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
+  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
     [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
     | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
     
 end
-module Core_Marker_PhantomData_Type
-  type t_phantomdata 't =
+module T_core__marker__PhantomData
+  type t_PhantomData 't =
     | C_PhantomData
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
+  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any
     [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
     
 end
-module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type as PhantomData'0
+module T_core__ptr__unique__Unique
+  use T_core__marker__PhantomData as PhantomData'0
   
-  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  use T_core__ptr__non_null__NonNull as NonNull'0
   
-  type t_unique 't =
-    | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
+  type t_Unique 't =
+    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
-    [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
+    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       = input}
       (! ret {pointer} {_marker})
-    | bad (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+    | bad (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       <> input}
       {false}
       any ]
     
 end
-module Alloc_RawVec_Cap_Type
+module T_alloc__raw_vec__Cap
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  type t_cap  =
+  type t_Cap  =
     | C_Cap usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_cap (input:t_cap) (ret  (field_0:usize))= any
+  let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
     [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
     | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
     
 end
-module Alloc_RawVec_RawVec_Type
-  use Alloc_RawVec_Cap_Type as Cap'0
+module T_alloc__raw_vec__RawVec
+  use T_alloc__raw_vec__Cap as Cap'0
   
-  use Core_Ptr_Unique_Unique_Type as Unique'0
+  use T_core__ptr__unique__Unique as Unique'0
   
-  type t_rawvec 't 'a =
-    | C_RawVec (Unique'0.t_unique 't) (Cap'0.t_cap) 'a
+  type t_RawVec 't 'a =
+    | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_rawvec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a))= any
-    [ good (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
+  let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
+    [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
       (! ret {ptr} {cap} {alloc})
-    | bad (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
+    | bad (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
     
 end
-module Alloc_Vec_Vec_Type
+module T_alloc__vec__Vec
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  use Alloc_RawVec_RawVec_Type as RawVec'0
+  use T_alloc__raw_vec__RawVec as RawVec'0
   
-  type t_vec 't 'a =
-    | C_Vec (RawVec'0.t_rawvec 't 'a) usize
+  type t_Vec 't 'a =
+    | C_Vec (RawVec'0.t_RawVec 't 'a) usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_vec < 't > < 'a > (input:t_vec 't 'a) (ret  (buf:RawVec'0.t_rawvec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
-    | bad (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
+    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
+    | bad (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
     
 end
-module Alloc_Alloc_Global_Type
-  type t_global  =
+module T_alloc__alloc__Global
+  type t_Global  =
     | C_Global
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_global (input:t_global) (ret  )= any
+  let rec t_Global (input:t_Global) (ret  )= any
     [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
     
 end
-module IndexRange_CreateArr
+module M_index_range__create_arr
   let%span sindex_range0 = "../index_range.rs" 15 18 15 28
   
   let%span sindex_range1 = "../index_range.rs" 17 13 17 14
@@ -147,7 +147,7 @@ module IndexRange_CreateArr
   
   predicate inv'2 (_1 : int32)
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'4 (self : int32) =
     [%#span7] inv'2 self
@@ -176,114 +176,114 @@ module IndexRange_CreateArr
   
   axiom inv'2 [@rewrite] : forall x : int32 . inv'2 x = true
   
-  use Alloc_Vec_Vec_Type as Vec'0
+  use T_alloc__vec__Vec as Vec'0
   
-  predicate inv'0 (_1 : Vec'0.t_vec int32 (Global'0.t_global))
+  predicate inv'0 (_1 : Vec'0.t_Vec int32 (Global'0.t_Global))
   
   use prelude.prelude.Borrow
   
-  predicate invariant'1 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) =
+  predicate invariant'1 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) =
     [%#span10] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'1 (_1 : borrowed (Vec'0.t_vec int32 (Global'0.t_global)))
+  predicate inv'1 (_1 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)))
   
-  axiom inv'1 [@rewrite] : forall x : borrowed (Vec'0.t_vec int32 (Global'0.t_global)) . inv'1 x = true
-  
-  use prelude.prelude.UIntSize
+  axiom inv'1 [@rewrite] : forall x : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) . inv'1 x = true
   
   use prelude.prelude.UIntSize
   
-  constant max'0 : usize = [%#span11] (18446744073709551615 : usize)
+  use prelude.prelude.UIntSize
   
-  function shallow_model'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) : Seq.seq int32
+  constant v_MAX'0 : usize = [%#span11] (18446744073709551615 : usize)
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_vec int32 (Global'0.t_global) . [%#span12] Seq.length (shallow_model'0 self)
-  <= UIntSize.to_int (max'0 : usize)
+  function shallow_model'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32
   
-  predicate invariant'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) =
+  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec int32 (Global'0.t_Global) . [%#span12] Seq.length (shallow_model'0 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  predicate invariant'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) =
     [%#span13] inv'3 (shallow_model'0 self)
   
-  axiom inv'0 [@rewrite] : forall x : Vec'0.t_vec int32 (Global'0.t_global) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) . inv'0 x = true
   
   use prelude.prelude.Int32
   
   use seq.Seq
   
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec int32 (Global'0.t_global)) (ix : int) : int32 =
+  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec int32 (Global'0.t_Global)) (ix : int) : int32 =
     [%#span14] Seq.get (shallow_model'0 self) ix
   
   use prelude.prelude.Intrinsic
   
   use seq.Seq
   
-  function shallow_model'1 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) : Seq.seq int32 =
+  function shallow_model'1 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) : Seq.seq int32 =
     [%#span15] shallow_model'0 self.current
   
-  let rec push'0 (self:borrowed (Vec'0.t_vec int32 (Global'0.t_global))) (value:int32) (return'  (ret:()))= {[@expl:precondition] [%#span17] inv'2 value}
+  let rec push'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (value:int32) (return'  (ret:()))= {[@expl:precondition] [%#span17] inv'2 value}
     {[@expl:precondition] [%#span16] inv'1 self}
     any
     [ return' (result:())-> {[%#span18] shallow_model'0 self.final = Seq.snoc (shallow_model'1 self) value}
       (! return' {result}) ]
     
   
-  let rec new'0 (_1:()) (return'  (ret:Vec'0.t_vec int32 (Global'0.t_global)))= any
-    [ return' (result:Vec'0.t_vec int32 (Global'0.t_global))-> {[%#span20] inv'0 result}
+  let rec new'0 (_1:()) (return'  (ret:Vec'0.t_Vec int32 (Global'0.t_Global)))= any
+    [ return' (result:Vec'0.t_Vec int32 (Global'0.t_Global))-> {[%#span20] inv'0 result}
       {[%#span19] Seq.length (shallow_model'0 result) = 0}
       (! return' {result}) ]
     
   
-  let rec create_arr (_1:()) (return'  (ret:Vec'0.t_vec int32 (Global'0.t_global)))= (! bb0
+  let rec create_arr (_1:()) (return'  (ret:Vec'0.t_Vec int32 (Global'0.t_Global)))= (! bb0
     [ bb0 = s0
-      [ s0 = new'0 {[%#sindex_range0] ()} (fun (_ret':Vec'0.t_vec int32 (Global'0.t_global)) ->  [ &arr <- _ret' ] s1)
+      [ s0 = new'0 {[%#sindex_range0] ()} (fun (_ret':Vec'0.t_Vec int32 (Global'0.t_Global)) ->  [ &arr <- _ret' ] s1)
       | s1 = bb1 ]
       
     | bb1 = s0
-      [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_4 <- _ret' ]  [ &arr <- _4.final ] s1)
+      [ s0 = Borrow.borrow_mut <Vec'0.t_Vec int32 (Global'0.t_Global)> {arr}
+          (fun (_ret':borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) ->  [ &_4 <- _ret' ]  [ &arr <- _4.final ] s1)
       | s1 = push'0 {_4} {[%#sindex_range1] (0 : int32)} (fun (_ret':()) ->  [ &_3 <- _ret' ] s2)
       | s2 = bb2 ]
       
     | bb2 = s0
-      [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_6 <- _ret' ]  [ &arr <- _6.final ] s1)
+      [ s0 = Borrow.borrow_mut <Vec'0.t_Vec int32 (Global'0.t_Global)> {arr}
+          (fun (_ret':borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) ->  [ &_6 <- _ret' ]  [ &arr <- _6.final ] s1)
       | s1 = push'0 {_6} {[%#sindex_range2] (1 : int32)} (fun (_ret':()) ->  [ &_5 <- _ret' ] s2)
       | s2 = bb3 ]
       
     | bb3 = s0
-      [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_8 <- _ret' ]  [ &arr <- _8.final ] s1)
+      [ s0 = Borrow.borrow_mut <Vec'0.t_Vec int32 (Global'0.t_Global)> {arr}
+          (fun (_ret':borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) ->  [ &_8 <- _ret' ]  [ &arr <- _8.final ] s1)
       | s1 = push'0 {_8} {[%#sindex_range3] (2 : int32)} (fun (_ret':()) ->  [ &_7 <- _ret' ] s2)
       | s2 = bb4 ]
       
     | bb4 = s0
-      [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_10 <- _ret' ]  [ &arr <- _10.final ] s1)
+      [ s0 = Borrow.borrow_mut <Vec'0.t_Vec int32 (Global'0.t_Global)> {arr}
+          (fun (_ret':borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) ->  [ &_10 <- _ret' ]  [ &arr <- _10.final ] s1)
       | s1 = push'0 {_10} {[%#sindex_range4] (3 : int32)} (fun (_ret':()) ->  [ &_9 <- _ret' ] s2)
       | s2 = bb5 ]
       
     | bb5 = s0
-      [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_12 <- _ret' ]  [ &arr <- _12.final ] s1)
+      [ s0 = Borrow.borrow_mut <Vec'0.t_Vec int32 (Global'0.t_Global)> {arr}
+          (fun (_ret':borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) ->  [ &_12 <- _ret' ]  [ &arr <- _12.final ] s1)
       | s1 = push'0 {_12} {[%#sindex_range5] (4 : int32)} (fun (_ret':()) ->  [ &_11 <- _ret' ] s2)
       | s2 = bb6 ]
       
     | bb6 = s0 [ s0 =  [ &_0 <- arr ] s1 | s1 = bb7 ] 
     | bb7 = return' {_0} ]
     )
-    [ & _0 : Vec'0.t_vec int32 (Global'0.t_global) = any_l ()
-    | & arr : Vec'0.t_vec int32 (Global'0.t_global) = any_l ()
+    [ & _0 : Vec'0.t_Vec int32 (Global'0.t_Global) = any_l ()
+    | & arr : Vec'0.t_Vec int32 (Global'0.t_Global) = any_l ()
     | & _3 : () = any_l ()
-    | & _4 : borrowed (Vec'0.t_vec int32 (Global'0.t_global)) = any_l ()
+    | & _4 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) = any_l ()
     | & _5 : () = any_l ()
-    | & _6 : borrowed (Vec'0.t_vec int32 (Global'0.t_global)) = any_l ()
+    | & _6 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) = any_l ()
     | & _7 : () = any_l ()
-    | & _8 : borrowed (Vec'0.t_vec int32 (Global'0.t_global)) = any_l ()
+    | & _8 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) = any_l ()
     | & _9 : () = any_l ()
-    | & _10 : borrowed (Vec'0.t_vec int32 (Global'0.t_global)) = any_l ()
+    | & _10 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) = any_l ()
     | & _11 : () = any_l ()
-    | & _12 : borrowed (Vec'0.t_vec int32 (Global'0.t_global)) = any_l () ]
+    | & _12 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) = any_l () ]
     
-    [ return' (result:Vec'0.t_vec int32 (Global'0.t_global))-> {[@expl:postcondition] [%#sindex_range6] Seq.length (shallow_model'0 result)
+    [ return' (result:Vec'0.t_Vec int32 (Global'0.t_Global))-> {[@expl:postcondition] [%#sindex_range6] Seq.length (shallow_model'0 result)
       = 5
       /\ Int32.to_int (index_logic'0 result 0) = 0
       /\ Int32.to_int (index_logic'0 result 1) = 1
@@ -292,44 +292,44 @@ module IndexRange_CreateArr
       (! return' {result}) ]
     
 end
-module Core_Option_Option_Type
-  type t_option 't =
+module T_core__option__Option
+  type t_Option 't =
     | C_None
     | C_Some 't
   
   function any_l (_ : 'b) : 'a
   
-  let rec none < 't > (input:t_option 't) (ret  )= any
+  let rec v_None < 't > (input:t_Option 't) (ret  )= any
     [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ]
     
   
-  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any
+  let rec v_Some < 't > (input:t_Option 't) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
     | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
     
 end
-module Core_Ops_Range_Range_Type
-  type t_range 'idx =
+module T_core__ops__range__Range
+  type t_Range 'idx =
     | C_Range 'idx 'idx
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_range < 'idx > (input:t_range 'idx) (ret  (start:'idx) (end':'idx))= any
+  let rec t_Range < 'idx > (input:t_Range 'idx) (ret  (start:'idx) (end':'idx))= any
     [ good (start:'idx) (end':'idx)-> {C_Range start end' = input} (! ret {start} {end'})
     | bad (start:'idx) (end':'idx)-> {C_Range start end' <> input} {false} any ]
     
   
-  function range_start (self : t_range 'idx) : 'idx =
+  function t_Range__start (self : t_Range 'idx) : 'idx =
     match self with
       | C_Range a _ -> a
       end
   
-  function range_end (self : t_range 'idx) : 'idx =
+  function t_Range__end (self : t_Range 'idx) : 'idx =
     match self with
       | C_Range _ a -> a
       end
 end
-module IndexRange_TestRange
+module M_index_range__test_range
   let%span sindex_range0 = "../index_range.rs" 29 18 29 30
   
   let%span sindex_range1 = "../index_range.rs" 34 17 34 18
@@ -574,7 +574,7 @@ module IndexRange_TestRange
   
   predicate inv'11 (_1 : int32)
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'13 (self : int32) =
     [%#span72] inv'11 self
@@ -611,12 +611,12 @@ module IndexRange_TestRange
   
   use prelude.prelude.UIntSize
   
-  constant max'0 : usize = [%#span75] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span75] (18446744073709551615 : usize)
   
   function shallow_model'4 (self : slice int32) : Seq.seq int32
   
   axiom shallow_model'4_spec : forall self : slice int32 . ([%#span77] shallow_model'4 self = Slice.id self)
-  && ([%#span76] Seq.length (shallow_model'4 self) <= UIntSize.to_int (max'0 : usize))
+  && ([%#span76] Seq.length (shallow_model'4 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'10 (self : slice int32) =
     [%#span78] inv'12 (shallow_model'4 self)
@@ -625,19 +625,19 @@ module IndexRange_TestRange
   
   axiom inv'10 [@rewrite] : forall x : slice int32 . inv'10 x = true
   
-  use Alloc_Vec_Vec_Type as Vec'0
+  use T_alloc__vec__Vec as Vec'0
   
-  function shallow_model'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) : Seq.seq int32
+  function shallow_model'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_vec int32 (Global'0.t_global) . [%#span79] Seq.length (shallow_model'0 self)
-  <= UIntSize.to_int (max'0 : usize)
+  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec int32 (Global'0.t_Global) . [%#span79] Seq.length (shallow_model'0 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
   
-  predicate invariant'9 (self : Vec'0.t_vec int32 (Global'0.t_global)) =
+  predicate invariant'9 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) =
     [%#span80] inv'12 (shallow_model'0 self)
   
-  predicate inv'9 (_1 : Vec'0.t_vec int32 (Global'0.t_global))
+  predicate inv'9 (_1 : Vec'0.t_Vec int32 (Global'0.t_Global))
   
-  axiom inv'9 [@rewrite] : forall x : Vec'0.t_vec int32 (Global'0.t_global) . inv'9 x = true
+  axiom inv'9 [@rewrite] : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) . inv'9 x = true
   
   use prelude.prelude.Borrow
   
@@ -662,28 +662,28 @@ module IndexRange_TestRange
   
   axiom inv'6 [@rewrite] : forall x : borrowed (slice int32) . inv'6 x = true
   
-  predicate invariant'5 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) =
+  predicate invariant'5 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) =
     [%#span82] inv'9 self.current /\ inv'9 self.final
   
-  predicate inv'5 (_1 : borrowed (Vec'0.t_vec int32 (Global'0.t_global)))
+  predicate inv'5 (_1 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)))
   
-  axiom inv'5 [@rewrite] : forall x : borrowed (Vec'0.t_vec int32 (Global'0.t_global)) . inv'5 x = true
+  axiom inv'5 [@rewrite] : forall x : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) . inv'5 x = true
   
-  use Core_Option_Option_Type as Option'0
+  use T_core__option__Option as Option'0
   
-  predicate inv'3 (_1 : Option'0.t_option (slice int32))
+  predicate inv'3 (_1 : Option'0.t_Option (slice int32))
   
-  predicate invariant'4 (self : Option'0.t_option (slice int32)) =
+  predicate invariant'4 (self : Option'0.t_Option (slice int32)) =
     [%#span81] inv'3 self
   
-  predicate inv'4 (_1 : Option'0.t_option (slice int32))
+  predicate inv'4 (_1 : Option'0.t_Option (slice int32))
   
-  axiom inv'4 [@rewrite] : forall x : Option'0.t_option (slice int32) . inv'4 x = true
+  axiom inv'4 [@rewrite] : forall x : Option'0.t_Option (slice int32) . inv'4 x = true
   
-  predicate invariant'3 (self : Option'0.t_option (slice int32)) =
+  predicate invariant'3 (self : Option'0.t_Option (slice int32)) =
     [%#span74] true
   
-  axiom inv'3 [@rewrite] : forall x : Option'0.t_option (slice int32) . inv'3 x = true
+  axiom inv'3 [@rewrite] : forall x : Option'0.t_Option (slice int32) . inv'3 x = true
   
   predicate invariant'2 (self : slice int32) =
     [%#span81] inv'10 self
@@ -692,21 +692,21 @@ module IndexRange_TestRange
   
   axiom inv'2 [@rewrite] : forall x : slice int32 . inv'2 x = true
   
-  use Core_Ops_Range_Range_Type as Range'0
+  use T_core__ops__range__Range as Range'0
   
-  predicate invariant'1 (self : Range'0.t_range usize) =
+  predicate invariant'1 (self : Range'0.t_Range usize) =
     [%#span74] true
   
-  predicate inv'1 (_1 : Range'0.t_range usize)
+  predicate inv'1 (_1 : Range'0.t_Range usize)
   
-  axiom inv'1 [@rewrite] : forall x : Range'0.t_range usize . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : Range'0.t_Range usize . inv'1 x = true
   
-  predicate invariant'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) =
+  predicate invariant'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) =
     [%#span81] inv'9 self
   
-  predicate inv'0 (_1 : Vec'0.t_vec int32 (Global'0.t_global))
+  predicate inv'0 (_1 : Vec'0.t_Vec int32 (Global'0.t_Global))
   
-  axiom inv'0 [@rewrite] : forall x : Vec'0.t_vec int32 (Global'0.t_global) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
@@ -718,10 +718,10 @@ module IndexRange_TestRange
   predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq int32) =
     [%#span84] UIntSize.to_int self < Seq.length seq
   
-  function shallow_model'1 (self : Vec'0.t_vec int32 (Global'0.t_global)) : Seq.seq int32 =
+  function shallow_model'1 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32 =
     [%#span85] shallow_model'0 self
   
-  let rec index'1 (self:Vec'0.t_vec int32 (Global'0.t_global)) (index:usize) (return'  (ret:int32))= {[@expl:precondition] [%#span88] inv'7 index}
+  let rec index'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:usize) (return'  (ret:int32))= {[@expl:precondition] [%#span88] inv'7 index}
     {[@expl:precondition] [%#span87] inv'0 self}
     {[@expl:precondition] [%#span86] in_bounds'1 index (shallow_model'1 self)}
     any
@@ -730,7 +730,7 @@ module IndexRange_TestRange
       (! return' {result}) ]
     
   
-  let rec len'1 (self:Vec'0.t_vec int32 (Global'0.t_global)) (return'  (ret:usize))= {[@expl:precondition] [%#span91] inv'0 self}
+  let rec len'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] [%#span91] inv'0 self}
     any
     [ return' (result:usize)-> {[%#span92] UIntSize.to_int result = Seq.length (shallow_model'1 self)}
       (! return' {result}) ]
@@ -739,29 +739,29 @@ module IndexRange_TestRange
   predicate resolve'0 (self : borrowed (slice int32)) =
     [%#span93] self.final = self.current
   
-  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  use T_core__ops__range__Range as T_core__ops__range__Range
   
-  predicate resolve_elswhere'0 (self : Range'0.t_range usize) (old' : Seq.seq int32) (fin : Seq.seq int32) =
+  predicate resolve_elswhere'0 (self : Range'0.t_Range usize) (old' : Seq.seq int32) (fin : Seq.seq int32) =
     [%#span94] forall i : int . 0 <= i
-    /\ (i < UIntSize.to_int (Core_Ops_Range_Range_Type.range_start self)
-    \/ UIntSize.to_int (Core_Ops_Range_Range_Type.range_end self) <= i)
+    /\ (i < UIntSize.to_int (T_core__ops__range__Range.t_Range__start self)
+    \/ UIntSize.to_int (T_core__ops__range__Range.t_Range__end self) <= i)
     /\ i < Seq.length old'  -> Seq.get old' i = Seq.get fin i
   
   use prelude.seq_ext.SeqExt
   
-  predicate has_value'0 (self : Range'0.t_range usize) (seq : Seq.seq int32) (out : slice int32) =
-    [%#span95] SeqExt.subsequence seq (UIntSize.to_int (Core_Ops_Range_Range_Type.range_start self)) (UIntSize.to_int (Core_Ops_Range_Range_Type.range_end self))
+  predicate has_value'0 (self : Range'0.t_Range usize) (seq : Seq.seq int32) (out : slice int32) =
+    [%#span95] SeqExt.subsequence seq (UIntSize.to_int (T_core__ops__range__Range.t_Range__start self)) (UIntSize.to_int (T_core__ops__range__Range.t_Range__end self))
     = shallow_model'4 out
   
-  predicate in_bounds'0 (self : Range'0.t_range usize) (seq : Seq.seq int32) =
-    [%#span96] UIntSize.to_int (Core_Ops_Range_Range_Type.range_start self)
-    <= UIntSize.to_int (Core_Ops_Range_Range_Type.range_end self)
-    /\ UIntSize.to_int (Core_Ops_Range_Range_Type.range_end self) <= Seq.length seq
+  predicate in_bounds'0 (self : Range'0.t_Range usize) (seq : Seq.seq int32) =
+    [%#span96] UIntSize.to_int (T_core__ops__range__Range.t_Range__start self)
+    <= UIntSize.to_int (T_core__ops__range__Range.t_Range__end self)
+    /\ UIntSize.to_int (T_core__ops__range__Range.t_Range__end self) <= Seq.length seq
   
-  function shallow_model'3 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) : Seq.seq int32 =
+  function shallow_model'3 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) : Seq.seq int32 =
     [%#span97] shallow_model'0 self.current
   
-  let rec index_mut'0 (self:borrowed (Vec'0.t_vec int32 (Global'0.t_global))) (index:Range'0.t_range usize) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] [%#span100] inv'1 index}
+  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (index:Range'0.t_Range usize) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] [%#span100] inv'1 index}
     {[@expl:precondition] [%#span99] inv'5 self}
     {[@expl:precondition] [%#span98] in_bounds'0 index (shallow_model'3 self)}
     any
@@ -773,23 +773,23 @@ module IndexRange_TestRange
       (! return' {result}) ]
     
   
-  let rec is_none'0 (self:Option'0.t_option (slice int32)) (return'  (ret:bool))= {[@expl:precondition] [%#span106] inv'4 self}
+  let rec is_none'0 (self:Option'0.t_Option (slice int32)) (return'  (ret:bool))= {[@expl:precondition] [%#span106] inv'4 self}
     any [ return' (result:bool)-> {[%#span107] result = (self = Option'0.C_None)} (! return' {result}) ] 
   
   function shallow_model'2 (self : slice int32) : Seq.seq int32 =
     [%#span85] shallow_model'4 self
   
-  let rec get'0 (self:slice int32) (index:Range'0.t_range usize) (return'  (ret:Option'0.t_option (slice int32)))= {[@expl:precondition] [%#span109] inv'1 index}
+  let rec get'0 (self:slice int32) (index:Range'0.t_Range usize) (return'  (ret:Option'0.t_Option (slice int32)))= {[@expl:precondition] [%#span109] inv'1 index}
     {[@expl:precondition] [%#span108] inv'2 self}
     any
-    [ return' (result:Option'0.t_option (slice int32))-> {[%#span112] inv'3 result}
+    [ return' (result:Option'0.t_Option (slice int32))-> {[%#span112] inv'3 result}
       {[%#span111] in_bounds'0 index (shallow_model'2 self) \/ result = Option'0.C_None}
       {[%#span110] in_bounds'0 index (shallow_model'2 self)
        -> (exists r : slice int32 . result = Option'0.C_Some r /\ has_value'0 index (shallow_model'2 self) r)}
       (! return' {result}) ]
     
   
-  let rec deref'0 (self:Vec'0.t_vec int32 (Global'0.t_global)) (return'  (ret:slice int32))= {[@expl:precondition] [%#span113] inv'0 self}
+  let rec deref'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:slice int32))= {[@expl:precondition] [%#span113] inv'0 self}
     any
     [ return' (result:slice int32)-> {[%#span115] inv'2 result}
       {[%#span114] shallow_model'2 result = shallow_model'1 self}
@@ -802,7 +802,7 @@ module IndexRange_TestRange
       (! return' {result}) ]
     
   
-  let rec index'0 (self:Vec'0.t_vec int32 (Global'0.t_global)) (index:Range'0.t_range usize) (return'  (ret:slice int32))= {[@expl:precondition] [%#span88] inv'1 index}
+  let rec index'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:Range'0.t_Range usize) (return'  (ret:slice int32))= {[@expl:precondition] [%#span88] inv'1 index}
     {[@expl:precondition] [%#span87] inv'0 self}
     {[@expl:precondition] [%#span86] in_bounds'0 index (shallow_model'1 self)}
     any
@@ -813,11 +813,11 @@ module IndexRange_TestRange
   
   use prelude.prelude.Int32
   
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec int32 (Global'0.t_global)) (ix : int) : int32 =
+  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec int32 (Global'0.t_Global)) (ix : int) : int32 =
     [%#span118] Seq.get (shallow_model'0 self) ix
   
-  let rec create_arr'0 (_1:()) (return'  (ret:Vec'0.t_vec int32 (Global'0.t_global)))= any
-    [ return' (result:Vec'0.t_vec int32 (Global'0.t_global))-> {[%#span119] Seq.length (shallow_model'0 result) = 5
+  let rec create_arr'0 (_1:()) (return'  (ret:Vec'0.t_Vec int32 (Global'0.t_Global)))= any
+    [ return' (result:Vec'0.t_Vec int32 (Global'0.t_Global))-> {[%#span119] Seq.length (shallow_model'0 result) = 5
       /\ Int32.to_int (index_logic'0 result 0) = 0
       /\ Int32.to_int (index_logic'0 result 1) = 1
       /\ Int32.to_int (index_logic'0 result 2) = 2
@@ -828,7 +828,7 @@ module IndexRange_TestRange
   let rec test_range (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 = create_arr'0 {[%#sindex_range0] ()}
-          (fun (_ret':Vec'0.t_vec int32 (Global'0.t_global)) ->  [ &arr <- _ret' ] s1)
+          (fun (_ret':Vec'0.t_Vec int32 (Global'0.t_Global)) ->  [ &arr <- _ret' ] s1)
       | s1 = bb1 ]
       
     | bb1 = s0
@@ -926,7 +926,7 @@ module IndexRange_TestRange
     | bb30 = s0 [ s0 = deref'0 {arr} (fun (_ret':slice int32) ->  [ &_61 <- _ret' ] s1) | s1 = bb32 ] 
     | bb32 = s0
       [ s0 =  [ &_63 <- Range'0.C_Range ([%#sindex_range25] (2 : usize)) ([%#sindex_range26] (6 : usize)) ] s1
-      | s1 = get'0 {_61} {_63} (fun (_ret':Option'0.t_option (slice int32)) ->  [ &_59 <- _ret' ] s2)
+      | s1 = get'0 {_61} {_63} (fun (_ret':Option'0.t_Option (slice int32)) ->  [ &_59 <- _ret' ] s2)
       | s2 = bb33 ]
       
     | bb33 = s0 [ s0 = is_none'0 {_59} (fun (_ret':bool) ->  [ &_57 <- _ret' ] s1) | s1 = bb34 ] 
@@ -934,7 +934,7 @@ module IndexRange_TestRange
     | bb35 = s0 [ s0 = deref'0 {arr} (fun (_ret':slice int32) ->  [ &_70 <- _ret' ] s1) | s1 = bb37 ] 
     | bb37 = s0
       [ s0 =  [ &_72 <- Range'0.C_Range ([%#sindex_range27] (2 : usize)) ([%#sindex_range28] (1 : usize)) ] s1
-      | s1 = get'0 {_70} {_72} (fun (_ret':Option'0.t_option (slice int32)) ->  [ &_68 <- _ret' ] s2)
+      | s1 = get'0 {_70} {_72} (fun (_ret':Option'0.t_Option (slice int32)) ->  [ &_68 <- _ret' ] s2)
       | s2 = bb38 ]
       
     | bb38 = s0 [ s0 = is_none'0 {_68} (fun (_ret':bool) ->  [ &_66 <- _ret' ] s1) | s1 = bb39 ] 
@@ -942,7 +942,7 @@ module IndexRange_TestRange
     | bb40 = s0 [ s0 = deref'0 {arr} (fun (_ret':slice int32) ->  [ &_79 <- _ret' ] s1) | s1 = bb42 ] 
     | bb42 = s0
       [ s0 =  [ &_81 <- Range'0.C_Range ([%#sindex_range29] (6 : usize)) ([%#sindex_range30] (6 : usize)) ] s1
-      | s1 = get'0 {_79} {_81} (fun (_ret':Option'0.t_option (slice int32)) ->  [ &_77 <- _ret' ] s2)
+      | s1 = get'0 {_79} {_81} (fun (_ret':Option'0.t_Option (slice int32)) ->  [ &_77 <- _ret' ] s2)
       | s2 = bb43 ]
       
     | bb43 = s0 [ s0 = is_none'0 {_77} (fun (_ret':bool) ->  [ &_75 <- _ret' ] s1) | s1 = bb44 ] 
@@ -950,14 +950,14 @@ module IndexRange_TestRange
     | bb45 = s0 [ s0 = deref'0 {arr} (fun (_ret':slice int32) ->  [ &_88 <- _ret' ] s1) | s1 = bb47 ] 
     | bb47 = s0
       [ s0 =  [ &_90 <- Range'0.C_Range ([%#sindex_range31] (10 : usize)) ([%#sindex_range32] (10 : usize)) ] s1
-      | s1 = get'0 {_88} {_90} (fun (_ret':Option'0.t_option (slice int32)) ->  [ &_86 <- _ret' ] s2)
+      | s1 = get'0 {_88} {_90} (fun (_ret':Option'0.t_Option (slice int32)) ->  [ &_86 <- _ret' ] s2)
       | s2 = bb48 ]
       
     | bb48 = s0 [ s0 = is_none'0 {_86} (fun (_ret':bool) ->  [ &_84 <- _ret' ] s1) | s1 = bb49 ] 
     | bb49 = any [ br0 -> {_84 = false} (! bb51) | br1 -> {_84} (! bb50) ] 
     | bb50 = s0
-      [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_94 <- _ret' ]  [ &arr <- _94.final ] s1)
+      [ s0 = Borrow.borrow_mut <Vec'0.t_Vec int32 (Global'0.t_Global)> {arr}
+          (fun (_ret':borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) ->  [ &_94 <- _ret' ]  [ &arr <- _94.final ] s1)
       | s1 =  [ &_95 <- Range'0.C_Range ([%#sindex_range33] (1 : usize)) ([%#sindex_range34] (4 : usize)) ] s2
       | s2 = index_mut'0 {_94} {_95} (fun (_ret':borrowed (slice int32)) ->  [ &_93 <- _ret' ] s3)
       | s3 = bb52 ]
@@ -1075,10 +1075,10 @@ module IndexRange_TestRange
     | bb12 = {[%#sindex_range71] false} any ]
     )
     [ & _0 : () = any_l ()
-    | & arr : Vec'0.t_vec int32 (Global'0.t_global) = any_l ()
+    | & arr : Vec'0.t_Vec int32 (Global'0.t_Global) = any_l ()
     | & s : slice int32 = any_l ()
     | & _3 : slice int32 = any_l ()
-    | & _5 : Range'0.t_range usize = any_l ()
+    | & _5 : Range'0.t_Range usize = any_l ()
     | & _7 : bool = any_l ()
     | & _8 : usize = any_l ()
     | & _10 : bool = any_l ()
@@ -1091,7 +1091,7 @@ module IndexRange_TestRange
     | & _19 : bool = any_l ()
     | & s1 : slice int32 = any_l ()
     | & _22 : slice int32 = any_l ()
-    | & _24 : Range'0.t_range usize = any_l ()
+    | & _24 : Range'0.t_Range usize = any_l ()
     | & _26 : bool = any_l ()
     | & _27 : usize = any_l ()
     | & _29 : bool = any_l ()
@@ -1105,31 +1105,31 @@ module IndexRange_TestRange
     | & _41 : bool = any_l ()
     | & _42 : usize = any_l ()
     | & _44 : slice int32 = any_l ()
-    | & _46 : Range'0.t_range usize = any_l ()
+    | & _46 : Range'0.t_Range usize = any_l ()
     | & _49 : bool = any_l ()
     | & _50 : usize = any_l ()
     | & _52 : slice int32 = any_l ()
-    | & _54 : Range'0.t_range usize = any_l ()
+    | & _54 : Range'0.t_Range usize = any_l ()
     | & _57 : bool = any_l ()
-    | & _59 : Option'0.t_option (slice int32) = any_l ()
+    | & _59 : Option'0.t_Option (slice int32) = any_l ()
     | & _61 : slice int32 = any_l ()
-    | & _63 : Range'0.t_range usize = any_l ()
+    | & _63 : Range'0.t_Range usize = any_l ()
     | & _66 : bool = any_l ()
-    | & _68 : Option'0.t_option (slice int32) = any_l ()
+    | & _68 : Option'0.t_Option (slice int32) = any_l ()
     | & _70 : slice int32 = any_l ()
-    | & _72 : Range'0.t_range usize = any_l ()
+    | & _72 : Range'0.t_Range usize = any_l ()
     | & _75 : bool = any_l ()
-    | & _77 : Option'0.t_option (slice int32) = any_l ()
+    | & _77 : Option'0.t_Option (slice int32) = any_l ()
     | & _79 : slice int32 = any_l ()
-    | & _81 : Range'0.t_range usize = any_l ()
+    | & _81 : Range'0.t_Range usize = any_l ()
     | & _84 : bool = any_l ()
-    | & _86 : Option'0.t_option (slice int32) = any_l ()
+    | & _86 : Option'0.t_Option (slice int32) = any_l ()
     | & _88 : slice int32 = any_l ()
-    | & _90 : Range'0.t_range usize = any_l ()
+    | & _90 : Range'0.t_Range usize = any_l ()
     | & s2 : borrowed (slice int32) = any_l ()
     | & _93 : borrowed (slice int32) = any_l ()
-    | & _94 : borrowed (Vec'0.t_vec int32 (Global'0.t_global)) = any_l ()
-    | & _95 : Range'0.t_range usize = any_l ()
+    | & _94 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) = any_l ()
+    | & _95 : Range'0.t_Range usize = any_l ()
     | & _97 : bool = any_l ()
     | & _98 : usize = any_l ()
     | & _101 : usize = any_l ()
@@ -1156,23 +1156,23 @@ module IndexRange_TestRange
     | & _146 : int32 = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
-module Core_Ops_Range_RangeTo_Type
-  type t_rangeto 'idx =
+module T_core__ops__range__RangeTo
+  type t_RangeTo 'idx =
     | C_RangeTo 'idx
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_rangeto < 'idx > (input:t_rangeto 'idx) (ret  (end':'idx))= any
+  let rec t_RangeTo < 'idx > (input:t_RangeTo 'idx) (ret  (end':'idx))= any
     [ good (end':'idx)-> {C_RangeTo end' = input} (! ret {end'})
     | bad (end':'idx)-> {C_RangeTo end' <> input} {false} any ]
     
   
-  function rangeto_end (self : t_rangeto 'idx) : 'idx =
+  function t_RangeTo__end (self : t_RangeTo 'idx) : 'idx =
     match self with
       | C_RangeTo a -> a
       end
 end
-module IndexRange_TestRangeTo
+module M_index_range__test_range_to
   let%span sindex_range0 = "../index_range.rs" 80 18 80 30
   
   let%span sindex_range1 = "../index_range.rs" 85 19 85 20
@@ -1363,7 +1363,7 @@ module IndexRange_TestRangeTo
   
   predicate inv'11 (_1 : int32)
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'13 (self : int32) =
     [%#span45] inv'11 self
@@ -1400,12 +1400,12 @@ module IndexRange_TestRangeTo
   
   use prelude.prelude.UIntSize
   
-  constant max'0 : usize = [%#span48] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span48] (18446744073709551615 : usize)
   
   function shallow_model'4 (self : slice int32) : Seq.seq int32
   
   axiom shallow_model'4_spec : forall self : slice int32 . ([%#span50] shallow_model'4 self = Slice.id self)
-  && ([%#span49] Seq.length (shallow_model'4 self) <= UIntSize.to_int (max'0 : usize))
+  && ([%#span49] Seq.length (shallow_model'4 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'10 (self : slice int32) =
     [%#span51] inv'12 (shallow_model'4 self)
@@ -1414,19 +1414,19 @@ module IndexRange_TestRangeTo
   
   axiom inv'10 [@rewrite] : forall x : slice int32 . inv'10 x = true
   
-  use Alloc_Vec_Vec_Type as Vec'0
+  use T_alloc__vec__Vec as Vec'0
   
-  function shallow_model'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) : Seq.seq int32
+  function shallow_model'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_vec int32 (Global'0.t_global) . [%#span52] Seq.length (shallow_model'0 self)
-  <= UIntSize.to_int (max'0 : usize)
+  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec int32 (Global'0.t_Global) . [%#span52] Seq.length (shallow_model'0 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
   
-  predicate invariant'9 (self : Vec'0.t_vec int32 (Global'0.t_global)) =
+  predicate invariant'9 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) =
     [%#span53] inv'12 (shallow_model'0 self)
   
-  predicate inv'9 (_1 : Vec'0.t_vec int32 (Global'0.t_global))
+  predicate inv'9 (_1 : Vec'0.t_Vec int32 (Global'0.t_Global))
   
-  axiom inv'9 [@rewrite] : forall x : Vec'0.t_vec int32 (Global'0.t_global) . inv'9 x = true
+  axiom inv'9 [@rewrite] : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) . inv'9 x = true
   
   use prelude.prelude.Borrow
   
@@ -1451,28 +1451,28 @@ module IndexRange_TestRangeTo
   
   axiom inv'6 [@rewrite] : forall x : borrowed (slice int32) . inv'6 x = true
   
-  predicate invariant'5 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) =
+  predicate invariant'5 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) =
     [%#span55] inv'9 self.current /\ inv'9 self.final
   
-  predicate inv'5 (_1 : borrowed (Vec'0.t_vec int32 (Global'0.t_global)))
+  predicate inv'5 (_1 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)))
   
-  axiom inv'5 [@rewrite] : forall x : borrowed (Vec'0.t_vec int32 (Global'0.t_global)) . inv'5 x = true
+  axiom inv'5 [@rewrite] : forall x : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) . inv'5 x = true
   
-  use Core_Option_Option_Type as Option'0
+  use T_core__option__Option as Option'0
   
-  predicate inv'3 (_1 : Option'0.t_option (slice int32))
+  predicate inv'3 (_1 : Option'0.t_Option (slice int32))
   
-  predicate invariant'4 (self : Option'0.t_option (slice int32)) =
+  predicate invariant'4 (self : Option'0.t_Option (slice int32)) =
     [%#span54] inv'3 self
   
-  predicate inv'4 (_1 : Option'0.t_option (slice int32))
+  predicate inv'4 (_1 : Option'0.t_Option (slice int32))
   
-  axiom inv'4 [@rewrite] : forall x : Option'0.t_option (slice int32) . inv'4 x = true
+  axiom inv'4 [@rewrite] : forall x : Option'0.t_Option (slice int32) . inv'4 x = true
   
-  predicate invariant'3 (self : Option'0.t_option (slice int32)) =
+  predicate invariant'3 (self : Option'0.t_Option (slice int32)) =
     [%#span47] true
   
-  axiom inv'3 [@rewrite] : forall x : Option'0.t_option (slice int32) . inv'3 x = true
+  axiom inv'3 [@rewrite] : forall x : Option'0.t_Option (slice int32) . inv'3 x = true
   
   predicate invariant'2 (self : slice int32) =
     [%#span54] inv'10 self
@@ -1481,21 +1481,21 @@ module IndexRange_TestRangeTo
   
   axiom inv'2 [@rewrite] : forall x : slice int32 . inv'2 x = true
   
-  use Core_Ops_Range_RangeTo_Type as RangeTo'0
+  use T_core__ops__range__RangeTo as RangeTo'0
   
-  predicate invariant'1 (self : RangeTo'0.t_rangeto usize) =
+  predicate invariant'1 (self : RangeTo'0.t_RangeTo usize) =
     [%#span47] true
   
-  predicate inv'1 (_1 : RangeTo'0.t_rangeto usize)
+  predicate inv'1 (_1 : RangeTo'0.t_RangeTo usize)
   
-  axiom inv'1 [@rewrite] : forall x : RangeTo'0.t_rangeto usize . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : RangeTo'0.t_RangeTo usize . inv'1 x = true
   
-  predicate invariant'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) =
+  predicate invariant'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) =
     [%#span54] inv'9 self
   
-  predicate inv'0 (_1 : Vec'0.t_vec int32 (Global'0.t_global))
+  predicate inv'0 (_1 : Vec'0.t_Vec int32 (Global'0.t_Global))
   
-  axiom inv'0 [@rewrite] : forall x : Vec'0.t_vec int32 (Global'0.t_global) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
@@ -1507,10 +1507,10 @@ module IndexRange_TestRangeTo
   predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq int32) =
     [%#span57] UIntSize.to_int self < Seq.length seq
   
-  function shallow_model'1 (self : Vec'0.t_vec int32 (Global'0.t_global)) : Seq.seq int32 =
+  function shallow_model'1 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32 =
     [%#span58] shallow_model'0 self
   
-  let rec index'1 (self:Vec'0.t_vec int32 (Global'0.t_global)) (index:usize) (return'  (ret:int32))= {[@expl:precondition] [%#span61] inv'7 index}
+  let rec index'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:usize) (return'  (ret:int32))= {[@expl:precondition] [%#span61] inv'7 index}
     {[@expl:precondition] [%#span60] inv'0 self}
     {[@expl:precondition] [%#span59] in_bounds'1 index (shallow_model'1 self)}
     any
@@ -1519,7 +1519,7 @@ module IndexRange_TestRangeTo
       (! return' {result}) ]
     
   
-  let rec len'1 (self:Vec'0.t_vec int32 (Global'0.t_global)) (return'  (ret:usize))= {[@expl:precondition] [%#span64] inv'0 self}
+  let rec len'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] [%#span64] inv'0 self}
     any
     [ return' (result:usize)-> {[%#span65] UIntSize.to_int result = Seq.length (shallow_model'1 self)}
       (! return' {result}) ]
@@ -1528,25 +1528,25 @@ module IndexRange_TestRangeTo
   predicate resolve'0 (self : borrowed (slice int32)) =
     [%#span66] self.final = self.current
   
-  use Core_Ops_Range_RangeTo_Type as Core_Ops_Range_RangeTo_Type
+  use T_core__ops__range__RangeTo as T_core__ops__range__RangeTo
   
-  predicate resolve_elswhere'0 (self : RangeTo'0.t_rangeto usize) (old' : Seq.seq int32) (fin : Seq.seq int32) =
-    [%#span67] forall i : int . UIntSize.to_int (Core_Ops_Range_RangeTo_Type.rangeto_end self) <= i
+  predicate resolve_elswhere'0 (self : RangeTo'0.t_RangeTo usize) (old' : Seq.seq int32) (fin : Seq.seq int32) =
+    [%#span67] forall i : int . UIntSize.to_int (T_core__ops__range__RangeTo.t_RangeTo__end self) <= i
     /\ i < Seq.length old'  -> Seq.get old' i = Seq.get fin i
   
   use prelude.seq_ext.SeqExt
   
-  predicate has_value'0 (self : RangeTo'0.t_rangeto usize) (seq : Seq.seq int32) (out : slice int32) =
-    [%#span68] SeqExt.subsequence seq 0 (UIntSize.to_int (Core_Ops_Range_RangeTo_Type.rangeto_end self))
+  predicate has_value'0 (self : RangeTo'0.t_RangeTo usize) (seq : Seq.seq int32) (out : slice int32) =
+    [%#span68] SeqExt.subsequence seq 0 (UIntSize.to_int (T_core__ops__range__RangeTo.t_RangeTo__end self))
     = shallow_model'4 out
   
-  predicate in_bounds'0 (self : RangeTo'0.t_rangeto usize) (seq : Seq.seq int32) =
-    [%#span69] UIntSize.to_int (Core_Ops_Range_RangeTo_Type.rangeto_end self) <= Seq.length seq
+  predicate in_bounds'0 (self : RangeTo'0.t_RangeTo usize) (seq : Seq.seq int32) =
+    [%#span69] UIntSize.to_int (T_core__ops__range__RangeTo.t_RangeTo__end self) <= Seq.length seq
   
-  function shallow_model'3 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) : Seq.seq int32 =
+  function shallow_model'3 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) : Seq.seq int32 =
     [%#span70] shallow_model'0 self.current
   
-  let rec index_mut'0 (self:borrowed (Vec'0.t_vec int32 (Global'0.t_global))) (index:RangeTo'0.t_rangeto usize) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] [%#span73] inv'1 index}
+  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (index:RangeTo'0.t_RangeTo usize) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] [%#span73] inv'1 index}
     {[@expl:precondition] [%#span72] inv'5 self}
     {[@expl:precondition] [%#span71] in_bounds'0 index (shallow_model'3 self)}
     any
@@ -1558,23 +1558,23 @@ module IndexRange_TestRangeTo
       (! return' {result}) ]
     
   
-  let rec is_none'0 (self:Option'0.t_option (slice int32)) (return'  (ret:bool))= {[@expl:precondition] [%#span79] inv'4 self}
+  let rec is_none'0 (self:Option'0.t_Option (slice int32)) (return'  (ret:bool))= {[@expl:precondition] [%#span79] inv'4 self}
     any [ return' (result:bool)-> {[%#span80] result = (self = Option'0.C_None)} (! return' {result}) ] 
   
   function shallow_model'2 (self : slice int32) : Seq.seq int32 =
     [%#span58] shallow_model'4 self
   
-  let rec get'0 (self:slice int32) (index:RangeTo'0.t_rangeto usize) (return'  (ret:Option'0.t_option (slice int32)))= {[@expl:precondition] [%#span82] inv'1 index}
+  let rec get'0 (self:slice int32) (index:RangeTo'0.t_RangeTo usize) (return'  (ret:Option'0.t_Option (slice int32)))= {[@expl:precondition] [%#span82] inv'1 index}
     {[@expl:precondition] [%#span81] inv'2 self}
     any
-    [ return' (result:Option'0.t_option (slice int32))-> {[%#span85] inv'3 result}
+    [ return' (result:Option'0.t_Option (slice int32))-> {[%#span85] inv'3 result}
       {[%#span84] in_bounds'0 index (shallow_model'2 self) \/ result = Option'0.C_None}
       {[%#span83] in_bounds'0 index (shallow_model'2 self)
        -> (exists r : slice int32 . result = Option'0.C_Some r /\ has_value'0 index (shallow_model'2 self) r)}
       (! return' {result}) ]
     
   
-  let rec deref'0 (self:Vec'0.t_vec int32 (Global'0.t_global)) (return'  (ret:slice int32))= {[@expl:precondition] [%#span86] inv'0 self}
+  let rec deref'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:slice int32))= {[@expl:precondition] [%#span86] inv'0 self}
     any
     [ return' (result:slice int32)-> {[%#span88] inv'2 result}
       {[%#span87] shallow_model'2 result = shallow_model'1 self}
@@ -1587,7 +1587,7 @@ module IndexRange_TestRangeTo
       (! return' {result}) ]
     
   
-  let rec index'0 (self:Vec'0.t_vec int32 (Global'0.t_global)) (index:RangeTo'0.t_rangeto usize) (return'  (ret:slice int32))= {[@expl:precondition] [%#span61] inv'1 index}
+  let rec index'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:RangeTo'0.t_RangeTo usize) (return'  (ret:slice int32))= {[@expl:precondition] [%#span61] inv'1 index}
     {[@expl:precondition] [%#span60] inv'0 self}
     {[@expl:precondition] [%#span59] in_bounds'0 index (shallow_model'1 self)}
     any
@@ -1598,11 +1598,11 @@ module IndexRange_TestRangeTo
   
   use prelude.prelude.Int32
   
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec int32 (Global'0.t_global)) (ix : int) : int32 =
+  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec int32 (Global'0.t_Global)) (ix : int) : int32 =
     [%#span91] Seq.get (shallow_model'0 self) ix
   
-  let rec create_arr'0 (_1:()) (return'  (ret:Vec'0.t_vec int32 (Global'0.t_global)))= any
-    [ return' (result:Vec'0.t_vec int32 (Global'0.t_global))-> {[%#span92] Seq.length (shallow_model'0 result) = 5
+  let rec create_arr'0 (_1:()) (return'  (ret:Vec'0.t_Vec int32 (Global'0.t_Global)))= any
+    [ return' (result:Vec'0.t_Vec int32 (Global'0.t_Global))-> {[%#span92] Seq.length (shallow_model'0 result) = 5
       /\ Int32.to_int (index_logic'0 result 0) = 0
       /\ Int32.to_int (index_logic'0 result 1) = 1
       /\ Int32.to_int (index_logic'0 result 2) = 2
@@ -1613,7 +1613,7 @@ module IndexRange_TestRangeTo
   let rec test_range_to (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 = create_arr'0 {[%#sindex_range0] ()}
-          (fun (_ret':Vec'0.t_vec int32 (Global'0.t_global)) ->  [ &arr <- _ret' ] s1)
+          (fun (_ret':Vec'0.t_Vec int32 (Global'0.t_Global)) ->  [ &arr <- _ret' ] s1)
       | s1 = bb1 ]
       
     | bb1 = s0
@@ -1665,14 +1665,14 @@ module IndexRange_TestRangeTo
     | bb15 = s0 [ s0 = deref'0 {arr} (fun (_ret':slice int32) ->  [ &_34 <- _ret' ] s1) | s1 = bb17 ] 
     | bb17 = s0
       [ s0 =  [ &_36 <- RangeTo'0.C_RangeTo ([%#sindex_range11] (6 : usize)) ] s1
-      | s1 = get'0 {_34} {_36} (fun (_ret':Option'0.t_option (slice int32)) ->  [ &_32 <- _ret' ] s2)
+      | s1 = get'0 {_34} {_36} (fun (_ret':Option'0.t_Option (slice int32)) ->  [ &_32 <- _ret' ] s2)
       | s2 = bb18 ]
       
     | bb18 = s0 [ s0 = is_none'0 {_32} (fun (_ret':bool) ->  [ &_30 <- _ret' ] s1) | s1 = bb19 ] 
     | bb19 = any [ br0 -> {_30 = false} (! bb21) | br1 -> {_30} (! bb20) ] 
     | bb20 = s0
-      [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_40 <- _ret' ]  [ &arr <- _40.final ] s1)
+      [ s0 = Borrow.borrow_mut <Vec'0.t_Vec int32 (Global'0.t_Global)> {arr}
+          (fun (_ret':borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) ->  [ &_40 <- _ret' ]  [ &arr <- _40.final ] s1)
       | s1 =  [ &_41 <- RangeTo'0.C_RangeTo ([%#sindex_range12] (3 : usize)) ] s2
       | s2 = index_mut'0 {_40} {_41} (fun (_ret':borrowed (slice int32)) ->  [ &_39 <- _ret' ] s3)
       | s3 = bb22 ]
@@ -1782,10 +1782,10 @@ module IndexRange_TestRangeTo
     | bb12 = {[%#sindex_range44] false} any ]
     )
     [ & _0 : () = any_l ()
-    | & arr : Vec'0.t_vec int32 (Global'0.t_global) = any_l ()
+    | & arr : Vec'0.t_Vec int32 (Global'0.t_Global) = any_l ()
     | & s : slice int32 = any_l ()
     | & _3 : slice int32 = any_l ()
-    | & _5 : RangeTo'0.t_rangeto usize = any_l ()
+    | & _5 : RangeTo'0.t_RangeTo usize = any_l ()
     | & _7 : bool = any_l ()
     | & _8 : usize = any_l ()
     | & _10 : bool = any_l ()
@@ -1799,15 +1799,15 @@ module IndexRange_TestRangeTo
     | & _22 : bool = any_l ()
     | & _23 : usize = any_l ()
     | & _25 : slice int32 = any_l ()
-    | & _27 : RangeTo'0.t_rangeto usize = any_l ()
+    | & _27 : RangeTo'0.t_RangeTo usize = any_l ()
     | & _30 : bool = any_l ()
-    | & _32 : Option'0.t_option (slice int32) = any_l ()
+    | & _32 : Option'0.t_Option (slice int32) = any_l ()
     | & _34 : slice int32 = any_l ()
-    | & _36 : RangeTo'0.t_rangeto usize = any_l ()
+    | & _36 : RangeTo'0.t_RangeTo usize = any_l ()
     | & s1 : borrowed (slice int32) = any_l ()
     | & _39 : borrowed (slice int32) = any_l ()
-    | & _40 : borrowed (Vec'0.t_vec int32 (Global'0.t_global)) = any_l ()
-    | & _41 : RangeTo'0.t_rangeto usize = any_l ()
+    | & _40 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) = any_l ()
+    | & _41 : RangeTo'0.t_RangeTo usize = any_l ()
     | & _43 : bool = any_l ()
     | & _44 : usize = any_l ()
     | & _47 : usize = any_l ()
@@ -1834,23 +1834,23 @@ module IndexRange_TestRangeTo
     | & _92 : int32 = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
-module Core_Ops_Range_RangeFrom_Type
-  type t_rangefrom 'idx =
+module T_core__ops__range__RangeFrom
+  type t_RangeFrom 'idx =
     | C_RangeFrom 'idx
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_rangefrom < 'idx > (input:t_rangefrom 'idx) (ret  (start:'idx))= any
+  let rec t_RangeFrom < 'idx > (input:t_RangeFrom 'idx) (ret  (start:'idx))= any
     [ good (start:'idx)-> {C_RangeFrom start = input} (! ret {start})
     | bad (start:'idx)-> {C_RangeFrom start <> input} {false} any ]
     
   
-  function rangefrom_start (self : t_rangefrom 'idx) : 'idx =
+  function t_RangeFrom__start (self : t_RangeFrom 'idx) : 'idx =
     match self with
       | C_RangeFrom a -> a
       end
 end
-module IndexRange_TestRangeFrom
+module M_index_range__test_range_from
   let%span sindex_range0 = "../index_range.rs" 117 18 117 30
   
   let%span sindex_range1 = "../index_range.rs" 122 17 122 18
@@ -2045,7 +2045,7 @@ module IndexRange_TestRangeFrom
   
   predicate inv'11 (_1 : int32)
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'13 (self : int32) =
     [%#span47] inv'11 self
@@ -2082,12 +2082,12 @@ module IndexRange_TestRangeFrom
   
   use prelude.prelude.UIntSize
   
-  constant max'0 : usize = [%#span50] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span50] (18446744073709551615 : usize)
   
   function shallow_model'4 (self : slice int32) : Seq.seq int32
   
   axiom shallow_model'4_spec : forall self : slice int32 . ([%#span52] shallow_model'4 self = Slice.id self)
-  && ([%#span51] Seq.length (shallow_model'4 self) <= UIntSize.to_int (max'0 : usize))
+  && ([%#span51] Seq.length (shallow_model'4 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'10 (self : slice int32) =
     [%#span53] inv'12 (shallow_model'4 self)
@@ -2096,19 +2096,19 @@ module IndexRange_TestRangeFrom
   
   axiom inv'10 [@rewrite] : forall x : slice int32 . inv'10 x = true
   
-  use Alloc_Vec_Vec_Type as Vec'0
+  use T_alloc__vec__Vec as Vec'0
   
-  function shallow_model'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) : Seq.seq int32
+  function shallow_model'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_vec int32 (Global'0.t_global) . [%#span54] Seq.length (shallow_model'0 self)
-  <= UIntSize.to_int (max'0 : usize)
+  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec int32 (Global'0.t_Global) . [%#span54] Seq.length (shallow_model'0 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
   
-  predicate invariant'9 (self : Vec'0.t_vec int32 (Global'0.t_global)) =
+  predicate invariant'9 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) =
     [%#span55] inv'12 (shallow_model'0 self)
   
-  predicate inv'9 (_1 : Vec'0.t_vec int32 (Global'0.t_global))
+  predicate inv'9 (_1 : Vec'0.t_Vec int32 (Global'0.t_Global))
   
-  axiom inv'9 [@rewrite] : forall x : Vec'0.t_vec int32 (Global'0.t_global) . inv'9 x = true
+  axiom inv'9 [@rewrite] : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) . inv'9 x = true
   
   use prelude.prelude.Borrow
   
@@ -2133,28 +2133,28 @@ module IndexRange_TestRangeFrom
   
   axiom inv'6 [@rewrite] : forall x : borrowed (slice int32) . inv'6 x = true
   
-  predicate invariant'5 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) =
+  predicate invariant'5 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) =
     [%#span57] inv'9 self.current /\ inv'9 self.final
   
-  predicate inv'5 (_1 : borrowed (Vec'0.t_vec int32 (Global'0.t_global)))
+  predicate inv'5 (_1 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)))
   
-  axiom inv'5 [@rewrite] : forall x : borrowed (Vec'0.t_vec int32 (Global'0.t_global)) . inv'5 x = true
+  axiom inv'5 [@rewrite] : forall x : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) . inv'5 x = true
   
-  use Core_Option_Option_Type as Option'0
+  use T_core__option__Option as Option'0
   
-  predicate inv'3 (_1 : Option'0.t_option (slice int32))
+  predicate inv'3 (_1 : Option'0.t_Option (slice int32))
   
-  predicate invariant'4 (self : Option'0.t_option (slice int32)) =
+  predicate invariant'4 (self : Option'0.t_Option (slice int32)) =
     [%#span56] inv'3 self
   
-  predicate inv'4 (_1 : Option'0.t_option (slice int32))
+  predicate inv'4 (_1 : Option'0.t_Option (slice int32))
   
-  axiom inv'4 [@rewrite] : forall x : Option'0.t_option (slice int32) . inv'4 x = true
+  axiom inv'4 [@rewrite] : forall x : Option'0.t_Option (slice int32) . inv'4 x = true
   
-  predicate invariant'3 (self : Option'0.t_option (slice int32)) =
+  predicate invariant'3 (self : Option'0.t_Option (slice int32)) =
     [%#span49] true
   
-  axiom inv'3 [@rewrite] : forall x : Option'0.t_option (slice int32) . inv'3 x = true
+  axiom inv'3 [@rewrite] : forall x : Option'0.t_Option (slice int32) . inv'3 x = true
   
   predicate invariant'2 (self : slice int32) =
     [%#span56] inv'10 self
@@ -2163,21 +2163,21 @@ module IndexRange_TestRangeFrom
   
   axiom inv'2 [@rewrite] : forall x : slice int32 . inv'2 x = true
   
-  use Core_Ops_Range_RangeFrom_Type as RangeFrom'0
+  use T_core__ops__range__RangeFrom as RangeFrom'0
   
-  predicate invariant'1 (self : RangeFrom'0.t_rangefrom usize) =
+  predicate invariant'1 (self : RangeFrom'0.t_RangeFrom usize) =
     [%#span49] true
   
-  predicate inv'1 (_1 : RangeFrom'0.t_rangefrom usize)
+  predicate inv'1 (_1 : RangeFrom'0.t_RangeFrom usize)
   
-  axiom inv'1 [@rewrite] : forall x : RangeFrom'0.t_rangefrom usize . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : RangeFrom'0.t_RangeFrom usize . inv'1 x = true
   
-  predicate invariant'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) =
+  predicate invariant'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) =
     [%#span56] inv'9 self
   
-  predicate inv'0 (_1 : Vec'0.t_vec int32 (Global'0.t_global))
+  predicate inv'0 (_1 : Vec'0.t_Vec int32 (Global'0.t_Global))
   
-  axiom inv'0 [@rewrite] : forall x : Vec'0.t_vec int32 (Global'0.t_global) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
@@ -2189,10 +2189,10 @@ module IndexRange_TestRangeFrom
   predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq int32) =
     [%#span59] UIntSize.to_int self < Seq.length seq
   
-  function shallow_model'1 (self : Vec'0.t_vec int32 (Global'0.t_global)) : Seq.seq int32 =
+  function shallow_model'1 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32 =
     [%#span60] shallow_model'0 self
   
-  let rec index'1 (self:Vec'0.t_vec int32 (Global'0.t_global)) (index:usize) (return'  (ret:int32))= {[@expl:precondition] [%#span63] inv'7 index}
+  let rec index'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:usize) (return'  (ret:int32))= {[@expl:precondition] [%#span63] inv'7 index}
     {[@expl:precondition] [%#span62] inv'0 self}
     {[@expl:precondition] [%#span61] in_bounds'1 index (shallow_model'1 self)}
     any
@@ -2201,7 +2201,7 @@ module IndexRange_TestRangeFrom
       (! return' {result}) ]
     
   
-  let rec len'1 (self:Vec'0.t_vec int32 (Global'0.t_global)) (return'  (ret:usize))= {[@expl:precondition] [%#span66] inv'0 self}
+  let rec len'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] [%#span66] inv'0 self}
     any
     [ return' (result:usize)-> {[%#span67] UIntSize.to_int result = Seq.length (shallow_model'1 self)}
       (! return' {result}) ]
@@ -2210,26 +2210,26 @@ module IndexRange_TestRangeFrom
   predicate resolve'0 (self : borrowed (slice int32)) =
     [%#span68] self.final = self.current
   
-  use Core_Ops_Range_RangeFrom_Type as Core_Ops_Range_RangeFrom_Type
+  use T_core__ops__range__RangeFrom as T_core__ops__range__RangeFrom
   
-  predicate resolve_elswhere'0 (self : RangeFrom'0.t_rangefrom usize) (old' : Seq.seq int32) (fin : Seq.seq int32) =
+  predicate resolve_elswhere'0 (self : RangeFrom'0.t_RangeFrom usize) (old' : Seq.seq int32) (fin : Seq.seq int32) =
     [%#span69] forall i : int . 0 <= i
-    /\ i < UIntSize.to_int (Core_Ops_Range_RangeFrom_Type.rangefrom_start self) /\ i < Seq.length old'
+    /\ i < UIntSize.to_int (T_core__ops__range__RangeFrom.t_RangeFrom__start self) /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
   
   use prelude.seq_ext.SeqExt
   
-  predicate has_value'0 (self : RangeFrom'0.t_rangefrom usize) (seq : Seq.seq int32) (out : slice int32) =
-    [%#span70] SeqExt.subsequence seq (UIntSize.to_int (Core_Ops_Range_RangeFrom_Type.rangefrom_start self)) (Seq.length seq)
+  predicate has_value'0 (self : RangeFrom'0.t_RangeFrom usize) (seq : Seq.seq int32) (out : slice int32) =
+    [%#span70] SeqExt.subsequence seq (UIntSize.to_int (T_core__ops__range__RangeFrom.t_RangeFrom__start self)) (Seq.length seq)
     = shallow_model'4 out
   
-  predicate in_bounds'0 (self : RangeFrom'0.t_rangefrom usize) (seq : Seq.seq int32) =
-    [%#span71] UIntSize.to_int (Core_Ops_Range_RangeFrom_Type.rangefrom_start self) <= Seq.length seq
+  predicate in_bounds'0 (self : RangeFrom'0.t_RangeFrom usize) (seq : Seq.seq int32) =
+    [%#span71] UIntSize.to_int (T_core__ops__range__RangeFrom.t_RangeFrom__start self) <= Seq.length seq
   
-  function shallow_model'3 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) : Seq.seq int32 =
+  function shallow_model'3 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) : Seq.seq int32 =
     [%#span72] shallow_model'0 self.current
   
-  let rec index_mut'0 (self:borrowed (Vec'0.t_vec int32 (Global'0.t_global))) (index:RangeFrom'0.t_rangefrom usize) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] [%#span75] inv'1 index}
+  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (index:RangeFrom'0.t_RangeFrom usize) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] [%#span75] inv'1 index}
     {[@expl:precondition] [%#span74] inv'5 self}
     {[@expl:precondition] [%#span73] in_bounds'0 index (shallow_model'3 self)}
     any
@@ -2241,23 +2241,23 @@ module IndexRange_TestRangeFrom
       (! return' {result}) ]
     
   
-  let rec is_none'0 (self:Option'0.t_option (slice int32)) (return'  (ret:bool))= {[@expl:precondition] [%#span81] inv'4 self}
+  let rec is_none'0 (self:Option'0.t_Option (slice int32)) (return'  (ret:bool))= {[@expl:precondition] [%#span81] inv'4 self}
     any [ return' (result:bool)-> {[%#span82] result = (self = Option'0.C_None)} (! return' {result}) ] 
   
   function shallow_model'2 (self : slice int32) : Seq.seq int32 =
     [%#span60] shallow_model'4 self
   
-  let rec get'0 (self:slice int32) (index:RangeFrom'0.t_rangefrom usize) (return'  (ret:Option'0.t_option (slice int32)))= {[@expl:precondition] [%#span84] inv'1 index}
+  let rec get'0 (self:slice int32) (index:RangeFrom'0.t_RangeFrom usize) (return'  (ret:Option'0.t_Option (slice int32)))= {[@expl:precondition] [%#span84] inv'1 index}
     {[@expl:precondition] [%#span83] inv'2 self}
     any
-    [ return' (result:Option'0.t_option (slice int32))-> {[%#span87] inv'3 result}
+    [ return' (result:Option'0.t_Option (slice int32))-> {[%#span87] inv'3 result}
       {[%#span86] in_bounds'0 index (shallow_model'2 self) \/ result = Option'0.C_None}
       {[%#span85] in_bounds'0 index (shallow_model'2 self)
        -> (exists r : slice int32 . result = Option'0.C_Some r /\ has_value'0 index (shallow_model'2 self) r)}
       (! return' {result}) ]
     
   
-  let rec deref'0 (self:Vec'0.t_vec int32 (Global'0.t_global)) (return'  (ret:slice int32))= {[@expl:precondition] [%#span88] inv'0 self}
+  let rec deref'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:slice int32))= {[@expl:precondition] [%#span88] inv'0 self}
     any
     [ return' (result:slice int32)-> {[%#span90] inv'2 result}
       {[%#span89] shallow_model'2 result = shallow_model'1 self}
@@ -2270,7 +2270,7 @@ module IndexRange_TestRangeFrom
       (! return' {result}) ]
     
   
-  let rec index'0 (self:Vec'0.t_vec int32 (Global'0.t_global)) (index:RangeFrom'0.t_rangefrom usize) (return'  (ret:slice int32))= {[@expl:precondition] [%#span63] inv'1 index}
+  let rec index'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:RangeFrom'0.t_RangeFrom usize) (return'  (ret:slice int32))= {[@expl:precondition] [%#span63] inv'1 index}
     {[@expl:precondition] [%#span62] inv'0 self}
     {[@expl:precondition] [%#span61] in_bounds'0 index (shallow_model'1 self)}
     any
@@ -2281,11 +2281,11 @@ module IndexRange_TestRangeFrom
   
   use prelude.prelude.Int32
   
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec int32 (Global'0.t_global)) (ix : int) : int32 =
+  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec int32 (Global'0.t_Global)) (ix : int) : int32 =
     [%#span93] Seq.get (shallow_model'0 self) ix
   
-  let rec create_arr'0 (_1:()) (return'  (ret:Vec'0.t_vec int32 (Global'0.t_global)))= any
-    [ return' (result:Vec'0.t_vec int32 (Global'0.t_global))-> {[%#span94] Seq.length (shallow_model'0 result) = 5
+  let rec create_arr'0 (_1:()) (return'  (ret:Vec'0.t_Vec int32 (Global'0.t_Global)))= any
+    [ return' (result:Vec'0.t_Vec int32 (Global'0.t_Global))-> {[%#span94] Seq.length (shallow_model'0 result) = 5
       /\ Int32.to_int (index_logic'0 result 0) = 0
       /\ Int32.to_int (index_logic'0 result 1) = 1
       /\ Int32.to_int (index_logic'0 result 2) = 2
@@ -2296,7 +2296,7 @@ module IndexRange_TestRangeFrom
   let rec test_range_from (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 = create_arr'0 {[%#sindex_range0] ()}
-          (fun (_ret':Vec'0.t_vec int32 (Global'0.t_global)) ->  [ &arr <- _ret' ] s1)
+          (fun (_ret':Vec'0.t_Vec int32 (Global'0.t_Global)) ->  [ &arr <- _ret' ] s1)
       | s1 = bb1 ]
       
     | bb1 = s0
@@ -2348,7 +2348,7 @@ module IndexRange_TestRangeFrom
     | bb15 = s0 [ s0 = deref'0 {arr} (fun (_ret':slice int32) ->  [ &_34 <- _ret' ] s1) | s1 = bb17 ] 
     | bb17 = s0
       [ s0 =  [ &_36 <- RangeFrom'0.C_RangeFrom ([%#sindex_range11] (6 : usize)) ] s1
-      | s1 = get'0 {_34} {_36} (fun (_ret':Option'0.t_option (slice int32)) ->  [ &_32 <- _ret' ] s2)
+      | s1 = get'0 {_34} {_36} (fun (_ret':Option'0.t_Option (slice int32)) ->  [ &_32 <- _ret' ] s2)
       | s2 = bb18 ]
       
     | bb18 = s0 [ s0 = is_none'0 {_32} (fun (_ret':bool) ->  [ &_30 <- _ret' ] s1) | s1 = bb19 ] 
@@ -2356,14 +2356,14 @@ module IndexRange_TestRangeFrom
     | bb20 = s0 [ s0 = deref'0 {arr} (fun (_ret':slice int32) ->  [ &_43 <- _ret' ] s1) | s1 = bb22 ] 
     | bb22 = s0
       [ s0 =  [ &_45 <- RangeFrom'0.C_RangeFrom ([%#sindex_range12] (10 : usize)) ] s1
-      | s1 = get'0 {_43} {_45} (fun (_ret':Option'0.t_option (slice int32)) ->  [ &_41 <- _ret' ] s2)
+      | s1 = get'0 {_43} {_45} (fun (_ret':Option'0.t_Option (slice int32)) ->  [ &_41 <- _ret' ] s2)
       | s2 = bb23 ]
       
     | bb23 = s0 [ s0 = is_none'0 {_41} (fun (_ret':bool) ->  [ &_39 <- _ret' ] s1) | s1 = bb24 ] 
     | bb24 = any [ br0 -> {_39 = false} (! bb26) | br1 -> {_39} (! bb25) ] 
     | bb25 = s0
-      [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_49 <- _ret' ]  [ &arr <- _49.final ] s1)
+      [ s0 = Borrow.borrow_mut <Vec'0.t_Vec int32 (Global'0.t_Global)> {arr}
+          (fun (_ret':borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) ->  [ &_49 <- _ret' ]  [ &arr <- _49.final ] s1)
       | s1 =  [ &_50 <- RangeFrom'0.C_RangeFrom ([%#sindex_range13] (2 : usize)) ] s2
       | s2 = index_mut'0 {_49} {_50} (fun (_ret':borrowed (slice int32)) ->  [ &_48 <- _ret' ] s3)
       | s3 = bb27 ]
@@ -2474,10 +2474,10 @@ module IndexRange_TestRangeFrom
     | bb12 = {[%#sindex_range46] false} any ]
     )
     [ & _0 : () = any_l ()
-    | & arr : Vec'0.t_vec int32 (Global'0.t_global) = any_l ()
+    | & arr : Vec'0.t_Vec int32 (Global'0.t_Global) = any_l ()
     | & s : slice int32 = any_l ()
     | & _3 : slice int32 = any_l ()
-    | & _5 : RangeFrom'0.t_rangefrom usize = any_l ()
+    | & _5 : RangeFrom'0.t_RangeFrom usize = any_l ()
     | & _7 : bool = any_l ()
     | & _8 : usize = any_l ()
     | & _10 : bool = any_l ()
@@ -2491,19 +2491,19 @@ module IndexRange_TestRangeFrom
     | & _22 : bool = any_l ()
     | & _23 : usize = any_l ()
     | & _25 : slice int32 = any_l ()
-    | & _27 : RangeFrom'0.t_rangefrom usize = any_l ()
+    | & _27 : RangeFrom'0.t_RangeFrom usize = any_l ()
     | & _30 : bool = any_l ()
-    | & _32 : Option'0.t_option (slice int32) = any_l ()
+    | & _32 : Option'0.t_Option (slice int32) = any_l ()
     | & _34 : slice int32 = any_l ()
-    | & _36 : RangeFrom'0.t_rangefrom usize = any_l ()
+    | & _36 : RangeFrom'0.t_RangeFrom usize = any_l ()
     | & _39 : bool = any_l ()
-    | & _41 : Option'0.t_option (slice int32) = any_l ()
+    | & _41 : Option'0.t_Option (slice int32) = any_l ()
     | & _43 : slice int32 = any_l ()
-    | & _45 : RangeFrom'0.t_rangefrom usize = any_l ()
+    | & _45 : RangeFrom'0.t_RangeFrom usize = any_l ()
     | & s1 : borrowed (slice int32) = any_l ()
     | & _48 : borrowed (slice int32) = any_l ()
-    | & _49 : borrowed (Vec'0.t_vec int32 (Global'0.t_global)) = any_l ()
-    | & _50 : RangeFrom'0.t_rangefrom usize = any_l ()
+    | & _49 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) = any_l ()
+    | & _50 : RangeFrom'0.t_RangeFrom usize = any_l ()
     | & _52 : bool = any_l ()
     | & _53 : usize = any_l ()
     | & _56 : usize = any_l ()
@@ -2530,17 +2530,17 @@ module IndexRange_TestRangeFrom
     | & _101 : int32 = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
-module Core_Ops_Range_RangeFull_Type
-  type t_rangefull  =
+module T_core__ops__range__RangeFull
+  type t_RangeFull  =
     | C_RangeFull
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_rangefull (input:t_rangefull) (ret  )= any
+  let rec t_RangeFull (input:t_RangeFull) (ret  )= any
     [ good -> {C_RangeFull  = input} (! ret) | bad -> {C_RangeFull  <> input} {false} any ]
     
 end
-module IndexRange_TestRangeFull
+module M_index_range__test_range_full
   let%span sindex_range0 = "../index_range.rs" 156 18 156 30
   
   let%span sindex_range1 = "../index_range.rs" 162 23 162 24
@@ -2707,7 +2707,7 @@ module IndexRange_TestRangeFull
   
   predicate inv'9 (_1 : int32)
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'11 (self : int32) =
     [%#span43] inv'9 self
@@ -2744,12 +2744,12 @@ module IndexRange_TestRangeFull
   
   use prelude.prelude.UIntSize
   
-  constant max'0 : usize = [%#span46] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span46] (18446744073709551615 : usize)
   
   function shallow_model'4 (self : slice int32) : Seq.seq int32
   
   axiom shallow_model'4_spec : forall self : slice int32 . ([%#span48] shallow_model'4 self = Slice.id self)
-  && ([%#span47] Seq.length (shallow_model'4 self) <= UIntSize.to_int (max'0 : usize))
+  && ([%#span47] Seq.length (shallow_model'4 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'8 (self : slice int32) =
     [%#span49] inv'10 (shallow_model'4 self)
@@ -2758,19 +2758,19 @@ module IndexRange_TestRangeFull
   
   axiom inv'8 [@rewrite] : forall x : slice int32 . inv'8 x = true
   
-  use Alloc_Vec_Vec_Type as Vec'0
+  use T_alloc__vec__Vec as Vec'0
   
-  function shallow_model'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) : Seq.seq int32
+  function shallow_model'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_vec int32 (Global'0.t_global) . [%#span50] Seq.length (shallow_model'0 self)
-  <= UIntSize.to_int (max'0 : usize)
+  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec int32 (Global'0.t_Global) . [%#span50] Seq.length (shallow_model'0 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
   
-  predicate invariant'7 (self : Vec'0.t_vec int32 (Global'0.t_global)) =
+  predicate invariant'7 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) =
     [%#span51] inv'10 (shallow_model'0 self)
   
-  predicate inv'7 (_1 : Vec'0.t_vec int32 (Global'0.t_global))
+  predicate inv'7 (_1 : Vec'0.t_Vec int32 (Global'0.t_Global))
   
-  axiom inv'7 [@rewrite] : forall x : Vec'0.t_vec int32 (Global'0.t_global) . inv'7 x = true
+  axiom inv'7 [@rewrite] : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) . inv'7 x = true
   
   use prelude.prelude.Borrow
   
@@ -2795,12 +2795,12 @@ module IndexRange_TestRangeFull
   
   axiom inv'4 [@rewrite] : forall x : borrowed (slice int32) . inv'4 x = true
   
-  predicate invariant'3 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) =
+  predicate invariant'3 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) =
     [%#span53] inv'7 self.current /\ inv'7 self.final
   
-  predicate inv'3 (_1 : borrowed (Vec'0.t_vec int32 (Global'0.t_global)))
+  predicate inv'3 (_1 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)))
   
-  axiom inv'3 [@rewrite] : forall x : borrowed (Vec'0.t_vec int32 (Global'0.t_global)) . inv'3 x = true
+  axiom inv'3 [@rewrite] : forall x : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) . inv'3 x = true
   
   predicate invariant'2 (self : slice int32) =
     [%#span52] inv'8 self
@@ -2809,21 +2809,21 @@ module IndexRange_TestRangeFull
   
   axiom inv'2 [@rewrite] : forall x : slice int32 . inv'2 x = true
   
-  use Core_Ops_Range_RangeFull_Type as RangeFull'0
+  use T_core__ops__range__RangeFull as RangeFull'0
   
-  predicate invariant'1 (self : RangeFull'0.t_rangefull) =
+  predicate invariant'1 (self : RangeFull'0.t_RangeFull) =
     [%#span45] true
   
-  predicate inv'1 (_1 : RangeFull'0.t_rangefull)
+  predicate inv'1 (_1 : RangeFull'0.t_RangeFull)
   
-  axiom inv'1 [@rewrite] : forall x : RangeFull'0.t_rangefull . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : RangeFull'0.t_RangeFull . inv'1 x = true
   
-  predicate invariant'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) =
+  predicate invariant'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) =
     [%#span52] inv'7 self
   
-  predicate inv'0 (_1 : Vec'0.t_vec int32 (Global'0.t_global))
+  predicate inv'0 (_1 : Vec'0.t_Vec int32 (Global'0.t_Global))
   
-  axiom inv'0 [@rewrite] : forall x : Vec'0.t_vec int32 (Global'0.t_global) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
@@ -2835,10 +2835,10 @@ module IndexRange_TestRangeFull
   predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq int32) =
     [%#span55] UIntSize.to_int self < Seq.length seq
   
-  function shallow_model'1 (self : Vec'0.t_vec int32 (Global'0.t_global)) : Seq.seq int32 =
+  function shallow_model'1 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32 =
     [%#span56] shallow_model'0 self
   
-  let rec index'1 (self:Vec'0.t_vec int32 (Global'0.t_global)) (index:usize) (return'  (ret:int32))= {[@expl:precondition] [%#span59] inv'5 index}
+  let rec index'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:usize) (return'  (ret:int32))= {[@expl:precondition] [%#span59] inv'5 index}
     {[@expl:precondition] [%#span58] inv'0 self}
     {[@expl:precondition] [%#span57] in_bounds'1 index (shallow_model'1 self)}
     any
@@ -2847,7 +2847,7 @@ module IndexRange_TestRangeFull
       (! return' {result}) ]
     
   
-  let rec len'1 (self:Vec'0.t_vec int32 (Global'0.t_global)) (return'  (ret:usize))= {[@expl:precondition] [%#span62] inv'0 self}
+  let rec len'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] [%#span62] inv'0 self}
     any
     [ return' (result:usize)-> {[%#span63] UIntSize.to_int result = Seq.length (shallow_model'1 self)}
       (! return' {result}) ]
@@ -2856,19 +2856,19 @@ module IndexRange_TestRangeFull
   predicate resolve'0 (self : borrowed (slice int32)) =
     [%#span64] self.final = self.current
   
-  predicate resolve_elswhere'0 (self : RangeFull'0.t_rangefull) (_old : Seq.seq int32) (_fin : Seq.seq int32) =
+  predicate resolve_elswhere'0 (self : RangeFull'0.t_RangeFull) (_old : Seq.seq int32) (_fin : Seq.seq int32) =
     [%#span65] true
   
-  predicate has_value'0 (self : RangeFull'0.t_rangefull) (seq : Seq.seq int32) (out : slice int32) =
+  predicate has_value'0 (self : RangeFull'0.t_RangeFull) (seq : Seq.seq int32) (out : slice int32) =
     [%#span66] seq = shallow_model'4 out
   
-  predicate in_bounds'0 (self : RangeFull'0.t_rangefull) (_seq : Seq.seq int32) =
+  predicate in_bounds'0 (self : RangeFull'0.t_RangeFull) (_seq : Seq.seq int32) =
     [%#span67] true
   
-  function shallow_model'3 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) : Seq.seq int32 =
+  function shallow_model'3 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) : Seq.seq int32 =
     [%#span68] shallow_model'0 self.current
   
-  let rec index_mut'0 (self:borrowed (Vec'0.t_vec int32 (Global'0.t_global))) (index:RangeFull'0.t_rangefull) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] [%#span71] inv'1 index}
+  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (index:RangeFull'0.t_RangeFull) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] [%#span71] inv'1 index}
     {[@expl:precondition] [%#span70] inv'3 self}
     {[@expl:precondition] [%#span69] in_bounds'0 index (shallow_model'3 self)}
     any
@@ -2889,7 +2889,7 @@ module IndexRange_TestRangeFull
       (! return' {result}) ]
     
   
-  let rec index'0 (self:Vec'0.t_vec int32 (Global'0.t_global)) (index:RangeFull'0.t_rangefull) (return'  (ret:slice int32))= {[@expl:precondition] [%#span59] inv'1 index}
+  let rec index'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:RangeFull'0.t_RangeFull) (return'  (ret:slice int32))= {[@expl:precondition] [%#span59] inv'1 index}
     {[@expl:precondition] [%#span58] inv'0 self}
     {[@expl:precondition] [%#span57] in_bounds'0 index (shallow_model'1 self)}
     any
@@ -2900,11 +2900,11 @@ module IndexRange_TestRangeFull
   
   use prelude.prelude.Int32
   
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec int32 (Global'0.t_global)) (ix : int) : int32 =
+  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec int32 (Global'0.t_Global)) (ix : int) : int32 =
     [%#span79] Seq.get (shallow_model'0 self) ix
   
-  let rec create_arr'0 (_1:()) (return'  (ret:Vec'0.t_vec int32 (Global'0.t_global)))= any
-    [ return' (result:Vec'0.t_vec int32 (Global'0.t_global))-> {[%#span80] Seq.length (shallow_model'0 result) = 5
+  let rec create_arr'0 (_1:()) (return'  (ret:Vec'0.t_Vec int32 (Global'0.t_Global)))= any
+    [ return' (result:Vec'0.t_Vec int32 (Global'0.t_Global))-> {[%#span80] Seq.length (shallow_model'0 result) = 5
       /\ Int32.to_int (index_logic'0 result 0) = 0
       /\ Int32.to_int (index_logic'0 result 1) = 1
       /\ Int32.to_int (index_logic'0 result 2) = 2
@@ -2915,7 +2915,7 @@ module IndexRange_TestRangeFull
   let rec test_range_full (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 = create_arr'0 {[%#sindex_range0] ()}
-          (fun (_ret':Vec'0.t_vec int32 (Global'0.t_global)) ->  [ &arr <- _ret' ] s1)
+          (fun (_ret':Vec'0.t_Vec int32 (Global'0.t_Global)) ->  [ &arr <- _ret' ] s1)
       | s1 = bb1 ]
       
     | bb1 = s0
@@ -2994,8 +2994,8 @@ module IndexRange_TestRangeFull
       | s1 = any [ br0 -> {_30 = false} (! bb15) | br1 -> {_30} (! bb14) ]  ]
       
     | bb14 = s0
-      [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_38 <- _ret' ]  [ &arr <- _38.final ] s1)
+      [ s0 = Borrow.borrow_mut <Vec'0.t_Vec int32 (Global'0.t_Global)> {arr}
+          (fun (_ret':borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) ->  [ &_38 <- _ret' ]  [ &arr <- _38.final ] s1)
       | s1 =  [ &_39 <- RangeFull'0.C_RangeFull ] s2
       | s2 = index_mut'0 {_38} {_39} (fun (_ret':borrowed (slice int32)) ->  [ &_37 <- _ret' ] s3)
       | s3 = bb22 ]
@@ -3095,10 +3095,10 @@ module IndexRange_TestRangeFull
     | bb21 = {[%#sindex_range42] false} any ]
     )
     [ & _0 : () = any_l ()
-    | & arr : Vec'0.t_vec int32 (Global'0.t_global) = any_l ()
+    | & arr : Vec'0.t_Vec int32 (Global'0.t_Global) = any_l ()
     | & s : slice int32 = any_l ()
     | & _3 : slice int32 = any_l ()
-    | & _5 : RangeFull'0.t_rangefull = any_l ()
+    | & _5 : RangeFull'0.t_RangeFull = any_l ()
     | & _7 : bool = any_l ()
     | & _8 : usize = any_l ()
     | & _10 : bool = any_l ()
@@ -3123,8 +3123,8 @@ module IndexRange_TestRangeFull
     | & _34 : bool = any_l ()
     | & s1 : borrowed (slice int32) = any_l ()
     | & _37 : borrowed (slice int32) = any_l ()
-    | & _38 : borrowed (Vec'0.t_vec int32 (Global'0.t_global)) = any_l ()
-    | & _39 : RangeFull'0.t_rangefull = any_l ()
+    | & _38 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) = any_l ()
+    | & _39 : RangeFull'0.t_RangeFull = any_l ()
     | & _41 : bool = any_l ()
     | & _42 : usize = any_l ()
     | & _45 : usize = any_l ()
@@ -3147,23 +3147,23 @@ module IndexRange_TestRangeFull
     | & _83 : int32 = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
-module Core_Ops_Range_RangeToInclusive_Type
-  type t_rangetoinclusive 'idx =
+module T_core__ops__range__RangeToInclusive
+  type t_RangeToInclusive 'idx =
     | C_RangeToInclusive 'idx
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_rangetoinclusive < 'idx > (input:t_rangetoinclusive 'idx) (ret  (end':'idx))= any
+  let rec t_RangeToInclusive < 'idx > (input:t_RangeToInclusive 'idx) (ret  (end':'idx))= any
     [ good (end':'idx)-> {C_RangeToInclusive end' = input} (! ret {end'})
     | bad (end':'idx)-> {C_RangeToInclusive end' <> input} {false} any ]
     
   
-  function rangetoinclusive_end (self : t_rangetoinclusive 'idx) : 'idx =
+  function t_RangeToInclusive__end (self : t_RangeToInclusive 'idx) : 'idx =
     match self with
       | C_RangeToInclusive a -> a
       end
 end
-module IndexRange_TestRangeToInclusive
+module M_index_range__test_range_to_inclusive
   let%span sindex_range0 = "../index_range.rs" 181 18 181 30
   
   let%span sindex_range1 = "../index_range.rs" 186 20 186 21
@@ -3348,7 +3348,7 @@ module IndexRange_TestRangeToInclusive
   
   predicate inv'11 (_1 : int32)
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'13 (self : int32) =
     [%#span42] inv'11 self
@@ -3385,12 +3385,12 @@ module IndexRange_TestRangeToInclusive
   
   use prelude.prelude.UIntSize
   
-  constant max'0 : usize = [%#span45] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span45] (18446744073709551615 : usize)
   
   function shallow_model'4 (self : slice int32) : Seq.seq int32
   
   axiom shallow_model'4_spec : forall self : slice int32 . ([%#span47] shallow_model'4 self = Slice.id self)
-  && ([%#span46] Seq.length (shallow_model'4 self) <= UIntSize.to_int (max'0 : usize))
+  && ([%#span46] Seq.length (shallow_model'4 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'10 (self : slice int32) =
     [%#span48] inv'12 (shallow_model'4 self)
@@ -3399,19 +3399,19 @@ module IndexRange_TestRangeToInclusive
   
   axiom inv'10 [@rewrite] : forall x : slice int32 . inv'10 x = true
   
-  use Alloc_Vec_Vec_Type as Vec'0
+  use T_alloc__vec__Vec as Vec'0
   
-  function shallow_model'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) : Seq.seq int32
+  function shallow_model'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_vec int32 (Global'0.t_global) . [%#span49] Seq.length (shallow_model'0 self)
-  <= UIntSize.to_int (max'0 : usize)
+  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec int32 (Global'0.t_Global) . [%#span49] Seq.length (shallow_model'0 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
   
-  predicate invariant'9 (self : Vec'0.t_vec int32 (Global'0.t_global)) =
+  predicate invariant'9 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) =
     [%#span50] inv'12 (shallow_model'0 self)
   
-  predicate inv'9 (_1 : Vec'0.t_vec int32 (Global'0.t_global))
+  predicate inv'9 (_1 : Vec'0.t_Vec int32 (Global'0.t_Global))
   
-  axiom inv'9 [@rewrite] : forall x : Vec'0.t_vec int32 (Global'0.t_global) . inv'9 x = true
+  axiom inv'9 [@rewrite] : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) . inv'9 x = true
   
   use prelude.prelude.Borrow
   
@@ -3436,28 +3436,28 @@ module IndexRange_TestRangeToInclusive
   
   axiom inv'6 [@rewrite] : forall x : borrowed (slice int32) . inv'6 x = true
   
-  predicate invariant'5 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) =
+  predicate invariant'5 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) =
     [%#span52] inv'9 self.current /\ inv'9 self.final
   
-  predicate inv'5 (_1 : borrowed (Vec'0.t_vec int32 (Global'0.t_global)))
+  predicate inv'5 (_1 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)))
   
-  axiom inv'5 [@rewrite] : forall x : borrowed (Vec'0.t_vec int32 (Global'0.t_global)) . inv'5 x = true
+  axiom inv'5 [@rewrite] : forall x : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) . inv'5 x = true
   
-  use Core_Option_Option_Type as Option'0
+  use T_core__option__Option as Option'0
   
-  predicate inv'3 (_1 : Option'0.t_option (slice int32))
+  predicate inv'3 (_1 : Option'0.t_Option (slice int32))
   
-  predicate invariant'4 (self : Option'0.t_option (slice int32)) =
+  predicate invariant'4 (self : Option'0.t_Option (slice int32)) =
     [%#span51] inv'3 self
   
-  predicate inv'4 (_1 : Option'0.t_option (slice int32))
+  predicate inv'4 (_1 : Option'0.t_Option (slice int32))
   
-  axiom inv'4 [@rewrite] : forall x : Option'0.t_option (slice int32) . inv'4 x = true
+  axiom inv'4 [@rewrite] : forall x : Option'0.t_Option (slice int32) . inv'4 x = true
   
-  predicate invariant'3 (self : Option'0.t_option (slice int32)) =
+  predicate invariant'3 (self : Option'0.t_Option (slice int32)) =
     [%#span44] true
   
-  axiom inv'3 [@rewrite] : forall x : Option'0.t_option (slice int32) . inv'3 x = true
+  axiom inv'3 [@rewrite] : forall x : Option'0.t_Option (slice int32) . inv'3 x = true
   
   predicate invariant'2 (self : slice int32) =
     [%#span51] inv'10 self
@@ -3466,21 +3466,21 @@ module IndexRange_TestRangeToInclusive
   
   axiom inv'2 [@rewrite] : forall x : slice int32 . inv'2 x = true
   
-  use Core_Ops_Range_RangeToInclusive_Type as RangeToInclusive'0
+  use T_core__ops__range__RangeToInclusive as RangeToInclusive'0
   
-  predicate invariant'1 (self : RangeToInclusive'0.t_rangetoinclusive usize) =
+  predicate invariant'1 (self : RangeToInclusive'0.t_RangeToInclusive usize) =
     [%#span44] true
   
-  predicate inv'1 (_1 : RangeToInclusive'0.t_rangetoinclusive usize)
+  predicate inv'1 (_1 : RangeToInclusive'0.t_RangeToInclusive usize)
   
-  axiom inv'1 [@rewrite] : forall x : RangeToInclusive'0.t_rangetoinclusive usize . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : RangeToInclusive'0.t_RangeToInclusive usize . inv'1 x = true
   
-  predicate invariant'0 (self : Vec'0.t_vec int32 (Global'0.t_global)) =
+  predicate invariant'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) =
     [%#span51] inv'9 self
   
-  predicate inv'0 (_1 : Vec'0.t_vec int32 (Global'0.t_global))
+  predicate inv'0 (_1 : Vec'0.t_Vec int32 (Global'0.t_Global))
   
-  axiom inv'0 [@rewrite] : forall x : Vec'0.t_vec int32 (Global'0.t_global) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
@@ -3492,10 +3492,10 @@ module IndexRange_TestRangeToInclusive
   predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq int32) =
     [%#span54] UIntSize.to_int self < Seq.length seq
   
-  function shallow_model'1 (self : Vec'0.t_vec int32 (Global'0.t_global)) : Seq.seq int32 =
+  function shallow_model'1 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32 =
     [%#span55] shallow_model'0 self
   
-  let rec index'1 (self:Vec'0.t_vec int32 (Global'0.t_global)) (index:usize) (return'  (ret:int32))= {[@expl:precondition] [%#span58] inv'7 index}
+  let rec index'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:usize) (return'  (ret:int32))= {[@expl:precondition] [%#span58] inv'7 index}
     {[@expl:precondition] [%#span57] inv'0 self}
     {[@expl:precondition] [%#span56] in_bounds'1 index (shallow_model'1 self)}
     any
@@ -3504,7 +3504,7 @@ module IndexRange_TestRangeToInclusive
       (! return' {result}) ]
     
   
-  let rec len'1 (self:Vec'0.t_vec int32 (Global'0.t_global)) (return'  (ret:usize))= {[@expl:precondition] [%#span61] inv'0 self}
+  let rec len'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] [%#span61] inv'0 self}
     any
     [ return' (result:usize)-> {[%#span62] UIntSize.to_int result = Seq.length (shallow_model'1 self)}
       (! return' {result}) ]
@@ -3513,28 +3513,28 @@ module IndexRange_TestRangeToInclusive
   predicate resolve'0 (self : borrowed (slice int32)) =
     [%#span63] self.final = self.current
   
-  use Core_Ops_Range_RangeToInclusive_Type as Core_Ops_Range_RangeToInclusive_Type
+  use T_core__ops__range__RangeToInclusive as T_core__ops__range__RangeToInclusive
   
-  predicate resolve_elswhere'0 (self : RangeToInclusive'0.t_rangetoinclusive usize) (old' : Seq.seq int32) (fin : Seq.seq int32)
+  predicate resolve_elswhere'0 (self : RangeToInclusive'0.t_RangeToInclusive usize) (old' : Seq.seq int32) (fin : Seq.seq int32)
     
    =
-    [%#span64] forall i : int . UIntSize.to_int (Core_Ops_Range_RangeToInclusive_Type.rangetoinclusive_end self) < i
+    [%#span64] forall i : int . UIntSize.to_int (T_core__ops__range__RangeToInclusive.t_RangeToInclusive__end self) < i
     /\ i < Seq.length old'  -> Seq.get old' i = Seq.get fin i
   
   use prelude.seq_ext.SeqExt
   
-  predicate has_value'0 (self : RangeToInclusive'0.t_rangetoinclusive usize) (seq : Seq.seq int32) (out : slice int32) =
-    [%#span65] SeqExt.subsequence seq 0 (UIntSize.to_int (Core_Ops_Range_RangeToInclusive_Type.rangetoinclusive_end self)
+  predicate has_value'0 (self : RangeToInclusive'0.t_RangeToInclusive usize) (seq : Seq.seq int32) (out : slice int32) =
+    [%#span65] SeqExt.subsequence seq 0 (UIntSize.to_int (T_core__ops__range__RangeToInclusive.t_RangeToInclusive__end self)
     + 1)
     = shallow_model'4 out
   
-  predicate in_bounds'0 (self : RangeToInclusive'0.t_rangetoinclusive usize) (seq : Seq.seq int32) =
-    [%#span66] UIntSize.to_int (Core_Ops_Range_RangeToInclusive_Type.rangetoinclusive_end self) < Seq.length seq
+  predicate in_bounds'0 (self : RangeToInclusive'0.t_RangeToInclusive usize) (seq : Seq.seq int32) =
+    [%#span66] UIntSize.to_int (T_core__ops__range__RangeToInclusive.t_RangeToInclusive__end self) < Seq.length seq
   
-  function shallow_model'3 (self : borrowed (Vec'0.t_vec int32 (Global'0.t_global))) : Seq.seq int32 =
+  function shallow_model'3 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) : Seq.seq int32 =
     [%#span67] shallow_model'0 self.current
   
-  let rec index_mut'0 (self:borrowed (Vec'0.t_vec int32 (Global'0.t_global))) (index:RangeToInclusive'0.t_rangetoinclusive usize) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] [%#span70] inv'1 index}
+  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (index:RangeToInclusive'0.t_RangeToInclusive usize) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] [%#span70] inv'1 index}
     {[@expl:precondition] [%#span69] inv'5 self}
     {[@expl:precondition] [%#span68] in_bounds'0 index (shallow_model'3 self)}
     any
@@ -3546,23 +3546,23 @@ module IndexRange_TestRangeToInclusive
       (! return' {result}) ]
     
   
-  let rec is_none'0 (self:Option'0.t_option (slice int32)) (return'  (ret:bool))= {[@expl:precondition] [%#span76] inv'4 self}
+  let rec is_none'0 (self:Option'0.t_Option (slice int32)) (return'  (ret:bool))= {[@expl:precondition] [%#span76] inv'4 self}
     any [ return' (result:bool)-> {[%#span77] result = (self = Option'0.C_None)} (! return' {result}) ] 
   
   function shallow_model'2 (self : slice int32) : Seq.seq int32 =
     [%#span55] shallow_model'4 self
   
-  let rec get'0 (self:slice int32) (index:RangeToInclusive'0.t_rangetoinclusive usize) (return'  (ret:Option'0.t_option (slice int32)))= {[@expl:precondition] [%#span79] inv'1 index}
+  let rec get'0 (self:slice int32) (index:RangeToInclusive'0.t_RangeToInclusive usize) (return'  (ret:Option'0.t_Option (slice int32)))= {[@expl:precondition] [%#span79] inv'1 index}
     {[@expl:precondition] [%#span78] inv'2 self}
     any
-    [ return' (result:Option'0.t_option (slice int32))-> {[%#span82] inv'3 result}
+    [ return' (result:Option'0.t_Option (slice int32))-> {[%#span82] inv'3 result}
       {[%#span81] in_bounds'0 index (shallow_model'2 self) \/ result = Option'0.C_None}
       {[%#span80] in_bounds'0 index (shallow_model'2 self)
        -> (exists r : slice int32 . result = Option'0.C_Some r /\ has_value'0 index (shallow_model'2 self) r)}
       (! return' {result}) ]
     
   
-  let rec deref'0 (self:Vec'0.t_vec int32 (Global'0.t_global)) (return'  (ret:slice int32))= {[@expl:precondition] [%#span83] inv'0 self}
+  let rec deref'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:slice int32))= {[@expl:precondition] [%#span83] inv'0 self}
     any
     [ return' (result:slice int32)-> {[%#span85] inv'2 result}
       {[%#span84] shallow_model'2 result = shallow_model'1 self}
@@ -3575,7 +3575,7 @@ module IndexRange_TestRangeToInclusive
       (! return' {result}) ]
     
   
-  let rec index'0 (self:Vec'0.t_vec int32 (Global'0.t_global)) (index:RangeToInclusive'0.t_rangetoinclusive usize) (return'  (ret:slice int32))= {[@expl:precondition] [%#span58] inv'1 index}
+  let rec index'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:RangeToInclusive'0.t_RangeToInclusive usize) (return'  (ret:slice int32))= {[@expl:precondition] [%#span58] inv'1 index}
     {[@expl:precondition] [%#span57] inv'0 self}
     {[@expl:precondition] [%#span56] in_bounds'0 index (shallow_model'1 self)}
     any
@@ -3586,11 +3586,11 @@ module IndexRange_TestRangeToInclusive
   
   use prelude.prelude.Int32
   
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_vec int32 (Global'0.t_global)) (ix : int) : int32 =
+  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec int32 (Global'0.t_Global)) (ix : int) : int32 =
     [%#span88] Seq.get (shallow_model'0 self) ix
   
-  let rec create_arr'0 (_1:()) (return'  (ret:Vec'0.t_vec int32 (Global'0.t_global)))= any
-    [ return' (result:Vec'0.t_vec int32 (Global'0.t_global))-> {[%#span89] Seq.length (shallow_model'0 result) = 5
+  let rec create_arr'0 (_1:()) (return'  (ret:Vec'0.t_Vec int32 (Global'0.t_Global)))= any
+    [ return' (result:Vec'0.t_Vec int32 (Global'0.t_Global))-> {[%#span89] Seq.length (shallow_model'0 result) = 5
       /\ Int32.to_int (index_logic'0 result 0) = 0
       /\ Int32.to_int (index_logic'0 result 1) = 1
       /\ Int32.to_int (index_logic'0 result 2) = 2
@@ -3601,7 +3601,7 @@ module IndexRange_TestRangeToInclusive
   let rec test_range_to_inclusive (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 = create_arr'0 {[%#sindex_range0] ()}
-          (fun (_ret':Vec'0.t_vec int32 (Global'0.t_global)) ->  [ &arr <- _ret' ] s1)
+          (fun (_ret':Vec'0.t_Vec int32 (Global'0.t_Global)) ->  [ &arr <- _ret' ] s1)
       | s1 = bb1 ]
       
     | bb1 = s0
@@ -3643,14 +3643,14 @@ module IndexRange_TestRangeToInclusive
     | bb8 = s0 [ s0 = deref'0 {arr} (fun (_ret':slice int32) ->  [ &_26 <- _ret' ] s1) | s1 = bb13 ] 
     | bb13 = s0
       [ s0 =  [ &_28 <- RangeToInclusive'0.C_RangeToInclusive ([%#sindex_range9] (5 : usize)) ] s1
-      | s1 = get'0 {_26} {_28} (fun (_ret':Option'0.t_option (slice int32)) ->  [ &_24 <- _ret' ] s2)
+      | s1 = get'0 {_26} {_28} (fun (_ret':Option'0.t_Option (slice int32)) ->  [ &_24 <- _ret' ] s2)
       | s2 = bb14 ]
       
     | bb14 = s0 [ s0 = is_none'0 {_24} (fun (_ret':bool) ->  [ &_22 <- _ret' ] s1) | s1 = bb15 ] 
     | bb15 = any [ br0 -> {_22 = false} (! bb17) | br1 -> {_22} (! bb16) ] 
     | bb16 = s0
-      [ s0 = Borrow.borrow_mut <Vec'0.t_vec int32 (Global'0.t_global)> {arr}
-          (fun (_ret':borrowed (Vec'0.t_vec int32 (Global'0.t_global))) ->  [ &_32 <- _ret' ]  [ &arr <- _32.final ] s1)
+      [ s0 = Borrow.borrow_mut <Vec'0.t_Vec int32 (Global'0.t_Global)> {arr}
+          (fun (_ret':borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) ->  [ &_32 <- _ret' ]  [ &arr <- _32.final ] s1)
       | s1 =  [ &_33 <- RangeToInclusive'0.C_RangeToInclusive ([%#sindex_range10] (2 : usize)) ] s2
       | s2 = index_mut'0 {_32} {_33} (fun (_ret':borrowed (slice int32)) ->  [ &_31 <- _ret' ] s3)
       | s3 = bb18 ]
@@ -3759,10 +3759,10 @@ module IndexRange_TestRangeToInclusive
     | bb12 = {[%#sindex_range41] false} any ]
     )
     [ & _0 : () = any_l ()
-    | & arr : Vec'0.t_vec int32 (Global'0.t_global) = any_l ()
+    | & arr : Vec'0.t_Vec int32 (Global'0.t_Global) = any_l ()
     | & s : slice int32 = any_l ()
     | & _3 : slice int32 = any_l ()
-    | & _5 : RangeToInclusive'0.t_rangetoinclusive usize = any_l ()
+    | & _5 : RangeToInclusive'0.t_RangeToInclusive usize = any_l ()
     | & _7 : bool = any_l ()
     | & _8 : usize = any_l ()
     | & _10 : bool = any_l ()
@@ -3774,13 +3774,13 @@ module IndexRange_TestRangeToInclusive
     | & _18 : usize = any_l ()
     | & _19 : bool = any_l ()
     | & _22 : bool = any_l ()
-    | & _24 : Option'0.t_option (slice int32) = any_l ()
+    | & _24 : Option'0.t_Option (slice int32) = any_l ()
     | & _26 : slice int32 = any_l ()
-    | & _28 : RangeToInclusive'0.t_rangetoinclusive usize = any_l ()
+    | & _28 : RangeToInclusive'0.t_RangeToInclusive usize = any_l ()
     | & s1 : borrowed (slice int32) = any_l ()
     | & _31 : borrowed (slice int32) = any_l ()
-    | & _32 : borrowed (Vec'0.t_vec int32 (Global'0.t_global)) = any_l ()
-    | & _33 : RangeToInclusive'0.t_rangetoinclusive usize = any_l ()
+    | & _32 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) = any_l ()
+    | & _33 : RangeToInclusive'0.t_RangeToInclusive usize = any_l ()
     | & _35 : bool = any_l ()
     | & _36 : usize = any_l ()
     | & _39 : usize = any_l ()

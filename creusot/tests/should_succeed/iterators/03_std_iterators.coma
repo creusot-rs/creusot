@@ -1,78 +1,78 @@
 
-module Core_Ptr_NonNull_NonNull_Type
+module T_core__ptr__non_null__NonNull
   use prelude.prelude.Opaque
   
-  type t_nonnull 't =
+  type t_NonNull 't =
     | C_NonNull opaque_ptr
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
+  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
     [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
     | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
     
 end
-module Core_Marker_PhantomData_Type
-  type t_phantomdata 't =
+module T_core__marker__PhantomData
+  type t_PhantomData 't =
     | C_PhantomData
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
+  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any
     [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
     
 end
-module Core_Slice_Iter_Iter_Type
+module T_core__slice__iter__Iter
   use prelude.prelude.Borrow
   
-  use Core_Marker_PhantomData_Type as PhantomData'0
+  use T_core__marker__PhantomData as PhantomData'0
   
   use prelude.prelude.Opaque
   
-  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  use T_core__ptr__non_null__NonNull as NonNull'0
   
-  type t_iter 't =
-    | C_Iter (NonNull'0.t_nonnull 't) opaque_ptr (PhantomData'0.t_phantomdata 't)
+  type t_Iter 't =
+    | C_Iter (NonNull'0.t_NonNull 't) opaque_ptr (PhantomData'0.t_PhantomData 't)
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_iter < 't > (input:t_iter 't) (ret  (ptr:NonNull'0.t_nonnull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_phantomdata 't))= any
-    [ good (ptr:NonNull'0.t_nonnull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Iter ptr end_or_len _marker
+  let rec t_Iter < 't > (input:t_Iter 't) (ret  (ptr:NonNull'0.t_NonNull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_PhantomData 't))= any
+    [ good (ptr:NonNull'0.t_NonNull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Iter ptr end_or_len _marker
       = input}
       (! ret {ptr} {end_or_len} {_marker})
-    | bad (ptr:NonNull'0.t_nonnull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Iter ptr end_or_len _marker
+    | bad (ptr:NonNull'0.t_NonNull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Iter ptr end_or_len _marker
       <> input}
       {false}
       any ]
     
 end
-module Core_Option_Option_Type
-  type t_option 't =
+module T_core__option__Option
+  type t_Option 't =
     | C_None
     | C_Some 't
   
   function any_l (_ : 'b) : 'a
   
-  let rec none < 't > (input:t_option 't) (ret  )= any
+  let rec v_None < 't > (input:t_Option 't) (ret  )= any
     [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ]
     
   
-  let rec some < 't > (input:t_option 't) (ret  (field_0:'t))= any
+  let rec v_Some < 't > (input:t_Option 't) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
     | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
     
 end
-module Alloc_Alloc_Global_Type
-  type t_global  =
+module T_alloc__alloc__Global
+  type t_Global  =
     | C_Global
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_global (input:t_global) (ret  )= any
+  let rec t_Global (input:t_Global) (ret  )= any
     [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
     
 end
-module C03StdIterators_SliceIter
+module M_03_std_iterators__slice_iter
   type t
   
   let%span s03_std_iterators0 = "../03_std_iterators.rs" 7 16 7 17
@@ -163,7 +163,7 @@ module C03StdIterators_SliceIter
   
   axiom inv'6 [@rewrite] : forall x : t . inv'6 x = true
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'5 (self : t) =
     [%#span10] inv'6 self
@@ -195,12 +195,12 @@ module C03StdIterators_SliceIter
   
   use prelude.prelude.UIntSize
   
-  constant max'0 : usize = [%#span12] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span12] (18446744073709551615 : usize)
   
   function shallow_model'2 (self : slice t) : Seq.seq t
   
   axiom shallow_model'2_spec : forall self : slice t . ([%#span14] shallow_model'2 self = Slice.id self)
-  && ([%#span13] Seq.length (shallow_model'2 self) <= UIntSize.to_int (max'0 : usize))
+  && ([%#span13] Seq.length (shallow_model'2 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'3 (self : slice t) =
     [%#span15] inv'4 (shallow_model'2 self)
@@ -209,14 +209,14 @@ module C03StdIterators_SliceIter
   
   axiom inv'3 [@rewrite] : forall x : slice t . inv'3 x = true
   
-  use Core_Option_Option_Type as Option'0
+  use T_core__option__Option as Option'0
   
-  predicate invariant'2 (self : Option'0.t_option t) =
+  predicate invariant'2 (self : Option'0.t_Option t) =
     [%#span16] true
   
-  predicate inv'2 (_1 : Option'0.t_option t)
+  predicate inv'2 (_1 : Option'0.t_Option t)
   
-  axiom inv'2 [@rewrite] : forall x : Option'0.t_option t . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : Option'0.t_Option t . inv'2 x = true
   
   use prelude.prelude.Borrow
   
@@ -227,7 +227,7 @@ module C03StdIterators_SliceIter
   
   axiom inv'1 [@rewrite] : forall x : slice t . inv'1 x = true
   
-  use Core_Slice_Iter_Iter_Type as Iter'0
+  use T_core__slice__iter__Iter as Iter'0
   
   use seq.Seq
   
@@ -249,32 +249,32 @@ module C03StdIterators_SliceIter
   /\ i < Seq.length (to_ref_seq'0 self)  -> Seq.get (to_ref_seq'0 self) i = index_logic'0 self i)
   && ([%#span20] Seq.length (to_ref_seq'0 self) = Seq.length (shallow_model'0 self))
   
-  function shallow_model'1 (self : Iter'0.t_iter t) : slice t
+  function shallow_model'1 (self : Iter'0.t_Iter t) : slice t
   
-  predicate produces'0 (self : Iter'0.t_iter t) (visited : Seq.seq t) (tl : Iter'0.t_iter t) =
+  predicate produces'0 (self : Iter'0.t_Iter t) (visited : Seq.seq t) (tl : Iter'0.t_Iter t) =
     [%#span22] to_ref_seq'0 (shallow_model'1 self) = Seq.(++) visited (to_ref_seq'0 (shallow_model'1 tl))
   
-  function produces_trans'0 (a : Iter'0.t_iter t) (ab : Seq.seq t) (b : Iter'0.t_iter t) (bc : Seq.seq t) (c : Iter'0.t_iter t) : ()
+  function produces_trans'0 (a : Iter'0.t_Iter t) (ab : Seq.seq t) (b : Iter'0.t_Iter t) (bc : Seq.seq t) (c : Iter'0.t_Iter t) : ()
     
    =
     [%#span26] ()
   
-  axiom produces_trans'0_spec : forall a : Iter'0.t_iter t, ab : Seq.seq t, b : Iter'0.t_iter t, bc : Seq.seq t, c : Iter'0.t_iter t . ([%#span23] produces'0 a ab b)
+  axiom produces_trans'0_spec : forall a : Iter'0.t_Iter t, ab : Seq.seq t, b : Iter'0.t_Iter t, bc : Seq.seq t, c : Iter'0.t_Iter t . ([%#span23] produces'0 a ab b)
    -> ([%#span24] produces'0 b bc c)  -> ([%#span25] produces'0 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
-  function produces_refl'0 (self : Iter'0.t_iter t) : () =
+  function produces_refl'0 (self : Iter'0.t_Iter t) : () =
     [%#span28] ()
   
-  axiom produces_refl'0_spec : forall self : Iter'0.t_iter t . [%#span27] produces'0 self (Seq.empty  : Seq.seq t) self
+  axiom produces_refl'0_spec : forall self : Iter'0.t_Iter t . [%#span27] produces'0 self (Seq.empty  : Seq.seq t) self
   
-  predicate invariant'0 (self : Iter'0.t_iter t) =
+  predicate invariant'0 (self : Iter'0.t_Iter t) =
     [%#span16] true
   
-  predicate inv'0 (_1 : Iter'0.t_iter t)
+  predicate inv'0 (_1 : Iter'0.t_Iter t)
   
-  axiom inv'0 [@rewrite] : forall x : Iter'0.t_iter t . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Iter'0.t_Iter t . inv'0 x = true
   
   use prelude.prelude.Snapshot
   
@@ -282,19 +282,19 @@ module C03StdIterators_SliceIter
   
   use seq.Seq
   
-  predicate resolve'0 (self : borrowed (Iter'0.t_iter t)) =
+  predicate resolve'0 (self : borrowed (Iter'0.t_Iter t)) =
     [%#span29] self.final = self.current
   
   use seq.Seq
   
-  function shallow_model'3 (self : borrowed (Iter'0.t_iter t)) : slice t =
+  function shallow_model'3 (self : borrowed (Iter'0.t_Iter t)) : slice t =
     [%#span30] shallow_model'1 self.current
   
-  predicate completed'0 (self : borrowed (Iter'0.t_iter t)) =
+  predicate completed'0 (self : borrowed (Iter'0.t_Iter t)) =
     [%#span31] resolve'0 self /\ shallow_model'2 (shallow_model'3 self) = (Seq.empty  : Seq.seq t)
   
-  let rec next'0 (self:borrowed (Iter'0.t_iter t)) (return'  (ret:Option'0.t_option t))= any
-    [ return' (result:Option'0.t_option t)-> {[%#span33] inv'2 result}
+  let rec next'0 (self:borrowed (Iter'0.t_Iter t)) (return'  (ret:Option'0.t_Option t))= any
+    [ return' (result:Option'0.t_Option t)-> {[%#span33] inv'2 result}
       {[%#span32] match result with
         | Option'0.C_None -> completed'0 self
         | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
@@ -312,32 +312,32 @@ module C03StdIterators_SliceIter
   
   use prelude.prelude.Snapshot
   
-  predicate into_iter_post'0 (self : Iter'0.t_iter t) (res : Iter'0.t_iter t) =
+  predicate into_iter_post'0 (self : Iter'0.t_Iter t) (res : Iter'0.t_Iter t) =
     [%#span34] self = res
   
-  predicate into_iter_pre'0 (self : Iter'0.t_iter t) =
+  predicate into_iter_pre'0 (self : Iter'0.t_Iter t) =
     [%#span35] true
   
-  let rec into_iter'0 (self:Iter'0.t_iter t) (return'  (ret:Iter'0.t_iter t))= {[@expl:precondition] [%#span37] inv'0 self}
+  let rec into_iter'0 (self:Iter'0.t_Iter t) (return'  (ret:Iter'0.t_Iter t))= {[@expl:precondition] [%#span37] inv'0 self}
     {[@expl:precondition] [%#span36] into_iter_pre'0 self}
     any
-    [ return' (result:Iter'0.t_iter t)-> {[%#span38] inv'0 result}
+    [ return' (result:Iter'0.t_Iter t)-> {[%#span38] inv'0 result}
       {[%#span36] into_iter_post'0 self result}
       (! return' {result}) ]
     
   
-  let rec iter'0 (self:slice t) (return'  (ret:Iter'0.t_iter t))= {[@expl:precondition] [%#span39] inv'1 self}
-    any [ return' (result:Iter'0.t_iter t)-> {[%#span40] shallow_model'1 result = self} (! return' {result}) ] 
+  let rec iter'0 (self:slice t) (return'  (ret:Iter'0.t_Iter t))= {[@expl:precondition] [%#span39] inv'1 self}
+    any [ return' (result:Iter'0.t_Iter t)-> {[%#span40] shallow_model'1 result = self} (! return' {result}) ] 
   
   let rec slice_iter (slice:slice t) (return'  (ret:usize))= {[%#s03_std_iterators8] inv'1 slice}
     {[%#s03_std_iterators7] Seq.length (shallow_model'0 slice) < 1000}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &i <- [%#s03_std_iterators0] (0 : usize) ] s1
-      | s1 = iter'0 {slice} (fun (_ret':Iter'0.t_iter t) ->  [ &_7 <- _ret' ] s2)
+      | s1 = iter'0 {slice} (fun (_ret':Iter'0.t_Iter t) ->  [ &_7 <- _ret' ] s2)
       | s2 = bb1 ]
       
-    | bb1 = s0 [ s0 = into_iter'0 {_7} (fun (_ret':Iter'0.t_iter t) ->  [ &iter <- _ret' ] s1) | s1 = bb2 ] 
+    | bb1 = s0 [ s0 = into_iter'0 {_7} (fun (_ret':Iter'0.t_Iter t) ->  [ &iter <- _ret' ] s1) | s1 = bb2 ] 
     | bb2 = s0 [ s0 =  [ &iter_old <- [%#s03_std_iterators1] Snapshot.new iter ] s1 | s1 = bb3 ] 
     | bb3 = s0 [ s0 =  [ &produced <- [%#s03_std_iterators2] Snapshot.new (Seq.empty  : Seq.seq t) ] s1 | s1 = bb4 ] 
     | bb4 = bb5
@@ -347,14 +347,14 @@ module C03StdIterators_SliceIter
         {[@expl:loop invariant] [%#s03_std_iterators3] inv'0 iter}
         (! s0) [ s0 = bb6 ] 
         [ bb6 = s0
-          [ s0 = Borrow.borrow_mut <Iter'0.t_iter t> {iter}
-              (fun (_ret':borrowed (Iter'0.t_iter t)) ->  [ &_19 <- _ret' ]  [ &iter <- _19.final ] s1)
-          | s1 = Borrow.borrow_final <Iter'0.t_iter t> {_19.current} {Borrow.get_id _19}
-              (fun (_ret':borrowed (Iter'0.t_iter t)) ->
+          [ s0 = Borrow.borrow_mut <Iter'0.t_Iter t> {iter}
+              (fun (_ret':borrowed (Iter'0.t_Iter t)) ->  [ &_19 <- _ret' ]  [ &iter <- _19.final ] s1)
+          | s1 = Borrow.borrow_final <Iter'0.t_Iter t> {_19.current} {Borrow.get_id _19}
+              (fun (_ret':borrowed (Iter'0.t_Iter t)) ->
                  [ &_18 <- _ret' ] 
                  [ &_19 <- { _19 with current = _18.final ; } ] 
                 s2)
-          | s2 = next'0 {_18} (fun (_ret':Option'0.t_option t) ->  [ &_17 <- _ret' ] s3)
+          | s2 = next'0 {_18} (fun (_ret':Option'0.t_Option t) ->  [ &_17 <- _ret' ] s3)
           | s3 = bb7 ]
           
         | bb7 = s0
@@ -363,7 +363,7 @@ module C03StdIterators_SliceIter
           
         | bb9 = bb11
         | bb11 = s0
-          [ s0 = Option'0.some <t> {_17} (fun (r0'0:t) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
+          [ s0 = Option'0.v_Some <t> {_17} (fun (r0'0:t) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
           | s1 = 
             [ &_22 <- [%#s03_std_iterators5] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
             
@@ -382,13 +382,13 @@ module C03StdIterators_SliceIter
     [ & _0 : usize = any_l ()
     | & slice : slice t = slice
     | & i : usize = any_l ()
-    | & iter : Iter'0.t_iter t = any_l ()
-    | & _7 : Iter'0.t_iter t = any_l ()
-    | & iter_old : Snapshot.snap_ty (Iter'0.t_iter t) = any_l ()
+    | & iter : Iter'0.t_Iter t = any_l ()
+    | & _7 : Iter'0.t_Iter t = any_l ()
+    | & iter_old : Snapshot.snap_ty (Iter'0.t_Iter t) = any_l ()
     | & produced : Snapshot.snap_ty (Seq.seq t) = any_l ()
-    | & _17 : Option'0.t_option t = any_l ()
-    | & _18 : borrowed (Iter'0.t_iter t) = any_l ()
-    | & _19 : borrowed (Iter'0.t_iter t) = any_l ()
+    | & _17 : Option'0.t_Option t = any_l ()
+    | & _18 : borrowed (Iter'0.t_Iter t) = any_l ()
+    | & _19 : borrowed (Iter'0.t_Iter t) = any_l ()
     | & __creusot_proc_iter_elem : t = any_l ()
     | & _22 : Snapshot.snap_ty (Seq.seq t) = any_l () ]
     
@@ -397,75 +397,75 @@ module C03StdIterators_SliceIter
       (! return' {result}) ]
     
 end
-module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type as PhantomData'0
+module T_core__ptr__unique__Unique
+  use T_core__marker__PhantomData as PhantomData'0
   
-  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  use T_core__ptr__non_null__NonNull as NonNull'0
   
-  type t_unique 't =
-    | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
+  type t_Unique 't =
+    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
-    [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
+    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       = input}
       (! ret {pointer} {_marker})
-    | bad (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+    | bad (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       <> input}
       {false}
       any ]
     
 end
-module Alloc_RawVec_Cap_Type
+module T_alloc__raw_vec__Cap
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  type t_cap  =
+  type t_Cap  =
     | C_Cap usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_cap (input:t_cap) (ret  (field_0:usize))= any
+  let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
     [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
     | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
     
 end
-module Alloc_RawVec_RawVec_Type
-  use Alloc_RawVec_Cap_Type as Cap'0
+module T_alloc__raw_vec__RawVec
+  use T_alloc__raw_vec__Cap as Cap'0
   
-  use Core_Ptr_Unique_Unique_Type as Unique'0
+  use T_core__ptr__unique__Unique as Unique'0
   
-  type t_rawvec 't 'a =
-    | C_RawVec (Unique'0.t_unique 't) (Cap'0.t_cap) 'a
+  type t_RawVec 't 'a =
+    | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_rawvec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a))= any
-    [ good (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
+  let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
+    [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
       (! ret {ptr} {cap} {alloc})
-    | bad (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
+    | bad (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
     
 end
-module Alloc_Vec_Vec_Type
+module T_alloc__vec__Vec
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  use Alloc_RawVec_RawVec_Type as RawVec'0
+  use T_alloc__raw_vec__RawVec as RawVec'0
   
-  type t_vec 't 'a =
-    | C_Vec (RawVec'0.t_rawvec 't 'a) usize
+  type t_Vec 't 'a =
+    | C_Vec (RawVec'0.t_RawVec 't 'a) usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_vec < 't > < 'a > (input:t_vec 't 'a) (ret  (buf:RawVec'0.t_rawvec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
-    | bad (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
+    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
+    | bad (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
     
 end
-module C03StdIterators_VecIter
+module M_03_std_iterators__vec_iter
   type t
   
   let%span s03_std_iterators0 = "../03_std_iterators.rs" 18 16 18 17
@@ -552,7 +552,7 @@ module C03StdIterators_VecIter
   
   axiom inv'6 [@rewrite] : forall x : t . inv'6 x = true
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'5 (self : t) =
     [%#span10] inv'6 self
@@ -576,45 +576,45 @@ module C03StdIterators_VecIter
   
   axiom inv'4 [@rewrite] : forall x : Seq.seq t . inv'4 x = true
   
-  use Alloc_Vec_Vec_Type as Vec'0
+  use T_alloc__vec__Vec as Vec'0
   
   use prelude.prelude.UIntSize
   
   use prelude.prelude.UIntSize
   
-  constant max'0 : usize = [%#span12] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span12] (18446744073709551615 : usize)
   
-  function shallow_model'2 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t
+  function shallow_model'2 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
   
-  axiom shallow_model'2_spec : forall self : Vec'0.t_vec t (Global'0.t_global) . [%#span13] Seq.length (shallow_model'2 self)
-  <= UIntSize.to_int (max'0 : usize)
+  axiom shallow_model'2_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#span13] Seq.length (shallow_model'2 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
   
-  predicate invariant'3 (self : Vec'0.t_vec t (Global'0.t_global)) =
+  predicate invariant'3 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
     [%#span14] inv'4 (shallow_model'2 self)
   
-  predicate inv'3 (_1 : Vec'0.t_vec t (Global'0.t_global))
+  predicate inv'3 (_1 : Vec'0.t_Vec t (Global'0.t_Global))
   
-  axiom inv'3 [@rewrite] : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'3 x = true
+  axiom inv'3 [@rewrite] : forall x : Vec'0.t_Vec t (Global'0.t_Global) . inv'3 x = true
   
-  use Core_Option_Option_Type as Option'0
+  use T_core__option__Option as Option'0
   
-  predicate invariant'2 (self : Option'0.t_option t) =
+  predicate invariant'2 (self : Option'0.t_Option t) =
     [%#span15] true
   
-  predicate inv'2 (_1 : Option'0.t_option t)
+  predicate inv'2 (_1 : Option'0.t_Option t)
   
-  axiom inv'2 [@rewrite] : forall x : Option'0.t_option t . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : Option'0.t_Option t . inv'2 x = true
   
   use prelude.prelude.Borrow
   
-  predicate invariant'1 (self : Vec'0.t_vec t (Global'0.t_global)) =
+  predicate invariant'1 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
     [%#span16] inv'3 self
   
-  predicate inv'1 (_1 : Vec'0.t_vec t (Global'0.t_global))
+  predicate inv'1 (_1 : Vec'0.t_Vec t (Global'0.t_Global))
   
-  axiom inv'1 [@rewrite] : forall x : Vec'0.t_vec t (Global'0.t_global) . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : Vec'0.t_Vec t (Global'0.t_Global) . inv'1 x = true
   
-  use Core_Slice_Iter_Iter_Type as Iter'0
+  use T_core__slice__iter__Iter as Iter'0
   
   use seq.Seq
   
@@ -627,7 +627,7 @@ module C03StdIterators_VecIter
   function shallow_model'5 (self : slice t) : Seq.seq t
   
   axiom shallow_model'5_spec : forall self : slice t . ([%#span18] shallow_model'5 self = Slice.id self)
-  && ([%#span17] Seq.length (shallow_model'5 self) <= UIntSize.to_int (max'0 : usize))
+  && ([%#span17] Seq.length (shallow_model'5 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   function index_logic'0 [@inline:trivial] (self : slice t) (ix : int) : t =
     [%#span19] Seq.get (shallow_model'5 self) ix
@@ -645,34 +645,34 @@ module C03StdIterators_VecIter
   /\ i < Seq.length (to_ref_seq'0 self)  -> Seq.get (to_ref_seq'0 self) i = index_logic'0 self i)
   && ([%#span21] Seq.length (to_ref_seq'0 self) = Seq.length (shallow_model'3 self))
   
-  function shallow_model'1 (self : Iter'0.t_iter t) : slice t
+  function shallow_model'1 (self : Iter'0.t_Iter t) : slice t
   
-  predicate produces'0 (self : Iter'0.t_iter t) (visited : Seq.seq t) (tl : Iter'0.t_iter t) =
+  predicate produces'0 (self : Iter'0.t_Iter t) (visited : Seq.seq t) (tl : Iter'0.t_Iter t) =
     [%#span23] to_ref_seq'0 (shallow_model'1 self) = Seq.(++) visited (to_ref_seq'0 (shallow_model'1 tl))
   
-  function produces_trans'0 (a : Iter'0.t_iter t) (ab : Seq.seq t) (b : Iter'0.t_iter t) (bc : Seq.seq t) (c : Iter'0.t_iter t) : ()
+  function produces_trans'0 (a : Iter'0.t_Iter t) (ab : Seq.seq t) (b : Iter'0.t_Iter t) (bc : Seq.seq t) (c : Iter'0.t_Iter t) : ()
     
    =
     [%#span27] ()
   
-  axiom produces_trans'0_spec : forall a : Iter'0.t_iter t, ab : Seq.seq t, b : Iter'0.t_iter t, bc : Seq.seq t, c : Iter'0.t_iter t . ([%#span24] produces'0 a ab b)
+  axiom produces_trans'0_spec : forall a : Iter'0.t_Iter t, ab : Seq.seq t, b : Iter'0.t_Iter t, bc : Seq.seq t, c : Iter'0.t_Iter t . ([%#span24] produces'0 a ab b)
    -> ([%#span25] produces'0 b bc c)  -> ([%#span26] produces'0 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
-  function produces_refl'0 (self : Iter'0.t_iter t) : () =
+  function produces_refl'0 (self : Iter'0.t_Iter t) : () =
     [%#span29] ()
   
-  axiom produces_refl'0_spec : forall self : Iter'0.t_iter t . [%#span28] produces'0 self (Seq.empty  : Seq.seq t) self
+  axiom produces_refl'0_spec : forall self : Iter'0.t_Iter t . [%#span28] produces'0 self (Seq.empty  : Seq.seq t) self
   
-  predicate invariant'0 (self : Iter'0.t_iter t) =
+  predicate invariant'0 (self : Iter'0.t_Iter t) =
     [%#span15] true
   
-  predicate inv'0 (_1 : Iter'0.t_iter t)
+  predicate inv'0 (_1 : Iter'0.t_Iter t)
   
-  axiom inv'0 [@rewrite] : forall x : Iter'0.t_iter t . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Iter'0.t_Iter t . inv'0 x = true
   
-  function shallow_model'0 (self : Vec'0.t_vec t (Global'0.t_global)) : Seq.seq t =
+  function shallow_model'0 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t =
     [%#span20] shallow_model'2 self
   
   use prelude.prelude.Snapshot
@@ -681,19 +681,19 @@ module C03StdIterators_VecIter
   
   use seq.Seq
   
-  predicate resolve'0 (self : borrowed (Iter'0.t_iter t)) =
+  predicate resolve'0 (self : borrowed (Iter'0.t_Iter t)) =
     [%#span30] self.final = self.current
   
   use seq.Seq
   
-  function shallow_model'4 (self : borrowed (Iter'0.t_iter t)) : slice t =
+  function shallow_model'4 (self : borrowed (Iter'0.t_Iter t)) : slice t =
     [%#span31] shallow_model'1 self.current
   
-  predicate completed'0 (self : borrowed (Iter'0.t_iter t)) =
+  predicate completed'0 (self : borrowed (Iter'0.t_Iter t)) =
     [%#span32] resolve'0 self /\ shallow_model'5 (shallow_model'4 self) = (Seq.empty  : Seq.seq t)
   
-  let rec next'0 (self:borrowed (Iter'0.t_iter t)) (return'  (ret:Option'0.t_option t))= any
-    [ return' (result:Option'0.t_option t)-> {[%#span34] inv'2 result}
+  let rec next'0 (self:borrowed (Iter'0.t_Iter t)) (return'  (ret:Option'0.t_Option t))= any
+    [ return' (result:Option'0.t_Option t)-> {[%#span34] inv'2 result}
       {[%#span33] match result with
         | Option'0.C_None -> completed'0 self
         | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
@@ -711,22 +711,22 @@ module C03StdIterators_VecIter
   
   use prelude.prelude.Snapshot
   
-  predicate into_iter_post'0 (self : Vec'0.t_vec t (Global'0.t_global)) (res : Iter'0.t_iter t) =
+  predicate into_iter_post'0 (self : Vec'0.t_Vec t (Global'0.t_Global)) (res : Iter'0.t_Iter t) =
     [%#span35] shallow_model'0 self = shallow_model'3 (shallow_model'1 res)
   
-  predicate into_iter_pre'0 (self : Vec'0.t_vec t (Global'0.t_global)) =
+  predicate into_iter_pre'0 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
     [%#span36] true
   
-  let rec into_iter'0 (self:Vec'0.t_vec t (Global'0.t_global)) (return'  (ret:Iter'0.t_iter t))= {[@expl:precondition] [%#span38] inv'1 self}
+  let rec into_iter'0 (self:Vec'0.t_Vec t (Global'0.t_Global)) (return'  (ret:Iter'0.t_Iter t))= {[@expl:precondition] [%#span38] inv'1 self}
     {[@expl:precondition] [%#span37] into_iter_pre'0 self}
-    any [ return' (result:Iter'0.t_iter t)-> {[%#span37] into_iter_post'0 self result} (! return' {result}) ] 
+    any [ return' (result:Iter'0.t_Iter t)-> {[%#span37] into_iter_post'0 self result} (! return' {result}) ] 
   
-  let rec vec_iter (vec:Vec'0.t_vec t (Global'0.t_global)) (return'  (ret:usize))= {[%#s03_std_iterators8] inv'1 vec}
+  let rec vec_iter (vec:Vec'0.t_Vec t (Global'0.t_Global)) (return'  (ret:usize))= {[%#s03_std_iterators8] inv'1 vec}
     {[%#s03_std_iterators7] Seq.length (shallow_model'0 vec) < 1000}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &i <- [%#s03_std_iterators0] (0 : usize) ] s1
-      | s1 = into_iter'0 {vec} (fun (_ret':Iter'0.t_iter t) ->  [ &iter <- _ret' ] s2)
+      | s1 = into_iter'0 {vec} (fun (_ret':Iter'0.t_Iter t) ->  [ &iter <- _ret' ] s2)
       | s2 = bb1 ]
       
     | bb1 = s0 [ s0 =  [ &iter_old <- [%#s03_std_iterators1] Snapshot.new iter ] s1 | s1 = bb2 ] 
@@ -738,14 +738,14 @@ module C03StdIterators_VecIter
         {[@expl:loop invariant] [%#s03_std_iterators3] inv'0 iter}
         (! s0) [ s0 = bb5 ] 
         [ bb5 = s0
-          [ s0 = Borrow.borrow_mut <Iter'0.t_iter t> {iter}
-              (fun (_ret':borrowed (Iter'0.t_iter t)) ->  [ &_18 <- _ret' ]  [ &iter <- _18.final ] s1)
-          | s1 = Borrow.borrow_final <Iter'0.t_iter t> {_18.current} {Borrow.get_id _18}
-              (fun (_ret':borrowed (Iter'0.t_iter t)) ->
+          [ s0 = Borrow.borrow_mut <Iter'0.t_Iter t> {iter}
+              (fun (_ret':borrowed (Iter'0.t_Iter t)) ->  [ &_18 <- _ret' ]  [ &iter <- _18.final ] s1)
+          | s1 = Borrow.borrow_final <Iter'0.t_Iter t> {_18.current} {Borrow.get_id _18}
+              (fun (_ret':borrowed (Iter'0.t_Iter t)) ->
                  [ &_17 <- _ret' ] 
                  [ &_18 <- { _18 with current = _17.final ; } ] 
                 s2)
-          | s2 = next'0 {_17} (fun (_ret':Option'0.t_option t) ->  [ &_16 <- _ret' ] s3)
+          | s2 = next'0 {_17} (fun (_ret':Option'0.t_Option t) ->  [ &_16 <- _ret' ] s3)
           | s3 = bb6 ]
           
         | bb6 = s0
@@ -754,7 +754,7 @@ module C03StdIterators_VecIter
           
         | bb8 = bb10
         | bb10 = s0
-          [ s0 = Option'0.some <t> {_16} (fun (r0'0:t) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
+          [ s0 = Option'0.v_Some <t> {_16} (fun (r0'0:t) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
           | s1 = 
             [ &_21 <- [%#s03_std_iterators5] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
             
@@ -771,14 +771,14 @@ module C03StdIterators_VecIter
     | bb9 = s0 [ s0 =  [ &_0 <- i ] s1 | s1 = return' {_0} ]  ]
     )
     [ & _0 : usize = any_l ()
-    | & vec : Vec'0.t_vec t (Global'0.t_global) = vec
+    | & vec : Vec'0.t_Vec t (Global'0.t_Global) = vec
     | & i : usize = any_l ()
-    | & iter : Iter'0.t_iter t = any_l ()
-    | & iter_old : Snapshot.snap_ty (Iter'0.t_iter t) = any_l ()
+    | & iter : Iter'0.t_Iter t = any_l ()
+    | & iter_old : Snapshot.snap_ty (Iter'0.t_Iter t) = any_l ()
     | & produced : Snapshot.snap_ty (Seq.seq t) = any_l ()
-    | & _16 : Option'0.t_option t = any_l ()
-    | & _17 : borrowed (Iter'0.t_iter t) = any_l ()
-    | & _18 : borrowed (Iter'0.t_iter t) = any_l ()
+    | & _16 : Option'0.t_Option t = any_l ()
+    | & _17 : borrowed (Iter'0.t_Iter t) = any_l ()
+    | & _18 : borrowed (Iter'0.t_Iter t) = any_l ()
     | & __creusot_proc_iter_elem : t = any_l ()
     | & _21 : Snapshot.snap_ty (Seq.seq t) = any_l () ]
     
@@ -787,31 +787,31 @@ module C03StdIterators_VecIter
       (! return' {result}) ]
     
 end
-module Core_Slice_Iter_IterMut_Type
+module T_core__slice__iter__IterMut
   use prelude.prelude.Borrow
   
-  use Core_Marker_PhantomData_Type as PhantomData'0
+  use T_core__marker__PhantomData as PhantomData'0
   
   use prelude.prelude.Opaque
   
-  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  use T_core__ptr__non_null__NonNull as NonNull'0
   
-  type t_itermut 't =
-    | C_IterMut (NonNull'0.t_nonnull 't) opaque_ptr (PhantomData'0.t_phantomdata (borrowed 't))
+  type t_IterMut 't =
+    | C_IterMut (NonNull'0.t_NonNull 't) opaque_ptr (PhantomData'0.t_PhantomData (borrowed 't))
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_itermut < 't > (input:t_itermut 't) (ret  (ptr:NonNull'0.t_nonnull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_phantomdata (borrowed 't)))= any
-    [ good (ptr:NonNull'0.t_nonnull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_phantomdata (borrowed 't))-> {C_IterMut ptr end_or_len _marker
+  let rec t_IterMut < 't > (input:t_IterMut 't) (ret  (ptr:NonNull'0.t_NonNull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_PhantomData (borrowed 't)))= any
+    [ good (ptr:NonNull'0.t_NonNull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_PhantomData (borrowed 't))-> {C_IterMut ptr end_or_len _marker
       = input}
       (! ret {ptr} {end_or_len} {_marker})
-    | bad (ptr:NonNull'0.t_nonnull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_phantomdata (borrowed 't))-> {C_IterMut ptr end_or_len _marker
+    | bad (ptr:NonNull'0.t_NonNull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_PhantomData (borrowed 't))-> {C_IterMut ptr end_or_len _marker
       <> input}
       {false}
       any ]
     
 end
-module C03StdIterators_AllZero
+module M_03_std_iterators__all_zero
   let%span s03_std_iterators0 = "../03_std_iterators.rs" 29 4 29 87
   
   let%span s03_std_iterators1 = "../03_std_iterators.rs" 29 4 29 87
@@ -915,7 +915,7 @@ module C03StdIterators_AllZero
   
   axiom inv'8 [@rewrite] : forall x : usize . inv'8 x = true
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'7 (self : usize) =
     [%#span8] inv'8 self
@@ -945,12 +945,12 @@ module C03StdIterators_AllZero
   
   use prelude.prelude.UIntSize
   
-  constant max'0 : usize = [%#span10] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span10] (18446744073709551615 : usize)
   
   function shallow_model'3 (self : slice usize) : Seq.seq usize
   
   axiom shallow_model'3_spec : forall self : slice usize . ([%#span12] shallow_model'3 self = Slice.id self)
-  && ([%#span11] Seq.length (shallow_model'3 self) <= UIntSize.to_int (max'0 : usize))
+  && ([%#span11] Seq.length (shallow_model'3 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'5 (self : slice usize) =
     [%#span13] inv'6 (shallow_model'3 self)
@@ -959,30 +959,30 @@ module C03StdIterators_AllZero
   
   axiom inv'5 [@rewrite] : forall x : slice usize . inv'5 x = true
   
-  use Alloc_Vec_Vec_Type as Vec'0
+  use T_alloc__vec__Vec as Vec'0
   
-  function shallow_model'0 (self : Vec'0.t_vec usize (Global'0.t_global)) : Seq.seq usize
+  function shallow_model'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_vec usize (Global'0.t_global) . [%#span14] Seq.length (shallow_model'0 self)
-  <= UIntSize.to_int (max'0 : usize)
+  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#span14] Seq.length (shallow_model'0 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
   
-  predicate invariant'4 (self : Vec'0.t_vec usize (Global'0.t_global)) =
+  predicate invariant'4 (self : Vec'0.t_Vec usize (Global'0.t_Global)) =
     [%#span15] inv'6 (shallow_model'0 self)
   
-  predicate inv'4 (_1 : Vec'0.t_vec usize (Global'0.t_global))
+  predicate inv'4 (_1 : Vec'0.t_Vec usize (Global'0.t_Global))
   
-  axiom inv'4 [@rewrite] : forall x : Vec'0.t_vec usize (Global'0.t_global) . inv'4 x = true
+  axiom inv'4 [@rewrite] : forall x : Vec'0.t_Vec usize (Global'0.t_Global) . inv'4 x = true
   
   use prelude.prelude.Borrow
   
-  use Core_Option_Option_Type as Option'0
+  use T_core__option__Option as Option'0
   
-  predicate invariant'3 (self : Option'0.t_option (borrowed usize)) =
+  predicate invariant'3 (self : Option'0.t_Option (borrowed usize)) =
     [%#span7] true
   
-  predicate inv'3 (_1 : Option'0.t_option (borrowed usize))
+  predicate inv'3 (_1 : Option'0.t_Option (borrowed usize))
   
-  axiom inv'3 [@rewrite] : forall x : Option'0.t_option (borrowed usize) . inv'3 x = true
+  axiom inv'3 [@rewrite] : forall x : Option'0.t_Option (borrowed usize) . inv'3 x = true
   
   predicate invariant'2 (self : borrowed (slice usize)) =
     [%#span16] inv'5 self.current /\ inv'5 self.final
@@ -991,14 +991,14 @@ module C03StdIterators_AllZero
   
   axiom inv'2 [@rewrite] : forall x : borrowed (slice usize) . inv'2 x = true
   
-  predicate invariant'1 (self : borrowed (Vec'0.t_vec usize (Global'0.t_global))) =
+  predicate invariant'1 (self : borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) =
     [%#span16] inv'4 self.current /\ inv'4 self.final
   
-  predicate inv'1 (_1 : borrowed (Vec'0.t_vec usize (Global'0.t_global)))
+  predicate inv'1 (_1 : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)))
   
-  axiom inv'1 [@rewrite] : forall x : borrowed (Vec'0.t_vec usize (Global'0.t_global)) . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)) . inv'1 x = true
   
-  use Core_Slice_Iter_IterMut_Type as IterMut'0
+  use T_core__slice__iter__IterMut as IterMut'0
   
   use seq.Seq
   
@@ -1022,52 +1022,52 @@ module C03StdIterators_AllZero
   = Borrow.borrow_logic (index_logic'2 self.current i) (index_logic'2 self.final i) (Borrow.inherit_id (Borrow.get_id self) i))
   && ([%#span19] Seq.length (to_mut_seq'0 self) = Seq.length (shallow_model'2 self))
   
-  function shallow_model'4 (self : IterMut'0.t_itermut usize) : borrowed (slice usize)
+  function shallow_model'4 (self : IterMut'0.t_IterMut usize) : borrowed (slice usize)
   
-  axiom shallow_model'4_spec : forall self : IterMut'0.t_itermut usize . [%#span21] Seq.length (shallow_model'3 (shallow_model'4 self).final)
+  axiom shallow_model'4_spec : forall self : IterMut'0.t_IterMut usize . [%#span21] Seq.length (shallow_model'3 (shallow_model'4 self).final)
   = Seq.length (shallow_model'3 (shallow_model'4 self).current)
   
-  predicate produces'0 (self : IterMut'0.t_itermut usize) (visited : Seq.seq (borrowed usize)) (tl : IterMut'0.t_itermut usize)
+  predicate produces'0 (self : IterMut'0.t_IterMut usize) (visited : Seq.seq (borrowed usize)) (tl : IterMut'0.t_IterMut usize)
     
    =
     [%#span22] to_mut_seq'0 (shallow_model'4 self) = Seq.(++) visited (to_mut_seq'0 (shallow_model'4 tl))
   
-  function produces_trans'0 (a : IterMut'0.t_itermut usize) (ab : Seq.seq (borrowed usize)) (b : IterMut'0.t_itermut usize) (bc : Seq.seq (borrowed usize)) (c : IterMut'0.t_itermut usize) : ()
+  function produces_trans'0 (a : IterMut'0.t_IterMut usize) (ab : Seq.seq (borrowed usize)) (b : IterMut'0.t_IterMut usize) (bc : Seq.seq (borrowed usize)) (c : IterMut'0.t_IterMut usize) : ()
     
    =
     [%#span26] ()
   
-  axiom produces_trans'0_spec : forall a : IterMut'0.t_itermut usize, ab : Seq.seq (borrowed usize), b : IterMut'0.t_itermut usize, bc : Seq.seq (borrowed usize), c : IterMut'0.t_itermut usize . ([%#span23] produces'0 a ab b)
+  axiom produces_trans'0_spec : forall a : IterMut'0.t_IterMut usize, ab : Seq.seq (borrowed usize), b : IterMut'0.t_IterMut usize, bc : Seq.seq (borrowed usize), c : IterMut'0.t_IterMut usize . ([%#span23] produces'0 a ab b)
    -> ([%#span24] produces'0 b bc c)  -> ([%#span25] produces'0 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
-  function produces_refl'0 (self : IterMut'0.t_itermut usize) : () =
+  function produces_refl'0 (self : IterMut'0.t_IterMut usize) : () =
     [%#span28] ()
   
-  axiom produces_refl'0_spec : forall self : IterMut'0.t_itermut usize . [%#span27] produces'0 self (Seq.empty  : Seq.seq (borrowed usize)) self
+  axiom produces_refl'0_spec : forall self : IterMut'0.t_IterMut usize . [%#span27] produces'0 self (Seq.empty  : Seq.seq (borrowed usize)) self
   
-  predicate invariant'0 (self : IterMut'0.t_itermut usize) =
+  predicate invariant'0 (self : IterMut'0.t_IterMut usize) =
     [%#span7] true
   
-  predicate inv'0 (_1 : IterMut'0.t_itermut usize)
+  predicate inv'0 (_1 : IterMut'0.t_IterMut usize)
   
-  axiom inv'0 [@rewrite] : forall x : IterMut'0.t_itermut usize . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : IterMut'0.t_IterMut usize . inv'0 x = true
   
-  function index_logic'1 [@inline:trivial] (self : Vec'0.t_vec usize (Global'0.t_global)) (ix : int) : usize =
+  function index_logic'1 [@inline:trivial] (self : Vec'0.t_Vec usize (Global'0.t_Global)) (ix : int) : usize =
     [%#span29] Seq.get (shallow_model'0 self) ix
   
-  function shallow_model'1 (self : borrowed (Vec'0.t_vec usize (Global'0.t_global))) : Seq.seq usize =
+  function shallow_model'1 (self : borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) : Seq.seq usize =
     [%#span18] shallow_model'0 self.current
   
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'4 (self : borrowed (Vec'0.t_vec usize (Global'0.t_global))) =
+  predicate resolve'4 (self : borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) =
     [%#span30] self.final = self.current
   
-  predicate resolve'3 (self : IterMut'0.t_itermut usize) =
+  predicate resolve'3 (self : IterMut'0.t_IterMut usize) =
     [%#span31] (shallow_model'4 self).current = (shallow_model'4 self).final
   
   predicate resolve'2 (self : borrowed usize) =
@@ -1075,19 +1075,19 @@ module C03StdIterators_AllZero
   
   use seq.Seq
   
-  predicate resolve'1 (self : borrowed (IterMut'0.t_itermut usize)) =
+  predicate resolve'1 (self : borrowed (IterMut'0.t_IterMut usize)) =
     [%#span30] self.final = self.current
   
   use seq.Seq
   
-  function shallow_model'5 (self : borrowed (IterMut'0.t_itermut usize)) : borrowed (slice usize) =
+  function shallow_model'5 (self : borrowed (IterMut'0.t_IterMut usize)) : borrowed (slice usize) =
     [%#span18] shallow_model'4 self.current
   
-  predicate completed'0 (self : borrowed (IterMut'0.t_itermut usize)) =
+  predicate completed'0 (self : borrowed (IterMut'0.t_IterMut usize)) =
     [%#span32] resolve'1 self /\ shallow_model'3 (shallow_model'5 self).current = (Seq.empty  : Seq.seq usize)
   
-  let rec next'0 (self:borrowed (IterMut'0.t_itermut usize)) (return'  (ret:Option'0.t_option (borrowed usize)))= any
-    [ return' (result:Option'0.t_option (borrowed usize))-> {[%#span34] inv'3 result}
+  let rec next'0 (self:borrowed (IterMut'0.t_IterMut usize)) (return'  (ret:Option'0.t_Option (borrowed usize)))= any
+    [ return' (result:Option'0.t_Option (borrowed usize))-> {[%#span34] inv'3 result}
       {[%#span33] match result with
         | Option'0.C_None -> completed'0 self
         | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
@@ -1113,26 +1113,26 @@ module C03StdIterators_AllZero
   predicate resolve'0 (self : borrowed (slice usize)) =
     [%#span30] self.final = self.current
   
-  predicate into_iter_post'0 (self : IterMut'0.t_itermut usize) (res : IterMut'0.t_itermut usize) =
+  predicate into_iter_post'0 (self : IterMut'0.t_IterMut usize) (res : IterMut'0.t_IterMut usize) =
     [%#span36] self = res
   
-  predicate into_iter_pre'0 (self : IterMut'0.t_itermut usize) =
+  predicate into_iter_pre'0 (self : IterMut'0.t_IterMut usize) =
     [%#span37] true
   
-  let rec into_iter'0 (self:IterMut'0.t_itermut usize) (return'  (ret:IterMut'0.t_itermut usize))= {[@expl:precondition] [%#span39] inv'0 self}
+  let rec into_iter'0 (self:IterMut'0.t_IterMut usize) (return'  (ret:IterMut'0.t_IterMut usize))= {[@expl:precondition] [%#span39] inv'0 self}
     {[@expl:precondition] [%#span38] into_iter_pre'0 self}
     any
-    [ return' (result:IterMut'0.t_itermut usize)-> {[%#span40] inv'0 result}
+    [ return' (result:IterMut'0.t_IterMut usize)-> {[%#span40] inv'0 result}
       {[%#span38] into_iter_post'0 self result}
       (! return' {result}) ]
     
   
-  let rec iter_mut'0 (self:borrowed (slice usize)) (return'  (ret:IterMut'0.t_itermut usize))= {[@expl:precondition] [%#span41] inv'2 self}
+  let rec iter_mut'0 (self:borrowed (slice usize)) (return'  (ret:IterMut'0.t_IterMut usize))= {[@expl:precondition] [%#span41] inv'2 self}
     any
-    [ return' (result:IterMut'0.t_itermut usize)-> {[%#span42] shallow_model'4 result = self} (! return' {result}) ]
+    [ return' (result:IterMut'0.t_IterMut usize)-> {[%#span42] shallow_model'4 result = self} (! return' {result}) ]
     
   
-  let rec deref_mut'0 (self:borrowed (Vec'0.t_vec usize (Global'0.t_global))) (return'  (ret:borrowed (slice usize)))= {[@expl:precondition] [%#span43] inv'1 self}
+  let rec deref_mut'0 (self:borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) (return'  (ret:borrowed (slice usize)))= {[@expl:precondition] [%#span43] inv'1 self}
     any
     [ return' (result:borrowed (slice usize))-> {[%#span46] inv'2 result}
       {[%#span45] shallow_model'3 result.final = shallow_model'0 self.final}
@@ -1140,10 +1140,10 @@ module C03StdIterators_AllZero
       (! return' {result}) ]
     
   
-  let rec all_zero (v:borrowed (Vec'0.t_vec usize (Global'0.t_global))) (return'  (ret:()))= (! bb0
+  let rec all_zero (v:borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) (return'  (ret:()))= (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_final <Vec'0.t_vec usize (Global'0.t_global)> {v.current} {Borrow.get_id v}
-          (fun (_ret':borrowed (Vec'0.t_vec usize (Global'0.t_global))) ->
+      [ s0 = Borrow.borrow_final <Vec'0.t_Vec usize (Global'0.t_Global)> {v.current} {Borrow.get_id v}
+          (fun (_ret':borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) ->
              [ &_8 <- _ret' ] 
              [ &v <- { v with current = _8.final ; } ] 
             s1)
@@ -1153,10 +1153,10 @@ module C03StdIterators_AllZero
     | bb1 = s0
       [ s0 = Borrow.borrow_final <slice usize> {_7.current} {Borrow.get_id _7}
           (fun (_ret':borrowed (slice usize)) ->  [ &_6 <- _ret' ]  [ &_7 <- { _7 with current = _6.final ; } ] s1)
-      | s1 = iter_mut'0 {_6} (fun (_ret':IterMut'0.t_itermut usize) ->  [ &_5 <- _ret' ] s2)
+      | s1 = iter_mut'0 {_6} (fun (_ret':IterMut'0.t_IterMut usize) ->  [ &_5 <- _ret' ] s2)
       | s2 = bb2 ]
       
-    | bb2 = s0 [ s0 = into_iter'0 {_5} (fun (_ret':IterMut'0.t_itermut usize) ->  [ &iter <- _ret' ] s1) | s1 = bb3 ] 
+    | bb2 = s0 [ s0 = into_iter'0 {_5} (fun (_ret':IterMut'0.t_IterMut usize) ->  [ &iter <- _ret' ] s1) | s1 = bb3 ] 
     | bb3 = s0
       [ s0 = -{resolve'0 _7}- s1 | s1 =  [ &iter_old <- [%#s03_std_iterators0] Snapshot.new iter ] s2 | s2 = bb4 ]
       
@@ -1172,14 +1172,14 @@ module C03StdIterators_AllZero
         {[@expl:loop invariant] [%#s03_std_iterators2] inv'0 iter}
         (! s0) [ s0 = bb7 ] 
         [ bb7 = s0
-          [ s0 = Borrow.borrow_mut <IterMut'0.t_itermut usize> {iter}
-              (fun (_ret':borrowed (IterMut'0.t_itermut usize)) ->  [ &_19 <- _ret' ]  [ &iter <- _19.final ] s1)
-          | s1 = Borrow.borrow_final <IterMut'0.t_itermut usize> {_19.current} {Borrow.get_id _19}
-              (fun (_ret':borrowed (IterMut'0.t_itermut usize)) ->
+          [ s0 = Borrow.borrow_mut <IterMut'0.t_IterMut usize> {iter}
+              (fun (_ret':borrowed (IterMut'0.t_IterMut usize)) ->  [ &_19 <- _ret' ]  [ &iter <- _19.final ] s1)
+          | s1 = Borrow.borrow_final <IterMut'0.t_IterMut usize> {_19.current} {Borrow.get_id _19}
+              (fun (_ret':borrowed (IterMut'0.t_IterMut usize)) ->
                  [ &_18 <- _ret' ] 
                  [ &_19 <- { _19 with current = _18.final ; } ] 
                 s2)
-          | s2 = next'0 {_18} (fun (_ret':Option'0.t_option (borrowed usize)) ->  [ &_17 <- _ret' ] s3)
+          | s2 = next'0 {_18} (fun (_ret':Option'0.t_Option (borrowed usize)) ->  [ &_17 <- _ret' ] s3)
           | s3 = bb8 ]
           
         | bb8 = s0
@@ -1190,7 +1190,7 @@ module C03StdIterators_AllZero
           
         | bb10 = bb12
         | bb12 = s0
-          [ s0 = Option'0.some <borrowed usize> {_17}
+          [ s0 = Option'0.v_Some <borrowed usize> {_17}
               (fun (r0'0:borrowed usize) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
           | s1 = 
             [ &_22 <- [%#s03_std_iterators3] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
@@ -1210,17 +1210,17 @@ module C03StdIterators_AllZero
     | bb11 = s0 [ s0 = -{resolve'3 iter}- s1 | s1 = -{resolve'4 v}- s2 | s2 = return' {_0} ]  ]
     )
     [ & _0 : () = any_l ()
-    | & v : borrowed (Vec'0.t_vec usize (Global'0.t_global)) = v
-    | & iter : IterMut'0.t_itermut usize = any_l ()
-    | & _5 : IterMut'0.t_itermut usize = any_l ()
+    | & v : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)) = v
+    | & iter : IterMut'0.t_IterMut usize = any_l ()
+    | & _5 : IterMut'0.t_IterMut usize = any_l ()
     | & _6 : borrowed (slice usize) = any_l ()
     | & _7 : borrowed (slice usize) = any_l ()
-    | & _8 : borrowed (Vec'0.t_vec usize (Global'0.t_global)) = any_l ()
-    | & iter_old : Snapshot.snap_ty (IterMut'0.t_itermut usize) = any_l ()
+    | & _8 : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)) = any_l ()
+    | & iter_old : Snapshot.snap_ty (IterMut'0.t_IterMut usize) = any_l ()
     | & produced : Snapshot.snap_ty (Seq.seq (borrowed usize)) = any_l ()
-    | & _17 : Option'0.t_option (borrowed usize) = any_l ()
-    | & _18 : borrowed (IterMut'0.t_itermut usize) = any_l ()
-    | & _19 : borrowed (IterMut'0.t_itermut usize) = any_l ()
+    | & _17 : Option'0.t_Option (borrowed usize) = any_l ()
+    | & _18 : borrowed (IterMut'0.t_IterMut usize) = any_l ()
+    | & _19 : borrowed (IterMut'0.t_IterMut usize) = any_l ()
     | & __creusot_proc_iter_elem : borrowed usize = any_l ()
     | & _22 : Snapshot.snap_ty (Seq.seq (borrowed usize)) = any_l ()
     | & x : borrowed usize = any_l () ]
@@ -1232,37 +1232,37 @@ module C03StdIterators_AllZero
       (! return' {result}) ]
     
 end
-module Core_Iter_Adapters_Take_Take_Type
+module T_core__iter__adapters__take__Take
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  type t_take 'i =
+  type t_Take 'i =
     | C_Take 'i usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_take < 'i > (input:t_take 'i) (ret  (iter:'i) (n:usize))= any
+  let rec t_Take < 'i > (input:t_Take 'i) (ret  (iter:'i) (n:usize))= any
     [ good (iter:'i) (n:usize)-> {C_Take iter n = input} (! ret {iter} {n})
     | bad (iter:'i) (n:usize)-> {C_Take iter n <> input} {false} any ]
     
 end
-module Core_Iter_Adapters_Skip_Skip_Type
+module T_core__iter__adapters__skip__Skip
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  type t_skip 'i =
+  type t_Skip 'i =
     | C_Skip 'i usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_skip < 'i > (input:t_skip 'i) (ret  (iter:'i) (n:usize))= any
+  let rec t_Skip < 'i > (input:t_Skip 'i) (ret  (iter:'i) (n:usize))= any
     [ good (iter:'i) (n:usize)-> {C_Skip iter n = input} (! ret {iter} {n})
     | bad (iter:'i) (n:usize)-> {C_Skip iter n <> input} {false} any ]
     
 end
-module C03StdIterators_SkipTake
+module M_03_std_iterators__skip_take
   type i
   
   let%span s03_std_iterators0 = "../03_std_iterators.rs" 38 20 38 31
@@ -1367,34 +1367,34 @@ module C03StdIterators_SkipTake
   
   let%span span50 = "" 0 0 0 0
   
-  type item'0
+  type t_Item'0
   
-  predicate invariant'8 (self : item'0)
+  predicate invariant'8 (self : t_Item'0)
   
-  predicate inv'8 (_1 : item'0)
+  predicate inv'8 (_1 : t_Item'0)
   
-  axiom inv'8 [@rewrite] : forall x : item'0 . inv'8 x = true
+  axiom inv'8 [@rewrite] : forall x : t_Item'0 . inv'8 x = true
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
-  predicate invariant'7 (self : item'0) =
+  predicate invariant'7 (self : t_Item'0) =
     [%#span2] inv'8 self
   
-  predicate inv'7 (_1 : item'0)
+  predicate inv'7 (_1 : t_Item'0)
   
-  axiom inv'7 [@rewrite] : forall x : item'0 . inv'7 x = true
-  
-  use seq.Seq
+  axiom inv'7 [@rewrite] : forall x : t_Item'0 . inv'7 x = true
   
   use seq.Seq
   
-  predicate produces'2 (self : i) (visited : Seq.seq item'0) (o : i)
+  use seq.Seq
+  
+  predicate produces'2 (self : i) (visited : Seq.seq t_Item'0) (o : i)
   
   predicate inv'2 (_1 : i)
   
-  function produces_trans'2 (a : i) (ab : Seq.seq item'0) (b : i) (bc : Seq.seq item'0) (c : i) : ()
+  function produces_trans'2 (a : i) (ab : Seq.seq t_Item'0) (b : i) (bc : Seq.seq t_Item'0) (c : i) : ()
   
-  axiom produces_trans'2_spec : forall a : i, ab : Seq.seq item'0, b : i, bc : Seq.seq item'0, c : i . ([%#span3] inv'2 a)
+  axiom produces_trans'2_spec : forall a : i, ab : Seq.seq t_Item'0, b : i, bc : Seq.seq t_Item'0, c : i . ([%#span3] inv'2 a)
    -> ([%#span4] inv'2 b)
    -> ([%#span5] inv'2 c)
    -> ([%#span6] produces'2 a ab b)  -> ([%#span7] produces'2 b bc c)  -> ([%#span8] produces'2 a (Seq.(++) ab bc) c)
@@ -1404,15 +1404,15 @@ module C03StdIterators_SkipTake
   function produces_refl'2 (self : i) : ()
   
   axiom produces_refl'2_spec : forall self : i . ([%#span9] inv'2 self)
-   -> ([%#span10] produces'2 self (Seq.empty  : Seq.seq item'0) self)
+   -> ([%#span10] produces'2 self (Seq.empty  : Seq.seq t_Item'0) self)
   
-  use Core_Iter_Adapters_Take_Take_Type as Take'0
+  use T_core__iter__adapters__take__Take as Take'0
   
-  predicate inv'3 (_1 : Take'0.t_take i)
+  predicate inv'3 (_1 : Take'0.t_Take i)
   
-  function iter'0 (self : Take'0.t_take i) : i
+  function iter'0 (self : Take'0.t_Take i) : i
   
-  axiom iter'0_spec : forall self : Take'0.t_take i . [%#span11] inv'3 self  -> inv'2 (iter'0 self)
+  axiom iter'0_spec : forall self : Take'0.t_Take i . [%#span11] inv'3 self  -> inv'2 (iter'0 self)
   
   use prelude.prelude.Int
   
@@ -1422,157 +1422,157 @@ module C03StdIterators_SkipTake
   
   use prelude.prelude.UIntSize
   
-  constant max'0 : usize = [%#span12] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span12] (18446744073709551615 : usize)
   
-  function n'0 (self : Take'0.t_take i) : int
+  function n'0 (self : Take'0.t_Take i) : int
   
-  axiom n'0_spec : forall self : Take'0.t_take i . [%#span13] n'0 self >= 0
-  /\ n'0 self <= UIntSize.to_int (max'0 : usize)
+  axiom n'0_spec : forall self : Take'0.t_Take i . [%#span13] n'0 self >= 0
+  /\ n'0 self <= UIntSize.to_int (v_MAX'0 : usize)
   
-  predicate produces'1 (self : Take'0.t_take i) (visited : Seq.seq item'0) (o : Take'0.t_take i) =
+  predicate produces'1 (self : Take'0.t_Take i) (visited : Seq.seq t_Item'0) (o : Take'0.t_Take i) =
     [%#span14] n'0 self = n'0 o + Seq.length visited /\ produces'2 (iter'0 self) visited (iter'0 o)
   
-  function produces_trans'1 (a : Take'0.t_take i) (ab : Seq.seq item'0) (b : Take'0.t_take i) (bc : Seq.seq item'0) (c : Take'0.t_take i) : ()
+  function produces_trans'1 (a : Take'0.t_Take i) (ab : Seq.seq t_Item'0) (b : Take'0.t_Take i) (bc : Seq.seq t_Item'0) (c : Take'0.t_Take i) : ()
     
   
-  axiom produces_trans'1_spec : forall a : Take'0.t_take i, ab : Seq.seq item'0, b : Take'0.t_take i, bc : Seq.seq item'0, c : Take'0.t_take i . ([%#span15] inv'3 a)
+  axiom produces_trans'1_spec : forall a : Take'0.t_Take i, ab : Seq.seq t_Item'0, b : Take'0.t_Take i, bc : Seq.seq t_Item'0, c : Take'0.t_Take i . ([%#span15] inv'3 a)
    -> ([%#span16] inv'3 b)
    -> ([%#span17] inv'3 c)
    -> ([%#span18] produces'1 a ab b)  -> ([%#span19] produces'1 b bc c)  -> ([%#span20] produces'1 a (Seq.(++) ab bc) c)
   
-  function produces_refl'1 (self : Take'0.t_take i) : ()
+  function produces_refl'1 (self : Take'0.t_Take i) : ()
   
-  axiom produces_refl'1_spec : forall self : Take'0.t_take i . ([%#span21] inv'3 self)
-   -> ([%#span22] produces'1 self (Seq.empty  : Seq.seq item'0) self)
+  axiom produces_refl'1_spec : forall self : Take'0.t_Take i . ([%#span21] inv'3 self)
+   -> ([%#span22] produces'1 self (Seq.empty  : Seq.seq t_Item'0) self)
   
   use prelude.prelude.Borrow
   
-  predicate invariant'6 (self : borrowed (Take'0.t_take i)) =
+  predicate invariant'6 (self : borrowed (Take'0.t_Take i)) =
     [%#span23] inv'3 self.current /\ inv'3 self.final
   
-  predicate inv'6 (_1 : borrowed (Take'0.t_take i))
+  predicate inv'6 (_1 : borrowed (Take'0.t_Take i))
   
-  axiom inv'6 [@rewrite] : forall x : borrowed (Take'0.t_take i) . inv'6 x = true
+  axiom inv'6 [@rewrite] : forall x : borrowed (Take'0.t_Take i) . inv'6 x = true
   
   use seq.Seq
   
-  predicate invariant'5 (self : Seq.seq item'0) =
+  predicate invariant'5 (self : Seq.seq t_Item'0) =
     [%#span24] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'7 (Seq.get self i)
   
-  predicate inv'5 (_1 : Seq.seq item'0)
+  predicate inv'5 (_1 : Seq.seq t_Item'0)
   
-  axiom inv'5 [@rewrite] : forall x : Seq.seq item'0 . inv'5 x = true
+  axiom inv'5 [@rewrite] : forall x : Seq.seq t_Item'0 . inv'5 x = true
   
-  use Core_Iter_Adapters_Skip_Skip_Type as Skip'0
+  use T_core__iter__adapters__skip__Skip as Skip'0
   
-  predicate resolve'2 (self : item'0)
+  predicate resolve'2 (self : t_Item'0)
   
   use seq.Seq
   
-  predicate inv'0 (_1 : Skip'0.t_skip (Take'0.t_take i))
+  predicate inv'0 (_1 : Skip'0.t_Skip (Take'0.t_Take i))
   
-  function iter'1 (self : Skip'0.t_skip (Take'0.t_take i)) : Take'0.t_take i
+  function iter'1 (self : Skip'0.t_Skip (Take'0.t_Take i)) : Take'0.t_Take i
   
-  axiom iter'1_spec : forall self : Skip'0.t_skip (Take'0.t_take i) . [%#span25] inv'0 self  -> inv'3 (iter'1 self)
+  axiom iter'1_spec : forall self : Skip'0.t_Skip (Take'0.t_Take i) . [%#span25] inv'0 self  -> inv'3 (iter'1 self)
   
-  function n'1 (self : Skip'0.t_skip (Take'0.t_take i)) : int
+  function n'1 (self : Skip'0.t_Skip (Take'0.t_Take i)) : int
   
-  axiom n'1_spec : forall self : Skip'0.t_skip (Take'0.t_take i) . [%#span26] n'1 self >= 0
-  /\ n'1 self <= UIntSize.to_int (max'0 : usize)
+  axiom n'1_spec : forall self : Skip'0.t_Skip (Take'0.t_Take i) . [%#span26] n'1 self >= 0
+  /\ n'1 self <= UIntSize.to_int (v_MAX'0 : usize)
   
-  predicate produces'0 (self : Skip'0.t_skip (Take'0.t_take i)) (visited : Seq.seq item'0) (o : Skip'0.t_skip (Take'0.t_take i))
+  predicate produces'0 (self : Skip'0.t_Skip (Take'0.t_Take i)) (visited : Seq.seq t_Item'0) (o : Skip'0.t_Skip (Take'0.t_Take i))
     
    =
-    [%#span27] visited = (Seq.empty  : Seq.seq item'0) /\ self = o
+    [%#span27] visited = (Seq.empty  : Seq.seq t_Item'0) /\ self = o
     \/ n'1 o = 0
     /\ Seq.length visited > 0
-    /\ (exists s : Seq.seq item'0 . inv'5 s
+    /\ (exists s : Seq.seq t_Item'0 . inv'5 s
     /\ Seq.length s = n'1 self
     /\ produces'1 (iter'1 self) (Seq.(++) s visited) (iter'1 o)
     /\ (forall i : int . 0 <= i /\ i < Seq.length s  -> resolve'2 (Seq.get s i)))
   
-  function produces_trans'0 (a : Skip'0.t_skip (Take'0.t_take i)) (ab : Seq.seq item'0) (b : Skip'0.t_skip (Take'0.t_take i)) (bc : Seq.seq item'0) (c : Skip'0.t_skip (Take'0.t_take i)) : ()
+  function produces_trans'0 (a : Skip'0.t_Skip (Take'0.t_Take i)) (ab : Seq.seq t_Item'0) (b : Skip'0.t_Skip (Take'0.t_Take i)) (bc : Seq.seq t_Item'0) (c : Skip'0.t_Skip (Take'0.t_Take i)) : ()
     
   
-  axiom produces_trans'0_spec : forall a : Skip'0.t_skip (Take'0.t_take i), ab : Seq.seq item'0, b : Skip'0.t_skip (Take'0.t_take i), bc : Seq.seq item'0, c : Skip'0.t_skip (Take'0.t_take i) . ([%#span28] inv'0 a)
+  axiom produces_trans'0_spec : forall a : Skip'0.t_Skip (Take'0.t_Take i), ab : Seq.seq t_Item'0, b : Skip'0.t_Skip (Take'0.t_Take i), bc : Seq.seq t_Item'0, c : Skip'0.t_Skip (Take'0.t_Take i) . ([%#span28] inv'0 a)
    -> ([%#span29] inv'0 b)
    -> ([%#span30] inv'0 c)
    -> ([%#span31] produces'0 a ab b)  -> ([%#span32] produces'0 b bc c)  -> ([%#span33] produces'0 a (Seq.(++) ab bc) c)
   
-  function produces_refl'0 (self : Skip'0.t_skip (Take'0.t_take i)) : ()
+  function produces_refl'0 (self : Skip'0.t_Skip (Take'0.t_Take i)) : ()
   
-  axiom produces_refl'0_spec : forall self : Skip'0.t_skip (Take'0.t_take i) . ([%#span34] inv'0 self)
-   -> ([%#span35] produces'0 self (Seq.empty  : Seq.seq item'0) self)
+  axiom produces_refl'0_spec : forall self : Skip'0.t_Skip (Take'0.t_Take i) . ([%#span34] inv'0 self)
+   -> ([%#span35] produces'0 self (Seq.empty  : Seq.seq t_Item'0) self)
   
-  predicate invariant'4 (self : borrowed (Skip'0.t_skip (Take'0.t_take i))) =
+  predicate invariant'4 (self : borrowed (Skip'0.t_Skip (Take'0.t_Take i))) =
     [%#span23] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'4 (_1 : borrowed (Skip'0.t_skip (Take'0.t_take i)))
+  predicate inv'4 (_1 : borrowed (Skip'0.t_Skip (Take'0.t_Take i)))
   
-  axiom inv'4 [@rewrite] : forall x : borrowed (Skip'0.t_skip (Take'0.t_take i)) . inv'4 x = true
+  axiom inv'4 [@rewrite] : forall x : borrowed (Skip'0.t_Skip (Take'0.t_Take i)) . inv'4 x = true
   
-  predicate invariant'3 (self : Take'0.t_take i) =
+  predicate invariant'3 (self : Take'0.t_Take i) =
     [%#span36] true
   
-  axiom inv'3 [@rewrite] : forall x : Take'0.t_take i . inv'3 x = true
+  axiom inv'3 [@rewrite] : forall x : Take'0.t_Take i . inv'3 x = true
   
   predicate invariant'2 (self : i)
   
   axiom inv'2 [@rewrite] : forall x : i . inv'2 x = true
   
-  use Core_Option_Option_Type as Option'0
+  use T_core__option__Option as Option'0
   
-  predicate invariant'1 (self : Option'0.t_option item'0) =
+  predicate invariant'1 (self : Option'0.t_Option t_Item'0) =
     [%#span36] true
   
-  predicate inv'1 (_1 : Option'0.t_option item'0)
+  predicate inv'1 (_1 : Option'0.t_Option t_Item'0)
   
-  axiom inv'1 [@rewrite] : forall x : Option'0.t_option item'0 . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : Option'0.t_Option t_Item'0 . inv'1 x = true
   
-  predicate invariant'0 (self : Skip'0.t_skip (Take'0.t_take i)) =
+  predicate invariant'0 (self : Skip'0.t_Skip (Take'0.t_Take i)) =
     [%#span36] true
   
-  axiom inv'0 [@rewrite] : forall x : Skip'0.t_skip (Take'0.t_take i) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Skip'0.t_Skip (Take'0.t_Take i) . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'3 (self : i)
   
-  predicate resolve'1 (self : Take'0.t_take i) =
+  predicate resolve'1 (self : Take'0.t_Take i) =
     [%#span37] resolve'3 (iter'0 self)
   
-  predicate resolve'0 (self : Skip'0.t_skip (Take'0.t_take i)) =
+  predicate resolve'0 (self : Skip'0.t_Skip (Take'0.t_Take i)) =
     [%#span38] resolve'1 (iter'1 self)
   
   use seq.Seq
   
   predicate completed'2 (self : borrowed i)
   
-  function iter_mut'0 (self : borrowed (Take'0.t_take i)) : borrowed i
+  function iter_mut'0 (self : borrowed (Take'0.t_Take i)) : borrowed i
   
-  axiom iter_mut'0_spec : forall self : borrowed (Take'0.t_take i) . [%#span39] iter'0 self.current
+  axiom iter_mut'0_spec : forall self : borrowed (Take'0.t_Take i) . [%#span39] iter'0 self.current
   = (iter_mut'0 self).current
   /\ iter'0 self.final = (iter_mut'0 self).final
   
-  predicate resolve'4 (self : borrowed (Take'0.t_take i)) =
+  predicate resolve'4 (self : borrowed (Take'0.t_Take i)) =
     [%#span40] self.final = self.current
   
-  predicate completed'1 (self : borrowed (Take'0.t_take i)) =
+  predicate completed'1 (self : borrowed (Take'0.t_Take i)) =
     [%#span41] n'0 self.current = 0 /\ resolve'4 self
     \/ n'0 self.current > 0 /\ n'0 self.current = n'0 self.final + 1 /\ completed'2 (iter_mut'0 self)
   
-  predicate completed'0 (self : borrowed (Skip'0.t_skip (Take'0.t_take i))) =
+  predicate completed'0 (self : borrowed (Skip'0.t_Skip (Take'0.t_Take i))) =
     [%#span42] n'1 self.final = 0
-    /\ (exists s : Seq.seq item'0, i : borrowed (Take'0.t_take i) . inv'5 s
+    /\ (exists s : Seq.seq t_Item'0, i : borrowed (Take'0.t_Take i) . inv'5 s
     /\ inv'6 i
     /\ Seq.length s <= n'1 self.current
     /\ produces'1 (iter'1 self.current) s i.current
     /\ (forall i : int . 0 <= i /\ i < Seq.length s  -> resolve'2 (Seq.get s i))
     /\ completed'1 i /\ i.final = iter'1 self.final)
   
-  let rec next'0 (self:borrowed (Skip'0.t_skip (Take'0.t_take i))) (return'  (ret:Option'0.t_option item'0))= {[@expl:precondition] [%#span43] inv'4 self}
+  let rec next'0 (self:borrowed (Skip'0.t_Skip (Take'0.t_Take i))) (return'  (ret:Option'0.t_Option t_Item'0))= {[@expl:precondition] [%#span43] inv'4 self}
     any
-    [ return' (result:Option'0.t_option item'0)-> {[%#span45] inv'1 result}
+    [ return' (result:Option'0.t_Option t_Item'0)-> {[%#span45] inv'1 result}
       {[%#span44] match result with
         | Option'0.C_None -> completed'0 self
         | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
@@ -1580,31 +1580,31 @@ module C03StdIterators_SkipTake
       (! return' {result}) ]
     
   
-  let rec skip'0 (self:Take'0.t_take i) (n:usize) (return'  (ret:Skip'0.t_skip (Take'0.t_take i)))= {[@expl:precondition] [%#span46] inv'3 self}
+  let rec skip'0 (self:Take'0.t_Take i) (n:usize) (return'  (ret:Skip'0.t_Skip (Take'0.t_Take i)))= {[@expl:precondition] [%#span46] inv'3 self}
     any
-    [ return' (result:Skip'0.t_skip (Take'0.t_take i))-> {[%#span48] inv'0 result}
+    [ return' (result:Skip'0.t_Skip (Take'0.t_Take i))-> {[%#span48] inv'0 result}
       {[%#span47] iter'1 result = self /\ n'1 result = UIntSize.to_int n}
       (! return' {result}) ]
     
   
-  let rec take'0 (self:i) (n:usize) (return'  (ret:Take'0.t_take i))= {[@expl:precondition] [%#span49] inv'2 self}
+  let rec take'0 (self:i) (n:usize) (return'  (ret:Take'0.t_Take i))= {[@expl:precondition] [%#span49] inv'2 self}
     any
-    [ return' (result:Take'0.t_take i)-> {[%#span50] inv'3 result}
+    [ return' (result:Take'0.t_Take i)-> {[%#span50] inv'3 result}
       {[%#span47] iter'0 result = self /\ n'0 result = UIntSize.to_int n}
       (! return' {result}) ]
     
   
   let rec skip_take (iter:i) (n:usize) (return'  (ret:()))= {[%#s03_std_iterators1] inv'2 iter}
     (! bb0
-    [ bb0 = s0 [ s0 = take'0 {iter} {n} (fun (_ret':Take'0.t_take i) ->  [ &_6 <- _ret' ] s1) | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 = take'0 {iter} {n} (fun (_ret':Take'0.t_Take i) ->  [ &_6 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0
-      [ s0 = skip'0 {_6} {n} (fun (_ret':Skip'0.t_skip (Take'0.t_take i)) ->  [ &_5 <- _ret' ] s1) | s1 = bb2 ]
+      [ s0 = skip'0 {_6} {n} (fun (_ret':Skip'0.t_Skip (Take'0.t_Take i)) ->  [ &_5 <- _ret' ] s1) | s1 = bb2 ]
       
     | bb2 = s0
-      [ s0 = Borrow.borrow_mut <Skip'0.t_skip (Take'0.t_take i)> {_5}
-          (fun (_ret':borrowed (Skip'0.t_skip (Take'0.t_take i))) ->  [ &_4 <- _ret' ]  [ &_5 <- _4.final ] s1)
+      [ s0 = Borrow.borrow_mut <Skip'0.t_Skip (Take'0.t_Take i)> {_5}
+          (fun (_ret':borrowed (Skip'0.t_Skip (Take'0.t_Take i))) ->  [ &_4 <- _ret' ]  [ &_5 <- _4.final ] s1)
       | s1 = -{inv'0 _4.final}- s2
-      | s2 = next'0 {_4} (fun (_ret':Option'0.t_option item'0) ->  [ &res <- _ret' ] s3)
+      | s2 = next'0 {_4} (fun (_ret':Option'0.t_Option t_Item'0) ->  [ &res <- _ret' ] s3)
       | s3 = bb3 ]
       
     | bb3 = s0
@@ -1621,23 +1621,23 @@ module C03StdIterators_SkipTake
     [ & _0 : () = any_l ()
     | & iter : i = iter
     | & n : usize = n
-    | & res : Option'0.t_option item'0 = any_l ()
-    | & _4 : borrowed (Skip'0.t_skip (Take'0.t_take i)) = any_l ()
-    | & _5 : Skip'0.t_skip (Take'0.t_take i) = any_l ()
-    | & _6 : Take'0.t_take i = any_l () ]
+    | & res : Option'0.t_Option t_Item'0 = any_l ()
+    | & _4 : borrowed (Skip'0.t_Skip (Take'0.t_Take i)) = any_l ()
+    | & _5 : Skip'0.t_Skip (Take'0.t_Take i) = any_l ()
+    | & _6 : Take'0.t_Take i = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
-module CreusotContracts_Std1_Iter_MapInv_MapInv_Type
+module T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv
   use seq.Seq
   
   use prelude.prelude.Snapshot
   
-  type t_mapinv 'i 'b 'f =
+  type t_MapInv 'i 'b 'f =
     | C_MapInv 'i 'f (Snapshot.snap_ty (Seq.seq 'b))
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_mapinv < 'i > < 'b > < 'f > (input:t_mapinv 'i 'b 'f) (ret  (iter:'i) (func:'f) (produced:Snapshot.snap_ty (Seq.seq 'b)))= any
+  let rec t_MapInv < 'i > < 'b > < 'f > (input:t_MapInv 'i 'b 'f) (ret  (iter:'i) (func:'f) (produced:Snapshot.snap_ty (Seq.seq 'b)))= any
     [ good (iter:'i) (func:'f) (produced:Snapshot.snap_ty (Seq.seq 'b))-> {C_MapInv iter func produced = input}
       (! ret {iter} {func} {produced})
     | bad (iter:'i) (func:'f) (produced:Snapshot.snap_ty (Seq.seq 'b))-> {C_MapInv iter func produced <> input}
@@ -1645,22 +1645,22 @@ module CreusotContracts_Std1_Iter_MapInv_MapInv_Type
       any ]
     
   
-  function mapinv_iter (self : t_mapinv 'i 'b 'f) : 'i =
+  function t_MapInv__iter (self : t_MapInv 'i 'b 'f) : 'i =
     match self with
       | C_MapInv a _ _ -> a
       end
   
-  function mapinv_func (self : t_mapinv 'i 'b 'f) : 'f =
+  function t_MapInv__func (self : t_MapInv 'i 'b 'f) : 'f =
     match self with
       | C_MapInv _ a _ -> a
       end
   
-  function mapinv_produced (self : t_mapinv 'i 'b 'f) : Snapshot.snap_ty (Seq.seq 'b) =
+  function t_MapInv__produced (self : t_MapInv 'i 'b 'f) : Snapshot.snap_ty (Seq.seq 'b) =
     match self with
       | C_MapInv _ _ a -> a
       end
 end
-module C03StdIterators_Counter_Closure0_Type
+module M_03_std_iterators__counter__qy123zclosureqy35z0qy125z_Type
   use prelude.prelude.UInt32
   
   use seq.Seq
@@ -1675,15 +1675,15 @@ module C03StdIterators_Counter_Closure0_Type
   
   use prelude.prelude.Borrow
   
-  type c03stditerators_counter_closure0  =
-    | C03stditerators_counter_closure0 (borrowed usize)
+  type m_03_std_iterators__counter__qy123zclosureqy35z0qy125z  =
+    | M_03_std_iterators__counter__qy123zclosureqy35z0qy125z (borrowed usize)
   
-  let rec c03stditerators_counter_closure0 (input:c03stditerators_counter_closure0) (ret  (cnt:borrowed usize))= any
-    [ good (cnt:borrowed usize)-> {C03stditerators_counter_closure0 cnt = input} (! ret {cnt})
-    | bad (cnt:borrowed usize)-> {C03stditerators_counter_closure0 cnt <> input} {false} any ]
+  let rec m_03_std_iterators__counter__qy123zclosureqy35z0qy125z (input:m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) (ret  (cnt:borrowed usize))= any
+    [ good (cnt:borrowed usize)-> {M_03_std_iterators__counter__qy123zclosureqy35z0qy125z cnt = input} (! ret {cnt})
+    | bad (cnt:borrowed usize)-> {M_03_std_iterators__counter__qy123zclosureqy35z0qy125z cnt <> input} {false} any ]
     
 end
-module C03StdIterators_Counter_Closure0
+module M_03_std_iterators__counter__qy123zclosureqy35z0qy125z
   let%span s03_std_iterators0 = "../03_std_iterators.rs" 50 23 50 24
   
   let%span s03_std_iterators1 = "../03_std_iterators.rs" 47 23 47 65
@@ -1708,19 +1708,19 @@ module C03StdIterators_Counter_Closure0
   
   use prelude.prelude.Borrow
   
-  use C03StdIterators_Counter_Closure0_Type as Closure'0
+  use M_03_std_iterators__counter__qy123zclosureqy35z0qy125z_Type as Closure'0
   
-  function field_0'0 [#"../03_std_iterators.rs" 48 12 48 91] (self : Closure'0.c03stditerators_counter_closure0) : borrowed usize
+  function field_0'0 [#"../03_std_iterators.rs" 48 12 48 91] (self : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) : borrowed usize
     
    =
-    let Closure'0.C03stditerators_counter_closure0 a = self in a
+    let Closure'0.M_03_std_iterators__counter__qy123zclosureqy35z0qy125z a = self in a
   
-  predicate unnest'0 [#"../03_std_iterators.rs" 48 12 48 91] (self : Closure'0.c03stditerators_counter_closure0) (_2 : Closure'0.c03stditerators_counter_closure0)
+  predicate unnest'0 [#"../03_std_iterators.rs" 48 12 48 91] (self : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) (_2 : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z)
     
    =
     (field_0'0 _2).final = (field_0'0 self).final
   
-  constant max'0 : usize = [%#span3] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span3] (18446744073709551615 : usize)
   
   use seq.Seq
   
@@ -1730,22 +1730,22 @@ module C03StdIterators_Counter_Closure0
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'0 (self : borrowed Closure'0.c03stditerators_counter_closure0) =
+  predicate resolve'0 (self : borrowed Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) =
     [%#span4] self.final = self.current
   
-  let rec c03stditerators_counter_closure0 (_1:borrowed Closure'0.c03stditerators_counter_closure0) (x:uint32) (_prod:Snapshot.snap_ty (Seq.seq uint32)) (return'  (ret:uint32))= {[%#s03_std_iterators1] UIntSize.to_int (field_0'0 _1.current).current
+  let rec m_03_std_iterators__counter__qy123zclosureqy35z0qy125z (_1:borrowed Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) (x:uint32) (_prod:Snapshot.snap_ty (Seq.seq uint32)) (return'  (ret:uint32))= {[%#s03_std_iterators1] UIntSize.to_int (field_0'0 _1.current).current
     = Seq.length (Snapshot.inner _prod)
-    /\ (field_0'0 _1.current).current < (max'0 : usize)}
+    /\ (field_0'0 _1.current).current < (v_MAX'0 : usize)}
     (! bb0
     [ bb0 = s0
-      [ s0 = Closure'0.c03stditerators_counter_closure0 {_1.current}
+      [ s0 = Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z {_1.current}
           (fun (r'0:borrowed usize) ->
             UIntSize.add {r'0.current} {[%#s03_std_iterators0] (1 : usize)}
               (fun (_ret':usize) ->
-                Closure'0.c03stditerators_counter_closure0 {_1.current}
+                Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z {_1.current}
                   (fun (l'0:borrowed usize) ->
                     
-                    [ &_1 <- { _1 with current = Closure'0.C03stditerators_counter_closure0 ({ l'0 with current = _ret' ; }) ; } ]
+                    [ &_1 <- { _1 with current = Closure'0.M_03_std_iterators__counter__qy123zclosureqy35z0qy125z ({ l'0 with current = _ret' ; }) ; } ]
                     
                     s1)))
       | s1 = -{resolve'0 _1}- s2
@@ -1756,7 +1756,7 @@ module C03StdIterators_Counter_Closure0
        ]
     )
     [ & _0 : uint32 = any_l ()
-    | & _1 : borrowed Closure'0.c03stditerators_counter_closure0 = _1
+    | & _1 : borrowed Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z = _1
     | & x : uint32 = x
     | & res : uint32 = any_l ()
     | & res1 : uint32 = any_l () ]
@@ -1768,7 +1768,7 @@ module C03StdIterators_Counter_Closure0
       (! return' {result}) ]
     
 end
-module C03StdIterators_Counter
+module M_03_std_iterators__counter
   let%span s03_std_iterators0 = "../03_std_iterators.rs" 42 18 42 19
   
   let%span s03_std_iterators1 = "../03_std_iterators.rs" 56 20 56 40
@@ -1928,16 +1928,17 @@ module C03StdIterators_Counter
   
   use prelude.prelude.Int16
   
-  use C03StdIterators_Counter_Closure0_Type as Closure'0
+  use M_03_std_iterators__counter__qy123zclosureqy35z0qy125z_Type as Closure'0
   
-  predicate inv'3 (_1 : Closure'0.c03stditerators_counter_closure0)
+  predicate inv'3 (_1 : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z)
   
-  predicate invariant'14 (self : borrowed Closure'0.c03stditerators_counter_closure0) =
+  predicate invariant'14 (self : borrowed Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) =
     [%#span5] inv'3 self.current /\ inv'3 self.final
   
-  predicate inv'14 (_1 : borrowed Closure'0.c03stditerators_counter_closure0)
+  predicate inv'14 (_1 : borrowed Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z)
   
-  axiom inv'14 [@rewrite] : forall x : borrowed Closure'0.c03stditerators_counter_closure0 . inv'14 x = true
+  axiom inv'14 [@rewrite] : forall x : borrowed Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z . inv'14 x
+  = true
   
   predicate invariant'13 (self : uint32) =
     [%#span6] inv'15 self
@@ -1946,7 +1947,7 @@ module C03StdIterators_Counter
   
   axiom inv'13 [@rewrite] : forall x : uint32 . inv'13 x = true
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'12 (self : uint32) =
     [%#span7] inv'15 self
@@ -1955,12 +1956,13 @@ module C03StdIterators_Counter
   
   axiom inv'12 [@rewrite] : forall x : uint32 . inv'12 x = true
   
-  predicate invariant'11 (self : borrowed Closure'0.c03stditerators_counter_closure0) =
+  predicate invariant'11 (self : borrowed Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) =
     [%#span7] inv'14 self
   
-  predicate inv'11 (_1 : borrowed Closure'0.c03stditerators_counter_closure0)
+  predicate inv'11 (_1 : borrowed Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z)
   
-  axiom inv'11 [@rewrite] : forall x : borrowed Closure'0.c03stditerators_counter_closure0 . inv'11 x = true
+  axiom inv'11 [@rewrite] : forall x : borrowed Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z . inv'11 x
+  = true
   
   predicate invariant'10 (self : uint32) =
     [%#span7] inv'13 self
@@ -1988,12 +1990,12 @@ module C03StdIterators_Counter
   
   use prelude.prelude.UIntSize
   
-  constant max'0 : usize = [%#span9] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span9] (18446744073709551615 : usize)
   
   function shallow_model'4 (self : slice uint32) : Seq.seq uint32
   
   axiom shallow_model'4_spec : forall self : slice uint32 . ([%#span11] shallow_model'4 self = Slice.id self)
-  && ([%#span10] Seq.length (shallow_model'4 self) <= UIntSize.to_int (max'0 : usize))
+  && ([%#span10] Seq.length (shallow_model'4 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'8 (self : slice uint32) =
     [%#span12] inv'9 (shallow_model'4 self)
@@ -2006,12 +2008,13 @@ module C03StdIterators_Counter
   
   use seq.Seq
   
-  predicate invariant'7 (self : Seq.seq (borrowed Closure'0.c03stditerators_counter_closure0)) =
+  predicate invariant'7 (self : Seq.seq (borrowed Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z)) =
     [%#span8] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'11 (Seq.get self i)
   
-  predicate inv'7 (_1 : Seq.seq (borrowed Closure'0.c03stditerators_counter_closure0))
+  predicate inv'7 (_1 : Seq.seq (borrowed Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z))
   
-  axiom inv'7 [@rewrite] : forall x : Seq.seq (borrowed Closure'0.c03stditerators_counter_closure0) . inv'7 x = true
+  axiom inv'7 [@rewrite] : forall x : Seq.seq (borrowed Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) . inv'7 x
+  = true
   
   use seq.Seq
   
@@ -2024,39 +2027,39 @@ module C03StdIterators_Counter
   
   axiom inv'6 [@rewrite] : forall x : Seq.seq uint32 . inv'6 x = true
   
-  use Alloc_Vec_Vec_Type as Vec'0
+  use T_alloc__vec__Vec as Vec'0
   
-  function shallow_model'0 (self : Vec'0.t_vec uint32 (Global'0.t_global)) : Seq.seq uint32
+  function shallow_model'0 (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) : Seq.seq uint32
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_vec uint32 (Global'0.t_global) . [%#span13] Seq.length (shallow_model'0 self)
-  <= UIntSize.to_int (max'0 : usize)
+  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec uint32 (Global'0.t_Global) . [%#span13] Seq.length (shallow_model'0 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
   
-  predicate invariant'5 (self : Vec'0.t_vec uint32 (Global'0.t_global)) =
+  predicate invariant'5 (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) =
     [%#span14] inv'9 (shallow_model'0 self)
   
-  predicate inv'5 (_1 : Vec'0.t_vec uint32 (Global'0.t_global))
+  predicate inv'5 (_1 : Vec'0.t_Vec uint32 (Global'0.t_Global))
   
-  axiom inv'5 [@rewrite] : forall x : Vec'0.t_vec uint32 (Global'0.t_global) . inv'5 x = true
+  axiom inv'5 [@rewrite] : forall x : Vec'0.t_Vec uint32 (Global'0.t_Global) . inv'5 x = true
   
-  use Core_Slice_Iter_Iter_Type as Iter'0
+  use T_core__slice__iter__Iter as Iter'0
   
-  use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as MapInv'0
+  use T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv as MapInv'0
   
   use seq.Seq
   
-  function field_0'0 [#"../03_std_iterators.rs" 48 12 48 91] (self : Closure'0.c03stditerators_counter_closure0) : borrowed usize
+  function field_0'0 [#"../03_std_iterators.rs" 48 12 48 91] (self : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) : borrowed usize
     
    =
-    let Closure'0.C03stditerators_counter_closure0 a = self in a
+    let Closure'0.M_03_std_iterators__counter__qy123zclosureqy35z0qy125z a = self in a
   
-  predicate unnest'0 [#"../03_std_iterators.rs" 48 12 48 91] (self : Closure'0.c03stditerators_counter_closure0) (_2 : Closure'0.c03stditerators_counter_closure0)
+  predicate unnest'0 [#"../03_std_iterators.rs" 48 12 48 91] (self : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) (_2 : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z)
     
    =
     (field_0'0 _2).final = (field_0'0 self).final
   
   use prelude.prelude.Snapshot
   
-  predicate postcondition_mut'0 [#"../03_std_iterators.rs" 48 12 48 91] (self : borrowed Closure'0.c03stditerators_counter_closure0) (args : (uint32, Snapshot.snap_ty (Seq.seq uint32))) (result : uint32)
+  predicate postcondition_mut'0 [#"../03_std_iterators.rs" 48 12 48 91] (self : borrowed Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) (args : (uint32, Snapshot.snap_ty (Seq.seq uint32))) (result : uint32)
     
    =
     (let (x, _prod) = args in UIntSize.to_int (field_0'0 self.final).current
@@ -2066,11 +2069,11 @@ module C03StdIterators_Counter
   
   use seq.Seq
   
-  predicate precondition'0 [#"../03_std_iterators.rs" 48 12 48 91] (self : Closure'0.c03stditerators_counter_closure0) (args : (uint32, Snapshot.snap_ty (Seq.seq uint32)))
+  predicate precondition'0 [#"../03_std_iterators.rs" 48 12 48 91] (self : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) (args : (uint32, Snapshot.snap_ty (Seq.seq uint32)))
     
    =
     [%#span15] let (x, _prod) = args in UIntSize.to_int (field_0'0 self).current = Seq.length (Snapshot.inner _prod)
-    /\ (field_0'0 self).current < (max'0 : usize)
+    /\ (field_0'0 self).current < (v_MAX'0 : usize)
   
   use prelude.prelude.Snapshot
   
@@ -2084,7 +2087,7 @@ module C03StdIterators_Counter
   
   use prelude.prelude.Snapshot
   
-  use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
+  use T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv as T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv
   
   function index_logic'0 [@inline:trivial] (self : slice uint32) (ix : int) : uint32 =
     [%#span16] Seq.get (shallow_model'4 self) ix
@@ -2098,123 +2101,127 @@ module C03StdIterators_Counter
   /\ i < Seq.length (to_ref_seq'0 self)  -> Seq.get (to_ref_seq'0 self) i = index_logic'0 self i)
   && ([%#span18] Seq.length (to_ref_seq'0 self) = Seq.length (shallow_model'1 self))
   
-  function shallow_model'3 (self : Iter'0.t_iter uint32) : slice uint32
+  function shallow_model'3 (self : Iter'0.t_Iter uint32) : slice uint32
   
-  predicate produces'0 (self : Iter'0.t_iter uint32) (visited : Seq.seq uint32) (tl : Iter'0.t_iter uint32) =
+  predicate produces'0 (self : Iter'0.t_Iter uint32) (visited : Seq.seq uint32) (tl : Iter'0.t_Iter uint32) =
     [%#span20] to_ref_seq'0 (shallow_model'3 self) = Seq.(++) visited (to_ref_seq'0 (shallow_model'3 tl))
   
-  predicate produces'1 [@inline:trivial] (self : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0) (visited : Seq.seq uint32) (succ : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0)
+  predicate produces'1 [@inline:trivial] (self : MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) (visited : Seq.seq uint32) (succ : MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z)
     
    =
-    [%#span21] unnest'0 (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self) (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func succ)
+    [%#span21] unnest'0 (T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__func self) (T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__func succ)
     /\ (exists s : Seq.seq uint32 . inv'6 s
     /\ Seq.length s = Seq.length visited
-    /\ produces'0 (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self) s (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter succ)
-    /\ Snapshot.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced succ)
-    = Seq.(++) (Snapshot.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) s
-    /\ (exists fs : Seq.seq (borrowed Closure'0.c03stditerators_counter_closure0) . inv'7 fs
+    /\ produces'0 (T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__iter self) s (T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__iter succ)
+    /\ Snapshot.inner (T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__produced succ)
+    = Seq.(++) (Snapshot.inner (T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__produced self)) s
+    /\ (exists fs : Seq.seq (borrowed Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) . inv'7 fs
     /\ Seq.length fs = Seq.length visited
     /\ (forall i : int . 1 <= i /\ i < Seq.length fs  -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
     /\ (if Seq.length visited = 0 then
-      CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self
-      = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func succ
+      T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__func self
+      = T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__func succ
     else
-      (Seq.get fs 0).current = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self
-      /\ (Seq.get fs (Seq.length visited - 1)).final = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func succ
+      (Seq.get fs 0).current = T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__func self
+      /\ (Seq.get fs (Seq.length visited - 1)).final
+      = T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__func succ
     )
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> unnest'0 (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self) (Seq.get fs i).current
-    /\ precondition'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) (SeqExt.subsequence s 0 i)))
-    /\ postcondition_mut'0 (Seq.get fs i) (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) (SeqExt.subsequence s 0 i))) (Seq.get visited i))))
+     -> unnest'0 (T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__func self) (Seq.get fs i).current
+    /\ precondition'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__produced self)) (SeqExt.subsequence s 0 i)))
+    /\ postcondition_mut'0 (Seq.get fs i) (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner (T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__produced self)) (SeqExt.subsequence s 0 i))) (Seq.get visited i))))
   
-  predicate inv'4 (_1 : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0)
-  
-  function produces_trans'2 (a : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0) (ab : Seq.seq uint32) (b : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0) (bc : Seq.seq uint32) (c : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0) : ()
+  predicate inv'4 (_1 : MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z)
     
   
-  axiom produces_trans'2_spec : forall a : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0, ab : Seq.seq uint32, b : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0, bc : Seq.seq uint32, c : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0 . ([%#span22] inv'4 a)
+  function produces_trans'2 (a : MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) (ab : Seq.seq uint32) (b : MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) (bc : Seq.seq uint32) (c : MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) : ()
+    
+  
+  axiom produces_trans'2_spec : forall a : MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z, ab : Seq.seq uint32, b : MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z, bc : Seq.seq uint32, c : MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z . ([%#span22] inv'4 a)
    -> ([%#span23] inv'4 b)
    -> ([%#span24] inv'4 c)
    -> ([%#span25] produces'1 a ab b)  -> ([%#span26] produces'1 b bc c)  -> ([%#span27] produces'1 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
-  function produces_refl'2 (self : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0) : ()
+  function produces_refl'2 (self : MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) : ()
     
   
-  axiom produces_refl'2_spec : forall self : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0 . ([%#span28] inv'4 self)
+  axiom produces_refl'2_spec : forall self : MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z . ([%#span28] inv'4 self)
    -> ([%#span29] produces'1 self (Seq.empty  : Seq.seq uint32) self)
   
-  predicate inv'2 (_1 : Iter'0.t_iter uint32)
+  predicate inv'2 (_1 : Iter'0.t_Iter uint32)
   
   use seq.Seq
   
-  predicate next_precondition'0 (iter : Iter'0.t_iter uint32) (func : Closure'0.c03stditerators_counter_closure0) (produced : Seq.seq uint32)
+  predicate next_precondition'0 (iter : Iter'0.t_Iter uint32) (func : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) (produced : Seq.seq uint32)
     
    =
-    [%#span30] forall e : uint32, i : Iter'0.t_iter uint32 . produces'0 iter (Seq.singleton e) i
+    [%#span30] forall e : uint32, i : Iter'0.t_Iter uint32 . produces'0 iter (Seq.singleton e) i
      -> precondition'0 func (e, Snapshot.new produced)
   
   use seq.Seq
   
-  predicate preservation'0 (iter : Iter'0.t_iter uint32) (func : Closure'0.c03stditerators_counter_closure0) =
-    [%#span31] forall s : Seq.seq uint32, e1 : uint32, e2 : uint32, f : borrowed Closure'0.c03stditerators_counter_closure0, b : uint32, i : Iter'0.t_iter uint32 . unnest'0 func f.current
+  predicate preservation'0 (iter : Iter'0.t_Iter uint32) (func : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z)
+    
+   =
+    [%#span31] forall s : Seq.seq uint32, e1 : uint32, e2 : uint32, f : borrowed Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z, b : uint32, i : Iter'0.t_Iter uint32 . unnest'0 func f.current
      -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
      -> precondition'0 f.current (e1, Snapshot.new s)
      -> postcondition_mut'0 f (e1, Snapshot.new s) b  -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
   
   use seq.Seq
   
-  predicate preservation_inv'0 (iter : Iter'0.t_iter uint32) (func : Closure'0.c03stditerators_counter_closure0) (produced : Seq.seq uint32)
+  predicate preservation_inv'0 (iter : Iter'0.t_Iter uint32) (func : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) (produced : Seq.seq uint32)
     
   
-  axiom preservation_inv'0_spec : forall iter : Iter'0.t_iter uint32, func : Closure'0.c03stditerators_counter_closure0, produced : Seq.seq uint32 . [%#span32] produced
+  axiom preservation_inv'0_spec : forall iter : Iter'0.t_Iter uint32, func : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z, produced : Seq.seq uint32 . [%#span32] produced
   = (Seq.empty  : Seq.seq uint32)  -> preservation_inv'0 iter func produced = preservation'0 iter func
   
-  function shallow_model'5 (self : borrowed (Iter'0.t_iter uint32)) : slice uint32 =
+  function shallow_model'5 (self : borrowed (Iter'0.t_Iter uint32)) : slice uint32 =
     [%#span33] shallow_model'3 self.current
   
-  predicate resolve'3 (self : borrowed (Iter'0.t_iter uint32)) =
+  predicate resolve'3 (self : borrowed (Iter'0.t_Iter uint32)) =
     [%#span34] self.final = self.current
   
-  predicate completed'1 (self : borrowed (Iter'0.t_iter uint32)) =
+  predicate completed'1 (self : borrowed (Iter'0.t_Iter uint32)) =
     [%#span35] resolve'3 self /\ shallow_model'4 (shallow_model'5 self) = (Seq.empty  : Seq.seq uint32)
   
   predicate reinitialize'0 (_1 : ()) =
-    [%#span36] forall iter : borrowed (Iter'0.t_iter uint32), func : Closure'0.c03stditerators_counter_closure0 . completed'1 iter
+    [%#span36] forall iter : borrowed (Iter'0.t_Iter uint32), func : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z . completed'1 iter
      -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq uint32) /\ preservation'0 iter.final func
   
-  predicate invariant'4 (self : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0)
+  predicate invariant'4 (self : MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z)
     
   
-  axiom inv'4 [@rewrite] : forall x : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0 . inv'4 x
+  axiom inv'4 [@rewrite] : forall x : MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z . inv'4 x
   = (invariant'4 x
   /\ match x with
     | MapInv'0.C_MapInv iter func produced -> true
     end)
   
-  predicate invariant'3 (self : Closure'0.c03stditerators_counter_closure0) =
+  predicate invariant'3 (self : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) =
     [%#span4] true
   
-  axiom inv'3 [@rewrite] : forall x : Closure'0.c03stditerators_counter_closure0 . inv'3 x = true
+  axiom inv'3 [@rewrite] : forall x : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z . inv'3 x = true
   
-  predicate invariant'2 (self : Iter'0.t_iter uint32) =
+  predicate invariant'2 (self : Iter'0.t_Iter uint32) =
     [%#span4] true
   
-  axiom inv'2 [@rewrite] : forall x : Iter'0.t_iter uint32 . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : Iter'0.t_Iter uint32 . inv'2 x = true
   
-  function produces_trans'1 (a : Iter'0.t_iter uint32) (ab : Seq.seq uint32) (b : Iter'0.t_iter uint32) (bc : Seq.seq uint32) (c : Iter'0.t_iter uint32) : ()
+  function produces_trans'1 (a : Iter'0.t_Iter uint32) (ab : Seq.seq uint32) (b : Iter'0.t_Iter uint32) (bc : Seq.seq uint32) (c : Iter'0.t_Iter uint32) : ()
     
    =
     [%#span40] ()
   
-  axiom produces_trans'1_spec : forall a : Iter'0.t_iter uint32, ab : Seq.seq uint32, b : Iter'0.t_iter uint32, bc : Seq.seq uint32, c : Iter'0.t_iter uint32 . ([%#span37] produces'0 a ab b)
+  axiom produces_trans'1_spec : forall a : Iter'0.t_Iter uint32, ab : Seq.seq uint32, b : Iter'0.t_Iter uint32, bc : Seq.seq uint32, c : Iter'0.t_Iter uint32 . ([%#span37] produces'0 a ab b)
    -> ([%#span38] produces'0 b bc c)  -> ([%#span39] produces'0 a (Seq.(++) ab bc) c)
   
-  function produces_refl'1 (self : Iter'0.t_iter uint32) : () =
+  function produces_refl'1 (self : Iter'0.t_Iter uint32) : () =
     [%#span42] ()
   
-  axiom produces_refl'1_spec : forall self : Iter'0.t_iter uint32 . [%#span41] produces'0 self (Seq.empty  : Seq.seq uint32) self
+  axiom produces_refl'1_spec : forall self : Iter'0.t_Iter uint32 . [%#span41] produces'0 self (Seq.empty  : Seq.seq uint32) self
   
   predicate invariant'1 (self : slice uint32) =
     [%#span6] inv'8 self
@@ -2223,109 +2230,111 @@ module C03StdIterators_Counter
   
   axiom inv'1 [@rewrite] : forall x : slice uint32 . inv'1 x = true
   
-  predicate invariant'0 (self : Vec'0.t_vec uint32 (Global'0.t_global)) =
+  predicate invariant'0 (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) =
     [%#span6] inv'5 self
   
-  predicate inv'0 (_1 : Vec'0.t_vec uint32 (Global'0.t_global))
+  predicate inv'0 (_1 : Vec'0.t_Vec uint32 (Global'0.t_Global))
   
-  axiom inv'0 [@rewrite] : forall x : Vec'0.t_vec uint32 (Global'0.t_global) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Vec'0.t_Vec uint32 (Global'0.t_Global) . inv'0 x = true
   
-  function produces_trans'0 (a : Iter'0.t_iter uint32) (ab : Seq.seq uint32) (b : Iter'0.t_iter uint32) (bc : Seq.seq uint32) (c : Iter'0.t_iter uint32) : ()
+  function produces_trans'0 (a : Iter'0.t_Iter uint32) (ab : Seq.seq uint32) (b : Iter'0.t_Iter uint32) (bc : Seq.seq uint32) (c : Iter'0.t_Iter uint32) : ()
     
   
-  axiom produces_trans'0_spec : forall a : Iter'0.t_iter uint32, ab : Seq.seq uint32, b : Iter'0.t_iter uint32, bc : Seq.seq uint32, c : Iter'0.t_iter uint32 . ([%#span43] inv'2 a)
+  axiom produces_trans'0_spec : forall a : Iter'0.t_Iter uint32, ab : Seq.seq uint32, b : Iter'0.t_Iter uint32, bc : Seq.seq uint32, c : Iter'0.t_Iter uint32 . ([%#span43] inv'2 a)
    -> ([%#span44] inv'2 b)
    -> ([%#span45] inv'2 c)
    -> ([%#span46] produces'0 a ab b)  -> ([%#span47] produces'0 b bc c)  -> ([%#span48] produces'0 a (Seq.(++) ab bc) c)
   
-  function produces_refl'0 (self : Iter'0.t_iter uint32) : ()
+  function produces_refl'0 (self : Iter'0.t_Iter uint32) : ()
   
-  axiom produces_refl'0_spec : forall self : Iter'0.t_iter uint32 . ([%#span49] inv'2 self)
+  axiom produces_refl'0_spec : forall self : Iter'0.t_Iter uint32 . ([%#span49] inv'2 self)
    -> ([%#span50] produces'0 self (Seq.empty  : Seq.seq uint32) self)
   
   use prelude.prelude.Intrinsic
   
   use seq.Seq
   
-  predicate from_iter_post'0 (prod : Seq.seq uint32) (res : Vec'0.t_vec uint32 (Global'0.t_global)) =
+  predicate from_iter_post'0 (prod : Seq.seq uint32) (res : Vec'0.t_Vec uint32 (Global'0.t_Global)) =
     [%#span51] prod = shallow_model'0 res
   
-  predicate completed'0 (self : borrowed (MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0))
+  predicate completed'0 (self : borrowed (MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z))
     
    =
-    [%#span52] Snapshot.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self.final)
+    [%#span52] Snapshot.inner (T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__produced self.final)
     = (Seq.empty  : Seq.seq uint32)
-    /\ completed'1 (Borrow.borrow_logic (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self.current) (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self.final) (Borrow.inherit_id (Borrow.get_id self) 1))
-    /\ CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self.current
-    = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self.final
+    /\ completed'1 (Borrow.borrow_logic (T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__iter self.current) (T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__iter self.final) (Borrow.inherit_id (Borrow.get_id self) 1))
+    /\ T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__func self.current
+    = T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__func self.final
   
   predicate resolve'4 (self : borrowed usize) =
     [%#span34] self.final = self.current
   
-  predicate resolve'2 [#"../03_std_iterators.rs" 48 12 48 91] (_1 : Closure'0.c03stditerators_counter_closure0) =
-    resolve'4 (field_0'0 _1)
-  
-  predicate resolve'1 (self : Iter'0.t_iter uint32) =
-    [%#span53] true
-  
-  predicate resolve'0 (self : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0)
+  predicate resolve'2 [#"../03_std_iterators.rs" 48 12 48 91] (_1 : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z)
     
    =
-    [%#span54] resolve'1 (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self)
-    /\ resolve'2 (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self)
+    resolve'4 (field_0'0 _1)
   
-  let rec collect'0 (self:MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0) (return'  (ret:Vec'0.t_vec uint32 (Global'0.t_global)))= {[@expl:precondition] [%#span55] inv'4 self}
+  predicate resolve'1 (self : Iter'0.t_Iter uint32) =
+    [%#span53] true
+  
+  predicate resolve'0 (self : MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z)
+    
+   =
+    [%#span54] resolve'1 (T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__iter self)
+    /\ resolve'2 (T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv.t_MapInv__func self)
+  
+  let rec collect'0 (self:MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) (return'  (ret:Vec'0.t_Vec uint32 (Global'0.t_Global)))= {[@expl:precondition] [%#span55] inv'4 self}
     any
-    [ return' (result:Vec'0.t_vec uint32 (Global'0.t_global))-> {[%#span57] inv'5 result}
-      {[%#span56] exists done' : borrowed (MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0), prod : Seq.seq uint32 . resolve'0 done'.final
+    [ return' (result:Vec'0.t_Vec uint32 (Global'0.t_Global))-> {[%#span57] inv'5 result}
+      {[%#span56] exists done' : borrowed (MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z), prod : Seq.seq uint32 . resolve'0 done'.final
       /\ completed'0 done' /\ produces'1 self prod done'.current /\ from_iter_post'0 prod result}
       (! return' {result}) ]
     
   
-  let rec map_inv'0 (self:Iter'0.t_iter uint32) (func:Closure'0.c03stditerators_counter_closure0) (return'  (ret:MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0))= {[@expl:precondition] [%#span62] inv'3 func}
+  let rec map_inv'0 (self:Iter'0.t_Iter uint32) (func:Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) (return'  (ret:MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z))= {[@expl:precondition] [%#span62] inv'3 func}
     {[@expl:precondition] [%#span61] inv'2 self}
     {[@expl:precondition] [%#span60] preservation'0 self func}
     {[@expl:precondition] [%#span59] reinitialize'0 ()}
-    {[@expl:precondition] [%#span58] forall e : uint32, i2 : Iter'0.t_iter uint32 . produces'0 self (Seq.singleton e) i2
+    {[@expl:precondition] [%#span58] forall e : uint32, i2 : Iter'0.t_Iter uint32 . produces'0 self (Seq.singleton e) i2
      -> precondition'0 func (e, Snapshot.new (Seq.empty  : Seq.seq uint32))}
     any
-    [ return' (result:MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0)-> {[%#span64] inv'4 result}
+    [ return' (result:MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z)-> {[%#span64] inv'4 result}
       {[%#span63] result = MapInv'0.C_MapInv self func (Snapshot.new (Seq.empty  : Seq.seq uint32))}
       (! return' {result}) ]
     
   
-  let rec iter'0 (self:slice uint32) (return'  (ret:Iter'0.t_iter uint32))= {[@expl:precondition] [%#span65] inv'1 self}
-    any [ return' (result:Iter'0.t_iter uint32)-> {[%#span66] shallow_model'3 result = self} (! return' {result}) ] 
+  let rec iter'0 (self:slice uint32) (return'  (ret:Iter'0.t_Iter uint32))= {[@expl:precondition] [%#span65] inv'1 self}
+    any [ return' (result:Iter'0.t_Iter uint32)-> {[%#span66] shallow_model'3 result = self} (! return' {result}) ] 
   
-  function shallow_model'2 (self : Vec'0.t_vec uint32 (Global'0.t_global)) : Seq.seq uint32 =
+  function shallow_model'2 (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) : Seq.seq uint32 =
     [%#span17] shallow_model'0 self
   
-  let rec deref'0 (self:Vec'0.t_vec uint32 (Global'0.t_global)) (return'  (ret:slice uint32))= {[@expl:precondition] [%#span67] inv'0 self}
+  let rec deref'0 (self:Vec'0.t_Vec uint32 (Global'0.t_Global)) (return'  (ret:slice uint32))= {[@expl:precondition] [%#span67] inv'0 self}
     any
     [ return' (result:slice uint32)-> {[%#span69] inv'1 result}
       {[%#span68] shallow_model'1 result = shallow_model'2 self}
       (! return' {result}) ]
     
   
-  let rec counter (v:Vec'0.t_vec uint32 (Global'0.t_global)) (return'  (ret:()))= (! bb0
+  let rec counter (v:Vec'0.t_Vec uint32 (Global'0.t_Global)) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &cnt <- [%#s03_std_iterators0] (0 : usize) ] s1
       | s1 = deref'0 {v} (fun (_ret':slice uint32) ->  [ &_7 <- _ret' ] s2)
       | s2 = bb1 ]
       
-    | bb1 = s0 [ s0 = iter'0 {_7} (fun (_ret':Iter'0.t_iter uint32) ->  [ &_5 <- _ret' ] s1) | s1 = bb2 ] 
+    | bb1 = s0 [ s0 = iter'0 {_7} (fun (_ret':Iter'0.t_Iter uint32) ->  [ &_5 <- _ret' ] s1) | s1 = bb2 ] 
     | bb2 = s0
       [ s0 = Borrow.borrow_mut <usize> {cnt}
           (fun (_ret':borrowed usize) ->  [ &_10 <- _ret' ]  [ &cnt <- _10.final ] s1)
-      | s1 =  [ &_9 <- Closure'0.C03stditerators_counter_closure0 _10 ] s2
+      | s1 =  [ &_9 <- Closure'0.M_03_std_iterators__counter__qy123zclosureqy35z0qy125z _10 ] s2
       | s2 = map_inv'0 {_5} {_9}
-          (fun (_ret':MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0) ->
+          (fun (_ret':MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) ->
              [ &_4 <- _ret' ] 
             s3)
       | s3 = bb3 ]
       
     | bb3 = s0
-      [ s0 = collect'0 {_4} (fun (_ret':Vec'0.t_vec uint32 (Global'0.t_global)) ->  [ &x <- _ret' ] s1) | s1 = bb4 ]
+      [ s0 = collect'0 {_4} (fun (_ret':Vec'0.t_Vec uint32 (Global'0.t_Global)) ->  [ &x <- _ret' ] s1) | s1 = bb4 ]
       
     | bb4 = s0
       [ s0 = {[@expl:assertion] [%#s03_std_iterators1] Seq.length (shallow_model'0 x) = Seq.length (shallow_model'0 v)}
@@ -2344,38 +2353,38 @@ module C03StdIterators_Counter
     | bb9 = return' {_0} ]
     )
     [ & _0 : () = any_l ()
-    | & v : Vec'0.t_vec uint32 (Global'0.t_global) = v
+    | & v : Vec'0.t_Vec uint32 (Global'0.t_Global) = v
     | & cnt : usize = any_l ()
-    | & x : Vec'0.t_vec uint32 (Global'0.t_global) = any_l ()
-    | & _4 : MapInv'0.t_mapinv (Iter'0.t_iter uint32) uint32 Closure'0.c03stditerators_counter_closure0 = any_l ()
-    | & _5 : Iter'0.t_iter uint32 = any_l ()
+    | & x : Vec'0.t_Vec uint32 (Global'0.t_Global) = any_l ()
+    | & _4 : MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z = any_l ()
+    | & _5 : Iter'0.t_Iter uint32 = any_l ()
     | & _7 : slice uint32 = any_l ()
-    | & _9 : Closure'0.c03stditerators_counter_closure0 = any_l ()
+    | & _9 : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z = any_l ()
     | & _10 : borrowed usize = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
-module Core_Ops_Range_Range_Type
-  type t_range 'idx =
+module T_core__ops__range__Range
+  type t_Range 'idx =
     | C_Range 'idx 'idx
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_range < 'idx > (input:t_range 'idx) (ret  (start:'idx) (end':'idx))= any
+  let rec t_Range < 'idx > (input:t_Range 'idx) (ret  (start:'idx) (end':'idx))= any
     [ good (start:'idx) (end':'idx)-> {C_Range start end' = input} (! ret {start} {end'})
     | bad (start:'idx) (end':'idx)-> {C_Range start end' <> input} {false} any ]
     
   
-  function range_end (self : t_range 'idx) : 'idx =
+  function t_Range__end (self : t_Range 'idx) : 'idx =
     match self with
       | C_Range _ a -> a
       end
   
-  function range_start (self : t_range 'idx) : 'idx =
+  function t_Range__start (self : t_Range 'idx) : 'idx =
     match self with
       | C_Range a _ -> a
       end
 end
-module C03StdIterators_SumRange
+module M_03_std_iterators__sum_range
   let%span s03_std_iterators0 = "../03_std_iterators.rs" 64 16 64 17
   
   let%span s03_std_iterators1 = "../03_std_iterators.rs" 66 13 66 14
@@ -2442,27 +2451,27 @@ module C03StdIterators_SumRange
   
   use prelude.prelude.IntSize
   
-  use Core_Option_Option_Type as Option'0
+  use T_core__option__Option as Option'0
   
-  predicate invariant'2 (self : Option'0.t_option isize) =
+  predicate invariant'2 (self : Option'0.t_Option isize) =
     [%#span10] true
   
-  predicate inv'2 (_1 : Option'0.t_option isize)
+  predicate inv'2 (_1 : Option'0.t_Option isize)
   
-  axiom inv'2 [@rewrite] : forall x : Option'0.t_option isize . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : Option'0.t_Option isize . inv'2 x = true
   
-  use Core_Ops_Range_Range_Type as Range'0
+  use T_core__ops__range__Range as Range'0
   
-  predicate inv'0 (_1 : Range'0.t_range isize)
+  predicate inv'0 (_1 : Range'0.t_Range isize)
   
   use prelude.prelude.Borrow
   
-  predicate invariant'1 (self : borrowed (Range'0.t_range isize)) =
+  predicate invariant'1 (self : borrowed (Range'0.t_Range isize)) =
     [%#span11] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'1 (_1 : borrowed (Range'0.t_range isize))
+  predicate inv'1 (_1 : borrowed (Range'0.t_Range isize))
   
-  axiom inv'1 [@rewrite] : forall x : borrowed (Range'0.t_range isize) . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed (Range'0.t_Range isize) . inv'1 x = true
   
   use seq.Seq
   
@@ -2481,38 +2490,40 @@ module C03StdIterators_SumRange
   function deep_model'0 (self : isize) : int =
     [%#span12] IntSize.to_int self
   
-  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  use T_core__ops__range__Range as T_core__ops__range__Range
   
-  predicate produces'0 (self : Range'0.t_range isize) (visited : Seq.seq isize) (o : Range'0.t_range isize) =
-    [%#span13] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
-    <= deep_model'0 (Core_Ops_Range_Range_Type.range_start o)
+  predicate produces'0 (self : Range'0.t_Range isize) (visited : Seq.seq isize) (o : Range'0.t_Range isize) =
+    [%#span13] T_core__ops__range__Range.t_Range__end self = T_core__ops__range__Range.t_Range__end o
+    /\ deep_model'0 (T_core__ops__range__Range.t_Range__start self)
+    <= deep_model'0 (T_core__ops__range__Range.t_Range__start o)
     /\ (Seq.length visited > 0
-     -> deep_model'0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model'0 (Core_Ops_Range_Range_Type.range_end o))
+     -> deep_model'0 (T_core__ops__range__Range.t_Range__start o)
+    <= deep_model'0 (T_core__ops__range__Range.t_Range__end o))
     /\ Seq.length visited
-    = deep_model'0 (Core_Ops_Range_Range_Type.range_start o) - deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
+    = deep_model'0 (T_core__ops__range__Range.t_Range__start o)
+    - deep_model'0 (T_core__ops__range__Range.t_Range__start self)
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> deep_model'0 (Seq.get visited i) = deep_model'0 (Core_Ops_Range_Range_Type.range_start self) + i)
+     -> deep_model'0 (Seq.get visited i) = deep_model'0 (T_core__ops__range__Range.t_Range__start self) + i)
   
-  function produces_trans'0 (a : Range'0.t_range isize) (ab : Seq.seq isize) (b : Range'0.t_range isize) (bc : Seq.seq isize) (c : Range'0.t_range isize) : ()
+  function produces_trans'0 (a : Range'0.t_Range isize) (ab : Seq.seq isize) (b : Range'0.t_Range isize) (bc : Seq.seq isize) (c : Range'0.t_Range isize) : ()
     
   
-  axiom produces_trans'0_spec : forall a : Range'0.t_range isize, ab : Seq.seq isize, b : Range'0.t_range isize, bc : Seq.seq isize, c : Range'0.t_range isize . ([%#span14] inv'0 a)
+  axiom produces_trans'0_spec : forall a : Range'0.t_Range isize, ab : Seq.seq isize, b : Range'0.t_Range isize, bc : Seq.seq isize, c : Range'0.t_Range isize . ([%#span14] inv'0 a)
    -> ([%#span15] inv'0 b)
    -> ([%#span16] inv'0 c)
    -> ([%#span17] produces'0 a ab b)  -> ([%#span18] produces'0 b bc c)  -> ([%#span19] produces'0 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
-  function produces_refl'0 (self : Range'0.t_range isize) : ()
+  function produces_refl'0 (self : Range'0.t_Range isize) : ()
   
-  axiom produces_refl'0_spec : forall self : Range'0.t_range isize . ([%#span20] inv'0 self)
+  axiom produces_refl'0_spec : forall self : Range'0.t_Range isize . ([%#span20] inv'0 self)
    -> ([%#span21] produces'0 self (Seq.empty  : Seq.seq isize) self)
   
-  predicate invariant'0 (self : Range'0.t_range isize) =
+  predicate invariant'0 (self : Range'0.t_Range isize) =
     [%#span10] true
   
-  axiom inv'0 [@rewrite] : forall x : Range'0.t_range isize . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Range'0.t_Range isize . inv'0 x = true
   
   use prelude.prelude.Snapshot
   
@@ -2520,17 +2531,17 @@ module C03StdIterators_SumRange
   
   use seq.Seq
   
-  predicate resolve'0 (self : borrowed (Range'0.t_range isize)) =
+  predicate resolve'0 (self : borrowed (Range'0.t_Range isize)) =
     [%#span22] self.final = self.current
   
-  predicate completed'0 (self : borrowed (Range'0.t_range isize)) =
+  predicate completed'0 (self : borrowed (Range'0.t_Range isize)) =
     [%#span23] resolve'0 self
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self.current)
-    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end self.current)
+    /\ deep_model'0 (T_core__ops__range__Range.t_Range__start self.current)
+    >= deep_model'0 (T_core__ops__range__Range.t_Range__end self.current)
   
-  let rec next'0 (self:borrowed (Range'0.t_range isize)) (return'  (ret:Option'0.t_option isize))= {[@expl:precondition] [%#span24] inv'1 self}
+  let rec next'0 (self:borrowed (Range'0.t_Range isize)) (return'  (ret:Option'0.t_Option isize))= {[@expl:precondition] [%#span24] inv'1 self}
     any
-    [ return' (result:Option'0.t_option isize)-> {[%#span26] inv'2 result}
+    [ return' (result:Option'0.t_Option isize)-> {[%#span26] inv'2 result}
       {[%#span25] match result with
         | Option'0.C_None -> completed'0 self
         | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
@@ -2548,16 +2559,16 @@ module C03StdIterators_SumRange
   
   use prelude.prelude.Snapshot
   
-  predicate into_iter_post'0 (self : Range'0.t_range isize) (res : Range'0.t_range isize) =
+  predicate into_iter_post'0 (self : Range'0.t_Range isize) (res : Range'0.t_Range isize) =
     [%#span27] self = res
   
-  predicate into_iter_pre'0 (self : Range'0.t_range isize) =
+  predicate into_iter_pre'0 (self : Range'0.t_Range isize) =
     [%#span28] true
   
-  let rec into_iter'0 (self:Range'0.t_range isize) (return'  (ret:Range'0.t_range isize))= {[@expl:precondition] [%#span30] inv'0 self}
+  let rec into_iter'0 (self:Range'0.t_Range isize) (return'  (ret:Range'0.t_Range isize))= {[@expl:precondition] [%#span30] inv'0 self}
     {[@expl:precondition] [%#span29] into_iter_pre'0 self}
     any
-    [ return' (result:Range'0.t_range isize)-> {[%#span31] inv'0 result}
+    [ return' (result:Range'0.t_Range isize)-> {[%#span31] inv'0 result}
       {[%#span29] into_iter_post'0 self result}
       (! return' {result}) ]
     
@@ -2567,7 +2578,7 @@ module C03StdIterators_SumRange
     [ bb0 = s0
       [ s0 =  [ &i <- [%#s03_std_iterators0] (0 : isize) ] s1
       | s1 =  [ &_7 <- Range'0.C_Range ([%#s03_std_iterators1] (0 : isize)) n ] s2
-      | s2 = into_iter'0 {_7} (fun (_ret':Range'0.t_range isize) ->  [ &iter <- _ret' ] s3)
+      | s2 = into_iter'0 {_7} (fun (_ret':Range'0.t_Range isize) ->  [ &iter <- _ret' ] s3)
       | s3 = bb1 ]
       
     | bb1 = s0 [ s0 =  [ &iter_old <- [%#s03_std_iterators2] Snapshot.new iter ] s1 | s1 = bb2 ] 
@@ -2582,14 +2593,14 @@ module C03StdIterators_SumRange
         {[@expl:loop invariant] [%#s03_std_iterators4] inv'0 iter}
         (! s0) [ s0 = bb5 ] 
         [ bb5 = s0
-          [ s0 = Borrow.borrow_mut <Range'0.t_range isize> {iter}
-              (fun (_ret':borrowed (Range'0.t_range isize)) ->  [ &_19 <- _ret' ]  [ &iter <- _19.final ] s1)
-          | s1 = Borrow.borrow_final <Range'0.t_range isize> {_19.current} {Borrow.get_id _19}
-              (fun (_ret':borrowed (Range'0.t_range isize)) ->
+          [ s0 = Borrow.borrow_mut <Range'0.t_Range isize> {iter}
+              (fun (_ret':borrowed (Range'0.t_Range isize)) ->  [ &_19 <- _ret' ]  [ &iter <- _19.final ] s1)
+          | s1 = Borrow.borrow_final <Range'0.t_Range isize> {_19.current} {Borrow.get_id _19}
+              (fun (_ret':borrowed (Range'0.t_Range isize)) ->
                  [ &_18 <- _ret' ] 
                  [ &_19 <- { _19 with current = _18.final ; } ] 
                 s2)
-          | s2 = next'0 {_18} (fun (_ret':Option'0.t_option isize) ->  [ &_17 <- _ret' ] s3)
+          | s2 = next'0 {_18} (fun (_ret':Option'0.t_Option isize) ->  [ &_17 <- _ret' ] s3)
           | s3 = bb6 ]
           
         | bb6 = s0
@@ -2598,7 +2609,7 @@ module C03StdIterators_SumRange
           
         | bb8 = bb10
         | bb10 = s0
-          [ s0 = Option'0.some <isize> {_17} (fun (r0'0:isize) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
+          [ s0 = Option'0.v_Some <isize> {_17} (fun (r0'0:isize) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
           | s1 = 
             [ &_22 <- [%#s03_std_iterators6] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
             
@@ -2617,33 +2628,33 @@ module C03StdIterators_SumRange
     [ & _0 : isize = any_l ()
     | & n : isize = n
     | & i : isize = any_l ()
-    | & iter : Range'0.t_range isize = any_l ()
-    | & _7 : Range'0.t_range isize = any_l ()
-    | & iter_old : Snapshot.snap_ty (Range'0.t_range isize) = any_l ()
+    | & iter : Range'0.t_Range isize = any_l ()
+    | & _7 : Range'0.t_Range isize = any_l ()
+    | & iter_old : Snapshot.snap_ty (Range'0.t_Range isize) = any_l ()
     | & produced : Snapshot.snap_ty (Seq.seq isize) = any_l ()
-    | & _17 : Option'0.t_option isize = any_l ()
-    | & _18 : borrowed (Range'0.t_range isize) = any_l ()
-    | & _19 : borrowed (Range'0.t_range isize) = any_l ()
+    | & _17 : Option'0.t_Option isize = any_l ()
+    | & _18 : borrowed (Range'0.t_Range isize) = any_l ()
+    | & _19 : borrowed (Range'0.t_Range isize) = any_l ()
     | & __creusot_proc_iter_elem : isize = any_l ()
     | & _22 : Snapshot.snap_ty (Seq.seq isize) = any_l () ]
      [ return' (result:isize)-> {[@expl:postcondition] [%#s03_std_iterators9] result = n} (! return' {result}) ] 
 end
-module Core_Iter_Adapters_Enumerate_Enumerate_Type
+module T_core__iter__adapters__enumerate__Enumerate
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  type t_enumerate 'i =
+  type t_Enumerate 'i =
     | C_Enumerate 'i usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_enumerate < 'i > (input:t_enumerate 'i) (ret  (iter:'i) (count:usize))= any
+  let rec t_Enumerate < 'i > (input:t_Enumerate 'i) (ret  (iter:'i) (count:usize))= any
     [ good (iter:'i) (count:usize)-> {C_Enumerate iter count = input} (! ret {iter} {count})
     | bad (iter:'i) (count:usize)-> {C_Enumerate iter count <> input} {false} any ]
     
 end
-module C03StdIterators_EnumerateRange
+module M_03_std_iterators__enumerate_range
   let%span s03_std_iterators0 = "../03_std_iterators.rs" 74 20 74 21
   
   let%span s03_std_iterators1 = "../03_std_iterators.rs" 74 23 74 25
@@ -2743,7 +2754,7 @@ module C03StdIterators_EnumerateRange
   
   axiom inv'7 [@rewrite] : forall x : usize . inv'7 x = true
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'6 (self : usize) =
     [%#span7] inv'7 self
@@ -2752,27 +2763,27 @@ module C03StdIterators_EnumerateRange
   
   axiom inv'6 [@rewrite] : forall x : usize . inv'6 x = true
   
-  use Core_Ops_Range_Range_Type as Range'0
+  use T_core__ops__range__Range as Range'0
   
-  predicate inv'2 (_1 : Range'0.t_range usize)
+  predicate inv'2 (_1 : Range'0.t_Range usize)
   
   use prelude.prelude.Borrow
   
-  predicate invariant'5 (self : borrowed (Range'0.t_range usize)) =
+  predicate invariant'5 (self : borrowed (Range'0.t_Range usize)) =
     [%#span8] inv'2 self.current /\ inv'2 self.final
   
-  predicate inv'5 (_1 : borrowed (Range'0.t_range usize))
+  predicate inv'5 (_1 : borrowed (Range'0.t_Range usize))
   
-  axiom inv'5 [@rewrite] : forall x : borrowed (Range'0.t_range usize) . inv'5 x = true
+  axiom inv'5 [@rewrite] : forall x : borrowed (Range'0.t_Range usize) . inv'5 x = true
   
-  use Core_Option_Option_Type as Option'0
+  use T_core__option__Option as Option'0
   
-  predicate invariant'4 (self : Option'0.t_option (usize, usize)) =
+  predicate invariant'4 (self : Option'0.t_Option (usize, usize)) =
     [%#span6] true
   
-  predicate inv'4 (_1 : Option'0.t_option (usize, usize))
+  predicate inv'4 (_1 : Option'0.t_Option (usize, usize))
   
-  axiom inv'4 [@rewrite] : forall x : Option'0.t_option (usize, usize) . inv'4 x = true
+  axiom inv'4 [@rewrite] : forall x : Option'0.t_Option (usize, usize) . inv'4 x = true
   
   use seq.Seq
   
@@ -2791,32 +2802,34 @@ module C03StdIterators_EnumerateRange
   function deep_model'0 (self : usize) : int =
     [%#span9] UIntSize.to_int self
   
-  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  use T_core__ops__range__Range as T_core__ops__range__Range
   
-  predicate produces'1 (self : Range'0.t_range usize) (visited : Seq.seq usize) (o : Range'0.t_range usize) =
-    [%#span10] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
-    <= deep_model'0 (Core_Ops_Range_Range_Type.range_start o)
+  predicate produces'1 (self : Range'0.t_Range usize) (visited : Seq.seq usize) (o : Range'0.t_Range usize) =
+    [%#span10] T_core__ops__range__Range.t_Range__end self = T_core__ops__range__Range.t_Range__end o
+    /\ deep_model'0 (T_core__ops__range__Range.t_Range__start self)
+    <= deep_model'0 (T_core__ops__range__Range.t_Range__start o)
     /\ (Seq.length visited > 0
-     -> deep_model'0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model'0 (Core_Ops_Range_Range_Type.range_end o))
+     -> deep_model'0 (T_core__ops__range__Range.t_Range__start o)
+    <= deep_model'0 (T_core__ops__range__Range.t_Range__end o))
     /\ Seq.length visited
-    = deep_model'0 (Core_Ops_Range_Range_Type.range_start o) - deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
+    = deep_model'0 (T_core__ops__range__Range.t_Range__start o)
+    - deep_model'0 (T_core__ops__range__Range.t_Range__start self)
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> deep_model'0 (Seq.get visited i) = deep_model'0 (Core_Ops_Range_Range_Type.range_start self) + i)
+     -> deep_model'0 (Seq.get visited i) = deep_model'0 (T_core__ops__range__Range.t_Range__start self) + i)
   
-  function produces_trans'1 (a : Range'0.t_range usize) (ab : Seq.seq usize) (b : Range'0.t_range usize) (bc : Seq.seq usize) (c : Range'0.t_range usize) : ()
+  function produces_trans'1 (a : Range'0.t_Range usize) (ab : Seq.seq usize) (b : Range'0.t_Range usize) (bc : Seq.seq usize) (c : Range'0.t_Range usize) : ()
     
   
-  axiom produces_trans'1_spec : forall a : Range'0.t_range usize, ab : Seq.seq usize, b : Range'0.t_range usize, bc : Seq.seq usize, c : Range'0.t_range usize . ([%#span11] inv'2 a)
+  axiom produces_trans'1_spec : forall a : Range'0.t_Range usize, ab : Seq.seq usize, b : Range'0.t_Range usize, bc : Seq.seq usize, c : Range'0.t_Range usize . ([%#span11] inv'2 a)
    -> ([%#span12] inv'2 b)
    -> ([%#span13] inv'2 c)
    -> ([%#span14] produces'1 a ab b)  -> ([%#span15] produces'1 b bc c)  -> ([%#span16] produces'1 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
-  function produces_refl'1 (self : Range'0.t_range usize) : ()
+  function produces_refl'1 (self : Range'0.t_Range usize) : ()
   
-  axiom produces_refl'1_spec : forall self : Range'0.t_range usize . ([%#span17] inv'2 self)
+  axiom produces_refl'1_spec : forall self : Range'0.t_Range usize . ([%#span17] inv'2 self)
    -> ([%#span18] produces'1 self (Seq.empty  : Seq.seq usize) self)
   
   use seq.Seq
@@ -2828,37 +2841,37 @@ module C03StdIterators_EnumerateRange
   
   axiom inv'3 [@rewrite] : forall x : Seq.seq usize . inv'3 x = true
   
-  predicate invariant'2 (self : Range'0.t_range usize) =
+  predicate invariant'2 (self : Range'0.t_Range usize) =
     [%#span6] true
   
-  axiom inv'2 [@rewrite] : forall x : Range'0.t_range usize . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : Range'0.t_Range usize . inv'2 x = true
   
-  use Core_Iter_Adapters_Enumerate_Enumerate_Type as Enumerate'0
+  use T_core__iter__adapters__enumerate__Enumerate as Enumerate'0
   
-  predicate inv'0 (_1 : Enumerate'0.t_enumerate (Range'0.t_range usize))
+  predicate inv'0 (_1 : Enumerate'0.t_Enumerate (Range'0.t_Range usize))
   
-  predicate invariant'1 (self : borrowed (Enumerate'0.t_enumerate (Range'0.t_range usize))) =
+  predicate invariant'1 (self : borrowed (Enumerate'0.t_Enumerate (Range'0.t_Range usize))) =
     [%#span8] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'1 (_1 : borrowed (Enumerate'0.t_enumerate (Range'0.t_range usize)))
+  predicate inv'1 (_1 : borrowed (Enumerate'0.t_Enumerate (Range'0.t_Range usize)))
   
-  axiom inv'1 [@rewrite] : forall x : borrowed (Enumerate'0.t_enumerate (Range'0.t_range usize)) . inv'1 x
+  axiom inv'1 [@rewrite] : forall x : borrowed (Enumerate'0.t_Enumerate (Range'0.t_Range usize)) . inv'1 x
   = invariant'1 x
   
   use seq.Seq
   
   use seq.Seq
   
-  function iter'0 (self : Enumerate'0.t_enumerate (Range'0.t_range usize)) : Range'0.t_range usize
+  function iter'0 (self : Enumerate'0.t_Enumerate (Range'0.t_Range usize)) : Range'0.t_Range usize
   
-  axiom iter'0_spec : forall self : Enumerate'0.t_enumerate (Range'0.t_range usize) . [%#span20] inv'0 self
+  axiom iter'0_spec : forall self : Enumerate'0.t_Enumerate (Range'0.t_Range usize) . [%#span20] inv'0 self
    -> inv'2 (iter'0 self)
   
-  function n'0 (self : Enumerate'0.t_enumerate (Range'0.t_range usize)) : int
+  function n'0 (self : Enumerate'0.t_Enumerate (Range'0.t_Range usize)) : int
   
   use seq.Seq
   
-  predicate produces'0 (self : Enumerate'0.t_enumerate (Range'0.t_range usize)) (visited : Seq.seq (usize, usize)) (o : Enumerate'0.t_enumerate (Range'0.t_range usize))
+  predicate produces'0 (self : Enumerate'0.t_Enumerate (Range'0.t_Range usize)) (visited : Seq.seq (usize, usize)) (o : Enumerate'0.t_Enumerate (Range'0.t_Range usize))
     
    =
     [%#span21] Seq.length visited = n'0 o - n'0 self
@@ -2869,34 +2882,34 @@ module C03StdIterators_EnumerateRange
      -> UIntSize.to_int (let (a, _) = Seq.get visited i in a) = n'0 self + i
     /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
   
-  function produces_trans'0 (a : Enumerate'0.t_enumerate (Range'0.t_range usize)) (ab : Seq.seq (usize, usize)) (b : Enumerate'0.t_enumerate (Range'0.t_range usize)) (bc : Seq.seq (usize, usize)) (c : Enumerate'0.t_enumerate (Range'0.t_range usize)) : ()
+  function produces_trans'0 (a : Enumerate'0.t_Enumerate (Range'0.t_Range usize)) (ab : Seq.seq (usize, usize)) (b : Enumerate'0.t_Enumerate (Range'0.t_Range usize)) (bc : Seq.seq (usize, usize)) (c : Enumerate'0.t_Enumerate (Range'0.t_Range usize)) : ()
     
   
-  axiom produces_trans'0_spec : forall a : Enumerate'0.t_enumerate (Range'0.t_range usize), ab : Seq.seq (usize, usize), b : Enumerate'0.t_enumerate (Range'0.t_range usize), bc : Seq.seq (usize, usize), c : Enumerate'0.t_enumerate (Range'0.t_range usize) . ([%#span22] inv'0 a)
+  axiom produces_trans'0_spec : forall a : Enumerate'0.t_Enumerate (Range'0.t_Range usize), ab : Seq.seq (usize, usize), b : Enumerate'0.t_Enumerate (Range'0.t_Range usize), bc : Seq.seq (usize, usize), c : Enumerate'0.t_Enumerate (Range'0.t_Range usize) . ([%#span22] inv'0 a)
    -> ([%#span23] inv'0 b)
    -> ([%#span24] inv'0 c)
    -> ([%#span25] produces'0 a ab b)  -> ([%#span26] produces'0 b bc c)  -> ([%#span27] produces'0 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
-  function produces_refl'0 (self : Enumerate'0.t_enumerate (Range'0.t_range usize)) : ()
+  function produces_refl'0 (self : Enumerate'0.t_Enumerate (Range'0.t_Range usize)) : ()
   
-  axiom produces_refl'0_spec : forall self : Enumerate'0.t_enumerate (Range'0.t_range usize) . ([%#span28] inv'0 self)
+  axiom produces_refl'0_spec : forall self : Enumerate'0.t_Enumerate (Range'0.t_Range usize) . ([%#span28] inv'0 self)
    -> ([%#span29] produces'0 self (Seq.empty  : Seq.seq (usize, usize)) self)
   
-  predicate resolve'1 (self : borrowed (Range'0.t_range usize)) =
+  predicate resolve'1 (self : borrowed (Range'0.t_Range usize)) =
     [%#span30] self.final = self.current
   
-  predicate completed'1 (self : borrowed (Range'0.t_range usize)) =
+  predicate completed'1 (self : borrowed (Range'0.t_Range usize)) =
     [%#span31] resolve'1 self
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self.current)
-    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end self.current)
+    /\ deep_model'0 (T_core__ops__range__Range.t_Range__start self.current)
+    >= deep_model'0 (T_core__ops__range__Range.t_Range__end self.current)
   
-  constant max'0 : usize = [%#span32] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span32] (18446744073709551615 : usize)
   
-  predicate invariant'0 (self : Enumerate'0.t_enumerate (Range'0.t_range usize))
+  predicate invariant'0 (self : Enumerate'0.t_Enumerate (Range'0.t_Range usize))
   
-  axiom inv'0 [@rewrite] : forall x : Enumerate'0.t_enumerate (Range'0.t_range usize) . inv'0 x
+  axiom inv'0 [@rewrite] : forall x : Enumerate'0.t_Enumerate (Range'0.t_Range usize) . inv'0 x
   = (invariant'0 x
   /\ match x with
     | Enumerate'0.C_Enumerate iter count -> true
@@ -2908,16 +2921,16 @@ module C03StdIterators_EnumerateRange
   
   use seq.Seq
   
-  predicate resolve'0 (self : borrowed (Enumerate'0.t_enumerate (Range'0.t_range usize))) =
+  predicate resolve'0 (self : borrowed (Enumerate'0.t_Enumerate (Range'0.t_Range usize))) =
     [%#span30] self.final = self.current
   
-  predicate completed'0 (self : borrowed (Enumerate'0.t_enumerate (Range'0.t_range usize))) =
-    [%#span33] exists inner : borrowed (Range'0.t_range usize) . inv'5 inner
+  predicate completed'0 (self : borrowed (Enumerate'0.t_Enumerate (Range'0.t_Range usize))) =
+    [%#span33] exists inner : borrowed (Range'0.t_Range usize) . inv'5 inner
     /\ inner.current = iter'0 self.current /\ inner.final = iter'0 self.final /\ completed'1 inner
   
-  let rec next'0 (self:borrowed (Enumerate'0.t_enumerate (Range'0.t_range usize))) (return'  (ret:Option'0.t_option (usize, usize)))= {[@expl:precondition] [%#span34] inv'1 self}
+  let rec next'0 (self:borrowed (Enumerate'0.t_Enumerate (Range'0.t_Range usize))) (return'  (ret:Option'0.t_Option (usize, usize)))= {[@expl:precondition] [%#span34] inv'1 self}
     any
-    [ return' (result:Option'0.t_option (usize, usize))-> {[%#span36] inv'4 result}
+    [ return' (result:Option'0.t_Option (usize, usize))-> {[%#span36] inv'4 result}
       {[%#span35] match result with
         | Option'0.C_None -> completed'0 self
         | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
@@ -2940,25 +2953,25 @@ module C03StdIterators_EnumerateRange
   
   use prelude.prelude.Snapshot
   
-  predicate into_iter_post'0 (self : Enumerate'0.t_enumerate (Range'0.t_range usize)) (res : Enumerate'0.t_enumerate (Range'0.t_range usize))
+  predicate into_iter_post'0 (self : Enumerate'0.t_Enumerate (Range'0.t_Range usize)) (res : Enumerate'0.t_Enumerate (Range'0.t_Range usize))
     
    =
     [%#span38] self = res
   
-  predicate into_iter_pre'0 (self : Enumerate'0.t_enumerate (Range'0.t_range usize)) =
+  predicate into_iter_pre'0 (self : Enumerate'0.t_Enumerate (Range'0.t_Range usize)) =
     [%#span39] true
   
-  let rec into_iter'0 (self:Enumerate'0.t_enumerate (Range'0.t_range usize)) (return'  (ret:Enumerate'0.t_enumerate (Range'0.t_range usize)))= {[@expl:precondition] [%#span41] inv'0 self}
+  let rec into_iter'0 (self:Enumerate'0.t_Enumerate (Range'0.t_Range usize)) (return'  (ret:Enumerate'0.t_Enumerate (Range'0.t_Range usize)))= {[@expl:precondition] [%#span41] inv'0 self}
     {[@expl:precondition] [%#span40] into_iter_pre'0 self}
     any
-    [ return' (result:Enumerate'0.t_enumerate (Range'0.t_range usize))-> {[%#span42] inv'0 result}
+    [ return' (result:Enumerate'0.t_Enumerate (Range'0.t_Range usize))-> {[%#span42] inv'0 result}
       {[%#span40] into_iter_post'0 self result}
       (! return' {result}) ]
     
   
-  let rec enumerate'0 (self:Range'0.t_range usize) (return'  (ret:Enumerate'0.t_enumerate (Range'0.t_range usize)))= {[@expl:precondition] [%#span43] inv'2 self}
+  let rec enumerate'0 (self:Range'0.t_Range usize) (return'  (ret:Enumerate'0.t_Enumerate (Range'0.t_Range usize)))= {[@expl:precondition] [%#span43] inv'2 self}
     any
-    [ return' (result:Enumerate'0.t_enumerate (Range'0.t_range usize))-> {[%#span44] inv'0 result}
+    [ return' (result:Enumerate'0.t_Enumerate (Range'0.t_Range usize))-> {[%#span44] inv'0 result}
       {[%#span40] iter'0 result = self /\ n'0 result = 0}
       (! return' {result}) ]
     
@@ -2966,11 +2979,11 @@ module C03StdIterators_EnumerateRange
   let rec enumerate_range (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &_3 <- Range'0.C_Range ([%#s03_std_iterators0] (0 : usize)) ([%#s03_std_iterators1] (10 : usize)) ] s1
-      | s1 = enumerate'0 {_3} (fun (_ret':Enumerate'0.t_enumerate (Range'0.t_range usize)) ->  [ &_2 <- _ret' ] s2)
+      | s1 = enumerate'0 {_3} (fun (_ret':Enumerate'0.t_Enumerate (Range'0.t_Range usize)) ->  [ &_2 <- _ret' ] s2)
       | s2 = bb1 ]
       
     | bb1 = s0
-      [ s0 = into_iter'0 {_2} (fun (_ret':Enumerate'0.t_enumerate (Range'0.t_range usize)) ->  [ &iter <- _ret' ] s1)
+      [ s0 = into_iter'0 {_2} (fun (_ret':Enumerate'0.t_Enumerate (Range'0.t_Range usize)) ->  [ &iter <- _ret' ] s1)
       | s1 = bb2 ]
       
     | bb2 = s0 [ s0 =  [ &iter_old <- [%#s03_std_iterators2] Snapshot.new iter ] s1 | s1 = bb3 ] 
@@ -2986,19 +2999,19 @@ module C03StdIterators_EnumerateRange
         {[@expl:loop invariant] [%#s03_std_iterators4] inv'0 iter}
         (! s0) [ s0 = bb6 ] 
         [ bb6 = s0
-          [ s0 = Borrow.borrow_mut <Enumerate'0.t_enumerate (Range'0.t_range usize)> {iter}
-              (fun (_ret':borrowed (Enumerate'0.t_enumerate (Range'0.t_range usize))) ->
+          [ s0 = Borrow.borrow_mut <Enumerate'0.t_Enumerate (Range'0.t_Range usize)> {iter}
+              (fun (_ret':borrowed (Enumerate'0.t_Enumerate (Range'0.t_Range usize))) ->
                  [ &_14 <- _ret' ] 
                  [ &iter <- _14.final ] 
                 s1)
           | s1 = -{inv'0 _14.final}- s2
-          | s2 = Borrow.borrow_final <Enumerate'0.t_enumerate (Range'0.t_range usize)> {_14.current} {Borrow.get_id _14}
-              (fun (_ret':borrowed (Enumerate'0.t_enumerate (Range'0.t_range usize))) ->
+          | s2 = Borrow.borrow_final <Enumerate'0.t_Enumerate (Range'0.t_Range usize)> {_14.current} {Borrow.get_id _14}
+              (fun (_ret':borrowed (Enumerate'0.t_Enumerate (Range'0.t_Range usize))) ->
                  [ &_13 <- _ret' ] 
                  [ &_14 <- { _14 with current = _13.final ; } ] 
                 s3)
           | s3 = -{inv'0 _13.final}- s4
-          | s4 = next'0 {_13} (fun (_ret':Option'0.t_option (usize, usize)) ->  [ &_12 <- _ret' ] s5)
+          | s4 = next'0 {_13} (fun (_ret':Option'0.t_Option (usize, usize)) ->  [ &_12 <- _ret' ] s5)
           | s5 = bb7 ]
           
         | bb7 = s0
@@ -3010,7 +3023,7 @@ module C03StdIterators_EnumerateRange
           
         | bb9 = bb11
         | bb11 = s0
-          [ s0 = Option'0.some <(usize, usize)> {_12}
+          [ s0 = Option'0.v_Some <(usize, usize)> {_12}
               (fun (r0'0:(usize, usize)) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
           | s1 = 
             [ &_17 <- [%#s03_std_iterators5] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
@@ -3029,37 +3042,37 @@ module C03StdIterators_EnumerateRange
     | bb10 = return' {_0} ]
     )
     [ & _0 : () = any_l ()
-    | & iter : Enumerate'0.t_enumerate (Range'0.t_range usize) = any_l ()
-    | & _2 : Enumerate'0.t_enumerate (Range'0.t_range usize) = any_l ()
-    | & _3 : Range'0.t_range usize = any_l ()
-    | & iter_old : Snapshot.snap_ty (Enumerate'0.t_enumerate (Range'0.t_range usize)) = any_l ()
+    | & iter : Enumerate'0.t_Enumerate (Range'0.t_Range usize) = any_l ()
+    | & _2 : Enumerate'0.t_Enumerate (Range'0.t_Range usize) = any_l ()
+    | & _3 : Range'0.t_Range usize = any_l ()
+    | & iter_old : Snapshot.snap_ty (Enumerate'0.t_Enumerate (Range'0.t_Range usize)) = any_l ()
     | & produced : Snapshot.snap_ty (Seq.seq (usize, usize)) = any_l ()
-    | & _12 : Option'0.t_option (usize, usize) = any_l ()
-    | & _13 : borrowed (Enumerate'0.t_enumerate (Range'0.t_range usize)) = any_l ()
-    | & _14 : borrowed (Enumerate'0.t_enumerate (Range'0.t_range usize)) = any_l ()
+    | & _12 : Option'0.t_Option (usize, usize) = any_l ()
+    | & _13 : borrowed (Enumerate'0.t_Enumerate (Range'0.t_Range usize)) = any_l ()
+    | & _14 : borrowed (Enumerate'0.t_Enumerate (Range'0.t_Range usize)) = any_l ()
     | & __creusot_proc_iter_elem : (usize, usize) = any_l ()
     | & _17 : Snapshot.snap_ty (Seq.seq (usize, usize)) = any_l ()
     | & ix : usize = any_l ()
     | & x : usize = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
-module Core_Iter_Adapters_Zip_Zip_Type
+module T_core__iter__adapters__zip__Zip
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  type t_zip 'a 'b =
+  type t_Zip 'a 'b =
     | C_Zip 'a 'b usize usize usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_zip < 'a > < 'b > (input:t_zip 'a 'b) (ret  (a:'a) (b:'b) (index:usize) (len:usize) (a_len:usize))= any
+  let rec t_Zip < 'a > < 'b > (input:t_Zip 'a 'b) (ret  (a:'a) (b:'b) (index:usize) (len:usize) (a_len:usize))= any
     [ good (a:'a) (b:'b) (index:usize) (len:usize) (a_len:usize)-> {C_Zip a b index len a_len = input}
       (! ret {a} {b} {index} {len} {a_len})
     | bad (a:'a) (b:'b) (index:usize) (len:usize) (a_len:usize)-> {C_Zip a b index len a_len <> input} {false} any ]
     
 end
-module C03StdIterators_MyReverse
+module M_03_std_iterators__my_reverse
   type t
   
   let%span s03_std_iterators0 = "../03_std_iterators.rs" 96 36 96 55
@@ -3220,7 +3233,7 @@ module C03StdIterators_MyReverse
   
   axiom inv'13 [@rewrite] : forall x : t . inv'13 x = true
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   predicate invariant'12 (self : t) =
     [%#span20] inv'13 self
@@ -3260,38 +3273,38 @@ module C03StdIterators_MyReverse
   
   axiom inv'9 [@rewrite] : forall x : usize . inv'9 x = true
   
-  use Core_Ops_Range_Range_Type as Range'0
+  use T_core__ops__range__Range as Range'0
   
-  predicate inv'4 (_1 : Range'0.t_range usize)
+  predicate inv'4 (_1 : Range'0.t_Range usize)
   
   use prelude.prelude.Borrow
   
-  predicate invariant'8 (self : borrowed (Range'0.t_range usize)) =
+  predicate invariant'8 (self : borrowed (Range'0.t_Range usize)) =
     [%#span23] inv'4 self.current /\ inv'4 self.final
   
-  predicate inv'8 (_1 : borrowed (Range'0.t_range usize))
+  predicate inv'8 (_1 : borrowed (Range'0.t_Range usize))
   
-  axiom inv'8 [@rewrite] : forall x : borrowed (Range'0.t_range usize) . inv'8 x = true
+  axiom inv'8 [@rewrite] : forall x : borrowed (Range'0.t_Range usize) . inv'8 x = true
   
-  use Core_Option_Option_Type as Option'0
+  use T_core__option__Option as Option'0
   
-  predicate invariant'7 (self : Option'0.t_option (usize, usize)) =
+  predicate invariant'7 (self : Option'0.t_Option (usize, usize)) =
     [%#span22] true
   
-  predicate inv'7 (_1 : Option'0.t_option (usize, usize))
+  predicate inv'7 (_1 : Option'0.t_Option (usize, usize))
   
-  axiom inv'7 [@rewrite] : forall x : Option'0.t_option (usize, usize) . inv'7 x = true
+  axiom inv'7 [@rewrite] : forall x : Option'0.t_Option (usize, usize) . inv'7 x = true
   
-  use Core_Iter_Adapters_Zip_Zip_Type as Zip'0
+  use T_core__iter__adapters__zip__Zip as Zip'0
   
-  predicate inv'0 (_1 : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize))
+  predicate inv'0 (_1 : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize))
   
-  predicate invariant'6 (self : borrowed (Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize))) =
+  predicate invariant'6 (self : borrowed (Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize))) =
     [%#span23] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'6 (_1 : borrowed (Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)))
+  predicate inv'6 (_1 : borrowed (Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)))
   
-  axiom inv'6 [@rewrite] : forall x : borrowed (Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)) . inv'6 x
+  axiom inv'6 [@rewrite] : forall x : borrowed (Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)) . inv'6 x
   = true
   
   use seq.Seq
@@ -3307,32 +3320,34 @@ module C03StdIterators_MyReverse
   function deep_model'0 (self : usize) : int =
     [%#span24] UIntSize.to_int self
   
-  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  use T_core__ops__range__Range as T_core__ops__range__Range
   
-  predicate produces'1 (self : Range'0.t_range usize) (visited : Seq.seq usize) (o : Range'0.t_range usize) =
-    [%#span25] Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
-    <= deep_model'0 (Core_Ops_Range_Range_Type.range_start o)
+  predicate produces'1 (self : Range'0.t_Range usize) (visited : Seq.seq usize) (o : Range'0.t_Range usize) =
+    [%#span25] T_core__ops__range__Range.t_Range__end self = T_core__ops__range__Range.t_Range__end o
+    /\ deep_model'0 (T_core__ops__range__Range.t_Range__start self)
+    <= deep_model'0 (T_core__ops__range__Range.t_Range__start o)
     /\ (Seq.length visited > 0
-     -> deep_model'0 (Core_Ops_Range_Range_Type.range_start o) <= deep_model'0 (Core_Ops_Range_Range_Type.range_end o))
+     -> deep_model'0 (T_core__ops__range__Range.t_Range__start o)
+    <= deep_model'0 (T_core__ops__range__Range.t_Range__end o))
     /\ Seq.length visited
-    = deep_model'0 (Core_Ops_Range_Range_Type.range_start o) - deep_model'0 (Core_Ops_Range_Range_Type.range_start self)
+    = deep_model'0 (T_core__ops__range__Range.t_Range__start o)
+    - deep_model'0 (T_core__ops__range__Range.t_Range__start self)
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> deep_model'0 (Seq.get visited i) = deep_model'0 (Core_Ops_Range_Range_Type.range_start self) + i)
+     -> deep_model'0 (Seq.get visited i) = deep_model'0 (T_core__ops__range__Range.t_Range__start self) + i)
   
-  function produces_trans'1 (a : Range'0.t_range usize) (ab : Seq.seq usize) (b : Range'0.t_range usize) (bc : Seq.seq usize) (c : Range'0.t_range usize) : ()
+  function produces_trans'1 (a : Range'0.t_Range usize) (ab : Seq.seq usize) (b : Range'0.t_Range usize) (bc : Seq.seq usize) (c : Range'0.t_Range usize) : ()
     
   
-  axiom produces_trans'1_spec : forall a : Range'0.t_range usize, ab : Seq.seq usize, b : Range'0.t_range usize, bc : Seq.seq usize, c : Range'0.t_range usize . ([%#span26] inv'4 a)
+  axiom produces_trans'1_spec : forall a : Range'0.t_Range usize, ab : Seq.seq usize, b : Range'0.t_Range usize, bc : Seq.seq usize, c : Range'0.t_Range usize . ([%#span26] inv'4 a)
    -> ([%#span27] inv'4 b)
    -> ([%#span28] inv'4 c)
    -> ([%#span29] produces'1 a ab b)  -> ([%#span30] produces'1 b bc c)  -> ([%#span31] produces'1 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
-  function produces_refl'1 (self : Range'0.t_range usize) : ()
+  function produces_refl'1 (self : Range'0.t_Range usize) : ()
   
-  axiom produces_refl'1_spec : forall self : Range'0.t_range usize . ([%#span32] inv'4 self)
+  axiom produces_refl'1_spec : forall self : Range'0.t_Range usize . ([%#span32] inv'4 self)
    -> ([%#span33] produces'1 self (Seq.empty  : Seq.seq usize) self)
   
   use seq.Seq
@@ -3344,10 +3359,10 @@ module C03StdIterators_MyReverse
   
   axiom inv'5 [@rewrite] : forall x : Seq.seq usize . inv'5 x = true
   
-  predicate invariant'4 (self : Range'0.t_range usize) =
+  predicate invariant'4 (self : Range'0.t_Range usize) =
     [%#span22] true
   
-  axiom inv'4 [@rewrite] : forall x : Range'0.t_range usize . inv'4 x = true
+  axiom inv'4 [@rewrite] : forall x : Range'0.t_Range usize . inv'4 x = true
   
   use prelude.prelude.Slice
   
@@ -3369,12 +3384,12 @@ module C03StdIterators_MyReverse
   
   use prelude.prelude.Slice
   
-  constant max'0 : usize = [%#span35] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span35] (18446744073709551615 : usize)
   
   function shallow_model'2 (self : slice t) : Seq.seq t
   
   axiom shallow_model'2_spec : forall self : slice t . ([%#span37] shallow_model'2 self = Slice.id self)
-  && ([%#span36] Seq.length (shallow_model'2 self) <= UIntSize.to_int (max'0 : usize))
+  && ([%#span36] Seq.length (shallow_model'2 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'1 (self : slice t) =
     [%#span38] inv'10 (shallow_model'2 self)
@@ -3383,21 +3398,21 @@ module C03StdIterators_MyReverse
   
   use seq.Seq
   
-  function iterb'0 (self : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)) : Range'0.t_range usize
+  function iterb'0 (self : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)) : Range'0.t_Range usize
   
-  axiom iterb'0_spec : forall self : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize) . [%#span39] inv'0 self
+  axiom iterb'0_spec : forall self : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize) . [%#span39] inv'0 self
    -> inv'4 (iterb'0 self)
   
-  function itera'0 (self : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)) : Range'0.t_range usize
+  function itera'0 (self : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)) : Range'0.t_Range usize
   
-  axiom itera'0_spec : forall self : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize) . [%#span40] inv'0 self
+  axiom itera'0_spec : forall self : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize) . [%#span40] inv'0 self
    -> inv'4 (itera'0 self)
   
   use seq.Seq
   
   use seq.Seq
   
-  predicate produces'0 (self : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)) (visited : Seq.seq (usize, usize)) (o : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize))
+  predicate produces'0 (self : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)) (visited : Seq.seq (usize, usize)) (o : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize))
     
    =
     [%#span41] exists p1 : Seq.seq usize, p2 : Seq.seq usize . inv'5 p1
@@ -3407,22 +3422,22 @@ module C03StdIterators_MyReverse
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited  -> Seq.get visited i = (Seq.get p1 i, Seq.get p2 i))
     /\ produces'1 (itera'0 self) p1 (itera'0 o) /\ produces'1 (iterb'0 self) p2 (iterb'0 o)
   
-  function produces_trans'0 (a : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)) (ab : Seq.seq (usize, usize)) (b : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)) (bc : Seq.seq (usize, usize)) (c : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)) : ()
+  function produces_trans'0 (a : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)) (ab : Seq.seq (usize, usize)) (b : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)) (bc : Seq.seq (usize, usize)) (c : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)) : ()
     
   
-  axiom produces_trans'0_spec : forall a : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize), ab : Seq.seq (usize, usize), b : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize), bc : Seq.seq (usize, usize), c : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize) . ([%#span42] produces'0 a ab b)
+  axiom produces_trans'0_spec : forall a : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize), ab : Seq.seq (usize, usize), b : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize), bc : Seq.seq (usize, usize), c : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize) . ([%#span42] produces'0 a ab b)
    -> ([%#span43] produces'0 b bc c)  -> ([%#span44] produces'0 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
-  function produces_refl'0 (self : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)) : ()
+  function produces_refl'0 (self : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)) : ()
   
-  axiom produces_refl'0_spec : forall self : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize) . [%#span45] produces'0 self (Seq.empty  : Seq.seq (usize, usize)) self
+  axiom produces_refl'0_spec : forall self : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize) . [%#span45] produces'0 self (Seq.empty  : Seq.seq (usize, usize)) self
   
-  predicate invariant'0 (self : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)) =
+  predicate invariant'0 (self : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)) =
     [%#span22] true
   
-  axiom inv'0 [@rewrite] : forall x : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize) . inv'0 x = true
   
   use seq.Seq
   
@@ -3458,7 +3473,7 @@ module C03StdIterators_MyReverse
   
   use seq.Seq
   
-  predicate resolve'0 (self : borrowed (Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize))) =
+  predicate resolve'0 (self : borrowed (Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize))) =
     [%#span46] self.final = self.current
   
   predicate resolve'3 (self : usize) =
@@ -3466,16 +3481,16 @@ module C03StdIterators_MyReverse
   
   use seq.Seq
   
-  predicate resolve'2 (self : borrowed (Range'0.t_range usize)) =
+  predicate resolve'2 (self : borrowed (Range'0.t_Range usize)) =
     [%#span46] self.final = self.current
   
-  predicate completed'1 (self : borrowed (Range'0.t_range usize)) =
+  predicate completed'1 (self : borrowed (Range'0.t_Range usize)) =
     [%#span55] resolve'2 self
-    /\ deep_model'0 (Core_Ops_Range_Range_Type.range_start self.current)
-    >= deep_model'0 (Core_Ops_Range_Range_Type.range_end self.current)
+    /\ deep_model'0 (T_core__ops__range__Range.t_Range__start self.current)
+    >= deep_model'0 (T_core__ops__range__Range.t_Range__end self.current)
   
-  predicate completed'0 (self : borrowed (Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize))) =
-    [%#span56] exists a : borrowed (Range'0.t_range usize), b : borrowed (Range'0.t_range usize) . inv'8 a
+  predicate completed'0 (self : borrowed (Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize))) =
+    [%#span56] exists a : borrowed (Range'0.t_Range usize), b : borrowed (Range'0.t_Range usize) . inv'8 a
     /\ inv'8 b
     /\ a.current = itera'0 self.current
     /\ b.current = iterb'0 self.current
@@ -3484,9 +3499,9 @@ module C03StdIterators_MyReverse
     /\ (completed'1 a /\ resolve'2 b
     \/ (exists x : usize . inv'9 x /\ produces'1 a.current (Seq.singleton x) a.final /\ resolve'3 x /\ completed'1 b))
   
-  let rec next'0 (self:borrowed (Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize))) (return'  (ret:Option'0.t_option (usize, usize)))= {[@expl:precondition] [%#span57] inv'6 self}
+  let rec next'0 (self:borrowed (Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize))) (return'  (ret:Option'0.t_Option (usize, usize)))= {[@expl:precondition] [%#span57] inv'6 self}
     any
-    [ return' (result:Option'0.t_option (usize, usize))-> {[%#span59] inv'7 result}
+    [ return' (result:Option'0.t_Option (usize, usize))-> {[%#span59] inv'7 result}
       {[%#span58] match result with
         | Option'0.C_None -> completed'0 self
         | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
@@ -3520,33 +3535,33 @@ module C03StdIterators_MyReverse
   
   use prelude.prelude.Snapshot
   
-  predicate into_iter_post'1 (self : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)) (res : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize))
+  predicate into_iter_post'1 (self : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)) (res : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize))
     
    =
     [%#span64] self = res
   
-  predicate into_iter_pre'1 (self : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)) =
+  predicate into_iter_pre'1 (self : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)) =
     [%#span65] true
   
-  let rec into_iter'0 (self:Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)) (return'  (ret:Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)))= {[@expl:precondition] [%#span67] inv'0 self}
+  let rec into_iter'0 (self:Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)) (return'  (ret:Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)))= {[@expl:precondition] [%#span67] inv'0 self}
     {[@expl:precondition] [%#span66] into_iter_pre'1 self}
     any
-    [ return' (result:Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize))-> {[%#span68] inv'0 result}
+    [ return' (result:Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize))-> {[%#span68] inv'0 result}
       {[%#span66] into_iter_post'1 self result}
       (! return' {result}) ]
     
   
-  predicate into_iter_post'0 (self : Range'0.t_range usize) (res : Range'0.t_range usize) =
+  predicate into_iter_post'0 (self : Range'0.t_Range usize) (res : Range'0.t_Range usize) =
     [%#span64] self = res
   
-  predicate into_iter_pre'0 (self : Range'0.t_range usize) =
+  predicate into_iter_pre'0 (self : Range'0.t_Range usize) =
     [%#span65] true
   
-  let rec zip'0 (self:Range'0.t_range usize) (other:Range'0.t_range usize) (return'  (ret:Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)))= {[@expl:precondition] [%#span71] inv'4 other}
+  let rec zip'0 (self:Range'0.t_Range usize) (other:Range'0.t_Range usize) (return'  (ret:Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)))= {[@expl:precondition] [%#span71] inv'4 other}
     {[@expl:precondition] [%#span70] inv'4 self}
     {[@expl:precondition] [%#span69] into_iter_pre'0 other}
     any
-    [ return' (result:Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize))-> {[%#span73] inv'0 result}
+    [ return' (result:Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize))-> {[%#span73] inv'0 result}
       {[%#span72] into_iter_post'0 other (iterb'0 result)}
       {[%#span66] itera'0 result = self}
       (! return' {result}) ]
@@ -3585,12 +3600,12 @@ module C03StdIterators_MyReverse
       [ s0 = UIntSize.div {n} {[%#s03_std_iterators4] (2 : usize)} (fun (_ret':usize) ->  [ &_14 <- _ret' ] s1)
       | s1 =  [ &_13 <- Range'0.C_Range ([%#s03_std_iterators6] (0 : usize)) _14 ] s2
       | s2 = zip'0 {_9} {_13}
-          (fun (_ret':Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)) ->  [ &_8 <- _ret' ] s3)
+          (fun (_ret':Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)) ->  [ &_8 <- _ret' ] s3)
       | s3 = bb5 ]
       
     | bb5 = s0
       [ s0 = into_iter'0 {_8}
-          (fun (_ret':Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)) ->  [ &iter <- _ret' ] s1)
+          (fun (_ret':Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)) ->  [ &iter <- _ret' ] s1)
       | s1 = bb6 ]
       
     | bb6 = s0 [ s0 =  [ &iter_old <- [%#s03_std_iterators7] Snapshot.new iter ] s1 | s1 = bb7 ] 
@@ -3612,20 +3627,20 @@ module C03StdIterators_MyReverse
         {[@expl:loop invariant] [%#s03_std_iterators9] inv'0 iter}
         (! s0) [ s0 = bb10 ] 
         [ bb10 = s0
-          [ s0 = Borrow.borrow_mut <Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)> {iter}
-              (fun (_ret':borrowed (Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize))) ->
+          [ s0 = Borrow.borrow_mut <Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)> {iter}
+              (fun (_ret':borrowed (Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize))) ->
                  [ &_31 <- _ret' ] 
                  [ &iter <- _31.final ] 
                 s1)
           | s1 = Borrow.borrow_final
-              <Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)>
+              <Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)>
               {_31.current}
               {Borrow.get_id _31}
-              (fun (_ret':borrowed (Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize))) ->
+              (fun (_ret':borrowed (Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize))) ->
                  [ &_30 <- _ret' ] 
                  [ &_31 <- { _31 with current = _30.final ; } ] 
                 s2)
-          | s2 = next'0 {_30} (fun (_ret':Option'0.t_option (usize, usize)) ->  [ &_29 <- _ret' ] s3)
+          | s2 = next'0 {_30} (fun (_ret':Option'0.t_Option (usize, usize)) ->  [ &_29 <- _ret' ] s3)
           | s3 = bb11 ]
           
         | bb11 = s0
@@ -3636,7 +3651,7 @@ module C03StdIterators_MyReverse
           
         | bb13 = bb15
         | bb15 = s0
-          [ s0 = Option'0.some <(usize, usize)> {_29}
+          [ s0 = Option'0.v_Some <(usize, usize)> {_29}
               (fun (r0'0:(usize, usize)) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
           | s1 = 
             [ &_34 <- [%#s03_std_iterators15] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
@@ -3675,19 +3690,19 @@ module C03StdIterators_MyReverse
     | & slice : borrowed (slice t) = slice
     | & n : usize = any_l ()
     | & old_v : Snapshot.snap_ty (borrowed (slice t)) = any_l ()
-    | & iter : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize) = any_l ()
-    | & _8 : Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize) = any_l ()
-    | & _9 : Range'0.t_range usize = any_l ()
+    | & iter : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize) = any_l ()
+    | & _8 : Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize) = any_l ()
+    | & _9 : Range'0.t_Range usize = any_l ()
     | & _10 : usize = any_l ()
     | & _12 : bool = any_l ()
-    | & _13 : Range'0.t_range usize = any_l ()
+    | & _13 : Range'0.t_Range usize = any_l ()
     | & _14 : usize = any_l ()
     | & _16 : bool = any_l ()
-    | & iter_old : Snapshot.snap_ty (Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)) = any_l ()
+    | & iter_old : Snapshot.snap_ty (Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)) = any_l ()
     | & produced : Snapshot.snap_ty (Seq.seq (usize, usize)) = any_l ()
-    | & _29 : Option'0.t_option (usize, usize) = any_l ()
-    | & _30 : borrowed (Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)) = any_l ()
-    | & _31 : borrowed (Zip'0.t_zip (Range'0.t_range usize) (Range'0.t_range usize)) = any_l ()
+    | & _29 : Option'0.t_Option (usize, usize) = any_l ()
+    | & _30 : borrowed (Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)) = any_l ()
+    | & _31 : borrowed (Zip'0.t_Zip (Range'0.t_Range usize) (Range'0.t_Range usize)) = any_l ()
     | & __creusot_proc_iter_elem : (usize, usize) = any_l ()
     | & _34 : Snapshot.snap_ty (Seq.seq (usize, usize)) = any_l ()
     | & i : usize = any_l ()

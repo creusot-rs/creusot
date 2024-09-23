@@ -1,135 +1,135 @@
 
-module Core_Ptr_NonNull_NonNull_Type
+module T_core__ptr__non_null__NonNull
   use prelude.prelude.Opaque
   
-  type t_nonnull 't =
+  type t_NonNull 't =
     | C_NonNull opaque_ptr
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_nonnull < 't > (input:t_nonnull 't) (ret  (pointer:opaque_ptr))= any
+  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
     [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
     | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
     
 end
-module Core_Marker_PhantomData_Type
-  type t_phantomdata 't =
+module T_core__marker__PhantomData
+  type t_PhantomData 't =
     | C_PhantomData
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_phantomdata < 't > (input:t_phantomdata 't) (ret  )= any
+  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any
     [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
     
 end
-module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type as PhantomData'0
+module T_core__ptr__unique__Unique
+  use T_core__marker__PhantomData as PhantomData'0
   
-  use Core_Ptr_NonNull_NonNull_Type as NonNull'0
+  use T_core__ptr__non_null__NonNull as NonNull'0
   
-  type t_unique 't =
-    | C_Unique (NonNull'0.t_nonnull 't) (PhantomData'0.t_phantomdata 't)
+  type t_Unique 't =
+    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_unique < 't > (input:t_unique 't) (ret  (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't))= any
-    [ good (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
+    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       = input}
       (! ret {pointer} {_marker})
-    | bad (pointer:NonNull'0.t_nonnull 't) (_marker:PhantomData'0.t_phantomdata 't)-> {C_Unique pointer _marker
+    | bad (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       <> input}
       {false}
       any ]
     
 end
-module Alloc_RawVec_Cap_Type
+module T_alloc__raw_vec__Cap
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  type t_cap  =
+  type t_Cap  =
     | C_Cap usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_cap (input:t_cap) (ret  (field_0:usize))= any
+  let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
     [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
     | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
     
 end
-module Alloc_RawVec_RawVec_Type
-  use Alloc_RawVec_Cap_Type as Cap'0
+module T_alloc__raw_vec__RawVec
+  use T_alloc__raw_vec__Cap as Cap'0
   
-  use Core_Ptr_Unique_Unique_Type as Unique'0
+  use T_core__ptr__unique__Unique as Unique'0
   
-  type t_rawvec 't 'a =
-    | C_RawVec (Unique'0.t_unique 't) (Cap'0.t_cap) 'a
+  type t_RawVec 't 'a =
+    | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_rawvec < 't > < 'a > (input:t_rawvec 't 'a) (ret  (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a))= any
-    [ good (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
+  let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
+    [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
       (! ret {ptr} {cap} {alloc})
-    | bad (ptr:Unique'0.t_unique 't) (cap:Cap'0.t_cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
+    | bad (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
     
 end
-module Alloc_Vec_Vec_Type
+module T_alloc__vec__Vec
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  use Alloc_RawVec_RawVec_Type as RawVec'0
+  use T_alloc__raw_vec__RawVec as RawVec'0
   
-  type t_vec 't 'a =
-    | C_Vec (RawVec'0.t_rawvec 't 'a) usize
+  type t_Vec 't 'a =
+    | C_Vec (RawVec'0.t_RawVec 't 'a) usize
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_vec < 't > < 'a > (input:t_vec 't 'a) (ret  (buf:RawVec'0.t_rawvec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
-    | bad (buf:RawVec'0.t_rawvec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
+    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
+    | bad (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
     
 end
-module Alloc_Alloc_Global_Type
-  type t_global  =
+module T_alloc__alloc__Global
+  type t_Global  =
     | C_Global
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_global (input:t_global) (ret  )= any
+  let rec t_Global (input:t_Global) (ret  )= any
     [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
     
 end
-module C991_Formula_Type
-  use Alloc_Alloc_Global_Type as Global'0
+module T_991__Formula
+  use T_alloc__alloc__Global as Global'0
   
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  use Alloc_Vec_Vec_Type as Vec'0
+  use T_alloc__vec__Vec as Vec'0
   
-  type t_formula  =
-    | C_Formula (Vec'0.t_vec usize (Global'0.t_global)) bool
+  type t_Formula  =
+    | C_Formula (Vec'0.t_Vec usize (Global'0.t_Global)) bool
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_formula (input:t_formula) (ret  (vec:Vec'0.t_vec usize (Global'0.t_global)) (b:bool))= any
-    [ good (vec:Vec'0.t_vec usize (Global'0.t_global)) (b:bool)-> {C_Formula vec b = input} (! ret {vec} {b})
-    | bad (vec:Vec'0.t_vec usize (Global'0.t_global)) (b:bool)-> {C_Formula vec b <> input} {false} any ]
+  let rec t_Formula (input:t_Formula) (ret  (vec:Vec'0.t_Vec usize (Global'0.t_Global)) (b:bool))= any
+    [ good (vec:Vec'0.t_Vec usize (Global'0.t_Global)) (b:bool)-> {C_Formula vec b = input} (! ret {vec} {b})
+    | bad (vec:Vec'0.t_Vec usize (Global'0.t_Global)) (b:bool)-> {C_Formula vec b <> input} {false} any ]
     
   
-  function formula_vec (self : t_formula) : Vec'0.t_vec usize (Global'0.t_global) =
+  function t_Formula__vec (self : t_Formula) : Vec'0.t_Vec usize (Global'0.t_Global) =
     match self with
       | C_Formula a _ -> a
       end
   
-  function formula_b (self : t_formula) : bool =
+  function t_Formula__b (self : t_Formula) : bool =
     match self with
       | C_Formula _ a -> a
       end
 end
-module C991_Impl1_LoveAndHope
+module M_991__qy123zimplqy35z1qy125z__love_and_hope
   let%span s9910 = "../991.rs" 21 14 21 28
   
   let%span span1 = "" 0 0 0 0
@@ -140,17 +140,17 @@ module C991_Impl1_LoveAndHope
   
   let%span span4 = "../../../../../creusot-contracts/src/model.rs" 90 8 90 31
   
-  use C991_Formula_Type as Formula'0
+  use T_991__Formula as Formula'0
   
   use prelude.prelude.Borrow
   
-  use Alloc_Alloc_Global_Type as Global'0
+  use T_alloc__alloc__Global as Global'0
   
   use prelude.prelude.UIntSize
   
-  use Alloc_Vec_Vec_Type as Vec'0
+  use T_alloc__vec__Vec as Vec'0
   
-  use C991_Formula_Type as C991_Formula_Type
+  use T_991__Formula as T_991__Formula
   
   use seq.Seq
   
@@ -158,30 +158,30 @@ module C991_Impl1_LoveAndHope
   
   use prelude.prelude.Int
   
-  constant max'0 : usize = [%#span1] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span1] (18446744073709551615 : usize)
   
   use seq.Seq
   
-  function shallow_model'2 (self : Vec'0.t_vec usize (Global'0.t_global)) : Seq.seq usize
+  function shallow_model'2 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
   
-  axiom shallow_model'2_spec : forall self : Vec'0.t_vec usize (Global'0.t_global) . [%#span2] Seq.length (shallow_model'2 self)
-  <= UIntSize.to_int (max'0 : usize)
+  axiom shallow_model'2_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#span2] Seq.length (shallow_model'2 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
   
-  function shallow_model'1 [#"../991.rs" 15 4 15 50] (self : Formula'0.t_formula) : (Seq.seq usize, bool) =
-    [%#span3] (shallow_model'2 (C991_Formula_Type.formula_vec self), C991_Formula_Type.formula_b self)
+  function shallow_model'1 [#"../991.rs" 15 4 15 50] (self : Formula'0.t_Formula) : (Seq.seq usize, bool) =
+    [%#span3] (shallow_model'2 (T_991__Formula.t_Formula__vec self), T_991__Formula.t_Formula__b self)
   
-  function shallow_model'0 (self : Formula'0.t_formula) : (Seq.seq usize, bool) =
+  function shallow_model'0 (self : Formula'0.t_Formula) : (Seq.seq usize, bool) =
     [%#span4] shallow_model'1 self
   
   use prelude.prelude.Intrinsic
   
-  let rec love_and_hope (self:Formula'0.t_formula) (return'  (ret:()))= (! bb0 [ bb0 = return' {_0} ] )
+  let rec love_and_hope (self:Formula'0.t_Formula) (return'  (ret:()))= (! bb0 [ bb0 = return' {_0} ] )
     [ & _0 : () = any_l () ]
     
     [ return' (result:())-> {[@expl:postcondition] [%#s9910] shallow_model'0 self = shallow_model'0 self}
       (! return' {result}) ]
     
 end
-module C991_Impl0
+module M_991__qy123zimplqy35z0qy125z
   
 end

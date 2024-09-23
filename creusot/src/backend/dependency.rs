@@ -1,4 +1,3 @@
-use heck::ToSnakeCase;
 use rustc_ast_ir::visit::VisitorResult;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
@@ -9,7 +8,7 @@ use rustc_type_ir::{fold::TypeFoldable, visit::TypeVisitable, AliasTyKind, Inter
 use crate::{
     ctx::TranslationCtx,
     translation::traits,
-    util::{self, item_symb, ItemType},
+    util::{self, item_symb, translate_accessor_name, type_name, value_name, ItemType},
 };
 
 use super::{ty_inv::tyinv_head_and_subst, PreludeModule, TransId};
@@ -181,22 +180,19 @@ impl<'tcx> Dependency<'tcx> {
 
     pub(crate) fn base_ident(self, tcx: TyCtxt<'tcx>) -> Symbol {
         match self {
-            Dependency::Type(ty) => {
-                let nm = match ty.kind() {
-                    TyKind::Adt(def, _) => {
-                        item_symb(tcx, def.did(), rustc_hir::def::Namespace::TypeNS)
-                    }
-                    TyKind::Alias(_, aty) => tcx.item_name(aty.def_id),
-                    TyKind::Closure(def_id, _) => {
-                        item_symb(tcx, *def_id, rustc_hir::def::Namespace::TypeNS)
-                    }
-                    _ => Symbol::intern("debug_ty_name"),
-                };
-                Symbol::intern(&nm.as_str().to_snake_case())
-            }
+            Dependency::Type(ty) => match ty.kind() {
+                TyKind::Adt(def, _) => item_symb(tcx, def.did(), rustc_hir::def::Namespace::TypeNS),
+                TyKind::Alias(_, aty) => {
+                    Symbol::intern(&type_name(tcx.item_name(aty.def_id).as_str()))
+                }
+                TyKind::Closure(def_id, _) => {
+                    item_symb(tcx, *def_id, rustc_hir::def::Namespace::TypeNS)
+                }
+                _ => Symbol::intern("debug_ty_name"),
+            },
             Dependency::Item(_, _) => {
                 let did = self.did().unwrap().0;
-                let base = match util::item_type(tcx, did) {
+                match util::item_type(tcx, did) {
                     ItemType::Impl => tcx.item_name(tcx.trait_id_of_impl(did).unwrap()),
                     ItemType::Closure => Symbol::intern(&format!(
                         "closure{}",
@@ -204,16 +200,14 @@ impl<'tcx> Dependency<'tcx> {
                     )),
                     ItemType::Field => {
                         let variant = tcx.parent(did);
-                        let name = format!(
-                            "{}_{}",
-                            tcx.item_name(variant).as_str().to_ascii_lowercase(),
-                            tcx.item_name(did),
+                        let name = translate_accessor_name(
+                            &tcx.item_name(variant).as_str(),
+                            &tcx.item_name(did).as_str(),
                         );
                         Symbol::intern(&name)
                     }
-                    _ => tcx.item_name(did),
-                };
-                Symbol::intern(&base.as_str().to_snake_case())
+                    _ => Symbol::intern(&value_name(tcx.item_name(did).as_str())),
+                }
             }
             Dependency::Hacked(hacked_id, _, _) => match hacked_id {
                 ExtendedId::PostconditionOnce => Symbol::intern("postcondition_once"),
