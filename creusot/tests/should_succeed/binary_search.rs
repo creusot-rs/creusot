@@ -8,7 +8,7 @@
 // 3. Lists are restricted to size < 1,000,000 this is because of (1), since there is no upper
 //    bound on the size of a list.
 extern crate creusot_contracts;
-use creusot_contracts::{logic::Int, *};
+use creusot_contracts::{invariant::inv, logic::Int, *};
 
 pub enum List<T> {
     Cons(T, Box<List<T>>),
@@ -48,6 +48,7 @@ impl<T> List<T> {
 
         #[invariant(ix@ < l.len_logic())]
         #[invariant(self.get(orig_ix@) == l.get(ix@))]
+        #[invariant(inv(l))]
         while let Cons(t, ls) = l {
             if ix > 0 {
                 l = &*ls;
@@ -67,6 +68,7 @@ impl<T> List<T> {
         let mut len: usize = 0;
         let mut l = self;
         #[invariant(len@ + l.len_logic() == self.len_logic())]
+        #[invariant(inv(l))]
         while let Cons(_, ls) = l {
             len += 1;
             l = ls;

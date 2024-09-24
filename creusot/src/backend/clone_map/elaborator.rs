@@ -54,9 +54,11 @@ impl<'tcx> SymbolElaborator<'tcx> {
                 vec![Decl::UseDecl(Use { name: b.qname(), as_: None, export: false })]
             }
             Dependency::TyInv(ty) => {
-                let term = InvariantElaborator::new(param_env, true).elaborate_inv(ctx, ty);
+                let mut elab = InvariantElaborator::new(param_env);
+                let term = elab.elaborate_inv(ctx, ty);
                 let exp = lower_pure(ctx, names, &term);
-                let axiom = Axiom { name: names.ty_inv(ty).name, rewrite: true, axiom: exp };
+                let axiom =
+                    Axiom { name: names.ty_inv(ty).name, rewrite: elab.rewrite, axiom: exp };
                 vec![Decl::Axiom(axiom)]
             }
             Dependency::Item(_, _) | Dependency::Hacked(_, _, _) => {

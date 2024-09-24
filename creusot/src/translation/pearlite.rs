@@ -1385,9 +1385,18 @@ impl<'tcx> Term<'tcx> {
         }
     }
 
-    pub(crate) fn forall(self, tcx: TyCtxt<'tcx>, binder: (Symbol, Ty<'tcx>)) -> Self {
+    pub(crate) fn forall_trig(
+        self,
+        tcx: TyCtxt<'tcx>,
+        binder: (Symbol, Ty<'tcx>),
+        trigger: Vec<Trigger<'tcx>>,
+    ) -> Self {
         let ty = Ty::new_tup(tcx, &[binder.1]);
-        self.quant(QuantKind::Forall, (vec![Ident::new(binder.0, DUMMY_SP)], ty), vec![])
+        self.quant(QuantKind::Forall, (vec![Ident::new(binder.0, DUMMY_SP)], ty), trigger)
+    }
+
+    pub(crate) fn forall(self, tcx: TyCtxt<'tcx>, binder: (Symbol, Ty<'tcx>)) -> Self {
+        self.forall_trig(tcx, binder, vec![])
     }
 
     pub(crate) fn quant(

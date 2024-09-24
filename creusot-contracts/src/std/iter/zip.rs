@@ -54,11 +54,15 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
 
     #[law]
     #[open(self)]
+    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
     #[open(self)]
+    #[requires(inv(a))]
+    #[requires(inv(b))]
+    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

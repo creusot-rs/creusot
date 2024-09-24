@@ -1,15 +1,18 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{invariant::inv, *};
 
 fn f<T>(_: &mut T) {}
 
 pub fn simple<T>(x: &mut T) {
+    #[invariant(inv(x))]
     loop {
         f(x)
     }
 }
 
 pub fn swapper<'a, T>(mut x: &'a mut T, mut y: &'a mut T) {
+    #[invariant(inv(x))]
+    #[invariant(inv(y))]
     loop {
         let c = x;
         x = y;
@@ -18,6 +21,8 @@ pub fn swapper<'a, T>(mut x: &'a mut T, mut y: &'a mut T) {
 }
 
 pub fn tuple<'a, T>(mut d: (&'a mut T, bool), mut e: (&'a mut T, bool)) {
+    #[invariant(inv(d))]
+    #[invariant(inv(e))]
     loop {
         let c = d;
         d = e;
@@ -26,6 +31,7 @@ pub fn tuple<'a, T>(mut d: (&'a mut T, bool), mut e: (&'a mut T, bool)) {
 }
 
 pub fn temp_move<'a, T>(mut x: &'a mut T) {
+    #[invariant(inv(x))]
     loop {
         let c = x;
         x = c;

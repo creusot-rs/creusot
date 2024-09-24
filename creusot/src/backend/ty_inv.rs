@@ -1,6 +1,7 @@
 use super::{term::lower_pure, CloneSummary, Dependencies, TransId, Why3Generator};
 use crate::{
     ctx::*,
+    pearlite::Trigger,
     translation::{
         pearlite::{Pattern, Term, TermKind},
         traits,
@@ -34,7 +35,7 @@ pub(crate) fn tyinv_head_and_subst<'tcx>(
         return def();
     }
 
-    if is_tyinv_trivial(tcx, param_env, ty, true) {
+    if is_tyinv_trivial(tcx, param_env, ty) {
         return def();
     }
 
@@ -59,7 +60,6 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,
-    param_is_trivial: bool,
 ) -> bool {
     // we cannot use a TypeWalker as it does not visit ADT field types
     let mut visited_tys = HashSet::new();
@@ -93,8 +93,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
                 stack.extend(def.all_fields().map(|f| f.ty(tcx, substs)))
             }
             TyKind::Closure(_, subst) => stack.extend(subst.as_closure().upvar_tys()),
-            TyKind::Never => return false,
-            TyKind::Param(_) | TyKind::Alias(_, _) if !param_is_trivial => return false,
+            TyKind::Never | TyKind::Param(_) | TyKind::Alias(_, _) => return false,
             TyKind::Bool
             | TyKind::Char
             | TyKind::Int(_)
@@ -103,9 +102,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
             | TyKind::Str
             | TyKind::FnDef(_, _)
             | TyKind::FnPtr(_)
-            | TyKind::RawPtr(_, _)
-            | TyKind::Param(_)
-            | TyKind::Alias(_, _) => (),
+            | TyKind::RawPtr(_, _) => (),
             _ => unimplemented!("{ty:?}"),
         }
     }
@@ -113,18 +110,22 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
 }
 
 pub struct InvariantElaborator<'tcx> {
-    default_trivial: bool,
     param_env: ParamEnv<'tcx>,
+    pub rewrite: bool,
 }
 
 impl<'tcx> InvariantElaborator<'tcx> {
-    pub(crate) fn new(param_env: ParamEnv<'tcx>, default_trivial: bool) -> Self {
-        InvariantElaborator { default_trivial, param_env }
+    pub(crate) fn new(param_env: ParamEnv<'tcx>) -> Self {
+        InvariantElaborator { param_env, rewrite: false }
     }
 
-    pub(crate) fn elaborate_inv(&self, ctx: &mut Why3Generator<'tcx>, ty: Ty<'tcx>) -> Term<'tcx> {
+    pub(crate) fn elaborate_inv(
+        &mut self,
+        ctx: &mut Why3Generator<'tcx>,
+        ty: Ty<'tcx>,
+    ) -> Term<'tcx> {
         let subject = Term::var(Symbol::intern("x"), ty);
-        let trivial = is_tyinv_trivial(ctx.tcx, self.param_env, ty, self.default_trivial);
+        let trivial = is_tyinv_trivial(ctx.tcx, self.param_env, ty);
         let no_struct = matches!(ty.kind(), TyKind::Alias(..) | TyKind::Param(_));
 
         let rhs = if trivial {
@@ -146,13 +147,15 @@ impl<'tcx> InvariantElaborator<'tcx> {
         let subst = ctx.mk_args(&[GenericArg::from(subject.ty)]);
         let lhs = Term::call(ctx.tcx, inv_id, subst, vec![subject]);
 
+        let trig = vec![Trigger(vec![lhs.clone()])];
         let term = if no_struct && !trivial {
             Term::implies(lhs, rhs)
         } else {
+            self.rewrite = true;
             Term::eq(ctx.tcx, lhs, rhs)
         };
 
-        Term::forall(term, ctx.tcx, (Symbol::intern("x"), ty))
+        term.forall_trig(ctx.tcx, (Symbol::intern("x"), ty), trig)
     }
 
     fn structural_invariant(
@@ -245,7 +248,7 @@ impl<'tcx> InvariantElaborator<'tcx> {
         ctx: &mut Why3Generator<'tcx>,
         term: Term<'tcx>,
     ) -> Term<'tcx> {
-        if is_tyinv_trivial(ctx.tcx, self.param_env, term.ty, self.default_trivial) {
+        if is_tyinv_trivial(ctx.tcx, self.param_env, term.ty) {
             return Term::mk_true(ctx.tcx);
         }
 
@@ -310,7 +313,7 @@ pub(crate) fn record_tyinv_deps<'tcx>(
         ParamEnv::empty()
     };
 
-    let inv_term = InvariantElaborator::new(param_env, false).elaborate_inv(ctx, ty);
+    let inv_term = InvariantElaborator::new(param_env).elaborate_inv(ctx, ty);
     lower_pure(ctx, &mut names, &inv_term);
 
     let (_, summary) = names.provide_deps(ctx, GraphDepth::Shallow);

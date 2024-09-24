@@ -2,7 +2,7 @@
 #![feature(box_patterns)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{logic::Mapping, Clone, *};
+use creusot_contracts::{invariant::inv, logic::Mapping, Clone, *};
 use std::cmp::Ordering::*;
 
 #[derive(Clone, Copy)]
@@ -823,6 +823,7 @@ where
         snapshot! { Self::has_mapping_model };
 
         let mut tree = self;
+        #[invariant(inv(tree))]
         #[invariant((*tree).bst_invariant())]
         #[invariant(forall<v: V> (*self).has_mapping(key.deep_model(), v) == (*tree).has_mapping(key.deep_model(), v))]
         while let Some(node) = &tree.node {
@@ -847,6 +848,7 @@ where
         let old_self = snapshot! { self };
         let mut tree = self;
 
+        #[invariant(inv(tree))]
         #[invariant((*tree).bst_invariant())]
         #[invariant((*tree).height_invariant())]
         #[invariant((*tree).color_invariant())]

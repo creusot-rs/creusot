@@ -10,7 +10,7 @@ module M_inferred_invariants__f
   
   predicate inv'1 (_1 : t)
   
-  axiom inv'1 [@rewrite] : forall x : t . inv'1 x = true
+  axiom inv'1 : forall x : t [inv'1 x] . inv'1 x  -> invariant'1 x
   
   use prelude.prelude.Borrow
   
@@ -19,7 +19,7 @@ module M_inferred_invariants__f
   
   predicate inv'0 (_1 : borrowed t)
   
-  axiom inv'0 [@rewrite] : forall x : borrowed t . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : borrowed t [inv'0 x] . inv'0 x = invariant'0 x
   
   use prelude.prelude.Intrinsic
   
@@ -34,47 +34,50 @@ end
 module M_inferred_invariants__simple
   type t
   
-  let%span sinferred_invariants0 = "../inferred_invariants.rs" 6 17 6 18
+  let%span sinferred_invariants0 = "../inferred_invariants.rs" 7 16 7 22
   
-  let%span span1 = "../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
+  let%span sinferred_invariants1 = "../inferred_invariants.rs" 6 17 6 18
   
-  predicate inv'0 (_1 : t)
+  let%span span2 = "../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
+  
+  predicate invariant'1 (self : t)
+  
+  predicate inv'1 (_1 : t)
+  
+  axiom inv'1 : forall x : t [inv'1 x] . inv'1 x  -> invariant'1 x
   
   use prelude.prelude.Borrow
   
-  predicate invariant'1 (self : borrowed t) =
-    [%#span1] inv'0 self.current /\ inv'0 self.final
+  predicate invariant'0 (self : borrowed t) =
+    [%#span2] inv'1 self.current /\ inv'1 self.final
   
-  predicate inv'1 (_1 : borrowed t)
+  predicate inv'0 (_1 : borrowed t)
   
-  axiom inv'1 [@rewrite] : forall x : borrowed t . inv'1 x = true
-  
-  predicate invariant'0 (self : t)
-  
-  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : borrowed t [inv'0 x] . inv'0 x = invariant'0 x
   
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Intrinsic
   
-  let rec f'0 (_1:borrowed t) (return'  (ret:()))= {[@expl:precondition] inv'1 _1}
+  let rec f'0 (_1:borrowed t) (return'  (ret:()))= {[@expl:precondition] inv'0 _1}
     any [ return' (result:())-> (! return' {result}) ] 
   
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
   
-  let rec simple (x:borrowed t) (return'  (ret:()))= {[%#sinferred_invariants0] inv'1 x}
+  let rec simple (x:borrowed t) (return'  (ret:()))= {[%#sinferred_invariants1] inv'0 x}
     (! bb0
     [ bb0 = s0 [ s0 =  [ &old_1_0 <- Snapshot.new x ] s1 | s1 = bb1 ] 
     | bb1 = bb1
       [ bb1 = {[@expl:loop invariant] (Snapshot.inner old_1_0).final = x.final}
+        {[@expl:loop invariant] [%#sinferred_invariants0] inv'0 x}
         (! s0) [ s0 = bb2 ] 
         [ bb2 = s0
           [ s0 = Borrow.borrow_mut <t> {x.current}
-              (fun (_ret':borrowed t) ->  [ &_4 <- _ret' ]  [ &x <- { x with current = _4.final ; } ] s1)
-          | s1 = -{inv'0 _4.final}- s2
-          | s2 = f'0 {_4} (fun (_ret':()) ->  [ &_3 <- _ret' ] s3)
+              (fun (_ret':borrowed t) ->  [ &_5 <- _ret' ]  [ &x <- { x with current = _5.final ; } ] s1)
+          | s1 = -{inv'1 _5.final}- s2
+          | s2 = f'0 {_5} (fun (_ret':()) ->  [ &_4 <- _ret' ] s3)
           | s3 = bb3 ]
           
         | bb3 = bb1 ]
@@ -82,61 +85,67 @@ module M_inferred_invariants__simple
        ]
     )
     [ & x : borrowed t = x
-    | & _3 : () = any_l ()
-    | & _4 : borrowed t = any_l ()
+    | & _4 : () = any_l ()
+    | & _5 : borrowed t = any_l ()
     | & old_1_0 : Snapshot.snap_ty (borrowed t) = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
 module M_inferred_invariants__swapper
   type t
   
-  let%span sinferred_invariants0 = "../inferred_invariants.rs" 12 26 12 27
+  let%span sinferred_invariants0 = "../inferred_invariants.rs" 14 16 14 22
   
-  let%span sinferred_invariants1 = "../inferred_invariants.rs" 12 44 12 45
+  let%span sinferred_invariants1 = "../inferred_invariants.rs" 15 16 15 22
   
-  let%span span2 = "../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
+  let%span sinferred_invariants2 = "../inferred_invariants.rs" 13 26 13 27
   
-  let%span span3 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span sinferred_invariants3 = "../inferred_invariants.rs" 13 44 13 45
   
-  predicate inv'0 (_1 : t)
+  let%span span4 = "../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
+  
+  let%span span5 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  
+  predicate invariant'1 (self : t)
+  
+  predicate inv'1 (_1 : t)
+  
+  axiom inv'1 : forall x : t [inv'1 x] . inv'1 x  -> invariant'1 x
   
   use prelude.prelude.Borrow
   
-  predicate invariant'1 (self : borrowed t) =
-    [%#span2] inv'0 self.current /\ inv'0 self.final
+  predicate invariant'0 (self : borrowed t) =
+    [%#span4] inv'1 self.current /\ inv'1 self.final
   
-  predicate inv'1 (_1 : borrowed t)
+  predicate inv'0 (_1 : borrowed t)
   
-  axiom inv'1 [@rewrite] : forall x : borrowed t . inv'1 x = true
-  
-  predicate invariant'0 (self : t)
-  
-  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : borrowed t [inv'0 x] . inv'0 x = invariant'0 x
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed t) =
-    [%#span3] self.final = self.current
+    [%#span5] self.final = self.current
   
-  let rec swapper (x:borrowed t) (y:borrowed t) (return'  (ret:()))= {[%#sinferred_invariants1] inv'1 y}
-    {[%#sinferred_invariants0] inv'1 x}
+  let rec swapper (x:borrowed t) (y:borrowed t) (return'  (ret:()))= {[%#sinferred_invariants3] inv'0 y}
+    {[%#sinferred_invariants2] inv'0 x}
     (! bb0
     [ bb0 = bb1
     | bb1 = bb1
-      [ bb1 = (! bb2)
+      [ bb1 = {[@expl:loop invariant] [%#sinferred_invariants1] inv'0 y}
+        {[@expl:loop invariant] [%#sinferred_invariants0] inv'0 x}
+        (! s0) [ s0 = bb2 ] 
         [ bb2 = s0
           [ s0 =  [ &c <- x ] s1
           | s1 = Borrow.borrow_final <t> {y.current} {Borrow.get_id y}
-              (fun (_ret':borrowed t) ->  [ &_6 <- _ret' ]  [ &y <- { y with current = _6.final ; } ] s2)
-          | s2 = -{inv'0 _6.final}- s3
-          | s3 =  [ &x <- _6 ] s4
+              (fun (_ret':borrowed t) ->  [ &_8 <- _ret' ]  [ &y <- { y with current = _8.final ; } ] s2)
+          | s2 = -{inv'1 _8.final}- s3
+          | s3 =  [ &x <- _8 ] s4
           | s4 = Borrow.borrow_final <t> {c.current} {Borrow.get_id c}
-              (fun (_ret':borrowed t) ->  [ &_7 <- _ret' ]  [ &c <- { c with current = _7.final ; } ] s5)
-          | s5 = -{inv'0 _7.final}- s6
-          | s6 = {[@expl:type invariant] inv'1 y} s7
+              (fun (_ret':borrowed t) ->  [ &_9 <- _ret' ]  [ &c <- { c with current = _9.final ; } ] s5)
+          | s5 = -{inv'1 _9.final}- s6
+          | s6 = {[@expl:type invariant] inv'0 y} s7
           | s7 = -{resolve'0 y}- s8
-          | s8 =  [ &y <- _7 ] s9
-          | s9 = {[@expl:type invariant] inv'1 c} s10
+          | s8 =  [ &y <- _9 ] s9
+          | s9 = {[@expl:type invariant] inv'0 c} s10
           | s10 = -{resolve'0 c}- s11
           | s11 = bb1 ]
            ]
@@ -146,36 +155,63 @@ module M_inferred_invariants__swapper
     [ & x : borrowed t = x
     | & y : borrowed t = y
     | & c : borrowed t = any_l ()
-    | & _6 : borrowed t = any_l ()
-    | & _7 : borrowed t = any_l () ]
+    | & _8 : borrowed t = any_l ()
+    | & _9 : borrowed t = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
 module M_inferred_invariants__tuple
   type t
   
-  let%span sinferred_invariants0 = "../inferred_invariants.rs" 20 24 20 25
+  let%span sinferred_invariants0 = "../inferred_invariants.rs" 24 16 24 22
   
-  let%span sinferred_invariants1 = "../inferred_invariants.rs" 20 50 20 51
+  let%span sinferred_invariants1 = "../inferred_invariants.rs" 25 16 25 22
   
-  let%span span2 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span sinferred_invariants2 = "../inferred_invariants.rs" 23 24 23 25
+  
+  let%span sinferred_invariants3 = "../inferred_invariants.rs" 23 50 23 51
+  
+  let%span span4 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  
+  let%span span5 = "../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
+  
+  predicate invariant'2 (self : t)
+  
+  predicate inv'3 (_1 : t)
+  
+  axiom inv'3 : forall x : t [inv'3 x] . inv'3 x  -> invariant'2 x
+  
+  predicate invariant'1 (self : bool) =
+    [%#span4] true
+  
+  predicate inv'2 (_1 : bool)
+  
+  axiom inv'2 [@rewrite] : forall x : bool [inv'2 x] . inv'2 x = true
   
   use prelude.prelude.Borrow
   
-  predicate invariant'0 (self : (borrowed t, bool)) =
-    [%#span2] true
+  predicate invariant'0 (self : borrowed t) =
+    [%#span5] inv'3 self.current /\ inv'3 self.final
+  
+  predicate inv'1 (_1 : borrowed t)
+  
+  axiom inv'1 [@rewrite] : forall x : borrowed t [inv'1 x] . inv'1 x = invariant'0 x
   
   predicate inv'0 (_1 : (borrowed t, bool))
   
-  axiom inv'0 [@rewrite] : forall x : (borrowed t, bool) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : (borrowed t, bool) [inv'0 x] . inv'0 x = (let (a, b) = x in inv'1 a)
   
   use prelude.prelude.Intrinsic
   
-  let rec tuple (d:(borrowed t, bool)) (e:(borrowed t, bool)) (return'  (ret:()))= {[%#sinferred_invariants1] inv'0 e}
-    {[%#sinferred_invariants0] inv'0 d}
+  let rec tuple (d:(borrowed t, bool)) (e:(borrowed t, bool)) (return'  (ret:()))= {[%#sinferred_invariants3] inv'0 e}
+    {[%#sinferred_invariants2] inv'0 d}
     (! bb0
     [ bb0 = bb1
     | bb1 = bb1
-      [ bb1 = (! bb2) [ bb2 = s0 [ s0 =  [ &c <- d ] s1 | s1 =  [ &d <- e ] s2 | s2 =  [ &e <- c ] s3 | s3 = bb1 ]  ]  ]
+      [ bb1 = {[@expl:loop invariant] [%#sinferred_invariants1] inv'0 e}
+        {[@expl:loop invariant] [%#sinferred_invariants0] inv'0 d}
+        (! s0) [ s0 = bb2 ] 
+        [ bb2 = s0 [ s0 =  [ &c <- d ] s1 | s1 =  [ &d <- e ] s2 | s2 =  [ &e <- c ] s3 | s3 = bb1 ]  ]
+         ]
        ]
     ) [ & d : (borrowed t, bool) = d | & e : (borrowed t, bool) = e | & c : (borrowed t, bool) = any_l () ] 
     [ return' (result:())-> (! return' {result}) ]
@@ -184,50 +220,53 @@ end
 module M_inferred_invariants__temp_move
   type t
   
-  let%span sinferred_invariants0 = "../inferred_invariants.rs" 28 28 28 29
+  let%span sinferred_invariants0 = "../inferred_invariants.rs" 34 16 34 22
   
-  let%span span1 = "../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
+  let%span sinferred_invariants1 = "../inferred_invariants.rs" 33 28 33 29
   
-  let%span span2 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span2 = "../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
   
-  predicate inv'0 (_1 : t)
+  let%span span3 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  
+  predicate invariant'1 (self : t)
+  
+  predicate inv'1 (_1 : t)
+  
+  axiom inv'1 : forall x : t [inv'1 x] . inv'1 x  -> invariant'1 x
   
   use prelude.prelude.Borrow
   
-  predicate invariant'1 (self : borrowed t) =
-    [%#span1] inv'0 self.current /\ inv'0 self.final
+  predicate invariant'0 (self : borrowed t) =
+    [%#span2] inv'1 self.current /\ inv'1 self.final
   
-  predicate inv'1 (_1 : borrowed t)
+  predicate inv'0 (_1 : borrowed t)
   
-  axiom inv'1 [@rewrite] : forall x : borrowed t . inv'1 x = true
-  
-  predicate invariant'0 (self : t)
-  
-  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : borrowed t [inv'0 x] . inv'0 x = invariant'0 x
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed t) =
-    [%#span2] self.final = self.current
+    [%#span3] self.final = self.current
   
-  let rec temp_move (x:borrowed t) (return'  (ret:()))= {[%#sinferred_invariants0] inv'1 x}
+  let rec temp_move (x:borrowed t) (return'  (ret:()))= {[%#sinferred_invariants1] inv'0 x}
     (! bb0
     [ bb0 = bb1
     | bb1 = bb1
-      [ bb1 = (! bb2)
+      [ bb1 = {[@expl:loop invariant] [%#sinferred_invariants0] inv'0 x}
+        (! s0) [ s0 = bb2 ] 
         [ bb2 = s0
           [ s0 =  [ &c <- x ] s1
           | s1 = Borrow.borrow_final <t> {c.current} {Borrow.get_id c}
-              (fun (_ret':borrowed t) ->  [ &_5 <- _ret' ]  [ &c <- { c with current = _5.final ; } ] s2)
-          | s2 = -{inv'0 _5.final}- s3
-          | s3 =  [ &x <- _5 ] s4
-          | s4 = {[@expl:type invariant] inv'1 c} s5
+              (fun (_ret':borrowed t) ->  [ &_6 <- _ret' ]  [ &c <- { c with current = _6.final ; } ] s2)
+          | s2 = -{inv'1 _6.final}- s3
+          | s3 =  [ &x <- _6 ] s4
+          | s4 = {[@expl:type invariant] inv'0 c} s5
           | s5 = -{resolve'0 c}- s6
           | s6 = bb1 ]
            ]
          ]
        ]
-    ) [ & x : borrowed t = x | & c : borrowed t = any_l () | & _5 : borrowed t = any_l () ] 
+    ) [ & x : borrowed t = x | & c : borrowed t = any_l () | & _6 : borrowed t = any_l () ] 
     [ return' (result:())-> (! return' {result}) ]
     
 end
@@ -333,19 +372,19 @@ module T_alloc__alloc__Global
     
 end
 module M_inferred_invariants__y
-  let%span sinferred_invariants0 = "../inferred_invariants.rs" 36 16 36 31
+  let%span sinferred_invariants0 = "../inferred_invariants.rs" 42 16 42 31
   
-  let%span sinferred_invariants1 = "../inferred_invariants.rs" 37 16 37 17
+  let%span sinferred_invariants1 = "../inferred_invariants.rs" 43 16 43 17
   
-  let%span sinferred_invariants2 = "../inferred_invariants.rs" 38 16 38 40
+  let%span sinferred_invariants2 = "../inferred_invariants.rs" 44 16 44 40
   
-  let%span sinferred_invariants3 = "../inferred_invariants.rs" 39 16 39 24
+  let%span sinferred_invariants3 = "../inferred_invariants.rs" 45 16 45 24
   
-  let%span sinferred_invariants4 = "../inferred_invariants.rs" 42 19 42 20
+  let%span sinferred_invariants4 = "../inferred_invariants.rs" 48 19 48 20
   
-  let%span sinferred_invariants5 = "../inferred_invariants.rs" 45 13 45 14
+  let%span sinferred_invariants5 = "../inferred_invariants.rs" 51 13 51 14
   
-  let%span sinferred_invariants6 = "../inferred_invariants.rs" 46 15 46 17
+  let%span sinferred_invariants6 = "../inferred_invariants.rs" 52 15 52 17
   
   let%span span7 = "../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
@@ -373,19 +412,19 @@ module M_inferred_invariants__y
   
   let%span span19 = "../../../../creusot-contracts/src/model.rs" 108 8 108 31
   
-  let%span span20 = "../../../../creusot-contracts/src/std/vec.rs" 147 27 147 46
+  let%span span20 = "../../../../creusot-contracts/src/std/vec.rs" 148 27 148 46
   
   let%span span21 = "" 0 0 0 0
   
   let%span span22 = "" 0 0 0 0
   
-  let%span span23 = "../../../../creusot-contracts/src/std/vec.rs" 148 26 148 54
+  let%span span23 = "../../../../creusot-contracts/src/std/vec.rs" 149 26 149 54
   
-  let%span span24 = "../../../../creusot-contracts/src/std/vec.rs" 149 26 149 57
+  let%span span24 = "../../../../creusot-contracts/src/std/vec.rs" 150 26 150 57
   
-  let%span span25 = "../../../../creusot-contracts/src/std/vec.rs" 150 26 150 62
+  let%span span25 = "../../../../creusot-contracts/src/std/vec.rs" 151 26 151 62
   
-  let%span span26 = "../../../../creusot-contracts/src/std/vec.rs" 151 26 151 55
+  let%span span26 = "../../../../creusot-contracts/src/std/vec.rs" 152 26 152 55
   
   let%span span27 = "" 0 0 0 0
   
@@ -408,7 +447,7 @@ module M_inferred_invariants__y
   
   predicate inv'7 (_1 : int32)
   
-  axiom inv'7 [@rewrite] : forall x : int32 . inv'7 x = true
+  axiom inv'7 [@rewrite] : forall x : int32 [inv'7 x] . inv'7 x = true
   
   use seq.Seq
   
@@ -423,12 +462,12 @@ module M_inferred_invariants__y
   
   predicate inv'6 (_1 : Seq.seq int32)
   
-  axiom inv'6 [@rewrite] : forall x : Seq.seq int32 . inv'6 x = true
+  axiom inv'6 [@rewrite] : forall x : Seq.seq int32 [inv'6 x] . inv'6 x = true
   
   predicate invariant'5 (self : int32) =
     [%#span9] true
   
-  axiom inv'5 [@rewrite] : forall x : int32 . inv'5 x = true
+  axiom inv'5 [@rewrite] : forall x : int32 [inv'5 x] . inv'5 x = true
   
   use T_alloc__vec__Vec as Vec'0
   
@@ -448,7 +487,7 @@ module M_inferred_invariants__y
   
   predicate inv'4 (_1 : Vec'0.t_Vec int32 (Global'0.t_Global))
   
-  axiom inv'4 [@rewrite] : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) . inv'4 x = true
+  axiom inv'4 [@rewrite] : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) [inv'4 x] . inv'4 x = true
   
   use prelude.prelude.Borrow
   
@@ -457,28 +496,28 @@ module M_inferred_invariants__y
   
   predicate inv'3 (_1 : borrowed int32)
   
-  axiom inv'3 [@rewrite] : forall x : borrowed int32 . inv'3 x = true
+  axiom inv'3 [@rewrite] : forall x : borrowed int32 [inv'3 x] . inv'3 x = true
   
   predicate invariant'2 (self : usize) =
     [%#span9] true
   
   predicate inv'2 (_1 : usize)
   
-  axiom inv'2 [@rewrite] : forall x : usize . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : usize [inv'2 x] . inv'2 x = true
   
   predicate invariant'1 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) =
     [%#span13] inv'4 self.current /\ inv'4 self.final
   
   predicate inv'1 (_1 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)))
   
-  axiom inv'1 [@rewrite] : forall x : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) [inv'1 x] . inv'1 x = true
   
   predicate invariant'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) =
     [%#span14] inv'4 self
   
   predicate inv'0 (_1 : Vec'0.t_Vec int32 (Global'0.t_Global))
   
-  axiom inv'0 [@rewrite] : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) [inv'0 x] . inv'0 x = true
   
   use prelude.prelude.Snapshot
   
@@ -593,27 +632,27 @@ module M_inferred_invariants__y
      [ return' (result:())-> (! return' {result}) ] 
 end
 module M_inferred_invariants__nested_loops
-  let%span sinferred_invariants0 = "../inferred_invariants.rs" 55 16 55 17
+  let%span sinferred_invariants0 = "../inferred_invariants.rs" 61 16 61 17
   
-  let%span sinferred_invariants1 = "../inferred_invariants.rs" 57 16 57 26
+  let%span sinferred_invariants1 = "../inferred_invariants.rs" 63 16 63 26
   
-  let%span sinferred_invariants2 = "../inferred_invariants.rs" 59 15 59 17
+  let%span sinferred_invariants2 = "../inferred_invariants.rs" 65 15 65 17
   
-  let%span sinferred_invariants3 = "../inferred_invariants.rs" 62 13 62 14
+  let%span sinferred_invariants3 = "../inferred_invariants.rs" 68 13 68 14
   
-  let%span sinferred_invariants4 = "../inferred_invariants.rs" 64 20 64 21
+  let%span sinferred_invariants4 = "../inferred_invariants.rs" 70 20 70 21
   
-  let%span sinferred_invariants5 = "../inferred_invariants.rs" 66 20 66 30
+  let%span sinferred_invariants5 = "../inferred_invariants.rs" 72 20 72 30
   
-  let%span sinferred_invariants6 = "../inferred_invariants.rs" 68 19 68 21
+  let%span sinferred_invariants6 = "../inferred_invariants.rs" 74 19 74 21
   
-  let%span sinferred_invariants7 = "../inferred_invariants.rs" 71 17 71 18
+  let%span sinferred_invariants7 = "../inferred_invariants.rs" 77 17 77 18
   
-  let%span sinferred_invariants8 = "../inferred_invariants.rs" 72 17 72 18
+  let%span sinferred_invariants8 = "../inferred_invariants.rs" 78 17 78 18
   
-  let%span sinferred_invariants9 = "../inferred_invariants.rs" 52 11 52 21
+  let%span sinferred_invariants9 = "../inferred_invariants.rs" 58 11 58 21
   
-  let%span sinferred_invariants10 = "../inferred_invariants.rs" 53 10 53 20
+  let%span sinferred_invariants10 = "../inferred_invariants.rs" 59 10 59 20
   
   let%span span11 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
@@ -687,23 +726,23 @@ module M_inferred_invariants__nested_loops
     
 end
 module M_inferred_invariants__nested_borrows
-  let%span sinferred_invariants0 = "../inferred_invariants.rs" 81 16 81 17
+  let%span sinferred_invariants0 = "../inferred_invariants.rs" 87 16 87 17
   
-  let%span sinferred_invariants1 = "../inferred_invariants.rs" 83 16 83 27
+  let%span sinferred_invariants1 = "../inferred_invariants.rs" 89 16 89 27
   
-  let%span sinferred_invariants2 = "../inferred_invariants.rs" 85 15 85 17
+  let%span sinferred_invariants2 = "../inferred_invariants.rs" 91 15 91 17
   
-  let%span sinferred_invariants3 = "../inferred_invariants.rs" 88 13 88 14
+  let%span sinferred_invariants3 = "../inferred_invariants.rs" 94 13 94 14
   
-  let%span sinferred_invariants4 = "../inferred_invariants.rs" 90 14 90 15
+  let%span sinferred_invariants4 = "../inferred_invariants.rs" 96 14 96 15
   
-  let%span sinferred_invariants5 = "../inferred_invariants.rs" 94 10 94 11
+  let%span sinferred_invariants5 = "../inferred_invariants.rs" 100 10 100 11
   
-  let%span sinferred_invariants6 = "../inferred_invariants.rs" 77 11 77 22
+  let%span sinferred_invariants6 = "../inferred_invariants.rs" 83 11 83 22
   
-  let%span sinferred_invariants7 = "../inferred_invariants.rs" 78 10 78 17
+  let%span sinferred_invariants7 = "../inferred_invariants.rs" 84 10 84 17
   
-  let%span sinferred_invariants8 = "../inferred_invariants.rs" 79 10 79 21
+  let%span sinferred_invariants8 = "../inferred_invariants.rs" 85 10 85 21
   
   let%span span9 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
   
@@ -728,7 +767,7 @@ module M_inferred_invariants__nested_borrows
   
   predicate inv'2 (_1 : int32)
   
-  axiom inv'2 [@rewrite] : forall x : int32 . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : int32 [inv'2 x] . inv'2 x = true
   
   use prelude.prelude.Borrow
   
@@ -737,14 +776,14 @@ module M_inferred_invariants__nested_borrows
   
   predicate inv'1 (_1 : borrowed int32)
   
-  axiom inv'1 [@rewrite] : forall x : borrowed int32 . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed int32 [inv'1 x] . inv'1 x = true
   
   predicate invariant'0 (self : borrowed (borrowed int32)) =
     [%#span10] inv'1 self.current /\ inv'1 self.final
   
   predicate inv'0 (_1 : borrowed (borrowed int32))
   
-  axiom inv'0 [@rewrite] : forall x : borrowed (borrowed int32) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : borrowed (borrowed int32) [inv'0 x] . inv'0 x = true
   
   use prelude.prelude.Snapshot
   

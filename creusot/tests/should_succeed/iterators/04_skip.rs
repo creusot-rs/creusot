@@ -68,11 +68,13 @@ where
         let old_self = snapshot! { self };
         let mut n = std::mem::take(&mut self.n);
         let mut skipped = snapshot! { Seq::EMPTY };
+
+        #[invariant(inv(self))]
+        #[invariant(inv(*skipped))]
         #[invariant(skipped.len() + n@ == old_self.n@)]
         #[invariant(old_self.iter.produces(skipped.inner(), self.iter))]
         #[invariant(forall<i: Int> 0 <= i && i < skipped.len() ==> skipped[i].resolve())]
         #[invariant((*self).n@ == 0)]
-        #[invariant(inv(self))]
         #[invariant(^*old_self == ^self)]
         loop {
             let r = self.iter.next();

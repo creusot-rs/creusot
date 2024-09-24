@@ -17,11 +17,11 @@ impl<T> Iterator for Once<T> {
     }
 
     #[open]
-    #[predicate]
+    #[predicate(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::EMPTY && self == o ||
-            exists<e: Self::Item> self == Once(Some(e)) && visited == Seq::singleton(e) && o == Once(None)
+            exists<e: Self::Item> inv(e) && self == Once(Some(e)) && visited == Seq::singleton(e) && o == Once(None)
         }
     }
 

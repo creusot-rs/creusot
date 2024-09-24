@@ -49,7 +49,6 @@ impl<T> Invariant for Sparse<T> {
     fn invariant(self) -> bool {
         pearlite! {
             self.n@ <= self.size@
-                && self@.len() == self.size@
                 && self.values@.len() == self.size@
                 && self.idx@.len() == self.size@
                 && self.back@.len() == self.size@

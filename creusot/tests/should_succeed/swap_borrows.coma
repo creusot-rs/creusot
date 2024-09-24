@@ -8,14 +8,15 @@ module M_swap_borrows__swap
   
   let%span sswap_borrows2 = "../swap_borrows.rs" 5 25 5 31
   
-  let%span span3 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  predicate invariant'0 (self : t)
   
-  predicate invariant'0 (self : (t, t)) =
-    [%#span3] true
+  predicate inv'1 (_1 : t)
+  
+  axiom inv'1 : forall x : t [inv'1 x] . inv'1 x  -> invariant'0 x
   
   predicate inv'0 (_1 : (t, t))
   
-  axiom inv'0 [@rewrite] : forall x : (t, t) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : (t, t) [inv'0 x] . inv'0 x = (let (a, b) = x in inv'1 a /\ inv'1 b)
   
   use prelude.prelude.Intrinsic
   
@@ -62,7 +63,7 @@ module M_swap_borrows__f
   
   predicate inv'0 (_1 : (borrowed uint32, borrowed uint32))
   
-  axiom inv'0 [@rewrite] : forall x : (borrowed uint32, borrowed uint32) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : (borrowed uint32, borrowed uint32) [inv'0 x] . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   

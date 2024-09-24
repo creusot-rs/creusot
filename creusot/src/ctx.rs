@@ -233,7 +233,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         let param_env = self.param_env(def_id);
         let ty = self.try_normalize_erasing_regions(param_env, ty).ok()?;
 
-        if ty_inv::is_tyinv_trivial(self.tcx, param_env, ty, false) {
+        if ty_inv::is_tyinv_trivial(self.tcx, param_env, ty) {
             None
         } else {
             debug!("resolving type invariant of {ty:?} in {def_id:?}");

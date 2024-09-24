@@ -21,11 +21,11 @@ module M_final_borrows__reborrow_id
   
   predicate inv'1 (_1 : borrowed t)
   
-  axiom inv'1 [@rewrite] : forall x : borrowed t . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed t [inv'1 x] . inv'1 x = invariant'1 x
   
   predicate invariant'0 (self : t)
   
-  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
+  axiom inv'0 : forall x : t [inv'0 x] . inv'0 x  -> invariant'0 x
   
   use prelude.prelude.Intrinsic
   
@@ -72,7 +72,7 @@ module M_final_borrows__select
   
   predicate inv'1 (_1 : t)
   
-  axiom inv'1 [@rewrite] : forall x : t . inv'1 x = true
+  axiom inv'1 : forall x : t [inv'1 x] . inv'1 x  -> invariant'1 x
   
   use prelude.prelude.Borrow
   
@@ -81,7 +81,7 @@ module M_final_borrows__select
   
   predicate inv'0 (_1 : borrowed t)
   
-  axiom inv'0 [@rewrite] : forall x : borrowed t . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : borrowed t [inv'0 x] . inv'0 x = invariant'0 x
   
   use prelude.prelude.Intrinsic
   
@@ -153,48 +153,43 @@ module M_final_borrows__reborrow_field
   
   let%span sfinal_borrows2 = "../final_borrows.rs" 19 44 19 50
   
-  let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
   
-  let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
+  let%span span4 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
-  
-  predicate invariant'3 (self : (t, t)) =
-    [%#span3] true
+  predicate inv'0 (_1 : t)
   
   predicate inv'3 (_1 : (t, t))
   
-  axiom inv'3 [@rewrite] : forall x : (t, t) . inv'3 x = true
+  axiom inv'3 [@rewrite] : forall x : (t, t) [inv'3 x] . inv'3 x = (let (a, b) = x in inv'0 a /\ inv'0 b)
   
   use prelude.prelude.Borrow
   
   predicate invariant'2 (self : borrowed (t, t)) =
-    [%#span4] inv'3 self.current /\ inv'3 self.final
+    [%#span3] inv'3 self.current /\ inv'3 self.final
   
   predicate inv'2 (_1 : borrowed (t, t))
   
-  axiom inv'2 [@rewrite] : forall x : borrowed (t, t) . inv'2 x = true
-  
-  predicate inv'0 (_1 : t)
+  axiom inv'2 [@rewrite] : forall x : borrowed (t, t) [inv'2 x] . inv'2 x = invariant'2 x
   
   predicate invariant'1 (self : borrowed t) =
-    [%#span4] inv'0 self.current /\ inv'0 self.final
+    [%#span3] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'1 (_1 : borrowed t)
   
-  axiom inv'1 [@rewrite] : forall x : borrowed t . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed t [inv'1 x] . inv'1 x = invariant'1 x
   
   predicate invariant'0 (self : t)
   
-  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
+  axiom inv'0 : forall x : t [inv'0 x] . inv'0 x  -> invariant'0 x
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'1 (self : borrowed (t, t)) =
-    [%#span5] self.final = self.current
+    [%#span4] self.final = self.current
   
   predicate resolve'0 (self : borrowed t) =
-    [%#span5] self.final = self.current
+    [%#span4] self.final = self.current
   
   let rec reborrow_field (r:borrowed (t, t)) (return'  (ret:borrowed t))= {[%#sfinal_borrows0] inv'2 r}
     (! bb0
@@ -240,65 +235,57 @@ module M_final_borrows__nested_fields
   
   let%span sfinal_borrows2 = "../final_borrows.rs" 24 48 24 54
   
-  let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
   
-  let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
-  
-  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
-  
-  predicate invariant'5 (self : ((t, t), t)) =
-    [%#span3] true
-  
-  predicate inv'5 (_1 : ((t, t), t))
-  
-  axiom inv'5 [@rewrite] : forall x : ((t, t), t) . inv'5 x = true
-  
-  use prelude.prelude.Borrow
-  
-  predicate invariant'4 (self : borrowed ((t, t), t)) =
-    [%#span4] inv'5 self.current /\ inv'5 self.final
-  
-  predicate inv'4 (_1 : borrowed ((t, t), t))
-  
-  axiom inv'4 [@rewrite] : forall x : borrowed ((t, t), t) . inv'4 x = true
+  let%span span4 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
   predicate inv'1 (_1 : t)
   
-  predicate invariant'3 (self : borrowed t) =
-    [%#span4] inv'1 self.current /\ inv'1 self.final
+  predicate inv'0 (_1 : (t, t))
+  
+  predicate inv'5 (_1 : ((t, t), t))
+  
+  axiom inv'5 [@rewrite] : forall x : ((t, t), t) [inv'5 x] . inv'5 x = (let (a, b) = x in inv'0 a /\ inv'1 b)
+  
+  use prelude.prelude.Borrow
+  
+  predicate invariant'3 (self : borrowed ((t, t), t)) =
+    [%#span3] inv'5 self.current /\ inv'5 self.final
+  
+  predicate inv'4 (_1 : borrowed ((t, t), t))
+  
+  axiom inv'4 [@rewrite] : forall x : borrowed ((t, t), t) [inv'4 x] . inv'4 x = invariant'3 x
+  
+  predicate invariant'2 (self : borrowed t) =
+    [%#span3] inv'1 self.current /\ inv'1 self.final
   
   predicate inv'3 (_1 : borrowed t)
   
-  axiom inv'3 [@rewrite] : forall x : borrowed t . inv'3 x = true
+  axiom inv'3 [@rewrite] : forall x : borrowed t [inv'3 x] . inv'3 x = invariant'2 x
   
-  predicate inv'0 (_1 : (t, t))
-  
-  predicate invariant'2 (self : borrowed (t, t)) =
-    [%#span4] inv'0 self.current /\ inv'0 self.final
+  predicate invariant'1 (self : borrowed (t, t)) =
+    [%#span3] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'2 (_1 : borrowed (t, t))
   
-  axiom inv'2 [@rewrite] : forall x : borrowed (t, t) . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : borrowed (t, t) [inv'2 x] . inv'2 x = invariant'1 x
   
-  predicate invariant'1 (self : t)
+  predicate invariant'0 (self : t)
   
-  axiom inv'1 [@rewrite] : forall x : t . inv'1 x = true
+  axiom inv'1 : forall x : t [inv'1 x] . inv'1 x  -> invariant'0 x
   
-  predicate invariant'0 (self : (t, t)) =
-    [%#span3] true
-  
-  axiom inv'0 [@rewrite] : forall x : (t, t) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : (t, t) [inv'0 x] . inv'0 x = (let (a, b) = x in inv'1 a /\ inv'1 b)
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'2 (self : borrowed ((t, t), t)) =
-    [%#span5] self.final = self.current
+    [%#span4] self.final = self.current
   
   predicate resolve'1 (self : borrowed t) =
-    [%#span5] self.final = self.current
+    [%#span4] self.final = self.current
   
   predicate resolve'0 (self : borrowed (t, t)) =
-    [%#span5] self.final = self.current
+    [%#span4] self.final = self.current
   
   let rec nested_fields (r:borrowed ((t, t), t)) (return'  (ret:borrowed t))= {[%#sfinal_borrows0] inv'4 r}
     (! bb0
@@ -356,48 +343,54 @@ module M_final_borrows__really_nested_fields
   
   let%span sfinal_borrows2 = "../final_borrows.rs" 30 55 30 61
   
-  let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
   
-  let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
+  let%span span4 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
-  
-  let%span span6 = "../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60
-  
-  use prelude.prelude.Borrow
-  
-  predicate invariant'2 (self : (borrowed (t, t), t)) =
-    [%#span3] true
-  
-  predicate inv'2 (_1 : (borrowed (t, t), t))
-  
-  axiom inv'2 [@rewrite] : forall x : (borrowed (t, t), t) . inv'2 x = true
+  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 17 8 17 60
   
   predicate inv'0 (_1 : t)
   
+  predicate inv'4 (_1 : (t, t))
+  
+  axiom inv'4 [@rewrite] : forall x : (t, t) [inv'4 x] . inv'4 x = (let (a, b) = x in inv'0 a /\ inv'0 b)
+  
+  use prelude.prelude.Borrow
+  
+  predicate invariant'2 (self : borrowed (t, t)) =
+    [%#span3] inv'4 self.current /\ inv'4 self.final
+  
+  predicate inv'3 (_1 : borrowed (t, t))
+  
+  axiom inv'3 [@rewrite] : forall x : borrowed (t, t) [inv'3 x] . inv'3 x = invariant'2 x
+  
+  predicate inv'2 (_1 : (borrowed (t, t), t))
+  
+  axiom inv'2 [@rewrite] : forall x : (borrowed (t, t), t) [inv'2 x] . inv'2 x = (let (a, b) = x in inv'3 a /\ inv'0 b)
+  
   predicate invariant'1 (self : borrowed t) =
-    [%#span4] inv'0 self.current /\ inv'0 self.final
+    [%#span3] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'1 (_1 : borrowed t)
   
-  axiom inv'1 [@rewrite] : forall x : borrowed t . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed t [inv'1 x] . inv'1 x = invariant'1 x
   
   predicate invariant'0 (self : t)
   
-  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
+  axiom inv'0 : forall x : t [inv'0 x] . inv'0 x  -> invariant'0 x
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'3 (self : t)
   
   predicate resolve'2 (self : borrowed (t, t)) =
-    [%#span5] self.final = self.current
+    [%#span4] self.final = self.current
   
   predicate resolve'1 (self : (borrowed (t, t), t)) =
-    [%#span6] resolve'2 (let (a, _) = self in a) /\ resolve'3 (let (_, a) = self in a)
+    [%#span5] resolve'2 (let (a, _) = self in a) /\ resolve'3 (let (_, a) = self in a)
   
   predicate resolve'0 (self : borrowed t) =
-    [%#span5] self.final = self.current
+    [%#span4] self.final = self.current
   
   let rec really_nested_fields (x:(borrowed (t, t), t)) (return'  (ret:borrowed t))= {[%#sfinal_borrows0] inv'2 x}
     (! bb0
@@ -466,67 +459,64 @@ module M_final_borrows__select_field
   
   let%span sfinal_borrows2 = "../final_borrows.rs" 39 50 39 56
   
-  let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
   
-  let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
-  
-  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
-  
-  use T_core__option__Option as Option'0
-  
-  predicate invariant'5 (self : (Option'0.t_Option t, t)) =
-    [%#span3] true
-  
-  predicate inv'5 (_1 : (Option'0.t_Option t, t))
-  
-  axiom inv'5 [@rewrite] : forall x : (Option'0.t_Option t, t) . inv'5 x = true
-  
-  use prelude.prelude.Borrow
-  
-  predicate invariant'4 (self : borrowed (Option'0.t_Option t, t)) =
-    [%#span4] inv'5 self.current /\ inv'5 self.final
-  
-  predicate inv'4 (_1 : borrowed (Option'0.t_Option t, t))
-  
-  axiom inv'4 [@rewrite] : forall x : borrowed (Option'0.t_Option t, t) . inv'4 x = true
-  
-  predicate inv'0 (_1 : Option'0.t_Option t)
-  
-  predicate invariant'3 (self : borrowed (Option'0.t_Option t)) =
-    [%#span4] inv'0 self.current /\ inv'0 self.final
-  
-  predicate inv'3 (_1 : borrowed (Option'0.t_Option t))
-  
-  axiom inv'3 [@rewrite] : forall x : borrowed (Option'0.t_Option t) . inv'3 x = true
+  let%span span4 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
   predicate inv'1 (_1 : t)
   
-  predicate invariant'2 (self : borrowed t) =
-    [%#span4] inv'1 self.current /\ inv'1 self.final
+  use T_core__option__Option as Option'0
+  
+  predicate inv'0 (_1 : Option'0.t_Option t)
+  
+  predicate inv'5 (_1 : (Option'0.t_Option t, t))
+  
+  axiom inv'5 [@rewrite] : forall x : (Option'0.t_Option t, t) [inv'5 x] . inv'5 x
+  = (let (a, b) = x in inv'0 a /\ inv'1 b)
+  
+  use prelude.prelude.Borrow
+  
+  predicate invariant'3 (self : borrowed (Option'0.t_Option t, t)) =
+    [%#span3] inv'5 self.current /\ inv'5 self.final
+  
+  predicate inv'4 (_1 : borrowed (Option'0.t_Option t, t))
+  
+  axiom inv'4 [@rewrite] : forall x : borrowed (Option'0.t_Option t, t) [inv'4 x] . inv'4 x = invariant'3 x
+  
+  predicate invariant'2 (self : borrowed (Option'0.t_Option t)) =
+    [%#span3] inv'0 self.current /\ inv'0 self.final
+  
+  predicate inv'3 (_1 : borrowed (Option'0.t_Option t))
+  
+  axiom inv'3 [@rewrite] : forall x : borrowed (Option'0.t_Option t) [inv'3 x] . inv'3 x = invariant'2 x
+  
+  predicate invariant'1 (self : borrowed t) =
+    [%#span3] inv'1 self.current /\ inv'1 self.final
   
   predicate inv'2 (_1 : borrowed t)
   
-  axiom inv'2 [@rewrite] : forall x : borrowed t . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : borrowed t [inv'2 x] . inv'2 x = invariant'1 x
   
-  predicate invariant'1 (self : t)
+  predicate invariant'0 (self : t)
   
-  axiom inv'1 [@rewrite] : forall x : t . inv'1 x = true
+  axiom inv'1 : forall x : t [inv'1 x] . inv'1 x  -> invariant'0 x
   
-  predicate invariant'0 (self : Option'0.t_Option t) =
-    [%#span3] true
-  
-  axiom inv'0 [@rewrite] : forall x : Option'0.t_Option t . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Option'0.t_Option t [inv'0 x] . inv'0 x
+  = match x with
+    | Option'0.C_None -> true
+    | Option'0.C_Some a_0 -> inv'1 a_0
+    end
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'2 (self : borrowed (Option'0.t_Option t, t)) =
-    [%#span5] self.final = self.current
+    [%#span4] self.final = self.current
   
   predicate resolve'1 (self : borrowed (Option'0.t_Option t)) =
-    [%#span5] self.final = self.current
+    [%#span4] self.final = self.current
   
   predicate resolve'0 (self : borrowed t) =
-    [%#span5] self.final = self.current
+    [%#span4] self.final = self.current
   
   let rec select_field (x:borrowed (Option'0.t_Option t, t)) (return'  (ret:borrowed t))= {[%#sfinal_borrows0] inv'4 x}
     (! bb0
@@ -775,18 +765,18 @@ module M_final_borrows__unnesting_non_extensional
   
   predicate inv'2 (_1 : borrowed (borrowed t))
   
-  axiom inv'2 [@rewrite] : forall x : borrowed (borrowed t) . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : borrowed (borrowed t) [inv'2 x] . inv'2 x = invariant'2 x
   
   predicate inv'0 (_1 : t)
   
   predicate invariant'1 (self : borrowed t) =
     [%#span4] inv'0 self.current /\ inv'0 self.final
   
-  axiom inv'1 [@rewrite] : forall x : borrowed t . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed t [inv'1 x] . inv'1 x = invariant'1 x
   
   predicate invariant'0 (self : t)
   
-  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
+  axiom inv'0 : forall x : t [inv'0 x] . inv'0 x  -> invariant'0 x
   
   use prelude.prelude.Intrinsic
   
@@ -856,7 +846,7 @@ module M_final_borrows__box_deref
   
   predicate inv'1 (_1 : t)
   
-  axiom inv'1 [@rewrite] : forall x : t . inv'1 x = true
+  axiom inv'1 : forall x : t [inv'1 x] . inv'1 x  -> invariant'1 x
   
   use T_alloc__alloc__Global as Global'0
   
@@ -865,7 +855,7 @@ module M_final_borrows__box_deref
   
   predicate inv'0 (_1 : t)
   
-  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : t [inv'0 x] . inv'0 x = invariant'0 x
   
   use prelude.prelude.Intrinsic
   
@@ -904,7 +894,7 @@ module M_final_borrows__box_reborrow_direct
   
   predicate inv'2 (_1 : t)
   
-  axiom inv'2 [@rewrite] : forall x : t . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : t [inv'2 x] . inv'2 x = invariant'2 x
   
   use prelude.prelude.Borrow
   
@@ -913,11 +903,11 @@ module M_final_borrows__box_reborrow_direct
   
   predicate inv'1 (_1 : borrowed t)
   
-  axiom inv'1 [@rewrite] : forall x : borrowed t . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed t [inv'1 x] . inv'1 x = invariant'1 x
   
   predicate invariant'0 (self : t)
   
-  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
+  axiom inv'0 : forall x : t [inv'0 x] . inv'0 x  -> invariant'0 x
   
   use prelude.prelude.Intrinsic
   
@@ -976,7 +966,7 @@ module M_final_borrows__box_reborrow_indirect
   
   predicate inv'3 (_1 : t)
   
-  axiom inv'3 [@rewrite] : forall x : t . inv'3 x = true
+  axiom inv'3 [@rewrite] : forall x : t [inv'3 x] . inv'3 x = invariant'3 x
   
   use prelude.prelude.Borrow
   
@@ -985,18 +975,18 @@ module M_final_borrows__box_reborrow_indirect
   
   predicate inv'2 (_1 : borrowed t)
   
-  axiom inv'2 [@rewrite] : forall x : borrowed t . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : borrowed t [inv'2 x] . inv'2 x = invariant'2 x
   
   predicate invariant'1 (self : borrowed t) =
     [%#span4] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'1 (_1 : borrowed t)
   
-  axiom inv'1 [@rewrite] : forall x : borrowed t . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed t [inv'1 x] . inv'1 x = invariant'1 x
   
   predicate invariant'0 (self : t)
   
-  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
+  axiom inv'0 : forall x : t [inv'0 x] . inv'0 x  -> invariant'0 x
   
   use prelude.prelude.Intrinsic
   
@@ -1110,18 +1100,18 @@ module M_final_borrows__borrow_in_box
   
   predicate inv'2 (_1 : borrowed t)
   
-  axiom inv'2 [@rewrite] : forall x : borrowed t . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : borrowed t [inv'2 x] . inv'2 x = invariant'2 x
   
   predicate inv'0 (_1 : t)
   
   predicate invariant'1 (self : borrowed t) =
     [%#span4] inv'0 self.current /\ inv'0 self.final
   
-  axiom inv'1 [@rewrite] : forall x : borrowed t . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed t [inv'1 x] . inv'1 x = invariant'1 x
   
   predicate invariant'0 (self : t)
   
-  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
+  axiom inv'0 : forall x : t [inv'0 x] . inv'0 x  -> invariant'0 x
   
   use prelude.prelude.Intrinsic
   
@@ -1315,7 +1305,7 @@ module M_final_borrows__reborrow_in_box
   
   predicate inv'3 (_1 : t)
   
-  axiom inv'3 [@rewrite] : forall x : t . inv'3 x = true
+  axiom inv'3 [@rewrite] : forall x : t [inv'3 x] . inv'3 x = invariant'3 x
   
   use prelude.prelude.Borrow
   
@@ -1324,18 +1314,18 @@ module M_final_borrows__reborrow_in_box
   
   predicate inv'2 (_1 : borrowed t)
   
-  axiom inv'2 [@rewrite] : forall x : borrowed t . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : borrowed t [inv'2 x] . inv'2 x = invariant'2 x
   
   predicate invariant'1 (self : borrowed t) =
     [%#span4] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'1 (_1 : borrowed t)
   
-  axiom inv'1 [@rewrite] : forall x : borrowed t . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed t [inv'1 x] . inv'1 x = invariant'1 x
   
   predicate invariant'0 (self : t)
   
-  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
+  axiom inv'0 : forall x : t [inv'0 x] . inv'0 x  -> invariant'0 x
   
   use prelude.prelude.Intrinsic
   
@@ -1396,11 +1386,11 @@ module M_final_borrows__shared_borrow_no_gen
   
   predicate inv'1 (_1 : borrowed t)
   
-  axiom inv'1 [@rewrite] : forall x : borrowed t . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed t [inv'1 x] . inv'1 x = invariant'1 x
   
   predicate invariant'0 (self : t)
   
-  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
+  axiom inv'0 : forall x : t [inv'0 x] . inv'0 x  -> invariant'0 x
   
   use prelude.prelude.Intrinsic
   
@@ -1441,9 +1431,13 @@ module M_final_borrows__inspect_no_gen
   
   let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
   
-  let%span span5 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span6 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  predicate invariant'1 (self : t)
+  
+  predicate inv'2 (_1 : t)
+  
+  axiom inv'2 : forall x : t [inv'2 x] . inv'2 x  -> invariant'1 x
   
   use T_core__option__Option as Option'0
   
@@ -1451,22 +1445,23 @@ module M_final_borrows__inspect_no_gen
   
   use prelude.prelude.Borrow
   
-  predicate invariant'1 (self : borrowed (Option'0.t_Option t)) =
+  predicate invariant'0 (self : borrowed (Option'0.t_Option t)) =
     [%#span4] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'1 (_1 : borrowed (Option'0.t_Option t))
   
-  axiom inv'1 [@rewrite] : forall x : borrowed (Option'0.t_Option t) . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed (Option'0.t_Option t) [inv'1 x] . inv'1 x = invariant'0 x
   
-  predicate invariant'0 (self : Option'0.t_Option t) =
-    [%#span5] true
-  
-  axiom inv'0 [@rewrite] : forall x : Option'0.t_Option t . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Option'0.t_Option t [inv'0 x] . inv'0 x
+  = match x with
+    | Option'0.C_None -> true
+    | Option'0.C_Some a_0 -> inv'2 a_0
+    end
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Option'0.t_Option t)) =
-    [%#span6] self.final = self.current
+    [%#span5] self.final = self.current
   
   let rec inspect_no_gen (x:borrowed (Option'0.t_Option t)) (return'  (ret:()))= {[%#sfinal_borrows3] inv'1 x}
     (! bb0
@@ -1505,9 +1500,13 @@ module M_final_borrows__place_mention_no_gen
   
   let%span span2 = "../../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
   
-  let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span3 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span4 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  predicate invariant'1 (self : t)
+  
+  predicate inv'2 (_1 : t)
+  
+  axiom inv'2 : forall x : t [inv'2 x] . inv'2 x  -> invariant'1 x
   
   use T_core__option__Option as Option'0
   
@@ -1515,22 +1514,23 @@ module M_final_borrows__place_mention_no_gen
   
   use prelude.prelude.Borrow
   
-  predicate invariant'1 (self : borrowed (Option'0.t_Option t)) =
+  predicate invariant'0 (self : borrowed (Option'0.t_Option t)) =
     [%#span2] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'1 (_1 : borrowed (Option'0.t_Option t))
   
-  axiom inv'1 [@rewrite] : forall x : borrowed (Option'0.t_Option t) . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed (Option'0.t_Option t) [inv'1 x] . inv'1 x = invariant'0 x
   
-  predicate invariant'0 (self : Option'0.t_Option t) =
-    [%#span3] true
-  
-  axiom inv'0 [@rewrite] : forall x : Option'0.t_Option t . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Option'0.t_Option t [inv'0 x] . inv'0 x
+  = match x with
+    | Option'0.C_None -> true
+    | Option'0.C_Some a_0 -> inv'2 a_0
+    end
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Option'0.t_Option t)) =
-    [%#span4] self.final = self.current
+    [%#span3] self.final = self.current
   
   let rec place_mention_no_gen (x:borrowed (Option'0.t_Option t)) (return'  (ret:()))= {[%#sfinal_borrows1] inv'1 x}
     (! bb0
@@ -1651,7 +1651,7 @@ module M_final_borrows__index_mut_slice
   
   predicate inv'5 (_1 : t)
   
-  axiom inv'5 [@rewrite] : forall x : t . inv'5 x = true
+  axiom inv'5 [@rewrite] : forall x : t [inv'5 x] . inv'5 x = invariant'5 x
   
   use seq.Seq
   
@@ -1666,7 +1666,7 @@ module M_final_borrows__index_mut_slice
   
   predicate inv'4 (_1 : Seq.seq t)
   
-  axiom inv'4 [@rewrite] : forall x : Seq.seq t . inv'4 x = true
+  axiom inv'4 [@rewrite] : forall x : Seq.seq t [inv'4 x] . inv'4 x = invariant'4 x
   
   use prelude.prelude.Slice
   
@@ -1688,7 +1688,7 @@ module M_final_borrows__index_mut_slice
   
   predicate inv'3 (_1 : slice t)
   
-  axiom inv'3 [@rewrite] : forall x : slice t . inv'3 x = true
+  axiom inv'3 [@rewrite] : forall x : slice t [inv'3 x] . inv'3 x = invariant'3 x
   
   use prelude.prelude.Borrow
   
@@ -1697,18 +1697,18 @@ module M_final_borrows__index_mut_slice
   
   predicate inv'2 (_1 : borrowed (slice t))
   
-  axiom inv'2 [@rewrite] : forall x : borrowed (slice t) . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : borrowed (slice t) [inv'2 x] . inv'2 x = invariant'2 x
   
   predicate invariant'1 (self : borrowed t) =
     [%#span12] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'1 (_1 : borrowed t)
   
-  axiom inv'1 [@rewrite] : forall x : borrowed t . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed t [inv'1 x] . inv'1 x = invariant'1 x
   
   predicate invariant'0 (self : t)
   
-  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
+  axiom inv'0 : forall x : t [inv'0 x] . inv'0 x  -> invariant'0 x
   
   use seq.Seq
   
@@ -1814,7 +1814,7 @@ module M_final_borrows__index_mut_array
   
   predicate inv'5 (_1 : t)
   
-  axiom inv'5 [@rewrite] : forall x : t . inv'5 x = true
+  axiom inv'5 [@rewrite] : forall x : t [inv'5 x] . inv'5 x = invariant'5 x
   
   use seq.Seq
   
@@ -1829,7 +1829,7 @@ module M_final_borrows__index_mut_array
   
   predicate inv'4 (_1 : Seq.seq t)
   
-  axiom inv'4 [@rewrite] : forall x : Seq.seq t . inv'4 x = true
+  axiom inv'4 [@rewrite] : forall x : Seq.seq t [inv'4 x] . inv'4 x = invariant'4 x
   
   use prelude.prelude.Slice
   
@@ -1842,7 +1842,7 @@ module M_final_borrows__index_mut_array
   
   predicate inv'3 (_1 : array t)
   
-  axiom inv'3 [@rewrite] : forall x : array t . inv'3 x = true
+  axiom inv'3 [@rewrite] : forall x : array t [inv'3 x] . inv'3 x = invariant'3 x
   
   use prelude.prelude.Borrow
   
@@ -1851,18 +1851,18 @@ module M_final_borrows__index_mut_array
   
   predicate inv'2 (_1 : borrowed (array t))
   
-  axiom inv'2 [@rewrite] : forall x : borrowed (array t) . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : borrowed (array t) [inv'2 x] . inv'2 x = invariant'2 x
   
   predicate invariant'1 (self : borrowed t) =
     [%#span9] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'1 (_1 : borrowed t)
   
-  axiom inv'1 [@rewrite] : forall x : borrowed t . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed t [inv'1 x] . inv'1 x = invariant'1 x
   
   predicate invariant'0 (self : t)
   
-  axiom inv'0 [@rewrite] : forall x : t . inv'0 x = true
+  axiom inv'0 : forall x : t [inv'0 x] . inv'0 x  -> invariant'0 x
   
   use seq.Seq
   

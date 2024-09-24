@@ -48,8 +48,10 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, B, F> {
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             self.func.unnest(succ.func)
-            && exists<s : Seq<I::Item>> inv(s) && s.len() == visited.len() && self.iter.produces(s, succ.iter)
             && exists<fs: Seq<&mut F>> inv(fs) && fs.len() == visited.len()
+            && exists<s : Seq<I::Item>>
+                #![trigger self.iter.produces(s, succ.iter)]
+                inv(s) && s.len() == visited.len() && self.iter.produces(s, succ.iter)
             && (forall<i : Int> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == *fs[i])
             && if visited.len() == 0 { self.func == succ.func }
                else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
@@ -80,7 +82,11 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
     #[predicate(prophetic)]
     fn next_precondition(iter: I, func: F) -> bool {
         pearlite! {
-            forall<e: I::Item, i: I> iter.produces(Seq::singleton(e), i) ==> func.precondition((e,))
+            forall<e: I::Item, i: I>
+                #![trigger iter.produces(Seq::singleton(e), i)]
+                inv(e) && inv(i) ==>
+                iter.produces(Seq::singleton(e), i) ==>
+                func.precondition((e,))
         }
     }
 
@@ -88,7 +94,8 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
     fn preservation(iter: I, func: F) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
-                func.unnest(*f) ==>
+                #![trigger iter.produces(s.push(e1).push(e2), i), f.postcondition_mut((e1,), b)]
+                inv(s) && inv(e1) && inv(e2) && inv(f) && inv(i) && func.unnest(*f) ==>
                 iter.produces(s.push(e1).push(e2), i) ==>
                 (*f).precondition((e1,)) ==>
                 f.postcondition_mut((e1,), b) ==>
@@ -100,6 +107,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
     fn reinitialize() -> bool {
         pearlite! {
             forall<iter: &mut I, func: F>
+                inv(iter) && inv(func) ==>
                 iter.completed() ==>
                 Self::next_precondition(^iter, func) && Self::preservation(^iter, func)
         }
@@ -107,6 +115,10 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
 
     #[logic]
     #[requires(inv(self))]
+    #[requires(inv(e))]
+    #[requires(inv(r))]
+    #[requires(inv(f))]
+    #[requires(inv(iter))]
     #[requires(self.iter.produces(Seq::singleton(e), iter))]
     #[requires(*f == self.func)]
     #[requires(f.postcondition_mut((e,), r) )]
@@ -115,6 +127,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
     fn produces_one_invariant(self, e: I::Item, r: B, f: &mut F, iter: I) {
         proof_assert! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, i: I>
+                inv(s) && inv(e1) && inv(e2) && inv(i) ==>
                 iter.produces(s.push(e1).push(e2), i) ==>
                 self.iter.produces(Seq::singleton(e).concat(s).push(e1).push(e2), i)
         }
@@ -124,8 +137,9 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
     fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {
-            exists<f: &mut F> inv(f) && *f == self.func && ^f == succ.func
-            && exists<e : I::Item> inv(e)
+            exists<f: &mut F, e: I::Item>
+                #![trigger f.postcondition_mut((e,), visited)]
+                inv(f) && inv(e) && *f == self.func && ^f == succ.func
                 && self.iter.produces(Seq::singleton(e), succ.iter)
                 && (*f).precondition((e,))
                 && f.postcondition_mut((e,), visited)
@@ -134,7 +148,6 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
 }
 
 impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, B, F> {
-    // Should not quantify over self or the `invariant` cannot be made into a type invariant
     #[predicate(prophetic)]
     #[open(self)]
     fn invariant(self) -> bool {
@@ -146,7 +159,9 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, B, F> {
     }
 }
 
-#[requires(forall<e : I::Item, i2 : I> iter.produces(Seq::singleton(e), i2) ==> func.precondition((e,)))]
+#[requires(forall<e : I::Item, i2 : I> inv(e) && inv(i2) ==>
+                iter.produces(Seq::singleton(e), i2) ==>
+                func.precondition((e,)))]
 #[requires(Map::<I, B, F>::reinitialize())]
 #[requires(Map::<I, B, F>::preservation(iter, func))]
 #[ensures(result == Map { iter, func })]

@@ -56,6 +56,9 @@ impl<I: Iterator> Iterator for Fuse<I> {
 
 pub trait FusedIterator: ::std::iter::FusedIterator + Iterator {
     #[law]
+    #[requires(inv(self))]
+    #[requires(inv(next))]
+    #[requires(inv(steps))]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
     #[ensures(steps == Seq::EMPTY && ^self == next)]
@@ -65,6 +68,9 @@ pub trait FusedIterator: ::std::iter::FusedIterator + Iterator {
 impl<I: Iterator> FusedIterator for Fuse<I> {
     #[law]
     #[open]
+    #[requires(inv(self))]
+    #[requires(inv(next))]
+    #[requires(inv(steps))]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
     #[ensures(steps == Seq::EMPTY && ^self == next)]

@@ -41,7 +41,10 @@ impl<I: Iterator> Invariant for Enumerate<I> {
     #[predicate(prophetic)]
     fn invariant(self) -> bool {
         pearlite! {
-            (forall<s: Seq<I::Item>, i: I> self.iter().produces(s, i) ==> self.n() + s.len() < std::usize::MAX@)
+            (forall<s: Seq<I::Item>, i: I>
+                #![trigger self.iter().produces(s, i)]
+                inv(s) && inv(i) && self.iter().produces(s, i) ==>
+                self.n() + s.len() < std::usize::MAX@)
             && (forall<i: &mut I> i.completed() ==> i.produces(Seq::EMPTY, ^i))
         }
     }
@@ -59,6 +62,7 @@ where
                 && *inner == self.iter()
                 && ^inner == (^self).iter()
                 && inner.completed()
+                && self.n() == (^self).n()
         }
     }
 

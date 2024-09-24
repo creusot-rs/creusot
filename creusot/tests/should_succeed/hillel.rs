@@ -3,6 +3,7 @@
 
 extern crate creusot_contracts;
 use creusot_contracts::{
+    invariant::inv,
     logic::{Int, Seq},
     *,
 };
@@ -104,6 +105,7 @@ fn unique<T: Eq + DeepModel + Copy>(str: &[T]) -> Vec<T> {
     let mut unique = Vec::new();
     let mut sub_str: Snapshot<Seq<T>> = snapshot! { Seq::EMPTY };
 
+    #[invariant(inv(unique))]
     #[invariant(is_unique(unique.deep_model()))]
     #[invariant(is_subset(unique.deep_model(), str.deep_model()))]
     #[invariant(is_subset(str.deep_model().subsequence(0, produced.len()), unique.deep_model()))]
