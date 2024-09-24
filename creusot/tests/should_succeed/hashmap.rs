@@ -1,7 +1,7 @@
 // UNSTABLE
 extern crate creusot_contracts;
 use creusot_contracts::{
-    invariant::inv,
+    invariant::{inv, Invariant},
     logic::{Int, Mapping},
     vec, *,
 };
@@ -90,19 +90,34 @@ impl<K: Hash, V> MyHashMap<K, V> {
     fn bucket_ix(self, k: K::DeepModelTy) -> Int {
         pearlite! { K::hash_log(k).rem_euclid(self.buckets@.len()) }
     }
+
+    #[predicate]
+    fn good_bucket(self, l: List<(K, V)>, h: Int) -> bool {
+        pearlite! {
+            forall<k : K::DeepModelTy, v: _> l.get(k) == Some(v) ==> self.bucket_ix(k) == h
+        }
+    }
+}
+
+impl<K: Hash, V> Invariant for MyHashMap<K, V> {
+    #[predicate]
+    #[open(self)]
+    fn invariant(self) -> bool {
+        pearlite! {
+            0 < self.buckets@.len() &&
+            forall<i : _> 0 <= i && i < self.buckets@.len() ==> self.good_bucket(self.buckets[i], i) && self.buckets[i].no_double_binding()
+        }
+    }
 }
 
 impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
     #[requires(0 < size@)]
-    #[ensures(result.hashmap_inv())]
     #[ensures(forall<i: K::DeepModelTy> result@.get(i) == None)]
     pub fn new(size: usize) -> MyHashMap<K, V> {
         let res = MyHashMap { buckets: vec![List::Nil; size] };
         res
     }
 
-    #[requires((*self).hashmap_inv())]
-    #[ensures((^self).hashmap_inv())]
     #[ensures(forall<i: K::DeepModelTy> (^self)@.get(i) == (if i == key.deep_model() { Some(val) } else { self@.get(i) } ))]
     pub fn add(&mut self, key: K, val: V) {
         use List::*;
@@ -124,18 +139,14 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
             let tl = tl;
             if *k == key {
                 *v = val;
-                proof_assert! { (self).hashmap_inv() };
                 return;
             }
             l = &mut **tl;
         }
 
         *l = Cons((key, val), Box::new(Nil));
-
-        proof_assert! { (self).hashmap_inv() };
     }
 
-    #[requires(self.hashmap_inv())]
     #[ensures(match result {
         Some(v) => self@.get(key.deep_model()) == Some(*v),
         None => self@.get(key.deep_model()) == None,
@@ -157,8 +168,6 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
 
     // TODO: Cleanup.
     #[requires(self.buckets@.len() < 1000)]
-    #[requires((*self).hashmap_inv())]
-    #[ensures((^self).hashmap_inv())]
     #[ensures(forall<k : K::DeepModelTy> (^self)@.get(k) == self@.get(k))] // lets prove the extensional version for now
     #[allow(dead_code)]
     fn resize(&mut self) {
@@ -174,7 +183,6 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
                     old_self.bucket_ix(k) <= old_self.buckets@.len() ==> new@.get(k) == None
         )]
         #[invariant(forall<j : Int> i@ <= j && j < old_self.buckets@.len() ==> self.buckets[j] == old_self.buckets[j])]
-        #[invariant(new.hashmap_inv())]
         #[invariant(old_self.buckets@.len() == self.buckets@.len())]
         #[invariant(i@ <= self.buckets@.len())]
         while i < self.buckets.len() {
@@ -182,7 +190,6 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
 
             #[invariant(inv(new))]
             #[invariant(inv(l))]
-            #[invariant(new.hashmap_inv())]
             #[invariant(forall<k : K::DeepModelTy> old_self.bucket_ix(k) < i@ ==> old_self@.get(k) == new@.get(k))]
             #[invariant(forall<k : K::DeepModelTy>
                 i@ < old_self.bucket_ix(k) && old_self.bucket_ix(k) <= old_self.buckets@.len()  ==> new@.get(k) == None
@@ -200,23 +207,6 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
         }
 
         *self = new;
-    }
-
-    #[predicate]
-    fn good_bucket(self, l: List<(K, V)>, h: Int) -> bool {
-        pearlite! {
-            forall<k : K::DeepModelTy, v: _> l.get(k) == Some(v) ==> self.bucket_ix(k) == h
-        }
-    }
-
-    /* The data invariant of the HashMap structure
-     */
-    #[predicate]
-    fn hashmap_inv(&self) -> bool {
-        pearlite! {
-            0 < self.buckets@.len() &&
-            forall<i : _> 0 <= i && i < self.buckets@.len() ==> self.good_bucket(self.buckets[i], i) && self.buckets[i].no_double_binding()
-        }
     }
 }
 
