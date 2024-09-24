@@ -2,11 +2,8 @@ use crate::*;
 
 pub trait Invariant {
     #[predicate(prophetic)]
-    #[open]
     #[rustc_diagnostic_item = "creusot_invariant_user"]
-    fn invariant(self) -> bool {
-        true
-    }
+    fn invariant(self) -> bool;
 }
 
 impl Invariant for ! {

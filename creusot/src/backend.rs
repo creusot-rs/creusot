@@ -261,7 +261,7 @@ impl<'tcx> Why3Generator<'tcx> {
             self.translate(adt.did());
         }
 
-        let deps = ty_inv::record_tyinv_deps(self, ty);
+        let deps = ty_inv::get_tyinv_deps(self, ty);
         self.dependencies.insert(tid, deps);
     }
 

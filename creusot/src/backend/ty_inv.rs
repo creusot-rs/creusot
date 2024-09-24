@@ -301,7 +301,7 @@ impl<'tcx> InvariantElaborator<'tcx> {
     }
 }
 
-pub(crate) fn record_tyinv_deps<'tcx>(
+pub(crate) fn get_tyinv_deps<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     ty: Ty<'tcx>,
 ) -> CloneSummary<'tcx> {
@@ -320,22 +320,19 @@ pub(crate) fn record_tyinv_deps<'tcx>(
     summary
 }
 
-fn user_inv_item<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> (DefId, GenericArgsRef<'tcx>) {
-    let trait_item_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap();
-    (trait_item_did, tcx.mk_args(&[GenericArg::from(ty)]))
-}
-
 fn resolve_user_inv<'tcx>(
     tcx: TyCtxt<'tcx>,
     ty: Ty<'tcx>,
     param_env: ParamEnv<'tcx>,
 ) -> Option<(DefId, GenericArgsRef<'tcx>, bool)> {
-    let (trait_did, subst) = user_inv_item(tcx, ty);
-    traits::resolve_assoc_item_opt(tcx, param_env, trait_did, subst)
+    let trait_item_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap();
+    let subst = tcx.mk_args(&[GenericArg::from(ty)]);
+
+    traits::resolve_assoc_item_opt(tcx, param_env, trait_item_did, subst)
         .map(|(id, subst)| (id, subst, false))
         .or_else(|| {
-            if traits::still_specializable(tcx, param_env, trait_did, subst) {
-                Some((trait_did, subst, true))
+            if traits::still_specializable(tcx, param_env, trait_item_did, subst) {
+                Some((trait_item_did, subst, true))
             } else {
                 None
             }

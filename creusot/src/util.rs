@@ -148,6 +148,10 @@ pub(crate) fn is_inv_internal(tcx: TyCtxt, def_id: DefId) -> bool {
     tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap() == def_id
 }
 
+pub(crate) fn is_inv_user(tcx: TyCtxt, def_id: DefId) -> bool {
+    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap() == def_id
+}
+
 pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "clause", "open"]).and_then(|item| {
         match &item.args {
