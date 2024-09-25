@@ -952,14 +952,8 @@ pub(crate) fn borrow_generated_id<V: Debug, T: Debug>(
                 );
             }
 
-            ProjectionElem::Downcast(_, _)
-            | ProjectionElem::ConstantIndex { .. }
-            | ProjectionElem::Subslice { .. }
-            | ProjectionElem::OpaqueCast(_) => {
-                // Nor logical reborrowing nor final borrows can generate such a projection
-                unreachable!("unexepected proj elem to generate a borrow id: {proj:?}")
-            }
-            ProjectionElem::Subtype(_) => {}
+            // TODO: think about id generation in these other cases
+            _ => {}
         }
     }
     borrow_id

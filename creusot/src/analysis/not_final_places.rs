@@ -1,140 +1,140 @@
-use crate::extended_location::ExtendedLocation;
 use rustc_borrowck::consumers::PlaceConflictBias;
 use rustc_index::bit_set::ChunkedBitSet;
 use rustc_middle::{
     mir::{
         self,
         visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor},
-        BasicBlock, CallReturnPlaces, Location, Place, PlaceRef, ProjectionElem, Statement,
-        Terminator, TerminatorEdges,
+        Location, Place, PlaceRef, ProjectionElem,
     },
-    ty::TyCtxt,
+    ty::{List, TyCtxt},
 };
 use rustc_mir_dataflow::{
     fmt::DebugWithContext, AnalysisDomain, Backward, GenKill, GenKillAnalysis, ResultsCursor,
 };
 use std::collections::{hash_map, HashMap};
 
-pub type PlaceId = usize;
+use crate::extended_location::ExtendedLocation;
 
-/// Analysis to determine "final" reborrows.
-///
-/// # Final borrows
-///
-/// A reborrow is considered final if the prophecy of the original borrow depends only on the reborrow.
-/// In that case, the reborrow id can be inherited:
-/// - If this is a reborrow of the same place (e.g. `let y = &mut *x`), the new id is the same.
-/// - Else (e.g. `let y = &mut x.field`), the new id is deterministically derived from the old.
-///
-/// # Example Usage
-///
-/// Note that this analysis determines places that are **not** final.
-///
-/// ```rust,ignore
-/// let tcx: rustc_middle::ty::TyCtxt = /* */;
-/// let body: rustc_middle::mir::Body = /* */;
-/// let mut not_final_places = NotFinalPlaces::new(body)
-///     .into_engine(tcx, body)
-///     .iterate_to_fixpoint()
-///     .into_results_cursor(body);
-/// /*
-///     ...
-/// */
-/// let place: rustc_middle::mir::Place = /* place that we want to reborrow from */;
-/// let location: rustc_middle::mir::Location = /* location of the reborrow in the MIR body */;
-/// let is_final = NotFinalPlaces::is_final_at(not_final_borrows, place, location);
-/// ```
-pub struct NotFinalPlaces<'tcx> {
-    tcx: TyCtxt<'tcx>,
-    /// Mapping from a place to its ID
+type PlaceId = usize;
+
+#[derive(Clone, Debug, Default)]
+struct PlaceInfo<'tcx> {
+    /// ID of this place.
     ///
     /// This is necessary to use a `ChunkedBitSet<PlaceId>`.
-    places: HashMap<PlaceRef<'tcx>, PlaceId>,
-    /// Contains the places that dereference a mutable ref.
-    ///
-    /// For example,
-    /// ```ignore
-    /// let x: &mut T = /* ... */;
-    /// *x;       // has dereference
-    /// x.field;  // has dereference
-    /// let y: Box<T> = /* ... */;
-    /// *y;       // does not have dereference
-    /// y.field;  // does not have dereference
-    /// ```
-    has_dereference: ChunkedBitSet<PlaceId>,
-    /// Maps each place to the set of its subplaces.
+    id: PlaceId,
+    /// The number of mutable derefs this place contains.
+    deref_count: usize,
+    /// The set of subplaces of this place.
     ///
     /// A `p1` is a subplace of `p2` if they refer to the same local variable, and
     /// `p2.projection` is a prefix of `p1.projection`.
-    subplaces: Vec<Vec<PlaceRef<'tcx>>>,
-    /// Maps each place to the set of conflicting subplaces.
+    subplaces: Vec<PlaceRef<'tcx>>,
+    /// The set of places that conflict with this place, but are NOT a subplace.
     ///
     /// Two places `p1` and `p2` are conflicting if they may refer to the same memory location
-    conflicting_places: Vec<Vec<PlaceRef<'tcx>>>,
+    conflicting: Vec<PlaceRef<'tcx>>,
+}
+
+pub struct NotFinalPlaces<'tcx> {
+    tcx: TyCtxt<'tcx>,
+    /// Maps an ID to its place
+    places: Vec<PlaceRef<'tcx>>,
+    /// Places organized by their local.
+    places_per_local: HashMap<mir::Local, Vec<PlaceRef<'tcx>>>,
+    infos: HashMap<PlaceRef<'tcx>, PlaceInfo<'tcx>>,
 }
 
 impl<'tcx> NotFinalPlaces<'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> Self {
+        #[derive(Default)]
         struct VisitAllPlaces<'tcx> {
-            places: HashMap<PlaceRef<'tcx>, PlaceId>,
+            places: Vec<PlaceRef<'tcx>>,
+            places_ids: HashMap<PlaceRef<'tcx>, PlaceId>,
+            places_per_local: HashMap<mir::Local, Vec<PlaceRef<'tcx>>>,
         }
         impl<'tcx> Visitor<'tcx> for VisitAllPlaces<'tcx> {
             fn visit_place(&mut self, place: &Place<'tcx>, context: PlaceContext, _: Location) {
                 let place_ref = place.as_ref();
                 // This is both an optimization, and required for `rustc_borrowck::consumers::places_conflict` to not crash.
-                // This is ok to do, because those are places we will not consider anyways.
-                if !(place_context_gen(context)
-                    || place_context_gen_deref(context)
-                    || place_context_kill(context))
-                {
+                // This is ok to do, because those are the only places we will consider anyways.
+                if !matches!(
+                    context,
+                    PlaceContext::NonMutatingUse(NonMutatingUseContext::Move)
+                        | PlaceContext::MutatingUse(
+                            MutatingUseContext::Store
+                                | MutatingUseContext::Drop
+                                | MutatingUseContext::SetDiscriminant
+                                | MutatingUseContext::AsmOutput
+                                | MutatingUseContext::Call
+                                | MutatingUseContext::Borrow
+                        )
+                ) {
                     return;
                 }
                 for place in
                     std::iter::once(place_ref).chain(place_ref.iter_projections().map(|(p, _)| p))
                 {
-                    let idx = self.places.len();
-                    if let hash_map::Entry::Vacant(entry) = self.places.entry(place) {
+                    let idx = self.places_ids.len();
+                    if let hash_map::Entry::Vacant(entry) = self.places_ids.entry(place) {
+                        self.places.push(place);
+                        self.places_per_local.entry(place.local).or_default().push(place);
                         entry.insert(idx);
                     }
                 }
             }
         }
 
-        let mut visitor = VisitAllPlaces { places: HashMap::new() };
+        let mut visitor = VisitAllPlaces::default();
         visitor.visit_body(body);
         let places = visitor.places;
-        let mut has_dereference = ChunkedBitSet::new_empty(places.len());
-        let mut subplaces = vec![Vec::new(); places.len()];
-        let mut conflicting_places = vec![Vec::new(); places.len()];
-
-        for (&place, &id) in &places {
-            if Self::place_get_first_deref(place, body, tcx).is_some() {
-                has_dereference.insert(id);
+        let places_ids = visitor.places_ids;
+        let places_per_local = {
+            let mut per_local = visitor.places_per_local;
+            for places in per_local.values_mut() {
+                places.sort_by_key(|p| p.projection.len());
             }
-            for (&other_place, &other_id) in &places {
-                if id == other_id || place.local != other_place.local {
-                    continue;
-                }
-                if other_place.projection.get(..place.projection.len()) == Some(place.projection) {
-                    subplaces[id].push(other_place);
-                }
+            per_local
+        };
+        let mut infos = HashMap::new();
 
-                // We use `PlaceConflictBias::Overlap`, because we assume that unknown index accesses _do_ overlap.
+        // pre-processing: determine subplaces, conflicting places, places with deref
+        for places in places_per_local.values() {
+            for &place in places {
+                let entry: &mut PlaceInfo = infos.entry(place).or_default();
+                entry.id = places_ids[&place];
+                entry.deref_count = Self::place_count_derefs(place, body, tcx);
+                for &other_place in places {
+                    if place == other_place {
+                        continue;
+                    }
+                    let mut subplace = false;
+                    if other_place.projection.get(..place.projection.len())
+                        == Some(place.projection)
+                    {
+                        subplace = true;
+                        entry.subplaces.push(other_place);
+                    }
 
-                // This function would crash if `place` is a `*x` where `x: &T`.
-                // But we filtered such places in the visitor.
-                if rustc_borrowck::consumers::places_conflict(
-                    tcx,
-                    body,
-                    place.to_place(tcx),
-                    other_place.to_place(tcx),
-                    PlaceConflictBias::Overlap,
-                ) {
-                    conflicting_places[id].push(other_place);
+                    // We use `PlaceConflictBias::Overlap`, because we assume that unknown index accesses _do_ overlap.
+
+                    // This function would crash if `place` is a `*x` where `x: &T`.
+                    // But we filtered such places in the visitor.
+                    if !subplace
+                        && rustc_borrowck::consumers::places_conflict(
+                            tcx,
+                            body,
+                            place.to_place(tcx),
+                            other_place.to_place(tcx),
+                            PlaceConflictBias::Overlap,
+                        )
+                    {
+                        entry.conflicting.push(other_place);
+                    }
                 }
             }
         }
-        Self { tcx, places, has_dereference, subplaces, conflicting_places }
+        Self { tcx, places, places_per_local, infos }
     }
 
     /// Run the analysis right **after** `location`, and determines if the borrow of
@@ -157,56 +157,61 @@ impl<'tcx> NotFinalPlaces<'tcx> {
         let body = cursor.body();
         let tcx = cursor.analysis().tcx;
 
-        let deref_position = match Self::place_get_first_deref(place.as_ref(), body, tcx) {
+        let deref_position = match Self::place_get_last_deref(place.as_ref(), body, tcx) {
             Some(p) => p,
             // `p` is not a reborrow
             None => return None,
         };
-        if place.iter_projections().skip(deref_position + 1).any(|(pl, proj)| match proj {
-            // pearlite does not know how to generate logical reborrowing for these ProjectionElem,
-            // so there is no need to consider these reborrows final.
-            ProjectionElem::Deref => !pl.ty(body, tcx).ty.is_box(),
-            ProjectionElem::ConstantIndex { .. }  /* TODO */
-            | ProjectionElem::Subslice { .. }
-            | ProjectionElem::OpaqueCast(_)
-            | ProjectionElem::Downcast(_, _) => true,
-            _ => false,
-        }) {
-            // some type of indirection
-            // Examples:
-            // - &mut **x  // unnesting
-            // - &mut x[y] // runtime indexing
-            return None;
-        }
 
         ExtendedLocation::Start(location.successor_within_block()).seek_to(cursor);
         let analysis: &Self = cursor.analysis();
 
-        let id = analysis.places[&place.as_ref()];
-        for place in std::iter::once(&place.as_ref()).chain(analysis.conflicting_places[id].iter())
-        {
-            let id = analysis.places[place];
-            if cursor.contains(id) {
-                return None;
-            }
+        let id = analysis.infos[&place.as_ref()].id;
+        if cursor.contains(id) {
+            return None;
         }
         Some(deref_position)
     }
 
-    /// Helper function: gets the index of the first projection of `place` that is a deref,
+    /// Helper function: gets the index of the last projection of `place` that is a deref,
     /// but not a deref of a box.
-    fn place_get_first_deref(
+    fn place_get_last_deref(
         place: PlaceRef<'tcx>,
         body: &mir::Body<'tcx>,
         tcx: TyCtxt<'tcx>,
     ) -> Option<usize> {
-        place.iter_projections().position(|(pl, proj)| {
+        let pos_from_end = place.iter_projections().rev().position(|(pl, proj)| {
             proj == ProjectionElem::Deref && !pl.ty(&body.local_decls, tcx).ty.is_box()
-        })
+        })?;
+        Some(place.projection.len() - pos_from_end - 1)
+    }
+
+    /// Helper function: gets the index of the first projection of `place` that is a deref,
+    /// but not a deref of a box.
+    fn place_count_derefs(
+        place: PlaceRef<'tcx>,
+        body: &mir::Body<'tcx>,
+        tcx: TyCtxt<'tcx>,
+    ) -> usize {
+        let mut result = 0;
+        for (pl, proj) in place.iter_projections() {
+            if proj == ProjectionElem::Deref && !pl.ty(&body.local_decls, tcx).ty.is_box() {
+                result += 1;
+            }
+        }
+        result
     }
 }
 
-impl<'tcx> DebugWithContext<NotFinalPlaces<'tcx>> for ChunkedBitSet<PlaceId> {}
+impl<'tcx> DebugWithContext<NotFinalPlaces<'tcx>> for ChunkedBitSet<PlaceId> {
+    fn fmt_with(
+        &self,
+        ctxt: &NotFinalPlaces<'tcx>,
+        f: &mut std::fmt::Formatter,
+    ) -> std::fmt::Result {
+        f.debug_list().entries(self.iter().map(|id| ctxt.places[id])).finish()
+    }
+}
 
 impl<'tcx> AnalysisDomain<'tcx> for NotFinalPlaces<'tcx> {
     type Domain = ChunkedBitSet<PlaceId>;
@@ -216,7 +221,7 @@ impl<'tcx> AnalysisDomain<'tcx> for NotFinalPlaces<'tcx> {
     const NAME: &'static str = "not_final_places";
 
     fn bottom_value(&self, _: &mir::Body<'tcx>) -> Self::Domain {
-        // start with every place "dead"
+        // bottom = all borrows are final
         ChunkedBitSet::new_empty(self.places.len())
     }
 
@@ -232,122 +237,143 @@ impl<'tcx> AnalysisDomain<'tcx> for NotFinalPlaces<'tcx> {
 impl<'tcx> GenKillAnalysis<'tcx> for NotFinalPlaces<'tcx> {
     type Idx = PlaceId;
 
+    fn domain_size(&self, _: &mir::Body<'tcx>) -> usize {
+        self.places.len()
+    }
+
     fn statement_effect(
         &mut self,
         trans: &mut impl GenKill<Self::Idx>,
-        statement: &Statement<'tcx>,
-        location: Location,
+        statement: &mir::Statement<'tcx>,
+        location: mir::Location,
     ) {
-        PlaceVisitorKill { mapping: self, trans }.visit_statement(statement, location);
-        PlaceVisitorGen { mapping: self, trans }.visit_statement(statement, location);
+        PlaceVisitor { info: self, trans }.visit_statement(statement, location);
     }
 
     fn terminator_effect<'mir>(
         &mut self,
         trans: &mut Self::Domain,
-        terminator: &'mir Terminator<'tcx>,
-        location: Location,
-    ) -> TerminatorEdges<'mir, 'tcx> {
-        PlaceVisitorKill { mapping: self, trans }.visit_terminator(terminator, location);
-        PlaceVisitorGen { mapping: self, trans }.visit_terminator(terminator, location);
+        terminator: &'mir mir::Terminator<'tcx>,
+        location: mir::Location,
+    ) -> mir::TerminatorEdges<'mir, 'tcx> {
+        PlaceVisitor { info: self, trans }.visit_terminator(terminator, location);
         terminator.edges()
     }
 
     fn call_return_effect(
         &mut self,
         _trans: &mut Self::Domain,
-        _block: BasicBlock,
-        _return_places: CallReturnPlaces<'_, 'tcx>,
+        _block: mir::BasicBlock,
+        _return_places: mir::CallReturnPlaces<'_, 'tcx>,
     ) {
     }
-
-    fn domain_size(&self, _: &mir::Body<'tcx>) -> usize {
-        self.places.len()
-    }
 }
 
-/// Determine when a place should be unconditionnaly 'gen'ed' in the analysis
-fn place_context_gen(context: PlaceContext) -> bool {
-    match context {
-        // Although they read the borrow, most `NonMutatingUse` are fine, because they can't influence the prophecized value.
-        // The only non-mutating uses we need to consider are:
-        // - `Move`: the borrow may be used somewhere else to change its value.
-        // - 'Copy': cannot be emitted for a mutable borrow
-        PlaceContext::NonMutatingUse(NonMutatingUseContext::Move)
-        // Note that a borrow triggers a gen
-        // e.g.
-        // ```rust
-        // let bor = &mut x;
-        // let r1 = &mut *bor;
-        // // ...
-        // let r2 = &mut bor; // r1 is not final !
-        // ```
-        | PlaceContext::MutatingUse(MutatingUseContext::Borrow) => true,
-        _ => false,
-    }
-}
-/// Determine when a place should be 'gen'ed' in the analysis. The caller should then also
-/// check that the write occurs under a dereference.
-fn place_context_gen_deref(context: PlaceContext) -> bool {
-    match context {
-        PlaceContext::MutatingUse(MutatingUseContext::Store)
-        | PlaceContext::MutatingUse(MutatingUseContext::Call)
-        | PlaceContext::MutatingUse(MutatingUseContext::SetDiscriminant)
-        | PlaceContext::MutatingUse(MutatingUseContext::AsmOutput) => true,
-        _ => false,
-    }
-}
-/// Determine when a place should be 'killed' in the analysis
-fn place_context_kill(context: PlaceContext) -> bool {
-    matches!(
-        context,
-        PlaceContext::MutatingUse(
-            MutatingUseContext::Store
-            | MutatingUseContext::Call
-            // Technically true, but unsupported by Creusot anyways
-            | MutatingUseContext::AsmOutput,
-        )
-    )
-}
-
-struct PlaceVisitorGen<'a, 'tcx, T> {
-    mapping: &'a NotFinalPlaces<'tcx>,
+struct PlaceVisitor<'a, 'tcx, T> {
+    info: &'a NotFinalPlaces<'tcx>,
     trans: &'a mut T,
 }
-impl<'a, 'tcx, T> Visitor<'tcx> for PlaceVisitorGen<'a, 'tcx, T>
+
+impl<'a, 'tcx, T> PlaceVisitor<'a, 'tcx, T>
 where
     T: GenKill<PlaceId>,
 {
-    fn visit_place(&mut self, place: &Place<'tcx>, context: PlaceContext, _: Location) {
-        if place_context_gen(context) {
-            self.trans.gen_(self.mapping.places[&place.as_ref()])
-        } else if place_context_gen_deref(context) {
-            let id = self.mapping.places[&place.as_ref()];
-            if self.mapping.has_dereference.contains(id) {
-                // We are writing under a dereference, so this changes the prophecy of the underlying borrow.
-                self.trans.gen_(id);
+    /// This place and all its subplaces will be marked non-final, _except_ for
+    /// subplaces that have more dereferences than `p`.
+    fn write(&mut self, p: PlaceRef<'tcx>) {
+        let infos = &self.info.infos[&p];
+        self.trans.gen_(infos.id);
+        for subplace in &infos.subplaces {
+            let sub_infos = &self.info.infos[subplace];
+            if sub_infos.deref_count == infos.deref_count {
+                self.trans.gen_(sub_infos.id);
+            } else {
+                self.trans.kill(sub_infos.id);
             }
+        }
+        for conflict in &infos.conflicting {
+            let sub_infos = &self.info.infos[conflict];
+            // FIXME: probably incorrect
+            if sub_infos.deref_count == infos.deref_count {
+                self.trans.gen_(sub_infos.id);
+            }
+        }
+    }
+
+    /// All the places with local `l` and 1 deref will be marked non-final.
+    ///
+    /// Places with more derefs will be marked final.
+    fn write_local(&mut self, l: mir::Local) {
+        for p in &self.info.places_per_local[&l] {
+            let infos = &self.info.infos[p];
+            if infos.deref_count == 1 {
+                self.trans.gen_(infos.id);
+            } else if infos.deref_count > 1 {
+                self.trans.kill(infos.id);
+            }
+        }
+    }
+
+    /// All subplaces of `p` will be marked non-final.
+    fn borrow(&mut self, p: PlaceRef<'tcx>) {
+        let infos = &self.info.infos[&p];
+        self.trans.gen_(infos.id);
+        for p2 in &infos.subplaces {
+            self.trans.gen_(self.info.infos[p2].id);
+        }
+    }
+
+    /// All subplaces of `p` will be marked non-final, as well as places conflicting with `p`.
+    fn move_(&mut self, p: PlaceRef<'tcx>) {
+        let infos = &self.info.infos[&p];
+        self.trans.gen_(infos.id);
+        for p2 in infos.conflicting.iter().chain(&infos.subplaces) {
+            self.trans.gen_(self.info.infos[p2].id);
         }
     }
 }
 
-struct PlaceVisitorKill<'a, 'tcx, T> {
-    mapping: &'a NotFinalPlaces<'tcx>,
-    trans: &'a mut T,
-}
-impl<'a, 'tcx, T> Visitor<'tcx> for PlaceVisitorKill<'a, 'tcx, T>
+impl<'a, 'tcx, T> Visitor<'tcx> for PlaceVisitor<'a, 'tcx, T>
 where
     T: GenKill<PlaceId>,
 {
     fn visit_place(&mut self, place: &Place<'tcx>, context: PlaceContext, _: Location) {
-        if place_context_kill(context) {
-            let id: usize = self.mapping.places[&place.as_ref()];
-            self.trans.kill(id);
-            // Now, kill all subplaces of this place
-            for subplace in self.mapping.subplaces[id].iter() {
-                let subplace_id: usize = self.mapping.places[subplace];
-                self.trans.kill(subplace_id);
+        match context {
+            PlaceContext::NonMutatingUse(NonMutatingUseContext::Move) => {
+                self.move_(place.as_ref());
             }
+            PlaceContext::MutatingUse(context) => match context {
+                MutatingUseContext::Store
+                | MutatingUseContext::Drop
+                | MutatingUseContext::SetDiscriminant
+                | MutatingUseContext::AsmOutput
+                | MutatingUseContext::Call => self.write(place.as_ref()),
+                MutatingUseContext::Borrow => {
+                    self.borrow(place.as_ref());
+                }
+                _ => {}
+            },
+            _ => {}
+        }
+    }
+
+    fn visit_local(&mut self, local: mir::Local, context: PlaceContext, _: Location) {
+        match context {
+            PlaceContext::NonMutatingUse(NonMutatingUseContext::Move) => {
+                self.move_(Place { local, projection: List::empty() }.as_ref());
+            }
+            PlaceContext::MutatingUse(context) => match context {
+                MutatingUseContext::Store
+                | MutatingUseContext::Drop
+                | MutatingUseContext::SetDiscriminant
+                | MutatingUseContext::AsmOutput
+                | MutatingUseContext::Call => self.write_local(local),
+                MutatingUseContext::Borrow => {
+                    self.borrow(Place { local, projection: List::empty() }.as_ref());
+                }
+                _ => {}
+            },
+            _ => {}
         }
     }
 }
