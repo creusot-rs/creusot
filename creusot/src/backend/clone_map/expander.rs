@@ -86,18 +86,27 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             }
 
             if let Some((did, subst)) = key.did() {
+                // If this is the `invariant` function, and we know for sure that the `Invariant`
+                // trait cannot be implemented, then ignore this, because we will actually never
+                // need it.
+                // This is needed because the dependency was coming from a context were we were
+                // not sure the `Invariant` trait was not implemented.
+                if util::is_inv_user(ctx.tcx, did)
+                    && traits::resolve_assoc_item_opt(ctx.tcx, self.param_env, did, subst).is_none()
+                    && !traits::still_specializable(ctx.tcx, self.param_env, did, subst)
+                {
+                    continue;
+                }
+
+                if
                 // If this trait item could potentially be specialized we must avoid depending on its default impl
                 // Note that a trait item impl that can be specialized is always inserted as a dependency as the
                 // corresponding trait impl did, so we only consider trait impls here.
-                if ctx.tcx.trait_of_item(did).is_some()
-                    && traits::still_specializable(ctx.tcx, self.param_env, did, subst)
-                {
-                    self.clone_graph.info_mut(key).opaque();
-                }
+                ctx.tcx.trait_of_item(did).is_some()
+                        && traits::still_specializable(ctx.tcx, self.param_env, did, subst)
 
-                // Alternatively, if we don't have `open(..)` permission to see its body
-                if self_key
-                    .did()
+                    // Alternatively, if we don't have `open(..)` permission to see its body
+                    || self_key.did()
                     .is_some_and(|(self_did, _)| !ctx.is_transparent_from(did, self_did))
                 {
                     self.clone_graph.info_mut(key).opaque();
@@ -110,7 +119,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
                 ctx.translate(did);
 
-                // Something obscure related to type invariants. TODO: clean up / remove
+                // If we are unsing the `inv(...)` logical function, then we need its accompanying axiom.
                 if util::is_inv_internal(ctx.tcx, did) && depth == GraphDepth::Deep {
                     let ty = subst.type_at(0);
                     let ty = ctx.try_normalize_erasing_regions(self.param_env, ty).unwrap_or(ty);

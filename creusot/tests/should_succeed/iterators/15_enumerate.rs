@@ -23,7 +23,7 @@ where
     #[open]
     #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.iter.completed() }
+        pearlite! { self.iter.completed() && (&mut self.count).resolve() }
     }
 
     #[open]
@@ -78,14 +78,21 @@ where
     #[predicate(prophetic)]
     fn invariant(self) -> bool {
         pearlite! {
-            (forall<s: Seq<I::Item>, i: I> self.iter.produces(s, i) ==> self.count@ + s.len() < std::usize::MAX@)
-            && (forall<i: &mut I> i.completed() ==> i.produces(Seq::EMPTY, ^i))
+            (forall<s: Seq<I::Item>, i: I>
+                #![trigger self.iter.produces(s, i)]
+                inv(s) && inv(i) && self.iter.produces(s, i) ==>
+                self.count@ + s.len() < std::usize::MAX@)
+            && (forall<i: &mut I> inv(i) && i.completed() ==>
+                i.produces(Seq::EMPTY, ^i))
         }
     }
 }
 
-#[requires(forall<i: &mut I> i.completed() ==> i.produces(Seq::EMPTY, ^i))]
-#[requires(forall<s: Seq<I::Item>, i: I> iter.produces(s, i) ==> s.len() < std::usize::MAX@)]
+// These two requirements are here only to prove the absence of overflow.
+#[requires(forall<i: &mut I> inv(i) && i.completed() ==> i.produces(Seq::EMPTY, ^i))]
+#[requires(forall<s: Seq<I::Item>, i: I> inv(s) && inv(i) && iter.produces(s, i) ==>
+            s.len() < std::usize::MAX@)]
+#[ensures(result.iter == iter && result.count@ == 0)]
 pub fn enumerate<I: Iterator>(iter: I) -> Enumerate<I> {
     Enumerate { iter, count: 0 }
 }

@@ -6,13 +6,13 @@ module M_12_default_method__T__default
   
   let%span s12_default_method1 = "../12_default_method.rs" 6 16 6 20
   
-  let%span span2 = "../../../../../creusot-contracts/src/invariant.rs" 27 8 27 18
+  let%span span2 = "../../../../../creusot-contracts/src/invariant.rs" 24 8 24 18
   
   predicate invariant'1 (self : self)
   
   predicate inv'1 (_1 : self)
   
-  axiom inv'1 [@rewrite] : forall x : self . inv'1 x = true
+  axiom inv'1 : forall x : self [inv'1 x] . inv'1 x  -> invariant'1 x
   
   use prelude.prelude.Borrow
   
@@ -21,7 +21,7 @@ module M_12_default_method__T__default
   
   predicate inv'0 (_1 : self)
   
-  axiom inv'0 [@rewrite] : forall x : self . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : self [inv'0 x] . inv'0 x = invariant'0 x
   
   use prelude.prelude.Intrinsic
   
@@ -37,40 +37,35 @@ end
 module M_12_default_method__should_use_impl
   let%span s12_default_method0 = "../12_default_method.rs" 19 10 19 27
   
-  let%span span1 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span1 = "../../../../../creusot-contracts/src/invariant.rs" 24 8 24 18
   
-  let%span span2 = "../../../../../creusot-contracts/src/invariant.rs" 27 8 27 18
+  let%span span2 = "../12_default_method.rs" 13 8 13 12
   
-  let%span span3 = "../12_default_method.rs" 13 8 13 12
-  
-  let%span span4 = "../12_default_method.rs" 6 16 6 20
+  let%span span3 = "../12_default_method.rs" 6 16 6 20
   
   use prelude.prelude.UInt32
   
-  predicate invariant'1 (self : uint32) =
-    [%#span1] true
-  
   predicate inv'1 (_1 : uint32)
   
-  axiom inv'1 [@rewrite] : forall x : uint32 . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : uint32 [inv'1 x] . inv'1 x = true
   
   use prelude.prelude.Borrow
   
   predicate invariant'0 (self : uint32) =
-    [%#span2] inv'1 self
+    [%#span1] inv'1 self
   
   predicate inv'0 (_1 : uint32)
   
-  axiom inv'0 [@rewrite] : forall x : uint32 . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : uint32 [inv'0 x] . inv'0 x = true
   
   function logic_default'0 [#"../12_default_method.rs" 12 4 12 34] (self : uint32) : bool =
-    [%#span3] true
+    [%#span2] true
   
   use prelude.prelude.Intrinsic
   
   use prelude.prelude.Int
   
-  let rec default'0 (self:uint32) (return'  (ret:uint32))= {[@expl:precondition] [%#span4] inv'0 self}
+  let rec default'0 (self:uint32) (return'  (ret:uint32))= {[@expl:precondition] [%#span3] inv'0 self}
     any [ return' (result:uint32)-> (! return' {result}) ] 
   
   let rec should_use_impl (x:uint32) (return'  (ret:()))= (! bb0

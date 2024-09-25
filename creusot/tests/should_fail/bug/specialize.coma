@@ -150,7 +150,7 @@ module M_specialize__g
   
   predicate inv'3 (_1 : t)
   
-  axiom inv'3 [@rewrite] : forall x : t . inv'3 x = true
+  axiom inv'3 : forall x : t [inv'3 x] . inv'3 x  -> invariant'3 x
   
   use T_alloc__alloc__Global as Global'0
   
@@ -159,7 +159,7 @@ module M_specialize__g
   
   predicate inv'2 (_1 : t)
   
-  axiom inv'2 [@rewrite] : forall x : t . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : t [inv'2 x] . inv'2 x = invariant'2 x
   
   use seq.Seq
   
@@ -174,7 +174,7 @@ module M_specialize__g
   
   predicate inv'1 (_1 : Seq.seq t)
   
-  axiom inv'1 [@rewrite] : forall x : Seq.seq t . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : Seq.seq t [inv'1 x] . inv'1 x = invariant'1 x
   
   use T_alloc__vec__Vec as Vec'0
   
@@ -194,7 +194,7 @@ module M_specialize__g
   
   predicate inv'0 (_1 : Vec'0.t_Vec t (Global'0.t_Global))
   
-  axiom inv'0 [@rewrite] : forall x : Vec'0.t_Vec t (Global'0.t_Global) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Vec'0.t_Vec t (Global'0.t_Global) [inv'0 x] . inv'0 x = invariant'0 x
   
   use prelude.prelude.Intrinsic
   
@@ -213,39 +213,34 @@ end
 module M_specialize__h
   let%span sspecialize0 = "../specialize.rs" 37 20 37 25
   
-  let%span span1 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span1 = "../../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
-  let%span span2 = "../../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
+  let%span span2 = "../../../../../creusot-contracts/src/logic/seq.rs" 198 8 198 97
   
-  let%span span3 = "../../../../../creusot-contracts/src/logic/seq.rs" 198 8 198 97
+  let%span span3 = "" 0 0 0 0
   
-  let%span span4 = "" 0 0 0 0
+  let%span span4 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   
-  let%span span5 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span span5 = "../../../../../creusot-contracts/src/std/vec.rs" 61 20 61 41
   
-  let%span span6 = "../../../../../creusot-contracts/src/std/vec.rs" 61 20 61 41
+  let%span span6 = "../specialize.rs" 12 17 12 21
   
-  let%span span7 = "../specialize.rs" 12 17 12 21
-  
-  let%span span8 = "../specialize.rs" 11 14 11 19
+  let%span span7 = "../specialize.rs" 11 14 11 19
   
   use prelude.prelude.Int32
   
-  predicate invariant'3 (self : int32) =
-    [%#span1] true
-  
   predicate inv'3 (_1 : int32)
   
-  axiom inv'3 [@rewrite] : forall x : int32 . inv'3 x = true
+  axiom inv'3 [@rewrite] : forall x : int32 [inv'3 x] . inv'3 x = true
   
   use T_alloc__alloc__Global as Global'0
   
   predicate invariant'2 (self : int32) =
-    [%#span2] inv'3 self
+    [%#span1] inv'3 self
   
   predicate inv'2 (_1 : int32)
   
-  axiom inv'2 [@rewrite] : forall x : int32 . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : int32 [inv'2 x] . inv'2 x = true
   
   use seq.Seq
   
@@ -256,11 +251,11 @@ module M_specialize__h
   use seq.Seq
   
   predicate invariant'1 (self : Seq.seq int32) =
-    [%#span3] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'2 (Seq.get self i)
+    [%#span2] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'2 (Seq.get self i)
   
   predicate inv'1 (_1 : Seq.seq int32)
   
-  axiom inv'1 [@rewrite] : forall x : Seq.seq int32 . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : Seq.seq int32 [inv'1 x] . inv'1 x = true
   
   use T_alloc__vec__Vec as Vec'0
   
@@ -268,24 +263,24 @@ module M_specialize__h
   
   use prelude.prelude.UIntSize
   
-  constant v_MAX'0 : usize = [%#span4] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#span3] (18446744073709551615 : usize)
   
   function shallow_model'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec int32 (Global'0.t_Global) . [%#span5] Seq.length (shallow_model'0 self)
+  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec int32 (Global'0.t_Global) . [%#span4] Seq.length (shallow_model'0 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) =
-    [%#span6] inv'1 (shallow_model'0 self)
+    [%#span5] inv'1 (shallow_model'0 self)
   
   predicate inv'0 (_1 : Vec'0.t_Vec int32 (Global'0.t_Global))
   
-  axiom inv'0 [@rewrite] : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) [inv'0 x] . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
-  let rec x'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:()))= {[@expl:precondition] [%#span7] inv'0 self}
-    any [ return' (result:())-> {[%#span8] false} (! return' {result}) ] 
+  let rec x'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:()))= {[@expl:precondition] [%#span6] inv'0 self}
+    any [ return' (result:())-> {[%#span7] false} (! return' {result}) ] 
   
   let rec h (v:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:()))= (! bb0
     [ bb0 = s0 [ s0 = x'0 {v} (fun (_ret':()) ->  [ &_2 <- _ret' ] s1) | s1 = bb1 ] 
@@ -314,7 +309,7 @@ module M_specialize__qy123zimplqy35z0qy125z
   
   predicate inv'3 (_1 : u)
   
-  axiom inv'3 [@rewrite] : forall x : u . inv'3 x = true
+  axiom inv'3 : forall x : u [inv'3 x] . inv'3 x  -> invariant'3 x
   
   use T_alloc__alloc__Global as Global'0
   
@@ -323,7 +318,7 @@ module M_specialize__qy123zimplqy35z0qy125z
   
   predicate inv'2 (_1 : u)
   
-  axiom inv'2 [@rewrite] : forall x : u . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : u [inv'2 x] . inv'2 x = invariant'2 x
   
   use seq.Seq
   
@@ -338,7 +333,7 @@ module M_specialize__qy123zimplqy35z0qy125z
   
   predicate inv'1 (_1 : Seq.seq u)
   
-  axiom inv'1 [@rewrite] : forall x : Seq.seq u . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : Seq.seq u [inv'1 x] . inv'1 x = invariant'1 x
   
   use T_alloc__vec__Vec as Vec'0
   
@@ -358,7 +353,7 @@ module M_specialize__qy123zimplqy35z0qy125z
   
   predicate inv'0 (_1 : Vec'0.t_Vec u (Global'0.t_Global))
   
-  axiom inv'0 [@rewrite] : forall x : Vec'0.t_Vec u (Global'0.t_Global) . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Vec'0.t_Vec u (Global'0.t_Global) [inv'0 x] . inv'0 x = invariant'0 x
   
   goal x_refn : [%#sspecialize0] forall self : Vec'0.t_Vec u (Global'0.t_Global) . inv'0 self  -> inv'0 self
 end

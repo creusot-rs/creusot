@@ -1,5 +1,5 @@
 use crate::{
-    invariant::Invariant,
+    invariant::*,
     std::{
         alloc::Allocator,
         ops::{Deref, DerefMut, Index, IndexMut},
@@ -134,6 +134,7 @@ extern_spec! {
             impl<T, A : Allocator> Extend<T> for Vec<T, A> {
                 #[requires(iter.into_iter_pre())]
                 #[ensures(exists<start_ : I::IntoIter, done : &mut I::IntoIter, prod: Seq<T>>
+                    inv(start_) && inv(done) && inv(prod) &&
                     iter.into_iter_post(start_) &&
                     done.completed() && start_.produces(prod, *done) && (^self)@ == self@.concat(prod)
                 )]

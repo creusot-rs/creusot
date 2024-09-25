@@ -52,66 +52,71 @@ module M_222__uses_invariant
   
   let%span s2222 = "../222.rs" 39 10 39 26
   
-  let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
+  let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   
-  let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 37 20 37 44
+  let%span span4 = "../222.rs" 30 8 30 12
   
-  let%span span5 = "../222.rs" 30 8 30 12
+  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
   
-  let%span span6 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span6 = "" 0 0 0 0
   
-  let%span span7 = "" 0 0 0 0
+  let%span span7 = "../../../../../creusot-contracts/src/std/option.rs" 30 0 141 1
   
-  let%span span8 = "../../../../../creusot-contracts/src/std/option.rs" 30 0 141 1
-  
-  let%span span9 = "" 0 0 0 0
-  
-  use T_222__Once as Once'0
-  
-  predicate invariant'4 (self : Once'0.t_Once t) =
-    [%#span3] true
-  
-  predicate inv'3 (_1 : Once'0.t_Once t)
-  
-  axiom inv'3 [@rewrite] : forall x : Once'0.t_Once t . inv'3 x = true
+  let%span span8 = "" 0 0 0 0
   
   use T_core__option__Option as Option'0
   
   predicate inv'0 (_1 : Option'0.t_Option t)
   
+  use T_222__Once as Once'0
+  
+  predicate inv'4 (_1 : Once'0.t_Once t)
+  
+  axiom inv'4 [@rewrite] : forall x : Once'0.t_Once t [inv'4 x] . inv'4 x
+  = match x with
+    | Once'0.C_Once a_0 -> inv'0 a_0
+    end
+  
+  predicate invariant'3 (self : t)
+  
+  predicate inv'3 (_1 : t)
+  
+  axiom inv'3 : forall x : t [inv'3 x] . inv'3 x  -> invariant'3 x
+  
   use prelude.prelude.Borrow
   
-  predicate invariant'3 (self : borrowed (Option'0.t_Option t)) =
-    [%#span4] inv'0 self.current /\ inv'0 self.final
+  predicate invariant'2 (self : borrowed (Option'0.t_Option t)) =
+    [%#span3] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'2 (_1 : borrowed (Option'0.t_Option t))
   
-  axiom inv'2 [@rewrite] : forall x : borrowed (Option'0.t_Option t) . inv'2 x = true
+  axiom inv'2 [@rewrite] : forall x : borrowed (Option'0.t_Option t) [inv'2 x] . inv'2 x = invariant'2 x
   
-  predicate invariant'2 (self : borrowed (Once'0.t_Once t)) =
-    [%#span4] inv'3 self.current /\ inv'3 self.final
+  predicate invariant'1 (self : borrowed (Once'0.t_Once t)) =
+    [%#span3] inv'4 self.current /\ inv'4 self.final
   
   predicate inv'1 (_1 : borrowed (Once'0.t_Once t))
   
-  axiom inv'1 [@rewrite] : forall x : borrowed (Once'0.t_Once t) . inv'1 x = true
+  axiom inv'1 [@rewrite] : forall x : borrowed (Once'0.t_Once t) [inv'1 x] . inv'1 x = invariant'1 x
   
-  predicate invariant'1 (self : Option'0.t_Option t) =
-    [%#span3] true
-  
-  axiom inv'0 [@rewrite] : forall x : Option'0.t_Option t . inv'0 x = true
+  axiom inv'0 [@rewrite] : forall x : Option'0.t_Option t [inv'0 x] . inv'0 x
+  = match x with
+    | Option'0.C_None -> true
+    | Option'0.C_Some a_0 -> inv'3 a_0
+    end
   
   predicate invariant'0 [#"../222.rs" 29 4 29 30] (self : Once'0.t_Once t) =
-    [%#span5] true
+    [%#span4] true
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'0 (self : borrowed (Once'0.t_Once t)) =
-    [%#span6] self.final = self.current
+    [%#span5] self.final = self.current
   
-  let rec take'0 (self:borrowed (Option'0.t_Option t)) (return'  (ret:Option'0.t_Option t))= {[@expl:precondition] [%#span7] inv'2 self}
+  let rec take'0 (self:borrowed (Option'0.t_Option t)) (return'  (ret:Option'0.t_Option t))= {[@expl:precondition] [%#span6] inv'2 self}
     any
-    [ return' (result:Option'0.t_Option t)-> {[%#span9] inv'0 result}
-      {[%#span8] result = self.current /\ self.final = Option'0.C_None}
+    [ return' (result:Option'0.t_Option t)-> {[%#span8] inv'0 result}
+      {[%#span7] result = self.current /\ self.final = Option'0.C_None}
       (! return' {result}) ]
     
   
