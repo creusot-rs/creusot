@@ -12,7 +12,7 @@ use crate::{
 use rustc_borrowck::borrow_set::TwoPhaseActivation;
 use rustc_middle::{
     mir::{
-        BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
+        BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
         StatementKind,
     },
     ty::adjustment::PointerCoercion,
@@ -121,11 +121,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
             },
             Rvalue::Discriminant(_) => return,
-            Rvalue::BinaryOp(BinOp::BitAnd, box (l, _))
-                if !l.ty(self.body, self.tcx()).is_bool() =>
-            {
-                self.ctx.crash_and_error(si.span, "bitwise operations are currently unsupported")
-            }
             Rvalue::BinaryOp(op, box (l, r)) => {
                 RValue::BinOp(*op, self.translate_operand(l), self.translate_operand(r))
             }

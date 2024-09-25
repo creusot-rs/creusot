@@ -1,0 +1,685 @@
+module UInt8
+    use export bv.BV8
+    use bv.BV256 as BV256
+    use bv.BVConverter_8_256
+    use int.Int
+    use int.EuclideanDivision as ED
+
+    constant max_uint : t = 0xFF
+    function to_BV256 (x: t) : BV256.t = toBig x
+    function of_BV256 (x: BV256.t) : t = toSmall x
+    function bv256_to_uint (x: BV256.t) : int = BV256.t'int x
+    constant max_uint_as_BV256 : BV256.t = to_BV256 max_uint
+
+    function to_uint(x:t): int = t'int x
+
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_uint a = to_uint b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <> to_uint b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <= to_uint b }  { result <-> ule a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a < to_uint b } { result <-> ult a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_uint a >= to_uint b } { result <-> uge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a > to_uint b } { result <-> ugt a b }) = any
+
+    let add (a:t) (b:t)
+        { [@expl:arithmetic overflow] to_uint a + to_uint b < two_power_size \/ BV256.ule (BV256.add (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result :t)  { to_uint result = to_uint a + to_uint b } { result = add a b })
+        = any
+    let sub (a:t)  (b:t)
+        { [@expl:arithmetic overflow] to_uint a >= to_uint b \/ uge a b }
+        (ret (result: t) { to_uint result = to_uint a - to_uint b } { result = sub a b })
+        = any
+    let mul (a:t) (b:t)
+        { [@expl:arithmetic overflow] to_uint a * to_uint b < two_power_size \/ BV256.ule (BV256.mul (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result: t) { result = mul a b } { to_int result = to_uint a * to_uint b })
+        = any
+    let div (a:t) (b:t)
+        { [@expl:division by zero] b <> zeros \/ to_uint b <> 0 }
+        (ret (result: t) { to_uint result = ED.div (to_uint a) (to_uint b) } { result = udiv a b })
+        = any
+    let rem (a:t) (b:t)
+        { [@expl:remainder by zero] b <> zeros  \/ to_uint b <> 0 }
+        (ret (result: t) { to_uint result = ED.mod (to_uint a) (to_uint b) } { result = urem a b })
+        = any
+
+    let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
+    let bw_or (a:t) (b:t) (ret (result :t)) = ret { bw_or a b }
+    let bw_xor (a:t) (b:t) (ret (result :t)) = ret { bw_xor a b }
+    let bw_not (a:t) (ret (result :t)) = ret { bw_not a }
+    let shl (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] b >= 0 /\ b <= size  }
+        (ret (result :t) { result = lsl_bv a (of_int b) } { result = lsl a b })
+        = any
+    let shr (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] b >= 0 /\ b <= size }
+        (ret (result :t) { result = lsr_bv a (of_int b) } { result = lsr a b })
+        = any
+
+    let to_bv256 (a:t)
+        (ret (result: BV256.t) { result = to_BV256 a })
+        = any
+    let of_bv256 (a:BV256.t)
+        { [@expl:arithmetic overflow] bv256_to_uint a >= 0 /\ bv256_to_uint a < two_power_size }
+        (ret (result: t) { result = of_BV256 a })
+        = any
+end
+module UInt16
+    use export bv.BV16
+    use bv.BV256 as BV256
+    use bv.BVConverter_16_256
+    use int.Int
+    use int.EuclideanDivision as ED
+
+    constant max_uint : t = 0xFFFF
+    function to_BV256 (x: t) : BV256.t = toBig x
+    function of_BV256 (x: BV256.t) : t = toSmall x
+    function bv256_to_uint (x: BV256.t) : int = BV256.t'int x
+    constant max_uint_as_BV256 : BV256.t = to_BV256 max_uint
+
+    function to_uint(x:t): int = t'int x
+
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_uint a = to_uint b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <> to_uint b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <= to_uint b }  { result <-> ule a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a < to_uint b } { result <-> ult a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_uint a >= to_uint b } { result <-> uge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a > to_uint b } { result <-> ugt a b }) = any
+
+    let add (a:t) (b:t)
+        { [@expl:arithmetic overflow] to_uint a + to_uint b < two_power_size \/ BV256.ule (BV256.add (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result :t)  { to_uint result = to_uint a + to_uint b } { result = add a b })
+        = any
+    let sub (a:t)  (b:t)
+        { [@expl:arithmetic overflow] to_uint a >= to_uint b \/ uge a b }
+        (ret (result: t) { to_uint result = to_uint a - to_uint b } { result = sub a b })
+        = any
+    let mul (a:t) (b:t)
+        { [@expl:arithmetic overflow] to_uint a * to_uint b < two_power_size \/ BV256.ule (BV256.mul (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result: t) { result = mul a b } { to_int result = to_uint a * to_uint b })
+        = any
+    let div (a:t) (b:t)
+        { [@expl:division by zero] b <> zeros \/ to_uint b <> 0 }
+        (ret (result: t) { to_uint result = ED.div (to_uint a) (to_uint b) } { result = udiv a b })
+        = any
+    let rem (a:t) (b:t)
+        { [@expl:remainder by zero] b <> zeros  \/ to_uint b <> 0 }
+        (ret (result: t) { to_uint result = ED.mod (to_uint a) (to_uint b) } { result = urem a b })
+        = any
+
+    let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
+    let bw_or (a:t) (b:t) (ret (result :t)) = ret { bw_or a b }
+    let bw_xor (a:t) (b:t) (ret (result :t)) = ret { bw_xor a b }
+    let bw_not (a:t) (ret (result :t)) = ret { bw_not a }
+    let shl (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] b >= 0 /\ b <= size  }
+        (ret (result :t) { result = lsl_bv a (of_int b) } { result = lsl a b })
+        = any
+    let shr (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] b >= 0 /\ b <= size }
+        (ret (result :t) { result = lsr_bv a (of_int b) } { result = lsr a b })
+        = any
+
+    let to_bv256 (a:t)
+        (ret (result: BV256.t) { result = to_BV256 a })
+        = any
+    let of_bv256 (a:BV256.t)
+        { [@expl:arithmetic overflow] bv256_to_uint a >= 0 /\ bv256_to_uint a < two_power_size }
+        (ret (result: t) { result = of_BV256 a })
+        = any
+end
+module UInt32
+    use export bv.BV32
+    use bv.BV256 as BV256
+    use bv.BVConverter_32_256
+    use int.Int
+    use int.EuclideanDivision as ED
+
+    constant max_uint : t = 0xFFFFFFFF
+    function to_BV256 (x: t) : BV256.t = toBig x
+    function of_BV256 (x: BV256.t) : t = toSmall x
+    function bv256_to_uint (x: BV256.t) : int = BV256.t'int x
+    constant max_uint_as_BV256 : BV256.t = to_BV256 max_uint
+
+    function to_uint(x:t): int = t'int x
+
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_uint a = to_uint b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <> to_uint b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <= to_uint b }  { result <-> ule a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a < to_uint b } { result <-> ult a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_uint a >= to_uint b } { result <-> uge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a > to_uint b } { result <-> ugt a b }) = any
+
+    let add (a:t) (b:t)
+        { [@expl:arithmetic overflow] to_uint a + to_uint b < two_power_size \/ BV256.ule (BV256.add (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result :t)  { to_uint result = to_uint a + to_uint b } { result = add a b })
+        = any
+    let sub (a:t)  (b:t)
+        { [@expl:arithmetic overflow] to_uint a >= to_uint b \/ uge a b }
+        (ret (result: t) { to_uint result = to_uint a - to_uint b } { result = sub a b })
+        = any
+    let mul (a:t) (b:t)
+        { [@expl:arithmetic overflow] to_uint a * to_uint b < two_power_size \/ BV256.ule (BV256.mul (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result: t) { result = mul a b } { to_int result = to_uint a * to_uint b })
+        = any
+    let div (a:t) (b:t)
+        { [@expl:division by zero] b <> zeros \/ to_uint b <> 0 }
+        (ret (result: t) { to_uint result = ED.div (to_uint a) (to_uint b) } { result = udiv a b })
+        = any
+    let rem (a:t) (b:t)
+        { [@expl:remainder by zero] b <> zeros  \/ to_uint b <> 0 }
+        (ret (result: t) { to_uint result = ED.mod (to_uint a) (to_uint b) } { result = urem a b })
+        = any
+
+    let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
+    let bw_or (a:t) (b:t) (ret (result :t)) = ret { bw_or a b }
+    let bw_xor (a:t) (b:t) (ret (result :t)) = ret { bw_xor a b }
+    let bw_not (a:t) (ret (result :t)) = ret { bw_not a }
+    let shl (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] b >= 0 /\ b <= size  }
+        (ret (result :t) { result = lsl_bv a (of_int b) } { result = lsl a b })
+        = any
+    let shr (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] b >= 0 /\ b <= size }
+        (ret (result :t) { result = lsr_bv a (of_int b) } { result = lsr a b })
+        = any
+
+    let to_bv256 (a:t)
+        (ret (result: BV256.t) { result = to_BV256 a })
+        = any
+    let of_bv256 (a:BV256.t)
+        { [@expl:arithmetic overflow] bv256_to_uint a >= 0 /\ bv256_to_uint a < two_power_size }
+        (ret (result: t) { result = of_BV256 a })
+        = any
+end
+module UInt64
+    use export bv.BV64
+    use bv.BV256 as BV256
+    use bv.BVConverter_64_256
+    use int.Int
+    use int.EuclideanDivision as ED
+
+    constant max_uint : t = 0xFFFFFFFFFFFFFFFF
+    function to_BV256 (x: t) : BV256.t = toBig x
+    function of_BV256 (x: BV256.t) : t = toSmall x
+    function bv256_to_uint (x: BV256.t) : int = BV256.t'int x
+    constant max_uint_as_BV256 : BV256.t = to_BV256 max_uint
+
+    function to_uint(x:t): int = t'int x
+
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_uint a = to_uint b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <> to_uint b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <= to_uint b }  { result <-> ule a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a < to_uint b } { result <-> ult a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_uint a >= to_uint b } { result <-> uge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a > to_uint b } { result <-> ugt a b }) = any
+
+    let add (a:t) (b:t)
+        { [@expl:arithmetic overflow] to_uint a + to_uint b < two_power_size \/ BV256.ule (BV256.add (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result :t)  { to_uint result = to_uint a + to_uint b } { result = add a b })
+        = any
+    let sub (a:t)  (b:t)
+        { [@expl:arithmetic overflow] to_uint a >= to_uint b \/ uge a b }
+        (ret (result: t) { to_uint result = to_uint a - to_uint b } { result = sub a b })
+        = any
+    let mul (a:t) (b:t)
+        { [@expl:arithmetic overflow] to_uint a * to_uint b < two_power_size \/ BV256.ule (BV256.mul (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result: t) { result = mul a b } { to_int result = to_uint a * to_uint b })
+        = any
+    let div (a:t) (b:t)
+        { [@expl:division by zero] b <> zeros \/ to_uint b <> 0 }
+        (ret (result: t) { to_uint result = ED.div (to_uint a) (to_uint b) } { result = udiv a b })
+        = any
+    let rem (a:t) (b:t)
+        { [@expl:remainder by zero] b <> zeros  \/ to_uint b <> 0 }
+        (ret (result: t) { to_uint result = ED.mod (to_uint a) (to_uint b) } { result = urem a b })
+        = any
+
+    let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
+    let bw_or (a:t) (b:t) (ret (result :t)) = ret { bw_or a b }
+    let bw_xor (a:t) (b:t) (ret (result :t)) = ret { bw_xor a b }
+    let bw_not (a:t) (ret (result :t)) = ret { bw_not a }
+    let shl (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] b >= 0 /\ b <= size  }
+        (ret (result :t) { result = lsl_bv a (of_int b) } { result = lsl a b })
+        = any
+    let shr (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] b >= 0 /\ b <= size }
+        (ret (result :t) { result = lsr_bv a (of_int b) } { result = lsr a b })
+        = any
+
+    let to_bv256 (a:t)
+        (ret (result: BV256.t) { result = to_BV256 a })
+        = any
+    let of_bv256 (a:BV256.t)
+        { [@expl:arithmetic overflow] bv256_to_uint a >= 0 /\ bv256_to_uint a < two_power_size }
+        (ret (result: t) { result = of_BV256 a })
+        = any
+end
+module UInt128
+    use export bv.BV128
+    use bv.BV256 as BV256
+    use bv.BVConverter_128_256
+    use int.Int
+    use int.EuclideanDivision as ED
+
+    constant max_uint : t = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+    function to_BV256 (x: t) : BV256.t = toBig x
+    function of_BV256 (x: BV256.t) : t = toSmall x
+    function bv256_to_uint (x: BV256.t) : int = BV256.t'int x
+    constant max_uint_as_BV256 : BV256.t = to_BV256 max_uint
+
+    function to_uint(x:t): int = t'int x
+
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_uint a = to_uint b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <> to_uint b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <= to_uint b }  { result <-> ule a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a < to_uint b } { result <-> ult a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_uint a >= to_uint b } { result <-> uge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a > to_uint b } { result <-> ugt a b }) = any
+
+    let add (a:t) (b:t)
+        { [@expl:arithmetic overflow] to_uint a + to_uint b < two_power_size \/ BV256.ule (BV256.add (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result :t)  { to_uint result = to_uint a + to_uint b } { result = add a b })
+        = any
+    let sub (a:t)  (b:t)
+        { [@expl:arithmetic overflow] to_uint a >= to_uint b \/ uge a b }
+        (ret (result: t) { to_uint result = to_uint a - to_uint b } { result = sub a b })
+        = any
+    let mul (a:t) (b:t)
+        { [@expl:arithmetic overflow] to_uint a * to_uint b < two_power_size \/ BV256.ule (BV256.mul (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result: t) { result = mul a b } { to_int result = to_uint a * to_uint b })
+        = any
+    let div (a:t) (b:t)
+        { [@expl:division by zero] b <> zeros \/ to_uint b <> 0 }
+        (ret (result: t) { to_uint result = ED.div (to_uint a) (to_uint b) } { result = udiv a b })
+        = any
+    let rem (a:t) (b:t)
+        { [@expl:remainder by zero] b <> zeros  \/ to_uint b <> 0 }
+        (ret (result: t) { to_uint result = ED.mod (to_uint a) (to_uint b) } { result = urem a b })
+        = any
+
+    let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
+    let bw_or (a:t) (b:t) (ret (result :t)) = ret { bw_or a b }
+    let bw_xor (a:t) (b:t) (ret (result :t)) = ret { bw_xor a b }
+    let bw_not (a:t) (ret (result :t)) = ret { bw_not a }
+    let shl (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] b >= 0 /\ b <= size  }
+        (ret (result :t) { result = lsl_bv a (of_int b) } { result = lsl a b })
+        = any
+    let shr (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] b >= 0 /\ b <= size }
+        (ret (result :t) { result = lsr_bv a (of_int b) } { result = lsr a b })
+        = any
+
+    let to_bv256 (a:t)
+        (ret (result: BV256.t) { result = to_BV256 a })
+        = any
+    let of_bv256 (a:BV256.t)
+        { [@expl:arithmetic overflow] bv256_to_uint a >= 0 /\ bv256_to_uint a < two_power_size }
+        (ret (result: t) { result = of_BV256 a })
+        = any
+end
+module Int8
+    use export bv.BV8
+    use bv.BV256 as BV256
+    use bv.BVConverter_8_256
+    use bv.Pow2int
+    use int.Int
+    use int.ComputerDivision as CD
+
+    constant min_sint : t = 0x80
+    constant max_sint : t = 0x7F
+    constant two_power_size_minus_one : int = 0x80
+    constant minus_one : t = 0xFF
+
+    function to_BV256 (x: t) : BV256.t = stoBig x
+    function of_BV256 (x: BV256.t) : t = toSmall x
+    function bv256_to_int (x: BV256.t) : int = BV256.t'int x
+    constant min_sint_as_BV256 : BV256.t = to_BV256 min_sint
+    constant max_sint_as_BV256 : BV256.t = to_BV256 max_sint
+
+    function to_uint(x:t): int = t'int x
+
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_int a = to_int b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_int a <> to_int b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_int a <= to_int b }  { result <-> sle a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_int a < to_int b } { result <-> slt a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_int a >= to_int b } { result <-> sge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_int a > to_int b } { result <-> sgt a b }) = any
+
+    let add (a:t) (b:t)
+        { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a + to_int b < two_power_size_minus_one \/ let r = BV256.add (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
+        (ret (result :t)  { to_int result = to_int a + to_int b } { result = add a b })
+        = any
+    let sub (a:t)  (b:t)
+        { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a - to_int b < two_power_size_minus_one \/ let r = BV256.sub (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
+        (ret (result: t) { to_int result = to_int a - to_int b } { result = sub a b })
+        = any
+    let mul (a:t) (b:t)
+        { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a * to_int b < two_power_size_minus_one \/ let r = BV256.mul (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
+        (ret (result: t) { to_int result = to_int a * to_int b } { result = mul a b })
+        = any
+    let div (a:t) (b:t)
+        { [@expl:division by zero] b <> zeros  \/ to_int b <> 0 }
+        { [@expl:signed division overflow check] (a <> min_sint \/ b <> minus_one) \/ (to_int a <> to_int min_sint \/ to_int b <> -1) }
+        (ret (result: t) { to_int result = CD.div (to_int a) (to_int b) } { result = sdiv a b })
+        = any
+    let rem (a:t) (b:t)
+        { [@expl:remainder by zero] b <> zeros \/ to_int b <> 0 }
+        (ret (result: t) { to_int result = CD.mod (to_int a) (to_int b) } { result = srem a b })
+        = any
+
+    let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
+    let bw_or (a:t) (b:t) (ret (result :t)) = ret { bw_or a b }
+    let bw_xor (a:t) (b:t) (ret (result :t)) = ret { bw_xor a b }
+    let bw_not (a:t) (ret (result :t)) = ret { bw_not a }
+    let shl (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] ult (of_int b) size_bv \/ b < size  }
+        { [@expl:out-of-bounds shifting] sle zeros a \/ to_int a >= 0 }
+        { [@expl:arithmetic overflow] (to_int a) * (pow2 (b)) < two_power_size_minus_one \/ let r = BV256.lsl_bv (to_BV256 a) (to_BV256 (of_int b)) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256)}
+        (ret (result :t) { result = lsl_bv a (of_int b) } { result = lsl a b })
+        = any
+    let shr (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] ult (of_int b) size_bv \/ b < size }
+        (ret (result :t) { result = asr_bv a (of_int b) } { result = asr a b })
+        = any
+
+    let to_bv256 (a:t)
+        (ret (result: BV256.t) { result = to_BV256 a })
+        = any
+    let of_bv256 (a:BV256.t)
+        { [@expl:arithmetic overflow] bv256_to_int a >= 0 /\ bv256_to_int a < two_power_size }
+        (ret (result: t) { result = of_BV256 a })
+        = any
+end
+module Int16
+    use export bv.BV16
+    use bv.BV256 as BV256
+    use bv.BVConverter_16_256
+    use bv.Pow2int
+    use int.Int
+    use int.ComputerDivision as CD
+
+    constant min_sint : t = 0x8000
+    constant max_sint : t = 0x7FFF
+    constant two_power_size_minus_one : int = 0x8000
+    constant minus_one : t = 0xFFFF
+
+    function to_BV256 (x: t) : BV256.t = stoBig x
+    function of_BV256 (x: BV256.t) : t = toSmall x
+    function bv256_to_int (x: BV256.t) : int = BV256.t'int x
+    constant min_sint_as_BV256 : BV256.t = to_BV256 min_sint
+    constant max_sint_as_BV256 : BV256.t = to_BV256 max_sint
+
+    function to_uint(x:t): int = t'int x
+
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_int a = to_int b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_int a <> to_int b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_int a <= to_int b }  { result <-> sle a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_int a < to_int b } { result <-> slt a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_int a >= to_int b } { result <-> sge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_int a > to_int b } { result <-> sgt a b }) = any
+
+    let add (a:t) (b:t)
+        { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a + to_int b < two_power_size_minus_one \/ let r = BV256.add (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
+        (ret (result :t)  { to_int result = to_int a + to_int b } { result = add a b })
+        = any
+    let sub (a:t)  (b:t)
+        { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a - to_int b < two_power_size_minus_one \/ let r = BV256.sub (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
+        (ret (result: t) { to_int result = to_int a - to_int b } { result = sub a b })
+        = any
+    let mul (a:t) (b:t)
+        { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a * to_int b < two_power_size_minus_one \/ let r = BV256.mul (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
+        (ret (result: t) { to_int result = to_int a * to_int b } { result = mul a b })
+        = any
+    let div (a:t) (b:t)
+        { [@expl:division by zero] b <> zeros  \/ to_int b <> 0 }
+        { [@expl:signed division overflow check] (a <> min_sint \/ b <> minus_one) \/ (to_int a <> to_int min_sint \/ to_int b <> -1) }
+        (ret (result: t) { to_int result = CD.div (to_int a) (to_int b) } { result = sdiv a b })
+        = any
+    let rem (a:t) (b:t)
+        { [@expl:remainder by zero] b <> zeros \/ to_int b <> 0 }
+        (ret (result: t) { to_int result = CD.mod (to_int a) (to_int b) } { result = srem a b })
+        = any
+
+    let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
+    let bw_or (a:t) (b:t) (ret (result :t)) = ret { bw_or a b }
+    let bw_xor (a:t) (b:t) (ret (result :t)) = ret { bw_xor a b }
+    let bw_not (a:t) (ret (result :t)) = ret { bw_not a }
+    let shl (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] ult (of_int b) size_bv \/ b < size  }
+        { [@expl:out-of-bounds shifting] sle zeros a \/ to_int a >= 0 }
+        { [@expl:arithmetic overflow] (to_int a) * (pow2 (b)) < two_power_size_minus_one \/ let r = BV256.lsl_bv (to_BV256 a) (to_BV256 (of_int b)) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256)}
+        (ret (result :t) { result = lsl_bv a (of_int b) } { result = lsl a b })
+        = any
+    let shr (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] ult (of_int b) size_bv \/ b < size }
+        (ret (result :t) { result = asr_bv a (of_int b) } { result = asr a b })
+        = any
+
+    let to_bv256 (a:t)
+        (ret (result: BV256.t) { result = to_BV256 a })
+        = any
+    let of_bv256 (a:BV256.t)
+        { [@expl:arithmetic overflow] bv256_to_int a >= 0 /\ bv256_to_int a < two_power_size }
+        (ret (result: t) { result = of_BV256 a })
+        = any
+end
+module Int32
+    use export bv.BV32
+    use bv.BV256 as BV256
+    use bv.BVConverter_32_256
+    use bv.Pow2int
+    use int.Int
+    use int.ComputerDivision as CD
+
+    constant min_sint : t = 0x80000000
+    constant max_sint : t = 0x7FFFFFFF
+    constant two_power_size_minus_one : int = 0x80000000
+    constant minus_one : t = 0xFFFFFFFF
+
+    function to_BV256 (x: t) : BV256.t = stoBig x
+    function of_BV256 (x: BV256.t) : t = toSmall x
+    function bv256_to_int (x: BV256.t) : int = BV256.t'int x
+    constant min_sint_as_BV256 : BV256.t = to_BV256 min_sint
+    constant max_sint_as_BV256 : BV256.t = to_BV256 max_sint
+
+    function to_uint(x:t): int = t'int x
+
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_int a = to_int b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_int a <> to_int b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_int a <= to_int b }  { result <-> sle a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_int a < to_int b } { result <-> slt a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_int a >= to_int b } { result <-> sge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_int a > to_int b } { result <-> sgt a b }) = any
+
+    let add (a:t) (b:t)
+        { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a + to_int b < two_power_size_minus_one \/ let r = BV256.add (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
+        (ret (result :t)  { to_int result = to_int a + to_int b } { result = add a b })
+        = any
+    let sub (a:t)  (b:t)
+        { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a - to_int b < two_power_size_minus_one \/ let r = BV256.sub (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
+        (ret (result: t) { to_int result = to_int a - to_int b } { result = sub a b })
+        = any
+    let mul (a:t) (b:t)
+        { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a * to_int b < two_power_size_minus_one \/ let r = BV256.mul (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
+        (ret (result: t) { to_int result = to_int a * to_int b } { result = mul a b })
+        = any
+    let div (a:t) (b:t)
+        { [@expl:division by zero] b <> zeros  \/ to_int b <> 0 }
+        { [@expl:signed division overflow check] (a <> min_sint \/ b <> minus_one) \/ (to_int a <> to_int min_sint \/ to_int b <> -1) }
+        (ret (result: t) { to_int result = CD.div (to_int a) (to_int b) } { result = sdiv a b })
+        = any
+    let rem (a:t) (b:t)
+        { [@expl:remainder by zero] b <> zeros \/ to_int b <> 0 }
+        (ret (result: t) { to_int result = CD.mod (to_int a) (to_int b) } { result = srem a b })
+        = any
+
+    let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
+    let bw_or (a:t) (b:t) (ret (result :t)) = ret { bw_or a b }
+    let bw_xor (a:t) (b:t) (ret (result :t)) = ret { bw_xor a b }
+    let bw_not (a:t) (ret (result :t)) = ret { bw_not a }
+    let shl (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] ult (of_int b) size_bv \/ b < size  }
+        { [@expl:out-of-bounds shifting] sle zeros a \/ to_int a >= 0 }
+        { [@expl:arithmetic overflow] (to_int a) * (pow2 (b)) < two_power_size_minus_one \/ let r = BV256.lsl_bv (to_BV256 a) (to_BV256 (of_int b)) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256)}
+        (ret (result :t) { result = lsl_bv a (of_int b) } { result = lsl a b })
+        = any
+    let shr (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] ult (of_int b) size_bv \/ b < size }
+        (ret (result :t) { result = asr_bv a (of_int b) } { result = asr a b })
+        = any
+
+    let to_bv256 (a:t)
+        (ret (result: BV256.t) { result = to_BV256 a })
+        = any
+    let of_bv256 (a:BV256.t)
+        { [@expl:arithmetic overflow] bv256_to_int a >= 0 /\ bv256_to_int a < two_power_size }
+        (ret (result: t) { result = of_BV256 a })
+        = any
+end
+module Int64
+    use export bv.BV64
+    use bv.BV256 as BV256
+    use bv.BVConverter_64_256
+    use bv.Pow2int
+    use int.Int
+    use int.ComputerDivision as CD
+
+    constant min_sint : t = 0x8000000000000000
+    constant max_sint : t = 0x7FFFFFFFFFFFFFFF
+    constant two_power_size_minus_one : int = 0x8000000000000000
+    constant minus_one : t = 0xFFFFFFFFFFFFFFFF
+
+    function to_BV256 (x: t) : BV256.t = stoBig x
+    function of_BV256 (x: BV256.t) : t = toSmall x
+    function bv256_to_int (x: BV256.t) : int = BV256.t'int x
+    constant min_sint_as_BV256 : BV256.t = to_BV256 min_sint
+    constant max_sint_as_BV256 : BV256.t = to_BV256 max_sint
+
+    function to_uint(x:t): int = t'int x
+
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_int a = to_int b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_int a <> to_int b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_int a <= to_int b }  { result <-> sle a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_int a < to_int b } { result <-> slt a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_int a >= to_int b } { result <-> sge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_int a > to_int b } { result <-> sgt a b }) = any
+
+    let add (a:t) (b:t)
+        { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a + to_int b < two_power_size_minus_one \/ let r = BV256.add (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
+        (ret (result :t)  { to_int result = to_int a + to_int b } { result = add a b })
+        = any
+    let sub (a:t)  (b:t)
+        { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a - to_int b < two_power_size_minus_one \/ let r = BV256.sub (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
+        (ret (result: t) { to_int result = to_int a - to_int b } { result = sub a b })
+        = any
+    let mul (a:t) (b:t)
+        { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a * to_int b < two_power_size_minus_one \/ let r = BV256.mul (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
+        (ret (result: t) { to_int result = to_int a * to_int b } { result = mul a b })
+        = any
+    let div (a:t) (b:t)
+        { [@expl:division by zero] b <> zeros  \/ to_int b <> 0 }
+        { [@expl:signed division overflow check] (a <> min_sint \/ b <> minus_one) \/ (to_int a <> to_int min_sint \/ to_int b <> -1) }
+        (ret (result: t) { to_int result = CD.div (to_int a) (to_int b) } { result = sdiv a b })
+        = any
+    let rem (a:t) (b:t)
+        { [@expl:remainder by zero] b <> zeros \/ to_int b <> 0 }
+        (ret (result: t) { to_int result = CD.mod (to_int a) (to_int b) } { result = srem a b })
+        = any
+
+    let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
+    let bw_or (a:t) (b:t) (ret (result :t)) = ret { bw_or a b }
+    let bw_xor (a:t) (b:t) (ret (result :t)) = ret { bw_xor a b }
+    let bw_not (a:t) (ret (result :t)) = ret { bw_not a }
+    let shl (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] ult (of_int b) size_bv \/ b < size  }
+        { [@expl:out-of-bounds shifting] sle zeros a \/ to_int a >= 0 }
+        { [@expl:arithmetic overflow] (to_int a) * (pow2 (b)) < two_power_size_minus_one \/ let r = BV256.lsl_bv (to_BV256 a) (to_BV256 (of_int b)) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256)}
+        (ret (result :t) { result = lsl_bv a (of_int b) } { result = lsl a b })
+        = any
+    let shr (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] ult (of_int b) size_bv \/ b < size }
+        (ret (result :t) { result = asr_bv a (of_int b) } { result = asr a b })
+        = any
+
+    let to_bv256 (a:t)
+        (ret (result: BV256.t) { result = to_BV256 a })
+        = any
+    let of_bv256 (a:BV256.t)
+        { [@expl:arithmetic overflow] bv256_to_int a >= 0 /\ bv256_to_int a < two_power_size }
+        (ret (result: t) { result = of_BV256 a })
+        = any
+end
+module Int128
+    use export bv.BV128
+    use bv.BV256 as BV256
+    use bv.BVConverter_128_256
+    use bv.Pow2int
+    use int.Int
+    use int.ComputerDivision as CD
+
+    constant min_sint : t = 0x80000000000000000000000000000000
+    constant max_sint : t = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+    constant two_power_size_minus_one : int = 0x80000000000000000000000000000000
+    constant minus_one : t = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+
+    function to_BV256 (x: t) : BV256.t = stoBig x
+    function of_BV256 (x: BV256.t) : t = toSmall x
+    function bv256_to_int (x: BV256.t) : int = BV256.t'int x
+    constant min_sint_as_BV256 : BV256.t = to_BV256 min_sint
+    constant max_sint_as_BV256 : BV256.t = to_BV256 max_sint
+
+    function to_uint(x:t): int = t'int x
+
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_int a = to_int b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_int a <> to_int b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_int a <= to_int b }  { result <-> sle a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_int a < to_int b } { result <-> slt a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_int a >= to_int b } { result <-> sge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_int a > to_int b } { result <-> sgt a b }) = any
+
+    let add (a:t) (b:t)
+        { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a + to_int b < two_power_size_minus_one \/ let r = BV256.add (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
+        (ret (result :t)  { to_int result = to_int a + to_int b } { result = add a b })
+        = any
+    let sub (a:t)  (b:t)
+        { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a - to_int b < two_power_size_minus_one \/ let r = BV256.sub (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
+        (ret (result: t) { to_int result = to_int a - to_int b } { result = sub a b })
+        = any
+    let mul (a:t) (b:t)
+        { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a * to_int b < two_power_size_minus_one \/ let r = BV256.mul (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
+        (ret (result: t) { to_int result = to_int a * to_int b } { result = mul a b })
+        = any
+    let div (a:t) (b:t)
+        { [@expl:division by zero] b <> zeros  \/ to_int b <> 0 }
+        { [@expl:signed division overflow check] (a <> min_sint \/ b <> minus_one) \/ (to_int a <> to_int min_sint \/ to_int b <> -1) }
+        (ret (result: t) { to_int result = CD.div (to_int a) (to_int b) } { result = sdiv a b })
+        = any
+    let rem (a:t) (b:t)
+        { [@expl:remainder by zero] b <> zeros \/ to_int b <> 0 }
+        (ret (result: t) { to_int result = CD.mod (to_int a) (to_int b) } { result = srem a b })
+        = any
+
+    let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
+    let bw_or (a:t) (b:t) (ret (result :t)) = ret { bw_or a b }
+    let bw_xor (a:t) (b:t) (ret (result :t)) = ret { bw_xor a b }
+    let bw_not (a:t) (ret (result :t)) = ret { bw_not a }
+    let shl (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] ult (of_int b) size_bv \/ b < size  }
+        { [@expl:out-of-bounds shifting] sle zeros a \/ to_int a >= 0 }
+        { [@expl:arithmetic overflow] (to_int a) * (pow2 (b)) < two_power_size_minus_one \/ let r = BV256.lsl_bv (to_BV256 a) (to_BV256 (of_int b)) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256)}
+        (ret (result :t) { result = lsl_bv a (of_int b) } { result = lsl a b })
+        = any
+    let shr (a:t) (b:int)
+        { [@expl:out-of-bounds shifting] ult (of_int b) size_bv \/ b < size }
+        (ret (result :t) { result = asr_bv a (of_int b) } { result = asr a b })
+        = any
+
+    let to_bv256 (a:t)
+        (ret (result: BV256.t) { result = to_BV256 a })
+        = any
+    let of_bv256 (a:BV256.t)
+        { [@expl:arithmetic overflow] bv256_to_int a >= 0 /\ bv256_to_int a < two_power_size }
+        (ret (result: t) { result = of_BV256 a })
+        = any
+end

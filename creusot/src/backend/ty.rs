@@ -903,49 +903,49 @@ pub(crate) fn single_ty() -> MlT {
 }
 
 pub(crate) fn u8_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint8").unwrap())
+    MlT::TConstructor(QName::from_string("UInt8.t").unwrap())
 }
 
 pub(crate) fn u16_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint16").unwrap())
+    MlT::TConstructor(QName::from_string("UInt16.t").unwrap())
 }
 
 pub(crate) fn u32_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint32").unwrap())
+    MlT::TConstructor(QName::from_string("UInt32.t").unwrap())
 }
 
 pub(crate) fn u64_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint64").unwrap())
+    MlT::TConstructor(QName::from_string("UInt64.t").unwrap())
 }
 
 pub(crate) fn u128_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint128").unwrap())
+    MlT::TConstructor(QName::from_string("UInt128.t").unwrap())
 }
 
 pub(crate) fn usize_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("usize").unwrap())
+    MlT::TConstructor(QName::from_string("USize.t").unwrap())
 }
 
 pub(crate) fn i8_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("int8").unwrap())
+    MlT::TConstructor(QName::from_string("Int8.t").unwrap())
 }
 
 pub(crate) fn i16_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("int16").unwrap())
+    MlT::TConstructor(QName::from_string("Int16.t").unwrap())
 }
 
 pub(crate) fn i32_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("int32").unwrap())
+    MlT::TConstructor(QName::from_string("Int32.t").unwrap())
 }
 
 pub(crate) fn i64_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("int64").unwrap())
+    MlT::TConstructor(QName::from_string("Int64.t").unwrap())
 }
 
 pub(crate) fn i128_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("int128").unwrap())
+    MlT::TConstructor(QName::from_string("Int128.t").unwrap())
 }
 
 pub(crate) fn isize_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("isize").unwrap())
+    MlT::TConstructor(QName::from_string("ISize.t").unwrap())
 }
