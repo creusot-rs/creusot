@@ -43,7 +43,7 @@ impl<I> Resolve for Take<I> {
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
-            self.iter().resolve()
+            resolve(&self.iter())
         }
     }
 }
@@ -53,7 +53,7 @@ impl<I: Iterator> Iterator for Take<I> {
     #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-            self.n() == 0 && self.resolve() ||
+            self.n() == 0 && resolve(&self) ||
             (*self).n() > 0 && (*self).n() == (^self).n() + 1 && self.iter_mut().completed()
         }
     }

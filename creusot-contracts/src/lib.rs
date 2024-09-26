@@ -252,7 +252,7 @@ mod base_prelude {
         ghost::GhostBox,
         logic::{IndexLogic as _, Int, OrdLogic, Seq},
         model::{DeepModel, ShallowModel},
-        resolve::Resolve,
+        resolve::*,
         snapshot::Snapshot,
         std::{
             // Shadow std::prelude by our version.

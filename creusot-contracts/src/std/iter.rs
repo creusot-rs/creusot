@@ -145,7 +145,7 @@ extern_spec! {
 
                 // TODO: Investigate why Self_ needed
                 #[ensures(exists<done : &mut Self_, prod: Seq<_>>
-                    inv(done) && inv(prod) && (^done).resolve() && done.completed() &&
+                    inv(done) && inv(prod) && resolve(&^done) && done.completed() &&
                     self.produces(prod, *done) && B::from_iter_post(prod, result))]
                 fn collect<B>(self) -> B
                     where B: FromIterator<Self::Item>;
@@ -167,7 +167,7 @@ extern_spec! {
                 #[ensures(exists<into_iter: T::IntoIter, done: &mut T::IntoIter, prod: Seq<A>>
                             inv(into_iter) && inv(done) && inv(prod) &&
                             iter.into_iter_post(into_iter) &&
-                            into_iter.produces(prod, *done) && done.completed() && (^done).resolve() &&
+                            into_iter.produces(prod, *done) && done.completed() && resolve(&^done) &&
                             Self_::from_iter_post(prod, result))]
                 fn from_iter<T>(iter: T) -> Self
                     where T: IntoIterator<Item = A>, T::IntoIter: Iterator;

@@ -1,20 +1,121 @@
 
+module T_core__ptr__non_null__NonNull
+  use prelude.prelude.Opaque
+  
+  type t_NonNull 't =
+    | C_NonNull opaque_ptr
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
+    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
+    | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
+    
+end
+module T_core__marker__PhantomData
+  type t_PhantomData 't =
+    | C_PhantomData
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any
+    [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
+    
+end
+module T_core__ptr__unique__Unique
+  use T_core__marker__PhantomData as PhantomData'0
+  
+  use T_core__ptr__non_null__NonNull as NonNull'0
+  
+  type t_Unique 't =
+    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
+    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
+      = input}
+      (! ret {pointer} {_marker})
+    | bad (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
+      <> input}
+      {false}
+      any ]
+    
+end
+module T_alloc__raw_vec__Cap
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  type t_Cap  =
+    | C_Cap usize
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
+    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
+    | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
+    
+end
+module T_alloc__raw_vec__RawVec
+  use T_alloc__raw_vec__Cap as Cap'0
+  
+  use T_core__ptr__unique__Unique as Unique'0
+  
+  type t_RawVec 't 'a =
+    | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
+    [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
+      (! ret {ptr} {cap} {alloc})
+    | bad (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
+    
+end
+module T_alloc__vec__Vec
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  use T_alloc__raw_vec__RawVec as RawVec'0
+  
+  type t_Vec 't 'a =
+    | C_Vec (RawVec'0.t_RawVec 't 'a) usize
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
+    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
+    | bad (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+    
+end
+module T_alloc__alloc__Global
+  type t_Global  =
+    | C_Global
+  
+  function any_l (_ : 'b) : 'a
+  
+  let rec t_Global (input:t_Global) (ret  )= any
+    [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
+    
+end
 module M_trigger2__resolve_seq__Impl
   type t
   
   let%span strigger20 = "../trigger2.rs" 5 0 5 36
   
-  let%span strigger21 = "../trigger2.rs" 7 4 10 5
+  let%span svec1 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   
-  let%span span2 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span strigger22 = "../trigger2.rs" 7 4 10 5
   
-  let%span span3 = "../../../../creusot-contracts/src/resolve.rs" 35 8 35 31
+  let%span span3 = "" 0 0 0 0
   
-  let%span span4 = "../../../../creusot-contracts/src/logic/seq.rs" 207 8 207 102
+  let%span span4 = "../../../../creusot-contracts/src/resolve.rs" 32 20 32 34
   
-  use seq.Seq
+  let%span span5 = "../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
   
-  use prelude.prelude.Int
+  let%span span6 = "../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85
   
   use seq.Seq
   
@@ -22,24 +123,48 @@ module M_trigger2__resolve_seq__Impl
   
   use seq.Seq
   
-  predicate resolve'2 (self : borrowed t) =
-    [%#span2] self.final = self.current
+  use prelude.prelude.UIntSize
   
-  predicate resolve'1 (self : borrowed t) =
-    [%#span3] resolve'2 self
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  constant v_MAX'0 : usize = [%#span3] (18446744073709551615 : usize)
   
   use seq.Seq
   
-  predicate resolve'0 (self : Seq.seq (borrowed t)) =
-    [%#span4] forall i : int . 0 <= i /\ i < Seq.length self  -> resolve'1 (Seq.get self i)
+  use T_alloc__alloc__Global as Global'0
   
-  constant seq  : Seq.seq (borrowed t)
+  use T_alloc__vec__Vec as Vec'0
   
-  predicate resolve_seq [#"../trigger2.rs" 6 0 6 43] (seq : Seq.seq (borrowed t))
+  function shallow_model'0 (self : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)) : Seq.seq (borrowed t)
+  
+  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec (borrowed t) (Global'0.t_Global) . [%#svec1] Seq.length (shallow_model'0 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  predicate resolve'3 (self : borrowed t) =
+    [%#span4] self.final = self.current
+  
+  predicate resolve'2 (_1 : borrowed t) =
+    resolve'3 _1
+  
+  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)) (ix : int) : borrowed t
+   =
+    [%#span5] Seq.get (shallow_model'0 self) ix
+  
+  predicate resolve'1 (self : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)) =
+    [%#span6] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'0 self)  -> resolve'2 (index_logic'0 self i)
+  
+  predicate resolve'0 (_1 : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)) =
+    resolve'1 _1
+  
+  constant seq  : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)
+  
+  predicate resolve_seq [#"../trigger2.rs" 6 0 6 43] (seq : Vec'0.t_Vec (borrowed t) (Global'0.t_Global))
   
   goal vc_resolve_seq : [%#strigger20] resolve'0 seq
-   -> ([%#strigger21] forall i : int [Seq.get seq i] . 0 <= i /\ i < Seq.length seq
-   -> (Seq.get seq i).current = (Seq.get seq i).final)
+   -> ([%#strigger22] forall i : int [Seq.get (shallow_model'0 seq) i] . 0 <= i /\ i < Seq.length (shallow_model'0 seq)
+   -> (Seq.get (shallow_model'0 seq) i).current = (Seq.get (shallow_model'0 seq) i).final)
 end
 module M_trigger2__resolve_seq2__Impl
   type t
@@ -48,44 +173,69 @@ module M_trigger2__resolve_seq2__Impl
   
   let%span strigger21 = "../trigger2.rs" 5 0 5 36
   
-  let%span span2 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span2 = "" 0 0 0 0
   
-  let%span span3 = "../../../../creusot-contracts/src/resolve.rs" 35 8 35 31
+  let%span span3 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   
-  let%span span4 = "../../../../creusot-contracts/src/logic/seq.rs" 207 8 207 102
+  let%span span4 = "../../../../creusot-contracts/src/resolve.rs" 32 20 32 34
   
-  let%span span5 = "../trigger2.rs" 7 4 10 5
+  let%span span5 = "../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
   
-  use seq.Seq
+  let%span span6 = "../../../../creusot-contracts/src/std/vec.rs" 51 8 51 85
   
-  use seq.Seq
-  
-  use prelude.prelude.Int
+  let%span span7 = "../trigger2.rs" 7 4 10 5
   
   use prelude.prelude.Borrow
   
   use seq.Seq
   
-  predicate resolve'2 (self : borrowed t) =
-    [%#span2] self.final = self.current
-  
-  predicate resolve'1 (self : borrowed t) =
-    [%#span3] resolve'2 self
+  use seq.Seq
   
   use seq.Seq
   
-  predicate resolve'0 (self : Seq.seq (borrowed t)) =
-    [%#span4] forall i : int . 0 <= i /\ i < Seq.length self  -> resolve'1 (Seq.get self i)
+  use T_alloc__alloc__Global as Global'0
   
-  predicate resolve_seq'0 [#"../trigger2.rs" 6 0 6 43] (seq : Seq.seq (borrowed t)) =
-    [%#span5] forall i : int [Seq.get seq i] . 0 <= i /\ i < Seq.length seq
-     -> (Seq.get seq i).current = (Seq.get seq i).final
+  use T_alloc__vec__Vec as Vec'0
   
-  axiom resolve_seq'0_spec : forall seq : Seq.seq (borrowed t) . [%#strigger21] resolve'0 seq  -> resolve_seq'0 seq
+  use prelude.prelude.UIntSize
   
-  constant seq  : Seq.seq (borrowed t)
+  use prelude.prelude.UIntSize
   
-  predicate resolve_seq2 [#"../trigger2.rs" 16 0 16 48] (seq : Seq.seq (borrowed t))
+  use prelude.prelude.Int
+  
+  constant v_MAX'0 : usize = [%#span2] (18446744073709551615 : usize)
+  
+  function shallow_model'0 (self : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)) : Seq.seq (borrowed t)
+  
+  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec (borrowed t) (Global'0.t_Global) . [%#span3] Seq.length (shallow_model'0 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  predicate resolve'3 (self : borrowed t) =
+    [%#span4] self.final = self.current
+  
+  predicate resolve'2 (_1 : borrowed t) =
+    resolve'3 _1
+  
+  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)) (ix : int) : borrowed t
+   =
+    [%#span5] Seq.get (shallow_model'0 self) ix
+  
+  predicate resolve'1 (self : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)) =
+    [%#span6] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'0 self)  -> resolve'2 (index_logic'0 self i)
+  
+  predicate resolve'0 (_1 : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)) =
+    resolve'1 _1
+  
+  predicate resolve_seq'0 [#"../trigger2.rs" 6 0 6 43] (seq : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)) =
+    [%#span7] forall i : int [Seq.get (shallow_model'0 seq) i] . 0 <= i /\ i < Seq.length (shallow_model'0 seq)
+     -> (Seq.get (shallow_model'0 seq) i).current = (Seq.get (shallow_model'0 seq) i).final
+  
+  axiom resolve_seq'0_spec : forall seq : Vec'0.t_Vec (borrowed t) (Global'0.t_Global) . [%#strigger21] resolve'0 seq
+   -> resolve_seq'0 seq
+  
+  constant seq  : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)
+  
+  predicate resolve_seq2 [#"../trigger2.rs" 16 0 16 48] (seq : Vec'0.t_Vec (borrowed t) (Global'0.t_Global))
   
   goal vc_resolve_seq2 : ([%#strigger21] resolve'0 seq  -> resolve_seq'0 seq)
    -> ([%#strigger20] resolve'0 seq  -> resolve_seq'0 seq)

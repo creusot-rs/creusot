@@ -1,7 +1,6 @@
 pub use crate::base_macros::Resolve;
 use crate::*;
 
-#[cfg_attr(creusot, rustc_diagnostic_item = "creusot_resolve")]
 #[trusted]
 pub trait Resolve {
     #[predicate(prophetic)]
@@ -9,12 +8,19 @@ pub trait Resolve {
     fn resolve(self) -> bool;
 }
 
+#[predicate(prophetic)]
+#[open]
+#[rustc_diagnostic_item = "creusot_resolve"]
+pub fn resolve<T: ?Sized>(_: &T) -> bool {
+    true
+}
+
 #[trusted]
 impl<T1, T2: ?Sized> Resolve for (T1, T2) {
     #[predicate(prophetic)]
     #[open]
     fn resolve(self) -> bool {
-        Resolve::resolve(self.0) && Resolve::resolve(self.1)
+        resolve(&self.0) && resolve(&self.1)
     }
 }
 
@@ -32,17 +38,6 @@ impl<T: ?Sized> Resolve for Box<T> {
     #[predicate(prophetic)]
     #[open]
     fn resolve(self) -> bool {
-        Resolve::resolve(*self)
-    }
-}
-
-#[cfg(creusot)]
-#[trusted]
-impl<T: ?Sized> Resolve for T {
-    #[predicate]
-    #[open]
-    #[rustc_diagnostic_item = "creusot_resolve_default"]
-    default fn resolve(self) -> bool {
-        true
+        resolve(&*self)
     }
 }

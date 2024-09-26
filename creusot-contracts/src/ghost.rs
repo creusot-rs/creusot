@@ -66,7 +66,7 @@ impl<T: ?Sized> Resolve for GhostBox<T> {
     #[predicate(prophetic)]
     #[open]
     fn resolve(self) -> bool {
-        Resolve::resolve(self.0)
+        resolve(&self.0)
     }
 }
 

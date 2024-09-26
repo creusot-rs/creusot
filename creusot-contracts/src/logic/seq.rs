@@ -198,12 +198,3 @@ impl<T: ?Sized> Invariant for Seq<T> {
         pearlite! { forall<i:Int> 0 <= i && i < self.len() ==> inv(self.index_logic_unsized(i)) }
     }
 }
-
-#[trusted]
-impl<T: ?Sized> Resolve for Seq<T> {
-    #[predicate(prophetic)]
-    #[open]
-    fn resolve(self) -> bool {
-        pearlite! { forall<i:Int> 0 <= i && i < self.len() ==> self.index_logic_unsized(i).resolve() }
-    }
-}

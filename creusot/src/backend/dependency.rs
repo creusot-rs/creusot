@@ -277,9 +277,7 @@ pub(crate) fn closure_hack<'tcx>(
         }
     };
 
-    if tcx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), def_id)
-        || tcx.is_diagnostic_item(Symbol::intern("creusot_resolve_method"), def_id)
-    {
+    if tcx.is_diagnostic_item(Symbol::intern("creusot_resolve_method"), def_id) {
         let self_ty = subst.types().nth(0).unwrap();
         if let TyKind::Closure(id, csubst) = self_ty.kind() {
             return (Some(ExtendedId::Resolve), *id, csubst);

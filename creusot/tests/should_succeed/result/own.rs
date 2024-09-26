@@ -14,8 +14,8 @@ impl<T, E> Resolve for OwnResult<T, E> {
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
         match self {
-            OwnResult::Ok(t) => t.resolve(),
-            OwnResult::Err(e) => e.resolve(),
+            OwnResult::Ok(t) => resolve(&t),
+            OwnResult::Err(e) => resolve(&e),
         }
     }
 }
@@ -183,7 +183,7 @@ impl<T, E> OwnResult<&T, E> {
 }
 
 impl<T, E> OwnResult<&mut T, E> {
-    #[ensures(forall<t: &mut T> self == OwnResult::Ok(t) ==> result == OwnResult::Ok(*t) && t.resolve())]
+    #[ensures(forall<t: &mut T> self == OwnResult::Ok(t) ==> result == OwnResult::Ok(*t) && resolve(&t))]
     #[ensures(forall<e: E> self == OwnResult::Err(e) ==> result == OwnResult::Err(e))]
     pub fn copied(self) -> OwnResult<T, E>
     where
@@ -196,7 +196,7 @@ impl<T, E> OwnResult<&mut T, E> {
         }
     }
 
-    #[ensures(forall<t: &mut T> self == OwnResult::Ok(t) ==> result == OwnResult::Ok(*t) && t.resolve())]
+    #[ensures(forall<t: &mut T> self == OwnResult::Ok(t) ==> result == OwnResult::Ok(*t) && resolve(&t))]
     #[ensures(forall<e: E> self == OwnResult::Err(e) ==> result == OwnResult::Err(e))]
     pub fn cloned(self) -> OwnResult<T, E>
     where

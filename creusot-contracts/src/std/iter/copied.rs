@@ -21,7 +21,7 @@ impl<I> Resolve for Copied<I> {
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
-            self.iter().resolve()
+            resolve(&self.iter())
         }
     }
 }
