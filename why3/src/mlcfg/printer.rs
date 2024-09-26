@@ -63,6 +63,32 @@ where
     }
 }
 
+impl Print for Span {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        docs![
+            alloc,
+            "let%span",
+            alloc.space(),
+            self.name.pretty(alloc),
+            alloc.space(),
+            alloc.text("="),
+            alloc.space(),
+            alloc.text(&self.path).double_quotes(),
+            alloc.space(),
+            alloc.as_string(self.start_line),
+            alloc.space(),
+            alloc.as_string(self.start_column),
+            alloc.space(),
+            alloc.as_string(self.end_line),
+            alloc.space(),
+            alloc.as_string(self.end_column),
+        ]
+    }
+}
+
 impl Print for Decl {
     fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
@@ -83,24 +109,9 @@ impl Print for Decl {
             Decl::Let(l) => l.pretty(alloc),
             Decl::ConstantDecl(c) => c.pretty(alloc),
             Decl::Coma(d) => d.pretty(alloc),
-            Decl::LetSpan(nm, f, l1, c1, l2, c2) => docs![
-                alloc,
-                "let%span",
-                alloc.space(),
-                nm.pretty(alloc),
-                alloc.space(),
-                alloc.text("="),
-                alloc.space(),
-                alloc.text(f).double_quotes(),
-                alloc.space(),
-                alloc.as_string(l1),
-                alloc.space(),
-                alloc.as_string(c1),
-                alloc.space(),
-                alloc.as_string(l2),
-                alloc.space(),
-                alloc.as_string(c2),
-            ],
+            Decl::LetSpans(spans) => {
+                alloc.intersperse(spans.iter().map(|span| span.pretty(alloc)), alloc.hardline())
+            }
         }
     }
 }
