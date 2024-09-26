@@ -1,6 +1,6 @@
 #![cfg_attr(
     creusot,
-    feature(unsized_locals, fn_traits, min_specialization),
+    feature(unsized_locals, fn_traits),
     allow(incomplete_features),
     feature(slice_take),
     feature(print_internals, fmt_internals, fmt_helpers_for_derive)

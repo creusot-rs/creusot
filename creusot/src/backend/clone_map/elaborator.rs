@@ -187,23 +187,21 @@ impl<'tcx> SymbolElaborator<'tcx> {
             return val(ctx, sig, kind);
         };
 
-        if let Dependency::Item(did, substs) = item
-            && util::is_resolve_function(ctx.tcx, did)
-        {
+        if util::is_resolve_function(ctx.tcx, def_id) {
             let trait_meth_id =
                 ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
             let arg = Term::var(pre_sig.inputs[0].0, pre_sig.inputs[0].2);
             let body;
 
             if let Some((meth_did, meth_substs)) =
-                traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, substs)
+                traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, subst)
             {
                 // We know the instance => body points to it
                 body = Term::call(ctx.tcx, meth_did, meth_substs, vec![arg]);
-            } else if let TyKind::Closure(..) = substs[0].as_type().unwrap().kind() {
+            } else if let TyKind::Closure(..) = subst[0].as_type().unwrap().kind() {
                 // Closures have an "hacked" instance of Resolve
-                body = Term::call(ctx.tcx, trait_meth_id, substs, vec![arg]);
-            } else if traits::still_specializable(ctx.tcx, param_env, trait_meth_id, substs) {
+                body = Term::call(ctx.tcx, trait_meth_id, subst, vec![arg]);
+            } else if traits::still_specializable(ctx.tcx, param_env, trait_meth_id, subst) {
                 // We don't know whether there is an instance => body is opaque
                 sig.retty = None;
                 return vec![Decl::predicate(sig, None)];
