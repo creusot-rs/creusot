@@ -96,7 +96,7 @@ fn main() {
         command.arg("--warn-off=unused_variable");
         command.arg("--warn-off=clone_not_abstract");
         command.arg("--warn-off=axiom_abstract");
-        command.arg("--debug=coma_no_trivial");
+        command.arg("--debug=coma_no_trivial,stack_trace");
 
         if sessionfile.is_file() {
             let Some(proved) =
