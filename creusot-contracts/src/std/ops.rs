@@ -39,7 +39,7 @@ pub trait FnMutExt<Args: Tuple>: FnMut<Args> + FnOnceExt<Args> {
     fn unnest_trans(self, b: Self, c: Self);
 
     #[law]
-    #[ensures(self.postcondition_once(args, res) == exists<s: &mut Self> *s == self && s.postcondition_mut(args, res) && (^s).resolve())]
+    #[ensures(self.postcondition_once(args, res) == exists<s: &mut Self> *s == self && s.postcondition_mut(args, res) && resolve(&^s))]
     fn fn_mut_once(self, args: Args, res: Self::Output)
     where
         Self: Sized;
@@ -53,11 +53,11 @@ pub trait FnExt<Args: Tuple>: Fn<Args> + FnMutExt<Args> {
     fn postcondition(&self, _: Args, _: Self::Output) -> bool;
 
     #[law]
-    #[ensures(self.postcondition_mut(args, res) == (self.resolve() && self.postcondition(args, res)))]
+    #[ensures(self.postcondition_mut(args, res) == (resolve(&self) && self.postcondition(args, res)))]
     fn fn_mut(&mut self, args: Args, res: Self::Output);
 
     #[law]
-    #[ensures(self.postcondition_once(args, res) == (self.resolve() && self.postcondition(args, res)))]
+    #[ensures(self.postcondition_once(args, res) == (resolve(&self) && self.postcondition(args, res)))]
     fn fn_once(self, args: Args, res: Self::Output)
     where
         Self: Sized;
@@ -119,7 +119,7 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
     #[law]
     #[trusted]
     #[open(self)]
-    #[ensures(self.postcondition_once(args, res) == exists<s: &mut Self> *s == self && s.postcondition_mut(args, res) && (^s).resolve())]
+    #[ensures(self.postcondition_once(args, res) == exists<s: &mut Self> *s == self && s.postcondition_mut(args, res) && resolve(&^s))]
     fn fn_mut_once(self, args: Args, res: Self::Output) {}
 }
 
@@ -141,7 +141,7 @@ impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
     #[law]
     #[open(self)]
     #[trusted]
-    #[ensures(self.postcondition_once(args, res) == (self.resolve() && self.postcondition(args, res)))]
+    #[ensures(self.postcondition_once(args, res) == (resolve(&self) && self.postcondition(args, res)))]
     fn fn_once(self, args: Args, res: Self::Output) {}
 }
 

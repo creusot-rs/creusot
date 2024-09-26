@@ -31,7 +31,7 @@ impl<I> Resolve for Enumerate<I> {
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
-            self.iter().resolve()
+            resolve(&self.iter())
         }
     }
 }

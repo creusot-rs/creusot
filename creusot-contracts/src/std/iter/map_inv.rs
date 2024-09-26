@@ -60,7 +60,7 @@ impl<I, B, F> Resolve for MapInv<I, B, F> {
     #[open]
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
-        self.iter.resolve() && self.func.resolve()
+        resolve(&self.iter) && resolve(&self.func)
     }
 }
 

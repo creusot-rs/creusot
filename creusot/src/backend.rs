@@ -1,7 +1,11 @@
 use indexmap::{IndexMap, IndexSet};
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::{AliasTy, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt};
-use rustc_span::{RealFileName, Span, DUMMY_SP};
+use rustc_middle::ty::{
+    AliasTy, GenericArgs, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt,
+};
+use rustc_span::{RealFileName, Span, Symbol, DUMMY_SP};
+use signature::sig_to_why3;
+use term::lower_pure;
 use why3::declaration::{Decl, TyDecl};
 
 use crate::{
@@ -202,10 +206,30 @@ impl<'tcx> Why3Generator<'tcx> {
         let translated = match util::item_type(self.tcx, def_id) {
             ItemType::Logic { .. } | ItemType::Predicate { .. } => {
                 debug!("translating {:?} as logical", def_id);
-                let (proof_modl, deps) = logic::translate_logic_or_predicate(self, def_id);
-                self.dependencies.insert(def_id.into(), deps);
 
-                TranslatedItem::Logic { proof_modl }
+                if util::is_resolve_function(self.tcx, def_id) {
+                    let mut names = Dependencies::new(self.tcx, [TransId::Item(def_id)]);
+                    let pre_sig = self.ctx.sig(def_id).clone();
+                    sig_to_why3(self, &mut names, &pre_sig, def_id);
+
+                    let method = self
+                        .tcx
+                        .get_diagnostic_item(Symbol::intern("creusot_resolve_method"))
+                        .unwrap();
+                    let substs = GenericArgs::identity_for_item(self.tcx, def_id);
+                    let arg = Term::var(pre_sig.inputs[0].0, pre_sig.inputs[0].2);
+
+                    lower_pure(self, &mut names, &Term::call(self.tcx, method, substs, vec![arg]));
+
+                    let deps = names.provide_deps(self, GraphDepth::Shallow).1;
+                    self.dependencies.insert(def_id.into(), deps);
+
+                    TranslatedItem::Logic { proof_modl: None }
+                } else {
+                    let (proof_modl, deps) = logic::translate_logic_or_predicate(self, def_id);
+                    self.dependencies.insert(def_id.into(), deps);
+                    TranslatedItem::Logic { proof_modl }
+                }
             }
             ItemType::Closure => {
                 let (deps, ty_modl, modl) = program::translate_closure(self, def_id);

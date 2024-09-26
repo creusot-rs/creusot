@@ -10,6 +10,7 @@ use crate::{
         TransId, Why3Generator,
     },
     ctx::*,
+    traits,
     translation::{
         pearlite::{normalize, Term},
         specification::PreContract,
@@ -178,7 +179,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
             names.value(def_id, subst).name
         };
 
-        let sig = named_sig_to_why3(ctx, names, name, &pre_sig, def_id);
+        let mut sig = named_sig_to_why3(ctx, names, name, &pre_sig, def_id);
 
         if CloneLevel::Signature == level_of_item {
             return val(ctx, sig, kind);
@@ -186,7 +187,32 @@ impl<'tcx> SymbolElaborator<'tcx> {
             return val(ctx, sig, kind);
         };
 
-        if item.is_hacked() || ctx.is_logical(def_id) {
+        if let Dependency::Item(did, substs) = item
+            && util::is_resolve_function(ctx.tcx, did)
+        {
+            let trait_meth_id =
+                ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
+            let arg = Term::var(pre_sig.inputs[0].0, pre_sig.inputs[0].2);
+            let body;
+
+            if let Some((meth_did, meth_substs)) =
+                traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, substs)
+            {
+                // We know the instance => body points to it
+                body = Term::call(ctx.tcx, meth_did, meth_substs, vec![arg]);
+            } else if let TyKind::Closure(..) = substs[0].as_type().unwrap().kind() {
+                // Closures have an "hacked" instance of Resolve
+                body = Term::call(ctx.tcx, trait_meth_id, substs, vec![arg]);
+            } else if traits::still_specializable(ctx.tcx, param_env, trait_meth_id, substs) {
+                // We don't know whether there is an instance => body is opaque
+                sig.retty = None;
+                return vec![Decl::predicate(sig, None)];
+            } else {
+                // We know there is no instance => body is true
+                body = Term::mk_true(ctx.tcx);
+            }
+            lower_logical_defn(ctx, names, sig, kind, body)
+        } else if item.is_hacked() || ctx.is_logical(def_id) {
             let Some(term) = term(ctx, param_env, item) else { return Vec::new() };
             let mut term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
             normalize(ctx.tcx, param_env, &mut term);

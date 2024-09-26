@@ -5,7 +5,7 @@ use std::marker::Tuple;
 
 #[requires(f.precondition(a))]
 #[ensures(f.postcondition(a, result))]
-pub fn weaken<A: Tuple, F: FnExt<A> + Resolve>(f: F, a: A) -> F::Output {
+pub fn weaken<A: Tuple, F: FnExt<A>>(f: F, a: A) -> F::Output {
     weaken_2(f, a)
 }
 
@@ -16,20 +16,20 @@ pub fn weaken_std<A: Tuple, F: Fn<A>>(f: F, a: A) -> F::Output {
 }
 
 #[requires(f.precondition(a))]
-#[ensures(exists<f2: &mut F> *f2 == f && f2.postcondition_mut(a, result) && (^f2).resolve())]
+#[ensures(exists<f2: &mut F> *f2 == f && f2.postcondition_mut(a, result) && resolve(&^f2))]
 fn weaken_2<A: Tuple, F: FnMutExt<A>>(f: F, a: A) -> F::Output {
     weaken_3(f, a)
 }
 
 #[requires(f.precondition(a))]
-#[ensures(exists<f2: &mut F> *f2 == f && f2.postcondition_mut(a, result) && (^f2).resolve())]
-fn weaken_2_std<A: Tuple, F: FnMut<A> + Resolve>(f: F, a: A) -> F::Output {
+#[ensures(exists<f2: &mut F> *f2 == f && f2.postcondition_mut(a, result) && resolve(&^f2))]
+fn weaken_2_std<A: Tuple, F: FnMut<A>>(f: F, a: A) -> F::Output {
     weaken_3_std(f, a)
 }
 
 #[requires(f.precondition(a))]
 #[ensures(f.postcondition_once(a, result))]
-fn weaken_3<A: Tuple, F: FnOnceExt<A> + Resolve>(f: F, a: A) -> F::Output {
+fn weaken_3<A: Tuple, F: FnOnceExt<A>>(f: F, a: A) -> F::Output {
     FnOnce::call_once(f, a)
 }
 

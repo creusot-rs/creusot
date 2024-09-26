@@ -86,14 +86,24 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             }
 
             if let Some((did, subst)) = key.did() {
-                // If this is the `invariant` function, and we know for sure that the `Invariant`
+                // If this is the `invariant` method, and we know for sure that the `Invariant`
                 // trait cannot be implemented, then ignore this, because we will actually never
                 // need it.
                 // This is needed because the dependency was coming from a context were we were
                 // not sure the `Invariant` trait was not implemented.
-                if util::is_inv_user(ctx.tcx, did)
+                if util::is_invariant_method(ctx.tcx, did)
                     && traits::resolve_assoc_item_opt(ctx.tcx, self.param_env, did, subst).is_none()
                     && !traits::still_specializable(ctx.tcx, self.param_env, did, subst)
+                {
+                    continue;
+                }
+
+                // Same thing for resolve, except that if we don't know whether there is an instance,
+                // then we can skip the dependency as well, and except that there are "hacked" instances
+                // for closures.
+                if util::is_resolve_method(ctx.tcx, did)
+                    && traits::resolve_assoc_item_opt(ctx.tcx, self.param_env, did, subst).is_none()
+                    && !matches!(subst[0].as_type().unwrap().kind(), TyKind::Closure(..))
                 {
                     continue;
                 }
@@ -103,11 +113,10 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 // Note that a trait item impl that can be specialized is always inserted as a dependency as the
                 // corresponding trait impl did, so we only consider trait impls here.
                 ctx.tcx.trait_of_item(did).is_some()
-                        && traits::still_specializable(ctx.tcx, self.param_env, did, subst)
+                  && traits::still_specializable(ctx.tcx, self.param_env, did, subst)
 
                     // Alternatively, if we don't have `open(..)` permission to see its body
-                    || self_key.did()
-                    .is_some_and(|(self_did, _)| !ctx.is_transparent_from(did, self_did))
+                || self_key.did().is_some_and(|(self_did, _)| !ctx.is_transparent_from(did, self_did))
                 {
                     self.clone_graph.info_mut(key).opaque();
                 }
@@ -120,7 +129,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 ctx.translate(did);
 
                 // If we are unsing the `inv(...)` logical function, then we need its accompanying axiom.
-                if util::is_inv_internal(ctx.tcx, did) && depth == GraphDepth::Deep {
+                if util::is_inv(ctx.tcx, did) && depth == GraphDepth::Deep {
                     let ty = subst.type_at(0);
                     let ty = ctx.try_normalize_erasing_regions(self.param_env, ty).unwrap_or(ty);
                     self.expand_ty_inv(ctx, ty);

@@ -48,7 +48,7 @@ impl<T, A: Allocator> Resolve for Vec<T, A> {
     #[predicate(prophetic)]
     #[open]
     fn resolve(self) -> bool {
-        pearlite! { forall<i : Int> 0 <= i && i < self@.len() ==> self[i].resolve() }
+        pearlite! { forall<i : Int> 0 <= i && i < self@.len() ==> resolve(&self[i]) }
     }
 }
 
@@ -238,7 +238,7 @@ impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
     #[predicate(prophetic)]
     #[open]
     fn resolve(self) -> bool {
-        pearlite! { forall<i: Int> 0 <= i && i < self@.len() ==> self@[i].resolve() }
+        pearlite! { forall<i: Int> 0 <= i && i < self@.len() ==> resolve(&self@[i]) }
     }
 }
 

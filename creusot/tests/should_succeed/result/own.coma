@@ -201,7 +201,9 @@ module M_own__qyi6971326534243444823__ok
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'0 (self : e)
+  use prelude.prelude.Borrow
+  
+  predicate resolve'0 (_1 : e)
   
   let rec ok (self:OwnResult'0.t_OwnResult t e) (return'  (ret:Option'0.t_Option t))= {[%#sown0] inv'1 self}
     (! bb0
@@ -285,7 +287,9 @@ module M_own__qyi6971326534243444823__err
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'0 (self : t)
+  use prelude.prelude.Borrow
+  
+  predicate resolve'0 (_1 : t)
   
   let rec err (self:OwnResult'0.t_OwnResult t e) (return'  (ret:Option'0.t_Option e))= {[%#sown0] inv'1 self}
     (! bb0
@@ -432,7 +436,7 @@ module M_own__qyi6971326534243444823__as_mut
   
   let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   
-  let%span span4 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span4 = "../../../../../creusot-contracts/src/resolve.rs" 32 20 32 34
   
   predicate inv'0 (_1 : e)
   
@@ -489,14 +493,23 @@ module M_own__qyi6971326534243444823__as_mut
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'2 (self : borrowed (OwnResult'0.t_OwnResult t e)) =
+  predicate resolve'5 (self : borrowed (OwnResult'0.t_OwnResult t e)) =
     [%#span4] self.final = self.current
   
-  predicate resolve'1 (self : borrowed t) =
+  predicate resolve'2 (_1 : borrowed (OwnResult'0.t_OwnResult t e)) =
+    resolve'5 _1
+  
+  predicate resolve'4 (self : borrowed t) =
     [%#span4] self.final = self.current
   
-  predicate resolve'0 (self : borrowed e) =
+  predicate resolve'1 (_1 : borrowed t) =
+    resolve'4 _1
+  
+  predicate resolve'3 (self : borrowed e) =
     [%#span4] self.final = self.current
+  
+  predicate resolve'0 (_1 : borrowed e) =
+    resolve'3 _1
   
   let rec as_mut (self:borrowed (OwnResult'0.t_OwnResult t e)) (return'  (ret:OwnResult'0.t_OwnResult (borrowed t) (borrowed e)))= {[%#sown0] inv'4 self}
     (! bb0
@@ -595,7 +608,9 @@ module M_own__qyi6971326534243444823__unwrap
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'0 (self : e)
+  use prelude.prelude.Borrow
+  
+  predicate resolve'0 (_1 : e)
   
   let rec unwrap (self:OwnResult'0.t_OwnResult t e) (return'  (ret:t))= {[%#sown2] inv'1 self}
     {[%#sown1] exists t : t . self = OwnResult'0.C_Ok t}
@@ -662,7 +677,7 @@ module M_own__qyi6971326534243444823__expect
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'0 (self : e)
+  predicate resolve'0 (_1 : e)
   
   let rec expect (self:OwnResult'0.t_OwnResult t e) (msg:string) (return'  (ret:t))= {[%#sown2] inv'1 self}
     {[%#sown1] exists t : t . self = OwnResult'0.C_Ok t}
@@ -727,7 +742,9 @@ module M_own__qyi6971326534243444823__unwrap_err
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'0 (self : t)
+  use prelude.prelude.Borrow
+  
+  predicate resolve'0 (_1 : t)
   
   let rec unwrap_err (self:OwnResult'0.t_OwnResult t e) (return'  (ret:e))= {[%#sown2] inv'1 self}
     {[%#sown1] exists e : e . self = OwnResult'0.C_Err e}
@@ -792,9 +809,11 @@ module M_own__qyi6971326534243444823__unwrap_or
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'1 (self : t)
+  use prelude.prelude.Borrow
   
-  predicate resolve'0 (self : e)
+  predicate resolve'1 (_1 : t)
+  
+  predicate resolve'0 (_1 : e)
   
   let rec unwrap_or (self:OwnResult'0.t_OwnResult t e) (default:t) (return'  (ret:t))= {[%#sown1] inv'1 default}
     {[%#sown0] inv'2 self}
@@ -882,15 +901,20 @@ module M_own__qyi6971326534243444823__unwrap_or_default
     [ return' (result:t)-> {[%#span6] inv'1 result} {[%#span5] is_default'0 result} (! return' {result}) ]
     
   
-  predicate resolve'2 (self : e)
+  use prelude.prelude.Borrow
   
-  predicate resolve'1 (self : t)
+  predicate resolve'3 (_1 : e)
   
-  predicate resolve'0 [#"../own.rs" 15 4 15 28] (self : OwnResult'0.t_OwnResult t e) =
+  predicate resolve'2 (_1 : t)
+  
+  predicate resolve'1 [#"../own.rs" 15 4 15 28] (self : OwnResult'0.t_OwnResult t e) =
     [%#span7] match self with
-      | OwnResult'0.C_Ok t -> resolve'1 t
-      | OwnResult'0.C_Err e -> resolve'2 e
+      | OwnResult'0.C_Ok t -> resolve'2 t
+      | OwnResult'0.C_Err e -> resolve'3 e
       end
+  
+  predicate resolve'0 (_1 : OwnResult'0.t_OwnResult t e) =
+    resolve'1 _1
   
   let rec unwrap_or_default (self:OwnResult'0.t_OwnResult t e) (return'  (ret:t))= {[%#sown1] inv'0 self}
     (! bb0
@@ -982,17 +1006,22 @@ module M_own__qyi6971326534243444823__and
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'1 (self : t)
+  use prelude.prelude.Borrow
   
-  predicate resolve'3 (self : e)
+  predicate resolve'1 (_1 : t)
   
-  predicate resolve'2 (self : u)
+  predicate resolve'5 (_1 : e)
   
-  predicate resolve'0 [#"../own.rs" 15 4 15 28] (self : OwnResult'0.t_OwnResult u e) =
+  predicate resolve'4 (_1 : u)
+  
+  predicate resolve'2 [#"../own.rs" 15 4 15 28] (self : OwnResult'0.t_OwnResult u e) =
     [%#span5] match self with
-      | OwnResult'0.C_Ok t -> resolve'2 t
-      | OwnResult'0.C_Err e -> resolve'3 e
+      | OwnResult'0.C_Ok t -> resolve'4 t
+      | OwnResult'0.C_Err e -> resolve'5 e
       end
+  
+  predicate resolve'0 (_1 : OwnResult'0.t_OwnResult u e) =
+    resolve'2 _1
   
   let rec and (self:OwnResult'0.t_OwnResult t e) (res:OwnResult'0.t_OwnResult u e) (return'  (ret:OwnResult'0.t_OwnResult u e))= {[%#sown1] inv'0 res}
     {[%#sown0] inv'2 self}
@@ -1091,17 +1120,22 @@ module M_own__qyi6971326534243444823__or
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'3 (self : f)
+  use prelude.prelude.Borrow
   
-  predicate resolve'2 (self : t)
+  predicate resolve'5 (_1 : f)
   
-  predicate resolve'1 [#"../own.rs" 15 4 15 28] (self : OwnResult'0.t_OwnResult t f) =
+  predicate resolve'4 (_1 : t)
+  
+  predicate resolve'3 [#"../own.rs" 15 4 15 28] (self : OwnResult'0.t_OwnResult t f) =
     [%#span5] match self with
-      | OwnResult'0.C_Ok t -> resolve'2 t
-      | OwnResult'0.C_Err e -> resolve'3 e
+      | OwnResult'0.C_Ok t -> resolve'4 t
+      | OwnResult'0.C_Err e -> resolve'5 e
       end
   
-  predicate resolve'0 (self : e)
+  predicate resolve'1 (_1 : OwnResult'0.t_OwnResult t f) =
+    resolve'3 _1
+  
+  predicate resolve'0 (_1 : e)
   
   let rec or (self:OwnResult'0.t_OwnResult t e) (res:OwnResult'0.t_OwnResult t f) (return'  (ret:OwnResult'0.t_OwnResult t f))= {[%#sown1] inv'1 res}
     {[%#sown0] inv'2 self}
@@ -1344,7 +1378,7 @@ module M_own__qyi4251468613200656694__copied
   
   let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   
-  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 32 20 32 34
   
   predicate invariant'2 (self : t)
   
@@ -1387,8 +1421,11 @@ module M_own__qyi4251468613200656694__copied
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'0 (self : borrowed t) =
+  predicate resolve'1 (self : borrowed t) =
     [%#span5] self.final = self.current
+  
+  predicate resolve'0 (_1 : borrowed t) =
+    resolve'1 _1
   
   let rec copied (self:OwnResult'0.t_OwnResult (borrowed t) e) (return'  (ret:OwnResult'0.t_OwnResult t e))= {[%#sown0] inv'1 self}
     (! bb0
@@ -1444,7 +1481,7 @@ module M_own__qyi4251468613200656694__cloned
   
   let%span span5 = "../../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   
-  let%span span6 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+  let%span span6 = "../../../../../creusot-contracts/src/resolve.rs" 32 20 32 34
   
   let%span span7 = "" 0 0 0 0
   
@@ -1500,8 +1537,11 @@ module M_own__qyi4251468613200656694__cloned
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'0 (self : borrowed t) =
+  predicate resolve'1 (self : borrowed t) =
     [%#span6] self.final = self.current
+  
+  predicate resolve'0 (_1 : borrowed t) =
+    resolve'1 _1
   
   let rec clone'0 (self:t) (return'  (ret:t))= {[@expl:precondition] [%#span7] inv'3 self}
     any [ return' (result:t)-> {[%#span9] inv'4 result} {[%#span8] result = self} (! return' {result}) ] 
