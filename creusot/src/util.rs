@@ -11,20 +11,23 @@ use rustc_ast::{
     visit::{walk_fn, FnKind, Visitor},
     AttrItem, AttrKind, Attribute, FnSig, NodeId,
 };
+use rustc_data_structures::stable_hasher::{Hash64, HashStable, StableHasher};
 use rustc_hir::{
     def::{DefKind, Namespace},
     def_id::DefId,
+    definitions::{DefPathData, DisambiguatedDefPathData},
     Safety,
 };
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
     self, BorrowKind, ClosureKind, EarlyBinder, GenericArg, GenericArgs, GenericArgsRef,
-    ResolverAstLowering, Ty, TyCtxt, TyKind, UpvarCapture,
+    ImplSubject, ResolverAstLowering, Ty, TyCtxt, TyKind, UpvarCapture,
 };
 use rustc_span::{symbol, symbol::kw, Span, Symbol, DUMMY_SP};
 use std::{
     collections::{HashMap, HashSet},
     fmt::{Display, Formatter},
+    hash::Hasher,
     iter,
 };
 use why3::{
@@ -315,11 +318,53 @@ pub fn translate_name(n: &str) -> String {
     dest
 }
 
+enum Segment {
+    Impl(u64), // Hash of the impl subject (type for inherent impl, trait+type for trait impls)
+    // There may be other variants than Impl to handle similarly.
+    Other(DisambiguatedDefPathData),
+}
+
+fn hash_impl_subject_u64<'tcx>(tcx: TyCtxt, t: EarlyBinder<'tcx, ImplSubject<'tcx>>) -> u64 {
+    tcx.with_stable_hashing_context(|mut hcx| {
+        let mut s = StableHasher::new();
+        match t.instantiate_identity() {
+            ImplSubject::Trait(trait_ref) => {
+                s.write_usize(0);
+                trait_ref.hash_stable(&mut hcx, &mut s)
+            }
+            ImplSubject::Inherent(ty) => {
+                s.write_usize(1);
+                ty.hash_stable(&mut hcx, &mut s)
+            }
+        }
+        s.finish::<Hash64>().as_u64()
+    })
+}
+
+fn ident_path_segments(tcx: TyCtxt, def_id: DefId) -> Vec<Segment> {
+    let mut segs = Vec::new();
+    let mut id = def_id;
+    loop {
+        let key = tcx.def_key(id);
+        let parent_id = match key.parent {
+            None => break, // The last segment is CrateRoot. Skip it.
+            Some(parent_id) => parent_id,
+        };
+        match key.disambiguated_data.data {
+            DefPathData::Impl => {
+                segs.push(Segment::Impl(hash_impl_subject_u64(tcx, tcx.impl_subject(id))))
+            }
+            _ => segs.push(Segment::Other(key.disambiguated_data)),
+        }
+        id.index = parent_id;
+    }
+    segs.reverse();
+    segs
+}
+
 // This function must be injective: distinct source constructs
 // must have different names in the output.
 fn ident_path(upper_initial: bool, tcx: TyCtxt, def_id: DefId) -> Symbol {
-    let def_path = tcx.def_path(def_id);
-
     let mut dest = String::new();
 
     if let Some(Namespace::TypeNS) = tcx.def_kind(def_id).ns() {
@@ -331,9 +376,13 @@ fn ident_path(upper_initial: bool, tcx: TyCtxt, def_id: DefId) -> Symbol {
     let crate_name = tcx.crate_name(def_id.krate);
     push_translate_name(crate_name.as_str(), &mut dest);
 
-    for seg in def_path.data[..].iter() {
+    let def_path = ident_path_segments(tcx, def_id);
+    for seg in def_path.iter() {
         dest.push_str("__");
-        push_translate_name(&format!("{}", seg), &mut dest);
+        match seg {
+            Segment::Impl(hash) => dest.push_str(&format!("qyi{}", hash)),
+            Segment::Other(data) => push_translate_name(&format!("{}", data), &mut dest),
+        }
     }
 
     Symbol::intern(&dest)
