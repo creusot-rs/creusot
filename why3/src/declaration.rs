@@ -55,7 +55,6 @@ pub enum Decl {
     Coma(coma::Defn),
     LetSpans(Vec<Span>),
     Meta(Meta),
-    LetSpan(Ident, String, usize, usize, usize, usize),
 }
 
 impl Decl {
