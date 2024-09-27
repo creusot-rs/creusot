@@ -937,7 +937,7 @@ pub(crate) fn borrow_generated_id<V: Debug, T: Debug>(
     for proj in projection {
         match proj {
             ProjectionElem::Deref => {
-                // Deref of a box
+                // TODO: If this is a deref of a mutable borrow, the id should change !
             }
             ProjectionElem::Field(idx, _) => {
                 borrow_id = Exp::Call(
@@ -952,14 +952,14 @@ pub(crate) fn borrow_generated_id<V: Debug, T: Debug>(
                 );
             }
 
-            ProjectionElem::Downcast(_, _)
-            | ProjectionElem::ConstantIndex { .. }
-            | ProjectionElem::Subslice { .. }
-            | ProjectionElem::OpaqueCast(_) => {
-                // Nor logical reborrowing nor final borrows can generate such a projection
-                unreachable!("unexepected proj elem to generate a borrow id: {proj:?}")
+            ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. } => {
+                // those should inherit a different id instead
+                todo!("Unsupported projection {proj:?} in reborrow")
             }
-            ProjectionElem::Subtype(_) => {}
+            // Nothing to do
+            ProjectionElem::Downcast(..)
+            | ProjectionElem::OpaqueCast(_)
+            | ProjectionElem::Subtype(_) => {}
         }
     }
     borrow_id

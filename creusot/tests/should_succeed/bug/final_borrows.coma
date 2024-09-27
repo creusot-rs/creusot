@@ -238,14 +238,120 @@ module M_final_borrows__reborrow_field
       (! return' {result}) ]
     
 end
+module M_final_borrows__disjoint_fields
+  type t
+  
+  let%span sfinal_borrows0 = "../final_borrows.rs" 25 26 25 27
+  
+  let%span sfinal_borrows1 = "../final_borrows.rs" 23 10 23 30
+  
+  let%span sfinal_borrows2 = "../final_borrows.rs" 24 10 24 30
+  
+  let%span sfinal_borrows3 = "../final_borrows.rs" 25 45 25 61
+  
+  let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
+  
+  let%span span5 = "../../../../../creusot-contracts/src/resolve.rs" 32 20 32 34
+  
+  predicate inv'0 (_1 : t)
+  
+  predicate inv'4 (_1 : (t, t))
+  
+  axiom inv'4 [@rewrite] : forall x : (t, t) [inv'4 x] . inv'4 x = (let (a, b) = x in inv'0 a /\ inv'0 b)
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'1 (_1 : borrowed t)
+  
+  predicate inv'3 (_1 : (borrowed t, borrowed t))
+  
+  axiom inv'3 [@rewrite] : forall x : (borrowed t, borrowed t) [inv'3 x] . inv'3 x
+  = (let (a, b) = x in inv'1 a /\ inv'1 b)
+  
+  predicate invariant'2 (self : borrowed (t, t)) =
+    [%#span4] inv'4 self.current /\ inv'4 self.final
+  
+  predicate inv'2 (_1 : borrowed (t, t))
+  
+  axiom inv'2 [@rewrite] : forall x : borrowed (t, t) [inv'2 x] . inv'2 x = invariant'2 x
+  
+  predicate invariant'1 (self : borrowed t) =
+    [%#span4] inv'0 self.current /\ inv'0 self.final
+  
+  axiom inv'1 [@rewrite] : forall x : borrowed t [inv'1 x] . inv'1 x = invariant'1 x
+  
+  predicate invariant'0 (self : t)
+  
+  axiom inv'0 : forall x : t [inv'0 x] . inv'0 x  -> invariant'0 x
+  
+  use prelude.prelude.Intrinsic
+  
+  predicate resolve'3 (self : borrowed (t, t)) =
+    [%#span5] self.final = self.current
+  
+  predicate resolve'1 (_1 : borrowed (t, t)) =
+    resolve'3 _1
+  
+  predicate resolve'2 (self : borrowed t) =
+    [%#span5] self.final = self.current
+  
+  predicate resolve'0 (_1 : borrowed t) =
+    resolve'2 _1
+  
+  let rec disjoint_fields (r:borrowed (t, t)) (return'  (ret:(borrowed t, borrowed t)))= {[%#sfinal_borrows0] inv'2 r}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = Borrow.borrow_final <t> {let (r'0, _) = r.current in r'0} {Borrow.inherit_id (Borrow.get_id r) 1}
+          (fun (_ret':borrowed t) ->
+             [ &r0 <- _ret' ] 
+             [ &r <- { r with current = (let (_, l'2) = r.current in (r0.final, l'2)) ; } ] 
+            s1)
+      | s1 = -{inv'0 r0.final}- s2
+      | s2 = Borrow.borrow_final <t> {let (_, r'1) = r.current in r'1} {Borrow.inherit_id (Borrow.get_id r) 2}
+          (fun (_ret':borrowed t) ->
+             [ &r1 <- _ret' ] 
+             [ &r <- { r with current = (let (l'4, _) = r.current in (l'4, r1.final)) ; } ] 
+            s3)
+      | s3 = -{inv'0 r1.final}- s4
+      | s4 = Borrow.borrow_final <t> {r0.current} {Borrow.get_id r0}
+          (fun (_ret':borrowed t) ->  [ &_6 <- _ret' ]  [ &r0 <- { r0 with current = _6.final ; } ] s5)
+      | s5 = -{inv'0 _6.final}- s6
+      | s6 = Borrow.borrow_final <t> {r1.current} {Borrow.get_id r1}
+          (fun (_ret':borrowed t) ->  [ &_7 <- _ret' ]  [ &r1 <- { r1 with current = _7.final ; } ] s7)
+      | s7 = -{inv'0 _7.final}- s8
+      | s8 =  [ &_0 <- (_6, _7) ] s9
+      | s9 = {[@expl:type invariant] inv'1 r1} s10
+      | s10 = -{resolve'0 r1}- s11
+      | s11 = {[@expl:type invariant] inv'1 r0} s12
+      | s12 = -{resolve'0 r0}- s13
+      | s13 = {[@expl:type invariant] inv'2 r} s14
+      | s14 = -{resolve'1 r}- s15
+      | s15 = return' {_0} ]
+       ]
+    )
+    [ & _0 : (borrowed t, borrowed t) = any_l ()
+    | & r : borrowed (t, t) = r
+    | & r0 : borrowed t = any_l ()
+    | & r1 : borrowed t = any_l ()
+    | & _6 : borrowed t = any_l ()
+    | & _7 : borrowed t = any_l () ]
+    
+    [ return' (result:(borrowed t, borrowed t))-> {[@expl:postcondition] [%#sfinal_borrows3] inv'3 result}
+      {[@expl:postcondition] [%#sfinal_borrows2] (let (_, a) = result in a)
+      = Borrow.borrow_logic (let (_, a) = r.current in a) (let (_, a) = r.final in a) (Borrow.inherit_id (Borrow.get_id r) 2)}
+      {[@expl:postcondition] [%#sfinal_borrows1] (let (a, _) = result in a)
+      = Borrow.borrow_logic (let (a, _) = r.current in a) (let (a, _) = r.final in a) (Borrow.inherit_id (Borrow.get_id r) 1)}
+      (! return' {result}) ]
+    
+end
 module M_final_borrows__nested_fields
   type t
   
-  let%span sfinal_borrows0 = "../final_borrows.rs" 24 24 24 25
+  let%span sfinal_borrows0 = "../final_borrows.rs" 32 24 32 25
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 23 0 23 32
+  let%span sfinal_borrows1 = "../final_borrows.rs" 31 0 31 32
   
-  let%span sfinal_borrows2 = "../final_borrows.rs" 24 48 24 54
+  let%span sfinal_borrows2 = "../final_borrows.rs" 32 48 32 54
   
   let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   
@@ -358,11 +464,11 @@ end
 module M_final_borrows__really_nested_fields
   type t
   
-  let%span sfinal_borrows0 = "../final_borrows.rs" 30 31 30 32
+  let%span sfinal_borrows0 = "../final_borrows.rs" 38 31 38 32
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 29 10 29 33
+  let%span sfinal_borrows1 = "../final_borrows.rs" 37 10 37 33
   
-  let%span sfinal_borrows2 = "../final_borrows.rs" 30 55 30 61
+  let%span sfinal_borrows2 = "../final_borrows.rs" 38 55 38 61
   
   let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   
@@ -483,11 +589,11 @@ end
 module M_final_borrows__select_field
   type t
   
-  let%span sfinal_borrows0 = "../final_borrows.rs" 39 23 39 24
+  let%span sfinal_borrows0 = "../final_borrows.rs" 47 23 47 24
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 35 10 38 1
+  let%span sfinal_borrows1 = "../final_borrows.rs" 43 10 46 1
   
-  let%span sfinal_borrows2 = "../final_borrows.rs" 39 50 39 56
+  let%span sfinal_borrows2 = "../final_borrows.rs" 47 50 47 56
   
   let%span span3 = "../../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   
@@ -576,7 +682,7 @@ module M_final_borrows__select_field
     | bb3 = s0
       [ s0 = Option'0.v_Some <t> {_4.current}
           (fun (r0'0:t) ->
-            Borrow.borrow_mut <t> {r0'0}
+            Borrow.borrow_final <t> {r0'0} {Borrow.inherit_id (Borrow.get_id _4) 1}
               (fun (_ret':borrowed t) ->
                  [ &r <- _ret' ] 
                 Option'0.v_Some <t> {_4.current}
@@ -626,9 +732,9 @@ module M_final_borrows__select_field
     
 end
 module M_final_borrows__set_7
-  let%span sfinal_borrows0 = "../final_borrows.rs" 49 9 49 10
+  let%span sfinal_borrows0 = "../final_borrows.rs" 57 9 57 10
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 47 10 47 20
+  let%span sfinal_borrows1 = "../final_borrows.rs" 55 10 55 20
   
   let%span span2 = "../../../../../creusot-contracts/src/resolve.rs" 32 20 32 34
   
@@ -659,15 +765,15 @@ module M_final_borrows__set_7
     
 end
 module M_final_borrows__not_final_borrow_works
-  let%span sfinal_borrows0 = "../final_borrows.rs" 54 16 54 20
+  let%span sfinal_borrows0 = "../final_borrows.rs" 62 16 62 20
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 59 9 59 10
+  let%span sfinal_borrows1 = "../final_borrows.rs" 67 9 67 10
   
-  let%span sfinal_borrows2 = "../final_borrows.rs" 52 10 52 22
+  let%span sfinal_borrows2 = "../final_borrows.rs" 60 10 60 22
   
   let%span span3 = "../../../../../creusot-contracts/src/resolve.rs" 32 20 32 34
   
-  let%span span4 = "../final_borrows.rs" 47 10 47 20
+  let%span span4 = "../final_borrows.rs" 55 10 55 20
   
   use prelude.prelude.Int32
   
@@ -722,9 +828,9 @@ module M_final_borrows__not_final_borrow_works
     
 end
 module M_final_borrows__branching
-  let%span sfinal_borrows0 = "../final_borrows.rs" 65 16 65 17
+  let%span sfinal_borrows0 = "../final_borrows.rs" 73 16 73 17
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 63 10 63 22
+  let%span sfinal_borrows1 = "../final_borrows.rs" 71 10 71 22
   
   let%span span2 = "../../../../../creusot-contracts/src/resolve.rs" 32 20 32 34
   
@@ -792,13 +898,13 @@ end
 module M_final_borrows__unnesting_non_extensional
   type t
   
-  let%span sfinal_borrows0 = "../final_borrows.rs" 85 48 85 49
+  let%span sfinal_borrows0 = "../final_borrows.rs" 93 48 93 49
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 83 10 83 24
+  let%span sfinal_borrows1 = "../final_borrows.rs" 91 10 91 24
   
-  let%span sfinal_borrows2 = "../final_borrows.rs" 84 10 84 24
+  let%span sfinal_borrows2 = "../final_borrows.rs" 92 10 92 24
   
-  let%span sfinal_borrows3 = "../final_borrows.rs" 85 73 85 82
+  let%span sfinal_borrows3 = "../final_borrows.rs" 93 73 93 82
   
   let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   
@@ -875,6 +981,115 @@ module M_final_borrows__unnesting_non_extensional
       (! return' {result}) ]
     
 end
+module M_final_borrows__write_inner_borrow
+  type t
+  
+  let%span sfinal_borrows0 = "../final_borrows.rs" 99 15 99 34
+  
+  let%span sfinal_borrows1 = "../final_borrows.rs" 102 18 102 28
+  
+  let%span sfinal_borrows2 = "../final_borrows.rs" 97 33 97 34
+  
+  let%span sfinal_borrows3 = "../final_borrows.rs" 97 52 97 53
+  
+  let%span sfinal_borrows4 = "../final_borrows.rs" 97 66 97 71
+  
+  let%span span5 = "../../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
+  
+  let%span span6 = "../../../../../creusot-contracts/src/resolve.rs" 32 20 32 34
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'1 (_1 : borrowed t)
+  
+  predicate invariant'2 (self : borrowed (borrowed t)) =
+    [%#span5] inv'1 self.current /\ inv'1 self.final
+  
+  predicate inv'2 (_1 : borrowed (borrowed t))
+  
+  axiom inv'2 [@rewrite] : forall x : borrowed (borrowed t) [inv'2 x] . inv'2 x = invariant'2 x
+  
+  predicate inv'0 (_1 : t)
+  
+  predicate invariant'1 (self : borrowed t) =
+    [%#span5] inv'0 self.current /\ inv'0 self.final
+  
+  axiom inv'1 [@rewrite] : forall x : borrowed t [inv'1 x] . inv'1 x = invariant'1 x
+  
+  predicate invariant'0 (self : t)
+  
+  axiom inv'0 : forall x : t [inv'0 x] . inv'0 x  -> invariant'0 x
+  
+  use prelude.prelude.Snapshot
+  
+  use prelude.prelude.Intrinsic
+  
+  use prelude.prelude.Snapshot
+  
+  predicate resolve'5 (self : borrowed (borrowed t)) =
+    [%#span6] self.final = self.current
+  
+  predicate resolve'2 (_1 : borrowed (borrowed t)) =
+    resolve'5 _1
+  
+  predicate resolve'1 (_1 : t)
+  
+  use prelude.prelude.Snapshot
+  
+  predicate resolve'3 (self : borrowed t) =
+    [%#span6] self.final = self.current
+  
+  predicate resolve'0 (_1 : borrowed t) =
+    resolve'3 _1
+  
+  let rec write_inner_borrow (x:borrowed (borrowed t)) (b:borrowed t) (value:t) (return'  (ret:()))= {[%#sfinal_borrows4] inv'0 value}
+    {[%#sfinal_borrows3] inv'1 b}
+    {[%#sfinal_borrows2] inv'2 x}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = Borrow.borrow_final <t> {(x.current).current} {Borrow.get_id x.current}
+          (fun (_ret':borrowed t) ->
+             [ &r <- _ret' ] 
+             [ &x <- { x with current = { x.current with current = r.final ; } ; } ] 
+            s1)
+      | s1 = -{inv'0 r.final}- s2
+      | s2 = {[@expl:type invariant] inv'1 r} s3
+      | s3 = -{resolve'0 r}- s4
+      | s4 = 
+        [ &snap <- [%#sfinal_borrows0] Snapshot.new (Borrow.borrow_logic (x.current).current (x.current).final (Borrow.get_id x.current)) ]
+        
+        s5
+      | s5 = bb1 ]
+      
+    | bb1 = s0
+      [ s0 = Borrow.borrow_final <t> {b.current} {Borrow.get_id b}
+          (fun (_ret':borrowed t) ->  [ &_7 <- _ret' ]  [ &b <- { b with current = _7.final ; } ] s1)
+      | s1 = -{inv'0 _7.final}- s2
+      | s2 = {[@expl:type invariant] inv'1 x.current} s3
+      | s3 = -{resolve'0 x.current}- s4
+      | s4 =  [ &x <- { x with current = _7 ; } ] s5
+      | s5 = bb2 ]
+      
+    | bb2 = s0
+      [ s0 = {[@expl:type invariant] inv'0 (x.current).current} s1
+      | s1 = -{resolve'1 (x.current).current}- s2
+      | s2 =  [ &x <- { x with current = { x.current with current = value ; } ; } ] s3
+      | s3 = {[@expl:type invariant] inv'2 x} s4
+      | s4 = -{resolve'2 x}- s5
+      | s5 = bb4 ]
+      
+    | bb4 = s0 [ s0 = {[@expl:assertion] [%#sfinal_borrows1] r = Snapshot.inner snap} s1 | s1 = bb5 ] 
+    | bb5 = s0 [ s0 = {[@expl:type invariant] inv'1 b} s1 | s1 = -{resolve'0 b}- s2 | s2 = return' {_0} ]  ]
+    )
+    [ & _0 : () = any_l ()
+    | & x : borrowed (borrowed t) = x
+    | & b : borrowed t = b
+    | & value : t = value
+    | & r : borrowed t = any_l ()
+    | & snap : Snapshot.snap_ty (borrowed t) = any_l ()
+    | & _7 : borrowed t = any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end
 module T_alloc__alloc__Global
   type t_Global  =
     | C_Global
@@ -888,11 +1103,11 @@ end
 module M_final_borrows__box_deref
   type t
   
-  let%span sfinal_borrows0 = "../final_borrows.rs" 94 20 94 21
+  let%span sfinal_borrows0 = "../final_borrows.rs" 110 20 110 21
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 93 10 93 22
+  let%span sfinal_borrows1 = "../final_borrows.rs" 109 10 109 22
   
-  let%span sfinal_borrows2 = "../final_borrows.rs" 94 34 94 35
+  let%span sfinal_borrows2 = "../final_borrows.rs" 110 34 110 35
   
   let%span span3 = "../../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
@@ -925,11 +1140,11 @@ end
 module M_final_borrows__box_reborrow_direct
   type t
   
-  let%span sfinal_borrows0 = "../final_borrows.rs" 102 8 102 21
+  let%span sfinal_borrows0 = "../final_borrows.rs" 118 8 118 21
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 99 34 99 35
+  let%span sfinal_borrows1 = "../final_borrows.rs" 115 34 115 35
   
-  let%span sfinal_borrows2 = "../final_borrows.rs" 98 10 98 14
+  let%span sfinal_borrows2 = "../final_borrows.rs" 114 10 114 14
   
   let%span span3 = "../../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
@@ -1005,11 +1220,11 @@ end
 module M_final_borrows__box_reborrow_indirect
   type t
   
-  let%span sfinal_borrows0 = "../final_borrows.rs" 107 38 107 39
+  let%span sfinal_borrows0 = "../final_borrows.rs" 123 38 123 39
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 106 10 106 25
+  let%span sfinal_borrows1 = "../final_borrows.rs" 122 10 122 25
   
-  let%span sfinal_borrows2 = "../final_borrows.rs" 107 57 107 58
+  let%span sfinal_borrows2 = "../final_borrows.rs" 123 57 123 58
   
   let%span span3 = "../../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
@@ -1087,9 +1302,9 @@ module M_final_borrows__box_reborrow_indirect
     
 end
 module M_final_borrows__box_reborrow_in_struct
-  let%span sfinal_borrows0 = "../final_borrows.rs" 112 11 112 29
+  let%span sfinal_borrows0 = "../final_borrows.rs" 128 11 128 29
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 113 10 113 22
+  let%span sfinal_borrows1 = "../final_borrows.rs" 129 10 129 22
   
   let%span span2 = "../../../../../creusot-contracts/src/resolve.rs" 32 20 32 34
   
@@ -1147,11 +1362,11 @@ end
 module M_final_borrows__borrow_in_box
   type t
   
-  let%span sfinal_borrows0 = "../final_borrows.rs" 120 24 120 25
+  let%span sfinal_borrows0 = "../final_borrows.rs" 136 24 136 25
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 119 10 119 22
+  let%span sfinal_borrows1 = "../final_borrows.rs" 135 10 135 22
   
-  let%span sfinal_borrows2 = "../final_borrows.rs" 120 43 120 49
+  let%span sfinal_borrows2 = "../final_borrows.rs" 136 43 136 49
   
   let%span span3 = "../../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
@@ -1232,9 +1447,9 @@ module M_final_borrows__borrow_in_box
     
 end
 module M_final_borrows__borrow_in_box_tuple_1
-  let%span sfinal_borrows0 = "../final_borrows.rs" 124 11 124 26
+  let%span sfinal_borrows0 = "../final_borrows.rs" 140 11 140 26
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 125 10 125 22
+  let%span sfinal_borrows1 = "../final_borrows.rs" 141 10 141 22
   
   let%span span2 = "../../../../../creusot-contracts/src/resolve.rs" 32 20 32 34
   
@@ -1303,9 +1518,9 @@ module M_final_borrows__borrow_in_box_tuple_1
     
 end
 module M_final_borrows__borrow_in_box_tuple_2
-  let%span sfinal_borrows0 = "../final_borrows.rs" 131 11 131 26
+  let%span sfinal_borrows0 = "../final_borrows.rs" 147 11 147 26
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 132 10 132 22
+  let%span sfinal_borrows1 = "../final_borrows.rs" 148 10 148 22
   
   let%span span2 = "../../../../../creusot-contracts/src/resolve.rs" 32 20 32 34
   
@@ -1376,11 +1591,11 @@ end
 module M_final_borrows__reborrow_in_box
   type t
   
-  let%span sfinal_borrows0 = "../final_borrows.rs" 139 26 139 27
+  let%span sfinal_borrows0 = "../final_borrows.rs" 155 26 155 27
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 138 10 138 28
+  let%span sfinal_borrows1 = "../final_borrows.rs" 154 10 154 28
   
-  let%span sfinal_borrows2 = "../final_borrows.rs" 139 45 139 51
+  let%span sfinal_borrows2 = "../final_borrows.rs" 155 45 155 51
   
   let%span span3 = "../../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
@@ -1467,9 +1682,9 @@ end
 module M_final_borrows__shared_borrow_no_gen
   type t
   
-  let%span sfinal_borrows0 = "../final_borrows.rs" 157 18 157 27
+  let%span sfinal_borrows0 = "../final_borrows.rs" 173 18 173 27
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 154 31 154 34
+  let%span sfinal_borrows1 = "../final_borrows.rs" 170 31 170 34
   
   let%span span2 = "../../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   
@@ -1526,9 +1741,9 @@ module M_final_borrows__inspect_no_gen
   
   let%span smod1 = "" 0 0 0 0
   
-  let%span sfinal_borrows2 = "../final_borrows.rs" 166 18 166 24
+  let%span sfinal_borrows2 = "../final_borrows.rs" 182 18 182 24
   
-  let%span sfinal_borrows3 = "../final_borrows.rs" 160 25 160 26
+  let%span sfinal_borrows3 = "../final_borrows.rs" 176 25 176 26
   
   let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   
@@ -1598,9 +1813,9 @@ end
 module M_final_borrows__place_mention_no_gen
   type t
   
-  let%span sfinal_borrows0 = "../final_borrows.rs" 172 18 172 25
+  let%span sfinal_borrows0 = "../final_borrows.rs" 188 18 188 25
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 169 31 169 32
+  let%span sfinal_borrows1 = "../final_borrows.rs" 185 31 185 32
   
   let%span span2 = "../../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   
@@ -1662,9 +1877,9 @@ module M_final_borrows__place_mention_no_gen
      [ return' (result:())-> (! return' {result}) ] 
 end
 module M_final_borrows__shallow_borrow_no_gen
-  let%span sfinal_borrows0 = "../final_borrows.rs" 179 37 179 38
+  let%span sfinal_borrows0 = "../final_borrows.rs" 195 37 195 38
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 180 26 180 33
+  let%span sfinal_borrows1 = "../final_borrows.rs" 196 26 196 33
   
   let%span span2 = "../../../../../creusot-contracts/src/resolve.rs" 32 20 32 34
   
@@ -1720,17 +1935,17 @@ end
 module M_final_borrows__index_mut_slice
   type t
   
-  let%span sfinal_borrows0 = "../final_borrows.rs" 193 11 193 13
+  let%span sfinal_borrows0 = "../final_borrows.rs" 209 11 209 13
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 193 9 193 14
+  let%span sfinal_borrows1 = "../final_borrows.rs" 209 9 209 14
   
-  let%span sfinal_borrows2 = "../final_borrows.rs" 190 11 190 25
+  let%span sfinal_borrows2 = "../final_borrows.rs" 206 11 206 25
   
-  let%span sfinal_borrows3 = "../final_borrows.rs" 192 26 192 27
+  let%span sfinal_borrows3 = "../final_borrows.rs" 208 26 208 27
   
-  let%span sfinal_borrows4 = "../final_borrows.rs" 191 10 191 30
+  let%span sfinal_borrows4 = "../final_borrows.rs" 207 10 207 30
   
-  let%span sfinal_borrows5 = "../final_borrows.rs" 192 42 192 48
+  let%span sfinal_borrows5 = "../final_borrows.rs" 208 42 208 48
   
   let%span span6 = "../../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
@@ -1895,17 +2110,17 @@ end
 module M_final_borrows__index_mut_array
   type t
   
-  let%span sfinal_borrows0 = "../final_borrows.rs" 199 11 199 13
+  let%span sfinal_borrows0 = "../final_borrows.rs" 215 11 215 13
   
-  let%span sfinal_borrows1 = "../final_borrows.rs" 199 9 199 14
+  let%span sfinal_borrows1 = "../final_borrows.rs" 215 9 215 14
   
-  let%span sfinal_borrows2 = "../final_borrows.rs" 196 11 196 25
+  let%span sfinal_borrows2 = "../final_borrows.rs" 212 11 212 25
   
-  let%span sfinal_borrows3 = "../final_borrows.rs" 198 26 198 27
+  let%span sfinal_borrows3 = "../final_borrows.rs" 214 26 214 27
   
-  let%span sfinal_borrows4 = "../final_borrows.rs" 197 10 197 35
+  let%span sfinal_borrows4 = "../final_borrows.rs" 213 10 213 35
   
-  let%span sfinal_borrows5 = "../final_borrows.rs" 198 46 198 52
+  let%span sfinal_borrows5 = "../final_borrows.rs" 214 46 214 52
   
   let%span span6 = "../../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
