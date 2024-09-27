@@ -54,6 +54,8 @@ pub enum Decl {
     ConstantDecl(Constant),
     Coma(coma::Defn),
     LetSpans(Vec<Span>),
+    Meta(Meta),
+    LetSpan(Ident, String, usize, usize, usize, usize),
 }
 
 impl Decl {
@@ -418,4 +420,36 @@ pub struct Constant {
     pub name: Ident,
     pub type_: Type,
     pub body: Option<Exp>,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct Meta {
+    pub name: MetaIdent,
+    pub args: Vec<MetaArg>,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub enum MetaIdent {
+    String(String),
+    Ident(Ident),
+}
+
+// meta_arg:
+// | TYPE      ty      { Mty $2 }
+// | CONSTANT  qualid  { Mfs $2 }
+// | FUNCTION  qualid  { Mfs $2 }
+// | PREDICATE qualid  { Mps $2 }
+// | AXIOM     qualid  { Max $2 }
+// | LEMMA     qualid  { Mlm $2 }
+// | GOAL      qualid  { Mgl $2 }
+// | VAL       qualid  { Mval $2 }
+// | STRING            { Mstr $1 }
+// | INTEGER           { Mint (Number.to_small_integer $1) }
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub enum MetaArg {
+    Integer(i128),
 }

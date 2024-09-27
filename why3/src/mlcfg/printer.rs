@@ -112,6 +112,7 @@ impl Print for Decl {
             Decl::LetSpans(spans) => {
                 alloc.intersperse(spans.iter().map(|span| span.pretty(alloc)), alloc.hardline())
             }
+            Decl::Meta(meta) => meta.pretty(alloc),
         }
     }
 }
@@ -404,6 +405,42 @@ impl Print for Use {
             } else {
                 alloc.nil()
             })
+    }
+}
+
+impl Print for Meta {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        alloc
+            .text("meta ")
+            .append(self.name.pretty(alloc))
+            .append(alloc.space())
+            .append(alloc.intersperse(self.args.iter().map(|a| a.pretty(alloc)), alloc.space()))
+    }
+}
+
+impl Print for MetaIdent {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        match self {
+            MetaIdent::Ident(i) => i.pretty(alloc),
+            MetaIdent::String(s) => alloc.text(format!("{s:?}")),
+        }
+    }
+}
+
+impl Print for MetaArg {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        match self {
+            MetaArg::Integer(i) => alloc.as_string(i),
+        }
     }
 }
 
