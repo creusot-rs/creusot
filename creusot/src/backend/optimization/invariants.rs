@@ -12,7 +12,6 @@ use crate::{
         wto::{weak_topological_order, Component},
     },
     ctx::TranslationCtx,
-    fmir::BorrowKind,
     pearlite::{mk_projection, BinOp, Term},
     translation::fmir,
 };
@@ -242,7 +241,7 @@ impl<'a, 'tcx> FmirVisitor<'tcx> for BorrowProph<'a, 'tcx> {
             fmir::Statement::Assignment(l, r, _) => {
                 self.record_write_to(l);
 
-                if let RValue::Borrow(BorrowKind::Mut, r) = r {
+                if let RValue::Borrow(_, r) = r {
                     self.record_write_to(r);
                 }
             }

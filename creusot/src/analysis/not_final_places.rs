@@ -3,8 +3,8 @@ use rustc_index::bit_set::ChunkedBitSet;
 use rustc_middle::{
     mir::{
         self,
-        visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor},
-        Location, Place, PlaceRef, ProjectionElem,
+        visit::{MutatingUseContext, NonMutatingUseContext, NonUseContext, PlaceContext, Visitor},
+        Location, Place, PlaceRef, ProjectionElem, TerminatorKind,
     },
     ty::{List, TyCtxt},
 };
@@ -68,6 +68,9 @@ impl<'tcx> NotFinalPlaces<'tcx> {
                                 | MutatingUseContext::AsmOutput
                                 | MutatingUseContext::Call
                                 | MutatingUseContext::Borrow
+                        )
+                        | PlaceContext::NonUse(
+                            NonUseContext::StorageDead | NonUseContext::StorageLive
                         )
                 ) {
                     return;
@@ -256,7 +259,13 @@ impl<'tcx> GenKillAnalysis<'tcx> for NotFinalPlaces<'tcx> {
         terminator: &'mir mir::Terminator<'tcx>,
         location: mir::Location,
     ) -> mir::TerminatorEdges<'mir, 'tcx> {
-        PlaceVisitor { info: self, trans }.visit_terminator(terminator, location);
+        let mut visitor = PlaceVisitor { info: self, trans };
+        if terminator.kind == TerminatorKind::Return {
+            for &p in &self.places {
+                visitor.write_local(p.local);
+            }
+        }
+        visitor.visit_terminator(terminator, location);
         terminator.edges()
     }
 
@@ -274,55 +283,51 @@ struct PlaceVisitor<'a, 'tcx, T> {
     trans: &'a mut T,
 }
 
-impl<'a, 'tcx, T> PlaceVisitor<'a, 'tcx, T>
+impl<'tcx, T> PlaceVisitor<'_, 'tcx, T>
 where
     T: GenKill<PlaceId>,
 {
-    /// This place and all its subplaces will be marked non-final, _except_ for
-    /// subplaces that have more dereferences than `p`.
+    /// A write into `p`, changing its prophecy.
+    ///
+    /// This place and all its subplaces/conflicting places will be marked non-final,
+    /// _but_ subplaces that have exactly one more dereference than `p` will become final.
     fn write(&mut self, p: PlaceRef<'tcx>) {
         let infos = &self.info.infos[&p];
         self.trans.gen_(infos.id);
         for subplace in &infos.subplaces {
             let sub_infos = &self.info.infos[subplace];
-            if sub_infos.deref_count == infos.deref_count {
-                self.trans.gen_(sub_infos.id);
-            } else {
+            if sub_infos.deref_count == infos.deref_count + 1 {
                 self.trans.kill(sub_infos.id);
+            } else {
+                self.trans.gen_(sub_infos.id);
             }
         }
         for conflict in &infos.conflicting {
             let sub_infos = &self.info.infos[conflict];
-            // FIXME: probably incorrect
-            if sub_infos.deref_count == infos.deref_count {
-                self.trans.gen_(sub_infos.id);
-            }
+            self.trans.gen_(sub_infos.id);
         }
     }
 
-    /// All the places with local `l` and 1 deref will be marked non-final.
+    /// All the places with local `l` and 1 deref will be marked final.
     ///
-    /// Places with more derefs will be marked final.
+    /// Other places with local `l` will be marked non-final.
     fn write_local(&mut self, l: mir::Local) {
-        for p in &self.info.places_per_local[&l] {
+        let Some(places) = self.info.places_per_local.get(&l) else {
+            return;
+        };
+        for p in places {
             let infos = &self.info.infos[p];
             if infos.deref_count == 1 {
-                self.trans.gen_(infos.id);
-            } else if infos.deref_count > 1 {
                 self.trans.kill(infos.id);
+            } else {
+                self.trans.gen_(infos.id);
             }
         }
     }
 
-    /// All subplaces of `p` will be marked non-final.
-    fn borrow(&mut self, p: PlaceRef<'tcx>) {
-        let infos = &self.info.infos[&p];
-        self.trans.gen_(infos.id);
-        for p2 in &infos.subplaces {
-            self.trans.gen_(self.info.infos[p2].id);
-        }
-    }
-
+    /// We are moving from `p`, preventing us from statically knowing the modification to
+    /// its prophecy. Note that this is also true if `p` is being borrrowed.
+    ///
     /// All subplaces of `p` will be marked non-final, as well as places conflicting with `p`.
     fn move_(&mut self, p: PlaceRef<'tcx>) {
         let infos = &self.info.infos[&p];
@@ -333,7 +338,7 @@ where
     }
 }
 
-impl<'a, 'tcx, T> Visitor<'tcx> for PlaceVisitor<'a, 'tcx, T>
+impl<'tcx, T> Visitor<'tcx> for PlaceVisitor<'_, 'tcx, T>
 where
     T: GenKill<PlaceId>,
 {
@@ -344,15 +349,18 @@ where
             }
             PlaceContext::MutatingUse(context) => match context {
                 MutatingUseContext::Store
-                | MutatingUseContext::Drop
                 | MutatingUseContext::SetDiscriminant
                 | MutatingUseContext::AsmOutput
-                | MutatingUseContext::Call => self.write(place.as_ref()),
+                | MutatingUseContext::Call
+                | MutatingUseContext::Drop => self.write(place.as_ref()),
                 MutatingUseContext::Borrow => {
-                    self.borrow(place.as_ref());
+                    self.move_(place.as_ref());
                 }
                 _ => {}
             },
+            PlaceContext::NonUse(NonUseContext::StorageLive | NonUseContext::StorageDead) => {
+                self.write(place.as_ref())
+            }
             _ => {}
         }
     }
@@ -369,10 +377,13 @@ where
                 | MutatingUseContext::AsmOutput
                 | MutatingUseContext::Call => self.write_local(local),
                 MutatingUseContext::Borrow => {
-                    self.borrow(Place { local, projection: List::empty() }.as_ref());
+                    self.move_(Place { local, projection: List::empty() }.as_ref());
                 }
                 _ => {}
             },
+            PlaceContext::NonUse(NonUseContext::StorageLive | NonUseContext::StorageDead) => {
+                self.write_local(local)
+            }
             _ => {}
         }
     }
