@@ -27,6 +27,17 @@ pub struct Scope {
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct Span {
+    pub name: Ident,
+    pub path: String,
+    pub start_line: usize,
+    pub start_column: usize,
+    pub end_line: usize,
+    pub end_column: usize,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Decl {
     CfgDecl(CfgFunction),
     Let(LetDecl),
@@ -42,7 +53,7 @@ pub enum Decl {
     Goal(Goal),
     ConstantDecl(Constant),
     Coma(coma::Defn),
-    LetSpan(Ident, String, usize, usize, usize, usize),
+    LetSpans(Vec<Span>),
 }
 
 impl Decl {

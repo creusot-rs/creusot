@@ -655,21 +655,36 @@ impl<'tcx> Dependencies<'tcx> {
             decls.extend(decl);
         }
 
-        let mut spans: Vec<_> = self
+        let spans: Vec<why3::declaration::Span> = self
             .names
             .spans
             .into_iter()
             .map(|(sp, name)| {
-                let (nm, l1, c1, l2, c2) =
-                    if let Some(Attribute::Span(nm, l1, c1, l2, c2)) = ctx.span_attr(sp) {
-                        (nm, l1, c1, l2, c2)
+                let (path, start_line, start_column, end_line, end_column) =
+                    if let Some(Attribute::Span(path, l1, c1, l2, c2)) = ctx.span_attr(sp) {
+                        (path, l1, c1, l2, c2)
                     } else {
                         ("".into(), 0, 0, 0, 0)
                     };
 
-                Decl::LetSpan(name.as_str().into(), nm, l1, c1, l2, c2)
+                why3::declaration::Span {
+                    name: name.as_str().into(),
+                    path,
+                    start_line,
+                    start_column,
+                    end_line,
+                    end_column,
+                }
             })
             .collect();
+
+        let dependencies = if spans.is_empty() {
+            decls
+        } else {
+            let mut tmp = vec![Decl::LetSpans(spans)];
+            tmp.extend(decls);
+            tmp
+        };
 
         // Only return the roots (direct dependencies) of the graph as dependencies
         let summary: CloneSummary<'tcx> = roots
@@ -678,8 +693,6 @@ impl<'tcx> Dependencies<'tcx> {
             .map(|r| (r, clone_graph.info(r).clone()))
             .collect();
 
-        spans.extend(decls);
-        let dependencies = spans;
         (dependencies, summary)
     }
 }
