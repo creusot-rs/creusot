@@ -45,7 +45,7 @@ mach_int!(i16, "prelude.prelude.Int16", 0i16);
 mach_int!(i32, "prelude.prelude.Int32", 0i32);
 mach_int!(i64, "prelude.prelude.Int64", 0i64);
 mach_int!(i128, "prelude.prelude.Int128", 0i128);
-mach_int!(isize, "prelude.prelude.IntSize", 9isize);
+mach_int!(isize, "prelude.prelude.IntSize", 0isize);
 
 /// Adds specifications for checked, wrapping, saturating, and overflowing operations on the given
 /// integer type
