@@ -59,6 +59,7 @@ impl<T> Resolve for VecDeque<T> {
     fn resolve(self) -> bool {
         pearlite! { forall<i : Int> 0 <= i && i < self@.len() ==> resolve(&self[i]) }
     }
+
     #[trusted]
     #[logic(prophetic)]
     #[open(self)]

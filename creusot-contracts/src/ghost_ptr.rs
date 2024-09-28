@@ -293,6 +293,7 @@ impl<'a, T: ?Sized> Resolve for GhostPtrTokenMut<'a, T> {
     fn resolve(self) -> bool {
         self.cur() == self.fin()
     }
+
     #[trusted]
     #[logic(prophetic)]
     #[open(self)]

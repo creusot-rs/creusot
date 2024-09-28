@@ -21,6 +21,7 @@ impl<I> Resolve for Cloned<I> {
     fn resolve(self) -> bool {
         resolve(&self.iter())
     }
+
     #[trusted]
     #[logic(prophetic)]
     #[open(self)]

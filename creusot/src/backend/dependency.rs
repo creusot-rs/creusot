@@ -24,7 +24,8 @@ pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
     Item(DefId, GenericArgsRef<'tcx>),
     // Type invariants and structual resolution expressions
-    // are identified by a "skeleton type" aka type with identity substs.
+    // are identified by a substituted type, each of these entries is associated with a `TransId` containing a
+    // 'skeleton type' (aka type with identity substs).
     TyInv(Ty<'tcx>),
     StructuralResolve(Ty<'tcx>),
     Hacked(ExtendedId, DefId, GenericArgsRef<'tcx>),

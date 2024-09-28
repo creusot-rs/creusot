@@ -21,7 +21,7 @@ pub fn resolve<T: ?Sized>(_: &T) -> bool {
     true
 }
 
-impl<T1, T2> Resolve for (T1, T2) {
+impl<T1, T2: ?Sized> Resolve for (T1, T2) {
     #[predicate(prophetic)]
     #[open]
     fn resolve(self) -> bool {
