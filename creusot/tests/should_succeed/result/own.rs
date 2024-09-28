@@ -21,13 +21,9 @@ impl<T, E> Resolve for OwnResult<T, E> {
 
     #[logic(prophetic)]
     #[open(self)]
-    #[requires(structural_resolve(&self))]
-    #[ensures(self.resolve())]
-    fn resolve_coherence(self)
-    where
-        Self: Sized,
-    {
-    }
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 impl<T, E> OwnResult<T, E> {

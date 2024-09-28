@@ -35,13 +35,9 @@ impl<I> Resolve for Enumerate<I> {
     #[trusted]
     #[logic(prophetic)]
     #[open(self)]
-    #[requires(structural_resolve(&self))]
-    #[ensures(self.resolve())]
-    fn resolve_coherence(self)
-    where
-        Self: Sized,
-    {
-    }
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 impl<I: Iterator> Invariant for Enumerate<I> {

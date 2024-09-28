@@ -21,10 +21,9 @@ pub fn derive_resolve(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 
             #[open(self)]
             #[logic(prophetic)]
-            #[requires(structural_resolve(&self))]
-            #[ensures(self.resolve())]
-            fn resolve_coherence(self)
-            where Self: Sized { }
+            #[requires(structural_resolve(self))]
+            #[ensures((*self).resolve())]
+            fn resolve_coherence(&self) {}
         }
     };
 

@@ -65,13 +65,9 @@ impl<I, B, F> Resolve for MapInv<I, B, F> {
     #[trusted]
     #[logic(prophetic)]
     #[open(self)]
-    #[requires(structural_resolve(&self))]
-    #[ensures(self.resolve())]
-    fn resolve_coherence(self)
-    where
-        Self: Sized,
-    {
-    }
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invariant

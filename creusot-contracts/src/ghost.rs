@@ -74,12 +74,8 @@ impl<T: ?Sized> Resolve for GhostBox<T> {
     #[logic(prophetic)]
     #[open(self)]
     #[requires(structural_resolve(&self))]
-    #[ensures(self.resolve())]
-    fn resolve_coherence(self)
-    where
-        Self: Sized,
-    {
-    }
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 impl<T> GhostBox<T> {

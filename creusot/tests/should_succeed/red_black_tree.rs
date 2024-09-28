@@ -189,13 +189,9 @@ impl<K: DeepModel, V> Resolve for Tree<K, V> {
 
     #[open(self)]
     #[logic(prophetic)]
-    #[requires(structural_resolve(&self))]
-    #[ensures(self.resolve())]
-    fn resolve_coherence(self)
-    where
-        Self: Sized,
-    {
-    }
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 impl<K: DeepModel, V> Resolve for Node<K, V> {
@@ -209,13 +205,9 @@ impl<K: DeepModel, V> Resolve for Node<K, V> {
 
     #[open(self)]
     #[logic(prophetic)]
-    #[requires(structural_resolve(&self))]
-    #[ensures(self.resolve())]
-    fn resolve_coherence(self)
-    where
-        Self: Sized,
-    {
-    }
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 /*******************************  The BST invariant ***************************/
@@ -802,13 +794,10 @@ where
 
     #[logic(prophetic)]
     #[open(self)]
-    #[requires(structural_resolve(&self))]
-    #[ensures(self.resolve())]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
     #[allow(path_statements)]
-    fn resolve_coherence(self)
-    where
-        Self: Sized,
-    {
+    fn resolve_coherence(&self) {
         Tree::<K, V>::has_mapping_model;
     }
 }
