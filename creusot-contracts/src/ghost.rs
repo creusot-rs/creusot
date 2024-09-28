@@ -1,4 +1,5 @@
 use crate::{
+    resolve::structural_resolve,
     std::ops::{Deref, DerefMut},
     *,
 };
@@ -25,6 +26,7 @@ use crate::{
 pub struct GhostBox<T: ?Sized>(T);
 
 impl<T: Clone + ?Sized> Clone for GhostBox<T> {
+    #[ensures(result == *self)]
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
@@ -61,13 +63,19 @@ impl<T: ShallowModel + ?Sized> ShallowModel for GhostBox<T> {
     }
 }
 
-#[trusted]
 impl<T: ?Sized> Resolve for GhostBox<T> {
-    #[predicate(prophetic)]
     #[open]
+    #[predicate(prophetic)]
     fn resolve(self) -> bool {
         resolve(&self.0)
     }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(&self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 impl<T> GhostBox<T> {

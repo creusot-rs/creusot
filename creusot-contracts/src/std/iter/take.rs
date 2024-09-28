@@ -1,4 +1,4 @@
-use crate::{invariant::*, std::iter::Take, *};
+use crate::{invariant::*, resolve::structural_resolve, std::iter::Take, *};
 
 pub trait TakeExt<I> {
     #[logic]
@@ -37,15 +37,19 @@ impl<I> TakeExt<I> for Take<I> {
     }
 }
 
-#[trusted]
 impl<I> Resolve for Take<I> {
     #[open]
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
-        pearlite! {
-            resolve(&self.iter())
-        }
+        resolve(&self.iter())
     }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 impl<I: Iterator> Iterator for Take<I> {

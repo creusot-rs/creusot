@@ -1,5 +1,6 @@
 use crate::{
     invariant::*,
+    resolve::structural_resolve,
     std::{
         alloc::Allocator,
         ops::{Deref, DerefMut, Index, IndexMut},
@@ -43,13 +44,19 @@ impl<T> Default for Vec<T> {
     }
 }
 
-#[trusted]
 impl<T, A: Allocator> Resolve for Vec<T, A> {
-    #[predicate(prophetic)]
     #[open]
+    #[predicate(prophetic)]
     fn resolve(self) -> bool {
         pearlite! { forall<i : Int> 0 <= i && i < self@.len() ==> resolve(&self[i]) }
     }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 impl<T, A: Allocator> Invariant for Vec<T, A> {
@@ -233,13 +240,19 @@ impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
     }
 }
 
-#[trusted]
 impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
-    #[predicate(prophetic)]
     #[open]
+    #[predicate(prophetic)]
     fn resolve(self) -> bool {
         pearlite! { forall<i: Int> 0 <= i && i < self@.len() ==> resolve(&self@[i]) }
     }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {

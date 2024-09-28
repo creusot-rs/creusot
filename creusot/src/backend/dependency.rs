@@ -11,7 +11,7 @@ use crate::{
     util::{self, item_symb, translate_accessor_name, type_name, value_name, ItemType},
 };
 
-use super::{ty_inv::tyinv_head_and_subst, PreludeModule, TransId};
+use super::{structural_resolve, ty_inv::tyinv_head_and_subst, PreludeModule, TransId};
 
 /// Dependencies between items and the resolution logic to find the 'monomorphic' forms accounting
 /// for various Creusot hacks like the handling of closures.
@@ -23,7 +23,11 @@ use super::{ty_inv::tyinv_head_and_subst, PreludeModule, TransId};
 pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
     Item(DefId, GenericArgsRef<'tcx>),
+    // Type invariants and structual resolution expressions
+    // are identified by a substituted type, each of these entries is associated with a `TransId` containing a
+    // 'skeleton type' (aka type with identity substs).
     TyInv(Ty<'tcx>),
+    StructuralResolve(Ty<'tcx>),
     Hacked(ExtendedId, DefId, GenericArgsRef<'tcx>),
     Builtin(PreludeModule),
 }
@@ -89,6 +93,7 @@ impl<'tcx> Dependency<'tcx> {
                 };
                 Dependency::Hacked(h, self_id, subst).erase_regions(tcx)
             }
+            TransId::StructuralResolve(ty) => Dependency::StructuralResolve(ty),
         }
     }
 
@@ -106,6 +111,10 @@ impl<'tcx> Dependency<'tcx> {
             }
             Dependency::Hacked(h, id, _) => Some(TransId::Hacked(h, id)),
             Dependency::Builtin(_) => None,
+            Dependency::StructuralResolve(ty) => {
+                let ty = structural_resolve::head_and_subst(tcx, ty).0;
+                Some(TransId::StructuralResolve(ty))
+            }
         }
     }
 
@@ -132,6 +141,7 @@ impl<'tcx> Dependency<'tcx> {
             },
             Dependency::Hacked(_, id, substs) => Some((id, substs)),
             Dependency::TyInv(_) | Dependency::Builtin(_) => None,
+            Dependency::StructuralResolve(_) => None,
         }
     }
 
@@ -153,6 +163,8 @@ impl<'tcx> Dependency<'tcx> {
     ) -> Self {
         let substs = if let Dependency::TyInv(ty) = other {
             tyinv_head_and_subst(tcx, ty, param_env).1
+        } else if let Dependency::StructuralResolve(ty) = other {
+            structural_resolve::head_and_subst(tcx, ty).1
         } else if let Some((_, substs)) = other.did() {
             substs
         } else {
@@ -162,13 +174,20 @@ impl<'tcx> Dependency<'tcx> {
         EarlyBinder::bind(self).instantiate(tcx, substs)
     }
 
+    /// We need to "overload" certain identifiers in rustc so that we can distinguish them while
+    /// rustc doesn't. In particular, closures act as both a type and a function and are missing many
+    /// identifiers for things like accessors.
+    ///
+    /// We also use this to overload "structural resolution" for types
     #[inline]
-    pub(crate) fn closure_hack(self, tcx: TyCtxt<'tcx>) -> Self {
+    pub(crate) fn identify_overloads(self, tcx: TyCtxt<'tcx>) -> Self {
         match self {
             Dependency::Item(did, subst) => {
                 let (hacked_id, id, subst) = closure_hack(tcx, did, subst);
                 if let Some(hacked_id) = hacked_id {
                     Dependency::Hacked(hacked_id, id, subst)
+                } else if let Some(ty) = structural_resolve(tcx, (id, subst)) {
+                    Dependency::StructuralResolve(ty)
                 } else {
                     Dependency::new(tcx, (id, subst))
                 }
@@ -220,6 +239,7 @@ impl<'tcx> Dependency<'tcx> {
             },
             Dependency::TyInv(..) => Symbol::intern("tyinv_should_not_appear"),
             Dependency::Builtin(_) => Symbol::intern("builtin_should_not_appear"),
+            Dependency::StructuralResolve(_) => Symbol::intern("structural_resolve"),
         }
     }
 }
@@ -244,8 +264,21 @@ fn resolve_item<'tcx>(
     let (hacked_id, id, subst) = closure_hack(tcx, resolved.0, resolved.1);
     if let Some(hacked_id) = hacked_id {
         Dependency::Hacked(hacked_id, id, subst)
+    } else if let Some(ty) = structural_resolve(tcx, resolved) {
+        Dependency::StructuralResolve(ty)
     } else {
         Dependency::new(tcx, (id, subst))
+    }
+}
+
+fn structural_resolve<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    dep: (DefId, GenericArgsRef<'tcx>),
+) -> Option<Ty<'tcx>> {
+    if tcx.get_diagnostic_item(Symbol::intern("creusot_structural_resolve")).unwrap() == dep.0 {
+        Some(dep.1.type_at(0))
+    } else {
+        None
     }
 }
 

@@ -1,5 +1,6 @@
 use crate::{
     invariant::*,
+    resolve::structural_resolve,
     std::{
         alloc::Allocator,
         ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
@@ -435,18 +436,24 @@ impl<'a, T> ShallowModel for IterMut<'a, T> {
     }
 }
 
-#[trusted]
 impl<'a, T> Resolve for IterMut<'a, T> {
-    #[predicate(prophetic)]
     #[open]
+    #[predicate(prophetic)]
     fn resolve(self) -> bool {
         pearlite! { *self@ == ^self@ }
     }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 impl<'a, T> Iterator for IterMut<'a, T> {
-    #[predicate(prophetic)]
     #[open]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && (*self@)@ == Seq::EMPTY }
     }

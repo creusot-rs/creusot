@@ -1,4 +1,4 @@
-use crate::{invariant::*, std::iter::Cloned, *};
+use crate::{invariant::*, resolve::structural_resolve, std::iter::Cloned, *};
 
 pub trait ClonedExt<I> {
     #[logic]
@@ -15,15 +15,19 @@ impl<I> ClonedExt<I> for Cloned<I> {
     }
 }
 
-#[trusted]
 impl<I> Resolve for Cloned<I> {
     #[open]
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
-        pearlite! {
-            resolve(&self.iter())
-        }
+        resolve(&self.iter())
     }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 impl<'a, I, T: 'a> Iterator for Cloned<I>

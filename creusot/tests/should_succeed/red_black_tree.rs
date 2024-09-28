@@ -178,6 +178,38 @@ impl<K: DeepModel, V> ShallowModel for Tree<K, V> {
     }
 }
 
+impl<K: DeepModel, V> Resolve for Tree<K, V> {
+    #[open(self)]
+    #[predicate(prophetic)]
+    fn resolve(self) -> bool {
+        pearlite! {
+            forall<k: _, v: V> self.has_mapping(k, v) ==> resolve(&v)
+        }
+    }
+
+    #[open(self)]
+    #[logic(prophetic)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
+}
+
+impl<K: DeepModel, V> Resolve for Node<K, V> {
+    #[open(self)]
+    #[predicate(prophetic)]
+    fn resolve(self) -> bool {
+        pearlite! {
+            forall<k: _, v: V> self.has_mapping(k, v) ==> resolve(&v)
+        }
+    }
+
+    #[open(self)]
+    #[logic(prophetic)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
+}
+
 /*******************************  The BST invariant ***************************/
 
 impl<K: DeepModel, V> Node<K, V>
@@ -294,7 +326,7 @@ impl<K, V> Node<K, V> {
 
 /*****************************  The height invariant  *************************/
 
-impl<K, V> Tree<K, V> {
+impl<K: DeepModel, V> Tree<K, V> {
     #[logic]
     #[ensures(result >= 0)]
     fn height(self) -> Int {
@@ -325,7 +357,7 @@ impl<K, V> Tree<K, V> {
     }
 }
 
-impl<K, V> Node<K, V> {
+impl<K: DeepModel, V> Node<K, V> {
     #[logic]
     #[ensures(forall<node: Box<Node<K, V>>>
               self == *node ==> result == Tree{ node: Some(node) }.height())]
@@ -747,6 +779,26 @@ where
         pearlite! {
             self.0.internal_invariant() && self.0.color_invariant() && self.0.color() == Black
         }
+    }
+}
+
+impl<K: DeepModel, V> Resolve for Map<K, V>
+where
+    K::DeepModelTy: OrdLogic,
+{
+    #[predicate(prophetic)]
+    #[open]
+    fn resolve(self) -> bool {
+        pearlite! { forall<k: K::DeepModelTy> resolve(&self@.get(k)) }
+    }
+
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    #[allow(path_statements)]
+    fn resolve_coherence(&self) {
+        Tree::<K, V>::has_mapping_model;
     }
 }
 

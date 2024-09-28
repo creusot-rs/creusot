@@ -33,6 +33,7 @@ pub(crate) mod optimization;
 pub(crate) mod place;
 pub(crate) mod program;
 pub(crate) mod signature;
+pub(crate) mod structural_resolve;
 pub(crate) mod term;
 pub(crate) mod traits;
 pub(crate) mod ty;
@@ -43,6 +44,7 @@ pub(crate) mod wto;
 pub(crate) enum TransId<'tcx> {
     Item(DefId),
     TyInv(Ty<'tcx>),
+    StructuralResolve(Ty<'tcx>),
     Hacked(ExtendedId, DefId),
 }
 
@@ -106,6 +108,7 @@ impl<'tcx> Why3Generator<'tcx> {
                     ExtendedId::Accessor(ix) => Some(&c.accessors[ix as usize].1),
                 }
             }
+            TransId::StructuralResolve(_) => unreachable!(),
         }
     }
 
@@ -222,6 +225,8 @@ impl<'tcx> Why3Generator<'tcx> {
                     lower_pure(self, &mut names, &Term::call(self.tcx, method, substs, vec![arg]));
 
                     let deps = names.provide_deps(self, GraphDepth::Shallow).1;
+
+                    // eprintln!("deps for {def_id:?} : {deps:?}");
                     self.dependencies.insert(def_id.into(), deps);
 
                     TranslatedItem::Logic { proof_modl: None }
@@ -286,6 +291,18 @@ impl<'tcx> Why3Generator<'tcx> {
         }
 
         let deps = ty_inv::get_tyinv_deps(self, ty);
+        self.dependencies.insert(tid, deps);
+    }
+
+    pub(crate) fn translate_structural_resolve(&mut self, ty: Ty<'tcx>) {
+        let tid = TransId::StructuralResolve(ty);
+        if self.dependencies.contains_key(&tid) {
+            return;
+        }
+
+        let deps = structural_resolve::record_deps(self, ty);
+
+        // eprintln!("structural_resolve({ty:?}) :- {deps:?}");
         self.dependencies.insert(tid, deps);
     }
 

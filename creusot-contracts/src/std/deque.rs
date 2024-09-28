@@ -1,4 +1,4 @@
-use crate::{logic::IndexLogic, std::alloc::Allocator, *};
+use crate::{logic::IndexLogic, resolve::structural_resolve, std::alloc::Allocator, *};
 pub use ::std::collections::VecDeque;
 use ::std::{
     collections::vec_deque::Iter,
@@ -53,13 +53,19 @@ impl<T, A: Allocator> IndexLogic<usize> for VecDeque<T, A> {
     }
 }
 
-#[trusted]
 impl<T> Resolve for VecDeque<T> {
-    #[predicate(prophetic)]
     #[open]
+    #[predicate(prophetic)]
     fn resolve(self) -> bool {
         pearlite! { forall<i : Int> 0 <= i && i < self@.len() ==> resolve(&self[i]) }
     }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 extern_spec! {

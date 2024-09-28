@@ -1,4 +1,6 @@
 // Inspired by https://plv.mpi-sws.org/rustbelt/ghostcell/ https://rust-unofficial.github.io/too-many-lists/fifth.html
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
 use crate::{invariant::*, logic::FMap, Clone, *};
 use ::std::{
     marker::PhantomData,
@@ -222,6 +224,7 @@ impl<'a, T: ?Sized> GhostPtrTokenMut<'a, T> {
         absurd
     }
 
+    #[trusted]
     #[ensures(self.fin() == self.cur())]
     #[ensures(result@ == self.cur())]
     pub fn shr(self) -> GhostPtrTokenRef<'a, T> {
@@ -284,13 +287,19 @@ impl<'a, T: ?Sized> DerefMut for GhostPtrTokenMut<'a, T> {
     }
 }
 
-#[trusted]
 impl<'a, T: ?Sized> Resolve for GhostPtrTokenMut<'a, T> {
-    #[predicate(prophetic)]
     #[open]
+    #[predicate(prophetic)]
     fn resolve(self) -> bool {
         self.cur() == self.fin()
     }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 pub trait GhostPtrExt<T: ?Sized>: Sized {

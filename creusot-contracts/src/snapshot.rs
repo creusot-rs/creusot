@@ -29,6 +29,7 @@ impl<T: ShallowModel + ?Sized> ShallowModel for Snapshot<T> {
 }
 
 impl<T: ?Sized> Clone for Snapshot<T> {
+    #[ensures(result == *self)]
     fn clone(&self) -> Self {
         snapshot! { **self }
     }

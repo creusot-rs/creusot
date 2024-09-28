@@ -100,7 +100,7 @@ module M_option__test_option
   let%span span81 = "../../../../creusot-contracts/src/std/option.rs" 135 16 135 59
   let%span span82 = "../../../../creusot-contracts/src/std/option.rs" 30 0 141 1
   let%span span83 = "" 0 0 0 0
-  let%span span84 = "../../../../creusot-contracts/src/resolve.rs" 32 20 32 34
+  let%span span84 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   let%span span85 = "" 0 0 0 0
   let%span span86 = "../../../../creusot-contracts/src/std/option.rs" 123 16 123 59
   let%span span87 = "" 0 0 0 0
@@ -138,16 +138,17 @@ module M_option__test_option
   let%span span119 = "../../../../creusot-contracts/src/std/option.rs" 66 16 66 60
   let%span span120 = "../../../../creusot-contracts/src/std/option.rs" 67 16 69 18
   let%span span121 = "" 0 0 0 0
-  let%span span122 = "" 0 0 0 0
-  let%span span123 = "../../../../creusot-contracts/src/std/option.rs" 58 16 58 77
-  let%span span124 = "../../../../creusot-contracts/src/std/option.rs" 59 16 62 18
-  let%span span125 = "" 0 0 0 0
+  let%span span122 = "../../../../creusot-contracts/src/resolve.rs" 69 8 72 9
+  let%span span123 = "" 0 0 0 0
+  let%span span124 = "../../../../creusot-contracts/src/std/option.rs" 58 16 58 77
+  let%span span125 = "../../../../creusot-contracts/src/std/option.rs" 59 16 62 18
   let%span span126 = "" 0 0 0 0
   let%span span127 = "" 0 0 0 0
-  let%span span128 = "../../../../creusot-contracts/src/std/option.rs" 53 16 53 62
-  let%span span129 = "" 0 0 0 0
+  let%span span128 = "" 0 0 0 0
+  let%span span129 = "../../../../creusot-contracts/src/std/option.rs" 53 16 53 62
   let%span span130 = "" 0 0 0 0
-  let%span span131 = "../../../../creusot-contracts/src/std/option.rs" 35 26 35 51
+  let%span span131 = "" 0 0 0 0
+  let%span span132 = "../../../../creusot-contracts/src/std/option.rs" 35 26 35 51
   
   use prelude.prelude.Int32
   
@@ -227,14 +228,14 @@ module M_option__test_option
       (! return' {result}) ]
     
   
-  predicate resolve'1 (self : borrowed int32) =
+  predicate resolve'3 (self : borrowed int32) =
     [%#span84] self.final = self.current
   
   let rec cloned'1 (self:Option'0.t_Option (borrowed int32)) (return'  (ret:Option'0.t_Option int32))= {[@expl:precondition] [%#span85] inv'4 self}
     any
     [ return' (result:Option'0.t_Option int32)-> {[%#span87] inv'1 result}
       {[%#span82] self = Option'0.C_None
-      \/ (exists t : borrowed int32 . self = Option'0.C_Some t /\ result = Option'0.C_Some (t.current) /\ resolve'1 t)}
+      \/ (exists t : borrowed int32 . self = Option'0.C_Some t /\ result = Option'0.C_Some (t.current) /\ resolve'3 t)}
       {[%#span86] self = Option'0.C_None  -> result = Option'0.C_None}
       (! return' {result}) ]
     
@@ -251,7 +252,7 @@ module M_option__test_option
     any
     [ return' (result:Option'0.t_Option int32)-> {[%#span93] inv'1 result}
       {[%#span82] self = Option'0.C_None
-      \/ (exists t : borrowed int32 . self = Option'0.C_Some t /\ result = Option'0.C_Some (t.current) /\ resolve'1 t)}
+      \/ (exists t : borrowed int32 . self = Option'0.C_Some t /\ result = Option'0.C_Some (t.current) /\ resolve'3 t)}
       {[%#span92] self = Option'0.C_None  -> result = Option'0.C_None}
       (! return' {result}) ]
     
@@ -330,8 +331,8 @@ module M_option__test_option
       (! return' {result}) ]
     
   
-  predicate resolve'0 (_1 : borrowed int32) =
-    resolve'1 _1
+  predicate resolve'1 (_1 : borrowed int32) =
+    resolve'3 _1
   
   let rec unwrap'1 (self:Option'0.t_Option (borrowed int32)) (return'  (ret:borrowed int32))= {[@expl:precondition] [%#span114] inv'4 self}
     {[@expl:precondition] [%#span82] self <> Option'0.C_None}
@@ -341,25 +342,34 @@ module M_option__test_option
       (! return' {result}) ]
     
   
+  predicate resolve'2 (self : Option'0.t_Option (borrowed int32)) =
+    [%#span122] match self with
+      | Option'0.C_Some x -> resolve'1 x
+      | Option'0.C_None -> true
+      end
+  
+  predicate resolve'0 (_1 : Option'0.t_Option (borrowed int32)) =
+    resolve'2 _1
+  
   let rec is_none'1 (self:Option'0.t_Option (borrowed int32)) (return'  (ret:bool))= {[@expl:precondition] [%#span116] inv'5 self}
     any [ return' (result:bool)-> {[%#span117] result = (self = Option'0.C_None)} (! return' {result}) ] 
   
-  let rec as_mut'0 (self:borrowed (Option'0.t_Option int32)) (return'  (ret:Option'0.t_Option (borrowed int32)))= {[@expl:precondition] [%#span122] inv'3 self}
+  let rec as_mut'0 (self:borrowed (Option'0.t_Option int32)) (return'  (ret:Option'0.t_Option (borrowed int32)))= {[@expl:precondition] [%#span123] inv'3 self}
     any
-    [ return' (result:Option'0.t_Option (borrowed int32))-> {[%#span125] inv'4 result}
-      {[%#span124] self.current = Option'0.C_None
+    [ return' (result:Option'0.t_Option (borrowed int32))-> {[%#span126] inv'4 result}
+      {[%#span125] self.current = Option'0.C_None
       \/ (exists r : borrowed int32 . result = Option'0.C_Some r
       /\ self.current = Option'0.C_Some (r.current) /\ self.final = Option'0.C_Some (r.final))}
-      {[%#span123] self.current = Option'0.C_None  -> result = Option'0.C_None /\ self.final = Option'0.C_None}
+      {[%#span124] self.current = Option'0.C_None  -> result = Option'0.C_None /\ self.final = Option'0.C_None}
       (! return' {result}) ]
     
   
-  let rec unwrap_or'0 (self:Option'0.t_Option int32) (default:int32) (return'  (ret:int32))= {[@expl:precondition] [%#span127] inv'2 default}
-    {[@expl:precondition] [%#span126] inv'1 self}
+  let rec unwrap_or'0 (self:Option'0.t_Option int32) (default:int32) (return'  (ret:int32))= {[@expl:precondition] [%#span128] inv'2 default}
+    {[@expl:precondition] [%#span127] inv'1 self}
     any
-    [ return' (result:int32)-> {[%#span129] inv'2 result}
+    [ return' (result:int32)-> {[%#span130] inv'2 result}
       {[%#span82] self = Option'0.C_None \/ self = Option'0.C_Some result}
-      {[%#span128] self = Option'0.C_None  -> result = default}
+      {[%#span129] self = Option'0.C_None  -> result = default}
       (! return' {result}) ]
     
   
@@ -374,8 +384,8 @@ module M_option__test_option
   let rec is_none'0 (self:Option'0.t_Option int32) (return'  (ret:bool))= {[@expl:precondition] [%#span116] inv'0 self}
     any [ return' (result:bool)-> {[%#span117] result = (self = Option'0.C_None)} (! return' {result}) ] 
   
-  let rec is_some'0 (self:Option'0.t_Option int32) (return'  (ret:bool))= {[@expl:precondition] [%#span130] inv'0 self}
-    any [ return' (result:bool)-> {[%#span131] result = (self <> Option'0.C_None)} (! return' {result}) ] 
+  let rec is_some'0 (self:Option'0.t_Option int32) (return'  (ret:bool))= {[@expl:precondition] [%#span131] inv'0 self}
+    any [ return' (result:bool)-> {[%#span132] result = (self <> Option'0.C_None)} (! return' {result}) ] 
   
   let rec test_option (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
@@ -419,7 +429,7 @@ module M_option__test_option
       | s2 = bb24 ]
       
     | bb24 = s0 [ s0 = is_none'1 {_33} (fun (_ret':bool) ->  [ &_31 <- _ret' ] s1) | s1 = bb25 ] 
-    | bb25 = any [ br0 -> {_31 = false} (! bb27) | br1 -> {_31} (! bb26) ] 
+    | bb25 = s0 [ s0 = -{resolve'0 _33}- s1 | s1 = any [ br0 -> {_31 = false} (! bb27) | br1 -> {_31} (! bb26) ]  ] 
     | bb26 = s0
       [ s0 = Borrow.borrow_mut <Option'0.t_Option int32> {some}
           (fun (_ret':borrowed (Option'0.t_Option int32)) ->  [ &_38 <- _ret' ]  [ &some <- _38.final ] s1)
@@ -429,7 +439,7 @@ module M_option__test_option
     | bb28 = s0 [ s0 = unwrap'1 {_37} (fun (_ret':borrowed int32) ->  [ &_36 <- _ret' ] s1) | s1 = bb29 ] 
     | bb29 = s0
       [ s0 =  [ &_36 <- { _36 with current = ([%#soption6] (2 : int32)) ; } ] s1
-      | s1 = -{resolve'0 _36}- s2
+      | s1 = -{resolve'1 _36}- s2
       | s2 = unwrap'0 {some} (fun (_ret':int32) ->  [ &_41 <- _ret' ] s3)
       | s3 = bb30 ]
       
@@ -446,7 +456,7 @@ module M_option__test_option
     | bb33 = s0 [ s0 = unwrap'1 {_45} (fun (_ret':borrowed int32) ->  [ &_44 <- _ret' ] s1) | s1 = bb34 ] 
     | bb34 = s0
       [ s0 =  [ &_44 <- { _44 with current = ([%#soption8] (1 : int32)) ; } ] s1
-      | s1 = -{resolve'0 _44}- s2
+      | s1 = -{resolve'1 _44}- s2
       | s2 = unwrap'0 {some} (fun (_ret':int32) ->  [ &_49 <- _ret' ] s3)
       | s3 = bb35 ]
       
