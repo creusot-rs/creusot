@@ -30,13 +30,6 @@ impl<T, E> Resolve for OwnResult<T, E> {
     }
 }
 
-#[open]
-#[logic(prophetic)]
-#[ensures(true)]
-pub fn omg<T>(x: T) {
-    proof_assert!(structural_resolve(&(x, 2)));
-}
-
 impl<T, E> OwnResult<T, E> {
     #[ensures(result == exists<t: T> *self == OwnResult::Ok(t))]
     pub fn is_ok(&self) -> bool {

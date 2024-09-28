@@ -790,6 +790,29 @@ where
     }
 }
 
+impl<K: DeepModel, V> Resolve for Map<K, V>
+where
+    K::DeepModelTy: OrdLogic,
+{
+    #[predicate(prophetic)]
+    #[open]
+    fn resolve(self) -> bool {
+        pearlite! { forall<k: K::DeepModelTy> resolve(&self@.get(k)) }
+    }
+
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(&self))]
+    #[ensures(self.resolve())]
+    #[allow(path_statements)]
+    fn resolve_coherence(self)
+    where
+        Self: Sized,
+    {
+        Tree::<K, V>::has_mapping_model;
+    }
+}
+
 impl<K: DeepModel + Ord, V> Map<K, V>
 where
     K::DeepModelTy: OrdLogic,
