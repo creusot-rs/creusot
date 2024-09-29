@@ -62,7 +62,8 @@ fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
 
     decls.push(d);
 
-    Module { name: format!("{}_Type", module_name(ctx.tcx, def_id)).into(), decls }
+    let meta = ctx.display_impl_of(def_id);
+    Module { name: format!("{}_Type", module_name(ctx.tcx, def_id)).into(), decls, meta }
 }
 
 pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) {
@@ -178,7 +179,8 @@ pub(crate) fn translate_function<'tcx, 'sess>(
         .collect();
 
     let name = Ident::build(&module_name(ctx.tcx, def_id).to_string());
-    (summary, Some(Module { name, decls }))
+    let meta = ctx.display_impl_of(def_id);
+    (summary, Some(Module { name, decls, meta }))
 }
 
 /// If `def_id`'s body should be translated, returns:

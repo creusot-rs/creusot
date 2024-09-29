@@ -114,7 +114,9 @@ fn builtin_body<'tcx>(
 
     let name = Ident::build(&module_name(ctx.tcx, def_id).to_string());
 
-    (Module { name, decls }, summary)
+    let meta = ctx.display_impl_of(def_id);
+
+    (Module { name, decls, meta }, summary)
 }
 
 // Create the program symbol with the same name that has a contract agreeing with the logical symbol.
@@ -382,7 +384,8 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
     decls.extend(body_decls);
 
     let name = impl_name(ctx, def_id);
-    Some(Module { name, decls })
+    let meta = ctx.display_impl_of(def_id);
+    Some(Module { name, decls, meta })
 }
 
 pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {

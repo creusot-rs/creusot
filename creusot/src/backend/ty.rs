@@ -367,6 +367,7 @@ pub(crate) fn translate_tydecl(
                 ty_name: ty_name.clone(),
                 ty_params: ty_params.clone(),
             })],
+            meta: ctx.display_impl_of(repr),
         };
         let _ = names.provide_deps(ctx, GraphDepth::Shallow);
         return Some(vec![modl]);
@@ -407,11 +408,12 @@ pub(crate) fn translate_tydecl(
 
     decls.extend(destructors);
 
-    let mut modls = vec![Module { name: name.clone(), decls }];
+    let mut modls = vec![Module { name: name.clone(), decls, meta: None }];
 
     modls.extend(bg.iter().filter(|did| **did != repr).map(|did| Module {
         name: module_name(ctx.tcx, *did).to_string().into(),
         decls: vec![Decl::UseDecl(Use { name: name.clone().into(), as_: None, export: true })],
+        meta: ctx.display_impl_of(*did),
     }));
 
     Some(modls)
