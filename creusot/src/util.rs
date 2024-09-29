@@ -4,6 +4,7 @@ use crate::{
         pearlite::{self, super_visit_mut_term, Term, TermKind, TermVisitorMut},
         specification::PreContract,
     },
+    very_stable_hash::get_very_stable_hash,
 };
 use indexmap::IndexMap;
 use rustc_ast::{
@@ -11,7 +12,6 @@ use rustc_ast::{
     visit::{walk_fn, FnKind, Visitor},
     AttrItem, AttrKind, Attribute, FnSig, NodeId,
 };
-use rustc_data_structures::stable_hasher::{Hash64, HashStable, StableHasher};
 use rustc_hir::{
     def::{DefKind, Namespace},
     def_id::DefId,
@@ -21,13 +21,12 @@ use rustc_hir::{
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
     self, BorrowKind, ClosureKind, EarlyBinder, GenericArg, GenericArgs, GenericArgsRef,
-    ImplSubject, ResolverAstLowering, Ty, TyCtxt, TyKind, UpvarCapture,
+    ResolverAstLowering, Ty, TyCtxt, TyKind, UpvarCapture,
 };
 use rustc_span::{symbol, symbol::kw, Span, Symbol, DUMMY_SP};
 use std::{
     collections::{HashMap, HashSet},
     fmt::{Display, Formatter},
-    hash::Hasher,
     iter,
 };
 use why3::{
@@ -332,23 +331,6 @@ enum Segment {
     Other(DisambiguatedDefPathData),
 }
 
-fn hash_impl_subject_u64<'tcx>(tcx: TyCtxt, t: EarlyBinder<'tcx, ImplSubject<'tcx>>) -> u64 {
-    tcx.with_stable_hashing_context(|mut hcx| {
-        let mut s = StableHasher::new();
-        match t.instantiate_identity() {
-            ImplSubject::Trait(trait_ref) => {
-                s.write_usize(0);
-                trait_ref.hash_stable(&mut hcx, &mut s)
-            }
-            ImplSubject::Inherent(ty) => {
-                s.write_usize(1);
-                ty.hash_stable(&mut hcx, &mut s)
-            }
-        }
-        s.finish::<Hash64>().as_u64()
-    })
-}
-
 fn ident_path_segments(tcx: TyCtxt, def_id: DefId) -> Vec<Segment> {
     let mut segs = Vec::new();
     let mut id = def_id;
@@ -360,7 +342,7 @@ fn ident_path_segments(tcx: TyCtxt, def_id: DefId) -> Vec<Segment> {
         };
         match key.disambiguated_data.data {
             DefPathData::Impl => {
-                segs.push(Segment::Impl(hash_impl_subject_u64(tcx, tcx.impl_subject(id))))
+                segs.push(Segment::Impl(get_very_stable_hash(&tcx.impl_subject(id), &tcx).as_u64()))
             }
             _ => segs.push(Segment::Other(key.disambiguated_data)),
         }
