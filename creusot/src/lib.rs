@@ -58,3 +58,4 @@ mod run_why3;
 mod translated_item;
 mod validate;
 mod validate_terminates;
+mod very_stable_hash;
