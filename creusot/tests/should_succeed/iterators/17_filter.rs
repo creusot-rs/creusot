@@ -22,7 +22,6 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Invariant for Filter<I, F> {
         pearlite! {
             // trivial precondition: simplification for sake of proof complexity
             forall<f : F, i : &I::Item> f.precondition((i,)) &&
-            (forall<f : &mut F, i : &I::Item, b: bool> f.postcondition_mut((i,), b) ==> *f == ^f) &&
             // immutable state: simplification for sake of proof complexity
             (forall<f : F, g : F> f.unnest(g) ==> f == g) &&
             // plain-ness: this is a simplification as well, but a fairly major one for very minor loss of expressivity. In short all it says
@@ -73,13 +72,11 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
             // blocks z3's guess for `f`.
             exists<s : Seq<Self::Item>, f : Mapping<Int, Int>> self.iter.produces(s, succ.iter) &&
                 // F is a monotone mapping
-                (forall<i : _, j :_ > 0 <= i && i <= j && j < visited.len() ==> f.get(i) <= f.get(j)) &&
-                (forall<i : _, > 0 <= i && i < visited.len() ==> 0 <= f.get(i) && f.get(i) < s.len()) &&
+                (forall<i : _, j :_ > 0 <= i && i <= j && j < visited.len() ==> 0 <= f.get(i) && f.get(i) <= f.get(j) && f.get(j) < s.len()) &&
                 (forall<i : _, > 0 <= i && i < visited.len() ==> visited[i] == s[f.get(i)]) &&
 
                 (forall<bor_f : &mut F> *bor_f == self.func && ^bor_f == self.func ==>
-                    (forall< i : _> 0 <= i &&  i < s.len() ==>  (exists<j : _> 0 <= j && j < visited.len() && f.get(j) == i) ==> bor_f.postcondition_mut((&s[i],), true)) &&
-                    (forall< i : _> 0 <= i &&  i < s.len() ==>  bor_f.postcondition_mut((&s[i],), true) ==> exists<j : _> 0 <= j && j < visited.len() && f.get(j) == i)
+                    forall< i : _> 0 <= i &&  i < s.len() ==>  (exists<j : _> 0 <= j && j < visited.len() && f.get(j) == i) == bor_f.postcondition_mut((&s[i],), true)
                 )
         }
     }
