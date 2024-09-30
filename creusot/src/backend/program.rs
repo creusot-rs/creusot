@@ -34,7 +34,7 @@ use rustc_type_ir::{FloatTy, IntTy, UintTy};
 use std::fmt::Debug;
 use why3::{
     coma::{self, Arg, Defn, Expr, Param, Term},
-    declaration::{Attribute, Contract, Decl, Module, Signature},
+    declaration::{Attribute, Contract, Decl, Meta, MetaArg, MetaIdent, Module, Signature},
     exp::{Binder, Constant, Exp, Pattern},
     ty::Type,
     Ident, QName,
@@ -168,6 +168,10 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     let decls = closure_generic_decls(ctx.tcx, def_id)
         .chain(clones)
         .chain(promoteds)
+        .chain([Decl::Meta(Meta {
+            name: MetaIdent::String("compute_max_steps".into()),
+            args: vec![MetaArg::Integer(1_000_000)],
+        })])
         .chain(std::iter::once(body))
         .collect();
 
