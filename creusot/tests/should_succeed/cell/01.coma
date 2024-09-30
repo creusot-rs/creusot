@@ -7,7 +7,7 @@ module T_core__cell__UnsafeCell
   
   let rec t_UnsafeCell < 't > (input:t_UnsafeCell 't) (ret  (value:'t))= any
     [ good (value:'t)-> {C_UnsafeCell value = input} (! ret {value})
-    | bad (value:'t)-> {C_UnsafeCell value <> input} {false} any ]
+    | bad -> {not (exists value : 't . C_UnsafeCell value = input)} (! {false} any) ]
     
 end
 module T_core__cell__Cell
@@ -20,7 +20,7 @@ module T_core__cell__Cell
   
   let rec t_Cell < 't > (input:t_Cell 't) (ret  (value:UnsafeCell'0.t_UnsafeCell 't))= any
     [ good (value:UnsafeCell'0.t_UnsafeCell 't)-> {C_Cell value = input} (! ret {value})
-    | bad (value:UnsafeCell'0.t_UnsafeCell 't)-> {C_Cell value <> input} {false} any ]
+    | bad -> {not (exists value : UnsafeCell'0.t_UnsafeCell 't . C_Cell value = input)} (! {false} any) ]
     
 end
 module T_core__marker__PhantomData
@@ -30,7 +30,7 @@ module T_core__marker__PhantomData
   function any_l (_ : 'b) : 'a
   
   let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any
-    [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
+    [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} (! {false} any) ]
     
 end
 module T_01__Cell
@@ -46,7 +46,9 @@ module T_01__Cell
   let rec t_Cell < 't > < 'i > (input:t_Cell 't 'i) (ret  (inner:Cell'0.t_Cell 't) (inv:PhantomData'0.t_PhantomData 'i))= any
     [ good (inner:Cell'0.t_Cell 't) (inv:PhantomData'0.t_PhantomData 'i)-> {C_Cell inner inv = input}
       (! ret {inner} {inv})
-    | bad (inner:Cell'0.t_Cell 't) (inv:PhantomData'0.t_PhantomData 'i)-> {C_Cell inner inv <> input} {false} any ]
+    | bad -> {not (exists inner : Cell'0.t_Cell 't, inv : PhantomData'0.t_PhantomData 'i . C_Cell inner inv = input)}
+      (! {false}
+      any) ]
     
 end
 module T_01__Even
@@ -56,7 +58,7 @@ module T_01__Even
   function any_l (_ : 'b) : 'a
   
   let rec t_Even (input:t_Even) (ret  )= any
-    [ good -> {C_Even  = input} (! ret) | bad -> {C_Even  <> input} {false} any ]
+    [ good -> {C_Even  = input} (! ret) | bad -> {C_Even  <> input} (! {false} any) ]
     
 end
 module M_01__adds_two

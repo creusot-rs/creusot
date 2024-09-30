@@ -502,7 +502,7 @@ pub(crate) fn destructor<'tcx>(
         Exp::qvar(constr).app(fields.iter().map(|(nm, _)| nm.clone()).map(Exp::var).collect());
 
     let ret = Expr::Symbol("ret".into())
-        .app(fields.into_iter().map(|(nm, _)| Exp::var(nm)).map(Arg::Term).collect());
+        .app(fields.iter().map(|(nm, _)| Exp::var(nm.clone())).map(Arg::Term).collect());
 
     let good_branch: coma::Defn = coma::Defn {
         name: format!("good").into(),
@@ -514,12 +514,20 @@ pub(crate) fn destructor<'tcx>(
         ),
     };
 
-    let fail = Expr::Assert(Box::new(Exp::mk_false()), Box::new(Expr::Any));
+    let fail = Expr::BlackBox(Box::new(Expr::Assert(Box::new(Exp::mk_false()), Box::new(Expr::Any))));
+
+    let existential_params : Vec<_> = fields.iter().cloned().collect();
+    let negative_assertion = if existential_params.is_empty() {
+        cons_test.neq(Exp::var("input"))
+    } else {
+         Exp::Exists(existential_params, vec![], Box::new(cons_test.eq(Exp::var("input")))).not()
+    };
+
     let bad_branch: Defn = coma::Defn {
         name: format!("bad").into(),
         writes: vec![],
-        params: field_args.clone(),
-        body: Expr::Assert(Box::new(cons_test.neq(Exp::var("input"))), Box::new(fail)),
+        params: vec![],
+        body: Expr::Assert(Box::new(negative_assertion), Box::new(fail)),
     };
 
     let ret_cont = Param::Cont("ret".into(), Vec::new(), field_args);

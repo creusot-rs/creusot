@@ -7,7 +7,7 @@ module T_mixed__Product
   
   let rec t_Product < 'a > < 'b > (input:t_Product 'a 'b) (ret  (a:'a) (b:'b))= any
     [ good (a:'a) (b:'b)-> {C_Product a b = input} (! ret {a} {b})
-    | bad (a:'a) (b:'b)-> {C_Product a b <> input} {false} any ]
+    | bad -> {not (exists a : 'a, b : 'b . C_Product a b = input)} (! {false} any) ]
     
   
   function t_Product__a (self : t_Product 'a 'b) : 'a =
@@ -247,12 +247,12 @@ module T_mixed__Sum
   
   let rec v_A < 'a > < 'b > (input:t_Sum 'a 'b) (ret  (field_0:'a))= any
     [ good (field_0:'a)-> {C_A field_0 = input} (! ret {field_0})
-    | bad (field_0:'a)-> {C_A field_0 <> input} {false} any ]
+    | bad -> {not (exists field_0 : 'a . C_A field_0 = input)} (! {false} any) ]
     
   
   let rec v_B < 'a > < 'b > (input:t_Sum 'a 'b) (ret  (field_0:'b))= any
     [ good (field_0:'b)-> {C_B field_0 = input} (! ret {field_0})
-    | bad (field_0:'b)-> {C_B field_0 <> input} {false} any ]
+    | bad -> {not (exists field_0 : 'b . C_B field_0 = input)} (! {false} any) ]
     
 end
 module M_mixed__qyi6273949305112291917__clone
@@ -520,7 +520,7 @@ module T_core__ptr__non_null__NonNull
   
   let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
     [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
-    | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
+    | bad -> {not (exists pointer : opaque_ptr . C_NonNull pointer = input)} (! {false} any) ]
     
 end
 module T_core__marker__PhantomData
@@ -530,7 +530,7 @@ module T_core__marker__PhantomData
   function any_l (_ : 'b) : 'a
   
   let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any
-    [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
+    [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} (! {false} any) ]
     
 end
 module T_core__ptr__unique__Unique
@@ -547,10 +547,10 @@ module T_core__ptr__unique__Unique
     [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       = input}
       (! ret {pointer} {_marker})
-    | bad (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
-      <> input}
-      {false}
-      any ]
+    | bad -> {not (exists pointer : NonNull'0.t_NonNull 't, _marker : PhantomData'0.t_PhantomData 't . C_Unique pointer _marker
+      = input)}
+      (! {false}
+      any) ]
     
 end
 module T_alloc__raw_vec__Cap
@@ -565,7 +565,7 @@ module T_alloc__raw_vec__Cap
   
   let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
     [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
-    | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
+    | bad -> {not (exists field_0 : usize . C_Cap field_0 = input)} (! {false} any) ]
     
 end
 module T_alloc__raw_vec__RawVec
@@ -581,7 +581,9 @@ module T_alloc__raw_vec__RawVec
   let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
     [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
       (! ret {ptr} {cap} {alloc})
-    | bad (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
+    | bad -> {not (exists ptr : Unique'0.t_Unique 't, cap : Cap'0.t_Cap, alloc : 'a . C_RawVec ptr cap alloc = input)}
+      (! {false}
+      any) ]
     
 end
 module T_alloc__vec__Vec
@@ -598,7 +600,7 @@ module T_alloc__vec__Vec
   
   let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
     [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
-    | bad (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+    | bad -> {not (exists buf : RawVec'0.t_RawVec 't 'a, len : usize . C_Vec buf len = input)} (! {false} any) ]
     
 end
 module T_alloc__alloc__Global
@@ -608,7 +610,7 @@ module T_alloc__alloc__Global
   function any_l (_ : 'b) : 'a
   
   let rec t_Global (input:t_Global) (ret  )= any
-    [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
+    [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} (! {false} any) ]
     
 end
 module T_mixed__Product2
@@ -630,9 +632,10 @@ module T_mixed__Product2
   let rec t_Product2 < 'a > (input:t_Product2 'a) (ret  (a:borrowed 'a) (b:bool) (c:Vec'0.t_Vec uint32 (Global'0.t_Global)))= any
     [ good (a:borrowed 'a) (b:bool) (c:Vec'0.t_Vec uint32 (Global'0.t_Global))-> {C_Product2 a b c = input}
       (! ret {a} {b} {c})
-    | bad (a:borrowed 'a) (b:bool) (c:Vec'0.t_Vec uint32 (Global'0.t_Global))-> {C_Product2 a b c <> input}
-      {false}
-      any ]
+    | bad -> {not (exists a : borrowed 'a, b : bool, c : Vec'0.t_Vec uint32 (Global'0.t_Global) . C_Product2 a b c
+      = input)}
+      (! {false}
+      any) ]
     
   
   function t_Product2__a (self : t_Product2 'a) : borrowed 'a =
@@ -737,11 +740,12 @@ module T_mixed__Sum2
   
   let rec v_X < 'a > < 'b > (input:t_Sum2 'a 'b) (ret  (field_0:'a))= any
     [ good (field_0:'a)-> {C_X field_0 = input} (! ret {field_0})
-    | bad (field_0:'a)-> {C_X field_0 <> input} {false} any ]
+    | bad -> {not (exists field_0 : 'a . C_X field_0 = input)} (! {false} any) ]
     
   
   let rec v_Y < 'a > < 'b > (input:t_Sum2 'a 'b) (ret  (a:bool) (x:'b))= any
-    [ good (a:bool) (x:'b)-> {C_Y a x = input} (! ret {a} {x}) | bad (a:bool) (x:'b)-> {C_Y a x <> input} {false} any ]
+    [ good (a:bool) (x:'b)-> {C_Y a x = input} (! ret {a} {x})
+    | bad -> {not (exists a : bool, x : 'b . C_Y a x = input)} (! {false} any) ]
     
 end
 module M_mixed__qyi17966204983409797136__resolve_coherence__Impl
@@ -788,12 +792,12 @@ module T_core__option__Option
   function any_l (_ : 'b) : 'a
   
   let rec v_None < 't > (input:t_Option 't) (ret  )= any
-    [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ]
+    [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} (! {false} any) ]
     
   
   let rec v_Some < 't > (input:t_Option 't) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
-    | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
+    | bad -> {not (exists field_0 : 't . C_Some field_0 = input)} (! {false} any) ]
     
 end
 module T_mixed__List
@@ -806,7 +810,7 @@ module T_mixed__List
   
   let rec t_List < 't > (input:t_List 't) (ret  (elem:'t) (tail:Option'0.t_Option (t_List 't)))= any
     [ good (elem:'t) (tail:Option'0.t_Option (t_List 't))-> {C_List elem tail = input} (! ret {elem} {tail})
-    | bad (elem:'t) (tail:Option'0.t_Option (t_List 't))-> {C_List elem tail <> input} {false} any ]
+    | bad -> {not (exists elem : 't, tail : Option'0.t_Option (t_List 't) . C_List elem tail = input)} (! {false} any) ]
     
   
   function t_List__elem (self : t_List 't) : 't =
@@ -832,9 +836,10 @@ module T_mixed__ListDeepModel
   let rec t_ListDeepModel < 't > < 'proj0 > (input:t_ListDeepModel 't 'proj0) (ret  (elem:'proj0) (tail:Option'0.t_Option (t_ListDeepModel 't 'proj0)))= any
     [ good (elem:'proj0) (tail:Option'0.t_Option (t_ListDeepModel 't 'proj0))-> {C_ListDeepModel elem tail = input}
       (! ret {elem} {tail})
-    | bad (elem:'proj0) (tail:Option'0.t_Option (t_ListDeepModel 't 'proj0))-> {C_ListDeepModel elem tail <> input}
-      {false}
-      any ]
+    | bad -> {not (exists elem : 'proj0, tail : Option'0.t_Option (t_ListDeepModel 't 'proj0) . C_ListDeepModel elem tail
+      = input)}
+      (! {false}
+      any) ]
     
 end
 module T_mixed__Expr
@@ -846,12 +851,12 @@ module T_mixed__Expr
   
   let rec v_Var < 'v > (input:t_Expr 'v) (ret  (field_0:'v))= any
     [ good (field_0:'v)-> {C_Var field_0 = input} (! ret {field_0})
-    | bad (field_0:'v)-> {C_Var field_0 <> input} {false} any ]
+    | bad -> {not (exists field_0 : 'v . C_Var field_0 = input)} (! {false} any) ]
     
   
   let rec v_Add < 'v > (input:t_Expr 'v) (ret  (field_0:t_Expr 'v) (field_1:t_Expr 'v))= any
     [ good (field_0:t_Expr 'v) (field_1:t_Expr 'v)-> {C_Add field_0 field_1 = input} (! ret {field_0} {field_1})
-    | bad (field_0:t_Expr 'v) (field_1:t_Expr 'v)-> {C_Add field_0 field_1 <> input} {false} any ]
+    | bad -> {not (exists field_0 : t_Expr 'v, field_1 : t_Expr 'v . C_Add field_0 field_1 = input)} (! {false} any) ]
     
 end
 module T_mixed__ExprDeepModel
@@ -865,15 +870,16 @@ module T_mixed__ExprDeepModel
   
   let rec v_Var < 'v > < 'proj0 > (input:t_ExprDeepModel 'v 'proj0) (ret  (field_0:'proj0))= any
     [ good (field_0:'proj0)-> {C_Var field_0 = input} (! ret {field_0})
-    | bad (field_0:'proj0)-> {C_Var field_0 <> input} {false} any ]
+    | bad -> {not (exists field_0 : 'proj0 . C_Var field_0 = input)} (! {false} any) ]
     
   
   let rec v_Add < 'v > < 'proj0 > (input:t_ExprDeepModel 'v 'proj0) (ret  (field_0:t_ExprDeepModel 'v 'proj0) (field_1:t_ExprDeepModel 'v 'proj0))= any
     [ good (field_0:t_ExprDeepModel 'v 'proj0) (field_1:t_ExprDeepModel 'v 'proj0)-> {C_Add field_0 field_1 = input}
       (! ret {field_0} {field_1})
-    | bad (field_0:t_ExprDeepModel 'v 'proj0) (field_1:t_ExprDeepModel 'v 'proj0)-> {C_Add field_0 field_1 <> input}
-      {false}
-      any ]
+    | bad -> {not (exists field_0 : t_ExprDeepModel 'v 'proj0, field_1 : t_ExprDeepModel 'v 'proj0 . C_Add field_0 field_1
+      = input)}
+      (! {false}
+      any) ]
     
 end
 module M_mixed__qyi9512435279263248376
