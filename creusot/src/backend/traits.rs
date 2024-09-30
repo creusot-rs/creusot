@@ -36,8 +36,9 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
     decls.extend(clones);
     decls.extend(refn_decls);
 
+    let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
     let meta = ctx.display_impl_of(def_id);
-    Module { name: module_name(ctx.tcx, def_id).to_string().into(), decls, meta }
+    Module { name: module_name(ctx.tcx, def_id).to_string().into(), decls, attrs, meta }
 }
 
 impl<'tcx> Why3Generator<'tcx> {
@@ -58,8 +59,12 @@ impl<'tcx> Why3Generator<'tcx> {
         let (clones, summary) = names.provide_deps(self, GraphDepth::Shallow);
         decls.extend(clones);
 
+        let attrs = Vec::from_iter(self.span_attr(self.def_span(def_id)));
         let meta = self.display_impl_of(def_id);
-        (Module { name: module_name(self.tcx, def_id).to_string().into(), decls, meta }, summary)
+        (
+            Module { name: module_name(self.tcx, def_id).to_string().into(), decls, attrs, meta },
+            summary,
+        )
     }
 
     // Probably needs to take a pair of id and subst to handle cloning properly

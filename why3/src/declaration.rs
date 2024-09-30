@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 pub struct Module {
     pub name: Ident,
     pub decls: Vec<Decl>,
+    pub attrs: Vec<Attribute>,
     // Meta data stored in comments
     // Stores a pretty representation of the impl
     pub meta: Option<String>,

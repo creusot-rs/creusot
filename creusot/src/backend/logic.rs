@@ -113,10 +113,10 @@ fn builtin_body<'tcx>(
     decls.push(Decl::ValDecl(ValDecl { ghost: false, val: true, kind: None, sig: val_sig }));
 
     let name = Ident::build(&module_name(ctx.tcx, def_id).to_string());
-
+    let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
     let meta = ctx.display_impl_of(def_id);
 
-    (Module { name, decls, meta }, summary)
+    (Module { name, decls, attrs, meta }, summary)
 }
 
 // Create the program symbol with the same name that has a contract agreeing with the logical symbol.
@@ -384,8 +384,9 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
     decls.extend(body_decls);
 
     let name = impl_name(ctx, def_id);
+    let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
     let meta = ctx.display_impl_of(def_id);
-    Some(Module { name, decls, meta })
+    Some(Module { name, decls, attrs, meta })
 }
 
 pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
