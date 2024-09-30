@@ -5,7 +5,9 @@ mod cloned;
 mod copied;
 mod empty;
 mod enumerate;
+mod filter;
 mod fuse;
+mod map;
 mod map_inv;
 mod once;
 mod range;
@@ -17,7 +19,9 @@ mod zip;
 pub use cloned::ClonedExt;
 pub use copied::CopiedExt;
 pub use enumerate::EnumerateExt;
+pub use filter::FilterExt;
 pub use fuse::FusedIterator;
+pub use map::MapExt;
 pub use map_inv::MapInv;
 pub use skip::SkipExt;
 pub use take::TakeExt;
@@ -123,6 +127,26 @@ extern_spec! {
                 fn copied<'a, T>(self) -> Copied<Self>
                     where T : 'a + Copy,
                         Self: Sized + Iterator<Item = &'a T>;
+
+                #[pure]
+                #[requires(forall<e : _, i2 : _> inv(e) && inv(i2) ==>
+                                self.produces(Seq::singleton(e), i2) ==>
+                                f.precondition((e,)))]
+                #[requires(map::reinitialize::<Self_, B, F>())]
+                #[requires(map::preservation::<Self_, B, F>(self, f))]
+                #[ensures(result.iter() == self && result.func() == f)]
+                fn map<B, F>(self, f: F) -> Map<Self, F>
+                    where Self: Sized, F : FnMut(Self_::Item) -> B;
+
+                #[pure]
+                #[requires(filter::immutable(f))]
+                #[requires(filter::no_precondition(f))]
+                #[requires(filter::plain(f))]
+                #[requires(filter::precise(f))]
+                #[ensures(result.iter() == self && result.func() == f)]
+                fn filter<P>(self, f: P) -> Filter<Self, P>
+                    where  P : for<'a> FnMut(&Self_::Item) -> bool;
+
 
                 #[pure]
                 // These two requirements are here only to prove the absence of overflows

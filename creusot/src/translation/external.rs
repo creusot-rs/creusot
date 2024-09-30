@@ -77,6 +77,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     if has_host_effect {
         inner_subst.pop();
     }
+
     // FIXME(xavier): I don't remember the original reason for introducing this...
     let extra_parameters = inner_subst.len() - outer_subst.len();
 
