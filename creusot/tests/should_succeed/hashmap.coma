@@ -7,12 +7,15 @@ module T_hashmap__List
   function any_l (_ : 'b) : 'a
   
   let rec v_Nil < 't > (input:t_List 't) (ret  )= any
-    [ good -> {C_Nil  = input} (! ret) | bad -> {C_Nil  <> input} {false} any ]
+    [ good -> {C_Nil  = input} (! ret) | bad -> {C_Nil  <> input} (! {false} any) ]
     
   
   let rec v_Cons < 't > (input:t_List 't) (ret  (field_0:'t) (field_1:t_List 't))= any
     [ good (field_0:'t) (field_1:t_List 't)-> {C_Cons field_0 field_1 = input} (! ret {field_0} {field_1})
-    | bad (field_0:'t) (field_1:t_List 't)-> {C_Cons field_0 field_1 <> input} {false} any ]
+    | bad -> {forall field_0 : 't, field_1 : t_List 't [C_Cons field_0 field_1 : t_List 't] . C_Cons field_0 field_1
+      <> input}
+      (! {false}
+      any) ]
     
 end
 module T_core__option__Option
@@ -23,12 +26,12 @@ module T_core__option__Option
   function any_l (_ : 'b) : 'a
   
   let rec v_None < 't > (input:t_Option 't) (ret  )= any
-    [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ]
+    [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} (! {false} any) ]
     
   
   let rec v_Some < 't > (input:t_Option 't) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
-    | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
+    | bad -> {forall field_0 : 't [C_Some field_0 : t_Option 't] . C_Some field_0 <> input} (! {false} any) ]
     
 end
 module M_hashmap__qyi9060063638777358169__hash
@@ -83,8 +86,7 @@ module T_core__ptr__non_null__NonNull
   function any_l (_ : 'b) : 'a
   
   let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
-    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
-    | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
+    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer}) ]
     
 end
 module T_core__marker__PhantomData
@@ -93,9 +95,7 @@ module T_core__marker__PhantomData
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any
-    [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
-    
+  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any [ good -> {C_PhantomData  = input} (! ret) ] 
 end
 module T_core__ptr__unique__Unique
   use T_core__marker__PhantomData as PhantomData'0
@@ -110,11 +110,7 @@ module T_core__ptr__unique__Unique
   let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
     [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       = input}
-      (! ret {pointer} {_marker})
-    | bad (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
-      <> input}
-      {false}
-      any ]
+      (! ret {pointer} {_marker}) ]
     
 end
 module T_alloc__raw_vec__Cap
@@ -128,8 +124,7 @@ module T_alloc__raw_vec__Cap
   function any_l (_ : 'b) : 'a
   
   let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
-    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
-    | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
+    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0}) ]
     
 end
 module T_alloc__raw_vec__RawVec
@@ -144,8 +139,7 @@ module T_alloc__raw_vec__RawVec
   
   let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
     [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
-      (! ret {ptr} {cap} {alloc})
-    | bad (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
+      (! ret {ptr} {cap} {alloc}) ]
     
 end
 module T_alloc__vec__Vec
@@ -161,8 +155,7 @@ module T_alloc__vec__Vec
   function any_l (_ : 'b) : 'a
   
   let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
-    | bad (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
     
 end
 module T_alloc__alloc__Global
@@ -171,9 +164,7 @@ module T_alloc__alloc__Global
   
   function any_l (_ : 'b) : 'a
   
-  let rec t_Global (input:t_Global) (ret  )= any
-    [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
-    
+  let rec t_Global (input:t_Global) (ret  )= any [ good -> {C_Global  = input} (! ret) ] 
 end
 module T_hashmap__MyHashMap
   use T_alloc__alloc__Global as Global'0
@@ -189,10 +180,7 @@ module T_hashmap__MyHashMap
   
   let rec t_MyHashMap < 'k > < 'v > (input:t_MyHashMap 'k 'v) (ret  (buckets:Vec'0.t_Vec (List'0.t_List ('k, 'v)) (Global'0.t_Global)))= any
     [ good (buckets:Vec'0.t_Vec (List'0.t_List ('k, 'v)) (Global'0.t_Global))-> {C_MyHashMap buckets = input}
-      (! ret {buckets})
-    | bad (buckets:Vec'0.t_Vec (List'0.t_List ('k, 'v)) (Global'0.t_Global))-> {C_MyHashMap buckets <> input}
-      {false}
-      any ]
+      (! ret {buckets}) ]
     
   
   function t_MyHashMap__buckets (self : t_MyHashMap 'k 'v) : Vec'0.t_Vec (List'0.t_List ('k, 'v)) (Global'0.t_Global) =
@@ -933,7 +921,11 @@ module M_hashmap__qyi7664122466964245986__add
     | bb15 = s0 [ s0 =  [ &_47 <- List'0.C_Cons _48 _52 ] s1 | s1 = bb16 ] 
     | bb16 = bb17
     | bb17 = s0
-      [ s0 = {[@expl:type invariant] inv'1 l.current} s1
+      [ s0 = {[@expl:type invariant] match l with
+          | {current = x'0} -> inv'1 x'0
+          | _ -> true
+          end}
+        s1
       | s1 =  [ &l <- { l with current = _47 ; } ] s2
       | s2 = {[@expl:type invariant] inv'2 l} s3
       | s3 = -{resolve'0 l}- s4
@@ -1854,11 +1846,7 @@ module M_hashmap__qyi7664122466964245986__resize
              ]
           
         | bb28 = s0
-          [ s0 = {[@expl:type invariant] match l with
-              | List'0.C_Cons _ _ -> inv'3 l
-              | _ -> true
-              end}
-            s1
+          [ s0 = {[@expl:type invariant] inv'3 l} s1
           | s1 = {[@expl:assertion] [%#shashmap13] forall k : t_DeepModelTy'0 . bucket_ix'0 (Snapshot.inner old_self).current k
             = UIntSize.to_int i  -> Map.get (shallow_model'0 old_self) k = Map.get (shallow_model'1 new) k}
             s2
@@ -1872,7 +1860,11 @@ module M_hashmap__qyi7664122466964245986__resize
       
     | bb32 = bb33
     | bb33 = s0
-      [ s0 = {[@expl:type invariant] inv'1 self.current} s1
+      [ s0 = {[@expl:type invariant] match self with
+          | {current = x'0} -> inv'1 x'0
+          | _ -> true
+          end}
+        s1
       | s1 =  [ &self <- { self with current = new ; } ] s2
       | s2 = {[@expl:type invariant] inv'0 self} s3
       | s3 = -{resolve'1 self}- s4

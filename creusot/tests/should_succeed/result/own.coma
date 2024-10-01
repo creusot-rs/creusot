@@ -8,12 +8,12 @@ module T_own__OwnResult
   
   let rec v_Ok < 't > < 'e > (input:t_OwnResult 't 'e) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Ok field_0 = input} (! ret {field_0})
-    | bad (field_0:'t)-> {C_Ok field_0 <> input} {false} any ]
+    | bad -> {forall field_0 : 't [C_Ok field_0 : t_OwnResult 't 'e] . C_Ok field_0 <> input} (! {false} any) ]
     
   
   let rec v_Err < 't > < 'e > (input:t_OwnResult 't 'e) (ret  (field_0:'e))= any
     [ good (field_0:'e)-> {C_Err field_0 = input} (! ret {field_0})
-    | bad (field_0:'e)-> {C_Err field_0 <> input} {false} any ]
+    | bad -> {forall field_0 : 'e [C_Err field_0 : t_OwnResult 't 'e] . C_Err field_0 <> input} (! {false} any) ]
     
 end
 module M_own__qyi3410529601998764826__resolve_coherence__Impl
@@ -177,12 +177,12 @@ module T_core__option__Option
   function any_l (_ : 'b) : 'a
   
   let rec v_None < 't > (input:t_Option 't) (ret  )= any
-    [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ]
+    [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} (! {false} any) ]
     
   
   let rec v_Some < 't > (input:t_Option 't) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
-    | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
+    | bad -> {forall field_0 : 't [C_Some field_0 : t_Option 't] . C_Some field_0 <> input} (! {false} any) ]
     
 end
 module M_own__qyi6204940358182728290__ok
@@ -934,16 +934,8 @@ module M_own__qyi6204940358182728290__unwrap_or_default
     | bb1 = bb2
     | bb2 = any [ br0 (a:t)-> {self = OwnResult'0.C_Ok a} (! bb4) | br1 (a:e)-> {self = OwnResult'0.C_Err a} (! bb5) ] 
     | bb5 = s0
-      [ s0 = {[@expl:type invariant] match self with
-          | OwnResult'0.C_Err _ -> inv'0 self
-          | _ -> true
-          end}
-        s1
-      | s1 = -{match self with
-          | OwnResult'0.C_Err _ -> resolve'0 self
-          | _ -> true
-          end}-
-        s2
+      [ s0 = {[@expl:type invariant] inv'0 self} s1
+      | s1 = -{resolve'0 self}- s2
       | s2 = default'0 {[%#sown0] ()} (fun (_ret':t) ->  [ &_0 <- _ret' ] s3)
       | s3 = bb8 ]
       

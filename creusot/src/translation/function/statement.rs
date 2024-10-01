@@ -66,7 +66,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             }
                         }
                     }
-                    self.resolve_places(need, &resolved, true);
+                    self.resolve_places(need, &resolved);
                 }
             }
             SetDiscriminant { .. } => self

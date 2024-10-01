@@ -250,11 +250,28 @@ pub enum Literal<'tcx> {
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum Pattern<'tcx> {
-    Constructor { variant: DefId, substs: GenericArgsRef<'tcx>, fields: Vec<Pattern<'tcx>> },
+    Constructor {
+        variant: DefId,
+        substs: GenericArgsRef<'tcx>,
+        fields: Vec<Pattern<'tcx>>,
+    },
+    /// Matches the pointed element of a pointer, so for `Box<T>` it matches `T`, for mutable borrows it matches the *current* value
+    Deref {
+        pointee: Box<Pattern<'tcx>>,
+        kind: PointerKind,
+    },
     Tuple(Vec<Pattern<'tcx>>),
     Wildcard,
     Binder(Symbol),
     Boolean(bool),
+}
+
+// TODO: Pattern should store a type directly
+#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
+pub enum PointerKind {
+    Box,
+    Shr,
+    Mut,
 }
 
 const TRIGGER_ERROR: &str = "Triggers can only be used inside quantifiers";
@@ -1168,6 +1185,7 @@ impl<'tcx> Pattern<'tcx> {
             }
 
             Pattern::Boolean(_) => {}
+            Pattern::Deref { pointee, .. } => pointee.binds(binders),
         }
     }
 }

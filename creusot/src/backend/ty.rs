@@ -23,7 +23,7 @@ use why3::{
         AdtDecl, ConstructorDecl, Contract, Decl, Field, Logic, Module, Signature, TyDecl, Use,
         ValDecl,
     },
-    exp::{Binder, Exp, Pattern},
+    exp::{Binder, Exp, Pattern, Trigger},
     ty::Type as MlT,
     Ident, QName,
 };
@@ -502,7 +502,7 @@ pub(crate) fn destructor<'tcx>(
         Exp::qvar(constr).app(fields.iter().map(|(nm, _)| nm.clone()).map(Exp::var).collect());
 
     let ret = Expr::Symbol("ret".into())
-        .app(fields.into_iter().map(|(nm, _)| Exp::var(nm)).map(Arg::Term).collect());
+        .app(fields.iter().map(|(nm, _)| Exp::var(nm.clone())).map(Arg::Term).collect());
 
     let good_branch: coma::Defn = coma::Defn {
         name: format!("good").into(),
@@ -513,13 +513,42 @@ pub(crate) fn destructor<'tcx>(
             Box::new(Expr::BlackBox(Box::new(ret))),
         ),
     };
+    let num_variants = match base_ty.kind() {
+        TyKind::Adt(def, _) => def.variants().len(),
+        _ => 1,
+    };
 
-    let fail = Expr::Assert(Box::new(Exp::mk_false()), Box::new(Expr::Any));
-    let bad_branch: Defn = coma::Defn {
-        name: format!("bad").into(),
-        writes: vec![],
-        params: field_args.clone(),
-        body: Expr::Assert(Box::new(cons_test.neq(Exp::var("input"))), Box::new(fail)),
+    let bad_branch = if num_variants > 1 {
+        let fail =
+            Expr::BlackBox(Box::new(Expr::Assert(Box::new(Exp::mk_false()), Box::new(Expr::Any))));
+
+        let fields: Vec<_> = fields.iter().cloned().collect();
+        let negative_assertion = if fields.is_empty() {
+            cons_test.neq(Exp::var("input"))
+        } else {
+            // TODO: Replace this with a pattern match to generat more readable goals
+            let ty = translate_ty_inner(
+                TyTranslation::Declaration(ty_id),
+                ctx,
+                names,
+                DUMMY_SP,
+                base_ty,
+            );
+            Exp::Forall(
+                fields,
+                vec![Trigger::single(cons_test.clone().ascribe(ty))],
+                Box::new(cons_test.neq(Exp::var("input"))),
+            )
+        };
+
+        Some(coma::Defn {
+            name: format!("bad").into(),
+            writes: vec![],
+            params: vec![],
+            body: Expr::Assert(Box::new(negative_assertion), Box::new(fail)),
+        })
+    } else {
+        None
     };
 
     let ret_cont = Param::Cont("ret".into(), Vec::new(), field_args);
@@ -530,11 +559,12 @@ pub(crate) fn destructor<'tcx>(
 
     let params = ty_params(ctx, ty_id).map(|ty| Param::Ty(Type::TVar(ty))).chain([input, ret_cont]);
 
+    let branches = std::iter::once(good_branch).chain(bad_branch).collect();
     Decl::Coma(Defn {
         name: names.eliminator(cons_id, subst).name,
         writes: vec![],
         params: params.collect(),
-        body: Expr::Defn(Box::new(Expr::Any), false, vec![good_branch, bad_branch]),
+        body: Expr::Defn(Box::new(Expr::Any), false, branches),
     })
 }
 

@@ -10,23 +10,25 @@ use super::{
 };
 use crate::{
     backend::{
-        closure_generic_decls, optimization,
-        optimization::infer_proph_invariants,
+        closure_generic_decls,
+        optimization::{self, infer_proph_invariants},
         place,
         ty::{self, translate_closure_ty, translate_ty},
         wto::weak_topological_order,
     },
     ctx::{BodyId, Dependencies, TranslationCtx},
-    fmir::{Body, BorrowKind, Operand},
+    fmir::{self, Body, BorrowKind, Operand},
+    pearlite::{self, PointerKind},
     translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
     util::{self, module_name},
 };
 
 use petgraph::graphmap::DiGraphMap;
+use rustc_ast::Mutability;
 use rustc_hir::{def_id::DefId, Safety};
 use rustc_middle::{
     mir::{self, BasicBlock, BinOp, ProjectionElem, UnOp, START_BLOCK},
-    ty::{AdtDef, GenericArgsRef, Ty, TyKind},
+    ty::{AdtDef, GenericArgsRef, Ty, TyCtxt, TyKind},
 };
 use rustc_span::{Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
@@ -421,8 +423,12 @@ impl<'a, 'tcx, N: Namer<'tcx>> LoweringState<'a, 'tcx, N> {
 
     fn reset_names(&mut self) {}
 
+    pub(super) fn fresh_sym_from(&mut self, base: impl AsRef<str>) -> Symbol {
+        self.name_supply.freshen(Symbol::intern(base.as_ref()))
+    }
+
     pub(super) fn fresh_from(&mut self, base: impl AsRef<str>) -> Ident {
-        self.name_supply.freshen(Symbol::intern(base.as_ref())).to_string().into()
+        self.fresh_sym_from(base).to_string().into()
     }
 }
 
@@ -1081,23 +1087,29 @@ impl<'tcx> Statement<'tcx> {
                 istmts.extend(assign);
                 istmts
             }
-            Statement::Resolve { did, subst, pl, pat } => {
+            Statement::Resolve { did, subst, pl } => {
                 lower.ctx.translate(did);
                 let mut istmts = Vec::new();
 
                 let rp = Exp::qvar(lower.names.value(did, subst));
                 let loc = pl.local;
 
-                let mut exp = rp.app_to(pl.as_rplace(lower, &mut istmts));
-                if let Some(pat) = pat {
-                    exp = Exp::Match(
+                let bound = lower.fresh_sym_from("x");
+
+                let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
+
+                let pat = lower_pat(lower.ctx, lower.names, &pat);
+                let exp = if let Pattern::VarP(_) = pat {
+                    rp.app_to(Exp::var(util::ident_of(loc)))
+                } else {
+                    Exp::Match(
                         Box::new(Exp::var(util::ident_of(loc))),
                         vec![
-                            (lower_pat(lower.ctx, lower.names, &pat), exp),
+                            (pat, rp.app_to(Exp::var(bound.as_str()))),
                             (Pattern::Wildcard, Exp::mk_true()),
                         ],
                     )
-                }
+                };
 
                 istmts.extend([IntermediateStmt::Assume(exp)]);
                 istmts
@@ -1121,22 +1133,27 @@ impl<'tcx> Statement<'tcx> {
                 istmts.extend(vec![IntermediateStmt::Assume(inv_fun.app_to(arg))]);
                 istmts
             }
-            Statement::AssertTyInv { pl, pat } => {
+            Statement::AssertTyInv { pl } => {
                 let mut istmts = Vec::new();
 
                 let inv_fun = Exp::qvar(lower.names.ty_inv(pl.ty(lower.ctx.tcx, lower.locals)));
                 let loc = pl.local;
 
-                let mut exp = inv_fun.app_to(pl.as_rplace(lower, &mut istmts));
-                if let Some(pat) = pat {
-                    exp = Exp::Match(
+                let bound = lower.fresh_sym_from("x");
+
+                let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
+                let pat = lower_pat(lower.ctx, lower.names, &pat);
+                let exp = if let Pattern::VarP(_) = pat {
+                    inv_fun.app_to(Exp::var(util::ident_of(loc)))
+                } else {
+                    Exp::Match(
                         Box::new(Exp::var(util::ident_of(loc))),
                         vec![
-                            (lower_pat(lower.ctx, lower.names, &pat), exp),
+                            (pat, inv_fun.app_to(Exp::var(bound.as_str()))),
                             (Pattern::Wildcard, Exp::mk_true()),
                         ],
                     )
-                }
+                };
 
                 let exp = Exp::Attr(Attribute::Attr(format!("expl:type invariant")), Box::new(exp));
 
@@ -1145,6 +1162,85 @@ impl<'tcx> Statement<'tcx> {
             }
         }
     }
+}
+
+/// Transform a place into a deeply nested pattern match, binding the pointed item into `binder`
+/// TODO: Transform this into a `match_place_logic` construct that handles everything
+fn pattern_of_place<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    locals: &fmir::LocalDecls<'tcx>,
+    pl: fmir::Place<'tcx>,
+    binder: Symbol,
+) -> pearlite::Pattern<'tcx> {
+    let mut pat = pearlite::Pattern::Binder(binder);
+
+    for (pl, el) in pl.iter_projections().rev() {
+        let ty = pl.ty(tcx, locals);
+        match el {
+            ProjectionElem::Deref => match ty.ty.kind() {
+                TyKind::Ref(_, _, mutbl) => match mutbl {
+                    Mutability::Not => {
+                        pat = pearlite::Pattern::Deref {
+                            pointee: Box::new(pat),
+                            kind: PointerKind::Shr,
+                        }
+                    }
+                    Mutability::Mut => {
+                        pat = pearlite::Pattern::Deref {
+                            pointee: Box::new(pat),
+                            kind: PointerKind::Mut,
+                        }
+                    }
+                },
+                _ if ty.ty.is_box() => {
+                    pat =
+                        pearlite::Pattern::Deref { pointee: Box::new(pat), kind: PointerKind::Box }
+                }
+                _ => {
+                    unreachable!("unsupported type of deref pattern: {:?}", ty.ty);
+                }
+            },
+            ProjectionElem::Field(fidx, _) => match ty.ty.kind() {
+                TyKind::Adt(adt, substs) => {
+                    let variant_def = &adt.variants()[ty.variant_index.unwrap_or(VariantIdx::ZERO)];
+                    let fields_len = variant_def.fields.len();
+                    let variant = variant_def.def_id;
+                    let mut fields = vec![pearlite::Pattern::Wildcard; fields_len];
+                    fields[fidx.as_usize()] = pat;
+                    pat = pearlite::Pattern::Constructor { variant, substs, fields }
+                }
+                TyKind::Tuple(tys) => {
+                    let mut fields = vec![pearlite::Pattern::Wildcard; tys.len()];
+                    fields[fidx.as_usize()] = pat;
+                    pat = pearlite::Pattern::Tuple(fields)
+                }
+                TyKind::Closure(did, substs) => {
+                    let mut fields: Vec<_> = substs
+                        .as_closure()
+                        .upvar_tys()
+                        .iter()
+                        .map(|_| pearlite::Pattern::Wildcard)
+                        .collect();
+                    fields[fidx.as_usize()] = pat;
+                    pat = pearlite::Pattern::Constructor { variant: *did, substs, fields }
+                }
+                _ => unreachable!(),
+            },
+            ProjectionElem::Downcast(_, _) => {}
+
+            ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. } => {
+                todo!("Array and slice patterns are currently not supported")
+            }
+
+            ProjectionElem::Index(_)
+            | ProjectionElem::OpaqueCast(_)
+            | ProjectionElem::Subtype(_) => {
+                unreachable!("These ProjectionElem should not be move paths")
+            }
+        }
+    }
+
+    pat
 }
 
 fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
