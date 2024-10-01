@@ -9,7 +9,7 @@ module T_486__HasMutRef
   
   let rec t_HasMutRef < 't > (input:t_HasMutRef 't) (ret  (field_0:borrowed 't))= any
     [ good (field_0:borrowed 't)-> {C_HasMutRef field_0 = input} (! ret {field_0})
-    | bad -> {not (exists field_0 : borrowed 't . C_HasMutRef field_0 = input)} (! {false} any) ]
+    | bad -> {forall field_0 : borrowed 't . C_HasMutRef field_0 <> input} (! {false} any) ]
     
   
   function t_HasMutRef__0 (self : t_HasMutRef 't) : borrowed 't =
@@ -50,7 +50,11 @@ module M_486__test
           (fun (l_0'0:borrowed uint32) ->
              [ &x <- HasMutRef'0.C_HasMutRef ({ l_0'0 with current = ([%#s4860] (5 : uint32)) ; }) ] 
             s1)
-      | s1 = HasMutRef'0.t_HasMutRef <uint32> {x} (fun (r0'0:borrowed uint32) -> -{resolve'0 r0'0}- s2)
+      | s1 = -{match x with
+          | HasMutRef'0.C_HasMutRef inv_asrt'0 -> resolve'0 inv_asrt'0
+          | _ -> true
+          end}-
+        s2
       | s2 = return' {_0} ]
        ]
     ) [ & _0 : () = any_l () | & x : HasMutRef'0.t_HasMutRef uint32 = x ] 

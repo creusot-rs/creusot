@@ -1,6 +1,6 @@
 use super::{
     fmir::{LocalDecls, LocalIdent, RValue},
-    pearlite::{normalize, Pattern, Term},
+    pearlite::{normalize, Term},
     specification::inv_subst,
 };
 use crate::{
@@ -28,7 +28,7 @@ use rustc_index::{bit_set::BitSet, Idx};
 use rustc_middle::{
     mir::{
         self, traversal::reverse_postorder, BasicBlock, Body, Local, Location, Operand, Place,
-        PlaceRef, ProjectionElem, TerminatorKind, START_BLOCK,
+        PlaceRef, TerminatorKind, START_BLOCK,
     },
     ty::{
         ClosureKind::*, EarlyBinder, GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
@@ -263,77 +263,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         self.current_block.0.push(s);
     }
 
-    /// We assume pl is syntactically a move path (i.e., it may not appear in move_data, but it
-    /// does not contain deref of borrows, or things like indexing).
-    fn pattern_of_downcasts(&self, pl: PlaceRef<'tcx>) -> Option<Pattern<'tcx>> {
-        let mut pat = Pattern::Wildcard;
-
-        if let Some((pl, ProjectionElem::Downcast(_, variant))) = pl.last_projection() {
-            let (adt, substs) =
-                if let TyKind::Adt(adt, substs) = pl.ty(self.body, self.tcx()).ty.kind() {
-                    (adt, substs)
-                } else {
-                    unreachable!()
-                };
-            let variant_def = &adt.variants()[variant];
-            let fields_len = variant_def.fields.len();
-            let variant = variant_def.def_id;
-            let fields = vec![Pattern::Wildcard; fields_len];
-            pat = Pattern::Constructor { variant, substs, fields }
-        }
-
-        let mut has_downcast = false;
-        for (pl, el) in pl.iter_projections().rev() {
-            let ty = pl.ty(self.body, self.tcx());
-            match el {
-                ProjectionElem::Deref => {
-                    assert!(ty.ty.is_box())
-                }
-                ProjectionElem::Field(fidx, _) => match ty.ty.kind() {
-                    TyKind::Adt(adt, substs) => {
-                        let variant_def =
-                            &adt.variants()[ty.variant_index.unwrap_or(VariantIdx::ZERO)];
-                        let fields_len = variant_def.fields.len();
-                        let variant = variant_def.def_id;
-                        let mut fields = vec![Pattern::Wildcard; fields_len];
-                        fields[fidx.as_usize()] = pat;
-                        pat = Pattern::Constructor { variant, substs, fields }
-                    }
-                    TyKind::Tuple(tys) => {
-                        let mut fields = vec![Pattern::Wildcard; tys.len()];
-                        fields[fidx.as_usize()] = pat;
-                        pat = Pattern::Tuple(fields)
-                    }
-                    TyKind::Closure(did, substs) => {
-                        let mut fields: Vec<_> = substs
-                            .as_closure()
-                            .upvar_tys()
-                            .iter()
-                            .map(|_| pearlite::Pattern::Wildcard)
-                            .collect();
-                        fields[fidx.as_usize()] = pat;
-                        pat = Pattern::Constructor { variant: *did, substs, fields }
-                    }
-                    _ => unreachable!(),
-                },
-                ProjectionElem::Downcast(_, _) => {
-                    has_downcast = true;
-                }
-
-                ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. } => {
-                    todo!("Array and slice patterns are currently not supported")
-                }
-
-                ProjectionElem::Index(_)
-                | ProjectionElem::OpaqueCast(_)
-                | ProjectionElem::Subtype(_) => {
-                    unreachable!("These ProjectionElem should not be move paths")
-                }
-            }
-        }
-        has_downcast.then_some(pat)
-    }
-
     /// These types cannot contain mutable borrows and thus do not need to be resolved.
     fn skip_resolve_type(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.ctx.normalize_erasing_regions(self.param_env(), ty);
@@ -341,7 +270,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             || !(ty.has_erased_regions() || ty.still_further_specializable())
     }
 
-    fn emit_resolve(&mut self, cond: bool, pl: PlaceRef<'tcx>) {
+    // TODO: What is `cond`?
+    fn emit_resolve(&mut self, _: bool, pl: PlaceRef<'tcx>) {
         let place_ty = pl.ty(self.body, self.tcx());
 
         if self.skip_resolve_type(place_ty.ty) {
@@ -359,15 +289,13 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         }
 
         let p = self.translate_place(pl);
-        let pat = if cond { self.pattern_of_downcasts(pl) } else { None };
 
         if let Some(_) = self.ctx.type_invariant(self.body_id.def_id(), place_ty.ty) {
-            let pat = pat.clone();
-            self.emit_statement(fmir::Statement::AssertTyInv { pl: p.clone(), pat });
+            self.emit_statement(fmir::Statement::AssertTyInv { pl: p.clone() });
         }
 
         if let Some((did, subst)) = resolve_predicate_of(self.ctx, self.param_env(), place_ty.ty) {
-            self.emit_statement(fmir::Statement::Resolve { did, subst, pl: p, pat });
+            self.emit_statement(fmir::Statement::Resolve { did, subst, pl: p });
         }
     }
 

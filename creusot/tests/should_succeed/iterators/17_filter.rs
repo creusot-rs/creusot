@@ -41,7 +41,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
     #[open]
     #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! {self.iter.completed() && (*self).func == (^self).func }
+        pearlite! {(exists<e : &mut I, s: Seq<_>> self.iter.produces(s, *e) && e.completed()) && (*self).func == (^self).func }
     }
 
     #[law]

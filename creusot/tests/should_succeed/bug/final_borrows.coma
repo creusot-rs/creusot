@@ -568,7 +568,7 @@ module T_core__option__Option
   
   let rec v_Some < 't > (input:t_Option 't) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {not (exists field_0 : 't . C_Some field_0 = input)} (! {false} any) ]
+    | bad -> {forall field_0 : 't . C_Some field_0 <> input} (! {false} any) ]
     
 end
 module M_final_borrows__select_field
@@ -1039,14 +1039,30 @@ module M_final_borrows__write_inner_borrow
       [ s0 = Borrow.borrow_final <t> {b.current} {Borrow.get_id b}
           (fun (_ret':borrowed t) ->  [ &_7 <- _ret' ]  [ &b <- { b with current = _7.final ; } ] s1)
       | s1 = -{inv'0 _7.final}- s2
-      | s2 = {[@expl:type invariant] inv'1 x.current} s3
-      | s3 = -{resolve'0 x.current}- s4
+      | s2 = {[@expl:type invariant] match x with
+          | {current = inv_asrt'0} -> inv'1 inv_asrt'0
+          | _ -> true
+          end}
+        s3
+      | s3 = -{match x with
+          | {current = inv_asrt'1} -> resolve'0 inv_asrt'1
+          | _ -> true
+          end}-
+        s4
       | s4 =  [ &x <- { x with current = _7 ; } ] s5
       | s5 = bb2 ]
       
     | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv'0 (x.current).current} s1
-      | s1 = -{resolve'1 (x.current).current}- s2
+      [ s0 = {[@expl:type invariant] match x with
+          | {current = {current = inv_asrt'0}} -> inv'0 inv_asrt'0
+          | _ -> true
+          end}
+        s1
+      | s1 = -{match x with
+          | {current = {current = inv_asrt'1}} -> resolve'1 inv_asrt'1
+          | _ -> true
+          end}-
+        s2
       | s2 =  [ &x <- { x with current = { x.current with current = value ; } ; } ] s3
       | s3 = {[@expl:type invariant] inv'2 x} s4
       | s4 = -{resolve'2 x}- s5

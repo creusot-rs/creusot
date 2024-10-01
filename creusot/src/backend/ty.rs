@@ -514,13 +514,14 @@ pub(crate) fn destructor<'tcx>(
         ),
     };
 
-    let fail = Expr::BlackBox(Box::new(Expr::Assert(Box::new(Exp::mk_false()), Box::new(Expr::Any))));
+    let fail =
+        Expr::BlackBox(Box::new(Expr::Assert(Box::new(Exp::mk_false()), Box::new(Expr::Any))));
 
-    let existential_params : Vec<_> = fields.iter().cloned().collect();
-    let negative_assertion = if existential_params.is_empty() {
+    let fields: Vec<_> = fields.iter().cloned().collect();
+    let negative_assertion = if fields.is_empty() {
         cons_test.neq(Exp::var("input"))
     } else {
-         Exp::Exists(existential_params, vec![], Box::new(cons_test.eq(Exp::var("input")))).not()
+        Exp::Forall(fields, vec![], Box::new(cons_test.neq(Exp::var("input"))))
     };
 
     let bad_branch: Defn = coma::Defn {

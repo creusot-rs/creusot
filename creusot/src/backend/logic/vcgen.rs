@@ -15,7 +15,7 @@ use crate::{
         ty::{is_int, translate_ty},
         Namer as _, Why3Generator,
     },
-    pearlite::{super_visit_term, Literal, Pattern, Term, TermVisitor},
+    pearlite::{super_visit_term, Literal, Pattern, PointerKind, Term, TermVisitor},
     util::{self, get_builtin, pre_sig_of},
 };
 
@@ -475,6 +475,12 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             Pattern::Tuple(pats) => Pat::TupleP(
                 pats.into_iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect(),
             ),
+            Pattern::Deref { pointee, kind } => match kind {
+                PointerKind::Box | PointerKind::Shr => self.build_pattern_inner(bounds, pointee),
+                PointerKind::Mut => {
+                    Pat::RecP(vec![("current".into(), self.build_pattern_inner(bounds, pointee))])
+                }
+            },
         }
     }
 

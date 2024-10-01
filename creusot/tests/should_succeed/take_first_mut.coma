@@ -12,7 +12,7 @@ module T_core__option__Option
   
   let rec v_Some < 't > (input:t_Option 't) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {not (exists field_0 : 't . C_Some field_0 = input)} (! {false} any) ]
+    | bad -> {forall field_0 : 't . C_Some field_0 <> input} (! {false} any) ]
     
 end
 module T_alloc__alloc__Global
@@ -245,8 +245,16 @@ module M_take_first_mut__take_first_mut
       | s2 = Borrow.borrow_final <slice t> {rem.current} {Borrow.get_id rem}
           (fun (_ret':borrowed (slice t)) ->  [ &_11 <- _ret' ]  [ &rem <- { rem with current = _11.final ; } ] s3)
       | s3 = -{inv'1 _11.final}- s4
-      | s4 = {[@expl:type invariant] inv'0 self_.current} s5
-      | s5 = -{resolve'0 self_.current}- s6
+      | s4 = {[@expl:type invariant] match self_ with
+          | {current = inv_asrt'0} -> inv'0 inv_asrt'0
+          | _ -> true
+          end}
+        s5
+      | s5 = -{match self_ with
+          | {current = inv_asrt'1} -> resolve'0 inv_asrt'1
+          | _ -> true
+          end}-
+        s6
       | s6 =  [ &self_ <- { self_ with current = _11 ; } ] s7
       | s7 = {[@expl:type invariant] inv'2 self_} s8
       | s8 = -{resolve'1 self_}- s9

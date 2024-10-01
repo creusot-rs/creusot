@@ -9,7 +9,7 @@ module T_core__ptr__non_null__NonNull
   
   let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
     [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
-    | bad -> {not (exists pointer : opaque_ptr . C_NonNull pointer = input)} (! {false} any) ]
+    | bad -> {forall pointer : opaque_ptr . C_NonNull pointer <> input} (! {false} any) ]
     
 end
 module T_core__marker__PhantomData
@@ -36,8 +36,8 @@ module T_core__ptr__unique__Unique
     [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       = input}
       (! ret {pointer} {_marker})
-    | bad -> {not (exists pointer : NonNull'0.t_NonNull 't, _marker : PhantomData'0.t_PhantomData 't . C_Unique pointer _marker
-      = input)}
+    | bad -> {forall pointer : NonNull'0.t_NonNull 't, _marker : PhantomData'0.t_PhantomData 't . C_Unique pointer _marker
+      <> input}
       (! {false}
       any) ]
     
@@ -78,8 +78,8 @@ module M_09_fnonce_resolve__f__qy123zclosureqy35z0qy125z_Type
     [ good (c:bool) (bx:borrowed int32) (by':borrowed int32)-> {M_09_fnonce_resolve__f__qy123zclosureqy35z0qy125z c bx by'
       = input}
       (! ret {c} {bx} {by'})
-    | bad -> {not (exists c : bool, bx : borrowed int32, by' : borrowed int32 . M_09_fnonce_resolve__f__qy123zclosureqy35z0qy125z c bx by'
-      = input)}
+    | bad -> {forall c : bool, bx : borrowed int32, by' : borrowed int32 . M_09_fnonce_resolve__f__qy123zclosureqy35z0qy125z c bx by'
+      <> input}
       (! {false}
       any) ]
     
@@ -146,10 +146,13 @@ module M_09_fnonce_resolve__f__qy123zclosureqy35z0qy125z
         (fun (r'0:bool) (r'1:borrowed int32) (r'2:borrowed int32) ->
           any [ br0 -> {r'0 = false} (! bb3) | br1 -> {r'0} (! bb1) ] )
     | bb1 = s0
-      [ s0 = Closure'0.m_09_fnonce_resolve__f__qy123zclosureqy35z0qy125z {_1}
-          (fun (r'0:bool) (r'1:borrowed int32) (r'2:borrowed int32) -> -{resolve'0 r'2}- s1)
+      [ s0 = -{match _1 with
+          | Closure'0.M_09_fnonce_resolve__f__qy123zclosureqy35z0qy125z _ _ inv_asrt'0 -> resolve'0 inv_asrt'0
+          | _ -> true
+          end}-
+        s1
       | s1 = Closure'0.m_09_fnonce_resolve__f__qy123zclosureqy35z0qy125z {_1}
-          (fun (r'3:bool) (r'4:borrowed int32) (r'5:borrowed int32) ->  [ &bx2 <- r'4 ] s2)
+          (fun (r'0:bool) (r'1:borrowed int32) (r'2:borrowed int32) ->  [ &bx2 <- r'1 ] s2)
       | s2 = Int32.add {bx2.current} {[%#s09_fnonce_resolve0] (1 : int32)}
           (fun (_ret':int32) ->  [ &bx2 <- { bx2 with current = _ret' ; } ] s3)
       | s3 = -{resolve'1 bx2}- s4
@@ -157,10 +160,13 @@ module M_09_fnonce_resolve__f__qy123zclosureqy35z0qy125z
       
     | bb2 = bb5
     | bb3 = s0
-      [ s0 = Closure'0.m_09_fnonce_resolve__f__qy123zclosureqy35z0qy125z {_1}
-          (fun (r'0:bool) (r'1:borrowed int32) (r'2:borrowed int32) -> -{resolve'2 r'1}- s1)
+      [ s0 = -{match _1 with
+          | Closure'0.M_09_fnonce_resolve__f__qy123zclosureqy35z0qy125z _ inv_asrt'0 _ -> resolve'2 inv_asrt'0
+          | _ -> true
+          end}-
+        s1
       | s1 = Closure'0.m_09_fnonce_resolve__f__qy123zclosureqy35z0qy125z {_1}
-          (fun (r'3:bool) (r'4:borrowed int32) (r'5:borrowed int32) ->  [ &by2 <- r'5 ] s2)
+          (fun (r'0:bool) (r'1:borrowed int32) (r'2:borrowed int32) ->  [ &by2 <- r'2 ] s2)
       | s2 = Int32.add {by2.current} {[%#s09_fnonce_resolve1] (1 : int32)}
           (fun (_ret':int32) ->  [ &by2 <- { by2 with current = _ret' ; } ] s3)
       | s3 = -{resolve'1 by2}- s4

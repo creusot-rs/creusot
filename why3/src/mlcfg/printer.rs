@@ -922,6 +922,13 @@ impl Print for Pattern {
                 }
                 doc
             }
+            Pattern::RecP(pats) => {
+                let pats = pats.iter().map(|(field, pat)| {
+                    field.pretty(alloc).append(" = ").append(pat.pretty(alloc))
+                });
+
+                alloc.intersperse(pats, " ; ").braces()
+            }
         }
     }
 }
