@@ -203,7 +203,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             {
                 let (_, resolved) = resolver
                     .need_resolve_resolved_places_at(ExtendedLocation::Start(Location::START));
-                self.resolve_places(resolved.clone(), &resolved, true);
+                self.resolve_places(resolved.clone(), &resolved);
             }
 
             let mut invariants = Vec::new();
@@ -270,8 +270,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             || !(ty.has_erased_regions() || ty.still_further_specializable())
     }
 
-    // TODO: What is `cond`?
-    fn emit_resolve(&mut self, _: bool, pl: PlaceRef<'tcx>) {
+    fn emit_resolve(&mut self, pl: PlaceRef<'tcx>) {
         let place_ty = pl.ty(self.body, self.tcx());
 
         if self.skip_resolve_type(place_ty.ty) {
@@ -351,7 +350,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     ) {
         // The assignement may, in theory, modify a variable that needs to be resolved.
         // Hence we resolve before the assignment.
-        self.resolve_places(need, &resolved, true);
+        self.resolve_places(need, &resolved);
 
         // We resolve the destination place, if necessary
         match self.move_data().rev_lookup.find(destination.as_ref()) {
@@ -369,7 +368,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     // If destination is a reborrow, then mp cannot be in resolved (since
                     // we are writting in it), so we will go through this test.
                     // Otherwise, we resolve only if it is not already resolved.
-                    self.emit_resolve(false, destination.as_ref());
+                    self.emit_resolve(destination.as_ref());
                 }
             }
             LookupResult::Exact(mp) => {
@@ -386,7 +385,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                         to_resolve.insert(mp);
                     }
                 });
-                self.resolve_places(to_resolve, &resolved, false);
+                self.resolve_places(to_resolve, &resolved);
             }
         }
     }
@@ -411,13 +410,10 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 if !live.contains(mp) {
                     if place_contains_borrow_deref(dest, self.body, self.tcx()) {
                         if resolved.contains(mp) {
-                            self.emit_resolve(
-                                false,
-                                self.move_data().move_paths[mp].place.as_ref(),
-                            );
+                            self.emit_resolve(self.move_data().move_paths[mp].place.as_ref());
                         }
                     } else {
-                        self.emit_resolve(false, dest)
+                        self.emit_resolve(dest)
                     }
                 }
             }
@@ -428,7 +424,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                         to_resolve.insert(imp);
                     }
                 });
-                self.resolve_places(to_resolve, &resolved, false);
+                self.resolve_places(to_resolve, &resolved);
             }
         }
     }
@@ -503,7 +499,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         // If we have multiple predecessors (join point) but all of them agree on the deaths, then don't introduce a dedicated block.
         if resolved_between.windows(2).all(|r| r[0] == r[1]) {
             let r = resolved_between.into_iter().next().unwrap();
-            self.resolve_places(r.0, &r.1, true);
+            self.resolve_places(r.0, &r.1);
             return;
         }
 
@@ -514,7 +510,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             };
 
             // Otherwise, we emit the resolves and move them to a stand-alone block.
-            self.resolve_places(resolved.0, &resolved.1, true);
+            self.resolve_places(resolved.0, &resolved.1);
             self.emit_terminator(fmir::Terminator::Goto(bb));
             let resolve_block = fmir::Block {
                 variant: None,
@@ -542,7 +538,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         &mut self,
         to_resolve: BitSet<MovePathIndex>,
         resolved: &BitSet<MovePathIndex>,
-        assume_downcasts: bool,
     ) {
         let mut to_resolve_full = to_resolve.clone();
         for mp in to_resolve.iter() {
@@ -659,7 +654,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         // TODO determine resolution order based on outlives relation?
         v.sort_by_key(|pl| pl.local);
         for pl in v.into_iter().rev() {
-            self.emit_resolve(assume_downcasts, pl.as_ref())
+            self.emit_resolve(pl.as_ref())
         }
     }
 

@@ -73,7 +73,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             need.remove(mp);
                         }
                     }
-                    self.resolve_places(need, &resolved, true);
+                    self.resolve_places(need, &resolved);
                     resolved_during = None;
                 }
 
@@ -237,7 +237,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 to_resolve.insert(mpi);
                             }
                         });
-                        self.resolve_places(to_resolve, &resolved, true);
+                        self.resolve_places(to_resolve, &resolved);
                     } else {
                         // If the place we drop is not a move path, then the MaybeUninit analysis ignores it. So we do not miss a resolve.
                     }
@@ -256,7 +256,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             | TailCall { .. } => unreachable!("{:?}", terminator.kind),
         }
         if let Some((need, resolved)) = resolved_during {
-            self.resolve_places(need, &resolved, true);
+            self.resolve_places(need, &resolved);
         }
         self.emit_terminator(term)
     }

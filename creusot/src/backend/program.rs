@@ -1094,7 +1094,7 @@ impl<'tcx> Statement<'tcx> {
                 let rp = Exp::qvar(lower.names.value(did, subst));
                 let loc = pl.local;
 
-                let bound = lower.fresh_sym_from("inv_asrt");
+                let bound = lower.fresh_sym_from("x");
 
                 let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
 
@@ -1139,10 +1139,9 @@ impl<'tcx> Statement<'tcx> {
                 let inv_fun = Exp::qvar(lower.names.ty_inv(pl.ty(lower.ctx.tcx, lower.locals)));
                 let loc = pl.local;
 
-                let bound = lower.fresh_sym_from("inv_asrt");
+                let bound = lower.fresh_sym_from("x");
 
                 let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
-
                 let pat = lower_pat(lower.ctx, lower.names, &pat);
                 let exp = if let Pattern::VarP(_) = pat {
                     inv_fun.app_to(Exp::var(util::ident_of(loc)))
