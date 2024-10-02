@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
     analysis::NotFinalPlaces,
-    backend::ty::closure_accessors,
+    backend::{ty::closure_accessors, ty_inv::is_tyinv_trivial},
     constant::from_mir_constant,
     ctx::*,
     extended_location::ExtendedLocation,
@@ -289,7 +289,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         let p = self.translate_place(pl);
 
-        if let Some(_) = self.ctx.type_invariant(self.body_id.def_id(), place_ty.ty) {
+        if !is_tyinv_trivial(self.tcx(), self.param_env(), place_ty.ty) {
             self.emit_statement(fmir::Statement::AssertTyInv { pl: p.clone() });
         }
 
@@ -326,7 +326,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         );
 
         let rhs_ty = rhs.ty(self.body, self.tcx()).ty;
-        if let Some(_) = self.ctx.type_invariant(self.body_id.def_id(), rhs_ty) {
+        if !is_tyinv_trivial(self.tcx(), self.param_env(), rhs_ty) {
             let p = self.translate_place(lhs.as_ref());
             self.emit_statement(fmir::Statement::AssumeBorrowInv(p));
         }

@@ -2,7 +2,7 @@ use std::{collections::HashMap, ops::Deref};
 
 pub(crate) use crate::backend::clone_map::*;
 use crate::{
-    backend::{ty::ty_binding_group, ty_inv},
+    backend::{ty::ty_binding_group, ty_inv::is_tyinv_trivial},
     callbacks,
     creusot_items::{self, CreusotItems},
     error::CreusotResult,
@@ -227,16 +227,14 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
     pub(crate) fn type_invariant(
         &self,
-        def_id: DefId,
+        param_env: ParamEnv<'tcx>,
         ty: Ty<'tcx>,
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-        let param_env = self.param_env(def_id);
         let ty = self.try_normalize_erasing_regions(param_env, ty).ok()?;
 
-        if ty_inv::is_tyinv_trivial(self.tcx, param_env, ty) {
+        if is_tyinv_trivial(self.tcx, param_env, ty) {
             None
         } else {
-            debug!("resolving type invariant of {ty:?} in {def_id:?}");
             let inv_did =
                 self.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
             let substs = self.mk_args(&[GenericArg::from(ty)]);

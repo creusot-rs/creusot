@@ -1069,7 +1069,7 @@ pub(crate) fn type_invariant_term<'tcx>(
     // assert!(!name.as_str().is_empty(), "name has len 0, env={env_did:?}, ty={ty:?}");
     let arg = Term { ty, span, kind: TermKind::Var(name) };
 
-    let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(env_did, ty)?;
+    let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(ctx.tcx.param_env(env_did), ty)?;
     let inv_fn_ty = ctx.type_of(inv_fn_did).instantiate(ctx.tcx, inv_fn_substs);
     assert!(matches!(inv_fn_ty.kind(), TyKind::FnDef(id, _) if id == &inv_fn_did));
 
