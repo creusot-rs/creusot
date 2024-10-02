@@ -956,19 +956,20 @@ module M_sparse_array__qyi912363311032332466__set [#"../sparse_array.rs" 112 4 1
     | bb1 = s0
       [ s0 = Sparse'0.t_Sparse <t> {self.current}
           (fun (rsize'0:usize) (rn'0:usize) (rvalues'0:Vec'0.t_Vec t (Global'0.t_Global)) (ridx'0:Vec'0.t_Vec usize (Global'0.t_Global)) (rback'0:Vec'0.t_Vec usize (Global'0.t_Global)) ->
+            {inv'0 rvalues'0}
             Borrow.borrow_final
               <Vec'0.t_Vec t (Global'0.t_Global)>
               {rvalues'0}
               {Borrow.inherit_id (Borrow.get_id self) 3}
               (fun (_ret':borrowed (Vec'0.t_Vec t (Global'0.t_Global))) ->
                  [ &_10 <- _ret' ] 
+                -{inv'0 _10.final}-
                 Sparse'0.t_Sparse <t> {self.current}
                   (fun (l_size'0:usize) (l_n'0:usize) (l_values'0:Vec'0.t_Vec t (Global'0.t_Global)) (l_idx'0:Vec'0.t_Vec usize (Global'0.t_Global)) (l_back'0:Vec'0.t_Vec usize (Global'0.t_Global)) ->
                      [ &self <- { self with current = Sparse'0.C_Sparse l_size'0 l_n'0 _10.final l_idx'0 l_back'0 ; } ] 
                     s1)))
-      | s1 = -{inv'0 _10.final}- s2
-      | s2 = index_mut'0 {_10} {i} (fun (_ret':borrowed t) ->  [ &_9 <- _ret' ] s3)
-      | s3 = bb2 ]
+      | s1 = index_mut'0 {_10} {i} (fun (_ret':borrowed t) ->  [ &_9 <- _ret' ] s2)
+      | s2 = bb2 ]
       
     | bb2 = bb3
     | bb3 = s0
@@ -1600,20 +1601,28 @@ module M_sparse_array__f [#"../sparse_array.rs" 140 0 140 10]
       
     | bb4 = s0
       [ s0 = {[@expl:assertion] [%#ssparse_array5] x = Option'0.C_None /\ y = Option'0.C_None} s1
-      | s1 = Borrow.borrow_mut <Sparse'0.t_Sparse int32> {a}
-          (fun (_ret':borrowed (Sparse'0.t_Sparse int32)) ->  [ &_13 <- _ret' ]  [ &a <- _13.final ] s2)
-      | s2 = -{inv'0 _13.final}- s3
-      | s3 = set'0 {_13} {[%#ssparse_array6] (5 : usize)} {[%#ssparse_array7] (1 : int32)}
-          (fun (_ret':()) ->  [ &_12 <- _ret' ] s4)
-      | s4 = bb5 ]
+      | s1 = {inv'0 a}
+        Borrow.borrow_mut <Sparse'0.t_Sparse int32> {a}
+          (fun (_ret':borrowed (Sparse'0.t_Sparse int32)) ->
+             [ &_13 <- _ret' ] 
+            -{inv'0 _13.final}-
+             [ &a <- _13.final ] 
+            s2)
+      | s2 = set'0 {_13} {[%#ssparse_array6] (5 : usize)} {[%#ssparse_array7] (1 : int32)}
+          (fun (_ret':()) ->  [ &_12 <- _ret' ] s3)
+      | s3 = bb5 ]
       
     | bb5 = s0
-      [ s0 = Borrow.borrow_mut <Sparse'0.t_Sparse int32> {b}
-          (fun (_ret':borrowed (Sparse'0.t_Sparse int32)) ->  [ &_15 <- _ret' ]  [ &b <- _15.final ] s1)
-      | s1 = -{inv'0 _15.final}- s2
-      | s2 = set'0 {_15} {[%#ssparse_array8] (7 : usize)} {[%#ssparse_array9] (2 : int32)}
-          (fun (_ret':()) ->  [ &_14 <- _ret' ] s3)
-      | s3 = bb6 ]
+      [ s0 = {inv'0 b}
+        Borrow.borrow_mut <Sparse'0.t_Sparse int32> {b}
+          (fun (_ret':borrowed (Sparse'0.t_Sparse int32)) ->
+             [ &_15 <- _ret' ] 
+            -{inv'0 _15.final}-
+             [ &b <- _15.final ] 
+            s1)
+      | s1 = set'0 {_15} {[%#ssparse_array8] (7 : usize)} {[%#ssparse_array9] (2 : int32)}
+          (fun (_ret':()) ->  [ &_14 <- _ret' ] s2)
+      | s2 = bb6 ]
       
     | bb6 = s0
       [ s0 = get'0 {a} {[%#ssparse_array10] (5 : usize)} (fun (_ret':Option'0.t_Option int32) ->  [ &_16 <- _ret' ] s1)

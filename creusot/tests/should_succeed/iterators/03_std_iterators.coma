@@ -1516,11 +1516,15 @@ module M_03_std_iterators__skip_take [#"../03_std_iterators.rs" 35 0 35 48]
       [ s0 = skip'0 {_6} {n} (fun (_ret':Skip'0.t_Skip (Take'0.t_Take i)) ->  [ &_5 <- _ret' ] s1) | s1 = bb2 ]
       
     | bb2 = s0
-      [ s0 = Borrow.borrow_mut <Skip'0.t_Skip (Take'0.t_Take i)> {_5}
-          (fun (_ret':borrowed (Skip'0.t_Skip (Take'0.t_Take i))) ->  [ &_4 <- _ret' ]  [ &_5 <- _4.final ] s1)
-      | s1 = -{inv'0 _4.final}- s2
-      | s2 = next'0 {_4} (fun (_ret':Option'0.t_Option t_Item'0) ->  [ &res <- _ret' ] s3)
-      | s3 = bb3 ]
+      [ s0 = {inv'0 _5}
+        Borrow.borrow_mut <Skip'0.t_Skip (Take'0.t_Take i)> {_5}
+          (fun (_ret':borrowed (Skip'0.t_Skip (Take'0.t_Take i))) ->
+             [ &_4 <- _ret' ] 
+            -{inv'0 _4.final}-
+             [ &_5 <- _4.final ] 
+            s1)
+      | s1 = next'0 {_4} (fun (_ret':Option'0.t_Option t_Item'0) ->  [ &res <- _ret' ] s2)
+      | s2 = bb3 ]
       
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv'0 _5} s1
@@ -2838,20 +2842,22 @@ module M_03_std_iterators__enumerate_range [#"../03_std_iterators.rs" 72 0 72 24
         {[@expl:loop invariant] [%#s03_std_iterators4] inv'0 (Snapshot.inner produced)}
         (! s0) [ s0 = bb6 ] 
         [ bb6 = s0
-          [ s0 = Borrow.borrow_mut <Enumerate'0.t_Enumerate (Range'0.t_Range usize)> {iter}
+          [ s0 = {inv'1 iter}
+            Borrow.borrow_mut <Enumerate'0.t_Enumerate (Range'0.t_Range usize)> {iter}
               (fun (_ret':borrowed (Enumerate'0.t_Enumerate (Range'0.t_Range usize))) ->
                  [ &_15 <- _ret' ] 
+                -{inv'1 _15.final}-
                  [ &iter <- _15.final ] 
                 s1)
-          | s1 = -{inv'1 _15.final}- s2
-          | s2 = Borrow.borrow_final <Enumerate'0.t_Enumerate (Range'0.t_Range usize)> {_15.current} {Borrow.get_id _15}
+          | s1 = {inv'1 _15.current}
+            Borrow.borrow_final <Enumerate'0.t_Enumerate (Range'0.t_Range usize)> {_15.current} {Borrow.get_id _15}
               (fun (_ret':borrowed (Enumerate'0.t_Enumerate (Range'0.t_Range usize))) ->
                  [ &_14 <- _ret' ] 
+                -{inv'1 _14.final}-
                  [ &_15 <- { _15 with current = _14.final ; } ] 
-                s3)
-          | s3 = -{inv'1 _14.final}- s4
-          | s4 = next'0 {_14} (fun (_ret':Option'0.t_Option (usize, usize)) ->  [ &_13 <- _ret' ] s5)
-          | s5 = bb7 ]
+                s2)
+          | s2 = next'0 {_14} (fun (_ret':Option'0.t_Option (usize, usize)) ->  [ &_13 <- _ret' ] s3)
+          | s3 = bb7 ]
           
         | bb7 = s0
           [ s0 = {[@expl:type invariant] inv'2 _15} s1
@@ -3450,16 +3456,17 @@ module M_03_std_iterators__my_reverse [#"../03_std_iterators.rs" 94 0 94 37]
           [ s0 =  [ &produced <- _34 ] s1
           | s1 =  [ &i <- let (r'0, _) = __creusot_proc_iter_elem in r'0 ] s2
           | s2 =  [ &j <- let (_, r'1) = __creusot_proc_iter_elem in r'1 ] s3
-          | s3 = Borrow.borrow_mut <slice t> {slice.current}
+          | s3 = {inv'2 slice.current}
+            Borrow.borrow_mut <slice t> {slice.current}
               (fun (_ret':borrowed (slice t)) ->
                  [ &_39 <- _ret' ] 
+                -{inv'2 _39.final}-
                  [ &slice <- { slice with current = _39.final ; } ] 
                 s4)
-          | s4 = -{inv'2 _39.final}- s5
-          | s5 = UIntSize.sub {n} {j} (fun (_ret':usize) ->  [ &_42 <- _ret' ] s6)
-          | s6 = UIntSize.sub {_42} {[%#s03_std_iterators15] (1 : usize)} (fun (_ret':usize) ->  [ &_41 <- _ret' ] s7)
-          | s7 = swap'0 {_39} {i} {_41} (fun (_ret':()) ->  [ &_38 <- _ret' ] s8)
-          | s8 = bb17 ]
+          | s4 = UIntSize.sub {n} {j} (fun (_ret':usize) ->  [ &_42 <- _ret' ] s5)
+          | s5 = UIntSize.sub {_42} {[%#s03_std_iterators15] (1 : usize)} (fun (_ret':usize) ->  [ &_41 <- _ret' ] s6)
+          | s6 = swap'0 {_39} {i} {_41} (fun (_ret':()) ->  [ &_38 <- _ret' ] s7)
+          | s7 = bb17 ]
           
         | bb17 = s0
           [ s0 = {[@expl:assertion] [%#s03_std_iterators16] index_logic'0 (Snapshot.inner old_v).current (UIntSize.to_int n

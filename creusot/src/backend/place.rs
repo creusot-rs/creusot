@@ -1,13 +1,9 @@
-use crate::{
-    backend::Namer,
-    translation::fmir::{self},
-    util,
-};
+use crate::{backend::Namer, fmir::Place, util};
 use rustc_middle::{
     mir::{self, tcx::PlaceTy, ProjectionElem},
     ty::{self, Ty, TyCtxt, TyKind},
 };
-use rustc_span::{Span, Symbol};
+use rustc_span::Symbol;
 use rustc_type_ir::AliasTyKind;
 use why3::{
     coma::{self, Arg, Expr, Param},
@@ -33,28 +29,26 @@ use super::program::{IntermediateStmt, LoweringState};
 /// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
 pub(crate) fn create_assign_inner<'tcx, N: Namer<'tcx>>(
     lower: &mut LoweringState<'_, 'tcx, N>,
-    lhs: &fmir::Place<'tcx>,
+    lhs: &Place<'tcx>,
     rhs: Exp,
-    _: Span,
-) -> Vec<IntermediateStmt> {
-    let (rhs, mut stmts) = lplace_to_expr(lower, lhs.local, &lhs.projection, rhs);
-
-    stmts.push(IntermediateStmt::Assign(Ident::build(lhs.local.as_str()), rhs));
-    stmts
+    istmts: &mut Vec<IntermediateStmt>,
+) {
+    let rhs = lplace_to_expr(lower, lhs.local, &lhs.projection, rhs, istmts);
+    istmts.push(IntermediateStmt::Assign(Ident::build(lhs.local.as_str()), rhs));
 }
 
-pub(crate) fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
+fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
     lower: &mut LoweringState<'_, 'tcx, N>,
     loc: Symbol,
     proj: &[mir::ProjectionElem<Symbol, Ty<'tcx>>],
     rhs: coma::Term,
-) -> (Exp, Vec<IntermediateStmt>) {
+    istmts: &mut Vec<IntermediateStmt>,
+) -> Exp {
     let mut focus = Exp::var(util::ident_of(loc));
     use rustc_middle::mir::ProjectionElem::*;
     let mut place_ty = PlaceTy::from_ty(lower.locals[&loc].ty);
     let mut constructor: Box<dyn FnOnce(&mut Vec<IntermediateStmt>, coma::Term) -> coma::Term> =
         Box::new(|_, x| x);
-    let mut istmts = Vec::new();
 
     let fresh_vars = |lower: &mut LoweringState<'_, 'tcx, _>, n| -> Vec<_> {
         (0..n).map(|_| lower.fresh_from("l")).collect()
@@ -163,7 +157,6 @@ pub(crate) fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
                         .iter()
                         .cloned()
                         .zip(upvars)
-                        .take(upvar_cnt)
                         .map(|(id, ty)| Param::Term(id, lower.ty(ty)))
                         .collect();
                     let params = subst
@@ -197,7 +190,7 @@ pub(crate) fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
                 let ty = lower.ty(place_ty.ty);
                 // TODO: Use [_] syntax
                 let ix_exp = Exp::var(Ident::build(ix.as_str()));
-                let result = fresh_vars(lower, 1).remove(0);
+                let result = lower.fresh_from("l");
                 istmts.push(IntermediateStmt::Call(
                     vec![Param::Term(result.clone(), elt_ty.clone())],
                     Expr::Symbol(QName::from_string("Slice.get").unwrap()),
@@ -212,7 +205,7 @@ pub(crate) fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
                 focus = Exp::qvar(result.into());
                 let set = QName::from_string("Slice.set").unwrap();
 
-                let out = fresh_vars(lower, 1).remove(0);
+                let out = lower.fresh_from("l");
                 constructor = Box::new(|is, t| {
                     let rhs = t;
 
@@ -238,31 +231,20 @@ pub(crate) fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
         }
         place_ty = projection_ty(place_ty, lower.ctx.tcx, *elem);
     }
-    let mut rhs_stmts = Vec::new();
-    let term = constructor(&mut rhs_stmts, rhs);
-    // rhs_stmts.reverse();
-    istmts.extend(rhs_stmts.into_iter());
-    (term, istmts)
+    let term = constructor(istmts, rhs);
+    term
 }
 
-pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
+pub(crate) fn projections_to_expr<'tcx, N: Namer<'tcx>>(
     lower: &mut LoweringState<'_, 'tcx, N>,
-    loc: Symbol,
-    proj: &[mir::ProjectionElem<Symbol, Ty<'tcx>>],
-) -> (Exp, Vec<IntermediateStmt>) {
-    let mut istmts = Vec::new();
-
     // The term holding the currently 'focused' portion of the place
-    let mut focus = Exp::var(util::ident_of(loc));
-    use rustc_middle::mir::ProjectionElem::*;
-    let mut place_ty = PlaceTy::from_ty(lower.locals[&loc].ty);
-
-    let fresh_vars = |lower: &mut LoweringState<'_, 'tcx, _>, n| -> Vec<_> {
-        (0..n).map(|_| lower.fresh_from("r")).collect()
-    };
-
+    (mut focus, mut place_ty): (Exp, PlaceTy<'tcx>),
+    proj: &[mir::ProjectionElem<Symbol, Ty<'tcx>>],
+    istmts: &mut Vec<IntermediateStmt>,
+) -> (Exp, PlaceTy<'tcx>) {
     // TODO: name hygiene
     for elem in proj {
+        use rustc_middle::mir::ProjectionElem::*;
         match elem {
             Deref => {
                 let mutable = place_ty.ty.is_mutable_ptr();
@@ -311,7 +293,7 @@ pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
                     focus = new_focus;
                 }
                 TyKind::Tuple(fields) => {
-                    let var = fresh_vars(lower, 1).remove(0);
+                    let var = lower.fresh_from("r");
                     let mut pat = vec![Wildcard; fields.len()];
                     pat[ix.as_usize()] = VarP(var.clone());
 
@@ -324,12 +306,10 @@ pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
                 TyKind::Closure(id, subst) => {
                     let acc_name = lower.names.eliminator(*id, subst);
                     let upvars = subst.as_closure().upvar_tys();
-                    let upvar_cnt = upvars.len();
 
-                    let fields: Vec<_> = fresh_vars(lower, upvar_cnt)
+                    let fields: Vec<_> = upvars
                         .into_iter()
-                        .zip(upvars)
-                        .map(|(id, ty)| Param::Term(id, lower.ty(ty)))
+                        .map(|ty| Param::Term(lower.fresh_from("r"), lower.ty(ty)))
                         .collect();
 
                     let params = subst
@@ -352,7 +332,7 @@ pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
                 let elt_ty = lower.ty(elt_ty.ty);
                 // TODO: Use [_] syntax
                 let ix_exp = Exp::var(Ident::build(ix.as_str()));
-                let res = fresh_vars(lower, 1).remove(0);
+                let res = lower.fresh_from("r");
                 istmts.push(IntermediateStmt::Call(
                     vec![Param::Term(res.clone(), elt_ty.clone())],
                     Expr::Symbol(QName::from_string("Slice.get").unwrap()),
@@ -372,7 +352,18 @@ pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
         place_ty = projection_ty(place_ty, lower.ctx.tcx, *elem);
     }
 
-    (focus, istmts)
+    (focus, place_ty)
+}
+
+pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
+    lower: &mut LoweringState<'_, 'tcx, N>,
+    pl: &Place<'tcx>,
+    istmts: &mut Vec<IntermediateStmt>,
+) -> Exp {
+    let focus = Exp::var(util::ident_of(pl.local));
+    let place_ty = PlaceTy::from_ty(lower.locals[&pl.local].ty);
+
+    projections_to_expr(lower, (focus, place_ty), &pl.projection, istmts).0
 }
 
 pub fn projection_ty<'tcx>(

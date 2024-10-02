@@ -41,40 +41,52 @@ module M_projection_toggle__proj_toggle [#"../projection_toggle.rs" 5 0 5 87]
     | bb1 = s0
       [ s0 = {[@expl:type invariant] inv'0 b} s1
       | s1 = -{resolve'0 b}- s2
-      | s2 = Borrow.borrow_final <t> {a.current} {Borrow.get_id a}
-          (fun (_ret':borrowed t) ->  [ &_8 <- _ret' ]  [ &a <- { a with current = _8.final ; } ] s3)
-      | s3 = -{inv'1 _8.final}- s4
-      | s4 = Borrow.borrow_final <t> {_8.current} {Borrow.get_id _8}
-          (fun (_ret':borrowed t) ->  [ &_6 <- _ret' ]  [ &_8 <- { _8 with current = _6.final ; } ] s5)
-      | s5 = -{inv'1 _6.final}- s6
-      | s6 = {[@expl:type invariant] inv'0 _8} s7
-      | s7 = -{resolve'0 _8}- s8
-      | s8 = bb3 ]
+      | s2 = {inv'1 a.current}
+        Borrow.borrow_final <t> {a.current} {Borrow.get_id a}
+          (fun (_ret':borrowed t) ->  [ &_8 <- _ret' ] -{inv'1 _8.final}-  [ &a <- { a with current = _8.final ; } ] s3)
+      | s3 = {inv'1 _8.current}
+        Borrow.borrow_final <t> {_8.current} {Borrow.get_id _8}
+          (fun (_ret':borrowed t) ->
+             [ &_6 <- _ret' ] 
+            -{inv'1 _6.final}-
+             [ &_8 <- { _8 with current = _6.final ; } ] 
+            s4)
+      | s4 = {[@expl:type invariant] inv'0 _8} s5
+      | s5 = -{resolve'0 _8}- s6
+      | s6 = bb3 ]
       
     | bb2 = s0
       [ s0 = {[@expl:type invariant] inv'0 a} s1
       | s1 = -{resolve'0 a}- s2
-      | s2 = Borrow.borrow_final <t> {b.current} {Borrow.get_id b}
-          (fun (_ret':borrowed t) ->  [ &_6 <- _ret' ]  [ &b <- { b with current = _6.final ; } ] s3)
-      | s3 = -{inv'1 _6.final}- s4
-      | s4 = bb3 ]
+      | s2 = {inv'1 b.current}
+        Borrow.borrow_final <t> {b.current} {Borrow.get_id b}
+          (fun (_ret':borrowed t) ->  [ &_6 <- _ret' ] -{inv'1 _6.final}-  [ &b <- { b with current = _6.final ; } ] s3)
+      | s3 = bb3 ]
       
     | bb3 = s0
-      [ s0 = Borrow.borrow_final <t> {_6.current} {Borrow.get_id _6}
-          (fun (_ret':borrowed t) ->  [ &_4 <- _ret' ]  [ &_6 <- { _6 with current = _4.final ; } ] s1)
-      | s1 = -{inv'1 _4.final}- s2
-      | s2 = Borrow.borrow_final <t> {_4.current} {Borrow.get_id _4}
-          (fun (_ret':borrowed t) ->  [ &_0 <- _ret' ]  [ &_4 <- { _4 with current = _0.final ; } ] s3)
-      | s3 = -{inv'1 _0.final}- s4
-      | s4 = {[@expl:type invariant] inv'0 _6} s5
-      | s5 = -{resolve'0 _6}- s6
-      | s6 = {[@expl:type invariant] inv'0 _4} s7
-      | s7 = -{resolve'0 _4}- s8
-      | s8 = {[@expl:type invariant] inv'0 b} s9
-      | s9 = -{resolve'0 b}- s10
-      | s10 = {[@expl:type invariant] inv'0 a} s11
-      | s11 = -{resolve'0 a}- s12
-      | s12 = return' {_0} ]
+      [ s0 = {inv'1 _6.current}
+        Borrow.borrow_final <t> {_6.current} {Borrow.get_id _6}
+          (fun (_ret':borrowed t) ->
+             [ &_4 <- _ret' ] 
+            -{inv'1 _4.final}-
+             [ &_6 <- { _6 with current = _4.final ; } ] 
+            s1)
+      | s1 = {inv'1 _4.current}
+        Borrow.borrow_final <t> {_4.current} {Borrow.get_id _4}
+          (fun (_ret':borrowed t) ->
+             [ &_0 <- _ret' ] 
+            -{inv'1 _0.final}-
+             [ &_4 <- { _4 with current = _0.final ; } ] 
+            s2)
+      | s2 = {[@expl:type invariant] inv'0 _6} s3
+      | s3 = -{resolve'0 _6}- s4
+      | s4 = {[@expl:type invariant] inv'0 _4} s5
+      | s5 = -{resolve'0 _4}- s6
+      | s6 = {[@expl:type invariant] inv'0 b} s7
+      | s7 = -{resolve'0 b}- s8
+      | s8 = {[@expl:type invariant] inv'0 a} s9
+      | s9 = -{resolve'0 a}- s10
+      | s10 = return' {_0} ]
        ]
     )
     [ & _0 : borrowed t = any_l ()

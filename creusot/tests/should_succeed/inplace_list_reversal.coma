@@ -137,12 +137,16 @@ module M_inplace_list_reversal__rev [#"../inplace_list_reversal.rs" 24 0 24 30]
     [ bb0 = s0 [ s0 =  [ &old_l <- [%#sinplace_list_reversal0] Snapshot.new l ] s1 | s1 = bb1 ] 
     | bb1 = s0
       [ s0 =  [ &prev <- List'0.C_Nil ] s1
-      | s1 = Borrow.borrow_mut <List'0.t_List t> {l.current}
-          (fun (_ret':borrowed (List'0.t_List t)) ->  [ &_7 <- _ret' ]  [ &l <- { l with current = _7.final ; } ] s2)
-      | s2 = -{inv'0 _7.final}- s3
-      | s3 =  [ &_8 <- List'0.C_Nil ] s4
-      | s4 = replace'0 {_7} {_8} (fun (_ret':List'0.t_List t) ->  [ &head <- _ret' ] s5)
-      | s5 = bb2 ]
+      | s1 = {inv'0 l.current}
+        Borrow.borrow_mut <List'0.t_List t> {l.current}
+          (fun (_ret':borrowed (List'0.t_List t)) ->
+             [ &_7 <- _ret' ] 
+            -{inv'0 _7.final}-
+             [ &l <- { l with current = _7.final ; } ] 
+            s2)
+      | s2 =  [ &_8 <- List'0.C_Nil ] s3
+      | s3 = replace'0 {_7} {_8} (fun (_ret':List'0.t_List t) ->  [ &head <- _ret' ] s4)
+      | s4 = bb2 ]
       
     | bb2 = bb3
     | bb3 = bb4

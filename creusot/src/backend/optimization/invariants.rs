@@ -241,7 +241,7 @@ impl<'a, 'tcx> FmirVisitor<'tcx> for BorrowProph<'a, 'tcx> {
             fmir::Statement::Assignment(l, r, _) => {
                 self.record_write_to(l);
 
-                if let RValue::Borrow(_, r) = r {
+                if let RValue::Borrow(_, r, _) = r {
                     self.record_write_to(r);
                 }
             }

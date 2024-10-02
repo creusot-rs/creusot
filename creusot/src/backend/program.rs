@@ -17,7 +17,7 @@ use crate::{
         wto::weak_topological_order,
     },
     ctx::{BodyId, Dependencies, TranslationCtx},
-    fmir::{self, Body, BorrowKind, Operand},
+    fmir::{self, Body, BorrowKind, Operand, TrivialInv},
     pearlite::{self, PointerKind},
     translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
     util::{self, module_name},
@@ -27,7 +27,7 @@ use petgraph::graphmap::DiGraphMap;
 use rustc_ast::Mutability;
 use rustc_hir::{def_id::DefId, Safety};
 use rustc_middle::{
-    mir::{self, BasicBlock, BinOp, ProjectionElem, UnOp, START_BLOCK},
+    mir::{self, tcx::PlaceTy, BasicBlock, BinOp, ProjectionElem, UnOp, START_BLOCK},
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt, TyKind},
 };
 use rustc_span::{Symbol, DUMMY_SP};
@@ -421,8 +421,8 @@ impl<'a, 'tcx, N: Namer<'tcx>> LoweringState<'a, 'tcx, N> {
         translate_ty(self.ctx, self.names, DUMMY_SP, ty)
     }
 
-    fn assignment(&mut self, lhs: &Place<'tcx>, rhs: Term) -> Vec<IntermediateStmt> {
-        place::create_assign_inner(self, lhs, rhs, DUMMY_SP)
+    fn assignment(&mut self, lhs: &Place<'tcx>, rhs: Term, istmts: &mut Vec<IntermediateStmt>) {
+        place::create_assign_inner(self, lhs, rhs, istmts)
     }
 
     fn reset_names(&mut self) {}
@@ -443,8 +443,8 @@ impl<'tcx> Operand<'tcx> {
         istmts: &mut Vec<IntermediateStmt>,
     ) -> Exp {
         match self {
-            Operand::Move(pl) => pl.as_rplace(lower, istmts),
-            Operand::Copy(pl) => pl.as_rplace(lower, istmts),
+            Operand::Move(pl) => rplace_to_expr(lower, &pl, istmts),
+            Operand::Copy(pl) => rplace_to_expr(lower, &pl, istmts),
             Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
             Operand::Promoted(pid, ty) => {
                 let promoted = Expr::Symbol(
@@ -637,7 +637,8 @@ impl<'tcx> RValue<'tcx> {
                 Exp::var("_res")
             }
             RValue::Ghost(t) => lower_pure(lower.ctx, lower.names, &t),
-            RValue::Borrow(_, _) | RValue::UnaryOp(UnOp::PtrMetadata, _) => todo!(),
+            RValue::Borrow(_, _, _) => unreachable!(), // Handled in Statement::to_why
+            RValue::UnaryOp(UnOp::PtrMetadata, _) => todo!(),
         };
 
         e
@@ -927,18 +928,6 @@ where
     })
 }
 
-impl<'tcx> Place<'tcx> {
-    pub(crate) fn as_rplace<N: Namer<'tcx>>(
-        &self,
-        lower: &mut LoweringState<'_, 'tcx, N>,
-        istmts: &mut Vec<IntermediateStmt>,
-    ) -> why3::Exp {
-        let (e, t) = rplace_to_expr(lower, self.local, &self.projection);
-        istmts.extend(t);
-        e
-    }
-}
-
 pub(crate) fn borrow_generated_id<V: Debug, T: Debug>(
     original_borrow: Exp,
     projection: &[ProjectionElem<V, T>],
@@ -994,8 +983,8 @@ pub(crate) enum IntermediateStmt {
 }
 
 impl IntermediateStmt {
-    fn call(id: Ident, exp: Type, f: coma::Expr, args: Vec<coma::Arg>) -> Self {
-        IntermediateStmt::Call(vec![Param::Term(id, exp)], f, args)
+    fn call(id: Ident, ty: Type, f: coma::Expr, args: Vec<coma::Arg>) -> Self {
+        IntermediateStmt::Call(vec![Param::Term(id, ty)], f, args)
     }
 }
 
@@ -1004,96 +993,89 @@ impl<'tcx> Statement<'tcx> {
         self,
         lower: &mut LoweringState<'_, 'tcx, N>,
     ) -> Vec<IntermediateStmt> {
+        let mut istmts = Vec::new();
         match self {
-            Statement::Assignment(lhs, RValue::Borrow(BorrowKind::Mut, rhs), _span) => {
-                let borrow_mut =
-                    coma::Expr::Symbol(QName::from_string("Borrow.borrow_mut").unwrap());
+            Statement::Assignment(lhs, RValue::Borrow(bor_kind, rhs, triv_inv), _span) => {
+                let func = match bor_kind {
+                    BorrowKind::Mut => {
+                        coma::Expr::Symbol(QName::from_string("Borrow.borrow_mut").unwrap())
+                    }
+                    BorrowKind::Final(_) => {
+                        coma::Expr::Symbol(QName::from_string("Borrow.borrow_final").unwrap())
+                    }
+                };
 
-                let mut istmts = Vec::new();
-                let args = vec![
-                    Arg::Ty(lower.ty(rhs.ty(lower.ctx.tcx, lower.locals))),
-                    Arg::Term(rhs.as_rplace(lower, &mut istmts)),
-                ];
-                let reassign = lhs.as_rplace(lower, &mut istmts).field("final");
+                let bor_id_arg;
+                let rhs_rplace;
 
-                let ty = lhs.ty(lower.ctx.tcx, lower.locals);
+                if let BorrowKind::Final(deref_index) = bor_kind {
+                    let focus = Exp::var(util::ident_of(rhs.local));
+                    let place_ty = PlaceTy::from_ty(lower.locals[&rhs.local].ty);
+                    let (original_borrow, original_borrow_ty) = place::projections_to_expr(
+                        lower,
+                        (focus, place_ty),
+                        &rhs.projection[..deref_index],
+                        &mut istmts,
+                    );
+                    rhs_rplace = place::projections_to_expr(
+                        lower,
+                        (original_borrow.clone(), original_borrow_ty),
+                        &rhs.projection[deref_index..],
+                        &mut istmts,
+                    )
+                    .0;
 
-                let borrow_call =
-                    IntermediateStmt::call("_ret'".into(), lower.ty(ty), borrow_mut, args);
+                    let borrow_id = borrow_generated_id(
+                        original_borrow,
+                        &rhs.projection[deref_index + 1..],
+                        |sym| Exp::var(util::ident_of(*sym)),
+                    );
 
-                istmts.extend([borrow_call]);
-                istmts.extend(lower.assignment(&lhs, Exp::var("_ret'")));
-                istmts.extend(lower.assignment(&rhs, reassign));
-
-                istmts
-            }
-            Statement::Assignment(
-                lhs,
-                RValue::Borrow(BorrowKind::Final(deref_index), rhs),
-                _span,
-            ) => {
-                let mut istmts = Vec::new();
-
-                let original_borrow = Place {
-                    local: rhs.local.clone(),
-                    projection: rhs.projection[..deref_index].to_vec(),
+                    bor_id_arg = Some(Arg::Term(borrow_id));
+                } else {
+                    rhs_rplace = rplace_to_expr(lower, &rhs, &mut istmts);
+                    bor_id_arg = None;
                 }
-                .as_rplace(lower, &mut istmts);
 
-                let ty = lhs.ty(lower.ctx.tcx, lower.locals);
+                let rhs_ty = rhs.ty(lower.ctx.tcx, lower.locals);
 
-                let borrow_id = borrow_generated_id(
-                    original_borrow,
-                    &rhs.projection[deref_index + 1..],
-                    |sym| Exp::var(util::ident_of(*sym)),
-                );
-                let reassign = lhs.as_rplace(lower, &mut istmts).field("final");
+                if matches!(triv_inv, TrivialInv::NonTrivial) {
+                    let inv_fun = Exp::qvar(lower.names.ty_inv(rhs_ty));
+                    istmts.push(IntermediateStmt::Assert(inv_fun.app_to(rhs_rplace.clone())));
+                }
 
-                let assign1 = { lower.assignment(&lhs, Exp::var("_ret'")) };
+                let mut args = vec![Arg::Ty(lower.ty(rhs_ty)), Arg::Term(rhs_rplace.clone())];
+                args.extend(bor_id_arg);
 
-                let assign2 = { lower.assignment(&rhs, reassign) };
-
-                let borrow_mut =
-                    coma::Expr::Symbol(QName::from_string("Borrow.borrow_final").unwrap());
-
-                let args = vec![
-                    Arg::Ty(lower.ty(rhs.ty(lower.ctx.tcx, lower.locals))),
-                    Arg::Term(rhs.as_rplace(lower, &mut istmts)),
-                    Arg::Term(borrow_id),
-                ];
-
+                let lhs_ty = lhs.ty(lower.ctx.tcx, lower.locals);
                 let borrow_call =
-                    IntermediateStmt::call("_ret'".into(), lower.ty(ty), borrow_mut, args);
+                    IntermediateStmt::call("_ret'".into(), lower.ty(lhs_ty), func, args);
+                istmts.push(borrow_call);
+                lower.assignment(&lhs, Exp::var("_ret'"), &mut istmts);
 
-                istmts.extend([borrow_call]);
-                istmts.extend(assign1);
-                istmts.extend(assign2);
-                istmts
+                let reassign = rplace_to_expr(lower, &lhs, &mut istmts).field("final");
+
+                if matches!(triv_inv, TrivialInv::NonTrivial) {
+                    let inv_fun = Exp::qvar(lower.names.ty_inv(rhs_ty));
+                    istmts.push(IntermediateStmt::Assume(inv_fun.app_to(reassign.clone())));
+                }
+
+                lower.assignment(&rhs, reassign, &mut istmts);
             }
             Statement::Assignment(lhs, e, _span) => {
-                let mut istmts = Vec::new();
-
                 let rhs = e.to_why(lower, lhs.ty(lower.ctx.tcx, lower.locals), &mut istmts);
-                let assign = lower.assignment(&lhs, rhs);
-                istmts.extend(assign);
-
-                istmts
+                lower.assignment(&lhs, rhs, &mut istmts);
             }
             Statement::Call(dest, fun_id, subst, args, _) => {
-                let mut istmts = Vec::new();
-
                 let (fun_exp, args) = func_call_to_why3(lower, fun_id, subst, args, &mut istmts);
                 let ty = dest.ty(lower.ctx.tcx, lower.locals);
                 let ty = lower.ty(ty);
-                let assign = lower.assignment(&dest, Exp::var("_ret'"));
 
-                istmts.extend([IntermediateStmt::call("_ret'".into(), ty, fun_exp, args)]);
-                istmts.extend(assign);
-                istmts
+                istmts.push(IntermediateStmt::call("_ret'".into(), ty, fun_exp, args));
+                lower.assignment(&dest, Exp::var("_ret'"), &mut istmts);
             }
             Statement::Resolve { did, subst, pl } => {
                 lower.ctx.translate(did);
-                let mut istmts = Vec::new();
 
                 let rp = Exp::qvar(lower.names.value(did, subst));
                 let loc = pl.local;
@@ -1116,30 +1098,12 @@ impl<'tcx> Statement<'tcx> {
                 };
 
                 istmts.extend([IntermediateStmt::Assume(exp)]);
-                istmts
             }
-            Statement::Assertion { cond, msg } => {
-                vec![IntermediateStmt::Assert(Exp::Attr(
-                    Attribute::Attr(format!("expl:{msg}")),
-                    Box::new(lower_pure(lower.ctx, lower.names, &cond)),
-                ))]
-            }
-            Statement::AssumeBorrowInv(pl) => {
-                let inv_fun = Exp::qvar(
-                    lower
-                        .names
-                        .ty_inv(pl.ty(lower.ctx.tcx, lower.locals).builtin_deref(false).unwrap()),
-                );
-                let mut istmts = Vec::new();
-
-                let arg = pl.as_rplace(lower, &mut istmts).field("final");
-
-                istmts.extend(vec![IntermediateStmt::Assume(inv_fun.app_to(arg))]);
-                istmts
-            }
+            Statement::Assertion { cond, msg } => istmts.push(IntermediateStmt::Assert(Exp::Attr(
+                Attribute::Attr(format!("expl:{msg}")),
+                Box::new(lower_pure(lower.ctx, lower.names, &cond)),
+            ))),
             Statement::AssertTyInv { pl } => {
-                let mut istmts = Vec::new();
-
                 let inv_fun = Exp::qvar(lower.names.ty_inv(pl.ty(lower.ctx.tcx, lower.locals)));
                 let loc = pl.local;
 
@@ -1161,10 +1125,10 @@ impl<'tcx> Statement<'tcx> {
 
                 let exp = Exp::Attr(Attribute::Attr(format!("expl:type invariant")), Box::new(exp));
 
-                istmts.extend(vec![IntermediateStmt::Assert(exp)]);
-                istmts
+                istmts.push(IntermediateStmt::Assert(exp));
             }
         }
+        istmts
     }
 }
 

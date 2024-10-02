@@ -765,21 +765,26 @@ module M_selection_sort_generic__selection_sort [#"../selection_sort_generic.rs"
              ]
           
         | bb23 = s0
-          [ s0 = Borrow.borrow_mut <Vec'0.t_Vec t (Global'0.t_Global)> {v.current}
+          [ s0 = {inv'2 v.current}
+            Borrow.borrow_mut <Vec'0.t_Vec t (Global'0.t_Global)> {v.current}
               (fun (_ret':borrowed (Vec'0.t_Vec t (Global'0.t_Global))) ->
                  [ &_68 <- _ret' ] 
+                -{inv'2 _68.final}-
                  [ &v <- { v with current = _68.final ; } ] 
                 s1)
-          | s1 = -{inv'2 _68.final}- s2
-          | s2 = deref_mut'0 {_68} (fun (_ret':borrowed (slice t)) ->  [ &_67 <- _ret' ] s3)
-          | s3 = bb32 ]
+          | s1 = deref_mut'0 {_68} (fun (_ret':borrowed (slice t)) ->  [ &_67 <- _ret' ] s2)
+          | s2 = bb32 ]
           
         | bb32 = s0
-          [ s0 = Borrow.borrow_final <slice t> {_67.current} {Borrow.get_id _67}
-              (fun (_ret':borrowed (slice t)) ->  [ &_66 <- _ret' ]  [ &_67 <- { _67 with current = _66.final ; } ] s1)
-          | s1 = -{inv'3 _66.final}- s2
-          | s2 = swap'0 {_66} {i} {min} (fun (_ret':()) ->  [ &_65 <- _ret' ] s3)
-          | s3 = bb33 ]
+          [ s0 = {inv'3 _67.current}
+            Borrow.borrow_final <slice t> {_67.current} {Borrow.get_id _67}
+              (fun (_ret':borrowed (slice t)) ->
+                 [ &_66 <- _ret' ] 
+                -{inv'3 _66.final}-
+                 [ &_67 <- { _67 with current = _66.final ; } ] 
+                s1)
+          | s1 = swap'0 {_66} {i} {min} (fun (_ret':()) ->  [ &_65 <- _ret' ] s2)
+          | s2 = bb33 ]
           
         | bb33 = s0
           [ s0 = {[@expl:type invariant] inv'4 _67} s1

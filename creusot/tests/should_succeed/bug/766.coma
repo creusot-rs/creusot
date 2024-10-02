@@ -58,11 +58,15 @@ module M_766__Trait__goo [#"../766.rs" 10 4 10 21]
   let rec goo (self:borrowed self) (return'  (ret:()))= {[%#s7660] inv'1 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_final <self> {self.current} {Borrow.get_id self}
-          (fun (_ret':borrowed self) ->  [ &_2 <- _ret' ]  [ &self <- { self with current = _2.final ; } ] s1)
-      | s1 = -{inv'0 _2.final}- s2
-      | s2 = f'0 {_2} (fun (_ret':()) ->  [ &_0 <- _ret' ] s3)
-      | s3 = bb1 ]
+      [ s0 = {inv'0 self.current}
+        Borrow.borrow_final <self> {self.current} {Borrow.get_id self}
+          (fun (_ret':borrowed self) ->
+             [ &_2 <- _ret' ] 
+            -{inv'0 _2.final}-
+             [ &self <- { self with current = _2.final ; } ] 
+            s1)
+      | s1 = f'0 {_2} (fun (_ret':()) ->  [ &_0 <- _ret' ] s2)
+      | s2 = bb1 ]
       
     | bb1 = s0 [ s0 = {[@expl:type invariant] inv'1 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = return' {_0} ]  ]
     ) [ & _0 : () = any_l () | & self : borrowed self = self | & _2 : borrowed self = any_l () ] 

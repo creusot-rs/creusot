@@ -120,10 +120,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         InvariantElaborator { param_env, ctx, rewrite: false }
     }
 
-    pub(crate) fn elaborate_inv(
-        &mut self,
-        ty: Ty<'tcx>,
-    ) -> Term<'tcx> {
+    pub(crate) fn elaborate_inv(&mut self, ty: Ty<'tcx>) -> Term<'tcx> {
         let subject = Term::var(Symbol::intern("x"), ty);
         let trivial = is_tyinv_trivial(self.ctx.tcx, self.param_env, ty);
         let no_struct = matches!(ty.kind(), TyKind::Alias(..) | TyKind::Param(_));
@@ -143,7 +140,8 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
             }
         };
 
-        let inv_id = self.ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
+        let inv_id =
+            self.ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
         let subst = self.ctx.mk_args(&[GenericArg::from(subject.ty)]);
         let lhs = Term::call(self.ctx.tcx, inv_id, subst, vec![subject]);
 
@@ -158,11 +156,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         term.forall_trig(self.ctx.tcx, (Symbol::intern("x"), ty), trig)
     }
 
-    fn structural_invariant(
-        &mut self,
-        term: Term<'tcx>,
-        ty: Ty<'tcx>,
-    ) -> Term<'tcx> {
+    fn structural_invariant(&mut self, term: Term<'tcx>, ty: Ty<'tcx>) -> Term<'tcx> {
         if let Some((uinv_did, _, _)) = resolve_user_inv(self.ctx.tcx, ty, self.param_env)
             && util::is_ignore_structural_inv(self.ctx.tcx, uinv_did)
         {
@@ -195,9 +189,10 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                         body: Box::new(ids.into_iter().enumerate().fold(
                             Term::mk_true(self.ctx.tcx),
                             |acc, (ix, id)| {
-                                acc.conj(self.mk_inv_call(
-                                    Term::var(Symbol::intern(&id.to_string()), tys[ix]),
-                                ))
+                                acc.conj(self.mk_inv_call(Term::var(
+                                    Symbol::intern(&id.to_string()),
+                                    tys[ix],
+                                )))
                             },
                         )),
                     },
@@ -226,9 +221,10 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                         body: Box::new(ids.into_iter().enumerate().fold(
                             Term::mk_true(self.ctx.tcx),
                             |acc, (ix, id)| {
-                                acc.conj(self.mk_inv_call(
-                                    Term::var(Symbol::intern(&id.to_string()), tys[ix]),
-                                ))
+                                acc.conj(self.mk_inv_call(Term::var(
+                                    Symbol::intern(&id.to_string()),
+                                    tys[ix],
+                                )))
                             },
                         )),
                     },
@@ -240,10 +236,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         }
     }
 
-    pub(crate) fn mk_inv_call(
-        &mut self,
-        term: Term<'tcx>,
-    ) -> Term<'tcx> {
+    pub(crate) fn mk_inv_call(&mut self, term: Term<'tcx>) -> Term<'tcx> {
         if let Some((inv_id, subst)) = self.ctx.type_invariant(self.param_env, term.ty) {
             Term::call(self.ctx.tcx, inv_id, subst, vec![term])
         } else {
@@ -251,10 +244,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         }
     }
 
-    fn build_inv_term_adt(
-        &mut self,
-        term: Term<'tcx>,
-    ) -> Term<'tcx> {
+    fn build_inv_term_adt(&mut self, term: Term<'tcx>) -> Term<'tcx> {
         let TyKind::Adt(adt_def, subst) = term.ty.kind() else {
             unreachable!("asked to build ADT invariant for non-ADT type {:?}", term.ty)
         };

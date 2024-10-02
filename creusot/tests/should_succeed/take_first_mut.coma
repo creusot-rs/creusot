@@ -214,22 +214,27 @@ module M_take_first_mut__take_first_mut [#"../take_first_mut.rs" 14 0 14 74]
   let rec take_first_mut (self_:borrowed (borrowed (slice t))) (return'  (ret:Option'0.t_Option (borrowed t)))= {[%#stake_first_mut0] inv'2 self_}
     (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_mut <borrowed (slice t)> {self_.current}
+      [ s0 = {inv'0 self_.current}
+        Borrow.borrow_mut <borrowed (slice t)> {self_.current}
           (fun (_ret':borrowed (borrowed (slice t))) ->
              [ &_6 <- _ret' ] 
+            -{inv'0 _6.final}-
              [ &self_ <- { self_ with current = _6.final ; } ] 
             s1)
-      | s1 = -{inv'0 _6.final}- s2
-      | s2 = take'0 {_6} (fun (_ret':borrowed (slice t)) ->  [ &_5 <- _ret' ] s3)
-      | s3 = bb1 ]
+      | s1 = take'0 {_6} (fun (_ret':borrowed (slice t)) ->  [ &_5 <- _ret' ] s2)
+      | s2 = bb1 ]
       
     | bb1 = s0
-      [ s0 = Borrow.borrow_final <slice t> {_5.current} {Borrow.get_id _5}
-          (fun (_ret':borrowed (slice t)) ->  [ &_4 <- _ret' ]  [ &_5 <- { _5 with current = _4.final ; } ] s1)
-      | s1 = -{inv'1 _4.final}- s2
-      | s2 = split_first_mut'0 {_4}
-          (fun (_ret':Option'0.t_Option (borrowed t, borrowed (slice t))) ->  [ &_3 <- _ret' ] s3)
-      | s3 = bb2 ]
+      [ s0 = {inv'1 _5.current}
+        Borrow.borrow_final <slice t> {_5.current} {Borrow.get_id _5}
+          (fun (_ret':borrowed (slice t)) ->
+             [ &_4 <- _ret' ] 
+            -{inv'1 _4.final}-
+             [ &_5 <- { _5 with current = _4.final ; } ] 
+            s1)
+      | s1 = split_first_mut'0 {_4}
+          (fun (_ret':Option'0.t_Option (borrowed t, borrowed (slice t))) ->  [ &_3 <- _ret' ] s2)
+      | s2 = bb2 ]
       
     | bb2 = any
       [ br0 -> {_3 = Option'0.C_None } (! bb4)
@@ -240,33 +245,41 @@ module M_take_first_mut__take_first_mut [#"../take_first_mut.rs" 14 0 14 74]
           (fun (r0'0:(borrowed t, borrowed (slice t))) ->  [ &first <- let (r'0, _) = r0'0 in r'0 ] s1)
       | s1 = Option'0.v_Some <(borrowed t, borrowed (slice t))> {_3}
           (fun (r0'1:(borrowed t, borrowed (slice t))) ->  [ &rem <- let (_, r'1) = r0'1 in r'1 ] s2)
-      | s2 = Borrow.borrow_final <slice t> {rem.current} {Borrow.get_id rem}
-          (fun (_ret':borrowed (slice t)) ->  [ &_11 <- _ret' ]  [ &rem <- { rem with current = _11.final ; } ] s3)
-      | s3 = -{inv'1 _11.final}- s4
-      | s4 = {[@expl:type invariant] match self_ with
+      | s2 = {inv'1 rem.current}
+        Borrow.borrow_final <slice t> {rem.current} {Borrow.get_id rem}
+          (fun (_ret':borrowed (slice t)) ->
+             [ &_11 <- _ret' ] 
+            -{inv'1 _11.final}-
+             [ &rem <- { rem with current = _11.final ; } ] 
+            s3)
+      | s3 = {[@expl:type invariant] match self_ with
           | {current = x'0} -> inv'0 x'0
           | _ -> true
           end}
-        s5
-      | s5 = -{match self_ with
+        s4
+      | s4 = -{match self_ with
           | {current = x'1} -> resolve'0 x'1
           | _ -> true
           end}-
-        s6
-      | s6 =  [ &self_ <- { self_ with current = _11 ; } ] s7
-      | s7 = {[@expl:type invariant] inv'2 self_} s8
-      | s8 = -{resolve'1 self_}- s9
-      | s9 = Borrow.borrow_final <t> {first.current} {Borrow.get_id first}
-          (fun (_ret':borrowed t) ->  [ &_12 <- _ret' ]  [ &first <- { first with current = _12.final ; } ] s10)
-      | s10 = -{inv'3 _12.final}- s11
-      | s11 =  [ &_0 <- Option'0.C_Some _12 ] s12
-      | s12 = {[@expl:type invariant] inv'0 rem} s13
-      | s13 = -{resolve'0 rem}- s14
-      | s14 = {[@expl:type invariant] inv'4 first} s15
-      | s15 = -{resolve'2 first}- s16
-      | s16 = {[@expl:type invariant] inv'0 _5} s17
-      | s17 = -{resolve'0 _5}- s18
-      | s18 = bb7 ]
+        s5
+      | s5 =  [ &self_ <- { self_ with current = _11 ; } ] s6
+      | s6 = {[@expl:type invariant] inv'2 self_} s7
+      | s7 = -{resolve'1 self_}- s8
+      | s8 = {inv'3 first.current}
+        Borrow.borrow_final <t> {first.current} {Borrow.get_id first}
+          (fun (_ret':borrowed t) ->
+             [ &_12 <- _ret' ] 
+            -{inv'3 _12.final}-
+             [ &first <- { first with current = _12.final ; } ] 
+            s9)
+      | s9 =  [ &_0 <- Option'0.C_Some _12 ] s10
+      | s10 = {[@expl:type invariant] inv'0 rem} s11
+      | s11 = -{resolve'0 rem}- s12
+      | s12 = {[@expl:type invariant] inv'4 first} s13
+      | s13 = -{resolve'2 first}- s14
+      | s14 = {[@expl:type invariant] inv'0 _5} s15
+      | s15 = -{resolve'0 _5}- s16
+      | s16 = bb7 ]
       
     | bb4 = s0 [ s0 = {[@expl:type invariant] inv'2 self_} s1 | s1 = -{resolve'1 self_}- s2 | s2 = bb6 ] 
     | bb6 = s0
