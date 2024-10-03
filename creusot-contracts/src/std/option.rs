@@ -200,16 +200,13 @@ extern_spec! {
 
                 #[requires(match self {
                     None => true,
-                    Some(t) => predicate.precondition((&t,)) &&
-                        // `predicate` returns either true or false, but not both
-                        (predicate.postcondition_once((&t,), true) != predicate.postcondition_once((&t,), false)),
+                    Some(t) => predicate.precondition((&t,))
                 })]
                 #[ensures(match self {
                     None => result == None,
-                    Some(t) => if predicate.postcondition_once((&t,), true) {
-                        result == Some(t)
-                    } else {
-                        result == None && resolve(&t)
+                    Some(t) => match result {
+                        None => predicate.postcondition_once((&t,), false) && resolve(&t),
+                        Some(r) => predicate.postcondition_once((&t,), true) && r == t,
                     },
                 })]
                 fn filter<P>(self, predicate: P) -> Option<T>
