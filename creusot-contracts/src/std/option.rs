@@ -108,6 +108,11 @@ extern_spec! {
                 where
                     T: Default;
 
+                #[pure]
+                #[requires(self != None)]
+                #[ensures(Some(result) == self)]
+                unsafe fn unwrap_unchecked(self) -> T;
+
                 #[requires(match self {
                     None => true,
                     Some(t) => f.precondition((t,)),
