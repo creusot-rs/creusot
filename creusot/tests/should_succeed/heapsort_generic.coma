@@ -637,21 +637,26 @@ module M_heapsort_generic__sift_down [#"../heapsort_generic.rs" 41 0 43 29]
         | bb17 = s0 [ s0 = le'0 {_51} {_55} (fun (_ret':bool) ->  [ &_49 <- _ret' ] s1) | s1 = bb18 ] 
         | bb18 = any [ br0 -> {_49 = false} (! bb20) | br1 -> {_49} (! bb19) ] 
         | bb20 = s0
-          [ s0 = Borrow.borrow_mut <Vec'0.t_Vec t (Global'0.t_Global)> {v.current}
+          [ s0 = {inv'0 v.current}
+            Borrow.borrow_mut <Vec'0.t_Vec t (Global'0.t_Global)> {v.current}
               (fun (_ret':borrowed (Vec'0.t_Vec t (Global'0.t_Global))) ->
                  [ &_62 <- _ret' ] 
-                 [ &v <- { v with current = _62.final ; } ] 
+                -{inv'0 _ret'.final}-
+                 [ &v <- { v with current = _ret'.final ; } ] 
                 s1)
-          | s1 = -{inv'0 _62.final}- s2
-          | s2 = deref_mut'0 {_62} (fun (_ret':borrowed (slice t)) ->  [ &_61 <- _ret' ] s3)
-          | s3 = bb21 ]
+          | s1 = deref_mut'0 {_62} (fun (_ret':borrowed (slice t)) ->  [ &_61 <- _ret' ] s2)
+          | s2 = bb21 ]
           
         | bb21 = s0
-          [ s0 = Borrow.borrow_final <slice t> {_61.current} {Borrow.get_id _61}
-              (fun (_ret':borrowed (slice t)) ->  [ &_60 <- _ret' ]  [ &_61 <- { _61 with current = _60.final ; } ] s1)
-          | s1 = -{inv'1 _60.final}- s2
-          | s2 = swap'0 {_60} {i} {child} (fun (_ret':()) ->  [ &_59 <- _ret' ] s3)
-          | s3 = bb22 ]
+          [ s0 = {inv'1 _61.current}
+            Borrow.borrow_final <slice t> {_61.current} {Borrow.get_id _61}
+              (fun (_ret':borrowed (slice t)) ->
+                 [ &_60 <- _ret' ] 
+                -{inv'1 _ret'.final}-
+                 [ &_61 <- { _61 with current = _ret'.final ; } ] 
+                s1)
+          | s1 = swap'0 {_60} {i} {child} (fun (_ret':()) ->  [ &_59 <- _ret' ] s2)
+          | s2 = bb22 ]
           
         | bb22 = s0
           [ s0 = {[@expl:type invariant] inv'2 _61} s1
@@ -1092,14 +1097,15 @@ module M_heapsort_generic__heap_sort [#"../heapsort_generic.rs" 93 0 95 29]
         | bb6 = s0
           [ s0 = UIntSize.sub {start} {[%#sheapsort_generic7] (1 : usize)}
               (fun (_ret':usize) ->  [ &start <- _ret' ] s1)
-          | s1 = Borrow.borrow_mut <Vec'0.t_Vec t (Global'0.t_Global)> {v.current}
+          | s1 = {inv'0 v.current}
+            Borrow.borrow_mut <Vec'0.t_Vec t (Global'0.t_Global)> {v.current}
               (fun (_ret':borrowed (Vec'0.t_Vec t (Global'0.t_Global))) ->
                  [ &_19 <- _ret' ] 
-                 [ &v <- { v with current = _19.final ; } ] 
+                -{inv'0 _ret'.final}-
+                 [ &v <- { v with current = _ret'.final ; } ] 
                 s2)
-          | s2 = -{inv'0 _19.final}- s3
-          | s3 = len'0 {_19.current} (fun (_ret':usize) ->  [ &_21 <- _ret' ] s4)
-          | s4 = bb7 ]
+          | s2 = len'0 {_19.current} (fun (_ret':usize) ->  [ &_21 <- _ret' ] s3)
+          | s3 = bb7 ]
           
         | bb7 = s0 [ s0 = sift_down'0 {_19} {start} {_21} (fun (_ret':()) ->  [ &_18 <- _ret' ] s1) | s1 = bb8 ] 
         | bb8 = bb4 ]
@@ -1123,21 +1129,26 @@ module M_heapsort_generic__heap_sort [#"../heapsort_generic.rs" 93 0 95 29]
           
         | bb13 = s0
           [ s0 = UIntSize.sub {end'} {[%#sheapsort_generic13] (1 : usize)} (fun (_ret':usize) ->  [ &end' <- _ret' ] s1)
-          | s1 = Borrow.borrow_mut <Vec'0.t_Vec t (Global'0.t_Global)> {v.current}
+          | s1 = {inv'0 v.current}
+            Borrow.borrow_mut <Vec'0.t_Vec t (Global'0.t_Global)> {v.current}
               (fun (_ret':borrowed (Vec'0.t_Vec t (Global'0.t_Global))) ->
                  [ &_38 <- _ret' ] 
-                 [ &v <- { v with current = _38.final ; } ] 
+                -{inv'0 _ret'.final}-
+                 [ &v <- { v with current = _ret'.final ; } ] 
                 s2)
-          | s2 = -{inv'0 _38.final}- s3
-          | s3 = deref_mut'0 {_38} (fun (_ret':borrowed (slice t)) ->  [ &_37 <- _ret' ] s4)
-          | s4 = bb14 ]
+          | s2 = deref_mut'0 {_38} (fun (_ret':borrowed (slice t)) ->  [ &_37 <- _ret' ] s3)
+          | s3 = bb14 ]
           
         | bb14 = s0
-          [ s0 = Borrow.borrow_final <slice t> {_37.current} {Borrow.get_id _37}
-              (fun (_ret':borrowed (slice t)) ->  [ &_36 <- _ret' ]  [ &_37 <- { _37 with current = _36.final ; } ] s1)
-          | s1 = -{inv'1 _36.final}- s2
-          | s2 = swap'0 {_36} {[%#sheapsort_generic14] (0 : usize)} {end'} (fun (_ret':()) ->  [ &_35 <- _ret' ] s3)
-          | s3 = bb15 ]
+          [ s0 = {inv'1 _37.current}
+            Borrow.borrow_final <slice t> {_37.current} {Borrow.get_id _37}
+              (fun (_ret':borrowed (slice t)) ->
+                 [ &_36 <- _ret' ] 
+                -{inv'1 _ret'.final}-
+                 [ &_37 <- { _37 with current = _ret'.final ; } ] 
+                s1)
+          | s1 = swap'0 {_36} {[%#sheapsort_generic14] (0 : usize)} {end'} (fun (_ret':()) ->  [ &_35 <- _ret' ] s2)
+          | s2 = bb15 ]
           
         | bb15 = s0
           [ s0 = {[@expl:type invariant] inv'2 _37} s1
@@ -1147,15 +1158,16 @@ module M_heapsort_generic__heap_sort [#"../heapsort_generic.rs" 93 0 95 29]
             /\ i < UIntSize.to_int end' /\ UIntSize.to_int end' <= j /\ j < Seq.length (shallow_model'0 v)
              -> le_log'0 (Seq.get (deep_model'0 v) i) (Seq.get (deep_model'0 v) j)}
             s3
-          | s3 = Borrow.borrow_mut <Vec'0.t_Vec t (Global'0.t_Global)> {v.current}
+          | s3 = {inv'0 v.current}
+            Borrow.borrow_mut <Vec'0.t_Vec t (Global'0.t_Global)> {v.current}
               (fun (_ret':borrowed (Vec'0.t_Vec t (Global'0.t_Global))) ->
                  [ &_43 <- _ret' ] 
-                 [ &v <- { v with current = _43.final ; } ] 
+                -{inv'0 _ret'.final}-
+                 [ &v <- { v with current = _ret'.final ; } ] 
                 s4)
-          | s4 = -{inv'0 _43.final}- s5
-          | s5 = sift_down'0 {_43} {[%#sheapsort_generic16] (0 : usize)} {end'}
-              (fun (_ret':()) ->  [ &_42 <- _ret' ] s6)
-          | s6 = bb16 ]
+          | s4 = sift_down'0 {_43} {[%#sheapsort_generic16] (0 : usize)} {end'}
+              (fun (_ret':()) ->  [ &_42 <- _ret' ] s5)
+          | s5 = bb16 ]
           
         | bb16 = bb11 ]
          ]

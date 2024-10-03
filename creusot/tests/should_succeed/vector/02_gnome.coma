@@ -488,22 +488,27 @@ module M_02_gnome__gnome_sort [#"../02_gnome.rs" 22 0 24 29]
           [ s0 = UIntSize.add {i} {[%#s02_gnome6] (1 : usize)} (fun (_ret':usize) ->  [ &i <- _ret' ] s1) | s1 = bb16 ]
           
         | bb13 = s0
-          [ s0 = Borrow.borrow_mut <Vec'0.t_Vec t (Global'0.t_Global)> {v.current}
+          [ s0 = {inv'0 v.current}
+            Borrow.borrow_mut <Vec'0.t_Vec t (Global'0.t_Global)> {v.current}
               (fun (_ret':borrowed (Vec'0.t_Vec t (Global'0.t_Global))) ->
                  [ &_30 <- _ret' ] 
-                 [ &v <- { v with current = _30.final ; } ] 
+                -{inv'0 _ret'.final}-
+                 [ &v <- { v with current = _ret'.final ; } ] 
                 s1)
-          | s1 = -{inv'0 _30.final}- s2
-          | s2 = deref_mut'0 {_30} (fun (_ret':borrowed (slice t)) ->  [ &_29 <- _ret' ] s3)
-          | s3 = bb14 ]
+          | s1 = deref_mut'0 {_30} (fun (_ret':borrowed (slice t)) ->  [ &_29 <- _ret' ] s2)
+          | s2 = bb14 ]
           
         | bb14 = s0
-          [ s0 = Borrow.borrow_final <slice t> {_29.current} {Borrow.get_id _29}
-              (fun (_ret':borrowed (slice t)) ->  [ &_28 <- _ret' ]  [ &_29 <- { _29 with current = _28.final ; } ] s1)
-          | s1 = -{inv'1 _28.final}- s2
-          | s2 = UIntSize.sub {i} {[%#s02_gnome7] (1 : usize)} (fun (_ret':usize) ->  [ &_31 <- _ret' ] s3)
-          | s3 = swap'0 {_28} {_31} {i} (fun (_ret':()) ->  [ &_27 <- _ret' ] s4)
-          | s4 = bb15 ]
+          [ s0 = {inv'1 _29.current}
+            Borrow.borrow_final <slice t> {_29.current} {Borrow.get_id _29}
+              (fun (_ret':borrowed (slice t)) ->
+                 [ &_28 <- _ret' ] 
+                -{inv'1 _ret'.final}-
+                 [ &_29 <- { _29 with current = _ret'.final ; } ] 
+                s1)
+          | s1 = UIntSize.sub {i} {[%#s02_gnome7] (1 : usize)} (fun (_ret':usize) ->  [ &_31 <- _ret' ] s2)
+          | s2 = swap'0 {_28} {_31} {i} (fun (_ret':()) ->  [ &_27 <- _ret' ] s3)
+          | s3 = bb15 ]
           
         | bb15 = s0
           [ s0 = {[@expl:type invariant] inv'2 _29} s1

@@ -550,16 +550,15 @@ module M_02_iter_mut__qyi4305820612590367313__next [#"../02_iter_mut.rs" 67 4 67
     [ bb0 = s0
       [ s0 = IterMut'0.t_IterMut <t> {self.current}
           (fun (rinner'0:borrowed (slice t)) ->
+            {inv'0 rinner'0}
             Borrow.borrow_final <borrowed (slice t)> {rinner'0} {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed (borrowed (slice t))) ->
                  [ &_3 <- _ret' ] 
-                IterMut'0.t_IterMut <t> {self.current}
-                  (fun (l_inner'0:borrowed (slice t)) ->
-                     [ &self <- { self with current = IterMut'0.C_IterMut _3.final ; } ] 
-                    s1)))
-      | s1 = -{inv'0 _3.final}- s2
-      | s2 = take_first_mut'0 {_3} (fun (_ret':Option'0.t_Option (borrowed t)) ->  [ &_0 <- _ret' ] s3)
-      | s3 = bb1 ]
+                -{inv'0 _ret'.final}-
+                 [ &self <- { self with current = IterMut'0.C_IterMut _ret'.final ; } ] 
+                s1))
+      | s1 = take_first_mut'0 {_3} (fun (_ret':Option'0.t_Option (borrowed t)) ->  [ &_0 <- _ret' ] s2)
+      | s2 = bb1 ]
       
     | bb1 = s0 [ s0 = {[@expl:type invariant] inv'1 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = return' {_0} ]  ]
     )
@@ -951,31 +950,40 @@ module M_02_iter_mut__iter_mut [#"../02_iter_mut.rs" 82 0 82 55]
   let rec iter_mut (v:borrowed (Vec'0.t_Vec t (Global'0.t_Global))) (return'  (ret:IterMut'0.t_IterMut t))= {[%#s02_iter_mut0] inv'3 v}
     (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_final <Vec'0.t_Vec t (Global'0.t_Global)> {v.current} {Borrow.get_id v}
+      [ s0 = {inv'0 v.current}
+        Borrow.borrow_final <Vec'0.t_Vec t (Global'0.t_Global)> {v.current} {Borrow.get_id v}
           (fun (_ret':borrowed (Vec'0.t_Vec t (Global'0.t_Global))) ->
              [ &_8 <- _ret' ] 
-             [ &v <- { v with current = _8.final ; } ] 
+            -{inv'0 _ret'.final}-
+             [ &v <- { v with current = _ret'.final ; } ] 
             s1)
-      | s1 = -{inv'0 _8.final}- s2
-      | s2 =  [ &_9 <- RangeFull'0.C_RangeFull ] s3
-      | s3 = index_mut'0 {_8} {_9} (fun (_ret':borrowed (slice t)) ->  [ &_7 <- _ret' ] s4)
-      | s4 = bb1 ]
+      | s1 =  [ &_9 <- RangeFull'0.C_RangeFull ] s2
+      | s2 = index_mut'0 {_8} {_9} (fun (_ret':borrowed (slice t)) ->  [ &_7 <- _ret' ] s3)
+      | s3 = bb1 ]
       
     | bb1 = s0
-      [ s0 = Borrow.borrow_final <slice t> {_7.current} {Borrow.get_id _7}
-          (fun (_ret':borrowed (slice t)) ->  [ &_6 <- _ret' ]  [ &_7 <- { _7 with current = _6.final ; } ] s1)
-      | s1 = -{inv'1 _6.final}- s2
-      | s2 = Borrow.borrow_final <slice t> {_6.current} {Borrow.get_id _6}
-          (fun (_ret':borrowed (slice t)) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _5.final ; } ] s3)
-      | s3 = -{inv'1 _5.final}- s4
-      | s4 =  [ &_0 <- IterMut'0.C_IterMut _5 ] s5
-      | s5 = {[@expl:type invariant] inv'2 _7} s6
-      | s6 = -{resolve'0 _7}- s7
-      | s7 = {[@expl:type invariant] inv'2 _6} s8
-      | s8 = -{resolve'0 _6}- s9
-      | s9 = {[@expl:type invariant] inv'3 v} s10
-      | s10 = -{resolve'1 v}- s11
-      | s11 = return' {_0} ]
+      [ s0 = {inv'1 _7.current}
+        Borrow.borrow_final <slice t> {_7.current} {Borrow.get_id _7}
+          (fun (_ret':borrowed (slice t)) ->
+             [ &_6 <- _ret' ] 
+            -{inv'1 _ret'.final}-
+             [ &_7 <- { _7 with current = _ret'.final ; } ] 
+            s1)
+      | s1 = {inv'1 _6.current}
+        Borrow.borrow_final <slice t> {_6.current} {Borrow.get_id _6}
+          (fun (_ret':borrowed (slice t)) ->
+             [ &_5 <- _ret' ] 
+            -{inv'1 _ret'.final}-
+             [ &_6 <- { _6 with current = _ret'.final ; } ] 
+            s2)
+      | s2 =  [ &_0 <- IterMut'0.C_IterMut _5 ] s3
+      | s3 = {[@expl:type invariant] inv'2 _7} s4
+      | s4 = -{resolve'0 _7}- s5
+      | s5 = {[@expl:type invariant] inv'2 _6} s6
+      | s6 = -{resolve'0 _6}- s7
+      | s7 = {[@expl:type invariant] inv'3 v} s8
+      | s8 = -{resolve'1 v}- s9
+      | s9 = return' {_0} ]
        ]
     )
     [ & _0 : IterMut'0.t_IterMut t = any_l ()
@@ -1289,7 +1297,7 @@ module M_02_iter_mut__all_zero [#"../02_iter_mut.rs" 88 0 88 35]
       [ s0 = Borrow.borrow_final <Vec'0.t_Vec usize (Global'0.t_Global)> {v.current} {Borrow.get_id v}
           (fun (_ret':borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) ->
              [ &_6 <- _ret' ] 
-             [ &v <- { v with current = _6.final ; } ] 
+             [ &v <- { v with current = _ret'.final ; } ] 
             s1)
       | s1 = iter_mut'0 {_6} (fun (_ret':IterMut'0.t_IterMut usize) ->  [ &_5 <- _ret' ] s2)
       | s2 = bb1 ]
@@ -1307,11 +1315,15 @@ module M_02_iter_mut__all_zero [#"../02_iter_mut.rs" 88 0 88 35]
         {[@expl:loop invariant] [%#s02_iter_mut2] inv'0 it}
         (! s0) [ s0 = bb6 ] 
         [ bb6 = s0
-          [ s0 = Borrow.borrow_mut <IterMut'0.t_IterMut usize> {it}
-              (fun (_ret':borrowed (IterMut'0.t_IterMut usize)) ->  [ &_16 <- _ret' ]  [ &it <- _16.final ] s1)
-          | s1 = -{inv'0 _16.final}- s2
-          | s2 = next'0 {_16} (fun (_ret':Option'0.t_Option (borrowed usize)) ->  [ &_15 <- _ret' ] s3)
-          | s3 = bb7 ]
+          [ s0 = {inv'0 it}
+            Borrow.borrow_mut <IterMut'0.t_IterMut usize> {it}
+              (fun (_ret':borrowed (IterMut'0.t_IterMut usize)) ->
+                 [ &_16 <- _ret' ] 
+                -{inv'0 _ret'.final}-
+                 [ &it <- _ret'.final ] 
+                s1)
+          | s1 = next'0 {_16} (fun (_ret':Option'0.t_Option (borrowed usize)) ->  [ &_15 <- _ret' ] s2)
+          | s2 = bb7 ]
           
         | bb7 = any
           [ br0 -> {_15 = Option'0.C_None } (! bb10) | br1 (a:borrowed usize)-> {_15 = Option'0.C_Some a} (! bb9) ]

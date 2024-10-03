@@ -78,9 +78,7 @@ pub enum Statement<'tcx> {
     Assignment(Place<'tcx>, RValue<'tcx>, Span),
     Resolve { did: DefId, subst: GenericArgsRef<'tcx>, pl: Place<'tcx> },
     Assertion { cond: Term<'tcx>, msg: String },
-    AssumeBorrowInv(Place<'tcx>),
     // Todo: fold into `Assertion`
-    // TODO: What is `pat` here and why do we need it?
     AssertTyInv { pl: Place<'tcx> },
     Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Vec<Operand<'tcx>>, Span),
 }
@@ -98,10 +96,16 @@ pub enum BorrowKind {
     Final(usize),
 }
 
+#[derive(Clone, Copy, Debug)]
+pub enum TrivialInv {
+    Trivial,
+    NonTrivial,
+}
+
 #[derive(Clone, Debug)]
 pub enum RValue<'tcx> {
     Ghost(Term<'tcx>),
-    Borrow(BorrowKind, Place<'tcx>),
+    Borrow(BorrowKind, Place<'tcx>, TrivialInv),
     Operand(Operand<'tcx>),
     BinOp(BinOp, Operand<'tcx>, Operand<'tcx>),
     UnaryOp(UnOp, Operand<'tcx>),
@@ -131,7 +135,7 @@ impl<'tcx> RValue<'tcx> {
             RValue::Array(_) => true,
             RValue::Repeat(_, _) => true,
             RValue::Ghost(_) => true,
-            RValue::Borrow(_, _) => false,
+            RValue::Borrow(_, _, _) => false,
         }
     }
 }
@@ -327,9 +331,6 @@ pub(crate) fn super_visit_stmt<'tcx, V: FmirVisitor<'tcx>>(
         Statement::Assertion { cond, .. } => {
             visitor.visit_term(cond);
         }
-        Statement::AssumeBorrowInv(place) => {
-            visitor.visit_place(place);
-        }
         Statement::AssertTyInv { pl, .. } => {
             visitor.visit_place(pl);
         }
@@ -378,7 +379,7 @@ pub(crate) fn super_visit_rvalue<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, rv
         RValue::Ghost(term) => {
             visitor.visit_term(term);
         }
-        RValue::Borrow(_, place) => {
+        RValue::Borrow(_, place, _) => {
             visitor.visit_place(place);
         }
         RValue::Operand(op) => {

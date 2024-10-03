@@ -101,7 +101,6 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
                 self.visit_term(cond);
                 self.visit_term(cond);
             }
-            Statement::AssumeBorrowInv(p) => self.read_place(p),
             Statement::AssertTyInv { pl, .. } => self.read_place(pl),
             Statement::Call(dest, _, _, args, _) => {
                 self.write_place(dest);
@@ -113,7 +112,7 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
     fn visit_rvalue(&mut self, r: &RValue<'tcx>) {
         match r {
             RValue::Ghost(t) => self.visit_term(t),
-            RValue::Borrow(_, p) => {
+            RValue::Borrow(_, p, _) => {
                 self.read_place(p);
                 self.read_place(p)
             }
@@ -288,7 +287,6 @@ impl<'tcx> SimplePropagator<'tcx> {
             Statement::Call(_, _, _, args, _) => {
                 args.iter_mut().for_each(|a| self.visit_operand(a))
             }
-            Statement::AssumeBorrowInv(_) => {}
             Statement::AssertTyInv { .. } => {}
         }
     }
@@ -296,7 +294,7 @@ impl<'tcx> SimplePropagator<'tcx> {
     fn visit_rvalue(&mut self, r: &mut RValue<'tcx>) {
         match r {
             RValue::Ghost(t) => self.visit_term(t),
-            RValue::Borrow(_, p) => {
+            RValue::Borrow(_, p, _) => {
                 assert!(self.prop.get(&p.local).is_none(), "Trying to propagate borrowed variable")
             }
             RValue::Operand(op) => self.visit_operand(op),

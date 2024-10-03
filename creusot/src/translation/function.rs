@@ -1,11 +1,11 @@
 use super::{
-    fmir::{LocalDecls, LocalIdent, RValue},
+    fmir::{LocalDecls, LocalIdent, RValue, TrivialInv},
     pearlite::{normalize, Term},
     specification::inv_subst,
 };
 use crate::{
     analysis::NotFinalPlaces,
-    backend::ty::closure_accessors,
+    backend::{ty::closure_accessors, ty_inv::is_tyinv_trivial},
     constant::from_mir_constant,
     ctx::*,
     extended_location::ExtendedLocation,
@@ -289,7 +289,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         let p = self.translate_place(pl);
 
-        if let Some(_) = self.ctx.type_invariant(self.body_id.def_id(), place_ty.ty) {
+        if !is_tyinv_trivial(self.tcx(), self.param_env(), place_ty.ty) {
             self.emit_statement(fmir::Statement::AssertTyInv { pl: p.clone() });
         }
 
@@ -315,21 +315,23 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         span: Span,
     ) {
         let p = self.translate_place(rhs.as_ref());
+
+        let rhs_ty = rhs.ty(self.body, self.tcx()).ty;
+        let triv_inv = if is_tyinv_trivial(self.tcx(), self.param_env(), rhs_ty) {
+            TrivialInv::Trivial
+        } else {
+            TrivialInv::NonTrivial
+        };
+
         self.emit_assignment(
             lhs,
             if let Some(deref_index) = is_final {
-                fmir::RValue::Borrow(fmir::BorrowKind::Final(deref_index), p)
+                fmir::RValue::Borrow(fmir::BorrowKind::Final(deref_index), p, triv_inv)
             } else {
-                fmir::RValue::Borrow(fmir::BorrowKind::Mut, p)
+                fmir::RValue::Borrow(fmir::BorrowKind::Mut, p, triv_inv)
             },
             span,
         );
-
-        let rhs_ty = rhs.ty(self.body, self.tcx()).ty;
-        if let Some(_) = self.ctx.type_invariant(self.body_id.def_id(), rhs_ty) {
-            let p = self.translate_place(lhs.as_ref());
-            self.emit_statement(fmir::Statement::AssumeBorrowInv(p));
-        }
     }
 
     fn emit_ghost_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>, span: Span) {

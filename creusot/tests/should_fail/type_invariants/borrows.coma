@@ -120,12 +120,12 @@ module M_borrows__qyi5649894289181344863__inner_mut [#"../borrows.rs" 23 4 23 43
             Borrow.borrow_final <int32> {r0'0} {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed int32) ->
                  [ &_5 <- _ret' ] 
-                NonZero'0.t_NonZero {self.current}
-                  (fun (l_0'0:int32) ->  [ &self <- { self with current = NonZero'0.C_NonZero _5.final ; } ] s1)))
+                 [ &self <- { self with current = NonZero'0.C_NonZero _ret'.final ; } ] 
+                s1))
       | s1 = Borrow.borrow_final <int32> {_5.current} {Borrow.get_id _5}
-          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_5 <- { _5 with current = _2.final ; } ] s2)
+          (fun (_ret':borrowed int32) ->  [ &_2 <- _ret' ]  [ &_5 <- { _5 with current = _ret'.final ; } ] s2)
       | s2 = Borrow.borrow_final <int32> {_2.current} {Borrow.get_id _2}
-          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = _0.final ; } ] s3)
+          (fun (_ret':borrowed int32) ->  [ &_0 <- _ret' ]  [ &_2 <- { _2 with current = _ret'.final ; } ] s3)
       | s3 = -{resolve'0 _5}- s4
       | s4 = -{resolve'0 _2}- s5
       | s5 = {[@expl:type invariant] inv'0 self} s6
@@ -270,10 +270,10 @@ module M_borrows__simple [#"../borrows.rs" 31 0 31 30]
             Borrow.borrow_final <int32> {r0'0} {Borrow.inherit_id (Borrow.get_id x) 1}
               (fun (_ret':borrowed int32) ->
                  [ &_6 <- _ret' ] 
-                NonZero'0.t_NonZero {x.current}
-                  (fun (l_0'0:int32) ->  [ &x <- { x with current = NonZero'0.C_NonZero _6.final ; } ] s1)))
+                 [ &x <- { x with current = NonZero'0.C_NonZero _ret'.final ; } ] 
+                s1))
       | s1 = Borrow.borrow_final <int32> {_6.current} {Borrow.get_id _6}
-          (fun (_ret':borrowed int32) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _5.final ; } ] s2)
+          (fun (_ret':borrowed int32) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _ret'.final ; } ] s2)
       | s2 = inc'0 {_5} (fun (_ret':()) ->  [ &_4 <- _ret' ] s3)
       | s3 = bb1 ]
       
@@ -376,18 +376,19 @@ module M_borrows__hard [#"../borrows.rs" 38 0 38 28]
     {[%#sborrows0] Int32.to_int (T_borrows__NonZero.t_NonZero__0 x.current) < Int32.to_int (v_MAX'0 : int32)}
     (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_final <NonZero'0.t_NonZero> {x.current} {Borrow.get_id x}
+      [ s0 = {inv'0 x.current}
+        Borrow.borrow_final <NonZero'0.t_NonZero> {x.current} {Borrow.get_id x}
           (fun (_ret':borrowed (NonZero'0.t_NonZero)) ->
              [ &_7 <- _ret' ] 
-             [ &x <- { x with current = _7.final ; } ] 
+            -{inv'0 _ret'.final}-
+             [ &x <- { x with current = _ret'.final ; } ] 
             s1)
-      | s1 = -{inv'0 _7.final}- s2
-      | s2 = inner_mut'0 {_7} (fun (_ret':borrowed int32) ->  [ &_6 <- _ret' ] s3)
-      | s3 = bb1 ]
+      | s1 = inner_mut'0 {_7} (fun (_ret':borrowed int32) ->  [ &_6 <- _ret' ] s2)
+      | s2 = bb1 ]
       
     | bb1 = s0
       [ s0 = Borrow.borrow_final <int32> {_6.current} {Borrow.get_id _6}
-          (fun (_ret':borrowed int32) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _5.final ; } ] s1)
+          (fun (_ret':borrowed int32) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _ret'.final ; } ] s1)
       | s1 = inc'0 {_5} (fun (_ret':()) ->  [ &_4 <- _ret' ] s2)
       | s2 = bb2 ]
       
@@ -497,23 +498,19 @@ module M_borrows__tuple [#"../borrows.rs" 45 0 45 44]
     < Int32.to_int (v_MAX'0 : int32)}
     (! bb0
     [ bb0 = s0
-      [ s0 = NonZero'0.t_NonZero {let (l'0, _) = x in l'0}
-          (fun (l_0'0:int32) ->
-             [ &x <- let (_, l'2) = x in (NonZero'0.C_NonZero ([%#sborrows0] (0 : int32)), l'2) ] 
-            s1)
-      | s1 = NonZero'0.t_NonZero {(let (_, r'1) = x in r'1).current}
-          (fun (r0'0:int32) ->
-            Borrow.borrow_final <int32> {r0'0} {Borrow.inherit_id (Borrow.get_id (let (_, r'0) = x in r'0)) 1}
+      [ s0 = NonZero'0.t_NonZero {let (r'0, _) = x in r'0}
+          (fun (r0'0:int32) ->  [ &x <- let (_, r'2) = x in (NonZero'0.C_NonZero ([%#sborrows0] (0 : int32)), r'2) ] s1)
+      | s1 = NonZero'0.t_NonZero {(let (_, r'3) = x in r'3).current}
+          (fun (r0'1:int32) ->
+            Borrow.borrow_final <int32> {r0'1} {Borrow.inherit_id (Borrow.get_id (let (_, r'3) = x in r'3)) 1}
               (fun (_ret':borrowed int32) ->
                  [ &_6 <- _ret' ] 
-                NonZero'0.t_NonZero {(let (_, l'3) = x in l'3).current}
-                  (fun (l_0'1:int32) ->
-                    
-                    [ &x <- let (l'4, _) = x in (l'4, { (let (_, l'3) = x in l'3) with current = NonZero'0.C_NonZero _6.final ; }) ]
-                    
-                    s2)))
+                
+                [ &x <- let (r'4, _) = x in (r'4, { (let (_, r'3) = x in r'3) with current = NonZero'0.C_NonZero _ret'.final ; }) ]
+                
+                s2))
       | s2 = Borrow.borrow_final <int32> {_6.current} {Borrow.get_id _6}
-          (fun (_ret':borrowed int32) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _5.final ; } ] s3)
+          (fun (_ret':borrowed int32) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _ret'.final ; } ] s3)
       | s3 = inc'0 {_5} (fun (_ret':()) ->  [ &_4 <- _ret' ] s4)
       | s4 = bb1 ]
       
@@ -613,19 +610,17 @@ module M_borrows__partial_move [#"../borrows.rs" 53 0 53 47]
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &a <- let (r'0, _) = x in r'0 ] s1
-      | s1 = NonZero'0.t_NonZero {(let (_, r'2) = x in r'2).current}
+      | s1 = NonZero'0.t_NonZero {(let (_, r'1) = x in r'1).current}
           (fun (r0'0:int32) ->
             Borrow.borrow_final <int32> {r0'0} {Borrow.inherit_id (Borrow.get_id (let (_, r'1) = x in r'1)) 1}
               (fun (_ret':borrowed int32) ->
                  [ &_7 <- _ret' ] 
-                NonZero'0.t_NonZero {(let (_, l'0) = x in l'0).current}
-                  (fun (l_0'0:int32) ->
-                    
-                    [ &x <- let (l'1, _) = x in (l'1, { (let (_, l'0) = x in l'0) with current = NonZero'0.C_NonZero _7.final ; }) ]
-                    
-                    s2)))
+                
+                [ &x <- let (r'2, _) = x in (r'2, { (let (_, r'1) = x in r'1) with current = NonZero'0.C_NonZero _ret'.final ; }) ]
+                
+                s2))
       | s2 = Borrow.borrow_final <int32> {_7.current} {Borrow.get_id _7}
-          (fun (_ret':borrowed int32) ->  [ &_6 <- _ret' ]  [ &_7 <- { _7 with current = _6.final ; } ] s3)
+          (fun (_ret':borrowed int32) ->  [ &_6 <- _ret' ]  [ &_7 <- { _7 with current = _ret'.final ; } ] s3)
       | s3 = inc'0 {_6} (fun (_ret':()) ->  [ &_5 <- _ret' ] s4)
       | s4 = bb1 ]
       
@@ -641,8 +636,7 @@ module M_borrows__partial_move [#"../borrows.rs" 53 0 53 47]
           | _ -> true
           end}-
         s3
-      | s3 = NonZero'0.t_NonZero {a}
-          (fun (l_0'0:int32) ->  [ &a <- NonZero'0.C_NonZero ([%#sborrows0] (0 : int32)) ] s4)
+      | s3 = NonZero'0.t_NonZero {a} (fun (r0'0:int32) ->  [ &a <- NonZero'0.C_NonZero ([%#sborrows0] (0 : int32)) ] s4)
       | s4 = return' {_0} ]
        ]
     )
@@ -737,17 +731,16 @@ module M_borrows__destruct [#"../borrows.rs" 61 0 61 43]
     [ bb0 = s0
       [ s0 =  [ &a <- let (r'0, _) = x in r'0 ] s1
       | s1 =  [ &b <- let (_, r'1) = x in r'1 ] s2
-      | s2 = NonZero'0.t_NonZero {a}
-          (fun (l_0'0:int32) ->  [ &a <- NonZero'0.C_NonZero ([%#sborrows0] (0 : int32)) ] s3)
+      | s2 = NonZero'0.t_NonZero {a} (fun (r0'0:int32) ->  [ &a <- NonZero'0.C_NonZero ([%#sborrows0] (0 : int32)) ] s3)
       | s3 = NonZero'0.t_NonZero {b.current}
-          (fun (r0'0:int32) ->
-            Borrow.borrow_final <int32> {r0'0} {Borrow.inherit_id (Borrow.get_id b) 1}
+          (fun (r0'1:int32) ->
+            Borrow.borrow_final <int32> {r0'1} {Borrow.inherit_id (Borrow.get_id b) 1}
               (fun (_ret':borrowed int32) ->
                  [ &_8 <- _ret' ] 
-                NonZero'0.t_NonZero {b.current}
-                  (fun (l_0'1:int32) ->  [ &b <- { b with current = NonZero'0.C_NonZero _8.final ; } ] s4)))
+                 [ &b <- { b with current = NonZero'0.C_NonZero _ret'.final ; } ] 
+                s4))
       | s4 = Borrow.borrow_final <int32> {_8.current} {Borrow.get_id _8}
-          (fun (_ret':borrowed int32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _7.final ; } ] s5)
+          (fun (_ret':borrowed int32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _ret'.final ; } ] s5)
       | s5 = inc'0 {_7} (fun (_ret':()) ->  [ &_6 <- _ret' ] s6)
       | s6 = bb1 ]
       
@@ -848,23 +841,24 @@ module M_borrows__frozen_dead [#"../borrows.rs" 69 0 69 66]
             Borrow.borrow_final <int32> {r0'0} {Borrow.inherit_id (Borrow.get_id x) 1}
               (fun (_ret':borrowed int32) ->
                  [ &_a <- _ret' ] 
-                NonZero'0.t_NonZero {x.current}
-                  (fun (l_0'0:int32) ->  [ &x <- { x with current = NonZero'0.C_NonZero _a.final ; } ] s1)))
-      | s1 = Borrow.borrow_final <NonZero'0.t_NonZero> {y.current} {Borrow.get_id y}
+                 [ &x <- { x with current = NonZero'0.C_NonZero _ret'.final ; } ] 
+                s1))
+      | s1 = {inv'0 y.current}
+        Borrow.borrow_final <NonZero'0.t_NonZero> {y.current} {Borrow.get_id y}
           (fun (_ret':borrowed (NonZero'0.t_NonZero)) ->
              [ &_6 <- _ret' ] 
-             [ &y <- { y with current = _6.final ; } ] 
+            -{inv'0 _ret'.final}-
+             [ &y <- { y with current = _ret'.final ; } ] 
             s2)
-      | s2 = -{inv'0 _6.final}- s3
-      | s3 = {[@expl:type invariant] inv'1 x} s4
-      | s4 = -{resolve'0 x}- s5
-      | s5 =  [ &x <- _6 ] s6
-      | s6 = {[@expl:type invariant] inv'1 x} s7
-      | s7 = -{resolve'0 x}- s8
-      | s8 = Borrow.borrow_final <int32> {_a.current} {Borrow.get_id _a}
-          (fun (_ret':borrowed int32) ->  [ &_8 <- _ret' ]  [ &_a <- { _a with current = _8.final ; } ] s9)
-      | s9 = inc'0 {_8} (fun (_ret':()) ->  [ &_7 <- _ret' ] s10)
-      | s10 = bb1 ]
+      | s2 = {[@expl:type invariant] inv'1 x} s3
+      | s3 = -{resolve'0 x}- s4
+      | s4 =  [ &x <- _6 ] s5
+      | s5 = {[@expl:type invariant] inv'1 x} s6
+      | s6 = -{resolve'0 x}- s7
+      | s7 = Borrow.borrow_final <int32> {_a.current} {Borrow.get_id _a}
+          (fun (_ret':borrowed int32) ->  [ &_8 <- _ret' ]  [ &_a <- { _a with current = _ret'.final ; } ] s8)
+      | s8 = inc'0 {_8} (fun (_ret':()) ->  [ &_7 <- _ret' ] s9)
+      | s9 = bb1 ]
       
     | bb1 = s0
       [ s0 = -{resolve'1 _a}- s1
@@ -1039,12 +1033,10 @@ module M_borrows__qyi5556307355051076399__foo [#"../borrows.rs" 93 4 93 25] (* S
             Borrow.borrow_final <int32> {ra'0} {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed int32) ->
                  [ &_5 <- _ret' ] 
-                SumTo10'0.t_SumTo10 {self.current}
-                  (fun (l_a'0:int32) (l_b'0:int32) ->
-                     [ &self <- { self with current = SumTo10'0.C_SumTo10 _5.final l_b'0 ; } ] 
-                    s1)))
+                 [ &self <- { self with current = SumTo10'0.C_SumTo10 _ret'.final rb'0 ; } ] 
+                s1))
       | s1 = Borrow.borrow_final <int32> {_5.current} {Borrow.get_id _5}
-          (fun (_ret':borrowed int32) ->  [ &_4 <- _ret' ]  [ &_5 <- { _5 with current = _4.final ; } ] s2)
+          (fun (_ret':borrowed int32) ->  [ &_4 <- _ret' ]  [ &_5 <- { _5 with current = _ret'.final ; } ] s2)
       | s2 = inc'0 {_4} (fun (_ret':()) ->  [ &_3 <- _ret' ] s3)
       | s3 = bb1 ]
       
@@ -1055,12 +1047,10 @@ module M_borrows__qyi5556307355051076399__foo [#"../borrows.rs" 93 4 93 25] (* S
             Borrow.borrow_final <int32> {rb'0} {Borrow.inherit_id (Borrow.get_id self) 2}
               (fun (_ret':borrowed int32) ->
                  [ &_8 <- _ret' ] 
-                SumTo10'0.t_SumTo10 {self.current}
-                  (fun (l_a'0:int32) (l_b'0:int32) ->
-                     [ &self <- { self with current = SumTo10'0.C_SumTo10 l_a'0 _8.final ; } ] 
-                    s2)))
+                 [ &self <- { self with current = SumTo10'0.C_SumTo10 ra'0 _ret'.final ; } ] 
+                s2))
       | s2 = Borrow.borrow_final <int32> {_8.current} {Borrow.get_id _8}
-          (fun (_ret':borrowed int32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _7.final ; } ] s3)
+          (fun (_ret':borrowed int32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _ret'.final ; } ] s3)
       | s3 = dec'0 {_7} (fun (_ret':()) ->  [ &_6 <- _ret' ] s4)
       | s4 = bb2 ]
       
