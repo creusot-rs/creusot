@@ -125,6 +125,15 @@ impl Print for Module {
         let doc = alloc
             .text("module ")
             .append(&*self.name)
+            .append(if self.attrs.is_empty() {
+                alloc.nil()
+            } else {
+                alloc.concat(self.attrs.iter().map(|attr| alloc.space().append(attr.pretty(alloc))))
+            })
+            .append(match self.meta.as_ref() {
+                Some(meta) => alloc.text(" (* ").append(meta.pretty(alloc)).append(" *)"),
+                None => alloc.nil(),
+            })
             .append(alloc.hardline())
             .append(
                 alloc

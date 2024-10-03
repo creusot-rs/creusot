@@ -440,6 +440,32 @@ impl<'tcx> Why3Generator<'tcx> {
             hi.col_display,
         ))
     }
+
+    pub fn display_impl_of(&self, def_id: DefId) -> Option<String> {
+        let tcx = self.ctx.tcx;
+        let mut id = def_id;
+        loop {
+            let key = tcx.def_key(id);
+            let parent_id = match key.parent {
+                None => return None, // The last segment is CrateRoot. Skip it.
+                Some(parent_id) => parent_id,
+            };
+            match key.disambiguated_data.data {
+                rustc_hir::definitions::DefPathData::Impl => {
+                    return Some(display_impl_subject(&tcx.impl_subject(id).skip_binder()))
+                }
+                _ => {}
+            }
+            id.index = parent_id;
+        }
+    }
+}
+
+fn display_impl_subject(i: &rustc_middle::ty::ImplSubject<'_>) -> String {
+    match i {
+        rustc_middle::ty::ImplSubject::Trait(trait_ref) => trait_ref.to_string(),
+        rustc_middle::ty::ImplSubject::Inherent(ty) => ty.to_string(),
+    }
 }
 
 // Closures inherit the generic parameters of the original function they were defined in, but
