@@ -33,7 +33,7 @@ use rustc_middle::{
 use rustc_span::{Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, UintTy};
-use std::fmt::Debug;
+use std::{cell::RefCell, fmt::Debug};
 use why3::{
     coma::{self, Arg, Defn, Expr, Param, Term},
     declaration::{Attribute, Contract, Decl, Meta, MetaArg, MetaIdent, Module, Signature},
@@ -996,6 +996,21 @@ impl<'tcx> Statement<'tcx> {
         let mut istmts = Vec::new();
         match self {
             Statement::Assignment(lhs, RValue::Borrow(bor_kind, rhs, triv_inv), _span) => {
+                let tcx = lower.ctx.tcx;
+                let lhs_ty = lhs.ty(tcx, lower.locals);
+                let lhs_ty_low = lower.ty(lhs_ty);
+                let rhs_ty = rhs.ty(tcx, lower.locals);
+                let rhs_ty_low = lower.ty(rhs_ty);
+                let rhs_local_ty = PlaceTy::from_ty(lower.locals[&rhs.local].ty);
+
+                let rhs_inv_fun = if matches!(triv_inv, TrivialInv::NonTrivial) {
+                    Some(Exp::qvar(lower.names.ty_inv(rhs_ty)))
+                } else {
+                    None
+                };
+
+                let lower = RefCell::new(lower);
+
                 let func = match bor_kind {
                     BorrowKind::Mut => {
                         coma::Expr::Symbol(QName::from_string("Borrow.borrow_mut").unwrap())
@@ -1007,60 +1022,71 @@ impl<'tcx> Statement<'tcx> {
 
                 let bor_id_arg;
                 let rhs_rplace;
+                let rhs_constr;
 
                 if let BorrowKind::Final(deref_index) = bor_kind {
-                    let focus = Exp::var(util::ident_of(rhs.local));
-                    let place_ty = PlaceTy::from_ty(lower.locals[&rhs.local].ty);
-                    let (original_borrow, original_borrow_ty) = place::projections_to_expr(
-                        lower,
-                        (focus, place_ty),
-                        &rhs.projection[..deref_index],
+                    let (original_borrow_ty, original_borrow, original_borrow_constr) =
+                        place::projections_to_expr(
+                            &lower,
+                            &mut istmts,
+                            rhs_local_ty,
+                            place::Focus::new(|_| Exp::var(util::ident_of(rhs.local))),
+                            Box::new(|_, x| x),
+                            &rhs.projection[..deref_index],
+                        );
+                    let (_, foc, constr) = place::projections_to_expr(
+                        &lower,
                         &mut istmts,
-                    );
-                    rhs_rplace = place::projections_to_expr(
-                        lower,
-                        (original_borrow.clone(), original_borrow_ty),
+                        original_borrow_ty,
+                        original_borrow.clone(),
+                        original_borrow_constr,
                         &rhs.projection[deref_index..],
-                        &mut istmts,
-                    )
-                    .0;
+                    );
+                    rhs_rplace = foc.call(&mut istmts);
+                    rhs_constr = constr;
 
                     let borrow_id = borrow_generated_id(
-                        original_borrow,
+                        original_borrow.call(&mut istmts),
                         &rhs.projection[deref_index + 1..],
                         |sym| Exp::var(util::ident_of(*sym)),
                     );
 
                     bor_id_arg = Some(Arg::Term(borrow_id));
                 } else {
-                    rhs_rplace = rplace_to_expr(lower, &rhs, &mut istmts);
+                    let (_, foc, constr) = place::projections_to_expr(
+                        &lower,
+                        &mut istmts,
+                        rhs_local_ty,
+                        place::Focus::new(|_| Exp::var(util::ident_of(rhs.local))),
+                        Box::new(|_, x| x),
+                        &rhs.projection,
+                    );
+                    rhs_rplace = foc.call(&mut istmts);
+                    rhs_constr = constr;
                     bor_id_arg = None;
                 }
 
-                let rhs_ty = rhs.ty(lower.ctx.tcx, lower.locals);
-
-                if matches!(triv_inv, TrivialInv::NonTrivial) {
-                    let inv_fun = Exp::qvar(lower.names.ty_inv(rhs_ty));
-                    istmts.push(IntermediateStmt::Assert(inv_fun.app_to(rhs_rplace.clone())));
+                if let Some(ref rhs_inv_fun) = rhs_inv_fun {
+                    istmts.push(IntermediateStmt::Assert(
+                        rhs_inv_fun.clone().app_to(rhs_rplace.clone()),
+                    ));
                 }
 
-                let mut args = vec![Arg::Ty(lower.ty(rhs_ty)), Arg::Term(rhs_rplace.clone())];
+                let mut args = vec![Arg::Ty(rhs_ty_low), Arg::Term(rhs_rplace)];
                 args.extend(bor_id_arg);
 
-                let lhs_ty = lhs.ty(lower.ctx.tcx, lower.locals);
-                let borrow_call =
-                    IntermediateStmt::call("_ret'".into(), lower.ty(lhs_ty), func, args);
+                let borrow_call = IntermediateStmt::call("_ret'".into(), lhs_ty_low, func, args);
                 istmts.push(borrow_call);
-                lower.assignment(&lhs, Exp::var("_ret'"), &mut istmts);
+                lower.borrow_mut().assignment(&lhs, Exp::var("_ret'"), &mut istmts);
 
-                let reassign = rplace_to_expr(lower, &lhs, &mut istmts).field("final");
+                let reassign = Exp::var("_ret'").field("final");
 
-                if matches!(triv_inv, TrivialInv::NonTrivial) {
-                    let inv_fun = Exp::qvar(lower.names.ty_inv(rhs_ty));
-                    istmts.push(IntermediateStmt::Assume(inv_fun.app_to(reassign.clone())));
+                if let Some(rhs_inv_fun) = rhs_inv_fun {
+                    istmts.push(IntermediateStmt::Assume(rhs_inv_fun.app_to(reassign.clone())));
                 }
 
-                lower.assignment(&rhs, reassign, &mut istmts);
+                let new_rhs = rhs_constr(&mut istmts, reassign);
+                istmts.push(IntermediateStmt::Assign(Ident::build(rhs.local.as_str()), new_rhs));
             }
             Statement::Assignment(lhs, e, _span) => {
                 let rhs = e.to_why(lower, lhs.ty(lower.ctx.tcx, lower.locals), &mut istmts);

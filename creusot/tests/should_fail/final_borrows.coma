@@ -39,8 +39,8 @@ module M_final_borrows__not_final_borrow [#"../final_borrows.rs" 5 0 5 45]
         Borrow.borrow_mut <t> {bor.current}
           (fun (_ret':borrowed t) ->
              [ &b1 <- _ret' ] 
-            -{inv'0 b1.final}-
-             [ &bor <- { bor with current = b1.final ; } ] 
+            -{inv'0 _ret'.final}-
+             [ &bor <- { bor with current = _ret'.final ; } ] 
             s1)
       | s1 = {[@expl:type invariant] inv'1 b1} s2
       | s2 = -{resolve'0 b1}- s3
@@ -48,8 +48,8 @@ module M_final_borrows__not_final_borrow [#"../final_borrows.rs" 5 0 5 45]
         Borrow.borrow_final <t> {bor.current} {Borrow.get_id bor}
           (fun (_ret':borrowed t) ->
              [ &_b2 <- _ret' ] 
-            -{inv'0 _b2.final}-
-             [ &bor <- { bor with current = _b2.final ; } ] 
+            -{inv'0 _ret'.final}-
+             [ &bor <- { bor with current = _ret'.final ; } ] 
             s4)
       | s4 = {[@expl:type invariant] inv'1 _b2} s5
       | s5 = -{resolve'0 _b2}- s6
@@ -102,8 +102,8 @@ module M_final_borrows__store_changes_prophecy [#"../final_borrows.rs" 11 0 11 5
         Borrow.borrow_mut <t> {bor.current}
           (fun (_ret':borrowed t) ->
              [ &b1 <- _ret' ] 
-            -{inv'0 b1.final}-
-             [ &bor <- { bor with current = b1.final ; } ] 
+            -{inv'0 _ret'.final}-
+             [ &bor <- { bor with current = _ret'.final ; } ] 
             s1)
       | s1 = {[@expl:type invariant] inv'1 b1} s2
       | s2 = -{resolve'0 b1}- s3
@@ -160,8 +160,8 @@ module M_final_borrows__store_changes_prophecy_2 [#"../final_borrows.rs" 19 0 19
         Borrow.borrow_mut <t> {bor.current}
           (fun (_ret':borrowed t) ->
              [ &b1 <- _ret' ] 
-            -{inv'0 b1.final}-
-             [ &bor <- { bor with current = b1.final ; } ] 
+            -{inv'0 _ret'.final}-
+             [ &bor <- { bor with current = _ret'.final ; } ] 
             s1)
       | s1 =  [ &b1 <- { b1 with current = x ; } ] s2
       | s2 = {[@expl:type invariant] inv'1 b1} s3
@@ -217,7 +217,7 @@ module M_final_borrows__call_changes_prophecy [#"../final_borrows.rs" 27 0 27 43
     [ bb0 = s0 [ s0 =  [ &bor_snap <- [%#sfinal_borrows0] Snapshot.new bor ] s1 | s1 = bb1 ] 
     | bb1 = s0
       [ s0 = Borrow.borrow_mut <int32> {bor.current}
-          (fun (_ret':borrowed int32) ->  [ &b1 <- _ret' ]  [ &bor <- { bor with current = b1.final ; } ] s1)
+          (fun (_ret':borrowed int32) ->  [ &b1 <- _ret' ]  [ &bor <- { bor with current = _ret'.final ; } ] s1)
       | s1 =  [ &b1_snap <- [%#sfinal_borrows1] Snapshot.new b1 ] s2
       | s2 = bb2 ]
       
@@ -274,19 +274,19 @@ module M_final_borrows__unnesting_fails [#"../final_borrows.rs" 42 0 42 24]
   let rec unnesting_fails (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &x <- [%#sfinal_borrows0] (0 : int32) ] s1
-      | s1 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &bor <- _ret' ]  [ &x <- bor.final ] s2)
+      | s1 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &bor <- _ret' ]  [ &x <- _ret'.final ] s2)
       | s2 = Borrow.borrow_mut <borrowed int32> {bor}
-          (fun (_ret':borrowed (borrowed int32)) ->  [ &nested <- _ret' ]  [ &bor <- nested.final ] s3)
+          (fun (_ret':borrowed (borrowed int32)) ->  [ &nested <- _ret' ]  [ &bor <- _ret'.final ] s3)
       | s3 = Borrow.borrow_mut <int32> {(nested.current).current}
           (fun (_ret':borrowed int32) ->
              [ &rebor1 <- _ret' ] 
-             [ &nested <- { nested with current = { nested.current with current = rebor1.final ; } ; } ] 
+             [ &nested <- { nested with current = { nested.current with current = _ret'.final ; } ; } ] 
             s4)
       | s4 = -{resolve'0 rebor1}- s5
       | s5 = Borrow.borrow_mut <int32> {(nested.current).current}
           (fun (_ret':borrowed int32) ->
              [ &rebor2 <- _ret' ] 
-             [ &nested <- { nested with current = { nested.current with current = rebor2.final ; } ; } ] 
+             [ &nested <- { nested with current = { nested.current with current = _ret'.final ; } ; } ] 
             s6)
       | s6 = -{resolve'0 rebor2}- s7
       | s7 = -{resolve'1 nested}- s8
@@ -366,8 +366,8 @@ module M_final_borrows__move_place_without_deref [#"../final_borrows.rs" 53 0 53
         Borrow.borrow_mut <t> {bor.current}
           (fun (_ret':borrowed t) ->
              [ &b1 <- _ret' ] 
-            -{inv'0 b1.final}-
-             [ &bor <- { bor with current = b1.final ; } ] 
+            -{inv'0 _ret'.final}-
+             [ &bor <- { bor with current = _ret'.final ; } ] 
             s1)
       | s1 = {[@expl:type invariant] inv'1 b1} s2
       | s2 = -{resolve'0 b1}- s3

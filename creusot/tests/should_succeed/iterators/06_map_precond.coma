@@ -1611,10 +1611,6 @@ module M_06_map_precond__qyi18374305379273630819__next [#"../06_map_precond.rs" 
   
   axiom inv'1 : forall x : f [inv'1 x] . inv'1 x  -> invariant'1 x
   
-  predicate invariant'0 (self : i)
-  
-  axiom inv'0 : forall x : i [inv'0 x] . inv'0 x  -> invariant'0 x
-  
   function produces_trans'0 [#"../common.rs" 25 4 25 91] (a : i) (ab : Seq.seq t_Item'0) (b : i) (bc : Seq.seq t_Item'0) (c : i) : ()
     
   
@@ -1627,6 +1623,10 @@ module M_06_map_precond__qyi18374305379273630819__next [#"../06_map_precond.rs" 
   
   axiom produces_refl'0_spec : forall self : i . ([%#span29] inv'0 self)
    -> ([%#span30] produces'0 self (Seq.empty  : Seq.seq t_Item'0) self)
+  
+  predicate invariant'0 (self : i)
+  
+  axiom inv'0 : forall x : i [inv'0 x] . inv'0 x  -> invariant'0 x
   
   use prelude.prelude.Snapshot
   
@@ -1740,11 +1740,9 @@ module M_06_map_precond__qyi18374305379273630819__next [#"../06_map_precond.rs" 
             Borrow.borrow_final <i> {riter'0} {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed i) ->
                  [ &_4 <- _ret' ] 
-                -{inv'0 _4.final}-
-                Map'0.t_Map <i> <b> <f> <t_Item'0> {self.current}
-                  (fun (l_iter'0:i) (l_func'0:f) (l_produced'0:Snapshot.snap_ty (Seq.seq t_Item'0)) ->
-                     [ &self <- { self with current = Map'0.C_Map _4.final l_func'0 l_produced'0 ; } ] 
-                    s1)))
+                -{inv'0 _ret'.final}-
+                 [ &self <- { self with current = Map'0.C_Map _ret'.final rfunc'0 rproduced'0 ; } ] 
+                s1))
       | s1 = next'0 {_4} (fun (_ret':Option'0.t_Option t_Item'0) ->  [ &_3 <- _ret' ] s2)
       | s2 = bb1 ]
       
@@ -1770,11 +1768,9 @@ module M_06_map_precond__qyi18374305379273630819__next [#"../06_map_precond.rs" 
             Borrow.borrow_final <f> {rfunc'0} {Borrow.inherit_id (Borrow.get_id self) 2}
               (fun (_ret':borrowed f) ->
                  [ &_12 <- _ret' ] 
-                -{inv'1 _12.final}-
-                Map'0.t_Map <i> <b> <f> <t_Item'0> {self.current}
-                  (fun (l_iter'0:i) (l_func'0:f) (l_produced'0:Snapshot.snap_ty (Seq.seq t_Item'0)) ->
-                     [ &self <- { self with current = Map'0.C_Map l_iter'0 _12.final l_produced'0 ; } ] 
-                    s1)))
+                -{inv'1 _ret'.final}-
+                 [ &self <- { self with current = Map'0.C_Map riter'0 _ret'.final rproduced'0 ; } ] 
+                s1))
       | s1 = Map'0.t_Map <i> <b> <f> <t_Item'0> {self.current}
           (fun (riter'1:i) (rfunc'1:f) (rproduced'1:Snapshot.snap_ty (Seq.seq t_Item'0)) ->
              [ &_13 <- (v, rproduced'1) ] 
@@ -1785,8 +1781,8 @@ module M_06_map_precond__qyi18374305379273630819__next [#"../06_map_precond.rs" 
     | bb8 = bb9
     | bb9 = s0
       [ s0 = Map'0.t_Map <i> <b> <f> <t_Item'0> {self.current}
-          (fun (l_iter'0:i) (l_func'0:f) (l_produced'0:Snapshot.snap_ty (Seq.seq t_Item'0)) ->
-             [ &self <- { self with current = Map'0.C_Map l_iter'0 l_func'0 produced ; } ] 
+          (fun (riter'0:i) (rfunc'0:f) (rproduced'0:Snapshot.snap_ty (Seq.seq t_Item'0)) ->
+             [ &self <- { self with current = Map'0.C_Map riter'0 rfunc'0 produced ; } ] 
             s1)
       | s1 = {[@expl:type invariant] inv'2 self} s2
       | s2 = -{resolve'0 self}- s3
@@ -1800,8 +1796,8 @@ module M_06_map_precond__qyi18374305379273630819__next [#"../06_map_precond.rs" 
     | bb4 = s0 [ s0 =  [ &_20 <- [%#s06_map_precond3] Snapshot.new (Seq.empty  : Seq.seq t_Item'0) ] s1 | s1 = bb14 ] 
     | bb14 = s0
       [ s0 = Map'0.t_Map <i> <b> <f> <t_Item'0> {self.current}
-          (fun (l_iter'0:i) (l_func'0:f) (l_produced'0:Snapshot.snap_ty (Seq.seq t_Item'0)) ->
-             [ &self <- { self with current = Map'0.C_Map l_iter'0 l_func'0 _20 ; } ] 
+          (fun (riter'0:i) (rfunc'0:f) (rproduced'0:Snapshot.snap_ty (Seq.seq t_Item'0)) ->
+             [ &self <- { self with current = Map'0.C_Map riter'0 rfunc'0 _20 ; } ] 
             s1)
       | s1 = {[@expl:type invariant] inv'2 self} s2
       | s2 = -{resolve'0 self}- s3
@@ -2899,9 +2895,9 @@ module M_06_map_precond__counter__qy123zclosureqy35z2qy125z [#"../06_map_precond
             UIntSize.add {r'0.current} {[%#s06_map_precond0] (1 : usize)}
               (fun (_ret':usize) ->
                 Closure'0.m_06_map_precond__counter__qy123zclosureqy35z2qy125z <i> {_1.current}
-                  (fun (l'0:borrowed usize) ->
+                  (fun (r'1:borrowed usize) ->
                     
-                    [ &_1 <- { _1 with current = Closure'0.M_06_map_precond__counter__qy123zclosureqy35z2qy125z ({ l'0 with current = _ret' ; }) ; } ]
+                    [ &_1 <- { _1 with current = Closure'0.M_06_map_precond__counter__qy123zclosureqy35z2qy125z ({ r'1 with current = _ret' ; }) ; } ]
                     
                     s1)))
       | s1 = -{resolve'0 _1}- s2
@@ -3158,7 +3154,8 @@ module M_06_map_precond__counter [#"../06_map_precond.rs" 222 0 222 48]
     [ bb0 = bb1
     | bb1 = s0
       [ s0 =  [ &cnt <- [%#s06_map_precond0] (0 : usize) ] s1
-      | s1 = Borrow.borrow_mut <usize> {cnt} (fun (_ret':borrowed usize) ->  [ &_8 <- _ret' ]  [ &cnt <- _8.final ] s2)
+      | s1 = Borrow.borrow_mut <usize> {cnt}
+          (fun (_ret':borrowed usize) ->  [ &_8 <- _ret' ]  [ &cnt <- _ret'.final ] s2)
       | s2 =  [ &_7 <- Closure'0.M_06_map_precond__counter__qy123zclosureqy35z2qy125z _8 ] s3
       | s3 = map'0 {iter} {_7}
           (fun (_ret':Map'0.t_Map i uint32 (Closure'0.m_06_map_precond__counter__qy123zclosureqy35z2qy125z i) uint32) ->

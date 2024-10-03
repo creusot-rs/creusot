@@ -51,7 +51,11 @@ module M_492__reborrow_tuple [#"../492.rs" 5 0 5 52]
     [ bb0 = s0
       [ s0 = {inv'0 x.current}
         Borrow.borrow_final <t> {x.current} {Borrow.get_id x}
-          (fun (_ret':borrowed t) ->  [ &_3 <- _ret' ] -{inv'0 _3.final}-  [ &x <- { x with current = _3.final ; } ] s1)
+          (fun (_ret':borrowed t) ->
+             [ &_3 <- _ret' ] 
+            -{inv'0 _ret'.final}-
+             [ &x <- { x with current = _ret'.final ; } ] 
+            s1)
       | s1 =  [ &_0 <- (_3, ([%#s4920] (32 : uint32))) ] s2
       | s2 = {[@expl:type invariant] inv'1 x} s3
       | s3 = -{resolve'0 x}- s4
@@ -117,9 +121,9 @@ module M_492__test [#"../492.rs" 10 0 10 13]
   let rec test (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &x <- [%#s4920] (5 : int32) ] s1
-      | s1 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &_6 <- _ret' ]  [ &x <- _6.final ] s2)
+      | s1 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &_6 <- _ret' ]  [ &x <- _ret'.final ] s2)
       | s2 = Borrow.borrow_final <int32> {_6.current} {Borrow.get_id _6}
-          (fun (_ret':borrowed int32) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _5.final ; } ] s3)
+          (fun (_ret':borrowed int32) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _ret'.final ; } ] s3)
       | s3 = reborrow_tuple'0 {_5} (fun (_ret':(borrowed int32, uint32)) ->  [ &_4 <- _ret' ] s4)
       | s4 = bb1 ]
       
