@@ -383,7 +383,7 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
     decls.extend(clones);
     decls.extend(body_decls);
 
-    let name = impl_name(ctx, def_id);
+    let name = module_ident(ctx, def_id);
     let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
     let meta = ctx.display_impl_of(def_id);
     Some(Module { name, decls, attrs, meta })
@@ -450,6 +450,6 @@ fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
     Axiom { name: name.into(), rewrite: false, axiom }
 }
 
-pub(crate) fn impl_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
-    format!("{}__Impl", module_name(ctx.tcx, def_id)).into()
+pub(crate) fn module_ident(ctx: &TranslationCtx, def_id: DefId) -> Ident {
+    Ident::build(module_name(ctx.tcx, def_id).as_str())
 }
