@@ -5,7 +5,7 @@ use syn::{
     parse::Parse,
     punctuated::{Pair, Punctuated},
     spanned::Spanned,
-    token::{Brace, Colon, Comma, For, Impl, Paren, Plus, Semi, Trait, Unsafe},
+    token::{Brace, Colon, Comma, For, Impl, Paren, Plus, Trait, Unsafe},
     visit_mut::VisitMut,
     *,
 };
@@ -19,47 +19,47 @@ pub struct ExternSpecs(Vec<ExternSpec>);
 // - A trait spec defining a subset of a trait's methods
 // - An impl spec defining a subset of a type or trait impl's methods
 // - A bare function spec defining a single non-trait or impl function
-pub enum ExternSpec {
+enum ExternSpec {
     Mod(ExternMod),
     Trait(ExternTrait),
     Impl(ExternImpl),
     Fn(ExternMethod),
 }
 
-pub struct ExternMod {
+struct ExternMod {
     ident: Ident,
     content: Vec<ExternSpec>,
 }
+
 #[allow(dead_code)]
-pub struct ExternTrait {
-    pub unsafety: Option<Unsafe>,
-    pub trait_token: Trait,
-    pub ident: Ident,
-    pub generics: Generics,
-    pub colon_token: Option<Colon>,
-    pub supertraits: Punctuated<TypeParamBound, Plus>,
-    pub brace_token: Brace,
-    pub items: Vec<ExternMethod>,
+struct ExternTrait {
+    unsafety: Option<Unsafe>,
+    trait_token: Trait,
+    ident: Ident,
+    generics: Generics,
+    colon_token: Option<Colon>,
+    supertraits: Punctuated<TypeParamBound, Plus>,
+    brace_token: Brace,
+    items: Vec<ExternMethod>,
 }
 
 #[allow(dead_code)]
-pub struct ExternImpl {
-    pub attrs: Vec<Attribute>,
-    pub defaultness: Option<token::Default>,
-    pub unsafety: Option<Unsafe>,
-    pub impl_token: Impl,
-    pub generics: Generics,
-    pub trait_: Option<(Path, For)>,
-    pub self_ty: Box<Type>,
-    pub brace_token: Brace,
-    pub items: Vec<ExternMethod>,
+struct ExternImpl {
+    attrs: Vec<Attribute>,
+    defaultness: Option<token::Default>,
+    unsafety: Option<Unsafe>,
+    impl_token: Impl,
+    generics: Generics,
+    trait_: Option<(Path, For)>,
+    self_ty: Box<Type>,
+    brace_token: Brace,
+    items: Vec<ExternMethod>,
 }
 
-#[allow(dead_code)]
-pub struct ExternMethod {
-    pub attrs: Vec<Attribute>,
-    pub sig: Signature,
-    pub semi_token: Option<Semi>,
+struct ExternMethod {
+    attrs: Vec<Attribute>,
+    sig: Signature,
+    body: std::result::Result<Block, Token![;]>,
 }
 
 // Information related to desugaring.
@@ -83,6 +83,7 @@ pub struct FlatSpec {
     inputs: Punctuated<FnArg, Comma>,
     output: ReturnType,
     impl_data: Option<ImplData>,
+    body: Option<Block>,
 }
 
 impl ExternSpecs {
@@ -138,11 +139,25 @@ impl FlatSpec {
             })
             .collect();
 
-        let call = ExprCall {
-            attrs: Vec::new(),
-            func: Box::new(Expr::Path(self.path.clone())),
-            paren_token: Paren::default(),
-            args,
+        let body_attrs = self.attrs.clone();
+        self.attrs.push(Attribute {
+            pound_token: Default::default(),
+            style: AttrStyle::Outer,
+            bracket_token: Default::default(),
+            meta: parse_quote! { creusot::no_translate },
+        });
+
+        let block = Block {
+            brace_token: Brace::default(),
+            stmts: vec![Stmt::Expr(
+                Expr::Call(ExprCall {
+                    attrs: Vec::new(),
+                    func: Box::new(Expr::Path(self.path.clone())),
+                    paren_token: Paren::default(),
+                    args,
+                }),
+                None,
+            )],
         };
 
         let ident = generate_unique_ident("extern_spec");
@@ -201,7 +216,7 @@ impl FlatSpec {
             }
         }
 
-        let sig = Signature {
+        let mut sig = Signature {
             constness: None,
             asyncness: None,
             unsafety: None,
@@ -218,14 +233,21 @@ impl FlatSpec {
         let f = ItemFn {
             attrs: self.attrs,
             vis: Visibility::Inherited,
-            sig,
-            block: Box::new(Block {
-                brace_token: Brace::default(),
-                stmts: vec![Stmt::Expr(Expr::Call(call), None)],
-            }),
+            sig: sig.clone(),
+            block: Box::new(block),
         };
 
-        quote! { #[allow(dead_code)] #f }
+        let f_with_body = if let Some(mut b) = self.body {
+            escape_self_in_block(&mut b);
+            sig.ident = Ident::new(&format!("{}_body", sig.ident.to_string()), sig.ident.span());
+            let f =
+                ItemFn { attrs: body_attrs, vis: Visibility::Inherited, sig, block: Box::new(b) };
+            Some(quote! { #[allow(dead_code)] #f })
+        } else {
+            None
+        };
+
+        quote! { #[allow(dead_code)] #f #f_with_body }
     }
 }
 
@@ -271,6 +293,18 @@ fn escape_self_in_contracts(attrs: &mut Vec<Attribute>) -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn escape_self_in_block(b: &mut Block) {
+    struct BlockSelfRename;
+    impl VisitMut for BlockSelfRename {
+        fn visit_expr_path_mut(&mut self, i: &mut ExprPath) {
+            if i.path.is_ident("self") {
+                i.path = parse_quote!(self_);
+            }
+        }
+    }
+    BlockSelfRename.visit_block_mut(b);
 }
 
 fn escape_self_in_term(t: &mut Term) {
@@ -483,6 +517,7 @@ fn flatten(
                 generics: fun.sig.generics,
                 inputs: fun.sig.inputs,
                 output: fun.sig.output,
+                body: fun.body.ok(),
             })
         }
     }
@@ -672,8 +707,9 @@ impl Parse for ExternMethod {
         let attrs = input.call(Attribute::parse_outer)?;
         let sig: Signature = input.parse()?;
 
-        let semi_token = Some(input.parse()?);
+        let body =
+            if let Ok(semi) = input.parse::<Token![;]>() { Err(semi) } else { Ok(input.parse()?) };
 
-        Ok(ExternMethod { attrs, sig, semi_token })
+        Ok(ExternMethod { attrs, sig, body })
     }
 }
