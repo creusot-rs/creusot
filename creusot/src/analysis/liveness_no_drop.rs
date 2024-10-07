@@ -15,10 +15,16 @@ use rustc_mir_dataflow::{
 use crate::resolve::place_contains_borrow_deref;
 
 /// A liveness analysis used for insertion of "resolve" statements.
+/// This is meant to be used exclusively for `Resolve`.
 /// It differs from Rustc's :
 /// - It's based on move paths, and not on locals
-/// - It ignores `drop`. This is meant to be used exclusively for `Resolve`.
-///   FIXME: Replace this if any unsoundness seems to occur with borrows.
+/// - It ignores `drop`. This is only sound if drop does never
+///   modify a mutable borrow contained in the drop value.
+///   For now, in Creusot, we do not support implementing Drop, and we assume that it
+///   has no observable effect, so this is coherent with ignoring drop in this analysis.
+///   If someday we want to support drop in some way, one solution is to ignore drop when
+///   all the type parameters are [may_dangle], consider it as a use if none of the type
+///   parameter is [may_dangle], and emit an error otherwise.
 /// - Dereferencing boxes for writing is considered as a "Def". Dereferencing mutable
 ///   borrows for writing is still considered as a Use.
 pub struct MaybeLiveExceptDrop<'a, 'tcx> {
