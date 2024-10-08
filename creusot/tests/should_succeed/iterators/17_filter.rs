@@ -30,7 +30,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Invariant for Filter<I, F> {
             // precision of postcondition. In some sense this is not *necessary*, but without this we cannot prove that we return *all* elements
             // for all elements where the predicate evaluated to true, since we don't actually have access to the closure's return value directly,
             // only what the postcondition says about it.
-            (forall<f : &mut F, i : _> f.postcondition_mut((i,), true) != f.postcondition_mut((i,), false))
+            (forall<f : &mut F, i : _> !(f.postcondition_mut((i,), true) && f.postcondition_mut((i,), false)))
         }
     }
 }
@@ -41,7 +41,11 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
     #[open]
     #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! {(exists<e : &mut I, s: Seq<_>> self.iter.produces(s, *e) && e.completed()) && (*self).func == (^self).func }
+        pearlite! {
+            (exists<s: Seq<_>, e : &mut I > self.iter.produces(s, *e) && e.completed() &&
+                forall<i : _> 0 <= i && i < s.len() ==> self.func.postcondition_mut((&s[i],), false))
+            && (*self).func == (^self).func
+        }
     }
 
     #[law]
@@ -75,8 +79,8 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
                 (forall<i : _, j :_ > 0 <= i && i <= j && j < visited.len() ==> 0 <= f.get(i) && f.get(i) <= f.get(j) && f.get(j) < s.len()) &&
                 (forall<i : _, > 0 <= i && i < visited.len() ==> visited[i] == s[f.get(i)]) &&
 
-                (forall<bor_f : &mut F> *bor_f == self.func && ^bor_f == self.func ==>
-                    forall< i : _> 0 <= i &&  i < s.len() ==>  (exists<j : _> 0 <= j && j < visited.len() && f.get(j) == i) == bor_f.postcondition_mut((&s[i],), true)
+                (forall<bor_f : &mut F, i : _> *bor_f == self.func && ^bor_f == self.func ==>
+                    0 <= i &&  i < s.len() ==>  (exists<j : _> 0 <= j && j < visited.len() && f.get(j) == i) == bor_f.postcondition_mut((&s[i],), true)
                 )
         }
     }
@@ -108,13 +112,54 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
     }
 }
 
-// Basic test to verify that closure properly satisfies invariant.
-pub fn is_even<I: Iterator<Item = u32>>(iter: I) {
-    let mut f = Filter {
-        iter,
-        func: #[ensures(result == (*x < 10u32))]
-        |x| *x < 10,
-    };
+#[pure]
+#[requires(immutable(f))]
+#[requires(no_precondition(f))]
+#[requires(plain(f))]
+#[requires(precise(f))]
+#[ensures(result.iter == iter && result.func == f)]
+pub fn filter<I: Iterator, P>(iter: I, f: P) -> Filter<I, P>
+where
+    P: for<'a> FnMut(&I::Item) -> bool,
+{
+    Filter { iter, func: f }
+}
 
-    let _ = f.next();
+#[ensures(forall< i : _> 0 <= i && i < result@.len() ==> result[i] < n)]
+#[ensures(forall< i : _> 0 <= i && i < result@.len() ==> v@.contains(result[i]))]
+pub fn less_than(v: Vec<u32>, n: u32) -> Vec<u32> {
+    v.into_iter()
+        .filter(
+            #[ensures(result == (*i < n))]
+            |i| *i < n,
+        )
+        .collect()
+}
+
+#[open]
+#[predicate]
+#[allow(unused_variables)]
+pub fn no_precondition<A, F: FnMut(A) -> bool>(f: F) -> bool {
+    pearlite! { forall<f : F, i : A> f.precondition((i,)) }
+}
+
+#[open]
+#[predicate]
+#[allow(unused_variables)]
+pub fn immutable<A, F: FnMut(A) -> bool>(f: F) -> bool {
+    pearlite! { forall<f : F, g : F> f.unnest(g) ==> f == g }
+}
+
+#[open]
+#[predicate(prophetic)]
+#[allow(unused_variables)]
+pub fn plain<A, F: FnMut(A) -> bool>(f: F) -> bool {
+    pearlite! { forall<f : &mut F, g : &mut F, i :_, b :_> *f == *g && ^f == ^g ==> f.postcondition_mut((i,), b) == g.postcondition_mut((i,), b) }
+}
+
+#[open]
+#[predicate]
+#[allow(unused_variables)]
+pub fn precise<A, F: FnMut(A) -> bool>(f: F) -> bool {
+    pearlite! { forall<f : &mut F, i : _> !(f.postcondition_mut((i,), true) && f.postcondition_mut((i,), false)) }
 }

@@ -41,3 +41,8 @@ impl<T: ?Sized> Invariant for &mut T {
 pub fn inv<T: ?Sized>(_: T) -> bool {
     true
 }
+
+#[cfg(not(creusot))]
+pub fn inv<T: ?Sized>(_: &T) -> bool {
+    panic!()
+}
