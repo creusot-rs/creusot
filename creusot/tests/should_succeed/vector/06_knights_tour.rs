@@ -91,7 +91,7 @@ impl Board {
 
 #[trusted]
 #[ensures(result@.len() == 8)]
-#[ensures(forall<i : Int> 0 <= i && i < 8 ==> -2 <= result[i].0@ && result[i].0@ <= 2 && -2 <= result[i].1@ && result[i].1@ <= 2)]
+#[ensures(forall<i: Int> 0 <= i && i < 8 ==>  -2 <= result[i].0@ && result[i].0@ <= 2 && -2 <= result[i].1@ && result[i].1@ <= 2)]
 fn moves() -> Vec<(isize, isize)> {
     let mut v = Vec::new();
     v.push((2, 1));
@@ -102,7 +102,6 @@ fn moves() -> Vec<(isize, isize)> {
     v.push((-1, -2));
     v.push((1, -2));
     v.push((2, -1));
-
     v
 }
 
@@ -148,6 +147,7 @@ pub fn knights_tour(size: usize, x: usize, y: usize) -> Option<Board> {
         #[invariant(forall<i: Int> 0 <= i && i < candidates@.len() ==>
                     board.in_bounds(candidates[i].1))]
         for m in moves() {
+            proof_assert! { forall<r:Seq<_>, a: Seq<_>, b:Seq<_>> r == a.concat(Seq::singleton(m).concat(b)) ==> m == r[a.len()] };
             let adj = p.mov(&m);
             if board.available(adj) {
                 let degree = board.count_degree(adj);
