@@ -277,7 +277,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         let def_id = Some(def_id);
         let builtin_attr = get_builtin(self.ctx.tcx, def_id.unwrap());
 
-        if let Some(builtin) = builtin_attr.and_then(|a| QName::from_string(&a.as_str())) {
+        if let Some(builtin) = builtin_attr.map(|a| QName::from_string(&a.as_str())) {
             self.names.value(def_id.unwrap(), _substs);
             // self.names.import_builtin_module(builtin.clone().module_qname());
 

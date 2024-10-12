@@ -5,8 +5,6 @@ module T_core__ptr__non_null__NonNull
   type t_NonNull 't =
     | C_NonNull opaque_ptr
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
     [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer}) ]
     
@@ -14,8 +12,6 @@ end
 module T_core__marker__PhantomData
   type t_PhantomData 't =
     | C_PhantomData
-  
-  function any_l (_ : 'b) : 'a
   
   let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any [ good -> {C_PhantomData  = input} (! ret) ] 
 end
@@ -26,8 +22,6 @@ module T_core__ptr__unique__Unique
   
   type t_Unique 't =
     | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
-  
-  function any_l (_ : 'b) : 'a
   
   let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
     [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
@@ -43,8 +37,6 @@ module T_alloc__raw_vec__Cap
   type t_Cap  =
     | C_Cap usize
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
     [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0}) ]
     
@@ -56,8 +48,6 @@ module T_alloc__raw_vec__RawVec
   
   type t_RawVec 't 'a =
     | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
-  
-  function any_l (_ : 'b) : 'a
   
   let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
     [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
@@ -74,8 +64,6 @@ module T_alloc__vec__Vec
   type t_Vec 't 'a =
     | C_Vec (RawVec'0.t_RawVec 't 'a) usize
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
     [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
     
@@ -83,8 +71,6 @@ end
 module T_alloc__alloc__Global
   type t_Global  =
     | C_Global
-  
-  function any_l (_ : 'b) : 'a
   
   let rec t_Global (input:t_Global) (ret  )= any [ good -> {C_Global  = input} (! ret) ] 
 end
@@ -278,8 +264,6 @@ module T_core__option__Option
     | C_None
     | C_Some 't
   
-  function any_l (_ : 'b) : 'a
-  
   let rec v_None < 't > (input:t_Option 't) (ret  )= any
     [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} (! {false} any) ]
     
@@ -292,8 +276,6 @@ end
 module T_core__ops__range__Range
   type t_Range 'idx =
     | C_Range 'idx 'idx
-  
-  function any_l (_ : 'b) : 'a
   
   let rec t_Range < 'idx > (input:t_Range 'idx) (ret  (start:'idx) (end':'idx))= any
     [ good (start:'idx) (end':'idx)-> {C_Range start end' = input} (! ret {start} {end'}) ]
@@ -598,10 +580,10 @@ module M_index_range__test_range [#"../index_range.rs" 27 0 27 19]
     \/ UIntSize.to_int (T_core__ops__range__Range.t_Range__end self) <= i)
     /\ i < Seq.length old'  -> Seq.get old' i = Seq.get fin i
   
-  use prelude.seq_ext.SeqExt
+  use seq.Seq
   
   predicate has_value'0 (self : Range'0.t_Range usize) (seq : Seq.seq int32) (out : slice int32) =
-    [%#span94] SeqExt.subsequence seq (UIntSize.to_int (T_core__ops__range__Range.t_Range__start self)) (UIntSize.to_int (T_core__ops__range__Range.t_Range__end self))
+    [%#span94] Seq.([..]) seq (UIntSize.to_int (T_core__ops__range__Range.t_Range__start self)) (UIntSize.to_int (T_core__ops__range__Range.t_Range__end self))
     = shallow_model'4 out
   
   predicate in_bounds'0 (self : Range'0.t_Range usize) (seq : Seq.seq int32) =
@@ -1012,8 +994,6 @@ module T_core__ops__range__RangeTo
   type t_RangeTo 'idx =
     | C_RangeTo 'idx
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_RangeTo < 'idx > (input:t_RangeTo 'idx) (ret  (end':'idx))= any
     [ good (end':'idx)-> {C_RangeTo end' = input} (! ret {end'}) ]
     
@@ -1283,10 +1263,10 @@ module M_index_range__test_range_to [#"../index_range.rs" 78 0 78 22]
     [%#span66] forall i : int . UIntSize.to_int (T_core__ops__range__RangeTo.t_RangeTo__end self) <= i
     /\ i < Seq.length old'  -> Seq.get old' i = Seq.get fin i
   
-  use prelude.seq_ext.SeqExt
+  use seq.Seq
   
   predicate has_value'0 (self : RangeTo'0.t_RangeTo usize) (seq : Seq.seq int32) (out : slice int32) =
-    [%#span67] SeqExt.subsequence seq 0 (UIntSize.to_int (T_core__ops__range__RangeTo.t_RangeTo__end self))
+    [%#span67] Seq.([..]) seq 0 (UIntSize.to_int (T_core__ops__range__RangeTo.t_RangeTo__end self))
     = shallow_model'4 out
   
   predicate in_bounds'0 (self : RangeTo'0.t_RangeTo usize) (seq : Seq.seq int32) =
@@ -1588,8 +1568,6 @@ module T_core__ops__range__RangeFrom
   type t_RangeFrom 'idx =
     | C_RangeFrom 'idx
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_RangeFrom < 'idx > (input:t_RangeFrom 'idx) (ret  (start:'idx))= any
     [ good (start:'idx)-> {C_RangeFrom start = input} (! ret {start}) ]
     
@@ -1862,10 +1840,10 @@ module M_index_range__test_range_from [#"../index_range.rs" 115 0 115 24]
     /\ i < UIntSize.to_int (T_core__ops__range__RangeFrom.t_RangeFrom__start self) /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
   
-  use prelude.seq_ext.SeqExt
+  use seq.Seq
   
   predicate has_value'0 (self : RangeFrom'0.t_RangeFrom usize) (seq : Seq.seq int32) (out : slice int32) =
-    [%#span69] SeqExt.subsequence seq (UIntSize.to_int (T_core__ops__range__RangeFrom.t_RangeFrom__start self)) (Seq.length seq)
+    [%#span69] Seq.([..]) seq (UIntSize.to_int (T_core__ops__range__RangeFrom.t_RangeFrom__start self)) (Seq.length seq)
     = shallow_model'4 out
   
   predicate in_bounds'0 (self : RangeFrom'0.t_RangeFrom usize) (seq : Seq.seq int32) =
@@ -2179,8 +2157,6 @@ end
 module T_core__ops__range__RangeFull
   type t_RangeFull  =
     | C_RangeFull
-  
-  function any_l (_ : 'b) : 'a
   
   let rec t_RangeFull (input:t_RangeFull) (ret  )= any [ good -> {C_RangeFull  = input} (! ret) ] 
 end
@@ -2709,8 +2685,6 @@ module T_core__ops__range__RangeToInclusive
   type t_RangeToInclusive 'idx =
     | C_RangeToInclusive 'idx
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_RangeToInclusive < 'idx > (input:t_RangeToInclusive 'idx) (ret  (end':'idx))= any
     [ good (end':'idx)-> {C_RangeToInclusive end' = input} (! ret {end'}) ]
     
@@ -2979,10 +2953,10 @@ module M_index_range__test_range_to_inclusive [#"../index_range.rs" 179 0 179 32
     [%#span63] forall i : int . UIntSize.to_int (T_core__ops__range__RangeToInclusive.t_RangeToInclusive__end self) < i
     /\ i < Seq.length old'  -> Seq.get old' i = Seq.get fin i
   
-  use prelude.seq_ext.SeqExt
+  use seq.Seq
   
   predicate has_value'0 (self : RangeToInclusive'0.t_RangeToInclusive usize) (seq : Seq.seq int32) (out : slice int32) =
-    [%#span64] SeqExt.subsequence seq 0 (UIntSize.to_int (T_core__ops__range__RangeToInclusive.t_RangeToInclusive__end self)
+    [%#span64] Seq.([..]) seq 0 (UIntSize.to_int (T_core__ops__range__RangeToInclusive.t_RangeToInclusive__end self)
     + 1)
     = shallow_model'4 out
   

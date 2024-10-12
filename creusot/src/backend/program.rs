@@ -447,9 +447,8 @@ impl<'tcx> Operand<'tcx> {
             Operand::Copy(pl) => rplace_to_expr(lower, &pl, istmts),
             Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
             Operand::Promoted(pid, ty) => {
-                let promoted = Expr::Symbol(
-                    QName::from_string(&format!("promoted{}", pid.as_usize())).unwrap(),
-                );
+                let promoted =
+                    Expr::Symbol(QName::from_string(&format!("promoted{}", pid.as_usize())));
                 let var: Ident = Ident::build(&format!("pr{}", pid.as_usize()));
                 istmts.push(IntermediateStmt::call(var.clone(), lower.ty(ty), promoted, vec![]));
 
@@ -474,13 +473,13 @@ impl<'tcx> RValue<'tcx> {
             RValue::BinOp(BinOp::Eq, l, r) if l.ty(lower.ctx.tcx, lower.locals).is_bool() => {
                 lower.names.import_prelude_module(PreludeModule::Bool);
 
-                Exp::qvar(QName::from_string("Bool.eq").unwrap())
+                Exp::qvar(QName::from_string("Bool.eq"))
                     .app(vec![l.to_why(lower, istmts), r.to_why(lower, istmts)])
             }
             RValue::BinOp(BinOp::Ne, l, r) if l.ty(lower.ctx.tcx, lower.locals).is_bool() => {
                 lower.names.import_prelude_module(PreludeModule::Bool);
 
-                Exp::qvar(QName::from_string("Bool.ne").unwrap())
+                Exp::qvar(QName::from_string("Bool.ne"))
                     .app(vec![l.to_why(lower, istmts), r.to_why(lower, istmts)])
             }
             RValue::BinOp(op, l, r) => {
@@ -548,7 +547,7 @@ impl<'tcx> RValue<'tcx> {
                     }
                     TyKind::Bool => {
                         lower.names.import_prelude_module(PreludeModule::Bool);
-                        Exp::qvar(QName::from_string("Bool.to_int").unwrap())
+                        Exp::qvar(QName::from_string("Bool.to_int"))
                     }
                     _ => lower
                         .ctx
@@ -560,7 +559,7 @@ impl<'tcx> RValue<'tcx> {
                     TyKind::Uint(uty) => uint_from_int(uty),
                     TyKind::Char => {
                         lower.names.import_prelude_module(PreludeModule::Char);
-                        QName::from_string("Char.chr").unwrap()
+                        QName::from_string("Char.chr")
                     }
                     _ => lower
                         .ctx
@@ -579,8 +578,8 @@ impl<'tcx> RValue<'tcx> {
                 Exp::var("_res")
             }
             RValue::Len(pl) => {
-                let len_call = Exp::qvar(QName::from_string("Slice.length").unwrap())
-                    .app_to(pl.to_why(lower, istmts));
+                let len_call =
+                    Exp::qvar(QName::from_string("Slice.length")).app_to(pl.to_why(lower, istmts));
                 len_call
             }
             RValue::Array(fields) => {
@@ -598,14 +597,14 @@ impl<'tcx> RValue<'tcx> {
                     .into_iter()
                     .enumerate()
                     .map(|(ix, f)| {
-                        Exp::qvar(QName::from_string("Seq.get").unwrap())
+                        Exp::qvar(QName::from_string("Seq.get"))
                             .app(vec![
                                 arr_elts.clone(),
                                 Exp::Const(Constant::Int(ix as i128, None)),
                             ])
                             .eq(f.to_why(lower, istmts))
                     })
-                    .chain([Exp::qvar(QName::from_string("Seq.length").unwrap())
+                    .chain([Exp::qvar(QName::from_string("Seq.length"))
                         .app_to(arr_elts.clone())
                         .eq(Exp::Const(Constant::Int(len as i128, None)))])
                     .reduce(Exp::log_and)
@@ -616,7 +615,7 @@ impl<'tcx> RValue<'tcx> {
                 Exp::var(id)
             }
             RValue::Repeat(e, len) => {
-                let slice_create = QName::from_string("Slice.create").unwrap();
+                let slice_create = QName::from_string("Slice.create");
                 let param_ty = lower.ty(e.ty(lower.ctx.tcx, lower.locals));
                 let args = vec![
                     Arg::Ty(param_ty),
@@ -933,10 +932,8 @@ pub(crate) fn borrow_generated_id<V: Debug, T: Debug>(
     projection: &[ProjectionElem<V, T>],
     mut translate_index: impl FnMut(&V) -> Exp,
 ) -> Exp {
-    let mut borrow_id = Exp::Call(
-        Box::new(Exp::qvar(QName::from_string("Borrow.get_id").unwrap())),
-        vec![original_borrow],
-    );
+    let mut borrow_id =
+        Exp::Call(Box::new(Exp::qvar(QName::from_string("Borrow.get_id"))), vec![original_borrow]);
     for proj in projection {
         match proj {
             ProjectionElem::Deref => {
@@ -944,13 +941,13 @@ pub(crate) fn borrow_generated_id<V: Debug, T: Debug>(
             }
             ProjectionElem::Field(idx, _) => {
                 borrow_id = Exp::Call(
-                    Box::new(Exp::qvar(QName::from_string("Borrow.inherit_id").unwrap())),
+                    Box::new(Exp::qvar(QName::from_string("Borrow.inherit_id"))),
                     vec![borrow_id, Exp::Const(Constant::Int(idx.as_u32() as i128 + 1, None))],
                 );
             }
             ProjectionElem::Index(x) => {
                 borrow_id = Exp::Call(
-                    Box::new(Exp::qvar(QName::from_string("Borrow.inherit_id").unwrap())),
+                    Box::new(Exp::qvar(QName::from_string("Borrow.inherit_id"))),
                     vec![borrow_id, translate_index(x)],
                 );
             }
@@ -1012,11 +1009,9 @@ impl<'tcx> Statement<'tcx> {
                 let lower = RefCell::new(lower);
 
                 let func = match bor_kind {
-                    BorrowKind::Mut => {
-                        coma::Expr::Symbol(QName::from_string("Borrow.borrow_mut").unwrap())
-                    }
+                    BorrowKind::Mut => coma::Expr::Symbol(QName::from_string("Borrow.borrow_mut")),
                     BorrowKind::Final(_) => {
-                        coma::Expr::Symbol(QName::from_string("Borrow.borrow_final").unwrap())
+                        coma::Expr::Symbol(QName::from_string("Borrow.borrow_final"))
                     }
                 };
 
@@ -1336,44 +1331,44 @@ pub(crate) fn uint_to_prelude(ity: UintTy) -> PreludeModule {
 
 pub(crate) fn int_from_int(ity: &IntTy) -> QName {
     match ity {
-        IntTy::Isize => QName::from_string("IntSize.of_int").unwrap(),
-        IntTy::I8 => QName::from_string("Int8.of_int").unwrap(),
-        IntTy::I16 => QName::from_string("Int16.of_int").unwrap(),
-        IntTy::I32 => QName::from_string("Int32.of_int").unwrap(),
-        IntTy::I64 => QName::from_string("Int64.of_int").unwrap(),
-        IntTy::I128 => QName::from_string("Int128.of_int").unwrap(),
+        IntTy::Isize => QName::from_string("IntSize.of_int"),
+        IntTy::I8 => QName::from_string("Int8.of_int"),
+        IntTy::I16 => QName::from_string("Int16.of_int"),
+        IntTy::I32 => QName::from_string("Int32.of_int"),
+        IntTy::I64 => QName::from_string("Int64.of_int"),
+        IntTy::I128 => QName::from_string("Int128.of_int"),
     }
 }
 
 pub(crate) fn uint_from_int(uty: &UintTy) -> QName {
     match uty {
-        UintTy::Usize => QName::from_string("UIntSize.of_int").unwrap(),
-        UintTy::U8 => QName::from_string("UInt8.of_int").unwrap(),
-        UintTy::U16 => QName::from_string("UInt16.of_int").unwrap(),
-        UintTy::U32 => QName::from_string("UInt32.of_int").unwrap(),
-        UintTy::U64 => QName::from_string("UInt64.of_int").unwrap(),
-        UintTy::U128 => QName::from_string("UInt128.of_int").unwrap(),
+        UintTy::Usize => QName::from_string("UIntSize.of_int"),
+        UintTy::U8 => QName::from_string("UInt8.of_int"),
+        UintTy::U16 => QName::from_string("UInt16.of_int"),
+        UintTy::U32 => QName::from_string("UInt32.of_int"),
+        UintTy::U64 => QName::from_string("UInt64.of_int"),
+        UintTy::U128 => QName::from_string("UInt128.of_int"),
     }
 }
 
 pub(crate) fn int_to_int(ity: &IntTy) -> Exp {
     match ity {
-        IntTy::Isize => Exp::qvar(QName::from_string("IntSize.to_int").unwrap()),
-        IntTy::I8 => Exp::qvar(QName::from_string("Int8.to_int").unwrap()),
-        IntTy::I16 => Exp::qvar(QName::from_string("Int16.to_int").unwrap()),
-        IntTy::I32 => Exp::qvar(QName::from_string("Int32.to_int").unwrap()),
-        IntTy::I64 => Exp::qvar(QName::from_string("Int64.to_int").unwrap()),
-        IntTy::I128 => Exp::qvar(QName::from_string("Int128.to_int").unwrap()),
+        IntTy::Isize => Exp::qvar(QName::from_string("IntSize.to_int")),
+        IntTy::I8 => Exp::qvar(QName::from_string("Int8.to_int")),
+        IntTy::I16 => Exp::qvar(QName::from_string("Int16.to_int")),
+        IntTy::I32 => Exp::qvar(QName::from_string("Int32.to_int")),
+        IntTy::I64 => Exp::qvar(QName::from_string("Int64.to_int")),
+        IntTy::I128 => Exp::qvar(QName::from_string("Int128.to_int")),
     }
 }
 
 pub(crate) fn uint_to_int(uty: &UintTy) -> Exp {
     match uty {
-        UintTy::Usize => Exp::qvar(QName::from_string("UIntSize.to_int").unwrap()),
-        UintTy::U8 => Exp::qvar(QName::from_string("UInt8.to_int").unwrap()),
-        UintTy::U16 => Exp::qvar(QName::from_string("UInt16.to_int").unwrap()),
-        UintTy::U32 => Exp::qvar(QName::from_string("UInt32.to_int").unwrap()),
-        UintTy::U64 => Exp::qvar(QName::from_string("UInt64.to_int").unwrap()),
-        UintTy::U128 => Exp::qvar(QName::from_string("UInt128.to_int").unwrap()),
+        UintTy::Usize => Exp::qvar(QName::from_string("UIntSize.to_int")),
+        UintTy::U8 => Exp::qvar(QName::from_string("UInt8.to_int")),
+        UintTy::U16 => Exp::qvar(QName::from_string("UInt16.to_int")),
+        UintTy::U32 => Exp::qvar(QName::from_string("UInt32.to_int")),
+        UintTy::U64 => Exp::qvar(QName::from_string("UInt64.to_int")),
+        UintTy::U128 => Exp::qvar(QName::from_string("UInt128.to_int")),
     }
 }

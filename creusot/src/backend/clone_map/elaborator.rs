@@ -108,7 +108,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
             TyKind::Alias(_, _) => vec![ctx.assoc_ty_decl(names, def_id, subst)],
             _ => {
                 if let Some(why3_modl) = util::get_builtin(ctx.tcx, def_id) {
-                    let qname = QName::from_string(why3_modl.as_str()).unwrap();
+                    let qname = QName::from_string(why3_modl.as_str());
                     let Kind::Used(modl, _) = names.insert(Dependency::Type(ty)) else {
                         return vec![];
                     };
@@ -169,7 +169,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
 
         if let Some(b) = get_builtin(ctx.tcx, def_id) {
             return vec![Decl::UseDecl(Use {
-                name: QName::from_string(b.as_str()).unwrap().module_qname(),
+                name: QName::from_string(b.as_str()).module_qname(),
                 as_: None,
                 export: false,
             })];

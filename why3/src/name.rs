@@ -128,13 +128,24 @@ impl QName {
         self
     }
 
-    pub fn from_string(s: &str) -> Option<QName> {
-        let mut chunks = s.split('.');
+    pub fn from_string(s: &str) -> QName {
+        let mut in_paren = false;
+        for (i, c) in s.char_indices().rev() {
+            match c {
+                ')' => in_paren = true,
+                '(' => in_paren = false,
+                '.' => {
+                    if !in_paren {
+                        let name = s[i + 1..].into();
+                        let module = s[..i].split('.').map(|s| s.into()).collect();
+                        return QName { module, name };
+                    }
+                }
+                _ => (),
+            }
+        }
 
-        let name = chunks.next_back()?;
-        let module = chunks.map(|s| s.into()).collect();
-
-        Some(QName { module, name: name.into() })
+        s.into()
     }
 }
 

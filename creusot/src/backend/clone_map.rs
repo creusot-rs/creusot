@@ -32,7 +32,6 @@ mod elaborator;
 mod expander;
 
 // Prelude modules
-#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, TypeVisitable, TypeFoldable)]
 pub enum PreludeModule {
     Float32,
@@ -55,39 +54,33 @@ pub enum PreludeModule {
     Borrow,
     Slice,
     Opaque,
-    Ref,
-    Seq,
-    Type,
     Intrinsic,
 }
 
 impl PreludeModule {
     pub fn qname(&self) -> QName {
         match self {
-            PreludeModule::Float32 => QName::from_string("prelude.prelude.Float32").unwrap(),
-            PreludeModule::Float64 => QName::from_string("prelude.prelude.Float64").unwrap(),
-            PreludeModule::Int => QName::from_string("prelude.prelude.Int").unwrap(),
-            PreludeModule::Int8 => QName::from_string("prelude.prelude.Int8").unwrap(),
-            PreludeModule::Int16 => QName::from_string("prelude.prelude.Int16").unwrap(),
-            PreludeModule::Int32 => QName::from_string("prelude.prelude.Int32").unwrap(),
-            PreludeModule::Int64 => QName::from_string("prelude.prelude.Int64").unwrap(),
-            PreludeModule::Int128 => QName::from_string("prelude.prelude.Int128").unwrap(),
-            PreludeModule::UInt8 => QName::from_string("prelude.prelude.UInt8").unwrap(),
-            PreludeModule::UInt16 => QName::from_string("prelude.prelude.UInt16").unwrap(),
-            PreludeModule::UInt32 => QName::from_string("prelude.prelude.UInt32").unwrap(),
-            PreludeModule::UInt64 => QName::from_string("prelude.prelude.UInt64").unwrap(),
-            PreludeModule::UInt128 => QName::from_string("prelude.prelude.UInt128").unwrap(),
-            PreludeModule::Char => QName::from_string("prelude.prelude.Char").unwrap(),
-            PreludeModule::Opaque => QName::from_string("prelude.prelude.Opaque").unwrap(),
-            PreludeModule::Ref => QName::from_string("Ref").unwrap(),
-            PreludeModule::Seq => QName::from_string("prelude.prelude.Seq").unwrap(),
-            PreludeModule::Type => QName::from_string("Type").unwrap(),
-            PreludeModule::Isize => QName::from_string("prelude.prelude.IntSize").unwrap(),
-            PreludeModule::Usize => QName::from_string("prelude.prelude.UIntSize").unwrap(),
-            PreludeModule::Bool => QName::from_string("prelude.prelude.Bool").unwrap(),
-            PreludeModule::Borrow => QName::from_string("prelude.prelude.Borrow").unwrap(),
-            PreludeModule::Slice => QName::from_string("prelude.prelude.Slice").unwrap(),
-            PreludeModule::Intrinsic => QName::from_string("prelude.prelude.Intrinsic").unwrap(),
+            PreludeModule::Float32 => QName::from_string("prelude.prelude.Float32"),
+            PreludeModule::Float64 => QName::from_string("prelude.prelude.Float64"),
+            PreludeModule::Int => QName::from_string("prelude.prelude.Int"),
+            PreludeModule::Int8 => QName::from_string("prelude.prelude.Int8"),
+            PreludeModule::Int16 => QName::from_string("prelude.prelude.Int16"),
+            PreludeModule::Int32 => QName::from_string("prelude.prelude.Int32"),
+            PreludeModule::Int64 => QName::from_string("prelude.prelude.Int64"),
+            PreludeModule::Int128 => QName::from_string("prelude.prelude.Int128"),
+            PreludeModule::UInt8 => QName::from_string("prelude.prelude.UInt8"),
+            PreludeModule::UInt16 => QName::from_string("prelude.prelude.UInt16"),
+            PreludeModule::UInt32 => QName::from_string("prelude.prelude.UInt32"),
+            PreludeModule::UInt64 => QName::from_string("prelude.prelude.UInt64"),
+            PreludeModule::UInt128 => QName::from_string("prelude.prelude.UInt128"),
+            PreludeModule::Char => QName::from_string("prelude.prelude.Char"),
+            PreludeModule::Opaque => QName::from_string("prelude.prelude.Opaque"),
+            PreludeModule::Isize => QName::from_string("prelude.prelude.IntSize"),
+            PreludeModule::Usize => QName::from_string("prelude.prelude.UIntSize"),
+            PreludeModule::Bool => QName::from_string("prelude.prelude.Bool"),
+            PreludeModule::Borrow => QName::from_string("prelude.prelude.Borrow"),
+            PreludeModule::Slice => QName::from_string("prelude.prelude.Slice"),
+            PreludeModule::Intrinsic => QName::from_string("prelude.prelude.Intrinsic"),
         }
     }
 }
@@ -351,7 +344,7 @@ impl<'tcx> CloneNames<'tcx> {
             Dependency::Type(ty) if !matches!(ty.kind(), TyKind::Alias(_, _)) => {
                 let kind = if let Some((did, _)) = key.did() {
                     let (modl, name) = if let Some(why3_modl) = util::get_builtin(self.tcx, did) {
-                        let qname = QName::from_string(why3_modl.as_str()).unwrap();
+                        let qname = QName::from_string(why3_modl.as_str());
                         let name = qname.name.clone();
                         let modl = qname.module_ident().unwrap();
                         (Symbol::intern(&modl), Symbol::intern(&*name))
@@ -392,7 +385,7 @@ impl<'tcx> CloneNames<'tcx> {
                 if let Dependency::Item(id, _) = key
                     && let Some(why3_modl) = util::get_builtin(self.tcx, id)
                 {
-                    let qname = QName::from_string(why3_modl.as_str()).unwrap();
+                    let qname = QName::from_string(why3_modl.as_str());
                     let name = qname.name.clone();
                     let modl = qname.module_qname().name;
                     return Kind::Used(Symbol::intern(&*modl), Symbol::intern(&*name));

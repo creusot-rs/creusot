@@ -46,7 +46,7 @@ impl<T: ?Sized> Seq<T> {
     #[trusted]
     #[logic]
     #[open(self)]
-    #[creusot::builtins = "prelude.seq_ext.SeqExt.subsequence"]
+    #[creusot::builtins = "seq.Seq.([..])"]
     pub fn subsequence(self, _: Int, _: Int) -> Self {
         absurd
     }
@@ -170,7 +170,7 @@ impl<T: ?Sized> Seq<&T> {
     #[logic]
     #[open]
     #[trusted]
-    #[creusot::builtins = "prelude.prelude.Seq.to_owned"]
+    #[creusot::builtins = "identity"]
     pub fn to_owned_seq(self) -> Seq<T> {
         pearlite! {absurd}
     }
