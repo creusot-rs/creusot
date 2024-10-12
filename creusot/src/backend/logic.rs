@@ -90,7 +90,7 @@ fn builtin_body<'tcx>(
         sig.retty = None;
     }
 
-    let builtin = QName::from_string(get_builtin(ctx.tcx, def_id).unwrap().as_str()).unwrap();
+    let builtin = QName::from_string(get_builtin(ctx.tcx, def_id).unwrap().as_str());
 
     if !builtin.module.is_empty() {
         // names.import_builtin_module(builtin.clone().module_qname());

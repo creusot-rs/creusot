@@ -583,12 +583,11 @@ pub(crate) fn get_func_name<'tcx>(
     let builtin_attr = get_builtin(ctx.tcx, id);
 
     builtin_attr
-        .and_then(|a| {
+        .map(|a| {
             // Add dependency
             names.value(id, subst);
 
-            QName::from_string(&a.as_str())
+            QName::from_string(&a.as_str()).without_search_path()
         })
-        .map(QName::without_search_path)
         .unwrap_or_else(|| names.value(id, subst))
 }

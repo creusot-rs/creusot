@@ -5,8 +5,6 @@ module T_core__ptr__non_null__NonNull
   type t_NonNull 't =
     | C_NonNull opaque_ptr
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
     [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer}) ]
     
@@ -14,8 +12,6 @@ end
 module T_core__marker__PhantomData
   type t_PhantomData 't =
     | C_PhantomData
-  
-  function any_l (_ : 'b) : 'a
   
   let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any [ good -> {C_PhantomData  = input} (! ret) ] 
 end
@@ -26,8 +22,6 @@ module T_core__ptr__unique__Unique
   
   type t_Unique 't =
     | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
-  
-  function any_l (_ : 'b) : 'a
   
   let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
     [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
@@ -43,8 +37,6 @@ module T_alloc__raw_vec__Cap
   type t_Cap  =
     | C_Cap usize
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
     [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0}) ]
     
@@ -56,8 +48,6 @@ module T_alloc__raw_vec__RawVec
   
   type t_RawVec 't 'a =
     | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
-  
-  function any_l (_ : 'b) : 'a
   
   let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
     [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
@@ -74,8 +64,6 @@ module T_alloc__vec__Vec
   type t_Vec 't 'a =
     | C_Vec (RawVec'0.t_RawVec 't 'a) usize
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
     [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
     
@@ -83,8 +71,6 @@ end
 module T_alloc__alloc__Global
   type t_Global  =
     | C_Global
-  
-  function any_l (_ : 'b) : 'a
   
   let rec t_Global (input:t_Global) (ret  )= any [ good -> {C_Global  = input} (! ret) ] 
 end
@@ -572,8 +558,6 @@ module T_core__slice__iter__Iter
   type t_Iter 't =
     | C_Iter (NonNull'0.t_NonNull 't) opaque_ptr (PhantomData'0.t_PhantomData 't)
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_Iter < 't > (input:t_Iter 't) (ret  (ptr:NonNull'0.t_NonNull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_PhantomData 't))= any
     [ good (ptr:NonNull'0.t_NonNull 't) (end_or_len:opaque_ptr) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Iter ptr end_or_len _marker
       = input}
@@ -584,8 +568,6 @@ module T_core__option__Option
   type t_Option 't =
     | C_None
     | C_Some 't
-  
-  function any_l (_ : 'b) : 'a
   
   let rec v_None < 't > (input:t_Option 't) (ret  )= any
     [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} (! {false} any) ]
@@ -1113,8 +1095,6 @@ module T_core__ops__range__Range
   type t_Range 'idx =
     | C_Range 'idx 'idx
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_Range < 'idx > (input:t_Range 'idx) (ret  (start:'idx) (end':'idx))= any
     [ good (start:'idx) (end':'idx)-> {C_Range start end' = input} (! ret {start} {end'}) ]
     
@@ -1455,7 +1435,7 @@ module M_hillel__unique [#"../hillel.rs" 102 0 102 56]
       (! return' {result}) ]
     
   
-  use prelude.seq_ext.SeqExt
+  use seq.Seq
   
   function index_logic'1 [@inline:trivial] (self : slice t) (ix : int) : t =
     [%#span60] Seq.get (shallow_model'2 self) ix
@@ -1532,7 +1512,7 @@ module M_hillel__unique [#"../hillel.rs" 102 0 102 56]
     | bb9 = bb10
     | bb10 = bb11
     | bb11 = bb11
-      [ bb11 = {[@expl:loop invariant] [%#shillel9] is_subset'0 (SeqExt.subsequence (deep_model'1 str) 0 (Seq.length (Snapshot.inner produced))) (deep_model'0 unique)}
+      [ bb11 = {[@expl:loop invariant] [%#shillel9] is_subset'0 (Seq.([..]) (deep_model'1 str) 0 (Seq.length (Snapshot.inner produced))) (deep_model'0 unique)}
         {[@expl:loop invariant] [%#shillel8] is_subset'0 (deep_model'0 unique) (deep_model'1 str)}
         {[@expl:loop invariant] [%#shillel7] is_unique'0 (deep_model'0 unique)}
         {[@expl:loop invariant] [%#shillel6] inv'2 unique}
@@ -1604,12 +1584,12 @@ module M_hillel__unique [#"../hillel.rs" 102 0 102 56]
          ]
       
     | bb16 = s0
-      [ s0 = {[@expl:assertion] [%#shillel13] is_subset'0 (SeqExt.subsequence (deep_model'1 str) 0 (Seq.length (shallow_model'0 str))) (deep_model'0 unique)}
+      [ s0 = {[@expl:assertion] [%#shillel13] is_subset'0 (Seq.([..]) (deep_model'1 str) 0 (Seq.length (shallow_model'0 str))) (deep_model'0 unique)}
         s1
       | s1 = bb22 ]
       
     | bb22 = s0
-      [ s0 = {[@expl:assertion] [%#shillel14] Seq.(==) (SeqExt.subsequence (deep_model'1 str) 0 (Seq.length (shallow_model'0 str))) (deep_model'1 str)}
+      [ s0 = {[@expl:assertion] [%#shillel14] Seq.(==) (Seq.([..]) (deep_model'1 str) 0 (Seq.length (shallow_model'0 str))) (deep_model'1 str)}
         s1
       | s1 =  [ &_0 <- unique ] s2
       | s2 = bb23 ]

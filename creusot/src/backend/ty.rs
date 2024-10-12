@@ -21,7 +21,6 @@ use std::collections::VecDeque;
 use why3::{
     declaration::{
         AdtDecl, ConstructorDecl, Contract, Decl, Field, Logic, Module, Signature, TyDecl, Use,
-        ValDecl,
     },
     exp::{Binder, Exp, Pattern, Trigger},
     ty::Type as MlT,
@@ -89,7 +88,7 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
             }
 
             let cons = if let Some(builtin) =
-                get_builtin(ctx.tcx, def.did()).and_then(|a| QName::from_string(&a.as_str()))
+                get_builtin(ctx.tcx, def.did()).map(|a| QName::from_string(&a.as_str()))
             {
                 names.ty(def.did(), s);
                 // names.import_builtin_module(builtin.clone().module_qname());
@@ -119,7 +118,7 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
             if let TyTranslation::Declaration(_) = trans {
                 MlT::TVar(translate_ty_param(p.name))
             } else {
-                MlT::TConstructor(QName::from_string(&p.to_string().to_lowercase()).unwrap())
+                MlT::TConstructor(QName::from_string(&p.to_string().to_lowercase()))
             }
         }
         Alias(AliasTyKind::Projection, pty) => translate_projection_ty(trans, ctx, names, pty),
@@ -152,7 +151,7 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
         Never => MlT::Tuple(vec![]),
         RawPtr(_, _) => {
             names.import_prelude_module(PreludeModule::Opaque);
-            MlT::TConstructor(QName::from_string("opaque_ptr").unwrap())
+            MlT::TConstructor(QName::from_string("opaque_ptr"))
         }
         Closure(id, subst) => {
             ctx.translate(*id);
@@ -182,16 +181,16 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
         }
         FnPtr(_) => {
             names.import_prelude_module(PreludeModule::Opaque);
-            MlT::TConstructor(QName::from_string("opaque_ptr").unwrap())
+            MlT::TConstructor(QName::from_string("opaque_ptr"))
         }
         Dynamic(_, _, _) => {
             names.import_prelude_module(PreludeModule::Opaque);
-            MlT::TConstructor(QName::from_string("dyn").unwrap())
+            MlT::TConstructor(QName::from_string("dyn"))
         }
 
         Foreign(_) => {
             names.import_prelude_module(PreludeModule::Opaque);
-            MlT::TConstructor(QName::from_string("foreign").unwrap())
+            MlT::TConstructor(QName::from_string("foreign"))
         }
         Error(_) => MlT::UNIT,
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
@@ -392,20 +391,6 @@ pub(crate) fn translate_tydecl(
 
     let (mut decls, _) = names.provide_deps(ctx, GraphDepth::Shallow);
     decls.push(Decl::TyDecl(ty_decl));
-    use why3::{declaration::LetKind, ty::*};
-    decls.push(Decl::ValDecl(ValDecl {
-        ghost: false,
-        val: false,
-        kind: Some(LetKind::Function),
-        sig: Signature {
-            name: "any_l".into(),
-            trigger: None,
-            attrs: vec![],
-            retty: Some(Type::TVar("a".into())),
-            args: vec![Binder::wild(Type::TVar("b".into()))],
-            contract: Default::default(),
-        },
-    }));
 
     decls.extend(destructors);
 
@@ -751,7 +736,7 @@ pub(crate) fn build_accessor(
         .enumerate()
         .map(|(ix, (name, arity))| {
             let mut pat = vec![Pattern::Wildcard; *arity];
-            let mut exp = Exp::var("any_l").app_to(Exp::var("self"));
+            let mut exp = Exp::var("any_l1").app_to(Exp::var("self"));
 
             if ix == variant_ix {
                 pat[field_ix] = Pattern::VarP("a".into());
@@ -930,57 +915,57 @@ pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &mut Why3Generator<'tcx>, names: &mut N
 }
 
 pub(crate) fn double_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("Float64.t").unwrap())
+    MlT::TConstructor(QName::from_string("Float64.t"))
 }
 
 pub(crate) fn single_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("Float32.t").unwrap())
+    MlT::TConstructor(QName::from_string("Float32.t"))
 }
 
 pub(crate) fn u8_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint8").unwrap())
+    MlT::TConstructor(QName::from_string("uint8"))
 }
 
 pub(crate) fn u16_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint16").unwrap())
+    MlT::TConstructor(QName::from_string("uint16"))
 }
 
 pub(crate) fn u32_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint32").unwrap())
+    MlT::TConstructor(QName::from_string("uint32"))
 }
 
 pub(crate) fn u64_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint64").unwrap())
+    MlT::TConstructor(QName::from_string("uint64"))
 }
 
 pub(crate) fn u128_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint128").unwrap())
+    MlT::TConstructor(QName::from_string("uint128"))
 }
 
 pub(crate) fn usize_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("usize").unwrap())
+    MlT::TConstructor(QName::from_string("usize"))
 }
 
 pub(crate) fn i8_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("int8").unwrap())
+    MlT::TConstructor(QName::from_string("int8"))
 }
 
 pub(crate) fn i16_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("int16").unwrap())
+    MlT::TConstructor(QName::from_string("int16"))
 }
 
 pub(crate) fn i32_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("int32").unwrap())
+    MlT::TConstructor(QName::from_string("int32"))
 }
 
 pub(crate) fn i64_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("int64").unwrap())
+    MlT::TConstructor(QName::from_string("int64"))
 }
 
 pub(crate) fn i128_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("int128").unwrap())
+    MlT::TConstructor(QName::from_string("int128"))
 }
 
 pub(crate) fn isize_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("isize").unwrap())
+    MlT::TConstructor(QName::from_string("isize"))
 }
