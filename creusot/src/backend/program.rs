@@ -447,9 +447,8 @@ impl<'tcx> Operand<'tcx> {
             Operand::Copy(pl) => rplace_to_expr(lower, &pl, istmts),
             Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
             Operand::Promoted(pid, ty) => {
-                let promoted = Expr::Symbol(
-                    QName::from_string(&format!("promoted{}", pid.as_usize())),
-                );
+                let promoted =
+                    Expr::Symbol(QName::from_string(&format!("promoted{}", pid.as_usize())));
                 let var: Ident = Ident::build(&format!("pr{}", pid.as_usize()));
                 istmts.push(IntermediateStmt::call(var.clone(), lower.ty(ty), promoted, vec![]));
 
@@ -579,8 +578,8 @@ impl<'tcx> RValue<'tcx> {
                 Exp::var("_res")
             }
             RValue::Len(pl) => {
-                let len_call = Exp::qvar(QName::from_string("Slice.length"))
-                    .app_to(pl.to_why(lower, istmts));
+                let len_call =
+                    Exp::qvar(QName::from_string("Slice.length")).app_to(pl.to_why(lower, istmts));
                 len_call
             }
             RValue::Array(fields) => {
@@ -933,10 +932,8 @@ pub(crate) fn borrow_generated_id<V: Debug, T: Debug>(
     projection: &[ProjectionElem<V, T>],
     mut translate_index: impl FnMut(&V) -> Exp,
 ) -> Exp {
-    let mut borrow_id = Exp::Call(
-        Box::new(Exp::qvar(QName::from_string("Borrow.get_id"))),
-        vec![original_borrow],
-    );
+    let mut borrow_id =
+        Exp::Call(Box::new(Exp::qvar(QName::from_string("Borrow.get_id"))), vec![original_borrow]);
     for proj in projection {
         match proj {
             ProjectionElem::Deref => {
@@ -1012,9 +1009,7 @@ impl<'tcx> Statement<'tcx> {
                 let lower = RefCell::new(lower);
 
                 let func = match bor_kind {
-                    BorrowKind::Mut => {
-                        coma::Expr::Symbol(QName::from_string("Borrow.borrow_mut"))
-                    }
+                    BorrowKind::Mut => coma::Expr::Symbol(QName::from_string("Borrow.borrow_mut")),
                     BorrowKind::Final(_) => {
                         coma::Expr::Symbol(QName::from_string("Borrow.borrow_final"))
                     }

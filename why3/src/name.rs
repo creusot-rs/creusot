@@ -134,12 +134,14 @@ impl QName {
             match c {
                 ')' => in_paren = true,
                 '(' => in_paren = false,
-                '.' => if !in_paren {
-                    let name = s[i+1..].into();
-                    let module = s[..i].split('.').map(|s| s.into()).collect();
-                    return QName { module, name };
-                },
-                _ => ()
+                '.' => {
+                    if !in_paren {
+                        let name = s[i + 1..].into();
+                        let module = s[..i].split('.').map(|s| s.into()).collect();
+                        return QName { module, name };
+                    }
+                }
+                _ => (),
             }
         }
 
