@@ -1086,8 +1086,10 @@ fn resolve_predicate_of<'tcx>(
     // Optimization: if we know there is no Resolve instance for this type, then we do not emit
     // a resolve
     if !ty.is_closure()
-        && traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, substs).is_none()
-        && !traits::still_specializable(ctx.tcx, param_env, trait_meth_id, substs)
+        && matches!(
+            traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, substs),
+            traits::TraitResol::NoInstance
+        )
     {
         return None;
     }

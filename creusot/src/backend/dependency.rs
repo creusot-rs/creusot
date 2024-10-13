@@ -251,13 +251,14 @@ fn resolve_item<'tcx>(
     param_env: ParamEnv<'tcx>,
 ) -> Dependency<'tcx> {
     let resolved = if tcx.trait_of_item(item).is_some()
-        && let Some(resolved) = traits::resolve_assoc_item_opt(tcx, param_env, item, substs)
+        && let traits::TraitResol::Instance(did, subst) =
+            traits::resolve_assoc_item_opt(tcx, param_env, item, substs)
     {
-        resolved
+        (did, subst)
     } else {
         // May happen:
         //    - if this is not a trait method, or
-        //    - if we are resolving a type invariant
+        //    - if don't know the instance
         (item, substs)
     };
 
