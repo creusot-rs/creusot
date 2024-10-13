@@ -2,13 +2,13 @@ use super::{term::lower_pure, CloneSummary, Dependencies, TransId, Why3Generator
 use crate::{
     ctx::*,
     pearlite::Trigger,
+    traits::TraitResol,
     translation::{
         pearlite::{Pattern, Term, TermKind},
         traits,
     },
     util::{self},
 };
-use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{GenericArg, GenericArgs, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
 use std::{collections::HashSet, iter};
@@ -29,7 +29,7 @@ pub(crate) fn tyinv_head_and_subst<'tcx>(
         )
     };
 
-    if let Some((uinv_did, _, _)) = resolve_user_inv(tcx, ty, param_env)
+    if let TraitResol::Instance(uinv_did, _) = resolve_user_inv(tcx, ty, param_env)
         && util::is_ignore_structural_inv(tcx, uinv_did)
     {
         return def();
@@ -70,7 +70,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
         }
 
         let user_inv = resolve_user_inv(tcx, ty, param_env);
-        if let Some((uinv_did, _, false)) = user_inv
+        if let TraitResol::Instance(uinv_did, _) = user_inv
             && !util::is_tyinv_trivial_if_param_trivial(tcx, uinv_did)
         {
             return false;
@@ -79,17 +79,21 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
         match ty.kind() {
             TyKind::Ref(_, ty, _) | TyKind::Slice(ty) | TyKind::Array(ty, _) => stack.push(*ty),
             TyKind::Tuple(tys) => stack.extend(*tys),
-            TyKind::Adt(_, substs) if matches!(user_inv, Some((_, _, false))) => {
-                assert!(util::is_tyinv_trivial_if_param_trivial(tcx, user_inv.unwrap().0));
+            TyKind::Adt(_, substs) if matches!(user_inv, TraitResol::Instance(_, _)) => {
+                // => The instance is annotated with tyinv_trivial_if_param_trivial
                 stack.extend(substs.types())
             }
             TyKind::Adt(def, substs) => {
-                if user_inv
-                    .is_some_and(|(uinv_did, _, _)| util::is_ignore_structural_inv(tcx, uinv_did))
-                    || util::is_trusted(tcx, def.did())
+                if util::is_trusted(tcx, def.did()) {
+                    continue;
+                }
+
+                if let TraitResol::Instance(uinv_did, _) = user_inv
+                    && util::is_ignore_structural_inv(tcx, uinv_did)
                 {
                     continue;
                 }
+
                 stack.extend(def.all_fields().map(|f| f.ty(tcx, substs)))
             }
             TyKind::Closure(_, subst) => stack.extend(subst.as_closure().upvar_tys()),
@@ -120,44 +124,70 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         InvariantElaborator { param_env, ctx, rewrite: false }
     }
 
-    pub(crate) fn elaborate_inv(&mut self, ty: Ty<'tcx>) -> Term<'tcx> {
+    pub(crate) fn elaborate_inv(&mut self, ty: Ty<'tcx>, for_deps: bool) -> Option<Term<'tcx>> {
         let subject = Term::var(Symbol::intern("x"), ty);
-        let trivial = is_tyinv_trivial(self.ctx.tcx, self.param_env, ty);
-        let no_struct = matches!(ty.kind(), TyKind::Alias(..) | TyKind::Param(_));
-
-        let rhs = if trivial {
-            Term::mk_true(self.ctx.tcx)
-        } else {
-            let user_inv = resolve_user_inv(self.ctx.tcx, ty, self.param_env)
-                .map(|(uinv_did, uinv_subst, _)| {
-                    Term::call(self.ctx.tcx, uinv_did, uinv_subst, vec![subject.clone()])
-                })
-                .unwrap_or(Term::mk_true(self.ctx.tcx));
-            if no_struct {
-                user_inv
-            } else {
-                user_inv.conj(self.structural_invariant(subject.clone(), ty))
-            }
-        };
-
         let inv_id =
             self.ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
         let subst = self.ctx.mk_args(&[GenericArg::from(subject.ty)]);
-        let lhs = Term::call(self.ctx.tcx, inv_id, subst, vec![subject]);
-
+        let lhs = Term::call(self.ctx.tcx, inv_id, subst, vec![subject.clone()]);
         let trig = vec![Trigger(vec![lhs.clone()])];
-        let term = if no_struct && !trivial {
+
+        if is_tyinv_trivial(self.ctx.tcx, self.param_env, ty) {
+            self.rewrite = true;
+            return Some(Term::eq(self.ctx.tcx, lhs, Term::mk_true(self.ctx.tcx)).forall_trig(
+                self.ctx.tcx,
+                (Symbol::intern("x"), ty),
+                trig,
+            ));
+        }
+
+        let mut use_imples = false;
+
+        matches!(ty.kind(), TyKind::Alias(..) | TyKind::Param(_));
+
+        let mut rhs = Term::mk_true(self.ctx.tcx);
+
+        match resolve_user_inv(self.ctx.tcx, ty, self.param_env) {
+            TraitResol::Instance(uinv_did, uinv_subst) => {
+                rhs =
+                    rhs.conj(Term::call(self.ctx.tcx, uinv_did, uinv_subst, vec![subject.clone()]))
+            }
+            TraitResol::UnknownNotFound if !for_deps => use_imples = true,
+            TraitResol::NoInstance => (),
+            _ => {
+                let trait_item_did = self
+                    .ctx
+                    .tcx
+                    .get_diagnostic_item(Symbol::intern("creusot_invariant_user"))
+                    .unwrap();
+                let subst = self.ctx.tcx.mk_args(&[GenericArg::from(ty)]);
+                rhs =
+                    rhs.conj(Term::call(self.ctx.tcx, trait_item_did, subst, vec![subject.clone()]))
+            }
+        }
+
+        if matches!(ty.kind(), TyKind::Alias(..) | TyKind::Param(_)) {
+            use_imples = true
+        } else {
+            rhs = rhs.conj(self.structural_invariant(subject, ty))
+        }
+
+        let term = if use_imples {
+            if matches!(rhs.kind, TermKind::Lit(crate::pearlite::Literal::Bool(true))) {
+                return None;
+            }
             Term::implies(lhs, rhs)
         } else {
             self.rewrite = true;
             Term::eq(self.ctx.tcx, lhs, rhs)
         };
 
-        term.forall_trig(self.ctx.tcx, (Symbol::intern("x"), ty), trig)
+        Some(term.forall_trig(self.ctx.tcx, (Symbol::intern("x"), ty), trig))
     }
 
     fn structural_invariant(&mut self, term: Term<'tcx>, ty: Ty<'tcx>) -> Term<'tcx> {
-        if let Some((uinv_did, _, _)) = resolve_user_inv(self.ctx.tcx, ty, self.param_env)
+        if let TraitResol::Instance(uinv_did, _) =
+            resolve_user_inv(self.ctx.tcx, ty, self.param_env)
             && util::is_ignore_structural_inv(self.ctx.tcx, uinv_did)
         {
             return Term::mk_true(self.ctx.tcx);
@@ -299,8 +329,9 @@ pub(crate) fn get_tyinv_deps<'tcx>(
         ParamEnv::empty()
     };
 
-    let inv_term = InvariantElaborator::new(param_env, ctx).elaborate_inv(ty);
-    lower_pure(ctx, &mut names, &inv_term);
+    if let Some(inv_term) = InvariantElaborator::new(param_env, ctx).elaborate_inv(ty, true) {
+        lower_pure(ctx, &mut names, &inv_term);
+    }
 
     let (_, summary) = names.provide_deps(ctx, GraphDepth::Shallow);
     summary
@@ -310,17 +341,9 @@ fn resolve_user_inv<'tcx>(
     tcx: TyCtxt<'tcx>,
     ty: Ty<'tcx>,
     param_env: ParamEnv<'tcx>,
-) -> Option<(DefId, GenericArgsRef<'tcx>, bool)> {
+) -> traits::TraitResol<'tcx> {
     let trait_item_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap();
     let subst = tcx.mk_args(&[GenericArg::from(ty)]);
 
     traits::resolve_assoc_item_opt(tcx, param_env, trait_item_did, subst)
-        .map(|(id, subst)| (id, subst, false))
-        .or_else(|| {
-            if traits::still_specializable(tcx, param_env, trait_item_did, subst) {
-                Some((trait_item_did, subst, true))
-            } else {
-                None
-            }
-        })
 }

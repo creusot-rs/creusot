@@ -59,11 +59,14 @@ impl<'tcx> SymbolElaborator<'tcx> {
             }
             Dependency::TyInv(ty) => {
                 let mut elab = InvariantElaborator::new(param_env, ctx);
-                let term = elab.elaborate_inv(ty);
-                let rewrite = elab.rewrite;
-                let exp = lower_pure(ctx, names, &term);
-                let axiom = Axiom { name: names.ty_inv(ty).name, rewrite, axiom: exp };
-                vec![Decl::Axiom(axiom)]
+                if let Some(term) = elab.elaborate_inv(ty, false) {
+                    let rewrite = elab.rewrite;
+                    let exp = lower_pure(ctx, names, &term);
+                    let axiom = Axiom { name: names.ty_inv(ty).name, rewrite, axiom: exp };
+                    vec![Decl::Axiom(axiom)]
+                } else {
+                    vec![]
+                }
             }
             Dependency::Item(_, _) | Dependency::Hacked(_, _, _) => {
                 self.elaborate_item(ctx, names, param_env, level_of_item, item)
@@ -221,22 +224,27 @@ impl<'tcx> SymbolElaborator<'tcx> {
             let arg = Term::var(pre_sig.inputs[0].0, pre_sig.inputs[0].2);
             let body;
 
-            if let Some((meth_did, meth_substs)) =
-                traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, subst)
-            {
-                // We know the instance => body points to it
-                body = Term::call(ctx.tcx, meth_did, meth_substs, vec![arg]);
-            } else if let TyKind::Closure(..) = subst[0].as_type().unwrap().kind() {
+            if let TyKind::Closure(..) = subst[0].as_type().unwrap().kind() {
                 // Closures have an "hacked" instance of Resolve
                 body = Term::call(ctx.tcx, trait_meth_id, subst, vec![arg]);
-            } else if traits::still_specializable(ctx.tcx, param_env, trait_meth_id, subst) {
-                // We don't know whether there is an instance => body is opaque
-                sig.retty = None;
-                return vec![Decl::predicate(sig, None)];
             } else {
-                // We know there is no instance => body is true
-                body = Term::mk_true(ctx.tcx);
+                match traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, subst) {
+                    traits::TraitResol::Instance(meth_did, meth_substs) => {
+                        // We know the instance => body points to it
+                        body = Term::call(ctx.tcx, meth_did, meth_substs, vec![arg]);
+                    }
+                    traits::TraitResol::UnknownFound | traits::TraitResol::UnknownNotFound => {
+                        // We don't know the instance => body is opaque
+                        sig.retty = None;
+                        return vec![Decl::predicate(sig, None)];
+                    }
+                    traits::TraitResol::NoInstance => {
+                        // We know there is no instance => body is true
+                        body = Term::mk_true(ctx.tcx);
+                    }
+                }
             }
+
             lower_logical_defn(ctx, names, sig, kind, body)
         } else if item.is_hacked() || ctx.is_logical(def_id) {
             let Some(term) = term(ctx, param_env, item) else { return Vec::new() };

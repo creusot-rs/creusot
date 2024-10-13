@@ -148,7 +148,9 @@ fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
         }
         _ if ty.is_unit() => Literal::ZST,
         FnDef(def_id, subst) => {
-            let method = resolve_assoc_item_opt(ctx.tcx, env, *def_id, subst).unwrap();
+            let method = resolve_assoc_item_opt(ctx.tcx, env, *def_id, subst)
+                .to_opt(*def_id, subst)
+                .unwrap();
             Literal::Function(method.0, method.1)
         }
         _ => {

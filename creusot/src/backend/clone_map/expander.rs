@@ -87,14 +87,20 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             }
 
             if let Some((did, subst)) = key.did() {
-                // If this is the `invariant` method, and we know for sure that the `Invariant`
-                // trait cannot be implemented, then ignore this, because we will actually never
-                // need it.
+                let trait_resol = ctx
+                    .tcx
+                    .trait_of_item(did)
+                    .map(|_| traits::resolve_assoc_item_opt(ctx.tcx, self.param_env, did, subst));
+
+                // If this is the `invariant` method, and don't know whether there is an instance
+                // of `Invariant`, then ignore this, because we will actually never need it.
                 // This is needed because the dependency was coming from a context were we were
                 // not sure the `Invariant` trait was not implemented.
                 if util::is_invariant_method(ctx.tcx, did)
-                    && traits::resolve_assoc_item_opt(ctx.tcx, self.param_env, did, subst).is_none()
-                    && !traits::still_specializable(ctx.tcx, self.param_env, did, subst)
+                    && matches!(
+                        trait_resol,
+                        Some(traits::TraitResol::UnknownNotFound | traits::TraitResol::NoInstance)
+                    )
                 {
                     continue;
                 }
@@ -103,7 +109,10 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 // then we can skip the dependency as well, and except that there are "hacked" instances
                 // for closures.
                 if util::is_resolve_method(ctx.tcx, did)
-                    && traits::resolve_assoc_item_opt(ctx.tcx, self.param_env, did, subst).is_none()
+                    && matches!(
+                        trait_resol,
+                        Some(traits::TraitResol::UnknownNotFound | traits::TraitResol::NoInstance)
+                    )
                     && !matches!(subst[0].as_type().unwrap().kind(), TyKind::Closure(..))
                 {
                     continue;
@@ -113,8 +122,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 // If this trait item could potentially be specialized we must avoid depending on its default impl
                 // Note that a trait item impl that can be specialized is always inserted as a dependency as the
                 // corresponding trait impl did, so we only consider trait impls here.
-                ctx.tcx.trait_of_item(did).is_some()
-                  && traits::still_specializable(ctx.tcx, self.param_env, did, subst)
+                matches!(trait_resol, Some(traits::TraitResol::UnknownFound | traits::TraitResol::UnknownNotFound))
 
                     // Alternatively, if we don't have `open(..)` permission to see its body
                 || self_key.did().is_some_and(|(self_did, _)| !ctx.is_transparent_from(did, self_did))

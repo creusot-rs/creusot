@@ -419,7 +419,8 @@ fn resolve_function<'tcx>(
     let res;
     if let Some(AssocItem { container: ty::TraitContainer, .. }) = ctx.opt_associated_item(def_id) {
         res = traits::resolve_assoc_item_opt(ctx.tcx, param_env, def_id, subst)
-            .expect("could not find instance");
+            .to_opt(def_id, subst)
+            .expect("could not find instance")
     } else {
         res = (def_id, subst)
     }

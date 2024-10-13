@@ -51,10 +51,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let (id, subst) = visit.items.pop().unwrap();
 
     let (id, _) = if ctx.trait_of_item(id).is_some() {
-        let resolved =
-            traits::resolve_assoc_item_opt(ctx.tcx, ctx.param_env(def_id.to_def_id()), id, subst);
-
-        if let None = resolved {
+        traits::resolve_assoc_item_opt(ctx.tcx, ctx.param_env(def_id.to_def_id()), id, subst).to_opt(id, subst).unwrap_or_else(|| {
             let mut err = ctx.fatal_error(
                 ctx.def_span(def_id.to_def_id()),
                 "could not derive original instance from external specification",
@@ -62,8 +59,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 
             err.span_warn(ctx.def_span(def_id.to_def_id()), "the bounds on an external specification must be at least as strong as the original impl bounds");
             err.emit()
-        };
-        resolved.unwrap()
+        })
     } else {
         (id, subst)
     };
