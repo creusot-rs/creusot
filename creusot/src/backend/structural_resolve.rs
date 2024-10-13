@@ -126,7 +126,7 @@ pub(crate) fn head_and_subst<'tcx>(
 }
 
 pub fn record_deps<'tcx>(ctx: &mut Why3Generator<'tcx>, ty: Ty<'tcx>) -> CloneSummary<'tcx> {
-    let mut names = Dependencies::new(ctx.tcx, [TransId::StructuralResolve(ty)]);
+    let mut names = Dependencies::new(ctx, [TransId::StructuralResolve(ty)]);
     let term = structural_resolve(ctx, ty);
 
     if let Some(t) = &term.1 {

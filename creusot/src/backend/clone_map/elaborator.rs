@@ -47,7 +47,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
         item: Dependency<'tcx>,
         level_of_item: CloneLevel,
     ) -> Vec<Decl> {
-        let param_env = names.param_env(ctx);
+        let param_env = Dependencies::param_env(names.self_id, ctx);
         let old_names = names;
         let mut names = ImmutDeps { tcx: ctx.tcx, param_env, names: &mut old_names.names };
         let names = &mut names;
@@ -292,7 +292,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
     }
 }
 
-fn val<'tcx>(
+pub fn val<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     mut sig: Signature,
     kind: Option<LetKind>,
@@ -321,7 +321,7 @@ fn val<'tcx>(
     }
 }
 
-fn term<'tcx>(
+pub fn term<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     param_env: ParamEnv<'tcx>,
     dep: Dependency<'tcx>,

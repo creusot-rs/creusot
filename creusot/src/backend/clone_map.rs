@@ -208,13 +208,69 @@ pub(crate) trait Namer<'tcx> {
     fn span(&mut self, span: Span) -> Option<why3::declaration::Attribute>;
 }
 
+impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
+    fn normalize<T: TypeFoldable<TyCtxt<'tcx>> + Copy>(
+        &self,
+        ctx: &TranslationCtx<'tcx>,
+        ty: T,
+    ) -> T {
+        self.tcx().try_normalize_erasing_regions(self.param_env, ty).unwrap_or(ty)
+    }
+
+    fn with_vis<F, A>(&mut self, vis: CloneLevel, f: F) -> A
+    where
+        F: FnOnce(&mut Self) -> A,
+    {
+        f(self)
+    }
+
+    fn insert(&mut self, key: Dependency<'tcx>) -> Kind {
+        let key = key.erase_regions(self.tcx);
+        // self.levels
+        //     .entry(key)
+        //     .and_modify(|l| {
+        //         *l = (*l).min(self.dep_level);
+        //     })
+        //     .or_insert(self.dep_level);
+
+        CloneNames::insert(self, key)
+    }
+
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.tcx
+    }
+
+    fn span(&mut self, span: Span) -> Option<why3::declaration::Attribute> {
+        if span.is_dummy() {
+            return None;
+        }
+        let cnt = self.spans.len();
+        let name = self.spans.entry(span).or_insert_with(|| {
+            let lo = self.tcx.sess.source_map().lookup_char_pos(span.lo());
+            if span.is_dummy() {
+                return Symbol::intern(&format!("dummy{cnt}"));
+            }
+
+            if let FileName::Real(real_name) = &lo.file.name {
+                let path = real_name.local_path_if_available();
+                Symbol::intern(&format!("s{}{cnt}", path.file_stem().unwrap().to_str().unwrap()))
+            } else {
+                Symbol::intern(&format!("span{cnt}"))
+            }
+        });
+        Some(Attribute::NamedSpan(name.to_string()))
+    }
+}
+
 impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
     fn normalize<T: TypeFoldable<TyCtxt<'tcx>> + Copy>(
         &self,
         ctx: &TranslationCtx<'tcx>,
         ty: T,
     ) -> T {
-        self.tcx().try_normalize_erasing_regions(self.param_env(ctx), ty).unwrap_or(ty)
+        self.tcx()
+            .try_normalize_erasing_regions(Self::param_env(self.self_id, ctx), ty)
+            .unwrap_or(ty)
     }
 
     fn with_vis<F, A>(&mut self, vis: CloneLevel, f: F) -> A
@@ -303,6 +359,8 @@ struct CloneNames<'tcx> {
     adt_names: IndexMap<DefId, Symbol>,
     /// Maps spans to a unique name
     spans: IndexMap<Span, Symbol>,
+    // To normalize during dependency stuff (deprecated)
+    param_env: ParamEnv<'tcx>,
 }
 
 impl std::fmt::Debug for CloneNames<'_> {
@@ -316,13 +374,14 @@ impl std::fmt::Debug for CloneNames<'_> {
 }
 
 impl<'tcx> CloneNames<'tcx> {
-    fn new(tcx: TyCtxt<'tcx>) -> Self {
+    fn new(tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>) -> Self {
         CloneNames {
             tcx,
             counts: Default::default(),
             names: Default::default(),
             adt_names: Default::default(),
             spans: Default::default(),
+            param_env,
         }
     }
 
@@ -532,16 +591,16 @@ pub enum GraphDepth {
 
 impl<'tcx> Dependencies<'tcx> {
     pub(crate) fn new(
-        tcx: TyCtxt<'tcx>,
+        ctx: &TranslationCtx<'tcx>,
         selfs: impl IntoIterator<Item = impl Into<TransId<'tcx>>>,
     ) -> Self {
-        let names = CloneNames::new(tcx);
         let dep_info = IndexMap::default();
         let self_ids: Vec<_> = selfs.into_iter().map(|x| x.into()).collect();
         let self_id = self_ids[0];
+        let names = CloneNames::new(ctx.tcx, Self::param_env(self_id, ctx));
         debug!("cloning self: {:?}", self_ids);
         let mut deps = Dependencies {
-            tcx,
+            tcx: ctx.tcx,
             self_id,
             names,
             levels: dep_info,
@@ -550,9 +609,9 @@ impl<'tcx> Dependencies<'tcx> {
         };
 
         for i in self_ids {
-            let node = Dependency::from_trans_id(tcx, i);
-            deps.names.names.insert(node, node.base_ident(tcx).map_or(Kind::Unnamed, Kind::Named));
-            deps.levels.insert(node, CloneLevel::Body);
+            let node = Dependency::from_trans_id(ctx.tcx, i);
+            deps.names.names.insert(node, node.base_ident(ctx.tcx).map_or(Kind::Unnamed, Kind::Named));
+            deps.levels.insert(node, CloneLevel::Root);
             deps.hidden.insert(node);
         }
 
@@ -571,8 +630,8 @@ impl<'tcx> Dependencies<'tcx> {
         Dependency::from_trans_id(self.tcx, self.self_id)
     }
 
-    fn param_env(&self, ctx: &TranslationCtx<'tcx>) -> ParamEnv<'tcx> {
-        match self.self_id {
+    fn param_env(self_id: TransId, ctx: &TranslationCtx<'tcx>) -> ParamEnv<'tcx> {
+        match self_id {
             TransId::Item(did) => ctx.param_env(did),
             TransId::StructuralResolve(ty) | TransId::TyInvAxiom(ty) => ty
                 .ty_adt_def()
@@ -593,41 +652,36 @@ impl<'tcx> Dependencies<'tcx> {
         use petgraph::visit::Walker;
         let mut roots: IndexSet<_> = self.names.names.keys().cloned().collect();
 
-        let param_env = self.param_env(ctx);
+        let param_env = Self::param_env(self.self_id, ctx);
         let self_key = self.self_key();
-        let mut graph = Expander::new(&mut self.names, self_key, param_env, self.tcx);
 
-        for r in &roots {
-            graph.add_root(*r, self.levels[r])
-        }
+        let mut graph = Expander::new(
+            &mut self.names,
+            self_key,
+            param_env,
+            self.tcx,
+            self.levels.iter().filter(|(_, l)| **l != CloneLevel::Root).map(|(a, b)| (*b, *a)),
+        );
+
+        // eprintln!("\n\n{:?} {:?}", self_key, depth);
+
+        // eprintln!("{:?}",self.levels.iter().filter(|(_, l)| **l != CloneLevel::Root).collect::<Vec<_>>());
 
         // Update the clone graph with any new entries.
-        let clone_graph = graph.update_graph(ctx, depth);
-
-        {
-            // Update `roots` to include any associated types which appear in the signature of another root.
-            let mut i = 0;
-            while i < roots.len() {
-                let r = roots.get_index(i).unwrap();
-                for (l, e) in clone_graph.dependencies(*r) {
-                    if l == CloneLevel::Signature {
-                        roots.insert(e);
-                    }
-                }
-                i += 1
-            }
-        }
+        let (graph, bodies) = graph.update_graph(ctx, depth);
 
         let mut elab = SymbolElaborator::new(param_env, self.tcx);
         let mut cloned = IndexSet::new();
 
-        for p in &clone_graph.builtins {
-            self.import_prelude_module(*p);
-        }
+        // for p in &clone_graph.builtins {
+        //     self.import_prelude_module(*p);
+        // }
+        //
 
-        let mut topo = DfsPostOrder::new(&clone_graph.graph, self.self_key());
-        while let Some(node) = topo.walk_next(&clone_graph.graph) {
-            trace!("processing node {:?}", clone_graph.info(node).kind);
+        let mut topo = DfsPostOrder::new(&graph, self.self_key());
+        while let Some(node) = topo.walk_next(&graph) {
+            // eprintln!("Cloning node for {node:?}");
+            // trace!("processing node {:?}", clone_graph.info(node).kind);
 
             if !cloned.insert(node) {
                 continue;
@@ -637,21 +691,25 @@ impl<'tcx> Dependencies<'tcx> {
                 continue;
             }
 
-            if !roots.contains(&node) && depth == GraphDepth::Shallow {
-                continue;
-            }
+            let body = &bodies[&node];
+            // eprintln!("{node:?} -> {:?}", body.len());
+            decls.extend(body.clone());
+            // if !roots.contains(&node) && depth == GraphDepth::Shallow {
+            //     continue;
+            // }
 
-            let level_of_item = match (depth, clone_graph.info(node).opaque) {
-                // We are requesting a deep clone of an opaque thing: stop at the contract
-                (GraphDepth::Deep, CloneOpacity::Opaque) => CloneLevel::Contract,
-                // Otherwise, go deep and get the body
-                (GraphDepth::Deep, _) => CloneLevel::Body,
-                // If we are only doing shallow dependencies, stop at the signature (no contracts)
-                (GraphDepth::Shallow, _) => CloneLevel::Signature,
-            };
+            // let level_of_item = match (depth, clone_graph.info(node).opaque) {
+            //     // We are requesting a deep clone of an opaque thing: stop at the contract
+            //     (GraphDepth::Deep, CloneOpacity::Opaque) => CloneLevel::Contract,
+            //     // Otherwise, go deep and get the body
+            //     (GraphDepth::Deep, _) => CloneLevel::Body,
+            //     // If we are only doing shallow dependencies, stop at the signature (no contracts)
+            //     (GraphDepth::Shallow, _) => CloneLevel::Signature,
+            // };
 
-            let decl = elab.build_clone(ctx, &mut self, node, level_of_item);
-            decls.extend(decl);
+
+            // let decl = elab.build_clone(ctx, &mut self, node, level_of_item);
+            // decls.extend(decl);
         }
 
         let spans: Vec<why3::declaration::Span> = self
@@ -686,13 +744,13 @@ impl<'tcx> Dependencies<'tcx> {
         };
 
         // Only return the roots (direct dependencies) of the graph as dependencies
-        let summary: CloneSummary<'tcx> = roots
-            .into_iter()
-            .filter(|r| !self.hidden.contains(r))
-            .map(|r| (r, clone_graph.info(r).clone()))
-            .collect();
+        // let summary: CloneSummary<'tcx> = roots
+        //     .into_iter()
+        //     .filter(|r| !self.hidden.contains(r))
+        //     .map(|r| (r, clone_graph.info(r).clone()))
+        //     .collect();
 
-        (dependencies, summary)
+        (dependencies, Default::default())
     }
 }
 
