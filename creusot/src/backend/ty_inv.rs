@@ -321,7 +321,7 @@ pub(crate) fn get_tyinv_deps<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     ty: Ty<'tcx>,
 ) -> CloneSummary<'tcx> {
-    let mut names = Dependencies::new(ctx.tcx, [TransId::TyInv(ty)]);
+    let mut names = Dependencies::new(ctx.tcx, [TransId::TyInvAxiom(ty)]);
 
     let param_env = if let Some(adt) = ty.ty_adt_def() {
         ctx.tcx.param_env(adt.did())

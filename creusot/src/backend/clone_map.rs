@@ -124,13 +124,6 @@ pub(crate) trait Namer<'tcx> {
         self.value(def_id, subst)
     }
 
-    fn structural_resolve(&mut self, ty: Ty<'tcx>) -> QName {
-        let def_id =
-            self.tcx().get_diagnostic_item(Symbol::intern("creusot_structural_resolve")).unwrap();
-        let subst = self.tcx().mk_args(&[ty::GenericArg::from(ty)]);
-        self.value(def_id, subst)
-    }
-
     /// Creates a name for a type or closure projection ie: x.field1
     /// This also includes projections from `enum` types
     ///
@@ -175,8 +168,11 @@ pub(crate) trait Namer<'tcx> {
 
                 let mut qname = clone.qname();
                 // TODO(xavier): Remove this hack
-                qname.name =
-                    Dependency::new(tcx, (def_id, subst)).base_ident(tcx).to_string().into();
+                qname.name = Dependency::new(tcx, (def_id, subst))
+                    .base_ident(tcx)
+                    .unwrap()
+                    .to_string()
+                    .into();
                 qname
             }
             DefKind::Closure | DefKind::Struct | DefKind::Union => {
@@ -339,7 +335,7 @@ impl<'tcx> CloneNames<'tcx> {
                 }
                 let modl = module_name(self.tcx, ty);
 
-                Kind::Used(modl, key.base_ident(self.tcx))
+                Kind::Used(modl, key.base_ident(self.tcx).unwrap())
             }
             Dependency::Type(ty) if !matches!(ty.kind(), TyKind::Alias(_, _)) => {
                 let kind = if let Some((did, _)) = key.did() {
@@ -379,7 +375,7 @@ impl<'tcx> CloneNames<'tcx> {
                 let ty = self.tcx.parent(id);
                 let modl = module_name(self.tcx, ty);
 
-                Kind::Used(modl, key.base_ident(self.tcx))
+                Kind::Used(modl, key.base_ident(self.tcx).unwrap())
             }
             _ => {
                 if let Dependency::Item(id, _) = key
@@ -391,9 +387,8 @@ impl<'tcx> CloneNames<'tcx> {
                     return Kind::Used(Symbol::intern(&*modl), Symbol::intern(&*name));
                 };
 
-                let base = key.base_ident(self.tcx);
-
-                Kind::Named(self.counts.freshen(base))
+                key.base_ident(self.tcx)
+                    .map_or(Kind::Unnamed, |base| Kind::Named(self.counts.freshen(base)))
             }
         })
     }
@@ -467,6 +462,8 @@ impl<'tcx> DepGraph<'tcx> {
 // TODO: Get rid of the enum
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable, Hash)]
 pub enum Kind {
+    /// This does not corresponds to a defined symbol
+    Unnamed,
     /// This symbol is locally defined
     Named(Symbol),
     /// This symbol must be acompanied by a `Use` statement in Why3
@@ -476,6 +473,7 @@ pub enum Kind {
 impl Kind {
     fn ident(&self) -> Ident {
         match self {
+            Kind::Unnamed => panic!("Unnamed item"),
             Kind::Named(nm) => nm.as_str().into(),
             Kind::Used(_, _) => panic!("cannot get ident of used module {self:?}"),
         }
@@ -483,6 +481,7 @@ impl Kind {
 
     fn qname(&self) -> QName {
         match self {
+            Kind::Unnamed => panic!("Unnamed item"),
             Kind::Named(nm) => nm.as_str().into(),
             Kind::Used(modl, id) => {
                 QName { module: vec![modl.as_str().into()], name: id.as_str().into() }
@@ -552,7 +551,7 @@ impl<'tcx> Dependencies<'tcx> {
 
         for i in self_ids {
             let node = Dependency::from_trans_id(tcx, i);
-            deps.names.names.insert(node, Kind::Named(node.base_ident(tcx)));
+            deps.names.names.insert(node, node.base_ident(tcx).map_or(Kind::Unnamed, Kind::Named));
             deps.levels.insert(node, CloneLevel::Body);
             deps.hidden.insert(node);
         }
@@ -563,7 +562,7 @@ impl<'tcx> Dependencies<'tcx> {
     // Hack: for closure ty decls
     pub(crate) fn insert_hidden_type(&mut self, ty: Ty<'tcx>) {
         let node = Dependency::Type(ty);
-        self.names.names.insert(node, Kind::Named(node.base_ident(self.tcx)));
+        self.names.names.insert(node, Kind::Named(node.base_ident(self.tcx).unwrap()));
         self.levels.insert(node, CloneLevel::Body);
         self.hidden.insert(node);
     }
@@ -575,7 +574,7 @@ impl<'tcx> Dependencies<'tcx> {
     fn param_env(&self, ctx: &TranslationCtx<'tcx>) -> ParamEnv<'tcx> {
         match self.self_id {
             TransId::Item(did) => ctx.param_env(did),
-            TransId::StructuralResolve(ty) | TransId::TyInv(ty) => ty
+            TransId::StructuralResolve(ty) | TransId::TyInvAxiom(ty) => ty
                 .ty_adt_def()
                 .map(|adt_def| ctx.param_env(adt_def.did()))
                 .unwrap_or_else(|| ParamEnv::empty()),

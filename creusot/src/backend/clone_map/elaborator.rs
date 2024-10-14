@@ -57,12 +57,12 @@ impl<'tcx> SymbolElaborator<'tcx> {
             Dependency::Builtin(b) => {
                 vec![Decl::UseDecl(Use { name: b.qname(), as_: None, export: false })]
             }
-            Dependency::TyInv(ty) => {
+            Dependency::TyInvAxiom(ty) => {
                 let mut elab = InvariantElaborator::new(param_env, ctx);
                 if let Some(term) = elab.elaborate_inv(ty, false) {
                     let rewrite = elab.rewrite;
                     let exp = lower_pure(ctx, names, &term);
-                    let axiom = Axiom { name: names.ty_inv(ty).name, rewrite, axiom: exp };
+                    let axiom = Axiom { name: names.insert(item).ident(), rewrite, axiom: exp };
                     vec![Decl::Axiom(axiom)]
                 } else {
                     vec![]
@@ -84,7 +84,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
                 let binder =
                     Binder::typed(ident_of(binder.0), translate_ty(ctx, names, DUMMY_SP, binder.1));
                 let sig = Signature {
-                    name: names.structural_resolve(ty).name,
+                    name: names.insert(item).ident(),
                     trigger: None,
                     attrs: vec![],
                     retty: None,
@@ -207,7 +207,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
         let name = if let Dependency::ClosureSpec(_, _, _) = item {
             names.insert(item).ident()
         } else {
-            names.value(def_id, subst).name
+            names.value(def_id, subst).as_ident()
         };
 
         let mut sig = named_sig_to_why3(ctx, names, name, &pre_sig, def_id);
@@ -336,8 +336,7 @@ fn sig<'tcx>(
 ) -> PreSignature<'tcx> {
     match dep.to_trans_id(ctx.tcx, param_env).unwrap() {
         TransId::Item(id) => ctx.sig(id).clone(),
-        // In future change this
-        TransId::TyInv(_) => unreachable!(),
+
         TransId::Hacked(h_id, id) => match h_id {
             ClosureSpecKind::PostconditionOnce => {
                 ctx.closure_contract(id).postcond_once.as_ref().unwrap().0.clone()
@@ -355,7 +354,8 @@ fn sig<'tcx>(
                 ctx.closure_contract(id).accessors[ix as usize].0.clone()
             }
         },
-        TransId::StructuralResolve(_) => unreachable!(),
+        // In future change this
+        TransId::TyInvAxiom(_) | TransId::StructuralResolve(_) => unreachable!(),
     }
 }
 

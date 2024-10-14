@@ -247,7 +247,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
     fn expand_ty_inv(&mut self, ctx: &mut Why3Generator<'tcx>, ty: Ty<'tcx>) {
         ctx.translate_tyinv(tyinv_head_and_subst(ctx.tcx, ty, self.param_env).0);
-        self.add_node(Dependency::TyInv(ty), CloneLevel::Body);
+        self.add_node(Dependency::TyInvAxiom(ty), CloneLevel::Body);
     }
 
     fn expand_laws(

@@ -1198,6 +1198,6 @@ impl Print for QName {
     {
         let module_path = self.module.iter().map(|t| alloc.text(&t.0));
 
-        alloc.intersperse(module_path.chain(std::iter::once(alloc.text(self.name().0))), ".")
+        alloc.intersperse(module_path.chain(std::iter::once(alloc.text(self.name.0.clone()))), ".")
     }
 }

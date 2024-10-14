@@ -147,19 +147,19 @@ pub(crate) fn is_open_inv_result(tcx: TyCtxt, def_id: DefId) -> bool {
 }
 
 pub(crate) fn is_inv(tcx: TyCtxt, def_id: DefId) -> bool {
-    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap() == def_id
+    tcx.is_diagnostic_item(Symbol::intern("creusot_invariant_internal"), def_id)
 }
 
 pub(crate) fn is_invariant_method(tcx: TyCtxt, def_id: DefId) -> bool {
-    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap() == def_id
+    tcx.is_diagnostic_item(Symbol::intern("creusot_invariant_user"), def_id)
 }
 
 pub(crate) fn is_resolve_method(tcx: TyCtxt, def_id: DefId) -> bool {
-    tcx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap() == def_id
+    tcx.is_diagnostic_item(Symbol::intern("creusot_resolve_method"), def_id)
 }
 
 pub(crate) fn is_resolve_function(tcx: TyCtxt, def_id: DefId) -> bool {
-    tcx.get_diagnostic_item(Symbol::intern("creusot_resolve")).unwrap() == def_id
+    tcx.is_diagnostic_item(Symbol::intern("creusot_resolve"), def_id)
 }
 
 pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {

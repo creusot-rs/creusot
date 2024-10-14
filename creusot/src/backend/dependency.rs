@@ -26,7 +26,7 @@ pub(crate) enum Dependency<'tcx> {
     // Type invariants and structual resolution expressions
     // are identified by a substituted type, each of these entries is associated with a `TransId` containing a
     // 'skeleton type' (aka type with identity substs).
-    TyInv(Ty<'tcx>),
+    TyInvAxiom(Ty<'tcx>),
     StructuralResolve(Ty<'tcx>),
     ClosureSpec(ClosureSpecKind, DefId, GenericArgsRef<'tcx>),
     Builtin(PreludeModule),
@@ -72,23 +72,15 @@ impl<'tcx> Dependency<'tcx> {
                 //
                 // We also use this to overload "structural resolution" for types
 
-                let closure_spec = if tcx
-                    .is_diagnostic_item(Symbol::intern("fn_once_impl_precond"), did)
-                {
-                    Some((ClosureSpecKind::Precondition, 1))
-                } else if tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_postcond"), did) {
-                    Some((ClosureSpecKind::PostconditionOnce, 1))
-                } else if tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_postcond"), did) {
-                    Some((ClosureSpecKind::PostconditionMut, 1))
-                } else if tcx.is_diagnostic_item(Symbol::intern("fn_impl_postcond"), did) {
-                    Some((ClosureSpecKind::Postcondition, 1))
-                } else if tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_unnest"), did) {
-                    Some((ClosureSpecKind::Unnest, 1))
-                } else if tcx.is_diagnostic_item(Symbol::intern("creusot_resolve_method"), did) {
-                    Some((ClosureSpecKind::Resolve, 0))
-                } else {
-                    None
-                };
+                let closure_spec = tcx.get_diagnostic_name(did).and_then(|s| match s.as_str() {
+                    "fn_once_impl_precond" => Some((ClosureSpecKind::Precondition, 1)),
+                    "fn_once_impl_postcond" => Some((ClosureSpecKind::PostconditionOnce, 1)),
+                    "fn_mut_impl_postcond" => Some((ClosureSpecKind::PostconditionMut, 1)),
+                    "fn_impl_postcond" => Some((ClosureSpecKind::Postcondition, 1)),
+                    "fn_mut_impl_unnest" => Some((ClosureSpecKind::Unnest, 1)),
+                    "creusot_resolve_method" => Some((ClosureSpecKind::Resolve, 0)),
+                    _ => None,
+                });
 
                 if let Some((closure_spec, param_id)) = closure_spec {
                     let self_ty = subst.types().nth(param_id).unwrap();
@@ -97,7 +89,7 @@ impl<'tcx> Dependency<'tcx> {
                     }
                 }
 
-                if let Some(ty) = structural_resolve(tcx, (did, subst)) {
+                if let Some(ty) = is_structural_resolve(tcx, (did, subst)) {
                     Dependency::StructuralResolve(ty)
                 } else {
                     Dependency::Item(did, subst)
@@ -119,7 +111,7 @@ impl<'tcx> Dependency<'tcx> {
 
                 Dependency::new(tcx, (self_id, subst)).erase_regions(tcx)
             }
-            TransId::TyInv(ty) => Dependency::TyInv(ty),
+            TransId::TyInvAxiom(ty) => Dependency::TyInvAxiom(ty),
             TransId::Hacked(h, self_id) => {
                 let subst = match tcx.def_kind(self_id) {
                     DefKind::Closure => match tcx.type_of(self_id).instantiate_identity().kind() {
@@ -142,9 +134,9 @@ impl<'tcx> Dependency<'tcx> {
         match self {
             Dependency::Type(_) => None,
             Dependency::Item(id, _) => Some(TransId::Item(id)),
-            Dependency::TyInv(ty) => {
+            Dependency::TyInvAxiom(ty) => {
                 let ty = tyinv_head_and_subst(tcx, ty, param_env).0;
-                Some(TransId::TyInv(ty))
+                Some(TransId::TyInvAxiom(ty))
             }
             Dependency::ClosureSpec(h, id, _) => Some(TransId::Hacked(h, id)),
             Dependency::Builtin(_) => None,
@@ -177,7 +169,7 @@ impl<'tcx> Dependency<'tcx> {
                 _ => None,
             },
             Dependency::ClosureSpec(_, id, substs) => Some((id, substs)),
-            Dependency::TyInv(_) | Dependency::Builtin(_) => None,
+            Dependency::TyInvAxiom(_) | Dependency::Builtin(_) => None,
             Dependency::StructuralResolve(_) => None,
         }
     }
@@ -198,7 +190,7 @@ impl<'tcx> Dependency<'tcx> {
         other: Dependency<'tcx>,
         param_env: ParamEnv<'tcx>,
     ) -> Self {
-        let substs = if let Dependency::TyInv(ty) = other {
+        let substs = if let Dependency::TyInvAxiom(ty) = other {
             tyinv_head_and_subst(tcx, ty, param_env).1
         } else if let Dependency::StructuralResolve(ty) = other {
             structural_resolve::head_and_subst(tcx, ty).1
@@ -211,49 +203,51 @@ impl<'tcx> Dependency<'tcx> {
         EarlyBinder::bind(self).instantiate(tcx, substs)
     }
 
-    pub(crate) fn base_ident(self, tcx: TyCtxt<'tcx>) -> Symbol {
+    pub(crate) fn base_ident(self, tcx: TyCtxt<'tcx>) -> Option<Symbol> {
         match self {
             Dependency::Type(ty) => match ty.kind() {
-                TyKind::Adt(def, _) => item_symb(tcx, def.did(), rustc_hir::def::Namespace::TypeNS),
+                TyKind::Adt(def, _) => {
+                    Some(item_symb(tcx, def.did(), rustc_hir::def::Namespace::TypeNS))
+                }
                 TyKind::Alias(_, aty) => {
-                    Symbol::intern(&type_name(tcx.item_name(aty.def_id).as_str()))
+                    Some(Symbol::intern(&type_name(tcx.item_name(aty.def_id).as_str())))
                 }
                 TyKind::Closure(def_id, _) => {
-                    item_symb(tcx, *def_id, rustc_hir::def::Namespace::TypeNS)
+                    Some(item_symb(tcx, *def_id, rustc_hir::def::Namespace::TypeNS))
                 }
-                _ => Symbol::intern("debug_ty_name"),
+                _ => None,
             },
             Dependency::Item(_, _) => {
                 let did = self.did().unwrap().0;
                 match util::item_type(tcx, did) {
-                    ItemType::Impl => tcx.item_name(tcx.trait_id_of_impl(did).unwrap()),
-                    ItemType::Closure => Symbol::intern(&format!(
+                    ItemType::Impl => Some(tcx.item_name(tcx.trait_id_of_impl(did).unwrap())),
+                    ItemType::Closure => Some(Symbol::intern(&format!(
                         "closure{}",
                         tcx.def_path(did).data.last().unwrap().disambiguator
-                    )),
+                    ))),
                     ItemType::Field => {
                         let variant = tcx.parent(did);
                         let name = translate_accessor_name(
                             &tcx.item_name(variant).as_str(),
                             &tcx.item_name(did).as_str(),
                         );
-                        Symbol::intern(&name)
+                        Some(Symbol::intern(&name))
                     }
-                    _ => Symbol::intern(&value_name(tcx.item_name(did).as_str())),
+                    _ => Some(Symbol::intern(&value_name(tcx.item_name(did).as_str()))),
                 }
             }
             Dependency::ClosureSpec(hacked_id, _, _) => match hacked_id {
-                ClosureSpecKind::PostconditionOnce => Symbol::intern("postcondition_once"),
-                ClosureSpecKind::PostconditionMut => Symbol::intern("postcondition_mut"),
-                ClosureSpecKind::Postcondition => Symbol::intern("postcondition"),
-                ClosureSpecKind::Precondition => Symbol::intern("precondition"),
-                ClosureSpecKind::Unnest => Symbol::intern("unnest"),
-                ClosureSpecKind::Resolve => Symbol::intern("resolve"),
-                ClosureSpecKind::Accessor(ix) => Symbol::intern(&format!("field_{ix}")),
+                ClosureSpecKind::PostconditionOnce => Some(Symbol::intern("postcondition_once")),
+                ClosureSpecKind::PostconditionMut => Some(Symbol::intern("postcondition_mut")),
+                ClosureSpecKind::Postcondition => Some(Symbol::intern("postcondition")),
+                ClosureSpecKind::Precondition => Some(Symbol::intern("precondition")),
+                ClosureSpecKind::Unnest => Some(Symbol::intern("unnest")),
+                ClosureSpecKind::Resolve => Some(Symbol::intern("resolve")),
+                ClosureSpecKind::Accessor(ix) => Some(Symbol::intern(&format!("field_{ix}"))),
             },
-            Dependency::TyInv(..) => Symbol::intern("tyinv_should_not_appear"),
-            Dependency::Builtin(_) => Symbol::intern("builtin_should_not_appear"),
-            Dependency::StructuralResolve(_) => Symbol::intern("structural_resolve"),
+            Dependency::TyInvAxiom(..) => Some(Symbol::intern(&format!("inv_axiom"))),
+            Dependency::StructuralResolve(_) => Some(Symbol::intern("structural_resolve")),
+            Dependency::Builtin(_) => None,
         }
     }
 }
@@ -277,11 +271,11 @@ fn resolve_item<'tcx>(
     }
 }
 
-fn structural_resolve<'tcx>(
+fn is_structural_resolve<'tcx>(
     tcx: TyCtxt<'tcx>,
     dep: (DefId, GenericArgsRef<'tcx>),
 ) -> Option<Ty<'tcx>> {
-    if tcx.get_diagnostic_item(Symbol::intern("creusot_structural_resolve")).unwrap() == dep.0 {
+    if tcx.is_diagnostic_item(Symbol::intern("creusot_structural_resolve"), dep.0) {
         Some(dep.1.type_at(0))
     } else {
         None
