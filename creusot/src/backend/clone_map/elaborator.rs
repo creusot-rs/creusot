@@ -1,7 +1,7 @@
 use super::{CloneNames, Dependency, Kind};
 use crate::{
     backend::{
-        dependency::ExtendedId,
+        dependency::ClosureSpecKind,
         logic::{lower_logical_defn, lower_pure_defn, sigs, spec_axiom},
         program,
         signature::named_sig_to_why3,
@@ -68,7 +68,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
                     vec![]
                 }
             }
-            Dependency::Item(_, _) | Dependency::Hacked(_, _, _) => {
+            Dependency::Item(_, _) | Dependency::ClosureSpec(_, _, _) => {
                 self.elaborate_item(ctx, names, param_env, level_of_item, item)
             }
             Dependency::StructuralResolve(ty) => {
@@ -188,7 +188,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
 
         let is_accessor =
             item.to_trans_id(self.tcx, self.param_env).is_some_and(|i| ctx.is_accessor(i));
-        let kind = if item.is_hacked() {
+        let kind = if item.is_closure_spec() {
             if is_accessor {
                 Some(LetKind::Function)
             } else {
@@ -204,7 +204,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
             pre_sig.contract = PreContract::default();
         }
 
-        let name = if let Dependency::Hacked(_, _, _) = item {
+        let name = if let Dependency::ClosureSpec(_, _, _) = item {
             names.insert(item).ident()
         } else {
             names.value(def_id, subst).name
@@ -225,7 +225,7 @@ impl<'tcx> SymbolElaborator<'tcx> {
             let body;
 
             if let TyKind::Closure(..) = subst[0].as_type().unwrap().kind() {
-                // Closures have an "hacked" instance of Resolve
+                // Closures have a special instance of Resolve
                 body = Term::call(ctx.tcx, trait_meth_id, subst, vec![arg]);
             } else {
                 match traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, subst) {
@@ -246,13 +246,13 @@ impl<'tcx> SymbolElaborator<'tcx> {
             }
 
             lower_logical_defn(ctx, names, sig, kind, body)
-        } else if item.is_hacked() || ctx.is_logical(def_id) {
+        } else if item.is_closure_spec() || ctx.is_logical(def_id) {
             let Some(term) = term(ctx, param_env, item) else { return Vec::new() };
             let mut term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
             normalize(ctx.tcx, param_env, &mut term);
             if is_accessor {
                 lower_logical_defn(ctx, names, sig, kind, term)
-            } else if item.is_hacked() {
+            } else if item.is_closure_spec() {
                 // TODO: Clean this up and merge with previous branches
                 lower_pure_defn(ctx, names, sig, kind, false, term)
             } else {
@@ -339,19 +339,21 @@ fn sig<'tcx>(
         // In future change this
         TransId::TyInv(_) => unreachable!(),
         TransId::Hacked(h_id, id) => match h_id {
-            ExtendedId::PostconditionOnce => {
+            ClosureSpecKind::PostconditionOnce => {
                 ctx.closure_contract(id).postcond_once.as_ref().unwrap().0.clone()
             }
-            ExtendedId::PostconditionMut => {
+            ClosureSpecKind::PostconditionMut => {
                 ctx.closure_contract(id).postcond_mut.as_ref().unwrap().0.clone()
             }
-            ExtendedId::Postcondition => {
+            ClosureSpecKind::Postcondition => {
                 ctx.closure_contract(id).postcond.as_ref().unwrap().0.clone()
             }
-            ExtendedId::Precondition => ctx.closure_contract(id).precond.0.clone(),
-            ExtendedId::Unnest => ctx.closure_contract(id).unnest.as_ref().unwrap().0.clone(),
-            ExtendedId::Resolve => ctx.closure_contract(id).resolve.0.clone(),
-            ExtendedId::Accessor(ix) => ctx.closure_contract(id).accessors[ix as usize].0.clone(),
+            ClosureSpecKind::Precondition => ctx.closure_contract(id).precond.0.clone(),
+            ClosureSpecKind::Unnest => ctx.closure_contract(id).unnest.as_ref().unwrap().0.clone(),
+            ClosureSpecKind::Resolve => ctx.closure_contract(id).resolve.0.clone(),
+            ClosureSpecKind::Accessor(ix) => {
+                ctx.closure_contract(id).accessors[ix as usize].0.clone()
+            }
         },
         TransId::StructuralResolve(_) => unreachable!(),
     }
@@ -368,8 +370,7 @@ struct ImmutDeps<'a, 'tcx> {
 
 impl<'a, 'tcx> ImmutDeps<'a, 'tcx> {
     fn get(&self, ix: Dependency<'tcx>) -> &Kind {
-        let n = ix.identify_overloads(self.tcx);
-        let n = self.tcx.try_normalize_erasing_regions(self.param_env, n).unwrap_or(n);
+        let n = self.tcx.try_normalize_erasing_regions(self.param_env, ix).unwrap_or(ix);
         self.names.names.get(&n).unwrap_or_else(|| {
             panic!("Could not find {ix:?} -> {n:?}");
         })

@@ -26,7 +26,7 @@ use crate::{
 };
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 
-use super::{dependency::ExtendedId, TransId, Why3Generator};
+use super::{dependency::ClosureSpecKind, TransId, Why3Generator};
 
 mod elaborator;
 mod expander;
@@ -148,7 +148,7 @@ pub(crate) trait Namer<'tcx> {
         let tcx = self.tcx();
         let node = match util::item_type(tcx, def_id) {
             ItemType::Closure => {
-                Dependency::Hacked(ExtendedId::Accessor(ix.as_u32() as u8), def_id, subst)
+                Dependency::ClosureSpec(ClosureSpecKind::Accessor(ix.as_u32() as u8), def_id, subst)
             }
             ItemType::Type => {
                 let adt = tcx.adt_def(def_id);
@@ -236,7 +236,7 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
     }
 
     fn insert(&mut self, key: Dependency<'tcx>) -> Kind {
-        let key = key.erase_regions(self.tcx).identify_overloads(self.tcx);
+        let key = key.erase_regions(self.tcx);
         self.levels
             .entry(key)
             .and_modify(|l| {
