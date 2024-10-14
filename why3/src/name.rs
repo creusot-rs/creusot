@@ -75,7 +75,7 @@ impl Deref for Ident {
 
 impl Equivalent<QName> for Ident {
     fn equivalent(&self, key: &QName) -> bool {
-        self == &key.name
+        key.is_ident(self)
     }
 }
 
@@ -87,15 +87,13 @@ pub struct QName {
 }
 
 impl QName {
-    pub fn as_ident(&self) -> Option<&Ident> {
-        if self.module.is_empty() {
-            return Some(&self.name);
-        } else {
-            None
-        }
+    pub fn is_ident(&self, id: &Ident) -> bool {
+        self.module.is_empty() && &self.name == id
     }
-    pub fn name(&self) -> Ident {
-        self.name.clone()
+
+    pub fn as_ident(self) -> Ident {
+        assert!(self.module.is_empty());
+        self.name
     }
 
     // ooof this is a bad function

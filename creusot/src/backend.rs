@@ -43,7 +43,7 @@ pub(crate) mod wto;
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub(crate) enum TransId<'tcx> {
     Item(DefId),
-    TyInv(Ty<'tcx>),
+    TyInvAxiom(Ty<'tcx>),
     StructuralResolve(Ty<'tcx>),
     Hacked(ClosureSpecKind, DefId),
 }
@@ -95,7 +95,7 @@ impl<'tcx> Why3Generator<'tcx> {
         match id.into() {
             TransId::Item(id) => self.ctx.term(id),
             // For the moment at least
-            TransId::TyInv(_) => unreachable!(),
+            TransId::TyInvAxiom(_) => unreachable!(),
             TransId::Hacked(h, id) => {
                 let c = self.ctx.closure_contract(id);
                 match h {
@@ -279,7 +279,7 @@ impl<'tcx> Why3Generator<'tcx> {
     }
 
     pub(crate) fn translate_tyinv(&mut self, ty: Ty<'tcx>) {
-        let tid = TransId::TyInv(ty);
+        let tid = TransId::TyInvAxiom(ty);
         if self.dependencies.contains_key(&tid) {
             return;
         }

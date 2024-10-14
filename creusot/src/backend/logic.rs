@@ -281,9 +281,7 @@ fn subst_qname(body: &mut Exp, name: &Ident, lim_name: &Ident) {
     impl<'a> ExpMutVisitor for QNameSubst<'a> {
         fn visit_mut(&mut self, exp: &mut Exp) {
             match exp {
-                Exp::QVar(qname) if qname.module.is_empty() && &qname.name == self.0 => {
-                    *exp = Exp::var(self.1.clone())
-                }
+                Exp::QVar(qname) if qname.is_ident(self.0) => *exp = Exp::var(self.1.clone()),
                 _ => super_visit_mut(self, exp),
             }
         }

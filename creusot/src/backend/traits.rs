@@ -74,18 +74,19 @@ impl<'tcx> Why3Generator<'tcx> {
         def_id: DefId,
         substs: GenericArgsRef<'tcx>,
     ) -> Decl {
-        let name = names.ty(def_id, substs).name;
+        let ty_name = names.ty(def_id, substs).as_ident();
+        let ty_params = vec![];
 
         let ty_decl = match self.tcx.associated_item(def_id).container {
             rustc_middle::ty::ImplContainer => names.with_vis(CloneLevel::Signature, |names| {
                 let assoc_ty = self.tcx.type_of(def_id).instantiate_identity();
                 TyDecl::Alias {
-                    ty_name: name,
-                    ty_params: vec![],
+                    ty_name,
+                    ty_params,
                     alias: backend::ty::translate_ty(self, names, rustc_span::DUMMY_SP, assoc_ty),
                 }
             }),
-            rustc_middle::ty::TraitContainer => TyDecl::Opaque { ty_name: name, ty_params: vec![] },
+            rustc_middle::ty::TraitContainer => TyDecl::Opaque { ty_name, ty_params },
         };
 
         Decl::TyDecl(ty_decl)

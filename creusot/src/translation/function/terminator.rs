@@ -267,9 +267,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
     /// Determine if the given type `ty` is a `GhostBox`.
     fn is_ghost_box(&self, ty: Ty<'tcx>) -> bool {
-        let ghost_box_id = self.ctx.get_diagnostic_item(Symbol::intern("ghost_box")).unwrap();
         match ty.kind() {
-            rustc_type_ir::TyKind::Adt(containing_type, _) => containing_type.did() == ghost_box_id,
+            rustc_type_ir::TyKind::Adt(containing_type, _) => {
+                self.ctx.is_diagnostic_item(Symbol::intern("ghost_box"), containing_type.did())
+            }
             _ => false,
         }
     }

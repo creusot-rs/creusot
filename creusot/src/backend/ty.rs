@@ -222,7 +222,7 @@ pub(crate) fn translate_closure_ty<'tcx>(
     did: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> TyDecl {
-    let ty_name = names.ty(did, subst).name;
+    let ty_name = names.ty(did, subst).as_ident();
     let closure_subst = subst.as_closure();
     let fields: Vec<_> = closure_subst
         .upvar_tys()
@@ -233,7 +233,7 @@ pub(crate) fn translate_closure_ty<'tcx>(
         })
         .collect();
 
-    let cons_name = names.constructor(did, subst).name;
+    let cons_name = names.constructor(did, subst).as_ident();
     let kind = AdtDecl {
         ty_name,
         ty_params: ty_param_names(ctx.tcx, did).collect(),
@@ -551,7 +551,7 @@ pub(crate) fn destructor<'tcx>(
 
     let branches = std::iter::once(good_branch).chain(bad_branch).collect();
     Decl::Coma(Defn {
-        name: names.eliminator(cons_id, subst).name,
+        name: names.eliminator(cons_id, subst).as_ident(),
         writes: vec![],
         params: params.collect(),
         body: Expr::Defn(Box::new(Expr::Any), false, branches),
@@ -567,7 +567,7 @@ fn build_ty_decl<'tcx>(
     let substs = GenericArgs::identity_for_item(ctx.tcx, did);
 
     // HACK(xavier): Clean up
-    let ty_name = names.ty(did, substs).name;
+    let ty_name = names.ty(did, substs).as_ident();
 
     // Collect type variables of declaration
     let ty_args: Vec<_> = ty_params(ctx, did).collect();
@@ -577,17 +577,17 @@ fn build_ty_decl<'tcx>(
         let mut ml_ty_def = Vec::new();
 
         for var_def in adt.variants().iter() {
-            let field_tys: Vec<_> = var_def
-                .fields
-                .iter()
-                .map(|f| {
-                    let ty = field_ty(ctx, names, param_env, did, f, substs);
-                    Field { ty, ghost: false }
-                })
-                .collect();
-            let var_name = names.constructor(var_def.def_id, substs);
-
-            ml_ty_def.push(ConstructorDecl { name: var_name.name, fields: field_tys });
+            ml_ty_def.push(ConstructorDecl {
+                name: names.constructor(var_def.def_id, substs).as_ident(),
+                fields: var_def
+                    .fields
+                    .iter()
+                    .map(|f| {
+                        let ty = field_ty(ctx, names, param_env, did, f, substs);
+                        Field { ty, ghost: false }
+                    })
+                    .collect(),
+            });
         }
 
         AdtDecl { ty_name, ty_params: ty_args, constrs: ml_ty_def }
@@ -902,7 +902,7 @@ pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(
 
 pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
     if let TyKind::Adt(def, _) = ty.kind() {
-        def.did() == tcx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap()
+        tcx.is_diagnostic_item(Symbol::intern("creusot_int"), def.did())
     } else {
         false
     }

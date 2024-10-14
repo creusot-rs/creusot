@@ -1047,11 +1047,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
         let TyKind::FnDef(id, sub) = ty.kind() else { panic!("expected function type") };
 
-        if *id != self.ctx.get_diagnostic_item(Symbol::intern("deref_method")).unwrap() {
-            return false;
-        }
-
-        sub[0].as_type().map(|ty| is_snap_ty(self.ctx.tcx, ty)).unwrap_or(false)
+        self.ctx.is_diagnostic_item(Symbol::intern("deref_method"), *id)
+            && is_snap_ty(self.ctx.tcx, sub[0].as_type().unwrap())
     }
 }
 
@@ -1097,40 +1094,20 @@ pub(crate) enum Stub {
 
 pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
     if let TyKind::FnDef(id, _) = *ty.kind() {
-        if id == tcx.get_diagnostic_item(Symbol::intern("forall")).unwrap() {
-            return Some(Stub::Forall);
+        match tcx.get_diagnostic_name(id)?.as_str() {
+            "forall" => Some(Stub::Forall),
+            "exists" => Some(Stub::Exists),
+            "trigger" => Some(Stub::Trigger),
+            "fin" => Some(Stub::Fin),
+            "implication" => Some(Stub::Impl),
+            "equal" => Some(Stub::Equals),
+            "neq" => Some(Stub::Neq),
+            "variant_check" => Some(Stub::VariantCheck),
+            "old" => Some(Stub::Old),
+            "absurd" => Some(Stub::Absurd),
+            "closure_result_constraint" => Some(Stub::ResultCheck),
+            _ => None,
         }
-        if id == tcx.get_diagnostic_item(Symbol::intern("exists")).unwrap() {
-            return Some(Stub::Exists);
-        }
-        if id == tcx.get_diagnostic_item(Symbol::intern("trigger")).unwrap() {
-            return Some(Stub::Trigger);
-        }
-        if id == tcx.get_diagnostic_item(Symbol::intern("fin")).unwrap() {
-            return Some(Stub::Fin);
-        }
-        if id == tcx.get_diagnostic_item(Symbol::intern("implication")).unwrap() {
-            return Some(Stub::Impl);
-        }
-        if id == tcx.get_diagnostic_item(Symbol::intern("equal")).unwrap() {
-            return Some(Stub::Equals);
-        }
-        if id == tcx.get_diagnostic_item(Symbol::intern("neq")).unwrap() {
-            return Some(Stub::Neq);
-        }
-        if id == tcx.get_diagnostic_item(Symbol::intern("variant_check")).unwrap() {
-            return Some(Stub::VariantCheck);
-        }
-        if id == tcx.get_diagnostic_item(Symbol::intern("old")).unwrap() {
-            return Some(Stub::Old);
-        }
-        if id == tcx.get_diagnostic_item(Symbol::intern("absurd")).unwrap() {
-            return Some(Stub::Absurd);
-        }
-        if id == tcx.get_diagnostic_item(Symbol::intern("closure_result_constraint")).unwrap() {
-            return Some(Stub::ResultCheck);
-        }
-        None
     } else {
         None
     }

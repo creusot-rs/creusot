@@ -154,7 +154,7 @@ impl Expr {
         // If we have `x [ x = z ]` replace this by `z`
         if defs.len() == 1
             && !defs[0].body.occurs_cont(&defs[0].name)
-            && self.as_symbol().and_then(QName::as_ident) == Some(&defs[0].name)
+            && self.as_symbol().is_some_and(|s| s.is_ident(&defs[0].name))
         {
             defs.remove(0).body
         } else {
@@ -185,7 +185,7 @@ impl Expr {
     /// Checks whether a symbol of name `cont` occurs in `self`
     pub fn occurs_cont(&self, cont: &Ident) -> bool {
         match self {
-            Expr::Symbol(v) => v.as_ident() == Some(&cont),
+            Expr::Symbol(v) => v.is_ident(&cont),
             Expr::App(e, arg) => {
                 let arg = if let Arg::Cont(e) = &**arg { e.occurs_cont(cont) } else { false };
                 arg || e.occurs_cont(cont)
