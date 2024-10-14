@@ -1,6 +1,6 @@
 use super::{
     clone_map::PreludeModule,
-    dependency::ExtendedId,
+    dependency::ClosureSpecKind,
     is_trusted_function,
     place::rplace_to_expr,
     signature::{sig_to_why3, signature_of},
@@ -77,7 +77,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
     lower_pure(ctx, &mut names, &contract.resolve.1);
 
     let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
-    ctx.dependencies.insert(TransId::Hacked(ExtendedId::Resolve, def_id), deps);
+    ctx.dependencies.insert(TransId::Hacked(ClosureSpecKind::Resolve, def_id), deps);
 
     // HACK PRECOND
     let mut names = Dependencies::new(ctx.tcx, [def_id]);
@@ -85,7 +85,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
     lower_pure(ctx, &mut names, &contract.precond.1);
 
     let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
-    ctx.dependencies.insert(TransId::Hacked(ExtendedId::Precondition, def_id), deps);
+    ctx.dependencies.insert(TransId::Hacked(ClosureSpecKind::Precondition, def_id), deps);
 
     // HACK POST ONCE
     if let Some((sig, term)) = contract.postcond_once {
@@ -94,7 +94,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
         lower_pure(ctx, &mut names, &term);
 
         let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
-        ctx.dependencies.insert(TransId::Hacked(ExtendedId::PostconditionOnce, def_id), deps);
+        ctx.dependencies.insert(TransId::Hacked(ClosureSpecKind::PostconditionOnce, def_id), deps);
     }
 
     // HACK POST MUT
@@ -104,7 +104,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
         lower_pure(ctx, &mut names, &term);
 
         let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
-        ctx.dependencies.insert(TransId::Hacked(ExtendedId::PostconditionMut, def_id), deps);
+        ctx.dependencies.insert(TransId::Hacked(ClosureSpecKind::PostconditionMut, def_id), deps);
     }
     // HACK POST
     if let Some((sig, term)) = contract.postcond {
@@ -113,7 +113,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
         lower_pure(ctx, &mut names, &term);
 
         let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
-        ctx.dependencies.insert(TransId::Hacked(ExtendedId::Postcondition, def_id), deps);
+        ctx.dependencies.insert(TransId::Hacked(ClosureSpecKind::Postcondition, def_id), deps);
     }
     // HACK UNNEst
     if let Some((sig, term)) = contract.unnest {
@@ -122,7 +122,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
         lower_pure(ctx, &mut names, &term);
 
         let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
-        ctx.dependencies.insert(TransId::Hacked(ExtendedId::Unnest, def_id), deps);
+        ctx.dependencies.insert(TransId::Hacked(ClosureSpecKind::Unnest, def_id), deps);
     } // END COMPLETE HACK
       // decls.extend(contract);
       // decls
@@ -132,7 +132,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
         lower_pure(ctx, &mut names, &term);
 
         let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
-        ctx.dependencies.insert(TransId::Hacked(ExtendedId::Accessor(ix as u8), def_id), deps);
+        ctx.dependencies.insert(TransId::Hacked(ClosureSpecKind::Accessor(ix as u8), def_id), deps);
     }
 }
 

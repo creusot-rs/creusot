@@ -22,7 +22,7 @@ use std::{
 use crate::{options::SpanMode, run_why3::SpanMap};
 pub(crate) use clone_map::*;
 
-use self::dependency::{Dependency, ExtendedId};
+use self::dependency::{ClosureSpecKind, Dependency};
 
 pub(crate) mod clone_map;
 pub(crate) mod constant;
@@ -45,7 +45,7 @@ pub(crate) enum TransId<'tcx> {
     Item(DefId),
     TyInv(Ty<'tcx>),
     StructuralResolve(Ty<'tcx>),
-    Hacked(ExtendedId, DefId),
+    Hacked(ClosureSpecKind, DefId),
 }
 
 impl<'tcx> From<DefId> for TransId<'tcx> {
@@ -99,13 +99,13 @@ impl<'tcx> Why3Generator<'tcx> {
             TransId::Hacked(h, id) => {
                 let c = self.ctx.closure_contract(id);
                 match h {
-                    ExtendedId::PostconditionOnce => Some(&c.postcond_once.as_ref()?.1),
-                    ExtendedId::PostconditionMut => Some(&c.postcond_mut.as_ref()?.1),
-                    ExtendedId::Postcondition => Some(&c.postcond.as_ref()?.1),
-                    ExtendedId::Precondition => Some(&c.precond.1),
-                    ExtendedId::Unnest => Some(&c.unnest.as_ref()?.1),
-                    ExtendedId::Resolve => Some(&c.resolve.1),
-                    ExtendedId::Accessor(ix) => Some(&c.accessors[ix as usize].1),
+                    ClosureSpecKind::PostconditionOnce => Some(&c.postcond_once.as_ref()?.1),
+                    ClosureSpecKind::PostconditionMut => Some(&c.postcond_mut.as_ref()?.1),
+                    ClosureSpecKind::Postcondition => Some(&c.postcond.as_ref()?.1),
+                    ClosureSpecKind::Precondition => Some(&c.precond.1),
+                    ClosureSpecKind::Unnest => Some(&c.unnest.as_ref()?.1),
+                    ClosureSpecKind::Resolve => Some(&c.resolve.1),
+                    ClosureSpecKind::Accessor(ix) => Some(&c.accessors[ix as usize].1),
                 }
             }
             TransId::StructuralResolve(_) => unreachable!(),
@@ -382,7 +382,7 @@ impl<'tcx> Why3Generator<'tcx> {
 
     fn is_accessor(&self, item: TransId) -> bool {
         match item {
-            TransId::Hacked(ExtendedId::Accessor(_), _) => true,
+            TransId::Hacked(ClosureSpecKind::Accessor(_), _) => true,
             TransId::Item(id) => self.def_kind(id) == DefKind::Field,
             _ => false,
         }
