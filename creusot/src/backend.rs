@@ -380,6 +380,9 @@ impl<'tcx> Why3Generator<'tcx> {
         )
     }
 
+    fn is_constant(&self, item: DefId) -> bool {
+        matches!(util::item_type(self.tcx, item), ItemType::Constant)
+    }
     fn is_accessor(&self, item: TransId) -> bool {
         match item {
             TransId::Hacked(ClosureSpecKind::Accessor(_), _) => true,

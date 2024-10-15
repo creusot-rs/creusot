@@ -329,7 +329,7 @@ pub fn term<'tcx>(
     ctx.term(dep.to_trans_id(ctx.tcx, param_env)?).cloned()
 }
 
-fn sig<'tcx>(
+pub fn sig<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     param_env: ParamEnv<'tcx>,
     dep: Dependency<'tcx>,

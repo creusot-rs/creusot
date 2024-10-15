@@ -2,25 +2,18 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 use crate::{
     backend::{
-        logic::{lower_logical_defn, sigs, spec_axiom},
-        program::{self},
-        signature::{contract_to_why3, named_sig_to_why3, sig_to_why3},
-        structural_resolve::structural_resolve,
-        term::{self, lower_pure},
-        ty::translate_ty,
-        ty_inv::{tyinv_head_and_subst, InvariantElaborator},
+        is_trusted_function, logic::{lower_logical_defn, lower_pure_defn, sigs, spec_axiom}, program::{self}, signature::named_sig_to_why3, structural_resolve::structural_resolve, term::lower_pure, ty::translate_ty, ty_inv::InvariantElaborator
     },
     pearlite::{normalize, Term},
     specification::PreContract,
     traits,
 };
-use petgraph::data::Build;
-use rustc_middle::ty::ParamEnv;
+use rustc_middle::ty::{self, Const, ParamEnv};
 use rustc_span::DUMMY_SP;
 use rustc_type_ir::EarlyBinder;
 use util::{get_builtin, ident_of, PreSignature};
 use why3::{
-    declaration::{Axiom, Contract, LetKind, Signature, Use, ValDecl},
+    declaration::{Axiom, Constant, Contract, LetKind, Signature, Use, ValDecl},
     exp::Binder,
 };
 
@@ -113,19 +106,19 @@ impl DepElab for ProgElab {
                 let mut sig = ctx.sig(def_id).clone();
                 sig.contract = PreContract::default();
                 let sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
-                let sig = signature(ctx, elab, sig, def_id, subst, level);
+                let sig = signature(ctx, elab, sig, dep, level);
                 vec![program::val(ctx, sig)]
             }
             CloneLevel::Contract => {
                 let sig = ctx.sig(def_id).clone();
                 let sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
-                let sig = signature(ctx, elab, sig, def_id, subst, level);
+                let sig = signature(ctx, elab, sig, dep, level);
                 vec![program::val(ctx, sig)]
             }
             CloneLevel::Body => {
                 let sig = ctx.sig(def_id).clone();
                 let sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
-                let sig = signature(ctx, elab, sig, def_id, subst, level);
+                let sig = signature(ctx, elab, sig, dep, level);
                 vec![program::val(ctx, sig)]
             }
             CloneLevel::Root => {
@@ -139,13 +132,18 @@ fn signature<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     elab: &mut Expander<'_, 'tcx>,
     sig: PreSignature<'tcx>,
-    def_id: DefId,
-    subst: GenericArgsRef<'tcx>,
+    dep: Dependency<'tcx>,
     level: CloneLevel,
 ) -> Signature {
-    let mut names = elab.namer(level, Dependency::Item(def_id, subst));
+    let mut names = elab.namer(level, dep);
 
-    let name = names.value(def_id, subst).name;
+    let name = if let Dependency::ClosureSpec(_, _, _) = dep {
+        names.insert(dep).ident()
+    } else {
+        names.insert(dep).ident()
+    };
+
+    let (def_id, _) = dep.did().unwrap();
 
     let sig = named_sig_to_why3(ctx, &mut names, name, &sig, def_id);
     sig
@@ -158,11 +156,14 @@ impl DepElab for LogicElab {
         elab: &mut Expander<'_, 'tcx>,
         ctx: &mut Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
-        level: CloneLevel,
+        mut level: CloneLevel,
     ) -> Vec<why3::declaration::Decl> {
         assert!(matches!(
             dep,
-            Dependency::Item(_, _) | Dependency::TyInvAxiom(_) | Dependency::StructuralResolve(_)
+            Dependency::Item(_, _)
+                | Dependency::TyInvAxiom(_)
+                | Dependency::StructuralResolve(_)
+                | Dependency::ClosureSpec(_, _, _)
         ));
 
         if let Dependency::TyInvAxiom(ty) = dep {
@@ -174,7 +175,18 @@ impl DepElab for LogicElab {
         }
 
         let Some((def_id, subst)) = dep.did() else { return Vec::new() };
-        let kind = util::item_type(ctx.tcx, def_id).let_kind();
+
+        let is_accessor =
+            dep.to_trans_id(elab.tcx, elab.param_env).is_some_and(|i| ctx.is_accessor(i));
+        let kind = if dep.is_closure_spec() {
+            if is_accessor {
+                Some(LetKind::Function)
+            } else {
+                Some(LetKind::Predicate)
+            }
+        } else {
+            util::item_type(ctx.tcx, def_id).let_kind()
+        };
 
         if let Some(b) = get_builtin(ctx.tcx, def_id) {
             return vec![Decl::UseDecl(Use {
@@ -184,7 +196,7 @@ impl DepElab for LogicElab {
             })];
         }
 
-        let sig = ctx.sig(def_id).clone();
+        let sig = sig(ctx, elab.param_env, dep);
         let mut sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
 
         if util::is_resolve_function(ctx.tcx, def_id) {
@@ -201,42 +213,71 @@ impl DepElab for LogicElab {
                 Dependency::TyInvAxiom(ty),
             ));
             elab.graph.add_edge(Dependency::TyInvAxiom(ty), dep, ());
-            let sig = signature(ctx, elab, sig, def_id, subst, level);
+            let sig = signature(ctx, elab, sig, dep, level);
 
             return val(ctx, sig, kind);
         }
 
+        // eprintln!("{dep:?} :- {level:?}");
+
+        if elab.self_key.did().is_some_and(|(self_did, _)| !ctx.is_transparent_from(def_id, self_did))
+        {
+           level = level.min(CloneLevel::Contract);
+        };
+
+
         match level {
             CloneLevel::Signature => {
                 sig.contract = PreContract::default();
-                let sig = signature(ctx, elab, sig, def_id, subst, level);
+                let sig = signature(ctx, elab, sig, dep, level);
                 val(ctx, sig, kind)
             }
             CloneLevel::Contract => {
-                let mut sig = signature(ctx, elab, sig, def_id, subst, level);
+                let mut sig = signature(ctx, elab, sig, dep, level);
                 if let Some(LetKind::Predicate) = kind {
                     sig.retty = None;
                 }
-                let ax = if !sig.contract.is_empty() { Some(spec_axiom(&sig)) } else { None };
-                let (sig, _) = sigs(ctx, sig);
-
-                let mut d = vec![Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig })];
-
-                if let Some(ax) = ax {
-                    d.push(Decl::Axiom(ax))
-                }
-                d
+                val(ctx, sig, kind)
             }
             CloneLevel::Body => {
-                let sig = signature(ctx, elab, sig, def_id, subst, level);
-                if elab.namer.insert(dep).qname().name.contains("invariant'3") {
-                    eprintln!("INVARIANT'3 {:?}", term(ctx, elab.param_env, dep));
-                }
-                let Some(term) = term(ctx, elab.param_env, dep) else { return Vec::new() };
+                let mut sig = signature(ctx, elab, sig, dep, level);
+                sig.contract = Contract::default();
+
+                if ctx.is_constant(def_id) {
+                    let uneval = ty::UnevaluatedConst::new(def_id, subst);
+                    let constant = Const::new(ctx.tcx, ty::ConstKind::Unevaluated(uneval));
+                    let ty = ctx.type_of(def_id).instantiate_identity();
+
+                    let span = ctx.def_span(def_id);
+                    let res = crate::constant::from_ty_const(
+                        &mut ctx.ctx,
+                        constant,
+                        ty,
+                        elab.param_env,
+                        span,
+                    );
+
+                    let res = lower_pure(ctx, &mut elab.namer(level, dep), &res);
+                    return vec![Decl::ConstantDecl(Constant {
+                        type_: sig.retty.unwrap(),
+                        name: sig.name,
+                        body: Some(res),
+                    })];
+                };
+
+                let Some(term) = term(ctx, elab.param_env, dep) else { return val(ctx, sig, kind) };
 
                 let mut term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
                 normalize(ctx.tcx, elab.param_env, &mut term);
-                lower_logical_defn(ctx, &mut elab.namer(level, dep), sig, kind, term)
+                // eprintln!("{term:?}");
+                if is_accessor {
+                    lower_logical_defn(ctx, &mut elab.namer(level, dep), sig, kind, term)
+                } else if dep.is_closure_spec() {
+                    // TODO: Clean this up and merge with previous branches
+                    lower_pure_defn(ctx, &mut elab.namer(level, dep), sig, kind, false, term)
+                } else {
+                    lower_logical_defn(ctx, &mut elab.namer(level, dep), sig, kind, term)
+                }
             }
             CloneLevel::Root => unreachable!(),
         }
@@ -364,7 +405,7 @@ impl DepElab for TyElab {
             _ => {
                 if let Some(why3_modl) = util::get_builtin(ctx.tcx, def_id) {
                     let qname = QName::from_string(why3_modl.as_str());
-                    let Kind::Used(modl, _) = names.insert(Dependency::Type(ty)) else {
+                    let Kind::Used(_, _) = names.insert(Dependency::Type(ty)) else {
                         return vec![];
                     };
 
@@ -419,7 +460,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         ExpansionProxy {
             namer: &mut self.namer,
             expansion_queue: &mut self.expansion_queue,
-            level,
+            level: CloneLevel::Body,
             source,
         }
     }
@@ -431,7 +472,6 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         _: GraphDepth,
     ) -> (DiGraphMap<Dependency<'tcx>, ()>, HashMap<Dependency<'tcx>, Vec<Decl>>) {
         let mut visited = HashSet::new();
-        // eprintln!("\n{:?}", self.self_key);
         while let Some(key) = self.expansion_queue.pop_front() {
             if !visited.insert(key) {
                 continue;
@@ -446,24 +486,35 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         if self.dep_level.get(&dep).map(|lvl| *lvl >= level).unwrap_or(false) {
             return;
         }
-
         let decls = match dep {
-            Dependency::Type(ty) => TyElab::expand(self, ctx, dep, level),
-            Dependency::Item(def_id, _) => {
+            Dependency::Type(_) => TyElab::expand(self, ctx, dep, level),
+            Dependency::Item(mut def_id, _) => {
                 if ctx.is_logical(def_id) {
                     LogicElab::expand(self, ctx, dep, level)
+                } else if ctx.is_constant(def_id) {
+                    LogicElab::expand(self, ctx, dep, CloneLevel::Body)
+                } else if matches!(ctx.def_kind(def_id), DefKind::Field) {
+                    if util::item_type(self.tcx, def_id) == ItemType::Field {
+                        def_id = self.tcx.parent(def_id);
+                    };
+                    let name = self.namer.insert(dep).qname();
+                    let modl = module_name(ctx.tcx, def_id);
+                    let name = if name.module.is_empty() { name } else { name.module_qname() };
+                    let use_decl =
+                        Use { as_: Some(name.clone()), name: modl.as_str().into(), export: false };
+                    vec![Decl::UseDecl(use_decl)]
                 } else {
                     ProgElab::expand(self, ctx, dep, level)
                 }
             }
-            Dependency::TyInvAxiom(ty) => LogicElab::expand(self, ctx, dep, level),
-            Dependency::StructuralResolve(ty) => LogicElab::expand(self, ctx, dep, level),
-            Dependency::ClosureSpec(extended_id, def_id, _) => todo!(),
+            Dependency::TyInvAxiom(_) => LogicElab::expand(self, ctx, dep, level),
+            Dependency::StructuralResolve(_) => LogicElab::expand(self, ctx, dep, level),
+            Dependency::ClosureSpec(_, _, _) => LogicElab::expand(self, ctx, dep, level),
             Dependency::Builtin(b) => {
                 vec![Decl::UseDecl(Use { name: b.qname(), as_: None, export: false })]
             }
         };
-        // eprintln!("{dep:?} -> {:?}", decls.len());
+        // eprintln!("{:?} {:?} {:?}", self.namer.insert(dep), dep, decls);
         self.dep_bodies.insert(dep, decls);
         self.dep_level.insert(dep, level);
     }
