@@ -18,7 +18,7 @@ use petgraph::data::Build;
 use rustc_middle::ty::ParamEnv;
 use rustc_span::DUMMY_SP;
 use rustc_type_ir::EarlyBinder;
-use util::{ident_of, PreSignature};
+use util::{get_builtin, ident_of, PreSignature};
 use why3::{
     declaration::{Axiom, Contract, LetKind, Signature, Use, ValDecl},
     exp::Binder,
@@ -176,6 +176,14 @@ impl DepElab for LogicElab {
         let Some((def_id, subst)) = dep.did() else { return Vec::new() };
         let kind = util::item_type(ctx.tcx, def_id).let_kind();
 
+        if let Some(b) = get_builtin(ctx.tcx, def_id) {
+            return vec![Decl::UseDecl(Use {
+                name: QName::from_string(b.as_str()).module_qname(),
+                as_: None,
+                export: false,
+            })];
+        }
+
         let sig = ctx.sig(def_id).clone();
         let mut sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
 
@@ -245,11 +253,14 @@ fn expand_ty_inv<'tcx>(
     let mut names = elab.namer(CloneLevel::Body, Dependency::TyInvAxiom(ty));
 
     let mut elab = InvariantElaborator::new(param_env, ctx);
-    let term = elab.elaborate_inv(ty, false).unwrap();
-    let rewrite = elab.rewrite;
-    let exp = lower_pure(ctx, &mut names, &term);
-    let axiom = Axiom { name: names.ty_inv(ty).name, rewrite, axiom: exp };
-    vec![Decl::Axiom(axiom)]
+    if let Some(term) = elab.elaborate_inv(ty, false) {
+        let rewrite = elab.rewrite;
+        let exp = lower_pure(ctx, &mut names, &term);
+        let axiom = Axiom { name: names.ty_inv(ty).name, rewrite, axiom: exp };
+        vec![Decl::Axiom(axiom)]
+    } else {
+        vec![]
+    }
 }
 
 // TODO Deprecate and fold into LogicElab
