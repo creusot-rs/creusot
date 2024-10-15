@@ -138,28 +138,24 @@ pub fn less_than(v: Vec<u32>, n: u32) -> Vec<u32> {
 
 #[open]
 #[predicate]
-#[allow(unused_variables)]
-pub fn no_precondition<A, F: FnMut(A) -> bool>(f: F) -> bool {
+pub fn no_precondition<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f : F, i : A> f.precondition((i,)) }
 }
 
 #[open]
 #[predicate]
-#[allow(unused_variables)]
-pub fn immutable<A, F: FnMut(A) -> bool>(f: F) -> bool {
+pub fn immutable<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f : F, g : F> f.unnest(g) ==> f == g }
 }
 
 #[open]
 #[predicate(prophetic)]
-#[allow(unused_variables)]
-pub fn plain<A, F: FnMut(A) -> bool>(f: F) -> bool {
+pub fn plain<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f : &mut F, g : &mut F, i :_, b :_> *f == *g && ^f == ^g ==> f.postcondition_mut((i,), b) == g.postcondition_mut((i,), b) }
 }
 
 #[open]
 #[predicate]
-#[allow(unused_variables)]
-pub fn precise<A, F: FnMut(A) -> bool>(f: F) -> bool {
+pub fn precise<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f : &mut F, i : _> !(f.postcondition_mut((i,), true) && f.postcondition_mut((i,), false)) }
 }
