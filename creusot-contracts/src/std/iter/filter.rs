@@ -63,7 +63,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Invariant for Filter<I, F> {
 /// In a future release this restriction may be lifted or weakened
 #[open]
 #[predicate]
-pub fn no_precondition<A, F: FnMut(A) -> bool>(f: F) -> bool {
+pub fn no_precondition<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f : F, i : A> f.precondition((i,)) }
 }
 
@@ -71,7 +71,7 @@ pub fn no_precondition<A, F: FnMut(A) -> bool>(f: F) -> bool {
 /// In a future release this restriction may be lifted or weakened
 #[open]
 #[predicate]
-pub fn immutable<A, F: FnMut(A) -> bool>(f: F) -> bool {
+pub fn immutable<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f : F, g : F> f.unnest(g) ==> f == g }
 }
 
@@ -79,14 +79,14 @@ pub fn immutable<A, F: FnMut(A) -> bool>(f: F) -> bool {
 /// In practice this means that the postcondition is not testing the equality of a mutable borrow
 #[open]
 #[predicate(prophetic)]
-pub fn plain<A, F: FnMut(A) -> bool>(f: F) -> bool {
+pub fn plain<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f : &mut F, g : &mut F, i :_, b :_> *f == *g && ^f == ^g ==> f.postcondition_mut((i,), b) == g.postcondition_mut((i,), b) }
 }
 
 /// Asserts that the postcondition of `f` is *precise*: that there are never two possible values matching the postcondition
 #[open]
 #[predicate]
-pub fn precise<A, F: FnMut(A) -> bool>(f: F) -> bool {
+pub fn precise<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f : &mut F, i : _> !(f.postcondition_mut((i,), true) && f.postcondition_mut((i,), false)) }
 }
 

@@ -1,6 +1,5 @@
 use crate::{
-    inv, logic::*, macros::*, resolve, std::ops::*, structural_resolve, Invariant, Iterator,
-    Resolve,
+    invariant::*, logic::*, macros::*, resolve, std::ops::*, structural_resolve, Iterator, Resolve,
 };
 use std::iter::Map;
 
