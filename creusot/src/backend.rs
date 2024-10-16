@@ -211,7 +211,7 @@ impl<'tcx> Why3Generator<'tcx> {
                 debug!("translating {:?} as logical", def_id);
 
                 if util::is_resolve_function(self.tcx, def_id) {
-                    let mut names = Dependencies::new(self.tcx, [TransId::Item(def_id)]);
+                    let mut names = Dependencies::new(self, [TransId::Item(def_id)]);
                     let pre_sig = self.ctx.sig(def_id).clone();
                     sig_to_why3(self, &mut names, &pre_sig, def_id);
 

@@ -12,6 +12,7 @@ use crate::{
         TransId, Why3Generator,
     },
     ctx::*,
+    options::SpanMode,
     traits,
     translation::{
         pearlite::{normalize, Term},
@@ -49,7 +50,12 @@ impl<'tcx> SymbolElaborator<'tcx> {
     ) -> Vec<Decl> {
         let param_env = names.param_env(ctx);
         let old_names = names;
-        let mut names = ImmutDeps { tcx: ctx.tcx, param_env, names: &mut old_names.names };
+        let mut names = ImmutDeps {
+            tcx: ctx.tcx,
+            param_env,
+            names: &mut old_names.names,
+            span_mode: ctx.opts.span_mode.clone(),
+        };
         let names = &mut names;
 
         match item {
@@ -197,8 +203,6 @@ impl<'tcx> SymbolElaborator<'tcx> {
         } else {
             util::item_type(ctx.tcx, def_id).let_kind()
         };
-
-        // eprintln!("{item:?} {kind:?}");
 
         if CloneLevel::Signature == level_of_item {
             pre_sig.contract = PreContract::default();
@@ -366,6 +370,7 @@ struct ImmutDeps<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     names: &'a mut CloneNames<'tcx>,
     param_env: ParamEnv<'tcx>,
+    span_mode: SpanMode,
 }
 
 impl<'a, 'tcx> ImmutDeps<'a, 'tcx> {
@@ -409,6 +414,14 @@ impl<'a, 'tcx> Namer<'tcx> for ImmutDeps<'a, 'tcx> {
         if span.is_dummy() {
             return None;
         }
+
+        let lo = self.tcx.sess.source_map().lookup_char_pos(span.lo());
+        let rustc_span::FileName::Real(path) = &lo.file.name else { return None };
+        match (&self.span_mode, path) {
+            (SpanMode::Relative(_), rustc_span::RealFileName::Remapped { .. }) => return None,
+            _ => (),
+        };
+
         let cnt = self.names.spans.len();
         let name =
             self.names.spans.entry(span).or_insert_with(|| Symbol::intern(&format!("span{cnt}")));

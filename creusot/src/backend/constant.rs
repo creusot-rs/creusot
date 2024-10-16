@@ -23,7 +23,7 @@ impl<'tcx> Why3Generator<'tcx> {
         let param_env = self.param_env(def_id);
         let span = self.def_span(def_id);
         let res = from_ty_const(&mut self.ctx, constant, ty, param_env, span);
-        let mut names = Dependencies::new(self.tcx, [def_id]);
+        let mut names = Dependencies::new(self, [def_id]);
         let _ = lower_pure(self, &mut names, &res);
 
         let _ = signature_of(self, &mut names, def_id);
