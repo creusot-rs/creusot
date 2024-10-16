@@ -422,12 +422,8 @@ impl<'tcx> Why3Generator<'tcx> {
             SpanMode::Relative(base) => {
                 let path = to_absolute(path);
                 let base = to_absolute(base);
-                // Why3 treats the spans as relative to the session, not the source file,
-                // and the session is in a subdirectory next to the coma file, so we need
-                // to add an extra ".."
-                let p = std::path::PathBuf::from("..");
                 let diff = pathdiff::diff_paths(&path, &base)?;
-                p.join(diff).to_string_lossy().into_owned()
+                diff.to_string_lossy().into_owned()
             }
             SpanMode::Off => return None,
         };
