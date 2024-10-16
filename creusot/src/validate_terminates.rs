@@ -286,7 +286,7 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
     }
 
     // detect mutual recursion
-    let cycles = petgraph::algo::kosaraju_scc(&call_graph);
+    let cycles = petgraph::algo::tarjan_scc(&call_graph);
     for mut cycle in cycles {
         if cycle.iter().all(|n| !call_graph.node_weight(*n).unwrap().def_id.is_local()) {
             // The cycle needs to involve at least one function in the current crate.
