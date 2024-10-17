@@ -2,7 +2,14 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 use crate::{
     backend::{
-        is_trusted_function, logic::{lower_logical_defn, lower_pure_defn, sigs, spec_axiom}, program::{self}, signature::named_sig_to_why3, structural_resolve::structural_resolve, term::lower_pure, ty::translate_ty, ty_inv::InvariantElaborator
+        is_trusted_function,
+        logic::{lower_logical_defn, lower_pure_defn, sigs, spec_axiom},
+        program::{self},
+        signature::named_sig_to_why3,
+        structural_resolve::structural_resolve,
+        term::lower_pure,
+        ty::translate_ty,
+        ty_inv::InvariantElaborator,
     },
     pearlite::{normalize, Term},
     specification::PreContract,
@@ -101,30 +108,13 @@ impl DepElab for ProgElab {
         level: CloneLevel,
     ) -> Vec<why3::declaration::Decl> {
         let Some((def_id, subst)) = dep.did() else { return Vec::new() };
-        match level {
-            CloneLevel::Signature => {
-                let mut sig = ctx.sig(def_id).clone();
-                sig.contract = PreContract::default();
-                let sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
-                let sig = signature(ctx, elab, sig, dep, level);
-                vec![program::val(ctx, sig)]
-            }
-            CloneLevel::Contract => {
-                let sig = ctx.sig(def_id).clone();
-                let sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
-                let sig = signature(ctx, elab, sig, dep, level);
-                vec![program::val(ctx, sig)]
-            }
-            CloneLevel::Body => {
-                let sig = ctx.sig(def_id).clone();
-                let sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
-                let sig = signature(ctx, elab, sig, dep, level);
-                vec![program::val(ctx, sig)]
-            }
-            CloneLevel::Root => {
-                unreachable!("programs cannot have their bodies expanded currently")
-            }
-        }
+
+        let sig = ctx.sig(def_id).clone();
+        let sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
+        let sig = sig.normalize(ctx.tcx, elab.param_env);
+
+        let sig = signature(ctx, elab, sig, dep, level);
+        vec![program::val(ctx, sig)]
     }
 }
 
@@ -220,11 +210,14 @@ impl DepElab for LogicElab {
 
         // eprintln!("{dep:?} :- {level:?}");
 
-        if elab.self_key.did().is_some_and(|(self_did, _)| !ctx.is_transparent_from(def_id, self_did))
+        if elab
+            .self_key
+            .did()
+            .is_some_and(|(self_did, _)| !ctx.is_transparent_from(def_id, self_did))
         {
-           level = level.min(CloneLevel::Contract);
+            // eprintln!("{dep:?}");
+            level = level.min(CloneLevel::Contract);
         };
-
 
         match level {
             CloneLevel::Signature => {
@@ -240,7 +233,7 @@ impl DepElab for LogicElab {
                 val(ctx, sig, kind)
             }
             CloneLevel::Body => {
-                let mut sig = signature(ctx, elab, sig, dep, level);
+                let sig = signature(ctx, elab, sig, dep, level);
                 // sig.contract = Contract::default();
 
                 if ctx.is_constant(def_id) {
@@ -293,6 +286,7 @@ fn expand_ty_inv<'tcx>(
     let param_env = elab.param_env;
     let mut names = elab.namer(CloneLevel::Body, Dependency::TyInvAxiom(ty));
 
+    // eprintln!("{:?}", names.insert( Dependency::TyInvAxiom(ty)));
     let mut elab = InvariantElaborator::new(param_env, ctx);
     if let Some(term) = elab.elaborate_inv(ty, false) {
         let rewrite = elab.rewrite;
@@ -456,7 +450,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         exp
     }
 
-    fn namer(&mut self, level: CloneLevel, source: Dependency<'tcx>) -> ExpansionProxy<'_, 'tcx> {
+    fn namer(&mut self, _: CloneLevel, source: Dependency<'tcx>) -> ExpansionProxy<'_, 'tcx> {
         ExpansionProxy {
             namer: &mut self.namer,
             expansion_queue: &mut self.expansion_queue,
@@ -472,12 +466,13 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         _: GraphDepth,
     ) -> (DiGraphMap<Dependency<'tcx>, ()>, HashMap<Dependency<'tcx>, Vec<Decl>>) {
         let mut visited = HashSet::new();
-        while let Some(key) = self.expansion_queue.pop_front() {
-            if !visited.insert(key) {
+        while let Some((s, l, t)) = self.expansion_queue.pop_front() {
+            let t = t.resolve(ctx, self.param_env).unwrap_or(t);
+            if !visited.insert((s, l, t)) {
                 continue;
             }
-            self.graph.add_edge(key.0, key.2, ());
-            self.expand(ctx, key.1, key.2);
+            self.graph.add_edge(s, t, ());
+            self.expand(ctx, l, t);
         }
         (self.graph, self.dep_bodies)
     }

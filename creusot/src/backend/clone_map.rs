@@ -610,7 +610,9 @@ impl<'tcx> Dependencies<'tcx> {
 
         for i in self_ids {
             let node = Dependency::from_trans_id(ctx.tcx, i);
-            deps.names.names.insert(node, node.base_ident(ctx.tcx).map_or(Kind::Unnamed, Kind::Named));
+            deps.names
+                .names
+                .insert(node, node.base_ident(ctx.tcx).map_or(Kind::Unnamed, Kind::Named));
             deps.levels.insert(node, CloneLevel::Root);
             deps.hidden.insert(node);
         }
@@ -691,7 +693,7 @@ impl<'tcx> Dependencies<'tcx> {
                 continue;
             }
 
-            let body = &bodies[&node];
+            let body = bodies.get(&node).unwrap_or_else(|| panic!("not found {node:?}"));
             // eprintln!("{node:?} -> {:?}", body.len());
             decls.extend(body.clone());
             // if !roots.contains(&node) && depth == GraphDepth::Shallow {
@@ -706,7 +708,6 @@ impl<'tcx> Dependencies<'tcx> {
             //     // If we are only doing shallow dependencies, stop at the signature (no contracts)
             //     (GraphDepth::Shallow, _) => CloneLevel::Signature,
             // };
-
 
             // let decl = elab.build_clone(ctx, &mut self, node, level_of_item);
             // decls.extend(decl);

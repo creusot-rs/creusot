@@ -677,7 +677,7 @@ pub(crate) fn translate_accessor(
     let field = &variant.fields[ix.into()];
 
     let substs = GenericArgs::identity_for_item(ctx.tcx, adt_did);
-    let omg : Vec<_> = ctx.binding_group(adt_did).iter().copied().collect();
+    let omg: Vec<_> = ctx.binding_group(adt_did).iter().copied().collect();
     let mut names = Dependencies::new(ctx, omg);
 
     let acc_name = translate_accessor_name(variant.name.as_str(), field.name.as_str());

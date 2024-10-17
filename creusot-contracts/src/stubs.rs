@@ -77,9 +77,11 @@ pub fn ghost_from_fn<T, F: FnOnce() -> T>(f: F, _arg: ()) -> T {
     f()
 }
 
+#[logic]
 #[trusted]
+#[open(self)]
 #[creusot::no_translate]
 #[creusot::builtins = "prelude.prelude.Mapping.from_fn"]
 pub fn mapping_from_fn<A, B, F: FnOnce(A) -> B>(_: F) -> crate::logic::Mapping<A, B> {
-    panic!()
+    pearlite! { absurd }
 }
