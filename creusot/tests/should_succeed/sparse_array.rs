@@ -30,12 +30,12 @@ pub struct Sparse<T> {
 
 /* The model of the structure is a sequence of optional values
  */
-impl<T> ShallowModel for Sparse<T> {
-    type ShallowModelTy = Seq<Option<T>>;
+impl<T> View for Sparse<T> {
+    type ViewTy = Seq<Option<T>>;
 
     #[logic]
     #[open(self)]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! {
             Seq::new(self.size@,
                      |i| if self.is_elt(i) { Some(self.values[i]) } else { None })

@@ -87,13 +87,13 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   let%span span7 = "../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   let%span span8 = "../../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
   let%span span9 = "../../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
-  let%span span10 = "../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span10 = "../../../../creusot-contracts/src/model.rs" 109 8 109 22
   let%span span11 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
-  let%span span12 = "../../../../creusot-contracts/src/model.rs" 81 8 81 28
+  let%span span12 = "../../../../creusot-contracts/src/model.rs" 82 8 82 28
   let%span span13 = "../../../../creusot-contracts/src/std/cmp.rs" 11 26 11 75
   let%span span14 = "../../../../creusot-contracts/src/std/slice.rs" 133 20 133 37
   let%span span15 = "../../../../creusot-contracts/src/std/slice.rs" 126 20 126 37
-  let%span span16 = "../../../../creusot-contracts/src/model.rs" 90 8 90 31
+  let%span span16 = "../../../../creusot-contracts/src/model.rs" 91 8 91 22
   let%span span17 = "../../../../creusot-contracts/src/std/vec.rs" 165 27 165 46
   let%span span18 = "../../../../creusot-contracts/src/std/vec.rs" 166 26 166 54
   let%span span19 = "../../../../creusot-contracts/src/std/slice.rs" 140 8 140 96
@@ -174,18 +174,18 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'1 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
+  function view'1 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
   
-  axiom shallow_model'1_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#span8] Seq.length (shallow_model'1 self)
+  axiom view'1_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#span8] Seq.length (view'1 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'0 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
-    [%#span9] inv'7 (shallow_model'1 self)
+    [%#span9] inv'7 (view'1 self)
   
   axiom inv_axiom'0 [@rewrite] : forall x : Vec'0.t_Vec t (Global'0.t_Global) [inv'0 x] . inv'0 x = invariant'0 x
   
-  function shallow_model'0 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t =
-    [%#span10] shallow_model'1 self.current
+  function view'0 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t =
+    [%#span10] view'1 self.current
   
   use prelude.prelude.Intrinsic
   
@@ -216,16 +216,14 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq t) =
     [%#span15] UIntSize.to_int self < Seq.length seq
   
-  function shallow_model'2 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t =
-    [%#span16] shallow_model'1 self
+  function view'2 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t =
+    [%#span16] view'1 self
   
   let rec index'0 (self:Vec'0.t_Vec t (Global'0.t_Global)) (index:usize) (return'  (ret:t))= {[@expl:precondition] inv'4 index}
     {[@expl:precondition] inv'5 self}
-    {[@expl:precondition] [%#span17] in_bounds'0 index (shallow_model'2 self)}
+    {[@expl:precondition] [%#span17] in_bounds'0 index (view'2 self)}
     any
-    [ return' (result:t)-> {inv'6 result}
-      {[%#span18] has_value'0 index (shallow_model'2 self) result}
-      (! return' {result}) ]
+    [ return' (result:t)-> {inv'6 result} {[%#span18] has_value'0 index (view'2 self) result} (! return' {result}) ]
     
   
   predicate resolve'2 (self : borrowed t) =
@@ -240,13 +238,13 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   
   let rec index_mut'0 (self:borrowed (Vec'0.t_Vec t (Global'0.t_Global))) (index:usize) (return'  (ret:borrowed t))= {[@expl:precondition] inv'4 index}
     {[@expl:precondition] inv'2 self}
-    {[@expl:precondition] [%#span20] in_bounds'0 index (shallow_model'0 self)}
+    {[@expl:precondition] [%#span20] in_bounds'0 index (view'0 self)}
     any
     [ return' (result:borrowed t)-> {inv'1 result}
-      {[%#span24] Seq.length (shallow_model'1 self.final) = Seq.length (shallow_model'0 self)}
-      {[%#span23] resolve_elswhere'0 index (shallow_model'0 self) (shallow_model'1 self.final)}
-      {[%#span22] has_value'0 index (shallow_model'1 self.final) result.final}
-      {[%#span21] has_value'0 index (shallow_model'0 self) result.current}
+      {[%#span24] Seq.length (view'1 self.final) = Seq.length (view'0 self)}
+      {[%#span23] resolve_elswhere'0 index (view'0 self) (view'1 self.final)}
+      {[%#span22] has_value'0 index (view'1 self.final) result.final}
+      {[%#span21] has_value'0 index (view'0 self) result.current}
       (! return' {result}) ]
     
   
@@ -254,7 +252,7 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   
   let rec read_write (a:borrowed (Vec'0.t_Vec t (Global'0.t_Global))) (i:usize) (x:t) (return'  (ret:()))= {[%#s07_read_write3] inv'3 x}
     {[%#s07_read_write2] inv'2 a}
-    {[%#s07_read_write1] UIntSize.to_int i < Seq.length (shallow_model'0 a)}
+    {[%#s07_read_write1] UIntSize.to_int i < Seq.length (view'0 a)}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 a.current}

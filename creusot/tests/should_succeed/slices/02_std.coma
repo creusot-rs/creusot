@@ -50,11 +50,11 @@ module M_02_std__binary_search [#"02_std.rs" 8 0 8 40]
   let%span span8 = "../../../../creusot-contracts/src/std/slice.rs" 18 20 18 30
   let%span span9 = "../../../../creusot-contracts/src/invariant.rs" 24 8 24 18
   let%span span10 = "../../../../creusot-contracts/src/logic/ops.rs" 42 8 42 31
-  let%span span11 = "../../../../creusot-contracts/src/model.rs" 90 8 90 31
+  let%span span11 = "../../../../creusot-contracts/src/model.rs" 91 8 91 22
   let%span span12 = "../../../../creusot-contracts/src/std/result.rs" 53 16 53 55
   let%span span13 = "../../../../creusot-contracts/src/std/result.rs" 18 0 135 1
   let%span span14 = "../../../../creusot-contracts/src/std/num.rs" 22 16 22 35
-  let%span span15 = "../../../../creusot-contracts/src/model.rs" 81 8 81 28
+  let%span span15 = "../../../../creusot-contracts/src/model.rs" 82 8 82 28
   let%span span16 = "../../../../creusot-contracts/src/std/slice.rs" 42 14 42 44
   let%span span17 = "../../../../creusot-contracts/src/std/slice.rs" 43 4 43 98
   let%span span18 = "../../../../creusot-contracts/src/logic/seq.rs" 154 8 156 9
@@ -105,13 +105,13 @@ module M_02_std__binary_search [#"02_std.rs" 8 0 8 40]
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'1 (self : slice uint32) : Seq.seq uint32
+  function view'1 (self : slice uint32) : Seq.seq uint32
   
-  axiom shallow_model'1_spec : forall self : slice uint32 . ([%#span7] shallow_model'1 self = Slice.id self)
-  && ([%#span6] Seq.length (shallow_model'1 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'1_spec : forall self : slice uint32 . ([%#span7] view'1 self = Slice.id self)
+  && ([%#span6] Seq.length (view'1 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'4 (self : slice uint32) =
-    [%#span8] inv'6 (shallow_model'1 self)
+    [%#span8] inv'6 (view'1 self)
   
   predicate inv'4 (_1 : slice uint32)
   
@@ -148,10 +148,10 @@ module M_02_std__binary_search [#"02_std.rs" 8 0 8 40]
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : slice uint32) (ix : int) : uint32 =
-    [%#span10] Seq.get (shallow_model'1 self) ix
+    [%#span10] Seq.get (view'1 self) ix
   
-  function shallow_model'0 (self : slice uint32) : Seq.seq uint32 =
-    [%#span11] shallow_model'1 self
+  function view'0 (self : slice uint32) : Seq.seq uint32 =
+    [%#span11] view'1 self
   
   use prelude.prelude.Intrinsic
   
@@ -177,7 +177,7 @@ module M_02_std__binary_search [#"02_std.rs" 8 0 8 40]
   
   axiom deep_model'1_spec : forall self : slice uint32 . ([%#span17] forall i : int . 0 <= i
   /\ i < Seq.length (deep_model'1 self)  -> Seq.get (deep_model'1 self) i = deep_model'3 (index_logic'0 self i))
-  && ([%#span16] Seq.length (shallow_model'0 self) = Seq.length (deep_model'1 self))
+  && ([%#span16] Seq.length (view'0 self) = Seq.length (deep_model'1 self))
   
   use int.Int
   
@@ -195,16 +195,15 @@ module M_02_std__binary_search [#"02_std.rs" 8 0 8 40]
     {[@expl:precondition] [%#span20] sorted'0 (deep_model'0 self)}
     any
     [ return' (result:Result'0.t_Result usize usize)-> {[%#span24] forall i : usize . result = Result'0.C_Err i
-       -> (forall j : usize . i <= j /\ UIntSize.to_int j < Seq.length (shallow_model'0 self)
+       -> (forall j : usize . i <= j /\ UIntSize.to_int j < Seq.length (view'0 self)
        -> deep_model'2 x < Seq.get (deep_model'0 self) (UIntSize.to_int j))}
       {[%#span23] forall i : usize . result = Result'0.C_Err i
        -> (forall j : usize . j < i  -> Seq.get (deep_model'0 self) (UIntSize.to_int j) < deep_model'2 x)}
       {[%#span22] forall i : usize . result = Result'0.C_Err i
-       -> UIntSize.to_int i <= Seq.length (shallow_model'0 self)
-      /\ (forall j : int . 0 <= j /\ j < Seq.length (shallow_model'0 self)
-       -> Seq.get (deep_model'0 self) j <> deep_model'2 x)}
+       -> UIntSize.to_int i <= Seq.length (view'0 self)
+      /\ (forall j : int . 0 <= j /\ j < Seq.length (view'0 self)  -> Seq.get (deep_model'0 self) j <> deep_model'2 x)}
       {[%#span21] forall i : usize . result = Result'0.C_Ok i
-       -> UIntSize.to_int i < Seq.length (shallow_model'0 self)
+       -> UIntSize.to_int i < Seq.length (view'0 self)
       /\ Seq.get (deep_model'1 self) (UIntSize.to_int i) = deep_model'2 x}
       (! return' {result}) ]
     
@@ -215,9 +214,8 @@ module M_02_std__binary_search [#"02_std.rs" 8 0 8 40]
   
   meta "compute_max_steps" 1000000
   
-  let rec binary_search (s:slice uint32) (return'  (ret:usize))= {[%#s02_std2] Seq.length (shallow_model'0 s) = 5}
-    {[%#s02_std1] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'0 s)
-     -> UInt32.to_int (index_logic'0 s i) = i}
+  let rec binary_search (s:slice uint32) (return'  (ret:usize))= {[%#s02_std2] Seq.length (view'0 s) = 5}
+    {[%#s02_std1] forall i : int . 0 <= i /\ i < Seq.length (view'0 s)  -> UInt32.to_int (index_logic'0 s i) = i}
     (! bb0
     [ bb0 = s0
       [ s0 = promoted0 (fun (pr0:uint32) ->  [ &_12 <- pr0 ] s1)

@@ -163,13 +163,13 @@ impl<T: OrdLogic> OrdLogic for Option<T> {
     ord_laws_impl! {}
 }
 
-impl<T> ShallowModel for IntoIter<T> {
-    type ShallowModelTy = Option<T>;
+impl<T> View for IntoIter<T> {
+    type ViewTy = Option<T>;
 
     #[open(self)]
     #[logic]
     #[trusted]
-    fn shallow_model(self) -> Option<T> {
+    fn view(self) -> Option<T> {
         pearlite! { absurd }
     }
 }
@@ -217,13 +217,13 @@ impl<T> IntoIterator for Option<T> {
     }
 }
 
-impl<'a, T> ShallowModel for Iter<'a, T> {
-    type ShallowModelTy = Option<&'a T>;
+impl<'a, T> View for Iter<'a, T> {
+    type ViewTy = Option<&'a T>;
 
     #[open(self)]
     #[logic]
     #[trusted]
-    fn shallow_model(self) -> Option<&'a T> {
+    fn view(self) -> Option<&'a T> {
         pearlite! { absurd }
     }
 }
@@ -274,13 +274,13 @@ impl<'a, T> IntoIterator for &'a Option<T> {
     }
 }
 
-impl<'a, T> ShallowModel for IterMut<'a, T> {
-    type ShallowModelTy = Option<&'a mut T>;
+impl<'a, T> View for IterMut<'a, T> {
+    type ViewTy = Option<&'a mut T>;
 
     #[logic]
     #[open(self)]
     #[trusted]
-    fn shallow_model(self) -> Option<&'a mut T> {
+    fn view(self) -> Option<&'a mut T> {
         pearlite! { absurd }
     }
 }

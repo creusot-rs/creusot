@@ -34,7 +34,7 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   let%span span9 = "../../../creusot-contracts/src/logic/seq.rs" 65 8 65 39
   let%span span10 = "../../../creusot-contracts/src/logic/ops.rs" 42 8 42 31
   let%span span11 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
-  let%span span12 = "../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span12 = "../../../creusot-contracts/src/model.rs" 109 8 109 22
   let%span span13 = "../../../creusot-contracts/src/std/slice.rs" 283 18 291 9
   let%span span14 = "../../../creusot-contracts/src/std/slice.rs" 66 20 66 65
   let%span span15 = "../../../creusot-contracts/src/std/mem.rs" 17 22 17 37
@@ -117,13 +117,13 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'0 (self : slice t) : Seq.seq t
+  function view'0 (self : slice t) : Seq.seq t
   
-  axiom shallow_model'0_spec : forall self : slice t . ([%#span7] shallow_model'0 self = Slice.id self)
-  && ([%#span6] Seq.length (shallow_model'0 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'0_spec : forall self : slice t . ([%#span7] view'0 self = Slice.id self)
+  && ([%#span6] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'1 (self : slice t) =
-    [%#span8] inv'7 (shallow_model'0 self)
+    [%#span8] inv'7 (view'0 self)
   
   predicate inv'1 (_1 : slice t)
   
@@ -144,7 +144,7 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : slice t) (ix : int) : t =
-    [%#span10] Seq.get (shallow_model'0 self) ix
+    [%#span10] Seq.get (view'0 self) ix
   
   use prelude.prelude.Intrinsic
   
@@ -166,8 +166,8 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   predicate resolve'0 (_1 : borrowed (slice t)) =
     resolve'3 _1
   
-  function shallow_model'1 (self : borrowed (slice t)) : Seq.seq t =
-    [%#span12] shallow_model'0 self.current
+  function view'1 (self : borrowed (slice t)) : Seq.seq t =
+    [%#span12] view'0 self.current
   
   let rec split_first_mut'0 (self:borrowed (slice t)) (return'  (ret:Option'0.t_Option (borrowed t, borrowed (slice t))))= {[@expl:precondition] inv'0 self}
     any
@@ -175,18 +175,17 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
       {[%#span13] match result with
         | Option'0.C_Some (first, tail) -> first.current = index_logic'0 self.current 0
         /\ first.final = index_logic'0 self.final 0
-        /\ Seq.length (shallow_model'0 self.current) > 0
-        /\ Seq.length (shallow_model'0 self.final) > 0
-        /\ shallow_model'0 tail.current = tail'0 (shallow_model'0 self.current)
-        /\ shallow_model'0 tail.final = tail'0 (shallow_model'0 self.final)
-        | Option'0.C_None -> Seq.length (shallow_model'1 self) = 0
-        /\ self.final = self.current /\ shallow_model'1 self = (Seq.empty  : Seq.seq t)
+        /\ Seq.length (view'0 self.current) > 0
+        /\ Seq.length (view'0 self.final) > 0
+        /\ view'0 tail.current = tail'0 (view'0 self.current) /\ view'0 tail.final = tail'0 (view'0 self.final)
+        | Option'0.C_None -> Seq.length (view'1 self) = 0
+        /\ self.final = self.current /\ view'1 self = (Seq.empty  : Seq.seq t)
         end}
       (! return' {result}) ]
     
   
   predicate is_default'0 (self : borrowed (slice t)) =
-    [%#span14] shallow_model'1 self = (Seq.empty  : Seq.seq t) /\ shallow_model'0 self.final = (Seq.empty  : Seq.seq t)
+    [%#span14] view'1 self = (Seq.empty  : Seq.seq t) /\ view'0 self.final = (Seq.empty  : Seq.seq t)
   
   let rec take'0 (dest:borrowed (borrowed (slice t))) (return'  (ret:borrowed (slice t)))= {[@expl:precondition] inv'2 dest}
     any
@@ -292,14 +291,14 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
       {[@expl:postcondition] [%#stake_first_mut1] match result with
         | Option'0.C_Some r -> r.current = index_logic'0 (self_.current).current 0
         /\ r.final = index_logic'0 (self_.current).final 0
-        /\ Seq.length (shallow_model'0 (self_.current).current) > 0
-        /\ Seq.length (shallow_model'0 (self_.current).final) > 0
-        /\ shallow_model'0 (self_.final).current = tail'0 (shallow_model'0 (self_.current).current)
-        /\ shallow_model'0 (self_.final).final = tail'0 (shallow_model'0 (self_.current).final)
-        | Option'0.C_None -> shallow_model'0 (self_.final).current = (Seq.empty  : Seq.seq t)
-        /\ shallow_model'0 (self_.current).final = (Seq.empty  : Seq.seq t)
-        /\ shallow_model'0 (self_.current).current = (Seq.empty  : Seq.seq t)
-        /\ shallow_model'0 (self_.final).final = (Seq.empty  : Seq.seq t)
+        /\ Seq.length (view'0 (self_.current).current) > 0
+        /\ Seq.length (view'0 (self_.current).final) > 0
+        /\ view'0 (self_.final).current = tail'0 (view'0 (self_.current).current)
+        /\ view'0 (self_.final).final = tail'0 (view'0 (self_.current).final)
+        | Option'0.C_None -> view'0 (self_.final).current = (Seq.empty  : Seq.seq t)
+        /\ view'0 (self_.current).final = (Seq.empty  : Seq.seq t)
+        /\ view'0 (self_.current).current = (Seq.empty  : Seq.seq t)
+        /\ view'0 (self_.final).final = (Seq.empty  : Seq.seq t)
         end}
       (! return' {result}) ]
     

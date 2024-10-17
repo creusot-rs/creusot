@@ -105,12 +105,12 @@ module M_949__main [#"949.rs" 4 0 4 13]
   
   function mk'0 (_m : Map.map opaque_ptr (Option'0.t_Option int32)) : FMap'0.t_FMap opaque_ptr int32
   
-  function view'0 (self : FMap'0.t_FMap opaque_ptr int32) : Map.map opaque_ptr (Option'0.t_Option int32)
+  function view'1 (self : FMap'0.t_FMap opaque_ptr int32) : Map.map opaque_ptr (Option'0.t_Option int32)
   
-  axiom view'0_spec : forall self : FMap'0.t_FMap opaque_ptr int32 . [%#span5] mk'0 (view'0 self) = self
+  axiom view'1_spec : forall self : FMap'0.t_FMap opaque_ptr int32 . [%#span5] mk'0 (view'1 self) = self
   
   function get'0 [@inline:trivial] (self : FMap'0.t_FMap opaque_ptr int32) (k : opaque_ptr) : Option'0.t_Option int32 =
-    [%#span6] Map.get (view'0 self) k
+    [%#span6] Map.get (view'1 self) k
   
   use prelude.prelude.Int
   
@@ -122,13 +122,13 @@ module M_949__main [#"949.rs" 4 0 4 13]
   = addr_logic'0 (null_logic'0 _1)  -> ptr = null_logic'0 _1)
   && ([%#span7] addr_logic'0 (null_logic'0 _1) = 0)
   
-  function shallow_model'0 (self : GhostPtrToken'0.t_GhostPtrToken int32) : FMap'0.t_FMap opaque_ptr int32
+  function view'0 (self : GhostPtrToken'0.t_GhostPtrToken int32) : FMap'0.t_FMap opaque_ptr int32
   
-  axiom shallow_model'0_spec : forall self : GhostPtrToken'0.t_GhostPtrToken int32 . [%#span9] get'0 (shallow_model'0 self) (null_logic'0 ())
+  axiom view'0_spec : forall self : GhostPtrToken'0.t_GhostPtrToken int32 . [%#span9] get'0 (view'0 self) (null_logic'0 ())
   = Option'0.C_None
   
   predicate invariant'0 (self : GhostPtrToken'0.t_GhostPtrToken int32) =
-    [%#span10] forall ptr : opaque_ptr, x : int32 . get'0 (shallow_model'0 self) ptr = Option'0.C_Some x  -> inv'3 x
+    [%#span10] forall ptr : opaque_ptr, x : int32 . get'0 (view'0 self) ptr = Option'0.C_Some x  -> inv'3 x
   
   axiom inv_axiom'0 [@rewrite] : forall x : GhostPtrToken'0.t_GhostPtrToken int32 [inv'0 x] . inv'0 x = true
   
@@ -147,7 +147,7 @@ module M_949__main [#"949.rs" 4 0 4 13]
   
   axiom remove'0_spec : forall self : FMap'0.t_FMap opaque_ptr int32, k : opaque_ptr . ([%#span14] len'0 (remove'0 self k)
   = (if contains'0 self k then len'0 self - 1 else len'0 self))
-  && ([%#span13] view'0 (remove'0 self k) = Map.set (view'0 self) k (Option'0.C_None))
+  && ([%#span13] view'1 (remove'0 self k) = Map.set (view'1 self) k (Option'0.C_None))
   
   function unreachable'0 (_1 : ()) : int32
   
@@ -162,11 +162,11 @@ module M_949__main [#"949.rs" 4 0 4 13]
     [%#span20] unwrap'0 (get'0 self k)
   
   let rec ptr_to_box'0 (self:borrowed (GhostPtrToken'0.t_GhostPtrToken int32)) (ptr:opaque_ptr) (return'  (ret:int32))= {[@expl:precondition] [%#span22] inv'1 self}
-    {[@expl:precondition] [%#span21] contains'0 (shallow_model'0 self.current) ptr}
+    {[@expl:precondition] [%#span21] contains'0 (view'0 self.current) ptr}
     any
     [ return' (result:int32)-> {[%#span25] inv'2 result}
-      {[%#span24] shallow_model'0 self.final = remove'0 (shallow_model'0 self.current) ptr}
-      {[%#span23] result = lookup_unsized'0 (shallow_model'0 self.current) ptr}
+      {[%#span24] view'0 self.final = remove'0 (view'0 self.current) ptr}
+      {[%#span23] result = lookup_unsized'0 (view'0 self.current) ptr}
       (! return' {result}) ]
     
   
@@ -180,14 +180,13 @@ module M_949__main [#"949.rs" 4 0 4 13]
   axiom insert'0_spec : forall self : FMap'0.t_FMap opaque_ptr int32, k : opaque_ptr, v : int32 . ([%#span29] not contains'0 self k
    -> len'0 (insert'0 self k v) = len'0 self + 1)
   && ([%#span28] contains'0 self k  -> len'0 (insert'0 self k v) = len'0 self)
-  && ([%#span27] view'0 (insert'0 self k v) = Map.set (view'0 self) k (Option'0.C_Some (make_sized'0 v)))
+  && ([%#span27] view'1 (insert'0 self k v) = Map.set (view'1 self) k (Option'0.C_Some (make_sized'0 v)))
   
   let rec ptr_from_box'0 (self:borrowed (GhostPtrToken'0.t_GhostPtrToken int32)) (val':int32) (return'  (ret:opaque_ptr))= {[@expl:precondition] [%#span31] inv'2 val'}
     {[@expl:precondition] [%#span30] inv'1 self}
     any
-    [ return' (result:opaque_ptr)-> {[%#span33] shallow_model'0 self.final
-      = insert'0 (shallow_model'0 self.current) result val'}
-      {[%#span32] not contains'0 (shallow_model'0 self.current) result}
+    [ return' (result:opaque_ptr)-> {[%#span33] view'0 self.final = insert'0 (view'0 self.current) result val'}
+      {[%#span32] not contains'0 (view'0 self.current) result}
       (! return' {result}) ]
     
   
@@ -195,12 +194,12 @@ module M_949__main [#"949.rs" 4 0 4 13]
   
   function empty'0 (_1 : ()) : FMap'0.t_FMap opaque_ptr int32
   
-  axiom empty'0_spec : forall _1 : () . ([%#span35] view'0 (empty'0 _1) = Const.const (Option'0.C_None))
+  axiom empty'0_spec : forall _1 : () . ([%#span35] view'1 (empty'0 _1) = Const.const (Option'0.C_None))
   && ([%#span34] len'0 (empty'0 _1) = 0)
   
   let rec new'0 (_1:()) (return'  (ret:GhostPtrToken'0.t_GhostPtrToken int32))= any
     [ return' (result:GhostPtrToken'0.t_GhostPtrToken int32)-> {[%#span37] inv'0 result}
-      {[%#span36] shallow_model'0 result = empty'0 ()}
+      {[%#span36] view'0 result = empty'0 ()}
       (! return' {result}) ]
     
   

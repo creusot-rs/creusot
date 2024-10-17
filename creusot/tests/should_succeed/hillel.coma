@@ -95,12 +95,12 @@ module M_hillel__right_pad [#"hillel.rs" 17 0 17 59]
   let%span span15 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
   let%span span16 = "../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
   let%span span17 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
-  let%span span18 = "../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span18 = "../../../creusot-contracts/src/model.rs" 109 8 109 22
   let%span span19 = "../../../creusot-contracts/src/std/vec.rs" 90 26 90 51
-  let%span span20 = "../../../creusot-contracts/src/model.rs" 90 8 90 31
+  let%span span20 = "../../../creusot-contracts/src/model.rs" 91 8 91 22
   let%span span21 = "../../../creusot-contracts/src/std/vec.rs" 86 26 86 48
   let%span span22 = "../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
-  let%span span23 = "../../../creusot-contracts/src/snapshot.rs" 27 20 27 48
+  let%span span23 = "../../../creusot-contracts/src/snapshot.rs" 27 20 27 39
   
   predicate inv'2 (_1 : t)
   
@@ -155,13 +155,13 @@ module M_hillel__right_pad [#"hillel.rs" 17 0 17 59]
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'2 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
+  function view'2 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
   
-  axiom shallow_model'2_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#span15] Seq.length (shallow_model'2 self)
+  axiom view'2_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#span15] Seq.length (view'2 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'0 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
-    [%#span16] inv'4 (shallow_model'2 self)
+    [%#span16] inv'4 (view'2 self)
   
   axiom inv_axiom'0 [@rewrite] : forall x : Vec'0.t_Vec t (Global'0.t_Global) [inv'0 x] . inv'0 x = invariant'0 x
   
@@ -177,23 +177,19 @@ module M_hillel__right_pad [#"hillel.rs" 17 0 17 59]
   
   use seq.Seq
   
-  function shallow_model'1 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t =
-    [%#span18] shallow_model'2 self.current
+  function view'1 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t =
+    [%#span18] view'2 self.current
   
   let rec push'0 (self:borrowed (Vec'0.t_Vec t (Global'0.t_Global))) (value:t) (return'  (ret:()))= {[@expl:precondition] inv'2 value}
     {[@expl:precondition] inv'1 self}
-    any
-    [ return' (result:())-> {[%#span19] shallow_model'2 self.final = Seq.snoc (shallow_model'1 self) value}
-      (! return' {result}) ]
-    
+    any [ return' (result:())-> {[%#span19] view'2 self.final = Seq.snoc (view'1 self) value} (! return' {result}) ] 
   
-  function shallow_model'4 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t =
-    [%#span20] shallow_model'2 self
+  function view'4 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t =
+    [%#span20] view'2 self
   
   let rec len'0 (self:Vec'0.t_Vec t (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] inv'3 self}
     any
-    [ return' (result:usize)-> {[%#span21] UIntSize.to_int result = Seq.length (shallow_model'4 self)}
-      (! return' {result}) ]
+    [ return' (result:usize)-> {[%#span21] UIntSize.to_int result = Seq.length (view'4 self)} (! return' {result}) ]
     
   
   use prelude.prelude.Snapshot
@@ -201,13 +197,13 @@ module M_hillel__right_pad [#"hillel.rs" 17 0 17 59]
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec t (Global'0.t_Global)) (ix : int) : t =
-    [%#span22] Seq.get (shallow_model'2 self) ix
+    [%#span22] Seq.get (view'2 self) ix
   
-  function shallow_model'3 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t =
-    [%#span20] shallow_model'1 self
+  function view'3 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t =
+    [%#span20] view'1 self
   
-  function shallow_model'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_Vec t (Global'0.t_Global)))) : Seq.seq t =
-    [%#span23] shallow_model'3 (Snapshot.inner self)
+  function view'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_Vec t (Global'0.t_Global)))) : Seq.seq t =
+    [%#span23] view'3 (Snapshot.inner self)
   
   use prelude.prelude.Snapshot
   
@@ -220,15 +216,15 @@ module M_hillel__right_pad [#"hillel.rs" 17 0 17 59]
     | bb1 = s0 [ s0 =  [ &old_2_0 <- Snapshot.new str ] s1 | s1 = bb2 ] 
     | bb2 = bb2
       [ bb2 = {[@expl:loop invariant] (Snapshot.inner old_2_0).final = str.final}
-        {[@expl:loop invariant] [%#shillel2] forall i : int . Seq.length (shallow_model'0 old_str) <= i
-        /\ i < Seq.length (shallow_model'1 str)  -> index_logic'0 str.current i = pad}
-        {[@expl:loop invariant] [%#shillel2] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'0 old_str)
+        {[@expl:loop invariant] [%#shillel2] forall i : int . Seq.length (view'0 old_str) <= i
+        /\ i < Seq.length (view'1 str)  -> index_logic'0 str.current i = pad}
+        {[@expl:loop invariant] [%#shillel2] forall i : int . 0 <= i /\ i < Seq.length (view'0 old_str)
          -> index_logic'0 str.current i = index_logic'0 (Snapshot.inner old_str).current i}
-        {[@expl:loop invariant] [%#shillel2] Seq.length (shallow_model'1 str) > UIntSize.to_int len
-         -> Seq.length (shallow_model'1 str) = Seq.length (shallow_model'0 old_str)}
-        {[@expl:loop invariant] [%#shillel2] Seq.length (shallow_model'0 old_str) < UIntSize.to_int len
-         -> Seq.length (shallow_model'1 str) <= UIntSize.to_int len}
-        {[@expl:loop invariant] [%#shillel1] Seq.length (shallow_model'0 old_str) <= Seq.length (shallow_model'1 str)}
+        {[@expl:loop invariant] [%#shillel2] Seq.length (view'1 str) > UIntSize.to_int len
+         -> Seq.length (view'1 str) = Seq.length (view'0 old_str)}
+        {[@expl:loop invariant] [%#shillel2] Seq.length (view'0 old_str) < UIntSize.to_int len
+         -> Seq.length (view'1 str) <= UIntSize.to_int len}
+        {[@expl:loop invariant] [%#shillel1] Seq.length (view'0 old_str) <= Seq.length (view'1 str)}
         (! s0) [ s0 = bb3 ] 
         [ bb3 = s0 [ s0 = len'0 {str.current} (fun (_ret':usize) ->  [ &_19 <- _ret' ] s1) | s1 = bb4 ] 
         | bb4 = s0
@@ -262,18 +258,18 @@ module M_hillel__right_pad [#"hillel.rs" 17 0 17 59]
     | & _23 : borrowed (Vec'0.t_Vec t (Global'0.t_Global)) = any_l ()
     | & old_2_0 : Snapshot.snap_ty (borrowed (Vec'0.t_Vec t (Global'0.t_Global))) = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#shillel10] forall i : int . Seq.length (shallow_model'1 str) <= i
+    [ return' (result:())-> {[@expl:postcondition] [%#shillel10] forall i : int . Seq.length (view'1 str) <= i
       /\ i < UIntSize.to_int len  -> index_logic'0 str.final i = pad}
-      {[@expl:postcondition] [%#shillel9] forall i : int . 0 <= i /\ i < Seq.length (shallow_model'1 str)
+      {[@expl:postcondition] [%#shillel9] forall i : int . 0 <= i /\ i < Seq.length (view'1 str)
        -> index_logic'0 str.final i = index_logic'0 str.current i}
-      {[@expl:postcondition] [%#shillel8] UIntSize.to_int len > Seq.length (shallow_model'1 str)
-       -> Seq.length (shallow_model'2 str.final) = UIntSize.to_int len}
-      {[@expl:postcondition] [%#shillel7] UIntSize.to_int len <= Seq.length (shallow_model'1 str)
-       -> Seq.length (shallow_model'2 str.final) = Seq.length (shallow_model'1 str)}
-      {[@expl:postcondition] [%#shillel6] Seq.length (shallow_model'2 str.final) = UIntSize.to_int len
-      \/ Seq.length (shallow_model'2 str.final) = Seq.length (shallow_model'1 str)}
-      {[@expl:postcondition] [%#shillel5] Seq.length (shallow_model'2 str.final) >= UIntSize.to_int len
-      /\ Seq.length (shallow_model'2 str.final) >= Seq.length (shallow_model'1 str)}
+      {[@expl:postcondition] [%#shillel8] UIntSize.to_int len > Seq.length (view'1 str)
+       -> Seq.length (view'2 str.final) = UIntSize.to_int len}
+      {[@expl:postcondition] [%#shillel7] UIntSize.to_int len <= Seq.length (view'1 str)
+       -> Seq.length (view'2 str.final) = Seq.length (view'1 str)}
+      {[@expl:postcondition] [%#shillel6] Seq.length (view'2 str.final) = UIntSize.to_int len
+      \/ Seq.length (view'2 str.final) = Seq.length (view'1 str)}
+      {[@expl:postcondition] [%#shillel5] Seq.length (view'2 str.final) >= UIntSize.to_int len
+      /\ Seq.length (view'2 str.final) >= Seq.length (view'1 str)}
       (! return' {result}) ]
     
 end
@@ -301,14 +297,14 @@ module M_hillel__left_pad [#"hillel.rs" 34 0 34 58]
   let%span span18 = "../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
   let%span span19 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   let%span span20 = "../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
-  let%span span21 = "../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span21 = "../../../creusot-contracts/src/model.rs" 109 8 109 22
   let%span span22 = "../../../creusot-contracts/src/std/vec.rs" 110 26 110 59
   let%span span23 = "../../../creusot-contracts/src/std/vec.rs" 111 16 111 89
   let%span span24 = "../../../creusot-contracts/src/std/vec.rs" 112 26 112 52
   let%span span25 = "../../../creusot-contracts/src/std/vec.rs" 113 16 113 105
-  let%span span26 = "../../../creusot-contracts/src/model.rs" 90 8 90 31
+  let%span span26 = "../../../creusot-contracts/src/model.rs" 91 8 91 22
   let%span span27 = "../../../creusot-contracts/src/std/vec.rs" 86 26 86 48
-  let%span span28 = "../../../creusot-contracts/src/snapshot.rs" 27 20 27 48
+  let%span span28 = "../../../creusot-contracts/src/snapshot.rs" 27 20 27 39
   
   predicate inv'2 (_1 : t)
   
@@ -363,13 +359,13 @@ module M_hillel__left_pad [#"hillel.rs" 34 0 34 58]
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'2 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
+  function view'2 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
   
-  axiom shallow_model'2_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#span17] Seq.length (shallow_model'2 self)
+  axiom view'2_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#span17] Seq.length (view'2 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'0 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
-    [%#span18] inv'4 (shallow_model'2 self)
+    [%#span18] inv'4 (view'2 self)
   
   axiom inv_axiom'0 [@rewrite] : forall x : Vec'0.t_Vec t (Global'0.t_Global) [inv'0 x] . inv'0 x = invariant'0 x
   
@@ -388,42 +384,40 @@ module M_hillel__left_pad [#"hillel.rs" 34 0 34 58]
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec t (Global'0.t_Global)) (ix : int) : t =
-    [%#span20] Seq.get (shallow_model'2 self) ix
+    [%#span20] Seq.get (view'2 self) ix
   
-  function shallow_model'1 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t =
-    [%#span21] shallow_model'2 self.current
+  function view'1 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t =
+    [%#span21] view'2 self.current
   
   let rec insert'0 (self:borrowed (Vec'0.t_Vec t (Global'0.t_Global))) (index:usize) (element:t) (return'  (ret:()))= {[@expl:precondition] inv'2 element}
     {[@expl:precondition] inv'1 self}
     any
-    [ return' (result:())-> {[%#span25] forall i : int . UIntSize.to_int index < i
-      /\ i < Seq.length (shallow_model'2 self.final)
+    [ return' (result:())-> {[%#span25] forall i : int . UIntSize.to_int index < i /\ i < Seq.length (view'2 self.final)
        -> index_logic'0 self.final i = index_logic'0 self.current (i - 1)}
       {[%#span24] index_logic'0 self.final (UIntSize.to_int index) = element}
       {[%#span23] forall i : int . 0 <= i /\ i < UIntSize.to_int index
        -> index_logic'0 self.final i = index_logic'0 self.current i}
-      {[%#span22] Seq.length (shallow_model'2 self.final) = Seq.length (shallow_model'1 self) + 1}
+      {[%#span22] Seq.length (view'2 self.final) = Seq.length (view'1 self) + 1}
       (! return' {result}) ]
     
   
-  function shallow_model'4 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t =
-    [%#span26] shallow_model'2 self
+  function view'4 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t =
+    [%#span26] view'2 self
   
   let rec len'0 (self:Vec'0.t_Vec t (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] inv'3 self}
     any
-    [ return' (result:usize)-> {[%#span27] UIntSize.to_int result = Seq.length (shallow_model'4 self)}
-      (! return' {result}) ]
+    [ return' (result:usize)-> {[%#span27] UIntSize.to_int result = Seq.length (view'4 self)} (! return' {result}) ]
     
   
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
   
-  function shallow_model'3 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t =
-    [%#span26] shallow_model'1 self
+  function view'3 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t =
+    [%#span26] view'1 self
   
-  function shallow_model'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_Vec t (Global'0.t_Global)))) : Seq.seq t =
-    [%#span28] shallow_model'3 (Snapshot.inner self)
+  function view'0 (self : Snapshot.snap_ty (borrowed (Vec'0.t_Vec t (Global'0.t_Global)))) : Seq.seq t =
+    [%#span28] view'3 (Snapshot.inner self)
   
   use prelude.prelude.Snapshot
   
@@ -441,16 +435,14 @@ module M_hillel__left_pad [#"hillel.rs" 34 0 34 58]
       [ bb3 = {[@expl:loop invariant] (Snapshot.inner old_3_0).final = str.final}
         {[@expl:loop invariant] [%#shillel3] forall i : int . 0 <= i /\ i < Snapshot.inner c
          -> index_logic'0 str.current i = pad}
-        {[@expl:loop invariant] [%#shillel3] forall i : int . Snapshot.inner c <= i
-        /\ i < Seq.length (shallow_model'1 str)
+        {[@expl:loop invariant] [%#shillel3] forall i : int . Snapshot.inner c <= i /\ i < Seq.length (view'1 str)
          -> index_logic'0 str.current i = index_logic'0 (Snapshot.inner old_str).current (i - Snapshot.inner c)}
-        {[@expl:loop invariant] [%#shillel4] Snapshot.inner c
-        = Seq.length (shallow_model'1 str) - Seq.length (shallow_model'0 old_str)}
-        {[@expl:loop invariant] [%#shillel3] Seq.length (shallow_model'1 str) > UIntSize.to_int len
-         -> Seq.length (shallow_model'1 str) = Seq.length (shallow_model'0 old_str)}
-        {[@expl:loop invariant] [%#shillel3] Seq.length (shallow_model'0 old_str) < UIntSize.to_int len
-         -> Seq.length (shallow_model'1 str) <= UIntSize.to_int len}
-        {[@expl:loop invariant] [%#shillel2] Seq.length (shallow_model'0 old_str) <= Seq.length (shallow_model'1 str)}
+        {[@expl:loop invariant] [%#shillel4] Snapshot.inner c = Seq.length (view'1 str) - Seq.length (view'0 old_str)}
+        {[@expl:loop invariant] [%#shillel3] Seq.length (view'1 str) > UIntSize.to_int len
+         -> Seq.length (view'1 str) = Seq.length (view'0 old_str)}
+        {[@expl:loop invariant] [%#shillel3] Seq.length (view'0 old_str) < UIntSize.to_int len
+         -> Seq.length (view'1 str) <= UIntSize.to_int len}
+        {[@expl:loop invariant] [%#shillel2] Seq.length (view'0 old_str) <= Seq.length (view'1 str)}
         (! s0) [ s0 = bb4 ] 
         [ bb4 = s0 [ s0 = len'0 {str.current} (fun (_ret':usize) ->  [ &_20 <- _ret' ] s1) | s1 = bb5 ] 
         | bb5 = s0
@@ -487,17 +479,15 @@ module M_hillel__left_pad [#"hillel.rs" 34 0 34 58]
     | & _26 : Snapshot.snap_ty int = any_l ()
     | & old_3_0 : Snapshot.snap_ty (borrowed (Vec'0.t_Vec t (Global'0.t_Global))) = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#shillel12] forall i : int . 0 <= i
-      /\ i < Seq.length (shallow_model'1 str)
-       -> index_logic'0 str.final (i + (Seq.length (shallow_model'2 str.final) - Seq.length (shallow_model'1 str)))
+    [ return' (result:())-> {[@expl:postcondition] [%#shillel12] forall i : int . 0 <= i /\ i < Seq.length (view'1 str)
+       -> index_logic'0 str.final (i + (Seq.length (view'2 str.final) - Seq.length (view'1 str)))
       = index_logic'0 str.current i}
       {[@expl:postcondition] [%#shillel11] forall i : int . 0 <= i
-      /\ i < Seq.length (shallow_model'2 str.final) - Seq.length (shallow_model'1 str)
-       -> index_logic'0 str.final i = pad}
-      {[@expl:postcondition] [%#shillel10] Seq.length (shallow_model'2 str.final) = UIntSize.to_int len
-      \/ Seq.length (shallow_model'2 str.final) = Seq.length (shallow_model'1 str)}
-      {[@expl:postcondition] [%#shillel9] Seq.length (shallow_model'2 str.final) >= UIntSize.to_int len
-      /\ Seq.length (shallow_model'2 str.final) >= Seq.length (shallow_model'1 str)}
+      /\ i < Seq.length (view'2 str.final) - Seq.length (view'1 str)  -> index_logic'0 str.final i = pad}
+      {[@expl:postcondition] [%#shillel10] Seq.length (view'2 str.final) = UIntSize.to_int len
+      \/ Seq.length (view'2 str.final) = Seq.length (view'1 str)}
+      {[@expl:postcondition] [%#shillel9] Seq.length (view'2 str.final) >= UIntSize.to_int len
+      /\ Seq.length (view'2 str.final) >= Seq.length (view'1 str)}
       (! return' {result}) ]
     
 end
@@ -595,7 +585,7 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
   let%span span25 = "../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
   let%span span26 = "../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   let%span span27 = "../../../creusot-contracts/src/logic/ops.rs" 42 8 42 31
-  let%span span28 = "../../../creusot-contracts/src/model.rs" 90 8 90 31
+  let%span span28 = "../../../creusot-contracts/src/model.rs" 91 8 91 22
   let%span span29 = "../../../creusot-contracts/src/std/slice.rs" 100 14 100 41
   let%span span30 = "../../../creusot-contracts/src/std/slice.rs" 101 4 101 82
   let%span span31 = "../../../creusot-contracts/src/std/slice.rs" 410 12 410 66
@@ -606,14 +596,14 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
   let%span span36 = "../../../creusot-contracts/src/std/slice.rs" 416 14 416 45
   let%span span37 = "../../../creusot-contracts/src/std/slice.rs" 414 4 414 10
   let%span span38 = "../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
-  let%span span39 = "../../../creusot-contracts/src/std/vec.rs" 31 14 31 56
+  let%span span39 = "../../../creusot-contracts/src/std/vec.rs" 31 14 31 47
   let%span span40 = "../../../creusot-contracts/src/std/vec.rs" 32 4 33 53
-  let%span span41 = "../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span41 = "../../../creusot-contracts/src/model.rs" 109 8 109 22
   let%span span42 = "../../../creusot-contracts/src/std/vec.rs" 90 26 90 51
   let%span span43 = "hillel.rs" 52 4 54 5
   let%span span44 = "hillel.rs" 59 4 61 5
   let%span span45 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
-  let%span span46 = "../../../creusot-contracts/src/model.rs" 81 8 81 28
+  let%span span46 = "../../../creusot-contracts/src/model.rs" 82 8 82 28
   let%span span47 = "../../../creusot-contracts/src/std/cmp.rs" 11 26 11 75
   let%span span48 = "../../../creusot-contracts/src/std/slice.rs" 403 20 403 61
   let%span span49 = "../../../creusot-contracts/src/std/iter.rs" 105 26 108 17
@@ -624,7 +614,7 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
   let%span span54 = "../../../creusot-contracts/src/std/slice.rs" 249 0 358 1
   let%span span55 = "../../../creusot-contracts/src/std/vec.rs" 172 26 172 42
   let%span span56 = "hillel.rs" 66 4 68 5
-  let%span span57 = "../../../creusot-contracts/src/model.rs" 99 8 99 28
+  let%span span57 = "../../../creusot-contracts/src/model.rs" 100 8 100 28
   let%span span58 = "hillel.rs" 72 10 72 36
   let%span span59 = "hillel.rs" 71 0 71 8
   
@@ -657,13 +647,13 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
   
   use seq.Seq
   
-  function shallow_model'5 (self : slice t) : Seq.seq t
+  function view'5 (self : slice t) : Seq.seq t
   
-  axiom shallow_model'5_spec : forall self : slice t . ([%#span20] shallow_model'5 self = Slice.id self)
-  && ([%#span19] Seq.length (shallow_model'5 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'5_spec : forall self : slice t . ([%#span20] view'5 self = Slice.id self)
+  && ([%#span19] Seq.length (view'5 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'11 (self : slice t) =
-    [%#span21] inv'11 (shallow_model'5 self)
+    [%#span21] inv'11 (view'5 self)
   
   predicate inv'12 (_1 : slice t)
   
@@ -727,13 +717,13 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
   
   axiom inv_axiom'5 [@rewrite] : forall x : Vec'0.t_Vec t (Global'0.t_Global) [inv'5 x] . inv'5 x = invariant'5 x
   
-  function shallow_model'3 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
+  function view'3 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
   
-  axiom shallow_model'3_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#span24] Seq.length (shallow_model'3 self)
+  axiom view'3_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#span24] Seq.length (view'3 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'4 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
-    [%#span25] inv'11 (shallow_model'3 self)
+    [%#span25] inv'11 (view'3 self)
   
   axiom inv_axiom'4 [@rewrite] : forall x : Vec'0.t_Vec t (Global'0.t_Global) [inv'4 x] . inv'4 x = invariant'4 x
   
@@ -752,12 +742,12 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
   use seq.Seq
   
   function index_logic'2 [@inline:trivial] (self : slice t) (ix : int) : t =
-    [%#span27] Seq.get (shallow_model'5 self) ix
+    [%#span27] Seq.get (view'5 self) ix
   
   use seq.Seq
   
-  function shallow_model'0 (self : slice t) : Seq.seq t =
-    [%#span28] shallow_model'5 self
+  function view'0 (self : slice t) : Seq.seq t =
+    [%#span28] view'5 self
   
   use seq.Seq
   
@@ -765,12 +755,12 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
   
   axiom to_ref_seq'0_spec : forall self : slice t . ([%#span30] forall i : int . 0 <= i
   /\ i < Seq.length (to_ref_seq'0 self)  -> Seq.get (to_ref_seq'0 self) i = index_logic'2 self i)
-  && ([%#span29] Seq.length (to_ref_seq'0 self) = Seq.length (shallow_model'0 self))
+  && ([%#span29] Seq.length (to_ref_seq'0 self) = Seq.length (view'0 self))
   
-  function shallow_model'2 (self : Iter'0.t_Iter t) : slice t
+  function view'2 (self : Iter'0.t_Iter t) : slice t
   
   predicate produces'0 (self : Iter'0.t_Iter t) (visited : Seq.seq t) (tl : Iter'0.t_Iter t) =
-    [%#span31] to_ref_seq'0 (shallow_model'2 self) = Seq.(++) visited (to_ref_seq'0 (shallow_model'2 tl))
+    [%#span31] to_ref_seq'0 (view'2 self) = Seq.(++) visited (to_ref_seq'0 (view'2 tl))
   
   function produces_trans'0 (a : Iter'0.t_Iter t) (ab : Seq.seq t) (b : Iter'0.t_Iter t) (bc : Seq.seq t) (c : Iter'0.t_Iter t) : ()
     
@@ -805,7 +795,7 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
   function deep_model'1 (self : t) : t_DeepModelTy'0
   
   function index_logic'1 [@inline:trivial] (self : Vec'0.t_Vec t (Global'0.t_Global)) (ix : int) : t =
-    [%#span38] Seq.get (shallow_model'3 self) ix
+    [%#span38] Seq.get (view'3 self) ix
   
   use seq.Seq
   
@@ -814,8 +804,8 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
   function deep_model'3 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t_DeepModelTy'0
   
   axiom deep_model'3_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . ([%#span40] forall i : int . 0 <= i
-  /\ i < Seq.length (shallow_model'3 self)  -> Seq.get (deep_model'3 self) i = deep_model'1 (index_logic'1 self i))
-  && ([%#span39] Seq.length (shallow_model'3 self) = Seq.length (deep_model'3 self))
+  /\ i < Seq.length (view'3 self)  -> Seq.get (deep_model'3 self) i = deep_model'1 (index_logic'1 self i))
+  && ([%#span39] Seq.length (view'3 self) = Seq.length (deep_model'3 self))
   
   use prelude.prelude.Snapshot
   
@@ -823,15 +813,12 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
   
   use seq.Seq
   
-  function shallow_model'4 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t =
-    [%#span41] shallow_model'3 self.current
+  function view'4 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t =
+    [%#span41] view'3 self.current
   
   let rec push'0 (self:borrowed (Vec'0.t_Vec t (Global'0.t_Global))) (value:t) (return'  (ret:()))= {[@expl:precondition] inv'2 value}
     {[@expl:precondition] inv'3 self}
-    any
-    [ return' (result:())-> {[%#span42] shallow_model'3 self.final = Seq.snoc (shallow_model'4 self) value}
-      (! return' {result}) ]
-    
+    any [ return' (result:())-> {[%#span42] view'3 self.final = Seq.snoc (view'4 self) value} (! return' {result}) ] 
   
   predicate is_unique'0 [#"hillel.rs" 51 0 51 34] (s : Seq.seq t_DeepModelTy'0) =
     [%#span43] forall i : int, j : int . 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s
@@ -870,11 +857,11 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
   
   use seq.Seq
   
-  function shallow_model'6 (self : borrowed (Iter'0.t_Iter t)) : slice t =
-    [%#span41] shallow_model'2 self.current
+  function view'6 (self : borrowed (Iter'0.t_Iter t)) : slice t =
+    [%#span41] view'2 self.current
   
   predicate completed'0 (self : borrowed (Iter'0.t_Iter t)) =
-    [%#span48] resolve'3 self /\ shallow_model'5 (shallow_model'6 self) = (Seq.empty  : Seq.seq t)
+    [%#span48] resolve'3 self /\ view'5 (view'6 self) = (Seq.empty  : Seq.seq t)
   
   let rec next'0 (self:borrowed (Iter'0.t_Iter t)) (return'  (ret:Option'0.t_Option t))= any
     [ return' (result:Option'0.t_Option t)-> {inv'7 result}
@@ -911,17 +898,13 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
     
   
   let rec iter'0 (self:slice t) (return'  (ret:Iter'0.t_Iter t))= {[@expl:precondition] inv'6 self}
-    any [ return' (result:Iter'0.t_Iter t)-> {[%#span54] shallow_model'2 result = self} (! return' {result}) ] 
+    any [ return' (result:Iter'0.t_Iter t)-> {[%#span54] view'2 result = self} (! return' {result}) ] 
   
-  function shallow_model'1 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t =
-    [%#span28] shallow_model'3 self
+  function view'1 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t =
+    [%#span28] view'3 self
   
   let rec deref'0 (self:Vec'0.t_Vec t (Global'0.t_Global)) (return'  (ret:slice t))= {[@expl:precondition] inv'5 self}
-    any
-    [ return' (result:slice t)-> {inv'6 result}
-      {[%#span55] shallow_model'0 result = shallow_model'1 self}
-      (! return' {result}) ]
-    
+    any [ return' (result:slice t)-> {inv'6 result} {[%#span55] view'0 result = view'1 self} (! return' {result}) ] 
   
   use prelude.prelude.Snapshot
   
@@ -1121,15 +1104,15 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
   let%span span36 = "../../../creusot-contracts/src/std/iter/range.rs" 44 14 44 42
   let%span span37 = "../../../creusot-contracts/src/std/iter/range.rs" 33 15 33 24
   let%span span38 = "../../../creusot-contracts/src/std/iter/range.rs" 34 14 34 45
-  let%span span39 = "../../../creusot-contracts/src/model.rs" 90 8 90 31
+  let%span span39 = "../../../creusot-contracts/src/model.rs" 91 8 91 22
   let%span span40 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   let%span span41 = "hillel.rs" 59 4 61 5
   let%span span42 = "hillel.rs" 66 4 68 5
   let%span span43 = "../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
-  let%span span44 = "../../../creusot-contracts/src/std/vec.rs" 31 14 31 56
+  let%span span44 = "../../../creusot-contracts/src/std/vec.rs" 31 14 31 47
   let%span span45 = "../../../creusot-contracts/src/std/vec.rs" 32 4 33 53
   let%span span46 = "hillel.rs" 52 4 54 5
-  let%span span47 = "../../../creusot-contracts/src/model.rs" 99 8 99 28
+  let%span span47 = "../../../creusot-contracts/src/model.rs" 100 8 100 28
   let%span span48 = "hillel.rs" 75 11 75 38
   let%span span49 = "hillel.rs" 80 36 80 39
   let%span span50 = "hillel.rs" 80 54 80 58
@@ -1142,7 +1125,7 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
   let%span span57 = "../../../creusot-contracts/src/logic/ops.rs" 42 8 42 31
   let%span span58 = "../../../creusot-contracts/src/std/slice.rs" 42 14 42 44
   let%span span59 = "../../../creusot-contracts/src/std/slice.rs" 43 4 43 98
-  let%span span60 = "../../../creusot-contracts/src/model.rs" 81 8 81 28
+  let%span span60 = "../../../creusot-contracts/src/model.rs" 82 8 82 28
   let%span span61 = "../../../creusot-contracts/src/std/iter.rs" 90 8 90 19
   let%span span62 = "../../../creusot-contracts/src/std/iter.rs" 84 20 84 24
   let%span span63 = "../../../creusot-contracts/src/std/iter.rs" 99 0 212 1
@@ -1182,13 +1165,13 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
   
   use seq.Seq
   
-  function shallow_model'2 (self : slice t) : Seq.seq t
+  function view'2 (self : slice t) : Seq.seq t
   
-  axiom shallow_model'2_spec : forall self : slice t . ([%#span22] shallow_model'2 self = Slice.id self)
-  && ([%#span21] Seq.length (shallow_model'2 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'2_spec : forall self : slice t . ([%#span22] view'2 self = Slice.id self)
+  && ([%#span21] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'10 (self : slice t) =
-    [%#span23] inv'9 (shallow_model'2 self)
+    [%#span23] inv'9 (view'2 self)
   
   predicate inv'10 (_1 : slice t)
   
@@ -1246,13 +1229,13 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
   axiom inv_axiom'3 [@rewrite] : forall x : borrowed (Vec'0.t_Vec t (Global'0.t_Global)) [inv'3 x] . inv'3 x
   = invariant'3 x
   
-  function shallow_model'1 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
+  function view'1 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
   
-  axiom shallow_model'1_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#span27] Seq.length (shallow_model'1 self)
+  axiom view'1_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#span27] Seq.length (view'1 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'2 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
-    [%#span28] inv'9 (shallow_model'1 self)
+    [%#span28] inv'9 (view'1 self)
   
   axiom inv_axiom'2 [@rewrite] : forall x : Vec'0.t_Vec t (Global'0.t_Global) [inv'2 x] . inv'2 x = invariant'2 x
   
@@ -1314,8 +1297,8 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
   
   use seq.Seq
   
-  function shallow_model'0 (self : slice t) : Seq.seq t =
-    [%#span39] shallow_model'2 self
+  function view'0 (self : slice t) : Seq.seq t =
+    [%#span39] view'2 self
   
   use seq.Seq
   
@@ -1346,13 +1329,13 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec t (Global'0.t_Global)) (ix : int) : t =
-    [%#span43] Seq.get (shallow_model'1 self) ix
+    [%#span43] Seq.get (view'1 self) ix
   
   function deep_model'0 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t_DeepModelTy'0
   
   axiom deep_model'0_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . ([%#span45] forall i : int . 0 <= i
-  /\ i < Seq.length (shallow_model'1 self)  -> Seq.get (deep_model'0 self) i = deep_model'3 (index_logic'0 self i))
-  && ([%#span44] Seq.length (shallow_model'1 self) = Seq.length (deep_model'0 self))
+  /\ i < Seq.length (view'1 self)  -> Seq.get (deep_model'0 self) i = deep_model'3 (index_logic'0 self i))
+  && ([%#span44] Seq.length (view'1 self) = Seq.length (deep_model'0 self))
   
   predicate is_unique'0 [#"hillel.rs" 51 0 51 34] (s : Seq.seq t_DeepModelTy'0) =
     [%#span46] forall i : int, j : int . 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s
@@ -1398,13 +1381,13 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
   use seq.Seq
   
   function index_logic'1 [@inline:trivial] (self : slice t) (ix : int) : t =
-    [%#span57] Seq.get (shallow_model'2 self) ix
+    [%#span57] Seq.get (view'2 self) ix
   
   function deep_model'4 (self : slice t) : Seq.seq t_DeepModelTy'0
   
   axiom deep_model'4_spec : forall self : slice t . ([%#span59] forall i : int . 0 <= i
   /\ i < Seq.length (deep_model'4 self)  -> Seq.get (deep_model'4 self) i = deep_model'3 (index_logic'1 self i))
-  && ([%#span58] Seq.length (shallow_model'0 self) = Seq.length (deep_model'4 self))
+  && ([%#span58] Seq.length (view'0 self) = Seq.length (deep_model'4 self))
   
   function deep_model'1 (self : slice t) : Seq.seq t_DeepModelTy'0 =
     [%#span60] deep_model'4 self
@@ -1435,8 +1418,7 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
   
   let rec len'0 (self:slice t) (return'  (ret:usize))= {[@expl:precondition] inv'4 self}
     any
-    [ return' (result:usize)-> {[%#span64] Seq.length (shallow_model'0 self) = UIntSize.to_int result}
-      (! return' {result}) ]
+    [ return' (result:usize)-> {[%#span64] Seq.length (view'0 self) = UIntSize.to_int result} (! return' {result}) ]
     
   
   use prelude.prelude.Snapshot
@@ -1445,7 +1427,7 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
   
   let rec new'0 (_1:()) (return'  (ret:Vec'0.t_Vec t (Global'0.t_Global)))= any
     [ return' (result:Vec'0.t_Vec t (Global'0.t_Global))-> {inv'2 result}
-      {[%#span65] Seq.length (shallow_model'1 result) = 0}
+      {[%#span65] Seq.length (view'1 result) = 0}
       (! return' {result}) ]
     
   
@@ -1544,12 +1526,12 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
          ]
       
     | bb16 = s0
-      [ s0 = {[@expl:assertion] [%#shillel13] is_subset'0 (Seq.([..]) (deep_model'1 str) 0 (Seq.length (shallow_model'0 str))) (deep_model'0 unique)}
+      [ s0 = {[@expl:assertion] [%#shillel13] is_subset'0 (Seq.([..]) (deep_model'1 str) 0 (Seq.length (view'0 str))) (deep_model'0 unique)}
         s1
       | s1 = bb22 ]
       
     | bb22 = s0
-      [ s0 = {[@expl:assertion] [%#shillel14] Seq.(==) (Seq.([..]) (deep_model'1 str) 0 (Seq.length (shallow_model'0 str))) (deep_model'1 str)}
+      [ s0 = {[@expl:assertion] [%#shillel14] Seq.(==) (Seq.([..]) (deep_model'1 str) 0 (Seq.length (view'0 str))) (deep_model'1 str)}
         s1
       | s1 =  [ &_0 <- unique ] s2
       | s2 = bb23 ]
@@ -1778,7 +1760,7 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   let%span span39 = "../../../creusot-contracts/src/std/iter/range.rs" 33 15 33 24
   let%span span40 = "../../../creusot-contracts/src/std/iter/range.rs" 34 14 34 45
   let%span span41 = "../../../creusot-contracts/src/logic/ops.rs" 42 8 42 31
-  let%span span42 = "../../../creusot-contracts/src/model.rs" 90 8 90 31
+  let%span span42 = "../../../creusot-contracts/src/model.rs" 91 8 91 22
   let%span span43 = "../../../creusot-contracts/src/std/slice.rs" 100 14 100 41
   let%span span44 = "../../../creusot-contracts/src/std/slice.rs" 101 4 101 82
   let%span span45 = "../../../creusot-contracts/src/std/slice.rs" 410 12 410 66
@@ -1809,7 +1791,7 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   let%span span70 = "../../../creusot-contracts/src/std/iter.rs" 84 20 84 24
   let%span span71 = "../../../creusot-contracts/src/std/iter.rs" 99 0 212 1
   let%span span72 = "../../../creusot-contracts/src/std/slice.rs" 249 0 358 1
-  let%span span73 = "../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span73 = "../../../creusot-contracts/src/model.rs" 109 8 109 22
   let%span span74 = "../../../creusot-contracts/src/std/slice.rs" 403 20 403 61
   let%span span75 = "../../../creusot-contracts/src/std/slice.rs" 370 20 370 32
   let%span span76 = "../../../creusot-contracts/src/std/slice.rs" 364 20 364 24
@@ -1867,13 +1849,13 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'2 (self : slice uint32) : Seq.seq uint32
+  function view'2 (self : slice uint32) : Seq.seq uint32
   
-  axiom shallow_model'2_spec : forall self : slice uint32 . ([%#span28] shallow_model'2 self = Slice.id self)
-  && ([%#span27] Seq.length (shallow_model'2 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'2_spec : forall self : slice uint32 . ([%#span28] view'2 self = Slice.id self)
+  && ([%#span27] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'10 (self : slice uint32) =
-    [%#span29] inv'13 (shallow_model'2 self)
+    [%#span29] inv'13 (view'2 self)
   
   predicate inv'10 (_1 : slice uint32)
   
@@ -1980,12 +1962,12 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : slice uint32) (ix : int) : uint32 =
-    [%#span41] Seq.get (shallow_model'2 self) ix
+    [%#span41] Seq.get (view'2 self) ix
   
   use seq.Seq
   
-  function shallow_model'0 (self : slice uint32) : Seq.seq uint32 =
-    [%#span42] shallow_model'2 self
+  function view'0 (self : slice uint32) : Seq.seq uint32 =
+    [%#span42] view'2 self
   
   use seq.Seq
   
@@ -1993,12 +1975,12 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   
   axiom to_ref_seq'0_spec : forall self : slice uint32 . ([%#span44] forall i : int . 0 <= i
   /\ i < Seq.length (to_ref_seq'0 self)  -> Seq.get (to_ref_seq'0 self) i = index_logic'0 self i)
-  && ([%#span43] Seq.length (to_ref_seq'0 self) = Seq.length (shallow_model'0 self))
+  && ([%#span43] Seq.length (to_ref_seq'0 self) = Seq.length (view'0 self))
   
-  function shallow_model'1 (self : Iter'0.t_Iter uint32) : slice uint32
+  function view'1 (self : Iter'0.t_Iter uint32) : slice uint32
   
   predicate produces'0 (self : Iter'0.t_Iter uint32) (visited : Seq.seq uint32) (tl : Iter'0.t_Iter uint32) =
-    [%#span45] to_ref_seq'0 (shallow_model'1 self) = Seq.(++) visited (to_ref_seq'0 (shallow_model'1 tl))
+    [%#span45] to_ref_seq'0 (view'1 self) = Seq.(++) visited (to_ref_seq'0 (view'1 tl))
   
   function produces_trans'0 (a : Iter'0.t_Iter uint32) (ab : Seq.seq uint32) (b : Iter'0.t_Iter uint32) (bc : Seq.seq uint32) (c : Iter'0.t_Iter uint32) : ()
     
@@ -2116,8 +2098,7 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   
   let rec len'0 (self:slice uint32) (return'  (ret:usize))= {[@expl:precondition] inv'4 self}
     any
-    [ return' (result:usize)-> {[%#span72] Seq.length (shallow_model'0 self) = UIntSize.to_int result}
-      (! return' {result}) ]
+    [ return' (result:usize)-> {[%#span72] Seq.length (view'0 self) = UIntSize.to_int result} (! return' {result}) ]
     
   
   use seq.Seq
@@ -2130,11 +2111,11 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   
   use seq.Seq
   
-  function shallow_model'3 (self : borrowed (Iter'0.t_Iter uint32)) : slice uint32 =
-    [%#span73] shallow_model'1 self.current
+  function view'3 (self : borrowed (Iter'0.t_Iter uint32)) : slice uint32 =
+    [%#span73] view'1 self.current
   
   predicate completed'0 (self : borrowed (Iter'0.t_Iter uint32)) =
-    [%#span74] resolve'2 self /\ shallow_model'2 (shallow_model'3 self) = (Seq.empty  : Seq.seq uint32)
+    [%#span74] resolve'2 self /\ view'2 (view'3 self) = (Seq.empty  : Seq.seq uint32)
   
   let rec next'0 (self:borrowed (Iter'0.t_Iter uint32)) (return'  (ret:Option'0.t_Option uint32))= any
     [ return' (result:Option'0.t_Option uint32)-> {inv'5 result}
@@ -2156,7 +2137,7 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   use prelude.prelude.Snapshot
   
   predicate into_iter_post'0 (self : slice uint32) (res : Iter'0.t_Iter uint32) =
-    [%#span75] self = shallow_model'1 res
+    [%#span75] self = view'1 res
   
   predicate into_iter_pre'0 (self : slice uint32) =
     [%#span76] true
@@ -2167,8 +2148,8 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   
   meta "compute_max_steps" 1000000
   
-  let rec fulcrum (s:slice uint32) (return'  (ret:usize))= {[%#shillel21] Seq.length (shallow_model'0 s) > 0}
-    {[%#shillel20] sum_range'0 (shallow_model'0 s) 0 (Seq.length (shallow_model'0 s)) <= 1000}
+  let rec fulcrum (s:slice uint32) (return'  (ret:usize))= {[%#shillel21] Seq.length (view'0 s) > 0}
+    {[%#shillel20] sum_range'0 (view'0 s) 0 (Seq.length (view'0 s)) <= 1000}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &total <- [%#shillel0] (0 : uint32) ] s1
@@ -2180,9 +2161,9 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
     | bb3 = bb4
     | bb4 = bb4
       [ bb4 = {[@expl:loop invariant] [%#shillel5] UInt32.to_int total
-        <= sum_range'0 (shallow_model'0 s) 0 (Seq.length (shallow_model'0 s))}
+        <= sum_range'0 (view'0 s) 0 (Seq.length (view'0 s))}
         {[@expl:loop invariant] [%#shillel4] UInt32.to_int total
-        = sum_range'0 (shallow_model'0 s) 0 (Seq.length (Snapshot.inner produced))}
+        = sum_range'0 (view'0 s) 0 (Seq.length (Snapshot.inner produced))}
         {[@expl:loop invariant] [%#shillel3] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
         {[@expl:loop invariant] [%#shillel3] inv'1 iter}
         {[@expl:loop invariant] [%#shillel3] inv'0 (Snapshot.inner produced)}
@@ -2220,9 +2201,7 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
          ]
       
     | bb9 = s0
-      [ s0 = {[@expl:assertion] [%#shillel7] UInt32.to_int total
-        = sum_range'0 (shallow_model'0 s) 0 (Seq.length (shallow_model'0 s))}
-        s1
+      [ s0 = {[@expl:assertion] [%#shillel7] UInt32.to_int total = sum_range'0 (view'0 s) 0 (Seq.length (view'0 s))} s1
       | s1 =  [ &min_i <- [%#shillel8] (0 : usize) ] s2
       | s2 =  [ &min_dist <- total ] s3
       | s3 =  [ &sum <- [%#shillel9] (0 : uint32) ] s4
@@ -2240,14 +2219,13 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
     | bb16 = bb16
       [ bb16 = {[@expl:loop invariant] [%#shillel13] forall j : int . 0 <= j
         /\ j < Seq.length (Snapshot.inner produced1)
-         -> score'0 (shallow_model'0 s) (UIntSize.to_int min_i) <= score'0 (shallow_model'0 s) j}
-        {[@expl:loop invariant] [%#shillel17] UInt32.to_int min_dist
-        = score'0 (shallow_model'0 s) (UIntSize.to_int min_i)}
+         -> score'0 (view'0 s) (UIntSize.to_int min_i) <= score'0 (view'0 s) j}
+        {[@expl:loop invariant] [%#shillel17] UInt32.to_int min_dist = score'0 (view'0 s) (UIntSize.to_int min_i)}
         {[@expl:loop invariant] [%#shillel16] UIntSize.to_int min_i <= Seq.length (Snapshot.inner produced1)
-        /\ UIntSize.to_int min_i < Seq.length (shallow_model'0 s)}
+        /\ UIntSize.to_int min_i < Seq.length (view'0 s)}
         {[@expl:loop invariant] [%#shillel15] UInt32.to_int sum <= UInt32.to_int total}
         {[@expl:loop invariant] [%#shillel14] UInt32.to_int sum
-        = sum_range'0 (shallow_model'0 s) 0 (Seq.length (Snapshot.inner produced1))}
+        = sum_range'0 (view'0 s) 0 (Seq.length (Snapshot.inner produced1))}
         {[@expl:loop invariant] [%#shillel13] produces'1 (Snapshot.inner iter_old1) (Snapshot.inner produced1) iter1}
         {[@expl:loop invariant] [%#shillel13] inv'3 iter1}
         {[@expl:loop invariant] [%#shillel13] inv'2 (Snapshot.inner produced1)}
@@ -2340,11 +2318,10 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
     | & _73 : usize = any_l ()
     | & _74 : bool = any_l () ]
     
-    [ return' (result:usize)-> {[@expl:postcondition] [%#shillel23] forall i : int . 0 <= i
-      /\ i < Seq.length (shallow_model'0 s)
-       -> score'0 (shallow_model'0 s) (UIntSize.to_int result) <= score'0 (shallow_model'0 s) i}
+    [ return' (result:usize)-> {[@expl:postcondition] [%#shillel23] forall i : int . 0 <= i /\ i < Seq.length (view'0 s)
+       -> score'0 (view'0 s) (UIntSize.to_int result) <= score'0 (view'0 s) i}
       {[@expl:postcondition] [%#shillel22] 0 <= UIntSize.to_int result
-      /\ UIntSize.to_int result < Seq.length (shallow_model'0 s)}
+      /\ UIntSize.to_int result < Seq.length (view'0 s)}
       (! return' {result}) ]
     
 end

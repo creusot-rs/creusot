@@ -12,7 +12,7 @@
   - [Mutable borrows](representation_of_types/mutable_borrows.md)
 - [Pearlite](./pearlite.md)
 - [Logic functions](logic_functions.md)
-- [Shallow model](./shallow_model.md)
+- [Views as models of types](./view.md)
 - [Termination](./termination.md)
 - [Snapshots](snapshots.md)
 - [Ghost code](ghost.md)

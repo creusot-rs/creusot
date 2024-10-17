@@ -141,13 +141,13 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
   let%span span31 = "../../../creusot-contracts/src/std/slice.rs" 140 8 140 96
   let%span span32 = "../../../creusot-contracts/src/std/slice.rs" 133 20 133 37
   let%span span33 = "../../../creusot-contracts/src/std/slice.rs" 126 20 126 37
-  let%span span34 = "../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span34 = "../../../creusot-contracts/src/model.rs" 109 8 109 22
   let%span span35 = "../../../creusot-contracts/src/std/vec.rs" 155 27 155 46
   let%span span36 = "../../../creusot-contracts/src/std/vec.rs" 156 26 156 54
   let%span span37 = "../../../creusot-contracts/src/std/vec.rs" 157 26 157 57
   let%span span38 = "../../../creusot-contracts/src/std/vec.rs" 158 26 158 62
   let%span span39 = "../../../creusot-contracts/src/std/vec.rs" 159 26 159 55
-  let%span span40 = "../../../creusot-contracts/src/model.rs" 90 8 90 31
+  let%span span40 = "../../../creusot-contracts/src/model.rs" 91 8 91 22
   let%span span41 = "../../../creusot-contracts/src/std/vec.rs" 165 27 165 46
   let%span span42 = "../../../creusot-contracts/src/std/vec.rs" 166 26 166 54
   let%span span43 = "../../../creusot-contracts/src/std/iter/range.rs" 15 12 15 78
@@ -253,13 +253,13 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'0 (self : Vec'0.t_Vec bool (Global'0.t_Global)) : Seq.seq bool
+  function view'0 (self : Vec'0.t_Vec bool (Global'0.t_Global)) : Seq.seq bool
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec bool (Global'0.t_Global) . [%#span18] Seq.length (shallow_model'0 self)
+  axiom view'0_spec : forall self : Vec'0.t_Vec bool (Global'0.t_Global) . [%#span18] Seq.length (view'0 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'3 (self : Vec'0.t_Vec bool (Global'0.t_Global)) =
-    [%#span19] inv'12 (shallow_model'0 self)
+    [%#span19] inv'12 (view'0 self)
   
   axiom inv_axiom'3 [@rewrite] : forall x : Vec'0.t_Vec bool (Global'0.t_Global) [inv'3 x] . inv'3 x = true
   
@@ -341,31 +341,29 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq bool) =
     [%#span33] UIntSize.to_int self < Seq.length seq
   
-  function shallow_model'2 (self : borrowed (Vec'0.t_Vec bool (Global'0.t_Global))) : Seq.seq bool =
-    [%#span34] shallow_model'0 self.current
+  function view'2 (self : borrowed (Vec'0.t_Vec bool (Global'0.t_Global))) : Seq.seq bool =
+    [%#span34] view'0 self.current
   
   let rec index_mut'0 (self:borrowed (Vec'0.t_Vec bool (Global'0.t_Global))) (index:usize) (return'  (ret:borrowed bool))= {[@expl:precondition] inv'7 index}
     {[@expl:precondition] inv'9 self}
-    {[@expl:precondition] [%#span35] in_bounds'0 index (shallow_model'2 self)}
+    {[@expl:precondition] [%#span35] in_bounds'0 index (view'2 self)}
     any
     [ return' (result:borrowed bool)-> {inv'10 result}
-      {[%#span39] Seq.length (shallow_model'0 self.final) = Seq.length (shallow_model'2 self)}
-      {[%#span38] resolve_elswhere'0 index (shallow_model'2 self) (shallow_model'0 self.final)}
-      {[%#span37] has_value'0 index (shallow_model'0 self.final) result.final}
-      {[%#span36] has_value'0 index (shallow_model'2 self) result.current}
+      {[%#span39] Seq.length (view'0 self.final) = Seq.length (view'2 self)}
+      {[%#span38] resolve_elswhere'0 index (view'2 self) (view'0 self.final)}
+      {[%#span37] has_value'0 index (view'0 self.final) result.final}
+      {[%#span36] has_value'0 index (view'2 self) result.current}
       (! return' {result}) ]
     
   
-  function shallow_model'1 (self : Vec'0.t_Vec bool (Global'0.t_Global)) : Seq.seq bool =
-    [%#span40] shallow_model'0 self
+  function view'1 (self : Vec'0.t_Vec bool (Global'0.t_Global)) : Seq.seq bool =
+    [%#span40] view'0 self
   
   let rec index'0 (self:Vec'0.t_Vec bool (Global'0.t_Global)) (index:usize) (return'  (ret:bool))= {[@expl:precondition] inv'7 index}
     {[@expl:precondition] inv'6 self}
-    {[@expl:precondition] [%#span41] in_bounds'0 index (shallow_model'1 self)}
+    {[@expl:precondition] [%#span41] in_bounds'0 index (view'1 self)}
     any
-    [ return' (result:bool)-> {inv'8 result}
-      {[%#span42] has_value'0 index (shallow_model'1 self) result}
-      (! return' {result}) ]
+    [ return' (result:bool)-> {inv'8 result} {[%#span42] has_value'0 index (view'1 self) result} (! return' {result}) ]
     
   
   use seq.Seq
@@ -416,13 +414,13 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
     
   
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec bool (Global'0.t_Global)) (ix : int) : bool =
-    [%#span48] Seq.get (shallow_model'0 self) ix
+    [%#span48] Seq.get (view'0 self) ix
   
   let rec from_elem'0 (elem:bool) (n:usize) (return'  (ret:Vec'0.t_Vec bool (Global'0.t_Global)))= {[@expl:precondition] inv'2 elem}
     any
     [ return' (result:Vec'0.t_Vec bool (Global'0.t_Global))-> {inv'3 result}
       {[%#span50] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
-      {[%#span49] Seq.length (shallow_model'0 result) = UIntSize.to_int n}
+      {[%#span49] Seq.length (view'0 result) = UIntSize.to_int n}
       (! return' {result}) ]
     
   
@@ -444,7 +442,7 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
     | bb4 = bb5
     | bb5 = bb6
     | bb6 = bb6
-      [ bb6 = {[@expl:loop invariant] [%#s100doors7] Seq.length (shallow_model'0 door_open) = 100}
+      [ bb6 = {[@expl:loop invariant] [%#s100doors7] Seq.length (view'0 door_open) = 100}
         {[@expl:loop invariant] [%#s100doors6] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
         {[@expl:loop invariant] [%#s100doors6] inv'1 iter}
         {[@expl:loop invariant] [%#s100doors6] inv'0 (Snapshot.inner produced)}
@@ -483,7 +481,7 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
           
         | bb14 = bb15
         | bb15 = bb15
-          [ bb15 = {[@expl:loop invariant] [%#s100doors10] Seq.length (shallow_model'0 door_open) = 100}
+          [ bb15 = {[@expl:loop invariant] [%#s100doors10] Seq.length (view'0 door_open) = 100}
             {[@expl:loop invariant] [%#s100doors9] 1 <= UIntSize.to_int door
             /\ UIntSize.to_int door <= 100 + UIntSize.to_int pass}
             (! s0) [ s0 = bb16 ] 

@@ -96,7 +96,7 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
   let%span span4 = "../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
   let%span span5 = "../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   let%span span6 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
-  let%span span7 = "../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span7 = "../../../creusot-contracts/src/model.rs" 109 8 109 22
   let%span span8 = "../../../creusot-contracts/src/std/vec.rs" 94 26 99 17
   
   use prelude.prelude.UInt32
@@ -137,13 +137,13 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'0 (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) : Seq.seq uint32
+  function view'0 (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) : Seq.seq uint32
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec uint32 (Global'0.t_Global) . [%#span3] Seq.length (shallow_model'0 self)
+  axiom view'0_spec : forall self : Vec'0.t_Vec uint32 (Global'0.t_Global) . [%#span3] Seq.length (view'0 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'2 (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) =
-    [%#span4] inv'3 (shallow_model'0 self)
+    [%#span4] inv'3 (view'0 self)
   
   predicate inv'2 (_1 : Vec'0.t_Vec uint32 (Global'0.t_Global))
   
@@ -176,17 +176,16 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
   
   use seq.Seq
   
-  function shallow_model'1 (self : borrowed (Vec'0.t_Vec uint32 (Global'0.t_Global))) : Seq.seq uint32 =
-    [%#span7] shallow_model'0 self.current
+  function view'1 (self : borrowed (Vec'0.t_Vec uint32 (Global'0.t_Global))) : Seq.seq uint32 =
+    [%#span7] view'0 self.current
   
   let rec pop'0 (self:borrowed (Vec'0.t_Vec uint32 (Global'0.t_Global))) (return'  (ret:Option'0.t_Option uint32))= {[@expl:precondition] inv'0 self}
     any
     [ return' (result:Option'0.t_Option uint32)-> {inv'1 result}
       {[%#span8] match result with
-        | Option'0.C_Some t -> shallow_model'0 self.final
-        = Seq.([..]) (shallow_model'1 self) 0 (Seq.length (shallow_model'1 self) - 1)
-        /\ shallow_model'1 self = Seq.snoc (shallow_model'0 self.final) t
-        | Option'0.C_None -> self.current = self.final /\ Seq.length (shallow_model'1 self) = 0
+        | Option'0.C_Some t -> view'0 self.final = Seq.([..]) (view'1 self) 0 (Seq.length (view'1 self) - 1)
+        /\ view'1 self = Seq.snoc (view'0 self.final) t
+        | Option'0.C_None -> self.current = self.final /\ Seq.length (view'1 self) = 0
         end}
       (! return' {result}) ]
     

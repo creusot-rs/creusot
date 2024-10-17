@@ -34,7 +34,7 @@ module M_hashmap__qyi9060063638777358169__hash [#"hashmap.rs" 60 4 60 25] (* <us
   let%span shashmap0 = "hashmap.rs" 59 14 59 58
   let%span span1 = "hashmap.rs" 66 20 66 21
   let%span span2 = "../../../creusot-contracts/src/std/num.rs" 22 16 22 35
-  let%span span3 = "../../../creusot-contracts/src/model.rs" 81 8 81 28
+  let%span span3 = "../../../creusot-contracts/src/model.rs" 82 8 82 28
   
   use prelude.prelude.Int
   
@@ -235,14 +235,13 @@ module M_hashmap__qyi7664122466964245986__new [#"hashmap.rs" 116 4 116 46] (* My
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'1 (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) : Seq.seq (List'0.t_List (k, v))
-    
+  function view'1 (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) : Seq.seq (List'0.t_List (k, v))
   
-  axiom shallow_model'1_spec : forall self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global) . [%#span5] Seq.length (shallow_model'1 self)
+  axiom view'1_spec : forall self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global) . [%#span5] Seq.length (view'1 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'1 (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) =
-    [%#span6] inv'5 (shallow_model'1 self)
+    [%#span6] inv'5 (view'1 self)
   
   predicate inv'2 (_1 : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global))
   
@@ -284,7 +283,7 @@ module M_hashmap__qyi7664122466964245986__new [#"hashmap.rs" 116 4 116 46] (* My
   use T_hashmap__MyHashMap as MyHashMap'0
   
   function bucket_ix'0 [#"hashmap.rs" 90 4 90 48] (self : MyHashMap'0.t_MyHashMap k v) (k : t_DeepModelTy'0) : int =
-    [%#span9] EuclideanDivision.mod (hash_log'0 k) (Seq.length (shallow_model'1 (T_hashmap__MyHashMap.t_MyHashMap__buckets self)))
+    [%#span9] EuclideanDivision.mod (hash_log'0 k) (Seq.length (view'1 (T_hashmap__MyHashMap.t_MyHashMap__buckets self)))
   
   predicate good_bucket'0 [#"hashmap.rs" 95 4 95 57] (self : MyHashMap'0.t_MyHashMap k v) (l : List'0.t_List (k, v)) (h : int)
     
@@ -296,11 +295,11 @@ module M_hashmap__qyi7664122466964245986__new [#"hashmap.rs" 116 4 116 46] (* My
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) (ix : int) : List'0.t_List (k, v)
     
    =
-    [%#span11] Seq.get (shallow_model'1 self) ix
+    [%#span11] Seq.get (view'1 self) ix
   
   predicate invariant'0 [#"hashmap.rs" 105 4 105 30] (self : MyHashMap'0.t_MyHashMap k v) =
-    [%#span12] 0 < Seq.length (shallow_model'1 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
-    /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model'1 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
+    [%#span12] 0 < Seq.length (view'1 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
+    /\ (forall i : int . 0 <= i /\ i < Seq.length (view'1 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
      -> good_bucket'0 self (index_logic'0 (T_hashmap__MyHashMap.t_MyHashMap__buckets self) i) i
     /\ no_double_binding'0 (index_logic'0 (T_hashmap__MyHashMap.t_MyHashMap__buckets self) i))
   
@@ -323,7 +322,7 @@ module M_hashmap__qyi7664122466964245986__new [#"hashmap.rs" 116 4 116 46] (* My
   
   use map.Map
   
-  function shallow_model'0 [#"hashmap.rs" 79 4 79 50] (self : MyHashMap'0.t_MyHashMap k v) : Map.map t_DeepModelTy'0 (Option'0.t_Option v)
+  function view'0 [#"hashmap.rs" 79 4 79 33] (self : MyHashMap'0.t_MyHashMap k v) : Map.map t_DeepModelTy'0 (Option'0.t_Option v)
     
    =
     [%#span14] Mapping.from_fn (fun (k : t_DeepModelTy'0) -> get'0 (bucket'0 self k) k)
@@ -334,7 +333,7 @@ module M_hashmap__qyi7664122466964245986__new [#"hashmap.rs" 116 4 116 46] (* My
     any
     [ return' (result:Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global))-> {inv'2 result}
       {[%#span16] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
-      {[%#span15] Seq.length (shallow_model'1 result) = UIntSize.to_int n}
+      {[%#span15] Seq.length (view'1 result) = UIntSize.to_int n}
       (! return' {result}) ]
     
   
@@ -359,8 +358,7 @@ module M_hashmap__qyi7664122466964245986__new [#"hashmap.rs" 116 4 116 46] (* My
     | & _6 : List'0.t_List (k, v) = any_l () ]
     
     [ return' (result:MyHashMap'0.t_MyHashMap k v)-> {[@expl:postcondition] [%#shashmap2] inv'0 result}
-      {[@expl:postcondition] [%#shashmap1] forall i : t_DeepModelTy'0 . Map.get (shallow_model'0 result) i
-      = Option'0.C_None}
+      {[@expl:postcondition] [%#shashmap1] forall i : t_DeepModelTy'0 . Map.get (view'0 result) i = Option'0.C_None}
       (! return' {result}) ]
     
 end
@@ -394,9 +392,9 @@ module M_hashmap__qyi7664122466964245986__add [#"hashmap.rs" 122 4 122 41] (* My
   let%span span22 = "../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
   let%span span23 = "hashmap.rs" 86 8 86 53
   let%span span24 = "hashmap.rs" 80 8 80 33
-  let%span span25 = "../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span25 = "../../../creusot-contracts/src/model.rs" 109 8 109 22
   let%span span26 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
-  let%span span27 = "../../../creusot-contracts/src/model.rs" 81 8 81 28
+  let%span span27 = "../../../creusot-contracts/src/model.rs" 82 8 82 28
   let%span span28 = "../../../creusot-contracts/src/std/cmp.rs" 11 26 11 75
   let%span span29 = "../../../creusot-contracts/src/std/slice.rs" 140 8 140 96
   let%span span30 = "../../../creusot-contracts/src/std/slice.rs" 133 20 133 37
@@ -408,7 +406,7 @@ module M_hashmap__qyi7664122466964245986__add [#"hashmap.rs" 122 4 122 41] (* My
   let%span span36 = "../../../creusot-contracts/src/std/vec.rs" 159 26 159 55
   let%span span37 = "hashmap.rs" 52 13 52 17
   let%span span38 = "hashmap.rs" 51 14 51 58
-  let%span span39 = "../../../creusot-contracts/src/model.rs" 90 8 90 31
+  let%span span39 = "../../../creusot-contracts/src/model.rs" 91 8 91 22
   let%span span40 = "../../../creusot-contracts/src/std/vec.rs" 86 26 86 48
   
   use T_alloc__alloc__Global as Global'0
@@ -453,10 +451,9 @@ module M_hashmap__qyi7664122466964245986__add [#"hashmap.rs" 122 4 122 41] (* My
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'4 (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) : Seq.seq (List'0.t_List (k, v))
-    
+  function view'4 (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) : Seq.seq (List'0.t_List (k, v))
   
-  axiom shallow_model'4_spec : forall self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global) . [%#span13] Seq.length (shallow_model'4 self)
+  axiom view'4_spec : forall self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global) . [%#span13] Seq.length (view'4 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   use T_hashmap__MyHashMap as T_hashmap__MyHashMap
@@ -466,7 +463,7 @@ module M_hashmap__qyi7664122466964245986__add [#"hashmap.rs" 122 4 122 41] (* My
   use T_hashmap__MyHashMap as MyHashMap'0
   
   function bucket_ix'0 [#"hashmap.rs" 90 4 90 48] (self : MyHashMap'0.t_MyHashMap k v) (k : t_DeepModelTy'0) : int =
-    [%#span14] EuclideanDivision.mod (hash_log'0 k) (Seq.length (shallow_model'4 (T_hashmap__MyHashMap.t_MyHashMap__buckets self)))
+    [%#span14] EuclideanDivision.mod (hash_log'0 k) (Seq.length (view'4 (T_hashmap__MyHashMap.t_MyHashMap__buckets self)))
   
   predicate good_bucket'0 [#"hashmap.rs" 95 4 95 57] (self : MyHashMap'0.t_MyHashMap k v) (l : List'0.t_List (k, v)) (h : int)
     
@@ -478,11 +475,11 @@ module M_hashmap__qyi7664122466964245986__add [#"hashmap.rs" 122 4 122 41] (* My
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) (ix : int) : List'0.t_List (k, v)
     
    =
-    [%#span16] Seq.get (shallow_model'4 self) ix
+    [%#span16] Seq.get (view'4 self) ix
   
   predicate invariant'14 [#"hashmap.rs" 105 4 105 30] (self : MyHashMap'0.t_MyHashMap k v) =
-    [%#span17] 0 < Seq.length (shallow_model'4 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
-    /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model'4 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
+    [%#span17] 0 < Seq.length (view'4 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
+    /\ (forall i : int . 0 <= i /\ i < Seq.length (view'4 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
      -> good_bucket'0 self (index_logic'0 (T_hashmap__MyHashMap.t_MyHashMap__buckets self) i) i
     /\ no_double_binding'0 (index_logic'0 (T_hashmap__MyHashMap.t_MyHashMap__buckets self) i))
   
@@ -591,7 +588,7 @@ module M_hashmap__qyi7664122466964245986__add [#"hashmap.rs" 122 4 122 41] (* My
     end
   
   predicate invariant'0 (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) =
-    [%#span22] inv'15 (shallow_model'4 self)
+    [%#span22] inv'15 (view'4 self)
   
   axiom inv_axiom'0 [@rewrite] : forall x : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global) [inv'0 x] . inv'0 x
   = invariant'0 x
@@ -605,15 +602,13 @@ module M_hashmap__qyi7664122466964245986__add [#"hashmap.rs" 122 4 122 41] (* My
   
   use map.Map
   
-  function shallow_model'0 [#"hashmap.rs" 79 4 79 50] (self : MyHashMap'0.t_MyHashMap k v) : Map.map t_DeepModelTy'0 (Option'0.t_Option v)
+  function view'0 [#"hashmap.rs" 79 4 79 33] (self : MyHashMap'0.t_MyHashMap k v) : Map.map t_DeepModelTy'0 (Option'0.t_Option v)
     
    =
     [%#span24] Mapping.from_fn (fun (k : t_DeepModelTy'0) -> get'0 (bucket'0 self k) k)
   
-  function shallow_model'1 (self : borrowed (MyHashMap'0.t_MyHashMap k v)) : Map.map t_DeepModelTy'0 (Option'0.t_Option v)
-    
-   =
-    [%#span25] shallow_model'0 self.current
+  function view'1 (self : borrowed (MyHashMap'0.t_MyHashMap k v)) : Map.map t_DeepModelTy'0 (Option'0.t_Option v) =
+    [%#span25] view'0 self.current
   
   use map.Map
   
@@ -682,20 +677,20 @@ module M_hashmap__qyi7664122466964245986__add [#"hashmap.rs" 122 4 122 41] (* My
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq (List'0.t_List (k, v))) =
     [%#span31] UIntSize.to_int self < Seq.length seq
   
-  function shallow_model'3 (self : borrowed (Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global))) : Seq.seq (List'0.t_List (k, v))
+  function view'3 (self : borrowed (Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global))) : Seq.seq (List'0.t_List (k, v))
     
    =
-    [%#span25] shallow_model'4 self.current
+    [%#span25] view'4 self.current
   
   let rec index_mut'0 (self:borrowed (Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global))) (index:usize) (return'  (ret:borrowed (List'0.t_List (k, v))))= {[@expl:precondition] inv'13 index}
     {[@expl:precondition] inv'12 self}
-    {[@expl:precondition] [%#span32] in_bounds'0 index (shallow_model'3 self)}
+    {[@expl:precondition] [%#span32] in_bounds'0 index (view'3 self)}
     any
     [ return' (result:borrowed (List'0.t_List (k, v)))-> {inv'2 result}
-      {[%#span36] Seq.length (shallow_model'4 self.final) = Seq.length (shallow_model'3 self)}
-      {[%#span35] resolve_elswhere'0 index (shallow_model'3 self) (shallow_model'4 self.final)}
-      {[%#span34] has_value'0 index (shallow_model'4 self.final) result.final}
-      {[%#span33] has_value'0 index (shallow_model'3 self) result.current}
+      {[%#span36] Seq.length (view'4 self.final) = Seq.length (view'3 self)}
+      {[%#span35] resolve_elswhere'0 index (view'3 self) (view'4 self.final)}
+      {[%#span34] has_value'0 index (view'4 self.final) result.final}
+      {[%#span33] has_value'0 index (view'3 self) result.current}
       (! return' {result}) ]
     
   
@@ -709,15 +704,12 @@ module M_hashmap__qyi7664122466964245986__add [#"hashmap.rs" 122 4 122 41] (* My
       (! return' {result}) ]
     
   
-  function shallow_model'2 (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) : Seq.seq (List'0.t_List (k, v))
-    
-   =
-    [%#span39] shallow_model'4 self
+  function view'2 (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) : Seq.seq (List'0.t_List (k, v)) =
+    [%#span39] view'4 self
   
   let rec len'0 (self:Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] inv'10 self}
     any
-    [ return' (result:usize)-> {[%#span40] UIntSize.to_int result = Seq.length (shallow_model'2 self)}
-      (! return' {result}) ]
+    [ return' (result:usize)-> {[%#span40] UIntSize.to_int result = Seq.length (view'2 self)} (! return' {result}) ]
     
   
   use prelude.prelude.Snapshot
@@ -933,8 +925,8 @@ module M_hashmap__qyi7664122466964245986__add [#"hashmap.rs" 122 4 122 41] (* My
     | & _48 : (k, v) = any_l ()
     | & _52 : List'0.t_List (k, v) = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#shashmap10] forall i : t_DeepModelTy'0 . Map.get (shallow_model'0 self.final) i
-      = (if i = deep_model'0 key then Option'0.C_Some val' else Map.get (shallow_model'1 self) i)}
+    [ return' (result:())-> {[@expl:postcondition] [%#shashmap10] forall i : t_DeepModelTy'0 . Map.get (view'0 self.final) i
+      = (if i = deep_model'0 key then Option'0.C_Some val' else Map.get (view'1 self) i)}
       (! return' {result}) ]
     
 end
@@ -963,8 +955,8 @@ module M_hashmap__qyi7664122466964245986__get [#"hashmap.rs" 154 4 154 43] (* My
   let%span span17 = "../../../creusot-contracts/src/invariant.rs" 24 8 24 18
   let%span span18 = "hashmap.rs" 86 8 86 53
   let%span span19 = "hashmap.rs" 80 8 80 33
-  let%span span20 = "../../../creusot-contracts/src/model.rs" 90 8 90 31
-  let%span span21 = "../../../creusot-contracts/src/model.rs" 81 8 81 28
+  let%span span20 = "../../../creusot-contracts/src/model.rs" 91 8 91 22
+  let%span span21 = "../../../creusot-contracts/src/model.rs" 82 8 82 28
   let%span span22 = "../../../creusot-contracts/src/std/cmp.rs" 11 26 11 75
   let%span span23 = "../../../creusot-contracts/src/std/slice.rs" 133 20 133 37
   let%span span24 = "../../../creusot-contracts/src/std/slice.rs" 126 20 126 37
@@ -1018,14 +1010,13 @@ module M_hashmap__qyi7664122466964245986__get [#"hashmap.rs" 154 4 154 43] (* My
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'3 (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) : Seq.seq (List'0.t_List (k, v))
-    
+  function view'3 (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) : Seq.seq (List'0.t_List (k, v))
   
-  axiom shallow_model'3_spec : forall self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global) . [%#span9] Seq.length (shallow_model'3 self)
+  axiom view'3_spec : forall self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global) . [%#span9] Seq.length (view'3 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'8 (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) =
-    [%#span10] inv'14 (shallow_model'3 self)
+    [%#span10] inv'14 (view'3 self)
   
   predicate inv'10 (_1 : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global))
   
@@ -1061,7 +1052,7 @@ module M_hashmap__qyi7664122466964245986__get [#"hashmap.rs" 154 4 154 43] (* My
   use T_hashmap__MyHashMap as MyHashMap'0
   
   function bucket_ix'0 [#"hashmap.rs" 90 4 90 48] (self : MyHashMap'0.t_MyHashMap k v) (k : t_DeepModelTy'0) : int =
-    [%#span13] EuclideanDivision.mod (hash_log'0 k) (Seq.length (shallow_model'3 (T_hashmap__MyHashMap.t_MyHashMap__buckets self)))
+    [%#span13] EuclideanDivision.mod (hash_log'0 k) (Seq.length (view'3 (T_hashmap__MyHashMap.t_MyHashMap__buckets self)))
   
   predicate good_bucket'0 [#"hashmap.rs" 95 4 95 57] (self : MyHashMap'0.t_MyHashMap k v) (l : List'0.t_List (k, v)) (h : int)
     
@@ -1073,11 +1064,11 @@ module M_hashmap__qyi7664122466964245986__get [#"hashmap.rs" 154 4 154 43] (* My
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) (ix : int) : List'0.t_List (k, v)
     
    =
-    [%#span15] Seq.get (shallow_model'3 self) ix
+    [%#span15] Seq.get (view'3 self) ix
   
   predicate invariant'7 [#"hashmap.rs" 105 4 105 30] (self : MyHashMap'0.t_MyHashMap k v) =
-    [%#span16] 0 < Seq.length (shallow_model'3 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
-    /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model'3 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
+    [%#span16] 0 < Seq.length (view'3 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
+    /\ (forall i : int . 0 <= i /\ i < Seq.length (view'3 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
      -> good_bucket'0 self (index_logic'0 (T_hashmap__MyHashMap.t_MyHashMap__buckets self) i) i
     /\ no_double_binding'0 (index_logic'0 (T_hashmap__MyHashMap.t_MyHashMap__buckets self) i))
   
@@ -1156,13 +1147,13 @@ module M_hashmap__qyi7664122466964245986__get [#"hashmap.rs" 154 4 154 43] (* My
   
   use map.Map
   
-  function shallow_model'2 [#"hashmap.rs" 79 4 79 50] (self : MyHashMap'0.t_MyHashMap k v) : Map.map t_DeepModelTy'0 (Option'0.t_Option v)
+  function view'2 [#"hashmap.rs" 79 4 79 33] (self : MyHashMap'0.t_MyHashMap k v) : Map.map t_DeepModelTy'0 (Option'0.t_Option v)
     
    =
     [%#span19] Mapping.from_fn (fun (k : t_DeepModelTy'0) -> get'0 (bucket'0 self k) k)
   
-  function shallow_model'0 (self : MyHashMap'0.t_MyHashMap k v) : Map.map t_DeepModelTy'0 (Option'0.t_Option v) =
-    [%#span20] shallow_model'2 self
+  function view'0 (self : MyHashMap'0.t_MyHashMap k v) : Map.map t_DeepModelTy'0 (Option'0.t_Option v) =
+    [%#span20] view'2 self
   
   use prelude.prelude.Intrinsic
   
@@ -1183,24 +1174,21 @@ module M_hashmap__qyi7664122466964245986__get [#"hashmap.rs" 154 4 154 43] (* My
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq (List'0.t_List (k, v))) =
     [%#span24] UIntSize.to_int self < Seq.length seq
   
-  function shallow_model'1 (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) : Seq.seq (List'0.t_List (k, v))
-    
-   =
-    [%#span20] shallow_model'3 self
+  function view'1 (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) : Seq.seq (List'0.t_List (k, v)) =
+    [%#span20] view'3 self
   
   let rec index'0 (self:Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) (index:usize) (return'  (ret:List'0.t_List (k, v)))= {[@expl:precondition] inv'6 index}
     {[@expl:precondition] inv'5 self}
-    {[@expl:precondition] [%#span25] in_bounds'0 index (shallow_model'1 self)}
+    {[@expl:precondition] [%#span25] in_bounds'0 index (view'1 self)}
     any
     [ return' (result:List'0.t_List (k, v))-> {inv'0 result}
-      {[%#span26] has_value'0 index (shallow_model'1 self) result}
+      {[%#span26] has_value'0 index (view'1 self) result}
       (! return' {result}) ]
     
   
   let rec len'0 (self:Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] inv'5 self}
     any
-    [ return' (result:usize)-> {[%#span27] UIntSize.to_int result = Seq.length (shallow_model'1 self)}
-      (! return' {result}) ]
+    [ return' (result:usize)-> {[%#span27] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ]
     
   
   use prelude.prelude.UInt64
@@ -1284,8 +1272,8 @@ module M_hashmap__qyi7664122466964245986__get [#"hashmap.rs" 154 4 154 43] (* My
     
     [ return' (result:Option'0.t_Option v)-> {[@expl:postcondition] [%#shashmap6] inv'3 result}
       {[@expl:postcondition] [%#shashmap5] match result with
-        | Option'0.C_Some v -> Map.get (shallow_model'0 self) (deep_model'0 key) = Option'0.C_Some v
-        | Option'0.C_None -> Map.get (shallow_model'0 self) (deep_model'0 key) = Option'0.C_None
+        | Option'0.C_Some v -> Map.get (view'0 self) (deep_model'0 key) = Option'0.C_Some v
+        | Option'0.C_None -> Map.get (view'0 self) (deep_model'0 key) = Option'0.C_None
         end}
       (! return' {result}) ]
     
@@ -1327,7 +1315,7 @@ module M_hashmap__qyi7664122466964245986__resize [#"hashmap.rs" 173 4 173 24] (*
   let%span span29 = "hashmap.rs" 106 8 109 9
   let%span span30 = "hashmap.rs" 86 8 86 53
   let%span span31 = "hashmap.rs" 80 8 80 33
-  let%span span32 = "../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span32 = "../../../creusot-contracts/src/model.rs" 109 8 109 22
   let%span span33 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   let%span span34 = "hashmap.rs" 122 20 122 24
   let%span span35 = "hashmap.rs" 122 26 122 29
@@ -1343,8 +1331,8 @@ module M_hashmap__qyi7664122466964245986__resize [#"hashmap.rs" 173 4 173 24] (*
   let%span span45 = "../../../creusot-contracts/src/std/vec.rs" 157 26 157 57
   let%span span46 = "../../../creusot-contracts/src/std/vec.rs" 158 26 158 62
   let%span span47 = "../../../creusot-contracts/src/std/vec.rs" 159 26 159 55
-  let%span span48 = "../../../creusot-contracts/src/model.rs" 90 8 90 31
-  let%span span49 = "../../../creusot-contracts/src/snapshot.rs" 27 20 27 48
+  let%span span48 = "../../../creusot-contracts/src/model.rs" 91 8 91 22
+  let%span span49 = "../../../creusot-contracts/src/snapshot.rs" 27 20 27 39
   let%span span50 = "hashmap.rs" 114 15 114 24
   let%span span51 = "hashmap.rs" 115 4 115 64
   let%span span52 = "hashmap.rs" 116 31 116 46
@@ -1431,14 +1419,13 @@ module M_hashmap__qyi7664122466964245986__resize [#"hashmap.rs" 173 4 173 24] (*
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'2 (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) : Seq.seq (List'0.t_List (k, v))
-    
+  function view'2 (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) : Seq.seq (List'0.t_List (k, v))
   
-  axiom shallow_model'2_spec : forall self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global) . [%#span22] Seq.length (shallow_model'2 self)
+  axiom view'2_spec : forall self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global) . [%#span22] Seq.length (view'2 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'2 (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) =
-    [%#span23] inv'12 (shallow_model'2 self)
+    [%#span23] inv'12 (view'2 self)
   
   axiom inv_axiom'2 [@rewrite] : forall x : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global) [inv'2 x] . inv'2 x
   = invariant'2 x
@@ -1472,7 +1459,7 @@ module M_hashmap__qyi7664122466964245986__resize [#"hashmap.rs" 173 4 173 24] (*
   use T_hashmap__MyHashMap as MyHashMap'0
   
   function bucket_ix'0 [#"hashmap.rs" 90 4 90 48] (self : MyHashMap'0.t_MyHashMap k v) (k : t_DeepModelTy'0) : int =
-    [%#span26] EuclideanDivision.mod (hash_log'0 k) (Seq.length (shallow_model'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets self)))
+    [%#span26] EuclideanDivision.mod (hash_log'0 k) (Seq.length (view'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets self)))
   
   predicate good_bucket'0 [#"hashmap.rs" 95 4 95 57] (self : MyHashMap'0.t_MyHashMap k v) (l : List'0.t_List (k, v)) (h : int)
     
@@ -1484,11 +1471,11 @@ module M_hashmap__qyi7664122466964245986__resize [#"hashmap.rs" 173 4 173 24] (*
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) (ix : int) : List'0.t_List (k, v)
     
    =
-    [%#span28] Seq.get (shallow_model'2 self) ix
+    [%#span28] Seq.get (view'2 self) ix
   
   predicate invariant'1 [#"hashmap.rs" 105 4 105 30] (self : MyHashMap'0.t_MyHashMap k v) =
-    [%#span29] 0 < Seq.length (shallow_model'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
-    /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
+    [%#span29] 0 < Seq.length (view'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
+    /\ (forall i : int . 0 <= i /\ i < Seq.length (view'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
      -> good_bucket'0 self (index_logic'0 (T_hashmap__MyHashMap.t_MyHashMap__buckets self) i) i
     /\ no_double_binding'0 (index_logic'0 (T_hashmap__MyHashMap.t_MyHashMap__buckets self) i))
   
@@ -1516,15 +1503,13 @@ module M_hashmap__qyi7664122466964245986__resize [#"hashmap.rs" 173 4 173 24] (*
   
   use map.Map
   
-  function shallow_model'1 [#"hashmap.rs" 79 4 79 50] (self : MyHashMap'0.t_MyHashMap k v) : Map.map t_DeepModelTy'0 (Option'0.t_Option v)
+  function view'1 [#"hashmap.rs" 79 4 79 33] (self : MyHashMap'0.t_MyHashMap k v) : Map.map t_DeepModelTy'0 (Option'0.t_Option v)
     
    =
     [%#span31] Mapping.from_fn (fun (k : t_DeepModelTy'0) -> get'0 (bucket'0 self k) k)
   
-  function shallow_model'3 (self : borrowed (MyHashMap'0.t_MyHashMap k v)) : Map.map t_DeepModelTy'0 (Option'0.t_Option v)
-    
-   =
-    [%#span32] shallow_model'1 self.current
+  function view'3 (self : borrowed (MyHashMap'0.t_MyHashMap k v)) : Map.map t_DeepModelTy'0 (Option'0.t_Option v) =
+    [%#span32] view'1 self.current
   
   use prelude.prelude.Snapshot
   
@@ -1542,8 +1527,8 @@ module M_hashmap__qyi7664122466964245986__resize [#"hashmap.rs" 173 4 173 24] (*
     {[@expl:precondition] [%#span35] inv'8 key}
     {[@expl:precondition] [%#span34] inv'0 self}
     any
-    [ return' (result:())-> {[%#span37] forall i : t_DeepModelTy'0 . Map.get (shallow_model'1 self.final) i
-      = (if i = deep_model'0 key then Option'0.C_Some val' else Map.get (shallow_model'3 self) i)}
+    [ return' (result:())-> {[%#span37] forall i : t_DeepModelTy'0 . Map.get (view'1 self.final) i
+      = (if i = deep_model'0 key then Option'0.C_Some val' else Map.get (view'3 self) i)}
       (! return' {result}) ]
     
   
@@ -1578,52 +1563,47 @@ module M_hashmap__qyi7664122466964245986__resize [#"hashmap.rs" 173 4 173 24] (*
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq (List'0.t_List (k, v))) =
     [%#span42] UIntSize.to_int self < Seq.length seq
   
-  function shallow_model'6 (self : borrowed (Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global))) : Seq.seq (List'0.t_List (k, v))
+  function view'6 (self : borrowed (Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global))) : Seq.seq (List'0.t_List (k, v))
     
    =
-    [%#span32] shallow_model'2 self.current
+    [%#span32] view'2 self.current
   
   let rec index_mut'0 (self:borrowed (Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global))) (index:usize) (return'  (ret:borrowed (List'0.t_List (k, v))))= {[@expl:precondition] inv'7 index}
     {[@expl:precondition] inv'6 self}
-    {[@expl:precondition] [%#span43] in_bounds'0 index (shallow_model'6 self)}
+    {[@expl:precondition] [%#span43] in_bounds'0 index (view'6 self)}
     any
     [ return' (result:borrowed (List'0.t_List (k, v)))-> {inv'4 result}
-      {[%#span47] Seq.length (shallow_model'2 self.final) = Seq.length (shallow_model'6 self)}
-      {[%#span46] resolve_elswhere'0 index (shallow_model'6 self) (shallow_model'2 self.final)}
-      {[%#span45] has_value'0 index (shallow_model'2 self.final) result.final}
-      {[%#span44] has_value'0 index (shallow_model'6 self) result.current}
+      {[%#span47] Seq.length (view'2 self.final) = Seq.length (view'6 self)}
+      {[%#span46] resolve_elswhere'0 index (view'6 self) (view'2 self.final)}
+      {[%#span45] has_value'0 index (view'2 self.final) result.final}
+      {[%#span44] has_value'0 index (view'6 self) result.current}
       (! return' {result}) ]
     
   
-  function shallow_model'5 (self : borrowed (MyHashMap'0.t_MyHashMap k v)) : Map.map t_DeepModelTy'0 (Option'0.t_Option v)
-    
-   =
-    [%#span48] shallow_model'3 self
+  function view'5 (self : borrowed (MyHashMap'0.t_MyHashMap k v)) : Map.map t_DeepModelTy'0 (Option'0.t_Option v) =
+    [%#span48] view'3 self
   
   use prelude.prelude.Snapshot
   
-  function shallow_model'0 (self : Snapshot.snap_ty (borrowed (MyHashMap'0.t_MyHashMap k v))) : Map.map t_DeepModelTy'0 (Option'0.t_Option v)
+  function view'0 (self : Snapshot.snap_ty (borrowed (MyHashMap'0.t_MyHashMap k v))) : Map.map t_DeepModelTy'0 (Option'0.t_Option v)
     
    =
-    [%#span49] shallow_model'5 (Snapshot.inner self)
+    [%#span49] view'5 (Snapshot.inner self)
   
   let rec new'0 (size:usize) (return'  (ret:MyHashMap'0.t_MyHashMap k v))= {[@expl:precondition] [%#span50] 0
     < UIntSize.to_int size}
     any
     [ return' (result:MyHashMap'0.t_MyHashMap k v)-> {[%#span52] inv'1 result}
-      {[%#span51] forall i : t_DeepModelTy'0 . Map.get (shallow_model'1 result) i = Option'0.C_None}
+      {[%#span51] forall i : t_DeepModelTy'0 . Map.get (view'1 result) i = Option'0.C_None}
       (! return' {result}) ]
     
   
-  function shallow_model'4 (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) : Seq.seq (List'0.t_List (k, v))
-    
-   =
-    [%#span48] shallow_model'2 self
+  function view'4 (self : Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) : Seq.seq (List'0.t_List (k, v)) =
+    [%#span48] view'2 self
   
   let rec len'0 (self:Vec'0.t_Vec (List'0.t_List (k, v)) (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] inv'5 self}
     any
-    [ return' (result:usize)-> {[%#span53] UIntSize.to_int result = Seq.length (shallow_model'4 self)}
-      (! return' {result}) ]
+    [ return' (result:usize)-> {[%#span53] UIntSize.to_int result = Seq.length (view'4 self)} (! return' {result}) ]
     
   
   use prelude.prelude.Snapshot
@@ -1631,7 +1611,7 @@ module M_hashmap__qyi7664122466964245986__resize [#"hashmap.rs" 173 4 173 24] (*
   meta "compute_max_steps" 1000000
   
   let rec resize (self:borrowed (MyHashMap'0.t_MyHashMap k v)) (return'  (ret:()))= {[%#shashmap16] inv'0 self}
-    {[%#shashmap15] Seq.length (shallow_model'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets self.current)) < 1000}
+    {[%#shashmap15] Seq.length (view'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets self.current)) < 1000}
     (! bb0
     [ bb0 = s0 [ s0 =  [ &old_self <- [%#shashmap0] Snapshot.new self ] s1 | s1 = bb1 ] 
     | bb1 = s0
@@ -1652,21 +1632,20 @@ module M_hashmap__qyi7664122466964245986__resize [#"hashmap.rs" 173 4 173 24] (*
     | bb7 = bb7
       [ bb7 = {[@expl:loop invariant] (Snapshot.inner old_7_0).final = self.final}
         {[@expl:loop invariant] [%#shashmap7] UIntSize.to_int i
-        <= Seq.length (shallow_model'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets self.current))}
-        {[@expl:loop invariant] [%#shashmap6] Seq.length (shallow_model'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets (Snapshot.inner old_self).current))
-        = Seq.length (shallow_model'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets self.current))}
+        <= Seq.length (view'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets self.current))}
+        {[@expl:loop invariant] [%#shashmap6] Seq.length (view'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets (Snapshot.inner old_self).current))
+        = Seq.length (view'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets self.current))}
         {[@expl:loop invariant] [%#shashmap5] forall j : int . UIntSize.to_int i <= j
-        /\ j
-        < Seq.length (shallow_model'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets (Snapshot.inner old_self).current))
+        /\ j < Seq.length (view'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets (Snapshot.inner old_self).current))
          -> index_logic'0 (T_hashmap__MyHashMap.t_MyHashMap__buckets self.current) j
         = index_logic'0 (T_hashmap__MyHashMap.t_MyHashMap__buckets (Snapshot.inner old_self).current) j}
         {[@expl:loop invariant] [%#shashmap5] forall k : t_DeepModelTy'0 . UIntSize.to_int i
         <= bucket_ix'0 (Snapshot.inner old_self).current k
         /\ bucket_ix'0 (Snapshot.inner old_self).current k
-        <= Seq.length (shallow_model'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets (Snapshot.inner old_self).current))
-         -> Map.get (shallow_model'1 new) k = Option'0.C_None}
+        <= Seq.length (view'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets (Snapshot.inner old_self).current))
+         -> Map.get (view'1 new) k = Option'0.C_None}
         {[@expl:loop invariant] [%#shashmap5] forall k : t_DeepModelTy'0 . bucket_ix'0 (Snapshot.inner old_self).current k
-        < UIntSize.to_int i  -> Map.get (shallow_model'0 old_self) k = Map.get (shallow_model'1 new) k}
+        < UIntSize.to_int i  -> Map.get (view'0 old_self) k = Map.get (view'1 new) k}
         {[@expl:loop invariant] [%#shashmap4] inv'1 new}
         {[@expl:loop invariant] [%#shashmap3] inv'0 self}
         (! s0) [ s0 = bb8 ] 
@@ -1731,18 +1710,18 @@ module M_hashmap__qyi7664122466964245986__resize [#"hashmap.rs" 173 4 173 24] (*
             {[@expl:loop invariant] [%#shashmap11] no_double_binding'0 l}
             {[@expl:loop invariant] [%#shashmap10] forall k : t_DeepModelTy'0 . bucket_ix'0 (Snapshot.inner old_self).current k
             = UIntSize.to_int i
-             -> Map.get (shallow_model'0 old_self) k
+             -> Map.get (view'0 old_self) k
             = match get'0 l k with
-              | Option'0.C_None -> Map.get (shallow_model'1 new) k
+              | Option'0.C_None -> Map.get (view'1 new) k
               | Option'0.C_Some v -> Option'0.C_Some v
               end}
             {[@expl:loop invariant] [%#shashmap10] forall k : t_DeepModelTy'0 . UIntSize.to_int i
             < bucket_ix'0 (Snapshot.inner old_self).current k
             /\ bucket_ix'0 (Snapshot.inner old_self).current k
-            <= Seq.length (shallow_model'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets (Snapshot.inner old_self).current))
-             -> Map.get (shallow_model'1 new) k = Option'0.C_None}
+            <= Seq.length (view'2 (T_hashmap__MyHashMap.t_MyHashMap__buckets (Snapshot.inner old_self).current))
+             -> Map.get (view'1 new) k = Option'0.C_None}
             {[@expl:loop invariant] [%#shashmap10] forall k : t_DeepModelTy'0 . bucket_ix'0 (Snapshot.inner old_self).current k
-            < UIntSize.to_int i  -> Map.get (shallow_model'0 old_self) k = Map.get (shallow_model'1 new) k}
+            < UIntSize.to_int i  -> Map.get (view'0 old_self) k = Map.get (view'1 new) k}
             {[@expl:loop invariant] [%#shashmap9] inv'3 l}
             {[@expl:loop invariant] [%#shashmap8] inv'1 new}
             (! s0) [ s0 = bb21 ] 
@@ -1776,7 +1755,7 @@ module M_hashmap__qyi7664122466964245986__resize [#"hashmap.rs" 173 4 173 24] (*
         | bb28 = s0
           [ s0 = {[@expl:type invariant] inv'3 l} s1
           | s1 = {[@expl:assertion] [%#shashmap13] forall k : t_DeepModelTy'0 . bucket_ix'0 (Snapshot.inner old_self).current k
-            = UIntSize.to_int i  -> Map.get (shallow_model'0 old_self) k = Map.get (shallow_model'1 new) k}
+            = UIntSize.to_int i  -> Map.get (view'0 old_self) k = Map.get (view'1 new) k}
             s2
           | s2 = bb30 ]
           
@@ -1823,8 +1802,8 @@ module M_hashmap__qyi7664122466964245986__resize [#"hashmap.rs" 173 4 173 24] (*
     | & _44 : borrowed (MyHashMap'0.t_MyHashMap k v) = any_l ()
     | & old_7_0 : Snapshot.snap_ty (borrowed (MyHashMap'0.t_MyHashMap k v)) = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#shashmap17] forall k : t_DeepModelTy'0 . Map.get (shallow_model'1 self.final) k
-      = Map.get (shallow_model'3 self) k}
+    [ return' (result:())-> {[@expl:postcondition] [%#shashmap17] forall k : t_DeepModelTy'0 . Map.get (view'1 self.final) k
+      = Map.get (view'3 self) k}
       (! return' {result}) ]
     
 end
@@ -1863,12 +1842,12 @@ module M_hashmap__main [#"hashmap.rs" 213 0 213 13]
   let%span span31 = "hashmap.rs" 106 8 109 9
   let%span span32 = "hashmap.rs" 86 8 86 53
   let%span span33 = "hashmap.rs" 80 8 80 33
-  let%span span34 = "../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span34 = "../../../creusot-contracts/src/model.rs" 109 8 109 22
   let%span span35 = "hashmap.rs" 122 20 122 24
   let%span span36 = "hashmap.rs" 122 26 122 29
   let%span span37 = "hashmap.rs" 122 34 122 37
   let%span span38 = "hashmap.rs" 121 4 121 124
-  let%span span39 = "../../../creusot-contracts/src/model.rs" 90 8 90 31
+  let%span span39 = "../../../creusot-contracts/src/model.rs" 91 8 91 22
   let%span span40 = "hashmap.rs" 154 16 154 20
   let%span span41 = "hashmap.rs" 154 22 154 25
   let%span span42 = "hashmap.rs" 150 14 153 5
@@ -1917,14 +1896,14 @@ module M_hashmap__main [#"hashmap.rs" 213 0 213 13]
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'3 (self : Vec'0.t_Vec (List'0.t_List (usize, isize)) (Global'0.t_Global)) : Seq.seq (List'0.t_List (usize, isize))
+  function view'3 (self : Vec'0.t_Vec (List'0.t_List (usize, isize)) (Global'0.t_Global)) : Seq.seq (List'0.t_List (usize, isize))
     
   
-  axiom shallow_model'3_spec : forall self : Vec'0.t_Vec (List'0.t_List (usize, isize)) (Global'0.t_Global) . [%#span20] Seq.length (shallow_model'3 self)
+  axiom view'3_spec : forall self : Vec'0.t_Vec (List'0.t_List (usize, isize)) (Global'0.t_Global) . [%#span20] Seq.length (view'3 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'6 (self : Vec'0.t_Vec (List'0.t_List (usize, isize)) (Global'0.t_Global)) =
-    [%#span21] inv'7 (shallow_model'3 self)
+    [%#span21] inv'7 (view'3 self)
   
   predicate inv'6 (_1 : Vec'0.t_Vec (List'0.t_List (usize, isize)) (Global'0.t_Global))
   
@@ -1993,7 +1972,7 @@ module M_hashmap__main [#"hashmap.rs" 213 0 213 13]
     [%#span27] x
   
   function bucket_ix'0 [#"hashmap.rs" 90 4 90 48] (self : MyHashMap'0.t_MyHashMap usize isize) (k : int) : int =
-    [%#span28] EuclideanDivision.mod (hash_log'0 k) (Seq.length (shallow_model'3 (T_hashmap__MyHashMap.t_MyHashMap__buckets self)))
+    [%#span28] EuclideanDivision.mod (hash_log'0 k) (Seq.length (view'3 (T_hashmap__MyHashMap.t_MyHashMap__buckets self)))
   
   predicate good_bucket'0 [#"hashmap.rs" 95 4 95 57] (self : MyHashMap'0.t_MyHashMap usize isize) (l : List'0.t_List (usize, isize)) (h : int)
     
@@ -2005,11 +1984,11 @@ module M_hashmap__main [#"hashmap.rs" 213 0 213 13]
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec (List'0.t_List (usize, isize)) (Global'0.t_Global)) (ix : int) : List'0.t_List (usize, isize)
     
    =
-    [%#span30] Seq.get (shallow_model'3 self) ix
+    [%#span30] Seq.get (view'3 self) ix
   
   predicate invariant'0 [#"hashmap.rs" 105 4 105 30] (self : MyHashMap'0.t_MyHashMap usize isize) =
-    [%#span31] 0 < Seq.length (shallow_model'3 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
-    /\ (forall i : int . 0 <= i /\ i < Seq.length (shallow_model'3 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
+    [%#span31] 0 < Seq.length (view'3 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
+    /\ (forall i : int . 0 <= i /\ i < Seq.length (view'3 (T_hashmap__MyHashMap.t_MyHashMap__buckets self))
      -> good_bucket'0 self (index_logic'0 (T_hashmap__MyHashMap.t_MyHashMap__buckets self) i) i
     /\ no_double_binding'0 (index_logic'0 (T_hashmap__MyHashMap.t_MyHashMap__buckets self) i))
   
@@ -2030,15 +2009,13 @@ module M_hashmap__main [#"hashmap.rs" 213 0 213 13]
    =
     [%#span32] index_logic'0 (T_hashmap__MyHashMap.t_MyHashMap__buckets self) (bucket_ix'0 self k)
   
-  function shallow_model'0 [#"hashmap.rs" 79 4 79 50] (self : MyHashMap'0.t_MyHashMap usize isize) : Map.map int (Option'0.t_Option isize)
+  function view'0 [#"hashmap.rs" 79 4 79 33] (self : MyHashMap'0.t_MyHashMap usize isize) : Map.map int (Option'0.t_Option isize)
     
    =
     [%#span33] Mapping.from_fn (fun (k : int) -> get'1 (bucket'0 self k) k)
   
-  function shallow_model'2 (self : borrowed (MyHashMap'0.t_MyHashMap usize isize)) : Map.map int (Option'0.t_Option isize)
-    
-   =
-    [%#span34] shallow_model'0 self.current
+  function view'2 (self : borrowed (MyHashMap'0.t_MyHashMap usize isize)) : Map.map int (Option'0.t_Option isize) =
+    [%#span34] view'0 self.current
   
   use map.Map
   
@@ -2046,21 +2023,21 @@ module M_hashmap__main [#"hashmap.rs" 213 0 213 13]
     {[@expl:precondition] [%#span36] inv'2 key}
     {[@expl:precondition] [%#span35] inv'4 self}
     any
-    [ return' (result:())-> {[%#span38] forall i : int . Map.get (shallow_model'0 self.final) i
-      = (if i = deep_model'0 key then Option'0.C_Some val' else Map.get (shallow_model'2 self) i)}
+    [ return' (result:())-> {[%#span38] forall i : int . Map.get (view'0 self.final) i
+      = (if i = deep_model'0 key then Option'0.C_Some val' else Map.get (view'2 self) i)}
       (! return' {result}) ]
     
   
-  function shallow_model'1 (self : MyHashMap'0.t_MyHashMap usize isize) : Map.map int (Option'0.t_Option isize) =
-    [%#span39] shallow_model'0 self
+  function view'1 (self : MyHashMap'0.t_MyHashMap usize isize) : Map.map int (Option'0.t_Option isize) =
+    [%#span39] view'0 self
   
   let rec get'0 (self:MyHashMap'0.t_MyHashMap usize isize) (key:usize) (return'  (ret:Option'0.t_Option isize))= {[@expl:precondition] [%#span41] inv'2 key}
     {[@expl:precondition] [%#span40] inv'1 self}
     any
     [ return' (result:Option'0.t_Option isize)-> {[%#span43] inv'3 result}
       {[%#span42] match result with
-        | Option'0.C_Some v -> Map.get (shallow_model'1 self) (deep_model'0 key) = Option'0.C_Some v
-        | Option'0.C_None -> Map.get (shallow_model'1 self) (deep_model'0 key) = Option'0.C_None
+        | Option'0.C_Some v -> Map.get (view'1 self) (deep_model'0 key) = Option'0.C_Some v
+        | Option'0.C_None -> Map.get (view'1 self) (deep_model'0 key) = Option'0.C_None
         end}
       (! return' {result}) ]
     
@@ -2069,7 +2046,7 @@ module M_hashmap__main [#"hashmap.rs" 213 0 213 13]
     < UIntSize.to_int size}
     any
     [ return' (result:MyHashMap'0.t_MyHashMap usize isize)-> {[%#span46] inv'0 result}
-      {[%#span45] forall i : int . Map.get (shallow_model'0 result) i = Option'0.C_None}
+      {[%#span45] forall i : int . Map.get (view'0 result) i = Option'0.C_None}
       (! return' {result}) ]
     
   
@@ -2235,7 +2212,7 @@ module M_hashmap__qyi9060063638777358169 [#"hashmap.rs" 58 0 58 19] (* <usize as
   let%span span1 = "../../../creusot-contracts/src/invariant.rs" 24 8 24 18
   let%span span2 = "hashmap.rs" 66 20 66 21
   let%span span3 = "../../../creusot-contracts/src/std/num.rs" 22 16 22 35
-  let%span span4 = "../../../creusot-contracts/src/model.rs" 81 8 81 28
+  let%span span4 = "../../../creusot-contracts/src/model.rs" 82 8 82 28
   
   use prelude.prelude.UIntSize
   
@@ -2275,7 +2252,7 @@ module M_hashmap__qyi9060063638777358169 [#"hashmap.rs" 58 0 58 19] (* <usize as
    -> (forall result : uint64 . UInt64.to_int result = hash_log'0 (deep_model'0 self)
    -> UInt64.to_int result = hash_log'0 (deep_model'0 self))
 end
-module M_hashmap__qyi10210256948696255965 [#"hashmap.rs" 74 0 74 49] (* <MyHashMap<K, V> as creusot_contracts::ShallowModel> *)
+module M_hashmap__qyi11215855950510163561 [#"hashmap.rs" 74 0 74 41] (* <MyHashMap<K, V> as creusot_contracts::View> *)
   type k
   
   type v

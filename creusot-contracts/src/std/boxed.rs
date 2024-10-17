@@ -10,12 +10,12 @@ impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
     }
 }
 
-impl<T: ShallowModel + ?Sized, A: Allocator> ShallowModel for Box<T, A> {
-    type ShallowModelTy = T::ShallowModelTy;
+impl<T: View + ?Sized, A: Allocator> View for Box<T, A> {
+    type ViewTy = T::ViewTy;
     #[logic]
     #[open]
-    fn shallow_model(self) -> Self::ShallowModelTy {
-        (*self).shallow_model()
+    fn view(self) -> Self::ViewTy {
+        (*self).view()
     }
 }
 
