@@ -251,7 +251,7 @@ mod base_prelude {
     pub use crate::{
         ghost::GhostBox,
         logic::{IndexLogic as _, Int, OrdLogic, Seq},
-        model::{DeepModel, ShallowModel},
+        model::{DeepModel, View},
         resolve::*,
         snapshot::Snapshot,
         std::{

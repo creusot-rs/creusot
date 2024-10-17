@@ -54,12 +54,12 @@ impl<T: ?Sized> DerefMut for GhostBox<T> {
     }
 }
 
-impl<T: ShallowModel + ?Sized> ShallowModel for GhostBox<T> {
-    type ShallowModelTy = T::ShallowModelTy;
+impl<T: View + ?Sized> View for GhostBox<T> {
+    type ViewTy = T::ViewTy;
     #[logic]
     #[open]
-    fn shallow_model(self) -> Self::ShallowModelTy {
-        self.0.shallow_model()
+    fn view(self) -> Self::ViewTy {
+        self.0.view()
     }
 }
 

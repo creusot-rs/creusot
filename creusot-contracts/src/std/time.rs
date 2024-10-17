@@ -4,14 +4,14 @@ pub use ::std::{
     time::*,
 };
 
-impl ShallowModel for Duration {
-    type ShallowModelTy = Int;
+impl View for Duration {
+    type ViewTy = Int;
 
     #[logic]
     #[open(self)]
     #[trusted]
     #[ensures(result >= 0 && result <= secs_to_nanos(u64::MAX@) + 999_999_999)]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { absurd }
     }
 }
@@ -22,7 +22,7 @@ impl DeepModel for Duration {
     #[logic]
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
-        self.shallow_model()
+        self.view()
     }
 }
 
@@ -49,14 +49,14 @@ pub fn secs_to_nanos(secs: Int) -> Int {
     secs * 1_000_000_000
 }
 
-impl ShallowModel for Instant {
-    type ShallowModelTy = Int;
+impl View for Instant {
+    type ViewTy = Int;
 
     #[logic]
     #[open(self)]
     #[trusted]
     #[ensures(result >= 0)]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { absurd }
     }
 }
@@ -67,7 +67,7 @@ impl DeepModel for Instant {
     #[logic]
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
-        self.shallow_model()
+        self.view()
     }
 }
 

@@ -10,7 +10,7 @@ It can be seen as a pure, immutable fragment of Rust which has access to a few a
 
 - Base Rust expressions: matching, function calls, let bindings, binary and unary operators, tuples, structs and enums, projections, primitive casts, and dereferencing
 - Logical Expressions: quantifiers (`forall` and `exists`), logical implication `==>`, _logical_ equality `a == b`, labels <!-- TODO: explain labels -->
-- Rust specific logical expressions: access to the **final** value of a mutable reference `^`, access to the [shallow model](./shallow_model.md) of an object `@`
+- Rust specific logical expressions: access to the **final** value of a mutable reference `^`, access to the [view](./view.md) of an object `@`
 
 ## Logical implication
 

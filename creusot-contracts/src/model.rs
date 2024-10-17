@@ -2,14 +2,15 @@ use ::std::{rc::Rc, sync::Arc};
 
 use crate::*;
 
-/// The shallow model of a type is typically used to specify a data
-/// structure. This kind of model is mostly useful for notation purposes,
+/// The view of a type is its logical model as typically used to specify a data
+/// structure. It is typically "shallow", and does not involve the model of
+/// other types contained by the datastructure.
+/// This kind of model is mostly useful for notation purposes,
 /// because this trait is linked to the @ notation of pearlite.
-/// Models of inner types are typically not involved.
-pub trait ShallowModel {
-    type ShallowModelTy;
+pub trait View {
+    type ViewTy;
     #[logic]
-    fn shallow_model(self) -> Self::ShallowModelTy;
+    fn view(self) -> Self::ViewTy;
 }
 
 pub use crate::base_macros::DeepModel;
@@ -29,27 +30,27 @@ impl<T: DeepModel> DeepModel for Rc<T> {
     #[logic]
     #[open]
     fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { self.shallow_model().deep_model() }
+        pearlite! { self.view().deep_model() }
     }
 }
 
-impl<T> ShallowModel for Rc<T> {
-    type ShallowModelTy = T;
+impl<T> View for Rc<T> {
+    type ViewTy = T;
     #[logic]
     #[open]
     #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { absurd }
     }
 }
 
-impl ShallowModel for str {
-    type ShallowModelTy = Seq<char>;
+impl View for str {
+    type ViewTy = Seq<char>;
 
     #[logic]
     #[open]
     #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { absurd }
     }
 }
@@ -63,12 +64,12 @@ impl<T: DeepModel> DeepModel for Arc<T> {
     }
 }
 
-impl<T> ShallowModel for Arc<T> {
-    type ShallowModelTy = T;
+impl<T> View for Arc<T> {
+    type ViewTy = T;
     #[logic]
     #[open]
     #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { absurd }
     }
 }
@@ -82,12 +83,12 @@ impl<T: DeepModel + ?Sized> DeepModel for &T {
     }
 }
 
-impl<T: ShallowModel + ?Sized> ShallowModel for &T {
-    type ShallowModelTy = T::ShallowModelTy;
+impl<T: View + ?Sized> View for &T {
+    type ViewTy = T::ViewTy;
     #[logic]
     #[open]
-    fn shallow_model(self) -> Self::ShallowModelTy {
-        (*self).shallow_model()
+    fn view(self) -> Self::ViewTy {
+        (*self).view()
     }
 }
 
@@ -100,12 +101,12 @@ impl<T: DeepModel + ?Sized> DeepModel for &mut T {
     }
 }
 
-impl<T: ShallowModel + ?Sized> ShallowModel for &mut T {
-    type ShallowModelTy = T::ShallowModelTy;
+impl<T: View + ?Sized> View for &mut T {
+    type ViewTy = T::ViewTy;
     #[logic]
     #[open]
-    fn shallow_model(self) -> Self::ShallowModelTy {
-        (*self).shallow_model()
+    fn view(self) -> Self::ViewTy {
+        (*self).view()
     }
 }
 
@@ -119,13 +120,13 @@ impl DeepModel for bool {
     }
 }
 
-impl ShallowModel for String {
-    type ShallowModelTy = Seq<char>;
+impl View for String {
+    type ViewTy = Seq<char>;
 
     #[logic]
     #[open(self)]
     #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { absurd }
     }
 }

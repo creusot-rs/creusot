@@ -7,13 +7,13 @@ pub struct Formula {
     b: bool,
 }
 
-impl ShallowModel for Formula {
-    type ShallowModelTy = (Seq<usize>, bool);
+impl View for Formula {
+    type ViewTy = (Seq<usize>, bool);
 
     #[logic]
     #[open]
-    fn shallow_model(self) -> Self::ShallowModelTy {
-        (self.vec.shallow_model(), self.b)
+    fn view(self) -> Self::ViewTy {
+        (self.vec.view(), self.b)
     }
 }
 

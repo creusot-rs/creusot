@@ -26,14 +26,14 @@ pub struct GhostPtrTokenMut<'a, T: ?Sized>(PhantomData<&'a mut T>);
 /// Thin wrapper over a raw pointer managed by a [`GhostPtr`]
 pub type GhostPtr<T> = *const T;
 
-impl<T: ?Sized> ShallowModel for GhostPtrToken<T> {
-    type ShallowModelTy = FMap<GhostPtr<T>, T>;
+impl<T: ?Sized> View for GhostPtrToken<T> {
+    type ViewTy = FMap<GhostPtr<T>, T>;
 
     #[trusted]
     #[logic]
     #[ensures(result.get(GhostPtr::null_logic()) == None)]
     #[open(self)]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         absurd
     }
 }
@@ -160,14 +160,14 @@ impl<T: ?Sized> GhostPtrExt<T> for GhostPtr<T> {
     }
 }
 
-impl<'a, T: ?Sized> ShallowModel for GhostPtrTokenRef<'a, T> {
-    type ShallowModelTy = FMap<GhostPtr<T>, T>;
+impl<'a, T: ?Sized> View for GhostPtrTokenRef<'a, T> {
+    type ViewTy = FMap<GhostPtr<T>, T>;
 
     #[trusted]
     #[logic]
     #[open(self)]
     #[ensures(result.get(GhostPtr::null_logic()) == None)]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         absurd
     }
 }

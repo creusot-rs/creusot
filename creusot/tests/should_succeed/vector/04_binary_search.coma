@@ -113,7 +113,7 @@ module M_04_binary_search__binary_search [#"04_binary_search.rs" 26 0 26 71]
   let%span span20 = "04_binary_search.rs" 16 4 16 31
   let%span span21 = "../../../../creusot-contracts/src/std/slice.rs" 133 20 133 37
   let%span span22 = "../../../../creusot-contracts/src/std/slice.rs" 126 20 126 37
-  let%span span23 = "../../../../creusot-contracts/src/model.rs" 90 8 90 31
+  let%span span23 = "../../../../creusot-contracts/src/model.rs" 91 8 91 22
   let%span span24 = "../../../../creusot-contracts/src/std/vec.rs" 165 27 165 46
   let%span span25 = "../../../../creusot-contracts/src/std/vec.rs" 166 26 166 54
   let%span span26 = "../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
@@ -157,13 +157,13 @@ module M_04_binary_search__binary_search [#"04_binary_search.rs" 26 0 26 71]
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'1 (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) : Seq.seq uint32
+  function view'1 (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) : Seq.seq uint32
   
-  axiom shallow_model'1_spec : forall self : Vec'0.t_Vec uint32 (Global'0.t_Global) . [%#span16] Seq.length (shallow_model'1 self)
+  axiom view'1_spec : forall self : Vec'0.t_Vec uint32 (Global'0.t_Global) . [%#span16] Seq.length (view'1 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'3 (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) =
-    [%#span17] inv'5 (shallow_model'1 self)
+    [%#span17] inv'5 (view'1 self)
   
   predicate inv'3 (_1 : Vec'0.t_Vec uint32 (Global'0.t_Global))
   
@@ -207,33 +207,32 @@ module M_04_binary_search__binary_search [#"04_binary_search.rs" 26 0 26 71]
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq uint32) =
     [%#span22] UIntSize.to_int self < Seq.length seq
   
-  function shallow_model'0 (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) : Seq.seq uint32 =
-    [%#span23] shallow_model'1 self
+  function view'0 (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) : Seq.seq uint32 =
+    [%#span23] view'1 self
   
   let rec index'0 (self:Vec'0.t_Vec uint32 (Global'0.t_Global)) (index:usize) (return'  (ret:uint32))= {[@expl:precondition] inv'1 index}
     {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#span24] in_bounds'0 index (shallow_model'0 self)}
+    {[@expl:precondition] [%#span24] in_bounds'0 index (view'0 self)}
     any
     [ return' (result:uint32)-> {inv'2 result}
-      {[%#span25] has_value'0 index (shallow_model'0 self) result}
+      {[%#span25] has_value'0 index (view'0 self) result}
       (! return' {result}) ]
     
   
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) (ix : int) : uint32 =
-    [%#span26] Seq.get (shallow_model'1 self) ix
+    [%#span26] Seq.get (view'1 self) ix
   
   use T_core__result__Result as Result'0
   
   let rec len'0 (self:Vec'0.t_Vec uint32 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] inv'0 self}
     any
-    [ return' (result:usize)-> {[%#span27] UIntSize.to_int result = Seq.length (shallow_model'0 self)}
-      (! return' {result}) ]
+    [ return' (result:usize)-> {[%#span27] UIntSize.to_int result = Seq.length (view'0 self)} (! return' {result}) ]
     
   
   meta "compute_max_steps" 1000000
   
-  let rec binary_search (arr:Vec'0.t_Vec uint32 (Global'0.t_Global)) (elem:uint32) (return'  (ret:Result'0.t_Result usize usize))= {[%#s04_binary_search10] sorted'0 (shallow_model'0 arr)}
-    {[%#s04_binary_search9] Seq.length (shallow_model'0 arr) <= UIntSize.to_int (v_MAX'0 : usize)}
+  let rec binary_search (arr:Vec'0.t_Vec uint32 (Global'0.t_Global)) (elem:uint32) (return'  (ret:Result'0.t_Result usize usize))= {[%#s04_binary_search10] sorted'0 (view'0 arr)}
+    {[%#s04_binary_search9] Seq.length (view'0 arr) <= UIntSize.to_int (v_MAX'0 : usize)}
     (! bb0
     [ bb0 = s0 [ s0 = len'0 {arr} (fun (_ret':usize) ->  [ &_10 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0
@@ -247,11 +246,11 @@ module M_04_binary_search__binary_search [#"04_binary_search.rs" 26 0 26 71]
       [ bb5 = {[@expl:loop invariant] [%#s04_binary_search4] forall i : usize . UIntSize.to_int base
         + UIntSize.to_int size
         < UIntSize.to_int i
-        /\ UIntSize.to_int i < Seq.length (shallow_model'0 arr)  -> elem < index_logic'0 arr (UIntSize.to_int i)}
+        /\ UIntSize.to_int i < Seq.length (view'0 arr)  -> elem < index_logic'0 arr (UIntSize.to_int i)}
         {[@expl:loop invariant] [%#s04_binary_search4] forall i : usize . i < base
          -> index_logic'0 arr (UIntSize.to_int i) <= elem}
         {[@expl:loop invariant] [%#s04_binary_search3] 0 < UIntSize.to_int size
-        /\ UIntSize.to_int size + UIntSize.to_int base <= Seq.length (shallow_model'0 arr)}
+        /\ UIntSize.to_int size + UIntSize.to_int base <= Seq.length (view'0 arr)}
         (! s0) [ s0 = bb6 ] 
         [ bb6 = s0
           [ s0 = UIntSize.gt {size} {[%#s04_binary_search5] (1 : usize)} (fun (_ret':bool) ->  [ &_21 <- _ret' ] s1)
@@ -325,7 +324,7 @@ module M_04_binary_search__binary_search [#"04_binary_search.rs" 26 0 26 71]
     
     [ return' (result:Result'0.t_Result usize usize)-> {[@expl:postcondition] [%#s04_binary_search13] forall x : usize . result
       = Result'0.C_Err x
-       -> (forall i : usize . x < i /\ UIntSize.to_int i < Seq.length (shallow_model'0 arr)
+       -> (forall i : usize . x < i /\ UIntSize.to_int i < Seq.length (view'0 arr)
        -> elem < index_logic'0 arr (UIntSize.to_int i))}
       {[@expl:postcondition] [%#s04_binary_search12] forall x : usize . result = Result'0.C_Err x
        -> (forall i : usize . i < x  -> index_logic'0 arr (UIntSize.to_int i) <= elem)}

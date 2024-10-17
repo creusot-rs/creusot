@@ -83,10 +83,10 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   let%span span5 = "../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   let%span span6 = "../../../../creusot-contracts/src/invariant.rs" 24 8 24 18
   let%span span7 = "../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
-  let%span span8 = "../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span8 = "../../../../creusot-contracts/src/model.rs" 109 8 109 22
   let%span span9 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   let%span span10 = "../../../../creusot-contracts/src/std/vec.rs" 90 26 90 51
-  let%span span11 = "../../../../creusot-contracts/src/model.rs" 90 8 90 31
+  let%span span11 = "../../../../creusot-contracts/src/model.rs" 91 8 91 22
   let%span span12 = "../../../../creusot-contracts/src/std/vec.rs" 86 26 86 48
   
   use prelude.prelude.UIntSize
@@ -123,13 +123,13 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'2 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
+  function view'2 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
   
-  axiom shallow_model'2_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#span3] Seq.length (shallow_model'2 self)
+  axiom view'2_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#span3] Seq.length (view'2 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'3 (self : Vec'0.t_Vec usize (Global'0.t_Global)) =
-    [%#span4] inv'4 (shallow_model'2 self)
+    [%#span4] inv'4 (view'2 self)
   
   predicate inv'3 (_1 : Vec'0.t_Vec usize (Global'0.t_Global))
   
@@ -156,10 +156,10 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec usize (Global'0.t_Global)) (ix : int) : usize =
-    [%#span7] Seq.get (shallow_model'2 self) ix
+    [%#span7] Seq.get (view'2 self) ix
   
-  function shallow_model'0 (self : borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) : Seq.seq usize =
-    [%#span8] shallow_model'2 self.current
+  function view'0 (self : borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) : Seq.seq usize =
+    [%#span8] view'2 self.current
   
   use prelude.prelude.Intrinsic
   
@@ -173,18 +173,14 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   
   let rec push'0 (self:borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) (value:usize) (return'  (ret:()))= {[@expl:precondition] inv'2 value}
     {[@expl:precondition] inv'1 self}
-    any
-    [ return' (result:())-> {[%#span10] shallow_model'2 self.final = Seq.snoc (shallow_model'0 self) value}
-      (! return' {result}) ]
-    
+    any [ return' (result:())-> {[%#span10] view'2 self.final = Seq.snoc (view'0 self) value} (! return' {result}) ] 
   
-  function shallow_model'1 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize =
-    [%#span11] shallow_model'2 self
+  function view'1 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize =
+    [%#span11] view'2 self
   
   let rec len'0 (self:Vec'0.t_Vec usize (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] inv'0 self}
     any
-    [ return' (result:usize)-> {[%#span12] UIntSize.to_int result = Seq.length (shallow_model'1 self)}
-      (! return' {result}) ]
+    [ return' (result:usize)-> {[%#span12] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ]
     
   
   meta "compute_max_steps" 1000000
@@ -208,8 +204,8 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
     | & _4 : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)) = any_l ()
     | & _5 : usize = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#stwo_phase0] UIntSize.to_int (index_logic'0 v.final (Seq.length (shallow_model'0 v)))
-      = Seq.length (shallow_model'0 v)}
+    [ return' (result:())-> {[@expl:postcondition] [%#stwo_phase0] UIntSize.to_int (index_logic'0 v.final (Seq.length (view'0 v)))
+      = Seq.length (view'0 v)}
       (! return' {result}) ]
     
 end

@@ -71,12 +71,12 @@ struct MyHashMap<K, V> {
     buckets: Vec<List<(K, V)>>,
 }
 
-impl<K: Hash, V> ShallowModel for MyHashMap<K, V> {
-    type ShallowModelTy = Mapping<K::DeepModelTy, Option<V>>;
+impl<K: Hash, V> View for MyHashMap<K, V> {
+    type ViewTy = Mapping<K::DeepModelTy, Option<V>>;
 
     #[open(self)]
     #[logic]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         |k| self.bucket(k).get(k)
     }
 }

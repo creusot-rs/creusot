@@ -73,7 +73,7 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 6 0 6 42]
   let%span span14 = "../../../../creusot-contracts/src/std/slice.rs" 18 20 18 30
   let%span span15 = "../../../../creusot-contracts/src/invariant.rs" 24 8 24 18
   let%span span16 = "../../../../creusot-contracts/src/logic/ops.rs" 42 8 42 31
-  let%span span17 = "../../../../creusot-contracts/src/model.rs" 90 8 90 31
+  let%span span17 = "../../../../creusot-contracts/src/model.rs" 91 8 91 22
   let%span span18 = "../../../../creusot-contracts/src/std/slice.rs" 100 14 100 41
   let%span span19 = "../../../../creusot-contracts/src/std/slice.rs" 101 4 101 82
   let%span span20 = "../../../../creusot-contracts/src/std/slice.rs" 410 12 410 66
@@ -84,7 +84,7 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 6 0 6 42]
   let%span span25 = "../../../../creusot-contracts/src/std/slice.rs" 416 14 416 45
   let%span span26 = "../../../../creusot-contracts/src/std/slice.rs" 414 4 414 10
   let%span span27 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
-  let%span span28 = "../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span28 = "../../../../creusot-contracts/src/model.rs" 109 8 109 22
   let%span span29 = "../../../../creusot-contracts/src/std/slice.rs" 403 20 403 61
   let%span span30 = "../../../../creusot-contracts/src/std/iter.rs" 105 26 108 17
   let%span span31 = "../../../../creusot-contracts/src/std/iter.rs" 90 8 90 19
@@ -128,13 +128,13 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 6 0 6 42]
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'2 (self : slice t) : Seq.seq t
+  function view'2 (self : slice t) : Seq.seq t
   
-  axiom shallow_model'2_spec : forall self : slice t . ([%#span13] shallow_model'2 self = Slice.id self)
-  && ([%#span12] Seq.length (shallow_model'2 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'2_spec : forall self : slice t . ([%#span13] view'2 self = Slice.id self)
+  && ([%#span12] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'5 (self : slice t) =
-    [%#span14] inv'8 (shallow_model'2 self)
+    [%#span14] inv'8 (view'2 self)
   
   predicate inv'6 (_1 : slice t)
   
@@ -180,12 +180,12 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 6 0 6 42]
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : slice t) (ix : int) : t =
-    [%#span16] Seq.get (shallow_model'2 self) ix
+    [%#span16] Seq.get (view'2 self) ix
   
   use seq.Seq
   
-  function shallow_model'0 (self : slice t) : Seq.seq t =
-    [%#span17] shallow_model'2 self
+  function view'0 (self : slice t) : Seq.seq t =
+    [%#span17] view'2 self
   
   use seq.Seq
   
@@ -193,12 +193,12 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 6 0 6 42]
   
   axiom to_ref_seq'0_spec : forall self : slice t . ([%#span19] forall i : int . 0 <= i
   /\ i < Seq.length (to_ref_seq'0 self)  -> Seq.get (to_ref_seq'0 self) i = index_logic'0 self i)
-  && ([%#span18] Seq.length (to_ref_seq'0 self) = Seq.length (shallow_model'0 self))
+  && ([%#span18] Seq.length (to_ref_seq'0 self) = Seq.length (view'0 self))
   
-  function shallow_model'1 (self : Iter'0.t_Iter t) : slice t
+  function view'1 (self : Iter'0.t_Iter t) : slice t
   
   predicate produces'0 (self : Iter'0.t_Iter t) (visited : Seq.seq t) (tl : Iter'0.t_Iter t) =
-    [%#span20] to_ref_seq'0 (shallow_model'1 self) = Seq.(++) visited (to_ref_seq'0 (shallow_model'1 tl))
+    [%#span20] to_ref_seq'0 (view'1 self) = Seq.(++) visited (to_ref_seq'0 (view'1 tl))
   
   function produces_trans'0 (a : Iter'0.t_Iter t) (ab : Seq.seq t) (b : Iter'0.t_Iter t) (bc : Seq.seq t) (c : Iter'0.t_Iter t) : ()
     
@@ -242,11 +242,11 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 6 0 6 42]
   
   use seq.Seq
   
-  function shallow_model'3 (self : borrowed (Iter'0.t_Iter t)) : slice t =
-    [%#span28] shallow_model'1 self.current
+  function view'3 (self : borrowed (Iter'0.t_Iter t)) : slice t =
+    [%#span28] view'1 self.current
   
   predicate completed'0 (self : borrowed (Iter'0.t_Iter t)) =
-    [%#span29] resolve'1 self /\ shallow_model'2 (shallow_model'3 self) = (Seq.empty  : Seq.seq t)
+    [%#span29] resolve'1 self /\ view'2 (view'3 self) = (Seq.empty  : Seq.seq t)
   
   let rec next'0 (self:borrowed (Iter'0.t_Iter t)) (return'  (ret:Option'0.t_Option t))= any
     [ return' (result:Option'0.t_Option t)-> {inv'3 result}
@@ -280,12 +280,12 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 6 0 6 42]
     
   
   let rec iter'0 (self:slice t) (return'  (ret:Iter'0.t_Iter t))= {[@expl:precondition] inv'2 self}
-    any [ return' (result:Iter'0.t_Iter t)-> {[%#span34] shallow_model'1 result = self} (! return' {result}) ] 
+    any [ return' (result:Iter'0.t_Iter t)-> {[%#span34] view'1 result = self} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
   let rec slice_iter (slice:slice t) (return'  (ret:usize))= {[%#s03_std_iterators8] inv'2 slice}
-    {[%#s03_std_iterators7] Seq.length (shallow_model'0 slice) < 1000}
+    {[%#s03_std_iterators7] Seq.length (view'0 slice) < 1000}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &i <- [%#s03_std_iterators0] (0 : usize) ] s1
@@ -349,7 +349,7 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 6 0 6 42]
     | & _23 : Snapshot.snap_ty (Seq.seq t) = any_l () ]
     
     [ return' (result:usize)-> {[@expl:postcondition] [%#s03_std_iterators9] UIntSize.to_int result
-      = Seq.length (shallow_model'0 slice)}
+      = Seq.length (view'0 slice)}
       (! return' {result}) ]
     
 end
@@ -427,7 +427,7 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 17 0 17 41]
   let%span span15 = "../../../../creusot-contracts/src/std/slice.rs" 29 14 29 41
   let%span span16 = "../../../../creusot-contracts/src/std/slice.rs" 30 14 30 42
   let%span span17 = "../../../../creusot-contracts/src/logic/ops.rs" 42 8 42 31
-  let%span span18 = "../../../../creusot-contracts/src/model.rs" 90 8 90 31
+  let%span span18 = "../../../../creusot-contracts/src/model.rs" 91 8 91 22
   let%span span19 = "../../../../creusot-contracts/src/std/slice.rs" 100 14 100 41
   let%span span20 = "../../../../creusot-contracts/src/std/slice.rs" 101 4 101 82
   let%span span21 = "../../../../creusot-contracts/src/std/slice.rs" 410 12 410 66
@@ -438,7 +438,7 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 17 0 17 41]
   let%span span26 = "../../../../creusot-contracts/src/std/slice.rs" 416 14 416 45
   let%span span27 = "../../../../creusot-contracts/src/std/slice.rs" 414 4 414 10
   let%span span28 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
-  let%span span29 = "../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span29 = "../../../../creusot-contracts/src/model.rs" 109 8 109 22
   let%span span30 = "../../../../creusot-contracts/src/std/slice.rs" 403 20 403 61
   let%span span31 = "../../../../creusot-contracts/src/std/iter.rs" 105 26 108 17
   let%span span32 = "../../../../creusot-contracts/src/std/vec.rs" 214 20 214 34
@@ -479,13 +479,13 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 17 0 17 41]
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'2 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
+  function view'2 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
   
-  axiom shallow_model'2_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#span12] Seq.length (shallow_model'2 self)
+  axiom view'2_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#span12] Seq.length (view'2 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'5 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
-    [%#span13] inv'8 (shallow_model'2 self)
+    [%#span13] inv'8 (view'2 self)
   
   predicate inv'6 (_1 : Vec'0.t_Vec t (Global'0.t_Global))
   
@@ -534,18 +534,18 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 17 0 17 41]
   
   use prelude.prelude.Slice
   
-  function shallow_model'5 (self : slice t) : Seq.seq t
+  function view'5 (self : slice t) : Seq.seq t
   
-  axiom shallow_model'5_spec : forall self : slice t . ([%#span16] shallow_model'5 self = Slice.id self)
-  && ([%#span15] Seq.length (shallow_model'5 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'5_spec : forall self : slice t . ([%#span16] view'5 self = Slice.id self)
+  && ([%#span15] Seq.length (view'5 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   function index_logic'0 [@inline:trivial] (self : slice t) (ix : int) : t =
-    [%#span17] Seq.get (shallow_model'5 self) ix
+    [%#span17] Seq.get (view'5 self) ix
   
   use seq.Seq
   
-  function shallow_model'3 (self : slice t) : Seq.seq t =
-    [%#span18] shallow_model'5 self
+  function view'3 (self : slice t) : Seq.seq t =
+    [%#span18] view'5 self
   
   use seq.Seq
   
@@ -553,12 +553,12 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 17 0 17 41]
   
   axiom to_ref_seq'0_spec : forall self : slice t . ([%#span20] forall i : int . 0 <= i
   /\ i < Seq.length (to_ref_seq'0 self)  -> Seq.get (to_ref_seq'0 self) i = index_logic'0 self i)
-  && ([%#span19] Seq.length (to_ref_seq'0 self) = Seq.length (shallow_model'3 self))
+  && ([%#span19] Seq.length (to_ref_seq'0 self) = Seq.length (view'3 self))
   
-  function shallow_model'1 (self : Iter'0.t_Iter t) : slice t
+  function view'1 (self : Iter'0.t_Iter t) : slice t
   
   predicate produces'0 (self : Iter'0.t_Iter t) (visited : Seq.seq t) (tl : Iter'0.t_Iter t) =
-    [%#span21] to_ref_seq'0 (shallow_model'1 self) = Seq.(++) visited (to_ref_seq'0 (shallow_model'1 tl))
+    [%#span21] to_ref_seq'0 (view'1 self) = Seq.(++) visited (to_ref_seq'0 (view'1 tl))
   
   function produces_trans'0 (a : Iter'0.t_Iter t) (ab : Seq.seq t) (b : Iter'0.t_Iter t) (bc : Seq.seq t) (c : Iter'0.t_Iter t) : ()
     
@@ -588,8 +588,8 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 17 0 17 41]
   
   axiom inv_axiom'0 [@rewrite] : forall x : Seq.seq t [inv'0 x] . inv'0 x = invariant'0 x
   
-  function shallow_model'0 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t =
-    [%#span18] shallow_model'2 self
+  function view'0 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t =
+    [%#span18] view'2 self
   
   use prelude.prelude.Snapshot
   
@@ -605,11 +605,11 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 17 0 17 41]
   
   use seq.Seq
   
-  function shallow_model'4 (self : borrowed (Iter'0.t_Iter t)) : slice t =
-    [%#span29] shallow_model'1 self.current
+  function view'4 (self : borrowed (Iter'0.t_Iter t)) : slice t =
+    [%#span29] view'1 self.current
   
   predicate completed'0 (self : borrowed (Iter'0.t_Iter t)) =
-    [%#span30] resolve'1 self /\ shallow_model'5 (shallow_model'4 self) = (Seq.empty  : Seq.seq t)
+    [%#span30] resolve'1 self /\ view'5 (view'4 self) = (Seq.empty  : Seq.seq t)
   
   let rec next'0 (self:borrowed (Iter'0.t_Iter t)) (return'  (ret:Option'0.t_Option t))= any
     [ return' (result:Option'0.t_Option t)-> {inv'3 result}
@@ -631,7 +631,7 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 17 0 17 41]
   use prelude.prelude.Snapshot
   
   predicate into_iter_post'0 (self : Vec'0.t_Vec t (Global'0.t_Global)) (res : Iter'0.t_Iter t) =
-    [%#span32] shallow_model'0 self = shallow_model'3 (shallow_model'1 res)
+    [%#span32] view'0 self = view'3 (view'1 res)
   
   predicate into_iter_pre'0 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
     [%#span33] true
@@ -643,7 +643,7 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 17 0 17 41]
   meta "compute_max_steps" 1000000
   
   let rec vec_iter (vec:Vec'0.t_Vec t (Global'0.t_Global)) (return'  (ret:usize))= {[%#s03_std_iterators8] inv'2 vec}
-    {[%#s03_std_iterators7] Seq.length (shallow_model'0 vec) < 1000}
+    {[%#s03_std_iterators7] Seq.length (view'0 vec) < 1000}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &i <- [%#s03_std_iterators0] (0 : usize) ] s1
@@ -705,7 +705,7 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 17 0 17 41]
     | & _22 : Snapshot.snap_ty (Seq.seq t) = any_l () ]
     
     [ return' (result:usize)-> {[@expl:postcondition] [%#s03_std_iterators9] UIntSize.to_int result
-      = Seq.length (shallow_model'0 vec)}
+      = Seq.length (view'0 vec)}
       (! return' {result}) ]
     
 end
@@ -744,7 +744,7 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 28 0 28 35]
   let%span span13 = "../../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
   let%span span14 = "../../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
   let%span span15 = "../../../../creusot-contracts/src/logic/ops.rs" 42 8 42 31
-  let%span span16 = "../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span16 = "../../../../creusot-contracts/src/model.rs" 109 8 109 22
   let%span span17 = "../../../../creusot-contracts/src/std/slice.rs" 90 14 90 41
   let%span span18 = "../../../../creusot-contracts/src/std/slice.rs" 91 4 91 86
   let%span span19 = "../../../../creusot-contracts/src/std/slice.rs" 433 14 433 50
@@ -819,13 +819,13 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 28 0 28 35]
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'3 (self : slice usize) : Seq.seq usize
+  function view'3 (self : slice usize) : Seq.seq usize
   
-  axiom shallow_model'3_spec : forall self : slice usize . ([%#span11] shallow_model'3 self = Slice.id self)
-  && ([%#span10] Seq.length (shallow_model'3 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'3_spec : forall self : slice usize . ([%#span11] view'3 self = Slice.id self)
+  && ([%#span10] Seq.length (view'3 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'7 (self : slice usize) =
-    [%#span12] inv'9 (shallow_model'3 self)
+    [%#span12] inv'9 (view'3 self)
   
   predicate inv'7 (_1 : slice usize)
   
@@ -833,13 +833,13 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 28 0 28 35]
   
   use T_alloc__vec__Vec as Vec'0
   
-  function shallow_model'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
+  function view'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#span13] Seq.length (shallow_model'0 self)
+  axiom view'0_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#span13] Seq.length (view'0 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'6 (self : Vec'0.t_Vec usize (Global'0.t_Global)) =
-    [%#span14] inv'9 (shallow_model'0 self)
+    [%#span14] inv'9 (view'0 self)
   
   predicate inv'6 (_1 : Vec'0.t_Vec usize (Global'0.t_Global))
   
@@ -879,12 +879,12 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 28 0 28 35]
   use seq.Seq
   
   function index_logic'2 [@inline:trivial] (self : slice usize) (ix : int) : usize =
-    [%#span15] Seq.get (shallow_model'3 self) ix
+    [%#span15] Seq.get (view'3 self) ix
   
   use seq.Seq
   
-  function shallow_model'2 (self : borrowed (slice usize)) : Seq.seq usize =
-    [%#span16] shallow_model'3 self.current
+  function view'2 (self : borrowed (slice usize)) : Seq.seq usize =
+    [%#span16] view'3 self.current
   
   use seq.Seq
   
@@ -894,17 +894,17 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 28 0 28 35]
   /\ i < Seq.length (to_mut_seq'0 self)
    -> Seq.get (to_mut_seq'0 self) i
   = Borrow.borrow_logic (index_logic'2 self.current i) (index_logic'2 self.final i) (Borrow.inherit_id (Borrow.get_id self) i))
-  && ([%#span17] Seq.length (to_mut_seq'0 self) = Seq.length (shallow_model'2 self))
+  && ([%#span17] Seq.length (to_mut_seq'0 self) = Seq.length (view'2 self))
   
-  function shallow_model'4 (self : IterMut'0.t_IterMut usize) : borrowed (slice usize)
+  function view'4 (self : IterMut'0.t_IterMut usize) : borrowed (slice usize)
   
-  axiom shallow_model'4_spec : forall self : IterMut'0.t_IterMut usize . [%#span19] Seq.length (shallow_model'3 (shallow_model'4 self).final)
-  = Seq.length (shallow_model'3 (shallow_model'4 self).current)
+  axiom view'4_spec : forall self : IterMut'0.t_IterMut usize . [%#span19] Seq.length (view'3 (view'4 self).final)
+  = Seq.length (view'3 (view'4 self).current)
   
   predicate produces'0 (self : IterMut'0.t_IterMut usize) (visited : Seq.seq (borrowed usize)) (tl : IterMut'0.t_IterMut usize)
     
    =
-    [%#span20] to_mut_seq'0 (shallow_model'4 self) = Seq.(++) visited (to_mut_seq'0 (shallow_model'4 tl))
+    [%#span20] to_mut_seq'0 (view'4 self) = Seq.(++) visited (to_mut_seq'0 (view'4 tl))
   
   predicate inv'1 (_1 : IterMut'0.t_IterMut usize)
   
@@ -938,10 +938,10 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 28 0 28 35]
   axiom inv_axiom'0 [@rewrite] : forall x : Seq.seq (borrowed usize) [inv'0 x] . inv'0 x = true
   
   function index_logic'1 [@inline:trivial] (self : Vec'0.t_Vec usize (Global'0.t_Global)) (ix : int) : usize =
-    [%#span31] Seq.get (shallow_model'0 self) ix
+    [%#span31] Seq.get (view'0 self) ix
   
-  function shallow_model'1 (self : borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) : Seq.seq usize =
-    [%#span16] shallow_model'0 self.current
+  function view'1 (self : borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) : Seq.seq usize =
+    [%#span16] view'0 self.current
   
   use prelude.prelude.Snapshot
   
@@ -954,7 +954,7 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 28 0 28 35]
     resolve'9 _1
   
   predicate resolve'8 (self : IterMut'0.t_IterMut usize) =
-    [%#span33] (shallow_model'4 self).current = (shallow_model'4 self).final
+    [%#span33] (view'4 self).current = (view'4 self).final
   
   predicate resolve'3 (_1 : IterMut'0.t_IterMut usize) =
     resolve'8 _1
@@ -975,11 +975,11 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 28 0 28 35]
   
   use seq.Seq
   
-  function shallow_model'5 (self : borrowed (IterMut'0.t_IterMut usize)) : borrowed (slice usize) =
-    [%#span16] shallow_model'4 self.current
+  function view'5 (self : borrowed (IterMut'0.t_IterMut usize)) : borrowed (slice usize) =
+    [%#span16] view'4 self.current
   
   predicate completed'0 (self : borrowed (IterMut'0.t_IterMut usize)) =
-    [%#span34] resolve'6 self /\ shallow_model'3 (shallow_model'5 self).current = (Seq.empty  : Seq.seq usize)
+    [%#span34] resolve'6 self /\ view'3 (view'5 self).current = (Seq.empty  : Seq.seq usize)
   
   let rec next'0 (self:borrowed (IterMut'0.t_IterMut usize)) (return'  (ret:Option'0.t_Option (borrowed usize)))= any
     [ return' (result:Option'0.t_Option (borrowed usize))-> {inv'4 result}
@@ -1026,15 +1026,13 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 28 0 28 35]
     
   
   let rec iter_mut'0 (self:borrowed (slice usize)) (return'  (ret:IterMut'0.t_IterMut usize))= {[@expl:precondition] inv'3 self}
-    any
-    [ return' (result:IterMut'0.t_IterMut usize)-> {[%#span40] shallow_model'4 result = self} (! return' {result}) ]
-    
+    any [ return' (result:IterMut'0.t_IterMut usize)-> {[%#span40] view'4 result = self} (! return' {result}) ] 
   
   let rec deref_mut'0 (self:borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) (return'  (ret:borrowed (slice usize)))= {[@expl:precondition] inv'2 self}
     any
     [ return' (result:borrowed (slice usize))-> {inv'3 result}
-      {[%#span42] shallow_model'3 result.final = shallow_model'0 self.final}
-      {[%#span41] shallow_model'2 result = shallow_model'1 self}
+      {[%#span42] view'3 result.final = view'0 self.final}
+      {[%#span41] view'2 result = view'1 self}
       (! return' {result}) ]
     
   
@@ -1127,9 +1125,8 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 28 0 28 35]
     | & x : borrowed usize = any_l () ]
     
     [ return' (result:())-> {[@expl:postcondition] [%#s03_std_iterators6] forall i : int . 0 <= i
-      /\ i < Seq.length (shallow_model'1 v)  -> UIntSize.to_int (index_logic'1 v.final i) = 0}
-      {[@expl:postcondition] [%#s03_std_iterators5] Seq.length (shallow_model'0 v.final)
-      = Seq.length (shallow_model'1 v)}
+      /\ i < Seq.length (view'1 v)  -> UIntSize.to_int (index_logic'1 v.final i) = 0}
+      {[@expl:postcondition] [%#s03_std_iterators5] Seq.length (view'0 v.final) = Seq.length (view'1 v)}
       (! return' {result}) ]
     
 end
@@ -1634,7 +1631,7 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 41 0 41 27]
   let%span span11 = "../../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
   let%span span12 = "03_std_iterators.rs" 47 23 47 65
   let%span span13 = "../../../../creusot-contracts/src/logic/ops.rs" 42 8 42 31
-  let%span span14 = "../../../../creusot-contracts/src/model.rs" 90 8 90 31
+  let%span span14 = "../../../../creusot-contracts/src/model.rs" 91 8 91 22
   let%span span15 = "../../../../creusot-contracts/src/std/slice.rs" 100 14 100 41
   let%span span16 = "../../../../creusot-contracts/src/std/slice.rs" 101 4 101 82
   let%span span17 = "../../../../creusot-contracts/src/std/slice.rs" 410 12 410 66
@@ -1650,7 +1647,7 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 41 0 41 27]
   let%span span27 = "../../../../creusot-contracts/src/std/iter/map_inv.rs" 123 8 127 9
   let%span span28 = "../../../../creusot-contracts/src/std/iter/map_inv.rs" 146 8 153 9
   let%span span29 = "../../../../creusot-contracts/src/std/iter/map_inv.rs" 131 4 131 83
-  let%span span30 = "../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span30 = "../../../../creusot-contracts/src/model.rs" 109 8 109 22
   let%span span31 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   let%span span32 = "../../../../creusot-contracts/src/std/slice.rs" 403 20 403 61
   let%span span33 = "../../../../creusot-contracts/src/std/iter/map_inv.rs" 159 8 165 9
@@ -1741,13 +1738,13 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 41 0 41 27]
   
   use seq.Seq
   
-  function shallow_model'4 (self : slice uint32) : Seq.seq uint32
+  function view'4 (self : slice uint32) : Seq.seq uint32
   
-  axiom shallow_model'4_spec : forall self : slice uint32 . ([%#span6] shallow_model'4 self = Slice.id self)
-  && ([%#span5] Seq.length (shallow_model'4 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'4_spec : forall self : slice uint32 . ([%#span6] view'4 self = Slice.id self)
+  && ([%#span5] Seq.length (view'4 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'14 (self : slice uint32) =
-    [%#span7] inv'7 (shallow_model'4 self)
+    [%#span7] inv'7 (view'4 self)
   
   predicate inv'14 (_1 : slice uint32)
   
@@ -1799,13 +1796,13 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 41 0 41 27]
   
   use T_alloc__vec__Vec as Vec'0
   
-  function shallow_model'0 (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) : Seq.seq uint32
+  function view'0 (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) : Seq.seq uint32
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec uint32 (Global'0.t_Global) . [%#span10] Seq.length (shallow_model'0 self)
+  axiom view'0_spec : forall self : Vec'0.t_Vec uint32 (Global'0.t_Global) . [%#span10] Seq.length (view'0 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'8 (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) =
-    [%#span11] inv'7 (shallow_model'0 self)
+    [%#span11] inv'7 (view'0 self)
   
   predicate inv'8 (_1 : Vec'0.t_Vec uint32 (Global'0.t_Global))
   
@@ -1858,21 +1855,21 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 41 0 41 27]
   use T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv as T_creusot_contracts__stdqy35z1__iter__map_inv__MapInv
   
   function index_logic'0 [@inline:trivial] (self : slice uint32) (ix : int) : uint32 =
-    [%#span13] Seq.get (shallow_model'4 self) ix
+    [%#span13] Seq.get (view'4 self) ix
   
-  function shallow_model'1 (self : slice uint32) : Seq.seq uint32 =
-    [%#span14] shallow_model'4 self
+  function view'1 (self : slice uint32) : Seq.seq uint32 =
+    [%#span14] view'4 self
   
   function to_ref_seq'0 (self : slice uint32) : Seq.seq uint32
   
   axiom to_ref_seq'0_spec : forall self : slice uint32 . ([%#span16] forall i : int . 0 <= i
   /\ i < Seq.length (to_ref_seq'0 self)  -> Seq.get (to_ref_seq'0 self) i = index_logic'0 self i)
-  && ([%#span15] Seq.length (to_ref_seq'0 self) = Seq.length (shallow_model'1 self))
+  && ([%#span15] Seq.length (to_ref_seq'0 self) = Seq.length (view'1 self))
   
-  function shallow_model'3 (self : Iter'0.t_Iter uint32) : slice uint32
+  function view'3 (self : Iter'0.t_Iter uint32) : slice uint32
   
   predicate produces'0 (self : Iter'0.t_Iter uint32) (visited : Seq.seq uint32) (tl : Iter'0.t_Iter uint32) =
-    [%#span17] to_ref_seq'0 (shallow_model'3 self) = Seq.(++) visited (to_ref_seq'0 (shallow_model'3 tl))
+    [%#span17] to_ref_seq'0 (view'3 self) = Seq.(++) visited (to_ref_seq'0 (view'3 tl))
   
   predicate produces'1 [@inline:trivial] (self : MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z) (visited : Seq.seq uint32) (succ : MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z)
     
@@ -1963,14 +1960,14 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 41 0 41 27]
   axiom preservation_inv'0_spec : forall iter : Iter'0.t_Iter uint32, func : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z, produced : Seq.seq uint32 . [%#span29] produced
   = (Seq.empty  : Seq.seq uint32)  -> preservation_inv'0 iter func produced = preservation'0 iter func
   
-  function shallow_model'5 (self : borrowed (Iter'0.t_Iter uint32)) : slice uint32 =
-    [%#span30] shallow_model'3 self.current
+  function view'5 (self : borrowed (Iter'0.t_Iter uint32)) : slice uint32 =
+    [%#span30] view'3 self.current
   
   predicate resolve'2 (self : borrowed (Iter'0.t_Iter uint32)) =
     [%#span31] self.final = self.current
   
   predicate completed'1 (self : borrowed (Iter'0.t_Iter uint32)) =
-    [%#span32] resolve'2 self /\ shallow_model'4 (shallow_model'5 self) = (Seq.empty  : Seq.seq uint32)
+    [%#span32] resolve'2 self /\ view'4 (view'5 self) = (Seq.empty  : Seq.seq uint32)
   
   predicate reinitialize'0 (_1 : ()) =
     [%#span33] forall iter : borrowed (Iter'0.t_Iter uint32), func : Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z . inv'9 iter
@@ -2042,7 +2039,7 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 41 0 41 27]
   use seq.Seq
   
   predicate from_iter_post'0 (prod : Seq.seq uint32) (res : Vec'0.t_Vec uint32 (Global'0.t_Global)) =
-    [%#span49] prod = shallow_model'0 res
+    [%#span49] prod = view'0 res
   
   predicate completed'0 (self : borrowed (MapInv'0.t_MapInv (Iter'0.t_Iter uint32) uint32 Closure'0.m_03_std_iterators__counter__qy123zclosureqy35z0qy125z))
     
@@ -2104,16 +2101,14 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 41 0 41 27]
     
   
   let rec iter'0 (self:slice uint32) (return'  (ret:Iter'0.t_Iter uint32))= {[@expl:precondition] inv'1 self}
-    any [ return' (result:Iter'0.t_Iter uint32)-> {[%#span60] shallow_model'3 result = self} (! return' {result}) ] 
+    any [ return' (result:Iter'0.t_Iter uint32)-> {[%#span60] view'3 result = self} (! return' {result}) ] 
   
-  function shallow_model'2 (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) : Seq.seq uint32 =
-    [%#span14] shallow_model'0 self
+  function view'2 (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) : Seq.seq uint32 =
+    [%#span14] view'0 self
   
   let rec deref'0 (self:Vec'0.t_Vec uint32 (Global'0.t_Global)) (return'  (ret:slice uint32))= {[@expl:precondition] inv'0 self}
     any
-    [ return' (result:slice uint32)-> {inv'1 result}
-      {[%#span61] shallow_model'1 result = shallow_model'2 self}
-      (! return' {result}) ]
+    [ return' (result:slice uint32)-> {inv'1 result} {[%#span61] view'1 result = view'2 self} (! return' {result}) ]
     
   
   meta "compute_max_steps" 1000000
@@ -2139,16 +2134,11 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 41 0 41 27]
       [ s0 = collect'0 {_4} (fun (_ret':Vec'0.t_Vec uint32 (Global'0.t_Global)) ->  [ &x <- _ret' ] s1) | s1 = bb4 ]
       
     | bb4 = s0
-      [ s0 = {[@expl:assertion] [%#s03_std_iterators1] Seq.length (shallow_model'0 x) = Seq.length (shallow_model'0 v)}
-        s1
-      | s1 = bb5 ]
+      [ s0 = {[@expl:assertion] [%#s03_std_iterators1] Seq.length (view'0 x) = Seq.length (view'0 v)} s1 | s1 = bb5 ]
       
-    | bb5 = s0
-      [ s0 = {[@expl:assertion] [%#s03_std_iterators2] Seq.(==) (shallow_model'0 x) (shallow_model'0 v)} s1 | s1 = bb6 ]
-      
+    | bb5 = s0 [ s0 = {[@expl:assertion] [%#s03_std_iterators2] Seq.(==) (view'0 x) (view'0 v)} s1 | s1 = bb6 ] 
     | bb6 = s0
-      [ s0 = {[@expl:assertion] [%#s03_std_iterators3] UIntSize.to_int cnt = Seq.length (shallow_model'0 x)} s1
-      | s1 = bb7 ]
+      [ s0 = {[@expl:assertion] [%#s03_std_iterators3] UIntSize.to_int cnt = Seq.length (view'0 x)} s1 | s1 = bb7 ]
       
     | bb7 = bb8
     | bb8 = bb9
@@ -2880,7 +2870,7 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 94 0 94 37]
   let%span span47 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   let%span span48 = "../../../../creusot-contracts/src/logic/ops.rs" 53 8 53 32
   let%span span49 = "../../../../creusot-contracts/src/logic/ops.rs" 42 8 42 31
-  let%span span50 = "../../../../creusot-contracts/src/model.rs" 108 8 108 31
+  let%span span50 = "../../../../creusot-contracts/src/model.rs" 109 8 109 22
   let%span span51 = "../../../../creusot-contracts/src/std/slice.rs" 261 19 261 35
   let%span span52 = "../../../../creusot-contracts/src/std/slice.rs" 262 19 262 35
   let%span span53 = "../../../../creusot-contracts/src/std/slice.rs" 263 8 263 52
@@ -2889,8 +2879,8 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 94 0 94 37]
   let%span span56 = "../../../../creusot-contracts/src/std/iter.rs" 105 26 108 17
   let%span span57 = "03_std_iterators.rs" 88 4 90 5
   let%span span58 = "03_std_iterators.rs" 81 4 83 5
-  let%span span59 = "../../../../creusot-contracts/src/model.rs" 90 8 90 31
-  let%span span60 = "../../../../creusot-contracts/src/snapshot.rs" 27 20 27 48
+  let%span span59 = "../../../../creusot-contracts/src/model.rs" 91 8 91 22
+  let%span span60 = "../../../../creusot-contracts/src/snapshot.rs" 27 20 27 39
   let%span span61 = "../../../../creusot-contracts/src/std/iter.rs" 90 8 90 19
   let%span span62 = "../../../../creusot-contracts/src/std/iter.rs" 84 20 84 24
   let%span span63 = "../../../../creusot-contracts/src/std/iter.rs" 99 0 212 1
@@ -3055,13 +3045,13 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 94 0 94 37]
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'2 (self : slice t) : Seq.seq t
+  function view'2 (self : slice t) : Seq.seq t
   
-  axiom shallow_model'2_spec : forall self : slice t . ([%#span34] shallow_model'2 self = Slice.id self)
-  && ([%#span33] Seq.length (shallow_model'2 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'2_spec : forall self : slice t . ([%#span34] view'2 self = Slice.id self)
+  && ([%#span33] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize))
   
   predicate invariant'2 (self : slice t) =
-    [%#span35] inv'12 (shallow_model'2 self)
+    [%#span35] inv'12 (view'2 self)
   
   axiom inv_axiom'2 [@rewrite] : forall x : slice t [inv'2 x] . inv'2 x = invariant'2 x
   
@@ -3135,21 +3125,21 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 94 0 94 37]
   use seq.Seq
   
   function index_logic'1 [@inline:trivial] (self : slice t) (ix : usize) : t =
-    [%#span48] Seq.get (shallow_model'2 self) (UIntSize.to_int ix)
+    [%#span48] Seq.get (view'2 self) (UIntSize.to_int ix)
   
   function index_logic'0 [@inline:trivial] (self : slice t) (ix : int) : t =
-    [%#span49] Seq.get (shallow_model'2 self) ix
+    [%#span49] Seq.get (view'2 self) ix
   
   use seq.Permut
   
-  function shallow_model'0 (self : borrowed (slice t)) : Seq.seq t =
-    [%#span50] shallow_model'2 self.current
+  function view'0 (self : borrowed (slice t)) : Seq.seq t =
+    [%#span50] view'2 self.current
   
   let rec swap'0 (self:borrowed (slice t)) (a:usize) (b:usize) (return'  (ret:()))= {[@expl:precondition] inv'3 self}
-    {[@expl:precondition] [%#span52] UIntSize.to_int b < Seq.length (shallow_model'0 self)}
-    {[@expl:precondition] [%#span51] UIntSize.to_int a < Seq.length (shallow_model'0 self)}
+    {[@expl:precondition] [%#span52] UIntSize.to_int b < Seq.length (view'0 self)}
+    {[@expl:precondition] [%#span51] UIntSize.to_int a < Seq.length (view'0 self)}
     any
-    [ return' (result:())-> {[%#span53] Permut.exchange (shallow_model'2 self.final) (shallow_model'0 self) (UIntSize.to_int a) (UIntSize.to_int b)}
+    [ return' (result:())-> {[%#span53] Permut.exchange (view'2 self.final) (view'0 self) (UIntSize.to_int a) (UIntSize.to_int b)}
       (! return' {result}) ]
     
   
@@ -3207,11 +3197,11 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 94 0 94 37]
   predicate equiv_range'0 [#"03_std_iterators.rs" 80 0 80 65] (s1 : Seq.seq t) (s2 : Seq.seq t) (l : int) (u : int) =
     [%#span58] forall i : int . l <= i /\ i < u  -> Seq.get s1 i = Seq.get s2 i
   
-  function shallow_model'4 (self : borrowed (slice t)) : Seq.seq t =
-    [%#span59] shallow_model'0 self
+  function view'4 (self : borrowed (slice t)) : Seq.seq t =
+    [%#span59] view'0 self
   
-  function shallow_model'1 (self : Snapshot.snap_ty (borrowed (slice t))) : Seq.seq t =
-    [%#span60] shallow_model'4 (Snapshot.inner self)
+  function view'1 (self : Snapshot.snap_ty (borrowed (slice t))) : Seq.seq t =
+    [%#span60] view'4 (Snapshot.inner self)
   
   use prelude.prelude.Snapshot
   
@@ -3257,13 +3247,12 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 94 0 94 37]
   
   use prelude.prelude.Snapshot
   
-  function shallow_model'3 (self : slice t) : Seq.seq t =
-    [%#span59] shallow_model'2 self
+  function view'3 (self : slice t) : Seq.seq t =
+    [%#span59] view'2 self
   
   let rec len'0 (self:slice t) (return'  (ret:usize))= {[@expl:precondition] inv'4 self}
     any
-    [ return' (result:usize)-> {[%#span66] Seq.length (shallow_model'3 self) = UIntSize.to_int result}
-      (! return' {result}) ]
+    [ return' (result:usize)-> {[%#span66] Seq.length (view'3 self) = UIntSize.to_int result} (! return' {result}) ]
     
   
   meta "compute_max_steps" 1000000
@@ -3305,13 +3294,13 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 94 0 94 37]
     | bb8 = s0 [ s0 =  [ &old_9_0 <- Snapshot.new slice ] s1 | s1 = bb9 ] 
     | bb9 = bb9
       [ bb9 = {[@expl:loop invariant] (Snapshot.inner old_9_0).final = slice.final}
-        {[@expl:loop invariant] [%#s03_std_iterators13] equiv_reverse_range'0 (shallow_model'0 slice) (shallow_model'1 old_v) (UIntSize.to_int n
+        {[@expl:loop invariant] [%#s03_std_iterators13] equiv_reverse_range'0 (view'0 slice) (view'1 old_v) (UIntSize.to_int n
         - Seq.length (Snapshot.inner produced)) (UIntSize.to_int n) (UIntSize.to_int n - 1)}
-        {[@expl:loop invariant] [%#s03_std_iterators12] equiv_reverse_range'0 (shallow_model'0 slice) (shallow_model'1 old_v) 0 (Seq.length (Snapshot.inner produced)) (UIntSize.to_int n
+        {[@expl:loop invariant] [%#s03_std_iterators12] equiv_reverse_range'0 (view'0 slice) (view'1 old_v) 0 (Seq.length (Snapshot.inner produced)) (UIntSize.to_int n
         - 1)}
-        {[@expl:loop invariant] [%#s03_std_iterators11] equiv_range'0 (shallow_model'0 slice) (shallow_model'1 old_v) (Seq.length (Snapshot.inner produced)) (UIntSize.to_int n
+        {[@expl:loop invariant] [%#s03_std_iterators11] equiv_range'0 (view'0 slice) (view'1 old_v) (Seq.length (Snapshot.inner produced)) (UIntSize.to_int n
         - Seq.length (Snapshot.inner produced))}
-        {[@expl:loop invariant] [%#s03_std_iterators10] UIntSize.to_int n = Seq.length (shallow_model'0 slice)}
+        {[@expl:loop invariant] [%#s03_std_iterators10] UIntSize.to_int n = Seq.length (view'0 slice)}
         {[@expl:loop invariant] [%#s03_std_iterators9] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
         {[@expl:loop invariant] [%#s03_std_iterators9] inv'1 iter}
         {[@expl:loop invariant] [%#s03_std_iterators9] inv'0 (Snapshot.inner produced)}
@@ -3404,7 +3393,7 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 94 0 94 37]
     | & _42 : usize = any_l ()
     | & old_9_0 : Snapshot.snap_ty (borrowed (slice t)) = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#s03_std_iterators18] Seq.(==) (shallow_model'2 slice.final) (Reverse.reverse (shallow_model'0 slice))}
+    [ return' (result:())-> {[@expl:postcondition] [%#s03_std_iterators18] Seq.(==) (view'2 slice.final) (Reverse.reverse (view'0 slice))}
       (! return' {result}) ]
     
 end

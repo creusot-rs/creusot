@@ -50,6 +50,8 @@ New specifications for `map` and `filter` were added. While proven, the specific
 
 Several changes were made to the `GhostPtrMap` module. (@dewert99)
 
+The `ShallowModel` trait was renamed to `View` which is hoped to be less confusing. (Armaël Guéneau @armael)
+
 ### Creusot Backend
 
 #### Place-oriented reasoning

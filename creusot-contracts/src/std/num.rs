@@ -3,13 +3,13 @@ pub use ::std::num::*;
 
 macro_rules! mach_int {
     ($t:ty, $ty_nm:expr, $zero:expr) => {
-        impl ShallowModel for $t {
-            type ShallowModelTy = Int;
+        impl View for $t {
+            type ViewTy = Int;
             #[logic]
             #[open]
             #[trusted]
             #[creusot::builtins = concat!($ty_nm, ".to_int")]
-            fn shallow_model(self) -> Self::ShallowModelTy {
+            fn view(self) -> Self::ViewTy {
                 pearlite! { absurd }
             }
         }
