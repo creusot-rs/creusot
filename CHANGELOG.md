@@ -11,7 +11,78 @@ Creusot is currently best suited for the verification of code like data-structur
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate 
 
-## [0.1.1] - 30/07/2024
+### Cargo Creusot
+
+Documentation using `cargo creusot doc`  now includes functions specifications and logic function bodies (Arnaud Golfouse @arnaudgolfouse).
+
+
+### Pearlite
+
+Several minor but still important changes were made to Pearlite in this release.
+
+### Nested Trusted
+
+The semantics of `#[trusted]` were slightly altered, the attribute is now inherited, which means that placing it on a module marks all contained functions as trusted. (Xavier Denis @xldenis, request by Molly MacLaren @mojeanmac)
+
+#### Type invariants & Resolution
+
+Type invariants were completely overhauled, several unsoundnesses were resolved in the process. Most notably the 'trivial invariant optimization' was removed, invariants are now always systematically enforced.
+
+Logical functions and quantifiers no longer provide the invariant, meaning that you must explicitly guard them if you require the invariant to be upheld for a type.  This enables future support for empty types.
+
+The resolution trait no longer uses specialization (meaning you no longer have to add `min_specialization` to your projects). Users should also now use the new, bare `resolve` functions if needed.
+Resolution also comes with a proof obligation to demonstrate the soundness of user-provided implementations of the `Resolve` trait.
+
+#### Syntax changes & bug fixes
+
+New syntax to specify triggers in quantifiers (David Ewert @dewert99). Triggers can be added to quantifiers in the following way: `forall<x : T, .. > #![trigger exp1,..,expN] exp`.
+Multi-triggers are supported by providing multiple comma separated values.
+
+Fixes to `#[derive(DeepModel)]` for structs (Arnaud Golfouse @arnaudgolfouse).
+
+
+#### Creusot standard library
+
+The API support for `VecDeque` was extended, adding indexing, and a custom `Resolve` implementation. (David Ewert @dewert99)
+
+New specifications for `map` and `filter` were added. While proven, the specification for `filter` is currently hard to successfully apply in projects, we expect revisions in future releases.
+
+Several changes were made to the `GhostPtrMap` module. (@dewert99)
+
+### Creusot Backend
+
+#### Place-oriented reasoning
+
+This release marks the complete transition of Creusot to a fully "place oriented" mode of reasoning.
+For users, what this means, is generally an easier time working with type invariants, specifically with partially initialized structures and the closing of several lingering unsoundnesses.
+
+#### Closures
+
+Several crashes with regards to closures (especially nested) were fixed.
+Support was added for `proof_assert!` inside of closures.
+
+#### Structural Resolution
+
+A new intrinsic `structural_resolve` generates a resolution statement from the conjunction of fields of a type. All user-defined implementations must be *weaker* than this.
+
+#### Ownership in Ghost code
+
+An initial, experimental version of ownership in ghost code was added, reintroducing the `ghost!` macro. Future releases will flesh out support in this area. (@arnaudgolfhouse)
+
+#### Coma
+
+A major unsoundness in our encoding of pattern matching in Coma was solved. We found that this was exploited by solvers in a single test of our suite (though without affecting the end reuslt of the proof).
+The issue was resolved.
+
+Identifiers generated in Coma are now stable, meaning that re-organizing Rust code should not lead to any changes in generated proofs. This should improve the obsolecence of proofs in Why3. (Li-yao Xia @Lysxia)
+
+### Creusot IDE
+
+Not strictly speaking part of this release, we have recently published a new [Creusot IDE](https://github.com/creusot-rs/creusot-ide) extension on the VSCode Marketplace.
+The extension currently provides syntax highlighting for Creusot, and dynamically updates the proof status within VSCode.
+Currently, it does not *run* proofs itself, you must run them via an external invocation, and it only supports `why3find` as the proof-runner.
+
+## [0.2.0] - 30/07/2024
 
 ### Cargo Creusot
 
