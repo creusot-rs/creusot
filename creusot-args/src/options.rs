@@ -5,10 +5,13 @@ use std::{error::Error, ffi::OsString, path::PathBuf};
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct CommonOptions {
     /// Determines how to format the spans in generated code to loading in Why3.
+    ///
     /// [Relative] is better if the generated code is meant to be checked into VCS.
     /// [Absolute] means the files can easily be moved around your system and still work.
     /// [None] provides the clearest diffs.
-    #[clap(long, value_enum, default_value_t=SpanMode::Relative)]
+    /// NB: spans pointing to the Rust standard library are thrown away in [Relative] mode,
+    /// while they are kept in [Absolute] mode.
+    #[clap(long, value_enum, default_value_t=SpanMode::Absolute, verbatim_doc_comment)]
     pub span_mode: SpanMode,
     #[clap(long)]
     /// Directory with respect to which (relative) spans should be relative to.
