@@ -18,15 +18,16 @@ Documentation using `cargo creusot doc`  now includes functions specifications a
 
 ### Pearlite
 
-Several minor but still important changes were made to Pearlite in this release.
+Several minor but still important changes were made to Pearlite in this release, their descriptions follow.
 
-### Nested Trusted
+#### Nested Trusted
 
 The semantics of `#[trusted]` were slightly altered, the attribute is now inherited, which means that placing it on a module marks all contained functions as trusted. (Xavier Denis @xldenis, request by Molly MacLaren @mojeanmac)
 
 #### Type invariants & Resolution
 
-Type invariants were completely overhauled, several unsoundnesses were resolved in the process. Most notably the 'trivial invariant optimization' was removed, invariants are now always systematically enforced.
+Type invariants were completely overhauled, several unsoundnesses were resolved in the process.
+Invariants are now added as pre and post conditions to program functions, but are not enforced for logical constructs.
 
 Logical functions and quantifiers no longer provide the invariant, meaning that you must explicitly guard them if you require the invariant to be upheld for a type.  This enables future support for empty types.
 
