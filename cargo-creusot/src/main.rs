@@ -95,7 +95,7 @@ fn main() -> Result<()> {
             let flags = setup::InstallFlags {
                 provers_parallelism,
                 why3: extflag(SetupTool::Why3),
-                altergo: extflag(SetupTool::AltErgo),
+                altergo: managedflag(SetupTool::AltErgo, SetupManagedTool::AltErgo),
                 z3: managedflag(SetupTool::Z3, SetupManagedTool::Z3),
                 cvc4: managedflag(SetupTool::CVC4, SetupManagedTool::CVC4),
                 cvc5: managedflag(SetupTool::CVC5, SetupManagedTool::CVC5),

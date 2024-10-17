@@ -18,11 +18,15 @@ pub const WHY3: Binary = Binary {
     detect_version: detect_why3_version,
 };
 
-pub const ALTERGO: Binary = Binary {
-    display_name: "Alt-Ergo",
-    binary_name: "alt-ergo",
-    version: ALTERGO_VERSION,
-    detect_version: detect_altergo_version,
+pub const ALTERGO: ManagedBinary = ManagedBinary {
+    bin: Binary {
+        display_name: "Alt-Ergo",
+        binary_name: "alt-ergo",
+        version: ALTERGO_VERSION,
+        detect_version: detect_altergo_version,
+    },
+    url: &URLS.altergo,
+    download_with: download_from_url_with_cache,
 };
 
 pub const Z3: ManagedBinary = ManagedBinary {
