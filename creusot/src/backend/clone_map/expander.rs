@@ -241,7 +241,7 @@ impl DepElab for LogicElab {
             }
             CloneLevel::Body => {
                 let mut sig = signature(ctx, elab, sig, dep, level);
-                sig.contract = Contract::default();
+                // sig.contract = Contract::default();
 
                 if ctx.is_constant(def_id) {
                     let uneval = ty::UnevaluatedConst::new(def_id, subst);
