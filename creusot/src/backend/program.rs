@@ -43,7 +43,7 @@ use why3::{
 };
 
 fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
-    let mut names = Dependencies::new(ctx.tcx, [def_id]);
+    let mut names = Dependencies::new(ctx, [def_id]);
     let mut decls = Vec::new();
 
     let ty = ctx.type_of(def_id).instantiate_identity();
@@ -72,7 +72,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
     let contract = ctx.closure_contract(def_id).clone();
 
     // HACK RESOLVE
-    let mut names = Dependencies::new(ctx.tcx, [def_id]);
+    let mut names = Dependencies::new(ctx, [def_id]);
     sig_to_why3(ctx, &mut names, &contract.resolve.0, def_id);
     lower_pure(ctx, &mut names, &contract.resolve.1);
 
@@ -80,7 +80,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
     ctx.dependencies.insert(TransId::Hacked(ClosureSpecKind::Resolve, def_id), deps);
 
     // HACK PRECOND
-    let mut names = Dependencies::new(ctx.tcx, [def_id]);
+    let mut names = Dependencies::new(ctx, [def_id]);
     sig_to_why3(ctx, &mut names, &contract.precond.0, def_id);
     lower_pure(ctx, &mut names, &contract.precond.1);
 
@@ -89,7 +89,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
 
     // HACK POST ONCE
     if let Some((sig, term)) = contract.postcond_once {
-        let mut names = Dependencies::new(ctx.tcx, [def_id]);
+        let mut names = Dependencies::new(ctx, [def_id]);
         sig_to_why3(ctx, &mut names, &sig, def_id);
         lower_pure(ctx, &mut names, &term);
 
@@ -99,7 +99,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
 
     // HACK POST MUT
     if let Some((sig, term)) = contract.postcond_mut {
-        let mut names = Dependencies::new(ctx.tcx, [def_id]);
+        let mut names = Dependencies::new(ctx, [def_id]);
         sig_to_why3(ctx, &mut names, &sig, def_id);
         lower_pure(ctx, &mut names, &term);
 
@@ -108,7 +108,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
     }
     // HACK POST
     if let Some((sig, term)) = contract.postcond {
-        let mut names = Dependencies::new(ctx.tcx, [def_id]);
+        let mut names = Dependencies::new(ctx, [def_id]);
         sig_to_why3(ctx, &mut names, &sig, def_id);
         lower_pure(ctx, &mut names, &term);
 
@@ -117,7 +117,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
     }
     // HACK UNNEst
     if let Some((sig, term)) = contract.unnest {
-        let mut names = Dependencies::new(ctx.tcx, [def_id]);
+        let mut names = Dependencies::new(ctx, [def_id]);
         sig_to_why3(ctx, &mut names, &sig, def_id);
         lower_pure(ctx, &mut names, &term);
 
@@ -127,7 +127,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
       // decls.extend(contract);
       // decls
     for (ix, (sig, term)) in contract.accessors.into_iter().enumerate() {
-        let mut names = Dependencies::new(ctx.tcx, [def_id]);
+        let mut names = Dependencies::new(ctx, [def_id]);
         sig_to_why3(ctx, &mut names, &sig, def_id);
         lower_pure(ctx, &mut names, &term);
 
@@ -149,8 +149,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
 ) -> (CloneSummary<'tcx>, Option<Module>) {
-    let tcx = ctx.tcx;
-    let mut names = Dependencies::new(tcx, [def_id]);
+    let mut names = Dependencies::new(ctx, [def_id]);
 
     let Some((body_id, promoteds)) = collect_body_ids(ctx, def_id) else {
         let (_, clones) = names.provide_deps(ctx, GraphDepth::Deep);

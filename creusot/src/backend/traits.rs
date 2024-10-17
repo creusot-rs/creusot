@@ -17,7 +17,7 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
     let tcx = ctx.tcx;
     let data = ctx.trait_impl(def_id).clone();
 
-    let mut names = Dependencies::new(ctx.tcx, [def_id]);
+    let mut names = Dependencies::new(ctx, [def_id]);
 
     let mut decls: Vec<_> = own_generic_decls_for(ctx.tcx, def_id).collect();
     let mut refn_decls = Vec::new();
@@ -45,7 +45,7 @@ impl<'tcx> Why3Generator<'tcx> {
     pub(crate) fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
         assert_eq!(util::item_type(self.tcx, def_id), ItemType::AssocTy);
 
-        let mut names = Dependencies::new(self.tcx, [def_id]);
+        let mut names = Dependencies::new(self, [def_id]);
 
         let mut decls: Vec<_> = all_generic_decls_for(self.tcx, def_id).collect();
         let ty_decl = self.assoc_ty_decl(

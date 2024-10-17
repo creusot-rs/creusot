@@ -347,7 +347,7 @@ pub(crate) fn translate_tydecl(
         return None;
     }
 
-    let mut names = Dependencies::new(ctx.tcx, bg.iter().copied());
+    let mut names = Dependencies::new(ctx, bg.iter().copied());
 
     let name = module_name(ctx.tcx, repr).to_string().into();
     let span = ctx.def_span(repr);
@@ -677,7 +677,8 @@ pub(crate) fn translate_accessor(
     let field = &variant.fields[ix.into()];
 
     let substs = GenericArgs::identity_for_item(ctx.tcx, adt_did);
-    let mut names = Dependencies::new(ctx.tcx, ctx.binding_group(adt_did).iter().copied());
+    let self_ids: Vec<_> = ctx.binding_group(adt_did).iter().copied().collect();
+    let mut names = Dependencies::new(ctx, self_ids);
 
     let acc_name = translate_accessor_name(variant.name.as_str(), field.name.as_str());
 

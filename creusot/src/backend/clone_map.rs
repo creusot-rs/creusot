@@ -22,6 +22,7 @@ use crate::{
         dependency::Dependency,
     },
     ctx::*,
+    options::SpanMode,
     util::{self, item_name, module_name},
 };
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
@@ -247,12 +248,17 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
         if span.is_dummy() {
             return None;
         }
+
+        let lo = self.tcx.sess.source_map().lookup_char_pos(span.lo());
+        let rustc_span::FileName::Real(path) = &lo.file.name else { return None };
+        match (&self.span_mode, path) {
+            (SpanMode::Relative(_), rustc_span::RealFileName::Remapped { .. }) => return None,
+            _ => (),
+        };
+
         let cnt = self.names.spans.len();
         let name = self.names.spans.entry(span).or_insert_with(|| {
             let lo = self.tcx.sess.source_map().lookup_char_pos(span.lo());
-            if span.is_dummy() {
-                return Symbol::intern(&format!("dummy{cnt}"));
-            }
 
             if let FileName::Real(real_name) = &lo.file.name {
                 let path = real_name.local_path_if_available();
@@ -283,6 +289,9 @@ pub struct Dependencies<'tcx> {
 
     // Internal state to determine whether dependencies should be public or not
     dep_level: CloneLevel,
+
+    // Internal state, used to determine whether we should emit spans at all
+    span_mode: SpanMode,
 }
 
 #[derive(Default, Clone)]
@@ -532,9 +541,10 @@ pub enum GraphDepth {
 
 impl<'tcx> Dependencies<'tcx> {
     pub(crate) fn new(
-        tcx: TyCtxt<'tcx>,
+        ctx: &TranslationCtx<'tcx>,
         selfs: impl IntoIterator<Item = impl Into<TransId<'tcx>>>,
     ) -> Self {
+        let tcx = ctx.tcx;
         let names = CloneNames::new(tcx);
         let dep_info = IndexMap::default();
         let self_ids: Vec<_> = selfs.into_iter().map(|x| x.into()).collect();
@@ -547,11 +557,14 @@ impl<'tcx> Dependencies<'tcx> {
             levels: dep_info,
             hidden: Default::default(),
             dep_level: CloneLevel::Body,
+            span_mode: ctx.opts.span_mode.clone(),
         };
 
         for i in self_ids {
-            let node = Dependency::from_trans_id(tcx, i);
-            deps.names.names.insert(node, node.base_ident(tcx).map_or(Kind::Unnamed, Kind::Named));
+            let node = Dependency::from_trans_id(ctx.tcx, i);
+            deps.names
+                .names
+                .insert(node, node.base_ident(ctx.tcx).map_or(Kind::Unnamed, Kind::Named));
             deps.levels.insert(node, CloneLevel::Body);
             deps.hidden.insert(node);
         }
@@ -658,22 +671,22 @@ impl<'tcx> Dependencies<'tcx> {
             .names
             .spans
             .into_iter()
-            .map(|(sp, name)| {
+            .filter_map(|(sp, name)| {
                 let (path, start_line, start_column, end_line, end_column) =
                     if let Some(Attribute::Span(path, l1, c1, l2, c2)) = ctx.span_attr(sp) {
                         (path, l1, c1, l2, c2)
                     } else {
-                        ("".into(), 0, 0, 0, 0)
+                        return None;
                     };
 
-                why3::declaration::Span {
+                Some(why3::declaration::Span {
                     name: name.as_str().into(),
                     path,
                     start_line,
                     start_column,
                     end_line,
                     end_column,
-                }
+                })
             })
             .collect();
 
