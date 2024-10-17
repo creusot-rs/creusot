@@ -75,57 +75,52 @@ macro_rules! ord_laws_impl {
     () => {
         #[::creusot_contracts::law]
         #[::creusot_contracts::open(self)]
-        fn cmp_le_log(_: Self, _: Self) {
-            ()
-        }
+        #[::creusot_contracts::ensures(x.le_log(y) == (x.cmp_log(y) != Ordering::Greater))]
+        fn cmp_le_log(x: Self, y: Self) {}
 
         #[::creusot_contracts::law]
         #[::creusot_contracts::open(self)]
-        fn cmp_lt_log(_: Self, _: Self) {
-            ()
-        }
+        #[::creusot_contracts::ensures(x.lt_log(y) == (x.cmp_log(y) == Ordering::Less))]
+        fn cmp_lt_log(x: Self, y: Self) {}
 
         #[::creusot_contracts::law]
         #[::creusot_contracts::open(self)]
-        fn cmp_ge_log(_: Self, _: Self) {
-            ()
-        }
+        #[::creusot_contracts::ensures(x.ge_log(y) == (x.cmp_log(y) != Ordering::Less))]
+        fn cmp_ge_log(x: Self, y: Self) {}
 
         #[::creusot_contracts::law]
         #[::creusot_contracts::open(self)]
-        fn cmp_gt_log(_: Self, _: Self) {
-            ()
-        }
+        #[::creusot_contracts::ensures(x.gt_log(y) == (x.cmp_log(y) == Ordering::Greater))]
+        fn cmp_gt_log(x: Self, y: Self) {}
 
         #[::creusot_contracts::law]
         #[::creusot_contracts::open(self)]
-        fn refl(_: Self) {
-            ()
-        }
+        #[::creusot_contracts::ensures(x.cmp_log(x) == Ordering::Equal)]
+        fn refl(x: Self) {}
 
         #[::creusot_contracts::law]
         #[::creusot_contracts::open(self)]
-        fn trans(_: Self, _: Self, _: Self, _: Ordering) {
-            ()
-        }
+        #[::creusot_contracts::requires(x.cmp_log(y) == o)]
+        #[::creusot_contracts::requires(y.cmp_log(z) == o)]
+        #[::creusot_contracts::ensures(x.cmp_log(z) == o)]
+        fn trans(x: Self, y: Self, z: Self, o: Ordering) {}
 
         #[::creusot_contracts::law]
         #[::creusot_contracts::open(self)]
-        fn antisym1(_: Self, _: Self) {
-            ()
-        }
+        #[::creusot_contracts::requires(x.cmp_log(y) == Ordering::Less)]
+        #[::creusot_contracts::ensures(y.cmp_log(x) == Ordering::Greater)]
+        fn antisym1(x: Self, y: Self) {}
 
         #[::creusot_contracts::law]
         #[::creusot_contracts::open(self)]
-        fn antisym2(_: Self, _: Self) {
-            ()
-        }
+        #[::creusot_contracts::requires(x.cmp_log(y) == Ordering::Greater)]
+        #[::creusot_contracts::ensures(y.cmp_log(x) == Ordering::Less)]
+        fn antisym2(x: Self, y: Self) {}
 
         #[::creusot_contracts::law]
         #[::creusot_contracts::open(self)]
-        fn eq_cmp(_: Self, _: Self) {
-            ()
-        }
+        #[::creusot_contracts::ensures((x == y) == (x.cmp_log(y) == Ordering::Equal))]
+        fn eq_cmp(x: Self, y: Self) {}
     };
 }
 
@@ -231,7 +226,7 @@ impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
     #[logic]
     #[open]
     fn le_log(self, o: Self) -> bool {
-        pearlite! { (self.0 == o.0 && self.1 <= o.1) || self.0 <= o.0 }
+        pearlite! { (self.0 == o.0 && self.1 <= o.1) || self.0 < o.0 }
     }
 
     #[logic]
@@ -243,7 +238,7 @@ impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
     #[logic]
     #[open]
     fn ge_log(self, o: Self) -> bool {
-        pearlite! { (self.0 == o.0 && self.1 >= o.1) || self.0 >= o.0 }
+        pearlite! { (self.0 == o.0 && self.1 >= o.1) || self.0 > o.0 }
     }
 
     #[logic]
