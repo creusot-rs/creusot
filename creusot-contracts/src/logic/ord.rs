@@ -226,7 +226,7 @@ impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
     #[logic]
     #[open]
     fn le_log(self, o: Self) -> bool {
-        pearlite! { (self.0 == o.0 && self.1 <= o.1) || self.0 <= o.0 }
+        pearlite! { (self.0 == o.0 && self.1 <= o.1) || self.0 < o.0 }
     }
 
     #[logic]
@@ -238,7 +238,7 @@ impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
     #[logic]
     #[open]
     fn ge_log(self, o: Self) -> bool {
-        pearlite! { (self.0 == o.0 && self.1 >= o.1) || self.0 >= o.0 }
+        pearlite! { (self.0 == o.0 && self.1 >= o.1) || self.0 > o.0 }
     }
 
     #[logic]
