@@ -13,6 +13,7 @@ pub mod num;
 pub mod ops;
 pub mod option;
 pub mod panicking;
+pub mod ptr;
 pub mod result;
 pub mod slice;
 pub mod string;
