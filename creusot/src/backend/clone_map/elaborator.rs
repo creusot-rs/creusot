@@ -34,11 +34,12 @@ pub(super) struct SymbolElaborator<'tcx> {
     used_types: IndexSet<Symbol>,
     param_env: ParamEnv<'tcx>,
     tcx: TyCtxt<'tcx>,
+    modular: bool, // Whether generated modules are in separate files
 }
 
 impl<'tcx> SymbolElaborator<'tcx> {
-    pub fn new(param_env: ParamEnv<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
-        Self { used_types: Default::default(), param_env, tcx }
+    pub fn new(param_env: ParamEnv<'tcx>, tcx: TyCtxt<'tcx>, modular: bool) -> Self {
+        Self { used_types: Default::default(), param_env, tcx, modular }
     }
 
     pub fn build_clone(
@@ -139,25 +140,23 @@ impl<'tcx> SymbolElaborator<'tcx> {
     }
 
     fn emit_use(&mut self, names: &mut ImmutDeps<'_, 'tcx>, dep: Dependency<'tcx>) -> Vec<Decl> {
-        if let k @ Kind::Used(modl, _) = names.insert(dep) {
+        if let Kind::Used(modl, _) = names.insert(dep) {
             self.used_types
                 .insert(modl)
                 .then(|| {
-                    let qname = k.qname();
-                    let name = qname.module_qname();
                     let mut did = dep.did().unwrap().0;
                     if util::item_type(self.tcx, did) == ItemType::Field {
                         did = self.tcx.parent(did);
                     };
 
-                    let modl = if util::item_type(self.tcx, did) == ItemType::Closure {
-                        Symbol::intern(&format!("{}_Type", module_name(self.tcx, did)))
+                    let name = if util::item_type(self.tcx, did) == ItemType::Closure {
+                        util::module_path_with_suffix(self.tcx, self.modular, did, "_Type")
                     } else {
-                        module_name(self.tcx, did)
+                        util::module_path(self.tcx, self.modular, did)
                     };
 
-                    let use_decl =
-                        Use { as_: Some(name.clone()), name: modl.as_str().into(), export: false };
+                    let as_ = Some(why3::Ident::from_string(modl.to_string()));
+                    let use_decl = Use { as_, name, export: false };
                     vec![Decl::UseDecl(use_decl)]
                 })
                 .unwrap_or_default()

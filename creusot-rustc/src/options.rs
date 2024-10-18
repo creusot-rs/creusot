@@ -1,4 +1,4 @@
-use creusot::options::{self, Options, OutputFile};
+use creusot::options::{self, Options, Output};
 pub use creusot_args::options::*;
 use std::path::PathBuf;
 
@@ -29,33 +29,42 @@ impl CreusotArgsExt for CreusotArgs {
         let cargo_creusot = std::env::var("CARGO_CREUSOT").is_ok();
         let should_output = !cargo_creusot || std::env::var("CARGO_PRIMARY_PACKAGE").is_ok();
 
-        let output_file = match (self.options.stdout, self.options.output_file) {
-            (true, None) => Ok(OutputFile::Stdout),
-            (false, Some(f)) => Ok(OutputFile::File(f)),
-            (true, Some(_)) => Err("--stdout and --output-file are mutually exclusive"),
-            (false, None) => Err("please specify either --output-file or --stdout"),
+        let output = match (self.options.stdout, self.options.output_file, self.options.output_dir)
+        {
+            (true, None, None) => Ok(Output::Stdout),
+            (false, Some(f), None) => Ok(Output::File(f)),
+            (false, None, Some(d)) => Ok(Output::Directory(d)),
+            (true, Some(_), _) => Err("--stdout and --output-file are mutually exclusive"),
+            (true, None, Some(_)) => Err("--stdout and --output-dir are mutually exclusive"),
+            (false, Some(_), Some(_)) => {
+                Err("--output-file and --output-dir are mutually exclusive")
+            }
+            (false, None, None) => {
+                Err("please specify either --output-dir, --output-file or --stdout")
+            }
         }?;
 
-        let span_mode =
-            match (&self.options.span_mode, &output_file, &self.options.spans_relative_to) {
-                (SpanMode::Absolute, _, _) => Ok(options::SpanMode::Absolute),
-                (SpanMode::Off, _, _) => Ok(options::SpanMode::Off),
-                (SpanMode::Relative, _, Some(p)) => Ok(options::SpanMode::Relative(p.to_owned())),
-                (SpanMode::Relative, OutputFile::File(f), None) => {
-                    let p = PathBuf::from(f);
-                    Ok(options::SpanMode::Relative(p.parent().unwrap().to_owned()))
-                }
-                (SpanMode::Relative, OutputFile::Stdout, None) => {
-                    Err("--spans-relative-to is required when using --stdout and relative spans")
-                }
-            }?;
+        let span_mode = match (&self.options.span_mode, &output, &self.options.spans_relative_to) {
+            (SpanMode::Absolute, _, _) => Ok(options::SpanMode::Absolute),
+            (SpanMode::Off, _, _) => Ok(options::SpanMode::Off),
+            (SpanMode::Relative, _, Some(p)) => Ok(options::SpanMode::Relative(p.to_owned())),
+            (SpanMode::Relative, Output::File(p), None) => {
+                Ok(options::SpanMode::Relative(p.parent().unwrap().to_owned()))
+            }
+            (SpanMode::Relative, Output::Directory(p), None) => {
+                Ok(options::SpanMode::Relative(p.to_owned()))
+            }
+            (SpanMode::Relative, Output::Stdout, None) => {
+                Err("--spans-relative-to is required when using --stdout and relative spans")
+            }
+        }?;
 
         Ok(Options {
             extern_paths,
             metadata_path,
             export_metadata: self.options.export_metadata,
             should_output,
-            output_file,
+            output,
             in_cargo: cargo_creusot,
             span_mode,
             match_str: self.options.focus_on,

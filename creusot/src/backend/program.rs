@@ -19,8 +19,9 @@ use crate::{
     ctx::{BodyId, Dependencies, TranslationCtx},
     fmir::{self, Body, BorrowKind, Operand, TrivialInv},
     pearlite::{self, PointerKind},
+    translated_item::FileModule,
     translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
-    util::{self, module_name},
+    util,
 };
 
 use petgraph::graphmap::DiGraphMap;
@@ -42,7 +43,7 @@ use why3::{
     Ident, QName,
 };
 
-fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
+fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> FileModule {
     let mut names = Dependencies::new(ctx, [def_id]);
     let mut decls = Vec::new();
 
@@ -64,7 +65,8 @@ fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
 
     let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
     let meta = ctx.display_impl_of(def_id);
-    Module { name: format!("{}_Type", module_name(ctx.tcx, def_id)).into(), decls, attrs, meta }
+    let QName { module: path, name } = ctx.module_path_with_suffix(def_id, "_Type");
+    FileModule { path, modl: Module { name, decls, attrs, meta } }
 }
 
 pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) {
@@ -139,7 +141,7 @@ pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefI
 pub(crate) fn translate_closure<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
-) -> (CloneSummary<'tcx>, Module, Option<Module>) {
+) -> (CloneSummary<'tcx>, FileModule, Option<FileModule>) {
     assert!(ctx.is_closure_like(def_id));
     let (summary, func) = translate_function(ctx, def_id);
     (summary, closure_ty(ctx, def_id), func)
@@ -148,7 +150,7 @@ pub(crate) fn translate_closure<'tcx>(
 pub(crate) fn translate_function<'tcx, 'sess>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
-) -> (CloneSummary<'tcx>, Option<Module>) {
+) -> (CloneSummary<'tcx>, Option<FileModule>) {
     let mut names = Dependencies::new(ctx, [def_id]);
 
     let Some((body_id, promoteds)) = collect_body_ids(ctx, def_id) else {
@@ -178,10 +180,10 @@ pub(crate) fn translate_function<'tcx, 'sess>(
         .chain(std::iter::once(body))
         .collect();
 
-    let name = Ident::build(&module_name(ctx.tcx, def_id).to_string());
     let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
     let meta = ctx.display_impl_of(def_id);
-    (summary, Some(Module { name, decls, attrs, meta }))
+    let QName { module: path, name } = ctx.module_path(def_id);
+    (summary, Some(FileModule { path, modl: Module { name, decls, attrs, meta } }))
 }
 
 /// If `def_id`'s body should be translated, returns:
