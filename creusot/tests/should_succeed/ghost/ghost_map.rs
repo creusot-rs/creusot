@@ -10,7 +10,7 @@ pub fn ghost_map() {
         proof_assert!(map.lookup(1i32) == 21i32);
         proof_assert!(length1 == 1);
         let (x1, x2, x3) = (1, 2, 3); // HACK: work around an issue with promoted
-        if let Some(x) = map.get_mut(&x1) {
+        if let Some(x) = map.get_mut_ghost(&x1) {
             *x = 42;
         }
         proof_assert!(map.lookup(1i32) == 42i32);
