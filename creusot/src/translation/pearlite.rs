@@ -858,6 +858,10 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 }
                 Ok(Pattern::Boolean(value.try_to_bool().unwrap()))
             }
+            // TODO: this simply ignores type annotations, maybe we should actually support them
+            PatKind::AscribeUserType { ascription: _, subpattern } => {
+                self.pattern_term(subpattern, mut_allowed)
+            }
             ref pk => todo!("lower_pattern: unsupported pattern kind {:?}", pk),
         }
     }
