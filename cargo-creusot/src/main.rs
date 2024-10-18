@@ -21,16 +21,24 @@ use Subcommand::*;
 
 fn main() -> Result<()> {
     let cargo_md = make_cargo_metadata()?;
-    let coma_filename: PathBuf; //  coma output file name container
+    let coma_src: PathBuf; //  coma output file name container
+    let coma_glob: Option<String>; // glob pattern for all coma files under coma_src
 
     let mut cargs = CargoCreusotArgs::parse_from(std::env::args().skip(1));
 
     // select coma output file name
     if let Some(f) = &cargs.options.output_file {
-        coma_filename = f.into();
+        coma_src = f.into();
+        coma_glob = None;
+    } else if cargs.options.stdout {
+        coma_src = PathBuf::new(); // don't care, dummy value
+        coma_glob = None;
     } else {
-        coma_filename = make_coma_filename(&cargo_md)?;
-        cargs.options.output_file = Some(coma_filename.to_string_lossy().into_owned());
+        // default to --output-dir=target/creusot
+        let dir = make_coma_target(&cargo_md)?;
+        coma_src = dir.clone();
+        cargs.options.output_dir = Some(dir);
+        coma_glob = coma_src.to_str().map(|s| s.to_string() + "/**/*.coma");
     }
 
     let subcommand = match cargs.subcommand {
@@ -46,14 +54,17 @@ fn main() -> Result<()> {
             //   however we want to keep the current behavior for other commands: prove
             let (creusot_rustc_subcmd, launch_why3) = match subcmd {
                 Some(CreusotSubCommand::Why3 { command: Why3SubCommand::Ide, args, .. }) => {
-                    (None, Some(args))
+                    (None, Some((Why3Mode::Ide, coma_src, args)))
                 }
                 Some(CreusotSubCommand::Why3 { command: Why3SubCommand::Replay, args, .. }) => {
-                    (None, Some(args))
+                    let mut basename = coma_src.clone();
+                    basename.set_extension(""); // for single-file mode
+                    (None, Some((Why3Mode::Replay, basename, args)))
                 }
                 _ => (subcmd, None),
             };
 
+            let include_dir = cargs.options.output_dir.clone();
             let config_args = setup::status_for_creusot()?;
             let creusot_args = CreusotArgs {
                 options: cargs.options,
@@ -65,17 +76,26 @@ fn main() -> Result<()> {
 
             invoke_cargo(&creusot_args);
 
-            if let Some(args) = launch_why3 {
-                // why3 configuration
-                let mut b = Why3LauncherBuilder::new();
-                b.why3_path(config_args.why3_path);
-                b.config_file(config_args.why3_config);
-                b.output_file(coma_filename);
-                // temporary: for the moment we only launch why3 via cargo-creusot in Ide and Replay mode
-                b.mode(Why3Mode::Ide);
-                b.args(args);
+            if let Some((mode, coma_src, args)) = launch_why3 {
+                let mut coma_files = vec![coma_src];
+                // Glob coma files after creusot-rustc has generated them
+                if let Why3Mode::Ide = mode {
+                    if let Some(glob) = coma_glob {
+                        if let Ok(paths) = glob::glob(&glob) {
+                            coma_files.extend(paths.filter_map(|p| p.ok()));
+                        }
+                    }
+                }
 
-                let why3 = b.build()?;
+                // why3 configuration
+                let why3 = Why3Launcher {
+                    why3_path: config_args.why3_path,
+                    config_file: config_args.why3_config,
+                    mode,
+                    include_dir,
+                    coma_files,
+                    args,
+                };
                 let prelude_dir =
                     TempDir::new("creusot_why3_prelude").expect("could not create temp dir");
                 let mut command = why3.make(prelude_dir.path())?;

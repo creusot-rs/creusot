@@ -631,7 +631,7 @@ impl<'tcx> Dependencies<'tcx> {
             }
         }
 
-        let mut elab = SymbolElaborator::new(param_env, self.tcx);
+        let mut elab = SymbolElaborator::new(param_env, self.tcx, ctx.is_modular());
         let mut cloned = IndexSet::new();
 
         for p in &clone_graph.builtins {
