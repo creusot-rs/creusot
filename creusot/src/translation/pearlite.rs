@@ -583,18 +583,40 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         "Triggers can only be used directly inside quantifiers",
                     )),
                     None => {
-                        let args = args
-                            .iter()
-                            .map(|arg| self.expr_term(*arg))
-                            .collect::<Result<Vec<_>, _>>()?;
                         let fun = self.expr_term(fun)?;
                         let (id, subst) = if let TermKind::Item(id, subst) = fun.kind {
                             (id, subst)
                         } else {
                             unreachable!("Call on non-function type");
                         };
+                        // HACK: allow dereferencing of GhostBox in pearlite
+                        if let Some(new_subst) = is_ghost_box_deref(
+                            self.ctx.tcx,
+                            id,
+                            subst.get(0).and_then(|arg| arg.as_type()),
+                        ) {
+                            let term = self.expr_term(args[0])?;
+                            let inner_id = self
+                                .ctx
+                                .get_diagnostic_item(Symbol::intern("ghost_box_inner_logic"))
+                                .unwrap();
+                            Ok(Term {
+                                ty,
+                                span,
+                                kind: TermKind::Call {
+                                    id: inner_id,
+                                    subst: new_subst,
+                                    args: vec![term],
+                                },
+                            })
+                        } else {
+                            let args = args
+                                .iter()
+                                .map(|arg| self.expr_term(*arg))
+                                .collect::<Result<Vec<_>, _>>()?;
 
-                        Ok(Term { ty, span, kind: TermKind::Call { id, subst, args } })
+                            Ok(Term { ty, span, kind: TermKind::Call { id, subst, args } })
+                        }
                     }
                 }
             }
@@ -1049,6 +1071,27 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
         self.ctx.is_diagnostic_item(Symbol::intern("deref_method"), *id)
             && is_snap_ty(self.ctx.tcx, sub[0].as_type().unwrap())
+    }
+}
+
+fn is_ghost_box_deref<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    fn_id: DefId,
+    ty: Option<Ty<'tcx>>,
+) -> Option<&'tcx GenericArgs<'tcx>> {
+    let Some(ty) = ty else { return None };
+    if !tcx.is_diagnostic_item(Symbol::intern("deref_method"), fn_id) {
+        return None;
+    }
+    match ty.kind() {
+        rustc_type_ir::TyKind::Adt(containing_type, new_subst) => {
+            if tcx.is_diagnostic_item(Symbol::intern("ghost_box"), containing_type.did()) {
+                Some(new_subst)
+            } else {
+                None
+            }
+        }
+        _ => None,
     }
 }
 

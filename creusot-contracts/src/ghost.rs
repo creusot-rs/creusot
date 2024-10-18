@@ -140,9 +140,9 @@ impl<T> GhostBox<T> {
     /// Creates a new ghost variable.
     ///
     /// This function can only be called in `ghost!` code.
-    #[rustc_diagnostic_item = "ghost_box_new"]
     #[pure]
     #[ensures(*result.0 == x)]
+    #[rustc_diagnostic_item = "ghost_box_new"]
     pub fn new(x: T) -> Self {
         #[cfg(creusot)]
         {
@@ -159,8 +159,8 @@ impl<T> GhostBox<T> {
     #[logic]
     #[open(self)]
     #[ensures(result == *self.0)]
-    #[rustc_diagnostic_item = "ghost_box_inner"]
-    pub fn inner(self) -> T {
+    #[rustc_diagnostic_item = "ghost_box_inner_logic"]
+    pub fn inner_logic(self) -> T {
         *self.0
     }
 }
