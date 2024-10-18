@@ -28,7 +28,7 @@ pub struct Options {
     pub metadata_path: Option<String>,
     pub export_metadata: bool,
     pub should_output: bool,
-    pub output_file: OutputFile,
+    pub output: Output,
     pub in_cargo: bool,
     pub span_mode: SpanMode,
     pub match_str: Option<String>,
@@ -37,7 +37,8 @@ pub struct Options {
 }
 
 #[derive(Debug, Clone)]
-pub enum OutputFile {
-    File(String),
+pub enum Output {
+    Directory(PathBuf), // One file per Coma module
+    File(PathBuf),      // Monolithic output
     Stdout,
 }

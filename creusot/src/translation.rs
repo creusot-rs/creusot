@@ -7,23 +7,24 @@ pub(crate) mod pearlite;
 mod projection_vec;
 pub(crate) mod specification;
 pub(crate) mod traits;
+use std::{fs::File, path::PathBuf};
 
 use crate::{
     backend::{TransId, Why3Generator},
     ctx::{self, load_extern_specs},
     error::InternalError,
     metadata,
-    options::OutputFile,
-    util::translate_name,
+    options::Output,
+    translated_item::FileModule,
     validate::{
         validate_impls, validate_opacity, validate_purity, validate_traits, validate_trusted,
     },
 };
 use ctx::TranslationCtx;
-use rustc_hir::{def::DefKind, def_id::LOCAL_CRATE};
+use rustc_hir::def::DefKind;
 use rustc_span::{Symbol, DUMMY_SP};
 use std::{error::Error, io::Write};
-use why3::{declaration::Module, mlcfg, Print};
+use why3::{mlcfg, Print};
 
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
@@ -99,19 +100,11 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
 
     if why3.should_compile() {
         use crate::run_why3::run_why3;
-        use std::fs::File;
-        let file = match why3.opts.output_file {
-            OutputFile::File(ref f) => Some(f.clone().into()),
-            OutputFile::Stdout => None,
-        };
-        let mut out: Box<dyn Write> = match &file {
-            Some(f) => Box::new(std::io::BufWriter::new(File::create(f)?)),
-            None => Box::new(std::io::stdout()),
-        };
 
         let matcher = why3.opts.match_str.clone();
         let matcher: &str = matcher.as_ref().map(|s| &s[..]).unwrap_or("");
         let tcx = why3.tcx;
+        let output_target = why3.opts.output.clone();
         let modules = why3.modules();
         let modules = modules.flat_map(|(id, item)| {
             if let TransId::Item(did) = id
@@ -123,9 +116,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
             }
         });
 
-        let crate_name = translate_name(&tcx.crate_name(LOCAL_CRATE).to_string());
-        print_crate(&mut out, crate_name, modules)?;
-        drop(out); //flush the buffer before running why3
+        let file = print_crate(output_target, modules)?;
         run_why3(&why3, file);
     }
     debug!("after_analysis_dump: {:?}", start.elapsed());
@@ -133,22 +124,55 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
     Ok(())
 }
 
-fn print_crate<W, I: Iterator<Item = Module>>(
-    out: &mut W,
-    _name: String,
-    functions: I,
-) -> std::io::Result<()>
-where
-    W: Write,
-{
+pub enum OutputHandle {
+    Directory(PathBuf),   // One file per Coma module
+    File(Box<dyn Write>), // Monolithic output
+}
+
+fn module_output<'a, R, F: FnMut(&mut dyn Write) -> R>(
+    modl: &FileModule,
+    output: &mut OutputHandle,
+    mut f: F,
+) -> R {
+    match output {
+        OutputHandle::Directory(dir) => {
+            let mut path = dir.clone();
+            for part in &modl.path {
+                path.push(part.as_str());
+            }
+            path.set_extension("coma");
+            let prefix = path.parent().unwrap();
+            std::fs::create_dir_all(prefix).unwrap();
+            f(&mut std::io::BufWriter::new(File::create(path).unwrap()))
+        }
+        OutputHandle::File(w) => f(&mut **w),
+    }
+}
+
+fn print_crate<I: Iterator<Item = FileModule>>(
+    output_target: Output,
+    modules: I,
+) -> std::io::Result<Option<PathBuf>> {
+    let (root, mut output) = match output_target {
+        Output::Directory(dir) => (Some(dir.clone()), OutputHandle::Directory(dir)),
+        Output::File(ref f) => (
+            Some(f.clone()),
+            OutputHandle::File(Box::new(std::io::BufWriter::new(File::create(f)?))),
+        ),
+        Output::Stdout => (None, OutputHandle::File(Box::new(std::io::stdout()))),
+    };
     let alloc = mlcfg::printer::ALLOC;
 
-    writeln!(out)?;
-
-    for modl in functions {
-        modl.pretty(&alloc).1.render(120, out)?;
-        writeln!(out)?;
+    for modl in modules {
+        module_output::<std::io::Result<()>, _>(&modl, &mut output, |out| {
+            modl.modl.pretty(&alloc).1.render(120, out)?;
+            writeln!(out)?;
+            Ok(())
+        })?;
     }
 
-    Ok(())
+    //flush the buffer before running why3
+    drop(output);
+
+    Ok(root)
 }

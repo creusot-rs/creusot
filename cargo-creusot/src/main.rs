@@ -28,9 +28,13 @@ fn main() -> Result<()> {
     // select coma output file name
     if let Some(f) = &cargs.options.output_file {
         coma_filename = f.into();
+    } else if cargs.options.stdout {
+        coma_filename = PathBuf::new(); // don't care, dummy value
     } else {
-        coma_filename = make_coma_filename(&cargo_md)?;
-        cargs.options.output_file = Some(coma_filename.to_string_lossy().into_owned());
+        // default to --output-dir=target/creusot
+        let dir = make_coma_target(&cargo_md)?;
+        coma_filename = dir.clone();
+        cargs.options.output_dir = Some(dir);
     }
 
     let subcommand = match cargs.subcommand {
