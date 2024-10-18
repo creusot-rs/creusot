@@ -79,6 +79,10 @@ The issue was resolved.
 
 Identifiers generated in Coma are now stable, meaning that re-organizing Rust code should not lead to any changes in generated proofs. This should improve the obsolecence of proofs in Why3. (Li-yao Xia @Lysxia)
 
+### SMT Solvers
+
+The Alt-Ergo solver was upgraded to version 2.6.0. As a bonus, it is now installed by `cargo creusot setup` itself instead of `opam`. (Armaël Guéneau @armael) 
+
 ### Creusot IDE
 
 Not strictly speaking part of this release, we have recently published a new [Creusot IDE](https://github.com/creusot-rs/creusot-ide) extension on the VSCode Marketplace.
