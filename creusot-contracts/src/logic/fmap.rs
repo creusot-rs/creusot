@@ -275,7 +275,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// let mut map = FMap::new();
     /// ghost! {
     ///     map.insert_ghost(1, 21);
-    ///     if let Some(x) = map.get_mut(&1) {
+    ///     if let Some(x) = map.get_mut_ghost(&1) {
     ///         *x = 42;
     ///     }
     ///     proof_assert!(map.lookup(1i32) == 42i32);
@@ -294,7 +294,7 @@ impl<K, V: ?Sized> FMap<K, V> {
         })]
     #[ensures(forall<k: K> k != *key ==> (*self).get(k) == (^self).get(k))]
     #[ensures((*self).len() == (^self).len())]
-    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+    pub fn get_mut_ghost(&mut self, key: &K) -> Option<&mut V> {
         let _ = key;
         panic!()
     }
@@ -344,7 +344,7 @@ impl<K, V: ?Sized> FMap<K, V> {
         } else {
             result == None
         })]
-    pub fn insert_unsized(&mut self, key: K, value: Box<V>) -> Option<Box<V>> {
+    pub fn insert_ghost_unsized(&mut self, key: K, value: Box<V>) -> Option<Box<V>> {
         let _ = key;
         let _ = value;
         panic!()
@@ -385,7 +385,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[pure]
     #[ensures(^self == self.remove(*key))]
     #[ensures(self.get(*key) == None)]
-    pub fn remove_unsized(&mut self, key: &K) -> Option<Box<V>> {
+    pub fn remove_ghost_unsized(&mut self, key: &K) -> Option<Box<V>> {
         let _ = key;
         panic!()
     }
