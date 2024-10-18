@@ -156,6 +156,24 @@ impl<T> GhostBox<T> {
     }
 
     /// Returns the inner value of the `GhostBox`.
+    ///
+    /// This function can only be called in `ghost!` context.
+    #[ensures(result == *self.0)]
+    #[rustc_diagnostic_item = "ghost_box_into_inner"]
+    pub fn into_inner(self) -> T {
+        #[cfg(creusot)]
+        {
+            *self.0
+        }
+        #[cfg(not(creusot))]
+        {
+            panic!()
+        }
+    }
+
+    /// Returns the inner value of the `GhostBox`.
+    ///
+    /// You should prefer the dereference operator `*` instead.
     #[logic]
     #[open(self)]
     #[ensures(result == *self.0)]

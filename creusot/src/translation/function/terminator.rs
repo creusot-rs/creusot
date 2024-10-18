@@ -341,6 +341,17 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         // We are indeed in program code.
         let func_param_env = self.ctx.param_env(fun_def_id);
 
+        // Check that we do not call `GhostBox::into_inner` in normal code
+        if self.ctx.is_diagnostic_item(Symbol::intern("ghost_box_into_inner"), fun_def_id) {
+            self.ctx
+                .error(
+                    fn_span,
+                    "trying to access the contents of a ghost variable in program context",
+                )
+                .with_note("This method can only be used inside a `ghost!` block")
+                .emit();
+        }
+
         // Check that we do not create/dereference a ghost variable in normal code.
         if self.ctx.is_diagnostic_item(Symbol::intern("deref_method"), fun_def_id)
             || self.ctx.is_diagnostic_item(Symbol::intern("deref_mut_method"), fun_def_id)
@@ -365,9 +376,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 .error(fn_span, "cannot create a ghost variable in program context")
                 .with_span_suggestion(
                     fn_span,
-                    "try wrapping this expression in `gh!` instead",
+                    "try wrapping this expression in `ghost!` instead",
                     format!(
-                        "gh!{{ {} }}",
+                        "ghost!({})",
                         self.ctx.sess.source_map().span_to_snippet(args[0].span).unwrap()
                     ),
                     rustc_errors::Applicability::MachineApplicable,
