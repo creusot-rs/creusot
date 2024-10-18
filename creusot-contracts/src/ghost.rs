@@ -162,6 +162,7 @@ impl<T> GhostBox<T> {
     #[logic]
     #[open(self)]
     #[ensures(result == self.0)]
+    #[rustc_diagnostic_item = "ghost_box_inner"]
     pub fn inner(self) -> T {
         self.0
     }
