@@ -1,5 +1,6 @@
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
 use crate::{
-    resolve::structural_resolve,
     std::ops::{Deref, DerefMut},
     *,
 };
@@ -22,35 +23,58 @@ use crate::{
 /// }
 /// let value: i32 = *b; // compile error !
 /// ```
-#[rustc_diagnostic_item = "ghost_box"]
-pub struct GhostBox<T: ?Sized>(T);
+#[cfg_attr(creusot, rustc_diagnostic_item = "ghost_box")]
+pub struct GhostBox<T>(#[cfg(creusot)] T, #[cfg(not(creusot))] std::marker::PhantomData<T>)
+where
+    T: ?Sized;
 
-impl<T: Clone + ?Sized> Clone for GhostBox<T> {
+impl<T: ?Sized + Clone> Clone for GhostBox<T> {
     #[ensures(result == *self)]
     fn clone(&self) -> Self {
-        Self(self.0.clone())
+        #[cfg(creusot)]
+        {
+            Self(self.0.clone())
+        }
+        #[cfg(not(creusot))]
+        {
+            Self(std::marker::PhantomData)
+        }
     }
 }
 
-impl<T: Copy + ?Sized> Copy for GhostBox<T> {}
+impl<T: ?Sized + Copy> Copy for GhostBox<T> {}
 
 impl<T: ?Sized> Deref for GhostBox<T> {
     type Target = T;
 
-    // This function can only be called in `ghost!` context
+    /// This function can only be called in `ghost!` context
     #[pure]
     #[ensures((*self).0 == *result)]
     fn deref(&self) -> &Self::Target {
-        &self.0
+        #[cfg(creusot)]
+        {
+            &self.0
+        }
+        #[cfg(not(creusot))]
+        {
+            panic!()
+        }
     }
 }
 impl<T: ?Sized> DerefMut for GhostBox<T> {
-    // This function can only be called in `ghost!` context
+    /// This function can only be called in `ghost!` context
     #[pure]
     #[ensures((^self).0 == ^result)]
     #[ensures((*self).0 == *result)]
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+        #[cfg(creusot)]
+        {
+            &mut self.0
+        }
+        #[cfg(not(creusot))]
+        {
+            panic!()
+        }
     }
 }
 
@@ -78,15 +102,63 @@ impl<T: ?Sized> Resolve for GhostBox<T> {
     fn resolve_coherence(&self) {}
 }
 
+impl<T: ?Sized> GhostBox<T> {
+    /// Transforms a `&GhostBox<T>` into `GhostBox<&T>`.
+    #[pure]
+    #[ensures(result.0 == &self.0)]
+    pub fn borrow(&self) -> GhostBox<&T> {
+        #[cfg(creusot)]
+        {
+            GhostBox(&self.0)
+        }
+        #[cfg(not(creusot))]
+        {
+            panic!()
+        }
+    }
+
+    /// Transforms a `&mut GhostBox<T>` into a `GhostBox<&mut T>`.
+    #[pure]
+    #[ensures(result.0 == &mut self.0)]
+    pub fn borrow_mut(&mut self) -> GhostBox<&mut T> {
+        #[cfg(creusot)]
+        {
+            GhostBox(&mut self.0)
+        }
+        #[cfg(not(creusot))]
+        {
+            panic!()
+        }
+    }
+
+    // Internal function to easily create a GhostBox in non-creusot mode.
+    #[cfg(not(creusot))]
+    #[doc(hidden)]
+    pub fn from_fn(_: impl FnOnce() -> T) -> Self {
+        GhostBox(std::marker::PhantomData)
+    }
+}
+
 impl<T> GhostBox<T> {
+    /// Creates a new ghost variable.
+    ///
+    /// This function can only be called in `ghost!` code.
     #[rustc_diagnostic_item = "ghost_box_new"]
     #[pure]
     #[ensures(result.0 == x)]
     pub fn new(x: T) -> Self {
-        Self(x)
+        #[cfg(creusot)]
+        {
+            Self(x)
+        }
+        #[cfg(not(creusot))]
+        {
+            let _ = x;
+            Self(std::marker::PhantomData)
+        }
     }
 
-    #[trusted]
+    /// Returns the inner value of the `GhostBox`.
     #[logic]
     #[open(self)]
     #[ensures(result == self.0)]
