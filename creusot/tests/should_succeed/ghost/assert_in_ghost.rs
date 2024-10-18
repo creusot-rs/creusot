@@ -25,7 +25,7 @@ pub fn ghost_mutate() {
     };
 
     ghost! {
-        proof_assert!(p.inner().0 == 4i32);
-        proof_assert!(p.inner().1 == 3i32);
+        proof_assert!(p.0 == 4i32);
+        proof_assert!(p.1 == 3i32);
     };
 }
