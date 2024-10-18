@@ -201,9 +201,9 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// let mut map = FMap::new();
     /// ghost! {
     ///     let len1 = map.len_ghost();
-    ///     map.insert(1, 21);
-    ///     map.insert(1, 42);
-    ///     map.insert(2, 50);
+    ///     map.insert_ghost(1, 21);
+    ///     map.insert_ghost(1, 42);
+    ///     map.insert_ghost(2, 50);
     ///     let len2 = map.len_ghost();
     ///     proof_assert!(len1 == 0);
     ///     proof_assert!(len2 == 2);
@@ -224,8 +224,8 @@ impl<K, V: ?Sized> FMap<K, V> {
     ///
     /// let mut map = FMap::new();
     /// ghost! {
-    ///     map.insert(1, 42);
-    ///     let (b1, b2) = (map.contains_ghost(&1), map.contains_ghost(&2))
+    ///     map.insert_ghost(1, 42);
+    ///     let (b1, b2) = (map.contains_ghost(&1), map.contains_ghost(&2));
     ///     proof_assert!(b1);
     ///     proof_assert!(!b2);
     /// };
@@ -274,7 +274,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     ///
     /// let mut map = FMap::new();
     /// ghost! {
-    ///     map.insert(1, 21);
+    ///     map.insert_ghost(1, 21);
     ///     if let Some(x) = map.get_mut(&1) {
     ///         *x = 42;
     ///     }
@@ -309,12 +309,13 @@ impl<K, V: ?Sized> FMap<K, V> {
     ///
     /// let mut map = FMap::new();
     /// ghost! {
-    ///     proof_assert!(map.insert(37, 41) == None);
+    ///     let res1 = map.insert_ghost(37, 41);
+    ///     proof_assert!(res1 == None);
     ///     proof_assert!(map.is_empty() == false);
     ///
-    ///     map.insert(37, 42);
-    ///     proof_assert!(map.insert(37, 43) == Some(42));
-    ///     proof_assert!(map.get(&37) == Some(&43));
+    ///     let res2 = map.insert_ghost(37, 42);
+    ///     proof_assert!(res2 == Some(41));
+    ///     proof_assert!(map.lookup(37i32) == 42i32);
     /// };
     /// ```
     #[trusted]
@@ -357,9 +358,9 @@ impl<K, V: ?Sized> FMap<K, V> {
     ///
     /// let mut map = FMap::new();
     /// let res = ghost! {
-    ///     map.insert(1, 42);
-    ///     let res1 = map.remove(&1);
-    ///     let res2 = map.remove(&1);
+    ///     map.insert_ghost(1, 42);
+    ///     let res1 = map.remove_ghost(&1);
+    ///     let res2 = map.remove_ghost(&1);
     ///     proof_assert!(res1 == Some(42i32));
     ///     proof_assert!(res2 == None);
     /// };

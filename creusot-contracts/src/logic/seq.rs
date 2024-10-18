@@ -310,8 +310,8 @@ impl<T> Seq<T> {
     ///     s.push_ghost(10);
     ///     s.push_ghost(40);
     ///     s.push_ghost(30);
-    ///     let get1 = s.get(*Int::new(1));
-    ///     let get2 = s.get(*Int::new(3));
+    ///     let get1 = s.get_ghost(*Int::new(1));
+    ///     let get2 = s.get_ghost(*Int::new(3));
     ///     proof_assert!(get1 == Some(&40i32));
     ///     proof_assert!(get2 == None);
     /// };
