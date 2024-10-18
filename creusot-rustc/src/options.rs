@@ -34,14 +34,10 @@ impl CreusotArgsExt for CreusotArgs {
             (true, None, None) => Ok(Output::Stdout),
             (false, Some(f), None) => Ok(Output::File(f)),
             (false, None, Some(d)) => Ok(Output::Directory(d)),
-            (true, Some(_), _) => Err("--stdout and --output-file are mutually exclusive"),
-            (true, None, Some(_)) => Err("--stdout and --output-dir are mutually exclusive"),
-            (false, Some(_), Some(_)) => {
-                Err("--output-file and --output-dir are mutually exclusive")
-            }
             (false, None, None) => {
                 Err("please specify either --output-dir, --output-file or --stdout")
             }
+            _ => Err("--stdout, --output-file and --output-dir are mutually exclusive"), // This should already be enforced by clap
         }?;
 
         let span_mode = match (&self.options.span_mode, &output, &self.options.spans_relative_to) {
