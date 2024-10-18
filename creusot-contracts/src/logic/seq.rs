@@ -339,7 +339,7 @@ impl<T> Seq<T> {
     ///     s.push_ghost(0);
     ///     s.push_ghost(1);
     ///     s.push_ghost(2);
-    ///     if let Some(elem) = s.get_mut(*Int::new(1)) {
+    ///     if let Some(elem) = s.get_mut_ghost(*Int::new(1)) {
     ///         *elem = 42;
     ///     }
     ///     proof_assert!(s[0] == 0i32 && s[1] == 42i32 && s[2] == 2i32);
@@ -357,7 +357,7 @@ impl<T> Seq<T> {
     })]
     #[ensures(forall<i: Int> i != index ==> (*self).get(index) == (^self).get(index))]
     #[ensures((*self).len() == (^self).len())]
-    pub fn get_mut(&mut self, index: Int) -> Option<&mut T> {
+    pub fn get_mut_ghost(&mut self, index: Int) -> Option<&mut T> {
         let _ = index;
         panic!()
     }
@@ -373,7 +373,7 @@ impl<T> Seq<T> {
     ///     s.push_ghost(1);
     ///     s.push_ghost(2);
     ///     s.push_ghost(3);
-    ///     let popped = s.pop();
+    ///     let popped = s.pop_ghost();
     ///     proof_assert!(popped == Some(3i32));
     ///     proof_assert!(s[0] == 1i32 && s[1] == 2i32);
     /// };
@@ -388,7 +388,7 @@ impl<T> Seq<T> {
             Some(r) => *self == (^self).push(r)
         }
     })]
-    pub fn pop(&mut self) -> Option<T> {
+    pub fn pop_ghost(&mut self) -> Option<T> {
         panic!()
     }
 }
