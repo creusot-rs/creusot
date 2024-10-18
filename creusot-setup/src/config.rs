@@ -8,7 +8,7 @@ use std::{
 // the goal is to avoid silently mis-interpreting a past or future version of
 // the config file whenever its format changes.
 // NOTE: update ci/creusot-config-dummy.toml whenever you change this.
-pub const CURRENT_CONFIG_VERSION: i64 = 3;
+pub const CURRENT_CONFIG_VERSION: i64 = 4;
 
 // bump CURRENT_CONFIG_VERSION if you change this definition
 #[derive(Serialize, Deserialize)]
@@ -32,7 +32,7 @@ pub enum ManagedTool {
 pub struct Config {
     pub provers_parallelism: usize,
     pub why3: ExternalTool,
-    pub altergo: ExternalTool,
+    pub altergo: ManagedTool,
     pub z3: ManagedTool,
     pub cvc4: ManagedTool,
     pub cvc5: ManagedTool,

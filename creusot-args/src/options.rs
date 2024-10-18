@@ -109,6 +109,7 @@ pub enum Why3SubCommand {
 
 #[derive(Debug, ValueEnum, Serialize, Deserialize, Clone, PartialEq)]
 pub enum SetupManagedTool {
+    AltErgo,
     Z3,
     CVC4,
     CVC5,
