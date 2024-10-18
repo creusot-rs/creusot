@@ -24,7 +24,7 @@ use crate::{
 /// let value: i32 = *b; // compile error !
 /// ```
 #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_box")]
-pub struct GhostBox<T>(#[cfg(creusot)] T, #[cfg(not(creusot))] std::marker::PhantomData<T>)
+pub struct GhostBox<T>(#[cfg(creusot)] Box<T>, #[cfg(not(creusot))] std::marker::PhantomData<T>)
 where
     T: ?Sized;
 
@@ -42,14 +42,12 @@ impl<T: ?Sized + Clone> Clone for GhostBox<T> {
     }
 }
 
-impl<T: ?Sized + Copy> Copy for GhostBox<T> {}
-
 impl<T: ?Sized> Deref for GhostBox<T> {
     type Target = T;
 
     /// This function can only be called in `ghost!` context
     #[pure]
-    #[ensures((*self).0 == *result)]
+    #[ensures(*(*self).0 == *result)]
     fn deref(&self) -> &Self::Target {
         #[cfg(creusot)]
         {
@@ -64,12 +62,11 @@ impl<T: ?Sized> Deref for GhostBox<T> {
 impl<T: ?Sized> DerefMut for GhostBox<T> {
     /// This function can only be called in `ghost!` context
     #[pure]
-    #[ensures((^self).0 == ^result)]
-    #[ensures((*self).0 == *result)]
+    #[ensures(result == &mut *self.0)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         #[cfg(creusot)]
         {
-            &mut self.0
+            &mut *self.0
         }
         #[cfg(not(creusot))]
         {
@@ -105,11 +102,11 @@ impl<T: ?Sized> Resolve for GhostBox<T> {
 impl<T: ?Sized> GhostBox<T> {
     /// Transforms a `&GhostBox<T>` into `GhostBox<&T>`.
     #[pure]
-    #[ensures(result.0 == &self.0)]
+    #[ensures(*result.0 == &*self.0)]
     pub fn borrow(&self) -> GhostBox<&T> {
         #[cfg(creusot)]
         {
-            GhostBox(&self.0)
+            GhostBox(Box::new(&*self.0))
         }
         #[cfg(not(creusot))]
         {
@@ -119,11 +116,11 @@ impl<T: ?Sized> GhostBox<T> {
 
     /// Transforms a `&mut GhostBox<T>` into a `GhostBox<&mut T>`.
     #[pure]
-    #[ensures(result.0 == &mut self.0)]
+    #[ensures(*result.0 == &mut *self.0)]
     pub fn borrow_mut(&mut self) -> GhostBox<&mut T> {
         #[cfg(creusot)]
         {
-            GhostBox(&mut self.0)
+            GhostBox(Box::new(&mut *self.0))
         }
         #[cfg(not(creusot))]
         {
@@ -143,13 +140,13 @@ impl<T> GhostBox<T> {
     /// Creates a new ghost variable.
     ///
     /// This function can only be called in `ghost!` code.
-    #[rustc_diagnostic_item = "ghost_box_new"]
     #[pure]
-    #[ensures(result.0 == x)]
+    #[ensures(*result.0 == x)]
+    #[rustc_diagnostic_item = "ghost_box_new"]
     pub fn new(x: T) -> Self {
         #[cfg(creusot)]
         {
-            Self(x)
+            Self(Box::new(x))
         }
         #[cfg(not(creusot))]
         {
@@ -159,10 +156,29 @@ impl<T> GhostBox<T> {
     }
 
     /// Returns the inner value of the `GhostBox`.
+    ///
+    /// This function can only be called in `ghost!` context.
+    #[ensures(result == *self.0)]
+    #[rustc_diagnostic_item = "ghost_box_into_inner"]
+    pub fn into_inner(self) -> T {
+        #[cfg(creusot)]
+        {
+            *self.0
+        }
+        #[cfg(not(creusot))]
+        {
+            panic!()
+        }
+    }
+
+    /// Returns the inner value of the `GhostBox`.
+    ///
+    /// You should prefer the dereference operator `*` instead.
     #[logic]
     #[open(self)]
-    #[ensures(result == self.0)]
-    pub fn inner(self) -> T {
-        self.0
+    #[ensures(result == *self.0)]
+    #[rustc_diagnostic_item = "ghost_box_inner_logic"]
+    pub fn inner_logic(self) -> T {
+        *self.0
     }
 }
