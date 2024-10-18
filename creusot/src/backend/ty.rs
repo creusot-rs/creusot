@@ -114,11 +114,12 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
                 (*args).iter().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
             MlT::Tuple(tys)
         }
-        Param(p) => {
+        Param(_) => {
+            let qname = names.ty_param(ty);
             if let TyTranslation::Declaration(_) = trans {
-                MlT::TVar(translate_ty_param(p.name))
+                MlT::TVar(qname.as_ident())
             } else {
-                MlT::TConstructor(QName::from_string(&p.to_string().to_lowercase()))
+                MlT::TConstructor(qname)
             }
         }
         Alias(AliasTyKind::Projection, pty) => translate_projection_ty(trans, ctx, names, pty),
@@ -236,7 +237,7 @@ pub(crate) fn translate_closure_ty<'tcx>(
     let cons_name = names.constructor(did, subst).as_ident();
     let kind = AdtDecl {
         ty_name,
-        ty_params: ty_param_names(ctx.tcx, did).collect(),
+        ty_params: ty_param_names(names, did).collect(),
         constrs: vec![ConstructorDecl { name: cons_name, fields }],
     };
 
@@ -325,10 +326,6 @@ fn translate_ty_name(ctx: &Why3Generator<'_>, did: DefId) -> Ident {
     item_name(ctx.tcx, did, Namespace::TypeNS)
 }
 
-pub(crate) fn translate_ty_param(p: Symbol) -> Ident {
-    Ident::build(&p.to_string().to_lowercase())
-}
-
 // Translate a Rust type declation to an ML one
 // Rust tuple-like types are translated as one would expect, to product types in WhyML
 // However, Rust struct types are *not* translated to WhyML records, instead we 'forget' the field names
@@ -359,7 +356,7 @@ pub(crate) fn translate_tydecl(
         }
         let ty_name = translate_ty_name(ctx, repr);
 
-        let ty_params: Vec<_> = ty_param_names(ctx.tcx, repr).collect();
+        let ty_params: Vec<_> = ty_param_names(&mut names, repr).collect();
         let modl = Module {
             name,
             decls: vec![Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params })],
@@ -544,13 +541,16 @@ pub(crate) fn destructor<'tcx>(
         Param::Term("input".into(), translate_ty_inner(decl, ctx, names, DUMMY_SP, base_ty));
     use why3::ty::Type;
 
-    let params = ty_params(ctx, ty_id).map(|ty| Param::Ty(Type::TVar(ty))).chain([input, ret_cont]);
+    let params = ty_params(ctx, names, ty_id)
+        .map(|ty| Param::Ty(Type::TVar(ty)))
+        .chain([input, ret_cont])
+        .collect();
 
     let branches = std::iter::once(good_branch).chain(bad_branch).collect();
     Decl::Coma(Defn {
         name: names.eliminator(cons_id, subst).as_ident(),
         writes: vec![],
-        params: params.collect(),
+        params,
         body: Expr::Defn(Box::new(Expr::Any), false, branches),
     })
 }
@@ -567,7 +567,7 @@ fn build_ty_decl<'tcx>(
     let ty_name = names.ty(did, substs).as_ident();
 
     // Collect type variables of declaration
-    let ty_args: Vec<_> = ty_params(ctx, did).collect();
+    let ty_args: Vec<_> = ty_params(ctx, names, did).collect();
 
     let param_env = ctx.param_env(did);
     let kind = {
@@ -594,11 +594,11 @@ fn build_ty_decl<'tcx>(
 }
 use rustc_data_structures::captures::Captures;
 
-pub(crate) fn ty_params<'tcx, 'a>(
+fn ty_params<'tcx, 'a>(
     ctx: &'a mut Why3Generator<'tcx>,
+    names: &'a mut Dependencies<'tcx>,
     did: DefId,
 ) -> impl Iterator<Item = Ident> + Captures<'tcx> + 'a {
-    let tcx = ctx.tcx;
     let projections = if ctx.is_closure_like(did) {
         Box::new(std::iter::empty()) as Box<dyn Iterator<Item = _>>
     } else {
@@ -610,10 +610,14 @@ pub(crate) fn ty_params<'tcx, 'a>(
         Box::new(i) as Box<dyn Iterator<Item = _>>
     };
 
-    ty_param_names(tcx, did).chain(projections)
+    ty_param_names(names, did).chain(projections)
 }
 
-fn ty_param_names(tcx: TyCtxt<'_>, mut def_id: DefId) -> impl Iterator<Item = Ident> + '_ {
+fn ty_param_names<'tcx, 'a>(
+    names: &'a mut Dependencies<'tcx>,
+    mut def_id: DefId,
+) -> Box<dyn Iterator<Item = Ident> + 'a> {
+    let tcx = names.tcx();
     loop {
         if tcx.is_closure_like(def_id) {
             def_id = tcx.parent(def_id);
@@ -623,10 +627,15 @@ fn ty_param_names(tcx: TyCtxt<'_>, mut def_id: DefId) -> impl Iterator<Item = Id
     }
 
     let gens = tcx.generics_of(def_id);
-    (0..gens.count()).map(move |i| gens.param_at(i, tcx)).filter_map(|param| match param.kind {
-        ty::GenericParamDefKind::Type { .. } => Some(translate_ty_param(param.name)),
-        _ => None,
-    })
+    Box::new((0..gens.count()).filter_map(move |i| {
+        let param = gens.param_at(i, tcx);
+        match param.kind {
+            ty::GenericParamDefKind::Type { .. } => {
+                Some(names.ty_param(Ty::new_param(tcx, param.index, param.name)).as_ident())
+            }
+            _ => None,
+        }
+    }))
 }
 
 fn field_ty<'tcx>(

@@ -190,6 +190,7 @@ impl<'tcx> Dependency<'tcx> {
                 TyKind::Closure(def_id, _) => {
                     Some(item_symb(tcx, *def_id, rustc_hir::def::Namespace::TypeNS))
                 }
+                TyKind::Param(p) => Some(Symbol::intern(&type_name(p.name.as_str()))),
                 _ => None,
             },
             Dependency::Item(_, _) => {

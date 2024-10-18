@@ -92,10 +92,12 @@ pub(crate) trait Namer<'tcx> {
             node = Dependency::Type(Ty::new_closure(self.tcx(), def_id, subst));
         }
 
-        match self.tcx().def_kind(def_id) {
-            DefKind::AssocTy => self.insert(node).qname(),
-            _ => self.insert(node).qname(),
-        }
+        self.insert(node).qname()
+    }
+
+    fn ty_param(&mut self, ty: Ty<'tcx>) -> QName {
+        assert!(matches!(ty.kind(), TyKind::Param(_)));
+        self.insert(Dependency::Type(ty)).qname()
     }
 
     fn constructor(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
@@ -344,8 +346,8 @@ impl<'tcx> CloneNames<'tcx> {
 
                 Kind::Used(modl, key.base_ident(self.tcx).unwrap())
             }
-            Dependency::Type(ty) if !matches!(ty.kind(), TyKind::Alias(_, _)) => {
-                let kind = if let Some((did, _)) = key.did() {
+            Dependency::Type(ty) if !matches!(ty.kind(), TyKind::Alias(_, _) | TyKind::Param(_)) => {
+                if let Some((did, _)) = key.did() {
                     let (modl, name) = if let Some(why3_modl) = util::get_builtin(self.tcx, did) {
                         let qname = QName::from_string(why3_modl.as_str());
                         let name = qname.name.clone();
@@ -374,9 +376,7 @@ impl<'tcx> CloneNames<'tcx> {
                     Kind::Used(modl, name)
                 } else {
                     Kind::Unnamed
-                };
-
-                return kind;
+                }
             }
             Dependency::Item(id, _) if util::item_type(self.tcx, id) == ItemType::Variant => {
                 let ty = self.tcx.parent(id);

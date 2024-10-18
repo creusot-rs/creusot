@@ -380,45 +380,54 @@ fn display_impl_subject(i: &rustc_middle::ty::ImplSubject<'_>) -> String {
 // Closures inherit the generic parameters of the original function they were defined in, but
 // add 3 'ghost' generics tracking metadata about the closure. We choose to erase those parameters,
 // as they contain a function type along with other irrelevant details (for us).
-pub(crate) fn closure_generic_decls(
-    tcx: TyCtxt,
+pub(crate) fn closure_generic_decls<'a, 'tcx>(
+    names: &'a mut Dependencies<'tcx>,
     mut def_id: DefId,
-) -> impl Iterator<Item = Decl> + '_ {
+) -> impl Iterator<Item = Decl> + 'a {
     loop {
-        if tcx.is_closure_like(def_id) {
-            def_id = tcx.parent(def_id);
+        if names.tcx().is_closure_like(def_id) {
+            def_id = names.tcx().parent(def_id);
         } else {
             break;
         }
     }
 
-    all_generic_decls_for(tcx, def_id)
+    all_generic_decls_for(names, def_id)
 }
 
-pub(crate) fn all_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = Decl> + '_ {
+pub(crate) fn all_generic_decls_for<'a, 'tcx>(
+    names: &'a mut Dependencies<'tcx>,
+    def_id: DefId,
+) -> impl Iterator<Item = Decl> + 'a {
+    let tcx = names.tcx();
     let generics = tcx.generics_of(def_id);
-
-    generic_decls((0..generics.count()).map(move |i| generics.param_at(i, tcx)))
+    generic_decls((0..generics.count()).map(move |i| generics.param_at(i, tcx)), names)
 }
 
-pub(crate) fn own_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = Decl> + '_ {
-    let generics = tcx.generics_of(def_id);
-    generic_decls(generics.own_params.iter())
+pub(crate) fn own_generic_decls_for<'a, 'tcx>(
+    names: &'a mut Dependencies<'tcx>,
+    def_id: DefId,
+) -> impl Iterator<Item = Decl> + 'a {
+    let generics = names.tcx().generics_of(def_id);
+    generic_decls(generics.own_params.iter(), names)
 }
 
-fn generic_decls<'tcx, I: Iterator<Item = &'tcx GenericParamDef> + 'tcx>(
+pub(crate) fn generic_decls<'tcx, 'a, I: Iterator<Item = &'tcx GenericParamDef> + 'a>(
     it: I,
-) -> impl Iterator<Item = Decl> + 'tcx {
-    it.filter_map(|param| {
+    names: &'a mut Dependencies<'tcx>,
+) -> Box<dyn Iterator<Item = Decl> + 'a> {
+    Box::new(it.filter_map(|param| {
         if let GenericParamDefKind::Type { .. } = param.kind {
             Some(Decl::TyDecl(TyDecl::Opaque {
-                ty_name: (&*param.name.as_str().to_lowercase()).into(),
+                ty_name: names
+                    .ty_param(Ty::new_param(names.tcx(), param.index, param.name))
+                    .as_ident(),
                 ty_params: vec![],
             }))
         } else {
             None
         }
-    })
+    }))
 }
 
 pub fn is_trusted_function(tcx: TyCtxt, mut def_id: DefId) -> bool {

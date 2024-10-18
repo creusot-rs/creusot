@@ -1,15 +1,8 @@
 use super::{
-    clone_map::PreludeModule,
-    is_trusted_function,
-    place::rplace_to_expr,
-    signature::signature_of,
-    term::{lower_pat, lower_pure},
-    ty::{destructor, int_ty},
-    NameSupply, Namer, Why3Generator,
+    clone_map::PreludeModule, closure_generic_decls, is_trusted_function, place::rplace_to_expr, signature::signature_of, term::{lower_pat, lower_pure}, ty::{destructor, int_ty}, NameSupply, Namer, Why3Generator
 };
 use crate::{
     backend::{
-        closure_generic_decls,
         optimization::{self, infer_proph_invariants},
         place,
         ty::{self, translate_closure_ty, translate_ty},
@@ -86,6 +79,8 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     };
     let body = Decl::Coma(to_why(ctx, &mut names, body_id));
 
+    let mut decls = closure_generic_decls(&mut names, def_id).collect::<Vec<_>>();
+
     let promoteds = promoteds
         .iter()
         .map(|body_id| Decl::Coma(to_why(ctx, &mut names, *body_id)))
@@ -93,15 +88,13 @@ pub(crate) fn translate_function<'tcx, 'sess>(
 
     let clones = names.provide_deps(ctx);
 
-    let decls = closure_generic_decls(ctx.tcx, def_id)
-        .chain(clones)
-        .chain(promoteds)
-        .chain([Decl::Meta(Meta {
-            name: MetaIdent::String("compute_max_steps".into()),
-            args: vec![MetaArg::Integer(1_000_000)],
-        })])
-        .chain(std::iter::once(body))
-        .collect();
+    decls.extend(clones);
+    decls.extend(promoteds);
+    decls.push(Decl::Meta(Meta {
+        name: MetaIdent::String("compute_max_steps".into()),
+        args: vec![MetaArg::Integer(1_000_000)],
+    }));
+    decls.push(body);
 
     let name = Ident::build(&module_name(ctx.tcx, def_id).to_string());
     let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));

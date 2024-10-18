@@ -15,13 +15,13 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
 
     let mut names = Dependencies::new(ctx, [def_id]);
 
-    let mut decls: Vec<_> = own_generic_decls_for(ctx.tcx, def_id).collect();
+    let mut decls: Vec<_> = own_generic_decls_for(&mut names, def_id).collect();
     let mut refn_decls = Vec::new();
 
     for refn in &data.refinements {
         let name = item_name(tcx, refn.impl_.0, Namespace::ValueNS);
 
-        decls.extend(own_generic_decls_for(tcx, refn.impl_.0));
+        decls.extend(own_generic_decls_for(&mut names, refn.impl_.0));
         refn_decls.push(Decl::Goal(Goal {
             name: format!("{}_refn", &*name).into(),
             goal: lower_pure(ctx, &mut names, &refn.refn.clone()),
@@ -43,7 +43,7 @@ impl<'tcx> Why3Generator<'tcx> {
 
         let mut names = Dependencies::new(self, [def_id]);
 
-        let mut decls: Vec<_> = all_generic_decls_for(self.tcx, def_id).collect();
+        let mut decls: Vec<_> = all_generic_decls_for(&mut names, def_id).collect();
         let ty_decl = self.assoc_ty_decl(
             &mut names,
             def_id,

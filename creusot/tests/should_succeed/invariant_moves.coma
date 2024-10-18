@@ -2,29 +2,31 @@
 module T_core__ptr__non_null__NonNull
   use prelude.prelude.Opaque
   
-  type t_NonNull 't =
+  type t_NonNull 't_T'0 =
     | C_NonNull opaque_ptr
   
-  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
+  let rec t_NonNull < 't_T'0 > (input:t_NonNull 't_T'0) (ret  (pointer:opaque_ptr))= any
     [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer}) ]
     
 end
 module T_core__marker__PhantomData
-  type t_PhantomData 't =
+  type t_PhantomData 't_T'0 =
     | C_PhantomData
   
-  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any [ good -> {C_PhantomData  = input} (! ret) ] 
+  let rec t_PhantomData < 't_T'0 > (input:t_PhantomData 't_T'0) (ret  )= any
+    [ good -> {C_PhantomData  = input} (! ret) ]
+    
 end
 module T_core__ptr__unique__Unique
   use T_core__marker__PhantomData as PhantomData'0
   
   use T_core__ptr__non_null__NonNull as NonNull'0
   
-  type t_Unique 't =
-    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
+  type t_Unique 't_T'0 =
+    | C_Unique (NonNull'0.t_NonNull 't_T'0) (PhantomData'0.t_PhantomData 't_T'0)
   
-  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
-    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
+  let rec t_Unique < 't_T'0 > (input:t_Unique 't_T'0) (ret  (pointer:NonNull'0.t_NonNull 't_T'0) (_marker:PhantomData'0.t_PhantomData 't_T'0))= any
+    [ good (pointer:NonNull'0.t_NonNull 't_T'0) (_marker:PhantomData'0.t_PhantomData 't_T'0)-> {C_Unique pointer _marker
       = input}
       (! ret {pointer} {_marker}) ]
     
@@ -46,11 +48,11 @@ module T_alloc__raw_vec__RawVec
   
   use T_core__ptr__unique__Unique as Unique'0
   
-  type t_RawVec 't 'a =
-    | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
+  type t_RawVec 't_T'0 't_A'0 =
+    | C_RawVec (Unique'0.t_Unique 't_T'0) (Cap'0.t_Cap) 't_A'0
   
-  let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
-    [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
+  let rec t_RawVec < 't_T'0 > < 't_A'0 > (input:t_RawVec 't_T'0 't_A'0) (ret  (ptr:Unique'0.t_Unique 't_T'0) (cap:Cap'0.t_Cap) (alloc:'t_A'0))= any
+    [ good (ptr:Unique'0.t_Unique 't_T'0) (cap:Cap'0.t_Cap) (alloc:'t_A'0)-> {C_RawVec ptr cap alloc = input}
       (! ret {ptr} {cap} {alloc}) ]
     
 end
@@ -61,11 +63,11 @@ module T_alloc__vec__Vec
   
   use T_alloc__raw_vec__RawVec as RawVec'0
   
-  type t_Vec 't 'a =
-    | C_Vec (RawVec'0.t_RawVec 't 'a) usize
+  type t_Vec 't_T'0 't_A'0 =
+    | C_Vec (RawVec'0.t_RawVec 't_T'0 't_A'0) usize
   
-  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
+  let rec t_Vec < 't_T'0 > < 't_A'0 > (input:t_Vec 't_T'0 't_A'0) (ret  (buf:RawVec'0.t_RawVec 't_T'0 't_A'0) (len:usize))= any
+    [ good (buf:RawVec'0.t_RawVec 't_T'0 't_A'0) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
     
 end
 module T_alloc__alloc__Global
@@ -75,17 +77,17 @@ module T_alloc__alloc__Global
   let rec t_Global (input:t_Global) (ret  )= any [ good -> {C_Global  = input} (! ret) ] 
 end
 module T_core__option__Option
-  type t_Option 't =
+  type t_Option 't_T'0 =
     | C_None
-    | C_Some 't
+    | C_Some 't_T'0
   
-  let rec v_None < 't > (input:t_Option 't) (ret  )= any
+  let rec v_None < 't_T'0 > (input:t_Option 't_T'0) (ret  )= any
     [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} (! {false} any) ]
     
   
-  let rec v_Some < 't > (input:t_Option 't) (ret  (field_0:'t))= any
-    [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : 't [C_Some field_0 : t_Option 't] . C_Some field_0 <> input} (! {false} any) ]
+  let rec v_Some < 't_T'0 > (input:t_Option 't_T'0) (ret  (field_0:'t_T'0))= any
+    [ good (field_0:'t_T'0)-> {C_Some field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0 : 't_T'0 [C_Some field_0 : t_Option 't_T'0] . C_Some field_0 <> input} (! {false} any) ]
     
 end
 module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
