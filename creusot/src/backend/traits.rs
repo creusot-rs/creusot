@@ -4,8 +4,7 @@ use super::{
     GraphDepth, Why3Generator,
 };
 use crate::{
-    backend,
-    backend::{all_generic_decls_for, own_generic_decls_for, Namer},
+    backend::{self, all_generic_decls_for, own_generic_decls_for, Namer},
     ctx::ItemType,
     util::{self, item_name, module_name},
 };
@@ -26,10 +25,12 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
         let name = item_name(tcx, refn.impl_.0, Namespace::ValueNS);
 
         decls.extend(own_generic_decls_for(tcx, refn.impl_.0));
-        refn_decls.push(Decl::Goal(Goal {
-            name: format!("{}_refn", &*name).into(),
-            goal: lower_pure(ctx, &mut names, &refn.refn.clone()),
-        }));
+        if !util::is_trusted(ctx.tcx, refn.impl_.0) {
+            refn_decls.push(Decl::Goal(Goal {
+                name: format!("{}_refn", &*name).into(),
+                goal: lower_pure(ctx, &mut names, &refn.refn.clone()),
+            }));
+        }
     }
 
     let (clones, _) = names.provide_deps(ctx, GraphDepth::Deep);
