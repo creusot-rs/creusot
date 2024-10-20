@@ -13,12 +13,13 @@ use crate::{
     },
     constant::from_ty_const,
     pearlite::{normalize, Term},
+    signature::PreSignature,
     traits,
 };
 use rustc_middle::ty::{self, Const, ParamEnv};
 use rustc_span::DUMMY_SP;
 use rustc_type_ir::EarlyBinder;
-use util::{get_builtin, ident_of, PreSignature};
+use util::{get_builtin, ident_of};
 use why3::{
     declaration::{Axiom, Contract, LetKind, Signature, Use, ValDecl},
     exp::Binder,

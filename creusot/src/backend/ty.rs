@@ -1,11 +1,12 @@
 use super::{Dependencies, Why3Generator};
 use crate::{
     ctx::*,
+    signature::PreSignature,
     translation::{
         pearlite::{self, Term, TermKind},
         specification::PreContract,
     },
-    util::{self, get_builtin, item_name, module_name, translate_accessor_name, PreSignature},
+    util::{self, get_builtin, item_name, module_name, translate_accessor_name},
 };
 use indexmap::IndexSet;
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
@@ -497,7 +498,7 @@ pub(crate) fn destructor<'tcx>(
     let good_branch: coma::Defn = coma::Defn {
         name: format!("good").into(),
         writes: vec![],
-        attrs:vec![],
+        attrs: vec![],
         params: field_args.clone(),
         body: Expr::Assert(
             Box::new(cons_test.clone().eq(Exp::var("input"))),

@@ -16,7 +16,8 @@ use crate::{
         Namer as _, Why3Generator,
     },
     pearlite::{super_visit_term, Literal, Pattern, PointerKind, Term, TermVisitor},
-    util::{self, get_builtin, pre_sig_of},
+    signature::pre_sig_of,
+    util::{self, get_builtin},
 };
 
 use super::{binders_to_args, Dependencies};
@@ -427,12 +428,12 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // TODO: lol
             TermKind::Absurd => todo!("absrd"),
 
-            TermKind::Precondition {..} => Err(VCError::Closure(t.span)),
-            TermKind::Postcondition {..} => Err(VCError::Closure(t.span)),
+            TermKind::Precondition { .. } => Err(VCError::Closure(t.span)),
+            TermKind::Postcondition { .. } => Err(VCError::Closure(t.span)),
             TermKind::Old { .. } => Err(VCError::Old(t.span)),
             TermKind::Closure { .. } => Err(VCError::Closure(t.span)),
             TermKind::Reborrow { .. } => Err(VCError::Reborrow(t.span)),
-            TermKind::Borrow { inner } => todo!(),
+            TermKind::Borrow { inner: _ } => todo!(),
         }
     }
     fn build_pattern<A>(

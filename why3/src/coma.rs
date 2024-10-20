@@ -1,4 +1,8 @@
-use crate::{declaration::{Attribute, Use}, ty::Type, Ident, Print, QName};
+use crate::{
+    declaration::{Attribute, Use},
+    ty::Type,
+    Ident, Print, QName,
+};
 use pretty::docs;
 
 #[cfg(feature = "serialize")]
