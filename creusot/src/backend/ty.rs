@@ -224,7 +224,7 @@ pub(crate) fn translate_closure_ty<'tcx>(
     did: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> TyDecl {
-    let ty_name = names.ty(did, subst).as_ident();
+    let ty_name = names.ty(did, subst).as_ident().unwrap().clone();
     let closure_subst = subst.as_closure();
     let fields: Vec<_> = closure_subst
         .upvar_tys()
@@ -235,7 +235,7 @@ pub(crate) fn translate_closure_ty<'tcx>(
         })
         .collect();
 
-    let cons_name = names.constructor(did, subst).as_ident();
+    let cons_name = names.constructor(did, subst).as_ident().unwrap().clone();
     let kind = AdtDecl {
         ty_name,
         ty_params: ty_param_names(ctx.tcx, did).collect(),
@@ -515,6 +515,7 @@ pub(crate) fn destructor<'tcx>(
     let good_branch: coma::Defn = coma::Defn {
         name: format!("good").into(),
         writes: vec![],
+        attrs:vec![],
         params: field_args.clone(),
         body: Expr::Assert(
             Box::new(cons_test.clone().eq(Exp::var("input"))),
@@ -553,6 +554,7 @@ pub(crate) fn destructor<'tcx>(
             name: format!("bad").into(),
             writes: vec![],
             params: vec![],
+            attrs: vec![],
             body: Expr::Assert(Box::new(negative_assertion), Box::new(fail)),
         })
     } else {
@@ -569,8 +571,9 @@ pub(crate) fn destructor<'tcx>(
 
     let branches = std::iter::once(good_branch).chain(bad_branch).collect();
     Decl::Coma(Defn {
-        name: names.eliminator(cons_id, subst).as_ident(),
+        name: names.eliminator(cons_id, subst).as_ident().unwrap().clone(),
         writes: vec![],
+        attrs: vec![],
         params: params.collect(),
         body: Expr::Defn(Box::new(Expr::Any), false, branches),
     })
@@ -585,7 +588,7 @@ fn build_ty_decl<'tcx>(
     let substs = GenericArgs::identity_for_item(ctx.tcx, did);
 
     // HACK(xavier): Clean up
-    let ty_name = names.ty(did, substs).as_ident();
+    let ty_name = names.ty(did, substs).as_ident().unwrap().clone();
 
     // Collect type variables of declaration
     let ty_args: Vec<_> = ty_params(ctx, did).collect();
@@ -596,7 +599,7 @@ fn build_ty_decl<'tcx>(
 
         for var_def in adt.variants().iter() {
             ml_ty_def.push(ConstructorDecl {
-                name: names.constructor(var_def.def_id, substs).as_ident(),
+                name: names.constructor(var_def.def_id, substs).as_ident().unwrap().clone(),
                 fields: var_def
                     .fields
                     .iter()

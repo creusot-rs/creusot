@@ -1,4 +1,4 @@
-use crate::{declaration::Use, ty::Type, Ident, Print, QName};
+use crate::{declaration::{Attribute, Use}, ty::Type, Ident, Print, QName};
 use pretty::docs;
 
 #[cfg(feature = "serialize")]
@@ -109,6 +109,7 @@ pub enum Arg {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Defn {
     pub name: Ident,
+    pub attrs: Vec<Attribute>,
     /// Only relevant if using references
     pub writes: Vec<Ident>,
     pub params: Vec<Param>,
@@ -130,7 +131,7 @@ pub struct Module(pub Vec<Decl>);
 
 impl Defn {
     pub fn simple(name: impl Into<Ident>, body: Expr) -> Self {
-        Defn { name: name.into(), writes: vec![], params: vec![], body }
+        Defn { name: name.into(), attrs: vec![], writes: vec![], params: vec![], body }
     }
 }
 
@@ -154,7 +155,7 @@ impl Expr {
         // If we have `x [ x = z ]` replace this by `z`
         if defs.len() == 1
             && !defs[0].body.occurs_cont(&defs[0].name)
-            && self.as_symbol().is_some_and(|s| s.is_ident(&defs[0].name))
+            && self.as_symbol().and_then(QName::as_ident) == Some(&defs[0].name)
         {
             defs.remove(0).body
         } else {
@@ -185,7 +186,7 @@ impl Expr {
     /// Checks whether a symbol of name `cont` occurs in `self`
     pub fn occurs_cont(&self, cont: &Ident) -> bool {
         match self {
-            Expr::Symbol(v) => v.is_ident(&cont),
+            Expr::Symbol(v) => v.as_ident() == Some(&cont),
             Expr::App(e, arg) => {
                 let arg = if let Arg::Cont(e) = &**arg { e.occurs_cont(cont) } else { false };
                 arg || e.occurs_cont(cont)
@@ -442,6 +443,7 @@ where
     docs![
         alloc,
         defn.name.pretty(alloc),
+        alloc.intersperse(defn.attrs.iter().map(|a| a.pretty(alloc)), alloc.space()),
         alloc.space(),
         bracket_list(alloc, defn.writes.iter().map(|a| a.pretty(alloc)), " "),
         if defn.writes.is_empty() { alloc.nil() } else { alloc.space() },
