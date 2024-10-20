@@ -13,7 +13,6 @@ use crate::{
     },
     constant::from_ty_const,
     pearlite::{normalize, Term},
-    specification::PreContract,
     traits,
 };
 use rustc_middle::ty::{self, Const, ParamEnv};
@@ -32,18 +31,16 @@ use super::*;
 pub(super) struct Expander<'a, 'tcx> {
     graph: DiGraphMap<Dependency<'tcx>, ()>,
     dep_bodies: HashMap<Dependency<'tcx>, Vec<Decl>>,
-    dep_level: HashMap<Dependency<'tcx>, CloneLevel>,
     namer: &'a mut CloneNames<'tcx>,
     self_key: Dependency<'tcx>,
     param_env: ParamEnv<'tcx>,
-    expansion_queue: VecDeque<(Dependency<'tcx>, CloneLevel, Dependency<'tcx>)>,
+    expansion_queue: VecDeque<(Dependency<'tcx>, Dependency<'tcx>)>,
     tcx: TyCtxt<'tcx>,
 }
 
 struct ExpansionProxy<'a, 'tcx> {
     namer: &'a mut CloneNames<'tcx>,
-    expansion_queue: &'a mut VecDeque<(Dependency<'tcx>, CloneLevel, Dependency<'tcx>)>,
-    level: CloneLevel,
+    expansion_queue: &'a mut VecDeque<(Dependency<'tcx>, Dependency<'tcx>)>,
     source: Dependency<'tcx>,
 }
 
@@ -56,21 +53,9 @@ impl<'a, 'tcx> Namer<'tcx> for ExpansionProxy<'a, 'tcx> {
         self.namer.normalize(ctx, ty)
     }
 
-    fn with_vis<F, A>(&mut self, _: CloneLevel, f: F) -> A
-    where
-        F: FnOnce(&mut Self) -> A,
-    {
-        f(self)
-    }
-
     fn insert(&mut self, dep: Dependency<'tcx>) -> Kind {
         let dep = dep.erase_regions(self.namer.tcx);
-        // let dep = dep.resolve(self.namer.tcx, self.param_env).unwrap_or(dep);
-        // eprintln!("{:?} -> {dep:?}", self.source);
-        // if format!("{:?}", dep.did()).contains("closure#4") {
-        //     panic!("{dep:?}")
-        // }
-        self.expansion_queue.push_back((self.source, self.level, dep));
+        self.expansion_queue.push_back((self.source, dep));
         let k = self.namer.insert(dep);
         k
     }
@@ -93,7 +78,6 @@ trait DepElab {
         elab: &mut Expander<'_, 'tcx>,
         ctx: &mut Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
-        level: CloneLevel,
     ) -> Vec<why3::declaration::Decl>;
 }
 
@@ -104,19 +88,18 @@ impl DepElab for ProgElab {
         elab: &mut Expander<'_, 'tcx>,
         ctx: &mut Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
-        level: CloneLevel,
     ) -> Vec<why3::declaration::Decl> {
         let Some((def_id, subst)) = dep.did() else { return Vec::new() };
 
         let sig = ctx.sig(def_id).clone();
         let sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
         let sig = sig.normalize(ctx.tcx, elab.param_env);
-        let sig = signature(ctx, elab, sig, dep, level);
+        let sig = signature(ctx, elab, sig, dep);
         if util::is_ghost_closure(ctx.tcx, def_id) {
             // Inline the body of ghost closures
             let mut coma = program::to_why(
                 ctx,
-                &mut elab.namer(level, dep),
+                &mut elab.namer(dep),
                 BodyId { def_id: def_id.expect_local(), promoted: None },
             );
             coma.name = sig.name;
@@ -133,9 +116,8 @@ fn signature<'tcx>(
     elab: &mut Expander<'_, 'tcx>,
     sig: PreSignature<'tcx>,
     dep: Dependency<'tcx>,
-    level: CloneLevel,
 ) -> Signature {
-    let mut names = elab.namer(level, dep);
+    let mut names = elab.namer(dep);
 
     let name = if let Dependency::ClosureSpec(_, _, _) = dep {
         names.insert(dep).ident()
@@ -162,7 +144,6 @@ impl DepElab for LogicElab {
         elab: &mut Expander<'_, 'tcx>,
         ctx: &mut Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
-        mut level: CloneLevel,
     ) -> Vec<why3::declaration::Decl> {
         assert!(matches!(
             dep,
@@ -190,11 +171,7 @@ impl DepElab for LogicElab {
         if util::is_inv(ctx.tcx, def_id) {
             let ty = subst.type_at(0);
             let ty = ctx.try_normalize_erasing_regions(elab.param_env, ty).unwrap_or(ty);
-            elab.expansion_queue.push_back((
-                elab.self_key,
-                CloneLevel::Body,
-                Dependency::TyInvAxiom(ty),
-            ));
+            elab.expansion_queue.push_back((elab.self_key, Dependency::TyInvAxiom(ty)));
         }
 
         let kind = if dep.is_closure_spec() {
@@ -226,38 +203,26 @@ impl DepElab for LogicElab {
             .trait_of_item(def_id)
             .map(|_| traits::resolve_assoc_item_opt(ctx.tcx, elab.param_env, def_id, subst));
 
-        // Move out to a higher level
-        if matches!(
+        let is_opaque = matches!(
             trait_resol,
             Some(traits::TraitResol::UnknownFound | traits::TraitResol::UnknownNotFound)
         ) || elab
             .self_key
             .did()
-            .is_some_and(|(self_did, _)| !ctx.is_transparent_from(def_id, self_did))
-        {
-            level = level.min(CloneLevel::Contract);
-        };
+            .is_some_and(|(self_did, _)| !ctx.is_transparent_from(def_id, self_did));
 
-        match level {
-            CloneLevel::Signature => {
-                sig.contract = PreContract::default();
-                let sig = signature(ctx, elab, sig, dep, level);
-                val(ctx, sig, kind)
+        if is_opaque {
+            let mut sig = signature(ctx, elab, sig, dep);
+            if let Some(LetKind::Predicate) = kind {
+                sig.retty = None;
             }
-            CloneLevel::Contract => {
-                let mut sig = signature(ctx, elab, sig, dep, level);
-                if let Some(LetKind::Predicate) = kind {
-                    sig.retty = None;
-                }
-                val(ctx, sig, kind)
-            }
-            CloneLevel::Body => {
-                let sig = signature(ctx, elab, sig, dep, level);
+            val(ctx, sig, kind)
+        } else {
+            let sig = signature(ctx, elab, sig, dep);
 
-                let Some(term) = term(ctx, elab.param_env, dep) else { return val(ctx, sig, kind) };
+            let Some(term) = term(ctx, elab.param_env, dep) else { return val(ctx, sig, kind) };
 
-                lower_logical_defn(ctx, &mut elab.namer(level, dep), sig, kind, term)
-            }
+            lower_logical_defn(ctx, &mut elab.namer(dep), sig, kind, term)
         }
     }
 }
@@ -269,7 +234,7 @@ fn expand_ty_inv<'tcx>(
     ty: Ty<'tcx>,
 ) -> Vec<Decl> {
     let param_env = elab.param_env;
-    let mut names = elab.namer(CloneLevel::Body, Dependency::TyInvAxiom(ty));
+    let mut names = elab.namer(Dependency::TyInvAxiom(ty));
 
     let mut elab = InvariantElaborator::new(param_env, ctx);
     let Some(term) = elab.elaborate_inv(ty, false) else { return vec![] };
@@ -288,7 +253,7 @@ fn expand_structural_resolve<'tcx>(
 ) -> Vec<Decl> {
     let (binder, term) = structural_resolve(ctx, ty);
     let param_env = elab.param_env;
-    let mut names = elab.namer(CloneLevel::Body, Dependency::StructuralResolve(ty));
+    let mut names = elab.namer(Dependency::StructuralResolve(ty));
     let exp = if let Some(mut term) = term {
         normalize(ctx.tcx, param_env, &mut term);
         Some(lower_pure(ctx, &mut names, &term))
@@ -355,14 +320,13 @@ impl DepElab for TyElab {
         elab: &mut Expander<'_, 'tcx>,
         ctx: &mut Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
-        level: CloneLevel,
     ) -> Vec<why3::declaration::Decl> {
         assert!(matches!(dep, Dependency::Type(_)));
 
         let Dependency::Type(ty) = dep else { return Vec::new() };
         let Some((def_id, subst)) = dep.did() else { return Vec::new() };
 
-        let mut names = elab.namer(level, dep);
+        let mut names = elab.namer(dep);
         match ty.kind() {
             TyKind::Alias(_, _) => vec![ctx.assoc_ty_decl(&mut names, def_id, subst)],
             _ => {
@@ -399,7 +363,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         self_key: Dependency<'tcx>,
         param_env: ParamEnv<'tcx>,
         tcx: TyCtxt<'tcx>,
-        initial: impl Iterator<Item = (CloneLevel, Dependency<'tcx>)>,
+        initial: impl Iterator<Item = Dependency<'tcx>>,
     ) -> Self {
         let exp = Self {
             graph: Default::default(),
@@ -407,19 +371,17 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             namer,
             self_key,
             param_env,
-            expansion_queue: initial.map(|(a, b)| (self_key, a, b)).collect(),
+            expansion_queue: initial.map(|b| (self_key, b)).collect(),
             tcx,
             dep_bodies: Default::default(),
-            dep_level: Default::default(),
         };
         exp
     }
 
-    fn namer(&mut self, _: CloneLevel, source: Dependency<'tcx>) -> ExpansionProxy<'_, 'tcx> {
+    fn namer(&mut self, source: Dependency<'tcx>) -> ExpansionProxy<'_, 'tcx> {
         ExpansionProxy {
             namer: &mut self.namer,
             expansion_queue: &mut self.expansion_queue,
-            level: CloneLevel::Body,
             source,
         }
     }
@@ -430,32 +392,29 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         ctx: &mut Why3Generator<'tcx>,
     ) -> (DiGraphMap<Dependency<'tcx>, ()>, HashMap<Dependency<'tcx>, Vec<Decl>>) {
         let mut visited = HashSet::new();
-        while let Some((s, l, t)) = self.expansion_queue.pop_front() {
+        while let Some((s, t)) = self.expansion_queue.pop_front() {
             let t = t.resolve(ctx.tcx, self.param_env).unwrap_or(t);
 
             self.graph.add_edge(s, t, ());
 
-            if !visited.insert((l, t)) {
+            if !visited.insert(t) {
                 continue;
             }
-            self.expand(ctx, l, t);
+            self.expand(ctx, t);
         }
         (self.graph, self.dep_bodies)
     }
 
-    fn expand(&mut self, ctx: &mut Why3Generator<'tcx>, level: CloneLevel, dep: Dependency<'tcx>) {
-        if self.dep_level.get(&dep).map(|lvl| *lvl >= level).unwrap_or(false) {
-            return;
-        }
+    fn expand(&mut self, ctx: &mut Why3Generator<'tcx>, dep: Dependency<'tcx>) {
         expand_laws(self, ctx, dep);
 
         let decls = match dep {
-            Dependency::Type(_) => TyElab::expand(self, ctx, dep, level),
+            Dependency::Type(_) => TyElab::expand(self, ctx, dep),
             Dependency::Item(mut def_id, _) => {
                 if ctx.is_logical(def_id) {
-                    LogicElab::expand(self, ctx, dep, level)
+                    LogicElab::expand(self, ctx, dep)
                 } else if ctx.is_constant(dep.to_trans_id(ctx.tcx, self.param_env).unwrap()) {
-                    LogicElab::expand(self, ctx, dep, CloneLevel::Body)
+                    LogicElab::expand(self, ctx, dep)
                 } else if matches!(ctx.def_kind(def_id), DefKind::Field) {
                     if util::item_type(self.tcx, def_id) == ItemType::Field {
                         def_id = self.tcx.parent(def_id);
@@ -467,19 +426,18 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                         Use { as_: Some(name.clone()), name: modl.as_str().into(), export: false };
                     vec![Decl::UseDecl(use_decl)]
                 } else {
-                    ProgElab::expand(self, ctx, dep, level)
+                    ProgElab::expand(self, ctx, dep)
                 }
             }
-            Dependency::TyInvAxiom(_) => LogicElab::expand(self, ctx, dep, level),
-            Dependency::StructuralResolve(_) => LogicElab::expand(self, ctx, dep, level),
-            Dependency::ClosureSpec(_, _, _) => LogicElab::expand(self, ctx, dep, level),
+            Dependency::TyInvAxiom(_) => LogicElab::expand(self, ctx, dep),
+            Dependency::StructuralResolve(_) => LogicElab::expand(self, ctx, dep),
+            Dependency::ClosureSpec(_, _, _) => LogicElab::expand(self, ctx, dep),
             Dependency::Builtin(b) => {
                 vec![Decl::UseDecl(Use { name: b.qname(), as_: None, export: false })]
             }
         };
-        // eprintln!("{:?} {:?} {:?}", self.namer.insert(dep), dep, decls);
+
         self.dep_bodies.insert(dep, decls);
-        self.dep_level.insert(dep, level);
     }
 }
 
@@ -512,7 +470,7 @@ fn expand_laws<'tcx>(
     }
 
     let tcx = ctx.tcx;
-    let mut namer = elab.namer(CloneLevel::Body, elab.self_key);
+    let mut namer = elab.namer(elab.self_key);
     for law in ctx.laws(item.container_id(tcx)) {
         let dep = Dependency::new(tcx, (*law, item_subst));
 

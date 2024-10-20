@@ -310,7 +310,9 @@ impl<'tcx> Why3Generator<'tcx> {
 
     fn is_constant(&self, item: TransId) -> bool {
         match item {
-            TransId::Item(def_id) => matches!(util::item_type(self.tcx, def_id), ItemType::Constant),
+            TransId::Item(def_id) => {
+                matches!(util::item_type(self.tcx, def_id), ItemType::Constant)
+            }
             _ => false,
         }
     }

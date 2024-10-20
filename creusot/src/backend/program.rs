@@ -5,7 +5,7 @@ use super::{
     signature::signature_of,
     term::{lower_pat, lower_pure},
     ty::{destructor, int_ty},
-     NameSupply, Namer, Why3Generator,
+    NameSupply, Namer, Why3Generator,
 };
 use crate::{
     backend::{

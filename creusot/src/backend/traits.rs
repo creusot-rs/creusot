@@ -1,8 +1,4 @@
-use super::{
-    clone_map::{CloneLevel, Dependencies},
-    term::lower_pure,
-    Why3Generator,
-};
+use super::{clone_map::Dependencies, term::lower_pure, Why3Generator};
 use crate::{
     backend,
     backend::{all_generic_decls_for, own_generic_decls_for, Namer},
@@ -76,14 +72,14 @@ impl<'tcx> Why3Generator<'tcx> {
         let ty_params = vec![];
 
         let ty_decl = match self.tcx.associated_item(def_id).container {
-            rustc_middle::ty::ImplContainer => names.with_vis(CloneLevel::Signature, |names| {
+            rustc_middle::ty::ImplContainer => {
                 let assoc_ty = self.tcx.type_of(def_id).instantiate_identity();
                 TyDecl::Alias {
                     ty_name,
                     ty_params,
                     alias: backend::ty::translate_ty(self, names, rustc_span::DUMMY_SP, assoc_ty),
                 }
-            }),
+            }
             rustc_middle::ty::TraitContainer => TyDecl::Opaque { ty_name, ty_params },
         };
 
