@@ -1,5 +1,6 @@
-use crate::{tools_versions_urls::*, Config};
+use crate::tools_versions_urls::*;
 use anyhow::{anyhow, bail, Context};
+use indoc::writedoc;
 use reqwest::blocking::Client;
 use std::{
     fs,
@@ -228,7 +229,7 @@ fn generate_strategy(f: &mut dyn Write) -> anyhow::Result<()> {
     let z3 = format!("Z3,{Z3_VERSION}");
     let cvc5 = format!("CVC5,{CVC5_VERSION}");
     let cvc4 = format!("CVC4,{CVC4_VERSION}");
-    write!(
+    writedoc!(
         f,
         r#"
         [strategy]
@@ -247,8 +248,8 @@ fn generate_strategy(f: &mut dyn Write) -> anyhow::Result<()> {
         c {altergo} 6. 4000 | {cvc5} 6. 4000 | {z3} 6. 4000 | {cvc4} 6. 4000
         "
         desc = "Automatic@ run@ of@ provers@ and@ most@ useful@ transformations"
-        name = "Auto_level_3"
-        shortcut = "3"
+        name = "Creusot_Auto"
+        shortcut = "4"
     "#,
     )?;
 
