@@ -185,11 +185,13 @@ pub fn val<'tcx>(_: &mut Why3Generator<'tcx>, sig: Signature) -> Decl {
         vec![Defn {
             name: "return".into(),
             writes: Vec::new(),
+            attrs: vec![],
+
             params: vec![Param::Term("result".into(), sig.retty.clone().unwrap())],
             body: postcond,
         }],
     );
-    why3::declaration::Decl::Coma(Defn { name: sig.name, writes: Vec::new(), params, body })
+    why3::declaration::Decl::Coma(Defn { name: sig.name, writes: Vec::new(), attrs: vec![], params, body })
 }
 
 // TODO: move to a more "central" location
@@ -277,6 +279,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         vec![Defn {
             name: "return".into(),
             writes: Vec::new(),
+            attrs: vec![],
             params: vec![Param::Term("result".into(), sig.retty.clone().unwrap())],
             body: postcond,
         }],
@@ -299,7 +302,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
             vec![Param::Term("ret".into(), sig.retty.unwrap())],
         )])
         .collect();
-    coma::Defn { name: sig.name, writes: Vec::new(), params, body }
+    coma::Defn { name: sig.name, writes: Vec::new(), attrs: vec![], params, body }
 }
 
 use super::wto::Component;
@@ -758,7 +761,7 @@ fn mk_adt_switch<'tcx, N: Namer<'tcx>>(
         );
 
         let branch =
-            coma::Defn { name: format!("br{c}").into(), body: filter, params, writes: Vec::new() };
+            coma::Defn { name: format!("br{c}").into(), body: filter, params, writes: Vec::new(), attrs: vec![], };
         out.push(branch)
     }
     out
@@ -849,6 +852,7 @@ where
             vec![Defn {
                 name: "any_".into(),
                 writes: vec![],
+                attrs: vec![],
                 params: vec![Param::Term(id, ty)],
                 body: Expr::BlackBox(Box::new(tail)),
             }],
