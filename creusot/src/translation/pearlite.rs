@@ -164,7 +164,22 @@ pub enum TermKind<'tcx> {
         fin: Box<Term<'tcx>>,
         projection: ProjectionVec<Term<'tcx>, Ty<'tcx>>,
     },
+    Borrow {
+        inner: Box<Term<'tcx>>,
+    },
     Absurd,
+    /// Inferred preconditions for `(item, args)`
+    Precondition {
+        item: DefId,
+        args: GenericArgsRef<'tcx>,
+        params: Vec<Term<'tcx>>,
+    },
+    /// Inferred postconditions for `(item, args)`
+    Postcondition {
+        item: DefId,
+        args: GenericArgsRef<'tcx>,
+        params: Vec<Term<'tcx>>,
+    },
 }
 
 impl<'tcx> TermKind<'tcx> {
@@ -583,40 +598,18 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         "Triggers can only be used directly inside quantifiers",
                     )),
                     None => {
+                        let args = args
+                            .iter()
+                            .map(|arg| self.expr_term(*arg))
+                            .collect::<Result<Vec<_>, _>>()?;
                         let fun = self.expr_term(fun)?;
                         let (id, subst) = if let TermKind::Item(id, subst) = fun.kind {
                             (id, subst)
                         } else {
                             unreachable!("Call on non-function type");
                         };
-                        // HACK: allow dereferencing of GhostBox in pearlite
-                        if let Some(new_subst) = is_ghost_box_deref(
-                            self.ctx.tcx,
-                            id,
-                            subst.get(0).and_then(|arg| arg.as_type()),
-                        ) {
-                            let term = self.expr_term(args[0])?;
-                            let inner_id = self
-                                .ctx
-                                .get_diagnostic_item(Symbol::intern("ghost_box_inner_logic"))
-                                .unwrap();
-                            Ok(Term {
-                                ty,
-                                span,
-                                kind: TermKind::Call {
-                                    id: inner_id,
-                                    subst: new_subst,
-                                    args: vec![term],
-                                },
-                            })
-                        } else {
-                            let args = args
-                                .iter()
-                                .map(|arg| self.expr_term(*arg))
-                                .collect::<Result<Vec<_>, _>>()?;
 
-                            Ok(Term { ty, span, kind: TermKind::Call { id, subst, args } })
-                        }
+                        Ok(Term { ty, span, kind: TermKind::Call { id, subst, args } })
                     }
                 }
             }
@@ -858,10 +851,6 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 }
                 Ok(Pattern::Boolean(value.try_to_bool().unwrap()))
             }
-            // TODO: this simply ignores type annotations, maybe we should actually support them
-            PatKind::AscribeUserType { ascription: _, subpattern } => {
-                self.pattern_term(subpattern, mut_allowed)
-            }
             ref pk => todo!("lower_pattern: unsupported pattern kind {:?}", pk),
         }
     }
@@ -1073,29 +1062,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
         let TyKind::FnDef(id, sub) = ty.kind() else { panic!("expected function type") };
 
-        self.ctx.is_diagnostic_item(Symbol::intern("deref_method"), *id)
-            && is_snap_ty(self.ctx.tcx, sub[0].as_type().unwrap())
-    }
-}
-
-fn is_ghost_box_deref<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    fn_id: DefId,
-    ty: Option<Ty<'tcx>>,
-) -> Option<&'tcx GenericArgs<'tcx>> {
-    let Some(ty) = ty else { return None };
-    if !tcx.is_diagnostic_item(Symbol::intern("deref_method"), fn_id) {
-        return None;
-    }
-    match ty.kind() {
-        rustc_type_ir::TyKind::Adt(containing_type, new_subst) => {
-            if tcx.is_diagnostic_item(Symbol::intern("ghost_box"), containing_type.did()) {
-                Some(new_subst)
-            } else {
-                None
-            }
+        if *id != self.ctx.get_diagnostic_item(Symbol::intern("deref_method")).unwrap() {
+            return false;
         }
-        _ => None,
+
+        sub[0].as_type().map(|ty| is_snap_ty(self.ctx.tcx, ty)).unwrap_or(false)
     }
 }
 
@@ -1141,20 +1112,40 @@ pub(crate) enum Stub {
 
 pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
     if let TyKind::FnDef(id, _) = *ty.kind() {
-        match tcx.get_diagnostic_name(id)?.as_str() {
-            "forall" => Some(Stub::Forall),
-            "exists" => Some(Stub::Exists),
-            "trigger" => Some(Stub::Trigger),
-            "fin" => Some(Stub::Fin),
-            "implication" => Some(Stub::Impl),
-            "equal" => Some(Stub::Equals),
-            "neq" => Some(Stub::Neq),
-            "variant_check" => Some(Stub::VariantCheck),
-            "old" => Some(Stub::Old),
-            "absurd" => Some(Stub::Absurd),
-            "closure_result_constraint" => Some(Stub::ResultCheck),
-            _ => None,
+        if id == tcx.get_diagnostic_item(Symbol::intern("forall")).unwrap() {
+            return Some(Stub::Forall);
         }
+        if id == tcx.get_diagnostic_item(Symbol::intern("exists")).unwrap() {
+            return Some(Stub::Exists);
+        }
+        if id == tcx.get_diagnostic_item(Symbol::intern("trigger")).unwrap() {
+            return Some(Stub::Trigger);
+        }
+        if id == tcx.get_diagnostic_item(Symbol::intern("fin")).unwrap() {
+            return Some(Stub::Fin);
+        }
+        if id == tcx.get_diagnostic_item(Symbol::intern("implication")).unwrap() {
+            return Some(Stub::Impl);
+        }
+        if id == tcx.get_diagnostic_item(Symbol::intern("equal")).unwrap() {
+            return Some(Stub::Equals);
+        }
+        if id == tcx.get_diagnostic_item(Symbol::intern("neq")).unwrap() {
+            return Some(Stub::Neq);
+        }
+        if id == tcx.get_diagnostic_item(Symbol::intern("variant_check")).unwrap() {
+            return Some(Stub::VariantCheck);
+        }
+        if id == tcx.get_diagnostic_item(Symbol::intern("old")).unwrap() {
+            return Some(Stub::Old);
+        }
+        if id == tcx.get_diagnostic_item(Symbol::intern("absurd")).unwrap() {
+            return Some(Stub::Absurd);
+        }
+        if id == tcx.get_diagnostic_item(Symbol::intern("closure_result_constraint")).unwrap() {
+            return Some(Stub::ResultCheck);
+        }
+        None
     } else {
         None
     }
@@ -1264,6 +1255,13 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
             visit_projections(projection, |term| visitor.visit_term(term))
         }
         TermKind::Assert { cond } => visitor.visit_term(&*cond),
+        TermKind::Precondition { params, .. } => {
+            params.iter().for_each(|a| visitor.visit_term(&*a))
+        }
+        TermKind::Postcondition { params, .. } => {
+            params.iter().for_each(|a| visitor.visit_term(&*a))
+        }
+        TermKind::Borrow { inner } => visitor.visit_term(&*inner),
     }
 }
 
@@ -1322,6 +1320,13 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
             visit_projections_mut(projection, |term| visitor.visit_mut_term(term))
         }
         TermKind::Assert { cond } => visitor.visit_mut_term(&mut *cond),
+        TermKind::Precondition { params, .. } => {
+            params.iter_mut().for_each(|a| visitor.visit_mut_term(a))
+        }
+        TermKind::Postcondition { params, .. } => {
+            params.iter_mut().for_each(|a| visitor.visit_mut_term(a))
+        }
+        TermKind::Borrow { inner } => visitor.visit_mut_term(inner),
     }
 }
 
@@ -1556,6 +1561,13 @@ impl<'tcx> Term<'tcx> {
                 visit_projections_mut(projection, |term| term.subst_with_inner(bound, inv_subst))
             }
             TermKind::Assert { cond } => cond.subst_with_inner(bound, inv_subst),
+            TermKind::Precondition { params, .. } => {
+                params.iter_mut().for_each(|p| p.subst_with_inner(bound, inv_subst))
+            }
+            TermKind::Postcondition { params, .. } => {
+                params.iter_mut().for_each(|p| p.subst_with_inner(bound, inv_subst))
+            }
+            TermKind::Borrow { inner } => inner.subst_with_inner(bound, inv_subst),
         }
     }
 
@@ -1636,6 +1648,13 @@ impl<'tcx> Term<'tcx> {
                 visit_projections(projection, |term| term.free_vars_inner(bound, free))
             }
             TermKind::Assert { cond } => cond.free_vars_inner(bound, free),
+            TermKind::Precondition { params, .. } => {
+                params.iter().for_each(|p| p.free_vars_inner(bound, free))
+            }
+            TermKind::Postcondition { params, .. } => {
+                params.iter().for_each(|p| p.free_vars_inner(bound, free))
+            }
+            TermKind::Borrow { inner } => inner.free_vars_inner(bound, free),
         }
     }
 
