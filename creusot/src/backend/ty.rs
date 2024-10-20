@@ -3,11 +3,12 @@ use crate::{
     contracts_items::{self, get_builtin},
     ctx::*,
     translated_item::FileModule,
+    signature::PreSignature,
     translation::{
         pearlite::{self, Term, TermKind},
         specification::PreContract,
     },
-    util::{self, item_name, translate_accessor_name, PreSignature},
+    util::{self, item_name, translate_accessor_name},
 };
 use indexmap::IndexSet;
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
@@ -515,7 +516,7 @@ pub(crate) fn destructor<'tcx>(
     let good_branch: coma::Defn = coma::Defn {
         name: format!("good").into(),
         writes: vec![],
-        attrs:vec![],
+        attrs: vec![],
         params: field_args.clone(),
         body: Expr::Assert(
             Box::new(cons_test.clone().eq(Exp::var("input"))),

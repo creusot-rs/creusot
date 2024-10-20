@@ -15,12 +15,21 @@ use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug, Default, TypeFoldable, TypeVisitable)]
 pub struct PreContract<'tcx> {
+    /// Variant clause used to prove termination of the described function
     pub(crate) variant: Option<Term<'tcx>>,
+    /// Preconditions of the described function. In the case of logical functions
+    /// these are not checked before calls but instead guard 'access' to the postcondition.
     pub(crate) requires: Vec<Term<'tcx>>,
+    /// Postconditions for this function.
     pub(crate) ensures: Vec<Term<'tcx>>,
+    /// Checks that this function cannot panic, used for ghost code.
     pub(crate) no_panic: bool,
+    /// Checks if this function *must* terminate, used for ghost code.
     pub(crate) terminates: bool,
+    /// Marks unknown external functions with no specification which get an implicit `requires false`
     pub(crate) extern_no_spec: bool,
+    /// Are any of the contract clauses here user provided? or merely Creusot inferred / provided?
+    pub(crate) has_user_contract: bool,
 }
 
 impl<'tcx> PreContract<'tcx> {
@@ -71,6 +80,9 @@ impl<'tcx> PreContract<'tcx> {
     }
 }
 
+/// [ContractClauses] is the most "raw" form of contract we have in Creusot,
+/// in this stage, we have only gathered the [DefId]s of the items that hold the various contract
+/// expressions.
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub struct ContractClauses {
     variant: Option<DefId>,
@@ -93,6 +105,8 @@ impl ContractClauses {
 
     fn get_pre<'tcx>(self, ctx: &mut TranslationCtx<'tcx>) -> EarlyBinder<'tcx, PreContract<'tcx>> {
         let mut out = PreContract::default();
+        out.has_user_contract =
+            !self.requires.is_empty() || !self.ensures.is_empty() || self.variant.is_some();
         for req_id in self.requires {
             log::trace!("require clause {:?}", req_id);
             let term = ctx.term(req_id).unwrap().clone();

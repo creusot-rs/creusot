@@ -14,8 +14,9 @@ use crate::{
     constant::from_ty_const,
     contracts_items::{get_builtin, get_resolve_method, is_inv_function, is_resolve_function},
     pearlite::{normalize, Term},
+    signature::PreSignature,
     traits,
-    util::{ident_of, PreSignature},
+    util::ident_of,
 };
 use rustc_middle::ty::{self, Const, ParamEnv};
 use rustc_span::DUMMY_SP;
