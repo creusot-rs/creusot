@@ -181,13 +181,22 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
 
     let mut postcond = Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("result"))]);
 
-    if body_id.promoted.is_none() && !is_ghost_closure(ctx.tcx, body_id.def_id()) {
+    // We remove the barrier around the definition in the following edge cases:
+    let open_body = false
+        // a closure with no contract
+        || (ctx.is_closure_like(body_id.def_id()) && !ctx.sig(body_id.def_id()).contract.has_user_contract)
+        // a promoted item
+        || body_id.promoted.is_some()
+        // a ghost closure
+        || is_ghost_closure(ctx.tcx, body_id.def_id());
+
+    if !open_body {
         postcond = Expr::BlackBox(Box::new(postcond));
     }
     let ensures = sig.contract.ensures.into_iter().map(Condition::labelled_exp);
     postcond = ensures.rfold(postcond, |acc, cond| Expr::Assert(Box::new(cond), Box::new(acc)));
 
-    if body_id.promoted.is_none() && !is_ghost_closure(ctx.tcx, body_id.def_id()) {
+    if !open_body {
         body = Expr::BlackBox(Box::new(body))
     };
 
