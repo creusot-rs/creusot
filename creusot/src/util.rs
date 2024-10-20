@@ -150,10 +150,12 @@ pub(crate) fn is_inv(tcx: TyCtxt, def_id: DefId) -> bool {
     tcx.is_diagnostic_item(Symbol::intern("creusot_invariant_internal"), def_id)
 }
 
+#[allow(dead_code)]
 pub(crate) fn is_invariant_method(tcx: TyCtxt, def_id: DefId) -> bool {
     tcx.is_diagnostic_item(Symbol::intern("creusot_invariant_user"), def_id)
 }
 
+#[allow(dead_code)]
 pub(crate) fn is_resolve_method(tcx: TyCtxt, def_id: DefId) -> bool {
     tcx.is_diagnostic_item(Symbol::intern("creusot_resolve_method"), def_id)
 }

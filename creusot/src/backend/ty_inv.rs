@@ -1,6 +1,5 @@
-use super::{term::lower_pure, CloneSummary, Dependencies, TransId, Why3Generator};
+use super::Why3Generator;
 use crate::{
-    ctx::*,
     pearlite::Trigger,
     traits::TraitResol,
     translation::{
@@ -16,6 +15,8 @@ use std::{collections::HashSet, iter};
 // Rewrite a type as a "head type" and a ssusbtitution, such that the head type applied to the substitution
 // equals the type.
 // The head type is used as a dependency node.
+// NOTE: Performance hasn't been a concern for us, but in general I think that this method can be surprisingly expensive
+// as it performs trait resolution each time its run.
 pub(crate) fn tyinv_head_and_subst<'tcx>(
     tcx: TyCtxt<'tcx>,
     ty: Ty<'tcx>,
@@ -315,26 +316,6 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
             span: DUMMY_SP,
         }
     }
-}
-
-pub(crate) fn get_tyinv_deps<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
-    ty: Ty<'tcx>,
-) -> CloneSummary<'tcx> {
-    let mut names = Dependencies::new(ctx, [TransId::TyInvAxiom(ty)]);
-
-    let param_env = if let Some(adt) = ty.ty_adt_def() {
-        ctx.tcx.param_env(adt.did())
-    } else {
-        ParamEnv::empty()
-    };
-
-    if let Some(inv_term) = InvariantElaborator::new(param_env, ctx).elaborate_inv(ty, true) {
-        lower_pure(ctx, &mut names, &inv_term);
-    }
-
-    let (_, summary) = names.provide_deps(ctx, GraphDepth::Shallow);
-    summary
 }
 
 fn resolve_user_inv<'tcx>(

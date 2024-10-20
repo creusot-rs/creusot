@@ -369,7 +369,7 @@ pub(crate) fn translate_tydecl(
             attrs: Vec::from_iter(ctx.span_attr(ctx.def_span(repr))),
             meta: ctx.display_impl_of(repr),
         };
-        let _ = names.provide_deps(ctx, GraphDepth::Shallow);
+        let _ = names.provide_deps(ctx);
         return Some(vec![modl]);
     }
 
@@ -389,7 +389,7 @@ pub(crate) fn translate_tydecl(
         });
     }
 
-    let (mut decls, _) = names.provide_deps(ctx, GraphDepth::Shallow);
+    let mut decls = names.provide_deps(ctx);
     decls.push(Decl::TyDecl(ty_decl));
 
     decls.extend(destructors);
@@ -677,8 +677,8 @@ pub(crate) fn translate_accessor(
     let field = &variant.fields[ix.into()];
 
     let substs = GenericArgs::identity_for_item(ctx.tcx, adt_did);
-    let self_ids: Vec<_> = ctx.binding_group(adt_did).iter().copied().collect();
-    let mut names = Dependencies::new(ctx, self_ids);
+    let omg: Vec<_> = ctx.binding_group(adt_did).iter().copied().collect();
+    let mut names = Dependencies::new(ctx, omg);
 
     let acc_name = translate_accessor_name(variant.name.as_str(), field.name.as_str());
 
@@ -700,7 +700,7 @@ pub(crate) fn translate_accessor(
         ctx.type_of(adt_did).instantiate_identity(),
     );
 
-    let _ = names.provide_deps(ctx, GraphDepth::Shallow);
+    let _ = names.provide_deps(ctx);
 
     build_accessor(
         this,

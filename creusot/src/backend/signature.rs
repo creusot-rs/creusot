@@ -89,7 +89,7 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
     named_sig_to_why3(ctx, names, name, pre_sig, def_id)
 }
 
-fn contract_to_why3<'tcx, N: Namer<'tcx>>(
+pub(super) fn contract_to_why3<'tcx, N: Namer<'tcx>>(
     pre: &PreContract<'tcx>,
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,
