@@ -14,7 +14,7 @@ use why3::{
 };
 
 use crate::{
-    backend::{clone_map::expander::Expander, dependency::Dependency},
+    backend::{clone_map::elaborator::Expander, dependency::Dependency},
     ctx::*,
     options::SpanMode,
     util::{self, item_name, module_name},
@@ -23,7 +23,7 @@ use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 
 use super::{dependency::ClosureSpecKind, TransId, Why3Generator};
 
-mod expander;
+mod elaborator;
 
 // Prelude modules
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, TypeVisitable, TypeFoldable)]

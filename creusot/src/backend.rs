@@ -20,7 +20,6 @@ pub(crate) use clone_map::*;
 use self::dependency::ClosureSpecKind;
 
 pub(crate) mod clone_map;
-pub(crate) mod constant;
 pub(crate) mod dependency;
 pub(crate) mod logic;
 pub(crate) mod optimization;
@@ -150,7 +149,7 @@ impl<'tcx> Why3Generator<'tcx> {
             }
             ItemType::Constant => {
                 self.start(def_id);
-                let constant = self.translate_constant(def_id);
+                let constant = TranslatedItem::Constant {};
                 self.finish(def_id);
                 self.functions.insert(tid, constant);
             }
