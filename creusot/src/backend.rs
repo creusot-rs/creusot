@@ -133,12 +133,28 @@ impl<'tcx> Why3Generator<'tcx> {
                     self.finish(def_id);
                 }
             }
-            ItemType::Logic { .. }
-            | ItemType::Predicate { .. }
-            | ItemType::Program
-            | ItemType::Closure => {
+            ItemType::Predicate { .. } if util::is_resolve_function(self.tcx, def_id) => {
                 self.start(def_id);
-                self.translate_function(def_id);
+                self.functions.insert(def_id.into(), TranslatedItem::Logic { proof_modl: None });
+                self.finish(def_id);
+            }
+            ItemType::Logic { .. } | ItemType::Predicate { .. } => {
+                self.start(def_id);
+                let proof_modl = logic::translate_logic_or_predicate(self, def_id);
+                self.functions.insert(def_id.into(), TranslatedItem::Logic { proof_modl });
+                self.finish(def_id);
+            }
+            ItemType::Program => {
+                self.start(def_id);
+                let modl = program::translate_function(self, def_id);
+                self.functions.insert(def_id.into(), TranslatedItem::Program { modl });
+
+                self.finish(def_id);
+            }
+            ItemType::Closure => {
+                self.start(def_id);
+                let (ty_modl, modl) = program::translate_closure(self, def_id);
+                self.functions.insert(def_id.into(), TranslatedItem::Closure { ty_modl, modl });
                 self.finish(def_id);
             }
             ItemType::AssocTy => {
@@ -179,45 +195,6 @@ impl<'tcx> Why3Generator<'tcx> {
                 &format!("unsupported definition kind {:?} {:?}", def_id, dk),
             ),
         }
-    }
-
-    // Generic entry point for function translation
-    fn translate_function(&mut self, def_id: DefId) {
-        assert!(matches!(
-            self.tcx.def_kind(def_id),
-            DefKind::Fn | DefKind::Closure | DefKind::AssocFn
-        ));
-
-        if !crate::util::should_translate(self.tcx, def_id) || util::is_spec(self.tcx, def_id) {
-            debug!("Skipping {:?}", def_id);
-            return;
-        }
-
-        let translated = match util::item_type(self.tcx, def_id) {
-            ItemType::Logic { .. } | ItemType::Predicate { .. } => {
-                debug!("translating {:?} as logical", def_id);
-
-                if util::is_resolve_function(self.tcx, def_id) {
-                    TranslatedItem::Logic { proof_modl: None }
-                } else {
-                    let proof_modl = logic::translate_logic_or_predicate(self, def_id);
-                    TranslatedItem::Logic { proof_modl }
-                }
-            }
-            ItemType::Closure => {
-                let (ty_modl, modl) = program::translate_closure(self, def_id);
-
-                TranslatedItem::Closure { ty_modl, modl }
-            }
-            ItemType::Program => {
-                debug!("translating {def_id:?} as program");
-                let modl = program::translate_function(self, def_id);
-                TranslatedItem::Program { modl }
-            }
-            _ => unreachable!(),
-        };
-
-        self.functions.insert(def_id.into(), translated);
     }
 
     pub(crate) fn translate_accessor(&mut self, field_id: DefId) {

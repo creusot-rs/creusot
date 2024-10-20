@@ -362,10 +362,7 @@ pub(crate) fn translate_tydecl(
         let ty_params: Vec<_> = ty_param_names(ctx.tcx, repr).collect();
         let modl = Module {
             name,
-            decls: vec![Decl::TyDecl(TyDecl::Opaque {
-                ty_name: ty_name.clone(),
-                ty_params: ty_params.clone(),
-            })],
+            decls: vec![Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params })],
             attrs: Vec::from_iter(ctx.span_attr(ctx.def_span(repr))),
             meta: ctx.display_impl_of(repr),
         };

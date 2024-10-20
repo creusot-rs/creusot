@@ -373,7 +373,7 @@ impl<'tcx> CloneNames<'tcx> {
 
                     Kind::Used(modl, name)
                 } else {
-                    Kind::Named(Symbol::intern("hidden_type_name"))
+                    Kind::Unnamed
                 };
 
                 return kind;
