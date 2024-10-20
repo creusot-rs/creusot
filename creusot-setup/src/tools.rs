@@ -1,8 +1,9 @@
-use crate::tools_versions_urls::*;
+use crate::{tools_versions_urls::*, Config};
 use anyhow::{anyhow, bail, Context};
 use reqwest::blocking::Client;
 use std::{
     fs,
+    io::Write,
     path::{Path, PathBuf},
     process::Command,
 };
@@ -202,7 +203,7 @@ pub fn generate_why3_conf(
         let mut f = fs::File::create(&dest_file)?;
         writeln!(&mut f, "[main]")?;
         writeln!(&mut f, "magic = {WHY3_CONFIG_MAGIC_NUMBER}")?;
-        writeln!(&mut f, "running_provers_max = {provers_parallelism}")?;
+        writeln!(&mut f, "running_provers_max = {}", provers_parallelism)?;
     }
     let status = Command::new(why3_path)
         .arg("-C")
@@ -214,6 +215,43 @@ pub fn generate_why3_conf(
     if !status.success() {
         bail!("failed to generate why3's configuration")
     };
+    {
+        let mut f = fs::OpenOptions::new().append(true).open(&dest_file)?;
+        generate_strategy(&mut f)?;
+    }
+
+    Ok(())
+}
+
+fn generate_strategy(f: &mut dyn Write) -> anyhow::Result<()> {
+    let altergo = format!("Alt-Ergo,{ALTERGO_VERSION}");
+    let z3 = format!("Z3,{Z3_VERSION}");
+    let cvc5 = format!("CVC5,{CVC5_VERSION}");
+    let cvc4 = format!("CVC4,{CVC4_VERSION}");
+    write!(
+        f,
+        r#"
+        [strategy]
+        code = "start:
+        c {z3} .5 1000
+        t split_vc start
+        c {altergo} 3. 2000 | {z3} 3. 2000
+        c {cvc5} 3. 2000 | {cvc4} 3. 2000
+        t introduce_premises afterintro
+        afterintro:
+        t inline_goal afterinline
+        g trylongertime
+        afterinline:
+        t split_all_full start
+        trylongertime:
+        c {altergo} 6. 4000 | {cvc5} 6. 4000 | {z3} 6. 4000 | {cvc4} 6. 4000
+        "
+        desc = "Automatic@ run@ of@ provers@ and@ most@ useful@ transformations"
+        name = "Auto_level_3"
+        shortcut = "3"
+    "#,
+    )?;
+
     Ok(())
 }
 
