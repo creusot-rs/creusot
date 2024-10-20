@@ -127,7 +127,9 @@ impl Decl {
         }
     }
 
-    pub fn predicate(sig: Signature, body: Option<Exp>) -> Self {
+    pub fn predicate(mut sig: Signature, body: Option<Exp>) -> Self {
+        sig.retty = None;
+
         match body {
             Some(body) => Decl::PredDecl(Predicate { sig, body }),
             None => Decl::ValDecl(ValDecl {

@@ -1,15 +1,10 @@
 use indexmap::{IndexMap, IndexSet};
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::{
-    AliasTy, GenericArgs, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt,
-};
-use rustc_span::{RealFileName, Span, Symbol, DUMMY_SP};
-use signature::sig_to_why3;
-use term::lower_pure;
+use rustc_middle::ty::{AliasTy, GenericParamDef, GenericParamDefKind, Ty, TyCtxt};
+use rustc_span::{RealFileName, Span, DUMMY_SP};
 use why3::declaration::{Decl, TyDecl};
 
 use crate::{
-    backend::interface::interface_for,
     ctx::{TranslatedItem, TranslationCtx},
     translation::pearlite::Term,
     util::{self, ItemType},
@@ -22,12 +17,10 @@ use std::{
 use crate::{options::SpanMode, run_why3::SpanMap};
 pub(crate) use clone_map::*;
 
-use self::dependency::{ClosureSpecKind, Dependency};
+use self::dependency::ClosureSpecKind;
 
 pub(crate) mod clone_map;
-pub(crate) mod constant;
 pub(crate) mod dependency;
-pub(crate) mod interface;
 pub(crate) mod logic;
 pub(crate) mod optimization;
 pub(crate) mod place;
@@ -56,7 +49,6 @@ impl<'tcx> From<DefId> for TransId<'tcx> {
 
 pub struct Why3Generator<'tcx> {
     ctx: TranslationCtx<'tcx>,
-    dependencies: IndexMap<TransId<'tcx>, CloneSummary<'tcx>>,
     projections_in_ty: HashMap<DefId, Vec<AliasTy<'tcx>>>,
     functions: IndexMap<TransId<'tcx>, TranslatedItem>,
     translated_items: IndexSet<TransId<'tcx>>,
@@ -82,7 +74,6 @@ impl<'tcx> Why3Generator<'tcx> {
     pub fn new(ctx: TranslationCtx<'tcx>) -> Self {
         Why3Generator {
             ctx,
-            dependencies: Default::default(),
             projections_in_ty: Default::default(),
             functions: Default::default(),
             translated_items: Default::default(),
@@ -94,8 +85,6 @@ impl<'tcx> Why3Generator<'tcx> {
     fn term(&mut self, id: impl Into<TransId<'tcx>>) -> Option<&Term<'tcx>> {
         match id.into() {
             TransId::Item(id) => self.ctx.term(id),
-            // For the moment at least
-            TransId::TyInvAxiom(_) => unreachable!(),
             TransId::Hacked(h, id) => {
                 let c = self.ctx.closure_contract(id);
                 match h {
@@ -108,6 +97,8 @@ impl<'tcx> Why3Generator<'tcx> {
                     ClosureSpecKind::Accessor(ix) => Some(&c.accessors[ix as usize].1),
                 }
             }
+            // For the moment at least
+            TransId::TyInvAxiom(_) => unreachable!(),
             TransId::StructuralResolve(_) => unreachable!(),
         }
     }
@@ -130,7 +121,6 @@ impl<'tcx> Why3Generator<'tcx> {
             ItemType::Trait => {
                 self.start(def_id);
                 let tr = self.translate_trait(def_id);
-                self.dependencies.insert(tid, CloneSummary::new());
                 self.functions.insert(tid, tr);
                 self.finish(def_id);
             }
@@ -139,7 +129,6 @@ impl<'tcx> Why3Generator<'tcx> {
                     self.start(def_id);
                     let impl_ = traits::lower_impl(self, def_id);
 
-                    self.dependencies.insert(tid, CloneSummary::new());
                     self.functions.insert(tid, TranslatedItem::Impl { modl: impl_ });
                     self.finish(def_id);
                 }
@@ -154,16 +143,14 @@ impl<'tcx> Why3Generator<'tcx> {
             }
             ItemType::AssocTy => {
                 self.start(def_id);
-                let (_, dependencies) = self.translate_assoc_ty(def_id);
+                let _ = self.translate_assoc_ty(def_id);
                 self.finish(def_id);
-                self.dependencies.insert(tid, dependencies);
                 self.functions.insert(tid, TranslatedItem::AssocTy {});
             }
             ItemType::Constant => {
                 self.start(def_id);
-                let (constant, dependencies) = self.translate_constant(def_id);
+                let constant = TranslatedItem::Constant {};
                 self.finish(def_id);
-                self.dependencies.insert(tid, dependencies);
                 self.functions.insert(tid, constant);
             }
             ItemType::Type => {
@@ -211,42 +198,20 @@ impl<'tcx> Why3Generator<'tcx> {
                 debug!("translating {:?} as logical", def_id);
 
                 if util::is_resolve_function(self.tcx, def_id) {
-                    let mut names = Dependencies::new(self, [TransId::Item(def_id)]);
-                    let pre_sig = self.ctx.sig(def_id).clone();
-                    sig_to_why3(self, &mut names, &pre_sig, def_id);
-
-                    let method = self
-                        .tcx
-                        .get_diagnostic_item(Symbol::intern("creusot_resolve_method"))
-                        .unwrap();
-                    let substs = GenericArgs::identity_for_item(self.tcx, def_id);
-                    let arg = Term::var(pre_sig.inputs[0].0, pre_sig.inputs[0].2);
-
-                    lower_pure(self, &mut names, &Term::call(self.tcx, method, substs, vec![arg]));
-
-                    let deps = names.provide_deps(self, GraphDepth::Shallow).1;
-
-                    // eprintln!("deps for {def_id:?} : {deps:?}");
-                    self.dependencies.insert(def_id.into(), deps);
-
                     TranslatedItem::Logic { proof_modl: None }
                 } else {
-                    let (proof_modl, deps) = logic::translate_logic_or_predicate(self, def_id);
-                    self.dependencies.insert(def_id.into(), deps);
+                    let proof_modl = logic::translate_logic_or_predicate(self, def_id);
                     TranslatedItem::Logic { proof_modl }
                 }
             }
             ItemType::Closure => {
-                let (deps, ty_modl, modl) = program::translate_closure(self, def_id);
-                self.dependencies.insert(def_id.into(), deps);
+                let (ty_modl, modl) = program::translate_closure(self, def_id);
 
                 TranslatedItem::Closure { ty_modl, modl }
             }
             ItemType::Program => {
                 debug!("translating {def_id:?} as program");
-                let (_, modl) = program::translate_function(self, def_id);
-                let deps = interface_for(self, def_id);
-                self.dependencies.insert(def_id.into(), deps);
+                let modl = program::translate_function(self, def_id);
                 TranslatedItem::Program { modl }
             }
             _ => unreachable!(),
@@ -276,34 +241,6 @@ impl<'tcx> Why3Generator<'tcx> {
             accessors.entry(variant_did).or_default().insert(field_id, accessor);
         };
         // self.types[&repr_id].accessors;
-    }
-
-    pub(crate) fn translate_tyinv(&mut self, ty: Ty<'tcx>) {
-        let tid = TransId::TyInvAxiom(ty);
-        if self.dependencies.contains_key(&tid) {
-            return;
-        }
-
-        if let Some(adt) = ty.ty_adt_def()
-            && !adt.is_box()
-        {
-            self.translate(adt.did());
-        }
-
-        let deps = ty_inv::get_tyinv_deps(self, ty);
-        self.dependencies.insert(tid, deps);
-    }
-
-    pub(crate) fn translate_structural_resolve(&mut self, ty: Ty<'tcx>) {
-        let tid = TransId::StructuralResolve(ty);
-        if self.dependencies.contains_key(&tid) {
-            return;
-        }
-
-        let deps = structural_resolve::record_deps(self, ty);
-
-        // eprintln!("structural_resolve({ty:?}) :- {deps:?}");
-        self.dependencies.insert(tid, deps);
     }
 
     pub(crate) fn modules<'a>(
@@ -355,15 +292,6 @@ impl<'tcx> Why3Generator<'tcx> {
         self.translated_items.insert(tid);
     }
 
-    pub(crate) fn dependencies(
-        &self,
-        param_env: ParamEnv<'tcx>,
-        key: Dependency<'tcx>,
-    ) -> Option<&CloneSummary<'tcx>> {
-        let tid = key.to_trans_id(self.tcx, param_env)?;
-        self.dependencies.get(&tid)
-    }
-
     pub(crate) fn projections_in_ty(&mut self, item: DefId) -> &[AliasTy<'tcx>] {
         if self.projections_in_ty.get(&item).is_none() {
             let res = self.get_projections_in_ty(item);
@@ -380,6 +308,14 @@ impl<'tcx> Why3Generator<'tcx> {
         )
     }
 
+    fn is_constant(&self, item: TransId) -> bool {
+        match item {
+            TransId::Item(def_id) => {
+                matches!(util::item_type(self.tcx, def_id), ItemType::Constant)
+            }
+            _ => false,
+        }
+    }
     fn is_accessor(&self, item: TransId) -> bool {
         match item {
             TransId::Hacked(ClosureSpecKind::Accessor(_), _) => true,

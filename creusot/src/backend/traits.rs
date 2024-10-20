@@ -1,8 +1,4 @@
-use super::{
-    clone_map::{CloneLevel, CloneSummary, Dependencies},
-    term::lower_pure,
-    GraphDepth, Why3Generator,
-};
+use super::{clone_map::Dependencies, term::lower_pure, Why3Generator};
 use crate::{
     backend,
     backend::{all_generic_decls_for, own_generic_decls_for, Namer},
@@ -32,7 +28,7 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
         }));
     }
 
-    let (clones, _) = names.provide_deps(ctx, GraphDepth::Deep);
+    let clones = names.provide_deps(ctx);
     decls.extend(clones);
     decls.extend(refn_decls);
 
@@ -42,7 +38,7 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
 }
 
 impl<'tcx> Why3Generator<'tcx> {
-    pub(crate) fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
+    pub(crate) fn translate_assoc_ty(&mut self, def_id: DefId) -> Module {
         assert_eq!(util::item_type(self.tcx, def_id), ItemType::AssocTy);
 
         let mut names = Dependencies::new(self, [def_id]);
@@ -56,15 +52,13 @@ impl<'tcx> Why3Generator<'tcx> {
 
         decls.push(ty_decl);
 
-        let (clones, summary) = names.provide_deps(self, GraphDepth::Shallow);
+        let clones = names.provide_deps(self);
         decls.extend(clones);
 
         let attrs = Vec::from_iter(self.span_attr(self.def_span(def_id)));
         let meta = self.display_impl_of(def_id);
-        (
-            Module { name: module_name(self.tcx, def_id).to_string().into(), decls, attrs, meta },
-            summary,
-        )
+
+        Module { name: module_name(self.tcx, def_id).to_string().into(), decls, attrs, meta }
     }
 
     // Probably needs to take a pair of id and subst to handle cloning properly
@@ -78,14 +72,14 @@ impl<'tcx> Why3Generator<'tcx> {
         let ty_params = vec![];
 
         let ty_decl = match self.tcx.associated_item(def_id).container {
-            rustc_middle::ty::ImplContainer => names.with_vis(CloneLevel::Signature, |names| {
+            rustc_middle::ty::ImplContainer => {
                 let assoc_ty = self.tcx.type_of(def_id).instantiate_identity();
                 TyDecl::Alias {
                     ty_name,
                     ty_params,
                     alias: backend::ty::translate_ty(self, names, rustc_span::DUMMY_SP, assoc_ty),
                 }
-            }),
+            }
             rustc_middle::ty::TraitContainer => TyDecl::Opaque { ty_name, ty_params },
         };
 

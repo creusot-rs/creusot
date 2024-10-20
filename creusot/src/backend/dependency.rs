@@ -1,12 +1,11 @@
 use rustc_ast_ir::visit::VisitorResult;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
-use rustc_middle::ty::{EarlyBinder, GenericArgs, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{GenericArgs, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::Symbol;
 use rustc_type_ir::{fold::TypeFoldable, visit::TypeVisitable, AliasTyKind, Interner};
 
 use crate::{
-    ctx::TranslationCtx,
     translation::traits,
     util::{self, item_symb, translate_accessor_name, type_name, value_name, ItemType},
 };
@@ -147,16 +146,12 @@ impl<'tcx> Dependency<'tcx> {
         }
     }
 
-    pub(crate) fn resolve(
-        mut self,
-        ctx: &TranslationCtx<'tcx>,
-        param_env: ParamEnv<'tcx>,
-    ) -> Option<Self> {
+    pub(crate) fn resolve(mut self, tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>) -> Option<Self> {
         if let Dependency::Item(item, substs) = self {
-            self = resolve_item(item, substs, ctx.tcx, param_env);
+            self = resolve_item(item, substs, tcx, param_env);
         }
 
-        ctx.try_normalize_erasing_regions(param_env, self).ok()
+        tcx.try_normalize_erasing_regions(param_env, self).ok()
     }
 
     pub(crate) fn did(self) -> Option<(DefId, GenericArgsRef<'tcx>)> {
@@ -181,26 +176,6 @@ impl<'tcx> Dependency<'tcx> {
     #[inline]
     pub(crate) fn erase_regions(self, tcx: TyCtxt<'tcx>) -> Self {
         tcx.erase_regions(self)
-    }
-
-    #[inline]
-    pub(crate) fn subst(
-        self,
-        tcx: TyCtxt<'tcx>,
-        other: Dependency<'tcx>,
-        param_env: ParamEnv<'tcx>,
-    ) -> Self {
-        let substs = if let Dependency::TyInvAxiom(ty) = other {
-            tyinv_head_and_subst(tcx, ty, param_env).1
-        } else if let Dependency::StructuralResolve(ty) = other {
-            structural_resolve::head_and_subst(tcx, ty).1
-        } else if let Some((_, substs)) = other.did() {
-            substs
-        } else {
-            return self;
-        };
-
-        EarlyBinder::bind(self).instantiate(tcx, substs)
     }
 
     pub(crate) fn base_ident(self, tcx: TyCtxt<'tcx>) -> Option<Symbol> {
@@ -249,6 +224,14 @@ impl<'tcx> Dependency<'tcx> {
             Dependency::StructuralResolve(_) => Some(Symbol::intern("structural_resolve")),
             Dependency::Builtin(_) => None,
         }
+    }
+
+    pub fn is_type(self) -> bool {
+        matches!(self, Dependency::Type(_))
+    }
+
+    pub fn is_invariant(self) -> bool {
+        matches!(self, Dependency::TyInvAxiom(_))
     }
 }
 

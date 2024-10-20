@@ -8,9 +8,7 @@ use crate::{
     util::{get_builtin, is_snap_ty, is_trusted},
 };
 
-use super::{
-    term::lower_pure, CloneSummary, Dependencies, GraphDepth, Namer as _, TransId, Why3Generator,
-};
+use super::Why3Generator;
 
 pub fn structural_resolve<'tcx>(
     ctx: &Why3Generator<'tcx>,
@@ -123,22 +121,6 @@ pub(crate) fn head_and_subst<'tcx>(
         }
         _ => unimplemented!("{ty:?}"), // TODO
     }
-}
-
-pub fn record_deps<'tcx>(ctx: &mut Why3Generator<'tcx>, ty: Ty<'tcx>) -> CloneSummary<'tcx> {
-    let mut names = Dependencies::new(ctx, [TransId::StructuralResolve(ty)]);
-    let term = structural_resolve(ctx, ty);
-
-    if let Some(t) = &term.1 {
-        let _ = lower_pure(ctx, &mut names, &t);
-    }
-
-    if let TyKind::Adt(def, sub) = ty.kind() {
-        names.ty(def.did(), sub);
-    }
-
-    let (_, summary) = names.provide_deps(ctx, GraphDepth::Shallow);
-    summary
 }
 
 fn resolve_of<'tcx>(ctx: &Why3Generator<'tcx>, term: Term<'tcx>) -> Term<'tcx> {

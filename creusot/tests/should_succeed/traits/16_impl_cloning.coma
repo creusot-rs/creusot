@@ -91,21 +91,19 @@ module M_16_impl_cloning__test [#"16_impl_cloning.rs" 17 0 17 30]
   
   let%span s16_impl_cloning0 = "16_impl_cloning.rs" 17 15 17 16
   let%span s16_impl_cloning1 = "16_impl_cloning.rs" 16 10 16 21
-  let%span span2 = "../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
-  let%span span3 = "../../../../creusot-contracts/src/logic/seq.rs" 198 8 198 97
-  let%span span4 = "../../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
-  let%span span5 = "../../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
-  let%span span6 = "../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
-  let%span span7 = "16_impl_cloning.rs" 12 8 12 14
-  let%span span8 = "../../../../creusot-contracts/src/model.rs" 109 8 109 22
-  let%span span9 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
+  let%span smodel2 = "../../../../creusot-contracts/src/model.rs" 109 8 109 22
+  let%span s16_impl_cloning3 = "16_impl_cloning.rs" 12 8 12 14
+  let%span sresolve4 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
+  let%span sinvariant5 = "../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
+  let%span svec6 = "../../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
+  let%span svec7 = "../../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
+  let%span sseq8 = "../../../../creusot-contracts/src/logic/seq.rs" 198 8 198 97
+  let%span sboxed9 = "../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
   predicate inv'5 (_1 : t)
   
-  use T_alloc__alloc__Global as Global'0
-  
   predicate invariant'3 (self : t) =
-    [%#span2] inv'5 self
+    [%#sboxed9] inv'5 self
   
   predicate inv'4 (_1 : t)
   
@@ -120,11 +118,13 @@ module M_16_impl_cloning__test [#"16_impl_cloning.rs" 17 0 17 30]
   use seq.Seq
   
   predicate invariant'2 (self : Seq.seq t) =
-    [%#span3] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
+    [%#sseq8] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
   
   predicate inv'3 (_1 : Seq.seq t)
   
   axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq t [inv'3 x] . inv'3 x = invariant'2 x
+  
+  use T_alloc__alloc__Global as Global'0
   
   use T_alloc__vec__Vec as Vec'1
   
@@ -136,11 +136,11 @@ module M_16_impl_cloning__test [#"16_impl_cloning.rs" 17 0 17 30]
   
   function view'2 (self : Vec'1.t_Vec t (Global'0.t_Global)) : Seq.seq t
   
-  axiom view'2_spec : forall self : Vec'1.t_Vec t (Global'0.t_Global) . [%#span4] Seq.length (view'2 self)
+  axiom view'2_spec : forall self : Vec'1.t_Vec t (Global'0.t_Global) . [%#svec7] Seq.length (view'2 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'1 (self : Vec'1.t_Vec t (Global'0.t_Global)) =
-    [%#span5] inv'3 (view'2 self)
+    [%#svec6] inv'3 (view'2 self)
   
   predicate inv'2 (_1 : Vec'1.t_Vec t (Global'0.t_Global))
   
@@ -158,7 +158,7 @@ module M_16_impl_cloning__test [#"16_impl_cloning.rs" 17 0 17 30]
   use prelude.prelude.Borrow
   
   predicate invariant'0 (self : borrowed (Vec'0.t_Vec t)) =
-    [%#span6] inv'1 self.current /\ inv'1 self.final
+    [%#sinvariant5] inv'1 self.current /\ inv'1 self.final
   
   predicate inv'0 (_1 : borrowed (Vec'0.t_Vec t))
   
@@ -167,12 +167,12 @@ module M_16_impl_cloning__test [#"16_impl_cloning.rs" 17 0 17 30]
   function view'1 [#"16_impl_cloning.rs" 11 4 11 33] (self : Vec'0.t_Vec t) : Seq.seq t
   
   function view'0 (self : borrowed (Vec'0.t_Vec t)) : Seq.seq t =
-    [%#span8] view'1 self.current
+    [%#smodel2] view'1 self.current
   
   use prelude.prelude.Intrinsic
   
   predicate resolve'1 (self : borrowed (Vec'0.t_Vec t)) =
-    [%#span9] self.final = self.current
+    [%#sresolve4] self.final = self.current
   
   predicate resolve'0 (_1 : borrowed (Vec'0.t_Vec t)) =
     resolve'1 _1
