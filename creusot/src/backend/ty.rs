@@ -266,6 +266,7 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
     let good_branch: coma::Defn = coma::Defn {
         name: format!("good").into(),
         writes: vec![],
+        attrs: vec![],
         params: field_args.clone(),
         body: Expr::Assert(
             Box::new(cons_test.clone().eq(Exp::var("input"))),
@@ -294,6 +295,7 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
             name: format!("bad").into(),
             writes: vec![],
             params: vec![],
+            attrs: vec![],
             body: Expr::Assert(Box::new(negative_assertion), Box::new(fail)),
         })
     } else {
@@ -310,6 +312,7 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
         writes: vec![],
         params: vec![input, ret_cont],
         body: Expr::Defn(Box::new(Expr::Any), false, branches),
+        attrs: vec![],
     })
 }
 
