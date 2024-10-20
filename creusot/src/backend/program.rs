@@ -191,7 +191,13 @@ pub fn val<'tcx>(_: &mut Why3Generator<'tcx>, sig: Signature) -> Decl {
             body: postcond,
         }],
     );
-    why3::declaration::Decl::Coma(Defn { name: sig.name, writes: Vec::new(), attrs: vec![], params, body })
+    why3::declaration::Decl::Coma(Defn {
+        name: sig.name,
+        writes: Vec::new(),
+        attrs: vec![],
+        params,
+        body,
+    })
 }
 
 // TODO: move to a more "central" location
@@ -760,8 +766,13 @@ fn mk_adt_switch<'tcx, N: Namer<'tcx>>(
             Box::new(coma::Expr::BlackBox(Box::new(tgt))),
         );
 
-        let branch =
-            coma::Defn { name: format!("br{c}").into(), body: filter, params, writes: Vec::new(), attrs: vec![], };
+        let branch = coma::Defn {
+            name: format!("br{c}").into(),
+            body: filter,
+            params,
+            writes: Vec::new(),
+            attrs: vec![],
+        };
         out.push(branch)
     }
     out

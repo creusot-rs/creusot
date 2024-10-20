@@ -2,6 +2,7 @@ use self::terminator::discriminator_for_switch;
 use super::{
     fmir::{LocalDecls, LocalIdent, RValue, TrivialInv},
     pearlite::{normalize, Term},
+    signature::PreSignature,
     specification::inv_subst,
 };
 use crate::{
@@ -20,7 +21,7 @@ use crate::{
         specification::{contract_of, PreContract},
         traits,
     },
-    util::{self, PreSignature},
+    util::{self},
 };
 use indexmap::IndexMap;
 use rustc_borrowck::borrow_set::BorrowSet;
