@@ -1,13 +1,13 @@
 use rustc_ast_ir::visit::VisitorResult;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
-use rustc_middle::ty::{GenericArgs, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::Symbol;
 use rustc_type_ir::{fold::TypeFoldable, visit::TypeVisitable, AliasTyKind, Interner};
 
 use crate::{
     translation::traits,
-    util::{self, item_symb, translate_accessor_name, type_name, value_name, ItemType},
+    util::{self, erased_identity_for_item, item_symb, translate_accessor_name, type_name, value_name, ItemType},
 };
 
 use super::{structural_resolve, ty_inv::tyinv_head_and_subst, PreludeModule, TransId};
@@ -105,7 +105,7 @@ impl<'tcx> Dependency<'tcx> {
                         TyKind::Closure(_, subst) => subst,
                         _ => unreachable!(),
                     },
-                    _ => GenericArgs::identity_for_item(tcx, self_id),
+                    _ => erased_identity_for_item(tcx, self_id),
                 };
 
                 Dependency::new(tcx, (self_id, subst)).erase_regions(tcx)
@@ -173,7 +173,7 @@ impl<'tcx> Dependency<'tcx> {
         matches!(self, Dependency::ClosureSpec(_, _, _))
     }
 
-    #[inline]
+    // FIXME: this function should not be necessary, dependencies should not be created non-normalized
     pub(crate) fn erase_regions(self, tcx: TyCtxt<'tcx>) -> Self {
         tcx.erase_regions(self)
     }
@@ -181,7 +181,7 @@ impl<'tcx> Dependency<'tcx> {
     pub(crate) fn base_ident(self, tcx: TyCtxt<'tcx>) -> Option<Symbol> {
         match self {
             Dependency::Type(ty) => match ty.kind() {
-                TyKind::Adt(def, _) => {
+                TyKind::Adt(def, _) if !def.is_box() => {
                     Some(item_symb(tcx, def.did(), rustc_hir::def::Namespace::TypeNS))
                 }
                 TyKind::Alias(_, aty) => {

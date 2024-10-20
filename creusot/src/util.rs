@@ -490,6 +490,10 @@ pub(crate) fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
     }
 }
 
+pub(crate) fn erased_identity_for_item(tcx: TyCtxt, did: DefId) -> GenericArgsRef {
+    tcx.erase_regions(GenericArgs::identity_for_item(tcx, did))
+}
+
 pub(crate) fn inputs_and_output<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
@@ -628,7 +632,7 @@ fn elaborate_type_invariants<'tcx>(
         return;
     }
 
-    let subst = GenericArgs::identity_for_item(ctx.tcx, def_id);
+    let subst = erased_identity_for_item(ctx.tcx, def_id);
 
     let params_open_inv: HashSet<usize> = ctx
         .params_open_inv(def_id)

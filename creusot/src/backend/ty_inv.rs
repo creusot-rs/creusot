@@ -6,9 +6,9 @@ use crate::{
         pearlite::{Pattern, Term, TermKind},
         traits,
     },
-    util::{self},
+    util::{self, erased_identity_for_item},
 };
-use rustc_middle::ty::{GenericArg, GenericArgs, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
 use std::{collections::HashSet, iter};
 
@@ -42,9 +42,9 @@ pub(crate) fn tyinv_head_and_subst<'tcx>(
 
     match ty.kind() {
         TyKind::Adt(adt_def, subst) => {
-            (Ty::new_adt(tcx, *adt_def, GenericArgs::identity_for_item(tcx, adt_def.did())), subst)
+            (Ty::new_adt(tcx, *adt_def, erased_identity_for_item(tcx, adt_def.did())), subst)
         }
-        TyKind::Closure(did, _) => (ty, GenericArgs::identity_for_item(tcx, tcx.parent(*did))),
+        TyKind::Closure(did, _) => (ty, erased_identity_for_item(tcx, tcx.parent(*did))),
         TyKind::Tuple(tys) => {
             let params = (0..tys.len())
                 .map(|i| Ty::new_param(tcx, i as _, Symbol::intern(&format!("T{i}"))));

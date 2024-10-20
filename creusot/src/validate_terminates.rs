@@ -21,7 +21,7 @@
 //! }
 //! ```
 
-use crate::{backend::is_trusted_function, ctx::TranslationCtx, specification::contract_of, util};
+use crate::{backend::is_trusted_function, ctx::TranslationCtx, specification::contract_of, util::{self, erased_identity_for_item}};
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graph, visit::EdgeRef as _};
 use rustc_hir::def_id::{DefId, LocalDefId};
@@ -126,8 +126,8 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
         {
             // Only consider functions marked with `terminates`: we already ensured that a `terminates` functions only calls other `terminates` functions.
         } else {
-            let generic_args = GenericArgs::identity_for_item(ctx.tcx, d);
             let def_id = d.to_def_id();
+            let generic_args = erased_identity_for_item(ctx.tcx, def_id);
             build_call_graph.insert_instance(def_id, FunctionInstance { def_id, generic_args });
         }
     }
@@ -424,7 +424,7 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tc
                 let mut closure_visitor = FunctionCalls {
                     thir: &thir,
                     tcx: self.tcx,
-                    generic_args: GenericArgs::identity_for_item(self.tcx, closure_id.to_def_id()),
+                    generic_args: erased_identity_for_item(self.tcx, closure_id.to_def_id()),
                     param_env: self.param_env,
                     calls: std::mem::take(&mut self.calls),
                     has_loops: None,

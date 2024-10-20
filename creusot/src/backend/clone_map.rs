@@ -86,11 +86,11 @@ pub(crate) trait Namer<'tcx> {
     }
 
     fn ty(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
-        let mut node = Dependency::new(self.tcx(), (def_id, subst));
-
-        if self.tcx().is_closure_like(def_id) {
-            node = Dependency::Type(Ty::new_closure(self.tcx(), def_id, subst));
-        }
+        let node = if self.tcx().is_closure_like(def_id) {
+            Dependency::Type(Ty::new_closure(self.tcx(), def_id, subst))
+        } else {
+            Dependency::new(self.tcx(), (def_id, subst))
+        };
 
         self.insert(node).qname()
     }
@@ -276,7 +276,7 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
 pub struct Dependencies<'tcx> {
     tcx: TyCtxt<'tcx>,
 
-    names: CloneNames<'tcx>,
+    pub names: CloneNames<'tcx>,
 
     // A hacky thing which is used to remember the dependncies we need to seed the expander with
     dep_set: IndexSet<Dependency<'tcx>>,
@@ -293,7 +293,7 @@ pub(crate) struct NameSupply {
 }
 
 #[derive(Clone)]
-struct CloneNames<'tcx> {
+pub struct CloneNames<'tcx> {
     tcx: TyCtxt<'tcx>,
     /// Freshens a symbol by appending a number to the end
     counts: NameSupply,
@@ -346,8 +346,12 @@ impl<'tcx> CloneNames<'tcx> {
 
                 Kind::Used(modl, key.base_ident(self.tcx).unwrap())
             }
-            Dependency::Type(ty) if !matches!(ty.kind(), TyKind::Alias(_, _) | TyKind::Param(_)) => {
-                if let Some((did, _)) = key.did() {
+            Dependency::Type(ty)
+                if !matches!(ty.kind(), TyKind::Alias(_, _) | TyKind::Param(_)) =>
+            {
+                if let Some((did, _)) = key.did()
+                    && !ty.is_box()
+                {
                     let (modl, name) = if let Some(why3_modl) = util::get_builtin(self.tcx, did) {
                         let qname = QName::from_string(why3_modl.as_str());
                         let name = qname.name.clone();
@@ -491,10 +495,11 @@ impl<'tcx> Dependencies<'tcx> {
     }
 
     pub(crate) fn provide_deps(mut self, ctx: &mut Why3Generator<'tcx>) -> Vec<Decl> {
+        use petgraph::visit::Walker;
+
         trace!("emitting dependencies for {:?}", self.self_id);
         let mut decls = Vec::new();
 
-        use petgraph::visit::Walker;
         let param_env = Self::param_env(self.self_id, ctx);
         let self_key = self.self_key();
 
@@ -508,8 +513,6 @@ impl<'tcx> Dependencies<'tcx> {
 
         // Update the clone graph with any new entries.
         let (graph, bodies) = graph.update_graph(ctx);
-
-        // assert!(!petgraph::algo::is_cyclic_directed(&graph));
 
         let mut cloned = IndexSet::new();
 

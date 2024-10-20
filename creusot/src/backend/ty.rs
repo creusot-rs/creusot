@@ -1,22 +1,26 @@
-use super::{Dependencies, Why3Generator};
+use super::{
+    program::{floatty_to_prelude, uint_to_prelude},
+    Dependencies, Why3Generator,
+};
 use crate::{
+    backend::program::int_to_prelude,
     ctx::*,
     translation::{
         pearlite::{self, Term, TermKind},
         specification::PreContract,
     },
-    util::{self, get_builtin, item_name, module_name, translate_accessor_name, PreSignature},
+    util::{self, erased_identity_for_item, get_builtin, item_name, module_name, translate_accessor_name, PreSignature},
 };
 use indexmap::IndexSet;
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
 use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_middle::ty::{
-    self, AliasTy, AliasTyKind, EarlyBinder, FieldDef, GenericArg, GenericArgKind, GenericArgs,
+    self, AliasTy, AliasTyKind, EarlyBinder, FieldDef, GenericArg, GenericArgKind,
     GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
-use rustc_type_ir::TyKind::*;
+use rustc_type_ir::{FloatTy, IntTy, TyKind::*, UintTy};
 use std::collections::VecDeque;
 use why3::{
     declaration::{
@@ -68,15 +72,9 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
             names.import_prelude_module(PreludeModule::Char);
             MlT::Char
         }
-        Int(ity) => {
-            // names.real_ty(ty);
-            intty_to_ty(names, ity)
-        }
-        Uint(uity) => {
-            // names.real_ty(ty);
-            uintty_to_ty(names, uity)
-        }
-        Float(flty) => floatty_to_ty(names, flty),
+        Int(ity) => intty_to_ty(names, *ity),
+        Uint(uity) => uintty_to_ty(names, *uity),
+        Float(flty) => floatty_to_ty(names, *flty),
         Adt(def, s) => {
             if def.is_box() {
                 return translate_ty_inner(trans, ctx, names, span, s[0].expect_ty());
@@ -91,7 +89,6 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
                 get_builtin(ctx.tcx, def.did()).map(|a| QName::from_string(&a.as_str()))
             {
                 names.ty(def.did(), s);
-                // names.import_builtin_module(builtin.clone().module_qname());
                 MlT::TConstructor(builtin.without_search_path())
             } else {
                 ctx.translate(def.did());
@@ -254,7 +251,7 @@ pub(crate) fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> IndexSe
     // Construct graph of type dependencies
     while let Some(next) = to_visit.pop_front() {
         let def = tcx.adt_def(next);
-        let substs = GenericArgs::identity_for_item(tcx, def.did());
+        let substs = erased_identity_for_item(tcx, def.did());
 
         // TODO: Look up a more efficient way of getting this info
         for variant in def.variants() {
@@ -289,7 +286,7 @@ impl<'tcx> Why3Generator<'tcx> {
         let param_env = self.param_env(def_id);
 
         // FIXME: Make this a proper BFS / DFS
-        let subst = GenericArgs::identity_for_item(self.tcx, def_id);
+        let subst = erased_identity_for_item(self.tcx, def_id);
         for f in self.adt_def(def_id).all_fields() {
             let ty = f.ty(self.tcx, subst);
             let ty = self.try_normalize_erasing_regions(param_env, ty).unwrap_or(ty);
@@ -340,7 +337,7 @@ pub(crate) fn translate_tydecl(
 ) -> Option<Vec<Module>> {
     let repr = ctx.representative_type(bg.first().unwrap().clone());
 
-    if let Some(_) = get_builtin(ctx.tcx, repr) {
+    if get_builtin(ctx.tcx, repr).is_some() || ctx.type_of(bg[0]).skip_binder().is_box() {
         return None;
     }
 
@@ -371,16 +368,12 @@ pub(crate) fn translate_tydecl(
         TyDecl::Adt { tys: bg.iter().map(|did| build_ty_decl(ctx, &mut names, *did)).collect() };
 
     let mut destructors = vec![];
-    if !ctx.type_of(bg[0]).skip_binder().is_box() {
-        bg.iter().for_each(|did| {
-            let adt_def = ctx.adt_def(*did);
-
-            adt_def.variants().indices().for_each(|vix| {
-                let d = destructor(ctx, &mut names, *did, ctx.type_of(*did).skip_binder(), vix);
-
-                destructors.push(d)
-            })
-        });
+    for did in bg.iter() {
+        let adt_def = ctx.adt_def(*did);
+        for vix in adt_def.variants().indices() {
+            let d = destructor(ctx, &mut names, *did, ctx.type_of(*did).skip_binder(), vix);
+            destructors.push(d)
+        }
     }
 
     let mut decls = names.provide_deps(ctx);
@@ -561,7 +554,7 @@ fn build_ty_decl<'tcx>(
     did: DefId,
 ) -> AdtDecl {
     let adt = ctx.tcx.adt_def(did);
-    let substs = GenericArgs::identity_for_item(ctx.tcx, did);
+    let substs = erased_identity_for_item(ctx.tcx, did);
 
     // HACK(xavier): Clean up
     let ty_name = names.ty(did, substs).as_ident();
@@ -682,9 +675,9 @@ pub(crate) fn translate_accessor(
     let ix = variant.fields.iter().position(|f| f.did == field_id).unwrap();
     let field = &variant.fields[ix.into()];
 
-    let substs = GenericArgs::identity_for_item(ctx.tcx, adt_did);
-    let omg: Vec<_> = ctx.binding_group(adt_did).iter().copied().collect();
-    let mut names = Dependencies::new(ctx, omg);
+    let substs = erased_identity_for_item(ctx.tcx, adt_did);
+    let bg: Vec<_> = ctx.binding_group(adt_did).iter().copied().collect();
+    let mut names = Dependencies::new(ctx, bg);
 
     let acc_name = translate_accessor_name(variant.name.as_str(), field.name.as_str());
 
@@ -818,92 +811,36 @@ pub(crate) fn build_closure_accessor<'tcx>(
     (pre_sig, term)
 }
 
-pub(crate) fn intty_to_ty<'tcx, N: Namer<'tcx>>(
-    names: &mut N,
-    ity: &rustc_middle::ty::IntTy,
-) -> MlT {
-    use rustc_middle::ty::IntTy::*;
-    names.import_prelude_module(PreludeModule::Int);
+pub(crate) fn intty_to_ty<'tcx, N: Namer<'tcx>>(names: &mut N, ity: IntTy) -> MlT {
+    names.import_prelude_module(int_to_prelude(ity));
     match ity {
-        Isize => {
-            names.import_prelude_module(PreludeModule::Isize);
-            isize_ty()
-        }
-        I8 => {
-            names.import_prelude_module(PreludeModule::Int8);
-            i8_ty()
-        }
-        I16 => {
-            names.import_prelude_module(PreludeModule::Int16);
-            i16_ty()
-        }
-        I32 => {
-            names.import_prelude_module(PreludeModule::Int32);
-            i32_ty()
-        }
-        I64 => {
-            names.import_prelude_module(PreludeModule::Int64);
-            i64_ty()
-        }
-        I128 => {
-            names.import_prelude_module(PreludeModule::Int128);
-            i128_ty()
-        }
+        IntTy::Isize => MlT::TConstructor(QName::from_string("isize")),
+        IntTy::I8 => MlT::TConstructor(QName::from_string("int8")),
+        IntTy::I16 => MlT::TConstructor(QName::from_string("int16")),
+        IntTy::I32 => MlT::TConstructor(QName::from_string("int32")),
+        IntTy::I64 => MlT::TConstructor(QName::from_string("int64")),
+        IntTy::I128 => MlT::TConstructor(QName::from_string("int128")),
     }
 }
 
-pub(crate) fn uintty_to_ty<'tcx, N: Namer<'tcx>>(
-    names: &mut N,
-    ity: &rustc_middle::ty::UintTy,
-) -> MlT {
-    use rustc_middle::ty::UintTy::*;
-    names.import_prelude_module(PreludeModule::Int);
-
-    match ity {
-        Usize => {
-            names.import_prelude_module(PreludeModule::Usize);
-            usize_ty()
-        }
-        U8 => {
-            names.import_prelude_module(PreludeModule::UInt8);
-            u8_ty()
-        }
-        U16 => {
-            names.import_prelude_module(PreludeModule::UInt16);
-            u16_ty()
-        }
-        U32 => {
-            names.import_prelude_module(PreludeModule::UInt32);
-            u32_ty()
-        }
-        U64 => {
-            names.import_prelude_module(PreludeModule::UInt64);
-            u64_ty()
-        }
-        U128 => {
-            names.import_prelude_module(PreludeModule::UInt128);
-            u128_ty()
-        }
+pub(crate) fn uintty_to_ty<'tcx, N: Namer<'tcx>>(names: &mut N, uty: UintTy) -> MlT {
+    names.import_prelude_module(uint_to_prelude(uty));
+    match uty {
+        UintTy::Usize => MlT::TConstructor(QName::from_string("usize")),
+        UintTy::U8 => MlT::TConstructor(QName::from_string("uint8")),
+        UintTy::U16 => MlT::TConstructor(QName::from_string("uint16")),
+        UintTy::U32 => MlT::TConstructor(QName::from_string("uint32")),
+        UintTy::U64 => MlT::TConstructor(QName::from_string("uint64")),
+        UintTy::U128 => MlT::TConstructor(QName::from_string("uint128")),
     }
 }
 
-pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(
-    names: &mut N,
-    fty: &rustc_middle::ty::FloatTy,
-) -> MlT {
-    use rustc_middle::ty::FloatTy::*;
-
+pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(names: &mut N, fty: FloatTy) -> MlT {
+    names.import_prelude_module(floatty_to_prelude(fty));
     match fty {
-        F16 => todo!(),
-        F32 => {
-            names.import_prelude_module(PreludeModule::Float32);
-            single_ty()
-        }
-        F64 => {
-            names.import_prelude_module(PreludeModule::Float64);
-            double_ty()
-        }
-        F128 => todo!(),
+        FloatTy::F32 => MlT::TConstructor(QName::from_string("Float32.t")),
+        FloatTy::F64 => MlT::TConstructor(QName::from_string("Float64.t")),
+        FloatTy::F128 | FloatTy::F16 => todo!("Unsupported: {fty:?}"),
     }
 }
 
@@ -919,60 +856,4 @@ pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &mut Why3Generator<'tcx>, names: &mut N
     let int_id = ctx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap();
     let ty = ctx.type_of(int_id).skip_binder();
     translate_ty(ctx, names, DUMMY_SP, ty)
-}
-
-pub(crate) fn double_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("Float64.t"))
-}
-
-pub(crate) fn single_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("Float32.t"))
-}
-
-pub(crate) fn u8_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint8"))
-}
-
-pub(crate) fn u16_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint16"))
-}
-
-pub(crate) fn u32_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint32"))
-}
-
-pub(crate) fn u64_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint64"))
-}
-
-pub(crate) fn u128_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("uint128"))
-}
-
-pub(crate) fn usize_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("usize"))
-}
-
-pub(crate) fn i8_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("int8"))
-}
-
-pub(crate) fn i16_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("int16"))
-}
-
-pub(crate) fn i32_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("int32"))
-}
-
-pub(crate) fn i64_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("int64"))
-}
-
-pub(crate) fn i128_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("int128"))
-}
-
-pub(crate) fn isize_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("isize"))
 }

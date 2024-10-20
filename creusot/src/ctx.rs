@@ -17,7 +17,7 @@ use crate::{
         specification::ContractClauses,
         traits::TraitImpl,
     },
-    util::{self, gather_params_open_inv, pre_sig_of, PreSignature},
+    util::{self, erased_identity_for_item, gather_params_open_inv, pre_sig_of, PreSignature},
 };
 use indexmap::{IndexMap, IndexSet};
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
@@ -30,7 +30,7 @@ use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
     mir::{Body, Promoted, TerminatorKind},
     ty::{
-        Clause, GenericArg, GenericArgs, GenericArgsRef, ParamEnv, Predicate, Ty, TyCtxt,
+        Clause, GenericArg, GenericArgsRef, ParamEnv, Predicate, Ty, TyCtxt,
         Visibility,
     },
 };
@@ -348,7 +348,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
     pub(crate) fn param_env(&self, def_id: DefId) -> ParamEnv<'tcx> {
         let (id, subst) = crate::specification::inherited_extern_spec(self, def_id)
-            .unwrap_or_else(|| (def_id, GenericArgs::identity_for_item(self.tcx, def_id)));
+            .unwrap_or_else(|| (def_id, erased_identity_for_item(self.tcx, def_id)));
         if let Some(es) = self.extern_spec(id) {
             let mut additional_predicates = Vec::new();
 
@@ -442,7 +442,7 @@ pub(crate) fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
             def_id,
             ExternSpec {
                 contract: ContractClauses::new(),
-                subst: GenericArgs::identity_for_item(ctx.tcx, def_id),
+                subst: erased_identity_for_item(ctx.tcx, def_id),
                 arg_subst: Vec::new(),
                 additional_predicates,
             },

@@ -1,5 +1,5 @@
 use super::pearlite::{normalize, Literal, Term, TermKind};
-use crate::{ctx::*, util};
+use crate::{ctx::*, util::{self, erased_identity_for_item}};
 use rustc_ast::{
     ast::{AttrArgs, AttrArgsEq},
     AttrItem,
@@ -8,7 +8,7 @@ use rustc_hir::def_id::DefId;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{self, Body, Local, SourceInfo, SourceScope, OUTERMOST_SOURCE_SCOPE},
-    ty::{EarlyBinder, GenericArgs, GenericArgsRef, ParamEnv, TyCtxt, TyKind},
+    ty::{EarlyBinder, GenericArgsRef, ParamEnv, TyCtxt, TyKind},
 };
 use rustc_span::Symbol;
 use std::collections::{HashMap, HashSet};
@@ -317,7 +317,7 @@ pub(crate) fn inherited_extern_spec<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-    let subst = GenericArgs::identity_for_item(ctx.tcx, def_id);
+    let subst = erased_identity_for_item(ctx.tcx, def_id);
     try {
         if def_id.is_local() || ctx.extern_spec(def_id).is_some() {
             return None;
@@ -349,7 +349,7 @@ pub(crate) fn contract_of<'tcx>(
         contract.subst(&spec.arg_subst.iter().cloned().collect());
         contract.normalize(ctx.tcx, ctx.param_env(def_id))
     } else {
-        let subst = GenericArgs::identity_for_item(ctx.tcx, def_id);
+        let subst = erased_identity_for_item(ctx.tcx, def_id);
         let mut contract =
             contract_clauses_of(ctx, def_id).unwrap().get_pre(ctx).instantiate(ctx.tcx, subst);
 

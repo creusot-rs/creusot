@@ -420,8 +420,7 @@ impl<'tcx> RValue<'tcx> {
                 let prelude: PreludeModule = match ty.kind() {
                     TyKind::Int(ity) => int_to_prelude(*ity),
                     TyKind::Uint(uty) => uint_to_prelude(*uty),
-                    TyKind::Float(FloatTy::F32) => PreludeModule::Float32,
-                    TyKind::Float(FloatTy::F64) => PreludeModule::Float64,
+                    TyKind::Float(fty) => floatty_to_prelude(*fty),
                     TyKind::Bool => PreludeModule::Bool,
                     _ => unreachable!("non-primitive type for negation {ty:?}"),
                 };
@@ -456,11 +455,11 @@ impl<'tcx> RValue<'tcx> {
                 let to_int = match source.kind() {
                     TyKind::Int(ity) => {
                         lower.names.import_prelude_module(int_to_prelude(*ity));
-                        int_to_int(ity)
+                        int_to_int(*ity)
                     }
                     TyKind::Uint(uty) => {
                         lower.names.import_prelude_module(uint_to_prelude(*uty));
-                        uint_to_int(uty)
+                        uint_to_int(*uty)
                     }
                     TyKind::Bool => {
                         lower.names.import_prelude_module(PreludeModule::Bool);
@@ -472,8 +471,8 @@ impl<'tcx> RValue<'tcx> {
                 };
 
                 let from_int = match target.kind() {
-                    TyKind::Int(ity) => int_from_int(ity),
-                    TyKind::Uint(uty) => uint_from_int(uty),
+                    TyKind::Int(ity) => int_from_int(*ity),
+                    TyKind::Uint(uty) => uint_from_int(*uty),
                     TyKind::Char => {
                         lower.names.import_prelude_module(PreludeModule::Char);
                         QName::from_string("Char.chr")
@@ -1184,8 +1183,7 @@ pub(crate) fn binop_to_binop<'tcx, N: Namer<'tcx>>(names: &mut N, ty: Ty, op: mi
     let prelude: PreludeModule = match ty.kind() {
         TyKind::Int(ity) => int_to_prelude(*ity),
         TyKind::Uint(uty) => uint_to_prelude(*uty),
-        TyKind::Float(FloatTy::F32) => PreludeModule::Float32,
-        TyKind::Float(FloatTy::F64) => PreludeModule::Float64,
+        TyKind::Float(fty) => floatty_to_prelude(*fty),
         TyKind::Bool => PreludeModule::Bool,
         _ => unreachable!("non-primitive type for binary operation {op:?} {ty:?}"),
     };
@@ -1246,7 +1244,15 @@ pub(crate) fn uint_to_prelude(ity: UintTy) -> PreludeModule {
     }
 }
 
-pub(crate) fn int_from_int(ity: &IntTy) -> QName {
+pub(crate) fn floatty_to_prelude(fty: FloatTy) -> PreludeModule {
+    match fty {
+        FloatTy::F32 => PreludeModule::Float32,
+        FloatTy::F64 => PreludeModule::Float64,
+        FloatTy::F16 | FloatTy::F128 => todo!("unsupported: {fty:?}"),
+    }
+}
+
+pub(crate) fn int_from_int(ity: IntTy) -> QName {
     match ity {
         IntTy::Isize => QName::from_string("IntSize.of_int"),
         IntTy::I8 => QName::from_string("Int8.of_int"),
@@ -1257,7 +1263,7 @@ pub(crate) fn int_from_int(ity: &IntTy) -> QName {
     }
 }
 
-pub(crate) fn uint_from_int(uty: &UintTy) -> QName {
+pub(crate) fn uint_from_int(uty: UintTy) -> QName {
     match uty {
         UintTy::Usize => QName::from_string("UIntSize.of_int"),
         UintTy::U8 => QName::from_string("UInt8.of_int"),
@@ -1268,7 +1274,7 @@ pub(crate) fn uint_from_int(uty: &UintTy) -> QName {
     }
 }
 
-pub(crate) fn int_to_int(ity: &IntTy) -> Exp {
+pub(crate) fn int_to_int(ity: IntTy) -> Exp {
     match ity {
         IntTy::Isize => Exp::qvar(QName::from_string("IntSize.to_int")),
         IntTy::I8 => Exp::qvar(QName::from_string("Int8.to_int")),
@@ -1279,7 +1285,7 @@ pub(crate) fn int_to_int(ity: &IntTy) -> Exp {
     }
 }
 
-pub(crate) fn uint_to_int(uty: &UintTy) -> Exp {
+pub(crate) fn uint_to_int(uty: UintTy) -> Exp {
     match uty {
         UintTy::Usize => Exp::qvar(QName::from_string("UIntSize.to_int")),
         UintTy::U8 => Exp::qvar(QName::from_string("UInt8.to_int")),

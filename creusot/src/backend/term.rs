@@ -272,15 +272,13 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         args: &Vec<Exp>,
     ) -> Option<Exp> {
         let def_id = method.0;
-        let _substs = method.1;
+        let substs = method.1;
 
         let def_id = Some(def_id);
         let builtin_attr = get_builtin(self.ctx.tcx, def_id.unwrap());
 
         if let Some(builtin) = builtin_attr.map(|a| QName::from_string(&a.as_str())) {
-            self.names.value(def_id.unwrap(), _substs);
-            // self.names.import_builtin_module(builtin.clone().module_qname());
-
+            self.names.value(def_id.unwrap(), substs);
             return Some(Exp::qvar(builtin.without_search_path()).app(args.clone()));
         }
         None
@@ -299,34 +297,29 @@ pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
     names: &mut N,
     lit: &Literal<'tcx>,
 ) -> Exp {
-    match &lit {
-        Literal::Integer(i) => Constant::Int(*i, None).into(),
+    match *lit {
+        Literal::Integer(i) => Constant::Int(i, None).into(),
         Literal::MachSigned(u, intty) => {
-            let why_ty = intty_to_ty(names, &intty);
-            Constant::Int(*u, Some(why_ty)).into()
+            let why_ty = intty_to_ty(names, intty);
+            Constant::Int(u, Some(why_ty)).into()
         }
         Literal::MachUnsigned(u, uty) => {
-            let why_ty = uintty_to_ty(names, &uty);
+            let why_ty = uintty_to_ty(names, uty);
 
-            Constant::Uint(*u, Some(why_ty)).into()
+            Constant::Uint(u, Some(why_ty)).into()
         }
-        Literal::Bool(b) => {
-            if *b {
-                Constant::const_true().into()
-            } else {
-                Constant::const_false().into()
-            }
-        }
+        Literal::Bool(true) => Constant::const_true().into(),
+        Literal::Bool(false) => Constant::const_false().into(),
         Literal::Function(id, subst) => {
-            names.value(*id, subst);
+            names.value(id, subst);
             Exp::Tuple(Vec::new())
         }
-        Literal::Float(f, fty) => {
-            let why_ty = floatty_to_ty(names, &fty);
+        Literal::Float(ref f, fty) => {
+            let why_ty = floatty_to_ty(names, fty);
             Constant::Float(f.0, Some(why_ty)).into()
         }
         Literal::ZST => Exp::Tuple(Vec::new()),
-        Literal::String(string) => Constant::String(string.clone()).into(),
+        Literal::String(ref string) => Constant::String(string.clone()).into(),
     }
 }
 

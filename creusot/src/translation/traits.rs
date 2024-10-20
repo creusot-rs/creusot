@@ -1,7 +1,7 @@
 use super::pearlite::{Term, TermKind};
 use crate::{
     ctx::*,
-    util::{is_law, is_spec},
+    util::{erased_identity_for_item, is_law, is_spec},
 };
 use rustc_hir::def_id::DefId;
 use rustc_infer::{
@@ -9,7 +9,7 @@ use rustc_infer::{
     traits::{Obligation, ObligationCause, TraitEngine},
 };
 use rustc_middle::ty::{
-    AssocItem, AssocItemContainer, Const, ConstKind, EarlyBinder, GenericArgs, GenericArgsRef,
+    AssocItem, AssocItemContainer, Const, ConstKind, EarlyBinder, GenericArgsRef,
     ParamConst, ParamEnv, ParamTy, Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable,
     TypeFolder,
 };
@@ -73,7 +73,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 continue;
             }
 
-            let subst = GenericArgs::identity_for_item(self.tcx, impl_item);
+            let subst = erased_identity_for_item(self.tcx, impl_item);
 
             let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.skip_binder().args);
 

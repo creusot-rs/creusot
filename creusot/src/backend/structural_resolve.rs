@@ -5,7 +5,7 @@ use rustc_type_ir::TyKind;
 
 use crate::{
     pearlite::{BinOp, Pattern, Term, TermKind},
-    util::{get_builtin, is_snap_ty, is_trusted},
+    util::{erased_identity_for_item, get_builtin, is_snap_ty, is_trusted},
 };
 
 use super::Why3Generator;
@@ -90,9 +90,9 @@ pub(crate) fn head_and_subst<'tcx>(
 ) -> (Ty<'tcx>, GenericArgsRef<'tcx>) {
     match ty.kind() {
         TyKind::Adt(adt_def, subst) => {
-            (Ty::new_adt(tcx, *adt_def, GenericArgs::identity_for_item(tcx, adt_def.did())), subst)
+            (Ty::new_adt(tcx, *adt_def, erased_identity_for_item(tcx, adt_def.did())), subst)
         }
-        TyKind::Closure(did, _) => (ty, GenericArgs::identity_for_item(tcx, tcx.parent(*did))),
+        TyKind::Closure(did, _) => (ty, erased_identity_for_item(tcx, tcx.parent(*did))),
         TyKind::Tuple(tys) => {
             let params = (0..tys.len())
                 .map(|i| Ty::new_param(tcx, i as _, Symbol::intern(&format!("T{i}"))));

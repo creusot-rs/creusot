@@ -1,7 +1,7 @@
 use crate::{
     ctx::*,
     error::{CreusotResult, InternalError},
-    translation::{pearlite::Term, specification::ContractClauses, traits},
+    translation::{pearlite::Term, specification::ContractClauses, traits}, util::erased_identity_for_item,
 };
 use indexmap::IndexSet;
 use rustc_hir::def_id::{DefId, LocalDefId};
@@ -9,7 +9,7 @@ use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
     thir::{self, visit::Visitor, Expr, ExprKind, Thir},
     ty::{
-        Clause, EarlyBinder, GenericArgKind, GenericArgs, GenericArgsRef, Predicate, TyCtxt, TyKind,
+        Clause, EarlyBinder, GenericArgKind, GenericArgsRef, Predicate, TyCtxt, TyKind,
     },
 };
 use rustc_span::Symbol;
@@ -64,8 +64,8 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         (id, subst)
     };
 
-    let mut inner_subst = GenericArgs::identity_for_item(ctx.tcx, id).to_vec();
-    let outer_subst = GenericArgs::identity_for_item(ctx.tcx, def_id.to_def_id());
+    let mut inner_subst = erased_identity_for_item(ctx.tcx, id).to_vec();
+    let outer_subst = erased_identity_for_item(ctx.tcx, def_id.to_def_id());
 
     // FIXME(xavier): Handle this better.
     // "Host effects" are related to the wip effects feature of Rust. For the moment let's just ignore them.

@@ -1,12 +1,11 @@
 use super::{clone_map::Dependencies, term::lower_pure, Why3Generator};
 use crate::{
-    backend,
     backend::{all_generic_decls_for, own_generic_decls_for, Namer},
     ctx::ItemType,
-    util::{self, item_name, module_name},
+    util::{self, erased_identity_for_item, item_name, module_name},
 };
 use rustc_hir::{def::Namespace, def_id::DefId};
-use rustc_middle::ty::{GenericArgs, GenericArgsRef};
+use rustc_middle::ty::GenericArgsRef;
 use why3::declaration::{Decl, Goal, Module, TyDecl};
 
 pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
@@ -44,11 +43,8 @@ impl<'tcx> Why3Generator<'tcx> {
         let mut names = Dependencies::new(self, [def_id]);
 
         let mut decls: Vec<_> = all_generic_decls_for(&mut names, def_id).collect();
-        let ty_decl = self.assoc_ty_decl(
-            &mut names,
-            def_id,
-            GenericArgs::identity_for_item(self.tcx, def_id),
-        );
+        let ty_decl =
+            self.assoc_ty_decl(&mut names, def_id, erased_identity_for_item(self.tcx, def_id));
 
         decls.push(ty_decl);
 
@@ -72,14 +68,7 @@ impl<'tcx> Why3Generator<'tcx> {
         let ty_params = vec![];
 
         let ty_decl = match self.tcx.associated_item(def_id).container {
-            rustc_middle::ty::ImplContainer => {
-                let assoc_ty = self.tcx.type_of(def_id).instantiate_identity();
-                TyDecl::Alias {
-                    ty_name,
-                    ty_params,
-                    alias: backend::ty::translate_ty(self, names, rustc_span::DUMMY_SP, assoc_ty),
-                }
-            }
+            rustc_middle::ty::ImplContainer => unreachable!("should be normalized"),
             rustc_middle::ty::TraitContainer => TyDecl::Opaque { ty_name, ty_params },
         };
 
