@@ -63,6 +63,7 @@ impl CreusotArgsExt for CreusotArgs {
             output,
             in_cargo: cargo_creusot,
             span_mode,
+            monolithic: self.options.monolithic,
             match_str: self.options.focus_on,
             simple_triggers: self.options.simple_triggers,
             why3_cmd: match self.subcommand {

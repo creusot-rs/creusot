@@ -35,10 +35,16 @@ fn main() -> Result<()> {
         coma_glob = None;
     } else {
         // default to --output-dir=target/creusot
-        let dir = make_coma_target(&cargo_md)?;
-        coma_src = dir.clone();
-        cargs.options.output_dir = Some(dir);
-        coma_glob = coma_src.to_str().map(|s| s.to_string() + "/**/*.coma");
+        let dir = match &cargs.options.output_dir {
+            Some(dir) => dir.clone(),
+            None => {
+                let dir = make_coma_target(&cargo_md)?;
+                cargs.options.output_dir = Some(dir.clone());
+                dir
+            }
+        };
+        coma_glob = dir.to_str().map(|s| s.to_string() + "/**/*.coma");
+        coma_src = dir;
     }
 
     let subcommand = match cargs.subcommand {

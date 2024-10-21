@@ -3,10 +3,15 @@ use rustc_driver::{Callbacks, Compilation};
 use rustc_hir::def_id::LocalDefId;
 use rustc_interface::{interface::Compiler, Config, Queries};
 use rustc_middle::ty::TyCtxt;
+use rustc_session::config::CrateType;
 
 use std::{cell::RefCell, collections::HashMap, thread_local};
 
-use crate::{cleanup_spec_closures::*, options::Options};
+use crate::{
+    cleanup_spec_closures::*,
+    ctx, lints,
+    options::{Options, Output},
+};
 
 pub struct ToWhy {
     opts: Options,
@@ -16,8 +21,37 @@ impl ToWhy {
     pub fn new(opts: Options) -> Self {
         ToWhy { opts }
     }
+
+    // Adjust the output directory so libraries and binaries with the same name don't overwrite each other
+    // Libraries go to output/creusot/
+    // Binaries go to output/creusot/bin/
+    fn set_output_dir(&mut self, config: &Config) {
+        let Output::Directory(ref mut dir) = self.opts.output else { return }; // if we're given a specific output file, just use that
+        if config.opts.crate_types.len() > 1 {
+            warn!(
+                "Found more than one --crate-type, only the first one will be used: {:?}",
+                config.opts.crate_types
+            );
+        }
+        match config.opts.crate_types.get(0) {
+            None | Some(CrateType::Rlib) => {}
+            Some(crate_type) => {
+                dir.push(format!("{}", crate_type));
+            }
+        }
+        if self.opts.monolithic {
+            let krate = match &config.opts.crate_name {
+                Some(krate) => krate.clone() + ".coma",
+                None => {
+                    warn!("No crate name found, defaulting to 'a.coma'");
+                    "a.coma".to_string()
+                }
+            };
+            dir.push(krate);
+            self.opts.output = Output::File(dir.clone());
+        }
+    }
 }
-use crate::{ctx, lints};
 
 thread_local! {
     pub static MIR_BODIES:
@@ -27,6 +61,8 @@ thread_local! {
 
 impl Callbacks for ToWhy {
     fn config(&mut self, config: &mut Config) {
+        self.set_output_dir(config);
+
         // HACK: remove this once `config.locale_resources` is defined as a Vec
         let mut locale_resources = config.locale_resources.to_vec();
         locale_resources.push(crate::DEFAULT_LOCALE_RESOURCE);

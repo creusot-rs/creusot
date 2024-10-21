@@ -318,10 +318,6 @@ pub(crate) fn module_path_with_suffix(
     }
 }
 
-pub(crate) fn module_path(tcx: TyCtxt, modular: bool, def_id: DefId) -> why3::QName {
-    module_path_with_suffix(tcx, modular, def_id, "")
-}
-
 // Translate a name to be a valid fragment of a Why3 identifier
 // Escape initial and final underscores, double underscores, non-ascii characters,
 // and "qy" sequences (because "qy" is the escape sequence).
