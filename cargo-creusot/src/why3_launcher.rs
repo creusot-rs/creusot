@@ -50,6 +50,7 @@ impl Why3Launcher {
                 "--warn-off=unused_variable",
                 "--warn-off=clone_not_abstract",
                 "--warn-off=axiom_abstract",
+                "--debug=coma_no_trivial",
                 &mode,
                 "-L",
             ])
