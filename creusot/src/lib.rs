@@ -14,6 +14,7 @@ extern crate rustc_borrowck;
 extern crate rustc_data_structures;
 extern crate rustc_driver;
 extern crate rustc_errors;
+extern crate rustc_fluent_macro;
 extern crate rustc_hir;
 extern crate rustc_index;
 extern crate rustc_infer;
@@ -59,3 +60,5 @@ mod translated_item;
 mod validate;
 mod validate_terminates;
 mod very_stable_hash;
+
+rustc_fluent_macro::fluent_messages! { "../messages.ftl" }

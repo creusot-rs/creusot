@@ -27,6 +27,10 @@ thread_local! {
 
 impl Callbacks for ToWhy {
     fn config(&mut self, config: &mut Config) {
+        // HACK: remove this once `config.locale_resources` is defined as a Vec
+        let mut locale_resources = config.locale_resources.to_vec();
+        locale_resources.push(crate::DEFAULT_LOCALE_RESOURCE);
+        config.locale_resources = locale_resources.leak();
         config.override_queries = Some(|_sess, providers| {
             providers.mir_built = |tcx, def_id| {
                 let mir = (rustc_interface::DEFAULT_QUERY_PROVIDERS.mir_built)(tcx, def_id);
