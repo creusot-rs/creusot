@@ -1,11 +1,12 @@
 use super::{Dependencies, Why3Generator};
 use crate::{
     ctx::*,
+    translated_item::FileModule,
     translation::{
         pearlite::{self, Term, TermKind},
         specification::PreContract,
     },
-    util::{self, get_builtin, item_name, module_name, translate_accessor_name, PreSignature},
+    util::{self, get_builtin, item_name, translate_accessor_name, PreSignature},
 };
 use indexmap::IndexSet;
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
@@ -340,7 +341,7 @@ pub(crate) fn translate_ty_param(p: Symbol) -> Ident {
 pub(crate) fn translate_tydecl(
     ctx: &mut Why3Generator<'_>,
     bg: &IndexSet<DefId>,
-) -> Option<Vec<Module>> {
+) -> Option<Vec<FileModule>> {
     let repr = ctx.representative_type(bg.first().unwrap().clone());
 
     if let Some(_) = get_builtin(ctx.tcx, repr) {
@@ -348,8 +349,8 @@ pub(crate) fn translate_tydecl(
     }
 
     let mut names = Dependencies::new(ctx, bg.iter().copied());
-
-    let name = module_name(ctx.tcx, repr).to_string().into();
+    let repr_name = ctx.module_path(repr);
+    let QName { module: path, name } = repr_name.clone();
     let span = ctx.def_span(repr);
 
     // Trusted types (opaque)
@@ -360,14 +361,17 @@ pub(crate) fn translate_tydecl(
         let ty_name = translate_ty_name(ctx, repr);
 
         let ty_params: Vec<_> = ty_param_names(ctx.tcx, repr).collect();
-        let modl = Module {
-            name,
-            decls: vec![Decl::TyDecl(TyDecl::Opaque {
-                ty_name: ty_name.clone(),
-                ty_params: ty_params.clone(),
-            })],
-            attrs: Vec::from_iter(ctx.span_attr(ctx.def_span(repr))),
-            meta: ctx.display_impl_of(repr),
+        let modl = FileModule {
+            path,
+            modl: Module {
+                name,
+                decls: vec![Decl::TyDecl(TyDecl::Opaque {
+                    ty_name: ty_name.clone(),
+                    ty_params: ty_params.clone(),
+                })],
+                attrs: Vec::from_iter(ctx.span_attr(ctx.def_span(repr))),
+                meta: ctx.display_impl_of(repr),
+            },
         };
         let _ = names.provide_deps(ctx);
         return Some(vec![modl]);
@@ -395,13 +399,24 @@ pub(crate) fn translate_tydecl(
     decls.extend(destructors);
 
     let attrs = Vec::from_iter(ctx.span_attr(span));
-    let mut modls = vec![Module { name: name.clone(), decls, attrs, meta: None }];
+    let mut modls =
+        vec![FileModule { path, modl: Module { name: name.clone(), decls, attrs, meta: None } }];
 
-    modls.extend(bg.iter().filter(|did| **did != repr).map(|did| Module {
-        name: module_name(ctx.tcx, *did).to_string().into(),
-        decls: vec![Decl::UseDecl(Use { name: name.clone().into(), as_: None, export: true })],
-        attrs: Vec::from_iter(ctx.span_attr(ctx.def_span(did))),
-        meta: ctx.display_impl_of(*did),
+    modls.extend(bg.iter().filter(|did| **did != repr).map(|did| {
+        let QName { module: path, name } = ctx.module_path(*did);
+        FileModule {
+            path,
+            modl: Module {
+                name,
+                decls: vec![Decl::UseDecl(Use {
+                    name: repr_name.clone(),
+                    as_: None,
+                    export: true,
+                })],
+                attrs: Vec::from_iter(ctx.span_attr(ctx.def_span(did))),
+                meta: ctx.display_impl_of(*did),
+            },
+        }
     }));
 
     Some(modls)

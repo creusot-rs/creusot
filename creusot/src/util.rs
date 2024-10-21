@@ -295,6 +295,33 @@ pub(crate) fn module_name(tcx: TyCtxt, def_id: DefId) -> Symbol {
     }
 }
 
+// The first component is the path to the file containing the module,
+// in modular mode (option --output-dir).
+// In monolithic mode (--output-file or --stdout) this is always empty.
+pub(crate) fn module_path_with_suffix(
+    tcx: TyCtxt,
+    modular: bool,
+    def_id: DefId,
+    suffix: &str,
+) -> why3::QName {
+    if modular {
+        let mut segs = crate::util::ident_path_segments(tcx, def_id);
+        match segs.last_mut() {
+            None => {}
+            Some(last) => last.push_str(suffix),
+        }
+        let module = segs.into_iter().map(|s| s.into()).collect();
+        why3::QName { module, name: "M".into() }
+    } else {
+        let name = (crate::util::module_name(tcx, def_id).to_string() + suffix).into();
+        why3::QName { module: vec![], name }
+    }
+}
+
+pub(crate) fn module_path(tcx: TyCtxt, modular: bool, def_id: DefId) -> why3::QName {
+    module_path_with_suffix(tcx, modular, def_id, "")
+}
+
 // Translate a name to be a valid fragment of a Why3 identifier
 // Escape initial and final underscores, double underscores, non-ascii characters,
 // and "qy" sequences (because "qy" is the escape sequence).
@@ -333,7 +360,7 @@ enum Segment {
     Other(DisambiguatedDefPathData),
 }
 
-fn ident_path_segments(tcx: TyCtxt, def_id: DefId) -> Vec<Segment> {
+fn ident_path_segments_(tcx: TyCtxt, def_id: DefId) -> Vec<Segment> {
     let mut segs = Vec::new();
     let mut id = def_id;
     loop {
@@ -354,6 +381,16 @@ fn ident_path_segments(tcx: TyCtxt, def_id: DefId) -> Vec<Segment> {
     segs
 }
 
+pub(crate) fn ident_path_segments(tcx: TyCtxt, def_id: DefId) -> Vec<String> {
+    let krate = tcx.crate_name(def_id.krate);
+    iter::once(translate_name(krate.as_str()))
+        .chain(ident_path_segments_(tcx, def_id).into_iter().map(|seg| match seg {
+            Segment::Impl(hash) => format!("qyi{}", hash),
+            Segment::Other(data) => translate_name(&data.to_string()),
+        }))
+        .collect()
+}
+
 // This function must be injective: distinct source constructs
 // must have different names in the output.
 fn ident_path(upper_initial: bool, tcx: TyCtxt, def_id: DefId) -> Symbol {
@@ -368,7 +405,7 @@ fn ident_path(upper_initial: bool, tcx: TyCtxt, def_id: DefId) -> Symbol {
     let crate_name = tcx.crate_name(def_id.krate);
     push_translate_name(crate_name.as_str(), &mut dest);
 
-    let def_path = ident_path_segments(tcx, def_id);
+    let def_path = ident_path_segments_(tcx, def_id);
     for seg in def_path.iter() {
         dest.push_str("__");
         match seg {

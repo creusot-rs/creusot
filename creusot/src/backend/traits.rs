@@ -3,13 +3,14 @@ use crate::{
     backend,
     backend::{all_generic_decls_for, own_generic_decls_for, Namer},
     ctx::ItemType,
+    translated_item::FileModule,
     util::{self, item_name, module_name},
 };
 use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_middle::ty::{GenericArgs, GenericArgsRef};
 use why3::declaration::{Decl, Goal, Module, TyDecl};
 
-pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
+pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> FileModule {
     let tcx = ctx.tcx;
     let data = ctx.trait_impl(def_id).clone();
 
@@ -34,7 +35,8 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
 
     let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
     let meta = ctx.display_impl_of(def_id);
-    Module { name: module_name(ctx.tcx, def_id).to_string().into(), decls, attrs, meta }
+    let why3::QName { module: path, name } = ctx.module_path(def_id);
+    FileModule { path, modl: Module { name, decls, attrs, meta } }
 }
 
 impl<'tcx> Why3Generator<'tcx> {

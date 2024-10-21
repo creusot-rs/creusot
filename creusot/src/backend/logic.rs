@@ -1,6 +1,7 @@
 use crate::{
     backend::all_generic_decls_for,
     ctx::*,
+    translated_item::FileModule,
     translation::pearlite::Term,
     util::{self, get_builtin},
 };
@@ -8,7 +9,7 @@ use rustc_hir::def_id::DefId;
 use why3::{
     declaration::*,
     exp::{super_visit_mut, BinOp, Binder, Exp, ExpMutVisitor, Trigger},
-    Ident,
+    Ident, QName,
 };
 
 mod vcgen;
@@ -49,7 +50,7 @@ pub(crate) fn binders_to_args(
 pub(crate) fn translate_logic_or_predicate<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
-) -> Option<Module> {
+) -> Option<FileModule> {
     let mut names = Dependencies::new(ctx, [def_id]);
     let sig = signature_of(ctx, &mut names, def_id);
 
@@ -200,7 +201,7 @@ fn limited_function_encode(
     decls.push(Decl::Axiom(definition_axiom(&sig, lim_call, "def_lim")));
 }
 
-fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
+fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<FileModule> {
     if is_trusted_function(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
         return None;
     }
@@ -261,10 +262,10 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
     decls.extend(clones);
     decls.extend(body_decls);
 
-    let name = module_ident(ctx, def_id);
     let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
     let meta = ctx.display_impl_of(def_id);
-    Some(Module { name, decls, attrs, meta })
+    let QName { module: path, name } = ctx.module_path(def_id);
+    Some(FileModule { path, modl: Module { name, decls, attrs, meta } })
 }
 
 pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
@@ -326,8 +327,4 @@ fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
 
     let name = format!("{}_{suffix}", &*sig.name);
     Axiom { name: name.into(), rewrite: false, axiom }
-}
-
-pub(crate) fn module_ident(ctx: &TranslationCtx, def_id: DefId) -> Ident {
-    Ident::build(module_name(ctx.tcx, def_id).as_str())
 }

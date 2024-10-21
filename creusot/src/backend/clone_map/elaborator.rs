@@ -343,13 +343,12 @@ impl DepElab for TyElab {
                     let name = names.insert(dep).qname();
 
                     let modl = if util::item_type(ctx.tcx, def_id) == ItemType::Closure {
-                        Symbol::intern(&format!("{}_Type", module_name(ctx.tcx, def_id)))
+                        ctx.module_path_with_suffix(def_id, "_Type")
                     } else {
-                        module_name(ctx.tcx, def_id)
+                        ctx.module_path(def_id)
                     };
                     let name = if name.module.is_empty() { name } else { name.module_qname() };
-                    let use_decl =
-                        Use { as_: Some(name.clone()), name: modl.as_str().into(), export: false };
+                    let use_decl = Use { as_: Some(name.as_ident()), name: modl, export: false };
                     vec![Decl::UseDecl(use_decl)]
                 }
             }
@@ -420,10 +419,13 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                         def_id = self.tcx.parent(def_id);
                     };
                     let name = self.namer.insert(dep).qname();
-                    let modl = module_name(ctx.tcx, def_id);
+                    let modl = ctx.module_path(def_id);
                     let name = if name.module.is_empty() { name } else { name.module_qname() };
-                    let use_decl =
-                        Use { as_: Some(name.clone()), name: modl.as_str().into(), export: false };
+                    let use_decl = Use {
+                        as_: Some(Ident::from_string(name.to_string())),
+                        name: modl,
+                        export: false,
+                    };
                     vec![Decl::UseDecl(use_decl)]
                 } else {
                     ProgElab::expand(self, ctx, dep)

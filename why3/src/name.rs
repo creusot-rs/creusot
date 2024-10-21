@@ -31,6 +31,10 @@ impl Ident {
         self.0
     }
 
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
     pub fn decapitalize(&mut self) {
         self.0[..1].make_ascii_lowercase();
     }
@@ -144,6 +148,16 @@ impl QName {
         }
 
         s.into()
+    }
+
+    pub fn to_string(&self) -> String {
+        let mut s = String::new();
+        for i in self.module.iter() {
+            s.push_str(i.as_str());
+            s.push('.');
+        }
+        s.push_str(self.name.as_str());
+        s
     }
 }
 

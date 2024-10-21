@@ -391,6 +391,22 @@ impl<'tcx> Why3Generator<'tcx> {
             id.index = parent_id;
         }
     }
+
+    pub(crate) fn module_path_with_suffix(&self, def_id: DefId, suffix: &str) -> why3::QName {
+        util::module_path_with_suffix(self.tcx, self.is_modular(), def_id, suffix)
+    }
+
+    pub(crate) fn module_path(&self, def_id: DefId) -> why3::QName {
+        self.module_path_with_suffix(def_id, "")
+    }
+
+    pub fn is_modular(&self) -> bool {
+        use crate::options::Output;
+        match &self.opts.output {
+            Output::Directory(_) => true,
+            Output::File(_) | Output::Stdout => false,
+        }
+    }
 }
 
 fn display_impl_subject(i: &rustc_middle::ty::ImplSubject<'_>) -> String {
