@@ -110,7 +110,7 @@ impl<T: ?Sized> GhostBox<T> {
         }
         #[cfg(not(creusot))]
         {
-            panic!()
+            GhostBox(std::marker::PhantomData)
         }
     }
 
@@ -124,7 +124,7 @@ impl<T: ?Sized> GhostBox<T> {
         }
         #[cfg(not(creusot))]
         {
-            panic!()
+            GhostBox(std::marker::PhantomData)
         }
     }
 
@@ -158,6 +158,7 @@ impl<T> GhostBox<T> {
     /// Returns the inner value of the `GhostBox`.
     ///
     /// This function can only be called in `ghost!` context.
+    #[pure]
     #[ensures(result == *self.0)]
     #[rustc_diagnostic_item = "ghost_box_into_inner"]
     pub fn into_inner(self) -> T {
@@ -175,8 +176,7 @@ impl<T> GhostBox<T> {
     ///
     /// You should prefer the dereference operator `*` instead.
     #[logic]
-    #[open(self)]
-    #[ensures(result == *self.0)]
+    #[open]
     #[rustc_diagnostic_item = "ghost_box_inner_logic"]
     pub fn inner_logic(self) -> T {
         *self.0
