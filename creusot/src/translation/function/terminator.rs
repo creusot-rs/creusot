@@ -3,6 +3,9 @@ use crate::{
     ctx::TranslationCtx,
     extended_location::ExtendedLocation,
     fmir,
+    lints::contractless_external_function::{
+        ContractlessExternalFunction, CONTRACTLESS_EXTERNAL_FUNCTION,
+    },
     resolve::HasMoveDataExt,
     translation::{
         fmir::*,
@@ -142,22 +145,22 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             infcx.err_ctxt().report_fulfillment_errors(errs);
                         }
 
-                        let (fun_def_id, subst) = if let Some((ghost_def_id, ghost_args_ty)) =
-                            call_ghost
-                        {
-                            // Directly call the ghost closure
-
-                            assert_eq!(func_args.len(), 2);
-
+                        let (fun_def_id, subst) = {
+                            let (fun_id, subst) =
+                                if let Some((ghost_def_id, ghost_args_ty)) = call_ghost {
+                                    // Directly call the ghost closure
+                                    assert_eq!(func_args.len(), 2);
+                                    (ghost_def_id, ghost_args_ty)
+                                } else {
+                                    (fun_def_id, subst)
+                                };
                             resolve_function(
                                 self.ctx,
                                 self.param_env(),
-                                ghost_def_id,
-                                ghost_args_ty,
-                                span,
+                                fun_id,
+                                subst,
+                                (self.body, span, location),
                             )
-                        } else {
-                            resolve_function(self.ctx, self.param_env(), fun_def_id, subst, span)
                         };
 
                         if self.ctx.sig(fun_def_id).contract.is_requires_false() {
@@ -421,12 +424,15 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
     }
 }
 
+/// # Parameters
+///
+/// - `report_location`: used to emit an eventual warning.
 fn resolve_function<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
-    sp: Span,
+    report_location: (&mir::Body<'tcx>, Span, Location),
 ) -> (DefId, GenericArgsRef<'tcx>) {
     let res;
     if let Some(AssocItem { container: ty::TraitContainer, .. }) = ctx.opt_associated_item(def_id) {
@@ -438,11 +444,17 @@ fn resolve_function<'tcx>(
     }
 
     if ctx.sig(res.0).contract.extern_no_spec {
-        ctx.warn(
-            sp,
-            &format!("calling external function `{}` with no contract will yield an impossible precondition", ctx.def_path_str(def_id))
-        )
-        .emit();
+        let (body, span, location) = report_location;
+        let name = ctx.tcx.item_name(def_id);
+        let source_info = body.source_info(location);
+        if let Some(lint_root) = source_info.scope.lint_root(&body.source_scopes) {
+            ctx.emit_node_span_lint(
+                CONTRACTLESS_EXTERNAL_FUNCTION,
+                lint_root,
+                span,
+                ContractlessExternalFunction { name, span },
+            );
+        }
     }
 
     res
