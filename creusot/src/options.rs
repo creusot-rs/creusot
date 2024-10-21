@@ -29,6 +29,7 @@ pub struct Options {
     pub export_metadata: bool,
     pub should_output: bool,
     pub output: Output,
+    pub monolithic: bool,
     pub in_cargo: bool,
     pub span_mode: SpanMode,
     pub match_str: Option<String>,

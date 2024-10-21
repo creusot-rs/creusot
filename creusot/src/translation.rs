@@ -155,10 +155,13 @@ fn print_crate<I: Iterator<Item = FileModule>>(
 ) -> std::io::Result<Option<PathBuf>> {
     let (root, mut output) = match output_target {
         Output::Directory(dir) => (Some(dir.clone()), OutputHandle::Directory(dir)),
-        Output::File(ref f) => (
-            Some(f.clone()),
-            OutputHandle::File(Box::new(std::io::BufWriter::new(File::create(f)?))),
-        ),
+        Output::File(ref f) => {
+            std::fs::create_dir_all(f.parent().unwrap()).unwrap();
+            (
+                Some(f.clone()),
+                OutputHandle::File(Box::new(std::io::BufWriter::new(File::create(f)?))),
+            )
+        }
         Output::Stdout => (None, OutputHandle::File(Box::new(std::io::stdout()))),
     };
     let alloc = mlcfg::printer::ALLOC;

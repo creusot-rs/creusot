@@ -35,6 +35,9 @@ pub struct CommonOptions {
     pub output_file: Option<PathBuf>,
     #[clap(group = "output", long, env, conflicts_with = "output_file", conflicts_with = "stdout")]
     pub output_dir: Option<PathBuf>,
+    /// Output the generated code in a single file in output_dir.
+    #[clap(long, default_value_t = false, action = clap::ArgAction::SetTrue)]
+    pub monolithic: bool,
     /// Specify locations of metadata for external crates. The format is the same as rustc's `--extern` flag.
     #[clap(long = "creusot-extern", value_parser= parse_key_val::<String, String>, required=false)]
     pub extern_paths: Vec<(String, String)>,
