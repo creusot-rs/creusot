@@ -110,7 +110,7 @@ impl<T: ?Sized> GhostBox<T> {
         }
         #[cfg(not(creusot))]
         {
-            panic!()
+            GhostBox(std::marker::PhantomData)
         }
     }
 
@@ -124,7 +124,7 @@ impl<T: ?Sized> GhostBox<T> {
         }
         #[cfg(not(creusot))]
         {
-            panic!()
+            GhostBox(std::marker::PhantomData)
         }
     }
 
