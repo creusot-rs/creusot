@@ -12,7 +12,6 @@ pub const CREUSOT_RUSTC_ARGS: &[&str] = &[
     "-Zcrate-attr=feature(rustc_attrs)",
     "-Zcrate-attr=feature(unsized_fn_params)",
     "--allow=internal_features",
-    "-Zdump-mir=speccleanup",
     "--cfg",
     "creusot",
 ];
