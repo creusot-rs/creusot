@@ -1,6 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
+#[expect(creusot::experimental)]
 pub fn f() {
     print!("Hello ");
     println!("world!");
