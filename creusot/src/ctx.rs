@@ -256,10 +256,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         self.tcx.dcx().struct_span_err(span, msg.to_string())
     }
 
-    pub(crate) fn warn(&self, span: Span, msg: &str) -> Diag<'tcx, ()> {
-        self.tcx.dcx().struct_span_warn(span, msg.to_string())
-    }
-
     fn add_binding_group(&mut self, def_ids: &IndexSet<DefId>) {
         let repr = *def_ids.first().unwrap();
         for i in def_ids {
