@@ -8,6 +8,7 @@ use crate::{
 };
 use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_middle::ty::{GenericArgs, GenericArgsRef};
+use rustc_span::Symbol;
 use why3::declaration::{Decl, Goal, Module, TyDecl};
 
 pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> FileModule {
@@ -23,10 +24,13 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
         let name = item_name(tcx, refn.impl_.0, Namespace::ValueNS);
 
         decls.extend(own_generic_decls_for(tcx, refn.impl_.0));
-        refn_decls.push(Decl::Goal(Goal {
-            name: format!("{}_refn", &*name).into(),
-            goal: lower_pure(ctx, &mut names, &refn.refn.clone()),
-        }));
+        // HACK: Snapshot::deref is a (very) special case, do not generate refinement obligations for it.
+        if !ctx.tcx.is_diagnostic_item(Symbol::intern("snapshot_deref"), refn.impl_.0) {
+            refn_decls.push(Decl::Goal(Goal {
+                name: format!("{}_refn", &*name).into(),
+                goal: lower_pure(ctx, &mut names, &refn.refn.clone()),
+            }));
+        }
     }
 
     let clones = names.provide_deps(ctx);
