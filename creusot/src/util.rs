@@ -352,7 +352,8 @@ pub fn translate_name(n: &str) -> String {
 
 enum Segment {
     Impl(u64), // Hash of the impl subject (type for inherent impl, trait+type for trait impls)
-    // There may be other variants than Impl to handle similarly.
+    Closure(u32), // Closure ID
+    // There may be other variants than Impl and Closure to handle similarly.
     Other(DisambiguatedDefPathData),
 }
 
@@ -369,6 +370,9 @@ fn ident_path_segments_(tcx: TyCtxt, def_id: DefId) -> Vec<Segment> {
             DefPathData::Impl => {
                 segs.push(Segment::Impl(get_very_stable_hash(&tcx.impl_subject(id), &tcx).as_u64()))
             }
+            DefPathData::Closure => {
+                segs.push(Segment::Closure(key.disambiguated_data.disambiguator))
+            }
             _ => segs.push(Segment::Other(key.disambiguated_data)),
         }
         id.index = parent_id;
@@ -382,6 +386,7 @@ pub(crate) fn ident_path_segments(tcx: TyCtxt, def_id: DefId) -> Vec<String> {
     iter::once(translate_name(krate.as_str()))
         .chain(ident_path_segments_(tcx, def_id).into_iter().map(|seg| match seg {
             Segment::Impl(hash) => format!("qyi{}", hash),
+            Segment::Closure(id) => format!("qyClosure{}", id),
             Segment::Other(data) => translate_name(&data.to_string()),
         }))
         .collect()
@@ -406,6 +411,7 @@ fn ident_path(upper_initial: bool, tcx: TyCtxt, def_id: DefId) -> Symbol {
         dest.push_str("__");
         match seg {
             Segment::Impl(hash) => dest.push_str(&format!("qyi{}", hash)),
+            Segment::Closure(id) => dest.push_str(&format!("qyClosure{}", id)),
             Segment::Other(data) => push_translate_name(&format!("{}", data), &mut dest),
         }
     }
