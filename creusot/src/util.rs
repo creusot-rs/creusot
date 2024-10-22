@@ -28,6 +28,7 @@ use std::{
     collections::{HashMap, HashSet},
     fmt::{Display, Formatter},
     iter,
+    path::PathBuf,
 };
 use why3::{
     declaration,
@@ -285,6 +286,88 @@ pub(crate) fn ident_of(sym: Symbol) -> Ident {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum NS {
+    T,
+    M,
+}
+
+impl NS {
+    pub fn as_str(&self) -> &str {
+        match self {
+            NS::T => "T",
+            NS::M => "M",
+        }
+    }
+}
+
+/// Common representation of module name from which we can generate both
+/// a Why3 module name (`M_krate__modl__f`) and a file name (`krate/modl/M_f.coma`).
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ModulePath {
+    path: Vec<Symbol>, // Crate and module names
+    namespace: NS,     // "M" for functions, or "T" for types
+    basename: Symbol,  // Function or type name
+}
+
+impl ModulePath {
+    pub fn new(tcx: TyCtxt, def_id: DefId, namespace: NS) -> Self {
+        let mut path: Vec<Symbol> = crate::util::ident_path_segments(tcx, def_id)
+            .into_iter()
+            .map(|s| Symbol::intern(&s))
+            .collect();
+        let basename = path.pop().unwrap();
+        ModulePath { path, namespace, basename }
+    }
+
+    // `M_krate__modl__f`
+    // Note: each fragment doesn't need to go through Ident (unlike why3_qname and file_name)
+    pub fn why3_ident(&self) -> Ident {
+        let mut path = self.namespace.as_str().to_string() + "_";
+        for m in &self.path {
+            path += m.as_str();
+            path += "__";
+        }
+        path += self.basename.as_str();
+        Ident::from_string(path)
+    }
+
+    // `krate.modl.M_f.Coma` (Coma is the toplevel name)
+    // Note: pass each fragment through Ident::build() to filter out coma keywords.
+    pub fn why3_qname(&self) -> why3::QName {
+        let module = self
+            .path
+            .iter()
+            .map(|s| Ident::build(s.as_str()))
+            .chain(iter::once(Ident::build(
+                &(self.namespace.as_str().to_string() + "_" + self.basename.as_str()),
+            )))
+            .collect::<Vec<_>>();
+        let name = Ident::build("Coma");
+        why3::QName { module, name }
+    }
+
+    pub fn why3_name(&self, modular: bool) -> why3::QName {
+        if modular {
+            self.why3_qname()
+        } else {
+            why3::QName { module: vec![], name: self.why3_ident() }
+        }
+    }
+
+    // `krate/modl/M_f.coma`
+    // Note: pass each fragment through Ident::build() to filter out coma keywords
+    // so that this produces the same names as `why3_qname()`.
+    pub fn file_name(&self) -> PathBuf {
+        let mut path = PathBuf::new();
+        for m in &self.path {
+            path.push(Ident::build(m.as_str()).as_str());
+        }
+        path.push(self.namespace.as_str().to_string() + "_" + &self.basename.as_str() + ".coma");
+        path
+    }
+}
+
 pub(crate) fn module_name(tcx: TyCtxt, def_id: DefId) -> Symbol {
     let kind = tcx.def_kind(def_id);
     use rustc_hir::def::DefKind::*;
@@ -292,29 +375,6 @@ pub(crate) fn module_name(tcx: TyCtxt, def_id: DefId) -> Symbol {
     match kind {
         Ctor(_, _) | Variant => module_name(tcx, tcx.parent(def_id)),
         _ => upper_ident_path(tcx, def_id),
-    }
-}
-
-// The first component is the path to the file containing the module,
-// in modular mode (option --output-dir).
-// In monolithic mode (--output-file or --stdout) this is always empty.
-pub(crate) fn module_path_with_suffix(
-    tcx: TyCtxt,
-    modular: bool,
-    def_id: DefId,
-    suffix: &str,
-) -> why3::QName {
-    if modular {
-        let mut segs = crate::util::ident_path_segments(tcx, def_id);
-        match segs.last_mut() {
-            None => {}
-            Some(last) => last.push_str(suffix),
-        }
-        let module = segs.into_iter().map(|s| s.into()).collect();
-        why3::QName { module, name: "M".into() }
-    } else {
-        let name = (crate::util::module_name(tcx, def_id).to_string() + suffix).into();
-        why3::QName { module: vec![], name }
     }
 }
 

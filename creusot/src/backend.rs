@@ -392,12 +392,8 @@ impl<'tcx> Why3Generator<'tcx> {
         }
     }
 
-    pub(crate) fn module_path_with_suffix(&self, def_id: DefId, suffix: &str) -> why3::QName {
-        util::module_path_with_suffix(self.tcx, self.is_modular(), def_id, suffix)
-    }
-
-    pub(crate) fn module_path(&self, def_id: DefId) -> why3::QName {
-        self.module_path_with_suffix(def_id, "")
+    pub(crate) fn module_path(&self, def_id: DefId, namespace: util::NS) -> util::ModulePath {
+        util::ModulePath::new(self.tcx, def_id, namespace)
     }
 
     pub fn is_modular(&self) -> bool {

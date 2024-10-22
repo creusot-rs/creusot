@@ -349,8 +349,7 @@ pub(crate) fn translate_tydecl(
     }
 
     let mut names = Dependencies::new(ctx, bg.iter().copied());
-    let repr_name = ctx.module_path(repr);
-    let QName { module: path, name } = repr_name.clone();
+    let repr_path = ctx.module_path(repr, util::NS::T);
     let span = ctx.def_span(repr);
 
     // Trusted types (opaque)
@@ -362,9 +361,9 @@ pub(crate) fn translate_tydecl(
 
         let ty_params: Vec<_> = ty_param_names(ctx.tcx, repr).collect();
         let modl = FileModule {
-            path,
+            path: repr_path.clone(),
             modl: Module {
-                name,
+                name: repr_path.why3_ident(),
                 decls: vec![Decl::TyDecl(TyDecl::Opaque {
                     ty_name: ty_name.clone(),
                     ty_params: ty_params.clone(),
@@ -399,17 +398,20 @@ pub(crate) fn translate_tydecl(
     decls.extend(destructors);
 
     let attrs = Vec::from_iter(ctx.span_attr(span));
-    let mut modls =
-        vec![FileModule { path, modl: Module { name: name.clone(), decls, attrs, meta: None } }];
+    let mut modls = vec![FileModule {
+        path: repr_path.clone(),
+        modl: Module { name: repr_path.why3_ident(), decls, attrs, meta: None },
+    }];
 
     modls.extend(bg.iter().filter(|did| **did != repr).map(|did| {
-        let QName { module: path, name } = ctx.module_path(*did);
+        let path = ctx.module_path(*did, util::NS::T);
+        let name = path.why3_ident();
         FileModule {
             path,
             modl: Module {
                 name,
                 decls: vec![Decl::UseDecl(Use {
-                    name: repr_name.clone(),
+                    name: repr_path.why3_name(ctx.is_modular()),
                     as_: None,
                     export: true,
                 })],

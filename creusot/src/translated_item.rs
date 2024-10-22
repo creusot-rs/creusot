@@ -1,16 +1,13 @@
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 
-use why3::{
-    declaration::{Decl, Module},
-    Ident,
-};
+use why3::declaration::{Decl, Module};
 
 /// Module with a path to the file it is defined in.
 /// We use this for modular translation (one file per module).
 /// In monolithic translation, the path is left empty.
 pub struct FileModule {
-    pub path: Vec<Ident>,
+    pub path: crate::util::ModulePath,
     pub modl: Module,
 }
 

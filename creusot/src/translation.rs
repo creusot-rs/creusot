@@ -20,11 +20,15 @@ use crate::{
         validate_impls, validate_opacity, validate_purity, validate_traits, validate_trusted,
     },
 };
+use ::why3::{
+    declaration::{Decl, Module},
+    mlcfg, Print,
+};
 use ctx::TranslationCtx;
 use rustc_hir::def::DefKind;
 use rustc_span::{Symbol, DUMMY_SP};
 use std::{error::Error, io::Write};
-use why3::{mlcfg, Print};
+use why3::mlcfg::printer::pretty_blocks;
 
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
@@ -129,24 +133,36 @@ pub enum OutputHandle {
     File(Box<dyn Write>), // Monolithic output
 }
 
-fn module_output<'a, R, F: FnMut(&mut dyn Write) -> R>(
-    modl: &FileModule,
-    output: &mut OutputHandle,
-    mut f: F,
-) -> R {
+fn module_output(modl: &FileModule, output: &mut OutputHandle) -> std::io::Result<()> {
     match output {
         OutputHandle::Directory(dir) => {
             let mut path = dir.clone();
-            for part in &modl.path {
-                path.push(part.as_str());
-            }
+            path.push(modl.path.file_name());
             path.set_extension("coma");
             let prefix = path.parent().unwrap();
             std::fs::create_dir_all(prefix).unwrap();
-            f(&mut std::io::BufWriter::new(File::create(path).unwrap()))
+            modular_output(modl, &mut std::io::BufWriter::new(File::create(path).unwrap()))
         }
-        OutputHandle::File(w) => f(&mut **w),
+        OutputHandle::File(w) => monolithic_output(modl, &mut *w),
     }
+}
+
+fn modular_output<T: Write>(modl: &FileModule, out: &mut T) -> std::io::Result<()> {
+    let FileModule { path: _, modl: Module { name: _, decls, attrs: _, meta } } = modl;
+    let decls: Vec<Decl> = meta
+        .into_iter()
+        .map(|s| Decl::Comment(s.clone()))
+        .chain(decls.into_iter().cloned())
+        .collect();
+    pretty_blocks(&decls, &mlcfg::printer::ALLOC).1.render(120, out)?;
+    writeln!(out)?;
+    Ok(())
+}
+
+fn monolithic_output<T: Write>(modl: &FileModule, out: &mut T) -> std::io::Result<()> {
+    modl.modl.pretty(&mlcfg::printer::ALLOC).1.render(120, out)?;
+    writeln!(out)?;
+    Ok(())
 }
 
 fn print_crate<I: Iterator<Item = FileModule>>(
@@ -164,14 +180,9 @@ fn print_crate<I: Iterator<Item = FileModule>>(
         }
         Output::Stdout => (None, OutputHandle::File(Box::new(std::io::stdout()))),
     };
-    let alloc = mlcfg::printer::ALLOC;
 
     for modl in modules {
-        module_output::<std::io::Result<()>, _>(&modl, &mut output, |out| {
-            modl.modl.pretty(&alloc).1.render(120, out)?;
-            writeln!(out)?;
-            Ok(())
-        })?;
+        module_output(&modl, &mut output)?;
     }
 
     //flush the buffer before running why3

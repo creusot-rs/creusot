@@ -64,7 +64,8 @@ fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> FileModule 
 
     let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
     let meta = ctx.display_impl_of(def_id);
-    let QName { module: path, name } = ctx.module_path_with_suffix(def_id, "_Type");
+    let path = ctx.module_path(def_id, util::NS::T);
+    let name = path.why3_ident();
     FileModule { path, modl: Module { name, decls, attrs, meta } }
 }
 
@@ -107,7 +108,8 @@ pub(crate) fn translate_function<'tcx, 'sess>(
 
     let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
     let meta = ctx.display_impl_of(def_id);
-    let QName { module: path, name } = ctx.module_path(def_id);
+    let path = ctx.module_path(def_id, util::NS::M);
+    let name = path.why3_ident();
     Some(FileModule { path, modl: Module { name, decls, attrs, meta } })
 }
 
