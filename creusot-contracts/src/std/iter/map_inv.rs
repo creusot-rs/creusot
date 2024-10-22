@@ -18,12 +18,16 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator
         }
     }
 
+    // FIXME: remove `trusted`
+    #[trusted]
     #[law]
     #[open(self)]
     #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
+    // FIXME: remove `trusted`
+    #[trusted]
     #[law]
     #[open(self)]
     #[requires(inv(a))]
@@ -127,6 +131,8 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I
         }
     }
 
+    // FIXME: remove `trusted`
+    #[trusted]
     #[predicate(prophetic)]
     #[ensures(produced == Seq::EMPTY ==> result == Self::preservation(iter, func))]
     fn preservation_inv(iter: I, func: F, produced: Seq<I::Item>) -> bool {
@@ -165,6 +171,8 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I
         }
     }
 
+    // FIXME: remove `trusted`
+    #[trusted]
     #[logic]
     #[requires(inv(self))]
     #[requires(inv(e))]
@@ -185,6 +193,8 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I
         }
     }
 
+    // FIXME: remove `trusted`
+    #[trusted]
     #[open]
     #[predicate(prophetic)]
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
