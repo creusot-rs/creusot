@@ -1,3 +1,4 @@
+use crate::{doc::DocItemName, generate_unique_ident};
 use pearlite_syn::term::*;
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
@@ -10,15 +11,15 @@ use syn::{
     *,
 };
 
-use crate::generate_unique_ident;
-
+#[derive(Debug)]
 pub struct ExternSpecs(Vec<ExternSpec>);
 
-// An extern spec is either:
-// - A module of extern specs
-// - A trait spec defining a subset of a trait's methods
-// - An impl spec defining a subset of a type or trait impl's methods
-// - A bare function spec defining a single non-trait or impl function
+/// An extern spec is either:
+/// - A module of extern specs
+/// - A trait spec defining a subset of a trait's methods
+/// - An impl spec defining a subset of a type or trait impl's methods
+/// - A bare function spec defining a single non-trait or impl function
+#[derive(Debug)]
 enum ExternSpec {
     Mod(ExternMod),
     Trait(ExternTrait),
@@ -26,12 +27,14 @@ enum ExternSpec {
     Fn(ExternMethod),
 }
 
+#[derive(Debug)]
 struct ExternMod {
     ident: Ident,
     content: Vec<ExternSpec>,
 }
 
 #[allow(dead_code)]
+#[derive(Debug)]
 struct ExternTrait {
     unsafety: Option<Unsafe>,
     trait_token: Trait,
@@ -44,6 +47,7 @@ struct ExternTrait {
 }
 
 #[allow(dead_code)]
+#[derive(Debug)]
 struct ExternImpl {
     attrs: Vec<Attribute>,
     defaultness: Option<token::Default>,
@@ -56,6 +60,7 @@ struct ExternImpl {
     items: Vec<ExternMethod>,
 }
 
+#[derive(Debug)]
 struct ExternMethod {
     attrs: Vec<Attribute>,
     sig: Signature,
@@ -64,11 +69,13 @@ struct ExternMethod {
 
 // Information related to desugaring.
 
+#[derive(Clone, Debug)]
 enum TraitOrImpl {
     Trait(Ident, Generics),
     Impl(Type),
 }
 
+#[derive(Clone, Debug)]
 struct ImplData {
     self_ty: TraitOrImpl,
     params: Punctuated<GenericParam, Comma>,
@@ -77,6 +84,7 @@ struct ImplData {
 
 pub struct FlatSpec {
     span: Span,
+    doc_item_name: DocItemName,
     attrs: Vec<Attribute>,
     path: ExprPath,
     generics: Generics,
@@ -101,6 +109,7 @@ impl ExternSpecs {
                         segments: Punctuated::new(),
                     },
                 },
+                DocItemName(String::from("extern_spec")),
                 None,
                 &mut specs,
             )?
@@ -239,7 +248,7 @@ impl FlatSpec {
 
         let f_with_body = if let Some(mut b) = self.body {
             escape_self_in_block(&mut b);
-            sig.ident = Ident::new(&format!("{}_body", sig.ident.to_string()), sig.ident.span());
+            sig.ident = Ident::new(&format!("{}_body", self.doc_item_name.0), sig.ident.span());
             let f =
                 ItemFn { attrs: body_attrs, vis: Visibility::Inherited, sig, block: Box::new(b) };
             Some(quote! { #[allow(dead_code)] #f })
@@ -437,18 +446,21 @@ fn escape_self_in_tblock(t: &mut TBlock) {
 fn flatten(
     ex: ExternSpec,
     mut prefix: ExprPath,
+    // Generated name for the extern spec body/the docmentation
+    mut item_name: DocItemName,
     impl_data: Option<ImplData>,
     flat: &mut Vec<FlatSpec>,
 ) -> Result<()> {
     match ex {
         ExternSpec::Mod(modl) => {
+            item_name.add_ident(&modl.ident);
             prefix
                 .path
                 .segments
                 .push(PathSegment { ident: modl.ident, arguments: PathArguments::None });
 
             for item in modl.content {
-                flatten(item, prefix.clone(), None, flat)?;
+                flatten(item, prefix.clone(), item_name.clone(), None, flat)?;
             }
         }
         ExternSpec::Trait(trait_) => {
@@ -457,10 +469,13 @@ fn flatten(
                 .segments
                 .push(PathSegment { ident: trait_.ident.clone(), arguments: PathArguments::None });
 
+            item_name.add_ident(&trait_.ident);
+            item_name.add_generics(&trait_.generics);
             for item in trait_.items {
                 flatten(
                     ExternSpec::Fn(item),
                     prefix.clone(),
+                    item_name.clone(),
                     Some(ImplData {
                         self_ty: TraitOrImpl::Trait(trait_.ident.clone(), trait_.generics.clone()),
                         params: trait_.generics.params.clone(),
@@ -491,10 +506,16 @@ fn flatten(
                 return Err(Error::new(impl_.brace_token.span.join(), "unsupported form of impl"));
             }
 
+            item_name.add_generics(&impl_.generics);
+            if let Some((trait_, _)) = &impl_.trait_ {
+                item_name.add_path(trait_);
+            }
+            item_name.add_type(&impl_.self_ty);
             for item in impl_.items {
                 flatten(
                     ExternSpec::Fn(item),
                     prefix.clone(),
+                    item_name.clone(),
                     Some(ImplData {
                         self_ty: TraitOrImpl::Impl(*impl_.self_ty.clone()),
                         params: impl_.generics.params.clone(),
@@ -509,8 +530,10 @@ fn flatten(
                 .path
                 .segments
                 .push(PathSegment { ident: fun.sig.ident.clone(), arguments: PathArguments::None });
+            item_name.add_ident(&fun.sig.ident);
             flat.push(FlatSpec {
                 span: fun.sig.span(),
+                doc_item_name: item_name,
                 attrs: fun.attrs,
                 path: prefix,
                 impl_data,
