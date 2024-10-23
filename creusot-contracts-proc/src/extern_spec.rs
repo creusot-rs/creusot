@@ -1,6 +1,6 @@
 use crate::{doc::DocItemName, generate_unique_ident};
 use pearlite_syn::term::*;
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{
     parse::Parse,
@@ -83,13 +83,10 @@ struct ImplData {
 }
 
 pub struct FlatSpec {
-    span: Span,
+    signature: Signature,
     doc_item_name: DocItemName,
     attrs: Vec<Attribute>,
     path: ExprPath,
-    generics: Generics,
-    inputs: Punctuated<FnArg, Comma>,
-    output: ReturnType,
     impl_data: Option<ImplData>,
     body: Option<Block>,
 }
@@ -134,6 +131,7 @@ impl FlatSpec {
             return e.into_compile_error();
         }
         let args: Punctuated<Expr, Comma> = self
+            .signature
             .inputs
             .clone()
             .into_pairs()
@@ -172,17 +170,17 @@ impl FlatSpec {
         let ident = generate_unique_ident("extern_spec");
 
         if let Some(mut data) = self.impl_data {
-            data.params.extend(self.generics.params);
-            self.generics.params = data.params;
+            data.params.extend(self.signature.generics.params);
+            self.signature.generics.params = data.params;
 
-            if self.generics.where_clause.is_none() {
-                self.generics.where_clause = Some(WhereClause {
+            if self.signature.generics.where_clause.is_none() {
+                self.signature.generics.where_clause = Some(WhereClause {
                     where_token: Default::default(),
                     predicates: Default::default(),
                 });
             }
 
-            let where_clause = self.generics.where_clause.as_mut().unwrap();
+            let where_clause = self.signature.generics.where_clause.as_mut().unwrap();
 
             if let Some(p) = data.where_clause {
                 where_clause.predicates.extend(p)
@@ -191,7 +189,7 @@ impl FlatSpec {
             let self_ty = data.self_ty.self_ty();
             let mut replacer = SelfEscape { self_ty };
 
-            self.inputs.iter_mut().for_each(|input| match input {
+            self.signature.inputs.iter_mut().for_each(|input| match input {
                 FnArg::Receiver(Receiver { reference, mutability, .. }) => {
                     // An `impl` block may have a `self` reciever, but we should replace it with the actual
                     // underlying type. This constructs the correct replacement for those cases.
@@ -209,13 +207,13 @@ impl FlatSpec {
                 FnArg::Typed(PatType { ty, .. }) => replacer.visit_type_mut(ty),
             });
 
-            replacer.visit_return_type_mut(&mut self.output);
+            replacer.visit_return_type_mut(&mut self.signature.output);
 
             match data.self_ty {
                 TraitOrImpl::Trait(trait_name, generics) => {
                     where_clause.predicates.push(parse_quote! { Self_ : #trait_name #generics });
 
-                    self.generics.params.insert(0, parse_quote! { Self_ });
+                    self.signature.generics.params.insert(0, parse_quote! { Self_ });
 
                     where_clause.predicates.iter_mut().for_each(|pred| {
                         replacer.visit_where_predicate_mut(pred);
@@ -228,15 +226,15 @@ impl FlatSpec {
         let mut sig = Signature {
             constness: None,
             asyncness: None,
-            unsafety: None,
+            unsafety: self.signature.unsafety,
             abi: None,
-            fn_token: Token![fn](self.span),
+            fn_token: Token![fn](self.signature.span()),
             ident,
-            generics: self.generics,
+            generics: self.signature.generics,
             paren_token: Paren::default(),
-            inputs: self.inputs,
+            inputs: self.signature.inputs,
             variadic: None,
-            output: self.output,
+            output: self.signature.output,
         };
 
         let f = ItemFn {
@@ -532,14 +530,11 @@ fn flatten(
                 .push(PathSegment { ident: fun.sig.ident.clone(), arguments: PathArguments::None });
             item_name.add_ident(&fun.sig.ident);
             flat.push(FlatSpec {
-                span: fun.sig.span(),
+                signature: fun.sig,
                 doc_item_name: item_name,
                 attrs: fun.attrs,
                 path: prefix,
                 impl_data,
-                generics: fun.sig.generics,
-                inputs: fun.sig.inputs,
-                output: fun.sig.output,
                 body: fun.body.ok(),
             })
         }

@@ -535,12 +535,6 @@ impl<'tcx> Dependencies<'tcx> {
             );
         }
 
-        for (n, k) in &self.names.names {
-            if format!("{:?}", k).contains("Closure'4") {
-                eprintln!("{:?} {n:?}", k);
-            }
-        }
-
         let mut topo = DfsPostOrder::new(&graph, self.self_key());
         while let Some(node) = topo.walk_next(&graph) {
             // eprintln!("Cloning node for {node:?}");
