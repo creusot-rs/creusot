@@ -1,25 +1,24 @@
+use crate::{
+    backend::{clone_map::elaborator::Expander, dependency::Dependency},
+    ctx::*,
+    options::SpanMode,
+    special_items::attributes,
+    util::{self, item_name, ModulePath},
+};
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder};
 use rustc_hir::{
     def::{DefKind, Namespace},
     def_id::DefId,
 };
+use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{self, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable};
 use rustc_span::{FileName, Span, Symbol};
 use rustc_target::abi::FieldIdx;
-
 use why3::{
     declaration::{Attribute, Decl},
     Ident, QName,
 };
-
-use crate::{
-    backend::{clone_map::elaborator::Expander, dependency::Dependency},
-    ctx::*,
-    options::SpanMode,
-    util::{self, item_name, ModulePath},
-};
-use rustc_macros::{TypeFoldable, TypeVisitable};
 
 use super::{dependency::ClosureSpecKind, TransId, Why3Generator};
 
@@ -343,7 +342,7 @@ impl<'tcx> CloneNames<'tcx> {
             }
             Dependency::Type(ty) if !matches!(ty.kind(), TyKind::Alias(_, _)) => {
                 if let Some((did, _)) = key.did() {
-                    if let Some(why3_modl) = util::get_builtin(self.tcx, did) {
+                    if let Some(why3_modl) = attributes::get_builtin(self.tcx, did) {
                         let qname = QName::from_string(why3_modl.as_str());
                         let name = qname.name.clone();
                         let modl = qname.module_qname();
@@ -380,7 +379,7 @@ impl<'tcx> CloneNames<'tcx> {
             }
             _ => {
                 if let Dependency::Item(id, _) = key
-                    && let Some(why3_modl) = util::get_builtin(self.tcx, id)
+                    && let Some(why3_modl) = attributes::get_builtin(self.tcx, id)
                 {
                     let qname = QName::from_string(why3_modl.as_str());
                     let name = qname.name.clone();

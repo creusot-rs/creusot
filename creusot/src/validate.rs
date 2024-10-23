@@ -12,15 +12,16 @@ use crate::{
     ctx::{parent_module, TranslationCtx},
     error::{Error, InternalError},
     pearlite::{pearlite_stub, Stub},
+    special_items::attributes::{self, is_law, is_open_inv_result, is_trusted},
     specification::contract_of,
     translation::pearlite::{super_visit_term, TermKind, TermVisitor},
-    util::{self, is_law, is_open_inv_result},
+    util,
 };
 
 pub(crate) fn validate_trusted(ctx: &mut TranslationCtx) {
     for def_id in ctx.hir_crate_items(()).definitions() {
         let def_id = def_id.to_def_id();
-        if util::get_builtin(ctx.tcx, def_id).is_some() && !util::is_trusted(ctx.tcx, def_id) {
+        if attributes::get_builtin(ctx.tcx, def_id).is_some() && !is_trusted(ctx.tcx, def_id) {
             ctx.error(
                 ctx.def_span(def_id),
                 "Builtin declarations should be annotated with #[trusted].",
@@ -78,7 +79,7 @@ pub(crate) fn validate_opacity(ctx: &mut TranslationCtx, item: DefId) -> Option<
             }
         }
     }
-    if util::is_spec(ctx.tcx, item) {
+    if attributes::is_spec(ctx.tcx, item) {
         return Some(());
     }
 
@@ -140,10 +141,8 @@ pub(crate) fn validate_impls(ctx: &mut TranslationCtx) {
         use rustc_middle::ty::print::PrintTraitRefExt;
         let trait_ref = ctx.impl_trait_ref(*impl_id).unwrap().skip_binder();
 
-        if util::is_trusted(ctx.tcx, trait_ref.def_id)
-            != util::is_trusted(ctx.tcx, impl_id.to_def_id())
-        {
-            let msg = if util::is_trusted(ctx.tcx, trait_ref.def_id) {
+        if is_trusted(ctx.tcx, trait_ref.def_id) != is_trusted(ctx.tcx, impl_id.to_def_id()) {
+            let msg = if is_trusted(ctx.tcx, trait_ref.def_id) {
                 format!(
                     "Expected implementation of trait `{}` for `{}` to be marked as `#[trusted]`",
                     trait_ref.print_only_trait_path(),
@@ -239,16 +238,15 @@ pub(crate) enum Purity {
 
 impl Purity {
     pub(crate) fn of_def_id<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Self {
-        let is_snapshot = util::is_snapshot_closure(ctx.tcx, def_id);
-        if util::is_predicate(ctx.tcx, def_id) && util::is_prophetic(ctx.tcx, def_id)
-            || util::is_logic(ctx.tcx, def_id) && util::is_prophetic(ctx.tcx, def_id)
-            || util::is_spec(ctx.tcx, def_id) && !is_snapshot
+        use attributes::{is_logic, is_predicate, is_prophetic, is_snapshot_closure, is_spec};
+
+        let is_snapshot = is_snapshot_closure(ctx.tcx, def_id);
+        if is_predicate(ctx.tcx, def_id) && is_prophetic(ctx.tcx, def_id)
+            || is_logic(ctx.tcx, def_id) && is_prophetic(ctx.tcx, def_id)
+            || is_spec(ctx.tcx, def_id) && !is_snapshot
         {
             Purity::Logic { prophetic: true }
-        } else if util::is_predicate(ctx.tcx, def_id)
-            || util::is_logic(ctx.tcx, def_id)
-            || is_snapshot
-        {
+        } else if is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id) || is_snapshot {
             Purity::Logic { prophetic: false }
         } else {
             let contract = contract_of(ctx, def_id);
@@ -296,7 +294,7 @@ pub(crate) fn validate_purity(ctx: &mut TranslationCtx, def_id: LocalDefId) {
 
     let def_id = def_id.to_def_id();
     let purity = Purity::of_def_id(ctx, def_id);
-    if matches!(purity, Purity::Program { .. }) && crate::util::is_no_translate(ctx.tcx, def_id) {
+    if matches!(purity, Purity::Program { .. }) && attributes::is_no_translate(ctx.tcx, def_id) {
         return;
     }
 
@@ -311,17 +309,17 @@ pub(crate) struct PurityVisitor<'a, 'tcx> {
 
 impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
     fn purity(&mut self, fun: thir::ExprId, func_did: DefId) -> Purity {
+        use attributes::{is_logic, is_predicate, is_prophetic};
         let stub = pearlite_stub(self.ctx.tcx, self.thir[fun].ty);
 
         if matches!(stub, Some(Stub::Fin))
-            || util::is_predicate(self.ctx.tcx, func_did)
-                && util::is_prophetic(self.ctx.tcx, func_did)
-            || util::is_logic(self.ctx.tcx, func_did) && util::is_prophetic(self.ctx.tcx, func_did)
+            || is_predicate(self.ctx.tcx, func_did) && is_prophetic(self.ctx.tcx, func_did)
+            || is_logic(self.ctx.tcx, func_did) && is_prophetic(self.ctx.tcx, func_did)
         {
             Purity::Logic { prophetic: true }
-        } else if util::is_predicate(self.ctx.tcx, func_did)
-            || util::is_logic(self.ctx.tcx, func_did)
-            || util::get_builtin(self.ctx.tcx, func_did).is_some()
+        } else if is_predicate(self.ctx.tcx, func_did)
+            || is_logic(self.ctx.tcx, func_did)
+            || attributes::get_builtin(self.ctx.tcx, func_did).is_some()
             || stub.is_some()
         {
             Purity::Logic { prophetic: false }
@@ -369,7 +367,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                 }
             }
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
-                if util::is_spec(self.ctx.tcx, closure_id.into()) {
+                if attributes::is_spec(self.ctx.tcx, closure_id.into()) {
                     return;
                 }
 

@@ -3,11 +3,12 @@ use crate::{
     analysis::NotFinalPlaces,
     extended_location::ExtendedLocation,
     fmir::Operand,
+    special_items::attributes,
     translation::{
         fmir::{self, RValue},
         specification::inv_subst,
     },
-    util::{self, snapshot_closure_id},
+    util::snapshot_closure_id,
 };
 use rustc_borrowck::borrow_set::TwoPhaseActivation;
 use rustc_middle::{
@@ -143,11 +144,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         RValue::Constructor(variant, subst, fields)
                     }
                     Closure(def_id, subst) => {
-                        if util::is_invariant(self.tcx(), *def_id)
-                            || util::is_variant(self.tcx(), *def_id)
+                        if attributes::is_invariant(self.tcx(), *def_id)
+                            || attributes::is_variant(self.tcx(), *def_id)
                         {
                             return;
-                        } else if util::is_assertion(self.tcx(), *def_id) {
+                        } else if attributes::is_assertion(self.tcx(), *def_id) {
                             let mut assertion = self
                                 .assertions
                                 .remove(def_id)
@@ -159,7 +160,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 msg: "assertion".to_owned(),
                             });
                             return;
-                        } else if util::is_spec(self.tcx(), *def_id) {
+                        } else if attributes::is_spec(self.tcx(), *def_id) {
                             return;
                         } else {
                             RValue::Constructor(*def_id, subst, fields)

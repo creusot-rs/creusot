@@ -1,12 +1,12 @@
 use super::Why3Generator;
 use crate::{
     pearlite::Trigger,
+    special_items::attributes,
     traits::TraitResol,
     translation::{
         pearlite::{Pattern, Term, TermKind},
         traits,
     },
-    util::{self},
 };
 use rustc_middle::ty::{GenericArg, GenericArgs, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
@@ -31,7 +31,7 @@ pub(crate) fn tyinv_head_and_subst<'tcx>(
     };
 
     if let TraitResol::Instance(uinv_did, _) = resolve_user_inv(tcx, ty, param_env)
-        && util::is_ignore_structural_inv(tcx, uinv_did)
+        && attributes::is_ignore_structural_inv(tcx, uinv_did)
     {
         return def();
     }
@@ -72,7 +72,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
 
         let user_inv = resolve_user_inv(tcx, ty, param_env);
         if let TraitResol::Instance(uinv_did, _) = user_inv
-            && !util::is_tyinv_trivial_if_param_trivial(tcx, uinv_did)
+            && !attributes::is_tyinv_trivial_if_param_trivial(tcx, uinv_did)
         {
             return false;
         }
@@ -85,12 +85,12 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
                 stack.extend(substs.types())
             }
             TyKind::Adt(def, substs) => {
-                if util::is_trusted(tcx, def.did()) {
+                if attributes::is_trusted(tcx, def.did()) {
                     continue;
                 }
 
                 if let TraitResol::Instance(uinv_did, _) = user_inv
-                    && util::is_ignore_structural_inv(tcx, uinv_did)
+                    && attributes::is_ignore_structural_inv(tcx, uinv_did)
                 {
                     continue;
                 }
@@ -189,7 +189,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
     fn structural_invariant(&mut self, term: Term<'tcx>, ty: Ty<'tcx>) -> Term<'tcx> {
         if let TraitResol::Instance(uinv_did, _) =
             resolve_user_inv(self.ctx.tcx, ty, self.param_env)
-            && util::is_ignore_structural_inv(self.ctx.tcx, uinv_did)
+            && attributes::is_ignore_structural_inv(self.ctx.tcx, uinv_did)
         {
             return Term::mk_true(self.ctx.tcx);
         }
@@ -197,7 +197,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         match ty.kind() {
             TyKind::Adt(adt_def, _) => {
                 let adt_did = adt_def.did();
-                if util::is_trusted(self.ctx.tcx, adt_did) {
+                if attributes::is_trusted(self.ctx.tcx, adt_did) {
                     Term::mk_true(self.ctx.tcx)
                 } else {
                     self.build_inv_term_adt(term)

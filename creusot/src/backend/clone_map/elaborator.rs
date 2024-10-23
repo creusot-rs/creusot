@@ -4,7 +4,7 @@ use crate::{
     backend::{
         is_trusted_function,
         logic::{lower_logical_defn, spec_axiom},
-        program::{self},
+        program,
         signature::named_sig_to_why3,
         structural_resolve::structural_resolve,
         term::lower_pure,
@@ -13,12 +13,13 @@ use crate::{
     },
     constant::from_ty_const,
     pearlite::{normalize, Term},
+    special_items::attributes::{self, get_builtin},
     traits,
+    util::{ident_of, PreSignature},
 };
 use rustc_middle::ty::{self, Const, ParamEnv};
 use rustc_span::DUMMY_SP;
 use rustc_type_ir::EarlyBinder;
-use util::{get_builtin, ident_of, PreSignature};
 use why3::{
     declaration::{Axiom, Contract, LetKind, Signature, Use, ValDecl},
     exp::Binder,
@@ -94,7 +95,7 @@ impl DepElab for ProgElab {
         let sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
         let sig = sig.normalize(ctx.tcx, elab.param_env);
         let sig = signature(ctx, elab, sig, dep);
-        if util::is_ghost_closure(ctx.tcx, def_id) {
+        if attributes::is_ghost_closure(ctx.tcx, def_id) {
             // Inline the body of ghost closures
             let mut coma = program::to_why(
                 ctx,

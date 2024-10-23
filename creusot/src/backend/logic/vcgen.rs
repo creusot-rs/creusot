@@ -3,11 +3,7 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
-use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{EarlyBinder, GenericArgsRef, ParamEnv, Ty, TyKind};
-use rustc_span::{Span, Symbol};
-use why3::{declaration::Signature, exp::Environment, ty::Type, Exp, Ident, QName};
-
+use super::{binders_to_args, Dependencies};
 use crate::{
     backend::{
         signature::{sig_to_why3, signature_of},
@@ -16,10 +12,13 @@ use crate::{
         Namer as _, Why3Generator,
     },
     pearlite::{super_visit_term, Literal, Pattern, PointerKind, Term, TermVisitor},
-    util::{self, get_builtin, pre_sig_of},
+    special_items::attributes::get_builtin,
+    util::{self, pre_sig_of},
 };
-
-use super::{binders_to_args, Dependencies};
+use rustc_hir::def_id::DefId;
+use rustc_middle::ty::{EarlyBinder, GenericArgsRef, ParamEnv, Ty, TyKind};
+use rustc_span::{Span, Symbol};
+use why3::{declaration::Signature, exp::Environment, ty::Type, Exp, Ident, QName};
 
 /// Verification conditions for lemma functions.
 ///

@@ -56,6 +56,7 @@ mod error;
 pub(crate) mod lints;
 pub(crate) mod metadata;
 mod run_why3;
+mod special_items;
 mod translated_item;
 mod validate;
 mod validate_terminates;

@@ -1,6 +1,7 @@
 use std::{collections::HashMap, ops::Deref};
 
-pub(crate) use crate::backend::clone_map::*;
+pub(crate) use crate::{backend::clone_map::*, translated_item::*};
+
 use crate::{
     backend::{ty::ty_binding_group, ty_inv::is_tyinv_trivial},
     callbacks,
@@ -8,6 +9,7 @@ use crate::{
     error::CreusotResult,
     metadata::{BinaryMetadata, Metadata},
     options::Options,
+    special_items::attributes,
     translation::{
         self,
         external::{extract_extern_specs_from_item, ExternSpec},
@@ -37,8 +39,6 @@ use rustc_middle::{
 use rustc_span::{Span, Symbol};
 use rustc_trait_selection::traits::SelectionContext;
 pub(crate) use util::ItemType;
-
-pub(crate) use crate::translated_item::*;
 
 macro_rules! queryish {
     ($name:ident, $res:ty, $builder:ident) => {
@@ -392,7 +392,7 @@ pub(crate) fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
     let mut traits_or_impls = Vec::new();
 
     for def_id in ctx.tcx.hir().body_owners() {
-        if crate::util::is_extern_spec(ctx.tcx, def_id.to_def_id()) {
+        if attributes::is_extern_spec(ctx.tcx, def_id.to_def_id()) {
             if let Some(container) = ctx.opt_associated_item(def_id.to_def_id()) {
                 traits_or_impls.push(container.def_id)
             }

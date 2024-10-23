@@ -13,6 +13,7 @@ use std::{
 
 use crate::{
     error::{CreusotResult, Error, InternalError},
+    special_items::attributes,
     translation::{projection_vec::*, TranslationCtx},
     util::{self, is_snap_ty},
 };
@@ -747,7 +748,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
                 let term = pearlite(self.ctx, closure_id)?;
 
-                if util::is_assertion(self.ctx.tcx, closure_id.to_def_id()) {
+                if attributes::is_assertion(self.ctx.tcx, closure_id.to_def_id()) {
                     Ok(Term { ty, span, kind: TermKind::Assert { cond: Box::new(term) } })
                 } else {
                     Ok(Term { ty, span, kind: TermKind::Closure { body: Box::new(term) } })
@@ -1177,7 +1178,7 @@ fn not_spec_expr(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: ExprId) -> bool {
     match thir[id].kind {
         ExprKind::Scope { value, .. } => not_spec_expr(tcx, thir, value),
         ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
-            !util::is_spec(tcx, closure_id.to_def_id())
+            !attributes::is_spec(tcx, closure_id.to_def_id())
         }
         _ => true,
     }

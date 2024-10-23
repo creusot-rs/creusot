@@ -1,3 +1,4 @@
+use self::terminator::discriminator_for_switch;
 use super::{
     fmir::{LocalDecls, LocalIdent, RValue, TrivialInv},
     pearlite::{normalize, Term},
@@ -12,6 +13,7 @@ use crate::{
     fmir,
     gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind, SpecClosures},
     resolve::{place_contains_borrow_deref, HasMoveDataExt, Resolver},
+    special_items::attributes,
     translation::{
         fmir::LocalDecl,
         pearlite::{self, TermKind, TermVisitorMut},
@@ -24,7 +26,6 @@ use indexmap::IndexMap;
 use rustc_borrowck::borrow_set::BorrowSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::{bit_set::BitSet, Idx};
-
 use rustc_middle::{
     mir::{
         self, traversal::reverse_postorder, BasicBlock, Body, Local, Location, Operand, Place,
@@ -43,7 +44,6 @@ use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_type_ir::inherent::SliceLike;
 use std::{collections::HashMap, iter, ops::FnOnce};
-use terminator::discriminator_for_switch;
 
 mod statement;
 mod terminator;
@@ -124,7 +124,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if crate::util::is_spec(tcx, *def_id) || util::is_snapshot_closure(tcx, *def_id) {
+                if attributes::is_spec(tcx, *def_id)
+                    || attributes::is_snapshot_closure(tcx, *def_id)
+                {
                     erased_locals.insert(local);
                 }
             }
@@ -169,7 +171,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             invariants,
             assertions,
             snapshots,
-            is_ghost_closure: util::is_ghost_closure(tcx, body_id.def_id()),
+            is_ghost_closure: attributes::is_ghost_closure(tcx, body_id.def_id()),
             borrows,
         })
     }

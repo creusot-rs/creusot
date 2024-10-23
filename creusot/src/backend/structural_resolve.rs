@@ -5,7 +5,8 @@ use rustc_type_ir::TyKind;
 
 use crate::{
     pearlite::{BinOp, Pattern, Term, TermKind},
-    util::{get_builtin, is_snap_ty, is_trusted},
+    special_items::attributes::{get_builtin, is_trusted},
+    util::is_snap_ty,
 };
 
 use super::Why3Generator;

@@ -1,7 +1,7 @@
 use crate::{
     pearlite::{self, Literal, Term, TermKind},
+    special_items::attributes::get_builtin,
     traits::resolve_assoc_item_opt,
-    util::get_builtin,
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{ParamEnv, TyCtxt};

@@ -3,8 +3,9 @@ use crate::{
     backend::ty::{floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty},
     ctx::*,
     pearlite::{self, Literal, Pattern, PointerKind, Term, TermKind},
+    special_items::attributes::get_builtin,
     translation::pearlite::{zip_binder, QuantKind, Trigger},
-    util::{self, get_builtin},
+    util,
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};

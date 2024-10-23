@@ -15,6 +15,7 @@ use crate::{
     error::InternalError,
     metadata,
     options::Output,
+    special_items::attributes,
     translated_item::FileModule,
     validate::{
         validate_impls, validate_opacity, validate_purity, validate_traits, validate_trusted,
@@ -44,9 +45,9 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
         validate_purity(ctx, def_id);
 
         let def_id = def_id.to_def_id();
-        if crate::util::is_spec(ctx.tcx, def_id)
-            || crate::util::is_predicate(ctx.tcx, def_id)
-            || crate::util::is_logic(ctx.tcx, def_id)
+        if attributes::is_spec(ctx.tcx, def_id)
+            || attributes::is_predicate(ctx.tcx, def_id)
+            || attributes::is_logic(ctx.tcx, def_id)
         {
             let _ = ctx.term(def_id);
             validate_opacity(ctx, def_id);

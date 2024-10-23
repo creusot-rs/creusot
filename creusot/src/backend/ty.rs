@@ -1,12 +1,13 @@
 use super::{Dependencies, Why3Generator};
 use crate::{
     ctx::*,
+    special_items::attributes::{self, get_builtin},
     translated_item::FileModule,
     translation::{
         pearlite::{self, Term, TermKind},
         specification::PreContract,
     },
-    util::{self, get_builtin, item_name, translate_accessor_name, PreSignature},
+    util::{self, item_name, translate_accessor_name, PreSignature},
 };
 use indexmap::IndexSet;
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
@@ -157,7 +158,7 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
         Closure(id, subst) => {
             ctx.translate(*id);
 
-            if util::is_logic(ctx.tcx, *id) {
+            if attributes::is_logic(ctx.tcx, *id) {
                 return MlT::Tuple(Vec::new());
             }
 
@@ -353,7 +354,7 @@ pub(crate) fn translate_tydecl(
     let span = ctx.def_span(repr);
 
     // Trusted types (opaque)
-    if util::is_trusted(ctx.tcx, repr) {
+    if attributes::is_trusted(ctx.tcx, repr) {
         if bg.len() > 1 {
             ctx.crash_and_error(span, "cannot mark mutually recursive types as trusted");
         }
