@@ -43,6 +43,7 @@ extern_spec! {
                     None => result == false,
                     Some(t) => resolve(&t) && f.postcondition_once((t,), result),
                 })]
+                // FIXME: we cannot attach a body to this extern spec, because creusot mistranslates `impl trait`.
                 fn is_some_and(self, f: impl FnOnce(T) -> bool) -> bool;
 
                 #[pure]
@@ -100,7 +101,12 @@ extern_spec! {
                 })]
                 fn unwrap_or_else<F>(self, f: F) -> T
                 where
-                    F: FnOnce() -> T;
+                    F: FnOnce() -> T {
+                    match self {
+                        None => f(),
+                        Some(t) => t,
+                    }
+                }
 
                 #[ensures(self == None ==> result.is_default())]
                 #[ensures(self == None || self == Some(result))]
@@ -123,7 +129,12 @@ extern_spec! {
                 })]
                 fn map<U, F>(self, f: F) -> Option<U>
                 where
-                    F: FnOnce(T) -> U;
+                    F: FnOnce(T) -> U {
+                    match self {
+                        None => None,
+                        Some(t) => Some(f(t)),
+                    }
+                }
 
                 #[requires(match self {
                     None => true,
@@ -136,7 +147,12 @@ extern_spec! {
                 })]
                 fn inspect<F>(self, f: F) -> Option<T>
                 where
-                    F: FnOnce(&T);
+                    F: FnOnce(&T) {
+                    match self {
+                        None => None,
+                        Some(t) => { f(&t); Some(t) }
+                    }
+                }
 
                 #[requires(match self {
                     None => true,
@@ -148,7 +164,12 @@ extern_spec! {
                 })]
                 fn map_or<U, F>(self, default: U, f: F) -> U
                 where
-                    F: FnOnce(T) -> U;
+                    F: FnOnce(T) -> U {
+                    match self {
+                        None => default,
+                        Some(t) => f(t),
+                    }
+                }
 
                 #[requires(match self {
                     None => default.precondition(()),
@@ -161,7 +182,12 @@ extern_spec! {
                 fn map_or_else<U, D, F>(self, default: D, f: F) -> U
                 where
                     D: FnOnce() -> U,
-                    F: FnOnce(T) -> U;
+                    F: FnOnce(T) -> U {
+                    match self {
+                        None => default(),
+                        Some(t) => f(t),
+                    }
+                }
 
                 #[ensures(match self {
                     None => result == Err(err),
@@ -176,7 +202,12 @@ extern_spec! {
                 })]
                 fn ok_or_else<E, F>(self, err: F) -> Result<T, E>
                 where
-                    F: FnOnce() -> E;
+                    F: FnOnce() -> E {
+                    match self {
+                        None => Err(err()),
+                        Some(t) => Ok(t),
+                    }
+                }
 
                 #[ensures(match *self {
                     None => result == None,
@@ -201,7 +232,12 @@ extern_spec! {
                 })]
                 fn and_then<U, F>(self, f: F) -> Option<U>
                 where
-                    F: FnOnce(T) -> Option<U>;
+                    F: FnOnce(T) -> Option<U> {
+                    match self {
+                        None => None,
+                        Some(t) => f(t),
+                    }
+                }
 
                 #[requires(match self {
                     None => true,
@@ -216,7 +252,12 @@ extern_spec! {
                 })]
                 fn filter<P>(self, predicate: P) -> Option<T>
                 where
-                    P: FnOnce(&T) -> bool;
+                    P: FnOnce(&T) -> bool {
+                    match self {
+                        None => None,
+                        Some(t) => if predicate(&t) { Some(t) } else { None }
+                    }
+                }
 
                 #[pure]
                 #[ensures(self == None ==> result == optb)]
@@ -230,7 +271,12 @@ extern_spec! {
                 })]
                 fn or_else<F>(self, f: F) -> Option<T>
                 where
-                    F: FnOnce() -> Option<T>;
+                    F: FnOnce() -> Option<T> {
+                    match self {
+                        None => f(),
+                        Some(t) => Some(t),
+                    }
+                }
 
                 #[pure]
                 #[ensures(match (self, optb) {
@@ -263,7 +309,12 @@ extern_spec! {
                 })]
                 fn get_or_insert_with<F>(&mut self, f: F) -> &mut T
                 where
-                    F: FnOnce() -> T;
+                    F: FnOnce() -> T {
+                    match self {
+                        None => { *self = Some(f()); self.as_mut().unwrap() }
+                        Some(t) => t,
+                    }
+                }
 
                 #[pure]
                 #[ensures(result == *self && ^self == None)]
@@ -276,7 +327,7 @@ extern_spec! {
                 #[ensures(match *self {
                     None => result == None && ^self == None,
                     Some(cur) =>
-                        exists<b: &mut T, res: bool> cur == *b && predicate.postcondition_once((b,), res) &&
+                        exists<b: &mut T, res: bool> inv(b) && cur == *b && predicate.postcondition_once((b,), res) &&
                             if res {
                                 ^self == None && result == Some(^b)
                             } else {
@@ -285,7 +336,12 @@ extern_spec! {
                 })]
                 fn take_if<P>(&mut self, predicate: P) -> Option<T>
                 where
-                    P: FnOnce(&mut T) -> bool;
+                    P: FnOnce(&mut T) -> bool {
+                    match self {
+                        None => None,
+                        Some(t) => if predicate(t) { self.take() } else { None },
+                    }
+                }
 
                 #[pure]
                 #[ensures(result == *self && ^self == Some(value))]
