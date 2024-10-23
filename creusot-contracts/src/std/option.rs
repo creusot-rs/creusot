@@ -27,6 +27,7 @@ extern_spec! {
     }
 }
 
+// FIXME: add a body where we can
 extern_spec! {
     mod std {
         mod option {
