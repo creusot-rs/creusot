@@ -6,6 +6,14 @@ use diff::differ;
 
 fn main() {
     let bless = std::env::args().any(|arg| arg == "--bless");
+    // Build creusot-rustc to make it available to cargo-creusot
+    let _ = escargot::CargoBuild::new()
+        .bin("creusot-rustc")
+        .current_release()
+        .manifest_path("../creusot-rustc/Cargo.toml")
+        .current_target()
+        .run()
+        .unwrap();
     let mut cargo_creusot = escargot::CargoBuild::new()
         .bin("cargo-creusot")
         .current_release()
