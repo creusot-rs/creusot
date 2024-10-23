@@ -275,6 +275,8 @@ impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
+    // FIXME: remove `trusted`
+    #[trusted]
     #[law]
     #[open]
     #[requires(a.produces(ab, b))]

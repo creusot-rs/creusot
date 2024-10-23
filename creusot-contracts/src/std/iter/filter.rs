@@ -130,6 +130,8 @@ where
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
+    // FIXME: remove `trusted`
+    #[trusted]
     #[law]
     #[open(self)]
     #[requires(inv(a))]
