@@ -28,7 +28,7 @@ use ctx::TranslationCtx;
 use rustc_hir::def::DefKind;
 use rustc_span::{Symbol, DUMMY_SP};
 use std::{error::Error, io::Write};
-use why3::mlcfg::printer::pretty_blocks;
+use why3::{declaration::Attribute, mlcfg::printer::pretty_blocks};
 
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
@@ -147,13 +147,21 @@ fn module_output(modl: &FileModule, output: &mut OutputHandle) -> std::io::Resul
     }
 }
 
+fn show_attribute(attr: &Attribute) -> String {
+    match attr {
+        Attribute::Attr(contents) => format!("@{}", contents),
+        Attribute::NamedSpan(name) => format!("%#{}", name),
+        Attribute::Span(file, sline, scol, eline, ecol) => {
+            format!("#\"{}\" {} {} {} {}", file, sline, scol, eline, ecol)
+        }
+    }
+}
+
 fn modular_output<T: Write>(modl: &FileModule, out: &mut T) -> std::io::Result<()> {
-    let FileModule { path: _, modl: Module { name: _, decls, attrs: _, meta } } = modl;
-    let decls: Vec<Decl> = meta
-        .into_iter()
-        .map(|s| Decl::Comment(s.clone()))
-        .chain(decls.into_iter().cloned())
-        .collect();
+    let FileModule { path: _, modl: Module { name: _, decls, attrs, meta } } = modl;
+    let attrs = attrs.into_iter().map(|attr| Decl::Comment(show_attribute(attr)));
+    let meta = meta.into_iter().map(|s| Decl::Comment(s.clone()));
+    let decls: Vec<Decl> = attrs.chain(meta).chain(decls.into_iter().cloned()).collect();
     pretty_blocks(&decls, &mlcfg::printer::ALLOC).1.render(120, out)?;
     writeln!(out)?;
     Ok(())
