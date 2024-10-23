@@ -35,7 +35,7 @@ fn main() {
         "--stdout",
         "--export-metadata=false",
         "--span-mode=relative",
-        // FIXME: spans disappear if this this set to something else
+        // FIXME: spans disappear if this is set to something else
         "--spans-relative-to=.",
         "--",
         "--package",

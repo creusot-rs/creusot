@@ -1,6 +1,7 @@
 use assert_cmd::output::OutputOkExt as _;
+use regex::Regex;
 use similar::{ChangeTag, TextDiff};
-use std::{error::Error, io::Write as _, path::Path};
+use std::{error::Error, io::Write as _, path::Path, sync::LazyLock};
 use termcolor::{Buffer, Color, ColorSpec, WriteColor};
 
 /// Normalize file path between linux/windows for consistency
@@ -59,12 +60,14 @@ fn compare_str(buf: &mut Buffer, got: &str, expect: &str) -> bool {
     use similar::Algorithm;
     use std::time::Duration;
 
+    let got = normalize_cargo_paths(got);
+    let expect = normalize_cargo_paths(expect);
     if got == expect {
         return true;
     }
 
-    let got = normalize_spans(&normalize_newlines(got));
-    let expect = normalize_spans(&normalize_newlines(expect));
+    let got = normalize_spans(&normalize_newlines(&got));
+    let expect = normalize_spans(&normalize_newlines(&expect));
 
     let result = TextDiff::configure()
         .newline_terminated(false)
@@ -96,12 +99,22 @@ fn normalize_newlines(input: impl Into<String>) -> String {
 
 /// Replace numbered spans with "spanxxxx" for better diffs
 fn normalize_spans(s: &str) -> String {
-    use regex::Regex;
     let re1 = Regex::new(r"\[%#span[0-9]*\]").unwrap();
     let s = re1.replace_all(s, "[%#spanxxxx]");
     let re2 = Regex::new(r"let%span.*").unwrap();
     let s = re2.replace_all(&s, "let%span spanxxxx =");
     s.into_owned()
+}
+
+/// Replace relative paths to the cargo registry with an absolute path, and strip the hash.
+///
+/// For now this is only used when testing creusot-contracts.
+fn normalize_cargo_paths(input: &str) -> String {
+    static CARGO_REGISTRY: LazyLock<Regex> = LazyLock::new(|| {
+        regex::Regex::new(r"(\.\.\/)*.cargo\/registry\/src\/index\.crates\.io-[a-zA-Z0-9]*")
+            .unwrap()
+    });
+    CARGO_REGISTRY.replace_all(input, ".cargo/registry/src/index.crates.io").into()
 }
 
 fn print_diff<'a, W: WriteColor>(mut buf: W, diff: TextDiff<'a, 'a, 'a, str>) {
