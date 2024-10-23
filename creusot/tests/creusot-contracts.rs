@@ -35,8 +35,7 @@ fn main() {
         "--stdout",
         "--export-metadata=false",
         "--span-mode=relative",
-        // FIXME: spans disappear if this is set to something else
-        "--spans-relative-to=.",
+        "--spans-relative-to=creusot/tests/creusot-contracts",
         "--",
         "--package",
         "creusot-contracts",
