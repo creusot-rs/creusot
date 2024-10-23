@@ -69,8 +69,8 @@ impl<T> PCell<T> {
     }
 
     #[trusted]
-    #[requires(self.id == token.inner().id)]
-    #[ensures(result == token.inner().value)]
+    #[requires(self.id == (*token).id)]
+    #[ensures(result == (*token).value)]
     pub fn get(&self, token: GhostBox<&Token<T>>) -> T
     where
         T: Copy,
@@ -79,9 +79,9 @@ impl<T> PCell<T> {
     }
 
     #[trusted]
-    #[requires(self.id == (*token.inner()).id)]
-    #[ensures(self.id == (^token.inner()).id)]
-    #[ensures(value == (^token.inner()).value)]
+    #[requires(self.id == (**token).id)]
+    #[ensures(self.id == (^token.inner_logic()).id)]
+    #[ensures(value == (^token.inner_logic()).value)]
     pub fn set(&self, token: GhostBox<&mut Token<T>>, value: T)
     where
         T: Copy,
@@ -90,21 +90,21 @@ impl<T> PCell<T> {
     }
 
     #[trusted]
-    #[requires(self.id == (*token.inner()).id)]
-    #[ensures(self.id == (^token.inner()).id)]
-    #[ensures(result == (*token.inner()).value)]
-    #[ensures(value == (^token.inner()).value)]
+    #[requires(self.id == (**token).id)]
+    #[ensures(self.id == (^token.inner_logic()).id)]
+    #[ensures(result == (**token).value)]
+    #[ensures(value == (^token.inner_logic()).value)]
     pub fn replace(&self, token: GhostBox<&mut Token<T>>, value: T) -> T {
         self.inner.replace(value)
     }
 
     #[trusted]
-    #[requires(self.id == (*self_t.inner()).id)]
-    #[ensures(self.id == (^self_t.inner()).id)]
-    #[requires(other.id == (*other_t.inner()).id)]
-    #[ensures(other.id == (^other_t.inner()).id)]
-    #[ensures((^self_t.inner()).value == (*other_t.inner()).value)]
-    #[ensures((*self_t.inner()).value == (^other_t.inner()).value)]
+    #[requires(self.id == (**self_t).id)]
+    #[ensures(self.id == (^self_t.inner_logic()).id)]
+    #[requires(other.id == (**other_t).id)]
+    #[ensures(other.id == (^other_t.inner_logic()).id)]
+    #[ensures((^self_t.inner_logic()).value == (**other_t).value)]
+    #[ensures((**self_t).value == (^other_t.inner_logic()).value)]
     pub fn swap(
         &self,
         mut self_t: GhostBox<&mut Token<T>>,
@@ -120,8 +120,8 @@ impl<T> PCell<T> {
     }
 
     #[trusted]
-    #[requires(self.id == token.inner().id)]
-    #[ensures(result == token.inner().value)]
+    #[requires(self.id == (*token).id)]
+    #[ensures(result == (*token).value)]
     pub fn into_inner(self, token: GhostBox<Token<T>>) -> T {
         self.inner.into_inner()
     }
@@ -153,7 +153,7 @@ pub fn use_pcell() {
     };
     pcell.swap(token.borrow_mut(), &other_pcell, other_token.borrow_mut());
 
-    proof_assert!(token.inner().id != other_token@.id);
+    proof_assert!(token.id != other_token@.id);
 
     let value = pcell.into_inner(token);
     proof_assert!(value@ == 4);
