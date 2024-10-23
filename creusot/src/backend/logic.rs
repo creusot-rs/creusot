@@ -9,7 +9,7 @@ use rustc_hir::def_id::DefId;
 use why3::{
     declaration::*,
     exp::{super_visit_mut, BinOp, Binder, Exp, ExpMutVisitor, Trigger},
-    Ident, QName,
+    Ident,
 };
 
 mod vcgen;
@@ -264,7 +264,8 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<FileModule> {
 
     let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
     let meta = ctx.display_impl_of(def_id);
-    let QName { module: path, name } = ctx.module_path(def_id);
+    let path = ctx.module_path(def_id, util::NS::M);
+    let name = path.why3_ident();
     Some(FileModule { path, modl: Module { name, decls, attrs, meta } })
 }
 

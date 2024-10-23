@@ -17,9 +17,9 @@ use crate::{
     backend::{clone_map::elaborator::Expander, dependency::Dependency},
     ctx::*,
     options::SpanMode,
-    util::{self, item_name, module_name},
+    util::{self, item_name, ModulePath},
 };
-use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
+use rustc_macros::{TypeFoldable, TypeVisitable};
 
 use super::{dependency::ClosureSpecKind, TransId, Why3Generator};
 
@@ -191,7 +191,7 @@ pub(crate) trait Namer<'tcx> {
         self.insert(Dependency::Builtin(module));
     }
 
-    fn insert(&mut self, dep: Dependency<'tcx>) -> Kind;
+    fn insert(&mut self, dep: Dependency<'tcx>) -> &Kind;
 
     fn tcx(&self) -> TyCtxt<'tcx>;
 
@@ -208,7 +208,7 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
         self.tcx().try_normalize_erasing_regions(self.param_env, ty).unwrap_or(ty)
     }
 
-    fn insert(&mut self, key: Dependency<'tcx>) -> Kind {
+    fn insert(&mut self, key: Dependency<'tcx>) -> &Kind {
         let key = key.erase_regions(self.tcx);
         CloneNames::insert(self, key)
     }
@@ -259,7 +259,7 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
         self.tcx
     }
 
-    fn insert(&mut self, key: Dependency<'tcx>) -> Kind {
+    fn insert(&mut self, key: Dependency<'tcx>) -> &Kind {
         let key = key.erase_regions(self.tcx);
         self.dep_set.insert(key);
         self.names.insert(key)
@@ -333,26 +333,23 @@ impl<'tcx> CloneNames<'tcx> {
         }
     }
 
-    fn insert(&mut self, key: Dependency<'tcx>) -> Kind {
-        *self.names.entry(key).or_insert_with(|| match key {
-            Dependency::Item(id, _) if util::item_type(self.tcx, id) == ItemType::Field => {
-                let mut ty = self.tcx.parent(id);
-                if util::item_type(self.tcx, ty) != ItemType::Type {
-                    ty = self.tcx.parent(id);
-                }
-                let modl = module_name(self.tcx, ty);
-
-                Kind::Used(modl, key.base_ident(self.tcx).unwrap())
+    fn insert(&mut self, key: Dependency<'tcx>) -> &Kind {
+        self.names.entry(key).or_insert_with(|| match key {
+            Dependency::Item(id, _) if matches!(self.tcx.def_kind(id), DefKind::Field) => {
+                let ty = self.tcx.parent(id);
+                let modl = util::ModulePath::new(self.tcx, ty, util::NS::T);
+                let alias = modl.why3_ident();
+                Kind::Used(modl, alias, key.base_ident(self.tcx).unwrap())
             }
             Dependency::Type(ty) if !matches!(ty.kind(), TyKind::Alias(_, _)) => {
-                let kind = if let Some((did, _)) = key.did() {
-                    let (modl, name) = if let Some(why3_modl) = util::get_builtin(self.tcx, did) {
+                if let Some((did, _)) = key.did() {
+                    if let Some(why3_modl) = util::get_builtin(self.tcx, did) {
                         let qname = QName::from_string(why3_modl.as_str());
                         let name = qname.name.clone();
-                        let modl = qname.module_ident().unwrap();
-                        (Symbol::intern(&modl), Symbol::intern(&*name))
+                        let modl = qname.module_qname();
+                        Kind::UsedBuiltin(modl, Symbol::intern(&*name))
                     } else {
-                        let modl: Symbol = if util::item_type(self.tcx, did) == ItemType::Closure {
+                        let alias: Symbol = if util::item_type(self.tcx, did) == ItemType::Closure {
                             self.counts.freshen(Symbol::intern("Closure"))
                         } else {
                             match self.adt_names.get(&did) {
@@ -365,24 +362,21 @@ impl<'tcx> CloneNames<'tcx> {
                                 }
                             }
                         };
-
+                        let alias = Ident::build(alias.as_str());
+                        let modl = ModulePath::new(self.tcx, did, util::NS::T);
                         let name = Symbol::intern(&*item_name(self.tcx, did, Namespace::TypeNS));
-
-                        (modl, name)
-                    };
-
-                    Kind::Used(modl, name)
+                        Kind::Used(modl, alias, name)
+                    }
                 } else {
                     Kind::Named(Symbol::intern("hidden_type_name"))
-                };
-
-                return kind;
+                }
             }
             Dependency::Item(id, _) if util::item_type(self.tcx, id) == ItemType::Variant => {
+                // This branch doesn't seem to be used
                 let ty = self.tcx.parent(id);
-                let modl = module_name(self.tcx, ty);
-
-                Kind::Used(modl, key.base_ident(self.tcx).unwrap())
+                let modl = ModulePath::new(self.tcx, ty, util::NS::T);
+                let alias = modl.why3_ident();
+                Kind::Used(modl, alias, key.base_ident(self.tcx).unwrap())
             }
             _ => {
                 if let Dependency::Item(id, _) = key
@@ -390,8 +384,8 @@ impl<'tcx> CloneNames<'tcx> {
                 {
                     let qname = QName::from_string(why3_modl.as_str());
                     let name = qname.name.clone();
-                    let modl = qname.module_qname().name;
-                    return Kind::Used(Symbol::intern(&*modl), Symbol::intern(&*name));
+                    let modl = qname.module_qname();
+                    return Kind::UsedBuiltin(modl, Symbol::intern(&*name));
                 };
 
                 key.base_ident(self.tcx)
@@ -408,15 +402,16 @@ impl NameSupply {
     }
 }
 
-// TODO: Get rid of the enum
-#[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Kind {
     /// This does not corresponds to a defined symbol
     Unnamed,
     /// This symbol is locally defined
     Named(Symbol),
-    /// This symbol must be acompanied by a `Use` statement in Why3
-    Used(Symbol, Symbol),
+    /// Used, UsedBuiltin: the symbols in the last argument must be acompanied by a `use` statement in Why3
+    UsedBuiltin(why3::QName, Symbol),
+    // Used(MODULE, ALIAS, ID) means the qualified identifier `ALIAS.ID` under `use MODULE as ALIAS`
+    Used(util::ModulePath, Ident, Symbol),
 }
 
 impl Kind {
@@ -424,7 +419,9 @@ impl Kind {
         match self {
             Kind::Unnamed => panic!("Unnamed item"),
             Kind::Named(nm) => nm.as_str().into(),
-            Kind::Used(_, _) => panic!("cannot get ident of used module {self:?}"),
+            Kind::UsedBuiltin(_, _) | Kind::Used(_, _, _) => {
+                panic!("cannot get ident of used module {self:?}")
+            }
         }
     }
 
@@ -432,8 +429,13 @@ impl Kind {
         match self {
             Kind::Unnamed => panic!("Unnamed item"),
             Kind::Named(nm) => nm.as_str().into(),
-            Kind::Used(modl, id) => {
-                QName { module: vec![modl.as_str().into()], name: id.as_str().into() }
+            Kind::UsedBuiltin(modl, id) => {
+                let mut module = modl.module.clone();
+                module.push(modl.name.clone());
+                QName { module, name: id.as_str().into() }
+            }
+            Kind::Used(_, alias, id) => {
+                QName { module: vec![alias.clone()], name: id.as_str().into() }
             }
         }
     }

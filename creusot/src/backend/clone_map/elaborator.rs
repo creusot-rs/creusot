@@ -53,11 +53,10 @@ impl<'a, 'tcx> Namer<'tcx> for ExpansionProxy<'a, 'tcx> {
         self.namer.normalize(ctx, ty)
     }
 
-    fn insert(&mut self, dep: Dependency<'tcx>) -> Kind {
+    fn insert(&mut self, dep: Dependency<'tcx>) -> &Kind {
         let dep = dep.erase_regions(self.namer.tcx);
         self.expansion_queue.push_back((self.source, dep));
-        let k = self.namer.insert(dep);
-        k
+        self.namer.insert(dep)
     }
 
     fn tcx(&self) -> TyCtxt<'tcx> {
@@ -330,26 +329,26 @@ impl DepElab for TyElab {
         match ty.kind() {
             TyKind::Alias(_, _) => vec![ctx.assoc_ty_decl(&mut names, def_id, subst)],
             _ => {
-                if let Some(why3_modl) = util::get_builtin(ctx.tcx, def_id) {
-                    let qname = QName::from_string(why3_modl.as_str());
-                    let Kind::Used(_, _) = names.insert(Dependency::Type(ty)) else {
-                        return vec![];
-                    };
-
-                    let use_decl = Use { as_: None, name: qname.module_qname(), export: false };
-
-                    vec![Decl::UseDecl(use_decl)]
-                } else {
-                    let name = names.insert(dep).qname();
-
-                    let modl = if util::item_type(ctx.tcx, def_id) == ItemType::Closure {
-                        ctx.module_path_with_suffix(def_id, "_Type")
-                    } else {
-                        ctx.module_path(def_id)
-                    };
-                    let name = if name.module.is_empty() { name } else { name.module_qname() };
-                    let use_decl = Use { as_: Some(name.as_ident()), name: modl, export: false };
-                    vec![Decl::UseDecl(use_decl)]
+                match names.insert(dep) {
+                    Kind::Unnamed | Kind::Named(_) => {
+                        // Locally available names.
+                        // We return an empty vector because we have to return something,
+                        // but it will be ignored anyway: it is inserted into a map at a
+                        // key which will never be looked up.
+                        vec![]
+                    }
+                    Kind::UsedBuiltin(name, _) => {
+                        let use_decl = Use { name: name.clone(), as_: None, export: false };
+                        vec![Decl::UseDecl(use_decl)]
+                    }
+                    Kind::Used(modl, alias, _) => {
+                        let use_decl = Use {
+                            as_: Some(alias.clone()),
+                            name: modl.why3_name(ctx.is_modular()),
+                            export: false,
+                        };
+                        vec![Decl::UseDecl(use_decl)]
+                    }
                 }
             }
         }
@@ -409,21 +408,18 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
         let decls = match dep {
             Dependency::Type(_) => TyElab::expand(self, ctx, dep),
-            Dependency::Item(mut def_id, _) => {
+            Dependency::Item(def_id, _) => {
                 if ctx.is_logical(def_id) {
                     LogicElab::expand(self, ctx, dep)
                 } else if ctx.is_constant(dep.to_trans_id(ctx.tcx, self.param_env).unwrap()) {
                     LogicElab::expand(self, ctx, dep)
                 } else if matches!(ctx.def_kind(def_id), DefKind::Field) {
-                    if util::item_type(self.tcx, def_id) == ItemType::Field {
-                        def_id = self.tcx.parent(def_id);
+                    let Kind::Used(modl, alias, _) = self.namer.insert(dep) else {
+                        panic!() /* insert() only returns Used in this case */
                     };
-                    let name = self.namer.insert(dep).qname();
-                    let modl = ctx.module_path(def_id);
-                    let name = if name.module.is_empty() { name } else { name.module_qname() };
                     let use_decl = Use {
-                        as_: Some(Ident::from_string(name.to_string())),
-                        name: modl,
+                        as_: Some(alias.clone()),
+                        name: modl.why3_name(ctx.is_modular()),
                         export: false,
                     };
                     vec![Decl::UseDecl(use_decl)]

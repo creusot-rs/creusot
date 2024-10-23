@@ -39,7 +39,8 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
 
     let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
     let meta = ctx.display_impl_of(def_id);
-    let why3::QName { module: path, name } = ctx.module_path(def_id);
+    let path = ctx.module_path(def_id, util::NS::M);
+    let name = path.why3_ident();
     FileModule { path, modl: Module { name, decls, attrs, meta } }
 }
 
