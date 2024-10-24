@@ -165,7 +165,22 @@ pub enum TermKind<'tcx> {
         fin: Box<Term<'tcx>>,
         projection: ProjectionVec<Term<'tcx>, Ty<'tcx>>,
     },
+    Borrow {
+        inner: Box<Term<'tcx>>,
+    },
     Absurd,
+    /// Inferred preconditions for `(item, args)`
+    Precondition {
+        item: DefId,
+        args: GenericArgsRef<'tcx>,
+        params: Vec<Term<'tcx>>,
+    },
+    /// Inferred postconditions for `(item, args)`
+    Postcondition {
+        item: DefId,
+        args: GenericArgsRef<'tcx>,
+        params: Vec<Term<'tcx>>,
+    },
 }
 
 impl<'tcx> TermKind<'tcx> {
@@ -1260,6 +1275,13 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
             visit_projections(projection, |term| visitor.visit_term(term))
         }
         TermKind::Assert { cond } => visitor.visit_term(&*cond),
+        TermKind::Precondition { params, .. } => {
+            params.iter().for_each(|a| visitor.visit_term(&*a))
+        }
+        TermKind::Postcondition { params, .. } => {
+            params.iter().for_each(|a| visitor.visit_term(&*a))
+        }
+        TermKind::Borrow { inner } => visitor.visit_term(&*inner),
     }
 }
 
@@ -1318,6 +1340,13 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
             visit_projections_mut(projection, |term| visitor.visit_mut_term(term))
         }
         TermKind::Assert { cond } => visitor.visit_mut_term(&mut *cond),
+        TermKind::Precondition { params, .. } => {
+            params.iter_mut().for_each(|a| visitor.visit_mut_term(a))
+        }
+        TermKind::Postcondition { params, .. } => {
+            params.iter_mut().for_each(|a| visitor.visit_mut_term(a))
+        }
+        TermKind::Borrow { inner } => visitor.visit_mut_term(inner),
     }
 }
 
@@ -1552,6 +1581,13 @@ impl<'tcx> Term<'tcx> {
                 visit_projections_mut(projection, |term| term.subst_with_inner(bound, inv_subst))
             }
             TermKind::Assert { cond } => cond.subst_with_inner(bound, inv_subst),
+            TermKind::Precondition { params, .. } => {
+                params.iter_mut().for_each(|p| p.subst_with_inner(bound, inv_subst))
+            }
+            TermKind::Postcondition { params, .. } => {
+                params.iter_mut().for_each(|p| p.subst_with_inner(bound, inv_subst))
+            }
+            TermKind::Borrow { inner } => inner.subst_with_inner(bound, inv_subst),
         }
     }
 
@@ -1632,6 +1668,13 @@ impl<'tcx> Term<'tcx> {
                 visit_projections(projection, |term| term.free_vars_inner(bound, free))
             }
             TermKind::Assert { cond } => cond.free_vars_inner(bound, free),
+            TermKind::Precondition { params, .. } => {
+                params.iter().for_each(|p| p.free_vars_inner(bound, free))
+            }
+            TermKind::Postcondition { params, .. } => {
+                params.iter().for_each(|p| p.free_vars_inner(bound, free))
+            }
+            TermKind::Borrow { inner } => inner.free_vars_inner(bound, free),
         }
     }
 

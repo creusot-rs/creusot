@@ -10,6 +10,7 @@ use crate::{
     error::CreusotResult,
     metadata::{BinaryMetadata, Metadata},
     options::Options,
+    signature::{pre_sig_of, PreSignature},
     translation::{
         self,
         external::{extract_extern_specs_from_item, ExternSpec},
@@ -19,7 +20,7 @@ use crate::{
         specification::ContractClauses,
         traits::TraitImpl,
     },
-    util::{self, gather_params_open_inv, pre_sig_of, PreSignature},
+    util::{self, gather_params_open_inv},
 };
 use indexmap::{IndexMap, IndexSet};
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
