@@ -354,6 +354,16 @@ impl<'tcx> CloneNames<'tcx> {
                                 Some(nm) => *nm,
                                 None => {
                                     let name = self.tcx.item_name(did);
+                                    // Ensure name is capitalized: add prefix "T_" if name starts with lower case
+                                    // or starts with "T_" (to avoid collisions).
+                                    let name =
+                                        if name.as_str().starts_with(|c: char| c.is_uppercase())
+                                            && !name.as_str().starts_with("T_")
+                                        {
+                                            name
+                                        } else {
+                                            Symbol::intern(&("T_".to_string() + name.as_str()))
+                                        };
                                     let fresh = self.counts.freshen(name);
                                     self.adt_names.insert(did, fresh);
                                     fresh
