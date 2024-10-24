@@ -2,8 +2,8 @@ use super::{Dependencies, Why3Generator};
 use crate::{
     contracts_items::{self, get_builtin},
     ctx::*,
-    translated_item::FileModule,
     signature::PreSignature,
+    translated_item::FileModule,
     translation::{
         pearlite::{self, Term, TermKind},
         specification::PreContract,
