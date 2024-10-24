@@ -96,7 +96,17 @@ impl DepElab for ProgElab {
         let sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
         let sig = sig.normalize(ctx.tcx, elab.param_env);
         let sig = signature(ctx, elab, sig, dep);
+
         if contracts_items::is_ghost_closure(ctx.tcx, def_id) {
+            // Inline the body of ghost closures
+            let mut coma = program::to_why(
+                ctx,
+                &mut elab.namer(dep),
+                BodyId { def_id: def_id.expect_local(), promoted: None },
+            );
+            coma.name = sig.name;
+            return vec![Decl::Coma(coma)];
+        } else if ctx.is_closure_like(def_id) && !ctx.sig(def_id).contract.has_user_contract {
             // Inline the body of ghost closures
             let mut coma = program::to_why(
                 ctx,
