@@ -1,7 +1,7 @@
 use assert_cmd::output::OutputOkExt as _;
 use regex::Regex;
 use similar::{ChangeTag, TextDiff};
-use std::{error::Error, io::Write as _, path::Path, sync::LazyLock};
+use std::{error::Error, io::Write as _, path::Path, str::from_utf8, sync::LazyLock};
 use termcolor::{Buffer, Color, ColorSpec, WriteColor};
 
 /// Normalize file path between linux/windows for consistency
@@ -21,7 +21,6 @@ pub fn differ(
     should_succeed: bool,
 ) -> Result<(bool, Buffer), Box<dyn Error>> {
     let mut buf = Buffer::ansi();
-    use std::str::from_utf8;
     match output.clone().ok() {
         Ok(output) => {
             let expect_out = &std::fs::read(stdout).unwrap_or_else(|_| Vec::new());
