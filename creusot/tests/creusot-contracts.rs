@@ -48,6 +48,12 @@ fn main() {
 
     let mut failed = false;
     if bless {
+        if output.stdout.is_empty() {
+            panic!(
+                "creusot-contracts should have an output! stderr is:\n\n{}",
+                std::str::from_utf8(&output.stderr).unwrap()
+            )
+        }
         out.set_color(ColorSpec::new().set_fg(Some(Color::Blue))).unwrap();
         writeln!(&mut out, "blessed").unwrap();
         out.reset().unwrap();
