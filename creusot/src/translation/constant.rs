@@ -1,7 +1,7 @@
 use crate::{
+    contracts_items::get_builtin,
     ctx::TranslationCtx,
     fmir::{self, Operand},
-    special_items::attributes::get_builtin,
     traits::resolve_assoc_item_opt,
     translation::pearlite::Literal,
 };

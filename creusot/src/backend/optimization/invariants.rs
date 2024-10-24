@@ -11,6 +11,7 @@ use crate::{
         program::node_graph,
         wto::{weak_topological_order, Component},
     },
+    contracts_items,
     ctx::TranslationCtx,
     pearlite::{mk_projection, BinOp, Term},
     translation::fmir,
@@ -35,9 +36,9 @@ pub fn infer_proph_invariants<'tcx>(ctx: &mut TranslationCtx<'tcx>, body: &mut f
 
     let res = borrow_prophecy_analysis(ctx, &body, &wto);
 
-    let snap_ty = ctx.get_diagnostic_item(Symbol::intern("snapshot_ty")).unwrap();
-    let snap_new = ctx.get_diagnostic_item(Symbol::intern("snapshot_new")).unwrap();
-    let snap_deref = ctx.get_diagnostic_item(Symbol::intern("snapshot_deref")).unwrap();
+    let snap_ty = contracts_items::get_snap_ty(ctx.tcx);
+    let snap_new = contracts_items::get_snaphot_new(ctx.tcx);
+    let snap_deref = contracts_items::get_snapshot_deref(ctx.tcx);
     let tcx = ctx.tcx;
     for (k, unchanged) in res.iter() {
         let inc = graph.neighbors_directed(*k, Direction::Incoming);

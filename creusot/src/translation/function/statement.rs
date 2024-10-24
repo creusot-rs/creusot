@@ -1,9 +1,9 @@
 use super::BodyTranslator;
 use crate::{
     analysis::NotFinalPlaces,
+    contracts_items,
     extended_location::ExtendedLocation,
     fmir::Operand,
-    special_items::attributes,
     translation::{
         fmir::{self, RValue},
         specification::inv_subst,
@@ -144,11 +144,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         RValue::Constructor(variant, subst, fields)
                     }
                     Closure(def_id, subst) => {
-                        if attributes::is_invariant(self.tcx(), *def_id)
-                            || attributes::is_variant(self.tcx(), *def_id)
+                        if contracts_items::is_invariant(self.tcx(), *def_id)
+                            || contracts_items::is_variant(self.tcx(), *def_id)
                         {
                             return;
-                        } else if attributes::is_assertion(self.tcx(), *def_id) {
+                        } else if contracts_items::is_assertion(self.tcx(), *def_id) {
                             let mut assertion = self
                                 .assertions
                                 .remove(def_id)
@@ -160,7 +160,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 msg: "assertion".to_owned(),
                             });
                             return;
-                        } else if attributes::is_spec(self.tcx(), *def_id) {
+                        } else if contracts_items::is_spec(self.tcx(), *def_id) {
                             return;
                         } else {
                             RValue::Constructor(*def_id, subst, fields)

@@ -1,6 +1,6 @@
 use crate::{
+    contracts_items::get_builtin,
     pearlite::{self, Literal, Term, TermKind},
-    special_items::attributes::get_builtin,
     traits::resolve_assoc_item_opt,
 };
 use rustc_hir::def_id::DefId;

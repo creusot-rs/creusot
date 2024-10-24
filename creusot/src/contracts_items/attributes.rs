@@ -5,6 +5,18 @@ use rustc_hir::def_id::DefId;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
 
+/// Helper macro, converts `creusot::foo::bar` into `["creusot", "foo", "bar"]`.
+macro_rules! path_to_str {
+    ([ :: $($p:tt)* ] ; [ $($acc:expr,)* ]) => {
+        path_to_str!([ $($p)* ] ; [ $($acc,)* ])
+    };
+    ([ $x:tt $($p:tt)* ] ; [ $($acc:expr,)* ]) => {
+        path_to_str!([ $($p)* ] ; [ $($acc,)* stringify!($x), ])
+    };
+    ([ ] ; [ $($acc:expr,)* ]) => { [$($acc),*] };
+    ($($p:tt)*) => { path_to_str!([ $($p)* ] ; []) };
+}
+
 macro_rules! attribute_functions {
     (
         $(
@@ -12,28 +24,16 @@ macro_rules! attribute_functions {
         )+
     ) => {
         $(
-            /// Detect if `def_id` has the attribute
-            #[doc = concat!("`", stringify!($($p)*), "`")]
+            #[doc = concat!("Detect if `def_id` has the attribute `", stringify!($($p)*), "`")]
             pub(crate) fn $fn_name(tcx: TyCtxt, def_id: DefId) -> bool {
-                let path = &attribute_functions!(@path_to_str $($p)*);
+                let path = &path_to_str!($($p)*);
                 let has_attr = get_attr(tcx.get_attrs_unchecked(def_id), path).is_some();
                 attribute_functions!(@negate $($not)? has_attr)
             }
         )+
     };
-
     (@negate $has_attr:ident) => { $has_attr };
     (@negate $not:ident $has_attr:ident) => { ! $has_attr };
-    (@path_to_str ( $x:ident :: $($p:tt)* ) ; [ $($acc:expr,)* ]) => {
-        attribute_functions!(@path_to_str ( $($p)* ) ; [ $($acc,)* stringify!($x), ])
-    };
-    (@path_to_str ( $x:ident ) ; [ $($acc:expr,)* ]) => {
-        attribute_functions!(@path_to_str () ; [ $($acc,)* stringify!($x), ])
-    };
-    (@path_to_str () ; [ $($acc:expr,)* ]) => { [$($acc),*] };
-    (@path_to_str $($p:tt)*) => {
-        attribute_functions!(@path_to_str ( $($p)* ) ; [])
-    };
 }
 
 attribute_functions! {

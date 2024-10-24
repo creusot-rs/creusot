@@ -1,6 +1,4 @@
-use crate::{
-    ctx::TranslationCtx, pearlite::Term, special_items::attributes, util::snapshot_closure_id,
-};
+use crate::{contracts_items, ctx::TranslationCtx, pearlite::Term, util::snapshot_closure_id};
 use indexmap::{IndexMap, IndexSet};
 use rustc_data_structures::graph::Successors;
 use rustc_hir::def_id::DefId;
@@ -31,10 +29,10 @@ impl<'tcx> SpecClosures<'tcx> {
         let mut assertions = IndexMap::new();
         let mut snapshots = IndexMap::new();
         for clos in visitor.closures.into_iter() {
-            if attributes::is_assertion(ctx.tcx, clos) {
+            if contracts_items::is_assertion(ctx.tcx, clos) {
                 let term = ctx.term(clos).unwrap().clone();
                 assertions.insert(clos, term);
-            } else if attributes::is_snapshot_closure(ctx.tcx, clos) {
+            } else if contracts_items::is_snapshot_closure(ctx.tcx, clos) {
                 let term = ctx.term(clos).unwrap().clone();
                 snapshots.insert(clos, term);
             }
@@ -81,9 +79,9 @@ struct Invariants<'tcx> {
 impl<'tcx> Visitor<'tcx> for Invariants<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         if let Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
-            let kind = if attributes::is_invariant(self.tcx, *id) {
+            let kind = if contracts_items::is_invariant(self.tcx, *id) {
                 LoopSpecKind::Invariant
-            } else if attributes::is_loop_variant(self.tcx, *id) {
+            } else if contracts_items::is_loop_variant(self.tcx, *id) {
                 LoopSpecKind::Variant
             } else {
                 return;

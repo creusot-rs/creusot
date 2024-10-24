@@ -2,4 +2,8 @@
 //!
 //! This includes attributes like `#[creusot::logic]`, and diagnostic items like `Snapshot`.
 
-pub(crate) mod attributes;
+mod attributes;
+mod diagnostic_items;
+
+pub(crate) use attributes::*;
+pub(crate) use diagnostic_items::*;

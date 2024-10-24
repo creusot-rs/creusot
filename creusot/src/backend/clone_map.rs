@@ -1,8 +1,8 @@
 use crate::{
     backend::{clone_map::elaborator::Expander, dependency::Dependency},
+    contracts_items::{self, get_inv_function},
     ctx::*,
     options::SpanMode,
-    special_items::attributes,
     util::{self, item_name, ModulePath},
 };
 use indexmap::{IndexMap, IndexSet};
@@ -111,8 +111,7 @@ pub(crate) trait Namer<'tcx> {
     }
 
     fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName {
-        let def_id =
-            self.tcx().get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
+        let def_id = get_inv_function(self.tcx());
         let subst = self.tcx().mk_args(&[ty::GenericArg::from(ty)]);
         self.value(def_id, subst)
     }
@@ -342,7 +341,7 @@ impl<'tcx> CloneNames<'tcx> {
             }
             Dependency::Type(ty) if !matches!(ty.kind(), TyKind::Alias(_, _)) => {
                 if let Some((did, _)) = key.did() {
-                    if let Some(why3_modl) = attributes::get_builtin(self.tcx, did) {
+                    if let Some(why3_modl) = contracts_items::get_builtin(self.tcx, did) {
                         let qname = QName::from_string(why3_modl.as_str());
                         let name = qname.name.clone();
                         let modl = qname.module_qname();
@@ -379,7 +378,7 @@ impl<'tcx> CloneNames<'tcx> {
             }
             _ => {
                 if let Dependency::Item(id, _) = key
-                    && let Some(why3_modl) = attributes::get_builtin(self.tcx, id)
+                    && let Some(why3_modl) = contracts_items::get_builtin(self.tcx, id)
                 {
                     let qname = QName::from_string(why3_modl.as_str());
                     let name = qname.name.clone();

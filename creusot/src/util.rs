@@ -1,9 +1,9 @@
 use crate::{
-    ctx::*,
-    special_items::attributes::{
-        is_logic, is_no_translate, is_open_inv_result, is_pearlite, is_predicate, is_prophetic,
-        is_snapshot_closure, is_spec,
+    contracts_items::{
+        get_fn_mut_unnest, is_logic, is_no_translate, is_open_inv_result, is_pearlite,
+        is_predicate, is_prophetic, is_snapshot_closure, is_spec,
     },
+    ctx::*,
     translation::{
         pearlite::{self, super_visit_mut_term, Term, TermKind, TermVisitorMut},
         specification::PreContract,
@@ -12,7 +12,6 @@ use crate::{
 };
 use indexmap::IndexMap;
 use rustc_ast::{
-    ast::{AttrArgs, AttrArgsEq},
     visit::{walk_fn, FnKind, Visitor},
     AttrItem, AttrKind, Attribute, FnSig, NodeId,
 };
@@ -35,7 +34,6 @@ use std::{
     path::PathBuf,
 };
 use why3::{
-    declaration,
     declaration::{LetKind, Signature, ValDecl},
     Ident,
 };
@@ -47,46 +45,6 @@ pub(crate) fn snapshot_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Opti
         }
     }
     None
-}
-
-pub(crate) fn is_snap_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    let Some(adt) = ty.ty_adt_def() else { return false };
-    tcx.is_diagnostic_item(Symbol::intern("snapshot_ty"), adt.did())
-}
-
-pub(crate) fn is_inv(tcx: TyCtxt, def_id: DefId) -> bool {
-    tcx.is_diagnostic_item(Symbol::intern("creusot_invariant_internal"), def_id)
-}
-
-#[allow(dead_code)]
-pub(crate) fn is_invariant_method(tcx: TyCtxt, def_id: DefId) -> bool {
-    tcx.is_diagnostic_item(Symbol::intern("creusot_invariant_user"), def_id)
-}
-
-#[allow(dead_code)]
-pub(crate) fn is_resolve_method(tcx: TyCtxt, def_id: DefId) -> bool {
-    tcx.is_diagnostic_item(Symbol::intern("creusot_resolve_method"), def_id)
-}
-
-pub(crate) fn is_resolve_function(tcx: TyCtxt, def_id: DefId) -> bool {
-    tcx.is_diagnostic_item(Symbol::intern("creusot_resolve"), def_id)
-}
-
-pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "clause", "open"]).and_then(|item| {
-        match &item.args {
-            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l.symbol),
-            _ => None,
-        }
-    })
-}
-
-pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::Attribute> {
-    let matches = get_attrs(tcx.get_attrs_unchecked(def_id), &["why3", "attr"]);
-    matches
-        .into_iter()
-        .map(|a| declaration::Attribute::Attr(a.value_str().unwrap().as_str().into()))
-        .collect()
 }
 
 pub(crate) fn param_def_id(tcx: TyCtxt, def_id: LocalDefId) -> LocalDefId {
@@ -573,7 +531,7 @@ pub(crate) fn pre_sig_of<'tcx>(
             let unnest_subst =
                 ctx.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty.peel_refs())]);
 
-            let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
+            let unnest_id = get_fn_mut_unnest(ctx.tcx);
 
             contract.ensures.push(Term::call(
                 ctx.tcx,
@@ -679,30 +637,6 @@ pub(crate) fn get_attr<'a>(attrs: &'a [Attribute], path: &[&str]) -> Option<&'a 
         }
     }
     None
-}
-
-pub(crate) fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
-    let mut matched = Vec::new();
-
-    for attr in attrs.iter() {
-        if attr.is_doc_comment() {
-            continue;
-        }
-
-        let item = attr.get_normal_item();
-
-        if item.path.segments.len() != path.len() {
-            continue;
-        }
-
-        let matches =
-            item.path.segments.iter().zip(path.iter()).all(|(seg, s)| &*seg.ident.as_str() == *s);
-
-        if matches {
-            matched.push(attr)
-        }
-    }
-    matched
 }
 
 pub(crate) fn is_attr(attr: &Attribute, str: &str) -> bool {

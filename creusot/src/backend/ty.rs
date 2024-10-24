@@ -1,7 +1,7 @@
 use super::{Dependencies, Why3Generator};
 use crate::{
+    contracts_items::{self, get_builtin},
     ctx::*,
-    special_items::attributes::{self, get_builtin},
     translated_item::FileModule,
     translation::{
         pearlite::{self, Term, TermKind},
@@ -158,7 +158,7 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
         Closure(id, subst) => {
             ctx.translate(*id);
 
-            if attributes::is_logic(ctx.tcx, *id) {
+            if contracts_items::is_logic(ctx.tcx, *id) {
                 return MlT::Tuple(Vec::new());
             }
 
@@ -354,7 +354,7 @@ pub(crate) fn translate_tydecl(
     let span = ctx.def_span(repr);
 
     // Trusted types (opaque)
-    if attributes::is_trusted(ctx.tcx, repr) {
+    if contracts_items::is_trusted(ctx.tcx, repr) {
         if bg.len() > 1 {
             ctx.crash_and_error(span, "cannot mark mutually recursive types as trusted");
         }
@@ -673,7 +673,7 @@ fn validate_field_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, adt_did: DefId, ty: Ty
     let bg = ctx.binding_group(adt_did);
 
     !ty.walk().filter_map(ty::GenericArg::as_type).any(|ty| {
-        util::is_snap_ty(tcx, ty)
+        contracts_items::is_snap_ty(tcx, ty)
             && ty.walk().filter_map(ty::GenericArg::as_type).any(|ty| match ty.kind() {
                 TyKind::Adt(adt_def, _) => bg.contains(&adt_def.did()),
                 // TyKind::Param(_) => true,
@@ -921,14 +921,14 @@ pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(
 
 pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
     if let TyKind::Adt(def, _) = ty.kind() {
-        tcx.is_diagnostic_item(Symbol::intern("creusot_int"), def.did())
+        contracts_items::is_int_ty(tcx, def.did())
     } else {
         false
     }
 }
 
 pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &mut Why3Generator<'tcx>, names: &mut N) -> MlT {
-    let int_id = ctx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap();
+    let int_id = contracts_items::get_int_ty(ctx.tcx);
     let ty = ctx.type_of(int_id).skip_binder();
     translate_ty(ctx, names, DUMMY_SP, ty)
 }

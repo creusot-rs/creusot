@@ -5,10 +5,10 @@ use rustc_span::{RealFileName, Span, DUMMY_SP};
 use why3::declaration::{Decl, TyDecl};
 
 use crate::{
+    contracts_items::{self, is_resolve_function},
     ctx::{TranslatedItem, TranslationCtx},
     options::SpanMode,
     run_why3::SpanMap,
-    special_items::attributes,
     translation::pearlite::Term,
     util::{self, ItemType},
 };
@@ -190,7 +190,8 @@ impl<'tcx> Why3Generator<'tcx> {
             DefKind::Fn | DefKind::Closure | DefKind::AssocFn
         ));
 
-        if !crate::util::should_translate(self.tcx, def_id) || attributes::is_spec(self.tcx, def_id)
+        if !crate::util::should_translate(self.tcx, def_id)
+            || contracts_items::is_spec(self.tcx, def_id)
         {
             debug!("Skipping {:?}", def_id);
             return;
@@ -200,7 +201,7 @@ impl<'tcx> Why3Generator<'tcx> {
             ItemType::Logic { .. } | ItemType::Predicate { .. } => {
                 debug!("translating {:?} as logical", def_id);
 
-                if util::is_resolve_function(self.tcx, def_id) {
+                if is_resolve_function(self.tcx, def_id) {
                     TranslatedItem::Logic { proof_modl: None }
                 } else {
                     let proof_modl = logic::translate_logic_or_predicate(self, def_id);
@@ -460,11 +461,11 @@ fn generic_decls<'tcx, I: Iterator<Item = &'tcx GenericParamDef> + 'tcx>(
 }
 
 pub fn is_trusted_function(tcx: TyCtxt, mut def_id: DefId) -> bool {
-    if attributes::is_trusted(tcx, def_id) {
+    if contracts_items::is_trusted(tcx, def_id) {
         return true;
     }
     while let Some(parent) = tcx.opt_parent(def_id) {
-        if attributes::is_trusted(tcx, def_id)
+        if contracts_items::is_trusted(tcx, def_id)
             && matches!(
                 tcx.def_kind(def_id),
                 DefKind::Mod | DefKind::AssocFn | DefKind::Fn | DefKind::Closure

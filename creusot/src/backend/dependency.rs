@@ -6,6 +6,7 @@ use rustc_span::Symbol;
 use rustc_type_ir::{fold::TypeFoldable, visit::TypeVisitable, AliasTyKind, Interner};
 
 use crate::{
+    contracts_items,
     translation::traits,
     util::{self, item_symb, translate_accessor_name, type_name, value_name, ItemType},
 };
@@ -258,7 +259,7 @@ fn is_structural_resolve<'tcx>(
     tcx: TyCtxt<'tcx>,
     dep: (DefId, GenericArgsRef<'tcx>),
 ) -> Option<Ty<'tcx>> {
-    if tcx.is_diagnostic_item(Symbol::intern("creusot_structural_resolve"), dep.0) {
+    if contracts_items::is_structural_resolve(tcx, dep.0) {
         Some(dep.1.type_at(0))
     } else {
         None

@@ -8,12 +8,12 @@ use crate::{
     analysis::NotFinalPlaces,
     backend::{ty::closure_accessors, ty_inv::is_tyinv_trivial},
     constant::from_mir_constant,
+    contracts_items::{self, get_fn_mut_unnest, get_resolve_function, get_resolve_method},
     ctx::*,
     extended_location::ExtendedLocation,
     fmir,
     gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind, SpecClosures},
     resolve::{place_contains_borrow_deref, HasMoveDataExt, Resolver},
-    special_items::attributes,
     translation::{
         fmir::LocalDecl,
         pearlite::{self, TermKind, TermVisitorMut},
@@ -124,8 +124,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if attributes::is_spec(tcx, *def_id)
-                    || attributes::is_snapshot_closure(tcx, *def_id)
+                if contracts_items::is_spec(tcx, *def_id)
+                    || contracts_items::is_snapshot_closure(tcx, *def_id)
                 {
                     erased_locals.insert(local);
                 }
@@ -171,7 +171,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             invariants,
             assertions,
             snapshots,
-            is_ghost_closure: attributes::is_ghost_closure(tcx, body_id.def_id()),
+            is_ghost_closure: contracts_items::is_ghost_closure(tcx, body_id.def_id()),
             borrows,
         })
     }
@@ -938,7 +938,7 @@ fn closure_contract<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Clos
         let args = subst.as_closure().sig().inputs().skip_binder()[0];
         let unnest_subst = ctx.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty)]);
 
-        let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
+        let unnest_id = get_fn_mut_unnest(ctx.tcx);
 
         let mut postcondition: Term<'tcx> = postcondition;
         postcondition = postcondition.conj(Term::call(
@@ -1082,7 +1082,7 @@ fn resolve_predicate_of<'tcx>(
     param_env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,
 ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-    let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
+    let trait_meth_id = get_resolve_method(ctx.tcx);
     let substs = ctx.mk_args(&[GenericArg::from(ty)]);
 
     // Optimization: if we know there is no Resolve instance for this type, then we do not emit
@@ -1096,5 +1096,5 @@ fn resolve_predicate_of<'tcx>(
         return None;
     }
 
-    Some((ctx.get_diagnostic_item(Symbol::intern("creusot_resolve")).unwrap(), substs))
+    Some((get_resolve_function(ctx.tcx), substs))
 }

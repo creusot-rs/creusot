@@ -12,8 +12,8 @@ use crate::{
         ty_inv::InvariantElaborator,
     },
     constant::from_ty_const,
+    contracts_items::{get_builtin, get_resolve_method, is_inv_function, is_resolve_function},
     pearlite::{normalize, Term},
-    special_items::attributes::{self, get_builtin},
     traits,
     util::{ident_of, PreSignature},
 };
@@ -95,7 +95,7 @@ impl DepElab for ProgElab {
         let sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
         let sig = sig.normalize(ctx.tcx, elab.param_env);
         let sig = signature(ctx, elab, sig, dep);
-        if attributes::is_ghost_closure(ctx.tcx, def_id) {
+        if contracts_items::is_ghost_closure(ctx.tcx, def_id) {
             // Inline the body of ghost closures
             let mut coma = program::to_why(
                 ctx,
@@ -168,7 +168,7 @@ impl DepElab for LogicElab {
 
         // This is the 'inv' symbol, which is defined using an axiom "TyInvAxiom".
         // We schedule this 'body' for expansion here by forcing it to be added to the expansion queue.
-        if util::is_inv(ctx.tcx, def_id) {
+        if is_inv_function(ctx.tcx, def_id) {
             let ty = subst.type_at(0);
             let ty = ctx.try_normalize_erasing_regions(elab.param_env, ty).unwrap_or(ty);
             elab.expansion_queue.push_back((elab.self_key, Dependency::TyInvAxiom(ty)));
@@ -283,7 +283,7 @@ pub fn resolve_term<'tcx>(
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Option<Term<'tcx>> {
-    let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
+    let trait_meth_id = get_resolve_method(ctx.tcx);
     let sig = ctx.sig(def_id).clone();
     let mut pre_sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
     pre_sig = pre_sig.normalize(ctx.tcx, param_env);
@@ -523,7 +523,7 @@ pub fn term<'tcx>(
                 let span = ctx.def_span(def_id);
                 let res = from_ty_const(&mut ctx.ctx, constant, ty, param_env, span);
                 Some(res)
-            } else if util::is_resolve_function(ctx.tcx, def_id) {
+            } else if is_resolve_function(ctx.tcx, def_id) {
                 resolve_term(ctx, param_env, def_id, subst)
             } else {
                 let term = ctx.term(trans_id).cloned()?;

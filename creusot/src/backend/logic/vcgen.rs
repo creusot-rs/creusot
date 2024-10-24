@@ -11,8 +11,8 @@ use crate::{
         ty::{is_int, translate_ty},
         Namer as _, Why3Generator,
     },
+    contracts_items::get_builtin,
     pearlite::{super_visit_term, Literal, Pattern, PointerKind, Term, TermVisitor},
-    special_items::attributes::get_builtin,
     util::{self, pre_sig_of},
 };
 use rustc_hir::def_id::DefId;
