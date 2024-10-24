@@ -447,7 +447,7 @@ where
     docs![
         alloc,
         defn.name.pretty(alloc),
-        alloc.intersperse(defn.attrs.iter().map(|a| a.pretty(alloc)), alloc.space()),
+        alloc.concat(defn.attrs.iter().map(|a| alloc.concat([alloc.space(), a.pretty(alloc)]))),
         alloc.space(),
         bracket_list(alloc, defn.writes.iter().map(|a| a.pretty(alloc)), " "),
         if defn.writes.is_empty() { alloc.nil() } else { alloc.space() },

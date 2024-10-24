@@ -6,7 +6,11 @@ use why3::{
 };
 
 use crate::{
-    backend, contracts_items::{should_replace_trigger, why3_attrs}, signature::PreSignature, translation::specification::PreContract, util::{ident_of, item_name, AnonymousParamName}
+    backend,
+    contracts_items::{should_replace_trigger, why3_attrs},
+    signature::PreSignature,
+    translation::specification::PreContract,
+    util::{ident_of, item_name, AnonymousParamName},
 };
 
 use super::{logic::function_call, term::lower_pure, Namer, Why3Generator};

@@ -1,8 +1,12 @@
 use crate::{
-    contracts_items::{is_open_inv_result, is_pearlite}, ctx::*, pearlite::TermVisitorMut, translation::{
+    contracts_items::{is_open_inv_result, is_pearlite},
+    ctx::*,
+    pearlite::TermVisitorMut,
+    translation::{
         pearlite::{self, Term},
         specification::PreContract,
-    }, util::{anonymous_param_symbol, closure_capture_subst}
+    },
+    util::{anonymous_param_symbol, closure_capture_subst},
 };
 use rustc_hir::{def_id::DefId, Safety};
 use rustc_macros::{TypeFoldable, TypeVisitable};
