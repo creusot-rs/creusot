@@ -439,6 +439,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             TermKind::Old { .. } => Err(VCError::OldInLemma(t.span)),
             TermKind::Closure { .. } => Err(VCError::UnimplementedClosure(t.span)),
             TermKind::Reborrow { .. } => Err(VCError::UnimplementedReborrow(t.span)),
+            TermKind::Precondition { .. } => Err(VCError::UnimplementedClosure(t.span)),
+            TermKind::Postcondition { .. } => Err(VCError::UnimplementedClosure(t.span)),
         }
     }
 
