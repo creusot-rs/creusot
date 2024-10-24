@@ -1,4 +1,8 @@
 use crate::{
+    contracts_items::{
+        get_fn_mut_unnest, is_logic, is_no_translate, is_open_inv_result, is_pearlite,
+        is_predicate, is_prophetic, is_snapshot_closure, is_spec,
+    },
     ctx::*,
     translation::{
         pearlite::{self, super_visit_mut_term, Term, TermKind, TermVisitorMut},
@@ -8,7 +12,6 @@ use crate::{
 };
 use indexmap::IndexMap;
 use rustc_ast::{
-    ast::{AttrArgs, AttrArgsEq},
     visit::{walk_fn, FnKind, Visitor},
     AttrItem, AttrKind, Attribute, FnSig, NodeId,
 };
@@ -31,54 +34,9 @@ use std::{
     path::PathBuf,
 };
 use why3::{
-    declaration,
     declaration::{LetKind, Signature, ValDecl},
     Ident,
 };
-
-pub(crate) fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
-    is_no_translate(tcx, def_id) || is_predicate(tcx, def_id) || is_logic(tcx, def_id)
-}
-
-pub(crate) fn is_pearlite(tcx: TyCtxt, def_id: DefId) -> bool {
-    is_predicate(tcx, def_id)
-        || is_spec(tcx, def_id)
-        || is_logic(tcx, def_id)
-        || is_assertion(tcx, def_id)
-        || is_snapshot_closure(tcx, def_id)
-}
-
-pub(crate) fn is_no_translate(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "no_translate"]).is_some()
-}
-
-pub(crate) fn is_spec(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec"]).is_some()
-}
-
-pub(crate) fn is_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "invariant"]).is_some()
-}
-
-pub(crate) fn is_loop_variant(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "variant", "loop_"]).is_some()
-}
-
-pub(crate) fn is_variant(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "variant"]).is_some()
-}
-
-pub(crate) fn is_assertion(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "assert"]).is_some()
-}
-
-pub(crate) fn is_snapshot_closure(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "snapshot"]).is_some()
-}
-
-pub(crate) fn is_ghost_closure(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "ghost"]).is_some()
-}
 
 pub(crate) fn snapshot_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
     if let TyKind::Closure(def_id, _) = ty.peel_refs().kind() {
@@ -87,99 +45,6 @@ pub(crate) fn snapshot_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Opti
         }
     }
     None
-}
-
-pub(crate) fn is_snap_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    let r: Option<bool> = try {
-        let adt = ty.ty_adt_def()?;
-        let builtin = get_builtin(tcx, adt.did())?;
-        builtin.as_str() == "prelude.prelude.Snapshot.snap_ty"
-    };
-    r.unwrap_or(false)
-}
-
-pub(crate) fn is_logic(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "logic"]).is_some()
-}
-
-pub(crate) fn is_prophetic(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "logic", "prophetic"]).is_some()
-}
-
-pub(crate) fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "predicate"]).is_some()
-}
-
-pub(crate) fn is_trusted(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "trusted"]).is_some()
-}
-
-pub(crate) fn is_law(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "law"]).is_some()
-}
-
-pub(crate) fn should_replace_trigger(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "no_trigger"]).is_none()
-}
-
-pub(crate) fn is_extern_spec(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "extern_spec"]).is_some()
-}
-
-pub(crate) fn is_ignore_structural_inv(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "trusted_ignore_structural_inv"])
-        .is_some()
-}
-
-pub(crate) fn is_tyinv_trivial_if_param_trivial(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(
-        tcx.get_attrs_unchecked(def_id),
-        &["creusot", "trusted_is_tyinv_trivial_if_param_trivial"],
-    )
-    .is_some()
-}
-
-pub(crate) fn has_variant_clause(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "clause", "variant"]).is_some()
-}
-
-pub(crate) fn is_open_inv_result(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "open_inv_result"]).is_some()
-}
-
-pub(crate) fn is_inv(tcx: TyCtxt, def_id: DefId) -> bool {
-    tcx.is_diagnostic_item(Symbol::intern("creusot_invariant_internal"), def_id)
-}
-
-#[allow(dead_code)]
-pub(crate) fn is_invariant_method(tcx: TyCtxt, def_id: DefId) -> bool {
-    tcx.is_diagnostic_item(Symbol::intern("creusot_invariant_user"), def_id)
-}
-
-#[allow(dead_code)]
-pub(crate) fn is_resolve_method(tcx: TyCtxt, def_id: DefId) -> bool {
-    tcx.is_diagnostic_item(Symbol::intern("creusot_resolve_method"), def_id)
-}
-
-pub(crate) fn is_resolve_function(tcx: TyCtxt, def_id: DefId) -> bool {
-    tcx.is_diagnostic_item(Symbol::intern("creusot_resolve"), def_id)
-}
-
-pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "clause", "open"]).and_then(|item| {
-        match &item.args {
-            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l.symbol),
-            _ => None,
-        }
-    })
-}
-
-pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::Attribute> {
-    let matches = get_attrs(tcx.get_attrs_unchecked(def_id), &["why3", "attr"]);
-    matches
-        .into_iter()
-        .map(|a| declaration::Attribute::Attr(a.value_str().unwrap().as_str().into()))
-        .collect()
 }
 
 pub(crate) fn param_def_id(tcx: TyCtxt, def_id: LocalDefId) -> LocalDefId {
@@ -213,15 +78,6 @@ pub(crate) fn has_body(ctx: &mut TranslationCtx, def_id: DefId) -> bool {
             _ => false,
         }
     }
-}
-
-pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "builtins"]).and_then(|a| {
-        match &a.args {
-            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l.symbol),
-            _ => None,
-        }
-    })
 }
 
 pub(crate) fn item_name(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Ident {
@@ -675,7 +531,7 @@ pub(crate) fn pre_sig_of<'tcx>(
             let unnest_subst =
                 ctx.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty.peel_refs())]);
 
-            let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
+            let unnest_id = get_fn_mut_unnest(ctx.tcx);
 
             contract.ensures.push(Term::call(
                 ctx.tcx,
@@ -781,30 +637,6 @@ pub(crate) fn get_attr<'a>(attrs: &'a [Attribute], path: &[&str]) -> Option<&'a 
         }
     }
     None
-}
-
-pub(crate) fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
-    let mut matched = Vec::new();
-
-    for attr in attrs.iter() {
-        if attr.is_doc_comment() {
-            continue;
-        }
-
-        let item = attr.get_normal_item();
-
-        if item.path.segments.len() != path.len() {
-            continue;
-        }
-
-        let matches =
-            item.path.segments.iter().zip(path.iter()).all(|(seg, s)| &*seg.ident.as_str() == *s);
-
-        if matches {
-            matched.push(attr)
-        }
-    }
-    matched
 }
 
 pub(crate) fn is_attr(attr: &Attribute, str: &str) -> bool {

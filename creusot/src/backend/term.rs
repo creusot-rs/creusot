@@ -1,10 +1,11 @@
 use super::{program::borrow_generated_id, Why3Generator};
 use crate::{
     backend::ty::{floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty},
+    contracts_items::get_builtin,
     ctx::*,
     pearlite::{self, Literal, Pattern, PointerKind, Term, TermKind},
     translation::pearlite::{zip_binder, QuantKind, Trigger},
-    util::{self, get_builtin},
+    util,
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};

@@ -1,12 +1,12 @@
 use super::Why3Generator;
 use crate::{
+    contracts_items::{self, get_inv_function, get_invariant_method},
     pearlite::Trigger,
     traits::TraitResol,
     translation::{
         pearlite::{Pattern, Term, TermKind},
         traits,
     },
-    util::{self},
 };
 use rustc_middle::ty::{GenericArg, GenericArgs, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
@@ -31,7 +31,7 @@ pub(crate) fn tyinv_head_and_subst<'tcx>(
     };
 
     if let TraitResol::Instance(uinv_did, _) = resolve_user_inv(tcx, ty, param_env)
-        && util::is_ignore_structural_inv(tcx, uinv_did)
+        && contracts_items::is_ignore_structural_inv(tcx, uinv_did)
     {
         return def();
     }
@@ -72,7 +72,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
 
         let user_inv = resolve_user_inv(tcx, ty, param_env);
         if let TraitResol::Instance(uinv_did, _) = user_inv
-            && !util::is_tyinv_trivial_if_param_trivial(tcx, uinv_did)
+            && !contracts_items::is_tyinv_trivial_if_param_trivial(tcx, uinv_did)
         {
             return false;
         }
@@ -85,12 +85,12 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
                 stack.extend(substs.types())
             }
             TyKind::Adt(def, substs) => {
-                if util::is_trusted(tcx, def.did()) {
+                if contracts_items::is_trusted(tcx, def.did()) {
                     continue;
                 }
 
                 if let TraitResol::Instance(uinv_did, _) = user_inv
-                    && util::is_ignore_structural_inv(tcx, uinv_did)
+                    && contracts_items::is_ignore_structural_inv(tcx, uinv_did)
                 {
                     continue;
                 }
@@ -127,8 +127,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
 
     pub(crate) fn elaborate_inv(&mut self, ty: Ty<'tcx>, for_deps: bool) -> Option<Term<'tcx>> {
         let subject = Term::var(Symbol::intern("x"), ty);
-        let inv_id =
-            self.ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
+        let inv_id = get_inv_function(self.ctx.tcx);
         let subst = self.ctx.mk_args(&[GenericArg::from(subject.ty)]);
         let lhs = Term::call(self.ctx.tcx, inv_id, subst, vec![subject.clone()]);
         let trig = vec![Trigger(vec![lhs.clone()])];
@@ -156,11 +155,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
             TraitResol::UnknownNotFound if !for_deps => use_imples = true,
             TraitResol::NoInstance => (),
             _ => {
-                let trait_item_did = self
-                    .ctx
-                    .tcx
-                    .get_diagnostic_item(Symbol::intern("creusot_invariant_user"))
-                    .unwrap();
+                let trait_item_did = get_invariant_method(self.ctx.tcx);
                 let subst = self.ctx.tcx.mk_args(&[GenericArg::from(ty)]);
                 rhs =
                     rhs.conj(Term::call(self.ctx.tcx, trait_item_did, subst, vec![subject.clone()]))
@@ -189,7 +184,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
     fn structural_invariant(&mut self, term: Term<'tcx>, ty: Ty<'tcx>) -> Term<'tcx> {
         if let TraitResol::Instance(uinv_did, _) =
             resolve_user_inv(self.ctx.tcx, ty, self.param_env)
-            && util::is_ignore_structural_inv(self.ctx.tcx, uinv_did)
+            && contracts_items::is_ignore_structural_inv(self.ctx.tcx, uinv_did)
         {
             return Term::mk_true(self.ctx.tcx);
         }
@@ -197,7 +192,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         match ty.kind() {
             TyKind::Adt(adt_def, _) => {
                 let adt_did = adt_def.did();
-                if util::is_trusted(self.ctx.tcx, adt_did) {
+                if contracts_items::is_trusted(self.ctx.tcx, adt_did) {
                     Term::mk_true(self.ctx.tcx)
                 } else {
                     self.build_inv_term_adt(term)
@@ -323,7 +318,7 @@ fn resolve_user_inv<'tcx>(
     ty: Ty<'tcx>,
     param_env: ParamEnv<'tcx>,
 ) -> traits::TraitResol<'tcx> {
-    let trait_item_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap();
+    let trait_item_did = get_invariant_method(tcx);
     let subst = tcx.mk_args(&[GenericArg::from(ty)]);
 
     traits::resolve_assoc_item_opt(tcx, param_env, trait_item_did, subst)

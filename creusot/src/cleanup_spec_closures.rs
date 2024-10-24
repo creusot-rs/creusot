@@ -1,3 +1,4 @@
+use crate::contracts_items;
 use indexmap::IndexSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::{Idx, IndexVec};
@@ -9,8 +10,6 @@ use rustc_middle::{
     ty::TyCtxt,
 };
 
-use crate::util;
-
 /// Hide non-linear specification code from the borrow checker
 ///
 /// Specifications in Creusot are encoded inside of special closures that are inserted throughout the code.
@@ -19,7 +18,7 @@ use crate::util;
 pub(crate) fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body: &mut Body<'tcx>) {
     trace!("cleanup_spec_closures: {:?}", def_id);
 
-    if util::no_mir(tcx, def_id) {
+    if contracts_items::no_mir(tcx, def_id) {
         trace!("replacing function body");
         *body.basic_blocks_mut() = make_loop(tcx);
     } else {
@@ -78,8 +77,8 @@ impl<'tcx> MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &mut Rvalue<'tcx>, l: Location) {
         match rvalue {
             Rvalue::Aggregate(box AggregateKind::Closure(def_id, _), substs) => {
-                if util::is_no_translate(self.tcx, *def_id)
-                    || util::is_snapshot_closure(self.tcx, *def_id)
+                if contracts_items::is_no_translate(self.tcx, *def_id)
+                    || contracts_items::is_snapshot_closure(self.tcx, *def_id)
                 {
                     substs.iter_mut().for_each(|p| {
                         if p.is_move() {
@@ -155,8 +154,8 @@ pub fn remove_ghost_closures<'tcx>(tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
             let Rvalue::Aggregate(box AggregateKind::Closure(def_id, _), _) = rhs else {
                 return;
             };
-            if util::is_no_translate(self.tcx, *def_id)
-                || util::is_snapshot_closure(self.tcx, *def_id)
+            if contracts_items::is_no_translate(self.tcx, *def_id)
+                || contracts_items::is_snapshot_closure(self.tcx, *def_id)
             {
                 statement.kind = StatementKind::Nop
             }

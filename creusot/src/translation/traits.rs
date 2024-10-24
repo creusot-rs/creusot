@@ -1,7 +1,7 @@
 use super::pearlite::{Term, TermKind};
 use crate::{
+    contracts_items::{is_law, is_spec},
     ctx::*,
-    util::{is_law, is_spec},
 };
 use rustc_hir::def_id::DefId;
 use rustc_infer::{

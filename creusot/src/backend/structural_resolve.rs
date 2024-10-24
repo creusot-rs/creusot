@@ -4,8 +4,8 @@ use rustc_span::{Symbol, DUMMY_SP};
 use rustc_type_ir::TyKind;
 
 use crate::{
+    contracts_items::{get_builtin, get_resolve_function, is_snap_ty, is_trusted},
     pearlite::{BinOp, Pattern, Term, TermKind},
-    util::{get_builtin, is_snap_ty, is_trusted},
 };
 
 use super::Why3Generator;
@@ -124,7 +124,7 @@ pub(crate) fn head_and_subst<'tcx>(
 }
 
 fn resolve_of<'tcx>(ctx: &Why3Generator<'tcx>, term: Term<'tcx>) -> Term<'tcx> {
-    let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve")).unwrap();
+    let trait_meth_id = get_resolve_function(ctx.tcx);
     let substs = ctx.mk_args(&[GenericArg::from(term.ty)]);
 
     Term::call(ctx.tcx, trait_meth_id, substs, vec![term])

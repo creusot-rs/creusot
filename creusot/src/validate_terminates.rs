@@ -21,7 +21,9 @@
 //! }
 //! ```
 
-use crate::{backend::is_trusted_function, ctx::TranslationCtx, specification::contract_of, util};
+use crate::{
+    backend::is_trusted_function, contracts_items, ctx::TranslationCtx, specification::contract_of,
+};
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graph, visit::EdgeRef as _};
 use rustc_hir::def_id::{DefId, LocalDefId};
@@ -29,7 +31,7 @@ use rustc_middle::{
     thir,
     ty::{EarlyBinder, FnDef, GenericArgKind, GenericArgs, ParamEnv, TyCtxt, TyKind},
 };
-use rustc_span::{Span, Symbol};
+use rustc_span::Span;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 struct FunctionInstance<'tcx> {
@@ -121,7 +123,7 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
 
     let mut is_pearlite = IndexSet::<graph::NodeIndex>::new();
     for d in ctx.hir().body_owners() {
-        if !(util::is_pearlite(ctx.tcx, d.to_def_id())
+        if !(contracts_items::is_pearlite(ctx.tcx, d.to_def_id())
             || contract_of(ctx, d.to_def_id()).terminates)
         {
             // Only consider functions marked with `terminates`: we already ensured that a `terminates` functions only calls other `terminates` functions.
@@ -135,7 +137,7 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
     while let Some((visit, caller_node)) = build_call_graph.to_visit.pop() {
         let caller_def_id = visit.def_id();
         if is_trusted_function(ctx.tcx, caller_def_id)
-            || util::is_no_translate(ctx.tcx, caller_def_id)
+            || contracts_items::is_no_translate(ctx.tcx, caller_def_id)
         {
             // FIXME: does this work with trait functions marked `#[terminates]`/`#[pure]` ?
             build_call_graph.additional_data[&caller_node] =
@@ -158,8 +160,11 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
                         has_loops: None,
                     };
                     <FunctionCalls as thir::visit::Visitor>::visit_expr(&mut visitor, &thir[expr]);
-                    let (visited_calls, pearlite_func, has_loops) =
-                        (visitor.calls, util::is_pearlite(tcx, caller_def_id), visitor.has_loops);
+                    let (visited_calls, pearlite_func, has_loops) = (
+                        visitor.calls,
+                        contracts_items::is_pearlite(tcx, caller_def_id),
+                        visitor.has_loops,
+                    );
 
                     for (function_def_id, span, subst) in visited_calls {
                         if !ctx.tcx.is_mir_available(function_def_id) {
@@ -177,13 +182,13 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
                         is_pearlite.insert(caller_node);
                     }
                     let additional_data = &mut build_call_graph.additional_data[&caller_node];
-                    additional_data.has_variant = util::has_variant_clause(ctx.tcx, caller_def_id);
+                    additional_data.has_variant =
+                        contracts_items::has_variant_clause(ctx.tcx, caller_def_id);
                     additional_data.has_loops = has_loops;
                 }
                 // Function defined in another crate: assume all the functions corresponding to its trait bounds can be called.
                 ToVisit::Extern { caller_def_id, function_def_id, generic_args } => {
-                    if ctx.tcx.is_diagnostic_item(Symbol::intern("ghost_from_fn"), function_def_id)
-                    {
+                    if contracts_items::is_ghost_from_fn(ctx.tcx, function_def_id) {
                         // This is a `ghost!` call, so it needs special handling.
                         let &[_, ty] = generic_args.as_slice() else {
                             unreachable!();
@@ -239,7 +244,7 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
                                     build_call_graph.graph.add_edge(caller_node, next_node, span);
 
                                     build_call_graph.additional_data[&next_node].has_variant =
-                                        util::has_variant_clause(ctx.tcx, item_id);
+                                        contracts_items::has_variant_clause(ctx.tcx, item_id);
                                 }
                             }
                         }
@@ -275,7 +280,7 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
         };
         if let Some(loop_span) = additional_data[&fun_index].has_loops {
             let fun_span = ctx.tcx.def_span(def_id);
-            let mut error = if util::is_ghost_closure(ctx.tcx, def_id) {
+            let mut error = if contracts_items::is_ghost_closure(ctx.tcx, def_id) {
                 ctx.error(fun_span, "`ghost!` block must not contain loops.")
             } else {
                 ctx.error(fun_span, "`#[terminates]` function must not contain loops.")

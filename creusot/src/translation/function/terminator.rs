@@ -1,5 +1,6 @@
 use super::BodyTranslator;
 use crate::{
+    contracts_items,
     ctx::TranslationCtx,
     extended_location::ExtendedLocation,
     fmir,
@@ -89,7 +90,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     self.resolve_before_assignment(need, &resolved, location, *destination)
                 }
 
-                if self.ctx.is_diagnostic_item(Symbol::intern("snapshot_from_fn"), fun_def_id) {
+                if contracts_items::is_snap_from_fn(self.ctx.tcx, fun_def_id) {
                     let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() else {
                         unreachable!()
                     };
@@ -272,7 +273,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
     fn is_ghost_box(&self, ty: Ty<'tcx>) -> bool {
         match ty.kind() {
             rustc_type_ir::TyKind::Adt(containing_type, _) => {
-                self.ctx.is_diagnostic_item(Symbol::intern("ghost_box"), containing_type.did())
+                contracts_items::is_ghost_ty(self.ctx.tcx, containing_type.did())
             }
             _ => false,
         }
@@ -288,7 +289,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         fun_def_id: DefId,
         subst: GenericArgsRef<'tcx>,
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-        if self.ctx.is_diagnostic_item(Symbol::intern("ghost_from_fn"), fun_def_id) {
+        if contracts_items::is_ghost_from_fn(self.ctx.tcx, fun_def_id) {
             let &[_, ty] = subst.as_slice() else {
                 unreachable!();
             };
@@ -345,7 +346,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         let func_param_env = self.ctx.param_env(fun_def_id);
 
         // Check that we do not call `GhostBox::into_inner` in normal code
-        if self.ctx.is_diagnostic_item(Symbol::intern("ghost_box_into_inner"), fun_def_id) {
+        if contracts_items::is_ghost_into_inner(self.ctx.tcx, fun_def_id) {
             self.ctx
                 .error(
                     fn_span,
@@ -374,7 +375,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     )
                     .emit();
             }
-        } else if self.ctx.is_diagnostic_item(Symbol::intern("ghost_box_new"), fun_def_id) {
+        } else if contracts_items::is_ghost_new(self.ctx.tcx, fun_def_id) {
             self.ctx
                 .error(fn_span, "cannot create a ghost variable in program context")
                 .with_span_suggestion(
@@ -389,7 +390,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 .emit();
         } else {
             // Check and reject instantiation of a <T: Deref> with a ghost parameter.
-            let deref_trait_id = self.ctx.get_diagnostic_item(Symbol::intern("Deref")).unwrap();
+            let deref_trait_id = self.ctx.require_lang_item(rustc_hir::LangItem::Deref, None);
             let infer_ctx = self.ctx.infer_ctxt().build();
             for bound in func_param_env.caller_bounds() {
                 let Some(trait_clause) = bound.as_trait_clause() else { continue };

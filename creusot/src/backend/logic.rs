@@ -1,9 +1,6 @@
 use crate::{
-    backend::all_generic_decls_for,
-    ctx::*,
-    translated_item::FileModule,
-    translation::pearlite::Term,
-    util::{self, get_builtin},
+    backend::all_generic_decls_for, contracts_items::get_builtin, ctx::*,
+    translated_item::FileModule, translation::pearlite::Term, util,
 };
 use rustc_hir::def_id::DefId;
 use why3::{

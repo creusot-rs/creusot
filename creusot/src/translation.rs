@@ -11,6 +11,7 @@ use std::{fs::File, path::PathBuf};
 
 use crate::{
     backend::{TransId, Why3Generator},
+    contracts_items,
     ctx::{self, load_extern_specs},
     error::InternalError,
     metadata,
@@ -26,15 +27,27 @@ use ::why3::{
 };
 use ctx::TranslationCtx;
 use rustc_hir::def::DefKind;
-use rustc_span::{Symbol, DUMMY_SP};
+use rustc_span::DUMMY_SP;
 use std::{error::Error, io::Write};
 use why3::{declaration::Attribute, mlcfg::printer::pretty_blocks};
 
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
 
-    if ctx.get_diagnostic_item(Symbol::intern("creusot_resolve")) == None {
-        ctx.fatal_error(DUMMY_SP, "The `creusot_contracts` crate is not loaded. You will not be able to verify any code using Creusot until you do so.").emit();
+    match crate::contracts_items::are_contracts_loaded(ctx.tcx) {
+        contracts_items::AreContractsLoaded::Yes => {},
+        contracts_items::AreContractsLoaded::No => ctx.fatal_error(DUMMY_SP, "The `creusot_contracts` crate is not loaded. You will not be able to verify any code using Creusot until you do so.").emit(),
+        contracts_items::AreContractsLoaded::MissingItems(missing) => {
+            let mut message = String::from("The `creusot_contracts` crate is loaded, but the following items are missing: ");
+            for (i, item) in missing.iter().enumerate() {
+                if i != 0 {
+                    message.push_str(", ");
+                }
+                message.push_str(item);
+            }
+            message.push_str(". Maybe your version of `creusot-contracts` is wrong?");
+            ctx.fatal_error(DUMMY_SP, &message).emit()
+        },
     }
 
     ctx.load_metadata();
@@ -44,9 +57,9 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
         validate_purity(ctx, def_id);
 
         let def_id = def_id.to_def_id();
-        if crate::util::is_spec(ctx.tcx, def_id)
-            || crate::util::is_predicate(ctx.tcx, def_id)
-            || crate::util::is_logic(ctx.tcx, def_id)
+        if contracts_items::is_spec(ctx.tcx, def_id)
+            || contracts_items::is_predicate(ctx.tcx, def_id)
+            || contracts_items::is_logic(ctx.tcx, def_id)
         {
             let _ = ctx.term(def_id);
             validate_opacity(ctx, def_id);

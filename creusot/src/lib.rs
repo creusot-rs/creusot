@@ -52,6 +52,7 @@ mod resolve;
 mod translation;
 pub(crate) mod util;
 use translation::*;
+mod contracts_items;
 mod error;
 pub(crate) mod lints;
 pub(crate) mod metadata;

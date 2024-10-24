@@ -15,6 +15,7 @@ use crate::{
         ty::{self, translate_closure_ty, translate_ty},
         wto::weak_topological_order,
     },
+    contracts_items,
     ctx::{BodyId, Dependencies, TranslationCtx},
     fmir::{self, Body, BorrowKind, Operand, TrivialInv},
     pearlite::{self, PointerKind},
@@ -254,7 +255,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
 
     let mut postcond = Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("result"))]);
 
-    if body_id.promoted.is_none() && !util::is_ghost_closure(ctx.tcx, body_id.def_id()) {
+    if body_id.promoted.is_none() && !contracts_items::is_ghost_closure(ctx.tcx, body_id.def_id()) {
         postcond = Expr::BlackBox(Box::new(postcond));
     }
     postcond = sig.contract.ensures.into_iter().fold(postcond, |acc, ensures| {
@@ -264,7 +265,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         )
     });
 
-    if body_id.promoted.is_none() && !util::is_ghost_closure(ctx.tcx, body_id.def_id()) {
+    if body_id.promoted.is_none() && !contracts_items::is_ghost_closure(ctx.tcx, body_id.def_id()) {
         body = Expr::BlackBox(Box::new(body))
     };
 
