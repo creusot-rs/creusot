@@ -426,9 +426,12 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // TODO: lol
             TermKind::Absurd => todo!("absrd"),
 
+            TermKind::Precondition {..} => Err(VCError::Closure(t.span)),
+            TermKind::Postcondition {..} => Err(VCError::Closure(t.span)),
             TermKind::Old { .. } => Err(VCError::Old(t.span)),
             TermKind::Closure { .. } => Err(VCError::Closure(t.span)),
             TermKind::Reborrow { .. } => Err(VCError::Reborrow(t.span)),
+            TermKind::Borrow { inner } => todo!(),
         }
     }
     fn build_pattern<A>(
@@ -586,7 +589,8 @@ pub(crate) fn get_func_name<'tcx>(
             // Add dependency
             names.value(id, subst);
 
-            QName::from_string(&a.as_str()).without_search_path()
+            QName::from_string(&a.as_str())
         })
+        .map(QName::without_search_path)
         .unwrap_or_else(|| names.value(id, subst))
 }

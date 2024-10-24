@@ -234,6 +234,28 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                 Exp::Assert(Box::new(cond))
             }
+            TermKind::Precondition { item, args, params } => {
+                let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
+                let mut sym = self.names.value(*item, args);
+                sym.name = format!("{}'pre", &*sym.name).into();
+
+                Exp::qvar(sym).app(params)
+            }
+            TermKind::Postcondition { item, args, params } => {
+                let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
+                let mut sym = self.names.value(*item, args);
+                sym.name = format!("{}'post'return'", &*sym.name).into();
+                Exp::qvar(sym).app(params)
+            }
+            TermKind::Borrow { inner } => {
+                let inner = self.lower_term(&*inner);
+
+                Exp::qvar("Borrow.borrow_logic".into()).app(vec![
+                    inner.clone(),
+                    inner,
+                    Exp::int(0).into(),
+                ])
+            }
         }
     }
 
