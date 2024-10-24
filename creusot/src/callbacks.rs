@@ -3,7 +3,6 @@ use rustc_driver::{Callbacks, Compilation};
 use rustc_hir::def_id::LocalDefId;
 use rustc_interface::{interface::Compiler, Config, Queries};
 use rustc_middle::ty::TyCtxt;
-use rustc_session::config::CrateType;
 
 use std::{cell::RefCell, collections::HashMap, thread_local};
 
@@ -22,9 +21,7 @@ impl ToWhy {
         ToWhy { opts }
     }
 
-    // Adjust the output directory so libraries and binaries with the same name don't overwrite each other
-    // Libraries go to output/creusot/
-    // Binaries go to output/creusot/bin/
+    // Isolate every crate in its own directory `{crate_name}-{crate_type}`.
     fn set_output_dir(&mut self, config: &Config) {
         let Output::Directory(ref mut dir) = self.opts.output else { return }; // if we're given a specific output file, just use that
         if config.opts.crate_types.len() > 1 {
@@ -33,22 +30,24 @@ impl ToWhy {
                 config.opts.crate_types
             );
         }
-        match config.opts.crate_types.get(0) {
-            None | Some(CrateType::Rlib) => {}
-            Some(crate_type) => {
-                dir.push(format!("{}", crate_type));
+        let mut krate = match &config.opts.crate_name {
+            Some(krate) => krate.clone(),
+            None => {
+                warn!("No crate name found, defaulting to 'a'");
+                "a".to_string()
             }
-        }
+        };
+        match config.opts.crate_types.get(0) {
+            None => {}
+            Some(crate_type) => {
+                krate = krate + "-" + &crate_type.to_string();
+            }
+        };
         if self.opts.monolithic {
-            let krate = match &config.opts.crate_name {
-                Some(krate) => krate.clone() + ".coma",
-                None => {
-                    warn!("No crate name found, defaulting to 'a.coma'");
-                    "a.coma".to_string()
-                }
-            };
-            dir.push(krate);
+            dir.push(krate + ".coma");
             self.opts.output = Output::File(dir.clone());
+        } else {
+            dir.push(krate);
         }
     }
 }
