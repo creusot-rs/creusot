@@ -164,7 +164,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         })
         .collect();
 
-    let sig = if body_id.promoted.is_none() {
+    let mut sig = if body_id.promoted.is_none() {
         signature_of(ctx, names, name, body_id.def_id())
     } else {
         let ret = ret.unwrap();
@@ -181,10 +181,13 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
 
     let mut postcond = Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("result"))]);
 
+    let inferred_closure_spec = ctx.is_closure_like(body_id.def_id())
+        && !ctx.sig(body_id.def_id()).contract.has_user_contract;
+
     // We remove the barrier around the definition in the following edge cases:
     let open_body = false
         // a closure with no contract
-        || (ctx.is_closure_like(body_id.def_id()) && !ctx.sig(body_id.def_id()).contract.has_user_contract)
+        || inferred_closure_spec
         // a promoted item
         || body_id.promoted.is_some()
         // a ghost closure
@@ -199,6 +202,10 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     if !open_body {
         body = Expr::BlackBox(Box::new(body))
     };
+
+    if inferred_closure_spec {
+        sig.attrs.push(Attribute::Attr("coma:extspec".into()));
+    }
 
     body = Expr::Let(Box::new(body), vars);
 
@@ -228,7 +235,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
             vec![Param::Term("ret".into(), sig.retty.unwrap())],
         )])
         .collect();
-    coma::Defn { name: sig.name, writes: Vec::new(), attrs: vec![], params, body }
+    coma::Defn { name: sig.name, writes: Vec::new(), attrs: sig.attrs, params, body }
 }
 
 fn component_to_defn<'tcx, N: Namer<'tcx>>(
