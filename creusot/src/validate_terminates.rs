@@ -33,83 +33,6 @@ use rustc_middle::{
 };
 use rustc_span::Span;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-struct FunctionInstance<'tcx> {
-    def_id: DefId,
-    generic_args: &'tcx GenericArgs<'tcx>,
-}
-
-#[derive(Default)]
-struct BuildFunctionsGraph<'tcx> {
-    graph: graph::DiGraph<FunctionInstance<'tcx>, Span>,
-    additional_data: IndexMap<graph::NodeIndex, AdditionalData>,
-    instance_to_index: IndexMap<FunctionInstance<'tcx>, graph::NodeIndex>,
-    to_visit: Vec<(ToVisit<'tcx>, graph::NodeIndex)>,
-}
-
-#[derive(Default)]
-struct AdditionalData {
-    /// `true` if the function has a `#[variant]` annotation.
-    ///
-    /// For now, mutually recursive functions are never allowed, so this only matter for
-    /// the simple recursion check.
-    has_variant: bool,
-    /// `Some` if the function contains a loop construct (contains the location of the loop).
-    ///
-    /// The body of external function are not visited, so this field will be `false`.
-    has_loops: Option<Span>,
-}
-
-impl<'tcx> BuildFunctionsGraph<'tcx> {
-    /// Insert a new instance function in the graph, or fetch the pre-existing instance.
-    ///
-    /// If it wasn't already in the graph, push it onto the `to_visit` stack.
-    fn insert_instance(
-        &mut self,
-        caller_def_id: DefId,
-        instance: FunctionInstance<'tcx>,
-    ) -> graph::NodeIndex {
-        match self.instance_to_index.entry(instance) {
-            indexmap::map::Entry::Occupied(n) => *n.get(),
-            indexmap::map::Entry::Vacant(entry) => {
-                let next_visit = if let Some(local) = instance.def_id.as_local() {
-                    ToVisit::Local { function_def_id: local, generic_args: instance.generic_args }
-                } else {
-                    ToVisit::Extern {
-                        caller_def_id,
-                        function_def_id: instance.def_id,
-                        generic_args: instance.generic_args,
-                    }
-                };
-                let node = self.graph.add_node(instance);
-                self.additional_data.insert(node, AdditionalData::default());
-                self.to_visit.push((next_visit, node));
-                entry.insert(node);
-                node
-            }
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-enum ToVisit<'tcx> {
-    /// The function is defined in the crate
-    Local { function_def_id: LocalDefId, generic_args: &'tcx GenericArgs<'tcx> },
-    /// The function is defined in another crate.
-    ///
-    /// We keep the generic parameters it was instantiated with, so that trait
-    /// parameters can be specialized to specific instances.
-    Extern { caller_def_id: DefId, function_def_id: DefId, generic_args: &'tcx GenericArgs<'tcx> },
-}
-impl<'tcx> ToVisit<'tcx> {
-    fn def_id(&self) -> DefId {
-        match self {
-            ToVisit::Local { function_def_id, .. } => function_def_id.to_def_id(),
-            ToVisit::Extern { function_def_id, .. } => *function_def_id,
-        }
-    }
-}
-
 /// Validate that a `#[terminates]` function cannot loop indefinitely. This includes:
 /// - forbidding program function from using loops of any kind (this should be relaxed
 /// later).
@@ -119,145 +42,8 @@ impl<'tcx> ToVisit<'tcx> {
 /// recursion, because why3 will handle it for us.
 pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
     ctx.tcx.dcx().abort_if_errors(); // There may have been errors before, if a `#[terminates]` calls a non-`#[terminates]`.
-    let mut build_call_graph = BuildFunctionsGraph::default();
 
-    let mut is_pearlite = IndexSet::<graph::NodeIndex>::new();
-    for d in ctx.hir().body_owners() {
-        if !(contracts_items::is_pearlite(ctx.tcx, d.to_def_id())
-            || contract_of(ctx, d.to_def_id()).terminates)
-        {
-            // Only consider functions marked with `terminates`: we already ensured that a `terminates` functions only calls other `terminates` functions.
-        } else {
-            let generic_args = GenericArgs::identity_for_item(ctx.tcx, d);
-            let def_id = d.to_def_id();
-            build_call_graph.insert_instance(def_id, FunctionInstance { def_id, generic_args });
-        }
-    }
-
-    while let Some((visit, caller_node)) = build_call_graph.to_visit.pop() {
-        let caller_def_id = visit.def_id();
-        if is_trusted_function(ctx.tcx, caller_def_id)
-            || contracts_items::is_no_translate(ctx.tcx, caller_def_id)
-        {
-            // FIXME: does this work with trait functions marked `#[terminates]`/`#[pure]` ?
-            build_call_graph.additional_data[&caller_node] =
-                AdditionalData { has_variant: false, has_loops: None };
-        } else {
-            match visit {
-                // Function defined in the current crate: visit its body
-                ToVisit::Local { function_def_id: local_id, generic_args } => {
-                    let caller_def_id = local_id.to_def_id();
-                    let param_env = ctx.tcx.param_env(caller_def_id);
-                    let tcx = ctx.tcx;
-                    let (thir, expr) = ctx.thir_body(local_id).unwrap();
-                    let thir = thir.borrow();
-                    let mut visitor = FunctionCalls {
-                        thir: &thir,
-                        tcx,
-                        generic_args,
-                        param_env,
-                        calls: IndexSet::new(),
-                        has_loops: None,
-                    };
-                    <FunctionCalls as thir::visit::Visitor>::visit_expr(&mut visitor, &thir[expr]);
-                    let (visited_calls, pearlite_func, has_loops) = (
-                        visitor.calls,
-                        contracts_items::is_pearlite(tcx, caller_def_id),
-                        visitor.has_loops,
-                    );
-
-                    for (function_def_id, span, subst) in visited_calls {
-                        if !ctx.tcx.is_mir_available(function_def_id) {
-                            continue;
-                        }
-
-                        let next_node = build_call_graph.insert_instance(
-                            caller_def_id,
-                            FunctionInstance { def_id: function_def_id, generic_args: subst },
-                        );
-
-                        build_call_graph.graph.add_edge(caller_node, next_node, span);
-                    }
-                    if pearlite_func {
-                        is_pearlite.insert(caller_node);
-                    }
-                    let additional_data = &mut build_call_graph.additional_data[&caller_node];
-                    additional_data.has_variant =
-                        contracts_items::has_variant_clause(ctx.tcx, caller_def_id);
-                    additional_data.has_loops = has_loops;
-                }
-                // Function defined in another crate: assume all the functions corresponding to its trait bounds can be called.
-                ToVisit::Extern { caller_def_id, function_def_id, generic_args } => {
-                    if contracts_items::is_ghost_from_fn(ctx.tcx, function_def_id) {
-                        // This is a `ghost!` call, so it needs special handling.
-                        let &[_, ty] = generic_args.as_slice() else {
-                            unreachable!();
-                        };
-                        let GenericArgKind::Type(ty) = ty.unpack() else { unreachable!() };
-                        let TyKind::Closure(ghost_def_id, ghost_args_ty) = ty.kind() else {
-                            unreachable!()
-                        };
-                        build_call_graph.insert_instance(
-                            caller_def_id,
-                            FunctionInstance { def_id: *ghost_def_id, generic_args: ghost_args_ty },
-                        );
-                    } else {
-                        for bound in ctx.tcx.param_env(function_def_id).caller_bounds() {
-                            let Some(clause) = bound.as_trait_clause() else { continue };
-                            let tcx = ctx.tcx;
-                            let param_env = tcx.param_env(caller_def_id);
-
-                            for &item_id in
-                                tcx.associated_item_def_ids(clause.skip_binder().trait_ref.def_id)
-                            {
-                                if !tcx.def_kind(item_id).is_fn_like() {
-                                    continue;
-                                }
-                                let subst = EarlyBinder::bind(
-                                    tcx.erase_regions(clause.skip_binder().trait_ref.args),
-                                )
-                                .instantiate(tcx, generic_args);
-                                let (def_id, generic_args) =
-                                    match tcx.try_normalize_erasing_regions(param_env, subst) {
-                                        Ok(subst) => {
-                                            match tcx.resolve_instance_raw(
-                                                param_env.and((item_id, subst)),
-                                            ) {
-                                                Ok(Some(instance)) => {
-                                                    (instance.def.def_id(), instance.args)
-                                                }
-                                                _ => (item_id, subst),
-                                            }
-                                        }
-                                        Err(_) => (item_id, subst),
-                                    };
-
-                                // Else, we could not find a concrete function to call,
-                                // so we don't consider this to be an actual call: we cannot resolve it to any concrete function yet.
-                                if def_id != item_id {
-                                    let span = ctx.tcx.def_span(function_def_id);
-                                    let next_node = build_call_graph.insert_instance(
-                                        function_def_id,
-                                        FunctionInstance { def_id, generic_args },
-                                    );
-
-                                    build_call_graph.graph.add_edge(caller_node, next_node, span);
-
-                                    build_call_graph.additional_data[&next_node].has_variant =
-                                        contracts_items::has_variant_clause(ctx.tcx, item_id);
-                                }
-                            }
-                        }
-                    }
-                    build_call_graph.additional_data[&caller_node] =
-                        AdditionalData { has_variant: true, has_loops: None };
-                }
-            }
-        }
-    }
-
-    let (mut call_graph, additional_data) =
-        (build_call_graph.graph, build_call_graph.additional_data);
+    let CallGraph { graph: mut call_graph, additional_data } = CallGraph::build(ctx);
 
     // Detect simple recursion, and loops
     for fun_index in call_graph.node_indices() {
@@ -265,7 +51,7 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
         let def_id = fun_inst.def_id;
         if let Some(self_edge) = call_graph.edges_connecting(fun_index, fun_index).next() {
             let (self_edge, span) = (self_edge.id(), *self_edge.weight());
-            if is_pearlite.contains(&fun_index) {
+            if additional_data[&fun_index].is_pearlite {
                 call_graph.remove_edge(self_edge);
                 continue;
             }
@@ -376,7 +162,248 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
     ctx.tcx.dcx().abort_if_errors();
 }
 
-/// Gather the functions calls that appear in a particular function.
+struct CallGraph<'tcx> {
+    graph: graph::DiGraph<FunctionInstance<'tcx>, Span>,
+    additional_data: IndexMap<graph::NodeIndex, FunctionData>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+struct FunctionInstance<'tcx> {
+    def_id: DefId,
+    generic_args: &'tcx GenericArgs<'tcx>,
+}
+
+#[derive(Default)]
+struct BuildFunctionsGraph<'tcx> {
+    graph: graph::DiGraph<FunctionInstance<'tcx>, Span>,
+    additional_data: IndexMap<graph::NodeIndex, FunctionData>,
+    instance_to_index: IndexMap<FunctionInstance<'tcx>, graph::NodeIndex>,
+    to_visit: Vec<(ToVisit<'tcx>, graph::NodeIndex)>,
+}
+
+#[derive(Default)]
+struct FunctionData {
+    /// `true` if the function is a pearlite function (e.g. `#[logic]`).
+    is_pearlite: bool,
+    /// `true` if the function has a `#[variant]` annotation.
+    ///
+    /// For now, mutually recursive functions are never allowed, so this only matter for
+    /// the simple recursion check.
+    has_variant: bool,
+    /// `Some` if the function contains a loop construct (contains the location of the loop).
+    ///
+    /// The body of external function are not visited, so this field will be `false`.
+    has_loops: Option<Span>,
+}
+
+impl<'tcx> BuildFunctionsGraph<'tcx> {
+    /// Insert a new instance function in the graph, or fetch the pre-existing instance.
+    ///
+    /// If it wasn't already in the graph, push it onto the `to_visit` stack.
+    fn insert_instance(
+        &mut self,
+        caller_def_id: DefId,
+        instance: FunctionInstance<'tcx>,
+    ) -> graph::NodeIndex {
+        match self.instance_to_index.entry(instance) {
+            indexmap::map::Entry::Occupied(n) => *n.get(),
+            indexmap::map::Entry::Vacant(entry) => {
+                let next_visit = if let Some(local) = instance.def_id.as_local() {
+                    ToVisit::Local { function_def_id: local, generic_args: instance.generic_args }
+                } else {
+                    ToVisit::Extern {
+                        caller_def_id,
+                        function_def_id: instance.def_id,
+                        generic_args: instance.generic_args,
+                    }
+                };
+                let node = self.graph.add_node(instance);
+                self.additional_data.insert(node, FunctionData::default());
+                self.to_visit.push((next_visit, node));
+                entry.insert(node);
+                node
+            }
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+enum ToVisit<'tcx> {
+    /// The function is defined in the crate
+    Local { function_def_id: LocalDefId, generic_args: &'tcx GenericArgs<'tcx> },
+    /// The function is defined in another crate.
+    ///
+    /// We keep the generic parameters it was instantiated with, so that trait
+    /// parameters can be specialized to specific instances.
+    Extern { caller_def_id: DefId, function_def_id: DefId, generic_args: &'tcx GenericArgs<'tcx> },
+}
+impl<'tcx> ToVisit<'tcx> {
+    fn def_id(&self) -> DefId {
+        match self {
+            ToVisit::Local { function_def_id, .. } => function_def_id.to_def_id(),
+            ToVisit::Extern { function_def_id, .. } => *function_def_id,
+        }
+    }
+}
+
+impl<'tcx> CallGraph<'tcx> {
+    /// Build the call graph of all functions appearing in the current crate,
+    /// exclusively for the purpose of termination checking.
+    ///
+    /// In particular, this means it only contains `#[terminates]` functions.
+    fn build(ctx: &mut TranslationCtx<'tcx>) -> Self {
+        let mut build_call_graph = BuildFunctionsGraph::default();
+
+        for d in ctx.hir().body_owners() {
+            if !(contracts_items::is_pearlite(ctx.tcx, d.to_def_id())
+                || contract_of(ctx, d.to_def_id()).terminates)
+            {
+                // Only consider functions marked with `terminates`: we already ensured that a `terminates` functions only calls other `terminates` functions.
+            } else {
+                let generic_args = GenericArgs::identity_for_item(ctx.tcx, d);
+                let def_id = d.to_def_id();
+                build_call_graph.insert_instance(def_id, FunctionInstance { def_id, generic_args });
+            }
+        }
+
+        while let Some((visit, caller_node)) = build_call_graph.to_visit.pop() {
+            let caller_def_id = visit.def_id();
+            if is_trusted_function(ctx.tcx, caller_def_id)
+                || contracts_items::is_no_translate(ctx.tcx, caller_def_id)
+            {
+                // FIXME: does this work with trait functions marked `#[terminates]`/`#[pure]` ?
+                build_call_graph.additional_data[&caller_node] =
+                    FunctionData { is_pearlite: false, has_variant: false, has_loops: None };
+            } else {
+                match visit {
+                    // Function defined in the current crate: visit its body
+                    ToVisit::Local { function_def_id: local_id, generic_args } => {
+                        let caller_def_id = local_id.to_def_id();
+                        let param_env = ctx.tcx.param_env(caller_def_id);
+                        let tcx = ctx.tcx;
+                        let (thir, expr) = ctx.thir_body(local_id).unwrap();
+                        let thir = thir.borrow();
+                        let mut visitor = FunctionCalls {
+                            thir: &thir,
+                            tcx,
+                            generic_args,
+                            param_env,
+                            calls: IndexSet::new(),
+                            has_loops: None,
+                        };
+                        <FunctionCalls as thir::visit::Visitor>::visit_expr(
+                            &mut visitor,
+                            &thir[expr],
+                        );
+                        let (visited_calls, pearlite_func, has_loops) = (
+                            visitor.calls,
+                            contracts_items::is_pearlite(tcx, caller_def_id),
+                            visitor.has_loops,
+                        );
+
+                        for (function_def_id, span, subst) in visited_calls {
+                            if !ctx.tcx.is_mir_available(function_def_id) {
+                                continue;
+                            }
+
+                            let next_node = build_call_graph.insert_instance(
+                                caller_def_id,
+                                FunctionInstance { def_id: function_def_id, generic_args: subst },
+                            );
+
+                            build_call_graph.graph.add_edge(caller_node, next_node, span);
+                        }
+                        build_call_graph.additional_data[&caller_node] = FunctionData {
+                            is_pearlite: pearlite_func,
+                            has_variant: contracts_items::has_variant_clause(
+                                ctx.tcx,
+                                caller_def_id,
+                            ),
+                            has_loops,
+                        };
+                    }
+                    // Function defined in another crate: assume all the functions corresponding to its trait bounds can be called.
+                    ToVisit::Extern { caller_def_id, function_def_id, generic_args } => {
+                        if contracts_items::is_ghost_from_fn(ctx.tcx, function_def_id) {
+                            // This is a `ghost!` call, so it needs special handling.
+                            let &[_, ty] = generic_args.as_slice() else {
+                                unreachable!();
+                            };
+                            let GenericArgKind::Type(ty) = ty.unpack() else { unreachable!() };
+                            let TyKind::Closure(ghost_def_id, ghost_args_ty) = ty.kind() else {
+                                unreachable!()
+                            };
+                            build_call_graph.insert_instance(
+                                caller_def_id,
+                                FunctionInstance {
+                                    def_id: *ghost_def_id,
+                                    generic_args: ghost_args_ty,
+                                },
+                            );
+                        } else {
+                            for bound in ctx.tcx.param_env(function_def_id).caller_bounds() {
+                                let Some(clause) = bound.as_trait_clause() else { continue };
+                                let tcx = ctx.tcx;
+                                let param_env = tcx.param_env(caller_def_id);
+
+                                for &item_id in tcx
+                                    .associated_item_def_ids(clause.skip_binder().trait_ref.def_id)
+                                {
+                                    if !tcx.def_kind(item_id).is_fn_like() {
+                                        continue;
+                                    }
+                                    let subst = EarlyBinder::bind(
+                                        tcx.erase_regions(clause.skip_binder().trait_ref.args),
+                                    )
+                                    .instantiate(tcx, generic_args);
+                                    let (def_id, generic_args) =
+                                        match tcx.try_normalize_erasing_regions(param_env, subst) {
+                                            Ok(subst) => {
+                                                match tcx.resolve_instance_raw(
+                                                    param_env.and((item_id, subst)),
+                                                ) {
+                                                    Ok(Some(instance)) => {
+                                                        (instance.def.def_id(), instance.args)
+                                                    }
+                                                    _ => (item_id, subst),
+                                                }
+                                            }
+                                            Err(_) => (item_id, subst),
+                                        };
+
+                                    // Else, we could not find a concrete function to call,
+                                    // so we don't consider this to be an actual call: we cannot resolve it to any concrete function yet.
+                                    if def_id != item_id {
+                                        let span = ctx.tcx.def_span(function_def_id);
+                                        let next_node = build_call_graph.insert_instance(
+                                            function_def_id,
+                                            FunctionInstance { def_id, generic_args },
+                                        );
+
+                                        build_call_graph.graph.add_edge(
+                                            caller_node,
+                                            next_node,
+                                            span,
+                                        );
+
+                                        build_call_graph.additional_data[&next_node].has_variant =
+                                            contracts_items::has_variant_clause(ctx.tcx, item_id);
+                                    }
+                                }
+                            }
+                        }
+                        build_call_graph.additional_data[&caller_node] =
+                            FunctionData { is_pearlite: false, has_variant: true, has_loops: None };
+                    }
+                }
+            }
+        }
+
+        Self { graph: build_call_graph.graph, additional_data: build_call_graph.additional_data }
+    }
+}
+
+/// Gather the functions calls that appear in a particular function, and store them in `calls`.
 struct FunctionCalls<'thir, 'tcx> {
     thir: &'thir thir::Thir<'tcx>,
     tcx: TyCtxt<'tcx>,
