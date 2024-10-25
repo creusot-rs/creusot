@@ -1,6 +1,8 @@
 use std::path::PathBuf;
 
+use anyhow::Error;
 use cargo_metadata;
+use creusot_args::options::CargoCreusotArgs;
 pub type Result<T> = anyhow::Result<T>;
 
 pub(crate) fn make_cargo_metadata() -> Result<cargo_metadata::Metadata> {
@@ -20,7 +22,47 @@ pub(crate) fn make_cargo_metadata() -> Result<cargo_metadata::Metadata> {
     cmd.exec().map_err(|e| e.into())
 }
 
-pub(crate) fn make_coma_target(m: &cargo_metadata::Metadata) -> Result<PathBuf> {
-    // put the file at the root of the target directory
-    Ok(m.target_directory.join("creusot").into())
+pub(crate) fn get_crate(m: &cargo_metadata::Metadata) -> Result<String> {
+    let package = m.root_package().ok_or(Error::msg("No root package found"))?;
+    let target = package.targets.first().ok_or(Error::msg("No target found"))?;
+    let krate_name = target.name.replace("-", "_");
+    let krate_type = target.crate_types.first().ok_or(Error::msg("No crate type found"))?;
+    let krate_type = if krate_type == "lib" { "rlib" } else { krate_type };
+    Ok(krate_name + "_" + krate_type)
+}
+
+fn get_crate_() -> Result<String> {
+    let m = make_cargo_metadata()?;
+    get_crate(&m)
+}
+
+const OUTPUT_PREFIX: &str = "verif";
+
+pub(crate) fn get_coma(cargs: &CargoCreusotArgs) -> (PathBuf, Option<String>) {
+    let coma_src: PathBuf; // coma output file name or directory
+    let coma_glob: Option<String>; // glob pattern for all coma files under coma_src
+    if let Some(f) = &cargs.options.output_file {
+        coma_src = f.into();
+        coma_glob = None;
+    } else if cargs.options.stdout {
+        coma_src = PathBuf::new(); // don't care, dummy value
+        coma_glob = None;
+    } else {
+        // default to --output-dir=target/creusot
+        let mut dir = match &cargs.options.output_dir {
+            Some(dir) => dir.clone(),
+            None => PathBuf::from("."),
+        };
+        dir.push(OUTPUT_PREFIX);
+
+        let Ok(krate) = get_crate_() else { return (PathBuf::new(), None) };
+        if cargs.options.monolithic {
+            coma_glob = dir.to_str().map(|s| s.to_string() + "/" + &krate + ".coma");
+        } else {
+            dir.push(krate);
+            coma_glob = dir.to_str().map(|s| s.to_string() + "/**/*.coma");
+        }
+        coma_src = dir;
+    }
+    (coma_src, coma_glob)
 }

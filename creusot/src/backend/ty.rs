@@ -412,7 +412,7 @@ pub(crate) fn translate_tydecl(
             modl: Module {
                 name,
                 decls: vec![Decl::UseDecl(Use {
-                    name: repr_path.why3_name(ctx.is_modular()),
+                    name: repr_path.why3_name(ctx.prefix()),
                     as_: None,
                     export: true,
                 })],

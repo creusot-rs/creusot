@@ -190,32 +190,31 @@ impl ModulePath {
 
     // `krate.modl.M_f.Coma` (Coma is the toplevel name)
     // Note: pass each fragment through Ident::build() to filter out coma keywords.
-    pub fn why3_qname(&self) -> why3::QName {
-        let module = self
-            .path
-            .iter()
-            .map(|s| Ident::build(s.as_str()))
-            .chain(iter::once(Ident::build(
-                &(self.namespace.as_str().to_string() + "_" + self.basename.as_str()),
-            )))
-            .collect::<Vec<_>>();
+    pub fn why3_qname(&self, prefix: &Vec<Ident>) -> why3::QName {
+        let path = self.path.iter().map(|s| Ident::build(s.as_str())).chain(iter::once(
+            Ident::build(&(self.namespace.as_str().to_string() + "_" + self.basename.as_str())),
+        ));
+        let module = prefix.into_iter().cloned().chain(path).collect::<Vec<_>>();
         let name = Ident::build("Coma");
         why3::QName { module, name }
     }
 
-    pub fn why3_name(&self, modular: bool) -> why3::QName {
-        if modular {
-            self.why3_qname()
-        } else {
-            why3::QName { module: vec![], name: self.why3_ident() }
+    /// Set `prefix` to `None` for monolithic output
+    pub fn why3_name(&self, prefix: Option<&Vec<Ident>>) -> why3::QName {
+        match prefix {
+            Some(prefix) => self.why3_qname(prefix),
+            None => why3::QName { module: vec![], name: self.why3_ident() },
         }
     }
 
-    // `krate/modl/M_f.coma`
+    // `prefix/krate/modl/M_f.coma`
     // Note: pass each fragment through Ident::build() to filter out coma keywords
     // so that this produces the same names as `why3_qname()`.
-    pub fn file_name(&self) -> PathBuf {
+    pub fn file_name(&self, prefix: &Vec<Ident>) -> PathBuf {
         let mut path = PathBuf::new();
+        for m in prefix {
+            path.push(m.as_str());
+        }
         for m in &self.path {
             path.push(Ident::build(m.as_str()).as_str());
         }

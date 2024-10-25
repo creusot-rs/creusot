@@ -400,11 +400,11 @@ impl<'tcx> Why3Generator<'tcx> {
         util::ModulePath::new(self.tcx, def_id, namespace)
     }
 
-    pub fn is_modular(&self) -> bool {
+    pub fn prefix(&self) -> Option<&Vec<why3::Ident>> {
         use crate::options::Output;
         match &self.opts.output {
-            Output::Directory(_) => true,
-            Output::File(_) | Output::Stdout => false,
+            Output::Directory(_) => Some(&self.opts.prefix),
+            Output::File(_) | Output::Stdout => None,
         }
     }
 }

@@ -122,6 +122,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
         let matcher: &str = matcher.as_ref().map(|s| &s[..]).unwrap_or("");
         let tcx = why3.tcx;
         let output_target = why3.opts.output.clone();
+        let prefix = why3.opts.prefix.clone();
         let modules = why3.modules();
         let modules = modules.flat_map(|(id, item)| {
             if let TransId::Item(did) = id
@@ -133,7 +134,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
             }
         });
 
-        let file = print_crate(output_target, modules)?;
+        let file = print_crate(output_target, prefix, modules)?;
         run_why3(&why3, file);
     }
     debug!("after_analysis_dump: {:?}", start.elapsed());
@@ -142,15 +143,15 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
 }
 
 pub enum OutputHandle {
-    Directory(PathBuf),   // One file per Coma module
-    File(Box<dyn Write>), // Monolithic output
+    Directory(PathBuf, Vec<why3::Ident>), // One file per Coma module, second component is a prefix for all files
+    File(Box<dyn Write>),                 // Monolithic output
 }
 
 fn module_output(modl: &FileModule, output: &mut OutputHandle) -> std::io::Result<()> {
     match output {
-        OutputHandle::Directory(dir) => {
+        OutputHandle::Directory(dir, prefix) => {
             let mut path = dir.clone();
-            path.push(modl.path.file_name());
+            path.push(modl.path.file_name(prefix));
             path.set_extension("coma");
             let prefix = path.parent().unwrap();
             std::fs::create_dir_all(prefix).unwrap();
@@ -188,10 +189,11 @@ fn monolithic_output<T: Write>(modl: &FileModule, out: &mut T) -> std::io::Resul
 
 fn print_crate<I: Iterator<Item = FileModule>>(
     output_target: Output,
+    prefix: Vec<why3::Ident>,
     modules: I,
 ) -> std::io::Result<Option<PathBuf>> {
     let (root, mut output) = match output_target {
-        Output::Directory(dir) => (Some(dir.clone()), OutputHandle::Directory(dir)),
+        Output::Directory(dir) => (Some(dir.clone()), OutputHandle::Directory(dir, prefix)),
         Output::File(ref f) => {
             std::fs::create_dir_all(f.parent().unwrap()).unwrap();
             (

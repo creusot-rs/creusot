@@ -34,9 +34,7 @@ impl CreusotArgsExt for CreusotArgs {
             (true, None, None) => Ok(Output::Stdout),
             (false, Some(f), None) => Ok(Output::File(f)),
             (false, None, Some(d)) => Ok(Output::Directory(d)),
-            (false, None, None) => {
-                Err("please specify either --output-dir, --output-file or --stdout")
-            }
+            (false, None, None) => Ok(Output::Directory(PathBuf::from("."))), // default --output-dir=.
             _ => Err("--stdout, --output-file and --output-dir are mutually exclusive"), // This should already be enforced by clap
         }?;
 
@@ -64,6 +62,7 @@ impl CreusotArgsExt for CreusotArgs {
             in_cargo: cargo_creusot,
             span_mode,
             monolithic: self.options.monolithic,
+            prefix: Vec::new(), // to be set in callbacks::ToWhy::set_output_dir
             match_str: self.options.focus_on,
             simple_triggers: self.options.simple_triggers,
             why3_cmd: match self.subcommand {

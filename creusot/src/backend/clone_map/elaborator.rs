@@ -345,7 +345,7 @@ impl DepElab for TyElab {
                     Kind::Used(modl, alias, _) => {
                         let use_decl = Use {
                             as_: Some(alias.clone()),
-                            name: modl.why3_name(ctx.is_modular()),
+                            name: modl.why3_name(ctx.prefix()),
                             export: false,
                         };
                         vec![Decl::UseDecl(use_decl)]
@@ -420,7 +420,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                     };
                     let use_decl = Use {
                         as_: Some(alias.clone()),
-                        name: modl.why3_name(ctx.is_modular()),
+                        name: modl.why3_name(ctx.prefix()),
                         export: false,
                     };
                     vec![Decl::UseDecl(use_decl)]

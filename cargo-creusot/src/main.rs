@@ -2,7 +2,6 @@ use creusot_args::{options::*, CREUSOT_RUSTC_ARGS};
 use creusot_setup as setup;
 use std::{
     env,
-    path::PathBuf,
     process::{exit, Command},
 };
 use tempdir::TempDir;
@@ -20,32 +19,8 @@ enum Subcommand {
 use Subcommand::*;
 
 fn main() -> Result<()> {
-    let cargo_md = make_cargo_metadata()?;
-    let coma_src: PathBuf; //  coma output file name container
-    let coma_glob: Option<String>; // glob pattern for all coma files under coma_src
-
-    let mut cargs = CargoCreusotArgs::parse_from(std::env::args().skip(1));
-
-    // select coma output file name
-    if let Some(f) = &cargs.options.output_file {
-        coma_src = f.into();
-        coma_glob = None;
-    } else if cargs.options.stdout {
-        coma_src = PathBuf::new(); // don't care, dummy value
-        coma_glob = None;
-    } else {
-        // default to --output-dir=target/creusot
-        let dir = match &cargs.options.output_dir {
-            Some(dir) => dir.clone(),
-            None => {
-                let dir = make_coma_target(&cargo_md)?;
-                cargs.options.output_dir = Some(dir.clone());
-                dir
-            }
-        };
-        coma_glob = dir.to_str().map(|s| s.to_string() + "/**/*.coma");
-        coma_src = dir;
-    }
+    let cargs = CargoCreusotArgs::parse_from(std::env::args().skip(1));
+    let (coma_src, coma_glob) = get_coma(&cargs);
 
     let subcommand = match cargs.subcommand {
         None => Creusot(None),
@@ -58,6 +33,7 @@ fn main() -> Result<()> {
             // subcommand analysis:
             //   we want to launch Why3 Ide and replay in cargo-creusot not by creusot-rustc.
             //   however we want to keep the current behavior for other commands: prove
+            // why3session will be put in or next to `coma_src`
             let (creusot_rustc_subcmd, launch_why3) = match subcmd {
                 Some(CreusotSubCommand::Why3 { command: Why3SubCommand::Ide, args, .. }) => {
                     (None, Some((Why3Mode::Ide, coma_src, args)))
@@ -70,7 +46,8 @@ fn main() -> Result<()> {
                 _ => (subcmd, None),
             };
 
-            let include_dir = cargs.options.output_dir.clone();
+            // Default output_dir to "." if not specified
+            let include_dir = Some(cargs.options.output_dir.clone().unwrap_or(".".into()));
             let config_args = setup::status_for_creusot()?;
             let creusot_args = CreusotArgs {
                 options: cargs.options,
