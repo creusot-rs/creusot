@@ -16,6 +16,8 @@ pub struct ToWhy {
     opts: Options,
 }
 
+const OUTPUT_PREFIX: &str = "verif";
+
 impl ToWhy {
     pub fn new(opts: Options) -> Self {
         ToWhy { opts }
@@ -40,14 +42,17 @@ impl ToWhy {
         match config.opts.crate_types.get(0) {
             None => {}
             Some(crate_type) => {
-                krate = krate + "-" + &crate_type.to_string();
+                krate = krate + "_" + &crate_type.to_string();
             }
         };
         if self.opts.monolithic {
+            // output file: "verif/{krate}.coma"
+            dir.push(OUTPUT_PREFIX);
             dir.push(krate + ".coma");
             self.opts.output = Output::File(dir.clone());
         } else {
-            dir.push(krate);
+            // prefix: "verif/{krate}/"
+            self.opts.prefix = vec![why3::Ident::build(OUTPUT_PREFIX), why3::Ident::build(&krate)];
         }
     }
 }
