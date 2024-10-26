@@ -5,7 +5,6 @@ pub(crate) mod fmir;
 pub(crate) mod function;
 pub(crate) mod pearlite;
 mod projection_vec;
-pub(crate) mod signature;
 pub(crate) mod specification;
 pub(crate) mod traits;
 use std::{fs::File, path::PathBuf};

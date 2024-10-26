@@ -95,12 +95,9 @@ impl QName {
         self.module.is_empty() && &self.name == id
     }
 
-    pub fn as_ident(&self) -> Option<&Ident> {
-        if self.module.is_empty() {
-            Some(&self.name)
-        } else {
-            None
-        }
+    pub fn as_ident(self) -> Ident {
+        assert!(self.module.is_empty());
+        self.name
     }
 
     // ooof this is a bad function
