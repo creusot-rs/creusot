@@ -21,7 +21,7 @@ pub enum TranslatedItem {
     Trait {},
     Impl {
         /// Trait refinement obligations
-        modl: Module,
+        modls: Vec<Module>,
     },
     AssocTy {},
     Constant {},
@@ -36,18 +36,18 @@ impl<'a> TranslatedItem {
         use std::iter;
         use TranslatedItem::*;
         match self {
-            Logic { proof_modl, .. } => Box::new(proof_modl.into_iter()),
-            Program { modl, .. } => Box::new(modl.into_iter()),
-            Trait { .. } => Box::new(iter::empty()),
-            Impl { modl, .. } => Box::new(iter::once(modl)),
-            AssocTy { .. } => Box::new(iter::empty()),
-            Constant { .. } => Box::new(iter::empty()),
+            Logic { proof_modl } => Box::new(proof_modl.into_iter()),
+            Program { modl } => Box::new(modl.into_iter()),
+            Trait {} => Box::new(iter::empty()),
+            Impl { modls } => Box::new(modls.into_iter()),
+            AssocTy {} => Box::new(iter::empty()),
+            Constant {} => Box::new(iter::empty()),
             Type { mut modl, accessors, .. } => {
                 modl[0].decls.extend(accessors.values().flat_map(|v| v.values()).cloned());
 
                 Box::new(modl.into_iter())
             }
-            Closure { ty_modl, modl, .. } => Box::new(iter::once(ty_modl).chain(modl.into_iter())),
+            Closure { ty_modl, modl } => Box::new(iter::once(ty_modl).chain(modl.into_iter())),
         }
     }
 }

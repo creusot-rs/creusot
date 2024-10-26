@@ -1,8 +1,7 @@
 use indexmap::{IndexMap, IndexSet};
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::{AliasTy, GenericParamDef, GenericParamDefKind, Ty, TyCtxt};
+use rustc_middle::ty::{AliasTy, Ty, TyCtxt};
 use rustc_span::{RealFileName, Span, DUMMY_SP};
-use why3::declaration::{Decl, TyDecl};
 
 use crate::{
     ctx::{TranslatedItem, TranslationCtx},
@@ -127,9 +126,8 @@ impl<'tcx> Why3Generator<'tcx> {
             ItemType::Impl => {
                 if self.tcx.impl_trait_ref(def_id).is_some() {
                     self.start(def_id);
-                    let impl_ = traits::lower_impl(self, def_id);
-
-                    self.functions.insert(tid, TranslatedItem::Impl { modl: impl_ });
+                    let modls = traits::lower_impl(self, def_id);
+                    self.functions.insert(tid, TranslatedItem::Impl { modls });
                     self.finish(def_id);
                 }
             }
@@ -375,59 +373,6 @@ fn display_impl_subject(i: &rustc_middle::ty::ImplSubject<'_>) -> String {
         rustc_middle::ty::ImplSubject::Trait(trait_ref) => trait_ref.to_string(),
         rustc_middle::ty::ImplSubject::Inherent(ty) => ty.to_string(),
     }
-}
-
-// Closures inherit the generic parameters of the original function they were defined in, but
-// add 3 'ghost' generics tracking metadata about the closure. We choose to erase those parameters,
-// as they contain a function type along with other irrelevant details (for us).
-pub(crate) fn closure_generic_decls<'a, 'tcx>(
-    names: &'a mut Dependencies<'tcx>,
-    mut def_id: DefId,
-) -> impl Iterator<Item = Decl> + 'a {
-    loop {
-        if names.tcx().is_closure_like(def_id) {
-            def_id = names.tcx().parent(def_id);
-        } else {
-            break;
-        }
-    }
-
-    all_generic_decls_for(names, def_id)
-}
-
-pub(crate) fn all_generic_decls_for<'a, 'tcx>(
-    names: &'a mut Dependencies<'tcx>,
-    def_id: DefId,
-) -> impl Iterator<Item = Decl> + 'a {
-    let tcx = names.tcx();
-    let generics = tcx.generics_of(def_id);
-    generic_decls((0..generics.count()).map(move |i| generics.param_at(i, tcx)), names)
-}
-
-pub(crate) fn own_generic_decls_for<'a, 'tcx>(
-    names: &'a mut Dependencies<'tcx>,
-    def_id: DefId,
-) -> impl Iterator<Item = Decl> + 'a {
-    let generics = names.tcx().generics_of(def_id);
-    generic_decls(generics.own_params.iter(), names)
-}
-
-pub(crate) fn generic_decls<'tcx, 'a, I: Iterator<Item = &'tcx GenericParamDef> + 'a>(
-    it: I,
-    names: &'a mut Dependencies<'tcx>,
-) -> Box<dyn Iterator<Item = Decl> + 'a> {
-    Box::new(it.filter_map(|param| {
-        if let GenericParamDefKind::Type { .. } = param.kind {
-            Some(Decl::TyDecl(TyDecl::Opaque {
-                ty_name: names
-                    .ty_param(Ty::new_param(names.tcx(), param.index, param.name))
-                    .as_ident(),
-                ty_params: vec![],
-            }))
-        } else {
-            None
-        }
-    }))
 }
 
 pub fn is_trusted_function(tcx: TyCtxt, mut def_id: DefId) -> bool {

@@ -1,5 +1,4 @@
 use crate::{
-    backend::all_generic_decls_for,
     ctx::*,
     translation::pearlite::Term,
     util::{self, get_builtin},
@@ -207,8 +206,6 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
 
     let mut names = Dependencies::new(ctx, [def_id]);
 
-    let mut decls = all_generic_decls_for(&mut names, def_id).collect::<Vec<_>>();
-
     let mut sig = signature_of(ctx, &mut names, def_id);
 
     if sig.contract.is_empty() {
@@ -256,8 +253,7 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
     body_decls
         .extend([Decl::Goal(Goal { name: format!("vc_{}", (&*sig.name)).into(), goal: body })]);
 
-    let clones = names.provide_deps(ctx);
-    decls.extend(clones);
+    let mut decls = names.provide_deps(ctx);
     decls.extend(body_decls);
 
     let name = module_ident(ctx, def_id);

@@ -1,39 +1,35 @@
 use super::{clone_map::Dependencies, term::lower_pure, Why3Generator};
 use crate::{
-    backend::{all_generic_decls_for, own_generic_decls_for, Namer},
+    backend::Namer,
     ctx::ItemType,
-    util::{self, erased_identity_for_item, item_name, module_name},
+    util::{self, erased_identity_for_item, module_name},
 };
-use rustc_hir::{def::Namespace, def_id::DefId};
+use rustc_hir::def_id::DefId;
 use rustc_middle::ty::GenericArgsRef;
 use why3::declaration::{Decl, Goal, Module, TyDecl};
 
-pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
-    let tcx = ctx.tcx;
+pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Vec<Module> {
     let data = ctx.trait_impl(def_id).clone();
-
-    let mut names = Dependencies::new(ctx, [def_id]);
-
-    let mut decls: Vec<_> = own_generic_decls_for(&mut names, def_id).collect();
-    let mut refn_decls = Vec::new();
+    let mut res = vec![];
 
     for refn in &data.refinements {
-        let name = item_name(tcx, refn.impl_.0, Namespace::ValueNS);
+        let impl_did = refn.impl_.0;
+        let mut names = Dependencies::new(ctx, [impl_did]);
+        let goal = lower_pure(ctx, &mut names, &refn.refn.clone());
+        let mut decls = names.provide_deps(ctx);
+        decls.push(Decl::Goal(Goal { name: "refines".into(), goal }));
 
-        decls.extend(own_generic_decls_for(&mut names, refn.impl_.0));
-        refn_decls.push(Decl::Goal(Goal {
-            name: format!("{}_refn", &*name).into(),
-            goal: lower_pure(ctx, &mut names, &refn.refn.clone()),
-        }));
+        let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(impl_did)));
+        let meta = ctx.display_impl_of(impl_did);
+        res.push(Module {
+            name: (module_name(ctx.tcx, impl_did).to_string() + "__refines").into(),
+            decls,
+            attrs,
+            meta,
+        })
     }
 
-    let clones = names.provide_deps(ctx);
-    decls.extend(clones);
-    decls.extend(refn_decls);
-
-    let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
-    let meta = ctx.display_impl_of(def_id);
-    Module { name: module_name(ctx.tcx, def_id).to_string().into(), decls, attrs, meta }
+    res
 }
 
 impl<'tcx> Why3Generator<'tcx> {
@@ -42,14 +38,12 @@ impl<'tcx> Why3Generator<'tcx> {
 
         let mut names = Dependencies::new(self, [def_id]);
 
-        let mut decls: Vec<_> = all_generic_decls_for(&mut names, def_id).collect();
-        let ty_decl =
-            self.assoc_ty_decl(&mut names, def_id, erased_identity_for_item(self.tcx, def_id));
-
-        decls.push(ty_decl);
-
-        let clones = names.provide_deps(self);
-        decls.extend(clones);
+        let mut decls = vec![self.assoc_ty_decl(
+            &mut names,
+            def_id,
+            erased_identity_for_item(self.tcx, def_id),
+        )];
+        decls.extend(names.provide_deps(self));
 
         let attrs = Vec::from_iter(self.span_attr(self.def_span(def_id)));
         let meta = self.display_impl_of(def_id);

@@ -20,7 +20,7 @@ use rustc_span::DUMMY_SP;
 use rustc_type_ir::EarlyBinder;
 use util::{get_builtin, ident_of, PreSignature};
 use why3::{
-    declaration::{Axiom, Contract, LetKind, Signature, Use, ValDecl},
+    declaration::{Axiom, Contract, LetKind, Signature, TyDecl, Use, ValDecl},
     exp::Binder,
 };
 
@@ -321,15 +321,20 @@ impl DepElab for TyElab {
         ctx: &mut Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
     ) -> Vec<why3::declaration::Decl> {
-        assert!(matches!(dep, Dependency::Type(_)));
-
-        let Dependency::Type(ty) = dep else { return Vec::new() };
-        let Some((def_id, subst)) = dep.did() else { return Vec::new() };
+        let Dependency::Type(ty) = dep else { unreachable!() };
 
         let mut names = elab.namer(dep);
         match ty.kind() {
-            TyKind::Alias(_, _) => vec![ctx.assoc_ty_decl(&mut names, def_id, subst)],
+            TyKind::Alias(_, _) => {
+                let (def_id, subst) = dep.did().unwrap();
+                vec![ctx.assoc_ty_decl(&mut names, def_id, subst)]
+            }
+            TyKind::Param(_) => vec![Decl::TyDecl(TyDecl::Opaque {
+                ty_name: names.ty_param(ty).as_ident(),
+                ty_params: vec![],
+            })],
             _ => {
+                let def_id = dep.did().unwrap().0;
                 if let Some(why3_modl) = util::get_builtin(ctx.tcx, def_id) {
                     let qname = QName::from_string(why3_modl.as_str());
                     let Kind::Used(_, _) = names.insert(Dependency::Type(ty)) else {
