@@ -74,7 +74,7 @@ impl<'tcx> Why3Generator<'tcx> {
         def_id: DefId,
         substs: GenericArgsRef<'tcx>,
     ) -> Decl {
-        let ty_name = names.ty(def_id, substs).as_ident().unwrap().clone();
+        let ty_name = names.ty(def_id, substs).as_ident();
         let ty_params = vec![];
 
         let ty_decl = match self.tcx.associated_item(def_id).container {
