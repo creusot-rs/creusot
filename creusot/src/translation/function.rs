@@ -2,6 +2,7 @@ use self::terminator::discriminator_for_switch;
 use super::{
     fmir::{LocalDecls, LocalIdent, RValue, TrivialInv},
     pearlite::{normalize, Term},
+    signature::PreSignature,
     specification::inv_subst,
 };
 use crate::{
@@ -20,7 +21,7 @@ use crate::{
         specification::{contract_of, PreContract},
         traits,
     },
-    util::{self, PreSignature},
+    util::{self},
 };
 use indexmap::IndexMap;
 use rustc_borrowck::borrow_set::BorrowSet;
@@ -32,8 +33,8 @@ use rustc_middle::{
         PlaceRef, TerminatorKind, START_BLOCK,
     },
     ty::{
-        ClosureKind::*, EarlyBinder, GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
-        TypeVisitableExt, UpvarCapture,
+        ClosureKind::*, EarlyBinder, GenericArg, GenericArgs, GenericArgsRef, ParamEnv, Ty, TyCtxt,
+        TyKind, TypeVisitableExt, UpvarCapture,
     },
 };
 use rustc_mir_dataflow::{
@@ -806,19 +807,64 @@ fn closure_contract<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Clos
         unreachable!()
     };
 
+    let span = ctx.def_span(def_id);
+
     let kind = subst.as_closure().kind();
     let mut pre_clos_sig = ctx.sig(def_id).clone();
-
-    let contract = contract_of(ctx, def_id);
-    let mut postcondition: Term<'_> = contract.ensures_conj(ctx.tcx);
-    let mut precondition: Term<'_> = contract.requires_conj(ctx.tcx);
-
     let result_ty = pre_clos_sig.output;
-    pre_clos_sig.output = ctx.types.bool;
 
+    pre_clos_sig.output = ctx.types.bool;
     pre_clos_sig.contract = PreContract::default();
 
     let args: Vec<_> = pre_clos_sig.inputs.drain(1..).collect();
+
+    let contract = contract_of(ctx, def_id);
+
+    let (mut precondition, mut postcondition): (Term<'_>, _) = if contract.is_empty() {
+        let self_ty = ctx.closure_env_ty(
+            ctx.type_of(def_id).instantiate_identity(),
+            kind,
+            ctx.lifetimes.re_erased,
+        );
+        let mut params: Vec<_> =
+            args.iter().cloned().map(|(nm, _, ty)| Term::var(nm, ty)).collect();
+
+        let args = GenericArgs::identity_for_item(ctx.tcx, def_id);
+        let mut ret_params = params.clone();
+        ret_params.insert(0, Term::var(Symbol::intern("self"), self_ty));
+        ret_params.push(Term::var(Symbol::intern("result"), result_ty));
+
+        if self_ty.is_mutable_ptr() {
+            let bare_ty = self_ty.builtin_deref(true).unwrap();
+            params.insert(
+                0,
+                Term {
+                    kind: TermKind::Borrow {
+                        inner: Box::new(Term::var(Symbol::intern("self"), bare_ty)),
+                    },
+                    ty: self_ty,
+                    span: DUMMY_SP,
+                },
+            );
+        } else {
+            params.insert(0, Term::var(Symbol::intern("self"), self_ty));
+        }
+
+        (
+            Term {
+                kind: TermKind::Precondition { item: def_id, args, params },
+                ty: ctx.types.bool,
+                span,
+            },
+            Term {
+                kind: TermKind::Postcondition { item: def_id, args, params: ret_params },
+                ty: ctx.types.bool,
+                span,
+            },
+        )
+    } else {
+        (contract.requires_conj(ctx.tcx), contract.ensures_conj(ctx.tcx))
+    };
 
     if args.len() == 0 {
         pre_clos_sig.inputs.push((Symbol::intern("_"), DUMMY_SP, ctx.types.unit))

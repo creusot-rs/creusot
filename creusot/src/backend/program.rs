@@ -185,11 +185,19 @@ pub fn val<'tcx>(_: &mut Why3Generator<'tcx>, sig: Signature) -> Decl {
         vec![Defn {
             name: "return".into(),
             writes: Vec::new(),
+            attrs: vec![],
+
             params: vec![Param::Term("result".into(), sig.retty.clone().unwrap())],
             body: postcond,
         }],
     );
-    why3::declaration::Decl::Coma(Defn { name: sig.name, writes: Vec::new(), params, body })
+    why3::declaration::Decl::Coma(Defn {
+        name: sig.name,
+        writes: Vec::new(),
+        attrs: vec![],
+        params,
+        body,
+    })
 }
 
 // TODO: move to a more "central" location
@@ -238,7 +246,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         })
         .collect();
 
-    let sig = if body_id.promoted.is_none() {
+    let mut sig = if body_id.promoted.is_none() {
         signature_of(ctx, names, body_id.def_id())
     } else {
         let ret = ret.unwrap();
@@ -255,7 +263,19 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
 
     let mut postcond = Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("result"))]);
 
-    if body_id.promoted.is_none() && !contracts_items::is_ghost_closure(ctx.tcx, body_id.def_id()) {
+    let inferred_closure_spec = ctx.is_closure_like(body_id.def_id())
+        && !ctx.sig(body_id.def_id()).contract.has_user_contract;
+
+    // We remove the barrier around the definition in the following edge cases:
+    let open_body = false
+        // a closure with no contract
+        || inferred_closure_spec
+        // a promoted item
+        || body_id.promoted.is_some()
+        // a ghost closure
+        || contracts_items::is_ghost_closure(ctx.tcx, body_id.def_id());
+
+    if !open_body {
         postcond = Expr::BlackBox(Box::new(postcond));
     }
     postcond = sig.contract.ensures.into_iter().fold(postcond, |acc, ensures| {
@@ -265,9 +285,13 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         )
     });
 
-    if body_id.promoted.is_none() && !contracts_items::is_ghost_closure(ctx.tcx, body_id.def_id()) {
+    if !open_body {
         body = Expr::BlackBox(Box::new(body))
     };
+
+    if inferred_closure_spec {
+        sig.attrs.push(Attribute::Attr("coma:extspec".into()));
+    }
 
     body = Expr::Let(Box::new(body), vars);
 
@@ -277,6 +301,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         vec![Defn {
             name: "return".into(),
             writes: Vec::new(),
+            attrs: vec![],
             params: vec![Param::Term("result".into(), sig.retty.clone().unwrap())],
             body: postcond,
         }],
@@ -299,7 +324,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
             vec![Param::Term("ret".into(), sig.retty.unwrap())],
         )])
         .collect();
-    coma::Defn { name: sig.name, writes: Vec::new(), params, body }
+    coma::Defn { name: sig.name, writes: Vec::new(), attrs: sig.attrs, params, body }
 }
 
 use super::wto::Component;
@@ -757,8 +782,13 @@ fn mk_adt_switch<'tcx, N: Namer<'tcx>>(
             Box::new(coma::Expr::BlackBox(Box::new(tgt))),
         );
 
-        let branch =
-            coma::Defn { name: format!("br{c}").into(), body: filter, params, writes: Vec::new() };
+        let branch = coma::Defn {
+            name: format!("br{c}").into(),
+            body: filter,
+            params,
+            writes: Vec::new(),
+            attrs: vec![],
+        };
         out.push(branch)
     }
     out
@@ -849,6 +879,7 @@ where
             vec![Defn {
                 name: "any_".into(),
                 writes: vec![],
+                attrs: vec![],
                 params: vec![Param::Term(id, ty)],
                 body: Expr::BlackBox(Box::new(tail)),
             }],
