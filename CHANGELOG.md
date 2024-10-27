@@ -9,7 +9,9 @@ Creusot is currently best suited for the verification of code like data-structur
 **Creusot is still very experimental software, you should expect some obscure crashes and missing features.**
 
 <!-- next-header -->
-## [Unreleased] - ReleaseDate 
+
+## [Unreleased] - ReleaseDate
+## [0.3.0] - 2024-10-27 
 
 ### Cargo Creusot
 
