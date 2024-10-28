@@ -23,6 +23,7 @@
 
 use crate::{
     backend::is_trusted_function, contracts_items, ctx::TranslationCtx, specification::contract_of,
+    traits::TraitResolved,
 };
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graph, visit::EdgeRef as _};
@@ -202,6 +203,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
     /// If it wasn't already in the graph, push it onto the `to_visit` stack.
     fn insert_instance(
         &mut self,
+        tcx: TyCtxt<'tcx>,
         caller_def_id: DefId,
         instance: FunctionInstance<'tcx>,
     ) -> graph::NodeIndex {
@@ -218,7 +220,14 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                     }
                 };
                 let node = self.graph.add_node(instance);
-                self.additional_data.insert(node, FunctionData::default());
+                self.additional_data.insert(
+                    node,
+                    FunctionData {
+                        is_pearlite: contracts_items::is_pearlite(tcx, instance.def_id),
+                        has_variant: contracts_items::has_variant_clause(tcx, instance.def_id),
+                        has_loops: None,
+                    },
+                );
                 self.to_visit.push((next_visit, node));
                 entry.insert(node);
                 node
@@ -262,7 +271,11 @@ impl<'tcx> CallGraph<'tcx> {
             } else {
                 let generic_args = GenericArgs::identity_for_item(ctx.tcx, d);
                 let def_id = d.to_def_id();
-                build_call_graph.insert_instance(def_id, FunctionInstance { def_id, generic_args });
+                build_call_graph.insert_instance(
+                    ctx.tcx,
+                    def_id,
+                    FunctionInstance { def_id, generic_args },
+                );
             }
         }
 
@@ -295,11 +308,7 @@ impl<'tcx> CallGraph<'tcx> {
                             &mut visitor,
                             &thir[expr],
                         );
-                        let (visited_calls, pearlite_func, has_loops) = (
-                            visitor.calls,
-                            contracts_items::is_pearlite(tcx, caller_def_id),
-                            visitor.has_loops,
-                        );
+                        let (visited_calls, has_loops) = (visitor.calls, visitor.has_loops);
 
                         for (function_def_id, span, subst) in visited_calls {
                             if !ctx.tcx.is_mir_available(function_def_id) {
@@ -307,20 +316,14 @@ impl<'tcx> CallGraph<'tcx> {
                             }
 
                             let next_node = build_call_graph.insert_instance(
+                                ctx.tcx,
                                 caller_def_id,
                                 FunctionInstance { def_id: function_def_id, generic_args: subst },
                             );
 
                             build_call_graph.graph.add_edge(caller_node, next_node, span);
                         }
-                        build_call_graph.additional_data[&caller_node] = FunctionData {
-                            is_pearlite: pearlite_func,
-                            has_variant: contracts_items::has_variant_clause(
-                                ctx.tcx,
-                                caller_def_id,
-                            ),
-                            has_loops,
-                        };
+                        build_call_graph.additional_data[&caller_node].has_loops = has_loops;
                     }
                     // Function defined in another crate: assume all the functions corresponding to its trait bounds can be called.
                     ToVisit::Extern { caller_def_id, function_def_id, generic_args } => {
@@ -334,6 +337,7 @@ impl<'tcx> CallGraph<'tcx> {
                                 unreachable!()
                             };
                             build_call_graph.insert_instance(
+                                ctx.tcx,
                                 caller_def_id,
                                 FunctionInstance {
                                     def_id: *ghost_def_id,
@@ -345,6 +349,11 @@ impl<'tcx> CallGraph<'tcx> {
                                 let Some(clause) = bound.as_trait_clause() else { continue };
                                 let tcx = ctx.tcx;
                                 let param_env = tcx.param_env(caller_def_id);
+                                let subst = tcx
+                                    .instantiate_bound_regions_with_erased(clause)
+                                    .trait_ref
+                                    .args;
+                                let subst = EarlyBinder::bind(subst).instantiate(tcx, generic_args);
 
                                 for &item_id in tcx
                                     .associated_item_def_ids(clause.skip_binder().trait_ref.def_id)
@@ -352,48 +361,34 @@ impl<'tcx> CallGraph<'tcx> {
                                     if !tcx.def_kind(item_id).is_fn_like() {
                                         continue;
                                     }
-                                    let subst = EarlyBinder::bind(
-                                        tcx.erase_regions(clause.skip_binder().trait_ref.args),
-                                    )
-                                    .instantiate(tcx, generic_args);
-                                    let (def_id, generic_args) =
-                                        match tcx.try_normalize_erasing_regions(param_env, subst) {
-                                            Ok(subst) => {
-                                                match tcx.resolve_instance_raw(
-                                                    param_env.and((item_id, subst)),
-                                                ) {
-                                                    Ok(Some(instance)) => {
-                                                        (instance.def.def_id(), instance.args)
-                                                    }
-                                                    _ => (item_id, subst),
-                                                }
-                                            }
-                                            Err(_) => (item_id, subst),
-                                        };
 
-                                    // Else, we could not find a concrete function to call,
-                                    // so we don't consider this to be an actual call: we cannot resolve it to any concrete function yet.
-                                    if def_id != item_id {
-                                        let span = ctx.tcx.def_span(function_def_id);
-                                        let next_node = build_call_graph.insert_instance(
-                                            function_def_id,
-                                            FunctionInstance { def_id, generic_args },
-                                        );
+                                    let TraitResolved::Instance(called_id, called_generic_args) =
+                                        TraitResolved::resolve_item(tcx, param_env, item_id, subst)
+                                    else {
+                                        // We could not find a concrete function to call,
+                                        // so we don't consider this to be an actual call: we cannot resolve it to any concrete function yet.
+                                        continue;
+                                    };
 
-                                        build_call_graph.graph.add_edge(
-                                            caller_node,
-                                            next_node,
-                                            span,
-                                        );
+                                    let span = ctx.tcx.def_span(function_def_id);
+                                    let next_node = build_call_graph.insert_instance(
+                                        ctx.tcx,
+                                        function_def_id,
+                                        FunctionInstance {
+                                            def_id: called_id,
+                                            generic_args: called_generic_args,
+                                        },
+                                    );
 
-                                        build_call_graph.additional_data[&next_node].has_variant =
-                                            contracts_items::has_variant_clause(ctx.tcx, item_id);
-                                    }
+                                    build_call_graph.graph.add_edge(caller_node, next_node, span);
+
+                                    build_call_graph.additional_data[&next_node].has_variant =
+                                        contracts_items::has_variant_clause(ctx.tcx, item_id);
                                 }
                             }
                         }
-                        build_call_graph.additional_data[&caller_node] =
-                            FunctionData { is_pearlite: false, has_variant: true, has_loops: None };
+                        // build_call_graph.additional_data[&caller_node] =
+                        // FunctionData { is_pearlite: false, has_variant: true, has_loops: None };
                     }
                 }
             }
@@ -430,20 +425,15 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tc
                 if let &FnDef(def_id, subst) = self.thir[fun].ty.kind() {
                     let subst = EarlyBinder::bind(self.tcx.erase_regions(subst))
                         .instantiate(self.tcx, self.generic_args);
-                    let (def_id, args) = match self
-                        .tcx
-                        .try_normalize_erasing_regions(self.param_env, subst)
-                    {
-                        Ok(subst) => {
-                            match self.tcx.resolve_instance_raw(self.param_env.and((def_id, subst)))
-                            {
-                                Ok(Some(instance)) => (instance.def.def_id(), instance.args),
-                                _ => (def_id, subst),
-                            }
+                    let (def_id, subst) = if TraitResolved::is_trait_item(self.tcx, def_id) {
+                        match TraitResolved::resolve_item(self.tcx, self.param_env, def_id, subst) {
+                            TraitResolved::Instance(id, subst) => (id, subst),
+                            _ => (def_id, subst),
                         }
-                        Err(_) => (def_id, subst),
+                    } else {
+                        (def_id, subst)
                     };
-                    self.calls.insert((def_id, fn_span, args));
+                    self.calls.insert((def_id, fn_span, subst));
                 }
             }
             thir::ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
