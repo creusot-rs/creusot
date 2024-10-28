@@ -243,8 +243,8 @@ fn resolve_item<'tcx>(
     param_env: ParamEnv<'tcx>,
 ) -> Dependency<'tcx> {
     if tcx.trait_of_item(item).is_some()
-        && let traits::TraitResol::Instance(did, subst) =
-            traits::resolve_assoc_item_opt(tcx, param_env, item, substs)
+        && let traits::TraitResolved::Instance(did, subst) =
+            traits::TraitResolved::resolve_item(tcx, param_env, item, substs)
     {
         Dependency::new(tcx, (did, subst))
     } else {

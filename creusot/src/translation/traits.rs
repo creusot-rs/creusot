@@ -204,91 +204,108 @@ pub(crate) fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item
         .filter(move |item| !is_spec(tcx, item.def_id))
 }
 
-pub enum TraitResol<'tcx> {
-    Instance(DefId, GenericArgsRef<'tcx>), // We know the instance
-    UnknownFound,                          // We don't know the instance, but it exists
-    UnknownNotFound,                       // We don't know if there is an instance
-    NoInstance,                            // We know there is no instance
+/// The result of [`Self::resolve_assoc_item_opt`]: given the id of a trait item and some
+/// type parameters, we might find an actual implementation of the item.
+pub(crate) enum TraitResolved<'tcx> {
+    /// An instance (like `impl Clone for i32 { ... }`) exists for the given type parameters.
+    Instance(DefId, GenericArgsRef<'tcx>),
+    /// A known instance exists, but we don't know which one.
+    UnknownFound,
+    /// We don't know if an instance exists.
+    UnknownNotFound,
+    /// We know that no instance exists.
+    ///
+    /// For example, in `fn<T> f(x: T) { let _ = x.clone() }`, we  don't have an
+    /// instance for `T::clone` until we know more about `T`.
+    NoInstance,
 }
 
-impl<'tcx> TraitResol<'tcx> {
+impl<'tcx> TraitResolved<'tcx> {
+    /// Try to resolve a trait item to the item in an `impl` block, given some typing context.
+    ///
+    /// # Parameters
+    /// - `tcx`: The global context
+    /// - `param_env`: The scope of type variables, see <https://rustc-dev-guide.rust-lang.org/param_env/param_env_summary.html>.
+    /// - `trait_item_def_id`: The trait item we are trying to resolve.
+    /// - `substs`: The type parameters we are instantiating the trait item with. This 
+    ///   can include the `Self` parameter.
+    pub(crate) fn resolve_item(
+        tcx: TyCtxt<'tcx>,
+        param_env: ParamEnv<'tcx>,
+        trait_item_def_id: DefId,
+        substs: GenericArgsRef<'tcx>,
+    ) -> Self {
+        trace!("TraitResolved::resolve {:?} {:?}", trait_item_def_id, substs);
+        let assoc = tcx.opt_associated_item(trait_item_def_id).unwrap();
+
+        assert!(assoc.container == AssocItemContainer::TraitContainer);
+
+        let trait_ref =
+            TraitRef::from_method(tcx, tcx.trait_of_item(trait_item_def_id).unwrap(), substs);
+        let trait_ref = tcx.normalize_erasing_regions(param_env, trait_ref);
+
+        let source = if let Ok(source) = tcx.codegen_select_candidate((param_env, trait_ref)) {
+            source
+        } else {
+            if still_specializable(tcx, param_env, trait_item_def_id, trait_ref, None) {
+                return TraitResolved::UnknownNotFound;
+            } else {
+                return TraitResolved::NoInstance;
+            }
+        };
+        trace!("resolve_assoc_item_opt {source:?}",);
+
+        match source {
+            ImplSource::UserDefined(impl_data) => {
+                if still_specializable(tcx, param_env, trait_item_def_id, trait_ref, Some(source)) {
+                    return TraitResolved::UnknownFound;
+                }
+
+                let trait_def = tcx.trait_def(trait_ref.def_id);
+                // Find the id of the actual associated method we will be running
+                let leaf_def = trait_def
+                    .ancestors(tcx, impl_data.impl_def_id)
+                    .unwrap()
+                    .leaf_def(tcx, assoc.def_id)
+                    .unwrap_or_else(|| {
+                        panic!("{:?} not found in {:?}", assoc, impl_data.impl_def_id);
+                    });
+
+                // Translate the original substitution into one on the selected impl method
+                let infcx = tcx.infer_ctxt().build();
+
+                let substs = substs.rebase_onto(tcx, trait_ref.def_id, impl_data.args);
+                let substs = rustc_trait_selection::traits::translate_args(
+                    &infcx,
+                    param_env,
+                    impl_data.impl_def_id,
+                    substs,
+                    leaf_def.defining_node,
+                );
+                let leaf_substs = infcx.tcx.erase_regions(substs);
+
+                TraitResolved::Instance(leaf_def.item.def_id, leaf_substs)
+            }
+            ImplSource::Param(_) => TraitResolved::UnknownFound,
+            ImplSource::Builtin(_, _) => match *substs.type_at(0).kind() {
+                rustc_middle::ty::Closure(closure_def_id, closure_substs) => {
+                    TraitResolved::Instance(closure_def_id, closure_substs)
+                }
+                _ => unimplemented!(),
+            },
+        }
+    }
+
     pub fn to_opt(
         self,
         did: DefId,
         substs: GenericArgsRef<'tcx>,
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
         match self {
-            TraitResol::Instance(did, substs) => Some((did, substs)),
-            TraitResol::UnknownFound => Some((did, substs)),
+            TraitResolved::Instance(did, substs) => Some((did, substs)),
+            TraitResolved::UnknownFound => Some((did, substs)),
             _ => None,
         }
-    }
-}
-
-pub(crate) fn resolve_assoc_item_opt<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    param_env: ParamEnv<'tcx>,
-    trait_item_def_id: DefId,
-    substs: GenericArgsRef<'tcx>,
-) -> TraitResol<'tcx> {
-    trace!("resolve_assoc_item_opt {:?} {:?}", trait_item_def_id, substs);
-    let assoc = tcx.opt_associated_item(trait_item_def_id).unwrap();
-
-    assert!(assoc.container == AssocItemContainer::TraitContainer);
-
-    let trait_ref =
-        TraitRef::from_method(tcx, tcx.trait_of_item(trait_item_def_id).unwrap(), substs);
-    let trait_ref = tcx.normalize_erasing_regions(param_env, trait_ref);
-
-    let source = if let Ok(source) = tcx.codegen_select_candidate((param_env, trait_ref)) {
-        source
-    } else {
-        if still_specializable(tcx, param_env, trait_item_def_id, trait_ref, None) {
-            return TraitResol::UnknownNotFound;
-        } else {
-            return TraitResol::NoInstance;
-        }
-    };
-    trace!("resolve_assoc_item_opt {source:?}",);
-
-    match source {
-        ImplSource::UserDefined(impl_data) => {
-            if still_specializable(tcx, param_env, trait_item_def_id, trait_ref, Some(source)) {
-                return TraitResol::UnknownFound;
-            }
-
-            let trait_def = tcx.trait_def(trait_ref.def_id);
-            // Find the id of the actual associated method we will be running
-            let leaf_def = trait_def
-                .ancestors(tcx, impl_data.impl_def_id)
-                .unwrap()
-                .leaf_def(tcx, assoc.def_id)
-                .unwrap_or_else(|| {
-                    panic!("{:?} not found in {:?}", assoc, impl_data.impl_def_id);
-                });
-
-            // Translate the original substitution into one on the selected impl method
-            let infcx = tcx.infer_ctxt().build();
-
-            let substs = substs.rebase_onto(tcx, trait_ref.def_id, impl_data.args);
-            let substs = rustc_trait_selection::traits::translate_args(
-                &infcx,
-                param_env,
-                impl_data.impl_def_id,
-                substs,
-                leaf_def.defining_node,
-            );
-            let leaf_substs = infcx.tcx.erase_regions(substs);
-
-            TraitResol::Instance(leaf_def.item.def_id, leaf_substs)
-        }
-        ImplSource::Param(_) => TraitResol::UnknownFound,
-        ImplSource::Builtin(_, _) => match *substs.type_at(0).kind() {
-            rustc_middle::ty::Closure(closure_def_id, closure_substs) => {
-                TraitResol::Instance(closure_def_id, closure_substs)
-            }
-            _ => unimplemented!(),
-        },
     }
 }
 

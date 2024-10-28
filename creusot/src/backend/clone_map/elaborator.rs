@@ -201,11 +201,11 @@ impl DepElab for LogicElab {
         let trait_resol = ctx
             .tcx
             .trait_of_item(def_id)
-            .map(|_| traits::resolve_assoc_item_opt(ctx.tcx, elab.param_env, def_id, subst));
+            .map(|_| traits::TraitResolved::resolve_item(ctx.tcx, elab.param_env, def_id, subst));
 
         let is_opaque = matches!(
             trait_resol,
-            Some(traits::TraitResol::UnknownFound | traits::TraitResol::UnknownNotFound)
+            Some(traits::TraitResolved::UnknownFound | traits::TraitResolved::UnknownNotFound)
         ) || elab
             .self_key
             .did()
@@ -295,16 +295,16 @@ pub fn resolve_term<'tcx>(
         // Closures have an "hacked" instance of Resolve
         body = Term::call(ctx.tcx, trait_meth_id, subst, vec![arg]);
     } else {
-        match traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, subst) {
-            traits::TraitResol::Instance(meth_did, meth_substs) => {
+        match traits::TraitResolved::resolve_item(ctx.tcx, param_env, trait_meth_id, subst) {
+            traits::TraitResolved::Instance(meth_did, meth_substs) => {
                 // We know the instance => body points to it
                 body = Term::call(ctx.tcx, meth_did, meth_substs, vec![arg]);
             }
-            traits::TraitResol::UnknownFound | traits::TraitResol::UnknownNotFound => {
+            traits::TraitResolved::UnknownFound | traits::TraitResolved::UnknownNotFound => {
                 // We don't know the instance => body is opaque
                 return None;
             }
-            traits::TraitResol::NoInstance => {
+            traits::TraitResolved::NoInstance => {
                 // We know there is no instance => body is true
                 body = Term::mk_true(ctx.tcx);
             }
