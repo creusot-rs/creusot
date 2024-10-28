@@ -3,12 +3,12 @@ extern crate creusot_contracts;
 use creusot_contracts::{logic::Seq, *};
 
 pub struct Vec<T>(pub std::vec::Vec<T>);
-impl<T> ShallowModel for Vec<T> {
-    type ShallowModelTy = Seq<T>;
+impl<T> View for Vec<T> {
+    type ViewTy = Seq<T>;
     #[open]
     #[logic]
     #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         absurd
     }
 }

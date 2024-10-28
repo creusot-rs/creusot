@@ -1,23 +1,19 @@
 use crate::{
-    backend::all_generic_decls_for,
-    ctx::*,
-    translation::pearlite::Term,
-    util::{self, get_builtin},
+    backend::all_generic_decls_for, contracts_items::get_builtin, ctx::*,
+    translated_item::FileModule, translation::pearlite::Term, util,
 };
 use rustc_hir::def_id::DefId;
 use why3::{
     declaration::*,
     exp::{super_visit_mut, BinOp, Binder, Exp, ExpMutVisitor, Trigger},
-    Ident, QName,
+    Ident,
 };
 
 mod vcgen;
 
 use self::vcgen::vc;
 
-use super::{
-    is_trusted_function, signature::signature_of, term::lower_pure, CloneSummary, Why3Generator,
-};
+use super::{is_trusted_function, signature::signature_of, term::lower_pure, Why3Generator};
 
 pub(crate) fn binders_to_args(
     ctx: &mut Why3Generator,
@@ -51,128 +47,34 @@ pub(crate) fn binders_to_args(
 pub(crate) fn translate_logic_or_predicate<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
-) -> (Option<Module>, CloneSummary<'tcx>) {
-    let deps = if get_builtin(ctx.tcx, def_id).is_some() {
-        builtin_body(ctx, def_id).1
-    } else {
-        body_deps(ctx, def_id)
-    };
-
-    let proof_modl = if def_id.is_local() { proof_module(ctx, def_id) } else { None };
-    (proof_modl, deps)
-}
-
-fn builtin_body<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
-    def_id: DefId,
-) -> (Module, CloneSummary<'tcx>) {
-    let mut names = Dependencies::new(ctx.tcx, [def_id]);
-    let mut sig = signature_of(ctx, &mut names, def_id);
-    let (val_args, val_binders) = binders_to_args(ctx, sig.args);
-    sig.args = val_binders;
+) -> Option<FileModule> {
+    let mut names = Dependencies::new(ctx, [def_id]);
+    let sig = signature_of(ctx, &mut names, def_id);
 
     // Check that we don't have both `builtins` and a contract at the same time (which are contradictory)
-    if !sig.contract.is_empty() {
+    if get_builtin(ctx.tcx, def_id).is_some() && !sig.contract.is_empty() {
         ctx.crash_and_error(
             ctx.def_span(def_id),
             "cannot specify both `creusot::builtins` and a contract on the same definition",
         );
     }
 
-    // Program symbol (for proofs)
-    let mut val_sig = sig.clone();
-
-    let val_args: Vec<_> = val_args.into_iter().map(|id| Exp::var(id)).collect();
-    val_sig.contract.ensures =
-        vec![Exp::var("result").eq(Exp::var(val_sig.name.clone()).app(val_args.clone()))];
-
-    if util::is_predicate(ctx.tcx, def_id) {
-        sig.retty = None;
-    }
-
-    let builtin = QName::from_string(get_builtin(ctx.tcx, def_id).unwrap().as_str()).unwrap();
-
-    if !builtin.module.is_empty() {
-        // names.import_builtin_module(builtin.clone().module_qname());
-    }
-
-    let mut decls: Vec<_> = all_generic_decls_for(ctx.tcx, def_id).collect();
-    let (clones, summary) = names.provide_deps(ctx, GraphDepth::Shallow);
-
-    decls.extend(clones);
-    if !builtin.module.is_empty() {
-        let body = Exp::qvar(builtin.without_search_path()).app(val_args);
-
-        if util::is_predicate(ctx.tcx, def_id) {
-            decls.push(Decl::PredDecl(Predicate { sig, body }));
-        } else {
-            decls.push(Decl::LogicDefn(Logic { sig, body }));
-        }
-    }
-
-    decls.push(Decl::ValDecl(ValDecl { ghost: false, val: true, kind: None, sig: val_sig }));
-
-    let name = Ident::build(&module_name(ctx.tcx, def_id).to_string());
-
-    (Module { name, decls }, summary)
-}
-
-// Create the program symbol with the same name that has a contract agreeing with the logical symbol.
-pub(crate) fn val_decl<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
-    def_id: DefId,
-) -> Decl {
-    let mut sig = signature_of(ctx, names, def_id);
-    sig.contract.variant = Vec::new();
-
-    let (val_args, val_binders) = binders_to_args(ctx, sig.args);
-    let val_args: Vec<_> = val_args.into_iter().map(|id| Exp::var(id)).collect();
-
-    sig.contract
-        .ensures
-        // = vec!(Exp::var("result".into()).eq(Exp::var(sig.name.clone()).app(val_args)));
-        .push(Exp::var("result").eq(Exp::var(sig.name.clone()).app(val_args)));
-    sig.args = val_binders;
-    Decl::ValDecl(ValDecl { sig, ghost: false, val: true, kind: None })
-}
-
-fn body_decls<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
-    def_id: DefId,
-) -> Vec<Decl> {
-    let mut decls: Vec<_> = Vec::new();
-
-    // let (mut sig, val_sig) = sigs(ctx, sig);
-    if is_trusted_function(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
-        let mut sig = signature_of(ctx, names, def_id);
-        sig.contract.variant = Vec::new();
-
-        let val = util::item_type(ctx.tcx, def_id).val(sig);
-        decls.push(Decl::ValDecl(val));
-        decls.push(val_decl(ctx, names, def_id));
-        return decls;
-    }
-
-    let term = ctx.term(def_id).unwrap().clone();
-
-    let sig = signature_of(ctx, names, def_id);
-
-    lower_logical_defn(ctx, names, sig, util::item_type(ctx.tcx, def_id).let_kind(), term)
+    let proof_modl = if def_id.is_local() { proof_module(ctx, def_id) } else { None };
+    proof_modl
 }
 
 pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,
-    sig: Signature,
+    mut sig: Signature,
     kind: Option<LetKind>,
     body: Term<'tcx>,
 ) -> Vec<Decl> {
     let has_axioms = !sig.contract.ensures.is_empty();
 
     let sig_contract = sig.clone();
-    let (mut sig, _) = sigs(ctx, sig);
+
+    sig.contract = Default::default();
     if let Some(LetKind::Predicate) = kind {
         sig.retty = None;
     }
@@ -227,6 +129,11 @@ pub(crate) fn lower_pure_defn<'tcx, N: Namer<'tcx>>(
         let decl = match kind {
             Some(LetKind::Function) => Decl::LogicDefn(Logic { sig, body }),
             Some(LetKind::Predicate) => Decl::PredDecl(Predicate { sig, body }),
+            Some(LetKind::Constant) => Decl::ConstantDecl(Constant {
+                name: sig.name,
+                type_: sig.retty.unwrap(),
+                body: Some(body),
+            }),
             _ => unreachable!("{kind:?}"),
         };
 
@@ -246,42 +153,13 @@ pub(crate) fn lower_pure_defn<'tcx, N: Namer<'tcx>>(
     }
 }
 
-pub fn sigs<'tcx>(ctx: &mut Why3Generator<'tcx>, mut sig: Signature) -> (Signature, Signature) {
-    let mut contract = std::mem::take(&mut sig.contract);
-    let mut prog_sig = sig.clone();
-
-    contract.variant = Vec::new();
-    prog_sig.contract = contract;
-    let (val_args, val_binders) = binders_to_args(ctx, prog_sig.args);
-    let val_args: Vec<_> = val_args.into_iter().map(|id| Exp::var(id)).collect();
-
-    prog_sig.args = val_binders;
-
-    prog_sig.contract.ensures =
-        vec![Exp::var("result").eq(Exp::var(sig.name.clone()).app(val_args))];
-
-    (sig, prog_sig)
-}
-
-fn body_deps<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> CloneSummary<'tcx> {
-    let mut names = Dependencies::new(ctx.tcx, [def_id]);
-
-    let _ = body_decls(ctx, &mut names, def_id);
-
-    let (_, summary) = names.provide_deps(ctx, GraphDepth::Shallow);
-
-    summary
-}
-
 fn subst_qname(body: &mut Exp, name: &Ident, lim_name: &Ident) {
     struct QNameSubst<'a>(&'a Ident, &'a Ident);
 
     impl<'a> ExpMutVisitor for QNameSubst<'a> {
         fn visit_mut(&mut self, exp: &mut Exp) {
             match exp {
-                Exp::QVar(qname) if qname.module.is_empty() && &qname.name == self.0 => {
-                    *exp = Exp::var(self.1.clone())
-                }
+                Exp::QVar(qname) if qname.is_ident(self.0) => *exp = Exp::var(self.1.clone()),
                 _ => super_visit_mut(self, exp),
             }
         }
@@ -320,17 +198,17 @@ fn limited_function_encode(
     decls.push(Decl::Axiom(definition_axiom(&sig, lim_call, "def_lim")));
 }
 
-fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
+fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<FileModule> {
     if is_trusted_function(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
         return None;
     }
 
-    let mut names = Dependencies::new(ctx.tcx, [def_id]);
+    let mut names = Dependencies::new(ctx, [def_id]);
 
     let mut sig = signature_of(ctx, &mut names, def_id);
 
     if sig.contract.is_empty() {
-        let _ = names.provide_deps(ctx, GraphDepth::Deep);
+        let _ = names.provide_deps(ctx);
         return None;
     }
     let term = ctx.term(def_id).unwrap().clone();
@@ -377,12 +255,15 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
 
-    let (clones, _) = names.provide_deps(ctx, GraphDepth::Deep);
+    let clones = names.provide_deps(ctx);
     decls.extend(clones);
     decls.extend(body_decls);
 
-    let name = impl_name(ctx, def_id);
-    Some(Module { name, decls })
+    let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
+    let meta = ctx.display_impl_of(def_id);
+    let path = ctx.module_path(def_id, util::NS::M);
+    let name = path.why3_ident();
+    Some(FileModule { path, modl: Module { name, decls, attrs, meta } })
 }
 
 pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
@@ -444,8 +325,4 @@ fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
 
     let name = format!("{}_{suffix}", &*sig.name);
     Axiom { name: name.into(), rewrite: false, axiom }
-}
-
-pub(crate) fn impl_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
-    format!("{}__Impl", module_name(ctx.tcx, def_id)).into()
 }

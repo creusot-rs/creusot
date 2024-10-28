@@ -1,4 +1,4 @@
-use crate::{invariant::*, std::iter::Skip, *};
+use crate::{invariant::*, resolve::structural_resolve, std::iter::Skip, *};
 
 pub trait SkipExt<I> {
     #[logic]
@@ -26,15 +26,21 @@ impl<I> SkipExt<I> for Skip<I> {
     }
 }
 
-#[trusted]
 impl<I> Resolve for Skip<I> {
     #[open]
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
-            self.iter().resolve()
+            resolve(&self.iter())
         }
     }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 impl<I: Iterator> Iterator for Skip<I> {
@@ -46,7 +52,7 @@ impl<I: Iterator> Iterator for Skip<I> {
             exists<s: Seq<Self::Item>, i: &mut I> inv(s) && inv(i)
                 && s.len() <= (*self).n()
                 && self.iter().produces(s, *i)
-                && (forall<i: Int> 0 <= i && i < s.len() ==> s[i].resolve())
+                && (forall<i: Int> 0 <= i && i < s.len() ==> resolve(&s[i]))
                 && i.completed()
                 && ^i == (^self).iter()
         }
@@ -61,7 +67,7 @@ impl<I: Iterator> Iterator for Skip<I> {
             exists<s: Seq<Self::Item>> inv(s)
                 && s.len() == self.n()
                 && self.iter().produces(s.concat(visited), o.iter())
-                && forall<i: Int> 0 <= i && i < s.len() ==> s[i].resolve()
+                && forall<i: Int> 0 <= i && i < s.len() ==> resolve(&s[i])
         }
     }
 
@@ -71,6 +77,8 @@ impl<I: Iterator> Iterator for Skip<I> {
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
+    // FIXME: remove `trusted`
+    #[trusted]
     #[law]
     #[open(self)]
     #[requires(inv(a))]

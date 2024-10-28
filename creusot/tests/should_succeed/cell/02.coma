@@ -1,54 +1,12 @@
-
-module T_core__cell__UnsafeCell
-  type t_UnsafeCell 't =
-    | C_UnsafeCell 't
-  
-  function any_l (_ : 'b) : 'a
-  
-  let rec t_UnsafeCell < 't > (input:t_UnsafeCell 't) (ret  (value:'t))= any
-    [ good (value:'t)-> {C_UnsafeCell value = input} (! ret {value})
-    | bad (value:'t)-> {C_UnsafeCell value <> input} {false} any ]
-    
-end
-module T_core__cell__Cell
-  use T_core__cell__UnsafeCell as UnsafeCell'0
-  
-  type t_Cell 't =
-    | C_Cell (UnsafeCell'0.t_UnsafeCell 't)
-  
-  function any_l (_ : 'b) : 'a
-  
-  let rec t_Cell < 't > (input:t_Cell 't) (ret  (value:UnsafeCell'0.t_UnsafeCell 't))= any
-    [ good (value:UnsafeCell'0.t_UnsafeCell 't)-> {C_Cell value = input} (! ret {value})
-    | bad (value:UnsafeCell'0.t_UnsafeCell 't)-> {C_Cell value <> input} {false} any ]
-    
-end
-module T_02__Cell
-  use T_core__cell__Cell as Cell'0
-  
-  type t_Cell 't 'i =
-    | C_Cell (Cell'0.t_Cell 't) 'i
-  
-  function any_l (_ : 'b) : 'a
-  
-  let rec t_Cell < 't > < 'i > (input:t_Cell 't 'i) (ret  (inner:Cell'0.t_Cell 't) (ghost_inv:'i))= any
-    [ good (inner:Cell'0.t_Cell 't) (ghost_inv:'i)-> {C_Cell inner ghost_inv = input} (! ret {inner} {ghost_inv})
-    | bad (inner:Cell'0.t_Cell 't) (ghost_inv:'i)-> {C_Cell inner ghost_inv <> input} {false} any ]
-    
-  
-  function t_Cell__ghost_inv (self : t_Cell 't 'i) : 'i =
-    match self with
-      | C_Cell _ a -> a
-      end
-end
-module M_02__fib__Impl
-  let%span s020 = "../02.rs" 31 10 31 11
+module M_02__fib [#"02.rs" 32 0 32 25]
+  let%span s020 = "02.rs" 31 10 31 11
+  let%span s021 = "02.rs" 29 0 29 8
   
   use prelude.prelude.Int
   
   constant i  : int
   
-  function fib [#"../02.rs" 32 0 32 25] (i : int) : int
+  function fib [#"02.rs" 32 0 32 25] (i : int) : int
   
   goal vc_fib : if i <= 0 then
     true
@@ -60,29 +18,26 @@ module M_02__fib__Impl
     
   
 end
-module M_02__lemma_fib_bound__Impl
-  let%span s020 = "../02.rs" 44 11 44 17
-  
-  let%span s021 = "../02.rs" 45 10 45 28
-  
-  let%span s022 = "../02.rs" 46 10 46 11
-  
-  let%span span3 = "../02.rs" 31 10 31 11
-  
-  let%span span4 = "../02.rs" 29 0 29 8
+module M_02__lemma_fib_bound [#"02.rs" 47 0 47 30]
+  let%span s020 = "02.rs" 44 11 44 17
+  let%span s021 = "02.rs" 45 10 45 28
+  let%span s022 = "02.rs" 46 10 46 11
+  let%span s023 = "02.rs" 31 10 31 11
+  let%span s024 = "02.rs" 29 0 29 8
+  let%span s025 = "02.rs" 43 0 43 8
   
   use int.Power
   
   use prelude.prelude.Int
   
-  function fib'0 [#"../02.rs" 32 0 32 25] (i : int) : int
+  function fib'0 [#"02.rs" 32 0 32 25] (i : int) : int
   
   axiom fib'0_def : forall i : int . fib'0 i
-  = ([%#span4] if i <= 0 then 0 else if i = 1 then 1 else fib'0 (i - 1) + fib'0 (i - 2))
+  = ([%#s024] if i <= 0 then 0 else if i = 1 then 1 else fib'0 (i - 1) + fib'0 (i - 2))
   
   constant i  : int
   
-  function lemma_fib_bound [#"../02.rs" 47 0 47 30] (i : int) : ()
+  function lemma_fib_bound [#"02.rs" 47 0 47 30] (i : int) : ()
   
   goal vc_lemma_fib_bound : ([%#s020] 0 <= i)
    -> (if i = 0 then
@@ -99,7 +54,7 @@ module M_02__lemma_fib_bound__Impl
     
   )
 end
-module T_02__Fib
+module T_02__Fib [#"02.rs" 64 0 64 14]
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
@@ -107,11 +62,7 @@ module T_02__Fib
   type t_Fib  =
     | C_Fib usize
   
-  function any_l (_ : 'b) : 'a
-  
-  let rec t_Fib (input:t_Fib) (ret  (ix:usize))= any
-    [ good (ix:usize)-> {C_Fib ix = input} (! ret {ix}) | bad (ix:usize)-> {C_Fib ix <> input} {false} any ]
-    
+  let rec t_Fib (input:t_Fib) (ret  (ix:usize))= any [ good (ix:usize)-> {C_Fib ix = input} (! ret {ix}) ] 
   
   function t_Fib__ix (self : t_Fib) : usize =
     match self with
@@ -123,15 +74,13 @@ module T_core__option__Option
     | C_None
     | C_Some 't
   
-  function any_l (_ : 'b) : 'a
-  
   let rec v_None < 't > (input:t_Option 't) (ret  )= any
-    [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ]
+    [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} (! {false} any) ]
     
   
   let rec v_Some < 't > (input:t_Option 't) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
-    | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
+    | bad -> {forall field_0 : 't [C_Some field_0 : t_Option 't] . C_Some field_0 <> input} (! {false} any) ]
     
 end
 module T_core__ptr__non_null__NonNull
@@ -140,22 +89,15 @@ module T_core__ptr__non_null__NonNull
   type t_NonNull 't =
     | C_NonNull opaque_ptr
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
-    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
-    | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
+    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer}) ]
     
 end
 module T_core__marker__PhantomData
   type t_PhantomData 't =
     | C_PhantomData
   
-  function any_l (_ : 'b) : 'a
-  
-  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any
-    [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
-    
+  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any [ good -> {C_PhantomData  = input} (! ret) ] 
 end
 module T_core__ptr__unique__Unique
   use T_core__marker__PhantomData as PhantomData'0
@@ -165,16 +107,10 @@ module T_core__ptr__unique__Unique
   type t_Unique 't =
     | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
     [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       = input}
-      (! ret {pointer} {_marker})
-    | bad (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
-      <> input}
-      {false}
-      any ]
+      (! ret {pointer} {_marker}) ]
     
 end
 module T_alloc__raw_vec__Cap
@@ -185,11 +121,8 @@ module T_alloc__raw_vec__Cap
   type t_Cap  =
     | C_Cap usize
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
-    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
-    | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
+    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0}) ]
     
 end
 module T_alloc__raw_vec__RawVec
@@ -200,12 +133,9 @@ module T_alloc__raw_vec__RawVec
   type t_RawVec 't 'a =
     | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
     [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
-      (! ret {ptr} {cap} {alloc})
-    | bad (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
+      (! ret {ptr} {cap} {alloc}) ]
     
 end
 module T_alloc__vec__Vec
@@ -218,218 +148,139 @@ module T_alloc__vec__Vec
   type t_Vec 't 'a =
     | C_Vec (RawVec'0.t_RawVec 't 'a) usize
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
-    | bad (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
     
+end
+module T_core__cell__UnsafeCell
+  type t_UnsafeCell 't =
+    | C_UnsafeCell 't
+  
+  let rec t_UnsafeCell < 't > (input:t_UnsafeCell 't) (ret  (value:'t))= any
+    [ good (value:'t)-> {C_UnsafeCell value = input} (! ret {value}) ]
+    
+end
+module T_core__cell__Cell
+  use T_core__cell__UnsafeCell as UnsafeCell'0
+  
+  type t_Cell 't =
+    | C_Cell (UnsafeCell'0.t_UnsafeCell 't)
+  
+  let rec t_Cell < 't > (input:t_Cell 't) (ret  (value:UnsafeCell'0.t_UnsafeCell 't))= any
+    [ good (value:UnsafeCell'0.t_UnsafeCell 't)-> {C_Cell value = input} (! ret {value}) ]
+    
+end
+module T_02__Cell [#"02.rs" 9 0 9 21]
+  use T_core__cell__Cell as Cell'0
+  
+  type t_Cell 't 'i =
+    | C_Cell (Cell'0.t_Cell 't) 'i
+  
+  let rec t_Cell < 't > < 'i > (input:t_Cell 't 'i) (ret  (inner:Cell'0.t_Cell 't) (ghost_inv:'i))= any
+    [ good (inner:Cell'0.t_Cell 't) (ghost_inv:'i)-> {C_Cell inner ghost_inv = input} (! ret {inner} {ghost_inv}) ]
+    
+  
+  function t_Cell__ghost_inv (self : t_Cell 't 'i) : 'i =
+    match self with
+      | C_Cell _ a -> a
+      end
 end
 module T_alloc__alloc__Global
   type t_Global  =
     | C_Global
   
-  function any_l (_ : 'b) : 'a
-  
-  let rec t_Global (input:t_Global) (ret  )= any
-    [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
-    
+  let rec t_Global (input:t_Global) (ret  )= any [ good -> {C_Global  = input} (! ret) ] 
 end
-module T_alloc__boxed__Box
-  use T_core__ptr__unique__Unique as Unique'0
-  
-  type t_Box 't 'a =
-    | C_Box (Unique'0.t_Unique 't) 'a
-  
-  function any_l (_ : 'b) : 'a
-end
-module M_02__fib_memo
-  let%span s020 = "../02.rs" 99 32 99 33
-  
-  let%span s021 = "../02.rs" 100 16 100 17
-  
-  let%span s022 = "../02.rs" 101 27 101 28
-  
-  let%span s023 = "../02.rs" 102 16 102 17
-  
-  let%span s024 = "../02.rs" 104 16 104 43
-  
-  let%span s025 = "../02.rs" 105 16 105 45
-  
-  let%span s026 = "../02.rs" 106 34 106 35
-  
-  let%span s027 = "../02.rs" 106 57 106 58
-  
-  let%span s028 = "../02.rs" 108 28 108 45
-  
-  let%span s029 = "../02.rs" 91 11 91 25
-  
-  let%span s0210 = "../02.rs" 92 11 92 26
-  
-  let%span s0211 = "../02.rs" 94 11 94 19
-  
-  let%span s0212 = "../02.rs" 93 10 93 28
-  
-  let%span span13 = "../../../../../creusot-contracts/src/std/boxed.rs" 27 8 27 18
-  
-  let%span span14 = "../../../../../creusot-contracts/src/logic/seq.rs" 197 8 197 97
-  
-  let%span span15 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
-  
-  let%span span16 = "" 0 0 0 0
-  
-  let%span span17 = "../../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
-  
-  let%span span18 = "../../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
-  
-  let%span span19 = "../../../../../creusot-contracts/src/invariant.rs" 26 8 26 18
-  
-  let%span span20 = "../../../../../creusot-contracts/src/model.rs" 90 8 90 31
-  
-  let%span span21 = "../../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
-  
-  let%span span22 = "../02.rs" 85 4 87 5
-  
-  let%span span23 = "../02.rs" 31 10 31 11
-  
-  let%span span24 = "../02.rs" 29 0 29 8
-  
-  let%span span25 = "../02.rs" 72 12 75 13
-  
-  let%span span26 = "../02.rs" 23 4 23 38
-  
-  let%span span27 = "../02.rs" 24 16 24 20
-  
-  let%span span28 = "../02.rs" 24 22 24 23
-  
-  let%span span29 = "../02.rs" 44 11 44 17
-  
-  let%span span30 = "../02.rs" 45 10 45 28
-  
-  let%span span31 = "../02.rs" 46 10 46 11
-  
-  let%span span32 = "../02.rs" 43 0 43 8
-  
-  let%span span33 = "../02.rs" 61 10 61 49
-  
-  let%span span34 = "../02.rs" 60 0 60 8
-  
-  let%span span35 = "../02.rs" 18 16 18 20
-  
-  let%span span36 = "../02.rs" 17 4 17 42
-  
-  let%span span37 = "../02.rs" 18 25 18 26
-  
-  let%span span38 = "../../../../../creusot-contracts/src/std/slice.rs" 131 20 131 37
-  
-  let%span span39 = "../../../../../creusot-contracts/src/std/slice.rs" 124 20 124 37
-  
-  let%span span40 = "../../../../../creusot-contracts/src/std/vec.rs" 156 27 156 46
-  
-  let%span span41 = "" 0 0 0 0
-  
-  let%span span42 = "" 0 0 0 0
-  
-  let%span span43 = "../../../../../creusot-contracts/src/std/vec.rs" 157 26 157 54
-  
-  let%span span44 = "" 0 0 0 0
-  
-  use T_02__Fib as Fib'0
+module M_02__fib_memo [#"02.rs" 95 0 95 50]
+  let%span s020 = "02.rs" 99 32 99 33
+  let%span s021 = "02.rs" 100 16 100 17
+  let%span s022 = "02.rs" 101 27 101 28
+  let%span s023 = "02.rs" 102 16 102 17
+  let%span s024 = "02.rs" 104 16 104 43
+  let%span s025 = "02.rs" 105 16 105 45
+  let%span s026 = "02.rs" 106 34 106 35
+  let%span s027 = "02.rs" 106 57 106 58
+  let%span s028 = "02.rs" 108 28 108 45
+  let%span s029 = "02.rs" 91 11 91 25
+  let%span s0210 = "02.rs" 92 11 92 26
+  let%span s0211 = "02.rs" 94 11 94 19
+  let%span s0212 = "02.rs" 93 10 93 28
+  let%span svec13 = "../../../../creusot-contracts/src/std/vec.rs" 165 27 165 46
+  let%span svec14 = "../../../../creusot-contracts/src/std/vec.rs" 166 26 166 54
+  let%span s0215 = "02.rs" 18 16 18 20
+  let%span s0216 = "02.rs" 17 4 17 42
+  let%span s0217 = "02.rs" 18 25 18 26
+  let%span s0218 = "02.rs" 61 10 61 49
+  let%span s0219 = "02.rs" 60 0 60 8
+  let%span s0220 = "02.rs" 44 11 44 17
+  let%span s0221 = "02.rs" 45 10 45 28
+  let%span s0222 = "02.rs" 46 10 46 11
+  let%span s0223 = "02.rs" 43 0 43 8
+  let%span s0224 = "02.rs" 31 10 31 11
+  let%span s0225 = "02.rs" 29 0 29 8
+  let%span s0226 = "02.rs" 23 4 23 38
+  let%span s0227 = "02.rs" 24 16 24 20
+  let%span s0228 = "02.rs" 24 22 24 23
+  let%span s0229 = "02.rs" 85 4 87 5
+  let%span smodel30 = "../../../../creusot-contracts/src/model.rs" 91 8 91 22
+  let%span sslice31 = "../../../../creusot-contracts/src/std/slice.rs" 126 20 126 37
+  let%span sslice32 = "../../../../creusot-contracts/src/std/slice.rs" 133 20 133 37
+  let%span s0233 = "02.rs" 72 12 75 13
+  let%span sops34 = "../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
+  let%span svec35 = "../../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
   
   use prelude.prelude.UIntSize
-  
-  use T_core__option__Option as Option'0
-  
-  use T_02__Cell as Cell'0
-  
-  predicate inv'6 (_1 : Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib))
-  
-  use T_alloc__alloc__Global as Global'0
-  
-  predicate invariant'7 (self : Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) =
-    [%#span13] inv'6 self
-  
-  predicate inv'8 (_1 : Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib))
-  
-  axiom inv'8 : forall x : Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib) . inv'8 x = true
-  
-  use seq.Seq
-  
-  use seq.Seq
   
   use prelude.prelude.Int
   
-  use seq.Seq
-  
-  predicate invariant'6 (self : Seq.seq (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib))) =
-    [%#span14] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'8 (Seq.get self i)
-  
-  predicate inv'7 (_1 : Seq.seq (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)))
-  
-  axiom inv'7 : forall x : Seq.seq (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) . inv'7 x = true
-  
-  predicate invariant'5 (self : Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) =
-    [%#span15] true
-  
-  axiom inv'6 : forall x : Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib) . inv'6 x = true
-  
-  use T_alloc__vec__Vec as Vec'0
-  
-  use prelude.prelude.UIntSize
-  
-  constant v_MAX'0 : usize = [%#span16] (18446744073709551615 : usize)
-  
-  function shallow_model'1 (self : Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global)) : Seq.seq (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib))
-    
-  
-  axiom shallow_model'1_spec : forall self : Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global) . [%#span17] Seq.length (shallow_model'1 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  predicate invariant'4 (self : Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global))
-   =
-    [%#span18] inv'7 (shallow_model'1 self)
-  
-  predicate inv'5 (_1 : Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global))
-  
-  axiom inv'5 : forall x : Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global) . inv'5 x
-  = true
-  
-  predicate invariant'3 (self : Option'0.t_Option usize) =
-    [%#span15] true
+  use T_core__option__Option as Option'0
   
   predicate inv'4 (_1 : Option'0.t_Option usize)
   
-  axiom inv'4 : forall x : Option'0.t_Option usize . inv'4 x = true
+  axiom inv_axiom'3 [@rewrite] : forall x : Option'0.t_Option usize [inv'4 x] . inv'4 x = true
+  
+  use T_02__Fib as Fib'0
+  
+  use T_02__Cell as Cell'0
   
   use prelude.prelude.Borrow
   
-  predicate invariant'2 (self : Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) =
-    [%#span19] inv'6 self
-  
   predicate inv'2 (_1 : Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib))
   
-  axiom inv'2 : forall x : Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib) . inv'2 x = true
-  
-  predicate invariant'1 (self : usize) =
-    [%#span15] true
+  axiom inv_axiom'2 [@rewrite] : forall x : Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib) [inv'2 x] . inv'2 x
+  = true
   
   predicate inv'1 (_1 : usize)
   
-  axiom inv'1 : forall x : usize . inv'1 x = true
+  axiom inv_axiom'1 [@rewrite] : forall x : usize [inv'1 x] . inv'1 x = true
   
-  predicate invariant'0 (self : Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global))
-   =
-    [%#span19] inv'5 self
+  use T_alloc__alloc__Global as Global'0
+  
+  use T_alloc__vec__Vec as Vec'0
   
   predicate inv'0 (_1 : Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global))
   
-  axiom inv'0 : forall x : Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global) . inv'0 x
+  axiom inv_axiom'0 [@rewrite] : forall x : Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global) [inv'0 x] . inv'0 x
   = true
   
-  function shallow_model'0 (self : Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global)) : Seq.seq (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib))
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use prelude.prelude.UIntSize
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  function view'1 (self : Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global)) : Seq.seq (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib))
+    
+  
+  axiom view'1_spec : forall self : Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global) . [%#svec35] Seq.length (view'1 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  function view'0 (self : Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global)) : Seq.seq (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib))
     
    =
-    [%#span20] shallow_model'1 self
+    [%#smodel30] view'1 self
   
   use T_02__Fib as T_02__Fib
   
@@ -440,88 +291,90 @@ module M_02__fib_memo
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global)) (ix : int) : Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)
     
    =
-    [%#span21] Seq.get (shallow_model'1 self) ix
+    [%#sops34] Seq.get (view'1 self) ix
   
-  predicate fib_cell'0 [#"../02.rs" 84 0 84 32] (v : Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global))
+  predicate fib_cell'0 [#"02.rs" 84 0 84 32] (v : Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global))
     
    =
-    [%#span22] forall i : int . UIntSize.to_int (T_02__Fib.t_Fib__ix (T_02__Cell.t_Cell__ghost_inv (index_logic'0 v i)))
+    [%#s0229] forall i : int . UIntSize.to_int (T_02__Fib.t_Fib__ix (T_02__Cell.t_Cell__ghost_inv (index_logic'0 v i)))
     = i
+  
+  use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Intrinsic
   
-  function fib'0 [#"../02.rs" 32 0 32 25] (i : int) : int
+  function fib'0 [#"02.rs" 32 0 32 25] (i : int) : int
   
   axiom fib'0_def : forall i : int . fib'0 i
-  = ([%#span24] if i <= 0 then 0 else if i = 1 then 1 else fib'0 (i - 1) + fib'0 (i - 2))
+  = ([%#s0225] if i <= 0 then 0 else if i = 1 then 1 else fib'0 (i - 1) + fib'0 (i - 2))
   
-  predicate inv'3 [#"../02.rs" 70 4 70 43] (self : Fib'0.t_Fib) (v : Option'0.t_Option usize) =
-    [%#span25] match v with
+  predicate inv'3 [#"02.rs" 70 4 70 43] (self : Fib'0.t_Fib) (v : Option'0.t_Option usize) =
+    [%#s0233] match v with
       | Option'0.C_None -> true
       | Option'0.C_Some i -> UIntSize.to_int i = fib'0 (UIntSize.to_int (T_02__Fib.t_Fib__ix self))
       end
   
-  let rec set'0 (self:Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (v:Option'0.t_Option usize) (return'  (ret:()))= {[@expl:precondition] [%#span28] inv'4 v}
-    {[@expl:precondition] [%#span27] inv'2 self}
-    {[@expl:precondition] [%#span26] inv'3 (T_02__Cell.t_Cell__ghost_inv self) v}
+  let rec set'0 (self:Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (v:Option'0.t_Option usize) (return'  (ret:()))= {[@expl:precondition] [%#s0228] inv'4 v}
+    {[@expl:precondition] [%#s0227] inv'2 self}
+    {[@expl:precondition] [%#s0226] inv'3 (T_02__Cell.t_Cell__ghost_inv self) v}
     any [ return' (result:())-> (! return' {result}) ] 
   
   use prelude.prelude.Snapshot
   
   use int.Power
   
-  function lemma_fib_bound'0 [#"../02.rs" 47 0 47 30] (i : int) : ()
+  function lemma_fib_bound'0 [#"02.rs" 47 0 47 30] (i : int) : ()
   
   axiom lemma_fib_bound'0_def : forall i : int . lemma_fib_bound'0 i
-  = ([%#span32] if i = 0 then
+  = ([%#s0223] if i = 0 then
     ()
   else
     if i = 1 then () else let _ = lemma_fib_bound'0 (i - 2) in lemma_fib_bound'0 (i - 1)
   )
   
-  axiom lemma_fib_bound'0_spec : forall i : int . ([%#span29] 0 <= i)  -> ([%#span30] fib'0 i <= Power.power 2 i)
+  axiom lemma_fib_bound'0_spec : forall i : int . ([%#s0220] 0 <= i)  -> ([%#s0221] fib'0 i <= Power.power 2 i)
   
   use prelude.prelude.Snapshot
   
-  function lemma_max_int'0 [#"../02.rs" 62 0 62 22] (_1 : ()) : () =
-    [%#span34] ()
+  function lemma_max_int'0 [#"02.rs" 62 0 62 22] (_1 : ()) : () =
+    [%#s0219] ()
   
-  axiom lemma_max_int'0_spec : forall _1 : () . [%#span33] Power.power 2 63
+  axiom lemma_max_int'0_spec : forall _1 : () . [%#s0218] Power.power 2 63
   < UIntSize.to_int (18446744073709551615 : usize)
   
-  let rec get'0 (self:Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (return'  (ret:Option'0.t_Option usize))= {[@expl:precondition] [%#span35] inv'2 self}
+  let rec get'0 (self:Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (return'  (ret:Option'0.t_Option usize))= {[@expl:precondition] [%#s0215] inv'2 self}
     any
-    [ return' (result:Option'0.t_Option usize)-> {[%#span37] inv'4 result}
-      {[%#span36] inv'3 (T_02__Cell.t_Cell__ghost_inv self) result}
+    [ return' (result:Option'0.t_Option usize)-> {[%#s0217] inv'4 result}
+      {[%#s0216] inv'3 (T_02__Cell.t_Cell__ghost_inv self) result}
       (! return' {result}) ]
     
-  
-  use prelude.prelude.Slice
   
   predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib))) (out : Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib))
     
    =
-    [%#span38] Seq.get seq (UIntSize.to_int self) = out
+    [%#sslice32] Seq.get seq (UIntSize.to_int self) = out
   
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)))
     
    =
-    [%#span39] UIntSize.to_int self < Seq.length seq
+    [%#sslice31] UIntSize.to_int self < Seq.length seq
   
-  let rec index'0 (self:Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global)) (index:usize) (return'  (ret:Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)))= {[@expl:precondition] [%#span42] inv'1 index}
-    {[@expl:precondition] [%#span41] inv'0 self}
-    {[@expl:precondition] [%#span40] in_bounds'0 index (shallow_model'0 self)}
+  let rec index'0 (self:Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global)) (index:usize) (return'  (ret:Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)))= {[@expl:precondition] inv'1 index}
+    {[@expl:precondition] inv'0 self}
+    {[@expl:precondition] [%#svec13] in_bounds'0 index (view'0 self)}
     any
-    [ return' (result:Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib))-> {[%#span44] inv'2 result}
-      {[%#span43] has_value'0 index (shallow_model'0 self) result}
+    [ return' (result:Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib))-> {inv'2 result}
+      {[%#svec14] has_value'0 index (view'0 self) result}
       (! return' {result}) ]
     
   
+  meta "compute_max_steps" 1000000
+  
   let rec fib_memo (mem:Vec'0.t_Vec (Cell'0.t_Cell (Option'0.t_Option usize) (Fib'0.t_Fib)) (Global'0.t_Global)) (i:usize) (return'  (ret:usize))= {[%#s0211] UIntSize.to_int i
     <= 63}
-    {[%#s0210] UIntSize.to_int i < Seq.length (shallow_model'0 mem)}
+    {[%#s0210] UIntSize.to_int i < Seq.length (view'0 mem)}
     {[%#s029] fib_cell'0 mem}
     (! bb0
     [ bb0 = s0
@@ -596,6 +449,6 @@ module M_02__fib_memo
       (! return' {result}) ]
     
 end
-module M_02__qy123zimplqy35z1qy125z
+module M_02__qyi15177728180321669486 [#"02.rs" 67 0 67 31] (* <Fib as Inv<std::option::Option<usize>>> *)
   
 end

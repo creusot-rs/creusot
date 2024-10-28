@@ -83,4 +83,5 @@ of the file (URLs and `git-XXXX` versions), and the `git-XXXX` versions in the
 - Run `eval $(cargo run --bin dev-env)`
 - Use the `./testsuite_upgrade_prover` script to update why3 sessions in the testsuite.
   Launch the script without arguments to have some usage instructions.
+  To instead regenerate a session from scratch, use the `./testsuite_regenerate` script.
 - Once the testsuite is migrated, update `creusot-setup/src/{tools,tools_versions_urls}.rs` 

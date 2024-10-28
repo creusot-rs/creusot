@@ -1,62 +1,56 @@
-
-module M_492__reborrow_tuple
+module M_492__reborrow_tuple [#"492.rs" 5 0 5 52]
   type t
   
-  let%span s4920 = "../492.rs" 6 8 6 10
-  
-  let%span s4921 = "../492.rs" 5 25 5 26
-  
-  let%span s4922 = "../492.rs" 4 10 4 27
-  
-  let%span s4923 = "../492.rs" 5 39 5 52
-  
-  let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
-  
-  let%span span5 = "../../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
-  
-  let%span span6 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
-  
-  use prelude.prelude.UInt32
+  let%span s4920 = "492.rs" 6 8 6 10
+  let%span s4921 = "492.rs" 5 25 5 26
+  let%span s4922 = "492.rs" 4 10 4 27
+  let%span s4923 = "492.rs" 5 39 5 52
+  let%span sresolve4 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
+  let%span sinvariant5 = "../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   
   use prelude.prelude.Borrow
   
-  predicate invariant'2 (self : (borrowed t, uint32)) =
-    [%#span4] true
+  predicate inv'1 (_1 : borrowed t)
+  
+  use prelude.prelude.UInt32
+  
+  use prelude.prelude.Int
   
   predicate inv'2 (_1 : (borrowed t, uint32))
   
-  axiom inv'2 : forall x : (borrowed t, uint32) . inv'2 x = true
+  axiom inv_axiom'1 [@rewrite] : forall x : (borrowed t, uint32) [inv'2 x] . inv'2 x = (let (a, b) = x in inv'1 a)
   
   predicate inv'0 (_1 : t)
   
-  predicate invariant'1 (self : borrowed t) =
-    [%#span5] inv'0 self.current /\ inv'0 self.final
+  predicate invariant'0 (self : borrowed t) =
+    [%#sinvariant5] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'1 (_1 : borrowed t)
-  
-  axiom inv'1 : forall x : borrowed t . inv'1 x = true
-  
-  predicate invariant'0 (self : t)
-  
-  axiom inv'0 : forall x : t . inv'0 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed t [inv'1 x] . inv'1 x = invariant'0 x
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'0 (self : borrowed t) =
-    [%#span6] self.final = self.current
+  predicate resolve'1 (self : borrowed t) =
+    [%#sresolve4] self.final = self.current
   
-  use prelude.prelude.Int
+  predicate resolve'0 (_1 : borrowed t) =
+    resolve'1 _1
+  
+  meta "compute_max_steps" 1000000
   
   let rec reborrow_tuple (x:borrowed t) (return'  (ret:(borrowed t, uint32)))= {[%#s4921] inv'1 x}
     (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_final <t> {x.current} {Borrow.get_id x}
-          (fun (_ret':borrowed t) ->  [ &_3 <- _ret' ]  [ &x <- { x with current = _3.final ; } ] s1)
-      | s1 = -{inv'0 _3.final}- s2
-      | s2 =  [ &_0 <- (_3, ([%#s4920] (32 : uint32))) ] s3
-      | s3 = {[@expl:type invariant] inv'1 x} s4
-      | s4 = -{resolve'0 x}- s5
-      | s5 = return' {_0} ]
+      [ s0 = {inv'0 x.current}
+        Borrow.borrow_final <t> {x.current} {Borrow.get_id x}
+          (fun (_ret':borrowed t) ->
+             [ &_3 <- _ret' ] 
+            -{inv'0 _ret'.final}-
+             [ &x <- { x with current = _ret'.final ; } ] 
+            s1)
+      | s1 =  [ &_0 <- (_3, ([%#s4920] (32 : uint32))) ] s2
+      | s2 = {[@expl:type invariant] inv'1 x} s3
+      | s3 = -{resolve'0 x}- s4
+      | s4 = return' {_0} ]
        ]
     ) [ & _0 : (borrowed t, uint32) = any_l () | & x : borrowed t = x | & _3 : borrowed t = any_l () ] 
     [ return' (result:(borrowed t, uint32))-> {[@expl:postcondition] [%#s4923] inv'2 result}
@@ -64,74 +58,55 @@ module M_492__reborrow_tuple
       (! return' {result}) ]
     
 end
-module M_492__test
-  let%span s4920 = "../492.rs" 11 16 11 17
-  
-  let%span s4921 = "../492.rs" 13 18 13 30
-  
-  let%span s4922 = "../492.rs" 14 11 14 13
-  
-  let%span s4923 = "../492.rs" 9 10 9 15
-  
-  let%span span4 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
-  
-  let%span span5 = "../../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
-  
-  let%span span6 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
-  
-  let%span span7 = "../492.rs" 5 25 5 26
-  
-  let%span span8 = "../492.rs" 4 10 4 27
-  
-  let%span span9 = "../492.rs" 5 39 5 52
-  
-  use prelude.prelude.Int32
-  
-  predicate invariant'2 (self : int32) =
-    [%#span4] true
-  
-  predicate inv'2 (_1 : int32)
-  
-  axiom inv'2 : forall x : int32 . inv'2 x = true
+module M_492__test [#"492.rs" 10 0 10 13]
+  let%span s4920 = "492.rs" 11 16 11 17
+  let%span s4921 = "492.rs" 13 18 13 30
+  let%span s4922 = "492.rs" 14 11 14 13
+  let%span s4923 = "492.rs" 9 10 9 15
+  let%span s4924 = "492.rs" 5 25 5 26
+  let%span s4925 = "492.rs" 4 10 4 27
+  let%span s4926 = "492.rs" 5 39 5 52
+  let%span sresolve7 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   
   use prelude.prelude.UInt32
   
-  use prelude.prelude.Borrow
-  
-  predicate invariant'1 (self : (borrowed int32, uint32)) =
-    [%#span4] true
-  
-  predicate inv'1 (_1 : (borrowed int32, uint32))
-  
-  axiom inv'1 : forall x : (borrowed int32, uint32) . inv'1 x = true
-  
-  predicate invariant'0 (self : borrowed int32) =
-    [%#span5] inv'2 self.current /\ inv'2 self.final
-  
-  predicate inv'0 (_1 : borrowed int32)
-  
-  axiom inv'0 : forall x : borrowed int32 . inv'0 x = true
-  
-  use prelude.prelude.Intrinsic
-  
-  predicate resolve'0 (self : borrowed int32) =
-    [%#span6] self.final = self.current
+  use prelude.prelude.Int32
   
   use prelude.prelude.Int
   
-  let rec reborrow_tuple'0 (x:borrowed int32) (return'  (ret:(borrowed int32, uint32)))= {[@expl:precondition] [%#span7] inv'0 x}
+  use prelude.prelude.Borrow
+  
+  predicate inv'1 (_1 : (borrowed int32, uint32))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : (borrowed int32, uint32) [inv'1 x] . inv'1 x = true
+  
+  predicate inv'0 (_1 : borrowed int32)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed int32 [inv'0 x] . inv'0 x = true
+  
+  use prelude.prelude.Intrinsic
+  
+  predicate resolve'1 (self : borrowed int32) =
+    [%#sresolve7] self.final = self.current
+  
+  predicate resolve'0 (_1 : borrowed int32) =
+    resolve'1 _1
+  
+  let rec reborrow_tuple'0 (x:borrowed int32) (return'  (ret:(borrowed int32, uint32)))= {[@expl:precondition] [%#s4924] inv'0 x}
     any
-    [ return' (result:(borrowed int32, uint32))-> {[%#span9] inv'1 result}
-      {[%#span8] (let (a, _) = result in a).current = x.current}
+    [ return' (result:(borrowed int32, uint32))-> {[%#s4926] inv'1 result}
+      {[%#s4925] (let (a, _) = result in a).current = x.current}
       (! return' {result}) ]
     
+  
+  meta "compute_max_steps" 1000000
   
   let rec test (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &x <- [%#s4920] (5 : int32) ] s1
-      | s1 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &_6 <- _ret' ]  [ &x <- _6.final ] s2)
+      | s1 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &_6 <- _ret' ]  [ &x <- _ret'.final ] s2)
       | s2 = Borrow.borrow_final <int32> {_6.current} {Borrow.get_id _6}
-          (fun (_ret':borrowed int32) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _5.final ; } ] s3)
+          (fun (_ret':borrowed int32) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _ret'.final ; } ] s3)
       | s3 = reborrow_tuple'0 {_5} (fun (_ret':(borrowed int32, uint32)) ->  [ &_4 <- _ret' ] s4)
       | s4 = bb1 ]
       

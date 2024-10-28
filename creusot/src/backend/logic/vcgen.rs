@@ -3,11 +3,7 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
-use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{EarlyBinder, GenericArgsRef, ParamEnv, Ty, TyKind};
-use rustc_span::{Span, Symbol};
-use why3::{declaration::Signature, exp::Environment, ty::Type, Exp, Ident, QName};
-
+use super::{binders_to_args, Dependencies};
 use crate::{
     backend::{
         signature::{sig_to_why3, signature_of},
@@ -15,11 +11,14 @@ use crate::{
         ty::{is_int, translate_ty},
         Namer as _, Why3Generator,
     },
-    pearlite::{super_visit_term, Literal, Pattern, Term, TermVisitor},
-    util::{self, get_builtin, pre_sig_of},
+    contracts_items::get_builtin,
+    pearlite::{super_visit_term, Literal, Pattern, PointerKind, Term, TermVisitor},
+    util::{self, pre_sig_of},
 };
-
-use super::{binders_to_args, Dependencies};
+use rustc_hir::def_id::DefId;
+use rustc_middle::ty::{EarlyBinder, GenericArgsRef, ParamEnv, Ty, TyKind};
+use rustc_span::{Span, Symbol};
+use why3::{declaration::Signature, exp::Environment, ty::Type, Exp, Ident, QName};
 
 /// Verification conditions for lemma functions.
 ///
@@ -475,6 +474,12 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             Pattern::Tuple(pats) => Pat::TupleP(
                 pats.into_iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect(),
             ),
+            Pattern::Deref { pointee, kind } => match kind {
+                PointerKind::Box | PointerKind::Shr => self.build_pattern_inner(bounds, pointee),
+                PointerKind::Mut => {
+                    Pat::RecP(vec![("current".into(), self.build_pattern_inner(bounds, pointee))])
+                }
+            },
         }
     }
 
@@ -577,12 +582,11 @@ pub(crate) fn get_func_name<'tcx>(
     let builtin_attr = get_builtin(ctx.tcx, id);
 
     builtin_attr
-        .and_then(|a| {
+        .map(|a| {
             // Add dependency
             names.value(id, subst);
 
-            QName::from_string(&a.as_str())
+            QName::from_string(&a.as_str()).without_search_path()
         })
-        .map(QName::without_search_path)
         .unwrap_or_else(|| names.value(id, subst))
 }

@@ -1,5 +1,6 @@
 use crate::{
     invariant::*,
+    resolve::structural_resolve,
     std::{
         alloc::Allocator,
         ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
@@ -12,13 +13,14 @@ impl<T> Invariant for [T] {
     #[predicate(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
+    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { inv(self@) }
     }
 }
 
-impl<T> ShallowModel for [T] {
-    type ShallowModelTy = Seq<T>;
+impl<T> View for [T] {
+    type ViewTy = Seq<T>;
 
     // We define this as trusted because builtins and ensures are incompatible
     #[logic]
@@ -26,7 +28,7 @@ impl<T> ShallowModel for [T] {
     #[trusted]
     #[ensures(result.len() <= usize::MAX@)]
     #[ensures(result == slice_model(&self))]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { absurd }
     }
 }
@@ -104,16 +106,16 @@ impl<T> SliceExt<T> for [T] {
 
 pub trait SliceIndex<T: ?Sized>: ::std::slice::SliceIndex<T>
 where
-    T: ShallowModel,
+    T: View,
 {
     #[predicate]
-    fn in_bounds(self, seq: T::ShallowModelTy) -> bool;
+    fn in_bounds(self, seq: T::ViewTy) -> bool;
 
     #[predicate]
-    fn has_value(self, seq: T::ShallowModelTy, out: Self::Output) -> bool;
+    fn has_value(self, seq: T::ViewTy, out: Self::Output) -> bool;
 
     #[predicate]
-    fn resolve_elswhere(self, old: T::ShallowModelTy, fin: T::ShallowModelTy) -> bool;
+    fn resolve_elswhere(self, old: T::ViewTy, fin: T::ViewTy) -> bool;
 }
 
 impl<T> SliceIndex<[T]> for usize {
@@ -383,13 +385,13 @@ impl<T> IntoIterator for &mut [T] {
     }
 }
 
-impl<'a, T> ShallowModel for Iter<'a, T> {
-    type ShallowModelTy = &'a [T];
+impl<'a, T> View for Iter<'a, T> {
+    type ViewTy = &'a [T];
 
     #[logic]
     #[open(self)]
     #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         absurd
     }
 }
@@ -409,11 +411,15 @@ impl<'a, T> Iterator for Iter<'a, T> {
         }
     }
 
+    // FIXME: remove `trusted`
+    #[trusted]
     #[law]
     #[open]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
+    // FIXME: remove `trusted`
+    #[trusted]
     #[law]
     #[open]
     #[requires(a.produces(ab, b))]
@@ -422,30 +428,36 @@ impl<'a, T> Iterator for Iter<'a, T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-impl<'a, T> ShallowModel for IterMut<'a, T> {
-    type ShallowModelTy = &'a mut [T];
+impl<'a, T> View for IterMut<'a, T> {
+    type ViewTy = &'a mut [T];
 
     #[logic]
     #[open(self)]
     #[trusted]
     #[ensures((^result)@.len() == (*result)@.len())]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         absurd
     }
 }
 
-#[trusted]
 impl<'a, T> Resolve for IterMut<'a, T> {
-    #[predicate(prophetic)]
     #[open]
+    #[predicate(prophetic)]
     fn resolve(self) -> bool {
         pearlite! { *self@ == ^self@ }
     }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 impl<'a, T> Iterator for IterMut<'a, T> {
-    #[predicate(prophetic)]
     #[open]
+    #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && (*self@)@ == Seq::EMPTY }
     }
@@ -460,11 +472,15 @@ impl<'a, T> Iterator for IterMut<'a, T> {
 
     #[law]
     #[open]
+    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
     #[open]
+    #[requires(inv(a))]
+    #[requires(inv(b))]
+    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

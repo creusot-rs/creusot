@@ -1,11 +1,11 @@
 use super::{program::borrow_generated_id, Why3Generator};
 use crate::{
     backend::{program::{int_to_prelude, uint_to_prelude}, ty::{floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty}},
+    contracts_items::get_builtin,
     ctx::*,
-    pearlite::{self, Literal, Pattern, Term, TermKind},
+    pearlite::{self, Literal, Pattern, PointerKind, Term, TermKind},
     translation::pearlite::{zip_binder, QuantKind, Trigger},
     util,
-    util::get_builtin,
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};
@@ -281,6 +281,11 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             Pattern::Tuple(pats) => {
                 Pat::TupleP(pats.into_iter().map(|pat| self.lower_pat(pat)).collect())
             }
+            Pattern::Deref { pointee, kind } => match kind {
+                PointerKind::Box => self.lower_pat(pointee),
+                PointerKind::Shr => self.lower_pat(pointee),
+                PointerKind::Mut => Pat::RecP(vec![("current".into(), self.lower_pat(pointee))]),
+            },
         }
     }
 
@@ -299,7 +304,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         let def_id = Some(def_id);
         let builtin_attr = get_builtin(self.ctx.tcx, def_id.unwrap());
 
-        if let Some(builtin) = builtin_attr.and_then(|a| QName::from_string(&a.as_str())) {
+        if let Some(builtin) = builtin_attr.map(|a| QName::from_string(&a.as_str())) {
             self.names.value(def_id.unwrap(), _substs);
             // self.names.import_builtin_module(builtin.clone().module_qname());
 

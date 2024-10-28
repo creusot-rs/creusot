@@ -1,47 +1,50 @@
 use super::{
     clone_map::PreludeModule,
-    dependency::ExtendedId,
     is_trusted_function,
     place::rplace_to_expr,
-    signature::{sig_to_why3, signature_of},
+    signature::signature_of,
     term::{lower_pat, lower_pure},
     ty::{destructor, int_ty},
-    CloneSummary, GraphDepth, NameSupply, Namer, TransId, Why3Generator,
+    NameSupply, Namer, Why3Generator,
 };
 use crate::{
     backend::{
-        closure_generic_decls, optimization,
-        optimization::infer_proph_invariants,
+        closure_generic_decls,
+        optimization::{self, infer_proph_invariants},
         place,
         ty::{self, translate_closure_ty, translate_ty},
         wto::weak_topological_order,
     },
+    contracts_items,
     ctx::{BodyId, Dependencies, TranslationCtx},
-    fmir::{Body, BorrowKind, Operand},
+    fmir::{self, Body, BorrowKind, Operand, TrivialInv},
+    pearlite::{self, PointerKind},
+    translated_item::FileModule,
     translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
-    util::{self, module_name},
+    util,
 };
 
 use petgraph::graphmap::DiGraphMap;
+use rustc_ast::Mutability;
 use rustc_hir::{def_id::DefId, Safety};
 use rustc_middle::{
-    mir::{self, BasicBlock, BinOp, ProjectionElem, UnOp, START_BLOCK},
-    ty::{AdtDef, GenericArgsRef, Ty, TyKind},
+    mir::{self, tcx::PlaceTy, BasicBlock, BinOp, ProjectionElem, UnOp, START_BLOCK},
+    ty::{AdtDef, GenericArgsRef, Ty, TyCtxt, TyKind},
 };
 use rustc_span::{Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, UintTy};
-use std::fmt::Debug;
+use std::{cell::RefCell, fmt::Debug};
 use why3::{
     coma::{self, Arg, Defn, Expr, Param, Term},
-    declaration::{Attribute, Contract, Decl, Module, Signature},
+    declaration::{Attribute, Contract, Decl, Meta, MetaArg, MetaIdent, Module, Signature},
     exp::{Binder, Constant, Exp, Pattern},
     ty::Type,
     Ident, QName,
 };
 
-fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
-    let mut names = Dependencies::new(ctx.tcx, [def_id]);
+fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> FileModule {
+    let mut names = Dependencies::new(ctx, [def_id]);
     let mut decls = Vec::new();
 
     let ty = ctx.type_of(def_id).instantiate_identity();
@@ -51,7 +54,7 @@ fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
 
     let d = destructor(ctx, &mut names, def_id, ty, 0u32.into());
 
-    let (clones, _) = names.provide_deps(ctx, GraphDepth::Deep);
+    let clones = names.provide_deps(ctx);
     decls.extend(
         // Definitely a hack but good enough for the moment
         clones.into_iter().filter(|d| matches!(d, Decl::UseDecl(_))),
@@ -60,119 +63,55 @@ fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
 
     decls.push(d);
 
-    Module { name: format!("{}_Type", module_name(ctx.tcx, def_id)).into(), decls }
-}
-
-pub(crate) fn closure_aux_defs<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) {
-    // COMPLETE HACK. This should be properly cleaned up
-    let contract = ctx.closure_contract(def_id).clone();
-
-    // HACK RESOLVE
-    let mut names = Dependencies::new(ctx.tcx, [def_id]);
-    sig_to_why3(ctx, &mut names, &contract.resolve.0, def_id);
-    lower_pure(ctx, &mut names, &contract.resolve.1);
-
-    let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
-    ctx.dependencies.insert(TransId::Hacked(ExtendedId::Resolve, def_id), deps);
-
-    // HACK PRECOND
-    let mut names = Dependencies::new(ctx.tcx, [def_id]);
-    sig_to_why3(ctx, &mut names, &contract.precond.0, def_id);
-    lower_pure(ctx, &mut names, &contract.precond.1);
-
-    let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
-    ctx.dependencies.insert(TransId::Hacked(ExtendedId::Precondition, def_id), deps);
-
-    // HACK POST ONCE
-    if let Some((sig, term)) = contract.postcond_once {
-        let mut names = Dependencies::new(ctx.tcx, [def_id]);
-        sig_to_why3(ctx, &mut names, &sig, def_id);
-        lower_pure(ctx, &mut names, &term);
-
-        let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
-        ctx.dependencies.insert(TransId::Hacked(ExtendedId::PostconditionOnce, def_id), deps);
-    }
-
-    // HACK POST MUT
-    if let Some((sig, term)) = contract.postcond_mut {
-        let mut names = Dependencies::new(ctx.tcx, [def_id]);
-        sig_to_why3(ctx, &mut names, &sig, def_id);
-        lower_pure(ctx, &mut names, &term);
-
-        let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
-        ctx.dependencies.insert(TransId::Hacked(ExtendedId::PostconditionMut, def_id), deps);
-    }
-    // HACK POST
-    if let Some((sig, term)) = contract.postcond {
-        let mut names = Dependencies::new(ctx.tcx, [def_id]);
-        sig_to_why3(ctx, &mut names, &sig, def_id);
-        lower_pure(ctx, &mut names, &term);
-
-        let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
-        ctx.dependencies.insert(TransId::Hacked(ExtendedId::Postcondition, def_id), deps);
-    }
-    // HACK UNNEst
-    if let Some((sig, term)) = contract.unnest {
-        let mut names = Dependencies::new(ctx.tcx, [def_id]);
-        sig_to_why3(ctx, &mut names, &sig, def_id);
-        lower_pure(ctx, &mut names, &term);
-
-        let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
-        ctx.dependencies.insert(TransId::Hacked(ExtendedId::Unnest, def_id), deps);
-    } // END COMPLETE HACK
-      // decls.extend(contract);
-      // decls
-    for (ix, (sig, term)) in contract.accessors.into_iter().enumerate() {
-        let mut names = Dependencies::new(ctx.tcx, [def_id]);
-        sig_to_why3(ctx, &mut names, &sig, def_id);
-        lower_pure(ctx, &mut names, &term);
-
-        let (_, deps) = names.provide_deps(ctx, GraphDepth::Shallow);
-        ctx.dependencies.insert(TransId::Hacked(ExtendedId::Accessor(ix as u8), def_id), deps);
-    }
+    let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
+    let meta = ctx.display_impl_of(def_id);
+    let path = ctx.module_path(def_id, util::NS::T);
+    let name = path.why3_ident();
+    FileModule { path, modl: Module { name, decls, attrs, meta } }
 }
 
 pub(crate) fn translate_closure<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
-) -> (CloneSummary<'tcx>, Module, Option<Module>) {
+) -> (FileModule, Option<FileModule>) {
     assert!(ctx.is_closure_like(def_id));
-    let (summary, func) = translate_function(ctx, def_id);
-    (summary, closure_ty(ctx, def_id), func)
+    let func = translate_function(ctx, def_id);
+    (closure_ty(ctx, def_id), func)
 }
 
 pub(crate) fn translate_function<'tcx, 'sess>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
-) -> (CloneSummary<'tcx>, Option<Module>) {
-    let tcx = ctx.tcx;
-    let mut names = Dependencies::new(tcx, [def_id]);
+) -> Option<FileModule> {
+    let mut names = Dependencies::new(ctx, [def_id]);
 
     let Some((body_id, promoteds)) = collect_body_ids(ctx, def_id) else {
-        let (_, clones) = names.provide_deps(ctx, GraphDepth::Deep);
-        return (clones, None);
+        return None;
     };
     let body = Decl::Coma(to_why(ctx, &mut names, body_id));
-
-    if ctx.tcx.is_closure_like(def_id) {
-        closure_aux_defs(ctx, def_id)
-    };
 
     let promoteds = promoteds
         .iter()
         .map(|body_id| Decl::Coma(to_why(ctx, &mut names, *body_id)))
         .collect::<Vec<_>>();
 
-    let (clones, summary) = names.provide_deps(ctx, GraphDepth::Deep);
+    let clones = names.provide_deps(ctx);
 
     let decls = closure_generic_decls(ctx.tcx, def_id)
         .chain(clones)
         .chain(promoteds)
+        .chain([Decl::Meta(Meta {
+            name: MetaIdent::String("compute_max_steps".into()),
+            args: vec![MetaArg::Integer(1_000_000)],
+        })])
         .chain(std::iter::once(body))
         .collect();
 
-    let name = Ident::build(&module_name(ctx.tcx, def_id).to_string());
-    (summary, Some(Module { name, decls }))
+    let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
+    let meta = ctx.display_impl_of(def_id);
+    let path = ctx.module_path(def_id, util::NS::M);
+    let name = path.why3_ident();
+    Some(FileModule { path, modl: Module { name, decls, attrs, meta } })
 }
 
 /// If `def_id`'s body should be translated, returns:
@@ -277,7 +216,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     optimization::simplify_fmir(usage, &mut body);
 
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
-    infer_proph_invariants(ctx, body_id.def_id(), &mut body);
+    infer_proph_invariants(ctx, &mut body);
 
     let blocks: Vec<Defn> =
         wto.into_iter().map(|c| component_to_defn(&mut body, ctx, names, c)).collect();
@@ -316,7 +255,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
 
     let mut postcond = Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("result"))]);
 
-    if body_id.promoted.is_none() && !util::is_ghost_closure(ctx.tcx, body_id.def_id()) {
+    if body_id.promoted.is_none() && !contracts_items::is_ghost_closure(ctx.tcx, body_id.def_id()) {
         postcond = Expr::BlackBox(Box::new(postcond));
     }
     postcond = sig.contract.ensures.into_iter().fold(postcond, |acc, ensures| {
@@ -326,7 +265,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         )
     });
 
-    if body_id.promoted.is_none() && !util::is_ghost_closure(ctx.tcx, body_id.def_id()) {
+    if body_id.promoted.is_none() && !contracts_items::is_ghost_closure(ctx.tcx, body_id.def_id()) {
         body = Expr::BlackBox(Box::new(body))
     };
 
@@ -411,14 +350,18 @@ impl<'a, 'tcx, N: Namer<'tcx>> LoweringState<'a, 'tcx, N> {
         translate_ty(self.ctx, self.names, DUMMY_SP, ty)
     }
 
-    fn assignment(&mut self, lhs: &Place<'tcx>, rhs: Term) -> Vec<IntermediateStmt> {
-        place::create_assign_inner(self, lhs, rhs, DUMMY_SP)
+    fn assignment(&mut self, lhs: &Place<'tcx>, rhs: Term, istmts: &mut Vec<IntermediateStmt>) {
+        place::create_assign_inner(self, lhs, rhs, istmts)
     }
 
     fn reset_names(&mut self) {}
 
+    pub(super) fn fresh_sym_from(&mut self, base: impl AsRef<str>) -> Symbol {
+        self.name_supply.freshen(Symbol::intern(base.as_ref()))
+    }
+
     pub(super) fn fresh_from(&mut self, base: impl AsRef<str>) -> Ident {
-        self.name_supply.freshen(Symbol::intern(base.as_ref())).to_string().into()
+        self.fresh_sym_from(base).to_string().into()
     }
 }
 
@@ -429,13 +372,12 @@ impl<'tcx> Operand<'tcx> {
         istmts: &mut Vec<IntermediateStmt>,
     ) -> Exp {
         match self {
-            Operand::Move(pl) => pl.as_rplace(lower, istmts),
-            Operand::Copy(pl) => pl.as_rplace(lower, istmts),
+            Operand::Move(pl) => rplace_to_expr(lower, &pl, istmts),
+            Operand::Copy(pl) => rplace_to_expr(lower, &pl, istmts),
             Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
             Operand::Promoted(pid, ty) => {
-                let promoted = Expr::Symbol(
-                    QName::from_string(&format!("promoted{}", pid.as_usize())).unwrap(),
-                );
+                let promoted =
+                    Expr::Symbol(QName::from_string(&format!("promoted{}", pid.as_usize())));
                 let var: Ident = Ident::build(&format!("pr{}", pid.as_usize()));
                 istmts.push(IntermediateStmt::call(var.clone(), lower.ty(ty), promoted, vec![]));
 
@@ -460,13 +402,13 @@ impl<'tcx> RValue<'tcx> {
             RValue::BinOp(BinOp::Eq, l, r) if l.ty(lower.ctx.tcx, lower.locals).is_bool() => {
                 lower.names.import_prelude_module(PreludeModule::Bool);
 
-                Exp::qvar(QName::from_string("Bool.eq").unwrap())
+                Exp::qvar(QName::from_string("Bool.eq"))
                     .app(vec![l.to_why(lower, istmts), r.to_why(lower, istmts)])
             }
             RValue::BinOp(BinOp::Ne, l, r) if l.ty(lower.ctx.tcx, lower.locals).is_bool() => {
                 lower.names.import_prelude_module(PreludeModule::Bool);
 
-                Exp::qvar(QName::from_string("Bool.ne").unwrap())
+                Exp::qvar(QName::from_string("Bool.ne"))
                     .app(vec![l.to_why(lower, istmts), r.to_why(lower, istmts)])
             }
             RValue::BinOp(op, l, r) => {
@@ -624,8 +566,8 @@ impl<'tcx> RValue<'tcx> {
                 Exp::var(of_ret_id)
             }
             RValue::Len(pl) => {
-                let len_call = Exp::qvar(QName::from_string("Slice.length").unwrap())
-                    .app_to(pl.to_why(lower, istmts));
+                let len_call =
+                    Exp::qvar(QName::from_string("Slice.length")).app_to(pl.to_why(lower, istmts));
                 len_call
             }
             RValue::Array(fields) => {
@@ -643,14 +585,14 @@ impl<'tcx> RValue<'tcx> {
                     .into_iter()
                     .enumerate()
                     .map(|(ix, f)| {
-                        Exp::qvar(QName::from_string("Seq.get").unwrap())
+                        Exp::qvar(QName::from_string("Seq.get"))
                             .app(vec![
                                 arr_elts.clone(),
                                 Exp::Const(Constant::Int(ix as i128, None)),
                             ])
                             .eq(f.to_why(lower, istmts))
                     })
-                    .chain([Exp::qvar(QName::from_string("Seq.length").unwrap())
+                    .chain([Exp::qvar(QName::from_string("Seq.length"))
                         .app_to(arr_elts.clone())
                         .eq(Exp::Const(Constant::Int(len as i128, None)))])
                     .reduce(Exp::log_and)
@@ -661,7 +603,7 @@ impl<'tcx> RValue<'tcx> {
                 Exp::var(id)
             }
             RValue::Repeat(e, len) => {
-                let slice_create = QName::from_string("Slice.create").unwrap();
+                let slice_create = QName::from_string("Slice.create");
                 let param_ty = lower.ty(e.ty(lower.ctx.tcx, lower.locals));
                 let args = vec![
                     Arg::Ty(param_ty),
@@ -682,7 +624,8 @@ impl<'tcx> RValue<'tcx> {
                 Exp::var("_res")
             }
             RValue::Ghost(t) => lower_pure(lower.ctx, lower.names, &t),
-            RValue::Borrow(_, _) | RValue::UnaryOp(UnOp::PtrMetadata, _) => todo!(),
+            RValue::Borrow(_, _, _) => unreachable!(), // Handled in Statement::to_why
+            RValue::UnaryOp(UnOp::PtrMetadata, _) => todo!(),
         };
 
         e
@@ -972,53 +915,39 @@ where
     })
 }
 
-impl<'tcx> Place<'tcx> {
-    pub(crate) fn as_rplace<N: Namer<'tcx>>(
-        &self,
-        lower: &mut LoweringState<'_, 'tcx, N>,
-        istmts: &mut Vec<IntermediateStmt>,
-    ) -> why3::Exp {
-        let (e, t) = rplace_to_expr(lower, self.local, &self.projection);
-        istmts.extend(t);
-        e
-    }
-}
-
 pub(crate) fn borrow_generated_id<V: Debug, T: Debug>(
     original_borrow: Exp,
     projection: &[ProjectionElem<V, T>],
     mut translate_index: impl FnMut(&V) -> Exp,
 ) -> Exp {
-    let mut borrow_id = Exp::Call(
-        Box::new(Exp::qvar(QName::from_string("Borrow.get_id").unwrap())),
-        vec![original_borrow],
-    );
+    let mut borrow_id =
+        Exp::Call(Box::new(Exp::qvar(QName::from_string("Borrow.get_id"))), vec![original_borrow]);
     for proj in projection {
         match proj {
             ProjectionElem::Deref => {
-                // Deref of a box
+                // TODO: If this is a deref of a mutable borrow, the id should change !
             }
             ProjectionElem::Field(idx, _) => {
                 borrow_id = Exp::Call(
-                    Box::new(Exp::qvar(QName::from_string("Borrow.inherit_id").unwrap())),
+                    Box::new(Exp::qvar(QName::from_string("Borrow.inherit_id"))),
                     vec![borrow_id, Exp::Const(Constant::Int(idx.as_u32() as i128 + 1, None))],
                 );
             }
             ProjectionElem::Index(x) => {
                 borrow_id = Exp::Call(
-                    Box::new(Exp::qvar(QName::from_string("Borrow.inherit_id").unwrap())),
+                    Box::new(Exp::qvar(QName::from_string("Borrow.inherit_id"))),
                     vec![borrow_id, translate_index(x)],
                 );
             }
 
-            ProjectionElem::Downcast(_, _)
-            | ProjectionElem::ConstantIndex { .. }
-            | ProjectionElem::Subslice { .. }
-            | ProjectionElem::OpaqueCast(_) => {
-                // Nor logical reborrowing nor final borrows can generate such a projection
-                unreachable!("unexepected proj elem to generate a borrow id: {proj:?}")
+            ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. } => {
+                // those should inherit a different id instead
+                todo!("Unsupported projection {proj:?} in reborrow")
             }
-            ProjectionElem::Subtype(_) => {}
+            // Nothing to do
+            ProjectionElem::Downcast(..)
+            | ProjectionElem::OpaqueCast(_)
+            | ProjectionElem::Subtype(_) => {}
         }
     }
     borrow_id
@@ -1039,8 +968,8 @@ pub(crate) enum IntermediateStmt {
 }
 
 impl IntermediateStmt {
-    fn call(id: Ident, exp: Type, f: coma::Expr, args: Vec<coma::Arg>) -> Self {
-        IntermediateStmt::Call(vec![Param::Term(id, exp)], f, args)
+    fn call(id: Ident, ty: Type, f: coma::Expr, args: Vec<coma::Arg>) -> Self {
+        IntermediateStmt::Call(vec![Param::Term(id, ty)], f, args)
     }
 }
 
@@ -1049,157 +978,246 @@ impl<'tcx> Statement<'tcx> {
         self,
         lower: &mut LoweringState<'_, 'tcx, N>,
     ) -> Vec<IntermediateStmt> {
+        let mut istmts = Vec::new();
         match self {
-            Statement::Assignment(lhs, RValue::Borrow(BorrowKind::Mut, rhs), _span) => {
-                let borrow_mut =
-                    coma::Expr::Symbol(QName::from_string("Borrow.borrow_mut").unwrap());
+            Statement::Assignment(lhs, RValue::Borrow(bor_kind, rhs, triv_inv), _span) => {
+                let tcx = lower.ctx.tcx;
+                let lhs_ty = lhs.ty(tcx, lower.locals);
+                let lhs_ty_low = lower.ty(lhs_ty);
+                let rhs_ty = rhs.ty(tcx, lower.locals);
+                let rhs_ty_low = lower.ty(rhs_ty);
+                let rhs_local_ty = PlaceTy::from_ty(lower.locals[&rhs.local].ty);
 
-                let mut istmts = Vec::new();
-                let args = vec![
-                    Arg::Ty(lower.ty(rhs.ty(lower.ctx.tcx, lower.locals))),
-                    Arg::Term(rhs.as_rplace(lower, &mut istmts)),
-                ];
-                let reassign = lhs.as_rplace(lower, &mut istmts).field("final");
+                let rhs_inv_fun = if matches!(triv_inv, TrivialInv::NonTrivial) {
+                    Some(Exp::qvar(lower.names.ty_inv(rhs_ty)))
+                } else {
+                    None
+                };
 
-                let ty = lhs.ty(lower.ctx.tcx, lower.locals);
+                let lower = RefCell::new(lower);
 
-                let borrow_call =
-                    IntermediateStmt::call("_ret'".into(), lower.ty(ty), borrow_mut, args);
+                let func = match bor_kind {
+                    BorrowKind::Mut => coma::Expr::Symbol(QName::from_string("Borrow.borrow_mut")),
+                    BorrowKind::Final(_) => {
+                        coma::Expr::Symbol(QName::from_string("Borrow.borrow_final"))
+                    }
+                };
 
-                istmts.extend([borrow_call]);
-                istmts.extend(lower.assignment(&lhs, Exp::var("_ret'")));
-                istmts.extend(lower.assignment(&rhs, reassign));
+                let bor_id_arg;
+                let rhs_rplace;
+                let rhs_constr;
 
-                istmts
-            }
-            Statement::Assignment(
-                lhs,
-                RValue::Borrow(BorrowKind::Final(deref_index), rhs),
-                _span,
-            ) => {
-                let mut istmts = Vec::new();
+                if let BorrowKind::Final(deref_index) = bor_kind {
+                    let (original_borrow_ty, original_borrow, original_borrow_constr) =
+                        place::projections_to_expr(
+                            &lower,
+                            &mut istmts,
+                            rhs_local_ty,
+                            place::Focus::new(|_| Exp::var(util::ident_of(rhs.local))),
+                            Box::new(|_, x| x),
+                            &rhs.projection[..deref_index],
+                        );
+                    let (_, foc, constr) = place::projections_to_expr(
+                        &lower,
+                        &mut istmts,
+                        original_borrow_ty,
+                        original_borrow.clone(),
+                        original_borrow_constr,
+                        &rhs.projection[deref_index..],
+                    );
+                    rhs_rplace = foc.call(&mut istmts);
+                    rhs_constr = constr;
 
-                let original_borrow = Place {
-                    local: rhs.local.clone(),
-                    projection: rhs.projection[..deref_index].to_vec(),
+                    let borrow_id = borrow_generated_id(
+                        original_borrow.call(&mut istmts),
+                        &rhs.projection[deref_index + 1..],
+                        |sym| Exp::var(util::ident_of(*sym)),
+                    );
+
+                    bor_id_arg = Some(Arg::Term(borrow_id));
+                } else {
+                    let (_, foc, constr) = place::projections_to_expr(
+                        &lower,
+                        &mut istmts,
+                        rhs_local_ty,
+                        place::Focus::new(|_| Exp::var(util::ident_of(rhs.local))),
+                        Box::new(|_, x| x),
+                        &rhs.projection,
+                    );
+                    rhs_rplace = foc.call(&mut istmts);
+                    rhs_constr = constr;
+                    bor_id_arg = None;
                 }
-                .as_rplace(lower, &mut istmts);
 
-                let ty = lhs.ty(lower.ctx.tcx, lower.locals);
+                if let Some(ref rhs_inv_fun) = rhs_inv_fun {
+                    istmts.push(IntermediateStmt::Assert(
+                        rhs_inv_fun.clone().app_to(rhs_rplace.clone()),
+                    ));
+                }
 
-                let borrow_id = borrow_generated_id(
-                    original_borrow,
-                    &rhs.projection[deref_index + 1..],
-                    |sym| Exp::var(util::ident_of(*sym)),
-                );
-                let reassign = lhs.as_rplace(lower, &mut istmts).field("final");
+                let mut args = vec![Arg::Ty(rhs_ty_low), Arg::Term(rhs_rplace)];
+                args.extend(bor_id_arg);
 
-                let assign1 = { lower.assignment(&lhs, Exp::var("_ret'")) };
+                let borrow_call = IntermediateStmt::call("_ret'".into(), lhs_ty_low, func, args);
+                istmts.push(borrow_call);
+                lower.borrow_mut().assignment(&lhs, Exp::var("_ret'"), &mut istmts);
 
-                let assign2 = { lower.assignment(&rhs, reassign) };
+                let reassign = Exp::var("_ret'").field("final");
 
-                let borrow_mut =
-                    coma::Expr::Symbol(QName::from_string("Borrow.borrow_final").unwrap());
+                if let Some(rhs_inv_fun) = rhs_inv_fun {
+                    istmts.push(IntermediateStmt::Assume(rhs_inv_fun.app_to(reassign.clone())));
+                }
 
-                let args = vec![
-                    Arg::Ty(lower.ty(rhs.ty(lower.ctx.tcx, lower.locals))),
-                    Arg::Term(rhs.as_rplace(lower, &mut istmts)),
-                    Arg::Term(borrow_id),
-                ];
-
-                let borrow_call =
-                    IntermediateStmt::call("_ret'".into(), lower.ty(ty), borrow_mut, args);
-
-                istmts.extend([borrow_call]);
-                istmts.extend(assign1);
-                istmts.extend(assign2);
-                istmts
+                let new_rhs = rhs_constr(&mut istmts, reassign);
+                istmts.push(IntermediateStmt::Assign(Ident::build(rhs.local.as_str()), new_rhs));
             }
             Statement::Assignment(lhs, e, _span) => {
-                let mut istmts = Vec::new();
-
                 let rhs = e.to_why(lower, lhs.ty(lower.ctx.tcx, lower.locals), &mut istmts);
-                let assign = lower.assignment(&lhs, rhs);
-                istmts.extend(assign);
-
-                istmts
+                lower.assignment(&lhs, rhs, &mut istmts);
             }
             Statement::Call(dest, fun_id, subst, args, _) => {
-                let mut istmts = Vec::new();
-
                 let (fun_exp, args) = func_call_to_why3(lower, fun_id, subst, args, &mut istmts);
                 let ty = dest.ty(lower.ctx.tcx, lower.locals);
                 let ty = lower.ty(ty);
-                let assign = lower.assignment(&dest, Exp::var("_ret'"));
 
-                istmts.extend([IntermediateStmt::call("_ret'".into(), ty, fun_exp, args)]);
-                istmts.extend(assign);
-                istmts
+                istmts.push(IntermediateStmt::call("_ret'".into(), ty, fun_exp, args));
+                lower.assignment(&dest, Exp::var("_ret'"), &mut istmts);
             }
-            Statement::Resolve { did, subst, pl, pat } => {
+            Statement::Resolve { did, subst, pl } => {
                 lower.ctx.translate(did);
-                let mut istmts = Vec::new();
 
                 let rp = Exp::qvar(lower.names.value(did, subst));
                 let loc = pl.local;
 
-                let mut exp = rp.app_to(pl.as_rplace(lower, &mut istmts));
-                if let Some(pat) = pat {
-                    exp = Exp::Match(
+                let bound = lower.fresh_sym_from("x");
+
+                let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
+
+                let pat = lower_pat(lower.ctx, lower.names, &pat);
+                let exp = if let Pattern::VarP(_) = pat {
+                    rp.app_to(Exp::var(util::ident_of(loc)))
+                } else {
+                    Exp::Match(
                         Box::new(Exp::var(util::ident_of(loc))),
                         vec![
-                            (lower_pat(lower.ctx, lower.names, &pat), exp),
+                            (pat, rp.app_to(Exp::var(bound.as_str()))),
                             (Pattern::Wildcard, Exp::mk_true()),
                         ],
                     )
-                }
+                };
 
                 istmts.extend([IntermediateStmt::Assume(exp)]);
-                istmts
             }
-            Statement::Assertion { cond, msg } => {
-                vec![IntermediateStmt::Assert(Exp::Attr(
-                    Attribute::Attr(format!("expl:{msg}")),
-                    Box::new(lower_pure(lower.ctx, lower.names, &cond)),
-                ))]
-            }
-            Statement::AssumeBorrowInv(pl) => {
-                let inv_fun = Exp::qvar(
-                    lower
-                        .names
-                        .ty_inv(pl.ty(lower.ctx.tcx, lower.locals).builtin_deref(false).unwrap()),
-                );
-                let mut istmts = Vec::new();
-
-                let arg = pl.as_rplace(lower, &mut istmts).field("final");
-
-                istmts.extend(vec![IntermediateStmt::Assume(inv_fun.app_to(arg))]);
-                istmts
-            }
-            Statement::AssertTyInv { pl, pat } => {
-                let mut istmts = Vec::new();
-
+            Statement::Assertion { cond, msg } => istmts.push(IntermediateStmt::Assert(Exp::Attr(
+                Attribute::Attr(format!("expl:{msg}")),
+                Box::new(lower_pure(lower.ctx, lower.names, &cond)),
+            ))),
+            Statement::AssertTyInv { pl } => {
                 let inv_fun = Exp::qvar(lower.names.ty_inv(pl.ty(lower.ctx.tcx, lower.locals)));
                 let loc = pl.local;
 
-                let mut exp = inv_fun.app_to(pl.as_rplace(lower, &mut istmts));
-                if let Some(pat) = pat {
-                    exp = Exp::Match(
+                let bound = lower.fresh_sym_from("x");
+
+                let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
+                let pat = lower_pat(lower.ctx, lower.names, &pat);
+                let exp = if let Pattern::VarP(_) = pat {
+                    inv_fun.app_to(Exp::var(util::ident_of(loc)))
+                } else {
+                    Exp::Match(
                         Box::new(Exp::var(util::ident_of(loc))),
                         vec![
-                            (lower_pat(lower.ctx, lower.names, &pat), exp),
+                            (pat, inv_fun.app_to(Exp::var(bound.as_str()))),
                             (Pattern::Wildcard, Exp::mk_true()),
                         ],
                     )
-                }
+                };
 
                 let exp = Exp::Attr(Attribute::Attr(format!("expl:type invariant")), Box::new(exp));
 
-                istmts.extend(vec![IntermediateStmt::Assert(exp)]);
-                istmts
+                istmts.push(IntermediateStmt::Assert(exp));
+            }
+        }
+        istmts
+    }
+}
+
+/// Transform a place into a deeply nested pattern match, binding the pointed item into `binder`
+/// TODO: Transform this into a `match_place_logic` construct that handles everything
+fn pattern_of_place<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    locals: &fmir::LocalDecls<'tcx>,
+    pl: fmir::Place<'tcx>,
+    binder: Symbol,
+) -> pearlite::Pattern<'tcx> {
+    let mut pat = pearlite::Pattern::Binder(binder);
+
+    for (pl, el) in pl.iter_projections().rev() {
+        let ty = pl.ty(tcx, locals);
+        match el {
+            ProjectionElem::Deref => match ty.ty.kind() {
+                TyKind::Ref(_, _, mutbl) => match mutbl {
+                    Mutability::Not => {
+                        pat = pearlite::Pattern::Deref {
+                            pointee: Box::new(pat),
+                            kind: PointerKind::Shr,
+                        }
+                    }
+                    Mutability::Mut => {
+                        pat = pearlite::Pattern::Deref {
+                            pointee: Box::new(pat),
+                            kind: PointerKind::Mut,
+                        }
+                    }
+                },
+                _ if ty.ty.is_box() => {
+                    pat =
+                        pearlite::Pattern::Deref { pointee: Box::new(pat), kind: PointerKind::Box }
+                }
+                _ => {
+                    unreachable!("unsupported type of deref pattern: {:?}", ty.ty);
+                }
+            },
+            ProjectionElem::Field(fidx, _) => match ty.ty.kind() {
+                TyKind::Adt(adt, substs) => {
+                    let variant_def = &adt.variants()[ty.variant_index.unwrap_or(VariantIdx::ZERO)];
+                    let fields_len = variant_def.fields.len();
+                    let variant = variant_def.def_id;
+                    let mut fields = vec![pearlite::Pattern::Wildcard; fields_len];
+                    fields[fidx.as_usize()] = pat;
+                    pat = pearlite::Pattern::Constructor { variant, substs, fields }
+                }
+                TyKind::Tuple(tys) => {
+                    let mut fields = vec![pearlite::Pattern::Wildcard; tys.len()];
+                    fields[fidx.as_usize()] = pat;
+                    pat = pearlite::Pattern::Tuple(fields)
+                }
+                TyKind::Closure(did, substs) => {
+                    let mut fields: Vec<_> = substs
+                        .as_closure()
+                        .upvar_tys()
+                        .iter()
+                        .map(|_| pearlite::Pattern::Wildcard)
+                        .collect();
+                    fields[fidx.as_usize()] = pat;
+                    pat = pearlite::Pattern::Constructor { variant: *did, substs, fields }
+                }
+                _ => unreachable!(),
+            },
+            ProjectionElem::Downcast(_, _) => {}
+
+            ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. } => {
+                todo!("Array and slice patterns are currently not supported")
+            }
+
+            ProjectionElem::Index(_)
+            | ProjectionElem::OpaqueCast(_)
+            | ProjectionElem::Subtype(_) => {
+                unreachable!("These ProjectionElem should not be move paths")
             }
         }
     }
+
+    pat
 }
 
 fn func_call_to_why3<'tcx, N: Namer<'tcx>>(

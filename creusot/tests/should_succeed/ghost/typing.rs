@@ -2,11 +2,11 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 struct NonCopy(i32);
-impl ShallowModel for NonCopy {
-    type ShallowModelTy = Int;
+impl View for NonCopy {
+    type ViewTy = Int;
     #[logic]
     #[open]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { self.0@ }
     }
 }

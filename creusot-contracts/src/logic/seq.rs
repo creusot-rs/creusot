@@ -46,7 +46,7 @@ impl<T: ?Sized> Seq<T> {
     #[trusted]
     #[logic]
     #[open(self)]
-    #[creusot::builtins = "prelude.seq_ext.SeqExt.subsequence"]
+    #[creusot::builtins = "seq.Seq.([..])"]
     pub fn subsequence(self, _: Int, _: Int) -> Self {
         absurd
     }
@@ -170,7 +170,7 @@ impl<T: ?Sized> Seq<&T> {
     #[logic]
     #[open]
     #[trusted]
-    #[creusot::builtins = "prelude.prelude.Seq.to_owned"]
+    #[creusot::builtins = "identity"]
     pub fn to_owned_seq(self) -> Seq<T> {
         pearlite! {absurd}
     }
@@ -193,16 +193,8 @@ impl<T: ?Sized> Invariant for Seq<T> {
     #[predicate(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
+    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { forall<i:Int> 0 <= i && i < self.len() ==> inv(self.index_logic_unsized(i)) }
-    }
-}
-
-#[trusted]
-impl<T: ?Sized> Resolve for Seq<T> {
-    #[predicate(prophetic)]
-    #[open]
-    fn resolve(self) -> bool {
-        pearlite! { forall<i:Int> 0 <= i && i < self.len() ==> self.index_logic_unsized(i).resolve() }
     }
 }

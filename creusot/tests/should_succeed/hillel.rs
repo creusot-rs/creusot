@@ -3,6 +3,7 @@
 
 extern crate creusot_contracts;
 use creusot_contracts::{
+    invariant::inv,
     logic::{Int, Seq},
     *,
 };
@@ -16,7 +17,6 @@ use creusot_contracts::{
 fn right_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     let old_str = snapshot! { str };
 
-    #[invariant(^str == ^*old_str)]
     #[invariant(old_str@.len() <= str@.len())]
     #[invariant(old_str@.len() < len@ ==> str@.len() <= len@)]
     #[invariant(str@.len() > len@ ==> str@.len() == old_str@.len())]
@@ -35,7 +35,6 @@ fn left_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     let old_str = snapshot! { str };
     let mut c: Snapshot<Int> = snapshot! { 0 };
 
-    #[invariant(^str == ^*old_str)]
     #[invariant(old_str@.len() <= str@.len())]
     #[invariant(old_str@.len() < len@ ==> str@.len() <= len@)]
     #[invariant(str@.len() > len@ ==> str@.len() == old_str@.len())]
@@ -104,6 +103,7 @@ fn unique<T: Eq + DeepModel + Copy>(str: &[T]) -> Vec<T> {
     let mut unique = Vec::new();
     let mut sub_str: Snapshot<Seq<T>> = snapshot! { Seq::EMPTY };
 
+    #[invariant(inv(unique))]
     #[invariant(is_unique(unique.deep_model()))]
     #[invariant(is_subset(unique.deep_model(), str.deep_model()))]
     #[invariant(is_subset(str.deep_model().subsequence(0, produced.len()), unique.deep_model()))]

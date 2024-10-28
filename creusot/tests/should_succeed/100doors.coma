@@ -1,26 +1,18 @@
-
 module T_core__ptr__non_null__NonNull
   use prelude.prelude.Opaque
   
   type t_NonNull 't =
     | C_NonNull opaque_ptr
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
-    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
-    | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
+    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer}) ]
     
 end
 module T_core__marker__PhantomData
   type t_PhantomData 't =
     | C_PhantomData
   
-  function any_l (_ : 'b) : 'a
-  
-  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any
-    [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
-    
+  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any [ good -> {C_PhantomData  = input} (! ret) ] 
 end
 module T_core__ptr__unique__Unique
   use T_core__marker__PhantomData as PhantomData'0
@@ -30,16 +22,10 @@ module T_core__ptr__unique__Unique
   type t_Unique 't =
     | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
     [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       = input}
-      (! ret {pointer} {_marker})
-    | bad (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
-      <> input}
-      {false}
-      any ]
+      (! ret {pointer} {_marker}) ]
     
 end
 module T_alloc__raw_vec__Cap
@@ -50,11 +36,8 @@ module T_alloc__raw_vec__Cap
   type t_Cap  =
     | C_Cap usize
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
-    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
-    | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
+    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0}) ]
     
 end
 module T_alloc__raw_vec__RawVec
@@ -65,12 +48,9 @@ module T_alloc__raw_vec__RawVec
   type t_RawVec 't 'a =
     | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
     [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
-      (! ret {ptr} {cap} {alloc})
-    | bad (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
+      (! ret {ptr} {cap} {alloc}) ]
     
 end
 module T_alloc__vec__Vec
@@ -83,32 +63,22 @@ module T_alloc__vec__Vec
   type t_Vec 't 'a =
     | C_Vec (RawVec'0.t_RawVec 't 'a) usize
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
-    | bad (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
     
 end
 module T_alloc__alloc__Global
   type t_Global  =
     | C_Global
   
-  function any_l (_ : 'b) : 'a
-  
-  let rec t_Global (input:t_Global) (ret  )= any
-    [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
-    
+  let rec t_Global (input:t_Global) (ret  )= any [ good -> {C_Global  = input} (! ret) ] 
 end
 module T_core__ops__range__Range
   type t_Range 'idx =
     | C_Range 'idx 'idx
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_Range < 'idx > (input:t_Range 'idx) (ret  (start:'idx) (end':'idx))= any
-    [ good (start:'idx) (end':'idx)-> {C_Range start end' = input} (! ret {start} {end'})
-    | bad (start:'idx) (end':'idx)-> {C_Range start end' <> input} {false} any ]
+    [ good (start:'idx) (end':'idx)-> {C_Range start end' = input} (! ret {start} {end'}) ]
     
   
   function t_Range__end (self : t_Range 'idx) : 'idx =
@@ -126,279 +96,132 @@ module T_core__option__Option
     | C_None
     | C_Some 't
   
-  function any_l (_ : 'b) : 'a
-  
   let rec v_None < 't > (input:t_Option 't) (ret  )= any
-    [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ]
+    [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} (! {false} any) ]
     
   
   let rec v_Some < 't > (input:t_Option 't) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
-    | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
+    | bad -> {forall field_0 : 't [C_Some field_0 : t_Option 't] . C_Some field_0 <> input} (! {false} any) ]
     
 end
-module T_alloc__boxed__Box
-  use T_core__ptr__unique__Unique as Unique'0
-  
-  type t_Box 't 'a =
-    | C_Box (Unique'0.t_Unique 't) 'a
-  
-  function any_l (_ : 'b) : 'a
-end
-module M_100doors__f
-  let%span s100doors0 = "../100doors.rs" 19 40 19 45
-  
-  let%span s100doors1 = "../100doors.rs" 19 47 19 50
-  
-  let%span s100doors2 = "../100doors.rs" 21 16 21 17
-  
-  let%span s100doors3 = "../100doors.rs" 21 19 21 22
-  
-  let%span s100doors4 = "../100doors.rs" 20 4 20 41
-  
-  let%span s100doors5 = "../100doors.rs" 20 4 20 41
-  
-  let%span s100doors6 = "../100doors.rs" 20 4 20 41
-  
-  let%span s100doors7 = "../100doors.rs" 20 16 20 39
-  
-  let%span s100doors8 = "../100doors.rs" 20 4 20 41
-  
-  let%span s100doors9 = "../100doors.rs" 23 20 23 54
-  
-  let%span s100doors10 = "../100doors.rs" 24 20 24 43
-  
-  let%span s100doors11 = "../100doors.rs" 25 22 25 25
-  
-  let%span s100doors12 = "../100doors.rs" 26 52 26 53
-  
-  let%span s100doors13 = "../100doors.rs" 26 29 26 30
-  
-  let%span span14 = "../../../../creusot-contracts/src/std/boxed.rs" 27 8 27 18
-  
-  let%span span15 = "../../../../creusot-contracts/src/logic/seq.rs" 197 8 197 97
-  
-  let%span span16 = "../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
-  
-  let%span span17 = "../../../../creusot-contracts/src/invariant.rs" 26 8 26 18
-  
-  let%span span18 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
-  
-  let%span span19 = "" 0 0 0 0
-  
-  let%span span20 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
-  
-  let%span span21 = "../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
-  
-  let%span span22 = "../../../../creusot-contracts/src/std/num.rs" 22 16 22 35
-  
-  let%span span23 = "../../../../creusot-contracts/src/std/iter/range.rs" 22 8 28 9
-  
-  let%span span24 = "../../../../creusot-contracts/src/std/iter/range.rs" 39 15 39 21
-  
-  let%span span25 = "../../../../creusot-contracts/src/std/iter/range.rs" 40 15 40 21
-  
-  let%span span26 = "../../../../creusot-contracts/src/std/iter/range.rs" 41 15 41 21
-  
-  let%span span27 = "../../../../creusot-contracts/src/std/iter/range.rs" 42 15 42 32
-  
-  let%span span28 = "../../../../creusot-contracts/src/std/iter/range.rs" 43 15 43 32
-  
-  let%span span29 = "../../../../creusot-contracts/src/std/iter/range.rs" 44 14 44 42
-  
-  let%span span30 = "../../../../creusot-contracts/src/std/iter/range.rs" 33 15 33 24
-  
-  let%span span31 = "../../../../creusot-contracts/src/std/iter/range.rs" 34 14 34 45
-  
-  let%span span32 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
-  
-  let%span span33 = "../../../../creusot-contracts/src/std/slice.rs" 138 8 138 96
-  
-  let%span span34 = "../../../../creusot-contracts/src/std/slice.rs" 131 20 131 37
-  
-  let%span span35 = "../../../../creusot-contracts/src/std/slice.rs" 124 20 124 37
-  
-  let%span span36 = "../../../../creusot-contracts/src/model.rs" 108 8 108 31
-  
-  let%span span37 = "../../../../creusot-contracts/src/std/vec.rs" 146 27 146 46
-  
-  let%span span38 = "" 0 0 0 0
-  
-  let%span span39 = "" 0 0 0 0
-  
-  let%span span40 = "../../../../creusot-contracts/src/std/vec.rs" 147 26 147 54
-  
-  let%span span41 = "../../../../creusot-contracts/src/std/vec.rs" 148 26 148 57
-  
-  let%span span42 = "../../../../creusot-contracts/src/std/vec.rs" 149 26 149 62
-  
-  let%span span43 = "../../../../creusot-contracts/src/std/vec.rs" 150 26 150 55
-  
-  let%span span44 = "" 0 0 0 0
-  
-  let%span span45 = "../../../../creusot-contracts/src/model.rs" 90 8 90 31
-  
-  let%span span46 = "../../../../creusot-contracts/src/std/vec.rs" 156 27 156 46
-  
-  let%span span47 = "" 0 0 0 0
-  
-  let%span span48 = "" 0 0 0 0
-  
-  let%span span49 = "../../../../creusot-contracts/src/std/vec.rs" 157 26 157 54
-  
-  let%span span50 = "" 0 0 0 0
-  
-  let%span span51 = "../../../../creusot-contracts/src/std/iter/range.rs" 15 12 15 78
-  
-  let%span span52 = "" 0 0 0 0
-  
-  let%span span53 = "../../../../creusot-contracts/src/std/iter.rs" 99 26 102 17
-  
-  let%span span54 = "" 0 0 0 0
-  
-  let%span span55 = "../../../../creusot-contracts/src/std/iter.rs" 84 8 84 19
-  
-  let%span span56 = "../../../../creusot-contracts/src/std/iter.rs" 78 20 78 24
-  
-  let%span span57 = "../../../../creusot-contracts/src/std/iter.rs" 93 0 179 1
-  
-  let%span span58 = "" 0 0 0 0
-  
-  let%span span59 = "" 0 0 0 0
-  
-  let%span span60 = "../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
-  
-  let%span span61 = "" 0 0 0 0
-  
-  let%span span62 = "../../../../creusot-contracts/src/std/vec.rs" 174 22 174 41
-  
-  let%span span63 = "../../../../creusot-contracts/src/std/vec.rs" 175 12 175 78
-  
-  let%span span64 = "" 0 0 0 0
-  
-  predicate inv'1 (_1 : bool)
-  
-  use T_alloc__alloc__Global as Global'0
-  
-  predicate invariant'11 (self : bool) =
-    [%#span14] inv'1 self
-  
-  predicate inv'11 (_1 : bool)
-  
-  axiom inv'11 : forall x : bool . inv'11 x = true
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use prelude.prelude.Int
-  
-  use seq.Seq
-  
-  predicate invariant'10 (self : Seq.seq bool) =
-    [%#span15] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'11 (Seq.get self i)
-  
-  predicate inv'10 (_1 : Seq.seq bool)
-  
-  axiom inv'10 : forall x : Seq.seq bool . inv'10 x = true
+module M_100doors__f [#"100doors.rs" 18 0 18 10]
+  let%span s100doors0 = "100doors.rs" 19 40 19 45
+  let%span s100doors1 = "100doors.rs" 19 47 19 50
+  let%span s100doors2 = "100doors.rs" 21 16 21 17
+  let%span s100doors3 = "100doors.rs" 21 19 21 22
+  let%span s100doors4 = "100doors.rs" 20 4 20 41
+  let%span s100doors5 = "100doors.rs" 20 4 20 41
+  let%span s100doors6 = "100doors.rs" 20 4 20 41
+  let%span s100doors7 = "100doors.rs" 20 16 20 39
+  let%span s100doors8 = "100doors.rs" 20 4 20 41
+  let%span s100doors9 = "100doors.rs" 23 20 23 54
+  let%span s100doors10 = "100doors.rs" 24 20 24 43
+  let%span s100doors11 = "100doors.rs" 25 22 25 25
+  let%span s100doors12 = "100doors.rs" 26 52 26 53
+  let%span s100doors13 = "100doors.rs" 26 29 26 30
+  let%span svec14 = "../../../creusot-contracts/src/std/vec.rs" 183 22 183 41
+  let%span svec15 = "../../../creusot-contracts/src/std/vec.rs" 184 12 184 78
+  let%span siter16 = "../../../creusot-contracts/src/std/iter.rs" 101 0 214 1
+  let%span srange17 = "../../../creusot-contracts/src/std/iter/range.rs" 22 8 28 9
+  let%span svec18 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
+  let%span siter19 = "../../../creusot-contracts/src/std/iter.rs" 107 26 110 17
+  let%span svec20 = "../../../creusot-contracts/src/std/vec.rs" 165 27 165 46
+  let%span svec21 = "../../../creusot-contracts/src/std/vec.rs" 166 26 166 54
+  let%span svec22 = "../../../creusot-contracts/src/std/vec.rs" 155 27 155 46
+  let%span svec23 = "../../../creusot-contracts/src/std/vec.rs" 156 26 156 54
+  let%span svec24 = "../../../creusot-contracts/src/std/vec.rs" 157 26 157 57
+  let%span svec25 = "../../../creusot-contracts/src/std/vec.rs" 158 26 158 62
+  let%span svec26 = "../../../creusot-contracts/src/std/vec.rs" 159 26 159 55
+  let%span sops27 = "../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
+  let%span siter28 = "../../../creusot-contracts/src/std/iter.rs" 86 20 86 24
+  let%span siter29 = "../../../creusot-contracts/src/std/iter.rs" 92 8 92 19
+  let%span srange30 = "../../../creusot-contracts/src/std/iter/range.rs" 33 15 33 24
+  let%span srange31 = "../../../creusot-contracts/src/std/iter/range.rs" 34 14 34 45
+  let%span srange32 = "../../../creusot-contracts/src/std/iter/range.rs" 39 15 39 21
+  let%span srange33 = "../../../creusot-contracts/src/std/iter/range.rs" 40 15 40 21
+  let%span srange34 = "../../../creusot-contracts/src/std/iter/range.rs" 41 15 41 21
+  let%span srange35 = "../../../creusot-contracts/src/std/iter/range.rs" 42 15 42 32
+  let%span srange36 = "../../../creusot-contracts/src/std/iter/range.rs" 43 15 43 32
+  let%span srange37 = "../../../creusot-contracts/src/std/iter/range.rs" 44 14 44 42
+  let%span snum38 = "../../../creusot-contracts/src/std/num.rs" 22 16 22 35
+  let%span srange39 = "../../../creusot-contracts/src/std/iter/range.rs" 15 12 15 78
+  let%span sresolve40 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
+  let%span smodel41 = "../../../creusot-contracts/src/model.rs" 91 8 91 22
+  let%span sslice42 = "../../../creusot-contracts/src/std/slice.rs" 126 20 126 37
+  let%span sslice43 = "../../../creusot-contracts/src/std/slice.rs" 133 20 133 37
+  let%span smodel44 = "../../../creusot-contracts/src/model.rs" 109 8 109 22
+  let%span sslice45 = "../../../creusot-contracts/src/std/slice.rs" 140 8 140 96
   
   use prelude.prelude.Borrow
   
-  predicate invariant'9 (self : borrowed bool) =
-    [%#span16] inv'1 self.current /\ inv'1 self.final
+  predicate inv'10 (_1 : borrowed bool)
   
-  predicate inv'9 (_1 : borrowed bool)
+  axiom inv_axiom'10 [@rewrite] : forall x : borrowed bool [inv'10 x] . inv'10 x = true
   
-  axiom inv'9 : forall x : borrowed bool . inv'9 x = true
+  use T_alloc__alloc__Global as Global'0
   
   use T_alloc__vec__Vec as Vec'0
   
-  predicate inv'2 (_1 : Vec'0.t_Vec bool (Global'0.t_Global))
+  predicate inv'9 (_1 : borrowed (Vec'0.t_Vec bool (Global'0.t_Global)))
   
-  predicate invariant'8 (self : borrowed (Vec'0.t_Vec bool (Global'0.t_Global))) =
-    [%#span16] inv'2 self.current /\ inv'2 self.final
+  axiom inv_axiom'9 [@rewrite] : forall x : borrowed (Vec'0.t_Vec bool (Global'0.t_Global)) [inv'9 x] . inv'9 x = true
   
-  predicate inv'8 (_1 : borrowed (Vec'0.t_Vec bool (Global'0.t_Global)))
+  predicate inv'8 (_1 : bool)
   
-  axiom inv'8 : forall x : borrowed (Vec'0.t_Vec bool (Global'0.t_Global)) . inv'8 x = true
-  
-  predicate invariant'7 (self : bool) =
-    [%#span17] inv'1 self
-  
-  predicate inv'7 (_1 : bool)
-  
-  axiom inv'7 : forall x : bool . inv'7 x = true
+  axiom inv_axiom'8 [@rewrite] : forall x : bool [inv'8 x] . inv'8 x = true
   
   use prelude.prelude.UIntSize
-  
-  predicate invariant'6 (self : usize) =
-    [%#span18] true
-  
-  predicate inv'6 (_1 : usize)
-  
-  axiom inv'6 : forall x : usize . inv'6 x = true
-  
-  predicate invariant'5 (self : Vec'0.t_Vec bool (Global'0.t_Global)) =
-    [%#span17] inv'2 self
-  
-  predicate inv'5 (_1 : Vec'0.t_Vec bool (Global'0.t_Global))
-  
-  axiom inv'5 : forall x : Vec'0.t_Vec bool (Global'0.t_Global) . inv'5 x = true
-  
-  use T_core__option__Option as Option'0
-  
-  predicate invariant'4 (self : Option'0.t_Option usize) =
-    [%#span18] true
-  
-  predicate inv'4 (_1 : Option'0.t_Option usize)
-  
-  axiom inv'4 : forall x : Option'0.t_Option usize . inv'4 x = true
-  
-  use T_core__ops__range__Range as Range'0
-  
-  predicate inv'0 (_1 : Range'0.t_Range usize)
-  
-  predicate invariant'3 (self : borrowed (Range'0.t_Range usize)) =
-    [%#span16] inv'0 self.current /\ inv'0 self.final
-  
-  predicate inv'3 (_1 : borrowed (Range'0.t_Range usize))
-  
-  axiom inv'3 : forall x : borrowed (Range'0.t_Range usize) . inv'3 x = true
-  
-  use prelude.prelude.UIntSize
-  
-  constant v_MAX'0 : usize = [%#span19] (18446744073709551615 : usize)
-  
-  function shallow_model'0 (self : Vec'0.t_Vec bool (Global'0.t_Global)) : Seq.seq bool
-  
-  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec bool (Global'0.t_Global) . [%#span20] Seq.length (shallow_model'0 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  predicate invariant'2 (self : Vec'0.t_Vec bool (Global'0.t_Global)) =
-    [%#span21] inv'10 (shallow_model'0 self)
-  
-  axiom inv'2 : forall x : Vec'0.t_Vec bool (Global'0.t_Global) . inv'2 x = true
-  
-  predicate invariant'1 (self : bool) =
-    [%#span18] true
-  
-  axiom inv'1 : forall x : bool . inv'1 x = true
-  
-  use seq.Seq
   
   use prelude.prelude.Int
   
+  predicate inv'7 (_1 : usize)
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : usize [inv'7 x] . inv'7 x = true
+  
+  predicate inv'6 (_1 : Vec'0.t_Vec bool (Global'0.t_Global))
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : Vec'0.t_Vec bool (Global'0.t_Global) [inv'6 x] . inv'6 x = true
+  
+  use T_core__option__Option as Option'0
+  
+  predicate inv'5 (_1 : Option'0.t_Option usize)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : Option'0.t_Option usize [inv'5 x] . inv'5 x = true
+  
+  use T_core__ops__range__Range as Range'0
+  
+  predicate inv'4 (_1 : borrowed (Range'0.t_Range usize))
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : borrowed (Range'0.t_Range usize) [inv'4 x] . inv'4 x = true
+  
+  predicate inv'3 (_1 : Vec'0.t_Vec bool (Global'0.t_Global))
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : Vec'0.t_Vec bool (Global'0.t_Global) [inv'3 x] . inv'3 x = true
+  
+  predicate inv'2 (_1 : bool)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : bool [inv'2 x] . inv'2 x = true
+  
   use seq.Seq
   
   use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use prelude.prelude.UIntSize
   
   function deep_model'0 (self : usize) : int =
-    [%#span22] UIntSize.to_int self
+    [%#snum38] UIntSize.to_int self
+  
+  use T_core__ops__range__Range as T_core__ops__range__Range
   
   use T_core__ops__range__Range as T_core__ops__range__Range
   
   predicate produces'0 (self : Range'0.t_Range usize) (visited : Seq.seq usize) (o : Range'0.t_Range usize) =
-    [%#span23] T_core__ops__range__Range.t_Range__end self = T_core__ops__range__Range.t_Range__end o
+    [%#srange17] T_core__ops__range__Range.t_Range__end self = T_core__ops__range__Range.t_Range__end o
     /\ deep_model'0 (T_core__ops__range__Range.t_Range__start self)
     <= deep_model'0 (T_core__ops__range__Range.t_Range__start o)
     /\ (Seq.length visited > 0
@@ -410,88 +233,107 @@ module M_100doors__f
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'0 (Seq.get visited i) = deep_model'0 (T_core__ops__range__Range.t_Range__start self) + i)
   
+  predicate inv'1 (_1 : Range'0.t_Range usize)
+  
   function produces_trans'0 (a : Range'0.t_Range usize) (ab : Seq.seq usize) (b : Range'0.t_Range usize) (bc : Seq.seq usize) (c : Range'0.t_Range usize) : ()
     
   
-  axiom produces_trans'0_spec : forall a : Range'0.t_Range usize, ab : Seq.seq usize, b : Range'0.t_Range usize, bc : Seq.seq usize, c : Range'0.t_Range usize . ([%#span24] inv'0 a)
-   -> ([%#span25] inv'0 b)
-   -> ([%#span26] inv'0 c)
-   -> ([%#span27] produces'0 a ab b)  -> ([%#span28] produces'0 b bc c)  -> ([%#span29] produces'0 a (Seq.(++) ab bc) c)
+  axiom produces_trans'0_spec : forall a : Range'0.t_Range usize, ab : Seq.seq usize, b : Range'0.t_Range usize, bc : Seq.seq usize, c : Range'0.t_Range usize . ([%#srange32] inv'1 a)
+   -> ([%#srange33] inv'1 b)
+   -> ([%#srange34] inv'1 c)
+   -> ([%#srange35] produces'0 a ab b)
+   -> ([%#srange36] produces'0 b bc c)  -> ([%#srange37] produces'0 a (Seq.(++) ab bc) c)
   
   use seq.Seq
   
   function produces_refl'0 (self : Range'0.t_Range usize) : ()
   
-  axiom produces_refl'0_spec : forall self : Range'0.t_Range usize . ([%#span30] inv'0 self)
-   -> ([%#span31] produces'0 self (Seq.empty  : Seq.seq usize) self)
+  axiom produces_refl'0_spec : forall self : Range'0.t_Range usize . ([%#srange30] inv'1 self)
+   -> ([%#srange31] produces'0 self (Seq.empty  : Seq.seq usize) self)
   
-  predicate invariant'0 (self : Range'0.t_Range usize) =
-    [%#span18] true
+  axiom inv_axiom'1 [@rewrite] : forall x : Range'0.t_Range usize [inv'1 x] . inv'1 x = true
   
-  axiom inv'0 : forall x : Range'0.t_Range usize . inv'0 x = true
+  predicate inv'0 (_1 : Seq.seq usize)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : Seq.seq usize [inv'0 x] . inv'0 x = true
+  
+  use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'1 (self : borrowed bool) =
-    [%#span32] self.final = self.current
+  predicate resolve'3 (self : borrowed bool) =
+    [%#sresolve40] self.final = self.current
   
-  use prelude.prelude.Slice
+  predicate resolve'1 (_1 : borrowed bool) =
+    resolve'3 _1
+  
+  use seq.Seq
+  
+  use seq.Seq
   
   use seq.Seq
   
   predicate resolve_elswhere'0 [@inline:trivial] (self : usize) (old' : Seq.seq bool) (fin : Seq.seq bool) =
-    [%#span33] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
+    [%#sslice45] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
   
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  function view'0 (self : Vec'0.t_Vec bool (Global'0.t_Global)) : Seq.seq bool
+  
+  axiom view'0_spec : forall self : Vec'0.t_Vec bool (Global'0.t_Global) . [%#svec18] Seq.length (view'0 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
+  
   predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq bool) (out : bool) =
-    [%#span34] Seq.get seq (UIntSize.to_int self) = out
+    [%#sslice43] Seq.get seq (UIntSize.to_int self) = out
   
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq bool) =
-    [%#span35] UIntSize.to_int self < Seq.length seq
+    [%#sslice42] UIntSize.to_int self < Seq.length seq
   
-  function shallow_model'2 (self : borrowed (Vec'0.t_Vec bool (Global'0.t_Global))) : Seq.seq bool =
-    [%#span36] shallow_model'0 self.current
+  function view'2 (self : borrowed (Vec'0.t_Vec bool (Global'0.t_Global))) : Seq.seq bool =
+    [%#smodel44] view'0 self.current
   
-  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec bool (Global'0.t_Global))) (index:usize) (return'  (ret:borrowed bool))= {[@expl:precondition] [%#span39] inv'6 index}
-    {[@expl:precondition] [%#span38] inv'8 self}
-    {[@expl:precondition] [%#span37] in_bounds'0 index (shallow_model'2 self)}
+  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec bool (Global'0.t_Global))) (index:usize) (return'  (ret:borrowed bool))= {[@expl:precondition] inv'7 index}
+    {[@expl:precondition] inv'9 self}
+    {[@expl:precondition] [%#svec22] in_bounds'0 index (view'2 self)}
     any
-    [ return' (result:borrowed bool)-> {[%#span44] inv'9 result}
-      {[%#span43] Seq.length (shallow_model'0 self.final) = Seq.length (shallow_model'2 self)}
-      {[%#span42] resolve_elswhere'0 index (shallow_model'2 self) (shallow_model'0 self.final)}
-      {[%#span41] has_value'0 index (shallow_model'0 self.final) result.final}
-      {[%#span40] has_value'0 index (shallow_model'2 self) result.current}
+    [ return' (result:borrowed bool)-> {inv'10 result}
+      {[%#svec26] Seq.length (view'0 self.final) = Seq.length (view'2 self)}
+      {[%#svec25] resolve_elswhere'0 index (view'2 self) (view'0 self.final)}
+      {[%#svec24] has_value'0 index (view'0 self.final) result.final}
+      {[%#svec23] has_value'0 index (view'2 self) result.current}
       (! return' {result}) ]
     
   
-  function shallow_model'1 (self : Vec'0.t_Vec bool (Global'0.t_Global)) : Seq.seq bool =
-    [%#span45] shallow_model'0 self
+  function view'1 (self : Vec'0.t_Vec bool (Global'0.t_Global)) : Seq.seq bool =
+    [%#smodel41] view'0 self
   
-  let rec index'0 (self:Vec'0.t_Vec bool (Global'0.t_Global)) (index:usize) (return'  (ret:bool))= {[@expl:precondition] [%#span48] inv'6 index}
-    {[@expl:precondition] [%#span47] inv'5 self}
-    {[@expl:precondition] [%#span46] in_bounds'0 index (shallow_model'1 self)}
+  let rec index'0 (self:Vec'0.t_Vec bool (Global'0.t_Global)) (index:usize) (return'  (ret:bool))= {[@expl:precondition] inv'7 index}
+    {[@expl:precondition] inv'6 self}
+    {[@expl:precondition] [%#svec20] in_bounds'0 index (view'1 self)}
     any
-    [ return' (result:bool)-> {[%#span50] inv'7 result}
-      {[%#span49] has_value'0 index (shallow_model'1 self) result}
-      (! return' {result}) ]
+    [ return' (result:bool)-> {inv'8 result} {[%#svec21] has_value'0 index (view'1 self) result} (! return' {result}) ]
     
   
   use seq.Seq
   
-  predicate resolve'0 (self : borrowed (Range'0.t_Range usize)) =
-    [%#span32] self.final = self.current
+  predicate resolve'2 (self : borrowed (Range'0.t_Range usize)) =
+    [%#sresolve40] self.final = self.current
+  
+  predicate resolve'0 (_1 : borrowed (Range'0.t_Range usize)) =
+    resolve'2 _1
   
   predicate completed'0 (self : borrowed (Range'0.t_Range usize)) =
-    [%#span51] resolve'0 self
+    [%#srange39] resolve'2 self
     /\ deep_model'0 (T_core__ops__range__Range.t_Range__start self.current)
     >= deep_model'0 (T_core__ops__range__Range.t_Range__end self.current)
   
-  let rec next'0 (self:borrowed (Range'0.t_Range usize)) (return'  (ret:Option'0.t_Option usize))= {[@expl:precondition] [%#span52] inv'3 self}
+  let rec next'0 (self:borrowed (Range'0.t_Range usize)) (return'  (ret:Option'0.t_Option usize))= {[@expl:precondition] inv'4 self}
     any
-    [ return' (result:Option'0.t_Option usize)-> {[%#span54] inv'4 result}
-      {[%#span53] match result with
+    [ return' (result:Option'0.t_Option usize)-> {inv'5 result}
+      {[%#siter19] match result with
         | Option'0.C_None -> completed'0 self
         | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
@@ -506,30 +348,34 @@ module M_100doors__f
   
   use prelude.prelude.Snapshot
   
+  use prelude.prelude.Snapshot
+  
   predicate into_iter_post'0 (self : Range'0.t_Range usize) (res : Range'0.t_Range usize) =
-    [%#span55] self = res
+    [%#siter29] self = res
   
   predicate into_iter_pre'0 (self : Range'0.t_Range usize) =
-    [%#span56] true
+    [%#siter28] true
   
-  let rec into_iter'0 (self:Range'0.t_Range usize) (return'  (ret:Range'0.t_Range usize))= {[@expl:precondition] [%#span58] inv'0 self}
-    {[@expl:precondition] [%#span57] into_iter_pre'0 self}
+  let rec into_iter'0 (self:Range'0.t_Range usize) (return'  (ret:Range'0.t_Range usize))= {[@expl:precondition] inv'1 self}
+    {[@expl:precondition] [%#siter16] into_iter_pre'0 self}
     any
-    [ return' (result:Range'0.t_Range usize)-> {[%#span59] inv'0 result}
-      {[%#span57] into_iter_post'0 self result}
+    [ return' (result:Range'0.t_Range usize)-> {inv'1 result}
+      {[%#siter16] into_iter_post'0 self result}
       (! return' {result}) ]
     
   
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec bool (Global'0.t_Global)) (ix : int) : bool =
-    [%#span60] Seq.get (shallow_model'0 self) ix
+    [%#sops27] Seq.get (view'0 self) ix
   
-  let rec from_elem'0 (elem:bool) (n:usize) (return'  (ret:Vec'0.t_Vec bool (Global'0.t_Global)))= {[@expl:precondition] [%#span61] inv'1 elem}
+  let rec from_elem'0 (elem:bool) (n:usize) (return'  (ret:Vec'0.t_Vec bool (Global'0.t_Global)))= {[@expl:precondition] inv'2 elem}
     any
-    [ return' (result:Vec'0.t_Vec bool (Global'0.t_Global))-> {[%#span64] inv'2 result}
-      {[%#span63] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
-      {[%#span62] Seq.length (shallow_model'0 result) = UIntSize.to_int n}
+    [ return' (result:Vec'0.t_Vec bool (Global'0.t_Global))-> {inv'3 result}
+      {[%#svec15] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
+      {[%#svec14] Seq.length (view'0 result) = UIntSize.to_int n}
       (! return' {result}) ]
     
+  
+  meta "compute_max_steps" 1000000
   
   let rec f (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
@@ -547,70 +393,71 @@ module M_100doors__f
     | bb4 = bb5
     | bb5 = bb6
     | bb6 = bb6
-      [ bb6 = {[@expl:loop invariant] [%#s100doors7] Seq.length (shallow_model'0 door_open) = 100}
+      [ bb6 = {[@expl:loop invariant] [%#s100doors7] Seq.length (view'0 door_open) = 100}
         {[@expl:loop invariant] [%#s100doors6] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
-        {[@expl:loop invariant] [%#s100doors6] inv'0 iter}
+        {[@expl:loop invariant] [%#s100doors6] inv'1 iter}
+        {[@expl:loop invariant] [%#s100doors6] inv'0 (Snapshot.inner produced)}
         (! s0) [ s0 = bb7 ] 
         [ bb7 = s0
           [ s0 = Borrow.borrow_mut <Range'0.t_Range usize> {iter}
-              (fun (_ret':borrowed (Range'0.t_Range usize)) ->  [ &_14 <- _ret' ]  [ &iter <- _14.final ] s1)
-          | s1 = Borrow.borrow_final <Range'0.t_Range usize> {_14.current} {Borrow.get_id _14}
+              (fun (_ret':borrowed (Range'0.t_Range usize)) ->  [ &_15 <- _ret' ]  [ &iter <- _ret'.final ] s1)
+          | s1 = Borrow.borrow_final <Range'0.t_Range usize> {_15.current} {Borrow.get_id _15}
               (fun (_ret':borrowed (Range'0.t_Range usize)) ->
-                 [ &_13 <- _ret' ] 
-                 [ &_14 <- { _14 with current = _13.final ; } ] 
+                 [ &_14 <- _ret' ] 
+                 [ &_15 <- { _15 with current = _ret'.final ; } ] 
                 s2)
-          | s2 = next'0 {_13} (fun (_ret':Option'0.t_Option usize) ->  [ &_12 <- _ret' ] s3)
+          | s2 = next'0 {_14} (fun (_ret':Option'0.t_Option usize) ->  [ &_13 <- _ret' ] s3)
           | s3 = bb8 ]
           
         | bb8 = s0
-          [ s0 = -{resolve'0 _14}- s1
+          [ s0 = -{resolve'0 _15}- s1
           | s1 = any
-            [ br0 -> {_12 = Option'0.C_None } (! bb11) | br1 (a:usize)-> {_12 = Option'0.C_Some a} (! bb10) ]
+            [ br0 -> {_13 = Option'0.C_None } (! bb11) | br1 (a:usize)-> {_13 = Option'0.C_Some a} (! bb10) ]
              ]
           
         | bb10 = bb12
         | bb12 = s0
-          [ s0 = Option'0.v_Some <usize> {_12} (fun (r0'0:usize) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
+          [ s0 = Option'0.v_Some <usize> {_13} (fun (r0'0:usize) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
           | s1 = 
-            [ &_17 <- [%#s100doors8] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
+            [ &_18 <- [%#s100doors8] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
             
             s2
           | s2 = bb13 ]
           
         | bb13 = s0
-          [ s0 =  [ &produced <- _17 ] s1
+          [ s0 =  [ &produced <- _18 ] s1
           | s1 =  [ &pass <- __creusot_proc_iter_elem ] s2
           | s2 =  [ &door <- pass ] s3
           | s3 = bb14 ]
           
         | bb14 = bb15
         | bb15 = bb15
-          [ bb15 = {[@expl:loop invariant] [%#s100doors10] Seq.length (shallow_model'0 door_open) = 100}
+          [ bb15 = {[@expl:loop invariant] [%#s100doors10] Seq.length (view'0 door_open) = 100}
             {[@expl:loop invariant] [%#s100doors9] 1 <= UIntSize.to_int door
             /\ UIntSize.to_int door <= 100 + UIntSize.to_int pass}
             (! s0) [ s0 = bb16 ] 
             [ bb16 = s0
-              [ s0 = UIntSize.le {door} {[%#s100doors11] (100 : usize)} (fun (_ret':bool) ->  [ &_23 <- _ret' ] s1)
-              | s1 = any [ br0 -> {_23 = false} (! bb20) | br1 -> {_23} (! bb17) ]  ]
+              [ s0 = UIntSize.le {door} {[%#s100doors11] (100 : usize)} (fun (_ret':bool) ->  [ &_24 <- _ret' ] s1)
+              | s1 = any [ br0 -> {_24 = false} (! bb20) | br1 -> {_24} (! bb17) ]  ]
               
             | bb17 = s0
-              [ s0 = UIntSize.sub {door} {[%#s100doors12] (1 : usize)} (fun (_ret':usize) ->  [ &_28 <- _ret' ] s1)
-              | s1 = index'0 {door_open} {_28} (fun (_ret':bool) ->  [ &_26 <- _ret' ] s2)
+              [ s0 = UIntSize.sub {door} {[%#s100doors12] (1 : usize)} (fun (_ret':usize) ->  [ &_29 <- _ret' ] s1)
+              | s1 = index'0 {door_open} {_29} (fun (_ret':bool) ->  [ &_27 <- _ret' ] s2)
               | s2 = bb18 ]
               
             | bb18 = s0
               [ s0 = Borrow.borrow_mut <Vec'0.t_Vec bool (Global'0.t_Global)> {door_open}
                   (fun (_ret':borrowed (Vec'0.t_Vec bool (Global'0.t_Global))) ->
-                     [ &_31 <- _ret' ] 
-                     [ &door_open <- _31.final ] 
+                     [ &_32 <- _ret' ] 
+                     [ &door_open <- _ret'.final ] 
                     s1)
-              | s1 = UIntSize.sub {door} {[%#s100doors13] (1 : usize)} (fun (_ret':usize) ->  [ &_32 <- _ret' ] s2)
-              | s2 = index_mut'0 {_31} {_32} (fun (_ret':borrowed bool) ->  [ &_30 <- _ret' ] s3)
+              | s1 = UIntSize.sub {door} {[%#s100doors13] (1 : usize)} (fun (_ret':usize) ->  [ &_33 <- _ret' ] s2)
+              | s2 = index_mut'0 {_32} {_33} (fun (_ret':borrowed bool) ->  [ &_31 <- _ret' ] s3)
               | s3 = bb19 ]
               
             | bb19 = s0
-              [ s0 =  [ &_30 <- { _30 with current = (not _26) ; } ] s1
-              | s1 = -{resolve'1 _30}- s2
+              [ s0 =  [ &_31 <- { _31 with current = (not _27) ; } ] s1
+              | s1 = -{resolve'1 _31}- s2
               | s2 = UIntSize.add {door} {pass} (fun (_ret':usize) ->  [ &door <- _ret' ] s3)
               | s3 = bb15 ]
                ]
@@ -628,18 +475,18 @@ module M_100doors__f
     | & _3 : Range'0.t_Range usize = any_l ()
     | & iter_old : Snapshot.snap_ty (Range'0.t_Range usize) = any_l ()
     | & produced : Snapshot.snap_ty (Seq.seq usize) = any_l ()
-    | & _12 : Option'0.t_Option usize = any_l ()
-    | & _13 : borrowed (Range'0.t_Range usize) = any_l ()
+    | & _13 : Option'0.t_Option usize = any_l ()
     | & _14 : borrowed (Range'0.t_Range usize) = any_l ()
+    | & _15 : borrowed (Range'0.t_Range usize) = any_l ()
     | & __creusot_proc_iter_elem : usize = any_l ()
-    | & _17 : Snapshot.snap_ty (Seq.seq usize) = any_l ()
+    | & _18 : Snapshot.snap_ty (Seq.seq usize) = any_l ()
     | & pass : usize = any_l ()
     | & door : usize = any_l ()
-    | & _23 : bool = any_l ()
-    | & _26 : bool = any_l ()
-    | & _28 : usize = any_l ()
-    | & _30 : borrowed bool = any_l ()
-    | & _31 : borrowed (Vec'0.t_Vec bool (Global'0.t_Global)) = any_l ()
-    | & _32 : usize = any_l () ]
+    | & _24 : bool = any_l ()
+    | & _27 : bool = any_l ()
+    | & _29 : usize = any_l ()
+    | & _31 : borrowed bool = any_l ()
+    | & _32 : borrowed (Vec'0.t_Vec bool (Global'0.t_Global)) = any_l ()
+    | & _33 : usize = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end

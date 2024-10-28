@@ -1,26 +1,18 @@
-
 module T_core__ptr__non_null__NonNull
   use prelude.prelude.Opaque
   
   type t_NonNull 't =
     | C_NonNull opaque_ptr
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
-    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer})
-    | bad (pointer:opaque_ptr)-> {C_NonNull pointer <> input} {false} any ]
+    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer}) ]
     
 end
 module T_core__marker__PhantomData
   type t_PhantomData 't =
     | C_PhantomData
   
-  function any_l (_ : 'b) : 'a
-  
-  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any
-    [ good -> {C_PhantomData  = input} (! ret) | bad -> {C_PhantomData  <> input} {false} any ]
-    
+  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any [ good -> {C_PhantomData  = input} (! ret) ] 
 end
 module T_core__ptr__unique__Unique
   use T_core__marker__PhantomData as PhantomData'0
@@ -30,16 +22,10 @@ module T_core__ptr__unique__Unique
   type t_Unique 't =
     | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
     [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
       = input}
-      (! ret {pointer} {_marker})
-    | bad (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
-      <> input}
-      {false}
-      any ]
+      (! ret {pointer} {_marker}) ]
     
 end
 module T_alloc__raw_vec__Cap
@@ -50,11 +36,8 @@ module T_alloc__raw_vec__Cap
   type t_Cap  =
     | C_Cap usize
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
-    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0})
-    | bad (field_0:usize)-> {C_Cap field_0 <> input} {false} any ]
+    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0}) ]
     
 end
 module T_alloc__raw_vec__RawVec
@@ -65,12 +48,9 @@ module T_alloc__raw_vec__RawVec
   type t_RawVec 't 'a =
     | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
     [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
-      (! ret {ptr} {cap} {alloc})
-    | bad (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc <> input} {false} any ]
+      (! ret {ptr} {cap} {alloc}) ]
     
 end
 module T_alloc__vec__Vec
@@ -83,24 +63,17 @@ module T_alloc__vec__Vec
   type t_Vec 't 'a =
     | C_Vec (RawVec'0.t_RawVec 't 'a) usize
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len})
-    | bad (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len <> input} {false} any ]
+    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
     
 end
 module T_alloc__alloc__Global
   type t_Global  =
     | C_Global
   
-  function any_l (_ : 'b) : 'a
-  
-  let rec t_Global (input:t_Global) (ret  )= any
-    [ good -> {C_Global  = input} (! ret) | bad -> {C_Global  <> input} {false} any ]
-    
+  let rec t_Global (input:t_Global) (ret  )= any [ good -> {C_Global  = input} (! ret) ] 
 end
-module T_list_reversal_lasso__Memory
+module T_list_reversal_lasso__Memory [#"list_reversal_lasso.rs" 10 0 10 13]
   use T_alloc__alloc__Global as Global'0
   
   use prelude.prelude.UIntSize
@@ -112,11 +85,8 @@ module T_list_reversal_lasso__Memory
   type t_Memory  =
     | C_Memory (Vec'0.t_Vec usize (Global'0.t_Global))
   
-  function any_l (_ : 'b) : 'a
-  
   let rec t_Memory (input:t_Memory) (ret  (field_0:Vec'0.t_Vec usize (Global'0.t_Global)))= any
-    [ good (field_0:Vec'0.t_Vec usize (Global'0.t_Global))-> {C_Memory field_0 = input} (! ret {field_0})
-    | bad (field_0:Vec'0.t_Vec usize (Global'0.t_Global))-> {C_Memory field_0 <> input} {false} any ]
+    [ good (field_0:Vec'0.t_Vec usize (Global'0.t_Global))-> {C_Memory field_0 = input} (! ret {field_0}) ]
     
   
   function t_Memory__0 (self : t_Memory) : Vec'0.t_Vec usize (Global'0.t_Global) =
@@ -124,160 +94,90 @@ module T_list_reversal_lasso__Memory
       | C_Memory a -> a
       end
 end
-module T_alloc__boxed__Box
-  use T_core__ptr__unique__Unique as Unique'0
-  
-  type t_Box 't 'a =
-    | C_Box (Unique'0.t_Unique 't) 'a
-  
-  function any_l (_ : 'b) : 'a
-end
-module M_list_reversal_lasso__qy123zimplqy35z1qy125z__index
-  let%span slist_reversal_lasso0 = "../list_reversal_lasso.rs" 28 15 28 34
-  
-  let%span slist_reversal_lasso1 = "../list_reversal_lasso.rs" 29 14 29 44
-  
-  let%span span2 = "../../../../creusot-contracts/src/std/boxed.rs" 27 8 27 18
-  
-  let%span span3 = "../../../../creusot-contracts/src/logic/seq.rs" 197 8 197 97
-  
-  let%span span4 = "" 0 0 0 0
-  
-  let%span span5 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
-  
-  let%span span6 = "../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
-  
-  let%span span7 = "../../../../creusot-contracts/src/invariant.rs" 26 8 26 18
-  
-  let%span span8 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
-  
-  let%span span9 = "../../../../creusot-contracts/src/logic/ops.rs" 31 8 31 32
-  
-  let%span span10 = "../list_reversal_lasso.rs" 21 8 21 31
-  
-  let%span span11 = "../list_reversal_lasso.rs" 50 20 50 70
-  
-  let%span span12 = "../../../../creusot-contracts/src/std/slice.rs" 131 20 131 37
-  
-  let%span span13 = "../../../../creusot-contracts/src/std/slice.rs" 124 20 124 37
-  
-  let%span span14 = "../../../../creusot-contracts/src/model.rs" 90 8 90 31
-  
-  let%span span15 = "../../../../creusot-contracts/src/std/vec.rs" 156 27 156 46
-  
-  let%span span16 = "" 0 0 0 0
-  
-  let%span span17 = "" 0 0 0 0
-  
-  let%span span18 = "../../../../creusot-contracts/src/std/vec.rs" 157 26 157 54
-  
-  let%span span19 = "" 0 0 0 0
+module M_list_reversal_lasso__qyi13715866738248475091__index [#"list_reversal_lasso.rs" 30 4 30 35] (* <Memory as std::ops::Index<usize>> *)
+  let%span slist_reversal_lasso0 = "list_reversal_lasso.rs" 28 15 28 34
+  let%span slist_reversal_lasso1 = "list_reversal_lasso.rs" 29 14 29 44
+  let%span svec2 = "../../../creusot-contracts/src/std/vec.rs" 165 27 165 46
+  let%span svec3 = "../../../creusot-contracts/src/std/vec.rs" 166 26 166 54
+  let%span slist_reversal_lasso4 = "list_reversal_lasso.rs" 50 20 50 70
+  let%span slist_reversal_lasso5 = "list_reversal_lasso.rs" 21 8 21 31
+  let%span smodel6 = "../../../creusot-contracts/src/model.rs" 91 8 91 22
+  let%span sslice7 = "../../../creusot-contracts/src/std/slice.rs" 126 20 126 37
+  let%span sslice8 = "../../../creusot-contracts/src/std/slice.rs" 133 20 133 37
+  let%span svec9 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
+  let%span sops10 = "../../../creusot-contracts/src/logic/ops.rs" 31 8 31 32
   
   use prelude.prelude.UIntSize
-  
-  predicate inv'1 (_1 : usize)
-  
-  use T_alloc__alloc__Global as Global'0
-  
-  predicate invariant'5 (self : usize) =
-    [%#span2] inv'1 self
-  
-  predicate inv'5 (_1 : usize)
-  
-  axiom inv'5 : forall x : usize . inv'5 x = true
-  
-  use seq.Seq
-  
-  use seq.Seq
   
   use prelude.prelude.Int
   
-  use seq.Seq
-  
-  predicate invariant'4 (self : Seq.seq usize) =
-    [%#span3] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'5 (Seq.get self i)
-  
-  predicate inv'4 (_1 : Seq.seq usize)
-  
-  axiom inv'4 : forall x : Seq.seq usize . inv'4 x = true
-  
-  use T_alloc__vec__Vec as Vec'0
-  
-  use prelude.prelude.UIntSize
-  
-  constant v_MAX'0 : usize = [%#span4] (18446744073709551615 : usize)
-  
-  function shallow_model'1 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
-  
-  axiom shallow_model'1_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#span5] Seq.length (shallow_model'1 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  predicate invariant'3 (self : Vec'0.t_Vec usize (Global'0.t_Global)) =
-    [%#span6] inv'4 (shallow_model'1 self)
-  
-  predicate inv'3 (_1 : Vec'0.t_Vec usize (Global'0.t_Global))
-  
-  axiom inv'3 : forall x : Vec'0.t_Vec usize (Global'0.t_Global) . inv'3 x = true
-  
   use prelude.prelude.Borrow
-  
-  predicate invariant'2 (self : usize) =
-    [%#span7] inv'1 self
   
   predicate inv'2 (_1 : usize)
   
-  axiom inv'2 : forall x : usize . inv'2 x = true
+  axiom inv_axiom'2 [@rewrite] : forall x : usize [inv'2 x] . inv'2 x = true
   
-  predicate invariant'1 (self : usize) =
-    [%#span8] true
+  predicate inv'1 (_1 : usize)
   
-  axiom inv'1 : forall x : usize . inv'1 x = true
+  axiom inv_axiom'1 [@rewrite] : forall x : usize [inv'1 x] . inv'1 x = true
   
-  predicate invariant'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) =
-    [%#span7] inv'3 self
+  use T_alloc__alloc__Global as Global'0
+  
+  use T_alloc__vec__Vec as Vec'0
   
   predicate inv'0 (_1 : Vec'0.t_Vec usize (Global'0.t_Global))
   
-  axiom inv'0 : forall x : Vec'0.t_Vec usize (Global'0.t_Global) . inv'0 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : Vec'0.t_Vec usize (Global'0.t_Global) [inv'0 x] . inv'0 x = true
   
   use seq.Seq
   
+  use prelude.prelude.UIntSize
+  
+  use seq.Seq
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use seq.Seq
+  
+  function view'1 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
+  
+  axiom view'1_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#svec9] Seq.length (view'1 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
+  
   function index_logic'1 [@inline:trivial] (self : Vec'0.t_Vec usize (Global'0.t_Global)) (ix : usize) : usize =
-    [%#span9] Seq.get (shallow_model'1 self) (UIntSize.to_int ix)
+    [%#sops10] Seq.get (view'1 self) (UIntSize.to_int ix)
   
   use T_list_reversal_lasso__Memory as T_list_reversal_lasso__Memory
   
   use T_list_reversal_lasso__Memory as Memory'0
   
-  function index_logic'0 [#"../list_reversal_lasso.rs" 20 4 20 39] (self : Memory'0.t_Memory) (i : usize) : usize =
-    [%#span10] index_logic'1 (T_list_reversal_lasso__Memory.t_Memory__0 self) i
+  function index_logic'0 [#"list_reversal_lasso.rs" 20 4 20 39] (self : Memory'0.t_Memory) (i : usize) : usize =
+    [%#slist_reversal_lasso5] index_logic'1 (T_list_reversal_lasso__Memory.t_Memory__0 self) i
   
-  predicate nonnull_ptr'0 [#"../list_reversal_lasso.rs" 49 4 49 44] (self : Memory'0.t_Memory) (i : usize) =
-    [%#span11] Seq.length (shallow_model'1 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+  predicate nonnull_ptr'0 [#"list_reversal_lasso.rs" 49 4 49 44] (self : Memory'0.t_Memory) (i : usize) =
+    [%#slist_reversal_lasso4] Seq.length (view'1 (T_list_reversal_lasso__Memory.t_Memory__0 self))
     <= UIntSize.to_int (v_MAX'0 : usize)
-    /\ UIntSize.to_int i < Seq.length (shallow_model'1 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+    /\ UIntSize.to_int i < Seq.length (view'1 (T_list_reversal_lasso__Memory.t_Memory__0 self))
   
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Slice
-  
   predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq usize) (out : usize) =
-    [%#span12] Seq.get seq (UIntSize.to_int self) = out
+    [%#sslice8] Seq.get seq (UIntSize.to_int self) = out
   
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq usize) =
-    [%#span13] UIntSize.to_int self < Seq.length seq
+    [%#sslice7] UIntSize.to_int self < Seq.length seq
   
-  function shallow_model'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize =
-    [%#span14] shallow_model'1 self
+  function view'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize =
+    [%#smodel6] view'1 self
   
-  let rec index'0 (self:Vec'0.t_Vec usize (Global'0.t_Global)) (index:usize) (return'  (ret:usize))= {[@expl:precondition] [%#span17] inv'1 index}
-    {[@expl:precondition] [%#span16] inv'0 self}
-    {[@expl:precondition] [%#span15] in_bounds'0 index (shallow_model'0 self)}
+  let rec index'0 (self:Vec'0.t_Vec usize (Global'0.t_Global)) (index:usize) (return'  (ret:usize))= {[@expl:precondition] inv'1 index}
+    {[@expl:precondition] inv'0 self}
+    {[@expl:precondition] [%#svec2] in_bounds'0 index (view'0 self)}
     any
-    [ return' (result:usize)-> {[%#span19] inv'2 result}
-      {[%#span18] has_value'0 index (shallow_model'0 self) result}
-      (! return' {result}) ]
+    [ return' (result:usize)-> {inv'2 result} {[%#svec3] has_value'0 index (view'0 self) result} (! return' {result}) ]
     
+  
+  meta "compute_max_steps" 1000000
   
   let rec index (self:Memory'0.t_Memory) (i:usize) (return'  (ret:usize))= {[%#slist_reversal_lasso0] nonnull_ptr'0 self i}
     (! bb0
@@ -299,181 +199,119 @@ module M_list_reversal_lasso__qy123zimplqy35z1qy125z__index
       (! return' {result}) ]
     
 end
-module M_list_reversal_lasso__qy123zimplqy35z2qy125z__index_mut
-  let%span slist_reversal_lasso0 = "../list_reversal_lasso.rs" 36 15 36 34
-  
-  let%span slist_reversal_lasso1 = "../list_reversal_lasso.rs" 37 14 37 47
-  
-  let%span slist_reversal_lasso2 = "../list_reversal_lasso.rs" 38 14 38 47
-  
-  let%span slist_reversal_lasso3 = "../list_reversal_lasso.rs" 39 14 39 47
-  
-  let%span slist_reversal_lasso4 = "../list_reversal_lasso.rs" 40 4 40 113
-  
-  let%span span5 = "../../../../creusot-contracts/src/std/boxed.rs" 27 8 27 18
-  
-  let%span span6 = "../../../../creusot-contracts/src/logic/seq.rs" 197 8 197 97
-  
-  let%span span7 = "" 0 0 0 0
-  
-  let%span span8 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
-  
-  let%span span9 = "../../../../creusot-contracts/src/std/vec.rs" 60 20 60 41
-  
-  let%span span10 = "../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
-  
-  let%span span11 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
-  
-  let%span span12 = "../../../../creusot-contracts/src/logic/ops.rs" 31 8 31 32
-  
-  let%span span13 = "../list_reversal_lasso.rs" 21 8 21 31
-  
-  let%span span14 = "../list_reversal_lasso.rs" 50 20 50 70
-  
-  let%span span15 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
-  
-  let%span span16 = "../../../../creusot-contracts/src/std/slice.rs" 138 8 138 96
-  
-  let%span span17 = "../../../../creusot-contracts/src/std/slice.rs" 131 20 131 37
-  
-  let%span span18 = "../../../../creusot-contracts/src/std/slice.rs" 124 20 124 37
-  
-  let%span span19 = "../../../../creusot-contracts/src/model.rs" 108 8 108 31
-  
-  let%span span20 = "../../../../creusot-contracts/src/std/vec.rs" 146 27 146 46
-  
-  let%span span21 = "" 0 0 0 0
-  
-  let%span span22 = "" 0 0 0 0
-  
-  let%span span23 = "../../../../creusot-contracts/src/std/vec.rs" 147 26 147 54
-  
-  let%span span24 = "../../../../creusot-contracts/src/std/vec.rs" 148 26 148 57
-  
-  let%span span25 = "../../../../creusot-contracts/src/std/vec.rs" 149 26 149 62
-  
-  let%span span26 = "../../../../creusot-contracts/src/std/vec.rs" 150 26 150 55
-  
-  let%span span27 = "" 0 0 0 0
+module M_list_reversal_lasso__qyi14823043098042356205__index_mut [#"list_reversal_lasso.rs" 41 4 41 47] (* <Memory as std::ops::IndexMut<usize>> *)
+  let%span slist_reversal_lasso0 = "list_reversal_lasso.rs" 36 15 36 34
+  let%span slist_reversal_lasso1 = "list_reversal_lasso.rs" 37 14 37 47
+  let%span slist_reversal_lasso2 = "list_reversal_lasso.rs" 38 14 38 47
+  let%span slist_reversal_lasso3 = "list_reversal_lasso.rs" 39 14 39 47
+  let%span slist_reversal_lasso4 = "list_reversal_lasso.rs" 40 4 40 113
+  let%span svec5 = "../../../creusot-contracts/src/std/vec.rs" 155 27 155 46
+  let%span svec6 = "../../../creusot-contracts/src/std/vec.rs" 156 26 156 54
+  let%span svec7 = "../../../creusot-contracts/src/std/vec.rs" 157 26 157 57
+  let%span svec8 = "../../../creusot-contracts/src/std/vec.rs" 158 26 158 62
+  let%span svec9 = "../../../creusot-contracts/src/std/vec.rs" 159 26 159 55
+  let%span slist_reversal_lasso10 = "list_reversal_lasso.rs" 50 20 50 70
+  let%span slist_reversal_lasso11 = "list_reversal_lasso.rs" 21 8 21 31
+  let%span svec12 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
+  let%span smodel13 = "../../../creusot-contracts/src/model.rs" 109 8 109 22
+  let%span sslice14 = "../../../creusot-contracts/src/std/slice.rs" 126 20 126 37
+  let%span sslice15 = "../../../creusot-contracts/src/std/slice.rs" 133 20 133 37
+  let%span sslice16 = "../../../creusot-contracts/src/std/slice.rs" 140 8 140 96
+  let%span sresolve17 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
+  let%span sops18 = "../../../creusot-contracts/src/logic/ops.rs" 31 8 31 32
   
   use prelude.prelude.UIntSize
-  
-  predicate inv'1 (_1 : usize)
-  
-  use T_alloc__alloc__Global as Global'0
-  
-  predicate invariant'5 (self : usize) =
-    [%#span5] inv'1 self
-  
-  predicate inv'5 (_1 : usize)
-  
-  axiom inv'5 : forall x : usize . inv'5 x = true
-  
-  use seq.Seq
-  
-  use seq.Seq
   
   use prelude.prelude.Int
   
-  use seq.Seq
-  
-  predicate invariant'4 (self : Seq.seq usize) =
-    [%#span6] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'5 (Seq.get self i)
-  
-  predicate inv'4 (_1 : Seq.seq usize)
-  
-  axiom inv'4 : forall x : Seq.seq usize . inv'4 x = true
-  
-  use T_alloc__vec__Vec as Vec'0
-  
-  use prelude.prelude.UIntSize
-  
-  constant v_MAX'0 : usize = [%#span7] (18446744073709551615 : usize)
-  
-  function shallow_model'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
-  
-  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#span8] Seq.length (shallow_model'0 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  predicate invariant'3 (self : Vec'0.t_Vec usize (Global'0.t_Global)) =
-    [%#span9] inv'4 (shallow_model'0 self)
-  
-  predicate inv'3 (_1 : Vec'0.t_Vec usize (Global'0.t_Global))
-  
-  axiom inv'3 : forall x : Vec'0.t_Vec usize (Global'0.t_Global) . inv'3 x = true
-  
   use prelude.prelude.Borrow
-  
-  predicate invariant'2 (self : borrowed usize) =
-    [%#span10] inv'1 self.current /\ inv'1 self.final
   
   predicate inv'2 (_1 : borrowed usize)
   
-  axiom inv'2 : forall x : borrowed usize . inv'2 x = true
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed usize [inv'2 x] . inv'2 x = true
   
-  predicate invariant'1 (self : usize) =
-    [%#span11] true
+  predicate inv'1 (_1 : usize)
   
-  axiom inv'1 : forall x : usize . inv'1 x = true
+  axiom inv_axiom'1 [@rewrite] : forall x : usize [inv'1 x] . inv'1 x = true
   
-  predicate invariant'0 (self : borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) =
-    [%#span10] inv'3 self.current /\ inv'3 self.final
+  use T_alloc__alloc__Global as Global'0
+  
+  use T_alloc__vec__Vec as Vec'0
   
   predicate inv'0 (_1 : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)))
   
-  axiom inv'0 : forall x : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)) . inv'0 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)) [inv'0 x] . inv'0 x = true
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use prelude.prelude.UIntSize
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  function view'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
+  
+  axiom view'0_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#svec12] Seq.length (view'0 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
   
   use T_list_reversal_lasso__Memory as T_list_reversal_lasso__Memory
   
   use seq.Seq
   
   function index_logic'1 [@inline:trivial] (self : Vec'0.t_Vec usize (Global'0.t_Global)) (ix : usize) : usize =
-    [%#span12] Seq.get (shallow_model'0 self) (UIntSize.to_int ix)
+    [%#sops18] Seq.get (view'0 self) (UIntSize.to_int ix)
   
   use T_list_reversal_lasso__Memory as Memory'0
   
-  function index_logic'0 [#"../list_reversal_lasso.rs" 20 4 20 39] (self : Memory'0.t_Memory) (i : usize) : usize =
-    [%#span13] index_logic'1 (T_list_reversal_lasso__Memory.t_Memory__0 self) i
+  function index_logic'0 [#"list_reversal_lasso.rs" 20 4 20 39] (self : Memory'0.t_Memory) (i : usize) : usize =
+    [%#slist_reversal_lasso11] index_logic'1 (T_list_reversal_lasso__Memory.t_Memory__0 self) i
   
-  predicate nonnull_ptr'0 [#"../list_reversal_lasso.rs" 49 4 49 44] (self : Memory'0.t_Memory) (i : usize) =
-    [%#span14] Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+  predicate nonnull_ptr'0 [#"list_reversal_lasso.rs" 49 4 49 44] (self : Memory'0.t_Memory) (i : usize) =
+    [%#slist_reversal_lasso10] Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
     <= UIntSize.to_int (v_MAX'0 : usize)
-    /\ UIntSize.to_int i < Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+    /\ UIntSize.to_int i < Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'1 (self : borrowed (Memory'0.t_Memory)) =
-    [%#span15] self.final = self.current
+  predicate resolve'3 (self : borrowed (Memory'0.t_Memory)) =
+    [%#sresolve17] self.final = self.current
   
-  predicate resolve'0 (self : borrowed usize) =
-    [%#span15] self.final = self.current
+  predicate resolve'1 (_1 : borrowed (Memory'0.t_Memory)) =
+    resolve'3 _1
   
-  use prelude.prelude.Slice
+  predicate resolve'2 (self : borrowed usize) =
+    [%#sresolve17] self.final = self.current
+  
+  predicate resolve'0 (_1 : borrowed usize) =
+    resolve'2 _1
   
   predicate resolve_elswhere'0 [@inline:trivial] (self : usize) (old' : Seq.seq usize) (fin : Seq.seq usize) =
-    [%#span16] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
+    [%#sslice16] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
   
   predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq usize) (out : usize) =
-    [%#span17] Seq.get seq (UIntSize.to_int self) = out
+    [%#sslice15] Seq.get seq (UIntSize.to_int self) = out
   
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq usize) =
-    [%#span18] UIntSize.to_int self < Seq.length seq
+    [%#sslice14] UIntSize.to_int self < Seq.length seq
   
-  function shallow_model'1 (self : borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) : Seq.seq usize =
-    [%#span19] shallow_model'0 self.current
+  function view'1 (self : borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) : Seq.seq usize =
+    [%#smodel13] view'0 self.current
   
-  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) (index:usize) (return'  (ret:borrowed usize))= {[@expl:precondition] [%#span22] inv'1 index}
-    {[@expl:precondition] [%#span21] inv'0 self}
-    {[@expl:precondition] [%#span20] in_bounds'0 index (shallow_model'1 self)}
+  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) (index:usize) (return'  (ret:borrowed usize))= {[@expl:precondition] inv'1 index}
+    {[@expl:precondition] inv'0 self}
+    {[@expl:precondition] [%#svec5] in_bounds'0 index (view'1 self)}
     any
-    [ return' (result:borrowed usize)-> {[%#span27] inv'2 result}
-      {[%#span26] Seq.length (shallow_model'0 self.final) = Seq.length (shallow_model'1 self)}
-      {[%#span25] resolve_elswhere'0 index (shallow_model'1 self) (shallow_model'0 self.final)}
-      {[%#span24] has_value'0 index (shallow_model'0 self.final) result.final}
-      {[%#span23] has_value'0 index (shallow_model'1 self) result.current}
+    [ return' (result:borrowed usize)-> {inv'2 result}
+      {[%#svec9] Seq.length (view'0 self.final) = Seq.length (view'1 self)}
+      {[%#svec8] resolve_elswhere'0 index (view'1 self) (view'0 self.final)}
+      {[%#svec7] has_value'0 index (view'0 self.final) result.final}
+      {[%#svec6] has_value'0 index (view'1 self) result.current}
       (! return' {result}) ]
     
+  
+  meta "compute_max_steps" 1000000
   
   let rec index_mut (self:borrowed (Memory'0.t_Memory)) (i:usize) (return'  (ret:borrowed usize))= {[%#slist_reversal_lasso0] nonnull_ptr'0 self.current i}
     (! bb0
@@ -486,20 +324,18 @@ module M_list_reversal_lasso__qy123zimplqy35z2qy125z__index_mut
               {Borrow.inherit_id (Borrow.get_id self) 1}
               (fun (_ret':borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) ->
                  [ &_11 <- _ret' ] 
-                Memory'0.t_Memory {self.current}
-                  (fun (l_0'0:Vec'0.t_Vec usize (Global'0.t_Global)) ->
-                     [ &self <- { self with current = Memory'0.C_Memory _11.final ; } ] 
-                    s1)))
+                 [ &self <- { self with current = Memory'0.C_Memory _ret'.final ; } ] 
+                s1))
       | s1 = index_mut'0 {_11} {i} (fun (_ret':borrowed usize) ->  [ &_10 <- _ret' ] s2)
       | s2 = bb1 ]
       
     | bb1 = s0
       [ s0 = Borrow.borrow_final <usize> {_10.current} {Borrow.get_id _10}
-          (fun (_ret':borrowed usize) ->  [ &_9 <- _ret' ]  [ &_10 <- { _10 with current = _9.final ; } ] s1)
+          (fun (_ret':borrowed usize) ->  [ &_9 <- _ret' ]  [ &_10 <- { _10 with current = _ret'.final ; } ] s1)
       | s1 = Borrow.borrow_final <usize> {_9.current} {Borrow.get_id _9}
-          (fun (_ret':borrowed usize) ->  [ &_3 <- _ret' ]  [ &_9 <- { _9 with current = _3.final ; } ] s2)
+          (fun (_ret':borrowed usize) ->  [ &_3 <- _ret' ]  [ &_9 <- { _9 with current = _ret'.final ; } ] s2)
       | s2 = Borrow.borrow_final <usize> {_3.current} {Borrow.get_id _3}
-          (fun (_ret':borrowed usize) ->  [ &_0 <- _ret' ]  [ &_3 <- { _3 with current = _0.final ; } ] s3)
+          (fun (_ret':borrowed usize) ->  [ &_0 <- _ret' ]  [ &_3 <- { _3 with current = _ret'.final ; } ] s3)
       | s3 = -{resolve'0 _10}- s4
       | s4 = -{resolve'0 _9}- s5
       | s5 = -{resolve'0 _3}- s6
@@ -517,73 +353,61 @@ module M_list_reversal_lasso__qy123zimplqy35z2qy125z__index_mut
     
     [ return' (result:borrowed usize)-> {[@expl:postcondition] [%#slist_reversal_lasso4] forall j : usize . nonnull_ptr'0 self.current j
       /\ i <> j  -> index_logic'0 self.final j = index_logic'0 self.current j}
-      {[@expl:postcondition] [%#slist_reversal_lasso3] Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.current))
-      = Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.final))}
+      {[@expl:postcondition] [%#slist_reversal_lasso3] Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.current))
+      = Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.final))}
       {[@expl:postcondition] [%#slist_reversal_lasso2] result.final = index_logic'0 self.final i}
       {[@expl:postcondition] [%#slist_reversal_lasso1] result.current = index_logic'0 self.current i}
       (! return' {result}) ]
     
 end
-module M_list_reversal_lasso__qy123zimplqy35z4qy125z__list_reversal_safe
-  let%span slist_reversal_lasso0 = "../list_reversal_lasso.rs" 66 20 66 24
-  
-  let%span slist_reversal_lasso1 = "../list_reversal_lasso.rs" 68 20 68 52
-  
-  let%span slist_reversal_lasso2 = "../list_reversal_lasso.rs" 69 20 69 52
-  
-  let%span slist_reversal_lasso3 = "../list_reversal_lasso.rs" 70 20 70 45
-  
-  let%span slist_reversal_lasso4 = "../list_reversal_lasso.rs" 71 19 71 23
-  
-  let%span slist_reversal_lasso5 = "../list_reversal_lasso.rs" 63 15 63 40
-  
-  let%span slist_reversal_lasso6 = "../list_reversal_lasso.rs" 64 15 64 47
-  
-  let%span span7 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
-  
-  let%span span8 = "" 0 0 0 0
-  
-  let%span span9 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
-  
-  let%span span10 = "../../../../creusot-contracts/src/logic/ops.rs" 31 8 31 32
-  
-  let%span span11 = "../list_reversal_lasso.rs" 21 8 21 31
-  
-  let%span span12 = "../list_reversal_lasso.rs" 50 20 50 70
-  
-  let%span span13 = "../list_reversal_lasso.rs" 36 15 36 34
-  
-  let%span span14 = "../list_reversal_lasso.rs" 37 14 37 47
-  
-  let%span span15 = "../list_reversal_lasso.rs" 38 14 38 47
-  
-  let%span span16 = "../list_reversal_lasso.rs" 39 14 39 47
-  
-  let%span span17 = "../list_reversal_lasso.rs" 40 4 40 113
-  
-  let%span span18 = "../list_reversal_lasso.rs" 28 15 28 34
-  
-  let%span span19 = "../list_reversal_lasso.rs" 29 14 29 44
-  
-  let%span span20 = "../list_reversal_lasso.rs" 13 0 13 15
-  
-  let%span span21 = "../list_reversal_lasso.rs" 56 8 58 9
-  
-  use T_list_reversal_lasso__Memory as Memory'0
-  
-  use prelude.prelude.Borrow
+module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_safe [#"list_reversal_lasso.rs" 65 4 65 59] (* Memory *)
+  let%span slist_reversal_lasso0 = "list_reversal_lasso.rs" 66 20 66 24
+  let%span slist_reversal_lasso1 = "list_reversal_lasso.rs" 68 20 68 52
+  let%span slist_reversal_lasso2 = "list_reversal_lasso.rs" 69 20 69 52
+  let%span slist_reversal_lasso3 = "list_reversal_lasso.rs" 70 20 70 45
+  let%span slist_reversal_lasso4 = "list_reversal_lasso.rs" 71 19 71 23
+  let%span slist_reversal_lasso5 = "list_reversal_lasso.rs" 63 15 63 40
+  let%span slist_reversal_lasso6 = "list_reversal_lasso.rs" 64 15 64 47
+  let%span slist_reversal_lasso7 = "list_reversal_lasso.rs" 13 0 13 15
+  let%span slist_reversal_lasso8 = "list_reversal_lasso.rs" 50 20 50 70
+  let%span slist_reversal_lasso9 = "list_reversal_lasso.rs" 56 8 58 9
+  let%span slist_reversal_lasso10 = "list_reversal_lasso.rs" 28 15 28 34
+  let%span slist_reversal_lasso11 = "list_reversal_lasso.rs" 29 14 29 44
+  let%span slist_reversal_lasso12 = "list_reversal_lasso.rs" 36 15 36 34
+  let%span slist_reversal_lasso13 = "list_reversal_lasso.rs" 37 14 37 47
+  let%span slist_reversal_lasso14 = "list_reversal_lasso.rs" 38 14 38 47
+  let%span slist_reversal_lasso15 = "list_reversal_lasso.rs" 39 14 39 47
+  let%span slist_reversal_lasso16 = "list_reversal_lasso.rs" 40 4 40 113
+  let%span svec17 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
+  let%span slist_reversal_lasso18 = "list_reversal_lasso.rs" 21 8 21 31
+  let%span sresolve19 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
+  let%span sops20 = "../../../creusot-contracts/src/logic/ops.rs" 31 8 31 32
   
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'1 (self : borrowed (Memory'0.t_Memory)) =
-    [%#span7] self.final = self.current
+  use T_list_reversal_lasso__Memory as Memory'0
+  
+  use prelude.prelude.Borrow
+  
+  predicate resolve'3 (self : borrowed (Memory'0.t_Memory)) =
+    [%#sresolve19] self.final = self.current
+  
+  predicate resolve'1 (_1 : borrowed (Memory'0.t_Memory)) =
+    resolve'3 _1
   
   use prelude.prelude.UIntSize
   
-  predicate resolve'0 (self : borrowed usize) =
-    [%#span7] self.final = self.current
+  use prelude.prelude.Int
+  
+  predicate resolve'2 (self : borrowed usize) =
+    [%#sresolve19] self.final = self.current
+  
+  predicate resolve'0 (_1 : borrowed usize) =
+    resolve'2 _1
+  
+  use seq.Seq
   
   use seq.Seq
   
@@ -591,17 +415,13 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__list_reversal_safe
   
   use T_alloc__vec__Vec as Vec'0
   
-  use prelude.prelude.Int
-  
-  use seq.Seq
-  
   use prelude.prelude.UIntSize
   
-  constant v_MAX'0 : usize = [%#span8] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function shallow_model'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
+  function view'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#span9] Seq.length (shallow_model'0 self)
+  axiom view'0_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#svec17] Seq.length (view'0 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   use T_list_reversal_lasso__Memory as T_list_reversal_lasso__Memory
@@ -609,39 +429,41 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__list_reversal_safe
   use seq.Seq
   
   function index_logic'1 [@inline:trivial] (self : Vec'0.t_Vec usize (Global'0.t_Global)) (ix : usize) : usize =
-    [%#span10] Seq.get (shallow_model'0 self) (UIntSize.to_int ix)
+    [%#sops20] Seq.get (view'0 self) (UIntSize.to_int ix)
   
-  function index_logic'0 [#"../list_reversal_lasso.rs" 20 4 20 39] (self : Memory'0.t_Memory) (i : usize) : usize =
-    [%#span11] index_logic'1 (T_list_reversal_lasso__Memory.t_Memory__0 self) i
+  function index_logic'0 [#"list_reversal_lasso.rs" 20 4 20 39] (self : Memory'0.t_Memory) (i : usize) : usize =
+    [%#slist_reversal_lasso18] index_logic'1 (T_list_reversal_lasso__Memory.t_Memory__0 self) i
   
-  predicate nonnull_ptr'0 [#"../list_reversal_lasso.rs" 49 4 49 44] (self : Memory'0.t_Memory) (i : usize) =
-    [%#span12] Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+  predicate nonnull_ptr'0 [#"list_reversal_lasso.rs" 49 4 49 44] (self : Memory'0.t_Memory) (i : usize) =
+    [%#slist_reversal_lasso8] Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
     <= UIntSize.to_int (v_MAX'0 : usize)
-    /\ UIntSize.to_int i < Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+    /\ UIntSize.to_int i < Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
   
-  let rec index_mut'0 (self:borrowed (Memory'0.t_Memory)) (i:usize) (return'  (ret:borrowed usize))= {[@expl:precondition] [%#span13] nonnull_ptr'0 self.current i}
+  let rec index_mut'0 (self:borrowed (Memory'0.t_Memory)) (i:usize) (return'  (ret:borrowed usize))= {[@expl:precondition] [%#slist_reversal_lasso12] nonnull_ptr'0 self.current i}
     any
-    [ return' (result:borrowed usize)-> {[%#span17] forall j : usize . nonnull_ptr'0 self.current j /\ i <> j
-       -> index_logic'0 self.final j = index_logic'0 self.current j}
-      {[%#span16] Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.current))
-      = Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.final))}
-      {[%#span15] result.final = index_logic'0 self.final i}
-      {[%#span14] result.current = index_logic'0 self.current i}
+    [ return' (result:borrowed usize)-> {[%#slist_reversal_lasso16] forall j : usize . nonnull_ptr'0 self.current j
+      /\ i <> j  -> index_logic'0 self.final j = index_logic'0 self.current j}
+      {[%#slist_reversal_lasso15] Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.current))
+      = Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.final))}
+      {[%#slist_reversal_lasso14] result.final = index_logic'0 self.final i}
+      {[%#slist_reversal_lasso13] result.current = index_logic'0 self.current i}
       (! return' {result}) ]
     
   
-  let rec index'0 (self:Memory'0.t_Memory) (i:usize) (return'  (ret:usize))= {[@expl:precondition] [%#span18] nonnull_ptr'0 self i}
-    any [ return' (result:usize)-> {[%#span19] result = index_logic'0 self i} (! return' {result}) ] 
+  let rec index'0 (self:Memory'0.t_Memory) (i:usize) (return'  (ret:usize))= {[@expl:precondition] [%#slist_reversal_lasso10] nonnull_ptr'0 self i}
+    any [ return' (result:usize)-> {[%#slist_reversal_lasso11] result = index_logic'0 self i} (! return' {result}) ] 
   
   use prelude.prelude.Snapshot
   
-  constant v_NULL'0 : usize = [%#span20] (18446744073709551615 : usize)
+  constant v_NULL'0 : usize = [%#slist_reversal_lasso7] (18446744073709551615 : usize)
   
-  predicate mem_is_well_formed'0 [#"../list_reversal_lasso.rs" 55 4 55 43] (self : Memory'0.t_Memory) =
-    [%#span21] forall i : usize . nonnull_ptr'0 self i
+  predicate mem_is_well_formed'0 [#"list_reversal_lasso.rs" 55 4 55 43] (self : Memory'0.t_Memory) =
+    [%#slist_reversal_lasso9] forall i : usize . nonnull_ptr'0 self i
      -> index_logic'0 self i = v_NULL'0 \/ nonnull_ptr'0 self (index_logic'0 self i)
   
   use prelude.prelude.Snapshot
+  
+  meta "compute_max_steps" 1000000
   
   let rec list_reversal_safe (self:borrowed (Memory'0.t_Memory)) (l:usize) (return'  (ret:usize))= {[%#slist_reversal_lasso6] l
     = v_NULL'0
@@ -674,7 +496,7 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__list_reversal_safe
           | s1 = Borrow.borrow_mut <Memory'0.t_Memory> {self.current}
               (fun (_ret':borrowed (Memory'0.t_Memory)) ->
                  [ &_21 <- _ret' ] 
-                 [ &self <- { self with current = _21.final ; } ] 
+                 [ &self <- { self with current = _ret'.final ; } ] 
                 s2)
           | s2 = index_mut'0 {_21} {tmp} (fun (_ret':borrowed usize) ->  [ &_20 <- _ret' ] s3)
           | s3 = bb5 ]
@@ -701,166 +523,132 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__list_reversal_safe
     | & old_1_0 : Snapshot.snap_ty (borrowed (Memory'0.t_Memory)) = any_l () ]
      [ return' (result:usize)-> (! return' {result}) ] 
 end
-module M_list_reversal_lasso__qy123zimplqy35z4qy125z__list_reversal_list
-  let%span slist_reversal_lasso0 = "../list_reversal_lasso.rs" 100 20 100 24
-  
-  let%span slist_reversal_lasso1 = "../list_reversal_lasso.rs" 101 20 101 35
-  
-  let%span slist_reversal_lasso2 = "../list_reversal_lasso.rs" 103 20 103 44
-  
-  let%span slist_reversal_lasso3 = "../list_reversal_lasso.rs" 104 20 104 59
-  
-  let%span slist_reversal_lasso4 = "../list_reversal_lasso.rs" 105 20 105 76
-  
-  let%span slist_reversal_lasso5 = "../list_reversal_lasso.rs" 107 19 107 23
-  
-  let%span slist_reversal_lasso6 = "../list_reversal_lasso.rs" 109 16 109 36
-  
-  let%span slist_reversal_lasso7 = "../list_reversal_lasso.rs" 97 15 97 31
-  
-  let%span slist_reversal_lasso8 = "../list_reversal_lasso.rs" 98 14 98 47
-  
-  let%span span9 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
-  
-  let%span span10 = "../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
-  
-  let%span span11 = "" 0 0 0 0
-  
-  let%span span12 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
-  
-  let%span span13 = "../../../../creusot-contracts/src/logic/ops.rs" 31 8 31 32
-  
-  let%span span14 = "../list_reversal_lasso.rs" 21 8 21 31
-  
-  let%span span15 = "../list_reversal_lasso.rs" 50 20 50 70
-  
-  let%span span16 = "../list_reversal_lasso.rs" 83 12 85 98
-  
-  let%span span17 = "../list_reversal_lasso.rs" 13 0 13 15
-  
-  let%span span18 = "../list_reversal_lasso.rs" 93 12 93 53
-  
-  let%span span19 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
-  
-  let%span span20 = "" 0 0 0 0
-  
-  let%span span21 = "" 0 0 0 0
-  
-  let%span span22 = "../../../../creusot-contracts/src/std/mem.rs" 8 22 8 34
-  
-  let%span span23 = "../../../../creusot-contracts/src/std/mem.rs" 9 22 9 37
-  
-  let%span span24 = "" 0 0 0 0
-  
-  let%span span25 = "../list_reversal_lasso.rs" 36 15 36 34
-  
-  let%span span26 = "../list_reversal_lasso.rs" 37 14 37 47
-  
-  let%span span27 = "../list_reversal_lasso.rs" 38 14 38 47
-  
-  let%span span28 = "../list_reversal_lasso.rs" 39 14 39 47
-  
-  let%span span29 = "../list_reversal_lasso.rs" 40 4 40 113
+module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_list [#"list_reversal_lasso.rs" 99 4 99 82] (* Memory *)
+  let%span slist_reversal_lasso0 = "list_reversal_lasso.rs" 100 20 100 24
+  let%span slist_reversal_lasso1 = "list_reversal_lasso.rs" 101 20 101 35
+  let%span slist_reversal_lasso2 = "list_reversal_lasso.rs" 103 20 103 44
+  let%span slist_reversal_lasso3 = "list_reversal_lasso.rs" 104 20 104 59
+  let%span slist_reversal_lasso4 = "list_reversal_lasso.rs" 105 20 105 76
+  let%span slist_reversal_lasso5 = "list_reversal_lasso.rs" 107 19 107 23
+  let%span slist_reversal_lasso6 = "list_reversal_lasso.rs" 109 16 109 36
+  let%span slist_reversal_lasso7 = "list_reversal_lasso.rs" 97 15 97 31
+  let%span slist_reversal_lasso8 = "list_reversal_lasso.rs" 98 14 98 47
+  let%span slist_reversal_lasso9 = "list_reversal_lasso.rs" 13 0 13 15
+  let%span slist_reversal_lasso10 = "list_reversal_lasso.rs" 83 12 85 98
+  let%span slist_reversal_lasso11 = "list_reversal_lasso.rs" 36 15 36 34
+  let%span slist_reversal_lasso12 = "list_reversal_lasso.rs" 37 14 37 47
+  let%span slist_reversal_lasso13 = "list_reversal_lasso.rs" 38 14 38 47
+  let%span slist_reversal_lasso14 = "list_reversal_lasso.rs" 39 14 39 47
+  let%span slist_reversal_lasso15 = "list_reversal_lasso.rs" 40 4 40 113
+  let%span smem16 = "../../../creusot-contracts/src/std/mem.rs" 8 22 8 34
+  let%span smem17 = "../../../creusot-contracts/src/std/mem.rs" 9 22 9 37
+  let%span slist_reversal_lasso18 = "list_reversal_lasso.rs" 93 12 93 53
+  let%span slist_reversal_lasso19 = "list_reversal_lasso.rs" 50 20 50 70
+  let%span slist_reversal_lasso20 = "list_reversal_lasso.rs" 21 8 21 31
+  let%span svec21 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
+  let%span sresolve22 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
+  let%span sops23 = "../../../creusot-contracts/src/logic/ops.rs" 31 8 31 32
   
   use prelude.prelude.UIntSize
   
-  predicate invariant'1 (self : usize) =
-    [%#span9] true
+  use prelude.prelude.Int
   
   predicate inv'1 (_1 : usize)
   
-  axiom inv'1 : forall x : usize . inv'1 x = true
+  axiom inv_axiom'1 [@rewrite] : forall x : usize [inv'1 x] . inv'1 x = true
   
   use prelude.prelude.Borrow
   
-  predicate invariant'0 (self : borrowed usize) =
-    [%#span10] inv'1 self.current /\ inv'1 self.final
-  
   predicate inv'0 (_1 : borrowed usize)
   
-  axiom inv'0 : forall x : borrowed usize . inv'0 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed usize [inv'0 x] . inv'0 x = true
+  
+  use seq.Seq
+  
+  use prelude.prelude.UIntSize
+  
+  use seq.Seq
   
   use T_alloc__alloc__Global as Global'0
   
   use T_alloc__vec__Vec as Vec'0
   
-  use seq.Seq
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
   use seq.Seq
   
-  use prelude.prelude.UIntSize
+  function view'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
   
-  use prelude.prelude.Int
-  
-  constant v_MAX'0 : usize = [%#span11] (18446744073709551615 : usize)
-  
-  use seq.Seq
-  
-  function shallow_model'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
-  
-  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#span12] Seq.length (shallow_model'0 self)
+  axiom view'0_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#svec21] Seq.length (view'0 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   function index_logic'1 [@inline:trivial] (self : Vec'0.t_Vec usize (Global'0.t_Global)) (ix : usize) : usize =
-    [%#span13] Seq.get (shallow_model'0 self) (UIntSize.to_int ix)
+    [%#sops23] Seq.get (view'0 self) (UIntSize.to_int ix)
   
   use T_list_reversal_lasso__Memory as T_list_reversal_lasso__Memory
   
   use T_list_reversal_lasso__Memory as Memory'0
   
-  function index_logic'0 [#"../list_reversal_lasso.rs" 20 4 20 39] (self : Memory'0.t_Memory) (i : usize) : usize =
-    [%#span14] index_logic'1 (T_list_reversal_lasso__Memory.t_Memory__0 self) i
+  function index_logic'0 [#"list_reversal_lasso.rs" 20 4 20 39] (self : Memory'0.t_Memory) (i : usize) : usize =
+    [%#slist_reversal_lasso20] index_logic'1 (T_list_reversal_lasso__Memory.t_Memory__0 self) i
   
-  predicate nonnull_ptr'0 [#"../list_reversal_lasso.rs" 49 4 49 44] (self : Memory'0.t_Memory) (i : usize) =
-    [%#span15] Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+  predicate nonnull_ptr'0 [#"list_reversal_lasso.rs" 49 4 49 44] (self : Memory'0.t_Memory) (i : usize) =
+    [%#slist_reversal_lasso19] Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
     <= UIntSize.to_int (v_MAX'0 : usize)
-    /\ UIntSize.to_int i < Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+    /\ UIntSize.to_int i < Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
   
-  predicate list_seg'0 [#"../list_reversal_lasso.rs" 81 4 81 81] (self : Memory'0.t_Memory) (first : usize) (s : Seq.seq usize) (last : usize) (l : int) (h : int)
+  predicate list_seg'0 [#"list_reversal_lasso.rs" 81 4 81 81] (self : Memory'0.t_Memory) (first : usize) (s : Seq.seq usize) (last : usize) (l : int) (h : int)
     
    =
-    [%#span16] first = (if h = l then last else Seq.get s l)
+    [%#slist_reversal_lasso10] first = (if h = l then last else Seq.get s l)
     /\ (forall i : int . l <= i /\ i < h
      -> nonnull_ptr'0 self (Seq.get s i)
     /\ index_logic'0 self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
     /\ (forall i : int, j : int . l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j  -> Seq.get s i <> Seq.get s j)
   
-  constant v_NULL'0 : usize = [%#span17] (18446744073709551615 : usize)
+  constant v_NULL'0 : usize = [%#slist_reversal_lasso9] (18446744073709551615 : usize)
   
-  predicate list'0 [#"../list_reversal_lasso.rs" 91 4 91 54] (self : Memory'0.t_Memory) (first : usize) (s : Seq.seq usize)
-    
+  predicate list'0 [#"list_reversal_lasso.rs" 91 4 91 54] (self : Memory'0.t_Memory) (first : usize) (s : Seq.seq usize)
    =
-    [%#span18] list_seg'0 self first s v_NULL'0 0 (Seq.length s)
+    [%#slist_reversal_lasso18] list_seg'0 self first s v_NULL'0 0 (Seq.length s)
   
   use prelude.prelude.Snapshot
   
-  use prelude.prelude.Int
+  use prelude.prelude.Snapshot
+  
+  use prelude.prelude.Snapshot
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'1 (self : borrowed (Memory'0.t_Memory)) =
-    [%#span19] self.final = self.current
+  predicate resolve'3 (self : borrowed (Memory'0.t_Memory)) =
+    [%#sresolve22] self.final = self.current
   
-  predicate resolve'0 (self : borrowed usize) =
-    [%#span19] self.final = self.current
+  predicate resolve'1 (_1 : borrowed (Memory'0.t_Memory)) =
+    resolve'3 _1
   
-  let rec replace'0 (dest:borrowed usize) (src:usize) (return'  (ret:usize))= {[@expl:precondition] [%#span21] inv'1 src}
-    {[@expl:precondition] [%#span20] inv'0 dest}
+  predicate resolve'2 (self : borrowed usize) =
+    [%#sresolve22] self.final = self.current
+  
+  predicate resolve'0 (_1 : borrowed usize) =
+    resolve'2 _1
+  
+  let rec replace'0 (dest:borrowed usize) (src:usize) (return'  (ret:usize))= {[@expl:precondition] inv'1 src}
+    {[@expl:precondition] inv'0 dest}
     any
-    [ return' (result:usize)-> {[%#span24] inv'1 result}
-      {[%#span23] result = dest.current}
-      {[%#span22] dest.final = src}
+    [ return' (result:usize)-> {inv'1 result}
+      {[%#smem17] result = dest.current}
+      {[%#smem16] dest.final = src}
       (! return' {result}) ]
     
   
-  let rec index_mut'0 (self:borrowed (Memory'0.t_Memory)) (i:usize) (return'  (ret:borrowed usize))= {[@expl:precondition] [%#span25] nonnull_ptr'0 self.current i}
+  let rec index_mut'0 (self:borrowed (Memory'0.t_Memory)) (i:usize) (return'  (ret:borrowed usize))= {[@expl:precondition] [%#slist_reversal_lasso11] nonnull_ptr'0 self.current i}
     any
-    [ return' (result:borrowed usize)-> {[%#span29] forall j : usize . nonnull_ptr'0 self.current j /\ i <> j
-       -> index_logic'0 self.final j = index_logic'0 self.current j}
-      {[%#span28] Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.current))
-      = Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.final))}
-      {[%#span27] result.final = index_logic'0 self.final i}
-      {[%#span26] result.current = index_logic'0 self.current i}
+    [ return' (result:borrowed usize)-> {[%#slist_reversal_lasso15] forall j : usize . nonnull_ptr'0 self.current j
+      /\ i <> j  -> index_logic'0 self.final j = index_logic'0 self.current j}
+      {[%#slist_reversal_lasso14] Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.current))
+      = Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.final))}
+      {[%#slist_reversal_lasso13] result.final = index_logic'0 self.final i}
+      {[%#slist_reversal_lasso12] result.current = index_logic'0 self.current i}
       (! return' {result}) ]
     
   
@@ -875,6 +663,8 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__list_reversal_list
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
+  
+  meta "compute_max_steps" 1000000
   
   let rec list_reversal_list (self:borrowed (Memory'0.t_Memory)) (l:usize) (s:Snapshot.snap_ty (Seq.seq usize)) (return'  (ret:usize))= {[%#slist_reversal_lasso7] list'0 self.current l (Snapshot.inner s)}
     (! bb0
@@ -901,20 +691,20 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__list_reversal_list
           [ s0 = Borrow.borrow_mut <Memory'0.t_Memory> {self.current}
               (fun (_ret':borrowed (Memory'0.t_Memory)) ->
                  [ &_21 <- _ret' ] 
-                 [ &self <- { self with current = _21.final ; } ] 
+                 [ &self <- { self with current = _ret'.final ; } ] 
                 s1)
           | s1 = index_mut'0 {_21} {l} (fun (_ret':borrowed usize) ->  [ &_20 <- _ret' ] s2)
           | s2 = bb5 ]
           
         | bb5 = s0
           [ s0 = Borrow.borrow_final <usize> {_20.current} {Borrow.get_id _20}
-              (fun (_ret':borrowed usize) ->  [ &_19 <- _ret' ]  [ &_20 <- { _20 with current = _19.final ; } ] s1)
+              (fun (_ret':borrowed usize) ->  [ &_19 <- _ret' ]  [ &_20 <- { _20 with current = _ret'.final ; } ] s1)
           | s1 = Borrow.borrow_final <usize> {_19.current} {Borrow.get_id _19}
-              (fun (_ret':borrowed usize) ->  [ &_18 <- _ret' ]  [ &_19 <- { _19 with current = _18.final ; } ] s2)
+              (fun (_ret':borrowed usize) ->  [ &_18 <- _ret' ]  [ &_19 <- { _19 with current = _ret'.final ; } ] s2)
           | s2 = Borrow.borrow_mut <usize> {r}
-              (fun (_ret':borrowed usize) ->  [ &_25 <- _ret' ]  [ &r <- _25.final ] s3)
+              (fun (_ret':borrowed usize) ->  [ &_25 <- _ret' ]  [ &r <- _ret'.final ] s3)
           | s3 = Borrow.borrow_final <usize> {_25.current} {Borrow.get_id _25}
-              (fun (_ret':borrowed usize) ->  [ &_24 <- _ret' ]  [ &_25 <- { _25 with current = _24.final ; } ] s4)
+              (fun (_ret':borrowed usize) ->  [ &_24 <- _ret' ]  [ &_25 <- { _25 with current = _ret'.final ; } ] s4)
           | s4 = replace'0 {_24} {l} (fun (_ret':usize) ->  [ &_23 <- _ret' ] s5)
           | s5 = bb6 ]
           
@@ -957,176 +747,140 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__list_reversal_list
       (! return' {result}) ]
     
 end
-module M_list_reversal_lasso__qy123zimplqy35z4qy125z__list_reversal_loop
-  let%span slist_reversal_lasso0 = "../list_reversal_lasso.rs" 126 20 126 24
-  
-  let%span slist_reversal_lasso1 = "../list_reversal_lasso.rs" 127 20 127 35
-  
-  let%span slist_reversal_lasso2 = "../list_reversal_lasso.rs" 129 20 129 48
-  
-  let%span slist_reversal_lasso3 = "../list_reversal_lasso.rs" 129 8 129 50
-  
-  let%span slist_reversal_lasso4 = "../list_reversal_lasso.rs" 137 19 137 23
-  
-  let%span slist_reversal_lasso5 = "../list_reversal_lasso.rs" 138 12 138 77
-  
-  let%span slist_reversal_lasso6 = "../list_reversal_lasso.rs" 140 16 140 36
-  
-  let%span slist_reversal_lasso7 = "../list_reversal_lasso.rs" 143 8 145 54
-  
-  let%span slist_reversal_lasso8 = "../list_reversal_lasso.rs" 122 15 122 26
-  
-  let%span slist_reversal_lasso9 = "../list_reversal_lasso.rs" 123 15 123 32
-  
-  let%span slist_reversal_lasso10 = "../list_reversal_lasso.rs" 124 14 124 101
-  
-  let%span span11 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
-  
-  let%span span12 = "../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
-  
-  let%span span13 = "" 0 0 0 0
-  
-  let%span span14 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
-  
-  let%span span15 = "../../../../creusot-contracts/src/logic/ops.rs" 31 8 31 32
-  
-  let%span span16 = "../list_reversal_lasso.rs" 21 8 21 31
-  
-  let%span span17 = "../list_reversal_lasso.rs" 50 20 50 70
-  
-  let%span span18 = "../list_reversal_lasso.rs" 83 12 85 98
-  
-  let%span span19 = "../list_reversal_lasso.rs" 118 12 118 53
-  
-  let%span span20 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
-  
-  let%span span21 = "" 0 0 0 0
-  
-  let%span span22 = "" 0 0 0 0
-  
-  let%span span23 = "../../../../creusot-contracts/src/std/mem.rs" 8 22 8 34
-  
-  let%span span24 = "../../../../creusot-contracts/src/std/mem.rs" 9 22 9 37
-  
-  let%span span25 = "" 0 0 0 0
-  
-  let%span span26 = "../list_reversal_lasso.rs" 36 15 36 34
-  
-  let%span span27 = "../list_reversal_lasso.rs" 37 14 37 47
-  
-  let%span span28 = "../list_reversal_lasso.rs" 38 14 38 47
-  
-  let%span span29 = "../list_reversal_lasso.rs" 39 14 39 47
-  
-  let%span span30 = "../list_reversal_lasso.rs" 40 4 40 113
-  
-  let%span span31 = "../../../../creusot-contracts/src/logic/ops.rs" 86 8 86 33
-  
-  let%span span32 = "../list_reversal_lasso.rs" 13 0 13 15
+module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_loop [#"list_reversal_lasso.rs" 125 4 125 82] (* Memory *)
+  let%span slist_reversal_lasso0 = "list_reversal_lasso.rs" 126 20 126 24
+  let%span slist_reversal_lasso1 = "list_reversal_lasso.rs" 127 20 127 35
+  let%span slist_reversal_lasso2 = "list_reversal_lasso.rs" 129 20 129 48
+  let%span slist_reversal_lasso3 = "list_reversal_lasso.rs" 129 8 129 50
+  let%span slist_reversal_lasso4 = "list_reversal_lasso.rs" 137 19 137 23
+  let%span slist_reversal_lasso5 = "list_reversal_lasso.rs" 138 12 138 77
+  let%span slist_reversal_lasso6 = "list_reversal_lasso.rs" 140 16 140 36
+  let%span slist_reversal_lasso7 = "list_reversal_lasso.rs" 143 8 145 54
+  let%span slist_reversal_lasso8 = "list_reversal_lasso.rs" 122 15 122 26
+  let%span slist_reversal_lasso9 = "list_reversal_lasso.rs" 123 15 123 32
+  let%span slist_reversal_lasso10 = "list_reversal_lasso.rs" 124 14 124 101
+  let%span slist_reversal_lasso11 = "list_reversal_lasso.rs" 13 0 13 15
+  let%span sops12 = "../../../creusot-contracts/src/logic/ops.rs" 86 8 86 33
+  let%span slist_reversal_lasso13 = "list_reversal_lasso.rs" 50 20 50 70
+  let%span slist_reversal_lasso14 = "list_reversal_lasso.rs" 21 8 21 31
+  let%span slist_reversal_lasso15 = "list_reversal_lasso.rs" 83 12 85 98
+  let%span slist_reversal_lasso16 = "list_reversal_lasso.rs" 36 15 36 34
+  let%span slist_reversal_lasso17 = "list_reversal_lasso.rs" 37 14 37 47
+  let%span slist_reversal_lasso18 = "list_reversal_lasso.rs" 38 14 38 47
+  let%span slist_reversal_lasso19 = "list_reversal_lasso.rs" 39 14 39 47
+  let%span slist_reversal_lasso20 = "list_reversal_lasso.rs" 40 4 40 113
+  let%span smem21 = "../../../creusot-contracts/src/std/mem.rs" 8 22 8 34
+  let%span smem22 = "../../../creusot-contracts/src/std/mem.rs" 9 22 9 37
+  let%span slist_reversal_lasso23 = "list_reversal_lasso.rs" 118 12 118 53
+  let%span svec24 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
+  let%span sops25 = "../../../creusot-contracts/src/logic/ops.rs" 31 8 31 32
+  let%span sresolve26 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   
   use prelude.prelude.UIntSize
   
-  predicate invariant'1 (self : usize) =
-    [%#span11] true
+  use prelude.prelude.Int
   
   predicate inv'1 (_1 : usize)
   
-  axiom inv'1 : forall x : usize . inv'1 x = true
+  axiom inv_axiom'1 [@rewrite] : forall x : usize [inv'1 x] . inv'1 x = true
   
   use prelude.prelude.Borrow
   
-  predicate invariant'0 (self : borrowed usize) =
-    [%#span12] inv'1 self.current /\ inv'1 self.final
-  
   predicate inv'0 (_1 : borrowed usize)
   
-  axiom inv'0 : forall x : borrowed usize . inv'0 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed usize [inv'0 x] . inv'0 x = true
+  
+  use seq.Seq
+  
+  use prelude.prelude.UIntSize
+  
+  use seq.Seq
   
   use T_alloc__alloc__Global as Global'0
   
   use T_alloc__vec__Vec as Vec'0
   
-  use seq.Seq
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
   use seq.Seq
   
-  use prelude.prelude.UIntSize
+  function view'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
   
-  use prelude.prelude.Int
-  
-  constant v_MAX'0 : usize = [%#span13] (18446744073709551615 : usize)
-  
-  use seq.Seq
-  
-  function shallow_model'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
-  
-  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#span14] Seq.length (shallow_model'0 self)
+  axiom view'0_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#svec24] Seq.length (view'0 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   function index_logic'2 [@inline:trivial] (self : Vec'0.t_Vec usize (Global'0.t_Global)) (ix : usize) : usize =
-    [%#span15] Seq.get (shallow_model'0 self) (UIntSize.to_int ix)
+    [%#sops25] Seq.get (view'0 self) (UIntSize.to_int ix)
   
   use T_list_reversal_lasso__Memory as T_list_reversal_lasso__Memory
   
   use T_list_reversal_lasso__Memory as Memory'0
   
-  function index_logic'1 [#"../list_reversal_lasso.rs" 20 4 20 39] (self : Memory'0.t_Memory) (i : usize) : usize =
-    [%#span16] index_logic'2 (T_list_reversal_lasso__Memory.t_Memory__0 self) i
+  function index_logic'1 [#"list_reversal_lasso.rs" 20 4 20 39] (self : Memory'0.t_Memory) (i : usize) : usize =
+    [%#slist_reversal_lasso14] index_logic'2 (T_list_reversal_lasso__Memory.t_Memory__0 self) i
   
-  predicate nonnull_ptr'0 [#"../list_reversal_lasso.rs" 49 4 49 44] (self : Memory'0.t_Memory) (i : usize) =
-    [%#span17] Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+  predicate nonnull_ptr'0 [#"list_reversal_lasso.rs" 49 4 49 44] (self : Memory'0.t_Memory) (i : usize) =
+    [%#slist_reversal_lasso13] Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
     <= UIntSize.to_int (v_MAX'0 : usize)
-    /\ UIntSize.to_int i < Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+    /\ UIntSize.to_int i < Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
   
-  predicate list_seg'0 [#"../list_reversal_lasso.rs" 81 4 81 81] (self : Memory'0.t_Memory) (first : usize) (s : Seq.seq usize) (last : usize) (l : int) (h : int)
+  predicate list_seg'0 [#"list_reversal_lasso.rs" 81 4 81 81] (self : Memory'0.t_Memory) (first : usize) (s : Seq.seq usize) (last : usize) (l : int) (h : int)
     
    =
-    [%#span18] first = (if h = l then last else Seq.get s l)
+    [%#slist_reversal_lasso15] first = (if h = l then last else Seq.get s l)
     /\ (forall i : int . l <= i /\ i < h
      -> nonnull_ptr'0 self (Seq.get s i)
     /\ index_logic'1 self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
     /\ (forall i : int, j : int . l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j  -> Seq.get s i <> Seq.get s j)
   
-  predicate loop_'0 [#"../list_reversal_lasso.rs" 116 4 116 55] (self : Memory'0.t_Memory) (first : usize) (s : Seq.seq usize)
+  predicate loop_'0 [#"list_reversal_lasso.rs" 116 4 116 55] (self : Memory'0.t_Memory) (first : usize) (s : Seq.seq usize)
     
    =
-    [%#span19] list_seg'0 self first s (Seq.get s 0) 0 (Seq.length s)
+    [%#slist_reversal_lasso23] list_seg'0 self first s (Seq.get s 0) 0 (Seq.length s)
   
   use prelude.prelude.Snapshot
   
-  use prelude.prelude.Int
+  use prelude.prelude.Snapshot
+  
+  use prelude.prelude.Snapshot
   
   use prelude.prelude.Intrinsic
   
   use seq.Seq
   
-  use prelude.seq_ext.SeqExt
+  use seq.Seq
   
   use seq.Seq
   
-  predicate resolve'1 (self : borrowed (Memory'0.t_Memory)) =
-    [%#span20] self.final = self.current
+  predicate resolve'3 (self : borrowed (Memory'0.t_Memory)) =
+    [%#sresolve26] self.final = self.current
   
-  predicate resolve'0 (self : borrowed usize) =
-    [%#span20] self.final = self.current
+  predicate resolve'1 (_1 : borrowed (Memory'0.t_Memory)) =
+    resolve'3 _1
   
-  let rec replace'0 (dest:borrowed usize) (src:usize) (return'  (ret:usize))= {[@expl:precondition] [%#span22] inv'1 src}
-    {[@expl:precondition] [%#span21] inv'0 dest}
+  predicate resolve'2 (self : borrowed usize) =
+    [%#sresolve26] self.final = self.current
+  
+  predicate resolve'0 (_1 : borrowed usize) =
+    resolve'2 _1
+  
+  let rec replace'0 (dest:borrowed usize) (src:usize) (return'  (ret:usize))= {[@expl:precondition] inv'1 src}
+    {[@expl:precondition] inv'0 dest}
     any
-    [ return' (result:usize)-> {[%#span25] inv'1 result}
-      {[%#span24] result = dest.current}
-      {[%#span23] dest.final = src}
+    [ return' (result:usize)-> {inv'1 result}
+      {[%#smem22] result = dest.current}
+      {[%#smem21] dest.final = src}
       (! return' {result}) ]
     
   
-  let rec index_mut'0 (self:borrowed (Memory'0.t_Memory)) (i:usize) (return'  (ret:borrowed usize))= {[@expl:precondition] [%#span26] nonnull_ptr'0 self.current i}
+  let rec index_mut'0 (self:borrowed (Memory'0.t_Memory)) (i:usize) (return'  (ret:borrowed usize))= {[@expl:precondition] [%#slist_reversal_lasso16] nonnull_ptr'0 self.current i}
     any
-    [ return' (result:borrowed usize)-> {[%#span30] forall j : usize . nonnull_ptr'0 self.current j /\ i <> j
-       -> index_logic'1 self.final j = index_logic'1 self.current j}
-      {[%#span29] Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.current))
-      = Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.final))}
-      {[%#span28] result.final = index_logic'1 self.final i}
-      {[%#span27] result.current = index_logic'1 self.current i}
+    [ return' (result:borrowed usize)-> {[%#slist_reversal_lasso20] forall j : usize . nonnull_ptr'0 self.current j
+      /\ i <> j  -> index_logic'1 self.final j = index_logic'1 self.current j}
+      {[%#slist_reversal_lasso19] Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.current))
+      = Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.final))}
+      {[%#slist_reversal_lasso18] result.final = index_logic'1 self.final i}
+      {[%#slist_reversal_lasso17] result.current = index_logic'1 self.current i}
       (! return' {result}) ]
     
   
@@ -1137,15 +891,17 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__list_reversal_loop
   use prelude.prelude.Snapshot
   
   function index_logic'0 [@inline:trivial] (self : Snapshot.snap_ty (Seq.seq usize)) (ix : int) : usize =
-    [%#span31] Seq.get (Snapshot.inner self) ix
+    [%#sops12] Seq.get (Snapshot.inner self) ix
   
-  constant v_NULL'0 : usize = [%#span32] (18446744073709551615 : usize)
-  
-  use prelude.prelude.Snapshot
+  constant v_NULL'0 : usize = [%#slist_reversal_lasso11] (18446744073709551615 : usize)
   
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
+  
+  use prelude.prelude.Snapshot
+  
+  meta "compute_max_steps" 1000000
   
   let rec list_reversal_loop (self:borrowed (Memory'0.t_Memory)) (l:usize) (s:Snapshot.snap_ty (Seq.seq usize)) (return'  (ret:usize))= {[%#slist_reversal_lasso9] loop_'0 self.current l (Snapshot.inner s)}
     {[%#slist_reversal_lasso8] Seq.length (Snapshot.inner s) > 0}
@@ -1185,20 +941,20 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__list_reversal_loop
           | s1 = Borrow.borrow_mut <Memory'0.t_Memory> {self.current}
               (fun (_ret':borrowed (Memory'0.t_Memory)) ->
                  [ &_25 <- _ret' ] 
-                 [ &self <- { self with current = _25.final ; } ] 
+                 [ &self <- { self with current = _ret'.final ; } ] 
                 s2)
           | s2 = index_mut'0 {_25} {l} (fun (_ret':borrowed usize) ->  [ &_24 <- _ret' ] s3)
           | s3 = bb5 ]
           
         | bb5 = s0
           [ s0 = Borrow.borrow_final <usize> {_24.current} {Borrow.get_id _24}
-              (fun (_ret':borrowed usize) ->  [ &_23 <- _ret' ]  [ &_24 <- { _24 with current = _23.final ; } ] s1)
+              (fun (_ret':borrowed usize) ->  [ &_23 <- _ret' ]  [ &_24 <- { _24 with current = _ret'.final ; } ] s1)
           | s1 = Borrow.borrow_final <usize> {_23.current} {Borrow.get_id _23}
-              (fun (_ret':borrowed usize) ->  [ &_22 <- _ret' ]  [ &_23 <- { _23 with current = _22.final ; } ] s2)
+              (fun (_ret':borrowed usize) ->  [ &_22 <- _ret' ]  [ &_23 <- { _23 with current = _ret'.final ; } ] s2)
           | s2 = Borrow.borrow_mut <usize> {r}
-              (fun (_ret':borrowed usize) ->  [ &_29 <- _ret' ]  [ &r <- _29.final ] s3)
+              (fun (_ret':borrowed usize) ->  [ &_29 <- _ret' ]  [ &r <- _ret'.final ] s3)
           | s3 = Borrow.borrow_final <usize> {_29.current} {Borrow.get_id _29}
-              (fun (_ret':borrowed usize) ->  [ &_28 <- _ret' ]  [ &_29 <- { _29 with current = _28.final ; } ] s4)
+              (fun (_ret':borrowed usize) ->  [ &_28 <- _ret' ]  [ &_29 <- { _29 with current = _ret'.final ; } ] s4)
           | s4 = replace'0 {_28} {l} (fun (_ret':usize) ->  [ &_27 <- _ret' ] s5)
           | s5 = bb6 ]
           
@@ -1220,7 +976,7 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__list_reversal_loop
     | bb9 = s0
       [ s0 = -{resolve'1 self}- s1
       | s1 = {[@expl:assertion] [%#slist_reversal_lasso7] forall i : int . 0 <= i /\ i < Seq.length (Snapshot.inner s)
-         -> Seq.get (Seq.(++) (Seq.singleton (index_logic'0 s 0)) (Reverse.reverse (SeqExt.subsequence (Snapshot.inner s) 1 (Seq.length (Snapshot.inner s))))) i
+         -> Seq.get (Seq.(++) (Seq.singleton (index_logic'0 s 0)) (Reverse.reverse (Seq.([..]) (Snapshot.inner s) 1 (Seq.length (Snapshot.inner s))))) i
         = (if i = 0 then index_logic'0 s 0 else Seq.get (Reverse.reverse (Snapshot.inner s)) (i - 1))}
         s2
       | s2 =  [ &_0 <- r ] s3
@@ -1245,138 +1001,101 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__list_reversal_loop
     | & _31 : Snapshot.snap_ty int = any_l ()
     | & old_2_0 : Snapshot.snap_ty (borrowed (Memory'0.t_Memory)) = any_l () ]
     
-    [ return' (result:usize)-> {[@expl:postcondition] [%#slist_reversal_lasso10] loop_'0 self.final result (Seq.(++) (Seq.singleton (index_logic'0 s 0)) (Reverse.reverse (SeqExt.subsequence (Snapshot.inner s) 1 (Seq.length (Snapshot.inner s)))))}
+    [ return' (result:usize)-> {[@expl:postcondition] [%#slist_reversal_lasso10] loop_'0 self.final result (Seq.(++) (Seq.singleton (index_logic'0 s 0)) (Reverse.reverse (Seq.([..]) (Snapshot.inner s) 1 (Seq.length (Snapshot.inner s)))))}
       (! return' {result}) ]
     
 end
-module M_list_reversal_lasso__qy123zimplqy35z4qy125z__list_reversal_lasso
-  let%span slist_reversal_lasso0 = "../list_reversal_lasso.rs" 169 20 169 24
-  
-  let%span slist_reversal_lasso1 = "../list_reversal_lasso.rs" 170 20 170 35
-  
-  let%span slist_reversal_lasso2 = "../list_reversal_lasso.rs" 172 20 172 58
-  
-  let%span slist_reversal_lasso3 = "../list_reversal_lasso.rs" 172 8 172 60
-  
-  let%span slist_reversal_lasso4 = "../list_reversal_lasso.rs" 190 19 190 23
-  
-  let%span slist_reversal_lasso5 = "../list_reversal_lasso.rs" 192 16 192 36
-  
-  let%span slist_reversal_lasso6 = "../list_reversal_lasso.rs" 161 15 161 38
-  
-  let%span slist_reversal_lasso7 = "../list_reversal_lasso.rs" 162 14 162 54
-  
-  let%span span8 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
-  
-  let%span span9 = "../../../../creusot-contracts/src/invariant.rs" 35 20 35 44
-  
-  let%span span10 = "" 0 0 0 0
-  
-  let%span span11 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
-  
-  let%span span12 = "../../../../creusot-contracts/src/logic/ops.rs" 31 8 31 32
-  
-  let%span span13 = "../list_reversal_lasso.rs" 21 8 21 31
-  
-  let%span span14 = "../list_reversal_lasso.rs" 50 20 50 70
-  
-  let%span span15 = "../list_reversal_lasso.rs" 83 12 85 98
-  
-  let%span span16 = "../list_reversal_lasso.rs" 152 8 158 9
-  
-  let%span span17 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
-  
-  let%span span18 = "" 0 0 0 0
-  
-  let%span span19 = "" 0 0 0 0
-  
-  let%span span20 = "../../../../creusot-contracts/src/std/mem.rs" 8 22 8 34
-  
-  let%span span21 = "../../../../creusot-contracts/src/std/mem.rs" 9 22 9 37
-  
-  let%span span22 = "" 0 0 0 0
-  
-  let%span span23 = "../list_reversal_lasso.rs" 36 15 36 34
-  
-  let%span span24 = "../list_reversal_lasso.rs" 37 14 37 47
-  
-  let%span span25 = "../list_reversal_lasso.rs" 38 14 38 47
-  
-  let%span span26 = "../list_reversal_lasso.rs" 39 14 39 47
-  
-  let%span span27 = "../list_reversal_lasso.rs" 40 4 40 113
-  
-  let%span span28 = "../list_reversal_lasso.rs" 13 0 13 15
-  
-  let%span span29 = "../../../../creusot-contracts/src/logic/ops.rs" 86 8 86 33
-  
-  use prelude.prelude.UIntSize
-  
-  predicate invariant'1 (self : usize) =
-    [%#span8] true
-  
-  predicate inv'1 (_1 : usize)
-  
-  axiom inv'1 : forall x : usize . inv'1 x = true
-  
-  use prelude.prelude.Borrow
-  
-  predicate invariant'0 (self : borrowed usize) =
-    [%#span9] inv'1 self.current /\ inv'1 self.final
-  
-  predicate inv'0 (_1 : borrowed usize)
-  
-  axiom inv'0 : forall x : borrowed usize . inv'0 x = true
-  
-  use T_alloc__alloc__Global as Global'0
-  
-  use T_alloc__vec__Vec as Vec'0
-  
-  use seq.Seq
-  
-  use seq.Seq
+module M_list_reversal_lasso__qyi2644757663130641572__list_reversal_lasso [#"list_reversal_lasso.rs" 163 4 168 12] (* Memory *)
+  let%span slist_reversal_lasso0 = "list_reversal_lasso.rs" 169 20 169 24
+  let%span slist_reversal_lasso1 = "list_reversal_lasso.rs" 170 20 170 35
+  let%span slist_reversal_lasso2 = "list_reversal_lasso.rs" 172 20 172 58
+  let%span slist_reversal_lasso3 = "list_reversal_lasso.rs" 172 8 172 60
+  let%span slist_reversal_lasso4 = "list_reversal_lasso.rs" 190 19 190 23
+  let%span slist_reversal_lasso5 = "list_reversal_lasso.rs" 192 16 192 36
+  let%span slist_reversal_lasso6 = "list_reversal_lasso.rs" 161 15 161 38
+  let%span slist_reversal_lasso7 = "list_reversal_lasso.rs" 162 14 162 54
+  let%span sops8 = "../../../creusot-contracts/src/logic/ops.rs" 86 8 86 33
+  let%span slist_reversal_lasso9 = "list_reversal_lasso.rs" 83 12 85 98
+  let%span slist_reversal_lasso10 = "list_reversal_lasso.rs" 13 0 13 15
+  let%span slist_reversal_lasso11 = "list_reversal_lasso.rs" 36 15 36 34
+  let%span slist_reversal_lasso12 = "list_reversal_lasso.rs" 37 14 37 47
+  let%span slist_reversal_lasso13 = "list_reversal_lasso.rs" 38 14 38 47
+  let%span slist_reversal_lasso14 = "list_reversal_lasso.rs" 39 14 39 47
+  let%span slist_reversal_lasso15 = "list_reversal_lasso.rs" 40 4 40 113
+  let%span smem16 = "../../../creusot-contracts/src/std/mem.rs" 8 22 8 34
+  let%span smem17 = "../../../creusot-contracts/src/std/mem.rs" 9 22 9 37
+  let%span slist_reversal_lasso18 = "list_reversal_lasso.rs" 152 8 158 9
+  let%span slist_reversal_lasso19 = "list_reversal_lasso.rs" 50 20 50 70
+  let%span slist_reversal_lasso20 = "list_reversal_lasso.rs" 21 8 21 31
+  let%span svec21 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
+  let%span sresolve22 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
+  let%span sops23 = "../../../creusot-contracts/src/logic/ops.rs" 31 8 31 32
   
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  constant v_MAX'0 : usize = [%#span10] (18446744073709551615 : usize)
+  predicate inv'1 (_1 : usize)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : usize [inv'1 x] . inv'1 x = true
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : borrowed usize)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed usize [inv'0 x] . inv'0 x = true
   
   use seq.Seq
   
-  function shallow_model'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
+  use prelude.prelude.UIntSize
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#span11] Seq.length (shallow_model'0 self)
+  use seq.Seq
+  
+  use T_alloc__alloc__Global as Global'0
+  
+  use T_alloc__vec__Vec as Vec'0
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use seq.Seq
+  
+  function view'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
+  
+  axiom view'0_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#svec21] Seq.length (view'0 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   function index_logic'2 [@inline:trivial] (self : Vec'0.t_Vec usize (Global'0.t_Global)) (ix : usize) : usize =
-    [%#span12] Seq.get (shallow_model'0 self) (UIntSize.to_int ix)
+    [%#sops23] Seq.get (view'0 self) (UIntSize.to_int ix)
   
   use T_list_reversal_lasso__Memory as T_list_reversal_lasso__Memory
   
   use T_list_reversal_lasso__Memory as Memory'0
   
-  function index_logic'1 [#"../list_reversal_lasso.rs" 20 4 20 39] (self : Memory'0.t_Memory) (i : usize) : usize =
-    [%#span13] index_logic'2 (T_list_reversal_lasso__Memory.t_Memory__0 self) i
+  function index_logic'1 [#"list_reversal_lasso.rs" 20 4 20 39] (self : Memory'0.t_Memory) (i : usize) : usize =
+    [%#slist_reversal_lasso20] index_logic'2 (T_list_reversal_lasso__Memory.t_Memory__0 self) i
   
-  predicate nonnull_ptr'0 [#"../list_reversal_lasso.rs" 49 4 49 44] (self : Memory'0.t_Memory) (i : usize) =
-    [%#span14] Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+  predicate nonnull_ptr'0 [#"list_reversal_lasso.rs" 49 4 49 44] (self : Memory'0.t_Memory) (i : usize) =
+    [%#slist_reversal_lasso19] Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
     <= UIntSize.to_int (v_MAX'0 : usize)
-    /\ UIntSize.to_int i < Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+    /\ UIntSize.to_int i < Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
   
-  predicate list_seg'0 [#"../list_reversal_lasso.rs" 81 4 81 81] (self : Memory'0.t_Memory) (first : usize) (s : Seq.seq usize) (last : usize) (l : int) (h : int)
+  predicate list_seg'0 [#"list_reversal_lasso.rs" 81 4 81 81] (self : Memory'0.t_Memory) (first : usize) (s : Seq.seq usize) (last : usize) (l : int) (h : int)
     
    =
-    [%#span15] first = (if h = l then last else Seq.get s l)
+    [%#slist_reversal_lasso9] first = (if h = l then last else Seq.get s l)
     /\ (forall i : int . l <= i /\ i < h
      -> nonnull_ptr'0 self (Seq.get s i)
     /\ index_logic'1 self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
     /\ (forall i : int, j : int . l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j  -> Seq.get s i <> Seq.get s j)
   
-  predicate lasso'0 [#"../list_reversal_lasso.rs" 151 4 151 70] (self : Memory'0.t_Memory) (first : usize) (s1 : Seq.seq usize) (s2 : Seq.seq usize)
+  predicate lasso'0 [#"list_reversal_lasso.rs" 151 4 151 70] (self : Memory'0.t_Memory) (first : usize) (s1 : Seq.seq usize) (s2 : Seq.seq usize)
     
    =
-    [%#span16] let mid = if Seq.length s2 = 0 then Seq.get s1 (Seq.length s1 - 1) else Seq.get s2 0 in Seq.length s1 > 0
+    [%#slist_reversal_lasso18] let mid = if Seq.length s2 = 0 then
+      Seq.get s1 (Seq.length s1 - 1)
+    else
+      Seq.get s2 0
+     in Seq.length s1 > 0
     /\ (forall i : int, j : int . 0 <= i /\ i < Seq.length s1 /\ 0 <= j /\ j < Seq.length s2
      -> Seq.get s1 i <> Seq.get s2 j)
     /\ list_seg'0 self first s1 mid 0 (Seq.length s1)
@@ -1384,52 +1103,62 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__list_reversal_lasso
   
   use prelude.prelude.Snapshot
   
-  use prelude.prelude.Int
+  use prelude.prelude.Snapshot
+  
+  use prelude.prelude.Snapshot
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'1 (self : borrowed (Memory'0.t_Memory)) =
-    [%#span17] self.final = self.current
+  predicate resolve'3 (self : borrowed (Memory'0.t_Memory)) =
+    [%#sresolve22] self.final = self.current
   
-  predicate resolve'0 (self : borrowed usize) =
-    [%#span17] self.final = self.current
+  predicate resolve'1 (_1 : borrowed (Memory'0.t_Memory)) =
+    resolve'3 _1
   
-  let rec replace'0 (dest:borrowed usize) (src:usize) (return'  (ret:usize))= {[@expl:precondition] [%#span19] inv'1 src}
-    {[@expl:precondition] [%#span18] inv'0 dest}
+  predicate resolve'2 (self : borrowed usize) =
+    [%#sresolve22] self.final = self.current
+  
+  predicate resolve'0 (_1 : borrowed usize) =
+    resolve'2 _1
+  
+  let rec replace'0 (dest:borrowed usize) (src:usize) (return'  (ret:usize))= {[@expl:precondition] inv'1 src}
+    {[@expl:precondition] inv'0 dest}
     any
-    [ return' (result:usize)-> {[%#span22] inv'1 result}
-      {[%#span21] result = dest.current}
-      {[%#span20] dest.final = src}
+    [ return' (result:usize)-> {inv'1 result}
+      {[%#smem17] result = dest.current}
+      {[%#smem16] dest.final = src}
       (! return' {result}) ]
     
   
-  let rec index_mut'0 (self:borrowed (Memory'0.t_Memory)) (i:usize) (return'  (ret:borrowed usize))= {[@expl:precondition] [%#span23] nonnull_ptr'0 self.current i}
+  let rec index_mut'0 (self:borrowed (Memory'0.t_Memory)) (i:usize) (return'  (ret:borrowed usize))= {[@expl:precondition] [%#slist_reversal_lasso11] nonnull_ptr'0 self.current i}
     any
-    [ return' (result:borrowed usize)-> {[%#span27] forall j : usize . nonnull_ptr'0 self.current j /\ i <> j
-       -> index_logic'1 self.final j = index_logic'1 self.current j}
-      {[%#span26] Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.current))
-      = Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.final))}
-      {[%#span25] result.final = index_logic'1 self.final i}
-      {[%#span24] result.current = index_logic'1 self.current i}
+    [ return' (result:borrowed usize)-> {[%#slist_reversal_lasso15] forall j : usize . nonnull_ptr'0 self.current j
+      /\ i <> j  -> index_logic'1 self.final j = index_logic'1 self.current j}
+      {[%#slist_reversal_lasso14] Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.current))
+      = Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self.final))}
+      {[%#slist_reversal_lasso13] result.final = index_logic'1 self.final i}
+      {[%#slist_reversal_lasso12] result.current = index_logic'1 self.current i}
       (! return' {result}) ]
     
   
   use prelude.prelude.Snapshot
   
-  constant v_NULL'0 : usize = [%#span28] (18446744073709551615 : usize)
+  constant v_NULL'0 : usize = [%#slist_reversal_lasso10] (18446744073709551615 : usize)
   
   use seq.Reverse
   
   use prelude.prelude.Snapshot
   
   function index_logic'0 [@inline:trivial] (self : Snapshot.snap_ty (Seq.seq usize)) (ix : int) : usize =
-    [%#span29] Seq.get (Snapshot.inner self) ix
+    [%#sops8] Seq.get (Snapshot.inner self) ix
   
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
+  
+  meta "compute_max_steps" 1000000
   
   let rec list_reversal_lasso (self:borrowed (Memory'0.t_Memory)) (l:usize) (s1:Snapshot.snap_ty (Seq.seq usize)) (s2:Snapshot.snap_ty (Seq.seq usize)) (return'  (ret:usize))= {[%#slist_reversal_lasso6] lasso'0 self.current l (Snapshot.inner s1) (Snapshot.inner s2)}
     (! bb0
@@ -1485,20 +1214,20 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__list_reversal_lasso
           [ s0 = Borrow.borrow_mut <Memory'0.t_Memory> {self.current}
               (fun (_ret':borrowed (Memory'0.t_Memory)) ->
                  [ &_23 <- _ret' ] 
-                 [ &self <- { self with current = _23.final ; } ] 
+                 [ &self <- { self with current = _ret'.final ; } ] 
                 s1)
           | s1 = index_mut'0 {_23} {l} (fun (_ret':borrowed usize) ->  [ &_22 <- _ret' ] s2)
           | s2 = bb5 ]
           
         | bb5 = s0
           [ s0 = Borrow.borrow_final <usize> {_22.current} {Borrow.get_id _22}
-              (fun (_ret':borrowed usize) ->  [ &_21 <- _ret' ]  [ &_22 <- { _22 with current = _21.final ; } ] s1)
+              (fun (_ret':borrowed usize) ->  [ &_21 <- _ret' ]  [ &_22 <- { _22 with current = _ret'.final ; } ] s1)
           | s1 = Borrow.borrow_final <usize> {_21.current} {Borrow.get_id _21}
-              (fun (_ret':borrowed usize) ->  [ &_20 <- _ret' ]  [ &_21 <- { _21 with current = _20.final ; } ] s2)
+              (fun (_ret':borrowed usize) ->  [ &_20 <- _ret' ]  [ &_21 <- { _21 with current = _ret'.final ; } ] s2)
           | s2 = Borrow.borrow_mut <usize> {r}
-              (fun (_ret':borrowed usize) ->  [ &_27 <- _ret' ]  [ &r <- _27.final ] s3)
+              (fun (_ret':borrowed usize) ->  [ &_27 <- _ret' ]  [ &r <- _ret'.final ] s3)
           | s3 = Borrow.borrow_final <usize> {_27.current} {Borrow.get_id _27}
-              (fun (_ret':borrowed usize) ->  [ &_26 <- _ret' ]  [ &_27 <- { _27 with current = _26.final ; } ] s4)
+              (fun (_ret':borrowed usize) ->  [ &_26 <- _ret' ]  [ &_27 <- { _27 with current = _ret'.final ; } ] s4)
           | s4 = replace'0 {_26} {l} (fun (_ret':usize) ->  [ &_25 <- _ret' ] s5)
           | s5 = bb6 ]
           
@@ -1547,33 +1276,28 @@ module T_core__option__Option
     | C_None
     | C_Some 't
   
-  function any_l (_ : 'b) : 'a
-  
   let rec v_None < 't > (input:t_Option 't) (ret  )= any
-    [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} {false} any ]
+    [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} (! {false} any) ]
     
   
   let rec v_Some < 't > (input:t_Option 't) (ret  (field_0:'t))= any
     [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
-    | bad (field_0:'t)-> {C_Some field_0 <> input} {false} any ]
+    | bad -> {forall field_0 : 't [C_Some field_0 : t_Option 't] . C_Some field_0 <> input} (! {false} any) ]
     
 end
-module M_list_reversal_lasso__qy123zimplqy35z4qy125z__find_ptr_in_seq__Impl
-  let%span slist_reversal_lasso0 = "../list_reversal_lasso.rs" 198 15 198 37
-  
-  let%span slist_reversal_lasso1 = "../list_reversal_lasso.rs" 199 14 202 5
-  
-  let%span slist_reversal_lasso2 = "../list_reversal_lasso.rs" 203 14 203 25
-  
-  use prelude.prelude.UIntSize
-  
-  use seq.Seq
+module M_list_reversal_lasso__qyi2644757663130641572__find_ptr_in_seq [#"list_reversal_lasso.rs" 204 4 204 66] (* Memory *)
+  let%span slist_reversal_lasso0 = "list_reversal_lasso.rs" 198 15 198 37
+  let%span slist_reversal_lasso1 = "list_reversal_lasso.rs" 199 14 202 5
+  let%span slist_reversal_lasso2 = "list_reversal_lasso.rs" 203 14 203 25
+  let%span slist_reversal_lasso3 = "list_reversal_lasso.rs" 205 8 209 9
   
   use prelude.prelude.UIntSize
   
   use seq.Seq
   
-  use prelude.prelude.Int
+  use prelude.prelude.UIntSize
+  
+  use seq.Seq
   
   use T_core__option__Option as Option'0
   
@@ -1587,7 +1311,7 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__find_ptr_in_seq__Impl
   
   constant p  : int
   
-  function find_ptr_in_seq [#"../list_reversal_lasso.rs" 204 4 204 66] (s : Seq.seq usize) (i : int) (p : int) : Option'0.t_Option int
+  function find_ptr_in_seq [#"list_reversal_lasso.rs" 204 4 204 66] (s : Seq.seq usize) (i : int) (p : int) : Option'0.t_Option int
     
   
   goal vc_find_ptr_in_seq : ([%#slist_reversal_lasso0] 0 <= i /\ i <= Seq.length s)
@@ -1617,32 +1341,22 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__find_ptr_in_seq__Impl
     
   )
 end
-module M_list_reversal_lasso__qy123zimplqy35z4qy125z__pigeon__Impl
-  let%span slist_reversal_lasso0 = "../list_reversal_lasso.rs" 213 15 213 21
-  
-  let%span slist_reversal_lasso1 = "../list_reversal_lasso.rs" 214 4 214 67
-  
-  let%span slist_reversal_lasso2 = "../list_reversal_lasso.rs" 215 4 215 113
-  
-  let%span slist_reversal_lasso3 = "../list_reversal_lasso.rs" 216 14 216 26
-  
-  let%span slist_reversal_lasso4 = "../list_reversal_lasso.rs" 217 14 217 20
-  
-  let%span slist_reversal_lasso5 = "../list_reversal_lasso.rs" 218 14 218 15
-  
-  let%span slist_reversal_lasso6 = "../list_reversal_lasso.rs" 198 15 198 37
-  
-  let%span slist_reversal_lasso7 = "../list_reversal_lasso.rs" 199 14 202 5
-  
-  let%span slist_reversal_lasso8 = "../list_reversal_lasso.rs" 203 14 203 25
-  
-  let%span span9 = "../list_reversal_lasso.rs" 205 8 209 9
+module M_list_reversal_lasso__qyi2644757663130641572__pigeon [#"list_reversal_lasso.rs" 219 4 219 42] (* Memory *)
+  let%span slist_reversal_lasso0 = "list_reversal_lasso.rs" 213 15 213 21
+  let%span slist_reversal_lasso1 = "list_reversal_lasso.rs" 214 4 214 67
+  let%span slist_reversal_lasso2 = "list_reversal_lasso.rs" 215 4 215 113
+  let%span slist_reversal_lasso3 = "list_reversal_lasso.rs" 216 14 216 26
+  let%span slist_reversal_lasso4 = "list_reversal_lasso.rs" 217 14 217 20
+  let%span slist_reversal_lasso5 = "list_reversal_lasso.rs" 218 14 218 15
+  let%span slist_reversal_lasso6 = "list_reversal_lasso.rs" 198 15 198 37
+  let%span slist_reversal_lasso7 = "list_reversal_lasso.rs" 199 14 202 5
+  let%span slist_reversal_lasso8 = "list_reversal_lasso.rs" 203 14 203 25
+  let%span slist_reversal_lasso9 = "list_reversal_lasso.rs" 205 8 209 9
+  let%span slist_reversal_lasso10 = "list_reversal_lasso.rs" 220 8 232 9
   
   use seq.Seq
   
-  use prelude.seq_ext.SeqExt
-  
-  use prelude.prelude.Int
+  use seq.Seq
   
   use T_core__option__Option as Option'0
   
@@ -1658,11 +1372,11 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__pigeon__Impl
   
   use prelude.prelude.Int
   
-  function find_ptr_in_seq'0 [#"../list_reversal_lasso.rs" 204 4 204 66] (s : Seq.seq usize) (i : int) (p : int) : Option'0.t_Option int
+  function find_ptr_in_seq'0 [#"list_reversal_lasso.rs" 204 4 204 66] (s : Seq.seq usize) (i : int) (p : int) : Option'0.t_Option int
     
   
   axiom find_ptr_in_seq'0_def : forall s : Seq.seq usize, i : int, p : int . find_ptr_in_seq'0 s i p
-  = ([%#span9] if i = Seq.length s then
+  = ([%#slist_reversal_lasso9] if i = Seq.length s then
     Option'0.C_None
   else
     if UIntSize.to_int (Seq.get s i) = p then Option'0.C_Some i else find_ptr_in_seq'0 s (i + 1) p
@@ -1679,7 +1393,7 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__pigeon__Impl
   
   constant n  : int
   
-  function pigeon [#"../list_reversal_lasso.rs" 219 4 219 42] (s : Seq.seq usize) (n : int) : bool
+  function pigeon [#"list_reversal_lasso.rs" 219 4 219 42] (s : Seq.seq usize) (n : int) : bool
   
   goal vc_pigeon : ([%#slist_reversal_lasso2] forall i : int, j : int . 0 <= i
   /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j  -> Seq.get s i <> Seq.get s j)
@@ -1709,130 +1423,99 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__pigeon__Impl
         end)
        -> match find_ptr_in_seq'0 s (i + 1) (n - 1) with
         | Option'0.C_None -> ((([%#slist_reversal_lasso2] forall i' : int, j : int . 0 <= i'
-        /\ i' < Seq.length (Seq.(++) (SeqExt.subsequence s 0 i) (SeqExt.subsequence s (i + 1) (Seq.length s)))
-        /\ 0 <= j
-        /\ j < Seq.length (Seq.(++) (SeqExt.subsequence s 0 i) (SeqExt.subsequence s (i + 1) (Seq.length s))) /\ i' <> j
-         -> Seq.get (Seq.(++) (SeqExt.subsequence s 0 i) (SeqExt.subsequence s (i + 1) (Seq.length s))) i'
-        <> Seq.get (Seq.(++) (SeqExt.subsequence s 0 i) (SeqExt.subsequence s (i + 1) (Seq.length s))) j)
+        /\ i' < Seq.length (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s)))
+        /\ 0 <= j /\ j < Seq.length (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s))) /\ i' <> j
+         -> Seq.get (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s))) i'
+        <> Seq.get (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s))) j)
         && ([%#slist_reversal_lasso1] forall i' : int . 0 <= i'
-        /\ i' < Seq.length (Seq.(++) (SeqExt.subsequence s 0 i) (SeqExt.subsequence s (i + 1) (Seq.length s)))
-         -> UIntSize.to_int (Seq.get (Seq.(++) (SeqExt.subsequence s 0 i) (SeqExt.subsequence s (i
-        + 1) (Seq.length s))) i')
-        < n - 1)
+        /\ i' < Seq.length (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s)))
+         -> UIntSize.to_int (Seq.get (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s))) i') < n - 1)
         && ([%#slist_reversal_lasso0] 0 <= n - 1))
         /\ 0 <= ([%#slist_reversal_lasso5] n) /\ ([%#slist_reversal_lasso5] n - 1) < ([%#slist_reversal_lasso5] n))
-        /\ (([%#slist_reversal_lasso4] pigeon (Seq.(++) (SeqExt.subsequence s 0 i) (SeqExt.subsequence s (i
-        + 1) (Seq.length s))) (n - 1))
-        && ([%#slist_reversal_lasso3] Seq.length (Seq.(++) (SeqExt.subsequence s 0 i) (SeqExt.subsequence s (i
-        + 1) (Seq.length s)))
+        /\ (([%#slist_reversal_lasso4] pigeon (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s))) (n
+        - 1))
+        && ([%#slist_reversal_lasso3] Seq.length (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s)))
         <= n - 1)
-         -> ([%#slist_reversal_lasso4] pigeon (Seq.(++) (SeqExt.subsequence s 0 i) (SeqExt.subsequence s (i
-        + 1) (Seq.length s))) (n - 1))
+         -> ([%#slist_reversal_lasso4] pigeon (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s))) (n
+        - 1))
         && ([%#slist_reversal_lasso3] Seq.length s <= n))
         | Option'0.C_Some _ -> ([%#slist_reversal_lasso4] true) && ([%#slist_reversal_lasso3] Seq.length s <= n)
         end)
       end)
   )
 end
-module M_list_reversal_lasso__qy123zimplqy35z4qy125z__find_lasso_aux__Impl
-  let%span slist_reversal_lasso0 = "../list_reversal_lasso.rs" 236 15 236 40
+module M_list_reversal_lasso__qyi2644757663130641572__find_lasso_aux [#"list_reversal_lasso.rs" 244 4 244 95] (* Memory *)
+  let%span slist_reversal_lasso0 = "list_reversal_lasso.rs" 236 15 236 40
+  let%span slist_reversal_lasso1 = "list_reversal_lasso.rs" 237 15 237 53
+  let%span slist_reversal_lasso2 = "list_reversal_lasso.rs" 238 15 238 56
+  let%span slist_reversal_lasso3 = "list_reversal_lasso.rs" 239 14 242 5
+  let%span slist_reversal_lasso4 = "list_reversal_lasso.rs" 243 4 243 39
+  let%span slist_reversal_lasso5 = "list_reversal_lasso.rs" 198 15 198 37
+  let%span slist_reversal_lasso6 = "list_reversal_lasso.rs" 199 14 202 5
+  let%span slist_reversal_lasso7 = "list_reversal_lasso.rs" 203 14 203 25
+  let%span svec8 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
+  let%span slist_reversal_lasso9 = "list_reversal_lasso.rs" 213 15 213 21
+  let%span slist_reversal_lasso10 = "list_reversal_lasso.rs" 214 4 214 67
+  let%span slist_reversal_lasso11 = "list_reversal_lasso.rs" 215 4 215 113
+  let%span slist_reversal_lasso12 = "list_reversal_lasso.rs" 216 14 216 26
+  let%span slist_reversal_lasso13 = "list_reversal_lasso.rs" 217 14 217 20
+  let%span slist_reversal_lasso14 = "list_reversal_lasso.rs" 218 14 218 15
+  let%span slist_reversal_lasso15 = "list_reversal_lasso.rs" 56 8 58 9
+  let%span slist_reversal_lasso16 = "list_reversal_lasso.rs" 13 0 13 15
+  let%span slist_reversal_lasso17 = "list_reversal_lasso.rs" 50 20 50 70
+  let%span slist_reversal_lasso18 = "list_reversal_lasso.rs" 83 12 85 98
+  let%span slist_reversal_lasso19 = "list_reversal_lasso.rs" 93 12 93 53
+  let%span slist_reversal_lasso20 = "list_reversal_lasso.rs" 152 8 158 9
+  let%span slist_reversal_lasso21 = "list_reversal_lasso.rs" 205 8 209 9
+  let%span slist_reversal_lasso22 = "list_reversal_lasso.rs" 220 8 232 9
+  let%span slist_reversal_lasso23 = "list_reversal_lasso.rs" 21 8 21 31
+  let%span slist_reversal_lasso24 = "list_reversal_lasso.rs" 245 8 259 9
+  let%span sops25 = "../../../creusot-contracts/src/logic/ops.rs" 31 8 31 32
   
-  let%span slist_reversal_lasso1 = "../list_reversal_lasso.rs" 237 15 237 53
+  use seq.Seq
   
-  let%span slist_reversal_lasso2 = "../list_reversal_lasso.rs" 238 15 238 56
+  use seq.Seq
   
-  let%span slist_reversal_lasso3 = "../list_reversal_lasso.rs" 239 14 242 5
+  use seq.Seq
   
-  let%span slist_reversal_lasso4 = "../list_reversal_lasso.rs" 243 4 243 39
-  
-  let%span slist_reversal_lasso5 = "../list_reversal_lasso.rs" 198 15 198 37
-  
-  let%span slist_reversal_lasso6 = "../list_reversal_lasso.rs" 199 14 202 5
-  
-  let%span slist_reversal_lasso7 = "../list_reversal_lasso.rs" 203 14 203 25
-  
-  let%span svec8 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
-  
-  let%span slist_reversal_lasso9 = "../list_reversal_lasso.rs" 213 15 213 21
-  
-  let%span slist_reversal_lasso10 = "../list_reversal_lasso.rs" 214 4 214 67
-  
-  let%span slist_reversal_lasso11 = "../list_reversal_lasso.rs" 215 4 215 113
-  
-  let%span slist_reversal_lasso12 = "../list_reversal_lasso.rs" 216 14 216 26
-  
-  let%span slist_reversal_lasso13 = "../list_reversal_lasso.rs" 217 14 217 20
-  
-  let%span slist_reversal_lasso14 = "../list_reversal_lasso.rs" 218 14 218 15
-  
-  let%span span15 = "" 0 0 0 0
-  
-  let%span span16 = "../../../../creusot-contracts/src/logic/ops.rs" 31 8 31 32
-  
-  let%span span17 = "../list_reversal_lasso.rs" 21 8 21 31
-  
-  let%span span18 = "../list_reversal_lasso.rs" 205 8 209 9
-  
-  let%span span19 = "../list_reversal_lasso.rs" 220 8 232 9
-  
-  let%span span20 = "../list_reversal_lasso.rs" 50 20 50 70
-  
-  let%span span21 = "../list_reversal_lasso.rs" 83 12 85 98
-  
-  let%span span22 = "../list_reversal_lasso.rs" 152 8 158 9
-  
-  let%span span23 = "../list_reversal_lasso.rs" 13 0 13 15
-  
-  let%span span24 = "../list_reversal_lasso.rs" 93 12 93 53
-  
-  let%span span25 = "../list_reversal_lasso.rs" 56 8 58 9
-  
-  use prelude.seq_ext.SeqExt
+  use prelude.prelude.UIntSize
   
   use seq.Seq
   
   use T_alloc__alloc__Global as Global'0
   
-  use prelude.prelude.UIntSize
-  
   use T_alloc__vec__Vec as Vec'0
-  
-  use seq.Seq
-  
-  use seq.Seq
   
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
-  constant v_MAX'0 : usize = [%#span15] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
   use seq.Seq
   
-  function shallow_model'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
+  function view'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#svec8] Seq.length (shallow_model'0 self)
+  axiom view'0_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#svec8] Seq.length (view'0 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   function index_logic'1 [@inline:trivial] (self : Vec'0.t_Vec usize (Global'0.t_Global)) (ix : usize) : usize =
-    [%#span16] Seq.get (shallow_model'0 self) (UIntSize.to_int ix)
+    [%#sops25] Seq.get (view'0 self) (UIntSize.to_int ix)
   
   use T_list_reversal_lasso__Memory as T_list_reversal_lasso__Memory
   
   use T_list_reversal_lasso__Memory as Memory'0
   
-  function index_logic'0 [#"../list_reversal_lasso.rs" 20 4 20 39] (self : Memory'0.t_Memory) (i : usize) : usize =
-    [%#span17] index_logic'1 (T_list_reversal_lasso__Memory.t_Memory__0 self) i
-  
-  use prelude.prelude.Int
+  function index_logic'0 [#"list_reversal_lasso.rs" 20 4 20 39] (self : Memory'0.t_Memory) (i : usize) : usize =
+    [%#slist_reversal_lasso23] index_logic'1 (T_list_reversal_lasso__Memory.t_Memory__0 self) i
   
   use T_core__option__Option as Option'0
   
-  function find_ptr_in_seq'0 [#"../list_reversal_lasso.rs" 204 4 204 66] (s : Seq.seq usize) (i : int) (p : int) : Option'0.t_Option int
+  function find_ptr_in_seq'0 [#"list_reversal_lasso.rs" 204 4 204 66] (s : Seq.seq usize) (i : int) (p : int) : Option'0.t_Option int
     
   
   axiom find_ptr_in_seq'0_def : forall s : Seq.seq usize, i : int, p : int . find_ptr_in_seq'0 s i p
-  = ([%#span18] if i = Seq.length s then
+  = ([%#slist_reversal_lasso21] if i = Seq.length s then
     Option'0.C_None
   else
     if UIntSize.to_int (Seq.get s i) = p then Option'0.C_Some i else find_ptr_in_seq'0 s (i + 1) p
@@ -1847,17 +1530,16 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__find_lasso_aux__Impl
   
   use seq.Seq
   
-  function pigeon'0 [#"../list_reversal_lasso.rs" 219 4 219 42] (s : Seq.seq usize) (n : int) : bool
+  function pigeon'0 [#"list_reversal_lasso.rs" 219 4 219 42] (s : Seq.seq usize) (n : int) : bool
   
   axiom pigeon'0_def : forall s : Seq.seq usize, n : int . pigeon'0 s n
-  = ([%#span19] if n = 0 then
+  = ([%#slist_reversal_lasso22] if n = 0 then
     true
   else
     match find_ptr_in_seq'0 s 0 (n - 1) with
       | Option'0.C_None -> pigeon'0 s (n - 1)
       | Option'0.C_Some i -> match find_ptr_in_seq'0 s (i + 1) (n - 1) with
-        | Option'0.C_None -> pigeon'0 (Seq.(++) (SeqExt.subsequence s 0 i) (SeqExt.subsequence s (i
-        + 1) (Seq.length s))) (n - 1)
+        | Option'0.C_None -> pigeon'0 (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s))) (n - 1)
         | Option'0.C_Some _ -> true
         end
       end
@@ -1869,38 +1551,43 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__find_lasso_aux__Impl
   /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j  -> Seq.get s i <> Seq.get s j)
    -> ([%#slist_reversal_lasso13] pigeon'0 s n) && ([%#slist_reversal_lasso12] Seq.length s <= n)
   
-  predicate nonnull_ptr'0 [#"../list_reversal_lasso.rs" 49 4 49 44] (self : Memory'0.t_Memory) (i : usize) =
-    [%#span20] Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+  predicate nonnull_ptr'0 [#"list_reversal_lasso.rs" 49 4 49 44] (self : Memory'0.t_Memory) (i : usize) =
+    [%#slist_reversal_lasso17] Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
     <= UIntSize.to_int (v_MAX'0 : usize)
-    /\ UIntSize.to_int i < Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+    /\ UIntSize.to_int i < Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
   
-  predicate list_seg'0 [#"../list_reversal_lasso.rs" 81 4 81 81] (self : Memory'0.t_Memory) (first : usize) (s : Seq.seq usize) (last : usize) (l : int) (h : int)
+  predicate list_seg'0 [#"list_reversal_lasso.rs" 81 4 81 81] (self : Memory'0.t_Memory) (first : usize) (s : Seq.seq usize) (last : usize) (l : int) (h : int)
     
    =
-    [%#span21] first = (if h = l then last else Seq.get s l)
+    [%#slist_reversal_lasso18] first = (if h = l then last else Seq.get s l)
     /\ (forall i : int . l <= i /\ i < h
      -> nonnull_ptr'0 self (Seq.get s i)
     /\ index_logic'0 self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
     /\ (forall i : int, j : int . l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j  -> Seq.get s i <> Seq.get s j)
   
-  predicate lasso'0 [#"../list_reversal_lasso.rs" 151 4 151 70] (self : Memory'0.t_Memory) (first : usize) (s1 : Seq.seq usize) (s2 : Seq.seq usize)
+  predicate lasso'0 [#"list_reversal_lasso.rs" 151 4 151 70] (self : Memory'0.t_Memory) (first : usize) (s1 : Seq.seq usize) (s2 : Seq.seq usize)
     
    =
-    [%#span22] let mid = if Seq.length s2 = 0 then Seq.get s1 (Seq.length s1 - 1) else Seq.get s2 0 in Seq.length s1 > 0
+    [%#slist_reversal_lasso20] let mid = if Seq.length s2 = 0 then
+      Seq.get s1 (Seq.length s1 - 1)
+    else
+      Seq.get s2 0
+     in Seq.length s1 > 0
     /\ (forall i : int, j : int . 0 <= i /\ i < Seq.length s1 /\ 0 <= j /\ j < Seq.length s2
      -> Seq.get s1 i <> Seq.get s2 j)
     /\ list_seg'0 self first s1 mid 0 (Seq.length s1)
     /\ list_seg'0 self mid s2 (Seq.get s1 (Seq.length s1 - 1)) 0 (Seq.length s2)
   
-  constant v_NULL'0 : usize = [%#span23] (18446744073709551615 : usize)
+  constant v_NULL'0 : usize = [%#slist_reversal_lasso16] (18446744073709551615 : usize)
   
-  predicate list'0 [#"../list_reversal_lasso.rs" 91 4 91 54] (self : Memory'0.t_Memory) (first : usize) (s : Seq.seq usize)
-    
+  predicate list'0 [#"list_reversal_lasso.rs" 91 4 91 54] (self : Memory'0.t_Memory) (first : usize) (s : Seq.seq usize)
    =
-    [%#span24] list_seg'0 self first s v_NULL'0 0 (Seq.length s)
+    [%#slist_reversal_lasso19] list_seg'0 self first s v_NULL'0 0 (Seq.length s)
   
-  predicate mem_is_well_formed'0 [#"../list_reversal_lasso.rs" 55 4 55 43] (self : Memory'0.t_Memory) =
-    [%#span25] forall i : usize . nonnull_ptr'0 self i
+  use T_core__option__Option as Option'0
+  
+  predicate mem_is_well_formed'0 [#"list_reversal_lasso.rs" 55 4 55 43] (self : Memory'0.t_Memory) =
+    [%#slist_reversal_lasso15] forall i : usize . nonnull_ptr'0 self i
      -> index_logic'0 self i = v_NULL'0 \/ nonnull_ptr'0 self (index_logic'0 self i)
   
   constant self  : Memory'0.t_Memory
@@ -1911,7 +1598,7 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__find_lasso_aux__Impl
   
   constant s  : Seq.seq usize
   
-  function find_lasso_aux [#"../list_reversal_lasso.rs" 244 4 244 95] (self : Memory'0.t_Memory) (first : usize) (last : usize) (s : Seq.seq usize) : (Seq.seq usize, Option'0.t_Option (Seq.seq usize))
+  function find_lasso_aux [#"list_reversal_lasso.rs" 244 4 244 95] (self : Memory'0.t_Memory) (first : usize) (last : usize) (s : Seq.seq usize) : (Seq.seq usize, Option'0.t_Option (Seq.seq usize))
     
   
   goal vc_find_lasso_aux : ([%#slist_reversal_lasso2] list_seg'0 self first s last 0 (Seq.length s))
@@ -1930,27 +1617,27 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__find_lasso_aux__Impl
       | Option'0.C_Some j -> 0 <= j /\ j < Seq.length s /\ UIntSize.to_int (Seq.get s j) = UIntSize.to_int last
       end)
      -> match find_ptr_in_seq'0 s 0 (UIntSize.to_int last) with
-      | Option'0.C_None -> ([%#svec8] Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+      | Option'0.C_None -> ([%#svec8] Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
       <= UIntSize.to_int (v_MAX'0 : usize))
        -> (([%#slist_reversal_lasso11] forall i : int, j : int . 0 <= i
       /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j  -> Seq.get s i <> Seq.get s j)
       && ([%#slist_reversal_lasso10] forall i : int . 0 <= i /\ i < Seq.length s
-       -> UIntSize.to_int (Seq.get s i) < Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self)))
-      && ([%#slist_reversal_lasso9] 0 <= Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))))
-      /\ (([%#slist_reversal_lasso13] pigeon'0 s (Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))))
+       -> UIntSize.to_int (Seq.get s i) < Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self)))
+      && ([%#slist_reversal_lasso9] 0 <= Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))))
+      /\ (([%#slist_reversal_lasso13] pigeon'0 s (Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))))
       && ([%#slist_reversal_lasso12] Seq.length s
-      <= Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self)))
-       -> (if pigeon'0 s (Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))) then
+      <= Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self)))
+       -> (if pigeon'0 s (Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))) then
         ((([%#slist_reversal_lasso2] list_seg'0 self first (Seq.snoc s last) (index_logic'0 self last) 0 (Seq.length (Seq.snoc s last)))
         && ([%#slist_reversal_lasso1] index_logic'0 self last = v_NULL'0
         \/ nonnull_ptr'0 self (index_logic'0 self last))
         && ([%#slist_reversal_lasso0] mem_is_well_formed'0 self))
         /\ 0
-        <= ([%#slist_reversal_lasso4] Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+        <= ([%#slist_reversal_lasso4] Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
         - Seq.length s)
-        /\ ([%#slist_reversal_lasso4] Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+        /\ ([%#slist_reversal_lasso4] Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
         - Seq.length (Seq.snoc s last))
-        < ([%#slist_reversal_lasso4] Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+        < ([%#slist_reversal_lasso4] Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
         - Seq.length s))
         /\ (([%#slist_reversal_lasso3] match find_lasso_aux self first (index_logic'0 self last) (Seq.snoc s last) with
           | (s, Option'0.C_None) -> list'0 self first s
@@ -1966,76 +1653,44 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__find_lasso_aux__Impl
           | (s1, Option'0.C_Some s2) -> lasso'0 self first s1 s2
           end
       ))
-      | Option'0.C_Some i -> [%#slist_reversal_lasso3] match (SeqExt.subsequence s 0 (i
-      + 1), Option'0.C_Some (SeqExt.subsequence s (i + 1) (Seq.length s))) with
+      | Option'0.C_Some i -> [%#slist_reversal_lasso3] match (Seq.([..]) s 0 (i + 1), Option'0.C_Some (Seq.([..]) s (i
+      + 1) (Seq.length s))) with
         | (s, Option'0.C_None) -> list'0 self first s
         | (s1, Option'0.C_Some s2) -> lasso'0 self first s1 s2
         end
       end)
   )
 end
-module M_list_reversal_lasso__qy123zimplqy35z4qy125z__find_lasso__Impl
-  let%span slist_reversal_lasso0 = "../list_reversal_lasso.rs" 264 15 264 40
-  
-  let%span slist_reversal_lasso1 = "../list_reversal_lasso.rs" 265 15 265 55
-  
-  let%span slist_reversal_lasso2 = "../list_reversal_lasso.rs" 266 14 269 5
-  
-  let%span slist_reversal_lasso3 = "../list_reversal_lasso.rs" 236 15 236 40
-  
-  let%span slist_reversal_lasso4 = "../list_reversal_lasso.rs" 237 15 237 53
-  
-  let%span slist_reversal_lasso5 = "../list_reversal_lasso.rs" 238 15 238 56
-  
-  let%span slist_reversal_lasso6 = "../list_reversal_lasso.rs" 239 14 242 5
-  
-  let%span slist_reversal_lasso7 = "../list_reversal_lasso.rs" 243 4 243 39
-  
-  let%span span8 = "" 0 0 0 0
-  
-  let%span span9 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
-  
-  let%span span10 = "../../../../creusot-contracts/src/logic/ops.rs" 31 8 31 32
-  
-  let%span span11 = "../list_reversal_lasso.rs" 21 8 21 31
-  
-  let%span span12 = "../list_reversal_lasso.rs" 50 20 50 70
-  
-  let%span span13 = "../list_reversal_lasso.rs" 83 12 85 98
-  
-  let%span span14 = "../list_reversal_lasso.rs" 198 15 198 37
-  
-  let%span span15 = "../list_reversal_lasso.rs" 199 14 202 5
-  
-  let%span span16 = "../list_reversal_lasso.rs" 203 14 203 25
-  
-  let%span span17 = "../list_reversal_lasso.rs" 205 8 209 9
-  
-  let%span span18 = "../list_reversal_lasso.rs" 213 15 213 21
-  
-  let%span span19 = "../list_reversal_lasso.rs" 214 4 214 67
-  
-  let%span span20 = "../list_reversal_lasso.rs" 215 4 215 113
-  
-  let%span span21 = "../list_reversal_lasso.rs" 216 14 216 26
-  
-  let%span span22 = "../list_reversal_lasso.rs" 217 14 217 20
-  
-  let%span span23 = "../list_reversal_lasso.rs" 218 14 218 15
-  
-  let%span span24 = "../list_reversal_lasso.rs" 220 8 232 9
-  
-  let%span span25 = "../list_reversal_lasso.rs" 152 8 158 9
-  
-  let%span span26 = "../list_reversal_lasso.rs" 13 0 13 15
-  
-  let%span span27 = "../list_reversal_lasso.rs" 93 12 93 53
-  
-  let%span span28 = "../list_reversal_lasso.rs" 56 8 58 9
-  
-  let%span span29 = "../list_reversal_lasso.rs" 245 8 259 9
-  
-  use prelude.prelude.UIntSize
+module M_list_reversal_lasso__qyi2644757663130641572__find_lasso [#"list_reversal_lasso.rs" 270 4 270 71] (* Memory *)
+  let%span slist_reversal_lasso0 = "list_reversal_lasso.rs" 264 15 264 40
+  let%span slist_reversal_lasso1 = "list_reversal_lasso.rs" 265 15 265 55
+  let%span slist_reversal_lasso2 = "list_reversal_lasso.rs" 266 14 269 5
+  let%span slist_reversal_lasso3 = "list_reversal_lasso.rs" 236 15 236 40
+  let%span slist_reversal_lasso4 = "list_reversal_lasso.rs" 237 15 237 53
+  let%span slist_reversal_lasso5 = "list_reversal_lasso.rs" 238 15 238 56
+  let%span slist_reversal_lasso6 = "list_reversal_lasso.rs" 239 14 242 5
+  let%span slist_reversal_lasso7 = "list_reversal_lasso.rs" 243 4 243 39
+  let%span slist_reversal_lasso8 = "list_reversal_lasso.rs" 56 8 58 9
+  let%span slist_reversal_lasso9 = "list_reversal_lasso.rs" 13 0 13 15
+  let%span slist_reversal_lasso10 = "list_reversal_lasso.rs" 50 20 50 70
+  let%span slist_reversal_lasso11 = "list_reversal_lasso.rs" 93 12 93 53
+  let%span slist_reversal_lasso12 = "list_reversal_lasso.rs" 152 8 158 9
+  let%span slist_reversal_lasso13 = "list_reversal_lasso.rs" 245 8 259 9
+  let%span slist_reversal_lasso14 = "list_reversal_lasso.rs" 83 12 85 98
+  let%span svec15 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
+  let%span slist_reversal_lasso16 = "list_reversal_lasso.rs" 21 8 21 31
+  let%span slist_reversal_lasso17 = "list_reversal_lasso.rs" 213 15 213 21
+  let%span slist_reversal_lasso18 = "list_reversal_lasso.rs" 214 4 214 67
+  let%span slist_reversal_lasso19 = "list_reversal_lasso.rs" 215 4 215 113
+  let%span slist_reversal_lasso20 = "list_reversal_lasso.rs" 216 14 216 26
+  let%span slist_reversal_lasso21 = "list_reversal_lasso.rs" 217 14 217 20
+  let%span slist_reversal_lasso22 = "list_reversal_lasso.rs" 218 14 218 15
+  let%span slist_reversal_lasso23 = "list_reversal_lasso.rs" 220 8 232 9
+  let%span slist_reversal_lasso24 = "list_reversal_lasso.rs" 198 15 198 37
+  let%span slist_reversal_lasso25 = "list_reversal_lasso.rs" 199 14 202 5
+  let%span slist_reversal_lasso26 = "list_reversal_lasso.rs" 203 14 203 25
+  let%span slist_reversal_lasso27 = "list_reversal_lasso.rs" 205 8 209 9
+  let%span sops28 = "../../../creusot-contracts/src/logic/ops.rs" 31 8 31 32
   
   use seq.Seq
   
@@ -2045,15 +1700,17 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__find_lasso__Impl
   
   use prelude.prelude.UIntSize
   
+  use prelude.prelude.UIntSize
+  
   use prelude.prelude.Int
   
-  constant v_MAX'0 : usize = [%#span8] (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
   use seq.Seq
   
-  function shallow_model'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
+  function view'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
   
-  axiom shallow_model'0_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#span9] Seq.length (shallow_model'0 self)
+  axiom view'0_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#svec15] Seq.length (view'0 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
   use T_list_reversal_lasso__Memory as T_list_reversal_lasso__Memory
@@ -2061,109 +1718,112 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__find_lasso__Impl
   use seq.Seq
   
   function index_logic'1 [@inline:trivial] (self : Vec'0.t_Vec usize (Global'0.t_Global)) (ix : usize) : usize =
-    [%#span10] Seq.get (shallow_model'0 self) (UIntSize.to_int ix)
+    [%#sops28] Seq.get (view'0 self) (UIntSize.to_int ix)
   
   use T_list_reversal_lasso__Memory as Memory'0
   
-  function index_logic'0 [#"../list_reversal_lasso.rs" 20 4 20 39] (self : Memory'0.t_Memory) (i : usize) : usize =
-    [%#span11] index_logic'1 (T_list_reversal_lasso__Memory.t_Memory__0 self) i
+  function index_logic'0 [#"list_reversal_lasso.rs" 20 4 20 39] (self : Memory'0.t_Memory) (i : usize) : usize =
+    [%#slist_reversal_lasso16] index_logic'1 (T_list_reversal_lasso__Memory.t_Memory__0 self) i
   
-  predicate nonnull_ptr'0 [#"../list_reversal_lasso.rs" 49 4 49 44] (self : Memory'0.t_Memory) (i : usize) =
-    [%#span12] Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+  predicate nonnull_ptr'0 [#"list_reversal_lasso.rs" 49 4 49 44] (self : Memory'0.t_Memory) (i : usize) =
+    [%#slist_reversal_lasso10] Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
     <= UIntSize.to_int (v_MAX'0 : usize)
-    /\ UIntSize.to_int i < Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
+    /\ UIntSize.to_int i < Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))
   
-  predicate list_seg'0 [#"../list_reversal_lasso.rs" 81 4 81 81] (self : Memory'0.t_Memory) (first : usize) (s : Seq.seq usize) (last : usize) (l : int) (h : int)
+  predicate list_seg'0 [#"list_reversal_lasso.rs" 81 4 81 81] (self : Memory'0.t_Memory) (first : usize) (s : Seq.seq usize) (last : usize) (l : int) (h : int)
     
    =
-    [%#span13] first = (if h = l then last else Seq.get s l)
+    [%#slist_reversal_lasso14] first = (if h = l then last else Seq.get s l)
     /\ (forall i : int . l <= i /\ i < h
      -> nonnull_ptr'0 self (Seq.get s i)
     /\ index_logic'0 self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
     /\ (forall i : int, j : int . l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j  -> Seq.get s i <> Seq.get s j)
   
-  use prelude.prelude.Int
-  
   use T_core__option__Option as Option'0
   
-  function find_ptr_in_seq'0 [#"../list_reversal_lasso.rs" 204 4 204 66] (s : Seq.seq usize) (i : int) (p : int) : Option'0.t_Option int
+  function find_ptr_in_seq'0 [#"list_reversal_lasso.rs" 204 4 204 66] (s : Seq.seq usize) (i : int) (p : int) : Option'0.t_Option int
     
   
   axiom find_ptr_in_seq'0_def : forall s : Seq.seq usize, i : int, p : int . find_ptr_in_seq'0 s i p
-  = ([%#span17] if i = Seq.length s then
+  = ([%#slist_reversal_lasso27] if i = Seq.length s then
     Option'0.C_None
   else
     if UIntSize.to_int (Seq.get s i) = p then Option'0.C_Some i else find_ptr_in_seq'0 s (i + 1) p
   )
   
-  axiom find_ptr_in_seq'0_spec : forall s : Seq.seq usize, i : int, p : int . ([%#span14] 0 <= i /\ i <= Seq.length s)
-   -> ([%#span15] match find_ptr_in_seq'0 s i p with
+  axiom find_ptr_in_seq'0_spec : forall s : Seq.seq usize, i : int, p : int . ([%#slist_reversal_lasso24] 0 <= i
+  /\ i <= Seq.length s)
+   -> ([%#slist_reversal_lasso25] match find_ptr_in_seq'0 s i p with
     | Option'0.C_None -> forall j : int . i <= j /\ j < Seq.length s  -> UIntSize.to_int (Seq.get s j) <> p
     | Option'0.C_Some j -> i <= j /\ j < Seq.length s /\ UIntSize.to_int (Seq.get s j) = p
     end)
   
-  use prelude.seq_ext.SeqExt
-  
   use seq.Seq
   
   use seq.Seq
   
-  function pigeon'0 [#"../list_reversal_lasso.rs" 219 4 219 42] (s : Seq.seq usize) (n : int) : bool
+  use seq.Seq
+  
+  function pigeon'0 [#"list_reversal_lasso.rs" 219 4 219 42] (s : Seq.seq usize) (n : int) : bool
   
   axiom pigeon'0_def : forall s : Seq.seq usize, n : int . pigeon'0 s n
-  = ([%#span24] if n = 0 then
+  = ([%#slist_reversal_lasso23] if n = 0 then
     true
   else
     match find_ptr_in_seq'0 s 0 (n - 1) with
       | Option'0.C_None -> pigeon'0 s (n - 1)
       | Option'0.C_Some i -> match find_ptr_in_seq'0 s (i + 1) (n - 1) with
-        | Option'0.C_None -> pigeon'0 (Seq.(++) (SeqExt.subsequence s 0 i) (SeqExt.subsequence s (i
-        + 1) (Seq.length s))) (n - 1)
+        | Option'0.C_None -> pigeon'0 (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s))) (n - 1)
         | Option'0.C_Some _ -> true
         end
       end
   )
   
-  axiom pigeon'0_spec : forall s : Seq.seq usize, n : int . ([%#span18] 0 <= n)
-   -> ([%#span19] forall i : int . 0 <= i /\ i < Seq.length s  -> UIntSize.to_int (Seq.get s i) < n)
-   -> ([%#span20] forall i : int, j : int . 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j
-   -> Seq.get s i <> Seq.get s j)  -> ([%#span22] pigeon'0 s n) && ([%#span21] Seq.length s <= n)
+  axiom pigeon'0_spec : forall s : Seq.seq usize, n : int . ([%#slist_reversal_lasso17] 0 <= n)
+   -> ([%#slist_reversal_lasso18] forall i : int . 0 <= i /\ i < Seq.length s  -> UIntSize.to_int (Seq.get s i) < n)
+   -> ([%#slist_reversal_lasso19] forall i : int, j : int . 0 <= i
+  /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j  -> Seq.get s i <> Seq.get s j)
+   -> ([%#slist_reversal_lasso21] pigeon'0 s n) && ([%#slist_reversal_lasso20] Seq.length s <= n)
   
-  predicate lasso'0 [#"../list_reversal_lasso.rs" 151 4 151 70] (self : Memory'0.t_Memory) (first : usize) (s1 : Seq.seq usize) (s2 : Seq.seq usize)
+  predicate lasso'0 [#"list_reversal_lasso.rs" 151 4 151 70] (self : Memory'0.t_Memory) (first : usize) (s1 : Seq.seq usize) (s2 : Seq.seq usize)
     
    =
-    [%#span25] let mid = if Seq.length s2 = 0 then Seq.get s1 (Seq.length s1 - 1) else Seq.get s2 0 in Seq.length s1 > 0
+    [%#slist_reversal_lasso12] let mid = if Seq.length s2 = 0 then
+      Seq.get s1 (Seq.length s1 - 1)
+    else
+      Seq.get s2 0
+     in Seq.length s1 > 0
     /\ (forall i : int, j : int . 0 <= i /\ i < Seq.length s1 /\ 0 <= j /\ j < Seq.length s2
      -> Seq.get s1 i <> Seq.get s2 j)
     /\ list_seg'0 self first s1 mid 0 (Seq.length s1)
     /\ list_seg'0 self mid s2 (Seq.get s1 (Seq.length s1 - 1)) 0 (Seq.length s2)
   
-  constant v_NULL'0 : usize = [%#span26] (18446744073709551615 : usize)
+  constant v_NULL'0 : usize = [%#slist_reversal_lasso9] (18446744073709551615 : usize)
   
-  predicate list'0 [#"../list_reversal_lasso.rs" 91 4 91 54] (self : Memory'0.t_Memory) (first : usize) (s : Seq.seq usize)
-    
+  predicate list'0 [#"list_reversal_lasso.rs" 91 4 91 54] (self : Memory'0.t_Memory) (first : usize) (s : Seq.seq usize)
    =
-    [%#span27] list_seg'0 self first s v_NULL'0 0 (Seq.length s)
+    [%#slist_reversal_lasso11] list_seg'0 self first s v_NULL'0 0 (Seq.length s)
   
-  predicate mem_is_well_formed'0 [#"../list_reversal_lasso.rs" 55 4 55 43] (self : Memory'0.t_Memory) =
-    [%#span28] forall i : usize . nonnull_ptr'0 self i
+  use T_core__option__Option as Option'0
+  
+  predicate mem_is_well_formed'0 [#"list_reversal_lasso.rs" 55 4 55 43] (self : Memory'0.t_Memory) =
+    [%#slist_reversal_lasso8] forall i : usize . nonnull_ptr'0 self i
      -> index_logic'0 self i = v_NULL'0 \/ nonnull_ptr'0 self (index_logic'0 self i)
   
-  function find_lasso_aux'0 [#"../list_reversal_lasso.rs" 244 4 244 95] (self : Memory'0.t_Memory) (first : usize) (last : usize) (s : Seq.seq usize) : (Seq.seq usize, Option'0.t_Option (Seq.seq usize))
+  function find_lasso_aux'0 [#"list_reversal_lasso.rs" 244 4 244 95] (self : Memory'0.t_Memory) (first : usize) (last : usize) (s : Seq.seq usize) : (Seq.seq usize, Option'0.t_Option (Seq.seq usize))
     
   
   axiom find_lasso_aux'0_def : forall self : Memory'0.t_Memory, first : usize, last : usize, s : Seq.seq usize . find_lasso_aux'0 self first last s
-  = ([%#span29] if last = v_NULL'0 then
+  = ([%#slist_reversal_lasso13] if last = v_NULL'0 then
     (s, Option'0.C_None)
   else
     match find_ptr_in_seq'0 s 0 (UIntSize.to_int last) with
-      | Option'0.C_None -> if pigeon'0 s (Seq.length (shallow_model'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))) then
+      | Option'0.C_None -> if pigeon'0 s (Seq.length (view'0 (T_list_reversal_lasso__Memory.t_Memory__0 self))) then
         find_lasso_aux'0 self first (index_logic'0 self last) (Seq.snoc s last)
       else
         (s, Option'0.C_None)
       
-      | Option'0.C_Some i -> (SeqExt.subsequence s 0 (i + 1), Option'0.C_Some (SeqExt.subsequence s (i
-      + 1) (Seq.length s)))
+      | Option'0.C_Some i -> (Seq.([..]) s 0 (i + 1), Option'0.C_Some (Seq.([..]) s (i + 1) (Seq.length s)))
       end
   )
   
@@ -2181,7 +1841,7 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__find_lasso__Impl
   
   constant first  : usize
   
-  function find_lasso [#"../list_reversal_lasso.rs" 270 4 270 71] (self : Memory'0.t_Memory) (first : usize) : (Seq.seq usize, Option'0.t_Option (Seq.seq usize))
+  function find_lasso [#"list_reversal_lasso.rs" 270 4 270 71] (self : Memory'0.t_Memory) (first : usize) : (Seq.seq usize, Option'0.t_Option (Seq.seq usize))
     
   
   goal vc_find_lasso : ([%#slist_reversal_lasso1] first = v_NULL'0 \/ nonnull_ptr'0 self first)
@@ -2198,16 +1858,16 @@ module M_list_reversal_lasso__qy123zimplqy35z4qy125z__find_lasso__Impl
     | (s1, Option'0.C_Some s2) -> lasso'0 self first s1 s2
     end))
 end
-module M_list_reversal_lasso__qy123zimplqy35z0qy125z
+module M_list_reversal_lasso__qyi182437734499702868 [#"list_reversal_lasso.rs" 15 0 15 31] (* <Memory as creusot_contracts::logic::IndexLogic<usize>> *)
   
 end
-module M_list_reversal_lasso__qy123zimplqy35z1qy125z
-  let%span slist_reversal_lasso0 = "../list_reversal_lasso.rs" 30 4 30 35
+module M_list_reversal_lasso__qyi13715866738248475091 [#"list_reversal_lasso.rs" 25 0 25 26] (* <Memory as std::ops::Index<usize>> *)
+  let%span slist_reversal_lasso0 = "list_reversal_lasso.rs" 30 4 30 35
   
   goal index_refn : [%#slist_reversal_lasso0] true
 end
-module M_list_reversal_lasso__qy123zimplqy35z2qy125z
-  let%span slist_reversal_lasso0 = "../list_reversal_lasso.rs" 41 4 41 47
+module M_list_reversal_lasso__qyi14823043098042356205 [#"list_reversal_lasso.rs" 35 0 35 29] (* <Memory as std::ops::IndexMut<usize>> *)
+  let%span slist_reversal_lasso0 = "list_reversal_lasso.rs" 41 4 41 47
   
   goal index_mut_refn : [%#slist_reversal_lasso0] true
 end

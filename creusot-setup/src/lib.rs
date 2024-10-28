@@ -66,12 +66,13 @@ impl fmt::Display for Issue {
 fn diagnostic_config(paths: &CfgPaths, config: &Config, check_builtins: bool) -> Vec<Issue> {
     let mut issues: Vec<Issue> = Vec::new();
 
-    let mut bins = vec![
-        (WHY3, config.why3.check_version, config.why3.path.clone(), false),
-        (ALTERGO, config.altergo.check_version, config.altergo.path.clone(), false),
-    ];
-    for (bin, cfgbin) in [(Z3.bin, &config.z3), (CVC4.bin, &config.cvc4), (CVC5.bin, &config.cvc5)]
-    {
+    let mut bins = vec![(WHY3, config.why3.check_version, config.why3.path.clone(), false)];
+    for (bin, cfgbin) in [
+        (ALTERGO.bin, &config.altergo),
+        (Z3.bin, &config.z3),
+        (CVC4.bin, &config.cvc4),
+        (CVC5.bin, &config.cvc5),
+    ] {
         match cfgbin {
             ManagedTool::Builtin { check_version } => {
                 if check_builtins {
@@ -195,7 +196,7 @@ pub struct ManagedFlag {
 pub struct InstallFlags {
     pub provers_parallelism: usize,
     pub why3: ExternalFlag,
-    pub altergo: ExternalFlag,
+    pub altergo: ManagedFlag,
     pub z3: ManagedFlag,
     pub cvc4: ManagedFlag,
     pub cvc5: ManagedFlag,
@@ -237,7 +238,7 @@ pub fn install(flags: InstallFlags) -> anyhow::Result<()> {
     let config = Config {
         provers_parallelism: std::cmp::max(1, flags.provers_parallelism),
         why3: external_tool(WHY3, flags.why3)?,
-        altergo: external_tool(ALTERGO, flags.altergo)?,
+        altergo: managed_tool(ALTERGO.bin, flags.altergo)?,
         z3: managed_tool(Z3.bin, flags.z3)?,
         cvc4: managed_tool(CVC4.bin, flags.cvc4)?,
         cvc5: managed_tool(CVC5.bin, flags.cvc5)?,
@@ -275,7 +276,9 @@ fn apply_config(paths: &CfgPaths, cfg: &Config) -> anyhow::Result<()> {
     let mut builtin: Vec<ManagedBinary> = Vec::new();
     let mut external: Vec<(ManagedBinary, PathBuf)> = Vec::new();
 
-    for (bin, mode) in [(Z3, &cfg.z3), (CVC4, &cfg.cvc4), (CVC5, &cfg.cvc5)] {
+    for (bin, mode) in
+        [(ALTERGO, &cfg.altergo), (Z3, &cfg.z3), (CVC4, &cfg.cvc4), (CVC5, &cfg.cvc5)]
+    {
         match mode {
             ManagedTool::Builtin { check_version: _ } => builtin.push(bin),
             ManagedTool::External(tool) => external.push((bin, tool.path.clone())),
@@ -286,7 +289,6 @@ fn apply_config(paths: &CfgPaths, cfg: &Config) -> anyhow::Result<()> {
     download_all(&builtin, &paths.cache_dir, &paths.bin_subdir)?;
 
     // create symbolic links for external tools so that why3 picks them up
-    symlink_file(&cfg.altergo.path, &paths.bin_subdir.join(ALTERGO.binary_name))?;
     for (bin, path) in external {
         symlink_file(path, &paths.bin_subdir.join(bin.bin.binary_name))?;
     }

@@ -8,19 +8,23 @@ use rustc_middle::{
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::VariantIdx;
 
-use super::pearlite::Pattern;
-
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Place<'tcx> {
     pub(crate) local: Symbol,
     pub(crate) projection: Vec<ProjectionElem<Symbol, Ty<'tcx>>>,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct PlaceRef<'a, 'tcx> {
+    pub local: Symbol,
+    pub projection: &'a [ProjectionElem<Symbol, Ty<'tcx>>],
+}
+
 impl<'tcx> Place<'tcx> {
     pub(crate) fn ty(&self, tcx: TyCtxt<'tcx>, locals: &LocalDecls<'tcx>) -> Ty<'tcx> {
         let mut ty = PlaceTy::from_ty(locals[&self.local].ty);
 
-        for p in &self.projection {
+        for p in self.projection.iter() {
             ty = projection_ty(ty, tcx, *p);
         }
 
@@ -34,16 +38,48 @@ impl<'tcx> Place<'tcx> {
             None
         }
     }
+
+    pub(crate) fn iter_projections(
+        &self,
+    ) -> impl Iterator<Item = (PlaceRef<'_, 'tcx>, ProjectionElem<Symbol, Ty<'tcx>>)>
+           + DoubleEndedIterator
+           + '_ {
+        self.projection.iter().enumerate().map(move |(i, proj)| {
+            let base = PlaceRef { local: self.local, projection: &self.projection[..i] };
+            (base, *proj)
+        })
+    }
+
+    pub fn last_projection(
+        &self,
+    ) -> Option<(PlaceRef<'_, 'tcx>, ProjectionElem<Symbol, Ty<'tcx>>)> {
+        if let &[ref proj_base @ .., elem] = &self.projection[..] {
+            Some((PlaceRef { local: self.local, projection: proj_base }, elem))
+        } else {
+            None
+        }
+    }
+}
+
+impl<'a, 'tcx> PlaceRef<'a, 'tcx> {
+    pub(crate) fn ty(&self, tcx: TyCtxt<'tcx>, locals: &LocalDecls<'tcx>) -> PlaceTy<'tcx> {
+        let mut ty = PlaceTy::from_ty(locals[&self.local].ty);
+
+        for p in self.projection.iter() {
+            ty = projection_ty(ty, tcx, *p);
+        }
+
+        ty
+    }
 }
 
 #[derive(Clone, Debug)]
 pub enum Statement<'tcx> {
     Assignment(Place<'tcx>, RValue<'tcx>, Span),
-    Resolve { did: DefId, subst: GenericArgsRef<'tcx>, pl: Place<'tcx>, pat: Option<Pattern<'tcx>> },
+    Resolve { did: DefId, subst: GenericArgsRef<'tcx>, pl: Place<'tcx> },
     Assertion { cond: Term<'tcx>, msg: String },
-    AssumeBorrowInv(Place<'tcx>),
     // Todo: fold into `Assertion`
-    AssertTyInv { pl: Place<'tcx>, pat: Option<Pattern<'tcx>> },
+    AssertTyInv { pl: Place<'tcx> },
     Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Vec<Operand<'tcx>>, Span),
 }
 
@@ -60,10 +96,16 @@ pub enum BorrowKind {
     Final(usize),
 }
 
+#[derive(Clone, Copy, Debug)]
+pub enum TrivialInv {
+    Trivial,
+    NonTrivial,
+}
+
 #[derive(Clone, Debug)]
 pub enum RValue<'tcx> {
     Ghost(Term<'tcx>),
-    Borrow(BorrowKind, Place<'tcx>),
+    Borrow(BorrowKind, Place<'tcx>, TrivialInv),
     Operand(Operand<'tcx>),
     BinOp(BinOp, Operand<'tcx>, Operand<'tcx>),
     UnaryOp(UnOp, Operand<'tcx>),
@@ -93,7 +135,7 @@ impl<'tcx> RValue<'tcx> {
             RValue::Array(_) => true,
             RValue::Repeat(_, _) => true,
             RValue::Ghost(_) => true,
-            RValue::Borrow(_, _) => false,
+            RValue::Borrow(_, _, _) => false,
         }
     }
 }
@@ -139,25 +181,34 @@ pub enum Branches<'tcx> {
 }
 
 impl<'tcx> Terminator<'tcx> {
-    pub fn targets(&self) -> impl Iterator<Item = BasicBlock> + '_ {
+    pub fn targets(&self) -> Box<dyn Iterator<Item = BasicBlock> + '_> {
         use std::iter::*;
         match self {
-            Terminator::Goto(bb) => Box::new(once(*bb)) as Box<dyn Iterator<Item = BasicBlock>>,
+            Terminator::Goto(bb) => Box::new(once(*bb)),
             Terminator::Switch(_, brs) => match brs {
-                Branches::Int(brs, def) => Box::new(brs.iter().map(|(_, b)| *b).chain(once(*def)))
-                    as Box<dyn Iterator<Item = BasicBlock>>,
-                Branches::Uint(brs, def) => Box::new(brs.iter().map(|(_, b)| *b).chain(once(*def)))
-                    as Box<dyn Iterator<Item = BasicBlock>>,
+                Branches::Int(brs, def) => Box::new(brs.iter().map(|(_, b)| *b).chain(once(*def))),
+                Branches::Uint(brs, def) => Box::new(brs.iter().map(|(_, b)| *b).chain(once(*def))),
                 Branches::Constructor(_, _, brs, def) => {
                     Box::new(brs.iter().map(|(_, b)| *b).chain(*def))
-                        as Box<dyn Iterator<Item = BasicBlock>>
                 }
-                Branches::Bool(f, t) => {
-                    Box::new([*f, *t].into_iter()) as Box<dyn Iterator<Item = BasicBlock>>
-                }
+                Branches::Bool(f, t) => Box::new([*f, *t].into_iter()),
             },
-            Terminator::Return => Box::new(empty()) as Box<dyn Iterator<Item = BasicBlock>>,
-            Terminator::Abort(_) => Box::new(empty()) as Box<dyn Iterator<Item = BasicBlock>>,
+            Terminator::Return => Box::new(empty()),
+            Terminator::Abort(_) => Box::new(empty()),
+        }
+    }
+}
+
+impl<'tcx> Branches<'tcx> {
+    pub fn targets_mut(&mut self) -> Box<dyn Iterator<Item = &mut BasicBlock> + '_> {
+        use std::iter::*;
+        match self {
+            Branches::Int(brs, def) => Box::new(brs.iter_mut().map(|(_, b)| b).chain(once(def))),
+            Branches::Uint(brs, def) => Box::new(brs.iter_mut().map(|(_, b)| b).chain(once(def))),
+            Branches::Constructor(_, _, brs, def) => {
+                Box::new(brs.iter_mut().map(|(_, b)| b).chain(def.as_mut()))
+            }
+            Branches::Bool(f, t) => Box::new([f, t].into_iter()),
         }
     }
 }
@@ -214,6 +265,7 @@ pub struct Body<'tcx> {
     pub(crate) locals: LocalDecls<'tcx>,
     pub(crate) arg_count: usize,
     pub(crate) blocks: IndexMap<BasicBlock, Block<'tcx>>,
+    pub(crate) fresh: usize,
 }
 
 pub(crate) trait FmirVisitor<'tcx>: Sized {
@@ -279,9 +331,6 @@ pub(crate) fn super_visit_stmt<'tcx, V: FmirVisitor<'tcx>>(
         Statement::Assertion { cond, .. } => {
             visitor.visit_term(cond);
         }
-        Statement::AssumeBorrowInv(place) => {
-            visitor.visit_place(place);
-        }
         Statement::AssertTyInv { pl, .. } => {
             visitor.visit_place(pl);
         }
@@ -330,7 +379,7 @@ pub(crate) fn super_visit_rvalue<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, rv
         RValue::Ghost(term) => {
             visitor.visit_term(term);
         }
-        RValue::Borrow(_, place) => {
+        RValue::Borrow(_, place, _) => {
             visitor.visit_place(place);
         }
         RValue::Operand(op) => {

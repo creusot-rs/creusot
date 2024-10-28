@@ -27,6 +27,7 @@ extern_spec! {
     }
 }
 
+// FIXME: add a body where we can
 extern_spec! {
     mod std {
         mod option {
@@ -35,24 +36,27 @@ extern_spec! {
                 #[ensures(result == (*self != None))]
                 fn is_some(&self) -> bool;
 
+                #[requires(match self {
+                    None => true,
+                    Some(t) => f.precondition((t,)),
+                })]
+                #[ensures(match self {
+                    None => result == false,
+                    Some(t) => resolve(&t) && f.postcondition_once((t,), result),
+                })]
+                // FIXME: we cannot attach a body to this extern spec, because creusot mistranslates `impl trait`.
+                fn is_some_and(self, f: impl FnOnce(T) -> bool) -> bool;
+
                 #[pure]
                 #[ensures(result == (*self == None))]
                 fn is_none(&self) -> bool;
 
                 #[pure]
-                #[requires(self != None)]
-                #[ensures(Some(result) == self)]
-                fn unwrap(self) -> T;
-
-                #[pure]
-                #[requires(self != None)]
-                #[ensures(Some(result) == self)]
-                fn expect(self, msg: &str) -> T;
-
-                #[pure]
-                #[ensures(self == None ==> result == default)]
-                #[ensures(self == None || self == Some(result))]
-                fn unwrap_or(self, default: T) -> T;
+                #[ensures(*self == None ==> result == None)]
+                #[ensures(
+                    *self == None || exists<r: &T> result == Some(r) && *self == Some(*r)
+                )]
+                fn as_ref(&self) -> Option<&T>;
 
                 #[pure]
                 #[ensures(*self == None ==> result == None && ^self == None)]
@@ -63,35 +67,303 @@ extern_spec! {
                 fn as_mut(&mut self) -> Option<&mut T>;
 
                 #[pure]
-                #[ensures(*self == None ==> result == None)]
-                #[ensures(
-                    *self == None || exists<r: &T> result == Some(r) && *self == Some(*r)
-                )]
-                fn as_ref(&self) -> Option<&T>;
+                #[ensures(match *self {
+                    None => result@.len() == 0,
+                    Some(t) => result@.len() == 1 && result@[0] == t
+                })]
+                fn as_slice(&self) -> &[T];
 
                 #[pure]
-                #[ensures(self == None ==> result == None)]
-                #[ensures(self == None || result == optb)]
-                fn and<U>(self, optb: Option<U>) -> Option<U>;
+                #[ensures(match *self {
+                    None => result@.len() == 0,
+                    Some(_) => exists<b:&mut T> *self == Some(*b) && ^self == Some(^b) && (*result)@[0] == *b && (^result)@[0] == ^b,
+                })]
+                fn as_mut_slice(&mut self) -> &mut [T];
 
                 #[pure]
-                #[ensures(self == None ==> result == optb)]
-                #[ensures(self == None || result == self)]
-                fn or(self, optb: Option<T>) -> Option<T>;
+                #[requires(self != None)]
+                #[ensures(Some(result) == self)]
+                fn expect(self, msg: &str) -> T;
 
                 #[pure]
-                #[ensures(result == *self && ^self == None)]
-                fn take(&mut self) -> Option<T>;
+                #[requires(self != None)]
+                #[ensures(Some(result) == self)]
+                fn unwrap(self) -> T;
 
                 #[pure]
-                #[ensures(result == *self && ^self == Some(value))]
-                fn replace(&mut self, value: T) -> Option<T>;
+                #[ensures(self == None ==> result == default)]
+                #[ensures(self == None || self == Some(result))]
+                fn unwrap_or(self, default: T) -> T;
+
+                #[requires(self == None ==> f.precondition(()))]
+                #[ensures(match self {
+                    None => f.postcondition_once((), result),
+                    Some(t) => result == t
+                })]
+                fn unwrap_or_else<F>(self, f: F) -> T
+                where
+                    F: FnOnce() -> T {
+                    match self {
+                        None => f(),
+                        Some(t) => t,
+                    }
+                }
 
                 #[ensures(self == None ==> result.is_default())]
                 #[ensures(self == None || self == Some(result))]
                 fn unwrap_or_default(self) -> T
                 where
                     T: Default;
+
+                #[pure]
+                #[requires(self != None)]
+                #[ensures(Some(result) == self)]
+                unsafe fn unwrap_unchecked(self) -> T;
+
+                #[requires(match self {
+                    None => true,
+                    Some(t) => f.precondition((t,)),
+                })]
+                #[ensures(match self {
+                    None => result == None,
+                    Some(t) => exists<r: _> result == Some(r) && f.postcondition_once((t,), r),
+                })]
+                fn map<U, F>(self, f: F) -> Option<U>
+                where
+                    F: FnOnce(T) -> U {
+                    match self {
+                        None => None,
+                        Some(t) => Some(f(t)),
+                    }
+                }
+
+                #[requires(match self {
+                    None => true,
+                    Some(t) => f.precondition((&t,)),
+                })]
+                #[ensures(result == self)]
+                #[ensures(match self {
+                    None => true,
+                    Some(t) => f.postcondition_once((&t,), ()),
+                })]
+                fn inspect<F>(self, f: F) -> Option<T>
+                where
+                    F: FnOnce(&T) {
+                    match self {
+                        None => None,
+                        Some(t) => { f(&t); Some(t) }
+                    }
+                }
+
+                #[requires(match self {
+                    None => true,
+                    Some(t) => f.precondition((t,)),
+                })]
+                #[ensures(match self {
+                    None => result == default,
+                    Some(t) => f.postcondition_once((t,), result)
+                })]
+                fn map_or<U, F>(self, default: U, f: F) -> U
+                where
+                    F: FnOnce(T) -> U {
+                    match self {
+                        None => default,
+                        Some(t) => f(t),
+                    }
+                }
+
+                #[requires(match self {
+                    None => default.precondition(()),
+                    Some(t) => f.precondition((t,)),
+                })]
+                #[ensures(match self {
+                    None => default.postcondition_once((), result),
+                    Some(t) => f.postcondition_once((t,), result),
+                })]
+                fn map_or_else<U, D, F>(self, default: D, f: F) -> U
+                where
+                    D: FnOnce() -> U,
+                    F: FnOnce(T) -> U {
+                    match self {
+                        None => default(),
+                        Some(t) => f(t),
+                    }
+                }
+
+                #[ensures(match self {
+                    None => result == Err(err),
+                    Some(t) => result == Ok(t),
+                })]
+                fn ok_or<E>(self, err: E) -> Result<T, E>;
+
+                #[requires(self == None ==> err.precondition(()))]
+                #[ensures(match self {
+                    None => exists<r: _> result == Err(r) && err.postcondition_once((), r),
+                    Some(t) => result == Ok(t),
+                })]
+                fn ok_or_else<E, F>(self, err: F) -> Result<T, E>
+                where
+                    F: FnOnce() -> E {
+                    match self {
+                        None => Err(err()),
+                        Some(t) => Ok(t),
+                    }
+                }
+
+                #[ensures(match *self {
+                    None => result == None,
+                    Some(t) => result == Some(&t.deref()),
+                })]
+                fn as_deref(&self) -> Option<&<T as ::std::ops::Deref>::Target>
+                where
+                    T: ::std::ops::Deref;
+
+                #[pure]
+                #[ensures(self == None ==> result == None)]
+                #[ensures(self == None || (result == optb && self.resolve()))]
+                fn and<U>(self, optb: Option<U>) -> Option<U>;
+
+                #[requires(match self {
+                    None => true,
+                    Some(t) => f.precondition((t,)),
+                })]
+                #[ensures(match self {
+                    None => result == None,
+                    Some(t) => f.postcondition_once((t,), result),
+                })]
+                fn and_then<U, F>(self, f: F) -> Option<U>
+                where
+                    F: FnOnce(T) -> Option<U> {
+                    match self {
+                        None => None,
+                        Some(t) => f(t),
+                    }
+                }
+
+                #[requires(match self {
+                    None => true,
+                    Some(t) => predicate.precondition((&t,))
+                })]
+                #[ensures(match self {
+                    None => result == None,
+                    Some(t) => match result {
+                        None => predicate.postcondition_once((&t,), false) && resolve(&t),
+                        Some(r) => predicate.postcondition_once((&t,), true) && r == t,
+                    },
+                })]
+                fn filter<P>(self, predicate: P) -> Option<T>
+                where
+                    P: FnOnce(&T) -> bool {
+                    match self {
+                        None => None,
+                        Some(t) => if predicate(&t) { Some(t) } else { None }
+                    }
+                }
+
+                #[pure]
+                #[ensures(self == None ==> result == optb)]
+                #[ensures(self == None || (result == self && optb.resolve()))]
+                fn or(self, optb: Option<T>) -> Option<T>;
+
+                #[requires(self == None ==> f.precondition(()))]
+                #[ensures(match self {
+                    None => f.postcondition_once((), result),
+                    Some(t) => result == Some(t),
+                })]
+                fn or_else<F>(self, f: F) -> Option<T>
+                where
+                    F: FnOnce() -> Option<T> {
+                    match self {
+                        None => f(),
+                        Some(t) => Some(t),
+                    }
+                }
+
+                #[pure]
+                #[ensures(match (self, optb) {
+                    (None, None)         => result == None,
+                    (Some(t1), Some(t2)) => result == None && resolve(&t1) && resolve(&t2),
+                    (Some(t), None)      => result == Some(t),
+                    (None, Some(t))      => result == Some(t),
+                })]
+                fn xor(self, optb: Option<T>) -> Option<T>;
+
+                #[pure]
+                #[ensures(match *self {
+                    Some(t) => resolve(&t),
+                    None => true,
+                })]
+                #[ensures(*result == value && ^self == Some(^result))]
+                fn insert(&mut self, value: T) -> &mut T;
+
+                #[pure]
+                #[ensures(match *self {
+                    None => *result == value && ^self == Some(^result),
+                    Some(_) => *self == Some(*result) && ^self == Some(^result) && resolve(&value),
+                })]
+                fn get_or_insert(&mut self, value: T) -> &mut T;
+
+                #[requires(*self == None ==> f.precondition(()))]
+                #[ensures(match *self {
+                    None => f.postcondition_once((), *result) && ^self == Some(^result),
+                    Some(_) => *self == Some(*result) && ^self == Some(^result),
+                })]
+                fn get_or_insert_with<F>(&mut self, f: F) -> &mut T
+                where
+                    F: FnOnce() -> T {
+                    match self {
+                        None => { *self = Some(f()); self.as_mut().unwrap() }
+                        Some(t) => t,
+                    }
+                }
+
+                #[pure]
+                #[ensures(result == *self && ^self == None)]
+                fn take(&mut self) -> Option<T>;
+
+                #[requires(match *self {
+                    None => true,
+                    Some(t) => forall<b:&mut T> inv(b) && *b == t ==> predicate.precondition((b,)),
+                })]
+                #[ensures(match *self {
+                    None => result == None && ^self == None,
+                    Some(cur) =>
+                        exists<b: &mut T, res: bool> inv(b) && cur == *b && predicate.postcondition_once((b,), res) &&
+                            if res {
+                                ^self == None && result == Some(^b)
+                            } else {
+                                ^self == Some(^b) && result == None
+                            }
+                })]
+                fn take_if<P>(&mut self, predicate: P) -> Option<T>
+                where
+                    P: FnOnce(&mut T) -> bool {
+                    match self {
+                        None => None,
+                        Some(t) => if predicate(t) { self.take() } else { None },
+                    }
+                }
+
+                #[pure]
+                #[ensures(result == *self && ^self == Some(value))]
+                fn replace(&mut self, value: T) -> Option<T>;
+
+                #[pure]
+                #[ensures(match (self, other) {
+                    (None, _)          => result == None && other.resolve(),
+                    (_, None)          => result == None && self.resolve(),
+                    (Some(t), Some(u)) => result == Some((t, u)),
+                })]
+                fn zip<U>(self, other: Option<U>) -> Option<(T, U)>;
+            }
+
+            impl<T, U> Option<(T, U)> {
+                #[pure]
+                #[ensures(match self {
+                    None => result == (None, None),
+                    Some((t, u)) => result == (Some(t), Some(u)),
+                })]
+                fn unzip(self) -> (Option<T>, Option<U>);
             }
 
             impl<T> Option<&T> {
@@ -130,6 +402,16 @@ extern_spec! {
                     T: Clone;
             }
 
+            impl<T, E> Option<Result<T, E>> {
+                #[pure]
+                #[ensures(match self {
+                    None => result == Ok(None),
+                    Some(Ok(ok)) => result == Ok(Some(ok)),
+                    Some(Err(err)) => result == Err(err),
+                })]
+                fn transpose(self) -> Result<Option<T>, E>;
+            }
+
             impl<T> Option<Option<T>> {
                 #[pure]
                 #[ensures(self == None ==> result == None)]
@@ -163,13 +445,13 @@ impl<T: OrdLogic> OrdLogic for Option<T> {
     ord_laws_impl! {}
 }
 
-impl<T> ShallowModel for IntoIter<T> {
-    type ShallowModelTy = Option<T>;
+impl<T> View for IntoIter<T> {
+    type ViewTy = Option<T>;
 
     #[open(self)]
     #[logic]
     #[trusted]
-    fn shallow_model(self) -> Option<T> {
+    fn view(self) -> Option<T> {
         pearlite! { absurd }
     }
 }
@@ -217,13 +499,13 @@ impl<T> IntoIterator for Option<T> {
     }
 }
 
-impl<'a, T> ShallowModel for Iter<'a, T> {
-    type ShallowModelTy = Option<&'a T>;
+impl<'a, T> View for Iter<'a, T> {
+    type ViewTy = Option<&'a T>;
 
     #[open(self)]
     #[logic]
     #[trusted]
-    fn shallow_model(self) -> Option<&'a T> {
+    fn view(self) -> Option<&'a T> {
         pearlite! { absurd }
     }
 }
@@ -274,13 +556,13 @@ impl<'a, T> IntoIterator for &'a Option<T> {
     }
 }
 
-impl<'a, T> ShallowModel for IterMut<'a, T> {
-    type ShallowModelTy = Option<&'a mut T>;
+impl<'a, T> View for IterMut<'a, T> {
+    type ViewTy = Option<&'a mut T>;
 
     #[logic]
     #[open(self)]
     #[trusted]
-    fn shallow_model(self) -> Option<&'a mut T> {
+    fn view(self) -> Option<&'a mut T> {
         pearlite! { absurd }
     }
 }

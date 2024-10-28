@@ -1,7 +1,7 @@
 use super::pearlite::{Term, TermKind};
 use crate::{
+    contracts_items::{is_law, is_spec},
     ctx::*,
-    util::{is_law, is_spec},
 };
 use rustc_hir::def_id::DefId;
 use rustc_infer::{
@@ -200,35 +200,33 @@ pub(crate) fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item
         .filter(move |item| !is_spec(tcx, item.def_id))
 }
 
-fn resolve_impl_source_opt<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    param_env: ParamEnv<'tcx>,
-    trait_ref: TraitRef<'tcx>,
-) -> Option<&'tcx ImplSource<'tcx, ()>> {
-    trace!("resolve_impl_source_opt={trait_ref:?}");
-    let trait_ref = tcx.normalize_erasing_regions(param_env, trait_ref);
-    let source = tcx.codegen_select_candidate((param_env, trait_ref));
-    match source {
-        Ok(src) => Some(src),
-        Err(_) => {
-            trace!("resolve_impl_source_opt error");
-            return None;
+pub enum TraitResol<'tcx> {
+    Instance(DefId, GenericArgsRef<'tcx>), // We know the instance
+    UnknownFound,                          // We don't know the instance, but it exists
+    UnknownNotFound,                       // We don't know if there is an instance
+    NoInstance,                            // We know there is no instance
+}
+
+impl<'tcx> TraitResol<'tcx> {
+    pub fn to_opt(
+        self,
+        did: DefId,
+        substs: GenericArgsRef<'tcx>,
+    ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
+        match self {
+            TraitResol::Instance(did, substs) => Some((did, substs)),
+            TraitResol::UnknownFound => Some((did, substs)),
+            _ => None,
         }
     }
 }
 
-/// Returns:
-///    - None if no instance is found
-///    - Some((trait_item_def_id, ...)) if an instance is found, but we do not know which
-///          instance is going to be used at runtime.
-///    - Some((did, ...)) with did the def id of the instance if an instance is found,
-///           which we know is going to be used.
 pub(crate) fn resolve_assoc_item_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     trait_item_def_id: DefId,
     substs: GenericArgsRef<'tcx>,
-) -> Option<(DefId, GenericArgsRef<'tcx>)> {
+) -> TraitResol<'tcx> {
     trace!("resolve_assoc_item_opt {:?} {:?}", trait_item_def_id, substs);
     let assoc = tcx.opt_associated_item(trait_item_def_id).unwrap();
 
@@ -236,14 +234,23 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
 
     let trait_ref =
         TraitRef::from_method(tcx, tcx.trait_of_item(trait_item_def_id).unwrap(), substs);
+    let trait_ref = tcx.normalize_erasing_regions(param_env, trait_ref);
 
-    let source = resolve_impl_source_opt(tcx, param_env, trait_ref)?;
+    let source = if let Ok(source) = tcx.codegen_select_candidate((param_env, trait_ref)) {
+        source
+    } else {
+        if still_specializable(tcx, param_env, trait_item_def_id, trait_ref, None) {
+            return TraitResol::UnknownNotFound;
+        } else {
+            return TraitResol::NoInstance;
+        }
+    };
     trace!("resolve_assoc_item_opt {source:?}",);
 
     match source {
         ImplSource::UserDefined(impl_data) => {
-            if still_specializable(tcx, param_env, trait_item_def_id, substs) {
-                return Some((trait_item_def_id, substs));
+            if still_specializable(tcx, param_env, trait_item_def_id, trait_ref, Some(source)) {
+                return TraitResol::UnknownFound;
             }
 
             let trait_def = tcx.trait_def(trait_ref.def_id);
@@ -269,12 +276,12 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
             );
             let leaf_substs = infcx.tcx.erase_regions(substs);
 
-            Some((leaf_def.item.def_id, leaf_substs))
+            TraitResol::Instance(leaf_def.item.def_id, leaf_substs)
         }
-        ImplSource::Param(_) => Some((trait_item_def_id, substs)),
+        ImplSource::Param(_) => TraitResol::UnknownFound,
         ImplSource::Builtin(_, _) => match *substs.type_at(0).kind() {
             rustc_middle::ty::Closure(closure_def_id, closure_substs) => {
-                Some((closure_def_id, closure_substs))
+                TraitResol::Instance(closure_def_id, closure_substs)
             }
             _ => unimplemented!(),
         },
@@ -316,21 +323,18 @@ fn instantiate_params_with_infer<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
     value.fold_with(&mut Folder { ctx, tys: Default::default(), consts: Default::default() })
 }
 
-pub(crate) fn still_specializable<'tcx>(
+fn still_specializable<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     trait_item_def_id: DefId,
-    substs: GenericArgsRef<'tcx>,
+    trait_ref: TraitRef<'tcx>,
+    source: Option<&ImplSource<'tcx, ()>>,
 ) -> bool {
-    let trait_ref =
-        TraitRef::from_method(tcx, tcx.trait_of_item(trait_item_def_id).unwrap(), substs);
-    let trait_ref = tcx.normalize_erasing_regions(param_env, trait_ref);
-
     let start_node;
     let graph = tcx.specialization_graph_of(trait_ref.def_id).unwrap();
 
     // Search for the least specialized node that applies to this trait_ref
-    if let Some(ImplSource::UserDefined(ud)) = resolve_impl_source_opt(tcx, param_env, trait_ref) {
+    if let Some(ImplSource::UserDefined(ud)) = source {
         let trait_def = tcx.trait_def(trait_ref.def_id);
         let leaf = trait_def
             .ancestors(tcx, ud.impl_def_id)

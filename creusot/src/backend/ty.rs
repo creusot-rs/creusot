@@ -1,11 +1,13 @@
 use super::{Dependencies, Why3Generator};
 use crate::{
+    contracts_items::{self, get_builtin},
     ctx::*,
+    translated_item::FileModule,
     translation::{
         pearlite::{self, Term, TermKind},
         specification::PreContract,
     },
-    util::{self, get_builtin, item_name, module_name, translate_accessor_name, PreSignature},
+    util::{self, item_name, translate_accessor_name, PreSignature},
 };
 use indexmap::IndexSet;
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
@@ -21,9 +23,8 @@ use std::collections::VecDeque;
 use why3::{
     declaration::{
         AdtDecl, ConstructorDecl, Contract, Decl, Field, Logic, Module, Signature, TyDecl, Use,
-        ValDecl,
     },
-    exp::{Binder, Exp, Pattern},
+    exp::{Binder, Exp, Pattern, Trigger},
     ty::Type as MlT,
     Ident, QName,
 };
@@ -89,7 +90,7 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
             }
 
             let cons = if let Some(builtin) =
-                get_builtin(ctx.tcx, def.did()).and_then(|a| QName::from_string(&a.as_str()))
+                get_builtin(ctx.tcx, def.did()).map(|a| QName::from_string(&a.as_str()))
             {
                 names.ty(def.did(), s);
                 // names.import_builtin_module(builtin.clone().module_qname());
@@ -119,7 +120,7 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
             if let TyTranslation::Declaration(_) = trans {
                 MlT::TVar(translate_ty_param(p.name))
             } else {
-                MlT::TConstructor(QName::from_string(&p.to_string().to_lowercase()).unwrap())
+                MlT::TConstructor(QName::from_string(&p.to_string().to_lowercase()))
             }
         }
         Alias(AliasTyKind::Projection, pty) => translate_projection_ty(trans, ctx, names, pty),
@@ -152,12 +153,12 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
         Never => MlT::Tuple(vec![]),
         RawPtr(_, _) => {
             names.import_prelude_module(PreludeModule::Opaque);
-            MlT::TConstructor(QName::from_string("opaque_ptr").unwrap())
+            MlT::TConstructor(QName::from_string("opaque_ptr"))
         }
         Closure(id, subst) => {
             ctx.translate(*id);
 
-            if util::is_logic(ctx.tcx, *id) {
+            if contracts_items::is_logic(ctx.tcx, *id) {
                 return MlT::Tuple(Vec::new());
             }
 
@@ -182,16 +183,16 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
         }
         FnPtr(_) => {
             names.import_prelude_module(PreludeModule::Opaque);
-            MlT::TConstructor(QName::from_string("opaque_ptr").unwrap())
+            MlT::TConstructor(QName::from_string("opaque_ptr"))
         }
         Dynamic(_, _, _) => {
             names.import_prelude_module(PreludeModule::Opaque);
-            MlT::TConstructor(QName::from_string("dyn").unwrap())
+            MlT::TConstructor(QName::from_string("dyn"))
         }
 
         Foreign(_) => {
             names.import_prelude_module(PreludeModule::Opaque);
-            MlT::TConstructor(QName::from_string("foreign").unwrap())
+            MlT::TConstructor(QName::from_string("foreign"))
         }
         Error(_) => MlT::UNIT,
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
@@ -223,7 +224,7 @@ pub(crate) fn translate_closure_ty<'tcx>(
     did: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> TyDecl {
-    let ty_name = names.ty(did, subst).name;
+    let ty_name = names.ty(did, subst).as_ident();
     let closure_subst = subst.as_closure();
     let fields: Vec<_> = closure_subst
         .upvar_tys()
@@ -234,7 +235,7 @@ pub(crate) fn translate_closure_ty<'tcx>(
         })
         .collect();
 
-    let cons_name = names.constructor(did, subst).name;
+    let cons_name = names.constructor(did, subst).as_ident();
     let kind = AdtDecl {
         ty_name,
         ty_params: ty_param_names(ctx.tcx, did).collect(),
@@ -341,34 +342,38 @@ pub(crate) fn translate_ty_param(p: Symbol) -> Ident {
 pub(crate) fn translate_tydecl(
     ctx: &mut Why3Generator<'_>,
     bg: &IndexSet<DefId>,
-) -> Option<Vec<Module>> {
+) -> Option<Vec<FileModule>> {
     let repr = ctx.representative_type(bg.first().unwrap().clone());
 
     if let Some(_) = get_builtin(ctx.tcx, repr) {
         return None;
     }
 
-    let mut names = Dependencies::new(ctx.tcx, bg.iter().copied());
-
-    let name = module_name(ctx.tcx, repr).to_string().into();
+    let mut names = Dependencies::new(ctx, bg.iter().copied());
+    let repr_path = ctx.module_path(repr, util::NS::T);
     let span = ctx.def_span(repr);
 
     // Trusted types (opaque)
-    if util::is_trusted(ctx.tcx, repr) {
+    if contracts_items::is_trusted(ctx.tcx, repr) {
         if bg.len() > 1 {
             ctx.crash_and_error(span, "cannot mark mutually recursive types as trusted");
         }
         let ty_name = translate_ty_name(ctx, repr);
 
         let ty_params: Vec<_> = ty_param_names(ctx.tcx, repr).collect();
-        let modl = Module {
-            name,
-            decls: vec![Decl::TyDecl(TyDecl::Opaque {
-                ty_name: ty_name.clone(),
-                ty_params: ty_params.clone(),
-            })],
+        let modl = FileModule {
+            path: repr_path.clone(),
+            modl: Module {
+                name: repr_path.why3_ident(),
+                decls: vec![Decl::TyDecl(TyDecl::Opaque {
+                    ty_name: ty_name.clone(),
+                    ty_params: ty_params.clone(),
+                })],
+                attrs: Vec::from_iter(ctx.span_attr(ctx.def_span(repr))),
+                meta: ctx.display_impl_of(repr),
+            },
         };
-        let _ = names.provide_deps(ctx, GraphDepth::Shallow);
+        let _ = names.provide_deps(ctx);
         return Some(vec![modl]);
     }
 
@@ -388,30 +393,33 @@ pub(crate) fn translate_tydecl(
         });
     }
 
-    let (mut decls, _) = names.provide_deps(ctx, GraphDepth::Shallow);
+    let mut decls = names.provide_deps(ctx);
     decls.push(Decl::TyDecl(ty_decl));
-    use why3::{declaration::LetKind, ty::*};
-    decls.push(Decl::ValDecl(ValDecl {
-        ghost: false,
-        val: false,
-        kind: Some(LetKind::Function),
-        sig: Signature {
-            name: "any_l".into(),
-            trigger: None,
-            attrs: vec![],
-            retty: Some(Type::TVar("a".into())),
-            args: vec![Binder::wild(Type::TVar("b".into()))],
-            contract: Default::default(),
-        },
-    }));
 
     decls.extend(destructors);
 
-    let mut modls = vec![Module { name: name.clone(), decls }];
+    let attrs = Vec::from_iter(ctx.span_attr(span));
+    let mut modls = vec![FileModule {
+        path: repr_path.clone(),
+        modl: Module { name: repr_path.why3_ident(), decls, attrs, meta: None },
+    }];
 
-    modls.extend(bg.iter().filter(|did| **did != repr).map(|did| Module {
-        name: module_name(ctx.tcx, *did).to_string().into(),
-        decls: vec![Decl::UseDecl(Use { name: name.clone().into(), as_: None, export: true })],
+    modls.extend(bg.iter().filter(|did| **did != repr).map(|did| {
+        let path = ctx.module_path(*did, util::NS::T);
+        let name = path.why3_ident();
+        FileModule {
+            path,
+            modl: Module {
+                name,
+                decls: vec![Decl::UseDecl(Use {
+                    name: repr_path.why3_name(ctx.prefix()),
+                    as_: None,
+                    export: true,
+                })],
+                attrs: Vec::from_iter(ctx.span_attr(ctx.def_span(did))),
+                meta: ctx.display_impl_of(*did),
+            },
+        }
     }));
 
     Some(modls)
@@ -502,7 +510,7 @@ pub(crate) fn destructor<'tcx>(
         Exp::qvar(constr).app(fields.iter().map(|(nm, _)| nm.clone()).map(Exp::var).collect());
 
     let ret = Expr::Symbol("ret".into())
-        .app(fields.into_iter().map(|(nm, _)| Exp::var(nm)).map(Arg::Term).collect());
+        .app(fields.iter().map(|(nm, _)| Exp::var(nm.clone())).map(Arg::Term).collect());
 
     let good_branch: coma::Defn = coma::Defn {
         name: format!("good").into(),
@@ -513,13 +521,42 @@ pub(crate) fn destructor<'tcx>(
             Box::new(Expr::BlackBox(Box::new(ret))),
         ),
     };
+    let num_variants = match base_ty.kind() {
+        TyKind::Adt(def, _) => def.variants().len(),
+        _ => 1,
+    };
 
-    let fail = Expr::Assert(Box::new(Exp::mk_false()), Box::new(Expr::Any));
-    let bad_branch: Defn = coma::Defn {
-        name: format!("bad").into(),
-        writes: vec![],
-        params: field_args.clone(),
-        body: Expr::Assert(Box::new(cons_test.neq(Exp::var("input"))), Box::new(fail)),
+    let bad_branch = if num_variants > 1 {
+        let fail =
+            Expr::BlackBox(Box::new(Expr::Assert(Box::new(Exp::mk_false()), Box::new(Expr::Any))));
+
+        let fields: Vec<_> = fields.iter().cloned().collect();
+        let negative_assertion = if fields.is_empty() {
+            cons_test.neq(Exp::var("input"))
+        } else {
+            // TODO: Replace this with a pattern match to generat more readable goals
+            let ty = translate_ty_inner(
+                TyTranslation::Declaration(ty_id),
+                ctx,
+                names,
+                DUMMY_SP,
+                base_ty,
+            );
+            Exp::Forall(
+                fields,
+                vec![Trigger::single(cons_test.clone().ascribe(ty))],
+                Box::new(cons_test.neq(Exp::var("input"))),
+            )
+        };
+
+        Some(coma::Defn {
+            name: format!("bad").into(),
+            writes: vec![],
+            params: vec![],
+            body: Expr::Assert(Box::new(negative_assertion), Box::new(fail)),
+        })
+    } else {
+        None
     };
 
     let ret_cont = Param::Cont("ret".into(), Vec::new(), field_args);
@@ -530,11 +567,12 @@ pub(crate) fn destructor<'tcx>(
 
     let params = ty_params(ctx, ty_id).map(|ty| Param::Ty(Type::TVar(ty))).chain([input, ret_cont]);
 
+    let branches = std::iter::once(good_branch).chain(bad_branch).collect();
     Decl::Coma(Defn {
-        name: names.eliminator(cons_id, subst).name,
+        name: names.eliminator(cons_id, subst).as_ident(),
         writes: vec![],
         params: params.collect(),
-        body: Expr::Defn(Box::new(Expr::Any), false, vec![good_branch, bad_branch]),
+        body: Expr::Defn(Box::new(Expr::Any), false, branches),
     })
 }
 
@@ -547,7 +585,7 @@ fn build_ty_decl<'tcx>(
     let substs = GenericArgs::identity_for_item(ctx.tcx, did);
 
     // HACK(xavier): Clean up
-    let ty_name = names.ty(did, substs).name;
+    let ty_name = names.ty(did, substs).as_ident();
 
     // Collect type variables of declaration
     let ty_args: Vec<_> = ty_params(ctx, did).collect();
@@ -557,17 +595,17 @@ fn build_ty_decl<'tcx>(
         let mut ml_ty_def = Vec::new();
 
         for var_def in adt.variants().iter() {
-            let field_tys: Vec<_> = var_def
-                .fields
-                .iter()
-                .map(|f| {
-                    let ty = field_ty(ctx, names, param_env, did, f, substs);
-                    Field { ty, ghost: false }
-                })
-                .collect();
-            let var_name = names.constructor(var_def.def_id, substs);
-
-            ml_ty_def.push(ConstructorDecl { name: var_name.name, fields: field_tys });
+            ml_ty_def.push(ConstructorDecl {
+                name: names.constructor(var_def.def_id, substs).as_ident(),
+                fields: var_def
+                    .fields
+                    .iter()
+                    .map(|f| {
+                        let ty = field_ty(ctx, names, param_env, did, f, substs);
+                        Field { ty, ghost: false }
+                    })
+                    .collect(),
+            });
         }
 
         AdtDecl { ty_name, ty_params: ty_args, constrs: ml_ty_def }
@@ -635,7 +673,7 @@ fn validate_field_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, adt_did: DefId, ty: Ty
     let bg = ctx.binding_group(adt_did);
 
     !ty.walk().filter_map(ty::GenericArg::as_type).any(|ty| {
-        util::is_snap_ty(tcx, ty)
+        contracts_items::is_snap_ty(tcx, ty)
             && ty.walk().filter_map(ty::GenericArg::as_type).any(|ty| match ty.kind() {
                 TyKind::Adt(adt_def, _) => bg.contains(&adt_def.did()),
                 // TyKind::Param(_) => true,
@@ -657,7 +695,8 @@ pub(crate) fn translate_accessor(
     let field = &variant.fields[ix.into()];
 
     let substs = GenericArgs::identity_for_item(ctx.tcx, adt_did);
-    let mut names = Dependencies::new(ctx.tcx, ctx.binding_group(adt_did).iter().copied());
+    let omg: Vec<_> = ctx.binding_group(adt_did).iter().copied().collect();
+    let mut names = Dependencies::new(ctx, omg);
 
     let acc_name = translate_accessor_name(variant.name.as_str(), field.name.as_str());
 
@@ -679,7 +718,7 @@ pub(crate) fn translate_accessor(
         ctx.type_of(adt_did).instantiate_identity(),
     );
 
-    let _ = names.provide_deps(ctx, GraphDepth::Shallow);
+    let _ = names.provide_deps(ctx);
 
     build_accessor(
         this,
@@ -716,7 +755,7 @@ pub(crate) fn build_accessor(
         .enumerate()
         .map(|(ix, (name, arity))| {
             let mut pat = vec![Pattern::Wildcard; *arity];
-            let mut exp = Exp::var("any_l").app_to(Exp::var("self"));
+            let mut exp = Exp::var("any_l1").app_to(Exp::var("self"));
 
             if ix == variant_ix {
                 pat[field_ix] = Pattern::VarP("a".into());
@@ -882,24 +921,24 @@ pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(
 
 pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
     if let TyKind::Adt(def, _) = ty.kind() {
-        def.did() == tcx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap()
+        contracts_items::is_int_ty(tcx, def.did())
     } else {
         false
     }
 }
 
 pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &mut Why3Generator<'tcx>, names: &mut N) -> MlT {
-    let int_id = ctx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap();
+    let int_id = contracts_items::get_int_ty(ctx.tcx);
     let ty = ctx.type_of(int_id).skip_binder();
     translate_ty(ctx, names, DUMMY_SP, ty)
 }
 
 pub(crate) fn double_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("Float64.t").unwrap())
+    MlT::TConstructor(QName::from_string("Float64.t"))
 }
 
 pub(crate) fn single_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("Float32.t").unwrap())
+    MlT::TConstructor(QName::from_string("Float32.t"))
 }
 
 pub(crate) fn u8_ty() -> MlT {

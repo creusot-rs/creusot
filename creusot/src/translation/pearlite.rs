@@ -12,9 +12,10 @@ use std::{
 };
 
 use crate::{
+    contracts_items,
     error::{CreusotResult, Error, InternalError},
     translation::{projection_vec::*, TranslationCtx},
-    util::{self, is_snap_ty},
+    util,
 };
 use itertools::Itertools;
 use log::*;
@@ -255,11 +256,28 @@ pub enum Literal<'tcx> {
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum Pattern<'tcx> {
-    Constructor { variant: DefId, substs: GenericArgsRef<'tcx>, fields: Vec<Pattern<'tcx>> },
+    Constructor {
+        variant: DefId,
+        substs: GenericArgsRef<'tcx>,
+        fields: Vec<Pattern<'tcx>>,
+    },
+    /// Matches the pointed element of a pointer, so for `Box<T>` it matches `T`, for mutable borrows it matches the *current* value
+    Deref {
+        pointee: Box<Pattern<'tcx>>,
+        kind: PointerKind,
+    },
     Tuple(Vec<Pattern<'tcx>>),
     Wildcard,
     Binder(Symbol),
     Boolean(bool),
+}
+
+// TODO: Pattern should store a type directly
+#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
+pub enum PointerKind {
+    Box,
+    Shr,
+    Mut,
 }
 
 const TRIGGER_ERROR: &str = "Triggers can only be used inside quantifiers";
@@ -546,18 +564,37 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         "Triggers can only be used directly inside quantifiers",
                     )),
                     None => {
-                        let args = args
-                            .iter()
-                            .map(|arg| self.expr_term(*arg))
-                            .collect::<Result<Vec<_>, _>>()?;
                         let fun = self.expr_term(fun)?;
                         let (id, subst) = if let TermKind::Item(id, subst) = fun.kind {
                             (id, subst)
                         } else {
                             unreachable!("Call on non-function type");
                         };
+                        // HACK: allow dereferencing of GhostBox in pearlite
+                        if let Some(new_subst) = is_ghost_box_deref(
+                            self.ctx.tcx,
+                            id,
+                            subst.get(0).and_then(|arg| arg.as_type()),
+                        ) {
+                            let term = self.expr_term(args[0])?;
+                            let inner_id = contracts_items::get_ghost_inner_logic(self.ctx.tcx);
+                            Ok(Term {
+                                ty,
+                                span,
+                                kind: TermKind::Call {
+                                    id: inner_id,
+                                    subst: new_subst,
+                                    args: vec![term],
+                                },
+                            })
+                        } else {
+                            let args = args
+                                .iter()
+                                .map(|arg| self.expr_term(*arg))
+                                .collect::<Result<Vec<_>, _>>()?;
 
-                        Ok(Term { ty, span, kind: TermKind::Call { id, subst, args } })
+                            Ok(Term { ty, span, kind: TermKind::Call { id, subst, args } })
+                        }
                     }
                 }
             }
@@ -688,7 +725,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
                 let term = pearlite(self.ctx, closure_id)?;
 
-                if util::is_assertion(self.ctx.tcx, closure_id.to_def_id()) {
+                if contracts_items::is_assertion(self.ctx.tcx, closure_id.to_def_id()) {
                     Ok(Term { ty, span, kind: TermKind::Assert { cond: Box::new(term) } })
                 } else {
                     Ok(Term { ty, span, kind: TermKind::Closure { body: Box::new(term) } })
@@ -798,6 +835,10 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     ));
                 }
                 Ok(Pattern::Boolean(value.try_to_bool().unwrap()))
+            }
+            // TODO: this simply ignores type annotations, maybe we should actually support them
+            PatKind::AscribeUserType { ascription: _, subpattern } => {
+                self.pattern_term(subpattern, mut_allowed)
             }
             ref pk => todo!("lower_pattern: unsupported pattern kind {:?}", pk),
         }
@@ -930,8 +971,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } = self.thir[args[0]].kind else { unreachable!() };
 
                     let (cur, fin, inner, proj) = self.logical_reborrow_inner(arg)?;
-                    let deref_method =
-                        self.ctx.get_diagnostic_item(Symbol::intern("snapshot_inner")).unwrap();
+                    let deref_method = contracts_items::get_snap_inner(self.ctx.tcx);
                     // Extract the `T` from `Snapshot<T>`
                     let TyKind::Adt(_, subst) = self.thir[arg].ty.peel_refs().kind() else { unreachable!() };
                     return Ok((
@@ -957,8 +997,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 }
             }
             e @ ExprKind::Call { ty: fn_ty, args, .. } if fn_ty.is_fn() => {
-                let index_logic_method =
-                    self.ctx.get_diagnostic_item(Symbol::intern("index_logic_method")).unwrap();
+                let index_logic_method = contracts_items:: get_index_logic(self.ctx.tcx);
 
                 let TyKind::FnDef(id,_) = fn_ty.kind() else { panic!("expected function type") };
 
@@ -1010,11 +1049,29 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
         let TyKind::FnDef(id, sub) = ty.kind() else { panic!("expected function type") };
 
-        if *id != self.ctx.get_diagnostic_item(Symbol::intern("deref_method")).unwrap() {
-            return false;
-        }
+        self.ctx.is_diagnostic_item(Symbol::intern("deref_method"), *id)
+            && contracts_items::is_snap_ty(self.ctx.tcx, sub[0].as_type().unwrap())
+    }
+}
 
-        sub[0].as_type().map(|ty| is_snap_ty(self.ctx.tcx, ty)).unwrap_or(false)
+fn is_ghost_box_deref<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    fn_id: DefId,
+    ty: Option<Ty<'tcx>>,
+) -> Option<&'tcx GenericArgs<'tcx>> {
+    let Some(ty) = ty else { return None };
+    if !tcx.is_diagnostic_item(Symbol::intern("deref_method"), fn_id) {
+        return None;
+    }
+    match ty.kind() {
+        rustc_type_ir::TyKind::Adt(containing_type, new_subst) => {
+            if contracts_items::is_ghost_ty(tcx, containing_type.did()) {
+                Some(new_subst)
+            } else {
+                None
+            }
+        }
+        _ => None,
     }
 }
 
@@ -1032,7 +1089,7 @@ pub(crate) fn type_invariant_term<'tcx>(
     // assert!(!name.as_str().is_empty(), "name has len 0, env={env_did:?}, ty={ty:?}");
     let arg = Term { ty, span, kind: TermKind::Var(name) };
 
-    let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(env_did, ty)?;
+    let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(ctx.tcx.param_env(env_did), ty)?;
     let inv_fn_ty = ctx.type_of(inv_fn_did).instantiate(ctx.tcx, inv_fn_substs);
     assert!(matches!(inv_fn_ty.kind(), TyKind::FnDef(id, _) if id == &inv_fn_did));
 
@@ -1060,40 +1117,20 @@ pub(crate) enum Stub {
 
 pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
     if let TyKind::FnDef(id, _) = *ty.kind() {
-        if id == tcx.get_diagnostic_item(Symbol::intern("forall")).unwrap() {
-            return Some(Stub::Forall);
+        match tcx.get_diagnostic_name(id)?.as_str() {
+            "forall" => Some(Stub::Forall),
+            "exists" => Some(Stub::Exists),
+            "trigger" => Some(Stub::Trigger),
+            "fin" => Some(Stub::Fin),
+            "implication" => Some(Stub::Impl),
+            "equal" => Some(Stub::Equals),
+            "neq" => Some(Stub::Neq),
+            "variant_check" => Some(Stub::VariantCheck),
+            "old" => Some(Stub::Old),
+            "absurd" => Some(Stub::Absurd),
+            "closure_result_constraint" => Some(Stub::ResultCheck),
+            _ => None,
         }
-        if id == tcx.get_diagnostic_item(Symbol::intern("exists")).unwrap() {
-            return Some(Stub::Exists);
-        }
-        if id == tcx.get_diagnostic_item(Symbol::intern("trigger")).unwrap() {
-            return Some(Stub::Trigger);
-        }
-        if id == tcx.get_diagnostic_item(Symbol::intern("fin")).unwrap() {
-            return Some(Stub::Fin);
-        }
-        if id == tcx.get_diagnostic_item(Symbol::intern("implication")).unwrap() {
-            return Some(Stub::Impl);
-        }
-        if id == tcx.get_diagnostic_item(Symbol::intern("equal")).unwrap() {
-            return Some(Stub::Equals);
-        }
-        if id == tcx.get_diagnostic_item(Symbol::intern("neq")).unwrap() {
-            return Some(Stub::Neq);
-        }
-        if id == tcx.get_diagnostic_item(Symbol::intern("variant_check")).unwrap() {
-            return Some(Stub::VariantCheck);
-        }
-        if id == tcx.get_diagnostic_item(Symbol::intern("old")).unwrap() {
-            return Some(Stub::Old);
-        }
-        if id == tcx.get_diagnostic_item(Symbol::intern("absurd")).unwrap() {
-            return Some(Stub::Absurd);
-        }
-        if id == tcx.get_diagnostic_item(Symbol::intern("closure_result_constraint")).unwrap() {
-            return Some(Stub::ResultCheck);
-        }
-        None
     } else {
         None
     }
@@ -1116,7 +1153,7 @@ fn not_spec_expr(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: ExprId) -> bool {
     match thir[id].kind {
         ExprKind::Scope { value, .. } => not_spec_expr(tcx, thir, value),
         ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
-            !util::is_spec(tcx, closure_id.to_def_id())
+            !contracts_items::is_spec(tcx, closure_id.to_def_id())
         }
         _ => true,
     }
@@ -1148,6 +1185,7 @@ impl<'tcx> Pattern<'tcx> {
             }
 
             Pattern::Boolean(_) => {}
+            Pattern::Deref { pointee, .. } => pointee.binds(binders),
         }
     }
 }
@@ -1365,9 +1403,18 @@ impl<'tcx> Term<'tcx> {
         }
     }
 
-    pub(crate) fn forall(self, tcx: TyCtxt<'tcx>, binder: (Symbol, Ty<'tcx>)) -> Self {
+    pub(crate) fn forall_trig(
+        self,
+        tcx: TyCtxt<'tcx>,
+        binder: (Symbol, Ty<'tcx>),
+        trigger: Vec<Trigger<'tcx>>,
+    ) -> Self {
         let ty = Ty::new_tup(tcx, &[binder.1]);
-        self.quant(QuantKind::Forall, (vec![Ident::new(binder.0, DUMMY_SP)], ty), vec![])
+        self.quant(QuantKind::Forall, (vec![Ident::new(binder.0, DUMMY_SP)], ty), trigger)
+    }
+
+    pub(crate) fn forall(self, tcx: TyCtxt<'tcx>, binder: (Symbol, Ty<'tcx>)) -> Self {
+        self.forall_trig(tcx, binder, vec![])
     }
 
     pub(crate) fn quant(

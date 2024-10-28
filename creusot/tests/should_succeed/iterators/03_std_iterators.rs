@@ -94,7 +94,6 @@ fn equiv_reverse_range<T>(s1: Seq<T>, s2: Seq<T>, l: Int, u: Int, n: Int) -> boo
 pub fn my_reverse<T>(slice: &mut [T]) {
     let n = slice.len();
     let old_v: Snapshot<&mut [T]> = snapshot! { slice };
-    #[invariant(^*old_v == ^slice)]
     #[invariant(n@ == slice@.len())]
     #[invariant(equiv_range(slice@, old_v@, produced.len(), n@-produced.len()))]
     #[invariant(equiv_reverse_range(slice@, old_v@, 0, produced.len(), n@-1))]

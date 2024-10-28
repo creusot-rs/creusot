@@ -20,6 +20,14 @@ pub fn reborrow_field<T>(r: &mut (T, T)) -> &mut T {
     &mut r.0
 }
 
+#[ensures(result.0 == &mut r.0)]
+#[ensures(result.1 == &mut r.1)]
+pub fn disjoint_fields<T>(r: &mut (T, T)) -> (&mut T, &mut T) {
+    let r0 = &mut r.0;
+    let r1 = &mut r.1;
+    (r0, r1)
+}
+
 #[ensures(result == &mut r.0.1)]
 pub fn nested_fields<T>(r: &mut ((T, T), T)) -> &mut T {
     let borrow1 = &mut r.0;
@@ -82,8 +90,16 @@ pub fn branching(b: bool) -> i32 {
 
 #[ensures(*result == **x)]
 #[ensures(^result == *^x)]
-pub fn unnesting_non_extensional<'a: 'b, 'b, T>(x: &'a mut &'b mut T) -> &'b mut T {
+pub fn unnesting_non_extensional<'a, 'b: 'a, T>(x: &'b mut &'a mut T) -> &'a mut T {
     &mut **x
+}
+
+pub fn write_inner_borrow<'a, T>(x: &mut &'a mut T, b: &'a mut T, value: T) {
+    let r = &mut **x;
+    let snap = snapshot!(&mut **x);
+    *x = b;
+    **x = value; // r does not refer to the same borrow, so r is in fact final !
+    proof_assert!(r == *snap);
 }
 
 //=============================

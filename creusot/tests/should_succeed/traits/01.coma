@@ -1,36 +1,26 @@
-
-module M_01__uses_generic
+module M_01__uses_generic [#"01.rs" 8 0 8 38]
   type t
   
-  let%span s010 = "../01.rs" 8 26 8 27
-  
-  let%span span1 = "../../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
-  
-  let%span span2 = "../01.rs" 5 17 5 18
-  
-  let%span span3 = "../01.rs" 5 29 5 30
+  let%span s010 = "01.rs" 8 26 8 27
+  let%span s011 = "01.rs" 5 17 5 18
+  let%span s012 = "01.rs" 5 29 5 30
   
   use prelude.prelude.UInt32
   
-  predicate invariant'1 (self : uint32) =
-    [%#span1] true
+  use prelude.prelude.Int
   
   predicate inv'1 (_1 : uint32)
   
-  axiom inv'1 : forall x : uint32 . inv'1 x = true
-  
-  predicate invariant'0 (self : t)
+  axiom inv_axiom'0 [@rewrite] : forall x : uint32 [inv'1 x] . inv'1 x = true
   
   predicate inv'0 (_1 : t)
   
-  axiom inv'0 : forall x : t . inv'0 x = true
-  
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Int
+  let rec from_b'0 (x:t) (return'  (ret:uint32))= {[@expl:precondition] [%#s011] inv'0 x}
+    any [ return' (result:uint32)-> {[%#s012] inv'1 result} (! return' {result}) ] 
   
-  let rec from_b'0 (x:t) (return'  (ret:uint32))= {[@expl:precondition] [%#span2] inv'0 x}
-    any [ return' (result:uint32)-> {[%#span3] inv'1 result} (! return' {result}) ] 
+  meta "compute_max_steps" 1000000
   
   let rec uses_generic (b:t) (return'  (ret:uint32))= {[%#s010] inv'0 b}
     (! bb0

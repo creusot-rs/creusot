@@ -5,10 +5,13 @@ use std::{error::Error, ffi::OsString, path::PathBuf};
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct CommonOptions {
     /// Determines how to format the spans in generated code to loading in Why3.
+    ///
     /// [Relative] is better if the generated code is meant to be checked into VCS.
     /// [Absolute] means the files can easily be moved around your system and still work.
     /// [None] provides the clearest diffs.
-    #[clap(long, value_enum, default_value_t=SpanMode::Relative)]
+    /// NB: spans pointing to the Rust standard library are thrown away in [Relative] mode,
+    /// while they are kept in [Absolute] mode.
+    #[clap(long, value_enum, default_value_t=SpanMode::Absolute, verbatim_doc_comment)]
     pub span_mode: SpanMode,
     #[clap(long)]
     /// Directory with respect to which (relative) spans should be relative to.
@@ -28,8 +31,13 @@ pub struct CommonOptions {
     #[clap(group = "output", long)]
     pub stdout: bool,
     /// Print to a file.
-    #[clap(group = "output", long, env)]
-    pub output_file: Option<String>,
+    #[clap(group = "output", long, env, conflicts_with = "stdout")]
+    pub output_file: Option<PathBuf>,
+    #[clap(group = "output", long, env, conflicts_with = "output_file", conflicts_with = "stdout")]
+    pub output_dir: Option<PathBuf>,
+    /// Output the generated code in a single file in output_dir.
+    #[clap(long, default_value_t = false, action = clap::ArgAction::SetTrue)]
+    pub monolithic: bool,
     /// Specify locations of metadata for external crates. The format is the same as rustc's `--extern` flag.
     #[clap(long = "creusot-extern", value_parser= parse_key_val::<String, String>, required=false)]
     pub extern_paths: Vec<(String, String)>,
@@ -106,6 +114,7 @@ pub enum Why3SubCommand {
 
 #[derive(Debug, ValueEnum, Serialize, Deserialize, Clone, PartialEq)]
 pub enum SetupManagedTool {
+    AltErgo,
     Z3,
     CVC4,
     CVC5,

@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::{invariant::inv, *};
 
 mod common;
 use common::Iterator;
@@ -29,6 +29,9 @@ impl<T> Iterator for Empty<T> {
 
     #[law]
     #[open]
+    #[requires(inv(a))]
+    #[requires(inv(b))]
+    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

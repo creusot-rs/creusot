@@ -13,6 +13,7 @@ use rustc_middle::{
     },
 };
 use rustc_span::Symbol;
+use rustc_type_ir::ConstKind;
 
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub(crate) struct ExternSpec<'tcx> {
@@ -51,10 +52,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let (id, subst) = visit.items.pop().unwrap();
 
     let (id, _) = if ctx.trait_of_item(id).is_some() {
-        let resolved =
-            traits::resolve_assoc_item_opt(ctx.tcx, ctx.param_env(def_id.to_def_id()), id, subst);
-
-        if let None = resolved {
+        traits::resolve_assoc_item_opt(ctx.tcx, ctx.param_env(def_id.to_def_id()), id, subst).to_opt(id, subst).unwrap_or_else(|| {
             let mut err = ctx.fatal_error(
                 ctx.def_span(def_id.to_def_id()),
                 "could not derive original instance from external specification",
@@ -62,13 +60,14 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 
             err.span_warn(ctx.def_span(def_id.to_def_id()), "the bounds on an external specification must be at least as strong as the original impl bounds");
             err.emit()
-        };
-        resolved.unwrap()
+        })
     } else {
         (id, subst)
     };
 
+    // Generics of the actual item.
     let mut inner_subst = GenericArgs::identity_for_item(ctx.tcx, id).to_vec();
+    // Generics of our stub.
     let outer_subst = GenericArgs::identity_for_item(ctx.tcx, def_id.to_def_id());
 
     // FIXME(xavier): Handle this better.
@@ -77,6 +76,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     if has_host_effect {
         inner_subst.pop();
     }
+
     // FIXME(xavier): I don't remember the original reason for introducing this...
     let extra_parameters = inner_subst.len() - outer_subst.len();
 
@@ -95,7 +95,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 
     if let Some(ix) = self_pos {
         let self_ = inner_subst.remove(ix + extra_parameters);
-        inner_subst.insert(0, self_);
+        inner_subst.insert(extra_parameters, self_);
     };
 
     let mut subst = Vec::new();
@@ -116,7 +116,14 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
                 }
             },
             (GenericArgKind::Const(c1), GenericArgKind::Const(c2)) => {
-                if c1 == c2 {
+                let is_eq = match (c1.kind(), c2.kind()) {
+                    (ConstKind::Param(param1), ConstKind::Param(param2)) => {
+                        param1.name == param2.name
+                    }
+                    // TODO: also compare the name only in these other cases (if this is not already the case)
+                    (_, _) => c1 == c2,
+                };
+                if is_eq {
                     subst.push(inner_subst[i + extra_parameters]);
                 } else {
                     let mut err = ctx.fatal_error(span, "mismatched parameters in `extern_spec!`");

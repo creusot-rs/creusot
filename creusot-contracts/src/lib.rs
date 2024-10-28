@@ -1,6 +1,6 @@
 #![cfg_attr(
     creusot,
-    feature(unsized_locals, fn_traits, min_specialization),
+    feature(unsized_locals, fn_traits),
     allow(incomplete_features),
     feature(slice_take),
     feature(print_internals, fmt_internals, fmt_helpers_for_derive)
@@ -190,33 +190,10 @@ pub mod std;
 #[cfg(creusot)]
 pub mod num_rational;
 
-#[cfg(creusot)]
 pub mod ghost;
 
 #[cfg(creusot)]
 pub mod snapshot;
-
-#[cfg(not(creusot))]
-pub mod ghost {
-    pub struct GhostBox<T>(std::marker::PhantomData<T>)
-    where
-        T: ?Sized;
-
-    impl<T: ?Sized> GhostBox<T> {
-        #[doc(hidden)]
-        pub fn from_fn(_: impl Fn() -> T) -> Self {
-            GhostBox(std::marker::PhantomData)
-        }
-    }
-
-    impl<T: ?Sized + Clone> Clone for GhostBox<T> {
-        fn clone(&self) -> Self {
-            GhostBox(std::marker::PhantomData)
-        }
-    }
-
-    impl<T: ?Sized + Copy> Copy for GhostBox<T> {}
-}
 
 #[cfg(not(creusot))]
 pub mod snapshot {
@@ -251,8 +228,8 @@ mod base_prelude {
     pub use crate::{
         ghost::GhostBox,
         logic::{IndexLogic as _, Int, OrdLogic, Seq},
-        model::{DeepModel, ShallowModel},
-        resolve::Resolve,
+        model::{DeepModel, View},
+        resolve::*,
         snapshot::Snapshot,
         std::{
             // Shadow std::prelude by our version.

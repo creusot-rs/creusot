@@ -41,13 +41,13 @@ mod hashmap {
     #[trusted]
     pub struct MyHashMap<K, V>(std::marker::PhantomData<(K, V)>);
 
-    impl<K: Hash, V> ShallowModel for MyHashMap<K, V> {
-        type ShallowModelTy = Mapping<K::DeepModelTy, Option<V>>;
+    impl<K: Hash, V> View for MyHashMap<K, V> {
+        type ViewTy = Mapping<K::DeepModelTy, Option<V>>;
 
         #[logic]
         #[open(self)]
         #[trusted]
-        fn shallow_model(self) -> Self::ShallowModelTy {
+        fn view(self) -> Self::ViewTy {
             absurd
         }
     }
@@ -171,12 +171,12 @@ impl<'arena> DeepModel for Node<'arena> {
     }
 }
 
-impl<'arena> ShallowModel for Node<'arena> {
-    type ShallowModelTy = NodeLog;
+impl<'arena> View for Node<'arena> {
+    type ViewTy = NodeLog;
 
     #[open(self)]
     #[logic]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { self.deep_model() }
     }
 }
@@ -191,12 +191,12 @@ impl<'arena> DeepModel for Bdd<'arena> {
     }
 }
 
-impl<'arena> ShallowModel for Bdd<'arena> {
-    type ShallowModelTy = u64;
+impl<'arena> View for Bdd<'arena> {
+    type ViewTy = u64;
 
     #[open(self)]
     #[logic]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         pearlite! { self.deep_model() }
     }
 }

@@ -1,74 +1,81 @@
+use crate::{doc::DocItemName, generate_unique_ident};
 use pearlite_syn::term::*;
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{
     parse::Parse,
     punctuated::{Pair, Punctuated},
     spanned::Spanned,
-    token::{Brace, Colon, Comma, For, Impl, Paren, Plus, Semi, Trait, Unsafe},
+    token::{Brace, Colon, Comma, For, Impl, Paren, Plus, Trait, Unsafe},
     visit_mut::VisitMut,
     *,
 };
 
-use crate::generate_unique_ident;
-
+#[derive(Debug)]
 pub struct ExternSpecs(Vec<ExternSpec>);
 
-// An extern spec is either:
-// - A module of extern specs
-// - A trait spec defining a subset of a trait's methods
-// - An impl spec defining a subset of a type or trait impl's methods
-// - A bare function spec defining a single non-trait or impl function
-pub enum ExternSpec {
+/// An extern spec is either:
+/// - A module of extern specs
+/// - A trait spec defining a subset of a trait's methods
+/// - An impl spec defining a subset of a type or trait impl's methods
+/// - A bare function spec defining a single non-trait or impl function
+#[derive(Debug)]
+enum ExternSpec {
     Mod(ExternMod),
     Trait(ExternTrait),
     Impl(ExternImpl),
     Fn(ExternMethod),
 }
 
-pub struct ExternMod {
+#[derive(Debug)]
+struct ExternMod {
     ident: Ident,
     content: Vec<ExternSpec>,
 }
+
 #[allow(dead_code)]
-pub struct ExternTrait {
-    pub unsafety: Option<Unsafe>,
-    pub trait_token: Trait,
-    pub ident: Ident,
-    pub generics: Generics,
-    pub colon_token: Option<Colon>,
-    pub supertraits: Punctuated<TypeParamBound, Plus>,
-    pub brace_token: Brace,
-    pub items: Vec<ExternMethod>,
+#[derive(Debug)]
+struct ExternTrait {
+    unsafety: Option<Unsafe>,
+    trait_token: Trait,
+    ident: Ident,
+    generics: Generics,
+    colon_token: Option<Colon>,
+    supertraits: Punctuated<TypeParamBound, Plus>,
+    brace_token: Brace,
+    items: Vec<ExternMethod>,
 }
 
 #[allow(dead_code)]
-pub struct ExternImpl {
-    pub attrs: Vec<Attribute>,
-    pub defaultness: Option<token::Default>,
-    pub unsafety: Option<Unsafe>,
-    pub impl_token: Impl,
-    pub generics: Generics,
-    pub trait_: Option<(Path, For)>,
-    pub self_ty: Box<Type>,
-    pub brace_token: Brace,
-    pub items: Vec<ExternMethod>,
+#[derive(Debug)]
+struct ExternImpl {
+    attrs: Vec<Attribute>,
+    defaultness: Option<token::Default>,
+    unsafety: Option<Unsafe>,
+    impl_token: Impl,
+    generics: Generics,
+    trait_: Option<(Path, For)>,
+    self_ty: Box<Type>,
+    brace_token: Brace,
+    items: Vec<ExternMethod>,
 }
 
-#[allow(dead_code)]
-pub struct ExternMethod {
-    pub attrs: Vec<Attribute>,
-    pub sig: Signature,
-    pub semi_token: Option<Semi>,
+#[derive(Debug)]
+struct ExternMethod {
+    attrs: Vec<Attribute>,
+    sig: Signature,
+    body: std::result::Result<Block, Token![;]>,
 }
 
 // Information related to desugaring.
 
+#[derive(Clone, Debug)]
 enum TraitOrImpl {
     Trait(Ident, Generics),
     Impl(Type),
 }
 
+#[derive(Clone, Debug)]
 struct ImplData {
     self_ty: TraitOrImpl,
     params: Punctuated<GenericParam, Comma>,
@@ -76,13 +83,12 @@ struct ImplData {
 }
 
 pub struct FlatSpec {
-    span: Span,
+    signature: Signature,
+    doc_item_name: DocItemName,
     attrs: Vec<Attribute>,
     path: ExprPath,
-    generics: Generics,
-    inputs: Punctuated<FnArg, Comma>,
-    output: ReturnType,
     impl_data: Option<ImplData>,
+    body: Option<Block>,
 }
 
 impl ExternSpecs {
@@ -100,6 +106,7 @@ impl ExternSpecs {
                         segments: Punctuated::new(),
                     },
                 },
+                DocItemName(String::from("extern_spec")),
                 None,
                 &mut specs,
             )?
@@ -124,6 +131,7 @@ impl FlatSpec {
             return e.into_compile_error();
         }
         let args: Punctuated<Expr, Comma> = self
+            .signature
             .inputs
             .clone()
             .into_pairs()
@@ -138,27 +146,41 @@ impl FlatSpec {
             })
             .collect();
 
-        let call = ExprCall {
-            attrs: Vec::new(),
-            func: Box::new(Expr::Path(self.path.clone())),
-            paren_token: Paren::default(),
-            args,
+        let body_attrs = self.attrs.clone();
+        self.attrs.push(Attribute {
+            pound_token: Default::default(),
+            style: AttrStyle::Outer,
+            bracket_token: Default::default(),
+            meta: parse_quote! { creusot::no_translate },
+        });
+
+        let block = Block {
+            brace_token: Brace::default(),
+            stmts: vec![Stmt::Expr(
+                Expr::Call(ExprCall {
+                    attrs: Vec::new(),
+                    func: Box::new(Expr::Path(self.path.clone())),
+                    paren_token: Paren::default(),
+                    args,
+                }),
+                None,
+            )],
         };
 
         let ident = generate_unique_ident("extern_spec");
 
         if let Some(mut data) = self.impl_data {
-            data.params.extend(self.generics.params);
-            self.generics.params = data.params;
+            data.params.extend(self.signature.generics.params);
+            self.signature.generics.params = data.params;
 
-            if self.generics.where_clause.is_none() {
-                self.generics.where_clause = Some(WhereClause {
+            if self.signature.generics.where_clause.is_none() {
+                self.signature.generics.where_clause = Some(WhereClause {
                     where_token: Default::default(),
                     predicates: Default::default(),
                 });
             }
 
-            let where_clause = self.generics.where_clause.as_mut().unwrap();
+            let where_clause = self.signature.generics.where_clause.as_mut().unwrap();
 
             if let Some(p) = data.where_clause {
                 where_clause.predicates.extend(p)
@@ -167,7 +189,7 @@ impl FlatSpec {
             let self_ty = data.self_ty.self_ty();
             let mut replacer = SelfEscape { self_ty };
 
-            self.inputs.iter_mut().for_each(|input| match input {
+            self.signature.inputs.iter_mut().for_each(|input| match input {
                 FnArg::Receiver(Receiver { reference, mutability, .. }) => {
                     // An `impl` block may have a `self` reciever, but we should replace it with the actual
                     // underlying type. This constructs the correct replacement for those cases.
@@ -185,13 +207,13 @@ impl FlatSpec {
                 FnArg::Typed(PatType { ty, .. }) => replacer.visit_type_mut(ty),
             });
 
-            replacer.visit_return_type_mut(&mut self.output);
+            replacer.visit_return_type_mut(&mut self.signature.output);
 
             match data.self_ty {
                 TraitOrImpl::Trait(trait_name, generics) => {
                     where_clause.predicates.push(parse_quote! { Self_ : #trait_name #generics });
 
-                    self.generics.params.insert(0, parse_quote! { Self_ });
+                    self.signature.generics.params.insert(0, parse_quote! { Self_ });
 
                     where_clause.predicates.iter_mut().for_each(|pred| {
                         replacer.visit_where_predicate_mut(pred);
@@ -201,31 +223,38 @@ impl FlatSpec {
             }
         }
 
-        let sig = Signature {
+        let mut sig = Signature {
             constness: None,
             asyncness: None,
-            unsafety: None,
+            unsafety: self.signature.unsafety,
             abi: None,
-            fn_token: Token![fn](self.span),
+            fn_token: Token![fn](self.signature.span()),
             ident,
-            generics: self.generics,
+            generics: self.signature.generics,
             paren_token: Paren::default(),
-            inputs: self.inputs,
+            inputs: self.signature.inputs,
             variadic: None,
-            output: self.output,
+            output: self.signature.output,
         };
 
         let f = ItemFn {
             attrs: self.attrs,
             vis: Visibility::Inherited,
-            sig,
-            block: Box::new(Block {
-                brace_token: Brace::default(),
-                stmts: vec![Stmt::Expr(Expr::Call(call), None)],
-            }),
+            sig: sig.clone(),
+            block: Box::new(block),
         };
 
-        quote! { #[allow(dead_code)] #f }
+        let f_with_body = if let Some(mut b) = self.body {
+            escape_self_in_block(&mut b);
+            sig.ident = Ident::new(&format!("{}_body", self.doc_item_name.0), sig.ident.span());
+            let f =
+                ItemFn { attrs: body_attrs, vis: Visibility::Inherited, sig, block: Box::new(b) };
+            Some(quote! { #[allow(dead_code)] #f })
+        } else {
+            None
+        };
+
+        quote! { #[allow(dead_code)] #f #f_with_body }
     }
 }
 
@@ -271,6 +300,18 @@ fn escape_self_in_contracts(attrs: &mut Vec<Attribute>) -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn escape_self_in_block(b: &mut Block) {
+    struct BlockSelfRename;
+    impl VisitMut for BlockSelfRename {
+        fn visit_expr_path_mut(&mut self, i: &mut ExprPath) {
+            if i.path.is_ident("self") {
+                i.path = parse_quote!(self_);
+            }
+        }
+    }
+    BlockSelfRename.visit_block_mut(b);
 }
 
 fn escape_self_in_term(t: &mut Term) {
@@ -403,18 +444,21 @@ fn escape_self_in_tblock(t: &mut TBlock) {
 fn flatten(
     ex: ExternSpec,
     mut prefix: ExprPath,
+    // Generated name for the extern spec body/the docmentation
+    mut item_name: DocItemName,
     impl_data: Option<ImplData>,
     flat: &mut Vec<FlatSpec>,
 ) -> Result<()> {
     match ex {
         ExternSpec::Mod(modl) => {
+            item_name.add_ident(&modl.ident);
             prefix
                 .path
                 .segments
                 .push(PathSegment { ident: modl.ident, arguments: PathArguments::None });
 
             for item in modl.content {
-                flatten(item, prefix.clone(), None, flat)?;
+                flatten(item, prefix.clone(), item_name.clone(), None, flat)?;
             }
         }
         ExternSpec::Trait(trait_) => {
@@ -423,10 +467,13 @@ fn flatten(
                 .segments
                 .push(PathSegment { ident: trait_.ident.clone(), arguments: PathArguments::None });
 
+            item_name.add_ident(&trait_.ident);
+            item_name.add_generics(&trait_.generics);
             for item in trait_.items {
                 flatten(
                     ExternSpec::Fn(item),
                     prefix.clone(),
+                    item_name.clone(),
                     Some(ImplData {
                         self_ty: TraitOrImpl::Trait(trait_.ident.clone(), trait_.generics.clone()),
                         params: trait_.generics.params.clone(),
@@ -457,10 +504,16 @@ fn flatten(
                 return Err(Error::new(impl_.brace_token.span.join(), "unsupported form of impl"));
             }
 
+            item_name.add_generics(&impl_.generics);
+            if let Some((trait_, _)) = &impl_.trait_ {
+                item_name.add_path(trait_);
+            }
+            item_name.add_type(&impl_.self_ty);
             for item in impl_.items {
                 flatten(
                     ExternSpec::Fn(item),
                     prefix.clone(),
+                    item_name.clone(),
                     Some(ImplData {
                         self_ty: TraitOrImpl::Impl(*impl_.self_ty.clone()),
                         params: impl_.generics.params.clone(),
@@ -475,14 +528,14 @@ fn flatten(
                 .path
                 .segments
                 .push(PathSegment { ident: fun.sig.ident.clone(), arguments: PathArguments::None });
+            item_name.add_ident(&fun.sig.ident);
             flat.push(FlatSpec {
-                span: fun.sig.span(),
+                signature: fun.sig,
+                doc_item_name: item_name,
                 attrs: fun.attrs,
                 path: prefix,
                 impl_data,
-                generics: fun.sig.generics,
-                inputs: fun.sig.inputs,
-                output: fun.sig.output,
+                body: fun.body.ok(),
             })
         }
     }
@@ -672,8 +725,9 @@ impl Parse for ExternMethod {
         let attrs = input.call(Attribute::parse_outer)?;
         let sig: Signature = input.parse()?;
 
-        let semi_token = Some(input.parse()?);
+        let body =
+            if let Ok(semi) = input.parse::<Token![;]>() { Err(semi) } else { Ok(input.parse()?) };
 
-        Ok(ExternMethod { attrs, sig, semi_token })
+        Ok(ExternMethod { attrs, sig, body })
     }
 }

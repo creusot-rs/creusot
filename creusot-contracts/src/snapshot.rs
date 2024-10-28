@@ -18,17 +18,18 @@ impl<T: ?Sized> Deref for Snapshot<T> {
     }
 }
 
-impl<T: ShallowModel + ?Sized> ShallowModel for Snapshot<T> {
-    type ShallowModelTy = T::ShallowModelTy;
+impl<T: View + ?Sized> View for Snapshot<T> {
+    type ViewTy = T::ViewTy;
 
     #[logic]
     #[open]
-    fn shallow_model(self) -> Self::ShallowModelTy {
-        pearlite! { self.deref().shallow_model() }
+    fn view(self) -> Self::ViewTy {
+        pearlite! { self.deref().view() }
     }
 }
 
 impl<T: ?Sized> Clone for Snapshot<T> {
+    #[ensures(result == *self)]
     fn clone(&self) -> Self {
         snapshot! { **self }
     }

@@ -140,6 +140,14 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
         },
     );
 
+    invariants.insert(
+        0,
+        Invariant {
+            span: Span::call_site(),
+            invariant: parse_quote! { ::creusot_contracts::invariant::inv(*#produced) },
+        },
+    );
+
     let elem = Ident::new("__creusot_proc_iter_elem", proc_macro::Span::def_site().into());
 
     quote! { {

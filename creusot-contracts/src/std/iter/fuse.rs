@@ -1,13 +1,13 @@
 use crate::{invariant::*, std::iter::Fuse, *};
 
-impl<I: Iterator> ShallowModel for Fuse<I> {
-    type ShallowModelTy = Option<I>;
+impl<I: Iterator> View for Fuse<I> {
+    type ViewTy = Option<I>;
 
     #[logic]
     #[open(self)]
     #[trusted]
     #[ensures(inv(self) ==> inv(result))]
-    fn shallow_model(self) -> Option<I> {
+    fn view(self) -> Option<I> {
         pearlite! { absurd }
     }
 }
@@ -56,6 +56,9 @@ impl<I: Iterator> Iterator for Fuse<I> {
 
 pub trait FusedIterator: ::std::iter::FusedIterator + Iterator {
     #[law]
+    #[requires(inv(self))]
+    #[requires(inv(next))]
+    #[requires(inv(steps))]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
     #[ensures(steps == Seq::EMPTY && ^self == next)]
@@ -63,8 +66,13 @@ pub trait FusedIterator: ::std::iter::FusedIterator + Iterator {
 }
 
 impl<I: Iterator> FusedIterator for Fuse<I> {
+    // FIXME: remove `trusted`
+    #[trusted]
     #[law]
     #[open]
+    #[requires(inv(self))]
+    #[requires(inv(next))]
+    #[requires(inv(steps))]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
     #[ensures(steps == Seq::EMPTY && ^self == next)]

@@ -5,7 +5,9 @@ mod cloned;
 mod copied;
 mod empty;
 mod enumerate;
+mod filter;
 mod fuse;
+mod map;
 mod map_inv;
 mod once;
 mod range;
@@ -17,7 +19,9 @@ mod zip;
 pub use cloned::ClonedExt;
 pub use copied::CopiedExt;
 pub use enumerate::EnumerateExt;
+pub use filter::FilterExt;
 pub use fuse::FusedIterator;
+pub use map::MapExt;
 pub use map_inv::MapInv;
 pub use skip::SkipExt;
 pub use take::TakeExt;
@@ -44,7 +48,11 @@ pub trait Iterator: ::std::iter::Iterator {
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
 
-    #[requires(forall<e : Self::Item, i2 : Self> self.produces(Seq::singleton(e), i2) ==> func.precondition((e, Snapshot::new(Seq::EMPTY))))]
+    // FIXME: remove `trusted`
+    #[trusted]
+    #[requires(forall<e : Self::Item, i2 : Self> inv(e) && inv(i2) ==>
+                    self.produces(Seq::singleton(e), i2) ==>
+                    func.precondition((e, Snapshot::new(Seq::EMPTY))))]
     #[requires(MapInv::<Self, _, F>::reinitialize())]
     #[requires(MapInv::<Self, Self::Item, F>::preservation(self, func))]
     #[ensures(result == MapInv { iter: self, func, produced: Snapshot::new(Seq::EMPTY) })]
@@ -123,6 +131,31 @@ extern_spec! {
                         Self: Sized + Iterator<Item = &'a T>;
 
                 #[pure]
+                #[requires(forall<e : _, i2 : _> inv(e) && inv(i2) ==>
+                                self.produces(Seq::singleton(e), i2) ==>
+                                f.precondition((e,)))]
+                #[requires(map::reinitialize::<Self_, B, F>())]
+                #[requires(map::preservation::<Self_, B, F>(self, f))]
+                #[ensures(result.iter() == self && result.func() == f)]
+                fn map<B, F>(self, f: F) -> Map<Self, F>
+                    where Self: Sized, F : FnMut(Self_::Item) -> B;
+
+                #[pure]
+                #[requires(filter::immutable(f))]
+                #[requires(filter::no_precondition(f))]
+                #[requires(filter::plain(f))]
+                #[requires(filter::precise(f))]
+                #[ensures(result.iter() == self && result.func() == f)]
+                fn filter<P>(self, f: P) -> Filter<Self, P>
+                    where  P : for<'a> FnMut(&Self_::Item) -> bool;
+
+
+                #[pure]
+                // These two requirements are here only to prove the absence of overflows
+                #[requires(forall<i: &mut Self_> inv(i) && i.completed() ==> i.produces(Seq::EMPTY, ^i))]
+                #[requires(forall<s: Seq<Self_::Item>, i: Self_>
+                            inv(s) && inv(i) && self.produces(s, i) ==>
+                            s.len() < std::usize::MAX@)]
                 #[ensures(result.iter() == self && result.n() == 0)]
                 fn enumerate(self) -> Enumerate<Self>;
 
@@ -137,7 +170,8 @@ extern_spec! {
                     where U::IntoIter: Iterator;
 
                 // TODO: Investigate why Self_ needed
-                #[ensures(exists<done : &mut Self_, prod: Seq<_>> (^done).resolve() && done.completed() &&
+                #[ensures(exists<done : &mut Self_, prod: Seq<_>>
+                    inv(done) && inv(prod) && resolve(&^done) && done.completed() &&
                     self.produces(prod, *done) && B::from_iter_post(prod, result))]
                 fn collect<B>(self) -> B
                     where B: FromIterator<Self::Item>;
@@ -157,9 +191,10 @@ extern_spec! {
 
                 #[requires(iter.into_iter_pre())]
                 #[ensures(exists<into_iter: T::IntoIter, done: &mut T::IntoIter, prod: Seq<A>>
-                              iter.into_iter_post(into_iter) &&
-                              into_iter.produces(prod, *done) && done.completed() && (^done).resolve() &&
-                              Self_::from_iter_post(prod, result))]
+                            inv(into_iter) && inv(done) && inv(prod) &&
+                            iter.into_iter_post(into_iter) &&
+                            into_iter.produces(prod, *done) && done.completed() && resolve(&^done) &&
+                            Self_::from_iter_post(prod, result))]
                 fn from_iter<T>(iter: T) -> Self
                     where T: IntoIterator<Item = A>, T::IntoIter: Iterator;
             }

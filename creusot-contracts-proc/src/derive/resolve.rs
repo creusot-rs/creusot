@@ -12,14 +12,18 @@ pub fn derive_resolve(input: proc_macro::TokenStream) -> proc_macro::TokenStream
     let eq = resolve(&name, &input.data);
 
     let expanded = quote! {
-        #[::creusot_contracts::trusted]
         impl #impl_generics ::creusot_contracts::Resolve for #name #ty_generics #where_clause {
             #[::creusot_contracts::predicate(prophetic)]
             #[::creusot_contracts::open]
             fn resolve(self) -> bool {
-                use ::creusot_contracts::Resolve;
                 #eq
             }
+
+            #[open(self)]
+            #[logic(prophetic)]
+            #[requires(structural_resolve(self))]
+            #[ensures((*self).resolve())]
+            fn resolve_coherence(&self) {}
         }
     };
 
@@ -33,7 +37,7 @@ fn resolve(base_ident: &Ident, data: &Data) -> TokenStream {
                 let recurse = fields.named.iter().map(|f| {
                     let name = &f.ident;
                     quote_spanned! {f.span()=>
-                        Resolve::resolve(self.#name)
+                        ::creusot_contracts::resolve(&self.#name)
                     }
                 });
                 quote! {
@@ -44,7 +48,7 @@ fn resolve(base_ident: &Ident, data: &Data) -> TokenStream {
                 let recurse = fields.unnamed.iter().enumerate().map(|(i, f)| {
                     let index = Index::from(i);
                     quote_spanned! {f.span()=>
-                        Resolve::resolve(self.#index)
+                        ::creusot_contracts::resolve(&self.#index)
                     }
                 });
                 quote! {
@@ -101,7 +105,7 @@ fn gen_match_arm<'a, I: Iterator<Item = &'a syn::Field>>(fields: I) -> ArmAcc {
         };
         let name_1 = format_ident!("{}_1", name_base);
 
-        let call = quote!(Resolve::resolve(#name_1));
+        let call = quote!(::creusot_contracts::resolve(&#name_1));
         if named {
             acc.fields.push(quote!(#name_base: #name_1));
             acc.body.push(quote!(#call));

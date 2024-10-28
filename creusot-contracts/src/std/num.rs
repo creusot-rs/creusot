@@ -2,14 +2,14 @@ use crate::{Default, *};
 pub use ::std::num::*;
 
 macro_rules! mach_int {
-    ($t:ty, $ty_nm:literal, $zero:expr) => {
-        impl ShallowModel for $t {
-            type ShallowModelTy = Int;
+    ($t:ty, $ty_nm:expr, $zero:expr) => {
+        impl View for $t {
+            type ViewTy = Int;
             #[logic]
             #[open]
             #[trusted]
-            #[creusot::builtins = $ty_nm]
-            fn shallow_model(self) -> Self::ShallowModelTy {
+            #[creusot::builtins = concat!($ty_nm, ".to_int")]
+            fn view(self) -> Self::ViewTy {
                 pearlite! { absurd }
             }
         }

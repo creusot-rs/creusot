@@ -1,19 +1,24 @@
 use crate::{
+    contracts_items::{
+        get_fn_mut_unnest, is_logic, is_no_translate, is_open_inv_result, is_pearlite,
+        is_predicate, is_prophetic, is_snapshot_closure, is_spec,
+    },
     ctx::*,
     translation::{
         pearlite::{self, super_visit_mut_term, Term, TermKind, TermVisitorMut},
         specification::PreContract,
     },
+    very_stable_hash::get_very_stable_hash,
 };
 use indexmap::IndexMap;
 use rustc_ast::{
-    ast::{AttrArgs, AttrArgsEq},
     visit::{walk_fn, FnKind, Visitor},
     AttrItem, AttrKind, Attribute, FnSig, NodeId,
 };
 use rustc_hir::{
     def::{DefKind, Namespace},
     def_id::DefId,
+    definitions::{DefPathData, DisambiguatedDefPathData},
     Safety,
 };
 use rustc_macros::{TypeFoldable, TypeVisitable};
@@ -26,56 +31,12 @@ use std::{
     collections::{HashMap, HashSet},
     fmt::{Display, Formatter},
     iter,
+    path::PathBuf,
 };
 use why3::{
-    declaration,
     declaration::{LetKind, Signature, ValDecl},
     Ident,
 };
-
-pub(crate) fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
-    is_no_translate(tcx, def_id) || is_predicate(tcx, def_id) || is_logic(tcx, def_id)
-}
-
-pub(crate) fn is_pearlite(tcx: TyCtxt, def_id: DefId) -> bool {
-    is_predicate(tcx, def_id)
-        || is_spec(tcx, def_id)
-        || is_logic(tcx, def_id)
-        || is_assertion(tcx, def_id)
-        || is_snapshot_closure(tcx, def_id)
-}
-
-pub(crate) fn is_no_translate(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "no_translate"]).is_some()
-}
-
-pub(crate) fn is_spec(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec"]).is_some()
-}
-
-pub(crate) fn is_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "invariant"]).is_some()
-}
-
-pub(crate) fn is_loop_variant(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "variant", "loop_"]).is_some()
-}
-
-pub(crate) fn is_variant(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "variant"]).is_some()
-}
-
-pub(crate) fn is_assertion(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "assert"]).is_some()
-}
-
-pub(crate) fn is_snapshot_closure(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "snapshot"]).is_some()
-}
-
-pub(crate) fn is_ghost_closure(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "ghost"]).is_some()
-}
 
 pub(crate) fn snapshot_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
     if let TyKind::Closure(def_id, _) = ty.peel_refs().kind() {
@@ -84,77 +45,6 @@ pub(crate) fn snapshot_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Opti
         }
     }
     None
-}
-
-pub(crate) fn is_snap_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    let r: Option<bool> = try {
-        let adt = ty.ty_adt_def()?;
-        let builtin = get_builtin(tcx, adt.did())?;
-        builtin.as_str() == "prelude.prelude.Snapshot.snap_ty"
-    };
-    r.unwrap_or(false)
-}
-
-pub(crate) fn is_logic(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "logic"]).is_some()
-}
-
-pub(crate) fn is_prophetic(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "logic", "prophetic"]).is_some()
-}
-
-pub(crate) fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "predicate"]).is_some()
-}
-
-pub(crate) fn is_trusted(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "trusted"]).is_some()
-}
-
-pub(crate) fn is_law(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "law"]).is_some()
-}
-
-pub(crate) fn should_replace_trigger(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "no_trigger"]).is_none()
-}
-
-pub(crate) fn is_extern_spec(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "extern_spec"]).is_some()
-}
-
-pub(crate) fn is_ignore_structural_inv(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "trusted_ignore_structural_inv"])
-        .is_some()
-}
-
-pub(crate) fn has_variant_clause(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "clause", "variant"]).is_some()
-}
-
-pub(crate) fn is_open_inv_result(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "open_inv_result"]).is_some()
-}
-
-pub(crate) fn is_inv_internal(tcx: TyCtxt, def_id: DefId) -> bool {
-    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap() == def_id
-}
-
-pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "clause", "open"]).and_then(|item| {
-        match &item.args {
-            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l.symbol),
-            _ => None,
-        }
-    })
-}
-
-pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::Attribute> {
-    let matches = get_attrs(tcx.get_attrs_unchecked(def_id), &["why3", "attr"]);
-    matches
-        .into_iter()
-        .map(|a| declaration::Attribute::Attr(a.value_str().unwrap().as_str().into()))
-        .collect()
 }
 
 pub(crate) fn param_def_id(tcx: TyCtxt, def_id: LocalDefId) -> LocalDefId {
@@ -188,15 +78,6 @@ pub(crate) fn has_body(ctx: &mut TranslationCtx, def_id: DefId) -> bool {
             _ => false,
         }
     }
-}
-
-pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "builtins"]).and_then(|a| {
-        match &a.args {
-            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l.symbol),
-            _ => None,
-        }
-    })
 }
 
 pub(crate) fn item_name(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Ident {
@@ -261,6 +142,87 @@ pub(crate) fn ident_of(sym: Symbol) -> Ident {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum NS {
+    T,
+    M,
+}
+
+impl NS {
+    pub fn as_str(&self) -> &str {
+        match self {
+            NS::T => "T",
+            NS::M => "M",
+        }
+    }
+}
+
+/// Common representation of module name from which we can generate both
+/// a Why3 module name (`M_krate__modl__f`) and a file name (`krate/modl/M_f.coma`).
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ModulePath {
+    path: Vec<Symbol>, // Crate and module names
+    namespace: NS,     // "M" for functions, or "T" for types
+    basename: Symbol,  // Function or type name
+}
+
+impl ModulePath {
+    pub fn new(tcx: TyCtxt, def_id: DefId, namespace: NS) -> Self {
+        let mut path: Vec<Symbol> = crate::util::ident_path_segments(tcx, def_id)
+            .into_iter()
+            .map(|s| Symbol::intern(&s))
+            .collect();
+        let basename = path.pop().unwrap();
+        ModulePath { path, namespace, basename }
+    }
+
+    // `M_krate__modl__f`
+    // Note: each fragment doesn't need to go through Ident (unlike why3_qname and file_name)
+    pub fn why3_ident(&self) -> Ident {
+        let mut path = self.namespace.as_str().to_string() + "_";
+        for m in &self.path {
+            path += m.as_str();
+            path += "__";
+        }
+        path += self.basename.as_str();
+        Ident::from_string(path)
+    }
+
+    // `krate.modl.M_f.Coma` (Coma is the toplevel name)
+    // Note: pass each fragment through Ident::build() to filter out coma keywords.
+    pub fn why3_qname(&self, prefix: &Vec<Ident>) -> why3::QName {
+        let path = self.path.iter().map(|s| Ident::build(s.as_str())).chain(iter::once(
+            Ident::build(&(self.namespace.as_str().to_string() + "_" + self.basename.as_str())),
+        ));
+        let module = prefix.into_iter().cloned().chain(path).collect::<Vec<_>>();
+        let name = Ident::build("Coma");
+        why3::QName { module, name }
+    }
+
+    /// Set `prefix` to `None` for monolithic output
+    pub fn why3_name(&self, prefix: Option<&Vec<Ident>>) -> why3::QName {
+        match prefix {
+            Some(prefix) => self.why3_qname(prefix),
+            None => why3::QName { module: vec![], name: self.why3_ident() },
+        }
+    }
+
+    // `prefix/krate/modl/M_f.coma`
+    // Note: pass each fragment through Ident::build() to filter out coma keywords
+    // so that this produces the same names as `why3_qname()`.
+    pub fn file_name(&self, prefix: &Vec<Ident>) -> PathBuf {
+        let mut path = PathBuf::new();
+        for m in prefix {
+            path.push(m.as_str());
+        }
+        for m in &self.path {
+            path.push(Ident::build(m.as_str()).as_str());
+        }
+        path.push(self.namespace.as_str().to_string() + "_" + &self.basename.as_str() + ".coma");
+        path
+    }
+}
+
 pub(crate) fn module_name(tcx: TyCtxt, def_id: DefId) -> Symbol {
     let kind = tcx.def_kind(def_id);
     use rustc_hir::def::DefKind::*;
@@ -303,11 +265,51 @@ pub fn translate_name(n: &str) -> String {
     dest
 }
 
+enum Segment {
+    Impl(u64), // Hash of the impl subject (type for inherent impl, trait+type for trait impls)
+    Closure(u32), // Closure ID
+    // There may be other variants than Impl and Closure to handle similarly.
+    Other(DisambiguatedDefPathData),
+}
+
+fn ident_path_segments_(tcx: TyCtxt, def_id: DefId) -> Vec<Segment> {
+    let mut segs = Vec::new();
+    let mut id = def_id;
+    loop {
+        let key = tcx.def_key(id);
+        let parent_id = match key.parent {
+            None => break, // The last segment is CrateRoot. Skip it.
+            Some(parent_id) => parent_id,
+        };
+        match key.disambiguated_data.data {
+            DefPathData::Impl => {
+                segs.push(Segment::Impl(get_very_stable_hash(&tcx.impl_subject(id), &tcx).as_u64()))
+            }
+            DefPathData::Closure => {
+                segs.push(Segment::Closure(key.disambiguated_data.disambiguator))
+            }
+            _ => segs.push(Segment::Other(key.disambiguated_data)),
+        }
+        id.index = parent_id;
+    }
+    segs.reverse();
+    segs
+}
+
+pub(crate) fn ident_path_segments(tcx: TyCtxt, def_id: DefId) -> Vec<String> {
+    let krate = tcx.crate_name(def_id.krate);
+    iter::once(translate_name(krate.as_str()))
+        .chain(ident_path_segments_(tcx, def_id).into_iter().map(|seg| match seg {
+            Segment::Impl(hash) => format!("qyi{}", hash),
+            Segment::Closure(id) => format!("qyClosure{}", id),
+            Segment::Other(data) => translate_name(&data.to_string()),
+        }))
+        .collect()
+}
+
 // This function must be injective: distinct source constructs
 // must have different names in the output.
 fn ident_path(upper_initial: bool, tcx: TyCtxt, def_id: DefId) -> Symbol {
-    let def_path = tcx.def_path(def_id);
-
     let mut dest = String::new();
 
     if let Some(Namespace::TypeNS) = tcx.def_kind(def_id).ns() {
@@ -319,9 +321,14 @@ fn ident_path(upper_initial: bool, tcx: TyCtxt, def_id: DefId) -> Symbol {
     let crate_name = tcx.crate_name(def_id.krate);
     push_translate_name(crate_name.as_str(), &mut dest);
 
-    for seg in def_path.data[..].iter() {
+    let def_path = ident_path_segments_(tcx, def_id);
+    for seg in def_path.iter() {
         dest.push_str("__");
-        push_translate_name(&format!("{}", seg), &mut dest);
+        match seg {
+            Segment::Impl(hash) => dest.push_str(&format!("qyi{}", hash)),
+            Segment::Closure(id) => dest.push_str(&format!("qyClosure{}", id)),
+            Segment::Other(data) => push_translate_name(&format!("{}", data), &mut dest),
+        }
     }
 
     Symbol::intern(&dest)
@@ -523,7 +530,7 @@ pub(crate) fn pre_sig_of<'tcx>(
             let unnest_subst =
                 ctx.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty.peel_refs())]);
 
-            let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
+            let unnest_id = get_fn_mut_unnest(ctx.tcx);
 
             contract.ensures.push(Term::call(
                 ctx.tcx,
@@ -629,30 +636,6 @@ pub(crate) fn get_attr<'a>(attrs: &'a [Attribute], path: &[&str]) -> Option<&'a 
         }
     }
     None
-}
-
-pub(crate) fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
-    let mut matched = Vec::new();
-
-    for attr in attrs.iter() {
-        if attr.is_doc_comment() {
-            continue;
-        }
-
-        let item = attr.get_normal_item();
-
-        if item.path.segments.len() != path.len() {
-            continue;
-        }
-
-        let matches =
-            item.path.segments.iter().zip(path.iter()).all(|(seg, s)| &*seg.ident.as_str() == *s);
-
-        if matches {
-            matched.push(attr)
-        }
-    }
-    matched
 }
 
 pub(crate) fn is_attr(attr: &Attribute, str: &str) -> bool {

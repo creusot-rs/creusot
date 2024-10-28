@@ -1134,7 +1134,7 @@ pub enum Pattern {
     VarP(Ident),
     TupleP(Vec<Pattern>),
     ConsP(QName, Vec<Pattern>),
-    // RecP(String, String),
+    RecP(Vec<(Ident, Pattern)>),
 }
 
 impl Pattern {
@@ -1162,6 +1162,12 @@ impl Pattern {
             }
             Pattern::ConsP(_, args) => {
                 args.iter().map(|p| p.binders()).fold(IndexSet::new(), |mut set, x| {
+                    set.extend(x);
+                    set
+                })
+            }
+            Pattern::RecP(vec) => {
+                vec.iter().map(|(_, p)| p.binders()).fold(IndexSet::new(), |mut set, x| {
                     set.extend(x);
                     set
                 })

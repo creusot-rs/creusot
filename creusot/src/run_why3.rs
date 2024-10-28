@@ -59,6 +59,7 @@ pub(super) fn run_why3<'tcx>(ctx: &Why3Generator<'tcx>, file: Option<PathBuf>) {
             "--warn-off=unused_variable",
             "--warn-off=clone_not_abstract",
             "--warn-off=axiom_abstract",
+            "--debug=coma_no_trivial",
             &why3_cmd.sub.to_string(),
             "-L",
         ])

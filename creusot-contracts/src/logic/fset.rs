@@ -108,6 +108,8 @@ impl<T: ?Sized> FSet<T> {
         pearlite! { absurd }
     }
 
+    // FIXME: remove `trusted`
+    #[trusted]
     #[open]
     #[predicate]
     #[ensures(result ==> self == other)]

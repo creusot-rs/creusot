@@ -1,9 +1,11 @@
 use std::{collections::HashMap, ops::Deref};
 
-pub(crate) use crate::backend::clone_map::*;
+pub(crate) use crate::{backend::clone_map::*, translated_item::*};
+
 use crate::{
-    backend::{ty::ty_binding_group, ty_inv},
+    backend::{ty::ty_binding_group, ty_inv::is_tyinv_trivial},
     callbacks,
+    contracts_items::{self, get_inv_function},
     creusot_items::{self, CreusotItems},
     error::CreusotResult,
     metadata::{BinaryMetadata, Metadata},
@@ -36,9 +38,7 @@ use rustc_middle::{
 };
 use rustc_span::{Span, Symbol};
 use rustc_trait_selection::traits::SelectionContext;
-pub(crate) use util::{module_name, ItemType};
-
-pub(crate) use crate::translated_item::*;
+pub(crate) use util::ItemType;
 
 macro_rules! queryish {
     ($name:ident, $res:ty, $builder:ident) => {
@@ -227,18 +227,15 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
     pub(crate) fn type_invariant(
         &self,
-        def_id: DefId,
+        param_env: ParamEnv<'tcx>,
         ty: Ty<'tcx>,
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-        let param_env = self.param_env(def_id);
         let ty = self.try_normalize_erasing_regions(param_env, ty).ok()?;
 
-        if ty_inv::is_tyinv_trivial(self.tcx, param_env, ty, false) {
+        if is_tyinv_trivial(self.tcx, param_env, ty) {
             None
         } else {
-            debug!("resolving type invariant of {ty:?} in {def_id:?}");
-            let inv_did =
-                self.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
+            let inv_did = get_inv_function(self.tcx);
             let substs = self.mk_args(&[GenericArg::from(ty)]);
             Some((inv_did, substs))
         }
@@ -256,10 +253,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
     pub(crate) fn error(&self, span: Span, msg: &str) -> Diag<'tcx, rustc_errors::ErrorGuaranteed> {
         self.tcx.dcx().struct_span_err(span, msg.to_string())
-    }
-
-    pub(crate) fn warn(&self, span: Span, msg: &str) -> Diag<'tcx, ()> {
-        self.tcx.dcx().struct_span_warn(span, msg.to_string())
     }
 
     fn add_binding_group(&mut self, def_ids: &IndexSet<DefId>) {
@@ -318,7 +311,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             return Opacity(Visibility::Public);
         };
 
-        let witness = util::opacity_witness_name(self.tcx, item)
+        let witness = contracts_items::opacity_witness_name(self.tcx, item)
             .and_then(|nm| self.creusot_item(nm))
             .map(|id| self.visibility(id))
             .unwrap_or_else(|| Visibility::Restricted(parent_module(self.tcx, item)));
@@ -398,7 +391,7 @@ pub(crate) fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
     let mut traits_or_impls = Vec::new();
 
     for def_id in ctx.tcx.hir().body_owners() {
-        if crate::util::is_extern_spec(ctx.tcx, def_id.to_def_id()) {
+        if contracts_items::is_extern_spec(ctx.tcx, def_id.to_def_id()) {
             if let Some(container) = ctx.opt_associated_item(def_id.to_def_id()) {
                 traits_or_impls.push(container.def_id)
             }

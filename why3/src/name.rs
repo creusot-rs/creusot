@@ -31,6 +31,10 @@ impl Ident {
         self.0
     }
 
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
     pub fn decapitalize(&mut self) {
         self.0[..1].make_ascii_lowercase();
     }
@@ -75,7 +79,7 @@ impl Deref for Ident {
 
 impl Equivalent<QName> for Ident {
     fn equivalent(&self, key: &QName) -> bool {
-        self == &key.name
+        key.is_ident(self)
     }
 }
 
@@ -87,15 +91,13 @@ pub struct QName {
 }
 
 impl QName {
-    pub fn as_ident(&self) -> Option<&Ident> {
-        if self.module.is_empty() {
-            return Some(&self.name);
-        } else {
-            None
-        }
+    pub fn is_ident(&self, id: &Ident) -> bool {
+        self.module.is_empty() && &self.name == id
     }
-    pub fn name(&self) -> Ident {
-        self.name.clone()
+
+    pub fn as_ident(self) -> Ident {
+        assert!(self.module.is_empty());
+        self.name
     }
 
     // ooof this is a bad function
@@ -128,13 +130,34 @@ impl QName {
         self
     }
 
-    pub fn from_string(s: &str) -> Option<QName> {
-        let mut chunks = s.split('.');
+    pub fn from_string(s: &str) -> QName {
+        let mut in_paren = false;
+        for (i, c) in s.char_indices().rev() {
+            match c {
+                ')' => in_paren = true,
+                '(' => in_paren = false,
+                '.' => {
+                    if !in_paren {
+                        let name = s[i + 1..].into();
+                        let module = s[..i].split('.').map(|s| s.into()).collect();
+                        return QName { module, name };
+                    }
+                }
+                _ => (),
+            }
+        }
 
-        let name = chunks.next_back()?;
-        let module = chunks.map(|s| s.into()).collect();
+        s.into()
+    }
 
-        Some(QName { module, name: name.into() })
+    pub fn to_string(&self) -> String {
+        let mut s = String::new();
+        for i in self.module.iter() {
+            s.push_str(i.as_str());
+            s.push('.');
+        }
+        s.push_str(self.name.as_str());
+        s
     }
 }
 

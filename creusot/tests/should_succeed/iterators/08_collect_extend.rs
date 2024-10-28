@@ -1,6 +1,7 @@
 extern crate creusot_contracts;
 
 use creusot_contracts::{
+    invariant::inv,
     logic::{Int, Seq},
     std::*,
     *,
@@ -20,11 +21,13 @@ use creusot_contracts::{
 // Here we prove the specific instance of `extend` for `Vec<T>`.
 #[ensures(
   exists<done : &mut I, prod: Seq<_>>
-    done.completed() && iter.produces(prod, *done) && (^vec)@ == vec@.concat(prod)
+    inv(done) && inv(prod) && done.completed() &&
+    iter.produces(prod, *done) && (^vec)@ == vec@.concat(prod)
 )]
 pub fn extend<T, I: Iterator<Item = T>>(vec: &mut Vec<T>, iter: I) {
     let old_vec = snapshot! { vec };
-    #[invariant(^*old_vec == ^vec)]
+
+    #[invariant(inv(vec))]
     #[invariant(vec@.ext_eq(old_vec@.concat(*produced)))]
     for x in iter {
         vec.push(x);
@@ -37,11 +40,13 @@ pub fn extend<T, I: Iterator<Item = T>>(vec: &mut Vec<T>, iter: I) {
 //  We prove the specific instance for vector
 #[ensures(
   exists<done : &mut I, prod: Seq<_>>
-    done.completed() && iter.produces(prod, *done) && result@ == prod
+    inv(done) && inv(prod) && done.completed() &&
+    iter.produces(prod, *done) && result@ == prod
 )]
 pub fn collect<I: Iterator>(iter: I) -> Vec<I::Item> {
     let mut res = Vec::new();
 
+    #[invariant(inv(res))]
     #[invariant(res@.ext_eq(*produced))]
     for x in iter {
         res.push(x);
@@ -57,7 +62,8 @@ pub fn extend_index(mut v1: Vec<u32>, v2: Vec<u32>) {
     proof_assert! { v1@.ext_eq(oldv1@.concat(oldv2@)) };
 }
 
-#[requires(forall<prod : Seq<u32>, fin: I> iter.produces(prod, fin) ==> forall<i : _> 0 <= i && i < prod.len() ==> prod[i]@ == i)]
+#[requires(forall<prod : Seq<u32>, fin: I> inv(fin) && iter.produces(prod, fin) ==>
+            forall<i : _> 0 <= i && i < prod.len() ==> prod[i]@ == i)]
 pub fn collect_example<I: Iterator<Item = u32>>(iter: I) {
     let v: Vec<u32> = collect(iter);
 

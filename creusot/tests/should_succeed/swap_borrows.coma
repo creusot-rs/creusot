@@ -1,23 +1,19 @@
-
-module M_swap_borrows__swap
+module M_swap_borrows__swap [#"swap_borrows.rs" 5 0 5 31]
   type t
   
-  let%span sswap_borrows0 = "../swap_borrows.rs" 5 11 5 12
+  let%span sswap_borrows0 = "swap_borrows.rs" 5 11 5 12
+  let%span sswap_borrows1 = "swap_borrows.rs" 4 10 4 30
+  let%span sswap_borrows2 = "swap_borrows.rs" 5 25 5 31
   
-  let%span sswap_borrows1 = "../swap_borrows.rs" 4 10 4 30
-  
-  let%span sswap_borrows2 = "../swap_borrows.rs" 5 25 5 31
-  
-  let%span span3 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
-  
-  predicate invariant'0 (self : (t, t)) =
-    [%#span3] true
+  predicate inv'1 (_1 : t)
   
   predicate inv'0 (_1 : (t, t))
   
-  axiom inv'0 : forall x : (t, t) . inv'0 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : (t, t) [inv'0 x] . inv'0 x = (let (a, b) = x in inv'1 a /\ inv'1 b)
   
   use prelude.prelude.Intrinsic
+  
+  meta "compute_max_steps" 1000000
   
   let rec swap (x:(t, t)) (return'  (ret:(t, t)))= {[%#sswap_borrows0] inv'0 x}
     (! bb0
@@ -32,73 +28,73 @@ module M_swap_borrows__swap
       (! return' {result}) ]
     
 end
-module M_swap_borrows__f
-  let%span sswap_borrows0 = "../swap_borrows.rs" 11 26 11 27
-  
-  let%span sswap_borrows1 = "../swap_borrows.rs" 11 29 11 30
-  
-  let%span sswap_borrows2 = "../swap_borrows.rs" 13 11 13 13
-  
-  let%span sswap_borrows3 = "../swap_borrows.rs" 15 20 15 30
-  
-  let%span sswap_borrows4 = "../swap_borrows.rs" 16 20 16 29
-  
-  let%span span5 = "../../../../creusot-contracts/src/invariant.rs" 8 8 8 12
-  
-  let%span span6 = "../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
-  
-  let%span span7 = "../swap_borrows.rs" 5 11 5 12
-  
-  let%span span8 = "../swap_borrows.rs" 4 10 4 30
-  
-  let%span span9 = "../swap_borrows.rs" 5 25 5 31
+module M_swap_borrows__f [#"swap_borrows.rs" 10 0 10 10]
+  let%span sswap_borrows0 = "swap_borrows.rs" 11 26 11 27
+  let%span sswap_borrows1 = "swap_borrows.rs" 11 29 11 30
+  let%span sswap_borrows2 = "swap_borrows.rs" 13 11 13 13
+  let%span sswap_borrows3 = "swap_borrows.rs" 15 20 15 30
+  let%span sswap_borrows4 = "swap_borrows.rs" 16 20 16 29
+  let%span sswap_borrows5 = "swap_borrows.rs" 5 11 5 12
+  let%span sswap_borrows6 = "swap_borrows.rs" 4 10 4 30
+  let%span sswap_borrows7 = "swap_borrows.rs" 5 25 5 31
+  let%span sresolve8 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   
   use prelude.prelude.UInt32
   
-  use prelude.prelude.Borrow
+  use prelude.prelude.Int
   
-  predicate invariant'0 (self : (borrowed uint32, borrowed uint32)) =
-    [%#span5] true
+  use prelude.prelude.Borrow
   
   predicate inv'0 (_1 : (borrowed uint32, borrowed uint32))
   
-  axiom inv'0 : forall x : (borrowed uint32, borrowed uint32) . inv'0 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : (borrowed uint32, borrowed uint32) [inv'0 x] . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'0 (self : borrowed uint32) =
-    [%#span6] self.final = self.current
+  predicate resolve'1 (self : borrowed uint32) =
+    [%#sresolve8] self.final = self.current
   
-  let rec swap'0 (x:(borrowed uint32, borrowed uint32)) (return'  (ret:(borrowed uint32, borrowed uint32)))= {[@expl:precondition] [%#span7] inv'0 x}
+  predicate resolve'0 (_1 : borrowed uint32) =
+    resolve'1 _1
+  
+  let rec swap'0 (x:(borrowed uint32, borrowed uint32)) (return'  (ret:(borrowed uint32, borrowed uint32)))= {[@expl:precondition] [%#sswap_borrows5] inv'0 x}
     any
-    [ return' (result:(borrowed uint32, borrowed uint32))-> {[%#span9] inv'0 result}
-      {[%#span8] result = ((let (_, a) = x in a), (let (a, _) = x in a))}
+    [ return' (result:(borrowed uint32, borrowed uint32))-> {[%#sswap_borrows7] inv'0 result}
+      {[%#sswap_borrows6] result = ((let (_, a) = x in a), (let (a, _) = x in a))}
       (! return' {result}) ]
     
   
-  use prelude.prelude.Int
+  meta "compute_max_steps" 1000000
   
   let rec f (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &_3 <- (([%#sswap_borrows0] (0 : uint32)), ([%#sswap_borrows1] (0 : uint32))) ] s1
       | s1 =  [ &a <- let (r'0, _) = _3 in r'0 ] s2
       | s2 =  [ &b <- let (_, r'1) = _3 in r'1 ] s3
-      | s3 = Borrow.borrow_mut <uint32> {a} (fun (_ret':borrowed uint32) ->  [ &_6 <- _ret' ]  [ &a <- _6.final ] s4)
-      | s4 = Borrow.borrow_mut <uint32> {b} (fun (_ret':borrowed uint32) ->  [ &_8 <- _ret' ]  [ &b <- _8.final ] s5)
+      | s3 = Borrow.borrow_mut <uint32> {a} (fun (_ret':borrowed uint32) ->  [ &_6 <- _ret' ]  [ &a <- _ret'.final ] s4)
+      | s4 = Borrow.borrow_mut <uint32> {b} (fun (_ret':borrowed uint32) ->  [ &_8 <- _ret' ]  [ &b <- _ret'.final ] s5)
       | s5 = Borrow.borrow_final <uint32> {_8.current} {Borrow.get_id _8}
-          (fun (_ret':borrowed uint32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _7.final ; } ] s6)
+          (fun (_ret':borrowed uint32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _ret'.final ; } ] s6)
       | s6 =  [ &_5 <- (_6, _7) ] s7
       | s7 = swap'0 {_5} (fun (_ret':(borrowed uint32, borrowed uint32)) ->  [ &p <- _ret' ] s8)
       | s8 = bb1 ]
       
     | bb1 = s0
-      [ s0 = -{resolve'0 (let (_, r'0) = p in r'0)}- s1
+      [ s0 = -{match p with
+          | (_, x'0) -> resolve'0 x'0
+          | _ -> true
+          end}-
+        s1
       | s1 = -{resolve'0 _8}- s2
       | s2 = 
-        [ &p <- let (_, l'2) = p in ({ (let (l'0, _) = p in l'0) with current = ([%#sswap_borrows2] (10 : uint32)) ; }, l'2) ]
+        [ &p <- let (_, r'2) = p in ({ (let (r'0, _) = p in r'0) with current = ([%#sswap_borrows2] (10 : uint32)) ; }, r'2) ]
         
         s3
-      | s3 = -{resolve'0 (let (r'1, _) = p in r'1)}- s4
+      | s3 = -{match p with
+          | (x'2, _) -> resolve'0 x'2
+          | _ -> true
+          end}-
+        s4
       | s4 = {[@expl:assertion] [%#sswap_borrows3] b = (10 : uint32)} s5
       | s5 = {[@expl:assertion] [%#sswap_borrows4] a = (0 : uint32)} s6
       | s6 = return' {_0} ]

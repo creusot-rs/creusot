@@ -45,12 +45,12 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
     $ git clone https://github.com/creusot-rs/creusot
     $ cd creusot
     ```
-4. Set up **Why3** and **Alt-Ergo**. Create a local `opam` switch with why3 and alt-ergo:
+4. Set up **Why3**. Create a local `opam` switch with why3:
    ```
    $ opam switch create -y . ocaml.4.14.1
    $ eval $(opam env)
    ```
-   This will build why3, alt-ergo and their ocaml dependencies in a local `_opam` directory.
+   This will build why3 and its ocaml dependencies in a local `_opam` directory.
 5. Build **Creusot**:
     ```
     $ cargo install --path creusot-rustc
@@ -61,7 +61,7 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
    ```
    $ cargo creusot setup install
    ```
-   this will download additional solvers (Z3, CVC4, CVC5) and configure Why3 to use them.
+   this will download additional solvers (Alt-Ergo, Z3, CVC4, CVC5) and configure Why3 to use them.
 
 # Upgrading Creusot 
 
@@ -70,7 +70,7 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
    ```
    $ git pull
    ```
-2. Upgrade Why3 and Alt-Ergo if needed:
+2. Upgrade Why3 if needed:
    ```
    $ eval $(opam env)
    $ opam update

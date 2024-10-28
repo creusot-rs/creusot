@@ -1,6 +1,6 @@
 use crate::*;
 #[cfg(creusot)]
-use ::std::fmt::{Debug, Formatter};
+use ::std::fmt::{Arguments, Debug, Formatter};
 
 extern_spec! {
     mod core {
@@ -13,6 +13,17 @@ extern_spec! {
                     name1: &str,
                     value1: &dyn Debug,
                 ) -> ::std::fmt::Result;
+            }
+        }
+    }
+}
+
+extern_spec! {
+    mod core {
+        mod fmt {
+            impl<'a> Arguments<'a> {
+                #[requires(true)]
+                fn new_const<const N: usize>(pieces: &'a [&'static str; N]) -> Self;
             }
         }
     }

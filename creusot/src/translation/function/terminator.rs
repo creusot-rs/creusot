@@ -1,8 +1,12 @@
 use super::BodyTranslator;
 use crate::{
+    contracts_items,
     ctx::TranslationCtx,
     extended_location::ExtendedLocation,
     fmir,
+    lints::contractless_external_function::{
+        ContractlessExternalFunction, CONTRACTLESS_EXTERNAL_FUNCTION,
+    },
     resolve::HasMoveDataExt,
     translation::{
         fmir::*,
@@ -73,7 +77,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             need.remove(mp);
                         }
                     }
-                    self.resolve_places(need, &resolved, true);
+                    self.resolve_places(need, &resolved);
                     resolved_during = None;
                 }
 
@@ -86,7 +90,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     self.resolve_before_assignment(need, &resolved, location, *destination)
                 }
 
-                if self.ctx.is_diagnostic_item(Symbol::intern("snapshot_from_fn"), fun_def_id) {
+                if contracts_items::is_snap_from_fn(self.ctx.tcx, fun_def_id) {
                     let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() else {
                         unreachable!()
                     };
@@ -142,22 +146,22 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             infcx.err_ctxt().report_fulfillment_errors(errs);
                         }
 
-                        let (fun_def_id, subst) = if let Some((ghost_def_id, ghost_args_ty)) =
-                            call_ghost
-                        {
-                            // Directly call the ghost closure
-
-                            assert_eq!(func_args.len(), 2);
-
+                        let (fun_def_id, subst) = {
+                            let (fun_id, subst) =
+                                if let Some((ghost_def_id, ghost_args_ty)) = call_ghost {
+                                    // Directly call the ghost closure
+                                    assert_eq!(func_args.len(), 2);
+                                    (ghost_def_id, ghost_args_ty)
+                                } else {
+                                    (fun_def_id, subst)
+                                };
                             resolve_function(
                                 self.ctx,
                                 self.param_env(),
-                                ghost_def_id,
-                                ghost_args_ty,
-                                span,
+                                fun_id,
+                                subst,
+                                (self.body, span, location),
                             )
-                        } else {
-                            resolve_function(self.ctx, self.param_env(), fun_def_id, subst, span)
                         };
 
                         if self.ctx.sig(fun_def_id).contract.is_requires_false() {
@@ -237,7 +241,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 to_resolve.insert(mpi);
                             }
                         });
-                        self.resolve_places(to_resolve, &resolved, true);
+                        self.resolve_places(to_resolve, &resolved);
                     } else {
                         // If the place we drop is not a move path, then the MaybeUninit analysis ignores it. So we do not miss a resolve.
                     }
@@ -256,7 +260,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             | TailCall { .. } => unreachable!("{:?}", terminator.kind),
         }
         if let Some((need, resolved)) = resolved_during {
-            self.resolve_places(need, &resolved, true);
+            self.resolve_places(need, &resolved);
         }
         self.emit_terminator(term)
     }
@@ -267,9 +271,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
     /// Determine if the given type `ty` is a `GhostBox`.
     fn is_ghost_box(&self, ty: Ty<'tcx>) -> bool {
-        let ghost_box_id = self.ctx.get_diagnostic_item(Symbol::intern("ghost_box")).unwrap();
         match ty.kind() {
-            rustc_type_ir::TyKind::Adt(containing_type, _) => containing_type.did() == ghost_box_id,
+            rustc_type_ir::TyKind::Adt(containing_type, _) => {
+                contracts_items::is_ghost_ty(self.ctx.tcx, containing_type.did())
+            }
             _ => false,
         }
     }
@@ -284,7 +289,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         fun_def_id: DefId,
         subst: GenericArgsRef<'tcx>,
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-        if self.ctx.is_diagnostic_item(Symbol::intern("ghost_from_fn"), fun_def_id) {
+        if contracts_items::is_ghost_from_fn(self.ctx.tcx, fun_def_id) {
             let &[_, ty] = subst.as_slice() else {
                 unreachable!();
             };
@@ -340,6 +345,17 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         // We are indeed in program code.
         let func_param_env = self.ctx.param_env(fun_def_id);
 
+        // Check that we do not call `GhostBox::into_inner` in normal code
+        if contracts_items::is_ghost_into_inner(self.ctx.tcx, fun_def_id) {
+            self.ctx
+                .error(
+                    fn_span,
+                    "trying to access the contents of a ghost variable in program context",
+                )
+                .with_note("This method can only be used inside a `ghost!` block")
+                .emit();
+        }
+
         // Check that we do not create/dereference a ghost variable in normal code.
         if self.ctx.is_diagnostic_item(Symbol::intern("deref_method"), fun_def_id)
             || self.ctx.is_diagnostic_item(Symbol::intern("deref_mut_method"), fun_def_id)
@@ -359,14 +375,14 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     )
                     .emit();
             }
-        } else if self.ctx.is_diagnostic_item(Symbol::intern("ghost_box_new"), fun_def_id) {
+        } else if contracts_items::is_ghost_new(self.ctx.tcx, fun_def_id) {
             self.ctx
                 .error(fn_span, "cannot create a ghost variable in program context")
                 .with_span_suggestion(
                     fn_span,
-                    "try wrapping this expression in `gh!` instead",
+                    "try wrapping this expression in `ghost!` instead",
                     format!(
-                        "gh!{{ {} }}",
+                        "ghost!({})",
                         self.ctx.sess.source_map().span_to_snippet(args[0].span).unwrap()
                     ),
                     rustc_errors::Applicability::MachineApplicable,
@@ -374,7 +390,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 .emit();
         } else {
             // Check and reject instantiation of a <T: Deref> with a ghost parameter.
-            let deref_trait_id = self.ctx.get_diagnostic_item(Symbol::intern("Deref")).unwrap();
+            let deref_trait_id = self.ctx.require_lang_item(rustc_hir::LangItem::Deref, None);
             let infer_ctx = self.ctx.infer_ctxt().build();
             for bound in func_param_env.caller_bounds() {
                 let Some(trait_clause) = bound.as_trait_clause() else { continue };
@@ -409,27 +425,37 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
     }
 }
 
+/// # Parameters
+///
+/// - `report_location`: used to emit an eventual warning.
 fn resolve_function<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
-    sp: Span,
+    report_location: (&mir::Body<'tcx>, Span, Location),
 ) -> (DefId, GenericArgsRef<'tcx>) {
     let res;
     if let Some(AssocItem { container: ty::TraitContainer, .. }) = ctx.opt_associated_item(def_id) {
         res = traits::resolve_assoc_item_opt(ctx.tcx, param_env, def_id, subst)
-            .expect("could not find instance");
+            .to_opt(def_id, subst)
+            .expect("could not find instance")
     } else {
         res = (def_id, subst)
     }
 
     if ctx.sig(res.0).contract.extern_no_spec {
-        ctx.warn(
-            sp,
-            &format!("calling external function `{}` with no contract will yield an impossible precondition", ctx.def_path_str(def_id))
-        )
-        .emit();
+        let (body, span, location) = report_location;
+        let name = ctx.tcx.item_name(def_id);
+        let source_info = body.source_info(location);
+        if let Some(lint_root) = source_info.scope.lint_root(&body.source_scopes) {
+            ctx.emit_node_span_lint(
+                CONTRACTLESS_EXTERNAL_FUNCTION,
+                lint_root,
+                span,
+                ContractlessExternalFunction { name, span },
+            );
+        }
     }
 
     res

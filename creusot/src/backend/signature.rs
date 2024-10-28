@@ -7,13 +7,12 @@ use why3::{
 
 use crate::{
     backend,
+    contracts_items::{should_replace_trigger, why3_attrs},
     translation::specification::PreContract,
-    util::{
-        ident_of, item_name, should_replace_trigger, why3_attrs, AnonymousParamName, PreSignature,
-    },
+    util::{ident_of, item_name, AnonymousParamName, PreSignature},
 };
 
-use super::{logic::function_call, term::lower_pure, CloneLevel, Namer, Why3Generator};
+use super::{logic::function_call, term::lower_pure, Namer, Why3Generator};
 
 pub(crate) fn signature_of<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
@@ -34,26 +33,23 @@ pub(crate) fn named_sig_to_why3<'tcx, N: Namer<'tcx>>(
     // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
     def_id: DefId,
 ) -> Signature {
-    let contract = names
-        .with_vis(CloneLevel::Contract, |names| contract_to_why3(&pre_sig.contract, ctx, names));
+    let contract = contract_to_why3(&pre_sig.contract, ctx, names);
 
     let span = ctx.tcx.def_span(def_id);
-    let args: Vec<Binder> = names.with_vis(CloneLevel::Signature, |names| {
-        pre_sig
-            .inputs
-            .iter()
-            .enumerate()
-            .map(|(ix, (id, _, ty))| {
-                let ty = backend::ty::translate_ty(ctx, names, span, *ty);
-                let id = if id.is_empty() {
-                    format!("{}", AnonymousParamName(ix)).into()
-                } else {
-                    ident_of(*id)
-                };
-                Binder::typed(id, ty)
-            })
-            .collect()
-    });
+    let args: Vec<Binder> = pre_sig
+        .inputs
+        .iter()
+        .enumerate()
+        .map(|(ix, (id, _, ty))| {
+            let ty = backend::ty::translate_ty(ctx, names, span, *ty);
+            let id = if id.is_empty() {
+                format!("{}", AnonymousParamName(ix)).into()
+            } else {
+                ident_of(*id)
+            };
+            Binder::typed(id, ty)
+        })
+        .collect();
 
     let mut attrs = why3_attrs(ctx.tcx, def_id);
 
@@ -63,9 +59,7 @@ pub(crate) fn named_sig_to_why3<'tcx, N: Namer<'tcx>>(
         .and_then(|span| ctx.span_attr(span))
         .map(|attr| attrs.push(attr));
 
-    let retty = names.with_vis(CloneLevel::Signature, |names| {
-        backend::ty::translate_ty(ctx, names, span, pre_sig.output)
-    });
+    let retty = backend::ty::translate_ty(ctx, names, span, pre_sig.output);
 
     let mut sig = Signature { name, trigger: None, attrs, retty: Some(retty), args, contract };
     let trigger = if ctx.opts.simple_triggers && should_replace_trigger(ctx.tcx, def_id) {
@@ -89,7 +83,7 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
     named_sig_to_why3(ctx, names, name, pre_sig, def_id)
 }
 
-fn contract_to_why3<'tcx, N: Namer<'tcx>>(
+pub(super) fn contract_to_why3<'tcx, N: Namer<'tcx>>(
     pre: &PreContract<'tcx>,
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,

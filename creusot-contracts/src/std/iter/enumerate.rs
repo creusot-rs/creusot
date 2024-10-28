@@ -1,4 +1,4 @@
-use crate::{invariant::*, std::iter::Enumerate, *};
+use crate::{invariant::*, resolve::structural_resolve, std::iter::Enumerate, *};
 
 pub trait EnumerateExt<I> {
     #[logic]
@@ -25,15 +25,19 @@ impl<I> EnumerateExt<I> for Enumerate<I> {
     }
 }
 
-#[trusted]
 impl<I> Resolve for Enumerate<I> {
     #[open]
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
-        pearlite! {
-            self.iter().resolve()
-        }
+        resolve(&self.iter())
     }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 impl<I: Iterator> Invariant for Enumerate<I> {
@@ -41,7 +45,10 @@ impl<I: Iterator> Invariant for Enumerate<I> {
     #[predicate(prophetic)]
     fn invariant(self) -> bool {
         pearlite! {
-            (forall<s: Seq<I::Item>, i: I> self.iter().produces(s, i) ==> self.n() + s.len() < std::usize::MAX@)
+            (forall<s: Seq<I::Item>, i: I>
+                #![trigger self.iter().produces(s, i)]
+                inv(s) && inv(i) && self.iter().produces(s, i) ==>
+                self.n() + s.len() < std::usize::MAX@)
             && (forall<i: &mut I> i.completed() ==> i.produces(Seq::EMPTY, ^i))
         }
     }
@@ -59,6 +66,7 @@ where
                 && *inner == self.iter()
                 && ^inner == (^self).iter()
                 && inner.completed()
+                && self.n() == (^self).n()
         }
     }
 

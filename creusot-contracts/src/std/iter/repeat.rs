@@ -1,12 +1,12 @@
 use crate::{invariant::*, std::iter::Repeat, *};
 
-impl<T> ShallowModel for Repeat<T> {
-    type ShallowModelTy = T;
+impl<T> View for Repeat<T> {
+    type ViewTy = T;
 
     #[logic]
     #[trusted]
     #[open(self)]
-    fn shallow_model(self) -> T {
+    fn view(self) -> T {
         pearlite! { absurd }
     }
 }

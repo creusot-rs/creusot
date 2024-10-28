@@ -28,7 +28,7 @@ Those restriction exists to ensure that ghost code is **erasable**: its presence
 
 ## `GhostBox<T>`
 
-The `GhostBox<T>` type is the type of "ghost data". In Creusot, it acts like a `Box<T>`, while in normal running code, it is an empty type. It has the same `ShallowModel` as the underlying type, meaning you can use the `@` operator directly.
+The `GhostBox<T>` type is the type of "ghost data". In Creusot, it acts like a `Box<T>`, while in normal running code, it is an empty type. It has the same `View` as the underlying type, meaning you can use the `@` operator directly.
 
 The only restriction of `GhostBox<T>` is that it may not be dereferenced nor created in non-ghost code.
 

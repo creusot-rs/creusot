@@ -1,4 +1,6 @@
 // Inspired by https://plv.mpi-sws.org/rustbelt/ghostcell/ https://rust-unofficial.github.io/too-many-lists/fifth.html
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
 use crate::{invariant::*, logic::FMap, Clone, *};
 use ::std::{
     marker::PhantomData,
@@ -24,14 +26,14 @@ pub struct GhostPtrTokenMut<'a, T: ?Sized>(PhantomData<&'a mut T>);
 /// Thin wrapper over a raw pointer managed by a [`GhostPtr`]
 pub type GhostPtr<T> = *const T;
 
-impl<T: ?Sized> ShallowModel for GhostPtrToken<T> {
-    type ShallowModelTy = FMap<GhostPtr<T>, T>;
+impl<T: ?Sized> View for GhostPtrToken<T> {
+    type ViewTy = FMap<GhostPtr<T>, T>;
 
     #[trusted]
     #[logic]
     #[ensures(result.get(GhostPtr::null_logic()) == None)]
     #[open(self)]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         absurd
     }
 }
@@ -40,6 +42,7 @@ impl<T: ?Sized> Invariant for GhostPtrToken<T> {
     #[predicate(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
+    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { forall<ptr: GhostPtr<T>, x: _> self@.get(ptr) == Some(x) ==> inv(*x) }
     }
@@ -157,14 +160,14 @@ impl<T: ?Sized> GhostPtrExt<T> for GhostPtr<T> {
     }
 }
 
-impl<'a, T: ?Sized> ShallowModel for GhostPtrTokenRef<'a, T> {
-    type ShallowModelTy = FMap<GhostPtr<T>, T>;
+impl<'a, T: ?Sized> View for GhostPtrTokenRef<'a, T> {
+    type ViewTy = FMap<GhostPtr<T>, T>;
 
     #[trusted]
     #[logic]
     #[open(self)]
     #[ensures(result.get(GhostPtr::null_logic()) == None)]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         absurd
     }
 }
@@ -221,6 +224,7 @@ impl<'a, T: ?Sized> GhostPtrTokenMut<'a, T> {
         absurd
     }
 
+    #[trusted]
     #[ensures(self.fin() == self.cur())]
     #[ensures(result@ == self.cur())]
     pub fn shr(self) -> GhostPtrTokenRef<'a, T> {
@@ -283,13 +287,19 @@ impl<'a, T: ?Sized> DerefMut for GhostPtrTokenMut<'a, T> {
     }
 }
 
-#[trusted]
 impl<'a, T: ?Sized> Resolve for GhostPtrTokenMut<'a, T> {
-    #[predicate(prophetic)]
     #[open]
+    #[predicate(prophetic)]
     fn resolve(self) -> bool {
         self.cur() == self.fin()
     }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 pub trait GhostPtrExt<T: ?Sized>: Sized {

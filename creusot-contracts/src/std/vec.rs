@@ -1,5 +1,6 @@
 use crate::{
-    invariant::Invariant,
+    invariant::*,
+    resolve::structural_resolve,
     std::{
         alloc::Allocator,
         ops::{Deref, DerefMut, Index, IndexMut},
@@ -9,14 +10,14 @@ use crate::{
 };
 pub use ::std::vec::*;
 
-impl<T, A: Allocator> ShallowModel for Vec<T, A> {
-    type ShallowModelTy = Seq<T>;
+impl<T, A: Allocator> View for Vec<T, A> {
+    type ViewTy = Seq<T>;
 
     #[open(self)]
     #[logic]
     #[trusted]
     #[ensures(result.len() <= usize::MAX@)]
-    fn shallow_model(self) -> Seq<T> {
+    fn view(self) -> Seq<T> {
         pearlite! { absurd }
     }
 }
@@ -27,8 +28,8 @@ impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
     #[logic]
     #[open(self)]
     #[trusted]
-    #[ensures(self.shallow_model().len() == result.len())]
-    #[ensures(forall<i: Int> 0 <= i && i < self.shallow_model().len()
+    #[ensures(self.view().len() == result.len())]
+    #[ensures(forall<i: Int> 0 <= i && i < self.view().len()
               ==> result[i] == self[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { absurd }
@@ -39,23 +40,30 @@ impl<T> Default for Vec<T> {
     #[predicate]
     #[open]
     fn is_default(self) -> bool {
-        pearlite! { self.shallow_model().len() == 0 }
+        pearlite! { self.view().len() == 0 }
     }
 }
 
-#[trusted]
 impl<T, A: Allocator> Resolve for Vec<T, A> {
-    #[predicate(prophetic)]
     #[open]
+    #[predicate(prophetic)]
     fn resolve(self) -> bool {
-        pearlite! { forall<i : Int> 0 <= i && i < self@.len() ==> self[i].resolve() }
+        pearlite! { forall<i : Int> 0 <= i && i < self@.len() ==> resolve(&self[i]) }
     }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 impl<T, A: Allocator> Invariant for Vec<T, A> {
     #[predicate(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
+    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { invariant::inv(self@) }
     }
@@ -133,6 +141,7 @@ extern_spec! {
             impl<T, A : Allocator> Extend<T> for Vec<T, A> {
                 #[requires(iter.into_iter_pre())]
                 #[ensures(exists<start_ : I::IntoIter, done : &mut I::IntoIter, prod: Seq<T>>
+                    inv(start_) && inv(done) && inv(prod) &&
                     iter.into_iter_post(start_) &&
                     done.completed() && start_.produces(prod, *done) && (^self)@ == self@.concat(prod)
                 )]
@@ -220,24 +229,30 @@ impl<T, A: Allocator> IntoIterator for &mut Vec<T, A> {
     }
 }
 
-impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
-    type ShallowModelTy = Seq<T>;
+impl<T, A: Allocator> View for std::vec::IntoIter<T, A> {
+    type ViewTy = Seq<T>;
 
     #[open(self)]
     #[logic]
     #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
+    fn view(self) -> Self::ViewTy {
         absurd
     }
 }
 
-#[trusted]
 impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
-    #[predicate(prophetic)]
     #[open]
+    #[predicate(prophetic)]
     fn resolve(self) -> bool {
-        pearlite! { forall<i: Int> 0 <= i && i < self@.len() ==> self@[i].resolve() }
+        pearlite! { forall<i: Int> 0 <= i && i < self@.len() ==> resolve(&self@[i]) }
     }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
 }
 
 impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
@@ -260,6 +275,8 @@ impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
+    // FIXME: remove `trusted`
+    #[trusted]
     #[law]
     #[open]
     #[requires(a.produces(ab, b))]

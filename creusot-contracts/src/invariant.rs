@@ -2,11 +2,8 @@ use crate::*;
 
 pub trait Invariant {
     #[predicate(prophetic)]
-    #[open]
     #[rustc_diagnostic_item = "creusot_invariant_user"]
-    fn invariant(self) -> bool {
-        true
-    }
+    fn invariant(self) -> bool;
 }
 
 impl Invariant for ! {
@@ -22,6 +19,7 @@ impl<T: ?Sized> Invariant for &T {
     #[predicate(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
+    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         inv(*self)
     }
@@ -31,6 +29,7 @@ impl<T: ?Sized> Invariant for &mut T {
     #[predicate(prophetic)]
     #[open]
     #[creusot::trusted_ignore_structural_inv]
+    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { inv(*self) && inv(^self) }
     }
@@ -41,4 +40,9 @@ impl<T: ?Sized> Invariant for &mut T {
 #[rustc_diagnostic_item = "creusot_invariant_internal"]
 pub fn inv<T: ?Sized>(_: T) -> bool {
     true
+}
+
+#[cfg(not(creusot))]
+pub fn inv<T: ?Sized>(_: &T) -> bool {
+    panic!()
 }

@@ -1,24 +1,14 @@
-
-module M_869__unsound
-  let%span s8690 = "../869.rs" 5 32 5 50
-  
-  let%span s8691 = "../869.rs" 10 44 10 59
-  
-  let%span s8692 = "../869.rs" 11 20 11 50
-  
-  let%span s8693 = "../869.rs" 17 20 17 53
-  
-  let%span s8694 = "../869.rs" 18 12 18 64
-  
-  let%span s8695 = "../869.rs" 19 20 19 37
-  
-  let%span s8696 = "../869.rs" 20 20 20 37
-  
-  let%span span7 = "../../../../../creusot-contracts/src/resolve.rs" 26 20 26 34
+module M_869__unsound [#"869.rs" 4 0 4 16]
+  let%span s8690 = "869.rs" 5 32 5 50
+  let%span s8691 = "869.rs" 10 44 10 59
+  let%span s8692 = "869.rs" 11 20 11 50
+  let%span s8693 = "869.rs" 17 20 17 53
+  let%span s8694 = "869.rs" 18 12 18 64
+  let%span s8695 = "869.rs" 19 20 19 37
+  let%span s8696 = "869.rs" 20 20 20 37
+  let%span sresolve7 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   
   use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Borrow
   
   use prelude.prelude.Intrinsic
   
@@ -28,31 +18,40 @@ module M_869__unsound
   
   use prelude.prelude.Snapshot
   
-  predicate resolve'0 (self : borrowed (Snapshot.snap_ty bool)) =
-    [%#span7] self.final = self.current
+  use prelude.prelude.Snapshot
+  
+  use prelude.prelude.Borrow
+  
+  predicate resolve'1 (self : borrowed (Snapshot.snap_ty bool)) =
+    [%#sresolve7] self.final = self.current
+  
+  predicate resolve'0 (_1 : borrowed (Snapshot.snap_ty bool)) =
+    resolve'1 _1
   
   use prelude.prelude.Snapshot
+  
+  meta "compute_max_steps" 1000000
   
   let rec unsound (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0 [ s0 =  [ &x <- [%#s8690] Snapshot.new true ] s1 | s1 = bb1 ] 
     | bb1 = s0
       [ s0 = Borrow.borrow_mut <Snapshot.snap_ty bool> {x}
-          (fun (_ret':borrowed (Snapshot.snap_ty bool)) ->  [ &_4 <- _ret' ]  [ &x <- _4.final ] s1)
+          (fun (_ret':borrowed (Snapshot.snap_ty bool)) ->  [ &_4 <- _ret' ]  [ &x <- _ret'.final ] s1)
       | s1 = Borrow.borrow_final <Snapshot.snap_ty bool> {_4.current} {Borrow.get_id _4}
           (fun (_ret':borrowed (Snapshot.snap_ty bool)) ->
              [ &xm <- _ret' ] 
-             [ &_4 <- { _4 with current = xm.final ; } ] 
+             [ &_4 <- { _4 with current = _ret'.final ; } ] 
             s2)
       | s2 = -{resolve'0 _4}- s3
       | s3 = Borrow.borrow_mut <Snapshot.snap_ty bool> {xm.current}
           (fun (_ret':borrowed (Snapshot.snap_ty bool)) ->
              [ &_6 <- _ret' ] 
-             [ &xm <- { xm with current = _6.final ; } ] 
+             [ &xm <- { xm with current = _ret'.final ; } ] 
             s4)
       | s4 = Borrow.borrow_final <Snapshot.snap_ty bool> {_6.current} {Borrow.get_id _6}
           (fun (_ret':borrowed (Snapshot.snap_ty bool)) ->
              [ &b <- _ret' ] 
-             [ &_6 <- { _6 with current = b.final ; } ] 
+             [ &_6 <- { _6 with current = _ret'.final ; } ] 
             s5)
       | s5 = -{resolve'0 b}- s6
       | s6 = -{resolve'0 _6}- s7
@@ -66,12 +65,12 @@ module M_869__unsound
       | s1 = Borrow.borrow_final <Snapshot.snap_ty bool> {xm.current} {Borrow.get_id xm}
           (fun (_ret':borrowed (Snapshot.snap_ty bool)) ->
              [ &_12 <- _ret' ] 
-             [ &xm <- { xm with current = _12.final ; } ] 
+             [ &xm <- { xm with current = _ret'.final ; } ] 
             s2)
       | s2 = Borrow.borrow_final <Snapshot.snap_ty bool> {_12.current} {Borrow.get_id _12}
           (fun (_ret':borrowed (Snapshot.snap_ty bool)) ->
              [ &evil <- _ret' ] 
-             [ &_12 <- { _12 with current = evil.final ; } ] 
+             [ &_12 <- { _12 with current = _ret'.final ; } ] 
             s3)
       | s3 = -{resolve'0 _12}- s4
       | s4 = {[@expl:assertion] [%#s8693] (evil = Snapshot.inner bg) = (Snapshot.inner evil.final = true)} s5

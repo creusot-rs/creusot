@@ -18,7 +18,13 @@ If you have made changes to the Creusot translation and the UI tests show a diff
 When contributing or updating tests, we ask that you minimize avoidable warnings, in particular, top-level declarations should be marked public, and unused arguments removed or replaced by wildcards.
 The warnings and errors of each test are recorded in an accompanying `stderr` file if any were present.
 
-# 4. Verifying proofs
+## 2.3. Testing `creusot-contracts`
+
+There is one special test used for the `creusot-contracts` crate, that can be run with `cargo test --test creusot-contracts`.
+
+The corresponding coma file is located at `creusot/tests/creusot-contracts/creusot-contracts.coma`. It can be updated with the `--bless` flag: `cargo test --test creusot-contracts -- --bless`. 
+
+# 3. Verifying proofs
 
 Once you are satisfied with the coma output, you can validate the proofs of Creusot by running `cargo test --test why3`. This will run each test in the UI suite, and if a Why3 session is found, execute the proofs within.
 If you add a test that you believe should include a proof, you can add it using the `./ide` script provided in Creusot.

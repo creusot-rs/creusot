@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
 use crate::{
     std::ops::{Deref, DerefMut},
     *,
@@ -21,68 +23,162 @@ use crate::{
 /// }
 /// let value: i32 = *b; // compile error !
 /// ```
-#[rustc_diagnostic_item = "ghost_box"]
-pub struct GhostBox<T: ?Sized>(T);
+#[cfg_attr(creusot, rustc_diagnostic_item = "ghost_box")]
+pub struct GhostBox<T>(#[cfg(creusot)] Box<T>, #[cfg(not(creusot))] std::marker::PhantomData<T>)
+where
+    T: ?Sized;
 
-impl<T: Clone + ?Sized> Clone for GhostBox<T> {
+impl<T: ?Sized + Clone> Clone for GhostBox<T> {
+    #[ensures(result == *self)]
     fn clone(&self) -> Self {
-        Self(self.0.clone())
+        #[cfg(creusot)]
+        {
+            Self(self.0.clone())
+        }
+        #[cfg(not(creusot))]
+        {
+            Self(std::marker::PhantomData)
+        }
     }
 }
-
-impl<T: Copy + ?Sized> Copy for GhostBox<T> {}
 
 impl<T: ?Sized> Deref for GhostBox<T> {
     type Target = T;
 
-    // This function can only be called in `ghost!` context
+    /// This function can only be called in `ghost!` context
     #[pure]
-    #[ensures((*self).0 == *result)]
+    #[ensures(*(*self).0 == *result)]
     fn deref(&self) -> &Self::Target {
-        &self.0
+        #[cfg(creusot)]
+        {
+            &self.0
+        }
+        #[cfg(not(creusot))]
+        {
+            panic!()
+        }
     }
 }
 impl<T: ?Sized> DerefMut for GhostBox<T> {
-    // This function can only be called in `ghost!` context
+    /// This function can only be called in `ghost!` context
     #[pure]
-    #[ensures((^self).0 == ^result)]
-    #[ensures((*self).0 == *result)]
+    #[ensures(result == &mut *self.0)]
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+        #[cfg(creusot)]
+        {
+            &mut *self.0
+        }
+        #[cfg(not(creusot))]
+        {
+            panic!()
+        }
     }
 }
 
-impl<T: ShallowModel + ?Sized> ShallowModel for GhostBox<T> {
-    type ShallowModelTy = T::ShallowModelTy;
+impl<T: View + ?Sized> View for GhostBox<T> {
+    type ViewTy = T::ViewTy;
     #[logic]
     #[open]
-    fn shallow_model(self) -> Self::ShallowModelTy {
-        self.0.shallow_model()
+    fn view(self) -> Self::ViewTy {
+        self.0.view()
     }
 }
 
-#[trusted]
 impl<T: ?Sized> Resolve for GhostBox<T> {
-    #[predicate(prophetic)]
     #[open]
+    #[predicate(prophetic)]
     fn resolve(self) -> bool {
-        Resolve::resolve(self.0)
+        resolve(&self.0)
+    }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[open(self)]
+    #[requires(structural_resolve(&self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
+}
+
+impl<T: ?Sized> GhostBox<T> {
+    /// Transforms a `&GhostBox<T>` into `GhostBox<&T>`.
+    #[pure]
+    #[ensures(*result.0 == &*self.0)]
+    pub fn borrow(&self) -> GhostBox<&T> {
+        #[cfg(creusot)]
+        {
+            GhostBox(Box::new(&*self.0))
+        }
+        #[cfg(not(creusot))]
+        {
+            GhostBox(std::marker::PhantomData)
+        }
+    }
+
+    /// Transforms a `&mut GhostBox<T>` into a `GhostBox<&mut T>`.
+    #[pure]
+    #[ensures(*result.0 == &mut *self.0)]
+    pub fn borrow_mut(&mut self) -> GhostBox<&mut T> {
+        #[cfg(creusot)]
+        {
+            GhostBox(Box::new(&mut *self.0))
+        }
+        #[cfg(not(creusot))]
+        {
+            GhostBox(std::marker::PhantomData)
+        }
+    }
+
+    // Internal function to easily create a GhostBox in non-creusot mode.
+    #[cfg(not(creusot))]
+    #[doc(hidden)]
+    pub fn from_fn(_: impl FnOnce() -> T) -> Self {
+        GhostBox(std::marker::PhantomData)
     }
 }
 
 impl<T> GhostBox<T> {
-    #[rustc_diagnostic_item = "ghost_box_new"]
+    /// Creates a new ghost variable.
+    ///
+    /// This function can only be called in `ghost!` code.
     #[pure]
-    #[ensures(result.0 == x)]
+    #[ensures(*result.0 == x)]
+    #[rustc_diagnostic_item = "ghost_box_new"]
     pub fn new(x: T) -> Self {
-        Self(x)
+        #[cfg(creusot)]
+        {
+            Self(Box::new(x))
+        }
+        #[cfg(not(creusot))]
+        {
+            let _ = x;
+            Self(std::marker::PhantomData)
+        }
     }
 
-    #[trusted]
+    /// Returns the inner value of the `GhostBox`.
+    ///
+    /// This function can only be called in `ghost!` context.
+    #[pure]
+    #[ensures(result == *self.0)]
+    #[rustc_diagnostic_item = "ghost_box_into_inner"]
+    pub fn into_inner(self) -> T {
+        #[cfg(creusot)]
+        {
+            *self.0
+        }
+        #[cfg(not(creusot))]
+        {
+            panic!()
+        }
+    }
+
+    /// Returns the inner value of the `GhostBox`.
+    ///
+    /// You should prefer the dereference operator `*` instead.
     #[logic]
-    #[open(self)]
-    #[ensures(result == self.0)]
-    pub fn inner(self) -> T {
-        self.0
+    #[open]
+    #[rustc_diagnostic_item = "ghost_box_inner_logic"]
+    pub fn inner_logic(self) -> T {
+        *self.0
     }
 }

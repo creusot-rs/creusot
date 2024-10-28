@@ -711,8 +711,7 @@ pub fn extern_spec(tokens: TS1) -> TS1 {
     }
 
     return TS1::from(quote! {
-        #(#[creusot::no_translate]
-          #[creusot::extern_spec]
+        #(#[creusot::extern_spec]
           #specs
         )*
     });

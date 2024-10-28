@@ -3,37 +3,44 @@ use rustc_hir::def_id::DefId;
 
 use why3::declaration::{Decl, Module};
 
+/// Module with a path to the file it is defined in.
+/// We use this for modular translation (one file per module).
+/// In monolithic translation, the path is left empty.
+pub struct FileModule {
+    pub path: crate::util::ModulePath,
+    pub modl: Module,
+}
+
 pub enum TranslatedItem {
     Logic {
         /// Proof obligations emerging from the contract of a logic function
-        proof_modl: Option<Module>,
+        proof_modl: Option<FileModule>,
     },
     Closure {
         /// The closure as a type
-        ty_modl: Module,
+        ty_modl: FileModule,
         /// The program of the closure
-        modl: Option<Module>,
+        modl: Option<FileModule>,
     },
     Program {
         /// An ordinary Rust function
-        modl: Option<Module>,
+        modl: Option<FileModule>,
     },
     Trait {},
     Impl {
         /// Trait refinement obligations
-        modl: Module,
+        modl: FileModule,
     },
     AssocTy {},
     Constant {},
     Type {
-        modl: Vec<Module>,
+        modl: Vec<FileModule>,
         accessors: IndexMap<DefId, IndexMap<DefId, Decl>>,
     },
-    TyInv {},
 }
 
 impl<'a> TranslatedItem {
-    pub(crate) fn modules(self) -> Box<dyn Iterator<Item = Module>> {
+    pub(crate) fn modules(self) -> Box<dyn Iterator<Item = FileModule>> {
         use std::iter;
         use TranslatedItem::*;
         match self {
@@ -44,12 +51,11 @@ impl<'a> TranslatedItem {
             AssocTy { .. } => Box::new(iter::empty()),
             Constant { .. } => Box::new(iter::empty()),
             Type { mut modl, accessors, .. } => {
-                modl[0].decls.extend(accessors.values().flat_map(|v| v.values()).cloned());
+                modl[0].modl.decls.extend(accessors.values().flat_map(|v| v.values()).cloned());
 
                 Box::new(modl.into_iter())
             }
             Closure { ty_modl, modl, .. } => Box::new(iter::once(ty_modl).chain(modl.into_iter())),
-            TyInv { .. } => Box::new(iter::empty()),
         }
     }
 }

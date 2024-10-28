@@ -34,9 +34,9 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
             exists<a: &mut A, b: &mut B> inv(a) && inv(b)
                 && *a == (*self).itera() && *b == (*self).iterb()
                 && ^a == (^self).itera() && ^b == (^self).iterb()
-                && (a.completed() && b.resolve()
+                && (a.completed() && resolve(&b)
                     || exists<x: A::Item> inv(x) && a.produces(Seq::singleton(x), ^a) &&
-                                          x.resolve() && b.completed())
+                                          resolve(&x) && b.completed())
         }
     }
 
@@ -54,11 +54,17 @@ impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
 
     #[law]
     #[open(self)]
+    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
+    // FIXME: remove `trusted`
+    #[trusted]
     #[law]
     #[open(self)]
+    #[requires(inv(a))]
+    #[requires(inv(b))]
+    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

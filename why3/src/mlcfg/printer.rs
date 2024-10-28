@@ -63,6 +63,32 @@ where
     }
 }
 
+impl Print for Span {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        docs![
+            alloc,
+            "let%span",
+            alloc.space(),
+            self.name.pretty(alloc),
+            alloc.space(),
+            alloc.text("="),
+            alloc.space(),
+            alloc.text(&self.path).double_quotes(),
+            alloc.space(),
+            alloc.as_string(self.start_line),
+            alloc.space(),
+            alloc.as_string(self.start_column),
+            alloc.space(),
+            alloc.as_string(self.end_line),
+            alloc.space(),
+            alloc.as_string(self.end_column),
+        ]
+    }
+}
+
 impl Print for Decl {
     fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
@@ -83,24 +109,11 @@ impl Print for Decl {
             Decl::Let(l) => l.pretty(alloc),
             Decl::ConstantDecl(c) => c.pretty(alloc),
             Decl::Coma(d) => d.pretty(alloc),
-            Decl::LetSpan(nm, f, l1, c1, l2, c2) => docs![
-                alloc,
-                "let%span",
-                alloc.space(),
-                nm.pretty(alloc),
-                alloc.space(),
-                alloc.text("="),
-                alloc.space(),
-                alloc.text(f).double_quotes(),
-                alloc.space(),
-                alloc.as_string(l1),
-                alloc.space(),
-                alloc.as_string(c1),
-                alloc.space(),
-                alloc.as_string(l2),
-                alloc.space(),
-                alloc.as_string(c2),
-            ],
+            Decl::LetSpans(spans) => {
+                alloc.intersperse(spans.iter().map(|span| span.pretty(alloc)), alloc.hardline())
+            }
+            Decl::Meta(meta) => meta.pretty(alloc),
+            Decl::Comment(c) => alloc.text("(* ").append(c).append(" *)"),
         }
     }
 }
@@ -113,19 +126,35 @@ impl Print for Module {
         let doc = alloc
             .text("module ")
             .append(&*self.name)
+            .append(if self.attrs.is_empty() {
+                alloc.nil()
+            } else {
+                alloc.concat(self.attrs.iter().map(|attr| alloc.space().append(attr.pretty(alloc))))
+            })
+            .append(match self.meta.as_ref() {
+                Some(meta) => alloc.text(" (* ").append(meta.pretty(alloc)).append(" *)"),
+                None => alloc.nil(),
+            })
             .append(alloc.hardline())
-            .append(
-                alloc
-                    .intersperse(
-                        self.decls.iter().map(|decl| decl.pretty(alloc)),
-                        alloc.hardline().append(alloc.hardline()),
-                    )
-                    .indent(2),
-            )
+            .append(pretty_blocks(&self.decls, alloc).indent(2))
             .append(alloc.hardline())
             .append("end");
         doc
     }
+}
+
+// Items separated by empty lines
+pub fn pretty_blocks<'a, T: Print, A: DocAllocator<'a>>(
+    items: &'a Vec<T>,
+    alloc: &'a A,
+) -> DocBuilder<'a, A>
+where
+    A::Doc: Clone,
+{
+    alloc.intersperse(
+        items.iter().map(|item| item.pretty(alloc)),
+        alloc.hardline().append(alloc.hardline()),
+    )
 }
 
 impl Print for Scope {
@@ -393,6 +422,42 @@ impl Print for Use {
             } else {
                 alloc.nil()
             })
+    }
+}
+
+impl Print for Meta {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        alloc
+            .text("meta ")
+            .append(self.name.pretty(alloc))
+            .append(alloc.space())
+            .append(alloc.intersperse(self.args.iter().map(|a| a.pretty(alloc)), alloc.space()))
+    }
+}
+
+impl Print for MetaIdent {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        match self {
+            MetaIdent::Ident(i) => i.pretty(alloc),
+            MetaIdent::String(s) => alloc.text(format!("{s:?}")),
+        }
+    }
+}
+
+impl Print for MetaArg {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        match self {
+            MetaArg::Integer(i) => alloc.as_string(i),
+        }
     }
 }
 
@@ -874,6 +939,13 @@ impl Print for Pattern {
                 }
                 doc
             }
+            Pattern::RecP(pats) => {
+                let pats = pats.iter().map(|(field, pat)| {
+                    field.pretty(alloc).append(" = ").append(pat.pretty(alloc))
+                });
+
+                alloc.intersperse(pats, " ; ").braces()
+            }
         }
     }
 }
@@ -1139,6 +1211,6 @@ impl Print for QName {
     {
         let module_path = self.module.iter().map(|t| alloc.text(&t.0));
 
-        alloc.intersperse(module_path.chain(std::iter::once(alloc.text(self.name().0))), ".")
+        alloc.intersperse(module_path.chain(std::iter::once(alloc.text(self.name.0.clone()))), ".")
     }
 }
