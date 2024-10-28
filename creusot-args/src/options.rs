@@ -97,6 +97,8 @@ pub enum CargoCreusotSubCommand {
     },
     #[command(flatten)]
     Creusot(CreusotSubCommand),
+    Config(ConfigArgs),
+    Prove(ProveArgs),
 }
 
 #[derive(Debug, ValueEnum, Serialize, Deserialize, Clone)]
@@ -117,6 +119,7 @@ pub enum SetupManagedTool {
 #[derive(Debug, ValueEnum, Serialize, Deserialize, Clone, PartialEq)]
 pub enum SetupTool {
     Why3,
+    Why3find,
     AltErgo,
     Z3,
     CVC4,
@@ -177,4 +180,20 @@ pub enum SpanMode {
     Relative,
     Absolute,
     Off,
+}
+
+#[derive(Debug, Parser)]
+pub struct ProveArgs {
+    /// Run Why3 IDE on next unproved goal.
+    #[clap(short = 'i', default_value_t = false, action = clap::ArgAction::SetTrue)]
+    pub ide: bool,
+    /// Files to prove; default to everything in `verif/`.
+    pub files: Vec<PathBuf>,
+}
+
+#[derive(Debug, Parser)]
+pub struct ConfigArgs {
+    /// All arguments are forwarded to `why3find config`; see `why3find config --help` for a list of options.
+    #[clap(allow_hyphen_values = true)]
+    pub args: Vec<String>,
 }

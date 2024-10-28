@@ -20,6 +20,13 @@ pub const WHY3: Binary = Binary {
     detect_version: detect_why3_version,
 };
 
+pub const WHY3FIND: Binary = Binary {
+    display_name: "why3find",
+    binary_name: "why3find",
+    version: WHY3FIND_VERSION,
+    detect_version: detect_why3find_version,
+};
+
 pub const ALTERGO: ManagedBinary = ManagedBinary {
     bin: Binary {
         display_name: "Alt-Ergo",
@@ -63,6 +70,8 @@ pub const CVC5: ManagedBinary = ManagedBinary {
     url: &URLS.cvc5,
     download_with: download_from_url_with_cache,
 };
+
+pub const PROVERS: &[ManagedBinary] = &[ALTERGO, Z3, CVC4, CVC5];
 
 // ----
 
@@ -256,6 +265,18 @@ fn generate_strategy(f: &mut dyn Write) -> anyhow::Result<()> {
     Ok(())
 }
 
+// helpers: why3find
+
+pub fn detect_why3find_version(why3find: &Path) -> Option<String> {
+    let output = Command::new(&why3find).arg("--version").output().ok()?;
+    let version_full = String::from_utf8(output.stdout).ok()?;
+    let version = version_full.strip_prefix("why3find v");
+    version.map(|ver| {
+        let parts: Vec<_> = ver.trim_end().split(|c| c == '.' || c == '+').collect();
+        String::from(&parts[..3].join("."))
+    })
+}
+
 // helpers: alt-ergo
 
 fn detect_altergo_version(altergo: &Path) -> Option<String> {
@@ -348,4 +369,8 @@ pub fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link: Q) -> std
     {
         std::os::windows::fs::symlink_file(original, link)
     }
+}
+
+pub fn why3find_install() {
+    Command::new("why3find").arg("install").arg("prelude").status().unwrap();
 }
