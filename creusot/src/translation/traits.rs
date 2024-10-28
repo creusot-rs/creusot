@@ -221,13 +221,21 @@ pub(crate) enum TraitResolved<'tcx> {
 }
 
 impl<'tcx> TraitResolved<'tcx> {
+    /// Returns `true` if `def_id` is an item inside a trait definition.
+    ///
+    /// Use this on an arbitrary `def_id` to avoid panics in [`Self::resolve_item`].
+    pub(crate) fn is_trait_item(tcx: TyCtxt<'tcx>, def_id: DefId) -> bool {
+        let Some(assoc) = tcx.opt_associated_item(def_id) else { return false };
+        assoc.container == AssocItemContainer::TraitContainer
+    }
+
     /// Try to resolve a trait item to the item in an `impl` block, given some typing context.
     ///
     /// # Parameters
     /// - `tcx`: The global context
     /// - `param_env`: The scope of type variables, see <https://rustc-dev-guide.rust-lang.org/param_env/param_env_summary.html>.
     /// - `trait_item_def_id`: The trait item we are trying to resolve.
-    /// - `substs`: The type parameters we are instantiating the trait item with. This 
+    /// - `substs`: The type parameters we are instantiating the trait item with. This
     ///   can include the `Self` parameter.
     pub(crate) fn resolve_item(
         tcx: TyCtxt<'tcx>,
