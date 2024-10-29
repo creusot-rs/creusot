@@ -482,9 +482,9 @@ module M_13_cloned__qyi7043136317404314719 [#"13_cloned.rs" 13 0 16 13] (* <Clon
   
   type t
   
-  let%span s13_cloned0 = "13_cloned.rs" 41 4 41 26
-  let%span s13_cloned1 = "13_cloned.rs" 57 4 57 35
-  let%span s13_cloned2 = "13_cloned.rs" 51 4 51 90
+  let%span s13_cloned0 = "13_cloned.rs" 51 4 51 90
+  let%span s13_cloned1 = "13_cloned.rs" 41 4 41 26
+  let%span s13_cloned2 = "13_cloned.rs" 57 4 57 35
   let%span s13_cloned3 = "13_cloned.rs" 29 8 34 9
   let%span s13_cloned4 = "13_cloned.rs" 23 8 23 43
   let%span sinvariant5 = "../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
@@ -555,14 +555,16 @@ module M_13_cloned__qyi7043136317404314719 [#"13_cloned.rs" 13 0 16 13] (* <Clon
   
   use seq.Seq
   
-  use seq.Seq
-  
   predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed i)
   
   use T_13_cloned__Cloned as T_13_cloned__Cloned
   
   predicate completed'0 [#"13_cloned.rs" 22 4 22 35] (self : borrowed (Cloned'0.t_Cloned i)) =
     [%#s13_cloned4] completed'1 (Borrow.borrow_logic (T_13_cloned__Cloned.t_Cloned__iter self.current) (T_13_cloned__Cloned.t_Cloned__iter self.final) (Borrow.inherit_id (Borrow.get_id self) 1))
+  
+  use seq.Seq
+  
+  use seq.Seq
   
   use seq.Seq
   
@@ -582,14 +584,19 @@ module M_13_cloned__qyi7043136317404314719 [#"13_cloned.rs" 13 0 16 13] (* <Clon
     /\ Seq.length visited = Seq.length s
     /\ (forall i : int . 0 <= i /\ i < Seq.length s  -> Seq.get visited i = Seq.get s i)
   
-  use seq.Seq
+  goal produces_trans_refn : [%#s13_cloned0] forall a : Cloned'0.t_Cloned i . forall ab : Seq.seq t . forall b : Cloned'0.t_Cloned i . forall bc : Seq.seq t . forall c : Cloned'0.t_Cloned i . produces'0 b bc c
+  /\ produces'0 a ab b /\ inv'0 c /\ inv'0 b /\ inv'0 a
+   -> produces'0 b bc c
+  /\ produces'0 a ab b
+  /\ inv'0 c
+  /\ inv'0 b /\ inv'0 a /\ (forall result : () . produces'0 a (Seq.(++) ab bc) c  -> produces'0 a (Seq.(++) ab bc) c)
   
-  goal produces_refl_refn : [%#s13_cloned0] forall self : Cloned'0.t_Cloned i . inv'0 self
+  goal produces_refl_refn : [%#s13_cloned1] forall self : Cloned'0.t_Cloned i . inv'0 self
    -> inv'0 self
   /\ (forall result : () . produces'0 self (Seq.empty  : Seq.seq t) self
    -> produces'0 self (Seq.empty  : Seq.seq t) self)
   
-  goal next_refn : [%#s13_cloned1] forall self : borrowed (Cloned'0.t_Cloned i) . inv'1 self
+  goal next_refn : [%#s13_cloned2] forall self : borrowed (Cloned'0.t_Cloned i) . inv'1 self
    -> inv'1 self
   /\ (forall result : Option'0.t_Option t . inv'2 result
   /\ match result with
@@ -601,11 +608,4 @@ module M_13_cloned__qyi7043136317404314719 [#"13_cloned.rs" 13 0 16 13] (* <Clon
     | Option'0.C_None -> completed'0 self
     | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end)
-  
-  goal produces_trans_refn : [%#s13_cloned2] forall a : Cloned'0.t_Cloned i . forall ab : Seq.seq t . forall b : Cloned'0.t_Cloned i . forall bc : Seq.seq t . forall c : Cloned'0.t_Cloned i . produces'0 b bc c
-  /\ produces'0 a ab b /\ inv'0 c /\ inv'0 b /\ inv'0 a
-   -> produces'0 b bc c
-  /\ produces'0 a ab b
-  /\ inv'0 c
-  /\ inv'0 b /\ inv'0 a /\ (forall result : () . produces'0 a (Seq.(++) ab bc) c  -> produces'0 a (Seq.(++) ab bc) c)
 end
