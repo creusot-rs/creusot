@@ -1089,8 +1089,8 @@ fn resolve_predicate_of<'tcx>(
     // a resolve
     if !ty.is_closure()
         && matches!(
-            traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, substs),
-            traits::TraitResol::NoInstance
+            traits::TraitResolved::resolve_item(ctx.tcx, param_env, trait_meth_id, substs),
+            traits::TraitResolved::NoInstance
         )
     {
         return None;

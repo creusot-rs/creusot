@@ -52,7 +52,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let (id, subst) = visit.items.pop().unwrap();
 
     let (id, _) = if ctx.trait_of_item(id).is_some() {
-        traits::resolve_assoc_item_opt(ctx.tcx, ctx.param_env(def_id.to_def_id()), id, subst).to_opt(id, subst).unwrap_or_else(|| {
+        traits::TraitResolved::resolve_item(ctx.tcx, ctx.param_env(def_id.to_def_id()), id, subst).to_opt(id, subst).unwrap_or_else(|| {
             let mut err = ctx.fatal_error(
                 ctx.def_span(def_id.to_def_id()),
                 "could not derive original instance from external specification",

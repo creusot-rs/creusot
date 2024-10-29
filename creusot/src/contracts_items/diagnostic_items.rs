@@ -86,6 +86,10 @@ contracts_items! {
         is_ghost_into_inner   get_ghost_into_inner
     fn GhostBox::inner_logic   ["ghost_box_inner_logic"]
         is_ghost_inner_logic  get_ghost_inner_logic
+    fn GhostBox::deref         ["ghost_box_deref"]
+        is_ghost_deref        get_ghost_deref
+    fn GhostBox::deref_mut     ["ghost_box_deref_mut"]
+        is_ghost_deref_mut    get_ghost_deref_mut
     fn IndexLogic::index_logic ["index_logic_method"]
         is_index_logic        get_index_logic
     type Int                   ["creusot_int"]

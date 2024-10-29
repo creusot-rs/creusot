@@ -1,7 +1,7 @@
 use crate::{
     contracts_items::get_builtin,
     pearlite::{self, Literal, Term, TermKind},
-    traits::resolve_assoc_item_opt,
+    traits::TraitResolved,
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{ParamEnv, TyCtxt};
@@ -23,7 +23,7 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
         match &mut term.kind {
             TermKind::Call { id, subst, args } => {
                 let method = if self.tcx.trait_of_item(*id).is_some() {
-                    resolve_assoc_item_opt(self.tcx, self.param_env, *id, subst)
+                    TraitResolved::resolve_item(self.tcx, self.param_env, *id, subst)
                         .to_opt(*id, subst)
                         .unwrap_or_else(|| {
                             panic!("could not resolve trait instance {:?}", (*id, *subst))
@@ -48,7 +48,7 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
             }
             TermKind::Item(id, subst) => {
                 let method = if self.tcx.trait_of_item(*id).is_some() {
-                    resolve_assoc_item_opt(self.tcx, self.param_env, *id, subst)
+                    TraitResolved::resolve_item(self.tcx, self.param_env, *id, subst)
                         .to_opt(*id, subst)
                         .unwrap_or_else(|| {
                             panic!("could not resolve trait instance {:?}", (*id, *subst))

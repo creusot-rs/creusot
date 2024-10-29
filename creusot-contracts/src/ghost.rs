@@ -46,6 +46,7 @@ impl<T: ?Sized> Deref for GhostBox<T> {
     type Target = T;
 
     /// This function can only be called in `ghost!` context
+    #[rustc_diagnostic_item = "ghost_box_deref"]
     #[pure]
     #[ensures(*(*self).0 == *result)]
     fn deref(&self) -> &Self::Target {
@@ -61,6 +62,7 @@ impl<T: ?Sized> Deref for GhostBox<T> {
 }
 impl<T: ?Sized> DerefMut for GhostBox<T> {
     /// This function can only be called in `ghost!` context
+    #[rustc_diagnostic_item = "ghost_box_deref_mut"]
     #[pure]
     #[ensures(result == &mut *self.0)]
     fn deref_mut(&mut self) -> &mut Self::Target {
