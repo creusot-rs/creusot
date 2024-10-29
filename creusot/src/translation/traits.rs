@@ -2,6 +2,7 @@ use super::pearlite::{Term, TermKind};
 use crate::{
     contracts_items::{is_law, is_spec},
     ctx::*,
+    very_stable_hash::get_very_stable_hash,
 };
 use rustc_hir::def_id::DefId;
 use rustc_infer::{
@@ -61,8 +62,11 @@ impl<'tcx> TranslationCtx<'tcx> {
         let implementor_map = self.tcx.impl_item_implementor_ids(impl_id);
 
         let mut refinements = Vec::new();
-        let implementor_map =
+        let mut implementor_map =
             self.with_stable_hashing_context(|hcx| implementor_map.to_sorted(&hcx, true));
+        implementor_map.sort_by_cached_key(|(trait_item, impl_item)| {
+            get_very_stable_hash(&[**trait_item, **impl_item] as &[_], &self.tcx)
+        });
         for (&trait_item, &impl_item) in implementor_map {
             if is_law(self.tcx, trait_item) {
                 laws.push(impl_item);

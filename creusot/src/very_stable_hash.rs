@@ -20,7 +20,7 @@ pub trait VeryStableHash<CTX> {
     fn very_stable_hash(&self, tcx: &CTX, hcx: &mut StableHasher);
 }
 
-pub fn get_very_stable_hash<CTX, T: VeryStableHash<CTX>>(t: &T, tcx: &CTX) -> Hash64 {
+pub fn get_very_stable_hash<CTX, T: VeryStableHash<CTX> + ?Sized>(t: &T, tcx: &CTX) -> Hash64 {
     let mut hcx = StableHasher::new();
     t.very_stable_hash(tcx, &mut hcx);
     hcx.finish::<Hash64>()
