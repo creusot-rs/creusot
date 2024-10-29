@@ -31,10 +31,13 @@ pub struct CommonOptions {
     #[clap(group = "output", long)]
     pub stdout: bool,
     /// Print to a file.
-    #[clap(group = "output", long, env, conflicts_with = "stdout")]
+    #[clap(group = "output", long, env)]
     pub output_file: Option<PathBuf>,
-    #[clap(group = "output", long, env, conflicts_with = "output_file", conflicts_with = "stdout")]
+    #[clap(group = "output", long, env)]
     pub output_dir: Option<PathBuf>,
+    /// Disable output.
+    #[clap(group = "output", long, default_value_t = false, action = clap::ArgAction::SetTrue)]
+    pub check: bool,
     /// Output the generated code in a single file in output_dir.
     #[clap(long, default_value_t = false, action = clap::ArgAction::SetTrue)]
     pub monolithic: bool,

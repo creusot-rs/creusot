@@ -202,6 +202,7 @@ fn print_crate<I: Iterator<Item = FileModule>>(
             )
         }
         Output::Stdout => (None, OutputHandle::File(Box::new(std::io::stdout()))),
+        Output::None => return Ok(None),
     };
 
     for modl in modules {
