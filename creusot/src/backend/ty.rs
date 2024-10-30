@@ -17,7 +17,7 @@ use rustc_middle::ty::{
     GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
-use rustc_target::abi::VariantIdx;
+use rustc_target::{abi::VariantIdx, spec::HasTargetSpec};
 use rustc_type_ir::TyKind::*;
 use std::collections::VecDeque;
 use why3::{
@@ -830,38 +830,93 @@ pub(crate) fn build_closure_accessor<'tcx>(
     (pre_sig, term)
 }
 
+pub(crate) fn concret_intty(ity: rustc_middle::ty::IntTy, pointer_width: u32) -> rustc_middle::ty::IntTy {
+    use rustc_middle::ty::IntTy::*;
+
+    fn int_ty (ity: rustc_middle::ty::IntTy, pointer_width: u32) -> rustc_middle::ty::IntTy {
+        match ity {
+            Isize => {
+                match pointer_width {
+                    8 => int_ty(I8, pointer_width),
+                    16 =>int_ty(I16, pointer_width),
+                    32 =>int_ty(I32, pointer_width),
+                    64 =>int_ty(I64, pointer_width),
+                    128 =>int_ty(I128, pointer_width),
+                    w => panic!("concret_intty unknwon pointer width for isize: {w}"), 
+                }
+            }
+            i => i
+        }
+    }
+
+    int_ty(ity, pointer_width)
+}
+
+pub(crate) fn concret_uintty(uty: rustc_middle::ty::UintTy, pointer_width: u32) -> rustc_middle::ty::UintTy {
+    use rustc_middle::ty::UintTy::*;
+
+    fn uint_ty (uty: rustc_middle::ty::UintTy, pointer_width: u32) -> rustc_middle::ty::UintTy {
+        match uty {
+            Usize => {
+                match pointer_width {
+                    8 => uint_ty(U8, pointer_width),
+                    16 =>uint_ty(U16, pointer_width),
+                    32 =>uint_ty(U32, pointer_width),
+                    64 =>uint_ty(U64, pointer_width),
+                    128 =>uint_ty(U128, pointer_width),
+                    w => panic!("concret_uintty unknwon pointer width for usize: {w}"), 
+                }
+            }
+            i => i
+        }
+    }
+
+    uint_ty(uty, pointer_width)
+}
+
 pub(crate) fn intty_to_ty<'tcx, N: Namer<'tcx>>(
     names: &mut N,
     ity: &rustc_middle::ty::IntTy,
 ) -> MlT {
     use rustc_middle::ty::IntTy::*;
     names.import_prelude_module(PreludeModule::Int);
-    match ity {
-        Isize => {
-            names.import_prelude_module(PreludeModule::Isize);
-            isize_ty()
-        }
-        I8 => {
-            names.import_prelude_module(PreludeModule::Int8);
-            i8_ty()
-        }
-        I16 => {
-            names.import_prelude_module(PreludeModule::Int16);
-            i16_ty()
-        }
-        I32 => {
-            names.import_prelude_module(PreludeModule::Int32);
-            i32_ty()
-        }
-        I64 => {
-            names.import_prelude_module(PreludeModule::Int64);
-            i64_ty()
-        }
-        I128 => {
-            names.import_prelude_module(PreludeModule::Int128);
-            i128_ty()
+
+    fn add_int_ty<'tcx, N: Namer<'tcx>> (names: &mut N, ity: &rustc_middle::ty::IntTy) -> MlT {
+        match ity {
+            Isize => {
+                match names.tcx().target_spec().pointer_width {
+                    8 => add_int_ty(names, &I8),
+                    16 =>add_int_ty(names, &I16),
+                    32 =>add_int_ty(names, &I32),
+                    64 =>add_int_ty(names, &I64),
+                    128 =>add_int_ty(names, &I128),
+                    t => panic!("uintty_to_ty unknwon pointer width for usize: {t}"), 
+                }
+            }
+            I8 => {
+                names.import_prelude_module(PreludeModule::Int8);
+                i8_ty()
+            }
+            I16 => {
+                names.import_prelude_module(PreludeModule::Int16);
+                i16_ty()
+            }
+            I32 => {
+                names.import_prelude_module(PreludeModule::Int32);
+                i32_ty()
+            }
+            I64 => {
+                names.import_prelude_module(PreludeModule::Int64);
+                i64_ty()
+            }
+            I128 => {
+                names.import_prelude_module(PreludeModule::Int128);
+                i128_ty()
+            }
         }
     }
+
+    add_int_ty(names, ity)
 }
 
 pub(crate) fn uintty_to_ty<'tcx, N: Namer<'tcx>>(
@@ -871,32 +926,42 @@ pub(crate) fn uintty_to_ty<'tcx, N: Namer<'tcx>>(
     use rustc_middle::ty::UintTy::*;
     names.import_prelude_module(PreludeModule::Int);
 
-    match ity {
-        Usize => {
-            names.import_prelude_module(PreludeModule::Usize);
-            usize_ty()
-        }
-        U8 => {
-            names.import_prelude_module(PreludeModule::UInt8);
-            u8_ty()
-        }
-        U16 => {
-            names.import_prelude_module(PreludeModule::UInt16);
-            u16_ty()
-        }
-        U32 => {
-            names.import_prelude_module(PreludeModule::UInt32);
-            u32_ty()
-        }
-        U64 => {
-            names.import_prelude_module(PreludeModule::UInt64);
-            u64_ty()
-        }
-        U128 => {
-            names.import_prelude_module(PreludeModule::UInt128);
-            u128_ty()
+    fn add_uint_ty<'tcx, N: Namer<'tcx>> (names: &mut N, ity: &rustc_middle::ty::UintTy) -> MlT {
+        match ity {
+            Usize => {
+                match names.tcx().target_spec().pointer_width {
+                    8 => add_uint_ty(names, &U8),
+                    16 =>add_uint_ty(names, &U16),
+                    32 =>add_uint_ty(names, &U32),
+                    64 =>add_uint_ty(names, &U64),
+                    128 =>add_uint_ty(names, &U128),
+                    t => panic!("uintty_to_ty unknwon pointer width for usize: {t}"), 
+                }
+            }
+            U8 => {
+                names.import_prelude_module(PreludeModule::UInt8);
+                u8_ty()
+            }
+            U16 => {
+                names.import_prelude_module(PreludeModule::UInt16);
+                u16_ty()
+            }
+            U32 => {
+                names.import_prelude_module(PreludeModule::UInt32);
+                u32_ty()
+            }
+            U64 => {
+                names.import_prelude_module(PreludeModule::UInt64);
+                u64_ty()
+            }
+            U128 => {
+                names.import_prelude_module(PreludeModule::UInt128);
+                u128_ty()
+            }
         }
     }
+
+    add_uint_ty(names, ity)
 }
 
 pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(
@@ -942,49 +1007,41 @@ pub(crate) fn single_ty() -> MlT {
 }
 
 pub(crate) fn u8_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("UInt8.t").unwrap())
+    MlT::TConstructor(QName::from_string("UInt8.t"))
 }
 
 pub(crate) fn u16_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("UInt16.t").unwrap())
+    MlT::TConstructor(QName::from_string("UInt16.t"))
 }
 
 pub(crate) fn u32_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("UInt32.t").unwrap())
+    MlT::TConstructor(QName::from_string("UInt32.t"))
 }
 
 pub(crate) fn u64_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("UInt64.t").unwrap())
+    MlT::TConstructor(QName::from_string("UInt64.t"))
 }
 
 pub(crate) fn u128_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("UInt128.t").unwrap())
-}
-
-pub(crate) fn usize_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("USize.t").unwrap())
+    MlT::TConstructor(QName::from_string("UInt128.t"))
 }
 
 pub(crate) fn i8_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("Int8.t").unwrap())
+    MlT::TConstructor(QName::from_string("Int8.t"))
 }
 
 pub(crate) fn i16_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("Int16.t").unwrap())
+    MlT::TConstructor(QName::from_string("Int16.t"))
 }
 
 pub(crate) fn i32_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("Int32.t").unwrap())
+    MlT::TConstructor(QName::from_string("Int32.t"))
 }
 
 pub(crate) fn i64_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("Int64.t").unwrap())
+    MlT::TConstructor(QName::from_string("Int64.t"))
 }
 
 pub(crate) fn i128_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("Int128.t").unwrap())
-}
-
-pub(crate) fn isize_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("ISize.t").unwrap())
+    MlT::TConstructor(QName::from_string("Int128.t"))
 }

@@ -763,7 +763,11 @@ module M_final_borrows__set_7 [#"final_borrows.rs" 56 0 56 21]
   let%span sfinal_borrows1 = "final_borrows.rs" 55 10 55 20
   let%span sresolve2 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   
-  use prelude.prelude.Int32
+  use prelude.prelude.Int128.to_int
+  
+  use prelude.prelude.Int128
+  
+  use prelude.prelude.Int32.to_int
   
   use prelude.prelude.Borrow
   
@@ -773,22 +777,24 @@ module M_final_borrows__set_7 [#"final_borrows.rs" 56 0 56 21]
   
   use prelude.prelude.Int
   
-  predicate resolve'1 (self : borrowed int32) =
+  predicate resolve'1 (self : borrowed Int32.t) =
     [%#sresolve2] self.final = self.current
   
-  predicate resolve'0 (_1 : borrowed int32) =
+  predicate resolve'0 (_1 : borrowed Int32.t) =
     resolve'1 _1
   
   meta "compute_max_steps" 1000000
   
-  let rec set_7 (r:borrowed int32) (return'  (ret:()))= (! bb0
+  let rec set_7 (r:borrowed Int32.t) (return'  (ret:()))= (! bb0
     [ bb0 = s0
-      [ s0 =  [ &r <- { r with current = ([%#sfinal_borrows0] (7 : int32)) ; } ] s1
+      [ s0 =  [ &r <- { r with current = ([%#sfinal_borrows0] (7 : Int32.t)) ; } ] s1
       | s1 = -{resolve'0 r}- s2
       | s2 = return' {_0} ]
        ]
-    ) [ & _0 : () = any_l () | & r : borrowed int32 = r ] 
-    [ return' (result:())-> {[@expl:postcondition] [%#sfinal_borrows1] Int32.to_int r.final = 7} (! return' {result}) ]
+    ) [ & _0 : () = any_l () | & r : borrowed Int32.t = r ] 
+    [ return' (result:())-> {[@expl:postcondition] [%#sfinal_borrows1] Int32.to_int r.final
+      = Int128.to_int (7 : Int128.t)}
+      (! return' {result}) ]
     
 end
 module M_final_borrows__not_final_borrow_works [#"final_borrows.rs" 61 0 61 38]
@@ -798,7 +804,11 @@ module M_final_borrows__not_final_borrow_works [#"final_borrows.rs" 61 0 61 38]
   let%span sfinal_borrows3 = "final_borrows.rs" 55 10 55 20
   let%span sresolve4 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   
-  use prelude.prelude.Int32
+  use prelude.prelude.Int128.to_int
+  
+  use prelude.prelude.Int128
+  
+  use prelude.prelude.Int32.to_int
   
   use prelude.prelude.Intrinsic
   
@@ -808,47 +818,50 @@ module M_final_borrows__not_final_borrow_works [#"final_borrows.rs" 61 0 61 38]
   
   use prelude.prelude.Borrow
   
-  predicate resolve'1 (self : borrowed int32) =
+  predicate resolve'1 (self : borrowed Int32.t) =
     [%#sresolve4] self.final = self.current
   
-  predicate resolve'0 (_1 : borrowed int32) =
+  predicate resolve'0 (_1 : borrowed Int32.t) =
     resolve'1 _1
   
-  let rec set_7'0 (r:borrowed int32) (return'  (ret:()))= any
-    [ return' (result:())-> {[%#sfinal_borrows3] Int32.to_int r.final = 7} (! return' {result}) ]
+  let rec set_7'0 (r:borrowed Int32.t) (return'  (ret:()))= any
+    [ return' (result:())-> {[%#sfinal_borrows3] Int32.to_int r.final = Int128.to_int (7 : Int128.t)}
+      (! return' {result}) ]
     
   
   meta "compute_max_steps" 1000000
   
-  let rec not_final_borrow_works (_1:()) (return'  (ret:int32))= (! bb0
+  let rec not_final_borrow_works (_1:()) (return'  (ret:Int32.t))= (! bb0
     [ bb0 = s0
-      [ s0 =  [ &x <- [%#sfinal_borrows0] (1 : int32) ] s1
-      | s1 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &r <- _ret' ]  [ &x <- _ret'.final ] s2)
-      | s2 = Borrow.borrow_mut <int32> {r.current}
-          (fun (_ret':borrowed int32) ->  [ &r1 <- _ret' ]  [ &r <- { r with current = _ret'.final ; } ] s3)
-      | s3 = Borrow.borrow_final <int32> {r1.current} {Borrow.get_id r1}
-          (fun (_ret':borrowed int32) ->  [ &_7 <- _ret' ]  [ &r1 <- { r1 with current = _ret'.final ; } ] s4)
+      [ s0 =  [ &x <- [%#sfinal_borrows0] (1 : Int32.t) ] s1
+      | s1 = Borrow.borrow_mut <Int32.t> {x}
+          (fun (_ret':borrowed Int32.t) ->  [ &r <- _ret' ]  [ &x <- _ret'.final ] s2)
+      | s2 = Borrow.borrow_mut <Int32.t> {r.current}
+          (fun (_ret':borrowed Int32.t) ->  [ &r1 <- _ret' ]  [ &r <- { r with current = _ret'.final ; } ] s3)
+      | s3 = Borrow.borrow_final <Int32.t> {r1.current} {Borrow.get_id r1}
+          (fun (_ret':borrowed Int32.t) ->  [ &_7 <- _ret' ]  [ &r1 <- { r1 with current = _ret'.final ; } ] s4)
       | s4 = set_7'0 {_7} (fun (_ret':()) ->  [ &_6 <- _ret' ] s5)
       | s5 = bb1 ]
       
     | bb1 = s0
       [ s0 = -{resolve'0 r1}- s1
       | s1 =  [ &y <- r.current ] s2
-      | s2 =  [ &r <- { r with current = ([%#sfinal_borrows1] (2 : int32)) ; } ] s3
+      | s2 =  [ &r <- { r with current = ([%#sfinal_borrows1] (2 : Int32.t)) ; } ] s3
       | s3 = -{resolve'0 r}- s4
-      | s4 = Int32.add {x} {y} (fun (_ret':int32) ->  [ &_0 <- _ret' ] s5)
+      | s4 = Int32.add {x} {y} (fun (_ret':Int32.t) ->  [ &_0 <- _ret' ] s5)
       | s5 = return' {_0} ]
        ]
     )
-    [ & _0 : int32 = any_l ()
-    | & x : int32 = any_l ()
-    | & r : borrowed int32 = any_l ()
-    | & r1 : borrowed int32 = any_l ()
+    [ & _0 : Int32.t = any_l ()
+    | & x : Int32.t = any_l ()
+    | & r : borrowed Int32.t = any_l ()
+    | & r1 : borrowed Int32.t = any_l ()
     | & _6 : () = any_l ()
-    | & _7 : borrowed int32 = any_l ()
-    | & y : int32 = any_l () ]
+    | & _7 : borrowed Int32.t = any_l ()
+    | & y : Int32.t = any_l () ]
     
-    [ return' (result:int32)-> {[@expl:postcondition] [%#sfinal_borrows2] Int32.to_int result = 9}
+    [ return' (result:Int32.t)-> {[@expl:postcondition] [%#sfinal_borrows2] Int32.to_int result
+      = Int128.to_int (9 : Int128.t)}
       (! return' {result}) ]
     
 end
@@ -857,7 +870,11 @@ module M_final_borrows__branching [#"final_borrows.rs" 72 0 72 32]
   let%span sfinal_borrows1 = "final_borrows.rs" 71 10 71 22
   let%span sresolve2 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   
-  use prelude.prelude.Int32
+  use prelude.prelude.Int128.to_int
+  
+  use prelude.prelude.Int128
+  
+  use prelude.prelude.Int32.to_int
   
   use prelude.prelude.Intrinsic
   
@@ -867,29 +884,31 @@ module M_final_borrows__branching [#"final_borrows.rs" 72 0 72 32]
   
   use prelude.prelude.Borrow
   
-  predicate resolve'1 (self : borrowed int32) =
+  predicate resolve'1 (self : borrowed Int32.t) =
     [%#sresolve2] self.final = self.current
   
-  predicate resolve'0 (_1 : borrowed int32) =
+  predicate resolve'0 (_1 : borrowed Int32.t) =
     resolve'1 _1
   
   meta "compute_max_steps" 1000000
   
-  let rec branching (b:bool) (return'  (ret:int32))= (! bb0
+  let rec branching (b:bool) (return'  (ret:Int32.t))= (! bb0
     [ bb0 = s0
-      [ s0 =  [ &x <- [%#sfinal_borrows0] (3 : int32) ] s1
-      | s1 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &r1 <- _ret' ]  [ &x <- _ret'.final ] s2)
-      | s2 = Borrow.borrow_mut <int32> {r1.current}
-          (fun (_ret':borrowed int32) ->  [ &r2 <- _ret' ]  [ &r1 <- { r1 with current = _ret'.final ; } ] s3)
+      [ s0 =  [ &x <- [%#sfinal_borrows0] (3 : Int32.t) ] s1
+      | s1 = Borrow.borrow_mut <Int32.t> {x}
+          (fun (_ret':borrowed Int32.t) ->  [ &r1 <- _ret' ]  [ &x <- _ret'.final ] s2)
+      | s2 = Borrow.borrow_mut <Int32.t> {r1.current}
+          (fun (_ret':borrowed Int32.t) ->  [ &r2 <- _ret' ]  [ &r1 <- { r1 with current = _ret'.final ; } ] s3)
       | s3 = -{resolve'0 r2}- s4
       | s4 =  [ &y <- r2.current ] s5
       | s5 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ]  ]
       
     | bb1 = s0
       [ s0 = -{resolve'0 r1}- s1
-      | s1 = Borrow.borrow_mut <int32> {y} (fun (_ret':borrowed int32) ->  [ &_11 <- _ret' ]  [ &y <- _ret'.final ] s2)
-      | s2 = Borrow.borrow_final <int32> {_11.current} {Borrow.get_id _11}
-          (fun (_ret':borrowed int32) ->  [ &_10 <- _ret' ]  [ &_11 <- { _11 with current = _ret'.final ; } ] s3)
+      | s1 = Borrow.borrow_mut <Int32.t> {y}
+          (fun (_ret':borrowed Int32.t) ->  [ &_11 <- _ret' ]  [ &y <- _ret'.final ] s2)
+      | s2 = Borrow.borrow_final <Int32.t> {_11.current} {Borrow.get_id _11}
+          (fun (_ret':borrowed Int32.t) ->  [ &_10 <- _ret' ]  [ &_11 <- { _11 with current = _ret'.final ; } ] s3)
       | s3 =  [ &r1 <- _10 ] s4
       | s4 = -{resolve'0 _11}- s5
       | s5 = -{resolve'0 r1}- s6
@@ -897,8 +916,8 @@ module M_final_borrows__branching [#"final_borrows.rs" 72 0 72 32]
       | s7 = bb3 ]
       
     | bb2 = s0
-      [ s0 = Borrow.borrow_final <int32> {r1.current} {Borrow.get_id r1}
-          (fun (_ret':borrowed int32) ->  [ &r21 <- _ret' ]  [ &r1 <- { r1 with current = _ret'.final ; } ] s1)
+      [ s0 = Borrow.borrow_final <Int32.t> {r1.current} {Borrow.get_id r1}
+          (fun (_ret':borrowed Int32.t) ->  [ &r21 <- _ret' ]  [ &r1 <- { r1 with current = _ret'.final ; } ] s1)
       | s1 = -{resolve'0 r21}- s2
       | s2 = -{resolve'0 r1}- s3
       | s3 =  [ &y <- r21.current ] s4
@@ -906,17 +925,18 @@ module M_final_borrows__branching [#"final_borrows.rs" 72 0 72 32]
       
     | bb3 = s0 [ s0 =  [ &_0 <- y ] s1 | s1 = return' {_0} ]  ]
     )
-    [ & _0 : int32 = any_l ()
+    [ & _0 : Int32.t = any_l ()
     | & b : bool = b
-    | & x : int32 = any_l ()
-    | & y : int32 = any_l ()
-    | & r1 : borrowed int32 = any_l ()
-    | & r2 : borrowed int32 = any_l ()
-    | & _10 : borrowed int32 = any_l ()
-    | & _11 : borrowed int32 = any_l ()
-    | & r21 : borrowed int32 = any_l () ]
+    | & x : Int32.t = any_l ()
+    | & y : Int32.t = any_l ()
+    | & r1 : borrowed Int32.t = any_l ()
+    | & r2 : borrowed Int32.t = any_l ()
+    | & _10 : borrowed Int32.t = any_l ()
+    | & _11 : borrowed Int32.t = any_l ()
+    | & r21 : borrowed Int32.t = any_l () ]
     
-    [ return' (result:int32)-> {[@expl:postcondition] [%#sfinal_borrows1] Int32.to_int result = 3}
+    [ return' (result:Int32.t)-> {[@expl:postcondition] [%#sfinal_borrows1] Int32.to_int result
+      = Int128.to_int (3 : Int128.t)}
       (! return' {result}) ]
     
 end
@@ -1323,7 +1343,11 @@ module M_final_borrows__box_reborrow_in_struct [#"final_borrows.rs" 130 0 130 66
   let%span sfinal_borrows1 = "final_borrows.rs" 129 10 129 22
   let%span sresolve2 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   
-  use prelude.prelude.Int32
+  use prelude.prelude.Int128.to_int
+  
+  use prelude.prelude.Int128
+  
+  use prelude.prelude.Int32.to_int
   
   use prelude.prelude.Intrinsic
   
@@ -1333,33 +1357,33 @@ module M_final_borrows__box_reborrow_in_struct [#"final_borrows.rs" 130 0 130 66
   
   use prelude.prelude.Borrow
   
-  predicate resolve'3 (self : borrowed (int32, borrowed int32)) =
+  predicate resolve'3 (self : borrowed (Int32.t, borrowed Int32.t)) =
     [%#sresolve2] self.final = self.current
   
-  predicate resolve'1 (_1 : borrowed (int32, borrowed int32)) =
+  predicate resolve'1 (_1 : borrowed (Int32.t, borrowed Int32.t)) =
     resolve'3 _1
   
-  predicate resolve'2 (self : borrowed int32) =
+  predicate resolve'2 (self : borrowed Int32.t) =
     [%#sresolve2] self.final = self.current
   
-  predicate resolve'0 (_1 : borrowed int32) =
+  predicate resolve'0 (_1 : borrowed Int32.t) =
     resolve'2 _1
   
   meta "compute_max_steps" 1000000
   
-  let rec box_reborrow_in_struct (x:borrowed (int32, borrowed int32)) (return'  (ret:int32))= {[%#sfinal_borrows0] Int32.to_int (let (_, a) = x.current in a).current
-    = 3}
+  let rec box_reborrow_in_struct (x:borrowed (Int32.t, borrowed Int32.t)) (return'  (ret:Int32.t))= {[%#sfinal_borrows0] Int32.to_int (let (_, a) = x.current in a).current
+    = Int128.to_int (3 : Int128.t)}
     (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_mut <int32> {(let (_, r'0) = x.current in r'0).current}
-          (fun (_ret':borrowed int32) ->
+      [ s0 = Borrow.borrow_mut <Int32.t> {(let (_, r'0) = x.current in r'0).current}
+          (fun (_ret':borrowed Int32.t) ->
              [ &_5 <- _ret' ] 
             
             [ &x <- { x with current = (let (r'1, _) = x.current in (r'1, { (let (_, r'0) = x.current in r'0) with current = _ret'.final ; })) ; } ]
             
             s1)
-      | s1 = Borrow.borrow_final <int32> {_5.current} {Borrow.get_id _5}
-          (fun (_ret':borrowed int32) ->  [ &borrow <- _ret' ]  [ &_5 <- { _5 with current = _ret'.final ; } ] s2)
+      | s1 = Borrow.borrow_final <Int32.t> {_5.current} {Borrow.get_id _5}
+          (fun (_ret':borrowed Int32.t) ->  [ &borrow <- _ret' ]  [ &_5 <- { _5 with current = _ret'.final ; } ] s2)
       | s2 = -{resolve'0 _5}- s3
       | s3 = -{resolve'0 borrow}- s4
       | s4 =  [ &_0 <- borrow.current ] s5
@@ -1367,12 +1391,13 @@ module M_final_borrows__box_reborrow_in_struct [#"final_borrows.rs" 130 0 130 66
       | s6 = return' {_0} ]
        ]
     )
-    [ & _0 : int32 = any_l ()
-    | & x : borrowed (int32, borrowed int32) = x
-    | & borrow : borrowed int32 = any_l ()
-    | & _5 : borrowed int32 = any_l () ]
+    [ & _0 : Int32.t = any_l ()
+    | & x : borrowed (Int32.t, borrowed Int32.t) = x
+    | & borrow : borrowed Int32.t = any_l ()
+    | & _5 : borrowed Int32.t = any_l () ]
     
-    [ return' (result:int32)-> {[@expl:postcondition] [%#sfinal_borrows1] Int32.to_int result = 3}
+    [ return' (result:Int32.t)-> {[@expl:postcondition] [%#sfinal_borrows1] Int32.to_int result
+      = Int128.to_int (3 : Int128.t)}
       (! return' {result}) ]
     
 end
@@ -1472,7 +1497,11 @@ module M_final_borrows__borrow_in_box_tuple_1 [#"final_borrows.rs" 142 0 142 60]
   let%span sresolve3 = "../../../../creusot-contracts/src/resolve.rs" 55 8 55 23
   let%span sresolve4 = "../../../../creusot-contracts/src/resolve.rs" 27 8 27 44
   
-  use prelude.prelude.Int32
+  use prelude.prelude.Int128.to_int
+  
+  use prelude.prelude.Int128
+  
+  use prelude.prelude.Int32.to_int
   
   use prelude.prelude.Intrinsic
   
@@ -1482,41 +1511,41 @@ module M_final_borrows__borrow_in_box_tuple_1 [#"final_borrows.rs" 142 0 142 60]
   
   use prelude.prelude.Borrow
   
-  predicate resolve'2 (self : borrowed int32) =
+  predicate resolve'2 (self : borrowed Int32.t) =
     [%#sresolve2] self.final = self.current
   
-  predicate resolve'0 (_1 : borrowed int32) =
+  predicate resolve'0 (_1 : borrowed Int32.t) =
     resolve'2 _1
   
-  predicate resolve'6 (_1 : int32) =
+  predicate resolve'6 (_1 : Int32.t) =
     true
   
-  predicate resolve'5 (self : (int32, borrowed int32)) =
+  predicate resolve'5 (self : (Int32.t, borrowed Int32.t)) =
     [%#sresolve4] resolve'6 (let (a, _) = self in a) /\ resolve'0 (let (_, a) = self in a)
   
-  predicate resolve'4 (_1 : (int32, borrowed int32)) =
+  predicate resolve'4 (_1 : (Int32.t, borrowed Int32.t)) =
     resolve'5 _1
   
-  predicate resolve'3 (self : (int32, borrowed int32)) =
+  predicate resolve'3 (self : (Int32.t, borrowed Int32.t)) =
     [%#sresolve3] resolve'4 self
   
-  predicate resolve'1 (_1 : (int32, borrowed int32)) =
+  predicate resolve'1 (_1 : (Int32.t, borrowed Int32.t)) =
     resolve'3 _1
   
   meta "compute_max_steps" 1000000
   
-  let rec borrow_in_box_tuple_1 (x:(int32, borrowed int32)) (return'  (ret:int32))= {[%#sfinal_borrows0] Int32.to_int (let (_, a) = x in a).current
-    = 2}
+  let rec borrow_in_box_tuple_1 (x:(Int32.t, borrowed Int32.t)) (return'  (ret:Int32.t))= {[%#sfinal_borrows0] Int32.to_int (let (_, a) = x in a).current
+    = Int128.to_int (2 : Int128.t)}
     (! bb0
     [ bb0 = bb1
     | bb1 = s0
-      [ s0 = Borrow.borrow_final <int32> {(let (_, r'0) = x in r'0).current} {Borrow.get_id (let (_, r'0) = x in r'0)}
-          (fun (_ret':borrowed int32) ->
+      [ s0 = Borrow.borrow_final <Int32.t> {(let (_, r'0) = x in r'0).current} {Borrow.get_id (let (_, r'0) = x in r'0)}
+          (fun (_ret':borrowed Int32.t) ->
              [ &_5 <- _ret' ] 
              [ &x <- let (r'1, _) = x in (r'1, { (let (_, r'0) = x in r'0) with current = _ret'.final ; }) ] 
             s1)
-      | s1 = Borrow.borrow_final <int32> {_5.current} {Borrow.get_id _5}
-          (fun (_ret':borrowed int32) ->  [ &borrow <- _ret' ]  [ &_5 <- { _5 with current = _ret'.final ; } ] s2)
+      | s1 = Borrow.borrow_final <Int32.t> {_5.current} {Borrow.get_id _5}
+          (fun (_ret':borrowed Int32.t) ->  [ &borrow <- _ret' ]  [ &_5 <- { _5 with current = _ret'.final ; } ] s2)
       | s2 = -{resolve'0 _5}- s3
       | s3 = -{resolve'0 borrow}- s4
       | s4 =  [ &_0 <- borrow.current ] s5
@@ -1525,12 +1554,13 @@ module M_final_borrows__borrow_in_box_tuple_1 [#"final_borrows.rs" 142 0 142 60]
       
     | bb2 = return' {_0} ]
     )
-    [ & _0 : int32 = any_l ()
-    | & x : (int32, borrowed int32) = x
-    | & borrow : borrowed int32 = any_l ()
-    | & _5 : borrowed int32 = any_l () ]
+    [ & _0 : Int32.t = any_l ()
+    | & x : (Int32.t, borrowed Int32.t) = x
+    | & borrow : borrowed Int32.t = any_l ()
+    | & _5 : borrowed Int32.t = any_l () ]
     
-    [ return' (result:int32)-> {[@expl:postcondition] [%#sfinal_borrows1] Int32.to_int result = 2}
+    [ return' (result:Int32.t)-> {[@expl:postcondition] [%#sfinal_borrows1] Int32.to_int result
+      = Int128.to_int (2 : Int128.t)}
       (! return' {result}) ]
     
 end
@@ -1541,7 +1571,11 @@ module M_final_borrows__borrow_in_box_tuple_2 [#"final_borrows.rs" 149 0 149 60]
   let%span sresolve3 = "../../../../creusot-contracts/src/resolve.rs" 27 8 27 44
   let%span sresolve4 = "../../../../creusot-contracts/src/resolve.rs" 55 8 55 23
   
-  use prelude.prelude.Int32
+  use prelude.prelude.Int128.to_int
+  
+  use prelude.prelude.Int128
+  
+  use prelude.prelude.Int32.to_int
   
   use prelude.prelude.Intrinsic
   
@@ -1551,41 +1585,41 @@ module M_final_borrows__borrow_in_box_tuple_2 [#"final_borrows.rs" 149 0 149 60]
   
   use prelude.prelude.Borrow
   
-  predicate resolve'2 (self : borrowed int32) =
+  predicate resolve'2 (self : borrowed Int32.t) =
     [%#sresolve2] self.final = self.current
   
-  predicate resolve'0 (_1 : borrowed int32) =
+  predicate resolve'0 (_1 : borrowed Int32.t) =
     resolve'2 _1
   
-  predicate resolve'6 (self : borrowed int32) =
+  predicate resolve'6 (self : borrowed Int32.t) =
     [%#sresolve4] resolve'0 self
   
-  predicate resolve'5 (_1 : borrowed int32) =
+  predicate resolve'5 (_1 : borrowed Int32.t) =
     resolve'6 _1
   
-  predicate resolve'4 (_1 : int32) =
+  predicate resolve'4 (_1 : Int32.t) =
     true
   
-  predicate resolve'3 (self : (int32, borrowed int32)) =
+  predicate resolve'3 (self : (Int32.t, borrowed Int32.t)) =
     [%#sresolve3] resolve'4 (let (a, _) = self in a) /\ resolve'5 (let (_, a) = self in a)
   
-  predicate resolve'1 (_1 : (int32, borrowed int32)) =
+  predicate resolve'1 (_1 : (Int32.t, borrowed Int32.t)) =
     resolve'3 _1
   
   meta "compute_max_steps" 1000000
   
-  let rec borrow_in_box_tuple_2 (x:(int32, borrowed int32)) (return'  (ret:int32))= {[%#sfinal_borrows0] Int32.to_int (let (_, a) = x in a).current
-    = 2}
+  let rec borrow_in_box_tuple_2 (x:(Int32.t, borrowed Int32.t)) (return'  (ret:Int32.t))= {[%#sfinal_borrows0] Int32.to_int (let (_, a) = x in a).current
+    = Int128.to_int (2 : Int128.t)}
     (! bb0
     [ bb0 = bb1
     | bb1 = s0
-      [ s0 = Borrow.borrow_final <int32> {(let (_, r'0) = x in r'0).current} {Borrow.get_id (let (_, r'0) = x in r'0)}
-          (fun (_ret':borrowed int32) ->
+      [ s0 = Borrow.borrow_final <Int32.t> {(let (_, r'0) = x in r'0).current} {Borrow.get_id (let (_, r'0) = x in r'0)}
+          (fun (_ret':borrowed Int32.t) ->
              [ &_5 <- _ret' ] 
              [ &x <- let (r'1, _) = x in (r'1, { (let (_, r'0) = x in r'0) with current = _ret'.final ; }) ] 
             s1)
-      | s1 = Borrow.borrow_final <int32> {_5.current} {Borrow.get_id _5}
-          (fun (_ret':borrowed int32) ->  [ &borrow <- _ret' ]  [ &_5 <- { _5 with current = _ret'.final ; } ] s2)
+      | s1 = Borrow.borrow_final <Int32.t> {_5.current} {Borrow.get_id _5}
+          (fun (_ret':borrowed Int32.t) ->  [ &borrow <- _ret' ]  [ &_5 <- { _5 with current = _ret'.final ; } ] s2)
       | s2 = -{resolve'0 _5}- s3
       | s3 = -{resolve'0 borrow}- s4
       | s4 =  [ &_0 <- borrow.current ] s5
@@ -1594,12 +1628,13 @@ module M_final_borrows__borrow_in_box_tuple_2 [#"final_borrows.rs" 149 0 149 60]
       
     | bb2 = return' {_0} ]
     )
-    [ & _0 : int32 = any_l ()
-    | & x : (int32, borrowed int32) = x
-    | & borrow : borrowed int32 = any_l ()
-    | & _5 : borrowed int32 = any_l () ]
+    [ & _0 : Int32.t = any_l ()
+    | & x : (Int32.t, borrowed Int32.t) = x
+    | & borrow : borrowed Int32.t = any_l ()
+    | & _5 : borrowed Int32.t = any_l () ]
     
-    [ return' (result:int32)-> {[@expl:postcondition] [%#sfinal_borrows1] Int32.to_int result = 2}
+    [ return' (result:Int32.t)-> {[@expl:postcondition] [%#sfinal_borrows1] Int32.to_int result
+      = Int128.to_int (2 : Int128.t)}
       (! return' {result}) ]
     
 end
@@ -1899,32 +1934,32 @@ module M_final_borrows__shallow_borrow_no_gen [#"final_borrows.rs" 191 0 191 49]
   
   use prelude.prelude.Borrow
   
-  predicate resolve'1 (self : borrowed (Option'0.t_Option int32)) =
+  predicate resolve'1 (self : borrowed (Option'0.t_Option Int32.t)) =
     [%#sresolve2] self.final = self.current
   
-  predicate resolve'0 (_1 : borrowed (Option'0.t_Option int32)) =
+  predicate resolve'0 (_1 : borrowed (Option'0.t_Option Int32.t)) =
     resolve'1 _1
   
   meta "compute_max_steps" 1000000
   
-  let rec shallow_borrow_no_gen (x:borrowed (Option'0.t_Option int32)) (return'  (ret:()))= (! bb0
+  let rec shallow_borrow_no_gen (x:borrowed (Option'0.t_Option Int32.t)) (return'  (ret:()))= (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_final <Option'0.t_Option int32> {x.current} {Borrow.get_id x}
-          (fun (_ret':borrowed (Option'0.t_Option int32)) ->
+      [ s0 = Borrow.borrow_final <Option'0.t_Option Int32.t> {x.current} {Borrow.get_id x}
+          (fun (_ret':borrowed (Option'0.t_Option Int32.t)) ->
              [ &_r <- _ret' ] 
              [ &x <- { x with current = _ret'.final ; } ] 
             s1)
       | s1 = -{resolve'0 _r}- s2
       | s2 = any
-        [ br0 -> {x.current = Option'0.C_None } (! bb7) | br1 (a:int32)-> {x.current = Option'0.C_Some a} (! bb2) ]
+        [ br0 -> {x.current = Option'0.C_None } (! bb7) | br1 (a:Int32.t)-> {x.current = Option'0.C_Some a} (! bb2) ]
          ]
       
     | bb7 = s0 [ s0 = -{resolve'0 x}- s1 | s1 = bb1 ] 
     | bb2 = bb3
     | bb3 = s0
-      [ s0 = Option'0.v_Some <int32> {x.current} (fun (r0'0:int32) ->  [ &inner <- r0'0 ] s1)
+      [ s0 = Option'0.v_Some <Int32.t> {x.current} (fun (r0'0:Int32.t) ->  [ &inner <- r0'0 ] s1)
       | s1 =  [ &inner1 <- inner ] s2
-      | s2 = Int32.eq {inner1} {[%#sfinal_borrows0] (2 : int32)} (fun (_ret':bool) ->  [ &_8 <- _ret' ] s3)
+      | s2 = Int32.eq {inner1} {[%#sfinal_borrows0] (2 : Int32.t)} (fun (_ret':bool) ->  [ &_8 <- _ret' ] s3)
       | s3 = any [ br0 -> {_8 = false} (! bb5) | br1 -> {_8} (! bb4) ]  ]
       
     | bb4 = s0 [ s0 = -{resolve'0 x}- s1 | s1 = {[@expl:assertion] [%#sfinal_borrows1] _r = x} s2 | s2 = bb6 ] 
@@ -1933,10 +1968,10 @@ module M_final_borrows__shallow_borrow_no_gen [#"final_borrows.rs" 191 0 191 49]
     | bb6 = return' {_0} ]
     )
     [ & _0 : () = any_l ()
-    | & x : borrowed (Option'0.t_Option int32) = x
-    | & _r : borrowed (Option'0.t_Option int32) = any_l ()
-    | & inner : int32 = any_l ()
-    | & inner1 : int32 = any_l ()
+    | & x : borrowed (Option'0.t_Option Int32.t) = x
+    | & _r : borrowed (Option'0.t_Option Int32.t) = any_l ()
+    | & inner : Int32.t = any_l ()
+    | & inner1 : Int32.t = any_l ()
     | & _8 : bool = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
@@ -1972,12 +2007,16 @@ module M_final_borrows__index_mut_slice [#"final_borrows.rs" 208 0 208 48]
   
   use seq.Seq
   
+  use prelude.prelude.Int128.to_int
+  
+  use prelude.prelude.Int128
+  
   use prelude.prelude.Int
   
   use seq.Seq
   
   predicate invariant'3 (self : Seq.seq t) =
-    [%#sseq13] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'5 (Seq.get self i)
+    [%#sseq13] forall i : int . Int128.to_int (0 : Int128.t) <= i /\ i < Seq.length self  -> inv'5 (Seq.get self i)
   
   predicate inv'4 (_1 : Seq.seq t)
   
@@ -1987,16 +2026,16 @@ module M_final_borrows__index_mut_slice [#"final_borrows.rs" 208 0 208 48]
   
   use prelude.prelude.Slice
   
-  use prelude.prelude.UIntSize
+  use prelude.prelude.UInt64.to_uint
   
-  use prelude.prelude.UIntSize
+  use prelude.prelude.UInt64
   
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function view'1 (self : slice t) : Seq.seq t
   
   axiom view'1_spec : forall self : slice t . ([%#sslice10] view'1 self = Slice.id self)
-  && ([%#sslice9] Seq.length (view'1 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  && ([%#sslice9] Seq.length (view'1 self) <= UInt64.to_int (v_MAX'0 : UInt64.t))
   
   predicate invariant'2 (self : slice t) =
     [%#sslice12] inv'4 (view'1 self)
@@ -2046,12 +2085,12 @@ module M_final_borrows__index_mut_slice [#"final_borrows.rs" 208 0 208 48]
   meta "compute_max_steps" 1000000
   
   let rec index_mut_slice (v:borrowed (slice t)) (return'  (ret:borrowed t))= {[%#sfinal_borrows3] inv'2 v}
-    {[%#sfinal_borrows2] Seq.length (view'0 v) = 42}
+    {[%#sfinal_borrows2] Seq.length (view'0 v) = Int128.to_int (42 : Int128.t)}
     (! bb0
     [ bb0 = s0
-      [ s0 =  [ &_6 <- [%#sfinal_borrows0] (12 : usize) ] s1
+      [ s0 =  [ &_6 <- [%#sfinal_borrows0] (12 : UInt64.t) ] s1
       | s1 =  [ &_7 <- Slice.length v.current ] s2
-      | s2 = UIntSize.lt {_6} {_7} (fun (_ret':bool) ->  [ &_8 <- _ret' ] s3)
+      | s2 = UInt64.lt {_6} {_7} (fun (_ret':bool) ->  [ &_8 <- _ret' ] s3)
       | s3 = {[@expl:index in bounds] [%#sfinal_borrows1] _8} s4
       | s4 = bb1 ]
       
@@ -2092,13 +2131,13 @@ module M_final_borrows__index_mut_slice [#"final_borrows.rs" 208 0 208 48]
     | & v : borrowed (slice t) = v
     | & _2 : borrowed t = any_l ()
     | & _5 : borrowed t = any_l ()
-    | & _6 : usize = any_l ()
-    | & _7 : usize = any_l ()
+    | & _6 : UInt64.t = any_l ()
+    | & _7 : UInt64.t = any_l ()
     | & _8 : bool = any_l () ]
     
     [ return' (result:borrowed t)-> {[@expl:postcondition] [%#sfinal_borrows5] inv'1 result}
       {[@expl:postcondition] [%#sfinal_borrows4] result
-      = Borrow.borrow_logic (index_logic'0 v.current 12) (index_logic'0 v.final 12) (Borrow.inherit_id (Borrow.get_id v) 12)}
+      = Borrow.borrow_logic (index_logic'0 v.current (Int128.to_int (12 : Int128.t))) (index_logic'0 v.final (Int128.to_int (12 : Int128.t))) (Borrow.inherit_id (Borrow.get_id v) (Int128.to_int (12 : Int128.t)))}
       (! return' {result}) ]
     
 end
@@ -2132,12 +2171,16 @@ module M_final_borrows__index_mut_array [#"final_borrows.rs" 214 0 214 52]
   
   use seq.Seq
   
+  use prelude.prelude.Int128.to_int
+  
+  use prelude.prelude.Int128
+  
   use prelude.prelude.Int
   
   use seq.Seq
   
   predicate invariant'3 (self : Seq.seq t) =
-    [%#sseq11] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'5 (Seq.get self i)
+    [%#sseq11] forall i : int . Int128.to_int (0 : Int128.t) <= i /\ i < Seq.length self  -> inv'5 (Seq.get self i)
   
   predicate inv'4 (_1 : Seq.seq t)
   
@@ -2172,12 +2215,12 @@ module M_final_borrows__index_mut_array [#"final_borrows.rs" 214 0 214 52]
   
   use seq.Seq
   
-  use prelude.prelude.UIntSize
+  use prelude.prelude.UInt64.to_uint
   
-  use prelude.prelude.UIntSize
+  use prelude.prelude.UInt64
   
-  function index_logic'0 [@inline:trivial] (self : array t) (ix : usize) : t =
-    [%#sops7] Seq.get (Slice.id self) (UIntSize.to_int ix)
+  function index_logic'0 [@inline:trivial] (self : array t) (ix : UInt64.t) : t =
+    [%#sops7] Seq.get (Slice.id self) (UInt64.to_int ix)
   
   function view'0 (self : borrowed (array t)) : Seq.seq t =
     [%#smodel6] Slice.id self.current
@@ -2199,12 +2242,12 @@ module M_final_borrows__index_mut_array [#"final_borrows.rs" 214 0 214 52]
   meta "compute_max_steps" 1000000
   
   let rec index_mut_array (v:borrowed (array t)) (return'  (ret:borrowed t))= {[%#sfinal_borrows3] inv'2 v}
-    {[%#sfinal_borrows2] Seq.length (view'0 v) = 31}
+    {[%#sfinal_borrows2] Seq.length (view'0 v) = Int128.to_int (31 : Int128.t)}
     (! bb0
     [ bb0 = s0
-      [ s0 =  [ &_6 <- [%#sfinal_borrows0] (12 : usize) ] s1
+      [ s0 =  [ &_6 <- [%#sfinal_borrows0] (12 : UInt64.t) ] s1
       | s1 =  [ &_7 <- Slice.length v.current ] s2
-      | s2 = UIntSize.lt {_6} {_7} (fun (_ret':bool) ->  [ &_8 <- _ret' ] s3)
+      | s2 = UInt64.lt {_6} {_7} (fun (_ret':bool) ->  [ &_8 <- _ret' ] s3)
       | s3 = {[@expl:index in bounds] [%#sfinal_borrows1] _8} s4
       | s4 = bb1 ]
       
@@ -2245,13 +2288,13 @@ module M_final_borrows__index_mut_array [#"final_borrows.rs" 214 0 214 52]
     | & v : borrowed (array t) = v
     | & _2 : borrowed t = any_l ()
     | & _5 : borrowed t = any_l ()
-    | & _6 : usize = any_l ()
-    | & _7 : usize = any_l ()
+    | & _6 : UInt64.t = any_l ()
+    | & _7 : UInt64.t = any_l ()
     | & _8 : bool = any_l () ]
     
     [ return' (result:borrowed t)-> {[@expl:postcondition] [%#sfinal_borrows5] inv'1 result}
       {[@expl:postcondition] [%#sfinal_borrows4] result
-      = Borrow.borrow_logic (index_logic'0 v.current (12 : usize)) (index_logic'0 v.final (12 : usize)) (Borrow.inherit_id (Borrow.get_id v) (12 : usize))}
+      = Borrow.borrow_logic (index_logic'0 v.current (12 : UInt64.t)) (index_logic'0 v.final (12 : UInt64.t)) (Borrow.inherit_id (Borrow.get_id v) (12 : UInt64.t))}
       (! return' {result}) ]
     
 end

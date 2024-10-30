@@ -1,6 +1,6 @@
 use super::{program::borrow_generated_id, Why3Generator};
 use crate::{
-    backend::{program::{int_to_prelude, uint_to_prelude}, ty::{floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty}},
+    backend::{program::{int_to_prelude, uint_to_prelude}, ty::{concret_intty, concret_uintty, floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty}},
     contracts_items::get_builtin,
     ctx::*,
     pearlite::{self, Literal, Pattern, PointerKind, Term, TermKind},
@@ -9,6 +9,7 @@ use crate::{
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};
+use rustc_target::spec::HasTargetSpec;
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat},
     ty::Type,
@@ -84,8 +85,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     BitAnd | BitOr | BitXor | Shl | Shr => {
                         let ty_kind = term.creusot_ty().kind();
                         let prelude: PreludeModule = match ty_kind {
-                            TyKind::Int(ity) => int_to_prelude(*ity),
-                            TyKind::Uint(uty) => uint_to_prelude(*uty),
+                            TyKind::Int(ity) => int_to_prelude(concret_intty(*ity, self.names.tcx().target_spec().pointer_width)),
+                            TyKind::Uint(uty) => uint_to_prelude(concret_uintty(*uty, self.names.tcx().target_spec().pointer_width)),
                             _ => unreachable!("the bitwise operator are only available on integer"),
                         };
 

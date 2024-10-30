@@ -1,3 +1,5 @@
+use self::ty::{concret_intty, concret_uintty};
+
 use super::{
     clone_map::PreludeModule,
     is_trusted_function,
@@ -34,6 +36,7 @@ use rustc_middle::{
 use rustc_span::{Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, UintTy};
+use rustc_target::spec::HasTargetSpec;
 use std::{cell::RefCell, fmt::Debug};
 use why3::{
     coma::{self, Arg, Defn, Expr, Param, Term},
@@ -426,8 +429,8 @@ impl<'tcx> RValue<'tcx> {
                         // rust allows shifting by a value of any integer type
                         // so we need to import the prelude for the right operand
                         let prelude: PreludeModule = match r_ty.kind() {
-                            TyKind::Int(ity) => int_to_prelude(*ity),
-                            TyKind::Uint(uty) => uint_to_prelude(*uty),
+                            TyKind::Int(ity) => int_to_prelude(concret_intty(*ity, lower.names.tcx().target_spec().pointer_width)),
+                            TyKind::Uint(uty) => uint_to_prelude(concret_uintty(*uty, lower.names.tcx().target_spec().pointer_width)),
                             _ => unreachable!("right operande, non-integer type for binary operation {op:?} {ty:?}"),
                         };
                         lower.names.import_prelude_module(prelude); 
@@ -461,8 +464,8 @@ impl<'tcx> RValue<'tcx> {
                     TyKind::Bool => arg.to_why(lower, istmts).not(),
                     TyKind::Int(_) | TyKind::Uint(_) => {
                         let prelude: PreludeModule = match a_ty.kind() {
-                            TyKind::Int(ity) => int_to_prelude(*ity),
-                            TyKind::Uint(uty) => uint_to_prelude(*uty),
+                            TyKind::Int(ity) => int_to_prelude(concret_intty(*ity, lower.names.tcx().target_spec().pointer_width)),
+                            TyKind::Uint(uty) => uint_to_prelude(concret_uintty(*uty, lower.names.tcx().target_spec().pointer_width)),
                             _ => unreachable!("this is not an executable path {ty:?}"),
                         };
 
@@ -480,8 +483,8 @@ impl<'tcx> RValue<'tcx> {
             },
             RValue::UnaryOp(UnOp::Neg, arg) => {
                 let prelude: PreludeModule = match ty.kind() {
-                    TyKind::Int(ity) => int_to_prelude(*ity),
-                    TyKind::Uint(uty) => uint_to_prelude(*uty),
+                    TyKind::Int(ity) => int_to_prelude(concret_intty(*ity, lower.names.tcx().target_spec().pointer_width)),
+                    TyKind::Uint(uty) => uint_to_prelude(concret_uintty(*uty, lower.names.tcx().target_spec().pointer_width)),
                     TyKind::Float(FloatTy::F32) => PreludeModule::Float32,
                     TyKind::Float(FloatTy::F64) => PreludeModule::Float64,
                     TyKind::Bool => PreludeModule::Bool,
@@ -515,15 +518,17 @@ impl<'tcx> RValue<'tcx> {
                 Exp::Tuple(f.into_iter().map(|f| f.to_why(lower, istmts)).collect())
             }
             RValue::Cast(e, source, target) => {
-                let bv256_ty = Type::TConstructor(QName::from_string("BV256.t").unwrap());
+                let bv256_ty = Type::TConstructor(QName::from_string("BV256.t"));
 
                 let to_fname = match source.kind() {
                     TyKind::Int(ity) => {
-                        lower.names.import_prelude_module(int_to_prelude(*ity));
+                        let ity = concret_intty(*ity, lower.names.tcx().target_spec().pointer_width);
+                        lower.names.import_prelude_module(int_to_prelude(ity));
                         int_to_bv256(ity)
                     }
                     TyKind::Uint(uty) => {
-                        lower.names.import_prelude_module(uint_to_prelude(*uty));
+                        let uty = concret_uintty(*uty, lower.names.tcx().target_spec().pointer_width);
+                        lower.names.import_prelude_module(uint_to_prelude(uty));
                         uint_to_bv256(uty)
                     }
                     // Laurent Todo: remettre le cast bool operationnelle
@@ -549,8 +554,8 @@ impl<'tcx> RValue<'tcx> {
                 // convert BV256.t to target
                 let of_ret_id: Ident = "_ret_from".into();
                 let of_fname = match target.kind() {
-                    TyKind::Int(ity) => int_from_bv256(ity),
-                    TyKind::Uint(uty) => uint_from_bv256(uty),
+                    TyKind::Int(ity) => int_from_bv256(concret_intty(*ity, lower.names.tcx().target_spec().pointer_width)),
+                    TyKind::Uint(uty) => uint_from_bv256(concret_uintty(*uty, lower.names.tcx().target_spec().pointer_width)),
                     // Laurent Todo: remettre le char bool operationnelle
                     // TyKind::Char => {
                     //     lower.names.import_prelude_module(PreludeModule::Char);
@@ -1253,8 +1258,8 @@ fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
 
 pub(crate) fn binop_to_binop<'tcx, N: Namer<'tcx>>(names: &mut N, ty: Ty, op: mir::BinOp) -> QName {
     let prelude: PreludeModule = match ty.kind() {
-        TyKind::Int(ity) => int_to_prelude(*ity),
-        TyKind::Uint(uty) => uint_to_prelude(*uty),
+        TyKind::Int(ity) => int_to_prelude(concret_intty(*ity, names.tcx().target_spec().pointer_width)),
+        TyKind::Uint(uty) => uint_to_prelude(concret_uintty(*uty, names.tcx().target_spec().pointer_width)),
         TyKind::Float(FloatTy::F32) => PreludeModule::Float32,
         TyKind::Float(FloatTy::F64) => PreludeModule::Float64,
         TyKind::Bool => PreludeModule::Bool,
@@ -1297,7 +1302,7 @@ pub(crate) fn binop_to_binop<'tcx, N: Namer<'tcx>>(names: &mut N, ty: Ty, op: mi
 
 pub(crate) fn int_to_prelude(ity: IntTy) -> PreludeModule {
     match ity {
-        IntTy::Isize => PreludeModule::Isize,
+        IntTy::Isize => panic!("int_to_prelude usize not supported"),
         IntTy::I8 => PreludeModule::Int8,
         IntTy::I16 => PreludeModule::Int16,
         IntTy::I32 => PreludeModule::Int32,
@@ -1308,7 +1313,7 @@ pub(crate) fn int_to_prelude(ity: IntTy) -> PreludeModule {
 
 pub(crate) fn uint_to_prelude(ity: UintTy) -> PreludeModule {
     match ity {
-        UintTy::Usize => PreludeModule::Usize,
+        UintTy::Usize => panic!("uint_to_prelude usize not supported"),
         UintTy::U8 => PreludeModule::UInt8,
         UintTy::U16 => PreludeModule::UInt16,
         UintTy::U32 => PreludeModule::UInt32,
@@ -1317,46 +1322,46 @@ pub(crate) fn uint_to_prelude(ity: UintTy) -> PreludeModule {
     }
 }
 
-pub(crate) fn int_from_bv256(ity: &IntTy) -> QName {
+pub(crate) fn int_from_bv256(ity: IntTy) -> QName {
     match ity {
-        IntTy::Isize => QName::from_string("IntSize.of_bv256").unwrap(),
-        IntTy::I8 => QName::from_string("Int8.of_bv256").unwrap(),
-        IntTy::I16 => QName::from_string("Int16.of_bv256").unwrap(),
-        IntTy::I32 => QName::from_string("Int32.of_bv256").unwrap(),
-        IntTy::I64 => QName::from_string("Int64.of_bv256").unwrap(),
-        IntTy::I128 => QName::from_string("Int128.of_bv256").unwrap(),
+        IntTy::Isize => panic!("int_from_bv256 isize not supported"),
+        IntTy::I8 => QName::from_string("Int8.of_bv256"),
+        IntTy::I16 => QName::from_string("Int16.of_bv256"),
+        IntTy::I32 => QName::from_string("Int32.of_bv256"),
+        IntTy::I64 => QName::from_string("Int64.of_bv256"),
+        IntTy::I128 => QName::from_string("Int128.of_bv256"),
     }
 }
 
-pub(crate) fn uint_from_bv256(uty: &UintTy) -> QName {
+pub(crate) fn uint_from_bv256(uty: UintTy) -> QName {
     match uty {
-        UintTy::Usize => QName::from_string("UIntSize.of_bv256").unwrap(),
-        UintTy::U8 => QName::from_string("UInt8.of_bv256").unwrap(),
-        UintTy::U16 => QName::from_string("UInt16.of_bv256").unwrap(),
-        UintTy::U32 => QName::from_string("UInt32.of_bv256").unwrap(),
-        UintTy::U64 => QName::from_string("UInt64.of_bv256").unwrap(),
-        UintTy::U128 => QName::from_string("UInt128.of_bv256").unwrap(),
+        UintTy::Usize => panic!("uint_from_bv256 usize not supported"),
+        UintTy::U8 => QName::from_string("UInt8.of_bv256"),
+        UintTy::U16 => QName::from_string("UInt16.of_bv256"),
+        UintTy::U32 => QName::from_string("UInt32.of_bv256"),
+        UintTy::U64 => QName::from_string("UInt64.of_bv256"),
+        UintTy::U128 => QName::from_string("UInt128.of_bv256"),
     }
 }
 
-pub(crate) fn int_to_bv256(ity: &IntTy) -> QName {
+pub(crate) fn int_to_bv256(ity: IntTy) -> QName {
     match ity {
-        IntTy::Isize => QName::from_string("IntSize.to_bv256").unwrap(),
-        IntTy::I8 => QName::from_string("Int8.to_bv256").unwrap(),
-        IntTy::I16 => QName::from_string("Int16.to_bv256").unwrap(),
-        IntTy::I32 => QName::from_string("Int32.to_bv256").unwrap(),
-        IntTy::I64 => QName::from_string("Int64.to_bv256").unwrap(),
-        IntTy::I128 => QName::from_string("Int128.to_bv256").unwrap(),
+        IntTy::Isize => panic!("int_to_bv256 isize not supported"),
+        IntTy::I8 => QName::from_string("Int8.to_bv256"),
+        IntTy::I16 => QName::from_string("Int16.to_bv256"),
+        IntTy::I32 => QName::from_string("Int32.to_bv256"),
+        IntTy::I64 => QName::from_string("Int64.to_bv256"),
+        IntTy::I128 => QName::from_string("Int128.to_bv256"),
     }
 }
 
-pub(crate) fn uint_to_bv256(uty: &UintTy) -> QName {
+pub(crate) fn uint_to_bv256(uty: UintTy) -> QName {
     match uty {
-        UintTy::Usize => QName::from_string("UIntSize.to_bv256").unwrap(),
-        UintTy::U8 => QName::from_string("UInt8.to_bv256").unwrap(),
-        UintTy::U16 => QName::from_string("UInt16.to_bv256").unwrap(),
-        UintTy::U32 => QName::from_string("UInt32.to_bv256").unwrap(),
-        UintTy::U64 => QName::from_string("UInt64.to_bv256").unwrap(),
-        UintTy::U128 => QName::from_string("UInt128.to_bv256").unwrap(),
+        UintTy::Usize => panic!("uint_to_bv256 usize not supported"),
+        UintTy::U8 => QName::from_string("UInt8.to_bv256"),
+        UintTy::U16 => QName::from_string("UInt16.to_bv256"),
+        UintTy::U32 => QName::from_string("UInt32.to_bv256"),
+        UintTy::U64 => QName::from_string("UInt64.to_bv256"),
+        UintTy::U128 => QName::from_string("UInt128.to_bv256"),
     }
 }

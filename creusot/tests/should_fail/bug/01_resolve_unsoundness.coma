@@ -29,15 +29,15 @@ module T_core__ptr__unique__Unique
     
 end
 module T_alloc__raw_vec__Cap
-  use prelude.prelude.UIntSize
+  use prelude.prelude.UInt64
   
   use prelude.prelude.Int
   
   type t_Cap  =
-    | C_Cap usize
+    | C_Cap UInt64.t
   
-  let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
-    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0}) ]
+  let rec t_Cap (input:t_Cap) (ret  (field_0:UInt64.t))= any
+    [ good (field_0:UInt64.t)-> {C_Cap field_0 = input} (! ret {field_0}) ]
     
 end
 module T_alloc__raw_vec__RawVec
@@ -54,17 +54,17 @@ module T_alloc__raw_vec__RawVec
     
 end
 module T_alloc__vec__Vec
-  use prelude.prelude.UIntSize
+  use prelude.prelude.UInt64
   
   use prelude.prelude.Int
   
   use T_alloc__raw_vec__RawVec as RawVec'0
   
   type t_Vec 't 'a =
-    | C_Vec (RawVec'0.t_RawVec 't 'a) usize
+    | C_Vec (RawVec'0.t_RawVec 't 'a) UInt64.t
   
-  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
+  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:UInt64.t))= any
+    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:UInt64.t)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
     
 end
 module T_alloc__alloc__Global
@@ -103,22 +103,22 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   
   axiom inv_axiom'0 [@rewrite] : forall x : Vec'0.t_Vec bool (Global'0.t_Global) [inv'0 x] . inv'0 x = true
   
-  use prelude.prelude.UIntSize
+  use prelude.prelude.UInt64.to_uint
   
   use seq.Seq
   
   use seq.Seq
   
-  use prelude.prelude.UIntSize
+  use prelude.prelude.UInt64
   
   use prelude.prelude.Int
   
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function view'0 (self : Vec'0.t_Vec bool (Global'0.t_Global)) : Seq.seq bool
   
   axiom view'0_spec : forall self : Vec'0.t_Vec bool (Global'0.t_Global) . [%#svec8] Seq.length (view'0 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
+  <= UInt64.to_int (v_MAX'0 : UInt64.t)
   
   use prelude.prelude.Intrinsic
   
@@ -131,26 +131,30 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
     {[@expl:precondition] inv'1 self}
     any [ return' (result:())-> {[%#svec7] view'0 self.final = Seq.snoc (view'1 self) value} (! return' {result}) ] 
   
+  use prelude.prelude.Int128.to_int
+  
+  use prelude.prelude.Int128
+  
   let rec new'0 (_1:()) (return'  (ret:Vec'0.t_Vec bool (Global'0.t_Global)))= any
     [ return' (result:Vec'0.t_Vec bool (Global'0.t_Global))-> {inv'0 result}
-      {[%#svec6] Seq.length (view'0 result) = 0}
+      {[%#svec6] Seq.length (view'0 result) = Int128.to_int (0 : Int128.t)}
       (! return' {result}) ]
     
   
   meta "compute_max_steps" 1000000
   
-  let rec make_vec_of_size (n:usize) (return'  (ret:Vec'0.t_Vec bool (Global'0.t_Global)))= (! bb0
+  let rec make_vec_of_size (n:UInt64.t) (return'  (ret:Vec'0.t_Vec bool (Global'0.t_Global)))= (! bb0
     [ bb0 = s0
       [ s0 = new'0 {[%#s01_resolve_unsoundness0] ()}
           (fun (_ret':Vec'0.t_Vec bool (Global'0.t_Global)) ->  [ &out <- _ret' ] s1)
       | s1 = bb1 ]
       
-    | bb1 = s0 [ s0 =  [ &i <- [%#s01_resolve_unsoundness1] (0 : usize) ] s1 | s1 = bb2 ] 
+    | bb1 = s0 [ s0 =  [ &i <- [%#s01_resolve_unsoundness1] (0 : UInt64.t) ] s1 | s1 = bb2 ] 
     | bb2 = bb2
-      [ bb2 = {[@expl:loop invariant] [%#s01_resolve_unsoundness2] (0 : usize) <= i /\ i <= n}
+      [ bb2 = {[@expl:loop invariant] [%#s01_resolve_unsoundness2] (0 : UInt64.t) <= i /\ i <= n}
         (! s0) [ s0 = bb3 ] 
         [ bb3 = s0
-          [ s0 = UIntSize.le {i} {n} (fun (_ret':bool) ->  [ &_9 <- _ret' ] s1)
+          [ s0 = UInt64.le {i} {n} (fun (_ret':bool) ->  [ &_9 <- _ret' ] s1)
           | s1 = any [ br0 -> {_9 = false} (! bb6) | br1 -> {_9} (! bb4) ]  ]
           
         | bb4 = s0
@@ -163,7 +167,8 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
           | s2 = bb5 ]
           
         | bb5 = s0
-          [ s0 = UIntSize.add {i} {[%#s01_resolve_unsoundness4] (1 : usize)} (fun (_ret':usize) ->  [ &i <- _ret' ] s1)
+          [ s0 = UInt64.add {i} {[%#s01_resolve_unsoundness4] (1 : UInt64.t)}
+              (fun (_ret':UInt64.t) ->  [ &i <- _ret' ] s1)
           | s1 = bb2 ]
            ]
          ]
@@ -172,15 +177,15 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
     | bb7 = return' {_0} ]
     )
     [ & _0 : Vec'0.t_Vec bool (Global'0.t_Global) = any_l ()
-    | & n : usize = n
+    | & n : UInt64.t = n
     | & out : Vec'0.t_Vec bool (Global'0.t_Global) = any_l ()
-    | & i : usize = any_l ()
+    | & i : UInt64.t = any_l ()
     | & _9 : bool = any_l ()
     | & _12 : () = any_l ()
     | & _13 : borrowed (Vec'0.t_Vec bool (Global'0.t_Global)) = any_l () ]
     
     [ return' (result:Vec'0.t_Vec bool (Global'0.t_Global))-> {[@expl:postcondition] [%#s01_resolve_unsoundness5] Seq.length (view'0 result)
-      = UIntSize.to_int n}
+      = UInt64.to_int n}
       (! return' {result}) ]
     
 end

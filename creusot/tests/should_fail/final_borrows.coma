@@ -184,35 +184,40 @@ module M_final_borrows__call_changes_prophecy [#"final_borrows.rs" 27 0 27 43]
   
   use prelude.prelude.Borrow
   
-  predicate resolve'1 (self : borrowed int32) =
+  predicate resolve'1 (self : borrowed Int32.t) =
     [%#sresolve6] self.final = self.current
   
-  predicate resolve'0 (_1 : borrowed int32) =
+  predicate resolve'0 (_1 : borrowed Int32.t) =
     resolve'1 _1
   
-  use prelude.prelude.Int32
+  use prelude.prelude.Int128.to_int
   
-  let rec inner'0 (_1:()) (return'  (ret:int32))= any
-    [ return' (result:int32)-> {[%#sfinal_borrows5] Int32.to_int result = 2} (! return' {result}) ]
+  use prelude.prelude.Int128
+  
+  use prelude.prelude.Int32.to_int
+  
+  let rec inner'0 (_1:()) (return'  (ret:Int32.t))= any
+    [ return' (result:Int32.t)-> {[%#sfinal_borrows5] Int32.to_int result = Int128.to_int (2 : Int128.t)}
+      (! return' {result}) ]
     
   
   use prelude.prelude.Snapshot
   
   meta "compute_max_steps" 1000000
   
-  let rec call_changes_prophecy (bor:borrowed int32) (return'  (ret:()))= (! bb0
+  let rec call_changes_prophecy (bor:borrowed Int32.t) (return'  (ret:()))= (! bb0
     [ bb0 = s0 [ s0 =  [ &bor_snap <- [%#sfinal_borrows0] Snapshot.new bor ] s1 | s1 = bb1 ] 
     | bb1 = s0
-      [ s0 = Borrow.borrow_mut <int32> {bor.current}
-          (fun (_ret':borrowed int32) ->  [ &b1 <- _ret' ]  [ &bor <- { bor with current = _ret'.final ; } ] s1)
+      [ s0 = Borrow.borrow_mut <Int32.t> {bor.current}
+          (fun (_ret':borrowed Int32.t) ->  [ &b1 <- _ret' ]  [ &bor <- { bor with current = _ret'.final ; } ] s1)
       | s1 =  [ &b1_snap <- [%#sfinal_borrows1] Snapshot.new b1 ] s2
       | s2 = bb2 ]
       
-    | bb2 = s0 [ s0 = inner'0 {[%#sfinal_borrows2] ()} (fun (_ret':int32) ->  [ &_7 <- _ret' ] s1) | s1 = bb3 ] 
+    | bb2 = s0 [ s0 = inner'0 {[%#sfinal_borrows2] ()} (fun (_ret':Int32.t) ->  [ &_7 <- _ret' ] s1) | s1 = bb3 ] 
     | bb3 = s0
       [ s0 =  [ &b1 <- { b1 with current = _7 ; } ] s1
       | s1 = -{resolve'0 b1}- s2
-      | s2 = inner'0 {[%#sfinal_borrows3] ()} (fun (_ret':int32) ->  [ &_8 <- _ret' ] s3)
+      | s2 = inner'0 {[%#sfinal_borrows3] ()} (fun (_ret':Int32.t) ->  [ &_8 <- _ret' ] s3)
       | s3 = bb4 ]
       
     | bb4 = s0
@@ -223,12 +228,12 @@ module M_final_borrows__call_changes_prophecy [#"final_borrows.rs" 27 0 27 43]
        ]
     )
     [ & _0 : () = any_l ()
-    | & bor : borrowed int32 = bor
-    | & bor_snap : Snapshot.snap_ty (borrowed int32) = any_l ()
-    | & b1 : borrowed int32 = any_l ()
-    | & b1_snap : Snapshot.snap_ty (borrowed int32) = any_l ()
-    | & _7 : int32 = any_l ()
-    | & _8 : int32 = any_l () ]
+    | & bor : borrowed Int32.t = bor
+    | & bor_snap : Snapshot.snap_ty (borrowed Int32.t) = any_l ()
+    | & b1 : borrowed Int32.t = any_l ()
+    | & b1_snap : Snapshot.snap_ty (borrowed Int32.t) = any_l ()
+    | & _7 : Int32.t = any_l ()
+    | & _8 : Int32.t = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
 module M_final_borrows__unnesting_fails [#"final_borrows.rs" 42 0 42 24]
@@ -244,34 +249,35 @@ module M_final_borrows__unnesting_fails [#"final_borrows.rs" 42 0 42 24]
   
   use prelude.prelude.Borrow
   
-  predicate resolve'3 (self : borrowed (borrowed int32)) =
+  predicate resolve'3 (self : borrowed (borrowed Int32.t)) =
     [%#sresolve2] self.final = self.current
   
-  predicate resolve'1 (_1 : borrowed (borrowed int32)) =
+  predicate resolve'1 (_1 : borrowed (borrowed Int32.t)) =
     resolve'3 _1
   
-  predicate resolve'2 (self : borrowed int32) =
+  predicate resolve'2 (self : borrowed Int32.t) =
     [%#sresolve2] self.final = self.current
   
-  predicate resolve'0 (_1 : borrowed int32) =
+  predicate resolve'0 (_1 : borrowed Int32.t) =
     resolve'2 _1
   
   meta "compute_max_steps" 1000000
   
   let rec unnesting_fails (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
-      [ s0 =  [ &x <- [%#sfinal_borrows0] (0 : int32) ] s1
-      | s1 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &bor <- _ret' ]  [ &x <- _ret'.final ] s2)
-      | s2 = Borrow.borrow_mut <borrowed int32> {bor}
-          (fun (_ret':borrowed (borrowed int32)) ->  [ &nested <- _ret' ]  [ &bor <- _ret'.final ] s3)
-      | s3 = Borrow.borrow_mut <int32> {(nested.current).current}
-          (fun (_ret':borrowed int32) ->
+      [ s0 =  [ &x <- [%#sfinal_borrows0] (0 : Int32.t) ] s1
+      | s1 = Borrow.borrow_mut <Int32.t> {x}
+          (fun (_ret':borrowed Int32.t) ->  [ &bor <- _ret' ]  [ &x <- _ret'.final ] s2)
+      | s2 = Borrow.borrow_mut <borrowed Int32.t> {bor}
+          (fun (_ret':borrowed (borrowed Int32.t)) ->  [ &nested <- _ret' ]  [ &bor <- _ret'.final ] s3)
+      | s3 = Borrow.borrow_mut <Int32.t> {(nested.current).current}
+          (fun (_ret':borrowed Int32.t) ->
              [ &rebor1 <- _ret' ] 
              [ &nested <- { nested with current = { nested.current with current = _ret'.final ; } ; } ] 
             s4)
       | s4 = -{resolve'0 rebor1}- s5
-      | s5 = Borrow.borrow_mut <int32> {(nested.current).current}
-          (fun (_ret':borrowed int32) ->
+      | s5 = Borrow.borrow_mut <Int32.t> {(nested.current).current}
+          (fun (_ret':borrowed Int32.t) ->
              [ &rebor2 <- _ret' ] 
              [ &nested <- { nested with current = { nested.current with current = _ret'.final ; } ; } ] 
             s6)
@@ -283,11 +289,11 @@ module M_final_borrows__unnesting_fails [#"final_borrows.rs" 42 0 42 24]
        ]
     )
     [ & _0 : () = any_l ()
-    | & x : int32 = any_l ()
-    | & bor : borrowed int32 = any_l ()
-    | & nested : borrowed (borrowed int32) = any_l ()
-    | & rebor1 : borrowed int32 = any_l ()
-    | & rebor2 : borrowed int32 = any_l () ]
+    | & x : Int32.t = any_l ()
+    | & bor : borrowed Int32.t = any_l ()
+    | & nested : borrowed (borrowed Int32.t) = any_l ()
+    | & rebor1 : borrowed Int32.t = any_l ()
+    | & rebor2 : borrowed Int32.t = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
 module M_final_borrows__move_place_without_deref [#"final_borrows.rs" 53 0 53 52]

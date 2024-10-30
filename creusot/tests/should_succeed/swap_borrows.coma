@@ -45,21 +45,21 @@ module M_swap_borrows__f [#"swap_borrows.rs" 10 0 10 10]
   
   use prelude.prelude.Borrow
   
-  predicate inv'0 (_1 : (borrowed uint32, borrowed uint32))
+  predicate inv'0 (_1 : (borrowed UInt32.t, borrowed UInt32.t))
   
-  axiom inv_axiom'0 [@rewrite] : forall x : (borrowed uint32, borrowed uint32) [inv'0 x] . inv'0 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : (borrowed UInt32.t, borrowed UInt32.t) [inv'0 x] . inv'0 x = true
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'1 (self : borrowed uint32) =
+  predicate resolve'1 (self : borrowed UInt32.t) =
     [%#sresolve8] self.final = self.current
   
-  predicate resolve'0 (_1 : borrowed uint32) =
+  predicate resolve'0 (_1 : borrowed UInt32.t) =
     resolve'1 _1
   
-  let rec swap'0 (x:(borrowed uint32, borrowed uint32)) (return'  (ret:(borrowed uint32, borrowed uint32)))= {[@expl:precondition] [%#sswap_borrows5] inv'0 x}
+  let rec swap'0 (x:(borrowed UInt32.t, borrowed UInt32.t)) (return'  (ret:(borrowed UInt32.t, borrowed UInt32.t)))= {[@expl:precondition] [%#sswap_borrows5] inv'0 x}
     any
-    [ return' (result:(borrowed uint32, borrowed uint32))-> {[%#sswap_borrows7] inv'0 result}
+    [ return' (result:(borrowed UInt32.t, borrowed UInt32.t))-> {[%#sswap_borrows7] inv'0 result}
       {[%#sswap_borrows6] result = ((let (_, a) = x in a), (let (a, _) = x in a))}
       (! return' {result}) ]
     
@@ -68,15 +68,17 @@ module M_swap_borrows__f [#"swap_borrows.rs" 10 0 10 10]
   
   let rec f (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
-      [ s0 =  [ &_3 <- (([%#sswap_borrows0] (0 : uint32)), ([%#sswap_borrows1] (0 : uint32))) ] s1
+      [ s0 =  [ &_3 <- (([%#sswap_borrows0] (0 : UInt32.t)), ([%#sswap_borrows1] (0 : UInt32.t))) ] s1
       | s1 =  [ &a <- let (r'0, _) = _3 in r'0 ] s2
       | s2 =  [ &b <- let (_, r'1) = _3 in r'1 ] s3
-      | s3 = Borrow.borrow_mut <uint32> {a} (fun (_ret':borrowed uint32) ->  [ &_6 <- _ret' ]  [ &a <- _ret'.final ] s4)
-      | s4 = Borrow.borrow_mut <uint32> {b} (fun (_ret':borrowed uint32) ->  [ &_8 <- _ret' ]  [ &b <- _ret'.final ] s5)
-      | s5 = Borrow.borrow_final <uint32> {_8.current} {Borrow.get_id _8}
-          (fun (_ret':borrowed uint32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _ret'.final ; } ] s6)
+      | s3 = Borrow.borrow_mut <UInt32.t> {a}
+          (fun (_ret':borrowed UInt32.t) ->  [ &_6 <- _ret' ]  [ &a <- _ret'.final ] s4)
+      | s4 = Borrow.borrow_mut <UInt32.t> {b}
+          (fun (_ret':borrowed UInt32.t) ->  [ &_8 <- _ret' ]  [ &b <- _ret'.final ] s5)
+      | s5 = Borrow.borrow_final <UInt32.t> {_8.current} {Borrow.get_id _8}
+          (fun (_ret':borrowed UInt32.t) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _ret'.final ; } ] s6)
       | s6 =  [ &_5 <- (_6, _7) ] s7
-      | s7 = swap'0 {_5} (fun (_ret':(borrowed uint32, borrowed uint32)) ->  [ &p <- _ret' ] s8)
+      | s7 = swap'0 {_5} (fun (_ret':(borrowed UInt32.t, borrowed UInt32.t)) ->  [ &p <- _ret' ] s8)
       | s8 = bb1 ]
       
     | bb1 = s0
@@ -87,7 +89,7 @@ module M_swap_borrows__f [#"swap_borrows.rs" 10 0 10 10]
         s1
       | s1 = -{resolve'0 _8}- s2
       | s2 = 
-        [ &p <- let (_, r'2) = p in ({ (let (r'0, _) = p in r'0) with current = ([%#sswap_borrows2] (10 : uint32)) ; }, r'2) ]
+        [ &p <- let (_, r'2) = p in ({ (let (r'0, _) = p in r'0) with current = ([%#sswap_borrows2] (10 : UInt32.t)) ; }, r'2) ]
         
         s3
       | s3 = -{match p with
@@ -95,19 +97,19 @@ module M_swap_borrows__f [#"swap_borrows.rs" 10 0 10 10]
           | _ -> true
           end}-
         s4
-      | s4 = {[@expl:assertion] [%#sswap_borrows3] b = (10 : uint32)} s5
-      | s5 = {[@expl:assertion] [%#sswap_borrows4] a = (0 : uint32)} s6
+      | s4 = {[@expl:assertion] [%#sswap_borrows3] b = (10 : UInt32.t)} s5
+      | s5 = {[@expl:assertion] [%#sswap_borrows4] a = (0 : UInt32.t)} s6
       | s6 = return' {_0} ]
        ]
     )
     [ & _0 : () = any_l ()
-    | & a : uint32 = any_l ()
-    | & b : uint32 = any_l ()
-    | & _3 : (uint32, uint32) = any_l ()
-    | & p : (borrowed uint32, borrowed uint32) = any_l ()
-    | & _5 : (borrowed uint32, borrowed uint32) = any_l ()
-    | & _6 : borrowed uint32 = any_l ()
-    | & _7 : borrowed uint32 = any_l ()
-    | & _8 : borrowed uint32 = any_l () ]
+    | & a : UInt32.t = any_l ()
+    | & b : UInt32.t = any_l ()
+    | & _3 : (UInt32.t, UInt32.t) = any_l ()
+    | & p : (borrowed UInt32.t, borrowed UInt32.t) = any_l ()
+    | & _5 : (borrowed UInt32.t, borrowed UInt32.t) = any_l ()
+    | & _6 : borrowed UInt32.t = any_l ()
+    | & _7 : borrowed UInt32.t = any_l ()
+    | & _8 : borrowed UInt32.t = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
