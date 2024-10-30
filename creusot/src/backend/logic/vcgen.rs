@@ -9,14 +9,15 @@ use rustc_span::{Span, Symbol};
 use why3::{declaration::Signature, exp::Environment, ty::Type, Exp, Ident, QName};
 
 use crate::{
+    attributes::get_builtin,
     backend::{
         signature::{sig_to_why3, signature_of},
         term::{binop_to_binop, lower_literal, lower_pure},
         ty::{is_int, translate_ty},
         Namer as _, Why3Generator,
     },
+    naming::ident_of,
     pearlite::{super_visit_term, Literal, Pattern, PointerKind, Term, TermVisitor},
-    util::{self, get_builtin, pre_sig_of},
 };
 
 use super::{binders_to_args, Dependencies};
@@ -53,7 +54,12 @@ pub(super) fn vc<'tcx>(
     post: Exp,
 ) -> Result<Exp, VCError<'tcx>> {
     let structurally_recursive = is_structurally_recursive(ctx, self_id, &t);
-    let sig = pre_sig_of(ctx, self_id);
+    let bounds = ctx
+        .sig(self_id)
+        .inputs
+        .iter()
+        .map(|arg| (arg.0.as_str().into(), Exp::var(arg.0.as_str())))
+        .collect();
     let gen = VCGen {
         param_env: ctx.param_env(self_id),
         ctx: RefCell::new(ctx),
@@ -62,8 +68,6 @@ pub(super) fn vc<'tcx>(
         structurally_recursive,
         subst: RefCell::new(Default::default()),
     };
-    let bounds =
-        sig.inputs.iter().map(|arg| (arg.0.as_str().into(), Exp::var(arg.0.as_str()))).collect();
     gen.add_bounds(bounds);
     gen.build_vc(&t, &|exp| Ok(Exp::let_(dest.clone(), exp, post.clone())))
 }
@@ -219,7 +223,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         match &t.kind {
             // VC(v, Q) = Q(v)
             TermKind::Var(v) => {
-                let id = util::ident_of(*v);
+                let id = ident_of(*v);
                 let exp = self.subst.borrow().get(&id).unwrap_or(Exp::var(id));
                 k(exp)
             }
@@ -255,7 +259,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     .inputs
                     .iter()
                     .zip(args.clone())
-                    .map(|(nm, res)| (util::ident_of(nm.0), res))
+                    .map(|(nm, res)| (ident_of(nm.0), res))
                     .collect();
                 let fname =
                     get_func_name(*self.ctx.borrow_mut(), *self.names.borrow_mut(), *id, subst);
@@ -580,9 +584,7 @@ pub(crate) fn get_func_name<'tcx>(
     id: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> QName {
-    let builtin_attr = get_builtin(ctx.tcx, id);
-
-    builtin_attr
+    get_builtin(ctx.tcx, id)
         .map(|a| {
             // Add dependency
             names.value(id, subst);

@@ -6,8 +6,9 @@ use rustc_span::Symbol;
 use rustc_type_ir::{fold::TypeFoldable, visit::TypeVisitable, AliasTyKind, Interner};
 
 use crate::{
+    naming::{item_symb, translate_accessor_name, type_name, value_name},
     translation::traits,
-    util::{self, erased_identity_for_item, item_symb, translate_accessor_name, type_name, value_name, ItemType},
+    util::erased_identity_for_item,
 };
 
 use super::{structural_resolve, ty_inv::tyinv_head_and_subst, PreludeModule, TransId};
@@ -61,9 +62,11 @@ impl<'tcx, I: Interner> TypeFoldable<I> for ClosureSpecKind {
 
 impl<'tcx> Dependency<'tcx> {
     pub(crate) fn new(tcx: TyCtxt<'tcx>, (did, subst): (DefId, GenericArgsRef<'tcx>)) -> Self {
-        match util::item_type(tcx, did) {
-            ItemType::Type => Dependency::Type(Ty::new_adt(tcx, tcx.adt_def(did), subst)),
-            ItemType::AssocTy => Dependency::Type(Ty::new_projection(tcx, did, subst)),
+        match tcx.def_kind(did) {
+            DefKind::Enum | DefKind::Struct | DefKind::Union => {
+                Dependency::Type(Ty::new_adt(tcx, tcx.adt_def(did), subst))
+            }
+            DefKind::AssocTy => Dependency::Type(Ty::new_projection(tcx, did, subst)),
             _ => {
                 // We need to "overload" certain identifiers in rustc so that we can distinguish them while
                 // rustc doesn't. In particular, closures act as both a type and a function and are missing many
@@ -195,13 +198,13 @@ impl<'tcx> Dependency<'tcx> {
             },
             Dependency::Item(_, _) => {
                 let did = self.did().unwrap().0;
-                match util::item_type(tcx, did) {
-                    ItemType::Impl => Some(tcx.item_name(tcx.trait_id_of_impl(did).unwrap())),
-                    ItemType::Closure => Some(Symbol::intern(&format!(
+                match tcx.def_kind(did) {
+                    DefKind::Impl { .. } => Some(tcx.item_name(tcx.trait_id_of_impl(did).unwrap())),
+                    DefKind::Closure => Some(Symbol::intern(&format!(
                         "closure{}",
                         tcx.def_path(did).data.last().unwrap().disambiguator
                     ))),
-                    ItemType::Field => {
+                    DefKind::Field => {
                         let variant = tcx.parent(did);
                         let name = translate_accessor_name(
                             &tcx.item_name(variant).as_str(),

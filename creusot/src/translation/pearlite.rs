@@ -12,9 +12,10 @@ use std::{
 };
 
 use crate::{
+    attributes::{is_assertion, is_snap_ty, is_spec},
     error::{CreusotResult, Error, InternalError},
+    naming::anonymous_param_symbol,
     translation::{projection_vec::*, TranslationCtx},
-    util::{self, is_snap_ty},
 };
 use itertools::Itertools;
 use log::*;
@@ -315,7 +316,14 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         let mut triggers = vec![];
         let expr = self.collect_triggers(expr, &mut triggers)?;
         let body = self.expr_term(expr)?;
-        let owner_id = util::param_def_id(self.ctx.tcx, self.item_id.into());
+
+        let did = self.item_id.into();
+        let owner_id = if is_spec(self.ctx.tcx, did) && self.ctx.tcx.is_closure_like(did) {
+            self.ctx.tcx.parent(did).expect_local()
+        } else {
+            self.item_id
+        };
+
         let (thir, _) =
             self.ctx.thir_body(owner_id).map_err(|_| InternalError("Cannot fetch THIR body"))?;
         let thir: &Thir = &thir.borrow();
@@ -329,7 +337,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             .fold_ok(body, |body, (idx, ty, pattern)| match pattern {
                 Pattern::Binder(_) | Pattern::Wildcard => body,
                 _ => {
-                    let arg = Box::new(Term::var(util::anonymous_param_symbol(idx), ty));
+                    let arg = Box::new(Term::var(anonymous_param_symbol(idx), ty));
                     Term {
                         ty: body.ty,
                         span: body.span,
@@ -747,7 +755,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
                 let term = pearlite(self.ctx, closure_id)?;
 
-                if util::is_assertion(self.ctx.tcx, closure_id.to_def_id()) {
+                if is_assertion(self.ctx.tcx, closure_id.to_def_id()) {
                     Ok(Term { ty, span, kind: TermKind::Assert { cond: Box::new(term) } })
                 } else {
                     Ok(Term { ty, span, kind: TermKind::Closure { body: Box::new(term) } })
@@ -1177,7 +1185,7 @@ fn not_spec_expr(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: ExprId) -> bool {
     match thir[id].kind {
         ExprKind::Scope { value, .. } => not_spec_expr(tcx, thir, value),
         ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
-            !util::is_spec(tcx, closure_id.to_def_id())
+            !is_spec(tcx, closure_id.to_def_id())
         }
         _ => true,
     }

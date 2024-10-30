@@ -1,7 +1,14 @@
 use super::{
-    clone_map::PreludeModule, is_trusted_function, place::rplace_to_expr, signature::signature_of, term::{lower_pat, lower_pure}, ty::{destructor, int_ty}, NameSupply, Namer, Why3Generator
+    clone_map::PreludeModule,
+    is_trusted_function,
+    place::rplace_to_expr,
+    signature::signature_of,
+    term::{lower_pat, lower_pure},
+    ty::{destructor, int_ty},
+    NameSupply, Namer, Why3Generator,
 };
 use crate::{
+    attributes::{is_ghost_closure, snapshot_closure_id},
     backend::{
         optimization::{self, infer_proph_invariants},
         place,
@@ -10,9 +17,9 @@ use crate::{
     },
     ctx::{BodyId, Dependencies, TranslationCtx},
     fmir::{self, Body, BorrowKind, Operand, TrivialInv},
+    naming::{ident_of, module_name},
     pearlite::{self, PointerKind},
     translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
-    util::{self, module_name},
 };
 
 use petgraph::graphmap::DiGraphMap;
@@ -105,14 +112,12 @@ fn collect_body_ids<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> Option<(BodyId, Vec<BodyId>)> {
-    let body_id = if def_id.is_local()
-        && util::has_body(ctx, def_id)
-        && !is_trusted_function(ctx.tcx, def_id)
-    {
-        BodyId::new(def_id.expect_local(), None)
-    } else {
-        return None;
-    };
+    let body_id =
+        if def_id.is_local() && ctx.has_body(def_id) && !is_trusted_function(ctx.tcx, def_id) {
+            BodyId::new(def_id.expect_local(), None)
+        } else {
+            return None;
+        };
 
     let tcx = ctx.tcx;
     let promoted = ctx
@@ -121,7 +126,7 @@ fn collect_body_ids<'tcx>(
         .iter_enumerated()
         .map(|(p, p_body)| (p, p_body.return_ty()))
         .filter_map(|(p, p_ty)| {
-            if util::snapshot_closure_id(tcx, p_ty).is_none() {
+            if snapshot_closure_id(tcx, p_ty).is_none() {
                 Some(BodyId::new(def_id.expect_local(), Some(p)))
             } else {
                 None
@@ -239,7 +244,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
 
     let mut postcond = Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("result"))]);
 
-    if body_id.promoted.is_none() && !util::is_ghost_closure(ctx.tcx, body_id.def_id()) {
+    if body_id.promoted.is_none() && !is_ghost_closure(ctx.tcx, body_id.def_id()) {
         postcond = Expr::BlackBox(Box::new(postcond));
     }
     postcond = sig.contract.ensures.into_iter().fold(postcond, |acc, ensures| {
@@ -249,7 +254,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         )
     });
 
-    if body_id.promoted.is_none() && !util::is_ghost_closure(ctx.tcx, body_id.def_id()) {
+    if body_id.promoted.is_none() && !is_ghost_closure(ctx.tcx, body_id.def_id()) {
         body = Expr::BlackBox(Box::new(body))
     };
 
@@ -937,7 +942,7 @@ impl<'tcx> Statement<'tcx> {
                             &lower,
                             &mut istmts,
                             rhs_local_ty,
-                            place::Focus::new(|_| Exp::var(util::ident_of(rhs.local))),
+                            place::Focus::new(|_| Exp::var(ident_of(rhs.local))),
                             Box::new(|_, x| x),
                             &rhs.projection[..deref_index],
                         );
@@ -955,7 +960,10 @@ impl<'tcx> Statement<'tcx> {
                     let borrow_id = borrow_generated_id(
                         original_borrow.call(&mut istmts),
                         &rhs.projection[deref_index + 1..],
-                        |sym| Exp::var(util::ident_of(*sym)),
+                        |sym| {
+                            let v = ident_of(*sym);
+                            Exp::var(v)
+                        },
                     );
 
                     bor_id_arg = Some(Arg::Term(borrow_id));
@@ -964,7 +972,7 @@ impl<'tcx> Statement<'tcx> {
                         &lower,
                         &mut istmts,
                         rhs_local_ty,
-                        place::Focus::new(|_| Exp::var(util::ident_of(rhs.local))),
+                        place::Focus::new(|_| Exp::var(ident_of(rhs.local))),
                         Box::new(|_, x| x),
                         &rhs.projection,
                     );
@@ -1019,10 +1027,10 @@ impl<'tcx> Statement<'tcx> {
 
                 let pat = lower_pat(lower.ctx, lower.names, &pat);
                 let exp = if let Pattern::VarP(_) = pat {
-                    rp.app_to(Exp::var(util::ident_of(loc)))
+                    rp.app_to(Exp::var(ident_of(loc)))
                 } else {
                     Exp::Match(
-                        Box::new(Exp::var(util::ident_of(loc))),
+                        Box::new(Exp::var(ident_of(loc))),
                         vec![
                             (pat, rp.app_to(Exp::var(bound.as_str()))),
                             (Pattern::Wildcard, Exp::mk_true()),
@@ -1045,10 +1053,10 @@ impl<'tcx> Statement<'tcx> {
                 let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
                 let pat = lower_pat(lower.ctx, lower.names, &pat);
                 let exp = if let Pattern::VarP(_) = pat {
-                    inv_fun.app_to(Exp::var(util::ident_of(loc)))
+                    inv_fun.app_to(Exp::var(ident_of(loc)))
                 } else {
                     Exp::Match(
-                        Box::new(Exp::var(util::ident_of(loc))),
+                        Box::new(Exp::var(ident_of(loc))),
                         vec![
                             (pat, inv_fun.app_to(Exp::var(bound.as_str()))),
                             (Pattern::Wildcard, Exp::mk_true()),

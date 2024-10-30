@@ -1,17 +1,28 @@
-use super::pearlite::{normalize, Literal, Term, TermKind};
-use crate::{ctx::*, util::{self, erased_identity_for_item}};
-use rustc_ast::{
-    ast::{AttrArgs, AttrArgsEq},
-    AttrItem,
+use crate::{
+    attributes::{creusot_clause_attrs, is_open_inv_result, is_pearlite},
+    ctx::*,
+    function::closure_capture_subst,
+    naming::anonymous_param_symbol,
+    pearlite::TermVisitorMut,
+    translation::pearlite::{self, normalize, Literal, Term, TermKind},
+    util::erased_identity_for_item,
 };
-use rustc_hir::def_id::DefId;
+use rustc_ast::ast::{AttrArgs, AttrArgsEq};
+use rustc_hir::{def_id::DefId, Safety};
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{self, Body, Local, SourceInfo, SourceScope, OUTERMOST_SOURCE_SCOPE},
-    ty::{EarlyBinder, GenericArgsRef, ParamEnv, TyCtxt, TyKind},
+    ty::{EarlyBinder, GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind},
 };
-use rustc_span::Symbol;
-use std::collections::{HashMap, HashSet};
+use rustc_span::{
+    symbol::{kw, Ident},
+    Span, Symbol, DUMMY_SP,
+};
+use rustc_type_ir::ClosureKind;
+use std::{
+    collections::{HashMap, HashSet},
+    iter,
+};
 
 #[derive(Clone, Debug, Default, TypeFoldable, TypeVisitable)]
 pub struct PreContract<'tcx> {
@@ -253,6 +264,7 @@ fn place_to_term<'tcx>(
 pub enum SpecAttrError {
     InvalidTokens { id: DefId },
     InvalidTerm { id: DefId },
+    MultipleVariant { id: DefId },
 }
 
 pub(crate) fn contract_clauses_of(
@@ -261,56 +273,39 @@ pub(crate) fn contract_clauses_of(
 ) -> Result<ContractClauses, SpecAttrError> {
     use SpecAttrError::*;
 
-    let attrs = ctx.get_attrs_unchecked(def_id);
     let mut contract = ContractClauses::new();
 
-    // Attributes are given in reverse order. So we need to rever the list of
-    // attributes to make sure requires/ensures clauses appear in the same
-    // order in WhyML code as they appear in Rust code.
-    for attr in attrs.iter().rev() {
-        if !util::is_attr(attr, "clause") {
-            continue;
-        }
-
-        let attr = attr.get_normal_item();
-
-        // Stop using diagnostic item.
-        // Use a custom HIR visitor which walks the attributes
-        let get_creusot_item = || {
-            let predicate_name = match &attr.args {
-                AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => l.symbol,
-                _ => return Err(InvalidTokens { id: def_id }),
-            };
-            ctx.creusot_item(predicate_name).ok_or(InvalidTerm { id: def_id })
+    let get_creusot_item = |arg: &AttrArgs| {
+        let predicate_name = match arg {
+            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => l.symbol,
+            _ => return Err(InvalidTokens { id: def_id }),
         };
+        ctx.creusot_item(predicate_name).ok_or(InvalidTerm { id: def_id })
+    };
 
-        if attributes_matches(attr, &["creusot", "clause", "requires"]) {
-            contract.requires.push(get_creusot_item()?)
-        } else if attributes_matches(attr, &["creusot", "clause", "ensures"]) {
-            contract.ensures.push(get_creusot_item()?);
-        } else if attributes_matches(attr, &["creusot", "clause", "variant"]) {
-            contract.variant = Some(get_creusot_item()?);
-        } else if attributes_matches(attr, &["creusot", "clause", "terminates"]) {
-            contract.terminates = true;
-        } else if attributes_matches(attr, &["creusot", "clause", "no_panic"]) {
-            contract.no_panic = true;
+    for arg in creusot_clause_attrs(ctx.tcx, def_id, "requires") {
+        contract.requires.push(get_creusot_item(arg)?)
+    }
+
+    for arg in creusot_clause_attrs(ctx.tcx, def_id, "ensures") {
+        contract.ensures.push(get_creusot_item(arg)?)
+    }
+
+    for arg in creusot_clause_attrs(ctx.tcx, def_id, "variant") {
+        if std::mem::replace(&mut contract.variant, Some(get_creusot_item(arg)?)).is_some() {
+            return Err(MultipleVariant { id: def_id });
         }
+    }
+
+    for _ in creusot_clause_attrs(ctx.tcx, def_id, "terminates") {
+        contract.terminates = true;
+    }
+
+    for _ in creusot_clause_attrs(ctx.tcx, def_id, "no_panic") {
+        contract.no_panic = true;
     }
 
     Ok(contract)
-}
-
-fn attributes_matches(attr: &AttrItem, to_match: &[&str]) -> bool {
-    let segments = &attr.path.segments;
-    if segments.len() < to_match.len() {
-        return false;
-    }
-    for (segment, &to_match) in std::iter::zip(segments, to_match) {
-        if segment.ident.as_str() != to_match {
-            return false;
-        }
-    }
-    true
 }
 
 pub(crate) fn inherited_extern_spec<'tcx>(
@@ -356,7 +351,7 @@ pub(crate) fn contract_of<'tcx>(
         if contract.is_empty()
             && !def_id.is_local()
             && ctx.externs.get(def_id.krate).is_none()
-            && util::item_type(ctx.tcx, def_id) == ItemType::Program
+            && ctx.item_type(def_id) == ItemType::Program
         {
             contract.extern_no_spec = true;
             contract.requires.push(Term::mk_false(ctx.tcx));
@@ -364,4 +359,169 @@ pub(crate) fn contract_of<'tcx>(
 
         contract
     }
+}
+
+#[derive(TypeVisitable, TypeFoldable, Debug, Clone)]
+pub struct PreSignature<'tcx> {
+    pub(crate) inputs: Vec<(Symbol, Span, Ty<'tcx>)>,
+    pub(crate) output: Ty<'tcx>,
+    pub(crate) contract: PreContract<'tcx>,
+    // trusted: bool,
+    // span: Span,
+    // program: bool,
+}
+
+impl<'tcx> PreSignature<'tcx> {
+    pub(crate) fn normalize(mut self, tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>) -> Self {
+        self.contract = self.contract.normalize(tcx, param_env);
+        self
+    }
+}
+
+pub(crate) fn pre_sig_of<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    def_id: DefId,
+) -> PreSignature<'tcx> {
+    let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
+
+    let mut contract = crate::specification::contract_of(ctx, def_id);
+
+    let fn_ty = ctx.tcx.type_of(def_id).instantiate_identity();
+
+    if let TyKind::Closure(_, subst) = fn_ty.kind() {
+        let self_ = Symbol::intern("_1");
+        let mut pre_subst = closure_capture_subst(ctx.tcx, def_id, subst, None, self_);
+
+        let mut s = HashMap::new();
+        let kind = subst.as_closure().kind();
+
+        let env_ty = ctx.closure_env_ty(fn_ty, kind, ctx.lifetimes.re_erased);
+        s.insert(
+            self_,
+            if env_ty.is_ref() { Term::var(self_, env_ty).cur() } else { Term::var(self_, env_ty) },
+        );
+        for pre in &mut contract.requires {
+            pre_subst.visit_mut_term(pre);
+
+            pre.subst(&s);
+        }
+
+        if kind == ClosureKind::FnMut {
+            let args = subst.as_closure().sig().inputs().skip_binder()[0];
+            let unnest_subst =
+                ctx.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty.peel_refs())]);
+
+            let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
+
+            contract.ensures.push(Term::call(
+                ctx.tcx,
+                unnest_id,
+                unnest_subst,
+                vec![Term::var(self_, env_ty).cur(), Term::var(self_, env_ty).fin()],
+            ));
+        };
+
+        let mut post_subst =
+            closure_capture_subst(ctx.tcx, def_id, subst, Some(subst.as_closure().kind()), self_);
+        for post in &mut contract.ensures {
+            post_subst.visit_mut_term(post);
+        }
+
+        assert!(contract.variant.is_none());
+    }
+
+    let mut inputs: Vec<_> = inputs
+        .enumerate()
+        .map(|(idx, (ident, ty))| {
+            if ident.name.as_str() == "result" {
+                ctx.crash_and_error(ident.span, "`result` is not allowed as a parameter name")
+            }
+
+            let name = if ident.name.as_str().is_empty() {
+                anonymous_param_symbol(idx)
+            } else {
+                ident.name
+            };
+            (name, ident.span, ty)
+        })
+        .collect();
+    if ctx.type_of(def_id).instantiate_identity().is_fn() && inputs.is_empty() {
+        inputs.push((kw::Empty, DUMMY_SP, ctx.tcx.types.unit));
+    };
+
+    if !is_pearlite(ctx.tcx, def_id) {
+        // Type invariants
+
+        let subst = erased_identity_for_item(ctx.tcx, def_id);
+
+        let params_open_inv: HashSet<usize> = ctx
+            .params_open_inv(def_id)
+            .iter()
+            .copied()
+            .flatten()
+            .map(|&i| if ctx.tcx.is_closure_like(def_id) { i + 1 } else { i })
+            .collect();
+        for (i, (name, span, ty)) in inputs.iter().enumerate() {
+            if params_open_inv.contains(&i) {
+                continue;
+            }
+            if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
+                let term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
+                contract.requires.push(term);
+            }
+        }
+
+        let ret_ty_span: Option<Span> =
+            try { ctx.tcx.hir().get_fn_output(def_id.as_local()?)?.span() };
+        if !is_open_inv_result(ctx.tcx, def_id)
+            && let Some(term) = pearlite::type_invariant_term(
+                ctx,
+                def_id,
+                Symbol::intern("result"),
+                ret_ty_span.unwrap_or_else(|| ctx.tcx.def_span(def_id)),
+                output,
+            )
+        {
+            let term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
+            contract.ensures.push(term);
+        }
+    }
+
+    PreSignature { inputs, output, contract }
+}
+
+fn inputs_and_output<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+) -> (impl Iterator<Item = (Ident, Ty<'tcx>)>, Ty<'tcx>) {
+    let ty = tcx.type_of(def_id).instantiate_identity();
+    let (inputs, output): (Box<dyn Iterator<Item = (rustc_span::symbol::Ident, _)>>, _) = match ty
+        .kind()
+    {
+        TyKind::FnDef(..) => {
+            let gen_sig = tcx.fn_sig(def_id).instantiate_identity();
+            let sig = tcx.normalize_erasing_late_bound_regions(tcx.param_env(def_id), gen_sig);
+            let iter = tcx.fn_arg_names(def_id).iter().cloned().zip(sig.inputs().iter().cloned());
+            (Box::new(iter), sig.output())
+        }
+        TyKind::Closure(_, subst) => {
+            let sig = tcx.signature_unclosure(subst.as_closure().sig(), Safety::Safe);
+            let sig = tcx.normalize_erasing_late_bound_regions(tcx.param_env(def_id), sig);
+            let env_ty = tcx.closure_env_ty(ty, subst.as_closure().kind(), tcx.lifetimes.re_erased);
+
+            // I wish this could be called "self"
+            let closure_env = (Ident::empty(), env_ty);
+            let names = tcx
+                .fn_arg_names(def_id)
+                .iter()
+                .cloned()
+                .chain(iter::repeat(rustc_span::symbol::Ident::empty()));
+            (
+                Box::new(iter::once(closure_env).chain(names.zip(sig.inputs().iter().cloned()))),
+                sig.output(),
+            )
+        }
+        _ => (Box::new(iter::empty()), tcx.type_of(def_id).instantiate_identity()),
+    };
+    (inputs, output)
 }

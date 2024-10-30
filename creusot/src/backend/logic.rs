@@ -1,8 +1,4 @@
-use crate::{
-    ctx::*,
-    translation::pearlite::Term,
-    util::{self, get_builtin},
-};
+use crate::{attributes::get_builtin, ctx::*, naming::module_name, translation::pearlite::Term};
 use rustc_hir::def_id::DefId;
 use why3::{
     declaration::*,
@@ -200,7 +196,7 @@ fn limited_function_encode(
 }
 
 fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
-    if is_trusted_function(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
+    if is_trusted_function(ctx.tcx, def_id) || !ctx.has_body(def_id) {
         return None;
     }
 
@@ -238,7 +234,23 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
 
     let mut val_sig = sig.clone();
     val_sig.contract = Default::default();
-    body_decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(val_sig)));
+    let val_decl = match ctx.item_type(def_id) {
+        ItemType::Logic { .. } => {
+            ValDecl { sig: val_sig, ghost: false, val: false, kind: Some(LetKind::Function) }
+        }
+        ItemType::Predicate { .. } => {
+            val_sig.retty = None;
+            ValDecl { sig: val_sig, ghost: false, val: false, kind: Some(LetKind::Predicate) }
+        }
+        ItemType::Program | ItemType::Closure => {
+            ValDecl { sig: val_sig, ghost: false, val: true, kind: None }
+        }
+        ItemType::Constant => {
+            ValDecl { sig: val_sig, ghost: false, val: true, kind: Some(LetKind::Constant) }
+        }
+        _ => unreachable!(),
+    };
+    body_decls.push(Decl::ValDecl(val_decl));
 
     let postcondition = sig.contract.ensures_conj();
     let body = vc(ctx, &mut names, def_id, term, "result".into(), postcondition.clone());

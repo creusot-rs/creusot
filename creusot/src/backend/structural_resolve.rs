@@ -4,8 +4,9 @@ use rustc_span::{Symbol, DUMMY_SP};
 use rustc_type_ir::TyKind;
 
 use crate::{
+    attributes::{get_builtin, is_snap_ty, is_trusted},
     pearlite::{BinOp, Pattern, Term, TermKind},
-    util::{erased_identity_for_item, get_builtin, is_snap_ty, is_trusted},
+    util::erased_identity_for_item,
 };
 
 use super::Why3Generator;

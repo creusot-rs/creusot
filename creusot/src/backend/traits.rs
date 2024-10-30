@@ -1,8 +1,8 @@
-use super::{clone_map::Dependencies, term::lower_pure, Why3Generator};
 use crate::{
-    backend::Namer,
+    backend::{clone_map::Dependencies, term::lower_pure, Namer, Why3Generator},
     ctx::ItemType,
-    util::{self, erased_identity_for_item, module_name},
+    naming::module_name,
+    util::erased_identity_for_item,
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::GenericArgsRef;
@@ -34,7 +34,7 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
 
 impl<'tcx> Why3Generator<'tcx> {
     pub(crate) fn translate_assoc_ty(&mut self, def_id: DefId) -> Module {
-        assert_eq!(util::item_type(self.tcx, def_id), ItemType::AssocTy);
+        assert_eq!(self.item_type(def_id), ItemType::AssocTy);
 
         let mut names = Dependencies::new(self, [def_id]);
 

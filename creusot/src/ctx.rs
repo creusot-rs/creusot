@@ -2,12 +2,17 @@ use std::{collections::HashMap, ops::Deref};
 
 pub(crate) use crate::backend::clone_map::*;
 use crate::{
+    attributes::{
+        gather_params_open_inv, is_extern_spec, is_logic, is_predicate, is_prophetic,
+        opacity_witness_name,
+    },
     backend::{ty::ty_binding_group, ty_inv::is_tyinv_trivial},
     callbacks,
     creusot_items::{self, CreusotItems},
     error::CreusotResult,
     metadata::{BinaryMetadata, Metadata},
     options::Options,
+    specification::{pre_sig_of, PreSignature},
     translation::{
         self,
         external::{extract_extern_specs_from_item, ExternSpec},
@@ -17,7 +22,7 @@ use crate::{
         specification::ContractClauses,
         traits::TraitImpl,
     },
-    util::{self, erased_identity_for_item, gather_params_open_inv, pre_sig_of, PreSignature},
+    util::{erased_identity_for_item, parent_module},
 };
 use indexmap::{IndexMap, IndexSet};
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
@@ -29,14 +34,10 @@ use rustc_hir::{
 use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
     mir::{Body, Promoted, TerminatorKind},
-    ty::{
-        Clause, GenericArg, GenericArgsRef, ParamEnv, Predicate, Ty, TyCtxt,
-        Visibility,
-    },
+    ty::{Clause, GenericArg, GenericArgsRef, ParamEnv, Predicate, Ty, TyCtxt, Visibility},
 };
 use rustc_span::{Span, Symbol};
 use rustc_trait_selection::traits::SelectionContext;
-pub(crate) use util::{module_name, ItemType};
 
 pub(crate) use crate::translated_item::*;
 
@@ -79,6 +80,65 @@ impl BodyId {
     }
 }
 
+#[derive(Copy, Clone)]
+pub(crate) struct Opacity(Visibility<DefId>);
+
+impl Opacity {
+    pub(crate) fn scope(self) -> Option<DefId> {
+        match self.0 {
+            Visibility::Public => None,
+            Visibility::Restricted(modl) => Some(modl),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ItemType {
+    Logic { prophetic: bool },
+    Predicate { prophetic: bool },
+    Program,
+    Closure,
+    Trait,
+    Impl,
+    Type,
+    AssocTy,
+    Constant,
+    Variant,
+    Unsupported(DefKind),
+    Field,
+}
+
+impl ItemType {
+    pub(crate) fn to_str(&self) -> &str {
+        match self {
+            ItemType::Logic { prophetic: false } => "logic function",
+            ItemType::Logic { prophetic: true } => "prophetic logic function",
+            ItemType::Predicate { prophetic: false } => "predicate",
+            ItemType::Predicate { prophetic: true } => "prophetic predicate",
+            ItemType::Program => "program function",
+            ItemType::Closure => "closure",
+            ItemType::Trait => "trait declaration",
+            ItemType::Impl => "trait implementation",
+            ItemType::Type => "type declaration",
+            ItemType::AssocTy => "associated type",
+            ItemType::Constant => "constant",
+            ItemType::Field => "field",
+            ItemType::Unsupported(_) => "[OTHER]",
+            ItemType::Variant => "constructor",
+        }
+    }
+
+    pub(crate) fn can_implement(self, trait_type: Self) -> bool {
+        match (self, trait_type) {
+            (ItemType::Logic { prophetic: false }, ItemType::Logic { prophetic: true }) => true,
+            (ItemType::Predicate { prophetic: false }, ItemType::Predicate { prophetic: true }) => {
+                true
+            }
+            _ => self == trait_type,
+        }
+    }
+}
+
 // TODO: The state in here should be as opaque as possible...
 pub struct TranslationCtx<'tcx> {
     pub tcx: TyCtxt<'tcx>,
@@ -98,18 +158,6 @@ pub struct TranslationCtx<'tcx> {
     opacity: HashMap<DefId, Opacity>,
     closure_contract: HashMap<DefId, ClosureContract<'tcx>>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
-}
-
-#[derive(Copy, Clone)]
-pub(crate) struct Opacity(Visibility<DefId>);
-
-impl Opacity {
-    pub(crate) fn scope(self) -> Option<DefId> {
-        match self.0 {
-            Visibility::Public => None,
-            Visibility::Restricted(modl) => Some(modl),
-        }
-    }
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -167,7 +215,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             return self.externs.term(def_id);
         }
 
-        if util::has_body(self, def_id) {
+        if self.has_body(def_id) {
             if !self.terms.contains_key(&def_id) {
                 let mut term = pearlite::pearlite(self, def_id.expect_local())
                     .unwrap_or_else(|e| e.emit(self.tcx));
@@ -309,14 +357,11 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     fn mk_opacity(&self, item: DefId) -> Opacity {
-        if !matches!(
-            util::item_type(self.tcx, item),
-            ItemType::Predicate { .. } | ItemType::Logic { .. }
-        ) {
+        if !matches!(self.item_type(item), ItemType::Predicate { .. } | ItemType::Logic { .. }) {
             return Opacity(Visibility::Public);
         };
 
-        let witness = util::opacity_witness_name(self.tcx, item)
+        let witness = opacity_witness_name(self.tcx, item)
             .and_then(|nm| self.creusot_item(nm))
             .map(|id| self.visibility(id))
             .unwrap_or_else(|| Visibility::Restricted(parent_module(self.tcx, item)));
@@ -390,72 +435,99 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             self.tcx.param_env(def_id)
         }
     }
-}
 
-pub(crate) fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
-    let mut traits_or_impls = Vec::new();
-
-    for def_id in ctx.tcx.hir().body_owners() {
-        if crate::util::is_extern_spec(ctx.tcx, def_id.to_def_id()) {
-            if let Some(container) = ctx.opt_associated_item(def_id.to_def_id()) {
-                traits_or_impls.push(container.def_id)
-            }
-
-            let (i, es) = extract_extern_specs_from_item(ctx, def_id)?;
-            let c = es.contract.clone();
-
-            if ctx.extern_spec(i).is_some() {
-                ctx.crash_and_error(
-                    ctx.def_span(def_id),
-                    &format!("duplicate extern specification for {i:?}"),
-                );
-            };
-
-            let _ = ctx.extern_specs.insert(i, es);
-
-            ctx.extern_spec_items.insert(def_id, i);
-
-            for id in c.iter_ids() {
-                ctx.term(id).unwrap();
+    pub(crate) fn has_body(&mut self, def_id: DefId) -> bool {
+        if let Some(local_id) = def_id.as_local() {
+            self.tcx.hir().maybe_body_owned_by(local_id).is_some()
+        } else {
+            match self.item_type(def_id) {
+                ItemType::Logic { .. } | ItemType::Predicate { .. } => self.term(def_id).is_some(),
+                _ => false,
             }
         }
     }
 
-    // Force extern spec items to get loaded so we export them properly
-    let need_to_load: Vec<_> =
-        ctx.extern_specs.values().flat_map(|e| e.contract.iter_ids()).collect();
+    pub(crate) fn load_extern_specs(&mut self) -> CreusotResult<()> {
+        let mut traits_or_impls = Vec::new();
 
-    for id in need_to_load {
-        ctx.term(id);
-    }
+        for def_id in self.tcx.hir().body_owners() {
+            if is_extern_spec(self.tcx, def_id.to_def_id()) {
+                if let Some(container) = self.opt_associated_item(def_id.to_def_id()) {
+                    traits_or_impls.push(container.def_id)
+                }
 
-    for def_id in traits_or_impls {
-        let mut additional_predicates: Vec<_> = Vec::new();
-        for item in ctx.associated_items(def_id).in_definition_order() {
-            additional_predicates
-                .extend(ctx.extern_spec(item.def_id).unwrap().additional_predicates.clone());
+                let (i, es) = extract_extern_specs_from_item(self, def_id)?;
+                let c = es.contract.clone();
+
+                if self.extern_spec(i).is_some() {
+                    self.crash_and_error(
+                        self.def_span(def_id),
+                        &format!("duplicate extern specification for {i:?}"),
+                    );
+                };
+
+                let _ = self.extern_specs.insert(i, es);
+
+                self.extern_spec_items.insert(def_id, i);
+
+                for id in c.iter_ids() {
+                    self.term(id).unwrap();
+                }
+            }
         }
-        // let additional_predicates = ctx.arena.alloc_slice(&additional_predicates);
-        // let additional_predicates = rustc_middle::ty::GenericPredicates { parent: None, predicates: additional_predicates };
 
-        ctx.extern_specs.insert(
-            def_id,
-            ExternSpec {
-                contract: ContractClauses::new(),
-                subst: erased_identity_for_item(ctx.tcx, def_id),
-                arg_subst: Vec::new(),
-                additional_predicates,
-            },
-        );
+        // Force extern spec items to get loaded so we export them properly
+        let need_to_load: Vec<_> =
+            self.extern_specs.values().flat_map(|e| e.contract.iter_ids()).collect();
+
+        for id in need_to_load {
+            self.term(id);
+        }
+
+        for def_id in traits_or_impls {
+            let mut additional_predicates: Vec<_> = Vec::new();
+            for item in self.associated_items(def_id).in_definition_order() {
+                additional_predicates
+                    .extend(self.extern_spec(item.def_id).unwrap().additional_predicates.clone());
+            }
+            // let additional_predicates = self.arena.alloc_slice(&additional_predicates);
+            // let additional_predicates = rustc_middle::ty::GenericPredicates { parent: None, predicates: additional_predicates };
+
+            self.extern_specs.insert(
+                def_id,
+                ExternSpec {
+                    contract: ContractClauses::new(),
+                    subst: erased_identity_for_item(self.tcx, def_id),
+                    arg_subst: Vec::new(),
+                    additional_predicates,
+                },
+            );
+        }
+
+        Ok(())
     }
 
-    Ok(())
-}
-
-pub(crate) fn parent_module(tcx: TyCtxt, mut id: DefId) -> DefId {
-    while tcx.def_kind(id) != DefKind::Mod {
-        id = tcx.parent(id);
+    pub(crate) fn item_type(&self, def_id: DefId) -> ItemType {
+        match self.tcx.def_kind(def_id) {
+            DefKind::Trait => ItemType::Trait,
+            DefKind::Impl { .. } => ItemType::Impl,
+            DefKind::Fn | DefKind::AssocFn => {
+                if is_predicate(self.tcx, def_id) {
+                    ItemType::Predicate { prophetic: is_prophetic(self.tcx, def_id) }
+                } else if is_logic(self.tcx, def_id) {
+                    ItemType::Logic { prophetic: is_prophetic(self.tcx, def_id) }
+                } else {
+                    ItemType::Program
+                }
+            }
+            DefKind::AssocConst | DefKind::Const => ItemType::Constant,
+            DefKind::Closure => ItemType::Closure,
+            DefKind::Struct | DefKind::Enum | DefKind::Union => ItemType::Type,
+            DefKind::AssocTy => ItemType::AssocTy,
+            DefKind::Field => ItemType::Field,
+            DefKind::AnonConst => panic!(),
+            DefKind::Variant => ItemType::Variant,
+            dk => ItemType::Unsupported(dk),
+        }
     }
-
-    id
 }

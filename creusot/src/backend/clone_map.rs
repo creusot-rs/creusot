@@ -14,10 +14,11 @@ use why3::{
 };
 
 use crate::{
+    attributes::get_builtin,
     backend::{clone_map::elaborator::Expander, dependency::Dependency},
     ctx::*,
+    naming::{item_name, module_name},
     options::SpanMode,
-    util::{self, item_name, module_name},
 };
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 
@@ -135,11 +136,11 @@ pub(crate) trait Namer<'tcx> {
         ix: FieldIdx,
     ) -> QName {
         let tcx = self.tcx();
-        let node = match util::item_type(tcx, def_id) {
-            ItemType::Closure => {
+        let node = match tcx.def_kind(def_id) {
+            DefKind::Closure => {
                 Dependency::ClosureSpec(ClosureSpecKind::Accessor(ix.as_u32() as u8), def_id, subst)
             }
-            ItemType::Type => {
+            DefKind::Struct => {
                 let adt = tcx.adt_def(def_id);
                 let field_did = adt.variants()[variant.into()].fields[ix].did;
                 Dependency::new(tcx, (field_did, subst))
@@ -148,9 +149,9 @@ pub(crate) trait Namer<'tcx> {
         };
 
         let clone = self.insert(node);
-        match util::item_type(tcx, def_id) {
-            ItemType::Closure => clone.qname(),
-            ItemType::Type => clone.qname(),
+        match tcx.def_kind(def_id) {
+            DefKind::Closure => clone.qname(),
+            DefKind::Struct => clone.qname(),
             _ => panic!("accessor: invalid item kind"),
         }
     }
@@ -337,9 +338,12 @@ impl<'tcx> CloneNames<'tcx> {
 
     fn insert(&mut self, key: Dependency<'tcx>) -> Kind {
         *self.names.entry(key).or_insert_with(|| match key {
-            Dependency::Item(id, _) if util::item_type(self.tcx, id) == ItemType::Field => {
+            Dependency::Item(id, _) if self.tcx.def_kind(id) == DefKind::Field => {
                 let mut ty = self.tcx.parent(id);
-                if util::item_type(self.tcx, ty) != ItemType::Type {
+                if !matches!(
+                    self.tcx.def_kind(ty),
+                    DefKind::Enum | DefKind::Struct | DefKind::Union
+                ) {
                     ty = self.tcx.parent(id);
                 }
                 let modl = module_name(self.tcx, ty);
@@ -352,13 +356,13 @@ impl<'tcx> CloneNames<'tcx> {
                 if let Some((did, _)) = key.did()
                     && !ty.is_box()
                 {
-                    let (modl, name) = if let Some(why3_modl) = util::get_builtin(self.tcx, did) {
+                    let (modl, name) = if let Some(why3_modl) = get_builtin(self.tcx, did) {
                         let qname = QName::from_string(why3_modl.as_str());
                         let name = qname.name.clone();
                         let modl = qname.module_ident().unwrap();
                         (Symbol::intern(&modl), Symbol::intern(&*name))
                     } else {
-                        let modl: Symbol = if util::item_type(self.tcx, did) == ItemType::Closure {
+                        let modl: Symbol = if self.tcx.def_kind(did) == DefKind::Closure {
                             self.counts.freshen(Symbol::intern("Closure"))
                         } else {
                             match self.adt_names.get(&did) {
@@ -382,7 +386,7 @@ impl<'tcx> CloneNames<'tcx> {
                     Kind::Unnamed
                 }
             }
-            Dependency::Item(id, _) if util::item_type(self.tcx, id) == ItemType::Variant => {
+            Dependency::Item(id, _) if self.tcx.def_kind(id) == DefKind::Variant => {
                 let ty = self.tcx.parent(id);
                 let modl = module_name(self.tcx, ty);
 
@@ -390,7 +394,7 @@ impl<'tcx> CloneNames<'tcx> {
             }
             _ => {
                 if let Dependency::Item(id, _) = key
-                    && let Some(why3_modl) = util::get_builtin(self.tcx, id)
+                    && let Some(why3_modl) = get_builtin(self.tcx, id)
                 {
                     let qname = QName::from_string(why3_modl.as_str());
                     let name = qname.name.clone();

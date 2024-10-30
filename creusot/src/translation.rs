@@ -9,12 +9,13 @@ pub(crate) mod specification;
 pub(crate) mod traits;
 
 use crate::{
+    attributes::{is_logic, is_predicate, is_spec, should_translate},
     backend::{TransId, Why3Generator},
-    ctx::{self, load_extern_specs},
+    ctx,
     error::InternalError,
     metadata,
+    naming::translate_name,
     options::OutputFile,
-    util::translate_name,
     validate::{
         validate_impls, validate_opacity, validate_purity, validate_traits, validate_trusted,
     },
@@ -33,16 +34,13 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
     }
 
     ctx.load_metadata();
-    load_extern_specs(ctx).map_err(|_| Box::new(InternalError("Failed to load extern specs")))?;
+    ctx.load_extern_specs().map_err(|_| Box::new(InternalError("Failed to load extern specs")))?;
 
     for def_id in ctx.tcx.hir().body_owners() {
         validate_purity(ctx, def_id);
 
         let def_id = def_id.to_def_id();
-        if crate::util::is_spec(ctx.tcx, def_id)
-            || crate::util::is_predicate(ctx.tcx, def_id)
-            || crate::util::is_logic(ctx.tcx, def_id)
-        {
+        if is_spec(ctx.tcx, def_id) || is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id) {
             let _ = ctx.term(def_id);
             validate_opacity(ctx, def_id);
         }
@@ -67,7 +65,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
     for def_id in why3.hir().body_owners() {
         let def_id = def_id.to_def_id();
 
-        if !crate::util::should_translate(why3.tcx, def_id) {
+        if !should_translate(why3.tcx, def_id) {
             info!("Skipping {:?}", def_id);
             continue;
         }

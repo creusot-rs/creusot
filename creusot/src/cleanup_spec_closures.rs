@@ -9,7 +9,7 @@ use rustc_middle::{
     ty::TyCtxt,
 };
 
-use crate::util;
+use crate::attributes::{is_no_translate, is_snapshot_closure, no_mir};
 
 /// Hide non-linear specification code from the borrow checker
 ///
@@ -19,7 +19,7 @@ use crate::util;
 pub(crate) fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body: &mut Body<'tcx>) {
     trace!("cleanup_spec_closures: {:?}", def_id);
 
-    if util::no_mir(tcx, def_id) {
+    if no_mir(tcx, def_id) {
         trace!("replacing function body");
         *body.basic_blocks_mut() = make_loop(tcx);
     } else {
@@ -78,9 +78,7 @@ impl<'tcx> MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &mut Rvalue<'tcx>, l: Location) {
         match rvalue {
             Rvalue::Aggregate(box AggregateKind::Closure(def_id, _), substs) => {
-                if util::is_no_translate(self.tcx, *def_id)
-                    || util::is_snapshot_closure(self.tcx, *def_id)
-                {
+                if is_no_translate(self.tcx, *def_id) || is_snapshot_closure(self.tcx, *def_id) {
                     substs.iter_mut().for_each(|p| {
                         if p.is_move() {
                             let place = p.place().unwrap();
@@ -155,9 +153,7 @@ pub fn remove_ghost_closures<'tcx>(tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
             let Rvalue::Aggregate(box AggregateKind::Closure(def_id, _), _) = rhs else {
                 return;
             };
-            if util::is_no_translate(self.tcx, *def_id)
-                || util::is_snapshot_closure(self.tcx, *def_id)
-            {
+            if is_no_translate(self.tcx, *def_id) || is_snapshot_closure(self.tcx, *def_id) {
                 statement.kind = StatementKind::Nop
             }
         }

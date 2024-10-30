@@ -1,4 +1,4 @@
-use crate::{backend::Namer, fmir::Place, util};
+use crate::{backend::Namer, fmir::Place, naming::ident_of};
 use rustc_middle::{
     mir::{self, tcx::PlaceTy, ProjectionElem},
     ty::{self, Ty, TyCtxt, TyKind},
@@ -267,7 +267,7 @@ pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
         &lower,
         istmts,
         place_ty,
-        Focus::new(|_| Exp::var(util::ident_of(pl.local))),
+        Focus::new(|_| Exp::var(ident_of(pl.local))),
         Box::new(|_, _| unreachable!()),
         &pl.projection,
     );
@@ -286,7 +286,7 @@ fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
         &lower,
         istmts,
         place_ty,
-        Focus::new(|_| Exp::var(util::ident_of(pl.local))),
+        Focus::new(|_| Exp::var(ident_of(pl.local))),
         Box::new(|_, x| x),
         &pl.projection,
     );

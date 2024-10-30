@@ -1,10 +1,14 @@
-use super::{program::borrow_generated_id, Why3Generator};
 use crate::{
-    backend::ty::{floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty},
+    attributes::get_builtin,
+    backend::{
+        program::borrow_generated_id,
+        ty::{floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty},
+        Why3Generator,
+    },
     ctx::*,
+    naming::ident_of,
     pearlite::{self, Literal, Pattern, PointerKind, Term, TermKind},
     translation::pearlite::{zip_binder, QuantKind, Trigger},
-    util::{self, get_builtin},
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};
@@ -67,7 +71,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     item
                 }
             }
-            TermKind::Var(v) => Exp::var(util::ident_of(*v)),
+            TermKind::Var(v) => Exp::var(ident_of(*v)),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);

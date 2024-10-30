@@ -6,11 +6,11 @@ use why3::{
 };
 
 use crate::{
+    attributes::{should_replace_trigger, why3_attrs},
     backend,
+    naming::{anonymous_param_symbol, ident_of, item_name},
+    specification::PreSignature,
     translation::specification::PreContract,
-    util::{
-        ident_of, item_name, should_replace_trigger, why3_attrs, AnonymousParamName, PreSignature,
-    },
 };
 
 use super::{logic::function_call, term::lower_pure, Namer, Why3Generator};
@@ -44,7 +44,7 @@ pub(crate) fn named_sig_to_why3<'tcx, N: Namer<'tcx>>(
         .map(|(ix, (id, _, ty))| {
             let ty = backend::ty::translate_ty(ctx, names, span, *ty);
             let id = if id.is_empty() {
-                format!("{}", AnonymousParamName(ix)).into()
+                anonymous_param_symbol(ix).as_str().into()
             } else {
                 ident_of(*id)
             };
@@ -84,7 +84,7 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
     named_sig_to_why3(ctx, names, name, pre_sig, def_id)
 }
 
-pub(super) fn contract_to_why3<'tcx, N: Namer<'tcx>>(
+fn contract_to_why3<'tcx, N: Namer<'tcx>>(
     pre: &PreContract<'tcx>,
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,

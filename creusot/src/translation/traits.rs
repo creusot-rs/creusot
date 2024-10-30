@@ -1,7 +1,8 @@
 use super::pearlite::{Term, TermKind};
 use crate::{
+    attributes::{is_law, is_spec},
     ctx::*,
-    util::{erased_identity_for_item, is_law, is_spec},
+    util::erased_identity_for_item,
 };
 use rustc_hir::def_id::DefId;
 use rustc_infer::{
@@ -9,9 +10,8 @@ use rustc_infer::{
     traits::{Obligation, ObligationCause, TraitEngine},
 };
 use rustc_middle::ty::{
-    AssocItem, AssocItemContainer, Const, ConstKind, EarlyBinder, GenericArgsRef,
-    ParamConst, ParamEnv, ParamTy, Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable,
-    TypeFolder,
+    AssocItem, AssocItemContainer, Const, ConstKind, EarlyBinder, GenericArgsRef, ParamConst,
+    ParamEnv, ParamTy, Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder,
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::{

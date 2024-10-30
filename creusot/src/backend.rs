@@ -4,9 +4,9 @@ use rustc_middle::ty::{AliasTy, Ty, TyCtxt};
 use rustc_span::{RealFileName, Span, DUMMY_SP};
 
 use crate::{
-    ctx::{TranslatedItem, TranslationCtx},
+    attributes::{is_resolve_function, is_trusted},
+    ctx::{ItemType, TranslatedItem, TranslationCtx},
     translation::pearlite::Term,
-    util::{self, ItemType},
 };
 use std::{
     collections::HashMap,
@@ -116,7 +116,7 @@ impl<'tcx> Why3Generator<'tcx> {
 
         // eprintln!("{:?}", self.param_env(def_id));
 
-        match util::item_type(self.tcx, def_id) {
+        match self.item_type(def_id) {
             ItemType::Trait => {
                 self.start(def_id);
                 let tr = self.translate_trait(def_id);
@@ -131,7 +131,7 @@ impl<'tcx> Why3Generator<'tcx> {
                     self.finish(def_id);
                 }
             }
-            ItemType::Predicate { .. } if util::is_resolve_function(self.tcx, def_id) => {
+            ItemType::Predicate { .. } if is_resolve_function(self.tcx, def_id) => {
                 self.start(def_id);
                 self.functions.insert(def_id.into(), TranslatedItem::Logic { proof_modl: None });
                 self.finish(def_id);
@@ -277,17 +277,12 @@ impl<'tcx> Why3Generator<'tcx> {
     }
 
     fn is_logical(&self, item: DefId) -> bool {
-        matches!(
-            util::item_type(self.tcx, item),
-            ItemType::Logic { .. } | ItemType::Predicate { .. }
-        )
+        matches!(self.item_type(item), ItemType::Logic { .. } | ItemType::Predicate { .. })
     }
 
     fn is_constant(&self, item: TransId) -> bool {
         match item {
-            TransId::Item(def_id) => {
-                matches!(util::item_type(self.tcx, def_id), ItemType::Constant)
-            }
+            TransId::Item(def_id) => matches!(self.item_type(def_id), ItemType::Constant),
             _ => false,
         }
     }
@@ -376,11 +371,11 @@ fn display_impl_subject(i: &rustc_middle::ty::ImplSubject<'_>) -> String {
 }
 
 pub fn is_trusted_function(tcx: TyCtxt, mut def_id: DefId) -> bool {
-    if util::is_trusted(tcx, def_id) {
+    if is_trusted(tcx, def_id) {
         return true;
     }
     while let Some(parent) = tcx.opt_parent(def_id) {
-        if util::is_trusted(tcx, def_id)
+        if is_trusted(tcx, def_id)
             && matches!(
                 tcx.def_kind(def_id),
                 DefKind::Mod | DefKind::AssocFn | DefKind::Fn | DefKind::Closure

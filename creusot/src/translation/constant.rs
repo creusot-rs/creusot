@@ -1,9 +1,9 @@
 use crate::{
+    attributes::get_builtin,
     ctx::TranslationCtx,
     fmir::{self, Operand},
     traits::resolve_assoc_item_opt,
     translation::pearlite::Literal,
-    util::get_builtin,
 };
 use rustc_middle::{
     mir::{self, interpret::AllocRange, ConstValue, UnevaluatedConst},

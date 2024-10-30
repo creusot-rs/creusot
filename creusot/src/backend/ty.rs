@@ -1,22 +1,24 @@
-use super::{
-    program::{floatty_to_prelude, uint_to_prelude},
-    Dependencies, Why3Generator,
-};
 use crate::{
-    backend::program::int_to_prelude,
+    attributes::{get_builtin, is_logic, is_snap_ty, is_trusted},
+    backend::{
+        program::{floatty_to_prelude, int_to_prelude, uint_to_prelude},
+        Dependencies, Why3Generator,
+    },
     ctx::*,
+    naming::{item_name, module_name, translate_accessor_name},
+    specification::PreSignature,
     translation::{
         pearlite::{self, Term, TermKind},
         specification::PreContract,
     },
-    util::{self, erased_identity_for_item, get_builtin, item_name, module_name, translate_accessor_name, PreSignature},
+    util::erased_identity_for_item,
 };
 use indexmap::IndexSet;
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
 use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_middle::ty::{
-    self, AliasTy, AliasTyKind, EarlyBinder, FieldDef, GenericArg, GenericArgKind,
-    GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
+    self, AliasTy, AliasTyKind, EarlyBinder, FieldDef, GenericArg, GenericArgKind, GenericArgsRef,
+    ParamEnv, Ty, TyCtxt, TyKind,
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
@@ -154,7 +156,7 @@ fn translate_ty_inner<'tcx, N: Namer<'tcx>>(
         Closure(id, subst) => {
             ctx.translate(*id);
 
-            if util::is_logic(ctx.tcx, *id) {
+            if is_logic(ctx.tcx, *id) {
                 return MlT::Tuple(Vec::new());
             }
 
@@ -319,10 +321,6 @@ impl<'tcx> Why3Generator<'tcx> {
     }
 }
 
-fn translate_ty_name(ctx: &Why3Generator<'_>, did: DefId) -> Ident {
-    item_name(ctx.tcx, did, Namespace::TypeNS)
-}
-
 // Translate a Rust type declation to an ML one
 // Rust tuple-like types are translated as one would expect, to product types in WhyML
 // However, Rust struct types are *not* translated to WhyML records, instead we 'forget' the field names
@@ -347,11 +345,11 @@ pub(crate) fn translate_tydecl(
     let span = ctx.def_span(repr);
 
     // Trusted types (opaque)
-    if util::is_trusted(ctx.tcx, repr) {
+    if is_trusted(ctx.tcx, repr) {
         if bg.len() > 1 {
             ctx.crash_and_error(span, "cannot mark mutually recursive types as trusted");
         }
-        let ty_name = translate_ty_name(ctx, repr);
+        let ty_name = item_name(ctx.tcx, repr, Namespace::TypeNS);
 
         let ty_params: Vec<_> = ty_param_names(&mut names, repr).collect();
         let modl = Module {
@@ -654,7 +652,7 @@ fn validate_field_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, adt_did: DefId, ty: Ty
     let bg = ctx.binding_group(adt_did);
 
     !ty.walk().filter_map(ty::GenericArg::as_type).any(|ty| {
-        util::is_snap_ty(tcx, ty)
+        is_snap_ty(tcx, ty)
             && ty.walk().filter_map(ty::GenericArg::as_type).any(|ty| match ty.kind() {
                 TyKind::Adt(adt_def, _) => bg.contains(&adt_def.did()),
                 // TyKind::Param(_) => true,

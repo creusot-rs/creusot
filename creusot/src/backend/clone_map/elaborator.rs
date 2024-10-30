@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use crate::{
+    attributes::{get_builtin, is_ghost_closure, is_inv, is_resolve_function},
     backend::{
         is_trusted_function,
         logic::{lower_logical_defn, spec_axiom},
@@ -12,13 +13,14 @@ use crate::{
         ty_inv::InvariantElaborator,
     },
     constant::from_ty_const,
+    naming::{ident_of, module_name},
     pearlite::{normalize, Term},
+    specification::PreSignature,
     traits,
 };
 use rustc_middle::ty::{self, Const, ParamEnv};
 use rustc_span::DUMMY_SP;
 use rustc_type_ir::EarlyBinder;
-use util::{get_builtin, ident_of, PreSignature};
 use why3::{
     declaration::{Axiom, Contract, LetKind, Signature, TyDecl, Use, ValDecl},
     exp::Binder,
@@ -95,7 +97,7 @@ impl DepElab for ProgElab {
         let sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
         let sig = sig.normalize(ctx.tcx, elab.param_env);
         let sig = signature(ctx, elab, sig, dep);
-        if util::is_ghost_closure(ctx.tcx, def_id) {
+        if is_ghost_closure(ctx.tcx, def_id) {
             // Inline the body of ghost closures
             let mut coma = program::to_why(
                 ctx,
@@ -168,7 +170,7 @@ impl DepElab for LogicElab {
 
         // This is the 'inv' symbol, which is defined using an axiom "TyInvAxiom".
         // We schedule this 'body' for expansion here by forcing it to be added to the expansion queue.
-        if util::is_inv(ctx.tcx, def_id) {
+        if is_inv(ctx.tcx, def_id) {
             let ty = subst.type_at(0);
             let ty = ctx.try_normalize_erasing_regions(elab.param_env, ty).unwrap_or(ty);
             elab.expansion_queue.push_back((elab.self_key, Dependency::TyInvAxiom(ty)));
@@ -183,7 +185,13 @@ impl DepElab for LogicElab {
                 Some(LetKind::Predicate)
             }
         } else {
-            util::item_type(ctx.tcx, def_id).let_kind()
+            match ctx.item_type(def_id) {
+                ItemType::Logic { .. } => Some(LetKind::Function),
+                ItemType::Predicate { .. } => Some(LetKind::Predicate),
+                ItemType::Program | ItemType::Closure => None,
+                ItemType::Constant => Some(LetKind::Constant),
+                _ => None,
+            }
         };
 
         if let Some(b) = get_builtin(ctx.tcx, def_id) {
@@ -335,7 +343,7 @@ impl DepElab for TyElab {
             })],
             _ => {
                 let def_id = dep.did().unwrap().0;
-                if let Some(why3_modl) = util::get_builtin(ctx.tcx, def_id) {
+                if let Some(why3_modl) = get_builtin(ctx.tcx, def_id) {
                     let qname = QName::from_string(why3_modl.as_str());
                     let Kind::Used(_, _) = names.insert(Dependency::Type(ty)) else {
                         return vec![];
@@ -347,7 +355,7 @@ impl DepElab for TyElab {
                 } else {
                     let name = names.insert(dep).qname();
 
-                    let modl = if util::item_type(ctx.tcx, def_id) == ItemType::Closure {
+                    let modl = if ctx.item_type(def_id) == ItemType::Closure {
                         Symbol::intern(&format!("{}_Type", module_name(ctx.tcx, def_id)))
                     } else {
                         module_name(ctx.tcx, def_id)
@@ -421,9 +429,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 } else if ctx.is_constant(dep.to_trans_id(ctx.tcx, self.param_env).unwrap()) {
                     LogicElab::expand(self, ctx, dep)
                 } else if matches!(ctx.def_kind(def_id), DefKind::Field) {
-                    if util::item_type(self.tcx, def_id) == ItemType::Field {
-                        def_id = self.tcx.parent(def_id);
-                    };
+                    def_id = self.tcx.parent(def_id);
                     let name = self.namer.insert(dep).qname();
                     let modl = module_name(ctx.tcx, def_id);
                     let name = if name.module.is_empty() { name } else { name.module_qname() };
@@ -470,7 +476,7 @@ fn expand_laws<'tcx>(
     // TODO: Push out of graph expansion
     // If the function we are cloning into is `#[trusted]` there is no need for laws.
     // Similarily, if it has no body, there will be no proofs.
-    if is_trusted_function(ctx.tcx, self_did) || !util::has_body(ctx, self_did) {
+    if is_trusted_function(ctx.tcx, self_did) || !ctx.has_body(self_did) {
         return;
     }
 
@@ -529,7 +535,7 @@ pub fn term<'tcx>(
                 let span = ctx.def_span(def_id);
                 let res = from_ty_const(&mut ctx.ctx, constant, ty, param_env, span);
                 Some(res)
-            } else if util::is_resolve_function(ctx.tcx, def_id) {
+            } else if is_resolve_function(ctx.tcx, def_id) {
                 resolve_term(ctx, param_env, def_id, subst)
             } else {
                 let term = ctx.term(trans_id).cloned()?;
