@@ -129,7 +129,10 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
                     errors.push(err);
                 }
             }
-            _ => {}
+            _ => {
+                let err = ctx.fatal_error(span, "mismatched parameters kind in `extern_spec!`");
+                errors.push(err);
+            }
         }
     }
 

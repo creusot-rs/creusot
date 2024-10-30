@@ -31,13 +31,11 @@ use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LocalDefId},
 };
-use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
     mir::{Body, Promoted, TerminatorKind},
     ty::{Clause, GenericArg, GenericArgsRef, ParamEnv, Predicate, Ty, TyCtxt, Visibility},
 };
 use rustc_span::{Span, Symbol};
-use rustc_trait_selection::traits::SelectionContext;
 
 pub(crate) use crate::translated_item::*;
 
@@ -395,42 +393,25 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         let (id, subst) = crate::specification::inherited_extern_spec(self, def_id)
             .unwrap_or_else(|| (def_id, erased_identity_for_item(self.tcx, def_id)));
         if let Some(es) = self.extern_spec(id) {
-            let mut additional_predicates = Vec::new();
-
-            let base_env = self.tcx.param_env(def_id);
-            {
-                // Only add predicates which don't already hold
-                use rustc_infer::infer::TyCtxtInferExt;
-                let infcx = self.tcx.infer_ctxt().build();
-                let mut selcx = SelectionContext::new(&infcx);
-                let param_env = self.tcx.param_env(def_id);
-                for pred in es.predicates_for(self.tcx, subst) {
-                    let obligation_cause = ObligationCause::dummy();
-                    let obligation = Obligation::new(self.tcx, obligation_cause, param_env, pred);
-                    if selcx.evaluate_root_obligation(&obligation).map_or(
-                        false, // Overflow has occurred, and treat the obligation as possibly holding.
-                        |result| !result.may_apply(),
-                    ) {
-                        additional_predicates.push(
-                            self.tcx.try_normalize_erasing_regions(base_env, pred).unwrap_or(pred),
-                        )
-                    }
-                }
-            }
-
-            additional_predicates.extend::<Vec<Predicate>>(
-                base_env.caller_bounds().into_iter().map(Clause::as_predicate).collect(),
-            );
-            ParamEnv::new(
-                self.mk_clauses(
-                    &(additional_predicates
-                        .into_iter()
-                        .map(Predicate::expect_clause)
-                        .collect::<Vec<Clause>>()
-                        .as_slice()),
-                ),
-                rustc_infer::traits::Reveal::UserFacing,
-            )
+            let base_predicates =
+                self.tcx.param_env(def_id).caller_bounds().into_iter().map(Clause::as_predicate);
+            let additional_predicates = es.predicates_for(self.tcx, subst).into_iter();
+            let clauses = base_predicates
+                .chain(additional_predicates)
+                .map(Predicate::expect_clause)
+                .collect::<Vec<_>>();
+            let res =
+                ParamEnv::new(self.mk_clauses(&clauses), rustc_infer::traits::Reveal::UserFacing);
+            // FIXME: param envs should be normalized (this is an invariant of the trait solver),
+            // but calling this function here causes an overflow in the handling of PartialEq::eq
+            // I see two solutions:
+            //    1- Wait for the next trait solver that does not need this (I think).
+            //    2- Allow adding new generic type variables in extern specs, so that we could write
+            //             Self: DeepModel<DeepModelTy = T>,
+            //             Rhs: DeepModel<DeepModelTy = T>;
+            //
+            // let res = normalize_param_env_or_error(self.tcx, res, ObligationCause::dummy());
+            res
         } else {
             self.tcx.param_env(def_id)
         }
