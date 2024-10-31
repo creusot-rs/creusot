@@ -54,10 +54,9 @@ fn main() -> Result<()> {
                 why3_path: config_args.why3_path.clone(),
                 why3_config_file: config_args.why3_config.clone(),
                 subcommand: creusot_rustc_subcmd.clone(),
-                rust_flags: cargs.rust_flags,
             };
 
-            invoke_cargo(&creusot_args);
+            invoke_cargo(&creusot_args, cargs.cargo_flags);
 
             if let Some((mode, coma_src, args)) = launch_why3 {
                 let mut coma_files = vec![coma_src];
@@ -108,7 +107,7 @@ fn main() -> Result<()> {
     }
 }
 
-fn invoke_cargo(args: &CreusotArgs) {
+fn invoke_cargo(args: &CreusotArgs, cargo_flags: Vec<String>) {
     let creusot_rustc_path = std::env::current_exe()
         .expect("current executable path invalid")
         .with_file_name("creusot-rustc");
@@ -129,8 +128,8 @@ fn invoke_cargo(args: &CreusotArgs) {
     let mut cmd = Command::new(cargo_path);
     cmd.arg(format!("+{toolchain}"))
         .arg(&cargo_cmd)
-        .args(args.rust_flags.clone())
-        .env("RUSTC_WRAPPER", creusot_rustc_path)
+        .args(cargo_flags)
+        .env("RUSTC", creusot_rustc_path)
         .env("CARGO_CREUSOT", "1");
 
     // Append flags to any pre-existing ones

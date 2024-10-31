@@ -103,7 +103,16 @@ fn run_creusot(
         })
         .collect();
 
+    cmd.args(&["-Zno-codegen", "--crate-type=lib"]);
+    cmd.args(&["--extern", &format!("creusot_contracts={}", creusot_contract_path)]);
+
+    let mut dep_path = base_path;
+    dep_path.push("deps");
+    cmd.arg(format!("-Ldependency={}/", dep_path.display()));
+    cmd.arg(file.file_name().unwrap());
+
     cmd.args(&[
+        "--",
         "--stdout",
         "--export-metadata=false",
         "--span-mode=relative",
@@ -118,13 +127,6 @@ fn run_creusot(
     cmd.arg("--why3-path").arg(&config_paths.why3);
     cmd.arg("--why3-config-file").arg(&config_paths.why3_config);
 
-    cmd.args(&["--", "-Zno-codegen", "--crate-type=lib"]);
-    cmd.args(&["--extern", &format!("creusot_contracts={}", creusot_contract_path)]);
-
-    let mut dep_path = base_path;
-    dep_path.push("deps");
-    cmd.arg(format!("-Ldependency={}/", dep_path.display()));
-    cmd.arg(file.file_name().unwrap());
     Some(cmd)
 }
 
