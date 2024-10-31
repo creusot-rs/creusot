@@ -9,7 +9,7 @@ use crate::{
 /// # Logic
 ///
 /// This type is (in particular) the logical representation of a [`Vec`]. This can be
-/// accessed via its [shallow model](crate::ShallowModel) (The `@` operator).
+/// accessed via its [view](crate::View) (The `@` operator).
 ///
 /// ```rust,creusot
 /// use creusot_contracts::*;
