@@ -205,7 +205,7 @@ impl<K, V: ?Sized> FMap<K, V> {
 
     /// Returns the number of elements in the map.
     ///
-    /// If you need to get the len in pearlite, consider using [`len`](Self::len).
+    /// If you need to get the length in pearlite, consider using [`len`](Self::len).
     ///
     /// # Example
     /// ```rust,creusot
