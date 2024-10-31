@@ -47,12 +47,17 @@ fn setup_plugin() {
         args.remove(1);
     }
 
-    let creusot: CreusotArgs = if is_wrapper {
-        serde_json::from_str(&std::env::var("CREUSOT_ARGS").unwrap()).unwrap()
+    let creusot: Option<CreusotArgs> = if is_wrapper {
+        let creusot = match args.iter().find_map(|arg| arg.strip_prefix("--creusot=")) {
+            Some(arg) => Some(serde_json::from_str(arg).unwrap()),
+            None => None,
+        };
+        args.retain(|arg| !arg.starts_with("--creusot"));
+        creusot
     } else {
         let mut all_args = CreusotArgs::parse_from(&args);
         args = std::mem::take(&mut all_args.rust_flags);
-        all_args
+        Some(all_args)
     };
 
     let sysroot = sysroot_path();
@@ -67,21 +72,24 @@ fn setup_plugin() {
     let user_asked_for = !is_wrapper || primary_package;
 
     if normal_rustc || !(user_asked_for || has_contracts) {
-        return RunCompiler::new(&args, &mut DefaultCallbacks {}).run().unwrap();
+        RunCompiler::new(&args, &mut DefaultCallbacks).run().unwrap()
     } else {
-        for &arg in CREUSOT_RUSTC_ARGS {
-            args.push(arg.to_owned());
+        match creusot {
+            Some(creusot) => {
+                for &arg in CREUSOT_RUSTC_ARGS {
+                    args.push(arg.to_owned());
+                }
+                debug!("creusot args={:?}", args);
+
+                let opts = match CreusotArgs::to_options(creusot) {
+                    Ok(opts) => opts,
+                    Err(msg) => panic!("Error: {msg}"),
+                };
+                RunCompiler::new(&args, &mut ToWhy::new(opts)).run().unwrap();
+            }
+            None => RunCompiler::new(&args, &mut DefaultCallbacks).run().unwrap(),
         }
-        debug!("creusot args={:?}", args);
-
-        let opts = match CreusotArgs::to_options(creusot) {
-            Ok(opts) => opts,
-            Err(msg) => panic!("Error: {msg}"),
-        };
-        let mut callbacks = ToWhy::new(opts);
-
-        RunCompiler::new(&args, &mut callbacks).run().unwrap();
-    }
+    };
 }
 
 fn sysroot_path() -> String {
