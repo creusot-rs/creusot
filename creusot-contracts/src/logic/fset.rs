@@ -194,7 +194,7 @@ impl<T: ?Sized> FSet<T> {
     /// ```
     #[pure]
     #[trusted]
-    #[ensures(self.contains(*value))]
+    #[ensures(result == self.contains(*value))]
     pub fn contains_ghost(&self, value: &T) -> bool {
         let _ = value;
         panic!()

@@ -244,7 +244,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// };
     /// ```
     #[pure]
-    #[ensures(self.contains(*key))]
+    #[ensures(result == self.contains(*key))]
     pub fn contains_ghost(&self, key: &K) -> bool {
         self.get_ghost(key).is_some()
     }
