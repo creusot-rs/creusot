@@ -71,7 +71,20 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
-    pub fn get(self, k: K) -> Option<SizedW<V>> {
+    pub fn get(self, k: K) -> Option<V>
+    where
+        V: Sized,
+    {
+        match self.get_unsized(k) {
+            None => None,
+            Some(x) => Some(*x),
+        }
+    }
+
+    #[logic]
+    #[open]
+    #[why3::attr = "inline:trivial"]
+    pub fn get_unsized(self, k: K) -> Option<SizedW<V>> {
         self.view().get(k)
     }
 
@@ -79,7 +92,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[open]
     #[why3::attr = "inline:trivial"]
     pub fn lookup_unsized(self, k: K) -> SizedW<V> {
-        unwrap(self.get(k))
+        unwrap(self.get_unsized(k))
     }
 
     #[logic]
@@ -96,7 +109,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[open]
     #[why3::attr = "inline:trivial"]
     pub fn contains(self, k: K) -> bool {
-        self.get(k) != None
+        self.get_unsized(k) != None
     }
 
     #[trusted]
@@ -124,7 +137,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[open]
     pub fn subset(self, other: Self) -> bool {
         pearlite! {
-            forall<k: K> self.contains(k) ==> other.get(k) == self.get(k)
+            forall<k: K> self.contains(k) ==> other.get_unsized(k) == self.get_unsized(k)
         }
     }
 
@@ -132,10 +145,10 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[logic]
     #[open(self)]
     #[requires(self.disjoint(other))]
-    #[ensures(forall<k: K> result.get(k) == if self.contains(k) {
-        self.get(k)
+    #[ensures(forall<k: K> result.get_unsized(k) == if self.contains(k) {
+        self.get_unsized(k)
     } else if other.contains(k) {
-        other.get(k)
+        other.get_unsized(k)
     } else {
         None
     })]
@@ -147,10 +160,10 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[trusted]
     #[logic]
     #[open(self)]
-    #[ensures(forall<k: K> result.get(k) == if other.contains(k) {
+    #[ensures(forall<k: K> result.get_unsized(k) == if other.contains(k) {
         None
     } else {
-        self.get(k)
+        self.get_unsized(k)
     })]
     pub fn subtract_keys(self, other: Self) -> Self {
         absurd
@@ -161,10 +174,10 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[requires(other.subset(self))]
     #[ensures(result.disjoint(other))]
     #[ensures(other.union(result).ext_eq(self))]
-    #[ensures(forall<k: K> result.get(k) == if other.contains(k) {
+    #[ensures(forall<k: K> result.get_unsized(k) == if other.contains(k) {
         None
     } else {
-        self.get(k)
+        self.get_unsized(k)
     })]
     pub fn subtract(self, other: Self) -> Self {
         self.subtract_keys(other)
@@ -173,7 +186,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[logic]
     #[open]
     #[ensures(result ==> self == other)]
-    #[ensures((forall<k: K> self.get(k) == other.get(k)) ==> result)]
+    #[ensures((forall<k: K> self.get_unsized(k) == other.get_unsized(k)) ==> result)]
     pub fn ext_eq(self, other: Self) -> bool {
         self.view() == other.view()
     }
@@ -292,7 +305,7 @@ impl<K, V: ?Sized> FMap<K, V> {
         } else {
             result == None
         })]
-    #[ensures(forall<k: K> k != *key ==> (*self).get(k) == (^self).get(k))]
+    #[ensures(forall<k: K> k != *key ==> (*self).get_unsized(k) == (^self).get_unsized(k))]
     #[ensures((*self).len() == (^self).len())]
     pub fn get_mut_ghost(&mut self, key: &K) -> Option<&mut V> {
         let _ = key;
@@ -320,12 +333,8 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// ```
     #[trusted]
     #[pure]
-    #[ensures(^self == self.insert(key, value))]
-    #[ensures(if self.contains(key) {
-            result == Some(self.lookup(key))
-        } else {
-            result == None
-        })]
+    #[ensures(^self == (*self).insert(key, value))]
+    #[ensures(result == (*self).get(key))]
     pub fn insert_ghost(&mut self, key: K, value: V) -> Option<V>
     where
         V: Sized,
@@ -338,12 +347,8 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// Same as [`Self::insert_ghost`], but for unsized values.
     #[trusted]
     #[pure]
-    #[ensures(^self == self.insert(key, *value))]
-    #[ensures(if self.contains(key) {
-            result == Some(self.lookup_unsized(key))
-        } else {
-            result == None
-        })]
+    #[ensures(^self == (*self).insert(key, *value))]
+    #[ensures(result == (*self).get_unsized(key))]
     pub fn insert_ghost_unsized(&mut self, key: K, value: Box<V>) -> Option<Box<V>> {
         let _ = key;
         let _ = value;
@@ -367,11 +372,8 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// ```
     #[trusted]
     #[pure]
-    #[ensures(^self == self.remove(*key))]
-    #[ensures(match self.get(*key) {
-            None => result == None,
-            Some(v) => result == Some(*v),
-        })]
+    #[ensures(^self == (*self).remove(*key))]
+    #[ensures(result == (*self).get(*key))]
     pub fn remove_ghost(&mut self, key: &K) -> Option<V>
     where
         V: Sized,
@@ -383,8 +385,8 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// Same as [`Self::remove_ghost`], but for unsized values.
     #[trusted]
     #[pure]
-    #[ensures(^self == self.remove(*key))]
-    #[ensures(self.get(*key) == None)]
+    #[ensures(^self == (*self).remove(*key))]
+    #[ensures(result == (*self).get_unsized(*key))]
     pub fn remove_ghost_unsized(&mut self, key: &K) -> Option<Box<V>> {
         let _ = key;
         panic!()
