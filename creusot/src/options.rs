@@ -43,4 +43,5 @@ pub enum Output {
     Directory(PathBuf), // One file per Coma module
     File(PathBuf),      // Monolithic output
     Stdout,
+    None,
 }

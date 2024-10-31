@@ -404,7 +404,7 @@ impl<'tcx> Why3Generator<'tcx> {
         use crate::options::Output;
         match &self.opts.output {
             Output::Directory(_) => Some(&self.opts.prefix),
-            Output::File(_) | Output::Stdout => None,
+            Output::File(_) | Output::Stdout | Output::None => None,
         }
     }
 }
