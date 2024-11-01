@@ -342,9 +342,11 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             TermKind::Tuple { fields } => self.build_vc_slice(fields, &|flds| k(Exp::Tuple(flds))),
             // Same as for tuples
             TermKind::Constructor { typ, variant, fields } => {
-                self.build_vc_slice(fields, &|args| {
-                    let TyKind::Adt(_, subst) = t.creusot_ty().kind() else { unreachable!() };
+                let ty =
+                    self.ctx.borrow().normalize_erasing_regions(self.param_env, t.creusot_ty());
+                let TyKind::Adt(_, subst) = ty.kind() else { unreachable!() };
 
+                self.build_vc_slice(fields, &|args| {
                     let ctor = self.names.borrow_mut().constructor(
                         self.ctx.borrow().adt_def(typ).variants()[*variant].def_id,
                         subst,
@@ -401,7 +403,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             }),
             // VC(A.f, Q) = VC(A, |a| Q(a.f))
             TermKind::Projection { lhs, name } => {
-                let accessor = match lhs.creusot_ty().kind() {
+                let ty =
+                    self.ctx.borrow().normalize_erasing_regions(self.param_env, lhs.creusot_ty());
+                let accessor = match ty.kind() {
                     TyKind::Closure(did, substs) => {
                         self.names.borrow_mut().accessor(*did, substs, 0, *name)
                     }
@@ -436,6 +440,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             TermKind::Reborrow { .. } => Err(VCError::Reborrow(t.span)),
         }
     }
+
     fn build_pattern<A>(
         &self,
         pat: &Pattern<'tcx>,
@@ -460,6 +465,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             Pattern::Constructor { variant, fields, substs } => {
                 let fields =
                     fields.into_iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect();
+                let substs = self.ctx.borrow().normalize_erasing_regions(self.param_env, *substs);
                 Pat::ConsP(self.names.borrow_mut().constructor(*variant, substs), fields)
             }
             Pattern::Wildcard => Pat::Wildcard,

@@ -82,7 +82,12 @@ pub fn infer_proph_invariants<'tcx>(ctx: &mut TranslationCtx<'tcx>, body: &mut f
                 }
                 prev_block.stmts.push(Statement::Assignment(
                     Place { local, projection: Vec::new() },
-                    RValue::Ghost(Term::call(tcx, snap_new, subst, vec![pterm.clone()])),
+                    RValue::Ghost(Term::call_no_normalize(
+                        tcx,
+                        snap_new,
+                        subst,
+                        vec![pterm.clone()],
+                    )),
                     DUMMY_SP,
                 ));
             }
@@ -90,7 +95,7 @@ pub fn infer_proph_invariants<'tcx>(ctx: &mut TranslationCtx<'tcx>, body: &mut f
             let old = Term::var(local, ty);
             let blk = body.blocks.get_mut(k).unwrap();
 
-            let mut snap_old = Term::call(ctx.tcx, snap_deref, subst, vec![old]);
+            let mut snap_old = Term::call_no_normalize(ctx.tcx, snap_deref, subst, vec![old]);
             snap_old.ty = u.ty(tcx, &body.locals);
             blk.invariants.push(snap_old.fin().bin_op(tcx, BinOp::Eq, pterm.fin()));
         }

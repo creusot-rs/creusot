@@ -42,7 +42,7 @@ use rustc_mir_dataflow::{
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_target::abi::{FieldIdx, VariantIdx};
-use rustc_type_ir::{inherent::SliceLike, ClosureKind};
+use rustc_type_ir::ClosureKind;
 use std::{
     collections::{HashMap, HashSet},
     iter,
@@ -893,7 +893,7 @@ fn closure_contract<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Clos
     };
 
     let mut resolve = closure_resolve(ctx, def_id, subst);
-    normalize(ctx.tcx, ctx.param_env(def_id), &mut resolve.1);
+    resolve.1 = normalize(ctx.tcx, ctx.param_env(def_id), resolve.1);
     let accessors = closure_accessors(ctx, def_id).into_iter().map(|(_, s, t)| (s, t)).collect();
     let mut contracts = ClosureContract {
         resolve,
@@ -938,7 +938,7 @@ fn closure_contract<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Clos
         let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
 
         let mut postcondition: Term<'tcx> = postcondition;
-        postcondition = postcondition.conj(Term::call(
+        postcondition = postcondition.conj(Term::call_no_normalize(
             ctx.tcx,
             unnest_id,
             unnest_subst,
@@ -956,13 +956,13 @@ fn closure_contract<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Clos
             ],
         ));
 
-        normalize(ctx.tcx, ctx.param_env(def_id), &mut postcondition);
+        postcondition = normalize(ctx.tcx, ctx.param_env(def_id), postcondition);
 
         let unnest_sig =
             EarlyBinder::bind(ctx.sig(unnest_id).clone()).instantiate(ctx.tcx, unnest_subst);
 
         let mut unnest = closure_unnest(ctx.tcx, def_id, subst);
-        normalize(ctx.tcx, ctx.param_env(def_id), &mut unnest);
+        unnest = normalize(ctx.tcx, ctx.param_env(def_id), unnest);
 
         contracts.unnest = Some((unnest_sig, unnest));
         contracts.postcond_mut = Some((post_sig, postcondition));
@@ -1003,12 +1003,7 @@ fn closure_resolve<'tcx>(
         };
 
         if let Some((id, subst)) = resolve_predicate_of(ctx, param_env, ty) {
-            resolve = Term {
-                ty: ctx.types.bool,
-                kind: TermKind::Call { id: id.into(), subst, args: vec![proj] },
-                span: DUMMY_SP,
-            }
-            .conj(resolve);
+            resolve = Term::call(ctx.tcx, param_env, id, subst, vec![proj]).conj(resolve);
         }
     }
 
@@ -1133,7 +1128,7 @@ impl<'tcx> ClosureSubst<'tcx> {
 
 impl<'tcx> TermVisitorMut<'tcx> for ClosureSubst<'tcx> {
     fn visit_mut_term(&mut self, term: &mut Term<'tcx>) {
-        match &term.kind {
+        match &mut term.kind {
             TermKind::Old { term: box Term { kind: TermKind::Var(x), .. }, .. } => {
                 if !self.bound.contains(&x) {
                     if let Some(v) = self.old(*x) {
@@ -1165,15 +1160,20 @@ impl<'tcx> TermVisitorMut<'tcx> for ClosureSubst<'tcx> {
                 super_visit_mut_term(term, self);
                 std::mem::swap(&mut self.bound, &mut bound);
             }
-            TermKind::Let { pattern, .. } => {
+            TermKind::Let { pattern, box arg, box body } => {
+                self.visit_mut_term(arg);
                 let mut bound = self.bound.clone();
                 pattern.binds(&mut bound);
                 std::mem::swap(&mut self.bound, &mut bound);
-                super_visit_mut_term(term, self);
+                self.visit_mut_term(body);
                 std::mem::swap(&mut self.bound, &mut bound);
             }
-            TermKind::Closure { .. } => {
-                super_visit_mut_term(term, self);
+            TermKind::Closure { bound: bound_new, box body } => {
+                let mut bound = self.bound.clone();
+                bound.extend(bound_new.iter());
+                std::mem::swap(&mut self.bound, &mut bound);
+                self.visit_mut_term(body);
+                std::mem::swap(&mut self.bound, &mut bound);
             }
             _ => super_visit_mut_term(term, self),
         }

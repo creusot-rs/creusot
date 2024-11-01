@@ -32,8 +32,8 @@ use rustc_middle::{
         AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
     },
     ty::{
-        int_ty, uint_ty, CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, Ty, TyCtxt,
-        TyKind, TypeFoldable, TypeVisitable, TypeVisitableExt, UserType,
+        int_ty, uint_ty, CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, ParamEnv, Ty,
+        TyCtxt, TyKind, TypeFoldable, TypeVisitable, TypeVisitableExt, UserType,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
@@ -157,6 +157,7 @@ pub enum TermKind<'tcx> {
         term: Box<Term<'tcx>>,
     },
     Closure {
+        bound: Vec<Symbol>,
         body: Box<Term<'tcx>>,
     },
     Reborrow {
@@ -758,7 +759,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 if is_assertion(self.ctx.tcx, closure_id.to_def_id()) {
                     Ok(Term { ty, span, kind: TermKind::Assert { cond: Box::new(term) } })
                 } else {
-                    Ok(Term { ty, span, kind: TermKind::Closure { body: Box::new(term) } })
+                    let bound = self.ctx.fn_arg_names(closure_id).iter().map(|i| i.name).collect();
+                    Ok(Term { ty, span, kind: TermKind::Closure { bound, body: Box::new(term) } })
                 }
             }
             ref ek => todo!("lower_expr: {:?}", ek),
@@ -1006,8 +1008,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     // Extract the `T` from `Snapshot<T>`
                     let TyKind::Adt(_, subst) = self.thir[arg].ty.peel_refs().kind() else { unreachable!() };
                     return Ok((
-                        Term::call(self.ctx.tcx, deref_method, subst, vec![cur]),
-                        Term::call(self.ctx.tcx, deref_method, subst, vec![fin]),
+                        Term::call_no_normalize(self.ctx.tcx, deref_method, subst, vec![cur]),
+                        Term::call_no_normalize(self.ctx.tcx, deref_method, subst, vec![fin]),
                         inner,
                         proj
                     ));
@@ -1050,13 +1052,13 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         self.ctx.mk_args(&[GenericArg::from(cur.ty), GenericArg::from(index.ty)]);
 
                     Ok((
-                        Term::call(
+                        Term::call_no_normalize(
                             self.ctx.tcx,
                             index_logic_method,
                             subst,
                             vec![cur, index.clone()],
                         ),
-                        Term::call(
+                        Term::call_no_normalize(
                             self.ctx.tcx,
                             index_logic_method,
                             subst,
@@ -1263,7 +1265,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         }
         TermKind::Projection { lhs, name: _ } => visitor.visit_term(&*lhs),
         TermKind::Old { term } => visitor.visit_term(&*term),
-        TermKind::Closure { body } => visitor.visit_term(&*body),
+        TermKind::Closure { body, .. } => visitor.visit_term(&*body),
         TermKind::Absurd => {}
         TermKind::Reborrow { cur, fin, inner, projection } => {
             visitor.visit_term(&*cur);
@@ -1321,7 +1323,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         }
         TermKind::Projection { lhs, name: _ } => visitor.visit_mut_term(&mut *lhs),
         TermKind::Old { term } => visitor.visit_mut_term(&mut *term),
-        TermKind::Closure { body } => visitor.visit_mut_term(&mut *body),
+        TermKind::Closure { body, .. } => visitor.visit_mut_term(&mut *body),
         TermKind::Absurd => {}
         TermKind::Reborrow { cur, fin, inner, projection } => {
             visitor.visit_mut_term(&mut *cur);
@@ -1342,7 +1344,7 @@ impl<'tcx> Term<'tcx> {
         Term { ty: tcx.types.bool, kind: TermKind::Lit(Literal::Bool(false)), span: DUMMY_SP }
     }
 
-    pub(crate) fn call(
+    pub(crate) fn call_no_normalize(
         tcx: TyCtxt<'tcx>,
         def_id: DefId,
         subst: GenericArgsRef<'tcx>,
@@ -1350,8 +1352,19 @@ impl<'tcx> Term<'tcx> {
     ) -> Self {
         let ty = tcx.type_of(def_id).instantiate(tcx, subst);
         let result = ty.fn_sig(tcx).skip_binder().output();
-
         Term { ty: result, span: DUMMY_SP, kind: TermKind::Call { id: def_id, subst, args } }
+    }
+
+    pub(crate) fn call(
+        tcx: TyCtxt<'tcx>,
+        param_env: ParamEnv<'tcx>,
+        def_id: DefId,
+        subst: GenericArgsRef<'tcx>,
+        args: Vec<Term<'tcx>>,
+    ) -> Self {
+        let mut res = Self::call_no_normalize(tcx, def_id, subst, args);
+        res.ty = tcx.normalize_erasing_regions(param_env, res.ty);
+        res
     }
 
     pub(crate) fn var(sym: Symbol, ty: Ty<'tcx>) -> Self {
@@ -1553,7 +1566,9 @@ impl<'tcx> Term<'tcx> {
             }
             TermKind::Projection { lhs, .. } => lhs.subst_with_inner(bound, inv_subst),
             TermKind::Old { term } => term.subst_with_inner(bound, inv_subst),
-            TermKind::Closure { body } => {
+            TermKind::Closure { body, bound: bound_new } => {
+                let mut bound = bound.clone();
+                bound.extend(bound_new.iter());
                 body.subst_with_inner(&bound, inv_subst);
             }
             TermKind::Absurd => {}
@@ -1633,7 +1648,9 @@ impl<'tcx> Term<'tcx> {
             }
             TermKind::Projection { lhs, .. } => lhs.free_vars_inner(bound, free),
             TermKind::Old { term } => term.free_vars_inner(bound, free),
-            TermKind::Closure { body } => {
+            TermKind::Closure { body, bound: bound_new } => {
+                let mut bound = bound.clone();
+                bound.extend(bound_new.iter());
                 body.free_vars_inner(&bound, free);
             }
             TermKind::Absurd => {}

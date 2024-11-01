@@ -8,8 +8,15 @@ use rustc_middle::ty::{ParamEnv, TyCtxt};
 
 use super::{super_visit_mut_term, BinOp, TermVisitorMut};
 
-pub(crate) fn normalize<'tcx>(tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>, term: &mut Term<'tcx>) {
-    NormalizeTerm { param_env, tcx }.visit_mut_term(term);
+pub(crate) fn normalize<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    mut term: Term<'tcx>,
+) -> Term<'tcx> {
+    NormalizeTerm { param_env, tcx }.visit_mut_term(&mut term);
+    // FIXME: we should normalize here, but it diverges when normalizing specification of partial_eq
+    // let term = tcx.normalize_erasing_regions(param_env, term);
+    term
 }
 
 struct NormalizeTerm<'tcx> {

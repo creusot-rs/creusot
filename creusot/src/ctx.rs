@@ -217,7 +217,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             if !self.terms.contains_key(&def_id) {
                 let mut term = pearlite::pearlite(self, def_id.expect_local())
                     .unwrap_or_else(|e| e.emit(self.tcx));
-                pearlite::normalize(self.tcx, self.param_env(def_id), &mut term);
+                term = pearlite::normalize(self.tcx, self.param_env(def_id), term);
 
                 self.terms.insert(def_id, term);
             };
@@ -234,11 +234,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         self.params_open_inv.get(&def_id)
     }
 
-    queryish!(sig, &PreSignature<'tcx>, |ctx: &mut Self, key| {
-        let mut pre_sig = pre_sig_of(&mut *ctx, key);
-        pre_sig = pre_sig.normalize(ctx.tcx, ctx.param_env(key));
-        pre_sig
-    });
+    queryish!(sig, &PreSignature<'tcx>, |ctx: &mut Self, key| { pre_sig_of(&mut *ctx, key) });
 
     pub(crate) fn body(&mut self, body_id: BodyId) -> &Body<'tcx> {
         let body = self.body_with_facts(body_id.def_id);
@@ -276,8 +272,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         param_env: ParamEnv<'tcx>,
         ty: Ty<'tcx>,
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-        let ty = self.try_normalize_erasing_regions(param_env, ty).ok()?;
-
+        let ty = self.normalize_erasing_regions(param_env, ty);
         if is_tyinv_trivial(self.tcx, param_env, ty) {
             None
         } else {

@@ -184,6 +184,7 @@ pub(crate) trait Namer<'tcx> {
             _ => unreachable!(),
         }
     }
+
     fn normalize<T: TypeFoldable<TyCtxt<'tcx>> + Copy>(
         &self,
         ctx: &TranslationCtx<'tcx>,
@@ -208,7 +209,7 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
         _: &TranslationCtx<'tcx>,
         ty: T,
     ) -> T {
-        self.tcx().try_normalize_erasing_regions(self.param_env, ty).unwrap_or(ty)
+        self.tcx().normalize_erasing_regions(self.param_env, ty)
     }
 
     fn insert(&mut self, key: Dependency<'tcx>) -> Kind {
@@ -253,9 +254,7 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
         ctx: &TranslationCtx<'tcx>,
         ty: T,
     ) -> T {
-        self.tcx()
-            .try_normalize_erasing_regions(Self::param_env(self.self_id, ctx), ty)
-            .unwrap_or(ty)
+        self.tcx().normalize_erasing_regions(Self::param_env(self.self_id, ctx), ty)
     }
 
     fn tcx(&self) -> TyCtxt<'tcx> {

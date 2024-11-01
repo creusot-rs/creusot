@@ -21,7 +21,7 @@ use rustc_middle::{
         SourceInfo, StatementKind, SwitchTargets,
         TerminatorKind::{self, *},
     },
-    ty::{self, AssocItem, GenericArgKind, GenericArgsRef, ParamEnv, Ty, TyKind},
+    ty::{self, AssocItem, EarlyBinder, GenericArgKind, GenericArgsRef, ParamEnv, Ty, TyKind},
 };
 use rustc_mir_dataflow::{
     move_paths::{HasMoveData, LookupResult},
@@ -163,10 +163,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         if self.ctx.sig(fun_def_id).contract.is_requires_false() {
                             target = None
                         } else {
-                            let subst = self
-                                .ctx
-                                .try_normalize_erasing_regions(self.param_env(), subst)
-                                .unwrap_or(subst);
+                            let subst = self.ctx.normalize_erasing_regions(self.param_env(), subst);
 
                             self.emit_statement(Statement::Call(
                                 self.translate_place(destination.as_ref()),
@@ -394,8 +391,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     continue;
                 }
                 let ty = trait_clause.self_ty().skip_binder();
-                let caller_ty = ty::EarlyBinder::bind(trait_clause.self_ty())
-                    .instantiate(self.tcx(), subst)
+                let caller_ty = self
+                    .ctx
+                    .instantiate_and_normalize_erasing_regions(
+                        subst,
+                        self.param_env(),
+                        EarlyBinder::bind(trait_clause.self_ty()),
+                    )
                     .skip_binder();
                 let deref_in_callee = infer_ctx
                     .type_implements_trait(deref_trait_id, std::iter::once(ty), func_param_env)

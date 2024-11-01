@@ -127,7 +127,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Constructor { typ, variant, fields } => {
                 self.ctx.translate(*typ);
-                let TyKind::Adt(_, subst) = term.creusot_ty().kind() else { unreachable!() };
+                let ty = self.names.normalize(self.ctx, term.creusot_ty());
+                let TyKind::Adt(_, subst) = ty.kind() else { unreachable!() };
                 let args = fields.into_iter().map(|f| self.lower_term(f)).collect();
 
                 let ctor = self
@@ -181,7 +182,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::Tuple(fields.into_iter().map(|f| self.lower_term(f)).collect())
             }
             TermKind::Projection { box lhs, name } => {
-                let base_ty = lhs.ty;
+                let base_ty = self.names.normalize(self.ctx, lhs.creusot_ty());
                 let lhs = self.lower_term(lhs);
 
                 let accessor = match base_ty.kind() {
@@ -205,7 +206,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                 Exp::qvar(accessor).app(vec![lhs])
             }
-            TermKind::Closure { body } => {
+            TermKind::Closure { body, .. } => {
                 let TyKind::Closure(id, subst) = term.creusot_ty().kind() else {
                     unreachable!("closure has non closure type")
                 };
@@ -214,6 +215,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let mut binders = Vec::new();
                 let sig = self.ctx.sig(*id).clone();
                 let sig = EarlyBinder::bind(sig).instantiate(self.ctx.tcx, subst);
+                // FIXME: normalize sig
                 for arg in sig.inputs.iter().skip(1) {
                     binders
                         .push(Binder::typed(Ident::build(&arg.0.to_string()), self.lower_ty(arg.2)))
@@ -244,6 +246,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         match pat {
             Pattern::Constructor { variant, fields, substs } => {
                 let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
+                let substs = self.names.normalize(self.ctx, *substs);
                 Pat::ConsP(self.names.constructor(*variant, substs), fields)
             }
             Pattern::Wildcard => Pat::Wildcard,

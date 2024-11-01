@@ -149,12 +149,11 @@ impl<'tcx> Dependency<'tcx> {
         }
     }
 
-    pub(crate) fn resolve(mut self, tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>) -> Option<Self> {
+    pub(crate) fn resolve(mut self, tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>) -> Self {
         if let Dependency::Item(item, substs) = self {
             self = resolve_item(item, substs, tcx, param_env);
         }
-
-        tcx.try_normalize_erasing_regions(param_env, self).ok()
+        tcx.normalize_erasing_regions(param_env, self)
     }
 
     pub(crate) fn did(self) -> Option<(DefId, GenericArgsRef<'tcx>)> {

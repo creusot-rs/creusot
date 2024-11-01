@@ -43,7 +43,8 @@ impl<'tcx> PreContract<'tcx> {
 
     pub(crate) fn normalize(mut self, tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>) -> Self {
         for term in self.terms_mut() {
-            normalize(tcx, param_env, term);
+            *term =
+                normalize(tcx, param_env, std::mem::replace(term, /*Dummy*/ Term::mk_true(tcx)));
         }
         self
     }
@@ -357,7 +358,7 @@ pub(crate) fn contract_of<'tcx>(
             contract.requires.push(Term::mk_false(ctx.tcx));
         }
 
-        contract
+        contract.normalize(ctx.tcx, ctx.param_env(def_id))
     }
 }
 
@@ -382,6 +383,7 @@ pub(crate) fn pre_sig_of<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> PreSignature<'tcx> {
+    let param_env = ctx.param_env(def_id);
     let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
 
     let mut contract = crate::specification::contract_of(ctx, def_id);
@@ -415,6 +417,7 @@ pub(crate) fn pre_sig_of<'tcx>(
 
             contract.ensures.push(Term::call(
                 ctx.tcx,
+                param_env,
                 unnest_id,
                 unnest_subst,
                 vec![Term::var(self_, env_ty).cur(), Term::var(self_, env_ty).fin()],
@@ -487,7 +490,7 @@ pub(crate) fn pre_sig_of<'tcx>(
         }
     }
 
-    PreSignature { inputs, output, contract }
+    PreSignature { inputs, output, contract }.normalize(ctx.tcx, param_env)
 }
 
 fn inputs_and_output<'tcx>(
@@ -499,14 +502,17 @@ fn inputs_and_output<'tcx>(
         .kind()
     {
         TyKind::FnDef(..) => {
-            let gen_sig = tcx.fn_sig(def_id).instantiate_identity();
-            let sig = tcx.normalize_erasing_late_bound_regions(tcx.param_env(def_id), gen_sig);
+            let gen_sig = tcx
+                .instantiate_bound_regions_with_erased(tcx.fn_sig(def_id).instantiate_identity());
+            let sig = tcx.normalize_erasing_regions(tcx.param_env(def_id), gen_sig);
             let iter = tcx.fn_arg_names(def_id).iter().cloned().zip(sig.inputs().iter().cloned());
             (Box::new(iter), sig.output())
         }
         TyKind::Closure(_, subst) => {
-            let sig = tcx.signature_unclosure(subst.as_closure().sig(), Safety::Safe);
-            let sig = tcx.normalize_erasing_late_bound_regions(tcx.param_env(def_id), sig);
+            let sig = tcx.instantiate_bound_regions_with_erased(
+                tcx.signature_unclosure(subst.as_closure().sig(), Safety::Safe),
+            );
+            let sig = tcx.normalize_erasing_regions(tcx.param_env(def_id), sig);
             let env_ty = tcx.closure_env_ty(ty, subst.as_closure().kind(), tcx.lifetimes.re_erased);
 
             // I wish this could be called "self"

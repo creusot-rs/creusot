@@ -128,5 +128,5 @@ fn resolve_of<'tcx>(ctx: &Why3Generator<'tcx>, term: Term<'tcx>) -> Term<'tcx> {
     let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve")).unwrap();
     let substs = ctx.mk_args(&[GenericArg::from(term.ty)]);
 
-    Term::call(ctx.tcx, trait_meth_id, substs, vec![term])
+    Term::call_no_normalize(ctx.tcx, trait_meth_id, substs, vec![term])
 }

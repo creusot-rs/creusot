@@ -215,24 +215,18 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
                                 if !tcx.def_kind(item_id).is_fn_like() {
                                     continue;
                                 }
-                                let subst = EarlyBinder::bind(
-                                    tcx.erase_regions(clause.skip_binder().trait_ref.args),
-                                )
-                                .instantiate(tcx, generic_args);
-                                let (def_id, generic_args) =
-                                    match tcx.try_normalize_erasing_regions(param_env, subst) {
-                                        Ok(subst) => {
-                                            match tcx.resolve_instance_raw(
-                                                param_env.and((item_id, subst)),
-                                            ) {
-                                                Ok(Some(instance)) => {
-                                                    (instance.def.def_id(), instance.args)
-                                                }
-                                                _ => (item_id, subst),
-                                            }
-                                        }
-                                        Err(_) => (item_id, subst),
-                                    };
+                                let subst = tcx.instantiate_and_normalize_erasing_regions(
+                                    generic_args,
+                                    param_env,
+                                    EarlyBinder::bind(clause.skip_binder().trait_ref.args),
+                                );
+
+                                let (def_id, generic_args) = match tcx
+                                    .resolve_instance_raw(param_env.and((item_id, subst)))
+                                {
+                                    Ok(Some(instance)) => (instance.def.def_id(), instance.args),
+                                    _ => (item_id, subst),
+                                };
 
                                 // Else, we could not find a concrete function to call,
                                 // so we don't consider this to be an actual call: we cannot resolve it to any concrete function yet.
@@ -403,25 +397,22 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tc
         match expr.kind {
             thir::ExprKind::Call { fun, fn_span, .. } => {
                 if let &FnDef(def_id, subst) = self.thir[fun].ty.kind() {
-                    let subst = EarlyBinder::bind(self.tcx.erase_regions(subst))
-                        .instantiate(self.tcx, self.generic_args);
-                    let (def_id, args) = match self
-                        .tcx
-                        .try_normalize_erasing_regions(self.param_env, subst)
-                    {
-                        Ok(subst) => {
-                            match self.tcx.resolve_instance_raw(self.param_env.and((def_id, subst)))
-                            {
-                                Ok(Some(instance)) => (instance.def.def_id(), instance.args),
-                                _ => (def_id, subst),
-                            }
-                        }
-                        Err(_) => (def_id, subst),
-                    };
+                    let subst = self.tcx.instantiate_and_normalize_erasing_regions(
+                        self.generic_args,
+                        self.param_env,
+                        EarlyBinder::bind(subst),
+                    );
+
+                    let (def_id, args) =
+                        match self.tcx.resolve_instance_raw(self.param_env.and((def_id, subst))) {
+                            Ok(Some(instance)) => (instance.def.def_id(), instance.args),
+                            _ => (def_id, subst),
+                        };
                     self.calls.insert((def_id, fn_span, args));
                 }
             }
             thir::ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
+                let TyKind::Closure(_, subst) = expr.ty.kind() else { unreachable!() };
                 let (thir, expr) = self.tcx.thir_body(closure_id).unwrap_or_else(|_| {
                     crate::error::Error::from(crate::error::InternalError("Cannot fetch THIR body"))
                         .emit(self.tcx)
@@ -431,13 +422,20 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tc
                 let mut closure_visitor = FunctionCalls {
                     thir: &thir,
                     tcx: self.tcx,
-                    generic_args: erased_identity_for_item(self.tcx, closure_id.to_def_id()),
+                    generic_args: self.tcx.instantiate_and_normalize_erasing_regions(
+                        self.generic_args,
+                        self.param_env,
+                        EarlyBinder::bind(subst),
+                    ),
                     param_env: self.param_env,
                     calls: std::mem::take(&mut self.calls),
                     has_loops: None,
                 };
                 thir::visit::walk_expr(&mut closure_visitor, &thir[expr]);
                 self.calls = closure_visitor.calls;
+                if self.has_loops.is_none() {
+                    self.has_loops = closure_visitor.has_loops
+                }
             }
             thir::ExprKind::Loop { .. } => self.has_loops = Some(expr.span),
             _ => {}

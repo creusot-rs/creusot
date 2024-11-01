@@ -131,7 +131,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         let inv_id =
             self.ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
         let subst = self.ctx.mk_args(&[GenericArg::from(subject.ty)]);
-        let lhs = Term::call(self.ctx.tcx, inv_id, subst, vec![subject.clone()]);
+        let lhs = Term::call(self.ctx.tcx, self.param_env, inv_id, subst, vec![subject.clone()]);
         let trig = vec![Trigger(vec![lhs.clone()])];
 
         if is_tyinv_trivial(self.ctx.tcx, self.param_env, ty) {
@@ -151,8 +151,13 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
 
         match resolve_user_inv(self.ctx.tcx, ty, self.param_env) {
             TraitResol::Instance(uinv_did, uinv_subst) => {
-                rhs =
-                    rhs.conj(Term::call(self.ctx.tcx, uinv_did, uinv_subst, vec![subject.clone()]))
+                rhs = rhs.conj(Term::call(
+                    self.ctx.tcx,
+                    self.param_env,
+                    uinv_did,
+                    uinv_subst,
+                    vec![subject.clone()],
+                ))
             }
             TraitResol::UnknownNotFound if !for_deps => use_imples = true,
             TraitResol::NoInstance => (),
@@ -163,8 +168,13 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                     .get_diagnostic_item(Symbol::intern("creusot_invariant_user"))
                     .unwrap();
                 let subst = self.ctx.tcx.mk_args(&[GenericArg::from(ty)]);
-                rhs =
-                    rhs.conj(Term::call(self.ctx.tcx, trait_item_did, subst, vec![subject.clone()]))
+                rhs = rhs.conj(Term::call(
+                    self.ctx.tcx,
+                    self.param_env,
+                    trait_item_did,
+                    subst,
+                    vec![subject.clone()],
+                ))
             }
         }
 
@@ -270,7 +280,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
 
     pub(crate) fn mk_inv_call(&mut self, term: Term<'tcx>) -> Term<'tcx> {
         if let Some((inv_id, subst)) = self.ctx.type_invariant(self.param_env, term.ty) {
-            Term::call(self.ctx.tcx, inv_id, subst, vec![term])
+            Term::call(self.ctx.tcx, self.param_env, inv_id, subst, vec![term])
         } else {
             Term::mk_true(self.ctx.tcx)
         }

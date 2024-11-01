@@ -172,7 +172,7 @@ impl DepElab for LogicElab {
         // We schedule this 'body' for expansion here by forcing it to be added to the expansion queue.
         if is_inv(ctx.tcx, def_id) {
             let ty = subst.type_at(0);
-            let ty = ctx.try_normalize_erasing_regions(elab.param_env, ty).unwrap_or(ty);
+            let ty = ctx.normalize_erasing_regions(elab.param_env, ty);
             elab.expansion_queue.push_back((elab.self_key, Dependency::TyInvAxiom(ty)));
         }
 
@@ -262,8 +262,8 @@ fn expand_structural_resolve<'tcx>(
     let (binder, term) = structural_resolve(ctx, ty);
     let param_env = elab.param_env;
     let mut names = elab.namer(Dependency::StructuralResolve(ty));
-    let exp = if let Some(mut term) = term {
-        normalize(ctx.tcx, param_env, &mut term);
+    let exp = if let Some(term) = term {
+        let term = normalize(ctx.tcx, param_env, term);
         Some(lower_pure(ctx, &mut names, &term))
     } else {
         None
@@ -301,12 +301,12 @@ pub fn resolve_term<'tcx>(
 
     if let TyKind::Closure(..) = subst[0].as_type().unwrap().kind() {
         // Closures have an "hacked" instance of Resolve
-        body = Term::call(ctx.tcx, trait_meth_id, subst, vec![arg]);
+        body = Term::call(ctx.tcx, param_env, trait_meth_id, subst, vec![arg]);
     } else {
         match traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, subst) {
             traits::TraitResol::Instance(meth_did, meth_substs) => {
                 // We know the instance => body points to it
-                body = Term::call(ctx.tcx, meth_did, meth_substs, vec![arg]);
+                body = Term::call(ctx.tcx, param_env, meth_did, meth_substs, vec![arg]);
             }
             traits::TraitResol::UnknownFound | traits::TraitResol::UnknownNotFound => {
                 // We don't know the instance => body is opaque
@@ -406,8 +406,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     ) -> (DiGraphMap<Dependency<'tcx>, ()>, HashMap<Dependency<'tcx>, Vec<Decl>>) {
         let mut visited = HashSet::new();
         while let Some((s, t)) = self.expansion_queue.pop_front() {
-            let t = t.resolve(ctx.tcx, self.param_env).unwrap_or(t);
-
+            let t = t.resolve(ctx.tcx, self.param_env);
             self.graph.add_edge(s, t, ());
 
             if !visited.insert(t) {
@@ -532,6 +531,7 @@ pub fn term<'tcx>(
                 let uneval = ty::UnevaluatedConst::new(def_id, subst);
                 let constant = Const::new(ctx.tcx, ty::ConstKind::Unevaluated(uneval));
                 let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
+                let ty = ctx.tcx.normalize_erasing_regions(param_env, ty);
                 let span = ctx.def_span(def_id);
                 let res = from_ty_const(&mut ctx.ctx, constant, ty, param_env, span);
                 Some(res)
@@ -539,9 +539,11 @@ pub fn term<'tcx>(
                 resolve_term(ctx, param_env, def_id, subst)
             } else {
                 let term = ctx.term(trans_id).cloned()?;
-                let mut term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
-                normalize(ctx.tcx, param_env, &mut term);
-
+                let term = normalize(
+                    ctx.tcx,
+                    param_env,
+                    EarlyBinder::bind(term).instantiate(ctx.tcx, subst),
+                );
                 Some(term)
             }
         }

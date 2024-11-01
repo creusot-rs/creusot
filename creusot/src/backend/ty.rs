@@ -291,7 +291,7 @@ impl<'tcx> Why3Generator<'tcx> {
         let subst = erased_identity_for_item(self.tcx, def_id);
         for f in self.adt_def(def_id).all_fields() {
             let ty = f.ty(self.tcx, subst);
-            let ty = self.try_normalize_erasing_regions(param_env, ty).unwrap_or(ty);
+            let ty = self.normalize_erasing_regions(param_env, ty);
             match ty.kind() {
                 TyKind::Alias(AliasTyKind::Projection, aty) => v.push(*aty),
                 TyKind::Adt(adt, substs) => {
@@ -638,7 +638,7 @@ fn field_ty<'tcx>(
     substs: GenericArgsRef<'tcx>,
 ) -> MlT {
     let ty = field.ty(ctx.tcx, substs);
-    let ty = ctx.try_normalize_erasing_regions(param_env, ty).unwrap_or(ty);
+    let ty = ctx.normalize_erasing_regions(param_env, ty);
 
     if !validate_field_ty(ctx, did, ty) {
         ctx.crash_and_error(ctx.def_span(field.did), "Illegal use of the Snapshot type")
