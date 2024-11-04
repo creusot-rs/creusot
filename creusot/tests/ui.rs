@@ -35,6 +35,7 @@ fn main() {
 
     let mut temp_file = base_path.clone();
     temp_file.push("target");
+    temp_file.push("creusot");
     temp_file.push("debug");
     temp_file.push("libcreusot_contracts.cmeta");
 
@@ -45,7 +46,9 @@ fn main() {
         temp_file.as_os_str(),
         "--output-file=/dev/null".as_ref(),
     ]);
-    metadata_file.args(&["--", "--package", "creusot-contracts"]).env("CREUSOT_CONTINUE", "true");
+    metadata_file
+        .args(&["--", "--target-dir", "target/creusot", "--package", "creusot-contracts"])
+        .env("CREUSOT_CONTINUE", "true");
 
     if !metadata_file.status().expect("could not dump metadata for `creusot_contracts`").success() {
         // eprintln!("{}", String::from_utf8_lossy(&metadata_file.output().unwrap().stderr));
@@ -75,6 +78,7 @@ fn run_creusot(
     let mut base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     base_path.pop();
     base_path.push("target");
+    base_path.push("creusot");
     base_path.push("debug");
 
     let config_paths = creusot_dev_config::paths().unwrap();
