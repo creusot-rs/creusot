@@ -38,58 +38,45 @@ fn main() {
     setup_plugin();
 }
 
+// Usage: creusot-rustc [RUSTC_OPTIONS] -- [CREUSOT_OPTIONS]
+// or     creusot-rustc [RUSTC_OPTIONS] --creusot=JSON_CREUSOT_OPTIONS
 fn setup_plugin() {
     let mut args = env::args().collect::<Vec<_>>();
 
-    let is_wrapper = args.get(1).map(|s| s.contains("rustc")).unwrap_or(false);
-
-    if is_wrapper {
-        args.remove(1);
-    }
-
-    let creusot: Option<CreusotArgs> = if is_wrapper {
-        let creusot = match args.iter().find_map(|arg| arg.strip_prefix("--creusot=")) {
-            Some(arg) => Some(serde_json::from_str(arg).unwrap()),
-            None => None,
-        };
-        args.retain(|arg| !arg.starts_with("--creusot"));
-        creusot
-    } else {
-        let mut all_args = CreusotArgs::parse_from(&args);
-        args = std::mem::take(&mut all_args.rust_flags);
-        Some(all_args)
+    let creusot = match args.iter().find_map(|arg| arg.strip_prefix("--creusot=")) {
+        Some(json) => {
+            let creusot = serde_json::from_str(json).unwrap();
+            args.retain(|arg| !arg.starts_with("--creusot="));
+            Some(creusot)
+        }
+        None => args.iter().rposition(|arg| arg == "--").map(|pos| {
+            let mut creusot_args = args.split_off(pos);
+            creusot_args[0] = "creusot-rustc".to_string();
+            CreusotArgs::parse_from(creusot_args)
+        }),
     };
+
+    let has_contracts =
+        args.iter().any(|arg| arg == "creusot_contracts" || arg.contains("creusot_contracts="));
 
     let sysroot = sysroot_path();
     args.push(format!("--sysroot={}", sysroot));
 
-    let normal_rustc = args.iter().any(|arg| arg.starts_with("--print"));
-    let primary_package = std::env::var("CARGO_PRIMARY_PACKAGE").is_ok();
-    let has_contracts =
-        args.iter().any(|arg| arg == "creusot_contracts" || arg.contains("creusot_contracts="));
-
-    // Did the user ask to compile this crate? Either they explicitly invoked `creusot-rustc` or this is a primary package.
-    let user_asked_for = !is_wrapper || primary_package;
-
-    if normal_rustc || !(user_asked_for || has_contracts) {
-        RunCompiler::new(&args, &mut DefaultCallbacks).run().unwrap()
-    } else {
-        match creusot {
-            Some(creusot) => {
-                for &arg in CREUSOT_RUSTC_ARGS {
-                    args.push(arg.to_owned());
-                }
-                debug!("creusot args={:?}", args);
-
-                let opts = match CreusotArgs::to_options(creusot) {
-                    Ok(opts) => opts,
-                    Err(msg) => panic!("Error: {msg}"),
-                };
-                RunCompiler::new(&args, &mut ToWhy::new(opts)).run().unwrap();
+    match creusot {
+        Some(creusot) if has_contracts => {
+            for &arg in CREUSOT_RUSTC_ARGS {
+                args.push(arg.to_owned());
             }
-            None => RunCompiler::new(&args, &mut DefaultCallbacks).run().unwrap(),
+            debug!("creusot args={:?}", args);
+
+            let opts = match CreusotArgs::to_options(creusot) {
+                Ok(opts) => opts,
+                Err(msg) => panic!("Error: {msg}"),
+            };
+            RunCompiler::new(&args, &mut ToWhy::new(opts)).run().unwrap();
         }
-    };
+        _ => RunCompiler::new(&args, &mut DefaultCallbacks).run().unwrap(),
+    }
 }
 
 fn sysroot_path() -> String {

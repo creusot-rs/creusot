@@ -7,14 +7,16 @@ SCRIPTPATH=$(dirname "$BASH_SOURCE")
 pushd $SCRIPTPATH > /dev/null
 eval $(cargo run --bin dev-env)
 cargo run --bin creusot-rustc --  \
-  --why3-config-file "$WHY3CONFIG" \
-  --output-file /dev/null \
-  --span-mode=absolute \
-  --creusot-extern creusot_contracts=./target/debug/libcreusot_contracts.rlib \
-  -- -Zno-codegen --crate-type=lib \
+  -Zno-codegen --crate-type=lib \
   --extern creusot_contracts=./target/debug/libcreusot_contracts.rlib \
   -Ldependency=./target/debug/deps/ \
   -Zunpretty=mir \
   -Zdump-mir= \
-  "$INPUTPATH"
+  "$INPUTPATH" \
+  -- \
+  --why3-config-file "$WHY3CONFIG" \
+  --output-file /dev/null \
+  --span-mode=absolute \
+  --creusot-extern creusot_contracts=./target/debug/libcreusot_contracts.rlib
+
 popd > /dev/null
