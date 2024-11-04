@@ -217,6 +217,7 @@ pub mod snapshot {
 }
 
 // pub mod ghost_ptr;
+pub mod ptr_own;
 pub mod invariant;
 pub mod model;
 pub mod resolve;
