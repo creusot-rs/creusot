@@ -161,7 +161,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         RT::Range(_) => Err(EncodeError::Unsupported(term.span(), "Range".into())),
         RT::Reference(TermReference { mutability, expr, .. }) => {
             let term = encode_term(expr)?;
-            Ok(quote! {
+            Ok(quote_spanned! {sp=>
                 & #mutability #term
             })
         }
@@ -206,13 +206,13 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         RT::Type(ty) => Ok(quote_spanned! {sp=> #ty }),
         RT::Unary(TermUnary { op, expr }) => {
             let term = encode_term(expr)?;
-            Ok(quote! {
+            Ok(quote_spanned! {sp=>
                 #op #term
             })
         }
         RT::Final(TermFinal { term, .. }) => {
             let term = encode_term(term)?;
-            Ok(quote! {
+            Ok(quote_spanned! {sp=>
                 * ::creusot_contracts::__stubs::fin(#term)
             })
         }
@@ -222,7 +222,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                 _ => &*term,
             };
             let term = encode_term(term)?;
-            Ok(quote! {
+            Ok(quote_spanned! {sp=>
                 ::creusot_contracts::model::View::view(#term)
             })
         }
@@ -230,7 +230,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         RT::LogEq(TermLogEq { lhs, rhs, .. }) => {
             let lhs = encode_term(lhs)?;
             let rhs = encode_term(rhs)?;
-            Ok(quote! {
+            Ok(quote_spanned! {sp=>
                 ::creusot_contracts::__stubs::equal(#lhs, #rhs)
             })
         }
@@ -244,14 +244,14 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             };
             let hyp = encode_term(hyp)?;
             let cons = encode_term(cons)?;
-            Ok(quote! {
+            Ok(quote_spanned! {sp=>
                 ::creusot_contracts::__stubs::implication(#hyp, #cons)
             })
         }
         RT::Quant(TermQuant { quant_token, args, trigger, term, .. }) => {
             let mut ts = encode_term(term)?;
             ts = encode_trigger(&trigger, ts)?;
-            ts = quote! {
+            ts = quote_spanned! {sp=>
                 ::creusot_contracts::__stubs::#quant_token(
                     #[creusot::no_translate]
                     |#args| { #ts }
