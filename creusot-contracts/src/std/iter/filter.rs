@@ -15,27 +15,24 @@ pub trait FilterExt<I, F> {
 impl<I, F> FilterExt<I, F> for Filter<I, F> {
     #[trusted]
     #[logic]
-    #[open(self)]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[ensures(inv(self) ==> inv(result))]
     fn func(self) -> F {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[ensures(inv(self) ==> inv(result))]
     #[ensures((*self).func() == *result && (^self).func() == ^result)]
     fn func_mut(&mut self) -> &mut F {
-        absurd
+        dead
     }
 }
 

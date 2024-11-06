@@ -1,5 +1,6 @@
 use super::BodyTranslator;
 use crate::{
+    attributes::is_box_new,
     ctx::TranslationCtx,
     extended_location::ExtendedLocation,
     fmir,
@@ -54,13 +55,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     .unwrap_or_else(|| discr.clone());
 
                 let discriminant = self.translate_operand(&real_discr);
-                let switch = make_switch(
-                    self.ctx,
-                    terminator.source_info,
-                    real_discr.ty(self.body, self.tcx()),
-                    targets,
-                    discriminant,
-                );
+                let ty = real_discr.ty(self.body, self.tcx());
+                let switch =
+                    make_switch(self.ctx, terminator.source_info, ty, targets, discriminant);
                 term = switch;
             }
             Return => {
@@ -116,7 +113,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         }))
                     }
 
-                    if self.is_box_new(fun_def_id) {
+                    if is_box_new(self.tcx(), fun_def_id) {
                         assert_eq!(func_args.len(), 1);
 
                         self.emit_assignment(
@@ -256,10 +253,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             self.resolve_places(need, &resolved);
         }
         self.emit_terminator(term)
-    }
-
-    fn is_box_new(&self, def_id: DefId) -> bool {
-        self.ctx.def_path_str(def_id) == "std::boxed::Box::<T>::new"
     }
 
     /// Determine if the given type `ty` is a `GhostBox`.

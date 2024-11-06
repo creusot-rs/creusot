@@ -18,10 +18,6 @@ pub struct CommonOptions {
     /// Necessary when using --stdout with relative spans, not needed otherwise.
     pub spans_relative_to: Option<PathBuf>,
     #[clap(long)]
-    /// Only generate proofs for items matching the provided string. The string is treated
-    /// as a Rust qualified path.
-    pub focus_on: Option<String>,
-    #[clap(long)]
     /// Location that Creusot metadata for this crate should be emitted to.
     pub metadata_path: Option<String>,
     /// Tell creusot to disable metadata exports.

@@ -5,7 +5,10 @@ use rustc_ast::{
     AttrArgs, AttrArgsEq, AttrItem, Attribute, FnSig, NodeId,
 };
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{ResolverAstLowering, Ty, TyCtxt, TyKind};
+use rustc_middle::{
+    query::Key,
+    ty::{ResolverAstLowering, Ty, TyCtxt, TyKind},
+};
 use rustc_span::{Span, Symbol};
 
 pub(crate) fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
@@ -54,20 +57,16 @@ pub(crate) fn is_ghost_closure(tcx: TyCtxt, def_id: DefId) -> bool {
 
 pub(crate) fn snapshot_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
     if let TyKind::Closure(def_id, _) = ty.peel_refs().kind() {
-        if is_snapshot_closure(tcx, *def_id) {
-            return Some(*def_id);
-        }
+        is_snapshot_closure(tcx, *def_id).then_some(*def_id)
+    } else {
+        None
     }
-    None
 }
 
 pub(crate) fn is_snap_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    let r: Option<bool> = try {
-        let adt = ty.ty_adt_def()?;
-        let builtin = get_builtin(tcx, adt.did())?;
-        builtin.as_str() == "prelude.prelude.Snapshot.snap_ty"
-    };
-    r.unwrap_or(false)
+    ty.ty_def_id()
+        .and_then(|did| get_builtin(tcx, did))
+        .is_some_and(|s| s.as_str() == "prelude.prelude.Snapshot.snap_ty")
 }
 
 pub(crate) fn is_logic(tcx: TyCtxt, def_id: DefId) -> bool {
@@ -135,6 +134,10 @@ pub(crate) fn is_resolve_method(tcx: TyCtxt, def_id: DefId) -> bool {
 
 pub(crate) fn is_resolve_function(tcx: TyCtxt, def_id: DefId) -> bool {
     tcx.is_diagnostic_item(Symbol::intern("creusot_resolve"), def_id)
+}
+
+pub(crate) fn is_box_new(tcx: TyCtxt, def_id: DefId) -> bool {
+    tcx.is_diagnostic_item(Symbol::intern("box_new"), def_id)
 }
 
 pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {

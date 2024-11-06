@@ -15,13 +15,12 @@ impl<T, const N: usize> View for [T; N] {
 
     #[logic]
     #[trusted]
-    #[open]
     #[creusot::builtins = "prelude.prelude.Slice.id"]
     // TODO:
     // #[ensures(result.len() == N@)]
     // Warning: #[ensures] and #[trusted] are incompatible, so this might require
     fn view(self) -> Self::ViewTy {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -30,12 +29,11 @@ impl<T: DeepModel, const N: usize> DeepModel for [T; N] {
 
     #[logic]
     #[trusted]
-    #[open(self)]
     // TODO
     // #[ensures(result.len() == N@)]
     #[ensures(self.view().len() == result.len())]
     #[ensures(forall<i: _> 0 <= i && i < result.len() ==> result[i] == self[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { absurd }
+        dead
     }
 }

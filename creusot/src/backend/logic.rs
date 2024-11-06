@@ -45,26 +45,94 @@ pub(crate) fn translate_logic_or_predicate<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
 ) -> Option<Module> {
-    let mut names = Dependencies::new(ctx, [def_id]);
-    let sig = signature_of(ctx, &mut names, def_id);
+    let mut names = Dependencies::new(ctx, def_id);
 
     // Check that we don't have both `builtins` and a contract at the same time (which are contradictory)
-    if get_builtin(ctx.tcx, def_id).is_some() && !sig.contract.is_empty() {
+    if get_builtin(ctx.tcx, def_id).is_some() {
+        if signature_of(ctx, &mut names, "".into(), def_id).contract.is_empty() {
+            return None;
+        }
+
         ctx.crash_and_error(
             ctx.def_span(def_id),
             "cannot specify both `creusot::builtins` and a contract on the same definition",
         );
     }
 
-    let proof_modl = if def_id.is_local() { proof_module(ctx, def_id) } else { None };
-    proof_modl
+    let name = names.value(names.self_id, names.self_subst).as_ident();
+    let mut sig = signature_of(ctx, &mut names, name, def_id);
+
+    if sig.contract.is_empty()
+        || !def_id.is_local()
+        || is_trusted_function(ctx.tcx, def_id)
+        || !ctx.has_body(def_id)
+    {
+        return None;
+    }
+
+    let term = ctx.ctx.term(def_id).unwrap().clone();
+
+    let mut body_decls = Vec::new();
+
+    let (arg_names, new_binders) = binders_to_args(ctx, sig.args);
+
+    let param_decls = arg_names.iter().zip(new_binders.iter()).map(|(nm, binder)| {
+        Decl::LogicDecl(LogicDecl {
+            kind: Some(DeclKind::Constant),
+            sig: Signature {
+                name: nm.clone(),
+                trigger: None,
+                attrs: Vec::new(),
+                retty: binder.type_of().cloned(),
+                args: Vec::new(),
+                contract: Default::default(),
+            },
+        })
+    });
+    body_decls.extend(param_decls);
+    sig.args = new_binders;
+
+    let mut val_sig = sig.clone();
+    val_sig.contract = Default::default();
+    let val_decl = match ctx.item_type(def_id) {
+        ItemType::Logic { .. } => LogicDecl { sig: val_sig, kind: Some(DeclKind::Function) },
+        ItemType::Predicate { .. } => {
+            val_sig.retty = None;
+            LogicDecl { sig: val_sig, kind: Some(DeclKind::Predicate) }
+        }
+        ItemType::Program | ItemType::Closure => LogicDecl { sig: val_sig, kind: None },
+        ItemType::Constant => LogicDecl { sig: val_sig, kind: Some(DeclKind::Constant) },
+        _ => unreachable!(),
+    };
+    body_decls.push(Decl::LogicDecl(val_decl));
+
+    let postcondition = sig.contract.ensures_conj();
+    let body = vc(ctx, &mut names, def_id, term, "result".into(), postcondition.clone());
+
+    let body = match body {
+        Ok(body) => body,
+        Err(e) => ctx.fatal_error(e.span(), &format!("{e:?}")).emit(),
+    };
+
+    let body = sig.contract.requires.into_iter().fold(body, |acc, pre| pre.implies(acc));
+
+    body_decls
+        .extend([Decl::Goal(Goal { name: format!("vc_{}", (&*sig.name)).into(), goal: body })]);
+
+    let mut decls = names.provide_deps(ctx);
+    decls.extend(body_decls);
+
+    let name = module_ident(ctx, def_id);
+    let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
+    let meta = ctx.display_impl_of(def_id);
+    Some(Module { name, decls, attrs, meta })
 }
 
 pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,
     mut sig: Signature,
-    kind: Option<LetKind>,
+    kind: Option<DeclKind>,
     body: Term<'tcx>,
 ) -> Vec<Decl> {
     let has_axioms = !sig.contract.ensures.is_empty();
@@ -72,7 +140,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
     let sig_contract = sig.clone();
 
     sig.contract = Default::default();
-    if let Some(LetKind::Predicate) = kind {
+    if let Some(DeclKind::Predicate) = kind {
         sig.retty = None;
     }
 
@@ -107,26 +175,21 @@ pub(crate) fn lower_pure_defn<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,
     mut sig: Signature,
-    kind: Option<LetKind>,
+    kind: Option<DeclKind>,
     needs_variant: bool,
     body: Term<'tcx>,
 ) -> Vec<Decl> {
-    if let Some(LetKind::Predicate) = kind {
+    if let Some(DeclKind::Predicate) = kind {
         sig.retty = None;
     }
 
     let body = lower_pure(ctx, names, &body);
 
-    if !body.is_pure() {
-        let val = ValDecl { ghost: false, val: false, kind, sig };
-        return vec![Decl::ValDecl(val)];
-    }
-
     if !needs_variant {
         let decl = match kind {
-            Some(LetKind::Function) => Decl::LogicDefn(Logic { sig, body }),
-            Some(LetKind::Predicate) => Decl::PredDecl(Predicate { sig, body }),
-            Some(LetKind::Constant) => Decl::ConstantDecl(Constant {
+            Some(DeclKind::Function) => Decl::LogicDefn(LogicDefn { sig, body }),
+            Some(DeclKind::Predicate) => Decl::PredDecl(Predicate { sig, body }),
+            Some(DeclKind::Constant) => Decl::ConstantDecl(Constant {
                 name: sig.name,
                 type_: sig.retty.unwrap(),
                 body: Some(body),
@@ -137,10 +200,10 @@ pub(crate) fn lower_pure_defn<'tcx, N: Namer<'tcx>>(
         return vec![decl];
     } else {
         let def_sig = sig.clone();
-        let val = ValDecl { ghost: false, val: false, kind, sig };
+        let val = LogicDecl { kind, sig };
 
         let mut decls = Vec::new();
-        decls.push(Decl::ValDecl(val));
+        decls.push(Decl::LogicDecl(val));
         if def_sig.uses_simple_triggers() {
             limited_function_encode(&mut decls, &def_sig, body, kind)
         } else {
@@ -176,7 +239,7 @@ fn limited_function_encode(
     decls: &mut Vec<Decl>,
     sig: &Signature,
     mut body: Exp,
-    kind: Option<LetKind>,
+    kind: Option<DeclKind>,
 ) {
     let lim_name = Ident::from_string(format!("{}_lim", &*sig.name));
     subst_qname(&mut body, &sig.name, &lim_name);
@@ -190,88 +253,9 @@ fn limited_function_encode(
     };
     let lim_call = function_call(&lim_sig);
     lim_sig.trigger = Some(Trigger::single(lim_call.clone()));
-    decls.push(Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig: lim_sig }));
+    decls.push(Decl::LogicDecl(LogicDecl { kind, sig: lim_sig }));
     decls.push(Decl::Axiom(definition_axiom(&sig, body, "def")));
     decls.push(Decl::Axiom(definition_axiom(&sig, lim_call, "def_lim")));
-}
-
-fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
-    if is_trusted_function(ctx.tcx, def_id) || !ctx.has_body(def_id) {
-        return None;
-    }
-
-    let mut names = Dependencies::new(ctx, [def_id]);
-
-    let mut sig = signature_of(ctx, &mut names, def_id);
-
-    if sig.contract.is_empty() {
-        let _ = names.provide_deps(ctx);
-        return None;
-    }
-    let term = ctx.term(def_id).unwrap().clone();
-
-    let mut body_decls = Vec::new();
-
-    let (arg_names, new_binders) = binders_to_args(ctx, sig.args);
-
-    let param_decls = arg_names.iter().zip(new_binders.iter()).map(|(nm, binder)| {
-        Decl::ValDecl(ValDecl {
-            ghost: false,
-            val: false,
-            kind: Some(LetKind::Constant),
-            sig: Signature {
-                name: nm.clone(),
-                trigger: None,
-                attrs: Vec::new(),
-                retty: binder.type_of().cloned(),
-                args: Vec::new(),
-                contract: Default::default(),
-            },
-        })
-    });
-    body_decls.extend(param_decls);
-    sig.args = new_binders;
-
-    let mut val_sig = sig.clone();
-    val_sig.contract = Default::default();
-    let val_decl = match ctx.item_type(def_id) {
-        ItemType::Logic { .. } => {
-            ValDecl { sig: val_sig, ghost: false, val: false, kind: Some(LetKind::Function) }
-        }
-        ItemType::Predicate { .. } => {
-            val_sig.retty = None;
-            ValDecl { sig: val_sig, ghost: false, val: false, kind: Some(LetKind::Predicate) }
-        }
-        ItemType::Program | ItemType::Closure => {
-            ValDecl { sig: val_sig, ghost: false, val: true, kind: None }
-        }
-        ItemType::Constant => {
-            ValDecl { sig: val_sig, ghost: false, val: true, kind: Some(LetKind::Constant) }
-        }
-        _ => unreachable!(),
-    };
-    body_decls.push(Decl::ValDecl(val_decl));
-
-    let postcondition = sig.contract.ensures_conj();
-    let body = vc(ctx, &mut names, def_id, term, "result".into(), postcondition.clone());
-
-    let body = match body {
-        Ok(body) => body,
-        Err(e) => ctx.fatal_error(e.span(), &format!("{e:?}")).emit(),
-    };
-
-    let body = sig.contract.requires.into_iter().fold(body, |acc, pre| pre.implies(acc));
-
-    body_decls
-        .extend([Decl::Goal(Goal { name: format!("vc_{}", (&*sig.name)).into(), goal: body })]);
-
-    let mut decls = names.provide_deps(ctx);
-    decls.extend(body_decls);
-
-    let name = module_ident(ctx, def_id);
-    let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
-    let meta = ctx.display_impl_of(def_id);
-    Some(Module { name, decls, attrs, meta })
 }
 
 pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {

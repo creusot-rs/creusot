@@ -31,7 +31,6 @@ pub struct Options {
     pub output_file: OutputFile,
     pub in_cargo: bool,
     pub span_mode: SpanMode,
-    pub match_str: Option<String>,
     pub simple_triggers: bool,
     pub why3_cmd: Option<Why3Command>,
 }

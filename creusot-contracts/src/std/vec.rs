@@ -13,12 +13,11 @@ pub use ::std::vec::*;
 impl<T, A: Allocator> View for Vec<T, A> {
     type ViewTy = Seq<T>;
 
-    #[open(self)]
     #[logic]
     #[trusted]
     #[ensures(result.len() <= usize::MAX@)]
     fn view(self) -> Seq<T> {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -26,13 +25,12 @@ impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
     #[logic]
-    #[open(self)]
     #[trusted]
     #[ensures(self.view().len() == result.len())]
     #[ensures(forall<i: Int> 0 <= i && i < self.view().len()
               ==> result[i] == self[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -232,11 +230,10 @@ impl<T, A: Allocator> IntoIterator for &mut Vec<T, A> {
 impl<T, A: Allocator> View for std::vec::IntoIter<T, A> {
     type ViewTy = Seq<T>;
 
-    #[open(self)]
     #[logic]
     #[trusted]
     fn view(self) -> Self::ViewTy {
-        absurd
+        dead
     }
 }
 

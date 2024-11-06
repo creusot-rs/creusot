@@ -11,17 +11,15 @@ pub trait EnumerateExt<I> {
 impl<I> EnumerateExt<I> for Enumerate<I> {
     #[trusted]
     #[logic]
-    #[open(self)]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     fn n(self) -> Int {
-        absurd
+        dead
     }
 }
 

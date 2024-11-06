@@ -10,7 +10,7 @@ pub(crate) mod traits;
 
 use crate::{
     attributes::{is_logic, is_predicate, is_spec, should_translate},
-    backend::{TransId, Why3Generator},
+    backend::{is_trusted_function, Why3Generator},
     ctx,
     error::InternalError,
     metadata,
@@ -24,7 +24,10 @@ use ctx::TranslationCtx;
 use rustc_hir::{def::DefKind, def_id::LOCAL_CRATE};
 use rustc_span::{Symbol, DUMMY_SP};
 use std::{error::Error, io::Write};
-use why3::{declaration::Module, mlcfg, Print};
+use why3::{
+    declaration::Module,
+    printer::{self, Print},
+};
 
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
@@ -41,8 +44,10 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
 
         let def_id = def_id.to_def_id();
         if is_spec(ctx.tcx, def_id) || is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id) {
-            let _ = ctx.term(def_id);
-            validate_opacity(ctx, def_id);
+            if !is_trusted_function(ctx.tcx, def_id) {
+                let _ = ctx.term(def_id);
+                validate_opacity(ctx, def_id);
+            }
         }
     }
     crate::validate_terminates::validate_terminates(ctx);
@@ -107,19 +112,9 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
             None => Box::new(std::io::stdout()),
         };
 
-        let matcher = why3.opts.match_str.clone();
-        let matcher: &str = matcher.as_ref().map(|s| &s[..]).unwrap_or("");
         let tcx = why3.tcx;
         let modules = why3.modules();
-        let modules = modules.flat_map(|(id, item)| {
-            if let TransId::Item(did) = id
-                && tcx.def_path_str(did).contains(matcher)
-            {
-                item.modules()
-            } else {
-                Box::new(std::iter::empty())
-            }
-        });
+        let modules = modules.flat_map(|item| item.modules());
 
         let crate_name = translate_name(&tcx.crate_name(LOCAL_CRATE).to_string());
         print_crate(&mut out, crate_name, modules)?;
@@ -139,7 +134,7 @@ fn print_crate<W, I: Iterator<Item = Module>>(
 where
     W: Write,
 {
-    let alloc = mlcfg::printer::ALLOC;
+    let alloc = printer::ALLOC;
 
     writeln!(out)?;
 

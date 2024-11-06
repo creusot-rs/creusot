@@ -1,9 +1,9 @@
 use indexmap::IndexSet;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 use crate::{
+    coma::Defn,
     exp::{Binder, Exp, ExpMutVisitor, Trigger},
-    mlcfg::{Block, BlockId},
     ty::Type,
     *,
 };
@@ -24,13 +24,6 @@ pub struct Module {
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct Scope {
-    pub name: Ident,
-    pub decls: Vec<Decl>,
-}
-
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Span {
     pub name: Ident,
     pub path: String,
@@ -43,87 +36,24 @@ pub struct Span {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Decl {
-    CfgDecl(CfgFunction),
-    Let(LetDecl),
-    ValDecl(ValDecl),
-    LogicDefn(Logic),
-    Scope(Scope),
-    Module(Module),
+    LogicDecl(LogicDecl),
+    LogicDefn(LogicDefn),
     TyDecl(TyDecl),
     PredDecl(Predicate),
-    Clone(DeclClone),
     UseDecl(Use),
     Axiom(Axiom),
     Goal(Goal),
     ConstantDecl(Constant),
-    Coma(coma::Defn),
+    Coma(Defn),
     LetSpans(Vec<Span>),
     Meta(Meta),
 }
 
 impl Decl {
-    pub fn module_like(&self) -> bool {
-        matches!(self, Self::Scope(_) | Self::Module(_))
-    }
-
-    pub fn val(sig: Signature) -> Self {
-        Decl::ValDecl(ValDecl { ghost: false, val: true, kind: None, sig })
-    }
-
-    pub fn val_pred(mut sig: Signature) -> Self {
-        sig.retty = None;
-        Decl::ValDecl(ValDecl { ghost: false, val: true, kind: Some(LetKind::Predicate), sig })
-    }
-
-    pub fn val_fn(sig: Signature) -> Self {
-        Decl::ValDecl(ValDecl { ghost: false, val: true, kind: Some(LetKind::Function), sig })
-    }
-
     pub fn function(sig: Signature, body: Option<Exp>) -> Self {
         match body {
-            Some(body) => Decl::LogicDefn(Logic { sig, body }),
-            None => Decl::ValDecl(ValDecl {
-                ghost: false,
-                val: false,
-                kind: Some(LetKind::Function),
-                sig,
-            }),
-        }
-    }
-
-    pub fn val_function(sig: Signature, body: Option<Exp>) -> Self {
-        match body {
-            Some(body) => Decl::Let(LetDecl {
-                kind: Some(LetKind::Function),
-                sig,
-                rec: false,
-                ghost: false,
-                body,
-            }),
-            None => Decl::ValDecl(ValDecl {
-                ghost: false,
-                val: true,
-                kind: Some(LetKind::Function),
-                sig,
-            }),
-        }
-    }
-
-    pub fn val_predicate(sig: Signature, body: Option<Exp>) -> Self {
-        match body {
-            Some(body) => Decl::Let(LetDecl {
-                kind: Some(LetKind::Predicate),
-                sig,
-                rec: false,
-                ghost: false,
-                body,
-            }),
-            None => Decl::ValDecl(ValDecl {
-                ghost: false,
-                val: true,
-                kind: Some(LetKind::Function),
-                sig,
-            }),
+            Some(body) => Decl::LogicDefn(LogicDefn { sig, body }),
+            None => Decl::LogicDecl(LogicDecl { kind: Some(DeclKind::Function), sig }),
         }
     }
 
@@ -132,12 +62,7 @@ impl Decl {
 
         match body {
             Some(body) => Decl::PredDecl(Predicate { sig, body }),
-            None => Decl::ValDecl(ValDecl {
-                ghost: false,
-                val: false,
-                kind: Some(LetKind::Predicate),
-                sig,
-            }),
+            None => Decl::LogicDecl(LogicDecl { kind: Some(DeclKind::Predicate), sig }),
         }
     }
 }
@@ -252,20 +177,9 @@ impl Signature {
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct Logic {
+pub struct LogicDefn {
     pub sig: Signature,
     pub body: Exp,
-}
-
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct CfgFunction {
-    pub sig: Signature,
-    pub rec: bool,
-    pub constant: bool,
-    pub vars: Vec<(bool, Ident, Type, Option<Exp>)>,
-    pub entry: Block,
-    pub blocks: BTreeMap<BlockId, Block>,
 }
 
 #[derive(Debug, Clone)]
@@ -288,75 +202,28 @@ pub enum TyDecl {
 pub struct AdtDecl {
     pub ty_name: Ident,
     pub ty_params: Vec<Ident>,
-    pub constrs: Vec<ConstructorDecl>,
+    pub sumrecord: SumRecord,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub enum SumRecord {
+    Sum(Vec<ConstructorDecl>),
+    Record(Vec<FieldDecl>),
 }
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct ConstructorDecl {
     pub name: Ident,
-    pub fields: Vec<Field>,
+    pub fields: Vec<Type>,
 }
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct Field {
-    pub ghost: bool,
+pub struct FieldDecl {
+    pub name: Ident,
     pub ty: Type,
-}
-
-impl TyDecl {
-    pub fn used_types(&self) -> IndexSet<QName> {
-        let mut used = IndexSet::new();
-        match &self {
-            TyDecl::Adt { tys } => {
-                for AdtDecl { constrs, .. } in tys {
-                    for cons in constrs {
-                        for ty in &cons.fields {
-                            ty.ty.find_used_types(&mut used);
-                        }
-                    }
-                }
-            }
-            TyDecl::Alias { alias, .. } => {
-                alias.find_used_types(&mut used);
-            }
-            TyDecl::Opaque { .. } => {}
-        }
-        used
-    }
-}
-
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct DeclClone {
-    pub name: QName,
-    pub subst: Vec<CloneSubst>,
-    pub kind: CloneKind,
-}
-
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub enum CloneKind {
-    Bare,
-    Named(Ident),
-    Export,
-}
-
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub enum CloneSubst {
-    Type(QName, Type),
-    Val(QName, QName),
-    Predicate(QName, QName),
-    Function(QName, QName),
-    Axiom(Option<QName>),
-}
-
-impl CloneSubst {
-    pub fn self_subst(ty: Type) -> Self {
-        Self::Type("self".into(), ty)
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -371,10 +238,8 @@ pub enum ValKind {
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct ValDecl {
-    pub ghost: bool,
-    pub val: bool,
-    pub kind: Option<LetKind>,
+pub struct LogicDecl {
+    pub kind: Option<DeclKind>,
     pub sig: Signature,
 }
 
@@ -401,19 +266,9 @@ pub struct Goal {
     pub goal: Exp,
 }
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct LetDecl {
-    pub kind: Option<LetKind>,
-    pub sig: Signature,
-    pub rec: bool,
-    pub ghost: bool,
-    pub body: Exp,
-}
-
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub enum LetKind {
+pub enum DeclKind {
     Function,
     Predicate,
     Constant,

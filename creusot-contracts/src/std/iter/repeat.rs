@@ -5,9 +5,8 @@ impl<T> View for Repeat<T> {
 
     #[logic]
     #[trusted]
-    #[open(self)]
     fn view(self) -> T {
-        pearlite! { absurd }
+        dead
     }
 }
 

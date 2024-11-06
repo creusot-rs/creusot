@@ -7,56 +7,10 @@ use crate::{
         pearlite::{Pattern, Term, TermKind},
         traits,
     },
-    util::erased_identity_for_item,
 };
-use rustc_middle::ty::{GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{GenericArg, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
-use std::{collections::HashSet, iter};
-
-// Rewrite a type as a "head type" and a ssusbtitution, such that the head type applied to the substitution
-// equals the type.
-// The head type is used as a dependency node.
-// NOTE: Performance hasn't been a concern for us, but in general I think that this method can be surprisingly expensive
-// as it performs trait resolution each time its run.
-pub(crate) fn tyinv_head_and_subst<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    ty: Ty<'tcx>,
-    param_env: ParamEnv<'tcx>,
-) -> (Ty<'tcx>, GenericArgsRef<'tcx>) {
-    let def = || {
-        // Return value to use if there is no structural invariant
-        (
-            Ty::new_param(tcx, 0, Symbol::intern(&format!("T"))),
-            tcx.mk_args_from_iter(iter::once(GenericArg::from(ty))),
-        )
-    };
-
-    if let TraitResol::Instance(uinv_did, _) = resolve_user_inv(tcx, ty, param_env)
-        && is_ignore_structural_inv(tcx, uinv_did)
-    {
-        return def();
-    }
-
-    if is_tyinv_trivial(tcx, param_env, ty) {
-        return def();
-    }
-
-    match ty.kind() {
-        TyKind::Adt(adt_def, subst) => {
-            (Ty::new_adt(tcx, *adt_def, erased_identity_for_item(tcx, adt_def.did())), subst)
-        }
-        TyKind::Closure(did, _) => (ty, erased_identity_for_item(tcx, tcx.parent(*did))),
-        TyKind::Tuple(tys) => {
-            let params = (0..tys.len())
-                .map(|i| Ty::new_param(tcx, i as _, Symbol::intern(&format!("T{i}"))));
-            let tup = Ty::new_tup_from_iter(tcx, params);
-            let subst = tcx.mk_args_from_iter(tys.iter().map(GenericArg::from));
-            (tup, subst)
-        }
-        TyKind::Alias(..) | TyKind::Param(_) => def(),
-        _ => unimplemented!("{ty:?}"), // TODO
-    }
-}
+use std::collections::HashSet;
 
 pub(crate) fn is_tyinv_trivial<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -215,66 +169,42 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                 }
             }
             TyKind::Tuple(tys) => {
-                let ids = ('a'..).take(tys.len());
-
-                let pattern = Pattern::Tuple(
-                    ids.clone()
-                        .into_iter()
-                        .map(|id| Symbol::intern(&id.to_string()))
-                        .map(Pattern::Binder)
-                        .collect(),
+                let ids: Vec<_> =
+                    (0..tys.len()).map(|i| Symbol::intern(&format!("x{i}"))).collect();
+                let body = Box::new(
+                    ids.iter().zip(*tys).fold(Term::mk_true(self.ctx.tcx), |acc, (&id, ty)| {
+                        acc.conj(self.mk_inv_call(Term::var(id, ty)))
+                    }),
                 );
+                let pattern = Pattern::Tuple(ids.into_iter().map(Pattern::Binder).collect());
                 Term {
-                    kind: TermKind::Let {
-                        pattern,
-                        arg: Box::new(term),
-                        body: Box::new(ids.into_iter().enumerate().fold(
-                            Term::mk_true(self.ctx.tcx),
-                            |acc, (ix, id)| {
-                                acc.conj(self.mk_inv_call(Term::var(
-                                    Symbol::intern(&id.to_string()),
-                                    tys[ix],
-                                )))
-                            },
-                        )),
-                    },
+                    kind: TermKind::Let { pattern, arg: Box::new(term), body },
                     ty: self.ctx.types.bool,
                     span: DUMMY_SP,
                 }
             }
             TyKind::Closure(clos_did, substs) => {
                 let tys = substs.as_closure().upvar_tys();
-                let ids = ('a'..).take(tys.len());
+                let ids: Vec<_> =
+                    (0..tys.len()).map(|i| Symbol::intern(&format!("x{i}"))).collect();
 
+                let body = Box::new(
+                    ids.iter().zip(tys).fold(Term::mk_true(self.ctx.tcx), |acc, (&id, ty)| {
+                        acc.conj(self.mk_inv_call(Term::var(id, ty)))
+                    }),
+                );
                 let pattern = Pattern::Constructor {
                     variant: *clos_did,
                     substs,
-                    fields: ids
-                        .clone()
-                        .into_iter()
-                        .map(|id| Symbol::intern(&id.to_string()))
-                        .map(Pattern::Binder)
-                        .collect(),
+                    fields: ids.into_iter().map(Pattern::Binder).collect(),
                 };
                 Term {
-                    kind: TermKind::Let {
-                        pattern,
-                        arg: Box::new(term),
-                        body: Box::new(ids.into_iter().enumerate().fold(
-                            Term::mk_true(self.ctx.tcx),
-                            |acc, (ix, id)| {
-                                acc.conj(self.mk_inv_call(Term::var(
-                                    Symbol::intern(&id.to_string()),
-                                    tys[ix],
-                                )))
-                            },
-                        )),
-                    },
+                    kind: TermKind::Let { pattern, arg: Box::new(term), body },
                     ty: self.ctx.types.bool,
                     span: DUMMY_SP,
                 }
             }
-            _ => unimplemented!("{ty:?}"), // TODO
+            _ => unreachable!(),
         }
     }
 

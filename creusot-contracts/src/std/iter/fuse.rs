@@ -4,11 +4,10 @@ impl<I: Iterator> View for Fuse<I> {
     type ViewTy = Option<I>;
 
     #[logic]
-    #[open(self)]
     #[trusted]
     #[ensures(inv(self) ==> inv(result))]
     fn view(self) -> Option<I> {
-        pearlite! { absurd }
+        dead
     }
 }
 

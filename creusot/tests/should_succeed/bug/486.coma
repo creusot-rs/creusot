@@ -1,21 +1,4 @@
 
-module T_486__HasMutRef [#"486.rs" 4 0 4 27]
-  use prelude.prelude.Borrow
-  
-  type t_T'0
-  
-  type t_HasMutRef 't_T'0 =
-    | C_HasMutRef (borrowed 't_T'0)
-  
-  let rec t_HasMutRef < 't_T'0 > (input:t_HasMutRef 't_T'0) (ret  (field_0:borrowed 't_T'0))= any
-    [ good (field_0:borrowed 't_T'0)-> {C_HasMutRef field_0 = input} (! ret {field_0}) ]
-    
-  
-  function t_HasMutRef__0 (self : t_HasMutRef 't_T'0) : borrowed 't_T'0 =
-    match self with
-      | C_HasMutRef a -> a
-      end
-end
 module M_486__test [#"486.rs" 7 0 7 34]
   let%span s4860 = "486.rs" 8 11 8 12
   let%span s4861 = "486.rs" 6 10 6 22
@@ -23,13 +6,10 @@ module M_486__test [#"486.rs" 7 0 7 34]
   
   use prelude.prelude.UInt32
   
-  use T_486__HasMutRef as T_486__HasMutRef
-  
-  use prelude.prelude.Intrinsic
-  
-  use prelude.prelude.UInt32
-  
   use prelude.prelude.Borrow
+  
+  type t_HasMutRef'0  =
+    { t_HasMutRef__0'0: borrowed uint32 }
   
   predicate resolve'1 (self : borrowed uint32) =
     [%#sresolve2] self.final = self.current
@@ -37,26 +17,24 @@ module M_486__test [#"486.rs" 7 0 7 34]
   predicate resolve'0 (_1 : borrowed uint32) =
     resolve'1 _1
   
-  use T_486__HasMutRef as HasMutRef'0
+  use prelude.prelude.Intrinsic
+  
+  use prelude.prelude.UInt32
   
   meta "compute_max_steps" 1000000
   
-  let rec test (x:HasMutRef'0.t_HasMutRef uint32) (return'  (ret:()))= (! bb0
+  let rec test'0 (x:t_HasMutRef'0) (return'  (ret:()))= (! bb0
     [ bb0 = s0
-      [ s0 = HasMutRef'0.t_HasMutRef <uint32> {x}
-          (fun (r0'0:borrowed uint32) ->
-             [ &x <- HasMutRef'0.C_HasMutRef ({ r0'0 with current = ([%#s4860] (5 : uint32)) ; }) ] 
-            s1)
+      [ s0 =  [ &x <- { t_HasMutRef__0'0 = { x.t_HasMutRef__0'0 with current = ([%#s4860] (5 : uint32)) } } ] s1
       | s1 = -{match x with
-          | HasMutRef'0.C_HasMutRef x'0 -> resolve'0 x'0
+          | {t_HasMutRef__0'0 = x'0} -> resolve'0 x'0
           | _ -> true
           end}-
         s2
       | s2 = return' {_0} ]
        ]
-    ) [ & _0 : () = any_l () | & x : HasMutRef'0.t_HasMutRef uint32 = x ] 
-    [ return' (result:())-> {[@expl:postcondition] [%#s4861] UInt32.to_int (T_486__HasMutRef.t_HasMutRef__0 x).final
-      = 5}
+    ) [ & _0 : () = any_l () | & x : t_HasMutRef'0 = x ] 
+    [ return' (result:())-> {[@expl:postcondition] [%#s4861] UInt32.to_int (x.t_HasMutRef__0'0).final = 5}
       (! return' {result}) ]
     
 end

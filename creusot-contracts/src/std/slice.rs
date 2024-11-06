@@ -24,12 +24,11 @@ impl<T> View for [T] {
 
     // We define this as trusted because builtins and ensures are incompatible
     #[logic]
-    #[open(self)]
     #[trusted]
     #[ensures(result.len() <= usize::MAX@)]
     #[ensures(result == slice_model(&self))]
     fn view(self) -> Self::ViewTy {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -37,12 +36,11 @@ impl<T: DeepModel> DeepModel for [T] {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
     #[logic]
-    #[open(self)]
     #[trusted]
     #[ensures((&self)@.len() == result.len())]
     #[ensures(forall<i: Int> 0 <= i && i < result.len() ==> result[i] == (&self)[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -50,7 +48,7 @@ impl<T: DeepModel> DeepModel for [T] {
 #[trusted]
 #[creusot::builtins = "prelude.prelude.Slice.id"]
 fn slice_model<T>(_: &[T]) -> Seq<T> {
-    pearlite! { absurd }
+    dead
 }
 
 #[logic]
@@ -86,21 +84,19 @@ pub trait SliceExt<T> {
 impl<T> SliceExt<T> for [T] {
     #[logic]
     #[trusted]
-    #[open(self)]
     #[ensures(result.len() == self@.len())]
     #[ensures(forall<i : _> 0 <= i && i < result.len() ==> result[i] == &mut self[i])]
     // TODO: replace with a map function applied on a sequence
     fn to_mut_seq(&mut self) -> Seq<&mut T> {
-        pearlite! { absurd }
+        dead
     }
 
     #[logic]
-    #[open(self)]
     #[trusted]
     #[ensures(result.len() == self@.len())]
     #[ensures(forall<i : _> 0 <= i && i < result.len() ==> result[i] == &self[i])]
     fn to_ref_seq(&self) -> Seq<&T> {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -389,10 +385,9 @@ impl<'a, T> View for Iter<'a, T> {
     type ViewTy = &'a [T];
 
     #[logic]
-    #[open(self)]
     #[trusted]
     fn view(self) -> Self::ViewTy {
-        absurd
+        dead
     }
 }
 
@@ -428,11 +423,10 @@ impl<'a, T> View for IterMut<'a, T> {
     type ViewTy = &'a mut [T];
 
     #[logic]
-    #[open(self)]
     #[trusted]
     #[ensures((^result)@.len() == (*result)@.len())]
     fn view(self) -> Self::ViewTy {
-        absurd
+        dead
     }
 }
 

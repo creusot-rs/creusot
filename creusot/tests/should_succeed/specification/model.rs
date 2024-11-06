@@ -7,10 +7,9 @@ impl View for Seven {
     type ViewTy = Int;
 
     #[logic]
-    #[open]
     #[trusted]
     fn view(self) -> Self::ViewTy {
-        absurd
+        dead
     }
 }
 
@@ -26,10 +25,9 @@ impl<T, U> View for Pair<T, U> {
     type ViewTy = (T, U);
 
     #[logic]
-    #[open]
     #[trusted]
     fn view(self) -> Self::ViewTy {
-        absurd
+        dead
     }
 }
 

@@ -380,7 +380,7 @@ fn escape_self_in_term(t: &mut Term) {
             escape_self_in_term(cons);
         }
         Term::Quant(TermQuant { term, .. }) => escape_self_in_term(term),
-        Term::Absurd(TermAbsurd { .. }) => {}
+        Term::Dead(TermDead { .. }) => {}
         Term::Pearlite(TermPearlite { block, .. }) => escape_self_in_tblock(block),
         Term::Lit(TermLit { .. }) => {}
         Term::Verbatim(_) => {}

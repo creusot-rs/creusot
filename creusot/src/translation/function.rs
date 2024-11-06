@@ -1,23 +1,18 @@
-use super::{
-    fmir::{LocalDecls, LocalIdent, RValue, TrivialInv},
-    pearlite::{normalize, super_visit_mut_term, Term},
-    specification::{inv_subst, PreSignature},
-};
 use crate::{
     analysis::NotFinalPlaces,
     attributes::{is_ghost_closure, is_snapshot_closure, is_spec},
-    backend::{ty::closure_accessors, ty_inv::is_tyinv_trivial},
+    backend::ty_inv::is_tyinv_trivial,
     constant::from_mir_constant,
     ctx::*,
     extended_location::ExtendedLocation,
-    fmir,
+    fmir::{self, LocalDecl, LocalDecls, LocalIdent, RValue, TrivialInv},
     gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind, SpecClosures},
     naming::anonymous_param_symbol,
+    pearlite::{normalize, Term},
     resolve::{place_contains_borrow_deref, HasMoveDataExt, Resolver},
     translation::{
-        fmir::LocalDecl,
-        pearlite::{self, TermKind, TermVisitorMut},
-        specification::{contract_of, PreContract},
+        pearlite::{self, super_visit_mut_term, TermKind, TermVisitorMut},
+        specification::{contract_of, inv_subst, PreContract, PreSignature},
         traits,
     },
 };
@@ -795,194 +790,197 @@ pub(crate) struct ClosureContract<'tcx> {
     pub(crate) postcond_mut: Option<(PreSignature<'tcx>, Term<'tcx>)>,
     pub(crate) postcond: Option<(PreSignature<'tcx>, Term<'tcx>)>,
     pub(crate) unnest: Option<(PreSignature<'tcx>, Term<'tcx>)>,
-    pub(crate) accessors: Vec<(PreSignature<'tcx>, Term<'tcx>)>,
 }
 
 impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn build_closure_contract(&mut self, def_id: DefId) -> ClosureContract<'tcx> {
-        closure_contract(self, def_id)
-    }
-}
-
-fn closure_contract<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> ClosureContract<'tcx> {
-    let TyKind::Closure(_, subst) = ctx.type_of(def_id).instantiate_identity().kind() else {
-        unreachable!()
-    };
-
-    let kind = subst.as_closure().kind();
-    let mut pre_clos_sig = ctx.sig(def_id).clone();
-
-    let contract = contract_of(ctx, def_id);
-    let mut postcondition: Term<'_> = contract.ensures_conj(ctx.tcx);
-    let mut precondition: Term<'_> = contract.requires_conj(ctx.tcx);
-
-    let result_ty = pre_clos_sig.output;
-    pre_clos_sig.output = ctx.types.bool;
-
-    pre_clos_sig.contract = PreContract::default();
-
-    let args: Vec<_> = pre_clos_sig.inputs.drain(1..).collect();
-
-    if args.len() == 0 {
-        pre_clos_sig.inputs.push((Symbol::intern("_"), DUMMY_SP, ctx.types.unit))
-    } else {
-        let arg_tys: Vec<_> = args.iter().map(|(_, _, ty)| *ty).collect();
-        let arg_ty = Ty::new_tup(ctx.tcx, &arg_tys);
-
-        pre_clos_sig.inputs.push((Symbol::intern("args"), DUMMY_SP, arg_ty));
-
-        let arg_tuple = Term::var(Symbol::intern("args"), arg_ty);
-
-        let arg_pat = pearlite::Pattern::Tuple(
-            args.iter()
-                .enumerate()
-                .map(|(idx, (nm, _, _))| {
-                    if nm.is_empty() {
-                        // We skipped the first element
-                        pearlite::Pattern::Binder(anonymous_param_symbol(idx + 1))
-                    } else {
-                        pearlite::Pattern::Binder(*nm)
-                    }
-                })
-                .collect(),
-        );
-
-        postcondition = pearlite::Term {
-            span: postcondition.span,
-            kind: TermKind::Let {
-                pattern: arg_pat.clone(),
-                arg: Box::new(arg_tuple.clone()),
-                body: Box::new(postcondition),
-            },
-            ty: ctx.types.bool,
+        let TyKind::Closure(_, subst) = self.type_of(def_id).instantiate_identity().kind() else {
+            unreachable!()
         };
-        precondition = pearlite::Term {
-            span: precondition.span,
-            kind: TermKind::Let {
-                pattern: arg_pat,
-                arg: Box::new(arg_tuple),
-                body: Box::new(precondition),
-            },
-            ty: ctx.types.bool,
+
+        let kind = subst.as_closure().kind();
+        let mut pre_clos_sig = self.sig(def_id).clone();
+
+        let contract = contract_of(self, def_id);
+        let mut postcondition: Term<'_> = contract.ensures_conj(self.tcx);
+        let mut precondition: Term<'_> = contract.requires_conj(self.tcx);
+
+        let result_ty = pre_clos_sig.output;
+        pre_clos_sig.output = self.types.bool;
+
+        pre_clos_sig.contract = PreContract::default();
+
+        let args: Vec<_> = pre_clos_sig.inputs.drain(1..).collect();
+
+        if args.len() == 0 {
+            pre_clos_sig.inputs.push((Symbol::intern("_"), DUMMY_SP, self.types.unit))
+        } else {
+            let arg_tys: Vec<_> = args.iter().map(|(_, _, ty)| *ty).collect();
+            let arg_ty = Ty::new_tup(self.tcx, &arg_tys);
+
+            pre_clos_sig.inputs.push((Symbol::intern("args"), DUMMY_SP, arg_ty));
+
+            let arg_tuple = Term::var(Symbol::intern("args"), arg_ty);
+
+            let arg_pat = pearlite::Pattern::Tuple(
+                args.iter()
+                    .enumerate()
+                    .map(|(idx, (nm, _, _))| {
+                        if nm.is_empty() {
+                            // We skipped the first element
+                            pearlite::Pattern::Binder(anonymous_param_symbol(idx + 1))
+                        } else {
+                            pearlite::Pattern::Binder(*nm)
+                        }
+                    })
+                    .collect(),
+            );
+
+            postcondition = pearlite::Term {
+                span: postcondition.span,
+                kind: TermKind::Let {
+                    pattern: arg_pat.clone(),
+                    arg: Box::new(arg_tuple.clone()),
+                    body: Box::new(postcondition),
+                },
+                ty: self.types.bool,
+            };
+            precondition = pearlite::Term {
+                span: precondition.span,
+                kind: TermKind::Let {
+                    pattern: arg_pat,
+                    arg: Box::new(arg_tuple),
+                    body: Box::new(precondition),
+                },
+                ty: self.types.bool,
+            };
+        }
+
+        let mut post_sig = pre_clos_sig.clone();
+        let pre_sig = pre_clos_sig;
+
+        post_sig.inputs.push((Symbol::intern("result"), DUMMY_SP, result_ty));
+
+        let env_ty = self
+            .closure_env_ty(
+                self.type_of(def_id).instantiate_identity(),
+                kind,
+                self.lifetimes.re_erased,
+            )
+            .peel_refs();
+        let self_ty = env_ty;
+
+        let precond = {
+            // Preconditions are the same for every kind of closure
+            let mut pre_sig = pre_sig;
+
+            pre_sig.inputs[0].0 = Symbol::intern("self");
+            pre_sig.inputs[0].2 = self_ty;
+
+            let mut subst =
+                closure_capture_subst(self.tcx, def_id, subst, None, Symbol::intern("self"));
+
+            let mut precondition = precondition.clone();
+            subst.visit_mut_term(&mut precondition);
+
+            (pre_sig, precondition)
         };
+
+        let mut resolve = closure_resolve(self, def_id, subst);
+        resolve.1 = normalize(self.tcx, self.param_env(def_id), resolve.1);
+        let mut contracts = ClosureContract {
+            resolve,
+            precond,
+            postcond: None,
+            postcond_once: None,
+            postcond_mut: None,
+            unnest: None,
+        };
+
+        if kind.extends(Fn) {
+            let mut post_sig = post_sig.clone();
+
+            post_sig.inputs[0].0 = Symbol::intern("self");
+            post_sig.inputs[0].2 = self_ty;
+            let mut csubst =
+                closure_capture_subst(self.tcx, def_id, subst, Some(Fn), Symbol::intern("self"));
+            let mut postcondition = postcondition.clone();
+
+            csubst.visit_mut_term(&mut postcondition);
+
+            contracts.postcond = Some((post_sig, postcondition));
+        }
+
+        if kind.extends(FnMut) {
+            let mut post_sig = post_sig.clone();
+            // post_sig.name = Ident::build("postcondition_mut");
+
+            post_sig.inputs[0].0 = Symbol::intern("self");
+            post_sig.inputs[0].2 = Ty::new_mut_ref(self.tcx, self.lifetimes.re_erased, self_ty);
+
+            let mut csubst =
+                closure_capture_subst(self.tcx, def_id, subst, Some(FnMut), Symbol::intern("self"));
+
+            let mut postcondition = postcondition.clone();
+            csubst.visit_mut_term(&mut postcondition);
+
+            let args = subst.as_closure().sig().inputs().skip_binder()[0];
+            let unnest_subst = self.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty)]);
+
+            let unnest_id = self.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
+
+            let mut postcondition: Term<'tcx> = postcondition;
+            postcondition = postcondition.conj(Term::call_no_normalize(
+                self.tcx,
+                unnest_id,
+                unnest_subst,
+                vec![
+                    Term::var(
+                        Symbol::intern("self"),
+                        Ty::new_mut_ref(self.tcx, self.lifetimes.re_erased, self_ty),
+                    )
+                    .cur(),
+                    Term::var(
+                        Symbol::intern("self"),
+                        Ty::new_mut_ref(self.tcx, self.lifetimes.re_erased, self_ty),
+                    )
+                    .fin(),
+                ],
+            ));
+
+            postcondition = normalize(self.tcx, self.param_env(def_id), postcondition);
+
+            let unnest_sig =
+                EarlyBinder::bind(self.sig(unnest_id).clone()).instantiate(self.tcx, unnest_subst);
+
+            let mut unnest = closure_unnest(self.tcx, def_id, subst);
+            unnest = normalize(self.tcx, self.param_env(def_id), unnest);
+
+            contracts.unnest = Some((unnest_sig, unnest));
+            contracts.postcond_mut = Some((post_sig, postcondition));
+        }
+
+        if kind.extends(FnOnce) {
+            let mut post_sig = post_sig.clone();
+            post_sig.inputs[0].0 = Symbol::intern("self");
+            post_sig.inputs[0].2 = self_ty;
+
+            let mut csubst = closure_capture_subst(
+                self.tcx,
+                def_id,
+                subst,
+                Some(FnOnce),
+                Symbol::intern("self"),
+            );
+
+            let mut postcondition = postcondition.clone();
+            csubst.visit_mut_term(&mut postcondition);
+
+            contracts.postcond_once = Some((post_sig, postcondition));
+        }
+
+        contracts
     }
-
-    let mut post_sig = pre_clos_sig.clone();
-    let pre_sig = pre_clos_sig;
-
-    post_sig.inputs.push((Symbol::intern("result"), DUMMY_SP, result_ty));
-
-    let env_ty = ctx
-        .closure_env_ty(ctx.type_of(def_id).instantiate_identity(), kind, ctx.lifetimes.re_erased)
-        .peel_refs();
-    let self_ty = env_ty;
-
-    let precond = {
-        // Preconditions are the same for every kind of closure
-        let mut pre_sig = pre_sig;
-
-        pre_sig.inputs[0].0 = Symbol::intern("self");
-        pre_sig.inputs[0].2 = self_ty;
-
-        let mut subst = closure_capture_subst(ctx.tcx, def_id, subst, None, Symbol::intern("self"));
-
-        let mut precondition = precondition.clone();
-        subst.visit_mut_term(&mut precondition);
-
-        (pre_sig, precondition)
-    };
-
-    let mut resolve = closure_resolve(ctx, def_id, subst);
-    resolve.1 = normalize(ctx.tcx, ctx.param_env(def_id), resolve.1);
-    let accessors = closure_accessors(ctx, def_id).into_iter().map(|(_, s, t)| (s, t)).collect();
-    let mut contracts = ClosureContract {
-        resolve,
-        precond,
-        postcond: None,
-        postcond_once: None,
-        postcond_mut: None,
-        unnest: None,
-        accessors,
-    };
-
-    if kind.extends(Fn) {
-        let mut post_sig = post_sig.clone();
-
-        post_sig.inputs[0].0 = Symbol::intern("self");
-        post_sig.inputs[0].2 = self_ty;
-        let mut csubst =
-            closure_capture_subst(ctx.tcx, def_id, subst, Some(Fn), Symbol::intern("self"));
-        let mut postcondition = postcondition.clone();
-
-        csubst.visit_mut_term(&mut postcondition);
-
-        contracts.postcond = Some((post_sig, postcondition));
-    }
-
-    if kind.extends(FnMut) {
-        let mut post_sig = post_sig.clone();
-        // post_sig.name = Ident::build("postcondition_mut");
-
-        post_sig.inputs[0].0 = Symbol::intern("self");
-        post_sig.inputs[0].2 = Ty::new_mut_ref(ctx.tcx, ctx.lifetimes.re_erased, self_ty);
-
-        let mut csubst =
-            closure_capture_subst(ctx.tcx, def_id, subst, Some(FnMut), Symbol::intern("self"));
-
-        let mut postcondition = postcondition.clone();
-        csubst.visit_mut_term(&mut postcondition);
-
-        let args = subst.as_closure().sig().inputs().skip_binder()[0];
-        let unnest_subst = ctx.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty)]);
-
-        let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
-
-        let mut postcondition: Term<'tcx> = postcondition;
-        postcondition = postcondition.conj(Term::call_no_normalize(
-            ctx.tcx,
-            unnest_id,
-            unnest_subst,
-            vec![
-                Term::var(
-                    Symbol::intern("self"),
-                    Ty::new_mut_ref(ctx.tcx, ctx.lifetimes.re_erased, self_ty),
-                )
-                .cur(),
-                Term::var(
-                    Symbol::intern("self"),
-                    Ty::new_mut_ref(ctx.tcx, ctx.lifetimes.re_erased, self_ty),
-                )
-                .fin(),
-            ],
-        ));
-
-        postcondition = normalize(ctx.tcx, ctx.param_env(def_id), postcondition);
-
-        let unnest_sig =
-            EarlyBinder::bind(ctx.sig(unnest_id).clone()).instantiate(ctx.tcx, unnest_subst);
-
-        let mut unnest = closure_unnest(ctx.tcx, def_id, subst);
-        unnest = normalize(ctx.tcx, ctx.param_env(def_id), unnest);
-
-        contracts.unnest = Some((unnest_sig, unnest));
-        contracts.postcond_mut = Some((post_sig, postcondition));
-    }
-
-    if kind.extends(FnOnce) {
-        let mut post_sig = post_sig.clone();
-        post_sig.inputs[0].0 = Symbol::intern("self");
-        post_sig.inputs[0].2 = self_ty;
-
-        let mut csubst =
-            closure_capture_subst(ctx.tcx, def_id, subst, Some(FnOnce), Symbol::intern("self"));
-
-        let mut postcondition = postcondition.clone();
-        csubst.visit_mut_term(&mut postcondition);
-
-        contracts.postcond_once = Some((post_sig, postcondition));
-    }
-
-    contracts
 }
 
 fn closure_resolve<'tcx>(

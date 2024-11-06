@@ -6,12 +6,11 @@ pub trait ClonedExt<I> {
 }
 
 impl<I> ClonedExt<I> for Cloned<I> {
-    #[open(self)]
     #[logic]
     #[trusted]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
-        pearlite! { absurd }
+        dead
     }
 }
 

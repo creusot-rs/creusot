@@ -20,10 +20,9 @@ impl<T: ?Sized> Set<T> {
     #[doc(hidden)]
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "set.Set.mem"]
     pub fn mem(_: T, _: Self) -> bool {
-        pearlite! { absurd }
+        dead
     }
 
     #[open]
@@ -36,18 +35,16 @@ impl<T: ?Sized> Set<T> {
     #[doc(hidden)]
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "set.Set.add"]
     pub fn add(_: T, _: Self) -> Self {
-        pearlite! { absurd }
+        dead
     }
 
     #[trusted]
-    #[open(self)]
     #[predicate]
     #[creusot::builtins = "set.Set.is_empty"]
     pub fn is_empty(self) -> bool {
-        pearlite! { absurd }
+        dead
     }
 
     #[open]
@@ -60,17 +57,15 @@ impl<T: ?Sized> Set<T> {
     #[doc(hidden)]
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "set.Set.remove"]
     pub fn rem(_: T, _: Self) -> Self {
-        pearlite! { absurd }
+        dead
     }
 
     #[trusted]
-    #[open(self)]
     #[logic]
     #[creusot::builtins = "set.Set.union"]
     pub fn union(self, _: Self) -> Self {
-        pearlite! { absurd }
+        dead
     }
 }

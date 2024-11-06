@@ -9,44 +9,39 @@ pub struct FMap<K, V: ?Sized>(std::marker::PhantomData<K>, std::marker::PhantomD
 impl<K, V: ?Sized> FMap<K, V> {
     #[trusted]
     #[logic]
-    #[open(self)]
     #[ensures(result >= 0)]
     pub fn len(self) -> Int {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     pub fn mk(_m: PMap<K, V>) -> Self {
-        absurd
+        dead
     }
 
     #[trusted]
-    #[open(self)]
     #[logic]
     #[ensures(Self::mk(result) == self)] // injectivity
     pub fn view(self) -> PMap<K, V> {
-        absurd
+        dead
     }
 
     #[trusted]
-    #[open(self)]
     #[logic]
     #[ensures(result.view() == self.view().set(k, Some(v.make_sized())))]
     #[ensures(self.contains(k) ==> result.len() == self.len())]
     #[ensures(!self.contains(k) ==> result.len() == self.len() + 1)]
     pub fn insert(self, k: K, v: V) -> Self {
-        absurd
+        dead
     }
 
     #[trusted]
-    #[open(self)]
     #[logic]
     #[ensures(result.view() == self.view().set(k, None))]
     #[ensures(result.len() == if self.contains(k) {self.len() - 1} else {self.len()})]
     pub fn remove(self, k: K) -> Self {
-        absurd
+        dead
     }
 
     #[logic]
@@ -82,11 +77,10 @@ impl<K, V: ?Sized> FMap<K, V> {
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[ensures(result.len() == 0)]
     #[ensures(result.view() == Mapping::cst(None))]
     pub fn empty() -> Self {
-        absurd
+        dead
     }
 
     #[logic]
@@ -109,7 +103,6 @@ impl<K, V: ?Sized> FMap<K, V> {
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[requires(self.disjoint(other))]
     #[ensures(forall<k: K> result.get(k) == if self.contains(k) {
         self.get(k)
@@ -120,15 +113,14 @@ impl<K, V: ?Sized> FMap<K, V> {
     })]
     #[ensures(result.len() == self.len() + other.len())]
     pub fn union(self, other: Self) -> Self {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[ensures(forall<k: K> result.get(k) == if other.contains(k) {None} else {self.get(k)})]
     pub fn subtract_keys(self, other: Self) -> Self {
-        absurd
+        dead
     }
 
     #[logic]

@@ -6,7 +6,7 @@ use crate::{
         gather_params_open_inv, is_extern_spec, is_logic, is_predicate, is_prophetic,
         opacity_witness_name,
     },
-    backend::{ty::ty_binding_group, ty_inv::is_tyinv_trivial},
+    backend::ty_inv::is_tyinv_trivial,
     callbacks,
     creusot_items::{self, CreusotItems},
     error::CreusotResult,
@@ -24,13 +24,14 @@ use crate::{
     },
     util::{erased_identity_for_item, parent_module},
 };
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexMap;
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
 use rustc_errors::{Diag, FatalAbort};
 use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LocalDefId},
 };
+use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{Body, Promoted, TerminatorKind},
     ty::{Clause, GenericArg, GenericArgsRef, ParamEnv, Predicate, Ty, TyCtxt, Visibility},
@@ -62,7 +63,7 @@ macro_rules! queryish {
     };
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, TypeVisitable, TypeFoldable)]
 pub struct BodyId {
     pub def_id: LocalDefId,
     pub promoted: Option<Promoted>,
@@ -140,8 +141,6 @@ impl ItemType {
 // TODO: The state in here should be as opaque as possible...
 pub struct TranslationCtx<'tcx> {
     pub tcx: TyCtxt<'tcx>,
-    representative_type: HashMap<DefId, DefId>, // maps type ids to their 'representative type'
-    ty_binding_groups: HashMap<DefId, IndexSet<DefId>>,
     laws: IndexMap<DefId, Vec<DefId>>,
     fmir_body: IndexMap<BodyId, fmir::Body<'tcx>>,
     terms: IndexMap<DefId, Term<'tcx>>,
@@ -178,8 +177,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             terms: Default::default(),
             creusot_items,
             opts,
-            representative_type: Default::default(),
-            ty_binding_groups: Default::default(),
             extern_specs: Default::default(),
             extern_spec_items: Default::default(),
             fmir_body: Default::default(),
@@ -299,29 +296,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
     pub(crate) fn warn(&self, span: Span, msg: &str) -> Diag<'tcx, ()> {
         self.tcx.dcx().struct_span_warn(span, msg.to_string())
-    }
-
-    fn add_binding_group(&mut self, def_ids: &IndexSet<DefId>) {
-        let repr = *def_ids.first().unwrap();
-        for i in def_ids {
-            self.representative_type.insert(*i, repr);
-        }
-    }
-
-    pub(crate) fn binding_group(&mut self, def_id: DefId) -> &IndexSet<DefId> {
-        if !self.representative_type.contains_key(&def_id) {
-            let bg = ty_binding_group(self.tcx, def_id);
-            self.add_binding_group(&bg);
-            self.ty_binding_groups.insert(self.representative_type(def_id), bg);
-        }
-
-        &self.ty_binding_groups[&self.representative_type(def_id)]
-    }
-
-    // Get the id of the type which represents a binding groups
-    // Panics a type hasn't yet been translated
-    pub(crate) fn representative_type(&self, def_id: DefId) -> DefId {
-        *self.representative_type.get(&def_id).unwrap_or_else(|| panic!("no key for {:?}", def_id))
     }
 
     queryish!(laws, &[DefId], laws_inner);

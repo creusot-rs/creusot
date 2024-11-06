@@ -9,10 +9,6 @@ use why3::Ident;
 
 use crate::very_stable_hash::get_very_stable_hash;
 
-pub(crate) fn item_name(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Ident {
-    item_symb(tcx, def_id, ns).to_string().into()
-}
-
 // Why3 value names must start with a lower case letter.
 // Rust function names conventionally start with a lower case letter,
 // but that is not mandatory, in which case we insert a prefix `v_`.
@@ -44,9 +40,6 @@ pub(crate) fn item_symb(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Symbol {
 
     match tcx.def_kind(def_id) {
         AssocTy => tcx.item_name(def_id), // TODO: is this used (the test suite passes if I replace this with panic!)?
-        Ctor(_, _) => {
-            Symbol::intern(&format!("C_{}", translate_name(tcx.item_name(def_id).as_str())))
-        }
         Struct | Variant | Union if ns == Namespace::ValueNS => {
             Symbol::intern(&format!("C_{}", translate_name(tcx.item_name(def_id).as_str())))
         }

@@ -37,12 +37,6 @@ pub(crate) struct TraitImpl<'tcx> {
 }
 
 impl<'tcx> TranslationCtx<'tcx> {
-    // Translate a trait declaration
-    pub(crate) fn translate_trait(&mut self, def_id: DefId) -> TranslatedItem {
-        debug!("translating trait {def_id:?}");
-        TranslatedItem::Trait {}
-    }
-
     pub(crate) fn laws_inner(&self, trait_or_impl: DefId) -> Vec<DefId> {
         let mut laws = Vec::new();
         for item in self

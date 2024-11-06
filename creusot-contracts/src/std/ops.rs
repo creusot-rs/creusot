@@ -66,36 +66,32 @@ pub trait FnExt<Args: Tuple>: Fn<Args> + FnMutExt<Args> {
 impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
     #[predicate]
     #[trusted]
-    #[open(self)]
     #[rustc_diagnostic_item = "fn_once_impl_precond"]
     fn precondition(self, _: Args) -> bool {
-        absurd
+        dead
     }
 
     #[predicate]
     #[trusted]
-    #[open(self)]
     #[rustc_diagnostic_item = "fn_once_impl_postcond"]
     fn postcondition_once(self, _: Args, _: Self::Output) -> bool {
-        absurd
+        dead
     }
 }
 
 impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
     #[predicate]
     #[trusted]
-    #[open(self)]
     #[rustc_diagnostic_item = "fn_mut_impl_postcond"]
     fn postcondition_mut(&mut self, _: Args, _: Self::Output) -> bool {
-        absurd
+        dead
     }
 
     #[predicate]
     #[trusted]
-    #[open(self)]
     #[rustc_diagnostic_item = "fn_mut_impl_unnest"]
     fn unnest(self, _: Self) -> bool {
-        absurd
+        dead
     }
 
     #[law]
@@ -126,10 +122,9 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
 impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
     #[predicate]
     #[trusted]
-    #[open(self)]
     #[rustc_diagnostic_item = "fn_impl_postcond"]
     fn postcondition(&self, _: Args, _: Self::Output) -> bool {
-        absurd
+        dead
     }
 
     #[law]
@@ -186,21 +181,18 @@ pub trait RangeInclusiveExt<Idx> {
 }
 
 impl<Idx> RangeInclusiveExt<Idx> for RangeInclusive<Idx> {
-    #[open(self)]
     #[logic]
     #[trusted]
     fn start_log(self) -> Idx {
-        pearlite! { absurd }
+        dead
     }
 
-    #[open(self)]
     #[logic]
     #[trusted]
     fn end_log(self) -> Idx {
-        pearlite! { absurd }
+        dead
     }
 
-    #[open(self)]
     #[logic]
     #[trusted]
     #[ensures(!result ==> self.start_log().deep_model() <= self.end_log().deep_model())]
@@ -209,7 +201,7 @@ impl<Idx> RangeInclusiveExt<Idx> for RangeInclusive<Idx> {
         Idx: DeepModel,
         Idx::DeepModelTy: OrdLogic,
     {
-        pearlite! { absurd }
+        dead
     }
 }
 

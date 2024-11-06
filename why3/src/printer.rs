@@ -1,9 +1,14 @@
 use std::{fmt::Display, iter::once};
 
-use super::*;
 use crate::{
-    declaration::{self, *},
-    exp::{AssocDir, BinOp, Binder, Constant, Precedence, Trigger, UnOp},
+    declaration::{
+        self, AdtDecl, Attribute, Axiom, ConstructorDecl, Contract, Decl, DeclKind, FieldDecl,
+        Goal, LogicDecl, LogicDefn, Meta, MetaArg, MetaIdent, Module, Predicate, Signature, Span,
+        SumRecord, TyDecl, Use,
+    },
+    exp::{AssocDir, BinOp, Binder, Constant, Pattern, Precedence, Trigger, UnOp},
+    ty::Type,
+    Exp, Ident, QName,
 };
 use num::{Float, Zero};
 use pretty::*;
@@ -40,6 +45,16 @@ macro_rules! parens {
     };
     ($alloc:ident, $par_prec:expr, $child:ident) => {
         parens($alloc, $par_prec, $child)
+    };
+}
+
+macro_rules! ty_parens {
+    ($alloc:ident, $e:ident) => {
+        if $e.complex() {
+            $e.pretty($alloc).parens()
+        } else {
+            $e.pretty($alloc)
+        }
     };
 }
 
@@ -95,18 +110,13 @@ impl Print for Decl {
         A::Doc: Clone,
     {
         match self {
-            Decl::CfgDecl(fun) => fun.pretty(alloc),
             Decl::LogicDefn(log) => log.pretty(alloc),
-            Decl::Module(modl) => modl.pretty(alloc),
-            Decl::Scope(scope) => scope.pretty(alloc),
             Decl::PredDecl(p) => p.pretty(alloc),
             Decl::TyDecl(t) => t.pretty(alloc),
-            Decl::Clone(c) => c.pretty(alloc),
-            Decl::ValDecl(v) => v.pretty(alloc),
+            Decl::LogicDecl(v) => v.pretty(alloc),
             Decl::UseDecl(u) => u.pretty(alloc),
             Decl::Axiom(a) => a.pretty(alloc),
             Decl::Goal(g) => g.pretty(alloc),
-            Decl::Let(l) => l.pretty(alloc),
             Decl::ConstantDecl(c) => c.pretty(alloc),
             Decl::Coma(d) => d.pretty(alloc),
             Decl::LetSpans(spans) => {
@@ -141,27 +151,6 @@ impl Print for Module {
                         self.decls.iter().map(|decl| decl.pretty(alloc)),
                         alloc.hardline().append(alloc.hardline()),
                     )
-                    .indent(2),
-            )
-            .append(alloc.hardline())
-            .append("end");
-        doc
-    }
-}
-
-impl Print for Scope {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
-    where
-        A::Doc: Clone,
-    {
-        let doc = alloc
-            .text("scope")
-            .append(alloc.space())
-            .append(&self.name.0)
-            .append(alloc.hardline())
-            .append(
-                alloc
-                    .intersperse(self.decls.iter().map(|decl| decl.pretty(alloc)), alloc.hardline())
                     .indent(2),
             )
             .append(alloc.hardline())
@@ -212,43 +201,6 @@ impl Print for declaration::Constant {
                 None => alloc.nil(),
             }
         ]
-    }
-}
-
-impl Print for LetDecl {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
-    where
-        A::Doc: Clone,
-    {
-        let mut doc = alloc.text("let ");
-
-        if self.rec {
-            doc = doc.append("rec ");
-        }
-
-        if self.ghost {
-            doc = doc.append("ghost ");
-        }
-
-        match self.kind {
-            Some(LetKind::Function) => doc = doc.append("function "),
-            Some(LetKind::Predicate) => doc = doc.append("predicate "),
-            Some(LetKind::Constant) => doc = doc.append("constant "),
-            None => {}
-        }
-
-        doc = doc
-            .append(
-                self.sig
-                    .pretty(alloc)
-                    .append(alloc.line_())
-                    .append(alloc.text(" = [@vc:do_not_keep_trace] [@vc:sp]")),
-            )
-            .group()
-            .append(alloc.line())
-            .append(self.body.pretty(alloc).indent(2));
-
-        doc
     }
 }
 
@@ -325,7 +277,7 @@ where
     }
 }
 
-impl Print for Logic {
+impl Print for LogicDefn {
     fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
@@ -336,67 +288,6 @@ impl Print for Logic {
             .group()
             .append(alloc.line())
             .append(self.body.pretty(alloc).indent(2))
-    }
-}
-
-impl Print for DeclClone {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
-    where
-        A::Doc: Clone,
-    {
-        let as_doc = match &self.kind {
-            CloneKind::Named(nm) => alloc.text(" as ").append(&**nm),
-            _ => alloc.nil(),
-        };
-        let kind = match &self.kind {
-            CloneKind::Export => alloc.text("export "),
-            _ => alloc.nil(),
-        };
-
-        let doc = alloc.text("clone ").append(kind).append(self.name.pretty(alloc)).append(as_doc);
-
-        if self.subst.is_empty() {
-            doc
-        } else {
-            doc.append(" with").append(alloc.hardline()).append(
-                alloc
-                    .intersperse(
-                        self.subst.iter().map(|s| s.pretty(alloc)),
-                        alloc.text(",").append(alloc.hardline()),
-                    )
-                    .indent(2),
-            )
-        }
-    }
-}
-
-impl Print for CloneSubst {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
-    where
-        A::Doc: Clone,
-    {
-        match self {
-            CloneSubst::Type(id, ty) => {
-                alloc.text("type ").append(id.pretty(alloc)).append(" = ").append(ty.pretty(alloc))
-            }
-            CloneSubst::Val(id, o) => {
-                alloc.text("val ").append(id.pretty(alloc)).append(" = ").append(o.pretty(alloc))
-            }
-            CloneSubst::Predicate(id, o) => alloc
-                .text("predicate ")
-                .append(id.pretty(alloc))
-                .append(" = ")
-                .append(o.pretty(alloc)),
-            CloneSubst::Function(id, o) => alloc
-                .text("function ")
-                .append(id.pretty(alloc))
-                .append(" = ")
-                .append(o.pretty(alloc)),
-            CloneSubst::Axiom(id) => match id {
-                Some(id) => alloc.text("axiom ").append(id.pretty(alloc)),
-                None => alloc.text("axiom ."),
-            },
-        }
     }
 }
 
@@ -453,25 +344,17 @@ impl Print for MetaArg {
     }
 }
 
-impl Print for ValDecl {
+impl Print for LogicDecl {
     fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         let mut doc = alloc.nil();
 
-        if self.val {
-            doc = doc.append("val ");
-        }
-
-        if self.ghost {
-            doc = doc.append("ghost ");
-        }
-
         match self.kind {
-            Some(LetKind::Function) => doc = doc.append("function "),
-            Some(LetKind::Predicate) => doc = doc.append("predicate "),
-            Some(LetKind::Constant) => doc = doc.append("constant "),
+            Some(DeclKind::Function) => doc = doc.append("function "),
+            Some(DeclKind::Predicate) => doc = doc.append("predicate "),
+            Some(DeclKind::Constant) => doc = doc.append("constant "),
             None => {}
         };
 
@@ -512,67 +395,12 @@ impl Print for Contract {
     }
 }
 
-impl Print for CfgFunction {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
-    where
-        A::Doc: Clone,
-    {
-        alloc
-            .text("let ")
-            .append(if self.rec { "rec " } else { "" })
-            .append("cfg ")
-            .append(if self.constant { "constant " } else { "" })
-            .append(
-                self.sig
-                    .pretty(alloc)
-                    .append(alloc.line_())
-                    .append(alloc.text(" = [@vc:do_not_keep_trace] [@vc:sp]")),
-            )
-            .group()
-            .append(alloc.line())
-            .append(sep_end_by(
-                alloc,
-                self.vars.iter().map(|(ghost, var, ty, init)| {
-                    if *ghost { alloc.text("ghost var ") } else { alloc.text("var ") }
-                        .append(alloc.as_string(&var.0))
-                        .append(" : ")
-                        .append(ty.pretty(alloc))
-                        .append(if let Some(init) = init {
-                            alloc.text(" = ").append(init.pretty(alloc))
-                        } else {
-                            alloc.nil()
-                        })
-                        .append(";")
-                }),
-                alloc.hardline(),
-            ))
-            .append(self.entry.pretty(alloc).append(alloc.hardline()))
-            .append(sep_end_by(
-                alloc,
-                self.blocks.iter().map(|(id, block)| {
-                    id.pretty(alloc).append(alloc.space()).append(block.pretty(alloc))
-                }),
-                alloc.hardline(),
-            ))
-    }
-}
-
 impl Print for Type {
     fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
         use Type::*;
-
-        macro_rules! ty_parens {
-            ($alloc:ident, $e:ident) => {
-                if $e.complex() {
-                    $e.pretty($alloc).parens()
-                } else {
-                    $e.pretty($alloc)
-                }
-            };
-        }
         match self {
             Bool => alloc.text("bool"),
             Char => alloc.text("char"),
@@ -580,7 +408,6 @@ impl Print for Type {
             MutableBorrow(t) => alloc.text("borrowed ").append(ty_parens!(alloc, t)),
             TVar(v) => alloc.text(format!("'{}", v.0)),
             TConstructor(ty) => ty.pretty(alloc),
-
             TFun(a, b) => ty_parens!(alloc, a).append(" -> ").append(ty_parens!(alloc, b)),
             TApp(tyf, args) => {
                 if args.is_empty() {
@@ -615,9 +442,6 @@ impl Print for Exp {
         A::Doc: Clone,
     {
         match self {
-            Exp::Any(ty) => alloc.text("any ").append(ty.pretty(alloc)),
-            Exp::Current(e) => alloc.text(" * ").append(parens!(alloc, self, e)),
-            Exp::Final(e) => alloc.text(" ^ ").append(parens!(alloc, self, e)),
             // TODO parenthesization
             Exp::Let { pattern, arg, body } => alloc
                 .text("let ")
@@ -628,20 +452,6 @@ impl Print for Exp {
                 .append(body.pretty(alloc)),
             Exp::Var(v) => v.pretty(alloc),
             Exp::QVar(v) => v.pretty(alloc),
-            Exp::RecUp { record, updates } => {
-                let mut res = alloc
-                    .space()
-                    .append(parens!(alloc, self.precedence().next(), record))
-                    .append(" with ");
-                for (label, val) in updates {
-                    res = res
-                        .append(alloc.text(label))
-                        .append(" = ")
-                        .append(parens!(alloc, self, val))
-                        .append(" ; ");
-                }
-                res.braces()
-            }
             Exp::RecField { record, label } => {
                 parens!(alloc, self.precedence().next(), record).append(".").append(label)
             }
@@ -685,7 +495,6 @@ impl Print for Exp {
                 ))
             }
 
-            Exp::Verbatim(verb) => alloc.text(verb),
             Exp::Attr(attr, e) => attr.pretty(alloc).append(alloc.space()).append(e.pretty(alloc)),
             Exp::Abs(binders, body) => alloc
                 .text("fun ")
@@ -772,26 +581,47 @@ impl Print for Exp {
             Exp::Ascribe(e, t) => {
                 parens!(alloc, self, e).append(" : ").append(t.pretty(alloc)).group()
             }
-            Exp::Pure(e) => alloc.text("pure ").append(e.pretty(alloc).braces()),
-            Exp::Ghost(e) => alloc.text("ghost ").append(parens!(alloc, Precedence::App.next(), e)),
-            Exp::Absurd => alloc.text("absurd"),
             Exp::Old(e) => alloc.text("old").append(e.pretty(alloc).parens()),
-            Exp::Record { fields } => alloc
-                .intersperse(
-                    fields.iter().map(|(nm, a)| {
-                        alloc.text(nm).append(" = ").append(parens!(
-                            alloc,
-                            Precedence::Attr.next(),
-                            a
-                        ))
-                    }),
-                    "; ",
+            Exp::RecUp { record, updates } => alloc
+                .space()
+                .append(parens!(alloc, self.precedence().next(), record))
+                .append(" with ")
+                .append(
+                    alloc
+                        .intersperse(
+                            updates.iter().map(|(nm, a)| {
+                                alloc.text(nm).append(" = ").append(parens!(
+                                    alloc,
+                                    Precedence::Attr.next(),
+                                    a
+                                ))
+                            }),
+                            alloc.text(";").append(alloc.line()),
+                        )
+                        .align(),
                 )
-                .braces(),
-            Exp::Chain(fields) => alloc.intersperse(fields.iter().map(|f| f.pretty(alloc)), "; "),
-            Exp::FnLit(e) => alloc.text("fun _ -> ").append(e.pretty(alloc)).parens(),
-            Exp::Assert(e) => alloc.text("assert ").append(e.pretty(alloc).braces()),
-            Exp::Assume(e) => alloc.text("assume ").append(e.pretty(alloc).braces()),
+                .append(alloc.space())
+                .braces()
+                .group(),
+            Exp::Record { fields } => alloc
+                .space()
+                .append(
+                    alloc
+                        .intersperse(
+                            fields.iter().map(|(nm, a)| {
+                                alloc.text(nm).append(" = ").append(parens!(
+                                    alloc,
+                                    Precedence::Attr.next(),
+                                    a
+                                ))
+                            }),
+                            alloc.text(";").append(alloc.line()),
+                        )
+                        .align(),
+                )
+                .append(alloc.space())
+                .braces()
+                .group(),
         }
     }
 }
@@ -815,90 +645,6 @@ impl Print for Binder {
                     )
                     .parens()
             }
-        }
-    }
-}
-
-fn pretty_attr<'b, 'a: 'b, A: DocAllocator<'a>>(
-    attr: &'a Option<Attribute>,
-    alloc: &'a A,
-) -> DocBuilder<'a, A>
-where
-    A::Doc: Clone,
-{
-    match attr {
-        Some(attr) => attr.pretty(alloc).append(" "),
-        None => alloc.nil(),
-    }
-}
-
-impl Print for Statement {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
-    where
-        A::Doc: Clone,
-    {
-        match self {
-            Statement::Assign { attr, lhs, rhs } => pretty_attr(attr, alloc)
-                .append(lhs.pretty(alloc))
-                .append(" <- ")
-                .append(parens!(alloc, Precedence::Impl, rhs)),
-            Statement::Invariant(e) => {
-                let doc = alloc
-                    .text("invariant ")
-                    .append(alloc.space().append(e.pretty(alloc)).append(alloc.space()).braces());
-                doc
-            }
-            Statement::Variant(e) => {
-                let doc = alloc
-                    .text("variant ")
-                    .append(alloc.space().append(e.pretty(alloc)).append(alloc.space()).braces());
-                doc
-            }
-            Statement::Assume(assump) => {
-                let doc = alloc.text("assume ").append(
-                    alloc.space().append(assump.pretty(alloc)).append(alloc.space()).braces(),
-                );
-                doc
-            }
-            Statement::Assert(assert) => {
-                let doc = alloc.text("assert ").append(
-                    alloc.space().append(assert.pretty(alloc)).append(alloc.space()).braces(),
-                );
-                doc
-            }
-        }
-    }
-}
-
-impl Print for Terminator {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
-    where
-        A::Doc: Clone,
-    {
-        use Terminator::*;
-        match self {
-            Goto(tgt) => alloc.text("goto ").append(tgt.pretty(alloc)),
-            Absurd => alloc.text("absurd"),
-            Return(exp) => alloc.text("return ").append(exp.pretty(alloc)),
-            Switch(discr, brs) => alloc
-                .text("switch ")
-                .append(discr.pretty(alloc).parens())
-                .append(alloc.hardline())
-                .append(
-                    sep_end_by(
-                        alloc,
-                        brs.iter().map(|(pat, tgt)| {
-                            alloc
-                                .text("| ")
-                                .append(pat.pretty(alloc))
-                                .append(" -> ")
-                                .append(tgt.pretty(alloc))
-                        }),
-                        alloc.hardline(),
-                    )
-                    .indent(2),
-                )
-                .append("end"),
         }
     }
 }
@@ -942,15 +688,6 @@ impl Print for Pattern {
     }
 }
 
-impl Print for BlockId {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
-    where
-        A::Doc: Clone,
-    {
-        alloc.text("BB").append(alloc.as_string(self.0))
-    }
-}
-
 fn sep_end_by<'a, A, D, I, S>(alloc: &'a D, docs: I, separator: S) -> DocBuilder<'a, D, A>
 where
     D: DocAllocator<'a, A>,
@@ -967,27 +704,6 @@ where
     }
 
     result
-}
-
-impl Print for Block {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
-    where
-        A::Doc: Clone,
-    {
-        alloc
-            .hardline()
-            .append(
-                sep_end_by(
-                    alloc,
-                    self.statements.iter().map(|stmt| stmt.pretty(alloc)),
-                    alloc.text(";").append(alloc.line()),
-                )
-                .append(self.terminator.pretty(alloc)),
-            )
-            .nest(2)
-            .append(alloc.hardline())
-            .braces()
-    }
 }
 
 fn bin_op_to_string(op: &BinOp) -> &str {
@@ -1110,30 +826,37 @@ impl Print for TyDecl {
 
                 let mut decls = Vec::new();
 
-                for (hdr, ty_decl) in header.zip(tys.iter()) {
+                for (hdr, AdtDecl { ty_name, ty_params, sumrecord }) in header.zip(tys.iter()) {
                     let decl = alloc
                         .nil()
                         .append(hdr)
                         .append(" ")
-                        .append(ty_decl.ty_name.pretty(alloc))
+                        .append(ty_name.pretty(alloc))
                         .append(" ")
-                        .append(
-                            alloc.intersperse(
-                                ty_decl
-                                    .ty_params
-                                    .iter()
-                                    .map(|p| alloc.text("'").append(p.pretty(alloc))),
-                                alloc.space(),
-                            ),
-                        );
-
-                    let inner_doc = alloc.intersperse(
-                        ty_decl
-                            .constrs
-                            .iter()
-                            .map(|cons| alloc.text("| ").append(cons.pretty(alloc))),
-                        alloc.hardline(),
-                    );
+                        .append(alloc.intersperse(
+                            ty_params.iter().map(|p| alloc.text("'").append(p.pretty(alloc))),
+                            alloc.space(),
+                        ));
+                    let inner_doc = match sumrecord {
+                        SumRecord::Sum(constrs) => alloc.intersperse(
+                            constrs.iter().map(|cons| alloc.text("| ").append(cons.pretty(alloc))),
+                            alloc.hardline(),
+                        ),
+                        SumRecord::Record(fields) => alloc
+                            .nil()
+                            .append(alloc.space())
+                            .append(
+                                alloc
+                                    .intersperse(
+                                        fields.iter().map(|f| f.pretty(alloc)),
+                                        alloc.text(";").append(alloc.line()),
+                                    )
+                                    .align(),
+                            )
+                            .append(alloc.space())
+                            .braces()
+                            .group(),
+                    };
 
                     let decl = decl
                         .append(alloc.text(" =").append(alloc.hardline()))
@@ -1158,7 +881,7 @@ impl Print for ConstructorDecl {
 
         if !self.fields.is_empty() {
             cons_doc = cons_doc.append(alloc.space()).append(
-                alloc.intersperse(self.fields.iter().map(|ty_arg| ty_arg.pretty(alloc)), " "),
+                alloc.intersperse(self.fields.iter().map(|ty_arg| ty_parens!(alloc, ty_arg)), " "),
             );
         }
 
@@ -1166,22 +889,15 @@ impl Print for ConstructorDecl {
     }
 }
 
-impl Print for Field {
+impl Print for FieldDecl {
     fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
     {
-        let parens = self.ghost || self.ty.complex();
-        let doc = if self.ghost { alloc.text("ghost ") } else { alloc.nil() }
-            .append(self.ty.pretty(alloc));
-
-        if parens {
-            doc.parens()
-        } else {
-            doc
-        }
+        alloc.text(&self.name).append(alloc.text(": ")).append(self.ty.pretty(alloc))
     }
 }
+
 impl Print for Ident {
     fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
     where

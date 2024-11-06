@@ -1,29 +1,34 @@
 
-module T_creusot_contracts__logic__fmap__FMap [#"../../../../creusot-contracts/src/logic/fmap.rs" 7 0 7 29]
-  type t_FMap 't_K'0 't_V'0
-end
 module M_766__Trait__goo [#"766.rs" 10 4 10 21]
   let%span s7660 = "766.rs" 10 16 10 20
   let%span s7661 = "766.rs" 8 14 8 18
   let%span s7662 = "766.rs" 7 14 7 52
-  let%span smodel3 = "../../../../creusot-contracts/src/model.rs" 100 8 100 28
+  let%span smodel3 = "../../../../creusot-contracts/src/model.rs" 97 8 97 28
   let%span sresolve4 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   let%span sinvariant5 = "../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
+  
+  use prelude.prelude.Borrow
   
   type t_Self'0
   
   predicate inv'0 (_1 : t_Self'0)
   
-  use prelude.prelude.Borrow
+  predicate inv'1 (_1 : borrowed t_Self'0)
+  
+  type t_FMap'0
+  
+  function deep_model'1 (self : t_Self'0) : t_FMap'0
+  
+  function deep_model'0 (self : borrowed t_Self'0) : t_FMap'0 =
+    [%#smodel3] deep_model'1 self.current
   
   predicate invariant'0 (self : borrowed t_Self'0) =
     [%#sinvariant5] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'1 (_1 : borrowed t_Self'0)
-  
   axiom inv_axiom'0 [@rewrite] : forall x : borrowed t_Self'0 [inv'1 x] . inv'1 x = invariant'0 x
   
-  use prelude.prelude.Intrinsic
+  let rec f'0 (self:borrowed t_Self'0) (return'  (ret:()))= {[@expl:precondition] [%#s7661] inv'1 self}
+    any [ return' (result:())-> {[%#s7662] deep_model'0 self = deep_model'0 self} (! return' {result}) ] 
   
   predicate resolve'1 (self : borrowed t_Self'0) =
     [%#sresolve4] self.final = self.current
@@ -31,23 +36,11 @@ module M_766__Trait__goo [#"766.rs" 10 4 10 21]
   predicate resolve'0 (_1 : borrowed t_Self'0) =
     resolve'1 _1
   
-  type t_DeepModelTy'1
-  
-  type t_DeepModelTy'0
-  
-  use T_creusot_contracts__logic__fmap__FMap as FMap'0
-  
-  function deep_model'1 (self : t_Self'0) : FMap'0.t_FMap t_DeepModelTy'0 t_DeepModelTy'1
-  
-  function deep_model'0 (self : borrowed t_Self'0) : FMap'0.t_FMap t_DeepModelTy'0 t_DeepModelTy'1 =
-    [%#smodel3] deep_model'1 self.current
-  
-  let rec f'0 (self:borrowed t_Self'0) (return'  (ret:()))= {[@expl:precondition] [%#s7661] inv'1 self}
-    any [ return' (result:())-> {[%#s7662] deep_model'0 self = deep_model'0 self} (! return' {result}) ] 
+  use prelude.prelude.Intrinsic
   
   meta "compute_max_steps" 1000000
   
-  let rec goo (self:borrowed t_Self'0) (return'  (ret:()))= {[%#s7660] inv'1 self}
+  let rec goo'0 (self:borrowed t_Self'0) (return'  (ret:()))= {[%#s7660] inv'1 self}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 self.current}
@@ -55,7 +48,7 @@ module M_766__Trait__goo [#"766.rs" 10 4 10 21]
           (fun (_ret':borrowed t_Self'0) ->
              [ &_2 <- _ret' ] 
             -{inv'0 _ret'.final}-
-             [ &self <- { self with current = _ret'.final ; } ] 
+             [ &self <- { self with current = _ret'.final } ] 
             s1)
       | s1 = f'0 {_2} (fun (_ret':()) ->  [ &_0 <- _ret' ] s2)
       | s2 = bb1 ]

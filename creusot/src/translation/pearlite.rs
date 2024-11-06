@@ -166,7 +166,6 @@ pub enum TermKind<'tcx> {
         fin: Box<Term<'tcx>>,
         projection: ProjectionVec<Term<'tcx>, Ty<'tcx>>,
     },
-    Absurd,
 }
 
 impl<'tcx> TermKind<'tcx> {
@@ -586,7 +585,10 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     Some(ResultCheck) => {
                         Ok(Term { ty, span, kind: TermKind::Tuple { fields: vec![] } })
                     }
-                    Some(Absurd) => Ok(Term { ty, span, kind: TermKind::Absurd }),
+                    Some(Dead) => Err(Error::new(
+                        span,
+                        "The `dead` term can only be used for the body of trusted logical functions",
+                    )),
                     Some(Trigger) => Err(Error::new(
                         span,
                         "Triggers can only be used directly inside quantifiers",
@@ -732,7 +734,6 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 Ok(Term { ty, span, kind: TermKind::Tuple { fields } })
             }
             ExprKind::Use { source } => self.expr_term(source),
-            ExprKind::NeverToAny { .. } => Ok(Term { ty, span, kind: TermKind::Absurd }),
             ExprKind::ValueTypeAscription { source, .. } => self.expr_term(source),
             ExprKind::Box { value } => self.expr_term(value),
             // ExprKind::Array { ref fields } => todo!("Array {:?}", fields),
@@ -1146,7 +1147,7 @@ pub(crate) enum Stub {
     VariantCheck,
     Old,
     ResultCheck,
-    Absurd,
+    Dead,
 }
 
 pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
@@ -1161,7 +1162,7 @@ pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stu
             "neq" => Some(Stub::Neq),
             "variant_check" => Some(Stub::VariantCheck),
             "old" => Some(Stub::Old),
-            "absurd" => Some(Stub::Absurd),
+            "dead" => Some(Stub::Dead),
             "closure_result_constraint" => Some(Stub::ResultCheck),
             _ => None,
         }
@@ -1266,7 +1267,6 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         TermKind::Projection { lhs, name: _ } => visitor.visit_term(&*lhs),
         TermKind::Old { term } => visitor.visit_term(&*term),
         TermKind::Closure { body, .. } => visitor.visit_term(&*body),
-        TermKind::Absurd => {}
         TermKind::Reborrow { cur, fin, inner, projection } => {
             visitor.visit_term(&*cur);
             visitor.visit_term(&*fin);
@@ -1324,7 +1324,6 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         TermKind::Projection { lhs, name: _ } => visitor.visit_mut_term(&mut *lhs),
         TermKind::Old { term } => visitor.visit_mut_term(&mut *term),
         TermKind::Closure { body, .. } => visitor.visit_mut_term(&mut *body),
-        TermKind::Absurd => {}
         TermKind::Reborrow { cur, fin, inner, projection } => {
             visitor.visit_mut_term(&mut *cur);
             visitor.visit_mut_term(&mut *fin);
@@ -1571,7 +1570,6 @@ impl<'tcx> Term<'tcx> {
                 bound.extend(bound_new.iter());
                 body.subst_with_inner(&bound, inv_subst);
             }
-            TermKind::Absurd => {}
             TermKind::Reborrow { cur, fin, inner, projection } => {
                 cur.subst_with_inner(bound, inv_subst);
                 fin.subst_with_inner(bound, inv_subst);
@@ -1653,7 +1651,6 @@ impl<'tcx> Term<'tcx> {
                 bound.extend(bound_new.iter());
                 body.free_vars_inner(&bound, free);
             }
-            TermKind::Absurd => {}
             TermKind::Reborrow { cur, fin, inner, projection } => {
                 cur.free_vars_inner(bound, free);
                 fin.free_vars_inner(bound, free);

@@ -32,9 +32,8 @@ impl<T: ?Sized> View for GhostPtrToken<T> {
     #[trusted]
     #[logic]
     #[ensures(result.get(GhostPtr::null_logic()) == None)]
-    #[open(self)]
     fn view(self) -> Self::ViewTy {
-        absurd
+        dead
     }
 }
 
@@ -144,19 +143,17 @@ impl<T: ?Sized> GhostPtrToken<T> {
 
 impl<T: ?Sized> GhostPtrExt<T> for GhostPtr<T> {
     #[trusted]
-    #[open(self)]
     #[logic]
     #[ensures(result.addr_logic() == 0)]
     #[ensures(forall<ptr: GhostPtr<T>> ptr.addr_logic() == result.addr_logic() ==> ptr == result)]
     fn null_logic() -> Self {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     fn addr_logic(self) -> Int {
-        absurd
+        dead
     }
 }
 
@@ -165,10 +162,9 @@ impl<'a, T: ?Sized> View for GhostPtrTokenRef<'a, T> {
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[ensures(result.get(GhostPtr::null_logic()) == None)]
     fn view(self) -> Self::ViewTy {
-        absurd
+        dead
     }
 }
 
@@ -210,18 +206,16 @@ impl<'a, T: ?Sized> Clone for GhostPtrTokenRef<'a, T> {
 impl<'a, T: ?Sized> GhostPtrTokenMut<'a, T> {
     #[trusted]
     #[logic]
-    #[open(self)]
     #[ensures(result.get(GhostPtr::null_logic()) == None)]
     pub fn cur(self) -> FMap<GhostPtr<T>, T> {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic(prophetic)]
-    #[open(self)]
     #[ensures(result.get(GhostPtr::null_logic()) == None)]
     pub fn fin(self) -> FMap<GhostPtr<T>, T> {
-        absurd
+        dead
     }
 
     #[trusted]

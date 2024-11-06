@@ -1,200 +1,105 @@
 
-module T_core__ptr__non_null__NonNull
-  use prelude.prelude.Opaque
-  
-  type t_T'0
-  
-  type t_NonNull 't_T'0 =
-    | C_NonNull opaque_ptr
-  
-  let rec t_NonNull < 't_T'0 > (input:t_NonNull 't_T'0) (ret  (pointer:opaque_ptr))= any
-    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer}) ]
-    
-end
-module T_core__marker__PhantomData
-  type t_T'0
-  
-  type t_PhantomData 't_T'0 =
-    | C_PhantomData
-  
-  let rec t_PhantomData < 't_T'0 > (input:t_PhantomData 't_T'0) (ret  )= any
-    [ good -> {C_PhantomData  = input} (! ret) ]
-    
-end
-module T_core__ptr__unique__Unique
-  use T_core__marker__PhantomData as PhantomData'0
-  
-  use T_core__ptr__non_null__NonNull as NonNull'0
-  
-  type t_T'0
-  
-  type t_Unique 't_T'0 =
-    | C_Unique (NonNull'0.t_NonNull 't_T'0) (PhantomData'0.t_PhantomData 't_T'0)
-  
-  let rec t_Unique < 't_T'0 > (input:t_Unique 't_T'0) (ret  (pointer:NonNull'0.t_NonNull 't_T'0) (_marker:PhantomData'0.t_PhantomData 't_T'0))= any
-    [ good (pointer:NonNull'0.t_NonNull 't_T'0) (_marker:PhantomData'0.t_PhantomData 't_T'0)-> {C_Unique pointer _marker
-      = input}
-      (! ret {pointer} {_marker}) ]
-    
-end
-module T_alloc__raw_vec__Cap
-  use prelude.prelude.UIntSize
-  
-  type t_Cap  =
-    | C_Cap usize
-  
-  let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
-    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0}) ]
-    
-end
-module T_alloc__raw_vec__RawVec
-  use T_alloc__raw_vec__Cap as Cap'0
-  
-  use T_core__ptr__unique__Unique as Unique'0
-  
-  type t_A'0
-  
-  type t_T'0
-  
-  type t_RawVec 't_T'0 't_A'0 =
-    | C_RawVec (Unique'0.t_Unique 't_T'0) (Cap'0.t_Cap) 't_A'0
-  
-  let rec t_RawVec < 't_T'0 > < 't_A'0 > (input:t_RawVec 't_T'0 't_A'0) (ret  (ptr:Unique'0.t_Unique 't_T'0) (cap:Cap'0.t_Cap) (alloc:'t_A'0))= any
-    [ good (ptr:Unique'0.t_Unique 't_T'0) (cap:Cap'0.t_Cap) (alloc:'t_A'0)-> {C_RawVec ptr cap alloc = input}
-      (! ret {ptr} {cap} {alloc}) ]
-    
-end
-module T_alloc__vec__Vec
-  use prelude.prelude.UIntSize
-  
-  use T_alloc__raw_vec__RawVec as RawVec'0
-  
-  type t_A'0
-  
-  type t_T'0
-  
-  type t_Vec 't_T'0 't_A'0 =
-    | C_Vec (RawVec'0.t_RawVec 't_T'0 't_A'0) usize
-  
-  let rec t_Vec < 't_T'0 > < 't_A'0 > (input:t_Vec 't_T'0 't_A'0) (ret  (buf:RawVec'0.t_RawVec 't_T'0 't_A'0) (len:usize))= any
-    [ good (buf:RawVec'0.t_RawVec 't_T'0 't_A'0) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
-    
-end
-module T_alloc__alloc__Global
-  type t_Global  =
-    | C_Global
-  
-  let rec t_Global (input:t_Global) (ret  )= any [ good -> {C_Global  = input} (! ret) ] 
-end
-module T_core__option__Option
-  type t_T'0
-  
-  type t_Option 't_T'0 =
-    | C_None
-    | C_Some 't_T'0
-  
-  let rec v_None < 't_T'0 > (input:t_Option 't_T'0) (ret  )= any
-    [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} (! {false} any) ]
-    
-  
-  let rec v_Some < 't_T'0 > (input:t_Option 't_T'0) (ret  (field_0:'t_T'0))= any
-    [ good (field_0:'t_T'0)-> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : 't_T'0 [C_Some field_0 : t_Option 't_T'0] . C_Some field_0 <> input} (! {false} any) ]
-    
-end
 module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
   let%span sinvariant_moves0 = "invariant_moves.rs" 6 16 6 22
-  let%span svec1 = "../../../creusot-contracts/src/std/vec.rs" 94 26 99 17
-  let%span svec2 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
-  let%span smodel3 = "../../../creusot-contracts/src/model.rs" 109 8 109 22
+  let%span svec1 = "../../../creusot-contracts/src/std/vec.rs" 92 26 97 17
+  let%span svec2 = "../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span smodel3 = "../../../creusot-contracts/src/model.rs" 106 8 106 22
   let%span sresolve4 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
-  
-  use prelude.prelude.UInt32
-  
-  use T_core__option__Option as Option'0
-  
-  predicate inv'1 (_1 : Option'0.t_Option uint32)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Option'0.t_Option uint32 [inv'1 x] . inv'1 x = true
-  
-  use T_alloc__alloc__Global as Global'0
-  
-  use T_alloc__vec__Vec as Vec'0
   
   use prelude.prelude.Borrow
   
-  predicate inv'0 (_1 : borrowed (Vec'0.t_Vec uint32 (Global'0.t_Global)))
+  use prelude.prelude.Opaque
   
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (Vec'0.t_Vec uint32 (Global'0.t_Global)) [inv'0 x] . inv'0 x = true
+  type t_NonNull'0  =
+    { t_NonNull__pointer'0: opaque_ptr }
   
-  use prelude.prelude.Intrinsic
+  type t_Unique'0  =
+    { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
   
-  predicate resolve'1 (self : borrowed (Vec'0.t_Vec uint32 (Global'0.t_Global))) =
-    [%#sresolve4] self.final = self.current
+  use prelude.prelude.UIntSize
   
-  predicate resolve'0 (_1 : borrowed (Vec'0.t_Vec uint32 (Global'0.t_Global))) =
-    resolve'1 _1
+  type t_Cap'0  =
+    { t_Cap__0'0: usize }
+  
+  type t_RawVec'0  =
+    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+  
+  type t_Vec'0  =
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
+  
+  predicate inv'0 (_1 : borrowed (t_Vec'0))
+  
+  use prelude.prelude.UInt32
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 uint32
   
   use seq.Seq
   
-  use seq.Seq
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
   use seq.Seq
   
-  use seq.Seq
+  function view'0 (self : t_Vec'0) : Seq.seq uint32
   
-  use prelude.prelude.UIntSize
+  axiom view'0_spec : forall self : t_Vec'0 . [%#svec2] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
-  use prelude.prelude.UIntSize
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  function view'0 (self : Vec'0.t_Vec uint32 (Global'0.t_Global)) : Seq.seq uint32
-  
-  axiom view'0_spec : forall self : Vec'0.t_Vec uint32 (Global'0.t_Global) . [%#svec2] Seq.length (view'0 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  function view'1 (self : borrowed (Vec'0.t_Vec uint32 (Global'0.t_Global))) : Seq.seq uint32 =
+  function view'1 (self : borrowed (t_Vec'0)) : Seq.seq uint32 =
     [%#smodel3] view'0 self.current
   
-  let rec pop'0 (self:borrowed (Vec'0.t_Vec uint32 (Global'0.t_Global))) (return'  (ret:Option'0.t_Option uint32))= {[@expl:precondition] inv'0 self}
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate inv'1 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'0 x] . inv'0 x = true
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x = true
+  
+  let rec pop'0 (self:borrowed (t_Vec'0)) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'0 self}
     any
-    [ return' (result:Option'0.t_Option uint32)-> {inv'1 result}
+    [ return' (result:t_Option'0)-> {inv'1 result}
       {[%#svec1] match result with
-        | Option'0.C_Some t -> view'0 self.final = Seq.([..]) (view'1 self) 0 (Seq.length (view'1 self) - 1)
+        | C_Some'0 t -> view'0 self.final = Seq.([..]) (view'1 self) 0 (Seq.length (view'1 self) - 1)
         /\ view'1 self = Seq.snoc (view'0 self.final) t
-        | Option'0.C_None -> self.current = self.final /\ Seq.length (view'1 self) = 0
+        | C_None'0 -> self.current = self.final /\ Seq.length (view'1 self) = 0
         end}
       (! return' {result}) ]
     
   
+  predicate resolve'1 (self : borrowed (t_Vec'0)) =
+    [%#sresolve4] self.final = self.current
+  
+  predicate resolve'0 (_1 : borrowed (t_Vec'0)) =
+    resolve'1 _1
+  
+  use prelude.prelude.Intrinsic
+  
   meta "compute_max_steps" 1000000
   
-  let rec test_invariant_move (x:Vec'0.t_Vec uint32 (Global'0.t_Global)) (return'  (ret:()))= (! bb0
+  let rec test_invariant_move'0 (x:t_Vec'0) (return'  (ret:()))= (! bb0
     [ bb0 = bb1
     | bb1 = bb2
     | bb2 = bb2
       [ bb2 = {[@expl:loop invariant] [%#sinvariant_moves0] x = x}
         (! s0) [ s0 = bb3 ] 
         [ bb3 = s0
-          [ s0 = Borrow.borrow_mut <Vec'0.t_Vec uint32 (Global'0.t_Global)> {x}
-              (fun (_ret':borrowed (Vec'0.t_Vec uint32 (Global'0.t_Global))) ->
-                 [ &_6 <- _ret' ] 
-                 [ &x <- _ret'.final ] 
-                s1)
-          | s1 = Borrow.borrow_final <Vec'0.t_Vec uint32 (Global'0.t_Global)> {_6.current} {Borrow.get_id _6}
-              (fun (_ret':borrowed (Vec'0.t_Vec uint32 (Global'0.t_Global))) ->
-                 [ &_5 <- _ret' ] 
-                 [ &_6 <- { _6 with current = _ret'.final ; } ] 
-                s2)
-          | s2 = pop'0 {_5} (fun (_ret':Option'0.t_Option uint32) ->  [ &_4 <- _ret' ] s3)
+          [ s0 = Borrow.borrow_mut <t_Vec'0> {x}
+              (fun (_ret':borrowed (t_Vec'0)) ->  [ &_6 <- _ret' ]  [ &x <- _ret'.final ] s1)
+          | s1 = Borrow.borrow_final <t_Vec'0> {_6.current} {Borrow.get_id _6}
+              (fun (_ret':borrowed (t_Vec'0)) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _ret'.final } ] s2)
+          | s2 = pop'0 {_5} (fun (_ret':t_Option'0) ->  [ &_4 <- _ret' ] s3)
           | s3 = bb4 ]
           
         | bb4 = s0
           [ s0 = -{resolve'0 _6}- s1
-          | s1 = any [ br0 -> {_4 = Option'0.C_None } (! bb7) | br1 (a:uint32)-> {_4 = Option'0.C_Some a} (! bb5) ]  ]
+          | s1 = any [ br0 -> {_4 = C_None'0 } (! bb7) | br1 (x0:uint32)-> {_4 = C_Some'0 x0} (! bb5) ]  ]
           
         | bb5 = bb6
         | bb6 = bb2 ]
@@ -204,9 +109,9 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
     | bb8 = return' {_0} ]
     )
     [ & _0 : () = any_l ()
-    | & x : Vec'0.t_Vec uint32 (Global'0.t_Global) = x
-    | & _4 : Option'0.t_Option uint32 = any_l ()
-    | & _5 : borrowed (Vec'0.t_Vec uint32 (Global'0.t_Global)) = any_l ()
-    | & _6 : borrowed (Vec'0.t_Vec uint32 (Global'0.t_Global)) = any_l () ]
+    | & x : t_Vec'0 = x
+    | & _4 : t_Option'0 = any_l ()
+    | & _5 : borrowed (t_Vec'0) = any_l ()
+    | & _6 : borrowed (t_Vec'0) = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end

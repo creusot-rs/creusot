@@ -166,11 +166,10 @@ impl<T: OrdLogic> OrdLogic for Option<T> {
 impl<T> View for IntoIter<T> {
     type ViewTy = Option<T>;
 
-    #[open(self)]
     #[logic]
     #[trusted]
     fn view(self) -> Option<T> {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -220,11 +219,10 @@ impl<T> IntoIterator for Option<T> {
 impl<'a, T> View for Iter<'a, T> {
     type ViewTy = Option<&'a T>;
 
-    #[open(self)]
     #[logic]
     #[trusted]
     fn view(self) -> Option<&'a T> {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -278,10 +276,9 @@ impl<'a, T> View for IterMut<'a, T> {
     type ViewTy = Option<&'a mut T>;
 
     #[logic]
-    #[open(self)]
     #[trusted]
     fn view(self) -> Option<&'a mut T> {
-        pearlite! { absurd }
+        dead
     }
 }
 

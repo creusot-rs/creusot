@@ -10,19 +10,17 @@ pub trait SkipExt<I> {
 
 impl<I> SkipExt<I> for Skip<I> {
     #[logic]
-    #[open(self)]
     #[trusted]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
-        pearlite! { absurd }
+        dead
     }
 
     #[logic]
-    #[open(self)]
     #[trusted]
     #[ensures(result >= 0 && result <= usize::MAX@)]
     fn n(self) -> Int {
-        pearlite! { absurd }
+        dead
     }
 }
 

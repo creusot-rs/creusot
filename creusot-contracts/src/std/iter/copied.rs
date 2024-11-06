@@ -6,12 +6,11 @@ pub trait CopiedExt<I> {
 }
 
 impl<I> CopiedExt<I> for Copied<I> {
-    #[open]
     #[logic]
     #[trusted]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
-        pearlite! { absurd }
+        dead
     }
 }
 

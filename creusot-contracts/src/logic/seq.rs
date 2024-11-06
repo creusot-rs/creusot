@@ -16,10 +16,9 @@ impl<T: ?Sized> Seq<T> {
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "seq.Seq.create"]
     pub fn new(_: Int, _: Mapping<Int, T>) -> Self {
-        absurd
+        dead
     }
 
     #[logic]
@@ -37,26 +36,23 @@ impl<T: ?Sized> Seq<T> {
 
     #[trusted]
     #[logic]
-    #[open]
     #[creusot::builtins = "seq.Seq.get"]
     pub fn index_logic_unsized(self, _: Int) -> Box<T> {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "seq.Seq.([..])"]
     pub fn subsequence(self, _: Int, _: Int) -> Self {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "seq.Seq.singleton"]
     pub fn singleton(_: T) -> Self {
-        absurd
+        dead
     }
 
     #[logic]
@@ -67,51 +63,45 @@ impl<T: ?Sized> Seq<T> {
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[rustc_diagnostic_item = "seq_len"]
     #[creusot::builtins = "seq.Seq.length"]
     pub fn len(self) -> Int {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "seq.Seq.set"]
     pub fn set(self, _: Int, _: T) -> Self {
-        absurd
+        dead
     }
 
     #[trusted]
     #[predicate]
-    #[open(self)]
     #[creusot::builtins = "seq.Seq.(==)"]
     pub fn ext_eq(self, _: Self) -> bool {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "seq.Seq.snoc"]
     pub fn push(self, _: T) -> Self {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "seq.Seq.(++)"]
     pub fn concat(self, _: Self) -> Self {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "seq.Reverse.reverse"]
     pub fn reverse(self) -> Self {
-        absurd
+        dead
     }
 
     #[predicate]
@@ -122,18 +112,16 @@ impl<T: ?Sized> Seq<T> {
 
     #[trusted]
     #[predicate]
-    #[open(self)]
     #[creusot::builtins = "seq.Permut.permut"]
     pub fn permut(self, _: Self, _: Int, _: Int) -> bool {
-        absurd
+        dead
     }
 
     #[trusted]
     #[predicate]
-    #[open(self)]
     #[creusot::builtins = "seq.Permut.exchange"]
     pub fn exchange(self, _: Self, _: Int, _: Int) -> bool {
-        absurd
+        dead
     }
 
     #[open]
@@ -168,11 +156,10 @@ impl<T: ?Sized> Seq<T> {
 
 impl<T: ?Sized> Seq<&T> {
     #[logic]
-    #[open]
     #[trusted]
     #[creusot::builtins = "identity"]
     pub fn to_owned_seq(self) -> Seq<T> {
-        pearlite! {absurd}
+        dead
     }
 }
 
@@ -181,11 +168,10 @@ impl<T> IndexLogic<Int> for Seq<T> {
 
     #[logic]
     #[trusted]
-    #[open(self)]
     #[rustc_diagnostic_item = "seq_index"]
     #[creusot::builtins = "seq.Seq.get"]
     fn index_logic(self, _: Int) -> Self::Item {
-        absurd
+        dead
     }
 }
 

@@ -259,7 +259,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             };
             Ok(ts)
         }
-        RT::Absurd(_) => Ok(quote_spanned! {sp=> *::creusot_contracts::__stubs::abs() }),
+        RT::Dead(_) => Ok(quote_spanned! {sp=> *::creusot_contracts::__stubs::dead() }),
         RT::Pearlite(term) => Ok(quote_spanned! {sp=> #term }),
         RT::Closure(clos) => {
             let inputs = &clos.inputs;

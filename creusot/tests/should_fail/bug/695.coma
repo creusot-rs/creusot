@@ -22,62 +22,56 @@ module M_695__inversed_if [#"695.rs" 6 0 6 78]
   
   type t_C'0
   
+  predicate precondition'0 (self : t_C'0) (_2 : ())
+  
   use prelude.prelude.Borrow
   
-  predicate resolve'0 (_1 : t_C'0)
-  
-  predicate postcondition_mut'0 (self : borrowed t_C'0) (_2 : ()) (_3 : bool)
-  
-  predicate postcondition_once'1 (self : t_C'0) (_2 : ()) (_3 : bool)
-  
-  function fn_mut_once'0 (self : t_C'0) (args : ()) (res : bool) : ()
-  
-  axiom fn_mut_once'0_spec : forall self : t_C'0, args : (), res : bool . [%#sops18] postcondition_once'1 self args res
-  = (exists s : borrowed t_C'0 . s.current = self /\ postcondition_mut'0 s args res /\ resolve'0 s.final)
-  
-  predicate unnest'0 (self : t_C'0) (_2 : t_C'0)
-  
-  function unnest_trans'0 (self : t_C'0) (b : t_C'0) (c : t_C'0) : ()
-  
-  axiom unnest_trans'0_spec : forall self : t_C'0, b : t_C'0, c : t_C'0 . ([%#sops15] unnest'0 self b)
-   -> ([%#sops16] unnest'0 b c)  -> ([%#sops17] unnest'0 self c)
-  
-  function unnest_refl'0 (self : t_C'0) : ()
-  
-  axiom unnest_refl'0_spec : forall self : t_C'0 . [%#sops14] unnest'0 self self
-  
-  function postcondition_mut_unnest'0 (self : borrowed t_C'0) (args : ()) (res : bool) : ()
-  
-  axiom postcondition_mut_unnest'0_spec : forall self : borrowed t_C'0, args : (), res : bool . ([%#sops12] postcondition_mut'0 self args res)
-   -> ([%#sops13] unnest'0 self.current self.final)
-  
-  predicate inv'5 (_1 : bool)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : bool [inv'5 x] . inv'5 x = true
-  
-  predicate inv'4 (_1 : bool)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : bool [inv'4 x] . inv'4 x = true
+  predicate inv'2 (_1 : t_C'0)
   
   predicate inv'3 (_1 : ())
   
-  axiom inv_axiom'1 [@rewrite] : forall x : () [inv'3 x] . inv'3 x = true
+  predicate postcondition'0 (self : t_C'0) (_2 : ()) (_3 : bool)
+  
+  predicate inv'4 (_1 : bool)
   
   predicate inv'0 (_1 : t_C'0)
   
   predicate invariant'0 (self : t_C'0) =
     [%#sinvariant11] inv'0 self
   
-  predicate inv'2 (_1 : t_C'0)
-  
   axiom inv_axiom'0 [@rewrite] : forall x : t_C'0 [inv'2 x] . inv'2 x = invariant'0 x
   
-  predicate postcondition'0 (self : t_C'0) (_2 : ()) (_3 : bool)
+  axiom inv_axiom'1 [@rewrite] : forall x : () [inv'3 x] . inv'3 x = true
   
-  function fn_once'0 (self : t_C'0) (args : ()) (res : bool) : ()
+  axiom inv_axiom'2 [@rewrite] : forall x : bool [inv'4 x] . inv'4 x = true
   
-  axiom fn_once'0_spec : forall self : t_C'0, args : (), res : bool . [%#sops9] postcondition_once'1 self args res
-  = (resolve'0 self /\ postcondition'0 self args res)
+  predicate inv'5 (_1 : bool)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : bool [inv'5 x] . inv'5 x = true
+  
+  let rec call'0 (self:t_C'0) (args:()) (return'  (ret:bool))= {[@expl:precondition] inv'3 args}
+    {[@expl:precondition] inv'2 self}
+    {[@expl:precondition] [%#sops6] precondition'0 self args}
+    any [ return' (result:bool)-> {inv'4 result} {[%#sops7] postcondition'0 self args result} (! return' {result}) ] 
+  
+  predicate resolve'0 (_1 : t_C'0)
+  
+  type t_B'0
+  
+  predicate precondition'1 (self : t_B'0) (_2 : bool)
+  
+  predicate inv'1 (_1 : t_B'0)
+  
+  predicate postcondition_once'0 (self : t_B'0) (_2 : bool) (_3 : ())
+  
+  let rec call_once'0 (self:t_B'0) (args:bool) (return'  (ret:()))= {[@expl:precondition] inv'5 args}
+    {[@expl:precondition] inv'1 self}
+    {[@expl:precondition] [%#sops7] precondition'1 self args}
+    any [ return' (result:())-> {inv'3 result} {[%#sops7] postcondition_once'0 self args result} (! return' {result}) ] 
+  
+  use prelude.prelude.Intrinsic
+  
+  predicate postcondition_mut'0 (self : borrowed t_C'0) (_2 : ()) (_3 : bool)
   
   predicate resolve'1 (self : borrowed t_C'0) =
     [%#sresolve10] self.final = self.current
@@ -87,31 +81,37 @@ module M_695__inversed_if [#"695.rs" 6 0 6 78]
   axiom fn_mut'0_spec : forall self : borrowed t_C'0, args : (), res : bool . [%#sops8] postcondition_mut'0 self args res
   = (resolve'1 self /\ postcondition'0 self.current args res)
   
-  type t_B'0
+  predicate postcondition_once'1 (self : t_C'0) (_2 : ()) (_3 : bool)
   
-  predicate postcondition_once'0 (self : t_B'0) (_2 : bool) (_3 : ())
+  function fn_once'0 (self : t_C'0) (args : ()) (res : bool) : ()
   
-  predicate inv'1 (_1 : t_B'0)
+  axiom fn_once'0_spec : forall self : t_C'0, args : (), res : bool . [%#sops9] postcondition_once'1 self args res
+  = (resolve'0 self /\ postcondition'0 self args res)
   
-  predicate precondition'1 (self : t_B'0) (_2 : bool)
+  predicate unnest'0 (self : t_C'0) (_2 : t_C'0)
   
-  predicate precondition'0 (self : t_C'0) (_2 : ())
+  function postcondition_mut_unnest'0 (self : borrowed t_C'0) (args : ()) (res : bool) : ()
   
-  use prelude.prelude.Intrinsic
+  axiom postcondition_mut_unnest'0_spec : forall self : borrowed t_C'0, args : (), res : bool . ([%#sops12] postcondition_mut'0 self args res)
+   -> ([%#sops13] unnest'0 self.current self.final)
   
-  let rec call_once'0 (self:t_B'0) (args:bool) (return'  (ret:()))= {[@expl:precondition] inv'5 args}
-    {[@expl:precondition] inv'1 self}
-    {[@expl:precondition] [%#sops7] precondition'1 self args}
-    any [ return' (result:())-> {inv'3 result} {[%#sops7] postcondition_once'0 self args result} (! return' {result}) ] 
+  function unnest_refl'0 (self : t_C'0) : ()
   
-  let rec call'0 (self:t_C'0) (args:()) (return'  (ret:bool))= {[@expl:precondition] inv'3 args}
-    {[@expl:precondition] inv'2 self}
-    {[@expl:precondition] [%#sops6] precondition'0 self args}
-    any [ return' (result:bool)-> {inv'4 result} {[%#sops7] postcondition'0 self args result} (! return' {result}) ] 
+  axiom unnest_refl'0_spec : forall self : t_C'0 . [%#sops14] unnest'0 self self
+  
+  function unnest_trans'0 (self : t_C'0) (b : t_C'0) (c : t_C'0) : ()
+  
+  axiom unnest_trans'0_spec : forall self : t_C'0, b : t_C'0, c : t_C'0 . ([%#sops15] unnest'0 self b)
+   -> ([%#sops16] unnest'0 b c)  -> ([%#sops17] unnest'0 self c)
+  
+  function fn_mut_once'0 (self : t_C'0) (args : ()) (res : bool) : ()
+  
+  axiom fn_mut_once'0_spec : forall self : t_C'0, args : (), res : bool . [%#sops18] postcondition_once'1 self args res
+  = (exists s : borrowed t_C'0 . s.current = self /\ postcondition_mut'0 s args res /\ resolve'0 s.final)
   
   meta "compute_max_steps" 1000000
   
-  let rec inversed_if (cond:t_C'0) (branch:t_B'0) (return'  (ret:()))= {[%#s6954] inv'1 branch}
+  let rec inversed_if'0 (cond:t_C'0) (branch:t_B'0) (return'  (ret:()))= {[%#s6954] inv'1 branch}
     {[%#s6953] inv'0 cond}
     {[%#s6952] precondition'0 cond () /\ (forall b : bool . precondition'1 branch (b))}
     (! bb0
@@ -152,196 +152,120 @@ module M_695__inversed_if [#"695.rs" 6 0 6 78]
       (! return' {result}) ]
     
 end
-module M_695__valid__qy123zclosureqy35z1qy125z_Type [#"695.rs" 17 15 17 47]
+module M_695__valid [#"695.rs" 15 0 15 27]
+  let%span s6950 = "695.rs" 16 16 16 20
+  let%span s6951 = "695.rs" 22 20 22 25
+  let%span s6952 = "695.rs" 14 10 14 71
+  let%span s6953 = "695.rs" 18 11 18 15
+  let%span s6954 = "695.rs" 17 25 17 45
+  let%span s6955 = "695.rs" 20 25 20 26
+  let%span s6956 = "695.rs" 20 36 20 37
+  let%span s6957 = "695.rs" 19 27 19 62
+  let%span s6958 = "695.rs" 4 0 4 79
+  let%span s6959 = "695.rs" 6 59 6 63
+  let%span s69510 = "695.rs" 6 68 6 74
+  let%span s69511 = "695.rs" 5 0 5 91
+  let%span sresolve12 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
+  
   use prelude.prelude.UInt32
+  
+  use prelude.prelude.Intrinsic
   
   use prelude.prelude.Borrow
   
-  type m_695__valid__qy123zclosureqy35z1qy125z  =
-    | M_695__valid__qy123zclosureqy35z1qy125z uint32
-  
-  let rec m_695__valid__qy123zclosureqy35z1qy125z (input:m_695__valid__qy123zclosureqy35z1qy125z) (ret  (n:uint32))= any
-    [ good (n:uint32)-> {M_695__valid__qy123zclosureqy35z1qy125z n = input} (! ret {n}) ]
-    
-end
-module M_695__valid__qy123zclosureqy35z1qy125z [#"695.rs" 17 15 17 47]
-  let%span s6950 = "695.rs" 18 11 18 15
-  let%span s6951 = "695.rs" 17 25 17 45
+  type m_695__valid__qy123zclosureqy35z1qy125z'0  =
+    { field_0'0: uint32 }
   
   use prelude.prelude.Int
   
-  use prelude.prelude.UInt32
+  predicate inv'0 (_1 : m_695__valid__qy123zclosureqy35z1qy125z'0)
   
-  use prelude.prelude.Borrow
+  axiom inv_axiom'0 [@rewrite] : forall x : m_695__valid__qy123zclosureqy35z1qy125z'0 [inv'0 x] . inv'0 x = true
   
-  use M_695__valid__qy123zclosureqy35z1qy125z_Type as Closure'0
+  type m_695__valid__qy123zclosureqy35z2qy125z'0  =
+    { field_0'1: borrowed uint32 }
   
-  function field_0'0 [#"695.rs" 17 15 17 47] (self : Closure'0.m_695__valid__qy123zclosureqy35z1qy125z) : uint32 =
-    let Closure'0.M_695__valid__qy123zclosureqy35z1qy125z a = self in a
+  predicate inv'1 (_1 : m_695__valid__qy123zclosureqy35z2qy125z'0)
   
-  use prelude.prelude.Intrinsic
+  axiom inv_axiom'1 [@rewrite] : forall x : m_695__valid__qy123zclosureqy35z2qy125z'0 [inv'1 x] . inv'1 x = true
   
-  meta "compute_max_steps" 1000000
-  
-  let rec m_695__valid__qy123zclosureqy35z1qy125z (_1:Closure'0.m_695__valid__qy123zclosureqy35z1qy125z) (return'  (ret:bool))= (! bb0
+  let rec closure1'0 (_1:m_695__valid__qy123zclosureqy35z1qy125z'0) (return'  (ret:bool))= (! bb0
     [ bb0 = s0
-      [ s0 = Closure'0.m_695__valid__qy123zclosureqy35z1qy125z {_1}
-          (fun (r'0:uint32) -> UInt32.gt {r'0} {[%#s6950] (7 : uint32)} (fun (_ret':bool) ->  [ &res <- _ret' ] s1))
+      [ s0 = UInt32.gt {_1.field_0'0} {[%#s6953] (7 : uint32)} (fun (_ret':bool) ->  [ &res <- _ret' ] s1)
       | s1 =  [ &_0 <- res ] s2
       | s2 = return' {_0} ]
        ]
-    )
-    [ & _0 : bool = any_l () | & _1 : Closure'0.m_695__valid__qy123zclosureqy35z1qy125z = _1 | & res : bool = any_l () ]
-    
-    [ return' (result:bool)-> {[@expl:postcondition] [%#s6951] result = (field_0'0 _1 > (7 : uint32))}
+    ) [ & _0 : bool = any_l () | & _1 : m_695__valid__qy123zclosureqy35z1qy125z'0 = _1 | & res : bool = any_l () ] 
+    [ return' (result:bool)-> {[@expl:postcondition] [%#s6954] result = (_1.field_0'0 > (7 : uint32))}
       (! return' {result}) ]
     
-end
-module M_695__valid__qy123zclosureqy35z2qy125z_Type [#"695.rs" 19 17 19 64]
-  use prelude.prelude.UInt32
   
-  use prelude.prelude.Borrow
+  predicate resolve'1 (self : borrowed m_695__valid__qy123zclosureqy35z2qy125z'0) =
+    [%#sresolve12] self.final = self.current
   
-  type m_695__valid__qy123zclosureqy35z2qy125z  =
-    | M_695__valid__qy123zclosureqy35z2qy125z (borrowed uint32)
-  
-  let rec m_695__valid__qy123zclosureqy35z2qy125z (input:m_695__valid__qy123zclosureqy35z2qy125z) (ret  (r:borrowed uint32))= any
-    [ good (r:borrowed uint32)-> {M_695__valid__qy123zclosureqy35z2qy125z r = input} (! ret {r}) ]
-    
-end
-module M_695__valid__qy123zclosureqy35z2qy125z [#"695.rs" 19 17 19 64]
-  let%span s6950 = "695.rs" 20 25 20 26
-  let%span s6951 = "695.rs" 20 36 20 37
-  let%span s6952 = "695.rs" 19 27 19 62
-  let%span sresolve3 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
-  
-  use prelude.prelude.UInt32
-  
-  use prelude.prelude.Borrow
-  
-  use M_695__valid__qy123zclosureqy35z2qy125z_Type as Closure'0
-  
-  function field_0'0 [#"695.rs" 19 17 19 64] (self : Closure'0.m_695__valid__qy123zclosureqy35z2qy125z) : borrowed uint32
-    
-   =
-    let Closure'0.M_695__valid__qy123zclosureqy35z2qy125z a = self in a
-  
-  predicate unnest'0 [#"695.rs" 19 17 19 64] (self : Closure'0.m_695__valid__qy123zclosureqy35z2qy125z) (_2 : Closure'0.m_695__valid__qy123zclosureqy35z2qy125z)
-    
-   =
-    (field_0'0 _2).final = (field_0'0 self).final
-  
-  use prelude.prelude.Intrinsic
-  
-  predicate resolve'1 (self : borrowed Closure'0.m_695__valid__qy123zclosureqy35z2qy125z) =
-    [%#sresolve3] self.final = self.current
-  
-  predicate resolve'0 (_1 : borrowed Closure'0.m_695__valid__qy123zclosureqy35z2qy125z) =
+  predicate resolve'0 (_1 : borrowed m_695__valid__qy123zclosureqy35z2qy125z'0) =
     resolve'1 _1
   
-  meta "compute_max_steps" 1000000
+  predicate unnest'0 [#"695.rs" 19 17 19 64] (self : m_695__valid__qy123zclosureqy35z2qy125z'0) (_2 : m_695__valid__qy123zclosureqy35z2qy125z'0)
+    
+   =
+    (_2.field_0'1).final = (self.field_0'1).final
   
-  let rec m_695__valid__qy123zclosureqy35z2qy125z (_1:borrowed Closure'0.m_695__valid__qy123zclosureqy35z2qy125z) (b:bool) (return'  (ret:()))= (! bb0
+  let rec closure2'0 (_1:borrowed m_695__valid__qy123zclosureqy35z2qy125z'0) (b:bool) (return'  (ret:()))= (! bb0
     [ bb0 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ] 
-    | bb1 = s0 [ s0 =  [ &_4 <- [%#s6950] (2 : uint32) ] s1 | s1 = bb3 ] 
-    | bb2 = s0 [ s0 =  [ &_4 <- [%#s6951] (1 : uint32) ] s1 | s1 = bb3 ] 
+    | bb1 = s0 [ s0 =  [ &_4 <- [%#s6955] (2 : uint32) ] s1 | s1 = bb3 ] 
+    | bb2 = s0 [ s0 =  [ &_4 <- [%#s6956] (1 : uint32) ] s1 | s1 = bb3 ] 
     | bb3 = s0
-      [ s0 = Closure'0.m_695__valid__qy123zclosureqy35z2qy125z {_1.current}
-          (fun (r'0:borrowed uint32) ->
-            
-            [ &_1 <- { _1 with current = Closure'0.M_695__valid__qy123zclosureqy35z2qy125z ({ r'0 with current = _4 ; }) ; } ]
-            
-            s1)
+      [ s0 =  [ &_1 <- { _1 with current = { field_0'1 = { (_1.current).field_0'1 with current = _4 } } } ] s1
       | s1 = -{resolve'0 _1}- s2
       | s2 = return' {_0} ]
        ]
     )
     [ & _0 : () = any_l ()
-    | & _1 : borrowed Closure'0.m_695__valid__qy123zclosureqy35z2qy125z = _1
+    | & _1 : borrowed m_695__valid__qy123zclosureqy35z2qy125z'0 = _1
     | & b : bool = b
     | & _4 : uint32 = any_l () ]
     
     [ return' (result:())-> {[@expl:postcondition] unnest'0 _1.current _1.final}
-      {[@expl:postcondition] [%#s6952] b /\ (field_0'0 _1.final).current = (2 : uint32)
-      \/ not b /\ (field_0'0 _1.final).current = (1 : uint32)}
+      {[@expl:postcondition] [%#s6957] b /\ ((_1.final).field_0'1).current = (2 : uint32)
+      \/ not b /\ ((_1.final).field_0'1).current = (1 : uint32)}
       (! return' {result}) ]
     
-end
-module M_695__valid [#"695.rs" 15 0 15 27]
-  let%span s6950 = "695.rs" 16 16 16 20
-  let%span s6951 = "695.rs" 22 20 22 25
-  let%span s6952 = "695.rs" 14 10 14 71
-  let%span s6953 = "695.rs" 4 0 4 79
-  let%span s6954 = "695.rs" 6 59 6 63
-  let%span s6955 = "695.rs" 6 68 6 74
-  let%span s6956 = "695.rs" 5 0 5 91
-  let%span s6957 = "695.rs" 17 25 17 45
-  let%span s6958 = "695.rs" 19 27 19 62
   
-  use M_695__valid__qy123zclosureqy35z2qy125z_Type as Closure'1
-  
-  predicate inv'1 (_1 : Closure'1.m_695__valid__qy123zclosureqy35z2qy125z)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Closure'1.m_695__valid__qy123zclosureqy35z2qy125z [inv'1 x] . inv'1 x = true
-  
-  use M_695__valid__qy123zclosureqy35z1qy125z_Type as Closure'0
-  
-  predicate inv'0 (_1 : Closure'0.m_695__valid__qy123zclosureqy35z1qy125z)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : Closure'0.m_695__valid__qy123zclosureqy35z1qy125z [inv'0 x] . inv'0 x = true
-  
-  use prelude.prelude.Int
-  
-  use prelude.prelude.Intrinsic
-  
-  use prelude.prelude.UInt32
-  
-  use prelude.prelude.Borrow
-  
-  function field_0'1 [#"695.rs" 19 17 19 64] (self : Closure'1.m_695__valid__qy123zclosureqy35z2qy125z) : borrowed uint32
-    
-   =
-    let Closure'1.M_695__valid__qy123zclosureqy35z2qy125z a = self in a
-  
-  predicate postcondition_once'0 [#"695.rs" 19 17 19 64] (self : Closure'1.m_695__valid__qy123zclosureqy35z2qy125z) (args : bool) (result : ())
-    
-   =
-    [%#s6958] let (b) = args in b /\ (field_0'1 self).final = (2 : uint32)
-    \/ not b /\ (field_0'1 self).final = (1 : uint32)
-  
-  function field_0'0 [#"695.rs" 17 15 17 47] (self : Closure'0.m_695__valid__qy123zclosureqy35z1qy125z) : uint32 =
-    let Closure'0.M_695__valid__qy123zclosureqy35z1qy125z a = self in a
-  
-  predicate postcondition'0 [#"695.rs" 17 15 17 47] (self : Closure'0.m_695__valid__qy123zclosureqy35z1qy125z) (_ : ()) (result : bool)
-    
-   =
-    [%#s6957] result = (field_0'0 self > (7 : uint32))
-  
-  predicate precondition'1 [#"695.rs" 19 17 19 64] (self : Closure'1.m_695__valid__qy123zclosureqy35z2qy125z) (args : bool)
-    
-   =
-    let (b) = args in true
-  
-  predicate precondition'0 [#"695.rs" 17 15 17 47] (self : Closure'0.m_695__valid__qy123zclosureqy35z1qy125z) (_ : ()) =
+  predicate precondition'0 [#"695.rs" 17 15 17 47] (self : m_695__valid__qy123zclosureqy35z1qy125z'0) (_ : ()) =
     true
   
-  let rec inversed_if'0 (cond:Closure'0.m_695__valid__qy123zclosureqy35z1qy125z) (branch:Closure'1.m_695__valid__qy123zclosureqy35z2qy125z) (return'  (ret:()))= {[@expl:precondition] [%#s6955] inv'1 branch}
-    {[@expl:precondition] [%#s6954] inv'0 cond}
-    {[@expl:precondition] [%#s6953] precondition'0 cond () /\ (forall b : bool . precondition'1 branch (b))}
+  predicate precondition'1 [#"695.rs" 19 17 19 64] (self : m_695__valid__qy123zclosureqy35z2qy125z'0) (args : bool) =
+    let (b) = args in true
+  
+  predicate postcondition'0 [#"695.rs" 17 15 17 47] (self : m_695__valid__qy123zclosureqy35z1qy125z'0) (_ : ()) (result : bool)
+    
+   =
+    [%#s6954] result = (self.field_0'0 > (7 : uint32))
+  
+  predicate postcondition_once'0 [#"695.rs" 19 17 19 64] (self : m_695__valid__qy123zclosureqy35z2qy125z'0) (args : bool) (result : ())
+    
+   =
+    [%#s6957] let (b) = args in b /\ (self.field_0'1).final = (2 : uint32)
+    \/ not b /\ (self.field_0'1).final = (1 : uint32)
+  
+  let rec inversed_if'0 (cond:m_695__valid__qy123zclosureqy35z1qy125z'0) (branch:m_695__valid__qy123zclosureqy35z2qy125z'0) (return'  (ret:()))= {[@expl:precondition] [%#s69510] inv'1 branch}
+    {[@expl:precondition] [%#s6959] inv'0 cond}
+    {[@expl:precondition] [%#s6958] precondition'0 cond () /\ (forall b : bool . precondition'1 branch (b))}
     any
-    [ return' (result:())-> {[%#s6956] exists b : bool . postcondition'0 cond () b
+    [ return' (result:())-> {[%#s69511] exists b : bool . postcondition'0 cond () b
       /\ postcondition_once'0 branch (not b) ()}
       (! return' {result}) ]
     
   
   meta "compute_max_steps" 1000000
   
-  let rec valid (n:uint32) (return'  (ret:uint32))= (! bb0
+  let rec valid'0 (n:uint32) (return'  (ret:uint32))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &r <- [%#s6950] (0 : uint32) ] s1
-      | s1 =  [ &cond <- Closure'0.M_695__valid__qy123zclosureqy35z1qy125z n ] s2
+      | s1 =  [ &cond <- { field_0'0 = n } ] s2
       | s2 = Borrow.borrow_mut <uint32> {r} (fun (_ret':borrowed uint32) ->  [ &_7 <- _ret' ]  [ &r <- _ret'.final ] s3)
-      | s3 =  [ &branch <- Closure'1.M_695__valid__qy123zclosureqy35z2qy125z _7 ] s4
+      | s3 =  [ &branch <- { field_0'1 = _7 } ] s4
       | s4 = inversed_if'0 {cond} {branch} (fun (_ret':()) ->  [ &_8 <- _ret' ] s5)
       | s5 = bb1 ]
       
@@ -350,8 +274,8 @@ module M_695__valid [#"695.rs" 15 0 15 27]
     [ & _0 : uint32 = any_l ()
     | & n : uint32 = n
     | & r : uint32 = any_l ()
-    | & cond : Closure'0.m_695__valid__qy123zclosureqy35z1qy125z = any_l ()
-    | & branch : Closure'1.m_695__valid__qy123zclosureqy35z2qy125z = any_l ()
+    | & cond : m_695__valid__qy123zclosureqy35z1qy125z'0 = any_l ()
+    | & branch : m_695__valid__qy123zclosureqy35z2qy125z'0 = any_l ()
     | & _7 : borrowed uint32 = any_l ()
     | & _8 : () = any_l () ]
     

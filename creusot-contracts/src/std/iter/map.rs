@@ -14,18 +14,16 @@ pub trait MapExt<I, F> {
 impl<I, F> MapExt<I, F> for Map<I, F> {
     #[trusted]
     #[logic]
-    #[open(self)]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[ensures(inv(self) ==> inv(result))]
     fn func(self) -> F {
-        absurd
+        dead
     }
 }
 

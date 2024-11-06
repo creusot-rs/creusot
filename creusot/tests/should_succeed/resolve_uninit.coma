@@ -5,25 +5,25 @@ module M_resolve_uninit__maybe_uninit [#"resolve_uninit.rs" 5 0 5 51]
   let%span sresolve_uninit2 = "resolve_uninit.rs" 5 50 5 51
   let%span sdefault3 = "../../../creusot-contracts/src/std/default.rs" 13 26 13 45
   
-  use prelude.prelude.Intrinsic
-  
   type t_T'0
   
-  use prelude.prelude.Borrow
-  
-  predicate resolve'0 (_1 : t_T'0)
+  predicate is_default'0 (self : t_T'0)
   
   predicate inv'0 (_1 : t_T'0)
-  
-  predicate is_default'0 (self : t_T'0)
   
   let rec default'0 (_1:()) (return'  (ret:t_T'0))= any
     [ return' (result:t_T'0)-> {inv'0 result} {[%#sdefault3] is_default'0 result} (! return' {result}) ]
     
   
+  use prelude.prelude.Borrow
+  
+  predicate resolve'0 (_1 : t_T'0)
+  
+  use prelude.prelude.Intrinsic
+  
   meta "compute_max_steps" 1000000
   
-  let rec maybe_uninit (b:bool) (y:t_T'0) (return'  (ret:t_T'0))= {[%#sresolve_uninit1] inv'0 y}
+  let rec maybe_uninit'0 (b:bool) (y:t_T'0) (return'  (ret:t_T'0))= {[%#sresolve_uninit1] inv'0 y}
     (! bb0
     [ bb0 = any [ br0 -> {b = false} (! bb6) | br1 -> {b} (! bb1) ] 
     | bb1 = s0 [ s0 = default'0 {[%#sresolve_uninit0] ()} (fun (_ret':t_T'0) ->  [ &_6 <- _ret' ] s1) | s1 = bb2 ] 
@@ -48,11 +48,9 @@ module M_resolve_uninit__init_join [#"resolve_uninit.rs" 15 0 15 37]
   let%span sresolve_uninit2 = "resolve_uninit.rs" 28 4 28 19
   let%span sresolve3 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   
-  use prelude.prelude.Intrinsic
+  use prelude.prelude.Borrow
   
   use prelude.prelude.Int32
-  
-  use prelude.prelude.Borrow
   
   predicate resolve'1 (self : borrowed int32) =
     [%#sresolve3] self.final = self.current
@@ -60,20 +58,22 @@ module M_resolve_uninit__init_join [#"resolve_uninit.rs" 15 0 15 37]
   predicate resolve'0 (_1 : borrowed int32) =
     resolve'1 _1
   
+  use prelude.prelude.Intrinsic
+  
   meta "compute_max_steps" 1000000
   
-  let rec init_join (b:bool) (x:int32) (return'  (ret:()))= (! bb0
+  let rec init_join'0 (b:bool) (x:int32) (return'  (ret:()))= (! bb0
     [ bb0 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ] 
     | bb1 = s0
       [ s0 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &_8 <- _ret' ]  [ &x <- _ret'.final ] s1)
       | s1 = Borrow.borrow_final <int32> {_8.current} {Borrow.get_id _8}
-          (fun (_ret':borrowed int32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _ret'.final ; } ] s2)
+          (fun (_ret':borrowed int32) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _ret'.final } ] s2)
       | s2 =  [ &z <- _7 ] s3
       | s3 = -{resolve'0 _8}- s4
       | s4 = Borrow.borrow_final <int32> {z.current} {Borrow.get_id z}
-          (fun (_ret':borrowed int32) ->  [ &_10 <- _ret' ]  [ &z <- { z with current = _ret'.final ; } ] s5)
+          (fun (_ret':borrowed int32) ->  [ &_10 <- _ret' ]  [ &z <- { z with current = _ret'.final } ] s5)
       | s5 = Borrow.borrow_final <int32> {_10.current} {Borrow.get_id _10}
-          (fun (_ret':borrowed int32) ->  [ &_9 <- _ret' ]  [ &_10 <- { _10 with current = _ret'.final ; } ] s6)
+          (fun (_ret':borrowed int32) ->  [ &_9 <- _ret' ]  [ &_10 <- { _10 with current = _ret'.final } ] s6)
       | s6 =  [ &y <- _9 ] s7
       | s7 = -{resolve'0 _10}- s8
       | s8 = bb7 ]
@@ -82,13 +82,13 @@ module M_resolve_uninit__init_join [#"resolve_uninit.rs" 15 0 15 37]
     | bb2 = s0
       [ s0 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &_12 <- _ret' ]  [ &x <- _ret'.final ] s1)
       | s1 = Borrow.borrow_final <int32> {_12.current} {Borrow.get_id _12}
-          (fun (_ret':borrowed int32) ->  [ &_11 <- _ret' ]  [ &_12 <- { _12 with current = _ret'.final ; } ] s2)
+          (fun (_ret':borrowed int32) ->  [ &_11 <- _ret' ]  [ &_12 <- { _12 with current = _ret'.final } ] s2)
       | s2 =  [ &y <- _11 ] s3
       | s3 = -{resolve'0 _12}- s4
       | s4 = bb3 ]
       
     | bb3 = s0
-      [ s0 =  [ &y <- { y with current = ([%#sresolve_uninit0] (5 : int32)) ; } ] s1
+      [ s0 =  [ &y <- { y with current = ([%#sresolve_uninit0] (5 : int32)) } ] s1
       | s1 = -{resolve'0 y}- s2
       | s2 = Int32.eq {x} {[%#sresolve_uninit1] (5 : int32)} (fun (_ret':bool) ->  [ &_14 <- _ret' ] s3)
       | s3 = any [ br0 -> {_14 = false} (! bb5) | br1 -> {_14} (! bb4) ]  ]

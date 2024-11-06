@@ -1,32 +1,42 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    iter,
+};
 
 use crate::{
-    attributes::{get_builtin, is_ghost_closure, is_inv, is_resolve_function},
+    attributes::{get_builtin, is_inv, is_resolve_function},
     backend::{
+        clone_map::{CloneNames, Dependency, Kind},
+        dependency::ClosureSpecKind,
         is_trusted_function,
         logic::{lower_logical_defn, spec_axiom},
-        program::{self},
-        signature::named_sig_to_why3,
+        program,
+        signature::sig_to_why3,
         structural_resolve::structural_resolve,
         term::lower_pure,
-        ty::translate_ty,
+        ty::{eliminator, translate_closure_ty, translate_ty, translate_tydecl},
         ty_inv::InvariantElaborator,
+        Namer, TranslationCtx, Why3Generator,
     },
     constant::from_ty_const,
-    naming::{ident_of, module_name},
+    ctx::{BodyId, ItemType},
+    naming::ident_of,
     pearlite::{normalize, Term},
     specification::PreSignature,
     traits,
 };
-use rustc_middle::ty::{self, Const, ParamEnv};
-use rustc_span::DUMMY_SP;
+use petgraph::graphmap::DiGraphMap;
+use rustc_hir::{def::DefKind, def_id::DefId};
+use rustc_middle::ty::{
+    Const, ConstKind, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable, UnevaluatedConst,
+};
+use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_type_ir::EarlyBinder;
 use why3::{
-    declaration::{Axiom, Contract, LetKind, Signature, TyDecl, Use, ValDecl},
+    declaration::{Axiom, Contract, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
     exp::Binder,
+    QName,
 };
-
-use super::*;
 
 /// The `Expander` takes a list of 'root' dependencies (items explicitly requested by user code),
 /// and expands this into a complete dependency graph.
@@ -37,7 +47,6 @@ pub(super) struct Expander<'a, 'tcx> {
     self_key: Dependency<'tcx>,
     param_env: ParamEnv<'tcx>,
     expansion_queue: VecDeque<(Dependency<'tcx>, Dependency<'tcx>)>,
-    tcx: TyCtxt<'tcx>,
 }
 
 struct ExpansionProxy<'a, 'tcx> {
@@ -56,10 +65,9 @@ impl<'a, 'tcx> Namer<'tcx> for ExpansionProxy<'a, 'tcx> {
     }
 
     fn insert(&mut self, dep: Dependency<'tcx>) -> Kind {
-        let dep = dep.erase_regions(self.namer.tcx);
+        let dep = dep.erase_regions(self.tcx());
         self.expansion_queue.push_back((self.source, dep));
-        let k = self.namer.insert(dep);
-        k
+        self.namer.insert(dep)
     }
 
     fn tcx(&self) -> TyCtxt<'tcx> {
@@ -91,24 +99,28 @@ impl DepElab for ProgElab {
         ctx: &mut Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
     ) -> Vec<why3::declaration::Decl> {
-        let Some((def_id, subst)) = dep.did() else { return Vec::new() };
+        if let Dependency::Item(def_id, subst) = dep
+            && ctx.def_kind(def_id) != DefKind::Closure
+        {
+            let sig = ctx.sig(def_id).clone();
+            let sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
+            let sig = sig.normalize(ctx.tcx, elab.param_env);
+            let sig = signature(ctx, elab, sig, dep);
+            return vec![program::val(ctx, sig)];
+        }
 
-        let sig = ctx.sig(def_id).clone();
-        let sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
-        let sig = sig.normalize(ctx.tcx, elab.param_env);
-        let sig = signature(ctx, elab, sig, dep);
-        if is_ghost_closure(ctx.tcx, def_id) {
-            // Inline the body of ghost closures
-            let mut coma = program::to_why(
-                ctx,
-                &mut elab.namer(dep),
-                BodyId { def_id: def_id.expect_local(), promoted: None },
-            );
-            coma.name = sig.name;
-            return vec![Decl::Coma(coma)];
+        // Inline the body of closures and promoted
+        let mut names = elab.namer(dep);
+        let name = names.insert(dep).ident();
+
+        let bid = match dep {
+            Dependency::Item(def_id, _) => BodyId { def_id: def_id.expect_local(), promoted: None },
+            Dependency::Promoted(def_id, prom) => BodyId { def_id, promoted: Some(prom) },
+            _ => unreachable!(),
         };
 
-        vec![program::val(ctx, sig)]
+        let coma = program::to_why(ctx, &mut names, name, bid);
+        return vec![Decl::Coma(coma)];
     }
 }
 
@@ -120,17 +132,9 @@ fn signature<'tcx>(
     dep: Dependency<'tcx>,
 ) -> Signature {
     let mut names = elab.namer(dep);
-
-    let name = if let Dependency::ClosureSpec(_, _, _) = dep {
-        names.insert(dep).ident()
-    } else {
-        names.insert(dep).ident()
-    };
-
+    let name = names.insert(dep).ident();
     let (def_id, _) = dep.did().unwrap();
-
-    let sig = named_sig_to_why3(ctx, &mut names, name, &sig, def_id);
-    sig
+    sig_to_why3(ctx, &mut names, name, &sig, def_id)
 }
 
 struct LogicElab;
@@ -158,7 +162,7 @@ impl DepElab for LogicElab {
         // TODO: Fold into `term`, but requires first some sort of
         // handling for axioms
         if let Dependency::TyInvAxiom(ty) = dep {
-            return expand_ty_inv(elab, ctx, ty);
+            return expand_ty_inv_axiom(elab, ctx, ty);
         }
 
         // TODO: getting rid of this requires breaking the dependency on `def_id` below.
@@ -166,30 +170,21 @@ impl DepElab for LogicElab {
             return expand_structural_resolve(elab, ctx, ty);
         }
 
-        let Some((def_id, subst)) = dep.did() else { return Vec::new() };
+        let (def_id, subst) = dep.did().unwrap();
 
-        // This is the 'inv' symbol, which is defined using an axiom "TyInvAxiom".
-        // We schedule this 'body' for expansion here by forcing it to be added to the expansion queue.
         if is_inv(ctx.tcx, def_id) {
-            let ty = subst.type_at(0);
-            let ty = ctx.normalize_erasing_regions(elab.param_env, ty);
-            elab.expansion_queue.push_back((elab.self_key, Dependency::TyInvAxiom(ty)));
+            elab.expansion_queue
+                .push_back((Dependency::AllTyInvAxioms, Dependency::TyInvAxiom(subst.type_at(0))));
         }
 
         let kind = if dep.is_closure_spec() {
-            let is_accessor =
-                dep.to_trans_id(elab.tcx, elab.param_env).is_some_and(|i| ctx.is_accessor(i));
-            if is_accessor {
-                Some(LetKind::Function)
-            } else {
-                Some(LetKind::Predicate)
-            }
+            Some(DeclKind::Predicate)
         } else {
             match ctx.item_type(def_id) {
-                ItemType::Logic { .. } => Some(LetKind::Function),
-                ItemType::Predicate { .. } => Some(LetKind::Predicate),
+                ItemType::Logic { .. } => Some(DeclKind::Function),
+                ItemType::Predicate { .. } => Some(DeclKind::Predicate),
                 ItemType::Program | ItemType::Closure => None,
-                ItemType::Constant => Some(LetKind::Constant),
+                ItemType::Constant => Some(DeclKind::Constant),
                 _ => None,
             }
         };
@@ -202,7 +197,7 @@ impl DepElab for LogicElab {
             })];
         }
 
-        let sig = sig(ctx, elab.param_env, dep);
+        let sig = sig(ctx, dep);
         let mut sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
         sig = sig.normalize(ctx.tcx, elab.param_env);
 
@@ -214,29 +209,23 @@ impl DepElab for LogicElab {
         let is_opaque = matches!(
             trait_resol,
             Some(traits::TraitResol::UnknownFound | traits::TraitResol::UnknownNotFound)
-        ) || elab
-            .self_key
-            .did()
-            .is_some_and(|(self_did, _)| !ctx.is_transparent_from(def_id, self_did));
+        ) || !ctx.is_transparent_from(def_id, elab.self_key.did().unwrap().0)
+            || is_trusted_function(ctx.tcx, def_id);
 
-        if is_opaque {
-            let mut sig = signature(ctx, elab, sig, dep);
-            if let Some(LetKind::Predicate) = kind {
+        let mut sig = signature(ctx, elab, sig, dep);
+        if !is_opaque && let Some(term) = term(ctx, elab.param_env, dep) {
+            lower_logical_defn(ctx, &mut elab.namer(dep), sig, kind, term)
+        } else {
+            if let Some(DeclKind::Predicate) = kind {
                 sig.retty = None;
             }
             val(ctx, sig, kind)
-        } else {
-            let sig = signature(ctx, elab, sig, dep);
-
-            let Some(term) = term(ctx, elab.param_env, dep) else { return val(ctx, sig, kind) };
-
-            lower_logical_defn(ctx, &mut elab.namer(dep), sig, kind, term)
         }
     }
 }
 
 // TODO Deprecate and fold into LogicElab
-fn expand_ty_inv<'tcx>(
+fn expand_ty_inv_axiom<'tcx>(
     elab: &mut Expander<'_, 'tcx>,
     ctx: &mut Why3Generator<'tcx>,
     ty: Ty<'tcx>,
@@ -259,11 +248,12 @@ fn expand_structural_resolve<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     ty: Ty<'tcx>,
 ) -> Vec<Decl> {
-    let (binder, term) = structural_resolve(ctx, ty);
     let param_env = elab.param_env;
     let mut names = elab.namer(Dependency::StructuralResolve(ty));
-    let exp = if let Some(term) = term {
-        let term = normalize(ctx.tcx, param_env, term);
+
+    let (binder, term) = structural_resolve(ctx, ty);
+    let exp = if let Some(mut term) = term {
+        term = normalize(ctx.tcx, param_env, term);
         Some(lower_pure(ctx, &mut names, &term))
     } else {
         None
@@ -280,9 +270,7 @@ fn expand_structural_resolve<'tcx>(
         contract: Contract::default(),
     };
 
-    let pred = Decl::predicate(sig, exp);
-
-    vec![pred]
+    vec![Decl::predicate(sig, exp)]
 }
 
 pub fn resolve_term<'tcx>(
@@ -330,42 +318,44 @@ impl DepElab for TyElab {
         dep: Dependency<'tcx>,
     ) -> Vec<why3::declaration::Decl> {
         let Dependency::Type(ty) = dep else { unreachable!() };
-
+        let param_env = elab.param_env;
         let mut names = elab.namer(dep);
         match ty.kind() {
-            TyKind::Alias(_, _) => {
-                let (def_id, subst) = dep.did().unwrap();
-                vec![ctx.assoc_ty_decl(&mut names, def_id, subst)]
-            }
             TyKind::Param(_) => vec![Decl::TyDecl(TyDecl::Opaque {
                 ty_name: names.ty_param(ty).as_ident(),
                 ty_params: vec![],
             })],
-            _ => {
-                let def_id = dep.did().unwrap().0;
-                if let Some(why3_modl) = get_builtin(ctx.tcx, def_id) {
-                    let qname = QName::from_string(why3_modl.as_str());
-                    let Kind::Used(_, _) = names.insert(Dependency::Type(ty)) else {
-                        return vec![];
-                    };
-
-                    let use_decl = Use { as_: None, name: qname.module_qname(), export: false };
-
-                    vec![Decl::UseDecl(use_decl)]
-                } else {
-                    let name = names.insert(dep).qname();
-
-                    let modl = if ctx.item_type(def_id) == ItemType::Closure {
-                        Symbol::intern(&format!("{}_Type", module_name(ctx.tcx, def_id)))
-                    } else {
-                        module_name(ctx.tcx, def_id)
-                    };
-                    let name = if name.module.is_empty() { name } else { name.module_qname() };
-                    let use_decl =
-                        Use { as_: Some(name.clone()), name: modl.as_str().into(), export: false };
-                    vec![Decl::UseDecl(use_decl)]
-                }
+            TyKind::Alias(_, _) => {
+                let (def_id, subst) = dep.did().unwrap();
+                assert_eq!(
+                    ctx.tcx.associated_item(def_id).container,
+                    rustc_middle::ty::TraitContainer
+                );
+                vec![Decl::TyDecl(TyDecl::Opaque {
+                    ty_name: names.ty(def_id, subst).as_ident(),
+                    ty_params: vec![],
+                })]
             }
+            TyKind::Closure(did, subst) => translate_closure_ty(ctx, &mut names, *did, subst)
+                .map_or(vec![], |d| vec![Decl::TyDecl(d)]),
+            TyKind::Adt(adt_def, subst)
+                if let Some(why3_modl) = get_builtin(ctx.tcx, adt_def.did()) =>
+            {
+                assert!(matches!(names.insert(dep), Kind::Used(_, _)));
+
+                for ty in subst.types() {
+                    translate_ty(ctx, &mut elab.namer(dep), DUMMY_SP, ty);
+                }
+
+                let qname = QName::from_string(why3_modl.as_str());
+                let use_decl = Use { as_: None, name: qname.module_qname(), export: false };
+                vec![Decl::UseDecl(use_decl)]
+            }
+            TyKind::Adt(_, _) => {
+                let (def_id, subst) = dep.did().unwrap();
+                translate_tydecl(ctx, &mut names, (def_id, subst), param_env)
+            }
+            _ => unreachable!(),
         }
     }
 }
@@ -375,17 +365,17 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         namer: &'a mut CloneNames<'tcx>,
         self_key: Dependency<'tcx>,
         param_env: ParamEnv<'tcx>,
-        tcx: TyCtxt<'tcx>,
         initial: impl Iterator<Item = Dependency<'tcx>>,
     ) -> Self {
         let exp = Self {
             graph: Default::default(),
-
             namer,
             self_key,
             param_env,
-            expansion_queue: initial.map(|b| (self_key, b)).collect(),
-            tcx,
+            expansion_queue: initial
+                .chain(iter::once(Dependency::AllTyInvAxioms))
+                .map(|b| (self_key, b))
+                .collect(),
             dep_bodies: Default::default(),
         };
         exp
@@ -405,8 +395,17 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         ctx: &mut Why3Generator<'tcx>,
     ) -> (DiGraphMap<Dependency<'tcx>, ()>, HashMap<Dependency<'tcx>, Vec<Decl>>) {
         let mut visited = HashSet::new();
-        while let Some((s, t)) = self.expansion_queue.pop_front() {
-            let t = t.resolve(ctx.tcx, self.param_env);
+        while let Some((s, mut t)) = self.expansion_queue.pop_front() {
+            if let Dependency::Item(item, substs) = t
+                && ctx.trait_of_item(item).is_some()
+                && let traits::TraitResol::Instance(did, subst) =
+                    traits::resolve_assoc_item_opt(ctx.tcx, self.param_env, item, substs)
+            {
+                t = ctx.normalize_erasing_regions(
+                    self.param_env,
+                    Dependency::item(ctx.tcx, (did, subst)),
+                )
+            }
             self.graph.add_edge(s, t, ());
 
             if !visited.insert(t) {
@@ -414,6 +413,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             }
             self.expand(ctx, t);
         }
+
         (self.graph, self.dep_bodies)
     }
 
@@ -422,30 +422,36 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
         let decls = match dep {
             Dependency::Type(_) => TyElab::expand(self, ctx, dep),
-            Dependency::Item(mut def_id, _) => {
-                if ctx.is_logical(def_id) {
+            Dependency::Item(def_id, subst) => {
+                if ctx.is_logical(def_id) || matches!(ctx.item_type(def_id), ItemType::Constant) {
                     LogicElab::expand(self, ctx, dep)
-                } else if ctx.is_constant(dep.to_trans_id(ctx.tcx, self.param_env).unwrap()) {
-                    LogicElab::expand(self, ctx, dep)
-                } else if matches!(ctx.def_kind(def_id), DefKind::Field) {
-                    def_id = self.tcx.parent(def_id);
-                    let name = self.namer.insert(dep).qname();
-                    let modl = module_name(ctx.tcx, def_id);
-                    let name = if name.module.is_empty() { name } else { name.module_qname() };
-                    let use_decl =
-                        Use { as_: Some(name.clone()), name: modl.as_str().into(), export: false };
-                    vec![Decl::UseDecl(use_decl)]
+                } else if matches!(ctx.def_kind(def_id), DefKind::Field | DefKind::Variant) {
+                    let mut namer = self.namer(dep);
+                    namer.ty(ctx.parent(def_id), subst);
+                    vec![]
                 } else {
                     ProgElab::expand(self, ctx, dep)
                 }
             }
             Dependency::TyInvAxiom(_) => LogicElab::expand(self, ctx, dep),
             Dependency::StructuralResolve(_) => LogicElab::expand(self, ctx, dep),
+            Dependency::ClosureSpec(ClosureSpecKind::Accessor(_), _, _) => vec![],
             Dependency::ClosureSpec(_, _, _) => LogicElab::expand(self, ctx, dep),
             Dependency::Builtin(b) => {
                 vec![Decl::UseDecl(Use { name: b.qname(), as_: None, export: false })]
             }
+            Dependency::Eliminator(def_id, subst) => {
+                vec![eliminator(ctx, &mut self.namer(dep), def_id, subst)]
+            }
+            Dependency::Promoted(_, _) => ProgElab::expand(self, ctx, dep),
+            Dependency::AllTyInvAxioms => vec![],
         };
+
+        // Make every declaration that creates a goal depend on every TyInvAxiom to make sure that
+        // TyInvAxioms are visible at this point
+        if decls.iter().any(|d| matches!(d, Decl::Coma(..) | Decl::Goal(_))) {
+            self.expansion_queue.push_back((dep, Dependency::AllTyInvAxioms));
+        }
 
         self.dep_bodies.insert(dep, decls);
     }
@@ -456,9 +462,7 @@ fn expand_laws<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     dep: Dependency<'tcx>,
 ) {
-    let Some((self_did, _)) = elab.self_key.did() else {
-        return;
-    };
+    let (self_did, _) = elab.self_key.did().unwrap();
     let Some((item_did, item_subst)) = dep.did() else {
         return;
     };
@@ -482,31 +486,29 @@ fn expand_laws<'tcx>(
     let tcx = ctx.tcx;
     let mut namer = elab.namer(elab.self_key);
     for law in ctx.laws(item.container_id(tcx)) {
-        let dep = Dependency::new(tcx, (*law, item_subst));
-
-        namer.insert(dep);
+        namer.insert(Dependency::item(tcx, (*law, item_subst)));
     }
 }
 
 pub fn val<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     mut sig: Signature,
-    kind: Option<LetKind>,
+    kind: Option<DeclKind>,
 ) -> Vec<Decl> {
     sig.contract.variant = Vec::new();
     if let Some(k) = kind {
         let ax = if !sig.contract.is_empty() { Some(spec_axiom(&sig)) } else { None };
 
         sig.contract = Default::default();
-        if let LetKind::Predicate = k {
+        if let DeclKind::Predicate = k {
             sig.retty = None;
         };
 
-        if let LetKind::Constant = k {
-            return vec![Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig })];
+        if let DeclKind::Constant = k {
+            return vec![Decl::LogicDecl(LogicDecl { kind, sig })];
         }
 
-        let mut d = vec![Decl::ValDecl(ValDecl { ghost: false, val: false, kind, sig })];
+        let mut d = vec![Decl::LogicDecl(LogicDecl { kind, sig })];
 
         if let Some(ax) = ax {
             d.push(Decl::Axiom(ax))
@@ -524,12 +526,11 @@ pub fn term<'tcx>(
     param_env: ParamEnv<'tcx>,
     dep: Dependency<'tcx>,
 ) -> Option<Term<'tcx>> {
-    let trans_id = dep.to_trans_id(ctx.tcx, param_env)?;
     match dep {
         Dependency::Item(def_id, subst) => {
-            if ctx.is_constant(trans_id) {
-                let uneval = ty::UnevaluatedConst::new(def_id, subst);
-                let constant = Const::new(ctx.tcx, ty::ConstKind::Unevaluated(uneval));
+            if matches!(ctx.item_type(def_id), ItemType::Constant) {
+                let uneval = UnevaluatedConst::new(def_id, subst);
+                let constant = Const::new(ctx.tcx, ConstKind::Unevaluated(uneval));
                 let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
                 let ty = ctx.tcx.normalize_erasing_regions(param_env, ty);
                 let span = ctx.def_span(def_id);
@@ -538,7 +539,7 @@ pub fn term<'tcx>(
             } else if is_resolve_function(ctx.tcx, def_id) {
                 resolve_term(ctx, param_env, def_id, subst)
             } else {
-                let term = ctx.term(trans_id).cloned()?;
+                let term = ctx.ctx.term(def_id).unwrap().clone();
                 let term = normalize(
                     ctx.tcx,
                     param_env,
@@ -547,43 +548,51 @@ pub fn term<'tcx>(
                 Some(term)
             }
         }
-        Dependency::StructuralResolve(ty) => {
-            let (_, term) = structural_resolve(ctx, ty);
-            term
+        Dependency::StructuralResolve(ty) => structural_resolve(ctx, ty).1,
+        Dependency::ClosureSpec(cs, did, _) => {
+            let c = ctx.ctx.closure_contract(did);
+            match cs {
+                ClosureSpecKind::PostconditionOnce => {
+                    Some(c.postcond_once.as_ref().unwrap().1.clone())
+                }
+                ClosureSpecKind::PostconditionMut => {
+                    Some(c.postcond_mut.as_ref().unwrap().1.clone())
+                }
+                ClosureSpecKind::Postcondition => Some(c.postcond.as_ref().unwrap().1.clone()),
+                ClosureSpecKind::Precondition => Some(c.precond.1.clone()),
+                ClosureSpecKind::Unnest => Some(c.unnest.as_ref().unwrap().1.clone()),
+                ClosureSpecKind::Resolve => Some(c.resolve.1.clone()),
+                ClosureSpecKind::Accessor(_) => unreachable!(),
+            }
         }
-        _ => ctx.term(trans_id).cloned(),
+        _ => unreachable!(),
     }
 }
 
 // Builds a presignature for a dependency, does not yet handle structural resolve or invariant axioms
 // In the future, we should change this to also store the function name and simplify upstream
 // code further.
-pub fn sig<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
-    param_env: ParamEnv<'tcx>,
-    dep: Dependency<'tcx>,
-) -> PreSignature<'tcx> {
-    match dep.to_trans_id(ctx.tcx, param_env).unwrap() {
-        TransId::Item(id) => ctx.sig(id).clone(),
-
-        TransId::Hacked(h_id, id) => match h_id {
-            ClosureSpecKind::PostconditionOnce => {
-                ctx.closure_contract(id).postcond_once.as_ref().unwrap().0.clone()
-            }
-            ClosureSpecKind::PostconditionMut => {
-                ctx.closure_contract(id).postcond_mut.as_ref().unwrap().0.clone()
-            }
-            ClosureSpecKind::Postcondition => {
-                ctx.closure_contract(id).postcond.as_ref().unwrap().0.clone()
-            }
-            ClosureSpecKind::Precondition => ctx.closure_contract(id).precond.0.clone(),
-            ClosureSpecKind::Unnest => ctx.closure_contract(id).unnest.as_ref().unwrap().0.clone(),
-            ClosureSpecKind::Resolve => ctx.closure_contract(id).resolve.0.clone(),
-            ClosureSpecKind::Accessor(ix) => {
-                ctx.closure_contract(id).accessors[ix as usize].0.clone()
-            }
-        },
-        // In future change this
-        TransId::TyInvAxiom(_) | TransId::StructuralResolve(_) => unreachable!(),
+pub fn sig<'tcx>(ctx: &mut Why3Generator<'tcx>, dep: Dependency<'tcx>) -> PreSignature<'tcx> {
+    match dep {
+        Dependency::Item(def_id, _) => ctx.sig(def_id).clone(),
+        Dependency::ClosureSpec(ClosureSpecKind::PostconditionOnce, def_id, _) => {
+            ctx.closure_contract(def_id).postcond_once.as_ref().unwrap().0.clone()
+        }
+        Dependency::ClosureSpec(ClosureSpecKind::PostconditionMut, def_id, _) => {
+            ctx.closure_contract(def_id).postcond_mut.as_ref().unwrap().0.clone()
+        }
+        Dependency::ClosureSpec(ClosureSpecKind::Postcondition, def_id, _) => {
+            ctx.closure_contract(def_id).postcond.as_ref().unwrap().0.clone()
+        }
+        Dependency::ClosureSpec(ClosureSpecKind::Precondition, def_id, _) => {
+            ctx.closure_contract(def_id).precond.0.clone()
+        }
+        Dependency::ClosureSpec(ClosureSpecKind::Unnest, def_id, _) => {
+            ctx.closure_contract(def_id).unnest.as_ref().unwrap().0.clone()
+        }
+        Dependency::ClosureSpec(ClosureSpecKind::Resolve, def_id, _) => {
+            ctx.closure_contract(def_id).resolve.0.clone()
+        }
+        _ => unreachable!(),
     }
 }

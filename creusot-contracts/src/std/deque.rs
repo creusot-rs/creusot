@@ -10,10 +10,9 @@ impl<T, A: Allocator> View for VecDeque<T, A> {
 
     #[logic]
     #[trusted]
-    #[open(self)]
     #[ensures(result.len() <= usize::MAX@)]
     fn view(self) -> Seq<T> {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -22,12 +21,11 @@ impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
 
     #[logic]
     #[trusted]
-    #[open(self)]
     #[ensures(self.view().len() == result.len())]
     #[ensures(forall<i: Int> 0 <= i && i < self.view().len()
               ==> result[i] == self[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -154,10 +152,9 @@ impl<'a, T> View for Iter<'a, T> {
     type ViewTy = &'a [T];
 
     #[logic]
-    #[open(self)]
     #[trusted]
     fn view(self) -> Self::ViewTy {
-        absurd
+        dead
     }
 }
 
