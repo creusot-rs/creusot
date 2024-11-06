@@ -20,7 +20,7 @@ impl EncodeError {
             }
             Self::Unsupported(sp, msg) => {
                 let msg = format!("Unsupported expression: {}", msg);
-                quote_spanned! {sp=> compile_error!(#msg) }
+                quote_spanned! { sp=> compile_error!(#msg) }
             }
         }
     }
@@ -40,7 +40,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             } else {
                 Err(EncodeError::Unsupported(
                     term.span(),
-                    "Macros other than pearlite! or proof_assert! are unsupported".into(),
+                    "macros other than `pearlite!` or `proof_assert!` are unsupported in pearlite code".into(),
                 ))
             }
         }
