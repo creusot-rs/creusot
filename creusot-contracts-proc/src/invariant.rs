@@ -27,7 +27,7 @@ impl ToTokens for Invariant {
 
         // TODO: Move out of `ToTokens`
         let s = self.span;
-        let inv_body = pretyping::encode_term(term).unwrap();
+        let inv_body = pretyping::encode_term(term).unwrap_or_else(|e| e.into_tokens());
         let inv_body = quote_spanned! {s=> #inv_body};
 
         tokens.extend(quote_spanned! {s=>
