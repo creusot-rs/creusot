@@ -37,7 +37,9 @@ use rustc_type_ir::{FloatTy, IntTy, UintTy};
 use std::{cell::RefCell, fmt::Debug};
 use why3::{
     coma::{self, Arg, Defn, Expr, Param, Term},
-    declaration::{Attribute, Contract, Decl, Meta, MetaArg, MetaIdent, Module, Signature},
+    declaration::{
+        Attribute, Condition, Contract, Decl, Meta, MetaArg, MetaIdent, Module, Signature,
+    },
     exp::{Binder, Constant, Exp, Pattern},
     ty::Type,
     Ident, QName,
@@ -162,22 +164,13 @@ pub fn val<'tcx>(_: &mut Why3Generator<'tcx>, sig: Signature) -> Decl {
         .collect();
 
     use coma::*;
-    let mut body = Expr::Any;
-
-    body = sig.contract.requires.into_iter().fold(body, |acc, ensures| {
-        Expr::Assert(
-            Box::new(Term::Attr(Attribute::Attr(format!("expl:precondition")), Box::new(ensures))),
-            Box::new(acc),
-        )
-    });
+    let requires = sig.contract.requires.into_iter().map(Condition::labelled_exp);
+    let body = requires.rfold(Expr::Any, |acc, cond| Expr::Assert(Box::new(cond), Box::new(acc)));
 
     let mut postcond = Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("result"))]);
     postcond = Expr::BlackBox(Box::new(postcond));
-    postcond = sig
-        .contract
-        .ensures
-        .into_iter()
-        .fold(postcond, |acc, ensures| Expr::Assert(Box::new(ensures), Box::new(acc)));
+    let ensures = sig.contract.ensures.into_iter().map(Condition::unlabelled_exp);
+    postcond = ensures.rfold(postcond, |acc, cond| Expr::Assert(Box::new(cond), Box::new(acc)));
 
     let body = Expr::Defn(
         Box::new(body),
@@ -258,12 +251,8 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     if body_id.promoted.is_none() && !contracts_items::is_ghost_closure(ctx.tcx, body_id.def_id()) {
         postcond = Expr::BlackBox(Box::new(postcond));
     }
-    postcond = sig.contract.ensures.into_iter().fold(postcond, |acc, ensures| {
-        Expr::Assert(
-            Box::new(Exp::Attr(Attribute::Attr("expl:postcondition".into()), Box::new(ensures))),
-            Box::new(acc),
-        )
-    });
+    let ensures = sig.contract.ensures.into_iter().map(Condition::labelled_exp);
+    postcond = ensures.rfold(postcond, |acc, cond| Expr::Assert(Box::new(cond), Box::new(acc)));
 
     if body_id.promoted.is_none() && !contracts_items::is_ghost_closure(ctx.tcx, body_id.def_id()) {
         body = Expr::BlackBox(Box::new(body))
@@ -282,11 +271,8 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         }],
     );
 
-    body = sig
-        .contract
-        .requires
-        .into_iter()
-        .fold(body, |acc, req| Expr::Assert(Box::new(req), Box::new(acc)));
+    let requires = sig.contract.requires.into_iter().map(Condition::labelled_exp);
+    body = requires.rfold(body, |acc, req| Expr::Assert(Box::new(req), Box::new(acc)));
 
     let params = sig
         .args
@@ -807,7 +793,7 @@ impl<'tcx> Block<'tcx> {
             body = Expr::BlackBox(Box::new(body));
         }
 
-        for i in self.invariants {
+        for i in self.invariants.into_iter().rev() {
             body = Expr::Assert(
                 Box::new(Term::Attr(
                     Attribute::Attr(i.expl),

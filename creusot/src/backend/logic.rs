@@ -247,7 +247,8 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<FileModule> {
         Err(e) => ctx.fatal_error(e.span(), &format!("{e:?}")).emit(),
     };
 
-    let body = sig.contract.requires.into_iter().fold(body, |acc, pre| pre.implies(acc));
+    let requires = sig.contract.requires.into_iter().map(Condition::unlabelled_exp);
+    let body = requires.fold(body, |acc, pre| pre.implies(acc));
 
     body_decls
         .extend([Decl::Goal(Goal { name: format!("vc_{}", (&*sig.name)).into(), goal: body })]);
@@ -267,14 +268,8 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<FileModule> {
 }
 
 pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
-    let mut ensures = sig.contract.ensures.clone();
-    let postcondition: Exp = ensures.pop().unwrap_or(Exp::mk_true());
-
-    let mut postcondition = ensures.into_iter().rfold(postcondition, Exp::lazy_conj);
-    postcondition.reassociate();
-
-    let preconditions = sig.contract.requires.iter().cloned();
-    let mut condition = preconditions.rfold(postcondition, |acc, arg| arg.implies(acc));
+    let postcondition = sig.contract.ensures_conj();
+    let mut condition = sig.contract.requires_implies(postcondition);
 
     let func_call = function_call(sig);
     let trigger = sig.trigger.clone().into_iter().collect();
@@ -314,9 +309,7 @@ fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
     let trigger = sig.trigger.clone().into_iter().collect();
 
     let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
-
-    let preconditions = sig.contract.requires.iter().cloned();
-    let condition = preconditions.rfold(equation, |acc, arg| arg.implies(acc));
+    let condition = sig.contract.requires_implies(equation);
 
     let args: Vec<_> = sig.args.clone().into_iter().flat_map(|b| b.var_type_pairs()).collect();
 

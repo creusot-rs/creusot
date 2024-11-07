@@ -50,10 +50,18 @@ fn filter_invariants(attrs: &mut Vec<Attribute>) -> Vec<Attribute> {
 }
 
 // Set the expl before pushing the invariant into the vector
-fn parse_push_invariant(invariants: &mut Vec<Invariant>, invariant: TokenStream) -> Result<()> {
+fn parse_push_invariant(
+    invariants: &mut Vec<Invariant>,
+    invariant: TokenStream,
+    numbering: bool,
+) -> Result<()> {
     let span = invariant.span();
     let invariant = syn::parse2(invariant)?;
-    let expl = format! {"expl:loop invariant {}", invariants.len()};
+    let expl = if numbering {
+        format! {"expl:loop invariant #{}", invariants.len()}
+    } else {
+        "expl:loop invariant".to_string()
+    };
     invariants.push(Invariant { span, invariant, expl });
     Ok(())
 }
@@ -74,11 +82,11 @@ pub fn parse(invariant: TokenStream, loopb: TokenStream) -> Result<Loop> {
     };
 
     let mut invariants = Vec::new();
-    parse_push_invariant(&mut invariants, invariant)?;
+    parse_push_invariant(&mut invariants, invariant, attrs.len() > 0)?;
 
     for attr in attrs {
         if let Meta::List(l) = attr.meta {
-            parse_push_invariant(&mut invariants, l.tokens)?;
+            parse_push_invariant(&mut invariants, l.tokens, true)?;
         } else {
             return Err(Error::new_spanned(attr, "expected #[invariant(...)]"));
         }
@@ -125,8 +133,7 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
     let iter_old = Ident::new("iter_old", for_span);
     let it = Ident::new("iter", for_span);
 
-    invariants.insert(
-        0,
+    invariants.insert(0,
         Invariant {
             span: for_span,
             invariant: parse_quote_spanned! {for_span=> ::creusot_contracts::std::iter::Iterator::produces(#iter_old.inner(), #produced.inner(), #it) },
@@ -143,8 +150,7 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
         },
     );
 
-    invariants.insert(
-        0,
+    invariants.insert(0,
         Invariant {
             span: for_span,
             invariant: parse_quote_spanned! {for_span=> ::creusot_contracts::invariant::inv(*#produced) },
@@ -154,6 +160,14 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
 
     let elem = Ident::new("__creusot_proc_iter_elem", proc_macro::Span::def_site().into());
 
+    // Note: the type of `produced` is not determined from its definition alone.
+    // We expect:
+    // ```
+    //     let produced: Snapshot<Seq<&T::Item>> = ...
+    // ```
+    // where `T: Iterator` is the type of `it`.
+    // This is indirectly enforced by typechecking the subsequent `produces` invariant.
+    // This may thus break if we change the order of invariants.
     quote_spanned! {for_span=> {
         let mut #it = ::std::iter::IntoIterator::into_iter(#iter);
         let #iter_old = snapshot! { #it };

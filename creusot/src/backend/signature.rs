@@ -8,7 +8,7 @@ use why3::{
 use crate::{
     backend,
     contracts_items::{should_replace_trigger, why3_attrs},
-    translation::specification::PreContract,
+    translation::specification::{Condition, PreContract},
     util::{ident_of, item_name, AnonymousParamName, PreSignature},
 };
 
@@ -21,19 +21,19 @@ pub(crate) fn signature_of<'tcx, N: Namer<'tcx>>(
 ) -> Signature {
     debug!("signature_of {def_id:?}");
     let pre_sig = ctx.sig(def_id).clone();
-    sig_to_why3(ctx, names, &pre_sig, def_id)
+    sig_to_why3(ctx, names, pre_sig, def_id)
 }
 
 pub(crate) fn named_sig_to_why3<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,
     name: Ident,
-    pre_sig: &PreSignature<'tcx>,
+    pre_sig: PreSignature<'tcx>,
     // FIXME: Get rid of this def id
     // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
     def_id: DefId,
 ) -> Signature {
-    let contract = contract_to_why3(&pre_sig.contract, ctx, names);
+    let contract = contract_to_why3(pre_sig.contract, ctx, names);
 
     let span = ctx.tcx.def_span(def_id);
     let args: Vec<Binder> = pre_sig
@@ -74,7 +74,7 @@ pub(crate) fn named_sig_to_why3<'tcx, N: Namer<'tcx>>(
 pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,
-    pre_sig: &PreSignature<'tcx>,
+    pre_sig: PreSignature<'tcx>,
     // FIXME: Get rid of this def id
     // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
     def_id: DefId,
@@ -83,19 +83,26 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
     named_sig_to_why3(ctx, names, name, pre_sig, def_id)
 }
 
+fn lower_condition<'tcx, N: Namer<'tcx>>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut N,
+    cond: Condition<'tcx>,
+) -> why3::declaration::Condition {
+    why3::declaration::Condition { exp: lower_pure(ctx, names, &cond.term), expl: cond.expl }
+}
+
 pub(super) fn contract_to_why3<'tcx, N: Namer<'tcx>>(
-    pre: &PreContract<'tcx>,
+    pre: PreContract<'tcx>,
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,
 ) -> Contract {
     let mut out = Contract::new();
-    for term in &pre.requires {
-        out.requires.push(lower_pure(ctx, names, term));
+    for cond in pre.requires.into_iter() {
+        out.requires.push(lower_condition(ctx, names, cond));
     }
-    for term in &pre.ensures {
-        out.ensures.push(lower_pure(ctx, names, &term));
+    for cond in pre.ensures.into_iter() {
+        out.ensures.push(lower_condition(ctx, names, cond));
     }
-
     if let Some(term) = &pre.variant {
         out.variant = vec![lower_pure(ctx, names, &term)];
     }

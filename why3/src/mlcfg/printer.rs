@@ -497,7 +497,10 @@ impl Print for Contract {
 
         for req in &self.requires {
             doc = doc.append(
-                alloc.text("requires ").append(req.pretty(alloc).braces()).append(alloc.hardline()),
+                alloc
+                    .text("requires ")
+                    .append(req.exp.pretty(alloc).braces())
+                    .append(alloc.hardline()),
             )
         }
 
@@ -505,7 +508,9 @@ impl Print for Contract {
             doc = doc.append(
                 alloc
                     .text("ensures ")
-                    .append(alloc.space().append(req.pretty(alloc)).append(alloc.space()).braces())
+                    .append(
+                        alloc.space().append(req.exp.pretty(alloc)).append(alloc.space()).braces(),
+                    )
                     .append(alloc.hardline()),
             )
         }
