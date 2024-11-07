@@ -28,7 +28,9 @@ pub struct Options {
     pub metadata_path: Option<String>,
     pub export_metadata: bool,
     pub should_output: bool,
-    pub output_file: OutputFile,
+    pub output: Output,
+    pub monolithic: bool,
+    pub prefix: Vec<why3::Ident>,
     pub in_cargo: bool,
     pub span_mode: SpanMode,
     pub simple_triggers: bool,
@@ -36,7 +38,9 @@ pub struct Options {
 }
 
 #[derive(Debug, Clone)]
-pub enum OutputFile {
-    File(String),
+pub enum Output {
+    Directory(PathBuf), // One file per Coma module
+    File(PathBuf),      // Monolithic output
     Stdout,
+    None,
 }

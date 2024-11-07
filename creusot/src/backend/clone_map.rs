@@ -1,28 +1,25 @@
+use crate::{
+    backend::{clone_map::elaborator::Expander, dependency::Dependency},
+    contracts_items::{get_builtin, get_inv_function},
+    ctx::*,
+    options::SpanMode, util::erased_identity_for_item,
+};
 use indexmap::{IndexMap, IndexSet};
 use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LocalDefId},
 };
+use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::Promoted,
     ty::{self, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable},
 };
 use rustc_span::{FileName, Span, Symbol};
 use rustc_target::abi::{FieldIdx, VariantIdx};
-
 use why3::{
     declaration::{Attribute, Decl, TyDecl},
     Ident, QName,
 };
-
-use crate::{
-    attributes::get_builtin,
-    backend::{clone_map::elaborator::Expander, dependency::Dependency},
-    ctx::*,
-    options::SpanMode,
-    util::erased_identity_for_item,
-};
-use rustc_macros::{TypeFoldable, TypeVisitable};
 
 use super::{dependency::ClosureSpecKind, Why3Generator};
 
@@ -112,8 +109,7 @@ pub(crate) trait Namer<'tcx> {
     }
 
     fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName {
-        let def_id =
-            self.tcx().get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
+        let def_id = get_inv_function(self.tcx());
         let subst = self.tcx().mk_args(&[ty::GenericArg::from(ty)]);
         self.value(def_id, subst)
     }
@@ -157,7 +153,7 @@ pub(crate) trait Namer<'tcx> {
         self.insert(Dependency::Builtin(module));
     }
 
-    fn insert(&mut self, dep: Dependency<'tcx>) -> Kind;
+    fn insert(&mut self, dep: Dependency<'tcx>) -> &Kind;
 
     fn tcx(&self) -> TyCtxt<'tcx>;
 
@@ -174,7 +170,7 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
         self.tcx().normalize_erasing_regions(self.param_env, ty)
     }
 
-    fn insert(&mut self, key: Dependency<'tcx>) -> Kind {
+    fn insert(&mut self, key: Dependency<'tcx>) -> &Kind {
         let key = key.erase_regions(self.tcx);
         CloneNames::insert(self, key)
     }
@@ -223,7 +219,7 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
         self.tcx
     }
 
-    fn insert(&mut self, key: Dependency<'tcx>) -> Kind {
+    fn insert(&mut self, key: Dependency<'tcx>) -> &Kind {
         let key = key.erase_regions(self.tcx);
         self.dep_set.insert(key);
         self.names.insert(key)
@@ -290,15 +286,15 @@ impl<'tcx> CloneNames<'tcx> {
         }
     }
 
-    fn insert(&mut self, key: Dependency<'tcx>) -> Kind {
-        *self.names.entry(key).or_insert_with(|| {
+    fn insert(&mut self, key: Dependency<'tcx>) -> &Kind {
+        self.names.entry(key).or_insert_with(|| {
             if let Some((did, _)) = key.did()
                 && let Some(why3_modl) = get_builtin(self.tcx, did)
             {
                 let qname = QName::from_string(why3_modl.as_str());
                 let name = qname.name.clone();
-                if let Some(modl) = qname.module_ident() {
-                    return Kind::Used(Symbol::intern(&modl), Symbol::intern(&*name));
+                if let Some(modl) = qname.module_qname() {
+                    return Kind::UsedBuiltin(modl, Symbol::intern(&*name));
                 } else {
                     return Kind::Named(Symbol::intern(&*name));
                 }
@@ -322,15 +318,14 @@ impl NameSupply {
     }
 }
 
-// TODO: Get rid of the enum
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Kind {
     /// This does not corresponds to a defined symbol
     Unnamed,
     /// This symbol is locally defined
     Named(Symbol),
-    /// This symbol must be acompanied by a `Use` statement in Why3
-    Used(Symbol, Symbol),
+    /// Used, UsedBuiltin: the symbols in the last argument must be acompanied by a `use` statement in Why3
+    UsedBuiltin(QName, Symbol),
 }
 
 impl Kind {
@@ -338,7 +333,9 @@ impl Kind {
         match self {
             Kind::Unnamed => panic!("Unnamed item"),
             Kind::Named(nm) => nm.as_str().into(),
-            Kind::Used(_, _) => panic!("cannot get ident of used module {self:?}"),
+            Kind::UsedBuiltin(_, _) => {
+                panic!("cannot get ident of used module {self:?}")
+            }
         }
     }
 
@@ -346,8 +343,10 @@ impl Kind {
         match self {
             Kind::Unnamed => panic!("Unnamed item"),
             Kind::Named(nm) => nm.as_str().into(),
-            Kind::Used(modl, id) => {
-                QName { module: vec![modl.as_str().into()], name: id.as_str().into() }
+            Kind::UsedBuiltin(modl, id) => {
+                let mut module = modl.module.clone();
+                module.push(modl.name.clone());
+                QName { module, name: id.as_str().into() }
             }
         }
     }

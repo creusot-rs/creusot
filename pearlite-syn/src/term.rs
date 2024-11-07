@@ -612,6 +612,7 @@ pub(crate) fn requires_terminator(expr: &Term) -> bool {
 pub(crate) mod parsing {
     use super::*;
     use syn::parse::{Parse, ParseStream, Result};
+    use token::{Brace, Bracket, Paren};
     // use syn::path;
     use std::cmp::Ordering;
 
@@ -1205,13 +1206,19 @@ pub(crate) mod parsing {
             && is_mod_style(&expr.inner.path)
         {
             let bang_token: Token![!] = input.parse()?;
-            let (_, _, tokens) = input.parse_any_delimiter()?;
+            let (delim, span, tokens) = input.parse_any_delimiter()?;
+            let delimiter = match delim {
+                Delimiter::Parenthesis => MacroDelimiter::Paren(Paren { span }),
+                Delimiter::Brace => MacroDelimiter::Brace(Brace { span }),
+                // Delimiter::None should not be encountered here.
+                Delimiter::Bracket | Delimiter::None => MacroDelimiter::Bracket(Bracket { span }),
+            };
             return Ok(Term::Macro(ExprMacro {
                 attrs: Vec::new(),
                 mac: Macro {
                     path: expr.inner.path,
                     bang_token,
-                    delimiter: MacroDelimiter::Brace(Default::default()),
+                    delimiter,
                     tokens: tokens.parse()?,
                 },
             }));

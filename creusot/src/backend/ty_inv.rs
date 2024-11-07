@@ -1,8 +1,11 @@
 use super::Why3Generator;
 use crate::{
-    attributes::{is_ignore_structural_inv, is_trusted, is_tyinv_trivial_if_param_trivial},
+    contracts_items::{
+        get_inv_function, get_invariant_method, is_ignore_structural_inv, is_trusted,
+        is_tyinv_trivial_if_param_trivial,
+    },
     pearlite::Trigger,
-    traits::TraitResol,
+    traits::TraitResolved,
     translation::{
         pearlite::{Pattern, Term, TermKind},
         traits,
@@ -26,7 +29,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
         }
 
         let user_inv = resolve_user_inv(tcx, ty, param_env);
-        if let TraitResol::Instance(uinv_did, _) = user_inv
+        if let TraitResolved::Instance(uinv_did, _) = user_inv
             && !is_tyinv_trivial_if_param_trivial(tcx, uinv_did)
         {
             return false;
@@ -35,7 +38,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
         match ty.kind() {
             TyKind::Ref(_, ty, _) | TyKind::Slice(ty) | TyKind::Array(ty, _) => stack.push(*ty),
             TyKind::Tuple(tys) => stack.extend(*tys),
-            TyKind::Adt(_, substs) if matches!(user_inv, TraitResol::Instance(_, _)) => {
+            TyKind::Adt(_, substs) if matches!(user_inv, TraitResolved::Instance(_, _)) => {
                 // => The instance is annotated with tyinv_trivial_if_param_trivial
                 stack.extend(substs.types())
             }
@@ -44,7 +47,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
                     continue;
                 }
 
-                if let TraitResol::Instance(uinv_did, _) = user_inv
+                if let TraitResolved::Instance(uinv_did, _) = user_inv
                     && is_ignore_structural_inv(tcx, uinv_did)
                 {
                     continue;
@@ -82,8 +85,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
 
     pub(crate) fn elaborate_inv(&mut self, ty: Ty<'tcx>, for_deps: bool) -> Option<Term<'tcx>> {
         let subject = Term::var(Symbol::intern("x"), ty);
-        let inv_id =
-            self.ctx.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
+        let inv_id = get_inv_function(self.ctx.tcx);
         let subst = self.ctx.mk_args(&[GenericArg::from(subject.ty)]);
         let lhs = Term::call(self.ctx.tcx, self.param_env, inv_id, subst, vec![subject.clone()]);
         let trig = vec![Trigger(vec![lhs.clone()])];
@@ -104,7 +106,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         let mut rhs = Term::mk_true(self.ctx.tcx);
 
         match resolve_user_inv(self.ctx.tcx, ty, self.param_env) {
-            TraitResol::Instance(uinv_did, uinv_subst) => {
+            TraitResolved::Instance(uinv_did, uinv_subst) => {
                 rhs = rhs.conj(Term::call(
                     self.ctx.tcx,
                     self.param_env,
@@ -113,14 +115,10 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                     vec![subject.clone()],
                 ))
             }
-            TraitResol::UnknownNotFound if !for_deps => use_imples = true,
-            TraitResol::NoInstance => (),
+            TraitResolved::UnknownNotFound if !for_deps => use_imples = true,
+            TraitResolved::NoInstance => (),
             _ => {
-                let trait_item_did = self
-                    .ctx
-                    .tcx
-                    .get_diagnostic_item(Symbol::intern("creusot_invariant_user"))
-                    .unwrap();
+                let trait_item_did = get_invariant_method(self.ctx.tcx);
                 let subst = self.ctx.tcx.mk_args(&[GenericArg::from(ty)]);
                 rhs = rhs.conj(Term::call(
                     self.ctx.tcx,
@@ -152,7 +150,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
     }
 
     fn structural_invariant(&mut self, term: Term<'tcx>, ty: Ty<'tcx>) -> Term<'tcx> {
-        if let TraitResol::Instance(uinv_did, _) =
+        if let TraitResolved::Instance(uinv_did, _) =
             resolve_user_inv(self.ctx.tcx, ty, self.param_env)
             && is_ignore_structural_inv(self.ctx.tcx, uinv_did)
         {
@@ -263,9 +261,9 @@ fn resolve_user_inv<'tcx>(
     tcx: TyCtxt<'tcx>,
     ty: Ty<'tcx>,
     param_env: ParamEnv<'tcx>,
-) -> traits::TraitResol<'tcx> {
-    let trait_item_did = tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_user")).unwrap();
+) -> traits::TraitResolved<'tcx> {
+    let trait_item_did = get_invariant_method(tcx);
     let subst = tcx.mk_args(&[GenericArg::from(ty)]);
 
-    traits::resolve_assoc_item_opt(tcx, param_env, trait_item_did, subst)
+    traits::TraitResolved::resolve_item(tcx, param_env, trait_item_did, subst)
 }

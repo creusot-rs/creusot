@@ -12,7 +12,7 @@ use std::{
 };
 
 use crate::{
-    attributes::{is_assertion, is_snap_ty, is_spec},
+    contracts_items::{get_ghost_inner_logic, get_index_logic, get_snap_inner, is_assertion, is_deref, is_ghost_ty, is_snap_ty, is_spec},
     error::{CreusotResult, Error, InternalError},
     naming::anonymous_param_symbol,
     translation::{projection_vec::*, TranslationCtx},
@@ -607,10 +607,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                             subst.get(0).and_then(|arg| arg.as_type()),
                         ) {
                             let term = self.expr_term(args[0])?;
-                            let inner_id = self
-                                .ctx
-                                .get_diagnostic_item(Symbol::intern("ghost_box_inner_logic"))
-                                .unwrap();
+                            let inner_id = get_ghost_inner_logic(self.ctx.tcx);
                             Ok(Term {
                                 ty,
                                 span,
@@ -1004,8 +1001,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } = self.thir[args[0]].kind else { unreachable!() };
 
                     let (cur, fin, inner, proj) = self.logical_reborrow_inner(arg)?;
-                    let deref_method =
-                        self.ctx.get_diagnostic_item(Symbol::intern("snapshot_inner")).unwrap();
+                    let deref_method = get_snap_inner(self.ctx.tcx);
                     // Extract the `T` from `Snapshot<T>`
                     let TyKind::Adt(_, subst) = self.thir[arg].ty.peel_refs().kind() else { unreachable!() };
                     return Ok((
@@ -1031,8 +1027,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 }
             }
             e @ ExprKind::Call { ty: fn_ty, args, .. } if fn_ty.is_fn() => {
-                let index_logic_method =
-                    self.ctx.get_diagnostic_item(Symbol::intern("index_logic_method")).unwrap();
+                let index_logic_method = get_index_logic(self.ctx.tcx);
 
                 let TyKind::FnDef(id,_) = fn_ty.kind() else { panic!("expected function type") };
 
@@ -1081,11 +1076,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
     pub(crate) fn is_snapshot_deref(&self, expr_id: ExprId) -> bool {
         let ExprKind::Call { ty, .. } = &self.thir[expr_id].kind else { return false };
-
         let TyKind::FnDef(id, sub) = ty.kind() else { panic!("expected function type") };
-
-        self.ctx.is_diagnostic_item(Symbol::intern("deref_method"), *id)
-            && is_snap_ty(self.ctx.tcx, sub[0].as_type().unwrap())
+        is_deref(self.ctx.tcx, *id)
+            && sub.type_at(0).ty_adt_def().is_some_and(|d| is_snap_ty(self.ctx.tcx, d.did()))
     }
 }
 
@@ -1095,12 +1088,12 @@ fn is_ghost_box_deref<'tcx>(
     ty: Option<Ty<'tcx>>,
 ) -> Option<&'tcx GenericArgs<'tcx>> {
     let Some(ty) = ty else { return None };
-    if !tcx.is_diagnostic_item(Symbol::intern("deref_method"), fn_id) {
+    if !is_deref(tcx, fn_id) {
         return None;
     }
     match ty.kind() {
         rustc_type_ir::TyKind::Adt(containing_type, new_subst) => {
-            if tcx.is_diagnostic_item(Symbol::intern("ghost_box"), containing_type.did()) {
+            if is_ghost_ty(tcx, containing_type.did()) {
                 Some(new_subst)
             } else {
                 None

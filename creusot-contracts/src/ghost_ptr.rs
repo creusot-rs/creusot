@@ -31,7 +31,7 @@ impl<T: ?Sized> View for GhostPtrToken<T> {
 
     #[trusted]
     #[logic]
-    #[ensures(result.get(GhostPtr::null_logic()) == None)]
+    #[ensures(result.get_unsized(GhostPtr::null_logic()) == None)]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -43,7 +43,7 @@ impl<T: ?Sized> Invariant for GhostPtrToken<T> {
     #[creusot::trusted_ignore_structural_inv]
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
-        pearlite! { forall<ptr: GhostPtr<T>, x: _> self@.get(ptr) == Some(x) ==> inv(*x) }
+        pearlite! { forall<ptr: GhostPtr<T>, x: _> self@.get_unsized(ptr) == Some(x) ==> inv(*x) }
     }
 }
 
@@ -162,7 +162,7 @@ impl<'a, T: ?Sized> View for GhostPtrTokenRef<'a, T> {
 
     #[trusted]
     #[logic]
-    #[ensures(result.get(GhostPtr::null_logic()) == None)]
+    #[ensures(result.get_unsized(GhostPtr::null_logic()) == None)]
     fn view(self) -> Self::ViewTy {
         dead
     }
@@ -206,14 +206,14 @@ impl<'a, T: ?Sized> Clone for GhostPtrTokenRef<'a, T> {
 impl<'a, T: ?Sized> GhostPtrTokenMut<'a, T> {
     #[trusted]
     #[logic]
-    #[ensures(result.get(GhostPtr::null_logic()) == None)]
+    #[ensures(result.get_unsized(GhostPtr::null_logic()) == None)]
     pub fn cur(self) -> FMap<GhostPtr<T>, T> {
         dead
     }
 
     #[trusted]
     #[logic(prophetic)]
-    #[ensures(result.get(GhostPtr::null_logic()) == None)]
+    #[ensures(result.get_unsized(GhostPtr::null_logic()) == None)]
     pub fn fin(self) -> FMap<GhostPtr<T>, T> {
         dead
     }

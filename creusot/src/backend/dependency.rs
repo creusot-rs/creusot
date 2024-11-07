@@ -13,6 +13,7 @@ use rustc_type_ir::{fold::TypeFoldable, visit::TypeVisitable, AliasTyKind, Inter
 
 use crate::{
     backend::PreludeModule,
+    contracts_items::is_structural_resolve,
     naming::{item_symb, translate_accessor_name, translate_name, type_name, value_name},
 };
 
@@ -88,8 +89,8 @@ impl<'tcx> Dependency<'tcx> {
             }
         }
 
-        if let Some(ty) = is_structural_resolve(tcx, (did, subst)) {
-            Dependency::StructuralResolve(ty)
+        if is_structural_resolve(tcx, did) {
+            Dependency::StructuralResolve(subst.type_at(0))
         } else {
             Dependency::Item(did, subst)
         }
@@ -127,9 +128,10 @@ impl<'tcx> Dependency<'tcx> {
                 TyKind::Alias(_, aty) => {
                     Some(Symbol::intern(&type_name(tcx.item_name(aty.def_id).as_str())))
                 }
-                TyKind::Closure(def_id, _) => {
-                    Some(item_symb(tcx, *def_id, rustc_hir::def::Namespace::TypeNS))
-                }
+                TyKind::Closure(def_id, _) => Some(Symbol::intern(&format!(
+                    "closure{}",
+                    tcx.def_path(*def_id).data.last().unwrap().disambiguator
+                ))),
                 TyKind::Param(p) => Some(Symbol::intern(&type_name(p.name.as_str()))),
                 _ => None,
             },
@@ -173,16 +175,5 @@ impl<'tcx> Dependency<'tcx> {
             ))),
             Dependency::Builtin(_) | Dependency::AllTyInvAxioms => None,
         }
-    }
-}
-
-fn is_structural_resolve<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    dep: (DefId, GenericArgsRef<'tcx>),
-) -> Option<Ty<'tcx>> {
-    if tcx.is_diagnostic_item(Symbol::intern("creusot_structural_resolve"), dep.0) {
-        Some(dep.1.type_at(0))
-    } else {
-        None
     }
 }

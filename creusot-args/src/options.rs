@@ -28,7 +28,15 @@ pub struct CommonOptions {
     pub stdout: bool,
     /// Print to a file.
     #[clap(group = "output", long, env)]
-    pub output_file: Option<String>,
+    pub output_file: Option<PathBuf>,
+    #[clap(group = "output", long, env)]
+    pub output_dir: Option<PathBuf>,
+    /// Disable output.
+    #[clap(group = "output", long, default_value_t = false, action = clap::ArgAction::SetTrue)]
+    pub check: bool,
+    /// Output the generated code in a single file in output_dir.
+    #[clap(long, default_value_t = false, action = clap::ArgAction::SetTrue)]
+    pub monolithic: bool,
     /// Specify locations of metadata for external crates. The format is the same as rustc's `--extern` flag.
     #[clap(long = "creusot-extern", value_parser= parse_key_val::<String, String>, required=false)]
     pub extern_paths: Vec<(String, String)>,
@@ -38,6 +46,7 @@ pub struct CommonOptions {
 }
 
 #[derive(Debug, Parser, Serialize, Deserialize)]
+#[clap(override_usage = "creusot-rustc [RUSTC_OPTIONS] -- [OPTIONS]")]
 pub struct CreusotArgs {
     #[clap(flatten)]
     pub options: CommonOptions,
@@ -49,8 +58,6 @@ pub struct CreusotArgs {
     pub why3_config_file: PathBuf,
     #[command(subcommand)]
     pub subcommand: Option<CreusotSubCommand>,
-    #[clap(last = true)]
-    pub rust_flags: Vec<String>,
 }
 
 #[derive(Debug, Subcommand, Serialize, Deserialize, Clone)]
@@ -62,15 +69,9 @@ pub enum CreusotSubCommand {
         /// Extra arguments to pass to why3
         #[clap(default_value_t = String::default())]
         args: String,
-        #[clap(last = true)]
-        rust_flags: Vec<String>,
     },
     /// Generates the documentation, including specs, logical functions, etc.
-    Doc {
-        /// Arguments to forward to `cargo doc`.
-        #[clap(trailing_var_arg = true)]
-        rust_flags: Vec<String>,
-    },
+    Doc,
 }
 
 #[derive(Debug, Parser)]
@@ -81,7 +82,7 @@ pub struct CargoCreusotArgs {
     #[command(subcommand)]
     pub subcommand: Option<CargoCreusotSubCommand>,
     #[clap(last = true)]
-    pub rust_flags: Vec<String>,
+    pub cargo_flags: Vec<String>,
 }
 
 #[derive(Debug, Subcommand)]
@@ -158,44 +159,14 @@ where
 }
 
 impl CreusotArgs {
-    fn move_rust_flags(&mut self) {
-        let rust_flags = match &mut self.subcommand {
-            None => return,
-            Some(CreusotSubCommand::Why3 { rust_flags, .. }) => rust_flags,
-            Some(CreusotSubCommand::Doc { rust_flags }) => rust_flags,
-        };
-        let rust_flags = std::mem::take(rust_flags);
-        assert!(self.rust_flags.is_empty());
-        self.rust_flags = rust_flags
-    }
-
     pub fn parse_from<I: Into<OsString> + Clone>(it: impl IntoIterator<Item = I>) -> Self {
-        let mut res: Self = Parser::parse_from(it);
-        res.move_rust_flags();
-        res
+        Parser::parse_from(it)
     }
 }
 
 impl CargoCreusotArgs {
-    fn move_rust_flags(&mut self) {
-        let rust_flags = match &mut self.subcommand {
-            Some(CargoCreusotSubCommand::Creusot(CreusotSubCommand::Why3 {
-                rust_flags, ..
-            })) => rust_flags,
-            Some(CargoCreusotSubCommand::Creusot(CreusotSubCommand::Doc { rust_flags })) => {
-                rust_flags
-            }
-            _ => return,
-        };
-        let rust_flags = std::mem::take(rust_flags);
-        assert!(self.rust_flags.is_empty());
-        self.rust_flags = rust_flags
-    }
-
     pub fn parse_from<I: Into<OsString> + Clone>(it: impl IntoIterator<Item = I>) -> Self {
-        let mut res: Self = Parser::parse_from(it);
-        res.move_rust_flags();
-        res
+        Parser::parse_from(it)
     }
 }
 
@@ -205,6 +176,3 @@ pub enum SpanMode {
     Absolute,
     Off,
 }
-
-#[test]
-fn test() {}

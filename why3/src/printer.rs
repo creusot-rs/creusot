@@ -123,6 +123,7 @@ impl Print for Decl {
                 alloc.intersperse(spans.iter().map(|span| span.pretty(alloc)), alloc.hardline())
             }
             Decl::Meta(meta) => meta.pretty(alloc),
+            Decl::Comment(c) => alloc.text("(* ").append(c).append(" *)"),
         }
     }
 }
@@ -145,18 +146,25 @@ impl Print for Module {
                 None => alloc.nil(),
             })
             .append(alloc.hardline())
-            .append(
-                alloc
-                    .intersperse(
-                        self.decls.iter().map(|decl| decl.pretty(alloc)),
-                        alloc.hardline().append(alloc.hardline()),
-                    )
-                    .indent(2),
-            )
+            .append(pretty_blocks(&self.decls, alloc).indent(2))
             .append(alloc.hardline())
             .append("end");
         doc
     }
+}
+
+// Items separated by empty lines
+pub fn pretty_blocks<'a, T: Print, A: DocAllocator<'a>>(
+    items: &'a Vec<T>,
+    alloc: &'a A,
+) -> DocBuilder<'a, A>
+where
+    A::Doc: Clone,
+{
+    alloc.intersperse(
+        items.iter().map(|item| item.pretty(alloc)),
+        alloc.hardline().append(alloc.hardline()),
+    )
 }
 
 impl Print for Axiom {

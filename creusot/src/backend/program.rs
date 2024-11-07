@@ -1,23 +1,16 @@
 use crate::{
-    attributes::is_ghost_closure,
     backend::{
         clone_map::PreludeModule,
         dependency::Dependency,
         is_trusted_function,
         optimization::{self, infer_proph_invariants},
-        place,
-        place::rplace_to_expr,
+        place::{self, rplace_to_expr},
         signature::signature_of,
         term::{lower_pat, lower_pure},
         ty::{self, constructor, int_ty, translate_ty},
         wto::{weak_topological_order, Component},
         NameSupply, Namer, Why3Generator,
-    },
-    ctx::{BodyId, Dependencies},
-    fmir::{self, Body, BorrowKind, Operand, TrivialInv},
-    naming::{ident_of, module_name},
-    pearlite::{self, PointerKind},
-    translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
+    }, contracts_items::is_ghost_closure, ctx::{BodyId, Dependencies}, fmir::{self, Body, BorrowKind, Operand, TrivialInv}, naming::ident_of, pearlite::{self, PointerKind}, translated_item::FileModule, translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator}
 };
 
 use petgraph::graphmap::DiGraphMap;
@@ -46,7 +39,7 @@ use why3::{
 pub(crate) fn translate_function<'tcx, 'sess>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
-) -> Option<Module> {
+) -> Option<FileModule> {
     let mut names = Dependencies::new(ctx, def_id);
 
     if !def_id.is_local() || !ctx.has_body(def_id) || is_trusted_function(ctx.tcx, def_id) {
@@ -63,10 +56,11 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     }));
     decls.push(body);
 
-    let name = Ident::build(&module_name(ctx.tcx, def_id).to_string());
     let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
     let meta = ctx.display_impl_of(def_id);
-    Some(Module { name, decls, attrs, meta })
+    let path = ctx.module_path(def_id);
+    let name = path.why3_ident();
+    Some(FileModule { path, modl: Module { name, decls, attrs, meta } })
 }
 
 pub fn val<'tcx>(_: &mut Why3Generator<'tcx>, sig: Signature) -> Decl {

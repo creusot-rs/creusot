@@ -391,7 +391,7 @@ impl Parse for Assertion {
 #[proc_macro]
 pub fn proof_assert(assertion: TS1) -> TS1 {
     let assert = parse_macro_input!(assertion as Assertion);
-    let assert_body = pretyping::encode_block(&assert.0).unwrap();
+    let assert_body = pretyping::encode_block(&assert.0).unwrap_or_else(|e| e.into_tokens());
 
     TS1::from(quote! {
         {
@@ -409,7 +409,7 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
 #[proc_macro]
 pub fn snapshot(assertion: TS1) -> TS1 {
     let assert = parse_macro_input!(assertion as Assertion);
-    let assert_body = pretyping::encode_block(&assert.0).unwrap();
+    let assert_body = pretyping::encode_block(&assert.0).unwrap_or_else(|e| e.into_tokens());
 
     TS1::from(quote! {
         {
@@ -551,7 +551,7 @@ fn logic_item(log: LogicItem, prophetic: Option<TokenStream>, documentation: Tok
     let def = log.defaultness;
     let sig = log.sig;
     let attrs = log.attrs;
-    let req_body = pretyping::encode_block(&term.stmts).unwrap();
+    let req_body = pretyping::encode_block(&term.stmts).unwrap_or_else(|e| e.into_tokens());
 
     TS1::from(quote_spanned! {span =>
         #[::creusot_contracts::pure]
@@ -651,7 +651,7 @@ fn predicate_item(
     let sig = log.sig;
     let attrs = log.attrs;
 
-    let req_body = pretyping::encode_block(&term.stmts).unwrap();
+    let req_body = pretyping::encode_block(&term.stmts).unwrap_or_else(|e| e.into_tokens());
 
     TS1::from(quote_spanned! {span =>
         #[::creusot_contracts::pure]
@@ -692,7 +692,7 @@ pub fn pearlite(tokens: TS1) -> TS1 {
             .iter()
             .map(pretyping::encode_stmt)
             .collect::<std::result::Result<TokenStream, _>>()
-            .unwrap(),
+            .unwrap_or_else(|e| e.into_tokens()),
     )
 }
 
@@ -711,8 +711,7 @@ pub fn extern_spec(tokens: TS1) -> TS1 {
     }
 
     return TS1::from(quote! {
-        #(#[creusot::no_translate]
-          #[creusot::extern_spec]
+        #(#[creusot::extern_spec]
           #specs
         )*
     });

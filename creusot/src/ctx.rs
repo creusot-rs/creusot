@@ -1,13 +1,10 @@
-use std::{collections::HashMap, ops::Deref};
-
-pub(crate) use crate::backend::clone_map::*;
 use crate::{
-    attributes::{
-        gather_params_open_inv, is_extern_spec, is_logic, is_predicate, is_prophetic,
-        opacity_witness_name,
-    },
     backend::ty_inv::is_tyinv_trivial,
     callbacks,
+    contracts_items::{
+        get_inv_function, is_extern_spec, is_logic, is_open_inv_param, is_predicate, is_prophetic,
+        opacity_witness_name,
+    },
     creusot_items::{self, CreusotItems},
     error::CreusotResult,
     metadata::{BinaryMetadata, Metadata},
@@ -25,6 +22,10 @@ use crate::{
     util::{erased_identity_for_item, parent_module},
 };
 use indexmap::IndexMap;
+use rustc_ast::{
+    visit::{walk_fn, FnKind, Visitor},
+    FnSig, NodeId,
+};
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
 use rustc_errors::{Diag, FatalAbort};
 use rustc_hir::{
@@ -34,11 +35,15 @@ use rustc_hir::{
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{Body, Promoted, TerminatorKind},
-    ty::{Clause, GenericArg, GenericArgsRef, ParamEnv, Predicate, Ty, TyCtxt, Visibility},
+    ty::{
+        Clause, GenericArg, GenericArgsRef, ParamEnv, Predicate, ResolverAstLowering, Ty, TyCtxt,
+        Visibility,
+    },
 };
 use rustc_span::{Span, Symbol};
+use std::{collections::HashMap, ops::Deref};
 
-pub(crate) use crate::translated_item::*;
+pub(crate) use crate::{backend::clone_map::*, translated_item::*};
 
 macro_rules! queryish {
     ($name:ident, $res:ty, $builder:ident) => {
@@ -165,6 +170,33 @@ impl<'tcx> Deref for TranslationCtx<'tcx> {
     }
 }
 
+fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, Vec<usize>> {
+    struct VisitFns<'a>(HashMap<DefId, Vec<usize>>, &'a ResolverAstLowering);
+    impl<'a> Visitor<'a> for VisitFns<'a> {
+        fn visit_fn(&mut self, fk: FnKind<'a>, _: Span, node: NodeId) {
+            let decl = match fk {
+                FnKind::Fn(_, _, FnSig { decl, .. }, _, _, _) => decl,
+                FnKind::Closure(_, decl, _) => decl,
+            };
+            let mut open_inv_params = vec![];
+            for (i, p) in decl.inputs.iter().enumerate() {
+                if is_open_inv_param(p) {
+                    open_inv_params.push(i);
+                }
+            }
+            let defid = self.1.node_id_to_def_id[&node].to_def_id();
+            assert!(self.0.insert(defid, open_inv_params).is_none());
+            walk_fn(self, fk)
+        }
+    }
+
+    let (resolver, cr) = &*tcx.resolver_for_lowering().borrow();
+
+    let mut visit = VisitFns(HashMap::new(), &resolver);
+    visit.visit_crate(&*cr);
+    visit.0
+}
+
 impl<'tcx, 'sess> TranslationCtx<'tcx> {
     pub(crate) fn new(tcx: TyCtxt<'tcx>, opts: Options) -> Self {
         let params_open_inv = gather_params_open_inv(tcx);
@@ -273,8 +305,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         if is_tyinv_trivial(self.tcx, param_env, ty) {
             None
         } else {
-            let inv_did =
-                self.get_diagnostic_item(Symbol::intern("creusot_invariant_internal")).unwrap();
+            let inv_did = get_inv_function(self.tcx);
             let substs = self.mk_args(&[GenericArg::from(ty)]);
             Some((inv_did, substs))
         }
@@ -292,10 +323,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
     pub(crate) fn error(&self, span: Span, msg: &str) -> Diag<'tcx, rustc_errors::ErrorGuaranteed> {
         self.tcx.dcx().struct_span_err(span, msg.to_string())
-    }
-
-    pub(crate) fn warn(&self, span: Span, msg: &str) -> Diag<'tcx, ()> {
-        self.tcx.dcx().struct_span_warn(span, msg.to_string())
     }
 
     queryish!(laws, &[DefId], laws_inner);

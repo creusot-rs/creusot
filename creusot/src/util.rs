@@ -9,6 +9,5 @@ pub(crate) fn parent_module(tcx: TyCtxt, mut id: DefId) -> DefId {
     while tcx.def_kind(id) != DefKind::Mod {
         id = tcx.parent(id);
     }
-
     id
 }

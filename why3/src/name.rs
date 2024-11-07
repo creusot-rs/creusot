@@ -31,6 +31,10 @@ impl Ident {
         self.0
     }
 
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
     pub fn decapitalize(&mut self) {
         self.0[..1].make_ascii_lowercase();
     }
@@ -107,11 +111,13 @@ impl QName {
         self.module.push(old);
     }
 
-    pub fn module_qname(mut self) -> QName {
-        assert!(!self.module.is_empty(), "ident has no module {:?}", self);
+    pub fn module_qname(mut self) -> Option<QName> {
+        if self.module.is_empty() {
+            return None;
+        }
         let id = self.module.pop().unwrap();
         self.name = id;
-        self
+        Some(self)
     }
 
     pub fn without_search_path(mut self) -> QName {
@@ -144,6 +150,16 @@ impl QName {
         }
 
         s.into()
+    }
+
+    pub fn to_string(&self) -> String {
+        let mut s = String::new();
+        for i in self.module.iter() {
+            s.push_str(i.as_str());
+            s.push('.');
+        }
+        s.push_str(self.name.as_str());
+        s
     }
 }
 

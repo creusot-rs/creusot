@@ -3,13 +3,13 @@ use rustc_hir::def_id::DefId;
 use rustc_index::{Idx, IndexVec};
 use rustc_middle::{
     mir::{
-        visit::MutVisitor, AggregateKind, BasicBlock, BasicBlockData, Body, Local, Location,
-        Rvalue, SourceInfo, StatementKind, Terminator, TerminatorKind,
+        visit::{MutVisitor, PlaceContext},
+        AggregateKind, BasicBlock, BasicBlockData, Body, Local, Location, Rvalue, SourceInfo,
+        StatementKind, Terminator, TerminatorKind,
     },
     ty::TyCtxt,
 };
-
-use crate::attributes::{is_no_translate, is_snapshot_closure, no_mir};
+use crate::contracts_items::{is_no_translate, is_snapshot_closure, no_mir};
 
 /// Hide non-linear specification code from the borrow checker
 ///
@@ -116,8 +116,6 @@ pub(crate) fn map_locals<V>(
     local_decls.truncate(used.index());
     map
 }
-
-use rustc_middle::mir::visit::PlaceContext;
 
 pub struct LocalUpdater<'tcx> {
     pub map: IndexVec<Local, Option<Local>>,

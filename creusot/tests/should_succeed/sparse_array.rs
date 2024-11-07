@@ -37,7 +37,7 @@ impl<T> View for Sparse<T> {
     #[open(self)]
     fn view(self) -> Self::ViewTy {
         pearlite! {
-            Seq::new(self.size@,
+            Seq::create(self.size@,
                      |i| if self.is_elt(i) { Some(self.values[i]) } else { None })
         }
     }

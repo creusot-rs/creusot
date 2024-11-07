@@ -65,6 +65,8 @@ pub trait FusedIterator: ::std::iter::FusedIterator + Iterator {
 }
 
 impl<I: Iterator> FusedIterator for Fuse<I> {
+    // FIXME: remove `trusted`
+    #[trusted]
     #[law]
     #[open]
     #[requires(inv(self))]

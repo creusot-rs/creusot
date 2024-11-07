@@ -1,8 +1,8 @@
 use crate::{
-    attributes::get_builtin,
+    contracts_items::get_builtin,
     ctx::TranslationCtx,
     fmir::{self, Operand},
-    traits::resolve_assoc_item_opt,
+    traits::TraitResolved,
     translation::pearlite::Literal,
 };
 use rustc_middle::{
@@ -148,7 +148,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
         }
         _ if ty.is_unit() => Literal::ZST,
         FnDef(def_id, subst) => {
-            let method = resolve_assoc_item_opt(ctx.tcx, env, *def_id, subst)
+            let method = TraitResolved::resolve_item(ctx.tcx, env, *def_id, subst)
                 .to_opt(*def_id, subst)
                 .unwrap();
             Literal::Function(method.0, method.1)

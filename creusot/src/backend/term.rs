@@ -1,10 +1,10 @@
 use crate::{
-    attributes::get_builtin,
     backend::{
         program::borrow_generated_id,
         ty::{constructor, floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty},
         Why3Generator,
     },
+    contracts_items::get_builtin,
     ctx::*,
     naming::ident_of,
     pearlite::{self, Literal, Pattern, PointerKind, Term, TermKind},

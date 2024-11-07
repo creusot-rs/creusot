@@ -94,17 +94,20 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
         dead
     }
 
+    #[trusted]
     #[law]
     #[open(self)]
     #[requires(self.postcondition_mut(args, res))]
     #[ensures((*self).unnest(^self))]
     fn postcondition_mut_unnest(&mut self, args: Args, res: Self::Output) {}
 
+    #[trusted]
     #[law]
     #[open(self)]
     #[ensures(self.unnest(self))]
     fn unnest_refl(self) {}
 
+    #[trusted]
     #[law]
     #[open(self)]
     #[requires(self.unnest(b))]

@@ -6,8 +6,8 @@ use why3::{
 };
 
 use crate::{
-    attributes::{should_replace_trigger, why3_attrs},
     backend,
+    contracts_items::{should_replace_trigger, why3_attrs},
     naming::{anonymous_param_symbol, ident_of},
     specification::PreSignature,
     translation::specification::PreContract,

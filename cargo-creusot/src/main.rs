@@ -2,7 +2,6 @@ use creusot_args::{options::*, CREUSOT_RUSTC_ARGS};
 use creusot_setup as setup;
 use std::{
     env,
-    path::PathBuf,
     process::{exit, Command},
 };
 use tempdir::TempDir;
@@ -20,18 +19,8 @@ enum Subcommand {
 use Subcommand::*;
 
 fn main() -> Result<()> {
-    let cargo_md = make_cargo_metadata()?;
-    let coma_filename: PathBuf; //  coma output file name container
-
-    let mut cargs = CargoCreusotArgs::parse_from(std::env::args().skip(1));
-
-    // select coma output file name
-    if let Some(f) = &cargs.options.output_file {
-        coma_filename = f.into();
-    } else {
-        coma_filename = make_coma_filename(&cargo_md)?;
-        cargs.options.output_file = Some(coma_filename.to_string_lossy().into_owned());
-    }
+    let cargs = CargoCreusotArgs::parse_from(std::env::args().skip(1));
+    let (coma_src, coma_glob) = get_coma(&cargs);
 
     let subcommand = match cargs.subcommand {
         None => Creusot(None),
@@ -44,38 +33,51 @@ fn main() -> Result<()> {
             // subcommand analysis:
             //   we want to launch Why3 Ide and replay in cargo-creusot not by creusot-rustc.
             //   however we want to keep the current behavior for other commands: prove
+            // why3session will be put in or next to `coma_src`
             let (creusot_rustc_subcmd, launch_why3) = match subcmd {
                 Some(CreusotSubCommand::Why3 { command: Why3SubCommand::Ide, args, .. }) => {
-                    (None, Some(args))
+                    (None, Some((Why3Mode::Ide, coma_src, args)))
                 }
                 Some(CreusotSubCommand::Why3 { command: Why3SubCommand::Replay, args, .. }) => {
-                    (None, Some(args))
+                    let mut basename = coma_src.clone();
+                    basename.set_extension(""); // for single-file mode
+                    (None, Some((Why3Mode::Replay, basename, args)))
                 }
                 _ => (subcmd, None),
             };
 
+            // Default output_dir to "." if not specified
+            let include_dir = Some(cargs.options.output_dir.clone().unwrap_or(".".into()));
             let config_args = setup::status_for_creusot()?;
             let creusot_args = CreusotArgs {
                 options: cargs.options,
                 why3_path: config_args.why3_path.clone(),
                 why3_config_file: config_args.why3_config.clone(),
                 subcommand: creusot_rustc_subcmd.clone(),
-                rust_flags: cargs.rust_flags,
             };
 
-            invoke_cargo(&creusot_args);
+            invoke_cargo(&creusot_args, cargs.cargo_flags);
 
-            if let Some(args) = launch_why3 {
+            if let Some((mode, coma_src, args)) = launch_why3 {
+                let mut coma_files = vec![coma_src];
+                // Glob coma files after creusot-rustc has generated them
+                if let Why3Mode::Ide = mode {
+                    if let Some(glob) = coma_glob {
+                        if let Ok(paths) = glob::glob(&glob) {
+                            coma_files.extend(paths.filter_map(|p| p.ok()));
+                        }
+                    }
+                }
+
                 // why3 configuration
-                let mut b = Why3LauncherBuilder::new();
-                b.why3_path(config_args.why3_path);
-                b.config_file(config_args.why3_config);
-                b.output_file(coma_filename);
-                // temporary: for the moment we only launch why3 via cargo-creusot in Ide and Replay mode
-                b.mode(Why3Mode::Ide);
-                b.args(args);
-
-                let why3 = b.build()?;
+                let why3 = Why3Launcher {
+                    why3_path: config_args.why3_path,
+                    config_file: config_args.why3_config,
+                    mode,
+                    include_dir,
+                    coma_files,
+                    args,
+                };
                 let prelude_dir =
                     TempDir::new("creusot_why3_prelude").expect("could not create temp dir");
                 let mut command = why3.make(prelude_dir.path())?;
@@ -105,7 +107,7 @@ fn main() -> Result<()> {
     }
 }
 
-fn invoke_cargo(args: &CreusotArgs) {
+fn invoke_cargo(args: &CreusotArgs, cargo_flags: Vec<String>) {
     let creusot_rustc_path = std::env::current_exe()
         .expect("current executable path invalid")
         .with_file_name("creusot-rustc");
@@ -126,9 +128,20 @@ fn invoke_cargo(args: &CreusotArgs) {
     let mut cmd = Command::new(cargo_path);
     cmd.arg(format!("+{toolchain}"))
         .arg(&cargo_cmd)
-        .args(args.rust_flags.clone())
-        .env("RUSTC_WRAPPER", creusot_rustc_path)
+        .args(cargo_flags)
+        .env("RUSTC", creusot_rustc_path)
         .env("CARGO_CREUSOT", "1");
+
+    // Append flags to any pre-existing ones
+    // CARGO_ENCODED_RUSTFLAGS contains options to pass to rustc, separated by '\x1f'.
+    // https://doc.rust-lang.org/cargo/reference/environment-variables.html
+    let mut cargo_encoded_rustflags = match std::env::var("CARGO_ENCODED_RUSTFLAGS") {
+        Ok(flags) => flags + "\x1f",
+        Err(_) => String::new(),
+    };
+    cargo_encoded_rustflags.push_str("--creusot=");
+    cargo_encoded_rustflags.push_str(&serde_json::to_string(&args).unwrap());
+    cmd.env("CARGO_ENCODED_RUSTFLAGS", cargo_encoded_rustflags);
 
     if matches!(&args.subcommand, Some(CreusotSubCommand::Doc { .. })) {
         let mut rustdocflags = String::new();
@@ -139,8 +152,6 @@ fn invoke_cargo(args: &CreusotArgs) {
         rustdocflags.pop();
         cmd.env("RUSTDOCFLAGS", rustdocflags);
     }
-
-    cmd.env("CREUSOT_ARGS", serde_json::to_string(&args).unwrap());
 
     let exit_status = cmd.status().expect("could not run cargo");
     if !exit_status.success() {

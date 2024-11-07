@@ -3,8 +3,7 @@ use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::{def_id::DefId, symbol::Symbol};
 use std::collections::HashMap;
-
-use crate::attributes::get_creusot_item;
+use crate::contracts_items::get_creusot_item;
 
 #[derive(Debug, Default, Clone, TyDecodable, TyEncodable)]
 pub struct CreusotItems {

@@ -1,7 +1,7 @@
 use super::BodyTranslator;
 use crate::{
     analysis::NotFinalPlaces,
-    attributes::{is_assertion, is_invariant, is_spec, is_variant, snapshot_closure_id},
+    contracts_items::{is_assertion, is_invariant, is_snapshot_closure, is_spec, is_variant},
     extended_location::ExtendedLocation,
     fmir::Operand,
     translation::{
@@ -15,7 +15,7 @@ use rustc_middle::{
         BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
         StatementKind,
     },
-    ty::adjustment::PointerCoercion,
+    ty::{adjustment::PointerCoercion, TyKind},
 };
 use rustc_mir_dataflow::ResultsCursor;
 
@@ -93,7 +93,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Rvalue::Use(op) => match op {
                 Move(_pl) | Copy(_pl) => RValue::Operand(self.translate_operand(op)),
                 Constant(box c) => {
-                    if snapshot_closure_id(self.tcx(), c.const_.ty()).is_some() {
+                    if let TyKind::Closure(def_id, _) = c.const_.ty().peel_refs().kind()
+                        && is_snapshot_closure(self.tcx(), *def_id)
+                    {
                         return;
                     };
                     RValue::Operand(self.translate_operand(op))

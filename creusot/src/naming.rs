@@ -1,3 +1,5 @@
+use std::{iter, path::PathBuf};
+
 use rustc_hir::{
     def::Namespace,
     def_id::DefId,
@@ -46,7 +48,6 @@ pub(crate) fn item_symb(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Symbol {
         Variant | Struct | Enum | Union => {
             Symbol::intern(&format!("t_{}", translate_name(tcx.item_name(def_id).as_str())))
         }
-        Closure => lower_ident_path(tcx, def_id),
         _ => Symbol::intern(&value_name(&translate_name(tcx.item_name(def_id).as_str()))),
     }
 }
@@ -61,16 +62,6 @@ pub(crate) fn ident_of(sym: Symbol) -> Ident {
     } else {
         id += &"'";
         Ident::build(&id)
-    }
-}
-
-pub(crate) fn module_name(tcx: TyCtxt, def_id: DefId) -> Symbol {
-    let kind = tcx.def_kind(def_id);
-    use rustc_hir::def::DefKind::*;
-
-    match kind {
-        Ctor(_, _) | Variant => module_name(tcx, tcx.parent(def_id)),
-        _ => upper_ident_path(tcx, def_id),
     }
 }
 
@@ -112,7 +103,76 @@ enum Segment {
     Other(DisambiguatedDefPathData),
 }
 
-fn ident_path_segments(tcx: TyCtxt, def_id: DefId) -> Vec<Segment> {
+/// Common representation of module name from which we can generate both
+/// a Why3 module name (`M_krate__modl__f`) and a file name (`krate/modl/M_f.coma`).
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ModulePath {
+    path: Vec<Symbol>, // Crate and module names
+    basename: Symbol,  // Function name
+}
+
+impl ModulePath {
+    pub fn new(tcx: TyCtxt, def_id: DefId) -> Self {
+        let mut path: Vec<Symbol> =
+            ident_path_segments(tcx, def_id).into_iter().map(|s| Symbol::intern(&s)).collect();
+        let basename = path.pop().unwrap();
+        ModulePath { path, basename }
+    }
+
+    pub fn add_suffix(&mut self, suffix: &str) {
+        self.basename = Symbol::intern(&format!("{}{}", self.basename, suffix))
+    }
+
+    // `M_krate__modl__f`
+    // Note: each fragment doesn't need to go through Ident (unlike why3_qname and file_name)
+    pub fn why3_ident(&self) -> Ident {
+        let mut path = "M_".to_owned();
+        for m in &self.path {
+            path += m.as_str();
+            path += "__";
+        }
+        path += self.basename.as_str();
+        Ident::from_string(path)
+    }
+
+    // `krate.modl.M_f.Coma` (Coma is the toplevel name)
+    // Note: pass each fragment through Ident::build() to filter out coma keywords.
+    pub fn why3_qname(&self, prefix: &Vec<Ident>) -> why3::QName {
+        let path = self
+            .path
+            .iter()
+            .map(|s| Ident::build(s.as_str()))
+            .chain(iter::once(Ident::build(&format!("M_{}", self.basename))));
+        let module = prefix.into_iter().cloned().chain(path).collect::<Vec<_>>();
+        let name = Ident::build("Coma");
+        why3::QName { module, name }
+    }
+
+    /// Set `prefix` to `None` for monolithic output
+    pub fn why3_name(&self, prefix: Option<&Vec<Ident>>) -> why3::QName {
+        match prefix {
+            Some(prefix) => self.why3_qname(prefix),
+            None => why3::QName { module: vec![], name: self.why3_ident() },
+        }
+    }
+
+    // `prefix/krate/modl/M_f.coma`
+    // Note: pass each fragment through Ident::build() to filter out coma keywords
+    // so that this produces the same names as `why3_qname()`.
+    pub fn file_name(&self, prefix: &Vec<Ident>) -> PathBuf {
+        let mut path = PathBuf::new();
+        for m in prefix {
+            path.push(m.as_str());
+        }
+        for m in &self.path {
+            path.push(Ident::build(m.as_str()).as_str());
+        }
+        path.push(format!("M_{}.coma", self.basename));
+        path
+    }
+}
+
+fn ident_path_segments_(tcx: TyCtxt, def_id: DefId) -> Vec<Segment> {
     let mut segs = Vec::new();
     let mut id = def_id;
     loop {
@@ -133,40 +193,14 @@ fn ident_path_segments(tcx: TyCtxt, def_id: DefId) -> Vec<Segment> {
     segs
 }
 
-// This function must be injective: distinct source constructs
-// must have different names in the output.
-fn ident_path(upper_initial: bool, tcx: TyCtxt, def_id: DefId) -> Symbol {
-    let mut dest = String::new();
-
-    if let Some(Namespace::TypeNS) = tcx.def_kind(def_id).ns() {
-        dest.push_str(if upper_initial { "T_" } else { "t_" });
-    } else {
-        dest.push_str(if upper_initial { "M_" } else { "m_" });
-    }
-
-    let crate_name = tcx.crate_name(def_id.krate);
-    push_translate_name(crate_name.as_str(), &mut dest);
-
-    let def_path = ident_path_segments(tcx, def_id);
-    for seg in def_path.iter() {
-        dest.push_str("__");
-        match seg {
-            Segment::Impl(hash) => dest.push_str(&format!("qyi{}", hash)),
-            Segment::Other(data) => push_translate_name(&format!("{}", data), &mut dest),
-        }
-    }
-
-    Symbol::intern(&dest)
-}
-
-// Coma module names must start with an upper case letter.
-pub(crate) fn upper_ident_path(tcx: TyCtxt, def_id: DefId) -> Symbol {
-    ident_path(true, tcx, def_id)
-}
-
-// Function and type names must start with a lower case letter.
-pub(crate) fn lower_ident_path(tcx: TyCtxt, def_id: DefId) -> Symbol {
-    ident_path(false, tcx, def_id)
+pub(crate) fn ident_path_segments(tcx: TyCtxt, def_id: DefId) -> Vec<String> {
+    let krate = tcx.crate_name(def_id.krate);
+    iter::once(translate_name(krate.as_str()))
+        .chain(ident_path_segments_(tcx, def_id).into_iter().map(|seg| match seg {
+            Segment::Impl(hash) => format!("qyi{}", hash),
+            Segment::Other(data) => translate_name(&data.to_string()),
+        }))
+        .collect()
 }
 
 pub(crate) fn anonymous_param_symbol(idx: usize) -> Symbol {

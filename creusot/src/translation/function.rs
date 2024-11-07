@@ -1,8 +1,8 @@
 use crate::{
     analysis::NotFinalPlaces,
-    attributes::{is_ghost_closure, is_snapshot_closure, is_spec},
     backend::ty_inv::is_tyinv_trivial,
     constant::from_mir_constant,
+    contracts_items::{get_fn_mut_unnest, get_resolve_function, get_resolve_method, is_ghost_closure, is_snapshot_closure, is_spec},
     ctx::*,
     extended_location::ExtendedLocation,
     fmir::{self, LocalDecl, LocalDecls, LocalIdent, RValue, TrivialInv},
@@ -20,7 +20,6 @@ use indexmap::IndexMap;
 use rustc_borrowck::borrow_set::BorrowSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::{bit_set::BitSet, Idx};
-
 use rustc_middle::{
     mir::{
         self, traversal::reverse_postorder, BasicBlock, Body, Local, Location, Operand, Place,
@@ -927,7 +926,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             let args = subst.as_closure().sig().inputs().skip_binder()[0];
             let unnest_subst = self.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty)]);
 
-            let unnest_id = self.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
+            let unnest_id = get_fn_mut_unnest(self.tcx);
 
             let mut postcondition: Term<'tcx> = postcondition;
             postcondition = postcondition.conj(Term::call_no_normalize(
@@ -1222,19 +1221,19 @@ fn resolve_predicate_of<'tcx>(
     param_env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,
 ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-    let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
+    let trait_meth_id = get_resolve_method(ctx.tcx);
     let substs = ctx.mk_args(&[GenericArg::from(ty)]);
 
     // Optimization: if we know there is no Resolve instance for this type, then we do not emit
     // a resolve
     if !ty.is_closure()
         && matches!(
-            traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, substs),
-            traits::TraitResol::NoInstance
+            traits::TraitResolved::resolve_item(ctx.tcx, param_env, trait_meth_id, substs),
+            traits::TraitResolved::NoInstance
         )
     {
         return None;
     }
 
-    Some((ctx.get_diagnostic_item(Symbol::intern("creusot_resolve")).unwrap(), substs))
+    Some((get_resolve_function(ctx.tcx), substs))
 }

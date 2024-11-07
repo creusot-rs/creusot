@@ -1,14 +1,14 @@
 use crate::{
-    attributes::{get_builtin, is_logic, is_trusted},
     backend::{
         program::{floatty_to_prelude, int_to_prelude, uint_to_prelude},
         Why3Generator,
     },
+    contracts_items::{get_builtin, get_int_ty, is_int_ty, is_logic, is_trusted},
     ctx::*,
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{AliasTy, AliasTyKind, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
-use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_span::{Span, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, TyKind::*, UintTy};
 use why3::{
@@ -47,7 +47,7 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
             if let Some(_) =
                 get_builtin(ctx.tcx, def.did()).map(|a| QName::from_string(&a.as_str()))
             {
-                let cons = MlT::TConstructor(names.ty(def.did(), s));
+                let cons = MlT::TConstructor(names.ty(def.did(), s).without_search_path());
                 let args: Vec<_> = s.types().map(|t| translate_ty(ctx, names, span, t)).collect();
                 MlT::TApp(Box::new(cons), args)
             } else {
@@ -377,14 +377,14 @@ pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(names: &mut N, fty: FloatTy) -
 
 pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
     if let TyKind::Adt(def, _) = ty.kind() {
-        tcx.is_diagnostic_item(Symbol::intern("creusot_int"), def.did())
+        is_int_ty(tcx, def.did())
     } else {
         false
     }
 }
 
 pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &mut Why3Generator<'tcx>, names: &mut N) -> MlT {
-    let int_id = ctx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap();
+    let int_id = get_int_ty(ctx.tcx);
     let ty = ctx.type_of(int_id).skip_binder();
     translate_ty(ctx, names, DUMMY_SP, ty)
 }

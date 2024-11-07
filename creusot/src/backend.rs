@@ -3,12 +3,10 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::{RealFileName, Span};
 
 use crate::{
-    attributes::{is_resolve_function, is_spec, is_trusted},
-    ctx::{ItemType, TranslatedItem, TranslationCtx},
+    contracts_items::{is_resolve_function, is_spec, is_trusted}, ctx::{ItemType, TranslatedItem, TranslationCtx}, naming::ModulePath, options::SpanMode, run_why3::SpanMap
 };
 use std::ops::{Deref, DerefMut};
 
-use crate::{options::SpanMode, run_why3::SpanMap};
 pub(crate) use clone_map::*;
 
 pub(crate) mod clone_map;
@@ -153,6 +151,18 @@ impl<'tcx> Why3Generator<'tcx> {
                 _ => {}
             }
             id.index = parent_id;
+        }
+    }
+
+    pub(crate) fn module_path(&self, def_id: DefId) -> ModulePath {
+        ModulePath::new(self.tcx, def_id)
+    }
+
+    pub fn prefix(&self) -> Option<&Vec<why3::Ident>> {
+        use crate::options::Output;
+        match &self.opts.output {
+            Output::Directory(_) => Some(&self.opts.prefix),
+            Output::File(_) | Output::Stdout | Output::None => None,
         }
     }
 }

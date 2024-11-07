@@ -6,18 +6,56 @@ use rustc_middle::ty::TyCtxt;
 
 use std::{cell::RefCell, collections::HashMap, thread_local};
 
-use crate::{cleanup_spec_closures::*, options::Options};
+use crate::{
+    cleanup_spec_closures::*,
+    ctx, lints,
+    options::{Options, Output},
+};
 
 pub struct ToWhy {
     opts: Options,
 }
 
+const OUTPUT_PREFIX: &str = "verif";
+
 impl ToWhy {
     pub fn new(opts: Options) -> Self {
         ToWhy { opts }
     }
+
+    // Isolate every crate in its own directory `{crate_name}-{crate_type}`.
+    fn set_output_dir(&mut self, config: &Config) {
+        let Output::Directory(ref mut dir) = self.opts.output else { return }; // if we're given a specific output file, just use that
+        if config.opts.crate_types.len() > 1 {
+            warn!(
+                "Found more than one --crate-type, only the first one will be used: {:?}",
+                config.opts.crate_types
+            );
+        }
+        let mut krate = match &config.opts.crate_name {
+            Some(krate) => krate.clone(),
+            None => {
+                warn!("No crate name found, defaulting to 'a'");
+                "a".to_string()
+            }
+        };
+        match config.opts.crate_types.get(0) {
+            None => {}
+            Some(crate_type) => {
+                krate = krate + "_" + &crate_type.to_string();
+            }
+        };
+        if self.opts.monolithic {
+            // output file: "verif/{krate}.coma"
+            dir.push(OUTPUT_PREFIX);
+            dir.push(krate + ".coma");
+            self.opts.output = Output::File(dir.clone());
+        } else {
+            // prefix: "verif/{krate}/"
+            self.opts.prefix = vec![why3::Ident::build(OUTPUT_PREFIX), why3::Ident::build(&krate)];
+        }
+    }
 }
-use crate::{ctx, lints};
 
 thread_local! {
     pub static MIR_BODIES:
@@ -27,6 +65,12 @@ thread_local! {
 
 impl Callbacks for ToWhy {
     fn config(&mut self, config: &mut Config) {
+        self.set_output_dir(config);
+
+        // HACK: remove this once `config.locale_resources` is defined as a Vec
+        let mut locale_resources = config.locale_resources.to_vec();
+        locale_resources.push(crate::DEFAULT_LOCALE_RESOURCE);
+        config.locale_resources = locale_resources.leak();
         config.override_queries = Some(|_sess, providers| {
             providers.mir_built = |tcx, def_id| {
                 let mir = (rustc_interface::DEFAULT_QUERY_PROVIDERS.mir_built)(tcx, def_id);

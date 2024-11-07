@@ -1,7 +1,5 @@
 use crate::{
-    attributes::{
-        is_assertion, is_invariant, is_loop_variant, is_snapshot_closure, snapshot_closure_id,
-    },
+    contracts_items::{is_assertion, is_invariant, is_loop_variant, is_snapshot_closure},
     ctx::TranslationCtx,
     pearlite::Term,
 };
@@ -10,7 +8,7 @@ use rustc_data_structures::graph::Successors;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{visit::Visitor, AggregateKind, BasicBlock, Body, Location, Operand, Rvalue},
-    ty::TyCtxt,
+    ty::{Ty, TyCtxt, TyKind},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -57,6 +55,14 @@ struct Closures<'tcx> {
 impl<'tcx> Closures<'tcx> {
     fn new(tcx: TyCtxt<'tcx>) -> Self {
         Closures { tcx, closures: IndexSet::new() }
+    }
+}
+
+fn snapshot_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
+    if let TyKind::Closure(def_id, _) = ty.peel_refs().kind() {
+        is_snapshot_closure(tcx, *def_id).then_some(*def_id)
+    } else {
+        None
     }
 }
 

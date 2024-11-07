@@ -13,9 +13,23 @@ impl UseSelf for () {
     }
 }
 
+impl UseSelf for i32 {
+    #[trusted]
+    fn func(&self, _: &i32) -> bool {
+        *self == 1
+    }
+}
+
 extern_spec! {
     impl UseSelf for () {
-        fn func(&self,  s: &Self) -> bool;
+        fn func(&self, s: &Self) -> bool;
+    }
+
+    impl UseSelf for i32 {
+        #[ensures(result == (*self == 1i32))]
+        fn func(&self, s: &Self) -> bool {
+            *self == 1
+        }
     }
 }
 

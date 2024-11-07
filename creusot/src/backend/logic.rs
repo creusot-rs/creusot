@@ -1,4 +1,6 @@
-use crate::{attributes::get_builtin, ctx::*, naming::module_name, translation::pearlite::Term};
+use crate::{
+    contracts_items::get_builtin, ctx::*, translated_item::FileModule, translation::pearlite::Term,
+};
 use rustc_hir::def_id::DefId;
 use why3::{
     declaration::*,
@@ -44,7 +46,7 @@ pub(crate) fn binders_to_args(
 pub(crate) fn translate_logic_or_predicate<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
-) -> Option<Module> {
+) -> Option<FileModule> {
     let mut names = Dependencies::new(ctx, def_id);
 
     // Check that we don't have both `builtins` and a contract at the same time (which are contradictory)
@@ -122,10 +124,11 @@ pub(crate) fn translate_logic_or_predicate<'tcx>(
     let mut decls = names.provide_deps(ctx);
     decls.extend(body_decls);
 
-    let name = module_ident(ctx, def_id);
     let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
     let meta = ctx.display_impl_of(def_id);
-    Some(Module { name, decls, attrs, meta })
+    let path = ctx.module_path(def_id);
+    let name = path.why3_ident();
+    Some(FileModule { path, modl: Module { name, decls, attrs, meta } })
 }
 
 pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
@@ -317,8 +320,4 @@ fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
 
     let name = format!("{}_{suffix}", &*sig.name);
     Axiom { name: name.into(), rewrite: false, axiom }
-}
-
-pub(crate) fn module_ident(ctx: &TranslationCtx, def_id: DefId) -> Ident {
-    Ident::build(module_name(ctx.tcx, def_id).as_str())
 }

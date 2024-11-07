@@ -1,11 +1,5 @@
 use crate::{
-    attributes::{creusot_clause_attrs, is_open_inv_result, is_pearlite},
-    ctx::*,
-    function::closure_capture_subst,
-    naming::anonymous_param_symbol,
-    pearlite::TermVisitorMut,
-    translation::pearlite::{self, normalize, Literal, Term, TermKind},
-    util::erased_identity_for_item,
+    contracts_items::{creusot_clause_attrs, get_fn_mut_unnest, is_open_inv_result, is_pearlite}, ctx::*, function::closure_capture_subst, naming::anonymous_param_symbol, pearlite::TermVisitorMut, translation::pearlite::{self, normalize, Literal, Term, TermKind}, util::erased_identity_for_item
 };
 use rustc_ast::ast::{AttrArgs, AttrArgsEq};
 use rustc_hir::{def_id::DefId, Safety};
@@ -413,7 +407,7 @@ pub(crate) fn pre_sig_of<'tcx>(
             let unnest_subst =
                 ctx.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty.peel_refs())]);
 
-            let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
+            let unnest_id = get_fn_mut_unnest(ctx.tcx);
 
             contract.ensures.push(Term::call(
                 ctx.tcx,

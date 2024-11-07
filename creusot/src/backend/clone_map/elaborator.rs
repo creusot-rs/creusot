@@ -4,7 +4,6 @@ use std::{
 };
 
 use crate::{
-    attributes::{get_builtin, is_inv, is_resolve_function},
     backend::{
         clone_map::{CloneNames, Dependency, Kind},
         dependency::ClosureSpecKind,
@@ -19,18 +18,19 @@ use crate::{
         Namer, TranslationCtx, Why3Generator,
     },
     constant::from_ty_const,
+    contracts_items::{get_builtin, get_resolve_method, is_inv_function, is_resolve_function},
     ctx::{BodyId, ItemType},
     naming::ident_of,
     pearlite::{normalize, Term},
     specification::PreSignature,
-    traits,
+    traits::{self, TraitResolved},
 };
 use petgraph::graphmap::DiGraphMap;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{
     Const, ConstKind, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable, UnevaluatedConst,
 };
-use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_span::{Span, DUMMY_SP};
 use rustc_type_ir::EarlyBinder;
 use why3::{
     declaration::{Axiom, Contract, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
@@ -64,7 +64,7 @@ impl<'a, 'tcx> Namer<'tcx> for ExpansionProxy<'a, 'tcx> {
         self.namer.normalize(ctx, ty)
     }
 
-    fn insert(&mut self, dep: Dependency<'tcx>) -> Kind {
+    fn insert(&mut self, dep: Dependency<'tcx>) -> &Kind {
         let dep = dep.erase_regions(self.tcx());
         self.expansion_queue.push_back((self.source, dep));
         self.namer.insert(dep)
@@ -172,7 +172,7 @@ impl DepElab for LogicElab {
 
         let (def_id, subst) = dep.did().unwrap();
 
-        if is_inv(ctx.tcx, def_id) {
+        if is_inv_function(ctx.tcx, def_id) {
             elab.expansion_queue
                 .push_back((Dependency::AllTyInvAxioms, Dependency::TyInvAxiom(subst.type_at(0))));
         }
@@ -190,11 +190,8 @@ impl DepElab for LogicElab {
         };
 
         if let Some(b) = get_builtin(ctx.tcx, def_id) {
-            return vec![Decl::UseDecl(Use {
-                name: QName::from_string(b.as_str()).module_qname(),
-                as_: None,
-                export: false,
-            })];
+            let Some(name) = QName::from_string(b.as_str()).module_qname() else { return vec![] };
+            return vec![Decl::UseDecl(Use { name, as_: None, export: false })];
         }
 
         let sig = sig(ctx, dep);
@@ -204,11 +201,11 @@ impl DepElab for LogicElab {
         let trait_resol = ctx
             .tcx
             .trait_of_item(def_id)
-            .map(|_| traits::resolve_assoc_item_opt(ctx.tcx, elab.param_env, def_id, subst));
+            .map(|_| traits::TraitResolved::resolve_item(ctx.tcx, elab.param_env, def_id, subst));
 
         let is_opaque = matches!(
             trait_resol,
-            Some(traits::TraitResol::UnknownFound | traits::TraitResol::UnknownNotFound)
+            Some(traits::TraitResolved::UnknownFound | traits::TraitResolved::UnknownNotFound)
         ) || !ctx.is_transparent_from(def_id, elab.self_key.did().unwrap().0)
             || is_trusted_function(ctx.tcx, def_id);
 
@@ -279,7 +276,7 @@ pub fn resolve_term<'tcx>(
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Option<Term<'tcx>> {
-    let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
+    let trait_meth_id = get_resolve_method(ctx.tcx);
     let sig = ctx.sig(def_id).clone();
     let mut pre_sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
     pre_sig = pre_sig.normalize(ctx.tcx, param_env);
@@ -291,16 +288,16 @@ pub fn resolve_term<'tcx>(
         // Closures have an "hacked" instance of Resolve
         body = Term::call(ctx.tcx, param_env, trait_meth_id, subst, vec![arg]);
     } else {
-        match traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, subst) {
-            traits::TraitResol::Instance(meth_did, meth_substs) => {
+        match traits::TraitResolved::resolve_item(ctx.tcx, param_env, trait_meth_id, subst) {
+            traits::TraitResolved::Instance(meth_did, meth_substs) => {
                 // We know the instance => body points to it
                 body = Term::call(ctx.tcx, param_env, meth_did, meth_substs, vec![arg]);
             }
-            traits::TraitResol::UnknownFound | traits::TraitResol::UnknownNotFound => {
+            traits::TraitResolved::UnknownFound | traits::TraitResolved::UnknownNotFound => {
                 // We don't know the instance => body is opaque
                 return None;
             }
-            traits::TraitResol::NoInstance => {
+            traits::TraitResolved::NoInstance => {
                 // We know there is no instance => body is true
                 body = Term::mk_true(ctx.tcx);
             }
@@ -341,14 +338,15 @@ impl DepElab for TyElab {
             TyKind::Adt(adt_def, subst)
                 if let Some(why3_modl) = get_builtin(ctx.tcx, adt_def.did()) =>
             {
-                assert!(matches!(names.insert(dep), Kind::Used(_, _)));
+                assert!(matches!(names.insert(dep), Kind::UsedBuiltin(_, _)));
 
                 for ty in subst.types() {
                     translate_ty(ctx, &mut elab.namer(dep), DUMMY_SP, ty);
                 }
 
                 let qname = QName::from_string(why3_modl.as_str());
-                let use_decl = Use { as_: None, name: qname.module_qname(), export: false };
+                let Some(name) = qname.module_qname() else { return vec![] };
+                let use_decl = Use { as_: None, name, export: false };
                 vec![Decl::UseDecl(use_decl)]
             }
             TyKind::Adt(_, _) => {
@@ -398,8 +396,8 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         while let Some((s, mut t)) = self.expansion_queue.pop_front() {
             if let Dependency::Item(item, substs) = t
                 && ctx.trait_of_item(item).is_some()
-                && let traits::TraitResol::Instance(did, subst) =
-                    traits::resolve_assoc_item_opt(ctx.tcx, self.param_env, item, substs)
+                && let TraitResolved::Instance(did, subst) =
+                    TraitResolved::resolve_item(ctx.tcx, self.param_env, item, substs)
             {
                 t = ctx.normalize_erasing_regions(
                     self.param_env,

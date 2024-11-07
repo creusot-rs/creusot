@@ -12,7 +12,25 @@ use crate::{
 #[allow(dead_code)]
 pub struct Int(*mut ());
 
+impl crate::Clone for Int {
+    #[trusted]
+    #[pure]
+    #[ensures(result == *self)]
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+impl Copy for Int {}
+
 impl Int {
+    #[trusted]
+    #[pure]
+    #[ensures(*result == value@)]
+    pub fn new(value: i128) -> GhostBox<Self> {
+        let _ = value;
+        loop {}
+    }
+
     #[trusted]
     #[logic]
     #[creusot::builtins = "int.Power.power"]

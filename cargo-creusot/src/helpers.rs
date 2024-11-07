@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 
-use anyhow::anyhow;
-use cargo_metadata::{self, Package};
+use anyhow::Error;
+use cargo_metadata;
+use creusot_args::options::CargoCreusotArgs;
 pub type Result<T> = anyhow::Result<T>;
 
 pub(crate) fn make_cargo_metadata() -> Result<cargo_metadata::Metadata> {
@@ -21,32 +22,47 @@ pub(crate) fn make_cargo_metadata() -> Result<cargo_metadata::Metadata> {
     cmd.exec().map_err(|e| e.into())
 }
 
-fn select_root_crate(m: &cargo_metadata::Metadata) -> Result<&Package> {
-    if m.workspace_default_members.is_empty() {
-        return Err(anyhow!("can't create coma file, no default workspace"));
-    }
-
-    // cargo metadata doesn't specify one particular crate.
-    // We consider that the first crate in the list of workspace_default_members will give the name of the file
-    let crate_id = &m.workspace_default_members[0];
-    let Some(package) = m.packages.iter().find(|p| &p.id == crate_id) else {
-        return Err(anyhow!("can't create coma file, no default package"));
-    };
-
-    Ok(package)
+pub(crate) fn get_crate(m: &cargo_metadata::Metadata) -> Result<String> {
+    let package = m.root_package().ok_or(Error::msg("No root package found"))?;
+    let target = package.targets.first().ok_or(Error::msg("No target found"))?;
+    let krate_name = target.name.replace("-", "_");
+    let krate_type = target.crate_types.first().ok_or(Error::msg("No crate type found"))?;
+    let krate_type = if krate_type == "lib" { "rlib" } else { krate_type };
+    Ok(krate_name + "_" + krate_type)
 }
 
-pub(crate) fn make_coma_filename(m: &cargo_metadata::Metadata) -> Result<PathBuf> {
-    let root_crate = select_root_crate(m)?;
+fn get_crate_() -> Result<String> {
+    let m = make_cargo_metadata()?;
+    get_crate(&m)
+}
 
-    // to specify the crate kind in the file name: lib, bin
-    if root_crate.targets.is_empty() || root_crate.targets[0].kind.is_empty() {
-        return Err(anyhow!("can't create coma file, default package without target"));
+const OUTPUT_PREFIX: &str = "verif";
+
+pub(crate) fn get_coma(cargs: &CargoCreusotArgs) -> (PathBuf, Option<String>) {
+    let coma_src: PathBuf; // coma output file name or directory
+    let coma_glob: Option<String>; // glob pattern for all coma files under coma_src
+    if let Some(f) = &cargs.options.output_file {
+        coma_src = f.into();
+        coma_glob = None;
+    } else if cargs.options.stdout {
+        coma_src = PathBuf::new(); // don't care, dummy value
+        coma_glob = None;
+    } else {
+        // default to --output-dir=target/creusot
+        let mut dir = match &cargs.options.output_dir {
+            Some(dir) => dir.clone(),
+            None => PathBuf::from("."),
+        };
+        dir.push(OUTPUT_PREFIX);
+
+        let Ok(krate) = get_crate_() else { return (PathBuf::new(), None) };
+        if cargs.options.monolithic {
+            coma_glob = dir.to_str().map(|s| s.to_string() + "/" + &krate + ".coma");
+        } else {
+            dir.push(krate);
+            coma_glob = dir.to_str().map(|s| s.to_string() + "/**/*.coma");
+        }
+        coma_src = dir;
     }
-
-    let crate_type = &root_crate.targets[0].kind[0];
-    let filename = format!("{}-{}.coma", root_crate.name, crate_type);
-
-    // put the file at the root of the target directory
-    Ok(m.target_directory.join(filename).into())
+    (coma_src, coma_glob)
 }

@@ -4,7 +4,7 @@ use rustc_span::{Symbol, DUMMY_SP};
 use rustc_type_ir::TyKind;
 
 use crate::{
-    attributes::{get_builtin, is_snap_ty, is_trusted},
+    contracts_items::{get_builtin, get_resolve_function, is_snap_ty, is_trusted},
     pearlite::{BinOp, Pattern, Term, TermKind},
 };
 
@@ -18,7 +18,7 @@ pub fn structural_resolve<'tcx>(
     let body = match ty.kind() {
         TyKind::Adt(adt, _) if adt.is_box() => Some(resolve_of(ctx, subject.cur())),
         TyKind::Adt(adt, _) if is_trusted(ctx.tcx, adt.did()) => None,
-        TyKind::Adt(_, _) if is_snap_ty(ctx.tcx, ty) => Some(Term::mk_true(ctx.tcx)),
+        TyKind::Adt(adt, _) if is_snap_ty(ctx.tcx, adt.did()) => Some(Term::mk_true(ctx.tcx)),
         TyKind::Adt(adt, _) if get_builtin(ctx.tcx, adt.did()).is_some() => {
             Some(Term::mk_true(ctx.tcx))
         }
@@ -81,7 +81,7 @@ pub fn structural_resolve<'tcx>(
 }
 
 fn resolve_of<'tcx>(ctx: &Why3Generator<'tcx>, term: Term<'tcx>) -> Term<'tcx> {
-    let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve")).unwrap();
+    let trait_meth_id = get_resolve_function(ctx.tcx);
     let substs = ctx.mk_args(&[GenericArg::from(term.ty)]);
 
     Term::call_no_normalize(ctx.tcx, trait_meth_id, substs, vec![term])

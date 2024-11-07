@@ -16,4 +16,5 @@
 - [Termination](./termination.md)
 - [Snapshots](snapshots.md)
 - [Ghost code](ghost.md)
+  - [Ghost structures](ghost/ghost-structures.md)
 - [Type invariants](./type_invariants.md)

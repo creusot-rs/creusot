@@ -14,6 +14,7 @@ extern crate rustc_borrowck;
 extern crate rustc_data_structures;
 extern crate rustc_driver;
 extern crate rustc_errors;
+extern crate rustc_fluent_macro;
 extern crate rustc_hir;
 extern crate rustc_index;
 extern crate rustc_infer;
@@ -38,9 +39,9 @@ pub mod callbacks;
 pub mod options;
 
 mod analysis;
-mod attributes;
 mod backend;
 mod cleanup_spec_closures;
+mod contracts_items;
 mod creusot_items;
 mod ctx;
 #[allow(dead_code)]
@@ -60,3 +61,5 @@ mod util;
 mod validate;
 mod validate_terminates;
 mod very_stable_hash;
+
+rustc_fluent_macro::fluent_messages! { "../messages.ftl" }

@@ -9,11 +9,27 @@ Creusot is currently best suited for the verification of code like data-structur
 **Creusot is still very experimental software, you should expect some obscure crashes and missing features.**
 
 <!-- next-header -->
-## [Unreleased] - ReleaseDate 
+
+## [Unreleased] - ReleaseDate
+## [0.3.0] - 2024-10-27 
 
 ### Cargo Creusot
 
 Documentation using `cargo creusot doc`  now includes functions specifications and logic function bodies (Arnaud Golfouse @arnaudgolfouse).
+
+Proof obligations are now generated in a separate `verif` directory, and by default `cargo creusot` will generate one coma file per module in your program, this can enable faster iteration by only loading relevant submodules during verification.
+The old behavior can be restored by passing the `--monolithic` flag.
+
+Note: We are planning on removing the `--focus-on` option with the arrival of modular code generation.
+
+The `cargo creusot why3 ide` has been made aware of this behavior.
+
+### Creusot IDE
+
+Not strictly speaking part of this release, we have recently published a new [Creusot IDE](https://github.com/creusot-rs/creusot-ide) extension on the VSCode Marketplace.
+The extension currently provides syntax highlighting for Creusot, and dynamically updates the proof status within VSCode.
+
+It also has support for running `why3find` on proofs that have pending obligations by interacting with an icon in the sidebar.
 
 
 ### Pearlite
@@ -82,12 +98,6 @@ Identifiers generated in Coma are now stable, meaning that re-organizing Rust co
 ### SMT Solvers
 
 The Alt-Ergo solver was upgraded to version 2.6.0. As a bonus, it is now installed by `cargo creusot setup` itself instead of `opam`. (Armaël Guéneau @armael) 
-
-### Creusot IDE
-
-Not strictly speaking part of this release, we have recently published a new [Creusot IDE](https://github.com/creusot-rs/creusot-ide) extension on the VSCode Marketplace.
-The extension currently provides syntax highlighting for Creusot, and dynamically updates the proof status within VSCode.
-Currently, it does not *run* proofs itself, you must run them via an external invocation, and it only supports `why3find` as the proof-runner.
 
 ## [0.2.0] - 30/07/2024
 
