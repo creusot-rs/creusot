@@ -13,7 +13,6 @@ use rustc_type_ir::{fold::TypeFoldable, visit::TypeVisitable, AliasTyKind, Inter
 
 use crate::{
     backend::PreludeModule,
-    contracts_items::is_structural_resolve,
     naming::{item_symb, translate_accessor_name, translate_name, type_name, value_name},
 };
 
@@ -29,7 +28,6 @@ pub(crate) enum Dependency<'tcx> {
     Item(DefId, GenericArgsRef<'tcx>),
     TyInvAxiom(Ty<'tcx>),
     AllTyInvAxioms,
-    StructuralResolve(Ty<'tcx>),
     ClosureSpec(ClosureSpecKind, DefId, GenericArgsRef<'tcx>),
     Builtin(PreludeModule),
     Eliminator(DefId, GenericArgsRef<'tcx>),
@@ -89,11 +87,7 @@ impl<'tcx> Dependency<'tcx> {
             }
         }
 
-        if is_structural_resolve(tcx, did) {
-            Dependency::StructuralResolve(subst.type_at(0))
-        } else {
-            Dependency::Item(did, subst)
-        }
+        Dependency::Item(did, subst)
     }
 
     pub(crate) fn did(self) -> Option<(DefId, GenericArgsRef<'tcx>)> {
@@ -164,7 +158,6 @@ impl<'tcx> Dependency<'tcx> {
                 ClosureSpecKind::Accessor(ix) => Some(Symbol::intern(&format!("field_{ix}"))),
             },
             Dependency::TyInvAxiom(..) => Some(Symbol::intern(&format!("inv_axiom"))),
-            Dependency::StructuralResolve(_) => Some(Symbol::intern("structural_resolve")),
             Dependency::Eliminator(did, _) => {
                 Some(Symbol::intern(&value_name(&translate_name(tcx.item_name(did).as_str()))))
             }

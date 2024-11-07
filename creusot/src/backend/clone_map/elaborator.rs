@@ -18,9 +18,11 @@ use crate::{
         Namer, TranslationCtx, Why3Generator,
     },
     constant::from_ty_const,
-    contracts_items::{get_builtin, get_resolve_method, is_inv_function, is_resolve_function},
+    contracts_items::{
+        get_builtin, get_resolve_method, is_inv_function, is_resolve_function,
+        is_structural_resolve,
+    },
     ctx::{BodyId, ItemType},
-    naming::ident_of,
     pearlite::{normalize, Term},
     specification::PreSignature,
     traits::{self, TraitResolved},
@@ -33,8 +35,7 @@ use rustc_middle::ty::{
 use rustc_span::{Span, DUMMY_SP};
 use rustc_type_ir::EarlyBinder;
 use why3::{
-    declaration::{Axiom, Contract, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
-    exp::Binder,
+    declaration::{Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
     QName,
 };
 
@@ -153,21 +154,13 @@ impl DepElab for LogicElab {
     ) -> Vec<why3::declaration::Decl> {
         assert!(matches!(
             dep,
-            Dependency::Item(_, _)
-                | Dependency::TyInvAxiom(_)
-                | Dependency::StructuralResolve(_)
-                | Dependency::ClosureSpec(_, _, _)
+            Dependency::Item(_, _) | Dependency::TyInvAxiom(_) | Dependency::ClosureSpec(_, _, _)
         ));
 
         // TODO: Fold into `term`, but requires first some sort of
         // handling for axioms
         if let Dependency::TyInvAxiom(ty) = dep {
             return expand_ty_inv_axiom(elab, ctx, ty);
-        }
-
-        // TODO: getting rid of this requires breaking the dependency on `def_id` below.
-        if let Dependency::StructuralResolve(ty) = dep {
-            return expand_structural_resolve(elab, ctx, ty);
         }
 
         let (def_id, subst) = dep.did().unwrap();
@@ -237,37 +230,6 @@ fn expand_ty_inv_axiom<'tcx>(
     let axiom =
         Axiom { name: names.insert(Dependency::TyInvAxiom(ty)).qname().name, rewrite, axiom: exp };
     vec![Decl::Axiom(axiom)]
-}
-
-// TODO Deprecate and fold into LogicElab
-fn expand_structural_resolve<'tcx>(
-    elab: &mut Expander<'_, 'tcx>,
-    ctx: &mut Why3Generator<'tcx>,
-    ty: Ty<'tcx>,
-) -> Vec<Decl> {
-    let param_env = elab.param_env;
-    let mut names = elab.namer(Dependency::StructuralResolve(ty));
-
-    let (binder, term) = structural_resolve(ctx, ty);
-    let exp = if let Some(mut term) = term {
-        term = normalize(ctx.tcx, param_env, term);
-        Some(lower_pure(ctx, &mut names, &term))
-    } else {
-        None
-    };
-
-    let binder =
-        Binder::typed(ident_of(binder.0), translate_ty(ctx, &mut names, DUMMY_SP, binder.1));
-    let sig = Signature {
-        name: names.insert(Dependency::StructuralResolve(ty)).ident(),
-        trigger: None,
-        attrs: vec![],
-        retty: None,
-        args: vec![binder],
-        contract: Contract::default(),
-    };
-
-    vec![Decl::predicate(sig, exp)]
 }
 
 pub fn resolve_term<'tcx>(
@@ -432,7 +394,6 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 }
             }
             Dependency::TyInvAxiom(_) => LogicElab::expand(self, ctx, dep),
-            Dependency::StructuralResolve(_) => LogicElab::expand(self, ctx, dep),
             Dependency::ClosureSpec(ClosureSpecKind::Accessor(_), _, _) => vec![],
             Dependency::ClosureSpec(_, _, _) => LogicElab::expand(self, ctx, dep),
             Dependency::Builtin(b) => {
@@ -536,6 +497,9 @@ pub fn term<'tcx>(
                 Some(res)
             } else if is_resolve_function(ctx.tcx, def_id) {
                 resolve_term(ctx, param_env, def_id, subst)
+            } else if is_structural_resolve(ctx.tcx, def_id) {
+                let sig = ctx.sig(def_id).clone();
+                structural_resolve(ctx, sig.inputs[0].0, subst.type_at(0))
             } else {
                 let term = ctx.ctx.term(def_id).unwrap().clone();
                 let term = normalize(
@@ -546,7 +510,6 @@ pub fn term<'tcx>(
                 Some(term)
             }
         }
-        Dependency::StructuralResolve(ty) => structural_resolve(ctx, ty).1,
         Dependency::ClosureSpec(cs, did, _) => {
             let c = ctx.ctx.closure_contract(did);
             match cs {

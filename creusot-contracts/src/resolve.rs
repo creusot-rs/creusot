@@ -80,7 +80,7 @@ impl<T> Resolve for Option<T> {
 }
 
 #[predicate(prophetic)]
-#[open(self)]
+#[open]
 #[rustc_diagnostic_item = "creusot_structural_resolve"]
 #[creusot::no_translate]
 pub fn structural_resolve<T: ?Sized>(_: &T) -> bool {

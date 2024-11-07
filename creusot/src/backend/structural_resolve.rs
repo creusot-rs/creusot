@@ -12,10 +12,11 @@ use super::Why3Generator;
 
 pub fn structural_resolve<'tcx>(
     ctx: &Why3Generator<'tcx>,
+    subject: Symbol,
     ty: Ty<'tcx>,
-) -> ((Symbol, Ty<'tcx>), Option<Term<'tcx>>) {
-    let subject = Term::var(Symbol::intern("x"), ty);
-    let body = match ty.kind() {
+) -> Option<Term<'tcx>> {
+    let subject = Term::var(subject, ty);
+    match ty.kind() {
         TyKind::Adt(adt, _) if adt.is_box() => Some(resolve_of(ctx, subject.cur())),
         TyKind::Adt(adt, _) if is_trusted(ctx.tcx, adt.did()) => None,
         TyKind::Adt(adt, _) if is_snap_ty(ctx.tcx, adt.did()) => Some(Term::mk_true(ctx.tcx)),
@@ -75,9 +76,7 @@ pub fn structural_resolve<'tcx>(
         }
         TyKind::Param(_) => None,
         _ => Some(Term::mk_true(ctx.tcx)),
-    };
-
-    ((Symbol::intern("x"), ty), body)
+    }
 }
 
 fn resolve_of<'tcx>(ctx: &Why3Generator<'tcx>, term: Term<'tcx>) -> Term<'tcx> {
