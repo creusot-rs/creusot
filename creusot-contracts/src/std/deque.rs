@@ -60,7 +60,6 @@ impl<T> Resolve for VecDeque<T> {
 
     #[trusted]
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
     fn resolve_coherence(&self) {}
@@ -96,7 +95,7 @@ extern_spec! {
                 #[ensures(match result {
                     Some(t) =>
                         (^self)@ == self@.subsequence(1, self@.len()) &&
-                        self@ == Seq::singleton(t).concat((^self)@),
+                        self@ == (^self)@.push_front(t),
                     None => *self == ^self && self@.len() == 0
                 })]
                 fn pop_front(&mut self) -> Option<T>;
@@ -105,18 +104,18 @@ extern_spec! {
                 #[ensures(match result {
                     Some(t) =>
                         (^self)@ == self@.subsequence(0, self@.len() - 1) &&
-                        self@ == (^self)@.push(t),
+                        self@ == (^self)@.push_back(t),
                     None => *self == ^self && self@.len() == 0
                 })]
                 fn pop_back(&mut self) -> Option<T>;
 
                 #[terminates] // can OOM
                 #[ensures((^self)@.len() == self@.len() + 1)]
-                #[ensures((^self)@ == Seq::singleton(value).concat(self@))]
+                #[ensures((^self)@ == self@.push_front(value))]
                 fn push_front(&mut self, value: T);
 
                 #[terminates] // can OOM
-                #[ensures((^self)@ == self@.push(value))]
+                #[ensures((^self)@ == self@.push_back(value))]
                 fn push_back(&mut self, value: T);
             }
 

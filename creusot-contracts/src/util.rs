@@ -20,7 +20,6 @@ impl<T: ?Sized> MakeSized for T {
 #[trusted]
 #[allow(unconditional_recursion)]
 #[logic]
-#[open(self)]
 #[requires(false)]
 #[ensures(false)]
 #[variant(0)]

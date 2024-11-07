@@ -142,35 +142,31 @@ macro_rules! ord_logic_impl {
             }
 
             #[trusted]
-            #[open]
             #[logic]
             #[creusot::builtins = "int.Int.(<=)"]
             fn le_log(self, _: Self) -> bool {
-                true
+                dead
             }
 
             #[trusted]
-            #[open]
             #[logic]
             #[creusot::builtins = "int.Int.(<)"]
             fn lt_log(self, _: Self) -> bool {
-                true
+                dead
             }
 
             #[trusted]
-            #[open]
             #[logic]
             #[creusot::builtins = "int.Int.(>=)"]
             fn ge_log(self, _: Self) -> bool {
-                true
+                dead
             }
 
             #[trusted]
-            #[open]
             #[logic]
             #[creusot::builtins = "int.Int.(>)"]
             fn gt_log(self, _: Self) -> bool {
-                true
+                dead
             }
 
             ord_laws_impl! {}

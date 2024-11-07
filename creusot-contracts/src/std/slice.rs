@@ -406,15 +406,11 @@ impl<'a, T> Iterator for Iter<'a, T> {
         }
     }
 
-    // FIXME: remove `trusted`
-    #[trusted]
     #[law]
     #[open]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
-    // FIXME: remove `trusted`
-    #[trusted]
     #[law]
     #[open]
     #[requires(a.produces(ab, b))]

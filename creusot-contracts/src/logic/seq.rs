@@ -127,10 +127,26 @@ impl<T: ?Sized> Seq<T> {
         dead
     }
 
+    // internal wrapper to match the order of arguments of Seq.cons
+    #[doc(hidden)]
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "seq.Seq.cons"]
+    pub fn cons(_: T, _: Self) -> Self {
+        dead
+    }
+
+    #[logic]
+    #[open]
+    #[why3::attr = "inline:trivial"]
+    pub fn push_front(self, x: T) -> Self {
+        Self::cons(x, self)
+    }
+
     #[trusted]
     #[logic]
     #[creusot::builtins = "seq.Seq.snoc"]
-    pub fn push(self, _: T) -> Self {
+    pub fn push_back(self, _: T) -> Self {
         dead
     }
 
@@ -249,9 +265,9 @@ impl<T> Seq<T> {
     ///
     /// let mut s = Seq::new();
     /// ghost! {
-    ///     s.push_ghost(1);
-    ///     s.push_ghost(2);
-    ///     s.push_ghost(3);
+    ///     s.push_back_ghost(1);
+    ///     s.push_back_ghost(2);
+    ///     s.push_back_ghost(3);
     ///     let len = s.len_ghost();
     ///     proof_assert!(len == 3);
     /// };
@@ -263,6 +279,28 @@ impl<T> Seq<T> {
         panic!()
     }
 
+    /// Appends an element to the front of a collection.
+    ///
+    /// # Example
+    /// ```rust,creusot
+    /// use creusot_contracts::{ghost, proof_assert, Seq};
+    ///
+    /// let mut s = Seq::new();
+    /// ghost! {
+    ///     s.push_front_ghost(1);
+    ///     s.push_front_ghost(2);
+    ///     s.push_front_ghost(3);
+    ///     proof_assert!(s[0] == 3i32 && s[1] == 2i32 && s[2] == 1i32);
+    /// };
+    /// ```
+    #[trusted]
+    #[pure]
+    #[ensures(^self == self.push_front(x))]
+    pub fn push_front_ghost(&mut self, x: T) {
+        let _ = x;
+        panic!()
+    }
+
     /// Appends an element to the back of a collection.
     ///
     /// # Example
@@ -271,16 +309,16 @@ impl<T> Seq<T> {
     ///
     /// let mut s = Seq::new();
     /// ghost! {
-    ///     s.push_ghost(1);
-    ///     s.push_ghost(2);
-    ///     s.push_ghost(3);
+    ///     s.push_back_ghost(1);
+    ///     s.push_back_ghost(2);
+    ///     s.push_back_ghost(3);
     ///     proof_assert!(s[0] == 1i32 && s[1] == 2i32 && s[2] == 3i32);
     /// };
     /// ```
     #[trusted]
     #[pure]
-    #[ensures(^self == self.push(x))]
-    pub fn push_ghost(&mut self, x: T) {
+    #[ensures(^self == self.push_back(x))]
+    pub fn push_back_ghost(&mut self, x: T) {
         let _ = x;
         panic!()
     }
@@ -293,9 +331,9 @@ impl<T> Seq<T> {
     ///
     /// let mut s = Seq::new();
     /// ghost! {
-    ///     s.push_ghost(10);
-    ///     s.push_ghost(40);
-    ///     s.push_ghost(30);
+    ///     s.push_back_ghost(10);
+    ///     s.push_back_ghost(40);
+    ///     s.push_back_ghost(30);
     ///     let get1 = s.get_ghost(*Int::new(1));
     ///     let get2 = s.get_ghost(*Int::new(3));
     ///     proof_assert!(get1 == Some(&40i32));
@@ -322,9 +360,9 @@ impl<T> Seq<T> {
     /// let mut s = Seq::new();
     ///
     /// ghost! {
-    ///     s.push_ghost(0);
-    ///     s.push_ghost(1);
-    ///     s.push_ghost(2);
+    ///     s.push_back_ghost(0);
+    ///     s.push_back_ghost(1);
+    ///     s.push_back_ghost(2);
     ///     if let Some(elem) = s.get_mut_ghost(*Int::new(1)) {
     ///         *elem = 42;
     ///     }
@@ -333,13 +371,9 @@ impl<T> Seq<T> {
     /// ```
     #[trusted]
     #[pure]
-    #[ensures(if self.get(index) == None {
-        result == None && *self == ^self
-    } else {
-        match result {
-            None => false,
-            Some(r) => *r == (*self)[index] && ^r == (^self)[index]
-        }
+    #[ensures(match result {
+        None => self.get(index) == None && *self == ^self,
+        Some(r) => self.get(index) == Some(*r) && ^r == (^self)[index],
     })]
     #[ensures(forall<i: Int> i != index ==> (*self).get(index) == (^self).get(index))]
     #[ensures((*self).len() == (^self).len())]
@@ -356,25 +390,47 @@ impl<T> Seq<T> {
     ///
     /// let mut s = Seq::new();
     /// ghost! {
-    ///     s.push_ghost(1);
-    ///     s.push_ghost(2);
-    ///     s.push_ghost(3);
-    ///     let popped = s.pop_ghost();
+    ///     s.push_back_ghost(1);
+    ///     s.push_back_ghost(2);
+    ///     s.push_back_ghost(3);
+    ///     let popped = s.pop_back_ghost();
     ///     proof_assert!(popped == Some(3i32));
     ///     proof_assert!(s[0] == 1i32 && s[1] == 2i32);
     /// };
     /// ```
     #[trusted]
     #[pure]
-    #[ensures(if self.len() == 0 {
-        *self == ^self && result == None
-    } else {
-        match result {
-            None => false,
-            Some(r) => *self == (^self).push(r)
-        }
+    #[ensures(match result {
+        None => *self == Seq::EMPTY && *self == ^self,
+        Some(r) => *self == (^self).push_back(r)
     })]
-    pub fn pop_ghost(&mut self) -> Option<T> {
+    pub fn pop_back_ghost(&mut self) -> Option<T> {
+        panic!()
+    }
+
+    /// Removes the first element from a vector and returns it, or `None` if it is empty.
+    ///
+    /// # Example
+    /// ```rust,creusot
+    /// use creusot_contracts::{ghost, proof_assert, Seq};
+    ///
+    /// let mut s = Seq::new();
+    /// ghost! {
+    ///     s.push_back_ghost(1);
+    ///     s.push_back_ghost(2);
+    ///     s.push_back_ghost(3);
+    ///     let popped = s.pop_front_ghost();
+    ///     proof_assert!(popped == Some(1i32));
+    ///     proof_assert!(s[0] == 2i32 && s[1] == 3i32);
+    /// };
+    /// ```
+    #[trusted]
+    #[pure]
+    #[ensures(match result {
+        None => *self == Seq::EMPTY && *self == ^self,
+        Some(r) => *self == (^self).push_front(r)
+    })]
+    pub fn pop_front_ghost(&mut self) -> Option<T> {
         panic!()
     }
 }

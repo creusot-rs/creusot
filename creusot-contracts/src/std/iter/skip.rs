@@ -35,7 +35,6 @@ impl<I> Resolve for Skip<I> {
 
     #[trusted]
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
     fn resolve_coherence(&self) {}
@@ -75,8 +74,6 @@ impl<I: Iterator> Iterator for Skip<I> {
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
-    // FIXME: remove `trusted`
-    #[trusted]
     #[law]
     #[open(self)]
     #[requires(inv(a))]

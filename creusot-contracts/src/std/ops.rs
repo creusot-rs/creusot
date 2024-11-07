@@ -96,20 +96,17 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
 
     #[trusted]
     #[law]
-    #[open(self)]
     #[requires(self.postcondition_mut(args, res))]
     #[ensures((*self).unnest(^self))]
     fn postcondition_mut_unnest(&mut self, args: Args, res: Self::Output) {}
 
     #[trusted]
     #[law]
-    #[open(self)]
     #[ensures(self.unnest(self))]
     fn unnest_refl(self) {}
 
     #[trusted]
     #[law]
-    #[open(self)]
     #[requires(self.unnest(b))]
     #[requires(b.unnest(c))]
     #[ensures(self.unnest(c))]
@@ -117,7 +114,6 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
 
     #[law]
     #[trusted]
-    #[open(self)]
     #[ensures(self.postcondition_once(args, res) == exists<s: &mut Self> *s == self && s.postcondition_mut(args, res) && resolve(&^s))]
     fn fn_mut_once(self, args: Args, res: Self::Output) {}
 }
@@ -131,13 +127,11 @@ impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
     }
 
     #[law]
-    #[open(self)]
     #[trusted]
     #[ensures(self.postcondition_mut(args, res) == (self.resolve() && self.postcondition(args, res)))]
     fn fn_mut(&mut self, args: Args, res: Self::Output) {}
 
     #[law]
-    #[open(self)]
     #[trusted]
     #[ensures(self.postcondition_once(args, res) == (resolve(&self) && self.postcondition(args, res)))]
     fn fn_once(self, args: Args, res: Self::Output) {}

@@ -51,7 +51,6 @@ impl<T, A: Allocator> Resolve for Vec<T, A> {
 
     #[trusted]
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
     fn resolve_coherence(&self) {}
@@ -85,14 +84,14 @@ extern_spec! {
                 fn len(&self) -> usize;
 
                 #[terminates] // can OOM
-                #[ensures((^self)@ == self@.push(v))]
+                #[ensures((^self)@ == self@.push_back(v))]
                 fn push(&mut self, v: T);
 
                 #[pure]
                 #[ensures(match result {
                     Some(t) =>
                         (^self)@ == self@.subsequence(0, self@.len() - 1) &&
-                        self@ == (^self)@.push(t),
+                        self@ == (^self)@.push_back(t),
                     None => *self == ^self && self@.len() == 0
                 })]
                 fn pop(&mut self) -> Option<T>;
@@ -246,7 +245,6 @@ impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
 
     #[trusted]
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
     fn resolve_coherence(&self) {}
@@ -272,8 +270,6 @@ impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
-    // FIXME: remove `trusted`
-    #[trusted]
     #[law]
     #[open]
     #[requires(a.produces(ab, b))]
