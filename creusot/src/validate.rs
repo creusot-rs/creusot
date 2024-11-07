@@ -10,7 +10,9 @@ use rustc_span::Span;
 
 use crate::{
     contracts_items::{
-        get_builtin, is_ghost_deref, is_ghost_deref_mut, is_law, is_logic, is_no_translate, is_open_inv_result, is_predicate, is_prophetic, is_snapshot_closure, is_snapshot_deref, is_spec, is_trusted, opacity_witness_name
+        get_builtin, is_ghost_deref, is_ghost_deref_mut, is_law, is_logic, is_no_translate,
+        is_open_inv_result, is_predicate, is_prophetic, is_snapshot_closure, is_snapshot_deref,
+        is_spec, is_trusted, opacity_witness_name,
     },
     ctx::TranslationCtx,
     error::{Error, InternalError},

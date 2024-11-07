@@ -23,10 +23,13 @@
 
 use crate::{
     backend::is_trusted_function,
-    contracts_items::{has_variant_clause, is_ghost_closure, is_ghost_from_fn, is_no_translate, is_pearlite},
+    contracts_items::{
+        has_variant_clause, is_ghost_closure, is_ghost_from_fn, is_no_translate, is_pearlite,
+    },
     ctx::TranslationCtx,
     specification::contract_of,
-    traits::TraitResolved, util::erased_identity_for_item,
+    traits::TraitResolved,
+    util::erased_identity_for_item,
 };
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graph, visit::EdgeRef as _};

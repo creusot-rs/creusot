@@ -1,6 +1,9 @@
 use super::BodyTranslator;
 use crate::{
-    contracts_items::{is_box_new, is_deref, is_deref_mut, is_ghost_from_fn, is_ghost_into_inner, is_ghost_new, is_ghost_ty, is_snap_from_fn},
+    contracts_items::{
+        is_box_new, is_deref, is_deref_mut, is_ghost_from_fn, is_ghost_into_inner, is_ghost_new,
+        is_ghost_ty, is_snap_from_fn,
+    },
     ctx::TranslationCtx,
     extended_location::ExtendedLocation,
     fmir,

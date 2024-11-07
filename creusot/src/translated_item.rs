@@ -1,5 +1,5 @@
-use why3::declaration::Module;
 use crate::naming::ModulePath;
+use why3::declaration::Module;
 
 /// Module with a path to the file it is defined in.
 /// We use this for modular translation (one file per module).

@@ -1,5 +1,11 @@
 use crate::{
-    contracts_items::{creusot_clause_attrs, get_fn_mut_unnest, is_open_inv_result, is_pearlite}, ctx::*, function::closure_capture_subst, naming::anonymous_param_symbol, pearlite::TermVisitorMut, translation::pearlite::{self, normalize, Literal, Term, TermKind}, util::erased_identity_for_item
+    contracts_items::{creusot_clause_attrs, get_fn_mut_unnest, is_open_inv_result, is_pearlite},
+    ctx::*,
+    function::closure_capture_subst,
+    naming::anonymous_param_symbol,
+    pearlite::TermVisitorMut,
+    translation::pearlite::{self, normalize, Literal, Term, TermKind},
+    util::erased_identity_for_item,
 };
 use rustc_ast::ast::{AttrArgs, AttrArgsEq};
 use rustc_hir::{def_id::DefId, Safety};

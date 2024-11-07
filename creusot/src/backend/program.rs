@@ -10,7 +10,14 @@ use crate::{
         ty::{self, constructor, int_ty, translate_ty},
         wto::{weak_topological_order, Component},
         NameSupply, Namer, Why3Generator,
-    }, contracts_items::is_ghost_closure, ctx::{BodyId, Dependencies}, fmir::{self, Body, BorrowKind, Operand, TrivialInv}, naming::ident_of, pearlite::{self, PointerKind}, translated_item::FileModule, translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator}
+    },
+    contracts_items::is_ghost_closure,
+    ctx::{BodyId, Dependencies},
+    fmir::{self, Body, BorrowKind, Operand, TrivialInv},
+    naming::ident_of,
+    pearlite::{self, PointerKind},
+    translated_item::FileModule,
+    translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
 };
 
 use petgraph::graphmap::DiGraphMap;

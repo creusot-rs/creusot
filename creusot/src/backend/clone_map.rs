@@ -2,7 +2,8 @@ use crate::{
     backend::{clone_map::elaborator::Expander, dependency::Dependency},
     contracts_items::{get_builtin, get_inv_function},
     ctx::*,
-    options::SpanMode, util::erased_identity_for_item,
+    options::SpanMode,
+    util::erased_identity_for_item,
 };
 use indexmap::{IndexMap, IndexSet};
 use rustc_hir::{

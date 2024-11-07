@@ -3,7 +3,11 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::{RealFileName, Span};
 
 use crate::{
-    contracts_items::{is_resolve_function, is_spec, is_trusted}, ctx::{ItemType, TranslatedItem, TranslationCtx}, naming::ModulePath, options::SpanMode, run_why3::SpanMap
+    contracts_items::{is_resolve_function, is_spec, is_trusted},
+    ctx::{ItemType, TranslatedItem, TranslationCtx},
+    naming::ModulePath,
+    options::SpanMode,
+    run_why3::SpanMap,
 };
 use std::ops::{Deref, DerefMut};
 

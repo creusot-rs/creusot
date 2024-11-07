@@ -119,7 +119,7 @@ pub(crate) fn get_creusot_item(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
 }
 
 pub(crate) fn is_open_inv_param(p: &Param) -> bool {
-    return get_attr(&p.attrs, &["creusot", "open_inv"]).is_some()
+    return get_attr(&p.attrs, &["creusot", "open_inv"]).is_some();
 }
 
 fn get_attr<'a>(

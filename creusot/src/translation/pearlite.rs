@@ -12,7 +12,10 @@ use std::{
 };
 
 use crate::{
-    contracts_items::{get_ghost_inner_logic, get_index_logic, get_snap_inner, is_assertion, is_deref, is_ghost_ty, is_snap_ty, is_spec},
+    contracts_items::{
+        get_ghost_inner_logic, get_index_logic, get_snap_inner, is_assertion, is_deref,
+        is_ghost_ty, is_snap_ty, is_spec,
+    },
     error::{CreusotResult, Error, InternalError},
     naming::anonymous_param_symbol,
     translation::{projection_vec::*, TranslationCtx},

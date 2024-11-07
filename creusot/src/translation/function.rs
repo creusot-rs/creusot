@@ -2,7 +2,10 @@ use crate::{
     analysis::NotFinalPlaces,
     backend::ty_inv::is_tyinv_trivial,
     constant::from_mir_constant,
-    contracts_items::{get_fn_mut_unnest, get_resolve_function, get_resolve_method, is_ghost_closure, is_snapshot_closure, is_spec},
+    contracts_items::{
+        get_fn_mut_unnest, get_resolve_function, get_resolve_method, is_ghost_closure,
+        is_snapshot_closure, is_spec,
+    },
     ctx::*,
     extended_location::ExtendedLocation,
     fmir::{self, LocalDecl, LocalDecls, LocalIdent, RValue, TrivialInv},

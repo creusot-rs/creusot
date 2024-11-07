@@ -1,3 +1,4 @@
+use crate::contracts_items::{is_no_translate, is_snapshot_closure, no_mir};
 use indexmap::IndexSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::{Idx, IndexVec};
@@ -9,7 +10,6 @@ use rustc_middle::{
     },
     ty::TyCtxt,
 };
-use crate::contracts_items::{is_no_translate, is_snapshot_closure, no_mir};
 
 /// Hide non-linear specification code from the borrow checker
 ///
