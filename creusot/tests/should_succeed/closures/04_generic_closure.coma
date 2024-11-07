@@ -87,15 +87,15 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
   
   predicate precondition'0 (self : f) (_2 : a)
   
-  let rec call'0 (self:f) (args:a) (return'  (ret:b))= {[@expl:precondition] inv'4 args}
-    {[@expl:precondition] inv'3 self}
-    {[@expl:precondition] [%#sops3] precondition'0 self args}
+  let rec call'0 (self:f) (args:a) (return'  (ret:b))= {[@expl:call 'self' type invariant] inv'3 self}
+    {[@expl:call 'args' type invariant] inv'4 args}
+    {[@expl:call requires] [%#sops3] precondition'0 self args}
     any [ return' (result:b)-> {inv'2 result} {[%#sops4] postcondition'0 self args result} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
-  let rec generic_closure (f:f) (a:a) (return'  (ret:b))= {[%#s04_generic_closure1] inv'1 a}
-    {[%#s04_generic_closure0] inv'0 f}
+  let rec generic_closure (f:f) (a:a) (return'  (ret:b))= {[@expl:generic_closure 'f' type invariant] [%#s04_generic_closure0] inv'0 f}
+    {[@expl:generic_closure 'a' type invariant] [%#s04_generic_closure1] inv'1 a}
     (! bb0
     [ bb0 = s0 [ s0 =  [ &_4 <- (a) ] s1 | s1 = call'0 {f} {_4} (fun (_ret':b) ->  [ &_0 <- _ret' ] s2) | s2 = bb1 ] 
     | bb1 = s0 [ s0 = {[@expl:type invariant] inv'0 f} s1 | s1 = -{resolve'0 f}- s2 | s2 = bb2 ] 
@@ -103,7 +103,8 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
     | bb3 = bb4
     | bb4 = return' {_0} ]
     ) [ & _0 : b = any_l () | & f : f = f | & a : a = a | & _4 : a = any_l () ] 
-    [ return' (result:b)-> {[@expl:postcondition] [%#s04_generic_closure2] inv'2 result} (! return' {result}) ]
+    [ return' (result:b)-> {[@expl:generic_closure result type invariant] [%#s04_generic_closure2] inv'2 result}
+      (! return' {result}) ]
     
 end
 module T_04_generic_closure__mapper__qyClosure0 [#"04_generic_closure.rs" 10 28 10 32]
@@ -131,7 +132,7 @@ module M_04_generic_closure__mapper__qyClosure0 [#"04_generic_closure.rs" 10 28 
   
   meta "compute_max_steps" 1000000
   
-  let rec m_04_generic_closure__mapper__qyClosure0 (_1:Closure'0.m_04_generic_closure__mapper__qyClosure0 a) (_a:a) (return'  (ret:()))= {[%#s04_generic_closure0] inv'0 _a}
+  let rec m_04_generic_closure__mapper__qyClosure0 (_1:Closure'0.m_04_generic_closure__mapper__qyClosure0 a) (_a:a) (return'  (ret:()))= {[@expl:closure '_a' type invariant] [%#s04_generic_closure0] inv'0 _a}
     (! bb0
     [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'0 _a} s1 | s1 = -{resolve'0 _a}- s2 | s2 = bb1 ] 
     | bb1 = return' {_0} ]
@@ -160,13 +161,13 @@ module M_04_generic_closure__mapper [#"04_generic_closure.rs" 9 0 9 22]
   
   use prelude.prelude.Intrinsic
   
-  let rec generic_closure'0 (f:Closure'0.m_04_generic_closure__mapper__qyClosure0 a) (a:a) (return'  (ret:()))= {[@expl:precondition] [%#s04_generic_closure2] inv'0 a}
-    {[@expl:precondition] [%#s04_generic_closure1] inv'1 f}
+  let rec generic_closure'0 (f:Closure'0.m_04_generic_closure__mapper__qyClosure0 a) (a:a) (return'  (ret:()))= {[@expl:generic_closure 'f' type invariant] [%#s04_generic_closure1] inv'1 f}
+    {[@expl:generic_closure 'a' type invariant] [%#s04_generic_closure2] inv'0 a}
     any [ return' (result:())-> {[%#s04_generic_closure3] inv'2 result} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
-  let rec mapper (x:a) (return'  (ret:()))= {[%#s04_generic_closure0] inv'0 x}
+  let rec mapper (x:a) (return'  (ret:()))= {[@expl:mapper 'x' type invariant] [%#s04_generic_closure0] inv'0 x}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &_3 <- Closure'0.M_04_generic_closure__mapper__qyClosure0 ] s1

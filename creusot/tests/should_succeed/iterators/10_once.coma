@@ -134,8 +134,8 @@ module M_10_once__qyi9558967427796228243__next [#"10_once.rs" 48 4 48 35] (* <On
   type t
   
   let%span s10_once0 = "10_once.rs" 48 17 48 21
-  let%span s10_once1 = "10_once.rs" 44 14 47 5
-  let%span s10_once2 = "10_once.rs" 48 26 48 35
+  let%span s10_once1 = "10_once.rs" 48 26 48 35
+  let%span s10_once2 = "10_once.rs" 44 14 47 5
   let%span soption3 = "../../../../creusot-contracts/src/std/option.rs" 31 0 423 1
   let%span s10_once4 = "10_once.rs" 16 20 16 57
   let%span s10_once5 = "10_once.rs" 23 12 24 116
@@ -201,7 +201,7 @@ module M_10_once__qyi9558967427796228243__next [#"10_once.rs" 48 4 48 35] (* <On
   predicate resolve'0 (_1 : borrowed (Once'0.t_Once t)) =
     resolve'1 _1
   
-  let rec take'0 (self:borrowed (Option'0.t_Option t)) (return'  (ret:Option'0.t_Option t))= {[@expl:precondition] inv'2 self}
+  let rec take'0 (self:borrowed (Option'0.t_Option t)) (return'  (ret:Option'0.t_Option t))= {[@expl:take 'self' type invariant] inv'2 self}
     any
     [ return' (result:Option'0.t_Option t)-> {inv'0 result}
       {[%#soption3] result = self.current /\ self.final = Option'0.C_None}
@@ -210,7 +210,7 @@ module M_10_once__qyi9558967427796228243__next [#"10_once.rs" 48 4 48 35] (* <On
   
   meta "compute_max_steps" 1000000
   
-  let rec next (self:borrowed (Once'0.t_Once t)) (return'  (ret:Option'0.t_Option t))= {[%#s10_once0] inv'1 self}
+  let rec next (self:borrowed (Once'0.t_Once t)) (return'  (ret:Option'0.t_Option t))= {[@expl:next 'self' type invariant] [%#s10_once0] inv'1 self}
     (! bb0
     [ bb0 = s0
       [ s0 = Once'0.t_Once <t> {self.current}
@@ -231,8 +231,8 @@ module M_10_once__qyi9558967427796228243__next [#"10_once.rs" 48 4 48 35] (* <On
     | & self : borrowed (Once'0.t_Once t) = self
     | & _3 : borrowed (Option'0.t_Option t) = any_l () ]
     
-    [ return' (result:Option'0.t_Option t)-> {[@expl:postcondition] [%#s10_once2] inv'0 result}
-      {[@expl:postcondition] [%#s10_once1] match result with
+    [ return' (result:Option'0.t_Option t)-> {[@expl:next result type invariant] [%#s10_once1] inv'0 result}
+      {[@expl:next ensures] [%#s10_once2] match result with
         | Option'0.C_None -> completed'0 self
         | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
@@ -301,16 +301,16 @@ module M_10_once__qyi9558967427796228243 [#"10_once.rs" 10 0 10 28] (* <Once<T> 
   
   goal next_refn : [%#s10_once0] forall self : borrowed (Once'0.t_Once t) . inv'0 self
    -> inv'0 self
-  /\ (forall result : Option'0.t_Option t . inv'1 result
-  /\ match result with
+  /\ (forall result : Option'0.t_Option t . match result with
     | Option'0.C_None -> completed'0 self
     | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end
-   -> inv'1 result
-  /\ match result with
+  /\ inv'1 result
+   -> match result with
     | Option'0.C_None -> completed'0 self
     | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
-    end)
+    end
+  /\ inv'1 result)
   
   goal produces_refl_refn : [%#s10_once1] forall self : Once'0.t_Once t . inv'2 self
    -> inv'2 self

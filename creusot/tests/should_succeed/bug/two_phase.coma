@@ -136,14 +136,14 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   
   use seq.Seq
   
-  let rec push'0 (self:borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) (value:usize) (return'  (ret:()))= {[@expl:precondition] inv'2 value}
-    {[@expl:precondition] inv'1 self}
+  let rec push'0 (self:borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) (value:usize) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'1 self}
+    {[@expl:push 'value' type invariant] inv'2 value}
     any [ return' (result:())-> {[%#svec2] view'2 self.final = Seq.snoc (view'0 self) value} (! return' {result}) ] 
   
   function view'1 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize =
     [%#smodel5] view'2 self
   
-  let rec len'0 (self:Vec'0.t_Vec usize (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] inv'0 self}
+  let rec len'0 (self:Vec'0.t_Vec usize (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'0 self}
     any [ return' (result:usize)-> {[%#svec1] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
@@ -167,7 +167,7 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
     | & _4 : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)) = any_l ()
     | & _5 : usize = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#stwo_phase0] UIntSize.to_int (index_logic'0 v.final (Seq.length (view'0 v)))
+    [ return' (result:())-> {[@expl:test ensures] [%#stwo_phase0] UIntSize.to_int (index_logic'0 v.final (Seq.length (view'0 v)))
       = Seq.length (view'0 v)}
       (! return' {result}) ]
     

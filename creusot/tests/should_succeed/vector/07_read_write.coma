@@ -77,9 +77,9 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   type t
   
   let%span s07_read_write0 = "07_read_write.rs" 8 4 8 22
-  let%span s07_read_write1 = "07_read_write.rs" 5 11 5 24
-  let%span s07_read_write2 = "07_read_write.rs" 6 44 6 45
-  let%span s07_read_write3 = "07_read_write.rs" 6 70 6 71
+  let%span s07_read_write1 = "07_read_write.rs" 6 44 6 45
+  let%span s07_read_write2 = "07_read_write.rs" 6 70 6 71
+  let%span s07_read_write3 = "07_read_write.rs" 5 11 5 24
   let%span svec4 = "../../../../creusot-contracts/src/std/vec.rs" 155 27 155 46
   let%span svec5 = "../../../../creusot-contracts/src/std/vec.rs" 156 26 156 54
   let%span svec6 = "../../../../creusot-contracts/src/std/vec.rs" 157 26 157 57
@@ -201,8 +201,8 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   function deep_model'0 (self : t) : t_DeepModelTy'0 =
     [%#smodel19] deep_model'1 self
   
-  let rec eq'0 (self:t) (other:t) (return'  (ret:bool))= {[@expl:precondition] inv'6 other}
-    {[@expl:precondition] inv'6 self}
+  let rec eq'0 (self:t) (other:t) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'6 self}
+    {[@expl:eq 'other' type invariant] inv'6 other}
     any [ return' (result:bool)-> {[%#scmp11] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ] 
   
   use seq.Seq
@@ -216,9 +216,9 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   function view'2 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t =
     [%#smodel18] view'1 self
   
-  let rec index'0 (self:Vec'0.t_Vec t (Global'0.t_Global)) (index:usize) (return'  (ret:t))= {[@expl:precondition] inv'4 index}
-    {[@expl:precondition] inv'5 self}
-    {[@expl:precondition] [%#svec9] in_bounds'0 index (view'2 self)}
+  let rec index'0 (self:Vec'0.t_Vec t (Global'0.t_Global)) (index:usize) (return'  (ret:t))= {[@expl:index 'self' type invariant] inv'5 self}
+    {[@expl:index 'index' type invariant] inv'4 index}
+    {[@expl:index requires] [%#svec9] in_bounds'0 index (view'2 self)}
     any
     [ return' (result:t)-> {inv'6 result} {[%#svec10] has_value'0 index (view'2 self) result} (! return' {result}) ]
     
@@ -233,23 +233,23 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
     [%#sslice16] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
   
-  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec t (Global'0.t_Global))) (index:usize) (return'  (ret:borrowed t))= {[@expl:precondition] inv'4 index}
-    {[@expl:precondition] inv'2 self}
-    {[@expl:precondition] [%#svec4] in_bounds'0 index (view'0 self)}
+  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec t (Global'0.t_Global))) (index:usize) (return'  (ret:borrowed t))= {[@expl:index_mut 'self' type invariant] inv'2 self}
+    {[@expl:index_mut 'index' type invariant] inv'4 index}
+    {[@expl:index_mut requires] [%#svec4] in_bounds'0 index (view'0 self)}
     any
     [ return' (result:borrowed t)-> {inv'1 result}
-      {[%#svec8] Seq.length (view'1 self.final) = Seq.length (view'0 self)}
-      {[%#svec7] resolve_elswhere'0 index (view'0 self) (view'1 self.final)}
-      {[%#svec6] has_value'0 index (view'1 self.final) result.final}
       {[%#svec5] has_value'0 index (view'0 self) result.current}
+      {[%#svec6] has_value'0 index (view'1 self.final) result.final}
+      {[%#svec7] resolve_elswhere'0 index (view'0 self) (view'1 self.final)}
+      {[%#svec8] Seq.length (view'1 self.final) = Seq.length (view'0 self)}
       (! return' {result}) ]
     
   
   meta "compute_max_steps" 1000000
   
-  let rec read_write (a:borrowed (Vec'0.t_Vec t (Global'0.t_Global))) (i:usize) (x:t) (return'  (ret:()))= {[%#s07_read_write3] inv'3 x}
-    {[%#s07_read_write2] inv'2 a}
-    {[%#s07_read_write1] UIntSize.to_int i < Seq.length (view'0 a)}
+  let rec read_write (a:borrowed (Vec'0.t_Vec t (Global'0.t_Global))) (i:usize) (x:t) (return'  (ret:()))= {[@expl:read_write 'a' type invariant] [%#s07_read_write1] inv'2 a}
+    {[@expl:read_write 'x' type invariant] [%#s07_read_write2] inv'3 x}
+    {[@expl:read_write requires] [%#s07_read_write3] UIntSize.to_int i < Seq.length (view'0 a)}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 a.current}

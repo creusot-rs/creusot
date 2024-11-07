@@ -139,8 +139,9 @@ module M_13_vec_macro__x [#"13_vec_macro.rs" 5 0 5 10]
   
   function view'3 (self : slice int32) : Seq.seq int32
   
-  axiom view'3_spec : forall self : slice int32 . ([%#sslice17] view'3 self = Slice.id self)
-  && ([%#sslice16] Seq.length (view'3 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'3_spec : forall self : slice int32 . ([%#sslice16] Seq.length (view'3 self)
+  <= UIntSize.to_int (v_MAX'0 : usize))
+  && ([%#sslice17] view'3 self = Slice.id self)
   
   function view'2 (self : slice int32) : Seq.seq int32 =
     [%#sboxed15] view'3 self
@@ -150,7 +151,7 @@ module M_13_vec_macro__x [#"13_vec_macro.rs" 5 0 5 10]
   axiom view'1_spec : forall self : Vec'0.t_Vec int32 (Global'0.t_Global) . [%#svec10] Seq.length (view'1 self)
   <= UIntSize.to_int (v_MAX'0 : usize)
   
-  let rec into_vec'0 (self:slice int32) (return'  (ret:Vec'0.t_Vec int32 (Global'0.t_Global)))= {[@expl:precondition] inv'3 self}
+  let rec into_vec'0 (self:slice int32) (return'  (ret:Vec'0.t_Vec int32 (Global'0.t_Global)))= {[@expl:into_vec 'self' type invariant] inv'3 self}
     any
     [ return' (result:Vec'0.t_Vec int32 (Global'0.t_Global))-> {inv'2 result}
       {[%#sslice13] view'1 result = view'2 self}
@@ -162,11 +163,11 @@ module M_13_vec_macro__x [#"13_vec_macro.rs" 5 0 5 10]
   function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec int32 (Global'0.t_Global)) (ix : int) : int32 =
     [%#sops14] Seq.get (view'1 self) ix
   
-  let rec from_elem'0 (elem:int32) (n:usize) (return'  (ret:Vec'0.t_Vec int32 (Global'0.t_Global)))= {[@expl:precondition] inv'1 elem}
+  let rec from_elem'0 (elem:int32) (n:usize) (return'  (ret:Vec'0.t_Vec int32 (Global'0.t_Global)))= {[@expl:from_elem 'elem' type invariant] inv'1 elem}
     any
     [ return' (result:Vec'0.t_Vec int32 (Global'0.t_Global))-> {inv'2 result}
-      {[%#svec12] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
       {[%#svec11] Seq.length (view'1 result) = UIntSize.to_int n}
+      {[%#svec12] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
       (! return' {result}) ]
     
   

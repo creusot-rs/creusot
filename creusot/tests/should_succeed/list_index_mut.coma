@@ -30,11 +30,11 @@ end
 module M_list_index_mut__index_mut [#"list_index_mut.rs" 37 0 37 61]
   let%span slist_index_mut0 = "list_index_mut.rs" 38 16 38 31
   let%span slist_index_mut1 = "list_index_mut.rs" 39 17 39 33
-  let%span slist_index_mut2 = "list_index_mut.rs" 40 16 40 45
-  let%span slist_index_mut3 = "list_index_mut.rs" 41 16 41 52
+  let%span slist_index_mut2 = "list_index_mut.rs" 45 8 47 48
+  let%span slist_index_mut3 = "list_index_mut.rs" 43 16 43 76
   let%span slist_index_mut4 = "list_index_mut.rs" 42 16 42 55
-  let%span slist_index_mut5 = "list_index_mut.rs" 43 16 43 76
-  let%span slist_index_mut6 = "list_index_mut.rs" 45 8 47 48
+  let%span slist_index_mut5 = "list_index_mut.rs" 41 16 41 52
+  let%span slist_index_mut6 = "list_index_mut.rs" 40 16 40 45
   let%span slist_index_mut7 = "list_index_mut.rs" 49 15 49 16
   let%span slist_index_mut8 = "list_index_mut.rs" 52 14 52 15
   let%span slist_index_mut9 = "list_index_mut.rs" 32 11 32 24
@@ -101,21 +101,21 @@ module M_list_index_mut__index_mut [#"list_index_mut.rs" 37 0 37 61]
   predicate resolve'0 (_1 : borrowed (List'0.t_List)) =
     resolve'3 _1
   
-  let rec unwrap'0 (self:Option'0.t_Option (borrowed (List'0.t_List))) (return'  (ret:borrowed (List'0.t_List)))= {[@expl:precondition] inv'1 self}
-    {[@expl:precondition] [%#soption19] self <> Option'0.C_None}
+  let rec unwrap'0 (self:Option'0.t_Option (borrowed (List'0.t_List))) (return'  (ret:borrowed (List'0.t_List)))= {[@expl:unwrap 'self' type invariant] inv'1 self}
+    {[@expl:unwrap requires] [%#soption19] self <> Option'0.C_None}
     any
     [ return' (result:borrowed (List'0.t_List))-> {inv'2 result}
       {[%#soption19] Option'0.C_Some result = self}
       (! return' {result}) ]
     
   
-  let rec as_mut'0 (self:borrowed (Option'0.t_Option (List'0.t_List))) (return'  (ret:Option'0.t_Option (borrowed (List'0.t_List))))= {[@expl:precondition] inv'0 self}
+  let rec as_mut'0 (self:borrowed (Option'0.t_Option (List'0.t_List))) (return'  (ret:Option'0.t_Option (borrowed (List'0.t_List))))= {[@expl:as_mut 'self' type invariant] inv'0 self}
     any
     [ return' (result:Option'0.t_Option (borrowed (List'0.t_List)))-> {inv'1 result}
+      {[%#soption17] self.current = Option'0.C_None  -> result = Option'0.C_None /\ self.final = Option'0.C_None}
       {[%#soption18] self.current = Option'0.C_None
       \/ (exists r : borrowed (List'0.t_List) . result = Option'0.C_Some r
       /\ self.current = Option'0.C_Some (r.current) /\ self.final = Option'0.C_Some (r.final))}
-      {[%#soption17] self.current = Option'0.C_None  -> result = Option'0.C_None /\ self.final = Option'0.C_None}
       (! return' {result}) ]
     
   
@@ -156,24 +156,24 @@ module M_list_index_mut__index_mut [#"list_index_mut.rs" 37 0 37 61]
   
   meta "compute_max_steps" 1000000
   
-  let rec index_mut (l:borrowed (List'0.t_List)) (ix:usize) (return'  (ret:borrowed uint32))= {[%#slist_index_mut9] UIntSize.to_int ix
+  let rec index_mut (l:borrowed (List'0.t_List)) (ix:usize) (return'  (ret:borrowed uint32))= {[@expl:index_mut requires] [%#slist_index_mut9] UIntSize.to_int ix
     < len'0 l.current}
     (! bb0
     [ bb0 = s0 [ s0 =  [ &old_l <- [%#slist_index_mut0] Snapshot.new l ] s1 | s1 = bb1 ] 
     | bb1 = s0 [ s0 =  [ &old_ix <- [%#slist_index_mut1] Snapshot.new ix ] s1 | s1 = bb2 ] 
     | bb2 = bb3
     | bb3 = bb3
-      [ bb3 = {[@expl:loop invariant 4] [%#slist_index_mut6] (forall i : int . 0 <= i
+      [ bb3 = {[@expl:loop invariant #0] [%#slist_index_mut6] (0 : usize) <= ix /\ UIntSize.to_int ix < len'0 l.current}
+        {[@expl:loop invariant #1] [%#slist_index_mut5] get'0 l.current (UIntSize.to_int ix)
+        = get'0 (Snapshot.inner old_l).current (view'0 old_ix)}
+        {[@expl:loop invariant #2] [%#slist_index_mut4] get'0 l.final (UIntSize.to_int ix)
+        = get'0 (Snapshot.inner old_l).final (view'0 old_ix)}
+        {[@expl:loop invariant #3] [%#slist_index_mut3] len'0 l.final = len'0 l.current
+         -> len'0 (Snapshot.inner old_l).final = len'0 (Snapshot.inner old_l).current}
+        {[@expl:loop invariant #4] [%#slist_index_mut2] (forall i : int . 0 <= i
         /\ i < len'0 l.current /\ i <> UIntSize.to_int ix  -> get'0 l.final i = get'0 l.current i)
          -> (forall i : int . 0 <= i /\ i < len'0 (Snapshot.inner old_l).current /\ i <> view'0 old_ix
          -> get'0 (Snapshot.inner old_l).final i = get'0 (Snapshot.inner old_l).current i)}
-        {[@expl:loop invariant 3] [%#slist_index_mut5] len'0 l.final = len'0 l.current
-         -> len'0 (Snapshot.inner old_l).final = len'0 (Snapshot.inner old_l).current}
-        {[@expl:loop invariant 2] [%#slist_index_mut4] get'0 l.final (UIntSize.to_int ix)
-        = get'0 (Snapshot.inner old_l).final (view'0 old_ix)}
-        {[@expl:loop invariant 1] [%#slist_index_mut3] get'0 l.current (UIntSize.to_int ix)
-        = get'0 (Snapshot.inner old_l).current (view'0 old_ix)}
-        {[@expl:loop invariant 0] [%#slist_index_mut2] (0 : usize) <= ix /\ UIntSize.to_int ix < len'0 l.current}
         (! s0) [ s0 = bb4 ] 
         [ bb4 = s0
           [ s0 = UIntSize.gt {ix} {[%#slist_index_mut7] (0 : usize)} (fun (_ret':bool) ->  [ &_20 <- _ret' ] s1)
@@ -236,12 +236,13 @@ module M_list_index_mut__index_mut [#"list_index_mut.rs" 37 0 37 61]
     | & _25 : borrowed (Option'0.t_Option (List'0.t_List)) = any_l ()
     | & _29 : borrowed uint32 = any_l () ]
     
-    [ return' (result:borrowed uint32)-> {[@expl:postcondition] [%#slist_index_mut13] forall i : int . 0 <= i
-      /\ i < len'0 l.current /\ i <> UIntSize.to_int ix  -> get'0 l.current i = get'0 l.final i}
-      {[@expl:postcondition] [%#slist_index_mut12] len'0 l.final = len'0 l.current}
-      {[@expl:postcondition] [%#slist_index_mut11] Option'0.C_Some (result.final) = get'0 l.final (UIntSize.to_int ix)}
-      {[@expl:postcondition] [%#slist_index_mut10] Option'0.C_Some (result.current)
+    [ return' (result:borrowed uint32)-> {[@expl:index_mut ensures #0] [%#slist_index_mut10] Option'0.C_Some (result.current)
       = get'0 l.current (UIntSize.to_int ix)}
+      {[@expl:index_mut ensures #1] [%#slist_index_mut11] Option'0.C_Some (result.final)
+      = get'0 l.final (UIntSize.to_int ix)}
+      {[@expl:index_mut ensures #2] [%#slist_index_mut12] len'0 l.final = len'0 l.current}
+      {[@expl:index_mut ensures #3] [%#slist_index_mut13] forall i : int . 0 <= i
+      /\ i < len'0 l.current /\ i <> UIntSize.to_int ix  -> get'0 l.current i = get'0 l.final i}
       (! return' {result}) ]
     
 end
@@ -306,20 +307,21 @@ module M_list_index_mut__write [#"list_index_mut.rs" 63 0 63 45]
   predicate resolve'0 (_1 : borrowed uint32) =
     resolve'2 _1
   
-  let rec index_mut'0 (l:borrowed (List'0.t_List)) (ix:usize) (return'  (ret:borrowed uint32))= {[@expl:precondition] [%#slist_index_mut4] UIntSize.to_int ix
+  let rec index_mut'0 (l:borrowed (List'0.t_List)) (ix:usize) (return'  (ret:borrowed uint32))= {[@expl:index_mut requires] [%#slist_index_mut4] UIntSize.to_int ix
     < len'0 l.current}
     any
-    [ return' (result:borrowed uint32)-> {[%#slist_index_mut8] forall i : int . 0 <= i
-      /\ i < len'0 l.current /\ i <> UIntSize.to_int ix  -> get'0 l.current i = get'0 l.final i}
-      {[%#slist_index_mut7] len'0 l.final = len'0 l.current}
+    [ return' (result:borrowed uint32)-> {[%#slist_index_mut5] Option'0.C_Some (result.current)
+      = get'0 l.current (UIntSize.to_int ix)}
       {[%#slist_index_mut6] Option'0.C_Some (result.final) = get'0 l.final (UIntSize.to_int ix)}
-      {[%#slist_index_mut5] Option'0.C_Some (result.current) = get'0 l.current (UIntSize.to_int ix)}
+      {[%#slist_index_mut7] len'0 l.final = len'0 l.current}
+      {[%#slist_index_mut8] forall i : int . 0 <= i /\ i < len'0 l.current /\ i <> UIntSize.to_int ix
+       -> get'0 l.current i = get'0 l.final i}
       (! return' {result}) ]
     
   
   meta "compute_max_steps" 1000000
   
-  let rec write (l:borrowed (List'0.t_List)) (ix:usize) (v:uint32) (return'  (ret:()))= {[%#slist_index_mut0] UIntSize.to_int ix
+  let rec write (l:borrowed (List'0.t_List)) (ix:usize) (v:uint32) (return'  (ret:()))= {[@expl:write requires] [%#slist_index_mut0] UIntSize.to_int ix
     < len'0 l.current}
     (! bb0
     [ bb0 = s0
@@ -342,10 +344,11 @@ module M_list_index_mut__write [#"list_index_mut.rs" 63 0 63 45]
     | & _9 : borrowed uint32 = any_l ()
     | & _10 : borrowed (List'0.t_List) = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#slist_index_mut3] forall i : int . 0 <= i
+    [ return' (result:())-> {[@expl:write ensures #0] [%#slist_index_mut1] Option'0.C_Some v
+      = get'0 l.final (UIntSize.to_int ix)}
+      {[@expl:write ensures #1] [%#slist_index_mut2] len'0 l.final = len'0 l.current}
+      {[@expl:write ensures #2] [%#slist_index_mut3] forall i : int . 0 <= i
       /\ i < len'0 l.current /\ i <> UIntSize.to_int ix  -> get'0 l.current i = get'0 l.final i}
-      {[@expl:postcondition] [%#slist_index_mut2] len'0 l.final = len'0 l.current}
-      {[@expl:postcondition] [%#slist_index_mut1] Option'0.C_Some v = get'0 l.final (UIntSize.to_int ix)}
       (! return' {result}) ]
     
 end
@@ -403,13 +406,13 @@ module M_list_index_mut__f [#"list_index_mut.rs" 67 0 67 10]
   
   use prelude.prelude.UIntSize
   
-  let rec write'0 (l:borrowed (List'0.t_List)) (ix:usize) (v:uint32) (return'  (ret:()))= {[@expl:precondition] [%#slist_index_mut4] UIntSize.to_int ix
+  let rec write'0 (l:borrowed (List'0.t_List)) (ix:usize) (v:uint32) (return'  (ret:()))= {[@expl:write requires] [%#slist_index_mut4] UIntSize.to_int ix
     < len'0 l.current}
     any
-    [ return' (result:())-> {[%#slist_index_mut7] forall i : int . 0 <= i
-      /\ i < len'0 l.current /\ i <> UIntSize.to_int ix  -> get'0 l.current i = get'0 l.final i}
+    [ return' (result:())-> {[%#slist_index_mut5] Option'0.C_Some v = get'0 l.final (UIntSize.to_int ix)}
       {[%#slist_index_mut6] len'0 l.final = len'0 l.current}
-      {[%#slist_index_mut5] Option'0.C_Some v = get'0 l.final (UIntSize.to_int ix)}
+      {[%#slist_index_mut7] forall i : int . 0 <= i /\ i < len'0 l.current /\ i <> UIntSize.to_int ix
+       -> get'0 l.current i = get'0 l.final i}
       (! return' {result}) ]
     
   

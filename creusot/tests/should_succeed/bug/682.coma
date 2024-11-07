@@ -22,7 +22,8 @@ module M_682__add_some [#"682.rs" 6 0 6 24]
   
   meta "compute_max_steps" 1000000
   
-  let rec add_some (a:borrowed uint64) (return'  (ret:()))= {[%#s6821] a.current <= div (v_MAX'0 : uint64) (2 : uint64)}
+  let rec add_some (a:borrowed uint64) (return'  (ret:()))= {[@expl:add_some requires] [%#s6821] a.current
+    <= div (v_MAX'0 : uint64) (2 : uint64)}
     (! bb0
     [ bb0 = s0
       [ s0 = UInt64.add {a.current} {[%#s6820] (1 : uint64)}
@@ -31,7 +32,7 @@ module M_682__add_some [#"682.rs" 6 0 6 24]
       | s2 = return' {_0} ]
        ]
     ) [ & _0 : () = any_l () | & a : borrowed uint64 = a ] 
-    [ return' (result:())-> {[@expl:postcondition] [%#s6822] a.final > a.current} (! return' {result}) ]
+    [ return' (result:())-> {[@expl:add_some ensures] [%#s6822] a.final > a.current} (! return' {result}) ]
     
 end
 module M_682__foo [#"682.rs" 12 0 12 23]
@@ -63,7 +64,7 @@ module M_682__foo [#"682.rs" 12 0 12 23]
   
   constant v_MAX'0 : uint64 = (18446744073709551615 : uint64)
   
-  let rec add_some'0 (a:borrowed uint64) (return'  (ret:()))= {[@expl:precondition] [%#s6824] a.current
+  let rec add_some'0 (a:borrowed uint64) (return'  (ret:()))= {[@expl:add_some requires] [%#s6824] a.current
     <= div (v_MAX'0 : uint64) (2 : uint64)}
     any [ return' (result:())-> {[%#s6825] a.final > a.current} (! return' {result}) ] 
   
@@ -71,7 +72,7 @@ module M_682__foo [#"682.rs" 12 0 12 23]
   
   meta "compute_max_steps" 1000000
   
-  let rec foo (a:borrowed uint64) (return'  (ret:()))= {[%#s6822] a.current = (3 : uint64)}
+  let rec foo (a:borrowed uint64) (return'  (ret:()))= {[@expl:foo requires] [%#s6822] a.current = (3 : uint64)}
     (! bb0
     [ bb0 = s0 [ s0 =  [ &a_p <- [%#s6820] Snapshot.new a.current ] s1 | s1 = bb1 ] 
     | bb1 = s0
@@ -91,5 +92,5 @@ module M_682__foo [#"682.rs" 12 0 12 23]
     | & a_p : Snapshot.snap_ty uint64 = any_l ()
     | & _6 : () = any_l ()
     | & _7 : borrowed uint64 = any_l () ]
-     [ return' (result:())-> {[@expl:postcondition] [%#s6823] a.final > a.current} (! return' {result}) ] 
+     [ return' (result:())-> {[@expl:foo ensures] [%#s6823] a.final > a.current} (! return' {result}) ] 
 end

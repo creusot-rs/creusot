@@ -309,7 +309,7 @@ module M_12_ghost_code__ghost_check [#"12_ghost_code.rs" 35 0 35 20]
   function view'2 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32 =
     [%#smodel11] view'0 self
   
-  let rec len'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] inv'3 self}
+  let rec len'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'3 self}
     any [ return' (result:usize)-> {[%#svec8] UIntSize.to_int result = Seq.length (view'2 self)} (! return' {result}) ] 
   
   use seq.Seq
@@ -317,8 +317,8 @@ module M_12_ghost_code__ghost_check [#"12_ghost_code.rs" 35 0 35 20]
   function view'1 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) : Seq.seq int32 =
     [%#smodel10] view'0 self.current
   
-  let rec push'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (value:int32) (return'  (ret:()))= {[@expl:precondition] inv'2 value}
-    {[@expl:precondition] inv'1 self}
+  let rec push'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (value:int32) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'1 self}
+    {[@expl:push 'value' type invariant] inv'2 value}
     any [ return' (result:())-> {[%#svec7] view'0 self.final = Seq.snoc (view'1 self) value} (! return' {result}) ] 
   
   use prelude.prelude.Snapshot
@@ -424,7 +424,7 @@ module M_12_ghost_code__takes_struct [#"12_ghost_code.rs" 52 0 52 36]
   
   meta "compute_max_steps" 1000000
   
-  let rec takes_struct (x:MyStruct'0.t_MyStruct) (return'  (ret:()))= {[%#s12_ghost_code1] view'0 (T_12_ghost_code__MyStruct.t_MyStruct__g x)
+  let rec takes_struct (x:MyStruct'0.t_MyStruct) (return'  (ret:()))= {[@expl:takes_struct requires] [%#s12_ghost_code1] view'0 (T_12_ghost_code__MyStruct.t_MyStruct__g x)
     = 0}
     (! bb0
     [ bb0 = s0

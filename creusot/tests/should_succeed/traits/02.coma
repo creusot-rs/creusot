@@ -22,17 +22,17 @@ module M_02__omg [#"02.rs" 11 0 11 30]
   
   predicate resolve'0 (_1 : t)
   
-  let rec is_true'0 (self:t) (return'  (ret:bool))= {[@expl:precondition] [%#s022] inv'1 self}
+  let rec is_true'0 (self:t) (return'  (ret:bool))= {[@expl:is_true 'self' type invariant] [%#s022] inv'1 self}
     any [ return' (result:bool)-> {[%#s023] result = true} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
-  let rec omg (a:t) (return'  (ret:bool))= {[%#s020] inv'0 a}
+  let rec omg (a:t) (return'  (ret:bool))= {[@expl:omg 'a' type invariant] [%#s020] inv'0 a}
     (! bb0
     [ bb0 = s0 [ s0 = is_true'0 {a} (fun (_ret':bool) ->  [ &_0 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0 [ s0 = {[@expl:type invariant] inv'0 a} s1 | s1 = -{resolve'0 a}- s2 | s2 = bb2 ] 
     | bb2 = return' {_0} ]
     ) [ & _0 : bool = any_l () | & a : t = a ] 
-    [ return' (result:bool)-> {[@expl:postcondition] [%#s021] result = true} (! return' {result}) ]
+    [ return' (result:bool)-> {[@expl:omg ensures] [%#s021] result = true} (! return' {result}) ]
     
 end

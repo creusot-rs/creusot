@@ -3,8 +3,8 @@ module M_492__reborrow_tuple [#"492.rs" 5 0 5 52]
   
   let%span s4920 = "492.rs" 6 8 6 10
   let%span s4921 = "492.rs" 5 25 5 26
-  let%span s4922 = "492.rs" 4 10 4 27
-  let%span s4923 = "492.rs" 5 39 5 52
+  let%span s4922 = "492.rs" 5 39 5 52
+  let%span s4923 = "492.rs" 4 10 4 27
   let%span sresolve4 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   let%span sinvariant5 = "../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   
@@ -37,7 +37,7 @@ module M_492__reborrow_tuple [#"492.rs" 5 0 5 52]
   
   meta "compute_max_steps" 1000000
   
-  let rec reborrow_tuple (x:borrowed t) (return'  (ret:(borrowed t, uint32)))= {[%#s4921] inv'1 x}
+  let rec reborrow_tuple (x:borrowed t) (return'  (ret:(borrowed t, uint32)))= {[@expl:reborrow_tuple 'x' type invariant] [%#s4921] inv'1 x}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 x.current}
@@ -53,8 +53,8 @@ module M_492__reborrow_tuple [#"492.rs" 5 0 5 52]
       | s4 = return' {_0} ]
        ]
     ) [ & _0 : (borrowed t, uint32) = any_l () | & x : borrowed t = x | & _3 : borrowed t = any_l () ] 
-    [ return' (result:(borrowed t, uint32))-> {[@expl:postcondition] [%#s4923] inv'2 result}
-      {[@expl:postcondition] [%#s4922] (let (a, _) = result in a).current = x.current}
+    [ return' (result:(borrowed t, uint32))-> {[@expl:reborrow_tuple result type invariant] [%#s4922] inv'2 result}
+      {[@expl:reborrow_tuple ensures] [%#s4923] (let (a, _) = result in a).current = x.current}
       (! return' {result}) ]
     
 end
@@ -64,8 +64,8 @@ module M_492__test [#"492.rs" 10 0 10 13]
   let%span s4922 = "492.rs" 14 11 14 13
   let%span s4923 = "492.rs" 9 10 9 15
   let%span s4924 = "492.rs" 5 25 5 26
-  let%span s4925 = "492.rs" 4 10 4 27
-  let%span s4926 = "492.rs" 5 39 5 52
+  let%span s4925 = "492.rs" 5 39 5 52
+  let%span s4926 = "492.rs" 4 10 4 27
   let%span sresolve7 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   
   use prelude.prelude.UInt32
@@ -92,10 +92,10 @@ module M_492__test [#"492.rs" 10 0 10 13]
   predicate resolve'0 (_1 : borrowed int32) =
     resolve'1 _1
   
-  let rec reborrow_tuple'0 (x:borrowed int32) (return'  (ret:(borrowed int32, uint32)))= {[@expl:precondition] [%#s4924] inv'0 x}
+  let rec reborrow_tuple'0 (x:borrowed int32) (return'  (ret:(borrowed int32, uint32)))= {[@expl:reborrow_tuple 'x' type invariant] [%#s4924] inv'0 x}
     any
-    [ return' (result:(borrowed int32, uint32))-> {[%#s4926] inv'1 result}
-      {[%#s4925] (let (a, _) = result in a).current = x.current}
+    [ return' (result:(borrowed int32, uint32))-> {[%#s4925] inv'1 result}
+      {[%#s4926] (let (a, _) = result in a).current = x.current}
       (! return' {result}) ]
     
   
@@ -125,5 +125,5 @@ module M_492__test [#"492.rs" 10 0 10 13]
     | & _4 : (borrowed int32, uint32) = any_l ()
     | & _5 : borrowed int32 = any_l ()
     | & _6 : borrowed int32 = any_l () ]
-     [ return' (result:())-> {[@expl:postcondition] [%#s4923] false} (! return' {result}) ] 
+     [ return' (result:())-> {[@expl:test ensures] [%#s4923] false} (! return' {result}) ] 
 end
