@@ -87,14 +87,14 @@ extern_spec! {
                 fn len(&self) -> usize;
 
                 #[terminates] // can OOM
-                #[ensures((^self)@ == self@.push(v))]
+                #[ensures((^self)@ == self@.push_back(v))]
                 fn push(&mut self, v: T);
 
                 #[pure]
                 #[ensures(match result {
                     Some(t) =>
                         (^self)@ == self@.subsequence(0, self@.len() - 1) &&
-                        self@ == (^self)@.push(t),
+                        self@ == (^self)@.push_back(t),
                     None => *self == ^self && self@.len() == 0
                 })]
                 fn pop(&mut self) -> Option<T>;

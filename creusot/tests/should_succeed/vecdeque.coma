@@ -115,15 +115,16 @@ module M_vecdeque__test_deque [#"vecdeque.rs" 5 0 5 19]
   let%span soption23 = "../../../creusot-contracts/src/std/option.rs" 23 26 23 75
   let%span sdeque24 = "../../../creusot-contracts/src/std/deque.rs" 107 26 112 17
   let%span sdeque25 = "../../../creusot-contracts/src/std/deque.rs" 116 26 116 59
-  let%span sdeque26 = "../../../creusot-contracts/src/std/deque.rs" 117 26 117 73
-  let%span sdeque27 = "../../../creusot-contracts/src/std/deque.rs" 121 26 121 55
+  let%span sdeque26 = "../../../creusot-contracts/src/std/deque.rs" 117 26 117 61
+  let%span sdeque27 = "../../../creusot-contracts/src/std/deque.rs" 121 26 121 60
   let%span sdeque28 = "../../../creusot-contracts/src/std/deque.rs" 94 26 94 45
   let%span sdeque29 = "../../../creusot-contracts/src/std/deque.rs" 14 14 14 41
   let%span smodel30 = "../../../creusot-contracts/src/model.rs" 91 8 91 22
   let%span smodel31 = "../../../creusot-contracts/src/model.rs" 109 8 109 22
-  let%span smodel32 = "../../../creusot-contracts/src/model.rs" 82 8 82 28
-  let%span soption33 = "../../../creusot-contracts/src/std/option.rs" 11 8 14 9
-  let%span snum34 = "../../../creusot-contracts/src/std/num.rs" 22 16 22 35
+  let%span sseq32 = "../../../creusot-contracts/src/logic/seq.rs" 151 8 151 27
+  let%span smodel33 = "../../../creusot-contracts/src/model.rs" 82 8 82 28
+  let%span soption34 = "../../../creusot-contracts/src/std/option.rs" 11 8 14 9
+  let%span snum35 = "../../../creusot-contracts/src/std/num.rs" 22 16 22 35
   
   use prelude.prelude.UInt32
   
@@ -189,12 +190,13 @@ module M_vecdeque__test_deque [#"vecdeque.rs" 5 0 5 19]
   
   use seq.Seq
   
-  use seq.Seq
+  function push_front'1 [@inline:trivial] (self : Seq.seq uint32) (x : uint32) : Seq.seq uint32 =
+    [%#sseq32] Seq.cons x self
   
   let rec push_front'0 (self:borrowed (VecDeque'0.t_VecDeque uint32 (Global'0.t_Global))) (value:uint32) (return'  (ret:()))= {[@expl:precondition] inv'4 value}
     {[@expl:precondition] inv'1 self}
     any
-    [ return' (result:())-> {[%#sdeque26] view'0 self.final = Seq.(++) (Seq.singleton value) (view'2 self)}
+    [ return' (result:())-> {[%#sdeque26] view'0 self.final = push_front'1 (view'2 self) value}
       {[%#sdeque25] Seq.length (view'0 self.final) = Seq.length (view'2 self) + 1}
       (! return' {result}) ]
     
@@ -215,18 +217,18 @@ module M_vecdeque__test_deque [#"vecdeque.rs" 5 0 5 19]
   use prelude.prelude.UInt32
   
   function deep_model'2 (self : uint32) : int =
-    [%#snum34] UInt32.to_int self
+    [%#snum35] UInt32.to_int self
   
   use T_core__option__Option as Option'0
   
   function deep_model'1 (self : Option'0.t_Option uint32) : Option'0.t_Option int =
-    [%#soption33] match self with
+    [%#soption34] match self with
       | Option'0.C_Some t -> Option'0.C_Some (deep_model'2 t)
       | Option'0.C_None -> Option'0.C_None
       end
   
   function deep_model'0 (self : Option'0.t_Option uint32) : Option'0.t_Option int =
-    [%#smodel32] deep_model'1 self
+    [%#smodel33] deep_model'1 self
   
   let rec eq'0 (self:Option'0.t_Option uint32) (other:Option'0.t_Option uint32) (return'  (ret:bool))= {[@expl:precondition] inv'3 other}
     {[@expl:precondition] inv'3 self}
@@ -239,7 +241,7 @@ module M_vecdeque__test_deque [#"vecdeque.rs" 5 0 5 19]
     [ return' (result:Option'0.t_Option uint32)-> {inv'2 result}
       {[%#sdeque22] match result with
         | Option'0.C_Some t -> view'0 self.final = Seq.([..]) (view'2 self) 1 (Seq.length (view'2 self))
-        /\ view'2 self = Seq.(++) (Seq.singleton t) (view'0 self.final)
+        /\ view'2 self = push_front'1 (view'0 self.final) t
         | Option'0.C_None -> self.current = self.final /\ Seq.length (view'2 self) = 0
         end}
       (! return' {result}) ]
