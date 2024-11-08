@@ -229,8 +229,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                         }
                         variant = Some(body);
                     }
-                    LoopSpecKind::Invariant => {
-                        invariants.push(body);
+                    LoopSpecKind::Invariant(expl) => {
+                        invariants.push(fmir::Invariant { body, expl });
                     }
                 }
             }

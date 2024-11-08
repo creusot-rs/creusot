@@ -66,7 +66,7 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
     }
 
     fn visit_block(&mut self, b: &Block<'tcx>) {
-        b.invariants.iter().for_each(|t| self.visit_term(t));
+        b.invariants.iter().for_each(|t| self.visit_term(&t.body));
         b.variant.iter().for_each(|t| self.visit_term(t));
         b.stmts.iter().for_each(|s| self.visit_statement(s));
         self.visit_terminator(&b.terminator);

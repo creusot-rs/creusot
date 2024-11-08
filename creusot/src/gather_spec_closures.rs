@@ -7,9 +7,9 @@ use rustc_middle::{
     ty::TyCtxt,
 };
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum LoopSpecKind {
-    Invariant,
+    Invariant(String),
     Variant,
 }
 
@@ -79,8 +79,8 @@ struct Invariants<'tcx> {
 impl<'tcx> Visitor<'tcx> for Invariants<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         if let Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
-            let kind = if contracts_items::is_invariant(self.tcx, *id) {
-                LoopSpecKind::Invariant
+            let kind = if let Some(expl) = contracts_items::get_invariant_expl(self.tcx, *id) {
+                LoopSpecKind::Invariant(expl)
             } else if contracts_items::is_loop_variant(self.tcx, *id) {
                 LoopSpecKind::Variant
             } else {
