@@ -24,6 +24,12 @@
 //! The main idea is that `#[terminates]` functions must be ordonnable: if there exists
 //! an order, such that no function can refer to a function defined before, then there
 //! can be no cycles.
+//!
+//! # Default function
+//!
+//! Default function in traits, as well as `impl` blocks marked with `default`, are
+//! special-cased when handling logical functions: see the documentation in
+//! [`ImplDefaultTransparent`] for more details.
 
 use crate::{
     backend::is_trusted_function,
@@ -36,13 +42,16 @@ use crate::{
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graph, visit::EdgeRef as _};
 use rustc_hir::def_id::{DefId, LocalDefId};
+use rustc_infer::{infer::TyCtxtInferExt as _, traits::ObligationCause};
 use rustc_middle::{
     thir,
     ty::{
-        EarlyBinder, FnDef, GenericArgKind, GenericArgs, GenericArgsRef, ParamEnv, TyCtxt, TyKind,
+        Clauses, EarlyBinder, FnDef, GenericArgKind, GenericArgs, GenericArgsRef, ParamEnv, TyCtxt,
+        TyKind,
     },
 };
 use rustc_span::Span;
+use rustc_trait_selection::traits::normalize_param_env_or_error;
 
 /// Validate that a `#[terminates]` function cannot loop indefinitely. This includes:
 /// - forbidding program function from using loops of any kind (this should be relaxed
@@ -180,47 +189,63 @@ struct CallGraph {
     additional_data: IndexMap<graph::NodeIndex, FunctionData>,
 }
 
+#[derive(Default)]
+struct BuildFunctionsGraph<'tcx> {
+    graph: graph::DiGraph<GraphNode, CallKind>,
+    additional_data: IndexMap<graph::NodeIndex, FunctionData>,
+    graph_node_to_index: IndexMap<GraphNode, graph::NodeIndex>,
+    /// Stores the generic bounds that are left when instantiating the default method in
+    /// the impl block.
+    ///
+    /// This is used to retrieve all the bounds when calling this function.
+    default_functions_bounds: IndexMap<ImplDefaultTransparent, Clauses<'tcx>>,
+    is_default_function: IndexSet<DefId>,
+}
+
+/// This node is used in the following case:
+/// ```
+/// # macro_rules! ignore { ($($t:tt)*) => {}; }
+/// # ignore! {
+/// trait Tr { // possibly in another crate
+///     #[logic] #[open] fn f() { /* ... */ }
+/// }
+/// impl Tr {} // in the current crate
+/// # }
+/// ```
+/// In this case, we create an additional node in the graph, corresponding to the
+/// implementation of the default function.
+///
+/// # Why though?
+///
+/// First, this is sound, because it acts as if the function was actually written in
+/// the impl block (with the same definition as the default one).
+///
+/// Then we feel this is justified to do this transformation, precisely because the
+/// default function is transparent at the point of the impl, so the user can 'see'
+/// its definition.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+struct ImplDefaultTransparent {
+    /// The default implementation selected for the impl block.
+    default_function: DefId,
+    impl_block: LocalDefId,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum GraphNode {
     /// A normal function.
     Function(DefId),
-    /// This node is used in the following case:
-    /// ```
-    /// # macro_rules! ignore { ($($t:tt)*) => {}; }
-    /// # ignore! {
-    /// trait Tr { // possibly in another crate
-    ///     #[logic] #[open] fn f() { /* ... */ }
-    /// }
-    /// impl Tr {} // in the current crate
-    /// # }
-    /// ```
-    /// In this case, we create an additional node in the graph, corresponding to the
-    /// implementation of the default function.
-    ///
-    /// # Why though?
-    ///
-    /// First, this is sound, because it acts as if the function was actually written in
-    /// the impl block (with the same definition as the default one).
-    ///
-    /// Then we feel this is justified to do this transformation, precisely because the
-    /// default function is transparent at the point of the impl, so the user can 'see'
-    /// its definition.
-    ImplDefaultTransparent { default_function: DefId, impl_block: LocalDefId },
+
+    ImplDefaultTransparent(ImplDefaultTransparent),
 }
 impl GraphNode {
     fn def_id(&self) -> DefId {
         match self {
             GraphNode::Function(def_id) => *def_id,
-            GraphNode::ImplDefaultTransparent { default_function, .. } => *default_function,
+            GraphNode::ImplDefaultTransparent(ImplDefaultTransparent {
+                default_function, ..
+            }) => *default_function,
         }
     }
-}
-
-#[derive(Default)]
-struct BuildFunctionsGraph {
-    graph: graph::DiGraph<GraphNode, CallKind>,
-    additional_data: IndexMap<graph::NodeIndex, FunctionData>,
-    graph_node_to_index: IndexMap<GraphNode, graph::NodeIndex>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -255,7 +280,7 @@ struct FunctionData {
     has_loops: Option<Span>,
 }
 
-impl BuildFunctionsGraph {
+impl<'tcx> BuildFunctionsGraph<'tcx> {
     /// Insert a new node in the graph, or fetch an existing node id.
     fn insert_function(&mut self, tcx: TyCtxt, graph_node: GraphNode) -> graph::NodeIndex {
         let def_id = graph_node.def_id();
@@ -278,7 +303,7 @@ impl BuildFunctionsGraph {
     }
 
     /// Process the call from `node` to `called_id`.
-    fn function_call<'tcx>(
+    fn function_call(
         &mut self,
         tcx: TyCtxt<'tcx>,
         node: graph::NodeIndex,
@@ -308,52 +333,68 @@ impl BuildFunctionsGraph {
             return;
         }
 
-        let (called_node, skip_self_bounds) = if TraitResolved::is_trait_item(tcx, called_id)
-            && let Some(called_node) = TraitResolved::impl_id_of_trait(
-                tcx,
-                param_env,
-                tcx.trait_of_item(called_id).unwrap(),
-                generic_args,
-            )
-            .and_then(|id| {
-                self.graph_node_to_index.get(&GraphNode::ImplDefaultTransparent {
+        let (called_node, bounds, impl_self_bound) = 'bl: {
+            // this checks if we are calling a function with a default implementation,
+            // as processed at the beginning of `CallGraph::build`.
+            'not_default: {
+                if !self.is_default_function.contains(&called_id) {
+                    break 'not_default;
+                };
+                let trait_id = match tcx.impl_of_method(called_id) {
+                    Some(id) => {
+                        if let Some(trait_id) = tcx.trait_id_of_impl(id) {
+                            trait_id
+                        } else {
+                            break 'not_default;
+                        }
+                    }
+                    None => {
+                        if let Some(trait_id) = tcx.trait_of_item(called_id) {
+                            trait_id
+                        } else {
+                            break 'not_default;
+                        }
+                    }
+                };
+                let Some(spec_impl_id) =
+                    TraitResolved::impl_id_of_trait(tcx, param_env, trait_id, generic_args)
+                        .and_then(|id| id.as_local())
+                else {
+                    break 'not_default;
+                };
+                let default_node = ImplDefaultTransparent {
                     default_function: called_id,
-                    impl_block: id.as_local()?,
-                })
-            }) {
-            (*called_node, true)
-        } else {
-            (self.insert_function(tcx, GraphNode::Function(called_id)), false)
+                    impl_block: spec_impl_id,
+                };
+                let Some(node) =
+                    self.graph_node_to_index.get(&GraphNode::ImplDefaultTransparent(default_node))
+                else {
+                    break 'not_default;
+                };
+                let bounds = self.default_functions_bounds[&default_node];
+                let self_bound = tcx.impl_trait_header(spec_impl_id);
+                break 'bl (*node, bounds, self_bound);
+            }
+            (
+                self.insert_function(tcx, GraphNode::Function(called_id)),
+                tcx.param_env(called_id).caller_bounds(),
+                None,
+            )
         };
         self.graph.update_edge(node, called_node, CallKind::Direct(call_span));
 
         // Iterate over the trait bounds of the called function, and assume we call all functions of the corresponding trait if they are specialized.
-        for bound in tcx.param_env(called_id).caller_bounds() {
+        for bound in bounds {
             let Some(clause) = bound.as_trait_clause() else { continue };
             let clause = tcx.instantiate_bound_regions_with_erased(clause);
             let trait_ref = clause.trait_ref;
-            let subst = trait_ref.args;
-            let subst = EarlyBinder::bind(subst).instantiate(tcx, generic_args);
-
-            match clause.self_ty().kind() {
-                rustc_type_ir::TyKind::Param(ty) => {
-                    if ty.index == 0 && skip_self_bounds {
-                        // trait Tr {
-                        //     #[logic] fn f<T: Tr>() {}
-                        // }
-                        // impl Tr for i32 {}
-                        //
-                        // #[logic] fn g<T: Tr>() {
-                        //     <i32 as Tr>::f::<T>()
-                        // }
-                        //
-                        // ==> T: Tr should appear in the bounds, but not Self: Tr.
-                        // TODO: Is this only true for Self?
-                        continue;
-                    }
+            if let Some(self_bound) = &impl_self_bound {
+                let self_trait_ref = self_bound.trait_ref.instantiate_identity();
+                if trait_ref == self_trait_ref {
+                    continue;
                 }
-                _ => {}
             }
+            let subst = EarlyBinder::bind(trait_ref.args).instantiate(tcx, generic_args);
 
             for &item in tcx.associated_item_def_ids(trait_ref.def_id) {
                 let (item_id, _) = match TraitResolved::resolve_item(tcx, param_env, item, subst) {
@@ -380,53 +421,109 @@ impl CallGraph {
         let tcx = ctx.tcx;
         let mut build_call_graph = BuildFunctionsGraph::default();
 
-        // Create the `GraphNode::ImplDefaultTransparent` nodes
+        let mut specialization_nodes = IndexMap::new();
+        // Create the `GraphNode::ImplDefaultTransparent` nodes.
         for (trait_id, impls) in tcx.all_local_trait_impls(()) {
-            for &impl_id in impls {
-                let items_in_impl = tcx.impl_item_implementor_ids(impl_id.to_def_id());
+            for &impl_local_id in impls {
+                let module_id = tcx.parent_module_from_def_id(impl_local_id).to_def_id();
+                let impl_id = impl_local_id.to_def_id();
+                let items_in_impl = tcx.impl_item_implementor_ids(impl_id);
+
                 for &item_id in tcx.associated_item_def_ids(trait_id) {
                     if items_in_impl.contains_key(&item_id) {
+                        // The function is explicitely implemented, skip
                         continue;
                     }
-                    let is_transparent = ctx.is_transparent_from(
-                        item_id,
-                        tcx.parent_module_from_def_id(impl_id).to_def_id(),
-                    );
-                    if !is_transparent || !contracts_items::is_pearlite(tcx, item_id) {
+
+                    let default_item = {
+                        let trait_def = tcx.trait_def(trait_id);
+                        let leaf_def = trait_def
+                            .ancestors(tcx, impl_id)
+                            .unwrap()
+                            .leaf_def(tcx, item_id)
+                            .unwrap_or_else(|| {
+                                unreachable!(
+                                    "no definition found for item {} in impl {}",
+                                    tcx.def_path_str(item_id),
+                                    tcx.def_path_str(impl_id)
+                                );
+                            });
+                        leaf_def
+                    };
+                    let default_item_id = default_item.item.def_id;
+
+                    let is_transparent = ctx.is_transparent_from(default_item_id, module_id);
+                    if !is_transparent || !contracts_items::is_pearlite(tcx, default_item_id) {
+                        // only consider item that are:
+                        // - transparent from the POV of the impl block
+                        // - logical items
                         continue;
                     }
+                    specialization_nodes.insert((default_item_id, impl_local_id), default_item);
                     build_call_graph.insert_function(
                         tcx,
-                        GraphNode::ImplDefaultTransparent {
-                            default_function: item_id,
-                            impl_block: impl_id,
-                        },
+                        GraphNode::ImplDefaultTransparent(ImplDefaultTransparent {
+                            default_function: default_item_id,
+                            impl_block: impl_local_id,
+                        }),
                     );
                 }
             }
         }
 
         for (graph_node, node) in build_call_graph.graph_node_to_index.clone() {
-            let GraphNode::ImplDefaultTransparent { default_function: item_id, impl_block: _ } =
-                graph_node
-            else {
+            let GraphNode::ImplDefaultTransparent(graph_node) = graph_node else {
                 continue;
             };
+            let ImplDefaultTransparent { default_function: item_id, impl_block: impl_id } =
+                graph_node;
+            let specialization_node = &specialization_nodes[&(item_id, impl_id)];
 
-            let param_env = tcx.param_env(item_id);
+            let impl_id = impl_id.to_def_id();
+            let param_env = tcx.param_env(impl_id);
             let term = ctx.term(item_id).unwrap();
             let mut visitor = TermCalls { results: IndexSet::new() };
             visitor.visit_term(term);
 
+            // Instantiate the generic args according to the specialization of the impl.
+
+            let trait_id = tcx.trait_id_of_impl(impl_id).unwrap();
+
+            // Now, translate the args to match the trait.
+            let infcx = tcx.infer_ctxt().build();
+            let impl_args = rustc_trait_selection::traits::translate_args(
+                &infcx,
+                param_env,
+                impl_id,
+                GenericArgs::identity_for_item(tcx, impl_id),
+                specialization_node.defining_node,
+            );
+
+            // Take the generic arguments of the default function, instantiated with
+            // the type parameters from the impl block.
+            let func_impl_args =
+                GenericArgs::identity_for_item(tcx, item_id).rebase_onto(tcx, trait_id, impl_args);
+
+            // data for when we call this function
+            build_call_graph.is_default_function.insert(item_id);
+            let item_param_env = tcx.param_env(item_id);
+            let item_param_env = EarlyBinder::bind(item_param_env).instantiate(tcx, func_impl_args);
+            let bounds =
+                normalize_param_env_or_error(tcx, item_param_env, ObligationCause::dummy())
+                    .caller_bounds();
+            build_call_graph.default_functions_bounds.insert(graph_node, bounds);
+
             for (called_id, generic_args, call_span) in visitor.results {
-                // FIXME: weird, why does taking the param_env/generic_args of item_id (aka the function in the *trait*, not the one specialized in the *impl*) works?
-                // This may not be sound.
+                // Instantiate the args for the call with the context we just built up.
+                let actual_args = EarlyBinder::bind(tcx.erase_regions(generic_args))
+                    .instantiate(tcx, func_impl_args);
+
                 build_call_graph.function_call(
                     tcx,
                     node,
                     param_env,
                     called_id,
-                    generic_args,
+                    actual_args,
                     call_span,
                 );
             }

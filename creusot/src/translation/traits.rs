@@ -261,7 +261,7 @@ impl<'tcx> TraitResolved<'tcx> {
                 return TraitResolved::NoInstance;
             }
         };
-        trace!("resolve_assoc_item_opt {source:?}",);
+        trace!("TraitResolved::resolve {source:?}",);
 
         match source {
             ImplSource::UserDefined(impl_data) => {
@@ -319,7 +319,7 @@ impl<'tcx> TraitResolved<'tcx> {
         let Ok(source) = tcx.codegen_select_candidate((param_env, trait_ref)) else {
             return None;
         };
-        trace!("resolve_assoc_item_opt {source:?}",);
+        trace!("TraitResolved::impl_id_of_trait {source:?}",);
         match source {
             ImplSource::UserDefined(impl_data) => Some(impl_data.impl_def_id),
             ImplSource::Param(_) => None,
