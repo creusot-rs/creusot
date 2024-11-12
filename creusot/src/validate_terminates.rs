@@ -198,8 +198,11 @@ struct BuildFunctionsGraph<'tcx> {
     /// the impl block.
     ///
     /// This is used to retrieve all the bounds when calling this function.
-    default_functions_bounds: IndexMap<ImplDefaultTransparent, Clauses<'tcx>>,
+    default_functions_bounds: IndexMap<graph::NodeIndex, Clauses<'tcx>>,
     is_default_function: IndexSet<DefId>,
+    visited_default_specialization: IndexSet<graph::NodeIndex>,
+    specialization_nodes:
+        IndexMap<graph::NodeIndex, rustc_infer::traits::specialization_graph::LeafDef>,
 }
 
 /// This node is used in the following case:
@@ -305,13 +308,14 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
     /// Process the call from `node` to `called_id`.
     fn function_call(
         &mut self,
-        tcx: TyCtxt<'tcx>,
+        ctx: &mut TranslationCtx<'tcx>,
         node: graph::NodeIndex,
         param_env: ParamEnv<'tcx>,
         called_id: DefId,
         generic_args: GenericArgsRef<'tcx>,
         call_span: Span,
     ) {
+        let tcx = ctx.tcx;
         let (called_id, generic_args) = if TraitResolved::is_trait_item(tcx, called_id) {
             match TraitResolved::resolve_item(tcx, param_env, called_id, generic_args) {
                 TraitResolved::Instance(def_id, subst) => (def_id, subst),
@@ -333,6 +337,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             return;
         }
 
+        // TODO: this code is kind of a soup, rework or refactor into a function
         let (called_node, bounds, impl_self_bound) = 'bl: {
             // this checks if we are calling a function with a default implementation,
             // as processed at the beginning of `CallGraph::build`.
@@ -366,14 +371,12 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                     default_function: called_id,
                     impl_block: spec_impl_id,
                 };
-                let Some(node) =
-                    self.graph_node_to_index.get(&GraphNode::ImplDefaultTransparent(default_node))
-                else {
+                let Some(node) = self.visit_specialized_default_function(ctx, default_node) else {
                     break 'not_default;
                 };
-                let bounds = self.default_functions_bounds[&default_node];
+                let bounds = self.default_functions_bounds[&node];
                 let self_bound = tcx.impl_trait_header(spec_impl_id);
-                break 'bl (*node, bounds, self_bound);
+                break 'bl (node, bounds, self_bound);
             }
             (
                 self.insert_function(tcx, GraphNode::Function(called_id)),
@@ -410,6 +413,75 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             }
         }
     }
+
+    /// This visit the special function that is called when calling:
+    /// - a default function in a trait (or in a default impl)
+    /// - that is logical
+    /// - and visible at the point of implementation, that is
+    ///   ```
+    ///   # use creusot_contracts::*;
+    ///   trait Tr {
+    ///       #[logic] #[open(self)] fn f() {}
+    ///   }
+    ///   impl Tr for i32 { }
+    ///   #[logic] #[open(self)] fn g() { <i32 as Tr>::f(); }
+    ///   ```
+    ///   Here the implementation `<i32 as Tr>` generates an additional node in the
+    ///   termination graph, which is "`f` but specialized in `impl Tr for i32`".
+    ///
+    /// We use this function, so that only those specialization that are actually called are visited.
+    fn visit_specialized_default_function(
+        &mut self,
+        ctx: &mut TranslationCtx<'tcx>,
+        graph_node: ImplDefaultTransparent,
+    ) -> Option<graph::NodeIndex> {
+        let node = *self.graph_node_to_index.get(&GraphNode::ImplDefaultTransparent(graph_node))?;
+        if !self.visited_default_specialization.insert(node) {
+            return Some(node);
+        }
+        let tcx = ctx.tcx;
+        let ImplDefaultTransparent { default_function: item_id, impl_block: impl_id } = graph_node;
+        let specialization_node = &self.specialization_nodes[&node];
+
+        let impl_id = impl_id.to_def_id();
+        let param_env = tcx.param_env(impl_id);
+        let term = ctx.term(item_id).unwrap();
+        let mut visitor = TermCalls { results: IndexSet::new() };
+        visitor.visit_term(term);
+
+        let trait_id = tcx.trait_id_of_impl(impl_id).unwrap();
+
+        // translate the args of the impl to match the trait.
+        let infcx = tcx.infer_ctxt().build();
+        let impl_args = rustc_trait_selection::traits::translate_args(
+            &infcx,
+            param_env,
+            impl_id,
+            GenericArgs::identity_for_item(tcx, impl_id),
+            specialization_node.defining_node,
+        );
+
+        // Take the generic arguments of the default function, instantiated with
+        // the type parameters from the impl block.
+        let func_impl_args =
+            GenericArgs::identity_for_item(tcx, item_id).rebase_onto(tcx, trait_id, impl_args);
+
+        // data for when we call this function
+        let item_param_env = tcx.param_env(item_id);
+        let item_param_env = EarlyBinder::bind(item_param_env).instantiate(tcx, func_impl_args);
+        let bounds = normalize_param_env_or_error(tcx, item_param_env, ObligationCause::dummy())
+            .caller_bounds();
+        self.default_functions_bounds.insert(node, bounds);
+
+        for (called_id, generic_args, call_span) in visitor.results {
+            // Instantiate the args for the call with the context we just built up.
+            let actual_args =
+                EarlyBinder::bind(tcx.erase_regions(generic_args)).instantiate(tcx, func_impl_args);
+
+            self.function_call(ctx, node, param_env, called_id, actual_args, call_span);
+        }
+        Some(node)
+    }
 }
 
 impl CallGraph {
@@ -421,7 +493,6 @@ impl CallGraph {
         let tcx = ctx.tcx;
         let mut build_call_graph = BuildFunctionsGraph::default();
 
-        let mut specialization_nodes = IndexMap::new();
         // Create the `GraphNode::ImplDefaultTransparent` nodes.
         for (trait_id, impls) in tcx.all_local_trait_impls(()) {
             for &impl_local_id in impls {
@@ -459,73 +530,17 @@ impl CallGraph {
                         // - logical items
                         continue;
                     }
-                    specialization_nodes.insert((default_item_id, impl_local_id), default_item);
-                    build_call_graph.insert_function(
+
+                    let node = build_call_graph.insert_function(
                         tcx,
                         GraphNode::ImplDefaultTransparent(ImplDefaultTransparent {
                             default_function: default_item_id,
                             impl_block: impl_local_id,
                         }),
                     );
+                    build_call_graph.specialization_nodes.insert(node, default_item);
+                    build_call_graph.is_default_function.insert(default_item_id);
                 }
-            }
-        }
-
-        for (graph_node, node) in build_call_graph.graph_node_to_index.clone() {
-            let GraphNode::ImplDefaultTransparent(graph_node) = graph_node else {
-                continue;
-            };
-            let ImplDefaultTransparent { default_function: item_id, impl_block: impl_id } =
-                graph_node;
-            let specialization_node = &specialization_nodes[&(item_id, impl_id)];
-
-            let impl_id = impl_id.to_def_id();
-            let param_env = tcx.param_env(impl_id);
-            let term = ctx.term(item_id).unwrap();
-            let mut visitor = TermCalls { results: IndexSet::new() };
-            visitor.visit_term(term);
-
-            // Instantiate the generic args according to the specialization of the impl.
-
-            let trait_id = tcx.trait_id_of_impl(impl_id).unwrap();
-
-            // Now, translate the args to match the trait.
-            let infcx = tcx.infer_ctxt().build();
-            let impl_args = rustc_trait_selection::traits::translate_args(
-                &infcx,
-                param_env,
-                impl_id,
-                GenericArgs::identity_for_item(tcx, impl_id),
-                specialization_node.defining_node,
-            );
-
-            // Take the generic arguments of the default function, instantiated with
-            // the type parameters from the impl block.
-            let func_impl_args =
-                GenericArgs::identity_for_item(tcx, item_id).rebase_onto(tcx, trait_id, impl_args);
-
-            // data for when we call this function
-            build_call_graph.is_default_function.insert(item_id);
-            let item_param_env = tcx.param_env(item_id);
-            let item_param_env = EarlyBinder::bind(item_param_env).instantiate(tcx, func_impl_args);
-            let bounds =
-                normalize_param_env_or_error(tcx, item_param_env, ObligationCause::dummy())
-                    .caller_bounds();
-            build_call_graph.default_functions_bounds.insert(graph_node, bounds);
-
-            for (called_id, generic_args, call_span) in visitor.results {
-                // Instantiate the args for the call with the context we just built up.
-                let actual_args = EarlyBinder::bind(tcx.erase_regions(generic_args))
-                    .instantiate(tcx, func_impl_args);
-
-                build_call_graph.function_call(
-                    tcx,
-                    node,
-                    param_env,
-                    called_id,
-                    actual_args,
-                    call_span,
-                );
             }
         }
 
@@ -558,7 +573,7 @@ impl CallGraph {
 
             for (called_id, generic_args, call_span) in visitor.calls {
                 build_call_graph.function_call(
-                    tcx,
+                    ctx,
                     node,
                     param_env,
                     called_id,
