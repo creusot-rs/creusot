@@ -392,6 +392,7 @@ impl Parse for Assertion {
 pub fn proof_assert(assertion: TS1) -> TS1 {
     let assert = parse_macro_input!(assertion as Assertion);
     let assert_body = pretyping::encode_block(&assert.0).unwrap_or_else(|e| e.into_tokens());
+    let location = format!("proof_assert L{}", Span::call_site().start().line);
 
     TS1::from(quote! {
         {
@@ -399,7 +400,7 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
             let _ = {
                 #[creusot::no_translate]
                 #[creusot::spec]
-                #[creusot::spec::assert]
+                #[creusot::spec::assert = #location]
                 || -> bool { #assert_body }
             };
         }

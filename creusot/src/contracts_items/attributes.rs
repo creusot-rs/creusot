@@ -67,6 +67,15 @@ pub fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {
     })
 }
 
+pub fn get_assert_msg(tcx: TyCtxt, def_id: DefId) -> Option<String> {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "assert"]).map(|a| {
+        match a.args {
+            AttrArgs::Eq(_, AttrArgsEq::Hir(ref msg)) => msg.symbol.to_string(),
+            _ => "assert".to_string(),
+        }
+    })
+}
+
 pub(crate) fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
     is_no_translate(tcx, def_id) || is_predicate(tcx, def_id) || is_logic(tcx, def_id)
 }
