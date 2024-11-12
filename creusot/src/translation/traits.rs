@@ -282,14 +282,15 @@ impl<'tcx> TraitResolved<'tcx> {
                 // Translate the original substitution into one on the selected impl method
                 let infcx = tcx.infer_ctxt().build();
 
-                let substs = substs.rebase_onto(tcx, trait_ref.def_id, impl_data.args);
-                let substs = rustc_trait_selection::traits::translate_args(
+                let args = rustc_trait_selection::traits::translate_args(
                     &infcx,
                     param_env,
                     impl_data.impl_def_id,
-                    substs,
+                    impl_data.args,
                     leaf_def.defining_node,
                 );
+                let substs = substs.rebase_onto(tcx, trait_ref.def_id, args);
+
                 let leaf_substs = infcx.tcx.erase_regions(substs);
 
                 TraitResolved::Instance(leaf_def.item.def_id, leaf_substs)
