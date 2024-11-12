@@ -1,0 +1,469 @@
+module T_core__ptr__non_null__NonNull
+  use prelude.prelude.Opaque
+  
+  type t_NonNull 't =
+    | C_NonNull opaque_ptr
+  
+  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
+    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer}) ]
+    
+end
+module T_core__marker__PhantomData
+  type t_PhantomData 't =
+    | C_PhantomData
+  
+  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any [ good -> {C_PhantomData  = input} (! ret) ] 
+end
+module T_core__ptr__unique__Unique
+  use T_core__marker__PhantomData as PhantomData'0
+  
+  use T_core__ptr__non_null__NonNull as NonNull'0
+  
+  type t_Unique 't =
+    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
+  
+  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
+    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
+      = input}
+      (! ret {pointer} {_marker}) ]
+    
+end
+module T_alloc__raw_vec__Cap
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  type t_Cap  =
+    | C_Cap usize
+  
+  let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
+    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0}) ]
+    
+end
+module T_alloc__raw_vec__RawVec
+  use T_alloc__raw_vec__Cap as Cap'0
+  
+  use T_core__ptr__unique__Unique as Unique'0
+  
+  type t_RawVec 't 'a =
+    | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
+  
+  let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
+    [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
+      (! ret {ptr} {cap} {alloc}) ]
+    
+end
+module T_alloc__vec__Vec
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  use T_alloc__raw_vec__RawVec as RawVec'0
+  
+  type t_Vec 't 'a =
+    | C_Vec (RawVec'0.t_RawVec 't 'a) usize
+  
+  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
+    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
+    
+end
+module T_alloc__alloc__Global
+  type t_Global  =
+    | C_Global
+  
+  let rec t_Global (input:t_Global) (ret  )= any [ good -> {C_Global  = input} (! ret) ] 
+end
+module M_878__test [#"878.rs" 4 0 4 13]
+  let%span s8780 = "878.rs" 5 21 5 22
+  let%span s8781 = "878.rs" 5 24 5 25
+  let%span s8782 = "878.rs" 5 27 5 28
+  let%span s8783 = "878.rs" 5 30 5 31
+  let%span s8784 = "878.rs" 6 4 6 13
+  let%span sslice5 = "../../../../creusot-contracts/src/std/slice.rs" 336 18 336 35
+  let%span svec6 = "../../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
+  let%span sboxed7 = "../../../../creusot-contracts/src/std/boxed.rs" 18 8 18 22
+  let%span sslice8 = "../../../../creusot-contracts/src/std/slice.rs" 29 14 29 41
+  let%span sslice9 = "../../../../creusot-contracts/src/std/slice.rs" 30 14 30 42
+  
+  use T_alloc__alloc__Global as Global'0
+  
+  use prelude.prelude.Int32
+  
+  use prelude.prelude.Int
+  
+  use T_alloc__vec__Vec as Vec'0
+  
+  predicate inv'1 (_1 : Vec'0.t_Vec int32 (Global'0.t_Global))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : Vec'0.t_Vec int32 (Global'0.t_Global) [inv'1 x] . inv'1 x = true
+  
+  use prelude.prelude.Slice
+  
+  predicate inv'0 (_1 : slice int32)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : slice int32 [inv'0 x] . inv'0 x = true
+  
+  use prelude.prelude.Intrinsic
+  
+  use prelude.prelude.Borrow
+  
+  use seq.Seq
+  
+  use prelude.prelude.Slice
+  
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.UIntSize
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use seq.Seq
+  
+  function view'2 (self : slice int32) : Seq.seq int32
+  
+  axiom view'2_spec : forall self : slice int32 . ([%#sslice9] view'2 self = Slice.id self)
+  && ([%#sslice8] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  
+  function view'1 (self : slice int32) : Seq.seq int32 =
+    [%#sboxed7] view'2 self
+  
+  function view'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32
+  
+  axiom view'0_spec : forall self : Vec'0.t_Vec int32 (Global'0.t_Global) . [%#svec6] Seq.length (view'0 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  let rec into_vec'0 (self:slice int32) (return'  (ret:Vec'0.t_Vec int32 (Global'0.t_Global)))= {[@expl:precondition] inv'0 self}
+    any
+    [ return' (result:Vec'0.t_Vec int32 (Global'0.t_Global))-> {inv'1 result}
+      {[%#sslice5] view'0 result = view'1 self}
+      (! return' {result}) ]
+    
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec test (_1:()) (return'  (ret:()))= (! bb0
+    [ bb0 = s0
+      [ s0 = any
+        [ any_ (__arr_temp:array int32)-> (! -{Seq.get __arr_temp.elts 0 = ([%#s8780] (1 : int32))
+          /\ Seq.get __arr_temp.elts 1 = ([%#s8781] (2 : int32))
+          /\ Seq.get __arr_temp.elts 2 = ([%#s8782] (2 : int32))
+          /\ Seq.get __arr_temp.elts 3 = ([%#s8783] (3 : int32)) /\ Seq.length __arr_temp.elts = 4}-
+           [ &_4 <- __arr_temp ] 
+          s1) ]
+        
+      | s1 = bb1 ]
+      
+    | bb1 = bb2
+    | bb2 = s0
+      [ s0 = into_vec'0 {_4} (fun (_ret':Vec'0.t_Vec int32 (Global'0.t_Global)) ->  [ &v <- _ret' ] s1) | s1 = bb3 ]
+      
+    | bb3 = s0
+      [ s0 = Borrow.borrow_mut <Vec'0.t_Vec int32 (Global'0.t_Global)> {v}
+          (fun (_ret':borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) ->  [ &_6 <- _ret' ]  [ &v <- _ret'.final ] s1)
+      | s1 = {[%#s8784] false} any ]
+       ]
+    )
+    [ & _0 : () = any_l ()
+    | & v : Vec'0.t_Vec int32 (Global'0.t_Global) = any_l ()
+    | & _4 : array int32 = any_l ()
+    | & _6 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) = any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end
+module T_878__S [#"878.rs" 10 0 10 8]
+  use prelude.prelude.UInt32
+  
+  use prelude.prelude.Int
+  
+  type t_S  =
+    | C_S uint32
+  
+  let rec t_S (input:t_S) (ret  (field_0:uint32))= any
+    [ good (field_0:uint32)-> {C_S field_0 = input} (! ret {field_0}) ]
+    
+  
+  function t_S__0 (self : t_S) : uint32 =
+    match self with
+      | C_S a -> a
+      end
+end
+module M_878__test2 [#"878.rs" 19 0 19 14]
+  let%span s8780 = "878.rs" 20 19 20 20
+  let%span s8781 = "878.rs" 21 13 21 25
+  let%span sslice2 = "../../../../creusot-contracts/src/std/slice.rs" 336 18 336 35
+  let%span svec3 = "../../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
+  let%span sboxed4 = "../../../../creusot-contracts/src/std/boxed.rs" 18 8 18 22
+  let%span sslice5 = "../../../../creusot-contracts/src/std/slice.rs" 29 14 29 41
+  let%span sslice6 = "../../../../creusot-contracts/src/std/slice.rs" 30 14 30 42
+  let%span sboxed7 = "../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
+  let%span svec8 = "../../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
+  let%span sslice9 = "../../../../creusot-contracts/src/std/slice.rs" 18 20 18 30
+  let%span sseq10 = "../../../../creusot-contracts/src/logic/seq.rs" 459 20 459 95
+  let%span s87811 = "878.rs" 15 8 15 22
+  
+  use prelude.prelude.UInt32
+  
+  use prelude.prelude.Int
+  
+  use T_878__S as T_878__S
+  
+  use T_878__S as S'0
+  
+  predicate invariant'5 [#"878.rs" 14 4 14 30] (self : S'0.t_S) =
+    [%#s87811] T_878__S.t_S__0 self = (0 : uint32)
+  
+  predicate inv'5 (_1 : S'0.t_S)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : S'0.t_S [inv'5 x] . inv'5 x
+  = (invariant'5 x
+  /\ match x with
+    | S'0.C_S a_0 -> true
+    end)
+  
+  predicate invariant'4 (self : S'0.t_S) =
+    [%#sboxed7] inv'5 self
+  
+  predicate inv'4 (_1 : S'0.t_S)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : S'0.t_S [inv'4 x] . inv'4 x = invariant'4 x
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate invariant'3 (self : Seq.seq (S'0.t_S)) =
+    [%#sseq10] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
+  
+  predicate inv'3 (_1 : Seq.seq (S'0.t_S))
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq (S'0.t_S) [inv'3 x] . inv'3 x = invariant'3 x
+  
+  use prelude.prelude.Slice
+  
+  use prelude.prelude.Slice
+  
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.UIntSize
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  function view'2 (self : slice (S'0.t_S)) : Seq.seq (S'0.t_S)
+  
+  axiom view'2_spec : forall self : slice (S'0.t_S) . ([%#sslice6] view'2 self = Slice.id self)
+  && ([%#sslice5] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  
+  predicate invariant'2 (self : slice (S'0.t_S)) =
+    [%#sslice9] inv'3 (view'2 self)
+  
+  predicate inv'2 (_1 : slice (S'0.t_S))
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : slice (S'0.t_S) [inv'2 x] . inv'2 x = invariant'2 x
+  
+  use T_alloc__alloc__Global as Global'0
+  
+  use T_alloc__vec__Vec as Vec'0
+  
+  function view'0 (self : Vec'0.t_Vec (S'0.t_S) (Global'0.t_Global)) : Seq.seq (S'0.t_S)
+  
+  axiom view'0_spec : forall self : Vec'0.t_Vec (S'0.t_S) (Global'0.t_Global) . [%#svec3] Seq.length (view'0 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  predicate invariant'1 (self : Vec'0.t_Vec (S'0.t_S) (Global'0.t_Global)) =
+    [%#svec8] inv'3 (view'0 self)
+  
+  predicate inv'1 (_1 : Vec'0.t_Vec (S'0.t_S) (Global'0.t_Global))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : Vec'0.t_Vec (S'0.t_S) (Global'0.t_Global) [inv'1 x] . inv'1 x
+  = invariant'1 x
+  
+  predicate invariant'0 (self : slice (S'0.t_S)) =
+    [%#sboxed7] inv'2 self
+  
+  predicate inv'0 (_1 : slice (S'0.t_S))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : slice (S'0.t_S) [inv'0 x] . inv'0 x = invariant'0 x
+  
+  use prelude.prelude.Intrinsic
+  
+  function view'1 (self : slice (S'0.t_S)) : Seq.seq (S'0.t_S) =
+    [%#sboxed4] view'2 self
+  
+  let rec into_vec'0 (self:slice (S'0.t_S)) (return'  (ret:Vec'0.t_Vec (S'0.t_S) (Global'0.t_Global)))= {[@expl:precondition] inv'0 self}
+    any
+    [ return' (result:Vec'0.t_Vec (S'0.t_S) (Global'0.t_Global))-> {inv'1 result}
+      {[%#sslice2] view'0 result = view'1 self}
+      (! return' {result}) ]
+    
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec test2 (_1:()) (return'  (ret:()))= (! bb0
+    [ bb0 = s0
+      [ s0 =  [ &_5 <- S'0.C_S ([%#s8780] (0 : uint32)) ] s1
+      | s1 = any
+        [ any_ (__arr_temp:array (S'0.t_S))-> (! -{Seq.get __arr_temp.elts 0 = _5 /\ Seq.length __arr_temp.elts = 1}-
+           [ &_4 <- __arr_temp ] 
+          s2) ]
+        
+      | s2 = bb1 ]
+      
+    | bb1 = bb2
+    | bb2 = s0
+      [ s0 = into_vec'0 {_4} (fun (_ret':Vec'0.t_Vec (S'0.t_S) (Global'0.t_Global)) ->  [ &v <- _ret' ] s1) | s1 = bb3 ]
+      
+    | bb3 = {[%#s8781] false} any ]
+    )
+    [ & _0 : () = any_l ()
+    | & v : Vec'0.t_Vec (S'0.t_S) (Global'0.t_Global) = any_l ()
+    | & _4 : array (S'0.t_S) = any_l ()
+    | & _5 : S'0.t_S = any_l ()
+    | & b : bool = any_l ()
+    | & _7 : bool = any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end
+module M_878__test3 [#"878.rs" 25 0 25 14]
+  let%span s8780 = "878.rs" 26 19 26 20
+  let%span s8781 = "878.rs" 27 20 27 35
+  let%span sslice2 = "../../../../creusot-contracts/src/std/slice.rs" 336 18 336 35
+  let%span svec3 = "../../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
+  let%span sboxed4 = "../../../../creusot-contracts/src/std/boxed.rs" 18 8 18 22
+  let%span sslice5 = "../../../../creusot-contracts/src/std/slice.rs" 29 14 29 41
+  let%span sslice6 = "../../../../creusot-contracts/src/std/slice.rs" 30 14 30 42
+  let%span sboxed7 = "../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
+  let%span svec8 = "../../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
+  let%span sslice9 = "../../../../creusot-contracts/src/std/slice.rs" 18 20 18 30
+  let%span sseq10 = "../../../../creusot-contracts/src/logic/seq.rs" 459 20 459 95
+  let%span s87811 = "878.rs" 15 8 15 22
+  
+  use prelude.prelude.UInt32
+  
+  use prelude.prelude.Int
+  
+  use T_878__S as T_878__S
+  
+  use T_878__S as S'0
+  
+  predicate invariant'5 [#"878.rs" 14 4 14 30] (self : S'0.t_S) =
+    [%#s87811] T_878__S.t_S__0 self = (0 : uint32)
+  
+  predicate inv'5 (_1 : S'0.t_S)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : S'0.t_S [inv'5 x] . inv'5 x
+  = (invariant'5 x
+  /\ match x with
+    | S'0.C_S a_0 -> true
+    end)
+  
+  predicate invariant'4 (self : S'0.t_S) =
+    [%#sboxed7] inv'5 self
+  
+  predicate inv'4 (_1 : S'0.t_S)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : S'0.t_S [inv'4 x] . inv'4 x = invariant'4 x
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate invariant'3 (self : Seq.seq (S'0.t_S)) =
+    [%#sseq10] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
+  
+  predicate inv'3 (_1 : Seq.seq (S'0.t_S))
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq (S'0.t_S) [inv'3 x] . inv'3 x = invariant'3 x
+  
+  use prelude.prelude.Slice
+  
+  use prelude.prelude.Slice
+  
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.UIntSize
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  function view'2 (self : slice (S'0.t_S)) : Seq.seq (S'0.t_S)
+  
+  axiom view'2_spec : forall self : slice (S'0.t_S) . ([%#sslice6] view'2 self = Slice.id self)
+  && ([%#sslice5] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  
+  predicate invariant'2 (self : slice (S'0.t_S)) =
+    [%#sslice9] inv'3 (view'2 self)
+  
+  predicate inv'2 (_1 : slice (S'0.t_S))
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : slice (S'0.t_S) [inv'2 x] . inv'2 x = invariant'2 x
+  
+  use T_alloc__alloc__Global as Global'0
+  
+  use T_alloc__vec__Vec as Vec'0
+  
+  function view'0 (self : Vec'0.t_Vec (S'0.t_S) (Global'0.t_Global)) : Seq.seq (S'0.t_S)
+  
+  axiom view'0_spec : forall self : Vec'0.t_Vec (S'0.t_S) (Global'0.t_Global) . [%#svec3] Seq.length (view'0 self)
+  <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  predicate invariant'1 (self : Vec'0.t_Vec (S'0.t_S) (Global'0.t_Global)) =
+    [%#svec8] inv'3 (view'0 self)
+  
+  predicate inv'1 (_1 : Vec'0.t_Vec (S'0.t_S) (Global'0.t_Global))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : Vec'0.t_Vec (S'0.t_S) (Global'0.t_Global) [inv'1 x] . inv'1 x
+  = invariant'1 x
+  
+  predicate invariant'0 (self : slice (S'0.t_S)) =
+    [%#sboxed7] inv'2 self
+  
+  predicate inv'0 (_1 : slice (S'0.t_S))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : slice (S'0.t_S) [inv'0 x] . inv'0 x = invariant'0 x
+  
+  use prelude.prelude.Intrinsic
+  
+  use seq.Seq
+  
+  function view'1 (self : slice (S'0.t_S)) : Seq.seq (S'0.t_S) =
+    [%#sboxed4] view'2 self
+  
+  let rec into_vec'0 (self:slice (S'0.t_S)) (return'  (ret:Vec'0.t_Vec (S'0.t_S) (Global'0.t_Global)))= {[@expl:precondition] inv'0 self}
+    any
+    [ return' (result:Vec'0.t_Vec (S'0.t_S) (Global'0.t_Global))-> {inv'1 result}
+      {[%#sslice2] view'0 result = view'1 self}
+      (! return' {result}) ]
+    
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec test3 (_1:()) (return'  (ret:()))= (! bb0
+    [ bb0 = s0
+      [ s0 =  [ &_5 <- S'0.C_S ([%#s8780] (0 : uint32)) ] s1
+      | s1 = any
+        [ any_ (__arr_temp:array (S'0.t_S))-> (! -{Seq.get __arr_temp.elts 0 = _5 /\ Seq.length __arr_temp.elts = 1}-
+           [ &_4 <- __arr_temp ] 
+          s2) ]
+        
+      | s2 = bb1 ]
+      
+    | bb1 = bb2
+    | bb2 = s0
+      [ s0 = into_vec'0 {_4} (fun (_ret':Vec'0.t_Vec (S'0.t_S) (Global'0.t_Global)) ->  [ &v <- _ret' ] s1) | s1 = bb3 ]
+      
+    | bb3 = s0
+      [ s0 = {[@expl:assertion] [%#s8781] T_878__S.t_S__0 (Seq.get (view'0 v) 0) = (0 : uint32)} s1 | s1 = bb4 ]
+      
+    | bb4 = bb5
+    | bb5 = return' {_0} ]
+    )
+    [ & _0 : () = any_l ()
+    | & v : Vec'0.t_Vec (S'0.t_S) (Global'0.t_Global) = any_l ()
+    | & _4 : array (S'0.t_S) = any_l ()
+    | & _5 : S'0.t_S = any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end
+module M_878__qyi12012022218104196795 [#"878.rs" 11 0 11 20] (* <S as creusot_contracts::Invariant> *)
+  
+end
