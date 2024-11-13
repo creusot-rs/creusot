@@ -65,8 +65,8 @@ fn compare_str(buf: &mut Buffer, got: &str, expect: &str) -> bool {
         return true;
     }
 
-    let got = normalize_spans(&normalize_newlines(&got));
-    let expect = normalize_spans(&normalize_newlines(&expect));
+    let got = normalize_spans(&normalize_trailing_spaces(&normalize_newlines(&got)));
+    let expect = normalize_spans(&normalize_trailing_spaces(&normalize_newlines(&expect)));
 
     let result = TextDiff::configure()
         .newline_terminated(false)
@@ -90,10 +90,17 @@ fn compare_str(buf: &mut Buffer, got: &str, expect: &str) -> bool {
 /// Normalize new lines between linux/windows for consistency
 ///
 /// Remove \r (for Windows)
-fn normalize_newlines(input: impl Into<String>) -> String {
+fn normalize_newlines(input: &str) -> String {
     let input: String = input.into();
     let input = input.replace("\r", "");
     input
+}
+
+/// Normalize trailing spaces
+fn normalize_trailing_spaces(input: &str) -> String {
+    let re = Regex::new(r"(?m)[\t ]*$").unwrap();
+    let s = re.replace_all(input.into(), "");
+    s.into_owned()
 }
 
 /// Replace numbered spans with "spanxxxx" for better diffs

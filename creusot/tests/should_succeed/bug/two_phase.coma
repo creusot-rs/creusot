@@ -1,109 +1,35 @@
-module T_core__ptr__non_null__NonNull
-  use prelude.prelude.Opaque
-  
-  type t_NonNull 't =
-    | C_NonNull opaque_ptr
-  
-  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
-    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer}) ]
-    
-end
-module T_core__marker__PhantomData
-  type t_PhantomData 't =
-    | C_PhantomData
-  
-  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any [ good -> {C_PhantomData  = input} (! ret) ] 
-end
-module T_core__ptr__unique__Unique
-  use T_core__marker__PhantomData as PhantomData'0
-  
-  use T_core__ptr__non_null__NonNull as NonNull'0
-  
-  type t_Unique 't =
-    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
-  
-  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
-    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
-      = input}
-      (! ret {pointer} {_marker}) ]
-    
-end
-module T_alloc__raw_vec__Cap
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  type t_Cap  =
-    | C_Cap usize
-  
-  let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
-    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0}) ]
-    
-end
-module T_alloc__raw_vec__RawVec
-  use T_alloc__raw_vec__Cap as Cap'0
-  
-  use T_core__ptr__unique__Unique as Unique'0
-  
-  type t_RawVec 't 'a =
-    | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
-  
-  let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
-    [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
-      (! ret {ptr} {cap} {alloc}) ]
-    
-end
-module T_alloc__vec__Vec
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  use T_alloc__raw_vec__RawVec as RawVec'0
-  
-  type t_Vec 't 'a =
-    | C_Vec (RawVec'0.t_RawVec 't 'a) usize
-  
-  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
-    
-end
-module T_alloc__alloc__Global
-  type t_Global  =
-    | C_Global
-  
-  let rec t_Global (input:t_Global) (ret  )= any [ good -> {C_Global  = input} (! ret) ] 
-end
 module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   let%span stwo_phase0 = "two_phase.rs" 5 10 5 37
-  let%span svec1 = "../../../../creusot-contracts/src/std/vec.rs" 86 26 86 48
-  let%span svec2 = "../../../../creusot-contracts/src/std/vec.rs" 90 26 90 56
-  let%span smodel3 = "../../../../creusot-contracts/src/model.rs" 109 8 109 22
+  let%span svec1 = "../../../../creusot-contracts/src/std/vec.rs" 83 26 83 48
+  let%span svec2 = "../../../../creusot-contracts/src/std/vec.rs" 87 26 87 56
+  let%span smodel3 = "../../../../creusot-contracts/src/model.rs" 106 8 106 22
   let%span sops4 = "../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
-  let%span smodel5 = "../../../../creusot-contracts/src/model.rs" 91 8 91 22
-  let%span svec6 = "../../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
+  let%span smodel5 = "../../../../creusot-contracts/src/model.rs" 88 8 88 22
+  let%span svec6 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   let%span sresolve7 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  predicate inv'2 (_1 : usize)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : usize [inv'2 x] . inv'2 x = true
-  
-  use T_alloc__alloc__Global as Global'0
-  
-  use T_alloc__vec__Vec as Vec'0
   
   use prelude.prelude.Borrow
   
-  predicate inv'1 (_1 : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)))
+  use prelude.prelude.Opaque
   
-  axiom inv_axiom'1 [@rewrite] : forall x : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)) [inv'1 x] . inv'1 x = true
+  type t_NonNull'0  =
+    { t_NonNull__pointer'0: opaque_ptr }
   
-  predicate inv'0 (_1 : Vec'0.t_Vec usize (Global'0.t_Global))
+  type t_Unique'0  =
+    { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
   
-  axiom inv_axiom'0 [@rewrite] : forall x : Vec'0.t_Vec usize (Global'0.t_Global) [inv'0 x] . inv'0 x = true
+  use prelude.prelude.UIntSize
+  
+  type t_Cap'0  =
+    { t_Cap__0'0: usize }
+  
+  type t_RawVec'0  =
+    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+  
+  type t_Vec'0  =
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
+  
+  predicate inv'0 (_1 : t_Vec'0)
   
   use prelude.prelude.UIntSize
   
@@ -113,48 +39,56 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  use seq.Seq
+  use prelude.prelude.Int
   
-  function view'2 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
+  function view'2 (self : t_Vec'0) : Seq.seq usize
   
-  axiom view'2_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#svec6] Seq.length (view'2 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
+  axiom view'2_spec : forall self : t_Vec'0 . [%#svec6] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec usize (Global'0.t_Global)) (ix : int) : usize =
-    [%#sops4] Seq.get (view'2 self) ix
+  function view'1 (self : t_Vec'0) : Seq.seq usize =
+    [%#smodel5] view'2 self
   
-  function view'0 (self : borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) : Seq.seq usize =
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
+  
+  predicate inv'1 (_1 : borrowed (t_Vec'0))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'1 x] . inv'1 x = true
+  
+  predicate inv'2 (_1 : usize)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : usize [inv'2 x] . inv'2 x = true
+  
+  let rec len'0 (self:t_Vec'0) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'0 self}
+    any [ return' (result:usize)-> {[%#svec1] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ] 
+  
+  function view'0 (self : borrowed (t_Vec'0)) : Seq.seq usize =
     [%#smodel3] view'2 self.current
   
-  use prelude.prelude.Intrinsic
-  
-  predicate resolve'1 (self : borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) =
-    [%#sresolve7] self.final = self.current
-  
-  predicate resolve'0 (_1 : borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) =
-    resolve'1 _1
-  
   use seq.Seq
   
-  let rec push'0 (self:borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) (value:usize) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'1 self}
+  let rec push'0 (self:borrowed (t_Vec'0)) (value:usize) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'1 self}
     {[@expl:push 'value' type invariant] inv'2 value}
     any [ return' (result:())-> {[%#svec2] view'2 self.final = Seq.snoc (view'0 self) value} (! return' {result}) ] 
   
-  function view'1 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize =
-    [%#smodel5] view'2 self
+  predicate resolve'1 (self : borrowed (t_Vec'0)) =
+    [%#sresolve7] self.final = self.current
   
-  let rec len'0 (self:Vec'0.t_Vec usize (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'0 self}
-    any [ return' (result:usize)-> {[%#svec1] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ] 
+  predicate resolve'0 (_1 : borrowed (t_Vec'0)) =
+    resolve'1 _1
+  
+  use prelude.prelude.Intrinsic
+  
+  use seq.Seq
+  
+  function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : usize =
+    [%#sops4] Seq.get (view'2 self) ix
   
   meta "compute_max_steps" 1000000
   
-  let rec test (v:borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) (return'  (ret:()))= (! bb0
+  let rec test'0 (v:borrowed (t_Vec'0)) (return'  (ret:()))= (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_final <Vec'0.t_Vec usize (Global'0.t_Global)> {v.current} {Borrow.get_id v}
-          (fun (_ret':borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) ->
-             [ &_4 <- _ret' ] 
-             [ &v <- { v with current = _ret'.final ; } ] 
-            s1)
+      [ s0 = Borrow.borrow_final <t_Vec'0> {v.current} {Borrow.get_id v}
+          (fun (_ret':borrowed (t_Vec'0)) ->  [ &_4 <- _ret' ]  [ &v <- { v with current = _ret'.final } ] s1)
       | s1 = len'0 {_4.current} (fun (_ret':usize) ->  [ &_5 <- _ret' ] s2)
       | s2 = bb1 ]
       
@@ -162,9 +96,9 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
     | bb2 = s0 [ s0 = -{resolve'0 v}- s1 | s1 = return' {_0} ]  ]
     )
     [ & _0 : () = any_l ()
-    | & v : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)) = v
+    | & v : borrowed (t_Vec'0) = v
     | & _3 : () = any_l ()
-    | & _4 : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)) = any_l ()
+    | & _4 : borrowed (t_Vec'0) = any_l ()
     | & _5 : usize = any_l () ]
     
     [ return' (result:())-> {[@expl:test ensures] [%#stwo_phase0] UIntSize.to_int (index_logic'0 v.final (Seq.length (view'0 v)))

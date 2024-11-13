@@ -4,11 +4,11 @@ impl<I: Iterator> View for Fuse<I> {
     type ViewTy = Option<I>;
 
     #[logic]
-    #[open(self)]
     #[trusted]
     #[ensures(inv(self) ==> inv(result))]
+    #[ensures(forall<other: Fuse<I>> result == other@ ==> self == other)]
     fn view(self) -> Option<I> {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -17,9 +17,8 @@ impl<I: Iterator> Iterator for Fuse<I> {
     #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-            (self@ == None ||
-            exists<it:&mut I> inv(it)
-                && it.completed() && self@ == Some(*it)) && (^self)@ == None
+            (self@ == None || exists<it:&mut I> inv(it) && it.completed() && self@ == Some(*it)) &&
+            (^self)@ == None
         }
     }
 
@@ -66,8 +65,6 @@ pub trait FusedIterator: ::std::iter::FusedIterator + Iterator {
 }
 
 impl<I: Iterator> FusedIterator for Fuse<I> {
-    // FIXME: remove `trusted`
-    #[trusted]
     #[law]
     #[open]
     #[requires(inv(self))]

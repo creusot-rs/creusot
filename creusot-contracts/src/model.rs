@@ -37,10 +37,9 @@ impl<T: DeepModel> DeepModel for Rc<T> {
 impl<T> View for Rc<T> {
     type ViewTy = T;
     #[logic]
-    #[open]
     #[trusted]
     fn view(self) -> Self::ViewTy {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -48,10 +47,9 @@ impl View for str {
     type ViewTy = Seq<char>;
 
     #[logic]
-    #[open]
     #[trusted]
     fn view(self) -> Self::ViewTy {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -67,10 +65,9 @@ impl<T: DeepModel> DeepModel for Arc<T> {
 impl<T> View for Arc<T> {
     type ViewTy = T;
     #[logic]
-    #[open]
     #[trusted]
     fn view(self) -> Self::ViewTy {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -124,9 +121,8 @@ impl View for String {
     type ViewTy = Seq<char>;
 
     #[logic]
-    #[open(self)]
     #[trusted]
     fn view(self) -> Self::ViewTy {
-        pearlite! { absurd }
+        dead
     }
 }

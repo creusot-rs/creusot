@@ -79,11 +79,15 @@ impl<T> Resolve for Option<T> {
     fn resolve_coherence(&self) {}
 }
 
-#[open(self)]
-#[cfg_attr(creusot, predicate(prophetic))]
-#[cfg_attr(creusot, creusot::open_inv)]
-#[cfg_attr(creusot, creusot::open_inv_result)]
-#[cfg_attr(creusot, rustc_diagnostic_item = "creusot_structural_resolve")]
+#[predicate(prophetic)]
+#[open]
+#[rustc_diagnostic_item = "creusot_structural_resolve"]
+#[creusot::no_translate]
 pub fn structural_resolve<T: ?Sized>(_: &T) -> bool {
     true
+}
+
+#[cfg(not(creusot))]
+pub fn structural_resolve<T: ?Sized>(_: &T) -> bool {
+    panic!()
 }

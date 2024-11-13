@@ -7,12 +7,13 @@ pub(crate) mod pearlite;
 mod projection_vec;
 pub(crate) mod specification;
 pub(crate) mod traits;
-use std::{fs::File, path::PathBuf};
 
 use crate::{
-    backend::{TransId, Why3Generator},
-    contracts_items,
-    ctx::{self, load_extern_specs},
+    backend::{is_trusted_function, Why3Generator},
+    contracts_items::{
+        are_contracts_loaded, is_logic, is_no_translate, is_predicate, is_spec, AreContractsLoaded,
+    },
+    ctx::{self},
     error::InternalError,
     metadata,
     options::Output,
@@ -20,24 +21,25 @@ use crate::{
     validate::{
         validate_impls, validate_opacity, validate_purity, validate_traits, validate_trusted,
     },
-};
-use ::why3::{
-    declaration::{Decl, Module},
-    mlcfg, Print,
+    validate_terminates::validate_terminates,
 };
 use ctx::TranslationCtx;
-use rustc_hir::def::DefKind;
+use rustc_hir::{def::DefKind, def_id::DefId};
+use rustc_middle::ty::TyCtxt;
 use rustc_span::DUMMY_SP;
-use std::{error::Error, io::Write};
-use why3::{declaration::Attribute, mlcfg::printer::pretty_blocks};
+use std::{error::Error, fs::File, io::Write, path::PathBuf};
+use why3::{
+    declaration::{Attribute, Decl, Module},
+    printer::{self, pretty_blocks, Print},
+};
 
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
 
-    match crate::contracts_items::are_contracts_loaded(ctx.tcx) {
-        contracts_items::AreContractsLoaded::Yes => {},
-        contracts_items::AreContractsLoaded::No => ctx.fatal_error(DUMMY_SP, "The `creusot_contracts` crate is not loaded. You will not be able to verify any code using Creusot until you do so.").emit(),
-        contracts_items::AreContractsLoaded::MissingItems(missing) => {
+    match are_contracts_loaded(ctx.tcx) {
+        AreContractsLoaded::Yes => {},
+        AreContractsLoaded::No => ctx.fatal_error(DUMMY_SP, "The `creusot_contracts` crate is not loaded. You will not be able to verify any code using Creusot until you do so.").emit(),
+        AreContractsLoaded::MissingItems(missing) => {
             let mut message = String::from("The `creusot_contracts` crate is loaded, but the following items are missing: ");
             for (i, item) in missing.iter().enumerate() {
                 if i != 0 {
@@ -51,21 +53,20 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
     }
 
     ctx.load_metadata();
-    load_extern_specs(ctx).map_err(|_| Box::new(InternalError("Failed to load extern specs")))?;
+    ctx.load_extern_specs().map_err(|_| Box::new(InternalError("Failed to load extern specs")))?;
 
     for def_id in ctx.tcx.hir().body_owners() {
         validate_purity(ctx, def_id);
 
         let def_id = def_id.to_def_id();
-        if contracts_items::is_spec(ctx.tcx, def_id)
-            || contracts_items::is_predicate(ctx.tcx, def_id)
-            || contracts_items::is_logic(ctx.tcx, def_id)
-        {
-            let _ = ctx.term(def_id);
-            validate_opacity(ctx, def_id);
+        if is_spec(ctx.tcx, def_id) || is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id) {
+            if !is_trusted_function(ctx.tcx, def_id) {
+                let _ = ctx.term(def_id);
+                validate_opacity(ctx, def_id);
+            }
         }
     }
-    crate::validate_terminates::validate_terminates(ctx);
+    validate_terminates(ctx);
 
     // Check that all trait laws are well-formed
     validate_traits(ctx);
@@ -74,6 +75,20 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
 
     debug!("before_analysis: {:?}", start.elapsed());
     Ok(())
+}
+
+fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
+    loop {
+        if is_no_translate(tcx, def_id) {
+            return false;
+        }
+
+        if tcx.is_closure_like(def_id) {
+            def_id = tcx.parent(def_id);
+        } else {
+            return true;
+        }
+    }
 }
 
 use std::time::Instant;
@@ -85,7 +100,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
     for def_id in why3.hir().body_owners() {
         let def_id = def_id.to_def_id();
 
-        if !crate::util::should_translate(why3.tcx, def_id) {
+        if !should_translate(why3.tcx, def_id) {
             info!("Skipping {:?}", def_id);
             continue;
         }
@@ -118,21 +133,10 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> 
     if why3.should_compile() {
         use crate::run_why3::run_why3;
 
-        let matcher = why3.opts.match_str.clone();
-        let matcher: &str = matcher.as_ref().map(|s| &s[..]).unwrap_or("");
-        let tcx = why3.tcx;
         let output_target = why3.opts.output.clone();
         let prefix = why3.opts.prefix.clone();
         let modules = why3.modules();
-        let modules = modules.flat_map(|(id, item)| {
-            if let TransId::Item(did) = id
-                && tcx.def_path_str(did).contains(matcher)
-            {
-                item.modules()
-            } else {
-                Box::new(std::iter::empty())
-            }
-        });
+        let modules = modules.flat_map(|item| item.modules());
 
         let file = print_crate(output_target, prefix, modules)?;
         run_why3(&why3, file);
@@ -176,13 +180,13 @@ fn modular_output<T: Write>(modl: &FileModule, out: &mut T) -> std::io::Result<(
     let attrs = attrs.into_iter().map(|attr| Decl::Comment(show_attribute(attr)));
     let meta = meta.into_iter().map(|s| Decl::Comment(s.clone()));
     let decls: Vec<Decl> = attrs.chain(meta).chain(decls.into_iter().cloned()).collect();
-    pretty_blocks(&decls, &mlcfg::printer::ALLOC).1.render(120, out)?;
+    pretty_blocks(&decls, &printer::ALLOC).1.render(120, out)?;
     writeln!(out)?;
     Ok(())
 }
 
 fn monolithic_output<T: Write>(modl: &FileModule, out: &mut T) -> std::io::Result<()> {
-    modl.modl.pretty(&mlcfg::printer::ALLOC).1.render(120, out)?;
+    modl.modl.pretty(&printer::ALLOC).1.render(120, out)?;
     writeln!(out)?;
     Ok(())
 }

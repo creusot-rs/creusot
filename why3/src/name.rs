@@ -111,11 +111,13 @@ impl QName {
         self.module.push(old);
     }
 
-    pub fn module_qname(mut self) -> QName {
-        assert!(!self.module.is_empty(), "ident has no module {:?}", self);
+    pub fn module_qname(mut self) -> Option<QName> {
+        if self.module.is_empty() {
+            return None;
+        }
         let id = self.module.pop().unwrap();
         self.name = id;
-        self
+        Some(self)
     }
 
     pub fn without_search_path(mut self) -> QName {

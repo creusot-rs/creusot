@@ -33,42 +33,37 @@ impl Int {
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "int.Power.power"]
     pub fn pow(self, _: Int) -> Int {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "int.MinMax.max"]
     pub fn max(self, _: Int) -> Int {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "int.MinMax.min"]
     pub fn min(self, _: Int) -> Int {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "int.EuclideanDivision.div"]
     pub fn div_euclid(self, _: Int) -> Int {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "int.EuclideanDivision.mod"]
     pub fn rem_euclid(self, _: Int) -> Int {
-        absurd
+        dead
     }
 
     #[logic]

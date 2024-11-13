@@ -1,8 +1,6 @@
-use std::marker::PhantomData;
-
-use crate::{logic, open, pearlite, trusted, DeepModel, Int, OrdLogic};
-use num_rational::BigRational;
-use std::cmp::Ordering;
+use crate::*;
+use ::num_rational::BigRational;
+use ::std::{cmp::Ordering, marker::PhantomData};
 
 #[cfg_attr(creusot, creusot::builtins = "prelude.prelude.Real.real")]
 #[trusted]
@@ -13,19 +11,17 @@ impl DeepModel for BigRational {
     type DeepModelTy = Real;
 
     #[logic]
-    #[open(self)]
     #[trusted]
     fn deep_model(self) -> Self::DeepModelTy {
-        absurd
+        dead
     }
 }
 
 impl Real {
     #[logic]
     #[trusted]
-    #[open(self)]
     pub fn from_int(_: Int) -> Self {
-        pearlite! { absurd }
+        dead
     }
 }
 

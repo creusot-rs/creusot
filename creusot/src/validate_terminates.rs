@@ -33,11 +33,14 @@
 
 use crate::{
     backend::is_trusted_function,
-    contracts_items,
+    contracts_items::{
+        has_variant_clause, is_ghost_closure, is_ghost_from_fn, is_no_translate, is_pearlite,
+    },
     ctx::TranslationCtx,
     pearlite::{TermKind, TermVisitor},
     specification::contract_of,
     traits::TraitResolved,
+    util::erased_identity_for_item,
 };
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graph, visit::EdgeRef as _};
@@ -91,7 +94,7 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
         };
         if let Some(loop_span) = function_data.has_loops {
             let fun_span = ctx.tcx.def_span(def_id);
-            let mut error = if contracts_items::is_ghost_closure(ctx.tcx, def_id) {
+            let mut error = if is_ghost_closure(ctx.tcx, def_id) {
                 ctx.error(fun_span, "`ghost!` block must not contain loops.")
             } else {
                 ctx.error(fun_span, "`#[terminates]` function must not contain loops.")
@@ -102,7 +105,7 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
     }
 
     // detect mutual recursion
-    let cycles = petgraph::algo::kosaraju_scc(&call_graph);
+    let cycles = petgraph::algo::tarjan_scc(&call_graph);
     for mut cycle in cycles {
         // find a root as a local function
         let Some(root_idx) = cycle.iter().position(|n| {
@@ -294,8 +297,8 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                 self.additional_data.insert(
                     node,
                     FunctionData {
-                        is_pearlite: contracts_items::is_pearlite(tcx, def_id),
-                        has_variant: contracts_items::has_variant_clause(tcx, def_id),
+                        is_pearlite: is_pearlite(tcx, def_id),
+                        has_variant: has_variant_clause(tcx, def_id),
                         has_loops: None,
                     },
                 );
@@ -324,7 +327,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         } else {
             (called_id, generic_args)
         };
-        if contracts_items::is_ghost_from_fn(tcx, called_id) {
+        if is_ghost_from_fn(tcx, called_id) {
             // This is a `ghost!` call, so it needs special handling.
             let &[_, ty] = generic_args.as_slice() else {
                 unreachable!();
@@ -392,17 +395,17 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             let clause = tcx.instantiate_bound_regions_with_erased(clause);
             let trait_ref = clause.trait_ref;
             if let Some(self_bound) = &impl_self_bound {
-                let self_trait_ref = self_bound.trait_ref.instantiate_identity();
-                if trait_ref == self_trait_ref {
+                if trait_ref == self_bound.trait_ref.instantiate_identity() {
                     continue;
                 }
             }
-            let subst = EarlyBinder::bind(trait_ref.args).instantiate(tcx, generic_args);
 
+            let subst = EarlyBinder::bind(trait_ref.args).instantiate(tcx, generic_args);
             for &item in tcx.associated_item_def_ids(trait_ref.def_id) {
-                let (item_id, _) = match TraitResolved::resolve_item(tcx, param_env, item, subst) {
-                    TraitResolved::Instance(def_id, subst) => (def_id, subst),
-                    _ => continue,
+                let TraitResolved::Instance(item_id, _) =
+                    TraitResolved::resolve_item(tcx, param_env, item, subst)
+                else {
+                    continue;
                 };
                 let item_node = self.insert_function(tcx, GraphNode::Function(item_id));
                 self.graph.update_edge(
@@ -457,14 +460,14 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             &infcx,
             param_env,
             impl_id,
-            GenericArgs::identity_for_item(tcx, impl_id),
+            erased_identity_for_item(tcx, impl_id),
             specialization_node.defining_node,
         );
 
         // Take the generic arguments of the default function, instantiated with
         // the type parameters from the impl block.
         let func_impl_args =
-            GenericArgs::identity_for_item(tcx, item_id).rebase_onto(tcx, trait_id, impl_args);
+            erased_identity_for_item(tcx, item_id).rebase_onto(tcx, trait_id, impl_args);
 
         // data for when we call this function
         let item_param_env = tcx.param_env(item_id);
@@ -475,8 +478,11 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
 
         for (called_id, generic_args, call_span) in visitor.results {
             // Instantiate the args for the call with the context we just built up.
-            let actual_args =
-                EarlyBinder::bind(tcx.erase_regions(generic_args)).instantiate(tcx, func_impl_args);
+            let actual_args = tcx.instantiate_and_normalize_erasing_regions(
+                func_impl_args,
+                item_param_env,
+                EarlyBinder::bind(generic_args),
+            );
 
             self.function_call(ctx, node, param_env, called_id, actual_args, call_span);
         }
@@ -524,7 +530,7 @@ impl CallGraph {
                     let default_item_id = default_item.item.def_id;
 
                     let is_transparent = ctx.is_transparent_from(default_item_id, module_id);
-                    if !is_transparent || !contracts_items::is_pearlite(tcx, default_item_id) {
+                    if !is_transparent || !is_pearlite(tcx, default_item_id) {
                         // only consider item that are:
                         // - transparent from the POV of the impl block
                         // - logical items
@@ -545,7 +551,7 @@ impl CallGraph {
         }
 
         for local_id in ctx.hir().body_owners() {
-            if !(contracts_items::is_pearlite(ctx.tcx, local_id.to_def_id())
+            if !(is_pearlite(ctx.tcx, local_id.to_def_id())
                 || contract_of(ctx, local_id.to_def_id()).terminates)
             {
                 // Only consider functions marked with `terminates`: we already ensured that a `terminates` functions only calls other `terminates` functions.
@@ -554,9 +560,7 @@ impl CallGraph {
             let def_id = local_id.to_def_id();
             let node = build_call_graph.insert_function(ctx.tcx, GraphNode::Function(def_id));
 
-            if is_trusted_function(ctx.tcx, def_id)
-                || contracts_items::is_no_translate(ctx.tcx, def_id)
-            {
+            if is_trusted_function(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {
                 // Cut all arcs from this function.
                 continue;
             }

@@ -69,7 +69,6 @@ impl CreusotArgsExt for CreusotArgs {
             span_mode,
             monolithic: self.options.monolithic,
             prefix: Vec::new(), // to be set in callbacks::ToWhy::set_output_dir
-            match_str: self.options.focus_on,
             simple_triggers: self.options.simple_triggers,
             why3_cmd: match self.subcommand {
                 Some(cmd @ CreusotSubCommand::Why3 { .. }) => {

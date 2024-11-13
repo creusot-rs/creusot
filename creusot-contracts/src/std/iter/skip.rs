@@ -10,19 +10,17 @@ pub trait SkipExt<I> {
 
 impl<I> SkipExt<I> for Skip<I> {
     #[logic]
-    #[open(self)]
     #[trusted]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
-        pearlite! { absurd }
+        dead
     }
 
     #[logic]
-    #[open(self)]
     #[trusted]
     #[ensures(result >= 0 && result <= usize::MAX@)]
     fn n(self) -> Int {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -37,7 +35,6 @@ impl<I> Resolve for Skip<I> {
 
     #[trusted]
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
     fn resolve_coherence(&self) {}
@@ -77,8 +74,6 @@ impl<I: Iterator> Iterator for Skip<I> {
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
-    // FIXME: remove `trusted`
-    #[trusted]
     #[law]
     #[open(self)]
     #[requires(inv(a))]

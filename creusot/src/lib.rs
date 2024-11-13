@@ -2,7 +2,7 @@
 #![feature(box_patterns, control_flow_enum, extract_if)]
 #![feature(let_chains, never_type, try_blocks)]
 #![feature(closure_lifetime_binder)]
-#![feature(if_let_guard, slice_take)]
+#![feature(if_let_guard, slice_take, is_none_or)]
 
 extern crate either;
 #[macro_use]
@@ -35,29 +35,29 @@ extern crate rustc_target;
 extern crate rustc_trait_selection;
 extern crate rustc_type_ir;
 
-mod analysis;
-pub(crate) mod backend;
 pub mod callbacks;
+pub mod options;
+
+mod analysis;
+mod backend;
 mod cleanup_spec_closures;
-pub(crate) mod creusot_items;
-pub(crate) mod ctx;
-
+mod contracts_items;
+mod creusot_items;
+mod ctx;
 #[allow(dead_code)]
-pub(crate) mod debug;
-
+mod debug;
+mod error;
 mod extended_location;
 mod gather_spec_closures;
-pub mod options;
+mod lints;
+mod metadata;
+mod naming;
 mod resolve;
-mod translation;
-pub(crate) mod util;
-use translation::*;
-mod contracts_items;
-mod error;
-pub(crate) mod lints;
-pub(crate) mod metadata;
 mod run_why3;
 mod translated_item;
+mod translation;
+use translation::*;
+mod util;
 mod validate;
 mod validate_terminates;
 mod very_stable_hash;

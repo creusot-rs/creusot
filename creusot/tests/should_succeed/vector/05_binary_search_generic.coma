@@ -1,114 +1,4 @@
-module T_core__cmp__Ordering
-  type t_Ordering  =
-    | C_Less
-    | C_Equal
-    | C_Greater
-  
-  let rec v_Less (input:t_Ordering) (ret  )= any
-    [ good -> {C_Less  = input} (! ret) | bad -> {C_Less  <> input} (! {false} any) ]
-    
-  
-  let rec v_Equal (input:t_Ordering) (ret  )= any
-    [ good -> {C_Equal  = input} (! ret) | bad -> {C_Equal  <> input} (! {false} any) ]
-    
-  
-  let rec v_Greater (input:t_Ordering) (ret  )= any
-    [ good -> {C_Greater  = input} (! ret) | bad -> {C_Greater  <> input} (! {false} any) ]
-    
-end
-module T_core__result__Result
-  type t_Result 't 'e =
-    | C_Ok 't
-    | C_Err 'e
-  
-  let rec v_Ok < 't > < 'e > (input:t_Result 't 'e) (ret  (field_0:'t))= any
-    [ good (field_0:'t)-> {C_Ok field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : 't [C_Ok field_0 : t_Result 't 'e] . C_Ok field_0 <> input} (! {false} any) ]
-    
-  
-  let rec v_Err < 't > < 'e > (input:t_Result 't 'e) (ret  (field_0:'e))= any
-    [ good (field_0:'e)-> {C_Err field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : 'e [C_Err field_0 : t_Result 't 'e] . C_Err field_0 <> input} (! {false} any) ]
-    
-end
-module T_core__ptr__non_null__NonNull
-  use prelude.prelude.Opaque
-  
-  type t_NonNull 't =
-    | C_NonNull opaque_ptr
-  
-  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
-    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer}) ]
-    
-end
-module T_core__marker__PhantomData
-  type t_PhantomData 't =
-    | C_PhantomData
-  
-  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any [ good -> {C_PhantomData  = input} (! ret) ] 
-end
-module T_core__ptr__unique__Unique
-  use T_core__marker__PhantomData as PhantomData'0
-  
-  use T_core__ptr__non_null__NonNull as NonNull'0
-  
-  type t_Unique 't =
-    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
-  
-  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
-    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
-      = input}
-      (! ret {pointer} {_marker}) ]
-    
-end
-module T_alloc__raw_vec__Cap
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  type t_Cap  =
-    | C_Cap usize
-  
-  let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
-    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0}) ]
-    
-end
-module T_alloc__raw_vec__RawVec
-  use T_alloc__raw_vec__Cap as Cap'0
-  
-  use T_core__ptr__unique__Unique as Unique'0
-  
-  type t_RawVec 't 'a =
-    | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
-  
-  let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
-    [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
-      (! ret {ptr} {cap} {alloc}) ]
-    
-end
-module T_alloc__vec__Vec
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  use T_alloc__raw_vec__RawVec as RawVec'0
-  
-  type t_Vec 't 'a =
-    | C_Vec (RawVec'0.t_RawVec 't 'a) usize
-  
-  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
-    
-end
-module T_alloc__alloc__Global
-  type t_Global  =
-    | C_Global
-  
-  let rec t_Global (input:t_Global) (ret  )= any [ good -> {C_Global  = input} (! ret) ] 
-end
 module M_05_binary_search_generic__binary_search [#"05_binary_search_generic.rs" 27 0 29 29]
-  type t
-  
   let%span s05_binary_search_generic0 = "05_binary_search_generic.rs" 31 20 31 21
   let%span s05_binary_search_generic1 = "05_binary_search_generic.rs" 32 19 32 20
   let%span s05_binary_search_generic2 = "05_binary_search_generic.rs" 35 26 35 27
@@ -126,17 +16,17 @@ module M_05_binary_search_generic__binary_search [#"05_binary_search_generic.rs"
   let%span s05_binary_search_generic14 = "05_binary_search_generic.rs" 22 10 22 87
   let%span s05_binary_search_generic15 = "05_binary_search_generic.rs" 23 10 24 72
   let%span s05_binary_search_generic16 = "05_binary_search_generic.rs" 25 10 26 90
-  let%span svec17 = "../../../../creusot-contracts/src/std/vec.rs" 86 26 86 48
-  let%span smodel18 = "../../../../creusot-contracts/src/model.rs" 91 8 91 22
-  let%span smodel19 = "../../../../creusot-contracts/src/model.rs" 82 8 82 28
-  let%span svec20 = "../../../../creusot-contracts/src/std/vec.rs" 165 27 165 46
-  let%span svec21 = "../../../../creusot-contracts/src/std/vec.rs" 166 26 166 54
+  let%span svec17 = "../../../../creusot-contracts/src/std/vec.rs" 83 26 83 48
+  let%span smodel18 = "../../../../creusot-contracts/src/model.rs" 88 8 88 22
+  let%span smodel19 = "../../../../creusot-contracts/src/model.rs" 79 8 79 28
+  let%span svec20 = "../../../../creusot-contracts/src/std/vec.rs" 162 27 162 46
+  let%span svec21 = "../../../../creusot-contracts/src/std/vec.rs" 163 26 163 54
   let%span scmp22 = "../../../../creusot-contracts/src/std/cmp.rs" 39 26 39 76
   let%span scmp23 = "../../../../creusot-contracts/src/std/cmp.rs" 50 26 50 85
   let%span s05_binary_search_generic24 = "05_binary_search_generic.rs" 17 4 17 31
-  let%span svec25 = "../../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
-  let%span svec26 = "../../../../creusot-contracts/src/std/vec.rs" 31 14 31 47
-  let%span svec27 = "../../../../creusot-contracts/src/std/vec.rs" 32 14 33 51
+  let%span svec25 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span svec26 = "../../../../creusot-contracts/src/std/vec.rs" 29 14 29 47
+  let%span svec27 = "../../../../creusot-contracts/src/std/vec.rs" 30 14 31 51
   let%span sord28 = "../../../../creusot-contracts/src/logic/ord.rs" 15 14 15 64
   let%span sord29 = "../../../../creusot-contracts/src/logic/ord.rs" 25 14 25 61
   let%span sord30 = "../../../../creusot-contracts/src/logic/ord.rs" 35 14 35 61
@@ -150,216 +40,235 @@ module M_05_binary_search_generic__binary_search [#"05_binary_search_generic.rs"
   let%span sord38 = "../../../../creusot-contracts/src/logic/ord.rs" 64 15 64 48
   let%span sord39 = "../../../../creusot-contracts/src/logic/ord.rs" 65 14 65 44
   let%span sord40 = "../../../../creusot-contracts/src/logic/ord.rs" 69 14 69 59
-  let%span sslice41 = "../../../../creusot-contracts/src/std/slice.rs" 126 20 126 37
-  let%span sslice42 = "../../../../creusot-contracts/src/std/slice.rs" 133 20 133 37
+  let%span sslice41 = "../../../../creusot-contracts/src/std/slice.rs" 122 20 122 37
+  let%span sslice42 = "../../../../creusot-contracts/src/std/slice.rs" 129 20 129 37
   let%span s05_binary_search_generic43 = "05_binary_search_generic.rs" 11 8 11 75
   let%span sops44 = "../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
   let%span sinvariant45 = "../../../../creusot-contracts/src/invariant.rs" 24 8 24 18
-  let%span svec46 = "../../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
-  let%span sseq47 = "../../../../creusot-contracts/src/logic/seq.rs" 459 20 459 95
+  let%span svec46 = "../../../../creusot-contracts/src/std/vec.rs" 65 20 65 41
+  let%span sseq47 = "../../../../creusot-contracts/src/logic/seq.rs" 444 20 444 95
   let%span sboxed48 = "../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
-  
-  predicate inv'0 (_1 : t)
-  
-  predicate invariant'4 (self : t) =
-    [%#sboxed48] inv'0 self
-  
-  predicate inv'6 (_1 : t)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t [inv'6 x] . inv'6 x = invariant'4 x
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use prelude.prelude.Int
-  
-  use seq.Seq
-  
-  predicate invariant'3 (self : Seq.seq t) =
-    [%#sseq47] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'6 (Seq.get self i)
-  
-  predicate inv'5 (_1 : Seq.seq t)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : Seq.seq t [inv'5 x] . inv'5 x = invariant'3 x
-  
-  use T_alloc__alloc__Global as Global'0
-  
-  use T_alloc__vec__Vec as Vec'0
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.UIntSize
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  function view'1 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
-  
-  axiom view'1_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#svec25] Seq.length (view'1 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  predicate invariant'2 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
-    [%#svec46] inv'5 (view'1 self)
-  
-  predicate inv'4 (_1 : Vec'0.t_Vec t (Global'0.t_Global))
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : Vec'0.t_Vec t (Global'0.t_Global) [inv'4 x] . inv'4 x = invariant'2 x
   
   use prelude.prelude.Borrow
   
-  predicate invariant'1 (self : t) =
-    [%#sinvariant45] inv'0 self
+  use prelude.prelude.Opaque
   
-  predicate inv'3 (_1 : t)
+  type t_NonNull'0  =
+    { t_NonNull__pointer'0: opaque_ptr }
   
-  axiom inv_axiom'2 [@rewrite] : forall x : t [inv'3 x] . inv'3 x = invariant'1 x
+  type t_Unique'0  =
+    { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
+  
+  use prelude.prelude.UIntSize
+  
+  type t_Cap'0  =
+    { t_Cap__0'0: usize }
+  
+  type t_RawVec'0  =
+    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+  
+  type t_Vec'0  =
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
+  
+  predicate inv'1 (_1 : t_Vec'0)
+  
+  use prelude.prelude.UIntSize
+  
+  type t_T'0
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.Int
+  
+  function view'1 (self : t_Vec'0) : Seq.seq t_T'0
+  
+  axiom view'1_spec : forall self : t_Vec'0 . [%#svec25] Seq.length (view'1 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  function view'0 (self : t_Vec'0) : Seq.seq t_T'0 =
+    [%#smodel18] view'1 self
+  
+  predicate inv'4 (_1 : t_Vec'0)
+  
+  predicate invariant'0 (self : t_Vec'0) =
+    [%#sinvariant45] inv'4 self
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'1 x] . inv'1 x = invariant'0 x
   
   predicate inv'2 (_1 : usize)
   
   axiom inv_axiom'1 [@rewrite] : forall x : usize [inv'2 x] . inv'2 x = true
   
-  predicate invariant'0 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
-    [%#sinvariant45] inv'4 self
+  predicate inv'3 (_1 : t_T'0)
   
-  predicate inv'1 (_1 : Vec'0.t_Vec t (Global'0.t_Global))
+  predicate inv'0 (_1 : t_T'0)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : Vec'0.t_Vec t (Global'0.t_Global) [inv'1 x] . inv'1 x = invariant'0 x
+  predicate invariant'1 (self : t_T'0) =
+    [%#sinvariant45] inv'0 self
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_T'0 [inv'3 x] . inv'3 x = invariant'1 x
+  
+  predicate inv'5 (_1 : Seq.seq t_T'0)
+  
+  predicate invariant'2 (self : t_Vec'0) =
+    [%#svec46] inv'5 (view'1 self)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Vec'0 [inv'4 x] . inv'4 x = invariant'2 x
+  
+  use seq.Seq
+  
+  predicate inv'6 (_1 : t_T'0)
+  
+  predicate invariant'3 (self : Seq.seq t_T'0) =
+    [%#sseq47] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'6 (Seq.get self i)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : Seq.seq t_T'0 [inv'5 x] . inv'5 x = invariant'3 x
+  
+  predicate invariant'4 (self : t_T'0) =
+    [%#sboxed48] inv'0 self
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_T'0 [inv'6 x] . inv'6 x = invariant'4 x
+  
+  let rec len'0 (self:t_Vec'0) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'1 self}
+    any
+    [ return' (result:usize)-> {[%#svec17] UIntSize.to_int result = Seq.length (view'0 self)} (! return' {result}) ]
+    
+  
+  predicate resolve'0 (_1 : t_T'0)
+  
+  type t_Result'0  =
+    | C_Ok'0 usize
+    | C_Err'0 usize
   
   type t_DeepModelTy'0
   
-  use T_core__cmp__Ordering as Ordering'0
+  function deep_model'0 (self : t_T'0) : t_DeepModelTy'0
   
-  function cmp_log'0 (self : t_DeepModelTy'0) (_2 : t_DeepModelTy'0) : Ordering'0.t_Ordering
+  use seq.Seq
   
-  function eq_cmp'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  use seq.Seq
   
-  axiom eq_cmp'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord40] (x = y)
-  = (cmp_log'0 x y = Ordering'0.C_Equal)
+  use seq.Seq
   
-  function antisym2'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  use seq.Seq
   
-  axiom antisym2'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . ([%#sord38] cmp_log'0 x y
-  = Ordering'0.C_Greater)  -> ([%#sord39] cmp_log'0 y x = Ordering'0.C_Less)
+  function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : t_T'0 =
+    [%#sops44] Seq.get (view'1 self) ix
   
-  function antisym1'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  function deep_model'2 (self : t_Vec'0) : Seq.seq t_DeepModelTy'0
   
-  axiom antisym1'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . ([%#sord36] cmp_log'0 x y
-  = Ordering'0.C_Less)  -> ([%#sord37] cmp_log'0 y x = Ordering'0.C_Greater)
+  axiom deep_model'2_spec : forall self : t_Vec'0 . ([%#svec26] Seq.length (view'1 self)
+  = Seq.length (deep_model'2 self))
+  && ([%#svec27] forall i : int . 0 <= i /\ i < Seq.length (view'1 self)
+   -> Seq.get (deep_model'2 self) i = deep_model'0 (index_logic'0 self i))
   
-  function trans'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) (z : t_DeepModelTy'0) (o : Ordering'0.t_Ordering) : ()
-  
-  axiom trans'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0, z : t_DeepModelTy'0, o : Ordering'0.t_Ordering . ([%#sord33] cmp_log'0 x y
-  = o)  -> ([%#sord34] cmp_log'0 y z = o)  -> ([%#sord35] cmp_log'0 x z = o)
-  
-  function refl'0 (x : t_DeepModelTy'0) : ()
-  
-  axiom refl'0_spec : forall x : t_DeepModelTy'0 . [%#sord32] cmp_log'0 x x = Ordering'0.C_Equal
-  
-  function gt_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
-  
-  function cmp_gt_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
-  
-  axiom cmp_gt_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord31] gt_log'0 x y
-  = (cmp_log'0 x y = Ordering'0.C_Greater)
-  
-  function ge_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
-  
-  function cmp_ge_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
-  
-  axiom cmp_ge_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord30] ge_log'0 x y
-  = (cmp_log'0 x y <> Ordering'0.C_Less)
+  function deep_model'1 (self : t_Vec'0) : Seq.seq t_DeepModelTy'0 =
+    [%#smodel19] deep_model'2 self
   
   function lt_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
   
-  function cmp_lt_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
-  
-  axiom cmp_lt_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord29] lt_log'0 x y
-  = (cmp_log'0 x y = Ordering'0.C_Less)
-  
   function le_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
   
-  function cmp_le_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq t_T'0) =
+    [%#sslice41] UIntSize.to_int self < Seq.length seq
   
-  axiom cmp_le_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord28] le_log'0 x y
-  = (cmp_log'0 x y <> Ordering'0.C_Greater)
+  predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq t_T'0) (out : t_T'0) =
+    [%#sslice42] Seq.get seq (UIntSize.to_int self) = out
   
-  use seq.Seq
-  
-  use seq.Seq
-  
-  predicate sorted_range'0 [#"05_binary_search_generic.rs" 9 0 9 63] (s : Seq.seq t_DeepModelTy'0) (l : int) (u : int) =
-    [%#s05_binary_search_generic43] forall i : int, j : int . l <= i /\ i <= j /\ j < u
-     -> le_log'0 (Seq.get s i) (Seq.get s j)
-  
-  use seq.Seq
-  
-  predicate sorted'0 [#"05_binary_search_generic.rs" 16 0 16 41] (s : Seq.seq t_DeepModelTy'0) =
-    [%#s05_binary_search_generic24] sorted_range'0 s 0 (Seq.length s)
-  
-  use prelude.prelude.Intrinsic
-  
-  function deep_model'0 (self : t) : t_DeepModelTy'0
-  
-  let rec cmp'0 (self:t) (other:t) (return'  (ret:Ordering'0.t_Ordering))= {[@expl:cmp 'self' type invariant] inv'3 self}
-    {[@expl:cmp 'other' type invariant] inv'3 other}
+  let rec index'0 (self:t_Vec'0) (index:usize) (return'  (ret:t_T'0))= {[@expl:index 'self' type invariant] inv'1 self}
+    {[@expl:index 'index' type invariant] inv'2 index}
+    {[@expl:index requires] [%#svec20] in_bounds'0 index (view'0 self)}
     any
-    [ return' (result:Ordering'0.t_Ordering)-> {[%#scmp23] result = cmp_log'0 (deep_model'0 self) (deep_model'0 other)}
-      (! return' {result}) ]
+    [ return' (result:t_T'0)-> {inv'3 result} {[%#svec21] has_value'0 index (view'0 self) result} (! return' {result}) ]
     
   
-  function deep_model'3 (self : t) : t_DeepModelTy'0 =
+  function deep_model'3 (self : t_T'0) : t_DeepModelTy'0 =
     [%#smodel19] deep_model'0 self
   
-  let rec gt'0 (self:t) (other:t) (return'  (ret:bool))= {[@expl:gt 'self' type invariant] inv'3 self}
+  function gt_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
+  
+  let rec gt'0 (self:t_T'0) (other:t_T'0) (return'  (ret:bool))= {[@expl:gt 'self' type invariant] inv'3 self}
     {[@expl:gt 'other' type invariant] inv'3 other}
     any
     [ return' (result:bool)-> {[%#scmp22] result = gt_log'0 (deep_model'3 self) (deep_model'3 other)}
       (! return' {result}) ]
     
   
-  use seq.Seq
+  type t_Ordering'0  =
+    | C_Less'0
+    | C_Equal'0
+    | C_Greater'0
   
-  predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
-    [%#sslice42] Seq.get seq (UIntSize.to_int self) = out
+  function cmp_log'0 (self : t_DeepModelTy'0) (_2 : t_DeepModelTy'0) : t_Ordering'0
   
-  predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq t) =
-    [%#sslice41] UIntSize.to_int self < Seq.length seq
-  
-  function view'0 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t =
-    [%#smodel18] view'1 self
-  
-  let rec index'0 (self:Vec'0.t_Vec t (Global'0.t_Global)) (index:usize) (return'  (ret:t))= {[@expl:index 'self' type invariant] inv'1 self}
-    {[@expl:index 'index' type invariant] inv'2 index}
-    {[@expl:index requires] [%#svec20] in_bounds'0 index (view'0 self)}
+  let rec cmp'0 (self:t_T'0) (other:t_T'0) (return'  (ret:t_Ordering'0))= {[@expl:cmp 'self' type invariant] inv'3 self}
+    {[@expl:cmp 'other' type invariant] inv'3 other}
     any
-    [ return' (result:t)-> {inv'3 result} {[%#svec21] has_value'0 index (view'0 self) result} (! return' {result}) ]
+    [ return' (result:t_Ordering'0)-> {[%#scmp23] result = cmp_log'0 (deep_model'0 self) (deep_model'0 other)}
+      (! return' {result}) ]
     
   
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec t (Global'0.t_Global)) (ix : int) : t =
-    [%#sops44] Seq.get (view'1 self) ix
+  use prelude.prelude.Intrinsic
   
-  function deep_model'2 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t_DeepModelTy'0
+  predicate sorted_range'0 [#"05_binary_search_generic.rs" 9 0 9 63] (s : Seq.seq t_DeepModelTy'0) (l : int) (u : int) =
+    [%#s05_binary_search_generic43] forall i : int, j : int . l <= i /\ i <= j /\ j < u
+     -> le_log'0 (Seq.get s i) (Seq.get s j)
   
-  axiom deep_model'2_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . ([%#svec26] Seq.length (view'1 self)
-  = Seq.length (deep_model'2 self))
-  && ([%#svec27] forall i : int . 0 <= i /\ i < Seq.length (view'1 self)
-   -> Seq.get (deep_model'2 self) i = deep_model'0 (index_logic'0 self i))
+  predicate sorted'0 [#"05_binary_search_generic.rs" 16 0 16 41] (s : Seq.seq t_DeepModelTy'0) =
+    [%#s05_binary_search_generic24] sorted_range'0 s 0 (Seq.length s)
   
-  function deep_model'1 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t_DeepModelTy'0 =
-    [%#smodel19] deep_model'2 self
+  function cmp_le_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
   
-  use T_core__result__Result as Result'0
+  axiom cmp_le_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord28] le_log'0 x y
+  = (cmp_log'0 x y <> C_Greater'0)
   
-  predicate resolve'0 (_1 : t)
+  function cmp_lt_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
   
-  let rec len'0 (self:Vec'0.t_Vec t (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'1 self}
-    any
-    [ return' (result:usize)-> {[%#svec17] UIntSize.to_int result = Seq.length (view'0 self)} (! return' {result}) ]
-    
+  axiom cmp_lt_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord29] lt_log'0 x y
+  = (cmp_log'0 x y = C_Less'0)
+  
+  function ge_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
+  
+  function cmp_ge_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom cmp_ge_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord30] ge_log'0 x y
+  = (cmp_log'0 x y <> C_Less'0)
+  
+  function cmp_gt_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom cmp_gt_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord31] gt_log'0 x y
+  = (cmp_log'0 x y = C_Greater'0)
+  
+  function refl'0 (x : t_DeepModelTy'0) : ()
+  
+  axiom refl'0_spec : forall x : t_DeepModelTy'0 . [%#sord32] cmp_log'0 x x = C_Equal'0
+  
+  function trans'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) (z : t_DeepModelTy'0) (o : t_Ordering'0) : ()
+  
+  axiom trans'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0, z : t_DeepModelTy'0, o : t_Ordering'0 . ([%#sord33] cmp_log'0 x y
+  = o)  -> ([%#sord34] cmp_log'0 y z = o)  -> ([%#sord35] cmp_log'0 x z = o)
+  
+  function antisym1'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom antisym1'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . ([%#sord36] cmp_log'0 x y = C_Less'0)
+   -> ([%#sord37] cmp_log'0 y x = C_Greater'0)
+  
+  function antisym2'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom antisym2'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . ([%#sord38] cmp_log'0 x y = C_Greater'0)
+   -> ([%#sord39] cmp_log'0 y x = C_Less'0)
+  
+  function eq_cmp'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom eq_cmp'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord40] (x = y)
+  = (cmp_log'0 x y = C_Equal'0)
   
   meta "compute_max_steps" 1000000
   
-  let rec binary_search (arr:Vec'0.t_Vec t (Global'0.t_Global)) (elem:t) (return'  (ret:Result'0.t_Result usize usize))= {[@expl:binary_search 'arr' type invariant] [%#s05_binary_search_generic10] inv'1 arr}
+  let rec binary_search'0 (arr:t_Vec'0) (elem:t_T'0) (return'  (ret:t_Result'0))= {[@expl:binary_search 'arr' type invariant] [%#s05_binary_search_generic10] inv'1 arr}
     {[@expl:binary_search 'elem' type invariant] [%#s05_binary_search_generic11] inv'0 elem}
     {[@expl:binary_search requires #0] [%#s05_binary_search_generic12] Seq.length (view'0 arr)
     <= UIntSize.to_int (v_MAX'0 : usize)}
@@ -376,7 +285,7 @@ module M_05_binary_search_generic__binary_search [#"05_binary_search_generic.rs"
     | bb5 = s0
       [ s0 = {[@expl:type invariant] inv'0 elem} s1
       | s1 = -{resolve'0 elem}- s2
-      | s2 =  [ &_0 <- Result'0.C_Err ([%#s05_binary_search_generic1] (0 : usize)) ] s3
+      | s2 =  [ &_0 <- C_Err'0 ([%#s05_binary_search_generic1] (0 : usize)) ] s3
       | s3 = bb29 ]
       
     | bb6 = s0 [ s0 = len'0 {arr} (fun (_ret':usize) ->  [ &size <- _ret' ] s1) | s1 = bb7 ] 
@@ -409,7 +318,7 @@ module M_05_binary_search_generic__binary_search [#"05_binary_search_generic.rs"
           [ s0 = UIntSize.div {size} {[%#s05_binary_search_generic7] (2 : usize)}
               (fun (_ret':usize) ->  [ &half <- _ret' ] s1)
           | s1 = UIntSize.add {base} {half} (fun (_ret':usize) ->  [ &mid <- _ret' ] s2)
-          | s2 = index'0 {arr} {mid} (fun (_ret':t) ->  [ &_32 <- _ret' ] s3)
+          | s2 = index'0 {arr} {mid} (fun (_ret':t_T'0) ->  [ &_32 <- _ret' ] s3)
           | s3 = bb14 ]
           
         | bb14 = s0 [ s0 = gt'0 {_32} {elem} (fun (_ret':bool) ->  [ &_30 <- _ret' ] s1) | s1 = bb15 ] 
@@ -423,38 +332,38 @@ module M_05_binary_search_generic__binary_search [#"05_binary_search_generic.rs"
            ]
          ]
       
-    | bb19 = s0 [ s0 = index'0 {arr} {base} (fun (_ret':t) ->  [ &_41 <- _ret' ] s1) | s1 = bb20 ] 
+    | bb19 = s0 [ s0 = index'0 {arr} {base} (fun (_ret':t_T'0) ->  [ &_41 <- _ret' ] s1) | s1 = bb20 ] 
     | bb20 = s0
       [ s0 =  [ &cmp <- _41 ] s1
       | s1 =  [ &_47 <- elem ] s2
-      | s2 = cmp'0 {cmp} {_47} (fun (_ret':Ordering'0.t_Ordering) ->  [ &_44 <- _ret' ] s3)
+      | s2 = cmp'0 {cmp} {_47} (fun (_ret':t_Ordering'0) ->  [ &_44 <- _ret' ] s3)
       | s3 = bb21 ]
       
     | bb21 = s0
       [ s0 = {[@expl:type invariant] inv'0 elem} s1
       | s1 = -{resolve'0 elem}- s2
       | s2 = any
-        [ br0 -> {_44 = Ordering'0.C_Less } (! bb24)
-        | br1 -> {_44 = Ordering'0.C_Equal } (! bb23)
-        | br2 -> {_44 = Ordering'0.C_Greater } (! bb25) ]
+        [ br0 -> {_44 = C_Less'0 } (! bb24)
+        | br1 -> {_44 = C_Equal'0 } (! bb23)
+        | br2 -> {_44 = C_Greater'0 } (! bb25) ]
          ]
       
-    | bb25 = s0 [ s0 =  [ &_0 <- Result'0.C_Err base ] s1 | s1 = bb28 ] 
+    | bb25 = s0 [ s0 =  [ &_0 <- C_Err'0 base ] s1 | s1 = bb28 ] 
     | bb23 = bb26
-    | bb26 = s0 [ s0 =  [ &_0 <- Result'0.C_Ok base ] s1 | s1 = bb28 ] 
+    | bb26 = s0 [ s0 =  [ &_0 <- C_Ok'0 base ] s1 | s1 = bb28 ] 
     | bb24 = bb27
     | bb27 = s0
       [ s0 = UIntSize.add {base} {[%#s05_binary_search_generic9] (1 : usize)}
           (fun (_ret':usize) ->  [ &_50 <- _ret' ] s1)
-      | s1 =  [ &_0 <- Result'0.C_Err _50 ] s2
+      | s1 =  [ &_0 <- C_Err'0 _50 ] s2
       | s2 = bb28 ]
       
     | bb28 = bb29
     | bb29 = return' {_0} ]
     )
-    [ & _0 : Result'0.t_Result usize usize = any_l ()
-    | & arr : Vec'0.t_Vec t (Global'0.t_Global) = arr
-    | & elem : t = elem
+    [ & _0 : t_Result'0 = any_l ()
+    | & arr : t_Vec'0 = arr
+    | & elem : t_T'0 = elem
     | & _9 : bool = any_l ()
     | & _10 : usize = any_l ()
     | & size : usize = any_l ()
@@ -465,18 +374,18 @@ module M_05_binary_search_generic__binary_search [#"05_binary_search_generic.rs"
     | & mid : usize = any_l ()
     | & _29 : usize = any_l ()
     | & _30 : bool = any_l ()
-    | & _32 : t = any_l ()
-    | & cmp : t = any_l ()
-    | & _41 : t = any_l ()
-    | & _44 : Ordering'0.t_Ordering = any_l ()
-    | & _47 : t = any_l ()
+    | & _32 : t_T'0 = any_l ()
+    | & cmp : t_T'0 = any_l ()
+    | & _41 : t_T'0 = any_l ()
+    | & _44 : t_Ordering'0 = any_l ()
+    | & _47 : t_T'0 = any_l ()
     | & _50 : usize = any_l () ]
     
-    [ return' (result:Result'0.t_Result usize usize)-> {[@expl:binary_search ensures #0] [%#s05_binary_search_generic14] forall x : usize . result
-      = Result'0.C_Ok x  -> Seq.get (deep_model'1 arr) (UIntSize.to_int x) = deep_model'0 elem}
-      {[@expl:binary_search ensures #1] [%#s05_binary_search_generic15] forall x : usize . result = Result'0.C_Err x
+    [ return' (result:t_Result'0)-> {[@expl:binary_search ensures #0] [%#s05_binary_search_generic14] forall x : usize . result
+      = C_Ok'0 x  -> Seq.get (deep_model'1 arr) (UIntSize.to_int x) = deep_model'0 elem}
+      {[@expl:binary_search ensures #1] [%#s05_binary_search_generic15] forall x : usize . result = C_Err'0 x
        -> (forall i : usize . i < x  -> le_log'0 (Seq.get (deep_model'1 arr) (UIntSize.to_int i)) (deep_model'0 elem))}
-      {[@expl:binary_search ensures #2] [%#s05_binary_search_generic16] forall x : usize . result = Result'0.C_Err x
+      {[@expl:binary_search ensures #2] [%#s05_binary_search_generic16] forall x : usize . result = C_Err'0 x
        -> (forall i : usize . x <= i /\ UIntSize.to_int i < Seq.length (view'0 arr)
        -> lt_log'0 (deep_model'0 elem) (Seq.get (deep_model'1 arr) (UIntSize.to_int i)))}
       (! return' {result}) ]

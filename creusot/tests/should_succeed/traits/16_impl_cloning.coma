@@ -1,191 +1,113 @@
-module T_core__ptr__non_null__NonNull
-  use prelude.prelude.Opaque
-  
-  type t_NonNull 't =
-    | C_NonNull opaque_ptr
-  
-  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
-    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer}) ]
-    
-end
-module T_core__marker__PhantomData
-  type t_PhantomData 't =
-    | C_PhantomData
-  
-  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any [ good -> {C_PhantomData  = input} (! ret) ] 
-end
-module T_core__ptr__unique__Unique
-  use T_core__marker__PhantomData as PhantomData'0
-  
-  use T_core__ptr__non_null__NonNull as NonNull'0
-  
-  type t_Unique 't =
-    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
-  
-  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
-    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
-      = input}
-      (! ret {pointer} {_marker}) ]
-    
-end
-module T_alloc__raw_vec__Cap
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  type t_Cap  =
-    | C_Cap usize
-  
-  let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
-    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0}) ]
-    
-end
-module T_alloc__raw_vec__RawVec
-  use T_alloc__raw_vec__Cap as Cap'0
-  
-  use T_core__ptr__unique__Unique as Unique'0
-  
-  type t_RawVec 't 'a =
-    | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
-  
-  let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
-    [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
-      (! ret {ptr} {cap} {alloc}) ]
-    
-end
-module T_alloc__vec__Vec
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  use T_alloc__raw_vec__RawVec as RawVec'0
-  
-  type t_Vec 't 'a =
-    | C_Vec (RawVec'0.t_RawVec 't 'a) usize
-  
-  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
-    
-end
-module T_alloc__alloc__Global
-  type t_Global  =
-    | C_Global
-  
-  let rec t_Global (input:t_Global) (ret  )= any [ good -> {C_Global  = input} (! ret) ] 
-end
-module T_16_impl_cloning__Vec [#"16_impl_cloning.rs" 5 0 5 17]
-  use T_alloc__alloc__Global as Global'0
-  
-  use T_alloc__vec__Vec as Vec'0
-  
-  type t_Vec 't =
-    | C_Vec (Vec'0.t_Vec 't (Global'0.t_Global))
-  
-  let rec t_Vec < 't > (input:t_Vec 't) (ret  (field_0:Vec'0.t_Vec 't (Global'0.t_Global)))= any
-    [ good (field_0:Vec'0.t_Vec 't (Global'0.t_Global))-> {C_Vec field_0 = input} (! ret {field_0}) ]
-    
-end
-module M_16_impl_cloning__test [#"16_impl_cloning.rs" 17 0 17 30]
-  type t
-  
-  let%span s16_impl_cloning0 = "16_impl_cloning.rs" 17 15 17 16
-  let%span s16_impl_cloning1 = "16_impl_cloning.rs" 16 10 16 21
-  let%span smodel2 = "../../../../creusot-contracts/src/model.rs" 109 8 109 22
-  let%span s16_impl_cloning3 = "16_impl_cloning.rs" 12 8 12 14
-  let%span sresolve4 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
-  let%span sinvariant5 = "../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
-  let%span svec6 = "../../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
-  let%span svec7 = "../../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
-  let%span sseq8 = "../../../../creusot-contracts/src/logic/seq.rs" 459 20 459 95
-  let%span sboxed9 = "../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
-  
-  predicate inv'5 (_1 : t)
-  
-  predicate invariant'3 (self : t) =
-    [%#sboxed9] inv'5 self
-  
-  predicate inv'4 (_1 : t)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t [inv'4 x] . inv'4 x = invariant'3 x
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use prelude.prelude.Int
-  
-  use seq.Seq
-  
-  predicate invariant'2 (self : Seq.seq t) =
-    [%#sseq8] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
-  
-  predicate inv'3 (_1 : Seq.seq t)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq t [inv'3 x] . inv'3 x = invariant'2 x
-  
-  use T_alloc__alloc__Global as Global'0
-  
-  use T_alloc__vec__Vec as Vec'1
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.UIntSize
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  function view'2 (self : Vec'1.t_Vec t (Global'0.t_Global)) : Seq.seq t
-  
-  axiom view'2_spec : forall self : Vec'1.t_Vec t (Global'0.t_Global) . [%#svec7] Seq.length (view'2 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  predicate invariant'1 (self : Vec'1.t_Vec t (Global'0.t_Global)) =
-    [%#svec6] inv'3 (view'2 self)
-  
-  predicate inv'2 (_1 : Vec'1.t_Vec t (Global'0.t_Global))
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : Vec'1.t_Vec t (Global'0.t_Global) [inv'2 x] . inv'2 x = invariant'1 x
-  
-  use T_16_impl_cloning__Vec as Vec'0
-  
-  predicate inv'1 (_1 : Vec'0.t_Vec t)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Vec'0.t_Vec t [inv'1 x] . inv'1 x
-  = match x with
-    | Vec'0.C_Vec a_0 -> inv'2 a_0
-    end
+module M_16_impl_cloning__test [#"16_impl_cloning.rs" 16 0 16 30]
+  let%span s16_impl_cloning0 = "16_impl_cloning.rs" 16 15 16 16
+  let%span s16_impl_cloning1 = "16_impl_cloning.rs" 15 10 15 21
+  let%span smodel2 = "../../../../creusot-contracts/src/model.rs" 106 8 106 22
+  let%span sresolve3 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
+  let%span sinvariant4 = "../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
+  let%span svec5 = "../../../../creusot-contracts/src/std/vec.rs" 65 20 65 41
+  let%span svec6 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span sseq7 = "../../../../creusot-contracts/src/logic/seq.rs" 444 20 444 95
+  let%span sboxed8 = "../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
   use prelude.prelude.Borrow
   
-  predicate invariant'0 (self : borrowed (Vec'0.t_Vec t)) =
-    [%#sinvariant5] inv'1 self.current /\ inv'1 self.final
+  use prelude.prelude.Opaque
   
-  predicate inv'0 (_1 : borrowed (Vec'0.t_Vec t))
+  type t_NonNull'0  =
+    { t_NonNull__pointer'0: opaque_ptr }
   
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (Vec'0.t_Vec t) [inv'0 x] . inv'0 x = invariant'0 x
+  type t_Unique'0  =
+    { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
   
-  function view'1 [#"16_impl_cloning.rs" 11 4 11 33] (self : Vec'0.t_Vec t) : Seq.seq t
+  use prelude.prelude.UIntSize
   
-  function view'0 (self : borrowed (Vec'0.t_Vec t)) : Seq.seq t =
-    [%#smodel2] view'1 self.current
+  type t_Cap'0  =
+    { t_Cap__0'0: usize }
+  
+  type t_RawVec'0  =
+    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+  
+  type t_Vec'1  =
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
+  
+  type t_Vec'0  =
+    { t_Vec__0'0: t_Vec'1 }
+  
+  predicate inv'0 (_1 : borrowed (t_Vec'0))
+  
+  predicate resolve'1 (self : borrowed (t_Vec'0)) =
+    [%#sresolve3] self.final = self.current
+  
+  predicate resolve'0 (_1 : borrowed (t_Vec'0)) =
+    resolve'1 _1
   
   use prelude.prelude.Intrinsic
   
-  predicate resolve'1 (self : borrowed (Vec'0.t_Vec t)) =
-    [%#sresolve4] self.final = self.current
+  type t_T'0
   
-  predicate resolve'0 (_1 : borrowed (Vec'0.t_Vec t)) =
-    resolve'1 _1
+  use seq.Seq
+  
+  function view'1 [#"16_impl_cloning.rs" 10 4 10 33] (self : t_Vec'0) : Seq.seq t_T'0
+  
+  function view'0 (self : borrowed (t_Vec'0)) : Seq.seq t_T'0 =
+    [%#smodel2] view'1 self.current
+  
+  predicate inv'1 (_1 : t_Vec'0)
+  
+  predicate invariant'0 (self : borrowed (t_Vec'0)) =
+    [%#sinvariant4] inv'1 self.current /\ inv'1 self.final
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'0 x] . inv'0 x = invariant'0 x
+  
+  predicate inv'2 (_1 : t_Vec'1)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Vec'0 [inv'1 x] . inv'1 x
+  = match x with
+    | {t_Vec__0'0 = a_0} -> inv'2 a_0
+    end
+  
+  use seq.Seq
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  function view'2 (self : t_Vec'1) : Seq.seq t_T'0
+  
+  axiom view'2_spec : forall self : t_Vec'1 . [%#svec6] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  predicate inv'3 (_1 : Seq.seq t_T'0)
+  
+  predicate invariant'1 (self : t_Vec'1) =
+    [%#svec5] inv'3 (view'2 self)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Vec'1 [inv'2 x] . inv'2 x = invariant'1 x
+  
+  use seq.Seq
+  
+  predicate inv'4 (_1 : t_T'0)
+  
+  predicate invariant'2 (self : Seq.seq t_T'0) =
+    [%#sseq7] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq t_T'0 [inv'3 x] . inv'3 x = invariant'2 x
+  
+  predicate inv'5 (_1 : t_T'0)
+  
+  predicate invariant'3 (self : t_T'0) =
+    [%#sboxed8] inv'5 self
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_T'0 [inv'4 x] . inv'4 x = invariant'3 x
   
   meta "compute_max_steps" 1000000
   
-  let rec test (x:borrowed (Vec'0.t_Vec t)) (return'  (ret:()))= {[@expl:test 'x' type invariant] [%#s16_impl_cloning0] inv'0 x}
+  let rec test'0 (x:borrowed (t_Vec'0)) (return'  (ret:()))= {[@expl:test 'x' type invariant] [%#s16_impl_cloning0] inv'0 x}
     (! bb0 [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'0 x} s1 | s1 = -{resolve'0 x}- s2 | s2 = return' {_0} ]  ] )
-    [ & _0 : () = any_l () | & x : borrowed (Vec'0.t_Vec t) = x ]
+    [ & _0 : () = any_l () | & x : borrowed (t_Vec'0) = x ]
     
     [ return' (result:())-> {[@expl:test ensures] [%#s16_impl_cloning1] view'0 x = view'1 x.current}
       (! return' {result}) ]
     
-end
-module M_16_impl_cloning__qyi11026057996065471000 [#"16_impl_cloning.rs" 6 0 6 23] (* <Vec<T> as creusot_contracts::View> *)
-  type t
 end

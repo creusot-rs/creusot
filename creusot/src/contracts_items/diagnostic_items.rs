@@ -2,7 +2,7 @@
 //! `#[rustc_diagnostic_item = "..."]`
 
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{Ty, TyCtxt};
+use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -92,16 +92,16 @@ contracts_items! {
         is_ghost_deref_mut    get_ghost_deref_mut
     fn IndexLogic::index_logic ["index_logic_method"]
         is_index_logic        get_index_logic
+    fn Deref::deref            ["deref_method"]
+        is_deref              get_deref
+    fn Deref::deref_mut        ["deref_mut_method"]
+        is_deref_mut          get_deref_mut
+    fn Box::new                ["box_new"]
+        is_box_new            get_box_new
     type Int                   ["creusot_int"]
         is_int_ty             get_int_ty
     type Snapshot              ["snapshot_ty"]
-        is_snap_def_id        get_snap_ty
+        is_snap_ty            get_snap_ty
     type GhostBox              ["ghost_box"]
         is_ghost_ty           get_ghost_ty
-}
-
-/// Check if `ty` is the `Snapshot` type
-pub(crate) fn is_snap_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    let Some(adt) = ty.ty_adt_def() else { return false };
-    is_snap_def_id(tcx, adt.did())
 }

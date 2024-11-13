@@ -1,197 +1,21 @@
-module T_core__option__Option
-  type t_Option 't =
-    | C_None
-    | C_Some 't
-  
-  let rec v_None < 't > (input:t_Option 't) (ret  )= any
-    [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} (! {false} any) ]
-    
-  
-  let rec v_Some < 't > (input:t_Option 't) (ret  (field_0:'t))= any
-    [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : 't [C_Some field_0 : t_Option 't] . C_Some field_0 <> input} (! {false} any) ]
-    
-end
-module T_core__fmt__rt__Alignment
-  type t_Alignment  =
-    | C_Left
-    | C_Right
-    | C_Center
-    | C_Unknown
-  
-  let rec v_Left (input:t_Alignment) (ret  )= any
-    [ good -> {C_Left  = input} (! ret) | bad -> {C_Left  <> input} (! {false} any) ]
-    
-  
-  let rec v_Right (input:t_Alignment) (ret  )= any
-    [ good -> {C_Right  = input} (! ret) | bad -> {C_Right  <> input} (! {false} any) ]
-    
-  
-  let rec v_Center (input:t_Alignment) (ret  )= any
-    [ good -> {C_Center  = input} (! ret) | bad -> {C_Center  <> input} (! {false} any) ]
-    
-  
-  let rec v_Unknown (input:t_Alignment) (ret  )= any
-    [ good -> {C_Unknown  = input} (! ret) | bad -> {C_Unknown  <> input} (! {false} any) ]
-    
-end
-module T_core__fmt__rt__Count
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  type t_Count  =
-    | C_Is usize
-    | C_Param usize
-    | C_Implied
-  
-  let rec v_Is (input:t_Count) (ret  (field_0:usize))= any
-    [ good (field_0:usize)-> {C_Is field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : usize [C_Is field_0 : t_Count] . C_Is field_0 <> input} (! {false} any) ]
-    
-  
-  let rec v_Param (input:t_Count) (ret  (field_0:usize))= any
-    [ good (field_0:usize)-> {C_Param field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : usize [C_Param field_0 : t_Count] . C_Param field_0 <> input} (! {false} any) ]
-    
-  
-  let rec v_Implied (input:t_Count) (ret  )= any
-    [ good -> {C_Implied  = input} (! ret) | bad -> {C_Implied  <> input} (! {false} any) ]
-    
-end
-module T_core__fmt__rt__Placeholder
-  use T_core__fmt__rt__Count as Count'0
-  
-  use prelude.prelude.UInt32
-  
-  use T_core__fmt__rt__Alignment as Alignment'0
-  
-  use prelude.prelude.Char
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  type t_Placeholder  =
-    | C_Placeholder usize char (Alignment'0.t_Alignment) uint32 (Count'0.t_Count) (Count'0.t_Count)
-  
-  let rec t_Placeholder (input:t_Placeholder) (ret  (position:usize) (fill:char) (align:Alignment'0.t_Alignment) (flags:uint32) (precision:Count'0.t_Count) (width:Count'0.t_Count))= any
-    [ good (position:usize) (fill:char) (align:Alignment'0.t_Alignment) (flags:uint32) (precision:Count'0.t_Count) (width:Count'0.t_Count)-> {C_Placeholder position fill align flags precision width
-      = input}
-      (! ret {position} {fill} {align} {flags} {precision} {width}) ]
-    
-end
-module T_core__ptr__non_null__NonNull
-  use prelude.prelude.Opaque
-  
-  type t_NonNull 't =
-    | C_NonNull opaque_ptr
-  
-  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
-    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer}) ]
-    
-end
-module T_core__marker__PhantomData
-  type t_PhantomData 't =
-    | C_PhantomData
-  
-  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any [ good -> {C_PhantomData  = input} (! ret) ] 
-end
-module T_core__fmt__rt__ArgumentType
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  use prelude.prelude.Borrow
-  
-  use T_core__marker__PhantomData as PhantomData'0
-  
-  use prelude.prelude.Opaque
-  
-  use T_core__ptr__non_null__NonNull as NonNull'0
-  
-  type t_ArgumentType  =
-    | C_Placeholder (NonNull'0.t_NonNull ()) opaque_ptr (PhantomData'0.t_PhantomData ())
-    | C_Count usize
-  
-  let rec v_Placeholder (input:t_ArgumentType) (ret  (value:NonNull'0.t_NonNull ()) (formatter:opaque_ptr) (_lifetime:PhantomData'0.t_PhantomData ()))= any
-    [ good (value:NonNull'0.t_NonNull ()) (formatter:opaque_ptr) (_lifetime:PhantomData'0.t_PhantomData ())-> {C_Placeholder value formatter _lifetime
-      = input}
-      (! ret {value} {formatter} {_lifetime})
-    | bad -> {forall value : NonNull'0.t_NonNull (), formatter : opaque_ptr, _lifetime : PhantomData'0.t_PhantomData () [C_Placeholder value formatter _lifetime : t_ArgumentType] . C_Placeholder value formatter _lifetime
-      <> input}
-      (! {false}
-      any) ]
-    
-  
-  let rec v_Count (input:t_ArgumentType) (ret  (field_0:usize))= any
-    [ good (field_0:usize)-> {C_Count field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : usize [C_Count field_0 : t_ArgumentType] . C_Count field_0 <> input} (! {false} any) ]
-    
-end
-module T_core__fmt__rt__Argument
-  use T_core__fmt__rt__ArgumentType as ArgumentType'0
-  
-  type t_Argument  =
-    | C_Argument (ArgumentType'0.t_ArgumentType)
-  
-  let rec t_Argument (input:t_Argument) (ret  (ty:ArgumentType'0.t_ArgumentType))= any
-    [ good (ty:ArgumentType'0.t_ArgumentType)-> {C_Argument ty = input} (! ret {ty}) ]
-    
-end
-module T_core__fmt__Arguments
-  use T_core__fmt__rt__Argument as Argument'0
-  
-  use T_core__fmt__rt__Placeholder as Placeholder'0
-  
-  use T_core__option__Option as Option'0
+module M_printing__f [#"printing.rs" 5 0 5 10]
+  let%span sprinting0 = "printing.rs" 11 18 11 28
+  let%span sprinting1 = "printing.rs" 6 11 6 19
+  let%span sfmt2 = "../../../creusot-contracts/src/std/fmt.rs" 25 27 25 31
+  let%span sprinting3 = "printing.rs" 7 13 7 21
+  let%span sprinting4 = "printing.rs" 8 12 8 20
+  let%span sprinting5 = "printing.rs" 9 14 9 23
   
   use prelude.prelude.Slice
   
   use prelude.prelude.Borrow
-  
-  type t_Arguments  =
-    | C_Arguments (slice string) (Option'0.t_Option (slice (Placeholder'0.t_Placeholder))) (slice (Argument'0.t_Argument))
-  
-  let rec t_Arguments (input:t_Arguments) (ret  (pieces:slice string) (fmt:Option'0.t_Option (slice (Placeholder'0.t_Placeholder))) (args:slice (Argument'0.t_Argument)))= any
-    [ good (pieces:slice string) (fmt:Option'0.t_Option (slice (Placeholder'0.t_Placeholder))) (args:slice (Argument'0.t_Argument))-> {C_Arguments pieces fmt args
-      = input}
-      (! ret {pieces} {fmt} {args}) ]
-    
-end
-module M_printing__f [#"printing.rs" 5 0 5 10]
-  let%span sprinting0 = "printing.rs" 11 18 11 28
-  let%span sprinting1 = "printing.rs" 9 14 9 23
-  let%span sprinting2 = "printing.rs" 8 12 8 20
-  let%span sprinting3 = "printing.rs" 7 13 7 21
-  let%span sprinting4 = "printing.rs" 6 11 6 19
-  let%span sfmt5 = "../../../creusot-contracts/src/std/fmt.rs" 25 27 25 31
   
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Int
-  
-  use T_core__fmt__Arguments as Arguments'0
-  
-  let rec v__eprint'0 (args:Arguments'0.t_Arguments) (return'  (ret:()))= any
-    [ return' (result:())-> (! return' {result}) ]
-    
-  
-  let rec v__print'0 (args:Arguments'0.t_Arguments) (return'  (ret:()))= any
-    [ return' (result:())-> (! return' {result}) ]
-    
-  
-  use prelude.prelude.Slice
-  
-  use prelude.prelude.Borrow
-  
-  let rec new_const'0 (pieces:array string) (return'  (ret:Arguments'0.t_Arguments))= {[@expl:new_const requires] [%#sfmt5] true}
-    any [ return' (result:Arguments'0.t_Arguments)-> (! return' {result}) ] 
-  
-  let rec promoted0 (return'  (ret:array string))= bb0
+  let rec promoted3__f'0 (return'  (ret:array string))= bb0
     [ bb0 = s0
       [ s0 = any
-        [ any_ (__arr_temp:array string)-> (! -{Seq.get __arr_temp.elts 0 = ([%#sprinting1] "stderr!\n")
+        [ any_ (__arr_temp:array string)-> (! -{Seq.get __arr_temp.elts 0 = ([%#sprinting1] "Hello ")
           /\ Seq.length __arr_temp.elts = 1}-
            [ &_1 <- __arr_temp ] 
           s1) ]
@@ -203,22 +27,56 @@ module M_printing__f [#"printing.rs" 5 0 5 10]
     [ return' (result:array string)-> return' {result} ]
     
   
-  let rec promoted1 (return'  (ret:array string))= bb0
-    [ bb0 = s0
-      [ s0 = any
-        [ any_ (__arr_temp:array string)-> (! -{Seq.get __arr_temp.elts 0 = ([%#sprinting2] "Hello ")
-          /\ Seq.length __arr_temp.elts = 1}-
-           [ &_1 <- __arr_temp ] 
-          s1) ]
-        
-      | s1 =  [ &_0 <- _1 ] s2
-      | s2 = return' {_0} ]
-       ]
-     [ & _0 : array string = any_l () | & _1 : array string = any_l () ] 
-    [ return' (result:array string)-> return' {result} ]
-    
+  use prelude.prelude.UIntSize
   
-  let rec promoted2 (return'  (ret:array string))= bb0
+  use prelude.prelude.Char
+  
+  type t_Alignment'0  =
+    | C_Left'0
+    | C_Right'0
+    | C_Center'0
+    | C_Unknown'0
+  
+  use prelude.prelude.UInt32
+  
+  type t_Count'0  =
+    | C_Is'0 usize
+    | C_Param'0 usize
+    | C_Implied'0
+  
+  type t_Placeholder'0  =
+    { t_Placeholder__position'0: usize;
+      t_Placeholder__fill'0: char;
+      t_Placeholder__align'0: t_Alignment'0;
+      t_Placeholder__flags'0: uint32;
+      t_Placeholder__precision'0: t_Count'0;
+      t_Placeholder__width'0: t_Count'0 }
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 (slice (t_Placeholder'0))
+  
+  use prelude.prelude.Opaque
+  
+  type t_NonNull'0  =
+    { t_NonNull__pointer'0: opaque_ptr }
+  
+  type t_ArgumentType'0  =
+    | C_Placeholder'0 (t_NonNull'0) opaque_ptr ()
+    | C_Count'0 usize
+  
+  type t_Argument'0  =
+    { t_Argument__ty'0: t_ArgumentType'0 }
+  
+  type t_Arguments'0  =
+    { t_Arguments__pieces'0: slice string; t_Arguments__fmt'0: t_Option'0; t_Arguments__args'0: slice (t_Argument'0) }
+  
+  let rec new_const'0 (pieces:array string) (return'  (ret:t_Arguments'0))= {[@expl:new_const requires] [%#sfmt2] true}
+    any [ return' (result:t_Arguments'0)-> (! return' {result}) ] 
+  
+  let rec qy95zprint'0 (args:t_Arguments'0) (return'  (ret:()))= any [ return' (result:())-> (! return' {result}) ] 
+  
+  let rec promoted2__f'0 (return'  (ret:array string))= bb0
     [ bb0 = s0
       [ s0 = any
         [ any_ (__arr_temp:array string)-> (! -{Seq.get __arr_temp.elts 0 = ([%#sprinting3] "world!\n")
@@ -233,7 +91,7 @@ module M_printing__f [#"printing.rs" 5 0 5 10]
     [ return' (result:array string)-> return' {result} ]
     
   
-  let rec promoted3 (return'  (ret:array string))= bb0
+  let rec promoted1__f'0 (return'  (ret:array string))= bb0
     [ bb0 = s0
       [ s0 = any
         [ any_ (__arr_temp:array string)-> (! -{Seq.get __arr_temp.elts 0 = ([%#sprinting4] "Hello ")
@@ -248,51 +106,70 @@ module M_printing__f [#"printing.rs" 5 0 5 10]
     [ return' (result:array string)-> return' {result} ]
     
   
+  let rec qy95zeprint'0 (args:t_Arguments'0) (return'  (ret:()))= any [ return' (result:())-> (! return' {result}) ] 
+  
+  let rec promoted0__f'0 (return'  (ret:array string))= bb0
+    [ bb0 = s0
+      [ s0 = any
+        [ any_ (__arr_temp:array string)-> (! -{Seq.get __arr_temp.elts 0 = ([%#sprinting5] "stderr!\n")
+          /\ Seq.length __arr_temp.elts = 1}-
+           [ &_1 <- __arr_temp ] 
+          s1) ]
+        
+      | s1 =  [ &_0 <- _1 ] s2
+      | s2 = return' {_0} ]
+       ]
+     [ & _0 : array string = any_l () | & _1 : array string = any_l () ] 
+    [ return' (result:array string)-> return' {result} ]
+    
+  
+  use prelude.prelude.Int
+  
   meta "compute_max_steps" 1000000
   
-  let rec f (_1:()) (return'  (ret:()))= (! bb0
+  let rec f'0 (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
-      [ s0 = promoted3 (fun (pr3:array string) ->  [ &_30 <- pr3 ] s1)
+      [ s0 = promoted3__f'0 (fun (pr3:array string) ->  [ &_30 <- pr3 ] s1)
       | s1 =  [ &_5 <- _30 ] s2
-      | s2 = new_const'0 {_5} (fun (_ret':Arguments'0.t_Arguments) ->  [ &_3 <- _ret' ] s3)
+      | s2 = new_const'0 {_5} (fun (_ret':t_Arguments'0) ->  [ &_3 <- _ret' ] s3)
       | s3 = bb1 ]
       
-    | bb1 = s0 [ s0 = v__print'0 {_3} (fun (_ret':()) ->  [ &_2 <- _ret' ] s1) | s1 = bb2 ] 
+    | bb1 = s0 [ s0 = qy95zprint'0 {_3} (fun (_ret':()) ->  [ &_2 <- _ret' ] s1) | s1 = bb2 ] 
     | bb2 = s0
-      [ s0 = promoted2 (fun (pr2:array string) ->  [ &_29 <- pr2 ] s1)
+      [ s0 = promoted2__f'0 (fun (pr2:array string) ->  [ &_29 <- pr2 ] s1)
       | s1 =  [ &_11 <- _29 ] s2
-      | s2 = new_const'0 {_11} (fun (_ret':Arguments'0.t_Arguments) ->  [ &_9 <- _ret' ] s3)
+      | s2 = new_const'0 {_11} (fun (_ret':t_Arguments'0) ->  [ &_9 <- _ret' ] s3)
       | s3 = bb3 ]
       
-    | bb3 = s0 [ s0 = v__print'0 {_9} (fun (_ret':()) ->  [ &_8 <- _ret' ] s1) | s1 = bb4 ] 
+    | bb3 = s0 [ s0 = qy95zprint'0 {_9} (fun (_ret':()) ->  [ &_8 <- _ret' ] s1) | s1 = bb4 ] 
     | bb4 = s0
-      [ s0 = promoted1 (fun (pr1:array string) ->  [ &_28 <- pr1 ] s1)
+      [ s0 = promoted1__f'0 (fun (pr1:array string) ->  [ &_28 <- pr1 ] s1)
       | s1 =  [ &_17 <- _28 ] s2
-      | s2 = new_const'0 {_17} (fun (_ret':Arguments'0.t_Arguments) ->  [ &_15 <- _ret' ] s3)
+      | s2 = new_const'0 {_17} (fun (_ret':t_Arguments'0) ->  [ &_15 <- _ret' ] s3)
       | s3 = bb5 ]
       
-    | bb5 = s0 [ s0 = v__eprint'0 {_15} (fun (_ret':()) ->  [ &_14 <- _ret' ] s1) | s1 = bb6 ] 
+    | bb5 = s0 [ s0 = qy95zeprint'0 {_15} (fun (_ret':()) ->  [ &_14 <- _ret' ] s1) | s1 = bb6 ] 
     | bb6 = s0
-      [ s0 = promoted0 (fun (pr0:array string) ->  [ &_27 <- pr0 ] s1)
+      [ s0 = promoted0__f'0 (fun (pr0:array string) ->  [ &_27 <- pr0 ] s1)
       | s1 =  [ &_23 <- _27 ] s2
-      | s2 = new_const'0 {_23} (fun (_ret':Arguments'0.t_Arguments) ->  [ &_21 <- _ret' ] s3)
+      | s2 = new_const'0 {_23} (fun (_ret':t_Arguments'0) ->  [ &_21 <- _ret' ] s3)
       | s3 = bb7 ]
       
-    | bb7 = s0 [ s0 = v__eprint'0 {_21} (fun (_ret':()) ->  [ &_20 <- _ret' ] s1) | s1 = bb8 ] 
+    | bb7 = s0 [ s0 = qy95zeprint'0 {_21} (fun (_ret':()) ->  [ &_20 <- _ret' ] s1) | s1 = bb8 ] 
     | bb8 = s0 [ s0 = {[@expl:assertion] [%#sprinting0] 1 + 1 = 2} s1 | s1 = return' {_0} ]  ]
     )
     [ & _0 : () = any_l ()
     | & _2 : () = any_l ()
-    | & _3 : Arguments'0.t_Arguments = any_l ()
+    | & _3 : t_Arguments'0 = any_l ()
     | & _5 : array string = any_l ()
     | & _8 : () = any_l ()
-    | & _9 : Arguments'0.t_Arguments = any_l ()
+    | & _9 : t_Arguments'0 = any_l ()
     | & _11 : array string = any_l ()
     | & _14 : () = any_l ()
-    | & _15 : Arguments'0.t_Arguments = any_l ()
+    | & _15 : t_Arguments'0 = any_l ()
     | & _17 : array string = any_l ()
     | & _20 : () = any_l ()
-    | & _21 : Arguments'0.t_Arguments = any_l ()
+    | & _21 : t_Arguments'0 = any_l ()
     | & _23 : array string = any_l ()
     | & _27 : array string = any_l ()
     | & _28 : array string = any_l ()

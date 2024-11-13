@@ -38,10 +38,9 @@ impl<T: ?Sized> FSet<T> {
     #[doc(hidden)]
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "set.Fset.mem"]
     pub fn mem(_: T, _: Self) -> bool {
-        pearlite! { absurd }
+        dead
     }
 
     #[open]
@@ -54,18 +53,16 @@ impl<T: ?Sized> FSet<T> {
     #[doc(hidden)]
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "set.Fset.add"]
     pub fn add(_: T, _: Self) -> Self {
-        pearlite! { absurd }
+        dead
     }
 
     #[trusted]
     #[predicate]
-    #[open(self)]
     #[creusot::builtins = "set.Fset.is_empty"]
     pub fn is_empty(self) -> bool {
-        pearlite! { absurd }
+        dead
     }
 
     #[open]
@@ -78,26 +75,23 @@ impl<T: ?Sized> FSet<T> {
     #[doc(hidden)]
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "set.Fset.remove"]
     pub fn rem(_: T, _: Self) -> Self {
-        pearlite! { absurd }
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "set.Fset.union"]
     pub fn union(self, _: Self) -> Self {
-        pearlite! { absurd }
+        dead
     }
 
     #[trusted]
     #[predicate]
-    #[open(self)]
     #[creusot::builtins = "set.Fset.subset"]
     pub fn is_subset(self, _: Self) -> bool {
-        pearlite! { absurd }
+        dead
     }
 
     #[open]
@@ -109,21 +103,19 @@ impl<T: ?Sized> FSet<T> {
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "set.Fset.cardinal"]
     pub fn len(self) -> Int {
-        pearlite! { absurd }
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[creusot::builtins = "set.Fset.pick"]
     pub fn peek(self) -> T
     where
         T: Sized,
     {
-        pearlite! { absurd }
+        dead
     }
 
     // FIXME: remove `trusted`

@@ -1,11 +1,14 @@
-use super::{program::borrow_generated_id, Why3Generator};
 use crate::{
-    backend::ty::{floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty},
+    backend::{
+        program::borrow_generated_id,
+        ty::{constructor, floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty},
+        Why3Generator,
+    },
     contracts_items::get_builtin,
     ctx::*,
+    naming::ident_of,
     pearlite::{self, Literal, Pattern, PointerKind, Term, TermKind},
     translation::pearlite::{zip_binder, QuantKind, Trigger},
-    util,
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};
@@ -52,7 +55,6 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 debug!("resolved_method={:?}", method);
                 let is_constant = matches!(self.ctx.def_kind(*id), DefKind::AssocConst);
                 let item = self.lookup_builtin(method, &Vec::new()).unwrap_or_else(|| {
-                    // eprintln!("{id:?} {subst:?}");
                     let clone = self.names.value(*id, subst);
                     match self.ctx.type_of(id).instantiate_identity().kind() {
                         TyKind::FnDef(_, _) => Exp::Tuple(Vec::new()),
@@ -60,7 +62,6 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     }
                 });
 
-                // eprintln!("{id:?} {:?} {is_constant:?}", self.ctx.def_kind(*id));
                 if is_constant {
                     let ty = translate_ty(self.ctx, self.names, term.span, term.ty);
                     item.ascribe(ty)
@@ -68,7 +69,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     item
                 }
             }
-            TermKind::Var(v) => Exp::var(util::ident_of(*v)),
+            TermKind::Var(v) => Exp::var(ident_of(*v)),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -105,8 +106,6 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
 
                 self.lookup_builtin(method, &mut args).unwrap_or_else(|| {
-                    self.ctx.translate(method.0);
-
                     let clone = self.names.value(method.0, method.1);
                     Exp::qvar(clone).app(args)
                 })
@@ -122,15 +121,11 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     QuantKind::Exists => Exp::exists_trig(bound, trigger, body),
                 }
             }
-            TermKind::Constructor { typ, variant, fields } => {
-                self.ctx.translate(*typ);
-                let TyKind::Adt(_, subst) = term.creusot_ty().kind() else { unreachable!() };
-                let args = fields.into_iter().map(|f| self.lower_term(f)).collect();
-
-                let ctor = self
-                    .names
-                    .constructor(self.ctx.adt_def(typ).variants()[*variant].def_id, subst);
-                Exp::Constructor { ctor, args }
+            TermKind::Constructor { variant, fields, .. } => {
+                let ty = self.names.normalize(self.ctx, term.creusot_ty());
+                let TyKind::Adt(adt, subst) = ty.kind() else { unreachable!() };
+                let fields = fields.into_iter().map(|f| self.lower_term(f)).collect();
+                constructor(self.names, fields, adt.variant(*variant).def_id, subst)
             }
             TermKind::Cur { box term } => {
                 if term.creusot_ty().is_mutable_ptr() {
@@ -178,15 +173,12 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::Tuple(fields.into_iter().map(|f| self.lower_term(f)).collect())
             }
             TermKind::Projection { box lhs, name } => {
-                let base_ty = lhs.ty;
+                let base_ty = self.names.normalize(self.ctx, lhs.creusot_ty());
                 let lhs = self.lower_term(lhs);
 
-                let accessor = match base_ty.kind() {
-                    TyKind::Closure(did, substs) => self.names.accessor(*did, substs, 0, *name),
-                    TyKind::Adt(def, substs) => {
-                        self.ctx.translate_accessor(def.variants()[0u32.into()].fields[*name].did);
-                        self.names.accessor(def.did(), substs, 0, *name)
-                    }
+                let field = match base_ty.kind() {
+                    TyKind::Closure(did, substs) => self.names.field(*did, substs, *name),
+                    TyKind::Adt(def, substs) => self.names.field(def.did(), substs, *name),
                     TyKind::Tuple(f) => {
                         let mut fields = vec![Pat::Wildcard; f.len()];
                         fields[name.as_usize()] = Pat::VarP("a".into());
@@ -200,9 +192,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                Exp::qvar(accessor).app(vec![lhs])
+                lhs.field(&field.as_ident())
             }
-            TermKind::Closure { body } => {
+            TermKind::Closure { body, .. } => {
                 let TyKind::Closure(id, subst) = term.creusot_ty().kind() else {
                     unreachable!("closure has non closure type")
                 };
@@ -211,6 +203,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let mut binders = Vec::new();
                 let sig = self.ctx.sig(*id).clone();
                 let sig = EarlyBinder::bind(sig).instantiate(self.ctx.tcx, subst);
+                // FIXME: normalize sig
                 for arg in sig.inputs.iter().skip(1) {
                     binders
                         .push(Binder::typed(Ident::build(&arg.0.to_string()), self.lower_ty(arg.2)))
@@ -218,7 +211,6 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                 Exp::Abs(binders, Box::new(body))
             }
-            TermKind::Absurd => Exp::Absurd,
             TermKind::Reborrow { cur, fin, inner, projection } => {
                 let inner = self.lower_term(&*inner);
                 let borrow_id = borrow_generated_id(inner, &projection, |x| self.lower_term(x));
@@ -229,10 +221,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     borrow_id,
                 ])
             }
-            TermKind::Assert { cond } => {
-                let cond = self.lower_term(&*cond);
-
-                Exp::Assert(Box::new(cond))
+            TermKind::Assert { .. } => {
+                // Discard cond, use unit
+                Exp::Tuple(vec![])
             }
         }
     }
@@ -241,7 +232,23 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         match pat {
             Pattern::Constructor { variant, fields, substs } => {
                 let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
-                Pat::ConsP(self.names.constructor(*variant, substs), fields)
+                let substs = self.names.normalize(self.ctx, *substs);
+                if self.ctx.def_kind(variant) == DefKind::Variant {
+                    Pat::ConsP(self.names.constructor(*variant, substs), fields)
+                } else if fields.len() == 0 {
+                    Pat::TupleP(vec![])
+                } else {
+                    Pat::RecP(
+                        fields
+                            .into_iter()
+                            .enumerate()
+                            .map(|(i, f)| {
+                                (self.names.field(*variant, substs, i.into()).as_ident(), f)
+                            })
+                            .filter(|(_, f)| !matches!(f, Pat::Wildcard))
+                            .collect(),
+                    )
+                }
             }
             Pattern::Wildcard => Pat::Wildcard,
             Pattern::Binder(name) => Pat::VarP(name.to_string().into()),
@@ -256,8 +263,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Pat::TupleP(pats.into_iter().map(|pat| self.lower_pat(pat)).collect())
             }
             Pattern::Deref { pointee, kind } => match kind {
-                PointerKind::Box => self.lower_pat(pointee),
-                PointerKind::Shr => self.lower_pat(pointee),
+                PointerKind::Box | PointerKind::Shr => self.lower_pat(pointee),
                 PointerKind::Mut => Pat::RecP(vec![("current".into(), self.lower_pat(pointee))]),
             },
         }
@@ -273,15 +279,13 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         args: &Vec<Exp>,
     ) -> Option<Exp> {
         let def_id = method.0;
-        let _substs = method.1;
+        let substs = method.1;
 
         let def_id = Some(def_id);
         let builtin_attr = get_builtin(self.ctx.tcx, def_id.unwrap());
 
         if let Some(builtin) = builtin_attr.map(|a| QName::from_string(&a.as_str())) {
-            self.names.value(def_id.unwrap(), _substs);
-            // self.names.import_builtin_module(builtin.clone().module_qname());
-
+            self.names.value(def_id.unwrap(), substs);
             return Some(Exp::qvar(builtin.without_search_path()).app(args.clone()));
         }
         None
@@ -300,34 +304,29 @@ pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
     names: &mut N,
     lit: &Literal<'tcx>,
 ) -> Exp {
-    match &lit {
-        Literal::Integer(i) => Constant::Int(*i, None).into(),
+    match *lit {
+        Literal::Integer(i) => Constant::Int(i, None).into(),
         Literal::MachSigned(u, intty) => {
-            let why_ty = intty_to_ty(names, &intty);
-            Constant::Int(*u, Some(why_ty)).into()
+            let why_ty = intty_to_ty(names, intty);
+            Constant::Int(u, Some(why_ty)).into()
         }
         Literal::MachUnsigned(u, uty) => {
-            let why_ty = uintty_to_ty(names, &uty);
+            let why_ty = uintty_to_ty(names, uty);
 
-            Constant::Uint(*u, Some(why_ty)).into()
+            Constant::Uint(u, Some(why_ty)).into()
         }
-        Literal::Bool(b) => {
-            if *b {
-                Constant::const_true().into()
-            } else {
-                Constant::const_false().into()
-            }
-        }
+        Literal::Bool(true) => Constant::const_true().into(),
+        Literal::Bool(false) => Constant::const_false().into(),
         Literal::Function(id, subst) => {
-            names.value(*id, subst);
+            names.value(id, subst);
             Exp::Tuple(Vec::new())
         }
-        Literal::Float(f, fty) => {
-            let why_ty = floatty_to_ty(names, &fty);
+        Literal::Float(ref f, fty) => {
+            let why_ty = floatty_to_ty(names, fty);
             Constant::Float(f.0, Some(why_ty)).into()
         }
         Literal::ZST => Exp::Tuple(Vec::new()),
-        Literal::String(string) => Constant::String(string.clone()).into(),
+        Literal::String(ref string) => Constant::String(string.clone()).into(),
     }
 }
 

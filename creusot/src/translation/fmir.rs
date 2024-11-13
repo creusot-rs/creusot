@@ -1,4 +1,4 @@
-use crate::{backend::place::projection_ty, pearlite::Term, util::ident_of};
+use crate::{backend::place::projection_ty, naming::ident_of, pearlite::Term};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{

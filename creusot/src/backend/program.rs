@@ -1,32 +1,32 @@
-use super::{
-    clone_map::PreludeModule,
-    is_trusted_function,
-    place::rplace_to_expr,
-    signature::signature_of,
-    term::{lower_pat, lower_pure},
-    ty::{destructor, int_ty},
-    NameSupply, Namer, Why3Generator,
-};
 use crate::{
     backend::{
-        closure_generic_decls,
+        clone_map::PreludeModule,
+        dependency::Dependency,
+        is_trusted_function,
         optimization::{self, infer_proph_invariants},
-        place,
-        ty::{self, translate_closure_ty, translate_ty},
-        wto::weak_topological_order,
+        place::{self, rplace_to_expr},
+        signature::signature_of,
+        term::{lower_pat, lower_pure},
+        ty::{self, constructor, int_ty, translate_ty},
+        wto::{weak_topological_order, Component},
+        NameSupply, Namer, Why3Generator,
     },
-    contracts_items,
-    ctx::{BodyId, Dependencies, TranslationCtx},
+    contracts_items::is_ghost_closure,
+    ctx::{BodyId, Dependencies},
     fmir::{self, Body, BorrowKind, Operand, TrivialInv},
+    naming::ident_of,
     pearlite::{self, PointerKind},
     translated_item::FileModule,
     translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
-    util,
 };
 
 use petgraph::graphmap::DiGraphMap;
 use rustc_ast::Mutability;
-use rustc_hir::{def_id::DefId, Safety};
+use rustc_hir::{
+    def::DefKind,
+    def_id::{DefId, LocalDefId},
+    Safety,
+};
 use rustc_middle::{
     mir::{self, tcx::PlaceTy, BasicBlock, BinOp, ProjectionElem, UnOp, START_BLOCK},
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt, TyKind},
@@ -45,109 +45,31 @@ use why3::{
     Ident, QName,
 };
 
-fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> FileModule {
-    let mut names = Dependencies::new(ctx, [def_id]);
-    let mut decls = Vec::new();
-
-    let ty = ctx.type_of(def_id).instantiate_identity();
-    let TyKind::Closure(_, subst) = ty.kind() else { unreachable!() };
-    names.insert_hidden_type(ctx.type_of(def_id).instantiate_identity());
-    let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
-
-    let d = destructor(ctx, &mut names, def_id, ty, 0u32.into());
-
-    let clones = names.provide_deps(ctx);
-    decls.extend(
-        // Definitely a hack but good enough for the moment
-        clones.into_iter().filter(|d| matches!(d, Decl::UseDecl(_))),
-    );
-    decls.push(env_ty);
-
-    decls.push(d);
-
-    let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
-    let meta = ctx.display_impl_of(def_id);
-    let path = ctx.module_path(def_id, util::NS::T);
-    let name = path.why3_ident();
-    FileModule { path, modl: Module { name, decls, attrs, meta } }
-}
-
-pub(crate) fn translate_closure<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
-    def_id: DefId,
-) -> (FileModule, Option<FileModule>) {
-    assert!(ctx.is_closure_like(def_id));
-    let func = translate_function(ctx, def_id);
-    (closure_ty(ctx, def_id), func)
-}
-
 pub(crate) fn translate_function<'tcx, 'sess>(
     ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
 ) -> Option<FileModule> {
-    let mut names = Dependencies::new(ctx, [def_id]);
+    let mut names = Dependencies::new(ctx, def_id);
 
-    let Some((body_id, promoteds)) = collect_body_ids(ctx, def_id) else {
+    if !def_id.is_local() || !ctx.has_body(def_id) || is_trusted_function(ctx.tcx, def_id) {
         return None;
-    };
-    let body = Decl::Coma(to_why(ctx, &mut names, body_id));
+    }
 
-    let promoteds = promoteds
-        .iter()
-        .map(|body_id| Decl::Coma(to_why(ctx, &mut names, *body_id)))
-        .collect::<Vec<_>>();
+    let name = names.value(names.self_id, names.self_subst).as_ident();
+    let body = Decl::Coma(to_why(ctx, &mut names, name, BodyId::new(def_id.expect_local(), None)));
 
-    let clones = names.provide_deps(ctx);
-
-    let decls = closure_generic_decls(ctx.tcx, def_id)
-        .chain(clones)
-        .chain(promoteds)
-        .chain([Decl::Meta(Meta {
-            name: MetaIdent::String("compute_max_steps".into()),
-            args: vec![MetaArg::Integer(1_000_000)],
-        })])
-        .chain(std::iter::once(body))
-        .collect();
+    let mut decls = names.provide_deps(ctx);
+    decls.push(Decl::Meta(Meta {
+        name: MetaIdent::String("compute_max_steps".into()),
+        args: vec![MetaArg::Integer(1_000_000)],
+    }));
+    decls.push(body);
 
     let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
     let meta = ctx.display_impl_of(def_id);
-    let path = ctx.module_path(def_id, util::NS::M);
+    let path = ctx.module_path(def_id);
     let name = path.why3_ident();
     Some(FileModule { path, modl: Module { name, decls, attrs, meta } })
-}
-
-/// If `def_id`'s body should be translated, returns:
-/// - The `BodyId` corresponding to `def_id`
-/// - The `BodyId`s of promoted items
-fn collect_body_ids<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> Option<(BodyId, Vec<BodyId>)> {
-    let body_id = if def_id.is_local()
-        && util::has_body(ctx, def_id)
-        && !is_trusted_function(ctx.tcx, def_id)
-    {
-        BodyId::new(def_id.expect_local(), None)
-    } else {
-        return None;
-    };
-
-    let tcx = ctx.tcx;
-    let promoted = ctx
-        .body_with_facts(def_id.expect_local())
-        .promoted
-        .iter_enumerated()
-        .map(|(p, p_body)| (p, p_body.return_ty()))
-        .filter_map(|(p, p_ty)| {
-            if util::snapshot_closure_id(tcx, p_ty).is_none() {
-                Some(BodyId::new(def_id.expect_local(), Some(p)))
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>();
-
-    Some((body_id, promoted))
 }
 
 pub fn val<'tcx>(_: &mut Why3Generator<'tcx>, sig: Signature) -> Decl {
@@ -201,6 +123,7 @@ pub(crate) fn node_graph(x: &Body) -> petgraph::graphmap::DiGraphMap<BasicBlock,
 pub fn to_why<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,
+    name: Ident,
     body_id: BodyId,
 ) -> coma::Defn {
     let mut body = ctx.fmir_body(body_id).clone();
@@ -211,8 +134,10 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
     infer_proph_invariants(ctx, &mut body);
 
-    let blocks: Vec<Defn> =
-        wto.into_iter().map(|c| component_to_defn(&mut body, ctx, names, c)).collect();
+    let blocks: Vec<Defn> = wto
+        .into_iter()
+        .map(|c| component_to_defn(&mut body, ctx, names, body_id.def_id, c))
+        .collect();
     let ret = body.locals.first().map(|(_, decl)| decl.clone());
 
     let vars: Vec<_> = body
@@ -232,11 +157,11 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         .collect();
 
     let sig = if body_id.promoted.is_none() {
-        signature_of(ctx, names, body_id.def_id())
+        signature_of(ctx, names, name, body_id.def_id())
     } else {
         let ret = ret.unwrap();
         Signature {
-            name: format!("promoted{}", body_id.promoted.unwrap().as_usize()).into(),
+            name,
             trigger: None,
             attrs: vec![],
             retty: Some(ty::translate_ty(ctx, names, ret.span, ret.ty)),
@@ -248,13 +173,13 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
 
     let mut postcond = Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("result"))]);
 
-    if body_id.promoted.is_none() && !contracts_items::is_ghost_closure(ctx.tcx, body_id.def_id()) {
+    if body_id.promoted.is_none() && !is_ghost_closure(ctx.tcx, body_id.def_id()) {
         postcond = Expr::BlackBox(Box::new(postcond));
     }
     let ensures = sig.contract.ensures.into_iter().map(Condition::labelled_exp);
     postcond = ensures.rfold(postcond, |acc, cond| Expr::Assert(Box::new(cond), Box::new(acc)));
 
-    if body_id.promoted.is_none() && !contracts_items::is_ghost_closure(ctx.tcx, body_id.def_id()) {
+    if body_id.promoted.is_none() && !is_ghost_closure(ctx.tcx, body_id.def_id()) {
         body = Expr::BlackBox(Box::new(body))
     };
 
@@ -288,16 +213,15 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     coma::Defn { name: sig.name, writes: Vec::new(), params, body }
 }
 
-use super::wto::Component;
-
 fn component_to_defn<'tcx, N: Namer<'tcx>>(
     body: &mut Body<'tcx>,
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,
+    def_id: LocalDefId,
     c: Component<BasicBlock>,
 ) -> coma::Defn {
     let mut lower =
-        LoweringState { ctx, names, locals: &body.locals, name_supply: Default::default() };
+        LoweringState { ctx, names, locals: &body.locals, name_supply: Default::default(), def_id };
     let (head, tl) = match c {
         Component::Vertex(v) => {
             let block = body.blocks.remove(&v).unwrap();
@@ -309,7 +233,7 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
     let block = body.blocks.remove(&head).unwrap();
     let mut block = block.to_why(&mut lower, head);
 
-    let defns = tl.into_iter().map(|id| component_to_defn(body, ctx, names, id)).collect();
+    let defns = tl.into_iter().map(|id| component_to_defn(body, ctx, names, def_id, id)).collect();
 
     if !block.body.is_guarded() {
         block.body = Expr::BlackBox(Box::new(block.body));
@@ -329,6 +253,7 @@ pub(crate) struct LoweringState<'a, 'tcx, N: Namer<'tcx>> {
     pub(super) names: &'a mut N,
     pub(super) locals: &'a LocalDecls<'tcx>,
     pub(super) name_supply: NameSupply,
+    pub(super) def_id: LocalDefId,
 }
 
 impl<'a, 'tcx, N: Namer<'tcx>> LoweringState<'a, 'tcx, N> {
@@ -362,8 +287,7 @@ impl<'tcx> Operand<'tcx> {
             Operand::Copy(pl) => rplace_to_expr(lower, &pl, istmts),
             Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
             Operand::Promoted(pid, ty) => {
-                let promoted =
-                    Expr::Symbol(QName::from_string(&format!("promoted{}", pid.as_usize())));
+                let promoted = Expr::Symbol(lower.names.promoted(lower.def_id, pid));
                 let var: Ident = Ident::build(&format!("pr{}", pid.as_usize()));
                 istmts.push(IntermediateStmt::call(var.clone(), lower.ty(ty), promoted, vec![]));
 
@@ -418,8 +342,7 @@ impl<'tcx> RValue<'tcx> {
                 let prelude: PreludeModule = match ty.kind() {
                     TyKind::Int(ity) => int_to_prelude(*ity),
                     TyKind::Uint(uty) => uint_to_prelude(*uty),
-                    TyKind::Float(FloatTy::F32) => PreludeModule::Float32,
-                    TyKind::Float(FloatTy::F64) => PreludeModule::Float64,
+                    TyKind::Float(fty) => floatty_to_prelude(*fty),
                     TyKind::Bool => PreludeModule::Bool,
                     _ => unreachable!("non-primitive type for negation {ty:?}"),
                 };
@@ -442,10 +365,11 @@ impl<'tcx> RValue<'tcx> {
                 Exp::var(id)
             }
             RValue::Constructor(id, subst, args) => {
+                if lower.ctx.def_kind(id) == DefKind::Closure {
+                    lower.names.insert(Dependency::item(lower.ctx.tcx, (id, subst)));
+                }
                 let args = args.into_iter().map(|a| a.to_why(lower, istmts)).collect();
-
-                let ctor = lower.names.constructor(id, subst);
-                Exp::Constructor { ctor, args }
+                constructor(lower.names, args, id, subst)
             }
             RValue::Tuple(f) => {
                 Exp::Tuple(f.into_iter().map(|f| f.to_why(lower, istmts)).collect())
@@ -454,11 +378,11 @@ impl<'tcx> RValue<'tcx> {
                 let to_int = match source.kind() {
                     TyKind::Int(ity) => {
                         lower.names.import_prelude_module(int_to_prelude(*ity));
-                        int_to_int(ity)
+                        int_to_int(*ity)
                     }
                     TyKind::Uint(uty) => {
                         lower.names.import_prelude_module(uint_to_prelude(*uty));
-                        uint_to_int(uty)
+                        uint_to_int(*uty)
                     }
                     TyKind::Bool => {
                         lower.names.import_prelude_module(PreludeModule::Bool);
@@ -470,8 +394,8 @@ impl<'tcx> RValue<'tcx> {
                 };
 
                 let from_int = match target.kind() {
-                    TyKind::Int(ity) => int_from_int(ity),
-                    TyKind::Uint(uty) => uint_from_int(uty),
+                    TyKind::Int(ity) => int_from_int(*ity),
+                    TyKind::Uint(uty) => uint_from_int(*uty),
                     TyKind::Char => {
                         lower.names.import_prelude_module(PreludeModule::Char);
                         QName::from_string("Char.chr")
@@ -559,10 +483,6 @@ impl<'tcx> RValue<'tcx> {
     }
 }
 
-// fn mk_constructor() -> Exp {
-
-// }
-
 impl<'tcx> Terminator<'tcx> {
     pub(crate) fn retarget(&mut self, from: BasicBlock, to: BasicBlock) {
         match self {
@@ -645,7 +565,7 @@ impl<'tcx> Terminator<'tcx> {
 impl<'tcx> Branches<'tcx> {
     fn to_why<N: Namer<'tcx>>(
         self,
-        _ctx: &mut Why3Generator<'tcx>,
+        ctx: &mut Why3Generator<'tcx>,
         names: &mut N,
         discr: Exp,
     ) -> coma::Expr {
@@ -668,17 +588,8 @@ impl<'tcx> Branches<'tcx> {
                 brs.push(Defn::simple("default", Expr::BlackBox(Box::new(mk_goto(def)))));
                 Expr::Defn(Box::new(Expr::Any), false, brs)
             }
-            Branches::Constructor(adt, _substs, vars, def) => {
-                let brs = mk_adt_switch(
-                    _ctx,
-                    names,
-                    adt,
-                    _substs,
-                    discr,
-                    vars.into_iter().map(|(var, bb)| (var, mk_goto(bb))).collect(),
-                    def.map(mk_goto),
-                );
-
+            Branches::Constructor(adt, substs, vars, def) => {
+                let brs = mk_adt_switch(ctx, names, adt, substs, discr, vars, def);
                 Expr::Defn(Box::new(Expr::Any), false, brs)
             }
             Branches::Bool(f, t) => {
@@ -703,51 +614,52 @@ fn mk_adt_switch<'tcx, N: Namer<'tcx>>(
     adt: AdtDef<'tcx>,
     subst: GenericArgsRef<'tcx>,
     discr: Exp,
-    mut brch: Vec<(VariantIdx, coma::Expr)>,
-    default: Option<coma::Expr>,
+    brch: Vec<(VariantIdx, BasicBlock)>,
+    default: Option<BasicBlock>,
 ) -> Vec<coma::Defn> {
-    let mut out = Vec::new();
+    assert!(adt.is_enum());
 
-    let mut branches = Vec::new();
-    for ix in 0..adt.variants().len() {
-        if let Some((vix, _)) = brch.get(0)
-            && *vix == VariantIdx::from(ix)
-        {
-            branches.push(brch.remove(0));
-        } else {
-            branches.push((VariantIdx::from(ix), default.clone().unwrap()))
-        }
-    }
+    let mut brch = brch.into_iter().peekable();
 
-    let brch = branches;
+    let res = adt
+        .variants()
+        .iter_enumerated()
+        .map(|(ix, var)| {
+            let tgt = if brch.peek().is_some_and(|&(vix, _)| vix == ix) {
+                brch.next().unwrap().1
+            } else {
+                default.unwrap()
+            };
 
-    for (c, (ix, tgt)) in brch.into_iter().enumerate() {
-        let var = &adt.variants()[ix];
+            let (params, ids) = var
+                .fields
+                .iter_enumerated()
+                .map(|(ix, field)| {
+                    let id: Ident = format!("x{}", ix.as_usize()).into();
+                    (
+                        Param::Term(
+                            id.clone(),
+                            translate_ty(ctx, names, DUMMY_SP, field.ty(ctx.tcx, subst)),
+                        ),
+                        Exp::var(id),
+                    )
+                })
+                .unzip();
 
-        let params: Vec<coma::Param> = ('a'..)
-            .zip(var.fields.iter())
-            .map(|(nm, field)| {
-                Param::Term(
-                    nm.to_string().into(),
-                    translate_ty(ctx, names, DUMMY_SP, field.ty(ctx.tcx, subst)),
-                )
-            })
-            .collect();
+            let cons = names.constructor(var.def_id, subst);
 
-        let cons = names.constructor(var.def_id, subst);
+            let body = Exp::qvar(cons).app(ids);
+            let body = coma::Expr::Assert(
+                Box::new(discr.clone().eq(body)),
+                Box::new(coma::Expr::BlackBox(Box::new(mk_goto(tgt)))),
+            );
+            let name = format!("br{}", ix.as_usize()).into();
 
-        let filter = Exp::qvar(cons)
-            .app(params.iter().zip('a'..).map(|(_, nm)| Exp::var(nm.to_string())).collect());
-        let filter = coma::Expr::Assert(
-            Box::new(discr.clone().eq(filter)),
-            Box::new(coma::Expr::BlackBox(Box::new(tgt))),
-        );
-
-        let branch =
-            coma::Defn { name: format!("br{c}").into(), body: filter, params, writes: Vec::new() };
-        out.push(branch)
-    }
-    out
+            coma::Defn { name, body, params, writes: Vec::new() }
+        })
+        .collect();
+    assert!(brch.next().is_none());
+    res
 }
 
 fn mk_switch_branches(discr: Exp, brch: Vec<(Exp, coma::Expr)>) -> Vec<coma::Defn> {
@@ -940,7 +852,7 @@ impl<'tcx> Statement<'tcx> {
                             &lower,
                             &mut istmts,
                             rhs_local_ty,
-                            place::Focus::new(|_| Exp::var(util::ident_of(rhs.local))),
+                            place::Focus::new(|_| Exp::var(ident_of(rhs.local))),
                             Box::new(|_, x| x),
                             &rhs.projection[..deref_index],
                         );
@@ -958,7 +870,10 @@ impl<'tcx> Statement<'tcx> {
                     let borrow_id = borrow_generated_id(
                         original_borrow.call(&mut istmts),
                         &rhs.projection[deref_index + 1..],
-                        |sym| Exp::var(util::ident_of(*sym)),
+                        |sym| {
+                            let v = ident_of(*sym);
+                            Exp::var(v)
+                        },
                     );
 
                     bor_id_arg = Some(Arg::Term(borrow_id));
@@ -967,7 +882,7 @@ impl<'tcx> Statement<'tcx> {
                         &lower,
                         &mut istmts,
                         rhs_local_ty,
-                        place::Focus::new(|_| Exp::var(util::ident_of(rhs.local))),
+                        place::Focus::new(|_| Exp::var(ident_of(rhs.local))),
                         Box::new(|_, x| x),
                         &rhs.projection,
                     );
@@ -1011,8 +926,6 @@ impl<'tcx> Statement<'tcx> {
                 lower.assignment(&dest, Exp::var("_ret'"), &mut istmts);
             }
             Statement::Resolve { did, subst, pl } => {
-                lower.ctx.translate(did);
-
                 let rp = Exp::qvar(lower.names.value(did, subst));
                 let loc = pl.local;
 
@@ -1022,10 +935,10 @@ impl<'tcx> Statement<'tcx> {
 
                 let pat = lower_pat(lower.ctx, lower.names, &pat);
                 let exp = if let Pattern::VarP(_) = pat {
-                    rp.app_to(Exp::var(util::ident_of(loc)))
+                    rp.app_to(Exp::var(ident_of(loc)))
                 } else {
                     Exp::Match(
-                        Box::new(Exp::var(util::ident_of(loc))),
+                        Box::new(Exp::var(ident_of(loc))),
                         vec![
                             (pat, rp.app_to(Exp::var(bound.as_str()))),
                             (Pattern::Wildcard, Exp::mk_true()),
@@ -1048,10 +961,10 @@ impl<'tcx> Statement<'tcx> {
                 let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
                 let pat = lower_pat(lower.ctx, lower.names, &pat);
                 let exp = if let Pattern::VarP(_) = pat {
-                    inv_fun.app_to(Exp::var(util::ident_of(loc)))
+                    inv_fun.app_to(Exp::var(ident_of(loc)))
                 } else {
                     Exp::Match(
-                        Box::new(Exp::var(util::ident_of(loc))),
+                        Box::new(Exp::var(ident_of(loc))),
                         vec![
                             (pat, inv_fun.app_to(Exp::var(bound.as_str()))),
                             (Pattern::Wildcard, Exp::mk_true()),
@@ -1182,8 +1095,7 @@ pub(crate) fn binop_to_binop<'tcx, N: Namer<'tcx>>(names: &mut N, ty: Ty, op: mi
     let prelude: PreludeModule = match ty.kind() {
         TyKind::Int(ity) => int_to_prelude(*ity),
         TyKind::Uint(uty) => uint_to_prelude(*uty),
-        TyKind::Float(FloatTy::F32) => PreludeModule::Float32,
-        TyKind::Float(FloatTy::F64) => PreludeModule::Float64,
+        TyKind::Float(fty) => floatty_to_prelude(*fty),
         TyKind::Bool => PreludeModule::Bool,
         _ => unreachable!("non-primitive type for binary operation {op:?} {ty:?}"),
     };
@@ -1244,7 +1156,15 @@ pub(crate) fn uint_to_prelude(ity: UintTy) -> PreludeModule {
     }
 }
 
-pub(crate) fn int_from_int(ity: &IntTy) -> QName {
+pub(crate) fn floatty_to_prelude(fty: FloatTy) -> PreludeModule {
+    match fty {
+        FloatTy::F32 => PreludeModule::Float32,
+        FloatTy::F64 => PreludeModule::Float64,
+        FloatTy::F16 | FloatTy::F128 => todo!("unsupported: {fty:?}"),
+    }
+}
+
+pub(crate) fn int_from_int(ity: IntTy) -> QName {
     match ity {
         IntTy::Isize => QName::from_string("IntSize.of_int"),
         IntTy::I8 => QName::from_string("Int8.of_int"),
@@ -1255,7 +1175,7 @@ pub(crate) fn int_from_int(ity: &IntTy) -> QName {
     }
 }
 
-pub(crate) fn uint_from_int(uty: &UintTy) -> QName {
+pub(crate) fn uint_from_int(uty: UintTy) -> QName {
     match uty {
         UintTy::Usize => QName::from_string("UIntSize.of_int"),
         UintTy::U8 => QName::from_string("UInt8.of_int"),
@@ -1266,7 +1186,7 @@ pub(crate) fn uint_from_int(uty: &UintTy) -> QName {
     }
 }
 
-pub(crate) fn int_to_int(ity: &IntTy) -> Exp {
+pub(crate) fn int_to_int(ity: IntTy) -> Exp {
     match ity {
         IntTy::Isize => Exp::qvar(QName::from_string("IntSize.to_int")),
         IntTy::I8 => Exp::qvar(QName::from_string("Int8.to_int")),
@@ -1277,7 +1197,7 @@ pub(crate) fn int_to_int(ity: &IntTy) -> Exp {
     }
 }
 
-pub(crate) fn uint_to_int(uty: &UintTy) -> Exp {
+pub(crate) fn uint_to_int(uty: UintTy) -> Exp {
     match uty {
         UintTy::Usize => Exp::qvar(QName::from_string("UIntSize.to_int")),
         UintTy::U8 => Exp::qvar(QName::from_string("UInt8.to_int")),

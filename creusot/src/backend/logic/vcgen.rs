@@ -8,14 +8,14 @@ use crate::{
     backend::{
         signature::{sig_to_why3, signature_of},
         term::{binop_to_binop, lower_literal, lower_pure},
-        ty::{is_int, translate_ty},
+        ty::{constructor, is_int, translate_ty},
         Namer as _, Why3Generator,
     },
     contracts_items::get_builtin,
+    naming::ident_of,
     pearlite::{super_visit_term, Literal, Pattern, PointerKind, Term, TermVisitor},
-    util::{self, pre_sig_of},
 };
-use rustc_hir::def_id::DefId;
+use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, ParamEnv, Ty, TyKind};
 use rustc_span::{Span, Symbol};
 use why3::{declaration::Signature, exp::Environment, ty::Type, Exp, Ident, QName};
@@ -52,7 +52,12 @@ pub(super) fn vc<'tcx>(
     post: Exp,
 ) -> Result<Exp, VCError<'tcx>> {
     let structurally_recursive = is_structurally_recursive(ctx, self_id, &t);
-    let sig = pre_sig_of(ctx, self_id);
+    let bounds = ctx
+        .sig(self_id)
+        .inputs
+        .iter()
+        .map(|arg| (arg.0.as_str().into(), Exp::var(arg.0.as_str())))
+        .collect();
     let gen = VCGen {
         param_env: ctx.param_env(self_id),
         ctx: RefCell::new(ctx),
@@ -61,8 +66,6 @@ pub(super) fn vc<'tcx>(
         structurally_recursive,
         subst: RefCell::new(Default::default()),
     };
-    let bounds =
-        sig.inputs.iter().map(|arg| (arg.0.as_str().into(), Exp::var(arg.0.as_str()))).collect();
     gen.add_bounds(bounds);
     gen.build_vc(&t, &|exp| Ok(Exp::let_(dest.clone(), exp, post.clone())))
 }
@@ -218,7 +221,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         match &t.kind {
             // VC(v, Q) = Q(v)
             TermKind::Var(v) => {
-                let id = util::ident_of(*v);
+                let id = ident_of(*v);
                 let exp = self.subst.borrow().get(&id).unwrap_or(Exp::var(id));
                 k(exp)
             }
@@ -254,12 +257,17 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     .inputs
                     .iter()
                     .zip(args.clone())
-                    .map(|(nm, res)| (util::ident_of(nm.0), res))
+                    .map(|(nm, res)| (ident_of(nm.0), res))
                     .collect();
                 let fname =
                     get_func_name(*self.ctx.borrow_mut(), *self.names.borrow_mut(), *id, subst);
-                let mut sig =
-                    sig_to_why3(*self.ctx.borrow_mut(), *self.names.borrow_mut(), pre_sig, *id);
+                let mut sig = sig_to_why3(
+                    *self.ctx.borrow_mut(),
+                    *self.names.borrow_mut(),
+                    "".into(),
+                    pre_sig,
+                    *id,
+                );
                 sig.contract.subst(&arg_subst);
                 let variant =
                     if *id == self.self_id { self.build_variant(&args)? } else { Exp::mk_true() };
@@ -336,16 +344,18 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // VC((T...), Q) = VC(T[0], |t0| ... VC(T[N], |tn| Q(t0..tn))))
             TermKind::Tuple { fields } => self.build_vc_slice(fields, &|flds| k(Exp::Tuple(flds))),
             // Same as for tuples
-            TermKind::Constructor { typ, variant, fields } => {
-                self.build_vc_slice(fields, &|args| {
-                    let TyKind::Adt(_, subst) = t.creusot_ty().kind() else { unreachable!() };
-
-                    let ctor = self.names.borrow_mut().constructor(
-                        self.ctx.borrow().adt_def(typ).variants()[*variant].def_id,
+            TermKind::Constructor { variant, fields, .. } => {
+                let ty =
+                    self.ctx.borrow().normalize_erasing_regions(self.param_env, t.creusot_ty());
+                let TyKind::Adt(adt, subst) = ty.kind() else { unreachable!() };
+                self.build_vc_slice(fields, &|fields| {
+                    let ctor = constructor(
+                        *self.names.borrow_mut(),
+                        fields,
+                        adt.variant(*variant).def_id,
                         subst,
                     );
-
-                    k(Exp::Constructor { ctor, args })
+                    k(ctor)
                 })
             }
             // VC( * T, Q) = VC(T, |t| Q(*t))
@@ -396,15 +406,14 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             }),
             // VC(A.f, Q) = VC(A, |a| Q(a.f))
             TermKind::Projection { lhs, name } => {
-                let accessor = match lhs.creusot_ty().kind() {
+                let ty =
+                    self.ctx.borrow().normalize_erasing_regions(self.param_env, lhs.creusot_ty());
+                let field = match ty.kind() {
                     TyKind::Closure(did, substs) => {
-                        self.names.borrow_mut().accessor(*did, substs, 0, *name)
+                        self.names.borrow_mut().field(*did, substs, *name).as_ident()
                     }
                     TyKind::Adt(def, substs) => {
-                        self.ctx
-                            .borrow_mut()
-                            .translate_accessor(def.variants()[0u32.into()].fields[*name].did);
-                        self.names.borrow_mut().accessor(def.did(), substs, 0, *name)
+                        self.names.borrow_mut().field(def.did(), substs, *name).as_ident()
                     }
                     TyKind::Tuple(f) => {
                         let mut fields = vec![why3::exp::Pattern::Wildcard; f.len()];
@@ -421,16 +430,14 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                self.build_vc(lhs, &|lhs| k(Exp::qvar(accessor.clone()).app(vec![lhs])))
+                self.build_vc(lhs, &|lhs| k(lhs.field(&field)))
             }
-            // TODO: lol
-            TermKind::Absurd => todo!("absrd"),
-
             TermKind::Old { .. } => Err(VCError::Old(t.span)),
             TermKind::Closure { .. } => Err(VCError::Closure(t.span)),
             TermKind::Reborrow { .. } => Err(VCError::Reborrow(t.span)),
         }
     }
+
     fn build_pattern<A>(
         &self,
         pat: &Pattern<'tcx>,
@@ -455,7 +462,29 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             Pattern::Constructor { variant, fields, substs } => {
                 let fields =
                     fields.into_iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect();
-                Pat::ConsP(self.names.borrow_mut().constructor(*variant, substs), fields)
+                let substs = self.ctx.borrow().normalize_erasing_regions(self.param_env, *substs);
+                if self.ctx.borrow().def_kind(variant) == DefKind::Variant {
+                    Pat::ConsP(self.names.borrow_mut().constructor(*variant, substs), fields)
+                } else if fields.len() == 0 {
+                    Pat::TupleP(vec![])
+                } else {
+                    Pat::RecP(
+                        fields
+                            .into_iter()
+                            .enumerate()
+                            .map(|(i, f)| {
+                                (
+                                    self.names
+                                        .borrow_mut()
+                                        .field(*variant, substs, i.into())
+                                        .as_ident(),
+                                    f,
+                                )
+                            })
+                            .filter(|(_, f)| !matches!(f, Pat::Wildcard))
+                            .collect(),
+                    )
+                }
             }
             Pattern::Wildcard => Pat::Wildcard,
             Pattern::Binder(name) => {
@@ -525,6 +554,10 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         translate_ty(*self.ctx.borrow_mut(), *self.names.borrow_mut(), rustc_span::DUMMY_SP, ty)
     }
 
+    fn self_sig(&self) -> Signature {
+        signature_of(*self.ctx.borrow_mut(), *self.names.borrow_mut(), "".into(), self.self_id)
+    }
+
     // Generates the expression to test the validity of the variant for a recursive call.
     // Currently restricted to `Int` until we sort out `WellFounded` (soon?)
     //
@@ -552,10 +585,6 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         }
     }
 
-    fn self_sig(&self) -> Signature {
-        signature_of(*self.ctx.borrow_mut(), *self.names.borrow_mut(), self.self_id)
-    }
-
     /// Produces the top-level call expression for the function being verified
     fn top_level_args(&self) -> Vec<Ident> {
         let sig = self.self_sig();
@@ -579,9 +608,7 @@ pub(crate) fn get_func_name<'tcx>(
     id: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> QName {
-    let builtin_attr = get_builtin(ctx.tcx, id);
-
-    builtin_attr
+    get_builtin(ctx.tcx, id)
         .map(|a| {
             // Add dependency
             names.value(id, subst);

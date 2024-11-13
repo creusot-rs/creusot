@@ -1,11 +1,12 @@
-use crate::contracts_items;
+use crate::contracts_items::{is_no_translate, is_snapshot_closure, no_mir};
 use indexmap::IndexSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::{Idx, IndexVec};
 use rustc_middle::{
     mir::{
-        visit::MutVisitor, AggregateKind, BasicBlock, BasicBlockData, Body, Local, Location,
-        Rvalue, SourceInfo, StatementKind, Terminator, TerminatorKind,
+        visit::{MutVisitor, PlaceContext},
+        AggregateKind, BasicBlock, BasicBlockData, Body, Local, Location, Rvalue, SourceInfo,
+        StatementKind, Terminator, TerminatorKind,
     },
     ty::TyCtxt,
 };
@@ -18,7 +19,7 @@ use rustc_middle::{
 pub(crate) fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body: &mut Body<'tcx>) {
     trace!("cleanup_spec_closures: {:?}", def_id);
 
-    if contracts_items::no_mir(tcx, def_id) {
+    if no_mir(tcx, def_id) {
         trace!("replacing function body");
         *body.basic_blocks_mut() = make_loop(tcx);
     } else {
@@ -77,9 +78,7 @@ impl<'tcx> MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &mut Rvalue<'tcx>, l: Location) {
         match rvalue {
             Rvalue::Aggregate(box AggregateKind::Closure(def_id, _), substs) => {
-                if contracts_items::is_no_translate(self.tcx, *def_id)
-                    || contracts_items::is_snapshot_closure(self.tcx, *def_id)
-                {
+                if is_no_translate(self.tcx, *def_id) || is_snapshot_closure(self.tcx, *def_id) {
                     substs.iter_mut().for_each(|p| {
                         if p.is_move() {
                             let place = p.place().unwrap();
@@ -118,8 +117,6 @@ pub(crate) fn map_locals<V>(
     map
 }
 
-use rustc_middle::mir::visit::PlaceContext;
-
 pub struct LocalUpdater<'tcx> {
     pub map: IndexVec<Local, Option<Local>>,
     pub tcx: TyCtxt<'tcx>,
@@ -154,9 +151,7 @@ pub fn remove_ghost_closures<'tcx>(tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
             let Rvalue::Aggregate(box AggregateKind::Closure(def_id, _), _) = rhs else {
                 return;
             };
-            if contracts_items::is_no_translate(self.tcx, *def_id)
-                || contracts_items::is_snapshot_closure(self.tcx, *def_id)
-            {
+            if is_no_translate(self.tcx, *def_id) || is_snapshot_closure(self.tcx, *def_id) {
                 statement.kind = StatementKind::Nop
             }
         }

@@ -1,6 +1,9 @@
 use super::BodyTranslator;
 use crate::{
-    contracts_items,
+    contracts_items::{
+        is_box_new, is_deref, is_deref_mut, is_ghost_from_fn, is_ghost_into_inner, is_ghost_new,
+        is_ghost_ty, is_snap_from_fn,
+    },
     ctx::TranslationCtx,
     extended_location::ExtendedLocation,
     fmir,
@@ -25,13 +28,13 @@ use rustc_middle::{
         SourceInfo, StatementKind, SwitchTargets,
         TerminatorKind::{self, *},
     },
-    ty::{self, AssocItem, GenericArgKind, GenericArgsRef, ParamEnv, Ty, TyKind},
+    ty::{self, AssocItem, EarlyBinder, GenericArgKind, GenericArgsRef, ParamEnv, Ty, TyKind},
 };
 use rustc_mir_dataflow::{
     move_paths::{HasMoveData, LookupResult},
     on_all_children_bits,
 };
-use rustc_span::{source_map::Spanned, Span, Symbol};
+use rustc_span::{source_map::Spanned, Span};
 use rustc_trait_selection::{error_reporting::InferCtxtErrorExt, infer::InferCtxtExt};
 use std::collections::{HashMap, HashSet};
 
@@ -58,13 +61,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     .unwrap_or_else(|| discr.clone());
 
                 let discriminant = self.translate_operand(&real_discr);
-                let switch = make_switch(
-                    self.ctx,
-                    terminator.source_info,
-                    real_discr.ty(self.body, self.tcx()),
-                    targets,
-                    discriminant,
-                );
+                let ty = real_discr.ty(self.body, self.tcx());
+                let switch =
+                    make_switch(self.ctx, terminator.source_info, ty, targets, discriminant);
                 term = switch;
             }
             Return => {
@@ -90,7 +89,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     self.resolve_before_assignment(need, &resolved, location, *destination)
                 }
 
-                if contracts_items::is_snap_from_fn(self.ctx.tcx, fun_def_id) {
+                if is_snap_from_fn(self.ctx.tcx, fun_def_id) {
                     let GenericArgKind::Type(ty) = subst.get(1).unwrap().unpack() else {
                         unreachable!()
                     };
@@ -120,7 +119,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         }))
                     }
 
-                    if self.is_box_new(fun_def_id) {
+                    if is_box_new(self.tcx(), fun_def_id) {
                         assert_eq!(func_args.len(), 1);
 
                         self.emit_assignment(
@@ -167,10 +166,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         if self.ctx.sig(fun_def_id).contract.is_requires_false() {
                             target = None
                         } else {
-                            let subst = self
-                                .ctx
-                                .try_normalize_erasing_regions(self.param_env(), subst)
-                                .unwrap_or(subst);
+                            let subst = self.ctx.normalize_erasing_regions(self.param_env(), subst);
 
                             self.emit_statement(Statement::Call(
                                 self.translate_place(destination.as_ref()),
@@ -265,15 +261,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         self.emit_terminator(term)
     }
 
-    fn is_box_new(&self, def_id: DefId) -> bool {
-        self.ctx.def_path_str(def_id) == "std::boxed::Box::<T>::new"
-    }
-
     /// Determine if the given type `ty` is a `GhostBox`.
     fn is_ghost_box(&self, ty: Ty<'tcx>) -> bool {
         match ty.kind() {
             rustc_type_ir::TyKind::Adt(containing_type, _) => {
-                contracts_items::is_ghost_ty(self.ctx.tcx, containing_type.did())
+                is_ghost_ty(self.ctx.tcx, containing_type.did())
             }
             _ => false,
         }
@@ -289,7 +281,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         fun_def_id: DefId,
         subst: GenericArgsRef<'tcx>,
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-        if contracts_items::is_ghost_from_fn(self.ctx.tcx, fun_def_id) {
+        if is_ghost_from_fn(self.ctx.tcx, fun_def_id) {
             let &[_, ty] = subst.as_slice() else {
                 unreachable!();
             };
@@ -346,7 +338,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         let func_param_env = self.ctx.param_env(fun_def_id);
 
         // Check that we do not call `GhostBox::into_inner` in normal code
-        if contracts_items::is_ghost_into_inner(self.ctx.tcx, fun_def_id) {
+        if is_ghost_into_inner(self.ctx.tcx, fun_def_id) {
             self.ctx
                 .error(
                     fn_span,
@@ -357,9 +349,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         }
 
         // Check that we do not create/dereference a ghost variable in normal code.
-        if self.ctx.is_diagnostic_item(Symbol::intern("deref_method"), fun_def_id)
-            || self.ctx.is_diagnostic_item(Symbol::intern("deref_mut_method"), fun_def_id)
-        {
+        if is_deref(self.ctx.tcx, fun_def_id) || is_deref_mut(self.ctx.tcx, fun_def_id) {
             let GenericArgKind::Type(ty) = subst.get(0).unwrap().unpack() else { unreachable!() };
             if self.is_ghost_box(ty) {
                 self.ctx
@@ -375,7 +365,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     )
                     .emit();
             }
-        } else if contracts_items::is_ghost_new(self.ctx.tcx, fun_def_id) {
+        } else if is_ghost_new(self.ctx.tcx, fun_def_id) {
             self.ctx
                 .error(fn_span, "cannot create a ghost variable in program context")
                 .with_span_suggestion(
@@ -398,8 +388,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     continue;
                 }
                 let ty = trait_clause.self_ty().skip_binder();
-                let caller_ty = ty::EarlyBinder::bind(trait_clause.self_ty())
-                    .instantiate(self.tcx(), subst)
+                let caller_ty = self
+                    .ctx
+                    .instantiate_and_normalize_erasing_regions(
+                        subst,
+                        self.param_env(),
+                        EarlyBinder::bind(trait_clause.self_ty()),
+                    )
                     .skip_binder();
                 let deref_in_callee = infer_ctx
                     .type_implements_trait(deref_trait_id, std::iter::once(ty), func_param_env)

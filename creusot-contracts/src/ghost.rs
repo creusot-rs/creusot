@@ -95,7 +95,6 @@ impl<T: ?Sized> Resolve for GhostBox<T> {
 
     #[trusted]
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(&self))]
     #[ensures((*self).resolve())]
     fn resolve_coherence(&self) {}

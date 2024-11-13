@@ -1,566 +1,441 @@
-module T_core__ptr__non_null__NonNull
-  use prelude.prelude.Opaque
-  
-  type t_NonNull 't =
-    | C_NonNull opaque_ptr
-  
-  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
-    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer}) ]
-    
-end
-module T_core__marker__PhantomData
-  type t_PhantomData 't =
-    | C_PhantomData
-  
-  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any [ good -> {C_PhantomData  = input} (! ret) ] 
-end
-module T_core__ptr__unique__Unique
-  use T_core__marker__PhantomData as PhantomData'0
-  
-  use T_core__ptr__non_null__NonNull as NonNull'0
-  
-  type t_Unique 't =
-    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
-  
-  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
-    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
-      = input}
-      (! ret {pointer} {_marker}) ]
-    
-end
-module T_alloc__raw_vec__Cap
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  type t_Cap  =
-    | C_Cap usize
-  
-  let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
-    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0}) ]
-    
-end
-module T_alloc__raw_vec__RawVec
-  use T_alloc__raw_vec__Cap as Cap'0
-  
-  use T_core__ptr__unique__Unique as Unique'0
-  
-  type t_RawVec 't 'a =
-    | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
-  
-  let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
-    [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
-      (! ret {ptr} {cap} {alloc}) ]
-    
-end
-module T_alloc__vec__Vec
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  use T_alloc__raw_vec__RawVec as RawVec'0
-  
-  type t_Vec 't 'a =
-    | C_Vec (RawVec'0.t_RawVec 't 'a) usize
-  
-  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
-    
-end
-module T_alloc__alloc__Global
-  type t_Global  =
-    | C_Global
-  
-  let rec t_Global (input:t_Global) (ret  )= any [ good -> {C_Global  = input} (! ret) ] 
-end
-module T_sparse_array__Sparse [#"sparse_array.rs" 23 0 23 20]
-  use T_alloc__vec__Vec as Vec'0
-  
-  use T_alloc__alloc__Global as Global'0
-  
-  use T_alloc__vec__Vec as Vec'0
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  type t_Sparse 't =
-    | C_Sparse usize usize (Vec'0.t_Vec 't (Global'0.t_Global)) (Vec'0.t_Vec usize (Global'0.t_Global)) (Vec'0.t_Vec usize (Global'0.t_Global))
-  
-  let rec t_Sparse < 't > (input:t_Sparse 't) (ret  (size:usize) (n:usize) (values:Vec'0.t_Vec 't (Global'0.t_Global)) (idx:Vec'0.t_Vec usize (Global'0.t_Global)) (back:Vec'0.t_Vec usize (Global'0.t_Global)))= any
-    [ good (size:usize) (n:usize) (values:Vec'0.t_Vec 't (Global'0.t_Global)) (idx:Vec'0.t_Vec usize (Global'0.t_Global)) (back:Vec'0.t_Vec usize (Global'0.t_Global))-> {C_Sparse size n values idx back
-      = input}
-      (! ret {size} {n} {values} {idx} {back}) ]
-    
-  
-  function t_Sparse__size (self : t_Sparse 't) : usize =
-    match self with
-      | C_Sparse a _ _ _ _ -> a
-      end
-  
-  function t_Sparse__values (self : t_Sparse 't) : Vec'0.t_Vec 't (Global'0.t_Global) =
-    match self with
-      | C_Sparse _ _ a _ _ -> a
-      end
-  
-  function t_Sparse__idx (self : t_Sparse 't) : Vec'0.t_Vec usize (Global'0.t_Global) =
-    match self with
-      | C_Sparse _ _ _ a _ -> a
-      end
-  
-  function t_Sparse__n (self : t_Sparse 't) : usize =
-    match self with
-      | C_Sparse _ a _ _ _ -> a
-      end
-  
-  function t_Sparse__back (self : t_Sparse 't) : Vec'0.t_Vec usize (Global'0.t_Global) =
-    match self with
-      | C_Sparse _ _ _ _ a -> a
-      end
-end
-module T_core__option__Option
-  type t_Option 't =
-    | C_None
-    | C_Some 't
-  
-  let rec v_None < 't > (input:t_Option 't) (ret  )= any
-    [ good -> {C_None  = input} (! ret) | bad -> {C_None  <> input} (! {false} any) ]
-    
-  
-  let rec v_Some < 't > (input:t_Option 't) (ret  (field_0:'t))= any
-    [ good (field_0:'t)-> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : 't [C_Some field_0 : t_Option 't] . C_Some field_0 <> input} (! {false} any) ]
-    
-end
 module M_sparse_array__qyi912363311032332466__get [#"sparse_array.rs" 88 4 88 45] (* Sparse<T> *)
-  type t
-  
   let%span ssparse_array0 = "sparse_array.rs" 88 16 88 20
   let%span ssparse_array1 = "sparse_array.rs" 79 15 79 31
   let%span ssparse_array2 = "sparse_array.rs" 88 35 88 45
   let%span ssparse_array3 = "sparse_array.rs" 80 14 83 5
   let%span ssparse_array4 = "sparse_array.rs" 84 14 87 5
-  let%span svec5 = "../../../creusot-contracts/src/std/vec.rs" 165 27 165 46
-  let%span svec6 = "../../../creusot-contracts/src/std/vec.rs" 166 26 166 54
-  let%span smodel7 = "../../../creusot-contracts/src/model.rs" 91 8 91 22
-  let%span sslice8 = "../../../creusot-contracts/src/std/slice.rs" 126 20 126 37
-  let%span sslice9 = "../../../creusot-contracts/src/std/slice.rs" 133 20 133 37
+  let%span svec5 = "../../../creusot-contracts/src/std/vec.rs" 162 27 162 46
+  let%span svec6 = "../../../creusot-contracts/src/std/vec.rs" 163 26 163 54
+  let%span smodel7 = "../../../creusot-contracts/src/model.rs" 88 8 88 22
+  let%span sslice8 = "../../../creusot-contracts/src/std/slice.rs" 122 20 122 37
+  let%span sslice9 = "../../../creusot-contracts/src/std/slice.rs" 129 20 129 37
   let%span ssparse_array10 = "sparse_array.rs" 40 12 41 82
-  let%span svec11 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
+  let%span svec11 = "../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   let%span sinvariant12 = "../../../creusot-contracts/src/invariant.rs" 24 8 24 18
   let%span ssparse_array13 = "sparse_array.rs" 72 20 73 52
   let%span sops14 = "../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
   let%span ssparse_array15 = "sparse_array.rs" 51 12 59 17
-  let%span svec16 = "../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
-  let%span sseq17 = "../../../creusot-contracts/src/logic/seq.rs" 459 20 459 95
+  let%span svec16 = "../../../creusot-contracts/src/std/vec.rs" 65 20 65 41
+  let%span sseq17 = "../../../creusot-contracts/src/logic/seq.rs" 444 20 444 95
   let%span sboxed18 = "../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
-  predicate inv'9 (_1 : t)
-  
-  predicate invariant'6 (self : t) =
-    [%#sboxed18] inv'9 self
-  
-  predicate inv'11 (_1 : t)
-  
-  axiom inv_axiom'10 [@rewrite] : forall x : t [inv'11 x] . inv'11 x = invariant'6 x
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use prelude.prelude.Int
-  
-  use seq.Seq
-  
-  predicate invariant'5 (self : Seq.seq t) =
-    [%#sseq17] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'11 (Seq.get self i)
-  
-  predicate inv'10 (_1 : Seq.seq t)
-  
-  axiom inv_axiom'9 [@rewrite] : forall x : Seq.seq t [inv'10 x] . inv'10 x = invariant'5 x
-  
-  use T_alloc__alloc__Global as Global'0
-  
-  use T_alloc__vec__Vec as Vec'0
-  
   use prelude.prelude.UIntSize
   
-  use prelude.prelude.UIntSize
+  use prelude.prelude.Opaque
   
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  type t_NonNull'1  =
+    { t_NonNull__pointer'1: opaque_ptr }
   
-  function view'5 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
+  type t_Unique'1  =
+    { t_Unique__pointer'1: t_NonNull'1; t_Unique__qy95zmarker'1: () }
   
-  axiom view'5_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#svec11] Seq.length (view'5 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
+  type t_Cap'0  =
+    { t_Cap__0'0: usize }
   
-  predicate invariant'4 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
-    [%#svec16] inv'10 (view'5 self)
+  type t_RawVec'1  =
+    { t_RawVec__ptr'1: t_Unique'1; t_RawVec__cap'1: t_Cap'0; t_RawVec__alloc'1: () }
   
-  predicate inv'8 (_1 : Vec'0.t_Vec t (Global'0.t_Global))
+  type t_Vec'1  =
+    { t_Vec__buf'1: t_RawVec'1; t_Vec__len'1: usize }
   
-  axiom inv_axiom'8 [@rewrite] : forall x : Vec'0.t_Vec t (Global'0.t_Global) [inv'8 x] . inv'8 x = invariant'4 x
+  type t_NonNull'0  =
+    { t_NonNull__pointer'0: opaque_ptr }
   
-  use seq.Seq
+  type t_Unique'0  =
+    { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
   
-  use seq.Seq
+  type t_RawVec'0  =
+    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
   
-  use T_alloc__vec__Vec as Vec'0
+  type t_Vec'0  =
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
   
-  use seq.Seq
-  
-  function view'4 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
-  
-  axiom view'4_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#svec11] Seq.length (view'4 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  function index_logic'1 [@inline:trivial] (self : Vec'0.t_Vec usize (Global'0.t_Global)) (ix : int) : usize =
-    [%#sops14] Seq.get (view'4 self) ix
-  
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use T_sparse_array__Sparse as Sparse'0
-  
-  predicate invariant'3 [#"sparse_array.rs" 49 4 49 30] (self : Sparse'0.t_Sparse t) =
-    [%#ssparse_array15] UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__n self)
-    <= UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ Seq.length (view'5 (T_sparse_array__Sparse.t_Sparse__values self))
-    = UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ Seq.length (view'4 (T_sparse_array__Sparse.t_Sparse__idx self))
-    = UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ Seq.length (view'4 (T_sparse_array__Sparse.t_Sparse__back self))
-    = UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__n self)
-     -> match index_logic'1 (T_sparse_array__Sparse.t_Sparse__back self) i with
-      | j -> 0 <= UIntSize.to_int j
-      /\ UIntSize.to_int j < UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-      /\ UIntSize.to_int (index_logic'1 (T_sparse_array__Sparse.t_Sparse__idx self) (UIntSize.to_int j)) = i
-      end)
-  
-  predicate inv'7 (_1 : Sparse'0.t_Sparse t)
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : Sparse'0.t_Sparse t [inv'7 x] . inv'7 x
-  = (invariant'3 x
-  /\ match x with
-    | Sparse'0.C_Sparse size n values idx back -> inv'8 values
-    end)
+  type t_Sparse'0  =
+    { t_Sparse__size'0: usize;
+      t_Sparse__n'0: usize;
+      t_Sparse__values'0: t_Vec'1;
+      t_Sparse__idx'0: t_Vec'0;
+      t_Sparse__back'0: t_Vec'0 }
   
   use prelude.prelude.Borrow
   
-  predicate invariant'2 (self : t) =
-    [%#sinvariant12] inv'9 self
-  
-  predicate inv'6 (_1 : t)
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : t [inv'6 x] . inv'6 x = invariant'2 x
-  
-  predicate invariant'1 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
-    [%#sinvariant12] inv'8 self
-  
-  predicate inv'5 (_1 : Vec'0.t_Vec t (Global'0.t_Global))
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : Vec'0.t_Vec t (Global'0.t_Global) [inv'5 x] . inv'5 x = invariant'1 x
-  
-  predicate inv'4 (_1 : usize)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : usize [inv'4 x] . inv'4 x = true
+  predicate inv'2 (_1 : t_Vec'0)
   
   predicate inv'3 (_1 : usize)
   
-  axiom inv_axiom'3 [@rewrite] : forall x : usize [inv'3 x] . inv'3 x = true
-  
-  predicate inv'2 (_1 : Vec'0.t_Vec usize (Global'0.t_Global))
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : Vec'0.t_Vec usize (Global'0.t_Global) [inv'2 x] . inv'2 x = true
-  
-  use T_core__option__Option as Option'0
-  
-  predicate inv'1 (_1 : Option'0.t_Option t)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Option'0.t_Option t [inv'1 x] . inv'1 x
-  = match x with
-    | Option'0.C_None -> true
-    | Option'0.C_Some a_0 -> inv'6 a_0
-    end
-  
-  predicate invariant'0 (self : Sparse'0.t_Sparse t) =
-    [%#sinvariant12] inv'7 self
-  
-  predicate inv'0 (_1 : Sparse'0.t_Sparse t)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : Sparse'0.t_Sparse t [inv'0 x] . inv'0 x = invariant'0 x
-  
-  use T_core__option__Option as Option'0
-  
   use seq.Seq
   
   use seq.Seq
   
-  use seq.Seq
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  use prelude.prelude.Mapping
+  use prelude.prelude.UIntSize
   
-  use seq.Seq
+  use prelude.prelude.Int
   
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec t (Global'0.t_Global)) (ix : int) : t =
-    [%#sops14] Seq.get (view'5 self) ix
+  function view'4 (self : t_Vec'0) : Seq.seq usize
   
-  function is_elt'0 [#"sparse_array.rs" 71 4 71 36] (self : Sparse'0.t_Sparse t) (i : int) : bool =
-    [%#ssparse_array13] UIntSize.to_int (index_logic'1 (T_sparse_array__Sparse.t_Sparse__idx self) i)
-    < UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__n self)
-    /\ UIntSize.to_int (index_logic'1 (T_sparse_array__Sparse.t_Sparse__back self) (UIntSize.to_int (index_logic'1 (T_sparse_array__Sparse.t_Sparse__idx self) i)))
-    = i
+  axiom view'4_spec : forall self : t_Vec'0 . [%#svec11] Seq.length (view'4 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
-  use seq.Seq
-  
-  function view'3 [#"sparse_array.rs" 38 4 38 33] (self : Sparse'0.t_Sparse t) : Seq.seq (Option'0.t_Option t) =
-    [%#ssparse_array10] Seq.create (UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)) (Mapping.from_fn (fun (i : int) -> if is_elt'0 self i then
-      Option'0.C_Some (index_logic'0 (T_sparse_array__Sparse.t_Sparse__values self) i)
-    else
-      Option'0.C_None
-    ))
-  
-  function view'0 (self : Sparse'0.t_Sparse t) : Seq.seq (Option'0.t_Option t) =
-    [%#smodel7] view'3 self
-  
-  use prelude.prelude.Intrinsic
-  
-  predicate has_value'1 [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
-    [%#sslice9] Seq.get seq (UIntSize.to_int self) = out
-  
-  predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq t) =
-    [%#sslice8] UIntSize.to_int self < Seq.length seq
-  
-  function view'2 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t =
-    [%#smodel7] view'5 self
-  
-  let rec index'1 (self:Vec'0.t_Vec t (Global'0.t_Global)) (index:usize) (return'  (ret:t))= {[@expl:index 'self' type invariant] inv'5 self}
-    {[@expl:index 'index' type invariant] inv'3 index}
-    {[@expl:index requires] [%#svec5] in_bounds'1 index (view'2 self)}
-    any [ return' (result:t)-> {inv'6 result} {[%#svec6] has_value'1 index (view'2 self) result} (! return' {result}) ] 
-  
-  predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq usize) (out : usize) =
-    [%#sslice9] Seq.get seq (UIntSize.to_int self) = out
+  function view'1 (self : t_Vec'0) : Seq.seq usize =
+    [%#smodel7] view'4 self
   
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq usize) =
     [%#sslice8] UIntSize.to_int self < Seq.length seq
   
-  function view'1 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize =
-    [%#smodel7] view'4 self
+  predicate inv'4 (_1 : usize)
   
-  let rec index'0 (self:Vec'0.t_Vec usize (Global'0.t_Global)) (index:usize) (return'  (ret:usize))= {[@expl:index 'self' type invariant] inv'2 self}
+  use seq.Seq
+  
+  predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq usize) (out : usize) =
+    [%#sslice9] Seq.get seq (UIntSize.to_int self) = out
+  
+  predicate inv'0 (_1 : t_Sparse'0)
+  
+  predicate inv'7 (_1 : t_Sparse'0)
+  
+  predicate invariant'0 (self : t_Sparse'0) =
+    [%#sinvariant12] inv'7 self
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Sparse'0 [inv'0 x] . inv'0 x = invariant'0 x
+  
+  type t_T'0
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_T'0
+  
+  predicate inv'1 (_1 : t_Option'0)
+  
+  predicate inv'6 (_1 : t_T'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x
+  = match x with
+    | C_None'0 -> true
+    | C_Some'0 a_0 -> inv'6 a_0
+    end
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Vec'0 [inv'2 x] . inv'2 x = true
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : usize [inv'3 x] . inv'3 x = true
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : usize [inv'4 x] . inv'4 x = true
+  
+  predicate inv'5 (_1 : t_Vec'1)
+  
+  predicate inv'8 (_1 : t_Vec'1)
+  
+  predicate invariant'1 (self : t_Vec'1) =
+    [%#sinvariant12] inv'8 self
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_Vec'1 [inv'5 x] . inv'5 x = invariant'1 x
+  
+  predicate inv'9 (_1 : t_T'0)
+  
+  predicate invariant'2 (self : t_T'0) =
+    [%#sinvariant12] inv'9 self
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : t_T'0 [inv'6 x] . inv'6 x = invariant'2 x
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  function view'5 (self : t_Vec'1) : Seq.seq t_T'0
+  
+  axiom view'5_spec : forall self : t_Vec'1 . [%#svec11] Seq.length (view'5 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  function index_logic'1 [@inline:trivial] (self : t_Vec'0) (ix : int) : usize =
+    [%#sops14] Seq.get (view'4 self) ix
+  
+  predicate invariant'3 [#"sparse_array.rs" 49 4 49 30] (self : t_Sparse'0) =
+    [%#ssparse_array15] UIntSize.to_int self.t_Sparse__n'0 <= UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'5 self.t_Sparse__values'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'4 self.t_Sparse__idx'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'4 self.t_Sparse__back'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int self.t_Sparse__n'0
+     -> match index_logic'1 self.t_Sparse__back'0 i with
+      | j -> 0 <= UIntSize.to_int j
+      /\ UIntSize.to_int j < UIntSize.to_int self.t_Sparse__size'0
+      /\ UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 (UIntSize.to_int j)) = i
+      end)
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : t_Sparse'0 [inv'7 x] . inv'7 x
+  = (invariant'3 x
+  /\ match x with
+    | {t_Sparse__size'0 = size ; t_Sparse__n'0 = n ; t_Sparse__values'0 = values ; t_Sparse__idx'0 = idx ; t_Sparse__back'0 = back} -> inv'8 values
+    end)
+  
+  predicate inv'10 (_1 : Seq.seq t_T'0)
+  
+  predicate invariant'4 (self : t_Vec'1) =
+    [%#svec16] inv'10 (view'5 self)
+  
+  axiom inv_axiom'8 [@rewrite] : forall x : t_Vec'1 [inv'8 x] . inv'8 x = invariant'4 x
+  
+  use seq.Seq
+  
+  predicate inv'11 (_1 : t_T'0)
+  
+  predicate invariant'5 (self : Seq.seq t_T'0) =
+    [%#sseq17] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'11 (Seq.get self i)
+  
+  axiom inv_axiom'9 [@rewrite] : forall x : Seq.seq t_T'0 [inv'10 x] . inv'10 x = invariant'5 x
+  
+  predicate invariant'6 (self : t_T'0) =
+    [%#sboxed18] inv'9 self
+  
+  axiom inv_axiom'10 [@rewrite] : forall x : t_T'0 [inv'11 x] . inv'11 x = invariant'6 x
+  
+  let rec index'0 (self:t_Vec'0) (index:usize) (return'  (ret:usize))= {[@expl:index 'self' type invariant] inv'2 self}
     {[@expl:index 'index' type invariant] inv'3 index}
     {[@expl:index requires] [%#svec5] in_bounds'0 index (view'1 self)}
     any
     [ return' (result:usize)-> {inv'4 result} {[%#svec6] has_value'0 index (view'1 self) result} (! return' {result}) ]
     
   
+  function view'2 (self : t_Vec'1) : Seq.seq t_T'0 =
+    [%#smodel7] view'5 self
+  
+  predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq t_T'0) =
+    [%#sslice8] UIntSize.to_int self < Seq.length seq
+  
+  use seq.Seq
+  
+  predicate has_value'1 [@inline:trivial] (self : usize) (seq : Seq.seq t_T'0) (out : t_T'0) =
+    [%#sslice9] Seq.get seq (UIntSize.to_int self) = out
+  
+  let rec index'1 (self:t_Vec'1) (index:usize) (return'  (ret:t_T'0))= {[@expl:index 'self' type invariant] inv'5 self}
+    {[@expl:index 'index' type invariant] inv'3 index}
+    {[@expl:index requires] [%#svec5] in_bounds'1 index (view'2 self)}
+    any
+    [ return' (result:t_T'0)-> {inv'6 result} {[%#svec6] has_value'1 index (view'2 self) result} (! return' {result}) ]
+    
+  
+  use prelude.prelude.Intrinsic
+  
+  type t_Option'1  =
+    | C_None'1
+    | C_Some'1 t_T'0
+  
+  use seq.Seq
+  
+  function is_elt'0 [#"sparse_array.rs" 71 4 71 36] (self : t_Sparse'0) (i : int) : bool =
+    [%#ssparse_array13] UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 i) < UIntSize.to_int self.t_Sparse__n'0
+    /\ UIntSize.to_int (index_logic'1 self.t_Sparse__back'0 (UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 i)))
+    = i
+  
+  function index_logic'0 [@inline:trivial] (self : t_Vec'1) (ix : int) : t_T'0 =
+    [%#sops14] Seq.get (view'5 self) ix
+  
+  use prelude.prelude.Mapping
+  
+  use seq.Seq
+  
+  function view'3 [#"sparse_array.rs" 38 4 38 33] (self : t_Sparse'0) : Seq.seq (t_Option'1) =
+    [%#ssparse_array10] Seq.create (UIntSize.to_int self.t_Sparse__size'0) (Mapping.from_fn (fun (i : int) -> if is_elt'0 self i then
+      C_Some'1 (index_logic'0 self.t_Sparse__values'0 i)
+    else
+      C_None'1
+    ))
+  
+  function view'0 (self : t_Sparse'0) : Seq.seq (t_Option'1) =
+    [%#smodel7] view'3 self
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
   meta "compute_max_steps" 1000000
   
-  let rec get (self:Sparse'0.t_Sparse t) (i:usize) (return'  (ret:Option'0.t_Option t))= {[@expl:get 'self' type invariant] [%#ssparse_array0] inv'0 self}
+  let rec get'0 (self:t_Sparse'0) (i:usize) (return'  (ret:t_Option'0))= {[@expl:get 'self' type invariant] [%#ssparse_array0] inv'0 self}
     {[@expl:get requires] [%#ssparse_array1] UIntSize.to_int i < Seq.length (view'0 self)}
     (! bb0
-    [ bb0 = s0
-      [ s0 = Sparse'0.t_Sparse <t> {self}
-          (fun (rsize'0:usize) (rn'0:usize) (rvalues'0:Vec'0.t_Vec t (Global'0.t_Global)) (ridx'0:Vec'0.t_Vec usize (Global'0.t_Global)) (rback'0:Vec'0.t_Vec usize (Global'0.t_Global)) ->
-            index'0 {ridx'0} {i} (fun (_ret':usize) ->  [ &_7 <- _ret' ] s1))
-      | s1 = bb1 ]
-      
+    [ bb0 = s0 [ s0 = index'0 {self.t_Sparse__idx'0} {i} (fun (_ret':usize) ->  [ &_7 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0
       [ s0 =  [ &index <- _7 ] s1
-      | s1 = Sparse'0.t_Sparse <t> {self}
-          (fun (rsize'0:usize) (rn'0:usize) (rvalues'0:Vec'0.t_Vec t (Global'0.t_Global)) (ridx'0:Vec'0.t_Vec usize (Global'0.t_Global)) (rback'0:Vec'0.t_Vec usize (Global'0.t_Global)) ->
-            UIntSize.lt {index} {rn'0} (fun (_ret':bool) ->  [ &_10 <- _ret' ] s2))
+      | s1 = UIntSize.lt {index} {self.t_Sparse__n'0} (fun (_ret':bool) ->  [ &_10 <- _ret' ] s2)
       | s2 = any [ br0 -> {_10 = false} (! bb7) | br1 -> {_10} (! bb2) ]  ]
       
-    | bb2 = s0
-      [ s0 = Sparse'0.t_Sparse <t> {self}
-          (fun (rsize'0:usize) (rn'0:usize) (rvalues'0:Vec'0.t_Vec t (Global'0.t_Global)) (ridx'0:Vec'0.t_Vec usize (Global'0.t_Global)) (rback'0:Vec'0.t_Vec usize (Global'0.t_Global)) ->
-            index'0 {rback'0} {index} (fun (_ret':usize) ->  [ &_15 <- _ret' ] s1))
-      | s1 = bb3 ]
-      
+    | bb2 = s0 [ s0 = index'0 {self.t_Sparse__back'0} {index} (fun (_ret':usize) ->  [ &_15 <- _ret' ] s1) | s1 = bb3 ] 
     | bb3 = s0
       [ s0 = UIntSize.eq {_15} {i} (fun (_ret':bool) ->  [ &_13 <- _ret' ] s1)
       | s1 = any [ br0 -> {_13 = false} (! bb6) | br1 -> {_13} (! bb4) ]  ]
       
-    | bb4 = s0
-      [ s0 = Sparse'0.t_Sparse <t> {self}
-          (fun (rsize'0:usize) (rn'0:usize) (rvalues'0:Vec'0.t_Vec t (Global'0.t_Global)) (ridx'0:Vec'0.t_Vec usize (Global'0.t_Global)) (rback'0:Vec'0.t_Vec usize (Global'0.t_Global)) ->
-            index'1 {rvalues'0} {i} (fun (_ret':t) ->  [ &_21 <- _ret' ] s1))
-      | s1 = bb5 ]
-      
-    | bb5 = s0 [ s0 =  [ &_20 <- _21 ] s1 | s1 =  [ &_0 <- Option'0.C_Some _20 ] s2 | s2 = bb9 ] 
+    | bb4 = s0 [ s0 = index'1 {self.t_Sparse__values'0} {i} (fun (_ret':t_T'0) ->  [ &_21 <- _ret' ] s1) | s1 = bb5 ] 
+    | bb5 = s0 [ s0 =  [ &_20 <- _21 ] s1 | s1 =  [ &_0 <- C_Some'0 _20 ] s2 | s2 = bb9 ] 
     | bb6 = bb8
     | bb7 = bb8
-    | bb8 = s0 [ s0 =  [ &_0 <- Option'0.C_None ] s1 | s1 = bb9 ] 
+    | bb8 = s0 [ s0 =  [ &_0 <- C_None'0 ] s1 | s1 = bb9 ] 
     | bb9 = return' {_0} ]
     )
-    [ & _0 : Option'0.t_Option t = any_l ()
-    | & self : Sparse'0.t_Sparse t = self
+    [ & _0 : t_Option'0 = any_l ()
+    | & self : t_Sparse'0 = self
     | & i : usize = i
     | & index : usize = any_l ()
     | & _7 : usize = any_l ()
     | & _10 : bool = any_l ()
     | & _13 : bool = any_l ()
     | & _15 : usize = any_l ()
-    | & _20 : t = any_l ()
-    | & _21 : t = any_l () ]
+    | & _20 : t_T'0 = any_l ()
+    | & _21 : t_T'0 = any_l () ]
     
-    [ return' (result:Option'0.t_Option t)-> {[@expl:get result type invariant] [%#ssparse_array2] inv'1 result}
+    [ return' (result:t_Option'0)-> {[@expl:get result type invariant] [%#ssparse_array2] inv'1 result}
       {[@expl:get ensures #0] [%#ssparse_array3] match result with
-        | Option'0.C_None -> Seq.get (view'0 self) (UIntSize.to_int i) = Option'0.C_None
-        | Option'0.C_Some x -> Seq.get (view'0 self) (UIntSize.to_int i) = Option'0.C_Some x
+        | C_None'0 -> Seq.get (view'0 self) (UIntSize.to_int i) = C_None'1
+        | C_Some'0 x -> Seq.get (view'0 self) (UIntSize.to_int i) = C_Some'1 x
         end}
       {[@expl:get ensures #1] [%#ssparse_array4] match Seq.get (view'0 self) (UIntSize.to_int i) with
-        | Option'0.C_None -> result = Option'0.C_None
-        | Option'0.C_Some _ -> true
+        | C_None'1 -> result = C_None'0
+        | C_Some'1 _ -> true
         end}
       (! return' {result}) ]
     
 end
 module M_sparse_array__qyi912363311032332466__lemma_permutation [#"sparse_array.rs" 104 4 104 38] (* Sparse<T> *)
-  type t
-  
   let%span ssparse_array0 = "sparse_array.rs" 100 15 100 24
   let%span ssparse_array1 = "sparse_array.rs" 101 15 101 34
   let%span ssparse_array2 = "sparse_array.rs" 102 15 102 39
   let%span ssparse_array3 = "sparse_array.rs" 103 14 103 28
-  let%span ssparse_array4 = "sparse_array.rs" 72 20 73 52
-  let%span sops5 = "../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
-  let%span ssparse_array6 = "sparse_array.rs" 51 12 59 17
-  let%span svec7 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
-  let%span svec8 = "../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
-  let%span sseq9 = "../../../creusot-contracts/src/logic/seq.rs" 459 20 459 95
-  let%span sboxed10 = "../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
+  let%span ssparse_array4 = "sparse_array.rs" 99 4 99 12
+  let%span ssparse_array5 = "sparse_array.rs" 72 20 73 52
+  let%span sops6 = "../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
+  let%span ssparse_array7 = "sparse_array.rs" 51 12 59 17
+  let%span svec8 = "../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span svec9 = "../../../creusot-contracts/src/std/vec.rs" 65 20 65 41
+  let%span sseq10 = "../../../creusot-contracts/src/logic/seq.rs" 444 20 444 95
+  let%span sboxed11 = "../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
-  predicate inv'4 (_1 : t)
+  use prelude.prelude.UIntSize
   
-  predicate invariant'3 (self : t) =
-    [%#sboxed10] inv'4 self
+  use prelude.prelude.Opaque
   
-  predicate inv'3 (_1 : t)
+  type t_NonNull'0  =
+    { t_NonNull__pointer'0: opaque_ptr }
   
-  axiom inv_axiom'3 [@rewrite] : forall x : t [inv'3 x] . inv'3 x = invariant'3 x
+  type t_Unique'0  =
+    { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
   
-  use seq.Seq
+  type t_Cap'0  =
+    { t_Cap__0'0: usize }
   
-  use seq.Seq
+  type t_RawVec'0  =
+    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+  
+  type t_Vec'0  =
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
+  
+  type t_NonNull'1  =
+    { t_NonNull__pointer'1: opaque_ptr }
+  
+  type t_Unique'1  =
+    { t_Unique__pointer'1: t_NonNull'1; t_Unique__qy95zmarker'1: () }
+  
+  type t_RawVec'1  =
+    { t_RawVec__ptr'1: t_Unique'1; t_RawVec__cap'1: t_Cap'0; t_RawVec__alloc'1: () }
+  
+  type t_Vec'1  =
+    { t_Vec__buf'1: t_RawVec'1; t_Vec__len'1: usize }
+  
+  type t_Sparse'0  =
+    { t_Sparse__size'0: usize;
+      t_Sparse__n'0: usize;
+      t_Sparse__values'0: t_Vec'0;
+      t_Sparse__idx'0: t_Vec'1;
+      t_Sparse__back'0: t_Vec'1 }
+  
+  predicate inv'0 (_1 : t_Sparse'0)
   
   use prelude.prelude.Int
   
-  use seq.Seq
-  
-  predicate invariant'2 (self : Seq.seq t) =
-    [%#sseq9] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'3 (Seq.get self i)
-  
-  predicate inv'2 (_1 : Seq.seq t)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t [inv'2 x] . inv'2 x = invariant'2 x
-  
-  use T_alloc__alloc__Global as Global'0
-  
-  use T_alloc__vec__Vec as Vec'0
-  
   use prelude.prelude.UIntSize
-  
-  use prelude.prelude.UIntSize
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  function view'1 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
-  
-  axiom view'1_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#svec7] Seq.length (view'1 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  predicate invariant'1 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
-    [%#svec8] inv'2 (view'1 self)
-  
-  predicate inv'1 (_1 : Vec'0.t_Vec t (Global'0.t_Global))
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Vec'0.t_Vec t (Global'0.t_Global) [inv'1 x] . inv'1 x = invariant'1 x
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use T_alloc__vec__Vec as Vec'0
-  
-  use seq.Seq
-  
-  function view'0 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
-  
-  axiom view'0_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#svec7] Seq.length (view'0 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec usize (Global'0.t_Global)) (ix : int) : usize =
-    [%#sops5] Seq.get (view'0 self) ix
-  
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use T_sparse_array__Sparse as Sparse'0
-  
-  predicate invariant'0 [#"sparse_array.rs" 49 4 49 30] (self : Sparse'0.t_Sparse t) =
-    [%#ssparse_array6] UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__n self)
-    <= UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ Seq.length (view'1 (T_sparse_array__Sparse.t_Sparse__values self))
-    = UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ Seq.length (view'0 (T_sparse_array__Sparse.t_Sparse__idx self))
-    = UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ Seq.length (view'0 (T_sparse_array__Sparse.t_Sparse__back self))
-    = UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__n self)
-     -> match index_logic'0 (T_sparse_array__Sparse.t_Sparse__back self) i with
-      | j -> 0 <= UIntSize.to_int j
-      /\ UIntSize.to_int j < UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-      /\ UIntSize.to_int (index_logic'0 (T_sparse_array__Sparse.t_Sparse__idx self) (UIntSize.to_int j)) = i
-      end)
-  
-  predicate inv'0 (_1 : Sparse'0.t_Sparse t)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : Sparse'0.t_Sparse t [inv'0 x] . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | Sparse'0.C_Sparse size n values idx back -> inv'1 values
-    end)
   
   use prelude.prelude.Borrow
   
-  function is_elt'0 [#"sparse_array.rs" 71 4 71 36] (self : Sparse'0.t_Sparse t) (i : int) : bool =
-    [%#ssparse_array4] UIntSize.to_int (index_logic'0 (T_sparse_array__Sparse.t_Sparse__idx self) i)
-    < UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__n self)
-    /\ UIntSize.to_int (index_logic'0 (T_sparse_array__Sparse.t_Sparse__back self) (UIntSize.to_int (index_logic'0 (T_sparse_array__Sparse.t_Sparse__idx self) i)))
+  use seq.Seq
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use seq.Seq
+  
+  function view'0 (self : t_Vec'1) : Seq.seq usize
+  
+  axiom view'0_spec : forall self : t_Vec'1 . [%#svec8] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  use seq.Seq
+  
+  function index_logic'0 [@inline:trivial] (self : t_Vec'1) (ix : int) : usize =
+    [%#sops6] Seq.get (view'0 self) ix
+  
+  function is_elt'0 [#"sparse_array.rs" 71 4 71 36] (self : t_Sparse'0) (i : int) : bool =
+    [%#ssparse_array5] UIntSize.to_int (index_logic'0 self.t_Sparse__idx'0 i) < UIntSize.to_int self.t_Sparse__n'0
+    /\ UIntSize.to_int (index_logic'0 self.t_Sparse__back'0 (UIntSize.to_int (index_logic'0 self.t_Sparse__idx'0 i)))
     = i
   
-  constant self  : Sparse'0.t_Sparse t
+  use seq.Seq
+  
+  type t_T'0
+  
+  use seq.Seq
+  
+  function view'1 (self : t_Vec'0) : Seq.seq t_T'0
+  
+  axiom view'1_spec : forall self : t_Vec'0 . [%#svec8] Seq.length (view'1 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  predicate invariant'0 [#"sparse_array.rs" 49 4 49 30] (self : t_Sparse'0) =
+    [%#ssparse_array7] UIntSize.to_int self.t_Sparse__n'0 <= UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'1 self.t_Sparse__values'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'0 self.t_Sparse__idx'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'0 self.t_Sparse__back'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int self.t_Sparse__n'0
+     -> match index_logic'0 self.t_Sparse__back'0 i with
+      | j -> 0 <= UIntSize.to_int j
+      /\ UIntSize.to_int j < UIntSize.to_int self.t_Sparse__size'0
+      /\ UIntSize.to_int (index_logic'0 self.t_Sparse__idx'0 (UIntSize.to_int j)) = i
+      end)
+  
+  predicate inv'1 (_1 : t_Vec'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Sparse'0 [inv'0 x] . inv'0 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_Sparse__size'0 = size ; t_Sparse__n'0 = n ; t_Sparse__values'0 = values ; t_Sparse__idx'0 = idx ; t_Sparse__back'0 = back} -> inv'1 values
+    end)
+  
+  predicate inv'2 (_1 : Seq.seq t_T'0)
+  
+  predicate invariant'1 (self : t_Vec'0) =
+    [%#svec9] inv'2 (view'1 self)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Vec'0 [inv'1 x] . inv'1 x = invariant'1 x
+  
+  use seq.Seq
+  
+  predicate inv'3 (_1 : t_T'0)
+  
+  predicate invariant'2 (self : Seq.seq t_T'0) =
+    [%#sseq10] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'3 (Seq.get self i)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_T'0 [inv'2 x] . inv'2 x = invariant'2 x
+  
+  predicate inv'4 (_1 : t_T'0)
+  
+  predicate invariant'3 (self : t_T'0) =
+    [%#sboxed11] inv'4 self
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_T'0 [inv'3 x] . inv'3 x = invariant'3 x
+  
+  constant self  : t_Sparse'0
   
   constant i  : int
   
-  function lemma_permutation [#"sparse_array.rs" 104 4 104 38] (self : Sparse'0.t_Sparse t) (i : int) : ()
+  function lemma_permutation'0 [#"sparse_array.rs" 104 4 104 38] (self : t_Sparse'0) (i : int) : ()
   
-  goal vc_lemma_permutation : ([%#ssparse_array2] 0 <= i
-  /\ i < UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self))
-   -> ([%#ssparse_array1] T_sparse_array__Sparse.t_Sparse__n self = T_sparse_array__Sparse.t_Sparse__size self)
+  goal vc_lemma_permutation'0 : ([%#ssparse_array2] 0 <= i /\ i < UIntSize.to_int self.t_Sparse__size'0)
+   -> ([%#ssparse_array1] self.t_Sparse__n'0 = self.t_Sparse__size'0)
    -> ([%#ssparse_array0] inv'0 self)  -> ([%#ssparse_array3] is_elt'0 self i)
 end
 module M_sparse_array__qyi912363311032332466__set [#"sparse_array.rs" 112 4 112 41] (* Sparse<T> *)
-  type t
-  
   let%span ssparse_array0 = "sparse_array.rs" 117 12 117 46
   let%span ssparse_array1 = "sparse_array.rs" 118 26 118 46
   let%span ssparse_array2 = "sparse_array.rs" 122 22 122 23
@@ -570,233 +445,269 @@ module M_sparse_array__qyi912363311032332466__set [#"sparse_array.rs" 112 4 112 
   let%span ssparse_array6 = "sparse_array.rs" 109 14 109 43
   let%span ssparse_array7 = "sparse_array.rs" 110 14 110 93
   let%span ssparse_array8 = "sparse_array.rs" 111 14 111 37
-  let%span svec9 = "../../../creusot-contracts/src/std/vec.rs" 155 27 155 46
-  let%span svec10 = "../../../creusot-contracts/src/std/vec.rs" 156 26 156 54
-  let%span svec11 = "../../../creusot-contracts/src/std/vec.rs" 157 26 157 57
-  let%span svec12 = "../../../creusot-contracts/src/std/vec.rs" 158 26 158 62
-  let%span svec13 = "../../../creusot-contracts/src/std/vec.rs" 159 26 159 55
-  let%span svec14 = "../../../creusot-contracts/src/std/vec.rs" 165 27 165 46
-  let%span svec15 = "../../../creusot-contracts/src/std/vec.rs" 166 26 166 54
+  let%span svec9 = "../../../creusot-contracts/src/std/vec.rs" 152 27 152 46
+  let%span svec10 = "../../../creusot-contracts/src/std/vec.rs" 153 26 153 54
+  let%span svec11 = "../../../creusot-contracts/src/std/vec.rs" 154 26 154 57
+  let%span svec12 = "../../../creusot-contracts/src/std/vec.rs" 155 26 155 62
+  let%span svec13 = "../../../creusot-contracts/src/std/vec.rs" 156 26 156 55
+  let%span svec14 = "../../../creusot-contracts/src/std/vec.rs" 162 27 162 46
+  let%span svec15 = "../../../creusot-contracts/src/std/vec.rs" 163 26 163 54
   let%span ssparse_array16 = "sparse_array.rs" 100 15 100 24
   let%span ssparse_array17 = "sparse_array.rs" 101 15 101 34
   let%span ssparse_array18 = "sparse_array.rs" 102 15 102 39
   let%span ssparse_array19 = "sparse_array.rs" 103 14 103 28
   let%span ssparse_array20 = "sparse_array.rs" 99 4 99 12
-  let%span smodel21 = "../../../creusot-contracts/src/model.rs" 109 8 109 22
+  let%span smodel21 = "../../../creusot-contracts/src/model.rs" 106 8 106 22
   let%span ssparse_array22 = "sparse_array.rs" 40 12 41 82
-  let%span sslice23 = "../../../creusot-contracts/src/std/slice.rs" 126 20 126 37
-  let%span sslice24 = "../../../creusot-contracts/src/std/slice.rs" 133 20 133 37
-  let%span svec25 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
-  let%span sslice26 = "../../../creusot-contracts/src/std/slice.rs" 140 20 140 94
+  let%span sslice23 = "../../../creusot-contracts/src/std/slice.rs" 122 20 122 37
+  let%span sslice24 = "../../../creusot-contracts/src/std/slice.rs" 129 20 129 37
+  let%span svec25 = "../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span sslice26 = "../../../creusot-contracts/src/std/slice.rs" 136 20 136 94
   let%span sresolve27 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
-  let%span smodel28 = "../../../creusot-contracts/src/model.rs" 91 8 91 22
+  let%span smodel28 = "../../../creusot-contracts/src/model.rs" 88 8 88 22
   let%span ssparse_array29 = "sparse_array.rs" 72 20 73 52
   let%span sops30 = "../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
-  let%span svec31 = "../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
+  let%span svec31 = "../../../creusot-contracts/src/std/vec.rs" 65 20 65 41
   let%span sinvariant32 = "../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   let%span ssparse_array33 = "sparse_array.rs" 51 12 59 17
-  let%span sseq34 = "../../../creusot-contracts/src/logic/seq.rs" 459 20 459 95
+  let%span sseq34 = "../../../creusot-contracts/src/logic/seq.rs" 444 20 444 95
   let%span sboxed35 = "../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
-  
-  predicate inv'1 (_1 : t)
-  
-  predicate invariant'6 (self : t) =
-    [%#sboxed35] inv'1 self
-  
-  predicate inv'12 (_1 : t)
-  
-  axiom inv_axiom'11 [@rewrite] : forall x : t [inv'12 x] . inv'12 x = invariant'6 x
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use prelude.prelude.Int
-  
-  use seq.Seq
-  
-  predicate invariant'5 (self : Seq.seq t) =
-    [%#sseq34] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'12 (Seq.get self i)
-  
-  predicate inv'11 (_1 : Seq.seq t)
-  
-  axiom inv_axiom'10 [@rewrite] : forall x : Seq.seq t [inv'11 x] . inv'11 x = invariant'5 x
-  
-  use prelude.prelude.UIntSize
   
   use prelude.prelude.Borrow
   
-  predicate inv'10 (_1 : borrowed usize)
+  use prelude.prelude.Opaque
   
-  axiom inv_axiom'9 [@rewrite] : forall x : borrowed usize [inv'10 x] . inv'10 x = true
+  type t_NonNull'0  =
+    { t_NonNull__pointer'0: opaque_ptr }
   
-  use T_alloc__alloc__Global as Global'0
-  
-  use T_alloc__vec__Vec as Vec'0
-  
-  predicate inv'9 (_1 : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)))
-  
-  axiom inv_axiom'8 [@rewrite] : forall x : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)) [inv'9 x] . inv'9 x = true
-  
-  use T_alloc__vec__Vec as Vec'0
-  
-  predicate inv'0 (_1 : Vec'0.t_Vec t (Global'0.t_Global))
-  
-  use seq.Seq
-  
-  use seq.Seq
+  type t_Unique'0  =
+    { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
   
   use prelude.prelude.UIntSize
   
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  type t_Cap'0  =
+    { t_Cap__0'0: usize }
+  
+  type t_RawVec'0  =
+    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+  
+  type t_Vec'0  =
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
+  
+  predicate inv'0 (_1 : t_Vec'0)
+  
+  type t_NonNull'1  =
+    { t_NonNull__pointer'1: opaque_ptr }
+  
+  type t_Unique'1  =
+    { t_Unique__pointer'1: t_NonNull'1; t_Unique__qy95zmarker'1: () }
+  
+  type t_RawVec'1  =
+    { t_RawVec__ptr'1: t_Unique'1; t_RawVec__cap'1: t_Cap'0; t_RawVec__alloc'1: () }
+  
+  type t_Vec'1  =
+    { t_Vec__buf'1: t_RawVec'1; t_Vec__len'1: usize }
+  
+  type t_Sparse'0  =
+    { t_Sparse__size'0: usize;
+      t_Sparse__n'0: usize;
+      t_Sparse__values'0: t_Vec'0;
+      t_Sparse__idx'0: t_Vec'1;
+      t_Sparse__back'0: t_Vec'1 }
+  
+  predicate inv'4 (_1 : borrowed (t_Vec'0))
+  
+  predicate inv'5 (_1 : usize)
+  
+  type t_T'0
   
   use seq.Seq
   
-  function view'6 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
+  use seq.Seq
   
-  axiom view'6_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#svec25] Seq.length (view'6 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function index_logic'1 [@inline:trivial] (self : Vec'0.t_Vec usize (Global'0.t_Global)) (ix : int) : usize =
-    [%#sops30] Seq.get (view'6 self) ix
+  use prelude.prelude.UIntSize
   
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
+  use prelude.prelude.Int
   
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
+  function view'3 (self : t_Vec'0) : Seq.seq t_T'0
   
-  function view'3 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
+  axiom view'3_spec : forall self : t_Vec'0 . [%#svec25] Seq.length (view'3 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
-  axiom view'3_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#svec25] Seq.length (view'3 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
+  function view'2 (self : borrowed (t_Vec'0)) : Seq.seq t_T'0 =
+    [%#smodel21] view'3 self.current
   
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
+  predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq t_T'0) =
+    [%#sslice23] UIntSize.to_int self < Seq.length seq
   
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
+  predicate inv'2 (_1 : borrowed t_T'0)
   
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
+  use seq.Seq
   
-  use T_sparse_array__Sparse as Sparse'0
+  predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq t_T'0) (out : t_T'0) =
+    [%#sslice24] Seq.get seq (UIntSize.to_int self) = out
   
-  predicate invariant'4 [#"sparse_array.rs" 49 4 49 30] (self : Sparse'0.t_Sparse t) =
-    [%#ssparse_array33] UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__n self)
-    <= UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ Seq.length (view'3 (T_sparse_array__Sparse.t_Sparse__values self))
-    = UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ Seq.length (view'6 (T_sparse_array__Sparse.t_Sparse__idx self))
-    = UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ Seq.length (view'6 (T_sparse_array__Sparse.t_Sparse__back self))
-    = UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__n self)
-     -> match index_logic'1 (T_sparse_array__Sparse.t_Sparse__back self) i with
-      | j -> 0 <= UIntSize.to_int j
-      /\ UIntSize.to_int j < UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-      /\ UIntSize.to_int (index_logic'1 (T_sparse_array__Sparse.t_Sparse__idx self) (UIntSize.to_int j)) = i
-      end)
+  predicate resolve_elswhere'0 [@inline:trivial] (self : usize) (old' : Seq.seq t_T'0) (fin : Seq.seq t_T'0) =
+    [%#sslice26] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
+     -> Seq.get old' i = Seq.get fin i
   
-  predicate inv'8 (_1 : Sparse'0.t_Sparse t)
+  predicate inv'11 (_1 : Seq.seq t_T'0)
   
-  axiom inv_axiom'7 [@rewrite] : forall x : Sparse'0.t_Sparse t [inv'8 x] . inv'8 x
-  = (invariant'4 x
-  /\ match x with
-    | Sparse'0.C_Sparse size n values idx back -> inv'0 values
-    end)
+  predicate invariant'0 (self : t_Vec'0) =
+    [%#svec31] inv'11 (view'3 self)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = invariant'0 x
+  
+  predicate inv'1 (_1 : t_T'0)
+  
+  predicate invariant'1 (self : borrowed t_T'0) =
+    [%#sinvariant32] inv'1 self.current /\ inv'1 self.final
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : borrowed t_T'0 [inv'2 x] . inv'2 x = invariant'1 x
+  
+  predicate inv'3 (_1 : borrowed (t_Sparse'0))
+  
+  predicate inv'8 (_1 : t_Sparse'0)
+  
+  predicate invariant'2 (self : borrowed (t_Sparse'0)) =
+    [%#sinvariant32] inv'8 self.current /\ inv'8 self.final
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_Sparse'0) [inv'3 x] . inv'3 x = invariant'2 x
+  
+  predicate invariant'3 (self : borrowed (t_Vec'0)) =
+    [%#sinvariant32] inv'0 self.current /\ inv'0 self.final
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'4 x] . inv'4 x = invariant'3 x
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : usize [inv'5 x] . inv'5 x = true
+  
+  predicate inv'6 (_1 : t_Vec'1)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_Vec'1 [inv'6 x] . inv'6 x = true
   
   predicate inv'7 (_1 : usize)
   
   axiom inv_axiom'6 [@rewrite] : forall x : usize [inv'7 x] . inv'7 x = true
   
-  predicate inv'6 (_1 : Vec'0.t_Vec usize (Global'0.t_Global))
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : Vec'0.t_Vec usize (Global'0.t_Global) [inv'6 x] . inv'6 x = true
-  
-  predicate inv'5 (_1 : usize)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : usize [inv'5 x] . inv'5 x = true
-  
-  predicate invariant'3 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) =
-    [%#sinvariant32] inv'0 self.current /\ inv'0 self.final
-  
-  predicate inv'4 (_1 : borrowed (Vec'0.t_Vec t (Global'0.t_Global)))
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed (Vec'0.t_Vec t (Global'0.t_Global)) [inv'4 x] . inv'4 x
-  = invariant'3 x
-  
-  predicate invariant'2 (self : borrowed (Sparse'0.t_Sparse t)) =
-    [%#sinvariant32] inv'8 self.current /\ inv'8 self.final
-  
-  predicate inv'3 (_1 : borrowed (Sparse'0.t_Sparse t))
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed (Sparse'0.t_Sparse t) [inv'3 x] . inv'3 x = invariant'2 x
-  
-  predicate invariant'1 (self : borrowed t) =
-    [%#sinvariant32] inv'1 self.current /\ inv'1 self.final
-  
-  predicate inv'2 (_1 : borrowed t)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : borrowed t [inv'2 x] . inv'2 x = invariant'1 x
-  
-  predicate invariant'0 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
-    [%#svec31] inv'11 (view'3 self)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : Vec'0.t_Vec t (Global'0.t_Global) [inv'0 x] . inv'0 x = invariant'0 x
-  
-  use T_core__option__Option as Option'0
-  
   use seq.Seq
   
   use seq.Seq
   
-  use prelude.prelude.Mapping
+  function view'6 (self : t_Vec'1) : Seq.seq usize
+  
+  axiom view'6_spec : forall self : t_Vec'1 . [%#svec25] Seq.length (view'6 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
   use seq.Seq
   
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec t (Global'0.t_Global)) (ix : int) : t =
-    [%#sops30] Seq.get (view'3 self) ix
+  function index_logic'1 [@inline:trivial] (self : t_Vec'1) (ix : int) : usize =
+    [%#sops30] Seq.get (view'6 self) ix
   
-  function is_elt'0 [#"sparse_array.rs" 71 4 71 36] (self : Sparse'0.t_Sparse t) (i : int) : bool =
-    [%#ssparse_array29] UIntSize.to_int (index_logic'1 (T_sparse_array__Sparse.t_Sparse__idx self) i)
-    < UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__n self)
-    /\ UIntSize.to_int (index_logic'1 (T_sparse_array__Sparse.t_Sparse__back self) (UIntSize.to_int (index_logic'1 (T_sparse_array__Sparse.t_Sparse__idx self) i)))
+  predicate invariant'4 [#"sparse_array.rs" 49 4 49 30] (self : t_Sparse'0) =
+    [%#ssparse_array33] UIntSize.to_int self.t_Sparse__n'0 <= UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'3 self.t_Sparse__values'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'6 self.t_Sparse__idx'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'6 self.t_Sparse__back'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int self.t_Sparse__n'0
+     -> match index_logic'1 self.t_Sparse__back'0 i with
+      | j -> 0 <= UIntSize.to_int j
+      /\ UIntSize.to_int j < UIntSize.to_int self.t_Sparse__size'0
+      /\ UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 (UIntSize.to_int j)) = i
+      end)
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : t_Sparse'0 [inv'8 x] . inv'8 x
+  = (invariant'4 x
+  /\ match x with
+    | {t_Sparse__size'0 = size ; t_Sparse__n'0 = n ; t_Sparse__values'0 = values ; t_Sparse__idx'0 = idx ; t_Sparse__back'0 = back} -> inv'0 values
+    end)
+  
+  predicate inv'9 (_1 : borrowed (t_Vec'1))
+  
+  axiom inv_axiom'8 [@rewrite] : forall x : borrowed (t_Vec'1) [inv'9 x] . inv'9 x = true
+  
+  predicate inv'10 (_1 : borrowed usize)
+  
+  axiom inv_axiom'9 [@rewrite] : forall x : borrowed usize [inv'10 x] . inv'10 x = true
+  
+  use seq.Seq
+  
+  predicate inv'12 (_1 : t_T'0)
+  
+  predicate invariant'5 (self : Seq.seq t_T'0) =
+    [%#sseq34] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'12 (Seq.get self i)
+  
+  axiom inv_axiom'10 [@rewrite] : forall x : Seq.seq t_T'0 [inv'11 x] . inv'11 x = invariant'5 x
+  
+  predicate invariant'6 (self : t_T'0) =
+    [%#sboxed35] inv'1 self
+  
+  axiom inv_axiom'11 [@rewrite] : forall x : t_T'0 [inv'12 x] . inv'12 x = invariant'6 x
+  
+  let rec index_mut'0 (self:borrowed (t_Vec'0)) (index:usize) (return'  (ret:borrowed t_T'0))= {[@expl:index_mut 'self' type invariant] inv'4 self}
+    {[@expl:index_mut 'index' type invariant] inv'5 index}
+    {[@expl:index_mut requires] [%#svec9] in_bounds'0 index (view'2 self)}
+    any
+    [ return' (result:borrowed t_T'0)-> {inv'2 result}
+      {[%#svec10] has_value'0 index (view'2 self) result.current}
+      {[%#svec11] has_value'0 index (view'3 self.final) result.final}
+      {[%#svec12] resolve_elswhere'0 index (view'2 self) (view'3 self.final)}
+      {[%#svec13] Seq.length (view'3 self.final) = Seq.length (view'2 self)}
+      (! return' {result}) ]
+    
+  
+  predicate resolve'0 (_1 : t_T'0)
+  
+  predicate resolve'4 (self : borrowed t_T'0) =
+    [%#sresolve27] self.final = self.current
+  
+  predicate resolve'1 (_1 : borrowed t_T'0) =
+    resolve'4 _1
+  
+  function view'4 (self : t_Vec'1) : Seq.seq usize =
+    [%#smodel28] view'6 self
+  
+  predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq usize) =
+    [%#sslice23] UIntSize.to_int self < Seq.length seq
+  
+  predicate has_value'1 [@inline:trivial] (self : usize) (seq : Seq.seq usize) (out : usize) =
+    [%#sslice24] Seq.get seq (UIntSize.to_int self) = out
+  
+  let rec index'0 (self:t_Vec'1) (index:usize) (return'  (ret:usize))= {[@expl:index 'self' type invariant] inv'6 self}
+    {[@expl:index 'index' type invariant] inv'5 index}
+    {[@expl:index requires] [%#svec14] in_bounds'1 index (view'4 self)}
+    any
+    [ return' (result:usize)-> {inv'7 result} {[%#svec15] has_value'1 index (view'4 self) result} (! return' {result}) ]
+    
+  
+  predicate resolve'5 (self : borrowed (t_Sparse'0)) =
+    [%#sresolve27] self.final = self.current
+  
+  predicate resolve'2 (_1 : borrowed (t_Sparse'0)) =
+    resolve'5 _1
+  
+  function is_elt'0 [#"sparse_array.rs" 71 4 71 36] (self : t_Sparse'0) (i : int) : bool =
+    [%#ssparse_array29] UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 i) < UIntSize.to_int self.t_Sparse__n'0
+    /\ UIntSize.to_int (index_logic'1 self.t_Sparse__back'0 (UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 i)))
     = i
   
-  use seq.Seq
+  function lemma_permutation'0 [#"sparse_array.rs" 104 4 104 38] (self : t_Sparse'0) (i : int) : () =
+    [%#ssparse_array20] ()
   
-  function view'1 [#"sparse_array.rs" 38 4 38 33] (self : Sparse'0.t_Sparse t) : Seq.seq (Option'0.t_Option t) =
-    [%#ssparse_array22] Seq.create (UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)) (Mapping.from_fn (fun (i : int) -> if is_elt'0 self i then
-      Option'0.C_Some (index_logic'0 (T_sparse_array__Sparse.t_Sparse__values self) i)
-    else
-      Option'0.C_None
-    ))
-  
-  use seq.Seq
-  
-  function view'0 (self : borrowed (Sparse'0.t_Sparse t)) : Seq.seq (Option'0.t_Option t) =
-    [%#smodel21] view'1 self.current
+  axiom lemma_permutation'0_spec : forall self : t_Sparse'0, i : int . ([%#ssparse_array16] inv'8 self)
+   -> ([%#ssparse_array17] self.t_Sparse__n'0 = self.t_Sparse__size'0)
+   -> ([%#ssparse_array18] 0 <= i /\ i < UIntSize.to_int self.t_Sparse__size'0)
+   -> ([%#ssparse_array19] is_elt'0 self i)
   
   use prelude.prelude.Snapshot
   
-  use prelude.prelude.Intrinsic
-  
-  predicate resolve'6 (self : borrowed usize) =
-    [%#sresolve27] self.final = self.current
-  
-  predicate resolve'3 (_1 : borrowed usize) =
-    resolve'6 _1
+  function view'5 (self : borrowed (t_Vec'1)) : Seq.seq usize =
+    [%#smodel21] view'6 self.current
   
   predicate resolve_elswhere'1 [@inline:trivial] (self : usize) (old' : Seq.seq usize) (fin : Seq.seq usize) =
     [%#sslice26] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
   
-  predicate has_value'1 [@inline:trivial] (self : usize) (seq : Seq.seq usize) (out : usize) =
-    [%#sslice24] Seq.get seq (UIntSize.to_int self) = out
-  
-  predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq usize) =
-    [%#sslice23] UIntSize.to_int self < Seq.length seq
-  
-  function view'5 (self : borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) : Seq.seq usize =
-    [%#smodel21] view'6 self.current
-  
-  let rec index_mut'1 (self:borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) (index:usize) (return'  (ret:borrowed usize))= {[@expl:index_mut 'self' type invariant] inv'9 self}
+  let rec index_mut'1 (self:borrowed (t_Vec'1)) (index:usize) (return'  (ret:borrowed usize))= {[@expl:index_mut 'self' type invariant] inv'9 self}
     {[@expl:index_mut 'index' type invariant] inv'5 index}
     {[@expl:index_mut requires] [%#svec9] in_bounds'1 index (view'5 self)}
     any
@@ -808,86 +719,59 @@ module M_sparse_array__qyi912363311032332466__set [#"sparse_array.rs" 112 4 112 
       (! return' {result}) ]
     
   
+  predicate resolve'6 (self : borrowed usize) =
+    [%#sresolve27] self.final = self.current
+  
+  predicate resolve'3 (_1 : borrowed usize) =
+    resolve'6 _1
+  
+  use prelude.prelude.Intrinsic
+  
   use prelude.prelude.Snapshot
   
-  function lemma_permutation'0 [#"sparse_array.rs" 104 4 104 38] (self : Sparse'0.t_Sparse t) (i : int) : () =
-    [%#ssparse_array20] ()
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_T'0
   
-  axiom lemma_permutation'0_spec : forall self : Sparse'0.t_Sparse t, i : int . ([%#ssparse_array16] inv'8 self)
-   -> ([%#ssparse_array17] T_sparse_array__Sparse.t_Sparse__n self = T_sparse_array__Sparse.t_Sparse__size self)
-   -> ([%#ssparse_array18] 0 <= i /\ i < UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self))
-   -> ([%#ssparse_array19] is_elt'0 self i)
+  use seq.Seq
   
-  predicate resolve'5 (self : borrowed (Sparse'0.t_Sparse t)) =
-    [%#sresolve27] self.final = self.current
+  function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : t_T'0 =
+    [%#sops30] Seq.get (view'3 self) ix
   
-  predicate resolve'2 (_1 : borrowed (Sparse'0.t_Sparse t)) =
-    resolve'5 _1
+  use prelude.prelude.Mapping
   
-  function view'4 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize =
-    [%#smodel28] view'6 self
+  use seq.Seq
   
-  let rec index'0 (self:Vec'0.t_Vec usize (Global'0.t_Global)) (index:usize) (return'  (ret:usize))= {[@expl:index 'self' type invariant] inv'6 self}
-    {[@expl:index 'index' type invariant] inv'5 index}
-    {[@expl:index requires] [%#svec14] in_bounds'1 index (view'4 self)}
-    any
-    [ return' (result:usize)-> {inv'7 result} {[%#svec15] has_value'1 index (view'4 self) result} (! return' {result}) ]
-    
+  function view'1 [#"sparse_array.rs" 38 4 38 33] (self : t_Sparse'0) : Seq.seq (t_Option'0) =
+    [%#ssparse_array22] Seq.create (UIntSize.to_int self.t_Sparse__size'0) (Mapping.from_fn (fun (i : int) -> if is_elt'0 self i then
+      C_Some'0 (index_logic'0 self.t_Sparse__values'0 i)
+    else
+      C_None'0
+    ))
   
-  predicate resolve'4 (self : borrowed t) =
-    [%#sresolve27] self.final = self.current
+  function view'0 (self : borrowed (t_Sparse'0)) : Seq.seq (t_Option'0) =
+    [%#smodel21] view'1 self.current
   
-  predicate resolve'1 (_1 : borrowed t) =
-    resolve'4 _1
+  use seq.Seq
   
-  predicate resolve'0 (_1 : t)
-  
-  predicate resolve_elswhere'0 [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t) =
-    [%#sslice26] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
-     -> Seq.get old' i = Seq.get fin i
-  
-  predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
-    [%#sslice24] Seq.get seq (UIntSize.to_int self) = out
-  
-  predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq t) =
-    [%#sslice23] UIntSize.to_int self < Seq.length seq
-  
-  function view'2 (self : borrowed (Vec'0.t_Vec t (Global'0.t_Global))) : Seq.seq t =
-    [%#smodel21] view'3 self.current
-  
-  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec t (Global'0.t_Global))) (index:usize) (return'  (ret:borrowed t))= {[@expl:index_mut 'self' type invariant] inv'4 self}
-    {[@expl:index_mut 'index' type invariant] inv'5 index}
-    {[@expl:index_mut requires] [%#svec9] in_bounds'0 index (view'2 self)}
-    any
-    [ return' (result:borrowed t)-> {inv'2 result}
-      {[%#svec10] has_value'0 index (view'2 self) result.current}
-      {[%#svec11] has_value'0 index (view'3 self.final) result.final}
-      {[%#svec12] resolve_elswhere'0 index (view'2 self) (view'3 self.final)}
-      {[%#svec13] Seq.length (view'3 self.final) = Seq.length (view'2 self)}
-      (! return' {result}) ]
-    
+  use seq.Seq
   
   meta "compute_max_steps" 1000000
   
-  let rec set (self:borrowed (Sparse'0.t_Sparse t)) (i:usize) (v:t) (return'  (ret:()))= {[@expl:set 'self' type invariant] [%#ssparse_array3] inv'3 self}
+  let rec set'0 (self:borrowed (t_Sparse'0)) (i:usize) (v:t_T'0) (return'  (ret:()))= {[@expl:set 'self' type invariant] [%#ssparse_array3] inv'3 self}
     {[@expl:set 'v' type invariant] [%#ssparse_array4] inv'1 v}
     {[@expl:set requires] [%#ssparse_array5] UIntSize.to_int i < Seq.length (view'0 self)}
     (! bb0
     [ bb0 = bb1
     | bb1 = s0
-      [ s0 = Sparse'0.t_Sparse <t> {self.current}
-          (fun (rsize'0:usize) (rn'0:usize) (rvalues'0:Vec'0.t_Vec t (Global'0.t_Global)) (ridx'0:Vec'0.t_Vec usize (Global'0.t_Global)) (rback'0:Vec'0.t_Vec usize (Global'0.t_Global)) ->
-            {inv'0 rvalues'0}
-            Borrow.borrow_final
-              <Vec'0.t_Vec t (Global'0.t_Global)>
-              {rvalues'0}
-              {Borrow.inherit_id (Borrow.get_id self) 3}
-              (fun (_ret':borrowed (Vec'0.t_Vec t (Global'0.t_Global))) ->
-                 [ &_10 <- _ret' ] 
-                -{inv'0 _ret'.final}-
-                 [ &self <- { self with current = Sparse'0.C_Sparse rsize'0 rn'0 _ret'.final ridx'0 rback'0 ; } ] 
-                s1))
-      | s1 = index_mut'0 {_10} {i} (fun (_ret':borrowed t) ->  [ &_9 <- _ret' ] s2)
+      [ s0 = {inv'0 (self.current).t_Sparse__values'0}
+        Borrow.borrow_final <t_Vec'0> {(self.current).t_Sparse__values'0} {Borrow.inherit_id (Borrow.get_id self) 3}
+          (fun (_ret':borrowed (t_Vec'0)) ->
+             [ &_10 <- _ret' ] 
+            -{inv'0 _ret'.final}-
+             [ &self <- { self with current = { self.current with t_Sparse__values'0 = _ret'.final } } ] 
+            s1)
+      | s1 = index_mut'0 {_10} {i} (fun (_ret':borrowed t_T'0) ->  [ &_9 <- _ret' ] s2)
       | s2 = bb2 ]
       
     | bb2 = bb3
@@ -902,29 +786,21 @@ module M_sparse_array__qyi912363311032332466__set [#"sparse_array.rs" 112 4 112 
           | _ -> true
           end}-
         s2
-      | s2 =  [ &_9 <- { _9 with current = v ; } ] s3
+      | s2 =  [ &_9 <- { _9 with current = v } ] s3
       | s3 = {[@expl:type invariant] inv'2 _9} s4
       | s4 = -{resolve'1 _9}- s5
       | s5 = bb5 ]
       
     | bb5 = s0
-      [ s0 = Sparse'0.t_Sparse <t> {self.current}
-          (fun (rsize'0:usize) (rn'0:usize) (rvalues'0:Vec'0.t_Vec t (Global'0.t_Global)) (ridx'0:Vec'0.t_Vec usize (Global'0.t_Global)) (rback'0:Vec'0.t_Vec usize (Global'0.t_Global)) ->
-            index'0 {ridx'0} {i} (fun (_ret':usize) ->  [ &_13 <- _ret' ] s1))
-      | s1 = bb6 ]
+      [ s0 = index'0 {(self.current).t_Sparse__idx'0} {i} (fun (_ret':usize) ->  [ &_13 <- _ret' ] s1) | s1 = bb6 ]
       
     | bb6 = s0
       [ s0 =  [ &index <- _13 ] s1
-      | s1 = Sparse'0.t_Sparse <t> {self.current}
-          (fun (rsize'0:usize) (rn'0:usize) (rvalues'0:Vec'0.t_Vec t (Global'0.t_Global)) (ridx'0:Vec'0.t_Vec usize (Global'0.t_Global)) (rback'0:Vec'0.t_Vec usize (Global'0.t_Global)) ->
-            UIntSize.lt {index} {rn'0} (fun (_ret':bool) ->  [ &_16 <- _ret' ] s2))
+      | s1 = UIntSize.lt {index} {(self.current).t_Sparse__n'0} (fun (_ret':bool) ->  [ &_16 <- _ret' ] s2)
       | s2 = any [ br0 -> {_16 = false} (! bb11) | br1 -> {_16} (! bb7) ]  ]
       
     | bb7 = s0
-      [ s0 = Sparse'0.t_Sparse <t> {self.current}
-          (fun (rsize'0:usize) (rn'0:usize) (rvalues'0:Vec'0.t_Vec t (Global'0.t_Global)) (ridx'0:Vec'0.t_Vec usize (Global'0.t_Global)) (rback'0:Vec'0.t_Vec usize (Global'0.t_Global)) ->
-            index'0 {rback'0} {index} (fun (_ret':usize) ->  [ &_21 <- _ret' ] s1))
-      | s1 = bb8 ]
+      [ s0 = index'0 {(self.current).t_Sparse__back'0} {index} (fun (_ret':usize) ->  [ &_21 <- _ret' ] s1) | s1 = bb8 ]
       
     | bb8 = s0
       [ s0 = UIntSize.eq {_21} {i} (fun (_ret':bool) ->  [ &_19 <- _ret' ] s1)
@@ -935,54 +811,33 @@ module M_sparse_array__qyi912363311032332466__set [#"sparse_array.rs" 112 4 112 
     | bb11 = bb12
     | bb12 = s0 [ s0 =  [ &_25 <- [%#ssparse_array0] Snapshot.new () ] s1 | s1 = bb13 ] 
     | bb13 = s0
-      [ s0 = {[@expl:assertion] [%#ssparse_array1] UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__n self.current)
-        < UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self.current)}
+      [ s0 = {[@expl:assertion] [%#ssparse_array1] UIntSize.to_int (self.current).t_Sparse__n'0
+        < UIntSize.to_int (self.current).t_Sparse__size'0}
         s1
-      | s1 = Sparse'0.t_Sparse <t> {self.current}
-          (fun (rsize'0:usize) (rn'0:usize) (rvalues'0:Vec'0.t_Vec t (Global'0.t_Global)) (ridx'0:Vec'0.t_Vec usize (Global'0.t_Global)) (rback'0:Vec'0.t_Vec usize (Global'0.t_Global)) ->
-            Borrow.borrow_final
-              <Vec'0.t_Vec usize (Global'0.t_Global)>
-              {ridx'0}
-              {Borrow.inherit_id (Borrow.get_id self) 4}
-              (fun (_ret':borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) ->
-                 [ &_31 <- _ret' ] 
-                 [ &self <- { self with current = Sparse'0.C_Sparse rsize'0 rn'0 rvalues'0 _ret'.final rback'0 ; } ] 
-                s2))
+      | s1 = Borrow.borrow_final <t_Vec'1> {(self.current).t_Sparse__idx'0} {Borrow.inherit_id (Borrow.get_id self) 4}
+          (fun (_ret':borrowed (t_Vec'1)) ->
+             [ &_31 <- _ret' ] 
+             [ &self <- { self with current = { self.current with t_Sparse__idx'0 = _ret'.final } } ] 
+            s2)
       | s2 = index_mut'1 {_31} {i} (fun (_ret':borrowed usize) ->  [ &_30 <- _ret' ] s3)
       | s3 = bb14 ]
       
     | bb14 = s0
-      [ s0 = Sparse'0.t_Sparse <t> {self.current}
-          (fun (rsize'0:usize) (rn'0:usize) (rvalues'0:Vec'0.t_Vec t (Global'0.t_Global)) (ridx'0:Vec'0.t_Vec usize (Global'0.t_Global)) (rback'0:Vec'0.t_Vec usize (Global'0.t_Global)) ->
-             [ &_30 <- { _30 with current = rn'0 ; } ] 
-            s1)
+      [ s0 =  [ &_30 <- { _30 with current = (self.current).t_Sparse__n'0 } ] s1
       | s1 = -{resolve'3 _30}- s2
-      | s2 = Sparse'0.t_Sparse <t> {self.current}
-          (fun (rsize'1:usize) (rn'1:usize) (rvalues'1:Vec'0.t_Vec t (Global'0.t_Global)) (ridx'1:Vec'0.t_Vec usize (Global'0.t_Global)) (rback'1:Vec'0.t_Vec usize (Global'0.t_Global)) ->
-            Borrow.borrow_final
-              <Vec'0.t_Vec usize (Global'0.t_Global)>
-              {rback'1}
-              {Borrow.inherit_id (Borrow.get_id self) 5}
-              (fun (_ret':borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) ->
-                 [ &_35 <- _ret' ] 
-                 [ &self <- { self with current = Sparse'0.C_Sparse rsize'1 rn'1 rvalues'1 ridx'1 _ret'.final ; } ] 
-                s3))
-      | s3 = Sparse'0.t_Sparse <t> {self.current}
-          (fun (rsize'2:usize) (rn'2:usize) (rvalues'2:Vec'0.t_Vec t (Global'0.t_Global)) (ridx'2:Vec'0.t_Vec usize (Global'0.t_Global)) (rback'2:Vec'0.t_Vec usize (Global'0.t_Global)) ->
-            index_mut'1 {_35} {rn'2} (fun (_ret':borrowed usize) ->  [ &_34 <- _ret' ] s4))
+      | s2 = Borrow.borrow_final <t_Vec'1> {(self.current).t_Sparse__back'0} {Borrow.inherit_id (Borrow.get_id self) 5}
+          (fun (_ret':borrowed (t_Vec'1)) ->
+             [ &_35 <- _ret' ] 
+             [ &self <- { self with current = { self.current with t_Sparse__back'0 = _ret'.final } } ] 
+            s3)
+      | s3 = index_mut'1 {_35} {(self.current).t_Sparse__n'0} (fun (_ret':borrowed usize) ->  [ &_34 <- _ret' ] s4)
       | s4 = bb15 ]
       
     | bb15 = s0
-      [ s0 =  [ &_34 <- { _34 with current = i ; } ] s1
+      [ s0 =  [ &_34 <- { _34 with current = i } ] s1
       | s1 = -{resolve'3 _34}- s2
-      | s2 = Sparse'0.t_Sparse <t> {self.current}
-          (fun (rsize'0:usize) (rn'0:usize) (rvalues'0:Vec'0.t_Vec t (Global'0.t_Global)) (ridx'0:Vec'0.t_Vec usize (Global'0.t_Global)) (rback'0:Vec'0.t_Vec usize (Global'0.t_Global)) ->
-            UIntSize.add {rn'0} {[%#ssparse_array2] (1 : usize)}
-              (fun (_ret':usize) ->
-                Sparse'0.t_Sparse <t> {self.current}
-                  (fun (rsize'1:usize) (rn'1:usize) (rvalues'1:Vec'0.t_Vec t (Global'0.t_Global)) (ridx'1:Vec'0.t_Vec usize (Global'0.t_Global)) (rback'1:Vec'0.t_Vec usize (Global'0.t_Global)) ->
-                     [ &self <- { self with current = Sparse'0.C_Sparse rsize'1 _ret' rvalues'1 ridx'1 rback'1 ; } ] 
-                    s3)))
+      | s2 = UIntSize.add {(self.current).t_Sparse__n'0} {[%#ssparse_array2] (1 : usize)}
+          (fun (_ret':usize) ->  [ &self <- { self with current = { self.current with t_Sparse__n'0 = _ret' } } ] s3)
       | s3 = {[@expl:type invariant] inv'3 self} s4
       | s4 = -{resolve'2 self}- s5
       | s5 = bb16 ]
@@ -991,11 +846,11 @@ module M_sparse_array__qyi912363311032332466__set [#"sparse_array.rs" 112 4 112 
     | bb17 = return' {_0} ]
     )
     [ & _0 : () = any_l ()
-    | & self : borrowed (Sparse'0.t_Sparse t) = self
+    | & self : borrowed (t_Sparse'0) = self
     | & i : usize = i
-    | & v : t = v
-    | & _9 : borrowed t = any_l ()
-    | & _10 : borrowed (Vec'0.t_Vec t (Global'0.t_Global)) = any_l ()
+    | & v : t_T'0 = v
+    | & _9 : borrowed t_T'0 = any_l ()
+    | & _10 : borrowed (t_Vec'0) = any_l ()
     | & index : usize = any_l ()
     | & _13 : usize = any_l ()
     | & _16 : bool = any_l ()
@@ -1003,22 +858,20 @@ module M_sparse_array__qyi912363311032332466__set [#"sparse_array.rs" 112 4 112 
     | & _21 : usize = any_l ()
     | & _25 : Snapshot.snap_ty () = any_l ()
     | & _30 : borrowed usize = any_l ()
-    | & _31 : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)) = any_l ()
+    | & _31 : borrowed (t_Vec'1) = any_l ()
     | & _34 : borrowed usize = any_l ()
-    | & _35 : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)) = any_l () ]
+    | & _35 : borrowed (t_Vec'1) = any_l () ]
     
     [ return' (result:())-> {[@expl:set ensures #0] [%#ssparse_array6] Seq.length (view'1 self.final)
       = Seq.length (view'0 self)}
       {[@expl:set ensures #1] [%#ssparse_array7] forall j : int . 0 <= j
       /\ j < Seq.length (view'0 self) /\ j <> UIntSize.to_int i
        -> Seq.get (view'1 self.final) j = Seq.get (view'0 self) j}
-      {[@expl:set ensures #2] [%#ssparse_array8] Seq.get (view'1 self.final) (UIntSize.to_int i) = Option'0.C_Some v}
+      {[@expl:set ensures #2] [%#ssparse_array8] Seq.get (view'1 self.final) (UIntSize.to_int i) = C_Some'0 v}
       (! return' {result}) ]
     
 end
 module M_sparse_array__create [#"sparse_array.rs" 134 0 134 64]
-  type t
-  
   let%span ssparse_array0 = "sparse_array.rs" 135 64 135 65
   let%span ssparse_array1 = "sparse_array.rs" 135 83 135 84
   let%span ssparse_array2 = "sparse_array.rs" 135 26 135 27
@@ -1026,205 +879,225 @@ module M_sparse_array__create [#"sparse_array.rs" 134 0 134 64]
   let%span ssparse_array4 = "sparse_array.rs" 134 55 134 64
   let%span ssparse_array5 = "sparse_array.rs" 132 10 132 27
   let%span ssparse_array6 = "sparse_array.rs" 133 10 133 65
-  let%span svec7 = "../../../creusot-contracts/src/std/vec.rs" 183 22 183 41
-  let%span svec8 = "../../../creusot-contracts/src/std/vec.rs" 184 22 184 76
+  let%span svec7 = "../../../creusot-contracts/src/std/vec.rs" 180 22 180 41
+  let%span svec8 = "../../../creusot-contracts/src/std/vec.rs" 181 22 181 76
   let%span ssparse_array9 = "sparse_array.rs" 40 12 41 82
-  let%span svec10 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
+  let%span svec10 = "../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   let%span sops11 = "../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
   let%span ssparse_array12 = "sparse_array.rs" 72 20 73 52
   let%span ssparse_array13 = "sparse_array.rs" 51 12 59 17
-  let%span svec14 = "../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
-  let%span sseq15 = "../../../creusot-contracts/src/logic/seq.rs" 459 20 459 95
+  let%span svec14 = "../../../creusot-contracts/src/std/vec.rs" 65 20 65 41
+  let%span sseq15 = "../../../creusot-contracts/src/logic/seq.rs" 444 20 444 95
   let%span sboxed16 = "../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
-  predicate inv'0 (_1 : t)
+  type t_T'0
   
-  predicate invariant'3 (self : t) =
-    [%#sboxed16] inv'0 self
+  predicate inv'0 (_1 : t_T'0)
   
-  predicate inv'6 (_1 : t)
+  use prelude.prelude.Opaque
   
-  axiom inv_axiom'5 [@rewrite] : forall x : t [inv'6 x] . inv'6 x = invariant'3 x
+  type t_NonNull'0  =
+    { t_NonNull__pointer'0: opaque_ptr }
+  
+  type t_Unique'0  =
+    { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
+  
+  use prelude.prelude.UIntSize
+  
+  type t_Cap'0  =
+    { t_Cap__0'0: usize }
+  
+  type t_RawVec'0  =
+    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+  
+  type t_Vec'0  =
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
+  
+  predicate inv'2 (_1 : t_Vec'0)
   
   use seq.Seq
   
-  use seq.Seq
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
   use seq.Seq
   
-  predicate invariant'2 (self : Seq.seq t) =
-    [%#sseq15] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'6 (Seq.get self i)
+  function view'1 (self : t_Vec'0) : Seq.seq t_T'0
   
-  predicate inv'5 (_1 : Seq.seq t)
+  axiom view'1_spec : forall self : t_Vec'0 . [%#svec10] Seq.length (view'1 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
-  axiom inv_axiom'4 [@rewrite] : forall x : Seq.seq t [inv'5 x] . inv'5 x = invariant'2 x
+  use seq.Seq
   
-  use T_alloc__alloc__Global as Global'0
+  function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : t_T'0 =
+    [%#sops11] Seq.get (view'1 self) ix
   
-  use prelude.prelude.UIntSize
+  type t_NonNull'1  =
+    { t_NonNull__pointer'1: opaque_ptr }
   
-  use T_alloc__vec__Vec as Vec'0
+  type t_Unique'1  =
+    { t_Unique__pointer'1: t_NonNull'1; t_Unique__qy95zmarker'1: () }
   
-  predicate inv'4 (_1 : Vec'0.t_Vec usize (Global'0.t_Global))
+  type t_RawVec'1  =
+    { t_RawVec__ptr'1: t_Unique'1; t_RawVec__cap'1: t_Cap'0; t_RawVec__alloc'1: () }
   
-  axiom inv_axiom'3 [@rewrite] : forall x : Vec'0.t_Vec usize (Global'0.t_Global) [inv'4 x] . inv'4 x = true
+  type t_Vec'1  =
+    { t_Vec__buf'1: t_RawVec'1; t_Vec__len'1: usize }
+  
+  type t_Sparse'0  =
+    { t_Sparse__size'0: usize;
+      t_Sparse__n'0: usize;
+      t_Sparse__values'0: t_Vec'0;
+      t_Sparse__idx'0: t_Vec'1;
+      t_Sparse__back'0: t_Vec'1 }
+  
+  predicate inv'1 (_1 : t_Sparse'0)
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  function view'2 (self : t_Vec'1) : Seq.seq usize
+  
+  axiom view'2_spec : forall self : t_Vec'1 . [%#svec10] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  use seq.Seq
+  
+  function index_logic'1 [@inline:trivial] (self : t_Vec'1) (ix : int) : usize =
+    [%#sops11] Seq.get (view'2 self) ix
+  
+  predicate invariant'0 [#"sparse_array.rs" 49 4 49 30] (self : t_Sparse'0) =
+    [%#ssparse_array13] UIntSize.to_int self.t_Sparse__n'0 <= UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'1 self.t_Sparse__values'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'2 self.t_Sparse__idx'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'2 self.t_Sparse__back'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int self.t_Sparse__n'0
+     -> match index_logic'1 self.t_Sparse__back'0 i with
+      | j -> 0 <= UIntSize.to_int j
+      /\ UIntSize.to_int j < UIntSize.to_int self.t_Sparse__size'0
+      /\ UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 (UIntSize.to_int j)) = i
+      end)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Sparse'0 [inv'1 x] . inv'1 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_Sparse__size'0 = size ; t_Sparse__n'0 = n ; t_Sparse__values'0 = values ; t_Sparse__idx'0 = idx ; t_Sparse__back'0 = back} -> inv'2 values
+    end)
+  
+  predicate inv'5 (_1 : Seq.seq t_T'0)
+  
+  predicate invariant'1 (self : t_Vec'0) =
+    [%#svec14] inv'5 (view'1 self)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Vec'0 [inv'2 x] . inv'2 x = invariant'1 x
   
   predicate inv'3 (_1 : usize)
   
   axiom inv_axiom'2 [@rewrite] : forall x : usize [inv'3 x] . inv'3 x = true
   
-  use T_alloc__vec__Vec as Vec'0
+  predicate inv'4 (_1 : t_Vec'1)
   
-  use prelude.prelude.UIntSize
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  function view'1 (self : Vec'0.t_Vec t (Global'0.t_Global)) : Seq.seq t
-  
-  axiom view'1_spec : forall self : Vec'0.t_Vec t (Global'0.t_Global) . [%#svec10] Seq.length (view'1 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  predicate invariant'1 (self : Vec'0.t_Vec t (Global'0.t_Global)) =
-    [%#svec14] inv'5 (view'1 self)
-  
-  predicate inv'2 (_1 : Vec'0.t_Vec t (Global'0.t_Global))
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Vec'0.t_Vec t (Global'0.t_Global) [inv'2 x] . inv'2 x = invariant'1 x
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Vec'1 [inv'4 x] . inv'4 x = true
   
   use seq.Seq
   
-  use seq.Seq
+  predicate inv'6 (_1 : t_T'0)
   
-  use seq.Seq
+  predicate invariant'2 (self : Seq.seq t_T'0) =
+    [%#sseq15] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'6 (Seq.get self i)
   
-  function view'2 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
+  axiom inv_axiom'4 [@rewrite] : forall x : Seq.seq t_T'0 [inv'5 x] . inv'5 x = invariant'2 x
   
-  axiom view'2_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#svec10] Seq.length (view'2 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
+  predicate invariant'3 (self : t_T'0) =
+    [%#sboxed16] inv'0 self
   
-  function index_logic'1 [@inline:trivial] (self : Vec'0.t_Vec usize (Global'0.t_Global)) (ix : int) : usize =
-    [%#sops11] Seq.get (view'2 self) ix
+  axiom inv_axiom'5 [@rewrite] : forall x : t_T'0 [inv'6 x] . inv'6 x = invariant'3 x
   
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use T_sparse_array__Sparse as Sparse'0
-  
-  predicate invariant'0 [#"sparse_array.rs" 49 4 49 30] (self : Sparse'0.t_Sparse t) =
-    [%#ssparse_array13] UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__n self)
-    <= UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ Seq.length (view'1 (T_sparse_array__Sparse.t_Sparse__values self))
-    = UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ Seq.length (view'2 (T_sparse_array__Sparse.t_Sparse__idx self))
-    = UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ Seq.length (view'2 (T_sparse_array__Sparse.t_Sparse__back self))
-    = UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__n self)
-     -> match index_logic'1 (T_sparse_array__Sparse.t_Sparse__back self) i with
-      | j -> 0 <= UIntSize.to_int j
-      /\ UIntSize.to_int j < UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-      /\ UIntSize.to_int (index_logic'1 (T_sparse_array__Sparse.t_Sparse__idx self) (UIntSize.to_int j)) = i
-      end)
-  
-  predicate inv'1 (_1 : Sparse'0.t_Sparse t)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : Sparse'0.t_Sparse t [inv'1 x] . inv'1 x
-  = (invariant'0 x
-  /\ match x with
-    | Sparse'0.C_Sparse size n values idx back -> inv'2 values
-    end)
-  
-  use T_core__option__Option as Option'0
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use prelude.prelude.Mapping
-  
-  use seq.Seq
-  
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec t (Global'0.t_Global)) (ix : int) : t =
-    [%#sops11] Seq.get (view'1 self) ix
-  
-  use prelude.prelude.Borrow
-  
-  function is_elt'0 [#"sparse_array.rs" 71 4 71 36] (self : Sparse'0.t_Sparse t) (i : int) : bool =
-    [%#ssparse_array12] UIntSize.to_int (index_logic'1 (T_sparse_array__Sparse.t_Sparse__idx self) i)
-    < UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__n self)
-    /\ UIntSize.to_int (index_logic'1 (T_sparse_array__Sparse.t_Sparse__back self) (UIntSize.to_int (index_logic'1 (T_sparse_array__Sparse.t_Sparse__idx self) i)))
-    = i
-  
-  use seq.Seq
-  
-  function view'0 [#"sparse_array.rs" 38 4 38 33] (self : Sparse'0.t_Sparse t) : Seq.seq (Option'0.t_Option t) =
-    [%#ssparse_array9] Seq.create (UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)) (Mapping.from_fn (fun (i : int) -> if is_elt'0 self i then
-      Option'0.C_Some (index_logic'0 (T_sparse_array__Sparse.t_Sparse__values self) i)
-    else
-      Option'0.C_None
-    ))
-  
-  use prelude.prelude.Intrinsic
-  
-  let rec from_elem'1 (elem:usize) (n:usize) (return'  (ret:Vec'0.t_Vec usize (Global'0.t_Global)))= {[@expl:from_elem 'elem' type invariant] inv'3 elem}
+  let rec from_elem'0 (elem:t_T'0) (n:usize) (return'  (ret:t_Vec'0))= {[@expl:from_elem 'elem' type invariant] inv'0 elem}
     any
-    [ return' (result:Vec'0.t_Vec usize (Global'0.t_Global))-> {inv'4 result}
-      {[%#svec7] Seq.length (view'2 result) = UIntSize.to_int n}
-      {[%#svec8] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'1 result i = elem}
-      (! return' {result}) ]
-    
-  
-  let rec from_elem'0 (elem:t) (n:usize) (return'  (ret:Vec'0.t_Vec t (Global'0.t_Global)))= {[@expl:from_elem 'elem' type invariant] inv'0 elem}
-    any
-    [ return' (result:Vec'0.t_Vec t (Global'0.t_Global))-> {inv'2 result}
+    [ return' (result:t_Vec'0)-> {inv'2 result}
       {[%#svec7] Seq.length (view'1 result) = UIntSize.to_int n}
       {[%#svec8] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
       (! return' {result}) ]
     
   
+  let rec from_elem'1 (elem:usize) (n:usize) (return'  (ret:t_Vec'1))= {[@expl:from_elem 'elem' type invariant] inv'3 elem}
+    any
+    [ return' (result:t_Vec'1)-> {inv'4 result}
+      {[%#svec7] Seq.length (view'2 result) = UIntSize.to_int n}
+      {[%#svec8] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'1 result i = elem}
+      (! return' {result}) ]
+    
+  
+  use prelude.prelude.Intrinsic
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_T'0
+  
+  use seq.Seq
+  
+  use prelude.prelude.Borrow
+  
+  function is_elt'0 [#"sparse_array.rs" 71 4 71 36] (self : t_Sparse'0) (i : int) : bool =
+    [%#ssparse_array12] UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 i) < UIntSize.to_int self.t_Sparse__n'0
+    /\ UIntSize.to_int (index_logic'1 self.t_Sparse__back'0 (UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 i)))
+    = i
+  
+  use prelude.prelude.Mapping
+  
+  use seq.Seq
+  
+  function view'0 [#"sparse_array.rs" 38 4 38 33] (self : t_Sparse'0) : Seq.seq (t_Option'0) =
+    [%#ssparse_array9] Seq.create (UIntSize.to_int self.t_Sparse__size'0) (Mapping.from_fn (fun (i : int) -> if is_elt'0 self i then
+      C_Some'0 (index_logic'0 self.t_Sparse__values'0 i)
+    else
+      C_None'0
+    ))
+  
+  use seq.Seq
+  
   meta "compute_max_steps" 1000000
   
-  let rec create (sz:usize) (dummy:t) (return'  (ret:Sparse'0.t_Sparse t))= {[@expl:create 'dummy' type invariant] [%#ssparse_array3] inv'0 dummy}
+  let rec create'0 (sz:usize) (dummy:t_T'0) (return'  (ret:t_Sparse'0))= {[@expl:create 'dummy' type invariant] [%#ssparse_array3] inv'0 dummy}
     (! bb0
-    [ bb0 = s0
-      [ s0 = from_elem'0 {dummy} {sz} (fun (_ret':Vec'0.t_Vec t (Global'0.t_Global)) ->  [ &_6 <- _ret' ] s1)
-      | s1 = bb1 ]
-      
+    [ bb0 = s0 [ s0 = from_elem'0 {dummy} {sz} (fun (_ret':t_Vec'0) ->  [ &_6 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0
-      [ s0 = from_elem'1 {[%#ssparse_array0] (0 : usize)} {sz}
-          (fun (_ret':Vec'0.t_Vec usize (Global'0.t_Global)) ->  [ &_9 <- _ret' ] s1)
+      [ s0 = from_elem'1 {[%#ssparse_array0] (0 : usize)} {sz} (fun (_ret':t_Vec'1) ->  [ &_9 <- _ret' ] s1)
       | s1 = bb2 ]
       
     | bb2 = s0
-      [ s0 = from_elem'1 {[%#ssparse_array1] (0 : usize)} {sz}
-          (fun (_ret':Vec'0.t_Vec usize (Global'0.t_Global)) ->  [ &_11 <- _ret' ] s1)
+      [ s0 = from_elem'1 {[%#ssparse_array1] (0 : usize)} {sz} (fun (_ret':t_Vec'1) ->  [ &_11 <- _ret' ] s1)
       | s1 = bb3 ]
       
-    | bb3 = s0 [ s0 =  [ &_0 <- Sparse'0.C_Sparse sz ([%#ssparse_array2] (0 : usize)) _6 _9 _11 ] s1 | s1 = bb4 ] 
+    | bb3 = s0
+      [ s0 = 
+        [ &_0 <- { t_Sparse__size'0 = sz;
+                   t_Sparse__n'0 = ([%#ssparse_array2] (0 : usize));
+                   t_Sparse__values'0 = _6;
+                   t_Sparse__idx'0 = _9;
+                   t_Sparse__back'0 = _11 } ]
+        
+        s1
+      | s1 = bb4 ]
+      
     | bb4 = bb5
     | bb5 = bb6
     | bb6 = return' {_0} ]
     )
-    [ & _0 : Sparse'0.t_Sparse t = any_l ()
+    [ & _0 : t_Sparse'0 = any_l ()
     | & sz : usize = sz
-    | & dummy : t = dummy
-    | & _6 : Vec'0.t_Vec t (Global'0.t_Global) = any_l ()
-    | & _9 : Vec'0.t_Vec usize (Global'0.t_Global) = any_l ()
-    | & _11 : Vec'0.t_Vec usize (Global'0.t_Global) = any_l () ]
+    | & dummy : t_T'0 = dummy
+    | & _6 : t_Vec'0 = any_l ()
+    | & _9 : t_Vec'1 = any_l ()
+    | & _11 : t_Vec'1 = any_l () ]
     
-    [ return' (result:Sparse'0.t_Sparse t)-> {[@expl:create result type invariant] [%#ssparse_array4] inv'1 result}
-      {[@expl:create ensures #0] [%#ssparse_array5] T_sparse_array__Sparse.t_Sparse__size result = sz}
+    [ return' (result:t_Sparse'0)-> {[@expl:create result type invariant] [%#ssparse_array4] inv'1 result}
+      {[@expl:create ensures #0] [%#ssparse_array5] result.t_Sparse__size'0 = sz}
       {[@expl:create ensures #1] [%#ssparse_array6] forall i : int . 0 <= i /\ i < UIntSize.to_int sz
-       -> Seq.get (view'0 result) i = Option'0.C_None}
+       -> Seq.get (view'0 result) i = C_None'0}
       (! return' {result}) ]
     
 end
@@ -1267,296 +1140,297 @@ module M_sparse_array__f [#"sparse_array.rs" 140 0 140 10]
   let%span ssparse_array35 = "sparse_array.rs" 109 14 109 43
   let%span ssparse_array36 = "sparse_array.rs" 110 14 110 93
   let%span ssparse_array37 = "sparse_array.rs" 111 14 111 37
-  let%span smodel38 = "../../../creusot-contracts/src/model.rs" 91 8 91 22
+  let%span smodel38 = "../../../creusot-contracts/src/model.rs" 88 8 88 22
   let%span ssparse_array39 = "sparse_array.rs" 40 12 41 82
-  let%span smodel40 = "../../../creusot-contracts/src/model.rs" 109 8 109 22
+  let%span smodel40 = "../../../creusot-contracts/src/model.rs" 106 8 106 22
   let%span ssparse_array41 = "sparse_array.rs" 72 20 73 52
   let%span sops42 = "../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
   let%span ssparse_array43 = "sparse_array.rs" 51 12 59 17
-  let%span svec44 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
+  let%span svec44 = "../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   let%span sinvariant45 = "../../../creusot-contracts/src/invariant.rs" 24 8 24 18
   let%span sinvariant46 = "../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   
   use prelude.prelude.Int32
   
-  use prelude.prelude.Int
-  
-  use T_sparse_array__Sparse as Sparse'0
-  
-  predicate inv'0 (_1 : Sparse'0.t_Sparse int32)
-  
-  use prelude.prelude.Borrow
-  
-  predicate invariant'2 (self : borrowed (Sparse'0.t_Sparse int32)) =
-    [%#sinvariant46] inv'0 self.current /\ inv'0 self.final
-  
-  predicate inv'4 (_1 : borrowed (Sparse'0.t_Sparse int32))
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : borrowed (Sparse'0.t_Sparse int32) [inv'4 x] . inv'4 x = invariant'2 x
-  
-  use T_core__option__Option as Option'0
-  
-  predicate inv'3 (_1 : Option'0.t_Option int32)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : Option'0.t_Option int32 [inv'3 x] . inv'3 x = true
-  
-  predicate invariant'1 (self : Sparse'0.t_Sparse int32) =
-    [%#sinvariant45] inv'0 self
-  
-  predicate inv'2 (_1 : Sparse'0.t_Sparse int32)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : Sparse'0.t_Sparse int32 [inv'2 x] . inv'2 x = invariant'1 x
+  use prelude.prelude.UIntSize
   
   predicate inv'1 (_1 : int32)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : int32 [inv'1 x] . inv'1 x = true
+  use prelude.prelude.Opaque
   
-  use seq.Seq
+  type t_NonNull'0  =
+    { t_NonNull__pointer'0: opaque_ptr }
   
-  use seq.Seq
+  type t_Unique'0  =
+    { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
   
-  use T_alloc__alloc__Global as Global'0
+  type t_Cap'0  =
+    { t_Cap__0'0: usize }
   
-  use T_alloc__vec__Vec as Vec'0
+  type t_RawVec'0  =
+    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+  
+  type t_Vec'0  =
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
+  
+  type t_NonNull'1  =
+    { t_NonNull__pointer'1: opaque_ptr }
+  
+  type t_Unique'1  =
+    { t_Unique__pointer'1: t_NonNull'1; t_Unique__qy95zmarker'1: () }
+  
+  type t_RawVec'1  =
+    { t_RawVec__ptr'1: t_Unique'1; t_RawVec__cap'1: t_Cap'0; t_RawVec__alloc'1: () }
+  
+  type t_Vec'1  =
+    { t_Vec__buf'1: t_RawVec'1; t_Vec__len'1: usize }
+  
+  type t_Sparse'0  =
+    { t_Sparse__size'0: usize;
+      t_Sparse__n'0: usize;
+      t_Sparse__values'0: t_Vec'0;
+      t_Sparse__idx'0: t_Vec'1;
+      t_Sparse__back'0: t_Vec'1 }
+  
+  predicate inv'0 (_1 : t_Sparse'0)
+  
+  use prelude.prelude.Int
   
   use prelude.prelude.UIntSize
   
-  use prelude.prelude.UIntSize
+  type t_Option'1  =
+    | C_None'1
+    | C_Some'1 int32
+  
+  use seq.Seq
+  
+  use prelude.prelude.Borrow
+  
+  use seq.Seq
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
   use seq.Seq
   
-  function view'5 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
+  function view'5 (self : t_Vec'1) : Seq.seq usize
   
-  axiom view'5_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#svec44] Seq.length (view'5 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
+  axiom view'5_spec : forall self : t_Vec'1 . [%#svec44] Seq.length (view'5 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
-  function index_logic'1 [@inline:trivial] (self : Vec'0.t_Vec usize (Global'0.t_Global)) (ix : int) : usize =
+  use seq.Seq
+  
+  function index_logic'1 [@inline:trivial] (self : t_Vec'1) (ix : int) : usize =
     [%#sops42] Seq.get (view'5 self) ix
   
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use T_alloc__vec__Vec as Vec'0
-  
-  function view'4 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32
-  
-  axiom view'4_spec : forall self : Vec'0.t_Vec int32 (Global'0.t_Global) . [%#svec44] Seq.length (view'4 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  use T_sparse_array__Sparse as T_sparse_array__Sparse
-  
-  predicate invariant'0 [#"sparse_array.rs" 49 4 49 30] (self : Sparse'0.t_Sparse int32) =
-    [%#ssparse_array43] UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__n self)
-    <= UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ Seq.length (view'4 (T_sparse_array__Sparse.t_Sparse__values self))
-    = UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ Seq.length (view'5 (T_sparse_array__Sparse.t_Sparse__idx self))
-    = UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ Seq.length (view'5 (T_sparse_array__Sparse.t_Sparse__back self))
-    = UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-    /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__n self)
-     -> match index_logic'1 (T_sparse_array__Sparse.t_Sparse__back self) i with
-      | j -> 0 <= UIntSize.to_int j
-      /\ UIntSize.to_int j < UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)
-      /\ UIntSize.to_int (index_logic'1 (T_sparse_array__Sparse.t_Sparse__idx self) (UIntSize.to_int j)) = i
-      end)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : Sparse'0.t_Sparse int32 [inv'0 x] . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | Sparse'0.C_Sparse size n values idx back -> true
-    end)
-  
-  use prelude.prelude.Intrinsic
-  
-  use prelude.prelude.Int32
-  
-  function view'0 (self : int32) : int =
-    [%#smodel38] Int32.to_int self
-  
-  use T_core__option__Option as Option'0
+  function is_elt'0 [#"sparse_array.rs" 71 4 71 36] (self : t_Sparse'0) (i : int) : bool =
+    [%#ssparse_array41] UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 i) < UIntSize.to_int self.t_Sparse__n'0
+    /\ UIntSize.to_int (index_logic'1 self.t_Sparse__back'0 (UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 i)))
+    = i
   
   use seq.Seq
   
   use seq.Seq
+  
+  function view'4 (self : t_Vec'0) : Seq.seq int32
+  
+  axiom view'4_spec : forall self : t_Vec'0 . [%#svec44] Seq.length (view'4 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  use seq.Seq
+  
+  function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : int32 =
+    [%#sops42] Seq.get (view'4 self) ix
   
   use prelude.prelude.Mapping
   
   use seq.Seq
   
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec int32 (Global'0.t_Global)) (ix : int) : int32 =
-    [%#sops42] Seq.get (view'4 self) ix
-  
-  function is_elt'0 [#"sparse_array.rs" 71 4 71 36] (self : Sparse'0.t_Sparse int32) (i : int) : bool =
-    [%#ssparse_array41] UIntSize.to_int (index_logic'1 (T_sparse_array__Sparse.t_Sparse__idx self) i)
-    < UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__n self)
-    /\ UIntSize.to_int (index_logic'1 (T_sparse_array__Sparse.t_Sparse__back self) (UIntSize.to_int (index_logic'1 (T_sparse_array__Sparse.t_Sparse__idx self) i)))
-    = i
-  
-  use seq.Seq
-  
-  function view'1 [#"sparse_array.rs" 38 4 38 33] (self : Sparse'0.t_Sparse int32) : Seq.seq (Option'0.t_Option int32) =
-    [%#ssparse_array39] Seq.create (UIntSize.to_int (T_sparse_array__Sparse.t_Sparse__size self)) (Mapping.from_fn (fun (i : int) -> if is_elt'0 self i then
-      Option'0.C_Some (index_logic'0 (T_sparse_array__Sparse.t_Sparse__values self) i)
+  function view'1 [#"sparse_array.rs" 38 4 38 33] (self : t_Sparse'0) : Seq.seq (t_Option'1) =
+    [%#ssparse_array39] Seq.create (UIntSize.to_int self.t_Sparse__size'0) (Mapping.from_fn (fun (i : int) -> if is_elt'0 self i then
+      C_Some'1 (index_logic'0 self.t_Sparse__values'0 i)
     else
-      Option'0.C_None
+      C_None'1
     ))
   
   use seq.Seq
   
-  function view'3 (self : borrowed (Sparse'0.t_Sparse int32)) : Seq.seq (Option'0.t_Option int32) =
+  predicate invariant'0 [#"sparse_array.rs" 49 4 49 30] (self : t_Sparse'0) =
+    [%#ssparse_array43] UIntSize.to_int self.t_Sparse__n'0 <= UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'4 self.t_Sparse__values'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'5 self.t_Sparse__idx'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'5 self.t_Sparse__back'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int self.t_Sparse__n'0
+     -> match index_logic'1 self.t_Sparse__back'0 i with
+      | j -> 0 <= UIntSize.to_int j
+      /\ UIntSize.to_int j < UIntSize.to_int self.t_Sparse__size'0
+      /\ UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 (UIntSize.to_int j)) = i
+      end)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Sparse'0 [inv'0 x] . inv'0 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_Sparse__size'0 = size ; t_Sparse__n'0 = n ; t_Sparse__values'0 = values ; t_Sparse__idx'0 = idx ; t_Sparse__back'0 = back} -> true
+    end)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : int32 [inv'1 x] . inv'1 x = true
+  
+  predicate inv'2 (_1 : t_Sparse'0)
+  
+  predicate invariant'1 (self : t_Sparse'0) =
+    [%#sinvariant45] inv'0 self
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Sparse'0 [inv'2 x] . inv'2 x = invariant'1 x
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 int32
+  
+  predicate inv'3 (_1 : t_Option'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
+  
+  predicate inv'4 (_1 : borrowed (t_Sparse'0))
+  
+  predicate invariant'2 (self : borrowed (t_Sparse'0)) =
+    [%#sinvariant46] inv'0 self.current /\ inv'0 self.final
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : borrowed (t_Sparse'0) [inv'4 x] . inv'4 x = invariant'2 x
+  
+  let rec create'0 (sz:usize) (dummy:int32) (return'  (ret:t_Sparse'0))= {[@expl:create 'dummy' type invariant] [%#ssparse_array23] inv'1 dummy}
+    any
+    [ return' (result:t_Sparse'0)-> {[%#ssparse_array24] inv'0 result}
+      {[%#ssparse_array25] result.t_Sparse__size'0 = sz}
+      {[%#ssparse_array26] forall i : int . 0 <= i /\ i < UIntSize.to_int sz  -> Seq.get (view'1 result) i = C_None'1}
+      (! return' {result}) ]
+    
+  
+  function view'2 (self : t_Sparse'0) : Seq.seq (t_Option'1) =
+    [%#smodel38] view'1 self
+  
+  use seq.Seq
+  
+  let rec get'0 (self:t_Sparse'0) (i:usize) (return'  (ret:t_Option'0))= {[@expl:get 'self' type invariant] [%#ssparse_array27] inv'2 self}
+    {[@expl:get requires] [%#ssparse_array28] UIntSize.to_int i < Seq.length (view'2 self)}
+    any
+    [ return' (result:t_Option'0)-> {[%#ssparse_array29] inv'3 result}
+      {[%#ssparse_array30] match result with
+        | C_None'0 -> Seq.get (view'2 self) (UIntSize.to_int i) = C_None'1
+        | C_Some'0 x -> Seq.get (view'2 self) (UIntSize.to_int i) = C_Some'1 x
+        end}
+      {[%#ssparse_array31] match Seq.get (view'2 self) (UIntSize.to_int i) with
+        | C_None'1 -> result = C_None'0
+        | C_Some'1 _ -> true
+        end}
+      (! return' {result}) ]
+    
+  
+  function view'3 (self : borrowed (t_Sparse'0)) : Seq.seq (t_Option'1) =
     [%#smodel40] view'1 self.current
   
-  let rec set'0 (self:borrowed (Sparse'0.t_Sparse int32)) (i:usize) (v:int32) (return'  (ret:()))= {[@expl:set 'self' type invariant] [%#ssparse_array32] inv'4 self}
+  let rec set'0 (self:borrowed (t_Sparse'0)) (i:usize) (v:int32) (return'  (ret:()))= {[@expl:set 'self' type invariant] [%#ssparse_array32] inv'4 self}
     {[@expl:set 'v' type invariant] [%#ssparse_array33] inv'1 v}
     {[@expl:set requires] [%#ssparse_array34] UIntSize.to_int i < Seq.length (view'3 self)}
     any
     [ return' (result:())-> {[%#ssparse_array35] Seq.length (view'1 self.final) = Seq.length (view'3 self)}
       {[%#ssparse_array36] forall j : int . 0 <= j /\ j < Seq.length (view'3 self) /\ j <> UIntSize.to_int i
        -> Seq.get (view'1 self.final) j = Seq.get (view'3 self) j}
-      {[%#ssparse_array37] Seq.get (view'1 self.final) (UIntSize.to_int i) = Option'0.C_Some v}
+      {[%#ssparse_array37] Seq.get (view'1 self.final) (UIntSize.to_int i) = C_Some'1 v}
       (! return' {result}) ]
     
   
-  function view'2 (self : Sparse'0.t_Sparse int32) : Seq.seq (Option'0.t_Option int32) =
-    [%#smodel38] view'1 self
+  use prelude.prelude.Int32
   
-  let rec get'0 (self:Sparse'0.t_Sparse int32) (i:usize) (return'  (ret:Option'0.t_Option int32))= {[@expl:get 'self' type invariant] [%#ssparse_array27] inv'2 self}
-    {[@expl:get requires] [%#ssparse_array28] UIntSize.to_int i < Seq.length (view'2 self)}
-    any
-    [ return' (result:Option'0.t_Option int32)-> {[%#ssparse_array29] inv'3 result}
-      {[%#ssparse_array30] match result with
-        | Option'0.C_None -> Seq.get (view'2 self) (UIntSize.to_int i) = Option'0.C_None
-        | Option'0.C_Some x -> Seq.get (view'2 self) (UIntSize.to_int i) = Option'0.C_Some x
-        end}
-      {[%#ssparse_array31] match Seq.get (view'2 self) (UIntSize.to_int i) with
-        | Option'0.C_None -> result = Option'0.C_None
-        | Option'0.C_Some _ -> true
-        end}
-      (! return' {result}) ]
-    
+  function view'0 (self : int32) : int =
+    [%#smodel38] Int32.to_int self
   
-  let rec create'0 (sz:usize) (dummy:int32) (return'  (ret:Sparse'0.t_Sparse int32))= {[@expl:create 'dummy' type invariant] [%#ssparse_array23] inv'1 dummy}
-    any
-    [ return' (result:Sparse'0.t_Sparse int32)-> {[%#ssparse_array24] inv'0 result}
-      {[%#ssparse_array25] T_sparse_array__Sparse.t_Sparse__size result = sz}
-      {[%#ssparse_array26] forall i : int . 0 <= i /\ i < UIntSize.to_int sz
-       -> Seq.get (view'1 result) i = Option'0.C_None}
-      (! return' {result}) ]
-    
+  use prelude.prelude.Intrinsic
   
   meta "compute_max_steps" 1000000
   
-  let rec f (_1:()) (return'  (ret:()))= (! bb0
+  let rec f'0 (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &default <- [%#ssparse_array0] (0 : int32) ] s1
-      | s1 = create'0 {[%#ssparse_array1] (10 : usize)} {default}
-          (fun (_ret':Sparse'0.t_Sparse int32) ->  [ &a <- _ret' ] s2)
+      | s1 = create'0 {[%#ssparse_array1] (10 : usize)} {default} (fun (_ret':t_Sparse'0) ->  [ &a <- _ret' ] s2)
       | s2 = bb1 ]
       
     | bb1 = s0
-      [ s0 = create'0 {[%#ssparse_array2] (20 : usize)} {default}
-          (fun (_ret':Sparse'0.t_Sparse int32) ->  [ &b <- _ret' ] s1)
+      [ s0 = create'0 {[%#ssparse_array2] (20 : usize)} {default} (fun (_ret':t_Sparse'0) ->  [ &b <- _ret' ] s1)
       | s1 = bb2 ]
       
     | bb2 = s0
-      [ s0 = get'0 {a} {[%#ssparse_array3] (5 : usize)} (fun (_ret':Option'0.t_Option int32) ->  [ &x <- _ret' ] s1)
-      | s1 = bb3 ]
+      [ s0 = get'0 {a} {[%#ssparse_array3] (5 : usize)} (fun (_ret':t_Option'0) ->  [ &x <- _ret' ] s1) | s1 = bb3 ]
       
     | bb3 = s0
-      [ s0 = get'0 {b} {[%#ssparse_array4] (7 : usize)} (fun (_ret':Option'0.t_Option int32) ->  [ &y <- _ret' ] s1)
-      | s1 = bb4 ]
+      [ s0 = get'0 {b} {[%#ssparse_array4] (7 : usize)} (fun (_ret':t_Option'0) ->  [ &y <- _ret' ] s1) | s1 = bb4 ]
       
     | bb4 = s0
-      [ s0 = {[@expl:assertion] [%#ssparse_array5] x = Option'0.C_None /\ y = Option'0.C_None} s1
+      [ s0 = {[@expl:assertion] [%#ssparse_array5] x = C_None'0 /\ y = C_None'0} s1
       | s1 = {inv'0 a}
-        Borrow.borrow_mut <Sparse'0.t_Sparse int32> {a}
-          (fun (_ret':borrowed (Sparse'0.t_Sparse int32)) ->
-             [ &_13 <- _ret' ] 
-            -{inv'0 _ret'.final}-
-             [ &a <- _ret'.final ] 
-            s2)
+        Borrow.borrow_mut <t_Sparse'0> {a}
+          (fun (_ret':borrowed (t_Sparse'0)) ->  [ &_13 <- _ret' ] -{inv'0 _ret'.final}-  [ &a <- _ret'.final ] s2)
       | s2 = set'0 {_13} {[%#ssparse_array6] (5 : usize)} {[%#ssparse_array7] (1 : int32)}
           (fun (_ret':()) ->  [ &_12 <- _ret' ] s3)
       | s3 = bb5 ]
       
     | bb5 = s0
       [ s0 = {inv'0 b}
-        Borrow.borrow_mut <Sparse'0.t_Sparse int32> {b}
-          (fun (_ret':borrowed (Sparse'0.t_Sparse int32)) ->
-             [ &_15 <- _ret' ] 
-            -{inv'0 _ret'.final}-
-             [ &b <- _ret'.final ] 
-            s1)
+        Borrow.borrow_mut <t_Sparse'0> {b}
+          (fun (_ret':borrowed (t_Sparse'0)) ->  [ &_15 <- _ret' ] -{inv'0 _ret'.final}-  [ &b <- _ret'.final ] s1)
       | s1 = set'0 {_15} {[%#ssparse_array8] (7 : usize)} {[%#ssparse_array9] (2 : int32)}
           (fun (_ret':()) ->  [ &_14 <- _ret' ] s2)
       | s2 = bb6 ]
       
     | bb6 = s0
-      [ s0 = get'0 {a} {[%#ssparse_array10] (5 : usize)} (fun (_ret':Option'0.t_Option int32) ->  [ &_16 <- _ret' ] s1)
-      | s1 = bb7 ]
+      [ s0 = get'0 {a} {[%#ssparse_array10] (5 : usize)} (fun (_ret':t_Option'0) ->  [ &_16 <- _ret' ] s1) | s1 = bb7 ]
       
     | bb7 = s0
       [ s0 =  [ &x <- _16 ] s1
-      | s1 = get'0 {b} {[%#ssparse_array11] (7 : usize)} (fun (_ret':Option'0.t_Option int32) ->  [ &_18 <- _ret' ] s2)
+      | s1 = get'0 {b} {[%#ssparse_array11] (7 : usize)} (fun (_ret':t_Option'0) ->  [ &_18 <- _ret' ] s2)
       | s2 = bb8 ]
       
     | bb8 = s0
       [ s0 =  [ &y <- _18 ] s1
       | s1 = {[@expl:assertion] [%#ssparse_array12] match x with
-          | Option'0.C_None -> false
-          | Option'0.C_Some z -> view'0 z = 1
+          | C_None'0 -> false
+          | C_Some'0 z -> view'0 z = 1
           end}
         s2
       | s2 = {[@expl:assertion] [%#ssparse_array13] match y with
-          | Option'0.C_None -> false
-          | Option'0.C_Some z -> view'0 z = 2
+          | C_None'0 -> false
+          | C_Some'0 z -> view'0 z = 2
           end}
         s3
-      | s3 = get'0 {a} {[%#ssparse_array14] (7 : usize)} (fun (_ret':Option'0.t_Option int32) ->  [ &_24 <- _ret' ] s4)
+      | s3 = get'0 {a} {[%#ssparse_array14] (7 : usize)} (fun (_ret':t_Option'0) ->  [ &_24 <- _ret' ] s4)
       | s4 = bb9 ]
       
     | bb9 = s0
       [ s0 =  [ &x <- _24 ] s1
-      | s1 = get'0 {b} {[%#ssparse_array15] (5 : usize)} (fun (_ret':Option'0.t_Option int32) ->  [ &_26 <- _ret' ] s2)
+      | s1 = get'0 {b} {[%#ssparse_array15] (5 : usize)} (fun (_ret':t_Option'0) ->  [ &_26 <- _ret' ] s2)
       | s2 = bb10 ]
       
     | bb10 = s0
       [ s0 =  [ &y <- _26 ] s1
-      | s1 = {[@expl:assertion] [%#ssparse_array16] x = Option'0.C_None /\ y = Option'0.C_None} s2
-      | s2 = get'0 {a} {[%#ssparse_array17] (0 : usize)} (fun (_ret':Option'0.t_Option int32) ->  [ &_30 <- _ret' ] s3)
+      | s1 = {[@expl:assertion] [%#ssparse_array16] x = C_None'0 /\ y = C_None'0} s2
+      | s2 = get'0 {a} {[%#ssparse_array17] (0 : usize)} (fun (_ret':t_Option'0) ->  [ &_30 <- _ret' ] s3)
       | s3 = bb11 ]
       
     | bb11 = s0
       [ s0 =  [ &x <- _30 ] s1
-      | s1 = get'0 {b} {[%#ssparse_array18] (0 : usize)} (fun (_ret':Option'0.t_Option int32) ->  [ &_32 <- _ret' ] s2)
+      | s1 = get'0 {b} {[%#ssparse_array18] (0 : usize)} (fun (_ret':t_Option'0) ->  [ &_32 <- _ret' ] s2)
       | s2 = bb12 ]
       
     | bb12 = s0
       [ s0 =  [ &y <- _32 ] s1
-      | s1 = {[@expl:assertion] [%#ssparse_array19] x = Option'0.C_None /\ y = Option'0.C_None} s2
-      | s2 = get'0 {a} {[%#ssparse_array20] (9 : usize)} (fun (_ret':Option'0.t_Option int32) ->  [ &_36 <- _ret' ] s3)
+      | s1 = {[@expl:assertion] [%#ssparse_array19] x = C_None'0 /\ y = C_None'0} s2
+      | s2 = get'0 {a} {[%#ssparse_array20] (9 : usize)} (fun (_ret':t_Option'0) ->  [ &_36 <- _ret' ] s3)
       | s3 = bb13 ]
       
     | bb13 = s0
       [ s0 =  [ &x <- _36 ] s1
-      | s1 = get'0 {b} {[%#ssparse_array21] (9 : usize)} (fun (_ret':Option'0.t_Option int32) ->  [ &_38 <- _ret' ] s2)
+      | s1 = get'0 {b} {[%#ssparse_array21] (9 : usize)} (fun (_ret':t_Option'0) ->  [ &_38 <- _ret' ] s2)
       | s2 = bb14 ]
       
     | bb14 = s0
       [ s0 =  [ &y <- _38 ] s1
-      | s1 = {[@expl:assertion] [%#ssparse_array22] x = Option'0.C_None /\ y = Option'0.C_None} s2
+      | s1 = {[@expl:assertion] [%#ssparse_array22] x = C_None'0 /\ y = C_None'0} s2
       | s2 = bb15 ]
       
     | bb15 = bb16
@@ -1564,27 +1438,21 @@ module M_sparse_array__f [#"sparse_array.rs" 140 0 140 10]
     )
     [ & _0 : () = any_l ()
     | & default : int32 = any_l ()
-    | & a : Sparse'0.t_Sparse int32 = any_l ()
-    | & b : Sparse'0.t_Sparse int32 = any_l ()
-    | & x : Option'0.t_Option int32 = any_l ()
-    | & y : Option'0.t_Option int32 = any_l ()
+    | & a : t_Sparse'0 = any_l ()
+    | & b : t_Sparse'0 = any_l ()
+    | & x : t_Option'0 = any_l ()
+    | & y : t_Option'0 = any_l ()
     | & _12 : () = any_l ()
-    | & _13 : borrowed (Sparse'0.t_Sparse int32) = any_l ()
+    | & _13 : borrowed (t_Sparse'0) = any_l ()
     | & _14 : () = any_l ()
-    | & _15 : borrowed (Sparse'0.t_Sparse int32) = any_l ()
-    | & _16 : Option'0.t_Option int32 = any_l ()
-    | & _18 : Option'0.t_Option int32 = any_l ()
-    | & _24 : Option'0.t_Option int32 = any_l ()
-    | & _26 : Option'0.t_Option int32 = any_l ()
-    | & _30 : Option'0.t_Option int32 = any_l ()
-    | & _32 : Option'0.t_Option int32 = any_l ()
-    | & _36 : Option'0.t_Option int32 = any_l ()
-    | & _38 : Option'0.t_Option int32 = any_l () ]
+    | & _15 : borrowed (t_Sparse'0) = any_l ()
+    | & _16 : t_Option'0 = any_l ()
+    | & _18 : t_Option'0 = any_l ()
+    | & _24 : t_Option'0 = any_l ()
+    | & _26 : t_Option'0 = any_l ()
+    | & _30 : t_Option'0 = any_l ()
+    | & _32 : t_Option'0 = any_l ()
+    | & _36 : t_Option'0 = any_l ()
+    | & _38 : t_Option'0 = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
-end
-module M_sparse_array__qyi10082018489091301134 [#"sparse_array.rs" 33 0 33 26] (* <Sparse<T> as creusot_contracts::View> *)
-  type t
-end
-module M_sparse_array__qyi15692326540577046543 [#"sparse_array.rs" 46 0 46 31] (* <Sparse<T> as creusot_contracts::Invariant> *)
-  type t
 end

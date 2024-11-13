@@ -6,12 +6,11 @@ pub trait ClonedExt<I> {
 }
 
 impl<I> ClonedExt<I> for Cloned<I> {
-    #[open(self)]
     #[logic]
     #[trusted]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -24,7 +23,6 @@ impl<I> Resolve for Cloned<I> {
 
     #[trusted]
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
     fn resolve_coherence(&self) {}

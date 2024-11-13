@@ -2,6 +2,7 @@ use super::pearlite::{Term, TermKind};
 use crate::{
     contracts_items::{is_law, is_spec},
     ctx::*,
+    util::erased_identity_for_item,
     very_stable_hash::get_very_stable_hash,
 };
 use rustc_hir::def_id::DefId;
@@ -10,9 +11,8 @@ use rustc_infer::{
     traits::{Obligation, ObligationCause, TraitEngine},
 };
 use rustc_middle::ty::{
-    AssocItem, AssocItemContainer, Const, ConstKind, EarlyBinder, GenericArgs, GenericArgsRef,
-    ParamConst, ParamEnv, ParamTy, Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable,
-    TypeFolder,
+    AssocItemContainer, Const, ConstKind, EarlyBinder, GenericArgsRef, ParamConst, ParamEnv,
+    ParamTy, Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder,
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::{
@@ -38,15 +38,14 @@ pub(crate) struct TraitImpl<'tcx> {
 }
 
 impl<'tcx> TranslationCtx<'tcx> {
-    // Translate a trait declaration
-    pub(crate) fn translate_trait(&mut self, def_id: DefId) -> TranslatedItem {
-        debug!("translating trait {def_id:?}");
-        TranslatedItem::Trait {}
-    }
-
     pub(crate) fn laws_inner(&self, trait_or_impl: DefId) -> Vec<DefId> {
         let mut laws = Vec::new();
-        for item in associated_items(self.tcx, trait_or_impl) {
+        for item in self
+            .tcx
+            .associated_items(trait_or_impl)
+            .in_definition_order()
+            .filter(move |item| !is_spec(self.tcx, item.def_id))
+        {
             if is_law(self.tcx, item.def_id) {
                 laws.push(item.def_id);
             }
@@ -77,7 +76,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 continue;
             }
 
-            let subst = GenericArgs::identity_for_item(self.tcx, impl_item);
+            let subst = erased_identity_for_item(self.tcx, impl_item);
 
             let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.skip_binder().args);
 
@@ -117,28 +116,6 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
 
         TraitImpl { laws, refinements }
-    }
-}
-
-pub(crate) fn evaluate_additional_predicates<'tcx>(
-    infcx: &InferCtxt<'tcx>,
-    p: Vec<Predicate<'tcx>>,
-    param_env: ParamEnv<'tcx>,
-    sp: Span,
-) -> Result<(), Vec<FulfillmentError<'tcx>>> {
-    let mut fulfill_cx = <dyn TraitEngine<'tcx, _>>::new(infcx);
-    for predicate in p {
-        let predicate = infcx.tcx.erase_regions(predicate);
-        let cause = ObligationCause::dummy_with_span(sp);
-        let obligation = Obligation { cause, param_env, recursion_depth: 0, predicate };
-        // holds &= infcx.predicate_may_hold(&obligation);
-        fulfill_cx.register_predicate_obligation(&infcx, obligation);
-    }
-    let errors = fulfill_cx.select_all_or_error(&infcx);
-    if !errors.is_empty() {
-        return Err(errors);
-    } else {
-        return Ok(());
     }
 }
 
@@ -192,16 +169,28 @@ fn logic_refinement_term<'tcx>(
     };
 
     refn
-    // // Don't use `item_name` here
-    // let name = item_name(ctx.tcx, impl_item_id, Namespace::ValueNS);
-
-    // Goal { name: format!("{}_spec", &*name).into(), goal: refn }
 }
 
-pub(crate) fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = &AssocItem> {
-    tcx.associated_items(def_id)
-        .in_definition_order()
-        .filter(move |item| !is_spec(tcx, item.def_id))
+pub(crate) fn evaluate_additional_predicates<'tcx>(
+    infcx: &InferCtxt<'tcx>,
+    p: Vec<Predicate<'tcx>>,
+    param_env: ParamEnv<'tcx>,
+    sp: Span,
+) -> Result<(), Vec<FulfillmentError<'tcx>>> {
+    let mut fulfill_cx = <dyn TraitEngine<'tcx, _>>::new(infcx);
+    for predicate in p {
+        let predicate = infcx.tcx.erase_regions(predicate);
+        let cause = ObligationCause::dummy_with_span(sp);
+        let obligation = Obligation { cause, param_env, recursion_depth: 0, predicate };
+        // holds &= infcx.predicate_may_hold(&obligation);
+        fulfill_cx.register_predicate_obligation(&infcx, obligation);
+    }
+    let errors = fulfill_cx.select_all_or_error(&infcx);
+    if !errors.is_empty() {
+        return Err(errors);
+    } else {
+        return Ok(());
+    }
 }
 
 /// The result of [`Self::resolve_assoc_item_opt`]: given the id of a trait item and some
@@ -421,7 +410,7 @@ fn still_specializable<'tcx>(
         return true;
     }
 
-    // Check wether on of the descendent of start_node applies too
+    // Check wether one of the descendents of start_node applies too
     let def_children = Default::default();
     let get_children = |node| {
         let ch = graph.children.get(&node).unwrap_or(&def_children);

@@ -1,10 +1,14 @@
-use crate::{contracts_items, ctx::TranslationCtx, pearlite::Term, util::snapshot_closure_id};
+use crate::{
+    contracts_items::{get_invariant_expl, is_assertion, is_loop_variant, is_snapshot_closure},
+    ctx::TranslationCtx,
+    pearlite::Term,
+};
 use indexmap::{IndexMap, IndexSet};
 use rustc_data_structures::graph::Successors;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{visit::Visitor, AggregateKind, BasicBlock, Body, Location, Operand, Rvalue},
-    ty::TyCtxt,
+    ty::{Ty, TyCtxt, TyKind},
 };
 
 #[derive(Debug, Clone)]
@@ -29,10 +33,10 @@ impl<'tcx> SpecClosures<'tcx> {
         let mut assertions = IndexMap::new();
         let mut snapshots = IndexMap::new();
         for clos in visitor.closures.into_iter() {
-            if contracts_items::is_assertion(ctx.tcx, clos) {
+            if is_assertion(ctx.tcx, clos) {
                 let term = ctx.term(clos).unwrap().clone();
                 assertions.insert(clos, term);
-            } else if contracts_items::is_snapshot_closure(ctx.tcx, clos) {
+            } else if is_snapshot_closure(ctx.tcx, clos) {
                 let term = ctx.term(clos).unwrap().clone();
                 snapshots.insert(clos, term);
             }
@@ -51,6 +55,14 @@ struct Closures<'tcx> {
 impl<'tcx> Closures<'tcx> {
     fn new(tcx: TyCtxt<'tcx>) -> Self {
         Closures { tcx, closures: IndexSet::new() }
+    }
+}
+
+fn snapshot_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
+    if let TyKind::Closure(def_id, _) = ty.peel_refs().kind() {
+        is_snapshot_closure(tcx, *def_id).then_some(*def_id)
+    } else {
+        None
     }
 }
 
@@ -79,9 +91,9 @@ struct Invariants<'tcx> {
 impl<'tcx> Visitor<'tcx> for Invariants<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         if let Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
-            let kind = if let Some(expl) = contracts_items::get_invariant_expl(self.tcx, *id) {
+            let kind = if let Some(expl) = get_invariant_expl(self.tcx, *id) {
                 LoopSpecKind::Invariant(expl)
-            } else if contracts_items::is_loop_variant(self.tcx, *id) {
+            } else if is_loop_variant(self.tcx, *id) {
                 LoopSpecKind::Variant
             } else {
                 return;

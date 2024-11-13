@@ -1,4 +1,4 @@
-use rustc_hir::{def::Namespace, def_id::DefId};
+use rustc_hir::def_id::DefId;
 use why3::{
     declaration::{Contract, Signature},
     exp::{Binder, Trigger},
@@ -8,8 +8,9 @@ use why3::{
 use crate::{
     backend,
     contracts_items::{should_replace_trigger, why3_attrs},
-    translation::specification::{Condition, PreContract},
-    util::{ident_of, item_name, AnonymousParamName, PreSignature},
+    naming::{anonymous_param_symbol, ident_of},
+    specification::{Condition, PreSignature},
+    translation::specification::PreContract,
 };
 
 use super::{logic::function_call, term::lower_pure, Namer, Why3Generator};
@@ -17,14 +18,15 @@ use super::{logic::function_call, term::lower_pure, Namer, Why3Generator};
 pub(crate) fn signature_of<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,
+    name: Ident,
     def_id: DefId,
 ) -> Signature {
     debug!("signature_of {def_id:?}");
     let pre_sig = ctx.sig(def_id).clone();
-    sig_to_why3(ctx, names, pre_sig, def_id)
+    sig_to_why3(ctx, names, name, pre_sig, def_id)
 }
 
-pub(crate) fn named_sig_to_why3<'tcx, N: Namer<'tcx>>(
+pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,
     name: Ident,
@@ -43,7 +45,7 @@ pub(crate) fn named_sig_to_why3<'tcx, N: Namer<'tcx>>(
         .map(|(ix, (id, _, ty))| {
             let ty = backend::ty::translate_ty(ctx, names, span, *ty);
             let id = if id.is_empty() {
-                format!("{}", AnonymousParamName(ix)).into()
+                anonymous_param_symbol(ix).as_str().into()
             } else {
                 ident_of(*id)
             };
@@ -71,18 +73,6 @@ pub(crate) fn named_sig_to_why3<'tcx, N: Namer<'tcx>>(
     sig
 }
 
-pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
-    pre_sig: PreSignature<'tcx>,
-    // FIXME: Get rid of this def id
-    // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
-    def_id: DefId,
-) -> Signature {
-    let name = item_name(ctx.tcx, def_id, Namespace::ValueNS);
-    named_sig_to_why3(ctx, names, name, pre_sig, def_id)
-}
-
 fn lower_condition<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,
@@ -91,7 +81,7 @@ fn lower_condition<'tcx, N: Namer<'tcx>>(
     why3::declaration::Condition { exp: lower_pure(ctx, names, &cond.term), expl: cond.expl }
 }
 
-pub(super) fn contract_to_why3<'tcx, N: Namer<'tcx>>(
+fn contract_to_why3<'tcx, N: Namer<'tcx>>(
     pre: PreContract<'tcx>,
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,

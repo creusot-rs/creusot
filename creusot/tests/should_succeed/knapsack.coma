@@ -2,19 +2,17 @@ module M_knapsack__max [#"knapsack.rs" 16 0 16 35]
   let%span sknapsack0 = "knapsack.rs" 14 11 14 15
   let%span sknapsack1 = "knapsack.rs" 15 10 15 31
   
-  use int.MinMax
-  
   use prelude.prelude.UIntSize
   
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Int
-  
   use prelude.prelude.UIntSize
+  
+  use int.MinMax
   
   meta "compute_max_steps" 1000000
   
-  let rec max (a:usize) (b:usize) (return'  (ret:usize))= {[@expl:max requires] [%#sknapsack0] true}
+  let rec max'0 (a:usize) (b:usize) (return'  (ret:usize))= {[@expl:max requires] [%#sknapsack0] true}
     (! bb0
     [ bb0 = s0
       [ s0 = UIntSize.lt {a} {b} (fun (_ret':bool) ->  [ &_5 <- _ret' ] s1)
@@ -29,173 +27,67 @@ module M_knapsack__max [#"knapsack.rs" 16 0 16 35]
       (! return' {result}) ]
     
 end
-module T_knapsack__Item [#"knapsack.rs" 8 0 8 21]
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  type t_Item 'name =
-    | C_Item 'name usize usize
-  
-  let rec t_Item < 'name > (input:t_Item 'name) (ret  (name:'name) (weight:usize) (value:usize))= any
-    [ good (name:'name) (weight:usize) (value:usize)-> {C_Item name weight value = input}
-      (! ret {name} {weight} {value}) ]
-    
-  
-  function t_Item__weight (self : t_Item 'name) : usize =
-    match self with
-      | C_Item _ a _ -> a
-      end
-  
-  function t_Item__value (self : t_Item 'name) : usize =
-    match self with
-      | C_Item _ _ a -> a
-      end
-end
 module M_knapsack__m [#"knapsack.rs" 35 0 35 57]
-  type name
-  
   let%span sknapsack0 = "knapsack.rs" 32 11 32 37
   let%span sknapsack1 = "knapsack.rs" 33 11 33 17
   let%span sknapsack2 = "knapsack.rs" 34 10 34 21
   let%span sknapsack3 = "knapsack.rs" 31 10 31 11
   let%span sknapsack4 = "knapsack.rs" 36 4 43 5
   
-  use int.MinMax
-  
-  use T_knapsack__Item as T_knapsack__Item
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.UIntSize
-  
-  use seq.Seq
-  
-  use T_knapsack__Item as T_knapsack__Item
-  
-  use T_knapsack__Item as Item'0
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
   use prelude.prelude.Int
   
-  constant items  : Seq.seq (Item'0.t_Item name)
+  use seq.Seq
+  
+  type t_Name'0
+  
+  use prelude.prelude.UIntSize
+  
+  type t_Item'0  =
+    { t_Item__name'0: t_Name'0; t_Item__weight'0: usize; t_Item__value'0: usize }
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use prelude.prelude.UIntSize
+  
+  use int.MinMax
+  
+  constant items  : Seq.seq (t_Item'0)
   
   constant i  : int
   
   constant w  : int
   
-  function m [#"knapsack.rs" 35 0 35 57] (items : Seq.seq (Item'0.t_Item name)) (i : int) (w : int) : int
+  function m'0 [#"knapsack.rs" 35 0 35 57] (items : Seq.seq (t_Item'0)) (i : int) (w : int) : int
   
-  goal vc_m : ([%#sknapsack1] 0 <= w)
+  goal vc_m'0 : ([%#sknapsack1] 0 <= w)
    -> ([%#sknapsack0] 0 <= i /\ i <= Seq.length items)
    -> (if i = 0 then
     [%#sknapsack2] 0 >= 0
   else
-    if UIntSize.to_int (T_knapsack__Item.t_Item__weight (Seq.get items (i - 1))) > w then
+    if UIntSize.to_int (Seq.get items (i - 1)).t_Item__weight'0 > w then
       ((([@expl:m requires #0] [%#sknapsack0] 0 <= i - 1 /\ i - 1 <= Seq.length items)
       && ([@expl:m requires #1] [%#sknapsack1] 0 <= w))
       /\ 0 <= ([%#sknapsack3] i) /\ ([%#sknapsack3] i - 1) < ([%#sknapsack3] i))
-      /\ (([%#sknapsack2] m items (i - 1) w >= 0)  -> ([%#sknapsack2] m items (i - 1) w >= 0))
+      /\ (([%#sknapsack2] m'0 items (i - 1) w >= 0)  -> ([%#sknapsack2] m'0 items (i - 1) w >= 0))
     else
       ((([@expl:m requires #0] [%#sknapsack0] 0 <= i - 1 /\ i - 1 <= Seq.length items)
       && ([@expl:m requires #1] [%#sknapsack1] 0 <= w))
       /\ 0 <= ([%#sknapsack3] i) /\ ([%#sknapsack3] i - 1) < ([%#sknapsack3] i))
-      /\ (([%#sknapsack2] m items (i - 1) w >= 0)
+      /\ (([%#sknapsack2] m'0 items (i - 1) w >= 0)
        -> ((([@expl:m requires #0] [%#sknapsack0] 0 <= i - 1 /\ i - 1 <= Seq.length items)
-      && ([@expl:m requires #1] [%#sknapsack1] 0
-      <= w - UIntSize.to_int (T_knapsack__Item.t_Item__weight (Seq.get items (i - 1)))))
+      && ([@expl:m requires #1] [%#sknapsack1] 0 <= w - UIntSize.to_int (Seq.get items (i - 1)).t_Item__weight'0))
       /\ 0 <= ([%#sknapsack3] i) /\ ([%#sknapsack3] i - 1) < ([%#sknapsack3] i))
-      /\ (([%#sknapsack2] m items (i - 1) (w
-      - UIntSize.to_int (T_knapsack__Item.t_Item__weight (Seq.get items (i - 1))))
-      >= 0)
-       -> ([%#sknapsack2] MinMax.max (m items (i - 1) w) (m items (i - 1) (w
-      - UIntSize.to_int (T_knapsack__Item.t_Item__weight (Seq.get items (i - 1))))
-      + UIntSize.to_int (T_knapsack__Item.t_Item__value (Seq.get items (i - 1))))
+      /\ (([%#sknapsack2] m'0 items (i - 1) (w - UIntSize.to_int (Seq.get items (i - 1)).t_Item__weight'0) >= 0)
+       -> ([%#sknapsack2] MinMax.max (m'0 items (i - 1) w) (m'0 items (i - 1) (w
+      - UIntSize.to_int (Seq.get items (i - 1)).t_Item__weight'0)
+      + UIntSize.to_int (Seq.get items (i - 1)).t_Item__value'0)
       >= 0)))
     
   )
 end
-module T_core__ptr__non_null__NonNull
-  use prelude.prelude.Opaque
-  
-  type t_NonNull 't =
-    | C_NonNull opaque_ptr
-  
-  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
-    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer}) ]
-    
-end
-module T_core__marker__PhantomData
-  type t_PhantomData 't =
-    | C_PhantomData
-  
-  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any [ good -> {C_PhantomData  = input} (! ret) ] 
-end
-module T_core__ptr__unique__Unique
-  use T_core__marker__PhantomData as PhantomData'0
-  
-  use T_core__ptr__non_null__NonNull as NonNull'0
-  
-  type t_Unique 't =
-    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
-  
-  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
-    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
-      = input}
-      (! ret {pointer} {_marker}) ]
-    
-end
-module T_alloc__raw_vec__Cap
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  type t_Cap  =
-    | C_Cap usize
-  
-  let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
-    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0}) ]
-    
-end
-module T_alloc__raw_vec__RawVec
-  use T_alloc__raw_vec__Cap as Cap'0
-  
-  use T_core__ptr__unique__Unique as Unique'0
-  
-  type t_RawVec 't 'a =
-    | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
-  
-  let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
-    [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
-      (! ret {ptr} {cap} {alloc}) ]
-    
-end
-module T_alloc__vec__Vec
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  use T_alloc__raw_vec__RawVec as RawVec'0
-  
-  type t_Vec 't 'a =
-    | C_Vec (RawVec'0.t_RawVec 't 'a) usize
-  
-  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
-    
-end
-module T_alloc__alloc__Global
-  type t_Global  =
-    | C_Global
-  
-  let rec t_Global (input:t_Global) (ret  )= any [ good -> {C_Global  = input} (! ret) ] 
-end
 module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
-  type name
-  
   let%span sknapsack0 = "knapsack.rs" 50 51 50 52
   let%span sknapsack1 = "knapsack.rs" 50 35 50 36
   let%span sknapsack2 = "knapsack.rs" 50 69 50 70
@@ -224,264 +116,389 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
   let%span sknapsack25 = "knapsack.rs" 47 11 47 33
   let%span sknapsack26 = "knapsack.rs" 48 11 48 84
   let%span sknapsack27 = "knapsack.rs" 49 75 49 91
-  let%span svec28 = "../../../creusot-contracts/src/std/vec.rs" 183 22 183 41
-  let%span svec29 = "../../../creusot-contracts/src/std/vec.rs" 184 22 184 76
-  let%span svec30 = "../../../creusot-contracts/src/std/vec.rs" 86 26 86 48
-  let%span smodel31 = "../../../creusot-contracts/src/model.rs" 91 8 91 22
+  let%span svec28 = "../../../creusot-contracts/src/std/vec.rs" 180 22 180 41
+  let%span svec29 = "../../../creusot-contracts/src/std/vec.rs" 181 22 181 76
+  let%span svec30 = "../../../creusot-contracts/src/std/vec.rs" 83 26 83 48
+  let%span smodel31 = "../../../creusot-contracts/src/model.rs" 88 8 88 22
   let%span sops32 = "../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
-  let%span svec33 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
+  let%span svec33 = "../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   let%span sknapsack34 = "knapsack.rs" 32 11 32 37
   let%span sknapsack35 = "knapsack.rs" 33 11 33 17
   let%span sknapsack36 = "knapsack.rs" 34 10 34 21
   let%span sknapsack37 = "knapsack.rs" 31 10 31 11
   let%span sknapsack38 = "knapsack.rs" 36 4 43 5
-  let%span svec39 = "../../../creusot-contracts/src/std/vec.rs" 165 27 165 46
-  let%span svec40 = "../../../creusot-contracts/src/std/vec.rs" 166 26 166 54
+  let%span svec39 = "../../../creusot-contracts/src/std/vec.rs" 162 27 162 46
+  let%span svec40 = "../../../creusot-contracts/src/std/vec.rs" 163 26 163 54
   let%span sknapsack41 = "knapsack.rs" 14 11 14 15
   let%span sknapsack42 = "knapsack.rs" 15 10 15 31
-  let%span svec43 = "../../../creusot-contracts/src/std/vec.rs" 155 27 155 46
-  let%span svec44 = "../../../creusot-contracts/src/std/vec.rs" 156 26 156 54
-  let%span svec45 = "../../../creusot-contracts/src/std/vec.rs" 157 26 157 57
-  let%span svec46 = "../../../creusot-contracts/src/std/vec.rs" 158 26 158 62
-  let%span svec47 = "../../../creusot-contracts/src/std/vec.rs" 159 26 159 55
-  let%span svec48 = "../../../creusot-contracts/src/std/vec.rs" 81 26 81 44
-  let%span svec49 = "../../../creusot-contracts/src/std/vec.rs" 90 26 90 56
-  let%span sslice50 = "../../../creusot-contracts/src/std/slice.rs" 126 20 126 37
-  let%span sslice51 = "../../../creusot-contracts/src/std/slice.rs" 133 20 133 37
-  let%span smodel52 = "../../../creusot-contracts/src/model.rs" 109 8 109 22
-  let%span sslice53 = "../../../creusot-contracts/src/std/slice.rs" 140 20 140 94
+  let%span svec43 = "../../../creusot-contracts/src/std/vec.rs" 152 27 152 46
+  let%span svec44 = "../../../creusot-contracts/src/std/vec.rs" 153 26 153 54
+  let%span svec45 = "../../../creusot-contracts/src/std/vec.rs" 154 26 154 57
+  let%span svec46 = "../../../creusot-contracts/src/std/vec.rs" 155 26 155 62
+  let%span svec47 = "../../../creusot-contracts/src/std/vec.rs" 156 26 156 55
+  let%span svec48 = "../../../creusot-contracts/src/std/vec.rs" 78 26 78 44
+  let%span svec49 = "../../../creusot-contracts/src/std/vec.rs" 87 26 87 56
+  let%span sslice50 = "../../../creusot-contracts/src/std/slice.rs" 122 20 122 37
+  let%span sslice51 = "../../../creusot-contracts/src/std/slice.rs" 129 20 129 37
+  let%span smodel52 = "../../../creusot-contracts/src/model.rs" 106 8 106 22
+  let%span sslice53 = "../../../creusot-contracts/src/std/slice.rs" 136 20 136 94
   let%span sresolve54 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
-  let%span svec55 = "../../../creusot-contracts/src/std/vec.rs" 68 20 68 41
+  let%span svec55 = "../../../creusot-contracts/src/std/vec.rs" 65 20 65 41
   let%span sinvariant56 = "../../../creusot-contracts/src/invariant.rs" 24 8 24 18
   let%span sinvariant57 = "../../../creusot-contracts/src/invariant.rs" 34 20 34 44
-  let%span sseq58 = "../../../creusot-contracts/src/logic/seq.rs" 459 20 459 95
+  let%span sseq58 = "../../../creusot-contracts/src/logic/seq.rs" 444 20 444 95
   let%span sboxed59 = "../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
-  use T_knapsack__Item as Item'0
+  use prelude.prelude.UIntSize
   
-  predicate inv'15 (_1 : Item'0.t_Item name)
+  predicate inv'2 (_1 : usize)
   
-  predicate invariant'8 (self : Item'0.t_Item name) =
-    [%#sboxed59] inv'15 self
+  use prelude.prelude.Opaque
   
-  predicate inv'19 (_1 : Item'0.t_Item name)
+  type t_NonNull'0  =
+    { t_NonNull__pointer'0: opaque_ptr }
   
-  axiom inv_axiom'18 [@rewrite] : forall x : Item'0.t_Item name [inv'19 x] . inv'19 x = invariant'8 x
+  type t_Unique'0  =
+    { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
+  
+  type t_Cap'0  =
+    { t_Cap__0'0: usize }
+  
+  type t_RawVec'0  =
+    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+  
+  type t_Vec'0  =
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
+  
+  predicate inv'3 (_1 : t_Vec'0)
   
   use seq.Seq
   
-  use seq.Seq
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
   use seq.Seq
   
-  predicate invariant'7 (self : Seq.seq (Item'0.t_Item name)) =
-    [%#sseq58] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'19 (Seq.get self i)
+  function view'1 (self : t_Vec'0) : Seq.seq usize
   
-  predicate inv'18 (_1 : Seq.seq (Item'0.t_Item name))
+  axiom view'1_spec : forall self : t_Vec'0 . [%#svec33] Seq.length (view'1 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
-  axiom inv_axiom'17 [@rewrite] : forall x : Seq.seq (Item'0.t_Item name) [inv'18 x] . inv'18 x = invariant'7 x
+  use seq.Seq
+  
+  function index_logic'2 [@inline:trivial] (self : t_Vec'0) (ix : int) : usize =
+    [%#sops32] Seq.get (view'1 self) ix
+  
+  type t_NonNull'2  =
+    { t_NonNull__pointer'2: opaque_ptr }
+  
+  type t_Unique'2  =
+    { t_Unique__pointer'2: t_NonNull'2; t_Unique__qy95zmarker'2: () }
+  
+  type t_RawVec'2  =
+    { t_RawVec__ptr'2: t_Unique'2; t_RawVec__cap'2: t_Cap'0; t_RawVec__alloc'2: () }
+  
+  type t_Vec'2  =
+    { t_Vec__buf'2: t_RawVec'2; t_Vec__len'2: usize }
+  
+  predicate inv'0 (_1 : t_Vec'2)
+  
+  use seq.Seq
   
   use prelude.prelude.Borrow
   
-  predicate inv'5 (_1 : Item'0.t_Item name)
+  type t_Name'0
   
-  predicate invariant'6 (self : Item'0.t_Item name) =
-    [%#sboxed59] inv'5 self
-  
-  predicate inv'17 (_1 : Item'0.t_Item name)
-  
-  axiom inv_axiom'16 [@rewrite] : forall x : Item'0.t_Item name [inv'17 x] . inv'17 x = invariant'6 x
-  
-  predicate inv'16 (_1 : name)
-  
-  axiom inv_axiom'15 [@rewrite] : forall x : Item'0.t_Item name [inv'15 x] . inv'15 x
-  = match x with
-    | Item'0.C_Item name weight value -> inv'16 name
-    end
-  
-  use T_alloc__alloc__Global as Global'0
-  
-  use T_alloc__vec__Vec as Vec'0
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.UIntSize
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  function view'3 (self : Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global)) : Seq.seq (Item'0.t_Item name)
-  
-  axiom view'3_spec : forall self : Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global) . [%#svec33] Seq.length (view'3 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  predicate invariant'5 (self : Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global)) =
-    [%#svec55] inv'18 (view'3 self)
-  
-  predicate inv'14 (_1 : Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global))
-  
-  axiom inv_axiom'14 [@rewrite] : forall x : Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global) [inv'14 x] . inv'14 x
-  = invariant'5 x
+  type t_Item'0  =
+    { t_Item__name'0: t_Name'0; t_Item__weight'0: usize; t_Item__value'0: usize }
   
   use seq.Seq
   
-  use seq.Seq
+  function view'8 (self : t_Vec'2) : Seq.seq (t_Item'0)
   
-  use seq.Seq
+  axiom view'8_spec : forall self : t_Vec'2 . [%#svec33] Seq.length (view'8 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
-  predicate invariant'4 (self : Seq.seq (Item'0.t_Item name)) =
-    [%#sseq58] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'17 (Seq.get self i)
+  predicate inv'13 (_1 : Seq.seq (t_Item'0))
   
-  predicate inv'13 (_1 : Seq.seq (Item'0.t_Item name))
+  predicate invariant'0 (self : t_Vec'2) =
+    [%#svec55] inv'13 (view'8 self)
   
-  axiom inv_axiom'13 [@rewrite] : forall x : Seq.seq (Item'0.t_Item name) [inv'13 x] . inv'13 x = invariant'4 x
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'2 [inv'0 x] . inv'0 x = invariant'0 x
   
-  use T_alloc__vec__Vec as Vec'0
+  type t_NonNull'3  =
+    { t_NonNull__pointer'3: opaque_ptr }
   
-  predicate inv'0 (_1 : Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global))
+  type t_Unique'3  =
+    { t_Unique__pointer'3: t_NonNull'3; t_Unique__qy95zmarker'3: () }
   
-  predicate invariant'3 (self : borrowed (Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global))) =
-    [%#sinvariant57] inv'0 self.current /\ inv'0 self.final
+  type t_RawVec'3  =
+    { t_RawVec__ptr'3: t_Unique'3; t_RawVec__cap'3: t_Cap'0; t_RawVec__alloc'3: () }
   
-  predicate inv'12 (_1 : borrowed (Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global)))
+  type t_Vec'3  =
+    { t_Vec__buf'3: t_RawVec'3; t_Vec__len'3: usize }
   
-  axiom inv_axiom'12 [@rewrite] : forall x : borrowed (Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global)) [inv'12 x] . inv'12 x
-  = invariant'3 x
+  predicate inv'1 (_1 : t_Vec'3)
   
-  predicate inv'11 (_1 : borrowed usize)
+  predicate inv'14 (_1 : t_Vec'3)
   
-  axiom inv_axiom'11 [@rewrite] : forall x : borrowed usize [inv'11 x] . inv'11 x = true
+  predicate invariant'1 (self : t_Vec'3) =
+    [%#sinvariant56] inv'14 self
   
-  use T_alloc__vec__Vec as Vec'0
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Vec'3 [inv'1 x] . inv'1 x = invariant'1 x
   
-  predicate inv'10 (_1 : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)))
+  axiom inv_axiom'2 [@rewrite] : forall x : usize [inv'2 x] . inv'2 x = true
   
-  axiom inv_axiom'10 [@rewrite] : forall x : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)) [inv'10 x] . inv'10 x
-  = true
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Vec'0 [inv'3 x] . inv'3 x = true
   
-  use T_alloc__vec__Vec as Vec'0
+  type t_NonNull'1  =
+    { t_NonNull__pointer'1: opaque_ptr }
   
-  predicate inv'9 (_1 : borrowed (Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global)))
+  type t_Unique'1  =
+    { t_Unique__pointer'1: t_NonNull'1; t_Unique__qy95zmarker'1: () }
   
-  axiom inv_axiom'9 [@rewrite] : forall x : borrowed (Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global)) [inv'9 x] . inv'9 x
-  = true
+  type t_RawVec'1  =
+    { t_RawVec__ptr'1: t_Unique'1; t_RawVec__cap'1: t_Cap'0; t_RawVec__alloc'1: () }
+  
+  type t_Vec'1  =
+    { t_Vec__buf'1: t_RawVec'1; t_Vec__len'1: usize }
+  
+  predicate inv'4 (_1 : t_Vec'1)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_Vec'1 [inv'4 x] . inv'4 x = true
+  
+  predicate inv'5 (_1 : t_Item'0)
+  
+  predicate inv'15 (_1 : t_Item'0)
+  
+  predicate invariant'2 (self : t_Item'0) =
+    [%#sinvariant56] inv'15 self
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_Item'0 [inv'5 x] . inv'5 x = invariant'2 x
+  
+  predicate inv'6 (_1 : t_Vec'1)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : t_Vec'1 [inv'6 x] . inv'6 x = true
+  
+  predicate inv'7 (_1 : t_Vec'0)
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : t_Vec'0 [inv'7 x] . inv'7 x = true
   
   predicate inv'8 (_1 : usize)
   
   axiom inv_axiom'8 [@rewrite] : forall x : usize [inv'8 x] . inv'8 x = true
   
-  predicate inv'7 (_1 : Vec'0.t_Vec usize (Global'0.t_Global))
+  predicate inv'9 (_1 : borrowed (t_Vec'1))
   
-  axiom inv_axiom'7 [@rewrite] : forall x : Vec'0.t_Vec usize (Global'0.t_Global) [inv'7 x] . inv'7 x = true
+  axiom inv_axiom'9 [@rewrite] : forall x : borrowed (t_Vec'1) [inv'9 x] . inv'9 x = true
   
-  predicate inv'6 (_1 : Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global))
+  predicate inv'10 (_1 : borrowed (t_Vec'0))
   
-  axiom inv_axiom'6 [@rewrite] : forall x : Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global) [inv'6 x] . inv'6 x
-  = true
+  axiom inv_axiom'10 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'10 x] . inv'10 x = true
   
-  predicate invariant'2 (self : Item'0.t_Item name) =
-    [%#sinvariant56] inv'15 self
+  predicate inv'11 (_1 : borrowed usize)
   
-  axiom inv_axiom'5 [@rewrite] : forall x : Item'0.t_Item name [inv'5 x] . inv'5 x = invariant'2 x
+  axiom inv_axiom'11 [@rewrite] : forall x : borrowed usize [inv'11 x] . inv'11 x = true
   
-  predicate inv'4 (_1 : Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global))
+  predicate inv'12 (_1 : borrowed (t_Vec'2))
   
-  axiom inv_axiom'4 [@rewrite] : forall x : Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global) [inv'4 x] . inv'4 x
-  = true
+  predicate invariant'3 (self : borrowed (t_Vec'2)) =
+    [%#sinvariant57] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'3 (_1 : Vec'0.t_Vec usize (Global'0.t_Global))
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : Vec'0.t_Vec usize (Global'0.t_Global) [inv'3 x] . inv'3 x = true
-  
-  predicate inv'2 (_1 : usize)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : usize [inv'2 x] . inv'2 x = true
-  
-  predicate invariant'1 (self : Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global)) =
-    [%#sinvariant56] inv'14 self
-  
-  predicate inv'1 (_1 : Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global))
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global) [inv'1 x] . inv'1 x
-  = invariant'1 x
-  
-  function view'8 (self : Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global)) : Seq.seq (Item'0.t_Item name)
-  
-  axiom view'8_spec : forall self : Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global) . [%#svec33] Seq.length (view'8 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  predicate invariant'0 (self : Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global)) =
-    [%#svec55] inv'13 (view'8 self)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global) [inv'0 x] . inv'0 x
-  = invariant'0 x
-  
-  use T_knapsack__Item as T_knapsack__Item
+  axiom inv_axiom'12 [@rewrite] : forall x : borrowed (t_Vec'2) [inv'12 x] . inv'12 x = invariant'3 x
   
   use seq.Seq
   
-  function index_logic'1 [@inline:trivial] (self : Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global)) (ix : int) : Item'0.t_Item name
-    
-   =
-    [%#sops32] Seq.get (view'3 self) ix
+  predicate inv'17 (_1 : t_Item'0)
   
-  use prelude.prelude.Intrinsic
+  predicate invariant'4 (self : Seq.seq (t_Item'0)) =
+    [%#sseq58] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'17 (Seq.get self i)
+  
+  axiom inv_axiom'13 [@rewrite] : forall x : Seq.seq (t_Item'0) [inv'13 x] . inv'13 x = invariant'4 x
   
   use seq.Seq
   
-  function view'9 (self : borrowed (Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global))) : Seq.seq (Item'0.t_Item name)
-    
-   =
-    [%#smodel52] view'8 self.current
+  use seq.Seq
   
-  let rec push'0 (self:borrowed (Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global))) (value:Item'0.t_Item name) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'12 self}
-    {[@expl:push 'value' type invariant] inv'5 value}
-    any [ return' (result:())-> {[%#svec49] view'8 self.final = Seq.snoc (view'9 self) value} (! return' {result}) ] 
+  function view'3 (self : t_Vec'3) : Seq.seq (t_Item'0)
   
-  let rec with_capacity'0 (capacity:usize) (return'  (ret:Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global)))= any
-    [ return' (result:Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global))-> {inv'0 result}
-      {[%#svec48] Seq.length (view'8 result) = 0}
+  axiom view'3_spec : forall self : t_Vec'3 . [%#svec33] Seq.length (view'3 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  predicate inv'18 (_1 : Seq.seq (t_Item'0))
+  
+  predicate invariant'5 (self : t_Vec'3) =
+    [%#svec55] inv'18 (view'3 self)
+  
+  axiom inv_axiom'14 [@rewrite] : forall x : t_Vec'3 [inv'14 x] . inv'14 x = invariant'5 x
+  
+  predicate inv'16 (_1 : t_Name'0)
+  
+  axiom inv_axiom'15 [@rewrite] : forall x : t_Item'0 [inv'15 x] . inv'15 x
+  = match x with
+    | {t_Item__name'0 = name ; t_Item__weight'0 = weight ; t_Item__value'0 = value} -> inv'16 name
+    end
+  
+  predicate invariant'6 (self : t_Item'0) =
+    [%#sboxed59] inv'5 self
+  
+  axiom inv_axiom'16 [@rewrite] : forall x : t_Item'0 [inv'17 x] . inv'17 x = invariant'6 x
+  
+  use seq.Seq
+  
+  predicate inv'19 (_1 : t_Item'0)
+  
+  predicate invariant'7 (self : Seq.seq (t_Item'0)) =
+    [%#sseq58] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'19 (Seq.get self i)
+  
+  axiom inv_axiom'17 [@rewrite] : forall x : Seq.seq (t_Item'0) [inv'18 x] . inv'18 x = invariant'7 x
+  
+  predicate invariant'8 (self : t_Item'0) =
+    [%#sboxed59] inv'15 self
+  
+  axiom inv_axiom'18 [@rewrite] : forall x : t_Item'0 [inv'19 x] . inv'19 x = invariant'8 x
+  
+  let rec from_elem'0 (elem:usize) (n:usize) (return'  (ret:t_Vec'0))= {[@expl:from_elem 'elem' type invariant] inv'2 elem}
+    any
+    [ return' (result:t_Vec'0)-> {inv'3 result}
+      {[%#svec28] Seq.length (view'1 result) = UIntSize.to_int n}
+      {[%#svec29] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'2 result i = elem}
       (! return' {result}) ]
     
   
-  predicate resolve'3 (self : borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) =
-    [%#sresolve54] self.final = self.current
+  function view'0 (self : t_Vec'3) : Seq.seq (t_Item'0) =
+    [%#smodel31] view'3 self
   
-  predicate resolve'1 (_1 : borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) =
-    resolve'3 _1
-  
-  predicate resolve'2 (self : borrowed usize) =
-    [%#sresolve54] self.final = self.current
-  
-  predicate resolve'0 (_1 : borrowed usize) =
-    resolve'2 _1
+  let rec len'0 (self:t_Vec'3) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'1 self}
+    any
+    [ return' (result:usize)-> {[%#svec30] UIntSize.to_int result = Seq.length (view'0 self)} (! return' {result}) ]
+    
   
   use seq.Seq
   
   use seq.Seq
   
+  function view'2 (self : t_Vec'1) : Seq.seq (t_Vec'0)
+  
+  axiom view'2_spec : forall self : t_Vec'1 . [%#svec33] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
   use seq.Seq
+  
+  function index_logic'0 [@inline:trivial] (self : t_Vec'1) (ix : int) : t_Vec'0 =
+    [%#sops32] Seq.get (view'2 self) ix
+  
+  let rec from_elem'1 (elem:t_Vec'0) (n:usize) (return'  (ret:t_Vec'1))= {[@expl:from_elem 'elem' type invariant] inv'3 elem}
+    any
+    [ return' (result:t_Vec'1)-> {inv'4 result}
+      {[%#svec28] Seq.length (view'2 result) = UIntSize.to_int n}
+      {[%#svec29] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
+      (! return' {result}) ]
+    
+  
+  use seq.Seq
+  
+  use int.MinMax
+  
+  function m'0 [#"knapsack.rs" 35 0 35 57] (items : Seq.seq (t_Item'0)) (i : int) (w : int) : int
+  
+  axiom m'0_def : forall items : Seq.seq (t_Item'0), i : int, w : int . m'0 items i w
+  = ([%#sknapsack38] if i = 0 then
+    0
+  else
+    if UIntSize.to_int (Seq.get items (i - 1)).t_Item__weight'0 > w then
+      m'0 items (i - 1) w
+    else
+      MinMax.max (m'0 items (i - 1) w) (m'0 items (i - 1) (w - UIntSize.to_int (Seq.get items (i - 1)).t_Item__weight'0)
+      + UIntSize.to_int (Seq.get items (i - 1)).t_Item__value'0)
+    
+  )
+  
+  axiom m'0_spec : forall items : Seq.seq (t_Item'0), i : int, w : int . ([%#sknapsack34] 0 <= i
+  /\ i <= Seq.length items)  -> ([%#sknapsack35] 0 <= w)  -> ([%#sknapsack36] m'0 items i w >= 0)
+  
+  predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq (t_Item'0)) =
+    [%#sslice50] UIntSize.to_int self < Seq.length seq
+  
+  predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq (t_Item'0)) (out : t_Item'0) =
+    [%#sslice51] Seq.get seq (UIntSize.to_int self) = out
+  
+  let rec index'0 (self:t_Vec'3) (index:usize) (return'  (ret:t_Item'0))= {[@expl:index 'self' type invariant] inv'1 self}
+    {[@expl:index 'index' type invariant] inv'2 index}
+    {[@expl:index requires] [%#svec39] in_bounds'0 index (view'0 self)}
+    any
+    [ return' (result:t_Item'0)-> {inv'5 result}
+      {[%#svec40] has_value'0 index (view'0 self) result}
+      (! return' {result}) ]
+    
+  
+  function view'4 (self : t_Vec'1) : Seq.seq (t_Vec'0) =
+    [%#smodel31] view'2 self
+  
+  predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq (t_Vec'0)) =
+    [%#sslice50] UIntSize.to_int self < Seq.length seq
+  
+  predicate has_value'1 [@inline:trivial] (self : usize) (seq : Seq.seq (t_Vec'0)) (out : t_Vec'0) =
+    [%#sslice51] Seq.get seq (UIntSize.to_int self) = out
+  
+  let rec index'1 (self:t_Vec'1) (index:usize) (return'  (ret:t_Vec'0))= {[@expl:index 'self' type invariant] inv'6 self}
+    {[@expl:index 'index' type invariant] inv'2 index}
+    {[@expl:index requires] [%#svec39] in_bounds'1 index (view'4 self)}
+    any
+    [ return' (result:t_Vec'0)-> {inv'7 result}
+      {[%#svec40] has_value'1 index (view'4 self) result}
+      (! return' {result}) ]
+    
+  
+  function view'5 (self : t_Vec'0) : Seq.seq usize =
+    [%#smodel31] view'1 self
+  
+  predicate in_bounds'2 [@inline:trivial] (self : usize) (seq : Seq.seq usize) =
+    [%#sslice50] UIntSize.to_int self < Seq.length seq
+  
+  predicate has_value'2 [@inline:trivial] (self : usize) (seq : Seq.seq usize) (out : usize) =
+    [%#sslice51] Seq.get seq (UIntSize.to_int self) = out
+  
+  let rec index'2 (self:t_Vec'0) (index:usize) (return'  (ret:usize))= {[@expl:index 'self' type invariant] inv'7 self}
+    {[@expl:index 'index' type invariant] inv'2 index}
+    {[@expl:index requires] [%#svec39] in_bounds'2 index (view'5 self)}
+    any
+    [ return' (result:usize)-> {inv'8 result} {[%#svec40] has_value'2 index (view'5 self) result} (! return' {result}) ]
+    
+  
+  let rec max'0 (a:usize) (b:usize) (return'  (ret:usize))= {[@expl:max requires] [%#sknapsack41] true}
+    any
+    [ return' (result:usize)-> {[%#sknapsack42] UIntSize.to_int result
+      = MinMax.max (UIntSize.to_int a) (UIntSize.to_int b)}
+      (! return' {result}) ]
+    
+  
+  function view'6 (self : borrowed (t_Vec'1)) : Seq.seq (t_Vec'0) =
+    [%#smodel52] view'2 self.current
+  
+  predicate resolve_elswhere'0 [@inline:trivial] (self : usize) (old' : Seq.seq (t_Vec'0)) (fin : Seq.seq (t_Vec'0)) =
+    [%#sslice53] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
+     -> Seq.get old' i = Seq.get fin i
+  
+  let rec index_mut'0 (self:borrowed (t_Vec'1)) (index:usize) (return'  (ret:borrowed (t_Vec'0)))= {[@expl:index_mut 'self' type invariant] inv'9 self}
+    {[@expl:index_mut 'index' type invariant] inv'2 index}
+    {[@expl:index_mut requires] [%#svec43] in_bounds'1 index (view'6 self)}
+    any
+    [ return' (result:borrowed (t_Vec'0))-> {inv'10 result}
+      {[%#svec44] has_value'1 index (view'6 self) result.current}
+      {[%#svec45] has_value'1 index (view'2 self.final) result.final}
+      {[%#svec46] resolve_elswhere'0 index (view'6 self) (view'2 self.final)}
+      {[%#svec47] Seq.length (view'2 self.final) = Seq.length (view'6 self)}
+      (! return' {result}) ]
+    
+  
+  function view'7 (self : borrowed (t_Vec'0)) : Seq.seq usize =
+    [%#smodel52] view'1 self.current
   
   predicate resolve_elswhere'1 [@inline:trivial] (self : usize) (old' : Seq.seq usize) (fin : Seq.seq usize) =
     [%#sslice53] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
   
-  function view'1 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
-  
-  axiom view'1_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#svec33] Seq.length (view'1 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  predicate has_value'2 [@inline:trivial] (self : usize) (seq : Seq.seq usize) (out : usize) =
-    [%#sslice51] Seq.get seq (UIntSize.to_int self) = out
-  
-  predicate in_bounds'2 [@inline:trivial] (self : usize) (seq : Seq.seq usize) =
-    [%#sslice50] UIntSize.to_int self < Seq.length seq
-  
-  function view'7 (self : borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) : Seq.seq usize =
-    [%#smodel52] view'1 self.current
-  
-  let rec index_mut'1 (self:borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) (index:usize) (return'  (ret:borrowed usize))= {[@expl:index_mut 'self' type invariant] inv'10 self}
+  let rec index_mut'1 (self:borrowed (t_Vec'0)) (index:usize) (return'  (ret:borrowed usize))= {[@expl:index_mut 'self' type invariant] inv'10 self}
     {[@expl:index_mut 'index' type invariant] inv'2 index}
     {[@expl:index_mut requires] [%#svec43] in_bounds'2 index (view'7 self)}
     any
@@ -493,171 +510,53 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
       (! return' {result}) ]
     
   
+  predicate resolve'2 (self : borrowed usize) =
+    [%#sresolve54] self.final = self.current
+  
+  predicate resolve'0 (_1 : borrowed usize) =
+    resolve'2 _1
+  
+  predicate resolve'3 (self : borrowed (t_Vec'0)) =
+    [%#sresolve54] self.final = self.current
+  
+  predicate resolve'1 (_1 : borrowed (t_Vec'0)) =
+    resolve'3 _1
+  
+  let rec with_capacity'0 (capacity:usize) (return'  (ret:t_Vec'2))= any
+    [ return' (result:t_Vec'2)-> {inv'0 result} {[%#svec48] Seq.length (view'8 result) = 0} (! return' {result}) ]
+    
+  
+  function view'9 (self : borrowed (t_Vec'2)) : Seq.seq (t_Item'0) =
+    [%#smodel52] view'8 self.current
+  
   use seq.Seq
   
-  use seq.Seq
+  let rec push'0 (self:borrowed (t_Vec'2)) (value:t_Item'0) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'12 self}
+    {[@expl:push 'value' type invariant] inv'5 value}
+    any [ return' (result:())-> {[%#svec49] view'8 self.final = Seq.snoc (view'9 self) value} (! return' {result}) ] 
   
-  use seq.Seq
+  use prelude.prelude.Intrinsic
   
-  predicate resolve_elswhere'0 [@inline:trivial] (self : usize) (old' : Seq.seq (Vec'0.t_Vec usize (Global'0.t_Global))) (fin : Seq.seq (Vec'0.t_Vec usize (Global'0.t_Global)))
-    
-   =
-    [%#sslice53] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
-     -> Seq.get old' i = Seq.get fin i
-  
-  function view'2 (self : Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global)) : Seq.seq (Vec'0.t_Vec usize (Global'0.t_Global))
-    
-  
-  axiom view'2_spec : forall self : Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global) . [%#svec33] Seq.length (view'2 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  predicate has_value'1 [@inline:trivial] (self : usize) (seq : Seq.seq (Vec'0.t_Vec usize (Global'0.t_Global))) (out : Vec'0.t_Vec usize (Global'0.t_Global))
-    
-   =
-    [%#sslice51] Seq.get seq (UIntSize.to_int self) = out
-  
-  predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq (Vec'0.t_Vec usize (Global'0.t_Global))) =
-    [%#sslice50] UIntSize.to_int self < Seq.length seq
-  
-  function view'6 (self : borrowed (Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global))) : Seq.seq (Vec'0.t_Vec usize (Global'0.t_Global))
-    
-   =
-    [%#smodel52] view'2 self.current
-  
-  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global))) (index:usize) (return'  (ret:borrowed (Vec'0.t_Vec usize (Global'0.t_Global))))= {[@expl:index_mut 'self' type invariant] inv'9 self}
-    {[@expl:index_mut 'index' type invariant] inv'2 index}
-    {[@expl:index_mut requires] [%#svec43] in_bounds'1 index (view'6 self)}
-    any
-    [ return' (result:borrowed (Vec'0.t_Vec usize (Global'0.t_Global)))-> {inv'10 result}
-      {[%#svec44] has_value'1 index (view'6 self) result.current}
-      {[%#svec45] has_value'1 index (view'2 self.final) result.final}
-      {[%#svec46] resolve_elswhere'0 index (view'6 self) (view'2 self.final)}
-      {[%#svec47] Seq.length (view'2 self.final) = Seq.length (view'6 self)}
-      (! return' {result}) ]
-    
-  
-  use int.MinMax
-  
-  let rec max'0 (a:usize) (b:usize) (return'  (ret:usize))= {[@expl:max requires] [%#sknapsack41] true}
-    any
-    [ return' (result:usize)-> {[%#sknapsack42] UIntSize.to_int result
-      = MinMax.max (UIntSize.to_int a) (UIntSize.to_int b)}
-      (! return' {result}) ]
-    
-  
-  function view'5 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize =
-    [%#smodel31] view'1 self
-  
-  let rec index'2 (self:Vec'0.t_Vec usize (Global'0.t_Global)) (index:usize) (return'  (ret:usize))= {[@expl:index 'self' type invariant] inv'7 self}
-    {[@expl:index 'index' type invariant] inv'2 index}
-    {[@expl:index requires] [%#svec39] in_bounds'2 index (view'5 self)}
-    any
-    [ return' (result:usize)-> {inv'8 result} {[%#svec40] has_value'2 index (view'5 self) result} (! return' {result}) ]
-    
-  
-  function view'4 (self : Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global)) : Seq.seq (Vec'0.t_Vec usize (Global'0.t_Global))
-    
-   =
-    [%#smodel31] view'2 self
-  
-  let rec index'1 (self:Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global)) (index:usize) (return'  (ret:Vec'0.t_Vec usize (Global'0.t_Global)))= {[@expl:index 'self' type invariant] inv'6 self}
-    {[@expl:index 'index' type invariant] inv'2 index}
-    {[@expl:index requires] [%#svec39] in_bounds'1 index (view'4 self)}
-    any
-    [ return' (result:Vec'0.t_Vec usize (Global'0.t_Global))-> {inv'7 result}
-      {[%#svec40] has_value'1 index (view'4 self) result}
-      (! return' {result}) ]
-    
-  
-  predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq (Item'0.t_Item name)) (out : Item'0.t_Item name)
-   =
-    [%#sslice51] Seq.get seq (UIntSize.to_int self) = out
-  
-  predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq (Item'0.t_Item name)) =
-    [%#sslice50] UIntSize.to_int self < Seq.length seq
-  
-  function view'0 (self : Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global)) : Seq.seq (Item'0.t_Item name) =
-    [%#smodel31] view'3 self
-  
-  let rec index'0 (self:Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global)) (index:usize) (return'  (ret:Item'0.t_Item name))= {[@expl:index 'self' type invariant] inv'1 self}
-    {[@expl:index 'index' type invariant] inv'2 index}
-    {[@expl:index requires] [%#svec39] in_bounds'0 index (view'0 self)}
-    any
-    [ return' (result:Item'0.t_Item name)-> {inv'5 result}
-      {[%#svec40] has_value'0 index (view'0 self) result}
-      (! return' {result}) ]
-    
-  
-  use T_knapsack__Item as T_knapsack__Item
-  
-  function m'0 [#"knapsack.rs" 35 0 35 57] (items : Seq.seq (Item'0.t_Item name)) (i : int) (w : int) : int
-  
-  axiom m'0_def : forall items : Seq.seq (Item'0.t_Item name), i : int, w : int . m'0 items i w
-  = ([%#sknapsack38] if i = 0 then
-    0
-  else
-    if UIntSize.to_int (T_knapsack__Item.t_Item__weight (Seq.get items (i - 1))) > w then
-      m'0 items (i - 1) w
-    else
-      MinMax.max (m'0 items (i - 1) w) (m'0 items (i - 1) (w
-      - UIntSize.to_int (T_knapsack__Item.t_Item__weight (Seq.get items (i - 1))))
-      + UIntSize.to_int (T_knapsack__Item.t_Item__value (Seq.get items (i - 1))))
-    
-  )
-  
-  axiom m'0_spec : forall items : Seq.seq (Item'0.t_Item name), i : int, w : int . ([%#sknapsack34] 0 <= i
-  /\ i <= Seq.length items)  -> ([%#sknapsack35] 0 <= w)  -> ([%#sknapsack36] m'0 items i w >= 0)
-  
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global)) (ix : int) : Vec'0.t_Vec usize (Global'0.t_Global)
-    
-   =
-    [%#sops32] Seq.get (view'2 self) ix
-  
-  let rec from_elem'1 (elem:Vec'0.t_Vec usize (Global'0.t_Global)) (n:usize) (return'  (ret:Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global)))= {[@expl:from_elem 'elem' type invariant] inv'3 elem}
-    any
-    [ return' (result:Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global))-> {inv'4 result}
-      {[%#svec28] Seq.length (view'2 result) = UIntSize.to_int n}
-      {[%#svec29] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
-      (! return' {result}) ]
-    
-  
-  let rec len'0 (self:Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'1 self}
-    any
-    [ return' (result:usize)-> {[%#svec30] UIntSize.to_int result = Seq.length (view'0 self)} (! return' {result}) ]
-    
-  
-  function index_logic'2 [@inline:trivial] (self : Vec'0.t_Vec usize (Global'0.t_Global)) (ix : int) : usize =
-    [%#sops32] Seq.get (view'1 self) ix
-  
-  let rec from_elem'0 (elem:usize) (n:usize) (return'  (ret:Vec'0.t_Vec usize (Global'0.t_Global)))= {[@expl:from_elem 'elem' type invariant] inv'2 elem}
-    any
-    [ return' (result:Vec'0.t_Vec usize (Global'0.t_Global))-> {inv'3 result}
-      {[%#svec28] Seq.length (view'1 result) = UIntSize.to_int n}
-      {[%#svec29] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'2 result i = elem}
-      (! return' {result}) ]
-    
+  function index_logic'1 [@inline:trivial] (self : t_Vec'3) (ix : int) : t_Item'0 =
+    [%#sops32] Seq.get (view'3 self) ix
   
   meta "compute_max_steps" 1000000
   
-  let rec knapsack01_dyn (items:Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global)) (max_weight:usize) (return'  (ret:Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global)))= {[@expl:knapsack01_dyn 'items' type invariant] [%#sknapsack23] inv'1 items}
+  let rec knapsack01_dyn'0 (items:t_Vec'3) (max_weight:usize) (return'  (ret:t_Vec'2))= {[@expl:knapsack01_dyn 'items' type invariant] [%#sknapsack23] inv'1 items}
     {[@expl:knapsack01_dyn requires #0] [%#sknapsack24] Seq.length (view'0 items) < 10000000}
     {[@expl:knapsack01_dyn requires #1] [%#sknapsack25] UIntSize.to_int max_weight < 10000000}
     {[@expl:knapsack01_dyn requires #2] [%#sknapsack26] forall i : int . 0 <= i /\ i < Seq.length (view'0 items)
-     -> UIntSize.to_int (T_knapsack__Item.t_Item__value (index_logic'1 items i)) <= 10000000}
+     -> UIntSize.to_int (index_logic'1 items i).t_Item__value'0 <= 10000000}
     (! bb0
     [ bb0 = s0
       [ s0 = UIntSize.add {max_weight} {[%#sknapsack0] (1 : usize)} (fun (_ret':usize) ->  [ &_8 <- _ret' ] s1)
-      | s1 = from_elem'0 {[%#sknapsack1] (0 : usize)} {_8}
-          (fun (_ret':Vec'0.t_Vec usize (Global'0.t_Global)) ->  [ &_7 <- _ret' ] s2)
+      | s1 = from_elem'0 {[%#sknapsack1] (0 : usize)} {_8} (fun (_ret':t_Vec'0) ->  [ &_7 <- _ret' ] s2)
       | s2 = bb1 ]
       
     | bb1 = s0 [ s0 = len'0 {items} (fun (_ret':usize) ->  [ &_11 <- _ret' ] s1) | s1 = bb2 ] 
     | bb2 = s0
       [ s0 = UIntSize.add {_11} {[%#sknapsack2] (1 : usize)} (fun (_ret':usize) ->  [ &_10 <- _ret' ] s1)
-      | s1 = from_elem'1 {_7} {_10}
-          (fun (_ret':Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global)) ->
-             [ &best_value <- _ret' ] 
-            s2)
+      | s1 = from_elem'1 {_7} {_10} (fun (_ret':t_Vec'1) ->  [ &best_value <- _ret' ] s2)
       | s2 = bb3 ]
       
     | bb3 = s0 [ s0 =  [ &i <- [%#sknapsack3] (0 : usize) ] s1 | s1 = bb4 ] 
@@ -681,7 +580,7 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
           [ s0 = UIntSize.lt {i} {_22} (fun (_ret':bool) ->  [ &_20 <- _ret' ] s1)
           | s1 = any [ br0 -> {_20 = false} (! bb34) | br1 -> {_20} (! bb11) ]  ]
           
-        | bb11 = s0 [ s0 = index'0 {items} {i} (fun (_ret':Item'0.t_Item name) ->  [ &_25 <- _ret' ] s1) | s1 = bb12 ] 
+        | bb11 = s0 [ s0 = index'0 {items} {i} (fun (_ret':t_Item'0) ->  [ &_25 <- _ret' ] s1) | s1 = bb12 ] 
         | bb12 = s0 [ s0 =  [ &it <- _25 ] s1 | s1 =  [ &w <- [%#sknapsack8] (0 : usize) ] s2 | s2 = bb13 ] 
         | bb13 = bb14
         | bb14 = bb15
@@ -708,68 +607,44 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
               | s1 = any [ br0 -> {_35 = false} (! bb33) | br1 -> {_35} (! bb20) ]  ]
               
             | bb20 = s0
-              [ s0 = Item'0.t_Item <name> {it}
-                  (fun (rname'0:name) (rweight'0:usize) (rvalue'0:usize) ->
-                    UIntSize.gt {rweight'0} {w} (fun (_ret':bool) ->  [ &_39 <- _ret' ] s1))
+              [ s0 = UIntSize.gt {it.t_Item__weight'0} {w} (fun (_ret':bool) ->  [ &_39 <- _ret' ] s1)
               | s1 = any [ br0 -> {_39 = false} (! bb24) | br1 -> {_39} (! bb21) ]  ]
               
-            | bb21 = s0
-              [ s0 = index'1 {best_value} {i}
-                  (fun (_ret':Vec'0.t_Vec usize (Global'0.t_Global)) ->  [ &_44 <- _ret' ] s1)
-              | s1 = bb22 ]
-              
+            | bb21 = s0 [ s0 = index'1 {best_value} {i} (fun (_ret':t_Vec'0) ->  [ &_44 <- _ret' ] s1) | s1 = bb22 ] 
             | bb22 = s0 [ s0 = index'2 {_44} {w} (fun (_ret':usize) ->  [ &_42 <- _ret' ] s1) | s1 = bb23 ] 
             | bb23 = s0 [ s0 =  [ &_38 <- _42 ] s1 | s1 = bb30 ] 
-            | bb24 = s0
-              [ s0 = index'1 {best_value} {i}
-                  (fun (_ret':Vec'0.t_Vec usize (Global'0.t_Global)) ->  [ &_51 <- _ret' ] s1)
-              | s1 = bb25 ]
-              
+            | bb24 = s0 [ s0 = index'1 {best_value} {i} (fun (_ret':t_Vec'0) ->  [ &_51 <- _ret' ] s1) | s1 = bb25 ] 
             | bb25 = s0 [ s0 = index'2 {_51} {w} (fun (_ret':usize) ->  [ &_49 <- _ret' ] s1) | s1 = bb26 ] 
-            | bb26 = s0
-              [ s0 = index'1 {best_value} {i}
-                  (fun (_ret':Vec'0.t_Vec usize (Global'0.t_Global)) ->  [ &_59 <- _ret' ] s1)
-              | s1 = bb27 ]
-              
+            | bb26 = s0 [ s0 = index'1 {best_value} {i} (fun (_ret':t_Vec'0) ->  [ &_59 <- _ret' ] s1) | s1 = bb27 ] 
             | bb27 = s0
-              [ s0 = Item'0.t_Item <name> {it}
-                  (fun (rname'0:name) (rweight'0:usize) (rvalue'0:usize) ->
-                    UIntSize.sub {w} {rweight'0} (fun (_ret':usize) ->  [ &_62 <- _ret' ] s1))
+              [ s0 = UIntSize.sub {w} {it.t_Item__weight'0} (fun (_ret':usize) ->  [ &_62 <- _ret' ] s1)
               | s1 = index'2 {_59} {_62} (fun (_ret':usize) ->  [ &_57 <- _ret' ] s2)
               | s2 = bb28 ]
               
             | bb28 = s0
-              [ s0 = Item'0.t_Item <name> {it}
-                  (fun (rname'0:name) (rweight'0:usize) (rvalue'0:usize) ->
-                    UIntSize.add {_57} {rvalue'0} (fun (_ret':usize) ->  [ &_55 <- _ret' ] s1))
+              [ s0 = UIntSize.add {_57} {it.t_Item__value'0} (fun (_ret':usize) ->  [ &_55 <- _ret' ] s1)
               | s1 = max'0 {_49} {_55} (fun (_ret':usize) ->  [ &_38 <- _ret' ] s2)
               | s2 = bb29 ]
               
             | bb29 = bb30
             | bb30 = s0
-              [ s0 = Borrow.borrow_mut
-                  <Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global)>
-                  {best_value}
-                  (fun (_ret':borrowed (Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global))) ->
-                     [ &_69 <- _ret' ] 
-                     [ &best_value <- _ret'.final ] 
-                    s1)
+              [ s0 = Borrow.borrow_mut <t_Vec'1> {best_value}
+                  (fun (_ret':borrowed (t_Vec'1)) ->  [ &_69 <- _ret' ]  [ &best_value <- _ret'.final ] s1)
               | s1 = UIntSize.add {i} {[%#sknapsack14] (1 : usize)} (fun (_ret':usize) ->  [ &_70 <- _ret' ] s2)
-              | s2 = index_mut'0 {_69} {_70}
-                  (fun (_ret':borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) ->  [ &_68 <- _ret' ] s3)
+              | s2 = index_mut'0 {_69} {_70} (fun (_ret':borrowed (t_Vec'0)) ->  [ &_68 <- _ret' ] s3)
               | s3 = bb31 ]
               
             | bb31 = s0
-              [ s0 = Borrow.borrow_final <Vec'0.t_Vec usize (Global'0.t_Global)> {_68.current} {Borrow.get_id _68}
-                  (fun (_ret':borrowed (Vec'0.t_Vec usize (Global'0.t_Global))) ->
+              [ s0 = Borrow.borrow_final <t_Vec'0> {_68.current} {Borrow.get_id _68}
+                  (fun (_ret':borrowed (t_Vec'0)) ->
                      [ &_67 <- _ret' ] 
-                     [ &_68 <- { _68 with current = _ret'.final ; } ] 
+                     [ &_68 <- { _68 with current = _ret'.final } ] 
                     s1)
               | s1 = index_mut'1 {_67} {w} (fun (_ret':borrowed usize) ->  [ &_66 <- _ret' ] s2)
               | s2 = bb32 ]
               
             | bb32 = s0
-              [ s0 =  [ &_66 <- { _66 with current = _38 ; } ] s1
+              [ s0 =  [ &_66 <- { _66 with current = _38 } ] s1
               | s1 = -{resolve'0 _66}- s2
               | s2 = -{resolve'1 _68}- s3
               | s3 = UIntSize.add {w} {[%#sknapsack15] (1 : usize)} (fun (_ret':usize) ->  [ &w <- _ret' ] s4)
@@ -783,11 +658,7 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
          ]
       
     | bb34 = s0 [ s0 = len'0 {items} (fun (_ret':usize) ->  [ &_80 <- _ret' ] s1) | s1 = bb35 ] 
-    | bb35 = s0
-      [ s0 = with_capacity'0 {_80}
-          (fun (_ret':Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global)) ->  [ &result <- _ret' ] s1)
-      | s1 = bb36 ]
-      
+    | bb35 = s0 [ s0 = with_capacity'0 {_80} (fun (_ret':t_Vec'2) ->  [ &result <- _ret' ] s1) | s1 = bb36 ] 
     | bb36 = s0
       [ s0 =  [ &left_weight <- max_weight ] s1
       | s1 = len'0 {items} (fun (_ret':usize) ->  [ &j <- _ret' ] s2)
@@ -806,21 +677,17 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
           
         | bb41 = s0
           [ s0 = UIntSize.sub {j} {[%#sknapsack21] (1 : usize)} (fun (_ret':usize) ->  [ &j <- _ret' ] s1)
-          | s1 = index'0 {items} {j} (fun (_ret':Item'0.t_Item name) ->  [ &_92 <- _ret' ] s2)
+          | s1 = index'0 {items} {j} (fun (_ret':t_Item'0) ->  [ &_92 <- _ret' ] s2)
           | s2 = bb42 ]
           
         | bb42 = s0
           [ s0 =  [ &it1 <- _92 ] s1
           | s1 = UIntSize.add {j} {[%#sknapsack22] (1 : usize)} (fun (_ret':usize) ->  [ &_101 <- _ret' ] s2)
-          | s2 = index'1 {best_value} {_101}
-              (fun (_ret':Vec'0.t_Vec usize (Global'0.t_Global)) ->  [ &_99 <- _ret' ] s3)
+          | s2 = index'1 {best_value} {_101} (fun (_ret':t_Vec'0) ->  [ &_99 <- _ret' ] s3)
           | s3 = bb43 ]
           
         | bb43 = s0 [ s0 = index'2 {_99} {left_weight} (fun (_ret':usize) ->  [ &_97 <- _ret' ] s1) | s1 = bb44 ] 
-        | bb44 = s0
-          [ s0 = index'1 {best_value} {j} (fun (_ret':Vec'0.t_Vec usize (Global'0.t_Global)) ->  [ &_107 <- _ret' ] s1)
-          | s1 = bb45 ]
-          
+        | bb44 = s0 [ s0 = index'1 {best_value} {j} (fun (_ret':t_Vec'0) ->  [ &_107 <- _ret' ] s1) | s1 = bb45 ] 
         | bb45 = s0 [ s0 = index'2 {_107} {left_weight} (fun (_ret':usize) ->  [ &_105 <- _ret' ] s1) | s1 = bb46 ] 
         | bb46 = s0
           [ s0 = UIntSize.ne {_97} {_105} (fun (_ret':bool) ->  [ &_95 <- _ret' ] s1)
@@ -828,8 +695,8 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
           
         | bb47 = s0
           [ s0 = {inv'0 result}
-            Borrow.borrow_mut <Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global)> {result}
-              (fun (_ret':borrowed (Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global))) ->
+            Borrow.borrow_mut <t_Vec'2> {result}
+              (fun (_ret':borrowed (t_Vec'2)) ->
                  [ &_112 <- _ret' ] 
                 -{inv'0 _ret'.final}-
                  [ &result <- _ret'.final ] 
@@ -838,9 +705,7 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
           | s2 = bb48 ]
           
         | bb48 = s0
-          [ s0 = Item'0.t_Item <name> {it1}
-              (fun (rname'0:name) (rweight'0:usize) (rvalue'0:usize) ->
-                UIntSize.sub {left_weight} {rweight'0} (fun (_ret':usize) ->  [ &left_weight <- _ret' ] s1))
+          [ s0 = UIntSize.sub {left_weight} {it1.t_Item__weight'0} (fun (_ret':usize) ->  [ &left_weight <- _ret' ] s1)
           | s1 = bb50 ]
           
         | bb49 = bb50
@@ -851,53 +716,53 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
     | bb52 = bb53
     | bb53 = return' {_0} ]
     )
-    [ & _0 : Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global) = any_l ()
-    | & items : Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global) = items
+    [ & _0 : t_Vec'2 = any_l ()
+    | & items : t_Vec'3 = items
     | & max_weight : usize = max_weight
-    | & best_value : Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global) = any_l ()
-    | & _7 : Vec'0.t_Vec usize (Global'0.t_Global) = any_l ()
+    | & best_value : t_Vec'1 = any_l ()
+    | & _7 : t_Vec'0 = any_l ()
     | & _8 : usize = any_l ()
     | & _10 : usize = any_l ()
     | & _11 : usize = any_l ()
     | & i : usize = any_l ()
     | & _20 : bool = any_l ()
     | & _22 : usize = any_l ()
-    | & it : Item'0.t_Item name = any_l ()
-    | & _25 : Item'0.t_Item name = any_l ()
+    | & it : t_Item'0 = any_l ()
+    | & _25 : t_Item'0 = any_l ()
     | & w : usize = any_l ()
     | & _35 : bool = any_l ()
     | & _38 : usize = any_l ()
     | & _39 : bool = any_l ()
     | & _42 : usize = any_l ()
-    | & _44 : Vec'0.t_Vec usize (Global'0.t_Global) = any_l ()
+    | & _44 : t_Vec'0 = any_l ()
     | & _49 : usize = any_l ()
-    | & _51 : Vec'0.t_Vec usize (Global'0.t_Global) = any_l ()
+    | & _51 : t_Vec'0 = any_l ()
     | & _55 : usize = any_l ()
     | & _57 : usize = any_l ()
-    | & _59 : Vec'0.t_Vec usize (Global'0.t_Global) = any_l ()
+    | & _59 : t_Vec'0 = any_l ()
     | & _62 : usize = any_l ()
     | & _66 : borrowed usize = any_l ()
-    | & _67 : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)) = any_l ()
-    | & _68 : borrowed (Vec'0.t_Vec usize (Global'0.t_Global)) = any_l ()
-    | & _69 : borrowed (Vec'0.t_Vec (Vec'0.t_Vec usize (Global'0.t_Global)) (Global'0.t_Global)) = any_l ()
+    | & _67 : borrowed (t_Vec'0) = any_l ()
+    | & _68 : borrowed (t_Vec'0) = any_l ()
+    | & _69 : borrowed (t_Vec'1) = any_l ()
     | & _70 : usize = any_l ()
-    | & result : Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global) = any_l ()
+    | & result : t_Vec'2 = any_l ()
     | & _80 : usize = any_l ()
     | & left_weight : usize = any_l ()
     | & j : usize = any_l ()
     | & _89 : bool = any_l ()
-    | & it1 : Item'0.t_Item name = any_l ()
-    | & _92 : Item'0.t_Item name = any_l ()
+    | & it1 : t_Item'0 = any_l ()
+    | & _92 : t_Item'0 = any_l ()
     | & _95 : bool = any_l ()
     | & _97 : usize = any_l ()
-    | & _99 : Vec'0.t_Vec usize (Global'0.t_Global) = any_l ()
+    | & _99 : t_Vec'0 = any_l ()
     | & _101 : usize = any_l ()
     | & _105 : usize = any_l ()
-    | & _107 : Vec'0.t_Vec usize (Global'0.t_Global) = any_l ()
+    | & _107 : t_Vec'0 = any_l ()
     | & _111 : () = any_l ()
-    | & _112 : borrowed (Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global)) = any_l () ]
+    | & _112 : borrowed (t_Vec'2) = any_l () ]
     
-    [ return' (result:Vec'0.t_Vec (Item'0.t_Item name) (Global'0.t_Global))-> {[@expl:knapsack01_dyn result type invariant] [%#sknapsack27] inv'0 result}
+    [ return' (result:t_Vec'2)-> {[@expl:knapsack01_dyn result type invariant] [%#sknapsack27] inv'0 result}
       (! return' {result}) ]
     
 end

@@ -9,20 +9,24 @@ use rustc_middle::{
 use rustc_span::Span;
 
 use crate::{
-    contracts_items::{self, is_law, is_open_inv_result, is_trusted},
-    ctx::{parent_module, TranslationCtx},
+    contracts_items::{
+        get_builtin, is_ghost_deref, is_ghost_deref_mut, is_law, is_logic, is_no_translate,
+        is_open_inv_result, is_predicate, is_prophetic, is_snapshot_closure, is_snapshot_deref,
+        is_spec, is_trusted, opacity_witness_name,
+    },
+    ctx::TranslationCtx,
     error::{Error, InternalError},
     pearlite::{pearlite_stub, Stub},
     specification::contract_of,
     traits::TraitResolved,
     translation::pearlite::{super_visit_term, TermKind, TermVisitor},
-    util,
+    util::parent_module,
 };
 
 pub(crate) fn validate_trusted(ctx: &mut TranslationCtx) {
     for def_id in ctx.hir_crate_items(()).definitions() {
         let def_id = def_id.to_def_id();
-        if contracts_items::get_builtin(ctx.tcx, def_id).is_some() && !is_trusted(ctx.tcx, def_id) {
+        if get_builtin(ctx.tcx, def_id).is_some() && !is_trusted(ctx.tcx, def_id) {
             ctx.error(
                 ctx.def_span(def_id),
                 "Builtin declarations should be annotated with #[trusted].",
@@ -80,7 +84,8 @@ pub(crate) fn validate_opacity(ctx: &mut TranslationCtx, item: DefId) -> Option<
             }
         }
     }
-    if contracts_items::is_spec(ctx.tcx, item) {
+
+    if is_spec(ctx.tcx, item) {
         return Some(());
     }
 
@@ -88,7 +93,7 @@ pub(crate) fn validate_opacity(ctx: &mut TranslationCtx, item: DefId) -> Option<
     let term = ctx.term(item)?.clone();
 
     if ctx.visibility(item) != Visibility::Restricted(parent_module(ctx.tcx, item))
-        && contracts_items::opacity_witness_name(ctx.tcx, item).is_none()
+        && opacity_witness_name(ctx.tcx, item).is_none()
     {
         ctx.error(ctx.def_span(item), "Non private definitions must have an explicit transparency. Please add #[open(..)] to your definition").emit();
     }
@@ -125,9 +130,9 @@ fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
             "mul" | "add" | "sub" | "div" | "rem" | "neg" | "box_new" | "deref_method"
             | "deref_mut_method" => true,
             _ => {
-                contracts_items::is_snapshot_deref(tcx, def_id)
-                    || contracts_items::is_ghost_deref(tcx, def_id)
-                    || contracts_items::is_ghost_deref_mut(tcx, def_id)
+                is_snapshot_deref(tcx, def_id)
+                    || is_ghost_deref(tcx, def_id)
+                    || is_ghost_deref_mut(tcx, def_id)
             }
         }
     } else {
@@ -193,8 +198,8 @@ pub(crate) fn validate_impls(ctx: &mut TranslationCtx) {
                 continue;
             };
 
-            let item_type = util::item_type(ctx.tcx, impl_item);
-            let trait_type = util::item_type(ctx.tcx, trait_item);
+            let item_type = ctx.item_type(impl_item);
+            let trait_type = ctx.item_type(trait_item);
             if !item_type.can_implement(trait_type) {
                 ctx.error(
                     ctx.def_span(impl_item),
@@ -240,8 +245,6 @@ pub(crate) enum Purity {
 
 impl Purity {
     pub(crate) fn of_def_id<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Self {
-        use contracts_items::{is_logic, is_predicate, is_prophetic, is_snapshot_closure, is_spec};
-
         let is_snapshot = is_snapshot_closure(ctx.tcx, def_id);
         if is_predicate(ctx.tcx, def_id) && is_prophetic(ctx.tcx, def_id)
             || is_logic(ctx.tcx, def_id) && is_prophetic(ctx.tcx, def_id)
@@ -296,8 +299,7 @@ pub(crate) fn validate_purity(ctx: &mut TranslationCtx, def_id: LocalDefId) {
 
     let def_id = def_id.to_def_id();
     let purity = Purity::of_def_id(ctx, def_id);
-    if matches!(purity, Purity::Program { .. }) && contracts_items::is_no_translate(ctx.tcx, def_id)
-    {
+    if matches!(purity, Purity::Program { .. }) && is_no_translate(ctx.tcx, def_id) {
         return;
     }
     let param_env = ctx.tcx.param_env(def_id);
@@ -318,7 +320,6 @@ struct PurityVisitor<'a, 'tcx> {
 
 impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
     fn purity(&mut self, fun: thir::ExprId, func_did: DefId) -> Purity {
-        use contracts_items::{is_logic, is_predicate, is_prophetic};
         let stub = pearlite_stub(self.ctx.tcx, self.thir[fun].ty);
 
         if matches!(stub, Some(Stub::Fin))
@@ -328,7 +329,7 @@ impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
             Purity::Logic { prophetic: true }
         } else if is_predicate(self.ctx.tcx, func_did)
             || is_logic(self.ctx.tcx, func_did)
-            || contracts_items::get_builtin(self.ctx.tcx, func_did).is_some()
+            || get_builtin(self.ctx.tcx, func_did).is_some()
             || stub.is_some()
         {
             Purity::Logic { prophetic: false }
@@ -391,7 +392,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                 }
             }
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
-                if contracts_items::is_spec(self.ctx.tcx, closure_id.into()) {
+                if is_spec(self.ctx.tcx, closure_id.into()) {
                     return;
                 }
 

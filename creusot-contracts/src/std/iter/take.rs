@@ -14,26 +14,23 @@ pub trait TakeExt<I> {
 impl<I> TakeExt<I> for Take<I> {
     #[logic]
     #[trusted]
-    #[open(self)]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
-        pearlite! { absurd }
+        dead
     }
 
     #[logic]
     #[trusted]
-    #[open(self)]
     #[ensures((*self).iter() == *result && (^self).iter() == ^result)]
     fn iter_mut(&mut self) -> &mut I {
-        pearlite! { absurd }
+        dead
     }
 
     #[logic]
     #[trusted]
-    #[open(self)]
     #[ensures(result >= 0 && result <= usize::MAX@)]
     fn n(self) -> Int {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -46,7 +43,6 @@ impl<I> Resolve for Take<I> {
 
     #[trusted]
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
     fn resolve_coherence(&self) {}
