@@ -148,7 +148,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             || contracts_items::is_variant(self.tcx(), *def_id)
                         {
                             return;
-                        } else if contracts_items::is_assertion(self.tcx(), *def_id) {
+                        } else if let Some(msg) = contracts_items::get_assert_msg(self.tcx(), *def_id) {
                             let mut assertion = self
                                 .assertions
                                 .remove(def_id)
@@ -157,7 +157,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             self.check_frozen_in_logic(&assertion, loc);
                             self.emit_statement(fmir::Statement::Assertion {
                                 cond: assertion,
-                                msg: "assertion".to_owned(),
+                                msg,
                             });
                             return;
                         } else if contracts_items::is_spec(self.tcx(), *def_id) {
