@@ -203,10 +203,10 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let mut binders = Vec::new();
                 let sig = self.ctx.sig(*id).clone();
                 let sig = EarlyBinder::bind(sig).instantiate(self.ctx.tcx, subst);
-                // FIXME: normalize sig
                 for arg in sig.inputs.iter().skip(1) {
-                    binders
-                        .push(Binder::typed(Ident::build(&arg.0.to_string()), self.lower_ty(arg.2)))
+                    let nm = Ident::build(&arg.0.to_string());
+                    let ty = self.names.normalize(self.ctx, arg.2);
+                    binders.push(Binder::typed(nm, self.lower_ty(ty)))
                 }
 
                 Exp::Abs(binders, Box::new(body))

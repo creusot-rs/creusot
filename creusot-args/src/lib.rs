@@ -11,6 +11,7 @@ pub const CREUSOT_RUSTC_ARGS: &[&str] = &[
     "-Zcrate-attr=feature(proc_macro_hygiene)",
     "-Zcrate-attr=feature(rustc_attrs)",
     "-Zcrate-attr=feature(unsized_fn_params)",
+    "-Znext-solver=globally",
     "--allow=internal_features",
     "--cfg",
     "creusot",
