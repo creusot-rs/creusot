@@ -426,6 +426,17 @@ pub fn snapshot(assertion: TS1) -> TS1 {
 #[proc_macro_attribute]
 pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
     let documentation = document_spec("terminates", TS1::new());
+    if let Ok(item) = syn::parse::<ImplItemFn>(tokens.clone()) {
+        if let Some(def) = item.defaultness {
+            return syn::Error::new(
+                def.span(),
+                "`terminates` functions cannot use the `default` modifier",
+            )
+            .into_compile_error()
+            .into();
+        }
+    };
+
     let mut result = TS1::from(quote! { #[creusot::clause::terminates] #documentation });
     result.extend(tokens);
     result
@@ -434,6 +445,16 @@ pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
 #[proc_macro_attribute]
 pub fn pure(_: TS1, tokens: TS1) -> TS1 {
     let documentation = document_spec("pure", TS1::new());
+    if let Ok(item) = syn::parse::<ImplItemFn>(tokens.clone()) {
+        if let Some(def) = item.defaultness {
+            return syn::Error::new(
+                def.span(),
+                "`pure` functions cannot use the `default` modifier",
+            )
+            .into_compile_error()
+            .into();
+        }
+    };
     let mut result = TS1::from(
         quote! { #[creusot::clause::no_panic] #[creusot::clause::terminates] #documentation },
     );
@@ -474,7 +495,13 @@ impl Parse for LogicInput {
         let attrs = input.call(Attribute::parse_outer)?;
         // Infalliable, no visibility = inherited
         let vis: Visibility = input.parse()?;
-        let default = input.parse()?;
+        let default: Option<_> = input.parse()?;
+        if default.is_some() {
+            return Err(syn::Error::new(
+                input.span(),
+                "logical functions cannot use the `default` modifier",
+            ));
+        }
         let sig: Signature = input.parse()?;
         let lookahead = input.lookahead1();
         if lookahead.peek(Token![;]) {

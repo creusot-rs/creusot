@@ -1,5 +1,5 @@
 use crate::{
-    contracts_items::{is_assertion, is_invariant, is_loop_variant, is_snapshot_closure},
+    contracts_items::{get_invariant_expl, is_assertion, is_loop_variant, is_snapshot_closure},
     ctx::TranslationCtx,
     pearlite::Term,
 };
@@ -11,9 +11,9 @@ use rustc_middle::{
     ty::{Ty, TyCtxt, TyKind},
 };
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum LoopSpecKind {
-    Invariant,
+    Invariant(String),
     Variant,
 }
 
@@ -91,8 +91,8 @@ struct Invariants<'tcx> {
 impl<'tcx> Visitor<'tcx> for Invariants<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         if let Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
-            let kind = if is_invariant(self.tcx, *id) {
-                LoopSpecKind::Invariant
+            let kind = if let Some(expl) = get_invariant_expl(self.tcx, *id) {
+                LoopSpecKind::Invariant(expl)
             } else if is_loop_variant(self.tcx, *id) {
                 LoopSpecKind::Variant
             } else {

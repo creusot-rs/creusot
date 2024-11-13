@@ -1,41 +1,30 @@
 use crate::pretyping;
 use proc_macro2::{Span, TokenStream};
-use quote::{quote, quote_spanned, ToTokens};
+use quote::{quote_spanned, ToTokens};
 use syn::{
-    parse_quote, spanned::Spanned, AttrStyle, Attribute, Error, Expr, ExprForLoop, ExprLoop,
-    ExprWhile, Ident, Meta, Result,
+    parse_quote_spanned, spanned::Spanned, AttrStyle, Attribute, Error, Expr, ExprForLoop,
+    ExprLoop, ExprWhile, Ident, Meta, Result,
 };
 
 #[derive(Debug)]
 struct Invariant {
     span: Span,
     invariant: pearlite_syn::Term,
-}
-
-impl syn::parse::Parse for Invariant {
-    fn parse(tokens: syn::parse::ParseStream) -> Result<Self> {
-        let span = tokens.span();
-        let invariant = tokens.parse()?;
-
-        Ok(Invariant { span, invariant })
-    }
+    expl: String,
 }
 
 impl ToTokens for Invariant {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let term = &self.invariant;
+        let span = self.span;
+        let expl = &self.expl;
+        let inv_body = pretyping::encode_term(&self.invariant).unwrap_or_else(|e| e.into_tokens());
 
-        // TODO: Move out of `ToTokens`
-        let s = self.span;
-        let inv_body = pretyping::encode_term(term).unwrap_or_else(|e| e.into_tokens());
-        let inv_body = quote_spanned! {s=> #inv_body};
-
-        tokens.extend(quote_spanned! {s=>
+        tokens.extend(quote_spanned! {span=>
             #[allow(unused_must_use)]
             let _ = {
                 #[creusot::no_translate]
                 #[creusot::spec]
-                #[creusot::spec::invariant]
+                #[creusot::spec::invariant = #expl]
                 ||{ #inv_body }
             };
         })
@@ -60,6 +49,15 @@ fn filter_invariants(attrs: &mut Vec<Attribute>) -> Vec<Attribute> {
         .collect()
 }
 
+// Set the expl before pushing the invariant into the vector
+fn parse_push_invariant(invariants: &mut Vec<Invariant>, invariant: TokenStream) -> Result<()> {
+    let span = invariant.span();
+    let invariant = syn::parse2(invariant)?;
+    let expl = format! {"expl:loop invariant {}", invariants.len()};
+    invariants.push(Invariant { span, invariant, expl });
+    Ok(())
+}
+
 pub fn parse(invariant: TokenStream, loopb: TokenStream) -> Result<Loop> {
     let body: Expr = syn::parse2(loopb)?;
     let span = body.span();
@@ -75,13 +73,14 @@ pub fn parse(invariant: TokenStream, loopb: TokenStream) -> Result<Loop> {
         }
     };
 
-    let mut invariants = vec![syn::parse2(invariant)?];
+    let mut invariants = Vec::new();
+    parse_push_invariant(&mut invariants, invariant)?;
 
     for attr in attrs {
         if let Meta::List(l) = attr.meta {
-            invariants.push(syn::parse2(l.tokens)?);
+            parse_push_invariant(&mut invariants, l.tokens)?;
         } else {
-            panic!()
+            return Err(Error::new_spanned(attr, "expected #[invariant(...)]"));
         }
     }
 
@@ -104,8 +103,9 @@ pub fn lower(loop_: Loop) -> TokenStream {
             }}
         }
         LoopKind::Loop(l) => {
-            quote! {{
-                #(#invariants;)*
+            let sp = loop_.span;
+            quote_spanned! {sp=> {
+                #(#invariants)*
                 #l
             }}
         }
@@ -115,46 +115,50 @@ pub fn lower(loop_: Loop) -> TokenStream {
 // Lowers for loops to `loop` and inserts the structural invariant that we get 'for free'
 fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
     let lbl = f.label;
+    let for_span = f.for_token.span;
     let pat = f.pat;
     let iter = f.expr;
     let body = f.body;
     let (outer, inner): (Vec<_>, _) =
         f.attrs.into_iter().partition(|f| matches!(f.style, AttrStyle::Outer));
-    let produced = Ident::new("produced", Span::call_site());
-    let iter_old = Ident::new("iter_old", Span::call_site());
-    let it = Ident::new("iter", Span::call_site());
+    let produced = Ident::new("produced", for_span);
+    let iter_old = Ident::new("iter_old", for_span);
+    let it = Ident::new("iter", for_span);
 
     invariants.insert(
         0,
         Invariant {
-            span: Span::call_site(),
-            invariant: parse_quote! { ::creusot_contracts::std::iter::Iterator::produces(#iter_old.inner(), #produced.inner(), #it) },
+            span: for_span,
+            invariant: parse_quote_spanned! {for_span=> ::creusot_contracts::std::iter::Iterator::produces(#iter_old.inner(), #produced.inner(), #it) },
+            expl: "expl:for invariant".to_string(),
         },
     );
 
     invariants.insert(
         0,
         Invariant {
-            span: Span::call_site(),
-            invariant: parse_quote! { ::creusot_contracts::invariant::inv(#it) },
+            span: for_span,
+            invariant: parse_quote_spanned! {for_span=> ::creusot_contracts::invariant::inv(#it) },
+            expl: "expl:for invariant".to_string(),
         },
     );
 
     invariants.insert(
         0,
         Invariant {
-            span: Span::call_site(),
-            invariant: parse_quote! { ::creusot_contracts::invariant::inv(*#produced) },
+            span: for_span,
+            invariant: parse_quote_spanned! {for_span=> ::creusot_contracts::invariant::inv(*#produced) },
+            expl: "expl:for invariant".to_string(),
         },
     );
 
     let elem = Ident::new("__creusot_proc_iter_elem", proc_macro::Span::def_site().into());
 
-    quote! { {
+    quote_spanned! {for_span=> {
         let mut #it = ::std::iter::IntoIterator::into_iter(#iter);
         let #iter_old = snapshot! { #it };
         let mut #produced = snapshot! { ::creusot_contracts::logic::Seq::EMPTY };
-        #(#invariants;)*
+        #(#invariants)*
         #(#outer)*
         #lbl
         loop {

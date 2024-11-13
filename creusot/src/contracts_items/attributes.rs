@@ -58,6 +58,15 @@ attribute_functions! {
     [creusot::clause::variant]               => has_variant_clause
 }
 
+pub fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "invariant"]).map(|a| {
+        match a.args {
+            AttrArgs::Eq(_, AttrArgsEq::Hir(ref expl)) => expl.symbol.to_string(),
+            _ => "expl:loop invariant".to_string(),
+        }
+    })
+}
+
 pub(crate) fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
     is_no_translate(tcx, def_id) || is_predicate(tcx, def_id) || is_logic(tcx, def_id)
 }

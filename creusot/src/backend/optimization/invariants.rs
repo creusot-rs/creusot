@@ -98,7 +98,10 @@ pub fn infer_proph_invariants<'tcx>(ctx: &mut TranslationCtx<'tcx>, body: &mut f
 
             let mut snap_old = Term::call_no_normalize(ctx.tcx, snap_deref, subst, vec![old]);
             snap_old.ty = u.ty(tcx, &body.locals);
-            blk.invariants.push(snap_old.fin().bin_op(tcx, BinOp::Eq, pterm.fin()));
+            blk.invariants.push(fmir::Invariant {
+                body: snap_old.fin().bin_op(tcx, BinOp::Eq, pterm.fin()),
+                expl: "expl:mut invariant".to_string(),
+            });
         }
     }
 }

@@ -250,7 +250,7 @@ impl<'tcx> TraitResolved<'tcx> {
                 return TraitResolved::NoInstance;
             }
         };
-        trace!("resolve_assoc_item_opt {source:?}",);
+        trace!("TraitResolved::resolve {source:?}",);
 
         match source {
             ImplSource::UserDefined(impl_data) => {
@@ -271,14 +271,15 @@ impl<'tcx> TraitResolved<'tcx> {
                 // Translate the original substitution into one on the selected impl method
                 let infcx = tcx.infer_ctxt().build();
 
-                let substs = substs.rebase_onto(tcx, trait_ref.def_id, impl_data.args);
-                let substs = rustc_trait_selection::traits::translate_args(
+                let args = rustc_trait_selection::traits::translate_args(
                     &infcx,
                     param_env,
                     impl_data.impl_def_id,
-                    substs,
+                    impl_data.args,
                     leaf_def.defining_node,
                 );
+                let substs = substs.rebase_onto(tcx, trait_ref.def_id, args);
+
                 let leaf_substs = infcx.tcx.erase_regions(substs);
 
                 TraitResolved::Instance(leaf_def.item.def_id, leaf_substs)
@@ -290,6 +291,29 @@ impl<'tcx> TraitResolved<'tcx> {
                 }
                 _ => unimplemented!(),
             },
+        }
+    }
+
+    /// Given a trait and some type parameters, try to find a concrete `impl` block for
+    /// this trait.
+    pub(crate) fn impl_id_of_trait(
+        tcx: TyCtxt<'tcx>,
+        param_env: ParamEnv<'tcx>,
+        trait_def_id: DefId,
+        substs: GenericArgsRef<'tcx>,
+    ) -> Option<DefId> {
+        let trait_ref = TraitRef::from_method(tcx, trait_def_id, substs);
+        let trait_ref = tcx.normalize_erasing_regions(param_env, trait_ref);
+
+        let Ok(source) = tcx.codegen_select_candidate((param_env, trait_ref)) else {
+            return None;
+        };
+        trace!("TraitResolved::impl_id_of_trait {source:?}",);
+        match source {
+            ImplSource::UserDefined(impl_data) => Some(impl_data.impl_def_id),
+            ImplSource::Param(_) => None,
+            // TODO: should we return something here, like we do in the above method?
+            ImplSource::Builtin(_, _) => None,
         }
     }
 

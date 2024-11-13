@@ -722,8 +722,8 @@ impl<'tcx> Block<'tcx> {
         for i in self.invariants {
             body = Expr::Assert(
                 Box::new(Term::Attr(
-                    Attribute::Attr(format!("expl:loop invariant")),
-                    Box::new(lower_pure(lower.ctx, lower.names, &i)),
+                    Attribute::Attr(i.expl),
+                    Box::new(lower_pure(lower.ctx, lower.names, &i.body)),
                 )),
                 Box::new(body),
             );
