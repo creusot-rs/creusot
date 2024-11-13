@@ -132,8 +132,8 @@ module M_11_repeat__qyi12237267952628538149__next [#"11_repeat.rs" 50 4 50 35] (
   type a
   
   let%span s11_repeat0 = "11_repeat.rs" 50 17 50 21
-  let%span s11_repeat1 = "11_repeat.rs" 46 14 49 5
-  let%span s11_repeat2 = "11_repeat.rs" 50 26 50 35
+  let%span s11_repeat1 = "11_repeat.rs" 50 26 50 35
+  let%span s11_repeat2 = "11_repeat.rs" 46 14 49 5
   let%span sclone3 = "../../../../creusot-contracts/src/std/clone.rs" 7 0 20 1
   let%span s11_repeat4 = "11_repeat.rs" 18 20 18 25
   let%span s11_repeat5 = "11_repeat.rs" 25 12 26 85
@@ -208,12 +208,12 @@ module M_11_repeat__qyi12237267952628538149__next [#"11_repeat.rs" 50 4 50 35] (
   predicate resolve'0 (_1 : borrowed (Repeat'0.t_Repeat a)) =
     resolve'1 _1
   
-  let rec clone'0 (self:a) (return'  (ret:a))= {[@expl:precondition] inv'2 self}
+  let rec clone'0 (self:a) (return'  (ret:a))= {[@expl:clone 'self' type invariant] inv'2 self}
     any [ return' (result:a)-> {inv'3 result} {[%#sclone3] result = self} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
-  let rec next (self:borrowed (Repeat'0.t_Repeat a)) (return'  (ret:Option'0.t_Option a))= {[%#s11_repeat0] inv'0 self}
+  let rec next (self:borrowed (Repeat'0.t_Repeat a)) (return'  (ret:Option'0.t_Option a))= {[@expl:next 'self' type invariant] [%#s11_repeat0] inv'0 self}
     (! bb0
     [ bb0 = s0
       [ s0 = Repeat'0.t_Repeat <a> {self.current}
@@ -228,8 +228,8 @@ module M_11_repeat__qyi12237267952628538149__next [#"11_repeat.rs" 50 4 50 35] (
       
     | bb2 = return' {_0} ]
     ) [ & _0 : Option'0.t_Option a = any_l () | & self : borrowed (Repeat'0.t_Repeat a) = self | & _3 : a = any_l () ] 
-    [ return' (result:Option'0.t_Option a)-> {[@expl:postcondition] [%#s11_repeat2] inv'1 result}
-      {[@expl:postcondition] [%#s11_repeat1] match result with
+    [ return' (result:Option'0.t_Option a)-> {[@expl:next result type invariant] [%#s11_repeat1] inv'1 result}
+      {[@expl:next ensures] [%#s11_repeat2] match result with
         | Option'0.C_None -> completed'0 self
         | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
@@ -309,16 +309,16 @@ module M_11_repeat__qyi12237267952628538149 [#"11_repeat.rs" 12 0 12 37] (* <Rep
   
   goal next_refn : [%#s11_repeat1] forall self : borrowed (Repeat'0.t_Repeat a) . inv'1 self
    -> inv'1 self
-  /\ (forall result : Option'0.t_Option a . inv'2 result
-  /\ match result with
+  /\ (forall result : Option'0.t_Option a . match result with
     | Option'0.C_None -> completed'0 self
     | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end
-   -> inv'2 result
-  /\ match result with
+  /\ inv'2 result
+   -> match result with
     | Option'0.C_None -> completed'0 self
     | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
-    end)
+    end
+  /\ inv'2 result)
   
   goal produces_trans_refn : [%#s11_repeat2] forall a : Repeat'0.t_Repeat a . forall ab : Seq.seq a . forall b : Repeat'0.t_Repeat a . forall bc : Seq.seq a . forall c : Repeat'0.t_Repeat a . produces'0 b bc c
   /\ produces'0 a ab b /\ inv'0 c /\ inv'0 b /\ inv'0 a

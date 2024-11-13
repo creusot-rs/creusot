@@ -266,11 +266,11 @@ module M_13_cloned__qyi7043136317404314719__next [#"13_cloned.rs" 57 4 57 35] (*
   type t
   
   let%span s13_cloned0 = "13_cloned.rs" 57 17 57 21
-  let%span s13_cloned1 = "13_cloned.rs" 53 14 56 5
-  let%span s13_cloned2 = "13_cloned.rs" 57 26 57 35
+  let%span s13_cloned1 = "13_cloned.rs" 57 26 57 35
+  let%span s13_cloned2 = "13_cloned.rs" 53 14 56 5
   let%span scommon3 = "common.rs" 31 17 31 21
-  let%span scommon4 = "common.rs" 27 14 30 5
-  let%span scommon5 = "common.rs" 31 26 31 44
+  let%span scommon4 = "common.rs" 31 26 31 44
+  let%span scommon5 = "common.rs" 27 14 30 5
   let%span soption6 = "../../../../creusot-contracts/src/std/option.rs" 31 0 423 1
   let%span s13_cloned7 = "13_cloned.rs" 23 8 23 43
   let%span s13_cloned8 = "13_cloned.rs" 30 12 33 79
@@ -412,11 +412,11 @@ module M_13_cloned__qyi7043136317404314719__next [#"13_cloned.rs" 57 4 57 35] (*
   
   use prelude.prelude.Intrinsic
   
-  let rec cloned'0 (self:Option'0.t_Option t) (return'  (ret:Option'0.t_Option t))= {[@expl:precondition] inv'4 self}
+  let rec cloned'0 (self:Option'0.t_Option t) (return'  (ret:Option'0.t_Option t))= {[@expl:cloned 'self' type invariant] inv'4 self}
     any
     [ return' (result:Option'0.t_Option t)-> {inv'2 result}
-      {[%#soption6] self = Option'0.C_None \/ (exists t : t . self = Option'0.C_Some t /\ result = Option'0.C_Some t)}
       {[%#soption6] self = Option'0.C_None  -> result = Option'0.C_None}
+      {[%#soption6] self = Option'0.C_None \/ (exists t : t . self = Option'0.C_Some t /\ result = Option'0.C_Some t)}
       (! return' {result}) ]
     
   
@@ -428,10 +428,10 @@ module M_13_cloned__qyi7043136317404314719__next [#"13_cloned.rs" 57 4 57 35] (*
   
   use seq.Seq
   
-  let rec next'0 (self:borrowed i) (return'  (ret:Option'0.t_Option t))= {[@expl:precondition] [%#scommon3] inv'3 self}
+  let rec next'0 (self:borrowed i) (return'  (ret:Option'0.t_Option t))= {[@expl:next 'self' type invariant] [%#scommon3] inv'3 self}
     any
-    [ return' (result:Option'0.t_Option t)-> {[%#scommon5] inv'4 result}
-      {[%#scommon4] match result with
+    [ return' (result:Option'0.t_Option t)-> {[%#scommon4] inv'4 result}
+      {[%#scommon5] match result with
         | Option'0.C_None -> completed'1 self
         | Option'0.C_Some v -> produces'1 self.current (Seq.singleton v) self.final
         end}
@@ -440,7 +440,7 @@ module M_13_cloned__qyi7043136317404314719__next [#"13_cloned.rs" 57 4 57 35] (*
   
   meta "compute_max_steps" 1000000
   
-  let rec next (self:borrowed (Cloned'0.t_Cloned i)) (return'  (ret:Option'0.t_Option t))= {[%#s13_cloned0] inv'1 self}
+  let rec next (self:borrowed (Cloned'0.t_Cloned i)) (return'  (ret:Option'0.t_Option t))= {[@expl:next 'self' type invariant] [%#s13_cloned0] inv'1 self}
     (! bb0
     [ bb0 = s0
       [ s0 = Cloned'0.t_Cloned <i> {self.current}
@@ -468,8 +468,8 @@ module M_13_cloned__qyi7043136317404314719__next [#"13_cloned.rs" 57 4 57 35] (*
     | & _3 : Option'0.t_Option t = any_l ()
     | & _4 : borrowed i = any_l () ]
     
-    [ return' (result:Option'0.t_Option t)-> {[@expl:postcondition] [%#s13_cloned2] inv'2 result}
-      {[@expl:postcondition] [%#s13_cloned1] match result with
+    [ return' (result:Option'0.t_Option t)-> {[@expl:next result type invariant] [%#s13_cloned1] inv'2 result}
+      {[@expl:next ensures] [%#s13_cloned2] match result with
         | Option'0.C_None -> completed'0 self
         | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
         end}
@@ -597,14 +597,14 @@ module M_13_cloned__qyi7043136317404314719 [#"13_cloned.rs" 13 0 16 13] (* <Clon
   
   goal next_refn : [%#s13_cloned2] forall self : borrowed (Cloned'0.t_Cloned i) . inv'1 self
    -> inv'1 self
-  /\ (forall result : Option'0.t_Option t . inv'2 result
-  /\ match result with
+  /\ (forall result : Option'0.t_Option t . match result with
     | Option'0.C_None -> completed'0 self
     | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
     end
-   -> inv'2 result
-  /\ match result with
+  /\ inv'2 result
+   -> match result with
     | Option'0.C_None -> completed'0 self
     | Option'0.C_Some v -> produces'0 self.current (Seq.singleton v) self.final
-    end)
+    end
+  /\ inv'2 result)
 end

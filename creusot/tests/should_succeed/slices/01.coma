@@ -26,8 +26,9 @@ module M_01__index_slice [#"01.rs" 6 0 6 36]
   
   function view'1 (self : slice uint32) : Seq.seq uint32
   
-  axiom view'1_spec : forall self : slice uint32 . ([%#sslice5] view'1 self = Slice.id self)
-  && ([%#sslice4] Seq.length (view'1 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'1_spec : forall self : slice uint32 . ([%#sslice4] Seq.length (view'1 self)
+  <= UIntSize.to_int (v_MAX'0 : usize))
+  && ([%#sslice5] view'1 self = Slice.id self)
   
   use prelude.prelude.Borrow
   
@@ -38,7 +39,8 @@ module M_01__index_slice [#"01.rs" 6 0 6 36]
   
   meta "compute_max_steps" 1000000
   
-  let rec index_slice (a:slice uint32) (return'  (ret:uint32))= {[%#s012] 10 < Seq.length (view'0 a)}
+  let rec index_slice (a:slice uint32) (return'  (ret:uint32))= {[@expl:index_slice requires] [%#s012] 10
+    < Seq.length (view'0 a)}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &_3 <- [%#s010] (10 : usize) ] s1
@@ -92,8 +94,9 @@ module M_01__index_mut_slice [#"01.rs" 12 0 12 37]
   
   function view'1 (self : slice uint32) : Seq.seq uint32
   
-  axiom view'1_spec : forall self : slice uint32 . ([%#sslice9] view'1 self = Slice.id self)
-  && ([%#sslice8] Seq.length (view'1 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'1_spec : forall self : slice uint32 . ([%#sslice8] Seq.length (view'1 self)
+  <= UIntSize.to_int (v_MAX'0 : usize))
+  && ([%#sslice9] view'1 self = Slice.id self)
   
   function index_logic'0 [@inline:trivial] (self : slice uint32) (ix : int) : uint32 =
     [%#sops6] Seq.get (view'1 self) ix
@@ -113,7 +116,8 @@ module M_01__index_mut_slice [#"01.rs" 12 0 12 37]
   
   meta "compute_max_steps" 1000000
   
-  let rec index_mut_slice (a:borrowed (slice uint32)) (return'  (ret:()))= {[%#s013] Seq.length (view'0 a) = 5}
+  let rec index_mut_slice (a:borrowed (slice uint32)) (return'  (ret:()))= {[@expl:index_mut_slice requires] [%#s013] Seq.length (view'0 a)
+    = 5}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &_4 <- [%#s010] (2 : usize) ] s1
@@ -135,7 +139,7 @@ module M_01__index_mut_slice [#"01.rs" 12 0 12 37]
     | & _5 : usize = any_l ()
     | & _6 : bool = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#s014] UInt32.to_int (index_logic'0 a.final 2) = 3}
+    [ return' (result:())-> {[@expl:index_mut_slice ensures] [%#s014] UInt32.to_int (index_logic'0 a.final 2) = 3}
       (! return' {result}) ]
     
 end
@@ -160,8 +164,8 @@ module M_01__slice_first [#"01.rs" 20 0 20 44]
   let%span s011 = "01.rs" 22 16 22 17
   let%span s012 = "01.rs" 22 14 22 18
   let%span s013 = "01.rs" 20 22 20 23
-  let%span s014 = "01.rs" 16 10 19 1
-  let%span s015 = "01.rs" 20 34 20 44
+  let%span s014 = "01.rs" 20 34 20 44
+  let%span s015 = "01.rs" 16 10 19 1
   let%span sslice6 = "../../../../creusot-contracts/src/std/slice.rs" 249 0 358 1
   let%span sops7 = "../../../../creusot-contracts/src/logic/ops.rs" 42 8 42 31
   let%span smodel8 = "../../../../creusot-contracts/src/model.rs" 91 8 91 22
@@ -208,8 +212,9 @@ module M_01__slice_first [#"01.rs" 20 0 20 44]
   
   function view'1 (self : slice t) : Seq.seq t
   
-  axiom view'1_spec : forall self : slice t . ([%#sslice10] view'1 self = Slice.id self)
-  && ([%#sslice9] Seq.length (view'1 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'1_spec : forall self : slice t . ([%#sslice9] Seq.length (view'1 self)
+  <= UIntSize.to_int (v_MAX'0 : usize))
+  && ([%#sslice10] view'1 self = Slice.id self)
   
   predicate invariant'2 (self : slice t) =
     [%#sslice12] inv'5 (view'1 self)
@@ -254,14 +259,14 @@ module M_01__slice_first [#"01.rs" 20 0 20 44]
   
   use prelude.prelude.Intrinsic
   
-  let rec len'0 (self:slice t) (return'  (ret:usize))= {[@expl:precondition] inv'0 self}
+  let rec len'0 (self:slice t) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'0 self}
     any
     [ return' (result:usize)-> {[%#sslice6] Seq.length (view'0 self) = UIntSize.to_int result} (! return' {result}) ]
     
   
   meta "compute_max_steps" 1000000
   
-  let rec slice_first (a:slice t) (return'  (ret:Option'0.t_Option t))= {[%#s013] inv'0 a}
+  let rec slice_first (a:slice t) (return'  (ret:Option'0.t_Option t))= {[@expl:slice_first 'a' type invariant] [%#s013] inv'0 a}
     (! bb0
     [ bb0 = s0 [ s0 = len'0 {a} (fun (_ret':usize) ->  [ &_4 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0
@@ -292,8 +297,8 @@ module M_01__slice_first [#"01.rs" 20 0 20 44]
     | & _9 : usize = any_l ()
     | & _10 : bool = any_l () ]
     
-    [ return' (result:Option'0.t_Option t)-> {[@expl:postcondition] [%#s015] inv'1 result}
-      {[@expl:postcondition] [%#s014] match result with
+    [ return' (result:Option'0.t_Option t)-> {[@expl:slice_first result type invariant] [%#s014] inv'1 result}
+      {[@expl:slice_first ensures] [%#s015] match result with
         | Option'0.C_Some v -> v = index_logic'0 a 0
         | Option'0.C_None -> Seq.length (view'0 a) = 0
         end}

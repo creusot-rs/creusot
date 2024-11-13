@@ -75,9 +75,9 @@ module M_mapping_test__incr [#"mapping_test.rs" 30 0 30 18]
   
   meta "compute_max_steps" 1000000
   
-  let rec incr (t:borrowed (T'0.t_T)) (return'  (ret:()))= {[%#smapping_test4] Int32.to_int (T_mapping_test__T.t_T__a t.current)
-    < 1000}
-    {[%#smapping_test3] 0 <= Int32.to_int (T_mapping_test__T.t_T__a t.current)}
+  let rec incr (t:borrowed (T'0.t_T)) (return'  (ret:()))= {[@expl:incr requires #0] [%#smapping_test3] 0
+    <= Int32.to_int (T_mapping_test__T.t_T__a t.current)}
+    {[@expl:incr requires #1] [%#smapping_test4] Int32.to_int (T_mapping_test__T.t_T__a t.current) < 1000}
     (! bb0
     [ bb0 = s0 [ s0 =  [ &old_t <- [%#smapping_test0] Snapshot.new t ] s1 | s1 = bb1 ] 
     | bb1 = s0
@@ -95,7 +95,7 @@ module M_mapping_test__incr [#"mapping_test.rs" 30 0 30 18]
     )
     [ & _0 : () = any_l () | & t : borrowed (T'0.t_T) = t | & old_t : Snapshot.snap_ty (borrowed (T'0.t_T)) = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#smapping_test5] view'0 t.final
+    [ return' (result:())-> {[@expl:incr ensures] [%#smapping_test5] view'0 t.final
       = Map.set (view'2 t) (Int32.to_int (T_mapping_test__T.t_T__a t.current)) 1}
       (! return' {result}) ]
     
@@ -146,9 +146,9 @@ module M_mapping_test__f [#"mapping_test.rs" 38 0 38 10]
   function view'1 (self : borrowed (T'0.t_T)) : Map.map int int =
     [%#smodel10] view'0 self.current
   
-  let rec incr'0 (t:borrowed (T'0.t_T)) (return'  (ret:()))= {[@expl:precondition] [%#smapping_test8] Int32.to_int (T_mapping_test__T.t_T__a t.current)
-    < 1000}
-    {[@expl:precondition] [%#smapping_test7] 0 <= Int32.to_int (T_mapping_test__T.t_T__a t.current)}
+  let rec incr'0 (t:borrowed (T'0.t_T)) (return'  (ret:()))= {[@expl:incr requires #0] [%#smapping_test7] 0
+    <= Int32.to_int (T_mapping_test__T.t_T__a t.current)}
+    {[@expl:incr requires #1] [%#smapping_test8] Int32.to_int (T_mapping_test__T.t_T__a t.current) < 1000}
     any
     [ return' (result:())-> {[%#smapping_test9] view'0 t.final
       = Map.set (view'1 t) (Int32.to_int (T_mapping_test__T.t_T__a t.current)) 1}

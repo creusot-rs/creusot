@@ -50,10 +50,6 @@ module M_03_generic_bound__closure_param [#"03_generic_bound.rs" 5 0 5 34]
   axiom postcondition_mut_unnest'0_spec : forall self : borrowed f, args : uint32, res : () . ([%#sops8] postcondition_mut'0 self args res)
    -> ([%#sops9] unnest'0 self.current self.final)
   
-  predicate inv'3 (_1 : ())
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : () [inv'3 x] . inv'3 x = true
-  
   predicate postcondition'0 (self : f) (_2 : uint32) (_3 : ())
   
   function fn_once'0 (self : f) (args : uint32) (res : ()) : ()
@@ -68,6 +64,10 @@ module M_03_generic_bound__closure_param [#"03_generic_bound.rs" 5 0 5 34]
   
   axiom fn_mut'0_spec : forall self : borrowed f, args : uint32, res : () . [%#sops4] postcondition_mut'0 self args res
   = (resolve'1 self /\ postcondition'0 self.current args res)
+  
+  predicate inv'3 (_1 : ())
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : () [inv'3 x] . inv'3 x = true
   
   predicate inv'2 (_1 : uint32)
   
@@ -86,14 +86,14 @@ module M_03_generic_bound__closure_param [#"03_generic_bound.rs" 5 0 5 34]
   
   predicate precondition'0 (self : f) (_2 : uint32)
   
-  let rec call'0 (self:f) (args:uint32) (return'  (ret:()))= {[@expl:precondition] inv'2 args}
-    {[@expl:precondition] inv'1 self}
-    {[@expl:precondition] [%#sops2] precondition'0 self args}
+  let rec call'0 (self:f) (args:uint32) (return'  (ret:()))= {[@expl:call 'self' type invariant] inv'1 self}
+    {[@expl:call 'args' type invariant] inv'2 args}
+    {[@expl:call requires] [%#sops2] precondition'0 self args}
     any [ return' (result:())-> {inv'3 result} {[%#sops3] postcondition'0 self args result} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
-  let rec closure_param (f:f) (return'  (ret:()))= {[%#s03_generic_bound1] inv'0 f}
+  let rec closure_param (f:f) (return'  (ret:()))= {[@expl:closure_param 'f' type invariant] [%#s03_generic_bound1] inv'0 f}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &_3 <- (([%#s03_generic_bound0] (0 : uint32))) ] s1
@@ -140,7 +140,7 @@ module M_03_generic_bound__caller [#"03_generic_bound.rs" 9 0 9 15]
   
   use prelude.prelude.Intrinsic
   
-  let rec closure_param'0 (f:Closure'0.m_03_generic_bound__caller__qyClosure0) (return'  (ret:()))= {[@expl:precondition] [%#s03_generic_bound0] inv'0 f}
+  let rec closure_param'0 (f:Closure'0.m_03_generic_bound__caller__qyClosure0) (return'  (ret:()))= {[@expl:closure_param 'f' type invariant] [%#s03_generic_bound0] inv'0 f}
     any [ return' (result:())-> (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000

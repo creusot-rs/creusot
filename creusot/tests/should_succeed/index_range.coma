@@ -138,8 +138,8 @@ module M_index_range__create_arr [#"index_range.rs" 14 0 14 27]
   function view'1 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) : Seq.seq int32 =
     [%#smodel11] view'0 self.current
   
-  let rec push'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (value:int32) (return'  (ret:()))= {[@expl:precondition] inv'2 value}
-    {[@expl:precondition] inv'1 self}
+  let rec push'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (value:int32) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'1 self}
+    {[@expl:push 'value' type invariant] inv'2 value}
     any [ return' (result:())-> {[%#svec8] view'0 self.final = Seq.snoc (view'1 self) value} (! return' {result}) ] 
   
   let rec new'0 (_1:()) (return'  (ret:Vec'0.t_Vec int32 (Global'0.t_Global)))= any
@@ -216,7 +216,7 @@ module M_index_range__create_arr [#"index_range.rs" 14 0 14 27]
     | & _11 : () = any_l ()
     | & _12 : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global)) = any_l () ]
     
-    [ return' (result:Vec'0.t_Vec int32 (Global'0.t_Global))-> {[@expl:postcondition] [%#sindex_range6] Seq.length (view'0 result)
+    [ return' (result:Vec'0.t_Vec int32 (Global'0.t_Global))-> {[@expl:create_arr ensures] [%#sindex_range6] Seq.length (view'0 result)
       = 5
       /\ Int32.to_int (index_logic'0 result 0) = 0
       /\ Int32.to_int (index_logic'0 result 1) = 1
@@ -437,14 +437,14 @@ module M_index_range__test_range [#"index_range.rs" 27 0 27 19]
   function view'1 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32 =
     [%#smodel88] view'0 self
   
-  let rec index'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:usize) (return'  (ret:int32))= {[@expl:precondition] inv'7 index}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#svec73] in_bounds'1 index (view'1 self)}
+  let rec index'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:usize) (return'  (ret:int32))= {[@expl:index 'self' type invariant] inv'0 self}
+    {[@expl:index 'index' type invariant] inv'7 index}
+    {[@expl:index requires] [%#svec73] in_bounds'1 index (view'1 self)}
     any
     [ return' (result:int32)-> {inv'8 result} {[%#svec74] has_value'1 index (view'1 self) result} (! return' {result}) ]
     
   
-  let rec len'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] inv'0 self}
+  let rec len'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'0 self}
     any
     [ return' (result:usize)-> {[%#svec85] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ]
     
@@ -469,8 +469,9 @@ module M_index_range__test_range [#"index_range.rs" 27 0 27 19]
   
   function view'4 (self : slice int32) : Seq.seq int32
   
-  axiom view'4_spec : forall self : slice int32 . ([%#sslice97] view'4 self = Slice.id self)
-  && ([%#sslice96] Seq.length (view'4 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'4_spec : forall self : slice int32 . ([%#sslice96] Seq.length (view'4 self)
+  <= UIntSize.to_int (v_MAX'0 : usize))
+  && ([%#sslice97] view'4 self = Slice.id self)
   
   use seq.Seq
   
@@ -486,45 +487,45 @@ module M_index_range__test_range [#"index_range.rs" 27 0 27 19]
   function view'3 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) : Seq.seq int32 =
     [%#smodel91] view'0 self.current
   
-  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (index:Range'0.t_Range usize) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] inv'1 index}
-    {[@expl:precondition] inv'5 self}
-    {[@expl:precondition] [%#svec80] in_bounds'0 index (view'3 self)}
+  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (index:Range'0.t_Range usize) (return'  (ret:borrowed (slice int32)))= {[@expl:index_mut 'self' type invariant] inv'5 self}
+    {[@expl:index_mut 'index' type invariant] inv'1 index}
+    {[@expl:index_mut requires] [%#svec80] in_bounds'0 index (view'3 self)}
     any
     [ return' (result:borrowed (slice int32))-> {inv'6 result}
-      {[%#svec84] Seq.length (view'0 self.final) = Seq.length (view'3 self)}
-      {[%#svec83] resolve_elswhere'0 index (view'3 self) (view'0 self.final)}
-      {[%#svec82] has_value'0 index (view'0 self.final) result.final}
       {[%#svec81] has_value'0 index (view'3 self) result.current}
+      {[%#svec82] has_value'0 index (view'0 self.final) result.final}
+      {[%#svec83] resolve_elswhere'0 index (view'3 self) (view'0 self.final)}
+      {[%#svec84] Seq.length (view'0 self.final) = Seq.length (view'3 self)}
       (! return' {result}) ]
     
   
-  let rec is_none'0 (self:Option'0.t_Option (slice int32)) (return'  (ret:bool))= {[@expl:precondition] inv'4 self}
+  let rec is_none'0 (self:Option'0.t_Option (slice int32)) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'4 self}
     any [ return' (result:bool)-> {[%#soption79] result = (self = Option'0.C_None)} (! return' {result}) ] 
   
   function view'2 (self : slice int32) : Seq.seq int32 =
     [%#smodel88] view'4 self
   
-  let rec get'0 (self:slice int32) (index:Range'0.t_Range usize) (return'  (ret:Option'0.t_Option (slice int32)))= {[@expl:precondition] inv'1 index}
-    {[@expl:precondition] inv'2 self}
+  let rec get'0 (self:slice int32) (index:Range'0.t_Range usize) (return'  (ret:Option'0.t_Option (slice int32)))= {[@expl:get 'self' type invariant] inv'2 self}
+    {[@expl:get 'index' type invariant] inv'1 index}
     any
     [ return' (result:Option'0.t_Option (slice int32))-> {inv'3 result}
-      {[%#sslice78] in_bounds'0 index (view'2 self) \/ result = Option'0.C_None}
       {[%#sslice77] in_bounds'0 index (view'2 self)
        -> (exists r : slice int32 . result = Option'0.C_Some r /\ has_value'0 index (view'2 self) r)}
+      {[%#sslice78] in_bounds'0 index (view'2 self) \/ result = Option'0.C_None}
       (! return' {result}) ]
     
   
-  let rec deref'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:slice int32))= {[@expl:precondition] inv'0 self}
+  let rec deref'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:slice int32))= {[@expl:deref 'self' type invariant] inv'0 self}
     any [ return' (result:slice int32)-> {inv'2 result} {[%#svec76] view'2 result = view'1 self} (! return' {result}) ] 
   
-  let rec len'0 (self:slice int32) (return'  (ret:usize))= {[@expl:precondition] inv'2 self}
+  let rec len'0 (self:slice int32) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'2 self}
     any
     [ return' (result:usize)-> {[%#sslice75] Seq.length (view'2 self) = UIntSize.to_int result} (! return' {result}) ]
     
   
-  let rec index'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:Range'0.t_Range usize) (return'  (ret:slice int32))= {[@expl:precondition] inv'1 index}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#svec73] in_bounds'0 index (view'1 self)}
+  let rec index'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:Range'0.t_Range usize) (return'  (ret:slice int32))= {[@expl:index 'self' type invariant] inv'0 self}
+    {[@expl:index 'index' type invariant] inv'1 index}
+    {[@expl:index requires] [%#svec73] in_bounds'0 index (view'1 self)}
     any
     [ return' (result:slice int32)-> {inv'2 result}
       {[%#svec74] has_value'0 index (view'1 self) result}
@@ -1043,14 +1044,14 @@ module M_index_range__test_range_to [#"index_range.rs" 78 0 78 22]
   function view'1 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32 =
     [%#smodel61] view'0 self
   
-  let rec index'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:usize) (return'  (ret:int32))= {[@expl:precondition] inv'7 index}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#svec46] in_bounds'1 index (view'1 self)}
+  let rec index'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:usize) (return'  (ret:int32))= {[@expl:index 'self' type invariant] inv'0 self}
+    {[@expl:index 'index' type invariant] inv'7 index}
+    {[@expl:index requires] [%#svec46] in_bounds'1 index (view'1 self)}
     any
     [ return' (result:int32)-> {inv'8 result} {[%#svec47] has_value'1 index (view'1 self) result} (! return' {result}) ]
     
   
-  let rec len'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] inv'0 self}
+  let rec len'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'0 self}
     any
     [ return' (result:usize)-> {[%#svec58] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ]
     
@@ -1071,8 +1072,9 @@ module M_index_range__test_range_to [#"index_range.rs" 78 0 78 22]
   
   function view'4 (self : slice int32) : Seq.seq int32
   
-  axiom view'4_spec : forall self : slice int32 . ([%#sslice70] view'4 self = Slice.id self)
-  && ([%#sslice69] Seq.length (view'4 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'4_spec : forall self : slice int32 . ([%#sslice69] Seq.length (view'4 self)
+  <= UIntSize.to_int (v_MAX'0 : usize))
+  && ([%#sslice70] view'4 self = Slice.id self)
   
   use seq.Seq
   
@@ -1085,45 +1087,45 @@ module M_index_range__test_range_to [#"index_range.rs" 78 0 78 22]
   function view'3 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) : Seq.seq int32 =
     [%#smodel64] view'0 self.current
   
-  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (index:RangeTo'0.t_RangeTo usize) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] inv'1 index}
-    {[@expl:precondition] inv'5 self}
-    {[@expl:precondition] [%#svec53] in_bounds'0 index (view'3 self)}
+  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (index:RangeTo'0.t_RangeTo usize) (return'  (ret:borrowed (slice int32)))= {[@expl:index_mut 'self' type invariant] inv'5 self}
+    {[@expl:index_mut 'index' type invariant] inv'1 index}
+    {[@expl:index_mut requires] [%#svec53] in_bounds'0 index (view'3 self)}
     any
     [ return' (result:borrowed (slice int32))-> {inv'6 result}
-      {[%#svec57] Seq.length (view'0 self.final) = Seq.length (view'3 self)}
-      {[%#svec56] resolve_elswhere'0 index (view'3 self) (view'0 self.final)}
-      {[%#svec55] has_value'0 index (view'0 self.final) result.final}
       {[%#svec54] has_value'0 index (view'3 self) result.current}
+      {[%#svec55] has_value'0 index (view'0 self.final) result.final}
+      {[%#svec56] resolve_elswhere'0 index (view'3 self) (view'0 self.final)}
+      {[%#svec57] Seq.length (view'0 self.final) = Seq.length (view'3 self)}
       (! return' {result}) ]
     
   
-  let rec is_none'0 (self:Option'0.t_Option (slice int32)) (return'  (ret:bool))= {[@expl:precondition] inv'4 self}
+  let rec is_none'0 (self:Option'0.t_Option (slice int32)) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'4 self}
     any [ return' (result:bool)-> {[%#soption52] result = (self = Option'0.C_None)} (! return' {result}) ] 
   
   function view'2 (self : slice int32) : Seq.seq int32 =
     [%#smodel61] view'4 self
   
-  let rec get'0 (self:slice int32) (index:RangeTo'0.t_RangeTo usize) (return'  (ret:Option'0.t_Option (slice int32)))= {[@expl:precondition] inv'1 index}
-    {[@expl:precondition] inv'2 self}
+  let rec get'0 (self:slice int32) (index:RangeTo'0.t_RangeTo usize) (return'  (ret:Option'0.t_Option (slice int32)))= {[@expl:get 'self' type invariant] inv'2 self}
+    {[@expl:get 'index' type invariant] inv'1 index}
     any
     [ return' (result:Option'0.t_Option (slice int32))-> {inv'3 result}
-      {[%#sslice51] in_bounds'0 index (view'2 self) \/ result = Option'0.C_None}
       {[%#sslice50] in_bounds'0 index (view'2 self)
        -> (exists r : slice int32 . result = Option'0.C_Some r /\ has_value'0 index (view'2 self) r)}
+      {[%#sslice51] in_bounds'0 index (view'2 self) \/ result = Option'0.C_None}
       (! return' {result}) ]
     
   
-  let rec deref'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:slice int32))= {[@expl:precondition] inv'0 self}
+  let rec deref'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:slice int32))= {[@expl:deref 'self' type invariant] inv'0 self}
     any [ return' (result:slice int32)-> {inv'2 result} {[%#svec49] view'2 result = view'1 self} (! return' {result}) ] 
   
-  let rec len'0 (self:slice int32) (return'  (ret:usize))= {[@expl:precondition] inv'2 self}
+  let rec len'0 (self:slice int32) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'2 self}
     any
     [ return' (result:usize)-> {[%#sslice48] Seq.length (view'2 self) = UIntSize.to_int result} (! return' {result}) ]
     
   
-  let rec index'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:RangeTo'0.t_RangeTo usize) (return'  (ret:slice int32))= {[@expl:precondition] inv'1 index}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#svec46] in_bounds'0 index (view'1 self)}
+  let rec index'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:RangeTo'0.t_RangeTo usize) (return'  (ret:slice int32))= {[@expl:index 'self' type invariant] inv'0 self}
+    {[@expl:index 'index' type invariant] inv'1 index}
+    {[@expl:index requires] [%#svec46] in_bounds'0 index (view'1 self)}
     any
     [ return' (result:slice int32)-> {inv'2 result}
       {[%#svec47] has_value'0 index (view'1 self) result}
@@ -1537,14 +1539,14 @@ module M_index_range__test_range_from [#"index_range.rs" 115 0 115 24]
   function view'1 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32 =
     [%#smodel63] view'0 self
   
-  let rec index'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:usize) (return'  (ret:int32))= {[@expl:precondition] inv'7 index}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#svec48] in_bounds'1 index (view'1 self)}
+  let rec index'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:usize) (return'  (ret:int32))= {[@expl:index 'self' type invariant] inv'0 self}
+    {[@expl:index 'index' type invariant] inv'7 index}
+    {[@expl:index requires] [%#svec48] in_bounds'1 index (view'1 self)}
     any
     [ return' (result:int32)-> {inv'8 result} {[%#svec49] has_value'1 index (view'1 self) result} (! return' {result}) ]
     
   
-  let rec len'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] inv'0 self}
+  let rec len'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'0 self}
     any
     [ return' (result:usize)-> {[%#svec60] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ]
     
@@ -1566,8 +1568,9 @@ module M_index_range__test_range_from [#"index_range.rs" 115 0 115 24]
   
   function view'4 (self : slice int32) : Seq.seq int32
   
-  axiom view'4_spec : forall self : slice int32 . ([%#sslice72] view'4 self = Slice.id self)
-  && ([%#sslice71] Seq.length (view'4 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'4_spec : forall self : slice int32 . ([%#sslice71] Seq.length (view'4 self)
+  <= UIntSize.to_int (v_MAX'0 : usize))
+  && ([%#sslice72] view'4 self = Slice.id self)
   
   use seq.Seq
   
@@ -1581,45 +1584,45 @@ module M_index_range__test_range_from [#"index_range.rs" 115 0 115 24]
   function view'3 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) : Seq.seq int32 =
     [%#smodel66] view'0 self.current
   
-  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (index:RangeFrom'0.t_RangeFrom usize) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] inv'1 index}
-    {[@expl:precondition] inv'5 self}
-    {[@expl:precondition] [%#svec55] in_bounds'0 index (view'3 self)}
+  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (index:RangeFrom'0.t_RangeFrom usize) (return'  (ret:borrowed (slice int32)))= {[@expl:index_mut 'self' type invariant] inv'5 self}
+    {[@expl:index_mut 'index' type invariant] inv'1 index}
+    {[@expl:index_mut requires] [%#svec55] in_bounds'0 index (view'3 self)}
     any
     [ return' (result:borrowed (slice int32))-> {inv'6 result}
-      {[%#svec59] Seq.length (view'0 self.final) = Seq.length (view'3 self)}
-      {[%#svec58] resolve_elswhere'0 index (view'3 self) (view'0 self.final)}
-      {[%#svec57] has_value'0 index (view'0 self.final) result.final}
       {[%#svec56] has_value'0 index (view'3 self) result.current}
+      {[%#svec57] has_value'0 index (view'0 self.final) result.final}
+      {[%#svec58] resolve_elswhere'0 index (view'3 self) (view'0 self.final)}
+      {[%#svec59] Seq.length (view'0 self.final) = Seq.length (view'3 self)}
       (! return' {result}) ]
     
   
-  let rec is_none'0 (self:Option'0.t_Option (slice int32)) (return'  (ret:bool))= {[@expl:precondition] inv'4 self}
+  let rec is_none'0 (self:Option'0.t_Option (slice int32)) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'4 self}
     any [ return' (result:bool)-> {[%#soption54] result = (self = Option'0.C_None)} (! return' {result}) ] 
   
   function view'2 (self : slice int32) : Seq.seq int32 =
     [%#smodel63] view'4 self
   
-  let rec get'0 (self:slice int32) (index:RangeFrom'0.t_RangeFrom usize) (return'  (ret:Option'0.t_Option (slice int32)))= {[@expl:precondition] inv'1 index}
-    {[@expl:precondition] inv'2 self}
+  let rec get'0 (self:slice int32) (index:RangeFrom'0.t_RangeFrom usize) (return'  (ret:Option'0.t_Option (slice int32)))= {[@expl:get 'self' type invariant] inv'2 self}
+    {[@expl:get 'index' type invariant] inv'1 index}
     any
     [ return' (result:Option'0.t_Option (slice int32))-> {inv'3 result}
-      {[%#sslice53] in_bounds'0 index (view'2 self) \/ result = Option'0.C_None}
       {[%#sslice52] in_bounds'0 index (view'2 self)
        -> (exists r : slice int32 . result = Option'0.C_Some r /\ has_value'0 index (view'2 self) r)}
+      {[%#sslice53] in_bounds'0 index (view'2 self) \/ result = Option'0.C_None}
       (! return' {result}) ]
     
   
-  let rec deref'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:slice int32))= {[@expl:precondition] inv'0 self}
+  let rec deref'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:slice int32))= {[@expl:deref 'self' type invariant] inv'0 self}
     any [ return' (result:slice int32)-> {inv'2 result} {[%#svec51] view'2 result = view'1 self} (! return' {result}) ] 
   
-  let rec len'0 (self:slice int32) (return'  (ret:usize))= {[@expl:precondition] inv'2 self}
+  let rec len'0 (self:slice int32) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'2 self}
     any
     [ return' (result:usize)-> {[%#sslice50] Seq.length (view'2 self) = UIntSize.to_int result} (! return' {result}) ]
     
   
-  let rec index'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:RangeFrom'0.t_RangeFrom usize) (return'  (ret:slice int32))= {[@expl:precondition] inv'1 index}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#svec48] in_bounds'0 index (view'1 self)}
+  let rec index'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:RangeFrom'0.t_RangeFrom usize) (return'  (ret:slice int32))= {[@expl:index 'self' type invariant] inv'0 self}
+    {[@expl:index 'index' type invariant] inv'1 index}
+    {[@expl:index requires] [%#svec48] in_bounds'0 index (view'1 self)}
     any
     [ return' (result:slice int32)-> {inv'2 result}
       {[%#svec49] has_value'0 index (view'1 self) result}
@@ -2021,14 +2024,14 @@ module M_index_range__test_range_full [#"index_range.rs" 154 0 154 24]
   function view'1 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32 =
     [%#smodel55] view'0 self
   
-  let rec index'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:usize) (return'  (ret:int32))= {[@expl:precondition] inv'5 index}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#svec44] in_bounds'1 index (view'1 self)}
+  let rec index'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:usize) (return'  (ret:int32))= {[@expl:index 'self' type invariant] inv'0 self}
+    {[@expl:index 'index' type invariant] inv'5 index}
+    {[@expl:index requires] [%#svec44] in_bounds'1 index (view'1 self)}
     any
     [ return' (result:int32)-> {inv'6 result} {[%#svec45] has_value'1 index (view'1 self) result} (! return' {result}) ]
     
   
-  let rec len'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] inv'0 self}
+  let rec len'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'0 self}
     any
     [ return' (result:usize)-> {[%#svec52] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ]
     
@@ -2046,8 +2049,9 @@ module M_index_range__test_range_full [#"index_range.rs" 154 0 154 24]
   
   function view'4 (self : slice int32) : Seq.seq int32
   
-  axiom view'4_spec : forall self : slice int32 . ([%#sslice64] view'4 self = Slice.id self)
-  && ([%#sslice63] Seq.length (view'4 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'4_spec : forall self : slice int32 . ([%#sslice63] Seq.length (view'4 self)
+  <= UIntSize.to_int (v_MAX'0 : usize))
+  && ([%#sslice64] view'4 self = Slice.id self)
   
   predicate has_value'0 (self : RangeFull'0.t_RangeFull) (seq : Seq.seq int32) (out : slice int32) =
     [%#sslice57] seq = view'4 out
@@ -2058,29 +2062,29 @@ module M_index_range__test_range_full [#"index_range.rs" 154 0 154 24]
   function view'3 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) : Seq.seq int32 =
     [%#smodel58] view'0 self.current
   
-  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (index:RangeFull'0.t_RangeFull) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] inv'1 index}
-    {[@expl:precondition] inv'3 self}
-    {[@expl:precondition] [%#svec47] in_bounds'0 index (view'3 self)}
+  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (index:RangeFull'0.t_RangeFull) (return'  (ret:borrowed (slice int32)))= {[@expl:index_mut 'self' type invariant] inv'3 self}
+    {[@expl:index_mut 'index' type invariant] inv'1 index}
+    {[@expl:index_mut requires] [%#svec47] in_bounds'0 index (view'3 self)}
     any
     [ return' (result:borrowed (slice int32))-> {inv'4 result}
-      {[%#svec51] Seq.length (view'0 self.final) = Seq.length (view'3 self)}
-      {[%#svec50] resolve_elswhere'0 index (view'3 self) (view'0 self.final)}
-      {[%#svec49] has_value'0 index (view'0 self.final) result.final}
       {[%#svec48] has_value'0 index (view'3 self) result.current}
+      {[%#svec49] has_value'0 index (view'0 self.final) result.final}
+      {[%#svec50] resolve_elswhere'0 index (view'3 self) (view'0 self.final)}
+      {[%#svec51] Seq.length (view'0 self.final) = Seq.length (view'3 self)}
       (! return' {result}) ]
     
   
   function view'2 (self : slice int32) : Seq.seq int32 =
     [%#smodel55] view'4 self
   
-  let rec len'0 (self:slice int32) (return'  (ret:usize))= {[@expl:precondition] inv'2 self}
+  let rec len'0 (self:slice int32) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'2 self}
     any
     [ return' (result:usize)-> {[%#sslice46] Seq.length (view'2 self) = UIntSize.to_int result} (! return' {result}) ]
     
   
-  let rec index'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:RangeFull'0.t_RangeFull) (return'  (ret:slice int32))= {[@expl:precondition] inv'1 index}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#svec44] in_bounds'0 index (view'1 self)}
+  let rec index'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:RangeFull'0.t_RangeFull) (return'  (ret:slice int32))= {[@expl:index 'self' type invariant] inv'0 self}
+    {[@expl:index 'index' type invariant] inv'1 index}
+    {[@expl:index requires] [%#svec44] in_bounds'0 index (view'1 self)}
     any
     [ return' (result:slice int32)-> {inv'2 result}
       {[%#svec45] has_value'0 index (view'1 self) result}
@@ -2500,14 +2504,14 @@ module M_index_range__test_range_to_inclusive [#"index_range.rs" 179 0 179 32]
   function view'1 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) : Seq.seq int32 =
     [%#smodel58] view'0 self
   
-  let rec index'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:usize) (return'  (ret:int32))= {[@expl:precondition] inv'7 index}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#svec43] in_bounds'1 index (view'1 self)}
+  let rec index'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:usize) (return'  (ret:int32))= {[@expl:index 'self' type invariant] inv'0 self}
+    {[@expl:index 'index' type invariant] inv'7 index}
+    {[@expl:index requires] [%#svec43] in_bounds'1 index (view'1 self)}
     any
     [ return' (result:int32)-> {inv'8 result} {[%#svec44] has_value'1 index (view'1 self) result} (! return' {result}) ]
     
   
-  let rec len'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:precondition] inv'0 self}
+  let rec len'1 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'0 self}
     any
     [ return' (result:usize)-> {[%#svec55] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ]
     
@@ -2531,8 +2535,9 @@ module M_index_range__test_range_to_inclusive [#"index_range.rs" 179 0 179 32]
   
   function view'4 (self : slice int32) : Seq.seq int32
   
-  axiom view'4_spec : forall self : slice int32 . ([%#sslice67] view'4 self = Slice.id self)
-  && ([%#sslice66] Seq.length (view'4 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'4_spec : forall self : slice int32 . ([%#sslice66] Seq.length (view'4 self)
+  <= UIntSize.to_int (v_MAX'0 : usize))
+  && ([%#sslice67] view'4 self = Slice.id self)
   
   use seq.Seq
   
@@ -2547,45 +2552,45 @@ module M_index_range__test_range_to_inclusive [#"index_range.rs" 179 0 179 32]
   function view'3 (self : borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) : Seq.seq int32 =
     [%#smodel61] view'0 self.current
   
-  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (index:RangeToInclusive'0.t_RangeToInclusive usize) (return'  (ret:borrowed (slice int32)))= {[@expl:precondition] inv'1 index}
-    {[@expl:precondition] inv'5 self}
-    {[@expl:precondition] [%#svec50] in_bounds'0 index (view'3 self)}
+  let rec index_mut'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (index:RangeToInclusive'0.t_RangeToInclusive usize) (return'  (ret:borrowed (slice int32)))= {[@expl:index_mut 'self' type invariant] inv'5 self}
+    {[@expl:index_mut 'index' type invariant] inv'1 index}
+    {[@expl:index_mut requires] [%#svec50] in_bounds'0 index (view'3 self)}
     any
     [ return' (result:borrowed (slice int32))-> {inv'6 result}
-      {[%#svec54] Seq.length (view'0 self.final) = Seq.length (view'3 self)}
-      {[%#svec53] resolve_elswhere'0 index (view'3 self) (view'0 self.final)}
-      {[%#svec52] has_value'0 index (view'0 self.final) result.final}
       {[%#svec51] has_value'0 index (view'3 self) result.current}
+      {[%#svec52] has_value'0 index (view'0 self.final) result.final}
+      {[%#svec53] resolve_elswhere'0 index (view'3 self) (view'0 self.final)}
+      {[%#svec54] Seq.length (view'0 self.final) = Seq.length (view'3 self)}
       (! return' {result}) ]
     
   
-  let rec is_none'0 (self:Option'0.t_Option (slice int32)) (return'  (ret:bool))= {[@expl:precondition] inv'4 self}
+  let rec is_none'0 (self:Option'0.t_Option (slice int32)) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'4 self}
     any [ return' (result:bool)-> {[%#soption49] result = (self = Option'0.C_None)} (! return' {result}) ] 
   
   function view'2 (self : slice int32) : Seq.seq int32 =
     [%#smodel58] view'4 self
   
-  let rec get'0 (self:slice int32) (index:RangeToInclusive'0.t_RangeToInclusive usize) (return'  (ret:Option'0.t_Option (slice int32)))= {[@expl:precondition] inv'1 index}
-    {[@expl:precondition] inv'2 self}
+  let rec get'0 (self:slice int32) (index:RangeToInclusive'0.t_RangeToInclusive usize) (return'  (ret:Option'0.t_Option (slice int32)))= {[@expl:get 'self' type invariant] inv'2 self}
+    {[@expl:get 'index' type invariant] inv'1 index}
     any
     [ return' (result:Option'0.t_Option (slice int32))-> {inv'3 result}
-      {[%#sslice48] in_bounds'0 index (view'2 self) \/ result = Option'0.C_None}
       {[%#sslice47] in_bounds'0 index (view'2 self)
        -> (exists r : slice int32 . result = Option'0.C_Some r /\ has_value'0 index (view'2 self) r)}
+      {[%#sslice48] in_bounds'0 index (view'2 self) \/ result = Option'0.C_None}
       (! return' {result}) ]
     
   
-  let rec deref'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:slice int32))= {[@expl:precondition] inv'0 self}
+  let rec deref'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:slice int32))= {[@expl:deref 'self' type invariant] inv'0 self}
     any [ return' (result:slice int32)-> {inv'2 result} {[%#svec46] view'2 result = view'1 self} (! return' {result}) ] 
   
-  let rec len'0 (self:slice int32) (return'  (ret:usize))= {[@expl:precondition] inv'2 self}
+  let rec len'0 (self:slice int32) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'2 self}
     any
     [ return' (result:usize)-> {[%#sslice45] Seq.length (view'2 self) = UIntSize.to_int result} (! return' {result}) ]
     
   
-  let rec index'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:RangeToInclusive'0.t_RangeToInclusive usize) (return'  (ret:slice int32))= {[@expl:precondition] inv'1 index}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#svec43] in_bounds'0 index (view'1 self)}
+  let rec index'0 (self:Vec'0.t_Vec int32 (Global'0.t_Global)) (index:RangeToInclusive'0.t_RangeToInclusive usize) (return'  (ret:slice int32))= {[@expl:index 'self' type invariant] inv'0 self}
+    {[@expl:index 'index' type invariant] inv'1 index}
+    {[@expl:index requires] [%#svec43] in_bounds'0 index (view'1 self)}
     any
     [ return' (result:slice int32)-> {inv'2 result}
       {[%#svec44] has_value'0 index (view'1 self) result}

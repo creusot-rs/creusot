@@ -239,9 +239,9 @@ module M_874__can_extend [#"874.rs" 4 0 4 19]
   predicate into_iter_pre'0 (self : Vec'0.t_Vec int32 (Global'0.t_Global)) =
     [%#svec18] true
   
-  let rec extend'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (iter:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:()))= {[@expl:precondition] inv'1 iter}
-    {[@expl:precondition] inv'2 self}
-    {[@expl:precondition] [%#svec14] into_iter_pre'0 iter}
+  let rec extend'0 (self:borrowed (Vec'0.t_Vec int32 (Global'0.t_Global))) (iter:Vec'0.t_Vec int32 (Global'0.t_Global)) (return'  (ret:()))= {[@expl:extend 'self' type invariant] inv'2 self}
+    {[@expl:extend 'iter' type invariant] inv'1 iter}
+    {[@expl:extend requires] [%#svec14] into_iter_pre'0 iter}
     any
     [ return' (result:())-> {[%#svec15] exists start_ : IntoIter'0.t_IntoIter int32 (Global'0.t_Global), done' : borrowed (IntoIter'0.t_IntoIter int32 (Global'0.t_Global)), prod : Seq.seq int32 . inv'3 start_
       /\ inv'4 done'
@@ -255,13 +255,14 @@ module M_874__can_extend [#"874.rs" 4 0 4 19]
   
   function view'3 (self : slice int32) : Seq.seq int32
   
-  axiom view'3_spec : forall self : slice int32 . ([%#sslice24] view'3 self = Slice.id self)
-  && ([%#sslice23] Seq.length (view'3 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'3_spec : forall self : slice int32 . ([%#sslice23] Seq.length (view'3 self)
+  <= UIntSize.to_int (v_MAX'0 : usize))
+  && ([%#sslice24] view'3 self = Slice.id self)
   
   function view'1 (self : slice int32) : Seq.seq int32 =
     [%#sboxed17] view'3 self
   
-  let rec into_vec'0 (self:slice int32) (return'  (ret:Vec'0.t_Vec int32 (Global'0.t_Global)))= {[@expl:precondition] inv'0 self}
+  let rec into_vec'0 (self:slice int32) (return'  (ret:Vec'0.t_Vec int32 (Global'0.t_Global)))= {[@expl:into_vec 'self' type invariant] inv'0 self}
     any
     [ return' (result:Vec'0.t_Vec int32 (Global'0.t_Global))-> {inv'1 result}
       {[%#sslice13] view'0 result = view'1 self}

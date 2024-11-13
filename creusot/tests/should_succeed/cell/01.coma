@@ -46,20 +46,20 @@ module M_01__adds_two [#"01.rs" 40 0 40 36]
   let%span s011 = "01.rs" 44 18 44 19
   let%span s012 = "01.rs" 46 14 46 15
   let%span s013 = "01.rs" 19 16 19 20
-  let%span s014 = "01.rs" 18 14 18 28
-  let%span s015 = "01.rs" 19 25 19 26
-  let%span s016 = "01.rs" 24 15 24 24
-  let%span s017 = "01.rs" 25 16 25 20
-  let%span s018 = "01.rs" 25 22 25 23
+  let%span s014 = "01.rs" 19 25 19 26
+  let%span s015 = "01.rs" 18 14 18 28
+  let%span s016 = "01.rs" 25 16 25 20
+  let%span s017 = "01.rs" 25 22 25 23
+  let%span s018 = "01.rs" 24 15 24 24
   let%span s019 = "01.rs" 36 8 36 24
   
   use prelude.prelude.UInt32
   
   use prelude.prelude.Int
   
-  predicate inv'2 (_1 : uint32)
+  predicate inv'1 (_1 : uint32)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : uint32 [inv'2 x] . inv'2 x = true
+  axiom inv_axiom'1 [@rewrite] : forall x : uint32 [inv'1 x] . inv'1 x = true
   
   use T_01__Even as Even'0
   
@@ -73,16 +73,16 @@ module M_01__adds_two [#"01.rs" 40 0 40 36]
   
   use prelude.prelude.Intrinsic
   
-  predicate inv'1 [#"01.rs" 35 4 35 26] (x : uint32) =
+  predicate inv'2 [#"01.rs" 35 4 35 26] (x : uint32) =
     [%#s019] mod x (2 : uint32) = (0 : uint32)
   
-  let rec set'0 (self:Cell'0.t_Cell uint32 (Even'0.t_Even)) (v:uint32) (return'  (ret:()))= {[@expl:precondition] [%#s018] inv'2 v}
-    {[@expl:precondition] [%#s017] inv'0 self}
-    {[@expl:precondition] [%#s016] inv'1 v}
+  let rec set'0 (self:Cell'0.t_Cell uint32 (Even'0.t_Even)) (v:uint32) (return'  (ret:()))= {[@expl:set 'self' type invariant] [%#s016] inv'0 self}
+    {[@expl:set 'v' type invariant] [%#s017] inv'1 v}
+    {[@expl:set requires] [%#s018] inv'2 v}
     any [ return' (result:())-> (! return' {result}) ] 
   
-  let rec get'0 (self:Cell'0.t_Cell uint32 (Even'0.t_Even)) (return'  (ret:uint32))= {[@expl:precondition] [%#s013] inv'0 self}
-    any [ return' (result:uint32)-> {[%#s015] inv'2 result} {[%#s014] inv'1 result} (! return' {result}) ] 
+  let rec get'0 (self:Cell'0.t_Cell uint32 (Even'0.t_Even)) (return'  (ret:uint32))= {[@expl:get 'self' type invariant] [%#s013] inv'0 self}
+    any [ return' (result:uint32)-> {[%#s014] inv'1 result} {[%#s015] inv'2 result} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   

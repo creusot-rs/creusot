@@ -91,7 +91,8 @@ module M_inc_some_2_tree__qyi9454558703362393917__sum_x [#"inc_some_2_tree.rs" 4
   
   meta "compute_max_steps" 1000000
   
-  let rec sum_x (self:Tree'0.t_Tree) (return'  (ret:uint32))= {[%#sinc_some_2_tree2] sum'0 self <= 1000000}
+  let rec sum_x (self:Tree'0.t_Tree) (return'  (ret:uint32))= {[@expl:sum_x requires] [%#sinc_some_2_tree2] sum'0 self
+    <= 1000000}
     (! bb0
     [ bb0 = any
       [ br0 (a:Tree'0.t_Tree) (b:uint32) (c:Tree'0.t_Tree)-> {self = Tree'0.C_Node a b c} (! bb2)
@@ -125,7 +126,7 @@ module M_inc_some_2_tree__qyi9454558703362393917__sum_x [#"inc_some_2_tree.rs" 4
     | & _11 : uint32 = any_l ()
     | & _14 : uint32 = any_l () ]
     
-    [ return' (result:uint32)-> {[@expl:postcondition] [%#sinc_some_2_tree3] UInt32.to_int result = sum'0 self}
+    [ return' (result:uint32)-> {[@expl:sum_x ensures] [%#sinc_some_2_tree3] UInt32.to_int result = sum'0 self}
       (! return' {result}) ]
     
 end
@@ -326,13 +327,14 @@ module M_inc_some_2_tree__qyi9454558703362393917__take_some_rest [#"inc_some_2_t
     | & _18 : borrowed (Tree'0.t_Tree) = any_l ()
     | & _19 : borrowed (Tree'0.t_Tree) = any_l () ]
     
-    [ return' (result:(borrowed uint32, borrowed (Tree'0.t_Tree)))-> {[@expl:postcondition] [%#sinc_some_2_tree6] sum'0 (let (_, a) = result in a).current
-      <= sum'0 self.current}
-      {[@expl:postcondition] [%#sinc_some_2_tree5] view'0 (let (a, _) = result in a) <= sum'0 self.current}
-      {[@expl:postcondition] [%#sinc_some_2_tree4] sum'0 self.final - sum'0 self.current
+    [ return' (result:(borrowed uint32, borrowed (Tree'0.t_Tree)))-> {[@expl:take_some_rest ensures #0] [%#sinc_some_2_tree4] sum'0 self.final
+      - sum'0 self.current
       = UInt32.to_int (let (a, _) = result in a).final + sum'0 (let (_, a) = result in a).final
       - view'0 (let (a, _) = result in a)
       - sum'0 (let (_, a) = result in a).current}
+      {[@expl:take_some_rest ensures #1] [%#sinc_some_2_tree5] view'0 (let (a, _) = result in a) <= sum'0 self.current}
+      {[@expl:take_some_rest ensures #2] [%#sinc_some_2_tree6] sum'0 (let (_, a) = result in a).current
+      <= sum'0 self.current}
       (! return' {result}) ]
     
 end
@@ -382,23 +384,23 @@ module M_inc_some_2_tree__inc_some_2_tree [#"inc_some_2_tree.rs" 85 0 85 51]
     [%#smodel8] UInt32.to_int self.current
   
   let rec take_some_rest'0 (self:borrowed (Tree'0.t_Tree)) (return'  (ret:(borrowed uint32, borrowed (Tree'0.t_Tree))))= any
-    [ return' (result:(borrowed uint32, borrowed (Tree'0.t_Tree)))-> {[%#sinc_some_2_tree6] sum'0 (let (_, a) = result in a).current
-      <= sum'0 self.current}
-      {[%#sinc_some_2_tree5] view'0 (let (a, _) = result in a) <= sum'0 self.current}
-      {[%#sinc_some_2_tree4] sum'0 self.final - sum'0 self.current
+    [ return' (result:(borrowed uint32, borrowed (Tree'0.t_Tree)))-> {[%#sinc_some_2_tree4] sum'0 self.final
+      - sum'0 self.current
       = UInt32.to_int (let (a, _) = result in a).final + sum'0 (let (_, a) = result in a).final
       - view'0 (let (a, _) = result in a)
       - sum'0 (let (_, a) = result in a).current}
+      {[%#sinc_some_2_tree5] view'0 (let (a, _) = result in a) <= sum'0 self.current}
+      {[%#sinc_some_2_tree6] sum'0 (let (_, a) = result in a).current <= sum'0 self.current}
       (! return' {result}) ]
     
   
-  let rec sum_x'0 (self:Tree'0.t_Tree) (return'  (ret:uint32))= {[@expl:precondition] [%#sinc_some_2_tree2] sum'0 self
+  let rec sum_x'0 (self:Tree'0.t_Tree) (return'  (ret:uint32))= {[@expl:sum_x requires] [%#sinc_some_2_tree2] sum'0 self
     <= 1000000}
     any [ return' (result:uint32)-> {[%#sinc_some_2_tree3] UInt32.to_int result = sum'0 self} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
-  let rec inc_some_2_tree (t:Tree'0.t_Tree) (j:uint32) (k:uint32) (return'  (ret:()))= {[%#sinc_some_2_tree1] sum'0 t
+  let rec inc_some_2_tree (t:Tree'0.t_Tree) (j:uint32) (k:uint32) (return'  (ret:()))= {[@expl:inc_some_2_tree requires] [%#sinc_some_2_tree1] sum'0 t
     + UInt32.to_int j
     + UInt32.to_int k
     <= 1000000}

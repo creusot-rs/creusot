@@ -259,7 +259,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let fname =
                     get_func_name(*self.ctx.borrow_mut(), *self.names.borrow_mut(), *id, subst);
                 let mut sig =
-                    sig_to_why3(*self.ctx.borrow_mut(), *self.names.borrow_mut(), &pre_sig, *id);
+                    sig_to_why3(*self.ctx.borrow_mut(), *self.names.borrow_mut(), pre_sig, *id);
                 sig.contract.subst(&arg_subst);
                 let variant =
                     if *id == self.self_id { self.build_variant(&args)? } else { Exp::mk_true() };
@@ -275,7 +275,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
                 let post = sig
                     .contract
-                    .requires_conj()
+                    .requires_conj_labelled()
                     .log_and(variant)
                     .log_and(sig.contract.ensures_conj().implies(inner));
 

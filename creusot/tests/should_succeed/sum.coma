@@ -26,8 +26,8 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
   let%span ssum1 = "sum.rs" 9 13 9 14
   let%span ssum2 = "sum.rs" 9 4 9 7
   let%span ssum3 = "sum.rs" 9 4 9 7
-  let%span ssum4 = "sum.rs" 9 4 9 7
-  let%span ssum5 = "sum.rs" 8 16 8 65
+  let%span ssum4 = "sum.rs" 8 16 8 65
+  let%span ssum5 = "sum.rs" 9 4 9 7
   let%span ssum6 = "sum.rs" 9 4 9 7
   let%span ssum7 = "sum.rs" 4 11 4 20
   let%span ssum8 = "sum.rs" 5 10 5 38
@@ -76,6 +76,14 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
   axiom inv_axiom'2 [@rewrite] : forall x : uint32 [inv'2 x] . inv'2 x = true
   
   use seq.Seq
+  
+  predicate inv'1 (_1 : Seq.seq uint32)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq uint32 [inv'1 x] . inv'1 x = true
+  
+  predicate inv'0 (_1 : RangeInclusive'0.t_RangeInclusive uint32)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : RangeInclusive'0.t_RangeInclusive uint32 [inv'0 x] . inv'0 x = true
   
   use seq.Seq
   
@@ -127,14 +135,6 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
   
   axiom produces_refl'0_spec : forall self : RangeInclusive'0.t_RangeInclusive uint32 . [%#srange19] produces'0 self (Seq.empty  : Seq.seq uint32) self
   
-  predicate inv'1 (_1 : RangeInclusive'0.t_RangeInclusive uint32)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : RangeInclusive'0.t_RangeInclusive uint32 [inv'1 x] . inv'1 x = true
-  
-  predicate inv'0 (_1 : Seq.seq uint32)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : Seq.seq uint32 [inv'0 x] . inv'0 x = true
-  
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
@@ -152,7 +152,7 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
   predicate completed'0 (self : borrowed (RangeInclusive'0.t_RangeInclusive uint32)) =
     [%#srange27] is_empty_log'0 self.current /\ is_empty_log'0 self.final
   
-  let rec next'0 (self:borrowed (RangeInclusive'0.t_RangeInclusive uint32)) (return'  (ret:Option'0.t_Option uint32))= {[@expl:precondition] inv'3 self}
+  let rec next'0 (self:borrowed (RangeInclusive'0.t_RangeInclusive uint32)) (return'  (ret:Option'0.t_Option uint32))= {[@expl:next 'self' type invariant] inv'3 self}
     any
     [ return' (result:Option'0.t_Option uint32)-> {inv'4 result}
       {[%#siter14] match result with
@@ -180,27 +180,28 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
   predicate into_iter_pre'0 (self : RangeInclusive'0.t_RangeInclusive uint32) =
     [%#siter17] true
   
-  let rec into_iter'0 (self:RangeInclusive'0.t_RangeInclusive uint32) (return'  (ret:RangeInclusive'0.t_RangeInclusive uint32))= {[@expl:precondition] inv'1 self}
-    {[@expl:precondition] [%#siter12] into_iter_pre'0 self}
+  let rec into_iter'0 (self:RangeInclusive'0.t_RangeInclusive uint32) (return'  (ret:RangeInclusive'0.t_RangeInclusive uint32))= {[@expl:into_iter 'self' type invariant] inv'0 self}
+    {[@expl:into_iter requires] [%#siter12] into_iter_pre'0 self}
     any
-    [ return' (result:RangeInclusive'0.t_RangeInclusive uint32)-> {inv'1 result}
+    [ return' (result:RangeInclusive'0.t_RangeInclusive uint32)-> {inv'0 result}
       {[%#siter12] into_iter_post'0 self result}
       (! return' {result}) ]
     
   
-  let rec new'0 (start:uint32) (end':uint32) (return'  (ret:RangeInclusive'0.t_RangeInclusive uint32))= {[@expl:precondition] inv'2 end'}
-    {[@expl:precondition] inv'2 start}
+  let rec new'0 (start:uint32) (end':uint32) (return'  (ret:RangeInclusive'0.t_RangeInclusive uint32))= {[@expl:new 'start' type invariant] inv'2 start}
+    {[@expl:new 'end' type invariant] inv'2 end'}
     any
-    [ return' (result:RangeInclusive'0.t_RangeInclusive uint32)-> {inv'1 result}
-      {[%#sops11] deep_model'0 start <= deep_model'0 end'  -> not is_empty_log'0 result}
-      {[%#sops10] end_log'0 result = end'}
+    [ return' (result:RangeInclusive'0.t_RangeInclusive uint32)-> {inv'0 result}
       {[%#sops9] start_log'0 result = start}
+      {[%#sops10] end_log'0 result = end'}
+      {[%#sops11] deep_model'0 start <= deep_model'0 end'  -> not is_empty_log'0 result}
       (! return' {result}) ]
     
   
   meta "compute_max_steps" 1000000
   
-  let rec sum_first_n (n:uint32) (return'  (ret:uint32))= {[%#ssum7] UInt32.to_int n < 1000}
+  let rec sum_first_n (n:uint32) (return'  (ret:uint32))= {[@expl:sum_first_n requires] [%#ssum7] UInt32.to_int n
+    < 1000}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &sum <- [%#ssum0] (0 : uint32) ] s1
@@ -216,11 +217,11 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
     | bb3 = s0 [ s0 =  [ &produced <- [%#ssum3] Snapshot.new (Seq.empty  : Seq.seq uint32) ] s1 | s1 = bb4 ] 
     | bb4 = bb5
     | bb5 = bb5
-      [ bb5 = {[@expl:loop invariant 0] [%#ssum5] UInt32.to_int sum
-        = div (Seq.length (Snapshot.inner produced) * (Seq.length (Snapshot.inner produced) + 1)) 2}
-        {[@expl:for invariant] [%#ssum4] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
-        {[@expl:for invariant] [%#ssum4] inv'1 iter}
-        {[@expl:for invariant] [%#ssum4] inv'0 (Snapshot.inner produced)}
+      [ bb5 = {[@expl:for invariant] [%#ssum5] inv'1 (Snapshot.inner produced)}
+        {[@expl:for invariant] [%#ssum5] inv'0 iter}
+        {[@expl:for invariant] [%#ssum5] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
+        {[@expl:loop invariant] [%#ssum4] UInt32.to_int sum * 2
+        = Seq.length (Snapshot.inner produced) * (Seq.length (Snapshot.inner produced) + 1)}
         (! s0) [ s0 = bb6 ] 
         [ bb6 = s0
           [ s0 = Borrow.borrow_mut <RangeInclusive'0.t_RangeInclusive uint32> {iter}
@@ -275,7 +276,7 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
     | & _23 : Snapshot.snap_ty (Seq.seq uint32) = any_l ()
     | & i : uint32 = any_l () ]
     
-    [ return' (result:uint32)-> {[@expl:postcondition] [%#ssum8] UInt32.to_int result
+    [ return' (result:uint32)-> {[@expl:sum_first_n ensures] [%#ssum8] UInt32.to_int result
       = div (UInt32.to_int n * (UInt32.to_int n + 1)) 2}
       (! return' {result}) ]
     

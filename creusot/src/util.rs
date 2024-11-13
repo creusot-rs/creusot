@@ -6,7 +6,7 @@ use crate::{
     ctx::*,
     translation::{
         pearlite::{self, super_visit_mut_term, Term, TermKind, TermVisitorMut},
-        specification::PreContract,
+        specification::{Condition, PreContract},
     },
     very_stable_hash::get_very_stable_hash,
 };
@@ -520,9 +520,9 @@ pub(crate) fn pre_sig_of<'tcx>(
             if env_ty.is_ref() { Term::var(self_, env_ty).cur() } else { Term::var(self_, env_ty) },
         );
         for pre in &mut contract.requires {
-            pre_subst.visit_mut_term(pre);
+            pre_subst.visit_mut_term(&mut pre.term);
 
-            pre.subst(&s);
+            pre.term.subst(&s);
         }
 
         if kind == ClosureKind::FnMut {
@@ -532,18 +532,20 @@ pub(crate) fn pre_sig_of<'tcx>(
 
             let unnest_id = get_fn_mut_unnest(ctx.tcx);
 
-            contract.ensures.push(Term::call(
+            let term = Term::call(
                 ctx.tcx,
                 unnest_id,
                 unnest_subst,
                 vec![Term::var(self_, env_ty).cur(), Term::var(self_, env_ty).fin()],
-            ));
+            );
+            let expl = format!("expl:closure unnest");
+            contract.ensures.push(Condition { term, expl });
         };
 
         let mut post_subst =
             closure_capture_subst(ctx.tcx, def_id, subst, Some(subst.as_closure().kind()), self_);
         for post in &mut contract.ensures {
-            post_subst.visit_mut_term(post);
+            post_subst.visit_mut_term(&mut post.term);
         }
 
         assert!(contract.variant.is_none());
@@ -582,6 +584,11 @@ fn elaborate_type_invariants<'tcx>(
         return;
     }
 
+    let fn_name = ctx.opt_item_name(def_id);
+    let fn_name = match &fn_name {
+        Some(fn_name) => fn_name.as_str(),
+        None => "closure",
+    };
     let subst = GenericArgs::identity_for_item(ctx.tcx, def_id);
 
     let params_open_inv: HashSet<usize> = ctx
@@ -591,15 +598,19 @@ fn elaborate_type_invariants<'tcx>(
         .flatten()
         .map(|&i| if ctx.tcx.is_closure_like(def_id) { i + 1 } else { i })
         .collect();
+    let mut requires = Vec::new();
     for (i, (name, span, ty)) in pre_sig.inputs.iter().enumerate() {
         if params_open_inv.contains(&i) {
             continue;
         }
         if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
             let term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
-            pre_sig.contract.requires.push(term);
+            let expl = format!("expl:{} '{}' type invariant", fn_name, name);
+            requires.push(Condition { term, expl });
         }
     }
+    requires.append(&mut pre_sig.contract.requires);
+    pre_sig.contract.requires = requires;
 
     let ret_ty_span: Option<Span> = try { ctx.tcx.hir().get_fn_output(def_id.as_local()?)?.span() };
     if !is_open_inv_result(ctx.tcx, def_id)
@@ -612,7 +623,8 @@ fn elaborate_type_invariants<'tcx>(
         )
     {
         let term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
-        pre_sig.contract.ensures.push(term);
+        let expl = format!("expl:{} result type invariant", fn_name);
+        pre_sig.contract.ensures.insert(0, Condition { term, expl });
     }
 }
 

@@ -127,7 +127,7 @@ fn signature<'tcx>(
 
     let (def_id, _) = dep.did().unwrap();
 
-    let sig = named_sig_to_why3(ctx, &mut names, name, &sig, def_id);
+    let sig = named_sig_to_why3(ctx, &mut names, name, sig, def_id);
     sig
 }
 

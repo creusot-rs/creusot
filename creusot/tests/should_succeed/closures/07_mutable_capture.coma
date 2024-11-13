@@ -51,7 +51,7 @@ module M_07_mutable_capture__test_fnmut__qyClosure1 [#"07_mutable_capture.rs" 8 
   
   meta "compute_max_steps" 1000000
   
-  let rec m_07_mutable_capture__test_fnmut__qyClosure1 (_1:borrowed Closure'0.m_07_mutable_capture__test_fnmut__qyClosure1) (return'  (ret:int32))= {[%#s07_mutable_capture2] UInt32.to_int (field_0'0 _1.current).current
+  let rec m_07_mutable_capture__test_fnmut__qyClosure1 (_1:borrowed Closure'0.m_07_mutable_capture__test_fnmut__qyClosure1) (return'  (ret:int32))= {[@expl:closure requires] [%#s07_mutable_capture2] UInt32.to_int (field_0'0 _1.current).current
     < 1000000}
     (! bb0
     [ bb0 = s0
@@ -77,9 +77,9 @@ module M_07_mutable_capture__test_fnmut__qyClosure1 [#"07_mutable_capture.rs" 8 
     | & res : int32 = any_l ()
     | & res1 : int32 = any_l () ]
     
-    [ return' (result:int32)-> {[@expl:postcondition] unnest'0 _1.current _1.final}
-      {[@expl:postcondition] [%#s07_mutable_capture3] UInt32.to_int (field_0'0 _1.final).current
+    [ return' (result:int32)-> {[@expl:closure ensures] [%#s07_mutable_capture3] UInt32.to_int (field_0'0 _1.final).current
       = UInt32.to_int (field_0'0 _1.current).current + 1}
+      {[@expl:closure unnest] unnest'0 _1.current _1.final}
       (! return' {result}) ]
     
 end
@@ -127,18 +127,19 @@ module M_07_mutable_capture__test_fnmut [#"07_mutable_capture.rs" 5 0 5 29]
    =
     (field_0'0 _2).final = (field_0'0 self).final
   
-  let rec closure1'0 (_1:borrowed Closure'0.m_07_mutable_capture__test_fnmut__qyClosure1) (return'  (ret:int32))= {[@expl:precondition] [%#s07_mutable_capture2] UInt32.to_int (field_0'0 _1.current).current
+  let rec closure1'0 (_1:borrowed Closure'0.m_07_mutable_capture__test_fnmut__qyClosure1) (return'  (ret:int32))= {[@expl:closure requires] [%#s07_mutable_capture2] UInt32.to_int (field_0'0 _1.current).current
     < 1000000}
     any
-    [ return' (result:int32)-> {unnest'0 _1.current _1.final}
-      {[%#s07_mutable_capture3] UInt32.to_int (field_0'0 _1.final).current
+    [ return' (result:int32)-> {[%#s07_mutable_capture3] UInt32.to_int (field_0'0 _1.final).current
       = UInt32.to_int (field_0'0 _1.current).current + 1}
+      {unnest'0 _1.current _1.final}
       (! return' {result}) ]
     
   
   meta "compute_max_steps" 1000000
   
-  let rec test_fnmut (x:uint32) (return'  (ret:()))= {[%#s07_mutable_capture1] UInt32.to_int x = 100000}
+  let rec test_fnmut (x:uint32) (return'  (ret:()))= {[@expl:test_fnmut requires] [%#s07_mutable_capture1] UInt32.to_int x
+    = 100000}
     (! bb0
     [ bb0 = s0
       [ s0 = Borrow.borrow_mut <uint32> {x} (fun (_ret':borrowed uint32) ->  [ &_4 <- _ret' ]  [ &x <- _ret'.final ] s1)

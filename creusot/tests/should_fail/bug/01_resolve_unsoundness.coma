@@ -127,8 +127,8 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   function view'1 (self : borrowed (Vec'0.t_Vec bool (Global'0.t_Global))) : Seq.seq bool =
     [%#smodel9] view'0 self.current
   
-  let rec push'0 (self:borrowed (Vec'0.t_Vec bool (Global'0.t_Global))) (value:bool) (return'  (ret:()))= {[@expl:precondition] inv'2 value}
-    {[@expl:precondition] inv'1 self}
+  let rec push'0 (self:borrowed (Vec'0.t_Vec bool (Global'0.t_Global))) (value:bool) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'1 self}
+    {[@expl:push 'value' type invariant] inv'2 value}
     any [ return' (result:())-> {[%#svec7] view'0 self.final = Seq.snoc (view'1 self) value} (! return' {result}) ] 
   
   let rec new'0 (_1:()) (return'  (ret:Vec'0.t_Vec bool (Global'0.t_Global)))= any
@@ -147,7 +147,7 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
       
     | bb1 = s0 [ s0 =  [ &i <- [%#s01_resolve_unsoundness1] (0 : usize) ] s1 | s1 = bb2 ] 
     | bb2 = bb2
-      [ bb2 = {[@expl:loop invariant 0] [%#s01_resolve_unsoundness2] (0 : usize) <= i /\ i <= n}
+      [ bb2 = {[@expl:loop invariant] [%#s01_resolve_unsoundness2] (0 : usize) <= i /\ i <= n}
         (! s0) [ s0 = bb3 ] 
         [ bb3 = s0
           [ s0 = UIntSize.le {i} {n} (fun (_ret':bool) ->  [ &_9 <- _ret' ] s1)
@@ -179,7 +179,7 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
     | & _12 : () = any_l ()
     | & _13 : borrowed (Vec'0.t_Vec bool (Global'0.t_Global)) = any_l () ]
     
-    [ return' (result:Vec'0.t_Vec bool (Global'0.t_Global))-> {[@expl:postcondition] [%#s01_resolve_unsoundness5] Seq.length (view'0 result)
+    [ return' (result:Vec'0.t_Vec bool (Global'0.t_Global))-> {[@expl:make_vec_of_size ensures] [%#s01_resolve_unsoundness5] Seq.length (view'0 result)
       = UIntSize.to_int n}
       (! return' {result}) ]
     

@@ -26,22 +26,22 @@ module M_04__user [#"04.rs" 14 0 14 39]
   
   use prelude.prelude.Intrinsic
   
-  let rec func3'0 (self:t) (o:t) (return'  (ret:bool))= {[@expl:precondition] [%#s049] inv'0 o}
-    {[@expl:precondition] [%#s048] inv'0 self}
+  let rec func3'0 (self:t) (o:t) (return'  (ret:bool))= {[@expl:func3 'self' type invariant] [%#s048] inv'0 self}
+    {[@expl:func3 'o' type invariant] [%#s049] inv'0 o}
     any [ return' (result:bool)-> (! return' {result}) ] 
   
-  let rec func2'0 (self:t) (o:t) (return'  (ret:bool))= {[@expl:precondition] [%#s047] inv'0 o}
-    {[@expl:precondition] [%#s046] inv'0 self}
+  let rec func2'0 (self:t) (o:t) (return'  (ret:bool))= {[@expl:func2 'self' type invariant] [%#s046] inv'0 self}
+    {[@expl:func2 'o' type invariant] [%#s047] inv'0 o}
     any [ return' (result:bool)-> (! return' {result}) ] 
   
-  let rec func1'0 (self:t) (o:t) (return'  (ret:bool))= {[@expl:precondition] [%#s045] inv'0 o}
-    {[@expl:precondition] [%#s044] inv'0 self}
+  let rec func1'0 (self:t) (o:t) (return'  (ret:bool))= {[@expl:func1 'self' type invariant] [%#s044] inv'0 self}
+    {[@expl:func1 'o' type invariant] [%#s045] inv'0 o}
     any [ return' (result:bool)-> (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
-  let rec user (a:t) (b:t) (return'  (ret:bool))= {[%#s042] inv'0 b}
-    {[%#s041] inv'0 a}
+  let rec user (a:t) (b:t) (return'  (ret:bool))= {[@expl:user 'a' type invariant] [%#s041] inv'0 a}
+    {[@expl:user 'b' type invariant] [%#s042] inv'0 b}
     (! bb0
     [ bb0 = s0 [ s0 = func1'0 {a} {b} (fun (_ret':bool) ->  [ &_4 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = any [ br0 -> {_4 = false} (! bb6) | br1 -> {_4} (! bb2) ] 
@@ -54,6 +54,6 @@ module M_04__user [#"04.rs" 14 0 14 39]
     | bb7 = s0 [ s0 =  [ &_0 <- [%#s040] false ] s1 | s1 = bb9 ] 
     | bb9 = return' {_0} ]
     ) [ & _0 : bool = any_l () | & a : t = a | & b : t = b | & _4 : bool = any_l () | & _7 : bool = any_l () ] 
-    [ return' (result:bool)-> {[@expl:postcondition] [%#s043] result = false} (! return' {result}) ]
+    [ return' (result:bool)-> {[@expl:user ensures] [%#s043] result = false} (! return' {result}) ]
     
 end
