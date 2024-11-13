@@ -24,11 +24,19 @@ use std::{
     iter,
 };
 
+/// A term with an "expl:" label (includes the "expl:" prefix)
+#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
+pub struct Condition<'tcx> {
+    pub(crate) term: Term<'tcx>,
+    /// Label including the "expl:" prefix.
+    pub(crate) expl: String,
+}
+
 #[derive(Clone, Debug, Default, TypeFoldable, TypeVisitable)]
 pub struct PreContract<'tcx> {
     pub(crate) variant: Option<Term<'tcx>>,
-    pub(crate) requires: Vec<Term<'tcx>>,
-    pub(crate) ensures: Vec<Term<'tcx>>,
+    pub(crate) requires: Vec<Condition<'tcx>>,
+    pub(crate) ensures: Vec<Condition<'tcx>>,
     pub(crate) no_panic: bool,
     pub(crate) terminates: bool,
     pub(crate) extern_no_spec: bool,
@@ -50,7 +58,7 @@ impl<'tcx> PreContract<'tcx> {
     }
 
     pub(crate) fn is_requires_false(&self) -> bool {
-        self.requires.iter().any(|req| matches!(req.kind, TermKind::Lit(Literal::Bool(false))))
+        self.requires.iter().any(|req| matches!(req.term.kind, TermKind::Lit(Literal::Bool(false))))
     }
 
     pub(crate) fn is_empty(&self) -> bool {
@@ -59,26 +67,36 @@ impl<'tcx> PreContract<'tcx> {
 
     #[allow(dead_code)]
     pub(crate) fn terms(&self) -> impl Iterator<Item = &Term<'tcx>> {
-        self.requires.iter().chain(self.ensures.iter()).chain(self.variant.iter())
+        self.requires
+            .iter()
+            .chain(self.ensures.iter())
+            .map(|cond| &cond.term)
+            .chain(self.variant.iter())
     }
 
     fn terms_mut(&mut self) -> impl Iterator<Item = &mut Term<'tcx>> {
-        self.requires.iter_mut().chain(self.ensures.iter_mut()).chain(self.variant.iter_mut())
+        self.requires
+            .iter_mut()
+            .chain(self.ensures.iter_mut())
+            .map(|cond| &mut cond.term)
+            .chain(self.variant.iter_mut())
     }
 
     pub(crate) fn ensures_conj(&self, tcx: TyCtxt<'tcx>) -> Term<'tcx> {
         let mut ensures = self.ensures.clone();
 
-        let postcond = ensures.pop().unwrap_or(Term::mk_true(tcx));
-        let postcond = ensures.into_iter().rfold(postcond, Term::conj);
+        let postcond = ensures.pop().map_or(Term::mk_true(tcx), |cond| cond.term);
+        let postcond =
+            ensures.into_iter().rfold(postcond, |postcond, cond| Term::conj(postcond, cond.term));
         postcond
     }
 
     pub(crate) fn requires_conj(&self, tcx: TyCtxt<'tcx>) -> Term<'tcx> {
         let mut requires = self.requires.clone();
 
-        let precond = requires.pop().unwrap_or(Term::mk_true(tcx));
-        let precond = requires.into_iter().rfold(precond, Term::conj);
+        let precond = requires.pop().map_or(Term::mk_true(tcx), |cond| cond.term);
+        let precond =
+            requires.into_iter().rfold(precond, |precond, cond| Term::conj(precond, cond.term));
         precond
     }
 }
@@ -103,18 +121,34 @@ impl ContractClauses {
         }
     }
 
-    fn get_pre<'tcx>(self, ctx: &mut TranslationCtx<'tcx>) -> EarlyBinder<'tcx, PreContract<'tcx>> {
+    fn get_pre<'tcx>(
+        self,
+        ctx: &mut TranslationCtx<'tcx>,
+        fn_name: &str,
+    ) -> EarlyBinder<'tcx, PreContract<'tcx>> {
         let mut out = PreContract::default();
+        let n_requires = self.requires.len();
         for req_id in self.requires {
             log::trace!("require clause {:?}", req_id);
             let term = ctx.term(req_id).unwrap().clone();
-            out.requires.push(term);
+            let expl = if n_requires == 1 {
+                format!("expl:{} requires", fn_name)
+            } else {
+                format!("expl:{} requires #{}", fn_name, out.requires.len())
+            };
+            out.requires.push(Condition { term, expl });
         }
 
+        let n_ensures = self.ensures.len();
         for ens_id in self.ensures {
             log::trace!("ensures clause {:?}", ens_id);
             let term = ctx.term(ens_id).unwrap().clone();
-            out.ensures.push(term);
+            let expl = if n_ensures == 1 {
+                format!("expl:{} ensures", fn_name)
+            } else {
+                format!("expl:{} ensures #{}", fn_name, out.ensures.len())
+            };
+            out.ensures.push(Condition { term, expl });
         }
 
         if let Some(var_id) = self.variant {
@@ -334,20 +368,27 @@ pub(crate) fn contract_of<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> PreContract<'tcx> {
+    let fn_name = ctx.opt_item_name(def_id);
+    let fn_name = match &fn_name {
+        Some(fn_name) => fn_name.as_str(),
+        None => "closure",
+    };
     if let Some(extern_spec) = ctx.extern_spec(def_id).cloned() {
         let mut contract =
-            extern_spec.contract.get_pre(ctx).instantiate(ctx.tcx, extern_spec.subst);
+            extern_spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, extern_spec.subst);
         contract.subst(&extern_spec.arg_subst.iter().cloned().collect());
         contract.normalize(ctx.tcx, ctx.param_env(def_id))
     } else if let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id) {
         let spec = ctx.extern_spec(parent_id).cloned().unwrap();
-        let mut contract = spec.contract.get_pre(ctx).instantiate(ctx.tcx, subst);
+        let mut contract = spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, subst);
         contract.subst(&spec.arg_subst.iter().cloned().collect());
         contract.normalize(ctx.tcx, ctx.param_env(def_id))
     } else {
         let subst = erased_identity_for_item(ctx.tcx, def_id);
-        let mut contract =
-            contract_clauses_of(ctx, def_id).unwrap().get_pre(ctx).instantiate(ctx.tcx, subst);
+        let mut contract = contract_clauses_of(ctx, def_id)
+            .unwrap()
+            .get_pre(ctx, fn_name)
+            .instantiate(ctx.tcx, subst);
 
         if contract.is_empty()
             && !def_id.is_local()
@@ -355,7 +396,10 @@ pub(crate) fn contract_of<'tcx>(
             && ctx.item_type(def_id) == ItemType::Program
         {
             contract.extern_no_spec = true;
-            contract.requires.push(Term::mk_false(ctx.tcx));
+            contract.requires.push(Condition {
+                term: Term::mk_false(ctx.tcx),
+                expl: format!("expl:{} requires false", fn_name),
+            });
         }
 
         contract.normalize(ctx.tcx, ctx.param_env(def_id))
@@ -403,9 +447,9 @@ pub(crate) fn pre_sig_of<'tcx>(
             if env_ty.is_ref() { Term::var(self_, env_ty).cur() } else { Term::var(self_, env_ty) },
         );
         for pre in &mut contract.requires {
-            pre_subst.visit_mut_term(pre);
+            pre_subst.visit_mut_term(&mut pre.term);
 
-            pre.subst(&s);
+            pre.term.subst(&s);
         }
 
         if kind == ClosureKind::FnMut {
@@ -415,19 +459,21 @@ pub(crate) fn pre_sig_of<'tcx>(
 
             let unnest_id = get_fn_mut_unnest(ctx.tcx);
 
-            contract.ensures.push(Term::call(
+            let term = Term::call(
                 ctx.tcx,
                 param_env,
                 unnest_id,
                 unnest_subst,
                 vec![Term::var(self_, env_ty).cur(), Term::var(self_, env_ty).fin()],
-            ));
+            );
+            let expl = format!("expl:closure unnest");
+            contract.ensures.push(Condition { term, expl });
         };
 
         let mut post_subst =
             closure_capture_subst(ctx.tcx, def_id, subst, Some(subst.as_closure().kind()), self_);
         for post in &mut contract.ensures {
-            post_subst.visit_mut_term(post);
+            post_subst.visit_mut_term(&mut post.term);
         }
 
         assert!(contract.variant.is_none());
@@ -455,6 +501,11 @@ pub(crate) fn pre_sig_of<'tcx>(
     if !is_pearlite(ctx.tcx, def_id) {
         // Type invariants
 
+        let fn_name = ctx.opt_item_name(def_id);
+        let fn_name = match &fn_name {
+            Some(fn_name) => fn_name.as_str(),
+            None => "closure",
+        };
         let subst = erased_identity_for_item(ctx.tcx, def_id);
 
         let params_open_inv: HashSet<usize> = ctx
@@ -464,15 +515,19 @@ pub(crate) fn pre_sig_of<'tcx>(
             .flatten()
             .map(|&i| if ctx.tcx.is_closure_like(def_id) { i + 1 } else { i })
             .collect();
+        let mut requires = Vec::new();
         for (i, (name, span, ty)) in inputs.iter().enumerate() {
             if params_open_inv.contains(&i) {
                 continue;
             }
             if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
                 let term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
-                contract.requires.push(term);
+                let expl = format!("expl:{} '{}' type invariant", fn_name, name);
+                requires.push(Condition { term, expl });
             }
         }
+        requires.append(&mut contract.requires);
+        contract.requires = requires;
 
         let ret_ty_span: Option<Span> =
             try { ctx.tcx.hir().get_fn_output(def_id.as_local()?)?.span() };
@@ -486,7 +541,8 @@ pub(crate) fn pre_sig_of<'tcx>(
             )
         {
             let term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
-            contract.ensures.push(term);
+            let expl = format!("expl:{} result type invariant", fn_name);
+            contract.ensures.insert(0, Condition { term, expl });
         }
     }
 

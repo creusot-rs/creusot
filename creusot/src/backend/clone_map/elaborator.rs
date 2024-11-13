@@ -135,7 +135,7 @@ fn signature<'tcx>(
     let mut names = elab.namer(dep);
     let name = names.insert(dep).ident();
     let (def_id, _) = dep.did().unwrap();
-    sig_to_why3(ctx, &mut names, name, &sig, def_id)
+    sig_to_why3(ctx, &mut names, name, sig, def_id)
 }
 
 struct LogicElab;

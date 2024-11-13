@@ -5,19 +5,19 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
   let%span s100doors3 = "100doors.rs" 21 19 21 22
   let%span s100doors4 = "100doors.rs" 21 4 21 7
   let%span s100doors5 = "100doors.rs" 21 4 21 7
-  let%span s100doors6 = "100doors.rs" 21 4 21 7
-  let%span s100doors7 = "100doors.rs" 20 16 20 39
+  let%span s100doors6 = "100doors.rs" 20 16 20 39
+  let%span s100doors7 = "100doors.rs" 21 4 21 7
   let%span s100doors8 = "100doors.rs" 21 4 21 7
-  let%span s100doors9 = "100doors.rs" 23 20 23 54
-  let%span s100doors10 = "100doors.rs" 24 20 24 43
+  let%span s100doors9 = "100doors.rs" 24 20 24 43
+  let%span s100doors10 = "100doors.rs" 23 20 23 54
   let%span s100doors11 = "100doors.rs" 25 22 25 25
   let%span s100doors12 = "100doors.rs" 26 52 26 53
   let%span s100doors13 = "100doors.rs" 26 29 26 30
   let%span svec14 = "../../../creusot-contracts/src/std/vec.rs" 180 22 180 41
   let%span svec15 = "../../../creusot-contracts/src/std/vec.rs" 181 22 181 76
   let%span siter16 = "../../../creusot-contracts/src/std/iter.rs" 101 0 214 1
-  let%span srange17 = "../../../creusot-contracts/src/std/iter/range.rs" 23 12 27 70
-  let%span svec18 = "../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span svec17 = "../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span srange18 = "../../../creusot-contracts/src/std/iter/range.rs" 23 12 27 70
   let%span siter19 = "../../../creusot-contracts/src/std/iter.rs" 107 26 110 17
   let%span svec20 = "../../../creusot-contracts/src/std/vec.rs" 162 27 162 46
   let%span svec21 = "../../../creusot-contracts/src/std/vec.rs" 163 26 163 54
@@ -50,14 +50,6 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
   
   predicate inv'2 (_1 : bool)
   
-  use seq.Seq
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
   use prelude.prelude.Opaque
   
   type t_NonNull'0  =
@@ -75,31 +67,39 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
   
+  predicate inv'3 (_1 : t_Vec'0)
+  
+  use seq.Seq
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
   use seq.Seq
   
   function view'0 (self : t_Vec'0) : Seq.seq bool
   
-  axiom view'0_spec : forall self : t_Vec'0 . [%#svec18] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  axiom view'0_spec : forall self : t_Vec'0 . [%#svec17] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : bool =
     [%#sops27] Seq.get (view'0 self) ix
   
-  predicate inv'3 (_1 : t_Vec'0)
-  
-  use seq.Seq
-  
-  predicate inv'0 (_1 : Seq.seq usize)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : Seq.seq usize [inv'0 x] . inv'0 x = true
-  
   type t_Range'0  =
     { t_Range__start'0: usize; t_Range__end'0: usize }
   
-  predicate inv'1 (_1 : t_Range'0)
+  predicate inv'0 (_1 : t_Range'0)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Range'0 [inv'1 x] . inv'1 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Range'0 [inv'0 x] . inv'0 x = true
+  
+  use seq.Seq
+  
+  predicate inv'1 (_1 : Seq.seq usize)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq usize [inv'1 x] . inv'1 x = true
   
   axiom inv_axiom'2 [@rewrite] : forall x : bool [inv'2 x] . inv'2 x = true
   
@@ -139,11 +139,11 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
   
   axiom inv_axiom'10 [@rewrite] : forall x : borrowed bool [inv'10 x] . inv'10 x = true
   
-  let rec from_elem'0 (elem:bool) (n:usize) (return'  (ret:t_Vec'0))= {[@expl:precondition] inv'2 elem}
+  let rec from_elem'0 (elem:bool) (n:usize) (return'  (ret:t_Vec'0))= {[@expl:from_elem 'elem' type invariant] inv'2 elem}
     any
     [ return' (result:t_Vec'0)-> {inv'3 result}
-      {[%#svec15] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
       {[%#svec14] Seq.length (view'0 result) = UIntSize.to_int n}
+      {[%#svec15] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
       (! return' {result}) ]
     
   
@@ -153,15 +153,13 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
   predicate into_iter_post'0 (self : t_Range'0) (res : t_Range'0) =
     [%#siter29] self = res
   
-  let rec into_iter'0 (self:t_Range'0) (return'  (ret:t_Range'0))= {[@expl:precondition] inv'1 self}
-    {[@expl:precondition] [%#siter16] into_iter_pre'0 self}
-    any [ return' (result:t_Range'0)-> {inv'1 result} {[%#siter16] into_iter_post'0 self result} (! return' {result}) ] 
+  let rec into_iter'0 (self:t_Range'0) (return'  (ret:t_Range'0))= {[@expl:into_iter 'self' type invariant] inv'0 self}
+    {[@expl:into_iter requires] [%#siter16] into_iter_pre'0 self}
+    any [ return' (result:t_Range'0)-> {inv'0 result} {[%#siter16] into_iter_post'0 self result} (! return' {result}) ] 
   
   use prelude.prelude.Snapshot
   
   use seq.Seq
-  
-  use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
   
@@ -177,12 +175,14 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
   use seq.Seq
   
   predicate produces'0 (self : t_Range'0) (visited : Seq.seq usize) (o : t_Range'0) =
-    [%#srange17] self.t_Range__end'0 = o.t_Range__end'0
+    [%#srange18] self.t_Range__end'0 = o.t_Range__end'0
     /\ deep_model'0 self.t_Range__start'0 <= deep_model'0 o.t_Range__start'0
     /\ (Seq.length visited > 0  -> deep_model'0 o.t_Range__start'0 <= deep_model'0 o.t_Range__end'0)
     /\ Seq.length visited = deep_model'0 o.t_Range__start'0 - deep_model'0 self.t_Range__start'0
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'0 (Seq.get visited i) = deep_model'0 self.t_Range__start'0 + i)
+  
+  use prelude.prelude.Snapshot
   
   predicate resolve'2 (self : borrowed (t_Range'0)) =
     [%#sresolve40] self.final = self.current
@@ -193,7 +193,7 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
   
   use seq.Seq
   
-  let rec next'0 (self:borrowed (t_Range'0)) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'4 self}
+  let rec next'0 (self:borrowed (t_Range'0)) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'4 self}
     any
     [ return' (result:t_Option'0)-> {inv'5 result}
       {[%#siter19] match result with
@@ -222,9 +222,9 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
   predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq bool) (out : bool) =
     [%#sslice43] Seq.get seq (UIntSize.to_int self) = out
   
-  let rec index'0 (self:t_Vec'0) (index:usize) (return'  (ret:bool))= {[@expl:precondition] inv'7 index}
-    {[@expl:precondition] inv'6 self}
-    {[@expl:precondition] [%#svec20] in_bounds'0 index (view'1 self)}
+  let rec index'0 (self:t_Vec'0) (index:usize) (return'  (ret:bool))= {[@expl:index 'self' type invariant] inv'6 self}
+    {[@expl:index 'index' type invariant] inv'7 index}
+    {[@expl:index requires] [%#svec20] in_bounds'0 index (view'1 self)}
     any
     [ return' (result:bool)-> {inv'8 result} {[%#svec21] has_value'0 index (view'1 self) result} (! return' {result}) ]
     
@@ -236,15 +236,15 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
     [%#sslice45] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
   
-  let rec index_mut'0 (self:borrowed (t_Vec'0)) (index:usize) (return'  (ret:borrowed bool))= {[@expl:precondition] inv'7 index}
-    {[@expl:precondition] inv'9 self}
-    {[@expl:precondition] [%#svec22] in_bounds'0 index (view'2 self)}
+  let rec index_mut'0 (self:borrowed (t_Vec'0)) (index:usize) (return'  (ret:borrowed bool))= {[@expl:index_mut 'self' type invariant] inv'9 self}
+    {[@expl:index_mut 'index' type invariant] inv'7 index}
+    {[@expl:index_mut requires] [%#svec22] in_bounds'0 index (view'2 self)}
     any
     [ return' (result:borrowed bool)-> {inv'10 result}
-      {[%#svec26] Seq.length (view'0 self.final) = Seq.length (view'2 self)}
-      {[%#svec25] resolve_elswhere'0 index (view'2 self) (view'0 self.final)}
-      {[%#svec24] has_value'0 index (view'0 self.final) result.final}
       {[%#svec23] has_value'0 index (view'2 self) result.current}
+      {[%#svec24] has_value'0 index (view'0 self.final) result.final}
+      {[%#svec25] resolve_elswhere'0 index (view'2 self) (view'0 self.final)}
+      {[%#svec26] Seq.length (view'0 self.final) = Seq.length (view'2 self)}
       (! return' {result}) ]
     
   
@@ -262,15 +262,15 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
   
   function produces_refl'0 (self : t_Range'0) : ()
   
-  axiom produces_refl'0_spec : forall self : t_Range'0 . ([%#srange30] inv'1 self)
+  axiom produces_refl'0_spec : forall self : t_Range'0 . ([%#srange30] inv'0 self)
    -> ([%#srange31] produces'0 self (Seq.empty  : Seq.seq usize) self)
   
   function produces_trans'0 (a : t_Range'0) (ab : Seq.seq usize) (b : t_Range'0) (bc : Seq.seq usize) (c : t_Range'0) : ()
     
   
-  axiom produces_trans'0_spec : forall a : t_Range'0, ab : Seq.seq usize, b : t_Range'0, bc : Seq.seq usize, c : t_Range'0 . ([%#srange32] inv'1 a)
-   -> ([%#srange33] inv'1 b)
-   -> ([%#srange34] inv'1 c)
+  axiom produces_trans'0_spec : forall a : t_Range'0, ab : Seq.seq usize, b : t_Range'0, bc : Seq.seq usize, c : t_Range'0 . ([%#srange32] inv'0 a)
+   -> ([%#srange33] inv'0 b)
+   -> ([%#srange34] inv'0 c)
    -> ([%#srange35] produces'0 a ab b)
    -> ([%#srange36] produces'0 b bc c)  -> ([%#srange37] produces'0 a (Seq.(++) ab bc) c)
   
@@ -295,10 +295,10 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
     | bb4 = bb5
     | bb5 = bb6
     | bb6 = bb6
-      [ bb6 = {[@expl:loop invariant 0] [%#s100doors7] Seq.length (view'0 door_open) = 100}
-        {[@expl:for invariant] [%#s100doors6] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
-        {[@expl:for invariant] [%#s100doors6] inv'1 iter}
-        {[@expl:for invariant] [%#s100doors6] inv'0 (Snapshot.inner produced)}
+      [ bb6 = {[@expl:for invariant] [%#s100doors7] inv'1 (Snapshot.inner produced)}
+        {[@expl:for invariant] [%#s100doors7] inv'0 iter}
+        {[@expl:for invariant] [%#s100doors7] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
+        {[@expl:loop invariant] [%#s100doors6] Seq.length (view'0 door_open) = 100}
         (! s0) [ s0 = bb7 ] 
         [ bb7 = s0
           [ s0 = Borrow.borrow_mut <t_Range'0> {iter}
@@ -332,9 +332,9 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
           
         | bb14 = bb15
         | bb15 = bb15
-          [ bb15 = {[@expl:loop invariant 1] [%#s100doors10] Seq.length (view'0 door_open) = 100}
-            {[@expl:loop invariant 0] [%#s100doors9] 1 <= UIntSize.to_int door
+          [ bb15 = {[@expl:loop invariant #0] [%#s100doors10] 1 <= UIntSize.to_int door
             /\ UIntSize.to_int door <= 100 + UIntSize.to_int pass}
+            {[@expl:loop invariant #1] [%#s100doors9] Seq.length (view'0 door_open) = 100}
             (! s0) [ s0 = bb16 ] 
             [ bb16 = s0
               [ s0 = UIntSize.le {door} {[%#s100doors11] (100 : usize)} (fun (_ret':bool) ->  [ &_24 <- _ret' ] s1)

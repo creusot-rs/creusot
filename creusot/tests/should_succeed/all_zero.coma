@@ -1,7 +1,7 @@
 module M_all_zero__all_zero [#"all_zero.rs" 34 0 34 29]
   let%span sall_zero0 = "all_zero.rs" 36 16 36 31
-  let%span sall_zero1 = "all_zero.rs" 40 8 41 86
-  let%span sall_zero2 = "all_zero.rs" 42 16 42 82
+  let%span sall_zero1 = "all_zero.rs" 42 16 42 82
+  let%span sall_zero2 = "all_zero.rs" 40 8 41 86
   let%span sall_zero3 = "all_zero.rs" 44 17 44 18
   let%span sall_zero4 = "all_zero.rs" 32 10 32 75
   let%span sall_zero5 = "all_zero.rs" 33 10 33 34
@@ -11,8 +11,6 @@ module M_all_zero__all_zero [#"all_zero.rs" 34 0 34 29]
   
   use prelude.prelude.Snapshot
   
-  use prelude.prelude.Int
-  
   use prelude.prelude.Borrow
   
   use prelude.prelude.UInt32
@@ -21,11 +19,15 @@ module M_all_zero__all_zero [#"all_zero.rs" 34 0 34 29]
     | C_Cons'0 uint32 (t_List'0)
     | C_Nil'0
   
+  use prelude.prelude.Int
+  
   function len'0 [#"all_zero.rs" 13 4 13 23] (self : t_List'0) : int =
     [%#sall_zero6] match self with
       | C_Cons'0 _ ls -> 1 + len'0 ls
       | C_Nil'0 -> 0
       end
+  
+  use prelude.prelude.Snapshot
   
   type t_Option'0  =
     | C_None'0
@@ -36,8 +38,6 @@ module M_all_zero__all_zero [#"all_zero.rs" 34 0 34 29]
       | C_Cons'0 x ls -> if ix = 0 then C_Some'0 x else get'0 ls (ix - 1)
       | C_Nil'0 -> C_None'0
       end
-  
-  use prelude.prelude.Snapshot
   
   let rec v_Cons'0 (input:t_List'0) (ret  (field_0:uint32) (field_1:t_List'0))= any
     [ good (field_0:uint32) (field_1:t_List'0)-> {C_Cons'0 field_0 field_1 = input} (! ret {field_0} {field_1})
@@ -75,12 +75,12 @@ module M_all_zero__all_zero [#"all_zero.rs" 34 0 34 29]
     [ bb0 = s0 [ s0 =  [ &old_l <- [%#sall_zero0] Snapshot.new l ] s1 | s1 = bb1 ] 
     | bb1 = s0 [ s0 =  [ &loop_l <- l ] s1 | s1 = bb2 ] 
     | bb2 = bb2
-      [ bb2 = {[@expl:loop invariant 1] [%#sall_zero2] len'0 loop_l.final = len'0 loop_l.current
-         -> len'0 (Snapshot.inner old_l).final = len'0 (Snapshot.inner old_l).current}
-        {[@expl:loop invariant 0] [%#sall_zero1] (forall i : int . 0 <= i /\ i < len'0 loop_l.current
+      [ bb2 = {[@expl:loop invariant #0] [%#sall_zero2] (forall i : int . 0 <= i /\ i < len'0 loop_l.current
          -> get'0 loop_l.final i = C_Some'0 (0 : uint32))
          -> (forall i : int . 0 <= i /\ i < len'0 (Snapshot.inner old_l).current
          -> get'0 (Snapshot.inner old_l).final i = C_Some'0 (0 : uint32))}
+        {[@expl:loop invariant #1] [%#sall_zero1] len'0 loop_l.final = len'0 loop_l.current
+         -> len'0 (Snapshot.inner old_l).final = len'0 (Snapshot.inner old_l).current}
         (! s0) [ s0 = bb3 ] 
         [ bb3 = any
           [ br0 (x0:uint32) (x1:t_List'0)-> {loop_l.current = C_Cons'0 x0 x1} (! bb4)
@@ -126,9 +126,9 @@ module M_all_zero__all_zero [#"all_zero.rs" 34 0 34 29]
     | & next : borrowed (t_List'0) = any_l ()
     | & _13 : borrowed (t_List'0) = any_l () ]
     
-    [ return' (result:())-> {[@expl:postcondition] [%#sall_zero5] len'0 l.current = len'0 l.final}
-      {[@expl:postcondition] [%#sall_zero4] forall i : int . 0 <= i /\ i < len'0 l.current
+    [ return' (result:())-> {[@expl:all_zero ensures #0] [%#sall_zero4] forall i : int . 0 <= i /\ i < len'0 l.current
        -> get'0 l.final i = C_Some'0 (0 : uint32)}
+      {[@expl:all_zero ensures #1] [%#sall_zero5] len'0 l.current = len'0 l.final}
       (! return' {result}) ]
     
 end

@@ -97,8 +97,8 @@ module M_11_repeat__qyi12237267952628538149__produces_trans [#"11_repeat.rs" 44 
 end
 module M_11_repeat__qyi12237267952628538149__next [#"11_repeat.rs" 50 4 50 35] (* <Repeat<A> as common::Iterator> *)
   let%span s11_repeat0 = "11_repeat.rs" 50 17 50 21
-  let%span s11_repeat1 = "11_repeat.rs" 46 14 49 5
-  let%span s11_repeat2 = "11_repeat.rs" 50 26 50 35
+  let%span s11_repeat1 = "11_repeat.rs" 50 26 50 35
+  let%span s11_repeat2 = "11_repeat.rs" 46 14 49 5
   let%span sclone3 = "../../../../creusot-contracts/src/std/clone.rs" 7 0 20 1
   let%span s11_repeat4 = "11_repeat.rs" 18 20 18 25
   let%span s11_repeat5 = "11_repeat.rs" 25 12 26 85
@@ -148,7 +148,7 @@ module M_11_repeat__qyi12237267952628538149__next [#"11_repeat.rs" 50 4 50 35] (
     | {t_Repeat__element'0 = element} -> inv'3 element
     end
   
-  let rec clone'0 (self:t_A'0) (return'  (ret:t_A'0))= {[@expl:precondition] inv'2 self}
+  let rec clone'0 (self:t_A'0) (return'  (ret:t_A'0))= {[@expl:clone 'self' type invariant] inv'2 self}
     any [ return' (result:t_A'0)-> {inv'3 result} {[%#sclone3] result = self} (! return' {result}) ] 
   
   predicate resolve'1 (self : borrowed (t_Repeat'0)) =
@@ -178,7 +178,7 @@ module M_11_repeat__qyi12237267952628538149__next [#"11_repeat.rs" 50 4 50 35] (
   
   meta "compute_max_steps" 1000000
   
-  let rec next'0 (self:borrowed (t_Repeat'0)) (return'  (ret:t_Option'0))= {[%#s11_repeat0] inv'0 self}
+  let rec next'0 (self:borrowed (t_Repeat'0)) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] [%#s11_repeat0] inv'0 self}
     (! bb0
     [ bb0 = s0
       [ s0 = clone'0 {(self.current).t_Repeat__element'0} (fun (_ret':t_A'0) ->  [ &_3 <- _ret' ] s1) | s1 = bb1 ]
@@ -191,8 +191,8 @@ module M_11_repeat__qyi12237267952628538149__next [#"11_repeat.rs" 50 4 50 35] (
       
     | bb2 = return' {_0} ]
     ) [ & _0 : t_Option'0 = any_l () | & self : borrowed (t_Repeat'0) = self | & _3 : t_A'0 = any_l () ] 
-    [ return' (result:t_Option'0)-> {[@expl:postcondition] [%#s11_repeat2] inv'1 result}
-      {[@expl:postcondition] [%#s11_repeat1] match result with
+    [ return' (result:t_Option'0)-> {[@expl:next result type invariant] [%#s11_repeat1] inv'1 result}
+      {[@expl:next ensures] [%#s11_repeat2] match result with
         | C_None'0 -> completed'0 self
         | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
         end}
@@ -257,8 +257,6 @@ module M_11_repeat__qyi12237267952628538149__next__refines [#"11_repeat.rs" 50 4
     | C_None'0
     | C_Some'0 t_A'0
   
-  predicate inv'1 (_1 : t_Option'0)
-  
   predicate completed'0 [#"11_repeat.rs" 17 4 17 35] (self : borrowed (t_Repeat'0)) =
     [%#s11_repeat1] false
   
@@ -275,6 +273,8 @@ module M_11_repeat__qyi12237267952628538149__next__refines [#"11_repeat.rs" 50 4
   predicate produces'0 [#"11_repeat.rs" 23 4 23 64] (self : t_Repeat'0) (visited : Seq.seq t_A'0) (o : t_Repeat'0) =
     [%#s11_repeat2] self = o
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited  -> Seq.get visited i = self.t_Repeat__element'0)
+  
+  predicate inv'1 (_1 : t_Option'0)
   
   predicate inv'3 (_1 : t_Repeat'0)
   
@@ -298,16 +298,16 @@ module M_11_repeat__qyi12237267952628538149__next__refines [#"11_repeat.rs" 50 4
   
   goal refines : [%#s11_repeat0] forall self : borrowed (t_Repeat'0) . inv'0 self
    -> inv'0 self
-  /\ (forall result : t_Option'0 . inv'1 result
-  /\ match result with
+  /\ (forall result : t_Option'0 . match result with
     | C_None'0 -> completed'0 self
     | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
     end
-   -> inv'1 result
-  /\ match result with
+  /\ inv'1 result
+   -> match result with
     | C_None'0 -> completed'0 self
     | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
-    end)
+    end
+  /\ inv'1 result)
 end
 module M_11_repeat__qyi12237267952628538149__produces_trans__refines [#"11_repeat.rs" 44 4 44 90] (* <Repeat<A> as common::Iterator> *)
   let%span s11_repeat0 = "11_repeat.rs" 44 4 44 90

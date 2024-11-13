@@ -35,16 +35,16 @@ module M_eq_panic__omg [#"eq_panic.rs" 6 0 6 51]
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_T'0 [inv'1 x] . inv'1 x = invariant'1 x
   
-  let rec eq'0 (self:t_T'0) (other:t_T'0) (return'  (ret:bool))= {[@expl:precondition] inv'1 other}
-    {[@expl:precondition] inv'1 self}
+  let rec eq'0 (self:t_T'0) (other:t_T'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'1 self}
+    {[@expl:eq 'other' type invariant] inv'1 other}
     any [ return' (result:bool)-> {[%#scmp2] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic
   
   meta "compute_max_steps" 1000000
   
-  let rec omg'0 (x:t_T'0) (y:t_T'0) (return'  (ret:bool))= {[%#seq_panic1] inv'0 y}
-    {[%#seq_panic0] inv'0 x}
+  let rec omg'0 (x:t_T'0) (y:t_T'0) (return'  (ret:bool))= {[@expl:omg 'x' type invariant] [%#seq_panic0] inv'0 x}
+    {[@expl:omg 'y' type invariant] [%#seq_panic1] inv'0 y}
     (! bb0
     [ bb0 = s0 [ s0 = eq'0 {x} {y} (fun (_ret':bool) ->  [ &_0 <- _ret' ] s1) | s1 = bb1 ]  | bb1 = return' {_0} ]
     ) [ & _0 : bool = any_l () | & x : t_T'0 = x | & y : t_T'0 = y ]  [ return' (result:bool)-> (! return' {result}) ] 

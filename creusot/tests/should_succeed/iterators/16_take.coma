@@ -159,11 +159,11 @@ module M_16_take__qyi16574350389265959367__next [#"16_take.rs" 57 4 57 41] (* <T
   let%span s16_take0 = "16_take.rs" 58 21 58 22
   let%span s16_take1 = "16_take.rs" 59 22 59 23
   let%span s16_take2 = "16_take.rs" 57 17 57 21
-  let%span s16_take3 = "16_take.rs" 53 14 56 5
-  let%span s16_take4 = "16_take.rs" 57 26 57 41
+  let%span s16_take3 = "16_take.rs" 57 26 57 41
+  let%span s16_take4 = "16_take.rs" 53 14 56 5
   let%span scommon5 = "common.rs" 31 17 31 21
-  let%span scommon6 = "common.rs" 27 14 30 5
-  let%span scommon7 = "common.rs" 31 26 31 44
+  let%span scommon6 = "common.rs" 31 26 31 44
+  let%span scommon7 = "common.rs" 27 14 30 5
   let%span s16_take8 = "16_take.rs" 23 8 26 9
   let%span s16_take9 = "16_take.rs" 32 8 34 9
   let%span scommon10 = "common.rs" 14 15 14 24
@@ -196,6 +196,8 @@ module M_16_take__qyi16574350389265959367__next [#"16_take.rs" 57 4 57 41] (* <T
     | C_None'0
     | C_Some'0 t_Item'0
   
+  predicate inv'2 (_1 : t_Option'0)
+  
   predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
   
   use seq.Seq
@@ -203,8 +205,6 @@ module M_16_take__qyi16574350389265959367__next [#"16_take.rs" 57 4 57 41] (* <T
   use seq.Seq
   
   predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
-  
-  predicate inv'2 (_1 : t_Option'0)
   
   predicate inv'1 (_1 : borrowed (t_Take'0))
   
@@ -233,10 +233,10 @@ module M_16_take__qyi16574350389265959367__next [#"16_take.rs" 57 4 57 41] (* <T
     | {t_Take__iter'0 = iter ; t_Take__n'0 = n} -> inv'0 iter
     end
   
-  let rec next'1 (self:borrowed t_I'0) (return'  (ret:t_Option'0))= {[@expl:precondition] [%#scommon5] inv'3 self}
+  let rec next'1 (self:borrowed t_I'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] [%#scommon5] inv'3 self}
     any
-    [ return' (result:t_Option'0)-> {[%#scommon7] inv'2 result}
-      {[%#scommon6] match result with
+    [ return' (result:t_Option'0)-> {[%#scommon6] inv'2 result}
+      {[%#scommon7] match result with
         | C_None'0 -> completed'1 self
         | C_Some'0 v -> produces'1 self.current (Seq.singleton v) self.final
         end}
@@ -287,7 +287,7 @@ module M_16_take__qyi16574350389265959367__next [#"16_take.rs" 57 4 57 41] (* <T
   
   meta "compute_max_steps" 1000000
   
-  let rec next'0 (self:borrowed (t_Take'0)) (return'  (ret:t_Option'0))= {[%#s16_take2] inv'1 self}
+  let rec next'0 (self:borrowed (t_Take'0)) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] [%#s16_take2] inv'1 self}
     (! bb0
     [ bb0 = s0
       [ s0 = UIntSize.ne {(self.current).t_Take__n'0} {[%#s16_take0] (0 : usize)}
@@ -321,8 +321,8 @@ module M_16_take__qyi16574350389265959367__next [#"16_take.rs" 57 4 57 41] (* <T
     | & _3 : bool = any_l ()
     | & _5 : borrowed t_I'0 = any_l () ]
     
-    [ return' (result:t_Option'0)-> {[@expl:postcondition] [%#s16_take4] inv'2 result}
-      {[@expl:postcondition] [%#s16_take3] match result with
+    [ return' (result:t_Option'0)-> {[@expl:next result type invariant] [%#s16_take3] inv'2 result}
+      {[@expl:next ensures] [%#s16_take4] match result with
         | C_None'0 -> completed'0 self
         | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
         end}
@@ -361,8 +361,6 @@ module M_16_take__qyi16574350389265959367__next__refines [#"16_take.rs" 57 4 57 
     | C_None'0
     | C_Some'0 t_Item'0
   
-  predicate inv'1 (_1 : t_Option'0)
-  
   use prelude.prelude.UIntSize
   
   predicate resolve'0 (self : borrowed (t_Take'0)) =
@@ -389,6 +387,8 @@ module M_16_take__qyi16574350389265959367__next__refines [#"16_take.rs" 57 4 57 
   predicate produces'0 [#"16_take.rs" 31 4 31 64] (self : t_Take'0) (visited : Seq.seq t_Item'0) (o : t_Take'0) =
     [%#s16_take2] UIntSize.to_int self.t_Take__n'0 = UIntSize.to_int o.t_Take__n'0 + Seq.length visited
     /\ produces'1 self.t_Take__iter'0 visited o.t_Take__iter'0
+  
+  predicate inv'1 (_1 : t_Option'0)
   
   predicate inv'3 (_1 : t_Take'0)
   
@@ -432,16 +432,16 @@ module M_16_take__qyi16574350389265959367__next__refines [#"16_take.rs" 57 4 57 
   
   goal refines : [%#s16_take0] forall self : borrowed (t_Take'0) . inv'0 self
    -> inv'0 self
-  /\ (forall result : t_Option'0 . inv'1 result
-  /\ match result with
+  /\ (forall result : t_Option'0 . match result with
     | C_None'0 -> completed'0 self
     | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
     end
-   -> inv'1 result
-  /\ match result with
+  /\ inv'1 result
+   -> match result with
     | C_None'0 -> completed'0 self
     | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
-    end)
+    end
+  /\ inv'1 result)
 end
 module M_16_take__qyi16574350389265959367__produces_refl__refines [#"16_take.rs" 41 4 41 26] (* <Take<I> as common::Iterator> *)
   let%span s16_take0 = "16_take.rs" 41 4 41 26

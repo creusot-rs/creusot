@@ -265,7 +265,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     *self.ctx.borrow_mut(),
                     *self.names.borrow_mut(),
                     "".into(),
-                    &pre_sig,
+                    pre_sig,
                     *id,
                 );
                 sig.contract.subst(&arg_subst);
@@ -283,7 +283,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
                 let post = sig
                     .contract
-                    .requires_conj()
+                    .requires_conj_labelled()
                     .log_and(variant)
                     .log_and(sig.contract.ensures_conj().implies(inner));
 

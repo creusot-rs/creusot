@@ -16,16 +16,6 @@ module M_878__test [#"878.rs" 4 0 4 13]
   
   predicate inv'0 (_1 : slice int32)
   
-  use seq.Seq
-  
-  use prelude.prelude.UIntSize
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
   use prelude.prelude.Opaque
   
   type t_NonNull'0  =
@@ -33,6 +23,8 @@ module M_878__test [#"878.rs" 4 0 4 13]
   
   type t_Unique'0  =
     { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
+  
+  use prelude.prelude.UIntSize
   
   type t_Cap'0  =
     { t_Cap__0'0: usize }
@@ -42,6 +34,16 @@ module M_878__test [#"878.rs" 4 0 4 13]
   
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
+  
+  predicate inv'1 (_1 : t_Vec'0)
+  
+  use seq.Seq
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
   
   use seq.Seq
   
@@ -53,19 +55,18 @@ module M_878__test [#"878.rs" 4 0 4 13]
   
   function view'2 (self : slice int32) : Seq.seq int32
   
-  axiom view'2_spec : forall self : slice int32 . ([%#sslice9] view'2 self = Slice.id self)
-  && ([%#sslice8] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'2_spec : forall self : slice int32 . ([%#sslice8] Seq.length (view'2 self)
+  <= UIntSize.to_int (v_MAX'0 : usize))
+  && ([%#sslice9] view'2 self = Slice.id self)
   
   function view'1 (self : slice int32) : Seq.seq int32 =
     [%#sboxed7] view'2 self
-  
-  predicate inv'1 (_1 : t_Vec'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : slice int32 [inv'0 x] . inv'0 x = true
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_Vec'0 [inv'1 x] . inv'1 x = true
   
-  let rec into_vec'0 (self:slice int32) (return'  (ret:t_Vec'0))= {[@expl:precondition] inv'0 self}
+  let rec into_vec'0 (self:slice int32) (return'  (ret:t_Vec'0))= {[@expl:into_vec 'self' type invariant] inv'0 self}
     any [ return' (result:t_Vec'0)-> {inv'1 result} {[%#sslice5] view'0 result = view'1 self} (! return' {result}) ] 
   
   use prelude.prelude.Borrow
@@ -123,16 +124,6 @@ module M_878__test2 [#"878.rs" 19 0 19 14]
   
   predicate inv'0 (_1 : slice (t_S'0))
   
-  use seq.Seq
-  
-  use prelude.prelude.UIntSize
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
   use prelude.prelude.Opaque
   
   type t_NonNull'0  =
@@ -140,6 +131,8 @@ module M_878__test2 [#"878.rs" 19 0 19 14]
   
   type t_Unique'0  =
     { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
+  
+  use prelude.prelude.UIntSize
   
   type t_Cap'0  =
     { t_Cap__0'0: usize }
@@ -149,6 +142,16 @@ module M_878__test2 [#"878.rs" 19 0 19 14]
   
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
+  
+  predicate inv'1 (_1 : t_Vec'0)
+  
+  use seq.Seq
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
   
   use seq.Seq
   
@@ -160,13 +163,12 @@ module M_878__test2 [#"878.rs" 19 0 19 14]
   
   function view'2 (self : slice (t_S'0)) : Seq.seq (t_S'0)
   
-  axiom view'2_spec : forall self : slice (t_S'0) . ([%#sslice6] view'2 self = Slice.id self)
-  && ([%#sslice5] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'2_spec : forall self : slice (t_S'0) . ([%#sslice5] Seq.length (view'2 self)
+  <= UIntSize.to_int (v_MAX'0 : usize))
+  && ([%#sslice6] view'2 self = Slice.id self)
   
   function view'1 (self : slice (t_S'0)) : Seq.seq (t_S'0) =
     [%#sboxed4] view'2 self
-  
-  predicate inv'1 (_1 : t_Vec'0)
   
   predicate inv'2 (_1 : slice (t_S'0))
   
@@ -212,7 +214,7 @@ module M_878__test2 [#"878.rs" 19 0 19 14]
     | {t_S__0'0 = a_0} -> true
     end)
   
-  let rec into_vec'0 (self:slice (t_S'0)) (return'  (ret:t_Vec'0))= {[@expl:precondition] inv'0 self}
+  let rec into_vec'0 (self:slice (t_S'0)) (return'  (ret:t_Vec'0))= {[@expl:into_vec 'self' type invariant] inv'0 self}
     any [ return' (result:t_Vec'0)-> {inv'1 result} {[%#sslice2] view'0 result = view'1 self} (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic
@@ -264,16 +266,6 @@ module M_878__test3 [#"878.rs" 25 0 25 14]
   
   predicate inv'0 (_1 : slice (t_S'0))
   
-  use seq.Seq
-  
-  use prelude.prelude.UIntSize
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
   use prelude.prelude.Opaque
   
   type t_NonNull'0  =
@@ -281,6 +273,8 @@ module M_878__test3 [#"878.rs" 25 0 25 14]
   
   type t_Unique'0  =
     { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
+  
+  use prelude.prelude.UIntSize
   
   type t_Cap'0  =
     { t_Cap__0'0: usize }
@@ -290,6 +284,16 @@ module M_878__test3 [#"878.rs" 25 0 25 14]
   
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
+  
+  predicate inv'1 (_1 : t_Vec'0)
+  
+  use seq.Seq
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
   
   use seq.Seq
   
@@ -301,13 +305,12 @@ module M_878__test3 [#"878.rs" 25 0 25 14]
   
   function view'2 (self : slice (t_S'0)) : Seq.seq (t_S'0)
   
-  axiom view'2_spec : forall self : slice (t_S'0) . ([%#sslice6] view'2 self = Slice.id self)
-  && ([%#sslice5] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'2_spec : forall self : slice (t_S'0) . ([%#sslice5] Seq.length (view'2 self)
+  <= UIntSize.to_int (v_MAX'0 : usize))
+  && ([%#sslice6] view'2 self = Slice.id self)
   
   function view'1 (self : slice (t_S'0)) : Seq.seq (t_S'0) =
     [%#sboxed4] view'2 self
-  
-  predicate inv'1 (_1 : t_Vec'0)
   
   predicate inv'2 (_1 : slice (t_S'0))
   
@@ -353,7 +356,7 @@ module M_878__test3 [#"878.rs" 25 0 25 14]
     | {t_S__0'0 = a_0} -> true
     end)
   
-  let rec into_vec'0 (self:slice (t_S'0)) (return'  (ret:t_Vec'0))= {[@expl:precondition] inv'0 self}
+  let rec into_vec'0 (self:slice (t_S'0)) (return'  (ret:t_Vec'0))= {[@expl:into_vec 'self' type invariant] inv'0 self}
     any [ return' (result:t_Vec'0)-> {inv'1 result} {[%#sslice2] view'0 result = view'1 self} (! return' {result}) ] 
   
   use seq.Seq

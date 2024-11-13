@@ -17,10 +17,10 @@ module M_option__is_some_none [#"option.rs" 6 0 6 21]
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
-  let rec is_some'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'0 self}
+  let rec is_some'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_some 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption3] result = (self <> C_None'0)} (! return' {result}) ] 
   
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'0 self}
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption4] result = (self = C_None'0)} (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic
@@ -110,37 +110,37 @@ module M_option__unwrap [#"option.rs" 15 0 15 15]
   
   axiom inv_axiom'3 [@rewrite] : forall x : () [inv'3 x] . inv'3 x = true
   
-  let rec unwrap'1 (self:t_Option'0) (return'  (ret:int32))= {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption22] self <> C_None'0}
+  let rec unwrap'1 (self:t_Option'0) (return'  (ret:int32))= {[@expl:unwrap 'self' type invariant] inv'0 self}
+    {[@expl:unwrap requires] [%#soption22] self <> C_None'0}
     any [ return' (result:int32)-> {inv'1 result} {[%#soption22] C_Some'0 result = self} (! return' {result}) ] 
   
   use prelude.prelude.Borrow
   
-  let rec expect'0 (self:t_Option'0) (msg:string) (return'  (ret:int32))= {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption22] self <> C_None'0}
+  let rec expect'0 (self:t_Option'0) (msg:string) (return'  (ret:int32))= {[@expl:expect 'self' type invariant] inv'0 self}
+    {[@expl:expect requires] [%#soption22] self <> C_None'0}
     any [ return' (result:int32)-> {inv'1 result} {[%#soption22] C_Some'0 result = self} (! return' {result}) ] 
   
-  let rec unwrap_or'0 (self:t_Option'0) (default:int32) (return'  (ret:int32))= {[@expl:precondition] inv'1 default}
-    {[@expl:precondition] inv'0 self}
+  let rec unwrap_or'0 (self:t_Option'0) (default:int32) (return'  (ret:int32))= {[@expl:unwrap_or 'self' type invariant] inv'0 self}
+    {[@expl:unwrap_or 'default' type invariant] inv'1 default}
     any
     [ return' (result:int32)-> {inv'1 result}
-      {[%#soption22] self = C_None'0 \/ self = C_Some'0 result}
       {[%#soption22] self = C_None'0  -> result = default}
+      {[%#soption22] self = C_None'0 \/ self = C_Some'0 result}
       (! return' {result}) ]
     
   
   predicate is_default'0 (self : int32) =
     [%#snum27] self = (0 : int32)
   
-  let rec unwrap_or_default'0 (self:t_Option'0) (return'  (ret:int32))= {[@expl:precondition] inv'0 self}
+  let rec unwrap_or_default'0 (self:t_Option'0) (return'  (ret:int32))= {[@expl:unwrap_or_default 'self' type invariant] inv'0 self}
     any
     [ return' (result:int32)-> {inv'1 result}
-      {[%#soption22] self = C_None'0 \/ self = C_Some'0 result}
       {[%#soption22] self = C_None'0  -> is_default'0 result}
+      {[%#soption22] self = C_None'0 \/ self = C_Some'0 result}
       (! return' {result}) ]
     
   
-  let rec closure0'0 (_1:()) (return'  (ret:int32))= {[%#soption23] false}
+  let rec closure0'0 (_1:()) (return'  (ret:int32))= {[@expl:closure requires] [%#soption23] false}
     (! bb0 [ bb0 = {false} any ] ) [ return' (result:int32)-> (! return' {result}) ] 
   
   predicate precondition'0 [#"option.rs" 30 12 30 30] (self : ()) (_ : ()) =
@@ -149,9 +149,9 @@ module M_option__unwrap [#"option.rs" 15 0 15 15]
   predicate postcondition_once'0 [#"option.rs" 30 12 30 30] (self : ()) (_ : ()) (result : int32) =
     true
   
-  let rec unwrap_or_else'0 (self:t_Option'0) (f:()) (return'  (ret:int32))= {[@expl:precondition] inv'2 f}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption22] self = C_None'0  -> precondition'0 f ()}
+  let rec unwrap_or_else'0 (self:t_Option'0) (f:()) (return'  (ret:int32))= {[@expl:unwrap_or_else 'self' type invariant] inv'0 self}
+    {[@expl:unwrap_or_else 'f' type invariant] inv'2 f}
+    {[@expl:unwrap_or_else requires] [%#soption22] self = C_None'0  -> precondition'0 f ()}
     any
     [ return' (result:int32)-> {inv'1 result}
       {[%#soption24] match self with
@@ -166,7 +166,7 @@ module M_option__unwrap [#"option.rs" 15 0 15 15]
   let rec closure1'0 (_1:()) (return'  (ret:int32))= (! bb0
     [ bb0 = s0 [ s0 =  [ &res <- [%#soption25] (3 : int32) ] s1 | s1 =  [ &_0 <- res ] s2 | s2 = return' {_0} ]  ]
     ) [ & _0 : int32 = any_l () | & res : int32 = any_l () ] 
-    [ return' (result:int32)-> {[@expl:postcondition] [%#soption26] result = (3 : int32)} (! return' {result}) ]
+    [ return' (result:int32)-> {[@expl:closure ensures] [%#soption26] result = (3 : int32)} (! return' {result}) ]
     
   
   predicate precondition'1 [#"option.rs" 36 12 36 38] (self : ()) (_ : ()) =
@@ -175,9 +175,9 @@ module M_option__unwrap [#"option.rs" 15 0 15 15]
   predicate postcondition_once'1 [#"option.rs" 36 12 36 38] (self : ()) (_ : ()) (result : int32) =
     [%#soption26] result = (3 : int32)
   
-  let rec unwrap_or_else'1 (self:t_Option'0) (f:()) (return'  (ret:int32))= {[@expl:precondition] inv'3 f}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption22] self = C_None'0  -> precondition'1 f ()}
+  let rec unwrap_or_else'1 (self:t_Option'0) (f:()) (return'  (ret:int32))= {[@expl:unwrap_or_else 'self' type invariant] inv'0 self}
+    {[@expl:unwrap_or_else 'f' type invariant] inv'3 f}
+    {[@expl:unwrap_or_else requires] [%#soption22] self = C_None'0  -> precondition'1 f ()}
     any
     [ return' (result:int32)-> {inv'1 result}
       {[%#soption24] match self with
@@ -187,8 +187,8 @@ module M_option__unwrap [#"option.rs" 15 0 15 15]
       (! return' {result}) ]
     
   
-  let rec unwrap_unchecked'0 (self:t_Option'0) (return'  (ret:int32))= {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption22] self <> C_None'0}
+  let rec unwrap_unchecked'0 (self:t_Option'0) (return'  (ret:int32))= {[@expl:unwrap_unchecked 'self' type invariant] inv'0 self}
+    {[@expl:unwrap_unchecked requires] [%#soption22] self <> C_None'0}
     any [ return' (result:int32)-> {inv'1 result} {[%#soption22] C_Some'0 result = self} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
@@ -358,7 +358,7 @@ module M_option__map [#"option.rs" 44 0 44 12]
   
   axiom inv_axiom'6 [@rewrite] : forall x : () [inv'6 x] . inv'6 x = true
   
-  let rec closure0'0 (_1:()) (_2:int32) (return'  (ret:()))= {[%#soption4] false}
+  let rec closure0'0 (_1:()) (_2:int32) (return'  (ret:()))= {[@expl:closure requires] [%#soption4] false}
     (! bb0 [ bb0 = {false} any ] ) [ return' (result:())-> (! return' {result}) ] 
   
   predicate precondition'0 [#"option.rs" 50 12 50 30] (self : ()) (args : int32) =
@@ -367,9 +367,9 @@ module M_option__map [#"option.rs" 44 0 44 12]
   predicate postcondition_once'0 [#"option.rs" 50 12 50 30] (self : ()) (args : int32) (result : ()) =
     let (_2) = args in true
   
-  let rec map'1 (self:t_Option'1) (f:()) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'1 f}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption5] match self with
+  let rec map'1 (self:t_Option'1) (f:()) (return'  (ret:t_Option'0))= {[@expl:map 'self' type invariant] inv'0 self}
+    {[@expl:map 'f' type invariant] inv'1 f}
+    {[@expl:map requires] [%#soption5] match self with
       | C_None'0 -> true
       | C_Some'0 t -> precondition'0 f (t)
       end}
@@ -402,8 +402,8 @@ module M_option__map [#"option.rs" 44 0 44 12]
   function deep_model'0 (self : t_Option'0) : t_Option'0 =
     [%#smodel15] deep_model'2 self
   
-  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'3 other}
-    {[@expl:precondition] inv'3 self}
+  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'3 self}
+    {[@expl:eq 'other' type invariant] inv'3 other}
     any
     [ return' (result:bool)-> {[%#soption7] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ]
     
@@ -411,7 +411,7 @@ module M_option__map [#"option.rs" 44 0 44 12]
   let rec closure1'0 (_1:()) (_2:int32) (return'  (ret:int32))= (! bb0
     [ bb0 = s0 [ s0 =  [ &res <- [%#soption8] (3 : int32) ] s1 | s1 =  [ &_0 <- res ] s2 | s2 = return' {_0} ]  ]
     ) [ & _0 : int32 = any_l () | & res : int32 = any_l () ] 
-    [ return' (result:int32)-> {[@expl:postcondition] [%#soption9] result = (3 : int32)} (! return' {result}) ]
+    [ return' (result:int32)-> {[@expl:closure ensures] [%#soption9] result = (3 : int32)} (! return' {result}) ]
     
   
   predicate precondition'1 [#"option.rs" 56 12 56 38] (self : ()) (args : int32) =
@@ -420,9 +420,9 @@ module M_option__map [#"option.rs" 44 0 44 12]
   predicate postcondition_once'1 [#"option.rs" 56 12 56 38] (self : ()) (args : int32) (result : int32) =
     [%#soption9] let (_2) = args in result = (3 : int32)
   
-  let rec map'2 (self:t_Option'1) (f:()) (return'  (ret:t_Option'1))= {[@expl:precondition] inv'4 f}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption5] match self with
+  let rec map'2 (self:t_Option'1) (f:()) (return'  (ret:t_Option'1))= {[@expl:map 'self' type invariant] inv'0 self}
+    {[@expl:map 'f' type invariant] inv'4 f}
+    {[@expl:map requires] [%#soption5] match self with
       | C_None'0 -> true
       | C_Some'0 t -> precondition'1 f (t)
       end}
@@ -463,15 +463,16 @@ module M_option__map [#"option.rs" 44 0 44 12]
   function deep_model'1 (self : t_Option'1) : t_Option'2 =
     [%#smodel15] deep_model'3 self
   
-  let rec eq'1 (self:t_Option'1) (other:t_Option'1) (return'  (ret:bool))= {[@expl:precondition] inv'5 other}
-    {[@expl:precondition] inv'5 self}
+  let rec eq'1 (self:t_Option'1) (other:t_Option'1) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'5 self}
+    {[@expl:eq 'other' type invariant] inv'5 other}
     any
     [ return' (result:bool)-> {[%#soption7] result = (deep_model'1 self = deep_model'1 other)} (! return' {result}) ]
     
   
   constant v_MAX'0 : int32 = (2147483647 : int32)
   
-  let rec closure2'0 (_1:()) (x:int32) (return'  (ret:int32))= {[%#soption12] x < (v_MAX'0 : int32)}
+  let rec closure2'0 (_1:()) (x:int32) (return'  (ret:int32))= {[@expl:closure requires] [%#soption12] x
+    < (v_MAX'0 : int32)}
     (! bb0
     [ bb0 = s0
       [ s0 = Int32.add {x} {[%#soption11] (1 : int32)} (fun (_ret':int32) ->  [ &res1 <- _ret' ] s1)
@@ -480,7 +481,7 @@ module M_option__map [#"option.rs" 44 0 44 12]
       | s3 = return' {_0} ]
        ]
     ) [ & _0 : int32 = any_l () | & x : int32 = x | & res : int32 = any_l () | & res1 : int32 = any_l () ] 
-    [ return' (result:int32)-> {[@expl:postcondition] [%#soption13] Int32.to_int result = Int32.to_int x + 1}
+    [ return' (result:int32)-> {[@expl:closure ensures] [%#soption13] Int32.to_int result = Int32.to_int x + 1}
       (! return' {result}) ]
     
   
@@ -490,9 +491,9 @@ module M_option__map [#"option.rs" 44 0 44 12]
   predicate postcondition_once'2 [#"option.rs" 63 12 63 41] (self : ()) (args : int32) (result : int32) =
     [%#soption13] let (x) = args in Int32.to_int result = Int32.to_int x + 1
   
-  let rec map'3 (self:t_Option'1) (f:()) (return'  (ret:t_Option'1))= {[@expl:precondition] inv'6 f}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption5] match self with
+  let rec map'3 (self:t_Option'1) (f:()) (return'  (ret:t_Option'1))= {[@expl:map 'self' type invariant] inv'0 self}
+    {[@expl:map 'f' type invariant] inv'6 f}
+    {[@expl:map requires] [%#soption5] match self with
       | C_None'0 -> true
       | C_Some'0 t -> precondition'2 f (t)
       end}
@@ -608,7 +609,7 @@ module M_option__inspect [#"option.rs" 69 0 69 16]
   
   axiom inv_axiom'3 [@rewrite] : forall x : () [inv'3 x] . inv'3 x = true
   
-  let rec closure0'0 (_1:()) (_2:int32) (return'  (ret:()))= {[%#soption3] false}
+  let rec closure0'0 (_1:()) (_2:int32) (return'  (ret:()))= {[@expl:closure requires] [%#soption3] false}
     (! bb0 [ bb0 = {false} any ] ) [ return' (result:())-> (! return' {result}) ] 
   
   predicate precondition'0 [#"option.rs" 75 12 75 30] (self : ()) (args : int32) =
@@ -617,19 +618,19 @@ module M_option__inspect [#"option.rs" 69 0 69 16]
   predicate postcondition_once'0 [#"option.rs" 75 12 75 30] (self : ()) (args : int32) (result : ()) =
     let (_2) = args in true
   
-  let rec inspect'1 (self:t_Option'0) (f:()) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'1 f}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption4] match self with
+  let rec inspect'1 (self:t_Option'0) (f:()) (return'  (ret:t_Option'0))= {[@expl:inspect 'self' type invariant] inv'0 self}
+    {[@expl:inspect 'f' type invariant] inv'1 f}
+    {[@expl:inspect requires] [%#soption4] match self with
       | C_None'0 -> true
       | C_Some'0 t -> precondition'0 f (t)
       end}
     any
     [ return' (result:t_Option'0)-> {inv'0 result}
+      {[%#soption5] result = self}
       {[%#soption6] match self with
         | C_None'0 -> true
         | C_Some'0 t -> postcondition_once'0 f (t) ()
         end}
-      {[%#soption5] result = self}
       (! return' {result}) ]
     
   
@@ -661,14 +662,14 @@ module M_option__inspect [#"option.rs" 69 0 69 16]
   function deep_model'0 (self : t_Option'0) : t_Option'1 =
     [%#smodel10] deep_model'1 self
   
-  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'2 other}
-    {[@expl:precondition] inv'2 self}
+  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'2 self}
+    {[@expl:eq 'other' type invariant] inv'2 other}
     any
     [ return' (result:bool)-> {[%#soption7] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ]
     
   
   let rec closure1'0 (_1:()) (_2:int32) (return'  (ret:()))= (! bb0 [ bb0 = return' {_0} ] ) [ & _0 : () = any_l () ] 
-    [ return' (result:())-> {[@expl:postcondition] [%#soption8] true} (! return' {result}) ]
+    [ return' (result:())-> {[@expl:closure ensures] [%#soption8] true} (! return' {result}) ]
     
   
   predicate precondition'1 [#"option.rs" 81 12 81 28] (self : ()) (args : int32) =
@@ -677,19 +678,19 @@ module M_option__inspect [#"option.rs" 69 0 69 16]
   predicate postcondition_once'1 [#"option.rs" 81 12 81 28] (self : ()) (args : int32) (result : ()) =
     [%#soption8] let (_2) = args in true
   
-  let rec inspect'2 (self:t_Option'0) (f:()) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'3 f}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption4] match self with
+  let rec inspect'2 (self:t_Option'0) (f:()) (return'  (ret:t_Option'0))= {[@expl:inspect 'self' type invariant] inv'0 self}
+    {[@expl:inspect 'f' type invariant] inv'3 f}
+    {[@expl:inspect requires] [%#soption4] match self with
       | C_None'0 -> true
       | C_Some'0 t -> precondition'1 f (t)
       end}
     any
     [ return' (result:t_Option'0)-> {inv'0 result}
+      {[%#soption5] result = self}
       {[%#soption6] match self with
         | C_None'0 -> true
         | C_Some'0 t -> postcondition_once'1 f (t) ()
         end}
-      {[%#soption5] result = self}
       (! return' {result}) ]
     
   
@@ -820,7 +821,7 @@ module M_option__map_or [#"option.rs" 87 0 87 15]
   
   axiom inv_axiom'8 [@rewrite] : forall x : () [inv'8 x] . inv'8 x = true
   
-  let rec closure0'0 (_1:()) (_2:int32) (return'  (ret:int32))= {[%#soption14] false}
+  let rec closure0'0 (_1:()) (_2:int32) (return'  (ret:int32))= {[@expl:closure requires] [%#soption14] false}
     (! bb0 [ bb0 = {false} any ] ) [ return' (result:int32)-> (! return' {result}) ] 
   
   predicate precondition'0 [#"option.rs" 95 12 95 30] (self : ()) (args : int32) =
@@ -829,10 +830,10 @@ module M_option__map_or [#"option.rs" 87 0 87 15]
   predicate postcondition_once'0 [#"option.rs" 95 12 95 30] (self : ()) (args : int32) (result : int32) =
     let (_2) = args in true
   
-  let rec map_or'1 (self:t_Option'0) (default:int32) (f:()) (return'  (ret:int32))= {[@expl:precondition] inv'2 f}
-    {[@expl:precondition] inv'1 default}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption15] match self with
+  let rec map_or'1 (self:t_Option'0) (default:int32) (f:()) (return'  (ret:int32))= {[@expl:map_or 'self' type invariant] inv'0 self}
+    {[@expl:map_or 'default' type invariant] inv'1 default}
+    {[@expl:map_or 'f' type invariant] inv'2 f}
+    {[@expl:map_or requires] [%#soption15] match self with
       | C_None'0 -> true
       | C_Some'0 t -> precondition'0 f (t)
       end}
@@ -850,7 +851,7 @@ module M_option__map_or [#"option.rs" 87 0 87 15]
   let rec closure1'0 (_1:()) (_2:int32) (return'  (ret:int32))= (! bb0
     [ bb0 = s0 [ s0 =  [ &res <- [%#soption17] (3 : int32) ] s1 | s1 =  [ &_0 <- res ] s2 | s2 = return' {_0} ]  ]
     ) [ & _0 : int32 = any_l () | & res : int32 = any_l () ] 
-    [ return' (result:int32)-> {[@expl:postcondition] [%#soption18] result = (3 : int32)} (! return' {result}) ]
+    [ return' (result:int32)-> {[@expl:closure ensures] [%#soption18] result = (3 : int32)} (! return' {result}) ]
     
   
   predicate precondition'1 [#"option.rs" 102 12 102 38] (self : ()) (args : int32) =
@@ -859,10 +860,10 @@ module M_option__map_or [#"option.rs" 87 0 87 15]
   predicate postcondition_once'1 [#"option.rs" 102 12 102 38] (self : ()) (args : int32) (result : int32) =
     [%#soption18] let (_2) = args in result = (3 : int32)
   
-  let rec map_or'2 (self:t_Option'0) (default:int32) (f:()) (return'  (ret:int32))= {[@expl:precondition] inv'3 f}
-    {[@expl:precondition] inv'1 default}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption15] match self with
+  let rec map_or'2 (self:t_Option'0) (default:int32) (f:()) (return'  (ret:int32))= {[@expl:map_or 'self' type invariant] inv'0 self}
+    {[@expl:map_or 'default' type invariant] inv'1 default}
+    {[@expl:map_or 'f' type invariant] inv'3 f}
+    {[@expl:map_or requires] [%#soption15] match self with
       | C_None'0 -> true
       | C_Some'0 t -> precondition'1 f (t)
       end}
@@ -881,7 +882,8 @@ module M_option__map_or [#"option.rs" 87 0 87 15]
   
   use prelude.prelude.Int32
   
-  let rec closure2'0 (_1:()) (x:int32) (return'  (ret:int32))= {[%#soption20] x < (v_MAX'0 : int32)}
+  let rec closure2'0 (_1:()) (x:int32) (return'  (ret:int32))= {[@expl:closure requires] [%#soption20] x
+    < (v_MAX'0 : int32)}
     (! bb0
     [ bb0 = s0
       [ s0 = Int32.add {x} {[%#soption19] (1 : int32)} (fun (_ret':int32) ->  [ &res1 <- _ret' ] s1)
@@ -890,7 +892,7 @@ module M_option__map_or [#"option.rs" 87 0 87 15]
       | s3 = return' {_0} ]
        ]
     ) [ & _0 : int32 = any_l () | & x : int32 = x | & res : int32 = any_l () | & res1 : int32 = any_l () ] 
-    [ return' (result:int32)-> {[@expl:postcondition] [%#soption21] Int32.to_int result = Int32.to_int x + 1}
+    [ return' (result:int32)-> {[@expl:closure ensures] [%#soption21] Int32.to_int result = Int32.to_int x + 1}
       (! return' {result}) ]
     
   
@@ -900,10 +902,10 @@ module M_option__map_or [#"option.rs" 87 0 87 15]
   predicate postcondition_once'2 [#"option.rs" 110 12 110 41] (self : ()) (args : int32) (result : int32) =
     [%#soption21] let (x) = args in Int32.to_int result = Int32.to_int x + 1
   
-  let rec map_or'3 (self:t_Option'0) (default:int32) (f:()) (return'  (ret:int32))= {[@expl:precondition] inv'4 f}
-    {[@expl:precondition] inv'1 default}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption15] match self with
+  let rec map_or'3 (self:t_Option'0) (default:int32) (f:()) (return'  (ret:int32))= {[@expl:map_or 'self' type invariant] inv'0 self}
+    {[@expl:map_or 'default' type invariant] inv'1 default}
+    {[@expl:map_or 'f' type invariant] inv'4 f}
+    {[@expl:map_or requires] [%#soption15] match self with
       | C_None'0 -> true
       | C_Some'0 t -> precondition'2 f (t)
       end}
@@ -919,10 +921,10 @@ module M_option__map_or [#"option.rs" 87 0 87 15]
   let rec closure3'0 (_1:()) (return'  (ret:int32))= (! bb0
     [ bb0 = s0 [ s0 =  [ &res <- [%#soption22] (2 : int32) ] s1 | s1 =  [ &_0 <- res ] s2 | s2 = return' {_0} ]  ]
     ) [ & _0 : int32 = any_l () | & res : int32 = any_l () ] 
-    [ return' (result:int32)-> {[@expl:postcondition] [%#soption23] result = (2 : int32)} (! return' {result}) ]
+    [ return' (result:int32)-> {[@expl:closure ensures] [%#soption23] result = (2 : int32)} (! return' {result}) ]
     
   
-  let rec closure4'0 (_1:()) (_2:int32) (return'  (ret:int32))= {[%#soption24] false}
+  let rec closure4'0 (_1:()) (_2:int32) (return'  (ret:int32))= {[@expl:closure requires] [%#soption24] false}
     (! bb0 [ bb0 = {false} any ] ) [ return' (result:int32)-> (! return' {result}) ] 
   
   predicate precondition'3 [#"option.rs" 118 12 118 38] (self : ()) (_ : ()) =
@@ -937,10 +939,10 @@ module M_option__map_or [#"option.rs" 87 0 87 15]
   predicate postcondition_once'4 [#"option.rs" 120 12 120 30] (self : ()) (args : int32) (result : int32) =
     let (_2) = args in true
   
-  let rec map_or_else'0 (self:t_Option'0) (default:()) (f:()) (return'  (ret:int32))= {[@expl:precondition] inv'6 f}
-    {[@expl:precondition] inv'5 default}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption25] match self with
+  let rec map_or_else'0 (self:t_Option'0) (default:()) (f:()) (return'  (ret:int32))= {[@expl:map_or_else 'self' type invariant] inv'0 self}
+    {[@expl:map_or_else 'default' type invariant] inv'5 default}
+    {[@expl:map_or_else 'f' type invariant] inv'6 f}
+    {[@expl:map_or_else requires] [%#soption25] match self with
       | C_None'0 -> precondition'3 default ()
       | C_Some'0 t -> precondition'4 f (t)
       end}
@@ -953,10 +955,11 @@ module M_option__map_or [#"option.rs" 87 0 87 15]
       (! return' {result}) ]
     
   
-  let rec closure5'0 (_1:()) (return'  (ret:int32))= {[%#soption27] false}
+  let rec closure5'0 (_1:()) (return'  (ret:int32))= {[@expl:closure requires] [%#soption27] false}
     (! bb0 [ bb0 = {false} any ] ) [ return' (result:int32)-> (! return' {result}) ] 
   
-  let rec closure6'0 (_1:()) (x:int32) (return'  (ret:int32))= {[%#soption29] x < (v_MAX'0 : int32)}
+  let rec closure6'0 (_1:()) (x:int32) (return'  (ret:int32))= {[@expl:closure requires] [%#soption29] x
+    < (v_MAX'0 : int32)}
     (! bb0
     [ bb0 = s0
       [ s0 = Int32.add {x} {[%#soption28] (1 : int32)} (fun (_ret':int32) ->  [ &res1 <- _ret' ] s1)
@@ -965,7 +968,7 @@ module M_option__map_or [#"option.rs" 87 0 87 15]
       | s3 = return' {_0} ]
        ]
     ) [ & _0 : int32 = any_l () | & x : int32 = x | & res : int32 = any_l () | & res1 : int32 = any_l () ] 
-    [ return' (result:int32)-> {[@expl:postcondition] [%#soption30] Int32.to_int result = Int32.to_int x + 1}
+    [ return' (result:int32)-> {[@expl:closure ensures] [%#soption30] Int32.to_int result = Int32.to_int x + 1}
       (! return' {result}) ]
     
   
@@ -981,10 +984,10 @@ module M_option__map_or [#"option.rs" 87 0 87 15]
   predicate postcondition_once'6 [#"option.rs" 129 12 129 41] (self : ()) (args : int32) (result : int32) =
     [%#soption30] let (x) = args in Int32.to_int result = Int32.to_int x + 1
   
-  let rec map_or_else'1 (self:t_Option'0) (default:()) (f:()) (return'  (ret:int32))= {[@expl:precondition] inv'8 f}
-    {[@expl:precondition] inv'7 default}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption25] match self with
+  let rec map_or_else'1 (self:t_Option'0) (default:()) (f:()) (return'  (ret:int32))= {[@expl:map_or_else 'self' type invariant] inv'0 self}
+    {[@expl:map_or_else 'default' type invariant] inv'7 default}
+    {[@expl:map_or_else 'f' type invariant] inv'8 f}
+    {[@expl:map_or_else requires] [%#soption25] match self with
       | C_None'0 -> precondition'5 default ()
       | C_Some'0 t -> precondition'6 f (t)
       end}
@@ -1124,8 +1127,8 @@ module M_option__ok_or [#"option.rs" 135 0 135 14]
   
   axiom inv_axiom'4 [@rewrite] : forall x : () [inv'4 x] . inv'4 x = true
   
-  let rec ok_or'1 (self:t_Option'0) (err:bool) (return'  (ret:t_Result'0))= {[@expl:precondition] inv'1 err}
-    {[@expl:precondition] inv'0 self}
+  let rec ok_or'1 (self:t_Option'0) (err:bool) (return'  (ret:t_Result'0))= {[@expl:ok_or 'self' type invariant] inv'0 self}
+    {[@expl:ok_or 'err' type invariant] inv'1 err}
     any
     [ return' (result:t_Result'0)-> {inv'2 result}
       {[%#soption7] match self with
@@ -1140,7 +1143,7 @@ module M_option__ok_or [#"option.rs" 135 0 135 14]
   let rec closure2'0 (_1:()) (return'  (ret:bool))= (! bb0
     [ bb0 = s0 [ s0 =  [ &res <- [%#soption8] true ] s1 | s1 =  [ &_0 <- res ] s2 | s2 = return' {_0} ]  ]
     ) [ & _0 : bool = any_l () | & res : bool = any_l () ] 
-    [ return' (result:bool)-> {[@expl:postcondition] [%#soption9] result} (! return' {result}) ]
+    [ return' (result:bool)-> {[@expl:closure ensures] [%#soption9] result} (! return' {result}) ]
     
   
   predicate precondition'0 [#"option.rs" 145 8 145 26] (self : ()) (_ : ()) =
@@ -1149,9 +1152,9 @@ module M_option__ok_or [#"option.rs" 135 0 135 14]
   predicate postcondition_once'0 [#"option.rs" 145 8 145 26] (self : ()) (_ : ()) (result : bool) =
     [%#soption9] result
   
-  let rec ok_or_else'0 (self:t_Option'0) (err:()) (return'  (ret:t_Result'0))= {[@expl:precondition] inv'3 err}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption10] self = C_None'0  -> precondition'0 err ()}
+  let rec ok_or_else'0 (self:t_Option'0) (err:()) (return'  (ret:t_Result'0))= {[@expl:ok_or_else 'self' type invariant] inv'0 self}
+    {[@expl:ok_or_else 'err' type invariant] inv'3 err}
+    {[@expl:ok_or_else requires] [%#soption10] self = C_None'0  -> precondition'0 err ()}
     any
     [ return' (result:t_Result'0)-> {inv'2 result}
       {[%#soption11] match self with
@@ -1161,7 +1164,7 @@ module M_option__ok_or [#"option.rs" 135 0 135 14]
       (! return' {result}) ]
     
   
-  let rec closure4'0 (_1:()) (return'  (ret:bool))= {[%#soption13] false}
+  let rec closure4'0 (_1:()) (return'  (ret:bool))= {[@expl:closure requires] [%#soption13] false}
     (! bb0 [ bb0 = s0 [ s0 =  [ &res <- [%#soption12] false ] s1 | s1 =  [ &_0 <- res ] s2 | s2 = return' {_0} ]  ] )
     [ & _0 : bool = any_l () | & res : bool = any_l () ]
      [ return' (result:bool)-> (! return' {result}) ] 
@@ -1172,9 +1175,9 @@ module M_option__ok_or [#"option.rs" 135 0 135 14]
   predicate postcondition_once'1 [#"option.rs" 150 8 150 26] (self : ()) (_ : ()) (result : bool) =
     true
   
-  let rec ok_or_else'1 (self:t_Option'0) (err:()) (return'  (ret:t_Result'0))= {[@expl:precondition] inv'4 err}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption10] self = C_None'0  -> precondition'1 err ()}
+  let rec ok_or_else'1 (self:t_Option'0) (err:()) (return'  (ret:t_Result'0))= {[@expl:ok_or_else 'self' type invariant] inv'0 self}
+    {[@expl:ok_or_else 'err' type invariant] inv'4 err}
+    {[@expl:ok_or_else requires] [%#soption10] self = C_None'0  -> precondition'1 err ()}
     any
     [ return' (result:t_Result'0)-> {inv'2 result}
       {[%#soption11] match self with
@@ -1275,17 +1278,17 @@ module M_option__as_mut [#"option.rs" 156 0 156 15]
   
   axiom inv_axiom'5 [@rewrite] : forall x : int32 [inv'5 x] . inv'5 x = true
   
-  let rec as_mut'1 (self:borrowed (t_Option'0)) (return'  (ret:t_Option'1))= {[@expl:precondition] inv'0 self}
+  let rec as_mut'1 (self:borrowed (t_Option'0)) (return'  (ret:t_Option'1))= {[@expl:as_mut 'self' type invariant] inv'0 self}
     any
     [ return' (result:t_Option'1)-> {inv'1 result}
+      {[%#soption8] self.current = C_None'0  -> result = C_None'1 /\ self.final = C_None'0}
       {[%#soption9] self.current = C_None'0
       \/ (exists r : borrowed int32 . result = C_Some'1 r
       /\ self.current = C_Some'0 (r.current) /\ self.final = C_Some'0 (r.final))}
-      {[%#soption8] self.current = C_None'0  -> result = C_None'1 /\ self.final = C_None'0}
       (! return' {result}) ]
     
   
-  let rec is_none'0 (self:t_Option'1) (return'  (ret:bool))= {[@expl:precondition] inv'2 self}
+  let rec is_none'0 (self:t_Option'1) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'2 self}
     any [ return' (result:bool)-> {[%#soption10] result = (self = C_None'1)} (! return' {result}) ] 
   
   predicate resolve'3 (self : borrowed int32) =
@@ -1303,14 +1306,14 @@ module M_option__as_mut [#"option.rs" 156 0 156 15]
   predicate resolve'0 (_1 : t_Option'1) =
     resolve'2 _1
   
-  let rec unwrap'0 (self:t_Option'1) (return'  (ret:borrowed int32))= {[@expl:precondition] inv'1 self}
-    {[@expl:precondition] [%#soption11] self <> C_None'1}
+  let rec unwrap'0 (self:t_Option'1) (return'  (ret:borrowed int32))= {[@expl:unwrap 'self' type invariant] inv'1 self}
+    {[@expl:unwrap requires] [%#soption11] self <> C_None'1}
     any
     [ return' (result:borrowed int32)-> {inv'3 result} {[%#soption11] C_Some'1 result = self} (! return' {result}) ]
     
   
-  let rec unwrap'1 (self:t_Option'0) (return'  (ret:int32))= {[@expl:precondition] inv'4 self}
-    {[@expl:precondition] [%#soption11] self <> C_None'0}
+  let rec unwrap'1 (self:t_Option'0) (return'  (ret:int32))= {[@expl:unwrap 'self' type invariant] inv'4 self}
+    {[@expl:unwrap requires] [%#soption11] self <> C_None'0}
     any [ return' (result:int32)-> {inv'5 result} {[%#soption11] C_Some'0 result = self} (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic
@@ -1423,19 +1426,19 @@ module M_option__as_ref [#"option.rs" 167 0 167 15]
   
   axiom inv_axiom'3 [@rewrite] : forall x : int32 [inv'3 x] . inv'3 x = true
   
-  let rec as_ref'1 (self:t_Option'1) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'0 self}
+  let rec as_ref'1 (self:t_Option'1) (return'  (ret:t_Option'0))= {[@expl:as_ref 'self' type invariant] inv'0 self}
     any
     [ return' (result:t_Option'0)-> {inv'1 result}
-      {[%#soption5] self = C_None'0 \/ (exists r : int32 . result = C_Some'1 r /\ self = C_Some'0 r)}
       {[%#soption4] self = C_None'0  -> result = C_None'1}
+      {[%#soption5] self = C_None'0 \/ (exists r : int32 . result = C_Some'1 r /\ self = C_Some'0 r)}
       (! return' {result}) ]
     
   
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'2 self}
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'2 self}
     any [ return' (result:bool)-> {[%#soption6] result = (self = C_None'1)} (! return' {result}) ] 
   
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:int32))= {[@expl:precondition] inv'1 self}
-    {[@expl:precondition] [%#soption7] self <> C_None'1}
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:int32))= {[@expl:unwrap 'self' type invariant] inv'1 self}
+    {[@expl:unwrap requires] [%#soption7] self <> C_None'1}
     any [ return' (result:int32)-> {inv'3 result} {[%#soption7] C_Some'1 result = self} (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic
@@ -1514,19 +1517,19 @@ module M_option__replace [#"option.rs" 175 0 175 16]
   
   axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
   
-  let rec replace'1 (self:borrowed (t_Option'0)) (value:int32) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'1 value}
-    {[@expl:precondition] inv'0 self}
+  let rec replace'1 (self:borrowed (t_Option'0)) (value:int32) (return'  (ret:t_Option'0))= {[@expl:replace 'self' type invariant] inv'0 self}
+    {[@expl:replace 'value' type invariant] inv'1 value}
     any
     [ return' (result:t_Option'0)-> {inv'2 result}
       {[%#soption15] result = self.current /\ self.final = C_Some'0 value}
       (! return' {result}) ]
     
   
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'3 self}
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'3 self}
     any [ return' (result:bool)-> {[%#soption16] result = (self = C_None'0)} (! return' {result}) ] 
   
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:int32))= {[@expl:precondition] inv'2 self}
-    {[@expl:precondition] [%#soption15] self <> C_None'0}
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:int32))= {[@expl:unwrap 'self' type invariant] inv'2 self}
+    {[@expl:unwrap requires] [%#soption15] self <> C_None'0}
     any [ return' (result:int32)-> {inv'1 result} {[%#soption15] C_Some'0 result = self} (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic
@@ -1670,12 +1673,12 @@ module M_option__and_or_xor [#"option.rs" 187 0 187 19]
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x = true
   
-  let rec and'0 (self:t_Option'0) (optb:t_Option'0) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'0 optb}
-    {[@expl:precondition] inv'0 self}
+  let rec and'0 (self:t_Option'0) (optb:t_Option'0) (return'  (ret:t_Option'0))= {[@expl:and 'self' type invariant] inv'0 self}
+    {[@expl:and 'optb' type invariant] inv'0 optb}
     any
     [ return' (result:t_Option'0)-> {inv'0 result}
-      {[%#soption19] self = C_None'0 \/ result = optb /\ resolve'0 self}
       {[%#soption19] self = C_None'0  -> result = C_None'0}
+      {[%#soption19] self = C_None'0 \/ result = optb /\ resolve'0 self}
       (! return' {result}) ]
     
   
@@ -1707,8 +1710,8 @@ module M_option__and_or_xor [#"option.rs" 187 0 187 19]
   function deep_model'0 (self : t_Option'0) : t_Option'1 =
     [%#smodel29] deep_model'1 self
   
-  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'1 other}
-    {[@expl:precondition] inv'1 self}
+  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'1 self}
+    {[@expl:eq 'other' type invariant] inv'1 other}
     any
     [ return' (result:bool)-> {[%#soption20] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ]
     
@@ -1733,12 +1736,12 @@ module M_option__and_or_xor [#"option.rs" 187 0 187 19]
     [ return' (result:t_Option'0)-> return' {result} ]
     
   
-  let rec or'0 (self:t_Option'0) (optb:t_Option'0) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'0 optb}
-    {[@expl:precondition] inv'0 self}
+  let rec or'0 (self:t_Option'0) (optb:t_Option'0) (return'  (ret:t_Option'0))= {[@expl:or 'self' type invariant] inv'0 self}
+    {[@expl:or 'optb' type invariant] inv'0 optb}
     any
     [ return' (result:t_Option'0)-> {inv'0 result}
-      {[%#soption19] self = C_None'0 \/ result = self /\ resolve'0 optb}
       {[%#soption19] self = C_None'0  -> result = optb}
+      {[%#soption19] self = C_None'0 \/ result = self /\ resolve'0 optb}
       (! return' {result}) ]
     
   
@@ -1772,8 +1775,8 @@ module M_option__and_or_xor [#"option.rs" 187 0 187 19]
     [ return' (result:t_Option'0)-> return' {result} ]
     
   
-  let rec xor'0 (self:t_Option'0) (optb:t_Option'0) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'0 optb}
-    {[@expl:precondition] inv'0 self}
+  let rec xor'0 (self:t_Option'0) (optb:t_Option'0) (return'  (ret:t_Option'0))= {[@expl:xor 'self' type invariant] inv'0 self}
+    {[@expl:xor 'optb' type invariant] inv'0 optb}
     any
     [ return' (result:t_Option'0)-> {inv'0 result}
       {[%#soption25] match (self, optb) with
@@ -2032,7 +2035,7 @@ module M_option__and_then [#"option.rs" 208 0 208 17]
   
   axiom inv_axiom'3 [@rewrite] : forall x : () [inv'3 x] . inv'3 x = true
   
-  let rec closure0'0 (_1:()) (_2:int32) (return'  (ret:t_Option'0))= {[%#soption5] false}
+  let rec closure0'0 (_1:()) (_2:int32) (return'  (ret:t_Option'0))= {[@expl:closure requires] [%#soption5] false}
     (! bb0 [ bb0 = {false} any ] ) [ return' (result:t_Option'0)-> (! return' {result}) ] 
   
   predicate precondition'0 [#"option.rs" 215 12 215 30] (self : ()) (args : int32) =
@@ -2041,9 +2044,9 @@ module M_option__and_then [#"option.rs" 208 0 208 17]
   predicate postcondition_once'0 [#"option.rs" 215 12 215 30] (self : ()) (args : int32) (result : t_Option'0) =
     let (_2) = args in true
   
-  let rec and_then'1 (self:t_Option'0) (f:()) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'1 f}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption6] match self with
+  let rec and_then'1 (self:t_Option'0) (f:()) (return'  (ret:t_Option'0))= {[@expl:and_then 'self' type invariant] inv'0 self}
+    {[@expl:and_then 'f' type invariant] inv'1 f}
+    {[@expl:and_then requires] [%#soption6] match self with
       | C_None'0 -> true
       | C_Some'0 t -> precondition'0 f (t)
       end}
@@ -2084,8 +2087,8 @@ module M_option__and_then [#"option.rs" 208 0 208 17]
   function deep_model'0 (self : t_Option'0) : t_Option'1 =
     [%#smodel13] deep_model'1 self
   
-  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'2 other}
-    {[@expl:precondition] inv'2 self}
+  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'2 self}
+    {[@expl:eq 'other' type invariant] inv'2 other}
     any
     [ return' (result:bool)-> {[%#soption8] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ]
     
@@ -2109,7 +2112,7 @@ module M_option__and_then [#"option.rs" 208 0 208 17]
     | & _4 : bool = any_l ()
     | & _6 : int32 = any_l () ]
     
-    [ return' (result:t_Option'0)-> {[@expl:postcondition] [%#soption11] if Int32.to_int x = 1 then
+    [ return' (result:t_Option'0)-> {[@expl:closure ensures] [%#soption11] if Int32.to_int x = 1 then
         exists r : int32 . result = C_Some'0 r /\ Int32.to_int r = Int32.to_int x + 1
       else
         result = C_None'0
@@ -2127,9 +2130,9 @@ module M_option__and_then [#"option.rs" 208 0 208 17]
       result = C_None'0
     
   
-  let rec and_then'2 (self:t_Option'0) (f:()) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'3 f}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption6] match self with
+  let rec and_then'2 (self:t_Option'0) (f:()) (return'  (ret:t_Option'0))= {[@expl:and_then 'self' type invariant] inv'0 self}
+    {[@expl:and_then 'f' type invariant] inv'3 f}
+    {[@expl:and_then requires] [%#soption6] match self with
       | C_None'0 -> true
       | C_Some'0 t -> precondition'1 f (t)
       end}
@@ -2260,7 +2263,7 @@ module M_option__filter [#"option.rs" 235 0 235 15]
   
   axiom inv_axiom'4 [@rewrite] : forall x : () [inv'4 x] . inv'4 x = true
   
-  let rec closure0'0 (_1:()) (_2:int32) (return'  (ret:bool))= {[%#soption4] false}
+  let rec closure0'0 (_1:()) (_2:int32) (return'  (ret:bool))= {[@expl:closure requires] [%#soption4] false}
     (! bb0 [ bb0 = {false} any ] ) [ return' (result:bool)-> (! return' {result}) ] 
   
   predicate precondition'0 [#"option.rs" 241 12 241 30] (self : ()) (args : int32) =
@@ -2272,9 +2275,9 @@ module M_option__filter [#"option.rs" 235 0 235 15]
   predicate resolve'0 (_1 : int32) =
     true
   
-  let rec filter'1 (self:t_Option'0) (predicate':()) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'1 predicate'}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption5] match self with
+  let rec filter'1 (self:t_Option'0) (predicate':()) (return'  (ret:t_Option'0))= {[@expl:filter 'self' type invariant] inv'0 self}
+    {[@expl:filter 'predicate' type invariant] inv'1 predicate'}
+    {[@expl:filter requires] [%#soption5] match self with
       | C_None'0 -> true
       | C_Some'0 t -> precondition'0 predicate' (t)
       end}
@@ -2318,8 +2321,8 @@ module M_option__filter [#"option.rs" 235 0 235 15]
   function deep_model'0 (self : t_Option'0) : t_Option'1 =
     [%#smodel13] deep_model'1 self
   
-  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'2 other}
-    {[@expl:precondition] inv'2 self}
+  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'2 self}
+    {[@expl:eq 'other' type invariant] inv'2 other}
     any
     [ return' (result:bool)-> {[%#soption7] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ]
     
@@ -2334,7 +2337,7 @@ module M_option__filter [#"option.rs" 235 0 235 15]
       | s2 = return' {_0} ]
        ]
     ) [ & _0 : bool = any_l () | & x : int32 = x | & res : bool = any_l () ] 
-    [ return' (result:bool)-> {[@expl:postcondition] [%#soption9] result = (view'0 x = 1)} (! return' {result}) ]
+    [ return' (result:bool)-> {[@expl:closure ensures] [%#soption9] result = (view'0 x = 1)} (! return' {result}) ]
     
   
   predicate precondition'1 [#"option.rs" 247 12 247 43] (self : ()) (args : int32) =
@@ -2343,9 +2346,9 @@ module M_option__filter [#"option.rs" 235 0 235 15]
   predicate postcondition_once'1 [#"option.rs" 247 12 247 43] (self : ()) (args : int32) (result : bool) =
     [%#soption9] let (x) = args in result = (view'0 x = 1)
   
-  let rec filter'2 (self:t_Option'0) (predicate':()) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'3 predicate'}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption5] match self with
+  let rec filter'2 (self:t_Option'0) (predicate':()) (return'  (ret:t_Option'0))= {[@expl:filter 'self' type invariant] inv'0 self}
+    {[@expl:filter 'predicate' type invariant] inv'3 predicate'}
+    {[@expl:filter requires] [%#soption5] match self with
       | C_None'0 -> true
       | C_Some'0 t -> precondition'1 predicate' (t)
       end}
@@ -2376,7 +2379,7 @@ module M_option__filter [#"option.rs" 235 0 235 15]
       | s2 = return' {_0} ]
        ]
     ) [ & _0 : bool = any_l () | & x : int32 = x | & res : bool = any_l () ] 
-    [ return' (result:bool)-> {[@expl:postcondition] [%#soption12] result = (view'0 x = 2)} (! return' {result}) ]
+    [ return' (result:bool)-> {[@expl:closure ensures] [%#soption12] result = (view'0 x = 2)} (! return' {result}) ]
     
   
   predicate precondition'2 [#"option.rs" 253 12 253 43] (self : ()) (args : int32) =
@@ -2385,9 +2388,9 @@ module M_option__filter [#"option.rs" 235 0 235 15]
   predicate postcondition_once'2 [#"option.rs" 253 12 253 43] (self : ()) (args : int32) (result : bool) =
     [%#soption12] let (x) = args in result = (view'0 x = 2)
   
-  let rec filter'3 (self:t_Option'0) (predicate':()) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'4 predicate'}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption5] match self with
+  let rec filter'3 (self:t_Option'0) (predicate':()) (return'  (ret:t_Option'0))= {[@expl:filter 'self' type invariant] inv'0 self}
+    {[@expl:filter 'predicate' type invariant] inv'4 predicate'}
+    {[@expl:filter requires] [%#soption5] match self with
       | C_None'0 -> true
       | C_Some'0 t -> precondition'2 predicate' (t)
       end}
@@ -2515,7 +2518,7 @@ module M_option__is_some_and [#"option.rs" 259 0 259 20]
       | s2 = return' {_0} ]
        ]
     ) [ & _0 : bool = any_l () | & x : int32 = x | & res : bool = any_l () ] 
-    [ return' (result:bool)-> {[@expl:postcondition] [%#soption6] result = (x = (1 : int32))} (! return' {result}) ]
+    [ return' (result:bool)-> {[@expl:closure ensures] [%#soption6] result = (x = (1 : int32))} (! return' {result}) ]
     
   
   predicate precondition'0 [#"option.rs" 265 8 265 41] (self : ()) (args : int32) =
@@ -2529,9 +2532,9 @@ module M_option__is_some_and [#"option.rs" 259 0 259 20]
   predicate postcondition_once'0 [#"option.rs" 265 8 265 41] (self : ()) (args : int32) (result : bool) =
     [%#soption6] let (x) = args in result = (x = (1 : int32))
   
-  let rec is_some_and'1 (self:t_Option'0) (f:()) (return'  (ret:bool))= {[@expl:precondition] inv'1 f}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption7] match self with
+  let rec is_some_and'1 (self:t_Option'0) (f:()) (return'  (ret:bool))= {[@expl:is_some_and 'self' type invariant] inv'0 self}
+    {[@expl:is_some_and 'f' type invariant] inv'1 f}
+    {[@expl:is_some_and requires] [%#soption7] match self with
       | C_None'0 -> true
       | C_Some'0 t -> precondition'0 f (t)
       end}
@@ -2550,7 +2553,7 @@ module M_option__is_some_and [#"option.rs" 259 0 259 20]
       | s2 = return' {_0} ]
        ]
     ) [ & _0 : bool = any_l () | & x : int32 = x | & res : bool = any_l () ] 
-    [ return' (result:bool)-> {[@expl:postcondition] [%#soption10] result = (x = (1 : int32))} (! return' {result}) ]
+    [ return' (result:bool)-> {[@expl:closure ensures] [%#soption10] result = (x = (1 : int32))} (! return' {result}) ]
     
   
   predicate precondition'1 [#"option.rs" 269 8 269 41] (self : ()) (args : int32) =
@@ -2559,9 +2562,9 @@ module M_option__is_some_and [#"option.rs" 259 0 259 20]
   predicate postcondition_once'1 [#"option.rs" 269 8 269 41] (self : ()) (args : int32) (result : bool) =
     [%#soption10] let (x) = args in result = (x = (1 : int32))
   
-  let rec is_some_and'2 (self:t_Option'0) (f:()) (return'  (ret:bool))= {[@expl:precondition] inv'2 f}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption7] match self with
+  let rec is_some_and'2 (self:t_Option'0) (f:()) (return'  (ret:bool))= {[@expl:is_some_and 'self' type invariant] inv'0 self}
+    {[@expl:is_some_and 'f' type invariant] inv'2 f}
+    {[@expl:is_some_and requires] [%#soption7] match self with
       | C_None'0 -> true
       | C_Some'0 t -> precondition'1 f (t)
       end}
@@ -2576,7 +2579,7 @@ module M_option__is_some_and [#"option.rs" 259 0 259 20]
   let rec closure2'0 (_1:()) (_2:int32) (return'  (ret:bool))= (! bb0
     [ bb0 = s0 [ s0 =  [ &res <- [%#soption11] true ] s1 | s1 =  [ &_0 <- res ] s2 | s2 = return' {_0} ]  ]
     ) [ & _0 : bool = any_l () | & res : bool = any_l () ] 
-    [ return' (result:bool)-> {[@expl:postcondition] [%#soption12] result} (! return' {result}) ]
+    [ return' (result:bool)-> {[@expl:closure ensures] [%#soption12] result} (! return' {result}) ]
     
   
   predicate precondition'2 [#"option.rs" 273 8 273 26] (self : ()) (args : int32) =
@@ -2585,9 +2588,9 @@ module M_option__is_some_and [#"option.rs" 259 0 259 20]
   predicate postcondition_once'2 [#"option.rs" 273 8 273 26] (self : ()) (args : int32) (result : bool) =
     [%#soption12] let (_2) = args in result
   
-  let rec is_some_and'3 (self:t_Option'0) (f:()) (return'  (ret:bool))= {[@expl:precondition] inv'3 f}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption7] match self with
+  let rec is_some_and'3 (self:t_Option'0) (f:()) (return'  (ret:bool))= {[@expl:is_some_and 'self' type invariant] inv'0 self}
+    {[@expl:is_some_and 'f' type invariant] inv'3 f}
+    {[@expl:is_some_and requires] [%#soption7] match self with
       | C_None'0 -> true
       | C_Some'0 t -> precondition'2 f (t)
       end}
@@ -2693,7 +2696,7 @@ module M_option__or_else [#"option.rs" 278 0 278 16]
       [ s0 =  [ &res <- C_Some'0 ([%#soption4] (2 : int32)) ] s1 | s1 =  [ &_0 <- res ] s2 | s2 = return' {_0} ]
        ]
     ) [ & _0 : t_Option'0 = any_l () | & res : t_Option'0 = any_l () ] 
-    [ return' (result:t_Option'0)-> {[@expl:postcondition] [%#soption5] result = C_Some'0 (2 : int32)}
+    [ return' (result:t_Option'0)-> {[@expl:closure ensures] [%#soption5] result = C_Some'0 (2 : int32)}
       (! return' {result}) ]
     
   
@@ -2703,9 +2706,9 @@ module M_option__or_else [#"option.rs" 278 0 278 16]
   predicate postcondition_once'0 [#"option.rs" 284 12 284 44] (self : ()) (_ : ()) (result : t_Option'0) =
     [%#soption5] result = C_Some'0 (2 : int32)
   
-  let rec or_else'1 (self:t_Option'0) (f:()) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'1 f}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption6] self = C_None'0  -> precondition'0 f ()}
+  let rec or_else'1 (self:t_Option'0) (f:()) (return'  (ret:t_Option'0))= {[@expl:or_else 'self' type invariant] inv'0 self}
+    {[@expl:or_else 'f' type invariant] inv'1 f}
+    {[@expl:or_else requires] [%#soption6] self = C_None'0  -> precondition'0 f ()}
     any
     [ return' (result:t_Option'0)-> {inv'0 result}
       {[%#soption7] match self with
@@ -2743,8 +2746,8 @@ module M_option__or_else [#"option.rs" 278 0 278 16]
   function deep_model'0 (self : t_Option'0) : t_Option'1 =
     [%#smodel13] deep_model'1 self
   
-  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'2 other}
-    {[@expl:precondition] inv'2 self}
+  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'2 self}
+    {[@expl:eq 'other' type invariant] inv'2 other}
     any
     [ return' (result:bool)-> {[%#soption9] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ]
     
@@ -2752,7 +2755,7 @@ module M_option__or_else [#"option.rs" 278 0 278 16]
   let rec closure1'0 (_1:()) (return'  (ret:t_Option'0))= (! bb0
     [ bb0 = s0 [ s0 =  [ &res <- C_None'0 ] s1 | s1 =  [ &_0 <- res ] s2 | s2 = return' {_0} ]  ]
     ) [ & _0 : t_Option'0 = any_l () | & res : t_Option'0 = any_l () ] 
-    [ return' (result:t_Option'0)-> {[@expl:postcondition] [%#soption10] result = C_None'0} (! return' {result}) ]
+    [ return' (result:t_Option'0)-> {[@expl:closure ensures] [%#soption10] result = C_None'0} (! return' {result}) ]
     
   
   predicate precondition'1 [#"option.rs" 290 12 290 38] (self : ()) (_ : ()) =
@@ -2761,9 +2764,9 @@ module M_option__or_else [#"option.rs" 278 0 278 16]
   predicate postcondition_once'1 [#"option.rs" 290 12 290 38] (self : ()) (_ : ()) (result : t_Option'0) =
     [%#soption10] result = C_None'0
   
-  let rec or_else'2 (self:t_Option'0) (f:()) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'3 f}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption6] self = C_None'0  -> precondition'1 f ()}
+  let rec or_else'2 (self:t_Option'0) (f:()) (return'  (ret:t_Option'0))= {[@expl:or_else 'self' type invariant] inv'0 self}
+    {[@expl:or_else 'f' type invariant] inv'3 f}
+    {[@expl:or_else requires] [%#soption6] self = C_None'0  -> precondition'1 f ()}
     any
     [ return' (result:t_Option'0)-> {inv'0 result}
       {[%#soption7] match self with
@@ -2779,7 +2782,7 @@ module M_option__or_else [#"option.rs" 278 0 278 16]
     [ return' (result:t_Option'0)-> return' {result} ]
     
   
-  let rec closure2'0 (_1:()) (return'  (ret:t_Option'0))= {[%#soption11] false}
+  let rec closure2'0 (_1:()) (return'  (ret:t_Option'0))= {[@expl:closure requires] [%#soption11] false}
     (! bb0 [ bb0 = {false} any ] ) [ return' (result:t_Option'0)-> (! return' {result}) ] 
   
   predicate precondition'2 [#"option.rs" 296 12 296 30] (self : ()) (_ : ()) =
@@ -2788,9 +2791,9 @@ module M_option__or_else [#"option.rs" 278 0 278 16]
   predicate postcondition_once'2 [#"option.rs" 296 12 296 30] (self : ()) (_ : ()) (result : t_Option'0) =
     true
   
-  let rec or_else'3 (self:t_Option'0) (f:()) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'4 f}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption6] self = C_None'0  -> precondition'2 f ()}
+  let rec or_else'3 (self:t_Option'0) (f:()) (return'  (ret:t_Option'0))= {[@expl:or_else 'self' type invariant] inv'0 self}
+    {[@expl:or_else 'f' type invariant] inv'4 f}
+    {[@expl:or_else requires] [%#soption6] self = C_None'0  -> precondition'2 f ()}
     any
     [ return' (result:t_Option'0)-> {inv'0 result}
       {[%#soption7] match self with
@@ -2902,10 +2905,10 @@ module M_option__insert [#"option.rs" 302 0 302 15]
   
   predicate inv'1 (_1 : int32)
   
+  predicate inv'2 (_1 : borrowed int32)
+  
   predicate resolve'1 (_1 : int32) =
     true
-  
-  predicate inv'2 (_1 : borrowed int32)
   
   axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Option'0) [inv'0 x] . inv'0 x = true
   
@@ -2917,15 +2920,15 @@ module M_option__insert [#"option.rs" 302 0 302 15]
   
   axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
   
-  let rec insert'1 (self:borrowed (t_Option'0)) (value:int32) (return'  (ret:borrowed int32))= {[@expl:precondition] inv'1 value}
-    {[@expl:precondition] inv'0 self}
+  let rec insert'1 (self:borrowed (t_Option'0)) (value:int32) (return'  (ret:borrowed int32))= {[@expl:insert 'self' type invariant] inv'0 self}
+    {[@expl:insert 'value' type invariant] inv'1 value}
     any
     [ return' (result:borrowed int32)-> {inv'2 result}
-      {[%#soption12] result.current = value /\ self.final = C_Some'0 (result.final)}
       {[%#soption11] match self.current with
         | C_Some'0 t -> resolve'1 t
         | C_None'0 -> true
         end}
+      {[%#soption12] result.current = value /\ self.final = C_Some'0 (result.final)}
       (! return' {result}) ]
     
   
@@ -2965,8 +2968,8 @@ module M_option__insert [#"option.rs" 302 0 302 15]
   function deep_model'0 (self : t_Option'0) : t_Option'1 =
     [%#smodel17] deep_model'1 self
   
-  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'3 other}
-    {[@expl:precondition] inv'3 self}
+  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'3 self}
+    {[@expl:eq 'other' type invariant] inv'3 other}
     any
     [ return' (result:bool)-> {[%#soption14] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ]
     
@@ -3090,10 +3093,10 @@ module M_option__get_or_insert [#"option.rs" 316 0 316 22]
   
   predicate inv'1 (_1 : int32)
   
+  predicate inv'2 (_1 : borrowed int32)
+  
   predicate resolve'1 (_1 : int32) =
     true
-  
-  predicate inv'2 (_1 : borrowed int32)
   
   axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Option'0) [inv'0 x] . inv'0 x = true
   
@@ -3113,8 +3116,8 @@ module M_option__get_or_insert [#"option.rs" 316 0 316 22]
   
   axiom inv_axiom'5 [@rewrite] : forall x : () [inv'5 x] . inv'5 x = true
   
-  let rec get_or_insert'1 (self:borrowed (t_Option'0)) (value:int32) (return'  (ret:borrowed int32))= {[@expl:precondition] inv'1 value}
-    {[@expl:precondition] inv'0 self}
+  let rec get_or_insert'1 (self:borrowed (t_Option'0)) (value:int32) (return'  (ret:borrowed int32))= {[@expl:get_or_insert 'self' type invariant] inv'0 self}
+    {[@expl:get_or_insert 'value' type invariant] inv'1 value}
     any
     [ return' (result:borrowed int32)-> {inv'2 result}
       {[%#soption20] match self.current with
@@ -3161,8 +3164,8 @@ module M_option__get_or_insert [#"option.rs" 316 0 316 22]
   function deep_model'0 (self : t_Option'0) : t_Option'1 =
     [%#smodel32] deep_model'1 self
   
-  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'3 other}
-    {[@expl:precondition] inv'3 self}
+  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'3 self}
+    {[@expl:eq 'other' type invariant] inv'3 other}
     any
     [ return' (result:bool)-> {[%#soption22] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ]
     
@@ -3178,7 +3181,7 @@ module M_option__get_or_insert [#"option.rs" 316 0 316 22]
   let rec closure0'0 (_1:()) (return'  (ret:int32))= (! bb0
     [ bb0 = s0 [ s0 =  [ &res <- [%#soption24] (2 : int32) ] s1 | s1 =  [ &_0 <- res ] s2 | s2 = return' {_0} ]  ]
     ) [ & _0 : int32 = any_l () | & res : int32 = any_l () ] 
-    [ return' (result:int32)-> {[@expl:postcondition] [%#soption25] result = (2 : int32)} (! return' {result}) ]
+    [ return' (result:int32)-> {[@expl:closure ensures] [%#soption25] result = (2 : int32)} (! return' {result}) ]
     
   
   predicate precondition'0 [#"option.rs" 335 8 335 34] (self : ()) (_ : ()) =
@@ -3187,9 +3190,9 @@ module M_option__get_or_insert [#"option.rs" 316 0 316 22]
   predicate postcondition_once'0 [#"option.rs" 335 8 335 34] (self : ()) (_ : ()) (result : int32) =
     [%#soption25] result = (2 : int32)
   
-  let rec get_or_insert_with'0 (self:borrowed (t_Option'0)) (f:()) (return'  (ret:borrowed int32))= {[@expl:precondition] inv'4 f}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption26] self.current = C_None'0  -> precondition'0 f ()}
+  let rec get_or_insert_with'0 (self:borrowed (t_Option'0)) (f:()) (return'  (ret:borrowed int32))= {[@expl:get_or_insert_with 'self' type invariant] inv'0 self}
+    {[@expl:get_or_insert_with 'f' type invariant] inv'4 f}
+    {[@expl:get_or_insert_with requires] [%#soption26] self.current = C_None'0  -> precondition'0 f ()}
     any
     [ return' (result:borrowed int32)-> {inv'2 result}
       {[%#soption27] match self.current with
@@ -3207,7 +3210,7 @@ module M_option__get_or_insert [#"option.rs" 316 0 316 22]
     [ return' (result:t_Option'0)-> return' {result} ]
     
   
-  let rec closure1'0 (_1:()) (return'  (ret:int32))= {[%#soption29] false}
+  let rec closure1'0 (_1:()) (return'  (ret:int32))= {[@expl:closure requires] [%#soption29] false}
     (! bb0 [ bb0 = {false} any ] ) [ return' (result:int32)-> (! return' {result}) ] 
   
   predicate precondition'1 [#"option.rs" 342 8 342 26] (self : ()) (_ : ()) =
@@ -3216,9 +3219,9 @@ module M_option__get_or_insert [#"option.rs" 316 0 316 22]
   predicate postcondition_once'1 [#"option.rs" 342 8 342 26] (self : ()) (_ : ()) (result : int32) =
     true
   
-  let rec get_or_insert_with'1 (self:borrowed (t_Option'0)) (f:()) (return'  (ret:borrowed int32))= {[@expl:precondition] inv'5 f}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption26] self.current = C_None'0  -> precondition'1 f ()}
+  let rec get_or_insert_with'1 (self:borrowed (t_Option'0)) (f:()) (return'  (ret:borrowed int32))= {[@expl:get_or_insert_with 'self' type invariant] inv'0 self}
+    {[@expl:get_or_insert_with 'f' type invariant] inv'5 f}
+    {[@expl:get_or_insert_with requires] [%#soption26] self.current = C_None'0  -> precondition'1 f ()}
     any
     [ return' (result:borrowed int32)-> {inv'2 result}
       {[%#soption27] match self.current with
@@ -3392,18 +3395,18 @@ module M_option__take [#"option.rs" 350 0 350 13]
   
   axiom inv_axiom'3 [@rewrite] : forall x : int32 [inv'3 x] . inv'3 x = true
   
-  let rec take'1 (self:borrowed (t_Option'0)) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'0 self}
+  let rec take'1 (self:borrowed (t_Option'0)) (return'  (ret:t_Option'0))= {[@expl:take 'self' type invariant] inv'0 self}
     any
     [ return' (result:t_Option'0)-> {inv'1 result}
       {[%#soption6] result = self.current /\ self.final = C_None'0}
       (! return' {result}) ]
     
   
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'2 self}
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'2 self}
     any [ return' (result:bool)-> {[%#soption7] result = (self = C_None'0)} (! return' {result}) ] 
   
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:int32))= {[@expl:precondition] inv'1 self}
-    {[@expl:precondition] [%#soption6] self <> C_None'0}
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:int32))= {[@expl:unwrap 'self' type invariant] inv'1 self}
+    {[@expl:unwrap requires] [%#soption6] self <> C_None'0}
     any [ return' (result:int32)-> {inv'3 result} {[%#soption6] C_Some'0 result = self} (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic
@@ -3495,17 +3498,17 @@ module M_option__take_if [#"option.rs" 360 0 360 16]
   predicate resolve'0 (_1 : borrowed int32) =
     resolve'1 _1
   
-  predicate inv'0 (_1 : borrowed int32)
+  predicate inv'0 (_1 : borrowed (t_Option'0))
   
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed int32 [inv'0 x] . inv'0 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Option'0) [inv'0 x] . inv'0 x = true
   
-  predicate inv'1 (_1 : borrowed (t_Option'0))
+  predicate inv'1 (_1 : ())
   
-  axiom inv_axiom'1 [@rewrite] : forall x : borrowed (t_Option'0) [inv'1 x] . inv'1 x = true
+  axiom inv_axiom'1 [@rewrite] : forall x : () [inv'1 x] . inv'1 x = true
   
-  predicate inv'2 (_1 : ())
+  predicate inv'2 (_1 : borrowed int32)
   
-  axiom inv_axiom'2 [@rewrite] : forall x : () [inv'2 x] . inv'2 x = true
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed int32 [inv'2 x] . inv'2 x = true
   
   predicate inv'3 (_1 : t_Option'0)
   
@@ -3523,7 +3526,7 @@ module M_option__take_if [#"option.rs" 360 0 360 16]
   
   axiom inv_axiom'6 [@rewrite] : forall x : () [inv'6 x] . inv'6 x = true
   
-  let rec closure0'0 (_1:()) (_2:borrowed int32) (return'  (ret:bool))= {[%#soption6] false}
+  let rec closure0'0 (_1:()) (_2:borrowed int32) (return'  (ret:bool))= {[@expl:closure requires] [%#soption6] false}
     (! bb0 [ bb0 = s0 [ s0 = -{resolve'0 _2}- s1 | s1 = {false} any ]  ] ) [ & _2 : borrowed int32 = _2 ] 
     [ return' (result:bool)-> (! return' {result}) ]
     
@@ -3534,17 +3537,17 @@ module M_option__take_if [#"option.rs" 360 0 360 16]
   predicate postcondition_once'0 [#"option.rs" 366 12 366 30] (self : ()) (args : borrowed int32) (result : bool) =
     let (_2) = args in true
   
-  let rec take_if'1 (self:borrowed (t_Option'0)) (predicate':()) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'2 predicate'}
-    {[@expl:precondition] inv'1 self}
-    {[@expl:precondition] [%#soption7] match self.current with
+  let rec take_if'1 (self:borrowed (t_Option'0)) (predicate':()) (return'  (ret:t_Option'0))= {[@expl:take_if 'self' type invariant] inv'0 self}
+    {[@expl:take_if 'predicate' type invariant] inv'1 predicate'}
+    {[@expl:take_if requires] [%#soption7] match self.current with
       | C_None'0 -> true
-      | C_Some'0 t -> forall b : borrowed int32 . inv'0 b /\ b.current = t  -> precondition'0 predicate' (b)
+      | C_Some'0 t -> forall b : borrowed int32 . inv'2 b /\ b.current = t  -> precondition'0 predicate' (b)
       end}
     any
     [ return' (result:t_Option'0)-> {inv'3 result}
       {[%#soption8] match self.current with
         | C_None'0 -> result = C_None'0 /\ self.final = C_None'0
-        | C_Some'0 cur -> exists b : borrowed int32, res : bool . inv'0 b
+        | C_Some'0 cur -> exists b : borrowed int32, res : bool . inv'2 b
         /\ cur = b.current
         /\ postcondition_once'0 predicate' (b) res
         /\ (if res then
@@ -3584,8 +3587,8 @@ module M_option__take_if [#"option.rs" 360 0 360 16]
   function deep_model'0 (self : t_Option'0) : t_Option'1 =
     [%#smodel19] deep_model'1 self
   
-  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'4 other}
-    {[@expl:precondition] inv'4 self}
+  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'4 self}
+    {[@expl:eq 'other' type invariant] inv'4 other}
     any
     [ return' (result:bool)-> {[%#soption9] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ]
     
@@ -3599,8 +3602,8 @@ module M_option__take_if [#"option.rs" 360 0 360 16]
       | s4 = return' {_0} ]
        ]
     ) [ & _0 : bool = any_l () | & x : borrowed int32 = x | & res : bool = any_l () | & res1 : bool = any_l () ] 
-    [ return' (result:bool)-> {[@expl:postcondition] [%#soption12] x.current = x.final}
-      {[@expl:postcondition] [%#soption11] result = (x.current = (2 : int32))}
+    [ return' (result:bool)-> {[@expl:closure ensures #0] [%#soption11] result = (x.current = (2 : int32))}
+      {[@expl:closure ensures #1] [%#soption12] x.current = x.final}
       (! return' {result}) ]
     
   
@@ -3610,17 +3613,17 @@ module M_option__take_if [#"option.rs" 360 0 360 16]
   predicate postcondition_once'1 [#"option.rs" 373 12 373 32] (self : ()) (args : borrowed int32) (result : bool) =
     let (x) = args in x.current = x.final /\ result = (x.current = (2 : int32))
   
-  let rec take_if'2 (self:borrowed (t_Option'0)) (predicate':()) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'5 predicate'}
-    {[@expl:precondition] inv'1 self}
-    {[@expl:precondition] [%#soption7] match self.current with
+  let rec take_if'2 (self:borrowed (t_Option'0)) (predicate':()) (return'  (ret:t_Option'0))= {[@expl:take_if 'self' type invariant] inv'0 self}
+    {[@expl:take_if 'predicate' type invariant] inv'5 predicate'}
+    {[@expl:take_if requires] [%#soption7] match self.current with
       | C_None'0 -> true
-      | C_Some'0 t -> forall b : borrowed int32 . inv'0 b /\ b.current = t  -> precondition'1 predicate' (b)
+      | C_Some'0 t -> forall b : borrowed int32 . inv'2 b /\ b.current = t  -> precondition'1 predicate' (b)
       end}
     any
     [ return' (result:t_Option'0)-> {inv'3 result}
       {[%#soption8] match self.current with
         | C_None'0 -> result = C_None'0 /\ self.final = C_None'0
-        | C_Some'0 cur -> exists b : borrowed int32, res : bool . inv'0 b
+        | C_Some'0 cur -> exists b : borrowed int32, res : bool . inv'2 b
         /\ cur = b.current
         /\ postcondition_once'1 predicate' (b) res
         /\ (if res then
@@ -3663,8 +3666,8 @@ module M_option__take_if [#"option.rs" 360 0 360 16]
     | & res1 : bool = any_l ()
     | & res2 : bool = any_l () ]
     
-    [ return' (result:bool)-> {[@expl:postcondition] [%#soption17] x.final = (3 : int32)}
-      {[@expl:postcondition] [%#soption16] result = (x.current = (1 : int32))}
+    [ return' (result:bool)-> {[@expl:closure ensures #0] [%#soption16] result = (x.current = (1 : int32))}
+      {[@expl:closure ensures #1] [%#soption17] x.final = (3 : int32)}
       (! return' {result}) ]
     
   
@@ -3674,17 +3677,17 @@ module M_option__take_if [#"option.rs" 360 0 360 16]
   predicate postcondition_once'2 [#"option.rs" 381 12 381 34] (self : ()) (args : borrowed int32) (result : bool) =
     let (x) = args in x.final = (3 : int32) /\ result = (x.current = (1 : int32))
   
-  let rec take_if'3 (self:borrowed (t_Option'0)) (predicate':()) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'6 predicate'}
-    {[@expl:precondition] inv'1 self}
-    {[@expl:precondition] [%#soption7] match self.current with
+  let rec take_if'3 (self:borrowed (t_Option'0)) (predicate':()) (return'  (ret:t_Option'0))= {[@expl:take_if 'self' type invariant] inv'0 self}
+    {[@expl:take_if 'predicate' type invariant] inv'6 predicate'}
+    {[@expl:take_if requires] [%#soption7] match self.current with
       | C_None'0 -> true
-      | C_Some'0 t -> forall b : borrowed int32 . inv'0 b /\ b.current = t  -> precondition'2 predicate' (b)
+      | C_Some'0 t -> forall b : borrowed int32 . inv'2 b /\ b.current = t  -> precondition'2 predicate' (b)
       end}
     any
     [ return' (result:t_Option'0)-> {inv'3 result}
       {[%#soption8] match self.current with
         | C_None'0 -> result = C_None'0 /\ self.final = C_None'0
-        | C_Some'0 cur -> exists b : borrowed int32, res : bool . inv'0 b
+        | C_Some'0 cur -> exists b : borrowed int32, res : bool . inv'2 b
         /\ cur = b.current
         /\ postcondition_once'2 predicate' (b) res
         /\ (if res then
@@ -3859,65 +3862,65 @@ module M_option__copied_cloned [#"option.rs" 392 0 392 22]
   
   axiom inv_axiom'5 [@rewrite] : forall x : t_Option'2 [inv'5 x] . inv'5 x = true
   
-  let rec as_ref'0 (self:t_Option'1) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'0 self}
+  let rec as_ref'0 (self:t_Option'1) (return'  (ret:t_Option'0))= {[@expl:as_ref 'self' type invariant] inv'0 self}
     any
     [ return' (result:t_Option'0)-> {inv'1 result}
-      {[%#soption14] self = C_None'0 \/ (exists r : int32 . result = C_Some'1 r /\ self = C_Some'0 r)}
       {[%#soption13] self = C_None'0  -> result = C_None'1}
+      {[%#soption14] self = C_None'0 \/ (exists r : int32 . result = C_Some'1 r /\ self = C_Some'0 r)}
       (! return' {result}) ]
     
   
-  let rec copied'0 (self:t_Option'0) (return'  (ret:t_Option'1))= {[@expl:precondition] inv'1 self}
+  let rec copied'0 (self:t_Option'0) (return'  (ret:t_Option'1))= {[@expl:copied 'self' type invariant] inv'1 self}
     any
     [ return' (result:t_Option'1)-> {inv'2 result}
-      {[%#soption15] self = C_None'1 \/ (exists t : int32 . self = C_Some'1 t /\ result = C_Some'0 t)}
       {[%#soption15] self = C_None'1  -> result = C_None'0}
+      {[%#soption15] self = C_None'1 \/ (exists t : int32 . self = C_Some'1 t /\ result = C_Some'0 t)}
       (! return' {result}) ]
     
   
-  let rec is_none'0 (self:t_Option'1) (return'  (ret:bool))= {[@expl:precondition] inv'0 self}
+  let rec is_none'0 (self:t_Option'1) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption16] result = (self = C_None'0)} (! return' {result}) ] 
   
-  let rec unwrap'0 (self:t_Option'1) (return'  (ret:int32))= {[@expl:precondition] inv'2 self}
-    {[@expl:precondition] [%#soption15] self <> C_None'0}
+  let rec unwrap'0 (self:t_Option'1) (return'  (ret:int32))= {[@expl:unwrap 'self' type invariant] inv'2 self}
+    {[@expl:unwrap requires] [%#soption15] self <> C_None'0}
     any [ return' (result:int32)-> {inv'3 result} {[%#soption15] C_Some'0 result = self} (! return' {result}) ] 
   
-  let rec as_mut'0 (self:borrowed (t_Option'1)) (return'  (ret:t_Option'2))= {[@expl:precondition] inv'4 self}
+  let rec as_mut'0 (self:borrowed (t_Option'1)) (return'  (ret:t_Option'2))= {[@expl:as_mut 'self' type invariant] inv'4 self}
     any
     [ return' (result:t_Option'2)-> {inv'5 result}
+      {[%#soption17] self.current = C_None'0  -> result = C_None'2 /\ self.final = C_None'0}
       {[%#soption18] self.current = C_None'0
       \/ (exists r : borrowed int32 . result = C_Some'2 r
       /\ self.current = C_Some'0 (r.current) /\ self.final = C_Some'0 (r.final))}
-      {[%#soption17] self.current = C_None'0  -> result = C_None'2 /\ self.final = C_None'0}
       (! return' {result}) ]
     
   
   predicate resolve'0 (self : borrowed int32) =
     [%#sresolve19] self.final = self.current
   
-  let rec copied'1 (self:t_Option'2) (return'  (ret:t_Option'1))= {[@expl:precondition] inv'5 self}
+  let rec copied'1 (self:t_Option'2) (return'  (ret:t_Option'1))= {[@expl:copied 'self' type invariant] inv'5 self}
     any
     [ return' (result:t_Option'1)-> {inv'2 result}
+      {[%#soption15] self = C_None'2  -> result = C_None'0}
       {[%#soption15] self = C_None'2
       \/ (exists t : borrowed int32 . self = C_Some'2 t /\ result = C_Some'0 (t.current) /\ resolve'0 t)}
-      {[%#soption15] self = C_None'2  -> result = C_None'0}
       (! return' {result}) ]
     
   
-  let rec cloned'0 (self:t_Option'0) (return'  (ret:t_Option'1))= {[@expl:precondition] inv'1 self}
+  let rec cloned'0 (self:t_Option'0) (return'  (ret:t_Option'1))= {[@expl:cloned 'self' type invariant] inv'1 self}
     any
     [ return' (result:t_Option'1)-> {inv'2 result}
-      {[%#soption15] self = C_None'1 \/ (exists t : int32 . self = C_Some'1 t /\ result = C_Some'0 t)}
       {[%#soption15] self = C_None'1  -> result = C_None'0}
+      {[%#soption15] self = C_None'1 \/ (exists t : int32 . self = C_Some'1 t /\ result = C_Some'0 t)}
       (! return' {result}) ]
     
   
-  let rec cloned'1 (self:t_Option'2) (return'  (ret:t_Option'1))= {[@expl:precondition] inv'5 self}
+  let rec cloned'1 (self:t_Option'2) (return'  (ret:t_Option'1))= {[@expl:cloned 'self' type invariant] inv'5 self}
     any
     [ return' (result:t_Option'1)-> {inv'2 result}
+      {[%#soption15] self = C_None'2  -> result = C_None'0}
       {[%#soption15] self = C_None'2
       \/ (exists t : borrowed int32 . self = C_Some'2 t /\ result = C_Some'0 (t.current) /\ resolve'0 t)}
-      {[%#soption15] self = C_None'2  -> result = C_None'0}
       (! return' {result}) ]
     
   
@@ -4087,6 +4090,8 @@ module M_option__zip_unzip [#"option.rs" 408 0 408 18]
     | C_None'2
     | C_Some'2 (int32, bool)
   
+  predicate inv'2 (_1 : t_Option'0)
+  
   use prelude.prelude.Borrow
   
   predicate resolve'2 (_1 : bool) =
@@ -4106,8 +4111,6 @@ module M_option__zip_unzip [#"option.rs" 408 0 408 18]
       | C_Some'0 x -> resolve'3 x
       | C_None'0 -> true
       end
-  
-  predicate inv'2 (_1 : t_Option'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Option'1 [inv'0 x] . inv'0 x = true
   
@@ -4131,8 +4134,8 @@ module M_option__zip_unzip [#"option.rs" 408 0 408 18]
   
   axiom inv_axiom'6 [@rewrite] : forall x : t_Option'2 [inv'6 x] . inv'6 x = true
   
-  let rec zip'0 (self:t_Option'1) (other:t_Option'2) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'1 other}
-    {[@expl:precondition] inv'0 self}
+  let rec zip'0 (self:t_Option'1) (other:t_Option'2) (return'  (ret:t_Option'0))= {[@expl:zip 'self' type invariant] inv'0 self}
+    {[@expl:zip 'other' type invariant] inv'1 other}
     any
     [ return' (result:t_Option'0)-> {inv'2 result}
       {[%#soption12] match (self, other) with
@@ -4177,8 +4180,8 @@ module M_option__zip_unzip [#"option.rs" 408 0 408 18]
   function deep_model'0 (self : t_Option'0) : t_Option'3 =
     [%#smodel20] deep_model'3 self
   
-  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'3 other}
-    {[@expl:precondition] inv'3 self}
+  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'3 self}
+    {[@expl:eq 'other' type invariant] inv'3 other}
     any
     [ return' (result:bool)-> {[%#soption13] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ]
     
@@ -4206,7 +4209,7 @@ module M_option__zip_unzip [#"option.rs" 408 0 408 18]
     [ return' (result:t_Option'0)-> return' {result} ]
     
   
-  let rec unzip'0 (self:t_Option'0) (return'  (ret:(t_Option'1, t_Option'2)))= {[@expl:precondition] inv'2 self}
+  let rec unzip'0 (self:t_Option'0) (return'  (ret:(t_Option'1, t_Option'2)))= {[@expl:unzip 'self' type invariant] inv'2 self}
     any
     [ return' (result:(t_Option'1, t_Option'2))-> {inv'4 result}
       {[%#soption16] match self with
@@ -4235,8 +4238,8 @@ module M_option__zip_unzip [#"option.rs" 408 0 408 18]
   function deep_model'1 (self : t_Option'1) : t_Option'4 =
     [%#smodel20] deep_model'4 self
   
-  let rec eq'1 (self:t_Option'1) (other:t_Option'1) (return'  (ret:bool))= {[@expl:precondition] inv'5 other}
-    {[@expl:precondition] inv'5 self}
+  let rec eq'1 (self:t_Option'1) (other:t_Option'1) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'5 self}
+    {[@expl:eq 'other' type invariant] inv'5 other}
     any
     [ return' (result:bool)-> {[%#soption13] result = (deep_model'1 self = deep_model'1 other)} (! return' {result}) ]
     
@@ -4256,8 +4259,8 @@ module M_option__zip_unzip [#"option.rs" 408 0 408 18]
   function deep_model'2 (self : t_Option'2) : t_Option'2 =
     [%#smodel20] deep_model'5 self
   
-  let rec eq'2 (self:t_Option'2) (other:t_Option'2) (return'  (ret:bool))= {[@expl:precondition] inv'6 other}
-    {[@expl:precondition] inv'6 self}
+  let rec eq'2 (self:t_Option'2) (other:t_Option'2) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'6 self}
+    {[@expl:eq 'other' type invariant] inv'6 other}
     any
     [ return' (result:bool)-> {[%#soption13] result = (deep_model'2 self = deep_model'2 other)} (! return' {result}) ]
     
@@ -4447,7 +4450,7 @@ module M_option__transpose [#"option.rs" 430 0 430 18]
   
   axiom inv_axiom'4 [@rewrite] : forall x : bool [inv'4 x] . inv'4 x = true
   
-  let rec transpose'1 (self:t_Option'1) (return'  (ret:t_Result'0))= {[@expl:precondition] inv'0 self}
+  let rec transpose'1 (self:t_Option'1) (return'  (ret:t_Result'0))= {[@expl:transpose 'self' type invariant] inv'0 self}
     any
     [ return' (result:t_Result'0)-> {inv'1 result}
       {[%#soption6] match self with
@@ -4458,8 +4461,8 @@ module M_option__transpose [#"option.rs" 430 0 430 18]
       (! return' {result}) ]
     
   
-  let rec unwrap'0 (self:t_Result'0) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'1 self}
-    {[@expl:precondition] [%#sresult7] exists t : t_Option'0 . self = C_Ok'1 t}
+  let rec unwrap'0 (self:t_Result'0) (return'  (ret:t_Option'0))= {[@expl:unwrap 'self' type invariant] inv'1 self}
+    {[@expl:unwrap requires] [%#sresult7] exists t : t_Option'0 . self = C_Ok'1 t}
     any [ return' (result:t_Option'0)-> {inv'2 result} {[%#sresult8] C_Ok'1 result = self} (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic
@@ -4490,8 +4493,8 @@ module M_option__transpose [#"option.rs" 430 0 430 18]
   function deep_model'0 (self : t_Option'0) : t_Option'2 =
     [%#smodel12] deep_model'1 self
   
-  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'3 other}
-    {[@expl:precondition] inv'3 self}
+  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'3 self}
+    {[@expl:eq 'other' type invariant] inv'3 other}
     any
     [ return' (result:bool)-> {[%#soption9] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ]
     
@@ -4504,8 +4507,8 @@ module M_option__transpose [#"option.rs" 430 0 430 18]
     [ return' (result:t_Option'0)-> return' {result} ]
     
   
-  let rec unwrap_err'0 (self:t_Result'0) (return'  (ret:bool))= {[@expl:precondition] inv'1 self}
-    {[@expl:precondition] [%#sresult11] exists e : bool . self = C_Err'1 e}
+  let rec unwrap_err'0 (self:t_Result'0) (return'  (ret:bool))= {[@expl:unwrap_err 'self' type invariant] inv'1 self}
+    {[@expl:unwrap_err requires] [%#sresult11] exists e : bool . self = C_Err'1 e}
     any [ return' (result:bool)-> {inv'4 result} {[%#sresult8] C_Err'1 result = self} (! return' {result}) ] 
   
   use prelude.prelude.Bool
@@ -4604,19 +4607,19 @@ module M_option__flatten [#"option.rs" 440 0 440 16]
   
   axiom inv_axiom'3 [@rewrite] : forall x : int32 [inv'3 x] . inv'3 x = true
   
-  let rec flatten'1 (self:t_Option'1) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'0 self}
+  let rec flatten'1 (self:t_Option'1) (return'  (ret:t_Option'0))= {[@expl:flatten 'self' type invariant] inv'0 self}
     any
     [ return' (result:t_Option'0)-> {inv'1 result}
-      {[%#soption5] self = C_None'0 \/ self = C_Some'0 result}
       {[%#soption5] self = C_None'0  -> result = C_None'1}
+      {[%#soption5] self = C_None'0 \/ self = C_Some'0 result}
       (! return' {result}) ]
     
   
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'2 self}
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'2 self}
     any [ return' (result:bool)-> {[%#soption6] result = (self = C_None'1)} (! return' {result}) ] 
   
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:int32))= {[@expl:precondition] inv'1 self}
-    {[@expl:precondition] [%#soption5] self <> C_None'1}
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:int32))= {[@expl:unwrap 'self' type invariant] inv'1 self}
+    {[@expl:unwrap requires] [%#soption5] self <> C_None'1}
     any [ return' (result:int32)-> {inv'3 result} {[%#soption5] C_Some'1 result = self} (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic
@@ -4794,7 +4797,7 @@ module M_option__resolve [#"option.rs" 449 0 449 16]
       | s3 = return' {_0} ]
        ]
     ) [ & _0 : bool = any_l () | & _2 : borrowed int32 = _2 | & res : bool = any_l () ] 
-    [ return' (result:bool)-> {[@expl:postcondition] [%#soption42] result} (! return' {result}) ]
+    [ return' (result:bool)-> {[@expl:closure ensures] [%#soption42] result} (! return' {result}) ]
     
   
   predicate precondition'0 [#"option.rs" 454 8 454 26] (self : ()) (args : borrowed int32) =
@@ -4803,9 +4806,9 @@ module M_option__resolve [#"option.rs" 449 0 449 16]
   predicate postcondition_once'0 [#"option.rs" 454 8 454 26] (self : ()) (args : borrowed int32) (result : bool) =
     [%#soption42] let (_2) = args in result
   
-  let rec is_some_and'0 (self:t_Option'1) (f:()) (return'  (ret:bool))= {[@expl:precondition] inv'1 f}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption43] match self with
+  let rec is_some_and'0 (self:t_Option'1) (f:()) (return'  (ret:bool))= {[@expl:is_some_and 'self' type invariant] inv'0 self}
+    {[@expl:is_some_and 'f' type invariant] inv'1 f}
+    {[@expl:is_some_and requires] [%#soption43] match self with
       | C_None'1 -> true
       | C_Some'0 t -> precondition'0 f (t)
       end}
@@ -4823,21 +4826,21 @@ module M_option__resolve [#"option.rs" 449 0 449 16]
       | C_None'1 -> true
       end
   
-  let rec and'0 (self:t_Option'1) (optb:t_Option'0) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'2 optb}
-    {[@expl:precondition] inv'0 self}
+  let rec and'0 (self:t_Option'1) (optb:t_Option'0) (return'  (ret:t_Option'0))= {[@expl:and 'self' type invariant] inv'0 self}
+    {[@expl:and 'optb' type invariant] inv'2 optb}
     any
     [ return' (result:t_Option'0)-> {inv'2 result}
-      {[%#soption45] self = C_None'1 \/ result = optb /\ resolve'5 self}
       {[%#soption45] self = C_None'1  -> result = C_None'0}
+      {[%#soption45] self = C_None'1 \/ result = optb /\ resolve'5 self}
       (! return' {result}) ]
     
   
-  let rec or'0 (self:t_Option'1) (optb:t_Option'1) (return'  (ret:t_Option'1))= {[@expl:precondition] inv'0 optb}
-    {[@expl:precondition] inv'0 self}
+  let rec or'0 (self:t_Option'1) (optb:t_Option'1) (return'  (ret:t_Option'1))= {[@expl:or 'self' type invariant] inv'0 self}
+    {[@expl:or 'optb' type invariant] inv'0 optb}
     any
     [ return' (result:t_Option'1)-> {inv'0 result}
-      {[%#soption45] self = C_None'1 \/ result = self /\ resolve'5 optb}
       {[%#soption45] self = C_None'1  -> result = optb}
+      {[%#soption45] self = C_None'1 \/ result = self /\ resolve'5 optb}
       (! return' {result}) ]
     
   
@@ -4847,7 +4850,7 @@ module M_option__resolve [#"option.rs" 449 0 449 16]
   let rec closure1'0 (_1:()) (_2:borrowed int32) (return'  (ret:bool))= (! bb0
     [ bb0 = s0 [ s0 =  [ &res <- [%#soption46] false ] s1 | s1 =  [ &_0 <- res ] s2 | s2 = return' {_0} ]  ]
     ) [ & _0 : bool = any_l () | & res : bool = any_l () ] 
-    [ return' (result:bool)-> {[@expl:postcondition] [%#soption47] not result} (! return' {result}) ]
+    [ return' (result:bool)-> {[@expl:closure ensures] [%#soption47] not result} (! return' {result}) ]
     
   
   predicate precondition'1 [#"option.rs" 474 8 474 27] (self : ()) (args : borrowed int32) =
@@ -4856,9 +4859,9 @@ module M_option__resolve [#"option.rs" 449 0 449 16]
   predicate postcondition_once'1 [#"option.rs" 474 8 474 27] (self : ()) (args : borrowed int32) (result : bool) =
     [%#soption47] let (_2) = args in not result
   
-  let rec filter'0 (self:t_Option'1) (predicate':()) (return'  (ret:t_Option'1))= {[@expl:precondition] inv'3 predicate'}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#soption48] match self with
+  let rec filter'0 (self:t_Option'1) (predicate':()) (return'  (ret:t_Option'1))= {[@expl:filter 'self' type invariant] inv'0 self}
+    {[@expl:filter 'predicate' type invariant] inv'3 predicate'}
+    {[@expl:filter requires] [%#soption48] match self with
       | C_None'1 -> true
       | C_Some'0 t -> precondition'1 predicate' (t)
       end}
@@ -4874,8 +4877,8 @@ module M_option__resolve [#"option.rs" 449 0 449 16]
       (! return' {result}) ]
     
   
-  let rec xor'0 (self:t_Option'1) (optb:t_Option'1) (return'  (ret:t_Option'1))= {[@expl:precondition] inv'0 optb}
-    {[@expl:precondition] inv'0 self}
+  let rec xor'0 (self:t_Option'1) (optb:t_Option'1) (return'  (ret:t_Option'1))= {[@expl:xor 'self' type invariant] inv'0 self}
+    {[@expl:xor 'optb' type invariant] inv'0 optb}
     any
     [ return' (result:t_Option'1)-> {inv'0 result}
       {[%#soption50] match (self, optb) with
@@ -4887,15 +4890,15 @@ module M_option__resolve [#"option.rs" 449 0 449 16]
       (! return' {result}) ]
     
   
-  let rec insert'0 (self:borrowed (t_Option'1)) (value:borrowed int32) (return'  (ret:borrowed (borrowed int32)))= {[@expl:precondition] inv'5 value}
-    {[@expl:precondition] inv'4 self}
+  let rec insert'0 (self:borrowed (t_Option'1)) (value:borrowed int32) (return'  (ret:borrowed (borrowed int32)))= {[@expl:insert 'self' type invariant] inv'4 self}
+    {[@expl:insert 'value' type invariant] inv'5 value}
     any
     [ return' (result:borrowed (borrowed int32))-> {inv'6 result}
-      {[%#soption52] result.current = value /\ self.final = C_Some'0 (result.final)}
       {[%#soption51] match self.current with
         | C_Some'0 t -> resolve'2 t
         | C_None'1 -> true
         end}
+      {[%#soption52] result.current = value /\ self.final = C_Some'0 (result.final)}
       (! return' {result}) ]
     
   
@@ -4905,8 +4908,8 @@ module M_option__resolve [#"option.rs" 449 0 449 16]
   predicate resolve'3 (_1 : borrowed (borrowed int32)) =
     resolve'7 _1
   
-  let rec get_or_insert'0 (self:borrowed (t_Option'1)) (value:borrowed int32) (return'  (ret:borrowed (borrowed int32)))= {[@expl:precondition] inv'5 value}
-    {[@expl:precondition] inv'4 self}
+  let rec get_or_insert'0 (self:borrowed (t_Option'1)) (value:borrowed int32) (return'  (ret:borrowed (borrowed int32)))= {[@expl:get_or_insert 'self' type invariant] inv'4 self}
+    {[@expl:get_or_insert 'value' type invariant] inv'5 value}
     any
     [ return' (result:borrowed (borrowed int32))-> {inv'6 result}
       {[%#soption53] match self.current with
@@ -4926,8 +4929,8 @@ module M_option__resolve [#"option.rs" 449 0 449 16]
       | C_None'0 -> true
       end
   
-  let rec zip'0 (self:t_Option'1) (other:t_Option'0) (return'  (ret:t_Option'2))= {[@expl:precondition] inv'2 other}
-    {[@expl:precondition] inv'0 self}
+  let rec zip'0 (self:t_Option'1) (other:t_Option'0) (return'  (ret:t_Option'2))= {[@expl:zip 'self' type invariant] inv'0 self}
+    {[@expl:zip 'other' type invariant] inv'2 other}
     any
     [ return' (result:t_Option'2)-> {inv'7 result}
       {[%#soption54] match (self, other) with
@@ -4953,21 +4956,21 @@ module M_option__resolve [#"option.rs" 449 0 449 16]
   predicate resolve'4 (_1 : t_Option'2) =
     resolve'9 _1
   
-  let rec copied'0 (self:t_Option'1) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'0 self}
+  let rec copied'0 (self:t_Option'1) (return'  (ret:t_Option'0))= {[@expl:copied 'self' type invariant] inv'0 self}
     any
     [ return' (result:t_Option'0)-> {inv'2 result}
+      {[%#soption45] self = C_None'1  -> result = C_None'0}
       {[%#soption45] self = C_None'1
       \/ (exists t : borrowed int32 . self = C_Some'0 t /\ result = C_Some'1 (t.current) /\ resolve'6 t)}
-      {[%#soption45] self = C_None'1  -> result = C_None'0}
       (! return' {result}) ]
     
   
-  let rec cloned'0 (self:t_Option'1) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'0 self}
+  let rec cloned'0 (self:t_Option'1) (return'  (ret:t_Option'0))= {[@expl:cloned 'self' type invariant] inv'0 self}
     any
     [ return' (result:t_Option'0)-> {inv'2 result}
+      {[%#soption45] self = C_None'1  -> result = C_None'0}
       {[%#soption45] self = C_None'1
       \/ (exists t : borrowed int32 . self = C_Some'0 t /\ result = C_Some'1 (t.current) /\ resolve'6 t)}
-      {[%#soption45] self = C_None'1  -> result = C_None'0}
       (! return' {result}) ]
     
   

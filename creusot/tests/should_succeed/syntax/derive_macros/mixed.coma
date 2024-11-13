@@ -44,17 +44,17 @@ module M_mixed__qyi9512435279263248376__clone [#"mixed.rs" 8 9 8 14] (* <Product
   
   axiom inv_axiom'3 [@rewrite] : forall x : t_B'0 [inv'4 x] . inv'4 x = invariant'2 x
   
-  let rec clone'1 (self:t_A'0) (return'  (ret:t_A'0))= {[@expl:precondition] inv'2 self}
+  let rec clone'1 (self:t_A'0) (return'  (ret:t_A'0))= {[@expl:clone 'self' type invariant] inv'2 self}
     any [ return' (result:t_A'0)-> {inv'3 result} {[%#sclone1] result = self} (! return' {result}) ] 
   
-  let rec clone'2 (self:t_B'0) (return'  (ret:t_B'0))= {[@expl:precondition] inv'4 self}
+  let rec clone'2 (self:t_B'0) (return'  (ret:t_B'0))= {[@expl:clone 'self' type invariant] inv'4 self}
     any [ return' (result:t_B'0)-> {inv'5 result} {[%#sclone1] result = self} (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic
   
   meta "compute_max_steps" 1000000
   
-  let rec clone'0 (self:t_Product'0) (return'  (ret:t_Product'0))= {[%#smixed0] inv'0 self}
+  let rec clone'0 (self:t_Product'0) (return'  (ret:t_Product'0))= {[@expl:clone 'self' type invariant] [%#smixed0] inv'0 self}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &_5 <- self.t_Product__a'0 ] s1
@@ -77,8 +77,8 @@ module M_mixed__qyi9512435279263248376__clone [#"mixed.rs" 8 9 8 14] (* <Product
     | & _6 : t_B'0 = any_l ()
     | & _8 : t_B'0 = any_l () ]
     
-    [ return' (result:t_Product'0)-> {[@expl:postcondition] [%#smixed0] inv'1 result}
-      {[@expl:postcondition] [%#smixed0] result = self}
+    [ return' (result:t_Product'0)-> {[@expl:clone result type invariant] [%#smixed0] inv'1 result}
+      {[@expl:clone ensures] [%#smixed0] result = self}
       (! return' {result}) ]
     
 end
@@ -138,8 +138,8 @@ module M_mixed__qyi2064882709679455996__eq [#"mixed.rs" 8 16 8 25] (* <Product<A
     | {t_Product__a'0 = a ; t_Product__b'0 = b} -> inv'4 a /\ inv'5 b
     end
   
-  let rec eq'1 (self:t_A'0) (other:t_A'0) (return'  (ret:bool))= {[@expl:precondition] inv'1 other}
-    {[@expl:precondition] inv'1 self}
+  let rec eq'1 (self:t_A'0) (other:t_A'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'1 self}
+    {[@expl:eq 'other' type invariant] inv'1 other}
     any [ return' (result:bool)-> {[%#scmp2] result = (deep_model'1 self = deep_model'1 other)} (! return' {result}) ] 
   
   type t_DeepModelTy'1
@@ -149,8 +149,8 @@ module M_mixed__qyi2064882709679455996__eq [#"mixed.rs" 8 16 8 25] (* <Product<A
   function deep_model'2 (self : t_B'0) : t_DeepModelTy'1 =
     [%#smodel3] deep_model'5 self
   
-  let rec eq'2 (self:t_B'0) (other:t_B'0) (return'  (ret:bool))= {[@expl:precondition] inv'2 other}
-    {[@expl:precondition] inv'2 self}
+  let rec eq'2 (self:t_B'0) (other:t_B'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'2 self}
+    {[@expl:eq 'other' type invariant] inv'2 other}
     any [ return' (result:bool)-> {[%#scmp2] result = (deep_model'2 self = deep_model'2 other)} (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic
@@ -166,8 +166,8 @@ module M_mixed__qyi2064882709679455996__eq [#"mixed.rs" 8 16 8 25] (* <Product<A
   
   meta "compute_max_steps" 1000000
   
-  let rec eq'0 (self:t_Product'0) (rhs:t_Product'0) (return'  (ret:bool))= {[%#smixed1] inv'0 rhs}
-    {[%#smixed1] inv'0 self}
+  let rec eq'0 (self:t_Product'0) (rhs:t_Product'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] [%#smixed1] inv'0 self}
+    {[@expl:eq 'rhs' type invariant] [%#smixed1] inv'0 rhs}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &_7 <- rhs.t_Product__a'0 ] s1
@@ -191,7 +191,7 @@ module M_mixed__qyi2064882709679455996__eq [#"mixed.rs" 8 16 8 25] (* <Product<A
     | & _7 : t_A'0 = any_l ()
     | & _10 : t_B'0 = any_l () ]
     
-    [ return' (result:bool)-> {[@expl:postcondition] [%#smixed1] result = (deep_model'0 self = deep_model'0 rhs)}
+    [ return' (result:bool)-> {[@expl:eq ensures] [%#smixed1] result = (deep_model'0 self = deep_model'0 rhs)}
       (! return' {result}) ]
     
 end
@@ -248,7 +248,7 @@ module M_mixed__qyi6273949305112291917__clone [#"mixed.rs" 28 9 28 14] (* <Sum<A
     | bad -> {forall field_0 : t_B'0 [C_B'0 field_0 : t_Sum'0] . C_B'0 field_0 <> input} (! {false} any) ]
     
   
-  let rec clone'1 (self:t_B'0) (return'  (ret:t_B'0))= {[@expl:precondition] inv'2 self}
+  let rec clone'1 (self:t_B'0) (return'  (ret:t_B'0))= {[@expl:clone 'self' type invariant] inv'2 self}
     any [ return' (result:t_B'0)-> {inv'3 result} {[%#sclone1] result = self} (! return' {result}) ] 
   
   let rec v_A'0 (input:t_Sum'0) (ret  (field_0:t_A'0))= any
@@ -256,14 +256,14 @@ module M_mixed__qyi6273949305112291917__clone [#"mixed.rs" 28 9 28 14] (* <Sum<A
     | bad -> {forall field_0 : t_A'0 [C_A'0 field_0 : t_Sum'0] . C_A'0 field_0 <> input} (! {false} any) ]
     
   
-  let rec clone'2 (self:t_A'0) (return'  (ret:t_A'0))= {[@expl:precondition] inv'4 self}
+  let rec clone'2 (self:t_A'0) (return'  (ret:t_A'0))= {[@expl:clone 'self' type invariant] inv'4 self}
     any [ return' (result:t_A'0)-> {inv'5 result} {[%#sclone1] result = self} (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic
   
   meta "compute_max_steps" 1000000
   
-  let rec clone'0 (self:t_Sum'0) (return'  (ret:t_Sum'0))= {[%#smixed0] inv'0 self}
+  let rec clone'0 (self:t_Sum'0) (return'  (ret:t_Sum'0))= {[@expl:clone 'self' type invariant] [%#smixed0] inv'0 self}
     (! bb0
     [ bb0 = any [ br0 (x0:t_A'0)-> {self = C_A'0 x0} (! bb2) | br1 (x0:t_B'0)-> {self = C_B'0 x0} (! bb3) ] 
     | bb3 = s0
@@ -294,8 +294,8 @@ module M_mixed__qyi6273949305112291917__clone [#"mixed.rs" 28 9 28 14] (* <Sum<A
     | & _9 : t_B'0 = any_l ()
     | & _11 : t_B'0 = any_l () ]
     
-    [ return' (result:t_Sum'0)-> {[@expl:postcondition] [%#smixed0] inv'1 result}
-      {[@expl:postcondition] [%#smixed0] result = self}
+    [ return' (result:t_Sum'0)-> {[@expl:clone result type invariant] [%#smixed0] inv'1 result}
+      {[@expl:clone ensures] [%#smixed0] result = self}
       (! return' {result}) ]
     
 end
@@ -361,8 +361,8 @@ module M_mixed__qyi1479716791028959114__eq [#"mixed.rs" 28 16 28 25] (* <Sum<A, 
   function deep_model'1 (self : t_B'0) : t_DeepModelTy'0 =
     [%#smodel2] deep_model'4 self
   
-  let rec eq'1 (self:t_B'0) (other:t_B'0) (return'  (ret:bool))= {[@expl:precondition] inv'1 other}
-    {[@expl:precondition] inv'1 self}
+  let rec eq'1 (self:t_B'0) (other:t_B'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'1 self}
+    {[@expl:eq 'other' type invariant] inv'1 other}
     any [ return' (result:bool)-> {[%#scmp1] result = (deep_model'1 self = deep_model'1 other)} (! return' {result}) ] 
   
   let rec v_A'0 (input:t_Sum'0) (ret  (field_0:t_A'0))= any
@@ -377,8 +377,8 @@ module M_mixed__qyi1479716791028959114__eq [#"mixed.rs" 28 16 28 25] (* <Sum<A, 
   function deep_model'2 (self : t_A'0) : t_DeepModelTy'1 =
     [%#smodel2] deep_model'5 self
   
-  let rec eq'2 (self:t_A'0) (other:t_A'0) (return'  (ret:bool))= {[@expl:precondition] inv'2 other}
-    {[@expl:precondition] inv'2 self}
+  let rec eq'2 (self:t_A'0) (other:t_A'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'2 self}
+    {[@expl:eq 'other' type invariant] inv'2 other}
     any [ return' (result:bool)-> {[%#scmp1] result = (deep_model'2 self = deep_model'2 other)} (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic
@@ -398,8 +398,8 @@ module M_mixed__qyi1479716791028959114__eq [#"mixed.rs" 28 16 28 25] (* <Sum<A, 
   
   meta "compute_max_steps" 1000000
   
-  let rec eq'0 (self:t_Sum'0) (rhs:t_Sum'0) (return'  (ret:bool))= {[%#smixed0] inv'0 rhs}
-    {[%#smixed0] inv'0 self}
+  let rec eq'0 (self:t_Sum'0) (rhs:t_Sum'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] [%#smixed0] inv'0 self}
+    {[@expl:eq 'rhs' type invariant] [%#smixed0] inv'0 rhs}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &_4 <- (self, rhs) ] s1
@@ -452,7 +452,7 @@ module M_mixed__qyi1479716791028959114__eq [#"mixed.rs" 28 16 28 25] (* <Sum<A, 
     | & v0_21 : t_B'0 = any_l ()
     | & _17 : bool = any_l () ]
     
-    [ return' (result:bool)-> {[@expl:postcondition] [%#smixed0] result = (deep_model'0 self = deep_model'0 rhs)}
+    [ return' (result:bool)-> {[@expl:eq ensures] [%#smixed0] result = (deep_model'0 self = deep_model'0 rhs)}
       (! return' {result}) ]
     
 end
@@ -616,7 +616,7 @@ module M_mixed__qyi9512435279263248376__clone__refines [#"mixed.rs" 8 9 8 14] (*
     end
   
   goal refines : [%#smixed0] forall self : t_Product'0 . inv'0 self
-   -> inv'0 self /\ (forall result : t_Product'0 . inv'1 result /\ result = self  -> inv'1 result /\ result = self)
+   -> inv'0 self /\ (forall result : t_Product'0 . result = self /\ inv'1 result  -> result = self /\ inv'1 result)
 end
 module M_mixed__qyi6273949305112291917__clone__refines [#"mixed.rs" 28 9 28 14] (* <Sum<A, B> as creusot_contracts::Clone> *)
   let%span smixed0 = "mixed.rs" 28 9 28 14
@@ -652,7 +652,7 @@ module M_mixed__qyi6273949305112291917__clone__refines [#"mixed.rs" 28 9 28 14] 
     end
   
   goal refines : [%#smixed0] forall self : t_Sum'0 . inv'0 self
-   -> inv'0 self /\ (forall result : t_Sum'0 . inv'1 result /\ result = self  -> inv'1 result /\ result = self)
+   -> inv'0 self /\ (forall result : t_Sum'0 . result = self /\ inv'1 result  -> result = self /\ inv'1 result)
 end
 module M_mixed__qyi2064882709679455996__eq__refines [#"mixed.rs" 8 16 8 25] (* <Product<A, B> as creusot_contracts::PartialEq> *)
   let%span smixed0 = "mixed.rs" 8 16 8 25

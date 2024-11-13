@@ -18,16 +18,6 @@ module M_13_vec_macro__x [#"13_vec_macro.rs" 5 0 5 10]
   let%span sslice16 = "../../../../creusot-contracts/src/std/slice.rs" 28 14 28 41
   let%span sslice17 = "../../../../creusot-contracts/src/std/slice.rs" 29 14 29 42
   
-  use seq.Seq
-  
-  use prelude.prelude.UIntSize
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
   use prelude.prelude.Opaque
   
   type t_NonNull'0  =
@@ -35,6 +25,8 @@ module M_13_vec_macro__x [#"13_vec_macro.rs" 5 0 5 10]
   
   type t_Unique'0  =
     { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
+  
+  use prelude.prelude.UIntSize
   
   type t_Cap'0  =
     { t_Cap__0'0: usize }
@@ -45,6 +37,16 @@ module M_13_vec_macro__x [#"13_vec_macro.rs" 5 0 5 10]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
   
+  predicate inv'0 (_1 : t_Vec'0)
+  
+  use seq.Seq
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
   use prelude.prelude.UInt32
   
   use seq.Seq
@@ -52,8 +54,6 @@ module M_13_vec_macro__x [#"13_vec_macro.rs" 5 0 5 10]
   function view'0 (self : t_Vec'0) : Seq.seq uint32
   
   axiom view'0_spec : forall self : t_Vec'0 . [%#svec10] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  predicate inv'0 (_1 : t_Vec'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
   
@@ -102,11 +102,11 @@ module M_13_vec_macro__x [#"13_vec_macro.rs" 5 0 5 10]
   function index_logic'0 [@inline:trivial] (self : t_Vec'1) (ix : int) : int32 =
     [%#sops14] Seq.get (view'1 self) ix
   
-  let rec from_elem'0 (elem:int32) (n:usize) (return'  (ret:t_Vec'1))= {[@expl:precondition] inv'1 elem}
+  let rec from_elem'0 (elem:int32) (n:usize) (return'  (ret:t_Vec'1))= {[@expl:from_elem 'elem' type invariant] inv'1 elem}
     any
     [ return' (result:t_Vec'1)-> {inv'2 result}
-      {[%#svec12] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
       {[%#svec11] Seq.length (view'1 result) = UIntSize.to_int n}
+      {[%#svec12] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
       (! return' {result}) ]
     
   
@@ -114,13 +114,14 @@ module M_13_vec_macro__x [#"13_vec_macro.rs" 5 0 5 10]
   
   function view'3 (self : slice int32) : Seq.seq int32
   
-  axiom view'3_spec : forall self : slice int32 . ([%#sslice17] view'3 self = Slice.id self)
-  && ([%#sslice16] Seq.length (view'3 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'3_spec : forall self : slice int32 . ([%#sslice16] Seq.length (view'3 self)
+  <= UIntSize.to_int (v_MAX'0 : usize))
+  && ([%#sslice17] view'3 self = Slice.id self)
   
   function view'2 (self : slice int32) : Seq.seq int32 =
     [%#sboxed15] view'3 self
   
-  let rec into_vec'0 (self:slice int32) (return'  (ret:t_Vec'1))= {[@expl:precondition] inv'3 self}
+  let rec into_vec'0 (self:slice int32) (return'  (ret:t_Vec'1))= {[@expl:into_vec 'self' type invariant] inv'3 self}
     any [ return' (result:t_Vec'1)-> {inv'2 result} {[%#sslice13] view'1 result = view'2 self} (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic

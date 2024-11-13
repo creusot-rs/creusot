@@ -84,7 +84,8 @@ module M_inc_some_tree__qyi12127997673864742005__sum_x [#"inc_some_tree.rs" 45 4
   
   meta "compute_max_steps" 1000000
   
-  let rec sum_x'0 (self:t_Tree'0) (return'  (ret:uint32))= {[%#sinc_some_tree2] sum'0 self <= 1000000}
+  let rec sum_x'0 (self:t_Tree'0) (return'  (ret:uint32))= {[@expl:sum_x requires] [%#sinc_some_tree2] sum'0 self
+    <= 1000000}
     (! bb0
     [ bb0 = any
       [ br0 (x0:t_Tree'0) (x1:uint32) (x2:t_Tree'0)-> {self = C_Node'0 x0 x1 x2} (! bb2)
@@ -118,7 +119,7 @@ module M_inc_some_tree__qyi12127997673864742005__sum_x [#"inc_some_tree.rs" 45 4
     | & _11 : uint32 = any_l ()
     | & _14 : uint32 = any_l () ]
     
-    [ return' (result:uint32)-> {[@expl:postcondition] [%#sinc_some_tree3] UInt32.to_int result = sum'0 self}
+    [ return' (result:uint32)-> {[@expl:sum_x ensures] [%#sinc_some_tree3] UInt32.to_int result = sum'0 self}
       (! return' {result}) ]
     
 end
@@ -319,9 +320,10 @@ module M_inc_some_tree__qyi12127997673864742005__take_some [#"inc_some_tree.rs" 
     | & _20 : borrowed uint32 = any_l ()
     | & _21 : borrowed (t_Tree'0) = any_l () ]
     
-    [ return' (result:borrowed uint32)-> {[@expl:postcondition] [%#sinc_some_tree4] view'0 result <= sum'0 self.current}
-      {[@expl:postcondition] [%#sinc_some_tree3] sum'0 self.final - sum'0 self.current
+    [ return' (result:borrowed uint32)-> {[@expl:take_some ensures #0] [%#sinc_some_tree3] sum'0 self.final
+      - sum'0 self.current
       = UInt32.to_int result.final - view'0 result}
+      {[@expl:take_some ensures #1] [%#sinc_some_tree4] view'0 result <= sum'0 self.current}
       (! return' {result}) ]
     
 end
@@ -354,7 +356,7 @@ module M_inc_some_tree__inc_some_tree [#"inc_some_tree.rs" 83 0 83 41]
   
   use prelude.prelude.Borrow
   
-  let rec sum_x'0 (self:t_Tree'0) (return'  (ret:uint32))= {[@expl:precondition] [%#sinc_some_tree2] sum'0 self
+  let rec sum_x'0 (self:t_Tree'0) (return'  (ret:uint32))= {[@expl:sum_x requires] [%#sinc_some_tree2] sum'0 self
     <= 1000000}
     any [ return' (result:uint32)-> {[%#sinc_some_tree3] UInt32.to_int result = sum'0 self} (! return' {result}) ] 
   
@@ -362,8 +364,9 @@ module M_inc_some_tree__inc_some_tree [#"inc_some_tree.rs" 83 0 83 41]
     [%#smodel7] UInt32.to_int self.current
   
   let rec take_some'0 (self:borrowed (t_Tree'0)) (return'  (ret:borrowed uint32))= any
-    [ return' (result:borrowed uint32)-> {[%#sinc_some_tree5] view'0 result <= sum'0 self.current}
-      {[%#sinc_some_tree4] sum'0 self.final - sum'0 self.current = UInt32.to_int result.final - view'0 result}
+    [ return' (result:borrowed uint32)-> {[%#sinc_some_tree4] sum'0 self.final - sum'0 self.current
+      = UInt32.to_int result.final - view'0 result}
+      {[%#sinc_some_tree5] view'0 result <= sum'0 self.current}
       (! return' {result}) ]
     
   
@@ -377,7 +380,8 @@ module M_inc_some_tree__inc_some_tree [#"inc_some_tree.rs" 83 0 83 41]
   
   meta "compute_max_steps" 1000000
   
-  let rec inc_some_tree'0 (t:t_Tree'0) (k:uint32) (return'  (ret:()))= {[%#sinc_some_tree1] sum'0 t + UInt32.to_int k
+  let rec inc_some_tree'0 (t:t_Tree'0) (k:uint32) (return'  (ret:()))= {[@expl:inc_some_tree requires] [%#sinc_some_tree1] sum'0 t
+    + UInt32.to_int k
     <= 1000000}
     (! bb0
     [ bb0 = bb1

@@ -20,24 +20,22 @@ module M_binary_search__qyi13868011053250380720__len_logic [#"binary_search.rs" 
     end
 end
 module M_binary_search__qyi13868011053250380720__index [#"binary_search.rs" 45 4 45 40] (* List<T> *)
-  let%span sbinary_search0 = "binary_search.rs" 49 20 49 39
+  let%span sbinary_search0 = "binary_search.rs" 51 20 51 26
   let%span sbinary_search1 = "binary_search.rs" 50 20 50 52
-  let%span sbinary_search2 = "binary_search.rs" 51 20 51 26
+  let%span sbinary_search2 = "binary_search.rs" 49 20 49 39
   let%span sbinary_search3 = "binary_search.rs" 53 20 53 21
   let%span sbinary_search4 = "binary_search.rs" 55 22 55 23
-  let%span sbinary_search5 = "binary_search.rs" 43 15 43 37
-  let%span sbinary_search6 = "binary_search.rs" 45 14 45 18
-  let%span sbinary_search7 = "binary_search.rs" 44 14 44 44
-  let%span sbinary_search8 = "binary_search.rs" 45 38 45 40
-  let%span sbinary_search9 = "binary_search.rs" 21 14 21 25
-  let%span sbinary_search10 = "binary_search.rs" 23 8 26 9
-  let%span sbinary_search11 = "binary_search.rs" 31 8 40 9
+  let%span sbinary_search5 = "binary_search.rs" 45 14 45 18
+  let%span sbinary_search6 = "binary_search.rs" 43 15 43 37
+  let%span sbinary_search7 = "binary_search.rs" 45 38 45 40
+  let%span sbinary_search8 = "binary_search.rs" 44 14 44 44
+  let%span sbinary_search9 = "binary_search.rs" 31 8 40 9
+  let%span sbinary_search10 = "binary_search.rs" 21 14 21 25
+  let%span sbinary_search11 = "binary_search.rs" 23 8 26 9
   let%span sinvariant12 = "../../../creusot-contracts/src/invariant.rs" 24 8 24 18
   let%span sboxed13 = "../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
+  use prelude.prelude.Borrow
   
   type t_T'0
   
@@ -45,27 +43,29 @@ module M_binary_search__qyi13868011053250380720__index [#"binary_search.rs" 45 4
     | C_Cons'0 t_T'0 (t_List'0)
     | C_Nil'0
   
-  function len_logic'0 [#"binary_search.rs" 22 4 22 29] (self : t_List'0) : int =
-    [%#sbinary_search10] match self with
-      | C_Cons'0 _ ls -> 1 + len_logic'0 ls
-      | C_Nil'0 -> 0
-      end
+  predicate inv'0 (_1 : t_List'0)
   
-  axiom len_logic'0_spec : forall self : t_List'0 . [%#sbinary_search9] len_logic'0 self >= 0
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
   
   type t_Option'0  =
     | C_None'0
     | C_Some'0 t_T'0
   
   function get'0 [#"binary_search.rs" 30 4 30 38] (self : t_List'0) (ix : int) : t_Option'0 =
-    [%#sbinary_search11] match self with
+    [%#sbinary_search9] match self with
       | C_Cons'0 t ls -> if ix = 0 then C_Some'0 t else get'0 ls (ix - 1)
       | C_Nil'0 -> C_None'0
       end
   
-  use prelude.prelude.Borrow
+  function len_logic'0 [#"binary_search.rs" 22 4 22 29] (self : t_List'0) : int =
+    [%#sbinary_search11] match self with
+      | C_Cons'0 _ ls -> 1 + len_logic'0 ls
+      | C_Nil'0 -> 0
+      end
   
-  predicate inv'0 (_1 : t_List'0)
+  axiom len_logic'0_spec : forall self : t_List'0 . [%#sbinary_search10] len_logic'0 self >= 0
   
   predicate inv'2 (_1 : t_List'0)
   
@@ -110,15 +110,15 @@ module M_binary_search__qyi13868011053250380720__index [#"binary_search.rs" 45 4
   
   meta "compute_max_steps" 1000000
   
-  let rec index'0 (self:t_List'0) (ix:usize) (return'  (ret:t_T'0))= {[%#sbinary_search6] inv'0 self}
-    {[%#sbinary_search5] UIntSize.to_int ix < len_logic'0 self}
+  let rec index'0 (self:t_List'0) (ix:usize) (return'  (ret:t_T'0))= {[@expl:index 'self' type invariant] [%#sbinary_search5] inv'0 self}
+    {[@expl:index requires] [%#sbinary_search6] UIntSize.to_int ix < len_logic'0 self}
     (! bb0
     [ bb0 = s0 [ s0 =  [ &orig_ix <- ix ] s1 | s1 =  [ &l <- self ] s2 | s2 = bb1 ] 
     | bb1 = bb1
-      [ bb1 = {[@expl:loop invariant 2] [%#sbinary_search2] inv'0 l}
-        {[@expl:loop invariant 1] [%#sbinary_search1] get'0 self (UIntSize.to_int orig_ix)
+      [ bb1 = {[@expl:loop invariant #0] [%#sbinary_search2] UIntSize.to_int ix < len_logic'0 l}
+        {[@expl:loop invariant #1] [%#sbinary_search1] get'0 self (UIntSize.to_int orig_ix)
         = get'0 l (UIntSize.to_int ix)}
-        {[@expl:loop invariant 0] [%#sbinary_search0] UIntSize.to_int ix < len_logic'0 l}
+        {[@expl:loop invariant #2] [%#sbinary_search0] inv'0 l}
         (! s0) [ s0 = bb2 ] 
         [ bb2 = any [ br0 (x0:t_T'0) (x1:t_List'0)-> {l = C_Cons'0 x0 x1} (! bb3) | br1 -> {l = C_Nil'0 } (! bb7) ] 
         | bb3 = bb4
@@ -149,18 +149,18 @@ module M_binary_search__qyi13868011053250380720__index [#"binary_search.rs" 45 4
     | & _15 : bool = any_l ()
     | & _18 : t_List'0 = any_l () ]
     
-    [ return' (result:t_T'0)-> {[@expl:postcondition] [%#sbinary_search8] inv'1 result}
-      {[@expl:postcondition] [%#sbinary_search7] C_Some'0 result = get'0 self (UIntSize.to_int ix)}
+    [ return' (result:t_T'0)-> {[@expl:index result type invariant] [%#sbinary_search7] inv'1 result}
+      {[@expl:index ensures] [%#sbinary_search8] C_Some'0 result = get'0 self (UIntSize.to_int ix)}
       (! return' {result}) ]
     
 end
 module M_binary_search__qyi13868011053250380720__len [#"binary_search.rs" 67 4 67 26] (* List<T> *)
   let%span sbinary_search0 = "binary_search.rs" 68 29 68 30
-  let%span sbinary_search1 = "binary_search.rs" 70 20 70 60
-  let%span sbinary_search2 = "binary_search.rs" 71 20 71 26
+  let%span sbinary_search1 = "binary_search.rs" 71 20 71 26
+  let%span sbinary_search2 = "binary_search.rs" 70 20 70 60
   let%span sbinary_search3 = "binary_search.rs" 73 19 73 20
-  let%span sbinary_search4 = "binary_search.rs" 64 15 64 44
-  let%span sbinary_search5 = "binary_search.rs" 67 12 67 16
+  let%span sbinary_search4 = "binary_search.rs" 67 12 67 16
+  let%span sbinary_search5 = "binary_search.rs" 64 15 64 44
   let%span sbinary_search6 = "binary_search.rs" 65 14 65 30
   let%span sbinary_search7 = "binary_search.rs" 66 14 66 41
   let%span sbinary_search8 = "binary_search.rs" 21 14 21 25
@@ -170,15 +170,19 @@ module M_binary_search__qyi13868011053250380720__len [#"binary_search.rs" 67 4 6
   
   use prelude.prelude.UIntSize
   
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
+  use prelude.prelude.Borrow
   
   type t_T'0
   
   type t_List'0  =
     | C_Cons'0 t_T'0 (t_List'0)
     | C_Nil'0
+  
+  predicate inv'0 (_1 : t_List'0)
+  
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
   
   function len_logic'0 [#"binary_search.rs" 22 4 22 29] (self : t_List'0) : int =
     [%#sbinary_search9] match self with
@@ -187,10 +191,6 @@ module M_binary_search__qyi13868011053250380720__len [#"binary_search.rs" 67 4 6
       end
   
   axiom len_logic'0_spec : forall self : t_List'0 . [%#sbinary_search8] len_logic'0 self >= 0
-  
-  use prelude.prelude.Borrow
-  
-  predicate inv'0 (_1 : t_List'0)
   
   predicate inv'1 (_1 : t_List'0)
   
@@ -226,13 +226,13 @@ module M_binary_search__qyi13868011053250380720__len [#"binary_search.rs" 67 4 6
   
   meta "compute_max_steps" 1000000
   
-  let rec len'0 (self:t_List'0) (return'  (ret:usize))= {[%#sbinary_search5] inv'0 self}
-    {[%#sbinary_search4] len_logic'0 self <= 1000000}
+  let rec len'0 (self:t_List'0) (return'  (ret:usize))= {[@expl:len 'self' type invariant] [%#sbinary_search4] inv'0 self}
+    {[@expl:len requires] [%#sbinary_search5] len_logic'0 self <= 1000000}
     (! bb0
     [ bb0 = s0 [ s0 =  [ &len <- [%#sbinary_search0] (0 : usize) ] s1 | s1 =  [ &l <- self ] s2 | s2 = bb1 ] 
     | bb1 = bb1
-      [ bb1 = {[@expl:loop invariant 1] [%#sbinary_search2] inv'0 l}
-        {[@expl:loop invariant 0] [%#sbinary_search1] UIntSize.to_int len + len_logic'0 l = len_logic'0 self}
+      [ bb1 = {[@expl:loop invariant #0] [%#sbinary_search2] UIntSize.to_int len + len_logic'0 l = len_logic'0 self}
+        {[@expl:loop invariant #1] [%#sbinary_search1] inv'0 l}
         (! s0) [ s0 = bb2 ] 
         [ bb2 = any [ br0 (x0:t_T'0) (x1:t_List'0)-> {l = C_Cons'0 x0 x1} (! bb3) | br1 -> {l = C_Nil'0 } (! bb5) ] 
         | bb3 = bb4
@@ -252,8 +252,8 @@ module M_binary_search__qyi13868011053250380720__len [#"binary_search.rs" 67 4 6
     | & l : t_List'0 = any_l ()
     | & ls : t_List'0 = any_l () ]
     
-    [ return' (result:usize)-> {[@expl:postcondition] [%#sbinary_search7] UIntSize.to_int result = len_logic'0 self}
-      {[@expl:postcondition] [%#sbinary_search6] result >= (0 : usize)}
+    [ return' (result:usize)-> {[@expl:len ensures #0] [%#sbinary_search6] result >= (0 : usize)}
+      {[@expl:len ensures #1] [%#sbinary_search7] UIntSize.to_int result = len_logic'0 self}
       (! return' {result}) ]
     
 end
@@ -261,9 +261,9 @@ module M_binary_search__binary_search [#"binary_search.rs" 111 0 111 72]
   let%span sbinary_search0 = "binary_search.rs" 112 20 112 21
   let%span sbinary_search1 = "binary_search.rs" 113 19 113 20
   let%span sbinary_search2 = "binary_search.rs" 116 19 116 20
-  let%span sbinary_search3 = "binary_search.rs" 118 16 118 63
+  let%span sbinary_search3 = "binary_search.rs" 120 16 120 117
   let%span sbinary_search4 = "binary_search.rs" 119 16 119 82
-  let%span sbinary_search5 = "binary_search.rs" 120 16 120 117
+  let%span sbinary_search5 = "binary_search.rs" 118 16 118 63
   let%span sbinary_search6 = "binary_search.rs" 121 17 121 18
   let%span sbinary_search7 = "binary_search.rs" 122 26 122 27
   let%span sbinary_search8 = "binary_search.rs" 122 19 122 27
@@ -273,27 +273,31 @@ module M_binary_search__binary_search [#"binary_search.rs" 111 0 111 72]
   let%span sbinary_search12 = "binary_search.rs" 106 10 106 71
   let%span sbinary_search13 = "binary_search.rs" 107 10 108 76
   let%span sbinary_search14 = "binary_search.rs" 109 10 110 88
-  let%span sbinary_search15 = "binary_search.rs" 64 15 64 44
-  let%span sbinary_search16 = "binary_search.rs" 67 12 67 16
+  let%span sbinary_search15 = "binary_search.rs" 67 12 67 16
+  let%span sbinary_search16 = "binary_search.rs" 64 15 64 44
   let%span sbinary_search17 = "binary_search.rs" 65 14 65 30
   let%span sbinary_search18 = "binary_search.rs" 66 14 66 41
   let%span sbinary_search19 = "binary_search.rs" 21 14 21 25
   let%span sbinary_search20 = "binary_search.rs" 23 8 26 9
   let%span sbinary_search21 = "binary_search.rs" 81 8 84 9
-  let%span sbinary_search22 = "binary_search.rs" 43 15 43 37
-  let%span sbinary_search23 = "binary_search.rs" 45 14 45 18
-  let%span sbinary_search24 = "binary_search.rs" 44 14 44 44
-  let%span sbinary_search25 = "binary_search.rs" 45 38 45 40
+  let%span sbinary_search22 = "binary_search.rs" 45 14 45 18
+  let%span sbinary_search23 = "binary_search.rs" 43 15 43 37
+  let%span sbinary_search24 = "binary_search.rs" 45 38 45 40
+  let%span sbinary_search25 = "binary_search.rs" 44 14 44 44
   let%span sbinary_search26 = "binary_search.rs" 93 16 98 17
   let%span sbinary_search27 = "binary_search.rs" 31 8 40 9
   
-  use prelude.prelude.Int
+  use prelude.prelude.Borrow
   
   use prelude.prelude.UInt32
   
   type t_List'0  =
     | C_Cons'0 uint32 (t_List'0)
     | C_Nil'0
+  
+  predicate inv'0 (_1 : t_List'0)
+  
+  use prelude.prelude.Int
   
   function len_logic'0 [#"binary_search.rs" 22 4 22 29] (self : t_List'0) : int =
     [%#sbinary_search20] match self with
@@ -302,10 +306,6 @@ module M_binary_search__binary_search [#"binary_search.rs" 111 0 111 72]
       end
   
   axiom len_logic'0_spec : forall self : t_List'0 . [%#sbinary_search19] len_logic'0 self >= 0
-  
-  use prelude.prelude.Borrow
-  
-  predicate inv'0 (_1 : t_List'0)
   
   use prelude.prelude.UIntSize
   
@@ -317,11 +317,11 @@ module M_binary_search__binary_search [#"binary_search.rs" 111 0 111 72]
   
   axiom inv_axiom'1 [@rewrite] : forall x : uint32 [inv'1 x] . inv'1 x = true
   
-  let rec len'0 (self:t_List'0) (return'  (ret:usize))= {[@expl:precondition] [%#sbinary_search16] inv'0 self}
-    {[@expl:precondition] [%#sbinary_search15] len_logic'0 self <= 1000000}
+  let rec len'0 (self:t_List'0) (return'  (ret:usize))= {[@expl:len 'self' type invariant] [%#sbinary_search15] inv'0 self}
+    {[@expl:len requires] [%#sbinary_search16] len_logic'0 self <= 1000000}
     any
-    [ return' (result:usize)-> {[%#sbinary_search18] UIntSize.to_int result = len_logic'0 self}
-      {[%#sbinary_search17] result >= (0 : usize)}
+    [ return' (result:usize)-> {[%#sbinary_search17] result >= (0 : usize)}
+      {[%#sbinary_search18] UIntSize.to_int result = len_logic'0 self}
       (! return' {result}) ]
     
   
@@ -345,11 +345,11 @@ module M_binary_search__binary_search [#"binary_search.rs" 111 0 111 72]
       | C_None'0 -> def
       end
   
-  let rec index'0 (self:t_List'0) (ix:usize) (return'  (ret:uint32))= {[@expl:precondition] [%#sbinary_search23] inv'0 self}
-    {[@expl:precondition] [%#sbinary_search22] UIntSize.to_int ix < len_logic'0 self}
+  let rec index'0 (self:t_List'0) (ix:usize) (return'  (ret:uint32))= {[@expl:index 'self' type invariant] [%#sbinary_search22] inv'0 self}
+    {[@expl:index requires] [%#sbinary_search23] UIntSize.to_int ix < len_logic'0 self}
     any
-    [ return' (result:uint32)-> {[%#sbinary_search25] inv'1 result}
-      {[%#sbinary_search24] C_Some'0 result = get'0 self (UIntSize.to_int ix)}
+    [ return' (result:uint32)-> {[%#sbinary_search24] inv'1 result}
+      {[%#sbinary_search25] C_Some'0 result = get'0 self (UIntSize.to_int ix)}
       (! return' {result}) ]
     
   
@@ -365,8 +365,9 @@ module M_binary_search__binary_search [#"binary_search.rs" 111 0 111 72]
   
   meta "compute_max_steps" 1000000
   
-  let rec binary_search'0 (arr:t_List'0) (elem:uint32) (return'  (ret:t_Result'0))= {[%#sbinary_search11] is_sorted'0 arr}
-    {[%#sbinary_search10] len_logic'0 arr <= 1000000}
+  let rec binary_search'0 (arr:t_List'0) (elem:uint32) (return'  (ret:t_Result'0))= {[@expl:binary_search requires #0] [%#sbinary_search10] len_logic'0 arr
+    <= 1000000}
+    {[@expl:binary_search requires #1] [%#sbinary_search11] is_sorted'0 arr}
     (! bb0
     [ bb0 = s0 [ s0 = len'0 {arr} (fun (_ret':usize) ->  [ &_10 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0
@@ -377,14 +378,13 @@ module M_binary_search__binary_search [#"binary_search.rs" 111 0 111 72]
     | bb3 = s0 [ s0 = len'0 {arr} (fun (_ret':usize) ->  [ &size <- _ret' ] s1) | s1 = bb4 ] 
     | bb4 = s0 [ s0 =  [ &base <- [%#sbinary_search2] (0 : usize) ] s1 | s1 = bb5 ] 
     | bb5 = bb5
-      [ bb5 = {[@expl:loop invariant 2] [%#sbinary_search5] forall i : usize . UIntSize.to_int base
-        + UIntSize.to_int size
+      [ bb5 = {[@expl:loop invariant #0] [%#sbinary_search5] 0 < UIntSize.to_int size
+        /\ UIntSize.to_int size + UIntSize.to_int base <= len_logic'0 arr}
+        {[@expl:loop invariant #1] [%#sbinary_search4] forall i : usize . i < base
+         -> get_default'0 arr (UIntSize.to_int i) (0 : uint32) <= elem}
+        {[@expl:loop invariant #2] [%#sbinary_search3] forall i : usize . UIntSize.to_int base + UIntSize.to_int size
         < UIntSize.to_int i
         /\ UIntSize.to_int i < len_logic'0 arr  -> elem < get_default'0 arr (UIntSize.to_int i) (0 : uint32)}
-        {[@expl:loop invariant 1] [%#sbinary_search4] forall i : usize . i < base
-         -> get_default'0 arr (UIntSize.to_int i) (0 : uint32) <= elem}
-        {[@expl:loop invariant 0] [%#sbinary_search3] 0 < UIntSize.to_int size
-        /\ UIntSize.to_int size + UIntSize.to_int base <= len_logic'0 arr}
         (! s0) [ s0 = bb6 ] 
         [ bb6 = s0
           [ s0 = UIntSize.gt {size} {[%#sbinary_search6] (1 : usize)} (fun (_ret':bool) ->  [ &_21 <- _ret' ] s1)
@@ -456,14 +456,14 @@ module M_binary_search__binary_search [#"binary_search.rs" 111 0 111 72]
     | & _48 : bool = any_l ()
     | & _51 : usize = any_l () ]
     
-    [ return' (result:t_Result'0)-> {[@expl:postcondition] [%#sbinary_search14] forall x : usize . result = C_Err'0 x
-       -> (forall i : usize . UIntSize.to_int x < UIntSize.to_int i /\ UIntSize.to_int i < len_logic'0 arr
-       -> elem < get_default'0 arr (UIntSize.to_int i) (0 : uint32))}
-      {[@expl:postcondition] [%#sbinary_search13] forall x : usize . result = C_Err'0 x
+    [ return' (result:t_Result'0)-> {[@expl:binary_search ensures #0] [%#sbinary_search12] forall x : usize . result
+      = C_Ok'0 x  -> get'0 arr (UIntSize.to_int x) = C_Some'0 elem}
+      {[@expl:binary_search ensures #1] [%#sbinary_search13] forall x : usize . result = C_Err'0 x
        -> (forall i : usize . 0 <= UIntSize.to_int i /\ UIntSize.to_int i < UIntSize.to_int x
        -> get_default'0 arr (UIntSize.to_int i) (0 : uint32) <= elem)}
-      {[@expl:postcondition] [%#sbinary_search12] forall x : usize . result = C_Ok'0 x
-       -> get'0 arr (UIntSize.to_int x) = C_Some'0 elem}
+      {[@expl:binary_search ensures #2] [%#sbinary_search14] forall x : usize . result = C_Err'0 x
+       -> (forall i : usize . UIntSize.to_int x < UIntSize.to_int i /\ UIntSize.to_int i < len_logic'0 arr
+       -> elem < get_default'0 arr (UIntSize.to_int i) (0 : uint32))}
       (! return' {result}) ]
     
 end

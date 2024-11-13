@@ -321,11 +321,11 @@ module M_12_zip__qyi1592645166739554830__produces_trans [#"12_zip.rs" 53 4 53 90
 end
 module M_12_zip__qyi1592645166739554830__next [#"12_zip.rs" 59 4 59 44] (* <Zip<A, B> as common::Iterator> *)
   let%span s12_zip0 = "12_zip.rs" 59 17 59 21
-  let%span s12_zip1 = "12_zip.rs" 55 14 58 5
-  let%span s12_zip2 = "12_zip.rs" 59 26 59 44
+  let%span s12_zip1 = "12_zip.rs" 59 26 59 44
+  let%span s12_zip2 = "12_zip.rs" 55 14 58 5
   let%span scommon3 = "common.rs" 31 17 31 21
-  let%span scommon4 = "common.rs" 27 14 30 5
-  let%span scommon5 = "common.rs" 31 26 31 44
+  let%span scommon4 = "common.rs" 31 26 31 44
+  let%span scommon5 = "common.rs" 27 14 30 5
   let%span s12_zip6 = "12_zip.rs" 21 13 23 67
   let%span s12_zip7 = "12_zip.rs" 32 12 35 73
   let%span scommon8 = "common.rs" 14 15 14 24
@@ -360,6 +360,8 @@ module M_12_zip__qyi1592645166739554830__next [#"12_zip.rs" 59 4 59 44] (* <Zip<
     | C_None'0
     | C_Some'0 t_Item'0
   
+  predicate inv'6 (_1 : t_Option'0)
+  
   predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_A'0)
   
   use seq.Seq
@@ -367,8 +369,6 @@ module M_12_zip__qyi1592645166739554830__next [#"12_zip.rs" 59 4 59 44] (* <Zip<
   use seq.Seq
   
   predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_A'0) (visited : Seq.seq t_Item'0) (o : t_A'0)
-  
-  predicate inv'6 (_1 : t_Option'0)
   
   predicate inv'2 (_1 : borrowed (t_Zip'0))
   
@@ -479,10 +479,10 @@ module M_12_zip__qyi1592645166739554830__next [#"12_zip.rs" 59 4 59 44] (* <Zip<
   
   axiom inv_axiom'11 [@rewrite] : forall x : t_Item'1 [inv'15 x] . inv'15 x = invariant'6 x
   
-  let rec next'1 (self:borrowed t_A'0) (return'  (ret:t_Option'0))= {[@expl:precondition] [%#scommon3] inv'5 self}
+  let rec next'1 (self:borrowed t_A'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] [%#scommon3] inv'5 self}
     any
-    [ return' (result:t_Option'0)-> {[%#scommon5] inv'6 result}
-      {[%#scommon4] match result with
+    [ return' (result:t_Option'0)-> {[%#scommon4] inv'6 result}
+      {[%#scommon5] match result with
         | C_None'0 -> completed'1 self
         | C_Some'0 v -> produces'1 self.current (Seq.singleton v) self.final
         end}
@@ -500,10 +500,10 @@ module M_12_zip__qyi1592645166739554830__next [#"12_zip.rs" 59 4 59 44] (* <Zip<
   
   predicate produces'2 [#"common.rs" 8 4 8 65] (self : t_B'0) (visited : Seq.seq t_Item'1) (o : t_B'0)
   
-  let rec next'2 (self:borrowed t_B'0) (return'  (ret:t_Option'1))= {[@expl:precondition] [%#scommon3] inv'7 self}
+  let rec next'2 (self:borrowed t_B'0) (return'  (ret:t_Option'1))= {[@expl:next 'self' type invariant] [%#scommon3] inv'7 self}
     any
-    [ return' (result:t_Option'1)-> {[%#scommon5] inv'8 result}
-      {[%#scommon4] match result with
+    [ return' (result:t_Option'1)-> {[%#scommon4] inv'8 result}
+      {[%#scommon5] match result with
         | C_None'1 -> completed'2 self
         | C_Some'1 v -> produces'2 self.current (Seq.singleton v) self.final
         end}
@@ -593,7 +593,7 @@ module M_12_zip__qyi1592645166739554830__next [#"12_zip.rs" 59 4 59 44] (* <Zip<
   
   meta "compute_max_steps" 1000000
   
-  let rec next'0 (self:borrowed (t_Zip'0)) (return'  (ret:t_Option'2))= {[%#s12_zip0] inv'2 self}
+  let rec next'0 (self:borrowed (t_Zip'0)) (return'  (ret:t_Option'2))= {[@expl:next 'self' type invariant] [%#s12_zip0] inv'2 self}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 (self.current).t_Zip__a'0}
@@ -656,8 +656,8 @@ module M_12_zip__qyi1592645166739554830__next [#"12_zip.rs" 59 4 59 44] (* <Zip<
     | & y1 : t_Item'1 = any_l ()
     | & _15 : (t_Item'0, t_Item'1) = any_l () ]
     
-    [ return' (result:t_Option'2)-> {[@expl:postcondition] [%#s12_zip2] inv'4 result}
-      {[@expl:postcondition] [%#s12_zip1] match result with
+    [ return' (result:t_Option'2)-> {[@expl:next result type invariant] [%#s12_zip1] inv'4 result}
+      {[@expl:next ensures] [%#s12_zip2] match result with
         | C_None'2 -> completed'0 self
         | C_Some'2 v -> produces'0 self.current (Seq.singleton v) self.final
         end}
@@ -698,8 +698,6 @@ module M_12_zip__qyi1592645166739554830__next__refines [#"12_zip.rs" 59 4 59 44]
   type t_Option'0  =
     | C_None'0
     | C_Some'0 (t_Item'0, t_Item'1)
-  
-  predicate inv'1 (_1 : t_Option'0)
   
   predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_A'0)
   
@@ -759,6 +757,8 @@ module M_12_zip__qyi1592645166739554830__next__refines [#"12_zip.rs" 59 4 59 44]
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited  -> Seq.get visited i = (Seq.get p1 i, Seq.get p2 i))
     /\ produces'1 self.t_Zip__a'0 p1 tl.t_Zip__a'0 /\ produces'2 self.t_Zip__b'0 p2 tl.t_Zip__b'0
   
+  predicate inv'1 (_1 : t_Option'0)
+  
   predicate inv'6 (_1 : t_Zip'0)
   
   predicate invariant'0 (self : borrowed (t_Zip'0)) =
@@ -776,26 +776,26 @@ module M_12_zip__qyi1592645166739554830__next__refines [#"12_zip.rs" 59 4 59 44]
   
   use seq.Seq
   
-  predicate inv'10 (_1 : t_Item'0)
+  predicate inv'9 (_1 : t_Item'0)
   
   predicate invariant'1 (self : Seq.seq t_Item'0) =
-    [%#sseq12] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'10 (Seq.get self i)
+    [%#sseq12] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'9 (Seq.get self i)
   
   axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'3 x] . inv'3 x = invariant'1 x
   
   use seq.Seq
   
-  predicate inv'11 (_1 : t_Item'1)
+  predicate inv'10 (_1 : t_Item'1)
   
   predicate invariant'2 (self : Seq.seq t_Item'1) =
-    [%#sseq12] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'11 (Seq.get self i)
+    [%#sseq12] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'10 (Seq.get self i)
   
   axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq t_Item'1 [inv'4 x] . inv'4 x = invariant'2 x
   
-  predicate inv'9 (_1 : t_Item'1)
+  predicate inv'11 (_1 : t_Item'1)
   
   axiom inv_axiom'4 [@rewrite] : forall x : (t_Item'0, t_Item'1) [inv'5 x] . inv'5 x
-  = (let (x0, x1) = x in inv'2 x0 /\ inv'9 x1)
+  = (let (x0, x1) = x in inv'2 x0 /\ inv'11 x1)
   
   predicate inv'7 (_1 : t_A'0)
   
@@ -809,12 +809,12 @@ module M_12_zip__qyi1592645166739554830__next__refines [#"12_zip.rs" 59 4 59 44]
   predicate invariant'3 (self : t_Item'0) =
     [%#sboxed13] inv'2 self
   
-  axiom inv_axiom'6 [@rewrite] : forall x : t_Item'0 [inv'10 x] . inv'10 x = invariant'3 x
+  axiom inv_axiom'6 [@rewrite] : forall x : t_Item'0 [inv'9 x] . inv'9 x = invariant'3 x
   
   predicate invariant'4 (self : t_Item'1) =
-    [%#sboxed13] inv'9 self
+    [%#sboxed13] inv'11 self
   
-  axiom inv_axiom'7 [@rewrite] : forall x : t_Item'1 [inv'11 x] . inv'11 x = invariant'4 x
+  axiom inv_axiom'7 [@rewrite] : forall x : t_Item'1 [inv'10 x] . inv'10 x = invariant'4 x
   
   use seq.Seq
   
@@ -854,16 +854,16 @@ module M_12_zip__qyi1592645166739554830__next__refines [#"12_zip.rs" 59 4 59 44]
   
   goal refines : [%#s12_zip0] forall self : borrowed (t_Zip'0) . inv'0 self
    -> inv'0 self
-  /\ (forall result : t_Option'0 . inv'1 result
-  /\ match result with
+  /\ (forall result : t_Option'0 . match result with
     | C_None'0 -> completed'0 self
     | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
     end
-   -> inv'1 result
-  /\ match result with
+  /\ inv'1 result
+   -> match result with
     | C_None'0 -> completed'0 self
     | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
-    end)
+    end
+  /\ inv'1 result)
 end
 module M_12_zip__qyi1592645166739554830__produces_trans__refines [#"12_zip.rs" 53 4 53 90] (* <Zip<A, B> as common::Iterator> *)
   let%span s12_zip0 = "12_zip.rs" 53 4 53 90

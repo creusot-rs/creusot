@@ -1,8 +1,8 @@
 module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   let%span s07_read_write0 = "07_read_write.rs" 8 4 8 22
-  let%span s07_read_write1 = "07_read_write.rs" 5 11 5 24
-  let%span s07_read_write2 = "07_read_write.rs" 6 44 6 45
-  let%span s07_read_write3 = "07_read_write.rs" 6 70 6 71
+  let%span s07_read_write1 = "07_read_write.rs" 6 44 6 45
+  let%span s07_read_write2 = "07_read_write.rs" 6 70 6 71
+  let%span s07_read_write3 = "07_read_write.rs" 5 11 5 24
   let%span svec4 = "../../../../creusot-contracts/src/std/vec.rs" 152 27 152 46
   let%span svec5 = "../../../../creusot-contracts/src/std/vec.rs" 153 26 153 54
   let%span svec6 = "../../../../creusot-contracts/src/std/vec.rs" 154 26 154 57
@@ -48,6 +48,10 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   
   predicate inv'0 (_1 : t_Vec'0)
   
+  predicate inv'2 (_1 : borrowed (t_Vec'0))
+  
+  predicate inv'4 (_1 : usize)
+  
   type t_T'0
   
   use seq.Seq
@@ -70,9 +74,7 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq t_T'0) =
     [%#sslice13] UIntSize.to_int self < Seq.length seq
   
-  predicate inv'2 (_1 : borrowed (t_Vec'0))
-  
-  predicate inv'4 (_1 : usize)
+  predicate inv'1 (_1 : borrowed t_T'0)
   
   use seq.Seq
   
@@ -82,8 +84,6 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   predicate resolve_elswhere'0 [@inline:trivial] (self : usize) (old' : Seq.seq t_T'0) (fin : Seq.seq t_T'0) =
     [%#sslice16] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
-  
-  predicate inv'1 (_1 : borrowed t_T'0)
   
   predicate inv'7 (_1 : Seq.seq t_T'0)
   
@@ -134,15 +134,15 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   
   axiom inv_axiom'7 [@rewrite] : forall x : t_T'0 [inv'8 x] . inv'8 x = invariant'6 x
   
-  let rec index_mut'0 (self:borrowed (t_Vec'0)) (index:usize) (return'  (ret:borrowed t_T'0))= {[@expl:precondition] inv'4 index}
-    {[@expl:precondition] inv'2 self}
-    {[@expl:precondition] [%#svec4] in_bounds'0 index (view'0 self)}
+  let rec index_mut'0 (self:borrowed (t_Vec'0)) (index:usize) (return'  (ret:borrowed t_T'0))= {[@expl:index_mut 'self' type invariant] inv'2 self}
+    {[@expl:index_mut 'index' type invariant] inv'4 index}
+    {[@expl:index_mut requires] [%#svec4] in_bounds'0 index (view'0 self)}
     any
     [ return' (result:borrowed t_T'0)-> {inv'1 result}
-      {[%#svec8] Seq.length (view'1 self.final) = Seq.length (view'0 self)}
-      {[%#svec7] resolve_elswhere'0 index (view'0 self) (view'1 self.final)}
-      {[%#svec6] has_value'0 index (view'1 self.final) result.final}
       {[%#svec5] has_value'0 index (view'0 self) result.current}
+      {[%#svec6] has_value'0 index (view'1 self.final) result.final}
+      {[%#svec7] resolve_elswhere'0 index (view'0 self) (view'1 self.final)}
+      {[%#svec8] Seq.length (view'1 self.final) = Seq.length (view'0 self)}
       (! return' {result}) ]
     
   
@@ -155,9 +155,9 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   function view'2 (self : t_Vec'0) : Seq.seq t_T'0 =
     [%#smodel18] view'1 self
   
-  let rec index'0 (self:t_Vec'0) (index:usize) (return'  (ret:t_T'0))= {[@expl:precondition] inv'4 index}
-    {[@expl:precondition] inv'5 self}
-    {[@expl:precondition] [%#svec9] in_bounds'0 index (view'2 self)}
+  let rec index'0 (self:t_Vec'0) (index:usize) (return'  (ret:t_T'0))= {[@expl:index 'self' type invariant] inv'5 self}
+    {[@expl:index 'index' type invariant] inv'4 index}
+    {[@expl:index requires] [%#svec9] in_bounds'0 index (view'2 self)}
     any
     [ return' (result:t_T'0)-> {inv'6 result} {[%#svec10] has_value'0 index (view'2 self) result} (! return' {result}) ]
     
@@ -169,8 +169,8 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   function deep_model'0 (self : t_T'0) : t_DeepModelTy'0 =
     [%#smodel19] deep_model'1 self
   
-  let rec eq'0 (self:t_T'0) (other:t_T'0) (return'  (ret:bool))= {[@expl:precondition] inv'6 other}
-    {[@expl:precondition] inv'6 self}
+  let rec eq'0 (self:t_T'0) (other:t_T'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'6 self}
+    {[@expl:eq 'other' type invariant] inv'6 other}
     any [ return' (result:bool)-> {[%#scmp11] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ] 
   
   predicate resolve'3 (self : borrowed (t_Vec'0)) =
@@ -183,9 +183,9 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   
   meta "compute_max_steps" 1000000
   
-  let rec read_write'0 (a:borrowed (t_Vec'0)) (i:usize) (x:t_T'0) (return'  (ret:()))= {[%#s07_read_write3] inv'3 x}
-    {[%#s07_read_write2] inv'2 a}
-    {[%#s07_read_write1] UIntSize.to_int i < Seq.length (view'0 a)}
+  let rec read_write'0 (a:borrowed (t_Vec'0)) (i:usize) (x:t_T'0) (return'  (ret:()))= {[@expl:read_write 'a' type invariant] [%#s07_read_write1] inv'2 a}
+    {[@expl:read_write 'x' type invariant] [%#s07_read_write2] inv'3 x}
+    {[@expl:read_write requires] [%#s07_read_write3] UIntSize.to_int i < Seq.length (view'0 a)}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 a.current}

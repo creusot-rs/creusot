@@ -1,7 +1,7 @@
 module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   let%span stake_first_mut0 = "take_first_mut.rs" 14 29 14 34
-  let%span stake_first_mut1 = "take_first_mut.rs" 6 10 13 1
-  let%span stake_first_mut2 = "take_first_mut.rs" 14 57 14 74
+  let%span stake_first_mut1 = "take_first_mut.rs" 14 57 14 74
+  let%span stake_first_mut2 = "take_first_mut.rs" 6 10 13 1
   let%span smem3 = "../../../creusot-contracts/src/std/mem.rs" 17 22 17 37
   let%span smem4 = "../../../creusot-contracts/src/std/mem.rs" 18 22 18 42
   let%span sslice5 = "../../../creusot-contracts/src/std/slice.rs" 279 18 287 9
@@ -43,8 +43,9 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   
   function view'0 (self : slice t_T'0) : Seq.seq t_T'0
   
-  axiom view'0_spec : forall self : slice t_T'0 . ([%#sslice8] view'0 self = Slice.id self)
-  && ([%#sslice7] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'0_spec : forall self : slice t_T'0 . ([%#sslice7] Seq.length (view'0 self)
+  <= UIntSize.to_int (v_MAX'0 : usize))
+  && ([%#sslice8] view'0 self = Slice.id self)
   
   function view'1 (self : borrowed (slice t_T'0)) : Seq.seq t_T'0 =
     [%#smodel11] view'0 self.current
@@ -125,11 +126,11 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   
   axiom inv_axiom'8 [@rewrite] : forall x : t_T'0 [inv'9 x] . inv'9 x = invariant'5 x
   
-  let rec take'0 (dest:borrowed (borrowed (slice t_T'0))) (return'  (ret:borrowed (slice t_T'0)))= {[@expl:precondition] inv'2 dest}
+  let rec take'0 (dest:borrowed (borrowed (slice t_T'0))) (return'  (ret:borrowed (slice t_T'0)))= {[@expl:take 'dest' type invariant] inv'2 dest}
     any
     [ return' (result:borrowed (slice t_T'0))-> {inv'0 result}
-      {[%#smem4] is_default'0 dest.final}
       {[%#smem3] result = dest.current}
+      {[%#smem4] is_default'0 dest.final}
       (! return' {result}) ]
     
   
@@ -143,7 +144,7 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   function tail'0 (self : Seq.seq t_T'0) : Seq.seq t_T'0 =
     [%#sseq9] Seq.([..]) self 1 (Seq.length self)
   
-  let rec split_first_mut'0 (self:borrowed (slice t_T'0)) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'0 self}
+  let rec split_first_mut'0 (self:borrowed (slice t_T'0)) (return'  (ret:t_Option'0))= {[@expl:split_first_mut 'self' type invariant] inv'0 self}
     any
     [ return' (result:t_Option'0)-> {inv'6 result}
       {[%#sslice5] match result with
@@ -188,7 +189,7 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   
   meta "compute_max_steps" 1000000
   
-  let rec take_first_mut'0 (self_:borrowed (borrowed (slice t_T'0))) (return'  (ret:t_Option'1))= {[%#stake_first_mut0] inv'2 self_}
+  let rec take_first_mut'0 (self_:borrowed (borrowed (slice t_T'0))) (return'  (ret:t_Option'1))= {[@expl:take_first_mut 'self_' type invariant] [%#stake_first_mut0] inv'2 self_}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 self_.current}
@@ -274,8 +275,8 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
     | & _11 : borrowed (slice t_T'0) = any_l ()
     | & _12 : borrowed t_T'0 = any_l () ]
     
-    [ return' (result:t_Option'1)-> {[@expl:postcondition] [%#stake_first_mut2] inv'5 result}
-      {[@expl:postcondition] [%#stake_first_mut1] match result with
+    [ return' (result:t_Option'1)-> {[@expl:take_first_mut result type invariant] [%#stake_first_mut1] inv'5 result}
+      {[@expl:take_first_mut ensures] [%#stake_first_mut2] match result with
         | C_Some'1 r -> r.current = index_logic'0 (self_.current).current 0
         /\ r.final = index_logic'0 (self_.current).final 0
         /\ Seq.length (view'0 (self_.current).current) > 0

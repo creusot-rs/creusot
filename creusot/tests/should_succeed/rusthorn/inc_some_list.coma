@@ -67,7 +67,8 @@ module M_inc_some_list__qyi14489061725823948544__sum_x [#"inc_some_list.rs" 42 4
   
   meta "compute_max_steps" 1000000
   
-  let rec sum_x'0 (self:t_List'0) (return'  (ret:uint32))= {[%#sinc_some_list1] sum'0 self <= 1000000}
+  let rec sum_x'0 (self:t_List'0) (return'  (ret:uint32))= {[@expl:sum_x requires] [%#sinc_some_list1] sum'0 self
+    <= 1000000}
     (! bb0
     [ bb0 = any [ br0 (x0:uint32) (x1:t_List'0)-> {self = C_Cons'0 x0 x1} (! bb2) | br1 -> {self = C_Nil'0 } (! bb3) ] 
     | bb3 = s0 [ s0 =  [ &_0 <- [%#sinc_some_list0] (0 : uint32) ] s1 | s1 = bb6 ] 
@@ -87,7 +88,7 @@ module M_inc_some_list__qyi14489061725823948544__sum_x [#"inc_some_list.rs" 42 4
     | & l : t_List'0 = any_l ()
     | & _8 : uint32 = any_l () ]
     
-    [ return' (result:uint32)-> {[@expl:postcondition] [%#sinc_some_list2] UInt32.to_int result = sum'0 self}
+    [ return' (result:uint32)-> {[@expl:sum_x ensures] [%#sinc_some_list2] UInt32.to_int result = sum'0 self}
       (! return' {result}) ]
     
 end
@@ -253,9 +254,10 @@ module M_inc_some_list__qyi14489061725823948544__take_some [#"inc_some_list.rs" 
     | & _15 : borrowed uint32 = any_l ()
     | & _16 : borrowed (t_List'0) = any_l () ]
     
-    [ return' (result:borrowed uint32)-> {[@expl:postcondition] [%#sinc_some_list3] view'0 result <= sum'0 self.current}
-      {[@expl:postcondition] [%#sinc_some_list2] sum'0 self.final - sum'0 self.current
+    [ return' (result:borrowed uint32)-> {[@expl:take_some ensures #0] [%#sinc_some_list2] sum'0 self.final
+      - sum'0 self.current
       = UInt32.to_int result.final - view'0 result}
+      {[@expl:take_some ensures #1] [%#sinc_some_list3] view'0 result <= sum'0 self.current}
       (! return' {result}) ]
     
 end
@@ -288,7 +290,7 @@ module M_inc_some_list__inc_some_list [#"inc_some_list.rs" 67 0 67 41]
   
   use prelude.prelude.Borrow
   
-  let rec sum_x'0 (self:t_List'0) (return'  (ret:uint32))= {[@expl:precondition] [%#sinc_some_list2] sum'0 self
+  let rec sum_x'0 (self:t_List'0) (return'  (ret:uint32))= {[@expl:sum_x requires] [%#sinc_some_list2] sum'0 self
     <= 1000000}
     any [ return' (result:uint32)-> {[%#sinc_some_list3] UInt32.to_int result = sum'0 self} (! return' {result}) ] 
   
@@ -296,8 +298,9 @@ module M_inc_some_list__inc_some_list [#"inc_some_list.rs" 67 0 67 41]
     [%#smodel7] UInt32.to_int self.current
   
   let rec take_some'0 (self:borrowed (t_List'0)) (return'  (ret:borrowed uint32))= any
-    [ return' (result:borrowed uint32)-> {[%#sinc_some_list5] view'0 result <= sum'0 self.current}
-      {[%#sinc_some_list4] sum'0 self.final - sum'0 self.current = UInt32.to_int result.final - view'0 result}
+    [ return' (result:borrowed uint32)-> {[%#sinc_some_list4] sum'0 self.final - sum'0 self.current
+      = UInt32.to_int result.final - view'0 result}
+      {[%#sinc_some_list5] view'0 result <= sum'0 self.current}
       (! return' {result}) ]
     
   
@@ -311,7 +314,8 @@ module M_inc_some_list__inc_some_list [#"inc_some_list.rs" 67 0 67 41]
   
   meta "compute_max_steps" 1000000
   
-  let rec inc_some_list'0 (l:t_List'0) (k:uint32) (return'  (ret:()))= {[%#sinc_some_list1] sum'0 l + UInt32.to_int k
+  let rec inc_some_list'0 (l:t_List'0) (k:uint32) (return'  (ret:()))= {[@expl:inc_some_list requires] [%#sinc_some_list1] sum'0 l
+    + UInt32.to_int k
     <= 1000000}
     (! bb0
     [ bb0 = bb1

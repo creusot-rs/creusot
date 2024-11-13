@@ -50,8 +50,8 @@ module M_ord_trait__x [#"ord_trait.rs" 5 0 7 29]
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_T'0 [inv'1 x] . inv'1 x = invariant'1 x
   
-  let rec le'0 (self:t_T'0) (other:t_T'0) (return'  (ret:bool))= {[@expl:precondition] inv'1 other}
-    {[@expl:precondition] inv'1 self}
+  let rec le'0 (self:t_T'0) (other:t_T'0) (return'  (ret:bool))= {[@expl:le 'self' type invariant] inv'1 self}
+    {[@expl:le 'other' type invariant] inv'1 other}
     any
     [ return' (result:bool)-> {[%#scmp2] result = le_log'0 (deep_model'0 self) (deep_model'0 other)}
       (! return' {result}) ]
@@ -118,11 +118,11 @@ module M_ord_trait__x [#"ord_trait.rs" 5 0 7 29]
   
   meta "compute_max_steps" 1000000
   
-  let rec x'0 (x:t_T'0) (return'  (ret:bool))= {[%#sord_trait0] inv'0 x}
+  let rec x'0 (x:t_T'0) (return'  (ret:bool))= {[@expl:x 'x' type invariant] [%#sord_trait0] inv'0 x}
     (! bb0
     [ bb0 = s0 [ s0 = le'0 {x} {x} (fun (_ret':bool) ->  [ &_0 <- _ret' ] s1) | s1 = bb1 ]  | bb1 = return' {_0} ]
     ) [ & _0 : bool = any_l () | & x : t_T'0 = x ] 
-    [ return' (result:bool)-> {[@expl:postcondition] [%#sord_trait1] result = true} (! return' {result}) ]
+    [ return' (result:bool)-> {[@expl:x ensures] [%#sord_trait1] result = true} (! return' {result}) ]
     
 end
 module M_ord_trait__gt_or_le [#"ord_trait.rs" 13 0 15 29]
@@ -178,8 +178,8 @@ module M_ord_trait__gt_or_le [#"ord_trait.rs" 13 0 15 29]
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_T'0 [inv'1 x] . inv'1 x = invariant'1 x
   
-  let rec ge'0 (self:t_T'0) (other:t_T'0) (return'  (ret:bool))= {[@expl:precondition] inv'1 other}
-    {[@expl:precondition] inv'1 self}
+  let rec ge'0 (self:t_T'0) (other:t_T'0) (return'  (ret:bool))= {[@expl:ge 'self' type invariant] inv'1 self}
+    {[@expl:ge 'other' type invariant] inv'1 other}
     any
     [ return' (result:bool)-> {[%#scmp3] result = ge_log'0 (deep_model'1 self) (deep_model'1 other)}
       (! return' {result}) ]
@@ -246,12 +246,12 @@ module M_ord_trait__gt_or_le [#"ord_trait.rs" 13 0 15 29]
   
   meta "compute_max_steps" 1000000
   
-  let rec gt_or_le'0 (x:t_T'0) (y:t_T'0) (return'  (ret:bool))= {[%#sord_trait1] inv'0 y}
-    {[%#sord_trait0] inv'0 x}
+  let rec gt_or_le'0 (x:t_T'0) (y:t_T'0) (return'  (ret:bool))= {[@expl:gt_or_le 'x' type invariant] [%#sord_trait0] inv'0 x}
+    {[@expl:gt_or_le 'y' type invariant] [%#sord_trait1] inv'0 y}
     (! bb0
     [ bb0 = s0 [ s0 = ge'0 {x} {y} (fun (_ret':bool) ->  [ &_0 <- _ret' ] s1) | s1 = bb1 ]  | bb1 = return' {_0} ]
     ) [ & _0 : bool = any_l () | & x : t_T'0 = x | & y : t_T'0 = y ] 
-    [ return' (result:bool)-> {[@expl:postcondition] [%#sord_trait2] result
+    [ return' (result:bool)-> {[@expl:gt_or_le ensures] [%#sord_trait2] result
       = le_log'0 (deep_model'0 y) (deep_model'0 x)}
       (! return' {result}) ]
     
@@ -272,7 +272,8 @@ module M_ord_trait__gt_or_le_int [#"ord_trait.rs" 21 0 21 47]
   let rec gt_or_le_int'0 (x:usize) (y:usize) (return'  (ret:bool))= (! bb0
     [ bb0 = s0 [ s0 = UIntSize.le {x} {y} (fun (_ret':bool) ->  [ &_0 <- _ret' ] s1) | s1 = return' {_0} ]  ]
     ) [ & _0 : bool = any_l () | & x : usize = x | & y : usize = y ] 
-    [ return' (result:bool)-> {[@expl:postcondition] [%#sord_trait0] result = (UIntSize.to_int x <= UIntSize.to_int y)}
+    [ return' (result:bool)-> {[@expl:gt_or_le_int ensures] [%#sord_trait0] result
+      = (UIntSize.to_int x <= UIntSize.to_int y)}
       (! return' {result}) ]
     
 end

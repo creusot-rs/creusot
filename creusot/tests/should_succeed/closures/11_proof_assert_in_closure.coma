@@ -12,7 +12,8 @@ module M_11_proof_assert_in_closure__immutable_capture [#"11_proof_assert_in_clo
   type closure0'1  =
     { field_0'0: int32 }
   
-  let rec closure0'0 (_1:closure0'1) (return'  (ret:()))= {[%#s11_proof_assert_in_closure2] _1.field_0'0 = (1 : int32)}
+  let rec closure0'0 (_1:closure0'1) (return'  (ret:()))= {[@expl:closure requires] [%#s11_proof_assert_in_closure2] _1.field_0'0
+    = (1 : int32)}
     (! bb0
     [ bb0 = s0
       [ s0 = {[@expl:assertion] [%#s11_proof_assert_in_closure1] _1.field_0'0 = (1 : int32)} s1 | s1 = return' {_0} ]
@@ -63,7 +64,7 @@ module M_11_proof_assert_in_closure__mutable_capture [#"11_proof_assert_in_closu
   predicate unnest'0 [#"11_proof_assert_in_closure.rs" 15 4 15 6] (self : closure0'1) (_2 : closure0'1) =
     (_2.field_0'0).final = (self.field_0'0).final
   
-  let rec closure0'0 (_1:borrowed closure0'1) (return'  (ret:()))= {[%#s11_proof_assert_in_closure4] ((_1.current).field_0'0).current
+  let rec closure0'0 (_1:borrowed closure0'1) (return'  (ret:()))= {[@expl:closure requires] [%#s11_proof_assert_in_closure4] ((_1.current).field_0'0).current
     = (1 : int32)}
     (! bb0
     [ bb0 = s0
@@ -77,7 +78,7 @@ module M_11_proof_assert_in_closure__mutable_capture [#"11_proof_assert_in_closu
       | s4 = return' {_0} ]
        ]
     ) [ & _0 : () = any_l () | & _1 : borrowed closure0'1 = _1 ] 
-    [ return' (result:())-> {[@expl:postcondition] unnest'0 _1.current _1.final} (! return' {result}) ]
+    [ return' (result:())-> {[@expl:closure unnest] unnest'0 _1.current _1.final} (! return' {result}) ]
     
   
   predicate resolve'5 (self : borrowed int32) =
@@ -123,8 +124,8 @@ module M_11_proof_assert_in_closure__captures_and_call [#"11_proof_assert_in_clo
   let%span s11_proof_assert_in_closure4 = "11_proof_assert_in_closure.rs" 36 22 36 31
   let%span s11_proof_assert_in_closure5 = "11_proof_assert_in_closure.rs" 31 26 31 35
   let%span s11_proof_assert_in_closure6 = "11_proof_assert_in_closure.rs" 32 14 32 23
-  let%span s11_proof_assert_in_closure7 = "11_proof_assert_in_closure.rs" 23 11 23 29
-  let%span s11_proof_assert_in_closure8 = "11_proof_assert_in_closure.rs" 25 36 25 37
+  let%span s11_proof_assert_in_closure7 = "11_proof_assert_in_closure.rs" 25 36 25 37
+  let%span s11_proof_assert_in_closure8 = "11_proof_assert_in_closure.rs" 23 11 23 29
   let%span s11_proof_assert_in_closure9 = "11_proof_assert_in_closure.rs" 24 10 24 38
   let%span sresolve10 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
   
@@ -150,7 +151,7 @@ module M_11_proof_assert_in_closure__captures_and_call [#"11_proof_assert_in_clo
   
   axiom inv_axiom'0 [@rewrite] : forall x : closure0'1 [inv'0 x] . inv'0 x = true
   
-  let rec closure0'0 (_1:borrowed closure0'1) (return'  (ret:()))= {[%#s11_proof_assert_in_closure5] ((_1.current).field_0'0).current
+  let rec closure0'0 (_1:borrowed closure0'1) (return'  (ret:()))= {[@expl:closure requires] [%#s11_proof_assert_in_closure5] ((_1.current).field_0'0).current
     = (1 : int32)}
     (! bb0
     [ bb0 = s0
@@ -164,8 +165,9 @@ module M_11_proof_assert_in_closure__captures_and_call [#"11_proof_assert_in_clo
       | s4 = return' {_0} ]
        ]
     ) [ & _0 : () = any_l () | & _1 : borrowed closure0'1 = _1 ] 
-    [ return' (result:())-> {[@expl:postcondition] unnest'0 _1.current _1.final}
-      {[@expl:postcondition] [%#s11_proof_assert_in_closure6] ((_1.final).field_0'0).current = (2 : int32)}
+    [ return' (result:())-> {[@expl:closure ensures] [%#s11_proof_assert_in_closure6] ((_1.final).field_0'0).current
+      = (2 : int32)}
+      {[@expl:closure unnest] unnest'0 _1.current _1.final}
       (! return' {result}) ]
     
   
@@ -177,8 +179,8 @@ module M_11_proof_assert_in_closure__captures_and_call [#"11_proof_assert_in_clo
    =
     [%#s11_proof_assert_in_closure6] (self.field_0'0).final = (2 : int32)
   
-  let rec calls_closure'0 (f:closure0'1) (return'  (ret:()))= {[@expl:precondition] [%#s11_proof_assert_in_closure8] inv'0 f}
-    {[@expl:precondition] [%#s11_proof_assert_in_closure7] precondition'0 f ()}
+  let rec calls_closure'0 (f:closure0'1) (return'  (ret:()))= {[@expl:calls_closure 'f' type invariant] [%#s11_proof_assert_in_closure7] inv'0 f}
+    {[@expl:calls_closure requires] [%#s11_proof_assert_in_closure8] precondition'0 f ()}
     any [ return' (result:())-> {[%#s11_proof_assert_in_closure9] postcondition_once'0 f () ()} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000

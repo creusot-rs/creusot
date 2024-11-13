@@ -34,6 +34,8 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
     | C_None'0
     | C_Some'0 uint32
   
+  predicate inv'1 (_1 : t_Option'0)
+  
   use seq.Seq
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
@@ -55,13 +57,11 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
   
   use seq.Seq
   
-  predicate inv'1 (_1 : t_Option'0)
-  
   axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'0 x] . inv'0 x = true
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x = true
   
-  let rec pop'0 (self:borrowed (t_Vec'0)) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'0 self}
+  let rec pop'0 (self:borrowed (t_Vec'0)) (return'  (ret:t_Option'0))= {[@expl:pop 'self' type invariant] inv'0 self}
     any
     [ return' (result:t_Option'0)-> {inv'1 result}
       {[%#svec1] match result with
@@ -86,7 +86,7 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
     [ bb0 = bb1
     | bb1 = bb2
     | bb2 = bb2
-      [ bb2 = {[@expl:loop invariant 0] [%#sinvariant_moves0] x = x}
+      [ bb2 = {[@expl:loop invariant] [%#sinvariant_moves0] x = x}
         (! s0) [ s0 = bb3 ] 
         [ bb3 = s0
           [ s0 = Borrow.borrow_mut <t_Vec'0> {x}

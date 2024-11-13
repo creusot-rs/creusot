@@ -117,8 +117,8 @@ module M_10_once__qyi9558967427796228243__produces_trans [#"10_once.rs" 42 4 42 
 end
 module M_10_once__qyi9558967427796228243__next [#"10_once.rs" 48 4 48 35] (* <Once<T> as common::Iterator> *)
   let%span s10_once0 = "10_once.rs" 48 17 48 21
-  let%span s10_once1 = "10_once.rs" 44 14 47 5
-  let%span s10_once2 = "10_once.rs" 48 26 48 35
+  let%span s10_once1 = "10_once.rs" 48 26 48 35
+  let%span s10_once2 = "10_once.rs" 44 14 47 5
   let%span soption3 = "../../../../creusot-contracts/src/std/option.rs" 31 0 423 1
   let%span s10_once4 = "10_once.rs" 16 20 16 57
   let%span s10_once5 = "10_once.rs" 23 12 24 116
@@ -167,7 +167,7 @@ module M_10_once__qyi9558967427796228243__next [#"10_once.rs" 48 4 48 35] (* <On
     | {t_Once__0'0 = a_0} -> inv'0 a_0
     end
   
-  let rec take'0 (self:borrowed (t_Option'0)) (return'  (ret:t_Option'0))= {[@expl:precondition] inv'2 self}
+  let rec take'0 (self:borrowed (t_Option'0)) (return'  (ret:t_Option'0))= {[@expl:take 'self' type invariant] inv'2 self}
     any
     [ return' (result:t_Option'0)-> {inv'0 result}
       {[%#soption3] result = self.current /\ self.final = C_None'0}
@@ -198,7 +198,7 @@ module M_10_once__qyi9558967427796228243__next [#"10_once.rs" 48 4 48 35] (* <On
   
   meta "compute_max_steps" 1000000
   
-  let rec next'0 (self:borrowed (t_Once'0)) (return'  (ret:t_Option'0))= {[%#s10_once0] inv'1 self}
+  let rec next'0 (self:borrowed (t_Once'0)) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] [%#s10_once0] inv'1 self}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 (self.current).t_Once__0'0}
@@ -213,8 +213,8 @@ module M_10_once__qyi9558967427796228243__next [#"10_once.rs" 48 4 48 35] (* <On
       
     | bb1 = s0 [ s0 = {[@expl:type invariant] inv'1 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = return' {_0} ]  ]
     ) [ & _0 : t_Option'0 = any_l () | & self : borrowed (t_Once'0) = self | & _3 : borrowed (t_Option'0) = any_l () ] 
-    [ return' (result:t_Option'0)-> {[@expl:postcondition] [%#s10_once2] inv'0 result}
-      {[@expl:postcondition] [%#s10_once1] match result with
+    [ return' (result:t_Option'0)-> {[@expl:next result type invariant] [%#s10_once1] inv'0 result}
+      {[@expl:next ensures] [%#s10_once2] match result with
         | C_None'0 -> completed'0 self
         | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
         end}
@@ -241,8 +241,6 @@ module M_10_once__qyi9558967427796228243__next__refines [#"10_once.rs" 48 4 48 3
   
   predicate inv'0 (_1 : borrowed (t_Once'0))
   
-  predicate inv'1 (_1 : t_Option'0)
-  
   predicate resolve'0 (self : borrowed (t_Once'0)) =
     [%#sresolve3] self.final = self.current
   
@@ -261,6 +259,8 @@ module M_10_once__qyi9558967427796228243__next__refines [#"10_once.rs" 48 4 48 3
     [%#s10_once2] visited = (Seq.empty  : Seq.seq t_T'0) /\ self = o
     \/ (exists e : t_T'0 . inv'2 e
     /\ self = { t_Once__0'0 = C_Some'0 e } /\ visited = Seq.singleton e /\ o = { t_Once__0'0 = C_None'0 })
+  
+  predicate inv'1 (_1 : t_Option'0)
   
   predicate inv'3 (_1 : t_Once'0)
   
@@ -282,16 +282,16 @@ module M_10_once__qyi9558967427796228243__next__refines [#"10_once.rs" 48 4 48 3
   
   goal refines : [%#s10_once0] forall self : borrowed (t_Once'0) . inv'0 self
    -> inv'0 self
-  /\ (forall result : t_Option'0 . inv'1 result
-  /\ match result with
+  /\ (forall result : t_Option'0 . match result with
     | C_None'0 -> completed'0 self
     | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
     end
-   -> inv'1 result
-  /\ match result with
+  /\ inv'1 result
+   -> match result with
     | C_None'0 -> completed'0 self
     | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
-    end)
+    end
+  /\ inv'1 result)
 end
 module M_10_once__qyi9558967427796228243__produces_refl__refines [#"10_once.rs" 32 4 32 26] (* <Once<T> as common::Iterator> *)
   let%span s10_once0 = "10_once.rs" 32 4 32 26

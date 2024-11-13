@@ -166,8 +166,8 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
   function deep_model'0 (self : t_Duration'0) : int =
     [%#smodel42] deep_model'3 self
   
-  let rec ge'0 (self:t_Duration'0) (other:t_Duration'0) (return'  (ret:bool))= {[@expl:precondition] inv'0 other}
-    {[@expl:precondition] inv'0 self}
+  let rec ge'0 (self:t_Duration'0) (other:t_Duration'0) (return'  (ret:bool))= {[@expl:ge 'self' type invariant] inv'0 self}
+    {[@expl:ge 'other' type invariant] inv'0 other}
     any
     [ return' (result:bool)-> {[%#scmp23] result = (deep_model'0 self >= deep_model'0 other)} (! return' {result}) ]
     
@@ -208,14 +208,14 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
     [%#sord45] cmp_log'0 self o = C_Less'0
   
   let rec checked_add'0 (self:t_Instant'0) (duration:t_Duration'0) (return'  (ret:t_Option'0))= any
-    [ return' (result:t_Option'0)-> {[%#stime25] view'1 duration > 0 /\ result <> C_None'0
+    [ return' (result:t_Option'0)-> {[%#stime24] view'1 duration = 0  -> deep_model'1 result = C_Some'0 (view'2 self)}
+      {[%#stime25] view'1 duration > 0 /\ result <> C_None'0
        -> lt_log'0 (C_Some'0 (view'2 self)) (deep_model'1 result)}
-      {[%#stime24] view'1 duration = 0  -> deep_model'1 result = C_Some'0 (view'2 self)}
       (! return' {result}) ]
     
   
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:t_Instant'0))= {[@expl:precondition] inv'1 self}
-    {[@expl:precondition] [%#soption26] self <> C_None'0}
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:t_Instant'0))= {[@expl:unwrap 'self' type invariant] inv'1 self}
+    {[@expl:unwrap requires] [%#soption26] self <> C_None'0}
     any [ return' (result:t_Instant'0)-> {inv'2 result} {[%#soption26] C_Some'1 result = self} (! return' {result}) ] 
   
   function deep_model'2 (self : t_Instant'0) : int =
@@ -226,8 +226,8 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
     
   
   let rec add'0 (self:t_Instant'0) (other:t_Duration'0) (return'  (ret:t_Instant'0))= any
-    [ return' (result:t_Instant'0)-> {[%#stime29] view'1 other > 0  -> view'0 self < view'0 result}
-      {[%#stime28] view'1 other = 0  -> view'0 self = view'0 result}
+    [ return' (result:t_Instant'0)-> {[%#stime28] view'1 other = 0  -> view'0 self = view'0 result}
+      {[%#stime29] view'1 other > 0  -> view'0 self < view'0 result}
       (! return' {result}) ]
     
   
@@ -235,21 +235,21 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
     [%#sord46] cmp_log'0 self o = C_Greater'0
   
   let rec checked_sub'0 (self:t_Instant'0) (duration:t_Duration'0) (return'  (ret:t_Option'0))= any
-    [ return' (result:t_Option'0)-> {[%#stime32] view'1 duration > 0 /\ result <> C_None'0
+    [ return' (result:t_Option'0)-> {[%#stime31] view'1 duration = 0  -> deep_model'1 result = C_Some'0 (view'2 self)}
+      {[%#stime32] view'1 duration > 0 /\ result <> C_None'0
        -> gt_log'0 (C_Some'0 (view'2 self)) (deep_model'1 result)}
-      {[%#stime31] view'1 duration = 0  -> deep_model'1 result = C_Some'0 (view'2 self)}
       (! return' {result}) ]
     
   
   let rec sub'0 (self:t_Instant'0) (other:t_Duration'0) (return'  (ret:t_Instant'0))= any
-    [ return' (result:t_Instant'0)-> {[%#stime34] view'1 other > 0  -> view'0 self > view'0 result}
-      {[%#stime33] view'1 other = 0  -> view'0 self = view'0 result}
+    [ return' (result:t_Instant'0)-> {[%#stime33] view'1 other = 0  -> view'0 self = view'0 result}
+      {[%#stime34] view'1 other > 0  -> view'0 self > view'0 result}
       (! return' {result}) ]
     
   
   let rec sub'1 (self:t_Instant'0) (other:t_Instant'0) (return'  (ret:t_Duration'0))= any
-    [ return' (result:t_Duration'0)-> {[%#stime35] view'0 self <= view'0 other  -> view'1 result = 0}
-      {[%#stime35] view'0 self > view'0 other  -> view'1 result > 0}
+    [ return' (result:t_Duration'0)-> {[%#stime35] view'0 self > view'0 other  -> view'1 result > 0}
+      {[%#stime35] view'0 self <= view'0 other  -> view'1 result = 0}
       (! return' {result}) ]
     
   
@@ -257,31 +257,31 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
     [ return' (result:bool)-> {[%#scmp27] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ]
     
   
-  let rec gt'0 (self:t_Duration'0) (other:t_Duration'0) (return'  (ret:bool))= {[@expl:precondition] inv'0 other}
-    {[@expl:precondition] inv'0 self}
+  let rec gt'0 (self:t_Duration'0) (other:t_Duration'0) (return'  (ret:bool))= {[@expl:gt 'self' type invariant] inv'0 self}
+    {[@expl:gt 'other' type invariant] inv'0 other}
     any [ return' (result:bool)-> {[%#scmp36] result = (deep_model'0 self > deep_model'0 other)} (! return' {result}) ] 
   
   let rec duration_since'0 (self:t_Instant'0) (earlier:t_Instant'0) (return'  (ret:t_Duration'0))= any
-    [ return' (result:t_Duration'0)-> {[%#stime37] view'2 self <= view'0 earlier  -> view'1 result = 0}
-      {[%#stime37] view'2 self > view'0 earlier  -> view'1 result > 0}
+    [ return' (result:t_Duration'0)-> {[%#stime37] view'2 self > view'0 earlier  -> view'1 result > 0}
+      {[%#stime37] view'2 self <= view'0 earlier  -> view'1 result = 0}
       (! return' {result}) ]
     
   
   let rec checked_duration_since'0 (self:t_Instant'0) (earlier:t_Instant'0) (return'  (ret:t_Option'1))= any
-    [ return' (result:t_Option'1)-> {[%#stime37] view'2 self < view'0 earlier  -> result = C_None'1}
-      {[%#stime37] view'2 self >= view'0 earlier  -> result <> C_None'1}
+    [ return' (result:t_Option'1)-> {[%#stime37] view'2 self >= view'0 earlier  -> result <> C_None'1}
+      {[%#stime37] view'2 self < view'0 earlier  -> result = C_None'1}
       (! return' {result}) ]
     
   
-  let rec is_some'0 (self:t_Option'1) (return'  (ret:bool))= {[@expl:precondition] inv'3 self}
+  let rec is_some'0 (self:t_Option'1) (return'  (ret:bool))= {[@expl:is_some 'self' type invariant] inv'3 self}
     any [ return' (result:bool)-> {[%#soption38] result = (self <> C_None'1)} (! return' {result}) ] 
   
-  let rec is_none'0 (self:t_Option'1) (return'  (ret:bool))= {[@expl:precondition] inv'3 self}
+  let rec is_none'0 (self:t_Option'1) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'3 self}
     any [ return' (result:bool)-> {[%#soption39] result = (self = C_None'1)} (! return' {result}) ] 
   
   let rec saturating_duration_since'0 (self:t_Instant'0) (earlier:t_Instant'0) (return'  (ret:t_Duration'0))= any
-    [ return' (result:t_Duration'0)-> {[%#stime37] view'2 self <= view'0 earlier  -> view'1 result = 0}
-      {[%#stime37] view'2 self > view'0 earlier  -> view'1 result > 0}
+    [ return' (result:t_Duration'0)-> {[%#stime37] view'2 self > view'0 earlier  -> view'1 result > 0}
+      {[%#stime37] view'2 self <= view'0 earlier  -> view'1 result = 0}
       (! return' {result}) ]
     
   

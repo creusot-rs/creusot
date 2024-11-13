@@ -71,8 +71,9 @@ module M_02_std__binary_search [#"02_std.rs" 8 0 8 40]
   
   function view'1 (self : slice uint32) : Seq.seq uint32
   
-  axiom view'1_spec : forall self : slice uint32 . ([%#sslice18] view'1 self = Slice.id self)
-  && ([%#sslice17] Seq.length (view'1 self) <= UIntSize.to_int (v_MAX'0 : usize))
+  axiom view'1_spec : forall self : slice uint32 . ([%#sslice17] Seq.length (view'1 self)
+  <= UIntSize.to_int (v_MAX'0 : usize))
+  && ([%#sslice18] view'1 self = Slice.id self)
   
   function view'0 (self : slice uint32) : Seq.seq uint32 =
     [%#smodel11] view'1 self
@@ -93,9 +94,10 @@ module M_02_std__binary_search [#"02_std.rs" 8 0 8 40]
   
   function deep_model'1 (self : slice uint32) : Seq.seq int
   
-  axiom deep_model'1_spec : forall self : slice uint32 . ([%#sslice16] forall i : int . 0 <= i
-  /\ i < Seq.length (deep_model'1 self)  -> Seq.get (deep_model'1 self) i = deep_model'3 (index_logic'0 self i))
-  && ([%#sslice15] Seq.length (view'0 self) = Seq.length (deep_model'1 self))
+  axiom deep_model'1_spec : forall self : slice uint32 . ([%#sslice15] Seq.length (view'0 self)
+  = Seq.length (deep_model'1 self))
+  && ([%#sslice16] forall i : int . 0 <= i /\ i < Seq.length (deep_model'1 self)
+   -> Seq.get (deep_model'1 self) i = deep_model'3 (index_logic'0 self i))
   
   function deep_model'0 (self : slice uint32) : Seq.seq int =
     [%#smodel13] deep_model'1 self
@@ -109,32 +111,34 @@ module M_02_std__binary_search [#"02_std.rs" 8 0 8 40]
   function deep_model'2 (self : uint32) : int =
     [%#smodel13] deep_model'3 self
   
-  let rec binary_search'1 (self:slice uint32) (x:uint32) (return'  (ret:t_Result'0))= {[@expl:precondition] inv'1 x}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#sslice4] sorted'0 (deep_model'0 self)}
+  let rec binary_search'1 (self:slice uint32) (x:uint32) (return'  (ret:t_Result'0))= {[@expl:binary_search 'self' type invariant] inv'0 self}
+    {[@expl:binary_search 'x' type invariant] inv'1 x}
+    {[@expl:binary_search requires] [%#sslice4] sorted'0 (deep_model'0 self)}
     any
-    [ return' (result:t_Result'0)-> {[%#sslice8] forall i : usize . result = C_Err'0 i
-       -> (forall j : usize . i <= j /\ UIntSize.to_int j < Seq.length (view'0 self)
-       -> deep_model'2 x < Seq.get (deep_model'0 self) (UIntSize.to_int j))}
-      {[%#sslice7] forall i : usize . result = C_Err'0 i
-       -> (forall j : usize . j < i  -> Seq.get (deep_model'0 self) (UIntSize.to_int j) < deep_model'2 x)}
+    [ return' (result:t_Result'0)-> {[%#sslice5] forall i : usize . result = C_Ok'0 i
+       -> UIntSize.to_int i < Seq.length (view'0 self)
+      /\ Seq.get (deep_model'1 self) (UIntSize.to_int i) = deep_model'2 x}
       {[%#sslice6] forall i : usize . result = C_Err'0 i
        -> UIntSize.to_int i <= Seq.length (view'0 self)
       /\ (forall j : int . 0 <= j /\ j < Seq.length (view'0 self)  -> Seq.get (deep_model'0 self) j <> deep_model'2 x)}
-      {[%#sslice5] forall i : usize . result = C_Ok'0 i
-       -> UIntSize.to_int i < Seq.length (view'0 self)
-      /\ Seq.get (deep_model'1 self) (UIntSize.to_int i) = deep_model'2 x}
+      {[%#sslice7] forall i : usize . result = C_Err'0 i
+       -> (forall j : usize . j < i  -> Seq.get (deep_model'0 self) (UIntSize.to_int j) < deep_model'2 x)}
+      {[%#sslice8] forall i : usize . result = C_Err'0 i
+       -> (forall j : usize . i <= j /\ UIntSize.to_int j < Seq.length (view'0 self)
+       -> deep_model'2 x < Seq.get (deep_model'0 self) (UIntSize.to_int j))}
       (! return' {result}) ]
     
   
-  let rec unwrap'0 (self:t_Result'0) (return'  (ret:usize))= {[@expl:precondition] inv'2 self}
-    {[@expl:precondition] [%#sresult9] exists t : usize . self = C_Ok'0 t}
+  let rec unwrap'0 (self:t_Result'0) (return'  (ret:usize))= {[@expl:unwrap 'self' type invariant] inv'2 self}
+    {[@expl:unwrap requires] [%#sresult9] exists t : usize . self = C_Ok'0 t}
     any [ return' (result:usize)-> {inv'3 result} {[%#sresult10] C_Ok'0 result = self} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
-  let rec binary_search'0 (s:slice uint32) (return'  (ret:usize))= {[%#s02_std2] Seq.length (view'0 s) = 5}
-    {[%#s02_std1] forall i : int . 0 <= i /\ i < Seq.length (view'0 s)  -> UInt32.to_int (index_logic'0 s i) = i}
+  let rec binary_search'0 (s:slice uint32) (return'  (ret:usize))= {[@expl:binary_search requires #0] [%#s02_std1] forall i : int . 0
+    <= i
+    /\ i < Seq.length (view'0 s)  -> UInt32.to_int (index_logic'0 s i) = i}
+    {[@expl:binary_search requires #1] [%#s02_std2] Seq.length (view'0 s) = 5}
     (! bb0
     [ bb0 = s0
       [ s0 = promoted0__binary_search'0 (fun (pr0:uint32) ->  [ &_12 <- pr0 ] s1)

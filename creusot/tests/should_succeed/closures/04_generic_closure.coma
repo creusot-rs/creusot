@@ -16,23 +16,23 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
   let%span sops14 = "../../../../creusot-contracts/src/std/ops.rs" 112 14 112 28
   let%span sops15 = "../../../../creusot-contracts/src/std/ops.rs" 117 14 117 133
   
-  type t_F'0
-  
-  type t_A'0
-  
-  predicate precondition'0 (self : t_F'0) (_2 : t_A'0)
-  
   use prelude.prelude.Borrow
+  
+  type t_F'0
   
   predicate inv'3 (_1 : t_F'0)
   
+  type t_A'0
+  
   predicate inv'4 (_1 : t_A'0)
+  
+  predicate precondition'0 (self : t_F'0) (_2 : t_A'0)
   
   type t_B'0
   
-  predicate postcondition'0 (self : t_F'0) (_2 : t_A'0) (_3 : t_B'0)
-  
   predicate inv'2 (_1 : t_B'0)
+  
+  predicate postcondition'0 (self : t_F'0) (_2 : t_A'0) (_3 : t_B'0)
   
   predicate inv'0 (_1 : t_F'0)
   
@@ -45,9 +45,9 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_A'0 [inv'4 x] . inv'4 x = (let (x0) = x in inv'1 x0)
   
-  let rec call'0 (self:t_F'0) (args:t_A'0) (return'  (ret:t_B'0))= {[@expl:precondition] inv'4 args}
-    {[@expl:precondition] inv'3 self}
-    {[@expl:precondition] [%#sops3] precondition'0 self args}
+  let rec call'0 (self:t_F'0) (args:t_A'0) (return'  (ret:t_B'0))= {[@expl:call 'self' type invariant] inv'3 self}
+    {[@expl:call 'args' type invariant] inv'4 args}
+    {[@expl:call requires] [%#sops3] precondition'0 self args}
     any [ return' (result:t_B'0)-> {inv'2 result} {[%#sops4] postcondition'0 self args result} (! return' {result}) ] 
   
   predicate resolve'0 (_1 : t_F'0)
@@ -94,8 +94,8 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
   
   meta "compute_max_steps" 1000000
   
-  let rec generic_closure'0 (f:t_F'0) (a:t_A'0) (return'  (ret:t_B'0))= {[%#s04_generic_closure1] inv'1 a}
-    {[%#s04_generic_closure0] inv'0 f}
+  let rec generic_closure'0 (f:t_F'0) (a:t_A'0) (return'  (ret:t_B'0))= {[@expl:generic_closure 'f' type invariant] [%#s04_generic_closure0] inv'0 f}
+    {[@expl:generic_closure 'a' type invariant] [%#s04_generic_closure1] inv'1 a}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &_4 <- (a) ] s1 | s1 = call'0 {f} {_4} (fun (_ret':t_B'0) ->  [ &_0 <- _ret' ] s2) | s2 = bb1 ]
@@ -105,7 +105,8 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
     | bb3 = bb4
     | bb4 = return' {_0} ]
     ) [ & _0 : t_B'0 = any_l () | & f : t_F'0 = f | & a : t_A'0 = a | & _4 : t_A'0 = any_l () ] 
-    [ return' (result:t_B'0)-> {[@expl:postcondition] [%#s04_generic_closure2] inv'2 result} (! return' {result}) ]
+    [ return' (result:t_B'0)-> {[@expl:generic_closure result type invariant] [%#s04_generic_closure2] inv'2 result}
+      (! return' {result}) ]
     
 end
 module M_04_generic_closure__mapper [#"04_generic_closure.rs" 9 0 9 22]
@@ -133,19 +134,19 @@ module M_04_generic_closure__mapper [#"04_generic_closure.rs" 9 0 9 22]
   
   axiom inv_axiom'1 [@rewrite] : forall x : () [inv'2 x] . inv'2 x = true
   
-  let rec closure0'0 (_1:()) (_a:t_A'0) (return'  (ret:()))= {[%#s04_generic_closure1] inv'0 _a}
+  let rec closure0'0 (_1:()) (_a:t_A'0) (return'  (ret:()))= {[@expl:closure '_a' type invariant] [%#s04_generic_closure1] inv'0 _a}
     (! bb0
     [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'0 _a} s1 | s1 = -{resolve'0 _a}- s2 | s2 = bb1 ] 
     | bb1 = return' {_0} ]
     ) [ & _0 : () = any_l () | & _a : t_A'0 = _a ]  [ return' (result:())-> (! return' {result}) ] 
   
-  let rec generic_closure'0 (f:()) (a:t_A'0) (return'  (ret:()))= {[@expl:precondition] [%#s04_generic_closure3] inv'0 a}
-    {[@expl:precondition] [%#s04_generic_closure2] inv'1 f}
+  let rec generic_closure'0 (f:()) (a:t_A'0) (return'  (ret:()))= {[@expl:generic_closure 'f' type invariant] [%#s04_generic_closure2] inv'1 f}
+    {[@expl:generic_closure 'a' type invariant] [%#s04_generic_closure3] inv'0 a}
     any [ return' (result:())-> {[%#s04_generic_closure4] inv'2 result} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
-  let rec mapper'0 (x:t_A'0) (return'  (ret:()))= {[%#s04_generic_closure0] inv'0 x}
+  let rec mapper'0 (x:t_A'0) (return'  (ret:()))= {[@expl:mapper 'x' type invariant] [%#s04_generic_closure0] inv'0 x}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &_3 <- () ] s1 | s1 = generic_closure'0 {_3} {x} (fun (_ret':()) ->  [ &_2 <- _ret' ] s2) | s2 = bb1 ]

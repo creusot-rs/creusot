@@ -17,19 +17,19 @@ module M_03_generic_bound__closure_param [#"03_generic_bound.rs" 5 0 5 34]
   
   use prelude.prelude.UInt32
   
-  type t_F'0
-  
-  predicate precondition'0 (self : t_F'0) (_2 : uint32)
-  
   use prelude.prelude.Borrow
+  
+  type t_F'0
   
   predicate inv'1 (_1 : t_F'0)
   
   predicate inv'2 (_1 : uint32)
   
-  predicate postcondition'0 (self : t_F'0) (_2 : uint32) (_3 : ())
+  predicate precondition'0 (self : t_F'0) (_2 : uint32)
   
   predicate inv'3 (_1 : ())
+  
+  predicate postcondition'0 (self : t_F'0) (_2 : uint32) (_3 : ())
   
   predicate inv'0 (_1 : t_F'0)
   
@@ -42,9 +42,9 @@ module M_03_generic_bound__closure_param [#"03_generic_bound.rs" 5 0 5 34]
   
   axiom inv_axiom'2 [@rewrite] : forall x : () [inv'3 x] . inv'3 x = true
   
-  let rec call'0 (self:t_F'0) (args:uint32) (return'  (ret:()))= {[@expl:precondition] inv'2 args}
-    {[@expl:precondition] inv'1 self}
-    {[@expl:precondition] [%#sops2] precondition'0 self args}
+  let rec call'0 (self:t_F'0) (args:uint32) (return'  (ret:()))= {[@expl:call 'self' type invariant] inv'1 self}
+    {[@expl:call 'args' type invariant] inv'2 args}
+    {[@expl:call requires] [%#sops2] precondition'0 self args}
     any [ return' (result:())-> {inv'3 result} {[%#sops3] postcondition'0 self args result} (! return' {result}) ] 
   
   predicate resolve'0 (_1 : t_F'0)
@@ -91,7 +91,7 @@ module M_03_generic_bound__closure_param [#"03_generic_bound.rs" 5 0 5 34]
   
   meta "compute_max_steps" 1000000
   
-  let rec closure_param'0 (f:t_F'0) (return'  (ret:()))= {[%#s03_generic_bound1] inv'0 f}
+  let rec closure_param'0 (f:t_F'0) (return'  (ret:()))= {[@expl:closure_param 'f' type invariant] [%#s03_generic_bound1] inv'0 f}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &_3 <- (([%#s03_generic_bound0] (0 : uint32))) ] s1
@@ -121,7 +121,7 @@ module M_03_generic_bound__caller [#"03_generic_bound.rs" 9 0 9 15]
     [ return' (result:())-> (! return' {result}) ]
     
   
-  let rec closure_param'0 (f:()) (return'  (ret:()))= {[@expl:precondition] [%#s03_generic_bound0] inv'0 f}
+  let rec closure_param'0 (f:()) (return'  (ret:()))= {[@expl:closure_param 'f' type invariant] [%#s03_generic_bound0] inv'0 f}
     any [ return' (result:())-> (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000

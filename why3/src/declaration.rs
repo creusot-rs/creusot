@@ -68,11 +68,29 @@ impl Decl {
     }
 }
 
+/// A term with an "expl:" label (includes the "expl:" prefix)
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct Condition {
+    pub exp: Exp,
+    /// Label including the "expl:" prefix.
+    pub expl: String,
+}
+
+impl Condition {
+    pub fn labelled_exp(self) -> Exp {
+        coma::Term::Attr(Attribute::Attr(self.expl), Box::new(self.exp))
+    }
+    pub fn unlabelled_exp(self) -> Exp {
+        self.exp
+    }
+}
+
 #[derive(Debug, Default, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Contract {
-    pub requires: Vec<Exp>,
-    pub ensures: Vec<Exp>,
+    pub requires: Vec<Condition>,
+    pub ensures: Vec<Condition>,
     pub variant: Vec<Exp>,
 }
 
@@ -92,21 +110,40 @@ impl Contract {
     }
 
     pub fn ensures_conj(&self) -> Exp {
-        let mut ensures = self.ensures.clone();
+        let mut ensures = self.ensures.iter().map(|cond| cond.exp.clone());
+        let Some(mut postcond) = ensures.next() else { return Exp::mk_true() };
+        postcond = ensures.fold(postcond, Exp::lazy_conj);
+        postcond.reassociate();
+        postcond
+    }
 
-        let postcond = ensures.pop().unwrap_or(Exp::mk_true());
-        let mut postcond = ensures.into_iter().rfold(postcond, Exp::lazy_conj);
+    pub fn ensures_conj_labelled(&self) -> Exp {
+        let mut ensures = self.ensures.iter().cloned().map(Condition::labelled_exp);
+        let Some(mut postcond) = ensures.next() else { return Exp::mk_true() };
+        postcond = ensures.fold(postcond, Exp::lazy_conj);
         postcond.reassociate();
         postcond
     }
 
     pub fn requires_conj(&self) -> Exp {
-        let mut requires = self.requires.clone();
+        let mut requires = self.requires.iter().map(|cond| cond.exp.clone());
+        let Some(mut postcond) = requires.next() else { return Exp::mk_true() };
+        postcond = requires.fold(postcond, Exp::lazy_conj);
+        postcond.reassociate();
+        postcond
+    }
 
-        let precond = requires.pop().unwrap_or(Exp::mk_true());
-        let mut precond = requires.into_iter().rfold(precond, Exp::lazy_conj);
-        precond.reassociate();
-        precond
+    pub fn requires_conj_labelled(&self) -> Exp {
+        let mut requires = self.requires.iter().cloned().map(Condition::labelled_exp);
+        let Some(mut postcond) = requires.next() else { return Exp::mk_true() };
+        postcond = requires.fold(postcond, Exp::lazy_conj);
+        postcond.reassociate();
+        postcond
+    }
+
+    pub fn requires_implies(&self, conclusion: Exp) -> Exp {
+        let requires = self.requires.iter().map(|cond| cond.exp.clone());
+        requires.rfold(conclusion, |acc, arg| arg.implies(acc))
     }
 
     pub fn subst(&mut self, subst: &HashMap<Ident, Exp>) {
@@ -120,11 +157,11 @@ impl Contract {
         mut var_visitor: T,
     ) {
         for req in self.requires.iter_mut() {
-            req_visitor.visit_mut(req);
+            req_visitor.visit_mut(&mut req.exp);
         }
 
         for ens in self.ensures.iter_mut() {
-            ens_visitor.visit_mut(ens);
+            ens_visitor.visit_mut(&mut ens.exp);
         }
 
         for var in self.variant.iter_mut() {
@@ -136,11 +173,11 @@ impl Contract {
         let mut qfvs = IndexSet::new();
 
         for req in &self.requires {
-            qfvs.extend(req.qfvs());
+            qfvs.extend(req.exp.qfvs());
         }
 
         for ens in &self.ensures {
-            qfvs.extend(ens.qfvs());
+            qfvs.extend(ens.exp.qfvs());
         }
 
         for var in &self.variant {

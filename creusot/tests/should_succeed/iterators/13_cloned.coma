@@ -233,11 +233,11 @@ module M_13_cloned__qyi7043136317404314719__produces_trans [#"13_cloned.rs" 51 4
 end
 module M_13_cloned__qyi7043136317404314719__next [#"13_cloned.rs" 57 4 57 35] (* <Cloned<I> as common::Iterator> *)
   let%span s13_cloned0 = "13_cloned.rs" 57 17 57 21
-  let%span s13_cloned1 = "13_cloned.rs" 53 14 56 5
-  let%span s13_cloned2 = "13_cloned.rs" 57 26 57 35
+  let%span s13_cloned1 = "13_cloned.rs" 57 26 57 35
+  let%span s13_cloned2 = "13_cloned.rs" 53 14 56 5
   let%span scommon3 = "common.rs" 31 17 31 21
-  let%span scommon4 = "common.rs" 27 14 30 5
-  let%span scommon5 = "common.rs" 31 26 31 44
+  let%span scommon4 = "common.rs" 31 26 31 44
+  let%span scommon5 = "common.rs" 27 14 30 5
   let%span soption6 = "../../../../creusot-contracts/src/std/option.rs" 31 0 423 1
   let%span s13_cloned7 = "13_cloned.rs" 23 8 23 43
   let%span s13_cloned8 = "13_cloned.rs" 30 12 33 79
@@ -272,6 +272,8 @@ module M_13_cloned__qyi7043136317404314719__next [#"13_cloned.rs" 57 4 57 35] (*
     | C_None'1
     | C_Some'1 t_T'0
   
+  predicate inv'4 (_1 : t_Option'0)
+  
   predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
   
   use seq.Seq
@@ -279,8 +281,6 @@ module M_13_cloned__qyi7043136317404314719__next [#"13_cloned.rs" 57 4 57 35] (*
   use seq.Seq
   
   predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_T'0) (o : t_I'0)
-  
-  predicate inv'4 (_1 : t_Option'0)
   
   predicate inv'1 (_1 : borrowed (t_Cloned'0))
   
@@ -348,10 +348,10 @@ module M_13_cloned__qyi7043136317404314719__next [#"13_cloned.rs" 57 4 57 35] (*
   
   axiom inv_axiom'7 [@rewrite] : forall x : t_T'0 [inv'9 x] . inv'9 x = invariant'4 x
   
-  let rec next'1 (self:borrowed t_I'0) (return'  (ret:t_Option'0))= {[@expl:precondition] [%#scommon3] inv'3 self}
+  let rec next'1 (self:borrowed t_I'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] [%#scommon3] inv'3 self}
     any
-    [ return' (result:t_Option'0)-> {[%#scommon5] inv'4 result}
-      {[%#scommon4] match result with
+    [ return' (result:t_Option'0)-> {[%#scommon4] inv'4 result}
+      {[%#scommon5] match result with
         | C_None'1 -> completed'1 self
         | C_Some'1 v -> produces'1 self.current (Seq.singleton v) self.final
         end}
@@ -364,11 +364,11 @@ module M_13_cloned__qyi7043136317404314719__next [#"13_cloned.rs" 57 4 57 35] (*
   predicate resolve'0 (_1 : borrowed (t_Cloned'0)) =
     resolve'1 _1
   
-  let rec cloned'0 (self:t_Option'0) (return'  (ret:t_Option'1))= {[@expl:precondition] inv'4 self}
+  let rec cloned'0 (self:t_Option'0) (return'  (ret:t_Option'1))= {[@expl:cloned 'self' type invariant] inv'4 self}
     any
     [ return' (result:t_Option'1)-> {inv'2 result}
-      {[%#soption6] self = C_None'1 \/ (exists t : t_T'0 . self = C_Some'1 t /\ result = C_Some'0 t)}
       {[%#soption6] self = C_None'1  -> result = C_None'0}
+      {[%#soption6] self = C_None'1 \/ (exists t : t_T'0 . self = C_Some'1 t /\ result = C_Some'0 t)}
       (! return' {result}) ]
     
   
@@ -413,7 +413,7 @@ module M_13_cloned__qyi7043136317404314719__next [#"13_cloned.rs" 57 4 57 35] (*
   
   meta "compute_max_steps" 1000000
   
-  let rec next'0 (self:borrowed (t_Cloned'0)) (return'  (ret:t_Option'1))= {[%#s13_cloned0] inv'1 self}
+  let rec next'0 (self:borrowed (t_Cloned'0)) (return'  (ret:t_Option'1))= {[@expl:next 'self' type invariant] [%#s13_cloned0] inv'1 self}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 (self.current).t_Cloned__iter'0}
@@ -439,8 +439,8 @@ module M_13_cloned__qyi7043136317404314719__next [#"13_cloned.rs" 57 4 57 35] (*
     | & _3 : t_Option'0 = any_l ()
     | & _4 : borrowed t_I'0 = any_l () ]
     
-    [ return' (result:t_Option'1)-> {[@expl:postcondition] [%#s13_cloned2] inv'2 result}
-      {[@expl:postcondition] [%#s13_cloned1] match result with
+    [ return' (result:t_Option'1)-> {[@expl:next result type invariant] [%#s13_cloned1] inv'2 result}
+      {[@expl:next ensures] [%#s13_cloned2] match result with
         | C_None'0 -> completed'0 self
         | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
         end}
@@ -693,8 +693,6 @@ module M_13_cloned__qyi7043136317404314719__next__refines [#"13_cloned.rs" 57 4 
     | C_None'0
     | C_Some'0 t_T'0
   
-  predicate inv'1 (_1 : t_Option'0)
-  
   predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
   
   predicate completed'0 [#"13_cloned.rs" 22 4 22 35] (self : borrowed (t_Cloned'0)) =
@@ -725,6 +723,8 @@ module M_13_cloned__qyi7043136317404314719__next__refines [#"13_cloned.rs" 57 4 
     /\ produces'1 self.t_Cloned__iter'0 s o.t_Cloned__iter'0
     /\ Seq.length visited = Seq.length s
     /\ (forall i : int . 0 <= i /\ i < Seq.length s  -> Seq.get visited i = Seq.get s i)
+  
+  predicate inv'1 (_1 : t_Option'0)
   
   predicate inv'4 (_1 : t_Cloned'0)
   
@@ -789,14 +789,14 @@ module M_13_cloned__qyi7043136317404314719__next__refines [#"13_cloned.rs" 57 4 
   
   goal refines : [%#s13_cloned0] forall self : borrowed (t_Cloned'0) . inv'0 self
    -> inv'0 self
-  /\ (forall result : t_Option'0 . inv'1 result
-  /\ match result with
+  /\ (forall result : t_Option'0 . match result with
     | C_None'0 -> completed'0 self
     | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
     end
-   -> inv'1 result
-  /\ match result with
+  /\ inv'1 result
+   -> match result with
     | C_None'0 -> completed'0 self
     | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
-    end)
+    end
+  /\ inv'1 result)
 end

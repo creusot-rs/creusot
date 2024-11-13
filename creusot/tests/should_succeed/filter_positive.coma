@@ -70,7 +70,7 @@ module M_filter_positive__lemma_num_of_pos_increasing [#"filter_positive.rs" 65 
   
   goal vc_lemma_num_of_pos_increasing'0 : ([%#sfilter_positive0] j <= k)
    -> (if j < k then
-    (([%#sfilter_positive0] j + 1 <= k)
+    (([@expl:lemma_num_of_pos_increasing requires] [%#sfilter_positive0] j + 1 <= k)
     /\ 0 <= ([%#sfilter_positive2] k - j) /\ ([%#sfilter_positive2] k - (j + 1)) < ([%#sfilter_positive2] k - j))
     /\ (([%#sfilter_positive1] num_of_pos'0 i (j + 1) t <= num_of_pos'0 i k t)
      -> ([%#sfilter_positive1] num_of_pos'0 i j t <= num_of_pos'0 i k t))
@@ -120,17 +120,17 @@ end
 module M_filter_positive__m [#"filter_positive.rs" 82 0 82 33]
   let%span sfilter_positive0 = "filter_positive.rs" 83 27 83 28
   let%span sfilter_positive1 = "filter_positive.rs" 84 23 84 24
-  let%span sfilter_positive2 = "filter_positive.rs" 85 16 85 30
+  let%span sfilter_positive2 = "filter_positive.rs" 87 16 87 45
   let%span sfilter_positive3 = "filter_positive.rs" 86 16 86 28
-  let%span sfilter_positive4 = "filter_positive.rs" 87 16 87 45
+  let%span sfilter_positive4 = "filter_positive.rs" 85 16 85 30
   let%span sfilter_positive5 = "filter_positive.rs" 90 18 90 19
   let%span sfilter_positive6 = "filter_positive.rs" 91 21 91 22
   let%span sfilter_positive7 = "filter_positive.rs" 93 13 93 14
   let%span sfilter_positive8 = "filter_positive.rs" 95 31 95 32
   let%span sfilter_positive9 = "filter_positive.rs" 96 12 96 13
   let%span sfilter_positive10 = "filter_positive.rs" 98 8 98 9
-  let%span sfilter_positive11 = "filter_positive.rs" 99 16 99 45
-  let%span sfilter_positive12 = "filter_positive.rs" 100 16 100 53
+  let%span sfilter_positive11 = "filter_positive.rs" 100 16 100 53
+  let%span sfilter_positive12 = "filter_positive.rs" 99 16 99 45
   let%span sfilter_positive13 = "filter_positive.rs" 103 18 103 19
   let%span sfilter_positive14 = "filter_positive.rs" 106 16 106 59
   let%span sfilter_positive15 = "filter_positive.rs" 110 16 110 63
@@ -246,7 +246,7 @@ module M_filter_positive__m [#"filter_positive.rs" 82 0 82 33]
   
   axiom inv_axiom'6 [@rewrite] : forall x : borrowed int32 [inv'6 x] . inv'6 x = true
   
-  let rec len'0 (self:t_Vec'0) (return'  (ret:usize))= {[@expl:precondition] inv'0 self}
+  let rec len'0 (self:t_Vec'0) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'0 self}
     any
     [ return' (result:usize)-> {[%#svec21] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ]
     
@@ -257,9 +257,9 @@ module M_filter_positive__m [#"filter_positive.rs" 82 0 82 33]
   predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq int32) (out : int32) =
     [%#sslice41] Seq.get seq (UIntSize.to_int self) = out
   
-  let rec index'0 (self:t_Vec'0) (index:usize) (return'  (ret:int32))= {[@expl:precondition] inv'1 index}
-    {[@expl:precondition] inv'0 self}
-    {[@expl:precondition] [%#svec22] in_bounds'0 index (view'1 self)}
+  let rec index'0 (self:t_Vec'0) (index:usize) (return'  (ret:int32))= {[@expl:index 'self' type invariant] inv'0 self}
+    {[@expl:index 'index' type invariant] inv'1 index}
+    {[@expl:index requires] [%#svec22] in_bounds'0 index (view'1 self)}
     any
     [ return' (result:int32)-> {inv'2 result} {[%#svec23] has_value'0 index (view'1 self) result} (! return' {result}) ]
     
@@ -267,11 +267,11 @@ module M_filter_positive__m [#"filter_positive.rs" 82 0 82 33]
   function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : int32 =
     [%#sops42] Seq.get (view'0 self) ix
   
-  let rec from_elem'0 (elem:int32) (n:usize) (return'  (ret:t_Vec'0))= {[@expl:precondition] inv'3 elem}
+  let rec from_elem'0 (elem:int32) (n:usize) (return'  (ret:t_Vec'0))= {[@expl:from_elem 'elem' type invariant] inv'3 elem}
     any
     [ return' (result:t_Vec'0)-> {inv'4 result}
-      {[%#svec25] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
       {[%#svec24] Seq.length (view'0 result) = UIntSize.to_int n}
+      {[%#svec25] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
       (! return' {result}) ]
     
   
@@ -300,15 +300,15 @@ module M_filter_positive__m [#"filter_positive.rs" 82 0 82 33]
     [%#sslice44] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
   
-  let rec index_mut'0 (self:borrowed (t_Vec'0)) (index:usize) (return'  (ret:borrowed int32))= {[@expl:precondition] inv'1 index}
-    {[@expl:precondition] inv'5 self}
-    {[@expl:precondition] [%#svec34] in_bounds'0 index (view'2 self)}
+  let rec index_mut'0 (self:borrowed (t_Vec'0)) (index:usize) (return'  (ret:borrowed int32))= {[@expl:index_mut 'self' type invariant] inv'5 self}
+    {[@expl:index_mut 'index' type invariant] inv'1 index}
+    {[@expl:index_mut requires] [%#svec34] in_bounds'0 index (view'2 self)}
     any
     [ return' (result:borrowed int32)-> {inv'6 result}
-      {[%#svec38] Seq.length (view'0 self.final) = Seq.length (view'2 self)}
-      {[%#svec37] resolve_elswhere'0 index (view'2 self) (view'0 self.final)}
-      {[%#svec36] has_value'0 index (view'0 self.final) result.final}
       {[%#svec35] has_value'0 index (view'2 self) result.current}
+      {[%#svec36] has_value'0 index (view'0 self.final) result.final}
+      {[%#svec37] resolve_elswhere'0 index (view'2 self) (view'0 self.final)}
+      {[%#svec38] Seq.length (view'0 self.final) = Seq.length (view'2 self)}
       (! return' {result}) ]
     
   
@@ -331,10 +331,10 @@ module M_filter_positive__m [#"filter_positive.rs" 82 0 82 33]
     | bb1 = bb2
     | bb2 = bb3
     | bb3 = bb3
-      [ bb3 = {[@expl:loop invariant 2] [%#sfilter_positive4] UIntSize.to_int count
+      [ bb3 = {[@expl:loop invariant #0] [%#sfilter_positive4] UIntSize.to_int i <= Seq.length (view'0 t)}
+        {[@expl:loop invariant #1] [%#sfilter_positive3] UIntSize.to_int count <= UIntSize.to_int i}
+        {[@expl:loop invariant #2] [%#sfilter_positive2] UIntSize.to_int count
         = num_of_pos'0 0 (UIntSize.to_int i) (view'0 t)}
-        {[@expl:loop invariant 1] [%#sfilter_positive3] UIntSize.to_int count <= UIntSize.to_int i}
-        {[@expl:loop invariant 0] [%#sfilter_positive2] UIntSize.to_int i <= Seq.length (view'0 t)}
         (! s0) [ s0 = bb4 ] 
         [ bb4 = s0 [ s0 = len'0 {t} (fun (_ret':usize) ->  [ &_12 <- _ret' ] s1) | s1 = bb5 ] 
         | bb5 = s0
@@ -369,10 +369,10 @@ module M_filter_positive__m [#"filter_positive.rs" 82 0 82 33]
     | bb13 = bb14
     | bb14 = bb15
     | bb15 = bb15
-      [ bb15 = {[@expl:loop invariant 1] [%#sfilter_positive12] Seq.length (view'0 u)
-        = num_of_pos'0 0 (Seq.length (view'0 t)) (view'0 t)}
-        {[@expl:loop invariant 0] [%#sfilter_positive11] UIntSize.to_int count
+      [ bb15 = {[@expl:loop invariant #0] [%#sfilter_positive12] UIntSize.to_int count
         = num_of_pos'0 0 (UIntSize.to_int i) (view'0 t)}
+        {[@expl:loop invariant #1] [%#sfilter_positive11] Seq.length (view'0 u)
+        = num_of_pos'0 0 (Seq.length (view'0 t)) (view'0 t)}
         (! s0) [ s0 = bb16 ] 
         [ bb16 = s0 [ s0 = len'0 {t} (fun (_ret':usize) ->  [ &_30 <- _ret' ] s1) | s1 = bb17 ] 
         | bb17 = s0

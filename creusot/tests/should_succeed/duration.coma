@@ -116,7 +116,7 @@ module M_duration__test_duration [#"duration.rs" 7 0 7 22]
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
-  let rec new'0 (secs:uint64) (nanos:uint32) (return'  (ret:t_Duration'0))= {[@expl:precondition] [%#stime42] UInt64.to_int secs
+  let rec new'0 (secs:uint64) (nanos:uint32) (return'  (ret:t_Duration'0))= {[@expl:new requires] [%#stime42] UInt64.to_int secs
     + nanos_to_secs'0 (UInt32.to_int nanos)
     <= UInt64.to_int (v_MAX'0 : uint64)}
     any
@@ -133,9 +133,8 @@ module M_duration__test_duration [#"duration.rs" 7 0 7 22]
   use prelude.prelude.UInt128
   
   let rec as_nanos'0 (self:t_Duration'0) (return'  (ret:uint128))= any
-    [ return' (result:uint128)-> {[%#stime46] UInt128.to_int result
-      <= secs_to_nanos'0 (UInt64.to_int (v_MAX'0 : uint64)) + 999999999}
-      {[%#stime45] UInt128.to_int result = view'1 self}
+    [ return' (result:uint128)-> {[%#stime45] UInt128.to_int result = view'1 self}
+      {[%#stime46] UInt128.to_int result <= secs_to_nanos'0 (UInt64.to_int (v_MAX'0 : uint64)) + 999999999}
       (! return' {result}) ]
     
   
@@ -158,8 +157,8 @@ module M_duration__test_duration [#"duration.rs" 7 0 7 22]
     
   
   let rec is_zero'0 (self:t_Duration'0) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {[%#stime51] view'1 self <> 0  -> result = false}
-      {[%#stime51] view'1 self = 0  -> result = true}
+    [ return' (result:bool)-> {[%#stime51] view'1 self = 0  -> result = true}
+      {[%#stime51] view'1 self <> 0  -> result = false}
       (! return' {result}) ]
     
   
@@ -172,8 +171,8 @@ module M_duration__test_duration [#"duration.rs" 7 0 7 22]
     [%#stime73] div nanos 1000000
   
   let rec subsec_millis'0 (self:t_Duration'0) (return'  (ret:uint32))= any
-    [ return' (result:uint32)-> {[%#stime54] result < (1000 : uint32)}
-      {[%#stime53] UInt32.to_int result = mod (nanos_to_millis'0 (view'1 self)) 1000}
+    [ return' (result:uint32)-> {[%#stime53] UInt32.to_int result = mod (nanos_to_millis'0 (view'1 self)) 1000}
+      {[%#stime54] result < (1000 : uint32)}
       (! return' {result}) ]
     
   
@@ -181,14 +180,14 @@ module M_duration__test_duration [#"duration.rs" 7 0 7 22]
     [%#stime74] div nanos 1000
   
   let rec subsec_micros'0 (self:t_Duration'0) (return'  (ret:uint32))= any
-    [ return' (result:uint32)-> {[%#stime56] result < (1000000 : uint32)}
-      {[%#stime55] UInt32.to_int result = mod (nanos_to_micros'0 (view'1 self)) 1000000}
+    [ return' (result:uint32)-> {[%#stime55] UInt32.to_int result = mod (nanos_to_micros'0 (view'1 self)) 1000000}
+      {[%#stime56] result < (1000000 : uint32)}
       (! return' {result}) ]
     
   
   let rec subsec_nanos'0 (self:t_Duration'0) (return'  (ret:uint32))= any
-    [ return' (result:uint32)-> {[%#stime58] result < (1000000000 : uint32)}
-      {[%#stime57] UInt32.to_int result = mod (view'1 self) 1000000000}
+    [ return' (result:uint32)-> {[%#stime57] UInt32.to_int result = mod (view'1 self) 1000000000}
+      {[%#stime58] result < (1000000000 : uint32)}
       (! return' {result}) ]
     
   
@@ -216,46 +215,45 @@ module M_duration__test_duration [#"duration.rs" 7 0 7 22]
       end
   
   let rec checked_add'0 (self:t_Duration'0) (rhs:t_Duration'0) (return'  (ret:t_Option'0))= any
-    [ return' (result:t_Option'0)-> {[%#stime62] nanos_to_secs'0 (view'0 self + view'0 rhs)
-      <= UInt64.to_int (v_MAX'0 : uint64)  -> deep_model'0 result = C_Some'0 (view'0 self + view'0 rhs)}
-      {[%#stime61] nanos_to_secs'0 (view'0 self + view'0 rhs) > UInt64.to_int (v_MAX'0 : uint64)  -> result = C_None'0}
+    [ return' (result:t_Option'0)-> {[%#stime61] nanos_to_secs'0 (view'0 self + view'0 rhs)
+      > UInt64.to_int (v_MAX'0 : uint64)  -> result = C_None'0}
+      {[%#stime62] nanos_to_secs'0 (view'0 self + view'0 rhs) <= UInt64.to_int (v_MAX'0 : uint64)
+       -> deep_model'0 result = C_Some'0 (view'0 self + view'0 rhs)}
       (! return' {result}) ]
     
   
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'0 self}
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption63] result = (self = C_None'0)} (! return' {result}) ] 
   
-  let rec is_some'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:precondition] inv'0 self}
+  let rec is_some'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_some 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption64] result = (self <> C_None'0)} (! return' {result}) ] 
   
   let rec checked_sub'0 (self:t_Duration'0) (rhs:t_Duration'0) (return'  (ret:t_Option'0))= any
-    [ return' (result:t_Option'0)-> {[%#stime51] view'0 self - view'0 rhs >= 0
-       -> deep_model'0 result = C_Some'0 (view'0 self - view'0 rhs)}
-      {[%#stime51] view'0 self - view'0 rhs < 0  -> result = C_None'0}
+    [ return' (result:t_Option'0)-> {[%#stime51] view'0 self - view'0 rhs < 0  -> result = C_None'0}
+      {[%#stime51] view'0 self - view'0 rhs >= 0  -> deep_model'0 result = C_Some'0 (view'0 self - view'0 rhs)}
       (! return' {result}) ]
     
   
   let rec checked_mul'0 (self:t_Duration'0) (rhs:uint32) (return'  (ret:t_Option'0))= any
-    [ return' (result:t_Option'0)-> {[%#stime66] nanos_to_secs'0 (view'0 self * UInt32.to_int rhs)
-      <= UInt64.to_int (v_MAX'0 : uint64)  -> deep_model'0 result = C_Some'0 (view'0 self * UInt32.to_int rhs)}
-      {[%#stime65] nanos_to_secs'0 (view'0 self * UInt32.to_int rhs) > UInt64.to_int (v_MAX'0 : uint64)
-       -> result = C_None'0}
+    [ return' (result:t_Option'0)-> {[%#stime65] nanos_to_secs'0 (view'0 self * UInt32.to_int rhs)
+      > UInt64.to_int (v_MAX'0 : uint64)  -> result = C_None'0}
+      {[%#stime66] nanos_to_secs'0 (view'0 self * UInt32.to_int rhs) <= UInt64.to_int (v_MAX'0 : uint64)
+       -> deep_model'0 result = C_Some'0 (view'0 self * UInt32.to_int rhs)}
       (! return' {result}) ]
     
   
   let rec checked_div'0 (self:t_Duration'0) (rhs:uint32) (return'  (ret:t_Option'0))= any
-    [ return' (result:t_Option'0)-> {[%#stime68] rhs <> (0 : uint32)
-       -> deep_model'0 result = C_Some'0 (div (view'0 self) (UInt32.to_int rhs))}
-      {[%#stime67] rhs = (0 : uint32)  -> result = C_None'0}
+    [ return' (result:t_Option'0)-> {[%#stime67] rhs = (0 : uint32)  -> result = C_None'0}
+      {[%#stime68] rhs <> (0 : uint32)  -> deep_model'0 result = C_Some'0 (div (view'0 self) (UInt32.to_int rhs))}
       (! return' {result}) ]
     
   
-  let rec add'0 (self:t_Duration'0) (rhs:t_Duration'0) (return'  (ret:t_Duration'0))= {[@expl:precondition] [%#stime69] view'0 self
+  let rec add'0 (self:t_Duration'0) (rhs:t_Duration'0) (return'  (ret:t_Duration'0))= {[@expl:add requires] [%#stime69] view'0 self
     + view'0 rhs
     <= secs_to_nanos'0 (UInt64.to_int (v_MAX'0 : uint64)) + 999999999}
     any [ return' (result:t_Duration'0)-> {[%#stime69] view'0 self + view'0 rhs = view'0 result} (! return' {result}) ] 
   
-  let rec sub'0 (self:t_Duration'0) (rhs:t_Duration'0) (return'  (ret:t_Duration'0))= {[@expl:precondition] [%#stime69] view'0 self
+  let rec sub'0 (self:t_Duration'0) (rhs:t_Duration'0) (return'  (ret:t_Duration'0))= {[@expl:sub requires] [%#stime69] view'0 self
     - view'0 rhs
     >= 0}
     any [ return' (result:t_Duration'0)-> {[%#stime69] view'0 self - view'0 rhs = view'0 result} (! return' {result}) ] 

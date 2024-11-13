@@ -10,16 +10,6 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   let%span svec8 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   let%span smodel9 = "../../../../creusot-contracts/src/model.rs" 106 8 106 22
   
-  use seq.Seq
-  
-  use prelude.prelude.UIntSize
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
   use prelude.prelude.Opaque
   
   type t_NonNull'0  =
@@ -27,6 +17,8 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   
   type t_Unique'0  =
     { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
+  
+  use prelude.prelude.UIntSize
   
   type t_Cap'0  =
     { t_Cap__0'0: usize }
@@ -37,13 +29,21 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
   
+  predicate inv'0 (_1 : t_Vec'0)
+  
+  use seq.Seq
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
   use seq.Seq
   
   function view'0 (self : t_Vec'0) : Seq.seq bool
   
   axiom view'0_spec : forall self : t_Vec'0 . [%#svec8] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  predicate inv'0 (_1 : t_Vec'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
   
@@ -66,8 +66,8 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   
   use seq.Seq
   
-  let rec push'0 (self:borrowed (t_Vec'0)) (value:bool) (return'  (ret:()))= {[@expl:precondition] inv'2 value}
-    {[@expl:precondition] inv'1 self}
+  let rec push'0 (self:borrowed (t_Vec'0)) (value:bool) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'1 self}
+    {[@expl:push 'value' type invariant] inv'2 value}
     any [ return' (result:())-> {[%#svec7] view'0 self.final = Seq.snoc (view'1 self) value} (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic
@@ -80,7 +80,7 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
       
     | bb1 = s0 [ s0 =  [ &i <- [%#s01_resolve_unsoundness1] (0 : usize) ] s1 | s1 = bb2 ] 
     | bb2 = bb2
-      [ bb2 = {[@expl:loop invariant 0] [%#s01_resolve_unsoundness2] (0 : usize) <= i /\ i <= n}
+      [ bb2 = {[@expl:loop invariant] [%#s01_resolve_unsoundness2] (0 : usize) <= i /\ i <= n}
         (! s0) [ s0 = bb3 ] 
         [ bb3 = s0
           [ s0 = UIntSize.le {i} {n} (fun (_ret':bool) ->  [ &_9 <- _ret' ] s1)
@@ -109,7 +109,7 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
     | & _12 : () = any_l ()
     | & _13 : borrowed (t_Vec'0) = any_l () ]
     
-    [ return' (result:t_Vec'0)-> {[@expl:postcondition] [%#s01_resolve_unsoundness5] Seq.length (view'0 result)
+    [ return' (result:t_Vec'0)-> {[@expl:make_vec_of_size ensures] [%#s01_resolve_unsoundness5] Seq.length (view'0 result)
       = UIntSize.to_int n}
       (! return' {result}) ]
     

@@ -2,8 +2,8 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   let%span s08_multiple_calls0 = "08_multiple_calls.rs" 4 20 4 21
   let%span s08_multiple_calls1 = "08_multiple_calls.rs" 8 8 8 9
   let%span s08_multiple_calls2 = "08_multiple_calls.rs" 5 23 5 29
-  let%span s08_multiple_calls3 = "08_multiple_calls.rs" 17 11 17 29
-  let%span s08_multiple_calls4 = "08_multiple_calls.rs" 19 27 19 28
+  let%span s08_multiple_calls3 = "08_multiple_calls.rs" 19 27 19 28
+  let%span s08_multiple_calls4 = "08_multiple_calls.rs" 17 11 17 29
   let%span s08_multiple_calls5 = "08_multiple_calls.rs" 18 10 18 68
   let%span sinvariant6 = "../../../../creusot-contracts/src/invariant.rs" 24 8 24 18
   
@@ -45,8 +45,8 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   
   axiom inv_axiom'3 [@rewrite] : forall x : t_T'0 [inv'3 x] . inv'3 x = invariant'2 x
   
-  let rec closure0'0 (_1:closure0'1) (return'  (ret:uint32))= {inv'1 _1}
-    {[%#s08_multiple_calls2] _1.field_0'0 = _1.field_0'0}
+  let rec closure0'0 (_1:closure0'1) (return'  (ret:uint32))= {[@expl:closure '_1' type invariant] inv'1 _1}
+    {[@expl:closure requires] [%#s08_multiple_calls2] _1.field_0'0 = _1.field_0'0}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &res <- [%#s08_multiple_calls1] (0 : uint32) ] s1 | s1 =  [ &_0 <- res ] s2 | s2 = return' {_0} ]
@@ -59,8 +59,8 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   predicate postcondition'0 [#"08_multiple_calls.rs" 5 12 5 31] (self : closure0'1) (_ : ()) (result : uint32) =
     true
   
-  let rec uses_fn'0 (f:closure0'1) (return'  (ret:()))= {[@expl:precondition] [%#s08_multiple_calls4] inv'2 f}
-    {[@expl:precondition] [%#s08_multiple_calls3] precondition'0 f ()}
+  let rec uses_fn'0 (f:closure0'1) (return'  (ret:()))= {[@expl:uses_fn 'f' type invariant] [%#s08_multiple_calls3] inv'2 f}
+    {[@expl:uses_fn requires] [%#s08_multiple_calls4] precondition'0 f ()}
     any
     [ return' (result:())-> {[%#s08_multiple_calls5] exists f2 : closure0'1, r : uint32 . f2 = f
       /\ postcondition'0 f2 () r}
@@ -69,7 +69,7 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   
   meta "compute_max_steps" 1000000
   
-  let rec multi_use'0 (x:t_T'0) (return'  (ret:()))= {[%#s08_multiple_calls0] inv'0 x}
+  let rec multi_use'0 (x:t_T'0) (return'  (ret:()))= {[@expl:multi_use 'x' type invariant] [%#s08_multiple_calls0] inv'0 x}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &c <- { field_0'0 = x } ] s1 | s1 = uses_fn'0 {c} (fun (_ret':()) ->  [ &_4 <- _ret' ] s2) | s2 = bb1 ]

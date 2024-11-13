@@ -155,7 +155,7 @@ module M_01_range__qyi16572111325853806140__next [#"01_range.rs" 57 4 57 39] (* 
     | & _3 : bool = any_l ()
     | & r : isize = any_l () ]
     
-    [ return' (result:t_Option'0)-> {[@expl:postcondition] [%#s01_range1] match result with
+    [ return' (result:t_Option'0)-> {[@expl:next ensures] [%#s01_range1] match result with
         | C_None'0 -> completed'0 self
         | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
         end}
@@ -177,7 +177,7 @@ module M_01_range__qyi2180657552132013455__into_iter [#"01_range.rs" 70 4 70 34]
   let rec into_iter'0 (self:t_Range'0) (return'  (ret:t_Range'0))= (! bb0
     [ bb0 = s0 [ s0 =  [ &_0 <- self ] s1 | s1 = return' {_0} ]  ]
     ) [ & _0 : t_Range'0 = any_l () | & self : t_Range'0 = self ] 
-    [ return' (result:t_Range'0)-> {[@expl:postcondition] [%#s01_range0] result = self} (! return' {result}) ]
+    [ return' (result:t_Range'0)-> {[@expl:into_iter ensures] [%#s01_range0] result = self} (! return' {result}) ]
     
 end
 module M_01_range__sum_range [#"01_range.rs" 77 0 77 35]
@@ -185,9 +185,9 @@ module M_01_range__sum_range [#"01_range.rs" 77 0 77 35]
   let%span s01_range1 = "01_range.rs" 79 32 79 33
   let%span s01_range2 = "01_range.rs" 80 19 80 35
   let%span s01_range3 = "01_range.rs" 81 23 81 47
-  let%span s01_range4 = "01_range.rs" 82 16 82 23
+  let%span s01_range4 = "01_range.rs" 84 16 84 46
   let%span s01_range5 = "01_range.rs" 83 16 83 55
-  let%span s01_range6 = "01_range.rs" 84 16 84 46
+  let%span s01_range6 = "01_range.rs" 82 16 82 23
   let%span s01_range7 = "01_range.rs" 88 27 88 75
   let%span s01_range8 = "01_range.rs" 89 21 89 22
   let%span s01_range9 = "01_range.rs" 75 11 75 18
@@ -225,15 +225,17 @@ module M_01_range__sum_range [#"01_range.rs" 77 0 77 35]
   
   use prelude.prelude.Snapshot
   
-  use prelude.prelude.Snapshot
+  use prelude.prelude.IntSize
   
   use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Int
   
   use seq.Seq
   
-  use prelude.prelude.IntSize
+  use prelude.prelude.Int
+  
+  use prelude.prelude.Snapshot
+  
+  use prelude.prelude.Snapshot
   
   use seq.Seq
   
@@ -244,8 +246,6 @@ module M_01_range__sum_range [#"01_range.rs" 77 0 77 35]
     /\ Seq.length visited = IntSize.to_int o.t_Range__start'0 - IntSize.to_int self.t_Range__start'0
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> IntSize.to_int (Seq.get visited i) = IntSize.to_int self.t_Range__start'0 + i)
-  
-  use prelude.prelude.Snapshot
   
   use prelude.prelude.Borrow
   
@@ -297,7 +297,8 @@ module M_01_range__sum_range [#"01_range.rs" 77 0 77 35]
   
   meta "compute_max_steps" 1000000
   
-  let rec sum_range'0 (n:isize) (return'  (ret:isize))= {[%#s01_range9] IntSize.to_int n >= 0}
+  let rec sum_range'0 (n:isize) (return'  (ret:isize))= {[@expl:sum_range requires] [%#s01_range9] IntSize.to_int n
+    >= 0}
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &i <- [%#s01_range0] (0 : isize) ] s1
@@ -309,10 +310,9 @@ module M_01_range__sum_range [#"01_range.rs" 77 0 77 35]
     | bb2 = s0 [ s0 =  [ &produced <- [%#s01_range3] Snapshot.new (Seq.empty  : Seq.seq isize) ] s1 | s1 = bb3 ] 
     | bb3 = bb4
     | bb4 = bb4
-      [ bb4 = {[@expl:loop invariant 2] [%#s01_range6] IntSize.to_int i = Seq.length (Snapshot.inner produced)
-        /\ i <= n}
-        {[@expl:loop invariant 1] [%#s01_range5] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) it}
-        {[@expl:loop invariant 0] [%#s01_range4] inv'0 it}
+      [ bb4 = {[@expl:loop invariant #0] [%#s01_range6] inv'0 it}
+        {[@expl:loop invariant #1] [%#s01_range5] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) it}
+        {[@expl:loop invariant #2] [%#s01_range4] IntSize.to_int i = Seq.length (Snapshot.inner produced) /\ i <= n}
         (! s0) [ s0 = bb5 ] 
         [ bb5 = s0
           [ s0 = Borrow.borrow_mut <t_Range'0> {it}
@@ -347,7 +347,7 @@ module M_01_range__sum_range [#"01_range.rs" 77 0 77 35]
     | & _18 : borrowed (t_Range'0) = any_l ()
     | & x : isize = any_l ()
     | & _21 : Snapshot.snap_ty (Seq.seq isize) = any_l () ]
-     [ return' (result:isize)-> {[@expl:postcondition] [%#s01_range10] result = n} (! return' {result}) ] 
+     [ return' (result:isize)-> {[@expl:sum_range ensures] [%#s01_range10] result = n} (! return' {result}) ] 
 end
 module M_01_range__qyi16572111325853806140__produces_trans__refines [#"01_range.rs" 51 4 51 90] (* <Range as common::Iterator> *)
   let%span s01_range0 = "01_range.rs" 51 4 51 90
@@ -443,11 +443,11 @@ module M_01_range__qyi16572111325853806140__next__refines [#"01_range.rs" 57 4 5
     | C_None'0 -> completed'0 self
     | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
     end
-   -> inv'1 result
-  /\ match result with
+   -> match result with
     | C_None'0 -> completed'0 self
     | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
-    end)
+    end
+  /\ inv'1 result)
 end
 module M_01_range__qyi16572111325853806140__produces_refl__refines [#"01_range.rs" 44 4 44 26] (* <Range as common::Iterator> *)
   let%span s01_range0 = "01_range.rs" 44 4 44 26
