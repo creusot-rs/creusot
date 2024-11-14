@@ -4,25 +4,23 @@ pub use ::std::ops::*;
 
 /// `FnOnceExt` is an extension trait for the `FnOnce` trait, used for
 /// adding a specification to closures. It should not be used directly.
-#[rustc_diagnostic_item = "fn_once_spec"]
 pub trait FnOnceExt<Args: Tuple> {
     type Output;
 
-    #[predicate]
+    #[predicate(prophetic)]
     fn precondition(self, a: Args) -> bool;
 
-    #[predicate]
+    #[predicate(prophetic)]
     fn postcondition_once(self, a: Args, res: Self::Output) -> bool;
 }
 
 /// `FnMutExt` is an extension trait for the `FnMut` trait, used for
 /// adding a specification to closures. It should not be used directly.
-#[rustc_diagnostic_item = "fn_mut_spec"]
 pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
-    #[predicate]
+    #[predicate(prophetic)]
     fn postcondition_mut(&mut self, _: Args, _: Self::Output) -> bool;
 
-    #[predicate]
+    #[predicate(prophetic)]
     fn unnest(self, _: Self) -> bool;
 
     #[law]
@@ -49,9 +47,8 @@ pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
 
 /// `FnExt` is an extension trait for the `Fn` trait, used for
 /// adding a specification to closures. It should not be used directly.
-#[rustc_diagnostic_item = "fn_spec"]
 pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
-    #[predicate]
+    #[predicate(prophetic)]
     fn postcondition(&self, _: Args, _: Self::Output) -> bool;
 
     #[law]
@@ -68,34 +65,38 @@ pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
 impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
     type Output = <Self as FnOnce<Args>>::Output;
 
-    #[predicate]
-    #[trusted]
+    #[predicate(prophetic)]
+    #[open]
+    #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_once_impl_precond"]
-    fn precondition(self, _: Args) -> bool {
-        dead
+    fn precondition(self, args: Args) -> bool {
+        true /* Dummy */
     }
 
-    #[predicate]
-    #[trusted]
+    #[predicate(prophetic)]
+    #[open]
+    #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_once_impl_postcond"]
-    fn postcondition_once(self, _: Args, _: Self::Output) -> bool {
-        dead
+    fn postcondition_once(self, args: Args, result: Self::Output) -> bool {
+        true /* Dummy */
     }
 }
 
 impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
-    #[predicate]
-    #[trusted]
+    #[predicate(prophetic)]
+    #[open]
+    #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_mut_impl_postcond"]
-    fn postcondition_mut(&mut self, _: Args, _: Self::Output) -> bool {
-        dead
+    fn postcondition_mut(&mut self, args: Args, result: Self::Output) -> bool {
+        true /* Dummy */
     }
 
-    #[predicate]
-    #[trusted]
+    #[predicate(prophetic)]
+    #[open]
+    #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_mut_impl_unnest"]
     fn unnest(self, _: Self) -> bool {
-        dead
+        true /* Dummy */
     }
 
     #[trusted]
@@ -124,10 +125,11 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
 
 impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
     #[predicate]
-    #[trusted]
+    #[open]
+    #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_impl_postcond"]
-    fn postcondition(&self, _: Args, _: Self::Output) -> bool {
-        dead
+    fn postcondition(&self, args: Args, result: Self::Output) -> bool {
+        true /* Dummy */
     }
 
     #[law]

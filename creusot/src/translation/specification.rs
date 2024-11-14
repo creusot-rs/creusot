@@ -1,5 +1,9 @@
 use crate::{
-    contracts_items::{creusot_clause_attrs, get_fn_mut_unnest, is_open_inv_result, is_pearlite},
+    contracts_items::{
+        creusot_clause_attrs, get_fn_mut_impl_unnest, is_fn_impl_postcond, is_fn_mut_impl_postcond,
+        is_fn_mut_impl_unnest, is_fn_once_impl_postcond, is_fn_once_impl_precond,
+        is_open_inv_result, is_pearlite,
+    },
     ctx::*,
     function::closure_capture_subst,
     naming::anonymous_param_symbol,
@@ -461,7 +465,7 @@ pub(crate) fn pre_sig_of<'tcx>(
             let unnest_subst =
                 ctx.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty.peel_refs())]);
 
-            let unnest_id = get_fn_mut_unnest(ctx.tcx);
+            let unnest_id = get_fn_mut_impl_unnest(ctx.tcx);
 
             let term = Term::call(
                 ctx.tcx,
@@ -486,7 +490,13 @@ pub(crate) fn pre_sig_of<'tcx>(
     let mut inputs: Vec<_> = inputs
         .enumerate()
         .map(|(idx, (ident, ty))| {
-            if ident.name.as_str() == "result" {
+            if ident.name.as_str() == "result"
+                && !is_fn_impl_postcond(ctx.tcx, def_id)
+                && !is_fn_mut_impl_postcond(ctx.tcx, def_id)
+                && !is_fn_once_impl_postcond(ctx.tcx, def_id)
+                && !is_fn_mut_impl_unnest(ctx.tcx, def_id)
+                && !is_fn_once_impl_precond(ctx.tcx, def_id)
+            {
                 ctx.crash_and_error(ident.span, "`result` is not allowed as a parameter name")
             }
 

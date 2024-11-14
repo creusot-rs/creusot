@@ -137,13 +137,13 @@ pub fn less_than(v: Vec<u32>, n: u32) -> Vec<u32> {
 }
 
 #[open]
-#[predicate]
+#[predicate(prophetic)]
 pub fn no_precondition<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f : F, i : A> f.precondition((i,)) }
 }
 
 #[open]
-#[predicate]
+#[predicate(prophetic)]
 pub fn immutable<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f : F, g : F> f.unnest(g) ==> f == g }
 }
@@ -155,7 +155,7 @@ pub fn plain<A, F: FnMut(A) -> bool>(_: F) -> bool {
 }
 
 #[open]
-#[predicate]
+#[predicate(prophetic)]
 pub fn precise<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f : &mut F, i : _> !(f.postcondition_mut((i,), true) && f.postcondition_mut((i,), false)) }
 }

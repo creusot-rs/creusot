@@ -3,7 +3,7 @@ use crate::{
     backend::ty_inv::is_tyinv_trivial,
     constant::from_mir_constant,
     contracts_items::{
-        get_fn_mut_unnest, get_resolve_function, get_resolve_method, is_ghost_closure,
+        get_fn_mut_impl_unnest, get_resolve_function, get_resolve_method, is_ghost_closure,
         is_snapshot_closure, is_spec,
     },
     ctx::*,
@@ -15,7 +15,7 @@ use crate::{
     resolve::{place_contains_borrow_deref, HasMoveDataExt, Resolver},
     translation::{
         pearlite::{self, super_visit_mut_term, TermKind, TermVisitorMut},
-        specification::{contract_of, inv_subst, PreContract, PreSignature},
+        specification::{contract_of, inv_subst},
         traits,
     },
 };
@@ -29,8 +29,8 @@ use rustc_middle::{
         PlaceRef, TerminatorKind, START_BLOCK,
     },
     ty::{
-        BorrowKind, ClosureKind::*, EarlyBinder, GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt,
-        TyKind, TypeVisitableExt, UpvarCapture,
+        BorrowKind, ClosureKind::*, GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
+        TypeVisitableExt, UpvarCapture,
     },
 };
 use rustc_mir_dataflow::{
@@ -786,12 +786,11 @@ fn mk_goto<'tcx>(bb: BasicBlock) -> fmir::Terminator<'tcx> {
 
 #[derive(Clone)]
 pub(crate) struct ClosureContract<'tcx> {
-    pub(crate) resolve: (PreSignature<'tcx>, Term<'tcx>),
-    pub(crate) precond: (PreSignature<'tcx>, Term<'tcx>),
-    pub(crate) postcond_once: Option<(PreSignature<'tcx>, Term<'tcx>)>,
-    pub(crate) postcond_mut: Option<(PreSignature<'tcx>, Term<'tcx>)>,
-    pub(crate) postcond: Option<(PreSignature<'tcx>, Term<'tcx>)>,
-    pub(crate) unnest: Option<(PreSignature<'tcx>, Term<'tcx>)>,
+    pub(crate) precond: Term<'tcx>,
+    pub(crate) postcond_once: Option<Term<'tcx>>,
+    pub(crate) postcond_mut: Option<Term<'tcx>>,
+    pub(crate) postcond: Option<Term<'tcx>>,
+    pub(crate) unnest: Option<Term<'tcx>>,
 }
 
 impl<'tcx> TranslationCtx<'tcx> {
@@ -801,67 +800,51 @@ impl<'tcx> TranslationCtx<'tcx> {
         };
 
         let kind = subst.as_closure().kind();
-        let mut pre_clos_sig = self.sig(def_id).clone();
 
         let contract = contract_of(self, def_id);
         let mut postcondition: Term<'_> = contract.ensures_conj(self.tcx);
         let mut precondition: Term<'_> = contract.requires_conj(self.tcx);
 
-        let result_ty = pre_clos_sig.output;
-        pre_clos_sig.output = self.types.bool;
+        let (args_nms, args_tys): (Vec<_>, Vec<_>) =
+            self.sig(def_id).inputs.iter().skip(1).map(|&(nm, _, ref ty)| (nm, ty.clone())).unzip();
 
-        pre_clos_sig.contract = PreContract::default();
+        let arg_ty = Ty::new_tup(self.tcx, &args_tys);
 
-        let args: Vec<_> = pre_clos_sig.inputs.drain(1..).collect();
+        let arg_tuple = Term::var(Symbol::intern("args"), arg_ty);
 
-        if args.len() == 0 {
-            pre_clos_sig.inputs.push((Symbol::intern("_"), DUMMY_SP, self.types.unit))
-        } else {
-            let arg_tys: Vec<_> = args.iter().map(|(_, _, ty)| *ty).collect();
-            let arg_ty = Ty::new_tup(self.tcx, &arg_tys);
+        let arg_pat = pearlite::Pattern::Tuple(
+            args_nms
+                .iter()
+                .enumerate()
+                .map(|(idx, nm)| {
+                    if nm.is_empty() {
+                        // We skipped the first element
+                        pearlite::Pattern::Binder(anonymous_param_symbol(idx + 1))
+                    } else {
+                        pearlite::Pattern::Binder(*nm)
+                    }
+                })
+                .collect(),
+        );
 
-            pre_clos_sig.inputs.push((Symbol::intern("args"), DUMMY_SP, arg_ty));
-
-            let arg_tuple = Term::var(Symbol::intern("args"), arg_ty);
-
-            let arg_pat = pearlite::Pattern::Tuple(
-                args.iter()
-                    .enumerate()
-                    .map(|(idx, (nm, _, _))| {
-                        if nm.is_empty() {
-                            // We skipped the first element
-                            pearlite::Pattern::Binder(anonymous_param_symbol(idx + 1))
-                        } else {
-                            pearlite::Pattern::Binder(*nm)
-                        }
-                    })
-                    .collect(),
-            );
-
-            postcondition = pearlite::Term {
-                span: postcondition.span,
-                kind: TermKind::Let {
-                    pattern: arg_pat.clone(),
-                    arg: Box::new(arg_tuple.clone()),
-                    body: Box::new(postcondition),
-                },
-                ty: self.types.bool,
-            };
-            precondition = pearlite::Term {
-                span: precondition.span,
-                kind: TermKind::Let {
-                    pattern: arg_pat,
-                    arg: Box::new(arg_tuple),
-                    body: Box::new(precondition),
-                },
-                ty: self.types.bool,
-            };
-        }
-
-        let mut post_sig = pre_clos_sig.clone();
-        let pre_sig = pre_clos_sig;
-
-        post_sig.inputs.push((Symbol::intern("result"), DUMMY_SP, result_ty));
+        postcondition = pearlite::Term {
+            span: postcondition.span,
+            kind: TermKind::Let {
+                pattern: arg_pat.clone(),
+                arg: Box::new(arg_tuple.clone()),
+                body: Box::new(postcondition),
+            },
+            ty: self.types.bool,
+        };
+        precondition = pearlite::Term {
+            span: precondition.span,
+            kind: TermKind::Let {
+                pattern: arg_pat,
+                arg: Box::new(arg_tuple),
+                body: Box::new(precondition),
+            },
+            ty: self.types.bool,
+        };
 
         let env_ty = self
             .closure_env_ty(
@@ -874,24 +857,16 @@ impl<'tcx> TranslationCtx<'tcx> {
 
         let precond = {
             // Preconditions are the same for every kind of closure
-            let mut pre_sig = pre_sig;
-
-            pre_sig.inputs[0].0 = Symbol::intern("self");
-            pre_sig.inputs[0].2 = self_ty;
-
             let mut subst =
                 closure_capture_subst(self.tcx, def_id, subst, None, Symbol::intern("self"));
 
             let mut precondition = precondition.clone();
             subst.visit_mut_term(&mut precondition);
 
-            (pre_sig, precondition)
+            precondition
         };
 
-        let mut resolve = closure_resolve(self, def_id, subst);
-        resolve.1 = normalize(self.tcx, self.param_env(def_id), resolve.1);
         let mut contracts = ClosureContract {
-            resolve,
             precond,
             postcond: None,
             postcond_once: None,
@@ -900,26 +875,16 @@ impl<'tcx> TranslationCtx<'tcx> {
         };
 
         if kind.extends(Fn) {
-            let mut post_sig = post_sig.clone();
-
-            post_sig.inputs[0].0 = Symbol::intern("self");
-            post_sig.inputs[0].2 = self_ty;
             let mut csubst =
                 closure_capture_subst(self.tcx, def_id, subst, Some(Fn), Symbol::intern("self"));
             let mut postcondition = postcondition.clone();
 
             csubst.visit_mut_term(&mut postcondition);
 
-            contracts.postcond = Some((post_sig, postcondition));
+            contracts.postcond = Some(postcondition);
         }
 
         if kind.extends(FnMut) {
-            let mut post_sig = post_sig.clone();
-            // post_sig.name = Ident::build("postcondition_mut");
-
-            post_sig.inputs[0].0 = Symbol::intern("self");
-            post_sig.inputs[0].2 = Ty::new_mut_ref(self.tcx, self.lifetimes.re_erased, self_ty);
-
             let mut csubst =
                 closure_capture_subst(self.tcx, def_id, subst, Some(FnMut), Symbol::intern("self"));
 
@@ -929,7 +894,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             let args = subst.as_closure().sig().inputs().skip_binder()[0];
             let unnest_subst = self.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty)]);
 
-            let unnest_id = get_fn_mut_unnest(self.tcx);
+            let unnest_id = get_fn_mut_impl_unnest(self.tcx);
 
             let mut postcondition: Term<'tcx> = postcondition;
             postcondition = postcondition.conj(Term::call_no_normalize(
@@ -952,21 +917,14 @@ impl<'tcx> TranslationCtx<'tcx> {
 
             postcondition = normalize(self.tcx, self.param_env(def_id), postcondition);
 
-            let unnest_sig =
-                EarlyBinder::bind(self.sig(unnest_id).clone()).instantiate(self.tcx, unnest_subst);
-
             let mut unnest = closure_unnest(self.tcx, def_id, subst);
             unnest = normalize(self.tcx, self.param_env(def_id), unnest);
 
-            contracts.unnest = Some((unnest_sig, unnest));
-            contracts.postcond_mut = Some((post_sig, postcondition));
+            contracts.unnest = Some(unnest);
+            contracts.postcond_mut = Some(postcondition);
         }
 
         if kind.extends(FnOnce) {
-            let mut post_sig = post_sig.clone();
-            post_sig.inputs[0].0 = Symbol::intern("self");
-            post_sig.inputs[0].2 = self_ty;
-
             let mut csubst = closure_capture_subst(
                 self.tcx,
                 def_id,
@@ -978,18 +936,18 @@ impl<'tcx> TranslationCtx<'tcx> {
             let mut postcondition = postcondition.clone();
             csubst.visit_mut_term(&mut postcondition);
 
-            contracts.postcond_once = Some((post_sig, postcondition));
+            contracts.postcond_once = Some(postcondition);
         }
 
         contracts
     }
 }
 
-fn closure_resolve<'tcx>(
+pub(crate) fn closure_resolve<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
-) -> (PreSignature<'tcx>, Term<'tcx>) {
+) -> Term<'tcx> {
     let mut resolve = Term::mk_true(ctx.tcx);
 
     let self_ = Term::var(Symbol::intern("_1"), ctx.type_of(def_id).instantiate_identity());
@@ -1007,17 +965,7 @@ fn closure_resolve<'tcx>(
         }
     }
 
-    let sig = PreSignature {
-        inputs: vec![(
-            Symbol::intern("_1"),
-            ctx.def_span(def_id),
-            ctx.type_of(def_id).instantiate_identity(),
-        )],
-        output: ctx.types.bool,
-        contract: PreContract::default(),
-    };
-
-    (sig, resolve)
+    resolve
 }
 
 fn closure_unnest<'tcx>(

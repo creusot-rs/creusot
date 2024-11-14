@@ -84,7 +84,7 @@ impl<T> Resolve for Option<T> {
 #[rustc_diagnostic_item = "creusot_structural_resolve"]
 #[creusot::no_translate]
 pub fn structural_resolve<T: ?Sized>(_: &T) -> bool {
-    true
+    true /* Dummy */
 }
 
 #[cfg(not(creusot))]

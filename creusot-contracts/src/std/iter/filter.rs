@@ -59,7 +59,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Invariant for Filter<I, F> {
 /// Asserts that `f` has no precondition: any closure state can be called with any input value
 /// In a future release this restriction may be lifted or weakened
 #[open]
-#[predicate]
+#[predicate(prophetic)]
 pub fn no_precondition<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f : F, i : A> f.precondition((i,)) }
 }
@@ -67,7 +67,7 @@ pub fn no_precondition<A, F: FnMut(A) -> bool>(_: F) -> bool {
 /// Asserts that the captures of `f` are used immutably
 /// In a future release this restriction may be lifted or weakened
 #[open]
-#[predicate]
+#[predicate(prophetic)]
 pub fn immutable<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f : F, g : F> f.unnest(g) ==> f == g }
 }
@@ -82,7 +82,7 @@ pub fn plain<A, F: FnMut(A) -> bool>(_: F) -> bool {
 
 /// Asserts that the postcondition of `f` is *precise*: that there are never two possible values matching the postcondition
 #[open]
-#[predicate]
+#[predicate(prophetic)]
 pub fn precise<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f : &mut F, i : _> !(f.postcondition_mut((i,), true) && f.postcondition_mut((i,), false)) }
 }

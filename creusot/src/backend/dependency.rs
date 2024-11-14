@@ -1,4 +1,3 @@
-use rustc_ast_ir::visit::VisitorResult;
 use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LocalDefId},
@@ -9,7 +8,7 @@ use rustc_middle::{
     ty::{GenericArgsRef, Ty, TyCtxt, TyKind},
 };
 use rustc_span::Symbol;
-use rustc_type_ir::{fold::TypeFoldable, visit::TypeVisitable, AliasTyKind, Interner};
+use rustc_type_ir::AliasTyKind;
 
 use crate::{
     backend::PreludeModule,
@@ -28,68 +27,13 @@ pub(crate) enum Dependency<'tcx> {
     Item(DefId, GenericArgsRef<'tcx>),
     TyInvAxiom(Ty<'tcx>),
     AllTyInvAxioms,
-    ClosureSpec(ClosureSpecKind, DefId, GenericArgsRef<'tcx>),
+    ClosureAccessor(DefId, GenericArgsRef<'tcx>, u32),
     Builtin(PreludeModule),
     Eliminator(DefId, GenericArgsRef<'tcx>),
     Promoted(LocalDefId, Promoted),
 }
 
-/// Due to how rustc keeps closures hidden from us, some key symbols of creusot don't get their own def ids.
-/// Instead, we use this enumerator combined with the closure's defid to distinguish these symbols.
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash, PartialOrd, Ord)]
-pub(crate) enum ClosureSpecKind {
-    PostconditionOnce,
-    PostconditionMut,
-    Postcondition,
-    Precondition,
-    Unnest,
-    Resolve,
-    Accessor(u32),
-}
-
-impl<'tcx, I: Interner> TypeVisitable<I> for ClosureSpecKind {
-    fn visit_with<V: rustc_type_ir::visit::TypeVisitor<I>>(&self, _: &mut V) -> V::Result {
-        V::Result::output()
-    }
-}
-
-impl<'tcx, I: Interner> TypeFoldable<I> for ClosureSpecKind {
-    fn try_fold_with<F: rustc_type_ir::fold::FallibleTypeFolder<I>>(
-        self,
-        _: &mut F,
-    ) -> Result<Self, F::Error> {
-        Ok(self)
-    }
-}
-
 impl<'tcx> Dependency<'tcx> {
-    pub(crate) fn item(tcx: TyCtxt<'tcx>, (did, subst): (DefId, GenericArgsRef<'tcx>)) -> Self {
-        // We need to "overload" certain identifiers in rustc so that we can distinguish them while
-        // rustc doesn't. In particular, closures act as both a type and a function and are missing many
-        // identifiers for things like accessors.
-        //
-        // We also use this to overload "structural resolution" for types
-
-        let closure_spec = tcx.get_diagnostic_name(did).and_then(|s| match s.as_str() {
-            "fn_once_impl_precond" => Some((ClosureSpecKind::Precondition, 1)),
-            "fn_once_impl_postcond" => Some((ClosureSpecKind::PostconditionOnce, 1)),
-            "fn_mut_impl_postcond" => Some((ClosureSpecKind::PostconditionMut, 1)),
-            "fn_impl_postcond" => Some((ClosureSpecKind::Postcondition, 1)),
-            "fn_mut_impl_unnest" => Some((ClosureSpecKind::Unnest, 1)),
-            "creusot_resolve_method" => Some((ClosureSpecKind::Resolve, 0)),
-            _ => None,
-        });
-
-        if let Some((closure_spec, param_id)) = closure_spec {
-            let self_ty = subst.types().nth(param_id).unwrap();
-            if let TyKind::Closure(id, subst) = self_ty.kind() {
-                return Dependency::ClosureSpec(closure_spec, *id, subst);
-            }
-        }
-
-        Dependency::Item(did, subst)
-    }
-
     pub(crate) fn did(self) -> Option<(DefId, GenericArgsRef<'tcx>)> {
         match self {
             Dependency::Item(def_id, subst) => Some((def_id, subst)),
@@ -99,13 +43,8 @@ impl<'tcx> Dependency<'tcx> {
                 TyKind::Alias(AliasTyKind::Projection, aty) => Some((aty.def_id, aty.args)),
                 _ => None,
             },
-            Dependency::ClosureSpec(_, id, substs) => Some((id, substs)),
             _ => None,
         }
-    }
-
-    pub(crate) fn is_closure_spec(&self) -> bool {
-        matches!(self, Dependency::ClosureSpec(_, _, _))
     }
 
     // FIXME: this function should not be necessary, dependencies should not be created non-normalized
@@ -148,15 +87,7 @@ impl<'tcx> Dependency<'tcx> {
                     Some(Symbol::intern(&value_name(&translate_name(tcx.item_name(did).as_str()))))
                 }
             },
-            Dependency::ClosureSpec(spec_kind, _, _) => match spec_kind {
-                ClosureSpecKind::PostconditionOnce => Some(Symbol::intern("postcondition_once")),
-                ClosureSpecKind::PostconditionMut => Some(Symbol::intern("postcondition_mut")),
-                ClosureSpecKind::Postcondition => Some(Symbol::intern("postcondition")),
-                ClosureSpecKind::Precondition => Some(Symbol::intern("precondition")),
-                ClosureSpecKind::Unnest => Some(Symbol::intern("unnest")),
-                ClosureSpecKind::Resolve => Some(Symbol::intern("resolve")),
-                ClosureSpecKind::Accessor(ix) => Some(Symbol::intern(&format!("field_{ix}"))),
-            },
+            Dependency::ClosureAccessor(_, _, ix) => Some(Symbol::intern(&format!("field_{ix}"))),
             Dependency::TyInvAxiom(..) => Some(Symbol::intern(&format!("inv_axiom"))),
             Dependency::Eliminator(did, _) => {
                 Some(Symbol::intern(&value_name(&translate_name(tcx.item_name(did).as_str()))))
