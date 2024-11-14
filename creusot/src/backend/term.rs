@@ -122,8 +122,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
             }
             TermKind::Constructor { variant, fields, .. } => {
-                let ty = self.names.normalize(self.ctx, term.creusot_ty());
-                let TyKind::Adt(adt, subst) = ty.kind() else { unreachable!() };
+                let TyKind::Adt(adt, subst) = term.creusot_ty().kind() else { unreachable!() };
                 let fields = fields.into_iter().map(|f| self.lower_term(f)).collect();
                 constructor(self.names, fields, adt.variant(*variant).def_id, subst)
             }
@@ -173,10 +172,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::Tuple(fields.into_iter().map(|f| self.lower_term(f)).collect())
             }
             TermKind::Projection { box lhs, name } => {
-                let base_ty = self.names.normalize(self.ctx, lhs.creusot_ty());
-                let lhs = self.lower_term(lhs);
+                let lhs_low = self.lower_term(lhs);
 
-                let field = match base_ty.kind() {
+                let field = match lhs.creusot_ty().kind() {
                     TyKind::Closure(did, substs) => self.names.field(*did, substs, *name),
                     TyKind::Adt(def, substs) => self.names.field(def.did(), substs, *name),
                     TyKind::Tuple(f) => {
@@ -185,14 +183,14 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                         return Exp::Let {
                             pattern: Pat::TupleP(fields),
-                            arg: Box::new(lhs),
+                            arg: Box::new(lhs_low),
                             body: Box::new(Exp::var("a")),
                         };
                     }
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                lhs.field(&field.as_ident())
+                lhs_low.field(&field.as_ident())
             }
             TermKind::Closure { body, .. } => {
                 let TyKind::Closure(id, subst) = term.creusot_ty().kind() else {
@@ -232,9 +230,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         match pat {
             Pattern::Constructor { variant, fields, substs } => {
                 let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
-                let substs = self.names.normalize(self.ctx, *substs);
                 if self.ctx.def_kind(variant) == DefKind::Variant {
-                    Pat::ConsP(self.names.constructor(*variant, substs), fields)
+                    Pat::ConsP(self.names.constructor(*variant, *substs), fields)
                 } else if fields.len() == 0 {
                     Pat::TupleP(vec![])
                 } else {

@@ -432,7 +432,6 @@ pub(crate) fn pre_sig_of<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> PreSignature<'tcx> {
-    let param_env = ctx.param_env(def_id);
     let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
 
     let mut contract = crate::specification::contract_of(ctx, def_id);
@@ -466,7 +465,7 @@ pub(crate) fn pre_sig_of<'tcx>(
 
             let term = Term::call(
                 ctx.tcx,
-                param_env,
+                ctx.param_env(def_id),
                 unnest_id,
                 unnest_subst,
                 vec![Term::var(self_, env_ty).cur(), Term::var(self_, env_ty).fin()],

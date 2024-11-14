@@ -335,7 +335,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             return;
         }
         // We are indeed in program code.
-        let func_param_env = self.ctx.param_env(fun_def_id);
 
         // Check that we do not call `GhostBox::into_inner` in normal code
         if is_ghost_into_inner(self.ctx.tcx, fun_def_id) {
@@ -379,6 +378,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 )
                 .emit();
         } else {
+            let func_param_env = self.ctx.param_env(fun_def_id);
             // Check and reject instantiation of a <T: Deref> with a ghost parameter.
             let deref_trait_id = self.ctx.require_lang_item(rustc_hir::LangItem::Deref, None);
             let infer_ctx = self.ctx.infer_ctxt().build();
