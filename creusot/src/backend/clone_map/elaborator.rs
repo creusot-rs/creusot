@@ -498,8 +498,8 @@ pub fn term<'tcx>(
             } else if is_resolve_function(ctx.tcx, def_id) {
                 resolve_term(ctx, param_env, def_id, subst)
             } else if is_structural_resolve(ctx.tcx, def_id) {
-                let sig = ctx.sig(def_id).clone();
-                structural_resolve(ctx, sig.inputs[0].0, subst.type_at(0))
+                let subj = ctx.sig(def_id).inputs[0].0;
+                structural_resolve(ctx, subj, subst.type_at(0))
             } else {
                 let term = ctx.ctx.term(def_id).unwrap().clone();
                 let term = normalize(

@@ -14,8 +14,7 @@ pub(crate) fn normalize<'tcx>(
     mut term: Term<'tcx>,
 ) -> Term<'tcx> {
     NormalizeTerm { param_env, tcx }.visit_mut_term(&mut term);
-    // FIXME: we should normalize here, but it diverges when normalizing specification of partial_eq
-    // let term = tcx.normalize_erasing_regions(param_env, term);
+    let term = tcx.normalize_erasing_regions(param_env, term);
     term
 }
 
@@ -38,7 +37,6 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
                     *id = method.0;
                     *subst = method.1;
                 }
-                *subst = self.tcx.normalize_erasing_regions(self.param_env, *subst);
 
                 if is_box_new(self.tcx, *id) {
                     let arg = args.remove(0);

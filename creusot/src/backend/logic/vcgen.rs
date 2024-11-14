@@ -345,9 +345,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             TermKind::Tuple { fields } => self.build_vc_slice(fields, &|flds| k(Exp::Tuple(flds))),
             // Same as for tuples
             TermKind::Constructor { variant, fields, .. } => {
-                let ty =
-                    self.ctx.borrow().normalize_erasing_regions(self.param_env, t.creusot_ty());
-                let TyKind::Adt(adt, subst) = ty.kind() else { unreachable!() };
+                let TyKind::Adt(adt, subst) = t.creusot_ty().kind() else { unreachable!() };
                 self.build_vc_slice(fields, &|fields| {
                     let ctor = constructor(
                         *self.names.borrow_mut(),
@@ -406,9 +404,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             }),
             // VC(A.f, Q) = VC(A, |a| Q(a.f))
             TermKind::Projection { lhs, name } => {
-                let ty =
-                    self.ctx.borrow().normalize_erasing_regions(self.param_env, lhs.creusot_ty());
-                let field = match ty.kind() {
+                let field = match lhs.creusot_ty().kind() {
                     TyKind::Closure(did, substs) => {
                         self.names.borrow_mut().field(*did, substs, *name).as_ident()
                     }
@@ -462,9 +458,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             Pattern::Constructor { variant, fields, substs } => {
                 let fields =
                     fields.into_iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect();
-                let substs = self.ctx.borrow().normalize_erasing_regions(self.param_env, *substs);
                 if self.ctx.borrow().def_kind(variant) == DefKind::Variant {
-                    Pat::ConsP(self.names.borrow_mut().constructor(*variant, substs), fields)
+                    Pat::ConsP(self.names.borrow_mut().constructor(*variant, *substs), fields)
                 } else if fields.len() == 0 {
                     Pat::TupleP(vec![])
                 } else {

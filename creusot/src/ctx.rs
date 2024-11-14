@@ -32,6 +32,7 @@ use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LocalDefId},
 };
+use rustc_infer::traits::ObligationCause;
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{Body, Promoted, TerminatorKind},
@@ -41,6 +42,7 @@ use rustc_middle::{
     },
 };
 use rustc_span::{Span, Symbol};
+use rustc_trait_selection::traits::normalize_param_env_or_error;
 use std::{collections::HashMap, ops::Deref};
 
 pub(crate) use crate::{backend::clone_map::*, translated_item::*};
@@ -398,15 +400,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                 .collect::<Vec<_>>();
             let res =
                 ParamEnv::new(self.mk_clauses(&clauses), rustc_infer::traits::Reveal::UserFacing);
-            // FIXME: param envs should be normalized (this is an invariant of the trait solver),
-            // but calling this function here causes an overflow in the handling of PartialEq::eq
-            // I see two solutions:
-            //    1- Wait for the next trait solver that does not need this (I think).
-            //    2- Allow adding new generic type variables in extern specs, so that we could write
-            //             Self: DeepModel<DeepModelTy = T>,
-            //             Rhs: DeepModel<DeepModelTy = T>;
-            //
-            // let res = normalize_param_env_or_error(self.tcx, res, ObligationCause::dummy());
+            let res = normalize_param_env_or_error(self.tcx, res, ObligationCause::dummy());
             res
         } else {
             self.tcx.param_env(def_id)

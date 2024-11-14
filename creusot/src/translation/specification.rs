@@ -377,12 +377,17 @@ pub(crate) fn contract_of<'tcx>(
         let mut contract =
             extern_spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, extern_spec.subst);
         contract.subst(&extern_spec.arg_subst.iter().cloned().collect());
-        contract.normalize(ctx.tcx, ctx.param_env(def_id))
+        // We do NOT normalize the contract here. See below.
+        contract
     } else if let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id) {
         let spec = ctx.extern_spec(parent_id).cloned().unwrap();
         let mut contract = spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, subst);
         contract.subst(&spec.arg_subst.iter().cloned().collect());
-        contract.normalize(ctx.tcx, ctx.param_env(def_id))
+        // We do NOT normalize the contract here: indeed, we do not have a valid non-redundant param
+        // env for doing this. This is still valid because this contract is going to be substituted
+        // and normalized in the caller context (such extern specs are only evaluated in the context
+        // of a specific call).
+        contract
     } else {
         let subst = erased_identity_for_item(ctx.tcx, def_id);
         let mut contract = contract_clauses_of(ctx, def_id)
@@ -427,7 +432,6 @@ pub(crate) fn pre_sig_of<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> PreSignature<'tcx> {
-    let param_env = ctx.param_env(def_id);
     let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
 
     let mut contract = crate::specification::contract_of(ctx, def_id);
@@ -461,7 +465,7 @@ pub(crate) fn pre_sig_of<'tcx>(
 
             let term = Term::call(
                 ctx.tcx,
-                param_env,
+                ctx.param_env(def_id),
                 unnest_id,
                 unnest_subst,
                 vec![Term::var(self_, env_ty).cur(), Term::var(self_, env_ty).fin()],
@@ -546,7 +550,7 @@ pub(crate) fn pre_sig_of<'tcx>(
         }
     }
 
-    PreSignature { inputs, output, contract }.normalize(ctx.tcx, param_env)
+    PreSignature { inputs, output, contract }
 }
 
 fn inputs_and_output<'tcx>(
