@@ -7,7 +7,7 @@ pub fn f(c: bool) {
     let bx = Box::new(&mut x);
     let by = Box::new(Box::new(&mut y));
     let f = #[requires((**bx)@ == 1 && (***by)@ == 1)]
-    #[ensures((^*bx)@ + (^**by)@ == 3)]
+    #[ensures((^*old(bx))@ + (^**old(by))@ == 3)]
     move || {
         if c {
             // TODO : fix #1072 and remove comments

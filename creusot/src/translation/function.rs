@@ -29,7 +29,7 @@ use rustc_middle::{
         PlaceRef, TerminatorKind, START_BLOCK,
     },
     ty::{
-        BorrowKind, ClosureKind::*, GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
+        BorrowKind, ClosureKind, GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
         TypeVisitableExt, UpvarCapture,
     },
 };
@@ -39,7 +39,6 @@ use rustc_mir_dataflow::{
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_target::abi::{FieldIdx, VariantIdx};
-use rustc_type_ir::ClosureKind;
 use std::{
     collections::{HashMap, HashSet},
     iter,
@@ -853,12 +852,12 @@ impl<'tcx> TranslationCtx<'tcx> {
                 self.lifetimes.re_erased,
             )
             .peel_refs();
-        let self_ty = env_ty;
 
         let precond = {
+            let self_ = Term::var(Symbol::intern("self"), env_ty);
+
             // Preconditions are the same for every kind of closure
-            let mut subst =
-                closure_capture_subst(self.tcx, def_id, subst, None, Symbol::intern("self"));
+            let mut subst = closure_capture_subst(self, def_id, subst, false, None, self_.clone());
 
             let mut precondition = precondition.clone();
             subst.visit_mut_term(&mut precondition);
@@ -874,9 +873,10 @@ impl<'tcx> TranslationCtx<'tcx> {
             unnest: None,
         };
 
-        if kind.extends(Fn) {
+        if kind.extends(ClosureKind::Fn) {
+            let self_ = Term::var(Symbol::intern("self"), env_ty);
             let mut csubst =
-                closure_capture_subst(self.tcx, def_id, subst, Some(Fn), Symbol::intern("self"));
+                closure_capture_subst(self, def_id, subst, false, Some(self_.clone()), self_);
             let mut postcondition = postcondition.clone();
 
             csubst.visit_mut_term(&mut postcondition);
@@ -884,9 +884,17 @@ impl<'tcx> TranslationCtx<'tcx> {
             contracts.postcond = Some(postcondition);
         }
 
-        if kind.extends(FnMut) {
-            let mut csubst =
-                closure_capture_subst(self.tcx, def_id, subst, Some(FnMut), Symbol::intern("self"));
+        if kind.extends(ClosureKind::FnMut) {
+            let self_ = Term::var(Symbol::intern("self"), env_ty);
+            let result_state = Term::var(Symbol::intern("result_state"), env_ty);
+            let mut csubst = closure_capture_subst(
+                self,
+                def_id,
+                subst,
+                false,
+                Some(self_.clone()),
+                result_state.clone(),
+            );
 
             let mut postcondition = postcondition.clone();
             csubst.visit_mut_term(&mut postcondition);
@@ -901,18 +909,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 self.tcx,
                 unnest_id,
                 unnest_subst,
-                vec![
-                    Term::var(
-                        Symbol::intern("self"),
-                        Ty::new_mut_ref(self.tcx, self.lifetimes.re_erased, self_ty),
-                    )
-                    .cur(),
-                    Term::var(
-                        Symbol::intern("self"),
-                        Ty::new_mut_ref(self.tcx, self.lifetimes.re_erased, self_ty),
-                    )
-                    .fin(),
-                ],
+                vec![self_, result_state],
             ));
 
             postcondition = normalize(self.tcx, self.param_env(def_id), postcondition);
@@ -924,20 +921,14 @@ impl<'tcx> TranslationCtx<'tcx> {
             contracts.postcond_mut = Some(postcondition);
         }
 
-        if kind.extends(FnOnce) {
-            let mut csubst = closure_capture_subst(
-                self.tcx,
-                def_id,
-                subst,
-                Some(FnOnce),
-                Symbol::intern("self"),
-            );
+        // FnOnce
+        let self_ = Term::var(Symbol::intern("self"), env_ty);
+        let mut csubst =
+            closure_capture_subst(self, def_id, subst, true, Some(self_.clone()), self_);
 
-            let mut postcondition = postcondition.clone();
-            csubst.visit_mut_term(&mut postcondition);
-
-            contracts.postcond_once = Some(postcondition);
-        }
+        let mut postcondition = postcondition.clone();
+        csubst.visit_mut_term(&mut postcondition);
+        contracts.postcond_once = Some(postcondition);
 
         contracts
     }
@@ -1014,36 +1005,36 @@ fn closure_unnest<'tcx>(
 
 // Responsible for replacing occurences of captured variables with projections from the closure environment.
 // Must also account for the *kind* of capture and the *kind* of closure involved each time.
-pub(crate) struct ClosureSubst<'tcx> {
+pub(crate) struct ClosureSubst<'a, 'tcx> {
+    ctx: &'a TranslationCtx<'tcx>,
     self_: Term<'tcx>,
-    kind: Option<ClosureKind>,
-
+    old_self: Option<Term<'tcx>>,
+    self_consumed: bool,
     map: IndexMap<Symbol, (UpvarCapture, Ty<'tcx>, FieldIdx)>,
     bound: HashSet<Symbol>,
+    pub use_of_consumed_var_error: Option<Span>,
 }
 
-impl<'tcx> ClosureSubst<'tcx> {
+impl<'a, 'tcx> ClosureSubst<'a, 'tcx> {
     // TODO: Simplify this logic.
-    fn var(&self, x: Symbol) -> Option<Term<'tcx>> {
+    fn var(&mut self, x: Symbol, span: Span) -> Option<Term<'tcx>> {
         let (ck, ty, ix) = *self.map.get(&x)?;
-
-        let self_ = match self.kind {
-            None => self.self_.clone(),
-            Some(ClosureKind::Fn) => self.self_.clone().cur(),
-            Some(ClosureKind::FnMut) => self.self_.clone().fin(),
-            Some(ClosureKind::FnOnce) => self.self_.clone(),
-        };
 
         let proj = Term {
             ty,
-            kind: TermKind::Projection { lhs: Box::new(self_), name: ix },
+            kind: TermKind::Projection { lhs: Box::new(self.self_.clone()), name: ix },
             span: DUMMY_SP,
         };
 
         match ck {
-            UpvarCapture::ByValue => Some(proj),
+            UpvarCapture::ByValue => {
+                if self.self_consumed {
+                    self.use_of_consumed_var_error = Some(span)
+                }
+                Some(proj)
+            }
             UpvarCapture::ByRef(BorrowKind::MutBorrow | BorrowKind::UniqueImmBorrow)
-                if self.kind == Some(ClosureKind::FnOnce) =>
+                if self.self_consumed =>
             {
                 Some(proj.fin())
             }
@@ -1051,19 +1042,16 @@ impl<'tcx> ClosureSubst<'tcx> {
         }
     }
 
-    fn old(&self, x: Symbol) -> Option<Term<'tcx>> {
+    fn old(&self, x: Symbol, span: Span) -> Option<Term<'tcx>> {
         let (ck, ty, ix) = *self.map.get(&x)?;
 
-        let self_ = match self.kind {
-            Some(ClosureKind::Fn) => self.self_.clone().cur(),
-            Some(ClosureKind::FnMut) => self.self_.clone().cur(),
-            Some(ClosureKind::FnOnce) => self.self_.clone(),
-            None => unreachable!(),
-        };
+        let old_self = self.old_self.clone().unwrap_or_else(|| {
+            self.ctx.fatal_error(span, "Cannot use `old` in a precondition.").emit()
+        });
 
         let proj = Term {
             ty,
-            kind: TermKind::Projection { lhs: Box::new(self_), name: ix },
+            kind: TermKind::Projection { lhs: Box::new(old_self), name: ix },
             span: DUMMY_SP,
         };
 
@@ -1074,12 +1062,12 @@ impl<'tcx> ClosureSubst<'tcx> {
     }
 }
 
-impl<'tcx> TermVisitorMut<'tcx> for ClosureSubst<'tcx> {
+impl<'a, 'tcx> TermVisitorMut<'tcx> for ClosureSubst<'a, 'tcx> {
     fn visit_mut_term(&mut self, term: &mut Term<'tcx>) {
         match &mut term.kind {
             TermKind::Old { term: box Term { kind: TermKind::Var(x), .. }, .. } => {
                 if !self.bound.contains(&x) {
-                    if let Some(v) = self.old(*x) {
+                    if let Some(v) = self.old(*x, term.span) {
                         *term = v;
                     }
                     return;
@@ -1087,7 +1075,7 @@ impl<'tcx> TermVisitorMut<'tcx> for ClosureSubst<'tcx> {
             }
             TermKind::Var(x) => {
                 if !self.bound.contains(&x) {
-                    if let Some(v) = self.var(*x) {
+                    if let Some(v) = self.var(*x, term.span) {
                         *term = v;
                     }
                 }
@@ -1128,43 +1116,36 @@ impl<'tcx> TermVisitorMut<'tcx> for ClosureSubst<'tcx> {
     }
 }
 
-pub(crate) fn closure_capture_subst<'tcx>(
-    tcx: TyCtxt<'tcx>,
+pub(crate) fn closure_capture_subst<'a, 'tcx>(
+    ctx: &'a TranslationCtx<'tcx>,
     def_id: DefId,
     cs: GenericArgsRef<'tcx>,
     // What kind of substitution we should generate. The same precondition can be used in several ways
-    ck: Option<ClosureKind>,
-    self_name: Symbol,
-) -> ClosureSubst<'tcx> {
+    self_consumed: bool,
+    old_self: Option<Term<'tcx>>,
+    self_: Term<'tcx>,
+) -> ClosureSubst<'a, 'tcx> {
     let mut fun_def_id = def_id;
-    while tcx.is_closure_like(fun_def_id) {
-        fun_def_id = tcx.parent(fun_def_id);
+    while ctx.is_closure_like(fun_def_id) {
+        fun_def_id = ctx.parent(fun_def_id);
     }
 
-    let captures = tcx.closure_captures(def_id.expect_local());
+    let captures = ctx.closure_captures(def_id.expect_local());
 
-    let ty = match ck {
-        Some(ClosureKind::Fn) => Ty::new_imm_ref(
-            tcx,
-            tcx.lifetimes.re_erased,
-            tcx.type_of(def_id).instantiate_identity(),
-        ),
-        Some(ClosureKind::FnMut) => Ty::new_mut_ref(
-            tcx,
-            tcx.lifetimes.re_erased,
-            tcx.type_of(def_id).instantiate_identity(),
-        ),
-        Some(ClosureKind::FnOnce) | None => tcx.type_of(def_id).instantiate_identity(),
-    };
-
-    let self_ = Term::var(self_name, ty);
-
-    let subst = std::iter::zip(captures, cs.as_closure().upvar_tys())
+    let map = std::iter::zip(captures, cs.as_closure().upvar_tys())
         .enumerate()
         .map(|(ix, (cap, ty))| (cap.to_symbol(), (cap.info.capture_kind, ty, ix.into())))
         .collect();
 
-    ClosureSubst { self_, kind: ck, map: subst, bound: Default::default() }
+    ClosureSubst {
+        old_self,
+        self_,
+        self_consumed,
+        map,
+        bound: Default::default(),
+        ctx,
+        use_of_consumed_var_error: None,
+    }
 }
 
 fn resolve_predicate_of<'tcx>(

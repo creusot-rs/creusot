@@ -18,9 +18,10 @@ use crate::{
     },
     constant::from_ty_const,
     contracts_items::{
-        get_builtin, get_resolve_method, is_fn_impl_postcond, is_fn_mut_impl_postcond,
-        is_fn_mut_impl_unnest, is_fn_once_impl_postcond, is_fn_once_impl_precond, is_inv_function,
-        is_resolve_function, is_structural_resolve,
+        get_builtin, get_fn_impl_postcond, get_fn_mut_impl_postcond, get_fn_once_impl_postcond,
+        get_resolve_method, is_fn_impl_postcond, is_fn_mut_impl_postcond, is_fn_mut_impl_unnest,
+        is_fn_once_impl_postcond, is_fn_once_impl_precond, is_inv_function, is_resolve_function,
+        is_structural_resolve,
     },
     ctx::{BodyId, ItemType},
     function::closure_resolve,
@@ -29,11 +30,13 @@ use crate::{
     traits::{self, TraitResolved},
 };
 use petgraph::graphmap::DiGraphMap;
+use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{
-    Const, ConstKind, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable, UnevaluatedConst,
+    Const, ConstKind, GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable,
+    UnevaluatedConst,
 };
-use rustc_span::{Span, DUMMY_SP};
+use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_type_ir::EarlyBinder;
 use why3::{
     declaration::{Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
@@ -225,39 +228,6 @@ fn expand_ty_inv_axiom<'tcx>(
     vec![Decl::Axiom(axiom)]
 }
 
-pub fn resolve_term<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
-    param_env: ParamEnv<'tcx>,
-    def_id: DefId,
-    subst: GenericArgsRef<'tcx>,
-) -> Option<Term<'tcx>> {
-    let trait_meth_id = get_resolve_method(ctx.tcx);
-    let sig = ctx.sig(def_id).clone();
-    let mut pre_sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
-    pre_sig = pre_sig.normalize(ctx.tcx, param_env);
-
-    let arg = Term::var(pre_sig.inputs[0].0, pre_sig.inputs[0].2);
-
-    if let &TyKind::Closure(def_id, subst) = subst[0].as_type().unwrap().kind() {
-        Some(closure_resolve(ctx, def_id, subst))
-    } else {
-        match traits::TraitResolved::resolve_item(ctx.tcx, param_env, trait_meth_id, subst) {
-            traits::TraitResolved::Instance(meth_did, meth_substs) => {
-                // We know the instance => body points to it
-                Some(Term::call(ctx.tcx, param_env, meth_did, meth_substs, vec![arg]))
-            }
-            traits::TraitResolved::UnknownFound | traits::TraitResolved::UnknownNotFound => {
-                // We don't know the instance => body is opaque
-                return None;
-            }
-            traits::TraitResolved::NoInstance => {
-                // We know there is no instance => body is true
-                Some(Term::mk_true(ctx.tcx))
-            }
-        }
-    }
-}
-
 struct TyElab;
 
 impl DepElab for TyElab {
@@ -435,7 +405,7 @@ fn expand_laws<'tcx>(
     }
 }
 
-pub fn val<'tcx>(
+fn val<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     mut sig: Signature,
     kind: Option<DeclKind>,
@@ -464,9 +434,147 @@ pub fn val<'tcx>(
     }
 }
 
+fn resolve_term<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    def_id: DefId,
+    subst: GenericArgsRef<'tcx>,
+) -> Option<Term<'tcx>> {
+    let trait_meth_id = get_resolve_method(ctx.tcx);
+    let sig = ctx.sig(def_id).clone();
+    let mut pre_sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
+    pre_sig = pre_sig.normalize(ctx.tcx, param_env);
+
+    let arg = Term::var(pre_sig.inputs[0].0, pre_sig.inputs[0].2);
+
+    if let &TyKind::Closure(def_id, subst) = subst[0].as_type().unwrap().kind() {
+        Some(closure_resolve(ctx, def_id, subst))
+    } else {
+        match traits::TraitResolved::resolve_item(ctx.tcx, param_env, trait_meth_id, subst) {
+            traits::TraitResolved::Instance(meth_did, meth_substs) => {
+                // We know the instance => body points to it
+                Some(Term::call(ctx.tcx, param_env, meth_did, meth_substs, vec![arg]))
+            }
+            traits::TraitResolved::UnknownFound | traits::TraitResolved::UnknownNotFound => {
+                // We don't know the instance => body is opaque
+                return None;
+            }
+            traits::TraitResolved::NoInstance => {
+                // We know there is no instance => body is true
+                Some(Term::mk_true(ctx.tcx))
+            }
+        }
+    }
+}
+
+fn fn_once_postcond_term<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    subst: GenericArgsRef<'tcx>,
+) -> Option<Term<'tcx>> {
+    let tcx = ctx.tcx;
+    let ty_self = subst.type_at(1);
+    let self_ = Term::var(Symbol::intern("self"), ty_self);
+    let args = Term::var(Symbol::intern("args"), subst.type_at(0));
+    let ty_res = ctx.instantiate_and_normalize_erasing_regions(
+        subst,
+        param_env,
+        EarlyBinder::bind(ctx.sig(get_fn_once_impl_postcond(tcx)).inputs[2].2),
+    );
+    let res = Term::var(Symbol::intern("result"), ty_res);
+    match ty_self.kind() {
+        TyKind::Closure(did, _) => ctx.closure_contract(*did).postcond_once.clone(),
+        TyKind::Ref(_, cl, Mutability::Mut) => {
+            let mut subst_postcond = subst.to_vec();
+            subst_postcond[1] = GenericArg::from(*cl);
+            let subst_postcond = ctx.mk_args(&subst_postcond);
+            let args = vec![self_.clone().cur(), args, self_.fin(), res];
+            Some(Term::call(tcx, param_env, get_fn_mut_impl_postcond(tcx), subst_postcond, args))
+        }
+        TyKind::Ref(_, cl, Mutability::Not) => {
+            let mut subst_postcond = subst.to_vec();
+            subst_postcond[1] = GenericArg::from(*cl);
+            let subst_postcond = ctx.mk_args(&subst_postcond);
+            let args = vec![self_.cur(), args, res];
+            Some(Term::call(tcx, param_env, get_fn_impl_postcond(tcx), subst_postcond, args))
+        }
+        _ => None,
+    }
+}
+
+fn fn_mut_postcond_term<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    subst: GenericArgsRef<'tcx>,
+) -> Option<Term<'tcx>> {
+    let tcx = ctx.tcx;
+    let ty_self = subst.type_at(1);
+    let self_ = Term::var(Symbol::intern("self"), ty_self);
+    let args = Term::var(Symbol::intern("args"), subst.type_at(0));
+    let result_state = Term::var(Symbol::intern("result_state"), ty_self);
+    let ty_res = ctx.instantiate_and_normalize_erasing_regions(
+        subst,
+        param_env,
+        EarlyBinder::bind(ctx.sig(get_fn_mut_impl_postcond(tcx)).inputs[3].2),
+    );
+    let res = Term::var(Symbol::intern("result"), ty_res);
+    match ty_self.kind() {
+        TyKind::Closure(did, _) => Some(ctx.closure_contract(*did).postcond_mut.clone().unwrap()),
+        TyKind::Ref(_, cl, Mutability::Mut) => {
+            let mut subst_postcond = subst.to_vec();
+            subst_postcond[1] = GenericArg::from(*cl);
+            let subst_postcond = ctx.mk_args(&subst_postcond);
+            let args = vec![self_.clone().cur(), args, result_state.clone().cur(), res];
+            Some(
+                Term::call(tcx, param_env, get_fn_mut_impl_postcond(tcx), subst_postcond, args)
+                    .conj(Term::eq(ctx.tcx, self_.fin(), result_state.fin())),
+            )
+        }
+        TyKind::Ref(_, cl, Mutability::Not) => {
+            let mut subst_postcond = subst.to_vec();
+            subst_postcond[1] = GenericArg::from(*cl);
+            let subst_postcond = ctx.mk_args(&subst_postcond);
+            let args = vec![self_.clone().cur(), args, res];
+            Some(
+                Term::call(tcx, param_env, get_fn_impl_postcond(tcx), subst_postcond, args)
+                    .conj(Term::eq(ctx.tcx, self_, result_state)),
+            )
+        }
+        _ => None,
+    }
+}
+
+fn fn_postcond_term<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    subst: GenericArgsRef<'tcx>,
+) -> Option<Term<'tcx>> {
+    let tcx = ctx.tcx;
+    let ty_self = subst.type_at(1);
+    let self_ = Term::var(Symbol::intern("self"), ty_self);
+    let args = Term::var(Symbol::intern("args"), subst.type_at(0));
+    let ty_res = ctx.instantiate_and_normalize_erasing_regions(
+        subst,
+        param_env,
+        EarlyBinder::bind(ctx.sig(get_fn_impl_postcond(tcx)).inputs[2].2),
+    );
+    let res = Term::var(Symbol::intern("result"), ty_res);
+    match ty_self.kind() {
+        TyKind::Closure(did, _) => Some(ctx.closure_contract(*did).postcond.clone().unwrap()),
+        TyKind::Ref(_, cl, Mutability::Not) => {
+            let mut subst_postcond = subst.to_vec();
+            subst_postcond[1] = GenericArg::from(*cl);
+            let subst_postcond = ctx.mk_args(&subst_postcond);
+            let args = vec![self_.clone().cur(), args, res];
+            Some(Term::call(tcx, param_env, get_fn_impl_postcond(tcx), subst_postcond, args))
+        }
+        _ => None,
+    }
+}
+
 // Returns a resolved and normalized term for a dependency.
 // Currently, it does not handle invariant axioms but otherwise returns all logical terms.
-pub fn term<'tcx>(
+fn term<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     param_env: ParamEnv<'tcx>,
     dep: Dependency<'tcx>,
@@ -487,20 +595,17 @@ pub fn term<'tcx>(
                 let subj = ctx.sig(def_id).inputs[0].0;
                 structural_resolve(ctx, subj, subst.type_at(0))
             } else if is_fn_once_impl_postcond(ctx.tcx, def_id) {
-                let TyKind::Closure(did, _) = subst.type_at(1).kind() else { return None };
-                Some(ctx.closure_contract(*did).postcond_once.as_ref().unwrap().clone())
+                fn_once_postcond_term(ctx, param_env, subst)
             } else if is_fn_mut_impl_postcond(ctx.tcx, def_id) {
-                let TyKind::Closure(did, _) = subst.type_at(1).kind() else { return None };
-                Some(ctx.closure_contract(*did).postcond_mut.as_ref().unwrap().clone())
+                fn_mut_postcond_term(ctx, param_env, subst)
             } else if is_fn_impl_postcond(ctx.tcx, def_id) {
-                let TyKind::Closure(did, _) = subst.type_at(1).kind() else { return None };
-                Some(ctx.closure_contract(*did).postcond.as_ref().unwrap().clone())
+                fn_postcond_term(ctx, param_env, subst)
             } else if is_fn_once_impl_precond(ctx.tcx, def_id) {
                 let TyKind::Closure(did, _) = subst.type_at(1).kind() else { return None };
                 Some(ctx.closure_contract(*did).precond.clone())
             } else if is_fn_mut_impl_unnest(ctx.tcx, def_id) {
                 let TyKind::Closure(did, _) = subst.type_at(1).kind() else { return None };
-                Some(ctx.closure_contract(*did).unnest.as_ref().unwrap().clone())
+                Some(ctx.closure_contract(*did).unnest.clone().unwrap())
             } else {
                 let term = ctx.term(def_id).unwrap().clone();
                 let term = normalize(

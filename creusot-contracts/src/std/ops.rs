@@ -18,15 +18,15 @@ pub trait FnOnceExt<Args: Tuple> {
 /// adding a specification to closures. It should not be used directly.
 pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
     #[predicate(prophetic)]
-    fn postcondition_mut(&mut self, _: Args, _: Self::Output) -> bool;
+    fn postcondition_mut(self, _: Args, _: Self, _: Self::Output) -> bool;
 
     #[predicate(prophetic)]
     fn unnest(self, _: Self) -> bool;
 
     #[law]
-    #[requires(self.postcondition_mut(args, res))]
-    #[ensures((*self).unnest(^self))]
-    fn postcondition_mut_unnest(&mut self, args: Args, res: Self::Output);
+    #[requires(self.postcondition_mut(args, res_state, res))]
+    #[ensures(self.unnest(res_state))]
+    fn postcondition_mut_unnest(self, args: Args, res_state: Self, res: Self::Output);
 
     #[law]
     #[ensures(self.unnest(self))]
@@ -39,7 +39,8 @@ pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
     fn unnest_trans(self, b: Self, c: Self);
 
     #[law]
-    #[ensures(self.postcondition_once(args, res) == exists<s: &mut Self> *s == self && s.postcondition_mut(args, res) && resolve(&^s))]
+    #[ensures(self.postcondition_once(args, res) ==
+              exists<res_state: Self> self.postcondition_mut(args, res_state, res) && resolve(&res_state))]
     fn fn_mut_once(self, args: Args, res: Self::Output)
     where
         Self: Sized;
@@ -49,11 +50,11 @@ pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
 /// adding a specification to closures. It should not be used directly.
 pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
     #[predicate(prophetic)]
-    fn postcondition(&self, _: Args, _: Self::Output) -> bool;
+    fn postcondition(self, _: Args, _: Self::Output) -> bool;
 
     #[law]
-    #[ensures(self.postcondition_mut(args, res) == (resolve(&self) && self.postcondition(args, res)))]
-    fn fn_mut(&mut self, args: Args, res: Self::Output);
+    #[ensures(self.postcondition_mut(args, res_state, res) == (self == res_state && self.postcondition(args, res)))]
+    fn fn_mut(self, args: Args, res_state: Self, res: Self::Output);
 
     #[law]
     #[ensures(self.postcondition_once(args, res) == (resolve(&self) && self.postcondition(args, res)))]
@@ -87,7 +88,7 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
     #[open]
     #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_mut_impl_postcond"]
-    fn postcondition_mut(&mut self, args: Args, result: Self::Output) -> bool {
+    fn postcondition_mut(self, args: Args, result_state: Self, result: Self::Output) -> bool {
         true /* Dummy */
     }
 
@@ -101,9 +102,9 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
 
     #[trusted]
     #[law]
-    #[requires(self.postcondition_mut(args, res))]
-    #[ensures((*self).unnest(^self))]
-    fn postcondition_mut_unnest(&mut self, args: Args, res: Self::Output) {}
+    #[requires(self.postcondition_mut(args, res_state, res))]
+    #[ensures(self.unnest(res_state))]
+    fn postcondition_mut_unnest(self, args: Args, res_state: Self, res: Self::Output) {}
 
     #[trusted]
     #[law]
@@ -119,7 +120,8 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
 
     #[law]
     #[trusted]
-    #[ensures(self.postcondition_once(args, res) == exists<s: &mut Self> *s == self && s.postcondition_mut(args, res) && resolve(&^s))]
+    #[ensures(self.postcondition_once(args, res) ==
+              exists<res_state: Self> self.postcondition_mut(args, res_state, res) && resolve(&res_state))]
     fn fn_mut_once(self, args: Args, res: Self::Output) {}
 }
 
@@ -128,14 +130,14 @@ impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
     #[open]
     #[allow(unused_variables)]
     #[rustc_diagnostic_item = "fn_impl_postcond"]
-    fn postcondition(&self, args: Args, result: Self::Output) -> bool {
+    fn postcondition(self, args: Args, result: Self::Output) -> bool {
         true /* Dummy */
     }
 
     #[law]
     #[trusted]
-    #[ensures(self.postcondition_mut(args, res) == (self.resolve() && self.postcondition(args, res)))]
-    fn fn_mut(&mut self, args: Args, res: Self::Output) {}
+    #[ensures(self.postcondition_mut(args, res_state, res) == (self == res_state && self.postcondition(args, res)))]
+    fn fn_mut(self, args: Args, res_state: Self, res: Self::Output) {}
 
     #[law]
     #[trusted]
@@ -154,13 +156,13 @@ extern_spec! {
 
             trait FnMut<Args> where Args : Tuple {
                 #[requires((*self).precondition(arg))]
-                #[ensures(self.postcondition_mut(arg, result))]
+                #[ensures((*self).postcondition_mut(arg, ^self, result))]
                 fn call_mut(&mut self, arg: Args) -> Self::Output;
             }
 
             trait Fn<Args> where Args : Tuple {
                 #[requires((*self).precondition(arg))]
-                #[ensures(self.postcondition(arg, result))]
+                #[ensures((*self).postcondition(arg, result))]
                 fn call(&self, arg: Args) -> Self::Output;
             }
         }
