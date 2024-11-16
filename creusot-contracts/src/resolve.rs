@@ -20,6 +20,19 @@ pub fn resolve<T: ?Sized>(_: &T) -> bool {
     true
 }
 
+#[predicate(prophetic)]
+#[open]
+#[rustc_diagnostic_item = "creusot_structural_resolve"]
+#[creusot::no_translate]
+pub fn structural_resolve<T: ?Sized>(_: &T) -> bool {
+    true /* Dummy */
+}
+
+#[cfg(not(creusot))]
+pub fn structural_resolve<T: ?Sized>(_: &T) -> bool {
+    panic!()
+}
+
 impl<T1, T2: ?Sized> Resolve for (T1, T2) {
     #[predicate(prophetic)]
     #[open]
@@ -77,17 +90,4 @@ impl<T> Resolve for Option<T> {
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
     fn resolve_coherence(&self) {}
-}
-
-#[predicate(prophetic)]
-#[open]
-#[rustc_diagnostic_item = "creusot_structural_resolve"]
-#[creusot::no_translate]
-pub fn structural_resolve<T: ?Sized>(_: &T) -> bool {
-    true
-}
-
-#[cfg(not(creusot))]
-pub fn structural_resolve<T: ?Sized>(_: &T) -> bool {
-    panic!()
 }

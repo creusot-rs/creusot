@@ -2,19 +2,18 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
   let%span s04_generic_closure0 = "04_generic_closure.rs" 5 40 5 41
   let%span s04_generic_closure1 = "04_generic_closure.rs" 5 46 5 47
   let%span s04_generic_closure2 = "04_generic_closure.rs" 5 55 5 56
-  let%span sops3 = "../../../../creusot-contracts/src/std/ops.rs" 160 27 160 52
-  let%span sops4 = "../../../../creusot-contracts/src/std/ops.rs" 144 0 166 1
-  let%span sops5 = "../../../../creusot-contracts/src/std/ops.rs" 135 14 135 100
-  let%span sops6 = "../../../../creusot-contracts/src/std/ops.rs" 140 14 140 101
+  let%span sops3 = "../../../../creusot-contracts/src/std/ops.rs" 164 27 164 52
+  let%span sops4 = "../../../../creusot-contracts/src/std/ops.rs" 165 26 165 60
+  let%span sops5 = "../../../../creusot-contracts/src/std/ops.rs" 139 14 139 114
+  let%span sops6 = "../../../../creusot-contracts/src/std/ops.rs" 144 14 144 101
   let%span sinvariant7 = "../../../../creusot-contracts/src/invariant.rs" 24 8 24 18
-  let%span sresolve8 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
-  let%span sops9 = "../../../../creusot-contracts/src/std/ops.rs" 103 15 103 48
-  let%span sops10 = "../../../../creusot-contracts/src/std/ops.rs" 104 14 104 35
-  let%span sops11 = "../../../../creusot-contracts/src/std/ops.rs" 109 14 109 31
-  let%span sops12 = "../../../../creusot-contracts/src/std/ops.rs" 114 15 114 29
-  let%span sops13 = "../../../../creusot-contracts/src/std/ops.rs" 115 15 115 26
-  let%span sops14 = "../../../../creusot-contracts/src/std/ops.rs" 116 14 116 28
-  let%span sops15 = "../../../../creusot-contracts/src/std/ops.rs" 121 14 121 133
+  let%span sops8 = "../../../../creusot-contracts/src/std/ops.rs" 105 15 105 59
+  let%span sops9 = "../../../../creusot-contracts/src/std/ops.rs" 106 14 106 36
+  let%span sops10 = "../../../../creusot-contracts/src/std/ops.rs" 111 14 111 31
+  let%span sops11 = "../../../../creusot-contracts/src/std/ops.rs" 116 15 116 29
+  let%span sops12 = "../../../../creusot-contracts/src/std/ops.rs" 117 15 117 26
+  let%span sops13 = "../../../../creusot-contracts/src/std/ops.rs" 118 14 118 28
+  let%span sops14 = "../../../../creusot-contracts/src/std/ops.rs" 123 14 124 105
   
   use prelude.prelude.Borrow
   
@@ -26,13 +25,13 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
   
   predicate inv'4 (_1 : t_A'0)
   
-  predicate precondition'0 (self : t_F'0) (_2 : t_A'0)
+  predicate precondition'0 (self : t_F'0) (args : t_A'0)
   
   type t_B'0
   
   predicate inv'2 (_1 : t_B'0)
   
-  predicate postcondition'0 (self : t_F'0) (_2 : t_A'0) (_3 : t_B'0)
+  predicate postcondition'0 (self : t_F'0) (args : t_A'0) (result : t_B'0)
   
   predicate inv'0 (_1 : t_F'0)
   
@@ -54,17 +53,14 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
   
   use prelude.prelude.Intrinsic
   
-  predicate postcondition_mut'0 (self : borrowed t_F'0) (_2 : t_A'0) (_3 : t_B'0)
+  predicate postcondition_mut'0 (self : t_F'0) (args : t_A'0) (result_state : t_F'0) (result : t_B'0)
   
-  predicate resolve'1 (self : borrowed t_F'0) =
-    [%#sresolve8] self.final = self.current
+  function fn_mut'0 (self : t_F'0) (args : t_A'0) (res_state : t_F'0) (res : t_B'0) : ()
   
-  function fn_mut'0 (self : borrowed t_F'0) (args : t_A'0) (res : t_B'0) : ()
+  axiom fn_mut'0_spec : forall self : t_F'0, args : t_A'0, res_state : t_F'0, res : t_B'0 . [%#sops5] postcondition_mut'0 self args res_state res
+  = (self = res_state /\ postcondition'0 self args res)
   
-  axiom fn_mut'0_spec : forall self : borrowed t_F'0, args : t_A'0, res : t_B'0 . [%#sops5] postcondition_mut'0 self args res
-  = (resolve'1 self /\ postcondition'0 self.current args res)
-  
-  predicate postcondition_once'0 (self : t_F'0) (_2 : t_A'0) (_3 : t_B'0)
+  predicate postcondition_once'0 (self : t_F'0) (args : t_A'0) (result : t_B'0)
   
   function fn_once'0 (self : t_F'0) (args : t_A'0) (res : t_B'0) : ()
   
@@ -73,24 +69,24 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
   
   predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
   
-  function postcondition_mut_unnest'0 (self : borrowed t_F'0) (args : t_A'0) (res : t_B'0) : ()
+  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_A'0) (res_state : t_F'0) (res : t_B'0) : ()
   
-  axiom postcondition_mut_unnest'0_spec : forall self : borrowed t_F'0, args : t_A'0, res : t_B'0 . ([%#sops9] postcondition_mut'0 self args res)
-   -> ([%#sops10] unnest'0 self.current self.final)
+  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_A'0, res_state : t_F'0, res : t_B'0 . ([%#sops8] postcondition_mut'0 self args res_state res)
+   -> ([%#sops9] unnest'0 self res_state)
   
   function unnest_refl'0 (self : t_F'0) : ()
   
-  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops11] unnest'0 self self
+  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops10] unnest'0 self self
   
   function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
   
-  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops12] unnest'0 self b)
-   -> ([%#sops13] unnest'0 b c)  -> ([%#sops14] unnest'0 self c)
+  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops11] unnest'0 self b)
+   -> ([%#sops12] unnest'0 b c)  -> ([%#sops13] unnest'0 self c)
   
   function fn_mut_once'0 (self : t_F'0) (args : t_A'0) (res : t_B'0) : ()
   
-  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_A'0, res : t_B'0 . [%#sops15] postcondition_once'0 self args res
-  = (exists s : borrowed t_F'0 . s.current = self /\ postcondition_mut'0 s args res /\ resolve'0 s.final)
+  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_A'0, res : t_B'0 . [%#sops14] postcondition_once'0 self args res
+  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
   
   meta "compute_max_steps" 1000000
   

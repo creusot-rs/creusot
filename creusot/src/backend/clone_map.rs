@@ -1,5 +1,5 @@
 use crate::{
-    backend::{clone_map::elaborator::Expander, dependency::Dependency},
+    backend::{clone_map::elaborator::Expander, dependency::Dependency, Why3Generator},
     contracts_items::{get_builtin, get_inv_function},
     ctx::*,
     options::SpanMode,
@@ -21,8 +21,6 @@ use why3::{
     declaration::{Attribute, Decl, TyDecl},
     Ident, QName,
 };
-
-use super::{dependency::ClosureSpecKind, Why3Generator};
 
 mod elaborator;
 
@@ -82,7 +80,7 @@ impl PreludeModule {
 
 pub(crate) trait Namer<'tcx> {
     fn value(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
-        let node = Dependency::item(self.tcx(), (def_id, subst));
+        let node = Dependency::Item(def_id, subst);
         self.insert(node).qname()
     }
 
@@ -105,7 +103,7 @@ pub(crate) trait Namer<'tcx> {
     }
 
     fn constructor(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
-        let node = Dependency::item(self.tcx(), (def_id, subst));
+        let node = Dependency::Item(def_id, subst);
         self.insert(node).qname()
     }
 
@@ -121,14 +119,12 @@ pub(crate) trait Namer<'tcx> {
     /// * `subst` - Substitution that type is being accessed at
     /// * `ix` - The field in that constructor being accessed.
     fn field(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>, ix: FieldIdx) -> QName {
-        let tcx = self.tcx();
-        let node = match tcx.def_kind(def_id) {
-            DefKind::Closure => {
-                Dependency::ClosureSpec(ClosureSpecKind::Accessor(ix.as_u32()), def_id, subst)
-            }
+        let node = match self.tcx().def_kind(def_id) {
+            DefKind::Closure => Dependency::ClosureAccessor(def_id, subst, ix.as_u32()),
             DefKind::Struct | DefKind::Union => {
-                let field_did = tcx.adt_def(def_id).variants()[VariantIdx::ZERO].fields[ix].did;
-                Dependency::item(tcx, (field_did, subst))
+                let field_did =
+                    self.tcx().adt_def(def_id).variants()[VariantIdx::ZERO].fields[ix].did;
+                Dependency::Item(field_did, subst)
             }
             _ => unreachable!(),
         };
@@ -361,7 +357,7 @@ impl<'tcx> Dependencies<'tcx> {
         let mut deps =
             Dependencies { tcx: ctx.tcx, self_id, self_subst, names, dep_set: Default::default() };
 
-        let node = Dependency::item(ctx.tcx, (self_id, self_subst));
+        let node = Dependency::Item(self_id, self_subst);
         deps.names.insert(node);
         deps
     }
@@ -372,7 +368,7 @@ impl<'tcx> Dependencies<'tcx> {
 
         let param_env = ctx.param_env(self.self_id);
 
-        let self_node = Dependency::item(self.tcx, (self.self_id, self.self_subst));
+        let self_node = Dependency::Item(self.self_id, self.self_subst);
         let graph =
             Expander::new(&mut self.names, self_node, param_env, self.dep_set.iter().copied());
 

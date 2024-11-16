@@ -5,7 +5,16 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   let%span s08_multiple_calls3 = "08_multiple_calls.rs" 19 27 19 28
   let%span s08_multiple_calls4 = "08_multiple_calls.rs" 17 11 17 29
   let%span s08_multiple_calls5 = "08_multiple_calls.rs" 18 10 18 68
-  let%span sinvariant6 = "../../../../creusot-contracts/src/invariant.rs" 24 8 24 18
+  let%span sops6 = "../../../../creusot-contracts/src/std/ops.rs" 139 14 139 114
+  let%span sops7 = "../../../../creusot-contracts/src/std/ops.rs" 144 14 144 101
+  let%span sinvariant8 = "../../../../creusot-contracts/src/invariant.rs" 24 8 24 18
+  let%span sops9 = "../../../../creusot-contracts/src/std/ops.rs" 105 15 105 59
+  let%span sops10 = "../../../../creusot-contracts/src/std/ops.rs" 106 14 106 36
+  let%span sops11 = "../../../../creusot-contracts/src/std/ops.rs" 111 14 111 31
+  let%span sops12 = "../../../../creusot-contracts/src/std/ops.rs" 116 15 116 29
+  let%span sops13 = "../../../../creusot-contracts/src/std/ops.rs" 117 15 117 26
+  let%span sops14 = "../../../../creusot-contracts/src/std/ops.rs" 118 14 118 28
+  let%span sops15 = "../../../../creusot-contracts/src/std/ops.rs" 123 14 124 105
   
   use prelude.prelude.UInt32
   
@@ -25,14 +34,14 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   predicate inv'4 (_1 : t_T'0)
   
   predicate invariant'0 (self : t_T'0) =
-    [%#sinvariant6] inv'4 self
+    [%#sinvariant8] inv'4 self
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_T'0 [inv'0 x] . inv'0 x = invariant'0 x
   
   predicate inv'2 (_1 : closure0'1)
   
   predicate invariant'1 (self : closure0'1) =
-    [%#sinvariant6] inv'2 self
+    [%#sinvariant8] inv'2 self
   
   axiom inv_axiom'1 [@rewrite] : forall x : closure0'1 [inv'1 x] . inv'1 x = invariant'1 x
   
@@ -41,7 +50,7 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   axiom inv_axiom'2 [@rewrite] : forall x : closure0'1 [inv'2 x] . inv'2 x = (let {field_0'0 = x0} = x in inv'3 x0)
   
   predicate invariant'2 (self : t_T'0) =
-    [%#sinvariant6] inv'0 self
+    [%#sinvariant8] inv'0 self
   
   axiom inv_axiom'3 [@rewrite] : forall x : t_T'0 [inv'3 x] . inv'3 x = invariant'2 x
   
@@ -53,11 +62,14 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
        ]
     ) [ & _0 : uint32 = any_l () | & res : uint32 = any_l () ]  [ return' (result:uint32)-> (! return' {result}) ] 
   
-  predicate precondition'0 [#"08_multiple_calls.rs" 5 12 5 31] (self : closure0'1) (_ : ()) =
-    [%#s08_multiple_calls2] self.field_0'0 = self.field_0'0
+  predicate precondition'0 (self : closure0'1) (args : ()) =
+    [%#s08_multiple_calls2] let () = args in self.field_0'0 = self.field_0'0
   
-  predicate postcondition'0 [#"08_multiple_calls.rs" 5 12 5 31] (self : closure0'1) (_ : ()) (result : uint32) =
-    true
+  predicate postcondition'1 (self : closure0'1) (args : ()) (result : uint32) =
+    let () = args in true
+  
+  predicate postcondition'0 (self : closure0'1) (args : ()) (result : uint32) =
+    postcondition'1 self args result
   
   let rec uses_fn'0 (f:closure0'1) (return'  (ret:()))= {[@expl:uses_fn 'f' type invariant] [%#s08_multiple_calls3] inv'2 f}
     {[@expl:uses_fn requires] [%#s08_multiple_calls4] precondition'0 f ()}
@@ -66,6 +78,89 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
       /\ postcondition'0 f2 () r}
       (! return' {result}) ]
     
+  
+  predicate postcondition_mut'0 (self : closure0'1) (args : ()) (result_state : closure0'1) (result : uint32) =
+    postcondition'1 self args result /\ self = result_state
+  
+  function fn_mut'0 (self : closure0'1) (args : ()) (res_state : closure0'1) (res : uint32) : ()
+  
+  axiom fn_mut'0_spec : forall self : closure0'1, args : (), res_state : closure0'1, res : uint32 . [%#sops6] postcondition_mut'0 self args res_state res
+  = (self = res_state /\ postcondition'0 self args res)
+  
+  predicate postcondition_once'0 (self : closure0'1) (args : ()) (result : uint32) =
+    postcondition'1 self args result
+  
+  predicate resolve'0 (_1 : closure0'1) =
+    true
+  
+  function fn_once'0 (self : closure0'1) (args : ()) (res : uint32) : ()
+  
+  axiom fn_once'0_spec : forall self : closure0'1, args : (), res : uint32 . [%#sops7] postcondition_once'0 self args res
+  = (resolve'0 self /\ postcondition'0 self args res)
+  
+  predicate unnest'1 (self : closure0'1) (_2 : closure0'1) =
+    _2.field_0'0 = self.field_0'0
+  
+  predicate postcondition_mut'1 (self : closure0'1) (args : ()) (result_state : closure0'1) (result : uint32) =
+    (let () = args in true) /\ unnest'1 self result_state
+  
+  function fn_mut'1 (self : closure0'1) (args : ()) (res_state : closure0'1) (res : uint32) : ()
+  
+  axiom fn_mut'1_spec : forall self : closure0'1, args : (), res_state : closure0'1, res : uint32 . [%#sops6] postcondition_mut'1 self args res_state res
+  = (self = res_state /\ postcondition'1 self args res)
+  
+  predicate postcondition_once'1 (self : closure0'1) (args : ()) (result : uint32) =
+    let () = args in true
+  
+  predicate resolve'2 (_1 : t_T'0)
+  
+  predicate resolve'1 (_1 : closure0'1) =
+    resolve'2 _1.field_0'0
+  
+  function fn_once'1 (self : closure0'1) (args : ()) (res : uint32) : ()
+  
+  axiom fn_once'1_spec : forall self : closure0'1, args : (), res : uint32 . [%#sops7] postcondition_once'1 self args res
+  = (resolve'1 self /\ postcondition'1 self args res)
+  
+  predicate unnest'0 (self : closure0'1) (_2 : closure0'1)
+  
+  function postcondition_mut_unnest'0 (self : closure0'1) (args : ()) (res_state : closure0'1) (res : uint32) : ()
+  
+  axiom postcondition_mut_unnest'0_spec : forall self : closure0'1, args : (), res_state : closure0'1, res : uint32 . ([%#sops9] postcondition_mut'0 self args res_state res)
+   -> ([%#sops10] unnest'0 self res_state)
+  
+  function unnest_refl'0 (self : closure0'1) : ()
+  
+  axiom unnest_refl'0_spec : forall self : closure0'1 . [%#sops11] unnest'0 self self
+  
+  function unnest_trans'0 (self : closure0'1) (b : closure0'1) (c : closure0'1) : ()
+  
+  axiom unnest_trans'0_spec : forall self : closure0'1, b : closure0'1, c : closure0'1 . ([%#sops12] unnest'0 self b)
+   -> ([%#sops13] unnest'0 b c)  -> ([%#sops14] unnest'0 self c)
+  
+  function fn_mut_once'0 (self : closure0'1) (args : ()) (res : uint32) : ()
+  
+  axiom fn_mut_once'0_spec : forall self : closure0'1, args : (), res : uint32 . [%#sops15] postcondition_once'0 self args res
+  = (exists res_state : closure0'1 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  function postcondition_mut_unnest'1 (self : closure0'1) (args : ()) (res_state : closure0'1) (res : uint32) : ()
+  
+  axiom postcondition_mut_unnest'1_spec : forall self : closure0'1, args : (), res_state : closure0'1, res : uint32 . ([%#sops9] postcondition_mut'1 self args res_state res)
+   -> ([%#sops10] unnest'1 self res_state)
+  
+  function unnest_refl'1 (self : closure0'1) : ()
+  
+  axiom unnest_refl'1_spec : forall self : closure0'1 . [%#sops11] unnest'1 self self
+  
+  function unnest_trans'1 (self : closure0'1) (b : closure0'1) (c : closure0'1) : ()
+  
+  axiom unnest_trans'1_spec : forall self : closure0'1, b : closure0'1, c : closure0'1 . ([%#sops12] unnest'1 self b)
+   -> ([%#sops13] unnest'1 b c)  -> ([%#sops14] unnest'1 self c)
+  
+  function fn_mut_once'1 (self : closure0'1) (args : ()) (res : uint32) : ()
+  
+  axiom fn_mut_once'1_spec : forall self : closure0'1, args : (), res : uint32 . [%#sops15] postcondition_once'1 self args res
+  = (exists res_state : closure0'1 . postcondition_mut'1 self args res_state res /\ resolve'1 res_state)
   
   meta "compute_max_steps" 1000000
   

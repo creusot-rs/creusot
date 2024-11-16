@@ -74,7 +74,7 @@ pub fn structural_resolve<'tcx>(
         TyKind::Ref(_, _, Mutability::Mut) => {
             Some(subject.clone().fin().bin_op(ctx.tcx, BinOp::Eq, subject.cur()))
         }
-        TyKind::Param(_) => None,
+        TyKind::Closure(..) | TyKind::Param(_) => None,
         _ => Some(Term::mk_true(ctx.tcx)),
     }
 }

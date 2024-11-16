@@ -366,7 +366,7 @@ impl<'tcx> RValue<'tcx> {
             }
             RValue::Constructor(id, subst, args) => {
                 if lower.ctx.def_kind(id) == DefKind::Closure {
-                    lower.names.insert(Dependency::item(lower.ctx.tcx, (id, subst)));
+                    lower.names.insert(Dependency::Item(id, subst));
                 }
                 let args = args.into_iter().map(|a| a.to_why(lower, istmts)).collect();
                 constructor(lower.names, args, id, subst)

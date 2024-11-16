@@ -1,5 +1,9 @@
 use crate::{
-    contracts_items::{creusot_clause_attrs, get_fn_mut_unnest, is_open_inv_result, is_pearlite},
+    contracts_items::{
+        creusot_clause_attrs, get_fn_mut_impl_unnest, is_fn_impl_postcond, is_fn_mut_impl_postcond,
+        is_fn_mut_impl_unnest, is_fn_once_impl_postcond, is_fn_once_impl_precond,
+        is_open_inv_result, is_pearlite,
+    },
     ctx::*,
     function::closure_capture_subst,
     naming::anonymous_param_symbol,
@@ -440,20 +444,16 @@ pub(crate) fn pre_sig_of<'tcx>(
 
     if let TyKind::Closure(_, subst) = fn_ty.kind() {
         let self_ = Symbol::intern("_1");
-        let mut pre_subst = closure_capture_subst(ctx.tcx, def_id, subst, None, self_);
-
-        let mut s = HashMap::new();
         let kind = subst.as_closure().kind();
-
         let env_ty = ctx.closure_env_ty(fn_ty, kind, ctx.lifetimes.re_erased);
-        s.insert(
-            self_,
-            if env_ty.is_ref() { Term::var(self_, env_ty).cur() } else { Term::var(self_, env_ty) },
-        );
+
+        let self_pre =
+            if env_ty.is_ref() { Term::var(self_, env_ty).cur() } else { Term::var(self_, env_ty) };
+
+        let mut pre_subst =
+            closure_capture_subst(ctx, def_id, subst, false, None, self_pre.clone());
         for pre in &mut contract.requires {
             pre_subst.visit_mut_term(&mut pre.term);
-
-            pre.term.subst(&s);
         }
 
         if kind == ClosureKind::FnMut {
@@ -461,7 +461,7 @@ pub(crate) fn pre_sig_of<'tcx>(
             let unnest_subst =
                 ctx.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty.peel_refs())]);
 
-            let unnest_id = get_fn_mut_unnest(ctx.tcx);
+            let unnest_id = get_fn_mut_impl_unnest(ctx.tcx);
 
             let term = Term::call(
                 ctx.tcx,
@@ -474,10 +474,27 @@ pub(crate) fn pre_sig_of<'tcx>(
             contract.ensures.push(Condition { term, expl });
         };
 
+        let self_post = match kind {
+            ClosureKind::Fn => Term::var(self_, env_ty).cur(),
+            ClosureKind::FnMut => Term::var(self_, env_ty).fin(),
+            ClosureKind::FnOnce => Term::var(self_, env_ty),
+        };
+
         let mut post_subst =
-            closure_capture_subst(ctx.tcx, def_id, subst, Some(subst.as_closure().kind()), self_);
+            closure_capture_subst(ctx, def_id, subst, !env_ty.is_ref(), Some(self_pre), self_post);
+
         for post in &mut contract.ensures {
             post_subst.visit_mut_term(&mut post.term);
+        }
+
+        if let Some(span) = post_subst.use_of_consumed_var_error
+            && kind == ClosureKind::FnOnce
+        {
+            ctx.fatal_error(
+                span,
+                "Use of a closure capture in a post-condition, but it is consumed by the closure.",
+            )
+            .emit()
         }
 
         assert!(contract.variant.is_none());
@@ -486,7 +503,13 @@ pub(crate) fn pre_sig_of<'tcx>(
     let mut inputs: Vec<_> = inputs
         .enumerate()
         .map(|(idx, (ident, ty))| {
-            if ident.name.as_str() == "result" {
+            if ident.name.as_str() == "result"
+                && !is_fn_impl_postcond(ctx.tcx, def_id)
+                && !is_fn_mut_impl_postcond(ctx.tcx, def_id)
+                && !is_fn_once_impl_postcond(ctx.tcx, def_id)
+                && !is_fn_mut_impl_unnest(ctx.tcx, def_id)
+                && !is_fn_once_impl_precond(ctx.tcx, def_id)
+            {
                 ctx.crash_and_error(ident.span, "`result` is not allowed as a parameter name")
             }
 

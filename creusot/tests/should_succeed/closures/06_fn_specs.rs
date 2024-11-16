@@ -10,7 +10,7 @@ pub fn weaken_std<A: Tuple, F: Fn<A>>(f: F, a: A) -> F::Output {
 }
 
 #[requires(f.precondition(a))]
-#[ensures(exists<f2: &mut F> *f2 == f && f2.postcondition_mut(a, result) && resolve(&^f2))]
+#[ensures(exists<f2: F> f.postcondition_mut(a, f2, result) && resolve(&f2))]
 fn weaken_2_std<A: Tuple, F: FnMut<A>>(f: F, a: A) -> F::Output {
     weaken_3_std(f, a)
 }

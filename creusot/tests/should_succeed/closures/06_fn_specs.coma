@@ -8,17 +8,16 @@ module M_06_fn_specs__weaken_std [#"06_fn_specs.rs" 8 0 8 62]
   let%span s06_fn_specs6 = "06_fn_specs.rs" 14 45 14 46
   let%span s06_fn_specs7 = "06_fn_specs.rs" 12 11 12 28
   let%span s06_fn_specs8 = "06_fn_specs.rs" 14 54 14 63
-  let%span s06_fn_specs9 = "06_fn_specs.rs" 13 10 13 89
-  let%span sops10 = "../../../../creusot-contracts/src/std/ops.rs" 135 14 135 100
-  let%span sops11 = "../../../../creusot-contracts/src/std/ops.rs" 140 14 140 101
-  let%span sops12 = "../../../../creusot-contracts/src/std/ops.rs" 103 15 103 48
-  let%span sops13 = "../../../../creusot-contracts/src/std/ops.rs" 104 14 104 35
-  let%span sops14 = "../../../../creusot-contracts/src/std/ops.rs" 109 14 109 31
-  let%span sops15 = "../../../../creusot-contracts/src/std/ops.rs" 114 15 114 29
-  let%span sops16 = "../../../../creusot-contracts/src/std/ops.rs" 115 15 115 26
-  let%span sops17 = "../../../../creusot-contracts/src/std/ops.rs" 116 14 116 28
-  let%span sops18 = "../../../../creusot-contracts/src/std/ops.rs" 121 14 121 133
-  let%span sresolve19 = "../../../../creusot-contracts/src/resolve.rs" 41 20 41 34
+  let%span s06_fn_specs9 = "06_fn_specs.rs" 13 10 13 74
+  let%span sops10 = "../../../../creusot-contracts/src/std/ops.rs" 139 14 139 114
+  let%span sops11 = "../../../../creusot-contracts/src/std/ops.rs" 144 14 144 101
+  let%span sops12 = "../../../../creusot-contracts/src/std/ops.rs" 105 15 105 59
+  let%span sops13 = "../../../../creusot-contracts/src/std/ops.rs" 106 14 106 36
+  let%span sops14 = "../../../../creusot-contracts/src/std/ops.rs" 111 14 111 31
+  let%span sops15 = "../../../../creusot-contracts/src/std/ops.rs" 116 15 116 29
+  let%span sops16 = "../../../../creusot-contracts/src/std/ops.rs" 117 15 117 26
+  let%span sops17 = "../../../../creusot-contracts/src/std/ops.rs" 118 14 118 28
+  let%span sops18 = "../../../../creusot-contracts/src/std/ops.rs" 123 14 124 105
   
   type t_F'0
   
@@ -28,15 +27,15 @@ module M_06_fn_specs__weaken_std [#"06_fn_specs.rs" 8 0 8 62]
   
   predicate inv'1 (_1 : t_A'0)
   
-  predicate precondition'0 (self : t_F'0) (_2 : t_A'0)
+  predicate precondition'0 (self : t_F'0) (args : t_A'0)
   
   type t_Output'0
   
   predicate inv'2 (_1 : t_Output'0)
   
-  use prelude.prelude.Borrow
+  predicate postcondition_mut'0 (self : t_F'0) (args : t_A'0) (result_state : t_F'0) (result : t_Output'0)
   
-  predicate postcondition_mut'0 (self : borrowed t_F'0) (_2 : t_A'0) (_3 : t_Output'0)
+  use prelude.prelude.Borrow
   
   predicate resolve'0 (_1 : t_F'0)
   
@@ -45,24 +44,20 @@ module M_06_fn_specs__weaken_std [#"06_fn_specs.rs" 8 0 8 62]
     {[@expl:weaken_2_std requires] [%#s06_fn_specs7] precondition'0 f a}
     any
     [ return' (result:t_Output'0)-> {[%#s06_fn_specs8] inv'2 result}
-      {[%#s06_fn_specs9] exists f2 : borrowed t_F'0 . f2.current = f
-      /\ postcondition_mut'0 f2 a result /\ resolve'0 f2.final}
+      {[%#s06_fn_specs9] exists f2 : t_F'0 . postcondition_mut'0 f a f2 result /\ resolve'0 f2}
       (! return' {result}) ]
     
   
   use prelude.prelude.Intrinsic
   
-  predicate postcondition'0 (self : t_F'0) (_2 : t_A'0) (_3 : t_Output'0)
+  predicate postcondition'0 (self : t_F'0) (args : t_A'0) (result : t_Output'0)
   
-  predicate resolve'1 (self : borrowed t_F'0) =
-    [%#sresolve19] self.final = self.current
+  function fn_mut'0 (self : t_F'0) (args : t_A'0) (res_state : t_F'0) (res : t_Output'0) : ()
   
-  function fn_mut'0 (self : borrowed t_F'0) (args : t_A'0) (res : t_Output'0) : ()
+  axiom fn_mut'0_spec : forall self : t_F'0, args : t_A'0, res_state : t_F'0, res : t_Output'0 . [%#sops10] postcondition_mut'0 self args res_state res
+  = (self = res_state /\ postcondition'0 self args res)
   
-  axiom fn_mut'0_spec : forall self : borrowed t_F'0, args : t_A'0, res : t_Output'0 . [%#sops10] postcondition_mut'0 self args res
-  = (resolve'1 self /\ postcondition'0 self.current args res)
-  
-  predicate postcondition_once'0 (self : t_F'0) (_2 : t_A'0) (_3 : t_Output'0)
+  predicate postcondition_once'0 (self : t_F'0) (args : t_A'0) (result : t_Output'0)
   
   function fn_once'0 (self : t_F'0) (args : t_A'0) (res : t_Output'0) : ()
   
@@ -71,10 +66,10 @@ module M_06_fn_specs__weaken_std [#"06_fn_specs.rs" 8 0 8 62]
   
   predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
   
-  function postcondition_mut_unnest'0 (self : borrowed t_F'0) (args : t_A'0) (res : t_Output'0) : ()
+  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_A'0) (res_state : t_F'0) (res : t_Output'0) : ()
   
-  axiom postcondition_mut_unnest'0_spec : forall self : borrowed t_F'0, args : t_A'0, res : t_Output'0 . ([%#sops12] postcondition_mut'0 self args res)
-   -> ([%#sops13] unnest'0 self.current self.final)
+  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_A'0, res_state : t_F'0, res : t_Output'0 . ([%#sops12] postcondition_mut'0 self args res_state res)
+   -> ([%#sops13] unnest'0 self res_state)
   
   function unnest_refl'0 (self : t_F'0) : ()
   
@@ -88,7 +83,7 @@ module M_06_fn_specs__weaken_std [#"06_fn_specs.rs" 8 0 8 62]
   function fn_mut_once'0 (self : t_F'0) (args : t_A'0) (res : t_Output'0) : ()
   
   axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_A'0, res : t_Output'0 . [%#sops18] postcondition_once'0 self args res
-  = (exists s : borrowed t_F'0 . s.current = self /\ postcondition_mut'0 s args res /\ resolve'0 s.final)
+  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
   
   meta "compute_max_steps" 1000000
   
@@ -113,19 +108,19 @@ module M_06_fn_specs__weaken_2_std [#"06_fn_specs.rs" 14 0 14 63]
   let%span s06_fn_specs1 = "06_fn_specs.rs" 14 45 14 46
   let%span s06_fn_specs2 = "06_fn_specs.rs" 12 11 12 28
   let%span s06_fn_specs3 = "06_fn_specs.rs" 14 54 14 63
-  let%span s06_fn_specs4 = "06_fn_specs.rs" 13 10 13 89
+  let%span s06_fn_specs4 = "06_fn_specs.rs" 13 10 13 74
   let%span s06_fn_specs5 = "06_fn_specs.rs" 20 40 20 41
   let%span s06_fn_specs6 = "06_fn_specs.rs" 20 46 20 47
   let%span s06_fn_specs7 = "06_fn_specs.rs" 18 11 18 28
   let%span s06_fn_specs8 = "06_fn_specs.rs" 20 55 20 64
   let%span s06_fn_specs9 = "06_fn_specs.rs" 19 10 19 41
-  let%span sops10 = "../../../../creusot-contracts/src/std/ops.rs" 103 15 103 48
-  let%span sops11 = "../../../../creusot-contracts/src/std/ops.rs" 104 14 104 35
-  let%span sops12 = "../../../../creusot-contracts/src/std/ops.rs" 109 14 109 31
-  let%span sops13 = "../../../../creusot-contracts/src/std/ops.rs" 114 15 114 29
-  let%span sops14 = "../../../../creusot-contracts/src/std/ops.rs" 115 15 115 26
-  let%span sops15 = "../../../../creusot-contracts/src/std/ops.rs" 116 14 116 28
-  let%span sops16 = "../../../../creusot-contracts/src/std/ops.rs" 121 14 121 133
+  let%span sops10 = "../../../../creusot-contracts/src/std/ops.rs" 105 15 105 59
+  let%span sops11 = "../../../../creusot-contracts/src/std/ops.rs" 106 14 106 36
+  let%span sops12 = "../../../../creusot-contracts/src/std/ops.rs" 111 14 111 31
+  let%span sops13 = "../../../../creusot-contracts/src/std/ops.rs" 116 15 116 29
+  let%span sops14 = "../../../../creusot-contracts/src/std/ops.rs" 117 15 117 26
+  let%span sops15 = "../../../../creusot-contracts/src/std/ops.rs" 118 14 118 28
+  let%span sops16 = "../../../../creusot-contracts/src/std/ops.rs" 123 14 124 105
   
   type t_F'0
   
@@ -135,13 +130,13 @@ module M_06_fn_specs__weaken_2_std [#"06_fn_specs.rs" 14 0 14 63]
   
   predicate inv'1 (_1 : t_A'0)
   
-  predicate precondition'0 (self : t_F'0) (_2 : t_A'0)
+  predicate precondition'0 (self : t_F'0) (args : t_A'0)
   
   type t_Output'0
   
   predicate inv'2 (_1 : t_Output'0)
   
-  predicate postcondition_once'0 (self : t_F'0) (_2 : t_A'0) (_3 : t_Output'0)
+  predicate postcondition_once'0 (self : t_F'0) (args : t_A'0) (result : t_Output'0)
   
   let rec weaken_3_std'0 (f:t_F'0) (a:t_A'0) (return'  (ret:t_Output'0))= {[@expl:weaken_3_std 'f' type invariant] [%#s06_fn_specs5] inv'0 f}
     {[@expl:weaken_3_std 'a' type invariant] [%#s06_fn_specs6] inv'1 a}
@@ -154,18 +149,18 @@ module M_06_fn_specs__weaken_2_std [#"06_fn_specs.rs" 14 0 14 63]
   
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Borrow
+  predicate postcondition_mut'0 (self : t_F'0) (args : t_A'0) (result_state : t_F'0) (result : t_Output'0)
   
-  predicate postcondition_mut'0 (self : borrowed t_F'0) (_2 : t_A'0) (_3 : t_Output'0)
+  use prelude.prelude.Borrow
   
   predicate resolve'0 (_1 : t_F'0)
   
   predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
   
-  function postcondition_mut_unnest'0 (self : borrowed t_F'0) (args : t_A'0) (res : t_Output'0) : ()
+  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_A'0) (res_state : t_F'0) (res : t_Output'0) : ()
   
-  axiom postcondition_mut_unnest'0_spec : forall self : borrowed t_F'0, args : t_A'0, res : t_Output'0 . ([%#sops10] postcondition_mut'0 self args res)
-   -> ([%#sops11] unnest'0 self.current self.final)
+  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_A'0, res_state : t_F'0, res : t_Output'0 . ([%#sops10] postcondition_mut'0 self args res_state res)
+   -> ([%#sops11] unnest'0 self res_state)
   
   function unnest_refl'0 (self : t_F'0) : ()
   
@@ -179,7 +174,7 @@ module M_06_fn_specs__weaken_2_std [#"06_fn_specs.rs" 14 0 14 63]
   function fn_mut_once'0 (self : t_F'0) (args : t_A'0) (res : t_Output'0) : ()
   
   axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_A'0, res : t_Output'0 . [%#sops16] postcondition_once'0 self args res
-  = (exists s : borrowed t_F'0 . s.current = self /\ postcondition_mut'0 s args res /\ resolve'0 s.final)
+  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
   
   meta "compute_max_steps" 1000000
   
@@ -195,8 +190,8 @@ module M_06_fn_specs__weaken_2_std [#"06_fn_specs.rs" 14 0 14 63]
     | bb5 = return' {_0} ]
     ) [ & _0 : t_Output'0 = any_l () | & f : t_F'0 = f | & a : t_A'0 = a ] 
     [ return' (result:t_Output'0)-> {[@expl:weaken_2_std result type invariant] [%#s06_fn_specs3] inv'2 result}
-      {[@expl:weaken_2_std ensures] [%#s06_fn_specs4] exists f2 : borrowed t_F'0 . f2.current = f
-      /\ postcondition_mut'0 f2 a result /\ resolve'0 f2.final}
+      {[@expl:weaken_2_std ensures] [%#s06_fn_specs4] exists f2 : t_F'0 . postcondition_mut'0 f a f2 result
+      /\ resolve'0 f2}
       (! return' {result}) ]
     
 end
@@ -206,7 +201,7 @@ module M_06_fn_specs__weaken_3_std [#"06_fn_specs.rs" 20 0 20 64]
   let%span s06_fn_specs2 = "06_fn_specs.rs" 18 11 18 28
   let%span s06_fn_specs3 = "06_fn_specs.rs" 20 55 20 64
   let%span s06_fn_specs4 = "06_fn_specs.rs" 19 10 19 41
-  let%span sops5 = "../../../../creusot-contracts/src/std/ops.rs" 144 0 166 1
+  let%span sops5 = "../../../../creusot-contracts/src/std/ops.rs" 148 0 170 1
   
   type t_F'0
   
@@ -216,13 +211,13 @@ module M_06_fn_specs__weaken_3_std [#"06_fn_specs.rs" 20 0 20 64]
   
   predicate inv'1 (_1 : t_A'0)
   
-  predicate precondition'0 (self : t_F'0) (_2 : t_A'0)
+  predicate precondition'0 (self : t_F'0) (args : t_A'0)
   
   type t_Output'0
   
   predicate inv'2 (_1 : t_Output'0)
   
-  predicate postcondition_once'0 (self : t_F'0) (_2 : t_A'0) (_3 : t_Output'0)
+  predicate postcondition_once'0 (self : t_F'0) (args : t_A'0) (result : t_Output'0)
   
   let rec call_once'0 (self:t_F'0) (args:t_A'0) (return'  (ret:t_Output'0))= {[@expl:call_once 'self' type invariant] inv'0 self}
     {[@expl:call_once 'args' type invariant] inv'1 args}
@@ -257,7 +252,7 @@ module M_06_fn_specs__fn_once_user [#"06_fn_specs.rs" 26 0 26 43]
   let%span s06_fn_specs0 = "06_fn_specs.rs" 27 6 27 7
   let%span s06_fn_specs1 = "06_fn_specs.rs" 26 38 26 39
   let%span s06_fn_specs2 = "06_fn_specs.rs" 25 11 25 36
-  let%span sops3 = "../../../../creusot-contracts/src/std/ops.rs" 144 0 166 1
+  let%span sops3 = "../../../../creusot-contracts/src/std/ops.rs" 148 0 170 1
   
   use prelude.prelude.UIntSize
   
@@ -267,11 +262,11 @@ module M_06_fn_specs__fn_once_user [#"06_fn_specs.rs" 26 0 26 43]
   
   predicate inv'1 (_1 : usize)
   
-  predicate precondition'0 (self : t_F'0) (_2 : usize)
+  predicate precondition'0 (self : t_F'0) (args : usize)
   
   predicate inv'2 (_1 : ())
   
-  predicate postcondition_once'0 (self : t_F'0) (_2 : usize) (_3 : ())
+  predicate postcondition_once'0 (self : t_F'0) (args : usize) (result : ())
   
   axiom inv_axiom'0 [@rewrite] : forall x : usize [inv'1 x] . inv'1 x = true
   
@@ -317,7 +312,7 @@ module M_06_fn_specs__caller [#"06_fn_specs.rs" 30 0 30 15]
     [ return' (result:())-> (! return' {result}) ]
     
   
-  predicate precondition'0 [#"06_fn_specs.rs" 31 17 31 20] (self : ()) (args : usize) =
+  predicate precondition'0 (self : ()) (args : usize) =
     let (_2) = args in true
   
   let rec fn_once_user'0 (f:()) (return'  (ret:()))= {[@expl:fn_once_user 'f' type invariant] [%#s06_fn_specs0] inv'0 f}
