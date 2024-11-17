@@ -43,6 +43,8 @@ pub struct PreContract<'tcx> {
     pub(crate) no_panic: bool,
     pub(crate) terminates: bool,
     pub(crate) extern_no_spec: bool,
+    /// Are any of the contract clauses here user provided? or merely Creusot inferred / provided?
+    pub(crate) has_user_contract: bool,
 }
 
 impl<'tcx> PreContract<'tcx> {
@@ -104,6 +106,9 @@ impl<'tcx> PreContract<'tcx> {
     }
 }
 
+/// [ContractClauses] is the most "raw" form of contract we have in Creusot,
+/// in this stage, we have only gathered the [DefId]s of the items that hold the various contract
+/// expressions.
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub struct ContractClauses {
     variant: Option<DefId>,
@@ -130,6 +135,8 @@ impl ContractClauses {
         fn_name: &str,
     ) -> EarlyBinder<'tcx, PreContract<'tcx>> {
         let mut out = PreContract::default();
+        out.has_user_contract =
+            !self.requires.is_empty() || !self.ensures.is_empty() || self.variant.is_some();
         let n_requires = self.requires.len();
         for req_id in self.requires {
             log::trace!("require clause {:?}", req_id);
