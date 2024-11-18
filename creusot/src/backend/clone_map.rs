@@ -357,7 +357,6 @@ impl<'tcx> Dependencies<'tcx> {
         // Update the clone graph with any new entries.
         let (graph, mut bodies) = graph.update_graph(ctx);
 
-        // First we find components including weak dependencies
         for scc in petgraph::algo::tarjan_scc(&graph).into_iter() {
             if scc.iter().any(|node| node == &self_node) {
                 assert_eq!(scc.len(), 1);

@@ -807,8 +807,8 @@ impl<'tcx> TranslationCtx<'tcx> {
         let kind = subst.as_closure().kind();
 
         let contract = contract_of(self, def_id);
-        let mut postcondition: Term<'_> = contract.ensures_conj(self.tcx);
-        let mut precondition: Term<'_> = contract.requires_conj(self.tcx);
+
+        let span = self.def_span(def_id);
 
         let (args_nms, args_tys): (Vec<_>, Vec<_>) =
             self.sig(def_id).inputs.iter().skip(1).map(|&(nm, _, ref ty)| (nm, ty.clone())).unzip();
@@ -831,6 +831,23 @@ impl<'tcx> TranslationCtx<'tcx> {
                 })
                 .collect(),
         );
+
+        let (mut precondition, mut postcondition) = if contract.is_empty() {
+            let params: Vec<_> =
+                args_nms.iter().cloned().zip(args_tys).map(|(nm, ty)| Term::var(nm, ty)).collect();
+            let ret_params = params.clone();
+            eprintln!("{subst:?}");
+            (
+                Term::mk_true(self.tcx),
+                Term {
+                    kind: TermKind::Postcondition { item: def_id, args: subst, params: ret_params },
+                    ty: self.types.bool,
+                    span,
+                },
+            )
+        } else {
+            (contract.requires_conj(self.tcx), contract.ensures_conj(self.tcx))
+        };
 
         postcondition = pearlite::Term {
             span: postcondition.span,
