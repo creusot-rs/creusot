@@ -61,7 +61,11 @@ module M_sparse_array__qyi912363311032332466__get [#"sparse_array.rs" 88 4 88 45
   
   predicate inv'2 (_1 : t_Vec'0)
   
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Vec'0 [inv'2 x] . inv'2 x = true
+  
   predicate inv'3 (_1 : usize)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : usize [inv'3 x] . inv'3 x = true
   
   use seq.Seq
   
@@ -85,65 +89,92 @@ module M_sparse_array__qyi912363311032332466__get [#"sparse_array.rs" 88 4 88 45
   
   predicate inv'4 (_1 : usize)
   
+  axiom inv_axiom'4 [@rewrite] : forall x : usize [inv'4 x] . inv'4 x = true
+  
   use seq.Seq
   
   predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq usize) (out : usize) =
     [%#sslice9] Seq.get seq (UIntSize.to_int self) = out
   
-  predicate inv'0 (_1 : t_Sparse'0)
-  
-  predicate inv'7 (_1 : t_Sparse'0)
-  
-  predicate invariant'0 (self : t_Sparse'0) =
-    [%#sinvariant12] inv'7 self
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Sparse'0 [inv'0 x] . inv'0 x = invariant'0 x
-  
-  type t_T'0
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_T'0
-  
-  predicate inv'1 (_1 : t_Option'0)
-  
-  predicate inv'6 (_1 : t_T'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x
-  = match x with
-    | C_None'0 -> true
-    | C_Some'0 a_0 -> inv'6 a_0
-    end
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Vec'0 [inv'2 x] . inv'2 x = true
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : usize [inv'3 x] . inv'3 x = true
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : usize [inv'4 x] . inv'4 x = true
-  
-  predicate inv'5 (_1 : t_Vec'1)
-  
-  predicate inv'8 (_1 : t_Vec'1)
-  
-  predicate invariant'1 (self : t_Vec'1) =
-    [%#sinvariant12] inv'8 self
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t_Vec'1 [inv'5 x] . inv'5 x = invariant'1 x
-  
-  predicate inv'9 (_1 : t_T'0)
-  
-  predicate invariant'2 (self : t_T'0) =
-    [%#sinvariant12] inv'9 self
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : t_T'0 [inv'6 x] . inv'6 x = invariant'2 x
+  let rec index'0 (self:t_Vec'0) (index:usize) (return'  (ret:usize))= {[@expl:index 'self' type invariant] inv'2 self}
+    {[@expl:index 'index' type invariant] inv'3 index}
+    {[@expl:index requires] [%#svec5] in_bounds'0 index (view'1 self)}
+    any
+    [ return' (result:usize)-> {inv'4 result} {[%#svec6] has_value'0 index (view'1 self) result} (! return' {result}) ]
+    
   
   use seq.Seq
+  
+  type t_T'0
   
   use seq.Seq
   
   function view'5 (self : t_Vec'1) : Seq.seq t_T'0
   
   axiom view'5_spec : forall self : t_Vec'1 . [%#svec11] Seq.length (view'5 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  use seq.Seq
+  
+  predicate inv'9 (_1 : t_T'0)
+  
+  predicate invariant'6 (self : t_T'0) =
+    [%#sboxed18] inv'9 self
+  
+  predicate inv'11 (_1 : t_T'0)
+  
+  axiom inv_axiom'10 [@rewrite] : forall x : t_T'0 [inv'11 x] . inv'11 x = invariant'6 x
+  
+  predicate invariant'5 (self : Seq.seq t_T'0) =
+    [%#sseq17] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'11 (Seq.get self i)
+  
+  predicate inv'10 (_1 : Seq.seq t_T'0)
+  
+  axiom inv_axiom'9 [@rewrite] : forall x : Seq.seq t_T'0 [inv'10 x] . inv'10 x = invariant'5 x
+  
+  predicate invariant'4 (self : t_Vec'1) =
+    [%#svec16] inv'10 (view'5 self)
+  
+  predicate inv'8 (_1 : t_Vec'1)
+  
+  axiom inv_axiom'8 [@rewrite] : forall x : t_Vec'1 [inv'8 x] . inv'8 x = invariant'4 x
+  
+  predicate invariant'1 (self : t_Vec'1) =
+    [%#sinvariant12] inv'8 self
+  
+  predicate inv'5 (_1 : t_Vec'1)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_Vec'1 [inv'5 x] . inv'5 x = invariant'1 x
+  
+  function view'2 (self : t_Vec'1) : Seq.seq t_T'0 =
+    [%#smodel7] view'5 self
+  
+  predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq t_T'0) =
+    [%#sslice8] UIntSize.to_int self < Seq.length seq
+  
+  predicate invariant'2 (self : t_T'0) =
+    [%#sinvariant12] inv'9 self
+  
+  predicate inv'6 (_1 : t_T'0)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : t_T'0 [inv'6 x] . inv'6 x = invariant'2 x
+  
+  use seq.Seq
+  
+  predicate has_value'1 [@inline:trivial] (self : usize) (seq : Seq.seq t_T'0) (out : t_T'0) =
+    [%#sslice9] Seq.get seq (UIntSize.to_int self) = out
+  
+  let rec index'1 (self:t_Vec'1) (index:usize) (return'  (ret:t_T'0))= {[@expl:index 'self' type invariant] inv'5 self}
+    {[@expl:index 'index' type invariant] inv'3 index}
+    {[@expl:index requires] [%#svec5] in_bounds'1 index (view'2 self)}
+    any
+    [ return' (result:t_T'0)-> {inv'6 result} {[%#svec6] has_value'1 index (view'2 self) result} (! return' {result}) ]
+    
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_T'0
+  
+  use prelude.prelude.Intrinsic
   
   function index_logic'1 [@inline:trivial] (self : t_Vec'0) (ix : int) : usize =
     [%#sops14] Seq.get (view'4 self) ix
@@ -160,59 +191,20 @@ module M_sparse_array__qyi912363311032332466__get [#"sparse_array.rs" 88 4 88 45
       /\ UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 (UIntSize.to_int j)) = i
       end)
   
+  predicate inv'7 (_1 : t_Sparse'0)
+  
   axiom inv_axiom'7 [@rewrite] : forall x : t_Sparse'0 [inv'7 x] . inv'7 x
   = (invariant'3 x
   /\ match x with
     | {t_Sparse__size'0 = size ; t_Sparse__n'0 = n ; t_Sparse__values'0 = values ; t_Sparse__idx'0 = idx ; t_Sparse__back'0 = back} -> inv'8 values
     end)
   
-  predicate inv'10 (_1 : Seq.seq t_T'0)
+  predicate invariant'0 (self : t_Sparse'0) =
+    [%#sinvariant12] inv'7 self
   
-  predicate invariant'4 (self : t_Vec'1) =
-    [%#svec16] inv'10 (view'5 self)
+  predicate inv'0 (_1 : t_Sparse'0)
   
-  axiom inv_axiom'8 [@rewrite] : forall x : t_Vec'1 [inv'8 x] . inv'8 x = invariant'4 x
-  
-  use seq.Seq
-  
-  predicate inv'11 (_1 : t_T'0)
-  
-  predicate invariant'5 (self : Seq.seq t_T'0) =
-    [%#sseq17] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'11 (Seq.get self i)
-  
-  axiom inv_axiom'9 [@rewrite] : forall x : Seq.seq t_T'0 [inv'10 x] . inv'10 x = invariant'5 x
-  
-  predicate invariant'6 (self : t_T'0) =
-    [%#sboxed18] inv'9 self
-  
-  axiom inv_axiom'10 [@rewrite] : forall x : t_T'0 [inv'11 x] . inv'11 x = invariant'6 x
-  
-  let rec index'0 (self:t_Vec'0) (index:usize) (return'  (ret:usize))= {[@expl:index 'self' type invariant] inv'2 self}
-    {[@expl:index 'index' type invariant] inv'3 index}
-    {[@expl:index requires] [%#svec5] in_bounds'0 index (view'1 self)}
-    any
-    [ return' (result:usize)-> {inv'4 result} {[%#svec6] has_value'0 index (view'1 self) result} (! return' {result}) ]
-    
-  
-  function view'2 (self : t_Vec'1) : Seq.seq t_T'0 =
-    [%#smodel7] view'5 self
-  
-  predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq t_T'0) =
-    [%#sslice8] UIntSize.to_int self < Seq.length seq
-  
-  use seq.Seq
-  
-  predicate has_value'1 [@inline:trivial] (self : usize) (seq : Seq.seq t_T'0) (out : t_T'0) =
-    [%#sslice9] Seq.get seq (UIntSize.to_int self) = out
-  
-  let rec index'1 (self:t_Vec'1) (index:usize) (return'  (ret:t_T'0))= {[@expl:index 'self' type invariant] inv'5 self}
-    {[@expl:index 'index' type invariant] inv'3 index}
-    {[@expl:index requires] [%#svec5] in_bounds'1 index (view'2 self)}
-    any
-    [ return' (result:t_T'0)-> {inv'6 result} {[%#svec6] has_value'1 index (view'2 self) result} (! return' {result}) ]
-    
-  
-  use prelude.prelude.Intrinsic
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Sparse'0 [inv'0 x] . inv'0 x = invariant'0 x
   
   type t_Option'1  =
     | C_None'1
@@ -243,6 +235,14 @@ module M_sparse_array__qyi912363311032332466__get [#"sparse_array.rs" 88 4 88 45
     [%#smodel7] view'3 self
   
   use seq.Seq
+  
+  predicate inv'1 (_1 : t_Option'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x
+  = match x with
+    | C_None'0 -> true
+    | C_Some'0 a_0 -> inv'6 a_0
+    end
   
   use seq.Seq
   
@@ -344,17 +344,23 @@ module M_sparse_array__qyi912363311032332466__lemma_permutation [#"sparse_array.
       t_Sparse__idx'0: t_Vec'1;
       t_Sparse__back'0: t_Vec'1 }
   
-  predicate inv'0 (_1 : t_Sparse'0)
-  
-  use prelude.prelude.Int
-  
   use prelude.prelude.UIntSize
   
-  use prelude.prelude.Borrow
+  use prelude.prelude.Int
   
   use seq.Seq
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  type t_T'0
+  
+  use seq.Seq
+  
+  function view'1 (self : t_Vec'0) : Seq.seq t_T'0
+  
+  axiom view'1_spec : forall self : t_Vec'0 . [%#svec8] Seq.length (view'1 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  use seq.Seq
   
   use seq.Seq
   
@@ -366,21 +372,6 @@ module M_sparse_array__qyi912363311032332466__lemma_permutation [#"sparse_array.
   
   function index_logic'0 [@inline:trivial] (self : t_Vec'1) (ix : int) : usize =
     [%#sops6] Seq.get (view'0 self) ix
-  
-  function is_elt'0 [#"sparse_array.rs" 71 4 71 36] (self : t_Sparse'0) (i : int) : bool =
-    [%#ssparse_array5] UIntSize.to_int (index_logic'0 self.t_Sparse__idx'0 i) < UIntSize.to_int self.t_Sparse__n'0
-    /\ UIntSize.to_int (index_logic'0 self.t_Sparse__back'0 (UIntSize.to_int (index_logic'0 self.t_Sparse__idx'0 i)))
-    = i
-  
-  use seq.Seq
-  
-  type t_T'0
-  
-  use seq.Seq
-  
-  function view'1 (self : t_Vec'0) : Seq.seq t_T'0
-  
-  axiom view'1_spec : forall self : t_Vec'0 . [%#svec8] Seq.length (view'1 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
   predicate invariant'0 [#"sparse_array.rs" 49 4 49 30] (self : t_Sparse'0) =
     [%#ssparse_array7] UIntSize.to_int self.t_Sparse__n'0 <= UIntSize.to_int self.t_Sparse__size'0
@@ -394,7 +385,32 @@ module M_sparse_array__qyi912363311032332466__lemma_permutation [#"sparse_array.
       /\ UIntSize.to_int (index_logic'0 self.t_Sparse__idx'0 (UIntSize.to_int j)) = i
       end)
   
+  use seq.Seq
+  
+  predicate inv'4 (_1 : t_T'0)
+  
+  predicate invariant'3 (self : t_T'0) =
+    [%#sboxed11] inv'4 self
+  
+  predicate inv'3 (_1 : t_T'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_T'0 [inv'3 x] . inv'3 x = invariant'3 x
+  
+  predicate invariant'2 (self : Seq.seq t_T'0) =
+    [%#sseq10] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'3 (Seq.get self i)
+  
+  predicate inv'2 (_1 : Seq.seq t_T'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_T'0 [inv'2 x] . inv'2 x = invariant'2 x
+  
+  predicate invariant'1 (self : t_Vec'0) =
+    [%#svec9] inv'2 (view'1 self)
+  
   predicate inv'1 (_1 : t_Vec'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Vec'0 [inv'1 x] . inv'1 x = invariant'1 x
+  
+  predicate inv'0 (_1 : t_Sparse'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Sparse'0 [inv'0 x] . inv'0 x
   = (invariant'0 x
@@ -402,28 +418,12 @@ module M_sparse_array__qyi912363311032332466__lemma_permutation [#"sparse_array.
     | {t_Sparse__size'0 = size ; t_Sparse__n'0 = n ; t_Sparse__values'0 = values ; t_Sparse__idx'0 = idx ; t_Sparse__back'0 = back} -> inv'1 values
     end)
   
-  predicate inv'2 (_1 : Seq.seq t_T'0)
+  use prelude.prelude.Borrow
   
-  predicate invariant'1 (self : t_Vec'0) =
-    [%#svec9] inv'2 (view'1 self)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Vec'0 [inv'1 x] . inv'1 x = invariant'1 x
-  
-  use seq.Seq
-  
-  predicate inv'3 (_1 : t_T'0)
-  
-  predicate invariant'2 (self : Seq.seq t_T'0) =
-    [%#sseq10] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'3 (Seq.get self i)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_T'0 [inv'2 x] . inv'2 x = invariant'2 x
-  
-  predicate inv'4 (_1 : t_T'0)
-  
-  predicate invariant'3 (self : t_T'0) =
-    [%#sboxed11] inv'4 self
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_T'0 [inv'3 x] . inv'3 x = invariant'3 x
+  function is_elt'0 [#"sparse_array.rs" 71 4 71 36] (self : t_Sparse'0) (i : int) : bool =
+    [%#ssparse_array5] UIntSize.to_int (index_logic'0 self.t_Sparse__idx'0 i) < UIntSize.to_int self.t_Sparse__n'0
+    /\ UIntSize.to_int (index_logic'0 self.t_Sparse__back'0 (UIntSize.to_int (index_logic'0 self.t_Sparse__idx'0 i)))
+    = i
   
   constant self  : t_Sparse'0
   
@@ -494,7 +494,46 @@ module M_sparse_array__qyi912363311032332466__set [#"sparse_array.rs" 112 4 112 
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
   
+  use seq.Seq
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  type t_T'0
+  
+  use seq.Seq
+  
+  function view'3 (self : t_Vec'0) : Seq.seq t_T'0
+  
+  axiom view'3_spec : forall self : t_Vec'0 . [%#svec25] Seq.length (view'3 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  use seq.Seq
+  
+  predicate inv'1 (_1 : t_T'0)
+  
+  predicate invariant'6 (self : t_T'0) =
+    [%#sboxed35] inv'1 self
+  
+  predicate inv'12 (_1 : t_T'0)
+  
+  axiom inv_axiom'11 [@rewrite] : forall x : t_T'0 [inv'12 x] . inv'12 x = invariant'6 x
+  
+  predicate invariant'5 (self : Seq.seq t_T'0) =
+    [%#sseq34] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'12 (Seq.get self i)
+  
+  predicate inv'11 (_1 : Seq.seq t_T'0)
+  
+  axiom inv_axiom'10 [@rewrite] : forall x : Seq.seq t_T'0 [inv'11 x] . inv'11 x = invariant'5 x
+  
+  predicate invariant'0 (self : t_Vec'0) =
+    [%#svec31] inv'11 (view'3 self)
+  
   predicate inv'0 (_1 : t_Vec'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = invariant'0 x
   
   type t_NonNull'1  =
     { t_NonNull__pointer'1: opaque_ptr }
@@ -515,25 +554,16 @@ module M_sparse_array__qyi912363311032332466__set [#"sparse_array.rs" 112 4 112 
       t_Sparse__idx'0: t_Vec'1;
       t_Sparse__back'0: t_Vec'1 }
   
+  predicate invariant'3 (self : borrowed (t_Vec'0)) =
+    [%#sinvariant32] inv'0 self.current /\ inv'0 self.final
+  
   predicate inv'4 (_1 : borrowed (t_Vec'0))
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'4 x] . inv'4 x = invariant'3 x
   
   predicate inv'5 (_1 : usize)
   
-  type t_T'0
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  function view'3 (self : t_Vec'0) : Seq.seq t_T'0
-  
-  axiom view'3_spec : forall self : t_Vec'0 . [%#svec25] Seq.length (view'3 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  axiom inv_axiom'4 [@rewrite] : forall x : usize [inv'5 x] . inv'5 x = true
   
   function view'2 (self : borrowed (t_Vec'0)) : Seq.seq t_T'0 =
     [%#smodel21] view'3 self.current
@@ -541,7 +571,12 @@ module M_sparse_array__qyi912363311032332466__set [#"sparse_array.rs" 112 4 112 
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq t_T'0) =
     [%#sslice23] UIntSize.to_int self < Seq.length seq
   
+  predicate invariant'1 (self : borrowed t_T'0) =
+    [%#sinvariant32] inv'1 self.current /\ inv'1 self.final
+  
   predicate inv'2 (_1 : borrowed t_T'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : borrowed t_T'0 [inv'2 x] . inv'2 x = invariant'1 x
   
   use seq.Seq
   
@@ -551,97 +586,6 @@ module M_sparse_array__qyi912363311032332466__set [#"sparse_array.rs" 112 4 112 
   predicate resolve_elswhere'0 [@inline:trivial] (self : usize) (old' : Seq.seq t_T'0) (fin : Seq.seq t_T'0) =
     [%#sslice26] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
-  
-  predicate inv'11 (_1 : Seq.seq t_T'0)
-  
-  predicate invariant'0 (self : t_Vec'0) =
-    [%#svec31] inv'11 (view'3 self)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = invariant'0 x
-  
-  predicate inv'1 (_1 : t_T'0)
-  
-  predicate invariant'1 (self : borrowed t_T'0) =
-    [%#sinvariant32] inv'1 self.current /\ inv'1 self.final
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : borrowed t_T'0 [inv'2 x] . inv'2 x = invariant'1 x
-  
-  predicate inv'3 (_1 : borrowed (t_Sparse'0))
-  
-  predicate inv'8 (_1 : t_Sparse'0)
-  
-  predicate invariant'2 (self : borrowed (t_Sparse'0)) =
-    [%#sinvariant32] inv'8 self.current /\ inv'8 self.final
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_Sparse'0) [inv'3 x] . inv'3 x = invariant'2 x
-  
-  predicate invariant'3 (self : borrowed (t_Vec'0)) =
-    [%#sinvariant32] inv'0 self.current /\ inv'0 self.final
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'4 x] . inv'4 x = invariant'3 x
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : usize [inv'5 x] . inv'5 x = true
-  
-  predicate inv'6 (_1 : t_Vec'1)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t_Vec'1 [inv'6 x] . inv'6 x = true
-  
-  predicate inv'7 (_1 : usize)
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : usize [inv'7 x] . inv'7 x = true
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  function view'6 (self : t_Vec'1) : Seq.seq usize
-  
-  axiom view'6_spec : forall self : t_Vec'1 . [%#svec25] Seq.length (view'6 self) <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  use seq.Seq
-  
-  function index_logic'1 [@inline:trivial] (self : t_Vec'1) (ix : int) : usize =
-    [%#sops30] Seq.get (view'6 self) ix
-  
-  predicate invariant'4 [#"sparse_array.rs" 49 4 49 30] (self : t_Sparse'0) =
-    [%#ssparse_array33] UIntSize.to_int self.t_Sparse__n'0 <= UIntSize.to_int self.t_Sparse__size'0
-    /\ Seq.length (view'3 self.t_Sparse__values'0) = UIntSize.to_int self.t_Sparse__size'0
-    /\ Seq.length (view'6 self.t_Sparse__idx'0) = UIntSize.to_int self.t_Sparse__size'0
-    /\ Seq.length (view'6 self.t_Sparse__back'0) = UIntSize.to_int self.t_Sparse__size'0
-    /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int self.t_Sparse__n'0
-     -> match index_logic'1 self.t_Sparse__back'0 i with
-      | j -> 0 <= UIntSize.to_int j
-      /\ UIntSize.to_int j < UIntSize.to_int self.t_Sparse__size'0
-      /\ UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 (UIntSize.to_int j)) = i
-      end)
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : t_Sparse'0 [inv'8 x] . inv'8 x
-  = (invariant'4 x
-  /\ match x with
-    | {t_Sparse__size'0 = size ; t_Sparse__n'0 = n ; t_Sparse__values'0 = values ; t_Sparse__idx'0 = idx ; t_Sparse__back'0 = back} -> inv'0 values
-    end)
-  
-  predicate inv'9 (_1 : borrowed (t_Vec'1))
-  
-  axiom inv_axiom'8 [@rewrite] : forall x : borrowed (t_Vec'1) [inv'9 x] . inv'9 x = true
-  
-  predicate inv'10 (_1 : borrowed usize)
-  
-  axiom inv_axiom'9 [@rewrite] : forall x : borrowed usize [inv'10 x] . inv'10 x = true
-  
-  use seq.Seq
-  
-  predicate inv'12 (_1 : t_T'0)
-  
-  predicate invariant'5 (self : Seq.seq t_T'0) =
-    [%#sseq34] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'12 (Seq.get self i)
-  
-  axiom inv_axiom'10 [@rewrite] : forall x : Seq.seq t_T'0 [inv'11 x] . inv'11 x = invariant'5 x
-  
-  predicate invariant'6 (self : t_T'0) =
-    [%#sboxed35] inv'1 self
-  
-  axiom inv_axiom'11 [@rewrite] : forall x : t_T'0 [inv'12 x] . inv'12 x = invariant'6 x
   
   let rec index_mut'0 (self:borrowed (t_Vec'0)) (index:usize) (return'  (ret:borrowed t_T'0))= {[@expl:index_mut 'self' type invariant] inv'4 self}
     {[@expl:index_mut 'index' type invariant] inv'5 index}
@@ -663,11 +607,29 @@ module M_sparse_array__qyi912363311032332466__set [#"sparse_array.rs" 112 4 112 
   predicate resolve'1 (_1 : borrowed t_T'0) =
     resolve'4 _1
   
+  predicate inv'6 (_1 : t_Vec'1)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_Vec'1 [inv'6 x] . inv'6 x = true
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  function view'6 (self : t_Vec'1) : Seq.seq usize
+  
+  axiom view'6_spec : forall self : t_Vec'1 . [%#svec25] Seq.length (view'6 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
   function view'4 (self : t_Vec'1) : Seq.seq usize =
     [%#smodel28] view'6 self
   
   predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq usize) =
     [%#sslice23] UIntSize.to_int self < Seq.length seq
+  
+  predicate inv'7 (_1 : usize)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : usize [inv'7 x] . inv'7 x = true
+  
+  use seq.Seq
   
   predicate has_value'1 [@inline:trivial] (self : usize) (seq : Seq.seq usize) (out : usize) =
     [%#sslice24] Seq.get seq (UIntSize.to_int self) = out
@@ -678,6 +640,36 @@ module M_sparse_array__qyi912363311032332466__set [#"sparse_array.rs" 112 4 112 
     any
     [ return' (result:usize)-> {inv'7 result} {[%#svec15] has_value'1 index (view'4 self) result} (! return' {result}) ]
     
+  
+  function index_logic'1 [@inline:trivial] (self : t_Vec'1) (ix : int) : usize =
+    [%#sops30] Seq.get (view'6 self) ix
+  
+  predicate invariant'4 [#"sparse_array.rs" 49 4 49 30] (self : t_Sparse'0) =
+    [%#ssparse_array33] UIntSize.to_int self.t_Sparse__n'0 <= UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'3 self.t_Sparse__values'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'6 self.t_Sparse__idx'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'6 self.t_Sparse__back'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int self.t_Sparse__n'0
+     -> match index_logic'1 self.t_Sparse__back'0 i with
+      | j -> 0 <= UIntSize.to_int j
+      /\ UIntSize.to_int j < UIntSize.to_int self.t_Sparse__size'0
+      /\ UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 (UIntSize.to_int j)) = i
+      end)
+  
+  predicate inv'8 (_1 : t_Sparse'0)
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : t_Sparse'0 [inv'8 x] . inv'8 x
+  = (invariant'4 x
+  /\ match x with
+    | {t_Sparse__size'0 = size ; t_Sparse__n'0 = n ; t_Sparse__values'0 = values ; t_Sparse__idx'0 = idx ; t_Sparse__back'0 = back} -> inv'0 values
+    end)
+  
+  predicate invariant'2 (self : borrowed (t_Sparse'0)) =
+    [%#sinvariant32] inv'8 self.current /\ inv'8 self.final
+  
+  predicate inv'3 (_1 : borrowed (t_Sparse'0))
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_Sparse'0) [inv'3 x] . inv'3 x = invariant'2 x
   
   predicate resolve'5 (self : borrowed (t_Sparse'0)) =
     [%#sresolve27] self.final = self.current
@@ -700,8 +692,16 @@ module M_sparse_array__qyi912363311032332466__set [#"sparse_array.rs" 112 4 112 
   
   use prelude.prelude.Snapshot
   
+  predicate inv'9 (_1 : borrowed (t_Vec'1))
+  
+  axiom inv_axiom'8 [@rewrite] : forall x : borrowed (t_Vec'1) [inv'9 x] . inv'9 x = true
+  
   function view'5 (self : borrowed (t_Vec'1)) : Seq.seq usize =
     [%#smodel21] view'6 self.current
+  
+  predicate inv'10 (_1 : borrowed usize)
+  
+  axiom inv_axiom'9 [@rewrite] : forall x : borrowed usize [inv'10 x] . inv'10 x = true
   
   predicate resolve_elswhere'1 [@inline:trivial] (self : usize) (old' : Seq.seq usize) (fin : Seq.seq usize) =
     [%#sslice26] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
@@ -913,8 +913,6 @@ module M_sparse_array__create [#"sparse_array.rs" 134 0 134 64]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
   
-  predicate inv'2 (_1 : t_Vec'0)
-  
   use seq.Seq
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
@@ -931,8 +929,43 @@ module M_sparse_array__create [#"sparse_array.rs" 134 0 134 64]
   
   use seq.Seq
   
+  predicate invariant'3 (self : t_T'0) =
+    [%#sboxed16] inv'0 self
+  
+  predicate inv'6 (_1 : t_T'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_T'0 [inv'6 x] . inv'6 x = invariant'3 x
+  
+  predicate invariant'2 (self : Seq.seq t_T'0) =
+    [%#sseq15] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'6 (Seq.get self i)
+  
+  predicate inv'5 (_1 : Seq.seq t_T'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : Seq.seq t_T'0 [inv'5 x] . inv'5 x = invariant'2 x
+  
+  predicate invariant'1 (self : t_Vec'0) =
+    [%#svec14] inv'5 (view'1 self)
+  
+  predicate inv'2 (_1 : t_Vec'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Vec'0 [inv'2 x] . inv'2 x = invariant'1 x
+  
+  use seq.Seq
+  
   function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : t_T'0 =
     [%#sops11] Seq.get (view'1 self) ix
+  
+  let rec from_elem'0 (elem:t_T'0) (n:usize) (return'  (ret:t_Vec'0))= {[@expl:from_elem 'elem' type invariant] inv'0 elem}
+    any
+    [ return' (result:t_Vec'0)-> {inv'2 result}
+      {[%#svec7] Seq.length (view'1 result) = UIntSize.to_int n}
+      {[%#svec8] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
+      (! return' {result}) ]
+    
+  
+  predicate inv'3 (_1 : usize)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : usize [inv'3 x] . inv'3 x = true
   
   type t_NonNull'1  =
     { t_NonNull__pointer'1: opaque_ptr }
@@ -946,14 +979,9 @@ module M_sparse_array__create [#"sparse_array.rs" 134 0 134 64]
   type t_Vec'1  =
     { t_Vec__buf'1: t_RawVec'1; t_Vec__len'1: usize }
   
-  type t_Sparse'0  =
-    { t_Sparse__size'0: usize;
-      t_Sparse__n'0: usize;
-      t_Sparse__values'0: t_Vec'0;
-      t_Sparse__idx'0: t_Vec'1;
-      t_Sparse__back'0: t_Vec'1 }
+  predicate inv'4 (_1 : t_Vec'1)
   
-  predicate inv'1 (_1 : t_Sparse'0)
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Vec'1 [inv'4 x] . inv'4 x = true
   
   use seq.Seq
   
@@ -968,6 +996,23 @@ module M_sparse_array__create [#"sparse_array.rs" 134 0 134 64]
   function index_logic'1 [@inline:trivial] (self : t_Vec'1) (ix : int) : usize =
     [%#sops11] Seq.get (view'2 self) ix
   
+  let rec from_elem'1 (elem:usize) (n:usize) (return'  (ret:t_Vec'1))= {[@expl:from_elem 'elem' type invariant] inv'3 elem}
+    any
+    [ return' (result:t_Vec'1)-> {inv'4 result}
+      {[%#svec7] Seq.length (view'2 result) = UIntSize.to_int n}
+      {[%#svec8] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'1 result i = elem}
+      (! return' {result}) ]
+    
+  
+  type t_Sparse'0  =
+    { t_Sparse__size'0: usize;
+      t_Sparse__n'0: usize;
+      t_Sparse__values'0: t_Vec'0;
+      t_Sparse__idx'0: t_Vec'1;
+      t_Sparse__back'0: t_Vec'1 }
+  
+  use prelude.prelude.Intrinsic
+  
   predicate invariant'0 [#"sparse_array.rs" 49 4 49 30] (self : t_Sparse'0) =
     [%#ssparse_array13] UIntSize.to_int self.t_Sparse__n'0 <= UIntSize.to_int self.t_Sparse__size'0
     /\ Seq.length (view'1 self.t_Sparse__values'0) = UIntSize.to_int self.t_Sparse__size'0
@@ -980,58 +1025,13 @@ module M_sparse_array__create [#"sparse_array.rs" 134 0 134 64]
       /\ UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 (UIntSize.to_int j)) = i
       end)
   
+  predicate inv'1 (_1 : t_Sparse'0)
+  
   axiom inv_axiom'0 [@rewrite] : forall x : t_Sparse'0 [inv'1 x] . inv'1 x
   = (invariant'0 x
   /\ match x with
     | {t_Sparse__size'0 = size ; t_Sparse__n'0 = n ; t_Sparse__values'0 = values ; t_Sparse__idx'0 = idx ; t_Sparse__back'0 = back} -> inv'2 values
     end)
-  
-  predicate inv'5 (_1 : Seq.seq t_T'0)
-  
-  predicate invariant'1 (self : t_Vec'0) =
-    [%#svec14] inv'5 (view'1 self)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Vec'0 [inv'2 x] . inv'2 x = invariant'1 x
-  
-  predicate inv'3 (_1 : usize)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : usize [inv'3 x] . inv'3 x = true
-  
-  predicate inv'4 (_1 : t_Vec'1)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Vec'1 [inv'4 x] . inv'4 x = true
-  
-  use seq.Seq
-  
-  predicate inv'6 (_1 : t_T'0)
-  
-  predicate invariant'2 (self : Seq.seq t_T'0) =
-    [%#sseq15] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'6 (Seq.get self i)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : Seq.seq t_T'0 [inv'5 x] . inv'5 x = invariant'2 x
-  
-  predicate invariant'3 (self : t_T'0) =
-    [%#sboxed16] inv'0 self
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t_T'0 [inv'6 x] . inv'6 x = invariant'3 x
-  
-  let rec from_elem'0 (elem:t_T'0) (n:usize) (return'  (ret:t_Vec'0))= {[@expl:from_elem 'elem' type invariant] inv'0 elem}
-    any
-    [ return' (result:t_Vec'0)-> {inv'2 result}
-      {[%#svec7] Seq.length (view'1 result) = UIntSize.to_int n}
-      {[%#svec8] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
-      (! return' {result}) ]
-    
-  
-  let rec from_elem'1 (elem:usize) (n:usize) (return'  (ret:t_Vec'1))= {[@expl:from_elem 'elem' type invariant] inv'3 elem}
-    any
-    [ return' (result:t_Vec'1)-> {inv'4 result}
-      {[%#svec7] Seq.length (view'2 result) = UIntSize.to_int n}
-      {[%#svec8] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'1 result i = elem}
-      (! return' {result}) ]
-    
-  
-  use prelude.prelude.Intrinsic
   
   type t_Option'0  =
     | C_None'0
@@ -1156,6 +1156,8 @@ module M_sparse_array__f [#"sparse_array.rs" 140 0 140 10]
   
   predicate inv'1 (_1 : int32)
   
+  axiom inv_axiom'1 [@rewrite] : forall x : int32 [inv'1 x] . inv'1 x = true
+  
   use prelude.prelude.Opaque
   
   type t_NonNull'0  =
@@ -1192,23 +1194,21 @@ module M_sparse_array__f [#"sparse_array.rs" 140 0 140 10]
       t_Sparse__idx'0: t_Vec'1;
       t_Sparse__back'0: t_Vec'1 }
   
-  predicate inv'0 (_1 : t_Sparse'0)
-  
-  use prelude.prelude.Int
-  
   use prelude.prelude.UIntSize
   
-  type t_Option'1  =
-    | C_None'1
-    | C_Some'1 int32
-  
-  use seq.Seq
-  
-  use prelude.prelude.Borrow
+  use prelude.prelude.Int
   
   use seq.Seq
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use seq.Seq
+  
+  function view'4 (self : t_Vec'0) : Seq.seq int32
+  
+  axiom view'4_spec : forall self : t_Vec'0 . [%#svec44] Seq.length (view'4 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  use seq.Seq
   
   use seq.Seq
   
@@ -1221,18 +1221,38 @@ module M_sparse_array__f [#"sparse_array.rs" 140 0 140 10]
   function index_logic'1 [@inline:trivial] (self : t_Vec'1) (ix : int) : usize =
     [%#sops42] Seq.get (view'5 self) ix
   
+  predicate invariant'0 [#"sparse_array.rs" 49 4 49 30] (self : t_Sparse'0) =
+    [%#ssparse_array43] UIntSize.to_int self.t_Sparse__n'0 <= UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'4 self.t_Sparse__values'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'5 self.t_Sparse__idx'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ Seq.length (view'5 self.t_Sparse__back'0) = UIntSize.to_int self.t_Sparse__size'0
+    /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int self.t_Sparse__n'0
+     -> match index_logic'1 self.t_Sparse__back'0 i with
+      | j -> 0 <= UIntSize.to_int j
+      /\ UIntSize.to_int j < UIntSize.to_int self.t_Sparse__size'0
+      /\ UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 (UIntSize.to_int j)) = i
+      end)
+  
+  predicate inv'0 (_1 : t_Sparse'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Sparse'0 [inv'0 x] . inv'0 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_Sparse__size'0 = size ; t_Sparse__n'0 = n ; t_Sparse__values'0 = values ; t_Sparse__idx'0 = idx ; t_Sparse__back'0 = back} -> true
+    end)
+  
+  type t_Option'1  =
+    | C_None'1
+    | C_Some'1 int32
+  
+  use seq.Seq
+  
+  use prelude.prelude.Borrow
+  
   function is_elt'0 [#"sparse_array.rs" 71 4 71 36] (self : t_Sparse'0) (i : int) : bool =
     [%#ssparse_array41] UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 i) < UIntSize.to_int self.t_Sparse__n'0
     /\ UIntSize.to_int (index_logic'1 self.t_Sparse__back'0 (UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 i)))
     = i
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  function view'4 (self : t_Vec'0) : Seq.seq int32
-  
-  axiom view'4_spec : forall self : t_Vec'0 . [%#svec44] Seq.length (view'4 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
   use seq.Seq
   
@@ -1252,48 +1272,6 @@ module M_sparse_array__f [#"sparse_array.rs" 140 0 140 10]
   
   use seq.Seq
   
-  predicate invariant'0 [#"sparse_array.rs" 49 4 49 30] (self : t_Sparse'0) =
-    [%#ssparse_array43] UIntSize.to_int self.t_Sparse__n'0 <= UIntSize.to_int self.t_Sparse__size'0
-    /\ Seq.length (view'4 self.t_Sparse__values'0) = UIntSize.to_int self.t_Sparse__size'0
-    /\ Seq.length (view'5 self.t_Sparse__idx'0) = UIntSize.to_int self.t_Sparse__size'0
-    /\ Seq.length (view'5 self.t_Sparse__back'0) = UIntSize.to_int self.t_Sparse__size'0
-    /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int self.t_Sparse__n'0
-     -> match index_logic'1 self.t_Sparse__back'0 i with
-      | j -> 0 <= UIntSize.to_int j
-      /\ UIntSize.to_int j < UIntSize.to_int self.t_Sparse__size'0
-      /\ UIntSize.to_int (index_logic'1 self.t_Sparse__idx'0 (UIntSize.to_int j)) = i
-      end)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Sparse'0 [inv'0 x] . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | {t_Sparse__size'0 = size ; t_Sparse__n'0 = n ; t_Sparse__values'0 = values ; t_Sparse__idx'0 = idx ; t_Sparse__back'0 = back} -> true
-    end)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : int32 [inv'1 x] . inv'1 x = true
-  
-  predicate inv'2 (_1 : t_Sparse'0)
-  
-  predicate invariant'1 (self : t_Sparse'0) =
-    [%#sinvariant45] inv'0 self
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Sparse'0 [inv'2 x] . inv'2 x = invariant'1 x
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 int32
-  
-  predicate inv'3 (_1 : t_Option'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
-  
-  predicate inv'4 (_1 : borrowed (t_Sparse'0))
-  
-  predicate invariant'2 (self : borrowed (t_Sparse'0)) =
-    [%#sinvariant46] inv'0 self.current /\ inv'0 self.final
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : borrowed (t_Sparse'0) [inv'4 x] . inv'4 x = invariant'2 x
-  
   let rec create'0 (sz:usize) (dummy:int32) (return'  (ret:t_Sparse'0))= {[@expl:create 'dummy' type invariant] [%#ssparse_array23] inv'1 dummy}
     any
     [ return' (result:t_Sparse'0)-> {[%#ssparse_array24] inv'0 result}
@@ -1302,10 +1280,25 @@ module M_sparse_array__f [#"sparse_array.rs" 140 0 140 10]
       (! return' {result}) ]
     
   
+  predicate invariant'1 (self : t_Sparse'0) =
+    [%#sinvariant45] inv'0 self
+  
+  predicate inv'2 (_1 : t_Sparse'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Sparse'0 [inv'2 x] . inv'2 x = invariant'1 x
+  
   function view'2 (self : t_Sparse'0) : Seq.seq (t_Option'1) =
     [%#smodel38] view'1 self
   
   use seq.Seq
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 int32
+  
+  predicate inv'3 (_1 : t_Option'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
   
   let rec get'0 (self:t_Sparse'0) (i:usize) (return'  (ret:t_Option'0))= {[@expl:get 'self' type invariant] [%#ssparse_array27] inv'2 self}
     {[@expl:get requires] [%#ssparse_array28] UIntSize.to_int i < Seq.length (view'2 self)}
@@ -1321,6 +1314,13 @@ module M_sparse_array__f [#"sparse_array.rs" 140 0 140 10]
         end}
       (! return' {result}) ]
     
+  
+  predicate invariant'2 (self : borrowed (t_Sparse'0)) =
+    [%#sinvariant46] inv'0 self.current /\ inv'0 self.final
+  
+  predicate inv'4 (_1 : borrowed (t_Sparse'0))
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : borrowed (t_Sparse'0) [inv'4 x] . inv'4 x = invariant'2 x
   
   function view'3 (self : borrowed (t_Sparse'0)) : Seq.seq (t_Option'1) =
     [%#smodel40] view'1 self.current

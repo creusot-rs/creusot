@@ -101,43 +101,11 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
   
   axiom view'0_spec : forall self : t_Instant'0 . [%#stime30] view'0 self >= 0
   
-  use prelude.prelude.Borrow
-  
-  use prelude.prelude.UInt64
-  
-  type t_Nanoseconds'0  =
-    { t_Nanoseconds__0'0: uint32 }
-  
-  type t_Duration'0  =
-    { t_Duration__secs'0: uint64; t_Duration__nanos'0: t_Nanoseconds'0 }
-  
-  predicate inv'0 (_1 : t_Duration'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Duration'0 [inv'0 x] . inv'0 x = true
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'1 (t_Instant'0)
-  
-  predicate inv'1 (_1 : t_Option'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x = true
-  
-  predicate inv'2 (_1 : t_Instant'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Instant'0 [inv'2 x] . inv'2 x = true
-  
-  type t_Option'1  =
-    | C_None'1
-    | C_Some'2 (t_Duration'0)
-  
-  predicate inv'3 (_1 : t_Option'1)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'1 [inv'3 x] . inv'3 x = true
-  
   let rec now'0 (_1:()) (return'  (ret:t_Instant'0))= any
     [ return' (result:t_Instant'0)-> {[%#stime20] view'0 result >= 0} (! return' {result}) ]
     
+  
+  use prelude.prelude.UInt64
   
   constant v_MAX'0 : uint64 = (18446744073709551615 : uint64)
   
@@ -145,6 +113,12 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
   
   function secs_to_nanos'0 (secs : int) : int =
     [%#stime41] secs * 1000000000
+  
+  type t_Nanoseconds'0  =
+    { t_Nanoseconds__0'0: uint32 }
+  
+  type t_Duration'0  =
+    { t_Duration__secs'0: uint64; t_Duration__nanos'0: t_Nanoseconds'0 }
   
   function view'1 (self : t_Duration'0) : int
   
@@ -156,9 +130,15 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
       (! return' {result}) ]
     
   
+  use prelude.prelude.Borrow
+  
   let rec elapsed'0 (self:t_Instant'0) (return'  (ret:t_Duration'0))= any
     [ return' (result:t_Duration'0)-> {[%#stime22] view'1 result >= 0} (! return' {result}) ]
     
+  
+  predicate inv'0 (_1 : t_Duration'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Duration'0 [inv'0 x] . inv'0 x = true
   
   function deep_model'3 (self : t_Duration'0) : int =
     [%#stime47] view'1 self
@@ -171,6 +151,10 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
     any
     [ return' (result:bool)-> {[%#scmp23] result = (deep_model'0 self >= deep_model'0 other)} (! return' {result}) ]
     
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'1 (t_Instant'0)
   
   type t_Option'2  =
     | C_None'2
@@ -213,6 +197,14 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
        -> lt_log'0 (C_Some'0 (view'2 self)) (deep_model'1 result)}
       (! return' {result}) ]
     
+  
+  predicate inv'1 (_1 : t_Option'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x = true
+  
+  predicate inv'2 (_1 : t_Instant'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Instant'0 [inv'2 x] . inv'2 x = true
   
   let rec unwrap'0 (self:t_Option'0) (return'  (ret:t_Instant'0))= {[@expl:unwrap 'self' type invariant] inv'1 self}
     {[@expl:unwrap requires] [%#soption26] self <> C_None'0}
@@ -267,11 +259,19 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
       (! return' {result}) ]
     
   
+  type t_Option'1  =
+    | C_None'1
+    | C_Some'2 (t_Duration'0)
+  
   let rec checked_duration_since'0 (self:t_Instant'0) (earlier:t_Instant'0) (return'  (ret:t_Option'1))= any
     [ return' (result:t_Option'1)-> {[%#stime37] view'2 self >= view'0 earlier  -> result <> C_None'1}
       {[%#stime37] view'2 self < view'0 earlier  -> result = C_None'1}
       (! return' {result}) ]
     
+  
+  predicate inv'3 (_1 : t_Option'1)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'1 [inv'3 x] . inv'3 x = true
   
   let rec is_some'0 (self:t_Option'1) (return'  (ret:bool))= {[@expl:is_some 'self' type invariant] inv'3 self}
     any [ return' (result:bool)-> {[%#soption38] result = (self <> C_None'1)} (! return' {result}) ] 

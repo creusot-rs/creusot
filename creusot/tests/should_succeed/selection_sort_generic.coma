@@ -104,26 +104,61 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 30
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
   
-  predicate inv'6 (_1 : t_Vec'0)
+  use seq.Seq
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
   use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
   
   type t_T'0
   
   use seq.Seq
   
-  use seq.Seq
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  use prelude.prelude.Int
-  
   function view'2 (self : t_Vec'0) : Seq.seq t_T'0
   
   axiom view'2_spec : forall self : t_Vec'0 . [%#svec41] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
+  use seq.Seq
+  
+  predicate inv'12 (_1 : t_T'0)
+  
+  predicate invariant'7 (self : t_T'0) =
+    [%#sboxed80] inv'12 self
+  
+  predicate inv'13 (_1 : t_T'0)
+  
+  axiom inv_axiom'12 [@rewrite] : forall x : t_T'0 [inv'13 x] . inv'13 x = invariant'7 x
+  
+  predicate invariant'6 (self : Seq.seq t_T'0) =
+    [%#sseq79] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'13 (Seq.get self i)
+  
+  predicate inv'11 (_1 : Seq.seq t_T'0)
+  
+  axiom inv_axiom'11 [@rewrite] : forall x : Seq.seq t_T'0 [inv'11 x] . inv'11 x = invariant'6 x
+  
+  predicate invariant'0 (self : t_Vec'0) =
+    [%#svec75] inv'11 (view'2 self)
+  
+  predicate inv'2 (_1 : t_Vec'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Vec'0 [inv'2 x] . inv'2 x = invariant'0 x
+  
+  predicate invariant'4 (self : t_Vec'0) =
+    [%#sinvariant78] inv'2 self
+  
+  predicate inv'6 (_1 : t_Vec'0)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : t_Vec'0 [inv'6 x] . inv'6 x = invariant'4 x
+  
   function view'3 (self : t_Vec'0) : Seq.seq t_T'0 =
     [%#smodel42] view'2 self
+  
+  let rec len'0 (self:t_Vec'0) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'6 self}
+    any
+    [ return' (result:usize)-> {[%#svec20] UIntSize.to_int result = Seq.length (view'3 self)} (! return' {result}) ]
+    
   
   type t_Range'0  =
     { t_Range__start'0: usize; t_Range__end'0: usize }
@@ -131,101 +166,6 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 30
   predicate inv'0 (_1 : t_Range'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Range'0 [inv'0 x] . inv'0 x = true
-  
-  use seq.Seq
-  
-  predicate inv'1 (_1 : Seq.seq usize)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq usize [inv'1 x] . inv'1 x = true
-  
-  predicate inv'2 (_1 : t_Vec'0)
-  
-  predicate inv'11 (_1 : Seq.seq t_T'0)
-  
-  predicate invariant'0 (self : t_Vec'0) =
-    [%#svec75] inv'11 (view'2 self)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Vec'0 [inv'2 x] . inv'2 x = invariant'0 x
-  
-  use prelude.prelude.Slice
-  
-  predicate inv'3 (_1 : slice t_T'0)
-  
-  use prelude.prelude.Slice
-  
-  function view'6 (self : slice t_T'0) : Seq.seq t_T'0
-  
-  axiom view'6_spec : forall self : slice t_T'0 . ([%#sslice72] Seq.length (view'6 self)
-  <= UIntSize.to_int (v_MAX'0 : usize))
-  && ([%#sslice73] view'6 self = Slice.id self)
-  
-  predicate invariant'1 (self : slice t_T'0) =
-    [%#sslice76] inv'11 (view'6 self)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : slice t_T'0 [inv'3 x] . inv'3 x = invariant'1 x
-  
-  predicate inv'4 (_1 : borrowed (slice t_T'0))
-  
-  predicate invariant'2 (self : borrowed (slice t_T'0)) =
-    [%#sinvariant77] inv'3 self.current /\ inv'3 self.final
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'4 x] . inv'4 x = invariant'2 x
-  
-  predicate inv'5 (_1 : borrowed (t_Vec'0))
-  
-  predicate invariant'3 (self : borrowed (t_Vec'0)) =
-    [%#sinvariant77] inv'2 self.current /\ inv'2 self.final
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'5 x] . inv'5 x = invariant'3 x
-  
-  predicate invariant'4 (self : t_Vec'0) =
-    [%#sinvariant78] inv'2 self
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : t_Vec'0 [inv'6 x] . inv'6 x = invariant'4 x
-  
-  predicate inv'7 (_1 : borrowed (t_Range'0))
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : borrowed (t_Range'0) [inv'7 x] . inv'7 x = true
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 usize
-  
-  predicate inv'8 (_1 : t_Option'0)
-  
-  axiom inv_axiom'8 [@rewrite] : forall x : t_Option'0 [inv'8 x] . inv'8 x = true
-  
-  predicate inv'9 (_1 : usize)
-  
-  axiom inv_axiom'9 [@rewrite] : forall x : usize [inv'9 x] . inv'9 x = true
-  
-  predicate inv'10 (_1 : t_T'0)
-  
-  predicate inv'12 (_1 : t_T'0)
-  
-  predicate invariant'5 (self : t_T'0) =
-    [%#sinvariant78] inv'12 self
-  
-  axiom inv_axiom'10 [@rewrite] : forall x : t_T'0 [inv'10 x] . inv'10 x = invariant'5 x
-  
-  use seq.Seq
-  
-  predicate inv'13 (_1 : t_T'0)
-  
-  predicate invariant'6 (self : Seq.seq t_T'0) =
-    [%#sseq79] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'13 (Seq.get self i)
-  
-  axiom inv_axiom'11 [@rewrite] : forall x : Seq.seq t_T'0 [inv'11 x] . inv'11 x = invariant'6 x
-  
-  predicate invariant'7 (self : t_T'0) =
-    [%#sboxed80] inv'12 self
-  
-  axiom inv_axiom'12 [@rewrite] : forall x : t_T'0 [inv'13 x] . inv'13 x = invariant'7 x
-  
-  let rec len'0 (self:t_Vec'0) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'6 self}
-    any
-    [ return' (result:usize)-> {[%#svec20] UIntSize.to_int result = Seq.length (view'3 self)} (! return' {result}) ]
-    
   
   predicate into_iter_pre'0 (self : t_Range'0) =
     [%#siter43] true
@@ -238,6 +178,8 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 30
     any [ return' (result:t_Range'0)-> {inv'0 result} {[%#siter21] into_iter_post'0 self result} (! return' {result}) ] 
   
   use prelude.prelude.Snapshot
+  
+  use seq.Seq
   
   use seq.Seq
   
@@ -317,6 +259,22 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 30
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'2 (Seq.get visited i) = deep_model'2 self.t_Range__start'0 + i)
   
+  predicate inv'1 (_1 : Seq.seq usize)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq usize [inv'1 x] . inv'1 x = true
+  
+  predicate inv'7 (_1 : borrowed (t_Range'0))
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : borrowed (t_Range'0) [inv'7 x] . inv'7 x = true
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 usize
+  
+  predicate inv'8 (_1 : t_Option'0)
+  
+  axiom inv_axiom'8 [@rewrite] : forall x : t_Option'0 [inv'8 x] . inv'8 x = true
+  
   predicate resolve'3 (self : borrowed (t_Range'0)) =
     [%#sresolve55] self.final = self.current
   
@@ -346,8 +304,19 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 30
   
   use seq.Seq
   
+  predicate inv'9 (_1 : usize)
+  
+  axiom inv_axiom'9 [@rewrite] : forall x : usize [inv'9 x] . inv'9 x = true
+  
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq t_T'0) =
     [%#sslice69] UIntSize.to_int self < Seq.length seq
+  
+  predicate invariant'5 (self : t_T'0) =
+    [%#sinvariant78] inv'12 self
+  
+  predicate inv'10 (_1 : t_T'0)
+  
+  axiom inv_axiom'10 [@rewrite] : forall x : t_T'0 [inv'10 x] . inv'10 x = invariant'5 x
   
   predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq t_T'0) (out : t_T'0) =
     [%#sslice70] Seq.get seq (UIntSize.to_int self) = out
@@ -372,6 +341,37 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 30
     [ return' (result:bool)-> {[%#scmp32] result = lt_log'0 (deep_model'3 self) (deep_model'3 other)}
       (! return' {result}) ]
     
+  
+  predicate invariant'3 (self : borrowed (t_Vec'0)) =
+    [%#sinvariant77] inv'2 self.current /\ inv'2 self.final
+  
+  predicate inv'5 (_1 : borrowed (t_Vec'0))
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'5 x] . inv'5 x = invariant'3 x
+  
+  use prelude.prelude.Slice
+  
+  use prelude.prelude.Slice
+  
+  function view'6 (self : slice t_T'0) : Seq.seq t_T'0
+  
+  axiom view'6_spec : forall self : slice t_T'0 . ([%#sslice72] Seq.length (view'6 self)
+  <= UIntSize.to_int (v_MAX'0 : usize))
+  && ([%#sslice73] view'6 self = Slice.id self)
+  
+  predicate invariant'1 (self : slice t_T'0) =
+    [%#sslice76] inv'11 (view'6 self)
+  
+  predicate inv'3 (_1 : slice t_T'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : slice t_T'0 [inv'3 x] . inv'3 x = invariant'1 x
+  
+  predicate invariant'2 (self : borrowed (slice t_T'0)) =
+    [%#sinvariant77] inv'3 self.current /\ inv'3 self.final
+  
+  predicate inv'4 (_1 : borrowed (slice t_T'0))
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'4 x] . inv'4 x = invariant'2 x
   
   function view'5 (self : borrowed (slice t_T'0)) : Seq.seq t_T'0 =
     [%#smodel25] view'6 self.current

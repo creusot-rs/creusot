@@ -19,7 +19,14 @@ module M_16_take__qyi16574350389265959367__produces_refl [#"16_take.rs" 41 4 41 
   type t_Take'0  =
     { t_Take__iter'0: t_I'0; t_Take__n'0: usize }
   
+  predicate inv'1 (_1 : t_I'0)
+  
   predicate inv'0 (_1 : t_Take'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Take'0 [inv'0 x] . inv'0 x
+  = match x with
+    | {t_Take__iter'0 = iter ; t_Take__n'0 = n} -> inv'1 iter
+    end
   
   use seq.Seq
   
@@ -38,13 +45,6 @@ module M_16_take__qyi16574350389265959367__produces_refl [#"16_take.rs" 41 4 41 
   predicate produces'0 [#"16_take.rs" 31 4 31 64] (self : t_Take'0) (visited : Seq.seq t_Item'0) (o : t_Take'0) =
     [%#s16_take3] UIntSize.to_int self.t_Take__n'0 = UIntSize.to_int o.t_Take__n'0 + Seq.length visited
     /\ produces'1 self.t_Take__iter'0 visited o.t_Take__iter'0
-  
-  predicate inv'1 (_1 : t_I'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Take'0 [inv'0 x] . inv'0 x
-  = match x with
-    | {t_Take__iter'0 = iter ; t_Take__n'0 = n} -> inv'1 iter
-    end
   
   function produces_refl'1 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   
@@ -94,7 +94,14 @@ module M_16_take__qyi16574350389265959367__produces_trans [#"16_take.rs" 51 4 51
   type t_Take'0  =
     { t_Take__iter'0: t_I'0; t_Take__n'0: usize }
   
+  predicate inv'1 (_1 : t_I'0)
+  
   predicate inv'0 (_1 : t_Take'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Take'0 [inv'0 x] . inv'0 x
+  = match x with
+    | {t_Take__iter'0 = iter ; t_Take__n'0 = n} -> inv'1 iter
+    end
   
   type t_Item'0
   
@@ -113,13 +120,6 @@ module M_16_take__qyi16574350389265959367__produces_trans [#"16_take.rs" 51 4 51
     /\ produces'1 self.t_Take__iter'0 visited o.t_Take__iter'0
   
   use seq.Seq
-  
-  predicate inv'1 (_1 : t_I'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Take'0 [inv'0 x] . inv'0 x
-  = match x with
-    | {t_Take__iter'0 = iter ; t_Take__n'0 = n} -> inv'1 iter
-    end
   
   use seq.Seq
   
@@ -188,7 +188,12 @@ module M_16_take__qyi16574350389265959367__next [#"16_take.rs" 57 4 57 41] (* <T
   
   predicate inv'0 (_1 : t_I'0)
   
+  predicate invariant'1 (self : borrowed t_I'0) =
+    [%#sinvariant19] inv'0 self.current /\ inv'0 self.final
+  
   predicate inv'3 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'3 x] . inv'3 x = invariant'1 x
   
   type t_Item'0
   
@@ -196,7 +201,15 @@ module M_16_take__qyi16574350389265959367__next [#"16_take.rs" 57 4 57 41] (* <T
     | C_None'0
     | C_Some'0 t_Item'0
   
+  predicate inv'4 (_1 : t_Item'0)
+  
   predicate inv'2 (_1 : t_Option'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x
+  = match x with
+    | C_None'0 -> true
+    | C_Some'0 a_0 -> inv'4 a_0
+    end
   
   predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
   
@@ -205,33 +218,6 @@ module M_16_take__qyi16574350389265959367__next [#"16_take.rs" 57 4 57 41] (* <T
   use seq.Seq
   
   predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
-  
-  predicate inv'1 (_1 : borrowed (t_Take'0))
-  
-  predicate inv'5 (_1 : t_Take'0)
-  
-  predicate invariant'0 (self : borrowed (t_Take'0)) =
-    [%#sinvariant19] inv'5 self.current /\ inv'5 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Take'0) [inv'1 x] . inv'1 x = invariant'0 x
-  
-  predicate inv'4 (_1 : t_Item'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x
-  = match x with
-    | C_None'0 -> true
-    | C_Some'0 a_0 -> inv'4 a_0
-    end
-  
-  predicate invariant'1 (self : borrowed t_I'0) =
-    [%#sinvariant19] inv'0 self.current /\ inv'0 self.final
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'3 x] . inv'3 x = invariant'1 x
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Take'0 [inv'5 x] . inv'5 x
-  = match x with
-    | {t_Take__iter'0 = iter ; t_Take__n'0 = n} -> inv'0 iter
-    end
   
   let rec next'1 (self:borrowed t_I'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] [%#scommon5] inv'3 self}
     any
@@ -242,6 +228,20 @@ module M_16_take__qyi16574350389265959367__next [#"16_take.rs" 57 4 57 41] (* <T
         end}
       (! return' {result}) ]
     
+  
+  predicate inv'5 (_1 : t_Take'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Take'0 [inv'5 x] . inv'5 x
+  = match x with
+    | {t_Take__iter'0 = iter ; t_Take__n'0 = n} -> inv'0 iter
+    end
+  
+  predicate invariant'0 (self : borrowed (t_Take'0)) =
+    [%#sinvariant19] inv'5 self.current /\ inv'5 self.final
+  
+  predicate inv'1 (_1 : borrowed (t_Take'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Take'0) [inv'1 x] . inv'1 x = invariant'0 x
   
   predicate resolve'1 (self : borrowed (t_Take'0)) =
     [%#sresolve18] self.final = self.current
@@ -353,7 +353,21 @@ module M_16_take__qyi16574350389265959367__next__refines [#"16_take.rs" 57 4 57 
   type t_Take'0  =
     { t_Take__iter'0: t_I'0; t_Take__n'0: usize }
   
+  predicate inv'4 (_1 : t_I'0)
+  
+  predicate inv'3 (_1 : t_Take'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Take'0 [inv'3 x] . inv'3 x
+  = match x with
+    | {t_Take__iter'0 = iter ; t_Take__n'0 = n} -> inv'4 iter
+    end
+  
+  predicate invariant'0 (self : borrowed (t_Take'0)) =
+    [%#sinvariant4] inv'3 self.current /\ inv'3 self.final
+  
   predicate inv'0 (_1 : borrowed (t_Take'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Take'0) [inv'0 x] . inv'0 x = invariant'0 x
   
   type t_Item'0
   
@@ -388,28 +402,14 @@ module M_16_take__qyi16574350389265959367__next__refines [#"16_take.rs" 57 4 57 
     [%#s16_take2] UIntSize.to_int self.t_Take__n'0 = UIntSize.to_int o.t_Take__n'0 + Seq.length visited
     /\ produces'1 self.t_Take__iter'0 visited o.t_Take__iter'0
   
-  predicate inv'1 (_1 : t_Option'0)
-  
-  predicate inv'3 (_1 : t_Take'0)
-  
-  predicate invariant'0 (self : borrowed (t_Take'0)) =
-    [%#sinvariant4] inv'3 self.current /\ inv'3 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Take'0) [inv'0 x] . inv'0 x = invariant'0 x
-  
   predicate inv'2 (_1 : t_Item'0)
+  
+  predicate inv'1 (_1 : t_Option'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x
   = match x with
     | C_None'0 -> true
     | C_Some'0 a_0 -> inv'2 a_0
-    end
-  
-  predicate inv'4 (_1 : t_I'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Take'0 [inv'3 x] . inv'3 x
-  = match x with
-    | {t_Take__iter'0 = iter ; t_Take__n'0 = n} -> inv'4 iter
     end
   
   use seq.Seq
@@ -462,7 +462,14 @@ module M_16_take__qyi16574350389265959367__produces_refl__refines [#"16_take.rs"
   type t_Take'0  =
     { t_Take__iter'0: t_I'0; t_Take__n'0: usize }
   
+  predicate inv'1 (_1 : t_I'0)
+  
   predicate inv'0 (_1 : t_Take'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Take'0 [inv'0 x] . inv'0 x
+  = match x with
+    | {t_Take__iter'0 = iter ; t_Take__n'0 = n} -> inv'1 iter
+    end
   
   use seq.Seq
   
@@ -481,13 +488,6 @@ module M_16_take__qyi16574350389265959367__produces_refl__refines [#"16_take.rs"
   predicate produces'0 [#"16_take.rs" 31 4 31 64] (self : t_Take'0) (visited : Seq.seq t_Item'0) (o : t_Take'0) =
     [%#s16_take1] UIntSize.to_int self.t_Take__n'0 = UIntSize.to_int o.t_Take__n'0 + Seq.length visited
     /\ produces'1 self.t_Take__iter'0 visited o.t_Take__iter'0
-  
-  predicate inv'1 (_1 : t_I'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Take'0 [inv'0 x] . inv'0 x
-  = match x with
-    | {t_Take__iter'0 = iter ; t_Take__n'0 = n} -> inv'1 iter
-    end
   
   function produces_refl'1 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   
@@ -545,16 +545,16 @@ module M_16_take__qyi16574350389265959367__produces_trans__refines [#"16_take.rs
     [%#s16_take1] UIntSize.to_int self.t_Take__n'0 = UIntSize.to_int o.t_Take__n'0 + Seq.length visited
     /\ produces'1 self.t_Take__iter'0 visited o.t_Take__iter'0
   
-  predicate inv'0 (_1 : t_Take'0)
-  
-  use seq.Seq
-  
   predicate inv'1 (_1 : t_I'0)
+  
+  predicate inv'0 (_1 : t_Take'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Take'0 [inv'0 x] . inv'0 x
   = match x with
     | {t_Take__iter'0 = iter ; t_Take__n'0 = n} -> inv'1 iter
     end
+  
+  use seq.Seq
   
   use seq.Seq
   

@@ -5,7 +5,9 @@ use crate::{
     options::SpanMode,
     util::erased_identity_for_item,
 };
+use elaborator::Strength;
 use indexmap::{IndexMap, IndexSet};
+use petgraph::prelude::DiGraphMap;
 use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LocalDefId},
@@ -375,6 +377,7 @@ impl<'tcx> Dependencies<'tcx> {
         // Update the clone graph with any new entries.
         let (graph, mut bodies) = graph.update_graph(ctx);
 
+        // First we find components including weak dependencies
         for scc in petgraph::algo::tarjan_scc(&graph).into_iter() {
             if scc.iter().any(|node| node == &self_node) {
                 assert_eq!(scc.len(), 1);
@@ -382,46 +385,63 @@ impl<'tcx> Dependencies<'tcx> {
                 continue;
             }
 
-            if scc.len() > 1
-                && scc.iter().any(|node| {
-                    node.did().is_none_or(|(did, _)| {
-                        !matches!(
-                            self.tcx.def_kind(did),
-                            DefKind::Struct
-                                | DefKind::Enum
-                                | DefKind::Union
-                                | DefKind::Variant
-                                | DefKind::Field
-                        ) || get_builtin(self.tcx, did).is_some()
-                    })
-                })
-            {
-                ctx.crash_and_error(
-                    ctx.def_span(scc[0].did().unwrap().0),
-                    &format!("encountered a cycle during translation: {:?}", scc),
-                );
+            // Then we construct a sub-graph ignoring weak edges.
+            let mut subgraph = DiGraphMap::new();
+
+            for n in &scc {
+                subgraph.add_node(*n);
             }
 
-            let mut bodies = scc
-                .iter()
-                .map(|node| bodies.remove(node).unwrap_or_else(|| panic!("not found {scc:?}")))
-                .collect::<Vec<_>>();
+            for n in &scc {
+                for (_, t, str) in graph.edges_directed(*n, petgraph::Direction::Outgoing) {
+                    if subgraph.contains_node(t) && *str == Strength::Strong {
+                        subgraph.add_edge(*n, t, ());
+                    }
+                }
+            }
 
-            if bodies.len() > 1 {
-                // Mutually recursive ADT
-                let tys = bodies
-                    .into_iter()
-                    .flatten()
-                    .flat_map(|body| {
-                        let Decl::TyDecl(TyDecl::Adt { tys }) = body else {
-                            panic!("not an ADT decl")
-                        };
-                        tys
+            for scc in petgraph::algo::tarjan_scc(&subgraph).into_iter() {
+                if scc.len() > 1
+                    && scc.iter().any(|node| {
+                        node.did().is_none_or(|(did, _)| {
+                            !matches!(
+                                self.tcx.def_kind(did),
+                                DefKind::Struct
+                                    | DefKind::Enum
+                                    | DefKind::Union
+                                    | DefKind::Variant
+                                    | DefKind::Field
+                            ) || get_builtin(self.tcx, did).is_some()
+                        })
                     })
-                    .collect();
-                decls.push(Decl::TyDecl(TyDecl::Adt { tys }))
-            } else {
-                decls.extend(bodies.remove(0))
+                {
+                    ctx.crash_and_error(
+                        ctx.def_span(scc[0].did().unwrap().0),
+                        &format!("encountered a cycle during translation: {:?}", scc),
+                    );
+                }
+
+                let mut bodies = scc
+                    .iter()
+                    .map(|node| bodies.remove(node).unwrap_or_else(|| panic!("not found {scc:?}")))
+                    .collect::<Vec<_>>();
+
+                if bodies.len() > 1 {
+                    // Mutually recursive ADT
+                    let tys = bodies
+                        .into_iter()
+                        .flatten()
+                        .flat_map(|body| {
+                            let Decl::TyDecl(TyDecl::Adt { tys }) = body else {
+                                panic!("not an ADT decl")
+                            };
+                            tys
+                        })
+                        .collect();
+                    decls.push(Decl::TyDecl(TyDecl::Adt { tys }))
+                } else {
+                    decls.extend(bodies.remove(0))
+                }
             }
         }
 

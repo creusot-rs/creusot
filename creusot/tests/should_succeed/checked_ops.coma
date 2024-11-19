@@ -63,20 +63,6 @@ module M_checked_ops__test_u8_add_example [#"checked_ops.rs" 5 0 5 28]
   
   constant v_MAX'0 : uint8 = (255 : uint8)
   
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : uint8)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : uint8 [inv'1 x] . inv'1 x = true
-  
-  use prelude.prelude.Borrow
-  
-  predicate inv'2 (_1 : t_Option'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
-  
   let rec checked_add'0 (self:uint8) (rhs:uint8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum33] (result = C_None'0)
       = (UInt8.to_int self + UInt8.to_int rhs < UInt8.to_int (v_MIN'0 : uint8)
@@ -85,9 +71,23 @@ module M_checked_ops__test_u8_add_example [#"checked_ops.rs" 5 0 5 28]
       (! return' {result}) ]
     
   
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
+  
+  predicate inv'1 (_1 : uint8)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : uint8 [inv'1 x] . inv'1 x = true
+  
   let rec unwrap'0 (self:t_Option'0) (return'  (ret:uint8))= {[@expl:unwrap 'self' type invariant] inv'0 self}
     {[@expl:unwrap requires] [%#soption35] self <> C_None'0}
     any [ return' (result:uint8)-> {inv'1 result} {[%#soption35] C_Some'0 result = self} (! return' {result}) ] 
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'2 (_1 : t_Option'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'2 self}
     any [ return' (result:bool)-> {[%#soption36] result = (self = C_None'0)} (! return' {result}) ] 
@@ -324,12 +324,6 @@ module M_checked_ops__test_u8_add_overflow [#"checked_ops.rs" 23 0 23 34]
   
   constant v_MAX'0 : uint8 = (255 : uint8)
   
-  use prelude.prelude.Borrow
-  
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
   let rec checked_add'0 (self:uint8) (rhs:uint8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum13] (result = C_None'0)
       = (UInt8.to_int self + UInt8.to_int rhs < UInt8.to_int (v_MIN'0 : uint8)
@@ -337,6 +331,12 @@ module M_checked_ops__test_u8_add_overflow [#"checked_ops.rs" 23 0 23 34]
       {[%#snum14] forall r : uint8 . result = C_Some'0 r  -> UInt8.to_int r = UInt8.to_int self + UInt8.to_int rhs}
       (! return' {result}) ]
     
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption15] result = (self = C_None'0)} (! return' {result}) ] 
@@ -571,16 +571,6 @@ module M_checked_ops__test_u8_overflowing_add [#"checked_ops.rs" 39 0 39 44]
   
   constant v_MAX'0 : uint8 = (255 : uint8)
   
-  use prelude.prelude.Borrow
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 uint8
-  
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
   let rec overflowing_add'0 (self:uint8) (rhs:uint8) (return'  (ret:(uint8, bool)))= any
     [ return' (result:(uint8, bool))-> {[%#snum2] UInt8.to_int (let (a, _) = result in a)
       = EuclideanDivision.mod (UInt8.to_int self + UInt8.to_int rhs) (Power.power 2 (UInt32.to_int (v_BITS'0 : uint32)))
@@ -624,6 +614,10 @@ module M_checked_ops__test_u8_overflowing_add [#"checked_ops.rs" 39 0 39 44]
       (! return' {result}) ]
     
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 uint8
+  
   let rec checked_add'0 (self:uint8) (rhs:uint8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum11] (result = C_None'0)
       = (UInt8.to_int self + UInt8.to_int rhs < UInt8.to_int (v_MIN'0 : uint8)
@@ -631,6 +625,12 @@ module M_checked_ops__test_u8_overflowing_add [#"checked_ops.rs" 39 0 39 44]
       {[%#snum12] forall r : uint8 . result = C_Some'0 r  -> UInt8.to_int r = UInt8.to_int self + UInt8.to_int rhs}
       (! return' {result}) ]
     
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption13] result = (self = C_None'0)} (! return' {result}) ] 
@@ -736,20 +736,6 @@ module M_checked_ops__test_u8_sub_example [#"checked_ops.rs" 45 0 45 28]
   
   constant v_MAX'0 : uint8 = (255 : uint8)
   
-  use prelude.prelude.Borrow
-  
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : t_Option'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x = true
-  
-  predicate inv'2 (_1 : uint8)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : uint8 [inv'2 x] . inv'2 x = true
-  
   let rec checked_sub'0 (self:uint8) (rhs:uint8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum33] (result = C_None'0)
       = (UInt8.to_int self - UInt8.to_int rhs < UInt8.to_int (v_MIN'0 : uint8)
@@ -758,8 +744,22 @@ module M_checked_ops__test_u8_sub_example [#"checked_ops.rs" 45 0 45 28]
       (! return' {result}) ]
     
   
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
+  
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption35] result = (self = C_None'0)} (! return' {result}) ] 
+  
+  predicate inv'1 (_1 : t_Option'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x = true
+  
+  predicate inv'2 (_1 : uint8)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : uint8 [inv'2 x] . inv'2 x = true
   
   let rec unwrap'0 (self:t_Option'0) (return'  (ret:uint8))= {[@expl:unwrap 'self' type invariant] inv'1 self}
     {[@expl:unwrap requires] [%#soption36] self <> C_None'0}
@@ -999,12 +999,6 @@ module M_checked_ops__test_u8_sub_overflow [#"checked_ops.rs" 63 0 63 34]
   
   constant v_MAX'0 : uint8 = (255 : uint8)
   
-  use prelude.prelude.Borrow
-  
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
   let rec checked_sub'0 (self:uint8) (rhs:uint8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum15] (result = C_None'0)
       = (UInt8.to_int self - UInt8.to_int rhs < UInt8.to_int (v_MIN'0 : uint8)
@@ -1012,6 +1006,12 @@ module M_checked_ops__test_u8_sub_overflow [#"checked_ops.rs" 63 0 63 34]
       {[%#snum16] forall r : uint8 . result = C_Some'0 r  -> UInt8.to_int r = UInt8.to_int self - UInt8.to_int rhs}
       (! return' {result}) ]
     
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption17] result = (self = C_None'0)} (! return' {result}) ] 
@@ -1249,16 +1249,6 @@ module M_checked_ops__test_u8_overflowing_sub [#"checked_ops.rs" 79 0 79 44]
   
   constant v_MAX'0 : uint8 = (255 : uint8)
   
-  use prelude.prelude.Borrow
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 uint8
-  
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
   let rec overflowing_sub'0 (self:uint8) (rhs:uint8) (return'  (ret:(uint8, bool)))= any
     [ return' (result:(uint8, bool))-> {[%#snum2] UInt8.to_int (let (a, _) = result in a)
       = EuclideanDivision.mod (UInt8.to_int self - UInt8.to_int rhs) (Power.power 2 (UInt32.to_int (v_BITS'0 : uint32)))
@@ -1302,6 +1292,10 @@ module M_checked_ops__test_u8_overflowing_sub [#"checked_ops.rs" 79 0 79 44]
       (! return' {result}) ]
     
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 uint8
+  
   let rec checked_sub'0 (self:uint8) (rhs:uint8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum11] (result = C_None'0)
       = (UInt8.to_int self - UInt8.to_int rhs < UInt8.to_int (v_MIN'0 : uint8)
@@ -1309,6 +1303,12 @@ module M_checked_ops__test_u8_overflowing_sub [#"checked_ops.rs" 79 0 79 44]
       {[%#snum12] forall r : uint8 . result = C_Some'0 r  -> UInt8.to_int r = UInt8.to_int self - UInt8.to_int rhs}
       (! return' {result}) ]
     
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption13] result = (self = C_None'0)} (! return' {result}) ] 
@@ -1414,20 +1414,6 @@ module M_checked_ops__test_u8_mul_example [#"checked_ops.rs" 85 0 85 28]
   
   constant v_MAX'0 : uint8 = (255 : uint8)
   
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : uint8)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : uint8 [inv'1 x] . inv'1 x = true
-  
-  use prelude.prelude.Borrow
-  
-  predicate inv'2 (_1 : t_Option'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
-  
   let rec checked_mul'0 (self:uint8) (rhs:uint8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum33] (result = C_None'0)
       = (UInt8.to_int self * UInt8.to_int rhs < UInt8.to_int (v_MIN'0 : uint8)
@@ -1436,9 +1422,23 @@ module M_checked_ops__test_u8_mul_example [#"checked_ops.rs" 85 0 85 28]
       (! return' {result}) ]
     
   
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
+  
+  predicate inv'1 (_1 : uint8)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : uint8 [inv'1 x] . inv'1 x = true
+  
   let rec unwrap'0 (self:t_Option'0) (return'  (ret:uint8))= {[@expl:unwrap 'self' type invariant] inv'0 self}
     {[@expl:unwrap requires] [%#soption35] self <> C_None'0}
     any [ return' (result:uint8)-> {inv'1 result} {[%#soption35] C_Some'0 result = self} (! return' {result}) ] 
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'2 (_1 : t_Option'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'2 self}
     any [ return' (result:bool)-> {[%#soption36] result = (self = C_None'0)} (! return' {result}) ] 
@@ -1675,14 +1675,6 @@ module M_checked_ops__test_u8_mul_zero [#"checked_ops.rs" 102 0 102 30]
   
   constant v_MAX'0 : uint8 = (255 : uint8)
   
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : uint8)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : uint8 [inv'1 x] . inv'1 x = true
-  
   let rec checked_mul'0 (self:uint8) (rhs:uint8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum13] (result = C_None'0)
       = (UInt8.to_int self * UInt8.to_int rhs < UInt8.to_int (v_MIN'0 : uint8)
@@ -1690,6 +1682,14 @@ module M_checked_ops__test_u8_mul_zero [#"checked_ops.rs" 102 0 102 30]
       {[%#snum14] forall r : uint8 . result = C_Some'0 r  -> UInt8.to_int r = UInt8.to_int self * UInt8.to_int rhs}
       (! return' {result}) ]
     
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
+  
+  predicate inv'1 (_1 : uint8)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : uint8 [inv'1 x] . inv'1 x = true
   
   let rec unwrap'0 (self:t_Option'0) (return'  (ret:uint8))= {[@expl:unwrap 'self' type invariant] inv'0 self}
     {[@expl:unwrap requires] [%#soption15] self <> C_None'0}
@@ -1862,16 +1862,6 @@ module M_checked_ops__test_u8_overflowing_mul [#"checked_ops.rs" 111 0 111 44]
   
   constant v_MAX'0 : uint8 = (255 : uint8)
   
-  use prelude.prelude.Borrow
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 uint8
-  
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
   let rec overflowing_mul'0 (self:uint8) (rhs:uint8) (return'  (ret:(uint8, bool)))= any
     [ return' (result:(uint8, bool))-> {[%#snum2] UInt8.to_int (let (a, _) = result in a)
       = EuclideanDivision.mod (UInt8.to_int self * UInt8.to_int rhs) (Power.power 2 (UInt32.to_int (v_BITS'0 : uint32)))
@@ -1915,6 +1905,10 @@ module M_checked_ops__test_u8_overflowing_mul [#"checked_ops.rs" 111 0 111 44]
       (! return' {result}) ]
     
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 uint8
+  
   let rec checked_mul'0 (self:uint8) (rhs:uint8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum11] (result = C_None'0)
       = (UInt8.to_int self * UInt8.to_int rhs < UInt8.to_int (v_MIN'0 : uint8)
@@ -1922,6 +1916,12 @@ module M_checked_ops__test_u8_overflowing_mul [#"checked_ops.rs" 111 0 111 44]
       {[%#snum12] forall r : uint8 . result = C_Some'0 r  -> UInt8.to_int r = UInt8.to_int self * UInt8.to_int rhs}
       (! return' {result}) ]
     
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption13] result = (self = C_None'0)} (! return' {result}) ] 
@@ -2010,20 +2010,6 @@ module M_checked_ops__test_u8_div_example [#"checked_ops.rs" 117 0 117 28]
   
   use prelude.prelude.Int
   
-  use prelude.prelude.Borrow
-  
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : t_Option'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x = true
-  
-  predicate inv'2 (_1 : uint8)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : uint8 [inv'2 x] . inv'2 x = true
-  
   let rec checked_div'0 (self:uint8) (rhs:uint8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum20] (result = C_None'0)
       = (UInt8.to_int rhs = 0 \/ UInt8.to_int self = UInt8.to_int (v_MIN'0 : uint8) /\ UInt8.to_int rhs = - 1)}
@@ -2032,8 +2018,22 @@ module M_checked_ops__test_u8_div_example [#"checked_ops.rs" 117 0 117 28]
       (! return' {result}) ]
     
   
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
+  
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption22] result = (self = C_None'0)} (! return' {result}) ] 
+  
+  predicate inv'1 (_1 : t_Option'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x = true
+  
+  predicate inv'2 (_1 : uint8)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : uint8 [inv'2 x] . inv'2 x = true
   
   let rec unwrap'0 (self:t_Option'0) (return'  (ret:uint8))= {[@expl:unwrap 'self' type invariant] inv'1 self}
     {[@expl:unwrap requires] [%#soption23] self <> C_None'0}
@@ -2188,14 +2188,6 @@ module M_checked_ops__test_u8_div_no_overflow [#"checked_ops.rs" 128 0 128 44]
   
   use prelude.prelude.Int
   
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : uint8)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : uint8 [inv'1 x] . inv'1 x = true
-  
   let rec checked_div'0 (self:uint8) (rhs:uint8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum10] (result = C_None'0)
       = (UInt8.to_int rhs = 0 \/ UInt8.to_int self = UInt8.to_int (v_MIN'0 : uint8) /\ UInt8.to_int rhs = - 1)}
@@ -2203,6 +2195,14 @@ module M_checked_ops__test_u8_div_no_overflow [#"checked_ops.rs" 128 0 128 44]
        -> UInt8.to_int r = div (UInt8.to_int self) (UInt8.to_int rhs)}
       (! return' {result}) ]
     
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
+  
+  predicate inv'1 (_1 : uint8)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : uint8 [inv'1 x] . inv'1 x = true
   
   let rec unwrap'0 (self:t_Option'0) (return'  (ret:uint8))= {[@expl:unwrap 'self' type invariant] inv'0 self}
     {[@expl:unwrap requires] [%#soption12] self <> C_None'0}
@@ -2356,18 +2356,18 @@ module M_checked_ops__test_u8_div_zero [#"checked_ops.rs" 137 0 137 30]
   
   use prelude.prelude.Int
   
-  use prelude.prelude.Borrow
-  
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
   let rec checked_div'0 (self:uint8) (rhs:uint8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum2] (result = C_None'0)
       = (UInt8.to_int rhs = 0 \/ UInt8.to_int self = UInt8.to_int (v_MIN'0 : uint8) /\ UInt8.to_int rhs = - 1)}
       {[%#snum3] forall r : uint8 . result = C_Some'0 r  -> UInt8.to_int r = div (UInt8.to_int self) (UInt8.to_int rhs)}
       (! return' {result}) ]
     
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption4] result = (self = C_None'0)} (! return' {result}) ] 
@@ -2470,20 +2470,6 @@ module M_checked_ops__test_i8_add_example [#"checked_ops.rs" 142 0 142 28]
   
   constant v_MAX'0 : int8 = (127 : int8)
   
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : int8)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : int8 [inv'1 x] . inv'1 x = true
-  
-  use prelude.prelude.Borrow
-  
-  predicate inv'2 (_1 : t_Option'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
-  
   let rec checked_add'0 (self:int8) (rhs:int8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum49] (result = C_None'0)
       = (Int8.to_int self + Int8.to_int rhs < Int8.to_int (v_MIN'0 : int8)
@@ -2492,9 +2478,23 @@ module M_checked_ops__test_i8_add_example [#"checked_ops.rs" 142 0 142 28]
       (! return' {result}) ]
     
   
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
+  
+  predicate inv'1 (_1 : int8)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : int8 [inv'1 x] . inv'1 x = true
+  
   let rec unwrap'0 (self:t_Option'0) (return'  (ret:int8))= {[@expl:unwrap 'self' type invariant] inv'0 self}
     {[@expl:unwrap requires] [%#soption51] self <> C_None'0}
     any [ return' (result:int8)-> {inv'1 result} {[%#soption51] C_Some'0 result = self} (! return' {result}) ] 
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'2 (_1 : t_Option'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'2 self}
     any [ return' (result:bool)-> {[%#soption52] result = (self = C_None'0)} (! return' {result}) ] 
@@ -2783,12 +2783,6 @@ module M_checked_ops__test_i8_add_overflow_pos [#"checked_ops.rs" 165 0 165 38]
   
   constant v_MAX'0 : int8 = (127 : int8)
   
-  use prelude.prelude.Borrow
-  
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
   let rec checked_add'0 (self:int8) (rhs:int8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum15] (result = C_None'0)
       = (Int8.to_int self + Int8.to_int rhs < Int8.to_int (v_MIN'0 : int8)
@@ -2796,6 +2790,12 @@ module M_checked_ops__test_i8_add_overflow_pos [#"checked_ops.rs" 165 0 165 38]
       {[%#snum16] forall r : int8 . result = C_Some'0 r  -> Int8.to_int r = Int8.to_int self + Int8.to_int rhs}
       (! return' {result}) ]
     
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption17] result = (self = C_None'0)} (! return' {result}) ] 
@@ -2978,12 +2978,6 @@ module M_checked_ops__test_i8_add_overflow_neg [#"checked_ops.rs" 175 0 175 38]
   
   constant v_MAX'0 : int8 = (127 : int8)
   
-  use prelude.prelude.Borrow
-  
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
   let rec checked_add'0 (self:int8) (rhs:int8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum15] (result = C_None'0)
       = (Int8.to_int self + Int8.to_int rhs < Int8.to_int (v_MIN'0 : int8)
@@ -2991,6 +2985,12 @@ module M_checked_ops__test_i8_add_overflow_neg [#"checked_ops.rs" 175 0 175 38]
       {[%#snum16] forall r : int8 . result = C_Some'0 r  -> Int8.to_int r = Int8.to_int self + Int8.to_int rhs}
       (! return' {result}) ]
     
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption17] result = (self = C_None'0)} (! return' {result}) ] 
@@ -3223,16 +3223,6 @@ module M_checked_ops__test_i8_overflowing_add [#"checked_ops.rs" 191 0 191 44]
   
   constant v_MAX'0 : int8 = (127 : int8)
   
-  use prelude.prelude.Borrow
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 int8
-  
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
   let rec overflowing_add'0 (self:int8) (rhs:int8) (return'  (ret:(int8, bool)))= any
     [ return' (result:(int8, bool))-> {[%#snum2] Int8.to_int (let (a, _) = result in a)
       = EuclideanDivision.mod (Int8.to_int self + Int8.to_int rhs) (Power.power 2 (UInt32.to_int (v_BITS'0 : uint32)))
@@ -3272,6 +3262,10 @@ module M_checked_ops__test_i8_overflowing_add [#"checked_ops.rs" 191 0 191 44]
       (! return' {result}) ]
     
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 int8
+  
   let rec checked_add'0 (self:int8) (rhs:int8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum11] (result = C_None'0)
       = (Int8.to_int self + Int8.to_int rhs < Int8.to_int (v_MIN'0 : int8)
@@ -3279,6 +3273,12 @@ module M_checked_ops__test_i8_overflowing_add [#"checked_ops.rs" 191 0 191 44]
       {[%#snum12] forall r : int8 . result = C_Some'0 r  -> Int8.to_int r = Int8.to_int self + Int8.to_int rhs}
       (! return' {result}) ]
     
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption13] result = (self = C_None'0)} (! return' {result}) ] 
@@ -3401,20 +3401,6 @@ module M_checked_ops__test_i8_sub_example [#"checked_ops.rs" 197 0 197 28]
   
   constant v_MAX'0 : int8 = (127 : int8)
   
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : int8)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : int8 [inv'1 x] . inv'1 x = true
-  
-  use prelude.prelude.Borrow
-  
-  predicate inv'2 (_1 : t_Option'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
-  
   let rec checked_sub'0 (self:int8) (rhs:int8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum50] (result = C_None'0)
       = (Int8.to_int self - Int8.to_int rhs < Int8.to_int (v_MIN'0 : int8)
@@ -3423,9 +3409,23 @@ module M_checked_ops__test_i8_sub_example [#"checked_ops.rs" 197 0 197 28]
       (! return' {result}) ]
     
   
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
+  
+  predicate inv'1 (_1 : int8)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : int8 [inv'1 x] . inv'1 x = true
+  
   let rec unwrap'0 (self:t_Option'0) (return'  (ret:int8))= {[@expl:unwrap 'self' type invariant] inv'0 self}
     {[@expl:unwrap requires] [%#soption52] self <> C_None'0}
     any [ return' (result:int8)-> {inv'1 result} {[%#soption52] C_Some'0 result = self} (! return' {result}) ] 
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'2 (_1 : t_Option'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'2 self}
     any [ return' (result:bool)-> {[%#soption53] result = (self = C_None'0)} (! return' {result}) ] 
@@ -3718,12 +3718,6 @@ module M_checked_ops__test_i8_sub_overflow_pos [#"checked_ops.rs" 220 0 220 38]
   
   constant v_MAX'0 : int8 = (127 : int8)
   
-  use prelude.prelude.Borrow
-  
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
   let rec checked_sub'0 (self:int8) (rhs:int8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum15] (result = C_None'0)
       = (Int8.to_int self - Int8.to_int rhs < Int8.to_int (v_MIN'0 : int8)
@@ -3731,6 +3725,12 @@ module M_checked_ops__test_i8_sub_overflow_pos [#"checked_ops.rs" 220 0 220 38]
       {[%#snum16] forall r : int8 . result = C_Some'0 r  -> Int8.to_int r = Int8.to_int self - Int8.to_int rhs}
       (! return' {result}) ]
     
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption17] result = (self = C_None'0)} (! return' {result}) ] 
@@ -3913,12 +3913,6 @@ module M_checked_ops__test_i8_sub_overflow_neg [#"checked_ops.rs" 230 0 230 38]
   
   constant v_MAX'0 : int8 = (127 : int8)
   
-  use prelude.prelude.Borrow
-  
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
   let rec checked_sub'0 (self:int8) (rhs:int8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum15] (result = C_None'0)
       = (Int8.to_int self - Int8.to_int rhs < Int8.to_int (v_MIN'0 : int8)
@@ -3926,6 +3920,12 @@ module M_checked_ops__test_i8_sub_overflow_neg [#"checked_ops.rs" 230 0 230 38]
       {[%#snum16] forall r : int8 . result = C_Some'0 r  -> Int8.to_int r = Int8.to_int self - Int8.to_int rhs}
       (! return' {result}) ]
     
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption17] result = (self = C_None'0)} (! return' {result}) ] 
@@ -4162,16 +4162,6 @@ module M_checked_ops__test_i8_overflowing_sub [#"checked_ops.rs" 246 0 246 44]
   
   constant v_MAX'0 : int8 = (127 : int8)
   
-  use prelude.prelude.Borrow
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 int8
-  
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
   let rec overflowing_sub'0 (self:int8) (rhs:int8) (return'  (ret:(int8, bool)))= any
     [ return' (result:(int8, bool))-> {[%#snum2] Int8.to_int (let (a, _) = result in a)
       = EuclideanDivision.mod (Int8.to_int self - Int8.to_int rhs) (Power.power 2 (UInt32.to_int (v_BITS'0 : uint32)))
@@ -4211,6 +4201,10 @@ module M_checked_ops__test_i8_overflowing_sub [#"checked_ops.rs" 246 0 246 44]
       (! return' {result}) ]
     
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 int8
+  
   let rec checked_sub'0 (self:int8) (rhs:int8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum11] (result = C_None'0)
       = (Int8.to_int self - Int8.to_int rhs < Int8.to_int (v_MIN'0 : int8)
@@ -4218,6 +4212,12 @@ module M_checked_ops__test_i8_overflowing_sub [#"checked_ops.rs" 246 0 246 44]
       {[%#snum12] forall r : int8 . result = C_Some'0 r  -> Int8.to_int r = Int8.to_int self - Int8.to_int rhs}
       (! return' {result}) ]
     
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption13] result = (self = C_None'0)} (! return' {result}) ] 
@@ -4339,20 +4339,6 @@ module M_checked_ops__test_i8_mul_example [#"checked_ops.rs" 252 0 252 28]
   
   constant v_MAX'0 : int8 = (127 : int8)
   
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : int8)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : int8 [inv'1 x] . inv'1 x = true
-  
-  use prelude.prelude.Borrow
-  
-  predicate inv'2 (_1 : t_Option'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
-  
   let rec checked_mul'0 (self:int8) (rhs:int8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum49] (result = C_None'0)
       = (Int8.to_int self * Int8.to_int rhs < Int8.to_int (v_MIN'0 : int8)
@@ -4361,9 +4347,23 @@ module M_checked_ops__test_i8_mul_example [#"checked_ops.rs" 252 0 252 28]
       (! return' {result}) ]
     
   
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
+  
+  predicate inv'1 (_1 : int8)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : int8 [inv'1 x] . inv'1 x = true
+  
   let rec unwrap'0 (self:t_Option'0) (return'  (ret:int8))= {[@expl:unwrap 'self' type invariant] inv'0 self}
     {[@expl:unwrap requires] [%#soption51] self <> C_None'0}
     any [ return' (result:int8)-> {inv'1 result} {[%#soption51] C_Some'0 result = self} (! return' {result}) ] 
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'2 (_1 : t_Option'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'2 self}
     any [ return' (result:bool)-> {[%#soption52] result = (self = C_None'0)} (! return' {result}) ] 
@@ -4650,14 +4650,6 @@ module M_checked_ops__test_i8_mul_zero [#"checked_ops.rs" 274 0 274 30]
   
   constant v_MAX'0 : int8 = (127 : int8)
   
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : int8)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : int8 [inv'1 x] . inv'1 x = true
-  
   let rec checked_mul'0 (self:int8) (rhs:int8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum13] (result = C_None'0)
       = (Int8.to_int self * Int8.to_int rhs < Int8.to_int (v_MIN'0 : int8)
@@ -4665,6 +4657,14 @@ module M_checked_ops__test_i8_mul_zero [#"checked_ops.rs" 274 0 274 30]
       {[%#snum14] forall r : int8 . result = C_Some'0 r  -> Int8.to_int r = Int8.to_int self * Int8.to_int rhs}
       (! return' {result}) ]
     
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
+  
+  predicate inv'1 (_1 : int8)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : int8 [inv'1 x] . inv'1 x = true
   
   let rec unwrap'0 (self:t_Option'0) (return'  (ret:int8))= {[@expl:unwrap 'self' type invariant] inv'0 self}
     {[@expl:unwrap requires] [%#soption15] self <> C_None'0}
@@ -4832,16 +4832,6 @@ module M_checked_ops__test_i8_overflowing_mul [#"checked_ops.rs" 283 0 283 44]
   
   constant v_MAX'0 : int8 = (127 : int8)
   
-  use prelude.prelude.Borrow
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 int8
-  
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
   let rec overflowing_mul'0 (self:int8) (rhs:int8) (return'  (ret:(int8, bool)))= any
     [ return' (result:(int8, bool))-> {[%#snum2] Int8.to_int (let (a, _) = result in a)
       = EuclideanDivision.mod (Int8.to_int self * Int8.to_int rhs) (Power.power 2 (UInt32.to_int (v_BITS'0 : uint32)))
@@ -4881,6 +4871,10 @@ module M_checked_ops__test_i8_overflowing_mul [#"checked_ops.rs" 283 0 283 44]
       (! return' {result}) ]
     
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 int8
+  
   let rec checked_mul'0 (self:int8) (rhs:int8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum11] (result = C_None'0)
       = (Int8.to_int self * Int8.to_int rhs < Int8.to_int (v_MIN'0 : int8)
@@ -4888,6 +4882,12 @@ module M_checked_ops__test_i8_overflowing_mul [#"checked_ops.rs" 283 0 283 44]
       {[%#snum12] forall r : int8 . result = C_Some'0 r  -> Int8.to_int r = Int8.to_int self * Int8.to_int rhs}
       (! return' {result}) ]
     
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption13] result = (self = C_None'0)} (! return' {result}) ] 
@@ -5009,11 +5009,21 @@ module M_checked_ops__test_i8_div_example [#"checked_ops.rs" 289 0 289 28]
   
   use prelude.prelude.Int
   
+  let rec checked_div'0 (self:int8) (rhs:int8) (return'  (ret:t_Option'0))= any
+    [ return' (result:t_Option'0)-> {[%#snum53] (result = C_None'0)
+      = (Int8.to_int rhs = 0 \/ Int8.to_int self = Int8.to_int (v_MIN'0 : int8) /\ Int8.to_int rhs = - 1)}
+      {[%#snum54] forall r : int8 . result = C_Some'0 r  -> Int8.to_int r = div (Int8.to_int self) (Int8.to_int rhs)}
+      (! return' {result}) ]
+    
+  
   use prelude.prelude.Borrow
   
   predicate inv'0 (_1 : t_Option'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
+  
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
+    any [ return' (result:bool)-> {[%#soption55] result = (self = C_None'0)} (! return' {result}) ] 
   
   predicate inv'1 (_1 : t_Option'0)
   
@@ -5022,16 +5032,6 @@ module M_checked_ops__test_i8_div_example [#"checked_ops.rs" 289 0 289 28]
   predicate inv'2 (_1 : int8)
   
   axiom inv_axiom'2 [@rewrite] : forall x : int8 [inv'2 x] . inv'2 x = true
-  
-  let rec checked_div'0 (self:int8) (rhs:int8) (return'  (ret:t_Option'0))= any
-    [ return' (result:t_Option'0)-> {[%#snum53] (result = C_None'0)
-      = (Int8.to_int rhs = 0 \/ Int8.to_int self = Int8.to_int (v_MIN'0 : int8) /\ Int8.to_int rhs = - 1)}
-      {[%#snum54] forall r : int8 . result = C_Some'0 r  -> Int8.to_int r = div (Int8.to_int self) (Int8.to_int rhs)}
-      (! return' {result}) ]
-    
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#soption55] result = (self = C_None'0)} (! return' {result}) ] 
   
   let rec unwrap'0 (self:t_Option'0) (return'  (ret:int8))= {[@expl:unwrap 'self' type invariant] inv'1 self}
     {[@expl:unwrap requires] [%#soption56] self <> C_None'0}
@@ -5298,6 +5298,13 @@ module M_checked_ops__test_i8_div_no_overflow [#"checked_ops.rs" 313 0 313 44]
   
   use prelude.prelude.Int
   
+  let rec checked_div'0 (self:int8) (rhs:int8) (return'  (ret:t_Option'0))= any
+    [ return' (result:t_Option'0)-> {[%#snum10] (result = C_None'0)
+      = (Int8.to_int rhs = 0 \/ Int8.to_int self = Int8.to_int (v_MIN'0 : int8) /\ Int8.to_int rhs = - 1)}
+      {[%#snum11] forall r : int8 . result = C_Some'0 r  -> Int8.to_int r = div (Int8.to_int self) (Int8.to_int rhs)}
+      (! return' {result}) ]
+    
+  
   predicate inv'0 (_1 : t_Option'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
@@ -5305,13 +5312,6 @@ module M_checked_ops__test_i8_div_no_overflow [#"checked_ops.rs" 313 0 313 44]
   predicate inv'1 (_1 : int8)
   
   axiom inv_axiom'1 [@rewrite] : forall x : int8 [inv'1 x] . inv'1 x = true
-  
-  let rec checked_div'0 (self:int8) (rhs:int8) (return'  (ret:t_Option'0))= any
-    [ return' (result:t_Option'0)-> {[%#snum10] (result = C_None'0)
-      = (Int8.to_int rhs = 0 \/ Int8.to_int self = Int8.to_int (v_MIN'0 : int8) /\ Int8.to_int rhs = - 1)}
-      {[%#snum11] forall r : int8 . result = C_Some'0 r  -> Int8.to_int r = div (Int8.to_int self) (Int8.to_int rhs)}
-      (! return' {result}) ]
-    
   
   let rec unwrap'0 (self:t_Option'0) (return'  (ret:int8))= {[@expl:unwrap 'self' type invariant] inv'0 self}
     {[@expl:unwrap requires] [%#soption12] self <> C_None'0}
@@ -5514,18 +5514,18 @@ module M_checked_ops__test_i8_div_zero [#"checked_ops.rs" 322 0 322 30]
   
   use prelude.prelude.Int
   
-  use prelude.prelude.Borrow
-  
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
   let rec checked_div'0 (self:int8) (rhs:int8) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#snum2] (result = C_None'0)
       = (Int8.to_int rhs = 0 \/ Int8.to_int self = Int8.to_int (v_MIN'0 : int8) /\ Int8.to_int rhs = - 1)}
       {[%#snum3] forall r : int8 . result = C_Some'0 r  -> Int8.to_int r = div (Int8.to_int self) (Int8.to_int rhs)}
       (! return' {result}) ]
     
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption4] result = (self = C_None'0)} (! return' {result}) ] 

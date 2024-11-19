@@ -22,6 +22,8 @@ module M_mutex__qyi5425553346843331945__call [#"mutex.rs" 100 4 100 23] (* <Adds
   
   predicate inv'0 (_1 : t_Mutex'0)
   
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Mutex'0 [inv'0 x] . inv'0 x = true
+  
   type t_GuardInner'0
   
   use prelude.prelude.Snapshot
@@ -31,23 +33,17 @@ module M_mutex__qyi5425553346843331945__call [#"mutex.rs" 100 4 100 23] (* <Adds
   
   use prelude.prelude.Snapshot
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Mutex'0 [inv'0 x] . inv'0 x = true
+  let rec lock'0 (self:t_Mutex'0) (return'  (ret:t_MutexGuard'0))= {[@expl:lock 'self' type invariant] [%#smutex3] inv'0 self}
+    any
+    [ return' (result:t_MutexGuard'0)-> {[%#smutex4] self.t_Mutex__1'0 = Snapshot.inner result.t_MutexGuard__1'0}
+      (! return' {result}) ]
+    
   
   use prelude.prelude.UInt32
   
   predicate inv'1 (_1 : uint32)
   
   axiom inv_axiom'1 [@rewrite] : forall x : uint32 [inv'1 x] . inv'1 x = true
-  
-  predicate inv'3 (_1 : uint32)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : uint32 [inv'3 x] . inv'3 x = true
-  
-  let rec lock'0 (self:t_Mutex'0) (return'  (ret:t_MutexGuard'0))= {[@expl:lock 'self' type invariant] [%#smutex3] inv'0 self}
-    any
-    [ return' (result:t_MutexGuard'0)-> {[%#smutex4] self.t_Mutex__1'0 = Snapshot.inner result.t_MutexGuard__1'0}
-      (! return' {result}) ]
-    
   
   use prelude.prelude.Int
   
@@ -59,6 +55,10 @@ module M_mutex__qyi5425553346843331945__call [#"mutex.rs" 100 4 100 23] (* <Adds
       {[%#smutex6] inv'2 (Snapshot.inner self.t_MutexGuard__1'0) result}
       (! return' {result}) ]
     
+  
+  predicate inv'3 (_1 : uint32)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : uint32 [inv'3 x] . inv'3 x = true
   
   let rec set'0 (self:borrowed (t_MutexGuard'0)) (v:uint32) (return'  (ret:()))= {[@expl:set 'v' type invariant] [%#smutex7] inv'3 v}
     {[@expl:set requires] [%#smutex8] inv'2 (Snapshot.inner (self.current).t_MutexGuard__1'0) v}
@@ -130,7 +130,11 @@ module M_mutex__concurrent [#"mutex.rs" 163 0 163 19]
   
   predicate inv'0 (_1 : uint32)
   
+  axiom inv_axiom'0 [@rewrite] : forall x : uint32 [inv'0 x] . inv'0 x = true
+  
   predicate inv'1 (_1 : ())
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : () [inv'1 x] . inv'1 x = true
   
   use prelude.prelude.Borrow
   
@@ -146,11 +150,12 @@ module M_mutex__concurrent [#"mutex.rs" 163 0 163 19]
   
   predicate inv'3 (_1 : t_Mutex'0)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : uint32 [inv'0 x] . inv'0 x = true
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : () [inv'1 x] . inv'1 x = true
-  
   axiom inv_axiom'2 [@rewrite] : forall x : t_Mutex'0 [inv'3 x] . inv'3 x = true
+  
+  let rec new'0 (val':uint32) (i:()) (return'  (ret:t_Mutex'0))= {[@expl:new 'val' type invariant] [%#smutex1] inv'0 val'}
+    {[@expl:new 'i' type invariant] [%#smutex2] inv'1 i}
+    {[@expl:new requires] [%#smutex3] inv'2 i val'}
+    any [ return' (result:t_Mutex'0)-> {[%#smutex4] inv'3 result} (! return' {result}) ] 
   
   predicate inv'4 (_1 : t_Mutex'0)
   
@@ -159,26 +164,6 @@ module M_mutex__concurrent [#"mutex.rs" 163 0 163 19]
   predicate inv'5 (_1 : borrowed (t_Mutex'0))
   
   axiom inv_axiom'4 [@rewrite] : forall x : borrowed (t_Mutex'0) [inv'5 x] . inv'5 x = true
-  
-  type t_AddsTwo'0  =
-    { t_AddsTwo__mutex'0: t_Mutex'0 }
-  
-  predicate inv'6 (_1 : t_AddsTwo'0)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t_AddsTwo'0 [inv'6 x] . inv'6 x = true
-  
-  type t_Result'0  =
-    | C_Ok'0 ()
-    | C_Err'0 ()
-  
-  predicate inv'7 (_1 : t_Result'0)
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : t_Result'0 [inv'7 x] . inv'7 x = true
-  
-  let rec new'0 (val':uint32) (i:()) (return'  (ret:t_Mutex'0))= {[@expl:new 'val' type invariant] [%#smutex1] inv'0 val'}
-    {[@expl:new 'i' type invariant] [%#smutex2] inv'1 i}
-    {[@expl:new requires] [%#smutex3] inv'2 i val'}
-    any [ return' (result:t_Mutex'0)-> {[%#smutex4] inv'3 result} (! return' {result}) ] 
   
   let rec leak'0 (b:t_Mutex'0) (return'  (ret:borrowed (t_Mutex'0)))= {[@expl:leak 'b' type invariant] [%#smutex5] inv'4 b}
     any
@@ -192,6 +177,13 @@ module M_mutex__concurrent [#"mutex.rs" 163 0 163 19]
   
   predicate resolve'0 (_1 : borrowed (t_Mutex'0)) =
     resolve'1 _1
+  
+  type t_AddsTwo'0  =
+    { t_AddsTwo__mutex'0: t_Mutex'0 }
+  
+  predicate inv'6 (_1 : t_AddsTwo'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_AddsTwo'0 [inv'6 x] . inv'6 x = true
   
   predicate precondition'0 [#"mutex.rs" 91 4 91 33] (self : t_AddsTwo'0) =
     [%#smutex14] true
@@ -209,6 +201,14 @@ module M_mutex__concurrent [#"mutex.rs" 163 0 163 19]
   let rec spawn'0 (f:t_AddsTwo'0) (return'  (ret:t_JoinHandle'0))= {[@expl:spawn 'f' type invariant] [%#smutex8] inv'6 f}
     {[@expl:spawn requires] [%#smutex9] precondition'0 f}
     any [ return' (result:t_JoinHandle'0)-> (! return' {result}) ] 
+  
+  type t_Result'0  =
+    | C_Ok'0 ()
+    | C_Err'0 ()
+  
+  predicate inv'7 (_1 : t_Result'0)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : t_Result'0 [inv'7 x] . inv'7 x = true
   
   use prelude.prelude.Snapshot
   
@@ -294,12 +294,12 @@ module M_mutex__qyi5425553346843331945__call__refines [#"mutex.rs" 100 4 100 23]
   
   predicate inv'0 (_1 : t_AddsTwo'0)
   
+  axiom inv_axiom'0 [@rewrite] : forall x : t_AddsTwo'0 [inv'0 x] . inv'0 x = true
+  
   predicate postcondition'0 [#"mutex.rs" 96 4 96 41] (self : t_AddsTwo'0) (_2 : ()) =
     [%#smutex2] true
   
   predicate inv'1 (_1 : ())
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_AddsTwo'0 [inv'0 x] . inv'0 x = true
   
   axiom inv_axiom'1 [@rewrite] : forall x : () [inv'1 x] . inv'1 x = true
   

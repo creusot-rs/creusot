@@ -132,7 +132,14 @@ module M_ghost_map__ghost_map [#"ghost_map.rs" 4 0 4 18]
   function is_empty'0 (self : t_FMap'0) : bool =
     [%#sfmap32] ext_eq'0 self (empty'0 ())
   
+  let rec new'0 (_1:()) (return'  (ret:t_GhostBox'0))= any
+    [ return' (result:t_GhostBox'0)-> {[%#sfmap1] is_empty'0 (inner_logic'0 result)} (! return' {result}) ]
+    
+  
   use prelude.prelude.Borrow
+  
+  function contains'0 [@inline:trivial] (self : t_FMap'0) (k : int32) : bool =
+    [%#sfmap33] get_unsized'0 self k <> C_None'3
   
   predicate inv'0 (_1 : borrowed (t_GhostBox'0))
   
@@ -141,6 +148,14 @@ module M_ghost_map__ghost_map [#"ghost_map.rs" 4 0 4 18]
   predicate inv'1 (_1 : borrowed (t_FMap'0))
   
   axiom inv_axiom'1 [@rewrite] : forall x : borrowed (t_FMap'0) [inv'1 x] . inv'1 x = true
+  
+  let rec deref_mut'0 (self:borrowed (t_GhostBox'0)) (return'  (ret:borrowed (t_FMap'0)))= {[@expl:deref_mut 'self' type invariant] [%#sghost34] inv'0 self}
+    any
+    [ return' (result:borrowed (t_FMap'0))-> {[%#sghost35] inv'1 result}
+      {[%#sghost36] result
+      = Borrow.borrow_logic (self.current).t_GhostBox__0'0 (self.final).t_GhostBox__0'0 (Borrow.inherit_id (Borrow.get_id self) 1)}
+      (! return' {result}) ]
+    
   
   predicate inv'2 (_1 : int32)
   
@@ -153,60 +168,6 @@ module M_ghost_map__ghost_map [#"ghost_map.rs" 4 0 4 18]
   predicate inv'3 (_1 : t_Option'0)
   
   axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
-  
-  predicate inv'4 (_1 : t_GhostBox'0)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_GhostBox'0 [inv'4 x] . inv'4 x = true
-  
-  predicate inv'5 (_1 : t_FMap'0)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t_FMap'0 [inv'5 x] . inv'5 x = true
-  
-  predicate inv'6 (_1 : int32)
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : int32 [inv'6 x] . inv'6 x = true
-  
-  type t_Option'1  =
-    | C_None'0
-    | C_Some'0 (borrowed int32)
-  
-  predicate inv'7 (_1 : t_Option'1)
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : t_Option'1 [inv'7 x] . inv'7 x = true
-  
-  type t_Option'2  =
-    | C_None'2
-    | C_Some'2 int32
-  
-  predicate inv'8 (_1 : t_Option'2)
-  
-  axiom inv_axiom'8 [@rewrite] : forall x : t_Option'2 [inv'8 x] . inv'8 x = true
-  
-  predicate inv'9 (_1 : ())
-  
-  axiom inv_axiom'9 [@rewrite] : forall x : () [inv'9 x] . inv'9 x = true
-  
-  type t_GhostBox'1  =
-    { t_GhostBox__0'1: () }
-  
-  predicate inv'10 (_1 : t_GhostBox'1)
-  
-  axiom inv_axiom'10 [@rewrite] : forall x : t_GhostBox'1 [inv'10 x] . inv'10 x = true
-  
-  let rec new'0 (_1:()) (return'  (ret:t_GhostBox'0))= any
-    [ return' (result:t_GhostBox'0)-> {[%#sfmap1] is_empty'0 (inner_logic'0 result)} (! return' {result}) ]
-    
-  
-  function contains'0 [@inline:trivial] (self : t_FMap'0) (k : int32) : bool =
-    [%#sfmap33] get_unsized'0 self k <> C_None'3
-  
-  let rec deref_mut'0 (self:borrowed (t_GhostBox'0)) (return'  (ret:borrowed (t_FMap'0)))= {[@expl:deref_mut 'self' type invariant] [%#sghost34] inv'0 self}
-    any
-    [ return' (result:borrowed (t_FMap'0))-> {[%#sghost35] inv'1 result}
-      {[%#sghost36] result
-      = Borrow.borrow_logic (self.current).t_GhostBox__0'0 (self.final).t_GhostBox__0'0 (Borrow.inherit_id (Borrow.get_id self) 1)}
-      (! return' {result}) ]
-    
   
   function make_sized'0 (self : int32) : int32
   
@@ -242,6 +203,14 @@ module M_ghost_map__ghost_map [#"ghost_map.rs" 4 0 4 18]
   predicate resolve'0 (_1 : borrowed (t_FMap'0)) =
     resolve'3 _1
   
+  predicate inv'4 (_1 : t_GhostBox'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_GhostBox'0 [inv'4 x] . inv'4 x = true
+  
+  predicate inv'5 (_1 : t_FMap'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_FMap'0 [inv'5 x] . inv'5 x = true
+  
   let rec deref'0 (self:t_GhostBox'0) (return'  (ret:t_FMap'0))= {[@expl:deref 'self' type invariant] [%#sghost42] inv'4 self}
     any
     [ return' (result:t_FMap'0)-> {[%#sghost43] inv'5 result}
@@ -263,6 +232,18 @@ module M_ghost_map__ghost_map [#"ghost_map.rs" 4 0 4 18]
   
   function lookup'0 [@inline:trivial] (self : t_FMap'0) (k : int32) : int32 =
     [%#sfmap46] lookup_unsized'0 self k
+  
+  predicate inv'6 (_1 : int32)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : int32 [inv'6 x] . inv'6 x = true
+  
+  type t_Option'1  =
+    | C_None'0
+    | C_Some'0 (borrowed int32)
+  
+  predicate inv'7 (_1 : t_Option'1)
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : t_Option'1 [inv'7 x] . inv'7 x = true
   
   let rec get_mut_ghost'0 (self:borrowed (t_FMap'0)) (key:int32) (return'  (ret:t_Option'1))= {[@expl:get_mut_ghost 'key' type invariant] [%#sfmap47] inv'6 key}
     any
@@ -310,6 +291,14 @@ module M_ghost_map__ghost_map [#"ghost_map.rs" 4 0 4 18]
   let rec contains_ghost'0 (self:t_FMap'0) (key:int32) (return'  (ret:bool))= {[@expl:contains_ghost 'key' type invariant] [%#sfmap57] inv'6 key}
     any [ return' (result:bool)-> {[%#sfmap58] result = contains'0 self key} (! return' {result}) ] 
   
+  type t_Option'2  =
+    | C_None'2
+    | C_Some'2 int32
+  
+  predicate inv'8 (_1 : t_Option'2)
+  
+  axiom inv_axiom'8 [@rewrite] : forall x : t_Option'2 [inv'8 x] . inv'8 x = true
+  
   let rec get_ghost'0 (self:t_FMap'0) (key:int32) (return'  (ret:t_Option'2))= {[@expl:get_ghost 'key' type invariant] [%#sfmap59] inv'6 key}
     any
     [ return' (result:t_Option'2)-> {[%#sfmap60] inv'8 result}
@@ -335,6 +324,17 @@ module M_ghost_map__ghost_map [#"ghost_map.rs" 4 0 4 18]
   
   predicate resolve'2 (_1 : closure0'1) =
     resolve'5 _1.field_0'0
+  
+  predicate inv'9 (_1 : ())
+  
+  axiom inv_axiom'9 [@rewrite] : forall x : () [inv'9 x] . inv'9 x = true
+  
+  type t_GhostBox'1  =
+    { t_GhostBox__0'1: () }
+  
+  predicate inv'10 (_1 : t_GhostBox'1)
+  
+  axiom inv_axiom'10 [@rewrite] : forall x : t_GhostBox'1 [inv'10 x] . inv'10 x = true
   
   let rec new'1 (x:()) (return'  (ret:t_GhostBox'1))= {[@expl:new 'x' type invariant] [%#sghost62] inv'9 x}
     any

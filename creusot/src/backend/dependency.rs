@@ -26,7 +26,6 @@ pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
     Item(DefId, GenericArgsRef<'tcx>),
     TyInvAxiom(Ty<'tcx>),
-    AllTyInvAxioms,
     ClosureAccessor(DefId, GenericArgsRef<'tcx>, u32),
     Builtin(PreludeModule),
     Eliminator(DefId, GenericArgsRef<'tcx>),
@@ -97,7 +96,7 @@ impl<'tcx> Dependency<'tcx> {
                 prom.as_usize(),
                 value_name(&translate_name(tcx.item_name(did.to_def_id()).as_str()))
             ))),
-            Dependency::Builtin(_) | Dependency::AllTyInvAxioms => None,
+            Dependency::Builtin(_) => None,
         }
     }
 }

@@ -23,25 +23,71 @@ module M_15_enumerate__qyi17057287782225696128__produces_refl [#"15_enumerate.rs
   type t_Enumerate'0  =
     { t_Enumerate__iter'0: t_I'0; t_Enumerate__count'0: usize }
   
-  predicate inv'0 (_1 : t_Enumerate'0)
-  
-  use seq.Seq
-  
   type t_Item'0
   
   use seq.Seq
-  
-  use seq.Seq
-  
-  use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
   use seq.Seq
   
+  use seq.Seq
+  
+  predicate inv'5 (_1 : t_Item'0)
+  
+  predicate invariant'3 (self : t_Item'0) =
+    [%#sboxed15] inv'5 self
+  
+  predicate inv'4 (_1 : t_Item'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Item'0 [inv'4 x] . inv'4 x = invariant'3 x
+  
+  predicate invariant'1 (self : Seq.seq t_Item'0) =
+    [%#sseq13] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
+  
   predicate inv'1 (_1 : Seq.seq t_Item'0)
   
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'1 x] . inv'1 x = invariant'1 x
+  
+  predicate inv'2 (_1 : t_I'0)
+  
   predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
+  
+  use prelude.prelude.UIntSize
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.Borrow
+  
+  predicate invariant'2 (self : borrowed t_I'0) =
+    [%#sinvariant14] inv'2 self.current /\ inv'2 self.final
+  
+  predicate inv'3 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'3 x] . inv'3 x = invariant'2 x
+  
+  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  
+  use seq.Seq
+  
+  predicate invariant'0 [#"15_enumerate.rs" 79 4 79 30] (self : t_Enumerate'0) =
+    [%#s15_enumerate12] (forall s : Seq.seq t_Item'0, i : t_I'0 [produces'1 self.t_Enumerate__iter'0 s i] . inv'1 s
+    /\ inv'2 i /\ produces'1 self.t_Enumerate__iter'0 s i
+     -> UIntSize.to_int self.t_Enumerate__count'0 + Seq.length s < UIntSize.to_int v_MAX'0)
+    /\ (forall i : borrowed t_I'0 . inv'3 i /\ completed'0 i
+     -> produces'1 i.current (Seq.empty  : Seq.seq t_Item'0) i.final)
+  
+  predicate inv'0 (_1 : t_Enumerate'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Enumerate'0 [inv'0 x] . inv'0 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_Enumerate__iter'0 = iter ; t_Enumerate__count'0 = count} -> inv'2 iter
+    end)
+  
+  use seq.Seq
+  
+  use seq.Seq
   
   use seq.Seq
   
@@ -60,52 +106,6 @@ module M_15_enumerate__qyi17057287782225696128__produces_refl [#"15_enumerate.rs
     /\ (forall i : int . 0 <= i /\ i < Seq.length s
      -> UIntSize.to_int (let (a, _) = Seq.get visited i in a) = UIntSize.to_int self.t_Enumerate__count'0 + i
     /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
-  
-  predicate inv'2 (_1 : t_I'0)
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  use prelude.prelude.Borrow
-  
-  predicate inv'3 (_1 : borrowed t_I'0)
-  
-  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
-  
-  use seq.Seq
-  
-  predicate invariant'0 [#"15_enumerate.rs" 79 4 79 30] (self : t_Enumerate'0) =
-    [%#s15_enumerate12] (forall s : Seq.seq t_Item'0, i : t_I'0 [produces'1 self.t_Enumerate__iter'0 s i] . inv'1 s
-    /\ inv'2 i /\ produces'1 self.t_Enumerate__iter'0 s i
-     -> UIntSize.to_int self.t_Enumerate__count'0 + Seq.length s < UIntSize.to_int v_MAX'0)
-    /\ (forall i : borrowed t_I'0 . inv'3 i /\ completed'0 i
-     -> produces'1 i.current (Seq.empty  : Seq.seq t_Item'0) i.final)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Enumerate'0 [inv'0 x] . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | {t_Enumerate__iter'0 = iter ; t_Enumerate__count'0 = count} -> inv'2 iter
-    end)
-  
-  use seq.Seq
-  
-  predicate inv'4 (_1 : t_Item'0)
-  
-  predicate invariant'1 (self : Seq.seq t_Item'0) =
-    [%#sseq13] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'1 x] . inv'1 x = invariant'1 x
-  
-  predicate invariant'2 (self : borrowed t_I'0) =
-    [%#sinvariant14] inv'2 self.current /\ inv'2 self.final
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'3 x] . inv'3 x = invariant'2 x
-  
-  predicate inv'5 (_1 : t_Item'0)
-  
-  predicate invariant'3 (self : t_Item'0) =
-    [%#sboxed15] inv'5 self
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Item'0 [inv'4 x] . inv'4 x = invariant'3 x
   
   function produces_refl'1 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   
@@ -159,23 +159,69 @@ module M_15_enumerate__qyi17057287782225696128__produces_trans [#"15_enumerate.r
   type t_Enumerate'0  =
     { t_Enumerate__iter'0: t_I'0; t_Enumerate__count'0: usize }
   
-  predicate inv'0 (_1 : t_Enumerate'0)
-  
   type t_Item'0
   
   use seq.Seq
-  
-  use seq.Seq
-  
-  use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
   use seq.Seq
   
+  use seq.Seq
+  
+  predicate inv'5 (_1 : t_Item'0)
+  
+  predicate invariant'3 (self : t_Item'0) =
+    [%#sboxed19] inv'5 self
+  
+  predicate inv'4 (_1 : t_Item'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Item'0 [inv'4 x] . inv'4 x = invariant'3 x
+  
+  predicate invariant'1 (self : Seq.seq t_Item'0) =
+    [%#sseq17] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
+  
   predicate inv'1 (_1 : Seq.seq t_Item'0)
   
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'1 x] . inv'1 x = invariant'1 x
+  
+  predicate inv'2 (_1 : t_I'0)
+  
   predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
+  
+  use prelude.prelude.UIntSize
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.Borrow
+  
+  predicate invariant'2 (self : borrowed t_I'0) =
+    [%#sinvariant18] inv'2 self.current /\ inv'2 self.final
+  
+  predicate inv'3 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'3 x] . inv'3 x = invariant'2 x
+  
+  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  
+  use seq.Seq
+  
+  predicate invariant'0 [#"15_enumerate.rs" 79 4 79 30] (self : t_Enumerate'0) =
+    [%#s15_enumerate16] (forall s : Seq.seq t_Item'0, i : t_I'0 [produces'1 self.t_Enumerate__iter'0 s i] . inv'1 s
+    /\ inv'2 i /\ produces'1 self.t_Enumerate__iter'0 s i
+     -> UIntSize.to_int self.t_Enumerate__count'0 + Seq.length s < UIntSize.to_int v_MAX'0)
+    /\ (forall i : borrowed t_I'0 . inv'3 i /\ completed'0 i
+     -> produces'1 i.current (Seq.empty  : Seq.seq t_Item'0) i.final)
+  
+  predicate inv'0 (_1 : t_Enumerate'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Enumerate'0 [inv'0 x] . inv'0 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_Enumerate__iter'0 = iter ; t_Enumerate__count'0 = count} -> inv'2 iter
+    end)
+  
+  use seq.Seq
   
   use seq.Seq
   
@@ -196,52 +242,6 @@ module M_15_enumerate__qyi17057287782225696128__produces_trans [#"15_enumerate.r
     /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
   
   use seq.Seq
-  
-  predicate inv'2 (_1 : t_I'0)
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  use prelude.prelude.Borrow
-  
-  predicate inv'3 (_1 : borrowed t_I'0)
-  
-  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
-  
-  use seq.Seq
-  
-  predicate invariant'0 [#"15_enumerate.rs" 79 4 79 30] (self : t_Enumerate'0) =
-    [%#s15_enumerate16] (forall s : Seq.seq t_Item'0, i : t_I'0 [produces'1 self.t_Enumerate__iter'0 s i] . inv'1 s
-    /\ inv'2 i /\ produces'1 self.t_Enumerate__iter'0 s i
-     -> UIntSize.to_int self.t_Enumerate__count'0 + Seq.length s < UIntSize.to_int v_MAX'0)
-    /\ (forall i : borrowed t_I'0 . inv'3 i /\ completed'0 i
-     -> produces'1 i.current (Seq.empty  : Seq.seq t_Item'0) i.final)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Enumerate'0 [inv'0 x] . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | {t_Enumerate__iter'0 = iter ; t_Enumerate__count'0 = count} -> inv'2 iter
-    end)
-  
-  use seq.Seq
-  
-  predicate inv'4 (_1 : t_Item'0)
-  
-  predicate invariant'1 (self : Seq.seq t_Item'0) =
-    [%#sseq17] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'1 x] . inv'1 x = invariant'1 x
-  
-  predicate invariant'2 (self : borrowed t_I'0) =
-    [%#sinvariant18] inv'2 self.current /\ inv'2 self.final
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'3 x] . inv'3 x = invariant'2 x
-  
-  predicate inv'5 (_1 : t_Item'0)
-  
-  predicate invariant'3 (self : t_Item'0) =
-    [%#sboxed19] inv'5 self
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Item'0 [inv'4 x] . inv'4 x = invariant'3 x
   
   function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   
@@ -313,7 +313,12 @@ module M_15_enumerate__qyi17057287782225696128__next [#"15_enumerate.rs" 61 4 61
   type t_Enumerate'0  =
     { t_Enumerate__iter'0: t_I'0; t_Enumerate__count'0: usize }
   
+  predicate invariant'1 (self : borrowed t_I'0) =
+    [%#sinvariant18] inv'0 self.current /\ inv'0 self.final
+  
   predicate inv'3 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'3 x] . inv'3 x = invariant'1 x
   
   type t_Item'0
   
@@ -321,7 +326,15 @@ module M_15_enumerate__qyi17057287782225696128__next [#"15_enumerate.rs" 61 4 61
     | C_None'0
     | C_Some'0 t_Item'0
   
+  predicate inv'7 (_1 : t_Item'0)
+  
   predicate inv'4 (_1 : t_Option'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x
+  = match x with
+    | C_None'0 -> true
+    | C_Some'0 a_0 -> inv'7 a_0
+    end
   
   predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
   
@@ -330,83 +343,6 @@ module M_15_enumerate__qyi17057287782225696128__next [#"15_enumerate.rs" 61 4 61
   use seq.Seq
   
   predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
-  
-  predicate inv'1 (_1 : borrowed (t_Enumerate'0))
-  
-  predicate inv'8 (_1 : t_Enumerate'0)
-  
-  predicate invariant'0 (self : borrowed (t_Enumerate'0)) =
-    [%#sinvariant18] inv'8 self.current /\ inv'8 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Enumerate'0) [inv'1 x] . inv'1 x = invariant'0 x
-  
-  type t_Option'1  =
-    | C_None'1
-    | C_Some'1 (usize, t_Item'0)
-  
-  predicate inv'2 (_1 : t_Option'1)
-  
-  predicate inv'6 (_1 : (usize, t_Item'0))
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'1 [inv'2 x] . inv'2 x
-  = match x with
-    | C_None'1 -> true
-    | C_Some'1 a_0 -> inv'6 a_0
-    end
-  
-  predicate invariant'1 (self : borrowed t_I'0) =
-    [%#sinvariant18] inv'0 self.current /\ inv'0 self.final
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'3 x] . inv'3 x = invariant'1 x
-  
-  predicate inv'7 (_1 : t_Item'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x
-  = match x with
-    | C_None'0 -> true
-    | C_Some'0 a_0 -> inv'7 a_0
-    end
-  
-  predicate inv'5 (_1 : Seq.seq t_Item'0)
-  
-  use prelude.prelude.Int
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  predicate inv'9 (_1 : t_Item'0)
-  
-  predicate invariant'2 (self : Seq.seq t_Item'0) =
-    [%#sseq19] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'9 (Seq.get self i)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'5 x] . inv'5 x = invariant'2 x
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : (usize, t_Item'0) [inv'6 x] . inv'6 x = (let (x0, x1) = x in inv'7 x1)
-  
-  use prelude.prelude.UIntSize
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  use seq.Seq
-  
-  predicate invariant'3 [#"15_enumerate.rs" 79 4 79 30] (self : t_Enumerate'0) =
-    [%#s15_enumerate20] (forall s : Seq.seq t_Item'0, i : t_I'0 [produces'1 self.t_Enumerate__iter'0 s i] . inv'5 s
-    /\ inv'0 i /\ produces'1 self.t_Enumerate__iter'0 s i
-     -> UIntSize.to_int self.t_Enumerate__count'0 + Seq.length s < UIntSize.to_int v_MAX'0)
-    /\ (forall i : borrowed t_I'0 . inv'3 i /\ completed'1 i
-     -> produces'1 i.current (Seq.empty  : Seq.seq t_Item'0) i.final)
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : t_Enumerate'0 [inv'8 x] . inv'8 x
-  = (invariant'3 x
-  /\ match x with
-    | {t_Enumerate__iter'0 = iter ; t_Enumerate__count'0 = count} -> inv'0 iter
-    end)
-  
-  predicate invariant'4 (self : t_Item'0) =
-    [%#sboxed21] inv'7 self
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : t_Item'0 [inv'9 x] . inv'9 x = invariant'4 x
   
   let rec next'1 (self:borrowed t_I'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] [%#scommon4] inv'3 self}
     any
@@ -423,13 +359,77 @@ module M_15_enumerate__qyi17057287782225696128__next [#"15_enumerate.rs" 61 4 61
     | bad -> {forall field_0 : t_Item'0 [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
     
   
+  use prelude.prelude.Int
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate invariant'4 (self : t_Item'0) =
+    [%#sboxed21] inv'7 self
+  
+  predicate inv'9 (_1 : t_Item'0)
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : t_Item'0 [inv'9 x] . inv'9 x = invariant'4 x
+  
+  predicate invariant'2 (self : Seq.seq t_Item'0) =
+    [%#sseq19] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'9 (Seq.get self i)
+  
+  predicate inv'5 (_1 : Seq.seq t_Item'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'5 x] . inv'5 x = invariant'2 x
+  
+  use prelude.prelude.UIntSize
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use seq.Seq
+  
+  predicate invariant'3 [#"15_enumerate.rs" 79 4 79 30] (self : t_Enumerate'0) =
+    [%#s15_enumerate20] (forall s : Seq.seq t_Item'0, i : t_I'0 [produces'1 self.t_Enumerate__iter'0 s i] . inv'5 s
+    /\ inv'0 i /\ produces'1 self.t_Enumerate__iter'0 s i
+     -> UIntSize.to_int self.t_Enumerate__count'0 + Seq.length s < UIntSize.to_int v_MAX'0)
+    /\ (forall i : borrowed t_I'0 . inv'3 i /\ completed'1 i
+     -> produces'1 i.current (Seq.empty  : Seq.seq t_Item'0) i.final)
+  
+  predicate inv'8 (_1 : t_Enumerate'0)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : t_Enumerate'0 [inv'8 x] . inv'8 x
+  = (invariant'3 x
+  /\ match x with
+    | {t_Enumerate__iter'0 = iter ; t_Enumerate__count'0 = count} -> inv'0 iter
+    end)
+  
+  predicate invariant'0 (self : borrowed (t_Enumerate'0)) =
+    [%#sinvariant18] inv'8 self.current /\ inv'8 self.final
+  
+  predicate inv'1 (_1 : borrowed (t_Enumerate'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Enumerate'0) [inv'1 x] . inv'1 x = invariant'0 x
+  
   predicate resolve'1 (self : borrowed (t_Enumerate'0)) =
     [%#sresolve17] self.final = self.current
   
   predicate resolve'0 (_1 : borrowed (t_Enumerate'0)) =
     resolve'1 _1
   
+  type t_Option'1  =
+    | C_None'1
+    | C_Some'1 (usize, t_Item'0)
+  
   use prelude.prelude.Intrinsic
+  
+  predicate inv'6 (_1 : (usize, t_Item'0))
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : (usize, t_Item'0) [inv'6 x] . inv'6 x = (let (x0, x1) = x in inv'7 x1)
+  
+  predicate inv'2 (_1 : t_Option'1)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'1 [inv'2 x] . inv'2 x
+  = match x with
+    | C_None'1 -> true
+    | C_Some'1 a_0 -> inv'6 a_0
+    end
   
   predicate resolve'2 (self : borrowed usize) =
     [%#sresolve17] self.final = self.current
@@ -561,7 +561,12 @@ module M_15_enumerate__enumerate [#"15_enumerate.rs" 96 0 96 54]
   
   use prelude.prelude.Borrow
   
+  predicate invariant'0 (self : borrowed t_I'0) =
+    [%#sinvariant14] inv'0 self.current /\ inv'0 self.final
+  
   predicate inv'1 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed t_I'0 [inv'1 x] . inv'1 x = invariant'0 x
   
   predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
   
@@ -573,31 +578,31 @@ module M_15_enumerate__enumerate [#"15_enumerate.rs" 96 0 96 54]
   
   predicate produces'0 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
   
-  predicate inv'2 (_1 : Seq.seq t_Item'0)
-  
-  use seq.Seq
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  use prelude.prelude.UIntSize
-  
   use prelude.prelude.Int
   
-  predicate inv'3 (_1 : t_Enumerate'0)
-  
-  predicate invariant'0 (self : borrowed t_I'0) =
-    [%#sinvariant14] inv'0 self.current /\ inv'0 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed t_I'0 [inv'1 x] . inv'1 x = invariant'0 x
+  use seq.Seq
   
   use seq.Seq
   
+  predicate inv'5 (_1 : t_Item'0)
+  
+  predicate invariant'3 (self : t_Item'0) =
+    [%#sboxed17] inv'5 self
+  
   predicate inv'4 (_1 : t_Item'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Item'0 [inv'4 x] . inv'4 x = invariant'3 x
   
   predicate invariant'1 (self : Seq.seq t_Item'0) =
     [%#sseq15] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
   
+  predicate inv'2 (_1 : Seq.seq t_Item'0)
+  
   axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'2 x] . inv'2 x = invariant'1 x
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.UIntSize
   
   predicate invariant'2 [#"15_enumerate.rs" 79 4 79 30] (self : t_Enumerate'0) =
     [%#s15_enumerate16] (forall s : Seq.seq t_Item'0, i : t_I'0 [produces'0 self.t_Enumerate__iter'0 s i] . inv'2 s
@@ -606,18 +611,13 @@ module M_15_enumerate__enumerate [#"15_enumerate.rs" 96 0 96 54]
     /\ (forall i : borrowed t_I'0 . inv'1 i /\ completed'0 i
      -> produces'0 i.current (Seq.empty  : Seq.seq t_Item'0) i.final)
   
+  predicate inv'3 (_1 : t_Enumerate'0)
+  
   axiom inv_axiom'2 [@rewrite] : forall x : t_Enumerate'0 [inv'3 x] . inv'3 x
   = (invariant'2 x
   /\ match x with
     | {t_Enumerate__iter'0 = iter ; t_Enumerate__count'0 = count} -> inv'0 iter
     end)
-  
-  predicate inv'5 (_1 : t_Item'0)
-  
-  predicate invariant'3 (self : t_Item'0) =
-    [%#sboxed17] inv'5 self
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Item'0 [inv'4 x] . inv'4 x = invariant'3 x
   
   function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   
@@ -685,15 +685,76 @@ module M_15_enumerate__qyi17057287782225696128__next__refines [#"15_enumerate.rs
   type t_Enumerate'0  =
     { t_Enumerate__iter'0: t_I'0; t_Enumerate__count'0: usize }
   
+  type t_Item'0
+  
+  use seq.Seq
+  
+  use prelude.prelude.Int
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate inv'7 (_1 : t_Item'0)
+  
+  predicate invariant'3 (self : t_Item'0) =
+    [%#sboxed15] inv'7 self
+  
+  predicate inv'6 (_1 : t_Item'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_Item'0 [inv'6 x] . inv'6 x = invariant'3 x
+  
+  predicate invariant'1 (self : Seq.seq t_Item'0) =
+    [%#sseq13] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'6 (Seq.get self i)
+  
+  predicate inv'2 (_1 : Seq.seq t_Item'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'2 x] . inv'2 x = invariant'1 x
+  
+  predicate inv'5 (_1 : t_I'0)
+  
+  predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
+  
+  use prelude.prelude.UIntSize
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  predicate invariant'4 (self : borrowed t_I'0) =
+    [%#sinvariant4] inv'5 self.current /\ inv'5 self.final
+  
+  predicate inv'8 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : borrowed t_I'0 [inv'8 x] . inv'8 x = invariant'4 x
+  
+  predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  
+  use seq.Seq
+  
+  predicate invariant'2 [#"15_enumerate.rs" 79 4 79 30] (self : t_Enumerate'0) =
+    [%#s15_enumerate14] (forall s : Seq.seq t_Item'0, i : t_I'0 [produces'1 self.t_Enumerate__iter'0 s i] . inv'2 s
+    /\ inv'5 i /\ produces'1 self.t_Enumerate__iter'0 s i
+     -> UIntSize.to_int self.t_Enumerate__count'0 + Seq.length s < UIntSize.to_int v_MAX'0)
+    /\ (forall i : borrowed t_I'0 . inv'8 i /\ completed'1 i
+     -> produces'1 i.current (Seq.empty  : Seq.seq t_Item'0) i.final)
+  
+  predicate inv'4 (_1 : t_Enumerate'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_Enumerate'0 [inv'4 x] . inv'4 x
+  = (invariant'2 x
+  /\ match x with
+    | {t_Enumerate__iter'0 = iter ; t_Enumerate__count'0 = count} -> inv'5 iter
+    end)
+  
+  predicate invariant'0 (self : borrowed (t_Enumerate'0)) =
+    [%#sinvariant4] inv'4 self.current /\ inv'4 self.final
+  
   predicate inv'0 (_1 : borrowed (t_Enumerate'0))
   
-  type t_Item'0
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Enumerate'0) [inv'0 x] . inv'0 x = invariant'0 x
   
   type t_Option'0  =
     | C_None'0
     | C_Some'0 (usize, t_Item'0)
-  
-  predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
   
   predicate resolve'0 (self : borrowed usize) =
     [%#sresolve3] self.final = self.current
@@ -705,18 +766,6 @@ module M_15_enumerate__qyi17057287782225696128__next__refines [#"15_enumerate.rs
   use seq.Seq
   
   use seq.Seq
-  
-  use seq.Seq
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  use seq.Seq
-  
-  predicate inv'2 (_1 : Seq.seq t_Item'0)
-  
-  predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
   
   use seq.Seq
   
@@ -736,66 +785,17 @@ module M_15_enumerate__qyi17057287782225696128__next__refines [#"15_enumerate.rs
      -> UIntSize.to_int (let (a, _) = Seq.get visited i in a) = UIntSize.to_int self.t_Enumerate__count'0 + i
     /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
   
-  predicate inv'1 (_1 : t_Option'0)
-  
-  predicate inv'4 (_1 : t_Enumerate'0)
-  
-  predicate invariant'0 (self : borrowed (t_Enumerate'0)) =
-    [%#sinvariant4] inv'4 self.current /\ inv'4 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Enumerate'0) [inv'0 x] . inv'0 x = invariant'0 x
-  
   predicate inv'3 (_1 : (usize, t_Item'0))
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : (usize, t_Item'0) [inv'3 x] . inv'3 x = (let (x0, x1) = x in inv'7 x1)
+  
+  predicate inv'1 (_1 : t_Option'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x
   = match x with
     | C_None'0 -> true
     | C_Some'0 a_0 -> inv'3 a_0
     end
-  
-  use seq.Seq
-  
-  predicate inv'6 (_1 : t_Item'0)
-  
-  predicate invariant'1 (self : Seq.seq t_Item'0) =
-    [%#sseq13] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'6 (Seq.get self i)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'2 x] . inv'2 x = invariant'1 x
-  
-  predicate inv'7 (_1 : t_Item'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : (usize, t_Item'0) [inv'3 x] . inv'3 x = (let (x0, x1) = x in inv'7 x1)
-  
-  predicate inv'5 (_1 : t_I'0)
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  predicate inv'8 (_1 : borrowed t_I'0)
-  
-  use seq.Seq
-  
-  predicate invariant'2 [#"15_enumerate.rs" 79 4 79 30] (self : t_Enumerate'0) =
-    [%#s15_enumerate14] (forall s : Seq.seq t_Item'0, i : t_I'0 [produces'1 self.t_Enumerate__iter'0 s i] . inv'2 s
-    /\ inv'5 i /\ produces'1 self.t_Enumerate__iter'0 s i
-     -> UIntSize.to_int self.t_Enumerate__count'0 + Seq.length s < UIntSize.to_int v_MAX'0)
-    /\ (forall i : borrowed t_I'0 . inv'8 i /\ completed'1 i
-     -> produces'1 i.current (Seq.empty  : Seq.seq t_Item'0) i.final)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Enumerate'0 [inv'4 x] . inv'4 x
-  = (invariant'2 x
-  /\ match x with
-    | {t_Enumerate__iter'0 = iter ; t_Enumerate__count'0 = count} -> inv'5 iter
-    end)
-  
-  predicate invariant'3 (self : t_Item'0) =
-    [%#sboxed15] inv'7 self
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t_Item'0 [inv'6 x] . inv'6 x = invariant'3 x
-  
-  predicate invariant'4 (self : borrowed t_I'0) =
-    [%#sinvariant4] inv'5 self.current /\ inv'5 self.final
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : borrowed t_I'0 [inv'8 x] . inv'8 x = invariant'4 x
   
   function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   
@@ -861,11 +861,27 @@ module M_15_enumerate__qyi17057287782225696128__produces_trans__refines [#"15_en
   
   use seq.Seq
   
-  predicate inv'1 (_1 : Seq.seq t_Item'0)
-  
-  predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
+  use seq.Seq
   
   use seq.Seq
+  
+  predicate inv'5 (_1 : t_Item'0)
+  
+  predicate invariant'3 (self : t_Item'0) =
+    [%#sboxed13] inv'5 self
+  
+  predicate inv'4 (_1 : t_Item'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Item'0 [inv'4 x] . inv'4 x = invariant'3 x
+  
+  predicate invariant'1 (self : Seq.seq t_Item'0) =
+    [%#sseq11] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
+  
+  predicate inv'1 (_1 : Seq.seq t_Item'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'1 x] . inv'1 x = invariant'1 x
+  
+  predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
   
   use seq.Seq
   
@@ -883,17 +899,18 @@ module M_15_enumerate__qyi17057287782225696128__produces_trans__refines [#"15_en
      -> UIntSize.to_int (let (a, _) = Seq.get visited i in a) = UIntSize.to_int self.t_Enumerate__count'0 + i
     /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
   
-  predicate inv'0 (_1 : t_Enumerate'0)
-  
-  use seq.Seq
-  
   predicate inv'2 (_1 : t_I'0)
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
   use prelude.prelude.Borrow
   
+  predicate invariant'2 (self : borrowed t_I'0) =
+    [%#sinvariant12] inv'2 self.current /\ inv'2 self.final
+  
   predicate inv'3 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'3 x] . inv'3 x = invariant'2 x
   
   predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
   
@@ -906,6 +923,8 @@ module M_15_enumerate__qyi17057287782225696128__produces_trans__refines [#"15_en
     /\ (forall i : borrowed t_I'0 . inv'3 i /\ completed'0 i
      -> produces'1 i.current (Seq.empty  : Seq.seq t_Item'0) i.final)
   
+  predicate inv'0 (_1 : t_Enumerate'0)
+  
   axiom inv_axiom'0 [@rewrite] : forall x : t_Enumerate'0 [inv'0 x] . inv'0 x
   = (invariant'0 x
   /\ match x with
@@ -913,25 +932,6 @@ module M_15_enumerate__qyi17057287782225696128__produces_trans__refines [#"15_en
     end)
   
   use seq.Seq
-  
-  predicate inv'4 (_1 : t_Item'0)
-  
-  predicate invariant'1 (self : Seq.seq t_Item'0) =
-    [%#sseq11] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'1 x] . inv'1 x = invariant'1 x
-  
-  predicate invariant'2 (self : borrowed t_I'0) =
-    [%#sinvariant12] inv'2 self.current /\ inv'2 self.final
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'3 x] . inv'3 x = invariant'2 x
-  
-  predicate inv'5 (_1 : t_Item'0)
-  
-  predicate invariant'3 (self : t_Item'0) =
-    [%#sboxed13] inv'5 self
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Item'0 [inv'4 x] . inv'4 x = invariant'3 x
   
   function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   
@@ -979,25 +979,71 @@ module M_15_enumerate__qyi17057287782225696128__produces_refl__refines [#"15_enu
   type t_Enumerate'0  =
     { t_Enumerate__iter'0: t_I'0; t_Enumerate__count'0: usize }
   
-  predicate inv'0 (_1 : t_Enumerate'0)
-  
-  use seq.Seq
-  
   type t_Item'0
   
   use seq.Seq
-  
-  use seq.Seq
-  
-  use prelude.prelude.UIntSize
   
   use prelude.prelude.Int
   
   use seq.Seq
   
+  use seq.Seq
+  
+  predicate inv'5 (_1 : t_Item'0)
+  
+  predicate invariant'3 (self : t_Item'0) =
+    [%#sboxed13] inv'5 self
+  
+  predicate inv'4 (_1 : t_Item'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Item'0 [inv'4 x] . inv'4 x = invariant'3 x
+  
+  predicate invariant'1 (self : Seq.seq t_Item'0) =
+    [%#sseq11] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
+  
   predicate inv'1 (_1 : Seq.seq t_Item'0)
   
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'1 x] . inv'1 x = invariant'1 x
+  
+  predicate inv'2 (_1 : t_I'0)
+  
   predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
+  
+  use prelude.prelude.UIntSize
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.Borrow
+  
+  predicate invariant'2 (self : borrowed t_I'0) =
+    [%#sinvariant12] inv'2 self.current /\ inv'2 self.final
+  
+  predicate inv'3 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'3 x] . inv'3 x = invariant'2 x
+  
+  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  
+  use seq.Seq
+  
+  predicate invariant'0 [#"15_enumerate.rs" 79 4 79 30] (self : t_Enumerate'0) =
+    [%#s15_enumerate10] (forall s : Seq.seq t_Item'0, i : t_I'0 [produces'1 self.t_Enumerate__iter'0 s i] . inv'1 s
+    /\ inv'2 i /\ produces'1 self.t_Enumerate__iter'0 s i
+     -> UIntSize.to_int self.t_Enumerate__count'0 + Seq.length s < UIntSize.to_int v_MAX'0)
+    /\ (forall i : borrowed t_I'0 . inv'3 i /\ completed'0 i
+     -> produces'1 i.current (Seq.empty  : Seq.seq t_Item'0) i.final)
+  
+  predicate inv'0 (_1 : t_Enumerate'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Enumerate'0 [inv'0 x] . inv'0 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_Enumerate__iter'0 = iter ; t_Enumerate__count'0 = count} -> inv'2 iter
+    end)
+  
+  use seq.Seq
+  
+  use seq.Seq
   
   use seq.Seq
   
@@ -1016,52 +1062,6 @@ module M_15_enumerate__qyi17057287782225696128__produces_refl__refines [#"15_enu
     /\ (forall i : int . 0 <= i /\ i < Seq.length s
      -> UIntSize.to_int (let (a, _) = Seq.get visited i in a) = UIntSize.to_int self.t_Enumerate__count'0 + i
     /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
-  
-  predicate inv'2 (_1 : t_I'0)
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  use prelude.prelude.Borrow
-  
-  predicate inv'3 (_1 : borrowed t_I'0)
-  
-  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
-  
-  use seq.Seq
-  
-  predicate invariant'0 [#"15_enumerate.rs" 79 4 79 30] (self : t_Enumerate'0) =
-    [%#s15_enumerate10] (forall s : Seq.seq t_Item'0, i : t_I'0 [produces'1 self.t_Enumerate__iter'0 s i] . inv'1 s
-    /\ inv'2 i /\ produces'1 self.t_Enumerate__iter'0 s i
-     -> UIntSize.to_int self.t_Enumerate__count'0 + Seq.length s < UIntSize.to_int v_MAX'0)
-    /\ (forall i : borrowed t_I'0 . inv'3 i /\ completed'0 i
-     -> produces'1 i.current (Seq.empty  : Seq.seq t_Item'0) i.final)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Enumerate'0 [inv'0 x] . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | {t_Enumerate__iter'0 = iter ; t_Enumerate__count'0 = count} -> inv'2 iter
-    end)
-  
-  use seq.Seq
-  
-  predicate inv'4 (_1 : t_Item'0)
-  
-  predicate invariant'1 (self : Seq.seq t_Item'0) =
-    [%#sseq11] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'1 x] . inv'1 x = invariant'1 x
-  
-  predicate invariant'2 (self : borrowed t_I'0) =
-    [%#sinvariant12] inv'2 self.current /\ inv'2 self.final
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'3 x] . inv'3 x = invariant'2 x
-  
-  predicate inv'5 (_1 : t_Item'0)
-  
-  predicate invariant'3 (self : t_Item'0) =
-    [%#sboxed13] inv'5 self
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Item'0 [inv'4 x] . inv'4 x = invariant'3 x
   
   function produces_refl'1 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   

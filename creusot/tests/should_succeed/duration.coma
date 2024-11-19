@@ -106,16 +106,6 @@ module M_duration__test_duration [#"duration.rs" 7 0 7 22]
   axiom view'0_spec : forall self : t_Duration'0 . [%#stime44] view'0 self >= 0
   /\ view'0 self <= secs_to_nanos'0 (UInt64.to_int (v_MAX'0 : uint64)) + 999999999
   
-  use prelude.prelude.Borrow
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'1 (t_Duration'0)
-  
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
   let rec new'0 (secs:uint64) (nanos:uint32) (return'  (ret:t_Duration'0))= {[@expl:new requires] [%#stime42] UInt64.to_int secs
     + nanos_to_secs'0 (UInt32.to_int nanos)
     <= UInt64.to_int (v_MAX'0 : uint64)}
@@ -126,6 +116,8 @@ module M_duration__test_duration [#"duration.rs" 7 0 7 22]
     
   
   use prelude.prelude.UInt128
+  
+  use prelude.prelude.Borrow
   
   function view'1 (self : t_Duration'0) : int =
     [%#smodel72] view'0 self
@@ -201,6 +193,10 @@ module M_duration__test_duration [#"duration.rs" 7 0 7 22]
       (! return' {result}) ]
     
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'1 (t_Duration'0)
+  
   type t_Option'1  =
     | C_None'1
     | C_Some'0 int
@@ -221,6 +217,10 @@ module M_duration__test_duration [#"duration.rs" 7 0 7 22]
        -> deep_model'0 result = C_Some'0 (view'0 self + view'0 rhs)}
       (! return' {result}) ]
     
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
     any [ return' (result:bool)-> {[%#soption63] result = (self = C_None'0)} (! return' {result}) ] 

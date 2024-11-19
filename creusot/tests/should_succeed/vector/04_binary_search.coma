@@ -48,6 +48,8 @@ module M_04_binary_search__binary_search [#"04_binary_search.rs" 26 0 26 71]
   
   predicate inv'0 (_1 : t_Vec'0)
   
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
+  
   use prelude.prelude.UIntSize
   
   use prelude.prelude.UInt32
@@ -67,16 +69,6 @@ module M_04_binary_search__binary_search [#"04_binary_search.rs" 26 0 26 71]
   function view'0 (self : t_Vec'0) : Seq.seq uint32 =
     [%#smodel16] view'1 self
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : usize)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : usize [inv'1 x] . inv'1 x = true
-  
-  predicate inv'2 (_1 : uint32)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : uint32 [inv'2 x] . inv'2 x = true
-  
   let rec len'0 (self:t_Vec'0) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'0 self}
     any
     [ return' (result:usize)-> {[%#svec15] UIntSize.to_int result = Seq.length (view'0 self)} (! return' {result}) ]
@@ -91,8 +83,16 @@ module M_04_binary_search__binary_search [#"04_binary_search.rs" 26 0 26 71]
   function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : uint32 =
     [%#sops17] Seq.get (view'1 self) ix
   
+  predicate inv'1 (_1 : usize)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : usize [inv'1 x] . inv'1 x = true
+  
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq uint32) =
     [%#sslice22] UIntSize.to_int self < Seq.length seq
+  
+  predicate inv'2 (_1 : uint32)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : uint32 [inv'2 x] . inv'2 x = true
   
   predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq uint32) (out : uint32) =
     [%#sslice23] Seq.get seq (UIntSize.to_int self) = out

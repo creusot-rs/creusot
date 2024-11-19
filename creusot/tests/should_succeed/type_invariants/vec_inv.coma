@@ -31,17 +31,15 @@ module M_vec_inv__vec [#"vec_inv.rs" 18 0 18 32]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
   
-  predicate inv'0 (_1 : t_Vec'0)
-  
-  use prelude.prelude.Borrow
-  
-  use prelude.prelude.Int
-  
   use seq.Seq
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
   use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  use prelude.prelude.Borrow
   
   use prelude.prelude.Int32
   
@@ -53,6 +51,49 @@ module M_vec_inv__vec [#"vec_inv.rs" 18 0 18 32]
   function view'0 (self : t_Vec'0) : Seq.seq (borrowed (t_SumTo10'0))
   
   axiom view'0_spec : forall self : t_Vec'0 . [%#svec4] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  use seq.Seq
+  
+  use prelude.prelude.Int32
+  
+  predicate invariant'4 [#"vec_inv.rs" 12 4 12 30] (self : t_SumTo10'0) =
+    [%#svec_inv11] Int32.to_int self.t_SumTo10__a'0 + Int32.to_int self.t_SumTo10__b'0 = 10
+  
+  predicate inv'4 (_1 : t_SumTo10'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_SumTo10'0 [inv'4 x] . inv'4 x
+  = (invariant'4 x
+  /\ match x with
+    | {t_SumTo10__a'0 = a ; t_SumTo10__b'0 = b} -> true
+    end)
+  
+  predicate invariant'3 (self : borrowed (t_SumTo10'0)) =
+    [%#sinvariant10] inv'4 self.current /\ inv'4 self.final
+  
+  predicate inv'3 (_1 : borrowed (t_SumTo10'0))
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed (t_SumTo10'0) [inv'3 x] . inv'3 x = invariant'3 x
+  
+  predicate invariant'2 (self : borrowed (t_SumTo10'0)) =
+    [%#sboxed9] inv'3 self
+  
+  predicate inv'2 (_1 : borrowed (t_SumTo10'0))
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_SumTo10'0) [inv'2 x] . inv'2 x = invariant'2 x
+  
+  predicate invariant'1 (self : Seq.seq (borrowed (t_SumTo10'0))) =
+    [%#sseq8] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'2 (Seq.get self i)
+  
+  predicate inv'1 (_1 : Seq.seq (borrowed (t_SumTo10'0)))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq (borrowed (t_SumTo10'0)) [inv'1 x] . inv'1 x = invariant'1 x
+  
+  predicate invariant'0 (self : t_Vec'0) =
+    [%#svec6] inv'1 (view'0 self)
+  
+  predicate inv'0 (_1 : t_Vec'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = invariant'0 x
   
   use seq.Seq
   
@@ -71,48 +112,7 @@ module M_vec_inv__vec [#"vec_inv.rs" 18 0 18 32]
   predicate resolve'0 (_1 : t_Vec'0) =
     resolve'1 _1
   
-  use prelude.prelude.Int32
-  
   use prelude.prelude.Intrinsic
-  
-  predicate inv'1 (_1 : Seq.seq (borrowed (t_SumTo10'0)))
-  
-  predicate invariant'0 (self : t_Vec'0) =
-    [%#svec6] inv'1 (view'0 self)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = invariant'0 x
-  
-  use seq.Seq
-  
-  predicate inv'2 (_1 : borrowed (t_SumTo10'0))
-  
-  predicate invariant'1 (self : Seq.seq (borrowed (t_SumTo10'0))) =
-    [%#sseq8] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'2 (Seq.get self i)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq (borrowed (t_SumTo10'0)) [inv'1 x] . inv'1 x = invariant'1 x
-  
-  predicate inv'3 (_1 : borrowed (t_SumTo10'0))
-  
-  predicate invariant'2 (self : borrowed (t_SumTo10'0)) =
-    [%#sboxed9] inv'3 self
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_SumTo10'0) [inv'2 x] . inv'2 x = invariant'2 x
-  
-  predicate inv'4 (_1 : t_SumTo10'0)
-  
-  predicate invariant'3 (self : borrowed (t_SumTo10'0)) =
-    [%#sinvariant10] inv'4 self.current /\ inv'4 self.final
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed (t_SumTo10'0) [inv'3 x] . inv'3 x = invariant'3 x
-  
-  predicate invariant'4 [#"vec_inv.rs" 12 4 12 30] (self : t_SumTo10'0) =
-    [%#svec_inv11] Int32.to_int self.t_SumTo10__a'0 + Int32.to_int self.t_SumTo10__b'0 = 10
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_SumTo10'0 [inv'4 x] . inv'4 x
-  = (invariant'4 x
-  /\ match x with
-    | {t_SumTo10__a'0 = a ; t_SumTo10__b'0 = b} -> true
-    end)
   
   meta "compute_max_steps" 1000000
   

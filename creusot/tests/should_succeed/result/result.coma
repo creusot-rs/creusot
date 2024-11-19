@@ -133,6 +133,12 @@ module M_result__test_result [#"result.rs" 3 0 3 20]
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Result'1 [inv'0 x] . inv'0 x = true
   
+  let rec is_ok'0 (self:t_Result'1) (return'  (ret:bool))= {[@expl:is_ok 'self' type invariant] inv'0 self}
+    any [ return' (result:bool)-> {[%#sresult87] result = (exists t : int32 . self = C_Ok'0 t)} (! return' {result}) ] 
+  
+  let rec is_err'0 (self:t_Result'1) (return'  (ret:bool))= {[@expl:is_err 'self' type invariant] inv'0 self}
+    any [ return' (result:bool)-> {[%#sresult88] result = (exists e : int32 . self = C_Err'0 e)} (! return' {result}) ] 
+  
   predicate inv'1 (_1 : t_Result'1)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_Result'1 [inv'1 x] . inv'1 x = true
@@ -145,13 +151,36 @@ module M_result__test_result [#"result.rs" 3 0 3 20]
   
   axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
   
+  let rec ok'0 (self:t_Result'1) (return'  (ret:t_Option'0))= {[@expl:ok 'self' type invariant] inv'1 self}
+    any
+    [ return' (result:t_Option'0)-> {inv'2 result}
+      {[%#sresult89] forall t : int32 . self = C_Ok'0 t  -> result = C_Some'0 t}
+      {[%#sresult90] (exists e : int32 . self = C_Err'0 e)  -> result = C_None'0}
+      (! return' {result}) ]
+    
+  
   predicate inv'3 (_1 : int32)
   
   axiom inv_axiom'3 [@rewrite] : forall x : int32 [inv'3 x] . inv'3 x = true
   
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:int32))= {[@expl:unwrap 'self' type invariant] inv'2 self}
+    {[@expl:unwrap requires] [%#soption91] self <> C_None'0}
+    any [ return' (result:int32)-> {inv'3 result} {[%#soption91] C_Some'0 result = self} (! return' {result}) ] 
+  
   predicate inv'4 (_1 : t_Option'0)
   
   axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
+  
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'4 self}
+    any [ return' (result:bool)-> {[%#soption92] result = (self = C_None'0)} (! return' {result}) ] 
+  
+  let rec err'0 (self:t_Result'1) (return'  (ret:t_Option'0))= {[@expl:err 'self' type invariant] inv'1 self}
+    any
+    [ return' (result:t_Option'0)-> {inv'2 result}
+      {[%#sresult93] (exists t : int32 . self = C_Ok'0 t)  -> result = C_None'0}
+      {[%#sresult94] forall e : int32 . self = C_Err'0 e  -> result = C_Some'0 e}
+      (! return' {result}) ]
+    
   
   type t_Result'0  =
     | C_Ok'2 int32
@@ -161,9 +190,25 @@ module M_result__test_result [#"result.rs" 3 0 3 20]
   
   axiom inv_axiom'5 [@rewrite] : forall x : t_Result'0 [inv'5 x] . inv'5 x = true
   
+  let rec as_ref'0 (self:t_Result'1) (return'  (ret:t_Result'0))= {[@expl:as_ref 'self' type invariant] inv'0 self}
+    any
+    [ return' (result:t_Result'0)-> {inv'5 result}
+      {[%#sresult95] forall t : int32 . self = C_Ok'0 t  -> result = C_Ok'2 t}
+      {[%#sresult96] forall e : int32 . self = C_Err'0 e  -> result = C_Err'2 e}
+      (! return' {result}) ]
+    
+  
   predicate inv'6 (_1 : int32)
   
   axiom inv_axiom'6 [@rewrite] : forall x : int32 [inv'6 x] . inv'6 x = true
+  
+  let rec unwrap'1 (self:t_Result'0) (return'  (ret:int32))= {[@expl:unwrap 'self' type invariant] inv'5 self}
+    {[@expl:unwrap requires] [%#sresult97] exists t : int32 . self = C_Ok'2 t}
+    any [ return' (result:int32)-> {inv'6 result} {[%#sresult98] C_Ok'2 result = self} (! return' {result}) ] 
+  
+  let rec unwrap_err'0 (self:t_Result'0) (return'  (ret:int32))= {[@expl:unwrap_err 'self' type invariant] inv'5 self}
+    {[@expl:unwrap_err requires] [%#sresult99] exists e : int32 . self = C_Err'2 e}
+    any [ return' (result:int32)-> {inv'6 result} {[%#sresult98] C_Err'2 result = self} (! return' {result}) ] 
   
   predicate inv'7 (_1 : borrowed (t_Result'1))
   
@@ -177,91 +222,6 @@ module M_result__test_result [#"result.rs" 3 0 3 20]
   
   axiom inv_axiom'8 [@rewrite] : forall x : t_Result'2 [inv'8 x] . inv'8 x = true
   
-  predicate inv'9 (_1 : borrowed int32)
-  
-  axiom inv_axiom'9 [@rewrite] : forall x : borrowed int32 [inv'9 x] . inv'9 x = true
-  
-  type t_Result'3  =
-    | C_Ok'4 int32
-    | C_Err'4 int32
-  
-  predicate inv'10 (_1 : t_Result'3)
-  
-  axiom inv_axiom'10 [@rewrite] : forall x : t_Result'3 [inv'10 x] . inv'10 x = true
-  
-  type t_Result'4  =
-    | C_Ok'5 int32
-    | C_Err'5 (borrowed int32)
-  
-  predicate inv'11 (_1 : t_Result'4)
-  
-  axiom inv_axiom'11 [@rewrite] : forall x : t_Result'4 [inv'11 x] . inv'11 x = true
-  
-  type t_Result'5  =
-    | C_Ok'1 (t_Option'0)
-    | C_Err'1 int32
-  
-  predicate inv'12 (_1 : t_Result'5)
-  
-  axiom inv_axiom'12 [@rewrite] : forall x : t_Result'5 [inv'12 x] . inv'12 x = true
-  
-  type t_Option'1  =
-    | C_None'1
-    | C_Some'1 (t_Result'1)
-  
-  predicate inv'13 (_1 : t_Option'1)
-  
-  axiom inv_axiom'13 [@rewrite] : forall x : t_Option'1 [inv'13 x] . inv'13 x = true
-  
-  predicate inv'14 (_1 : t_Option'1)
-  
-  axiom inv_axiom'14 [@rewrite] : forall x : t_Option'1 [inv'14 x] . inv'14 x = true
-  
-  let rec is_ok'0 (self:t_Result'1) (return'  (ret:bool))= {[@expl:is_ok 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#sresult87] result = (exists t : int32 . self = C_Ok'0 t)} (! return' {result}) ] 
-  
-  let rec is_err'0 (self:t_Result'1) (return'  (ret:bool))= {[@expl:is_err 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#sresult88] result = (exists e : int32 . self = C_Err'0 e)} (! return' {result}) ] 
-  
-  let rec ok'0 (self:t_Result'1) (return'  (ret:t_Option'0))= {[@expl:ok 'self' type invariant] inv'1 self}
-    any
-    [ return' (result:t_Option'0)-> {inv'2 result}
-      {[%#sresult89] forall t : int32 . self = C_Ok'0 t  -> result = C_Some'0 t}
-      {[%#sresult90] (exists e : int32 . self = C_Err'0 e)  -> result = C_None'0}
-      (! return' {result}) ]
-    
-  
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:int32))= {[@expl:unwrap 'self' type invariant] inv'2 self}
-    {[@expl:unwrap requires] [%#soption91] self <> C_None'0}
-    any [ return' (result:int32)-> {inv'3 result} {[%#soption91] C_Some'0 result = self} (! return' {result}) ] 
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'4 self}
-    any [ return' (result:bool)-> {[%#soption92] result = (self = C_None'0)} (! return' {result}) ] 
-  
-  let rec err'0 (self:t_Result'1) (return'  (ret:t_Option'0))= {[@expl:err 'self' type invariant] inv'1 self}
-    any
-    [ return' (result:t_Option'0)-> {inv'2 result}
-      {[%#sresult93] (exists t : int32 . self = C_Ok'0 t)  -> result = C_None'0}
-      {[%#sresult94] forall e : int32 . self = C_Err'0 e  -> result = C_Some'0 e}
-      (! return' {result}) ]
-    
-  
-  let rec as_ref'0 (self:t_Result'1) (return'  (ret:t_Result'0))= {[@expl:as_ref 'self' type invariant] inv'0 self}
-    any
-    [ return' (result:t_Result'0)-> {inv'5 result}
-      {[%#sresult95] forall t : int32 . self = C_Ok'0 t  -> result = C_Ok'2 t}
-      {[%#sresult96] forall e : int32 . self = C_Err'0 e  -> result = C_Err'2 e}
-      (! return' {result}) ]
-    
-  
-  let rec unwrap'1 (self:t_Result'0) (return'  (ret:int32))= {[@expl:unwrap 'self' type invariant] inv'5 self}
-    {[@expl:unwrap requires] [%#sresult97] exists t : int32 . self = C_Ok'2 t}
-    any [ return' (result:int32)-> {inv'6 result} {[%#sresult98] C_Ok'2 result = self} (! return' {result}) ] 
-  
-  let rec unwrap_err'0 (self:t_Result'0) (return'  (ret:int32))= {[@expl:unwrap_err 'self' type invariant] inv'5 self}
-    {[@expl:unwrap_err requires] [%#sresult99] exists e : int32 . self = C_Err'2 e}
-    any [ return' (result:int32)-> {inv'6 result} {[%#sresult98] C_Err'2 result = self} (! return' {result}) ] 
-  
   let rec as_mut'0 (self:borrowed (t_Result'1)) (return'  (ret:t_Result'2))= {[@expl:as_mut 'self' type invariant] inv'7 self}
     any
     [ return' (result:t_Result'2)-> {inv'8 result}
@@ -271,6 +231,10 @@ module M_result__test_result [#"result.rs" 3 0 3 20]
       /\ self.final = C_Err'0 (e.final) /\ result = C_Err'3 e)}
       (! return' {result}) ]
     
+  
+  predicate inv'9 (_1 : borrowed int32)
+  
+  axiom inv_axiom'9 [@rewrite] : forall x : borrowed int32 [inv'9 x] . inv'9 x = true
   
   let rec unwrap'2 (self:t_Result'2) (return'  (ret:borrowed int32))= {[@expl:unwrap 'self' type invariant] inv'8 self}
     {[@expl:unwrap requires] [%#sresult97] exists t : borrowed int32 . self = C_Ok'3 t}
@@ -332,6 +296,14 @@ module M_result__test_result [#"result.rs" 3 0 3 20]
       (! return' {result}) ]
     
   
+  type t_Result'3  =
+    | C_Ok'4 int32
+    | C_Err'4 int32
+  
+  predicate inv'10 (_1 : t_Result'3)
+  
+  axiom inv_axiom'10 [@rewrite] : forall x : t_Result'3 [inv'10 x] . inv'10 x = true
+  
   let rec copied'0 (self:t_Result'0) (return'  (ret:t_Result'3))= {[@expl:copied 'self' type invariant] inv'5 self}
     any
     [ return' (result:t_Result'3)-> {inv'10 result}
@@ -347,6 +319,14 @@ module M_result__test_result [#"result.rs" 3 0 3 20]
   let rec unwrap_err'3 (self:t_Result'3) (return'  (ret:int32))= {[@expl:unwrap_err 'self' type invariant] inv'10 self}
     {[@expl:unwrap_err requires] [%#sresult99] exists e : int32 . self = C_Err'4 e}
     any [ return' (result:int32)-> {inv'6 result} {[%#sresult98] C_Err'4 result = self} (! return' {result}) ] 
+  
+  type t_Result'4  =
+    | C_Ok'5 int32
+    | C_Err'5 (borrowed int32)
+  
+  predicate inv'11 (_1 : t_Result'4)
+  
+  axiom inv_axiom'11 [@rewrite] : forall x : t_Result'4 [inv'11 x] . inv'11 x = true
   
   let rec copied'1 (self:t_Result'2) (return'  (ret:t_Result'4))= {[@expl:copied 'self' type invariant] inv'8 self}
     any
@@ -380,6 +360,22 @@ module M_result__test_result [#"result.rs" 3 0 3 20]
       (! return' {result}) ]
     
   
+  type t_Result'5  =
+    | C_Ok'1 (t_Option'0)
+    | C_Err'1 int32
+  
+  predicate inv'12 (_1 : t_Result'5)
+  
+  axiom inv_axiom'12 [@rewrite] : forall x : t_Result'5 [inv'12 x] . inv'12 x = true
+  
+  type t_Option'1  =
+    | C_None'1
+    | C_Some'1 (t_Result'1)
+  
+  predicate inv'13 (_1 : t_Option'1)
+  
+  axiom inv_axiom'13 [@rewrite] : forall x : t_Option'1 [inv'13 x] . inv'13 x = true
+  
   let rec transpose'0 (self:t_Result'5) (return'  (ret:t_Option'1))= {[@expl:transpose 'self' type invariant] inv'12 self}
     any
     [ return' (result:t_Option'1)-> {inv'13 result}
@@ -388,6 +384,10 @@ module M_result__test_result [#"result.rs" 3 0 3 20]
       {[%#sresult118] forall e : int32 . self = C_Err'1 e  -> result = C_Some'1 (C_Err'0 e)}
       (! return' {result}) ]
     
+  
+  predicate inv'14 (_1 : t_Option'1)
+  
+  axiom inv_axiom'14 [@rewrite] : forall x : t_Option'1 [inv'14 x] . inv'14 x = true
   
   let rec is_none'1 (self:t_Option'1) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'14 self}
     any [ return' (result:bool)-> {[%#soption92] result = (self = C_None'1)} (! return' {result}) ] 

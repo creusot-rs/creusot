@@ -13,10 +13,10 @@ module M_borrows__qyi5649894289181344863__new [#"borrows.rs" 17 4 17 30] (* NonZ
   
   use prelude.prelude.Int32
   
-  predicate inv'0 (_1 : t_NonZero'0)
-  
   predicate invariant'0 [#"borrows.rs" 9 4 9 30] (self : t_NonZero'0) =
     [%#sborrows3] Int32.to_int self.t_NonZero__0'0 <> 0
+  
+  predicate inv'0 (_1 : t_NonZero'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_NonZero'0 [inv'0 x] . inv'0 x
   = (invariant'0 x
@@ -56,7 +56,25 @@ module M_borrows__qyi5649894289181344863__inner_mut [#"borrows.rs" 23 4 23 43] (
   predicate resolve'0 (_1 : borrowed int32) =
     resolve'2 _1
   
+  use prelude.prelude.Int32
+  
+  predicate invariant'1 [#"borrows.rs" 9 4 9 30] (self : t_NonZero'0) =
+    [%#sborrows5] Int32.to_int self.t_NonZero__0'0 <> 0
+  
+  predicate inv'1 (_1 : t_NonZero'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_NonZero'0 [inv'1 x] . inv'1 x
+  = (invariant'1 x
+  /\ match x with
+    | {t_NonZero__0'0 = a_0} -> true
+    end)
+  
+  predicate invariant'0 (self : borrowed (t_NonZero'0)) =
+    [%#sinvariant4] inv'1 self.current /\ inv'1 self.final
+  
   predicate inv'0 (_1 : borrowed (t_NonZero'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_NonZero'0) [inv'0 x] . inv'0 x = invariant'0 x
   
   predicate resolve'3 (self : borrowed (t_NonZero'0)) =
     [%#sresolve3] self.final = self.current
@@ -65,24 +83,6 @@ module M_borrows__qyi5649894289181344863__inner_mut [#"borrows.rs" 23 4 23 43] (
     resolve'3 _1
   
   use prelude.prelude.Intrinsic
-  
-  use prelude.prelude.Int32
-  
-  predicate inv'1 (_1 : t_NonZero'0)
-  
-  predicate invariant'0 (self : borrowed (t_NonZero'0)) =
-    [%#sinvariant4] inv'1 self.current /\ inv'1 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_NonZero'0) [inv'0 x] . inv'0 x = invariant'0 x
-  
-  predicate invariant'1 [#"borrows.rs" 9 4 9 30] (self : t_NonZero'0) =
-    [%#sborrows5] Int32.to_int self.t_NonZero__0'0 <> 0
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_NonZero'0 [inv'1 x] . inv'1 x
-  = (invariant'1 x
-  /\ match x with
-    | {t_NonZero__0'0 = a_0} -> true
-    end)
   
   meta "compute_max_steps" 1000000
   
@@ -143,24 +143,6 @@ module M_borrows__simple [#"borrows.rs" 31 0 31 30]
   
   constant v_MAX'0 : int32 = (2147483647 : int32)
   
-  predicate inv'0 (_1 : borrowed (t_NonZero'0))
-  
-  predicate inv'1 (_1 : t_NonZero'0)
-  
-  predicate invariant'0 (self : borrowed (t_NonZero'0)) =
-    [%#sinvariant7] inv'1 self.current /\ inv'1 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_NonZero'0) [inv'0 x] . inv'0 x = invariant'0 x
-  
-  predicate invariant'1 [#"borrows.rs" 9 4 9 30] (self : t_NonZero'0) =
-    [%#sborrows8] Int32.to_int self.t_NonZero__0'0 <> 0
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_NonZero'0 [inv'1 x] . inv'1 x
-  = (invariant'1 x
-  /\ match x with
-    | {t_NonZero__0'0 = a_0} -> true
-    end)
-  
   let rec inc'0 (x:borrowed int32) (return'  (ret:()))= {[@expl:inc requires] [%#sborrows3] view'0 x
     < Int32.to_int (v_MAX'0 : int32)}
     any [ return' (result:())-> {[%#sborrows4] Int32.to_int x.final = view'0 x + 1} (! return' {result}) ] 
@@ -170,6 +152,24 @@ module M_borrows__simple [#"borrows.rs" 31 0 31 30]
   
   predicate resolve'0 (_1 : borrowed int32) =
     resolve'2 _1
+  
+  predicate invariant'1 [#"borrows.rs" 9 4 9 30] (self : t_NonZero'0) =
+    [%#sborrows8] Int32.to_int self.t_NonZero__0'0 <> 0
+  
+  predicate inv'1 (_1 : t_NonZero'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_NonZero'0 [inv'1 x] . inv'1 x
+  = (invariant'1 x
+  /\ match x with
+    | {t_NonZero__0'0 = a_0} -> true
+    end)
+  
+  predicate invariant'0 (self : borrowed (t_NonZero'0)) =
+    [%#sinvariant7] inv'1 self.current /\ inv'1 self.final
+  
+  predicate inv'0 (_1 : borrowed (t_NonZero'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_NonZero'0) [inv'0 x] . inv'0 x = invariant'0 x
   
   predicate resolve'3 (self : borrowed (t_NonZero'0)) =
     [%#sresolve6] self.final = self.current
@@ -231,14 +231,12 @@ module M_borrows__hard [#"borrows.rs" 38 0 38 28]
   type t_NonZero'0  =
     { t_NonZero__0'0: int32 }
   
-  predicate inv'0 (_1 : t_NonZero'0)
-  
-  predicate inv'1 (_1 : borrowed (t_NonZero'0))
-  
   use prelude.prelude.Int32
   
   predicate invariant'0 [#"borrows.rs" 9 4 9 30] (self : t_NonZero'0) =
     [%#sborrows10] Int32.to_int self.t_NonZero__0'0 <> 0
+  
+  predicate inv'0 (_1 : t_NonZero'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_NonZero'0 [inv'0 x] . inv'0 x
   = (invariant'0 x
@@ -248,6 +246,8 @@ module M_borrows__hard [#"borrows.rs" 38 0 38 28]
   
   predicate invariant'1 (self : borrowed (t_NonZero'0)) =
     [%#sinvariant11] inv'0 self.current /\ inv'0 self.final
+  
+  predicate inv'1 (_1 : borrowed (t_NonZero'0))
   
   axiom inv_axiom'1 [@rewrite] : forall x : borrowed (t_NonZero'0) [inv'1 x] . inv'1 x = invariant'1 x
   
@@ -351,17 +351,20 @@ module M_borrows__tuple [#"borrows.rs" 45 0 45 44]
   
   constant v_MAX'0 : int32 = (2147483647 : int32)
   
-  predicate inv'0 (_1 : (t_NonZero'0, borrowed (t_NonZero'0)))
+  let rec inc'0 (x:borrowed int32) (return'  (ret:()))= {[@expl:inc requires] [%#sborrows4] view'0 x
+    < Int32.to_int (v_MAX'0 : int32)}
+    any [ return' (result:())-> {[%#sborrows5] Int32.to_int x.final = view'0 x + 1} (! return' {result}) ] 
   
-  predicate inv'1 (_1 : t_NonZero'0)
+  predicate resolve'2 (self : borrowed int32) =
+    [%#sresolve7] self.final = self.current
   
-  predicate inv'2 (_1 : borrowed (t_NonZero'0))
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : (t_NonZero'0, borrowed (t_NonZero'0)) [inv'0 x] . inv'0 x
-  = (let (x0, x1) = x in inv'1 x0 /\ inv'2 x1)
+  predicate resolve'0 (_1 : borrowed int32) =
+    resolve'2 _1
   
   predicate invariant'0 [#"borrows.rs" 9 4 9 30] (self : t_NonZero'0) =
     [%#sborrows9] Int32.to_int self.t_NonZero__0'0 <> 0
+  
+  predicate inv'1 (_1 : t_NonZero'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_NonZero'0 [inv'1 x] . inv'1 x
   = (invariant'0 x
@@ -372,17 +375,14 @@ module M_borrows__tuple [#"borrows.rs" 45 0 45 44]
   predicate invariant'1 (self : borrowed (t_NonZero'0)) =
     [%#sinvariant10] inv'1 self.current /\ inv'1 self.final
   
+  predicate inv'2 (_1 : borrowed (t_NonZero'0))
+  
   axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_NonZero'0) [inv'2 x] . inv'2 x = invariant'1 x
   
-  let rec inc'0 (x:borrowed int32) (return'  (ret:()))= {[@expl:inc requires] [%#sborrows4] view'0 x
-    < Int32.to_int (v_MAX'0 : int32)}
-    any [ return' (result:())-> {[%#sborrows5] Int32.to_int x.final = view'0 x + 1} (! return' {result}) ] 
+  predicate inv'0 (_1 : (t_NonZero'0, borrowed (t_NonZero'0)))
   
-  predicate resolve'2 (self : borrowed int32) =
-    [%#sresolve7] self.final = self.current
-  
-  predicate resolve'0 (_1 : borrowed int32) =
-    resolve'2 _1
+  axiom inv_axiom'0 [@rewrite] : forall x : (t_NonZero'0, borrowed (t_NonZero'0)) [inv'0 x] . inv'0 x
+  = (let (x0, x1) = x in inv'1 x0 /\ inv'2 x1)
   
   predicate resolve'4 (_1 : t_NonZero'0) =
     true
@@ -467,29 +467,6 @@ module M_borrows__partial_move [#"borrows.rs" 53 0 53 47]
   
   constant v_MAX'0 : int32 = (2147483647 : int32)
   
-  predicate inv'0 (_1 : borrowed (t_NonZero'0))
-  
-  predicate inv'2 (_1 : t_NonZero'0)
-  
-  predicate invariant'0 (self : borrowed (t_NonZero'0)) =
-    [%#sinvariant8] inv'2 self.current /\ inv'2 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_NonZero'0) [inv'0 x] . inv'0 x = invariant'0 x
-  
-  predicate inv'1 (_1 : (t_NonZero'0, borrowed (t_NonZero'0)))
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : (t_NonZero'0, borrowed (t_NonZero'0)) [inv'1 x] . inv'1 x
-  = (let (x0, x1) = x in inv'2 x0 /\ inv'0 x1)
-  
-  predicate invariant'1 [#"borrows.rs" 9 4 9 30] (self : t_NonZero'0) =
-    [%#sborrows9] Int32.to_int self.t_NonZero__0'0 <> 0
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_NonZero'0 [inv'2 x] . inv'2 x
-  = (invariant'1 x
-  /\ match x with
-    | {t_NonZero__0'0 = a_0} -> true
-    end)
-  
   let rec inc'0 (x:borrowed int32) (return'  (ret:()))= {[@expl:inc requires] [%#sborrows4] view'0 x
     < Int32.to_int (v_MAX'0 : int32)}
     any [ return' (result:())-> {[%#sborrows5] Int32.to_int x.final = view'0 x + 1} (! return' {result}) ] 
@@ -500,6 +477,24 @@ module M_borrows__partial_move [#"borrows.rs" 53 0 53 47]
   predicate resolve'0 (_1 : borrowed int32) =
     resolve'2 _1
   
+  predicate invariant'1 [#"borrows.rs" 9 4 9 30] (self : t_NonZero'0) =
+    [%#sborrows9] Int32.to_int self.t_NonZero__0'0 <> 0
+  
+  predicate inv'2 (_1 : t_NonZero'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_NonZero'0 [inv'2 x] . inv'2 x
+  = (invariant'1 x
+  /\ match x with
+    | {t_NonZero__0'0 = a_0} -> true
+    end)
+  
+  predicate invariant'0 (self : borrowed (t_NonZero'0)) =
+    [%#sinvariant8] inv'2 self.current /\ inv'2 self.final
+  
+  predicate inv'0 (_1 : borrowed (t_NonZero'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_NonZero'0) [inv'0 x] . inv'0 x = invariant'0 x
+  
   predicate resolve'3 (self : borrowed (t_NonZero'0)) =
     [%#sresolve7] self.final = self.current
   
@@ -507,6 +502,11 @@ module M_borrows__partial_move [#"borrows.rs" 53 0 53 47]
     resolve'3 _1
   
   use prelude.prelude.Intrinsic
+  
+  predicate inv'1 (_1 : (t_NonZero'0, borrowed (t_NonZero'0)))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : (t_NonZero'0, borrowed (t_NonZero'0)) [inv'1 x] . inv'1 x
+  = (let (x0, x1) = x in inv'2 x0 /\ inv'0 x1)
   
   meta "compute_max_steps" 1000000
   
@@ -584,29 +584,6 @@ module M_borrows__destruct [#"borrows.rs" 61 0 61 43]
   
   constant v_MAX'0 : int32 = (2147483647 : int32)
   
-  predicate inv'0 (_1 : borrowed (t_NonZero'0))
-  
-  predicate inv'2 (_1 : t_NonZero'0)
-  
-  predicate invariant'0 (self : borrowed (t_NonZero'0)) =
-    [%#sinvariant8] inv'2 self.current /\ inv'2 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_NonZero'0) [inv'0 x] . inv'0 x = invariant'0 x
-  
-  predicate inv'1 (_1 : (t_NonZero'0, borrowed (t_NonZero'0)))
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : (t_NonZero'0, borrowed (t_NonZero'0)) [inv'1 x] . inv'1 x
-  = (let (x0, x1) = x in inv'2 x0 /\ inv'0 x1)
-  
-  predicate invariant'1 [#"borrows.rs" 9 4 9 30] (self : t_NonZero'0) =
-    [%#sborrows9] Int32.to_int self.t_NonZero__0'0 <> 0
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_NonZero'0 [inv'2 x] . inv'2 x
-  = (invariant'1 x
-  /\ match x with
-    | {t_NonZero__0'0 = a_0} -> true
-    end)
-  
   let rec inc'0 (x:borrowed int32) (return'  (ret:()))= {[@expl:inc requires] [%#sborrows4] view'0 x
     < Int32.to_int (v_MAX'0 : int32)}
     any [ return' (result:())-> {[%#sborrows5] Int32.to_int x.final = view'0 x + 1} (! return' {result}) ] 
@@ -617,6 +594,24 @@ module M_borrows__destruct [#"borrows.rs" 61 0 61 43]
   predicate resolve'0 (_1 : borrowed int32) =
     resolve'2 _1
   
+  predicate invariant'1 [#"borrows.rs" 9 4 9 30] (self : t_NonZero'0) =
+    [%#sborrows9] Int32.to_int self.t_NonZero__0'0 <> 0
+  
+  predicate inv'2 (_1 : t_NonZero'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_NonZero'0 [inv'2 x] . inv'2 x
+  = (invariant'1 x
+  /\ match x with
+    | {t_NonZero__0'0 = a_0} -> true
+    end)
+  
+  predicate invariant'0 (self : borrowed (t_NonZero'0)) =
+    [%#sinvariant8] inv'2 self.current /\ inv'2 self.final
+  
+  predicate inv'0 (_1 : borrowed (t_NonZero'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_NonZero'0) [inv'0 x] . inv'0 x = invariant'0 x
+  
   predicate resolve'3 (self : borrowed (t_NonZero'0)) =
     [%#sresolve7] self.final = self.current
   
@@ -624,6 +619,11 @@ module M_borrows__destruct [#"borrows.rs" 61 0 61 43]
     resolve'3 _1
   
   use prelude.prelude.Intrinsic
+  
+  predicate inv'1 (_1 : (t_NonZero'0, borrowed (t_NonZero'0)))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : (t_NonZero'0, borrowed (t_NonZero'0)) [inv'1 x] . inv'1 x
+  = (let (x0, x1) = x in inv'2 x0 /\ inv'0 x1)
   
   meta "compute_max_steps" 1000000
   
@@ -681,27 +681,12 @@ module M_borrows__frozen_dead [#"borrows.rs" 69 0 69 66]
   type t_NonZero'0  =
     { t_NonZero__0'0: int32 }
   
-  predicate inv'0 (_1 : t_NonZero'0)
-  
-  predicate inv'1 (_1 : borrowed (t_NonZero'0))
-  
-  predicate resolve'2 (self : borrowed (t_NonZero'0)) =
-    [%#sresolve6] self.final = self.current
-  
-  predicate resolve'0 (_1 : borrowed (t_NonZero'0)) =
-    resolve'2 _1
-  
-  use prelude.prelude.Int
-  
   use prelude.prelude.Int32
-  
-  function view'0 (self : borrowed int32) : int =
-    [%#smodel7] Int32.to_int self.current
-  
-  constant v_MAX'0 : int32 = (2147483647 : int32)
   
   predicate invariant'0 [#"borrows.rs" 9 4 9 30] (self : t_NonZero'0) =
     [%#sborrows8] Int32.to_int self.t_NonZero__0'0 <> 0
+  
+  predicate inv'0 (_1 : t_NonZero'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_NonZero'0 [inv'0 x] . inv'0 x
   = (invariant'0 x
@@ -712,7 +697,22 @@ module M_borrows__frozen_dead [#"borrows.rs" 69 0 69 66]
   predicate invariant'1 (self : borrowed (t_NonZero'0)) =
     [%#sinvariant9] inv'0 self.current /\ inv'0 self.final
   
+  predicate inv'1 (_1 : borrowed (t_NonZero'0))
+  
   axiom inv_axiom'1 [@rewrite] : forall x : borrowed (t_NonZero'0) [inv'1 x] . inv'1 x = invariant'1 x
+  
+  predicate resolve'2 (self : borrowed (t_NonZero'0)) =
+    [%#sresolve6] self.final = self.current
+  
+  predicate resolve'0 (_1 : borrowed (t_NonZero'0)) =
+    resolve'2 _1
+  
+  use prelude.prelude.Int
+  
+  function view'0 (self : borrowed int32) : int =
+    [%#smodel7] Int32.to_int self.current
+  
+  constant v_MAX'0 : int32 = (2147483647 : int32)
   
   let rec inc'0 (x:borrowed int32) (return'  (ret:()))= {[@expl:inc requires] [%#sborrows4] view'0 x
     < Int32.to_int (v_MAX'0 : int32)}
@@ -801,24 +801,6 @@ module M_borrows__qyi5556307355051076399__foo [#"borrows.rs" 93 4 93 25] (* SumT
   
   constant v_MAX'0 : int32 = (2147483647 : int32)
   
-  predicate inv'0 (_1 : borrowed (t_SumTo10'0))
-  
-  predicate inv'1 (_1 : t_SumTo10'0)
-  
-  predicate invariant'0 (self : borrowed (t_SumTo10'0)) =
-    [%#sinvariant8] inv'1 self.current /\ inv'1 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_SumTo10'0) [inv'0 x] . inv'0 x = invariant'0 x
-  
-  predicate invariant'1 [#"borrows.rs" 86 4 86 30] (self : t_SumTo10'0) =
-    [%#sborrows9] Int32.to_int self.t_SumTo10__a'0 + Int32.to_int self.t_SumTo10__b'0 = 10
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_SumTo10'0 [inv'1 x] . inv'1 x
-  = (invariant'1 x
-  /\ match x with
-    | {t_SumTo10__a'0 = a ; t_SumTo10__b'0 = b} -> true
-    end)
-  
   let rec inc'0 (x:borrowed int32) (return'  (ret:()))= {[@expl:inc requires] [%#sborrows2] view'0 x
     < Int32.to_int (v_MAX'0 : int32)}
     any [ return' (result:())-> {[%#sborrows3] Int32.to_int x.final = view'0 x + 1} (! return' {result}) ] 
@@ -834,6 +816,24 @@ module M_borrows__qyi5556307355051076399__foo [#"borrows.rs" 93 4 93 25] (* SumT
   let rec dec'0 (x:borrowed int32) (return'  (ret:()))= {[@expl:dec requires] [%#sborrows4] view'0 x
     > Int32.to_int (v_MIN'0 : int32)}
     any [ return' (result:())-> {[%#sborrows5] Int32.to_int x.final = view'0 x - 1} (! return' {result}) ] 
+  
+  predicate invariant'1 [#"borrows.rs" 86 4 86 30] (self : t_SumTo10'0) =
+    [%#sborrows9] Int32.to_int self.t_SumTo10__a'0 + Int32.to_int self.t_SumTo10__b'0 = 10
+  
+  predicate inv'1 (_1 : t_SumTo10'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_SumTo10'0 [inv'1 x] . inv'1 x
+  = (invariant'1 x
+  /\ match x with
+    | {t_SumTo10__a'0 = a ; t_SumTo10__b'0 = b} -> true
+    end)
+  
+  predicate invariant'0 (self : borrowed (t_SumTo10'0)) =
+    [%#sinvariant8] inv'1 self.current /\ inv'1 self.final
+  
+  predicate inv'0 (_1 : borrowed (t_SumTo10'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_SumTo10'0) [inv'0 x] . inv'0 x = invariant'0 x
   
   predicate resolve'3 (self : borrowed (t_SumTo10'0)) =
     [%#sresolve7] self.final = self.current
