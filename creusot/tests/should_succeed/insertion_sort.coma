@@ -63,6 +63,8 @@ module M_insertion_sort__insertion_sort [#"insertion_sort.rs" 21 0 21 40]
   
   predicate inv'2 (_1 : slice int32)
   
+  axiom inv_axiom'2 [@rewrite] : forall x : slice int32 [inv'2 x] . inv'2 x = true
+  
   use seq.Seq
   
   use seq.Seq
@@ -86,41 +88,17 @@ module M_insertion_sort__insertion_sort [#"insertion_sort.rs" 21 0 21 40]
   function view'3 (self : slice int32) : Seq.seq int32 =
     [%#smodel39] view'2 self
   
+  let rec len'0 (self:slice int32) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'2 self}
+    any
+    [ return' (result:usize)-> {[%#sslice23] Seq.length (view'3 self) = UIntSize.to_int result} (! return' {result}) ]
+    
+  
   type t_Range'0  =
     { t_Range__start'0: usize; t_Range__end'0: usize }
   
   predicate inv'0 (_1 : t_Range'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Range'0 [inv'0 x] . inv'0 x = true
-  
-  use seq.Seq
-  
-  predicate inv'1 (_1 : Seq.seq usize)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq usize [inv'1 x] . inv'1 x = true
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : slice int32 [inv'2 x] . inv'2 x = true
-  
-  predicate inv'3 (_1 : borrowed (t_Range'0))
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed (t_Range'0) [inv'3 x] . inv'3 x = true
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 usize
-  
-  predicate inv'4 (_1 : t_Option'0)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
-  
-  predicate inv'5 (_1 : borrowed (slice int32))
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : borrowed (slice int32) [inv'5 x] . inv'5 x = true
-  
-  let rec len'0 (self:slice int32) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'2 self}
-    any
-    [ return' (result:usize)-> {[%#sslice23] Seq.length (view'3 self) = UIntSize.to_int result} (! return' {result}) ]
-    
   
   predicate into_iter_pre'0 (self : t_Range'0) =
     [%#siter40] true
@@ -133,6 +111,8 @@ module M_insertion_sort__insertion_sort [#"insertion_sort.rs" 21 0 21 40]
     any [ return' (result:t_Range'0)-> {inv'0 result} {[%#siter24] into_iter_post'0 self result} (! return' {result}) ] 
   
   use prelude.prelude.Snapshot
+  
+  use seq.Seq
   
   use seq.Seq
   
@@ -182,6 +162,22 @@ module M_insertion_sort__insertion_sort [#"insertion_sort.rs" 21 0 21 40]
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'0 (Seq.get visited i) = deep_model'0 self.t_Range__start'0 + i)
   
+  predicate inv'1 (_1 : Seq.seq usize)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq usize [inv'1 x] . inv'1 x = true
+  
+  predicate inv'3 (_1 : borrowed (t_Range'0))
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed (t_Range'0) [inv'3 x] . inv'3 x = true
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 usize
+  
+  predicate inv'4 (_1 : t_Option'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
+  
   predicate resolve'2 (self : borrowed (t_Range'0)) =
     [%#sresolve52] self.final = self.current
   
@@ -216,6 +212,10 @@ module M_insertion_sort__insertion_sort [#"insertion_sort.rs" 21 0 21 40]
   
   function index_logic'1 [@inline:trivial] (self : slice int32) (ix : int) : int32 =
     [%#sops32] Seq.get (view'2 self) ix
+  
+  predicate inv'5 (_1 : borrowed (slice int32))
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : borrowed (slice int32) [inv'5 x] . inv'5 x = true
   
   use seq.Permut
   

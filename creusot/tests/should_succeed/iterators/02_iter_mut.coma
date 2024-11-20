@@ -24,14 +24,6 @@ module M_02_iter_mut__qyi4305820612590367313__produces_refl [#"02_iter_mut.rs" 5
   type t_IterMut'0  =
     { t_IterMut__inner'0: borrowed (slice t_T'0) }
   
-  predicate inv'0 (_1 : t_IterMut'0)
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
   use seq.Seq
   
   use prelude.prelude.UIntSize
@@ -44,11 +36,61 @@ module M_02_iter_mut__qyi4305820612590367313__produces_refl [#"02_iter_mut.rs" 5
   
   use prelude.prelude.Slice
   
+  use seq.Seq
+  
   function view'1 (self : slice t_T'0) : Seq.seq t_T'0
   
   axiom view'1_spec : forall self : slice t_T'0 . ([%#sslice8] Seq.length (view'1 self)
   <= UIntSize.to_int (v_MAX'0 : usize))
   && ([%#sslice9] view'1 self = Slice.id self)
+  
+  predicate invariant'0 [#"02_iter_mut.rs" 20 4 20 30] (self : t_IterMut'0) =
+    [%#s02_iter_mut7] Seq.length (view'1 (self.t_IterMut__inner'0).final)
+    = Seq.length (view'1 (self.t_IterMut__inner'0).current)
+  
+  use seq.Seq
+  
+  predicate inv'5 (_1 : t_T'0)
+  
+  predicate invariant'4 (self : t_T'0) =
+    [%#sboxed14] inv'5 self
+  
+  predicate inv'4 (_1 : t_T'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_T'0 [inv'4 x] . inv'4 x = invariant'4 x
+  
+  predicate invariant'3 (self : Seq.seq t_T'0) =
+    [%#sseq13] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
+  
+  predicate inv'3 (_1 : Seq.seq t_T'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq t_T'0 [inv'3 x] . inv'3 x = invariant'3 x
+  
+  predicate invariant'2 (self : slice t_T'0) =
+    [%#sslice12] inv'3 (view'1 self)
+  
+  predicate inv'2 (_1 : slice t_T'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : slice t_T'0 [inv'2 x] . inv'2 x = invariant'2 x
+  
+  predicate invariant'1 (self : borrowed (slice t_T'0)) =
+    [%#sinvariant11] inv'2 self.current /\ inv'2 self.final
+  
+  predicate inv'1 (_1 : borrowed (slice t_T'0))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'1 x] . inv'1 x = invariant'1 x
+  
+  predicate inv'0 (_1 : t_IterMut'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_IterMut'0 [inv'0 x] . inv'0 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_IterMut__inner'0 = inner} -> inv'1 inner
+    end)
+  
+  use seq.Seq
+  
+  use seq.Seq
   
   function view'0 (self : borrowed (slice t_T'0)) : Seq.seq t_T'0 =
     [%#smodel4] view'1 self.current
@@ -82,48 +124,6 @@ module M_02_iter_mut__qyi4305820612590367313__produces_refl [#"02_iter_mut.rs" 5
     = (Seq.get (Seq.(++) visited (to_mut_seq'0 tl.t_IterMut__inner'0)) i).current
     /\ (Seq.get (to_mut_seq'0 self.t_IterMut__inner'0) i).final
     = (Seq.get (Seq.(++) visited (to_mut_seq'0 tl.t_IterMut__inner'0)) i).final)
-  
-  predicate invariant'0 [#"02_iter_mut.rs" 20 4 20 30] (self : t_IterMut'0) =
-    [%#s02_iter_mut7] Seq.length (view'1 (self.t_IterMut__inner'0).final)
-    = Seq.length (view'1 (self.t_IterMut__inner'0).current)
-  
-  predicate inv'1 (_1 : borrowed (slice t_T'0))
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_IterMut'0 [inv'0 x] . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | {t_IterMut__inner'0 = inner} -> inv'1 inner
-    end)
-  
-  predicate inv'2 (_1 : slice t_T'0)
-  
-  predicate invariant'1 (self : borrowed (slice t_T'0)) =
-    [%#sinvariant11] inv'2 self.current /\ inv'2 self.final
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'1 x] . inv'1 x = invariant'1 x
-  
-  predicate inv'3 (_1 : Seq.seq t_T'0)
-  
-  predicate invariant'2 (self : slice t_T'0) =
-    [%#sslice12] inv'3 (view'1 self)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : slice t_T'0 [inv'2 x] . inv'2 x = invariant'2 x
-  
-  use seq.Seq
-  
-  predicate inv'4 (_1 : t_T'0)
-  
-  predicate invariant'3 (self : Seq.seq t_T'0) =
-    [%#sseq13] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq t_T'0 [inv'3 x] . inv'3 x = invariant'3 x
-  
-  predicate inv'5 (_1 : t_T'0)
-  
-  predicate invariant'4 (self : t_T'0) =
-    [%#sboxed14] inv'5 self
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_T'0 [inv'4 x] . inv'4 x = invariant'4 x
   
   constant self  : t_IterMut'0
   
@@ -162,12 +162,6 @@ module M_02_iter_mut__qyi4305820612590367313__produces_trans [#"02_iter_mut.rs" 
   type t_IterMut'0  =
     { t_IterMut__inner'0: borrowed (slice t_T'0) }
   
-  predicate inv'0 (_1 : t_IterMut'0)
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
   use seq.Seq
   
   use prelude.prelude.UIntSize
@@ -180,11 +174,59 @@ module M_02_iter_mut__qyi4305820612590367313__produces_trans [#"02_iter_mut.rs" 
   
   use prelude.prelude.Slice
   
+  use seq.Seq
+  
   function view'1 (self : slice t_T'0) : Seq.seq t_T'0
   
   axiom view'1_spec : forall self : slice t_T'0 . ([%#sslice12] Seq.length (view'1 self)
   <= UIntSize.to_int (v_MAX'0 : usize))
   && ([%#sslice13] view'1 self = Slice.id self)
+  
+  predicate invariant'0 [#"02_iter_mut.rs" 20 4 20 30] (self : t_IterMut'0) =
+    [%#s02_iter_mut11] Seq.length (view'1 (self.t_IterMut__inner'0).final)
+    = Seq.length (view'1 (self.t_IterMut__inner'0).current)
+  
+  use seq.Seq
+  
+  predicate inv'5 (_1 : t_T'0)
+  
+  predicate invariant'4 (self : t_T'0) =
+    [%#sboxed18] inv'5 self
+  
+  predicate inv'4 (_1 : t_T'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_T'0 [inv'4 x] . inv'4 x = invariant'4 x
+  
+  predicate invariant'3 (self : Seq.seq t_T'0) =
+    [%#sseq17] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
+  
+  predicate inv'3 (_1 : Seq.seq t_T'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq t_T'0 [inv'3 x] . inv'3 x = invariant'3 x
+  
+  predicate invariant'2 (self : slice t_T'0) =
+    [%#sslice16] inv'3 (view'1 self)
+  
+  predicate inv'2 (_1 : slice t_T'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : slice t_T'0 [inv'2 x] . inv'2 x = invariant'2 x
+  
+  predicate invariant'1 (self : borrowed (slice t_T'0)) =
+    [%#sinvariant15] inv'2 self.current /\ inv'2 self.final
+  
+  predicate inv'1 (_1 : borrowed (slice t_T'0))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'1 x] . inv'1 x = invariant'1 x
+  
+  predicate inv'0 (_1 : t_IterMut'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_IterMut'0 [inv'0 x] . inv'0 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_IterMut__inner'0 = inner} -> inv'1 inner
+    end)
+  
+  use seq.Seq
   
   function view'0 (self : borrowed (slice t_T'0)) : Seq.seq t_T'0 =
     [%#smodel8] view'1 self.current
@@ -218,48 +260,6 @@ module M_02_iter_mut__qyi4305820612590367313__produces_trans [#"02_iter_mut.rs" 
     = (Seq.get (Seq.(++) visited (to_mut_seq'0 tl.t_IterMut__inner'0)) i).current
     /\ (Seq.get (to_mut_seq'0 self.t_IterMut__inner'0) i).final
     = (Seq.get (Seq.(++) visited (to_mut_seq'0 tl.t_IterMut__inner'0)) i).final)
-  
-  predicate invariant'0 [#"02_iter_mut.rs" 20 4 20 30] (self : t_IterMut'0) =
-    [%#s02_iter_mut11] Seq.length (view'1 (self.t_IterMut__inner'0).final)
-    = Seq.length (view'1 (self.t_IterMut__inner'0).current)
-  
-  predicate inv'1 (_1 : borrowed (slice t_T'0))
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_IterMut'0 [inv'0 x] . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | {t_IterMut__inner'0 = inner} -> inv'1 inner
-    end)
-  
-  predicate inv'2 (_1 : slice t_T'0)
-  
-  predicate invariant'1 (self : borrowed (slice t_T'0)) =
-    [%#sinvariant15] inv'2 self.current /\ inv'2 self.final
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'1 x] . inv'1 x = invariant'1 x
-  
-  predicate inv'3 (_1 : Seq.seq t_T'0)
-  
-  predicate invariant'2 (self : slice t_T'0) =
-    [%#sslice16] inv'3 (view'1 self)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : slice t_T'0 [inv'2 x] . inv'2 x = invariant'2 x
-  
-  use seq.Seq
-  
-  predicate inv'4 (_1 : t_T'0)
-  
-  predicate invariant'3 (self : Seq.seq t_T'0) =
-    [%#sseq17] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq t_T'0 [inv'3 x] . inv'3 x = invariant'3 x
-  
-  predicate inv'5 (_1 : t_T'0)
-  
-  predicate invariant'4 (self : t_T'0) =
-    [%#sboxed18] inv'5 self
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_T'0 [inv'4 x] . inv'4 x = invariant'4 x
   
   constant a  : t_IterMut'0
   
@@ -307,21 +307,6 @@ module M_02_iter_mut__qyi4305820612590367313__next [#"02_iter_mut.rs" 67 4 67 44
   
   type t_T'0
   
-  predicate inv'0 (_1 : borrowed (slice t_T'0))
-  
-  type t_IterMut'0  =
-    { t_IterMut__inner'0: borrowed (slice t_T'0) }
-  
-  predicate inv'3 (_1 : borrowed (borrowed (slice t_T'0)))
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 (borrowed t_T'0)
-  
-  predicate inv'2 (_1 : t_Option'0)
-  
-  use prelude.prelude.Int
-  
   use seq.Seq
   
   use prelude.prelude.UIntSize
@@ -329,6 +314,8 @@ module M_02_iter_mut__qyi4305820612590367313__next [#"02_iter_mut.rs" 67 4 67 44
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
   use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
   
   use prelude.prelude.Slice
   
@@ -342,6 +329,67 @@ module M_02_iter_mut__qyi4305820612590367313__next [#"02_iter_mut.rs" 67 4 67 44
   
   use seq.Seq
   
+  predicate inv'7 (_1 : t_T'0)
+  
+  predicate invariant'7 (self : t_T'0) =
+    [%#sboxed18] inv'7 self
+  
+  predicate inv'9 (_1 : t_T'0)
+  
+  axiom inv_axiom'8 [@rewrite] : forall x : t_T'0 [inv'9 x] . inv'9 x = invariant'7 x
+  
+  predicate invariant'6 (self : Seq.seq t_T'0) =
+    [%#sseq17] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'9 (Seq.get self i)
+  
+  predicate inv'8 (_1 : Seq.seq t_T'0)
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : Seq.seq t_T'0 [inv'8 x] . inv'8 x = invariant'6 x
+  
+  predicate invariant'4 (self : slice t_T'0) =
+    [%#sslice15] inv'8 (view'0 self)
+  
+  predicate inv'5 (_1 : slice t_T'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : slice t_T'0 [inv'5 x] . inv'5 x = invariant'4 x
+  
+  predicate invariant'0 (self : borrowed (slice t_T'0)) =
+    [%#sinvariant14] inv'5 self.current /\ inv'5 self.final
+  
+  predicate inv'0 (_1 : borrowed (slice t_T'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'0 x] . inv'0 x = invariant'0 x
+  
+  type t_IterMut'0  =
+    { t_IterMut__inner'0: borrowed (slice t_T'0) }
+  
+  predicate invariant'2 (self : borrowed (borrowed (slice t_T'0))) =
+    [%#sinvariant14] inv'0 self.current /\ inv'0 self.final
+  
+  predicate inv'3 (_1 : borrowed (borrowed (slice t_T'0)))
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed (borrowed (slice t_T'0)) [inv'3 x] . inv'3 x = invariant'2 x
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 (borrowed t_T'0)
+  
+  predicate invariant'3 (self : borrowed t_T'0) =
+    [%#sinvariant14] inv'7 self.current /\ inv'7 self.final
+  
+  predicate inv'4 (_1 : borrowed t_T'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : borrowed t_T'0 [inv'4 x] . inv'4 x = invariant'3 x
+  
+  predicate inv'2 (_1 : t_Option'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x
+  = match x with
+    | C_None'0 -> true
+    | C_Some'0 a_0 -> inv'4 a_0
+    end
+  
+  use seq.Seq
+  
   function index_logic'0 [@inline:trivial] (self : slice t_T'0) (ix : int) : t_T'0 =
     [%#sops6] Seq.get (view'0 self) ix
   
@@ -351,73 +399,6 @@ module M_02_iter_mut__qyi4305820612590367313__next [#"02_iter_mut.rs" 67 4 67 44
     [%#sseq9] Seq.([..]) self 1 (Seq.length self)
   
   use seq.Seq
-  
-  predicate inv'5 (_1 : slice t_T'0)
-  
-  predicate invariant'0 (self : borrowed (slice t_T'0)) =
-    [%#sinvariant14] inv'5 self.current /\ inv'5 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'0 x] . inv'0 x = invariant'0 x
-  
-  predicate inv'1 (_1 : borrowed (t_IterMut'0))
-  
-  predicate inv'6 (_1 : t_IterMut'0)
-  
-  predicate invariant'1 (self : borrowed (t_IterMut'0)) =
-    [%#sinvariant14] inv'6 self.current /\ inv'6 self.final
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : borrowed (t_IterMut'0) [inv'1 x] . inv'1 x = invariant'1 x
-  
-  predicate inv'4 (_1 : borrowed t_T'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x
-  = match x with
-    | C_None'0 -> true
-    | C_Some'0 a_0 -> inv'4 a_0
-    end
-  
-  predicate invariant'2 (self : borrowed (borrowed (slice t_T'0))) =
-    [%#sinvariant14] inv'0 self.current /\ inv'0 self.final
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed (borrowed (slice t_T'0)) [inv'3 x] . inv'3 x = invariant'2 x
-  
-  predicate inv'7 (_1 : t_T'0)
-  
-  predicate invariant'3 (self : borrowed t_T'0) =
-    [%#sinvariant14] inv'7 self.current /\ inv'7 self.final
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : borrowed t_T'0 [inv'4 x] . inv'4 x = invariant'3 x
-  
-  predicate inv'8 (_1 : Seq.seq t_T'0)
-  
-  predicate invariant'4 (self : slice t_T'0) =
-    [%#sslice15] inv'8 (view'0 self)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : slice t_T'0 [inv'5 x] . inv'5 x = invariant'4 x
-  
-  predicate invariant'5 [#"02_iter_mut.rs" 20 4 20 30] (self : t_IterMut'0) =
-    [%#s02_iter_mut16] Seq.length (view'0 (self.t_IterMut__inner'0).final)
-    = Seq.length (view'0 (self.t_IterMut__inner'0).current)
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : t_IterMut'0 [inv'6 x] . inv'6 x
-  = (invariant'5 x
-  /\ match x with
-    | {t_IterMut__inner'0 = inner} -> inv'0 inner
-    end)
-  
-  use seq.Seq
-  
-  predicate inv'9 (_1 : t_T'0)
-  
-  predicate invariant'6 (self : Seq.seq t_T'0) =
-    [%#sseq17] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'9 (Seq.get self i)
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : Seq.seq t_T'0 [inv'8 x] . inv'8 x = invariant'6 x
-  
-  predicate invariant'7 (self : t_T'0) =
-    [%#sboxed18] inv'7 self
-  
-  axiom inv_axiom'8 [@rewrite] : forall x : t_T'0 [inv'9 x] . inv'9 x = invariant'7 x
   
   let rec take_first_mut'0 (self:borrowed (borrowed (slice t_T'0))) (return'  (ret:t_Option'0))= {[@expl:take_first_mut 'self' type invariant] inv'3 self}
     any
@@ -436,6 +417,25 @@ module M_02_iter_mut__qyi4305820612590367313__next [#"02_iter_mut.rs" 67 4 67 44
         end}
       (! return' {result}) ]
     
+  
+  predicate invariant'5 [#"02_iter_mut.rs" 20 4 20 30] (self : t_IterMut'0) =
+    [%#s02_iter_mut16] Seq.length (view'0 (self.t_IterMut__inner'0).final)
+    = Seq.length (view'0 (self.t_IterMut__inner'0).current)
+  
+  predicate inv'6 (_1 : t_IterMut'0)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : t_IterMut'0 [inv'6 x] . inv'6 x
+  = (invariant'5 x
+  /\ match x with
+    | {t_IterMut__inner'0 = inner} -> inv'0 inner
+    end)
+  
+  predicate invariant'1 (self : borrowed (t_IterMut'0)) =
+    [%#sinvariant14] inv'6 self.current /\ inv'6 self.final
+  
+  predicate inv'1 (_1 : borrowed (t_IterMut'0))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : borrowed (t_IterMut'0) [inv'1 x] . inv'1 x = invariant'1 x
   
   predicate resolve'1 (self : borrowed (t_IterMut'0)) =
     [%#sresolve10] self.final = self.current
@@ -541,8 +541,6 @@ module M_02_iter_mut__qyi7060081090368749043__into_iter [#"02_iter_mut.rs" 74 4 
   
   use prelude.prelude.Intrinsic
   
-  predicate inv'0 (_1 : t_IterMut'0)
-  
   use seq.Seq
   
   use prelude.prelude.UIntSize
@@ -567,43 +565,45 @@ module M_02_iter_mut__qyi7060081090368749043__into_iter [#"02_iter_mut.rs" 74 4 
     [%#s02_iter_mut3] Seq.length (view'0 (self.t_IterMut__inner'0).final)
     = Seq.length (view'0 (self.t_IterMut__inner'0).current)
   
-  predicate inv'1 (_1 : borrowed (slice t_T'0))
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_IterMut'0 [inv'0 x] . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | {t_IterMut__inner'0 = inner} -> inv'1 inner
-    end)
-  
-  predicate inv'2 (_1 : slice t_T'0)
-  
-  predicate invariant'1 (self : borrowed (slice t_T'0)) =
-    [%#sinvariant6] inv'2 self.current /\ inv'2 self.final
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'1 x] . inv'1 x = invariant'1 x
-  
-  predicate inv'3 (_1 : Seq.seq t_T'0)
-  
-  predicate invariant'2 (self : slice t_T'0) =
-    [%#sslice7] inv'3 (view'0 self)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : slice t_T'0 [inv'2 x] . inv'2 x = invariant'2 x
-  
   use seq.Seq
-  
-  predicate inv'4 (_1 : t_T'0)
-  
-  predicate invariant'3 (self : Seq.seq t_T'0) =
-    [%#sseq8] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq t_T'0 [inv'3 x] . inv'3 x = invariant'3 x
   
   predicate inv'5 (_1 : t_T'0)
   
   predicate invariant'4 (self : t_T'0) =
     [%#sboxed9] inv'5 self
   
+  predicate inv'4 (_1 : t_T'0)
+  
   axiom inv_axiom'4 [@rewrite] : forall x : t_T'0 [inv'4 x] . inv'4 x = invariant'4 x
+  
+  predicate invariant'3 (self : Seq.seq t_T'0) =
+    [%#sseq8] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
+  
+  predicate inv'3 (_1 : Seq.seq t_T'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq t_T'0 [inv'3 x] . inv'3 x = invariant'3 x
+  
+  predicate invariant'2 (self : slice t_T'0) =
+    [%#sslice7] inv'3 (view'0 self)
+  
+  predicate inv'2 (_1 : slice t_T'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : slice t_T'0 [inv'2 x] . inv'2 x = invariant'2 x
+  
+  predicate invariant'1 (self : borrowed (slice t_T'0)) =
+    [%#sinvariant6] inv'2 self.current /\ inv'2 self.final
+  
+  predicate inv'1 (_1 : borrowed (slice t_T'0))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'1 x] . inv'1 x = invariant'1 x
+  
+  predicate inv'0 (_1 : t_IterMut'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_IterMut'0 [inv'0 x] . inv'0 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_IterMut__inner'0 = inner} -> inv'1 inner
+    end)
   
   meta "compute_max_steps" 1000000
   
@@ -663,16 +663,6 @@ module M_02_iter_mut__iter_mut [#"02_iter_mut.rs" 82 0 82 55]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
   
-  predicate inv'0 (_1 : t_Vec'0)
-  
-  predicate inv'3 (_1 : borrowed (t_Vec'0))
-  
-  predicate inv'5 (_1 : ())
-  
-  type t_T'0
-  
-  use seq.Seq
-  
   use seq.Seq
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
@@ -681,9 +671,49 @@ module M_02_iter_mut__iter_mut [#"02_iter_mut.rs" 82 0 82 55]
   
   use prelude.prelude.Int
   
+  type t_T'0
+  
+  use seq.Seq
+  
   function view'3 (self : t_Vec'0) : Seq.seq t_T'0
   
   axiom view'3_spec : forall self : t_Vec'0 . [%#svec13] Seq.length (view'3 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  use seq.Seq
+  
+  predicate inv'8 (_1 : t_T'0)
+  
+  predicate invariant'6 (self : t_T'0) =
+    [%#sboxed23] inv'8 self
+  
+  predicate inv'7 (_1 : t_T'0)
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : t_T'0 [inv'7 x] . inv'7 x = invariant'6 x
+  
+  predicate invariant'5 (self : Seq.seq t_T'0) =
+    [%#sseq22] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'7 (Seq.get self i)
+  
+  predicate inv'6 (_1 : Seq.seq t_T'0)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : Seq.seq t_T'0 [inv'6 x] . inv'6 x = invariant'5 x
+  
+  predicate invariant'0 (self : t_Vec'0) =
+    [%#svec18] inv'6 (view'3 self)
+  
+  predicate inv'0 (_1 : t_Vec'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = invariant'0 x
+  
+  predicate invariant'3 (self : borrowed (t_Vec'0)) =
+    [%#sinvariant20] inv'0 self.current /\ inv'0 self.final
+  
+  predicate inv'3 (_1 : borrowed (t_Vec'0))
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'3 x] . inv'3 x = invariant'3 x
+  
+  predicate inv'5 (_1 : ())
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : () [inv'5 x] . inv'5 x = true
   
   function view'1 (self : borrowed (t_Vec'0)) : Seq.seq t_T'0 =
     [%#smodel10] view'3 self.current
@@ -693,8 +723,6 @@ module M_02_iter_mut__iter_mut [#"02_iter_mut.rs" 82 0 82 55]
   
   use prelude.prelude.Slice
   
-  predicate inv'2 (_1 : borrowed (slice t_T'0))
-  
   use prelude.prelude.Slice
   
   function view'2 (self : slice t_T'0) : Seq.seq t_T'0
@@ -703,68 +731,25 @@ module M_02_iter_mut__iter_mut [#"02_iter_mut.rs" 82 0 82 55]
   <= UIntSize.to_int (v_MAX'0 : usize))
   && ([%#sslice12] view'2 self = Slice.id self)
   
-  predicate has_value'0 (self : ()) (seq : Seq.seq t_T'0) (out : slice t_T'0) =
-    [%#sslice15] seq = view'2 out
-  
-  predicate resolve_elswhere'0 (self : ()) (_old : Seq.seq t_T'0) (_fin : Seq.seq t_T'0) =
-    [%#sslice16] true
-  
-  predicate inv'6 (_1 : Seq.seq t_T'0)
-  
-  predicate invariant'0 (self : t_Vec'0) =
-    [%#svec18] inv'6 (view'3 self)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = invariant'0 x
-  
-  predicate inv'1 (_1 : slice t_T'0)
-  
   predicate invariant'1 (self : slice t_T'0) =
     [%#sslice19] inv'6 (view'2 self)
+  
+  predicate inv'1 (_1 : slice t_T'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : slice t_T'0 [inv'1 x] . inv'1 x = invariant'1 x
   
   predicate invariant'2 (self : borrowed (slice t_T'0)) =
     [%#sinvariant20] inv'1 self.current /\ inv'1 self.final
   
+  predicate inv'2 (_1 : borrowed (slice t_T'0))
+  
   axiom inv_axiom'2 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'2 x] . inv'2 x = invariant'2 x
   
-  predicate invariant'3 (self : borrowed (t_Vec'0)) =
-    [%#sinvariant20] inv'0 self.current /\ inv'0 self.final
+  predicate has_value'0 (self : ()) (seq : Seq.seq t_T'0) (out : slice t_T'0) =
+    [%#sslice15] seq = view'2 out
   
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'3 x] . inv'3 x = invariant'3 x
-  
-  type t_IterMut'0  =
-    { t_IterMut__inner'0: borrowed (slice t_T'0) }
-  
-  predicate inv'4 (_1 : t_IterMut'0)
-  
-  predicate invariant'4 [#"02_iter_mut.rs" 20 4 20 30] (self : t_IterMut'0) =
-    [%#s02_iter_mut21] Seq.length (view'2 (self.t_IterMut__inner'0).final)
-    = Seq.length (view'2 (self.t_IterMut__inner'0).current)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_IterMut'0 [inv'4 x] . inv'4 x
-  = (invariant'4 x
-  /\ match x with
-    | {t_IterMut__inner'0 = inner} -> inv'2 inner
-    end)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : () [inv'5 x] . inv'5 x = true
-  
-  use seq.Seq
-  
-  predicate inv'7 (_1 : t_T'0)
-  
-  predicate invariant'5 (self : Seq.seq t_T'0) =
-    [%#sseq22] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'7 (Seq.get self i)
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : Seq.seq t_T'0 [inv'6 x] . inv'6 x = invariant'5 x
-  
-  predicate inv'8 (_1 : t_T'0)
-  
-  predicate invariant'6 (self : t_T'0) =
-    [%#sboxed23] inv'8 self
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : t_T'0 [inv'7 x] . inv'7 x = invariant'6 x
+  predicate resolve_elswhere'0 (self : ()) (_old : Seq.seq t_T'0) (_fin : Seq.seq t_T'0) =
+    [%#sslice16] true
   
   let rec index_mut'0 (self:borrowed (t_Vec'0)) (index:()) (return'  (ret:borrowed (slice t_T'0)))= {[@expl:index_mut 'self' type invariant] inv'3 self}
     {[@expl:index_mut 'index' type invariant] inv'5 index}
@@ -777,6 +762,9 @@ module M_02_iter_mut__iter_mut [#"02_iter_mut.rs" 82 0 82 55]
       {[%#svec9] Seq.length (view'3 self.final) = Seq.length (view'1 self)}
       (! return' {result}) ]
     
+  
+  type t_IterMut'0  =
+    { t_IterMut__inner'0: borrowed (slice t_T'0) }
   
   predicate resolve'2 (self : borrowed (slice t_T'0)) =
     [%#sresolve17] self.final = self.current
@@ -791,6 +779,18 @@ module M_02_iter_mut__iter_mut [#"02_iter_mut.rs" 82 0 82 55]
     resolve'3 _1
   
   use prelude.prelude.Intrinsic
+  
+  predicate invariant'4 [#"02_iter_mut.rs" 20 4 20 30] (self : t_IterMut'0) =
+    [%#s02_iter_mut21] Seq.length (view'2 (self.t_IterMut__inner'0).final)
+    = Seq.length (view'2 (self.t_IterMut__inner'0).current)
+  
+  predicate inv'4 (_1 : t_IterMut'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_IterMut'0 [inv'4 x] . inv'4 x
+  = (invariant'4 x
+  /\ match x with
+    | {t_IterMut__inner'0 = inner} -> inv'2 inner
+    end)
   
   function view'0 (self : borrowed (slice t_T'0)) : Seq.seq t_T'0 =
     [%#smodel10] view'2 self.current
@@ -920,14 +920,12 @@ module M_02_iter_mut__all_zero [#"02_iter_mut.rs" 88 0 88 35]
   
   predicate inv'1 (_1 : borrowed (t_Vec'0))
   
+  axiom inv_axiom'1 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'1 x] . inv'1 x = true
+  
   use prelude.prelude.Slice
   
   type t_IterMut'0  =
     { t_IterMut__inner'0: borrowed (slice usize) }
-  
-  predicate inv'0 (_1 : t_IterMut'0)
-  
-  use seq.Seq
   
   use seq.Seq
   
@@ -939,11 +937,25 @@ module M_02_iter_mut__all_zero [#"02_iter_mut.rs" 88 0 88 35]
   
   use prelude.prelude.Slice
   
+  use seq.Seq
+  
   function view'3 (self : slice usize) : Seq.seq usize
   
   axiom view'3_spec : forall self : slice usize . ([%#sslice25] Seq.length (view'3 self)
   <= UIntSize.to_int (v_MAX'0 : usize))
   && ([%#sslice26] view'3 self = Slice.id self)
+  
+  predicate invariant'0 [#"02_iter_mut.rs" 20 4 20 30] (self : t_IterMut'0) =
+    [%#s02_iter_mut42] Seq.length (view'3 (self.t_IterMut__inner'0).final)
+    = Seq.length (view'3 (self.t_IterMut__inner'0).current)
+  
+  predicate inv'0 (_1 : t_IterMut'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_IterMut'0 [inv'0 x] . inv'0 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_IterMut__inner'0 = inner} -> true
+    end)
   
   function view'2 (self : borrowed (slice usize)) : Seq.seq usize =
     [%#smodel23] view'3 self.current
@@ -954,33 +966,6 @@ module M_02_iter_mut__all_zero [#"02_iter_mut.rs" 88 0 88 35]
   
   function view'1 (self : borrowed (t_Vec'0)) : Seq.seq usize =
     [%#smodel23] view'0 self.current
-  
-  predicate invariant'0 [#"02_iter_mut.rs" 20 4 20 30] (self : t_IterMut'0) =
-    [%#s02_iter_mut42] Seq.length (view'3 (self.t_IterMut__inner'0).final)
-    = Seq.length (view'3 (self.t_IterMut__inner'0).current)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_IterMut'0 [inv'0 x] . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | {t_IterMut__inner'0 = inner} -> true
-    end)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'1 x] . inv'1 x = true
-  
-  predicate inv'2 (_1 : borrowed (t_IterMut'0))
-  
-  predicate invariant'1 (self : borrowed (t_IterMut'0)) =
-    [%#sinvariant43] inv'0 self.current /\ inv'0 self.final
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_IterMut'0) [inv'2 x] . inv'2 x = invariant'1 x
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 (borrowed usize)
-  
-  predicate inv'3 (_1 : t_Option'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
   
   let rec iter_mut'0 (v:borrowed (t_Vec'0)) (return'  (ret:t_IterMut'0))= {[@expl:iter_mut 'v' type invariant] [%#s02_iter_mut9] inv'1 v}
     any
@@ -1048,6 +1033,21 @@ module M_02_iter_mut__all_zero [#"02_iter_mut.rs" 88 0 88 35]
     = (Seq.get (Seq.(++) visited (to_mut_seq'0 tl.t_IterMut__inner'0)) i).current
     /\ (Seq.get (to_mut_seq'0 self.t_IterMut__inner'0) i).final
     = (Seq.get (Seq.(++) visited (to_mut_seq'0 tl.t_IterMut__inner'0)) i).final)
+  
+  predicate invariant'1 (self : borrowed (t_IterMut'0)) =
+    [%#sinvariant43] inv'0 self.current /\ inv'0 self.final
+  
+  predicate inv'2 (_1 : borrowed (t_IterMut'0))
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_IterMut'0) [inv'2 x] . inv'2 x = invariant'1 x
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 (borrowed usize)
+  
+  predicate inv'3 (_1 : t_Option'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
   
   predicate resolve'4 (self : borrowed (slice usize)) =
     [%#sresolve40] self.final = self.current
@@ -1262,49 +1262,49 @@ module M_02_iter_mut__qyi4305820612590367313__produces_trans__refines [#"02_iter
     /\ (Seq.get (to_mut_seq'0 self.t_IterMut__inner'0) i).final
     = (Seq.get (Seq.(++) visited (to_mut_seq'0 tl.t_IterMut__inner'0)) i).final)
   
-  predicate inv'0 (_1 : t_IterMut'0)
-  
   predicate invariant'0 [#"02_iter_mut.rs" 20 4 20 30] (self : t_IterMut'0) =
     [%#s02_iter_mut8] Seq.length (view'1 (self.t_IterMut__inner'0).final)
     = Seq.length (view'1 (self.t_IterMut__inner'0).current)
   
-  predicate inv'1 (_1 : borrowed (slice t_T'0))
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_IterMut'0 [inv'0 x] . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | {t_IterMut__inner'0 = inner} -> inv'1 inner
-    end)
-  
-  predicate inv'2 (_1 : slice t_T'0)
-  
-  predicate invariant'1 (self : borrowed (slice t_T'0)) =
-    [%#sinvariant9] inv'2 self.current /\ inv'2 self.final
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'1 x] . inv'1 x = invariant'1 x
-  
-  predicate inv'3 (_1 : Seq.seq t_T'0)
-  
-  predicate invariant'2 (self : slice t_T'0) =
-    [%#sslice10] inv'3 (view'1 self)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : slice t_T'0 [inv'2 x] . inv'2 x = invariant'2 x
-  
   use seq.Seq
-  
-  predicate inv'4 (_1 : t_T'0)
-  
-  predicate invariant'3 (self : Seq.seq t_T'0) =
-    [%#sseq11] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq t_T'0 [inv'3 x] . inv'3 x = invariant'3 x
   
   predicate inv'5 (_1 : t_T'0)
   
   predicate invariant'4 (self : t_T'0) =
     [%#sboxed12] inv'5 self
   
+  predicate inv'4 (_1 : t_T'0)
+  
   axiom inv_axiom'4 [@rewrite] : forall x : t_T'0 [inv'4 x] . inv'4 x = invariant'4 x
+  
+  predicate invariant'3 (self : Seq.seq t_T'0) =
+    [%#sseq11] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
+  
+  predicate inv'3 (_1 : Seq.seq t_T'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq t_T'0 [inv'3 x] . inv'3 x = invariant'3 x
+  
+  predicate invariant'2 (self : slice t_T'0) =
+    [%#sslice10] inv'3 (view'1 self)
+  
+  predicate inv'2 (_1 : slice t_T'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : slice t_T'0 [inv'2 x] . inv'2 x = invariant'2 x
+  
+  predicate invariant'1 (self : borrowed (slice t_T'0)) =
+    [%#sinvariant9] inv'2 self.current /\ inv'2 self.final
+  
+  predicate inv'1 (_1 : borrowed (slice t_T'0))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'1 x] . inv'1 x = invariant'1 x
+  
+  predicate inv'0 (_1 : t_IterMut'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_IterMut'0 [inv'0 x] . inv'0 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_IterMut__inner'0 = inner} -> inv'1 inner
+    end)
   
   goal refines : [%#s02_iter_mut0] forall a : t_IterMut'0 . forall ab : Seq.seq (borrowed t_T'0) . forall b : t_IterMut'0 . forall bc : Seq.seq (borrowed t_T'0) . forall c : t_IterMut'0 . produces'0 b bc c
   /\ produces'0 a ab b /\ inv'0 c /\ inv'0 b /\ inv'0 a
@@ -1339,17 +1339,6 @@ module M_02_iter_mut__qyi4305820612590367313__next__refines [#"02_iter_mut.rs" 6
   type t_IterMut'0  =
     { t_IterMut__inner'0: borrowed (slice t_T'0) }
   
-  predicate inv'0 (_1 : borrowed (t_IterMut'0))
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 (borrowed t_T'0)
-  
-  predicate resolve'0 (self : borrowed (slice t_T'0)) =
-    [%#sresolve3] self.final = self.current
-  
-  use seq.Seq
-  
   use seq.Seq
   
   use prelude.prelude.UIntSize
@@ -1362,11 +1351,71 @@ module M_02_iter_mut__qyi4305820612590367313__next__refines [#"02_iter_mut.rs" 6
   
   use prelude.prelude.Slice
   
+  use seq.Seq
+  
   function view'1 (self : slice t_T'0) : Seq.seq t_T'0
   
   axiom view'1_spec : forall self : slice t_T'0 . ([%#sslice8] Seq.length (view'1 self)
   <= UIntSize.to_int (v_MAX'0 : usize))
   && ([%#sslice9] view'1 self = Slice.id self)
+  
+  predicate invariant'2 [#"02_iter_mut.rs" 20 4 20 30] (self : t_IterMut'0) =
+    [%#s02_iter_mut11] Seq.length (view'1 (self.t_IterMut__inner'0).final)
+    = Seq.length (view'1 (self.t_IterMut__inner'0).current)
+  
+  use seq.Seq
+  
+  predicate inv'5 (_1 : t_T'0)
+  
+  predicate invariant'6 (self : t_T'0) =
+    [%#sboxed14] inv'5 self
+  
+  predicate inv'8 (_1 : t_T'0)
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : t_T'0 [inv'8 x] . inv'8 x = invariant'6 x
+  
+  predicate invariant'5 (self : Seq.seq t_T'0) =
+    [%#sseq13] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'8 (Seq.get self i)
+  
+  predicate inv'7 (_1 : Seq.seq t_T'0)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : Seq.seq t_T'0 [inv'7 x] . inv'7 x = invariant'5 x
+  
+  predicate invariant'4 (self : slice t_T'0) =
+    [%#sslice12] inv'7 (view'1 self)
+  
+  predicate inv'6 (_1 : slice t_T'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : slice t_T'0 [inv'6 x] . inv'6 x = invariant'4 x
+  
+  predicate invariant'3 (self : borrowed (slice t_T'0)) =
+    [%#sinvariant7] inv'6 self.current /\ inv'6 self.final
+  
+  predicate inv'4 (_1 : borrowed (slice t_T'0))
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'4 x] . inv'4 x = invariant'3 x
+  
+  predicate inv'3 (_1 : t_IterMut'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_IterMut'0 [inv'3 x] . inv'3 x
+  = (invariant'2 x
+  /\ match x with
+    | {t_IterMut__inner'0 = inner} -> inv'4 inner
+    end)
+  
+  predicate invariant'0 (self : borrowed (t_IterMut'0)) =
+    [%#sinvariant7] inv'3 self.current /\ inv'3 self.final
+  
+  predicate inv'0 (_1 : borrowed (t_IterMut'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_IterMut'0) [inv'0 x] . inv'0 x = invariant'0 x
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 (borrowed t_T'0)
+  
+  predicate resolve'0 (self : borrowed (slice t_T'0)) =
+    [%#sresolve3] self.final = self.current
   
   function view'0 (self : borrowed (slice t_T'0)) : Seq.seq t_T'0 =
     [%#smodel4] view'1 self.current
@@ -1413,69 +1462,20 @@ module M_02_iter_mut__qyi4305820612590367313__next__refines [#"02_iter_mut.rs" 6
     /\ (Seq.get (to_mut_seq'0 self.t_IterMut__inner'0) i).final
     = (Seq.get (Seq.(++) visited (to_mut_seq'0 tl.t_IterMut__inner'0)) i).final)
   
-  predicate inv'1 (_1 : t_Option'0)
-  
-  predicate inv'3 (_1 : t_IterMut'0)
-  
-  predicate invariant'0 (self : borrowed (t_IterMut'0)) =
-    [%#sinvariant7] inv'3 self.current /\ inv'3 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_IterMut'0) [inv'0 x] . inv'0 x = invariant'0 x
+  predicate invariant'1 (self : borrowed t_T'0) =
+    [%#sinvariant7] inv'5 self.current /\ inv'5 self.final
   
   predicate inv'2 (_1 : borrowed t_T'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_T'0 [inv'2 x] . inv'2 x = invariant'1 x
+  
+  predicate inv'1 (_1 : t_Option'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x
   = match x with
     | C_None'0 -> true
     | C_Some'0 a_0 -> inv'2 a_0
     end
-  
-  predicate inv'5 (_1 : t_T'0)
-  
-  predicate invariant'1 (self : borrowed t_T'0) =
-    [%#sinvariant7] inv'5 self.current /\ inv'5 self.final
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_T'0 [inv'2 x] . inv'2 x = invariant'1 x
-  
-  predicate invariant'2 [#"02_iter_mut.rs" 20 4 20 30] (self : t_IterMut'0) =
-    [%#s02_iter_mut11] Seq.length (view'1 (self.t_IterMut__inner'0).final)
-    = Seq.length (view'1 (self.t_IterMut__inner'0).current)
-  
-  predicate inv'4 (_1 : borrowed (slice t_T'0))
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_IterMut'0 [inv'3 x] . inv'3 x
-  = (invariant'2 x
-  /\ match x with
-    | {t_IterMut__inner'0 = inner} -> inv'4 inner
-    end)
-  
-  predicate inv'6 (_1 : slice t_T'0)
-  
-  predicate invariant'3 (self : borrowed (slice t_T'0)) =
-    [%#sinvariant7] inv'6 self.current /\ inv'6 self.final
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'4 x] . inv'4 x = invariant'3 x
-  
-  predicate inv'7 (_1 : Seq.seq t_T'0)
-  
-  predicate invariant'4 (self : slice t_T'0) =
-    [%#sslice12] inv'7 (view'1 self)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : slice t_T'0 [inv'6 x] . inv'6 x = invariant'4 x
-  
-  use seq.Seq
-  
-  predicate inv'8 (_1 : t_T'0)
-  
-  predicate invariant'5 (self : Seq.seq t_T'0) =
-    [%#sseq13] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'8 (Seq.get self i)
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : Seq.seq t_T'0 [inv'7 x] . inv'7 x = invariant'5 x
-  
-  predicate invariant'6 (self : t_T'0) =
-    [%#sboxed14] inv'5 self
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : t_T'0 [inv'8 x] . inv'8 x = invariant'6 x
   
   goal refines : [%#s02_iter_mut0] forall self : borrowed (t_IterMut'0) . inv'0 self
    -> inv'0 self
@@ -1514,14 +1514,6 @@ module M_02_iter_mut__qyi4305820612590367313__produces_refl__refines [#"02_iter_
   type t_IterMut'0  =
     { t_IterMut__inner'0: borrowed (slice t_T'0) }
   
-  predicate inv'0 (_1 : t_IterMut'0)
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
   use seq.Seq
   
   use prelude.prelude.UIntSize
@@ -1534,11 +1526,61 @@ module M_02_iter_mut__qyi4305820612590367313__produces_refl__refines [#"02_iter_
   
   use prelude.prelude.Slice
   
+  use seq.Seq
+  
   function view'1 (self : slice t_T'0) : Seq.seq t_T'0
   
   axiom view'1_spec : forall self : slice t_T'0 . ([%#sslice6] Seq.length (view'1 self)
   <= UIntSize.to_int (v_MAX'0 : usize))
   && ([%#sslice7] view'1 self = Slice.id self)
+  
+  predicate invariant'0 [#"02_iter_mut.rs" 20 4 20 30] (self : t_IterMut'0) =
+    [%#s02_iter_mut5] Seq.length (view'1 (self.t_IterMut__inner'0).final)
+    = Seq.length (view'1 (self.t_IterMut__inner'0).current)
+  
+  use seq.Seq
+  
+  predicate inv'5 (_1 : t_T'0)
+  
+  predicate invariant'4 (self : t_T'0) =
+    [%#sboxed12] inv'5 self
+  
+  predicate inv'4 (_1 : t_T'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_T'0 [inv'4 x] . inv'4 x = invariant'4 x
+  
+  predicate invariant'3 (self : Seq.seq t_T'0) =
+    [%#sseq11] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
+  
+  predicate inv'3 (_1 : Seq.seq t_T'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq t_T'0 [inv'3 x] . inv'3 x = invariant'3 x
+  
+  predicate invariant'2 (self : slice t_T'0) =
+    [%#sslice10] inv'3 (view'1 self)
+  
+  predicate inv'2 (_1 : slice t_T'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : slice t_T'0 [inv'2 x] . inv'2 x = invariant'2 x
+  
+  predicate invariant'1 (self : borrowed (slice t_T'0)) =
+    [%#sinvariant9] inv'2 self.current /\ inv'2 self.final
+  
+  predicate inv'1 (_1 : borrowed (slice t_T'0))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'1 x] . inv'1 x = invariant'1 x
+  
+  predicate inv'0 (_1 : t_IterMut'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_IterMut'0 [inv'0 x] . inv'0 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_IterMut__inner'0 = inner} -> inv'1 inner
+    end)
+  
+  use seq.Seq
+  
+  use seq.Seq
   
   function view'0 (self : borrowed (slice t_T'0)) : Seq.seq t_T'0 =
     [%#smodel2] view'1 self.current
@@ -1572,48 +1614,6 @@ module M_02_iter_mut__qyi4305820612590367313__produces_refl__refines [#"02_iter_
     = (Seq.get (Seq.(++) visited (to_mut_seq'0 tl.t_IterMut__inner'0)) i).current
     /\ (Seq.get (to_mut_seq'0 self.t_IterMut__inner'0) i).final
     = (Seq.get (Seq.(++) visited (to_mut_seq'0 tl.t_IterMut__inner'0)) i).final)
-  
-  predicate invariant'0 [#"02_iter_mut.rs" 20 4 20 30] (self : t_IterMut'0) =
-    [%#s02_iter_mut5] Seq.length (view'1 (self.t_IterMut__inner'0).final)
-    = Seq.length (view'1 (self.t_IterMut__inner'0).current)
-  
-  predicate inv'1 (_1 : borrowed (slice t_T'0))
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_IterMut'0 [inv'0 x] . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | {t_IterMut__inner'0 = inner} -> inv'1 inner
-    end)
-  
-  predicate inv'2 (_1 : slice t_T'0)
-  
-  predicate invariant'1 (self : borrowed (slice t_T'0)) =
-    [%#sinvariant9] inv'2 self.current /\ inv'2 self.final
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'1 x] . inv'1 x = invariant'1 x
-  
-  predicate inv'3 (_1 : Seq.seq t_T'0)
-  
-  predicate invariant'2 (self : slice t_T'0) =
-    [%#sslice10] inv'3 (view'1 self)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : slice t_T'0 [inv'2 x] . inv'2 x = invariant'2 x
-  
-  use seq.Seq
-  
-  predicate inv'4 (_1 : t_T'0)
-  
-  predicate invariant'3 (self : Seq.seq t_T'0) =
-    [%#sseq11] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq t_T'0 [inv'3 x] . inv'3 x = invariant'3 x
-  
-  predicate inv'5 (_1 : t_T'0)
-  
-  predicate invariant'4 (self : t_T'0) =
-    [%#sboxed12] inv'5 self
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_T'0 [inv'4 x] . inv'4 x = invariant'4 x
   
   goal refines : [%#s02_iter_mut0] forall self : t_IterMut'0 . inv'0 self
    -> inv'0 self

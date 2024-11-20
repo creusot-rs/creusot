@@ -47,6 +47,8 @@ module M_12_ghost_code__ghost_vec [#"12_ghost_code.rs" 8 0 8 18]
   
   predicate inv'0 (_1 : t_Vec'0)
   
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
+  
   use seq.Seq
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
@@ -62,8 +64,6 @@ module M_12_ghost_code__ghost_vec [#"12_ghost_code.rs" 8 0 8 18]
   function view'0 (self : t_Vec'0) : Seq.seq uint32
   
   axiom view'0_spec : forall self : t_Vec'0 . [%#svec3] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
   
   let rec new'0 (_1:()) (return'  (ret:t_Vec'0))= any
     [ return' (result:t_Vec'0)-> {inv'0 result} {[%#svec2] Seq.length (view'0 result) = 0} (! return' {result}) ]
@@ -206,6 +206,8 @@ module M_12_ghost_code__ghost_check [#"12_ghost_code.rs" 35 0 35 20]
   
   predicate inv'0 (_1 : t_Vec'0)
   
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
+  
   use seq.Seq
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
@@ -222,7 +224,14 @@ module M_12_ghost_code__ghost_check [#"12_ghost_code.rs" 35 0 35 20]
   
   axiom view'0_spec : forall self : t_Vec'0 . [%#svec9] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
+  let rec new'0 (_1:()) (return'  (ret:t_Vec'0))= any
+    [ return' (result:t_Vec'0)-> {inv'0 result} {[%#svec5] Seq.length (view'0 result) = 0} (! return' {result}) ]
+    
+  
+  function logi_drop'0 [#"12_ghost_code.rs" 33 0 33 21] (_1 : t_Vec'0) : () =
+    [%#s12_ghost_code6] ()
+  
+  use prelude.prelude.Snapshot
   
   use prelude.prelude.Borrow
   
@@ -234,19 +243,6 @@ module M_12_ghost_code__ghost_check [#"12_ghost_code.rs" 35 0 35 20]
   
   axiom inv_axiom'2 [@rewrite] : forall x : int32 [inv'2 x] . inv'2 x = true
   
-  predicate inv'3 (_1 : t_Vec'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Vec'0 [inv'3 x] . inv'3 x = true
-  
-  let rec new'0 (_1:()) (return'  (ret:t_Vec'0))= any
-    [ return' (result:t_Vec'0)-> {inv'0 result} {[%#svec5] Seq.length (view'0 result) = 0} (! return' {result}) ]
-    
-  
-  function logi_drop'0 [#"12_ghost_code.rs" 33 0 33 21] (_1 : t_Vec'0) : () =
-    [%#s12_ghost_code6] ()
-  
-  use prelude.prelude.Snapshot
-  
   function view'1 (self : borrowed (t_Vec'0)) : Seq.seq int32 =
     [%#smodel10] view'0 self.current
   
@@ -255,6 +251,10 @@ module M_12_ghost_code__ghost_check [#"12_ghost_code.rs" 35 0 35 20]
   let rec push'0 (self:borrowed (t_Vec'0)) (value:int32) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'1 self}
     {[@expl:push 'value' type invariant] inv'2 value}
     any [ return' (result:())-> {[%#svec7] view'0 self.final = Seq.snoc (view'1 self) value} (! return' {result}) ] 
+  
+  predicate inv'3 (_1 : t_Vec'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Vec'0 [inv'3 x] . inv'3 x = true
   
   function view'2 (self : t_Vec'0) : Seq.seq int32 =
     [%#smodel11] view'0 self

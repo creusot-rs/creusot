@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet, VecDeque},
-    iter,
-};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use crate::{
     backend::{
@@ -43,20 +40,28 @@ use why3::{
     QName,
 };
 
+/// Weak dependencies are allowed to form cycles in the graph, but strong ones cannot,
+/// weak dependencies are used to perform an initial stratification of the dependency graph.
+#[derive(PartialEq, PartialOrd, Copy, Clone)]
+pub enum Strength {
+    Weak,
+    Strong,
+}
+
 /// The `Expander` takes a list of 'root' dependencies (items explicitly requested by user code),
 /// and expands this into a complete dependency graph.
 pub(super) struct Expander<'a, 'tcx> {
-    graph: DiGraphMap<Dependency<'tcx>, ()>,
+    graph: DiGraphMap<Dependency<'tcx>, Strength>,
     dep_bodies: HashMap<Dependency<'tcx>, Vec<Decl>>,
     namer: &'a mut CloneNames<'tcx>,
     self_key: Dependency<'tcx>,
     param_env: ParamEnv<'tcx>,
-    expansion_queue: VecDeque<(Dependency<'tcx>, Dependency<'tcx>)>,
+    expansion_queue: VecDeque<(Dependency<'tcx>, Strength, Dependency<'tcx>)>,
 }
 
 struct ExpansionProxy<'a, 'tcx> {
     namer: &'a mut CloneNames<'tcx>,
-    expansion_queue: &'a mut VecDeque<(Dependency<'tcx>, Dependency<'tcx>)>,
+    expansion_queue: &'a mut VecDeque<(Dependency<'tcx>, Strength, Dependency<'tcx>)>,
     source: Dependency<'tcx>,
 }
 
@@ -71,7 +76,7 @@ impl<'a, 'tcx> Namer<'tcx> for ExpansionProxy<'a, 'tcx> {
 
     fn insert(&mut self, dep: Dependency<'tcx>) -> &Kind {
         let dep = dep.erase_regions(self.tcx());
-        self.expansion_queue.push_back((self.source, dep));
+        self.expansion_queue.push_back((self.source, Strength::Strong, dep));
         self.namer.insert(dep)
     }
 
@@ -144,12 +149,6 @@ fn signature<'tcx>(
 
 struct LogicElab;
 
-// TODO refactor1!!!1
-//
-// The main thrust of refactorings would be to unify the different ways
-// we generate logical definitions, ideally, we should only have one way to
-// turn a Pearlite term into a Why3 declaration.
-// Currently, we have specialcasing for invariant axioms and other various bits-and-bobs.
 impl DepElab for LogicElab {
     fn expand<'tcx>(
         elab: &mut Expander<'_, 'tcx>,
@@ -167,8 +166,11 @@ impl DepElab for LogicElab {
         let (def_id, subst) = dep.did().unwrap();
 
         if is_inv_function(ctx.tcx, def_id) {
-            elab.expansion_queue
-                .push_back((Dependency::AllTyInvAxioms, Dependency::TyInvAxiom(subst.type_at(0))));
+            elab.expansion_queue.push_back((
+                dep,
+                Strength::Weak,
+                Dependency::TyInvAxiom(subst.type_at(0)),
+            ));
         }
 
         let kind = match ctx.item_type(def_id) {
@@ -292,10 +294,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             namer,
             self_key,
             param_env,
-            expansion_queue: initial
-                .chain(iter::once(Dependency::AllTyInvAxioms))
-                .map(|b| (self_key, b))
-                .collect(),
+            expansion_queue: initial.map(|b| (self_key, Strength::Strong, b)).collect(),
             dep_bodies: Default::default(),
         };
         exp
@@ -313,9 +312,9 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     pub fn update_graph(
         mut self,
         ctx: &mut Why3Generator<'tcx>,
-    ) -> (DiGraphMap<Dependency<'tcx>, ()>, HashMap<Dependency<'tcx>, Vec<Decl>>) {
+    ) -> (DiGraphMap<Dependency<'tcx>, Strength>, HashMap<Dependency<'tcx>, Vec<Decl>>) {
         let mut visited = HashSet::new();
-        while let Some((s, mut t)) = self.expansion_queue.pop_front() {
+        while let Some((s, strength, mut t)) = self.expansion_queue.pop_front() {
             if let Dependency::Item(item, substs) = t
                 && ctx.trait_of_item(item).is_some()
                 && let TraitResolved::Instance(did, subst) =
@@ -323,7 +322,12 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             {
                 t = ctx.normalize_erasing_regions(self.param_env, Dependency::Item(did, subst))
             }
-            self.graph.add_edge(s, t, ());
+
+            if let Some(old) = self.graph.add_edge(s, t, strength)
+                && old > strength
+            {
+                self.graph.add_edge(s, t, old);
+            }
 
             if !visited.insert(t) {
                 continue;
@@ -359,14 +363,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 vec![eliminator(ctx, &mut self.namer(dep), def_id, subst)]
             }
             Dependency::Promoted(_, _) => ProgElab::expand(self, ctx, dep),
-            Dependency::AllTyInvAxioms => vec![],
         };
-
-        // Make every declaration that creates a goal depend on every TyInvAxiom to make sure that
-        // TyInvAxioms are visible at this point
-        if decls.iter().any(|d| matches!(d, Decl::Coma(..) | Decl::Goal(_))) {
-            self.expansion_queue.push_back((dep, Dependency::AllTyInvAxioms));
-        }
 
         self.dep_bodies.insert(dep, decls);
     }

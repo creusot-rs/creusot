@@ -31,6 +31,8 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   
   predicate inv'0 (_1 : t_Vec'0)
   
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
+  
   use seq.Seq
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
@@ -45,7 +47,9 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   
   axiom view'0_spec : forall self : t_Vec'0 . [%#svec8] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
+  let rec new'0 (_1:()) (return'  (ret:t_Vec'0))= any
+    [ return' (result:t_Vec'0)-> {inv'0 result} {[%#svec6] Seq.length (view'0 result) = 0} (! return' {result}) ]
+    
   
   use prelude.prelude.Borrow
   
@@ -56,10 +60,6 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   predicate inv'2 (_1 : bool)
   
   axiom inv_axiom'2 [@rewrite] : forall x : bool [inv'2 x] . inv'2 x = true
-  
-  let rec new'0 (_1:()) (return'  (ret:t_Vec'0))= any
-    [ return' (result:t_Vec'0)-> {inv'0 result} {[%#svec6] Seq.length (view'0 result) = 0} (! return' {result}) ]
-    
   
   function view'1 (self : borrowed (t_Vec'0)) : Seq.seq bool =
     [%#smodel9] view'0 self.current

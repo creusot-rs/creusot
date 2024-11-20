@@ -33,10 +33,14 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
   
   predicate inv'2 (_1 : uint32)
   
+  axiom inv_axiom'2 [@rewrite] : forall x : uint32 [inv'2 x] . inv'2 x = true
+  
   type t_RangeInclusive'0  =
     { t_RangeInclusive__start'0: uint32; t_RangeInclusive__end'0: uint32; t_RangeInclusive__exhausted'0: bool }
   
   predicate inv'0 (_1 : t_RangeInclusive'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_RangeInclusive'0 [inv'0 x] . inv'0 x = true
   
   function start_log'0 (self : t_RangeInclusive'0) : uint32
   
@@ -53,30 +57,6 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
   
   axiom is_empty_log'0_spec : forall self : t_RangeInclusive'0 . [%#sops16] not is_empty_log'0 self
    -> deep_model'0 (start_log'0 self) <= deep_model'0 (end_log'0 self)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_RangeInclusive'0 [inv'0 x] . inv'0 x = true
-  
-  use seq.Seq
-  
-  predicate inv'1 (_1 : Seq.seq uint32)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq uint32 [inv'1 x] . inv'1 x = true
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : uint32 [inv'2 x] . inv'2 x = true
-  
-  use prelude.prelude.Borrow
-  
-  predicate inv'3 (_1 : borrowed (t_RangeInclusive'0))
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed (t_RangeInclusive'0) [inv'3 x] . inv'3 x = true
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 uint32
-  
-  predicate inv'4 (_1 : t_Option'0)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
   
   let rec new'0 (start:uint32) (end':uint32) (return'  (ret:t_RangeInclusive'0))= {[@expl:new 'start' type invariant] inv'2 start}
     {[@expl:new 'end' type invariant] inv'2 end'}
@@ -106,6 +86,8 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
   
   use seq.Seq
   
+  use seq.Seq
+  
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
@@ -130,6 +112,24 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
     /\ (is_empty_log'0 o \/ end_log'0 self = end_log'0 o)
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'0 (Seq.get visited i) = deep_model'0 (start_log'0 self) + i)
+  
+  predicate inv'1 (_1 : Seq.seq uint32)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq uint32 [inv'1 x] . inv'1 x = true
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'3 (_1 : borrowed (t_RangeInclusive'0))
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed (t_RangeInclusive'0) [inv'3 x] . inv'3 x = true
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 uint32
+  
+  predicate inv'4 (_1 : t_Option'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
   
   predicate completed'0 (self : borrowed (t_RangeInclusive'0)) =
     [%#srange27] is_empty_log'0 self.current /\ is_empty_log'0 self.final

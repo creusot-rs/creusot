@@ -41,27 +41,24 @@ module M_06_map_precond__qyi18374305379273630819__produces_refl [#"06_map_precon
   type t_Map'0  =
     { t_Map__iter'0: t_I'0; t_Map__func'0: t_F'0; t_Map__produced'0: Snapshot.snap_ty (Seq.seq t_Item'0) }
   
-  predicate inv'0 (_1 : t_Map'0)
-  
-  use seq.Seq
-  
-  type t_B'0
-  
-  use seq.Seq
-  
-  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
-  
   use prelude.prelude.Borrow
   
+  predicate inv'3 (_1 : t_I'0)
+  
+  predicate invariant'3 (self : borrowed t_I'0) =
+    [%#sinvariant26] inv'3 self.current /\ inv'3 self.final
+  
+  predicate inv'5 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed t_I'0 [inv'5 x] . inv'5 x = invariant'3 x
+  
+  predicate inv'4 (_1 : t_F'0)
+  
+  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  
   use seq.Seq
   
-  predicate inv'1 (_1 : Seq.seq (borrowed t_F'0))
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  predicate inv'2 (_1 : Seq.seq t_Item'0)
+  predicate inv'6 (_1 : t_Item'0)
   
   use seq.Seq
   
@@ -69,9 +66,15 @@ module M_06_map_precond__qyi18374305379273630819__produces_refl [#"06_map_precon
   
   use prelude.prelude.Snapshot
   
-  use prelude.prelude.Snapshot
+  predicate precondition'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0)))
   
-  use seq.Seq
+  predicate next_precondition'0 [#"06_map_precond.rs" 92 4 92 74] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
+    
+   =
+    [%#s06_map_precond23] forall e : t_Item'0, i : t_I'0 [produces'1 iter (Seq.singleton e) i] . inv'6 e
+    /\ inv'3 i /\ produces'1 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
+  
+  type t_B'0
   
   use prelude.prelude.Int
   
@@ -79,16 +82,114 @@ module M_06_map_precond__qyi18374305379273630819__produces_refl [#"06_map_precon
   
   use seq.Seq
   
-  use seq.Seq
+  predicate invariant'6 (self : t_Item'0) =
+    [%#sboxed27] inv'6 self
   
-  use prelude.prelude.Snapshot
+  predicate inv'10 (_1 : t_Item'0)
   
-  predicate precondition'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0)))
+  axiom inv_axiom'6 [@rewrite] : forall x : t_Item'0 [inv'10 x] . inv'10 x = invariant'6 x
+  
+  predicate invariant'2 (self : Seq.seq t_Item'0) =
+    [%#sseq24] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'10 (Seq.get self i)
+  
+  predicate inv'2 (_1 : Seq.seq t_Item'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'2 x] . inv'2 x = invariant'2 x
+  
+  predicate invariant'4 (self : borrowed t_F'0) =
+    [%#sinvariant26] inv'4 self.current /\ inv'4 self.final
+  
+  predicate inv'7 (_1 : borrowed t_F'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : borrowed t_F'0 [inv'7 x] . inv'7 x = invariant'4 x
+  
+  predicate inv'8 (_1 : t_B'0)
+  
+  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
   
   use seq.Seq
   
   predicate postcondition_mut'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0))) (result_state : t_F'0) (result : t_B'0)
     
+  
+  predicate preservation'0 [#"06_map_precond.rs" 116 4 116 45] (iter : t_I'0) (func : t_F'0) =
+    [%#s06_map_precond25] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 . inv'2 s
+    /\ inv'6 e1 /\ inv'6 e2 /\ inv'7 f /\ inv'8 b /\ inv'3 i /\ unnest'0 func f.current
+     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
+     -> precondition'0 f.current (e1, Snapshot.new s)
+     -> postcondition_mut'0 f.current (e1, Snapshot.new s) f.final b
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
+  
+  predicate reinitialize'0 [#"06_map_precond.rs" 128 4 128 29] (_1 : ()) =
+    [%#s06_map_precond20] forall iter : borrowed t_I'0, func : t_F'0 . inv'5 iter /\ inv'4 func
+     -> completed'0 iter
+     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq t_Item'0) /\ preservation'0 iter.final func
+  
+  use prelude.prelude.Snapshot
+  
+  use seq.Seq
+  
+  predicate preservation_inv'0 [#"06_map_precond.rs" 103 4 103 73] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
+    
+   =
+    [%#s06_map_precond22] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 [produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b] . inv'2 s
+    /\ inv'6 e1 /\ inv'6 e2 /\ inv'7 f /\ inv'8 b /\ inv'3 i /\ unnest'0 func f.current
+     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
+     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
+     -> postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
+  
+  axiom preservation_inv'0_spec : forall iter : t_I'0, func : t_F'0, produced : Seq.seq t_Item'0 . [%#s06_map_precond21] produced
+  = (Seq.empty  : Seq.seq t_Item'0)  -> preservation_inv'0 iter func produced = preservation'0 iter func
+  
+  predicate invariant'0 [#"06_map_precond.rs" 176 4 176 30] (self : t_Map'0) =
+    [%#s06_map_precond4] reinitialize'0 ()
+    /\ preservation_inv'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
+    /\ next_precondition'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
+  
+  predicate inv'0 (_1 : t_Map'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Map'0 [inv'0 x] . inv'0 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_Map__iter'0 = iter ; t_Map__func'0 = func ; t_Map__produced'0 = produced} -> inv'3 iter /\ inv'4 func
+    end)
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate invariant'5 (self : borrowed t_F'0) =
+    [%#sboxed27] inv'7 self
+  
+  predicate inv'9 (_1 : borrowed t_F'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : borrowed t_F'0 [inv'9 x] . inv'9 x = invariant'5 x
+  
+  predicate invariant'1 (self : Seq.seq (borrowed t_F'0)) =
+    [%#sseq24] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'9 (Seq.get self i)
+  
+  predicate inv'1 (_1 : Seq.seq (borrowed t_F'0))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq (borrowed t_F'0) [inv'1 x] . inv'1 x = invariant'1 x
+  
+  use seq.Seq
+  
+  use prelude.prelude.Snapshot
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
   
   predicate produces'0 [@inline:trivial] [#"06_map_precond.rs" 50 4 50 67] (self : t_Map'0) (visited : Seq.seq t_B'0) (succ : t_Map'0)
     
@@ -110,107 +211,6 @@ module M_06_map_precond__qyi18374305379273630819__produces_refl [#"06_map_precon
      -> unnest'0 self.t_Map__func'0 (Seq.get fs i).current
     /\ precondition'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner self.t_Map__produced'0) (Seq.([..]) s 0 i)))
     /\ postcondition_mut'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner self.t_Map__produced'0) (Seq.([..]) s 0 i))) (Seq.get fs i).final (Seq.get visited i))))
-  
-  predicate inv'5 (_1 : borrowed t_I'0)
-  
-  predicate inv'4 (_1 : t_F'0)
-  
-  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
-  
-  use seq.Seq
-  
-  predicate inv'6 (_1 : t_Item'0)
-  
-  predicate inv'3 (_1 : t_I'0)
-  
-  use seq.Seq
-  
-  predicate next_precondition'0 [#"06_map_precond.rs" 92 4 92 74] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
-    
-   =
-    [%#s06_map_precond23] forall e : t_Item'0, i : t_I'0 [produces'1 iter (Seq.singleton e) i] . inv'6 e
-    /\ inv'3 i /\ produces'1 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
-  
-  predicate inv'7 (_1 : borrowed t_F'0)
-  
-  predicate inv'8 (_1 : t_B'0)
-  
-  use seq.Seq
-  
-  predicate preservation'0 [#"06_map_precond.rs" 116 4 116 45] (iter : t_I'0) (func : t_F'0) =
-    [%#s06_map_precond25] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 . inv'2 s
-    /\ inv'6 e1 /\ inv'6 e2 /\ inv'7 f /\ inv'8 b /\ inv'3 i /\ unnest'0 func f.current
-     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 f.current (e1, Snapshot.new s)
-     -> postcondition_mut'0 f.current (e1, Snapshot.new s) f.final b
-     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
-  
-  predicate reinitialize'0 [#"06_map_precond.rs" 128 4 128 29] (_1 : ()) =
-    [%#s06_map_precond20] forall iter : borrowed t_I'0, func : t_F'0 . inv'5 iter /\ inv'4 func
-     -> completed'0 iter
-     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq t_Item'0) /\ preservation'0 iter.final func
-  
-  predicate preservation_inv'0 [#"06_map_precond.rs" 103 4 103 73] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
-    
-   =
-    [%#s06_map_precond22] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 [produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b] . inv'2 s
-    /\ inv'6 e1 /\ inv'6 e2 /\ inv'7 f /\ inv'8 b /\ inv'3 i /\ unnest'0 func f.current
-     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
-     -> postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b
-     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
-  
-  axiom preservation_inv'0_spec : forall iter : t_I'0, func : t_F'0, produced : Seq.seq t_Item'0 . [%#s06_map_precond21] produced
-  = (Seq.empty  : Seq.seq t_Item'0)  -> preservation_inv'0 iter func produced = preservation'0 iter func
-  
-  predicate invariant'0 [#"06_map_precond.rs" 176 4 176 30] (self : t_Map'0) =
-    [%#s06_map_precond4] reinitialize'0 ()
-    /\ preservation_inv'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
-    /\ next_precondition'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Map'0 [inv'0 x] . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | {t_Map__iter'0 = iter ; t_Map__func'0 = func ; t_Map__produced'0 = produced} -> inv'3 iter /\ inv'4 func
-    end)
-  
-  use seq.Seq
-  
-  predicate inv'9 (_1 : borrowed t_F'0)
-  
-  predicate invariant'1 (self : Seq.seq (borrowed t_F'0)) =
-    [%#sseq24] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'9 (Seq.get self i)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq (borrowed t_F'0) [inv'1 x] . inv'1 x = invariant'1 x
-  
-  use seq.Seq
-  
-  predicate inv'10 (_1 : t_Item'0)
-  
-  predicate invariant'2 (self : Seq.seq t_Item'0) =
-    [%#sseq24] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'10 (Seq.get self i)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'2 x] . inv'2 x = invariant'2 x
-  
-  predicate invariant'3 (self : borrowed t_I'0) =
-    [%#sinvariant26] inv'3 self.current /\ inv'3 self.final
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed t_I'0 [inv'5 x] . inv'5 x = invariant'3 x
-  
-  predicate invariant'4 (self : borrowed t_F'0) =
-    [%#sinvariant26] inv'4 self.current /\ inv'4 self.final
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : borrowed t_F'0 [inv'7 x] . inv'7 x = invariant'4 x
-  
-  predicate invariant'5 (self : borrowed t_F'0) =
-    [%#sboxed27] inv'7 self
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : borrowed t_F'0 [inv'9 x] . inv'9 x = invariant'5 x
-  
-  predicate invariant'6 (self : t_Item'0) =
-    [%#sboxed27] inv'6 self
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : t_Item'0 [inv'10 x] . inv'10 x = invariant'6 x
   
   function postcondition_mut_unnest'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0))) (res_state : t_F'0) (res : t_B'0) : ()
     
@@ -305,25 +305,24 @@ module M_06_map_precond__qyi18374305379273630819__produces_trans [#"06_map_preco
   type t_Map'0  =
     { t_Map__iter'0: t_I'0; t_Map__func'0: t_F'0; t_Map__produced'0: Snapshot.snap_ty (Seq.seq t_Item'0) }
   
-  predicate inv'0 (_1 : t_Map'0)
-  
-  type t_B'0
-  
-  use seq.Seq
-  
-  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
-  
   use prelude.prelude.Borrow
   
+  predicate inv'3 (_1 : t_I'0)
+  
+  predicate invariant'3 (self : borrowed t_I'0) =
+    [%#sinvariant30] inv'3 self.current /\ inv'3 self.final
+  
+  predicate inv'5 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed t_I'0 [inv'5 x] . inv'5 x = invariant'3 x
+  
+  predicate inv'4 (_1 : t_F'0)
+  
+  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  
   use seq.Seq
   
-  predicate inv'1 (_1 : Seq.seq (borrowed t_F'0))
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  predicate inv'2 (_1 : Seq.seq t_Item'0)
+  predicate inv'6 (_1 : t_Item'0)
   
   use seq.Seq
   
@@ -331,9 +330,15 @@ module M_06_map_precond__qyi18374305379273630819__produces_trans [#"06_map_preco
   
   use prelude.prelude.Snapshot
   
-  use prelude.prelude.Snapshot
+  predicate precondition'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0)))
   
-  use seq.Seq
+  predicate next_precondition'0 [#"06_map_precond.rs" 92 4 92 74] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
+    
+   =
+    [%#s06_map_precond27] forall e : t_Item'0, i : t_I'0 [produces'1 iter (Seq.singleton e) i] . inv'6 e
+    /\ inv'3 i /\ produces'1 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
+  
+  type t_B'0
   
   use prelude.prelude.Int
   
@@ -341,16 +346,112 @@ module M_06_map_precond__qyi18374305379273630819__produces_trans [#"06_map_preco
   
   use seq.Seq
   
-  use seq.Seq
+  predicate invariant'6 (self : t_Item'0) =
+    [%#sboxed31] inv'6 self
   
-  use prelude.prelude.Snapshot
+  predicate inv'10 (_1 : t_Item'0)
   
-  predicate precondition'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0)))
+  axiom inv_axiom'6 [@rewrite] : forall x : t_Item'0 [inv'10 x] . inv'10 x = invariant'6 x
+  
+  predicate invariant'2 (self : Seq.seq t_Item'0) =
+    [%#sseq28] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'10 (Seq.get self i)
+  
+  predicate inv'2 (_1 : Seq.seq t_Item'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'2 x] . inv'2 x = invariant'2 x
+  
+  predicate invariant'4 (self : borrowed t_F'0) =
+    [%#sinvariant30] inv'4 self.current /\ inv'4 self.final
+  
+  predicate inv'7 (_1 : borrowed t_F'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : borrowed t_F'0 [inv'7 x] . inv'7 x = invariant'4 x
+  
+  predicate inv'8 (_1 : t_B'0)
+  
+  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
   
   use seq.Seq
   
   predicate postcondition_mut'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0))) (result_state : t_F'0) (result : t_B'0)
     
+  
+  predicate preservation'0 [#"06_map_precond.rs" 116 4 116 45] (iter : t_I'0) (func : t_F'0) =
+    [%#s06_map_precond29] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 . inv'2 s
+    /\ inv'6 e1 /\ inv'6 e2 /\ inv'7 f /\ inv'8 b /\ inv'3 i /\ unnest'0 func f.current
+     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
+     -> precondition'0 f.current (e1, Snapshot.new s)
+     -> postcondition_mut'0 f.current (e1, Snapshot.new s) f.final b
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
+  
+  predicate reinitialize'0 [#"06_map_precond.rs" 128 4 128 29] (_1 : ()) =
+    [%#s06_map_precond24] forall iter : borrowed t_I'0, func : t_F'0 . inv'5 iter /\ inv'4 func
+     -> completed'0 iter
+     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq t_Item'0) /\ preservation'0 iter.final func
+  
+  use prelude.prelude.Snapshot
+  
+  use seq.Seq
+  
+  predicate preservation_inv'0 [#"06_map_precond.rs" 103 4 103 73] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
+    
+   =
+    [%#s06_map_precond26] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 [produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b] . inv'2 s
+    /\ inv'6 e1 /\ inv'6 e2 /\ inv'7 f /\ inv'8 b /\ inv'3 i /\ unnest'0 func f.current
+     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
+     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
+     -> postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
+  
+  axiom preservation_inv'0_spec : forall iter : t_I'0, func : t_F'0, produced : Seq.seq t_Item'0 . [%#s06_map_precond25] produced
+  = (Seq.empty  : Seq.seq t_Item'0)  -> preservation_inv'0 iter func produced = preservation'0 iter func
+  
+  predicate invariant'0 [#"06_map_precond.rs" 176 4 176 30] (self : t_Map'0) =
+    [%#s06_map_precond8] reinitialize'0 ()
+    /\ preservation_inv'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
+    /\ next_precondition'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
+  
+  predicate inv'0 (_1 : t_Map'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Map'0 [inv'0 x] . inv'0 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_Map__iter'0 = iter ; t_Map__func'0 = func ; t_Map__produced'0 = produced} -> inv'3 iter /\ inv'4 func
+    end)
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate invariant'5 (self : borrowed t_F'0) =
+    [%#sboxed31] inv'7 self
+  
+  predicate inv'9 (_1 : borrowed t_F'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : borrowed t_F'0 [inv'9 x] . inv'9 x = invariant'5 x
+  
+  predicate invariant'1 (self : Seq.seq (borrowed t_F'0)) =
+    [%#sseq28] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'9 (Seq.get self i)
+  
+  predicate inv'1 (_1 : Seq.seq (borrowed t_F'0))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq (borrowed t_F'0) [inv'1 x] . inv'1 x = invariant'1 x
+  
+  use seq.Seq
+  
+  use prelude.prelude.Snapshot
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
   
   predicate produces'0 [@inline:trivial] [#"06_map_precond.rs" 50 4 50 67] (self : t_Map'0) (visited : Seq.seq t_B'0) (succ : t_Map'0)
     
@@ -374,107 +475,6 @@ module M_06_map_precond__qyi18374305379273630819__produces_trans [#"06_map_preco
     /\ postcondition_mut'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner self.t_Map__produced'0) (Seq.([..]) s 0 i))) (Seq.get fs i).final (Seq.get visited i))))
   
   use seq.Seq
-  
-  predicate inv'5 (_1 : borrowed t_I'0)
-  
-  predicate inv'4 (_1 : t_F'0)
-  
-  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
-  
-  use seq.Seq
-  
-  predicate inv'6 (_1 : t_Item'0)
-  
-  predicate inv'3 (_1 : t_I'0)
-  
-  use seq.Seq
-  
-  predicate next_precondition'0 [#"06_map_precond.rs" 92 4 92 74] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
-    
-   =
-    [%#s06_map_precond27] forall e : t_Item'0, i : t_I'0 [produces'1 iter (Seq.singleton e) i] . inv'6 e
-    /\ inv'3 i /\ produces'1 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
-  
-  predicate inv'7 (_1 : borrowed t_F'0)
-  
-  predicate inv'8 (_1 : t_B'0)
-  
-  use seq.Seq
-  
-  predicate preservation'0 [#"06_map_precond.rs" 116 4 116 45] (iter : t_I'0) (func : t_F'0) =
-    [%#s06_map_precond29] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 . inv'2 s
-    /\ inv'6 e1 /\ inv'6 e2 /\ inv'7 f /\ inv'8 b /\ inv'3 i /\ unnest'0 func f.current
-     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 f.current (e1, Snapshot.new s)
-     -> postcondition_mut'0 f.current (e1, Snapshot.new s) f.final b
-     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
-  
-  predicate reinitialize'0 [#"06_map_precond.rs" 128 4 128 29] (_1 : ()) =
-    [%#s06_map_precond24] forall iter : borrowed t_I'0, func : t_F'0 . inv'5 iter /\ inv'4 func
-     -> completed'0 iter
-     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq t_Item'0) /\ preservation'0 iter.final func
-  
-  predicate preservation_inv'0 [#"06_map_precond.rs" 103 4 103 73] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
-    
-   =
-    [%#s06_map_precond26] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 [produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b] . inv'2 s
-    /\ inv'6 e1 /\ inv'6 e2 /\ inv'7 f /\ inv'8 b /\ inv'3 i /\ unnest'0 func f.current
-     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
-     -> postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b
-     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
-  
-  axiom preservation_inv'0_spec : forall iter : t_I'0, func : t_F'0, produced : Seq.seq t_Item'0 . [%#s06_map_precond25] produced
-  = (Seq.empty  : Seq.seq t_Item'0)  -> preservation_inv'0 iter func produced = preservation'0 iter func
-  
-  predicate invariant'0 [#"06_map_precond.rs" 176 4 176 30] (self : t_Map'0) =
-    [%#s06_map_precond8] reinitialize'0 ()
-    /\ preservation_inv'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
-    /\ next_precondition'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Map'0 [inv'0 x] . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | {t_Map__iter'0 = iter ; t_Map__func'0 = func ; t_Map__produced'0 = produced} -> inv'3 iter /\ inv'4 func
-    end)
-  
-  use seq.Seq
-  
-  predicate inv'9 (_1 : borrowed t_F'0)
-  
-  predicate invariant'1 (self : Seq.seq (borrowed t_F'0)) =
-    [%#sseq28] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'9 (Seq.get self i)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq (borrowed t_F'0) [inv'1 x] . inv'1 x = invariant'1 x
-  
-  use seq.Seq
-  
-  predicate inv'10 (_1 : t_Item'0)
-  
-  predicate invariant'2 (self : Seq.seq t_Item'0) =
-    [%#sseq28] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'10 (Seq.get self i)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'2 x] . inv'2 x = invariant'2 x
-  
-  predicate invariant'3 (self : borrowed t_I'0) =
-    [%#sinvariant30] inv'3 self.current /\ inv'3 self.final
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed t_I'0 [inv'5 x] . inv'5 x = invariant'3 x
-  
-  predicate invariant'4 (self : borrowed t_F'0) =
-    [%#sinvariant30] inv'4 self.current /\ inv'4 self.final
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : borrowed t_F'0 [inv'7 x] . inv'7 x = invariant'4 x
-  
-  predicate invariant'5 (self : borrowed t_F'0) =
-    [%#sboxed31] inv'7 self
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : borrowed t_F'0 [inv'9 x] . inv'9 x = invariant'5 x
-  
-  predicate invariant'6 (self : t_Item'0) =
-    [%#sboxed31] inv'6 self
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : t_Item'0 [inv'10 x] . inv'10 x = invariant'6 x
   
   function postcondition_mut_unnest'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0))) (res_state : t_F'0) (res : t_B'0) : ()
     
@@ -605,51 +605,20 @@ module M_06_map_precond__qyi18374305379273630819__next [#"06_map_precond.rs" 72 
   type t_Map'0  =
     { t_Map__iter'0: t_I'0; t_Map__func'0: t_F'0; t_Map__produced'0: Snapshot.snap_ty (Seq.seq t_Item'0) }
   
+  predicate invariant'1 (self : borrowed t_I'0) =
+    [%#sinvariant46] inv'0 self.current /\ inv'0 self.final
+  
   predicate inv'4 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'4 x] . inv'4 x = invariant'1 x
   
   type t_Option'0  =
     | C_None'0
     | C_Some'0 t_Item'0
   
-  predicate inv'5 (_1 : t_Option'0)
-  
-  predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
-  
-  use seq.Seq
-  
-  predicate produces'0 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
-  
-  predicate inv'2 (_1 : borrowed (t_Map'0))
-  
-  predicate inv'9 (_1 : t_Map'0)
-  
-  predicate invariant'0 (self : borrowed (t_Map'0)) =
-    [%#sinvariant46] inv'9 self.current /\ inv'9 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Map'0) [inv'2 x] . inv'2 x = invariant'0 x
-  
-  type t_B'0
-  
-  type t_Option'1  =
-    | C_None'1
-    | C_Some'1 t_B'0
-  
-  predicate inv'3 (_1 : t_Option'1)
-  
-  predicate inv'8 (_1 : t_B'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'1 [inv'3 x] . inv'3 x
-  = match x with
-    | C_None'1 -> true
-    | C_Some'1 a_0 -> inv'8 a_0
-    end
-  
-  predicate invariant'1 (self : borrowed t_I'0) =
-    [%#sinvariant46] inv'0 self.current /\ inv'0 self.final
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'4 x] . inv'4 x = invariant'1 x
-  
   predicate inv'10 (_1 : t_Item'0)
+  
+  predicate inv'5 (_1 : t_Option'0)
   
   axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'5 x] . inv'5 x
   = match x with
@@ -657,12 +626,41 @@ module M_06_map_precond__qyi18374305379273630819__next [#"06_map_precond.rs" 72 
     | C_Some'0 a_0 -> inv'10 a_0
     end
   
-  predicate inv'6 (_1 : borrowed t_F'0)
+  predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  
+  use seq.Seq
+  
+  predicate produces'0 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
+  
+  let rec next'1 (self:borrowed t_I'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] [%#scommon7] inv'4 self}
+    any
+    [ return' (result:t_Option'0)-> {[%#scommon8] inv'5 result}
+      {[%#scommon9] match result with
+        | C_None'0 -> completed'1 self
+        | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
+        end}
+      (! return' {result}) ]
+    
+  
+  let rec v_Some'0 (input:t_Option'0) (ret  (field_0:t_Item'0))= any
+    [ good (field_0:t_Item'0)-> {C_Some'0 field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0 : t_Item'0 [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
+    
+  
+  predicate precondition'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0)))
+  
+  use prelude.prelude.Snapshot
+  
+  use seq.Seq
+  
+  use prelude.prelude.Snapshot
   
   predicate inv'1 (_1 : t_F'0)
   
   predicate invariant'2 (self : borrowed t_F'0) =
     [%#sinvariant46] inv'1 self.current /\ inv'1 self.final
+  
+  predicate inv'6 (_1 : borrowed t_F'0)
   
   axiom inv_axiom'4 [@rewrite] : forall x : borrowed t_F'0 [inv'6 x] . inv'6 x = invariant'2 x
   
@@ -671,11 +669,23 @@ module M_06_map_precond__qyi18374305379273630819__next [#"06_map_precond.rs" 72 
   axiom inv_axiom'5 [@rewrite] : forall x : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0)) [inv'7 x] . inv'7 x
   = (let (x0, x1) = x in inv'10 x0)
   
+  type t_B'0
+  
+  predicate inv'8 (_1 : t_B'0)
+  
+  predicate postcondition_mut'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0))) (result_state : t_F'0) (result : t_B'0)
+    
+  
+  let rec call_mut'0 (self:borrowed t_F'0) (args:(t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0))) (return'  (ret:t_B'0))= {[@expl:call_mut 'self' type invariant] inv'6 self}
+    {[@expl:call_mut 'args' type invariant] inv'7 args}
+    {[@expl:call_mut requires] [%#sops10] precondition'0 self.current args}
+    any
+    [ return' (result:t_B'0)-> {inv'8 result}
+      {[%#sops11] postcondition_mut'0 self.current args self.final result}
+      (! return' {result}) ]
+    
+  
   use seq.Seq
-  
-  use prelude.prelude.Snapshot
-  
-  predicate precondition'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0)))
   
   predicate next_precondition'0 [#"06_map_precond.rs" 92 4 92 74] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
     
@@ -683,14 +693,27 @@ module M_06_map_precond__qyi18374305379273630819__next [#"06_map_precond.rs" 72 
     [%#s06_map_precond37] forall e : t_Item'0, i : t_I'0 [produces'0 iter (Seq.singleton e) i] . inv'10 e
     /\ inv'0 i /\ produces'0 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
   
-  predicate inv'11 (_1 : Seq.seq t_Item'0)
-  
-  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  use prelude.prelude.Int
   
   use seq.Seq
   
-  predicate postcondition_mut'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0))) (result_state : t_F'0) (result : t_B'0)
-    
+  use seq.Seq
+  
+  predicate invariant'6 (self : t_Item'0) =
+    [%#sboxed51] inv'10 self
+  
+  predicate inv'13 (_1 : t_Item'0)
+  
+  axiom inv_axiom'9 [@rewrite] : forall x : t_Item'0 [inv'13 x] . inv'13 x = invariant'6 x
+  
+  predicate invariant'4 (self : Seq.seq t_Item'0) =
+    [%#sseq50] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'13 (Seq.get self i)
+  
+  predicate inv'11 (_1 : Seq.seq t_Item'0)
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'11 x] . inv'11 x = invariant'4 x
+  
+  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
   
   predicate preservation'0 [#"06_map_precond.rs" 116 4 116 45] (iter : t_I'0) (func : t_F'0) =
     [%#s06_map_precond47] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 . inv'11 s
@@ -704,8 +727,6 @@ module M_06_map_precond__qyi18374305379273630819__next [#"06_map_precond.rs" 72 
     [%#s06_map_precond49] forall iter : borrowed t_I'0, func : t_F'0 . inv'4 iter /\ inv'1 func
      -> completed'1 iter
      -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq t_Item'0) /\ preservation'0 iter.final func
-  
-  use prelude.prelude.Snapshot
   
   use seq.Seq
   
@@ -727,73 +748,20 @@ module M_06_map_precond__qyi18374305379273630819__next [#"06_map_precond.rs" 72 
     /\ preservation_inv'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
     /\ next_precondition'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
   
+  predicate inv'9 (_1 : t_Map'0)
+  
   axiom inv_axiom'6 [@rewrite] : forall x : t_Map'0 [inv'9 x] . inv'9 x
   = (invariant'3 x
   /\ match x with
     | {t_Map__iter'0 = iter ; t_Map__func'0 = func ; t_Map__produced'0 = produced} -> inv'0 iter /\ inv'1 func
     end)
   
-  use prelude.prelude.Int
+  predicate invariant'0 (self : borrowed (t_Map'0)) =
+    [%#sinvariant46] inv'9 self.current /\ inv'9 self.final
   
-  use seq.Seq
+  predicate inv'2 (_1 : borrowed (t_Map'0))
   
-  use seq.Seq
-  
-  predicate inv'13 (_1 : t_Item'0)
-  
-  predicate invariant'4 (self : Seq.seq t_Item'0) =
-    [%#sseq50] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'13 (Seq.get self i)
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'11 x] . inv'11 x = invariant'4 x
-  
-  use seq.Seq
-  
-  predicate inv'12 (_1 : Seq.seq (borrowed t_F'0))
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  predicate inv'14 (_1 : borrowed t_F'0)
-  
-  predicate invariant'5 (self : Seq.seq (borrowed t_F'0)) =
-    [%#sseq50] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'14 (Seq.get self i)
-  
-  axiom inv_axiom'8 [@rewrite] : forall x : Seq.seq (borrowed t_F'0) [inv'12 x] . inv'12 x = invariant'5 x
-  
-  predicate invariant'6 (self : t_Item'0) =
-    [%#sboxed51] inv'10 self
-  
-  axiom inv_axiom'9 [@rewrite] : forall x : t_Item'0 [inv'13 x] . inv'13 x = invariant'6 x
-  
-  predicate invariant'7 (self : borrowed t_F'0) =
-    [%#sboxed51] inv'6 self
-  
-  axiom inv_axiom'10 [@rewrite] : forall x : borrowed t_F'0 [inv'14 x] . inv'14 x = invariant'7 x
-  
-  let rec next'1 (self:borrowed t_I'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] [%#scommon7] inv'4 self}
-    any
-    [ return' (result:t_Option'0)-> {[%#scommon8] inv'5 result}
-      {[%#scommon9] match result with
-        | C_None'0 -> completed'1 self
-        | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
-        end}
-      (! return' {result}) ]
-    
-  
-  let rec v_Some'0 (input:t_Option'0) (ret  (field_0:t_Item'0))= any
-    [ good (field_0:t_Item'0)-> {C_Some'0 field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : t_Item'0 [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
-    
-  
-  let rec call_mut'0 (self:borrowed t_F'0) (args:(t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0))) (return'  (ret:t_B'0))= {[@expl:call_mut 'self' type invariant] inv'6 self}
-    {[@expl:call_mut 'args' type invariant] inv'7 args}
-    {[@expl:call_mut requires] [%#sops10] precondition'0 self.current args}
-    any
-    [ return' (result:t_B'0)-> {inv'8 result}
-      {[%#sops11] postcondition_mut'0 self.current args self.final result}
-      (! return' {result}) ]
-    
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Map'0) [inv'2 x] . inv'2 x = invariant'0 x
   
   predicate resolve'1 (self : borrowed (t_Map'0)) =
     [%#sresolve34] self.final = self.current
@@ -819,9 +787,21 @@ module M_06_map_precond__qyi18374305379273630819__next [#"06_map_precond.rs" 72 
   
   use prelude.prelude.Snapshot
   
+  type t_Option'1  =
+    | C_None'1
+    | C_Some'1 t_B'0
+  
   use prelude.prelude.Intrinsic
   
   use prelude.prelude.Snapshot
+  
+  predicate inv'3 (_1 : t_Option'1)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'1 [inv'3 x] . inv'3 x
+  = match x with
+    | C_None'1 -> true
+    | C_Some'1 a_0 -> inv'8 a_0
+    end
   
   predicate completed'0 [#"06_map_precond.rs" 24 4 24 35] (self : borrowed (t_Map'0)) =
     [%#s06_map_precond23] Snapshot.inner (self.final).t_Map__produced'0 = (Seq.empty  : Seq.seq t_Item'0)
@@ -831,6 +811,26 @@ module M_06_map_precond__qyi18374305379273630819__next [#"06_map_precond.rs" 72 
   use seq.Seq
   
   use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate invariant'7 (self : borrowed t_F'0) =
+    [%#sboxed51] inv'6 self
+  
+  predicate inv'14 (_1 : borrowed t_F'0)
+  
+  axiom inv_axiom'10 [@rewrite] : forall x : borrowed t_F'0 [inv'14 x] . inv'14 x = invariant'7 x
+  
+  predicate invariant'5 (self : Seq.seq (borrowed t_F'0)) =
+    [%#sseq50] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'14 (Seq.get self i)
+  
+  predicate inv'12 (_1 : Seq.seq (borrowed t_F'0))
+  
+  axiom inv_axiom'8 [@rewrite] : forall x : Seq.seq (borrowed t_F'0) [inv'12 x] . inv'12 x = invariant'5 x
   
   use seq.Seq
   
@@ -1039,11 +1039,36 @@ module M_06_map_precond__qyi16548623944279504987__preservation_inv [#"06_map_pre
   
   type t_B'0
   
-  predicate inv'0 (_1 : Seq.seq t_Item'0)
+  use prelude.prelude.Int
+  
+  use seq.Seq
+  
+  use seq.Seq
   
   predicate inv'1 (_1 : t_Item'0)
   
+  predicate invariant'2 (self : t_Item'0) =
+    [%#sboxed20] inv'1 self
+  
+  predicate inv'5 (_1 : t_Item'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Item'0 [inv'5 x] . inv'5 x = invariant'2 x
+  
+  predicate invariant'0 (self : Seq.seq t_Item'0) =
+    [%#sseq18] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'5 (Seq.get self i)
+  
+  predicate inv'0 (_1 : Seq.seq t_Item'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'0 x] . inv'0 x = invariant'0 x
+  
+  predicate inv'6 (_1 : t_F'0)
+  
+  predicate invariant'1 (self : borrowed t_F'0) =
+    [%#sinvariant19] inv'6 self.current /\ inv'6 self.final
+  
   predicate inv'2 (_1 : borrowed t_F'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : borrowed t_F'0 [inv'2 x] . inv'2 x = invariant'1 x
   
   predicate inv'3 (_1 : t_B'0)
   
@@ -1073,31 +1098,6 @@ module M_06_map_precond__qyi16548623944279504987__preservation_inv [#"06_map_pre
      -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
   
   use seq.Seq
-  
-  use prelude.prelude.Int
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  predicate inv'5 (_1 : t_Item'0)
-  
-  predicate invariant'0 (self : Seq.seq t_Item'0) =
-    [%#sseq18] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'5 (Seq.get self i)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'0 x] . inv'0 x = invariant'0 x
-  
-  predicate inv'6 (_1 : t_F'0)
-  
-  predicate invariant'1 (self : borrowed t_F'0) =
-    [%#sinvariant19] inv'6 self.current /\ inv'6 self.final
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : borrowed t_F'0 [inv'2 x] . inv'2 x = invariant'1 x
-  
-  predicate invariant'2 (self : t_Item'0) =
-    [%#sboxed20] inv'1 self
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Item'0 [inv'5 x] . inv'5 x = invariant'2 x
   
   function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   
@@ -1207,40 +1207,76 @@ module M_06_map_precond__qyi16548623944279504987__produces_one_invariant [#"06_m
   type t_Map'0  =
     { t_Map__iter'0: t_I'0; t_Map__func'0: t_F'0; t_Map__produced'0: Snapshot.snap_ty (Seq.seq t_Item'0) }
   
-  predicate inv'0 (_1 : t_Map'0)
-  
-  predicate inv'1 (_1 : t_Item'0)
-  
-  type t_B'0
-  
-  predicate inv'2 (_1 : t_B'0)
-  
   use prelude.prelude.Borrow
   
-  predicate inv'3 (_1 : borrowed t_F'0)
-  
   predicate inv'4 (_1 : t_I'0)
+  
+  predicate invariant'4 (self : borrowed t_I'0) =
+    [%#sinvariant32] inv'4 self.current /\ inv'4 self.final
+  
+  predicate inv'8 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : borrowed t_I'0 [inv'8 x] . inv'8 x = invariant'4 x
+  
+  predicate inv'6 (_1 : t_F'0)
+  
+  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  
+  use seq.Seq
+  
+  predicate inv'1 (_1 : t_Item'0)
   
   use seq.Seq
   
   predicate produces'0 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
   
-  predicate postcondition_mut'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0))) (result_state : t_F'0) (result : t_B'0)
-    
-  
-  use prelude.prelude.Snapshot
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  predicate inv'5 (_1 : Seq.seq t_Item'0)
-  
-  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
-  
   use prelude.prelude.Snapshot
   
   predicate precondition'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0)))
+  
+  predicate next_precondition'0 [#"06_map_precond.rs" 92 4 92 74] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
+    
+   =
+    [%#s06_map_precond14] forall e : t_Item'0, i : t_I'0 [produces'0 iter (Seq.singleton e) i] . inv'1 e
+    /\ inv'4 i /\ produces'0 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
+  
+  type t_B'0
+  
+  use prelude.prelude.Int
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate invariant'3 (self : t_Item'0) =
+    [%#sboxed35] inv'1 self
+  
+  predicate inv'7 (_1 : t_Item'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Item'0 [inv'7 x] . inv'7 x = invariant'3 x
+  
+  predicate invariant'2 (self : Seq.seq t_Item'0) =
+    [%#sseq33] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'7 (Seq.get self i)
+  
+  predicate inv'5 (_1 : Seq.seq t_Item'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'5 x] . inv'5 x = invariant'2 x
+  
+  predicate invariant'1 (self : borrowed t_F'0) =
+    [%#sinvariant32] inv'6 self.current /\ inv'6 self.final
+  
+  predicate inv'3 (_1 : borrowed t_F'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : borrowed t_F'0 [inv'3 x] . inv'3 x = invariant'1 x
+  
+  predicate inv'2 (_1 : t_B'0)
+  
+  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  
+  use seq.Seq
+  
+  predicate postcondition_mut'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0))) (result_state : t_F'0) (result : t_B'0)
+    
   
   predicate preservation'0 [#"06_map_precond.rs" 116 4 116 45] (iter : t_I'0) (func : t_F'0) =
     [%#s06_map_precond30] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 . inv'5 s
@@ -1249,6 +1285,13 @@ module M_06_map_precond__qyi16548623944279504987__produces_one_invariant [#"06_m
      -> precondition'0 f.current (e1, Snapshot.new s)
      -> postcondition_mut'0 f.current (e1, Snapshot.new s) f.final b
      -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
+  
+  predicate reinitialize'0 [#"06_map_precond.rs" 128 4 128 29] (_1 : ()) =
+    [%#s06_map_precond34] forall iter : borrowed t_I'0, func : t_F'0 . inv'8 iter /\ inv'6 func
+     -> completed'0 iter
+     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq t_Item'0) /\ preservation'0 iter.final func
+  
+  use prelude.prelude.Snapshot
   
   use seq.Seq
   
@@ -1265,61 +1308,18 @@ module M_06_map_precond__qyi16548623944279504987__produces_one_invariant [#"06_m
   axiom preservation_inv'0_spec : forall iter : t_I'0, func : t_F'0, produced : Seq.seq t_Item'0 . [%#s06_map_precond12] produced
   = (Seq.empty  : Seq.seq t_Item'0)  -> preservation_inv'0 iter func produced = preservation'0 iter func
   
-  predicate next_precondition'0 [#"06_map_precond.rs" 92 4 92 74] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
-    
-   =
-    [%#s06_map_precond14] forall e : t_Item'0, i : t_I'0 [produces'0 iter (Seq.singleton e) i] . inv'1 e
-    /\ inv'4 i /\ produces'0 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
-  
-  predicate inv'8 (_1 : borrowed t_I'0)
-  
-  predicate inv'6 (_1 : t_F'0)
-  
-  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
-  
-  predicate reinitialize'0 [#"06_map_precond.rs" 128 4 128 29] (_1 : ()) =
-    [%#s06_map_precond34] forall iter : borrowed t_I'0, func : t_F'0 . inv'8 iter /\ inv'6 func
-     -> completed'0 iter
-     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq t_Item'0) /\ preservation'0 iter.final func
-  
   predicate invariant'0 [#"06_map_precond.rs" 176 4 176 30] (self : t_Map'0) =
     [%#s06_map_precond31] reinitialize'0 ()
     /\ preservation_inv'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
     /\ next_precondition'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
+  
+  predicate inv'0 (_1 : t_Map'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Map'0 [inv'0 x] . inv'0 x
   = (invariant'0 x
   /\ match x with
     | {t_Map__iter'0 = iter ; t_Map__func'0 = func ; t_Map__produced'0 = produced} -> inv'4 iter /\ inv'6 func
     end)
-  
-  predicate invariant'1 (self : borrowed t_F'0) =
-    [%#sinvariant32] inv'6 self.current /\ inv'6 self.final
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : borrowed t_F'0 [inv'3 x] . inv'3 x = invariant'1 x
-  
-  use prelude.prelude.Int
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  predicate inv'7 (_1 : t_Item'0)
-  
-  predicate invariant'2 (self : Seq.seq t_Item'0) =
-    [%#sseq33] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'7 (Seq.get self i)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'5 x] . inv'5 x = invariant'2 x
-  
-  predicate invariant'3 (self : t_Item'0) =
-    [%#sboxed35] inv'1 self
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Item'0 [inv'7 x] . inv'7 x = invariant'3 x
-  
-  predicate invariant'4 (self : borrowed t_I'0) =
-    [%#sinvariant32] inv'4 self.current /\ inv'4 self.final
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : borrowed t_I'0 [inv'8 x] . inv'8 x = invariant'4 x
   
   function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   
@@ -1452,15 +1452,56 @@ module M_06_map_precond__qyi16548623944279504987__produces_one [#"06_map_precond
   
   use seq.Seq
   
+  use prelude.prelude.Int
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate inv'6 (_1 : t_F'0)
+  
+  predicate invariant'0 (self : borrowed t_F'0) =
+    [%#sinvariant28] inv'6 self.current /\ inv'6 self.final
+  
+  predicate inv'0 (_1 : borrowed t_F'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed t_F'0 [inv'0 x] . inv'0 x = invariant'0 x
+  
+  predicate invariant'4 (self : borrowed t_F'0) =
+    [%#sboxed36] inv'0 self
+  
+  predicate inv'7 (_1 : borrowed t_F'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : borrowed t_F'0 [inv'7 x] . inv'7 x = invariant'4 x
+  
+  predicate invariant'1 (self : Seq.seq (borrowed t_F'0)) =
+    [%#sseq29] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'7 (Seq.get self i)
+  
   predicate inv'2 (_1 : Seq.seq (borrowed t_F'0))
   
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq (borrowed t_F'0) [inv'2 x] . inv'2 x = invariant'1 x
+  
   use seq.Seq
   
   use seq.Seq
+  
+  use seq.Seq
+  
+  predicate inv'1 (_1 : t_Item'0)
+  
+  predicate invariant'5 (self : t_Item'0) =
+    [%#sboxed36] inv'1 self
+  
+  predicate inv'8 (_1 : t_Item'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_Item'0 [inv'8 x] . inv'8 x = invariant'5 x
+  
+  predicate invariant'2 (self : Seq.seq t_Item'0) =
+    [%#sseq29] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'8 (Seq.get self i)
   
   predicate inv'3 (_1 : Seq.seq t_Item'0)
   
-  use seq.Seq
+  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'3 x] . inv'3 x = invariant'2 x
   
   predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
   
@@ -1469,8 +1510,6 @@ module M_06_map_precond__qyi16548623944279504987__produces_one [#"06_map_precond
   use prelude.prelude.Snapshot
   
   use seq.Seq
-  
-  use prelude.prelude.Int
   
   use seq.Seq
   
@@ -1508,48 +1547,22 @@ module M_06_map_precond__qyi16548623944279504987__produces_one [#"06_map_precond
     /\ precondition'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner self.t_Map__produced'0) (Seq.([..]) s 0 i)))
     /\ postcondition_mut'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner self.t_Map__produced'0) (Seq.([..]) s 0 i))) (Seq.get fs i).final (Seq.get visited i))))
   
-  predicate inv'0 (_1 : borrowed t_F'0)
-  
-  predicate inv'1 (_1 : t_Item'0)
-  
   use seq.Seq
-  
-  use seq.Seq
-  
-  predicate inv'6 (_1 : t_F'0)
-  
-  predicate invariant'0 (self : borrowed t_F'0) =
-    [%#sinvariant28] inv'6 self.current /\ inv'6 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed t_F'0 [inv'0 x] . inv'0 x = invariant'0 x
-  
-  use seq.Seq
-  
-  predicate inv'7 (_1 : borrowed t_F'0)
-  
-  predicate invariant'1 (self : Seq.seq (borrowed t_F'0)) =
-    [%#sseq29] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'7 (Seq.get self i)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq (borrowed t_F'0) [inv'2 x] . inv'2 x = invariant'1 x
-  
-  use seq.Seq
-  
-  predicate inv'8 (_1 : t_Item'0)
-  
-  predicate invariant'2 (self : Seq.seq t_Item'0) =
-    [%#sseq29] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'8 (Seq.get self i)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'3 x] . inv'3 x = invariant'2 x
-  
-  predicate inv'4 (_1 : t_Map'0)
-  
-  predicate inv'9 (_1 : borrowed t_I'0)
-  
-  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
   
   use seq.Seq
   
   predicate inv'5 (_1 : t_I'0)
+  
+  predicate invariant'6 (self : borrowed t_I'0) =
+    [%#sinvariant28] inv'5 self.current /\ inv'5 self.final
+  
+  predicate inv'9 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : borrowed t_I'0 [inv'9 x] . inv'9 x = invariant'6 x
+  
+  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  
+  use seq.Seq
   
   predicate next_precondition'0 [#"06_map_precond.rs" 92 4 92 74] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
     
@@ -1590,26 +1603,13 @@ module M_06_map_precond__qyi16548623944279504987__produces_one [#"06_map_precond
     /\ preservation_inv'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
     /\ next_precondition'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
   
+  predicate inv'4 (_1 : t_Map'0)
+  
   axiom inv_axiom'3 [@rewrite] : forall x : t_Map'0 [inv'4 x] . inv'4 x
   = (invariant'3 x
   /\ match x with
     | {t_Map__iter'0 = iter ; t_Map__func'0 = func ; t_Map__produced'0 = produced} -> inv'5 iter /\ inv'6 func
     end)
-  
-  predicate invariant'4 (self : borrowed t_F'0) =
-    [%#sboxed36] inv'0 self
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : borrowed t_F'0 [inv'7 x] . inv'7 x = invariant'4 x
-  
-  predicate invariant'5 (self : t_Item'0) =
-    [%#sboxed36] inv'1 self
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t_Item'0 [inv'8 x] . inv'8 x = invariant'5 x
-  
-  predicate invariant'6 (self : borrowed t_I'0) =
-    [%#sinvariant28] inv'5 self.current /\ inv'5 self.final
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : borrowed t_I'0 [inv'9 x] . inv'9 x = invariant'6 x
   
   use seq.Seq
   
@@ -1756,7 +1756,12 @@ module M_06_map_precond__map [#"06_map_precond.rs" 191 0 194 17]
   
   use prelude.prelude.Borrow
   
+  predicate invariant'1 (self : borrowed t_I'0) =
+    [%#sinvariant27] inv'0 self.current /\ inv'0 self.final
+  
   predicate inv'4 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : borrowed t_I'0 [inv'4 x] . inv'4 x = invariant'1 x
   
   predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
   
@@ -1768,9 +1773,32 @@ module M_06_map_precond__map [#"06_map_precond.rs" 191 0 194 17]
   
   type t_B'0
   
+  use prelude.prelude.Int
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate invariant'4 (self : t_Item'0) =
+    [%#sboxed31] inv'2 self
+  
+  predicate inv'8 (_1 : t_Item'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_Item'0 [inv'8 x] . inv'8 x = invariant'4 x
+  
+  predicate invariant'2 (self : Seq.seq t_Item'0) =
+    [%#sseq28] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'8 (Seq.get self i)
+  
   predicate inv'5 (_1 : Seq.seq t_Item'0)
   
+  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'5 x] . inv'5 x = invariant'2 x
+  
+  predicate invariant'3 (self : borrowed t_F'0) =
+    [%#sinvariant27] inv'1 self.current /\ inv'1 self.final
+  
   predicate inv'6 (_1 : borrowed t_F'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed t_F'0 [inv'6 x] . inv'6 x = invariant'3 x
   
   predicate inv'7 (_1 : t_B'0)
   
@@ -1794,8 +1822,6 @@ module M_06_map_precond__map [#"06_map_precond.rs" 191 0 194 17]
      -> completed'0 iter
      -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq t_Item'0) /\ preservation'0 iter.final func
   
-  predicate inv'3 (_1 : t_Map'0)
-  
   use prelude.prelude.Snapshot
   
   use seq.Seq
@@ -1818,39 +1844,13 @@ module M_06_map_precond__map [#"06_map_precond.rs" 191 0 194 17]
     /\ preservation_inv'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
     /\ next_precondition'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
   
+  predicate inv'3 (_1 : t_Map'0)
+  
   axiom inv_axiom'0 [@rewrite] : forall x : t_Map'0 [inv'3 x] . inv'3 x
   = (invariant'0 x
   /\ match x with
     | {t_Map__iter'0 = iter ; t_Map__func'0 = func ; t_Map__produced'0 = produced} -> inv'0 iter /\ inv'1 func
     end)
-  
-  predicate invariant'1 (self : borrowed t_I'0) =
-    [%#sinvariant27] inv'0 self.current /\ inv'0 self.final
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : borrowed t_I'0 [inv'4 x] . inv'4 x = invariant'1 x
-  
-  use prelude.prelude.Int
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  predicate inv'8 (_1 : t_Item'0)
-  
-  predicate invariant'2 (self : Seq.seq t_Item'0) =
-    [%#sseq28] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'8 (Seq.get self i)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'5 x] . inv'5 x = invariant'2 x
-  
-  predicate invariant'3 (self : borrowed t_F'0) =
-    [%#sinvariant27] inv'1 self.current /\ inv'1 self.final
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed t_F'0 [inv'6 x] . inv'6 x = invariant'3 x
-  
-  predicate invariant'4 (self : t_Item'0) =
-    [%#sboxed31] inv'2 self
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Item'0 [inv'8 x] . inv'8 x = invariant'4 x
   
   function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   
@@ -1983,31 +1983,42 @@ module M_06_map_precond__identity [#"06_map_precond.rs" 198 0 198 37]
   
   use prelude.prelude.Snapshot
   
+  let rec closure0'0 (_1:borrowed ()) (x:t_Item'0) (_3:Snapshot.snap_ty (Seq.seq t_Item'0)) (return'  (ret:t_Item'0))= {[@expl:closure 'x' type invariant] [%#s06_map_precond1] inv'2 x}
+    (! bb0 [ bb0 = s0 [ s0 = -{resolve'0 _1}- s1 | s1 =  [ &_0 <- x ] s2 | s2 = bb1 ]  | bb1 = return' {_0} ] )
+    [ & _0 : t_Item'0 = any_l () | & _1 : borrowed () = _1 | & x : t_Item'0 = x ]
+    
+    [ return' (result:t_Item'0)-> {[@expl:closure result type invariant] [%#s06_map_precond2] inv'2 result}
+      {[@expl:closure unnest] unnest'0 _1.current _1.final}
+      (! return' {result}) ]
+    
+  
   type t_I'0
   
-  type t_Map'0  =
-    { t_Map__iter'0: t_I'0; t_Map__func'0: (); t_Map__produced'0: Snapshot.snap_ty (Seq.seq t_Item'0) }
-  
-  predicate inv'0 (_1 : t_Map'0)
-  
-  predicate inv'4 (_1 : borrowed t_I'0)
+  predicate inv'1 (_1 : t_I'0)
   
   predicate inv'3 (_1 : ())
   
-  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
-  
-  use seq.Seq
-  
-  predicate inv'1 (_1 : t_I'0)
+  axiom inv_axiom'1 [@rewrite] : forall x : () [inv'3 x] . inv'3 x = true
   
   use seq.Seq
   
   predicate produces'0 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
   
+  use seq.Seq
+  
   use prelude.prelude.Snapshot
   
   predicate precondition'0 (self : ()) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0))) =
     let (x, _3) = args in true
+  
+  predicate invariant'1 (self : borrowed t_I'0) =
+    [%#sinvariant32] inv'1 self.current /\ inv'1 self.final
+  
+  predicate inv'4 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'4 x] . inv'4 x = invariant'1 x
+  
+  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
   
   predicate next_precondition'0 [#"06_map_precond.rs" 92 4 92 74] (iter : t_I'0) (func : ()) (produced : Seq.seq t_Item'0)
     
@@ -2015,9 +2026,29 @@ module M_06_map_precond__identity [#"06_map_precond.rs" 198 0 198 37]
     [%#s06_map_precond28] forall e : t_Item'0, i : t_I'0 [produces'0 iter (Seq.singleton e) i] . inv'2 e
     /\ inv'1 i /\ produces'0 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
   
+  use prelude.prelude.Int
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate invariant'3 (self : t_Item'0) =
+    [%#sboxed34] inv'2 self
+  
+  predicate inv'7 (_1 : t_Item'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_Item'0 [inv'7 x] . inv'7 x = invariant'3 x
+  
+  predicate invariant'2 (self : Seq.seq t_Item'0) =
+    [%#sseq33] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'7 (Seq.get self i)
+  
   predicate inv'5 (_1 : Seq.seq t_Item'0)
   
+  axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'5 x] . inv'5 x = invariant'2 x
+  
   predicate inv'6 (_1 : borrowed ())
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : borrowed () [inv'6 x] . inv'6 x = true
   
   use seq.Seq
   
@@ -2038,6 +2069,9 @@ module M_06_map_precond__identity [#"06_map_precond.rs" 198 0 198 37]
     [%#s06_map_precond10] forall iter : borrowed t_I'0, func : () . inv'4 iter /\ inv'3 func
      -> completed'0 iter
      -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq t_Item'0) /\ preservation'0 iter.final func
+  
+  type t_Map'0  =
+    { t_Map__iter'0: t_I'0; t_Map__func'0: (); t_Map__produced'0: Snapshot.snap_ty (Seq.seq t_Item'0) }
   
   use prelude.prelude.Snapshot
   
@@ -2061,47 +2095,13 @@ module M_06_map_precond__identity [#"06_map_precond.rs" 198 0 198 37]
     /\ preservation_inv'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
     /\ next_precondition'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
   
+  predicate inv'0 (_1 : t_Map'0)
+  
   axiom inv_axiom'0 [@rewrite] : forall x : t_Map'0 [inv'0 x] . inv'0 x
   = (invariant'0 x
   /\ match x with
     | {t_Map__iter'0 = iter ; t_Map__func'0 = func ; t_Map__produced'0 = produced} -> inv'1 iter
     end)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : () [inv'3 x] . inv'3 x = true
-  
-  predicate invariant'1 (self : borrowed t_I'0) =
-    [%#sinvariant32] inv'1 self.current /\ inv'1 self.final
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'4 x] . inv'4 x = invariant'1 x
-  
-  use prelude.prelude.Int
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  predicate inv'7 (_1 : t_Item'0)
-  
-  predicate invariant'2 (self : Seq.seq t_Item'0) =
-    [%#sseq33] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'7 (Seq.get self i)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'5 x] . inv'5 x = invariant'2 x
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : borrowed () [inv'6 x] . inv'6 x = true
-  
-  predicate invariant'3 (self : t_Item'0) =
-    [%#sboxed34] inv'2 self
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t_Item'0 [inv'7 x] . inv'7 x = invariant'3 x
-  
-  let rec closure0'0 (_1:borrowed ()) (x:t_Item'0) (_3:Snapshot.snap_ty (Seq.seq t_Item'0)) (return'  (ret:t_Item'0))= {[@expl:closure 'x' type invariant] [%#s06_map_precond1] inv'2 x}
-    (! bb0 [ bb0 = s0 [ s0 = -{resolve'0 _1}- s1 | s1 =  [ &_0 <- x ] s2 | s2 = bb1 ]  | bb1 = return' {_0} ] )
-    [ & _0 : t_Item'0 = any_l () | & _1 : borrowed () = _1 | & x : t_Item'0 = x ]
-    
-    [ return' (result:t_Item'0)-> {[@expl:closure result type invariant] [%#s06_map_precond2] inv'2 result}
-      {[@expl:closure unnest] unnest'0 _1.current _1.final}
-      (! return' {result}) ]
-    
   
   let rec map'0 (iter:t_I'0) (func:()) (return'  (ret:t_Map'0))= {[@expl:map 'iter' type invariant] [%#s06_map_precond3] inv'1 iter}
     {[@expl:map 'func' type invariant] [%#s06_map_precond4] inv'3 func}
@@ -2250,110 +2250,6 @@ module M_06_map_precond__increment [#"06_map_precond.rs" 206 0 206 50]
   
   use prelude.prelude.Snapshot
   
-  type t_U'0
-  
-  type t_Map'0  =
-    { t_Map__iter'0: t_U'0; t_Map__func'0: (); t_Map__produced'0: Snapshot.snap_ty (Seq.seq uint32) }
-  
-  predicate inv'0 (_1 : t_Map'0)
-  
-  predicate inv'3 (_1 : borrowed t_U'0)
-  
-  predicate inv'4 (_1 : ())
-  
-  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_U'0)
-  
-  use seq.Seq
-  
-  predicate inv'5 (_1 : uint32)
-  
-  predicate inv'2 (_1 : t_U'0)
-  
-  use seq.Seq
-  
-  predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_U'0) (visited : Seq.seq uint32) (o : t_U'0)
-  
-  use prelude.prelude.Snapshot
-  
-  predicate precondition'0 (self : ()) (args : (uint32, Snapshot.snap_ty (Seq.seq uint32))) =
-    [%#s06_map_precond5] let (x, _3) = args in UInt32.to_int x <= 15
-  
-  predicate next_precondition'0 [#"06_map_precond.rs" 92 4 92 74] (iter : t_U'0) (func : ()) (produced : Seq.seq uint32)
-   =
-    [%#s06_map_precond43] forall e : uint32, i : t_U'0 [produces'1 iter (Seq.singleton e) i] . inv'5 e
-    /\ inv'2 i /\ produces'1 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
-  
-  predicate inv'1 (_1 : Seq.seq uint32)
-  
-  predicate inv'7 (_1 : borrowed ())
-  
-  use seq.Seq
-  
-  predicate postcondition_mut'0 (self : ()) (args : (uint32, Snapshot.snap_ty (Seq.seq uint32))) (result_state : ()) (result : uint32)
-    
-   =
-    (let (x, _3) = args in UInt32.to_int result = UInt32.to_int x + 1) /\ unnest'0 self result_state
-  
-  predicate preservation'0 [#"06_map_precond.rs" 116 4 116 45] (iter : t_U'0) (func : ()) =
-    [%#s06_map_precond16] forall s : Seq.seq uint32, e1 : uint32, e2 : uint32, f : borrowed (), b : uint32, i : t_U'0 . inv'1 s
-    /\ inv'5 e1 /\ inv'5 e2 /\ inv'7 f /\ inv'5 b /\ inv'2 i /\ unnest'0 func f.current
-     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 f.current (e1, Snapshot.new s)
-     -> postcondition_mut'0 f.current (e1, Snapshot.new s) f.final b
-     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
-  
-  predicate reinitialize'0 [#"06_map_precond.rs" 128 4 128 29] (_1 : ()) =
-    [%#s06_map_precond15] forall iter : borrowed t_U'0, func : () . inv'3 iter /\ inv'4 func
-     -> completed'0 iter
-     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq uint32) /\ preservation'0 iter.final func
-  
-  use prelude.prelude.Snapshot
-  
-  use seq.Seq
-  
-  predicate preservation_inv'0 [#"06_map_precond.rs" 103 4 103 73] (iter : t_U'0) (func : ()) (produced : Seq.seq uint32)
-    
-   =
-    [%#s06_map_precond47] forall s : Seq.seq uint32, e1 : uint32, e2 : uint32, f : borrowed (), b : uint32, i : t_U'0 [produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b] . inv'1 s
-    /\ inv'5 e1 /\ inv'5 e2 /\ inv'7 f /\ inv'5 b /\ inv'2 i /\ unnest'0 func f.current
-     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
-     -> postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b
-     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
-  
-  axiom preservation_inv'0_spec : forall iter : t_U'0, func : (), produced : Seq.seq uint32 . [%#s06_map_precond46] produced
-  = (Seq.empty  : Seq.seq uint32)  -> preservation_inv'0 iter func produced = preservation'0 iter func
-  
-  predicate invariant'0 [#"06_map_precond.rs" 176 4 176 30] (self : t_Map'0) =
-    [%#s06_map_precond44] reinitialize'0 ()
-    /\ preservation_inv'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
-    /\ next_precondition'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Map'0 [inv'0 x] . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | {t_Map__iter'0 = iter ; t_Map__func'0 = func ; t_Map__produced'0 = produced} -> inv'2 iter
-    end)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq uint32 [inv'1 x] . inv'1 x = true
-  
-  predicate invariant'1 (self : borrowed t_U'0) =
-    [%#sinvariant45] inv'2 self.current /\ inv'2 self.final
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_U'0 [inv'3 x] . inv'3 x = invariant'1 x
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : () [inv'4 x] . inv'4 x = true
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : uint32 [inv'5 x] . inv'5 x = true
-  
-  use seq.Seq
-  
-  predicate inv'6 (_1 : Seq.seq (borrowed ()))
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : Seq.seq (borrowed ()) [inv'6 x] . inv'6 x = true
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : borrowed () [inv'7 x] . inv'7 x = true
-  
   let rec closure2'0 (_1:borrowed ()) (x:uint32) (_3:Snapshot.snap_ty (Seq.seq uint32)) (return'  (ret:uint32))= {[@expl:closure requires] [%#s06_map_precond5] UInt32.to_int x
     <= 15}
     (! bb0
@@ -2377,6 +2273,104 @@ module M_06_map_precond__increment [#"06_map_precond.rs" 206 0 206 50]
       (! return' {result}) ]
     
   
+  type t_U'0
+  
+  predicate inv'2 (_1 : t_U'0)
+  
+  predicate inv'4 (_1 : ())
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : () [inv'4 x] . inv'4 x = true
+  
+  predicate inv'5 (_1 : uint32)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : uint32 [inv'5 x] . inv'5 x = true
+  
+  use seq.Seq
+  
+  predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_U'0) (visited : Seq.seq uint32) (o : t_U'0)
+  
+  use seq.Seq
+  
+  use prelude.prelude.Snapshot
+  
+  predicate precondition'0 (self : ()) (args : (uint32, Snapshot.snap_ty (Seq.seq uint32))) =
+    [%#s06_map_precond5] let (x, _3) = args in UInt32.to_int x <= 15
+  
+  predicate invariant'1 (self : borrowed t_U'0) =
+    [%#sinvariant45] inv'2 self.current /\ inv'2 self.final
+  
+  predicate inv'3 (_1 : borrowed t_U'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_U'0 [inv'3 x] . inv'3 x = invariant'1 x
+  
+  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_U'0)
+  
+  predicate next_precondition'0 [#"06_map_precond.rs" 92 4 92 74] (iter : t_U'0) (func : ()) (produced : Seq.seq uint32)
+   =
+    [%#s06_map_precond43] forall e : uint32, i : t_U'0 [produces'1 iter (Seq.singleton e) i] . inv'5 e
+    /\ inv'2 i /\ produces'1 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
+  
+  predicate inv'1 (_1 : Seq.seq uint32)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq uint32 [inv'1 x] . inv'1 x = true
+  
+  predicate inv'7 (_1 : borrowed ())
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : borrowed () [inv'7 x] . inv'7 x = true
+  
+  use seq.Seq
+  
+  predicate postcondition_mut'0 (self : ()) (args : (uint32, Snapshot.snap_ty (Seq.seq uint32))) (result_state : ()) (result : uint32)
+    
+   =
+    (let (x, _3) = args in UInt32.to_int result = UInt32.to_int x + 1) /\ unnest'0 self result_state
+  
+  predicate preservation'0 [#"06_map_precond.rs" 116 4 116 45] (iter : t_U'0) (func : ()) =
+    [%#s06_map_precond16] forall s : Seq.seq uint32, e1 : uint32, e2 : uint32, f : borrowed (), b : uint32, i : t_U'0 . inv'1 s
+    /\ inv'5 e1 /\ inv'5 e2 /\ inv'7 f /\ inv'5 b /\ inv'2 i /\ unnest'0 func f.current
+     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
+     -> precondition'0 f.current (e1, Snapshot.new s)
+     -> postcondition_mut'0 f.current (e1, Snapshot.new s) f.final b
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
+  
+  predicate reinitialize'0 [#"06_map_precond.rs" 128 4 128 29] (_1 : ()) =
+    [%#s06_map_precond15] forall iter : borrowed t_U'0, func : () . inv'3 iter /\ inv'4 func
+     -> completed'0 iter
+     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq uint32) /\ preservation'0 iter.final func
+  
+  type t_Map'0  =
+    { t_Map__iter'0: t_U'0; t_Map__func'0: (); t_Map__produced'0: Snapshot.snap_ty (Seq.seq uint32) }
+  
+  use prelude.prelude.Snapshot
+  
+  use seq.Seq
+  
+  predicate preservation_inv'0 [#"06_map_precond.rs" 103 4 103 73] (iter : t_U'0) (func : ()) (produced : Seq.seq uint32)
+    
+   =
+    [%#s06_map_precond47] forall s : Seq.seq uint32, e1 : uint32, e2 : uint32, f : borrowed (), b : uint32, i : t_U'0 [produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b] . inv'1 s
+    /\ inv'5 e1 /\ inv'5 e2 /\ inv'7 f /\ inv'5 b /\ inv'2 i /\ unnest'0 func f.current
+     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
+     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
+     -> postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
+  
+  axiom preservation_inv'0_spec : forall iter : t_U'0, func : (), produced : Seq.seq uint32 . [%#s06_map_precond46] produced
+  = (Seq.empty  : Seq.seq uint32)  -> preservation_inv'0 iter func produced = preservation'0 iter func
+  
+  predicate invariant'0 [#"06_map_precond.rs" 176 4 176 30] (self : t_Map'0) =
+    [%#s06_map_precond44] reinitialize'0 ()
+    /\ preservation_inv'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
+    /\ next_precondition'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
+  
+  predicate inv'0 (_1 : t_Map'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Map'0 [inv'0 x] . inv'0 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_Map__iter'0 = iter ; t_Map__func'0 = func ; t_Map__produced'0 = produced} -> inv'2 iter
+    end)
+  
   let rec map'0 (iter:t_U'0) (func:()) (return'  (ret:t_Map'0))= {[@expl:map 'iter' type invariant] [%#s06_map_precond7] inv'2 iter}
     {[@expl:map 'func' type invariant] [%#s06_map_precond8] inv'4 func}
     {[@expl:map requires #0] [%#s06_map_precond9] forall e : uint32, i2 : t_U'0 . inv'5 e /\ inv'2 i2
@@ -2389,6 +2383,12 @@ module M_06_map_precond__increment [#"06_map_precond.rs" 206 0 206 50]
       = { t_Map__iter'0 = iter; t_Map__func'0 = func; t_Map__produced'0 = Snapshot.new (Seq.empty  : Seq.seq uint32) }}
       (! return' {result}) ]
     
+  
+  use seq.Seq
+  
+  predicate inv'6 (_1 : Seq.seq (borrowed ()))
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : Seq.seq (borrowed ()) [inv'6 x] . inv'6 x = true
   
   use seq.Seq
   
@@ -2582,107 +2582,6 @@ module M_06_map_precond__counter [#"06_map_precond.rs" 222 0 222 48]
   
   use prelude.prelude.Snapshot
   
-  type t_I'0
-  
-  type t_Map'0  =
-    { t_Map__iter'0: t_I'0; t_Map__func'0: closure2'1; t_Map__produced'0: Snapshot.snap_ty (Seq.seq uint32) }
-  
-  predicate inv'0 (_1 : t_Map'0)
-  
-  predicate inv'2 (_1 : borrowed t_I'0)
-  
-  predicate inv'4 (_1 : closure2'1)
-  
-  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
-  
-  use seq.Seq
-  
-  predicate inv'5 (_1 : uint32)
-  
-  predicate inv'1 (_1 : t_I'0)
-  
-  use seq.Seq
-  
-  predicate produces'0 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq uint32) (o : t_I'0)
-  
-  use prelude.prelude.Snapshot
-  
-  predicate precondition'0 (self : closure2'1) (args : (uint32, Snapshot.snap_ty (Seq.seq uint32))) =
-    [%#s06_map_precond5] let (x, _prod) = args in UIntSize.to_int (self.field_0'0).current
-    = Seq.length (Snapshot.inner _prod)
-    /\ (self.field_0'0).current < (v_MAX'0 : usize)
-  
-  predicate next_precondition'0 [#"06_map_precond.rs" 92 4 92 74] (iter : t_I'0) (func : closure2'1) (produced : Seq.seq uint32)
-    
-   =
-    [%#s06_map_precond32] forall e : uint32, i : t_I'0 [produces'0 iter (Seq.singleton e) i] . inv'5 e
-    /\ inv'1 i /\ produces'0 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
-  
-  predicate inv'3 (_1 : Seq.seq uint32)
-  
-  predicate inv'6 (_1 : borrowed closure2'1)
-  
-  use seq.Seq
-  
-  predicate postcondition_mut'0 (self : closure2'1) (args : (uint32, Snapshot.snap_ty (Seq.seq uint32))) (result_state : closure2'1) (result : uint32)
-    
-   =
-    (let (x, _prod) = args in UIntSize.to_int (result_state.field_0'0).current
-    = UIntSize.to_int (self.field_0'0).current + 1)
-    /\ unnest'0 self result_state
-  
-  predicate preservation'0 [#"06_map_precond.rs" 116 4 116 45] (iter : t_I'0) (func : closure2'1) =
-    [%#s06_map_precond15] forall s : Seq.seq uint32, e1 : uint32, e2 : uint32, f : borrowed closure2'1, b : uint32, i : t_I'0 . inv'3 s
-    /\ inv'5 e1 /\ inv'5 e2 /\ inv'6 f /\ inv'5 b /\ inv'1 i /\ unnest'0 func f.current
-     -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 f.current (e1, Snapshot.new s)
-     -> postcondition_mut'0 f.current (e1, Snapshot.new s) f.final b
-     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
-  
-  predicate reinitialize'0 [#"06_map_precond.rs" 128 4 128 29] (_1 : ()) =
-    [%#s06_map_precond14] forall iter : borrowed t_I'0, func : closure2'1 . inv'2 iter /\ inv'4 func
-     -> completed'0 iter
-     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq uint32) /\ preservation'0 iter.final func
-  
-  use seq.Seq
-  
-  predicate preservation_inv'0 [#"06_map_precond.rs" 103 4 103 73] (iter : t_I'0) (func : closure2'1) (produced : Seq.seq uint32)
-    
-   =
-    [%#s06_map_precond36] forall s : Seq.seq uint32, e1 : uint32, e2 : uint32, f : borrowed closure2'1, b : uint32, i : t_I'0 [produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b] . inv'3 s
-    /\ inv'5 e1 /\ inv'5 e2 /\ inv'6 f /\ inv'5 b /\ inv'1 i /\ unnest'0 func f.current
-     -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
-     -> postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b
-     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
-  
-  axiom preservation_inv'0_spec : forall iter : t_I'0, func : closure2'1, produced : Seq.seq uint32 . [%#s06_map_precond35] produced
-  = (Seq.empty  : Seq.seq uint32)  -> preservation_inv'0 iter func produced = preservation'0 iter func
-  
-  predicate invariant'0 [#"06_map_precond.rs" 176 4 176 30] (self : t_Map'0) =
-    [%#s06_map_precond33] reinitialize'0 ()
-    /\ preservation_inv'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
-    /\ next_precondition'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Map'0 [inv'0 x] . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | {t_Map__iter'0 = iter ; t_Map__func'0 = func ; t_Map__produced'0 = produced} -> inv'1 iter
-    end)
-  
-  predicate invariant'1 (self : borrowed t_I'0) =
-    [%#sinvariant34] inv'1 self.current /\ inv'1 self.final
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : borrowed t_I'0 [inv'2 x] . inv'2 x = invariant'1 x
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq uint32 [inv'3 x] . inv'3 x = true
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : closure2'1 [inv'4 x] . inv'4 x = true
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : uint32 [inv'5 x] . inv'5 x = true
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : borrowed closure2'1 [inv'6 x] . inv'6 x = true
-  
   let rec closure2'0 (_1:borrowed closure2'1) (x:uint32) (_prod:Snapshot.snap_ty (Seq.seq uint32)) (return'  (ret:uint32))= {[@expl:closure requires] [%#s06_map_precond5] UIntSize.to_int ((_1.current).field_0'0).current
     = Seq.length (Snapshot.inner _prod)
     /\ ((_1.current).field_0'0).current < (v_MAX'0 : usize)}
@@ -2710,6 +2609,107 @@ module M_06_map_precond__counter [#"06_map_precond.rs" 222 0 222 48]
       {[@expl:closure unnest] unnest'0 _1.current _1.final}
       (! return' {result}) ]
     
+  
+  type t_I'0
+  
+  predicate inv'1 (_1 : t_I'0)
+  
+  predicate inv'4 (_1 : closure2'1)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : closure2'1 [inv'4 x] . inv'4 x = true
+  
+  predicate inv'5 (_1 : uint32)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : uint32 [inv'5 x] . inv'5 x = true
+  
+  use seq.Seq
+  
+  predicate produces'0 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq uint32) (o : t_I'0)
+  
+  use seq.Seq
+  
+  use prelude.prelude.Snapshot
+  
+  predicate precondition'0 (self : closure2'1) (args : (uint32, Snapshot.snap_ty (Seq.seq uint32))) =
+    [%#s06_map_precond5] let (x, _prod) = args in UIntSize.to_int (self.field_0'0).current
+    = Seq.length (Snapshot.inner _prod)
+    /\ (self.field_0'0).current < (v_MAX'0 : usize)
+  
+  predicate invariant'1 (self : borrowed t_I'0) =
+    [%#sinvariant34] inv'1 self.current /\ inv'1 self.final
+  
+  predicate inv'2 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : borrowed t_I'0 [inv'2 x] . inv'2 x = invariant'1 x
+  
+  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  
+  predicate next_precondition'0 [#"06_map_precond.rs" 92 4 92 74] (iter : t_I'0) (func : closure2'1) (produced : Seq.seq uint32)
+    
+   =
+    [%#s06_map_precond32] forall e : uint32, i : t_I'0 [produces'0 iter (Seq.singleton e) i] . inv'5 e
+    /\ inv'1 i /\ produces'0 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
+  
+  predicate inv'3 (_1 : Seq.seq uint32)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq uint32 [inv'3 x] . inv'3 x = true
+  
+  predicate inv'6 (_1 : borrowed closure2'1)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : borrowed closure2'1 [inv'6 x] . inv'6 x = true
+  
+  use seq.Seq
+  
+  predicate postcondition_mut'0 (self : closure2'1) (args : (uint32, Snapshot.snap_ty (Seq.seq uint32))) (result_state : closure2'1) (result : uint32)
+    
+   =
+    (let (x, _prod) = args in UIntSize.to_int (result_state.field_0'0).current
+    = UIntSize.to_int (self.field_0'0).current + 1)
+    /\ unnest'0 self result_state
+  
+  predicate preservation'0 [#"06_map_precond.rs" 116 4 116 45] (iter : t_I'0) (func : closure2'1) =
+    [%#s06_map_precond15] forall s : Seq.seq uint32, e1 : uint32, e2 : uint32, f : borrowed closure2'1, b : uint32, i : t_I'0 . inv'3 s
+    /\ inv'5 e1 /\ inv'5 e2 /\ inv'6 f /\ inv'5 b /\ inv'1 i /\ unnest'0 func f.current
+     -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
+     -> precondition'0 f.current (e1, Snapshot.new s)
+     -> postcondition_mut'0 f.current (e1, Snapshot.new s) f.final b
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
+  
+  predicate reinitialize'0 [#"06_map_precond.rs" 128 4 128 29] (_1 : ()) =
+    [%#s06_map_precond14] forall iter : borrowed t_I'0, func : closure2'1 . inv'2 iter /\ inv'4 func
+     -> completed'0 iter
+     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq uint32) /\ preservation'0 iter.final func
+  
+  type t_Map'0  =
+    { t_Map__iter'0: t_I'0; t_Map__func'0: closure2'1; t_Map__produced'0: Snapshot.snap_ty (Seq.seq uint32) }
+  
+  use seq.Seq
+  
+  predicate preservation_inv'0 [#"06_map_precond.rs" 103 4 103 73] (iter : t_I'0) (func : closure2'1) (produced : Seq.seq uint32)
+    
+   =
+    [%#s06_map_precond36] forall s : Seq.seq uint32, e1 : uint32, e2 : uint32, f : borrowed closure2'1, b : uint32, i : t_I'0 [produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b] . inv'3 s
+    /\ inv'5 e1 /\ inv'5 e2 /\ inv'6 f /\ inv'5 b /\ inv'1 i /\ unnest'0 func f.current
+     -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
+     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
+     -> postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
+  
+  axiom preservation_inv'0_spec : forall iter : t_I'0, func : closure2'1, produced : Seq.seq uint32 . [%#s06_map_precond35] produced
+  = (Seq.empty  : Seq.seq uint32)  -> preservation_inv'0 iter func produced = preservation'0 iter func
+  
+  predicate invariant'0 [#"06_map_precond.rs" 176 4 176 30] (self : t_Map'0) =
+    [%#s06_map_precond33] reinitialize'0 ()
+    /\ preservation_inv'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
+    /\ next_precondition'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
+  
+  predicate inv'0 (_1 : t_Map'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Map'0 [inv'0 x] . inv'0 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_Map__iter'0 = iter ; t_Map__func'0 = func ; t_Map__produced'0 = produced} -> inv'1 iter
+    end)
   
   let rec map'0 (iter:t_I'0) (func:closure2'1) (return'  (ret:t_Map'0))= {[@expl:map 'iter' type invariant] [%#s06_map_precond7] inv'1 iter}
     {[@expl:map 'func' type invariant] [%#s06_map_precond8] inv'4 func}
@@ -2850,19 +2850,128 @@ module M_06_map_precond__qyi18374305379273630819__next__refines [#"06_map_precon
   type t_Map'0  =
     { t_Map__iter'0: t_I'0; t_Map__func'0: t_F'0; t_Map__produced'0: Snapshot.snap_ty (Seq.seq t_Item'0) }
   
-  predicate inv'0 (_1 : borrowed (t_Map'0))
+  predicate inv'7 (_1 : t_I'0)
+  
+  predicate invariant'7 (self : borrowed t_I'0) =
+    [%#sinvariant13] inv'7 self.current /\ inv'7 self.final
+  
+  predicate inv'12 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'8 [@rewrite] : forall x : borrowed t_I'0 [inv'12 x] . inv'12 x = invariant'7 x
+  
+  predicate inv'9 (_1 : t_F'0)
+  
+  predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  
+  use seq.Seq
+  
+  predicate inv'3 (_1 : t_Item'0)
+  
+  use seq.Seq
+  
+  predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
+  
+  use prelude.prelude.Snapshot
+  
+  predicate precondition'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0)))
+  
+  predicate next_precondition'0 [#"06_map_precond.rs" 92 4 92 74] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
+    
+   =
+    [%#s06_map_precond26] forall e : t_Item'0, i : t_I'0 [produces'1 iter (Seq.singleton e) i] . inv'3 e
+    /\ inv'7 i /\ produces'1 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
   
   type t_B'0
   
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_B'0
+  use prelude.prelude.Int
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate invariant'6 (self : t_Item'0) =
+    [%#sboxed27] inv'3 self
+  
+  predicate inv'11 (_1 : t_Item'0)
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : t_Item'0 [inv'11 x] . inv'11 x = invariant'6 x
+  
+  predicate invariant'3 (self : Seq.seq t_Item'0) =
+    [%#sseq21] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'11 (Seq.get self i)
+  
+  predicate inv'5 (_1 : Seq.seq t_Item'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'5 x] . inv'5 x = invariant'3 x
+  
+  predicate invariant'1 (self : borrowed t_F'0) =
+    [%#sinvariant13] inv'9 self.current /\ inv'9 self.final
+  
+  predicate inv'2 (_1 : borrowed t_F'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_F'0 [inv'2 x] . inv'2 x = invariant'1 x
+  
+  predicate inv'6 (_1 : t_B'0)
+  
+  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  
+  use seq.Seq
+  
+  predicate postcondition_mut'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0))) (result_state : t_F'0) (result : t_B'0)
+    
+  
+  predicate preservation'0 [#"06_map_precond.rs" 116 4 116 45] (iter : t_I'0) (func : t_F'0) =
+    [%#s06_map_precond28] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 . inv'5 s
+    /\ inv'3 e1 /\ inv'3 e2 /\ inv'2 f /\ inv'6 b /\ inv'7 i /\ unnest'0 func f.current
+     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
+     -> precondition'0 f.current (e1, Snapshot.new s)
+     -> postcondition_mut'0 f.current (e1, Snapshot.new s) f.final b
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
+  
+  predicate reinitialize'0 [#"06_map_precond.rs" 128 4 128 29] (_1 : ()) =
+    [%#s06_map_precond23] forall iter : borrowed t_I'0, func : t_F'0 . inv'12 iter /\ inv'9 func
+     -> completed'1 iter
+     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq t_Item'0) /\ preservation'0 iter.final func
   
   use prelude.prelude.Snapshot
   
   use seq.Seq
   
-  predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  predicate preservation_inv'0 [#"06_map_precond.rs" 103 4 103 73] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
+    
+   =
+    [%#s06_map_precond25] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 [produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b] . inv'5 s
+    /\ inv'3 e1 /\ inv'3 e2 /\ inv'2 f /\ inv'6 b /\ inv'7 i /\ unnest'0 func f.current
+     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
+     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
+     -> postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
+  
+  axiom preservation_inv'0_spec : forall iter : t_I'0, func : t_F'0, produced : Seq.seq t_Item'0 . [%#s06_map_precond24] produced
+  = (Seq.empty  : Seq.seq t_Item'0)  -> preservation_inv'0 iter func produced = preservation'0 iter func
+  
+  predicate invariant'4 [#"06_map_precond.rs" 176 4 176 30] (self : t_Map'0) =
+    [%#s06_map_precond22] reinitialize'0 ()
+    /\ preservation_inv'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
+    /\ next_precondition'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
+  
+  predicate inv'8 (_1 : t_Map'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_Map'0 [inv'8 x] . inv'8 x
+  = (invariant'4 x
+  /\ match x with
+    | {t_Map__iter'0 = iter ; t_Map__func'0 = func ; t_Map__produced'0 = produced} -> inv'7 iter /\ inv'9 func
+    end)
+  
+  predicate invariant'0 (self : borrowed (t_Map'0)) =
+    [%#sinvariant13] inv'8 self.current /\ inv'8 self.final
+  
+  predicate inv'0 (_1 : borrowed (t_Map'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Map'0) [inv'0 x] . inv'0 x = invariant'0 x
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_B'0
   
   predicate completed'0 [#"06_map_precond.rs" 24 4 24 35] (self : borrowed (t_Map'0)) =
     [%#s06_map_precond1] Snapshot.inner (self.final).t_Map__produced'0 = (Seq.empty  : Seq.seq t_Item'0)
@@ -2873,42 +2982,37 @@ module M_06_map_precond__qyi18374305379273630819__next__refines [#"06_map_precon
   
   use seq.Seq
   
-  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  use seq.Seq
   
   use seq.Seq
+  
+  use seq.Seq
+  
+  predicate invariant'5 (self : borrowed t_F'0) =
+    [%#sboxed27] inv'2 self
+  
+  predicate inv'10 (_1 : borrowed t_F'0)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : borrowed t_F'0 [inv'10 x] . inv'10 x = invariant'5 x
+  
+  predicate invariant'2 (self : Seq.seq (borrowed t_F'0)) =
+    [%#sseq21] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'10 (Seq.get self i)
   
   predicate inv'4 (_1 : Seq.seq (borrowed t_F'0))
   
-  use seq.Seq
-  
-  use seq.Seq
-  
-  predicate inv'5 (_1 : Seq.seq t_Item'0)
-  
-  use seq.Seq
-  
-  predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
-  
-  use prelude.prelude.Snapshot
-  
-  use seq.Seq
-  
-  use prelude.prelude.Int
-  
-  use seq.Seq
-  
-  use seq.Seq
+  axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq (borrowed t_F'0) [inv'4 x] . inv'4 x = invariant'2 x
   
   use seq.Seq
   
   use prelude.prelude.Snapshot
   
-  predicate precondition'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0)))
+  use seq.Seq
   
   use seq.Seq
   
-  predicate postcondition_mut'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0))) (result_state : t_F'0) (result : t_B'0)
-    
+  use seq.Seq
+  
+  use seq.Seq
   
   predicate produces'0 [@inline:trivial] [#"06_map_precond.rs" 50 4 50 67] (self : t_Map'0) (visited : Seq.seq t_B'0) (succ : t_Map'0)
     
@@ -2931,14 +3035,6 @@ module M_06_map_precond__qyi18374305379273630819__next__refines [#"06_map_precon
     /\ precondition'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner self.t_Map__produced'0) (Seq.([..]) s 0 i)))
     /\ postcondition_mut'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner self.t_Map__produced'0) (Seq.([..]) s 0 i))) (Seq.get fs i).final (Seq.get visited i))))
   
-  predicate inv'2 (_1 : borrowed t_F'0)
-  
-  predicate inv'3 (_1 : t_Item'0)
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
   predicate produces_one'0 [#"06_map_precond.rs" 160 4 160 57] (self : t_Map'0) (visited : t_B'0) (succ : t_Map'0) =
     [%#s06_map_precond3] exists f : borrowed t_F'0, e : t_Item'0 [postcondition_mut'0 f.current (e, self.t_Map__produced'0) f.final visited] . inv'2 f
     /\ inv'3 e
@@ -2954,107 +3050,11 @@ module M_06_map_precond__qyi18374305379273630819__next__refines [#"06_map_precon
   
   predicate inv'1 (_1 : t_Option'0)
   
-  predicate inv'8 (_1 : t_Map'0)
-  
-  predicate invariant'0 (self : borrowed (t_Map'0)) =
-    [%#sinvariant13] inv'8 self.current /\ inv'8 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Map'0) [inv'0 x] . inv'0 x = invariant'0 x
-  
-  predicate inv'6 (_1 : t_B'0)
-  
   axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x
   = match x with
     | C_None'0 -> true
     | C_Some'0 a_0 -> inv'6 a_0
     end
-  
-  predicate inv'9 (_1 : t_F'0)
-  
-  predicate invariant'1 (self : borrowed t_F'0) =
-    [%#sinvariant13] inv'9 self.current /\ inv'9 self.final
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_F'0 [inv'2 x] . inv'2 x = invariant'1 x
-  
-  use seq.Seq
-  
-  predicate inv'10 (_1 : borrowed t_F'0)
-  
-  predicate invariant'2 (self : Seq.seq (borrowed t_F'0)) =
-    [%#sseq21] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'10 (Seq.get self i)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq (borrowed t_F'0) [inv'4 x] . inv'4 x = invariant'2 x
-  
-  use seq.Seq
-  
-  predicate inv'11 (_1 : t_Item'0)
-  
-  predicate invariant'3 (self : Seq.seq t_Item'0) =
-    [%#sseq21] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'11 (Seq.get self i)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'5 x] . inv'5 x = invariant'3 x
-  
-  predicate inv'12 (_1 : borrowed t_I'0)
-  
-  predicate inv'7 (_1 : t_I'0)
-  
-  predicate next_precondition'0 [#"06_map_precond.rs" 92 4 92 74] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
-    
-   =
-    [%#s06_map_precond26] forall e : t_Item'0, i : t_I'0 [produces'1 iter (Seq.singleton e) i] . inv'3 e
-    /\ inv'7 i /\ produces'1 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
-  
-  predicate preservation'0 [#"06_map_precond.rs" 116 4 116 45] (iter : t_I'0) (func : t_F'0) =
-    [%#s06_map_precond28] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 . inv'5 s
-    /\ inv'3 e1 /\ inv'3 e2 /\ inv'2 f /\ inv'6 b /\ inv'7 i /\ unnest'0 func f.current
-     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 f.current (e1, Snapshot.new s)
-     -> postcondition_mut'0 f.current (e1, Snapshot.new s) f.final b
-     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
-  
-  predicate reinitialize'0 [#"06_map_precond.rs" 128 4 128 29] (_1 : ()) =
-    [%#s06_map_precond23] forall iter : borrowed t_I'0, func : t_F'0 . inv'12 iter /\ inv'9 func
-     -> completed'1 iter
-     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq t_Item'0) /\ preservation'0 iter.final func
-  
-  predicate preservation_inv'0 [#"06_map_precond.rs" 103 4 103 73] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
-    
-   =
-    [%#s06_map_precond25] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 [produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b] . inv'5 s
-    /\ inv'3 e1 /\ inv'3 e2 /\ inv'2 f /\ inv'6 b /\ inv'7 i /\ unnest'0 func f.current
-     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
-     -> postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b
-     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
-  
-  axiom preservation_inv'0_spec : forall iter : t_I'0, func : t_F'0, produced : Seq.seq t_Item'0 . [%#s06_map_precond24] produced
-  = (Seq.empty  : Seq.seq t_Item'0)  -> preservation_inv'0 iter func produced = preservation'0 iter func
-  
-  predicate invariant'4 [#"06_map_precond.rs" 176 4 176 30] (self : t_Map'0) =
-    [%#s06_map_precond22] reinitialize'0 ()
-    /\ preservation_inv'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
-    /\ next_precondition'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t_Map'0 [inv'8 x] . inv'8 x
-  = (invariant'4 x
-  /\ match x with
-    | {t_Map__iter'0 = iter ; t_Map__func'0 = func ; t_Map__produced'0 = produced} -> inv'7 iter /\ inv'9 func
-    end)
-  
-  predicate invariant'5 (self : borrowed t_F'0) =
-    [%#sboxed27] inv'2 self
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : borrowed t_F'0 [inv'10 x] . inv'10 x = invariant'5 x
-  
-  predicate invariant'6 (self : t_Item'0) =
-    [%#sboxed27] inv'3 self
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : t_Item'0 [inv'11 x] . inv'11 x = invariant'6 x
-  
-  predicate invariant'7 (self : borrowed t_I'0) =
-    [%#sinvariant13] inv'7 self.current /\ inv'7 self.final
-  
-  axiom inv_axiom'8 [@rewrite] : forall x : borrowed t_I'0 [inv'12 x] . inv'12 x = invariant'7 x
   
   function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   
@@ -3149,27 +3149,24 @@ module M_06_map_precond__qyi18374305379273630819__produces_refl__refines [#"06_m
   type t_Map'0  =
     { t_Map__iter'0: t_I'0; t_Map__func'0: t_F'0; t_Map__produced'0: Snapshot.snap_ty (Seq.seq t_Item'0) }
   
-  predicate inv'0 (_1 : t_Map'0)
-  
-  use seq.Seq
-  
-  type t_B'0
-  
-  use seq.Seq
-  
-  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
-  
   use prelude.prelude.Borrow
   
+  predicate inv'3 (_1 : t_I'0)
+  
+  predicate invariant'3 (self : borrowed t_I'0) =
+    [%#sinvariant24] inv'3 self.current /\ inv'3 self.final
+  
+  predicate inv'5 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed t_I'0 [inv'5 x] . inv'5 x = invariant'3 x
+  
+  predicate inv'4 (_1 : t_F'0)
+  
+  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  
   use seq.Seq
   
-  predicate inv'1 (_1 : Seq.seq (borrowed t_F'0))
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  predicate inv'2 (_1 : Seq.seq t_Item'0)
+  predicate inv'6 (_1 : t_Item'0)
   
   use seq.Seq
   
@@ -3177,9 +3174,15 @@ module M_06_map_precond__qyi18374305379273630819__produces_refl__refines [#"06_m
   
   use prelude.prelude.Snapshot
   
-  use prelude.prelude.Snapshot
+  predicate precondition'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0)))
   
-  use seq.Seq
+  predicate next_precondition'0 [#"06_map_precond.rs" 92 4 92 74] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
+    
+   =
+    [%#s06_map_precond21] forall e : t_Item'0, i : t_I'0 [produces'1 iter (Seq.singleton e) i] . inv'6 e
+    /\ inv'3 i /\ produces'1 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
+  
+  type t_B'0
   
   use prelude.prelude.Int
   
@@ -3187,16 +3190,114 @@ module M_06_map_precond__qyi18374305379273630819__produces_refl__refines [#"06_m
   
   use seq.Seq
   
-  use seq.Seq
+  predicate invariant'6 (self : t_Item'0) =
+    [%#sboxed25] inv'6 self
   
-  use prelude.prelude.Snapshot
+  predicate inv'10 (_1 : t_Item'0)
   
-  predicate precondition'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0)))
+  axiom inv_axiom'6 [@rewrite] : forall x : t_Item'0 [inv'10 x] . inv'10 x = invariant'6 x
+  
+  predicate invariant'2 (self : Seq.seq t_Item'0) =
+    [%#sseq22] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'10 (Seq.get self i)
+  
+  predicate inv'2 (_1 : Seq.seq t_Item'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'2 x] . inv'2 x = invariant'2 x
+  
+  predicate invariant'4 (self : borrowed t_F'0) =
+    [%#sinvariant24] inv'4 self.current /\ inv'4 self.final
+  
+  predicate inv'7 (_1 : borrowed t_F'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : borrowed t_F'0 [inv'7 x] . inv'7 x = invariant'4 x
+  
+  predicate inv'8 (_1 : t_B'0)
+  
+  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
   
   use seq.Seq
   
   predicate postcondition_mut'0 (self : t_F'0) (args : (t_Item'0, Snapshot.snap_ty (Seq.seq t_Item'0))) (result_state : t_F'0) (result : t_B'0)
     
+  
+  predicate preservation'0 [#"06_map_precond.rs" 116 4 116 45] (iter : t_I'0) (func : t_F'0) =
+    [%#s06_map_precond23] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 . inv'2 s
+    /\ inv'6 e1 /\ inv'6 e2 /\ inv'7 f /\ inv'8 b /\ inv'3 i /\ unnest'0 func f.current
+     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
+     -> precondition'0 f.current (e1, Snapshot.new s)
+     -> postcondition_mut'0 f.current (e1, Snapshot.new s) f.final b
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
+  
+  predicate reinitialize'0 [#"06_map_precond.rs" 128 4 128 29] (_1 : ()) =
+    [%#s06_map_precond18] forall iter : borrowed t_I'0, func : t_F'0 . inv'5 iter /\ inv'4 func
+     -> completed'0 iter
+     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq t_Item'0) /\ preservation'0 iter.final func
+  
+  use prelude.prelude.Snapshot
+  
+  use seq.Seq
+  
+  predicate preservation_inv'0 [#"06_map_precond.rs" 103 4 103 73] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
+    
+   =
+    [%#s06_map_precond20] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 [produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b] . inv'2 s
+    /\ inv'6 e1 /\ inv'6 e2 /\ inv'7 f /\ inv'8 b /\ inv'3 i /\ unnest'0 func f.current
+     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
+     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
+     -> postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b
+     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
+  
+  axiom preservation_inv'0_spec : forall iter : t_I'0, func : t_F'0, produced : Seq.seq t_Item'0 . [%#s06_map_precond19] produced
+  = (Seq.empty  : Seq.seq t_Item'0)  -> preservation_inv'0 iter func produced = preservation'0 iter func
+  
+  predicate invariant'0 [#"06_map_precond.rs" 176 4 176 30] (self : t_Map'0) =
+    [%#s06_map_precond10] reinitialize'0 ()
+    /\ preservation_inv'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
+    /\ next_precondition'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
+  
+  predicate inv'0 (_1 : t_Map'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Map'0 [inv'0 x] . inv'0 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_Map__iter'0 = iter ; t_Map__func'0 = func ; t_Map__produced'0 = produced} -> inv'3 iter /\ inv'4 func
+    end)
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate invariant'5 (self : borrowed t_F'0) =
+    [%#sboxed25] inv'7 self
+  
+  predicate inv'9 (_1 : borrowed t_F'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : borrowed t_F'0 [inv'9 x] . inv'9 x = invariant'5 x
+  
+  predicate invariant'1 (self : Seq.seq (borrowed t_F'0)) =
+    [%#sseq22] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'9 (Seq.get self i)
+  
+  predicate inv'1 (_1 : Seq.seq (borrowed t_F'0))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq (borrowed t_F'0) [inv'1 x] . inv'1 x = invariant'1 x
+  
+  use seq.Seq
+  
+  use prelude.prelude.Snapshot
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
   
   predicate produces'0 [@inline:trivial] [#"06_map_precond.rs" 50 4 50 67] (self : t_Map'0) (visited : Seq.seq t_B'0) (succ : t_Map'0)
     
@@ -3218,107 +3319,6 @@ module M_06_map_precond__qyi18374305379273630819__produces_refl__refines [#"06_m
      -> unnest'0 self.t_Map__func'0 (Seq.get fs i).current
     /\ precondition'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner self.t_Map__produced'0) (Seq.([..]) s 0 i)))
     /\ postcondition_mut'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner self.t_Map__produced'0) (Seq.([..]) s 0 i))) (Seq.get fs i).final (Seq.get visited i))))
-  
-  predicate inv'5 (_1 : borrowed t_I'0)
-  
-  predicate inv'4 (_1 : t_F'0)
-  
-  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
-  
-  use seq.Seq
-  
-  predicate inv'6 (_1 : t_Item'0)
-  
-  predicate inv'3 (_1 : t_I'0)
-  
-  use seq.Seq
-  
-  predicate next_precondition'0 [#"06_map_precond.rs" 92 4 92 74] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
-    
-   =
-    [%#s06_map_precond21] forall e : t_Item'0, i : t_I'0 [produces'1 iter (Seq.singleton e) i] . inv'6 e
-    /\ inv'3 i /\ produces'1 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
-  
-  predicate inv'7 (_1 : borrowed t_F'0)
-  
-  predicate inv'8 (_1 : t_B'0)
-  
-  use seq.Seq
-  
-  predicate preservation'0 [#"06_map_precond.rs" 116 4 116 45] (iter : t_I'0) (func : t_F'0) =
-    [%#s06_map_precond23] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 . inv'2 s
-    /\ inv'6 e1 /\ inv'6 e2 /\ inv'7 f /\ inv'8 b /\ inv'3 i /\ unnest'0 func f.current
-     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 f.current (e1, Snapshot.new s)
-     -> postcondition_mut'0 f.current (e1, Snapshot.new s) f.final b
-     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc s e1))
-  
-  predicate reinitialize'0 [#"06_map_precond.rs" 128 4 128 29] (_1 : ()) =
-    [%#s06_map_precond18] forall iter : borrowed t_I'0, func : t_F'0 . inv'5 iter /\ inv'4 func
-     -> completed'0 iter
-     -> next_precondition'0 iter.final func (Seq.empty  : Seq.seq t_Item'0) /\ preservation'0 iter.final func
-  
-  predicate preservation_inv'0 [#"06_map_precond.rs" 103 4 103 73] (iter : t_I'0) (func : t_F'0) (produced : Seq.seq t_Item'0)
-    
-   =
-    [%#s06_map_precond20] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 [produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b] . inv'2 s
-    /\ inv'6 e1 /\ inv'6 e2 /\ inv'7 f /\ inv'8 b /\ inv'3 i /\ unnest'0 func f.current
-     -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 f.current (e1, Snapshot.new (Seq.(++) produced s))
-     -> postcondition_mut'0 f.current (e1, Snapshot.new (Seq.(++) produced s)) f.final b
-     -> precondition'0 f.final (e2, Snapshot.new (Seq.snoc (Seq.(++) produced s) e1))
-  
-  axiom preservation_inv'0_spec : forall iter : t_I'0, func : t_F'0, produced : Seq.seq t_Item'0 . [%#s06_map_precond19] produced
-  = (Seq.empty  : Seq.seq t_Item'0)  -> preservation_inv'0 iter func produced = preservation'0 iter func
-  
-  predicate invariant'0 [#"06_map_precond.rs" 176 4 176 30] (self : t_Map'0) =
-    [%#s06_map_precond10] reinitialize'0 ()
-    /\ preservation_inv'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
-    /\ next_precondition'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Map'0 [inv'0 x] . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | {t_Map__iter'0 = iter ; t_Map__func'0 = func ; t_Map__produced'0 = produced} -> inv'3 iter /\ inv'4 func
-    end)
-  
-  use seq.Seq
-  
-  predicate inv'9 (_1 : borrowed t_F'0)
-  
-  predicate invariant'1 (self : Seq.seq (borrowed t_F'0)) =
-    [%#sseq22] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'9 (Seq.get self i)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq (borrowed t_F'0) [inv'1 x] . inv'1 x = invariant'1 x
-  
-  use seq.Seq
-  
-  predicate inv'10 (_1 : t_Item'0)
-  
-  predicate invariant'2 (self : Seq.seq t_Item'0) =
-    [%#sseq22] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'10 (Seq.get self i)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'2 x] . inv'2 x = invariant'2 x
-  
-  predicate invariant'3 (self : borrowed t_I'0) =
-    [%#sinvariant24] inv'3 self.current /\ inv'3 self.final
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed t_I'0 [inv'5 x] . inv'5 x = invariant'3 x
-  
-  predicate invariant'4 (self : borrowed t_F'0) =
-    [%#sinvariant24] inv'4 self.current /\ inv'4 self.final
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : borrowed t_F'0 [inv'7 x] . inv'7 x = invariant'4 x
-  
-  predicate invariant'5 (self : borrowed t_F'0) =
-    [%#sboxed25] inv'7 self
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : borrowed t_F'0 [inv'9 x] . inv'9 x = invariant'5 x
-  
-  predicate invariant'6 (self : t_Item'0) =
-    [%#sboxed25] inv'6 self
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : t_Item'0 [inv'10 x] . inv'10 x = invariant'6 x
   
   function produces_refl'1 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   
@@ -3415,15 +3415,56 @@ module M_06_map_precond__qyi18374305379273630819__produces_trans__refines [#"06_
   
   use seq.Seq
   
+  use prelude.prelude.Int
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate inv'4 (_1 : t_F'0)
+  
+  predicate invariant'6 (self : borrowed t_F'0) =
+    [%#sinvariant25] inv'4 self.current /\ inv'4 self.final
+  
+  predicate inv'9 (_1 : borrowed t_F'0)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : borrowed t_F'0 [inv'9 x] . inv'9 x = invariant'6 x
+  
+  predicate invariant'3 (self : borrowed t_F'0) =
+    [%#sboxed24] inv'9 self
+  
+  predicate inv'5 (_1 : borrowed t_F'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed t_F'0 [inv'5 x] . inv'5 x = invariant'3 x
+  
+  predicate invariant'1 (self : Seq.seq (borrowed t_F'0)) =
+    [%#sseq18] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'5 (Seq.get self i)
+  
   predicate inv'1 (_1 : Seq.seq (borrowed t_F'0))
   
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq (borrowed t_F'0) [inv'1 x] . inv'1 x = invariant'1 x
+  
   use seq.Seq
   
   use seq.Seq
+  
+  use seq.Seq
+  
+  predicate inv'8 (_1 : t_Item'0)
+  
+  predicate invariant'4 (self : t_Item'0) =
+    [%#sboxed24] inv'8 self
+  
+  predicate inv'6 (_1 : t_Item'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_Item'0 [inv'6 x] . inv'6 x = invariant'4 x
+  
+  predicate invariant'2 (self : Seq.seq t_Item'0) =
+    [%#sseq18] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'6 (Seq.get self i)
   
   predicate inv'2 (_1 : Seq.seq t_Item'0)
   
-  use seq.Seq
+  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'2 x] . inv'2 x = invariant'2 x
   
   predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
   
@@ -3432,8 +3473,6 @@ module M_06_map_precond__qyi18374305379273630819__produces_trans__refines [#"06_
   use prelude.prelude.Snapshot
   
   use seq.Seq
-  
-  use prelude.prelude.Int
   
   use seq.Seq
   
@@ -3471,21 +3510,18 @@ module M_06_map_precond__qyi18374305379273630819__produces_trans__refines [#"06_
     /\ precondition'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner self.t_Map__produced'0) (Seq.([..]) s 0 i)))
     /\ postcondition_mut'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner self.t_Map__produced'0) (Seq.([..]) s 0 i))) (Seq.get fs i).final (Seq.get visited i))))
   
-  predicate inv'0 (_1 : t_Map'0)
+  predicate inv'3 (_1 : t_I'0)
   
-  use seq.Seq
+  predicate invariant'5 (self : borrowed t_I'0) =
+    [%#sinvariant25] inv'3 self.current /\ inv'3 self.final
   
   predicate inv'7 (_1 : borrowed t_I'0)
   
-  predicate inv'4 (_1 : t_F'0)
+  axiom inv_axiom'5 [@rewrite] : forall x : borrowed t_I'0 [inv'7 x] . inv'7 x = invariant'5 x
   
   predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
   
   use seq.Seq
-  
-  predicate inv'8 (_1 : t_Item'0)
-  
-  predicate inv'3 (_1 : t_I'0)
   
   use seq.Seq
   
@@ -3494,8 +3530,6 @@ module M_06_map_precond__qyi18374305379273630819__produces_trans__refines [#"06_
    =
     [%#s06_map_precond22] forall e : t_Item'0, i : t_I'0 [produces'1 iter (Seq.singleton e) i] . inv'8 e
     /\ inv'3 i /\ produces'1 iter (Seq.singleton e) i  -> precondition'0 func (e, Snapshot.new produced)
-  
-  predicate inv'9 (_1 : borrowed t_F'0)
   
   predicate inv'10 (_1 : t_B'0)
   
@@ -3532,6 +3566,8 @@ module M_06_map_precond__qyi18374305379273630819__produces_trans__refines [#"06_
     /\ preservation_inv'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
     /\ next_precondition'0 self.t_Map__iter'0 self.t_Map__func'0 (Snapshot.inner self.t_Map__produced'0)
   
+  predicate inv'0 (_1 : t_Map'0)
+  
   axiom inv_axiom'0 [@rewrite] : forall x : t_Map'0 [inv'0 x] . inv'0 x
   = (invariant'0 x
   /\ match x with
@@ -3539,42 +3575,6 @@ module M_06_map_precond__qyi18374305379273630819__produces_trans__refines [#"06_
     end)
   
   use seq.Seq
-  
-  predicate inv'5 (_1 : borrowed t_F'0)
-  
-  predicate invariant'1 (self : Seq.seq (borrowed t_F'0)) =
-    [%#sseq18] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'5 (Seq.get self i)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq (borrowed t_F'0) [inv'1 x] . inv'1 x = invariant'1 x
-  
-  use seq.Seq
-  
-  predicate inv'6 (_1 : t_Item'0)
-  
-  predicate invariant'2 (self : Seq.seq t_Item'0) =
-    [%#sseq18] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'6 (Seq.get self i)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'2 x] . inv'2 x = invariant'2 x
-  
-  predicate invariant'3 (self : borrowed t_F'0) =
-    [%#sboxed24] inv'9 self
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed t_F'0 [inv'5 x] . inv'5 x = invariant'3 x
-  
-  predicate invariant'4 (self : t_Item'0) =
-    [%#sboxed24] inv'8 self
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Item'0 [inv'6 x] . inv'6 x = invariant'4 x
-  
-  predicate invariant'5 (self : borrowed t_I'0) =
-    [%#sinvariant25] inv'3 self.current /\ inv'3 self.final
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : borrowed t_I'0 [inv'7 x] . inv'7 x = invariant'5 x
-  
-  predicate invariant'6 (self : borrowed t_F'0) =
-    [%#sinvariant25] inv'4 self.current /\ inv'4 self.final
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : borrowed t_F'0 [inv'9 x] . inv'9 x = invariant'6 x
   
   function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   

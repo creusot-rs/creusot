@@ -21,7 +21,14 @@ module M_bdd__hashmap__qyi11648407051195780326__hash [#"bdd.rs" 79 8 79 29] (* <
   
   type t_U'0
   
+  predicate inv'4 (_1 : t_U'0)
+  
+  predicate invariant'1 (self : t_U'0) =
+    [%#sinvariant16] inv'4 self
+  
   predicate inv'1 (_1 : t_U'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_U'0 [inv'1 x] . inv'1 x = invariant'1 x
   
   use prelude.prelude.UInt64
   
@@ -38,40 +45,21 @@ module M_bdd__hashmap__qyi11648407051195780326__hash [#"bdd.rs" 79 8 79 29] (* <
   
   use prelude.prelude.UInt64
   
+  let rec hash'1 (self:t_U'0) (return'  (ret:uint64))= {[@expl:hash 'self' type invariant] [%#sbdd3] inv'1 self}
+    any
+    [ return' (result:uint64)-> {[%#sbdd4] UInt64.to_int result = hash_log'1 (deep_model'1 self)} (! return' {result}) ]
+    
+  
   type t_V'0
-  
-  predicate inv'0 (_1 : (t_U'0, t_V'0))
-  
-  predicate inv'3 (_1 : (t_U'0, t_V'0))
-  
-  predicate invariant'0 (self : (t_U'0, t_V'0)) =
-    [%#sinvariant16] inv'3 self
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : (t_U'0, t_V'0) [inv'0 x] . inv'0 x = invariant'0 x
-  
-  predicate inv'4 (_1 : t_U'0)
-  
-  predicate invariant'1 (self : t_U'0) =
-    [%#sinvariant16] inv'4 self
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_U'0 [inv'1 x] . inv'1 x = invariant'1 x
-  
-  predicate inv'2 (_1 : t_V'0)
   
   predicate inv'5 (_1 : t_V'0)
   
   predicate invariant'2 (self : t_V'0) =
     [%#sinvariant16] inv'5 self
   
+  predicate inv'2 (_1 : t_V'0)
+  
   axiom inv_axiom'2 [@rewrite] : forall x : t_V'0 [inv'2 x] . inv'2 x = invariant'2 x
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : (t_U'0, t_V'0) [inv'3 x] . inv'3 x
-  = (let (x0, x1) = x in inv'4 x0 /\ inv'5 x1)
-  
-  let rec hash'1 (self:t_U'0) (return'  (ret:uint64))= {[@expl:hash 'self' type invariant] [%#sbdd3] inv'1 self}
-    any
-    [ return' (result:uint64)-> {[%#sbdd4] UInt64.to_int result = hash_log'1 (deep_model'1 self)} (! return' {result}) ]
-    
   
   type t_DeepModelTy'1
   
@@ -144,6 +132,18 @@ module M_bdd__hashmap__qyi11648407051195780326__hash [#"bdd.rs" 79 8 79 29] (* <
     
   
   use prelude.prelude.Intrinsic
+  
+  predicate inv'3 (_1 : (t_U'0, t_V'0))
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : (t_U'0, t_V'0) [inv'3 x] . inv'3 x
+  = (let (x0, x1) = x in inv'4 x0 /\ inv'5 x1)
+  
+  predicate invariant'0 (self : (t_U'0, t_V'0)) =
+    [%#sinvariant16] inv'3 self
+  
+  predicate inv'0 (_1 : (t_U'0, t_V'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : (t_U'0, t_V'0) [inv'0 x] . inv'0 x = invariant'0 x
   
   function deep_model'3 (self : (t_U'0, t_V'0)) : (t_DeepModelTy'0, t_DeepModelTy'1) =
     [%#stuples15] (deep_model'4 (let (a, _) = self in a), deep_model'5 (let (_, a) = self in a))
@@ -962,8 +962,6 @@ module M_bdd__qyi11078426090797403070__set_irrelevent_var [#"bdd.rs" 355 4 355 8
       t_Context__and_memo'0: t_MyHashMap'2;
       t_Context__cnt'0: uint64 }
   
-  predicate inv'0 (_1 : t_Context'0)
-  
   type t_NodeLog'0  =
     | C_False'1
     | C_True'1
@@ -972,10 +970,6 @@ module M_bdd__qyi11078426090797403070__set_irrelevent_var [#"bdd.rs" 355 4 355 8
   type t_Option'0  =
     | C_None'0
     | C_Some'0 (t_Bdd'0)
-  
-  use map.Map
-  
-  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map (t_NodeLog'0) (t_Option'0)
   
   function deep_model'0 [#"bdd.rs" 161 4 161 44] (self : t_Node'0) : t_NodeLog'0 =
     [%#sbdd12] match self with
@@ -989,6 +983,10 @@ module M_bdd__qyi11078426090797403070__set_irrelevent_var [#"bdd.rs" 355 4 355 8
   
   function view'1 (self : t_Node'0) : t_NodeLog'0 =
     [%#smodel8] view'3 self
+  
+  use map.Map
+  
+  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map (t_NodeLog'0) (t_Option'0)
   
   use map.Map
   
@@ -1011,19 +1009,6 @@ module M_bdd__qyi11078426090797403070__set_irrelevent_var [#"bdd.rs" 355 4 355 8
       | {t_Bdd__0'0 = C_If'0 v _ _} -> view'2 v
       end
   
-  use map.Map
-  
-  use map.Map
-  
-  function interp'0 [#"bdd.rs" 212 4 212 53] (self : t_Bdd'0) (vars : Map.map uint64 bool) : bool =
-    [%#sbdd7] match self with
-      | {t_Bdd__0'0 = C_True'0} -> true
-      | {t_Bdd__0'0 = C_False'0} -> false
-      | {t_Bdd__0'0 = C_If'0 v childt childf} -> if Map.get vars v then interp'0 childt vars else interp'0 childf vars
-      end
-  
-  use map.Map
-  
   predicate is_valid_node'0 [#"bdd.rs" 319 4 319 51] (self : t_Context'0) (n : t_Node'0) =
     [%#sbdd11] match n with
       | C_True'0 -> true
@@ -1036,6 +1021,17 @@ module M_bdd__qyi11078426090797403070__set_irrelevent_var [#"bdd.rs" 355 4 355 8
   use prelude.prelude.Snapshot
   
   use map.Map
+  
+  use map.Map
+  
+  use map.Map
+  
+  function interp'0 [#"bdd.rs" 212 4 212 53] (self : t_Bdd'0) (vars : Map.map uint64 bool) : bool =
+    [%#sbdd7] match self with
+      | {t_Bdd__0'0 = C_True'0} -> true
+      | {t_Bdd__0'0 = C_False'0} -> false
+      | {t_Bdd__0'0 = C_If'0 v childt childf} -> if Map.get vars v then interp'0 childt vars else interp'0 childf vars
+      end
   
   use map.Map
   
@@ -1075,11 +1071,15 @@ module M_bdd__qyi11078426090797403070__set_irrelevent_var [#"bdd.rs" 355 4 355 8
       /\ (leastvar'0 a <= leastvar'0 n \/ leastvar'0 b <= leastvar'0 n)
       end)
   
+  predicate inv'0 (_1 : t_Context'0)
+  
   axiom inv_axiom'0 [@rewrite] : forall x : t_Context'0 [inv'0 x] . inv'0 x
   = (invariant'0 x
   /\ match x with
     | {t_Context__alloc'0 = alloc ; t_Context__hashcons'0 = hashcons ; t_Context__hashcons_ghost'0 = hashcons_ghost ; t_Context__not_memo'0 = not_memo ; t_Context__and_memo'0 = and_memo ; t_Context__cnt'0 = cnt} -> true
     end)
+  
+  use map.Map
   
   constant self  : t_Context'0
   
@@ -1163,8 +1163,6 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 375 4 375 82] 
       t_Context__and_memo'0: t_MyHashMap'2;
       t_Context__cnt'0: uint64 }
   
-  predicate inv'0 (_1 : t_Context'0)
-  
   type t_NodeLog'0  =
     | C_False'1
     | C_True'1
@@ -1173,10 +1171,6 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 375 4 375 82] 
   type t_Option'0  =
     | C_None'0
     | C_Some'0 (t_Bdd'0)
-  
-  use map.Map
-  
-  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map (t_NodeLog'0) (t_Option'0)
   
   function deep_model'0 [#"bdd.rs" 161 4 161 44] (self : t_Node'0) : t_NodeLog'0 =
     [%#sbdd21] match self with
@@ -1193,32 +1187,16 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 375 4 375 82] 
   
   use map.Map
   
+  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map (t_NodeLog'0) (t_Option'0)
+  
+  use map.Map
+  
   predicate is_valid_bdd'0 [#"bdd.rs" 312 4 312 53] (self : t_Context'0) (b : t_Bdd'0) =
     [%#sbdd7] Map.get (view'0 self.t_Context__hashcons'0) (view'1 b.t_Bdd__0'0) = C_Some'0 b
   
-  use map.Map
-  
-  use map.Map
-  
-  function interp'0 [#"bdd.rs" 212 4 212 53] (self : t_Bdd'0) (vars : Map.map uint64 bool) : bool =
-    [%#sbdd8] match self with
-      | {t_Bdd__0'0 = C_True'0} -> true
-      | {t_Bdd__0'0 = C_False'0} -> false
-      | {t_Bdd__0'0 = C_If'0 v childt childf} -> if Map.get vars v then interp'0 childt vars else interp'0 childf vars
-      end
+  use prelude.prelude.UInt64
   
   use prelude.prelude.Int
-  
-  function size'0 [#"bdd.rs" 227 4 227 24] (self : t_Bdd'0) : int =
-    [%#sbdd10] match self with
-      | {t_Bdd__0'0 = C_True'0} -> 0
-      | {t_Bdd__0'0 = C_False'0} -> 0
-      | {t_Bdd__0'0 = C_If'0 _ childt childf} -> let ht = size'0 childt in let hf = size'0 childf in 1 + ht + hf
-      end
-  
-  axiom size'0_spec : forall self : t_Bdd'0 . [%#sbdd9] size'0 self >= 0
-  
-  use prelude.prelude.UInt64
   
   constant v_MAX'0 : uint64 = (18446744073709551615 : uint64)
   
@@ -1232,22 +1210,6 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 375 4 375 82] 
       | {t_Bdd__0'0 = C_If'0 v _ _} -> view'2 v
       end
   
-  use map.Map
-  
-  function set_irrelevent_var'0 [#"bdd.rs" 355 4 355 87] (self : t_Context'0) (a : t_Bdd'0) (x : uint64) (v : Map.map uint64 bool) (b : bool) : ()
-    
-   =
-    [%#sbdd15] match a with
-      | {t_Bdd__0'0 = C_If'0 _ childt childf} -> let _ = set_irrelevent_var'0 self childt x v b in let _ = set_irrelevent_var'0 self childf x v b in ()
-      | _ -> ()
-      end
-  
-  axiom set_irrelevent_var'0_spec : forall self : t_Context'0, a : t_Bdd'0, x : uint64, v : Map.map uint64 bool, b : bool . ([%#sbdd11] inv'0 self)
-   -> ([%#sbdd12] is_valid_bdd'0 self a)
-   -> ([%#sbdd13] UInt64.to_int x < leastvar'0 a)  -> ([%#sbdd14] interp'0 a v = interp'0 a (Map.set v x b))
-  
-  use map.Const
-  
   predicate is_valid_node'0 [#"bdd.rs" 319 4 319 51] (self : t_Context'0) (n : t_Node'0) =
     [%#sbdd20] match n with
       | C_True'0 -> true
@@ -1260,6 +1222,17 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 375 4 375 82] 
   use prelude.prelude.Snapshot
   
   use map.Map
+  
+  use map.Map
+  
+  use map.Map
+  
+  function interp'0 [#"bdd.rs" 212 4 212 53] (self : t_Bdd'0) (vars : Map.map uint64 bool) : bool =
+    [%#sbdd8] match self with
+      | {t_Bdd__0'0 = C_True'0} -> true
+      | {t_Bdd__0'0 = C_False'0} -> false
+      | {t_Bdd__0'0 = C_If'0 v childt childf} -> if Map.get vars v then interp'0 childt vars else interp'0 childf vars
+      end
   
   use map.Map
   
@@ -1299,11 +1272,38 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 375 4 375 82] 
       /\ (leastvar'0 a <= leastvar'0 n \/ leastvar'0 b <= leastvar'0 n)
       end)
   
+  predicate inv'0 (_1 : t_Context'0)
+  
   axiom inv_axiom'0 [@rewrite] : forall x : t_Context'0 [inv'0 x] . inv'0 x
   = (invariant'0 x
   /\ match x with
     | {t_Context__alloc'0 = alloc ; t_Context__hashcons'0 = hashcons ; t_Context__hashcons_ghost'0 = hashcons_ghost ; t_Context__not_memo'0 = not_memo ; t_Context__and_memo'0 = and_memo ; t_Context__cnt'0 = cnt} -> true
     end)
+  
+  function size'0 [#"bdd.rs" 227 4 227 24] (self : t_Bdd'0) : int =
+    [%#sbdd10] match self with
+      | {t_Bdd__0'0 = C_True'0} -> 0
+      | {t_Bdd__0'0 = C_False'0} -> 0
+      | {t_Bdd__0'0 = C_If'0 _ childt childf} -> let ht = size'0 childt in let hf = size'0 childf in 1 + ht + hf
+      end
+  
+  axiom size'0_spec : forall self : t_Bdd'0 . [%#sbdd9] size'0 self >= 0
+  
+  use map.Map
+  
+  function set_irrelevent_var'0 [#"bdd.rs" 355 4 355 87] (self : t_Context'0) (a : t_Bdd'0) (x : uint64) (v : Map.map uint64 bool) (b : bool) : ()
+    
+   =
+    [%#sbdd15] match a with
+      | {t_Bdd__0'0 = C_If'0 _ childt childf} -> let _ = set_irrelevent_var'0 self childt x v b in let _ = set_irrelevent_var'0 self childf x v b in ()
+      | _ -> ()
+      end
+  
+  axiom set_irrelevent_var'0_spec : forall self : t_Context'0, a : t_Bdd'0, x : uint64, v : Map.map uint64 bool, b : bool . ([%#sbdd11] inv'0 self)
+   -> ([%#sbdd12] is_valid_bdd'0 self a)
+   -> ([%#sbdd13] UInt64.to_int x < leastvar'0 a)  -> ([%#sbdd14] interp'0 a v = interp'0 a (Map.set v x b))
+  
+  use map.Const
   
   constant self  : t_Context'0
   
@@ -1465,8 +1465,6 @@ module M_bdd__qyi11078426090797403070__bdd_canonical [#"bdd.rs" 424 4 424 62] (*
       t_Context__and_memo'0: t_MyHashMap'2;
       t_Context__cnt'0: uint64 }
   
-  predicate inv'0 (_1 : t_Context'0)
-  
   type t_NodeLog'0  =
     | C_False'1
     | C_True'1
@@ -1475,10 +1473,6 @@ module M_bdd__qyi11078426090797403070__bdd_canonical [#"bdd.rs" 424 4 424 62] (*
   type t_Option'0  =
     | C_None'0
     | C_Some'0 (t_Bdd'0)
-  
-  use map.Map
-  
-  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map (t_NodeLog'0) (t_Option'0)
   
   function deep_model'0 [#"bdd.rs" 161 4 161 44] (self : t_Node'0) : t_NodeLog'0 =
     [%#sbdd27] match self with
@@ -1495,32 +1489,16 @@ module M_bdd__qyi11078426090797403070__bdd_canonical [#"bdd.rs" 424 4 424 62] (*
   
   use map.Map
   
+  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map (t_NodeLog'0) (t_Option'0)
+  
+  use map.Map
+  
   predicate is_valid_bdd'0 [#"bdd.rs" 312 4 312 53] (self : t_Context'0) (b : t_Bdd'0) =
     [%#sbdd6] Map.get (view'0 self.t_Context__hashcons'0) (view'1 b.t_Bdd__0'0) = C_Some'0 b
   
-  use map.Map
-  
-  use map.Map
-  
-  function interp'0 [#"bdd.rs" 212 4 212 53] (self : t_Bdd'0) (vars : Map.map uint64 bool) : bool =
-    [%#sbdd7] match self with
-      | {t_Bdd__0'0 = C_True'0} -> true
-      | {t_Bdd__0'0 = C_False'0} -> false
-      | {t_Bdd__0'0 = C_If'0 v childt childf} -> if Map.get vars v then interp'0 childt vars else interp'0 childf vars
-      end
+  use prelude.prelude.UInt64
   
   use prelude.prelude.Int
-  
-  function size'0 [#"bdd.rs" 227 4 227 24] (self : t_Bdd'0) : int =
-    [%#sbdd17] match self with
-      | {t_Bdd__0'0 = C_True'0} -> 0
-      | {t_Bdd__0'0 = C_False'0} -> 0
-      | {t_Bdd__0'0 = C_If'0 _ childt childf} -> let ht = size'0 childt in let hf = size'0 childf in 1 + ht + hf
-      end
-  
-  axiom size'0_spec : forall self : t_Bdd'0 . [%#sbdd16] size'0 self >= 0
-  
-  use prelude.prelude.UInt64
   
   constant v_MAX'0 : uint64 = (18446744073709551615 : uint64)
   
@@ -1533,6 +1511,85 @@ module M_bdd__qyi11078426090797403070__bdd_canonical [#"bdd.rs" 424 4 424 62] (*
       | {t_Bdd__0'0 = C_False'0} -> UInt64.to_int (v_MAX'0 : uint64) + 1
       | {t_Bdd__0'0 = C_If'0 v _ _} -> view'3 v
       end
+  
+  predicate is_valid_node'0 [#"bdd.rs" 319 4 319 51] (self : t_Context'0) (n : t_Node'0) =
+    [%#sbdd26] match n with
+      | C_True'0 -> true
+      | C_False'0 -> true
+      | C_If'0 v childt childf -> childt.t_Bdd__0'0 <> childf.t_Bdd__0'0
+      /\ is_valid_bdd'0 self childt
+      /\ is_valid_bdd'0 self childf /\ UInt64.to_int v < leastvar'0 childt /\ UInt64.to_int v < leastvar'0 childf
+      end
+  
+  use prelude.prelude.Snapshot
+  
+  use map.Map
+  
+  use map.Map
+  
+  use map.Map
+  
+  function interp'0 [#"bdd.rs" 212 4 212 53] (self : t_Bdd'0) (vars : Map.map uint64 bool) : bool =
+    [%#sbdd7] match self with
+      | {t_Bdd__0'0 = C_True'0} -> true
+      | {t_Bdd__0'0 = C_False'0} -> false
+      | {t_Bdd__0'0 = C_If'0 v childt childf} -> if Map.get vars v then interp'0 childt vars else interp'0 childf vars
+      end
+  
+  use map.Map
+  
+  function view'4 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map uint64 (t_Option'0)
+  
+  use map.Map
+  
+  use map.Map
+  
+  function view'5 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map (uint64, uint64) (t_Option'0)
+  
+  use map.Map
+  
+  predicate invariant'0 [#"bdd.rs" 265 4 265 30] (self : t_Context'0) =
+    [%#sbdd24] (forall n : t_NodeLog'0 . match Map.get (view'0 self.t_Context__hashcons'0) n with
+      | C_Some'0 b -> view'1 b.t_Bdd__0'0 = n
+      /\ is_valid_node'0 self b.t_Bdd__0'0
+      /\ b.t_Bdd__1'0 < self.t_Context__cnt'0
+      /\ Map.get (Snapshot.inner self.t_Context__hashcons_ghost'0) b.t_Bdd__1'0 = b.t_Bdd__0'0
+      | C_None'0 -> true
+      end)
+    /\ (forall bm : uint64 . match Map.get (view'4 self.t_Context__not_memo'0) bm with
+      | C_None'0 -> true
+      | C_Some'0 n -> let b = { t_Bdd__0'0 = Map.get (Snapshot.inner self.t_Context__hashcons_ghost'0) bm;
+                                t_Bdd__1'0 = bm } in is_valid_bdd'0 self n
+      /\ is_valid_bdd'0 self b
+      /\ (forall v : Map.map uint64 bool . interp'0 n v = (not interp'0 b v)) /\ leastvar'0 b <= leastvar'0 n
+      end)
+    /\ (forall abm : (uint64, uint64) . match Map.get (view'5 self.t_Context__and_memo'0) abm with
+      | C_None'0 -> true
+      | C_Some'0 n -> let a = { t_Bdd__0'0 = Map.get (Snapshot.inner self.t_Context__hashcons_ghost'0) (let (a, _) = abm in a);
+                                t_Bdd__1'0 = (let (a, _) = abm in a) } in let b = { t_Bdd__0'0 = Map.get (Snapshot.inner self.t_Context__hashcons_ghost'0) (let (_, a) = abm in a);
+                                                                                    t_Bdd__1'0 = (let (_, a) = abm in a) } in is_valid_bdd'0 self n
+      /\ is_valid_bdd'0 self a
+      /\ is_valid_bdd'0 self b
+      /\ (forall v : Map.map uint64 bool . interp'0 n v = (interp'0 a v /\ interp'0 b v))
+      /\ (leastvar'0 a <= leastvar'0 n \/ leastvar'0 b <= leastvar'0 n)
+      end)
+  
+  predicate inv'0 (_1 : t_Context'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Context'0 [inv'0 x] . inv'0 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_Context__alloc'0 = alloc ; t_Context__hashcons'0 = hashcons ; t_Context__hashcons_ghost'0 = hashcons_ghost ; t_Context__not_memo'0 = not_memo ; t_Context__and_memo'0 = and_memo ; t_Context__cnt'0 = cnt} -> true
+    end)
+  
+  function size'0 [#"bdd.rs" 227 4 227 24] (self : t_Bdd'0) : int =
+    [%#sbdd17] match self with
+      | {t_Bdd__0'0 = C_True'0} -> 0
+      | {t_Bdd__0'0 = C_False'0} -> 0
+      | {t_Bdd__0'0 = C_If'0 _ childt childf} -> let ht = size'0 childt in let hf = size'0 childf in 1 + ht + hf
+      end
+  
+  axiom size'0_spec : forall self : t_Bdd'0 . [%#sbdd16] size'0 self >= 0
   
   use map.Map
   
@@ -1598,63 +1655,6 @@ module M_bdd__qyi11078426090797403070__bdd_canonical [#"bdd.rs" 424 4 424 62] (*
    -> ([%#sbdd11] a <> b)
    -> ([%#sbdd12] interp'0 a (discr_valuation'0 self a b) <> interp'0 b (discr_valuation'0 self a b))
   
-  predicate is_valid_node'0 [#"bdd.rs" 319 4 319 51] (self : t_Context'0) (n : t_Node'0) =
-    [%#sbdd26] match n with
-      | C_True'0 -> true
-      | C_False'0 -> true
-      | C_If'0 v childt childf -> childt.t_Bdd__0'0 <> childf.t_Bdd__0'0
-      /\ is_valid_bdd'0 self childt
-      /\ is_valid_bdd'0 self childf /\ UInt64.to_int v < leastvar'0 childt /\ UInt64.to_int v < leastvar'0 childf
-      end
-  
-  use prelude.prelude.Snapshot
-  
-  use map.Map
-  
-  use map.Map
-  
-  function view'4 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map uint64 (t_Option'0)
-  
-  use map.Map
-  
-  use map.Map
-  
-  function view'5 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map (uint64, uint64) (t_Option'0)
-  
-  use map.Map
-  
-  predicate invariant'0 [#"bdd.rs" 265 4 265 30] (self : t_Context'0) =
-    [%#sbdd24] (forall n : t_NodeLog'0 . match Map.get (view'0 self.t_Context__hashcons'0) n with
-      | C_Some'0 b -> view'1 b.t_Bdd__0'0 = n
-      /\ is_valid_node'0 self b.t_Bdd__0'0
-      /\ b.t_Bdd__1'0 < self.t_Context__cnt'0
-      /\ Map.get (Snapshot.inner self.t_Context__hashcons_ghost'0) b.t_Bdd__1'0 = b.t_Bdd__0'0
-      | C_None'0 -> true
-      end)
-    /\ (forall bm : uint64 . match Map.get (view'4 self.t_Context__not_memo'0) bm with
-      | C_None'0 -> true
-      | C_Some'0 n -> let b = { t_Bdd__0'0 = Map.get (Snapshot.inner self.t_Context__hashcons_ghost'0) bm;
-                                t_Bdd__1'0 = bm } in is_valid_bdd'0 self n
-      /\ is_valid_bdd'0 self b
-      /\ (forall v : Map.map uint64 bool . interp'0 n v = (not interp'0 b v)) /\ leastvar'0 b <= leastvar'0 n
-      end)
-    /\ (forall abm : (uint64, uint64) . match Map.get (view'5 self.t_Context__and_memo'0) abm with
-      | C_None'0 -> true
-      | C_Some'0 n -> let a = { t_Bdd__0'0 = Map.get (Snapshot.inner self.t_Context__hashcons_ghost'0) (let (a, _) = abm in a);
-                                t_Bdd__1'0 = (let (a, _) = abm in a) } in let b = { t_Bdd__0'0 = Map.get (Snapshot.inner self.t_Context__hashcons_ghost'0) (let (_, a) = abm in a);
-                                                                                    t_Bdd__1'0 = (let (_, a) = abm in a) } in is_valid_bdd'0 self n
-      /\ is_valid_bdd'0 self a
-      /\ is_valid_bdd'0 self b
-      /\ (forall v : Map.map uint64 bool . interp'0 n v = (interp'0 a v /\ interp'0 b v))
-      /\ (leastvar'0 a <= leastvar'0 n \/ leastvar'0 b <= leastvar'0 n)
-      end)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Context'0 [inv'0 x] . inv'0 x
-  = (invariant'0 x
-  /\ match x with
-    | {t_Context__alloc'0 = alloc ; t_Context__hashcons'0 = hashcons ; t_Context__hashcons_ghost'0 = hashcons_ghost ; t_Context__not_memo'0 = not_memo ; t_Context__and_memo'0 = and_memo ; t_Context__cnt'0 = cnt} -> true
-    end)
-  
   constant self  : t_Context'0
   
   constant a  : t_Bdd'0
@@ -1697,25 +1697,11 @@ module M_bdd__qyi11078426090797403070__new [#"bdd.rs" 430 4 430 52] (* Context<'
   
   use prelude.prelude.Intrinsic
   
+  let rec promoted0__new'0 (return'  (ret:t_Node'0))= bb0
+    [ bb0 = s0 [ s0 =  [ &_1 <- C_True'0 ] s1 | s1 =  [ &_0 <- _1 ] s2 | s2 = return' {_0} ]  ]
+     [ & _0 : t_Node'0 = any_l () | & _1 : t_Node'0 = any_l () ]  [ return' (result:t_Node'0)-> return' {result} ] 
+  
   type t_MyHashMap'0
-  
-  use map.Map
-  
-  use prelude.prelude.Snapshot
-  
-  type t_MyHashMap'1
-  
-  type t_MyHashMap'2
-  
-  type t_Context'0  =
-    { t_Context__alloc'0: ();
-      t_Context__hashcons'0: t_MyHashMap'0;
-      t_Context__hashcons_ghost'0: Snapshot.snap_ty (Map.map uint64 (t_Node'0));
-      t_Context__not_memo'0: t_MyHashMap'1;
-      t_Context__and_memo'0: t_MyHashMap'2;
-      t_Context__cnt'0: uint64 }
-  
-  predicate inv'0 (_1 : t_Context'0)
   
   type t_NodeLog'0  =
     | C_False'1
@@ -1725,6 +1711,56 @@ module M_bdd__qyi11078426090797403070__new [#"bdd.rs" 430 4 430 52] (* Context<'
   type t_Option'0  =
     | C_None'0
     | C_Some'0 (t_Bdd'0)
+  
+  use map.Map
+  
+  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map (t_NodeLog'0) (t_Option'0)
+  
+  use map.Const
+  
+  let rec new'1 (_1:()) (return'  (ret:t_MyHashMap'0))= any
+    [ return' (result:t_MyHashMap'0)-> {[%#sbdd6] view'0 result = Const.const (C_None'0)} (! return' {result}) ]
+    
+  
+  use map.Const
+  
+  use prelude.prelude.Snapshot
+  
+  type t_MyHashMap'1
+  
+  use map.Map
+  
+  function view'1 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map uint64 (t_Option'0)
+  
+  use map.Const
+  
+  let rec new'2 (_1:()) (return'  (ret:t_MyHashMap'1))= any
+    [ return' (result:t_MyHashMap'1)-> {[%#sbdd6] view'1 result = Const.const (C_None'0)} (! return' {result}) ]
+    
+  
+  type t_MyHashMap'2
+  
+  use map.Map
+  
+  function view'2 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map (uint64, uint64) (t_Option'0)
+  
+  use map.Const
+  
+  let rec new'3 (_1:()) (return'  (ret:t_MyHashMap'2))= any
+    [ return' (result:t_MyHashMap'2)-> {[%#sbdd6] view'2 result = Const.const (C_None'0)} (! return' {result}) ]
+    
+  
+  use map.Map
+  
+  use prelude.prelude.Snapshot
+  
+  type t_Context'0  =
+    { t_Context__alloc'0: ();
+      t_Context__hashcons'0: t_MyHashMap'0;
+      t_Context__hashcons_ghost'0: Snapshot.snap_ty (Map.map uint64 (t_Node'0));
+      t_Context__not_memo'0: t_MyHashMap'1;
+      t_Context__and_memo'0: t_MyHashMap'2;
+      t_Context__cnt'0: uint64 }
   
   function deep_model'0 [#"bdd.rs" 161 4 161 44] (self : t_Node'0) : t_NodeLog'0 =
     [%#sbdd14] match self with
@@ -1738,10 +1774,6 @@ module M_bdd__qyi11078426090797403070__new [#"bdd.rs" 430 4 430 52] (* Context<'
   
   function view'3 (self : t_Node'0) : t_NodeLog'0 =
     [%#smodel8] view'4 self
-  
-  use map.Map
-  
-  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map (t_NodeLog'0) (t_Option'0)
   
   use map.Map
   
@@ -1790,14 +1822,6 @@ module M_bdd__qyi11078426090797403070__new [#"bdd.rs" 430 4 430 52] (* Context<'
   
   use map.Map
   
-  function view'1 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map uint64 (t_Option'0)
-  
-  use map.Map
-  
-  use map.Map
-  
-  function view'2 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map (uint64, uint64) (t_Option'0)
-  
   use map.Map
   
   predicate invariant'0 [#"bdd.rs" 265 4 265 30] (self : t_Context'0) =
@@ -1826,37 +1850,13 @@ module M_bdd__qyi11078426090797403070__new [#"bdd.rs" 430 4 430 52] (* Context<'
       /\ (leastvar'0 a <= leastvar'0 n \/ leastvar'0 b <= leastvar'0 n)
       end)
   
+  predicate inv'0 (_1 : t_Context'0)
+  
   axiom inv_axiom'0 [@rewrite] : forall x : t_Context'0 [inv'0 x] . inv'0 x
   = (invariant'0 x
   /\ match x with
     | {t_Context__alloc'0 = alloc ; t_Context__hashcons'0 = hashcons ; t_Context__hashcons_ghost'0 = hashcons_ghost ; t_Context__not_memo'0 = not_memo ; t_Context__and_memo'0 = and_memo ; t_Context__cnt'0 = cnt} -> true
     end)
-  
-  let rec promoted0__new'0 (return'  (ret:t_Node'0))= bb0
-    [ bb0 = s0 [ s0 =  [ &_1 <- C_True'0 ] s1 | s1 =  [ &_0 <- _1 ] s2 | s2 = return' {_0} ]  ]
-     [ & _0 : t_Node'0 = any_l () | & _1 : t_Node'0 = any_l () ]  [ return' (result:t_Node'0)-> return' {result} ] 
-  
-  use map.Const
-  
-  let rec new'1 (_1:()) (return'  (ret:t_MyHashMap'0))= any
-    [ return' (result:t_MyHashMap'0)-> {[%#sbdd6] view'0 result = Const.const (C_None'0)} (! return' {result}) ]
-    
-  
-  use map.Const
-  
-  use prelude.prelude.Snapshot
-  
-  use map.Const
-  
-  let rec new'2 (_1:()) (return'  (ret:t_MyHashMap'1))= any
-    [ return' (result:t_MyHashMap'1)-> {[%#sbdd6] view'1 result = Const.const (C_None'0)} (! return' {result}) ]
-    
-  
-  use map.Const
-  
-  let rec new'3 (_1:()) (return'  (ret:t_MyHashMap'2))= any
-    [ return' (result:t_MyHashMap'2)-> {[%#sbdd6] view'2 result = Const.const (C_None'0)} (! return' {result}) ]
-    
   
   meta "compute_max_steps" 1000000
   
@@ -1958,11 +1958,15 @@ module M_bdd__qyi11078426090797403070__hashcons [#"bdd.rs" 446 4 446 58] (* Cont
   
   predicate inv'1 (_1 : t_Node'0)
   
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Node'0 [inv'1 x] . inv'1 x = true
+  
   type t_Option'0  =
     | C_None'0
     | C_Some'0 (t_Bdd'0)
   
   predicate inv'2 (_1 : t_Option'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
   
   type t_NodeLog'0  =
     | C_False'1
@@ -1992,18 +1996,15 @@ module M_bdd__qyi11078426090797403070__hashcons [#"bdd.rs" 446 4 446 58] (* Cont
   
   use map.Map
   
-  predicate inv'0 (_1 : borrowed (t_Context'0))
-  
-  predicate inv'6 (_1 : t_Context'0)
-  
-  predicate invariant'0 (self : borrowed (t_Context'0)) =
-    [%#sinvariant29] inv'6 self.current /\ inv'6 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Context'0) [inv'0 x] . inv'0 x = invariant'0 x
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Node'0 [inv'1 x] . inv'1 x = true
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
+  let rec get'0 (self:t_MyHashMap'0) (key:t_Node'0) (return'  (ret:t_Option'0))= {[@expl:get 'key' type invariant] [%#sbdd10] inv'1 key}
+    any
+    [ return' (result:t_Option'0)-> {[%#sbdd11] inv'2 result}
+      {[%#sbdd12] match result with
+        | C_Some'0 v -> Map.get (view'2 self) (deep_model'0 key) = C_Some'1 v
+        | C_None'0 -> Map.get (view'2 self) (deep_model'0 key) = C_None'1
+        end}
+      (! return' {result}) ]
+    
   
   predicate inv'3 (_1 : t_Node'0)
   
@@ -2013,9 +2014,43 @@ module M_bdd__qyi11078426090797403070__hashcons [#"bdd.rs" 446 4 446 58] (* Cont
   
   axiom inv_axiom'4 [@rewrite] : forall x : borrowed (t_Node'0) [inv'4 x] . inv'4 x = true
   
+  let rec alloc'0 (self:()) (val':t_Node'0) (return'  (ret:borrowed (t_Node'0)))= {[@expl:alloc 'val' type invariant] [%#sbdd13] inv'3 val'}
+    any
+    [ return' (result:borrowed (t_Node'0))-> {[%#sbdd14] inv'4 result}
+      {[%#sbdd15] result.current = val'}
+      (! return' {result}) ]
+    
+  
+  predicate resolve'2 (self : borrowed (t_Node'0)) =
+    [%#sresolve25] self.final = self.current
+  
+  predicate resolve'0 (_1 : borrowed (t_Node'0)) =
+    resolve'2 _1
+  
   predicate inv'5 (_1 : t_Bdd'0)
   
   axiom inv_axiom'5 [@rewrite] : forall x : t_Bdd'0 [inv'5 x] . inv'5 x = true
+  
+  function view'4 (self : borrowed (t_MyHashMap'0)) : Map.map (t_NodeLog'0) (t_Option'1) =
+    [%#smodel27] view'3 self.current
+  
+  let rec add'0 (self:borrowed (t_MyHashMap'0)) (key:t_Node'0) (val':t_Bdd'0) (return'  (ret:()))= {[@expl:add 'key' type invariant] [%#sbdd16] inv'3 key}
+    {[@expl:add 'val' type invariant] [%#sbdd17] inv'5 val'}
+    any
+    [ return' (result:())-> {[%#sbdd18] forall i : t_NodeLog'0 . Map.get (view'3 self.final) i
+      = (if i = deep_model'1 key then C_Some'1 val' else Map.get (view'4 self) i)}
+      (! return' {result}) ]
+    
+  
+  use prelude.prelude.Snapshot
+  
+  use map.Map
+  
+  use prelude.prelude.Snapshot
+  
+  use prelude.prelude.Snapshot
+  
+  use prelude.prelude.Snapshot
   
   function view'1 [#"bdd.rs" 178 4 178 33] (self : t_Node'0) : t_NodeLog'0 =
     [%#sbdd20] deep_model'1 self
@@ -2050,8 +2085,6 @@ module M_bdd__qyi11078426090797403070__hashcons [#"bdd.rs" 446 4 446 58] (* Cont
       /\ is_valid_bdd'0 self childt
       /\ is_valid_bdd'0 self childf /\ UInt64.to_int v < leastvar'0 childt /\ UInt64.to_int v < leastvar'0 childf
       end
-  
-  use prelude.prelude.Snapshot
   
   use map.Map
   
@@ -2104,53 +2137,20 @@ module M_bdd__qyi11078426090797403070__hashcons [#"bdd.rs" 446 4 446 58] (* Cont
       /\ (leastvar'0 a <= leastvar'0 n \/ leastvar'0 b <= leastvar'0 n)
       end)
   
+  predicate inv'6 (_1 : t_Context'0)
+  
   axiom inv_axiom'6 [@rewrite] : forall x : t_Context'0 [inv'6 x] . inv'6 x
   = (invariant'1 x
   /\ match x with
     | {t_Context__alloc'0 = alloc ; t_Context__hashcons'0 = hashcons ; t_Context__hashcons_ghost'0 = hashcons_ghost ; t_Context__not_memo'0 = not_memo ; t_Context__and_memo'0 = and_memo ; t_Context__cnt'0 = cnt} -> true
     end)
   
-  let rec get'0 (self:t_MyHashMap'0) (key:t_Node'0) (return'  (ret:t_Option'0))= {[@expl:get 'key' type invariant] [%#sbdd10] inv'1 key}
-    any
-    [ return' (result:t_Option'0)-> {[%#sbdd11] inv'2 result}
-      {[%#sbdd12] match result with
-        | C_Some'0 v -> Map.get (view'2 self) (deep_model'0 key) = C_Some'1 v
-        | C_None'0 -> Map.get (view'2 self) (deep_model'0 key) = C_None'1
-        end}
-      (! return' {result}) ]
-    
+  predicate invariant'0 (self : borrowed (t_Context'0)) =
+    [%#sinvariant29] inv'6 self.current /\ inv'6 self.final
   
-  let rec alloc'0 (self:()) (val':t_Node'0) (return'  (ret:borrowed (t_Node'0)))= {[@expl:alloc 'val' type invariant] [%#sbdd13] inv'3 val'}
-    any
-    [ return' (result:borrowed (t_Node'0))-> {[%#sbdd14] inv'4 result}
-      {[%#sbdd15] result.current = val'}
-      (! return' {result}) ]
-    
+  predicate inv'0 (_1 : borrowed (t_Context'0))
   
-  predicate resolve'2 (self : borrowed (t_Node'0)) =
-    [%#sresolve25] self.final = self.current
-  
-  predicate resolve'0 (_1 : borrowed (t_Node'0)) =
-    resolve'2 _1
-  
-  function view'4 (self : borrowed (t_MyHashMap'0)) : Map.map (t_NodeLog'0) (t_Option'1) =
-    [%#smodel27] view'3 self.current
-  
-  let rec add'0 (self:borrowed (t_MyHashMap'0)) (key:t_Node'0) (val':t_Bdd'0) (return'  (ret:()))= {[@expl:add 'key' type invariant] [%#sbdd16] inv'3 key}
-    {[@expl:add 'val' type invariant] [%#sbdd17] inv'5 val'}
-    any
-    [ return' (result:())-> {[%#sbdd18] forall i : t_NodeLog'0 . Map.get (view'3 self.final) i
-      = (if i = deep_model'1 key then C_Some'1 val' else Map.get (view'4 self) i)}
-      (! return' {result}) ]
-    
-  
-  use map.Map
-  
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Context'0) [inv'0 x] . inv'0 x = invariant'0 x
   
   predicate resolve'3 (self : borrowed (t_Context'0)) =
     [%#sresolve25] self.final = self.current
@@ -2321,6 +2321,10 @@ module M_bdd__qyi11078426090797403070__node [#"bdd.rs" 471 4 471 87] (* Context<
   function view'0 (self : t_Bdd'0) : uint64 =
     [%#smodel18] view'4 self
   
+  let rec eq'0 (self:t_Bdd'0) (o:t_Bdd'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#sbdd8] result = (view'0 self = view'0 o)} (! return' {result}) ]
+    
+  
   type t_MyHashMap'0
   
   use map.Map
@@ -2338,15 +2342,6 @@ module M_bdd__qyi11078426090797403070__node [#"bdd.rs" 471 4 471 87] (* Context<
       t_Context__not_memo'0: t_MyHashMap'1;
       t_Context__and_memo'0: t_MyHashMap'2;
       t_Context__cnt'0: uint64 }
-  
-  predicate inv'0 (_1 : borrowed (t_Context'0))
-  
-  predicate inv'1 (_1 : t_Context'0)
-  
-  predicate invariant'0 (self : borrowed (t_Context'0)) =
-    [%#sinvariant22] inv'1 self.current /\ inv'1 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Context'0) [inv'0 x] . inv'0 x = invariant'0 x
   
   type t_NodeLog'0  =
     | C_False'1
@@ -2457,15 +2452,20 @@ module M_bdd__qyi11078426090797403070__node [#"bdd.rs" 471 4 471 87] (* Context<
       /\ (leastvar'0 a <= leastvar'0 n \/ leastvar'0 b <= leastvar'0 n)
       end)
   
+  predicate inv'1 (_1 : t_Context'0)
+  
   axiom inv_axiom'1 [@rewrite] : forall x : t_Context'0 [inv'1 x] . inv'1 x
   = (invariant'1 x
   /\ match x with
     | {t_Context__alloc'0 = alloc ; t_Context__hashcons'0 = hashcons ; t_Context__hashcons_ghost'0 = hashcons_ghost ; t_Context__not_memo'0 = not_memo ; t_Context__and_memo'0 = and_memo ; t_Context__cnt'0 = cnt} -> true
     end)
   
-  let rec eq'0 (self:t_Bdd'0) (o:t_Bdd'0) (return'  (ret:bool))= any
-    [ return' (result:bool)-> {[%#sbdd8] result = (view'0 self = view'0 o)} (! return' {result}) ]
-    
+  predicate invariant'0 (self : borrowed (t_Context'0)) =
+    [%#sinvariant22] inv'1 self.current /\ inv'1 self.final
+  
+  predicate inv'0 (_1 : borrowed (t_Context'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Context'0) [inv'0 x] . inv'0 x = invariant'0 x
   
   predicate resolve'1 (self : borrowed (t_Context'0)) =
     [%#sresolve19] self.final = self.current
@@ -2590,10 +2590,6 @@ module M_bdd__qyi11078426090797403070__trueqy95z [#"bdd.rs" 482 4 482 42] (* Con
       t_Context__and_memo'0: t_MyHashMap'2;
       t_Context__cnt'0: uint64 }
   
-  predicate inv'0 (_1 : t_Context'0)
-  
-  predicate inv'1 (_1 : borrowed (t_Context'0))
-  
   type t_NodeLog'0  =
     | C_False'1
     | C_True'1
@@ -2602,10 +2598,6 @@ module M_bdd__qyi11078426090797403070__trueqy95z [#"bdd.rs" 482 4 482 42] (* Con
   type t_Option'0  =
     | C_None'0
     | C_Some'0 (t_Bdd'0)
-  
-  use map.Map
-  
-  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map (t_NodeLog'0) (t_Option'0)
   
   function deep_model'0 [#"bdd.rs" 161 4 161 44] (self : t_Node'0) : t_NodeLog'0 =
     [%#sbdd20] match self with
@@ -2619,6 +2611,10 @@ module M_bdd__qyi11078426090797403070__trueqy95z [#"bdd.rs" 482 4 482 42] (* Con
   
   function view'1 (self : t_Node'0) : t_NodeLog'0 =
     [%#smodel16] view'3 self
+  
+  use map.Map
+  
+  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map (t_NodeLog'0) (t_Option'0)
   
   use map.Map
   
@@ -2649,13 +2645,6 @@ module M_bdd__qyi11078426090797403070__trueqy95z [#"bdd.rs" 482 4 482 42] (* Con
       /\ is_valid_bdd'0 self childt
       /\ is_valid_bdd'0 self childf /\ UInt64.to_int v < leastvar'0 childt /\ UInt64.to_int v < leastvar'0 childf
       end
-  
-  predicate grows'0 [#"bdd.rs" 299 4 299 35] (self : borrowed (t_Context'0)) =
-    [%#sbdd10] UInt64.to_int (self.current).t_Context__cnt'0 <= UInt64.to_int (self.final).t_Context__cnt'0
-    /\ (forall n : t_NodeLog'0 . match Map.get (view'0 (self.current).t_Context__hashcons'0) n with
-      | C_Some'0 b -> Map.get (view'0 (self.final).t_Context__hashcons'0) n = C_Some'0 b
-      | C_None'0 -> true
-      end)
   
   use prelude.prelude.Snapshot
   
@@ -2710,6 +2699,8 @@ module M_bdd__qyi11078426090797403070__trueqy95z [#"bdd.rs" 482 4 482 42] (* Con
       /\ (leastvar'0 a <= leastvar'0 n \/ leastvar'0 b <= leastvar'0 n)
       end)
   
+  predicate inv'0 (_1 : t_Context'0)
+  
   axiom inv_axiom'0 [@rewrite] : forall x : t_Context'0 [inv'0 x] . inv'0 x
   = (invariant'0 x
   /\ match x with
@@ -2719,7 +2710,16 @@ module M_bdd__qyi11078426090797403070__trueqy95z [#"bdd.rs" 482 4 482 42] (* Con
   predicate invariant'1 (self : borrowed (t_Context'0)) =
     [%#sinvariant18] inv'0 self.current /\ inv'0 self.final
   
+  predicate inv'1 (_1 : borrowed (t_Context'0))
+  
   axiom inv_axiom'1 [@rewrite] : forall x : borrowed (t_Context'0) [inv'1 x] . inv'1 x = invariant'1 x
+  
+  predicate grows'0 [#"bdd.rs" 299 4 299 35] (self : borrowed (t_Context'0)) =
+    [%#sbdd10] UInt64.to_int (self.current).t_Context__cnt'0 <= UInt64.to_int (self.final).t_Context__cnt'0
+    /\ (forall n : t_NodeLog'0 . match Map.get (view'0 (self.current).t_Context__hashcons'0) n with
+      | C_Some'0 b -> Map.get (view'0 (self.final).t_Context__hashcons'0) n = C_Some'0 b
+      | C_None'0 -> true
+      end)
   
   let rec hashcons'0 (self:borrowed (t_Context'0)) (n:t_Node'0) (return'  (ret:t_Bdd'0))= {[@expl:hashcons 'self' type invariant] [%#sbdd5] inv'1 self}
     {[@expl:hashcons requires] [%#sbdd6] is_valid_node'0 self.current n}
@@ -2820,10 +2820,6 @@ module M_bdd__qyi11078426090797403070__falseqy95z [#"bdd.rs" 490 4 490 43] (* Co
       t_Context__and_memo'0: t_MyHashMap'2;
       t_Context__cnt'0: uint64 }
   
-  predicate inv'0 (_1 : t_Context'0)
-  
-  predicate inv'1 (_1 : borrowed (t_Context'0))
-  
   type t_NodeLog'0  =
     | C_False'1
     | C_True'1
@@ -2832,10 +2828,6 @@ module M_bdd__qyi11078426090797403070__falseqy95z [#"bdd.rs" 490 4 490 43] (* Co
   type t_Option'0  =
     | C_None'0
     | C_Some'0 (t_Bdd'0)
-  
-  use map.Map
-  
-  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map (t_NodeLog'0) (t_Option'0)
   
   function deep_model'0 [#"bdd.rs" 161 4 161 44] (self : t_Node'0) : t_NodeLog'0 =
     [%#sbdd20] match self with
@@ -2849,6 +2841,10 @@ module M_bdd__qyi11078426090797403070__falseqy95z [#"bdd.rs" 490 4 490 43] (* Co
   
   function view'1 (self : t_Node'0) : t_NodeLog'0 =
     [%#smodel16] view'3 self
+  
+  use map.Map
+  
+  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map (t_NodeLog'0) (t_Option'0)
   
   use map.Map
   
@@ -2879,13 +2875,6 @@ module M_bdd__qyi11078426090797403070__falseqy95z [#"bdd.rs" 490 4 490 43] (* Co
       /\ is_valid_bdd'0 self childt
       /\ is_valid_bdd'0 self childf /\ UInt64.to_int v < leastvar'0 childt /\ UInt64.to_int v < leastvar'0 childf
       end
-  
-  predicate grows'0 [#"bdd.rs" 299 4 299 35] (self : borrowed (t_Context'0)) =
-    [%#sbdd10] UInt64.to_int (self.current).t_Context__cnt'0 <= UInt64.to_int (self.final).t_Context__cnt'0
-    /\ (forall n : t_NodeLog'0 . match Map.get (view'0 (self.current).t_Context__hashcons'0) n with
-      | C_Some'0 b -> Map.get (view'0 (self.final).t_Context__hashcons'0) n = C_Some'0 b
-      | C_None'0 -> true
-      end)
   
   use prelude.prelude.Snapshot
   
@@ -2940,6 +2929,8 @@ module M_bdd__qyi11078426090797403070__falseqy95z [#"bdd.rs" 490 4 490 43] (* Co
       /\ (leastvar'0 a <= leastvar'0 n \/ leastvar'0 b <= leastvar'0 n)
       end)
   
+  predicate inv'0 (_1 : t_Context'0)
+  
   axiom inv_axiom'0 [@rewrite] : forall x : t_Context'0 [inv'0 x] . inv'0 x
   = (invariant'0 x
   /\ match x with
@@ -2949,7 +2940,16 @@ module M_bdd__qyi11078426090797403070__falseqy95z [#"bdd.rs" 490 4 490 43] (* Co
   predicate invariant'1 (self : borrowed (t_Context'0)) =
     [%#sinvariant18] inv'0 self.current /\ inv'0 self.final
   
+  predicate inv'1 (_1 : borrowed (t_Context'0))
+  
   axiom inv_axiom'1 [@rewrite] : forall x : borrowed (t_Context'0) [inv'1 x] . inv'1 x = invariant'1 x
+  
+  predicate grows'0 [#"bdd.rs" 299 4 299 35] (self : borrowed (t_Context'0)) =
+    [%#sbdd10] UInt64.to_int (self.current).t_Context__cnt'0 <= UInt64.to_int (self.final).t_Context__cnt'0
+    /\ (forall n : t_NodeLog'0 . match Map.get (view'0 (self.current).t_Context__hashcons'0) n with
+      | C_Some'0 b -> Map.get (view'0 (self.final).t_Context__hashcons'0) n = C_Some'0 b
+      | C_None'0 -> true
+      end)
   
   let rec hashcons'0 (self:borrowed (t_Context'0)) (n:t_Node'0) (return'  (ret:t_Bdd'0))= {[@expl:hashcons 'self' type invariant] [%#sbdd5] inv'1 self}
     {[@expl:hashcons requires] [%#sbdd6] is_valid_node'0 self.current n}
@@ -3062,14 +3062,6 @@ module M_bdd__qyi11078426090797403070__v [#"bdd.rs" 497 4 497 46] (* Context<'ar
       t_Context__and_memo'0: t_MyHashMap'2;
       t_Context__cnt'0: uint64 }
   
-  predicate inv'0 (_1 : t_Context'0)
-  
-  predicate inv'1 (_1 : borrowed (t_Context'0))
-  
-  use prelude.prelude.UInt64
-  
-  use prelude.prelude.Int
-  
   type t_NodeLog'0  =
     | C_False'1
     | C_True'1
@@ -3078,19 +3070,6 @@ module M_bdd__qyi11078426090797403070__v [#"bdd.rs" 497 4 497 46] (* Context<'ar
   type t_Option'0  =
     | C_None'0
     | C_Some'0 (t_Bdd'0)
-  
-  use map.Map
-  
-  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map (t_NodeLog'0) (t_Option'0)
-  
-  use map.Map
-  
-  predicate grows'0 [#"bdd.rs" 299 4 299 35] (self : borrowed (t_Context'0)) =
-    [%#sbdd22] UInt64.to_int (self.current).t_Context__cnt'0 <= UInt64.to_int (self.final).t_Context__cnt'0
-    /\ (forall n : t_NodeLog'0 . match Map.get (view'0 (self.current).t_Context__hashcons'0) n with
-      | C_Some'0 b -> Map.get (view'0 (self.final).t_Context__hashcons'0) n = C_Some'0 b
-      | C_None'0 -> true
-      end)
   
   function deep_model'0 [#"bdd.rs" 161 4 161 44] (self : t_Node'0) : t_NodeLog'0 =
     [%#sbdd32] match self with
@@ -3105,19 +3084,18 @@ module M_bdd__qyi11078426090797403070__v [#"bdd.rs" 497 4 497 46] (* Context<'ar
   function view'1 (self : t_Node'0) : t_NodeLog'0 =
     [%#smodel27] view'3 self
   
+  use map.Map
+  
+  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map (t_NodeLog'0) (t_Option'0)
+  
+  use map.Map
+  
   predicate is_valid_bdd'0 [#"bdd.rs" 312 4 312 53] (self : t_Context'0) (b : t_Bdd'0) =
     [%#sbdd23] Map.get (view'0 self.t_Context__hashcons'0) (view'1 b.t_Bdd__0'0) = C_Some'0 b
   
-  use map.Map
+  use prelude.prelude.UInt64
   
-  use map.Map
-  
-  function interp'0 [#"bdd.rs" 212 4 212 53] (self : t_Bdd'0) (vars : Map.map uint64 bool) : bool =
-    [%#sbdd24] match self with
-      | {t_Bdd__0'0 = C_True'0} -> true
-      | {t_Bdd__0'0 = C_False'0} -> false
-      | {t_Bdd__0'0 = C_If'0 v childt childf} -> if Map.get vars v then interp'0 childt vars else interp'0 childf vars
-      end
+  use prelude.prelude.Int
   
   constant v_MAX'0 : uint64 = (18446744073709551615 : uint64)
   
@@ -3143,6 +3121,17 @@ module M_bdd__qyi11078426090797403070__v [#"bdd.rs" 497 4 497 46] (* Context<'ar
   use prelude.prelude.Snapshot
   
   use map.Map
+  
+  use map.Map
+  
+  use map.Map
+  
+  function interp'0 [#"bdd.rs" 212 4 212 53] (self : t_Bdd'0) (vars : Map.map uint64 bool) : bool =
+    [%#sbdd24] match self with
+      | {t_Bdd__0'0 = C_True'0} -> true
+      | {t_Bdd__0'0 = C_False'0} -> false
+      | {t_Bdd__0'0 = C_If'0 v childt childf} -> if Map.get vars v then interp'0 childt vars else interp'0 childf vars
+      end
   
   use map.Map
   
@@ -3182,6 +3171,8 @@ module M_bdd__qyi11078426090797403070__v [#"bdd.rs" 497 4 497 46] (* Context<'ar
       /\ (leastvar'0 a <= leastvar'0 n \/ leastvar'0 b <= leastvar'0 n)
       end)
   
+  predicate inv'0 (_1 : t_Context'0)
+  
   axiom inv_axiom'0 [@rewrite] : forall x : t_Context'0 [inv'0 x] . inv'0 x
   = (invariant'0 x
   /\ match x with
@@ -3191,7 +3182,16 @@ module M_bdd__qyi11078426090797403070__v [#"bdd.rs" 497 4 497 46] (* Context<'ar
   predicate invariant'1 (self : borrowed (t_Context'0)) =
     [%#sinvariant29] inv'0 self.current /\ inv'0 self.final
   
+  predicate inv'1 (_1 : borrowed (t_Context'0))
+  
   axiom inv_axiom'1 [@rewrite] : forall x : borrowed (t_Context'0) [inv'1 x] . inv'1 x = invariant'1 x
+  
+  predicate grows'0 [#"bdd.rs" 299 4 299 35] (self : borrowed (t_Context'0)) =
+    [%#sbdd22] UInt64.to_int (self.current).t_Context__cnt'0 <= UInt64.to_int (self.final).t_Context__cnt'0
+    /\ (forall n : t_NodeLog'0 . match Map.get (view'0 (self.current).t_Context__hashcons'0) n with
+      | C_Some'0 b -> Map.get (view'0 (self.final).t_Context__hashcons'0) n = C_Some'0 b
+      | C_None'0 -> true
+      end)
   
   let rec trueqy95z'0 (self:borrowed (t_Context'0)) (return'  (ret:t_Bdd'0))= {[@expl:true_ 'self' type invariant] [%#sbdd4] inv'1 self}
     any
@@ -3366,11 +3366,15 @@ module M_bdd__qyi11078426090797403070__not [#"bdd.rs" 509 4 509 56] (* Context<'
   
   predicate inv'2 (_1 : t_Bdd'0)
   
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Bdd'0 [inv'2 x] . inv'2 x = true
+  
   type t_Option'0  =
     | C_None'0
     | C_Some'0 (t_Bdd'0)
   
   predicate inv'3 (_1 : t_Option'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
   
   type t_Option'1  =
     | C_None'1
@@ -3391,7 +3395,23 @@ module M_bdd__qyi11078426090797403070__not [#"bdd.rs" 509 4 509 56] (* Context<'
   
   use map.Map
   
-  predicate inv'0 (_1 : t_Context'0)
+  let rec get'0 (self:t_MyHashMap'0) (key:t_Bdd'0) (return'  (ret:t_Option'0))= {[@expl:get 'key' type invariant] [%#sbdd7] inv'2 key}
+    any
+    [ return' (result:t_Option'0)-> {[%#sbdd8] inv'3 result}
+      {[%#sbdd9] match result with
+        | C_Some'0 v -> Map.get (view'0 self) (deep_model'0 key) = C_Some'1 v
+        | C_None'0 -> Map.get (view'0 self) (deep_model'0 key) = C_None'1
+        end}
+      (! return' {result}) ]
+    
+  
+  let rec v_If'0 (input:t_Node'0) (ret  (v:uint64) (childt:t_Bdd'0) (childf:t_Bdd'0))= any
+    [ good (v:uint64) (childt:t_Bdd'0) (childf:t_Bdd'0)-> {C_If'0 v childt childf = input} (! ret {v} {childt} {childf})
+    | bad -> {forall v : uint64, childt : t_Bdd'0, childf : t_Bdd'0 [C_If'0 v childt childf : t_Node'0] . C_If'0 v childt childf
+      <> input}
+      (! {false}
+      any) ]
+    
   
   type t_NodeLog'0  =
     | C_False'1
@@ -3492,44 +3512,20 @@ module M_bdd__qyi11078426090797403070__not [#"bdd.rs" 509 4 509 56] (* Context<'
       /\ (leastvar'0 a <= leastvar'0 n \/ leastvar'0 b <= leastvar'0 n)
       end)
   
+  predicate inv'0 (_1 : t_Context'0)
+  
   axiom inv_axiom'0 [@rewrite] : forall x : t_Context'0 [inv'0 x] . inv'0 x
   = (invariant'0 x
   /\ match x with
     | {t_Context__alloc'0 = alloc ; t_Context__hashcons'0 = hashcons ; t_Context__hashcons_ghost'0 = hashcons_ghost ; t_Context__not_memo'0 = not_memo ; t_Context__and_memo'0 = and_memo ; t_Context__cnt'0 = cnt} -> true
     end)
   
-  predicate inv'1 (_1 : borrowed (t_Context'0))
-  
   predicate invariant'1 (self : borrowed (t_Context'0)) =
     [%#sinvariant43] inv'0 self.current /\ inv'0 self.final
   
+  predicate inv'1 (_1 : borrowed (t_Context'0))
+  
   axiom inv_axiom'1 [@rewrite] : forall x : borrowed (t_Context'0) [inv'1 x] . inv'1 x = invariant'1 x
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Bdd'0 [inv'2 x] . inv'2 x = true
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
-  
-  predicate inv'4 (_1 : t_Bdd'0)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Bdd'0 [inv'4 x] . inv'4 x = true
-  
-  let rec get'0 (self:t_MyHashMap'0) (key:t_Bdd'0) (return'  (ret:t_Option'0))= {[@expl:get 'key' type invariant] [%#sbdd7] inv'2 key}
-    any
-    [ return' (result:t_Option'0)-> {[%#sbdd8] inv'3 result}
-      {[%#sbdd9] match result with
-        | C_Some'0 v -> Map.get (view'0 self) (deep_model'0 key) = C_Some'1 v
-        | C_None'0 -> Map.get (view'0 self) (deep_model'0 key) = C_None'1
-        end}
-      (! return' {result}) ]
-    
-  
-  let rec v_If'0 (input:t_Node'0) (ret  (v:uint64) (childt:t_Bdd'0) (childf:t_Bdd'0))= any
-    [ good (v:uint64) (childt:t_Bdd'0) (childf:t_Bdd'0)-> {C_If'0 v childt childf = input} (! ret {v} {childt} {childf})
-    | bad -> {forall v : uint64, childt : t_Bdd'0, childf : t_Bdd'0 [C_If'0 v childt childf : t_Node'0] . C_If'0 v childt childf
-      <> input}
-      (! {false}
-      any) ]
-    
   
   predicate grows'0 [#"bdd.rs" 299 4 299 35] (self : borrowed (t_Context'0)) =
     [%#sbdd32] UInt64.to_int (self.current).t_Context__cnt'0 <= UInt64.to_int (self.final).t_Context__cnt'0
@@ -3568,6 +3564,10 @@ module M_bdd__qyi11078426090797403070__not [#"bdd.rs" 509 4 509 56] (* Context<'
       {[%#sbdd27] UInt64.to_int (v_MAX'0 : uint64) + 1 = leastvar'0 result}
       (! return' {result}) ]
     
+  
+  predicate inv'4 (_1 : t_Bdd'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_Bdd'0 [inv'4 x] . inv'4 x = true
   
   function view'2 (self : borrowed (t_MyHashMap'0)) : Map.map uint64 (t_Option'1) =
     [%#smodel40] view'1 self.current
@@ -3829,11 +3829,15 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
   
   predicate inv'2 (_1 : (t_Bdd'0, t_Bdd'0))
   
+  axiom inv_axiom'2 [@rewrite] : forall x : (t_Bdd'0, t_Bdd'0) [inv'2 x] . inv'2 x = true
+  
   type t_Option'0  =
     | C_None'0
     | C_Some'0 (t_Bdd'0)
   
   predicate inv'3 (_1 : t_Option'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
   
   type t_Option'1  =
     | C_None'1
@@ -3857,14 +3861,15 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
   
   use map.Map
   
-  predicate inv'0 (_1 : borrowed (t_Context'0))
-  
-  predicate inv'1 (_1 : t_Context'0)
-  
-  predicate invariant'0 (self : borrowed (t_Context'0)) =
-    [%#sinvariant42] inv'1 self.current /\ inv'1 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Context'0) [inv'0 x] . inv'0 x = invariant'0 x
+  let rec get'0 (self:t_MyHashMap'0) (key:(t_Bdd'0, t_Bdd'0)) (return'  (ret:t_Option'0))= {[@expl:get 'key' type invariant] [%#sbdd9] inv'2 key}
+    any
+    [ return' (result:t_Option'0)-> {[%#sbdd10] inv'3 result}
+      {[%#sbdd11] match result with
+        | C_Some'0 v -> Map.get (view'0 self) (deep_model'0 key) = C_Some'1 v
+        | C_None'0 -> Map.get (view'0 self) (deep_model'0 key) = C_None'1
+        end}
+      (! return' {result}) ]
+    
   
   type t_NodeLog'0  =
     | C_False'1
@@ -3965,33 +3970,20 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
       /\ (leastvar'0 a <= leastvar'0 n \/ leastvar'0 b <= leastvar'0 n)
       end)
   
+  predicate inv'1 (_1 : t_Context'0)
+  
   axiom inv_axiom'1 [@rewrite] : forall x : t_Context'0 [inv'1 x] . inv'1 x
   = (invariant'1 x
   /\ match x with
     | {t_Context__alloc'0 = alloc ; t_Context__hashcons'0 = hashcons ; t_Context__hashcons_ghost'0 = hashcons_ghost ; t_Context__not_memo'0 = not_memo ; t_Context__and_memo'0 = and_memo ; t_Context__cnt'0 = cnt} -> true
     end)
   
-  axiom inv_axiom'2 [@rewrite] : forall x : (t_Bdd'0, t_Bdd'0) [inv'2 x] . inv'2 x = true
+  predicate invariant'0 (self : borrowed (t_Context'0)) =
+    [%#sinvariant42] inv'1 self.current /\ inv'1 self.final
   
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
+  predicate inv'0 (_1 : borrowed (t_Context'0))
   
-  predicate inv'4 (_1 : (t_Bdd'0, t_Bdd'0))
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : (t_Bdd'0, t_Bdd'0) [inv'4 x] . inv'4 x = true
-  
-  predicate inv'5 (_1 : t_Bdd'0)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t_Bdd'0 [inv'5 x] . inv'5 x = true
-  
-  let rec get'0 (self:t_MyHashMap'0) (key:(t_Bdd'0, t_Bdd'0)) (return'  (ret:t_Option'0))= {[@expl:get 'key' type invariant] [%#sbdd9] inv'2 key}
-    any
-    [ return' (result:t_Option'0)-> {[%#sbdd10] inv'3 result}
-      {[%#sbdd11] match result with
-        | C_Some'0 v -> Map.get (view'0 self) (deep_model'0 key) = C_Some'1 v
-        | C_None'0 -> Map.get (view'0 self) (deep_model'0 key) = C_None'1
-        end}
-      (! return' {result}) ]
-    
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Context'0) [inv'0 x] . inv'0 x = invariant'0 x
   
   predicate resolve'1 (self : borrowed (t_Context'0)) =
     [%#sresolve37] self.final = self.current
@@ -4051,6 +4043,14 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
       {[%#sbdd25] UInt64.to_int (v_MAX'0 : uint64) + 1 = leastvar'0 result}
       (! return' {result}) ]
     
+  
+  predicate inv'4 (_1 : (t_Bdd'0, t_Bdd'0))
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : (t_Bdd'0, t_Bdd'0) [inv'4 x] . inv'4 x = true
+  
+  predicate inv'5 (_1 : t_Bdd'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_Bdd'0 [inv'5 x] . inv'5 x = true
   
   function view'2 (self : borrowed (t_MyHashMap'0)) : Map.map (uint64, uint64) (t_Option'1) =
     [%#smodel41] view'1 self.current
@@ -4374,7 +4374,21 @@ module M_bdd__hashmap__qyi11648407051195780326__hash__refines [#"bdd.rs" 79 8 79
   
   type t_V'0
   
+  predicate inv'2 (_1 : t_U'0)
+  
+  predicate inv'3 (_1 : t_V'0)
+  
+  predicate inv'1 (_1 : (t_U'0, t_V'0))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : (t_U'0, t_V'0) [inv'1 x] . inv'1 x
+  = (let (x0, x1) = x in inv'2 x0 /\ inv'3 x1)
+  
+  predicate invariant'0 (self : (t_U'0, t_V'0)) =
+    [%#sinvariant4] inv'1 self
+  
   predicate inv'0 (_1 : (t_U'0, t_V'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : (t_U'0, t_V'0) [inv'0 x] . inv'0 x = invariant'0 x
   
   use prelude.prelude.UInt64
   
@@ -4406,20 +4420,6 @@ module M_bdd__hashmap__qyi11648407051195780326__hash__refines [#"bdd.rs" 79 8 79
     [%#sbdd2] mod (hash_log'1 (let (a, _) = x in a)
     + hash_log'2 (let (_, a) = x in a) * 17) (UInt64.to_int (v_MAX'0 : uint64) + 1)
   
-  predicate inv'1 (_1 : (t_U'0, t_V'0))
-  
-  predicate invariant'0 (self : (t_U'0, t_V'0)) =
-    [%#sinvariant4] inv'1 self
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : (t_U'0, t_V'0) [inv'0 x] . inv'0 x = invariant'0 x
-  
-  predicate inv'2 (_1 : t_U'0)
-  
-  predicate inv'3 (_1 : t_V'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : (t_U'0, t_V'0) [inv'1 x] . inv'1 x
-  = (let (x0, x1) = x in inv'2 x0 /\ inv'3 x1)
-  
   goal refines : [%#sbdd0] forall self : (t_U'0, t_V'0) . inv'0 self
    -> inv'0 self
   /\ (forall result : uint64 . UInt64.to_int result = hash_log'0 (deep_model'0 self)
@@ -4445,6 +4445,8 @@ module M_bdd__qyi699402059438633899__hash__refines [#"bdd.rs" 119 4 119 25] (* <
     | C_If'0 uint64 (t_Bdd'0) (t_Bdd'0)
   
   predicate inv'0 (_1 : t_Node'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Node'0 [inv'0 x] . inv'0 x = true
   
   use prelude.prelude.UInt64
   
@@ -4481,8 +4483,6 @@ module M_bdd__qyi699402059438633899__hash__refines [#"bdd.rs" 119 4 119 25] (* <
   function deep_model'0 (self : t_Node'0) : t_NodeLog'0 =
     [%#smodel3] deep_model'1 self
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Node'0 [inv'0 x] . inv'0 x = true
-  
   goal refines : [%#sbdd0] forall self : t_Node'0 . inv'0 self
    -> (forall result : uint64 . UInt64.to_int result = hash_log'0 (view'0 self)
    -> UInt64.to_int result = hash_log'0 (deep_model'0 self))
@@ -4508,6 +4508,8 @@ module M_bdd__qyi14323183011761258016__hash__refines [#"bdd.rs" 145 4 145 25] (*
   
   predicate inv'0 (_1 : t_Bdd'0)
   
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Bdd'0 [inv'0 x] . inv'0 x = true
+  
   use prelude.prelude.UInt64
   
   function deep_model'1 [#"bdd.rs" 188 4 188 44] (self : t_Bdd'0) : uint64 =
@@ -4526,8 +4528,6 @@ module M_bdd__qyi14323183011761258016__hash__refines [#"bdd.rs" 145 4 145 25] (*
   
   function deep_model'0 (self : t_Bdd'0) : uint64 =
     [%#smodel3] deep_model'1 self
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Bdd'0 [inv'0 x] . inv'0 x = true
   
   goal refines : [%#sbdd0] forall self : t_Bdd'0 . inv'0 self
    -> (forall result : uint64 . UInt64.to_int result = hash_log'0 (view'0 self)
@@ -4561,6 +4561,8 @@ module M_bdd__qyi4854841669736991510__eq__refines [#"bdd.rs" 93 13 93 22] (* <No
   
   predicate inv'0 (_1 : t_Node'0)
   
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Node'0 [inv'0 x] . inv'0 x = true
+  
   type t_NodeLog'0  =
     | C_False'1
     | C_True'1
@@ -4575,8 +4577,6 @@ module M_bdd__qyi4854841669736991510__eq__refines [#"bdd.rs" 93 13 93 22] (* <No
   
   function deep_model'0 (self : t_Node'0) : t_NodeLog'0 =
     [%#smodel1] deep_model'1 self
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Node'0 [inv'0 x] . inv'0 x = true
   
   goal refines : [%#sbdd0] forall self : t_Node'0 . forall other : t_Node'0 . inv'0 other /\ inv'0 self
    -> (forall result : bool . result = (deep_model'0 self = deep_model'0 other)
@@ -4602,6 +4602,8 @@ module M_bdd__qyi2581120635339165136__eq__refines [#"bdd.rs" 205 4 205 34] (* <B
   
   predicate inv'0 (_1 : t_Bdd'0)
   
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Bdd'0 [inv'0 x] . inv'0 x = true
+  
   function deep_model'1 [#"bdd.rs" 188 4 188 44] (self : t_Bdd'0) : uint64 =
     [%#sbdd4] self.t_Bdd__1'0
   
@@ -4613,8 +4615,6 @@ module M_bdd__qyi2581120635339165136__eq__refines [#"bdd.rs" 205 4 205 34] (* <B
   
   function deep_model'0 (self : t_Bdd'0) : uint64 =
     [%#smodel2] deep_model'1 self
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Bdd'0 [inv'0 x] . inv'0 x = true
   
   goal refines : [%#sbdd0] forall self : t_Bdd'0 . forall other : t_Bdd'0 . inv'0 other /\ inv'0 self
    -> (forall result : bool . result = (view'0 self = view'0 other)
@@ -4636,9 +4636,9 @@ module M_bdd__qyi17981791245757283426__clone__refines [#"bdd.rs" 93 24 93 29] (*
   
   predicate inv'0 (_1 : t_Node'0)
   
-  predicate inv'1 (_1 : t_Node'0)
-  
   axiom inv_axiom'0 [@rewrite] : forall x : t_Node'0 [inv'0 x] . inv'0 x = true
+  
+  predicate inv'1 (_1 : t_Node'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_Node'0 [inv'1 x] . inv'1 x = true
   
@@ -4661,9 +4661,9 @@ module M_bdd__qyi2820858787824331484__clone__refines [#"bdd.rs" 112 4 112 27] (*
   
   predicate inv'0 (_1 : t_Bdd'0)
   
-  predicate inv'1 (_1 : t_Bdd'0)
-  
   axiom inv_axiom'0 [@rewrite] : forall x : t_Bdd'0 [inv'0 x] . inv'0 x = true
+  
+  predicate inv'1 (_1 : t_Bdd'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_Bdd'0 [inv'1 x] . inv'1 x = true
   

@@ -33,6 +33,8 @@ module M_index_range__create_arr [#"index_range.rs" 14 0 14 27]
   
   predicate inv'0 (_1 : t_Vec'0)
   
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
+  
   use seq.Seq
   
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
@@ -49,7 +51,9 @@ module M_index_range__create_arr [#"index_range.rs" 14 0 14 27]
   
   axiom view'0_spec : forall self : t_Vec'0 . [%#svec9] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
+  let rec new'0 (_1:()) (return'  (ret:t_Vec'0))= any
+    [ return' (result:t_Vec'0)-> {inv'0 result} {[%#svec7] Seq.length (view'0 result) = 0} (! return' {result}) ]
+    
   
   use prelude.prelude.Borrow
   
@@ -60,10 +64,6 @@ module M_index_range__create_arr [#"index_range.rs" 14 0 14 27]
   predicate inv'2 (_1 : int32)
   
   axiom inv_axiom'2 [@rewrite] : forall x : int32 [inv'2 x] . inv'2 x = true
-  
-  let rec new'0 (_1:()) (return'  (ret:t_Vec'0))= any
-    [ return' (result:t_Vec'0)-> {inv'0 result} {[%#svec7] Seq.length (view'0 result) = 0} (! return' {result}) ]
-    
   
   function view'1 (self : borrowed (t_Vec'0)) : Seq.seq int32 =
     [%#smodel11] view'0 self.current
@@ -283,53 +283,6 @@ module M_index_range__test_range [#"index_range.rs" 27 0 27 19]
   
   use prelude.prelude.Int32
   
-  use prelude.prelude.Borrow
-  
-  predicate inv'0 (_1 : t_Vec'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
-  
-  type t_Range'0  =
-    { t_Range__start'0: usize; t_Range__end'0: usize }
-  
-  predicate inv'1 (_1 : t_Range'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Range'0 [inv'1 x] . inv'1 x = true
-  
-  use prelude.prelude.Slice
-  
-  predicate inv'2 (_1 : slice int32)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : slice int32 [inv'2 x] . inv'2 x = true
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 (slice int32)
-  
-  predicate inv'3 (_1 : t_Option'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
-  
-  predicate inv'4 (_1 : t_Option'0)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
-  
-  predicate inv'5 (_1 : borrowed (t_Vec'0))
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'5 x] . inv'5 x = true
-  
-  predicate inv'6 (_1 : borrowed (slice int32))
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : borrowed (slice int32) [inv'6 x] . inv'6 x = true
-  
-  predicate inv'7 (_1 : usize)
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : usize [inv'7 x] . inv'7 x = true
-  
-  predicate inv'8 (_1 : int32)
-  
-  axiom inv_axiom'8 [@rewrite] : forall x : int32 [inv'8 x] . inv'8 x = true
-  
   let rec create_arr'0 (_1:()) (return'  (ret:t_Vec'0))= any
     [ return' (result:t_Vec'0)-> {[%#sindex_range72] Seq.length (view'0 result) = 5
       /\ Int32.to_int (index_logic'0 result 0) = 0
@@ -339,12 +292,31 @@ module M_index_range__test_range [#"index_range.rs" 27 0 27 19]
       (! return' {result}) ]
     
   
+  type t_Range'0  =
+    { t_Range__start'0: usize; t_Range__end'0: usize }
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Vec'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
+  
+  predicate inv'1 (_1 : t_Range'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Range'0 [inv'1 x] . inv'1 x = true
+  
   function view'1 (self : t_Vec'0) : Seq.seq int32 =
     [%#smodel88] view'0 self
   
   predicate in_bounds'0 (self : t_Range'0) (seq : Seq.seq int32) =
     [%#sslice89] UIntSize.to_int self.t_Range__start'0 <= UIntSize.to_int self.t_Range__end'0
     /\ UIntSize.to_int self.t_Range__end'0 <= Seq.length seq
+  
+  use prelude.prelude.Slice
+  
+  predicate inv'2 (_1 : slice int32)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : slice int32 [inv'2 x] . inv'2 x = true
   
   use seq.Seq
   
@@ -380,6 +352,14 @@ module M_index_range__test_range [#"index_range.rs" 27 0 27 19]
   let rec deref'0 (self:t_Vec'0) (return'  (ret:slice int32))= {[@expl:deref 'self' type invariant] inv'0 self}
     any [ return' (result:slice int32)-> {inv'2 result} {[%#svec76] view'2 result = view'1 self} (! return' {result}) ] 
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 (slice int32)
+  
+  predicate inv'3 (_1 : t_Option'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
+  
   let rec get'0 (self:slice int32) (index:t_Range'0) (return'  (ret:t_Option'0))= {[@expl:get 'self' type invariant] inv'2 self}
     {[@expl:get 'index' type invariant] inv'1 index}
     any
@@ -390,11 +370,23 @@ module M_index_range__test_range [#"index_range.rs" 27 0 27 19]
       (! return' {result}) ]
     
   
+  predicate inv'4 (_1 : t_Option'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
+  
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'4 self}
     any [ return' (result:bool)-> {[%#soption79] result = (self = C_None'0)} (! return' {result}) ] 
   
+  predicate inv'5 (_1 : borrowed (t_Vec'0))
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'5 x] . inv'5 x = true
+  
   function view'3 (self : borrowed (t_Vec'0)) : Seq.seq int32 =
     [%#smodel91] view'0 self.current
+  
+  predicate inv'6 (_1 : borrowed (slice int32))
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : borrowed (slice int32) [inv'6 x] . inv'6 x = true
   
   predicate resolve_elswhere'0 (self : t_Range'0) (old' : Seq.seq int32) (fin : Seq.seq int32) =
     [%#sslice92] forall i : int . 0 <= i
@@ -424,8 +416,16 @@ module M_index_range__test_range [#"index_range.rs" 27 0 27 19]
     [ return' (result:usize)-> {[%#svec85] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ]
     
   
+  predicate inv'7 (_1 : usize)
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : usize [inv'7 x] . inv'7 x = true
+  
   predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq int32) =
     [%#sslice94] UIntSize.to_int self < Seq.length seq
+  
+  predicate inv'8 (_1 : int32)
+  
+  axiom inv_axiom'8 [@rewrite] : forall x : int32 [inv'8 x] . inv'8 x = true
   
   predicate has_value'1 [@inline:trivial] (self : usize) (seq : Seq.seq int32) (out : int32) =
     [%#sslice95] Seq.get seq (UIntSize.to_int self) = out
@@ -915,53 +915,6 @@ module M_index_range__test_range_to [#"index_range.rs" 78 0 78 22]
   
   use prelude.prelude.Int32
   
-  use prelude.prelude.Borrow
-  
-  predicate inv'0 (_1 : t_Vec'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
-  
-  type t_RangeTo'0  =
-    { t_RangeTo__end'0: usize }
-  
-  predicate inv'1 (_1 : t_RangeTo'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_RangeTo'0 [inv'1 x] . inv'1 x = true
-  
-  use prelude.prelude.Slice
-  
-  predicate inv'2 (_1 : slice int32)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : slice int32 [inv'2 x] . inv'2 x = true
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 (slice int32)
-  
-  predicate inv'3 (_1 : t_Option'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
-  
-  predicate inv'4 (_1 : t_Option'0)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
-  
-  predicate inv'5 (_1 : borrowed (t_Vec'0))
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'5 x] . inv'5 x = true
-  
-  predicate inv'6 (_1 : borrowed (slice int32))
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : borrowed (slice int32) [inv'6 x] . inv'6 x = true
-  
-  predicate inv'7 (_1 : usize)
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : usize [inv'7 x] . inv'7 x = true
-  
-  predicate inv'8 (_1 : int32)
-  
-  axiom inv_axiom'8 [@rewrite] : forall x : int32 [inv'8 x] . inv'8 x = true
-  
   let rec create_arr'0 (_1:()) (return'  (ret:t_Vec'0))= any
     [ return' (result:t_Vec'0)-> {[%#sindex_range45] Seq.length (view'0 result) = 5
       /\ Int32.to_int (index_logic'0 result 0) = 0
@@ -971,11 +924,30 @@ module M_index_range__test_range_to [#"index_range.rs" 78 0 78 22]
       (! return' {result}) ]
     
   
+  type t_RangeTo'0  =
+    { t_RangeTo__end'0: usize }
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Vec'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
+  
+  predicate inv'1 (_1 : t_RangeTo'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_RangeTo'0 [inv'1 x] . inv'1 x = true
+  
   function view'1 (self : t_Vec'0) : Seq.seq int32 =
     [%#smodel61] view'0 self
   
   predicate in_bounds'0 (self : t_RangeTo'0) (seq : Seq.seq int32) =
     [%#sslice62] UIntSize.to_int self.t_RangeTo__end'0 <= Seq.length seq
+  
+  use prelude.prelude.Slice
+  
+  predicate inv'2 (_1 : slice int32)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : slice int32 [inv'2 x] . inv'2 x = true
   
   use seq.Seq
   
@@ -1010,6 +982,14 @@ module M_index_range__test_range_to [#"index_range.rs" 78 0 78 22]
   let rec deref'0 (self:t_Vec'0) (return'  (ret:slice int32))= {[@expl:deref 'self' type invariant] inv'0 self}
     any [ return' (result:slice int32)-> {inv'2 result} {[%#svec49] view'2 result = view'1 self} (! return' {result}) ] 
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 (slice int32)
+  
+  predicate inv'3 (_1 : t_Option'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
+  
   let rec get'0 (self:slice int32) (index:t_RangeTo'0) (return'  (ret:t_Option'0))= {[@expl:get 'self' type invariant] inv'2 self}
     {[@expl:get 'index' type invariant] inv'1 index}
     any
@@ -1020,11 +1000,23 @@ module M_index_range__test_range_to [#"index_range.rs" 78 0 78 22]
       (! return' {result}) ]
     
   
+  predicate inv'4 (_1 : t_Option'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
+  
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'4 self}
     any [ return' (result:bool)-> {[%#soption52] result = (self = C_None'0)} (! return' {result}) ] 
   
+  predicate inv'5 (_1 : borrowed (t_Vec'0))
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'5 x] . inv'5 x = true
+  
   function view'3 (self : borrowed (t_Vec'0)) : Seq.seq int32 =
     [%#smodel64] view'0 self.current
+  
+  predicate inv'6 (_1 : borrowed (slice int32))
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : borrowed (slice int32) [inv'6 x] . inv'6 x = true
   
   predicate resolve_elswhere'0 (self : t_RangeTo'0) (old' : Seq.seq int32) (fin : Seq.seq int32) =
     [%#sslice65] forall i : int . UIntSize.to_int self.t_RangeTo__end'0 <= i /\ i < Seq.length old'
@@ -1053,8 +1045,16 @@ module M_index_range__test_range_to [#"index_range.rs" 78 0 78 22]
     [ return' (result:usize)-> {[%#svec58] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ]
     
   
+  predicate inv'7 (_1 : usize)
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : usize [inv'7 x] . inv'7 x = true
+  
   predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq int32) =
     [%#sslice67] UIntSize.to_int self < Seq.length seq
+  
+  predicate inv'8 (_1 : int32)
+  
+  axiom inv_axiom'8 [@rewrite] : forall x : int32 [inv'8 x] . inv'8 x = true
   
   predicate has_value'1 [@inline:trivial] (self : usize) (seq : Seq.seq int32) (out : int32) =
     [%#sslice68] Seq.get seq (UIntSize.to_int self) = out
@@ -1403,53 +1403,6 @@ module M_index_range__test_range_from [#"index_range.rs" 115 0 115 24]
   
   use prelude.prelude.Int32
   
-  use prelude.prelude.Borrow
-  
-  predicate inv'0 (_1 : t_Vec'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
-  
-  type t_RangeFrom'0  =
-    { t_RangeFrom__start'0: usize }
-  
-  predicate inv'1 (_1 : t_RangeFrom'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_RangeFrom'0 [inv'1 x] . inv'1 x = true
-  
-  use prelude.prelude.Slice
-  
-  predicate inv'2 (_1 : slice int32)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : slice int32 [inv'2 x] . inv'2 x = true
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 (slice int32)
-  
-  predicate inv'3 (_1 : t_Option'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
-  
-  predicate inv'4 (_1 : t_Option'0)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
-  
-  predicate inv'5 (_1 : borrowed (t_Vec'0))
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'5 x] . inv'5 x = true
-  
-  predicate inv'6 (_1 : borrowed (slice int32))
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : borrowed (slice int32) [inv'6 x] . inv'6 x = true
-  
-  predicate inv'7 (_1 : usize)
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : usize [inv'7 x] . inv'7 x = true
-  
-  predicate inv'8 (_1 : int32)
-  
-  axiom inv_axiom'8 [@rewrite] : forall x : int32 [inv'8 x] . inv'8 x = true
-  
   let rec create_arr'0 (_1:()) (return'  (ret:t_Vec'0))= any
     [ return' (result:t_Vec'0)-> {[%#sindex_range47] Seq.length (view'0 result) = 5
       /\ Int32.to_int (index_logic'0 result 0) = 0
@@ -1459,11 +1412,30 @@ module M_index_range__test_range_from [#"index_range.rs" 115 0 115 24]
       (! return' {result}) ]
     
   
+  type t_RangeFrom'0  =
+    { t_RangeFrom__start'0: usize }
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Vec'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
+  
+  predicate inv'1 (_1 : t_RangeFrom'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_RangeFrom'0 [inv'1 x] . inv'1 x = true
+  
   function view'1 (self : t_Vec'0) : Seq.seq int32 =
     [%#smodel63] view'0 self
   
   predicate in_bounds'0 (self : t_RangeFrom'0) (seq : Seq.seq int32) =
     [%#sslice64] UIntSize.to_int self.t_RangeFrom__start'0 <= Seq.length seq
+  
+  use prelude.prelude.Slice
+  
+  predicate inv'2 (_1 : slice int32)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : slice int32 [inv'2 x] . inv'2 x = true
   
   use seq.Seq
   
@@ -1498,6 +1470,14 @@ module M_index_range__test_range_from [#"index_range.rs" 115 0 115 24]
   let rec deref'0 (self:t_Vec'0) (return'  (ret:slice int32))= {[@expl:deref 'self' type invariant] inv'0 self}
     any [ return' (result:slice int32)-> {inv'2 result} {[%#svec51] view'2 result = view'1 self} (! return' {result}) ] 
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 (slice int32)
+  
+  predicate inv'3 (_1 : t_Option'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
+  
   let rec get'0 (self:slice int32) (index:t_RangeFrom'0) (return'  (ret:t_Option'0))= {[@expl:get 'self' type invariant] inv'2 self}
     {[@expl:get 'index' type invariant] inv'1 index}
     any
@@ -1508,11 +1488,23 @@ module M_index_range__test_range_from [#"index_range.rs" 115 0 115 24]
       (! return' {result}) ]
     
   
+  predicate inv'4 (_1 : t_Option'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
+  
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'4 self}
     any [ return' (result:bool)-> {[%#soption54] result = (self = C_None'0)} (! return' {result}) ] 
   
+  predicate inv'5 (_1 : borrowed (t_Vec'0))
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'5 x] . inv'5 x = true
+  
   function view'3 (self : borrowed (t_Vec'0)) : Seq.seq int32 =
     [%#smodel66] view'0 self.current
+  
+  predicate inv'6 (_1 : borrowed (slice int32))
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : borrowed (slice int32) [inv'6 x] . inv'6 x = true
   
   predicate resolve_elswhere'0 (self : t_RangeFrom'0) (old' : Seq.seq int32) (fin : Seq.seq int32) =
     [%#sslice67] forall i : int . 0 <= i /\ i < UIntSize.to_int self.t_RangeFrom__start'0 /\ i < Seq.length old'
@@ -1541,8 +1533,16 @@ module M_index_range__test_range_from [#"index_range.rs" 115 0 115 24]
     [ return' (result:usize)-> {[%#svec60] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ]
     
   
+  predicate inv'7 (_1 : usize)
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : usize [inv'7 x] . inv'7 x = true
+  
   predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq int32) =
     [%#sslice69] UIntSize.to_int self < Seq.length seq
+  
+  predicate inv'8 (_1 : int32)
+  
+  axiom inv_axiom'8 [@rewrite] : forall x : int32 [inv'8 x] . inv'8 x = true
   
   predicate has_value'1 [@inline:trivial] (self : usize) (seq : Seq.seq int32) (out : int32) =
     [%#sslice70] Seq.get seq (UIntSize.to_int self) = out
@@ -1896,6 +1896,15 @@ module M_index_range__test_range_full [#"index_range.rs" 154 0 154 24]
   
   use prelude.prelude.Int32
   
+  let rec create_arr'0 (_1:()) (return'  (ret:t_Vec'0))= any
+    [ return' (result:t_Vec'0)-> {[%#sindex_range43] Seq.length (view'0 result) = 5
+      /\ Int32.to_int (index_logic'0 result 0) = 0
+      /\ Int32.to_int (index_logic'0 result 1) = 1
+      /\ Int32.to_int (index_logic'0 result 2) = 2
+      /\ Int32.to_int (index_logic'0 result 3) = 3 /\ Int32.to_int (index_logic'0 result 4) = 4}
+      (! return' {result}) ]
+    
+  
   use prelude.prelude.Borrow
   
   predicate inv'0 (_1 : t_Vec'0)
@@ -1906,42 +1915,17 @@ module M_index_range__test_range_full [#"index_range.rs" 154 0 154 24]
   
   axiom inv_axiom'1 [@rewrite] : forall x : () [inv'1 x] . inv'1 x = true
   
-  use prelude.prelude.Slice
-  
-  predicate inv'2 (_1 : slice int32)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : slice int32 [inv'2 x] . inv'2 x = true
-  
-  predicate inv'3 (_1 : borrowed (t_Vec'0))
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'3 x] . inv'3 x = true
-  
-  predicate inv'4 (_1 : borrowed (slice int32))
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : borrowed (slice int32) [inv'4 x] . inv'4 x = true
-  
-  predicate inv'5 (_1 : usize)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : usize [inv'5 x] . inv'5 x = true
-  
-  predicate inv'6 (_1 : int32)
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : int32 [inv'6 x] . inv'6 x = true
-  
-  let rec create_arr'0 (_1:()) (return'  (ret:t_Vec'0))= any
-    [ return' (result:t_Vec'0)-> {[%#sindex_range43] Seq.length (view'0 result) = 5
-      /\ Int32.to_int (index_logic'0 result 0) = 0
-      /\ Int32.to_int (index_logic'0 result 1) = 1
-      /\ Int32.to_int (index_logic'0 result 2) = 2
-      /\ Int32.to_int (index_logic'0 result 3) = 3 /\ Int32.to_int (index_logic'0 result 4) = 4}
-      (! return' {result}) ]
-    
-  
   function view'1 (self : t_Vec'0) : Seq.seq int32 =
     [%#smodel55] view'0 self
   
   predicate in_bounds'0 (self : ()) (_seq : Seq.seq int32) =
     [%#sslice56] true
+  
+  use prelude.prelude.Slice
+  
+  predicate inv'2 (_1 : slice int32)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : slice int32 [inv'2 x] . inv'2 x = true
   
   use prelude.prelude.Slice
   
@@ -1971,8 +1955,16 @@ module M_index_range__test_range_full [#"index_range.rs" 154 0 154 24]
     [ return' (result:usize)-> {[%#sslice46] Seq.length (view'2 self) = UIntSize.to_int result} (! return' {result}) ]
     
   
+  predicate inv'3 (_1 : borrowed (t_Vec'0))
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'3 x] . inv'3 x = true
+  
   function view'3 (self : borrowed (t_Vec'0)) : Seq.seq int32 =
     [%#smodel58] view'0 self.current
+  
+  predicate inv'4 (_1 : borrowed (slice int32))
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : borrowed (slice int32) [inv'4 x] . inv'4 x = true
   
   predicate resolve_elswhere'0 (self : ()) (_old : Seq.seq int32) (_fin : Seq.seq int32) =
     [%#sslice59] true
@@ -2000,8 +1992,16 @@ module M_index_range__test_range_full [#"index_range.rs" 154 0 154 24]
     [ return' (result:usize)-> {[%#svec52] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ]
     
   
+  predicate inv'5 (_1 : usize)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : usize [inv'5 x] . inv'5 x = true
+  
   predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq int32) =
     [%#sslice61] UIntSize.to_int self < Seq.length seq
+  
+  predicate inv'6 (_1 : int32)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : int32 [inv'6 x] . inv'6 x = true
   
   predicate has_value'1 [@inline:trivial] (self : usize) (seq : Seq.seq int32) (out : int32) =
     [%#sslice62] Seq.get seq (UIntSize.to_int self) = out
@@ -2354,53 +2354,6 @@ module M_index_range__test_range_to_inclusive [#"index_range.rs" 179 0 179 32]
   
   use prelude.prelude.Int32
   
-  use prelude.prelude.Borrow
-  
-  predicate inv'0 (_1 : t_Vec'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
-  
-  type t_RangeToInclusive'0  =
-    { t_RangeToInclusive__end'0: usize }
-  
-  predicate inv'1 (_1 : t_RangeToInclusive'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_RangeToInclusive'0 [inv'1 x] . inv'1 x = true
-  
-  use prelude.prelude.Slice
-  
-  predicate inv'2 (_1 : slice int32)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : slice int32 [inv'2 x] . inv'2 x = true
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 (slice int32)
-  
-  predicate inv'3 (_1 : t_Option'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
-  
-  predicate inv'4 (_1 : t_Option'0)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
-  
-  predicate inv'5 (_1 : borrowed (t_Vec'0))
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'5 x] . inv'5 x = true
-  
-  predicate inv'6 (_1 : borrowed (slice int32))
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : borrowed (slice int32) [inv'6 x] . inv'6 x = true
-  
-  predicate inv'7 (_1 : usize)
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : usize [inv'7 x] . inv'7 x = true
-  
-  predicate inv'8 (_1 : int32)
-  
-  axiom inv_axiom'8 [@rewrite] : forall x : int32 [inv'8 x] . inv'8 x = true
-  
   let rec create_arr'0 (_1:()) (return'  (ret:t_Vec'0))= any
     [ return' (result:t_Vec'0)-> {[%#sindex_range42] Seq.length (view'0 result) = 5
       /\ Int32.to_int (index_logic'0 result 0) = 0
@@ -2410,11 +2363,30 @@ module M_index_range__test_range_to_inclusive [#"index_range.rs" 179 0 179 32]
       (! return' {result}) ]
     
   
+  type t_RangeToInclusive'0  =
+    { t_RangeToInclusive__end'0: usize }
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'0 (_1 : t_Vec'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
+  
+  predicate inv'1 (_1 : t_RangeToInclusive'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_RangeToInclusive'0 [inv'1 x] . inv'1 x = true
+  
   function view'1 (self : t_Vec'0) : Seq.seq int32 =
     [%#smodel58] view'0 self
   
   predicate in_bounds'0 (self : t_RangeToInclusive'0) (seq : Seq.seq int32) =
     [%#sslice59] UIntSize.to_int self.t_RangeToInclusive__end'0 < Seq.length seq
+  
+  use prelude.prelude.Slice
+  
+  predicate inv'2 (_1 : slice int32)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : slice int32 [inv'2 x] . inv'2 x = true
   
   use seq.Seq
   
@@ -2449,6 +2421,14 @@ module M_index_range__test_range_to_inclusive [#"index_range.rs" 179 0 179 32]
   let rec deref'0 (self:t_Vec'0) (return'  (ret:slice int32))= {[@expl:deref 'self' type invariant] inv'0 self}
     any [ return' (result:slice int32)-> {inv'2 result} {[%#svec46] view'2 result = view'1 self} (! return' {result}) ] 
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 (slice int32)
+  
+  predicate inv'3 (_1 : t_Option'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
+  
   let rec get'0 (self:slice int32) (index:t_RangeToInclusive'0) (return'  (ret:t_Option'0))= {[@expl:get 'self' type invariant] inv'2 self}
     {[@expl:get 'index' type invariant] inv'1 index}
     any
@@ -2459,11 +2439,23 @@ module M_index_range__test_range_to_inclusive [#"index_range.rs" 179 0 179 32]
       (! return' {result}) ]
     
   
+  predicate inv'4 (_1 : t_Option'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
+  
   let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'4 self}
     any [ return' (result:bool)-> {[%#soption49] result = (self = C_None'0)} (! return' {result}) ] 
   
+  predicate inv'5 (_1 : borrowed (t_Vec'0))
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'5 x] . inv'5 x = true
+  
   function view'3 (self : borrowed (t_Vec'0)) : Seq.seq int32 =
     [%#smodel61] view'0 self.current
+  
+  predicate inv'6 (_1 : borrowed (slice int32))
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : borrowed (slice int32) [inv'6 x] . inv'6 x = true
   
   predicate resolve_elswhere'0 (self : t_RangeToInclusive'0) (old' : Seq.seq int32) (fin : Seq.seq int32) =
     [%#sslice62] forall i : int . UIntSize.to_int self.t_RangeToInclusive__end'0 < i /\ i < Seq.length old'
@@ -2492,8 +2484,16 @@ module M_index_range__test_range_to_inclusive [#"index_range.rs" 179 0 179 32]
     [ return' (result:usize)-> {[%#svec55] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ]
     
   
+  predicate inv'7 (_1 : usize)
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : usize [inv'7 x] . inv'7 x = true
+  
   predicate in_bounds'1 [@inline:trivial] (self : usize) (seq : Seq.seq int32) =
     [%#sslice64] UIntSize.to_int self < Seq.length seq
+  
+  predicate inv'8 (_1 : int32)
+  
+  axiom inv_axiom'8 [@rewrite] : forall x : int32 [inv'8 x] . inv'8 x = true
   
   predicate has_value'1 [@inline:trivial] (self : usize) (seq : Seq.seq int32) (out : int32) =
     [%#sslice65] Seq.get seq (UIntSize.to_int self) = out

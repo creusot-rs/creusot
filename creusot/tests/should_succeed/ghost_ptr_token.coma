@@ -55,6 +55,8 @@ module M_ghost_ptr_token__test [#"ghost_ptr_token.rs" 3 0 3 13]
   
   predicate inv'0 (_1 : t_GhostPtrToken'0)
   
+  axiom inv_axiom'0 [@rewrite] : forall x : t_GhostPtrToken'0 [inv'0 x] . inv'0 x = true
+  
   use prelude.prelude.Opaque
   
   use prelude.prelude.Int
@@ -104,7 +106,11 @@ module M_ghost_ptr_token__test [#"ghost_ptr_token.rs" 3 0 3 13]
   axiom empty'0_spec : forall _1 : () . ([%#sfmap29] len'0 (empty'0 _1) = 0)
   && ([%#sfmap30] view'2 (empty'0 _1) = Const.const (C_None'0))
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_GhostPtrToken'0 [inv'0 x] . inv'0 x = true
+  let rec new'0 (_1:()) (return'  (ret:t_GhostPtrToken'0))= any
+    [ return' (result:t_GhostPtrToken'0)-> {[%#sghost_ptr3] inv'0 result}
+      {[%#sghost_ptr4] view'0 result = empty'0 ()}
+      (! return' {result}) ]
+    
   
   use prelude.prelude.Borrow
   
@@ -115,24 +121,6 @@ module M_ghost_ptr_token__test [#"ghost_ptr_token.rs" 3 0 3 13]
   predicate inv'2 (_1 : int32)
   
   axiom inv_axiom'2 [@rewrite] : forall x : int32 [inv'2 x] . inv'2 x = true
-  
-  predicate inv'3 (_1 : borrowed int32)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed int32 [inv'3 x] . inv'3 x = true
-  
-  predicate inv'4 (_1 : t_GhostPtrToken'0)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_GhostPtrToken'0 [inv'4 x] . inv'4 x = true
-  
-  predicate inv'5 (_1 : int32)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : int32 [inv'5 x] . inv'5 x = true
-  
-  let rec new'0 (_1:()) (return'  (ret:t_GhostPtrToken'0))= any
-    [ return' (result:t_GhostPtrToken'0)-> {[%#sghost_ptr3] inv'0 result}
-      {[%#sghost_ptr4] view'0 result = empty'0 ()}
-      (! return' {result}) ]
-    
   
   function contains'0 [@inline:trivial] (self : t_FMap'0) (k : opaque_ptr) : bool =
     [%#sfmap31] get_unsized'0 self k <> C_None'0
@@ -176,6 +164,10 @@ module M_ghost_ptr_token__test [#"ghost_ptr_token.rs" 3 0 3 13]
       {[%#sghost_ptr11] fin'0 result = view'0 self.final}
       (! return' {result}) ]
     
+  
+  predicate inv'3 (_1 : borrowed int32)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed int32 [inv'3 x] . inv'3 x = true
   
   function unwrap'0 (op : t_Option'0) : int32
   
@@ -229,8 +221,16 @@ module M_ghost_ptr_token__test [#"ghost_ptr_token.rs" 3 0 3 13]
   predicate resolve'1 (_1 : borrowed int32) =
     resolve'3 _1
   
+  predicate inv'4 (_1 : t_GhostPtrToken'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_GhostPtrToken'0 [inv'4 x] . inv'4 x = true
+  
   function view'1 (self : t_GhostPtrToken'0) : t_FMap'0 =
     [%#smodel42] view'0 self
+  
+  predicate inv'5 (_1 : int32)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : int32 [inv'5 x] . inv'5 x = true
   
   let rec ptr_as_ref'0 (self:t_GhostPtrToken'0) (ptr:opaque_ptr) (return'  (ret:int32))= {[@expl:ptr_as_ref 'self' type invariant] [%#sghost_ptr22] inv'4 self}
     {[@expl:ptr_as_ref requires] [%#sghost_ptr23] contains'0 (view'1 self) ptr}

@@ -38,6 +38,8 @@ module M_874__can_extend [#"874.rs" 4 0 4 19]
   
   predicate inv'0 (_1 : slice int32)
   
+  axiom inv_axiom'0 [@rewrite] : forall x : slice int32 [inv'0 x] . inv'0 x = true
+  
   use prelude.prelude.Opaque
   
   type t_NonNull'0  =
@@ -58,6 +60,8 @@ module M_874__can_extend [#"874.rs" 4 0 4 19]
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
   
   predicate inv'1 (_1 : t_Vec'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Vec'0 [inv'1 x] . inv'1 x = true
   
   use seq.Seq
   
@@ -84,15 +88,17 @@ module M_874__can_extend [#"874.rs" 4 0 4 19]
   function view'1 (self : slice int32) : Seq.seq int32 =
     [%#sboxed17] view'3 self
   
-  axiom inv_axiom'0 [@rewrite] : forall x : slice int32 [inv'0 x] . inv'0 x = true
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Vec'0 [inv'1 x] . inv'1 x = true
+  let rec into_vec'0 (self:slice int32) (return'  (ret:t_Vec'0))= {[@expl:into_vec 'self' type invariant] inv'0 self}
+    any [ return' (result:t_Vec'0)-> {inv'1 result} {[%#sslice13] view'0 result = view'1 self} (! return' {result}) ] 
   
   use prelude.prelude.Borrow
   
   predicate inv'2 (_1 : borrowed (t_Vec'0))
   
   axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'2 x] . inv'2 x = true
+  
+  predicate into_iter_pre'0 (self : t_Vec'0) =
+    [%#svec18] true
   
   type t_ManuallyDrop'0  =
     { t_ManuallyDrop__value'0: () }
@@ -116,12 +122,6 @@ module M_874__can_extend [#"874.rs" 4 0 4 19]
   predicate inv'5 (_1 : Seq.seq int32)
   
   axiom inv_axiom'5 [@rewrite] : forall x : Seq.seq int32 [inv'5 x] . inv'5 x = true
-  
-  let rec into_vec'0 (self:slice int32) (return'  (ret:t_Vec'0))= {[@expl:into_vec 'self' type invariant] inv'0 self}
-    any [ return' (result:t_Vec'0)-> {inv'1 result} {[%#sslice13] view'0 result = view'1 self} (! return' {result}) ] 
-  
-  predicate into_iter_pre'0 (self : t_Vec'0) =
-    [%#svec18] true
   
   function view'4 (self : t_IntoIter'0) : Seq.seq int32
   

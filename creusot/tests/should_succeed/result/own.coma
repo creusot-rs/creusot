@@ -53,24 +53,24 @@ module M_own__qyi6204940358182728290__is_ok [#"own.rs" 31 4 31 31] (* OwnResult<
   
   use prelude.prelude.Borrow
   
-  predicate inv'0 (_1 : t_OwnResult'0)
-  
-  predicate inv'1 (_1 : t_OwnResult'0)
-  
-  predicate invariant'0 (self : t_OwnResult'0) =
-    [%#sinvariant2] inv'1 self
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'0 x] . inv'0 x = invariant'0 x
-  
   predicate inv'2 (_1 : t_T'0)
   
   predicate inv'3 (_1 : t_E'0)
+  
+  predicate inv'1 (_1 : t_OwnResult'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_OwnResult'0 [inv'1 x] . inv'1 x
   = match x with
     | C_Ok'0 a_0 -> inv'2 a_0
     | C_Err'0 a_0 -> inv'3 a_0
     end
+  
+  predicate invariant'0 (self : t_OwnResult'0) =
+    [%#sinvariant2] inv'1 self
+  
+  predicate inv'0 (_1 : t_OwnResult'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'0 x] . inv'0 x = invariant'0 x
   
   meta "compute_max_steps" 1000000
   
@@ -103,24 +103,24 @@ module M_own__qyi6204940358182728290__is_err [#"own.rs" 36 4 36 32] (* OwnResult
     | C_Ok'0 t_T'0
     | C_Err'0 t_E'0
   
-  predicate inv'0 (_1 : t_OwnResult'0)
-  
-  predicate inv'1 (_1 : t_OwnResult'0)
-  
-  predicate invariant'0 (self : t_OwnResult'0) =
-    [%#sinvariant4] inv'1 self
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'0 x] . inv'0 x = invariant'0 x
-  
   predicate inv'2 (_1 : t_T'0)
   
   predicate inv'3 (_1 : t_E'0)
+  
+  predicate inv'1 (_1 : t_OwnResult'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_OwnResult'0 [inv'1 x] . inv'1 x
   = match x with
     | C_Ok'0 a_0 -> inv'2 a_0
     | C_Err'0 a_0 -> inv'3 a_0
     end
+  
+  predicate invariant'0 (self : t_OwnResult'0) =
+    [%#sinvariant4] inv'1 self
+  
+  predicate inv'0 (_1 : t_OwnResult'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'0 x] . inv'0 x = invariant'0 x
   
   let rec is_ok'0 (self:t_OwnResult'0) (return'  (ret:bool))= {[@expl:is_ok 'self' type invariant] [%#sown2] inv'0 self}
     any [ return' (result:bool)-> {[%#sown3] result = (exists t : t_T'0 . self = C_Ok'0 t)} (! return' {result}) ] 
@@ -152,21 +152,37 @@ module M_own__qyi6204940358182728290__ok [#"own.rs" 42 4 42 32] (* OwnResult<T, 
     | C_Ok'0 t_T'0
     | C_Err'0 t_E'0
   
-  predicate inv'1 (_1 : t_OwnResult'0)
+  let rec v_Err'0 (input:t_OwnResult'0) (ret  (field_0:t_E'0))= any
+    [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'0] . C_Err'0 field_0 <> input} (! {false} any) ]
+    
+  
+  predicate inv'0 (_1 : t_E'0)
+  
+  use prelude.prelude.Borrow
+  
+  predicate resolve'0 (_1 : t_E'0)
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_T'0
+  
+  let rec v_Ok'0 (input:t_OwnResult'0) (ret  (field_0:t_T'0))= any
+    [ good (field_0:t_T'0)-> {C_Ok'0 field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0 : t_T'0 [C_Ok'0 field_0 : t_OwnResult'0] . C_Ok'0 field_0 <> input} (! {false} any) ]
+    
+  
+  use prelude.prelude.Intrinsic
   
   predicate inv'3 (_1 : t_T'0)
   
-  predicate inv'0 (_1 : t_E'0)
+  predicate inv'1 (_1 : t_OwnResult'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'1 x] . inv'1 x
   = match x with
     | C_Ok'0 a_0 -> inv'3 a_0
     | C_Err'0 a_0 -> inv'0 a_0
     end
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_T'0
   
   predicate inv'2 (_1 : t_Option'0)
   
@@ -175,22 +191,6 @@ module M_own__qyi6204940358182728290__ok [#"own.rs" 42 4 42 32] (* OwnResult<T, 
     | C_None'0 -> true
     | C_Some'0 a_0 -> inv'3 a_0
     end
-  
-  let rec v_Err'0 (input:t_OwnResult'0) (ret  (field_0:t_E'0))= any
-    [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'0] . C_Err'0 field_0 <> input} (! {false} any) ]
-    
-  
-  use prelude.prelude.Borrow
-  
-  predicate resolve'0 (_1 : t_E'0)
-  
-  let rec v_Ok'0 (input:t_OwnResult'0) (ret  (field_0:t_T'0))= any
-    [ good (field_0:t_T'0)-> {C_Ok'0 field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : t_T'0 [C_Ok'0 field_0 : t_OwnResult'0] . C_Ok'0 field_0 <> input} (! {false} any) ]
-    
-  
-  use prelude.prelude.Intrinsic
   
   meta "compute_max_steps" 1000000
   
@@ -238,21 +238,37 @@ module M_own__qyi6204940358182728290__err [#"own.rs" 52 4 52 33] (* OwnResult<T,
     | C_Ok'0 t_T'0
     | C_Err'0 t_E'0
   
-  predicate inv'1 (_1 : t_OwnResult'0)
+  let rec v_Err'0 (input:t_OwnResult'0) (ret  (field_0:t_E'0))= any
+    [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'0] . C_Err'0 field_0 <> input} (! {false} any) ]
+    
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_E'0
+  
+  let rec v_Ok'0 (input:t_OwnResult'0) (ret  (field_0:t_T'0))= any
+    [ good (field_0:t_T'0)-> {C_Ok'0 field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0 : t_T'0 [C_Ok'0 field_0 : t_OwnResult'0] . C_Ok'0 field_0 <> input} (! {false} any) ]
+    
   
   predicate inv'0 (_1 : t_T'0)
   
+  use prelude.prelude.Borrow
+  
+  predicate resolve'0 (_1 : t_T'0)
+  
+  use prelude.prelude.Intrinsic
+  
   predicate inv'3 (_1 : t_E'0)
+  
+  predicate inv'1 (_1 : t_OwnResult'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'1 x] . inv'1 x
   = match x with
     | C_Ok'0 a_0 -> inv'0 a_0
     | C_Err'0 a_0 -> inv'3 a_0
     end
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_E'0
   
   predicate inv'2 (_1 : t_Option'0)
   
@@ -261,22 +277,6 @@ module M_own__qyi6204940358182728290__err [#"own.rs" 52 4 52 33] (* OwnResult<T,
     | C_None'0 -> true
     | C_Some'0 a_0 -> inv'3 a_0
     end
-  
-  let rec v_Err'0 (input:t_OwnResult'0) (ret  (field_0:t_E'0))= any
-    [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'0] . C_Err'0 field_0 <> input} (! {false} any) ]
-    
-  
-  let rec v_Ok'0 (input:t_OwnResult'0) (ret  (field_0:t_T'0))= any
-    [ good (field_0:t_T'0)-> {C_Ok'0 field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : t_T'0 [C_Ok'0 field_0 : t_OwnResult'0] . C_Ok'0 field_0 <> input} (! {false} any) ]
-    
-  
-  use prelude.prelude.Borrow
-  
-  predicate resolve'0 (_1 : t_T'0)
-  
-  use prelude.prelude.Intrinsic
   
   meta "compute_max_steps" 1000000
   
@@ -325,57 +325,16 @@ module M_own__qyi6204940358182728290__as_ref [#"own.rs" 62 4 62 45] (* OwnResult
     | C_Ok'0 t_T'0
     | C_Err'0 t_E'0
   
-  use prelude.prelude.Borrow
-  
-  predicate inv'0 (_1 : t_OwnResult'1)
-  
-  predicate inv'4 (_1 : t_OwnResult'1)
-  
-  predicate invariant'0 (self : t_OwnResult'1) =
-    [%#sinvariant4] inv'4 self
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'1 [inv'0 x] . inv'0 x = invariant'0 x
-  
-  type t_OwnResult'0  =
-    | C_Ok'1 t_T'0
-    | C_Err'1 t_E'0
-  
-  predicate inv'1 (_1 : t_OwnResult'0)
-  
-  predicate inv'2 (_1 : t_T'0)
-  
-  predicate inv'3 (_1 : t_E'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_OwnResult'0 [inv'1 x] . inv'1 x
-  = match x with
-    | C_Ok'1 a_0 -> inv'2 a_0
-    | C_Err'1 a_0 -> inv'3 a_0
-    end
-  
-  predicate inv'5 (_1 : t_T'0)
-  
-  predicate invariant'1 (self : t_T'0) =
-    [%#sinvariant4] inv'5 self
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_T'0 [inv'2 x] . inv'2 x = invariant'1 x
-  
-  predicate inv'6 (_1 : t_E'0)
-  
-  predicate invariant'2 (self : t_E'0) =
-    [%#sinvariant4] inv'6 self
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_E'0 [inv'3 x] . inv'3 x = invariant'2 x
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_OwnResult'1 [inv'4 x] . inv'4 x
-  = match x with
-    | C_Ok'0 a_0 -> inv'5 a_0
-    | C_Err'0 a_0 -> inv'6 a_0
-    end
-  
   let rec v_Err'0 (input:t_OwnResult'1) (ret  (field_0:t_E'0))= any
     [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'1] . C_Err'0 field_0 <> input} (! {false} any) ]
     
+  
+  use prelude.prelude.Borrow
+  
+  type t_OwnResult'0  =
+    | C_Ok'1 t_T'0
+    | C_Err'1 t_E'0
   
   let rec v_Ok'0 (input:t_OwnResult'1) (ret  (field_0:t_T'0))= any
     [ good (field_0:t_T'0)-> {C_Ok'0 field_0 = input} (! ret {field_0})
@@ -383,6 +342,47 @@ module M_own__qyi6204940358182728290__as_ref [#"own.rs" 62 4 62 45] (* OwnResult
     
   
   use prelude.prelude.Intrinsic
+  
+  predicate inv'5 (_1 : t_T'0)
+  
+  predicate inv'6 (_1 : t_E'0)
+  
+  predicate inv'4 (_1 : t_OwnResult'1)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_OwnResult'1 [inv'4 x] . inv'4 x
+  = match x with
+    | C_Ok'0 a_0 -> inv'5 a_0
+    | C_Err'0 a_0 -> inv'6 a_0
+    end
+  
+  predicate invariant'0 (self : t_OwnResult'1) =
+    [%#sinvariant4] inv'4 self
+  
+  predicate inv'0 (_1 : t_OwnResult'1)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'1 [inv'0 x] . inv'0 x = invariant'0 x
+  
+  predicate invariant'1 (self : t_T'0) =
+    [%#sinvariant4] inv'5 self
+  
+  predicate inv'2 (_1 : t_T'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_T'0 [inv'2 x] . inv'2 x = invariant'1 x
+  
+  predicate invariant'2 (self : t_E'0) =
+    [%#sinvariant4] inv'6 self
+  
+  predicate inv'3 (_1 : t_E'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_E'0 [inv'3 x] . inv'3 x = invariant'2 x
+  
+  predicate inv'1 (_1 : t_OwnResult'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_OwnResult'0 [inv'1 x] . inv'1 x
+  = match x with
+    | C_Ok'1 a_0 -> inv'2 a_0
+    | C_Err'1 a_0 -> inv'3 a_0
+    end
   
   meta "compute_max_steps" 1000000
   
@@ -428,53 +428,21 @@ module M_own__qyi6204940358182728290__as_mut [#"own.rs" 77 4 77 57] (* OwnResult
   
   predicate inv'0 (_1 : t_E'0)
   
-  predicate inv'1 (_1 : borrowed t_E'0)
-  
-  predicate invariant'0 (self : borrowed t_E'0) =
-    [%#sinvariant4] inv'0 self.current /\ inv'0 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed t_E'0 [inv'1 x] . inv'1 x = invariant'0 x
-  
-  predicate inv'3 (_1 : borrowed t_T'0)
-  
-  predicate inv'2 (_1 : t_T'0)
-  
-  predicate invariant'1 (self : borrowed t_T'0) =
-    [%#sinvariant4] inv'2 self.current /\ inv'2 self.final
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : borrowed t_T'0 [inv'3 x] . inv'3 x = invariant'1 x
-  
-  predicate inv'4 (_1 : borrowed (t_OwnResult'1))
-  
-  predicate inv'6 (_1 : t_OwnResult'1)
-  
-  predicate invariant'2 (self : borrowed (t_OwnResult'1)) =
-    [%#sinvariant4] inv'6 self.current /\ inv'6 self.final
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_OwnResult'1) [inv'4 x] . inv'4 x = invariant'2 x
+  let rec v_Err'0 (input:t_OwnResult'1) (ret  (field_0:t_E'0))= any
+    [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'1] . C_Err'0 field_0 <> input} (! {false} any) ]
+    
   
   type t_OwnResult'0  =
     | C_Ok'1 (borrowed t_T'0)
     | C_Err'1 (borrowed t_E'0)
   
-  predicate inv'5 (_1 : t_OwnResult'0)
+  predicate invariant'0 (self : borrowed t_E'0) =
+    [%#sinvariant4] inv'0 self.current /\ inv'0 self.final
   
-  axiom inv_axiom'3 [@rewrite] : forall x : t_OwnResult'0 [inv'5 x] . inv'5 x
-  = match x with
-    | C_Ok'1 a_0 -> inv'3 a_0
-    | C_Err'1 a_0 -> inv'1 a_0
-    end
+  predicate inv'1 (_1 : borrowed t_E'0)
   
-  axiom inv_axiom'4 [@rewrite] : forall x : t_OwnResult'1 [inv'6 x] . inv'6 x
-  = match x with
-    | C_Ok'0 a_0 -> inv'2 a_0
-    | C_Err'0 a_0 -> inv'0 a_0
-    end
-  
-  let rec v_Err'0 (input:t_OwnResult'1) (ret  (field_0:t_E'0))= any
-    [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'1] . C_Err'0 field_0 <> input} (! {false} any) ]
-    
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed t_E'0 [inv'1 x] . inv'1 x = invariant'0 x
   
   predicate resolve'3 (self : borrowed t_E'0) =
     [%#sresolve3] self.final = self.current
@@ -482,16 +450,40 @@ module M_own__qyi6204940358182728290__as_mut [#"own.rs" 77 4 77 57] (* OwnResult
   predicate resolve'0 (_1 : borrowed t_E'0) =
     resolve'3 _1
   
+  predicate inv'2 (_1 : t_T'0)
+  
   let rec v_Ok'0 (input:t_OwnResult'1) (ret  (field_0:t_T'0))= any
     [ good (field_0:t_T'0)-> {C_Ok'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0 : t_T'0 [C_Ok'0 field_0 : t_OwnResult'1] . C_Ok'0 field_0 <> input} (! {false} any) ]
     
+  
+  predicate invariant'1 (self : borrowed t_T'0) =
+    [%#sinvariant4] inv'2 self.current /\ inv'2 self.final
+  
+  predicate inv'3 (_1 : borrowed t_T'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : borrowed t_T'0 [inv'3 x] . inv'3 x = invariant'1 x
   
   predicate resolve'4 (self : borrowed t_T'0) =
     [%#sresolve3] self.final = self.current
   
   predicate resolve'1 (_1 : borrowed t_T'0) =
     resolve'4 _1
+  
+  predicate inv'6 (_1 : t_OwnResult'1)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_OwnResult'1 [inv'6 x] . inv'6 x
+  = match x with
+    | C_Ok'0 a_0 -> inv'2 a_0
+    | C_Err'0 a_0 -> inv'0 a_0
+    end
+  
+  predicate invariant'2 (self : borrowed (t_OwnResult'1)) =
+    [%#sinvariant4] inv'6 self.current /\ inv'6 self.final
+  
+  predicate inv'4 (_1 : borrowed (t_OwnResult'1))
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_OwnResult'1) [inv'4 x] . inv'4 x = invariant'2 x
   
   predicate resolve'5 (self : borrowed (t_OwnResult'1)) =
     [%#sresolve3] self.final = self.current
@@ -500,6 +492,14 @@ module M_own__qyi6204940358182728290__as_mut [#"own.rs" 77 4 77 57] (* OwnResult
     resolve'5 _1
   
   use prelude.prelude.Intrinsic
+  
+  predicate inv'5 (_1 : t_OwnResult'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_OwnResult'0 [inv'5 x] . inv'5 x
+  = match x with
+    | C_Ok'1 a_0 -> inv'3 a_0
+    | C_Err'1 a_0 -> inv'1 a_0
+    end
   
   meta "compute_max_steps" 1000000
   
@@ -584,22 +584,12 @@ module M_own__qyi6204940358182728290__unwrap [#"own.rs" 86 4 88 29] (* OwnResult
     | C_Ok'0 t_T'0
     | C_Err'0 t_E'0
   
-  predicate inv'1 (_1 : t_OwnResult'0)
-  
-  predicate inv'2 (_1 : t_T'0)
-  
-  predicate inv'0 (_1 : t_E'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'1 x] . inv'1 x
-  = match x with
-    | C_Ok'0 a_0 -> inv'2 a_0
-    | C_Err'0 a_0 -> inv'0 a_0
-    end
-  
   let rec v_Err'0 (input:t_OwnResult'0) (ret  (field_0:t_E'0))= any
     [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'0] . C_Err'0 field_0 <> input} (! {false} any) ]
     
+  
+  predicate inv'0 (_1 : t_E'0)
   
   use prelude.prelude.Borrow
   
@@ -611,6 +601,16 @@ module M_own__qyi6204940358182728290__unwrap [#"own.rs" 86 4 88 29] (* OwnResult
     
   
   use prelude.prelude.Intrinsic
+  
+  predicate inv'2 (_1 : t_T'0)
+  
+  predicate inv'1 (_1 : t_OwnResult'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'1 x] . inv'1 x
+  = match x with
+    | C_Ok'0 a_0 -> inv'2 a_0
+    | C_Err'0 a_0 -> inv'0 a_0
+    end
   
   meta "compute_max_steps" 1000000
   
@@ -650,22 +650,12 @@ module M_own__qyi6204940358182728290__expect [#"own.rs" 98 4 100 29] (* OwnResul
     | C_Ok'0 t_T'0
     | C_Err'0 t_E'0
   
-  predicate inv'1 (_1 : t_OwnResult'0)
-  
-  predicate inv'2 (_1 : t_T'0)
-  
-  predicate inv'0 (_1 : t_E'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'1 x] . inv'1 x
-  = match x with
-    | C_Ok'0 a_0 -> inv'2 a_0
-    | C_Err'0 a_0 -> inv'0 a_0
-    end
-  
   let rec v_Err'0 (input:t_OwnResult'0) (ret  (field_0:t_E'0))= any
     [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'0] . C_Err'0 field_0 <> input} (! {false} any) ]
     
+  
+  predicate inv'0 (_1 : t_E'0)
   
   use prelude.prelude.Borrow
   
@@ -677,6 +667,16 @@ module M_own__qyi6204940358182728290__expect [#"own.rs" 98 4 100 29] (* OwnResul
     
   
   use prelude.prelude.Intrinsic
+  
+  predicate inv'2 (_1 : t_T'0)
+  
+  predicate inv'1 (_1 : t_OwnResult'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'1 x] . inv'1 x
+  = match x with
+    | C_Ok'0 a_0 -> inv'2 a_0
+    | C_Err'0 a_0 -> inv'0 a_0
+    end
   
   meta "compute_max_steps" 1000000
   
@@ -716,18 +716,6 @@ module M_own__qyi6204940358182728290__unwrap_err [#"own.rs" 110 4 112 29] (* Own
     | C_Ok'0 t_T'0
     | C_Err'0 t_E'0
   
-  predicate inv'1 (_1 : t_OwnResult'0)
-  
-  predicate inv'0 (_1 : t_T'0)
-  
-  predicate inv'2 (_1 : t_E'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'1 x] . inv'1 x
-  = match x with
-    | C_Ok'0 a_0 -> inv'0 a_0
-    | C_Err'0 a_0 -> inv'2 a_0
-    end
-  
   let rec v_Err'0 (input:t_OwnResult'0) (ret  (field_0:t_E'0))= any
     [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'0] . C_Err'0 field_0 <> input} (! {false} any) ]
@@ -738,11 +726,23 @@ module M_own__qyi6204940358182728290__unwrap_err [#"own.rs" 110 4 112 29] (* Own
     | bad -> {forall field_0 : t_T'0 [C_Ok'0 field_0 : t_OwnResult'0] . C_Ok'0 field_0 <> input} (! {false} any) ]
     
   
+  predicate inv'0 (_1 : t_T'0)
+  
   use prelude.prelude.Borrow
   
   predicate resolve'0 (_1 : t_T'0)
   
   use prelude.prelude.Intrinsic
+  
+  predicate inv'2 (_1 : t_E'0)
+  
+  predicate inv'1 (_1 : t_OwnResult'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'1 x] . inv'1 x
+  = match x with
+    | C_Ok'0 a_0 -> inv'0 a_0
+    | C_Err'0 a_0 -> inv'2 a_0
+    end
   
   meta "compute_max_steps" 1000000
   
@@ -783,26 +783,18 @@ module M_own__qyi6204940358182728290__unwrap_or [#"own.rs" 122 4 122 43] (* OwnR
     | C_Ok'0 t_T'0
     | C_Err'0 t_E'0
   
-  predicate inv'2 (_1 : t_OwnResult'0)
-  
-  predicate inv'1 (_1 : t_T'0)
-  
-  predicate inv'0 (_1 : t_E'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'2 x] . inv'2 x
-  = match x with
-    | C_Ok'0 a_0 -> inv'1 a_0
-    | C_Err'0 a_0 -> inv'0 a_0
-    end
-  
   let rec v_Err'0 (input:t_OwnResult'0) (ret  (field_0:t_E'0))= any
     [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'0] . C_Err'0 field_0 <> input} (! {false} any) ]
     
   
+  predicate inv'0 (_1 : t_E'0)
+  
   use prelude.prelude.Borrow
   
   predicate resolve'0 (_1 : t_E'0)
+  
+  predicate inv'1 (_1 : t_T'0)
   
   predicate resolve'1 (_1 : t_T'0)
   
@@ -812,6 +804,14 @@ module M_own__qyi6204940358182728290__unwrap_or [#"own.rs" 122 4 122 43] (* OwnR
     
   
   use prelude.prelude.Intrinsic
+  
+  predicate inv'2 (_1 : t_OwnResult'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'2 x] . inv'2 x
+  = match x with
+    | C_Ok'0 a_0 -> inv'1 a_0
+    | C_Err'0 a_0 -> inv'0 a_0
+    end
   
   meta "compute_max_steps" 1000000
   
@@ -865,7 +865,17 @@ module M_own__qyi6204940358182728290__unwrap_or_default [#"own.rs" 132 4 134 19]
     | C_Ok'0 t_T'0
     | C_Err'0 t_E'0
   
+  predicate inv'1 (_1 : t_T'0)
+  
+  predicate inv'2 (_1 : t_E'0)
+  
   predicate inv'0 (_1 : t_OwnResult'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'0 x] . inv'0 x
+  = match x with
+    | C_Ok'0 a_0 -> inv'1 a_0
+    | C_Err'0 a_0 -> inv'2 a_0
+    end
   
   use prelude.prelude.Borrow
   
@@ -882,17 +892,7 @@ module M_own__qyi6204940358182728290__unwrap_or_default [#"own.rs" 132 4 134 19]
   predicate resolve'0 (_1 : t_OwnResult'0) =
     resolve'1 _1
   
-  predicate inv'1 (_1 : t_T'0)
-  
   predicate is_default'0 (self : t_T'0)
-  
-  predicate inv'2 (_1 : t_E'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'0 x] . inv'0 x
-  = match x with
-    | C_Ok'0 a_0 -> inv'1 a_0
-    | C_Err'0 a_0 -> inv'2 a_0
-    end
   
   let rec default'0 (_1:()) (return'  (ret:t_T'0))= any
     [ return' (result:t_T'0)-> {inv'1 result} {[%#sdefault5] is_default'0 result} (! return' {result}) ]
@@ -952,7 +952,17 @@ module M_own__qyi6204940358182728290__and [#"own.rs" 144 4 144 64] (* OwnResult<
     | C_Ok'1 t_U'0
     | C_Err'1 t_E'0
   
+  predicate inv'3 (_1 : t_U'0)
+  
+  predicate inv'4 (_1 : t_E'0)
+  
   predicate inv'0 (_1 : t_OwnResult'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'0 x] . inv'0 x
+  = match x with
+    | C_Ok'1 a_0 -> inv'3 a_0
+    | C_Err'1 a_0 -> inv'4 a_0
+    end
   
   use prelude.prelude.Borrow
   
@@ -969,26 +979,6 @@ module M_own__qyi6204940358182728290__and [#"own.rs" 144 4 144 64] (* OwnResult<
   predicate resolve'0 (_1 : t_OwnResult'0) =
     resolve'2 _1
   
-  predicate inv'3 (_1 : t_U'0)
-  
-  predicate inv'4 (_1 : t_E'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'0 x] . inv'0 x
-  = match x with
-    | C_Ok'1 a_0 -> inv'3 a_0
-    | C_Err'1 a_0 -> inv'4 a_0
-    end
-  
-  predicate inv'2 (_1 : t_OwnResult'1)
-  
-  predicate inv'1 (_1 : t_T'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_OwnResult'1 [inv'2 x] . inv'2 x
-  = match x with
-    | C_Ok'0 a_0 -> inv'1 a_0
-    | C_Err'0 a_0 -> inv'4 a_0
-    end
-  
   let rec v_Err'0 (input:t_OwnResult'1) (ret  (field_0:t_E'0))= any
     [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'1] . C_Err'0 field_0 <> input} (! {false} any) ]
@@ -999,9 +989,19 @@ module M_own__qyi6204940358182728290__and [#"own.rs" 144 4 144 64] (* OwnResult<
     | bad -> {forall field_0 : t_T'0 [C_Ok'0 field_0 : t_OwnResult'1] . C_Ok'0 field_0 <> input} (! {false} any) ]
     
   
+  predicate inv'1 (_1 : t_T'0)
+  
   predicate resolve'1 (_1 : t_T'0)
   
   use prelude.prelude.Intrinsic
+  
+  predicate inv'2 (_1 : t_OwnResult'1)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_OwnResult'1 [inv'2 x] . inv'2 x
+  = match x with
+    | C_Ok'0 a_0 -> inv'1 a_0
+    | C_Err'0 a_0 -> inv'4 a_0
+    end
   
   meta "compute_max_steps" 1000000
   
@@ -1061,42 +1061,34 @@ module M_own__qyi6204940358182728290__or [#"own.rs" 154 4 154 63] (* OwnResult<T
     | C_Ok'0 t_T'0
     | C_Err'0 t_E'0
   
+  let rec v_Err'0 (input:t_OwnResult'1) (ret  (field_0:t_E'0))= any
+    [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'1] . C_Err'0 field_0 <> input} (! {false} any) ]
+    
+  
+  predicate inv'0 (_1 : t_E'0)
+  
+  use prelude.prelude.Borrow
+  
+  predicate resolve'0 (_1 : t_E'0)
+  
   type t_F'0
   
   type t_OwnResult'0  =
     | C_Ok'1 t_T'0
     | C_Err'1 t_F'0
   
-  predicate inv'1 (_1 : t_OwnResult'0)
-  
   predicate inv'3 (_1 : t_T'0)
   
   predicate inv'4 (_1 : t_F'0)
+  
+  predicate inv'1 (_1 : t_OwnResult'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'1 x] . inv'1 x
   = match x with
     | C_Ok'1 a_0 -> inv'3 a_0
     | C_Err'1 a_0 -> inv'4 a_0
     end
-  
-  predicate inv'2 (_1 : t_OwnResult'1)
-  
-  predicate inv'0 (_1 : t_E'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_OwnResult'1 [inv'2 x] . inv'2 x
-  = match x with
-    | C_Ok'0 a_0 -> inv'3 a_0
-    | C_Err'0 a_0 -> inv'0 a_0
-    end
-  
-  let rec v_Err'0 (input:t_OwnResult'1) (ret  (field_0:t_E'0))= any
-    [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'1] . C_Err'0 field_0 <> input} (! {false} any) ]
-    
-  
-  use prelude.prelude.Borrow
-  
-  predicate resolve'0 (_1 : t_E'0)
   
   predicate resolve'3 (_1 : t_T'0)
   
@@ -1117,6 +1109,14 @@ module M_own__qyi6204940358182728290__or [#"own.rs" 154 4 154 63] (* OwnResult<T
     
   
   use prelude.prelude.Intrinsic
+  
+  predicate inv'2 (_1 : t_OwnResult'1)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_OwnResult'1 [inv'2 x] . inv'2 x
+  = match x with
+    | C_Ok'0 a_0 -> inv'3 a_0
+    | C_Err'0 a_0 -> inv'0 a_0
+    end
   
   meta "compute_max_steps" 1000000
   
@@ -1173,41 +1173,14 @@ module M_own__qyi13172074075585881807__copied [#"own.rs" 166 4 168 16] (* OwnRes
     | C_Ok'0 t_T'0
     | C_Err'0 t_E'0
   
-  predicate inv'0 (_1 : t_OwnResult'1)
-  
-  predicate inv'2 (_1 : t_T'0)
-  
-  predicate inv'3 (_1 : t_E'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'1 [inv'0 x] . inv'0 x
-  = match x with
-    | C_Ok'0 a_0 -> inv'2 a_0
-    | C_Err'0 a_0 -> inv'3 a_0
-    end
-  
-  type t_OwnResult'0  =
-    | C_Ok'1 t_T'0
-    | C_Err'1 t_E'0
-  
-  predicate inv'1 (_1 : t_OwnResult'0)
-  
-  predicate inv'4 (_1 : t_T'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_OwnResult'0 [inv'1 x] . inv'1 x
-  = match x with
-    | C_Ok'1 a_0 -> inv'4 a_0
-    | C_Err'1 a_0 -> inv'3 a_0
-    end
-  
-  predicate invariant'0 (self : t_T'0) =
-    [%#sinvariant4] inv'4 self
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_T'0 [inv'2 x] . inv'2 x = invariant'0 x
-  
   let rec v_Err'0 (input:t_OwnResult'1) (ret  (field_0:t_E'0))= any
     [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'1] . C_Err'0 field_0 <> input} (! {false} any) ]
     
+  
+  type t_OwnResult'0  =
+    | C_Ok'1 t_T'0
+    | C_Err'1 t_E'0
   
   let rec v_Ok'0 (input:t_OwnResult'1) (ret  (field_0:t_T'0))= any
     [ good (field_0:t_T'0)-> {C_Ok'0 field_0 = input} (! ret {field_0})
@@ -1215,6 +1188,33 @@ module M_own__qyi13172074075585881807__copied [#"own.rs" 166 4 168 16] (* OwnRes
     
   
   use prelude.prelude.Intrinsic
+  
+  predicate inv'4 (_1 : t_T'0)
+  
+  predicate invariant'0 (self : t_T'0) =
+    [%#sinvariant4] inv'4 self
+  
+  predicate inv'2 (_1 : t_T'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_T'0 [inv'2 x] . inv'2 x = invariant'0 x
+  
+  predicate inv'3 (_1 : t_E'0)
+  
+  predicate inv'0 (_1 : t_OwnResult'1)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'1 [inv'0 x] . inv'0 x
+  = match x with
+    | C_Ok'0 a_0 -> inv'2 a_0
+    | C_Err'0 a_0 -> inv'3 a_0
+    end
+  
+  predicate inv'1 (_1 : t_OwnResult'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_OwnResult'0 [inv'1 x] . inv'1 x
+  = match x with
+    | C_Ok'1 a_0 -> inv'4 a_0
+    | C_Err'1 a_0 -> inv'3 a_0
+    end
   
   meta "compute_max_steps" 1000000
   
@@ -1264,11 +1264,37 @@ module M_own__qyi13172074075585881807__cloned [#"own.rs" 179 4 181 17] (* OwnRes
     | C_Ok'0 t_T'0
     | C_Err'0 t_E'0
   
-  predicate inv'0 (_1 : t_OwnResult'1)
+  let rec v_Err'0 (input:t_OwnResult'1) (ret  (field_0:t_E'0))= any
+    [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'1] . C_Err'0 field_0 <> input} (! {false} any) ]
+    
+  
+  type t_OwnResult'0  =
+    | C_Ok'1 t_T'0
+    | C_Err'1 t_E'0
+  
+  let rec v_Ok'0 (input:t_OwnResult'1) (ret  (field_0:t_T'0))= any
+    [ good (field_0:t_T'0)-> {C_Ok'0 field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0 : t_T'0 [C_Ok'0 field_0 : t_OwnResult'1] . C_Ok'0 field_0 <> input} (! {false} any) ]
+    
+  
+  predicate inv'3 (_1 : t_T'0)
+  
+  predicate invariant'0 (self : t_T'0) =
+    [%#sinvariant5] inv'3 self
   
   predicate inv'2 (_1 : t_T'0)
   
+  axiom inv_axiom'2 [@rewrite] : forall x : t_T'0 [inv'2 x] . inv'2 x = invariant'0 x
+  
+  let rec clone'0 (self:t_T'0) (return'  (ret:t_T'0))= {[@expl:clone 'self' type invariant] inv'2 self}
+    any [ return' (result:t_T'0)-> {inv'3 result} {[%#sclone4] result = self} (! return' {result}) ] 
+  
+  use prelude.prelude.Intrinsic
+  
   predicate inv'4 (_1 : t_E'0)
+  
+  predicate inv'0 (_1 : t_OwnResult'1)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'1 [inv'0 x] . inv'0 x
   = match x with
@@ -1276,39 +1302,13 @@ module M_own__qyi13172074075585881807__cloned [#"own.rs" 179 4 181 17] (* OwnRes
     | C_Err'0 a_0 -> inv'4 a_0
     end
   
-  type t_OwnResult'0  =
-    | C_Ok'1 t_T'0
-    | C_Err'1 t_E'0
-  
   predicate inv'1 (_1 : t_OwnResult'0)
-  
-  predicate inv'3 (_1 : t_T'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_OwnResult'0 [inv'1 x] . inv'1 x
   = match x with
     | C_Ok'1 a_0 -> inv'3 a_0
     | C_Err'1 a_0 -> inv'4 a_0
     end
-  
-  predicate invariant'0 (self : t_T'0) =
-    [%#sinvariant5] inv'3 self
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_T'0 [inv'2 x] . inv'2 x = invariant'0 x
-  
-  let rec v_Err'0 (input:t_OwnResult'1) (ret  (field_0:t_E'0))= any
-    [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'1] . C_Err'0 field_0 <> input} (! {false} any) ]
-    
-  
-  let rec v_Ok'0 (input:t_OwnResult'1) (ret  (field_0:t_T'0))= any
-    [ good (field_0:t_T'0)-> {C_Ok'0 field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : t_T'0 [C_Ok'0 field_0 : t_OwnResult'1] . C_Ok'0 field_0 <> input} (! {false} any) ]
-    
-  
-  let rec clone'0 (self:t_T'0) (return'  (ret:t_T'0))= {[@expl:clone 'self' type invariant] inv'2 self}
-    any [ return' (result:t_T'0)-> {inv'3 result} {[%#sclone4] result = self} (! return' {result}) ] 
-  
-  use prelude.prelude.Intrinsic
   
   meta "compute_max_steps" 1000000
   
@@ -1363,41 +1363,14 @@ module M_own__qyi10012309719472384256__copied [#"own.rs" 194 4 196 16] (* OwnRes
     | C_Ok'0 (borrowed t_T'0)
     | C_Err'0 t_E'0
   
-  predicate inv'0 (_1 : borrowed t_T'0)
-  
-  predicate inv'4 (_1 : t_T'0)
-  
-  predicate invariant'0 (self : borrowed t_T'0) =
-    [%#sinvariant5] inv'4 self.current /\ inv'4 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed t_T'0 [inv'0 x] . inv'0 x = invariant'0 x
-  
-  predicate inv'1 (_1 : t_OwnResult'1)
-  
-  predicate inv'3 (_1 : t_E'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_OwnResult'1 [inv'1 x] . inv'1 x
-  = match x with
-    | C_Ok'0 a_0 -> inv'0 a_0
-    | C_Err'0 a_0 -> inv'3 a_0
-    end
-  
-  type t_OwnResult'0  =
-    | C_Ok'1 t_T'0
-    | C_Err'1 t_E'0
-  
-  predicate inv'2 (_1 : t_OwnResult'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_OwnResult'0 [inv'2 x] . inv'2 x
-  = match x with
-    | C_Ok'1 a_0 -> inv'4 a_0
-    | C_Err'1 a_0 -> inv'3 a_0
-    end
-  
   let rec v_Err'0 (input:t_OwnResult'1) (ret  (field_0:t_E'0))= any
     [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'1] . C_Err'0 field_0 <> input} (! {false} any) ]
     
+  
+  type t_OwnResult'0  =
+    | C_Ok'1 t_T'0
+    | C_Err'1 t_E'0
   
   let rec v_Ok'0 (input:t_OwnResult'1) (ret  (field_0:borrowed t_T'0))= any
     [ good (field_0:borrowed t_T'0)-> {C_Ok'0 field_0 = input} (! ret {field_0})
@@ -1406,6 +1379,15 @@ module M_own__qyi10012309719472384256__copied [#"own.rs" 194 4 196 16] (* OwnRes
       any) ]
     
   
+  predicate inv'4 (_1 : t_T'0)
+  
+  predicate invariant'0 (self : borrowed t_T'0) =
+    [%#sinvariant5] inv'4 self.current /\ inv'4 self.final
+  
+  predicate inv'0 (_1 : borrowed t_T'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed t_T'0 [inv'0 x] . inv'0 x = invariant'0 x
+  
   predicate resolve'1 (self : borrowed t_T'0) =
     [%#sresolve4] self.final = self.current
   
@@ -1413,6 +1395,24 @@ module M_own__qyi10012309719472384256__copied [#"own.rs" 194 4 196 16] (* OwnRes
     resolve'1 _1
   
   use prelude.prelude.Intrinsic
+  
+  predicate inv'3 (_1 : t_E'0)
+  
+  predicate inv'1 (_1 : t_OwnResult'1)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_OwnResult'1 [inv'1 x] . inv'1 x
+  = match x with
+    | C_Ok'0 a_0 -> inv'0 a_0
+    | C_Err'0 a_0 -> inv'3 a_0
+    end
+  
+  predicate inv'2 (_1 : t_OwnResult'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_OwnResult'0 [inv'2 x] . inv'2 x
+  = match x with
+    | C_Ok'1 a_0 -> inv'4 a_0
+    | C_Err'1 a_0 -> inv'3 a_0
+    end
   
   meta "compute_max_steps" 1000000
   
@@ -1469,48 +1469,14 @@ module M_own__qyi10012309719472384256__cloned [#"own.rs" 207 4 209 17] (* OwnRes
     | C_Ok'0 (borrowed t_T'0)
     | C_Err'0 t_E'0
   
-  predicate inv'0 (_1 : borrowed t_T'0)
-  
-  predicate inv'4 (_1 : t_T'0)
-  
-  predicate invariant'0 (self : borrowed t_T'0) =
-    [%#sinvariant6] inv'4 self.current /\ inv'4 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed t_T'0 [inv'0 x] . inv'0 x = invariant'0 x
-  
-  predicate inv'1 (_1 : t_OwnResult'1)
-  
-  predicate inv'5 (_1 : t_E'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_OwnResult'1 [inv'1 x] . inv'1 x
-  = match x with
-    | C_Ok'0 a_0 -> inv'0 a_0
-    | C_Err'0 a_0 -> inv'5 a_0
-    end
-  
-  type t_OwnResult'0  =
-    | C_Ok'1 t_T'0
-    | C_Err'1 t_E'0
-  
-  predicate inv'2 (_1 : t_OwnResult'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_OwnResult'0 [inv'2 x] . inv'2 x
-  = match x with
-    | C_Ok'1 a_0 -> inv'4 a_0
-    | C_Err'1 a_0 -> inv'5 a_0
-    end
-  
-  predicate inv'3 (_1 : t_T'0)
-  
-  predicate invariant'1 (self : t_T'0) =
-    [%#sinvariant7] inv'4 self
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_T'0 [inv'3 x] . inv'3 x = invariant'1 x
-  
   let rec v_Err'0 (input:t_OwnResult'1) (ret  (field_0:t_E'0))= any
     [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'1] . C_Err'0 field_0 <> input} (! {false} any) ]
     
+  
+  type t_OwnResult'0  =
+    | C_Ok'1 t_T'0
+    | C_Err'1 t_E'0
   
   let rec v_Ok'0 (input:t_OwnResult'1) (ret  (field_0:borrowed t_T'0))= any
     [ good (field_0:borrowed t_T'0)-> {C_Ok'0 field_0 = input} (! ret {field_0})
@@ -1519,8 +1485,24 @@ module M_own__qyi10012309719472384256__cloned [#"own.rs" 207 4 209 17] (* OwnRes
       any) ]
     
   
+  predicate inv'4 (_1 : t_T'0)
+  
+  predicate invariant'1 (self : t_T'0) =
+    [%#sinvariant7] inv'4 self
+  
+  predicate inv'3 (_1 : t_T'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_T'0 [inv'3 x] . inv'3 x = invariant'1 x
+  
   let rec clone'0 (self:t_T'0) (return'  (ret:t_T'0))= {[@expl:clone 'self' type invariant] inv'3 self}
     any [ return' (result:t_T'0)-> {inv'4 result} {[%#sclone4] result = self} (! return' {result}) ] 
+  
+  predicate invariant'0 (self : borrowed t_T'0) =
+    [%#sinvariant6] inv'4 self.current /\ inv'4 self.final
+  
+  predicate inv'0 (_1 : borrowed t_T'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed t_T'0 [inv'0 x] . inv'0 x = invariant'0 x
   
   predicate resolve'1 (self : borrowed t_T'0) =
     [%#sresolve5] self.final = self.current
@@ -1529,6 +1511,24 @@ module M_own__qyi10012309719472384256__cloned [#"own.rs" 207 4 209 17] (* OwnRes
     resolve'1 _1
   
   use prelude.prelude.Intrinsic
+  
+  predicate inv'5 (_1 : t_E'0)
+  
+  predicate inv'1 (_1 : t_OwnResult'1)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_OwnResult'1 [inv'1 x] . inv'1 x
+  = match x with
+    | C_Ok'0 a_0 -> inv'0 a_0
+    | C_Err'0 a_0 -> inv'5 a_0
+    end
+  
+  predicate inv'2 (_1 : t_OwnResult'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_OwnResult'0 [inv'2 x] . inv'2 x
+  = match x with
+    | C_Ok'1 a_0 -> inv'4 a_0
+    | C_Err'1 a_0 -> inv'5 a_0
+    end
   
   meta "compute_max_steps" 1000000
   
@@ -1587,17 +1587,10 @@ module M_own__qyi12833551122006947340__transpose [#"own.rs" 223 4 223 53] (* Own
     | C_Ok'0 (t_Option'0)
     | C_Err'0 t_E'0
   
-  predicate inv'0 (_1 : t_OwnResult'0)
-  
-  predicate inv'2 (_1 : t_Option'0)
-  
-  predicate inv'3 (_1 : t_E'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'0 x] . inv'0 x
-  = match x with
-    | C_Ok'0 a_0 -> inv'2 a_0
-    | C_Err'0 a_0 -> inv'3 a_0
-    end
+  let rec v_Err'0 (input:t_OwnResult'0) (ret  (field_0:t_E'0))= any
+    [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'0] . C_Err'0 field_0 <> input} (! {false} any) ]
+    
   
   type t_OwnResult'1  =
     | C_Ok'1 t_T'0
@@ -1606,35 +1599,6 @@ module M_own__qyi12833551122006947340__transpose [#"own.rs" 223 4 223 53] (* Own
   type t_Option'1  =
     | C_None'1
     | C_Some'0 (t_OwnResult'1)
-  
-  predicate inv'1 (_1 : t_Option'1)
-  
-  predicate inv'4 (_1 : t_OwnResult'1)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'1 [inv'1 x] . inv'1 x
-  = match x with
-    | C_None'1 -> true
-    | C_Some'0 a_0 -> inv'4 a_0
-    end
-  
-  predicate inv'5 (_1 : t_T'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x
-  = match x with
-    | C_None'0 -> true
-    | C_Some'1 a_0 -> inv'5 a_0
-    end
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_OwnResult'1 [inv'4 x] . inv'4 x
-  = match x with
-    | C_Ok'1 a_0 -> inv'5 a_0
-    | C_Err'1 a_0 -> inv'3 a_0
-    end
-  
-  let rec v_Err'0 (input:t_OwnResult'0) (ret  (field_0:t_E'0))= any
-    [ good (field_0:t_E'0)-> {C_Err'0 field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : t_E'0 [C_Err'0 field_0 : t_OwnResult'0] . C_Err'0 field_0 <> input} (! {false} any) ]
-    
   
   let rec v_Ok'0 (input:t_OwnResult'0) (ret  (field_0:t_Option'0))= any
     [ good (field_0:t_Option'0)-> {C_Ok'0 field_0 = input} (! ret {field_0})
@@ -1647,6 +1611,42 @@ module M_own__qyi12833551122006947340__transpose [#"own.rs" 223 4 223 53] (* Own
     
   
   use prelude.prelude.Intrinsic
+  
+  predicate inv'5 (_1 : t_T'0)
+  
+  predicate inv'2 (_1 : t_Option'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x
+  = match x with
+    | C_None'0 -> true
+    | C_Some'1 a_0 -> inv'5 a_0
+    end
+  
+  predicate inv'3 (_1 : t_E'0)
+  
+  predicate inv'0 (_1 : t_OwnResult'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'0 x] . inv'0 x
+  = match x with
+    | C_Ok'0 a_0 -> inv'2 a_0
+    | C_Err'0 a_0 -> inv'3 a_0
+    end
+  
+  predicate inv'4 (_1 : t_OwnResult'1)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_OwnResult'1 [inv'4 x] . inv'4 x
+  = match x with
+    | C_Ok'1 a_0 -> inv'5 a_0
+    | C_Err'1 a_0 -> inv'3 a_0
+    end
+  
+  predicate inv'1 (_1 : t_Option'1)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'1 [inv'1 x] . inv'1 x
+  = match x with
+    | C_None'1 -> true
+    | C_Some'0 a_0 -> inv'4 a_0
+    end
   
   meta "compute_max_steps" 1000000
   
@@ -1719,30 +1719,30 @@ module M_own__qyi3410529601998764826__resolve_coherence__refines [#"own.rs" 26 4
       | C_Err'0 x0 -> resolve'2 x0
       end
   
-  predicate inv'0 (_1 : t_OwnResult'0)
-  
-  predicate resolve'0 [#"own.rs" 15 4 15 28] (self : t_OwnResult'0) =
-    [%#sown1] match self with
-      | C_Ok'0 t -> resolve'1 t
-      | C_Err'0 e -> resolve'2 e
-      end
-  
-  predicate inv'1 (_1 : t_OwnResult'0)
-  
-  predicate invariant'0 (self : t_OwnResult'0) =
-    [%#sinvariant2] inv'1 self
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'0 x] . inv'0 x = invariant'0 x
-  
   predicate inv'2 (_1 : t_T'0)
   
   predicate inv'3 (_1 : t_E'0)
+  
+  predicate inv'1 (_1 : t_OwnResult'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_OwnResult'0 [inv'1 x] . inv'1 x
   = match x with
     | C_Ok'0 a_0 -> inv'2 a_0
     | C_Err'0 a_0 -> inv'3 a_0
     end
+  
+  predicate invariant'0 (self : t_OwnResult'0) =
+    [%#sinvariant2] inv'1 self
+  
+  predicate inv'0 (_1 : t_OwnResult'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_OwnResult'0 [inv'0 x] . inv'0 x = invariant'0 x
+  
+  predicate resolve'0 [#"own.rs" 15 4 15 28] (self : t_OwnResult'0) =
+    [%#sown1] match self with
+      | C_Ok'0 t -> resolve'1 t
+      | C_Err'0 e -> resolve'2 e
+      end
   
   goal refines : [%#sown0] forall self : t_OwnResult'0 . structural_resolve'0 self /\ inv'0 self
    -> structural_resolve'0 self /\ (forall result : () . resolve'0 self  -> resolve'0 self)

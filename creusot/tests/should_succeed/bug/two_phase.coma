@@ -31,6 +31,8 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   
   predicate inv'0 (_1 : t_Vec'0)
   
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
+  
   use prelude.prelude.UIntSize
   
   use seq.Seq
@@ -48,7 +50,8 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   function view'1 (self : t_Vec'0) : Seq.seq usize =
     [%#smodel5] view'2 self
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
+  let rec len'0 (self:t_Vec'0) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'0 self}
+    any [ return' (result:usize)-> {[%#svec1] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ] 
   
   predicate inv'1 (_1 : borrowed (t_Vec'0))
   
@@ -57,9 +60,6 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   predicate inv'2 (_1 : usize)
   
   axiom inv_axiom'2 [@rewrite] : forall x : usize [inv'2 x] . inv'2 x = true
-  
-  let rec len'0 (self:t_Vec'0) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'0 self}
-    any [ return' (result:usize)-> {[%#svec1] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ] 
   
   function view'0 (self : borrowed (t_Vec'0)) : Seq.seq usize =
     [%#smodel3] view'2 self.current

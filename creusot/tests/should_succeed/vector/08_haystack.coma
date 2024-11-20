@@ -78,6 +78,8 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   
   predicate inv'3 (_1 : t_Vec'0)
   
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Vec'0 [inv'3 x] . inv'3 x = true
+  
   use prelude.prelude.UIntSize
   
   use prelude.prelude.UInt8
@@ -97,56 +99,21 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   function view'0 (self : t_Vec'0) : Seq.seq uint8 =
     [%#smodel21] view'1 self
   
+  let rec len'0 (self:t_Vec'0) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'3 self}
+    any
+    [ return' (result:usize)-> {[%#svec16] UIntSize.to_int result = Seq.length (view'0 self)} (! return' {result}) ]
+    
+  
+  predicate inv'4 (_1 : usize)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : usize [inv'4 x] . inv'4 x = true
+  
   type t_RangeInclusive'0  =
     { t_RangeInclusive__start'0: usize; t_RangeInclusive__end'0: usize; t_RangeInclusive__exhausted'0: bool }
   
   predicate inv'0 (_1 : t_RangeInclusive'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_RangeInclusive'0 [inv'0 x] . inv'0 x = true
-  
-  use seq.Seq
-  
-  predicate inv'1 (_1 : Seq.seq usize)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq usize [inv'1 x] . inv'1 x = true
-  
-  type t_Range'0  =
-    { t_Range__start'0: usize; t_Range__end'0: usize }
-  
-  predicate inv'2 (_1 : t_Range'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Range'0 [inv'2 x] . inv'2 x = true
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Vec'0 [inv'3 x] . inv'3 x = true
-  
-  predicate inv'4 (_1 : usize)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : usize [inv'4 x] . inv'4 x = true
-  
-  predicate inv'5 (_1 : borrowed (t_RangeInclusive'0))
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : borrowed (t_RangeInclusive'0) [inv'5 x] . inv'5 x = true
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 usize
-  
-  predicate inv'6 (_1 : t_Option'0)
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : t_Option'0 [inv'6 x] . inv'6 x = true
-  
-  predicate inv'7 (_1 : borrowed (t_Range'0))
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : borrowed (t_Range'0) [inv'7 x] . inv'7 x = true
-  
-  predicate inv'8 (_1 : uint8)
-  
-  axiom inv_axiom'8 [@rewrite] : forall x : uint8 [inv'8 x] . inv'8 x = true
-  
-  let rec len'0 (self:t_Vec'0) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'3 self}
-    any
-    [ return' (result:usize)-> {[%#svec16] UIntSize.to_int result = Seq.length (view'0 self)} (! return' {result}) ]
-    
   
   function start_log'0 (self : t_RangeInclusive'0) : usize
   
@@ -188,6 +155,8 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   
   use seq.Seq
   
+  use seq.Seq
+  
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
@@ -223,6 +192,22 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'0 (Seq.get visited i) = deep_model'0 (start_log'0 self) + i)
   
+  predicate inv'1 (_1 : Seq.seq usize)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq usize [inv'1 x] . inv'1 x = true
+  
+  predicate inv'5 (_1 : borrowed (t_RangeInclusive'0))
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : borrowed (t_RangeInclusive'0) [inv'5 x] . inv'5 x = true
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 usize
+  
+  predicate inv'6 (_1 : t_Option'0)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : t_Option'0 [inv'6 x] . inv'6 x = true
+  
   predicate completed'0 (self : borrowed (t_RangeInclusive'0)) =
     [%#srange42] is_empty_log'0 self.current /\ is_empty_log'0 self.final
   
@@ -251,6 +236,13 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   
   use seq.Seq
   
+  type t_Range'0  =
+    { t_Range__start'0: usize; t_Range__end'0: usize }
+  
+  predicate inv'2 (_1 : t_Range'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Range'0 [inv'2 x] . inv'2 x = true
+  
   predicate into_iter_pre'1 (self : t_Range'0) =
     [%#siter30] true
   
@@ -272,6 +264,10 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
     /\ Seq.length visited = deep_model'0 o.t_Range__start'0 - deep_model'0 self.t_Range__start'0
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'0 (Seq.get visited i) = deep_model'0 self.t_Range__start'0 + i)
+  
+  predicate inv'7 (_1 : borrowed (t_Range'0))
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : borrowed (t_Range'0) [inv'7 x] . inv'7 x = true
   
   predicate resolve'3 (self : borrowed (t_Range'0)) =
     [%#sresolve43] self.final = self.current
@@ -295,6 +291,10 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq uint8) =
     [%#sslice53] UIntSize.to_int self < Seq.length seq
+  
+  predicate inv'8 (_1 : uint8)
+  
+  axiom inv_axiom'8 [@rewrite] : forall x : uint8 [inv'8 x] . inv'8 x = true
   
   predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq uint8) (out : uint8) =
     [%#sslice54] Seq.get seq (UIntSize.to_int self) = out

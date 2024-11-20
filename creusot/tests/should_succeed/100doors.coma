@@ -50,6 +50,8 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
   
   predicate inv'2 (_1 : bool)
   
+  axiom inv_axiom'2 [@rewrite] : forall x : bool [inv'2 x] . inv'2 x = true
+  
   use prelude.prelude.Opaque
   
   type t_NonNull'0  =
@@ -68,6 +70,8 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
   
   predicate inv'3 (_1 : t_Vec'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Vec'0 [inv'3 x] . inv'3 x = true
   
   use seq.Seq
   
@@ -88,57 +92,6 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
   function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : bool =
     [%#sops27] Seq.get (view'0 self) ix
   
-  type t_Range'0  =
-    { t_Range__start'0: usize; t_Range__end'0: usize }
-  
-  predicate inv'0 (_1 : t_Range'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Range'0 [inv'0 x] . inv'0 x = true
-  
-  use seq.Seq
-  
-  predicate inv'1 (_1 : Seq.seq usize)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq usize [inv'1 x] . inv'1 x = true
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : bool [inv'2 x] . inv'2 x = true
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Vec'0 [inv'3 x] . inv'3 x = true
-  
-  use prelude.prelude.Borrow
-  
-  predicate inv'4 (_1 : borrowed (t_Range'0))
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : borrowed (t_Range'0) [inv'4 x] . inv'4 x = true
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 usize
-  
-  predicate inv'5 (_1 : t_Option'0)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t_Option'0 [inv'5 x] . inv'5 x = true
-  
-  predicate inv'6 (_1 : t_Vec'0)
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : t_Vec'0 [inv'6 x] . inv'6 x = true
-  
-  predicate inv'7 (_1 : usize)
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : usize [inv'7 x] . inv'7 x = true
-  
-  predicate inv'8 (_1 : bool)
-  
-  axiom inv_axiom'8 [@rewrite] : forall x : bool [inv'8 x] . inv'8 x = true
-  
-  predicate inv'9 (_1 : borrowed (t_Vec'0))
-  
-  axiom inv_axiom'9 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'9 x] . inv'9 x = true
-  
-  predicate inv'10 (_1 : borrowed bool)
-  
-  axiom inv_axiom'10 [@rewrite] : forall x : borrowed bool [inv'10 x] . inv'10 x = true
-  
   let rec from_elem'0 (elem:bool) (n:usize) (return'  (ret:t_Vec'0))= {[@expl:from_elem 'elem' type invariant] inv'2 elem}
     any
     [ return' (result:t_Vec'0)-> {inv'3 result}
@@ -146,6 +99,13 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
       {[%#svec15] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
       (! return' {result}) ]
     
+  
+  type t_Range'0  =
+    { t_Range__start'0: usize; t_Range__end'0: usize }
+  
+  predicate inv'0 (_1 : t_Range'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Range'0 [inv'0 x] . inv'0 x = true
   
   predicate into_iter_pre'0 (self : t_Range'0) =
     [%#siter28] true
@@ -158,6 +118,8 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
     any [ return' (result:t_Range'0)-> {inv'0 result} {[%#siter16] into_iter_post'0 self result} (! return' {result}) ] 
   
   use prelude.prelude.Snapshot
+  
+  use seq.Seq
   
   use seq.Seq
   
@@ -183,6 +145,24 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
      -> deep_model'0 (Seq.get visited i) = deep_model'0 self.t_Range__start'0 + i)
   
   use prelude.prelude.Snapshot
+  
+  predicate inv'1 (_1 : Seq.seq usize)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq usize [inv'1 x] . inv'1 x = true
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'4 (_1 : borrowed (t_Range'0))
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : borrowed (t_Range'0) [inv'4 x] . inv'4 x = true
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 usize
+  
+  predicate inv'5 (_1 : t_Option'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_Option'0 [inv'5 x] . inv'5 x = true
   
   predicate resolve'2 (self : borrowed (t_Range'0)) =
     [%#sresolve40] self.final = self.current
@@ -213,11 +193,23 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
   
   use seq.Seq
   
+  predicate inv'6 (_1 : t_Vec'0)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : t_Vec'0 [inv'6 x] . inv'6 x = true
+  
+  predicate inv'7 (_1 : usize)
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : usize [inv'7 x] . inv'7 x = true
+  
   function view'1 (self : t_Vec'0) : Seq.seq bool =
     [%#smodel41] view'0 self
   
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq bool) =
     [%#sslice42] UIntSize.to_int self < Seq.length seq
+  
+  predicate inv'8 (_1 : bool)
+  
+  axiom inv_axiom'8 [@rewrite] : forall x : bool [inv'8 x] . inv'8 x = true
   
   predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq bool) (out : bool) =
     [%#sslice43] Seq.get seq (UIntSize.to_int self) = out
@@ -229,8 +221,16 @@ module M_100doors__f [#"100doors.rs" 18 0 18 10]
     [ return' (result:bool)-> {inv'8 result} {[%#svec21] has_value'0 index (view'1 self) result} (! return' {result}) ]
     
   
+  predicate inv'9 (_1 : borrowed (t_Vec'0))
+  
+  axiom inv_axiom'9 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'9 x] . inv'9 x = true
+  
   function view'2 (self : borrowed (t_Vec'0)) : Seq.seq bool =
     [%#smodel44] view'0 self.current
+  
+  predicate inv'10 (_1 : borrowed bool)
+  
+  axiom inv_axiom'10 [@rewrite] : forall x : borrowed bool [inv'10 x] . inv'10 x = true
   
   predicate resolve_elswhere'0 [@inline:trivial] (self : usize) (old' : Seq.seq bool) (fin : Seq.seq bool) =
     [%#sslice45] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'

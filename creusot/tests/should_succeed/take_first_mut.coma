@@ -23,12 +23,6 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   
   type t_T'0
   
-  predicate inv'0 (_1 : borrowed (slice t_T'0))
-  
-  predicate inv'2 (_1 : borrowed (borrowed (slice t_T'0)))
-  
-  use seq.Seq
-  
   use seq.Seq
   
   use prelude.prelude.UIntSize
@@ -41,11 +35,52 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   
   use prelude.prelude.Slice
   
+  use seq.Seq
+  
   function view'0 (self : slice t_T'0) : Seq.seq t_T'0
   
   axiom view'0_spec : forall self : slice t_T'0 . ([%#sslice7] Seq.length (view'0 self)
   <= UIntSize.to_int (v_MAX'0 : usize))
   && ([%#sslice8] view'0 self = Slice.id self)
+  
+  use seq.Seq
+  
+  predicate inv'3 (_1 : t_T'0)
+  
+  predicate invariant'5 (self : t_T'0) =
+    [%#sboxed16] inv'3 self
+  
+  predicate inv'9 (_1 : t_T'0)
+  
+  axiom inv_axiom'8 [@rewrite] : forall x : t_T'0 [inv'9 x] . inv'9 x = invariant'5 x
+  
+  predicate invariant'4 (self : Seq.seq t_T'0) =
+    [%#sseq15] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'9 (Seq.get self i)
+  
+  predicate inv'7 (_1 : Seq.seq t_T'0)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : Seq.seq t_T'0 [inv'7 x] . inv'7 x = invariant'4 x
+  
+  predicate invariant'1 (self : slice t_T'0) =
+    [%#sslice14] inv'7 (view'0 self)
+  
+  predicate inv'1 (_1 : slice t_T'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : slice t_T'0 [inv'1 x] . inv'1 x = invariant'1 x
+  
+  predicate invariant'0 (self : borrowed (slice t_T'0)) =
+    [%#sinvariant13] inv'1 self.current /\ inv'1 self.final
+  
+  predicate inv'0 (_1 : borrowed (slice t_T'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'0 x] . inv'0 x = invariant'0 x
+  
+  predicate invariant'2 (self : borrowed (borrowed (slice t_T'0))) =
+    [%#sinvariant13] inv'0 self.current /\ inv'0 self.final
+  
+  predicate inv'2 (_1 : borrowed (borrowed (slice t_T'0)))
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed (borrowed (slice t_T'0)) [inv'2 x] . inv'2 x = invariant'2 x
   
   function view'1 (self : borrowed (slice t_T'0)) : Seq.seq t_T'0 =
     [%#smodel11] view'0 self.current
@@ -55,77 +90,6 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   predicate is_default'0 (self : borrowed (slice t_T'0)) =
     [%#sslice10] view'1 self = (Seq.empty  : Seq.seq t_T'0) /\ view'0 self.final = (Seq.empty  : Seq.seq t_T'0)
   
-  predicate inv'1 (_1 : slice t_T'0)
-  
-  predicate invariant'0 (self : borrowed (slice t_T'0)) =
-    [%#sinvariant13] inv'1 self.current /\ inv'1 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (slice t_T'0) [inv'0 x] . inv'0 x = invariant'0 x
-  
-  predicate inv'7 (_1 : Seq.seq t_T'0)
-  
-  predicate invariant'1 (self : slice t_T'0) =
-    [%#sslice14] inv'7 (view'0 self)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : slice t_T'0 [inv'1 x] . inv'1 x = invariant'1 x
-  
-  predicate invariant'2 (self : borrowed (borrowed (slice t_T'0))) =
-    [%#sinvariant13] inv'0 self.current /\ inv'0 self.final
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed (borrowed (slice t_T'0)) [inv'2 x] . inv'2 x = invariant'2 x
-  
-  predicate inv'4 (_1 : borrowed t_T'0)
-  
-  predicate inv'3 (_1 : t_T'0)
-  
-  predicate invariant'3 (self : borrowed t_T'0) =
-    [%#sinvariant13] inv'3 self.current /\ inv'3 self.final
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed t_T'0 [inv'4 x] . inv'4 x = invariant'3 x
-  
-  type t_Option'1  =
-    | C_None'1
-    | C_Some'1 (borrowed t_T'0)
-  
-  predicate inv'5 (_1 : t_Option'1)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'1 [inv'5 x] . inv'5 x
-  = match x with
-    | C_None'1 -> true
-    | C_Some'1 a_0 -> inv'4 a_0
-    end
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 (borrowed t_T'0, borrowed (slice t_T'0))
-  
-  predicate inv'6 (_1 : t_Option'0)
-  
-  predicate inv'8 (_1 : (borrowed t_T'0, borrowed (slice t_T'0)))
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t_Option'0 [inv'6 x] . inv'6 x
-  = match x with
-    | C_None'0 -> true
-    | C_Some'0 a_0 -> inv'8 a_0
-    end
-  
-  use seq.Seq
-  
-  predicate inv'9 (_1 : t_T'0)
-  
-  predicate invariant'4 (self : Seq.seq t_T'0) =
-    [%#sseq15] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'9 (Seq.get self i)
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : Seq.seq t_T'0 [inv'7 x] . inv'7 x = invariant'4 x
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : (borrowed t_T'0, borrowed (slice t_T'0)) [inv'8 x] . inv'8 x
-  = (let (x0, x1) = x in inv'4 x0 /\ inv'0 x1)
-  
-  predicate invariant'5 (self : t_T'0) =
-    [%#sboxed16] inv'3 self
-  
-  axiom inv_axiom'8 [@rewrite] : forall x : t_T'0 [inv'9 x] . inv'9 x = invariant'5 x
-  
   let rec take'0 (dest:borrowed (borrowed (slice t_T'0))) (return'  (ret:borrowed (slice t_T'0)))= {[@expl:take 'dest' type invariant] inv'2 dest}
     any
     [ return' (result:borrowed (slice t_T'0))-> {inv'0 result}
@@ -133,6 +97,30 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
       {[%#smem4] is_default'0 dest.final}
       (! return' {result}) ]
     
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 (borrowed t_T'0, borrowed (slice t_T'0))
+  
+  predicate invariant'3 (self : borrowed t_T'0) =
+    [%#sinvariant13] inv'3 self.current /\ inv'3 self.final
+  
+  predicate inv'4 (_1 : borrowed t_T'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed t_T'0 [inv'4 x] . inv'4 x = invariant'3 x
+  
+  predicate inv'8 (_1 : (borrowed t_T'0, borrowed (slice t_T'0)))
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : (borrowed t_T'0, borrowed (slice t_T'0)) [inv'8 x] . inv'8 x
+  = (let (x0, x1) = x in inv'4 x0 /\ inv'0 x1)
+  
+  predicate inv'6 (_1 : t_Option'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_Option'0 [inv'6 x] . inv'6 x
+  = match x with
+    | C_None'0 -> true
+    | C_Some'0 a_0 -> inv'8 a_0
+    end
   
   use seq.Seq
   
@@ -179,6 +167,10 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
   predicate resolve'1 (_1 : borrowed (borrowed (slice t_T'0))) =
     resolve'4 _1
   
+  type t_Option'1  =
+    | C_None'1
+    | C_Some'1 (borrowed t_T'0)
+  
   predicate resolve'5 (self : borrowed t_T'0) =
     [%#sresolve12] self.final = self.current
   
@@ -186,6 +178,14 @@ module M_take_first_mut__take_first_mut [#"take_first_mut.rs" 14 0 14 74]
     resolve'5 _1
   
   use prelude.prelude.Intrinsic
+  
+  predicate inv'5 (_1 : t_Option'1)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'1 [inv'5 x] . inv'5 x
+  = match x with
+    | C_None'1 -> true
+    | C_Some'1 a_0 -> inv'4 a_0
+    end
   
   meta "compute_max_steps" 1000000
   

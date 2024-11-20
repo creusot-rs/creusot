@@ -102,39 +102,21 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 15 0 15 53]
   
   predicate inv'0 (_1 : t_Range'0)
   
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Range'0 [inv'0 x] . inv'0 x = true
+  
   predicate into_iter_pre'0 (self : t_Range'0) =
     [%#siter14] true
   
   predicate into_iter_post'0 (self : t_Range'0) (res : t_Range'0) =
     [%#siter15] self = res
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Range'0 [inv'0 x] . inv'0 x = true
-  
-  use seq.Seq
-  
-  predicate inv'1 (_1 : Seq.seq uint32)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq uint32 [inv'1 x] . inv'1 x = true
-  
-  use prelude.prelude.Borrow
-  
-  predicate inv'2 (_1 : borrowed (t_Range'0))
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_Range'0) [inv'2 x] . inv'2 x = true
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 uint32
-  
-  predicate inv'3 (_1 : t_Option'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
-  
   let rec into_iter'0 (self:t_Range'0) (return'  (ret:t_Range'0))= {[@expl:into_iter 'self' type invariant] inv'0 self}
     {[@expl:into_iter requires] [%#siter10] into_iter_pre'0 self}
     any [ return' (result:t_Range'0)-> {inv'0 result} {[%#siter10] into_iter_post'0 self result} (! return' {result}) ] 
   
   use prelude.prelude.Snapshot
+  
+  use seq.Seq
   
   use seq.Seq
   
@@ -164,6 +146,24 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 15 0 15 53]
     /\ Seq.length visited = deep_model'0 o.t_Range__start'0 - deep_model'0 self.t_Range__start'0
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'0 (Seq.get visited i) = deep_model'0 self.t_Range__start'0 + i)
+  
+  predicate inv'1 (_1 : Seq.seq uint32)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq uint32 [inv'1 x] . inv'1 x = true
+  
+  use prelude.prelude.Borrow
+  
+  predicate inv'2 (_1 : borrowed (t_Range'0))
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_Range'0) [inv'2 x] . inv'2 x = true
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 uint32
+  
+  predicate inv'3 (_1 : t_Option'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
   
   predicate resolve'2 (self : borrowed (t_Range'0)) =
     [%#sresolve26] self.final = self.current

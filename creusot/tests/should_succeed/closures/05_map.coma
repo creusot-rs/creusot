@@ -29,7 +29,12 @@ module M_05_map__qyi6135204174218663437__next [#"05_map.rs" 20 4 20 44] (* <Map<
   type t_Map'0  =
     { t_Map__iter'0: t_I'0; t_Map__func'0: t_F'0 }
   
+  predicate invariant'1 (self : borrowed t_I'0) =
+    [%#sinvariant9] inv'0 self.current /\ inv'0 self.final
+  
   predicate inv'3 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'3 x] . inv'3 x = invariant'1 x
   
   type t_A'0
   
@@ -37,62 +42,14 @@ module M_05_map__qyi6135204174218663437__next [#"05_map.rs" 20 4 20 44] (* <Map<
     | C_None'0
     | C_Some'0 t_A'0
   
-  predicate inv'4 (_1 : t_Option'0)
-  
-  predicate inv'1 (_1 : borrowed (t_Map'0))
-  
-  predicate inv'9 (_1 : t_Map'0)
-  
-  predicate invariant'0 (self : borrowed (t_Map'0)) =
-    [%#sinvariant9] inv'9 self.current /\ inv'9 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Map'0) [inv'1 x] . inv'1 x = invariant'0 x
-  
-  type t_B'0
-  
-  type t_Option'1  =
-    | C_None'1
-    | C_Some'1 t_B'0
-  
-  predicate inv'2 (_1 : t_Option'1)
-  
-  predicate inv'7 (_1 : t_B'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'1 [inv'2 x] . inv'2 x
-  = match x with
-    | C_None'1 -> true
-    | C_Some'1 a_0 -> inv'7 a_0
-    end
-  
-  predicate invariant'1 (self : borrowed t_I'0) =
-    [%#sinvariant9] inv'0 self.current /\ inv'0 self.final
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'3 x] . inv'3 x = invariant'1 x
-  
   predicate inv'8 (_1 : t_A'0)
+  
+  predicate inv'4 (_1 : t_Option'0)
   
   axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x
   = match x with
     | C_None'0 -> true
     | C_Some'0 a_0 -> inv'8 a_0
-    end
-  
-  predicate inv'5 (_1 : t_F'0)
-  
-  predicate inv'10 (_1 : t_F'0)
-  
-  predicate invariant'2 (self : t_F'0) =
-    [%#sinvariant10] inv'10 self
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_F'0 [inv'5 x] . inv'5 x = invariant'2 x
-  
-  predicate inv'6 (_1 : t_A'0)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t_A'0 [inv'6 x] . inv'6 x = (let (x0) = x in inv'8 x0)
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : t_Map'0 [inv'9 x] . inv'9 x
-  = match x with
-    | {t_Map__iter'0 = iter ; t_Map__func'0 = func} -> inv'0 iter /\ inv'10 func
     end
   
   let rec next'1 (self:borrowed t_I'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] [%#s05_map2] inv'3 self}
@@ -103,7 +60,24 @@ module M_05_map__qyi6135204174218663437__next [#"05_map.rs" 20 4 20 44] (* <Map<
     | bad -> {forall field_0 : t_A'0 [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
     
   
+  predicate inv'10 (_1 : t_F'0)
+  
+  predicate invariant'2 (self : t_F'0) =
+    [%#sinvariant10] inv'10 self
+  
+  predicate inv'5 (_1 : t_F'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_F'0 [inv'5 x] . inv'5 x = invariant'2 x
+  
+  predicate inv'6 (_1 : t_A'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_A'0 [inv'6 x] . inv'6 x = (let (x0) = x in inv'8 x0)
+  
   predicate precondition'0 (self : t_F'0) (args : t_A'0)
+  
+  type t_B'0
+  
+  predicate inv'7 (_1 : t_B'0)
   
   predicate postcondition'0 (self : t_F'0) (args : t_A'0) (result : t_B'0)
   
@@ -112,13 +86,39 @@ module M_05_map__qyi6135204174218663437__next [#"05_map.rs" 20 4 20 44] (* <Map<
     {[@expl:call requires] [%#sops4] precondition'0 self args}
     any [ return' (result:t_B'0)-> {inv'7 result} {[%#sops5] postcondition'0 self args result} (! return' {result}) ] 
   
+  predicate inv'9 (_1 : t_Map'0)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : t_Map'0 [inv'9 x] . inv'9 x
+  = match x with
+    | {t_Map__iter'0 = iter ; t_Map__func'0 = func} -> inv'0 iter /\ inv'10 func
+    end
+  
+  predicate invariant'0 (self : borrowed (t_Map'0)) =
+    [%#sinvariant9] inv'9 self.current /\ inv'9 self.final
+  
+  predicate inv'1 (_1 : borrowed (t_Map'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Map'0) [inv'1 x] . inv'1 x = invariant'0 x
+  
   predicate resolve'1 (self : borrowed (t_Map'0)) =
     [%#sresolve6] self.final = self.current
   
   predicate resolve'0 (_1 : borrowed (t_Map'0)) =
     resolve'1 _1
   
+  type t_Option'1  =
+    | C_None'1
+    | C_Some'1 t_B'0
+  
   use prelude.prelude.Intrinsic
+  
+  predicate inv'2 (_1 : t_Option'1)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'1 [inv'2 x] . inv'2 x
+  = match x with
+    | C_None'1 -> true
+    | C_Some'1 a_0 -> inv'7 a_0
+    end
   
   predicate postcondition_mut'0 (self : t_F'0) (args : t_A'0) (result_state : t_F'0) (result : t_B'0)
   
@@ -213,7 +213,23 @@ module M_05_map__qyi6135204174218663437__next__refines [#"05_map.rs" 20 4 20 44]
   type t_Map'0  =
     { t_Map__iter'0: t_I'0; t_Map__func'0: t_F'0 }
   
+  predicate inv'4 (_1 : t_I'0)
+  
+  predicate inv'5 (_1 : t_F'0)
+  
+  predicate inv'3 (_1 : t_Map'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Map'0 [inv'3 x] . inv'3 x
+  = match x with
+    | {t_Map__iter'0 = iter ; t_Map__func'0 = func} -> inv'4 iter /\ inv'5 func
+    end
+  
+  predicate invariant'0 (self : borrowed (t_Map'0)) =
+    [%#sinvariant1] inv'3 self.current /\ inv'3 self.final
+  
   predicate inv'0 (_1 : borrowed (t_Map'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Map'0) [inv'0 x] . inv'0 x = invariant'0 x
   
   type t_B'0
   
@@ -221,30 +237,14 @@ module M_05_map__qyi6135204174218663437__next__refines [#"05_map.rs" 20 4 20 44]
     | C_None'0
     | C_Some'0 t_B'0
   
-  predicate inv'1 (_1 : t_Option'0)
-  
-  predicate inv'3 (_1 : t_Map'0)
-  
-  predicate invariant'0 (self : borrowed (t_Map'0)) =
-    [%#sinvariant1] inv'3 self.current /\ inv'3 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Map'0) [inv'0 x] . inv'0 x = invariant'0 x
-  
   predicate inv'2 (_1 : t_B'0)
+  
+  predicate inv'1 (_1 : t_Option'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x
   = match x with
     | C_None'0 -> true
     | C_Some'0 a_0 -> inv'2 a_0
-    end
-  
-  predicate inv'4 (_1 : t_I'0)
-  
-  predicate inv'5 (_1 : t_F'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Map'0 [inv'3 x] . inv'3 x
-  = match x with
-    | {t_Map__iter'0 = iter ; t_Map__func'0 = func} -> inv'4 iter /\ inv'5 func
     end
   
   goal refines : [%#s05_map0] forall self : borrowed (t_Map'0) . inv'0 self

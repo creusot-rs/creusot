@@ -76,12 +76,31 @@ module M_ghost_vec__ghost_vec [#"ghost_vec.rs" 4 0 4 18]
   
   predicate inv'0 (_1 : t_GhostBox'0)
   
+  axiom inv_axiom'0 [@rewrite] : forall x : t_GhostBox'0 [inv'0 x] . inv'0 x = true
+  
   function inner_logic'0 (self : t_GhostBox'0) : Seq.seq int32 =
     [%#sghost5] self.t_GhostBox__0'0
   
   use seq.Seq
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_GhostBox'0 [inv'0 x] . inv'0 x = true
+  let rec new'0 (_1:()) (return'  (ret:t_GhostBox'0))= any
+    [ return' (result:t_GhostBox'0)-> {[%#sseq3] inv'0 result}
+      {[%#sseq4] inner_logic'0 result = (Seq.empty  : Seq.seq int32)}
+      (! return' {result}) ]
+    
+  
+  use prelude.prelude.Int
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 int32
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  function get'0 (self : Seq.seq int32) (ix : int) : t_Option'0 =
+    [%#sseq6] if 0 <= ix /\ ix < Seq.length self then C_Some'0 (Seq.get self ix) else C_None'0
   
   use prelude.prelude.Borrow
   
@@ -93,79 +112,6 @@ module M_ghost_vec__ghost_vec [#"ghost_vec.rs" 4 0 4 18]
   
   axiom inv_axiom'2 [@rewrite] : forall x : borrowed (Seq.seq int32) [inv'2 x] . inv'2 x = true
   
-  predicate inv'3 (_1 : int32)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : int32 [inv'3 x] . inv'3 x = true
-  
-  predicate inv'4 (_1 : t_GhostBox'0)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_GhostBox'0 [inv'4 x] . inv'4 x = true
-  
-  predicate inv'5 (_1 : Seq.seq int32)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : Seq.seq int32 [inv'5 x] . inv'5 x = true
-  
-  use prelude.prelude.Int
-  
-  type t_GhostBox'2  =
-    { t_GhostBox__0'2: int }
-  
-  predicate inv'6 (_1 : t_GhostBox'2)
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : t_GhostBox'2 [inv'6 x] . inv'6 x = true
-  
-  predicate inv'7 (_1 : int)
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : int [inv'7 x] . inv'7 x = true
-  
-  type t_Option'1  =
-    | C_None'1
-    | C_Some'1 int32
-  
-  predicate inv'8 (_1 : t_Option'1)
-  
-  axiom inv_axiom'8 [@rewrite] : forall x : t_Option'1 [inv'8 x] . inv'8 x = true
-  
-  type t_Option'2  =
-    | C_None'2
-    | C_Some'2 (borrowed int32)
-  
-  predicate inv'9 (_1 : t_Option'2)
-  
-  axiom inv_axiom'9 [@rewrite] : forall x : t_Option'2 [inv'9 x] . inv'9 x = true
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 int32
-  
-  predicate inv'10 (_1 : t_Option'0)
-  
-  axiom inv_axiom'10 [@rewrite] : forall x : t_Option'0 [inv'10 x] . inv'10 x = true
-  
-  predicate inv'11 (_1 : ())
-  
-  axiom inv_axiom'11 [@rewrite] : forall x : () [inv'11 x] . inv'11 x = true
-  
-  type t_GhostBox'1  =
-    { t_GhostBox__0'1: () }
-  
-  predicate inv'12 (_1 : t_GhostBox'1)
-  
-  axiom inv_axiom'12 [@rewrite] : forall x : t_GhostBox'1 [inv'12 x] . inv'12 x = true
-  
-  let rec new'0 (_1:()) (return'  (ret:t_GhostBox'0))= any
-    [ return' (result:t_GhostBox'0)-> {[%#sseq3] inv'0 result}
-      {[%#sseq4] inner_logic'0 result = (Seq.empty  : Seq.seq int32)}
-      (! return' {result}) ]
-    
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  function get'0 (self : Seq.seq int32) (ix : int) : t_Option'0 =
-    [%#sseq6] if 0 <= ix /\ ix < Seq.length self then C_Some'0 (Seq.get self ix) else C_None'0
-  
   let rec deref_mut'0 (self:borrowed (t_GhostBox'0)) (return'  (ret:borrowed (Seq.seq int32)))= {[@expl:deref_mut 'self' type invariant] [%#sghost33] inv'1 self}
     any
     [ return' (result:borrowed (Seq.seq int32))-> {[%#sghost34] inv'2 result}
@@ -173,6 +119,10 @@ module M_ghost_vec__ghost_vec [#"ghost_vec.rs" 4 0 4 18]
       = Borrow.borrow_logic (self.current).t_GhostBox__0'0 (self.final).t_GhostBox__0'0 (Borrow.inherit_id (Borrow.get_id self) 1)}
       (! return' {result}) ]
     
+  
+  predicate inv'3 (_1 : int32)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : int32 [inv'3 x] . inv'3 x = true
   
   use seq.Seq
   
@@ -186,6 +136,14 @@ module M_ghost_vec__ghost_vec [#"ghost_vec.rs" 4 0 4 18]
   predicate resolve'0 (_1 : borrowed (Seq.seq int32)) =
     resolve'4 _1
   
+  predicate inv'4 (_1 : t_GhostBox'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_GhostBox'0 [inv'4 x] . inv'4 x = true
+  
+  predicate inv'5 (_1 : Seq.seq int32)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : Seq.seq int32 [inv'5 x] . inv'5 x = true
+  
   let rec deref'0 (self:t_GhostBox'0) (return'  (ret:Seq.seq int32))= {[@expl:deref 'self' type invariant] [%#sghost39] inv'4 self}
     any
     [ return' (result:Seq.seq int32)-> {[%#sghost40] inv'5 result}
@@ -198,6 +156,9 @@ module M_ghost_vec__ghost_vec [#"ghost_vec.rs" 4 0 4 18]
   
   use prelude.prelude.Int128
   
+  type t_GhostBox'2  =
+    { t_GhostBox__0'2: int }
+  
   function inner_logic'1 (self : t_GhostBox'2) : int =
     [%#sghost5] self.t_GhostBox__0'2
   
@@ -207,12 +168,28 @@ module M_ghost_vec__ghost_vec [#"ghost_vec.rs" 4 0 4 18]
     [ return' (result:t_GhostBox'2)-> {[%#sint44] inner_logic'1 result = Int128.to_int value} (! return' {result}) ]
     
   
+  predicate inv'6 (_1 : t_GhostBox'2)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : t_GhostBox'2 [inv'6 x] . inv'6 x = true
+  
+  predicate inv'7 (_1 : int)
+  
+  axiom inv_axiom'7 [@rewrite] : forall x : int [inv'7 x] . inv'7 x = true
+  
   let rec deref'1 (self:t_GhostBox'2) (return'  (ret:int))= {[@expl:deref 'self' type invariant] [%#sghost39] inv'6 self}
     any
     [ return' (result:int)-> {[%#sghost40] inv'7 result}
       {[%#sghost41] self.t_GhostBox__0'2 = result}
       (! return' {result}) ]
     
+  
+  type t_Option'1  =
+    | C_None'1
+    | C_Some'1 int32
+  
+  predicate inv'8 (_1 : t_Option'1)
+  
+  axiom inv_axiom'8 [@rewrite] : forall x : t_Option'1 [inv'8 x] . inv'8 x = true
   
   let rec get_ghost'0 (self:Seq.seq int32) (index:int) (return'  (ret:t_Option'1))= {[@expl:get_ghost 'self' type invariant] [%#sseq45] inv'5 self}
     any
@@ -223,6 +200,14 @@ module M_ghost_vec__ghost_vec [#"ghost_vec.rs" 4 0 4 18]
         end}
       (! return' {result}) ]
     
+  
+  type t_Option'2  =
+    | C_None'2
+    | C_Some'2 (borrowed int32)
+  
+  predicate inv'9 (_1 : t_Option'2)
+  
+  axiom inv_axiom'9 [@rewrite] : forall x : t_Option'2 [inv'9 x] . inv'9 x = true
   
   let rec get_mut_ghost'0 (self:borrowed (Seq.seq int32)) (index:int) (return'  (ret:t_Option'2))= {[@expl:get_mut_ghost 'self' type invariant] [%#sseq48] inv'2 self}
     any
@@ -249,6 +234,10 @@ module M_ghost_vec__ghost_vec [#"ghost_vec.rs" 4 0 4 18]
       any) ]
     
   
+  predicate inv'10 (_1 : t_Option'0)
+  
+  axiom inv_axiom'10 [@rewrite] : forall x : t_Option'0 [inv'10 x] . inv'10 x = true
+  
   let rec pop_back_ghost'0 (self:borrowed (Seq.seq int32)) (return'  (ret:t_Option'0))= {[@expl:pop_back_ghost 'self' type invariant] [%#sseq53] inv'2 self}
     any
     [ return' (result:t_Option'0)-> {[%#sseq54] inv'10 result}
@@ -270,6 +259,17 @@ module M_ghost_vec__ghost_vec [#"ghost_vec.rs" 4 0 4 18]
   
   predicate resolve'2 (_1 : closure1'1) =
     resolve'6 _1.field_0'0
+  
+  predicate inv'11 (_1 : ())
+  
+  axiom inv_axiom'11 [@rewrite] : forall x : () [inv'11 x] . inv'11 x = true
+  
+  type t_GhostBox'1  =
+    { t_GhostBox__0'1: () }
+  
+  predicate inv'12 (_1 : t_GhostBox'1)
+  
+  axiom inv_axiom'12 [@rewrite] : forall x : t_GhostBox'1 [inv'12 x] . inv'12 x = true
   
   let rec new'2 (x:()) (return'  (ret:t_GhostBox'1))= {[@expl:new 'x' type invariant] [%#sghost56] inv'11 x}
     any

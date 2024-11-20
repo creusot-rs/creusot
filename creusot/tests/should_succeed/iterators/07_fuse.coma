@@ -27,12 +27,9 @@ module M_07_fuse__qyi2452592938496686347__next [#"07_fuse.rs" 39 4 39 44] (* <Fu
   
   use prelude.prelude.Borrow
   
-  predicate inv'0 (_1 : t_Option'0)
-  
-  type t_Fuse'0  =
-    { t_Fuse__iter'0: t_Option'0 }
-  
   predicate inv'1 (_1 : t_I'0)
+  
+  predicate inv'0 (_1 : t_Option'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x
   = match x with
@@ -40,28 +37,20 @@ module M_07_fuse__qyi2452592938496686347__next [#"07_fuse.rs" 39 4 39 44] (* <Fu
     | C_Some'0 a_0 -> inv'1 a_0
     end
   
-  predicate inv'2 (_1 : borrowed t_I'0)
+  type t_Fuse'0  =
+    { t_Fuse__iter'0: t_Option'0 }
+  
+  let rec v_Some'0 (input:t_Option'0) (ret  (field_0:t_I'0))= any
+    [ good (field_0:t_I'0)-> {C_Some'0 field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0 : t_I'0 [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
+    
   
   predicate invariant'0 (self : borrowed t_I'0) =
     [%#sinvariant18] inv'1 self.current /\ inv'1 self.final
   
+  predicate inv'2 (_1 : borrowed t_I'0)
+  
   axiom inv_axiom'1 [@rewrite] : forall x : borrowed t_I'0 [inv'2 x] . inv'2 x = invariant'0 x
-  
-  predicate inv'3 (_1 : borrowed (t_Option'0))
-  
-  predicate invariant'1 (self : borrowed (t_Option'0)) =
-    [%#sinvariant18] inv'0 self.current /\ inv'0 self.final
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_Option'0) [inv'3 x] . inv'3 x = invariant'1 x
-  
-  predicate inv'4 (_1 : borrowed (t_Fuse'0))
-  
-  predicate inv'7 (_1 : t_Fuse'0)
-  
-  predicate invariant'2 (self : borrowed (t_Fuse'0)) =
-    [%#sinvariant18] inv'7 self.current /\ inv'7 self.final
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed (t_Fuse'0) [inv'4 x] . inv'4 x = invariant'2 x
   
   type t_Item'0
   
@@ -69,25 +58,15 @@ module M_07_fuse__qyi2452592938496686347__next [#"07_fuse.rs" 39 4 39 44] (* <Fu
     | C_None'1
     | C_Some'1 t_Item'0
   
-  predicate inv'5 (_1 : t_Option'1)
-  
   predicate inv'6 (_1 : t_Item'0)
+  
+  predicate inv'5 (_1 : t_Option'1)
   
   axiom inv_axiom'4 [@rewrite] : forall x : t_Option'1 [inv'5 x] . inv'5 x
   = match x with
     | C_None'1 -> true
     | C_Some'1 a_0 -> inv'6 a_0
     end
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t_Fuse'0 [inv'7 x] . inv'7 x
-  = match x with
-    | {t_Fuse__iter'0 = iter} -> inv'0 iter
-    end
-  
-  let rec v_Some'0 (input:t_Option'0) (ret  (field_0:t_I'0))= any
-    [ good (field_0:t_I'0)-> {C_Some'0 field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : t_I'0 [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
-    
   
   predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
   
@@ -113,11 +92,32 @@ module M_07_fuse__qyi2452592938496686347__next [#"07_fuse.rs" 39 4 39 44] (* <Fu
   predicate resolve'0 (_1 : borrowed t_I'0) =
     resolve'5 _1
   
+  predicate invariant'1 (self : borrowed (t_Option'0)) =
+    [%#sinvariant18] inv'0 self.current /\ inv'0 self.final
+  
+  predicate inv'3 (_1 : borrowed (t_Option'0))
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_Option'0) [inv'3 x] . inv'3 x = invariant'1 x
+  
   predicate resolve'6 (self : borrowed (t_Option'0)) =
     [%#sresolve16] self.final = self.current
   
   predicate resolve'1 (_1 : borrowed (t_Option'0)) =
     resolve'6 _1
+  
+  predicate inv'7 (_1 : t_Fuse'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_Fuse'0 [inv'7 x] . inv'7 x
+  = match x with
+    | {t_Fuse__iter'0 = iter} -> inv'0 iter
+    end
+  
+  predicate invariant'2 (self : borrowed (t_Fuse'0)) =
+    [%#sinvariant18] inv'7 self.current /\ inv'7 self.final
+  
+  predicate inv'4 (_1 : borrowed (t_Fuse'0))
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed (t_Fuse'0) [inv'4 x] . inv'4 x = invariant'2 x
   
   predicate resolve'7 (self : borrowed (t_Fuse'0)) =
     [%#sresolve16] self.final = self.current
@@ -301,7 +301,22 @@ module M_07_fuse__qyi2452592938496686347__produces_refl [#"07_fuse.rs" 56 4 56 2
   type t_Fuse'0  =
     { t_Fuse__iter'0: t_Option'0 }
   
+  predicate inv'2 (_1 : t_I'0)
+  
+  predicate inv'1 (_1 : t_Option'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x
+  = match x with
+    | C_None'0 -> true
+    | C_Some'0 a_0 -> inv'2 a_0
+    end
+  
   predicate inv'0 (_1 : t_Fuse'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Fuse'0 [inv'0 x] . inv'0 x
+  = match x with
+    | {t_Fuse__iter'0 = iter} -> inv'1 iter
+    end
   
   use seq.Seq
   
@@ -319,21 +334,6 @@ module M_07_fuse__qyi2452592938496686347__produces_refl [#"07_fuse.rs" 56 4 56 2
         | C_None'0 -> false
         end
       end
-  
-  predicate inv'1 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Fuse'0 [inv'0 x] . inv'0 x
-  = match x with
-    | {t_Fuse__iter'0 = iter} -> inv'1 iter
-    end
-  
-  predicate inv'2 (_1 : t_I'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x
-  = match x with
-    | C_None'0 -> true
-    | C_Some'0 a_0 -> inv'2 a_0
-    end
   
   function produces_refl'1 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   
@@ -385,7 +385,22 @@ module M_07_fuse__qyi2452592938496686347__produces_trans [#"07_fuse.rs" 66 4 66 
   type t_Fuse'0  =
     { t_Fuse__iter'0: t_Option'0 }
   
+  predicate inv'2 (_1 : t_I'0)
+  
+  predicate inv'1 (_1 : t_Option'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x
+  = match x with
+    | C_None'0 -> true
+    | C_Some'0 a_0 -> inv'2 a_0
+    end
+  
   predicate inv'0 (_1 : t_Fuse'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Fuse'0 [inv'0 x] . inv'0 x
+  = match x with
+    | {t_Fuse__iter'0 = iter} -> inv'1 iter
+    end
   
   type t_Item'0
   
@@ -405,21 +420,6 @@ module M_07_fuse__qyi2452592938496686347__produces_trans [#"07_fuse.rs" 66 4 66 
       end
   
   use seq.Seq
-  
-  predicate inv'1 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Fuse'0 [inv'0 x] . inv'0 x
-  = match x with
-    | {t_Fuse__iter'0 = iter} -> inv'1 iter
-    end
-  
-  predicate inv'2 (_1 : t_I'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x
-  = match x with
-    | C_None'0 -> true
-    | C_Some'0 a_0 -> inv'2 a_0
-    end
   
   function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   
@@ -496,17 +496,62 @@ module M_07_fuse__qyi3347558734837599430__is_fused [#"07_fuse.rs" 91 4 91 62] (*
   type t_Fuse'0  =
     { t_Fuse__iter'0: t_Option'0 }
   
-  predicate inv'0 (_1 : borrowed (t_Fuse'0))
+  predicate inv'5 (_1 : t_I'0)
+  
+  predicate inv'4 (_1 : t_Option'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x
+  = match x with
+    | C_None'0 -> true
+    | C_Some'0 a_0 -> inv'5 a_0
+    end
   
   predicate inv'1 (_1 : t_Fuse'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Fuse'0 [inv'1 x] . inv'1 x
+  = match x with
+    | {t_Fuse__iter'0 = iter} -> inv'4 iter
+    end
+  
+  predicate invariant'0 (self : borrowed (t_Fuse'0)) =
+    [%#sinvariant27] inv'1 self.current /\ inv'1 self.final
+  
+  predicate inv'0 (_1 : borrowed (t_Fuse'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Fuse'0) [inv'0 x] . inv'0 x = invariant'0 x
   
   type t_Item'0
   
   use seq.Seq
   
+  use prelude.prelude.Int
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate inv'7 (_1 : t_Item'0)
+  
+  predicate invariant'3 (self : t_Item'0) =
+    [%#sboxed29] inv'7 self
+  
+  predicate inv'6 (_1 : t_Item'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_Item'0 [inv'6 x] . inv'6 x = invariant'3 x
+  
+  predicate invariant'1 (self : Seq.seq t_Item'0) =
+    [%#sseq28] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'6 (Seq.get self i)
+  
   predicate inv'2 (_1 : Seq.seq t_Item'0)
   
+  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'2 x] . inv'2 x = invariant'1 x
+  
+  predicate invariant'2 (self : borrowed t_I'0) =
+    [%#sinvariant27] inv'5 self.current /\ inv'5 self.final
+  
   predicate inv'3 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed t_I'0 [inv'3 x] . inv'3 x = invariant'2 x
   
   predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
   
@@ -528,51 +573,6 @@ module M_07_fuse__qyi3347558734837599430__is_fused [#"07_fuse.rs" 91 4 91 62] (*
         | C_None'0 -> false
         end
       end
-  
-  predicate invariant'0 (self : borrowed (t_Fuse'0)) =
-    [%#sinvariant27] inv'1 self.current /\ inv'1 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Fuse'0) [inv'0 x] . inv'0 x = invariant'0 x
-  
-  predicate inv'4 (_1 : t_Option'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Fuse'0 [inv'1 x] . inv'1 x
-  = match x with
-    | {t_Fuse__iter'0 = iter} -> inv'4 iter
-    end
-  
-  use prelude.prelude.Int
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  predicate inv'6 (_1 : t_Item'0)
-  
-  predicate invariant'1 (self : Seq.seq t_Item'0) =
-    [%#sseq28] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'6 (Seq.get self i)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'2 x] . inv'2 x = invariant'1 x
-  
-  predicate inv'5 (_1 : t_I'0)
-  
-  predicate invariant'2 (self : borrowed t_I'0) =
-    [%#sinvariant27] inv'5 self.current /\ inv'5 self.final
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed t_I'0 [inv'3 x] . inv'3 x = invariant'2 x
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x
-  = match x with
-    | C_None'0 -> true
-    | C_Some'0 a_0 -> inv'5 a_0
-    end
-  
-  predicate inv'7 (_1 : t_Item'0)
-  
-  predicate invariant'3 (self : t_Item'0) =
-    [%#sboxed29] inv'7 self
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t_Item'0 [inv'6 x] . inv'6 x = invariant'3 x
   
   function produces_refl'0 [#"07_fuse.rs" 56 4 56 26] (self : t_Fuse'0) : () =
     [%#s07_fuse11] ()
@@ -660,24 +660,24 @@ module M_07_fuse__qyi2452592938496686347__produces_trans__refines [#"07_fuse.rs"
         end
       end
   
-  predicate inv'0 (_1 : t_Fuse'0)
-  
-  use seq.Seq
+  predicate inv'1 (_1 : t_I'0)
   
   predicate inv'2 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Fuse'0 [inv'0 x] . inv'0 x
-  = match x with
-    | {t_Fuse__iter'0 = iter} -> inv'2 iter
-    end
-  
-  predicate inv'1 (_1 : t_I'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x
   = match x with
     | C_None'0 -> true
     | C_Some'0 a_0 -> inv'1 a_0
     end
+  
+  predicate inv'0 (_1 : t_Fuse'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Fuse'0 [inv'0 x] . inv'0 x
+  = match x with
+    | {t_Fuse__iter'0 = iter} -> inv'2 iter
+    end
+  
+  use seq.Seq
   
   function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   
@@ -721,7 +721,22 @@ module M_07_fuse__qyi2452592938496686347__produces_refl__refines [#"07_fuse.rs" 
   type t_Fuse'0  =
     { t_Fuse__iter'0: t_Option'0 }
   
+  predicate inv'2 (_1 : t_I'0)
+  
+  predicate inv'1 (_1 : t_Option'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x
+  = match x with
+    | C_None'0 -> true
+    | C_Some'0 a_0 -> inv'2 a_0
+    end
+  
   predicate inv'0 (_1 : t_Fuse'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Fuse'0 [inv'0 x] . inv'0 x
+  = match x with
+    | {t_Fuse__iter'0 = iter} -> inv'1 iter
+    end
   
   use seq.Seq
   
@@ -739,21 +754,6 @@ module M_07_fuse__qyi2452592938496686347__produces_refl__refines [#"07_fuse.rs" 
         | C_None'0 -> false
         end
       end
-  
-  predicate inv'1 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Fuse'0 [inv'0 x] . inv'0 x
-  = match x with
-    | {t_Fuse__iter'0 = iter} -> inv'1 iter
-    end
-  
-  predicate inv'2 (_1 : t_I'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x
-  = match x with
-    | C_None'0 -> true
-    | C_Some'0 a_0 -> inv'2 a_0
-    end
   
   function produces_refl'1 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   
@@ -801,7 +801,29 @@ module M_07_fuse__qyi2452592938496686347__next__refines [#"07_fuse.rs" 39 4 39 4
   type t_Fuse'0  =
     { t_Fuse__iter'0: t_Option'1 }
   
+  predicate inv'5 (_1 : t_I'0)
+  
+  predicate inv'6 (_1 : t_Option'1)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'1 [inv'6 x] . inv'6 x
+  = match x with
+    | C_None'1 -> true
+    | C_Some'1 a_0 -> inv'5 a_0
+    end
+  
+  predicate inv'4 (_1 : t_Fuse'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Fuse'0 [inv'4 x] . inv'4 x
+  = match x with
+    | {t_Fuse__iter'0 = iter} -> inv'6 iter
+    end
+  
+  predicate invariant'0 (self : borrowed (t_Fuse'0)) =
+    [%#sinvariant3] inv'4 self.current /\ inv'4 self.final
+  
   predicate inv'0 (_1 : borrowed (t_Fuse'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Fuse'0) [inv'0 x] . inv'0 x = invariant'0 x
   
   type t_Item'0
   
@@ -809,7 +831,12 @@ module M_07_fuse__qyi2452592938496686347__next__refines [#"07_fuse.rs" 39 4 39 4
     | C_None'0
     | C_Some'0 t_Item'0
   
+  predicate invariant'1 (self : borrowed t_I'0) =
+    [%#sinvariant3] inv'5 self.current /\ inv'5 self.final
+  
   predicate inv'2 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'2 x] . inv'2 x = invariant'1 x
   
   predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
   
@@ -836,41 +863,14 @@ module M_07_fuse__qyi2452592938496686347__next__refines [#"07_fuse.rs" 39 4 39 4
         end
       end
   
-  predicate inv'1 (_1 : t_Option'0)
-  
-  predicate inv'4 (_1 : t_Fuse'0)
-  
-  predicate invariant'0 (self : borrowed (t_Fuse'0)) =
-    [%#sinvariant3] inv'4 self.current /\ inv'4 self.final
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Fuse'0) [inv'0 x] . inv'0 x = invariant'0 x
-  
   predicate inv'3 (_1 : t_Item'0)
+  
+  predicate inv'1 (_1 : t_Option'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x
   = match x with
     | C_None'0 -> true
     | C_Some'0 a_0 -> inv'3 a_0
-    end
-  
-  predicate inv'5 (_1 : t_I'0)
-  
-  predicate invariant'1 (self : borrowed t_I'0) =
-    [%#sinvariant3] inv'5 self.current /\ inv'5 self.final
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'2 x] . inv'2 x = invariant'1 x
-  
-  predicate inv'6 (_1 : t_Option'1)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Fuse'0 [inv'4 x] . inv'4 x
-  = match x with
-    | {t_Fuse__iter'0 = iter} -> inv'6 iter
-    end
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'1 [inv'6 x] . inv'6 x
-  = match x with
-    | C_None'1 -> true
-    | C_Some'1 a_0 -> inv'5 a_0
     end
   
   function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
@@ -956,7 +956,14 @@ module M_07_fuse__qyi3347558734837599430__is_fused__refines [#"07_fuse.rs" 91 4 
         end
       end
   
+  predicate inv'4 (_1 : t_I'0)
+  
+  predicate invariant'2 (self : borrowed t_I'0) =
+    [%#sinvariant22] inv'4 self.current /\ inv'4 self.final
+  
   predicate inv'3 (_1 : borrowed t_I'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed t_I'0 [inv'3 x] . inv'3 x = invariant'2 x
   
   predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
   
@@ -966,26 +973,37 @@ module M_07_fuse__qyi3347558734837599430__is_fused__refines [#"07_fuse.rs" 91 4 
     /\ completed'1 it /\ (self.current).t_Fuse__iter'0 = C_Some'0 (it.current)))
     /\ (self.final).t_Fuse__iter'0 = C_None'0
   
-  predicate inv'0 (_1 : Seq.seq t_Item'0)
-  
-  predicate inv'1 (_1 : t_Fuse'0)
-  
-  predicate inv'2 (_1 : borrowed (t_Fuse'0))
-  
   use prelude.prelude.Int
   
   use seq.Seq
   
   use seq.Seq
   
+  predicate inv'7 (_1 : t_Item'0)
+  
+  predicate invariant'3 (self : t_Item'0) =
+    [%#sboxed23] inv'7 self
+  
   predicate inv'6 (_1 : t_Item'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_Item'0 [inv'6 x] . inv'6 x = invariant'3 x
   
   predicate invariant'0 (self : Seq.seq t_Item'0) =
     [%#sseq21] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'6 (Seq.get self i)
   
+  predicate inv'0 (_1 : Seq.seq t_Item'0)
+  
   axiom inv_axiom'0 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'0 x] . inv'0 x = invariant'0 x
   
   predicate inv'5 (_1 : t_Option'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'5 x] . inv'5 x
+  = match x with
+    | C_None'0 -> true
+    | C_Some'0 a_0 -> inv'4 a_0
+    end
+  
+  predicate inv'1 (_1 : t_Fuse'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_Fuse'0 [inv'1 x] . inv'1 x
   = match x with
@@ -995,27 +1013,9 @@ module M_07_fuse__qyi3347558734837599430__is_fused__refines [#"07_fuse.rs" 91 4 
   predicate invariant'1 (self : borrowed (t_Fuse'0)) =
     [%#sinvariant22] inv'1 self.current /\ inv'1 self.final
   
+  predicate inv'2 (_1 : borrowed (t_Fuse'0))
+  
   axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_Fuse'0) [inv'2 x] . inv'2 x = invariant'1 x
-  
-  predicate inv'4 (_1 : t_I'0)
-  
-  predicate invariant'2 (self : borrowed t_I'0) =
-    [%#sinvariant22] inv'4 self.current /\ inv'4 self.final
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed t_I'0 [inv'3 x] . inv'3 x = invariant'2 x
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'5 x] . inv'5 x
-  = match x with
-    | C_None'0 -> true
-    | C_Some'0 a_0 -> inv'4 a_0
-    end
-  
-  predicate inv'7 (_1 : t_Item'0)
-  
-  predicate invariant'3 (self : t_Item'0) =
-    [%#sboxed23] inv'7 self
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t_Item'0 [inv'6 x] . inv'6 x = invariant'3 x
   
   function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
   

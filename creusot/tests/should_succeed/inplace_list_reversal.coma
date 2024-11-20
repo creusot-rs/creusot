@@ -24,11 +24,21 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
   
   use prelude.prelude.Borrow
   
+  predicate inv'4 (_1 : t_T'0)
+  
+  predicate inv'3 (_1 : (t_T'0, t_List'0))
+  
   predicate inv'0 (_1 : t_List'0)
   
-  predicate inv'2 (_1 : borrowed (t_List'0))
+  axiom inv_axiom'3 [@rewrite] : forall x : (t_T'0, t_List'0) [inv'3 x] . inv'3 x
+  = (let (x0, x1) = x in inv'4 x0 /\ inv'0 x1)
+  
+  predicate invariant'0 (self : (t_T'0, t_List'0)) =
+    [%#sboxed11] inv'3 self
   
   predicate inv'1 (_1 : (t_T'0, t_List'0))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : (t_T'0, t_List'0) [inv'1 x] . inv'1 x = invariant'0 x
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_List'0 [inv'0 x] . inv'0 x
   = match x with
@@ -36,22 +46,12 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
     | C_Cons'0 a_0 -> inv'1 a_0
     end
   
-  predicate inv'3 (_1 : (t_T'0, t_List'0))
-  
-  predicate invariant'0 (self : (t_T'0, t_List'0)) =
-    [%#sboxed11] inv'3 self
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : (t_T'0, t_List'0) [inv'1 x] . inv'1 x = invariant'0 x
-  
   predicate invariant'1 (self : borrowed (t_List'0)) =
     [%#sinvariant12] inv'0 self.current /\ inv'0 self.final
   
+  predicate inv'2 (_1 : borrowed (t_List'0))
+  
   axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_List'0) [inv'2 x] . inv'2 x = invariant'1 x
-  
-  predicate inv'4 (_1 : t_T'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : (t_T'0, t_List'0) [inv'3 x] . inv'3 x
-  = (let (x0, x1) = x in inv'4 x0 /\ inv'0 x1)
   
   let rec replace'0 (dest:borrowed (t_List'0)) (src:t_List'0) (return'  (ret:t_List'0))= {[@expl:replace 'dest' type invariant] inv'2 dest}
     {[@expl:replace 'src' type invariant] inv'0 src}
