@@ -539,6 +539,6 @@ fn make_switch<'tcx>(
 
             Terminator::Switch(discr, Branches::Int(branches, targets.otherwise()))
         }
-        ty => unimplemented!("{ty:?}"),
+        ty => ctx.crash_and_error(si.span, &format!("match on {:?} is currently unsupported", ty)),
     }
 }
