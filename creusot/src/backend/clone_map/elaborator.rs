@@ -30,8 +30,8 @@ use petgraph::graphmap::DiGraphMap;
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{
-    Const, ConstKind, GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable,
-    UnevaluatedConst,
+    Const, ConstKind, GenericArg, GenericArgsRef, ParamEnv, TraitRef, Ty, TyCtxt, TyKind,
+    TypeFoldable, UnevaluatedConst,
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_type_ir::EarlyBinder;
@@ -369,21 +369,41 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     }
 }
 
+fn traitref_of_item<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    did: DefId,
+    subst: GenericArgsRef<'tcx>,
+) -> Option<TraitRef<'tcx>> {
+    let ai = tcx.opt_associated_item(did)?;
+    let cont = ai.container_id(tcx);
+    let subst = tcx.mk_args_from_iter(subst.iter().take(tcx.generics_of(cont).count()));
+
+    if tcx.def_kind(cont) == DefKind::Trait {
+        return Some(TraitRef::new(tcx, cont, subst));
+    }
+
+    let trait_ref = tcx.impl_trait_ref(cont)?.instantiate(tcx, subst);
+    Some(tcx.normalize_erasing_regions(param_env, trait_ref))
+}
+
 fn expand_laws<'tcx>(
     elab: &mut Expander<'_, 'tcx>,
     ctx: &mut Why3Generator<'tcx>,
     dep: Dependency<'tcx>,
 ) {
-    let (self_did, _) = elab.self_key.did().unwrap();
+    let (self_did, self_subst) = elab.self_key.did().unwrap();
     let Some((item_did, item_subst)) = dep.did() else {
         return;
     };
 
-    let Some(item) = ctx.opt_associated_item(item_did) else { return };
+    let Some(item_ai) = ctx.opt_associated_item(item_did) else { return };
+    let item_container = item_ai.container_id(ctx.tcx);
 
     // Dont clone laws into the trait / impl which defines them.
-    if let Some(self_item) = ctx.opt_associated_item(self_did)
-        && self_item.container_id(ctx.tcx) == item.container_id(ctx.tcx)
+    if let Some(tr_item) = traitref_of_item(ctx.tcx, elab.param_env, item_did, item_subst)
+        && let Some(tr_self) = traitref_of_item(ctx.tcx, elab.param_env, self_did, self_subst)
+        && tr_item == tr_self
     {
         return;
     }
@@ -395,10 +415,9 @@ fn expand_laws<'tcx>(
         return;
     }
 
-    let tcx = ctx.tcx;
-    let mut namer = elab.namer(elab.self_key);
-    for law in ctx.laws(item.container_id(tcx)) {
-        namer.insert(Dependency::Item(*law, item_subst));
+    for law in ctx.laws(item_container) {
+        // We add a weak dep from `dep` to make sure it appears close to the triggering item
+        elab.expansion_queue.push_back((dep, Strength::Weak, Dependency::Item(*law, item_subst)));
     }
 }
 

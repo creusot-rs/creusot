@@ -28,7 +28,7 @@ impl NonZeroU32 {
         pearlite! { self.0@ > rhs.0@ }
     }
 
-    #[law]
+    #[logic]
     #[open]
     #[requires(a.sub_pre(b))]
     #[requires(b.sub_pre(c))]

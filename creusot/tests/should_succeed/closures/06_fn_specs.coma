@@ -33,11 +33,34 @@ module M_06_fn_specs__weaken_std [#"06_fn_specs.rs" 8 0 8 62]
   
   predicate inv'2 (_1 : t_Output'0)
   
-  predicate postcondition_mut'0 (self : t_F'0) (args : t_A'0) (result_state : t_F'0) (result : t_Output'0)
+  predicate postcondition_once'0 (self : t_F'0) (args : t_A'0) (result : t_Output'0)
   
   use prelude.prelude.Borrow
   
   predicate resolve'0 (_1 : t_F'0)
+  
+  predicate postcondition_mut'0 (self : t_F'0) (args : t_A'0) (result_state : t_F'0) (result : t_Output'0)
+  
+  function fn_mut_once'0 (self : t_F'0) (args : t_A'0) (res : t_Output'0) : ()
+  
+  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_A'0, res : t_Output'0 . [%#sops18] postcondition_once'0 self args res
+  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  
+  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
+  
+  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops15] unnest'0 self b)
+   -> ([%#sops16] unnest'0 b c)  -> ([%#sops17] unnest'0 self c)
+  
+  function unnest_refl'0 (self : t_F'0) : ()
+  
+  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops14] unnest'0 self self
+  
+  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_A'0) (res_state : t_F'0) (res : t_Output'0) : ()
+  
+  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_A'0, res_state : t_F'0, res : t_Output'0 . ([%#sops12] postcondition_mut'0 self args res_state res)
+   -> ([%#sops13] unnest'0 self res_state)
   
   let rec weaken_2_std'0 (f:t_F'0) (a:t_A'0) (return'  (ret:t_Output'0))= {[@expl:weaken_2_std 'f' type invariant] [%#s06_fn_specs5] inv'0 f}
     {[@expl:weaken_2_std 'a' type invariant] [%#s06_fn_specs6] inv'1 a}
@@ -52,38 +75,15 @@ module M_06_fn_specs__weaken_std [#"06_fn_specs.rs" 8 0 8 62]
   
   predicate postcondition'0 (self : t_F'0) (args : t_A'0) (result : t_Output'0)
   
-  function fn_mut'0 (self : t_F'0) (args : t_A'0) (res_state : t_F'0) (res : t_Output'0) : ()
-  
-  axiom fn_mut'0_spec : forall self : t_F'0, args : t_A'0, res_state : t_F'0, res : t_Output'0 . [%#sops10] postcondition_mut'0 self args res_state res
-  = (self = res_state /\ postcondition'0 self args res)
-  
-  predicate postcondition_once'0 (self : t_F'0) (args : t_A'0) (result : t_Output'0)
-  
   function fn_once'0 (self : t_F'0) (args : t_A'0) (res : t_Output'0) : ()
   
   axiom fn_once'0_spec : forall self : t_F'0, args : t_A'0, res : t_Output'0 . [%#sops11] postcondition_once'0 self args res
   = (resolve'0 self /\ postcondition'0 self args res)
   
-  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  function fn_mut'0 (self : t_F'0) (args : t_A'0) (res_state : t_F'0) (res : t_Output'0) : ()
   
-  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_A'0) (res_state : t_F'0) (res : t_Output'0) : ()
-  
-  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_A'0, res_state : t_F'0, res : t_Output'0 . ([%#sops12] postcondition_mut'0 self args res_state res)
-   -> ([%#sops13] unnest'0 self res_state)
-  
-  function unnest_refl'0 (self : t_F'0) : ()
-  
-  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops14] unnest'0 self self
-  
-  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
-  
-  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops15] unnest'0 self b)
-   -> ([%#sops16] unnest'0 b c)  -> ([%#sops17] unnest'0 self c)
-  
-  function fn_mut_once'0 (self : t_F'0) (args : t_A'0) (res : t_Output'0) : ()
-  
-  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_A'0, res : t_Output'0 . [%#sops18] postcondition_once'0 self args res
-  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  axiom fn_mut'0_spec : forall self : t_F'0, args : t_A'0, res_state : t_F'0, res : t_Output'0 . [%#sops10] postcondition_mut'0 self args res_state res
+  = (self = res_state /\ postcondition'0 self args res)
   
   meta "compute_max_steps" 1000000
   
@@ -149,32 +149,32 @@ module M_06_fn_specs__weaken_2_std [#"06_fn_specs.rs" 14 0 14 63]
   
   use prelude.prelude.Intrinsic
   
-  predicate postcondition_mut'0 (self : t_F'0) (args : t_A'0) (result_state : t_F'0) (result : t_Output'0)
-  
   use prelude.prelude.Borrow
   
   predicate resolve'0 (_1 : t_F'0)
   
+  predicate postcondition_mut'0 (self : t_F'0) (args : t_A'0) (result_state : t_F'0) (result : t_Output'0)
+  
+  function fn_mut_once'0 (self : t_F'0) (args : t_A'0) (res : t_Output'0) : ()
+  
+  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_A'0, res : t_Output'0 . [%#sops16] postcondition_once'0 self args res
+  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
   predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
-  
-  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_A'0) (res_state : t_F'0) (res : t_Output'0) : ()
-  
-  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_A'0, res_state : t_F'0, res : t_Output'0 . ([%#sops10] postcondition_mut'0 self args res_state res)
-   -> ([%#sops11] unnest'0 self res_state)
-  
-  function unnest_refl'0 (self : t_F'0) : ()
-  
-  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops12] unnest'0 self self
   
   function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
   
   axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops13] unnest'0 self b)
    -> ([%#sops14] unnest'0 b c)  -> ([%#sops15] unnest'0 self c)
   
-  function fn_mut_once'0 (self : t_F'0) (args : t_A'0) (res : t_Output'0) : ()
+  function unnest_refl'0 (self : t_F'0) : ()
   
-  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_A'0, res : t_Output'0 . [%#sops16] postcondition_once'0 self args res
-  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops12] unnest'0 self self
+  
+  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_A'0) (res_state : t_F'0) (res : t_Output'0) : ()
+  
+  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_A'0, res_state : t_F'0, res : t_Output'0 . ([%#sops10] postcondition_mut'0 self args res_state res)
+   -> ([%#sops11] unnest'0 self res_state)
   
   meta "compute_max_steps" 1000000
   

@@ -177,6 +177,8 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   
   use prelude.prelude.Snapshot
   
+  use seq.Seq
+  
   function range_inclusive_len'0 (r : t_RangeInclusive'0) : int =
     [%#srange41] if is_empty_log'0 r then 0 else deep_model'0 (end_log'0 r) - deep_model'0 (start_log'0 r) + 1
   
@@ -191,6 +193,19 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
     /\ (is_empty_log'0 o \/ end_log'0 self = end_log'0 o)
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'0 (Seq.get visited i) = deep_model'0 (start_log'0 self) + i)
+  
+  function produces_trans'0 (a : t_RangeInclusive'0) (ab : Seq.seq usize) (b : t_RangeInclusive'0) (bc : Seq.seq usize) (c : t_RangeInclusive'0) : ()
+    
+   =
+    [%#srange39] ()
+  
+  axiom produces_trans'0_spec : forall a : t_RangeInclusive'0, ab : Seq.seq usize, b : t_RangeInclusive'0, bc : Seq.seq usize, c : t_RangeInclusive'0 . ([%#srange36] produces'0 a ab b)
+   -> ([%#srange37] produces'0 b bc c)  -> ([%#srange38] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 (self : t_RangeInclusive'0) : () =
+    [%#srange35] ()
+  
+  axiom produces_refl'0_spec : forall self : t_RangeInclusive'0 . [%#srange34] produces'0 self (Seq.empty  : Seq.seq usize) self
   
   predicate inv'1 (_1 : Seq.seq usize)
   
@@ -234,8 +249,6 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
     | bad -> {forall field_0 : usize [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
     
   
-  use seq.Seq
-  
   type t_Range'0  =
     { t_Range__start'0: usize; t_Range__end'0: usize }
   
@@ -264,6 +277,20 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
     /\ Seq.length visited = deep_model'0 o.t_Range__start'0 - deep_model'0 self.t_Range__start'0
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'0 (Seq.get visited i) = deep_model'0 self.t_Range__start'0 + i)
+  
+  function produces_trans'1 (a : t_Range'0) (ab : Seq.seq usize) (b : t_Range'0) (bc : Seq.seq usize) (c : t_Range'0) : ()
+    
+  
+  axiom produces_trans'1_spec : forall a : t_Range'0, ab : Seq.seq usize, b : t_Range'0, bc : Seq.seq usize, c : t_Range'0 . ([%#srange46] inv'2 a)
+   -> ([%#srange47] inv'2 b)
+   -> ([%#srange48] inv'2 c)
+   -> ([%#srange49] produces'1 a ab b)
+   -> ([%#srange50] produces'1 b bc c)  -> ([%#srange51] produces'1 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'1 (self : t_Range'0) : ()
+  
+  axiom produces_refl'1_spec : forall self : t_Range'0 . ([%#srange44] inv'2 self)
+   -> ([%#srange45] produces'1 self (Seq.empty  : Seq.seq usize) self)
   
   predicate inv'7 (_1 : borrowed (t_Range'0))
   
@@ -313,33 +340,6 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
-  
-  function produces_refl'0 (self : t_RangeInclusive'0) : () =
-    [%#srange35] ()
-  
-  axiom produces_refl'0_spec : forall self : t_RangeInclusive'0 . [%#srange34] produces'0 self (Seq.empty  : Seq.seq usize) self
-  
-  function produces_trans'0 (a : t_RangeInclusive'0) (ab : Seq.seq usize) (b : t_RangeInclusive'0) (bc : Seq.seq usize) (c : t_RangeInclusive'0) : ()
-    
-   =
-    [%#srange39] ()
-  
-  axiom produces_trans'0_spec : forall a : t_RangeInclusive'0, ab : Seq.seq usize, b : t_RangeInclusive'0, bc : Seq.seq usize, c : t_RangeInclusive'0 . ([%#srange36] produces'0 a ab b)
-   -> ([%#srange37] produces'0 b bc c)  -> ([%#srange38] produces'0 a (Seq.(++) ab bc) c)
-  
-  function produces_refl'1 (self : t_Range'0) : ()
-  
-  axiom produces_refl'1_spec : forall self : t_Range'0 . ([%#srange44] inv'2 self)
-   -> ([%#srange45] produces'1 self (Seq.empty  : Seq.seq usize) self)
-  
-  function produces_trans'1 (a : t_Range'0) (ab : Seq.seq usize) (b : t_Range'0) (bc : Seq.seq usize) (c : t_Range'0) : ()
-    
-  
-  axiom produces_trans'1_spec : forall a : t_Range'0, ab : Seq.seq usize, b : t_Range'0, bc : Seq.seq usize, c : t_Range'0 . ([%#srange46] inv'2 a)
-   -> ([%#srange47] inv'2 b)
-   -> ([%#srange48] inv'2 c)
-   -> ([%#srange49] produces'1 a ab b)
-   -> ([%#srange50] produces'1 b bc c)  -> ([%#srange51] produces'1 a (Seq.(++) ab bc) c)
   
   meta "compute_max_steps" 1000000
   

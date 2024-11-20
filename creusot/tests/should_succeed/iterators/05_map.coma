@@ -46,17 +46,35 @@ module M_05_map__qyi14910388998417814812__produces_refl [#"05_map.rs" 33 4 33 26
   
   predicate inv'4 (_1 : t_F'0)
   
-  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
-  
-  type t_Item'0
-  
-  predicate inv'6 (_1 : t_Item'0)
+  use seq.Seq
   
   use seq.Seq
+  
+  type t_Item'0
   
   use seq.Seq
   
   predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
+  
+  function produces_trans'0 [#"common.rs" 25 4 25 91] (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
+    
+  
+  axiom produces_trans'0_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#scommon14] inv'3 a)
+   -> ([%#scommon15] inv'3 b)
+   -> ([%#scommon16] inv'3 c)
+   -> ([%#scommon17] produces'1 a ab b)
+   -> ([%#scommon18] produces'1 b bc c)  -> ([%#scommon19] produces'1 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'1 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
+  
+  axiom produces_refl'1_spec : forall self : t_I'0 . ([%#scommon12] inv'3 self)
+   -> ([%#scommon13] produces'1 self (Seq.empty  : Seq.seq t_Item'0) self)
+  
+  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  
+  predicate inv'6 (_1 : t_Item'0)
+  
+  use seq.Seq
   
   predicate precondition'0 (self : t_F'0) (args : t_Item'0)
   
@@ -93,11 +111,34 @@ module M_05_map__qyi14910388998417814812__produces_refl [#"05_map.rs" 33 4 33 26
   
   axiom inv_axiom'4 [@rewrite] : forall x : borrowed t_F'0 [inv'7 x] . inv'7 x = invariant'4 x
   
-  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
   
-  use seq.Seq
+  predicate resolve'0 (_1 : t_F'0)
   
   predicate postcondition_mut'0 (self : t_F'0) (args : t_Item'0) (result_state : t_F'0) (result : t_B'0)
+  
+  function fn_mut_once'0 (self : t_F'0) (args : t_Item'0) (res : t_B'0) : ()
+  
+  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_Item'0, res : t_B'0 . [%#sops11] postcondition_once'0 self args res
+  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  
+  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
+  
+  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops8] unnest'0 self b)
+   -> ([%#sops9] unnest'0 b c)  -> ([%#sops10] unnest'0 self c)
+  
+  function unnest_refl'0 (self : t_F'0) : ()
+  
+  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops7] unnest'0 self self
+  
+  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_Item'0) (res_state : t_F'0) (res : t_B'0) : ()
+  
+  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_Item'0, res_state : t_F'0, res : t_B'0 . ([%#sops5] postcondition_mut'0 self args res_state res)
+   -> ([%#sops6] unnest'0 self res_state)
+  
+  use seq.Seq
   
   predicate preservation'0 [#"05_map.rs" 94 4 94 45] (iter : t_I'0) (func : t_F'0) =
     [%#s05_map21] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 [produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1) f.final b] . inv'2 s
@@ -173,47 +214,6 @@ module M_05_map__qyi14910388998417814812__produces_refl [#"05_map.rs" 33 4 33 26
     /\ precondition'0 (Seq.get fs i).current (Seq.get s i)
     /\ postcondition_mut'0 (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
   
-  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_Item'0) (res_state : t_F'0) (res : t_B'0) : ()
-  
-  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_Item'0, res_state : t_F'0, res : t_B'0 . ([%#sops5] postcondition_mut'0 self args res_state res)
-   -> ([%#sops6] unnest'0 self res_state)
-  
-  function unnest_refl'0 (self : t_F'0) : ()
-  
-  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops7] unnest'0 self self
-  
-  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
-  
-  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops8] unnest'0 self b)
-   -> ([%#sops9] unnest'0 b c)  -> ([%#sops10] unnest'0 self c)
-  
-  predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
-  
-  predicate resolve'0 (_1 : t_F'0)
-  
-  function fn_mut_once'0 (self : t_F'0) (args : t_Item'0) (res : t_B'0) : ()
-  
-  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_Item'0, res : t_B'0 . [%#sops11] postcondition_once'0 self args res
-  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
-  
-  use seq.Seq
-  
-  function produces_refl'1 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
-  
-  axiom produces_refl'1_spec : forall self : t_I'0 . ([%#scommon12] inv'3 self)
-   -> ([%#scommon13] produces'1 self (Seq.empty  : Seq.seq t_Item'0) self)
-  
-  use seq.Seq
-  
-  function produces_trans'0 [#"common.rs" 25 4 25 91] (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
-    
-  
-  axiom produces_trans'0_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#scommon14] inv'3 a)
-   -> ([%#scommon15] inv'3 b)
-   -> ([%#scommon16] inv'3 c)
-   -> ([%#scommon17] produces'1 a ab b)
-   -> ([%#scommon18] produces'1 b bc c)  -> ([%#scommon19] produces'1 a (Seq.(++) ab bc) c)
-  
   constant self  : t_Map'0
   
   function produces_refl'0 [#"05_map.rs" 33 4 33 26] (self : t_Map'0) : ()
@@ -273,17 +273,35 @@ module M_05_map__qyi14910388998417814812__produces_trans [#"05_map.rs" 43 4 43 9
   
   predicate inv'4 (_1 : t_F'0)
   
-  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
-  
-  type t_Item'0
-  
-  predicate inv'6 (_1 : t_Item'0)
+  use seq.Seq
   
   use seq.Seq
+  
+  type t_Item'0
   
   use seq.Seq
   
   predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
+  
+  function produces_trans'1 [#"common.rs" 25 4 25 91] (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
+    
+  
+  axiom produces_trans'1_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#scommon18] inv'3 a)
+   -> ([%#scommon19] inv'3 b)
+   -> ([%#scommon20] inv'3 c)
+   -> ([%#scommon21] produces'1 a ab b)
+   -> ([%#scommon22] produces'1 b bc c)  -> ([%#scommon23] produces'1 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
+  
+  axiom produces_refl'0_spec : forall self : t_I'0 . ([%#scommon16] inv'3 self)
+   -> ([%#scommon17] produces'1 self (Seq.empty  : Seq.seq t_Item'0) self)
+  
+  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  
+  predicate inv'6 (_1 : t_Item'0)
+  
+  use seq.Seq
   
   predicate precondition'0 (self : t_F'0) (args : t_Item'0)
   
@@ -320,11 +338,34 @@ module M_05_map__qyi14910388998417814812__produces_trans [#"05_map.rs" 43 4 43 9
   
   axiom inv_axiom'4 [@rewrite] : forall x : borrowed t_F'0 [inv'7 x] . inv'7 x = invariant'4 x
   
-  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
   
-  use seq.Seq
+  predicate resolve'0 (_1 : t_F'0)
   
   predicate postcondition_mut'0 (self : t_F'0) (args : t_Item'0) (result_state : t_F'0) (result : t_B'0)
+  
+  function fn_mut_once'0 (self : t_F'0) (args : t_Item'0) (res : t_B'0) : ()
+  
+  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_Item'0, res : t_B'0 . [%#sops15] postcondition_once'0 self args res
+  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  
+  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
+  
+  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops12] unnest'0 self b)
+   -> ([%#sops13] unnest'0 b c)  -> ([%#sops14] unnest'0 self c)
+  
+  function unnest_refl'0 (self : t_F'0) : ()
+  
+  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops11] unnest'0 self self
+  
+  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_Item'0) (res_state : t_F'0) (res : t_B'0) : ()
+  
+  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_Item'0, res_state : t_F'0, res : t_B'0 . ([%#sops9] postcondition_mut'0 self args res_state res)
+   -> ([%#sops10] unnest'0 self res_state)
+  
+  use seq.Seq
   
   predicate preservation'0 [#"05_map.rs" 94 4 94 45] (iter : t_I'0) (func : t_F'0) =
     [%#s05_map25] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 [produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1) f.final b] . inv'2 s
@@ -399,47 +440,6 @@ module M_05_map__qyi14910388998417814812__produces_trans [#"05_map.rs" 43 4 43 9
     /\ postcondition_mut'0 (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
   
   use seq.Seq
-  
-  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_Item'0) (res_state : t_F'0) (res : t_B'0) : ()
-  
-  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_Item'0, res_state : t_F'0, res : t_B'0 . ([%#sops9] postcondition_mut'0 self args res_state res)
-   -> ([%#sops10] unnest'0 self res_state)
-  
-  function unnest_refl'0 (self : t_F'0) : ()
-  
-  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops11] unnest'0 self self
-  
-  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
-  
-  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops12] unnest'0 self b)
-   -> ([%#sops13] unnest'0 b c)  -> ([%#sops14] unnest'0 self c)
-  
-  predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
-  
-  predicate resolve'0 (_1 : t_F'0)
-  
-  function fn_mut_once'0 (self : t_F'0) (args : t_Item'0) (res : t_B'0) : ()
-  
-  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_Item'0, res : t_B'0 . [%#sops15] postcondition_once'0 self args res
-  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
-  
-  use seq.Seq
-  
-  function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
-  
-  axiom produces_refl'0_spec : forall self : t_I'0 . ([%#scommon16] inv'3 self)
-   -> ([%#scommon17] produces'1 self (Seq.empty  : Seq.seq t_Item'0) self)
-  
-  use seq.Seq
-  
-  function produces_trans'1 [#"common.rs" 25 4 25 91] (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
-    
-  
-  axiom produces_trans'1_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#scommon18] inv'3 a)
-   -> ([%#scommon19] inv'3 b)
-   -> ([%#scommon20] inv'3 c)
-   -> ([%#scommon21] produces'1 a ab b)
-   -> ([%#scommon22] produces'1 b bc c)  -> ([%#scommon23] produces'1 a (Seq.(++) ab bc) c)
   
   constant a  : t_Map'0
   
@@ -520,14 +520,36 @@ module M_05_map__qyi14910388998417814812__next [#"05_map.rs" 69 4 69 44] (* <Map
   type t_Map'0  =
     { t_Map__iter'0: t_I'0; t_Map__func'0: t_F'0 }
   
+  use seq.Seq
+  
+  use seq.Seq
+  
+  type t_Item'0
+  
+  use seq.Seq
+  
+  predicate produces'0 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
+  
+  function produces_trans'0 [#"common.rs" 25 4 25 91] (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
+    
+  
+  axiom produces_trans'0_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#scommon26] inv'0 a)
+   -> ([%#scommon27] inv'0 b)
+   -> ([%#scommon28] inv'0 c)
+   -> ([%#scommon29] produces'0 a ab b)
+   -> ([%#scommon30] produces'0 b bc c)  -> ([%#scommon31] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
+  
+  axiom produces_refl'0_spec : forall self : t_I'0 . ([%#scommon24] inv'0 self)
+   -> ([%#scommon25] produces'0 self (Seq.empty  : Seq.seq t_Item'0) self)
+  
   predicate invariant'1 (self : borrowed t_I'0) =
     [%#sinvariant43] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'4 (_1 : borrowed t_I'0)
   
   axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_I'0 [inv'4 x] . inv'4 x = invariant'1 x
-  
-  type t_Item'0
   
   type t_Option'0  =
     | C_None'0
@@ -546,10 +568,6 @@ module M_05_map__qyi14910388998417814812__next [#"05_map.rs" 69 4 69 44] (* <Map
   predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
   
   use seq.Seq
-  
-  use seq.Seq
-  
-  predicate produces'0 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
   
   let rec next'1 (self:borrowed t_I'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] [%#scommon5] inv'4 self}
     any
@@ -603,11 +621,34 @@ module M_05_map__qyi14910388998417814812__next [#"05_map.rs" 69 4 69 44] (* <Map
   
   axiom inv_axiom'5 [@rewrite] : forall x : borrowed t_F'0 [inv'9 x] . inv'9 x = invariant'3 x
   
-  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
   
-  use seq.Seq
+  predicate resolve'2 (_1 : t_F'0)
   
   predicate postcondition_mut'0 (self : t_F'0) (args : t_Item'0) (result_state : t_F'0) (result : t_B'0)
+  
+  function fn_mut_once'0 (self : t_F'0) (args : t_Item'0) (res : t_B'0) : ()
+  
+  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_Item'0, res : t_B'0 . [%#sops42] postcondition_once'0 self args res
+  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'2 res_state)
+  
+  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  
+  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
+  
+  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops39] unnest'0 self b)
+   -> ([%#sops40] unnest'0 b c)  -> ([%#sops41] unnest'0 self c)
+  
+  function unnest_refl'0 (self : t_F'0) : ()
+  
+  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops38] unnest'0 self self
+  
+  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_Item'0) (res_state : t_F'0) (res : t_B'0) : ()
+  
+  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_Item'0, res_state : t_F'0, res : t_B'0 . ([%#sops36] postcondition_mut'0 self args res_state res)
+   -> ([%#sops37] unnest'0 self res_state)
+  
+  use seq.Seq
   
   predicate preservation'0 [#"05_map.rs" 94 4 94 45] (iter : t_I'0) (func : t_F'0) =
     [%#s05_map32] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 [produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1) f.final b] . inv'11 s
@@ -759,47 +800,6 @@ module M_05_map__qyi14910388998417814812__next [#"05_map.rs" 69 4 69 44] (* <Map
   axiom produces_one'0_spec : forall self : t_Map'0, visited : t_B'0, succ : t_Map'0 . [%#s05_map22] produces_one'0 self visited succ
   = produces'1 self (Seq.singleton visited) succ
   
-  use seq.Seq
-  
-  function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
-  
-  axiom produces_refl'0_spec : forall self : t_I'0 . ([%#scommon24] inv'0 self)
-   -> ([%#scommon25] produces'0 self (Seq.empty  : Seq.seq t_Item'0) self)
-  
-  use seq.Seq
-  
-  function produces_trans'0 [#"common.rs" 25 4 25 91] (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
-    
-  
-  axiom produces_trans'0_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#scommon26] inv'0 a)
-   -> ([%#scommon27] inv'0 b)
-   -> ([%#scommon28] inv'0 c)
-   -> ([%#scommon29] produces'0 a ab b)
-   -> ([%#scommon30] produces'0 b bc c)  -> ([%#scommon31] produces'0 a (Seq.(++) ab bc) c)
-  
-  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_Item'0) (res_state : t_F'0) (res : t_B'0) : ()
-  
-  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_Item'0, res_state : t_F'0, res : t_B'0 . ([%#sops36] postcondition_mut'0 self args res_state res)
-   -> ([%#sops37] unnest'0 self res_state)
-  
-  function unnest_refl'0 (self : t_F'0) : ()
-  
-  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops38] unnest'0 self self
-  
-  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
-  
-  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops39] unnest'0 self b)
-   -> ([%#sops40] unnest'0 b c)  -> ([%#sops41] unnest'0 self c)
-  
-  predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
-  
-  predicate resolve'2 (_1 : t_F'0)
-  
-  function fn_mut_once'0 (self : t_F'0) (args : t_Item'0) (res : t_B'0) : ()
-  
-  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_Item'0, res : t_B'0 . [%#sops42] postcondition_once'0 self args res
-  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'2 res_state)
-  
   meta "compute_max_steps" 1000000
   
   let rec next'0 (self:borrowed (t_Map'0)) (return'  (ret:t_Option'1))= {[@expl:next 'self' type invariant] [%#s05_map2] inv'2 self}
@@ -922,17 +922,35 @@ module M_05_map__qyi9543869049664362474__produces_one_invariant [#"05_map.rs" 12
   
   predicate inv'6 (_1 : t_F'0)
   
-  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
-  
-  type t_Item'0
-  
-  predicate inv'1 (_1 : t_Item'0)
+  use seq.Seq
   
   use seq.Seq
+  
+  type t_Item'0
   
   use seq.Seq
   
   predicate produces'0 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
+  
+  function produces_trans'0 [#"common.rs" 25 4 25 91] (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
+    
+  
+  axiom produces_trans'0_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#scommon16] inv'4 a)
+   -> ([%#scommon17] inv'4 b)
+   -> ([%#scommon18] inv'4 c)
+   -> ([%#scommon19] produces'0 a ab b)
+   -> ([%#scommon20] produces'0 b bc c)  -> ([%#scommon21] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
+  
+  axiom produces_refl'0_spec : forall self : t_I'0 . ([%#scommon14] inv'4 self)
+   -> ([%#scommon15] produces'0 self (Seq.empty  : Seq.seq t_Item'0) self)
+  
+  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  
+  predicate inv'1 (_1 : t_Item'0)
+  
+  use seq.Seq
   
   predicate precondition'0 (self : t_F'0) (args : t_Item'0)
   
@@ -969,11 +987,34 @@ module M_05_map__qyi9543869049664362474__produces_one_invariant [#"05_map.rs" 12
   
   axiom inv_axiom'1 [@rewrite] : forall x : borrowed t_F'0 [inv'3 x] . inv'3 x = invariant'1 x
   
-  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
   
-  use seq.Seq
+  predicate resolve'0 (_1 : t_F'0)
   
   predicate postcondition_mut'0 (self : t_F'0) (args : t_Item'0) (result_state : t_F'0) (result : t_B'0)
+  
+  function fn_mut_once'0 (self : t_F'0) (args : t_Item'0) (res : t_B'0) : ()
+  
+  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_Item'0, res : t_B'0 . [%#sops28] postcondition_once'0 self args res
+  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  
+  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
+  
+  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops25] unnest'0 self b)
+   -> ([%#sops26] unnest'0 b c)  -> ([%#sops27] unnest'0 self c)
+  
+  function unnest_refl'0 (self : t_F'0) : ()
+  
+  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops24] unnest'0 self self
+  
+  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_Item'0) (res_state : t_F'0) (res : t_B'0) : ()
+  
+  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_Item'0, res_state : t_F'0, res : t_B'0 . ([%#sops22] postcondition_mut'0 self args res_state res)
+   -> ([%#sops23] unnest'0 self res_state)
+  
+  use seq.Seq
   
   predicate preservation'0 [#"05_map.rs" 94 4 94 45] (iter : t_I'0) (func : t_F'0) =
     [%#s05_map12] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 [produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1) f.final b] . inv'5 s
@@ -998,47 +1039,6 @@ module M_05_map__qyi9543869049664362474__produces_one_invariant [#"05_map.rs" 12
     end)
   
   predicate inv'2 (_1 : t_B'0)
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
-  
-  axiom produces_refl'0_spec : forall self : t_I'0 . ([%#scommon14] inv'4 self)
-   -> ([%#scommon15] produces'0 self (Seq.empty  : Seq.seq t_Item'0) self)
-  
-  function produces_trans'0 [#"common.rs" 25 4 25 91] (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
-    
-  
-  axiom produces_trans'0_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#scommon16] inv'4 a)
-   -> ([%#scommon17] inv'4 b)
-   -> ([%#scommon18] inv'4 c)
-   -> ([%#scommon19] produces'0 a ab b)
-   -> ([%#scommon20] produces'0 b bc c)  -> ([%#scommon21] produces'0 a (Seq.(++) ab bc) c)
-  
-  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_Item'0) (res_state : t_F'0) (res : t_B'0) : ()
-  
-  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_Item'0, res_state : t_F'0, res : t_B'0 . ([%#sops22] postcondition_mut'0 self args res_state res)
-   -> ([%#sops23] unnest'0 self res_state)
-  
-  function unnest_refl'0 (self : t_F'0) : ()
-  
-  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops24] unnest'0 self self
-  
-  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
-  
-  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops25] unnest'0 self b)
-   -> ([%#sops26] unnest'0 b c)  -> ([%#sops27] unnest'0 self c)
-  
-  predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
-  
-  predicate resolve'0 (_1 : t_F'0)
-  
-  function fn_mut_once'0 (self : t_F'0) (args : t_Item'0) (res : t_B'0) : ()
-  
-  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_Item'0, res : t_B'0 . [%#sops28] postcondition_once'0 self args res
-  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
   
   constant self  : t_Map'0
   
@@ -1113,44 +1113,20 @@ module M_05_map__qyi9543869049664362474__produces_one [#"05_map.rs" 138 4 138 57
   type t_Map'0  =
     { t_Map__iter'0: t_I'0; t_Map__func'0: t_F'0 }
   
-  type t_B'0
-  
-  use seq.Seq
-  
-  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
-  
   use prelude.prelude.Borrow
   
-  use seq.Seq
+  predicate inv'5 (_1 : t_I'0)
   
-  use prelude.prelude.Int
+  predicate invariant'6 (self : borrowed t_I'0) =
+    [%#sinvariant28] inv'5 self.current /\ inv'5 self.final
   
-  use seq.Seq
+  predicate inv'9 (_1 : borrowed t_I'0)
   
-  use seq.Seq
+  axiom inv_axiom'6 [@rewrite] : forall x : borrowed t_I'0 [inv'9 x] . inv'9 x = invariant'6 x
   
   predicate inv'6 (_1 : t_F'0)
   
-  predicate invariant'0 (self : borrowed t_F'0) =
-    [%#sinvariant28] inv'6 self.current /\ inv'6 self.final
-  
-  predicate inv'0 (_1 : borrowed t_F'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed t_F'0 [inv'0 x] . inv'0 x = invariant'0 x
-  
-  predicate invariant'4 (self : borrowed t_F'0) =
-    [%#sboxed34] inv'0 self
-  
-  predicate inv'7 (_1 : borrowed t_F'0)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : borrowed t_F'0 [inv'7 x] . inv'7 x = invariant'4 x
-  
-  predicate invariant'1 (self : Seq.seq (borrowed t_F'0)) =
-    [%#sseq29] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'7 (Seq.get self i)
-  
-  predicate inv'2 (_1 : Seq.seq (borrowed t_F'0))
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq (borrowed t_F'0) [inv'2 x] . inv'2 x = invariant'1 x
+  use seq.Seq
   
   use seq.Seq
   
@@ -1158,11 +1134,41 @@ module M_05_map__qyi9543869049664362474__produces_one [#"05_map.rs" 138 4 138 57
   
   use seq.Seq
   
-  use seq.Seq
+  predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
   
-  use seq.Seq
+  function produces_trans'1 [#"common.rs" 25 4 25 91] (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
+    
+  
+  axiom produces_trans'1_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#scommon15] inv'5 a)
+   -> ([%#scommon16] inv'5 b)
+   -> ([%#scommon17] inv'5 c)
+   -> ([%#scommon18] produces'1 a ab b)
+   -> ([%#scommon19] produces'1 b bc c)  -> ([%#scommon20] produces'1 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'1 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
+  
+  axiom produces_refl'1_spec : forall self : t_I'0 . ([%#scommon13] inv'5 self)
+   -> ([%#scommon14] produces'1 self (Seq.empty  : Seq.seq t_Item'0) self)
+  
+  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
   
   predicate inv'1 (_1 : t_Item'0)
+  
+  use seq.Seq
+  
+  predicate precondition'0 (self : t_F'0) (args : t_Item'0)
+  
+  predicate next_precondition'0 [#"05_map.rs" 83 4 83 50] (iter : t_I'0) (func : t_F'0) =
+    [%#s05_map33] forall e : t_Item'0, i : t_I'0 [produces'1 iter (Seq.singleton e) i] . inv'1 e /\ inv'5 i
+     -> produces'1 iter (Seq.singleton e) i  -> precondition'0 func (e)
+  
+  type t_B'0
+  
+  use prelude.prelude.Int
+  
+  use seq.Seq
+  
+  use seq.Seq
   
   predicate invariant'5 (self : t_Item'0) =
     [%#sboxed34] inv'1 self
@@ -1178,54 +1184,39 @@ module M_05_map__qyi9543869049664362474__produces_one [#"05_map.rs" 138 4 138 57
   
   axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'3 x] . inv'3 x = invariant'2 x
   
-  predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
+  predicate invariant'0 (self : borrowed t_F'0) =
+    [%#sinvariant28] inv'6 self.current /\ inv'6 self.final
   
-  use seq.Seq
+  predicate inv'0 (_1 : borrowed t_F'0)
   
-  use seq.Seq
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed t_F'0 [inv'0 x] . inv'0 x = invariant'0 x
   
-  predicate precondition'0 (self : t_F'0) (args : t_Item'0)
+  predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
   
-  use seq.Seq
+  predicate resolve'0 (_1 : t_F'0)
   
   predicate postcondition_mut'0 (self : t_F'0) (args : t_Item'0) (result_state : t_F'0) (result : t_B'0)
   
-  predicate produces'0 [@inline:trivial] [#"05_map.rs" 48 4 48 67] (self : t_Map'0) (visited : Seq.seq t_B'0) (succ : t_Map'0)
-    
-   =
-    [%#s05_map2] unnest'0 self.t_Map__func'0 succ.t_Map__func'0
-    /\ (exists fs : Seq.seq (borrowed t_F'0) . inv'2 fs
-    /\ Seq.length fs = Seq.length visited
-    /\ (exists s : Seq.seq t_Item'0 [produces'1 self.t_Map__iter'0 s succ.t_Map__iter'0] . inv'3 s
-    /\ Seq.length s = Seq.length visited
-    /\ produces'1 self.t_Map__iter'0 s succ.t_Map__iter'0
-    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
-    /\ (if Seq.length visited = 0 then
-      self.t_Map__func'0 = succ.t_Map__func'0
-    else
-      (Seq.get fs 0).current = self.t_Map__func'0 /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func'0
-    )
-    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
-     -> unnest'0 self.t_Map__func'0 (Seq.get fs i).current
-    /\ precondition'0 (Seq.get fs i).current (Seq.get s i)
-    /\ postcondition_mut'0 (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
+  function fn_mut_once'0 (self : t_F'0) (args : t_Item'0) (res : t_B'0) : ()
   
-  use seq.Seq
+  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_Item'0, res : t_B'0 . [%#sops27] postcondition_once'0 self args res
+  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
   
-  predicate inv'5 (_1 : t_I'0)
+  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
   
-  predicate invariant'6 (self : borrowed t_I'0) =
-    [%#sinvariant28] inv'5 self.current /\ inv'5 self.final
+  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
   
-  predicate inv'9 (_1 : borrowed t_I'0)
+  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops24] unnest'0 self b)
+   -> ([%#sops25] unnest'0 b c)  -> ([%#sops26] unnest'0 self c)
   
-  axiom inv_axiom'6 [@rewrite] : forall x : borrowed t_I'0 [inv'9 x] . inv'9 x = invariant'6 x
+  function unnest_refl'0 (self : t_F'0) : ()
   
-  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops23] unnest'0 self self
   
-  predicate next_precondition'0 [#"05_map.rs" 83 4 83 50] (iter : t_I'0) (func : t_F'0) =
-    [%#s05_map33] forall e : t_Item'0, i : t_I'0 [produces'1 iter (Seq.singleton e) i] . inv'1 e /\ inv'5 i
-     -> produces'1 iter (Seq.singleton e) i  -> precondition'0 func (e)
+  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_Item'0) (res_state : t_F'0) (res : t_B'0) : ()
+  
+  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_Item'0, res_state : t_F'0, res : t_B'0 . ([%#sops21] postcondition_mut'0 self args res_state res)
+   -> ([%#sops22] unnest'0 self res_state)
   
   use seq.Seq
   
@@ -1253,13 +1244,57 @@ module M_05_map__qyi9543869049664362474__produces_one [#"05_map.rs" 138 4 138 57
   
   use seq.Seq
   
-  function produces_refl'0 [#"05_map.rs" 33 4 33 26] (self : t_Map'0) : () =
-    [%#s05_map5] ()
-  
-  axiom produces_refl'0_spec : forall self : t_Map'0 . ([%#s05_map3] inv'4 self)
-   -> ([%#s05_map4] produces'0 self (Seq.empty  : Seq.seq t_B'0) self)
+  use seq.Seq
   
   use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate invariant'4 (self : borrowed t_F'0) =
+    [%#sboxed34] inv'0 self
+  
+  predicate inv'7 (_1 : borrowed t_F'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : borrowed t_F'0 [inv'7 x] . inv'7 x = invariant'4 x
+  
+  predicate invariant'1 (self : Seq.seq (borrowed t_F'0)) =
+    [%#sseq29] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'7 (Seq.get self i)
+  
+  predicate inv'2 (_1 : Seq.seq (borrowed t_F'0))
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq (borrowed t_F'0) [inv'2 x] . inv'2 x = invariant'1 x
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate produces'0 [@inline:trivial] [#"05_map.rs" 48 4 48 67] (self : t_Map'0) (visited : Seq.seq t_B'0) (succ : t_Map'0)
+    
+   =
+    [%#s05_map2] unnest'0 self.t_Map__func'0 succ.t_Map__func'0
+    /\ (exists fs : Seq.seq (borrowed t_F'0) . inv'2 fs
+    /\ Seq.length fs = Seq.length visited
+    /\ (exists s : Seq.seq t_Item'0 [produces'1 self.t_Map__iter'0 s succ.t_Map__iter'0] . inv'3 s
+    /\ Seq.length s = Seq.length visited
+    /\ produces'1 self.t_Map__iter'0 s succ.t_Map__iter'0
+    /\ (forall i : int . 1 <= i /\ i < Seq.length fs  -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
+    /\ (if Seq.length visited = 0 then
+      self.t_Map__func'0 = succ.t_Map__func'0
+    else
+      (Seq.get fs 0).current = self.t_Map__func'0 /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func'0
+    )
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> unnest'0 self.t_Map__func'0 (Seq.get fs i).current
+    /\ precondition'0 (Seq.get fs i).current (Seq.get s i)
+    /\ postcondition_mut'0 (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
   
   function produces_trans'0 [#"05_map.rs" 43 4 43 90] (a : t_Map'0) (ab : Seq.seq t_B'0) (b : t_Map'0) (bc : Seq.seq t_B'0) (c : t_Map'0) : ()
     
@@ -1272,46 +1307,11 @@ module M_05_map__qyi9543869049664362474__produces_one [#"05_map.rs" 138 4 138 57
    -> ([%#s05_map9] produces'0 a ab b)
    -> ([%#s05_map10] produces'0 b bc c)  -> ([%#s05_map11] produces'0 a (Seq.(++) ab bc) c)
   
-  use seq.Seq
+  function produces_refl'0 [#"05_map.rs" 33 4 33 26] (self : t_Map'0) : () =
+    [%#s05_map5] ()
   
-  function produces_refl'1 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
-  
-  axiom produces_refl'1_spec : forall self : t_I'0 . ([%#scommon13] inv'5 self)
-   -> ([%#scommon14] produces'1 self (Seq.empty  : Seq.seq t_Item'0) self)
-  
-  use seq.Seq
-  
-  function produces_trans'1 [#"common.rs" 25 4 25 91] (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
-    
-  
-  axiom produces_trans'1_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#scommon15] inv'5 a)
-   -> ([%#scommon16] inv'5 b)
-   -> ([%#scommon17] inv'5 c)
-   -> ([%#scommon18] produces'1 a ab b)
-   -> ([%#scommon19] produces'1 b bc c)  -> ([%#scommon20] produces'1 a (Seq.(++) ab bc) c)
-  
-  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_Item'0) (res_state : t_F'0) (res : t_B'0) : ()
-  
-  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_Item'0, res_state : t_F'0, res : t_B'0 . ([%#sops21] postcondition_mut'0 self args res_state res)
-   -> ([%#sops22] unnest'0 self res_state)
-  
-  function unnest_refl'0 (self : t_F'0) : ()
-  
-  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops23] unnest'0 self self
-  
-  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
-  
-  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops24] unnest'0 self b)
-   -> ([%#sops25] unnest'0 b c)  -> ([%#sops26] unnest'0 self c)
-  
-  predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
-  
-  predicate resolve'0 (_1 : t_F'0)
-  
-  function fn_mut_once'0 (self : t_F'0) (args : t_Item'0) (res : t_B'0) : ()
-  
-  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_Item'0, res : t_B'0 . [%#sops27] postcondition_once'0 self args res
-  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  axiom produces_refl'0_spec : forall self : t_Map'0 . ([%#s05_map3] inv'4 self)
+   -> ([%#s05_map4] produces'0 self (Seq.empty  : Seq.seq t_B'0) self)
   
   constant self  : t_Map'0
   
@@ -1373,15 +1373,33 @@ module M_05_map__map [#"05_map.rs" 168 0 168 84]
   
   predicate inv'1 (_1 : t_F'0)
   
-  type t_Item'0
-  
-  predicate inv'2 (_1 : t_Item'0)
+  use seq.Seq
   
   use seq.Seq
+  
+  type t_Item'0
   
   use seq.Seq
   
   predicate produces'0 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
+  
+  function produces_trans'0 [#"common.rs" 25 4 25 91] (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
+    
+  
+  axiom produces_trans'0_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#scommon11] inv'0 a)
+   -> ([%#scommon12] inv'0 b)
+   -> ([%#scommon13] inv'0 c)
+   -> ([%#scommon14] produces'0 a ab b)
+   -> ([%#scommon15] produces'0 b bc c)  -> ([%#scommon16] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
+  
+  axiom produces_refl'0_spec : forall self : t_I'0 . ([%#scommon9] inv'0 self)
+   -> ([%#scommon10] produces'0 self (Seq.empty  : Seq.seq t_Item'0) self)
+  
+  predicate inv'2 (_1 : t_Item'0)
+  
+  use seq.Seq
   
   predicate precondition'0 (self : t_F'0) (args : t_Item'0)
   
@@ -1429,11 +1447,34 @@ module M_05_map__map [#"05_map.rs" 168 0 168 84]
   
   axiom inv_axiom'3 [@rewrite] : forall x : borrowed t_F'0 [inv'6 x] . inv'6 x = invariant'3 x
   
-  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
   
-  use seq.Seq
+  predicate resolve'0 (_1 : t_F'0)
   
   predicate postcondition_mut'0 (self : t_F'0) (args : t_Item'0) (result_state : t_F'0) (result : t_B'0)
+  
+  function fn_mut_once'0 (self : t_F'0) (args : t_Item'0) (res : t_B'0) : ()
+  
+  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_Item'0, res : t_B'0 . [%#sops24] postcondition_once'0 self args res
+  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  
+  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
+  
+  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops21] unnest'0 self b)
+   -> ([%#sops22] unnest'0 b c)  -> ([%#sops23] unnest'0 self c)
+  
+  function unnest_refl'0 (self : t_F'0) : ()
+  
+  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops20] unnest'0 self self
+  
+  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_Item'0) (res_state : t_F'0) (res : t_B'0) : ()
+  
+  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_Item'0, res_state : t_F'0, res : t_B'0 . ([%#sops18] postcondition_mut'0 self args res_state res)
+   -> ([%#sops19] unnest'0 self res_state)
+  
+  use seq.Seq
   
   predicate preservation'0 [#"05_map.rs" 94 4 94 45] (iter : t_I'0) (func : t_F'0) =
     [%#s05_map8] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 [produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1) f.final b] . inv'5 s
@@ -1456,47 +1497,6 @@ module M_05_map__map [#"05_map.rs" 168 0 168 84]
   /\ match x with
     | {t_Map__iter'0 = iter ; t_Map__func'0 = func} -> inv'0 iter /\ inv'1 func
     end)
-  
-  use seq.Seq
-  
-  function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
-  
-  axiom produces_refl'0_spec : forall self : t_I'0 . ([%#scommon9] inv'0 self)
-   -> ([%#scommon10] produces'0 self (Seq.empty  : Seq.seq t_Item'0) self)
-  
-  use seq.Seq
-  
-  function produces_trans'0 [#"common.rs" 25 4 25 91] (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
-    
-  
-  axiom produces_trans'0_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#scommon11] inv'0 a)
-   -> ([%#scommon12] inv'0 b)
-   -> ([%#scommon13] inv'0 c)
-   -> ([%#scommon14] produces'0 a ab b)
-   -> ([%#scommon15] produces'0 b bc c)  -> ([%#scommon16] produces'0 a (Seq.(++) ab bc) c)
-  
-  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_Item'0) (res_state : t_F'0) (res : t_B'0) : ()
-  
-  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_Item'0, res_state : t_F'0, res : t_B'0 . ([%#sops18] postcondition_mut'0 self args res_state res)
-   -> ([%#sops19] unnest'0 self res_state)
-  
-  function unnest_refl'0 (self : t_F'0) : ()
-  
-  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops20] unnest'0 self self
-  
-  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
-  
-  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops21] unnest'0 self b)
-   -> ([%#sops22] unnest'0 b c)  -> ([%#sops23] unnest'0 self c)
-  
-  predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
-  
-  predicate resolve'0 (_1 : t_F'0)
-  
-  function fn_mut_once'0 (self : t_F'0) (args : t_Item'0) (res : t_B'0) : ()
-  
-  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_Item'0, res : t_B'0 . [%#sops24] postcondition_once'0 self args res
-  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
   
   meta "compute_max_steps" 1000000
   
@@ -1570,17 +1570,35 @@ module M_05_map__qyi14910388998417814812__next__refines [#"05_map.rs" 69 4 69 44
   
   predicate inv'9 (_1 : t_F'0)
   
-  predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
-  
-  type t_Item'0
-  
-  predicate inv'3 (_1 : t_Item'0)
+  use seq.Seq
   
   use seq.Seq
+  
+  type t_Item'0
   
   use seq.Seq
   
   predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
+  
+  function produces_trans'0 [#"common.rs" 25 4 25 91] (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
+    
+  
+  axiom produces_trans'0_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#scommon8] inv'8 a)
+   -> ([%#scommon9] inv'8 b)
+   -> ([%#scommon10] inv'8 c)
+   -> ([%#scommon11] produces'1 a ab b)
+   -> ([%#scommon12] produces'1 b bc c)  -> ([%#scommon13] produces'1 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
+  
+  axiom produces_refl'0_spec : forall self : t_I'0 . ([%#scommon6] inv'8 self)
+   -> ([%#scommon7] produces'1 self (Seq.empty  : Seq.seq t_Item'0) self)
+  
+  predicate completed'1 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  
+  predicate inv'3 (_1 : t_Item'0)
+  
+  use seq.Seq
   
   predicate precondition'0 (self : t_F'0) (args : t_Item'0)
   
@@ -1617,11 +1635,34 @@ module M_05_map__qyi14910388998417814812__next__refines [#"05_map.rs" 69 4 69 44
   
   axiom inv_axiom'2 [@rewrite] : forall x : borrowed t_F'0 [inv'2 x] . inv'2 x = invariant'1 x
   
-  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
   
-  use seq.Seq
+  predicate resolve'0 (_1 : t_F'0)
   
   predicate postcondition_mut'0 (self : t_F'0) (args : t_Item'0) (result_state : t_F'0) (result : t_B'0)
+  
+  function fn_mut_once'0 (self : t_F'0) (args : t_Item'0) (res : t_B'0) : ()
+  
+  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_Item'0, res : t_B'0 . [%#sops20] postcondition_once'0 self args res
+  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  
+  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
+  
+  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops17] unnest'0 self b)
+   -> ([%#sops18] unnest'0 b c)  -> ([%#sops19] unnest'0 self c)
+  
+  function unnest_refl'0 (self : t_F'0) : ()
+  
+  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops16] unnest'0 self self
+  
+  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_Item'0) (res_state : t_F'0) (res : t_B'0) : ()
+  
+  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_Item'0, res_state : t_F'0, res : t_B'0 . ([%#sops14] postcondition_mut'0 self args res_state res)
+   -> ([%#sops15] unnest'0 self res_state)
+  
+  use seq.Seq
   
   predicate preservation'0 [#"05_map.rs" 94 4 94 45] (iter : t_I'0) (func : t_F'0) =
     [%#s05_map24] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 [produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1) f.final b] . inv'5 s
@@ -1733,47 +1774,6 @@ module M_05_map__qyi14910388998417814812__next__refines [#"05_map.rs" 69 4 69 44
     | C_Some'0 a_0 -> inv'6 a_0
     end
   
-  use seq.Seq
-  
-  function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
-  
-  axiom produces_refl'0_spec : forall self : t_I'0 . ([%#scommon6] inv'8 self)
-   -> ([%#scommon7] produces'1 self (Seq.empty  : Seq.seq t_Item'0) self)
-  
-  use seq.Seq
-  
-  function produces_trans'0 [#"common.rs" 25 4 25 91] (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
-    
-  
-  axiom produces_trans'0_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#scommon8] inv'8 a)
-   -> ([%#scommon9] inv'8 b)
-   -> ([%#scommon10] inv'8 c)
-   -> ([%#scommon11] produces'1 a ab b)
-   -> ([%#scommon12] produces'1 b bc c)  -> ([%#scommon13] produces'1 a (Seq.(++) ab bc) c)
-  
-  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_Item'0) (res_state : t_F'0) (res : t_B'0) : ()
-  
-  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_Item'0, res_state : t_F'0, res : t_B'0 . ([%#sops14] postcondition_mut'0 self args res_state res)
-   -> ([%#sops15] unnest'0 self res_state)
-  
-  function unnest_refl'0 (self : t_F'0) : ()
-  
-  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops16] unnest'0 self self
-  
-  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
-  
-  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops17] unnest'0 self b)
-   -> ([%#sops18] unnest'0 b c)  -> ([%#sops19] unnest'0 self c)
-  
-  predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
-  
-  predicate resolve'0 (_1 : t_F'0)
-  
-  function fn_mut_once'0 (self : t_F'0) (args : t_Item'0) (res : t_B'0) : ()
-  
-  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_Item'0, res : t_B'0 . [%#sops20] postcondition_once'0 self args res
-  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
-  
   goal refines : [%#s05_map0] forall self : borrowed (t_Map'0) . inv'0 self
    -> inv'0 self
   /\ (forall result : t_Option'0 . match result with
@@ -1833,17 +1833,35 @@ module M_05_map__qyi14910388998417814812__produces_refl__refines [#"05_map.rs" 3
   
   predicate inv'4 (_1 : t_F'0)
   
-  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
-  
-  type t_Item'0
-  
-  predicate inv'6 (_1 : t_Item'0)
+  use seq.Seq
   
   use seq.Seq
+  
+  type t_Item'0
   
   use seq.Seq
   
   predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
+  
+  function produces_trans'0 [#"common.rs" 25 4 25 91] (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
+    
+  
+  axiom produces_trans'0_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#scommon12] inv'3 a)
+   -> ([%#scommon13] inv'3 b)
+   -> ([%#scommon14] inv'3 c)
+   -> ([%#scommon15] produces'1 a ab b)
+   -> ([%#scommon16] produces'1 b bc c)  -> ([%#scommon17] produces'1 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'1 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
+  
+  axiom produces_refl'1_spec : forall self : t_I'0 . ([%#scommon10] inv'3 self)
+   -> ([%#scommon11] produces'1 self (Seq.empty  : Seq.seq t_Item'0) self)
+  
+  predicate completed'0 [#"common.rs" 11 4 11 36] (self : borrowed t_I'0)
+  
+  predicate inv'6 (_1 : t_Item'0)
+  
+  use seq.Seq
   
   predicate precondition'0 (self : t_F'0) (args : t_Item'0)
   
@@ -1880,11 +1898,34 @@ module M_05_map__qyi14910388998417814812__produces_refl__refines [#"05_map.rs" 3
   
   axiom inv_axiom'4 [@rewrite] : forall x : borrowed t_F'0 [inv'7 x] . inv'7 x = invariant'4 x
   
-  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
   
-  use seq.Seq
+  predicate resolve'0 (_1 : t_F'0)
   
   predicate postcondition_mut'0 (self : t_F'0) (args : t_Item'0) (result_state : t_F'0) (result : t_B'0)
+  
+  function fn_mut_once'0 (self : t_F'0) (args : t_Item'0) (res : t_B'0) : ()
+  
+  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_Item'0, res : t_B'0 . [%#sops9] postcondition_once'0 self args res
+  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  
+  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
+  
+  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops6] unnest'0 self b)
+   -> ([%#sops7] unnest'0 b c)  -> ([%#sops8] unnest'0 self c)
+  
+  function unnest_refl'0 (self : t_F'0) : ()
+  
+  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops5] unnest'0 self self
+  
+  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_Item'0) (res_state : t_F'0) (res : t_B'0) : ()
+  
+  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_Item'0, res_state : t_F'0, res : t_B'0 . ([%#sops3] postcondition_mut'0 self args res_state res)
+   -> ([%#sops4] unnest'0 self res_state)
+  
+  use seq.Seq
   
   predicate preservation'0 [#"05_map.rs" 94 4 94 45] (iter : t_I'0) (func : t_F'0) =
     [%#s05_map19] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : borrowed t_F'0, b : t_B'0, i : t_I'0 [produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1) f.final b] . inv'2 s
@@ -1960,47 +2001,6 @@ module M_05_map__qyi14910388998417814812__produces_refl__refines [#"05_map.rs" 3
     /\ precondition'0 (Seq.get fs i).current (Seq.get s i)
     /\ postcondition_mut'0 (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
   
-  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_Item'0) (res_state : t_F'0) (res : t_B'0) : ()
-  
-  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_Item'0, res_state : t_F'0, res : t_B'0 . ([%#sops3] postcondition_mut'0 self args res_state res)
-   -> ([%#sops4] unnest'0 self res_state)
-  
-  function unnest_refl'0 (self : t_F'0) : ()
-  
-  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops5] unnest'0 self self
-  
-  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
-  
-  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops6] unnest'0 self b)
-   -> ([%#sops7] unnest'0 b c)  -> ([%#sops8] unnest'0 self c)
-  
-  predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
-  
-  predicate resolve'0 (_1 : t_F'0)
-  
-  function fn_mut_once'0 (self : t_F'0) (args : t_Item'0) (res : t_B'0) : ()
-  
-  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_Item'0, res : t_B'0 . [%#sops9] postcondition_once'0 self args res
-  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
-  
-  use seq.Seq
-  
-  function produces_refl'1 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
-  
-  axiom produces_refl'1_spec : forall self : t_I'0 . ([%#scommon10] inv'3 self)
-   -> ([%#scommon11] produces'1 self (Seq.empty  : Seq.seq t_Item'0) self)
-  
-  use seq.Seq
-  
-  function produces_trans'0 [#"common.rs" 25 4 25 91] (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
-    
-  
-  axiom produces_trans'0_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#scommon12] inv'3 a)
-   -> ([%#scommon13] inv'3 b)
-   -> ([%#scommon14] inv'3 c)
-   -> ([%#scommon15] produces'1 a ab b)
-   -> ([%#scommon16] produces'1 b bc c)  -> ([%#scommon17] produces'1 a (Seq.(++) ab bc) c)
-  
   goal refines : [%#s05_map0] forall self : t_Map'0 . inv'0 self
    -> inv'0 self
   /\ (forall result : () . produces'0 self (Seq.empty  : Seq.seq t_B'0) self
@@ -2043,9 +2043,60 @@ module M_05_map__qyi14910388998417814812__produces_trans__refines [#"05_map.rs" 
   
   use seq.Seq
   
-  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  predicate inv'3 (_1 : t_I'0)
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  type t_Item'0
+  
+  use seq.Seq
+  
+  predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
+  
+  function produces_trans'1 [#"common.rs" 25 4 25 91] (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
+    
+  
+  axiom produces_trans'1_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#scommon11] inv'3 a)
+   -> ([%#scommon12] inv'3 b)
+   -> ([%#scommon13] inv'3 c)
+   -> ([%#scommon14] produces'1 a ab b)
+   -> ([%#scommon15] produces'1 b bc c)  -> ([%#scommon16] produces'1 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
+  
+  axiom produces_refl'0_spec : forall self : t_I'0 . ([%#scommon9] inv'3 self)
+   -> ([%#scommon10] produces'1 self (Seq.empty  : Seq.seq t_Item'0) self)
+  
+  predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
   
   use prelude.prelude.Borrow
+  
+  predicate resolve'0 (_1 : t_F'0)
+  
+  predicate postcondition_mut'0 (self : t_F'0) (args : t_Item'0) (result_state : t_F'0) (result : t_B'0)
+  
+  function fn_mut_once'0 (self : t_F'0) (args : t_Item'0) (res : t_B'0) : ()
+  
+  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_Item'0, res : t_B'0 . [%#sops8] postcondition_once'0 self args res
+  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
+  
+  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
+  
+  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops5] unnest'0 self b)
+   -> ([%#sops6] unnest'0 b c)  -> ([%#sops7] unnest'0 self c)
+  
+  function unnest_refl'0 (self : t_F'0) : ()
+  
+  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops4] unnest'0 self self
+  
+  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_Item'0) (res_state : t_F'0) (res : t_B'0) : ()
+  
+  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_Item'0, res_state : t_F'0, res : t_B'0 . ([%#sops2] postcondition_mut'0 self args res_state res)
+   -> ([%#sops3] unnest'0 self res_state)
   
   use seq.Seq
   
@@ -2080,10 +2131,6 @@ module M_05_map__qyi14910388998417814812__produces_trans__refines [#"05_map.rs" 
   
   use seq.Seq
   
-  type t_Item'0
-  
-  use seq.Seq
-  
   use seq.Seq
   
   use seq.Seq
@@ -2104,8 +2151,6 @@ module M_05_map__qyi14910388998417814812__produces_trans__refines [#"05_map.rs" 
   
   axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_Item'0 [inv'2 x] . inv'2 x = invariant'2 x
   
-  predicate produces'1 [#"common.rs" 8 4 8 65] (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
-  
   use seq.Seq
   
   use seq.Seq
@@ -2113,8 +2158,6 @@ module M_05_map__qyi14910388998417814812__produces_trans__refines [#"05_map.rs" 
   predicate precondition'0 (self : t_F'0) (args : t_Item'0)
   
   use seq.Seq
-  
-  predicate postcondition_mut'0 (self : t_F'0) (args : t_Item'0) (result_state : t_F'0) (result : t_B'0)
   
   predicate produces'0 [@inline:trivial] [#"05_map.rs" 48 4 48 67] (self : t_Map'0) (visited : Seq.seq t_B'0) (succ : t_Map'0)
     
@@ -2135,8 +2178,6 @@ module M_05_map__qyi14910388998417814812__produces_trans__refines [#"05_map.rs" 
      -> unnest'0 self.t_Map__func'0 (Seq.get fs i).current
     /\ precondition'0 (Seq.get fs i).current (Seq.get s i)
     /\ postcondition_mut'0 (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
-  
-  predicate inv'3 (_1 : t_I'0)
   
   predicate invariant'5 (self : borrowed t_I'0) =
     [%#sinvariant23] inv'3 self.current /\ inv'3 self.final
@@ -2178,47 +2219,6 @@ module M_05_map__qyi14910388998417814812__produces_trans__refines [#"05_map.rs" 
     end)
   
   use seq.Seq
-  
-  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_Item'0) (res_state : t_F'0) (res : t_B'0) : ()
-  
-  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_Item'0, res_state : t_F'0, res : t_B'0 . ([%#sops2] postcondition_mut'0 self args res_state res)
-   -> ([%#sops3] unnest'0 self res_state)
-  
-  function unnest_refl'0 (self : t_F'0) : ()
-  
-  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops4] unnest'0 self self
-  
-  function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
-  
-  axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops5] unnest'0 self b)
-   -> ([%#sops6] unnest'0 b c)  -> ([%#sops7] unnest'0 self c)
-  
-  predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
-  
-  predicate resolve'0 (_1 : t_F'0)
-  
-  function fn_mut_once'0 (self : t_F'0) (args : t_Item'0) (res : t_B'0) : ()
-  
-  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_Item'0, res : t_B'0 . [%#sops8] postcondition_once'0 self args res
-  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
-  
-  use seq.Seq
-  
-  function produces_refl'0 [#"common.rs" 16 4 16 27] (self : t_I'0) : ()
-  
-  axiom produces_refl'0_spec : forall self : t_I'0 . ([%#scommon9] inv'3 self)
-   -> ([%#scommon10] produces'1 self (Seq.empty  : Seq.seq t_Item'0) self)
-  
-  use seq.Seq
-  
-  function produces_trans'1 [#"common.rs" 25 4 25 91] (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
-    
-  
-  axiom produces_trans'1_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#scommon11] inv'3 a)
-   -> ([%#scommon12] inv'3 b)
-   -> ([%#scommon13] inv'3 c)
-   -> ([%#scommon14] produces'1 a ab b)
-   -> ([%#scommon15] produces'1 b bc c)  -> ([%#scommon16] produces'1 a (Seq.(++) ab bc) c)
   
   goal refines : [%#s05_map0] forall a : t_Map'0 . forall ab : Seq.seq t_B'0 . forall b : t_Map'0 . forall bc : Seq.seq t_B'0 . forall c : t_Map'0 . produces'0 b bc c
   /\ produces'0 a ab b /\ inv'0 c /\ inv'0 b /\ inv'0 a
