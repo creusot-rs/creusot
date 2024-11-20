@@ -50,6 +50,7 @@ impl<T> View for List<T> {
     }
 }
 
+// TODO: see issue #1251
 #[trusted]
 #[pure]
 #[ensures(result == x - 1)]
@@ -65,16 +66,6 @@ fn minus_one(x: Int) -> Int {
 pub fn seq_map<T, U>(s: Seq<T>, f: logic::Mapping<T, U>) -> Seq<U> {
     Seq::create(s.len(), |i| f.get(s[i]))
 }
-
-#[pure]
-#[ensures(forall<y: T, s: Seq<T>, f: logic::Mapping<T,U>>
-    seq_map(s.push_front(y), f) == seq_map(s, f).push_front(f.get(y)))]
-fn seq_map_cons<T, U>() {}
-
-#[pure]
-#[ensures(forall<y: T, s: Seq<T>, f: logic::Mapping<T,U>>
-    seq_map(s.push_back(y), f) == seq_map(s, f).push_back(f.get(y)))]
-fn seq_map_snoc<T, U>() {}
 
 impl<T> List<T> {
     #[ensures(result@ == Seq::EMPTY)]
@@ -103,7 +94,6 @@ impl<T> List<T> {
             cell_last.next = cell_ptr;
             self.last = cell_ptr;
         }
-        seq_map_snoc::<PtrOwn<Cell<T>>, T>();
     }
 
     #[ensures((^self)@ == (*self)@.push_front(x))]
@@ -115,6 +105,5 @@ impl<T> List<T> {
         }
         let mut seq = self.seq.borrow_mut();
         ghost! { seq.push_front_ghost(cell_own.into_inner()) };
-        seq_map_cons::<PtrOwn<Cell<T>>, T>();
     }
 }
