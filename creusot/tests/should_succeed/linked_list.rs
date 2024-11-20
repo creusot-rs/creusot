@@ -1,5 +1,9 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::Seq, ptr_own::{RawPtr, PtrOwn}, *};
+use creusot_contracts::{
+    logic::Seq,
+    ptr_own::{PtrOwn, RawPtr},
+    *,
+};
 
 struct Cell<T> {
     v: T,
@@ -75,19 +79,12 @@ fn seq_map_snoc<T, U>() {}
 impl<T> List<T> {
     #[ensures(result@ == Seq::EMPTY)]
     pub fn new() -> List<T> {
-        List {
-            first: std::ptr::null(),
-            last: std::ptr::null(),
-            seq: Seq::new(),
-        }
+        List { first: std::ptr::null(), last: std::ptr::null(), seq: Seq::new() }
     }
 
     #[ensures((^self)@ == (*self)@.push_back(x))]
     pub fn push_back(&mut self, x: T) {
-        let cell = Box::new(Cell {
-            v: x,
-            next: std::ptr::null(),
-        });
+        let cell = Box::new(Cell { v: x, next: std::ptr::null() });
         let (cell_ptr, cell_own) = ptr_own::from_box(cell);
         if self.last.is_null() {
             self.first = cell_ptr;
@@ -111,10 +108,7 @@ impl<T> List<T> {
 
     #[ensures((^self)@ == (*self)@.push_front(x))]
     pub fn push_front(&mut self, x: T) {
-        let (cell_ptr, cell_own) = ptr_own::new(Cell {
-            v: x,
-            next: self.first,
-        });
+        let (cell_ptr, cell_own) = ptr_own::new(Cell { v: x, next: self.first });
         self.first = cell_ptr;
         if self.last.is_null() {
             self.last = cell_ptr;

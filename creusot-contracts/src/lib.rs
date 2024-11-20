@@ -216,9 +216,9 @@ pub mod snapshot {
     impl<T: ?Sized> Copy for Snapshot<T> {}
 }
 
-pub mod ptr_own;
 pub mod invariant;
 pub mod model;
+pub mod ptr_own;
 pub mod resolve;
 pub mod util;
 pub mod well_founded;

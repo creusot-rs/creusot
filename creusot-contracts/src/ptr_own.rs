@@ -1,6 +1,6 @@
-use crate::*;
 #[cfg(creusot)]
 use crate::util::SizedW;
+use crate::*;
 
 /// Raw pointer whose ownership is tracked by a ghost [PtrOwn].
 pub type RawPtr<T> = *const T;
@@ -20,11 +20,15 @@ pub struct PtrOwn<T: ?Sized>(std::marker::PhantomData<T>);
 impl<T: ?Sized> PtrOwn<T> {
     #[trusted]
     #[logic]
-    pub fn ptr(&self) -> RawPtr<T> { dead }
+    pub fn ptr(&self) -> RawPtr<T> {
+        dead
+    }
 
     #[trusted]
     #[logic]
-    pub fn val(&self) -> SizedW<T> { dead }
+    pub fn val(&self) -> SizedW<T> {
+        dead
+    }
 }
 
 impl<T: ?Sized> Invariant for PtrOwn<T> {
@@ -48,14 +52,8 @@ pub fn new<T>(v: T) -> (RawPtr<T>, GhostBox<PtrOwn<T>>) {
 #[trusted]
 #[ensures(result.1.ptr() == result.0 && *result.1.val() == *val)]
 pub fn from_box<T: ?Sized>(val: Box<T>) -> (RawPtr<T>, GhostBox<PtrOwn<T>>) {
-    assert!(
-        core::mem::size_of_val::<T>(&*val) > 0,
-        "PtrOwn doesn't support ZSTs"
-    );
-    (
-        Box::into_raw(val),
-        GhostBox::conjure(),
-    )
+    assert!(core::mem::size_of_val::<T>(&*val) > 0, "PtrOwn doesn't support ZSTs");
+    (Box::into_raw(val), GhostBox::conjure())
 }
 
 /// Immutably borrows the underlying `T`.
