@@ -171,8 +171,6 @@ impl DepElab for LogicElab {
                 Strength::Weak,
                 Dependency::TyInvAxiom(subst.type_at(0)),
             ));
-            // elab.expansion_queue
-            //     .push_back((Dependency::AllTyInvAxioms, Dependency::TyInvAxiom(subst.type_at(0))));
         }
 
         let kind = match ctx.item_type(def_id) {
@@ -296,10 +294,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             namer,
             self_key,
             param_env,
-            expansion_queue: initial
-                // .chain(iter::once(Dependency::AllTyInvAxioms))
-                .map(|b| (self_key, Strength::Strong, b))
-                .collect(),
+            expansion_queue: initial.map(|b| (self_key, Strength::Strong, b)).collect(),
             dep_bodies: Default::default(),
         };
         exp
@@ -369,12 +364,6 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             }
             Dependency::Promoted(_, _) => ProgElab::expand(self, ctx, dep),
         };
-
-        // // Make every declaration that creates a goal depend on every TyInvAxiom to make sure that
-        // // TyInvAxioms are visible at this point
-        // if decls.iter().any(|d| matches!(d, Decl::Coma(..) | Decl::Goal(_))) {
-        //     self.expansion_queue.push_back((dep, Dependency::AllTyInvAxioms));
-        // }
 
         self.dep_bodies.insert(dep, decls);
     }
