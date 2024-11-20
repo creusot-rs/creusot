@@ -42,14 +42,49 @@ module M_695__inversed_if [#"695.rs" 6 0 6 78]
   
   axiom inv_axiom'2 [@rewrite] : forall x : bool [inv'4 x] . inv'4 x = true
   
+  predicate postcondition_once'1 (self : t_C'0) (args : ()) (result : bool)
+  
+  predicate resolve'0 (_1 : t_C'0)
+  
+  predicate postcondition_mut'0 (self : t_C'0) (args : ()) (result_state : t_C'0) (result : bool)
+  
+  function fn_mut_once'0 (self : t_C'0) (args : ()) (res : bool) : ()
+  
+  axiom fn_mut_once'0_spec : forall self : t_C'0, args : (), res : bool . [%#sops18] postcondition_once'1 self args res
+  = (exists res_state : t_C'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate unnest'0 (self : t_C'0) (_2 : t_C'0)
+  
+  function unnest_trans'0 (self : t_C'0) (b : t_C'0) (c : t_C'0) : ()
+  
+  axiom unnest_trans'0_spec : forall self : t_C'0, b : t_C'0, c : t_C'0 . ([%#sops15] unnest'0 self b)
+   -> ([%#sops16] unnest'0 b c)  -> ([%#sops17] unnest'0 self c)
+  
+  function unnest_refl'0 (self : t_C'0) : ()
+  
+  axiom unnest_refl'0_spec : forall self : t_C'0 . [%#sops14] unnest'0 self self
+  
+  function postcondition_mut_unnest'0 (self : t_C'0) (args : ()) (res_state : t_C'0) (res : bool) : ()
+  
+  axiom postcondition_mut_unnest'0_spec : forall self : t_C'0, args : (), res_state : t_C'0, res : bool . ([%#sops12] postcondition_mut'0 self args res_state res)
+   -> ([%#sops13] unnest'0 self res_state)
+  
   predicate postcondition'0 (self : t_C'0) (args : ()) (result : bool)
+  
+  function fn_once'0 (self : t_C'0) (args : ()) (res : bool) : ()
+  
+  axiom fn_once'0_spec : forall self : t_C'0, args : (), res : bool . [%#sops10] postcondition_once'1 self args res
+  = (resolve'0 self /\ postcondition'0 self args res)
+  
+  function fn_mut'0 (self : t_C'0) (args : ()) (res_state : t_C'0) (res : bool) : ()
+  
+  axiom fn_mut'0_spec : forall self : t_C'0, args : (), res_state : t_C'0, res : bool . [%#sops9] postcondition_mut'0 self args res_state res
+  = (self = res_state /\ postcondition'0 self args res)
   
   let rec call'0 (self:t_C'0) (args:()) (return'  (ret:bool))= {[@expl:call 'self' type invariant] inv'2 self}
     {[@expl:call 'args' type invariant] inv'3 args}
     {[@expl:call requires] [%#sops6] precondition'0 self args}
     any [ return' (result:bool)-> {inv'4 result} {[%#sops7] postcondition'0 self args result} (! return' {result}) ] 
-  
-  predicate resolve'0 (_1 : t_C'0)
   
   type t_B'0
   
@@ -69,41 +104,6 @@ module M_695__inversed_if [#"695.rs" 6 0 6 78]
     any [ return' (result:())-> {inv'3 result} {[%#sops8] postcondition_once'0 self args result} (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic
-  
-  predicate postcondition_mut'0 (self : t_C'0) (args : ()) (result_state : t_C'0) (result : bool)
-  
-  function fn_mut'0 (self : t_C'0) (args : ()) (res_state : t_C'0) (res : bool) : ()
-  
-  axiom fn_mut'0_spec : forall self : t_C'0, args : (), res_state : t_C'0, res : bool . [%#sops9] postcondition_mut'0 self args res_state res
-  = (self = res_state /\ postcondition'0 self args res)
-  
-  predicate postcondition_once'1 (self : t_C'0) (args : ()) (result : bool)
-  
-  function fn_once'0 (self : t_C'0) (args : ()) (res : bool) : ()
-  
-  axiom fn_once'0_spec : forall self : t_C'0, args : (), res : bool . [%#sops10] postcondition_once'1 self args res
-  = (resolve'0 self /\ postcondition'0 self args res)
-  
-  predicate unnest'0 (self : t_C'0) (_2 : t_C'0)
-  
-  function postcondition_mut_unnest'0 (self : t_C'0) (args : ()) (res_state : t_C'0) (res : bool) : ()
-  
-  axiom postcondition_mut_unnest'0_spec : forall self : t_C'0, args : (), res_state : t_C'0, res : bool . ([%#sops12] postcondition_mut'0 self args res_state res)
-   -> ([%#sops13] unnest'0 self res_state)
-  
-  function unnest_refl'0 (self : t_C'0) : ()
-  
-  axiom unnest_refl'0_spec : forall self : t_C'0 . [%#sops14] unnest'0 self self
-  
-  function unnest_trans'0 (self : t_C'0) (b : t_C'0) (c : t_C'0) : ()
-  
-  axiom unnest_trans'0_spec : forall self : t_C'0, b : t_C'0, c : t_C'0 . ([%#sops15] unnest'0 self b)
-   -> ([%#sops16] unnest'0 b c)  -> ([%#sops17] unnest'0 self c)
-  
-  function fn_mut_once'0 (self : t_C'0) (args : ()) (res : bool) : ()
-  
-  axiom fn_mut_once'0_spec : forall self : t_C'0, args : (), res : bool . [%#sops18] postcondition_once'1 self args res
-  = (exists res_state : t_C'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
   
   meta "compute_max_steps" 1000000
   
@@ -203,8 +203,45 @@ module M_695__valid [#"695.rs" 15 0 15 27]
   predicate resolve'0 (_1 : borrowed closure2'1) =
     resolve'1 _1
   
+  predicate postcondition_once'0 (self : closure2'1) (args : bool) (result : ()) =
+    [%#s6957] let (b) = args in b /\ (self.field_0'1).final = (2 : uint32)
+    \/ not b /\ (self.field_0'1).final = (1 : uint32)
+  
+  predicate resolve'5 (self : borrowed uint32) =
+    [%#sresolve12] self.final = self.current
+  
+  predicate resolve'4 (_1 : borrowed uint32) =
+    resolve'5 _1
+  
+  predicate resolve'2 (_1 : closure2'1) =
+    resolve'4 _1.field_0'1
+  
   predicate unnest'0 (self : closure2'1) (_2 : closure2'1) =
     (_2.field_0'1).final = (self.field_0'1).final
+  
+  predicate postcondition_mut'0 (self : closure2'1) (args : bool) (result_state : closure2'1) (result : ()) =
+    (let (b) = args in b /\ (result_state.field_0'1).current = (2 : uint32)
+    \/ not b /\ (result_state.field_0'1).current = (1 : uint32))
+    /\ unnest'0 self result_state
+  
+  function fn_mut_once'0 (self : closure2'1) (args : bool) (res : ()) : ()
+  
+  axiom fn_mut_once'0_spec : forall self : closure2'1, args : bool, res : () . [%#sops19] postcondition_once'0 self args res
+  = (exists res_state : closure2'1 . postcondition_mut'0 self args res_state res /\ resolve'2 res_state)
+  
+  function unnest_trans'0 (self : closure2'1) (b : closure2'1) (c : closure2'1) : ()
+  
+  axiom unnest_trans'0_spec : forall self : closure2'1, b : closure2'1, c : closure2'1 . ([%#sops16] unnest'0 self b)
+   -> ([%#sops17] unnest'0 b c)  -> ([%#sops18] unnest'0 self c)
+  
+  function unnest_refl'0 (self : closure2'1) : ()
+  
+  axiom unnest_refl'0_spec : forall self : closure2'1 . [%#sops15] unnest'0 self self
+  
+  function postcondition_mut_unnest'0 (self : closure2'1) (args : bool) (res_state : closure2'1) (res : ()) : ()
+  
+  axiom postcondition_mut_unnest'0_spec : forall self : closure2'1, args : bool, res_state : closure2'1, res : () . ([%#sops13] postcondition_mut'0 self args res_state res)
+   -> ([%#sops14] unnest'0 self res_state)
   
   let rec closure2'0 (_1:borrowed closure2'1) (b:bool) (return'  (ret:()))= (! bb0
     [ bb0 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ] 
@@ -236,12 +273,49 @@ module M_695__valid [#"695.rs" 15 0 15 27]
   predicate precondition'1 (self : closure2'1) (args : bool) =
     let (b) = args in true
   
+  predicate postcondition_once'1 (self : closure1'1) (args : ()) (result : bool) =
+    [%#s6954] let () = args in result = (self.field_0'0 > (7 : uint32))
+  
+  predicate resolve'3 (_1 : closure1'1) =
+    true
+  
+  predicate unnest'1 (self : closure1'1) (_2 : closure1'1) =
+    _2.field_0'0 = self.field_0'0
+  
+  predicate postcondition_mut'1 (self : closure1'1) (args : ()) (result_state : closure1'1) (result : bool) =
+    (let () = args in result = (result_state.field_0'0 > (7 : uint32))) /\ unnest'1 self result_state
+  
+  function fn_mut_once'1 (self : closure1'1) (args : ()) (res : bool) : ()
+  
+  axiom fn_mut_once'1_spec : forall self : closure1'1, args : (), res : bool . [%#sops19] postcondition_once'1 self args res
+  = (exists res_state : closure1'1 . postcondition_mut'1 self args res_state res /\ resolve'3 res_state)
+  
+  function unnest_trans'1 (self : closure1'1) (b : closure1'1) (c : closure1'1) : ()
+  
+  axiom unnest_trans'1_spec : forall self : closure1'1, b : closure1'1, c : closure1'1 . ([%#sops16] unnest'1 self b)
+   -> ([%#sops17] unnest'1 b c)  -> ([%#sops18] unnest'1 self c)
+  
+  function unnest_refl'1 (self : closure1'1) : ()
+  
+  axiom unnest_refl'1_spec : forall self : closure1'1 . [%#sops15] unnest'1 self self
+  
+  function postcondition_mut_unnest'1 (self : closure1'1) (args : ()) (res_state : closure1'1) (res : bool) : ()
+  
+  axiom postcondition_mut_unnest'1_spec : forall self : closure1'1, args : (), res_state : closure1'1, res : bool . ([%#sops13] postcondition_mut'1 self args res_state res)
+   -> ([%#sops14] unnest'1 self res_state)
+  
   predicate postcondition'0 (self : closure1'1) (args : ()) (result : bool) =
     [%#s6954] let () = args in result = (self.field_0'0 > (7 : uint32))
   
-  predicate postcondition_once'0 (self : closure2'1) (args : bool) (result : ()) =
-    [%#s6957] let (b) = args in b /\ (self.field_0'1).final = (2 : uint32)
-    \/ not b /\ (self.field_0'1).final = (1 : uint32)
+  function fn_once'0 (self : closure1'1) (args : ()) (res : bool) : ()
+  
+  axiom fn_once'0_spec : forall self : closure1'1, args : (), res : bool . [%#sops21] postcondition_once'1 self args res
+  = (resolve'3 self /\ postcondition'0 self args res)
+  
+  function fn_mut'0 (self : closure1'1) (args : ()) (res_state : closure1'1) (res : bool) : ()
+  
+  axiom fn_mut'0_spec : forall self : closure1'1, args : (), res_state : closure1'1, res : bool . [%#sops20] postcondition_mut'1 self args res_state res
+  = (self = res_state /\ postcondition'0 self args res)
   
   let rec inversed_if'0 (cond:closure1'1) (branch:closure2'1) (return'  (ret:()))= {[@expl:inversed_if 'cond' type invariant] [%#s6958] inv'0 cond}
     {[@expl:inversed_if 'branch' type invariant] [%#s6959] inv'1 branch}
@@ -251,80 +325,6 @@ module M_695__valid [#"695.rs" 15 0 15 27]
       /\ postcondition_once'0 branch (not b) ()}
       (! return' {result}) ]
     
-  
-  predicate postcondition_mut'0 (self : closure2'1) (args : bool) (result_state : closure2'1) (result : ()) =
-    (let (b) = args in b /\ (result_state.field_0'1).current = (2 : uint32)
-    \/ not b /\ (result_state.field_0'1).current = (1 : uint32))
-    /\ unnest'0 self result_state
-  
-  function postcondition_mut_unnest'0 (self : closure2'1) (args : bool) (res_state : closure2'1) (res : ()) : ()
-  
-  axiom postcondition_mut_unnest'0_spec : forall self : closure2'1, args : bool, res_state : closure2'1, res : () . ([%#sops13] postcondition_mut'0 self args res_state res)
-   -> ([%#sops14] unnest'0 self res_state)
-  
-  function unnest_refl'0 (self : closure2'1) : ()
-  
-  axiom unnest_refl'0_spec : forall self : closure2'1 . [%#sops15] unnest'0 self self
-  
-  function unnest_trans'0 (self : closure2'1) (b : closure2'1) (c : closure2'1) : ()
-  
-  axiom unnest_trans'0_spec : forall self : closure2'1, b : closure2'1, c : closure2'1 . ([%#sops16] unnest'0 self b)
-   -> ([%#sops17] unnest'0 b c)  -> ([%#sops18] unnest'0 self c)
-  
-  predicate resolve'5 (self : borrowed uint32) =
-    [%#sresolve12] self.final = self.current
-  
-  predicate resolve'4 (_1 : borrowed uint32) =
-    resolve'5 _1
-  
-  predicate resolve'2 (_1 : closure2'1) =
-    resolve'4 _1.field_0'1
-  
-  function fn_mut_once'0 (self : closure2'1) (args : bool) (res : ()) : ()
-  
-  axiom fn_mut_once'0_spec : forall self : closure2'1, args : bool, res : () . [%#sops19] postcondition_once'0 self args res
-  = (exists res_state : closure2'1 . postcondition_mut'0 self args res_state res /\ resolve'2 res_state)
-  
-  predicate unnest'1 (self : closure1'1) (_2 : closure1'1) =
-    _2.field_0'0 = self.field_0'0
-  
-  predicate postcondition_mut'1 (self : closure1'1) (args : ()) (result_state : closure1'1) (result : bool) =
-    (let () = args in result = (result_state.field_0'0 > (7 : uint32))) /\ unnest'1 self result_state
-  
-  function fn_mut'0 (self : closure1'1) (args : ()) (res_state : closure1'1) (res : bool) : ()
-  
-  axiom fn_mut'0_spec : forall self : closure1'1, args : (), res_state : closure1'1, res : bool . [%#sops20] postcondition_mut'1 self args res_state res
-  = (self = res_state /\ postcondition'0 self args res)
-  
-  predicate postcondition_once'1 (self : closure1'1) (args : ()) (result : bool) =
-    [%#s6954] let () = args in result = (self.field_0'0 > (7 : uint32))
-  
-  predicate resolve'3 (_1 : closure1'1) =
-    true
-  
-  function fn_once'0 (self : closure1'1) (args : ()) (res : bool) : ()
-  
-  axiom fn_once'0_spec : forall self : closure1'1, args : (), res : bool . [%#sops21] postcondition_once'1 self args res
-  = (resolve'3 self /\ postcondition'0 self args res)
-  
-  function postcondition_mut_unnest'1 (self : closure1'1) (args : ()) (res_state : closure1'1) (res : bool) : ()
-  
-  axiom postcondition_mut_unnest'1_spec : forall self : closure1'1, args : (), res_state : closure1'1, res : bool . ([%#sops13] postcondition_mut'1 self args res_state res)
-   -> ([%#sops14] unnest'1 self res_state)
-  
-  function unnest_refl'1 (self : closure1'1) : ()
-  
-  axiom unnest_refl'1_spec : forall self : closure1'1 . [%#sops15] unnest'1 self self
-  
-  function unnest_trans'1 (self : closure1'1) (b : closure1'1) (c : closure1'1) : ()
-  
-  axiom unnest_trans'1_spec : forall self : closure1'1, b : closure1'1, c : closure1'1 . ([%#sops16] unnest'1 self b)
-   -> ([%#sops17] unnest'1 b c)  -> ([%#sops18] unnest'1 self c)
-  
-  function fn_mut_once'1 (self : closure1'1) (args : ()) (res : bool) : ()
-  
-  axiom fn_mut_once'1_spec : forall self : closure1'1, args : (), res : bool . [%#sops19] postcondition_once'1 self args res
-  = (exists res_state : closure1'1 . postcondition_mut'1 self args res_state res /\ resolve'3 res_state)
   
   meta "compute_max_steps" 1000000
   

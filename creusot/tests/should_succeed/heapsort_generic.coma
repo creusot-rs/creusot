@@ -31,12 +31,6 @@ module M_heapsort_generic__heap_frag_max [#"heapsort_generic.rs" 25 0 25 58]
   
   use seq.Seq
   
-  function le_log'0 (self : t_T'0) (o : t_T'0) : bool
-  
-  predicate heap_frag'0 [#"heapsort_generic.rs" 15 0 15 66] (s : Seq.seq t_T'0) (start : int) (end' : int) =
-    [%#sheapsort_generic5] forall i : int . start <= parent'0 i /\ i < end'
-     -> le_log'0 (Seq.get s i) (Seq.get s (parent'0 i))
-  
   type t_Ordering'0  =
     | C_Less'0
     | C_Equal'0
@@ -44,21 +38,28 @@ module M_heapsort_generic__heap_frag_max [#"heapsort_generic.rs" 25 0 25 58]
   
   function cmp_log'0 (self : t_T'0) (_2 : t_T'0) : t_Ordering'0
   
-  function cmp_le_log'0 (x : t_T'0) (y : t_T'0) : ()
+  function eq_cmp'0 (x : t_T'0) (y : t_T'0) : ()
   
-  axiom cmp_le_log'0_spec : forall x : t_T'0, y : t_T'0 . [%#sord7] le_log'0 x y = (cmp_log'0 x y <> C_Greater'0)
+  axiom eq_cmp'0_spec : forall x : t_T'0, y : t_T'0 . [%#sord19] (x = y) = (cmp_log'0 x y = C_Equal'0)
   
-  function lt_log'0 (self : t_T'0) (o : t_T'0) : bool
+  function antisym2'0 (x : t_T'0) (y : t_T'0) : ()
   
-  function cmp_lt_log'0 (x : t_T'0) (y : t_T'0) : ()
+  axiom antisym2'0_spec : forall x : t_T'0, y : t_T'0 . ([%#sord17] cmp_log'0 x y = C_Greater'0)
+   -> ([%#sord18] cmp_log'0 y x = C_Less'0)
   
-  axiom cmp_lt_log'0_spec : forall x : t_T'0, y : t_T'0 . [%#sord8] lt_log'0 x y = (cmp_log'0 x y = C_Less'0)
+  function antisym1'0 (x : t_T'0) (y : t_T'0) : ()
   
-  function ge_log'0 (self : t_T'0) (o : t_T'0) : bool
+  axiom antisym1'0_spec : forall x : t_T'0, y : t_T'0 . ([%#sord15] cmp_log'0 x y = C_Less'0)
+   -> ([%#sord16] cmp_log'0 y x = C_Greater'0)
   
-  function cmp_ge_log'0 (x : t_T'0) (y : t_T'0) : ()
+  function trans'0 (x : t_T'0) (y : t_T'0) (z : t_T'0) (o : t_Ordering'0) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : t_T'0, y : t_T'0 . [%#sord9] ge_log'0 x y = (cmp_log'0 x y <> C_Less'0)
+  axiom trans'0_spec : forall x : t_T'0, y : t_T'0, z : t_T'0, o : t_Ordering'0 . ([%#sord12] cmp_log'0 x y = o)
+   -> ([%#sord13] cmp_log'0 y z = o)  -> ([%#sord14] cmp_log'0 x z = o)
+  
+  function refl'0 (x : t_T'0) : ()
+  
+  axiom refl'0_spec : forall x : t_T'0 . [%#sord11] cmp_log'0 x x = C_Equal'0
   
   function gt_log'0 (self : t_T'0) (o : t_T'0) : bool
   
@@ -66,28 +67,27 @@ module M_heapsort_generic__heap_frag_max [#"heapsort_generic.rs" 25 0 25 58]
   
   axiom cmp_gt_log'0_spec : forall x : t_T'0, y : t_T'0 . [%#sord10] gt_log'0 x y = (cmp_log'0 x y = C_Greater'0)
   
-  function refl'0 (x : t_T'0) : ()
+  function ge_log'0 (self : t_T'0) (o : t_T'0) : bool
   
-  axiom refl'0_spec : forall x : t_T'0 . [%#sord11] cmp_log'0 x x = C_Equal'0
+  function cmp_ge_log'0 (x : t_T'0) (y : t_T'0) : ()
   
-  function trans'0 (x : t_T'0) (y : t_T'0) (z : t_T'0) (o : t_Ordering'0) : ()
+  axiom cmp_ge_log'0_spec : forall x : t_T'0, y : t_T'0 . [%#sord9] ge_log'0 x y = (cmp_log'0 x y <> C_Less'0)
   
-  axiom trans'0_spec : forall x : t_T'0, y : t_T'0, z : t_T'0, o : t_Ordering'0 . ([%#sord12] cmp_log'0 x y = o)
-   -> ([%#sord13] cmp_log'0 y z = o)  -> ([%#sord14] cmp_log'0 x z = o)
+  function lt_log'0 (self : t_T'0) (o : t_T'0) : bool
   
-  function antisym1'0 (x : t_T'0) (y : t_T'0) : ()
+  function cmp_lt_log'0 (x : t_T'0) (y : t_T'0) : ()
   
-  axiom antisym1'0_spec : forall x : t_T'0, y : t_T'0 . ([%#sord15] cmp_log'0 x y = C_Less'0)
-   -> ([%#sord16] cmp_log'0 y x = C_Greater'0)
+  axiom cmp_lt_log'0_spec : forall x : t_T'0, y : t_T'0 . [%#sord8] lt_log'0 x y = (cmp_log'0 x y = C_Less'0)
   
-  function antisym2'0 (x : t_T'0) (y : t_T'0) : ()
+  function le_log'0 (self : t_T'0) (o : t_T'0) : bool
   
-  axiom antisym2'0_spec : forall x : t_T'0, y : t_T'0 . ([%#sord17] cmp_log'0 x y = C_Greater'0)
-   -> ([%#sord18] cmp_log'0 y x = C_Less'0)
+  function cmp_le_log'0 (x : t_T'0) (y : t_T'0) : ()
   
-  function eq_cmp'0 (x : t_T'0) (y : t_T'0) : ()
+  axiom cmp_le_log'0_spec : forall x : t_T'0, y : t_T'0 . [%#sord7] le_log'0 x y = (cmp_log'0 x y <> C_Greater'0)
   
-  axiom eq_cmp'0_spec : forall x : t_T'0, y : t_T'0 . [%#sord19] (x = y) = (cmp_log'0 x y = C_Equal'0)
+  predicate heap_frag'0 [#"heapsort_generic.rs" 15 0 15 66] (s : Seq.seq t_T'0) (start : int) (end' : int) =
+    [%#sheapsort_generic5] forall i : int . start <= parent'0 i /\ i < end'
+     -> le_log'0 (Seq.get s i) (Seq.get s (parent'0 i))
   
   constant s  : Seq.seq t_T'0
   
@@ -246,7 +246,64 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
   function deep_model'0 (self : borrowed (t_Vec'0)) : Seq.seq t_DeepModelTy'0 =
     [%#smodel24] deep_model'1 self.current
   
+  type t_Ordering'0  =
+    | C_Less'0
+    | C_Equal'0
+    | C_Greater'0
+  
+  function cmp_log'0 (self : t_DeepModelTy'0) (_2 : t_DeepModelTy'0) : t_Ordering'0
+  
+  function eq_cmp'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom eq_cmp'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord54] (x = y)
+  = (cmp_log'0 x y = C_Equal'0)
+  
+  function antisym2'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom antisym2'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . ([%#sord52] cmp_log'0 x y = C_Greater'0)
+   -> ([%#sord53] cmp_log'0 y x = C_Less'0)
+  
+  function antisym1'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom antisym1'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . ([%#sord50] cmp_log'0 x y = C_Less'0)
+   -> ([%#sord51] cmp_log'0 y x = C_Greater'0)
+  
+  function trans'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) (z : t_DeepModelTy'0) (o : t_Ordering'0) : ()
+  
+  axiom trans'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0, z : t_DeepModelTy'0, o : t_Ordering'0 . ([%#sord47] cmp_log'0 x y
+  = o)  -> ([%#sord48] cmp_log'0 y z = o)  -> ([%#sord49] cmp_log'0 x z = o)
+  
+  function refl'0 (x : t_DeepModelTy'0) : ()
+  
+  axiom refl'0_spec : forall x : t_DeepModelTy'0 . [%#sord46] cmp_log'0 x x = C_Equal'0
+  
+  function gt_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
+  
+  function cmp_gt_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom cmp_gt_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord45] gt_log'0 x y
+  = (cmp_log'0 x y = C_Greater'0)
+  
+  function ge_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
+  
+  function cmp_ge_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom cmp_ge_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord44] ge_log'0 x y
+  = (cmp_log'0 x y <> C_Less'0)
+  
+  function lt_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
+  
+  function cmp_lt_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom cmp_lt_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord43] lt_log'0 x y
+  = (cmp_log'0 x y = C_Less'0)
+  
   function le_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
+  
+  function cmp_le_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom cmp_le_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord42] le_log'0 x y
+  = (cmp_log'0 x y <> C_Greater'0)
   
   use prelude.prelude.Snapshot
   
@@ -335,8 +392,6 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
   function deep_model'2 (self : t_T'0) : t_DeepModelTy'0 =
     [%#smodel58] deep_model'3 self
   
-  function lt_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
-  
   let rec lt'0 (self:t_T'0) (other:t_T'0) (return'  (ret:bool))= {[@expl:lt 'self' type invariant] inv'6 self}
     {[@expl:lt 'other' type invariant] inv'6 other}
     any
@@ -413,61 +468,6 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
   predicate heap_frag'0 [#"heapsort_generic.rs" 15 0 15 66] (s : Seq.seq t_DeepModelTy'0) (start : int) (end' : int) =
     [%#sheapsort_generic38] forall i : int . start <= parent'0 i /\ i < end'
      -> le_log'0 (Seq.get s i) (Seq.get s (parent'0 i))
-  
-  type t_Ordering'0  =
-    | C_Less'0
-    | C_Equal'0
-    | C_Greater'0
-  
-  function cmp_log'0 (self : t_DeepModelTy'0) (_2 : t_DeepModelTy'0) : t_Ordering'0
-  
-  function cmp_le_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
-  
-  axiom cmp_le_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord42] le_log'0 x y
-  = (cmp_log'0 x y <> C_Greater'0)
-  
-  function cmp_lt_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
-  
-  axiom cmp_lt_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord43] lt_log'0 x y
-  = (cmp_log'0 x y = C_Less'0)
-  
-  function ge_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
-  
-  function cmp_ge_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
-  
-  axiom cmp_ge_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord44] ge_log'0 x y
-  = (cmp_log'0 x y <> C_Less'0)
-  
-  function gt_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
-  
-  function cmp_gt_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
-  
-  axiom cmp_gt_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord45] gt_log'0 x y
-  = (cmp_log'0 x y = C_Greater'0)
-  
-  function refl'0 (x : t_DeepModelTy'0) : ()
-  
-  axiom refl'0_spec : forall x : t_DeepModelTy'0 . [%#sord46] cmp_log'0 x x = C_Equal'0
-  
-  function trans'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) (z : t_DeepModelTy'0) (o : t_Ordering'0) : ()
-  
-  axiom trans'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0, z : t_DeepModelTy'0, o : t_Ordering'0 . ([%#sord47] cmp_log'0 x y
-  = o)  -> ([%#sord48] cmp_log'0 y z = o)  -> ([%#sord49] cmp_log'0 x z = o)
-  
-  function antisym1'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
-  
-  axiom antisym1'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . ([%#sord50] cmp_log'0 x y = C_Less'0)
-   -> ([%#sord51] cmp_log'0 y x = C_Greater'0)
-  
-  function antisym2'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
-  
-  axiom antisym2'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . ([%#sord52] cmp_log'0 x y = C_Greater'0)
-   -> ([%#sord53] cmp_log'0 y x = C_Less'0)
-  
-  function eq_cmp'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
-  
-  axiom eq_cmp'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord54] (x = y)
-  = (cmp_log'0 x y = C_Equal'0)
   
   meta "compute_max_steps" 1000000
   
@@ -802,7 +802,64 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
   function parent'0 [#"heapsort_generic.rs" 10 0 10 24] (i : int) : int =
     [%#sheapsort_generic53] div (i + 1) 2 - 1
   
+  type t_Ordering'0  =
+    | C_Less'0
+    | C_Equal'0
+    | C_Greater'0
+  
+  function cmp_log'0 (self : t_DeepModelTy'0) (_2 : t_DeepModelTy'0) : t_Ordering'0
+  
+  function eq_cmp'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom eq_cmp'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord67] (x = y)
+  = (cmp_log'0 x y = C_Equal'0)
+  
+  function antisym2'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom antisym2'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . ([%#sord65] cmp_log'0 x y = C_Greater'0)
+   -> ([%#sord66] cmp_log'0 y x = C_Less'0)
+  
+  function antisym1'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom antisym1'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . ([%#sord63] cmp_log'0 x y = C_Less'0)
+   -> ([%#sord64] cmp_log'0 y x = C_Greater'0)
+  
+  function trans'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) (z : t_DeepModelTy'0) (o : t_Ordering'0) : ()
+  
+  axiom trans'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0, z : t_DeepModelTy'0, o : t_Ordering'0 . ([%#sord60] cmp_log'0 x y
+  = o)  -> ([%#sord61] cmp_log'0 y z = o)  -> ([%#sord62] cmp_log'0 x z = o)
+  
+  function refl'0 (x : t_DeepModelTy'0) : ()
+  
+  axiom refl'0_spec : forall x : t_DeepModelTy'0 . [%#sord59] cmp_log'0 x x = C_Equal'0
+  
+  function gt_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
+  
+  function cmp_gt_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom cmp_gt_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord58] gt_log'0 x y
+  = (cmp_log'0 x y = C_Greater'0)
+  
+  function ge_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
+  
+  function cmp_ge_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom cmp_ge_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord57] ge_log'0 x y
+  = (cmp_log'0 x y <> C_Less'0)
+  
+  function lt_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
+  
+  function cmp_lt_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom cmp_lt_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord56] lt_log'0 x y
+  = (cmp_log'0 x y = C_Less'0)
+  
   function le_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
+  
+  function cmp_le_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
+  
+  axiom cmp_le_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord55] le_log'0 x y
+  = (cmp_log'0 x y <> C_Greater'0)
   
   predicate heap_frag'0 [#"heapsort_generic.rs" 15 0 15 66] (s : Seq.seq t_DeepModelTy'0) (start : int) (end' : int) =
     [%#sheapsort_generic26] forall i : int . start <= parent'0 i /\ i < end'
@@ -922,63 +979,6 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
   
   predicate sorted'0 [#"heapsort_generic.rs" 85 0 85 41] (s : Seq.seq t_DeepModelTy'0) =
     [%#sheapsort_generic50] sorted_range'0 s 0 (Seq.length s)
-  
-  type t_Ordering'0  =
-    | C_Less'0
-    | C_Equal'0
-    | C_Greater'0
-  
-  function cmp_log'0 (self : t_DeepModelTy'0) (_2 : t_DeepModelTy'0) : t_Ordering'0
-  
-  function cmp_le_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
-  
-  axiom cmp_le_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord55] le_log'0 x y
-  = (cmp_log'0 x y <> C_Greater'0)
-  
-  function lt_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
-  
-  function cmp_lt_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
-  
-  axiom cmp_lt_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord56] lt_log'0 x y
-  = (cmp_log'0 x y = C_Less'0)
-  
-  function ge_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
-  
-  function cmp_ge_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
-  
-  axiom cmp_ge_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord57] ge_log'0 x y
-  = (cmp_log'0 x y <> C_Less'0)
-  
-  function gt_log'0 (self : t_DeepModelTy'0) (o : t_DeepModelTy'0) : bool
-  
-  function cmp_gt_log'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
-  
-  axiom cmp_gt_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord58] gt_log'0 x y
-  = (cmp_log'0 x y = C_Greater'0)
-  
-  function refl'0 (x : t_DeepModelTy'0) : ()
-  
-  axiom refl'0_spec : forall x : t_DeepModelTy'0 . [%#sord59] cmp_log'0 x x = C_Equal'0
-  
-  function trans'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) (z : t_DeepModelTy'0) (o : t_Ordering'0) : ()
-  
-  axiom trans'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0, z : t_DeepModelTy'0, o : t_Ordering'0 . ([%#sord60] cmp_log'0 x y
-  = o)  -> ([%#sord61] cmp_log'0 y z = o)  -> ([%#sord62] cmp_log'0 x z = o)
-  
-  function antisym1'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
-  
-  axiom antisym1'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . ([%#sord63] cmp_log'0 x y = C_Less'0)
-   -> ([%#sord64] cmp_log'0 y x = C_Greater'0)
-  
-  function antisym2'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
-  
-  axiom antisym2'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . ([%#sord65] cmp_log'0 x y = C_Greater'0)
-   -> ([%#sord66] cmp_log'0 y x = C_Less'0)
-  
-  function eq_cmp'0 (x : t_DeepModelTy'0) (y : t_DeepModelTy'0) : ()
-  
-  axiom eq_cmp'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord67] (x = y)
-  = (cmp_log'0 x y = C_Equal'0)
   
   meta "compute_max_steps" 1000000
   

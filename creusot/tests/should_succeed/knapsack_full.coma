@@ -681,6 +681,8 @@ module M_knapsack_full__knapsack01_dyn [#"knapsack_full.rs" 86 0 86 91]
   
   use prelude.prelude.Snapshot
   
+  use seq.Seq
+  
   function deep_model'0 (self : usize) : int =
     [%#snum90] UIntSize.to_int self
   
@@ -691,6 +693,20 @@ module M_knapsack_full__knapsack01_dyn [#"knapsack_full.rs" 86 0 86 91]
     /\ Seq.length visited = deep_model'0 o.t_Range__start'0 - deep_model'0 self.t_Range__start'0
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'0 (Seq.get visited i) = deep_model'0 self.t_Range__start'0 + i)
+  
+  function produces_trans'0 (a : t_Range'0) (ab : Seq.seq usize) (b : t_Range'0) (bc : Seq.seq usize) (c : t_Range'0) : ()
+    
+  
+  axiom produces_trans'0_spec : forall a : t_Range'0, ab : Seq.seq usize, b : t_Range'0, bc : Seq.seq usize, c : t_Range'0 . ([%#srange84] inv'0 a)
+   -> ([%#srange85] inv'0 b)
+   -> ([%#srange86] inv'0 c)
+   -> ([%#srange87] produces'0 a ab b)
+   -> ([%#srange88] produces'0 b bc c)  -> ([%#srange89] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 (self : t_Range'0) : ()
+  
+  axiom produces_refl'0_spec : forall self : t_Range'0 . ([%#srange82] inv'0 self)
+   -> ([%#srange83] produces'0 self (Seq.empty  : Seq.seq usize) self)
   
   predicate inv'1 (_1 : Seq.seq usize)
   
@@ -734,8 +750,6 @@ module M_knapsack_full__knapsack01_dyn [#"knapsack_full.rs" 86 0 86 91]
     [ good (field_0:usize)-> {C_Some'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0 : usize [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
     
-  
-  use seq.Seq
   
   predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq (t_Item'0)) =
     [%#sslice93] UIntSize.to_int self < Seq.length seq
@@ -815,6 +829,19 @@ module M_knapsack_full__knapsack01_dyn [#"knapsack_full.rs" 86 0 86 91]
     /\ (is_empty_log'0 o \/ end_log'0 self = end_log'0 o)
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'0 (Seq.get visited i) = deep_model'0 (start_log'0 self) + i)
+  
+  function produces_trans'1 (a : t_RangeInclusive'0) (ab : Seq.seq usize) (b : t_RangeInclusive'0) (bc : Seq.seq usize) (c : t_RangeInclusive'0) : ()
+    
+   =
+    [%#srange101] ()
+  
+  axiom produces_trans'1_spec : forall a : t_RangeInclusive'0, ab : Seq.seq usize, b : t_RangeInclusive'0, bc : Seq.seq usize, c : t_RangeInclusive'0 . ([%#srange98] produces'1 a ab b)
+   -> ([%#srange99] produces'1 b bc c)  -> ([%#srange100] produces'1 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'1 (self : t_RangeInclusive'0) : () =
+    [%#srange97] ()
+  
+  axiom produces_refl'1_spec : forall self : t_RangeInclusive'0 . [%#srange96] produces'1 self (Seq.empty  : Seq.seq usize) self
   
   predicate inv'11 (_1 : borrowed (t_RangeInclusive'0))
   
@@ -1027,33 +1054,6 @@ module M_knapsack_full__knapsack01_dyn [#"knapsack_full.rs" 86 0 86 91]
   
   function index_logic'2 [@inline:trivial] (self : t_Vec'3) (ix : int) : t_Item'0 =
     [%#sops45] Seq.get (view'4 self) ix
-  
-  function produces_refl'0 (self : t_Range'0) : ()
-  
-  axiom produces_refl'0_spec : forall self : t_Range'0 . ([%#srange82] inv'0 self)
-   -> ([%#srange83] produces'0 self (Seq.empty  : Seq.seq usize) self)
-  
-  function produces_trans'0 (a : t_Range'0) (ab : Seq.seq usize) (b : t_Range'0) (bc : Seq.seq usize) (c : t_Range'0) : ()
-    
-  
-  axiom produces_trans'0_spec : forall a : t_Range'0, ab : Seq.seq usize, b : t_Range'0, bc : Seq.seq usize, c : t_Range'0 . ([%#srange84] inv'0 a)
-   -> ([%#srange85] inv'0 b)
-   -> ([%#srange86] inv'0 c)
-   -> ([%#srange87] produces'0 a ab b)
-   -> ([%#srange88] produces'0 b bc c)  -> ([%#srange89] produces'0 a (Seq.(++) ab bc) c)
-  
-  function produces_refl'1 (self : t_RangeInclusive'0) : () =
-    [%#srange97] ()
-  
-  axiom produces_refl'1_spec : forall self : t_RangeInclusive'0 . [%#srange96] produces'1 self (Seq.empty  : Seq.seq usize) self
-  
-  function produces_trans'1 (a : t_RangeInclusive'0) (ab : Seq.seq usize) (b : t_RangeInclusive'0) (bc : Seq.seq usize) (c : t_RangeInclusive'0) : ()
-    
-   =
-    [%#srange101] ()
-  
-  axiom produces_trans'1_spec : forall a : t_RangeInclusive'0, ab : Seq.seq usize, b : t_RangeInclusive'0, bc : Seq.seq usize, c : t_RangeInclusive'0 . ([%#srange98] produces'1 a ab b)
-   -> ([%#srange99] produces'1 b bc c)  -> ([%#srange100] produces'1 a (Seq.(++) ab bc) c)
   
   meta "compute_max_steps" 1000000
   

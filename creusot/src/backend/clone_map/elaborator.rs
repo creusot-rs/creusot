@@ -415,9 +415,9 @@ fn expand_laws<'tcx>(
         return;
     }
 
-    let mut namer = elab.namer(elab.self_key);
     for law in ctx.laws(item_container) {
-        namer.insert(Dependency::Item(*law, item_subst));
+        // We add a weak dep from `dep` to make sure it appears close to the triggering item
+        elab.expansion_queue.push_back((dep, Strength::Weak, Dependency::Item(*law, item_subst)));
     }
 }
 

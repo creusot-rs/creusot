@@ -733,6 +733,8 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
   
   use prelude.prelude.Snapshot
   
+  use seq.Seq
+  
   function index_logic'2 [@inline:trivial] (self : slice t_T'0) (ix : int) : t_T'0 =
     [%#sops54] Seq.get (view'5 self) ix
   
@@ -743,10 +745,20 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
   && ([%#sslice47] forall i : int . 0 <= i /\ i < Seq.length (to_ref_seq'0 self)
    -> Seq.get (to_ref_seq'0 self) i = index_logic'2 self i)
   
-  use seq.Seq
-  
   predicate produces'0 (self : t_Iter'0) (visited : Seq.seq t_T'0) (tl : t_Iter'0) =
     [%#sslice28] to_ref_seq'0 (view'2 self) = Seq.(++) visited (to_ref_seq'0 (view'2 tl))
+  
+  function produces_trans'0 (a : t_Iter'0) (ab : Seq.seq t_T'0) (b : t_Iter'0) (bc : Seq.seq t_T'0) (c : t_Iter'0) : ()
+   =
+    [%#sslice45] ()
+  
+  axiom produces_trans'0_spec : forall a : t_Iter'0, ab : Seq.seq t_T'0, b : t_Iter'0, bc : Seq.seq t_T'0, c : t_Iter'0 . ([%#sslice42] produces'0 a ab b)
+   -> ([%#sslice43] produces'0 b bc c)  -> ([%#sslice44] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 (self : t_Iter'0) : () =
+    [%#sslice41] ()
+  
+  axiom produces_refl'0_spec : forall self : t_Iter'0 . [%#sslice40] produces'0 self (Seq.empty  : Seq.seq t_T'0) self
   
   use seq.Seq
   
@@ -864,18 +876,6 @@ module M_hillel__insert_unique [#"hillel.rs" 80 0 80 62]
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
-  
-  function produces_refl'0 (self : t_Iter'0) : () =
-    [%#sslice41] ()
-  
-  axiom produces_refl'0_spec : forall self : t_Iter'0 . [%#sslice40] produces'0 self (Seq.empty  : Seq.seq t_T'0) self
-  
-  function produces_trans'0 (a : t_Iter'0) (ab : Seq.seq t_T'0) (b : t_Iter'0) (bc : Seq.seq t_T'0) (c : t_Iter'0) : ()
-   =
-    [%#sslice45] ()
-  
-  axiom produces_trans'0_spec : forall a : t_Iter'0, ab : Seq.seq t_T'0, b : t_Iter'0, bc : Seq.seq t_T'0, c : t_Iter'0 . ([%#sslice42] produces'0 a ab b)
-   -> ([%#sslice43] produces'0 b bc c)  -> ([%#sslice44] produces'0 a (Seq.(++) ab bc) c)
   
   meta "compute_max_steps" 1000000
   
@@ -1245,6 +1245,8 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
   
   use prelude.prelude.Snapshot
   
+  use seq.Seq
+  
   function deep_model'4 (self : usize) : int =
     [%#snum53] UIntSize.to_int self
   
@@ -1257,6 +1259,20 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
     /\ Seq.length visited = deep_model'4 o.t_Range__start'0 - deep_model'4 self.t_Range__start'0
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'4 (Seq.get visited i) = deep_model'4 self.t_Range__start'0 + i)
+  
+  function produces_trans'0 (a : t_Range'0) (ab : Seq.seq usize) (b : t_Range'0) (bc : Seq.seq usize) (c : t_Range'0) : ()
+    
+  
+  axiom produces_trans'0_spec : forall a : t_Range'0, ab : Seq.seq usize, b : t_Range'0, bc : Seq.seq usize, c : t_Range'0 . ([%#srange47] inv'1 a)
+   -> ([%#srange48] inv'1 b)
+   -> ([%#srange49] inv'1 c)
+   -> ([%#srange50] produces'0 a ab b)
+   -> ([%#srange51] produces'0 b bc c)  -> ([%#srange52] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 (self : t_Range'0) : ()
+  
+  axiom produces_refl'0_spec : forall self : t_Range'0 . ([%#srange45] inv'1 self)
+   -> ([%#srange46] produces'0 self (Seq.empty  : Seq.seq usize) self)
   
   predicate inv'2 (_1 : Seq.seq usize)
   
@@ -1301,8 +1317,6 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
     | bad -> {forall field_0 : usize [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
     
   
-  use seq.Seq
-  
   predicate invariant'1 (self : borrowed (t_Vec'0)) =
     [%#sinvariant61] inv'0 self.current /\ inv'0 self.final
   
@@ -1345,20 +1359,6 @@ module M_hillel__unique [#"hillel.rs" 102 0 102 56]
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
-  
-  function produces_refl'0 (self : t_Range'0) : ()
-  
-  axiom produces_refl'0_spec : forall self : t_Range'0 . ([%#srange45] inv'1 self)
-   -> ([%#srange46] produces'0 self (Seq.empty  : Seq.seq usize) self)
-  
-  function produces_trans'0 (a : t_Range'0) (ab : Seq.seq usize) (b : t_Range'0) (bc : Seq.seq usize) (c : t_Range'0) : ()
-    
-  
-  axiom produces_trans'0_spec : forall a : t_Range'0, ab : Seq.seq usize, b : t_Range'0, bc : Seq.seq usize, c : t_Range'0 . ([%#srange47] inv'1 a)
-   -> ([%#srange48] inv'1 b)
-   -> ([%#srange49] inv'1 c)
-   -> ([%#srange50] produces'0 a ab b)
-   -> ([%#srange51] produces'0 b bc c)  -> ([%#srange52] produces'0 a (Seq.(++) ab bc) c)
   
   meta "compute_max_steps" 1000000
   
@@ -1812,6 +1812,8 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   
   use seq.Seq
   
+  use seq.Seq
+  
   function index_logic'0 [@inline:trivial] (self : slice uint32) (ix : int) : uint32 =
     [%#sops71] Seq.get (view'1 self) ix
   
@@ -1822,10 +1824,21 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   && ([%#sslice51] forall i : int . 0 <= i /\ i < Seq.length (to_ref_seq'0 self)
    -> Seq.get (to_ref_seq'0 self) i = index_logic'0 self i)
   
-  use seq.Seq
-  
   predicate produces'0 (self : t_Iter'0) (visited : Seq.seq uint32) (tl : t_Iter'0) =
     [%#sslice31] to_ref_seq'0 (view'2 self) = Seq.(++) visited (to_ref_seq'0 (view'2 tl))
+  
+  function produces_trans'0 (a : t_Iter'0) (ab : Seq.seq uint32) (b : t_Iter'0) (bc : Seq.seq uint32) (c : t_Iter'0) : ()
+    
+   =
+    [%#sslice49] ()
+  
+  axiom produces_trans'0_spec : forall a : t_Iter'0, ab : Seq.seq uint32, b : t_Iter'0, bc : Seq.seq uint32, c : t_Iter'0 . ([%#sslice46] produces'0 a ab b)
+   -> ([%#sslice47] produces'0 b bc c)  -> ([%#sslice48] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 (self : t_Iter'0) : () =
+    [%#sslice45] ()
+  
+  axiom produces_refl'0_spec : forall self : t_Iter'0 . [%#sslice44] produces'0 self (Seq.empty  : Seq.seq uint32) self
   
   predicate inv'0 (_1 : t_Iter'0)
   
@@ -1932,6 +1945,8 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   
   use prelude.prelude.Snapshot
   
+  use seq.Seq
+  
   function deep_model'0 (self : usize) : int =
     [%#snum69] UIntSize.to_int self
   
@@ -1944,6 +1959,20 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
     /\ Seq.length visited = deep_model'0 o.t_Range__start'0 - deep_model'0 self.t_Range__start'0
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'0 (Seq.get visited i) = deep_model'0 self.t_Range__start'0 + i)
+  
+  function produces_trans'1 (a : t_Range'0) (ab : Seq.seq usize) (b : t_Range'0) (bc : Seq.seq usize) (c : t_Range'0) : ()
+    
+  
+  axiom produces_trans'1_spec : forall a : t_Range'0, ab : Seq.seq usize, b : t_Range'0, bc : Seq.seq usize, c : t_Range'0 . ([%#srange63] inv'2 a)
+   -> ([%#srange64] inv'2 b)
+   -> ([%#srange65] inv'2 c)
+   -> ([%#srange66] produces'1 a ab b)
+   -> ([%#srange67] produces'1 b bc c)  -> ([%#srange68] produces'1 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'1 (self : t_Range'0) : ()
+  
+  axiom produces_refl'1_spec : forall self : t_Range'0 . ([%#srange61] inv'2 self)
+   -> ([%#srange62] produces'1 self (Seq.empty  : Seq.seq usize) self)
   
   predicate inv'3 (_1 : Seq.seq usize)
   
@@ -1988,8 +2017,6 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
     | bad -> {forall field_0 : usize [C_Some'1 field_0 : t_Option'1] . C_Some'1 field_0 <> input} (! {false} any) ]
     
   
-  use seq.Seq
-  
   let rec abs_diff'0 (self:uint32) (other:uint32) (return'  (ret:uint32))= any
     [ return' (result:uint32)-> {[%#snum39] UInt32.to_int result
       = abs_diff'1 (UInt32.to_int self) (UInt32.to_int other)}
@@ -2005,33 +2032,6 @@ module M_hillel__fulcrum [#"hillel.rs" 159 0 159 30]
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
-  
-  function produces_refl'0 (self : t_Iter'0) : () =
-    [%#sslice45] ()
-  
-  axiom produces_refl'0_spec : forall self : t_Iter'0 . [%#sslice44] produces'0 self (Seq.empty  : Seq.seq uint32) self
-  
-  function produces_trans'0 (a : t_Iter'0) (ab : Seq.seq uint32) (b : t_Iter'0) (bc : Seq.seq uint32) (c : t_Iter'0) : ()
-    
-   =
-    [%#sslice49] ()
-  
-  axiom produces_trans'0_spec : forall a : t_Iter'0, ab : Seq.seq uint32, b : t_Iter'0, bc : Seq.seq uint32, c : t_Iter'0 . ([%#sslice46] produces'0 a ab b)
-   -> ([%#sslice47] produces'0 b bc c)  -> ([%#sslice48] produces'0 a (Seq.(++) ab bc) c)
-  
-  function produces_refl'1 (self : t_Range'0) : ()
-  
-  axiom produces_refl'1_spec : forall self : t_Range'0 . ([%#srange61] inv'2 self)
-   -> ([%#srange62] produces'1 self (Seq.empty  : Seq.seq usize) self)
-  
-  function produces_trans'1 (a : t_Range'0) (ab : Seq.seq usize) (b : t_Range'0) (bc : Seq.seq usize) (c : t_Range'0) : ()
-    
-  
-  axiom produces_trans'1_spec : forall a : t_Range'0, ab : Seq.seq usize, b : t_Range'0, bc : Seq.seq usize, c : t_Range'0 . ([%#srange63] inv'2 a)
-   -> ([%#srange64] inv'2 b)
-   -> ([%#srange65] inv'2 c)
-   -> ([%#srange66] produces'1 a ab b)
-   -> ([%#srange67] produces'1 b bc c)  -> ([%#srange68] produces'1 a (Seq.(++) ab bc) c)
   
   meta "compute_max_steps" 1000000
   

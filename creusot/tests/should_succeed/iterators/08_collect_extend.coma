@@ -148,6 +148,19 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 27 0 27 66]
   
   predicate produces'0 (self : t_I'0) (visited : Seq.seq t_T'0) (o : t_I'0)
   
+  function produces_trans'0 (a : t_I'0) (ab : Seq.seq t_T'0) (b : t_I'0) (bc : Seq.seq t_T'0) (c : t_I'0) : ()
+  
+  axiom produces_trans'0_spec : forall a : t_I'0, ab : Seq.seq t_T'0, b : t_I'0, bc : Seq.seq t_T'0, c : t_I'0 . ([%#siter21] inv'1 a)
+   -> ([%#siter22] inv'1 b)
+   -> ([%#siter23] inv'1 c)
+   -> ([%#siter24] produces'0 a ab b)
+   -> ([%#siter25] produces'0 b bc c)  -> ([%#siter26] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 (self : t_I'0) : ()
+  
+  axiom produces_refl'0_spec : forall self : t_I'0 . ([%#siter19] inv'1 self)
+   -> ([%#siter20] produces'0 self (Seq.empty  : Seq.seq t_T'0) self)
+  
   predicate invariant'2 (self : borrowed t_I'0) =
     [%#sinvariant28] inv'1 self.current /\ inv'1 self.final
   
@@ -211,19 +224,6 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 27 0 27 66]
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
-  
-  function produces_refl'0 (self : t_I'0) : ()
-  
-  axiom produces_refl'0_spec : forall self : t_I'0 . ([%#siter19] inv'1 self)
-   -> ([%#siter20] produces'0 self (Seq.empty  : Seq.seq t_T'0) self)
-  
-  function produces_trans'0 (a : t_I'0) (ab : Seq.seq t_T'0) (b : t_I'0) (bc : Seq.seq t_T'0) (c : t_I'0) : ()
-  
-  axiom produces_trans'0_spec : forall a : t_I'0, ab : Seq.seq t_T'0, b : t_I'0, bc : Seq.seq t_T'0, c : t_I'0 . ([%#siter21] inv'1 a)
-   -> ([%#siter22] inv'1 b)
-   -> ([%#siter23] inv'1 c)
-   -> ([%#siter24] produces'0 a ab b)
-   -> ([%#siter25] produces'0 b bc c)  -> ([%#siter26] produces'0 a (Seq.(++) ab bc) c)
   
   meta "compute_max_steps" 1000000
   
@@ -454,7 +454,22 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 46 0 46 52]
   
   use prelude.prelude.Snapshot
   
+  use seq.Seq
+  
   predicate produces'0 (self : t_I'0) (visited : Seq.seq t_Item'0) (o : t_I'0)
+  
+  function produces_trans'0 (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
+  
+  axiom produces_trans'0_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#siter19] inv'1 a)
+   -> ([%#siter20] inv'1 b)
+   -> ([%#siter21] inv'1 c)
+   -> ([%#siter22] produces'0 a ab b)
+   -> ([%#siter23] produces'0 b bc c)  -> ([%#siter24] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 (self : t_I'0) : ()
+  
+  axiom produces_refl'0_spec : forall self : t_I'0 . ([%#siter17] inv'1 self)
+   -> ([%#siter18] produces'0 self (Seq.empty  : Seq.seq t_Item'0) self)
   
   use prelude.prelude.Borrow
   
@@ -502,8 +517,6 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 46 0 46 52]
     | bad -> {forall field_0 : t_Item'0 [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
     
   
-  use seq.Seq
-  
   predicate invariant'3 (self : borrowed (t_Vec'0)) =
     [%#sinvariant29] inv'0 self.current /\ inv'0 self.final
   
@@ -527,19 +540,6 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 46 0 46 52]
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
-  
-  function produces_refl'0 (self : t_I'0) : ()
-  
-  axiom produces_refl'0_spec : forall self : t_I'0 . ([%#siter17] inv'1 self)
-   -> ([%#siter18] produces'0 self (Seq.empty  : Seq.seq t_Item'0) self)
-  
-  function produces_trans'0 (a : t_I'0) (ab : Seq.seq t_Item'0) (b : t_I'0) (bc : Seq.seq t_Item'0) (c : t_I'0) : ()
-  
-  axiom produces_trans'0_spec : forall a : t_I'0, ab : Seq.seq t_Item'0, b : t_I'0, bc : Seq.seq t_Item'0, c : t_I'0 . ([%#siter19] inv'1 a)
-   -> ([%#siter20] inv'1 b)
-   -> ([%#siter21] inv'1 c)
-   -> ([%#siter22] produces'0 a ab b)
-   -> ([%#siter23] produces'0 b bc c)  -> ([%#siter24] produces'0 a (Seq.(++) ab bc) c)
   
   meta "compute_max_steps" 1000000
   
@@ -742,21 +742,34 @@ module M_08_collect_extend__extend_index [#"08_collect_extend.rs" 57 0 57 51]
   
   axiom inv_axiom'4 [@rewrite] : forall x : Seq.seq uint32 [inv'4 x] . inv'4 x = true
   
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate produces'0 (self : t_IntoIter'0) (visited : Seq.seq uint32) (rhs : t_IntoIter'0) =
+    [%#svec12] view'4 self = Seq.(++) visited (view'4 rhs)
+  
+  function produces_trans'0 (a : t_IntoIter'0) (ab : Seq.seq uint32) (b : t_IntoIter'0) (bc : Seq.seq uint32) (c : t_IntoIter'0) : ()
+    
+   =
+    [%#svec21] ()
+  
+  axiom produces_trans'0_spec : forall a : t_IntoIter'0, ab : Seq.seq uint32, b : t_IntoIter'0, bc : Seq.seq uint32, c : t_IntoIter'0 . ([%#svec18] produces'0 a ab b)
+   -> ([%#svec19] produces'0 b bc c)  -> ([%#svec20] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 (self : t_IntoIter'0) : () =
+    [%#svec17] ()
+  
+  axiom produces_refl'0_spec : forall self : t_IntoIter'0 . [%#svec16] produces'0 self (Seq.empty  : Seq.seq uint32) self
+  
   predicate resolve'2 (self : borrowed (t_IntoIter'0)) =
     [%#sresolve14] self.final = self.current
   
   function view'5 (self : borrowed (t_IntoIter'0)) : Seq.seq uint32 =
     [%#smodel13] view'4 self.current
   
-  use seq.Seq
-  
   predicate completed'0 (self : borrowed (t_IntoIter'0)) =
     [%#svec11] resolve'2 self /\ view'5 self = (Seq.empty  : Seq.seq uint32)
-  
-  use seq.Seq
-  
-  predicate produces'0 (self : t_IntoIter'0) (visited : Seq.seq uint32) (rhs : t_IntoIter'0) =
-    [%#svec12] view'4 self = Seq.(++) visited (view'4 rhs)
   
   function view'2 (self : borrowed (t_Vec'0)) : Seq.seq uint32 =
     [%#smodel13] view'0 self.current
@@ -789,19 +802,6 @@ module M_08_collect_extend__extend_index [#"08_collect_extend.rs" 57 0 57 51]
   use seq.Seq
   
   use prelude.prelude.Intrinsic
-  
-  function produces_refl'0 (self : t_IntoIter'0) : () =
-    [%#svec17] ()
-  
-  axiom produces_refl'0_spec : forall self : t_IntoIter'0 . [%#svec16] produces'0 self (Seq.empty  : Seq.seq uint32) self
-  
-  function produces_trans'0 (a : t_IntoIter'0) (ab : Seq.seq uint32) (b : t_IntoIter'0) (bc : Seq.seq uint32) (c : t_IntoIter'0) : ()
-    
-   =
-    [%#svec21] ()
-  
-  axiom produces_trans'0_spec : forall a : t_IntoIter'0, ab : Seq.seq uint32, b : t_IntoIter'0, bc : Seq.seq uint32, c : t_IntoIter'0 . ([%#svec18] produces'0 a ab b)
-   -> ([%#svec19] produces'0 b bc c)  -> ([%#svec20] produces'0 a (Seq.(++) ab bc) c)
   
   meta "compute_max_steps" 1000000
   
@@ -901,9 +901,26 @@ module M_08_collect_extend__collect_example [#"08_collect_extend.rs" 67 0 67 56]
   
   axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq uint32 [inv'3 x] . inv'3 x = true
   
-  predicate completed'0 (self : borrowed t_I'0)
+  use seq.Seq
+  
+  use seq.Seq
   
   predicate produces'0 (self : t_I'0) (visited : Seq.seq uint32) (o : t_I'0)
+  
+  function produces_trans'0 (a : t_I'0) (ab : Seq.seq uint32) (b : t_I'0) (bc : Seq.seq uint32) (c : t_I'0) : ()
+  
+  axiom produces_trans'0_spec : forall a : t_I'0, ab : Seq.seq uint32, b : t_I'0, bc : Seq.seq uint32, c : t_I'0 . ([%#siter10] inv'0 a)
+   -> ([%#siter11] inv'0 b)
+   -> ([%#siter12] inv'0 c)
+   -> ([%#siter13] produces'0 a ab b)
+   -> ([%#siter14] produces'0 b bc c)  -> ([%#siter15] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 (self : t_I'0) : ()
+  
+  axiom produces_refl'0_spec : forall self : t_I'0 . ([%#siter8] inv'0 self)
+   -> ([%#siter9] produces'0 self (Seq.empty  : Seq.seq uint32) self)
+  
+  predicate completed'0 (self : borrowed t_I'0)
   
   use seq.Seq
   
@@ -933,23 +950,6 @@ module M_08_collect_extend__collect_example [#"08_collect_extend.rs" 67 0 67 56]
   use prelude.prelude.UInt32
   
   use prelude.prelude.Intrinsic
-  
-  use seq.Seq
-  
-  function produces_refl'0 (self : t_I'0) : ()
-  
-  axiom produces_refl'0_spec : forall self : t_I'0 . ([%#siter8] inv'0 self)
-   -> ([%#siter9] produces'0 self (Seq.empty  : Seq.seq uint32) self)
-  
-  use seq.Seq
-  
-  function produces_trans'0 (a : t_I'0) (ab : Seq.seq uint32) (b : t_I'0) (bc : Seq.seq uint32) (c : t_I'0) : ()
-  
-  axiom produces_trans'0_spec : forall a : t_I'0, ab : Seq.seq uint32, b : t_I'0, bc : Seq.seq uint32, c : t_I'0 . ([%#siter10] inv'0 a)
-   -> ([%#siter11] inv'0 b)
-   -> ([%#siter12] inv'0 c)
-   -> ([%#siter13] produces'0 a ab b)
-   -> ([%#siter14] produces'0 b bc c)  -> ([%#siter15] produces'0 a (Seq.(++) ab bc) c)
   
   meta "compute_max_steps" 1000000
   

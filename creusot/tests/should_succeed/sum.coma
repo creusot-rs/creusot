@@ -98,6 +98,8 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
   
   use prelude.prelude.Snapshot
   
+  use seq.Seq
+  
   function range_inclusive_len'0 (r : t_RangeInclusive'0) : int =
     [%#srange26] if is_empty_log'0 r then 0 else deep_model'0 (end_log'0 r) - deep_model'0 (start_log'0 r) + 1
   
@@ -112,6 +114,19 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
     /\ (is_empty_log'0 o \/ end_log'0 self = end_log'0 o)
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'0 (Seq.get visited i) = deep_model'0 (start_log'0 self) + i)
+  
+  function produces_trans'0 (a : t_RangeInclusive'0) (ab : Seq.seq uint32) (b : t_RangeInclusive'0) (bc : Seq.seq uint32) (c : t_RangeInclusive'0) : ()
+    
+   =
+    [%#srange24] ()
+  
+  axiom produces_trans'0_spec : forall a : t_RangeInclusive'0, ab : Seq.seq uint32, b : t_RangeInclusive'0, bc : Seq.seq uint32, c : t_RangeInclusive'0 . ([%#srange21] produces'0 a ab b)
+   -> ([%#srange22] produces'0 b bc c)  -> ([%#srange23] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 (self : t_RangeInclusive'0) : () =
+    [%#srange20] ()
+  
+  axiom produces_refl'0_spec : forall self : t_RangeInclusive'0 . [%#srange19] produces'0 self (Seq.empty  : Seq.seq uint32) self
   
   predicate inv'1 (_1 : Seq.seq uint32)
   
@@ -157,26 +172,11 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
     | bad -> {forall field_0 : uint32 [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
     
   
-  use seq.Seq
-  
   use prelude.prelude.Intrinsic
   
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
-  
-  function produces_refl'0 (self : t_RangeInclusive'0) : () =
-    [%#srange20] ()
-  
-  axiom produces_refl'0_spec : forall self : t_RangeInclusive'0 . [%#srange19] produces'0 self (Seq.empty  : Seq.seq uint32) self
-  
-  function produces_trans'0 (a : t_RangeInclusive'0) (ab : Seq.seq uint32) (b : t_RangeInclusive'0) (bc : Seq.seq uint32) (c : t_RangeInclusive'0) : ()
-    
-   =
-    [%#srange24] ()
-  
-  axiom produces_trans'0_spec : forall a : t_RangeInclusive'0, ab : Seq.seq uint32, b : t_RangeInclusive'0, bc : Seq.seq uint32, c : t_RangeInclusive'0 . ([%#srange21] produces'0 a ab b)
-   -> ([%#srange22] produces'0 b bc c)  -> ([%#srange23] produces'0 a (Seq.(++) ab bc) c)
   
   meta "compute_max_steps" 1000000
   

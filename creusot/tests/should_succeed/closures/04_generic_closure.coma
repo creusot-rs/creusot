@@ -42,51 +42,51 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
   
   predicate inv'2 (_1 : t_B'0)
   
-  predicate postcondition'0 (self : t_F'0) (args : t_A'0) (result : t_B'0)
-  
-  let rec call'0 (self:t_F'0) (args:t_A'0) (return'  (ret:t_B'0))= {[@expl:call 'self' type invariant] inv'3 self}
-    {[@expl:call 'args' type invariant] inv'4 args}
-    {[@expl:call requires] [%#sops3] precondition'0 self args}
-    any [ return' (result:t_B'0)-> {inv'2 result} {[%#sops4] postcondition'0 self args result} (! return' {result}) ] 
+  predicate postcondition_once'0 (self : t_F'0) (args : t_A'0) (result : t_B'0)
   
   predicate resolve'0 (_1 : t_F'0)
   
-  use prelude.prelude.Intrinsic
-  
   predicate postcondition_mut'0 (self : t_F'0) (args : t_A'0) (result_state : t_F'0) (result : t_B'0)
   
-  function fn_mut'0 (self : t_F'0) (args : t_A'0) (res_state : t_F'0) (res : t_B'0) : ()
+  function fn_mut_once'0 (self : t_F'0) (args : t_A'0) (res : t_B'0) : ()
   
-  axiom fn_mut'0_spec : forall self : t_F'0, args : t_A'0, res_state : t_F'0, res : t_B'0 . [%#sops5] postcondition_mut'0 self args res_state res
-  = (self = res_state /\ postcondition'0 self args res)
-  
-  predicate postcondition_once'0 (self : t_F'0) (args : t_A'0) (result : t_B'0)
-  
-  function fn_once'0 (self : t_F'0) (args : t_A'0) (res : t_B'0) : ()
-  
-  axiom fn_once'0_spec : forall self : t_F'0, args : t_A'0, res : t_B'0 . [%#sops6] postcondition_once'0 self args res
-  = (resolve'0 self /\ postcondition'0 self args res)
+  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_A'0, res : t_B'0 . [%#sops14] postcondition_once'0 self args res
+  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
   
   predicate unnest'0 (self : t_F'0) (_2 : t_F'0)
-  
-  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_A'0) (res_state : t_F'0) (res : t_B'0) : ()
-  
-  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_A'0, res_state : t_F'0, res : t_B'0 . ([%#sops8] postcondition_mut'0 self args res_state res)
-   -> ([%#sops9] unnest'0 self res_state)
-  
-  function unnest_refl'0 (self : t_F'0) : ()
-  
-  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops10] unnest'0 self self
   
   function unnest_trans'0 (self : t_F'0) (b : t_F'0) (c : t_F'0) : ()
   
   axiom unnest_trans'0_spec : forall self : t_F'0, b : t_F'0, c : t_F'0 . ([%#sops11] unnest'0 self b)
    -> ([%#sops12] unnest'0 b c)  -> ([%#sops13] unnest'0 self c)
   
-  function fn_mut_once'0 (self : t_F'0) (args : t_A'0) (res : t_B'0) : ()
+  function unnest_refl'0 (self : t_F'0) : ()
   
-  axiom fn_mut_once'0_spec : forall self : t_F'0, args : t_A'0, res : t_B'0 . [%#sops14] postcondition_once'0 self args res
-  = (exists res_state : t_F'0 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  axiom unnest_refl'0_spec : forall self : t_F'0 . [%#sops10] unnest'0 self self
+  
+  function postcondition_mut_unnest'0 (self : t_F'0) (args : t_A'0) (res_state : t_F'0) (res : t_B'0) : ()
+  
+  axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : t_A'0, res_state : t_F'0, res : t_B'0 . ([%#sops8] postcondition_mut'0 self args res_state res)
+   -> ([%#sops9] unnest'0 self res_state)
+  
+  predicate postcondition'0 (self : t_F'0) (args : t_A'0) (result : t_B'0)
+  
+  function fn_once'0 (self : t_F'0) (args : t_A'0) (res : t_B'0) : ()
+  
+  axiom fn_once'0_spec : forall self : t_F'0, args : t_A'0, res : t_B'0 . [%#sops6] postcondition_once'0 self args res
+  = (resolve'0 self /\ postcondition'0 self args res)
+  
+  function fn_mut'0 (self : t_F'0) (args : t_A'0) (res_state : t_F'0) (res : t_B'0) : ()
+  
+  axiom fn_mut'0_spec : forall self : t_F'0, args : t_A'0, res_state : t_F'0, res : t_B'0 . [%#sops5] postcondition_mut'0 self args res_state res
+  = (self = res_state /\ postcondition'0 self args res)
+  
+  let rec call'0 (self:t_F'0) (args:t_A'0) (return'  (ret:t_B'0))= {[@expl:call 'self' type invariant] inv'3 self}
+    {[@expl:call 'args' type invariant] inv'4 args}
+    {[@expl:call requires] [%#sops3] precondition'0 self args}
+    any [ return' (result:t_B'0)-> {inv'2 result} {[%#sops4] postcondition'0 self args result} (! return' {result}) ] 
+  
+  use prelude.prelude.Intrinsic
   
   meta "compute_max_steps" 1000000
   

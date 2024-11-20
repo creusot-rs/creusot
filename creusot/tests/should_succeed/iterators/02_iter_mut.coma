@@ -1010,6 +1010,8 @@ module M_02_iter_mut__all_zero [#"02_iter_mut.rs" 88 0 88 35]
   
   use seq.Seq
   
+  use seq.Seq
+  
   function index_logic'2 [@inline:trivial] (self : slice usize) (ix : int) : usize =
     [%#sops41] Seq.get (view'3 self) ix
   
@@ -1021,8 +1023,6 @@ module M_02_iter_mut__all_zero [#"02_iter_mut.rs" 88 0 88 35]
    -> Seq.get (to_mut_seq'0 self) i
   = Borrow.borrow_logic (index_logic'2 self.current i) (index_logic'2 self.final i) (Borrow.inherit_id (Borrow.get_id self) i))
   
-  use seq.Seq
-  
   predicate produces'0 [#"02_iter_mut.rs" 37 4 37 65] (self : t_IterMut'0) (visited : Seq.seq (borrowed usize)) (tl : t_IterMut'0)
     
    =
@@ -1033,6 +1033,23 @@ module M_02_iter_mut__all_zero [#"02_iter_mut.rs" 88 0 88 35]
     = (Seq.get (Seq.(++) visited (to_mut_seq'0 tl.t_IterMut__inner'0)) i).current
     /\ (Seq.get (to_mut_seq'0 self.t_IterMut__inner'0) i).final
     = (Seq.get (Seq.(++) visited (to_mut_seq'0 tl.t_IterMut__inner'0)) i).final)
+  
+  function produces_trans'0 [#"02_iter_mut.rs" 61 4 61 90] (a : t_IterMut'0) (ab : Seq.seq (borrowed usize)) (b : t_IterMut'0) (bc : Seq.seq (borrowed usize)) (c : t_IterMut'0) : ()
+    
+   =
+    [%#s02_iter_mut36] ()
+  
+  axiom produces_trans'0_spec : forall a : t_IterMut'0, ab : Seq.seq (borrowed usize), b : t_IterMut'0, bc : Seq.seq (borrowed usize), c : t_IterMut'0 . ([%#s02_iter_mut30] inv'0 a)
+   -> ([%#s02_iter_mut31] inv'0 b)
+   -> ([%#s02_iter_mut32] inv'0 c)
+   -> ([%#s02_iter_mut33] produces'0 a ab b)
+   -> ([%#s02_iter_mut34] produces'0 b bc c)  -> ([%#s02_iter_mut35] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 [#"02_iter_mut.rs" 51 4 51 26] (self : t_IterMut'0) : () =
+    [%#s02_iter_mut29] ()
+  
+  axiom produces_refl'0_spec : forall self : t_IterMut'0 . ([%#s02_iter_mut27] inv'0 self)
+   -> ([%#s02_iter_mut28] produces'0 self (Seq.empty  : Seq.seq (borrowed usize)) self)
   
   predicate invariant'1 (self : borrowed (t_IterMut'0)) =
     [%#sinvariant43] inv'0 self.current /\ inv'0 self.final
@@ -1097,23 +1114,6 @@ module M_02_iter_mut__all_zero [#"02_iter_mut.rs" 88 0 88 35]
   
   function index_logic'1 [@inline:trivial] (self : t_Vec'0) (ix : int) : usize =
     [%#sops24] Seq.get (view'0 self) ix
-  
-  function produces_refl'0 [#"02_iter_mut.rs" 51 4 51 26] (self : t_IterMut'0) : () =
-    [%#s02_iter_mut29] ()
-  
-  axiom produces_refl'0_spec : forall self : t_IterMut'0 . ([%#s02_iter_mut27] inv'0 self)
-   -> ([%#s02_iter_mut28] produces'0 self (Seq.empty  : Seq.seq (borrowed usize)) self)
-  
-  function produces_trans'0 [#"02_iter_mut.rs" 61 4 61 90] (a : t_IterMut'0) (ab : Seq.seq (borrowed usize)) (b : t_IterMut'0) (bc : Seq.seq (borrowed usize)) (c : t_IterMut'0) : ()
-    
-   =
-    [%#s02_iter_mut36] ()
-  
-  axiom produces_trans'0_spec : forall a : t_IterMut'0, ab : Seq.seq (borrowed usize), b : t_IterMut'0, bc : Seq.seq (borrowed usize), c : t_IterMut'0 . ([%#s02_iter_mut30] inv'0 a)
-   -> ([%#s02_iter_mut31] inv'0 b)
-   -> ([%#s02_iter_mut32] inv'0 c)
-   -> ([%#s02_iter_mut33] produces'0 a ab b)
-   -> ([%#s02_iter_mut34] produces'0 b bc c)  -> ([%#s02_iter_mut35] produces'0 a (Seq.(++) ab bc) c)
   
   meta "compute_max_steps" 1000000
   

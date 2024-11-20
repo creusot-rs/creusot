@@ -57,23 +57,6 @@ module M_constrained_types__uses_concrete_instance [#"constrained_types.rs" 14 0
   function deep_model'0 (self : (uint32, uint32)) : (int, int) =
     [%#smodel1] deep_model'1 self
   
-  function lt_log'0 (self : (int, int)) (o : (int, int)) : bool =
-    [%#sord2] (let (a, _) = self in a) = (let (a, _) = o in a) /\ (let (_, a) = self in a) < (let (_, a) = o in a)
-    \/ (let (a, _) = self in a) < (let (a, _) = o in a)
-  
-  let rec lt'0 (self:(uint32, uint32)) (other:(uint32, uint32)) (return'  (ret:bool))= {[@expl:lt 'self' type invariant] inv'0 self}
-    {[@expl:lt 'other' type invariant] inv'0 other}
-    any
-    [ return' (result:bool)-> {[%#sconstrained_types0] result = lt_log'0 (deep_model'0 self) (deep_model'0 other)}
-      (! return' {result}) ]
-    
-  
-  use prelude.prelude.Intrinsic
-  
-  function le_log'0 (self : (int, int)) (o : (int, int)) : bool =
-    [%#sord18] (let (a, _) = self in a) = (let (a, _) = o in a) /\ (let (_, a) = self in a) <= (let (_, a) = o in a)
-    \/ (let (a, _) = self in a) < (let (a, _) = o in a)
-  
   type t_Ordering'0  =
     | C_Less'0
     | C_Equal'0
@@ -82,6 +65,45 @@ module M_constrained_types__uses_concrete_instance [#"constrained_types.rs" 14 0
   function cmp_log'1 (self : int) (o : int) : t_Ordering'0 =
     [%#sord22] if self < o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
+  function eq_cmp'1 (x : int) (y : int) : ()
+  
+  axiom eq_cmp'1_spec : forall x : int, y : int . [%#sord35] (x = y) = (cmp_log'1 x y = C_Equal'0)
+  
+  function antisym2'1 (x : int) (y : int) : ()
+  
+  axiom antisym2'1_spec : forall x : int, y : int . ([%#sord33] cmp_log'1 x y = C_Greater'0)
+   -> ([%#sord34] cmp_log'1 y x = C_Less'0)
+  
+  function antisym1'1 (x : int) (y : int) : ()
+  
+  axiom antisym1'1_spec : forall x : int, y : int . ([%#sord31] cmp_log'1 x y = C_Less'0)
+   -> ([%#sord32] cmp_log'1 y x = C_Greater'0)
+  
+  function trans'1 (x : int) (y : int) (z : int) (o : t_Ordering'0) : ()
+  
+  axiom trans'1_spec : forall x : int, y : int, z : int, o : t_Ordering'0 . ([%#sord28] cmp_log'1 x y = o)
+   -> ([%#sord29] cmp_log'1 y z = o)  -> ([%#sord30] cmp_log'1 x z = o)
+  
+  function refl'1 (x : int) : ()
+  
+  axiom refl'1_spec : forall x : int . [%#sord27] cmp_log'1 x x = C_Equal'0
+  
+  function cmp_gt_log'1 (x : int) (y : int) : ()
+  
+  axiom cmp_gt_log'1_spec : forall x : int, y : int . [%#sord26] (x > y) = (cmp_log'1 x y = C_Greater'0)
+  
+  function cmp_ge_log'1 (x : int) (y : int) : ()
+  
+  axiom cmp_ge_log'1_spec : forall x : int, y : int . [%#sord25] (x >= y) = (cmp_log'1 x y <> C_Less'0)
+  
+  function cmp_lt_log'1 (x : int) (y : int) : ()
+  
+  axiom cmp_lt_log'1_spec : forall x : int, y : int . [%#sord24] (x < y) = (cmp_log'1 x y = C_Less'0)
+  
+  function cmp_le_log'1 (x : int) (y : int) : ()
+  
+  axiom cmp_le_log'1_spec : forall x : int, y : int . [%#sord23] (x <= y) = (cmp_log'1 x y <> C_Greater'0)
+  
   function cmp_log'0 (self : (int, int)) (o : (int, int)) : t_Ordering'0 =
     [%#sord19] let r = cmp_log'1 (let (a, _) = self in a) (let (a, _) = o in a) in if r = C_Equal'0 then
       cmp_log'1 (let (_, a) = self in a) (let (_, a) = o in a)
@@ -89,22 +111,28 @@ module M_constrained_types__uses_concrete_instance [#"constrained_types.rs" 14 0
       r
     
   
-  function cmp_le_log'0 (x : (int, int)) (y : (int, int)) : ()
+  function eq_cmp'0 (x : (int, int)) (y : (int, int)) : ()
   
-  axiom cmp_le_log'0_spec : forall x : (int, int), y : (int, int) . [%#sord4] le_log'0 x y
-  = (cmp_log'0 x y <> C_Greater'0)
+  axiom eq_cmp'0_spec : forall x : (int, int), y : (int, int) . [%#sord16] (x = y) = (cmp_log'0 x y = C_Equal'0)
   
-  function cmp_lt_log'0 (x : (int, int)) (y : (int, int)) : ()
+  function antisym2'0 (x : (int, int)) (y : (int, int)) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : (int, int), y : (int, int) . [%#sord5] lt_log'0 x y = (cmp_log'0 x y = C_Less'0)
+  axiom antisym2'0_spec : forall x : (int, int), y : (int, int) . ([%#sord14] cmp_log'0 x y = C_Greater'0)
+   -> ([%#sord15] cmp_log'0 y x = C_Less'0)
   
-  function ge_log'0 (self : (int, int)) (o : (int, int)) : bool =
-    [%#sord20] (let (a, _) = self in a) = (let (a, _) = o in a) /\ (let (_, a) = self in a) >= (let (_, a) = o in a)
-    \/ (let (a, _) = self in a) > (let (a, _) = o in a)
+  function antisym1'0 (x : (int, int)) (y : (int, int)) : ()
   
-  function cmp_ge_log'0 (x : (int, int)) (y : (int, int)) : ()
+  axiom antisym1'0_spec : forall x : (int, int), y : (int, int) . ([%#sord12] cmp_log'0 x y = C_Less'0)
+   -> ([%#sord13] cmp_log'0 y x = C_Greater'0)
   
-  axiom cmp_ge_log'0_spec : forall x : (int, int), y : (int, int) . [%#sord6] ge_log'0 x y = (cmp_log'0 x y <> C_Less'0)
+  function trans'0 (x : (int, int)) (y : (int, int)) (z : (int, int)) (o : t_Ordering'0) : ()
+  
+  axiom trans'0_spec : forall x : (int, int), y : (int, int), z : (int, int), o : t_Ordering'0 . ([%#sord9] cmp_log'0 x y
+  = o)  -> ([%#sord10] cmp_log'0 y z = o)  -> ([%#sord11] cmp_log'0 x z = o)
+  
+  function refl'0 (x : (int, int)) : ()
+  
+  axiom refl'0_spec : forall x : (int, int) . [%#sord8] cmp_log'0 x x = C_Equal'0
   
   function gt_log'0 (self : (int, int)) (o : (int, int)) : bool =
     [%#sord21] (let (a, _) = self in a) = (let (a, _) = o in a) /\ (let (_, a) = self in a) > (let (_, a) = o in a)
@@ -115,67 +143,39 @@ module M_constrained_types__uses_concrete_instance [#"constrained_types.rs" 14 0
   axiom cmp_gt_log'0_spec : forall x : (int, int), y : (int, int) . [%#sord7] gt_log'0 x y
   = (cmp_log'0 x y = C_Greater'0)
   
-  function refl'0 (x : (int, int)) : ()
+  function ge_log'0 (self : (int, int)) (o : (int, int)) : bool =
+    [%#sord20] (let (a, _) = self in a) = (let (a, _) = o in a) /\ (let (_, a) = self in a) >= (let (_, a) = o in a)
+    \/ (let (a, _) = self in a) > (let (a, _) = o in a)
   
-  axiom refl'0_spec : forall x : (int, int) . [%#sord8] cmp_log'0 x x = C_Equal'0
+  function cmp_ge_log'0 (x : (int, int)) (y : (int, int)) : ()
   
-  function trans'0 (x : (int, int)) (y : (int, int)) (z : (int, int)) (o : t_Ordering'0) : ()
+  axiom cmp_ge_log'0_spec : forall x : (int, int), y : (int, int) . [%#sord6] ge_log'0 x y = (cmp_log'0 x y <> C_Less'0)
   
-  axiom trans'0_spec : forall x : (int, int), y : (int, int), z : (int, int), o : t_Ordering'0 . ([%#sord9] cmp_log'0 x y
-  = o)  -> ([%#sord10] cmp_log'0 y z = o)  -> ([%#sord11] cmp_log'0 x z = o)
+  function lt_log'0 (self : (int, int)) (o : (int, int)) : bool =
+    [%#sord2] (let (a, _) = self in a) = (let (a, _) = o in a) /\ (let (_, a) = self in a) < (let (_, a) = o in a)
+    \/ (let (a, _) = self in a) < (let (a, _) = o in a)
   
-  function antisym1'0 (x : (int, int)) (y : (int, int)) : ()
+  function cmp_lt_log'0 (x : (int, int)) (y : (int, int)) : ()
   
-  axiom antisym1'0_spec : forall x : (int, int), y : (int, int) . ([%#sord12] cmp_log'0 x y = C_Less'0)
-   -> ([%#sord13] cmp_log'0 y x = C_Greater'0)
+  axiom cmp_lt_log'0_spec : forall x : (int, int), y : (int, int) . [%#sord5] lt_log'0 x y = (cmp_log'0 x y = C_Less'0)
   
-  function antisym2'0 (x : (int, int)) (y : (int, int)) : ()
+  function le_log'0 (self : (int, int)) (o : (int, int)) : bool =
+    [%#sord18] (let (a, _) = self in a) = (let (a, _) = o in a) /\ (let (_, a) = self in a) <= (let (_, a) = o in a)
+    \/ (let (a, _) = self in a) < (let (a, _) = o in a)
   
-  axiom antisym2'0_spec : forall x : (int, int), y : (int, int) . ([%#sord14] cmp_log'0 x y = C_Greater'0)
-   -> ([%#sord15] cmp_log'0 y x = C_Less'0)
+  function cmp_le_log'0 (x : (int, int)) (y : (int, int)) : ()
   
-  function eq_cmp'0 (x : (int, int)) (y : (int, int)) : ()
+  axiom cmp_le_log'0_spec : forall x : (int, int), y : (int, int) . [%#sord4] le_log'0 x y
+  = (cmp_log'0 x y <> C_Greater'0)
   
-  axiom eq_cmp'0_spec : forall x : (int, int), y : (int, int) . [%#sord16] (x = y) = (cmp_log'0 x y = C_Equal'0)
+  let rec lt'0 (self:(uint32, uint32)) (other:(uint32, uint32)) (return'  (ret:bool))= {[@expl:lt 'self' type invariant] inv'0 self}
+    {[@expl:lt 'other' type invariant] inv'0 other}
+    any
+    [ return' (result:bool)-> {[%#sconstrained_types0] result = lt_log'0 (deep_model'0 self) (deep_model'0 other)}
+      (! return' {result}) ]
+    
   
-  function cmp_le_log'1 (x : int) (y : int) : ()
-  
-  axiom cmp_le_log'1_spec : forall x : int, y : int . [%#sord23] (x <= y) = (cmp_log'1 x y <> C_Greater'0)
-  
-  function cmp_lt_log'1 (x : int) (y : int) : ()
-  
-  axiom cmp_lt_log'1_spec : forall x : int, y : int . [%#sord24] (x < y) = (cmp_log'1 x y = C_Less'0)
-  
-  function cmp_ge_log'1 (x : int) (y : int) : ()
-  
-  axiom cmp_ge_log'1_spec : forall x : int, y : int . [%#sord25] (x >= y) = (cmp_log'1 x y <> C_Less'0)
-  
-  function cmp_gt_log'1 (x : int) (y : int) : ()
-  
-  axiom cmp_gt_log'1_spec : forall x : int, y : int . [%#sord26] (x > y) = (cmp_log'1 x y = C_Greater'0)
-  
-  function refl'1 (x : int) : ()
-  
-  axiom refl'1_spec : forall x : int . [%#sord27] cmp_log'1 x x = C_Equal'0
-  
-  function trans'1 (x : int) (y : int) (z : int) (o : t_Ordering'0) : ()
-  
-  axiom trans'1_spec : forall x : int, y : int, z : int, o : t_Ordering'0 . ([%#sord28] cmp_log'1 x y = o)
-   -> ([%#sord29] cmp_log'1 y z = o)  -> ([%#sord30] cmp_log'1 x z = o)
-  
-  function antisym1'1 (x : int) (y : int) : ()
-  
-  axiom antisym1'1_spec : forall x : int, y : int . ([%#sord31] cmp_log'1 x y = C_Less'0)
-   -> ([%#sord32] cmp_log'1 y x = C_Greater'0)
-  
-  function antisym2'1 (x : int) (y : int) : ()
-  
-  axiom antisym2'1_spec : forall x : int, y : int . ([%#sord33] cmp_log'1 x y = C_Greater'0)
-   -> ([%#sord34] cmp_log'1 y x = C_Less'0)
-  
-  function eq_cmp'1 (x : int) (y : int) : ()
-  
-  axiom eq_cmp'1_spec : forall x : int, y : int . [%#sord35] (x = y) = (cmp_log'1 x y = C_Equal'0)
+  use prelude.prelude.Intrinsic
   
   meta "compute_max_steps" 1000000
   

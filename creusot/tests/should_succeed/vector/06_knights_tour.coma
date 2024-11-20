@@ -217,10 +217,44 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
   
   use prelude.prelude.Intrinsic
   
+  use prelude.prelude.Snapshot
+  
+  predicate postcondition_once'0 (self : closure3'1) (args : (usize, Snapshot.snap_ty (Seq.seq usize))) (result : t_Vec'1)
+    
+   =
+    [%#s06_knights_tour5] let (_2, _3) = args in Seq.length (view'0 result) = UIntSize.to_int self.field_0'0
+  
+  predicate resolve'4 (_1 : closure3'1) =
+    true
+  
   predicate unnest'0 (self : closure3'1) (_2 : closure3'1) =
     _2.field_0'0 = self.field_0'0
   
-  use prelude.prelude.Snapshot
+  predicate postcondition_mut'0 (self : closure3'1) (args : (usize, Snapshot.snap_ty (Seq.seq usize))) (result_state : closure3'1) (result : t_Vec'1)
+    
+   =
+    (let (_2, _3) = args in Seq.length (view'0 result) = UIntSize.to_int result_state.field_0'0)
+    /\ unnest'0 self result_state
+  
+  function fn_mut_once'0 (self : closure3'1) (args : (usize, Snapshot.snap_ty (Seq.seq usize))) (res : t_Vec'1) : ()
+  
+  axiom fn_mut_once'0_spec : forall self : closure3'1, args : (usize, Snapshot.snap_ty (Seq.seq usize)), res : t_Vec'1 . [%#sops40] postcondition_once'0 self args res
+  = (exists res_state : closure3'1 . postcondition_mut'0 self args res_state res /\ resolve'4 res_state)
+  
+  function unnest_trans'0 (self : closure3'1) (b : closure3'1) (c : closure3'1) : ()
+  
+  axiom unnest_trans'0_spec : forall self : closure3'1, b : closure3'1, c : closure3'1 . ([%#sops37] unnest'0 self b)
+   -> ([%#sops38] unnest'0 b c)  -> ([%#sops39] unnest'0 self c)
+  
+  function unnest_refl'0 (self : closure3'1) : ()
+  
+  axiom unnest_refl'0_spec : forall self : closure3'1 . [%#sops36] unnest'0 self self
+  
+  function postcondition_mut_unnest'0 (self : closure3'1) (args : (usize, Snapshot.snap_ty (Seq.seq usize))) (res_state : closure3'1) (res : t_Vec'1) : ()
+    
+  
+  axiom postcondition_mut_unnest'0_spec : forall self : closure3'1, args : (usize, Snapshot.snap_ty (Seq.seq usize)), res_state : closure3'1, res : t_Vec'1 . ([%#sops34] postcondition_mut'0 self args res_state res)
+   -> ([%#sops35] unnest'0 self res_state)
   
   let rec closure3'0 (_1:borrowed closure3'1) (_2:usize) (_3:Snapshot.snap_ty (Seq.seq usize)) (return'  (ret:t_Vec'1))= (! bb0
     [ bb0 = s0
@@ -243,9 +277,7 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Range'0 [inv'0 x] . inv'0 x = true
   
-  predicate inv'1 (_1 : closure3'1)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : closure3'1 [inv'1 x] . inv'1 x = true
+  use seq.Seq
   
   use seq.Seq
   
@@ -259,6 +291,38 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
     /\ Seq.length visited = deep_model'0 o.t_Range__start'0 - deep_model'0 self.t_Range__start'0
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'0 (Seq.get visited i) = deep_model'0 self.t_Range__start'0 + i)
+  
+  function produces_trans'1 (a : t_Range'0) (ab : Seq.seq usize) (b : t_Range'0) (bc : Seq.seq usize) (c : t_Range'0) : ()
+    
+  
+  axiom produces_trans'1_spec : forall a : t_Range'0, ab : Seq.seq usize, b : t_Range'0, bc : Seq.seq usize, c : t_Range'0 . ([%#srange20] inv'0 a)
+   -> ([%#srange21] inv'0 b)
+   -> ([%#srange22] inv'0 c)
+   -> ([%#srange23] produces'0 a ab b)
+   -> ([%#srange24] produces'0 b bc c)  -> ([%#srange25] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'1 (self : t_Range'0) : ()
+  
+  axiom produces_refl'1_spec : forall self : t_Range'0 . ([%#srange18] inv'0 self)
+   -> ([%#srange19] produces'0 self (Seq.empty  : Seq.seq usize) self)
+  
+  function produces_trans'0 (a : t_Range'0) (ab : Seq.seq usize) (b : t_Range'0) (bc : Seq.seq usize) (c : t_Range'0) : ()
+    
+  
+  axiom produces_trans'0_spec : forall a : t_Range'0, ab : Seq.seq usize, b : t_Range'0, bc : Seq.seq usize, c : t_Range'0 . ([%#srange20] inv'0 a)
+   -> ([%#srange21] inv'0 b)
+   -> ([%#srange22] inv'0 c)
+   -> ([%#srange23] produces'0 a ab b)
+   -> ([%#srange24] produces'0 b bc c)  -> ([%#srange25] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 (self : t_Range'0) : ()
+  
+  axiom produces_refl'0_spec : forall self : t_Range'0 . ([%#srange18] inv'0 self)
+   -> ([%#srange19] produces'0 self (Seq.empty  : Seq.seq usize) self)
+  
+  predicate inv'1 (_1 : closure3'1)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : closure3'1 [inv'1 x] . inv'1 x = true
   
   use seq.Seq
   
@@ -291,12 +355,6 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
   axiom inv_axiom'10 [@rewrite] : forall x : borrowed closure3'1 [inv'10 x] . inv'10 x = true
   
   use seq.Seq
-  
-  predicate postcondition_mut'0 (self : closure3'1) (args : (usize, Snapshot.snap_ty (Seq.seq usize))) (result_state : closure3'1) (result : t_Vec'1)
-    
-   =
-    (let (_2, _3) = args in Seq.length (view'0 result) = UIntSize.to_int result_state.field_0'0)
-    /\ unnest'0 self result_state
   
   predicate preservation'0 (iter : t_Range'0) (func : closure3'1) =
     [%#smap_inv28] forall s : Seq.seq usize, e1 : usize, e2 : usize, f : borrowed closure3'1, b : t_Vec'1, i : t_Range'0 . inv'9 s
@@ -373,21 +431,11 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
   predicate resolve'6 (_1 : t_Range'0) =
     true
   
-  predicate resolve'4 (_1 : closure3'1) =
-    true
-  
   predicate resolve'3 (self : t_MapInv'0) =
     [%#smap_inv44] resolve'6 self.t_MapInv__iter'0 /\ resolve'4 self.t_MapInv__func'0
   
   predicate resolve'1 (_1 : t_MapInv'0) =
     resolve'3 _1
-  
-  use prelude.prelude.Snapshot
-  
-  predicate completed'0 (self : borrowed (t_MapInv'0)) =
-    [%#smap_inv29] Snapshot.inner (self.final).t_MapInv__produced'0 = (Seq.empty  : Seq.seq usize)
-    /\ completed'1 (Borrow.borrow_logic (self.current).t_MapInv__iter'0 (self.final).t_MapInv__iter'0 (Borrow.inherit_id (Borrow.get_id self) 1))
-    /\ (self.current).t_MapInv__func'0 = (self.final).t_MapInv__func'0
   
   use seq.Seq
   
@@ -400,6 +448,10 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
   use seq.Seq
   
   use prelude.prelude.Snapshot
+  
+  use prelude.prelude.Snapshot
+  
+  use seq.Seq
   
   use seq.Seq
   
@@ -429,6 +481,25 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
     /\ precondition'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner self.t_MapInv__produced'0) (Seq.([..]) s 0 i)))
     /\ postcondition_mut'0 (Seq.get fs i).current (Seq.get s i, Snapshot.new (Seq.(++) (Snapshot.inner self.t_MapInv__produced'0) (Seq.([..]) s 0 i))) (Seq.get fs i).final (Seq.get visited i))))
   
+  function produces_trans'2 (a : t_MapInv'0) (ab : Seq.seq (t_Vec'1)) (b : t_MapInv'0) (bc : Seq.seq (t_Vec'1)) (c : t_MapInv'0) : ()
+    
+  
+  axiom produces_trans'2_spec : forall a : t_MapInv'0, ab : Seq.seq (t_Vec'1), b : t_MapInv'0, bc : Seq.seq (t_Vec'1), c : t_MapInv'0 . ([%#smap_inv47] inv'3 a)
+   -> ([%#smap_inv48] inv'3 b)
+   -> ([%#smap_inv49] inv'3 c)
+   -> ([%#smap_inv50] produces'1 a ab b)
+   -> ([%#smap_inv51] produces'1 b bc c)  -> ([%#smap_inv52] produces'1 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'2 (self : t_MapInv'0) : ()
+  
+  axiom produces_refl'2_spec : forall self : t_MapInv'0 . ([%#smap_inv45] inv'3 self)
+   -> ([%#smap_inv46] produces'1 self (Seq.empty  : Seq.seq (t_Vec'1)) self)
+  
+  predicate completed'0 (self : borrowed (t_MapInv'0)) =
+    [%#smap_inv29] Snapshot.inner (self.final).t_MapInv__produced'0 = (Seq.empty  : Seq.seq usize)
+    /\ completed'1 (Borrow.borrow_logic (self.current).t_MapInv__iter'0 (self.final).t_MapInv__iter'0 (Borrow.inherit_id (Borrow.get_id self) 1))
+    /\ (self.current).t_MapInv__func'0 = (self.final).t_MapInv__func'0
+  
   function view'1 (self : t_Vec'0) : Seq.seq (t_Vec'1)
   
   axiom view'1_spec : forall self : t_Vec'0 . [%#svec17] Seq.length (view'1 self) <= UIntSize.to_int (v_MAX'0 : usize)
@@ -457,77 +528,6 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
     /\ Seq.length (view'1 self.t_Board__field'0) = UIntSize.to_int self.t_Board__size'0
     /\ (forall i : int . 0 <= i /\ i < UIntSize.to_int self.t_Board__size'0
      -> Seq.length (view'0 (index_logic'0 self.t_Board__field'0 i)) = UIntSize.to_int self.t_Board__size'0)
-  
-  function produces_refl'1 (self : t_Range'0) : ()
-  
-  axiom produces_refl'1_spec : forall self : t_Range'0 . ([%#srange18] inv'0 self)
-   -> ([%#srange19] produces'0 self (Seq.empty  : Seq.seq usize) self)
-  
-  function produces_trans'1 (a : t_Range'0) (ab : Seq.seq usize) (b : t_Range'0) (bc : Seq.seq usize) (c : t_Range'0) : ()
-    
-  
-  axiom produces_trans'1_spec : forall a : t_Range'0, ab : Seq.seq usize, b : t_Range'0, bc : Seq.seq usize, c : t_Range'0 . ([%#srange20] inv'0 a)
-   -> ([%#srange21] inv'0 b)
-   -> ([%#srange22] inv'0 c)
-   -> ([%#srange23] produces'0 a ab b)
-   -> ([%#srange24] produces'0 b bc c)  -> ([%#srange25] produces'0 a (Seq.(++) ab bc) c)
-  
-  function postcondition_mut_unnest'0 (self : closure3'1) (args : (usize, Snapshot.snap_ty (Seq.seq usize))) (res_state : closure3'1) (res : t_Vec'1) : ()
-    
-  
-  axiom postcondition_mut_unnest'0_spec : forall self : closure3'1, args : (usize, Snapshot.snap_ty (Seq.seq usize)), res_state : closure3'1, res : t_Vec'1 . ([%#sops34] postcondition_mut'0 self args res_state res)
-   -> ([%#sops35] unnest'0 self res_state)
-  
-  function unnest_refl'0 (self : closure3'1) : ()
-  
-  axiom unnest_refl'0_spec : forall self : closure3'1 . [%#sops36] unnest'0 self self
-  
-  function unnest_trans'0 (self : closure3'1) (b : closure3'1) (c : closure3'1) : ()
-  
-  axiom unnest_trans'0_spec : forall self : closure3'1, b : closure3'1, c : closure3'1 . ([%#sops37] unnest'0 self b)
-   -> ([%#sops38] unnest'0 b c)  -> ([%#sops39] unnest'0 self c)
-  
-  predicate postcondition_once'0 (self : closure3'1) (args : (usize, Snapshot.snap_ty (Seq.seq usize))) (result : t_Vec'1)
-    
-   =
-    [%#s06_knights_tour5] let (_2, _3) = args in Seq.length (view'0 result) = UIntSize.to_int self.field_0'0
-  
-  function fn_mut_once'0 (self : closure3'1) (args : (usize, Snapshot.snap_ty (Seq.seq usize))) (res : t_Vec'1) : ()
-  
-  axiom fn_mut_once'0_spec : forall self : closure3'1, args : (usize, Snapshot.snap_ty (Seq.seq usize)), res : t_Vec'1 . [%#sops40] postcondition_once'0 self args res
-  = (exists res_state : closure3'1 . postcondition_mut'0 self args res_state res /\ resolve'4 res_state)
-  
-  function produces_refl'2 (self : t_Range'0) : ()
-  
-  axiom produces_refl'2_spec : forall self : t_Range'0 . ([%#srange18] inv'0 self)
-   -> ([%#srange19] produces'0 self (Seq.empty  : Seq.seq usize) self)
-  
-  function produces_trans'2 (a : t_Range'0) (ab : Seq.seq usize) (b : t_Range'0) (bc : Seq.seq usize) (c : t_Range'0) : ()
-    
-  
-  axiom produces_trans'2_spec : forall a : t_Range'0, ab : Seq.seq usize, b : t_Range'0, bc : Seq.seq usize, c : t_Range'0 . ([%#srange20] inv'0 a)
-   -> ([%#srange21] inv'0 b)
-   -> ([%#srange22] inv'0 c)
-   -> ([%#srange23] produces'0 a ab b)
-   -> ([%#srange24] produces'0 b bc c)  -> ([%#srange25] produces'0 a (Seq.(++) ab bc) c)
-  
-  use seq.Seq
-  
-  function produces_refl'3 (self : t_MapInv'0) : ()
-  
-  axiom produces_refl'3_spec : forall self : t_MapInv'0 . ([%#smap_inv45] inv'3 self)
-   -> ([%#smap_inv46] produces'1 self (Seq.empty  : Seq.seq (t_Vec'1)) self)
-  
-  use seq.Seq
-  
-  function produces_trans'3 (a : t_MapInv'0) (ab : Seq.seq (t_Vec'1)) (b : t_MapInv'0) (bc : Seq.seq (t_Vec'1)) (c : t_MapInv'0) : ()
-    
-  
-  axiom produces_trans'3_spec : forall a : t_MapInv'0, ab : Seq.seq (t_Vec'1), b : t_MapInv'0, bc : Seq.seq (t_Vec'1), c : t_MapInv'0 . ([%#smap_inv47] inv'3 a)
-   -> ([%#smap_inv48] inv'3 b)
-   -> ([%#smap_inv49] inv'3 c)
-   -> ([%#smap_inv50] produces'1 a ab b)
-   -> ([%#smap_inv51] produces'1 b bc c)  -> ([%#smap_inv52] produces'1 a (Seq.(++) ab bc) c)
   
   meta "compute_max_steps" 1000000
   
@@ -912,6 +912,19 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree [#"06_knights_tou
   predicate produces'0 (self : t_IntoIter'0) (visited : Seq.seq (isize, isize)) (rhs : t_IntoIter'0) =
     [%#svec13] view'1 self = Seq.(++) visited (view'1 rhs)
   
+  function produces_trans'0 (a : t_IntoIter'0) (ab : Seq.seq (isize, isize)) (b : t_IntoIter'0) (bc : Seq.seq (isize, isize)) (c : t_IntoIter'0) : ()
+    
+   =
+    [%#svec34] ()
+  
+  axiom produces_trans'0_spec : forall a : t_IntoIter'0, ab : Seq.seq (isize, isize), b : t_IntoIter'0, bc : Seq.seq (isize, isize), c : t_IntoIter'0 . ([%#svec31] produces'0 a ab b)
+   -> ([%#svec32] produces'0 b bc c)  -> ([%#svec33] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 (self : t_IntoIter'0) : () =
+    [%#svec30] ()
+  
+  axiom produces_refl'0_spec : forall self : t_IntoIter'0 . [%#svec29] produces'0 self (Seq.empty  : Seq.seq (isize, isize)) self
+  
   predicate inv'1 (_1 : Seq.seq (isize, isize))
   
   axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq (isize, isize) [inv'1 x] . inv'1 x = true
@@ -1048,19 +1061,6 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree [#"06_knights_tou
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
-  
-  function produces_refl'0 (self : t_IntoIter'0) : () =
-    [%#svec30] ()
-  
-  axiom produces_refl'0_spec : forall self : t_IntoIter'0 . [%#svec29] produces'0 self (Seq.empty  : Seq.seq (isize, isize)) self
-  
-  function produces_trans'0 (a : t_IntoIter'0) (ab : Seq.seq (isize, isize)) (b : t_IntoIter'0) (bc : Seq.seq (isize, isize)) (c : t_IntoIter'0) : ()
-    
-   =
-    [%#svec34] ()
-  
-  axiom produces_trans'0_spec : forall a : t_IntoIter'0, ab : Seq.seq (isize, isize), b : t_IntoIter'0, bc : Seq.seq (isize, isize), c : t_IntoIter'0 . ([%#svec31] produces'0 a ab b)
-   -> ([%#svec32] produces'0 b bc c)  -> ([%#svec33] produces'0 a (Seq.(++) ab bc) c)
   
   meta "compute_max_steps" 1000000
   
@@ -1514,6 +1514,8 @@ module M_06_knights_tour__min [#"06_knights_tour.rs" 110 0 110 58]
   
   use seq.Seq
   
+  use seq.Seq
+  
   function index_logic'1 [@inline:trivial] (self : slice (usize, t_Point'0)) (ix : int) : (usize, t_Point'0) =
     [%#sops24] Seq.get (view'5 self) ix
   
@@ -1524,10 +1526,21 @@ module M_06_knights_tour__min [#"06_knights_tour.rs" 110 0 110 58]
   && ([%#sslice21] forall i : int . 0 <= i /\ i < Seq.length (to_ref_seq'0 self)
    -> Seq.get (to_ref_seq'0 self) i = index_logic'1 self i)
   
-  use seq.Seq
-  
   predicate produces'0 (self : t_Iter'0) (visited : Seq.seq (usize, t_Point'0)) (tl : t_Iter'0) =
     [%#sslice9] to_ref_seq'0 (view'2 self) = Seq.(++) visited (to_ref_seq'0 (view'2 tl))
+  
+  function produces_trans'0 (a : t_Iter'0) (ab : Seq.seq (usize, t_Point'0)) (b : t_Iter'0) (bc : Seq.seq (usize, t_Point'0)) (c : t_Iter'0) : ()
+    
+   =
+    [%#sslice19] ()
+  
+  axiom produces_trans'0_spec : forall a : t_Iter'0, ab : Seq.seq (usize, t_Point'0), b : t_Iter'0, bc : Seq.seq (usize, t_Point'0), c : t_Iter'0 . ([%#sslice16] produces'0 a ab b)
+   -> ([%#sslice17] produces'0 b bc c)  -> ([%#sslice18] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 (self : t_Iter'0) : () =
+    [%#sslice15] ()
+  
+  axiom produces_refl'0_spec : forall self : t_Iter'0 . [%#sslice14] produces'0 self (Seq.empty  : Seq.seq (usize, t_Point'0)) self
   
   predicate inv'0 (_1 : t_Iter'0)
   
@@ -1580,19 +1593,6 @@ module M_06_knights_tour__min [#"06_knights_tour.rs" 110 0 110 58]
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
-  
-  function produces_refl'0 (self : t_Iter'0) : () =
-    [%#sslice15] ()
-  
-  axiom produces_refl'0_spec : forall self : t_Iter'0 . [%#sslice14] produces'0 self (Seq.empty  : Seq.seq (usize, t_Point'0)) self
-  
-  function produces_trans'0 (a : t_Iter'0) (ab : Seq.seq (usize, t_Point'0)) (b : t_Iter'0) (bc : Seq.seq (usize, t_Point'0)) (c : t_Iter'0) : ()
-    
-   =
-    [%#sslice19] ()
-  
-  axiom produces_trans'0_spec : forall a : t_Iter'0, ab : Seq.seq (usize, t_Point'0), b : t_Iter'0, bc : Seq.seq (usize, t_Point'0), c : t_Iter'0 . ([%#sslice16] produces'0 a ab b)
-   -> ([%#sslice17] produces'0 b bc c)  -> ([%#sslice18] produces'0 a (Seq.(++) ab bc) c)
   
   meta "compute_max_steps" 1000000
   
@@ -1911,6 +1911,8 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
   
   use prelude.prelude.Snapshot
   
+  use seq.Seq
+  
   function deep_model'0 (self : usize) : int =
     [%#snum64] UIntSize.to_int self
   
@@ -1923,6 +1925,20 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
     /\ Seq.length visited = deep_model'0 o.t_Range__start'0 - deep_model'0 self.t_Range__start'0
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'0 (Seq.get visited i) = deep_model'0 self.t_Range__start'0 + i)
+  
+  function produces_trans'0 (a : t_Range'0) (ab : Seq.seq usize) (b : t_Range'0) (bc : Seq.seq usize) (c : t_Range'0) : ()
+    
+  
+  axiom produces_trans'0_spec : forall a : t_Range'0, ab : Seq.seq usize, b : t_Range'0, bc : Seq.seq usize, c : t_Range'0 . ([%#srange58] inv'0 a)
+   -> ([%#srange59] inv'0 b)
+   -> ([%#srange60] inv'0 c)
+   -> ([%#srange61] produces'0 a ab b)
+   -> ([%#srange62] produces'0 b bc c)  -> ([%#srange63] produces'0 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'0 (self : t_Range'0) : ()
+  
+  axiom produces_refl'0_spec : forall self : t_Range'0 . ([%#srange56] inv'0 self)
+   -> ([%#srange57] produces'0 self (Seq.empty  : Seq.seq usize) self)
   
   use prelude.prelude.Snapshot
   
@@ -1968,8 +1984,6 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
     [ good (field_0:usize)-> {C_Some'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0 : usize [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
     
-  
-  use seq.Seq
   
   type t_NonNull'1  =
     { t_NonNull__pointer'1: opaque_ptr }
@@ -2086,6 +2100,19 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
   
   predicate produces'1 (self : t_IntoIter'0) (visited : Seq.seq (isize, isize)) (rhs : t_IntoIter'0) =
     [%#svec41] view'4 self = Seq.(++) visited (view'4 rhs)
+  
+  function produces_trans'1 (a : t_IntoIter'0) (ab : Seq.seq (isize, isize)) (b : t_IntoIter'0) (bc : Seq.seq (isize, isize)) (c : t_IntoIter'0) : ()
+    
+   =
+    [%#svec74] ()
+  
+  axiom produces_trans'1_spec : forall a : t_IntoIter'0, ab : Seq.seq (isize, isize), b : t_IntoIter'0, bc : Seq.seq (isize, isize), c : t_IntoIter'0 . ([%#svec71] produces'1 a ab b)
+   -> ([%#svec72] produces'1 b bc c)  -> ([%#svec73] produces'1 a (Seq.(++) ab bc) c)
+  
+  function produces_refl'1 (self : t_IntoIter'0) : () =
+    [%#svec70] ()
+  
+  axiom produces_refl'1_spec : forall self : t_IntoIter'0 . [%#svec69] produces'1 self (Seq.empty  : Seq.seq (isize, isize)) self
   
   use prelude.prelude.Snapshot
   
@@ -2212,33 +2239,6 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
-  
-  function produces_refl'0 (self : t_Range'0) : ()
-  
-  axiom produces_refl'0_spec : forall self : t_Range'0 . ([%#srange56] inv'0 self)
-   -> ([%#srange57] produces'0 self (Seq.empty  : Seq.seq usize) self)
-  
-  function produces_trans'0 (a : t_Range'0) (ab : Seq.seq usize) (b : t_Range'0) (bc : Seq.seq usize) (c : t_Range'0) : ()
-    
-  
-  axiom produces_trans'0_spec : forall a : t_Range'0, ab : Seq.seq usize, b : t_Range'0, bc : Seq.seq usize, c : t_Range'0 . ([%#srange58] inv'0 a)
-   -> ([%#srange59] inv'0 b)
-   -> ([%#srange60] inv'0 c)
-   -> ([%#srange61] produces'0 a ab b)
-   -> ([%#srange62] produces'0 b bc c)  -> ([%#srange63] produces'0 a (Seq.(++) ab bc) c)
-  
-  function produces_refl'1 (self : t_IntoIter'0) : () =
-    [%#svec70] ()
-  
-  axiom produces_refl'1_spec : forall self : t_IntoIter'0 . [%#svec69] produces'1 self (Seq.empty  : Seq.seq (isize, isize)) self
-  
-  function produces_trans'1 (a : t_IntoIter'0) (ab : Seq.seq (isize, isize)) (b : t_IntoIter'0) (bc : Seq.seq (isize, isize)) (c : t_IntoIter'0) : ()
-    
-   =
-    [%#svec74] ()
-  
-  axiom produces_trans'1_spec : forall a : t_IntoIter'0, ab : Seq.seq (isize, isize), b : t_IntoIter'0, bc : Seq.seq (isize, isize), c : t_IntoIter'0 . ([%#svec71] produces'1 a ab b)
-   -> ([%#svec72] produces'1 b bc c)  -> ([%#svec73] produces'1 a (Seq.(++) ab bc) c)
   
   meta "compute_max_steps" 1000000
   
