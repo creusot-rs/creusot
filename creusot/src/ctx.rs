@@ -327,6 +327,10 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         self.tcx.dcx().struct_span_err(span, msg.to_string())
     }
 
+    pub(crate) fn warn(&self, span: Span, msg: impl Into<String>) {
+        self.tcx.dcx().span_warn(span, msg.into())
+    }
+
     queryish!(laws, &[DefId], laws_inner);
 
     // TODO Make private

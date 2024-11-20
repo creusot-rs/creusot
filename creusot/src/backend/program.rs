@@ -949,7 +949,7 @@ impl<'tcx> Statement<'tcx> {
                 istmts.extend([IntermediateStmt::Assume(exp)]);
             }
             Statement::Assertion { cond, msg } => istmts.push(IntermediateStmt::Assert(Exp::Attr(
-                Attribute::Attr(format!("expl:{msg}")),
+                Attribute::Attr(msg),
                 Box::new(lower_pure(lower.ctx, lower.names, &cond)),
             ))),
             Statement::AssertTyInv { pl } => {

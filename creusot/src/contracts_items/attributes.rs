@@ -42,6 +42,7 @@ attribute_functions! {
     [creusot::spec::invariant]               => is_invariant
     [creusot::spec::variant]                 => is_variant
     [creusot::spec::variant::loop_]          => is_loop_variant
+    [creusot::before_loop]                   => is_before_loop
     [creusot::spec::assert]                  => is_assertion
     [creusot::spec::snapshot]                => is_snapshot_closure
     [creusot::ghost]                         => is_ghost_closure

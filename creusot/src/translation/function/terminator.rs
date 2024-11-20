@@ -410,11 +410,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
     fn get_explanation(&mut self, msg: &mir::AssertKind<Operand<'tcx>>) -> String {
         match msg {
-            AssertKind::BoundsCheck { len: _, index: _ } => format!("index in bounds"),
-            AssertKind::Overflow(op, _a, _b) => format!("{op:?} overflow"),
-            AssertKind::OverflowNeg(_op) => format!("negation overflow"),
-            AssertKind::DivisionByZero(_) => format!("division by zero"),
-            AssertKind::RemainderByZero(_) => format!("remainder by zero"),
+            AssertKind::BoundsCheck { len: _, index: _ } => format!("expl:index in bounds"),
+            AssertKind::Overflow(op, _a, _b) => format!("expl:{op:?} overflow"),
+            AssertKind::OverflowNeg(_op) => format!("expl:negation overflow"),
+            AssertKind::DivisionByZero(_) => format!("expl:division by zero"),
+            AssertKind::RemainderByZero(_) => format!("expl:remainder by zero"),
             _ => unreachable!("Resume assertions"),
         }
     }

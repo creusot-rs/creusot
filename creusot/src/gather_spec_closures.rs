@@ -1,10 +1,11 @@
 use crate::{
-    contracts_items::{get_invariant_expl, is_assertion, is_loop_variant, is_snapshot_closure},
+    contracts_items::{
+        get_invariant_expl, is_assertion, is_before_loop, is_loop_variant, is_snapshot_closure,
+    },
     ctx::TranslationCtx,
     pearlite::Term,
 };
 use indexmap::{IndexMap, IndexSet};
-use rustc_data_structures::graph::Successors;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{visit::Visitor, AggregateKind, BasicBlock, Body, Location, Operand, Rvalue},
@@ -83,22 +84,81 @@ impl<'tcx> Visitor<'tcx> for Closures<'tcx> {
     }
 }
 
-struct Invariants<'tcx> {
-    tcx: TyCtxt<'tcx>,
-    invariants: IndexMap<Location, (DefId, LoopSpecKind)>,
+pub(crate) struct Invariants<'tcx> {
+    pub(crate) loop_headers: IndexMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>,
+    /// Invariants for which we couldn't find a loop header are translated as assertions.
+    pub(crate) assertions: IndexMap<DefId, (Term<'tcx>, String)>,
 }
 
-impl<'tcx> Visitor<'tcx> for Invariants<'tcx> {
+struct InvariantsVisitor<'a, 'tcx> {
+    ctx: &'a mut TranslationCtx<'tcx>,
+    body: &'a Body<'tcx>,
+    before_loop: IndexSet<BasicBlock>,
+    invariants: Invariants<'tcx>,
+}
+
+impl<'a, 'tcx> InvariantsVisitor<'a, 'tcx> {
+    // Search backwards for the loop header: it should have more than one predecessor.
+    fn find_loop_header(&self, loc: Location) -> Option<BasicBlock> {
+        let mut block = loc.block;
+        if self.before_loop.contains(&block) {
+            // Reached "before_loop" marker in the same block.
+            // This assumes that statements are visited in order, so that if a block
+            // contains both invariants and a "before_block" marker, the marker is not
+            // in the `before_loop` set when we visit invariants before it.
+            return None;
+        }
+        loop {
+            let preds = &self.body.basic_blocks.predecessors()[block];
+            if preds.len() > 1 {
+                return Some(block);
+            }
+            let Some(pred) = preds.get(0) else {
+                // Reached the top of the function. Impossible.
+                panic!("The impossible happened: Missing 'before_loop' marker.");
+            };
+            if self.before_loop.contains(pred) {
+                // Reached "before_loop" marker.
+                return None;
+            }
+            block = *pred;
+        }
+    }
+}
+
+impl<'a, 'tcx> Visitor<'tcx> for InvariantsVisitor<'a, 'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         if let Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
-            let kind = if let Some(expl) = get_invariant_expl(self.tcx, *id) {
+            let kind = if let Some(expl) = get_invariant_expl(self.ctx.tcx, *id) {
                 LoopSpecKind::Invariant(expl)
-            } else if is_loop_variant(self.tcx, *id) {
+            } else if is_loop_variant(self.ctx.tcx, *id) {
+                self.ctx.warn(self.ctx.def_span(id), "Loop variants are currently unsupported.");
                 LoopSpecKind::Variant
             } else {
+                if is_before_loop(self.ctx.tcx, *id) {
+                    self.before_loop.insert(loc.block);
+                }
                 return;
             };
-            self.invariants.insert(loc, (*id, kind));
+            let term = self.ctx.term(*id).unwrap().clone();
+            match self.find_loop_header(loc) {
+                None if let LoopSpecKind::Invariant(expl) = kind => {
+                    self.ctx.warn(
+                        self.ctx.def_span(id),
+                        "This loop does not loop. This invariant could just be an assertion.",
+                    );
+                    let assertions = &mut self.invariants.assertions;
+                    assertions.insert(*id, (term, expl));
+                }
+                None => self.ctx.warn(
+                    self.ctx.def_span(id),
+                    "This loop does not loop. This variant will be ignored.",
+                ),
+                Some(target) => {
+                    let loop_headers = &mut self.invariants.loop_headers;
+                    loop_headers.entry(target).or_insert_with(Vec::new).push((kind, term))
+                }
+            }
         }
         self.super_rvalue(rvalue, loc);
     }
@@ -108,41 +168,13 @@ impl<'tcx> Visitor<'tcx> for Invariants<'tcx> {
 pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     body: &Body<'tcx>,
-) -> IndexMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>> {
-    let mut results = IndexMap::new();
-
-    let mut invs_gather = Invariants { tcx: ctx.tcx, invariants: IndexMap::new() };
+) -> Invariants<'tcx> {
+    let mut invs_gather = InvariantsVisitor {
+        ctx,
+        body,
+        before_loop: IndexSet::new(),
+        invariants: Invariants { loop_headers: IndexMap::new(), assertions: IndexMap::new() },
+    };
     invs_gather.visit_body(body);
-
-    for (loc, (clos, kind)) in invs_gather.invariants.into_iter() {
-        let mut target: BasicBlock = loc.block;
-
-        loop {
-            let mut succs = body.basic_blocks.successors(target);
-
-            target = succs.next().unwrap();
-
-            // Check if `taget_block` is a loop header by testing if it dominates
-            // one of its predecessors.
-            if let Some(preds) = body.basic_blocks.predecessors().get(target) {
-                let is_loop_header = preds
-                    .iter()
-                    .any(|pred| body.basic_blocks.dominators().dominates(target, *pred));
-
-                if is_loop_header {
-                    break;
-                }
-            };
-
-            // If we've hit a switch then stop trying to push the invariants down.
-            if body[target].terminator().kind.as_switch().is_some() {
-                panic!("Could not find loop header")
-            }
-        }
-
-        let term = ctx.term(clos).unwrap().clone();
-        results.entry(target).or_insert_with(Vec::new).push((kind, term));
-    }
-
-    results
+    invs_gather.invariants
 }
