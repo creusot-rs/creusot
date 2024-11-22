@@ -290,10 +290,8 @@ module M_05_binary_search_generic__binary_search [#"05_binary_search_generic.rs"
       
     | bb6 = s0 [ s0 = len'0 {arr} (fun (_ret':usize) ->  [ &size <- _ret' ] s1) | s1 = bb7 ] 
     | bb7 = s0 [ s0 =  [ &base <- [%#s05_binary_search_generic2] (0 : usize) ] s1 | s1 = bb8 ] 
-    | bb8 = bb9
-    | bb9 = bb10
-    | bb10 = bb10
-      [ bb10 = {[@expl:loop invariant #0] [%#s05_binary_search_generic5] 0 < UIntSize.to_int size
+    | bb8 = bb8
+      [ bb8 = {[@expl:loop invariant #0] [%#s05_binary_search_generic5] 0 < UIntSize.to_int size
         /\ UIntSize.to_int size + UIntSize.to_int base <= Seq.length (view'0 arr)}
         {[@expl:loop invariant #1] [%#s05_binary_search_generic4] forall i : usize . i < base
          -> le_log'0 (Seq.get (deep_model'1 arr) (UIntSize.to_int i)) (deep_model'0 elem)}
@@ -302,50 +300,52 @@ module M_05_binary_search_generic__binary_search [#"05_binary_search_generic.rs"
         <= UIntSize.to_int i
         /\ UIntSize.to_int i < Seq.length (view'0 arr)
          -> lt_log'0 (deep_model'0 elem) (Seq.get (deep_model'1 arr) (UIntSize.to_int i))}
-        (! s0) [ s0 = bb11 ] 
-        [ bb11 = s0
+        (! s0) [ s0 = bb9 ] 
+        [ bb9 = bb10
+        | bb10 = bb11
+        | bb11 = s0
           [ s0 = UIntSize.gt {size} {[%#s05_binary_search_generic6] (1 : usize)}
-              (fun (_ret':bool) ->  [ &_21 <- _ret' ] s1)
-          | s1 = any [ br0 -> {_21 = false} (! bb19) | br1 -> {_21} (! bb12) ]  ]
+              (fun (_ret':bool) ->  [ &_22 <- _ret' ] s1)
+          | s1 = any [ br0 -> {_22 = false} (! bb19) | br1 -> {_22} (! bb12) ]  ]
           
         | bb12 = s0
           [ s0 = UIntSize.eq {[%#s05_binary_search_generic7] (2 : usize)} {[%#s05_binary_search_generic8] (0 : usize)}
-              (fun (_ret':bool) ->  [ &_25 <- _ret' ] s1)
-          | s1 = {[@expl:division by zero] [%#s05_binary_search_generic8] not _25} s2
+              (fun (_ret':bool) ->  [ &_26 <- _ret' ] s1)
+          | s1 = {[@expl:division by zero] [%#s05_binary_search_generic8] not _26} s2
           | s2 = bb13 ]
           
         | bb13 = s0
           [ s0 = UIntSize.div {size} {[%#s05_binary_search_generic7] (2 : usize)}
               (fun (_ret':usize) ->  [ &half <- _ret' ] s1)
           | s1 = UIntSize.add {base} {half} (fun (_ret':usize) ->  [ &mid <- _ret' ] s2)
-          | s2 = index'0 {arr} {mid} (fun (_ret':t_T'0) ->  [ &_32 <- _ret' ] s3)
+          | s2 = index'0 {arr} {mid} (fun (_ret':t_T'0) ->  [ &_33 <- _ret' ] s3)
           | s3 = bb14 ]
           
-        | bb14 = s0 [ s0 = gt'0 {_32} {elem} (fun (_ret':bool) ->  [ &_30 <- _ret' ] s1) | s1 = bb15 ] 
-        | bb15 = any [ br0 -> {_30 = false} (! bb17) | br1 -> {_30} (! bb16) ] 
-        | bb16 = s0 [ s0 =  [ &_29 <- base ] s1 | s1 = bb18 ] 
-        | bb17 = s0 [ s0 =  [ &_29 <- mid ] s1 | s1 = bb18 ] 
+        | bb14 = s0 [ s0 = gt'0 {_33} {elem} (fun (_ret':bool) ->  [ &_31 <- _ret' ] s1) | s1 = bb15 ] 
+        | bb15 = any [ br0 -> {_31 = false} (! bb17) | br1 -> {_31} (! bb16) ] 
+        | bb16 = s0 [ s0 =  [ &_30 <- base ] s1 | s1 = bb18 ] 
+        | bb17 = s0 [ s0 =  [ &_30 <- mid ] s1 | s1 = bb18 ] 
         | bb18 = s0
-          [ s0 =  [ &base <- _29 ] s1
+          [ s0 =  [ &base <- _30 ] s1
           | s1 = UIntSize.sub {size} {half} (fun (_ret':usize) ->  [ &size <- _ret' ] s2)
-          | s2 = bb10 ]
+          | s2 = bb8 ]
            ]
          ]
       
-    | bb19 = s0 [ s0 = index'0 {arr} {base} (fun (_ret':t_T'0) ->  [ &_41 <- _ret' ] s1) | s1 = bb20 ] 
+    | bb19 = s0 [ s0 = index'0 {arr} {base} (fun (_ret':t_T'0) ->  [ &_40 <- _ret' ] s1) | s1 = bb20 ] 
     | bb20 = s0
-      [ s0 =  [ &cmp <- _41 ] s1
-      | s1 =  [ &_47 <- elem ] s2
-      | s2 = cmp'0 {cmp} {_47} (fun (_ret':t_Ordering'0) ->  [ &_44 <- _ret' ] s3)
+      [ s0 =  [ &cmp <- _40 ] s1
+      | s1 =  [ &_46 <- elem ] s2
+      | s2 = cmp'0 {cmp} {_46} (fun (_ret':t_Ordering'0) ->  [ &_43 <- _ret' ] s3)
       | s3 = bb21 ]
       
     | bb21 = s0
       [ s0 = {[@expl:type invariant] inv'0 elem} s1
       | s1 = -{resolve'0 elem}- s2
       | s2 = any
-        [ br0 -> {_44 = C_Less'0 } (! bb24)
-        | br1 -> {_44 = C_Equal'0 } (! bb23)
-        | br2 -> {_44 = C_Greater'0 } (! bb25) ]
+        [ br0 -> {_43 = C_Less'0 } (! bb24)
+        | br1 -> {_43 = C_Equal'0 } (! bb23)
+        | br2 -> {_43 = C_Greater'0 } (! bb25) ]
          ]
       
     | bb25 = s0 [ s0 =  [ &_0 <- C_Err'0 base ] s1 | s1 = bb28 ] 
@@ -354,8 +354,8 @@ module M_05_binary_search_generic__binary_search [#"05_binary_search_generic.rs"
     | bb24 = bb27
     | bb27 = s0
       [ s0 = UIntSize.add {base} {[%#s05_binary_search_generic9] (1 : usize)}
-          (fun (_ret':usize) ->  [ &_50 <- _ret' ] s1)
-      | s1 =  [ &_0 <- C_Err'0 _50 ] s2
+          (fun (_ret':usize) ->  [ &_49 <- _ret' ] s1)
+      | s1 =  [ &_0 <- C_Err'0 _49 ] s2
       | s2 = bb28 ]
       
     | bb28 = bb29
@@ -368,18 +368,18 @@ module M_05_binary_search_generic__binary_search [#"05_binary_search_generic.rs"
     | & _10 : usize = any_l ()
     | & size : usize = any_l ()
     | & base : usize = any_l ()
-    | & _21 : bool = any_l ()
+    | & _22 : bool = any_l ()
     | & half : usize = any_l ()
-    | & _25 : bool = any_l ()
+    | & _26 : bool = any_l ()
     | & mid : usize = any_l ()
-    | & _29 : usize = any_l ()
-    | & _30 : bool = any_l ()
-    | & _32 : t_T'0 = any_l ()
+    | & _30 : usize = any_l ()
+    | & _31 : bool = any_l ()
+    | & _33 : t_T'0 = any_l ()
     | & cmp : t_T'0 = any_l ()
-    | & _41 : t_T'0 = any_l ()
-    | & _44 : t_Ordering'0 = any_l ()
-    | & _47 : t_T'0 = any_l ()
-    | & _50 : usize = any_l () ]
+    | & _40 : t_T'0 = any_l ()
+    | & _43 : t_Ordering'0 = any_l ()
+    | & _46 : t_T'0 = any_l ()
+    | & _49 : usize = any_l () ]
     
     [ return' (result:t_Result'0)-> {[@expl:binary_search ensures #0] [%#s05_binary_search_generic14] forall x : usize . result
       = C_Ok'0 x  -> Seq.get (deep_model'1 arr) (UIntSize.to_int x) = deep_model'0 elem}
