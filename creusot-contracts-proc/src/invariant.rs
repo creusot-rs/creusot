@@ -179,6 +179,7 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
             #(#inner)*
             match ::std::iter::Iterator::next(&mut #it) {
                 Some(#elem) => {
+                    #[allow(unused_assignments)]
                     #produced = snapshot! { #produced.inner().concat(::creusot_contracts::logic::Seq::singleton(#elem)) };
                     let #pat = #elem;
                     #body
