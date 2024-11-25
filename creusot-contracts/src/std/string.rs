@@ -5,6 +5,7 @@ extern_spec! {
     mod std {
         mod string {
             impl Deref for String {
+                #[expect(creusot::experimental)] // Suppress the warning until string are no longer experimental
                 #[pure]
                 #[ensures(result@ == self@)]
                 fn deref(&self) -> &str;
