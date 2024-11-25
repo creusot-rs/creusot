@@ -331,11 +331,11 @@ pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
     match *lit {
         Literal::Integer(i) => Constant::Int(i, None).into(),
         Literal::MachSigned(u, intty) => {
-            let why_ty = intty_to_ty(names, intty);
+            let why_ty = intty_to_ty(names, &intty);
             Constant::Int(u, Some(why_ty)).into()
         }
         Literal::MachUnsigned(u, uty) => {
-            let why_ty = uintty_to_ty(names, uty);
+            let why_ty = uintty_to_ty(names, &uty);
 
             Constant::Uint(u, Some(why_ty)).into()
         }

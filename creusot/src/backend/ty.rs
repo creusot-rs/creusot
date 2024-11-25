@@ -1,6 +1,6 @@
 use crate::{
     backend::{
-        program::{floatty_to_prelude, int_to_prelude, uint_to_prelude},
+        program::floatty_to_prelude,
         Why3Generator,
     },
     contracts_items::{get_builtin, get_int_ty, is_int_ty, is_logic, is_trusted},
@@ -10,7 +10,7 @@ use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{AliasTy, AliasTyKind, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Span, DUMMY_SP};
 use rustc_target::{abi::VariantIdx, spec::HasTargetSpec};
-use rustc_type_ir::{FloatTy, IntTy, TyKind::*, UintTy};
+use rustc_type_ir::{FloatTy, TyKind::*};
 use why3::{
     declaration::{AdtDecl, ConstructorDecl, Decl, FieldDecl, SumRecord, TyDecl},
     exp::{Exp, Trigger},
@@ -31,8 +31,8 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
             names.import_prelude_module(PreludeModule::Char);
             MlT::Char
         }
-        Int(ity) => intty_to_ty(names, *ity),
-        Uint(uity) => uintty_to_ty(names, *uity),
+        Int(ity) => intty_to_ty(names, ity),
+        Uint(uity) => uintty_to_ty(names, uity),
         Float(flty) => floatty_to_ty(names, *flty),
         Adt(def, s) => {
             if def.is_box() {
@@ -342,6 +342,51 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
     }
 }
 
+
+pub(crate) fn concret_intty(ity: rustc_middle::ty::IntTy, pointer_width: u32) -> rustc_middle::ty::IntTy {
+    use rustc_middle::ty::IntTy::*;
+
+    fn int_ty (ity: rustc_middle::ty::IntTy, pointer_width: u32) -> rustc_middle::ty::IntTy {
+        match ity {
+            Isize => {
+                match pointer_width {
+                    8 => int_ty(I8, pointer_width),
+                    16 =>int_ty(I16, pointer_width),
+                    32 =>int_ty(I32, pointer_width),
+                    64 =>int_ty(I64, pointer_width),
+                    128 =>int_ty(I128, pointer_width),
+                    w => panic!("concret_intty unknwon pointer width for isize: {w}"), 
+                }
+            }
+            i => i
+        }
+    }
+
+    int_ty(ity, pointer_width)
+}
+
+pub(crate) fn concret_uintty(uty: rustc_middle::ty::UintTy, pointer_width: u32) -> rustc_middle::ty::UintTy {
+    use rustc_middle::ty::UintTy::*;
+
+    fn uint_ty (uty: rustc_middle::ty::UintTy, pointer_width: u32) -> rustc_middle::ty::UintTy {
+        match uty {
+            Usize => {
+                match pointer_width {
+                    8 => uint_ty(U8, pointer_width),
+                    16 =>uint_ty(U16, pointer_width),
+                    32 =>uint_ty(U32, pointer_width),
+                    64 =>uint_ty(U64, pointer_width),
+                    128 =>uint_ty(U128, pointer_width),
+                    w => panic!("concret_uintty unknwon pointer width for usize: {w}"), 
+                }
+            }
+            i => i
+        }
+    }
+
+    uint_ty(uty, pointer_width)
+}
+
 pub(crate) fn intty_to_ty<'tcx, N: Namer<'tcx>>(
     names: &mut N,
     ity: &rustc_middle::ty::IntTy,
@@ -453,14 +498,6 @@ pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &mut Why3Generator<'tcx>, names: &mut N
     let int_id = get_int_ty(ctx.tcx);
     let ty = ctx.type_of(int_id).skip_binder();
     translate_ty(ctx, names, DUMMY_SP, ty)
-}
-
-pub(crate) fn double_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("Float64.t"))
-}
-
-pub(crate) fn single_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("Float32.t"))
 }
 
 pub(crate) fn u8_ty() -> MlT {
