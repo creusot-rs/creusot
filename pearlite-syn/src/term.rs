@@ -12,7 +12,7 @@ use std::mem;
 mod kw {
     syn::custom_keyword!(forall);
     syn::custom_keyword!(exists);
-    syn::custom_keyword!(absurd);
+    syn::custom_keyword!(dead);
     syn::custom_keyword!(pearlite);
     syn::custom_keyword!(trigger);
 }
@@ -121,8 +121,8 @@ ast_enum_of_structs! {
         /// Logical quantification
         Quant(TermQuant),
 
-        /// Logical absurdity
-        Absurd(TermAbsurd),
+        /// POlymorphic placeholder for pealite code that won't be translated
+        Dead(TermDead),
 
         /// Pearlite macro `pearlite!{ ... }`.
         Pearlite(TermPearlite),
@@ -471,8 +471,8 @@ ast_struct! {
 }
 
 ast_struct! {
-    pub struct TermAbsurd {
-        pub absurd_token: kw::absurd
+    pub struct TermDead {
+        pub dead_token: kw::dead
     }
 }
 
@@ -612,6 +612,7 @@ pub(crate) fn requires_terminator(expr: &Term) -> bool {
 pub(crate) mod parsing {
     use super::*;
     use syn::parse::{Parse, ParseStream, Result};
+    use token::{Brace, Bracket, Paren};
     // use syn::path;
     use std::cmp::Ordering;
 
@@ -1145,7 +1146,7 @@ pub(crate) mod parsing {
         } else if (input.peek(Ident)
             && !(input.peek(kw::forall)
                 || input.peek(kw::exists)
-                || input.peek(kw::absurd)
+                || input.peek(kw::dead)
                 || input.peek(kw::pearlite)))
             || input.peek(Token![::])
             || input.peek(Token![<])
@@ -1165,8 +1166,8 @@ pub(crate) mod parsing {
             input.parse().map(Term::If)
         } else if input.peek(kw::forall) || input.peek(kw::exists) {
             input.parse().map(Term::Quant)
-        } else if input.peek(kw::absurd) {
-            input.parse().map(Term::Absurd)
+        } else if input.peek(kw::dead) {
+            input.parse().map(Term::Dead)
         } else if input.peek(kw::pearlite) {
             input.parse().map(Term::Pearlite)
         } else if input.peek(Token![match]) {
@@ -1205,13 +1206,19 @@ pub(crate) mod parsing {
             && is_mod_style(&expr.inner.path)
         {
             let bang_token: Token![!] = input.parse()?;
-            let (_, _, tokens) = input.parse_any_delimiter()?;
+            let (delim, span, tokens) = input.parse_any_delimiter()?;
+            let delimiter = match delim {
+                Delimiter::Parenthesis => MacroDelimiter::Paren(Paren { span }),
+                Delimiter::Brace => MacroDelimiter::Brace(Brace { span }),
+                // Delimiter::None should not be encountered here.
+                Delimiter::Bracket | Delimiter::None => MacroDelimiter::Bracket(Bracket { span }),
+            };
             return Ok(Term::Macro(ExprMacro {
                 attrs: Vec::new(),
                 mac: Macro {
                     path: expr.inner.path,
                     bang_token,
-                    delimiter: MacroDelimiter::Brace(Default::default()),
+                    delimiter,
                     tokens: tokens.parse()?,
                 },
             }));
@@ -1458,9 +1465,9 @@ pub(crate) mod parsing {
         }
     }
 
-    impl Parse for TermAbsurd {
+    impl Parse for TermDead {
         fn parse(input: ParseStream) -> Result<Self> {
-            Ok(TermAbsurd { absurd_token: input.parse()? })
+            Ok(TermDead { dead_token: input.parse()? })
         }
     }
 
@@ -1985,9 +1992,9 @@ pub(crate) mod printing {
         }
     }
 
-    impl ToTokens for TermAbsurd {
+    impl ToTokens for TermDead {
         fn to_tokens(&self, tokens: &mut TokenStream) {
-            self.absurd_token.to_tokens(tokens);
+            self.dead_token.to_tokens(tokens);
         }
     }
 

@@ -1,6 +1,6 @@
 //! Defines all the internal creusot attributes.
 
-use rustc_ast::{AttrArgs, AttrArgsEq, Attribute};
+use rustc_ast::{AttrArgs, AttrArgsEq, Attribute, Param};
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
@@ -58,6 +58,15 @@ attribute_functions! {
     [creusot::clause::variant]               => has_variant_clause
 }
 
+pub fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "invariant"]).map(|a| {
+        match a.args {
+            AttrArgs::Eq(_, AttrArgsEq::Hir(ref expl)) => expl.symbol.to_string(),
+            _ => "expl:loop invariant".to_string(),
+        }
+    })
+}
+
 pub(crate) fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
     is_no_translate(tcx, def_id) || is_predicate(tcx, def_id) || is_logic(tcx, def_id)
 }
@@ -95,6 +104,31 @@ pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::A
         .into_iter()
         .map(|a| why3::declaration::Attribute::Attr(a.value_str().unwrap().as_str().into()))
         .collect()
+}
+
+pub(crate) fn creusot_clause_attrs<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    clause: &str,
+) -> impl Iterator<Item = &'tcx AttrArgs> {
+    // Attributes are given in reverse order. So we need to rever the list of
+    // attributes to make sure requires/ensures clauses appear in the same
+    // order in WhyML code as they appear in Rust code.
+    get_attrs(tcx.get_attrs_unchecked(def_id), &["creusot", "clause", clause])
+        .into_iter()
+        .rev()
+        .map(|a| &a.get_normal_item().args)
+}
+
+pub(crate) fn get_creusot_item(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
+    match &get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "item"])?.args {
+        AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l.symbol),
+        _ => unreachable!("invalid creusot::item attribute"),
+    }
+}
+
+pub(crate) fn is_open_inv_param(p: &Param) -> bool {
+    return get_attr(&p.attrs, &["creusot", "open_inv"]).is_some();
 }
 
 fn get_attr<'a>(

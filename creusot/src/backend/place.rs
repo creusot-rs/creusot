@@ -1,10 +1,9 @@
-use crate::{backend::Namer, fmir::Place, util};
+use crate::{backend::Namer, fmir::Place, naming::ident_of};
 use rustc_middle::{
     mir::{self, tcx::PlaceTy, ProjectionElem},
     ty::{self, Ty, TyCtxt, TyKind},
 };
 use rustc_span::Symbol;
-use rustc_type_ir::AliasTyKind;
 use std::{cell::RefCell, rc::Rc};
 use why3::{
     coma::{Arg, Expr, Param},
@@ -81,7 +80,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                 }
             }
             Field(ix, _) => match place_ty.ty.kind() {
-                TyKind::Adt(def, subst) => {
+                TyKind::Adt(def, subst) if def.is_enum() => {
                     let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
                     let variant = &def.variants()[variant_id];
                     let fields: Vec<_> = variant
@@ -96,28 +95,12 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                         })
                         .collect();
 
-                    let projections = lower.borrow_mut().ctx.projections_in_ty(def.did()).to_vec();
-                    let mut ty_projections = Vec::new();
-                    for p in projections {
-                        let low = &mut *lower.borrow_mut();
-                        let n = low.names.normalize(&low.ctx, p);
-                        let ty = low
-                            .ty(low.ctx.mk_ty_from_kind(TyKind::Alias(AliasTyKind::Projection, n)));
-                        ty_projections.push(ty);
-                    }
-                    let params = subst
-                        .iter()
-                        .flat_map(|ty| ty.as_type())
-                        .map(|ty| lower.borrow_mut().ty(ty))
-                        .chain(ty_projections)
-                        .map(Arg::Ty)
-                        .chain(std::iter::once(Arg::Term(focus.call(istmts))))
-                        .collect();
                     let acc_name = lower.borrow_mut().names.eliminator(variant.def_id, subst);
+                    let args = vec![Arg::Term(focus.call(istmts))];
                     istmts.push(IntermediateStmt::Call(
                         fields.clone(),
                         Expr::Symbol(acc_name),
-                        params,
+                        args,
                     ));
 
                     let foc = Exp::var(fields[ix.as_usize()].as_term().0.clone());
@@ -129,9 +112,37 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                         let mut fields: Vec<_> =
                             fields.into_iter().map(|f| Exp::var(f.as_term().0.clone())).collect();
                         fields[ix.as_usize()] = t;
-                        // TODO: Only emit type if the constructor would otherwise be ambiguous
                         constructor(is, constr.app(fields))
                     });
+                }
+                TyKind::Adt(def, subst) => {
+                    assert!(def.is_struct());
+
+                    let focus1 = focus.clone();
+
+                    focus = Focus::new(move |is| {
+                        focus.call(is).field(
+                            &lower.borrow_mut().names.field(def.did(), subst, *ix).as_ident(),
+                        )
+                    });
+
+                    constructor = Box::new(move |is, t| {
+                        let updates = vec![(
+                            lower
+                                .borrow_mut()
+                                .names
+                                .field(def.did(), subst, *ix)
+                                .as_ident()
+                                .to_string(),
+                            t,
+                        )];
+                        if def.all_fields().count() == 1 {
+                            constructor(is, Exp::Record { fields: updates })
+                        } else {
+                            let record = Box::new(focus1.call(is));
+                            constructor(is, Exp::RecUp { record, updates })
+                        }
+                    })
                 }
                 TyKind::Tuple(fields) => {
                     let focus1 = focus.clone();
@@ -168,42 +179,26 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     });
                 }
                 TyKind::Closure(id, subst) => {
-                    let acc_name = lower.borrow_mut().names.eliminator(*id, subst);
-                    let upvars = subst.as_closure().upvar_tys();
-                    let field_names: Vec<_> =
-                        upvars.iter().map(|_| lower.borrow_mut().fresh_from("r")).collect();
+                    let focus1 = focus.clone();
 
-                    let fields: Vec<_> = field_names
-                        .iter()
-                        .cloned()
-                        .zip(upvars)
-                        .map(|(id, ty)| Param::Term(id, lower.borrow_mut().ty(ty)))
-                        .collect();
-                    let params = subst
-                        .as_closure()
-                        .parent_args()
-                        .iter()
-                        .flat_map(|arg| arg.as_type())
-                        .map(|ty| lower.borrow_mut().ty(ty))
-                        .map(Arg::Ty)
-                        .chain(std::iter::once(Arg::Term(focus.call(istmts))))
-                        .collect();
-                    istmts.push(IntermediateStmt::Call(
-                        fields.clone(),
-                        Expr::Symbol(acc_name),
-                        params,
-                    ));
+                    focus = Focus::new(move |is| {
+                        focus
+                            .call(is)
+                            .field(&lower.borrow_mut().names.field(*id, subst, *ix).as_ident())
+                    });
 
-                    let foc = Exp::var(fields[ix.as_usize()].as_term().0.clone());
-                    focus = Focus::new(|_| foc);
+                    constructor = Box::new(move |is, t| {
+                        let updates = vec![(
+                            lower.borrow_mut().names.field(*id, subst, *ix).as_ident().to_string(),
+                            t,
+                        )];
 
-                    constructor = Box::new(|is, t| {
-                        let constr = Exp::qvar(lower.borrow_mut().names.constructor(*id, subst));
-                        let mut fields: Vec<_> =
-                            field_names.into_iter().map(|f| Exp::var(f)).collect();
-                        fields[ix.as_usize()] = t;
-                        // TODO: Only emit type if the constructor would otherwise be ambiguous
-                        constructor(is, constr.app(fields))
+                        if subst.as_closure().upvar_tys().len() == 1 {
+                            constructor(is, Exp::Record { fields: updates })
+                        } else {
+                            let record = Box::new(focus1.call(is));
+                            constructor(is, Exp::RecUp { record, updates })
+                        }
                     });
                 }
                 _ => todo!("place: {:?}", place_ty.ty.kind()),
@@ -267,7 +262,7 @@ pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
         &lower,
         istmts,
         place_ty,
-        Focus::new(|_| Exp::var(util::ident_of(pl.local))),
+        Focus::new(|_| Exp::var(ident_of(pl.local))),
         Box::new(|_, _| unreachable!()),
         &pl.projection,
     );
@@ -286,7 +281,7 @@ fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
         &lower,
         istmts,
         place_ty,
-        Focus::new(|_| Exp::var(util::ident_of(pl.local))),
+        Focus::new(|_| Exp::var(ident_of(pl.local))),
         Box::new(|_, x| x),
         &pl.projection,
     );

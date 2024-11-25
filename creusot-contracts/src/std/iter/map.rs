@@ -14,18 +14,16 @@ pub trait MapExt<I, F> {
 impl<I, F> MapExt<I, F> for Map<I, F> {
     #[trusted]
     #[logic]
-    #[open(self)]
     #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
-        absurd
+        dead
     }
 
     #[trusted]
     #[logic]
-    #[open(self)]
     #[ensures(inv(self) ==> inv(result))]
     fn func(self) -> F {
-        absurd
+        dead
     }
 }
 
@@ -74,7 +72,7 @@ where
             && forall<i : Int> 0 <= i && i < visited.len() ==>
                  self.func().unnest(*fs[i])
                  && (*fs[i]).precondition((s[i],))
-                 && fs[i].postcondition_mut((s[i],), visited[i])
+                 && (*fs[i]).postcondition_mut((s[i],), ^fs[i], visited[i])
         }
     }
 
@@ -84,8 +82,6 @@ where
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
-    // FIXME: remove `trusted`
-    #[trusted]
     #[law]
     #[open(self)]
     #[requires(inv(a))]
@@ -122,11 +118,11 @@ where
 {
     pearlite! {
         forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
-            #![trigger iter.produces(s.push(e1).push(e2), i), f.postcondition_mut((e1,), b)]
+            #![trigger iter.produces(s.push_back(e1).push_back(e2), i), (*f).postcondition_mut((e1,), ^f, b)]
             inv(s) && inv(e1) && inv(e2) && inv(f) && inv(i) && func.unnest(*f) ==>
-            iter.produces(s.push(e1).push(e2), i) ==>
+            iter.produces(s.push_back(e1).push_back(e2), i) ==>
             (*f).precondition((e1,)) ==>
-            f.postcondition_mut((e1,), b) ==>
+            (*f).postcondition_mut((e1,), ^f, b) ==>
             (^f).precondition((e2, ))
     }
 }

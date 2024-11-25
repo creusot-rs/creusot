@@ -391,7 +391,7 @@ impl Parse for Assertion {
 #[proc_macro]
 pub fn proof_assert(assertion: TS1) -> TS1 {
     let assert = parse_macro_input!(assertion as Assertion);
-    let assert_body = pretyping::encode_block(&assert.0).unwrap();
+    let assert_body = pretyping::encode_block(&assert.0).unwrap_or_else(|e| e.into_tokens());
 
     TS1::from(quote! {
         {
@@ -409,7 +409,7 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
 #[proc_macro]
 pub fn snapshot(assertion: TS1) -> TS1 {
     let assert = parse_macro_input!(assertion as Assertion);
-    let assert_body = pretyping::encode_block(&assert.0).unwrap();
+    let assert_body = pretyping::encode_block(&assert.0).unwrap_or_else(|e| e.into_tokens());
 
     TS1::from(quote! {
         {
@@ -426,6 +426,17 @@ pub fn snapshot(assertion: TS1) -> TS1 {
 #[proc_macro_attribute]
 pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
     let documentation = document_spec("terminates", TS1::new());
+    if let Ok(item) = syn::parse::<ImplItemFn>(tokens.clone()) {
+        if let Some(def) = item.defaultness {
+            return syn::Error::new(
+                def.span(),
+                "`terminates` functions cannot use the `default` modifier",
+            )
+            .into_compile_error()
+            .into();
+        }
+    };
+
     let mut result = TS1::from(quote! { #[creusot::clause::terminates] #documentation });
     result.extend(tokens);
     result
@@ -434,6 +445,16 @@ pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
 #[proc_macro_attribute]
 pub fn pure(_: TS1, tokens: TS1) -> TS1 {
     let documentation = document_spec("pure", TS1::new());
+    if let Ok(item) = syn::parse::<ImplItemFn>(tokens.clone()) {
+        if let Some(def) = item.defaultness {
+            return syn::Error::new(
+                def.span(),
+                "`pure` functions cannot use the `default` modifier",
+            )
+            .into_compile_error()
+            .into();
+        }
+    };
     let mut result = TS1::from(
         quote! { #[creusot::clause::no_panic] #[creusot::clause::terminates] #documentation },
     );
@@ -474,7 +495,13 @@ impl Parse for LogicInput {
         let attrs = input.call(Attribute::parse_outer)?;
         // Infalliable, no visibility = inherited
         let vis: Visibility = input.parse()?;
-        let default = input.parse()?;
+        let default: Option<_> = input.parse()?;
+        if default.is_some() {
+            return Err(syn::Error::new(
+                input.span(),
+                "logical functions cannot use the `default` modifier",
+            ));
+        }
         let sig: Signature = input.parse()?;
         let lookahead = input.lookahead1();
         if lookahead.peek(Token![;]) {
@@ -551,7 +578,7 @@ fn logic_item(log: LogicItem, prophetic: Option<TokenStream>, documentation: Tok
     let def = log.defaultness;
     let sig = log.sig;
     let attrs = log.attrs;
-    let req_body = pretyping::encode_block(&term.stmts).unwrap();
+    let req_body = pretyping::encode_block(&term.stmts).unwrap_or_else(|e| e.into_tokens());
 
     TS1::from(quote_spanned! {span =>
         #[::creusot_contracts::pure]
@@ -651,7 +678,7 @@ fn predicate_item(
     let sig = log.sig;
     let attrs = log.attrs;
 
-    let req_body = pretyping::encode_block(&term.stmts).unwrap();
+    let req_body = pretyping::encode_block(&term.stmts).unwrap_or_else(|e| e.into_tokens());
 
     TS1::from(quote_spanned! {span =>
         #[::creusot_contracts::pure]
@@ -692,7 +719,7 @@ pub fn pearlite(tokens: TS1) -> TS1 {
             .iter()
             .map(pretyping::encode_stmt)
             .collect::<std::result::Result<TokenStream, _>>()
-            .unwrap(),
+            .unwrap_or_else(|e| e.into_tokens()),
     )
 }
 

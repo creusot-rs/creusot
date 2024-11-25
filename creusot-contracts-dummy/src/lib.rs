@@ -29,14 +29,14 @@ pub fn proof_assert(_: TS1) -> TS1 {
 
 #[proc_macro]
 pub fn snapshot(_: TS1) -> TS1 {
-    quote::quote! { creusot_contracts::snapshot::Snapshot::from_fn(|| std::process::abort()) }
+    quote::quote! { ::creusot_contracts::snapshot::Snapshot::from_fn(|| std::process::abort()) }
         .into()
 }
 
 #[proc_macro]
 pub fn ghost(body: TS1) -> TS1 {
     let body = proc_macro2::TokenStream::from(body);
-    quote::quote! { GhostBox::from_fn(|| { #body }) }.into()
+    quote::quote! { ::creusot_contracts::ghost::GhostBox::from_fn(|| { #body }) }.into()
 }
 
 #[proc_macro_attribute]

@@ -127,13 +127,13 @@ pub fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&
     #[invariant(forall<r: Seq<&Item<Name>>>
                     result@.len() <= r.len() &&
                     (forall<i: Int> 0 <= i && i < result@.len() ==> result[i] == r[i]) &&
-                    sum_weights(r, result@.len()) <= left_weight@ ==>
-                    sum_weights(r, 0) <= max_weight@)]
+                    sum_values(r, result@.len()) == m(items@, j@, left_weight@) ==>
+                    sum_values(r, 0) == m(items@, items@.len(), max_weight@))]
     #[invariant(forall<r: Seq<&Item<Name>>>
                     result@.len() <= r.len() &&
                     (forall<i: Int> 0 <= i && i < result@.len() ==> result[i] == r[i]) &&
-                    sum_values(r, result@.len()) == m(items@, j@, left_weight@) ==>
-                    sum_values(r, 0) == m(items@, items@.len(), max_weight@))]
+                    sum_weights(r, result@.len()) <= left_weight@ ==>
+                    sum_weights(r, 0) <= max_weight@)]
     #[invariant(forall<r: Seq<&Item<Name>>>
                     result@.len() <= r.len() &&
                     (forall<i: Int> 0 <= i && i < result@.len() ==> result[i] == r[i]) &&

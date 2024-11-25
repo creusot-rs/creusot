@@ -18,16 +18,12 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator
         }
     }
 
-    // FIXME: remove `trusted`
-    #[trusted]
     #[law]
     #[open(self)]
     #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
-    // FIXME: remove `trusted`
-    #[trusted]
     #[law]
     #[open(self)]
     #[requires(inv(a))]
@@ -54,7 +50,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator
             && forall<i : Int> 0 <= i && i < visited.len() ==>
                  self.func.unnest(*fs[i])
                  && (*fs[i]).precondition((s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))))
-                 && fs[i].postcondition_mut((s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), visited[i])
+                 && (*fs[i]).postcondition_mut((s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), ^fs[i], visited[i])
         }
     }
 }
@@ -66,7 +62,6 @@ impl<I, B, F> Resolve for MapInv<I, B, F> {
         resolve(&self.iter) && resolve(&self.func)
     }
 
-    #[trusted]
     #[logic(prophetic)]
     #[open(self)]
     #[requires(structural_resolve(self))]
@@ -103,7 +98,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> ::std::iter
         match self.iter.next() {
             Some(v) => {
                 proof_assert! { self.func.precondition((v, self.produced)) };
-                let produced = snapshot! { self.produced.push(v) };
+                let produced = snapshot! { self.produced.push_back(v) };
                 let r = (self.func)(v, self.produced);
                 self.produced = produced;
                 #[allow(path_statements)]
@@ -131,18 +126,16 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I
         }
     }
 
-    // FIXME: remove `trusted`
-    #[trusted]
     #[predicate(prophetic)]
     #[ensures(produced == Seq::EMPTY ==> result == Self::preservation(iter, func))]
     fn preservation_inv(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 inv(s) && inv(e1) && inv(e2) && inv(f) && inv(b) && inv(i) && func.unnest(*f) ==>
-                iter.produces(s.push(e1).push(e2), i) ==>
+                iter.produces(s.push_back(e1).push_back(e2), i) ==>
                 (*f).precondition((e1, Snapshot::new(produced.concat(s)))) ==>
-                f.postcondition_mut((e1, Snapshot::new(produced.concat(s))), b) ==>
-                (^f).precondition((e2, Snapshot::new(produced.concat(s).push(e1))))
+                (*f).postcondition_mut((e1, Snapshot::new(produced.concat(s))), ^f, b) ==>
+                (^f).precondition((e2, Snapshot::new(produced.concat(s).push_back(e1))))
         }
     }
 
@@ -152,10 +145,10 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 inv(s) && inv(e1) && inv(e2) && inv(f) && inv(b) && inv(i) && func.unnest(*f) ==>
-                iter.produces(s.push(e1).push(e2), i) ==>
+                iter.produces(s.push_back(e1).push_back(e2), i) ==>
                 (*f).precondition((e1, Snapshot::new(s))) ==>
-                f.postcondition_mut((e1, Snapshot::new(s)), b) ==>
-                (^f).precondition((e2, Snapshot::new(s.push(e1))))
+                (*f).postcondition_mut((e1, Snapshot::new(s)), ^f, b) ==>
+                (^f).precondition((e2, Snapshot::new(s.push_back(e1))))
         }
     }
 
@@ -181,20 +174,18 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I
     #[requires(inv(iter))]
     #[requires(self.iter.produces(Seq::singleton(e), iter))]
     #[requires(*f == self.func)]
-    #[requires(f.postcondition_mut((e, self.produced), r) )]
-    #[ensures(Self::preservation_inv(iter, ^f, self.produced.push(e)))]
-    #[ensures(Self::next_precondition(iter, ^f, self.produced.push(e)))]
+    #[requires((*f).postcondition_mut((e, self.produced), ^f, r) )]
+    #[ensures(Self::preservation_inv(iter, ^f, self.produced.push_back(e)))]
+    #[ensures(Self::next_precondition(iter, ^f, self.produced.push_back(e)))]
     fn produces_one_invariant(self, e: I::Item, r: B, f: &mut F, iter: I) {
         proof_assert! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, i: I>
                 inv(s) && inv(e1) && inv(e2) && inv(i) ==>
-                iter.produces(s.push(e1).push(e2), i) ==>
-                self.iter.produces(Seq::singleton(e).concat(s).push(e1).push(e2), i)
+                iter.produces(s.push_back(e1).push_back(e2), i) ==>
+                self.iter.produces(s.push_front(e).push_back(e1).push_back(e2), i)
         }
     }
 
-    // FIXME: remove `trusted`
-    #[trusted]
     #[open]
     #[predicate(prophetic)]
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
@@ -203,9 +194,9 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I
             exists<f: &mut F, e: I::Item>
                 inv(f) && inv(e) && *f == self.func && ^f == succ.func
                 && self.iter.produces(Seq::singleton(e), succ.iter)
-                && succ.produced.inner() == self.produced.push(e)
+                && succ.produced.inner() == self.produced.push_back(e)
                 && (*f).precondition((e, self.produced))
-                && f.postcondition_mut((e, self.produced), visited)
+                && (*f).postcondition_mut((e, self.produced), ^f, visited)
         }
     }
 }

@@ -6,11 +6,10 @@ macro_rules! mach_int {
         impl View for $t {
             type ViewTy = Int;
             #[logic]
-            #[open]
             #[trusted]
             #[creusot::builtins = concat!($ty_nm, ".to_int")]
             fn view(self) -> Self::ViewTy {
-                pearlite! { absurd }
+                dead
             }
         }
 

@@ -45,6 +45,27 @@ pub struct NotFinalPlaces<'tcx> {
     infos: HashMap<PlaceRef<'tcx>, PlaceInfo<'tcx>>,
 }
 
+fn place_has_deref_ref<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &mir::Body<'tcx>,
+    place: PlaceRef<'tcx>,
+) -> bool {
+    for (p, elem) in place.iter_projections() {
+        if matches!(elem, ProjectionElem::Deref) {
+            let ty_kind = p.ty(body, tcx).ty.kind();
+            match ty_kind {
+                rustc_type_ir::TyKind::Ref(_, _, mutability) => {
+                    if !mutability.is_mut() {
+                        return true;
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    false
+}
+
 impl<'tcx> NotFinalPlaces<'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> Self {
         #[derive(Default)]
@@ -54,27 +75,8 @@ impl<'tcx> NotFinalPlaces<'tcx> {
             places_per_local: HashMap<mir::Local, Vec<PlaceRef<'tcx>>>,
         }
         impl<'tcx> Visitor<'tcx> for VisitAllPlaces<'tcx> {
-            fn visit_place(&mut self, place: &Place<'tcx>, context: PlaceContext, _: Location) {
+            fn visit_place(&mut self, place: &Place<'tcx>, _: PlaceContext, _: Location) {
                 let place_ref = place.as_ref();
-                // This is both an optimization, and required for `rustc_borrowck::consumers::places_conflict` to not crash.
-                // This is ok to do, because those are the only places we will consider anyways.
-                if !matches!(
-                    context,
-                    PlaceContext::NonMutatingUse(NonMutatingUseContext::Move)
-                        | PlaceContext::MutatingUse(
-                            MutatingUseContext::Store
-                                | MutatingUseContext::Drop
-                                | MutatingUseContext::SetDiscriminant
-                                | MutatingUseContext::AsmOutput
-                                | MutatingUseContext::Call
-                                | MutatingUseContext::Borrow
-                        )
-                        | PlaceContext::NonUse(
-                            NonUseContext::StorageDead | NonUseContext::StorageLive
-                        )
-                ) {
-                    return;
-                }
                 for place in
                     std::iter::once(place_ref).chain(place_ref.iter_projections().map(|(p, _)| p))
                 {
@@ -124,6 +126,9 @@ impl<'tcx> NotFinalPlaces<'tcx> {
                     // This function would crash if `place` is a `*x` where `x: &T`.
                     // But we filtered such places in the visitor.
                     if !subplace
+                        // This is required for `rustc_borrowck::consumers::places_conflict` to not crash.
+                        && !place_has_deref_ref(tcx, body, place)
+                        && !place_has_deref_ref(tcx, body, other_place)
                         && rustc_borrowck::consumers::places_conflict(
                             tcx,
                             body,

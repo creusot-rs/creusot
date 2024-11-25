@@ -21,7 +21,7 @@ fn uses_fn<F: Fn() -> u32>(f: F) {
 }
 
 // #[requires(f.precondition(()))]
-// #[ensures(exists<f2 : &mut F, r : _> *f2 == f && f2.postcondition_mut((), r))]
+// #[ensures(exists<f2 : F, r : _> f2.postcondition_mut((), f2, r))]
 // fn uses_fnmut<F: FnMut() -> u32>(mut f: F) {
 //     f();
 // }

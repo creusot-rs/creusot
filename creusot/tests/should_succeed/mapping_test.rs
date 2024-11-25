@@ -14,13 +14,12 @@ impl View for T {
     type ViewTy = Mapping<Int, Int>;
 
     #[logic]
-    #[open(self)]
     #[trusted]
     #[ensures(
         forall<i:Int>
             result.get(i) == (if 0 <= i && i < self.a@ { 1 } else { 0 }))]
     fn view(self) -> Self::ViewTy {
-        absurd
+        dead
     }
 }
 

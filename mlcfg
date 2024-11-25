@@ -8,13 +8,15 @@ SCRIPTPATH=$(dirname "$BASH_SOURCE")
 pushd "$SCRIPTPATH" > /dev/null
 eval $(cargo run --bin dev-env)
 cargo run --bin creusot-rustc --  \
+  -Zno-codegen \
+  -Zmacro-backtrace \
+  --extern creusot_contracts=./target/creusot/debug/libcreusot_contracts.rlib \
+  -Ldependency=./target/creusot/debug/deps/ \
+  --crate-type=lib \
+  "$INPUTPATH" \
+  -- \
   --why3-config-file "$WHY3CONFIG" \
   --output-file="${INPUTPATH%.*}.coma" \
-  --span-mode=absolute \
-  -- -Zno-codegen \
-  -Zmacro-backtrace \
-  --extern creusot_contracts=./target/debug/libcreusot_contracts.rlib \
-  -Ldependency=./target/debug/deps/ \
-  --crate-type=lib \
-  "$INPUTPATH"
+  --span-mode=absolute
+
 popd > /dev/null

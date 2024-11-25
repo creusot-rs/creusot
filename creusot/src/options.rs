@@ -33,7 +33,6 @@ pub struct Options {
     pub prefix: Vec<why3::Ident>,
     pub in_cargo: bool,
     pub span_mode: SpanMode,
-    pub match_str: Option<String>,
     pub simple_triggers: bool,
     pub why3_cmd: Option<Why3Command>,
 }
@@ -43,4 +42,5 @@ pub enum Output {
     Directory(PathBuf), // One file per Coma module
     File(PathBuf),      // Monolithic output
     Stdout,
+    None,
 }

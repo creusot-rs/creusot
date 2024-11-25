@@ -1,200 +1,147 @@
-module T_core__ptr__non_null__NonNull
-  use prelude.prelude.Opaque
-  
-  type t_NonNull 't =
-    | C_NonNull opaque_ptr
-  
-  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
-    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer}) ]
-    
-end
-module T_core__marker__PhantomData
-  type t_PhantomData 't =
-    | C_PhantomData
-  
-  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any [ good -> {C_PhantomData  = input} (! ret) ] 
-end
-module T_core__ptr__unique__Unique
-  use T_core__marker__PhantomData as PhantomData'0
-  
-  use T_core__ptr__non_null__NonNull as NonNull'0
-  
-  type t_Unique 't =
-    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
-  
-  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
-    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
-      = input}
-      (! ret {pointer} {_marker}) ]
-    
-end
-module T_alloc__raw_vec__Cap
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  type t_Cap  =
-    | C_Cap usize
-  
-  let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
-    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0}) ]
-    
-end
-module T_alloc__raw_vec__RawVec
-  use T_alloc__raw_vec__Cap as Cap'0
-  
-  use T_core__ptr__unique__Unique as Unique'0
-  
-  type t_RawVec 't 'a =
-    | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
-  
-  let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
-    [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
-      (! ret {ptr} {cap} {alloc}) ]
-    
-end
-module T_alloc__vec__Vec
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  use T_alloc__raw_vec__RawVec as RawVec'0
-  
-  type t_Vec 't 'a =
-    | C_Vec (RawVec'0.t_RawVec 't 'a) usize
-  
-  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
-    
-end
-module T_alloc__alloc__Global
-  type t_Global  =
-    | C_Global
-  
-  let rec t_Global (input:t_Global) (ret  )= any [ good -> {C_Global  = input} (! ret) ] 
-end
 module M_trigger2__resolve_seq [#"trigger2.rs" 6 0 6 43]
-  type t
-  
-  let%span strigger20 = "trigger2.rs" 5 0 5 36
-  let%span svec1 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
-  let%span strigger22 = "trigger2.rs" 7 4 10 5
-  let%span svec3 = "../../../creusot-contracts/src/std/vec.rs" 51 8 51 85
+  let%span strigger20 = "trigger2.rs" 5 10 5 34
+  let%span svec1 = "../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span strigger22 = "trigger2.rs" 8 8 9 32
+  let%span svec3 = "../../../creusot-contracts/src/std/vec.rs" 49 20 49 83
   let%span sops4 = "../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
-  let%span sresolve5 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  use seq.Seq
-  
-  use T_alloc__alloc__Global as Global'0
+  let%span sresolve5 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   
   use prelude.prelude.Borrow
   
-  use T_alloc__vec__Vec as Vec'0
+  use prelude.prelude.Opaque
   
-  function view'0 (self : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)) : Seq.seq (borrowed t)
+  type t_NonNull'0  =
+    { t_NonNull__pointer'0: opaque_ptr }
   
-  axiom view'0_spec : forall self : Vec'0.t_Vec (borrowed t) (Global'0.t_Global) . [%#svec1] Seq.length (view'0 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
+  type t_Unique'0  =
+    { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
   
-  predicate resolve'3 (self : borrowed t) =
-    [%#sresolve5] self.final = self.current
+  use prelude.prelude.UIntSize
   
-  predicate resolve'2 (_1 : borrowed t) =
-    resolve'3 _1
+  type t_Cap'0  =
+    { t_Cap__0'0: usize }
   
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)) (ix : int) : borrowed t
-   =
+  type t_RawVec'0  =
+    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+  
+  type t_Vec'0  =
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
+  
+  use prelude.prelude.Int
+  
+  use seq.Seq
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.UIntSize
+  
+  type t_T'0
+  
+  use seq.Seq
+  
+  function view'0 (self : t_Vec'0) : Seq.seq (borrowed t_T'0)
+  
+  axiom view'0_spec : forall self : t_Vec'0 . [%#svec1] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  use seq.Seq
+  
+  function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : borrowed t_T'0 =
     [%#sops4] Seq.get (view'0 self) ix
   
-  predicate resolve'1 (self : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)) =
+  predicate resolve'3 (self : borrowed t_T'0) =
+    [%#sresolve5] self.final = self.current
+  
+  predicate resolve'2 (_1 : borrowed t_T'0) =
+    resolve'3 _1
+  
+  predicate resolve'1 (self : t_Vec'0) =
     [%#svec3] forall i : int . 0 <= i /\ i < Seq.length (view'0 self)  -> resolve'2 (index_logic'0 self i)
   
-  predicate resolve'0 (_1 : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)) =
+  predicate resolve'0 (_1 : t_Vec'0) =
     resolve'1 _1
   
-  constant seq  : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)
+  constant seq  : t_Vec'0
   
-  predicate resolve_seq [#"trigger2.rs" 6 0 6 43] (seq : Vec'0.t_Vec (borrowed t) (Global'0.t_Global))
+  predicate resolve_seq'0 [#"trigger2.rs" 6 0 6 43] (seq : t_Vec'0)
   
-  goal vc_resolve_seq : [%#strigger20] resolve'0 seq
+  goal vc_resolve_seq'0 : [%#strigger20] resolve'0 seq
    -> ([%#strigger22] forall i : int [Seq.get (view'0 seq) i] . 0 <= i /\ i < Seq.length (view'0 seq)
    -> (Seq.get (view'0 seq) i).current = (Seq.get (view'0 seq) i).final)
 end
 module M_trigger2__resolve_seq2 [#"trigger2.rs" 16 0 16 48]
-  type t
-  
-  let%span strigger20 = "trigger2.rs" 14 0 14 36
-  let%span strigger21 = "trigger2.rs" 5 0 5 36
-  let%span strigger22 = "trigger2.rs" 7 4 10 5
-  let%span svec3 = "../../../creusot-contracts/src/std/vec.rs" 51 8 51 85
-  let%span svec4 = "../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
-  let%span sops5 = "../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
-  let%span sresolve6 = "../../../creusot-contracts/src/resolve.rs" 41 20 41 34
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use T_alloc__alloc__Global as Global'0
+  let%span strigger20 = "trigger2.rs" 14 10 14 34
+  let%span strigger21 = "trigger2.rs" 5 10 5 34
+  let%span strigger22 = "trigger2.rs" 17 4 17 20
+  let%span strigger23 = "trigger2.rs" 8 8 9 32
+  let%span svec4 = "../../../creusot-contracts/src/std/vec.rs" 49 20 49 83
+  let%span svec5 = "../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span sops6 = "../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
+  let%span sresolve7 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   
   use prelude.prelude.Borrow
   
-  use T_alloc__vec__Vec as Vec'0
+  use prelude.prelude.Opaque
+  
+  type t_NonNull'0  =
+    { t_NonNull__pointer'0: opaque_ptr }
+  
+  type t_Unique'0  =
+    { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
   
   use prelude.prelude.UIntSize
   
-  use prelude.prelude.UIntSize
+  type t_Cap'0  =
+    { t_Cap__0'0: usize }
+  
+  type t_RawVec'0  =
+    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+  
+  type t_Vec'0  =
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
   
   use prelude.prelude.Int
   
+  use seq.Seq
+  
   constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  function view'0 (self : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)) : Seq.seq (borrowed t)
+  use prelude.prelude.UIntSize
   
-  axiom view'0_spec : forall self : Vec'0.t_Vec (borrowed t) (Global'0.t_Global) . [%#svec4] Seq.length (view'0 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
+  type t_T'0
   
-  predicate resolve'3 (self : borrowed t) =
-    [%#sresolve6] self.final = self.current
+  use seq.Seq
   
-  predicate resolve'2 (_1 : borrowed t) =
+  function view'0 (self : t_Vec'0) : Seq.seq (borrowed t_T'0)
+  
+  axiom view'0_spec : forall self : t_Vec'0 . [%#svec5] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  use seq.Seq
+  
+  function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : borrowed t_T'0 =
+    [%#sops6] Seq.get (view'0 self) ix
+  
+  predicate resolve'3 (self : borrowed t_T'0) =
+    [%#sresolve7] self.final = self.current
+  
+  predicate resolve'2 (_1 : borrowed t_T'0) =
     resolve'3 _1
   
-  function index_logic'0 [@inline:trivial] (self : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)) (ix : int) : borrowed t
-   =
-    [%#sops5] Seq.get (view'0 self) ix
+  predicate resolve'1 (self : t_Vec'0) =
+    [%#svec4] forall i : int . 0 <= i /\ i < Seq.length (view'0 self)  -> resolve'2 (index_logic'0 self i)
   
-  predicate resolve'1 (self : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)) =
-    [%#svec3] forall i : int . 0 <= i /\ i < Seq.length (view'0 self)  -> resolve'2 (index_logic'0 self i)
-  
-  predicate resolve'0 (_1 : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)) =
+  predicate resolve'0 (_1 : t_Vec'0) =
     resolve'1 _1
   
-  predicate resolve_seq'0 [#"trigger2.rs" 6 0 6 43] (seq : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)) =
-    [%#strigger22] forall i : int [Seq.get (view'0 seq) i] . 0 <= i /\ i < Seq.length (view'0 seq)
+  predicate resolve_seq'0 [#"trigger2.rs" 6 0 6 43] (seq : t_Vec'0) =
+    [%#strigger23] forall i : int [Seq.get (view'0 seq) i] . 0 <= i /\ i < Seq.length (view'0 seq)
      -> (Seq.get (view'0 seq) i).current = (Seq.get (view'0 seq) i).final
   
-  axiom resolve_seq'0_spec : forall seq : Vec'0.t_Vec (borrowed t) (Global'0.t_Global) . [%#strigger21] resolve'0 seq
-   -> resolve_seq'0 seq
+  axiom resolve_seq'0_spec : forall seq : t_Vec'0 . [%#strigger21] resolve'0 seq  -> resolve_seq'0 seq
   
-  constant seq  : Vec'0.t_Vec (borrowed t) (Global'0.t_Global)
+  constant seq  : t_Vec'0
   
-  predicate resolve_seq2 [#"trigger2.rs" 16 0 16 48] (seq : Vec'0.t_Vec (borrowed t) (Global'0.t_Global))
+  predicate resolve_seq2'0 [#"trigger2.rs" 16 0 16 48] (seq : t_Vec'0)
   
-  goal vc_resolve_seq2 : ([%#strigger21] resolve'0 seq  -> resolve_seq'0 seq)
+  goal vc_resolve_seq2'0 : ([%#strigger21] resolve'0 seq  -> resolve_seq'0 seq)
    -> ([%#strigger20] resolve'0 seq  -> resolve_seq'0 seq)
 end

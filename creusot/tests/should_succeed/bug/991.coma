@@ -1,153 +1,58 @@
-module T_core__ptr__non_null__NonNull
-  use prelude.prelude.Opaque
-  
-  type t_NonNull 't =
-    | C_NonNull opaque_ptr
-  
-  let rec t_NonNull < 't > (input:t_NonNull 't) (ret  (pointer:opaque_ptr))= any
-    [ good (pointer:opaque_ptr)-> {C_NonNull pointer = input} (! ret {pointer}) ]
-    
-end
-module T_core__marker__PhantomData
-  type t_PhantomData 't =
-    | C_PhantomData
-  
-  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any [ good -> {C_PhantomData  = input} (! ret) ] 
-end
-module T_core__ptr__unique__Unique
-  use T_core__marker__PhantomData as PhantomData'0
-  
-  use T_core__ptr__non_null__NonNull as NonNull'0
-  
-  type t_Unique 't =
-    | C_Unique (NonNull'0.t_NonNull 't) (PhantomData'0.t_PhantomData 't)
-  
-  let rec t_Unique < 't > (input:t_Unique 't) (ret  (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't))= any
-    [ good (pointer:NonNull'0.t_NonNull 't) (_marker:PhantomData'0.t_PhantomData 't)-> {C_Unique pointer _marker
-      = input}
-      (! ret {pointer} {_marker}) ]
-    
-end
-module T_alloc__raw_vec__Cap
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  type t_Cap  =
-    | C_Cap usize
-  
-  let rec t_Cap (input:t_Cap) (ret  (field_0:usize))= any
-    [ good (field_0:usize)-> {C_Cap field_0 = input} (! ret {field_0}) ]
-    
-end
-module T_alloc__raw_vec__RawVec
-  use T_alloc__raw_vec__Cap as Cap'0
-  
-  use T_core__ptr__unique__Unique as Unique'0
-  
-  type t_RawVec 't 'a =
-    | C_RawVec (Unique'0.t_Unique 't) (Cap'0.t_Cap) 'a
-  
-  let rec t_RawVec < 't > < 'a > (input:t_RawVec 't 'a) (ret  (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a))= any
-    [ good (ptr:Unique'0.t_Unique 't) (cap:Cap'0.t_Cap) (alloc:'a)-> {C_RawVec ptr cap alloc = input}
-      (! ret {ptr} {cap} {alloc}) ]
-    
-end
-module T_alloc__vec__Vec
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  use T_alloc__raw_vec__RawVec as RawVec'0
-  
-  type t_Vec 't 'a =
-    | C_Vec (RawVec'0.t_RawVec 't 'a) usize
-  
-  let rec t_Vec < 't > < 'a > (input:t_Vec 't 'a) (ret  (buf:RawVec'0.t_RawVec 't 'a) (len:usize))= any
-    [ good (buf:RawVec'0.t_RawVec 't 'a) (len:usize)-> {C_Vec buf len = input} (! ret {buf} {len}) ]
-    
-end
-module T_alloc__alloc__Global
-  type t_Global  =
-    | C_Global
-  
-  let rec t_Global (input:t_Global) (ret  )= any [ good -> {C_Global  = input} (! ret) ] 
-end
-module T_991__Formula [#"991.rs" 5 0 5 18]
-  use T_alloc__alloc__Global as Global'0
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  use T_alloc__vec__Vec as Vec'0
-  
-  type t_Formula  =
-    | C_Formula (Vec'0.t_Vec usize (Global'0.t_Global)) bool
-  
-  let rec t_Formula (input:t_Formula) (ret  (vec:Vec'0.t_Vec usize (Global'0.t_Global)) (b:bool))= any
-    [ good (vec:Vec'0.t_Vec usize (Global'0.t_Global)) (b:bool)-> {C_Formula vec b = input} (! ret {vec} {b}) ]
-    
-  
-  function t_Formula__vec (self : t_Formula) : Vec'0.t_Vec usize (Global'0.t_Global) =
-    match self with
-      | C_Formula a _ -> a
-      end
-  
-  function t_Formula__b (self : t_Formula) : bool =
-    match self with
-      | C_Formula _ a -> a
-      end
-end
 module M_991__qyi6256438357931963096__love_and_hope [#"991.rs" 22 4 22 27] (* Formula *)
   let%span s9910 = "991.rs" 21 14 21 28
-  let%span smodel1 = "../../../../creusot-contracts/src/model.rs" 91 8 91 22
+  let%span smodel1 = "../../../../creusot-contracts/src/model.rs" 88 8 88 22
   let%span s9912 = "991.rs" 16 8 16 33
-  let%span svec3 = "../../../../creusot-contracts/src/std/vec.rs" 19 14 19 41
-  
-  use T_991__Formula as Formula'0
-  
-  use prelude.prelude.Borrow
-  
-  use T_991__Formula as T_991__Formula
-  
-  use seq.Seq
-  
-  use T_alloc__alloc__Global as Global'0
-  
-  use T_alloc__vec__Vec as Vec'0
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
-  
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
-  
-  use seq.Seq
-  
-  function view'2 (self : Vec'0.t_Vec usize (Global'0.t_Global)) : Seq.seq usize
-  
-  axiom view'2_spec : forall self : Vec'0.t_Vec usize (Global'0.t_Global) . [%#svec3] Seq.length (view'2 self)
-  <= UIntSize.to_int (v_MAX'0 : usize)
-  
-  use T_991__Formula as T_991__Formula
-  
-  function view'1 [#"991.rs" 15 4 15 33] (self : Formula'0.t_Formula) : (Seq.seq usize, bool) =
-    [%#s9912] (view'2 (T_991__Formula.t_Formula__vec self), T_991__Formula.t_Formula__b self)
-  
-  function view'0 (self : Formula'0.t_Formula) : (Seq.seq usize, bool) =
-    [%#smodel1] view'1 self
+  let%span svec3 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   
   use prelude.prelude.Intrinsic
   
+  use prelude.prelude.Borrow
+  
+  use prelude.prelude.Opaque
+  
+  type t_NonNull'0  =
+    { t_NonNull__pointer'0: opaque_ptr }
+  
+  type t_Unique'0  =
+    { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
+  
+  use prelude.prelude.UIntSize
+  
+  type t_Cap'0  =
+    { t_Cap__0'0: usize }
+  
+  type t_RawVec'0  =
+    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+  
+  type t_Vec'0  =
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
+  
+  type t_Formula'0  =
+    { t_Formula__vec'0: t_Vec'0; t_Formula__b'0: bool }
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
+  
+  function view'2 (self : t_Vec'0) : Seq.seq usize
+  
+  axiom view'2_spec : forall self : t_Vec'0 . [%#svec3] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  
+  function view'1 [#"991.rs" 15 4 15 33] (self : t_Formula'0) : (Seq.seq usize, bool) =
+    [%#s9912] (view'2 self.t_Formula__vec'0, self.t_Formula__b'0)
+  
+  function view'0 (self : t_Formula'0) : (Seq.seq usize, bool) =
+    [%#smodel1] view'1 self
+  
   meta "compute_max_steps" 1000000
   
-  let rec love_and_hope (self:Formula'0.t_Formula) (return'  (ret:()))= (! bb0 [ bb0 = return' {_0} ] )
+  let rec love_and_hope'0 (self:t_Formula'0) (return'  (ret:()))= (! bb0 [ bb0 = return' {_0} ] )
     [ & _0 : () = any_l () ]
-     [ return' (result:())-> {[@expl:postcondition] [%#s9910] view'0 self = view'0 self} (! return' {result}) ] 
-end
-module M_991__qyi17221981267159154533 [#"991.rs" 10 0 10 21] (* <Formula as creusot_contracts::View> *)
-  
+     [ return' (result:())-> {[@expl:love_and_hope ensures] [%#s9910] view'0 self = view'0 self} (! return' {result}) ] 
 end

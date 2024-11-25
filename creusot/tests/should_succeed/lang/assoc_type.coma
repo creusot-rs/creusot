@@ -1,52 +1,34 @@
-module T_assoc_type__Assoc [#"assoc_type.rs" 8 0 8 23]
-  type t_Assoc 'u 'proj0 =
-    | C_Assoc 'proj0
-  
-  let rec t_Assoc < 'u > < 'proj0 > (input:t_Assoc 'u 'proj0) (ret  (item:'proj0))= any
-    [ good (item:'proj0)-> {C_Assoc item = input} (! ret {item}) ]
-    
-end
-module T_assoc_type__Nested [#"assoc_type.rs" 32 0 32 24]
-  use T_assoc_type__Assoc as Assoc'0
-  
-  type t_Nested 't 'proj0 =
-    | C_Nested (Assoc'0.t_Assoc 't 'proj0)
-  
-  let rec t_Nested < 't > < 'proj0 > (input:t_Nested 't 'proj0) (ret  (item:Assoc'0.t_Assoc 't 'proj0))= any
-    [ good (item:Assoc'0.t_Assoc 't 'proj0)-> {C_Nested item = input} (! ret {item}) ]
-    
-end
 module M_assoc_type__uses3 [#"assoc_type.rs" 36 0 36 33]
-  type t
-  
   type t_A'0
+  
+  type t_Assoc'0  =
+    { t_Assoc__item'0: t_A'0 }
+  
+  type t_Nested'0  =
+    { t_Nested__item'0: t_Assoc'0 }
   
   predicate inv'2 (_1 : t_A'0)
   
-  use T_assoc_type__Assoc as Assoc'0
+  predicate inv'1 (_1 : t_Assoc'0)
   
-  predicate inv'1 (_1 : Assoc'0.t_Assoc t t_A'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Assoc'0.t_Assoc t t_A'0 [inv'1 x] . inv'1 x
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Assoc'0 [inv'1 x] . inv'1 x
   = match x with
-    | Assoc'0.C_Assoc item -> inv'2 item
+    | {t_Assoc__item'0 = item} -> inv'2 item
     end
   
-  use T_assoc_type__Nested as Nested'0
+  predicate inv'0 (_1 : t_Nested'0)
   
-  predicate inv'0 (_1 : Nested'0.t_Nested t t_A'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : Nested'0.t_Nested t t_A'0 [inv'0 x] . inv'0 x
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Nested'0 [inv'0 x] . inv'0 x
   = match x with
-    | Nested'0.C_Nested item -> inv'1 item
+    | {t_Nested__item'0 = item} -> inv'1 item
     end
   
   use prelude.prelude.Intrinsic
   
   meta "compute_max_steps" 1000000
   
-  let rec uses3 (_1:Nested'0.t_Nested t t_A'0) (return'  (ret:()))= {inv'0 _1}
+  let rec uses3'0 (_1:t_Nested'0) (return'  (ret:()))= {[@expl:uses3 '_1' type invariant] inv'0 _1}
     (! bb0 [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'0 _1} s1 | s1 = bb1 ]  | bb1 = return' {_0} ] )
-    [ & _0 : () = any_l () | & _1 : Nested'0.t_Nested t t_A'0 = _1 ]
+    [ & _0 : () = any_l () | & _1 : t_Nested'0 = _1 ]
      [ return' (result:())-> (! return' {result}) ] 
 end

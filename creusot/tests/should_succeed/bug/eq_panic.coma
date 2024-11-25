@@ -1,51 +1,51 @@
 module M_eq_panic__omg [#"eq_panic.rs" 6 0 6 51]
-  type t
-  
   let%span seq_panic0 = "eq_panic.rs" 6 30 6 31
   let%span seq_panic1 = "eq_panic.rs" 6 37 6 38
   let%span scmp2 = "../../../../creusot-contracts/src/std/cmp.rs" 11 26 11 75
-  let%span smodel3 = "../../../../creusot-contracts/src/model.rs" 82 8 82 28
+  let%span smodel3 = "../../../../creusot-contracts/src/model.rs" 79 8 79 28
   let%span sinvariant4 = "../../../../creusot-contracts/src/invariant.rs" 24 8 24 18
   
   use prelude.prelude.Borrow
   
-  predicate inv'0 (_1 : t)
+  type t_T'0
   
-  predicate invariant'1 (self : t) =
-    [%#sinvariant4] inv'0 self
+  predicate inv'2 (_1 : t_T'0)
   
-  predicate inv'1 (_1 : t)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t [inv'1 x] . inv'1 x = invariant'1 x
-  
-  predicate inv'2 (_1 : t)
-  
-  predicate invariant'0 (self : t) =
+  predicate invariant'0 (self : t_T'0) =
     [%#sinvariant4] inv'2 self
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t [inv'0 x] . inv'0 x = invariant'0 x
+  predicate inv'0 (_1 : t_T'0)
   
-  use prelude.prelude.Intrinsic
+  axiom inv_axiom'0 [@rewrite] : forall x : t_T'0 [inv'0 x] . inv'0 x = invariant'0 x
+  
+  predicate invariant'1 (self : t_T'0) =
+    [%#sinvariant4] inv'0 self
+  
+  predicate inv'1 (_1 : t_T'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_T'0 [inv'1 x] . inv'1 x = invariant'1 x
   
   type t_DeepModelTy'0
   
-  function deep_model'2 (self : t) : t_DeepModelTy'0
+  function deep_model'2 (self : t_T'0) : t_DeepModelTy'0
   
-  function deep_model'1 (self : t) : t_DeepModelTy'0 =
+  function deep_model'1 (self : t_T'0) : t_DeepModelTy'0 =
     [%#smodel3] deep_model'2 self
   
-  function deep_model'0 (self : t) : t_DeepModelTy'0 =
+  function deep_model'0 (self : t_T'0) : t_DeepModelTy'0 =
     [%#smodel3] deep_model'1 self
   
-  let rec eq'0 (self:t) (other:t) (return'  (ret:bool))= {[@expl:precondition] inv'1 other}
-    {[@expl:precondition] inv'1 self}
+  let rec eq'0 (self:t_T'0) (other:t_T'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'1 self}
+    {[@expl:eq 'other' type invariant] inv'1 other}
     any [ return' (result:bool)-> {[%#scmp2] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ] 
+  
+  use prelude.prelude.Intrinsic
   
   meta "compute_max_steps" 1000000
   
-  let rec omg (x:t) (y:t) (return'  (ret:bool))= {[%#seq_panic1] inv'0 y}
-    {[%#seq_panic0] inv'0 x}
+  let rec omg'0 (x:t_T'0) (y:t_T'0) (return'  (ret:bool))= {[@expl:omg 'x' type invariant] [%#seq_panic0] inv'0 x}
+    {[@expl:omg 'y' type invariant] [%#seq_panic1] inv'0 y}
     (! bb0
     [ bb0 = s0 [ s0 = eq'0 {x} {y} (fun (_ret':bool) ->  [ &_0 <- _ret' ] s1) | s1 = bb1 ]  | bb1 = return' {_0} ]
-    ) [ & _0 : bool = any_l () | & x : t = x | & y : t = y ]  [ return' (result:bool)-> (! return' {result}) ] 
+    ) [ & _0 : bool = any_l () | & x : t_T'0 = x | & y : t_T'0 = y ]  [ return' (result:bool)-> (! return' {result}) ] 
 end

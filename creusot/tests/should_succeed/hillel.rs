@@ -69,17 +69,17 @@ fn is_subset<T>(sub: Seq<T>, sup: Seq<T>) -> bool {
 }
 
 #[logic]
-#[ensures(is_subset(s, s.push(elem)))]
+#[ensures(is_subset(s, s.push_back(elem)))]
 fn subset_push<T>(s: Seq<T>, elem: T) {}
 
 #[requires(is_unique(vec.deep_model()))]
 #[ensures(is_unique((^vec).deep_model()))]
 #[ensures(is_subset(vec.deep_model(), (^vec).deep_model()))]
-#[ensures(is_subset((^vec).deep_model(), vec.deep_model().push(elem.deep_model())))]
+#[ensures(is_subset((^vec).deep_model(), vec.deep_model().push_back(elem.deep_model())))]
 #[ensures(contains((^vec).deep_model(), elem.deep_model()))]
 fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
     snapshot! { subset_push::<T::DeepModelTy> };
-    proof_assert! { is_subset(vec.deep_model(), vec.deep_model().push(elem.deep_model())) };
+    proof_assert! { is_subset(vec.deep_model(), vec.deep_model().push_back(elem.deep_model())) };
     let ghost_vec = snapshot! { vec };
 
     #[invariant(forall<j: Int> 0 <= j && j < produced.len() ==> produced[j].deep_model() != elem.deep_model())]
@@ -92,7 +92,7 @@ fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
     }
 
     proof_assert!(^vec == ^*ghost_vec);
-    proof_assert! { is_unique(vec.deep_model().push(elem.deep_model())) };
+    proof_assert! { is_unique(vec.deep_model().push_back(elem.deep_model())) };
     vec.push(elem);
 }
 
@@ -110,7 +110,7 @@ fn unique<T: Eq + DeepModel + Copy>(str: &[T]) -> Vec<T> {
     for i in 0..str.len() {
         let elem: T = str[i];
         insert_unique(&mut unique, elem);
-        sub_str = snapshot! { sub_str.push(elem) };
+        sub_str = snapshot! { sub_str.push_back(elem) };
     }
 
     proof_assert! { is_subset(str.deep_model().subsequence(0, str@.len()), unique.deep_model()) }

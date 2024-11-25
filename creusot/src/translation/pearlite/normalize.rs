@@ -1,15 +1,21 @@
 use crate::{
-    contracts_items::get_builtin,
+    contracts_items::{get_builtin, is_box_new},
     pearlite::{self, Literal, Term, TermKind},
-    traits::resolve_assoc_item_opt,
+    traits::TraitResolved,
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{ParamEnv, TyCtxt};
 
 use super::{super_visit_mut_term, BinOp, TermVisitorMut};
 
-pub(crate) fn normalize<'tcx>(tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>, term: &mut Term<'tcx>) {
-    NormalizeTerm { param_env, tcx }.visit_mut_term(term);
+pub(crate) fn normalize<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    mut term: Term<'tcx>,
+) -> Term<'tcx> {
+    NormalizeTerm { param_env, tcx }.visit_mut_term(&mut term);
+    let term = tcx.normalize_erasing_regions(param_env, term);
+    term
 }
 
 struct NormalizeTerm<'tcx> {
@@ -22,21 +28,17 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
         super_visit_mut_term(term, self);
         match &mut term.kind {
             TermKind::Call { id, subst, args } => {
-                let method = if self.tcx.trait_of_item(*id).is_some() {
-                    resolve_assoc_item_opt(self.tcx, self.param_env, *id, subst)
+                if self.tcx.trait_of_item(*id).is_some() {
+                    let method = TraitResolved::resolve_item(self.tcx, self.param_env, *id, subst)
                         .to_opt(*id, subst)
                         .unwrap_or_else(|| {
                             panic!("could not resolve trait instance {:?}", (*id, *subst))
-                        })
-                } else {
-                    // TODO dont' do this
-                    (*id, *subst)
-                };
-                *id = method.0;
-                *subst = method.1;
-                *subst = self.tcx.normalize_erasing_regions(self.param_env, *subst);
+                        });
+                    *id = method.0;
+                    *subst = method.1;
+                }
 
-                if self.tcx.def_path_str(*id) == "std::boxed::Box::<T>::new" {
+                if is_box_new(self.tcx, *id) {
                     let arg = args.remove(0);
                     *term = arg;
                     return;
@@ -47,18 +49,15 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
                 }
             }
             TermKind::Item(id, subst) => {
-                let method = if self.tcx.trait_of_item(*id).is_some() {
-                    resolve_assoc_item_opt(self.tcx, self.param_env, *id, subst)
+                if self.tcx.trait_of_item(*id).is_some() {
+                    let method = TraitResolved::resolve_item(self.tcx, self.param_env, *id, subst)
                         .to_opt(*id, subst)
                         .unwrap_or_else(|| {
                             panic!("could not resolve trait instance {:?}", (*id, *subst))
-                        })
-                } else {
-                    // TODO dont' do this
-                    (*id, *subst)
-                };
-                *id = method.0;
-                *subst = method.1;
+                        });
+                    *id = method.0;
+                    *subst = method.1;
+                }
             }
             _ => {}
         }

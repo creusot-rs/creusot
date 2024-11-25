@@ -20,7 +20,7 @@ impl EncodeError {
             }
             Self::Unsupported(sp, msg) => {
                 let msg = format!("Unsupported expression: {}", msg);
-                quote_spanned! {sp=> compile_error!(#msg) }
+                quote_spanned! { sp=> compile_error!(#msg) }
             }
         }
     }
@@ -40,7 +40,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             } else {
                 Err(EncodeError::Unsupported(
                     term.span(),
-                    "Macros other than pearlite! or proof_assert! are unsupported".into(),
+                    "macros other than `pearlite!` or `proof_assert!` are unsupported in pearlite code".into(),
                 ))
             }
         }
@@ -161,7 +161,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         RT::Range(_) => Err(EncodeError::Unsupported(term.span(), "Range".into())),
         RT::Reference(TermReference { mutability, expr, .. }) => {
             let term = encode_term(expr)?;
-            Ok(quote! {
+            Ok(quote_spanned! {sp=>
                 & #mutability #term
             })
         }
@@ -206,13 +206,13 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         RT::Type(ty) => Ok(quote_spanned! {sp=> #ty }),
         RT::Unary(TermUnary { op, expr }) => {
             let term = encode_term(expr)?;
-            Ok(quote! {
+            Ok(quote_spanned! {sp=>
                 #op #term
             })
         }
         RT::Final(TermFinal { term, .. }) => {
             let term = encode_term(term)?;
-            Ok(quote! {
+            Ok(quote_spanned! {sp=>
                 * ::creusot_contracts::__stubs::fin(#term)
             })
         }
@@ -222,7 +222,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                 _ => &*term,
             };
             let term = encode_term(term)?;
-            Ok(quote! {
+            Ok(quote_spanned! {sp=>
                 ::creusot_contracts::model::View::view(#term)
             })
         }
@@ -230,7 +230,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         RT::LogEq(TermLogEq { lhs, rhs, .. }) => {
             let lhs = encode_term(lhs)?;
             let rhs = encode_term(rhs)?;
-            Ok(quote! {
+            Ok(quote_spanned! {sp=>
                 ::creusot_contracts::__stubs::equal(#lhs, #rhs)
             })
         }
@@ -244,14 +244,14 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             };
             let hyp = encode_term(hyp)?;
             let cons = encode_term(cons)?;
-            Ok(quote! {
+            Ok(quote_spanned! {sp=>
                 ::creusot_contracts::__stubs::implication(#hyp, #cons)
             })
         }
         RT::Quant(TermQuant { quant_token, args, trigger, term, .. }) => {
             let mut ts = encode_term(term)?;
             ts = encode_trigger(&trigger, ts)?;
-            ts = quote! {
+            ts = quote_spanned! {sp=>
                 ::creusot_contracts::__stubs::#quant_token(
                     #[creusot::no_translate]
                     |#args| { #ts }
@@ -259,7 +259,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             };
             Ok(ts)
         }
-        RT::Absurd(_) => Ok(quote_spanned! {sp=> *::creusot_contracts::__stubs::abs() }),
+        RT::Dead(_) => Ok(quote_spanned! {sp=> *::creusot_contracts::__stubs::dead() }),
         RT::Pearlite(term) => Ok(quote_spanned! {sp=> #term }),
         RT::Closure(clos) => {
             let inputs = &clos.inputs;

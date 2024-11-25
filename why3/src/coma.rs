@@ -1,4 +1,4 @@
-use crate::{declaration::Use, ty::Type, Ident, Print, QName};
+use crate::{declaration::Use, printer::Print, ty::Type, Ident, QName};
 use pretty::docs;
 
 #[cfg(feature = "serialize")]
@@ -243,6 +243,7 @@ impl Print for Param {
         }
     }
 }
+
 impl Print for Var {
     fn pretty<'b, 'a: 'b, A: pretty::DocAllocator<'a>>(
         &'a self,

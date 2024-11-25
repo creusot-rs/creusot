@@ -1,14 +1,13 @@
 use super::BodyTranslator;
 use crate::{
     analysis::NotFinalPlaces,
-    contracts_items,
+    contracts_items::{is_assertion, is_invariant, is_snapshot_closure, is_spec, is_variant},
     extended_location::ExtendedLocation,
     fmir::Operand,
     translation::{
         fmir::{self, RValue},
         specification::inv_subst,
     },
-    util::snapshot_closure_id,
 };
 use rustc_borrowck::borrow_set::TwoPhaseActivation;
 use rustc_middle::{
@@ -16,7 +15,7 @@ use rustc_middle::{
         BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
         StatementKind,
     },
-    ty::adjustment::PointerCoercion,
+    ty::{adjustment::PointerCoercion, TyKind},
 };
 use rustc_mir_dataflow::ResultsCursor;
 
@@ -94,7 +93,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Rvalue::Use(op) => match op {
                 Move(_pl) | Copy(_pl) => RValue::Operand(self.translate_operand(op)),
                 Constant(box c) => {
-                    if snapshot_closure_id(self.tcx(), c.const_.ty()).is_some() {
+                    if let TyKind::Closure(def_id, _) = c.const_.ty().peel_refs().kind()
+                        && is_snapshot_closure(self.tcx(), *def_id)
+                    {
                         return;
                     };
                     RValue::Operand(self.translate_operand(op))
@@ -133,17 +134,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 match kind {
                     Tuple => RValue::Tuple(fields),
                     Adt(adt, varix, subst, _, _) => {
-                        // self.ctx.translate(*adt);
                         let variant = self.ctx.adt_def(*adt).variant(*varix).def_id;
-
                         RValue::Constructor(variant, subst, fields)
                     }
                     Closure(def_id, subst) => {
-                        if contracts_items::is_invariant(self.tcx(), *def_id)
-                            || contracts_items::is_variant(self.tcx(), *def_id)
-                        {
+                        if is_invariant(self.tcx(), *def_id) || is_variant(self.tcx(), *def_id) {
                             return;
-                        } else if contracts_items::is_assertion(self.tcx(), *def_id) {
+                        } else if is_assertion(self.tcx(), *def_id) {
                             let mut assertion = self
                                 .assertions
                                 .remove(def_id)
@@ -155,7 +152,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 msg: "assertion".to_owned(),
                             });
                             return;
-                        } else if contracts_items::is_spec(self.tcx(), *def_id) {
+                        } else if is_spec(self.tcx(), *def_id) {
                             return;
                         } else {
                             RValue::Constructor(*def_id, subst, fields)

@@ -16,7 +16,7 @@ impl Tr for () {
 #[trusted]
 #[logic]
 fn x<T: Tr>(_x: T) -> T::A {
-    absurd
+    dead
 }
 
 #[requires(x(a) == ())]

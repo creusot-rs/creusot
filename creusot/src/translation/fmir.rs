@@ -1,4 +1,4 @@
-use crate::{backend::place::projection_ty, pearlite::Term, util::ident_of};
+use crate::{backend::place::projection_ty, naming::ident_of, pearlite::Term};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
@@ -214,8 +214,15 @@ impl<'tcx> Branches<'tcx> {
 }
 
 #[derive(Clone, Debug)]
+pub struct Invariant<'tcx> {
+    pub(crate) body: Term<'tcx>,
+    /// Label ("explanation") for the corresponding Why3 subgoal, including the "expl:" prefix
+    pub(crate) expl: String,
+}
+
+#[derive(Clone, Debug)]
 pub struct Block<'tcx> {
-    pub(crate) invariants: Vec<Term<'tcx>>,
+    pub(crate) invariants: Vec<Invariant<'tcx>>,
     pub(crate) variant: Option<Term<'tcx>>,
     pub(crate) stmts: Vec<Statement<'tcx>>,
     pub(crate) terminator: Terminator<'tcx>,

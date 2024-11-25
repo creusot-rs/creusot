@@ -4,24 +4,29 @@ use rustc_hir::{
 };
 use rustc_middle::{
     thir::{self, ClosureExpr, ExprKind, Thir},
-    ty::{FnDef, TyCtxt, Visibility},
+    ty::{FnDef, ParamEnv, TyCtxt, Visibility},
 };
 use rustc_span::Span;
 
 use crate::{
-    contracts_items::{self, is_law, is_open_inv_result, is_trusted},
-    ctx::{parent_module, TranslationCtx},
+    contracts_items::{
+        get_builtin, is_ghost_deref, is_ghost_deref_mut, is_law, is_logic, is_no_translate,
+        is_open_inv_result, is_predicate, is_prophetic, is_snapshot_closure, is_snapshot_deref,
+        is_spec, is_trusted, opacity_witness_name,
+    },
+    ctx::TranslationCtx,
     error::{Error, InternalError},
     pearlite::{pearlite_stub, Stub},
     specification::contract_of,
+    traits::TraitResolved,
     translation::pearlite::{super_visit_term, TermKind, TermVisitor},
-    util,
+    util::parent_module,
 };
 
 pub(crate) fn validate_trusted(ctx: &mut TranslationCtx) {
     for def_id in ctx.hir_crate_items(()).definitions() {
         let def_id = def_id.to_def_id();
-        if contracts_items::get_builtin(ctx.tcx, def_id).is_some() && !is_trusted(ctx.tcx, def_id) {
+        if get_builtin(ctx.tcx, def_id).is_some() && !is_trusted(ctx.tcx, def_id) {
             ctx.error(
                 ctx.def_span(def_id),
                 "Builtin declarations should be annotated with #[trusted].",
@@ -79,7 +84,8 @@ pub(crate) fn validate_opacity(ctx: &mut TranslationCtx, item: DefId) -> Option<
             }
         }
     }
-    if contracts_items::is_spec(ctx.tcx, item) {
+
+    if is_spec(ctx.tcx, item) {
         return Some(());
     }
 
@@ -87,7 +93,7 @@ pub(crate) fn validate_opacity(ctx: &mut TranslationCtx, item: DefId) -> Option<
     let term = ctx.term(item)?.clone();
 
     if ctx.visibility(item) != Visibility::Restricted(parent_module(ctx.tcx, item))
-        && contracts_items::opacity_witness_name(ctx.tcx, item).is_none()
+        && opacity_witness_name(ctx.tcx, item).is_none()
     {
         ctx.error(ctx.def_span(item), "Non private definitions must have an explicit transparency. Please add #[open(..)] to your definition").emit();
     }
@@ -119,18 +125,19 @@ pub(crate) fn validate_traits(ctx: &mut TranslationCtx) {
 
 // These methods are allowed to cheat the purity restrictions because they are lang items we cannot redefine
 fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
-    let def_path = tcx.def_path_str(def_id);
-
-    def_path.ends_with("::ops::Mul::mul")
-        || def_path.ends_with("::ops::Add::add")
-        || def_path.ends_with("::ops::Sub::sub")
-        || def_path.ends_with("::ops::Div::div")
-        || def_path.ends_with("::ops::Rem::rem")
-        || def_path.ends_with("::ops::Neg::neg")
-        || def_path.ends_with("::boxed::Box::<T>::new")
-        || def_path.ends_with("::ops::Deref::deref")
-        || def_path.ends_with("::ops::DerefMut::deref_mut")
-        || def_path.ends_with("Snapshot::<T>::from_fn")
+    if let Some(name) = tcx.get_diagnostic_name(def_id) {
+        match name.as_str() {
+            "mul" | "add" | "sub" | "div" | "rem" | "neg" | "box_new" | "deref_method"
+            | "deref_mut_method" => true,
+            _ => {
+                is_snapshot_deref(tcx, def_id)
+                    || is_ghost_deref(tcx, def_id)
+                    || is_ghost_deref_mut(tcx, def_id)
+            }
+        }
+    } else {
+        false
+    }
 }
 
 pub(crate) fn validate_impls(ctx: &mut TranslationCtx) {
@@ -191,8 +198,8 @@ pub(crate) fn validate_impls(ctx: &mut TranslationCtx) {
                 continue;
             };
 
-            let item_type = util::item_type(ctx.tcx, impl_item);
-            let trait_type = util::item_type(ctx.tcx, trait_item);
+            let item_type = ctx.item_type(impl_item);
+            let trait_type = ctx.item_type(trait_item);
             if !item_type.can_implement(trait_type) {
                 ctx.error(
                     ctx.def_span(impl_item),
@@ -238,8 +245,6 @@ pub(crate) enum Purity {
 
 impl Purity {
     pub(crate) fn of_def_id<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Self {
-        use contracts_items::{is_logic, is_predicate, is_prophetic, is_snapshot_closure, is_spec};
-
         let is_snapshot = is_snapshot_closure(ctx.tcx, def_id);
         if is_predicate(ctx.tcx, def_id) && is_prophetic(ctx.tcx, def_id)
             || is_logic(ctx.tcx, def_id) && is_prophetic(ctx.tcx, def_id)
@@ -294,23 +299,27 @@ pub(crate) fn validate_purity(ctx: &mut TranslationCtx, def_id: LocalDefId) {
 
     let def_id = def_id.to_def_id();
     let purity = Purity::of_def_id(ctx, def_id);
-    if matches!(purity, Purity::Program { .. }) && contracts_items::is_no_translate(ctx.tcx, def_id)
-    {
+    if matches!(purity, Purity::Program { .. }) && is_no_translate(ctx.tcx, def_id) {
         return;
     }
+    let param_env = ctx.tcx.param_env(def_id);
 
-    thir::visit::walk_expr(&mut PurityVisitor { ctx, thir: &thir, context: purity }, &thir[expr]);
+    thir::visit::walk_expr(
+        &mut PurityVisitor { ctx, thir: &thir, context: purity, param_env },
+        &thir[expr],
+    );
 }
 
-pub(crate) struct PurityVisitor<'a, 'tcx> {
-    pub(crate) ctx: &'a mut TranslationCtx<'tcx>,
-    pub(crate) thir: &'a Thir<'tcx>,
-    pub(crate) context: Purity,
+struct PurityVisitor<'a, 'tcx> {
+    ctx: &'a mut TranslationCtx<'tcx>,
+    thir: &'a Thir<'tcx>,
+    context: Purity,
+    /// Typing environment of the caller function
+    param_env: ParamEnv<'tcx>,
 }
 
 impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
     fn purity(&mut self, fun: thir::ExprId, func_did: DefId) -> Purity {
-        use contracts_items::{is_logic, is_predicate, is_prophetic};
         let stub = pearlite_stub(self.ctx.tcx, self.thir[fun].ty);
 
         if matches!(stub, Some(Stub::Fin))
@@ -320,7 +329,7 @@ impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
             Purity::Logic { prophetic: true }
         } else if is_predicate(self.ctx.tcx, func_did)
             || is_logic(self.ctx.tcx, func_did)
-            || contracts_items::get_builtin(self.ctx.tcx, func_did).is_some()
+            || get_builtin(self.ctx.tcx, func_did).is_some()
             || stub.is_some()
         {
             Purity::Logic { prophetic: false }
@@ -341,8 +350,23 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
     fn visit_expr(&mut self, expr: &'a thir::Expr<'tcx>) {
         match expr.kind {
             ExprKind::Call { fun, .. } => {
-                // FIXME: like in detect_recursion (MIR visitor), we would need to specialize the trait functions.
-                if let &FnDef(func_did, _) = self.thir[fun].ty.kind() {
+                if let &FnDef(func_did, subst) = self.thir[fun].ty.kind() {
+                    // try to specialize the called function if it is a trait method.
+                    let subst = self.ctx.erase_regions(subst);
+                    let func_did = if TraitResolved::is_trait_item(self.ctx.tcx, func_did) {
+                        match TraitResolved::resolve_item(
+                            self.ctx.tcx,
+                            self.param_env,
+                            func_did,
+                            subst,
+                        ) {
+                            TraitResolved::Instance(id, _) => id,
+                            _ => func_did,
+                        }
+                    } else {
+                        func_did
+                    };
+
                     let fn_purity = self.purity(fun, func_did);
                     if !self.context.can_call(fn_purity)
                         && !is_overloaded_item(self.ctx.tcx, func_did)
@@ -368,7 +392,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                 }
             }
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
-                if contracts_items::is_spec(self.ctx.tcx, closure_id.into()) {
+                if is_spec(self.ctx.tcx, closure_id.into()) {
                     return;
                 }
 
@@ -378,7 +402,12 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                 let thir = thir.borrow();
 
                 thir::visit::walk_expr(
-                    &mut PurityVisitor { ctx: self.ctx, thir: &thir, context: self.context },
+                    &mut PurityVisitor {
+                        ctx: self.ctx,
+                        thir: &thir,
+                        context: self.context,
+                        param_env: self.param_env,
+                    },
                     &thir[expr],
                 );
             }

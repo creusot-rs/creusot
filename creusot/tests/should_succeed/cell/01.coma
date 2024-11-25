@@ -1,92 +1,54 @@
-module T_core__cell__UnsafeCell
-  type t_UnsafeCell 't =
-    | C_UnsafeCell 't
-  
-  let rec t_UnsafeCell < 't > (input:t_UnsafeCell 't) (ret  (value:'t))= any
-    [ good (value:'t)-> {C_UnsafeCell value = input} (! ret {value}) ]
-    
-end
-module T_core__cell__Cell
-  use T_core__cell__UnsafeCell as UnsafeCell'0
-  
-  type t_Cell 't =
-    | C_Cell (UnsafeCell'0.t_UnsafeCell 't)
-  
-  let rec t_Cell < 't > (input:t_Cell 't) (ret  (value:UnsafeCell'0.t_UnsafeCell 't))= any
-    [ good (value:UnsafeCell'0.t_UnsafeCell 't)-> {C_Cell value = input} (! ret {value}) ]
-    
-end
-module T_core__marker__PhantomData
-  type t_PhantomData 't =
-    | C_PhantomData
-  
-  let rec t_PhantomData < 't > (input:t_PhantomData 't) (ret  )= any [ good -> {C_PhantomData  = input} (! ret) ] 
-end
-module T_01__Cell [#"01.rs" 11 0 11 21]
-  use T_core__marker__PhantomData as PhantomData'0
-  
-  use T_core__cell__Cell as Cell'0
-  
-  type t_Cell 't 'i =
-    | C_Cell (Cell'0.t_Cell 't) (PhantomData'0.t_PhantomData 'i)
-  
-  let rec t_Cell < 't > < 'i > (input:t_Cell 't 'i) (ret  (inner:Cell'0.t_Cell 't) (inv:PhantomData'0.t_PhantomData 'i))= any
-    [ good (inner:Cell'0.t_Cell 't) (inv:PhantomData'0.t_PhantomData 'i)-> {C_Cell inner inv = input}
-      (! ret {inner} {inv}) ]
-    
-end
-module T_01__Even [#"01.rs" 30 0 30 15]
-  type t_Even  =
-    | C_Even
-  
-  let rec t_Even (input:t_Even) (ret  )= any [ good -> {C_Even  = input} (! ret) ] 
-end
 module M_01__adds_two [#"01.rs" 40 0 40 36]
   let%span s010 = "01.rs" 43 11 43 17
   let%span s011 = "01.rs" 44 18 44 19
   let%span s012 = "01.rs" 46 14 46 15
   let%span s013 = "01.rs" 19 16 19 20
-  let%span s014 = "01.rs" 18 14 18 28
-  let%span s015 = "01.rs" 19 25 19 26
-  let%span s016 = "01.rs" 24 15 24 24
-  let%span s017 = "01.rs" 25 16 25 20
-  let%span s018 = "01.rs" 25 22 25 23
+  let%span s014 = "01.rs" 19 25 19 26
+  let%span s015 = "01.rs" 18 14 18 28
+  let%span s016 = "01.rs" 25 16 25 20
+  let%span s017 = "01.rs" 25 22 25 23
+  let%span s018 = "01.rs" 24 15 24 24
   let%span s019 = "01.rs" 36 8 36 24
-  
-  use prelude.prelude.UInt32
-  
-  use prelude.prelude.Int
-  
-  predicate inv'2 (_1 : uint32)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : uint32 [inv'2 x] . inv'2 x = true
-  
-  use T_01__Even as Even'0
-  
-  use T_01__Cell as Cell'0
   
   use prelude.prelude.Borrow
   
-  predicate inv'0 (_1 : Cell'0.t_Cell uint32 (Even'0.t_Even))
+  use prelude.prelude.UInt32
   
-  axiom inv_axiom'0 [@rewrite] : forall x : Cell'0.t_Cell uint32 (Even'0.t_Even) [inv'0 x] . inv'0 x = true
+  type t_UnsafeCell'0  =
+    { t_UnsafeCell__value'0: uint32 }
+  
+  type t_Cell'1  =
+    { t_Cell__value'0: t_UnsafeCell'0 }
+  
+  type t_Cell'0  =
+    { t_Cell__inner'0: t_Cell'1; t_Cell__inv'0: () }
+  
+  predicate inv'0 (_1 : t_Cell'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Cell'0 [inv'0 x] . inv'0 x = true
+  
+  predicate inv'1 (_1 : uint32)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : uint32 [inv'1 x] . inv'1 x = true
+  
+  use prelude.prelude.Int
+  
+  predicate inv'2 [#"01.rs" 35 4 35 26] (x : uint32) =
+    [%#s019] mod x (2 : uint32) = (0 : uint32)
+  
+  let rec get'0 (self:t_Cell'0) (return'  (ret:uint32))= {[@expl:get 'self' type invariant] [%#s013] inv'0 self}
+    any [ return' (result:uint32)-> {[%#s014] inv'1 result} {[%#s015] inv'2 result} (! return' {result}) ] 
+  
+  let rec set'0 (self:t_Cell'0) (v:uint32) (return'  (ret:()))= {[@expl:set 'self' type invariant] [%#s016] inv'0 self}
+    {[@expl:set 'v' type invariant] [%#s017] inv'1 v}
+    {[@expl:set requires] [%#s018] inv'2 v}
+    any [ return' (result:())-> (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic
   
-  predicate inv'1 [#"01.rs" 35 4 35 26] (x : uint32) =
-    [%#s019] mod x (2 : uint32) = (0 : uint32)
-  
-  let rec set'0 (self:Cell'0.t_Cell uint32 (Even'0.t_Even)) (v:uint32) (return'  (ret:()))= {[@expl:precondition] [%#s018] inv'2 v}
-    {[@expl:precondition] [%#s017] inv'0 self}
-    {[@expl:precondition] [%#s016] inv'1 v}
-    any [ return' (result:())-> (! return' {result}) ] 
-  
-  let rec get'0 (self:Cell'0.t_Cell uint32 (Even'0.t_Even)) (return'  (ret:uint32))= {[@expl:precondition] [%#s013] inv'0 self}
-    any [ return' (result:uint32)-> {[%#s015] inv'2 result} {[%#s014] inv'1 result} (! return' {result}) ] 
-  
   meta "compute_max_steps" 1000000
   
-  let rec adds_two (c:Cell'0.t_Cell uint32 (Even'0.t_Even)) (return'  (ret:()))= (! bb0
+  let rec adds_two'0 (c:t_Cell'0) (return'  (ret:()))= (! bb0
     [ bb0 = s0 [ s0 = get'0 {c} (fun (_ret':uint32) ->  [ &v <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0
       [ s0 = UInt32.lt {v} {[%#s010] (100000 : uint32)} (fun (_ret':bool) ->  [ &_4 <- _ret' ] s1)
@@ -103,14 +65,11 @@ module M_01__adds_two [#"01.rs" 40 0 40 36]
     | bb6 = return' {_0} ]
     )
     [ & _0 : () = any_l ()
-    | & c : Cell'0.t_Cell uint32 (Even'0.t_Even) = c
+    | & c : t_Cell'0 = c
     | & v : uint32 = any_l ()
     | & _4 : bool = any_l ()
     | & _6 : () = any_l ()
     | & _8 : uint32 = any_l ()
     | & _10 : () = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
-end
-module M_01__qyi8909805269774214915 [#"01.rs" 32 0 32 22] (* <Even as Inv<u32>> *)
-  
 end

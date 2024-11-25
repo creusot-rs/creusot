@@ -112,13 +112,6 @@ impl Trigger {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Exp {
-    Assert(Box<Exp>),
-    Assume(Box<Exp>),
-    Any(Type),
-    // TODO: Remove
-    Current(Box<Exp>),
-    // TODO: Remove
-    Final(Box<Exp>),
     Let {
         pattern: Pattern,
         arg: Box<Exp>,
@@ -146,25 +139,18 @@ pub enum Exp {
     BinaryOp(BinOp, Box<Exp>, Box<Exp>),
     UnaryOp(UnOp, Box<Exp>),
     Call(Box<Exp>, Vec<Exp>),
-    Verbatim(String),
     Attr(Attribute, Box<Exp>),
-    Ghost(Box<Exp>),
     /// Lambda abstraction
     Abs(Vec<Binder>, Box<Exp>),
-    /// Expression (statement) sequencing (aka ;)
-    Chain(Vec<Exp>),
 
     Match(Box<Exp>, Vec<(Pattern, Exp)>),
     IfThenElse(Box<Exp>, Box<Exp>, Box<Exp>),
     Ascribe(Box<Exp>, Type),
-    Pure(Box<Exp>),
     // Predicates
     Old(Box<Exp>),
-    Absurd,
     Impl(Box<Exp>, Box<Exp>),
     Forall(Vec<(Ident, Type)>, Vec<Trigger>, Box<Exp>),
     Exists(Vec<(Ident, Type)>, Vec<Trigger>, Box<Exp>),
-    FnLit(Box<Exp>),
 }
 
 #[derive(Debug, Clone)]
@@ -188,9 +174,6 @@ pub trait ExpMutVisitor: Sized {
 
 pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
     match exp {
-        Exp::Any(_) => {}
-        Exp::Current(e) => f.visit_mut(e),
-        Exp::Final(e) => f.visit_mut(e),
         Exp::Let { pattern: _, arg, body } => {
             f.visit_mut(arg);
             f.visit_mut(body)
@@ -214,7 +197,6 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
             f.visit_mut(func);
             args.iter_mut().for_each(|e| f.visit_mut(e))
         }
-        Exp::Verbatim(_) => {}
         Exp::Abs(_, e) => f.visit_mut(e),
         Exp::Match(scrut, arms) => {
             f.visit_mut(scrut);
@@ -226,9 +208,7 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
             f.visit_mut(r)
         }
         Exp::Ascribe(e, _) => f.visit_mut(e),
-        Exp::Pure(e) => f.visit_mut(e),
         Exp::Old(e) => f.visit_mut(e),
-        Exp::Absurd => {}
         Exp::Impl(l, r) => {
             f.visit_mut(l);
             f.visit_mut(r)
@@ -242,12 +222,7 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
             f.visit_mut(e)
         }
         Exp::Attr(_, e) => f.visit_mut(e),
-        Exp::Ghost(e) => f.visit_mut(e),
         Exp::Record { fields } => fields.iter_mut().for_each(|(_, e)| f.visit_mut(e)),
-        Exp::Chain(fields) => fields.iter_mut().for_each(|e| f.visit_mut(e)),
-        Exp::FnLit(e) => f.visit_mut(e),
-        Exp::Assert(e) => f.visit_mut(e),
-        Exp::Assume(e) => f.visit_mut(e),
     }
 }
 
@@ -363,9 +338,6 @@ pub trait ExpVisitor: Sized {
 
 pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
     match exp {
-        Exp::Any(_) => {}
-        Exp::Current(e) => f.visit(e),
-        Exp::Final(e) => f.visit(e),
         Exp::Let { pattern: _, arg, body } => {
             f.visit(arg);
             f.visit(body)
@@ -389,7 +361,6 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
             f.visit(func);
             args.iter().for_each(|e| f.visit(e))
         }
-        Exp::Verbatim(_) => {}
         Exp::Abs(_, e) => f.visit(e),
         Exp::Match(scrut, arms) => {
             f.visit(scrut);
@@ -401,9 +372,7 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
             f.visit(r)
         }
         Exp::Ascribe(e, _) => f.visit(e),
-        Exp::Pure(e) => f.visit(e),
         Exp::Old(e) => f.visit(e),
-        Exp::Absurd => {}
         Exp::Impl(l, r) => {
             f.visit(l);
             f.visit(r)
@@ -417,12 +386,7 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
             f.visit(e)
         }
         Exp::Attr(_, e) => f.visit(e),
-        Exp::Ghost(e) => f.visit(e),
         Exp::Record { fields } => fields.iter().for_each(|(_, e)| f.visit(e)),
-        Exp::Chain(fields) => fields.iter().for_each(|e| f.visit(e)),
-        Exp::FnLit(e) => f.visit(e),
-        Exp::Assert(e) => f.visit(e),
-        Exp::Assume(e) => f.visit(e),
     }
 }
 
@@ -632,32 +596,6 @@ impl Exp {
         Exp::Const(Constant::Uint(value, None))
     }
 
-    pub fn is_pure(&self) -> bool {
-        struct IsPure {
-            pure: bool,
-        }
-
-        impl ExpVisitor for IsPure {
-            fn visit(&mut self, exp: &Exp) {
-                match exp {
-                    Exp::Verbatim(_) => self.pure &= false,
-                    Exp::Absurd => self.pure &= false,
-                    // This is a bit absurd, but you can't put "pure {...}"
-                    // in a term, so it's not "pure".
-                    Exp::Pure(_) => self.pure &= false,
-                    Exp::Assert(_) => self.pure &= false,
-                    _ => {
-                        super_visit(self, exp);
-                    }
-                }
-            }
-        }
-
-        let mut p = IsPure { pure: true };
-        p.visit(self);
-        p.pure
-    }
-
     pub fn reassociate(&mut self) {
         struct Reassociate;
 
@@ -792,8 +730,6 @@ impl Exp {
         use Precedence::*;
 
         match self {
-            Exp::Current(_) => Prefix,
-            Exp::Final(_) => Prefix,
             Exp::Let { .. } => IfLet,
             Exp::Abs(_, _) => Abs,
             Exp::Var(_) => Atom,
@@ -802,7 +738,6 @@ impl Exp {
             Exp::RecField { .. } => Field,
             Exp::Tuple(_) => Atom,
             Exp::Constructor { .. } => App,
-            // Exp::Seq(_, _) => { Term }
             Exp::Match(_, _) => Abs,
             Exp::IfThenElse(_, _, _) => IfLet,
             Exp::Const(_) => Atom,
@@ -810,25 +745,13 @@ impl Exp {
             Exp::UnaryOp(UnOp::Not, _) => Not,
             Exp::BinaryOp(op, _, _) => op.precedence(),
             Exp::Call(_, _) => App,
-            // Exp::Verbatim(_) => Any,
             Exp::Impl(_, _) => Impl,
             Exp::Forall(_, _, _) => IfLet,
             Exp::Exists(_, _, _) => IfLet,
             Exp::Ascribe(_, _) => Cast,
-            Exp::Absurd => Atom,
-            Exp::Pure(_) => Atom,
             Exp::Old(_) => AtOld,
-            Exp::Any(_) => Prefix,
-            Exp::Verbatim(_) => Atom,
             Exp::Attr(_, _) => Attr,
-            Exp::Ghost(_) => App,
             Exp::Record { fields: _ } => Atom,
-            // TODO: Wrong, should introduce a better name for it
-            Exp::Chain(_) => Attr,
-            Exp::FnLit(_) => Atom,
-            Exp::Assert(_) => Atom,
-            Exp::Assume(_) => Atom,
-            // _ => unimplemented!("{:?}", self),
         }
     }
 

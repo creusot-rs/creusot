@@ -143,7 +143,6 @@ extern_spec! {
                 #[pure]
                 #[requires(filter::immutable(f))]
                 #[requires(filter::no_precondition(f))]
-                #[requires(filter::plain(f))]
                 #[requires(filter::precise(f))]
                 #[ensures(result.iter() == self && result.func() == f)]
                 fn filter<P>(self, f: P) -> Filter<Self, P>

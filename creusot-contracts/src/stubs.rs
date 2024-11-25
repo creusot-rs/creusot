@@ -49,8 +49,8 @@ pub fn old<T: ?Sized>(_: T) -> Box<T> {
 }
 
 #[creusot::no_translate]
-#[rustc_diagnostic_item = "absurd"]
-pub fn abs<T: ?Sized>() -> Box<T> {
+#[rustc_diagnostic_item = "dead"]
+pub fn dead<T: ?Sized>() -> Box<T> {
     panic!()
 }
 
@@ -79,9 +79,8 @@ pub fn ghost_from_fn<T, F: FnOnce() -> T>(f: F, _arg: ()) -> T {
 
 #[logic]
 #[trusted]
-#[open(self)]
 #[creusot::no_translate]
 #[creusot::builtins = "prelude.prelude.Mapping.from_fn"]
 pub fn mapping_from_fn<A, B, F: FnOnce(A) -> B>(_: F) -> crate::logic::Mapping<A, B> {
-    pearlite! { absurd }
+    dead
 }

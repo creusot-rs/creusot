@@ -8,11 +8,10 @@ impl View for Duration {
     type ViewTy = Int;
 
     #[logic]
-    #[open(self)]
     #[trusted]
     #[ensures(result >= 0 && result <= secs_to_nanos(u64::MAX@) + 999_999_999)]
     fn view(self) -> Self::ViewTy {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -53,11 +52,10 @@ impl View for Instant {
     type ViewTy = Int;
 
     #[logic]
-    #[open(self)]
     #[trusted]
     #[ensures(result >= 0)]
     fn view(self) -> Self::ViewTy {
-        pearlite! { absurd }
+        dead
     }
 }
 

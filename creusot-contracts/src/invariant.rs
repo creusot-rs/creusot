@@ -36,7 +36,7 @@ impl<T: ?Sized> Invariant for &mut T {
 }
 
 #[predicate(prophetic)]
-#[open(self)]
+#[trusted]
 #[rustc_diagnostic_item = "creusot_invariant_internal"]
 pub fn inv<T: ?Sized>(_: T) -> bool {
     true

@@ -5,9 +5,8 @@ impl<T> View for Once<T> {
 
     #[logic]
     #[trusted]
-    #[open(self)]
     fn view(self) -> Option<T> {
-        pearlite! { absurd }
+        dead
     }
 }
 

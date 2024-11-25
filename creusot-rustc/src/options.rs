@@ -29,13 +29,18 @@ impl CreusotArgsExt for CreusotArgs {
         let cargo_creusot = std::env::var("CARGO_CREUSOT").is_ok();
         let should_output = !cargo_creusot || std::env::var("CARGO_PRIMARY_PACKAGE").is_ok();
 
-        let output = match (self.options.stdout, self.options.output_file, self.options.output_dir)
-        {
-            (true, None, None) => Ok(Output::Stdout),
-            (false, Some(f), None) => Ok(Output::File(f)),
-            (false, None, Some(d)) => Ok(Output::Directory(d)),
-            (false, None, None) => Ok(Output::Directory(PathBuf::from("."))), // default --output-dir=.
-            _ => Err("--stdout, --output-file and --output-dir are mutually exclusive"), // This should already be enforced by clap
+        let output = match (
+            self.options.stdout,
+            self.options.output_file,
+            self.options.output_dir,
+            self.options.check,
+        ) {
+            (true, None, None, false) => Ok(Output::Stdout),
+            (false, Some(f), None, false) => Ok(Output::File(f)),
+            (false, None, Some(d), false) => Ok(Output::Directory(d)),
+            (false, None, None, true) => Ok(Output::None),
+            (false, None, None, false) => Ok(Output::Directory(PathBuf::from("."))), // default --output-dir=.
+            _ => Err("--stdout, --output-file, --output-dir, and --check are mutually exclusive"), // This should already be enforced by clap
         }?;
 
         let span_mode = match (&self.options.span_mode, &output, &self.options.spans_relative_to) {
@@ -48,6 +53,7 @@ impl CreusotArgsExt for CreusotArgs {
             (SpanMode::Relative, Output::Directory(p), None) => {
                 Ok(options::SpanMode::Relative(p.to_owned()))
             }
+            (SpanMode::Relative, Output::None, None) => Ok(options::SpanMode::Off),
             (SpanMode::Relative, Output::Stdout, None) => {
                 Err("--spans-relative-to is required when using --stdout and relative spans")
             }
@@ -63,7 +69,6 @@ impl CreusotArgsExt for CreusotArgs {
             span_mode,
             monolithic: self.options.monolithic,
             prefix: Vec::new(), // to be set in callbacks::ToWhy::set_output_dir
-            match_str: self.options.focus_on,
             simple_triggers: self.options.simple_triggers,
             why3_cmd: match self.subcommand {
                 Some(cmd @ CreusotSubCommand::Why3 { .. }) => {

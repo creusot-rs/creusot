@@ -367,10 +367,10 @@ fn test_trigger() {
 }
 
 #[test]
-fn test_absurd() {
-    snapshot!(quote!(absurd) as Term, @r###"
-    TermAbsurd {
-        absurd_token: Keyword [absurd],
+fn test_dead() {
+    snapshot!(quote!(dead) as Term, @r###"
+    TermDead {
+        dead_token: Keyword [dead],
     }
     "###);
 }

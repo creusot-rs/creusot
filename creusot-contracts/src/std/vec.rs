@@ -13,12 +13,11 @@ pub use ::std::vec::*;
 impl<T, A: Allocator> View for Vec<T, A> {
     type ViewTy = Seq<T>;
 
-    #[open(self)]
     #[logic]
     #[trusted]
     #[ensures(result.len() <= usize::MAX@)]
     fn view(self) -> Seq<T> {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -26,13 +25,12 @@ impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
     #[logic]
-    #[open(self)]
     #[trusted]
     #[ensures(self.view().len() == result.len())]
     #[ensures(forall<i: Int> 0 <= i && i < self.view().len()
               ==> result[i] == self[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { absurd }
+        dead
     }
 }
 
@@ -53,7 +51,6 @@ impl<T, A: Allocator> Resolve for Vec<T, A> {
 
     #[trusted]
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
     fn resolve_coherence(&self) {}
@@ -87,14 +84,14 @@ extern_spec! {
                 fn len(&self) -> usize;
 
                 #[terminates] // can OOM
-                #[ensures((^self)@ == self@.push(v))]
+                #[ensures((^self)@ == self@.push_back(v))]
                 fn push(&mut self, v: T);
 
                 #[pure]
                 #[ensures(match result {
                     Some(t) =>
                         (^self)@ == self@.subsequence(0, self@.len() - 1) &&
-                        self@ == (^self)@.push(t),
+                        self@ == (^self)@.push_back(t),
                     None => *self == ^self && self@.len() == 0
                 })]
                 fn pop(&mut self) -> Option<T>;
@@ -232,11 +229,10 @@ impl<T, A: Allocator> IntoIterator for &mut Vec<T, A> {
 impl<T, A: Allocator> View for std::vec::IntoIter<T, A> {
     type ViewTy = Seq<T>;
 
-    #[open(self)]
     #[logic]
     #[trusted]
     fn view(self) -> Self::ViewTy {
-        absurd
+        dead
     }
 }
 
@@ -249,7 +245,6 @@ impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
 
     #[trusted]
     #[logic(prophetic)]
-    #[open(self)]
     #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
     fn resolve_coherence(&self) {}
@@ -275,8 +270,6 @@ impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
-    // FIXME: remove `trusted`
-    #[trusted]
     #[law]
     #[open]
     #[requires(a.produces(ab, b))]

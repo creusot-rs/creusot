@@ -11,17 +11,15 @@ pub trait MakeSized {
 impl<T: ?Sized> MakeSized for T {
     #[trusted]
     #[logic]
-    #[open(self)]
     #[ensures(*result == *self)]
     fn make_sized(&self) -> SizedW<Self> {
-        absurd
+        dead
     }
 }
 
 #[trusted]
 #[allow(unconditional_recursion)]
 #[logic]
-#[open(self)]
 #[requires(false)]
 #[ensures(false)]
 #[variant(0)]

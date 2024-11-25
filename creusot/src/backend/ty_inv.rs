@@ -1,61 +1,19 @@
 use super::Why3Generator;
 use crate::{
-    contracts_items::{self, get_inv_function, get_invariant_method},
+    contracts_items::{
+        get_inv_function, get_invariant_method, is_ignore_structural_inv, is_trusted,
+        is_tyinv_trivial_if_param_trivial,
+    },
     pearlite::Trigger,
-    traits::TraitResol,
+    traits::TraitResolved,
     translation::{
         pearlite::{Pattern, Term, TermKind},
         traits,
     },
 };
-use rustc_middle::ty::{GenericArg, GenericArgs, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{GenericArg, ParamEnv, Ty, TyCtxt, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
-use std::{collections::HashSet, iter};
-
-// Rewrite a type as a "head type" and a ssusbtitution, such that the head type applied to the substitution
-// equals the type.
-// The head type is used as a dependency node.
-// NOTE: Performance hasn't been a concern for us, but in general I think that this method can be surprisingly expensive
-// as it performs trait resolution each time its run.
-pub(crate) fn tyinv_head_and_subst<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    ty: Ty<'tcx>,
-    param_env: ParamEnv<'tcx>,
-) -> (Ty<'tcx>, GenericArgsRef<'tcx>) {
-    let def = || {
-        // Return value to use if there is no structural invariant
-        (
-            Ty::new_param(tcx, 0, Symbol::intern(&format!("T"))),
-            tcx.mk_args_from_iter(iter::once(GenericArg::from(ty))),
-        )
-    };
-
-    if let TraitResol::Instance(uinv_did, _) = resolve_user_inv(tcx, ty, param_env)
-        && contracts_items::is_ignore_structural_inv(tcx, uinv_did)
-    {
-        return def();
-    }
-
-    if is_tyinv_trivial(tcx, param_env, ty) {
-        return def();
-    }
-
-    match ty.kind() {
-        TyKind::Adt(adt_def, subst) => {
-            (Ty::new_adt(tcx, *adt_def, GenericArgs::identity_for_item(tcx, adt_def.did())), subst)
-        }
-        TyKind::Closure(did, _) => (ty, GenericArgs::identity_for_item(tcx, tcx.parent(*did))),
-        TyKind::Tuple(tys) => {
-            let params = (0..tys.len())
-                .map(|i| Ty::new_param(tcx, i as _, Symbol::intern(&format!("T{i}"))));
-            let tup = Ty::new_tup_from_iter(tcx, params);
-            let subst = tcx.mk_args_from_iter(tys.iter().map(GenericArg::from));
-            (tup, subst)
-        }
-        TyKind::Alias(..) | TyKind::Param(_) => def(),
-        _ => unimplemented!("{ty:?}"), // TODO
-    }
-}
+use std::collections::HashSet;
 
 pub(crate) fn is_tyinv_trivial<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -71,8 +29,8 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
         }
 
         let user_inv = resolve_user_inv(tcx, ty, param_env);
-        if let TraitResol::Instance(uinv_did, _) = user_inv
-            && !contracts_items::is_tyinv_trivial_if_param_trivial(tcx, uinv_did)
+        if let TraitResolved::Instance(uinv_did, _) = user_inv
+            && !is_tyinv_trivial_if_param_trivial(tcx, uinv_did)
         {
             return false;
         }
@@ -80,17 +38,17 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
         match ty.kind() {
             TyKind::Ref(_, ty, _) | TyKind::Slice(ty) | TyKind::Array(ty, _) => stack.push(*ty),
             TyKind::Tuple(tys) => stack.extend(*tys),
-            TyKind::Adt(_, substs) if matches!(user_inv, TraitResol::Instance(_, _)) => {
+            TyKind::Adt(_, substs) if matches!(user_inv, TraitResolved::Instance(_, _)) => {
                 // => The instance is annotated with tyinv_trivial_if_param_trivial
                 stack.extend(substs.types())
             }
             TyKind::Adt(def, substs) => {
-                if contracts_items::is_trusted(tcx, def.did()) {
+                if is_trusted(tcx, def.did()) {
                     continue;
                 }
 
-                if let TraitResol::Instance(uinv_did, _) = user_inv
-                    && contracts_items::is_ignore_structural_inv(tcx, uinv_did)
+                if let TraitResolved::Instance(uinv_did, _) = user_inv
+                    && is_ignore_structural_inv(tcx, uinv_did)
                 {
                     continue;
                 }
@@ -129,7 +87,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         let subject = Term::var(Symbol::intern("x"), ty);
         let inv_id = get_inv_function(self.ctx.tcx);
         let subst = self.ctx.mk_args(&[GenericArg::from(subject.ty)]);
-        let lhs = Term::call(self.ctx.tcx, inv_id, subst, vec![subject.clone()]);
+        let lhs = Term::call(self.ctx.tcx, self.param_env, inv_id, subst, vec![subject.clone()]);
         let trig = vec![Trigger(vec![lhs.clone()])];
 
         if is_tyinv_trivial(self.ctx.tcx, self.param_env, ty) {
@@ -148,17 +106,27 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         let mut rhs = Term::mk_true(self.ctx.tcx);
 
         match resolve_user_inv(self.ctx.tcx, ty, self.param_env) {
-            TraitResol::Instance(uinv_did, uinv_subst) => {
-                rhs =
-                    rhs.conj(Term::call(self.ctx.tcx, uinv_did, uinv_subst, vec![subject.clone()]))
+            TraitResolved::Instance(uinv_did, uinv_subst) => {
+                rhs = rhs.conj(Term::call(
+                    self.ctx.tcx,
+                    self.param_env,
+                    uinv_did,
+                    uinv_subst,
+                    vec![subject.clone()],
+                ))
             }
-            TraitResol::UnknownNotFound if !for_deps => use_imples = true,
-            TraitResol::NoInstance => (),
+            TraitResolved::UnknownNotFound if !for_deps => use_imples = true,
+            TraitResolved::NoInstance => (),
             _ => {
                 let trait_item_did = get_invariant_method(self.ctx.tcx);
                 let subst = self.ctx.tcx.mk_args(&[GenericArg::from(ty)]);
-                rhs =
-                    rhs.conj(Term::call(self.ctx.tcx, trait_item_did, subst, vec![subject.clone()]))
+                rhs = rhs.conj(Term::call(
+                    self.ctx.tcx,
+                    self.param_env,
+                    trait_item_did,
+                    subst,
+                    vec![subject.clone()],
+                ))
             }
         }
 
@@ -182,9 +150,9 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
     }
 
     fn structural_invariant(&mut self, term: Term<'tcx>, ty: Ty<'tcx>) -> Term<'tcx> {
-        if let TraitResol::Instance(uinv_did, _) =
+        if let TraitResolved::Instance(uinv_did, _) =
             resolve_user_inv(self.ctx.tcx, ty, self.param_env)
-            && contracts_items::is_ignore_structural_inv(self.ctx.tcx, uinv_did)
+            && is_ignore_structural_inv(self.ctx.tcx, uinv_did)
         {
             return Term::mk_true(self.ctx.tcx);
         }
@@ -192,79 +160,55 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         match ty.kind() {
             TyKind::Adt(adt_def, _) => {
                 let adt_did = adt_def.did();
-                if contracts_items::is_trusted(self.ctx.tcx, adt_did) {
+                if is_trusted(self.ctx.tcx, adt_did) {
                     Term::mk_true(self.ctx.tcx)
                 } else {
                     self.build_inv_term_adt(term)
                 }
             }
             TyKind::Tuple(tys) => {
-                let ids = ('a'..).take(tys.len());
-
-                let pattern = Pattern::Tuple(
-                    ids.clone()
-                        .into_iter()
-                        .map(|id| Symbol::intern(&id.to_string()))
-                        .map(Pattern::Binder)
-                        .collect(),
+                let ids: Vec<_> =
+                    (0..tys.len()).map(|i| Symbol::intern(&format!("x{i}"))).collect();
+                let body = Box::new(
+                    ids.iter().zip(*tys).fold(Term::mk_true(self.ctx.tcx), |acc, (&id, ty)| {
+                        acc.conj(self.mk_inv_call(Term::var(id, ty)))
+                    }),
                 );
+                let pattern = Pattern::Tuple(ids.into_iter().map(Pattern::Binder).collect());
                 Term {
-                    kind: TermKind::Let {
-                        pattern,
-                        arg: Box::new(term),
-                        body: Box::new(ids.into_iter().enumerate().fold(
-                            Term::mk_true(self.ctx.tcx),
-                            |acc, (ix, id)| {
-                                acc.conj(self.mk_inv_call(Term::var(
-                                    Symbol::intern(&id.to_string()),
-                                    tys[ix],
-                                )))
-                            },
-                        )),
-                    },
+                    kind: TermKind::Let { pattern, arg: Box::new(term), body },
                     ty: self.ctx.types.bool,
                     span: DUMMY_SP,
                 }
             }
             TyKind::Closure(clos_did, substs) => {
                 let tys = substs.as_closure().upvar_tys();
-                let ids = ('a'..).take(tys.len());
+                let ids: Vec<_> =
+                    (0..tys.len()).map(|i| Symbol::intern(&format!("x{i}"))).collect();
 
+                let body = Box::new(
+                    ids.iter().zip(tys).fold(Term::mk_true(self.ctx.tcx), |acc, (&id, ty)| {
+                        acc.conj(self.mk_inv_call(Term::var(id, ty)))
+                    }),
+                );
                 let pattern = Pattern::Constructor {
                     variant: *clos_did,
                     substs,
-                    fields: ids
-                        .clone()
-                        .into_iter()
-                        .map(|id| Symbol::intern(&id.to_string()))
-                        .map(Pattern::Binder)
-                        .collect(),
+                    fields: ids.into_iter().map(Pattern::Binder).collect(),
                 };
                 Term {
-                    kind: TermKind::Let {
-                        pattern,
-                        arg: Box::new(term),
-                        body: Box::new(ids.into_iter().enumerate().fold(
-                            Term::mk_true(self.ctx.tcx),
-                            |acc, (ix, id)| {
-                                acc.conj(self.mk_inv_call(Term::var(
-                                    Symbol::intern(&id.to_string()),
-                                    tys[ix],
-                                )))
-                            },
-                        )),
-                    },
+                    kind: TermKind::Let { pattern, arg: Box::new(term), body },
                     ty: self.ctx.types.bool,
                     span: DUMMY_SP,
                 }
             }
-            _ => unimplemented!("{ty:?}"), // TODO
+            _ => unreachable!(),
         }
     }
 
     pub(crate) fn mk_inv_call(&mut self, term: Term<'tcx>) -> Term<'tcx> {
         if let Some((inv_id, subst)) = self.ctx.type_invariant(self.param_env, term.ty) {
-            Term::call(self.ctx.tcx, inv_id, subst, vec![term])
+            Term::call(self.ctx.tcx, self.param_env, inv_id, subst, vec![term])
         } else {
             Term::mk_true(self.ctx.tcx)
         }
@@ -317,9 +261,9 @@ fn resolve_user_inv<'tcx>(
     tcx: TyCtxt<'tcx>,
     ty: Ty<'tcx>,
     param_env: ParamEnv<'tcx>,
-) -> traits::TraitResol<'tcx> {
+) -> traits::TraitResolved<'tcx> {
     let trait_item_did = get_invariant_method(tcx);
     let subst = tcx.mk_args(&[GenericArg::from(ty)]);
 
-    traits::resolve_assoc_item_opt(tcx, param_env, trait_item_did, subst)
+    traits::TraitResolved::resolve_item(tcx, param_env, trait_item_did, subst)
 }

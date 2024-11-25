@@ -48,7 +48,7 @@ impl<K: DeepModel, V> View for BTreeMap<K, V> {
     #[open(self)]
     #[trusted]
     fn view(self) -> Self::ViewTy {
-        pearlite! { absurd }
+        dead
     }
 }
 
