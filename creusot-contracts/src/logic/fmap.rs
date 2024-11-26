@@ -1,4 +1,8 @@
-use crate::{logic::Mapping, util::*, *};
+use crate::{
+    logic::{ops::IndexLogic, Mapping},
+    util::*,
+    *,
+};
 
 #[cfg_attr(not(creusot), allow(dead_code))]
 type PMap<K, V> = Mapping<K, Option<SizedW<V>>>;
@@ -26,6 +30,15 @@ pub struct FMap<K, V: ?Sized>(std::marker::PhantomData<K>, std::marker::PhantomD
 
 /// Logical definitions
 impl<K, V: ?Sized> FMap<K, V> {
+    /// Returns the empty map.
+    #[trusted]
+    #[logic]
+    #[ensures(result.len() == 0)]
+    #[ensures(result.view() == Mapping::cst(None))]
+    pub fn empty() -> Self {
+        dead
+    }
+
     #[trusted]
     #[logic]
     #[ensures(result >= 0)]
@@ -105,14 +118,6 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[why3::attr = "inline:trivial"]
     pub fn contains(self, k: K) -> bool {
         self.get_unsized(k) != None
-    }
-
-    #[trusted]
-    #[logic]
-    #[ensures(result.len() == 0)]
-    #[ensures(result.view() == Mapping::cst(None))]
-    pub fn empty() -> Self {
-        dead
     }
 
     #[logic]
