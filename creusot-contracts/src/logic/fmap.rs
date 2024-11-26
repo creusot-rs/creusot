@@ -184,6 +184,17 @@ impl<K, V: ?Sized> FMap<K, V> {
     }
 }
 
+impl<K, V> IndexLogic<K> for FMap<K, V> {
+    type Item = V;
+
+    #[logic]
+    #[open]
+    #[why3::attr = "inline:trivial"]
+    fn index_logic(self, key: K) -> Self::Item {
+        self.lookup(key)
+    }
+}
+
 /// Ghost definitions
 impl<K, V: ?Sized> FMap<K, V> {
     /// Create a new, empty map on the ghost heap.
