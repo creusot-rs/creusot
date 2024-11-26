@@ -127,7 +127,7 @@ fn invoke_cargo(args: &CreusotArgs, cargo_flags: Vec<String>) {
         .expect("Expected `cargo-creusot` to be built with a valid toolchain file");
     let mut cmd = Command::new(cargo_path);
     cmd.arg(format!("+{toolchain}"))
-        .arg(&cargo_cmd)
+        .arg(cargo_cmd)
         .args(cargo_flags)
         .env("RUSTC", creusot_rustc_path)
         .env("CARGO_CREUSOT", "1");

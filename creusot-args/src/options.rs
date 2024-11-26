@@ -81,7 +81,9 @@ pub struct CargoCreusotArgs {
     /// Subcommand: why3, setup
     #[command(subcommand)]
     pub subcommand: Option<CargoCreusotSubCommand>,
+    /// Additional flags to pass to the underlying cargo invocation.
     #[clap(last = true)]
+    #[clap(global = true)]
     pub cargo_flags: Vec<String>,
 }
 
