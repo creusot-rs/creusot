@@ -1,4 +1,4 @@
-// SHOULD_PROVE Z3 NO_SPLIT
+// WHY3PROVE SHOULD_PROVE Z3 NO_SPLIT
 extern crate creusot_contracts;
 use creusot_contracts::{logic::Int, *};
 

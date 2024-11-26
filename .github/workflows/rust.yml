@@ -108,6 +108,10 @@ jobs:
           ~/.local/share/creusot
           _opam/lib/why3find/packages
         key: ${{ runner.os }}-cargo-creusot-setup-${{ hashFiles('creusot-deps.opam', 'creusot-setup/src/tools_versions_urls.rs', 'creusot-setup/src/config.rs') }}
+    - uses: actions/cache@v4
+      with:
+        path: .why3find
+        key: ${{ runner.os }}-why3find-${{ hashFiles('creusot-deps.opam', 'creusot-setup/src/tools_versions_urls.rs') }}
     - name: download why3 and why3find
       uses: actions/download-artifact@v4
       with:
@@ -124,8 +128,7 @@ jobs:
         cat ~/.config/creusot/Config.toml
         echo -e "\n>> ~/.config/creusot/why3.conf:\n"
         cat ~/.config/creusot/why3.conf
-    - run: cargo test --test why3 "" -- --replay=none --diff-from=origin/master
-    - run: cargo test --test why3 "" -- --skip-unstable
+    - run: cargo test --test why3
   install:
     needs: why3-deps
     runs-on: ubuntu-latest
