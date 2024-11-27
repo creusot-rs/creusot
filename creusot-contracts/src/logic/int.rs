@@ -28,7 +28,7 @@ impl Int {
     #[ensures(*result == value@)]
     pub fn new(value: i128) -> GhostBox<Self> {
         let _ = value;
-        loop {}
+        ghost!(panic!())
     }
 
     #[trusted]
