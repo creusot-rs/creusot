@@ -17,4 +17,5 @@
 - [Snapshots](snapshots.md)
 - [Ghost code](ghost.md)
   - [Ghost structures](ghost/ghost-structures.md)
+  - [`Int` in ghost](ghost/int-in-ghost.md)
 - [Type invariants](./type_invariants.md)
