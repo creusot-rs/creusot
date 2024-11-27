@@ -192,7 +192,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[ensures(result.is_empty())]
     #[allow(unreachable_code)]
     pub fn new() -> GhostBox<Self> {
-        ghost!(loop {})
+        ghost!(panic!())
     }
 
     /// Returns the number of elements in the map.
@@ -291,11 +291,12 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[ensures(if self.contains(*key) {
             match result {
                 None => false,
-                Some(r) => *(*self).lookup_unsized(*key) == *r &&
+                Some(r) => (^self).contains(*key) &&
+                           *(*self).lookup_unsized(*key) == *r &&
                            *(^self).lookup_unsized(*key) == ^r,
             }
         } else {
-            result == None
+            result == None && *self == ^self
         })]
     #[ensures(forall<k: K> k != *key ==> (*self).get_unsized(k) == (^self).get_unsized(k))]
     #[ensures((*self).len() == (^self).len())]
