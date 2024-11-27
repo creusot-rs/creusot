@@ -15,12 +15,12 @@ pub fn ghost_vec() {
         proof_assert!(len == 3);
         proof_assert!(v[0] == 21i32 && v[1] == 10i32 && v[2] == 30i32);
 
-        let get1 = v.get_ghost(*Int::new(1));
-        let get2 = v.get_ghost(*Int::new(3));
+        let get1 = v.get_ghost(1int);
+        let get2 = v.get_ghost(3int);
         proof_assert!(get1 == Some(&10i32));
         proof_assert!(get2 == None);
 
-        if let Some(x) = v.get_mut_ghost(*Int::new(0)) {
+        if let Some(x) = v.get_mut_ghost(0int) {
             *x = 42;
         }
         proof_assert!(v[0] == 42i32);
