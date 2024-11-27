@@ -47,6 +47,13 @@ impl<T: ?Sized> Seq<T> {
     #[creusot::builtins = "seq.Seq.empty"]
     pub const EMPTY: Self = { Seq(std::marker::PhantomData) };
 
+    /// Returns the empty sequence.
+    #[logic]
+    #[open]
+    pub fn empty() -> Self {
+        Self::EMPTY
+    }
+
     /// Create a new sequence in pearlite.
     ///
     /// The new sequence will be of length `n`, and will contain `mapping[i]` at index `i`.
@@ -252,7 +259,7 @@ impl<T> Seq<T> {
     #[ensures(*result == Self::EMPTY)]
     #[allow(unreachable_code)]
     pub fn new() -> GhostBox<Self> {
-        ghost!(loop {})
+        ghost!(panic!())
     }
 
     /// Returns the number of elements in the sequence, also referred to as its 'length'.

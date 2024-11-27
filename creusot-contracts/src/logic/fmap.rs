@@ -1,4 +1,8 @@
-use crate::{logic::Mapping, util::*, *};
+use crate::{
+    logic::{ops::IndexLogic, Mapping},
+    util::*,
+    *,
+};
 
 #[cfg_attr(not(creusot), allow(dead_code))]
 type PMap<K, V> = Mapping<K, Option<SizedW<V>>>;
@@ -26,6 +30,15 @@ pub struct FMap<K, V: ?Sized>(std::marker::PhantomData<K>, std::marker::PhantomD
 
 /// Logical definitions
 impl<K, V: ?Sized> FMap<K, V> {
+    /// Returns the empty map.
+    #[trusted]
+    #[logic]
+    #[ensures(result.len() == 0)]
+    #[ensures(result.view() == Mapping::cst(None))]
+    pub fn empty() -> Self {
+        dead
+    }
+
     #[trusted]
     #[logic]
     #[ensures(result >= 0)]
@@ -107,14 +120,6 @@ impl<K, V: ?Sized> FMap<K, V> {
         self.get_unsized(k) != None
     }
 
-    #[trusted]
-    #[logic]
-    #[ensures(result.len() == 0)]
-    #[ensures(result.view() == Mapping::cst(None))]
-    pub fn empty() -> Self {
-        dead
-    }
-
     #[logic]
     #[open]
     pub fn is_empty(self) -> bool {
@@ -181,6 +186,17 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[ensures((forall<k: K> self.get_unsized(k) == other.get_unsized(k)) ==> result)]
     pub fn ext_eq(self, other: Self) -> bool {
         self.view() == other.view()
+    }
+}
+
+impl<K, V> IndexLogic<K> for FMap<K, V> {
+    type Item = V;
+
+    #[logic]
+    #[open]
+    #[why3::attr = "inline:trivial"]
+    fn index_logic(self, key: K) -> Self::Item {
+        self.lookup(key)
     }
 }
 
