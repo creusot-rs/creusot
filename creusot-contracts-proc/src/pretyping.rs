@@ -124,8 +124,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             Ok(quote_spanned! {sp=> if #cond { #(#then_branch)* } #else_branch })
         }
         RT::Index(TermIndex { expr, index, .. }) => {
-            let expr =
-                if let RT::Paren(TermParen { expr, .. }) = &**expr { &**expr } else { &*expr };
+            let expr = if let RT::Paren(TermParen { expr, .. }) = &**expr { &**expr } else { expr };
 
             let expr = encode_term(expr)?;
             let index = encode_term(index)?;
@@ -140,10 +139,14 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             Lit::Int(int) if int.suffix() == "" => {
                 Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) })
             }
+            Lit::Int(int) if int.suffix() == "int" => {
+                let lit = syn::LitInt::new(int.base10_digits(), int.span());
+                Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) })
+            }
             _ => Ok(quote_spanned! {sp=> #lit }),
         },
         RT::Match(TermMatch { expr, arms, .. }) => {
-            let arms: Vec<_> = arms.into_iter().map(encode_arm).collect::<Result<_, _>>()?;
+            let arms: Vec<_> = arms.iter().map(encode_arm).collect::<Result<_, _>>()?;
             let expr = encode_term(expr)?;
             Ok(quote_spanned! {sp=> match #expr { #(#arms)* } })
         }
@@ -218,8 +221,8 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         }
         RT::Model(TermModel { term, .. }) => {
             let term = match &**term {
-                RT::Paren(TermParen { expr, .. }) => &expr,
-                _ => &*term,
+                RT::Paren(TermParen { expr, .. }) => expr,
+                _ => term,
             };
             let term = encode_term(term)?;
             Ok(quote_spanned! {sp=>
