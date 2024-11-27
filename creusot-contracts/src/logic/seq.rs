@@ -341,8 +341,8 @@ impl<T> Seq<T> {
     ///     s.push_back_ghost(10);
     ///     s.push_back_ghost(40);
     ///     s.push_back_ghost(30);
-    ///     let get1 = s.get_ghost(*Int::new(1));
-    ///     let get2 = s.get_ghost(*Int::new(3));
+    ///     let get1 = s.get_ghost(1int);
+    ///     let get2 = s.get_ghost(3int);
     ///     proof_assert!(get1 == Some(&40i32));
     ///     proof_assert!(get2 == None);
     /// };
@@ -370,7 +370,7 @@ impl<T> Seq<T> {
     ///     s.push_back_ghost(0);
     ///     s.push_back_ghost(1);
     ///     s.push_back_ghost(2);
-    ///     if let Some(elem) = s.get_mut_ghost(*Int::new(1)) {
+    ///     if let Some(elem) = s.get_mut_ghost(1int) {
     ///         *elem = 42;
     ///     }
     ///     proof_assert!(s[0] == 0i32 && s[1] == 42i32 && s[2] == 2i32);
