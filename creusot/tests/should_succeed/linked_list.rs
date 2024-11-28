@@ -76,7 +76,7 @@ impl<T> List<T> {
     #[ensures((^self)@ == (*self)@.push_back(x))]
     pub fn push_back(&mut self, x: T) {
         let cell = Box::new(Cell { v: x, next: std::ptr::null() });
-        let (cell_ptr, cell_own) = ptr_own::from_box(cell);
+        let (cell_ptr, cell_own) = PtrOwn::from_box(cell);
         if self.last.is_null() {
             self.first = cell_ptr;
             self.last = cell_ptr;
@@ -84,7 +84,7 @@ impl<T> List<T> {
             ghost! { seq.push_back_ghost(cell_own.into_inner()) };
         } else {
             let seq = self.seq.borrow_mut();
-            let cell_last = ptr_own::as_mut(
+            let cell_last = PtrOwn::as_mut(
                 self.last,
                 ghost! {
                     let off = minus_one(seq.len_ghost());
@@ -98,7 +98,7 @@ impl<T> List<T> {
 
     #[ensures((^self)@ == (*self)@.push_front(x))]
     pub fn push_front(&mut self, x: T) {
-        let (cell_ptr, cell_own) = ptr_own::new(Cell { v: x, next: self.first });
+        let (cell_ptr, cell_own) = PtrOwn::new(Cell { v: x, next: self.first });
         self.first = cell_ptr;
         if self.last.is_null() {
             self.last = cell_ptr;
