@@ -50,3 +50,40 @@ We also recommend section 2.3 of this [thesis](https://sarsko.github.io/_pages/S
 
 We plan to improve this part of the user experience, but that will have to wait until Creusot gets more stable and complete.
 If you'd like to help, a prototype VSCode plugin for Why3 is [in development](https://github.com/xldenis/whycode), it should make the experience much smoother when complete.
+
+## Prove with Why3find
+
+### Configure
+
+```sh
+$ cargo creusot config
+```
+
+The configuration is stored in `why3find.json`.
+
+### Prove
+
+1. Run the Creusot translation.
+
+    ```sh
+    $ cargo creusot
+    ```
+
+2. Run the Why3find prover.
+
+    ```sh
+    $ cargo creusot prove
+    ```
+
+    Run the Why3find prover on specific files:
+
+    ```sh
+    $ cargo creusot prove verif/[COMA_FILES]
+    ```
+
+3. Launch Why3 IDE on unproved goals (this will only open one file even if there are many listed with unproved goals).
+
+    ```sh
+    $ cargo creusot prove -i
+    $ cargo creusot prove -i verif/[COMA_FILES]
+    ```

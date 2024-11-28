@@ -10,11 +10,16 @@ mod helpers;
 use helpers::*;
 mod why3_launcher;
 use why3_launcher::*;
+mod why3find_wrapper;
+use why3find_wrapper::{why3find_config, why3find_prove};
+
 enum Subcommand {
     // subcommand to pass on to creusot-rustc
     Creusot(Option<CreusotSubCommand>),
-    // subcommand to handle in cargo-creusot
+    // subcommands to handle in cargo-creusot
     Setup(SetupSubCommand),
+    Config(ConfigArgs),
+    Prove(ProveArgs),
 }
 use Subcommand::*;
 
@@ -26,6 +31,8 @@ fn main() -> Result<()> {
         None => Creusot(None),
         Some(CargoCreusotSubCommand::Creusot(cmd)) => Creusot(Some(cmd)),
         Some(CargoCreusotSubCommand::Setup { command }) => Setup(command),
+        Some(CargoCreusotSubCommand::Config(args)) => Config(args),
+        Some(CargoCreusotSubCommand::Prove(args)) => Prove(args),
     };
 
     match subcommand {
@@ -97,6 +104,7 @@ fn main() -> Result<()> {
             let flags = setup::InstallFlags {
                 provers_parallelism,
                 why3: extflag(SetupTool::Why3),
+                why3find: extflag(SetupTool::Why3find),
                 altergo: managedflag(SetupTool::AltErgo, SetupManagedTool::AltErgo),
                 z3: managedflag(SetupTool::Z3, SetupManagedTool::Z3),
                 cvc4: managedflag(SetupTool::CVC4, SetupManagedTool::CVC4),
@@ -104,6 +112,8 @@ fn main() -> Result<()> {
             };
             setup::install(flags)
         }
+        Config(args) => why3find_config(args),
+        Prove(args) => why3find_prove(args),
     }
 }
 

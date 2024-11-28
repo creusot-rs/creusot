@@ -8,6 +8,8 @@ mod tools_versions_urls;
 use config::*;
 use tools::*;
 
+pub use tools::PROVERS;
+
 // CAUTION: on MacOS, [config_dir] and [data_dir] are in fact the same directory
 struct CfgPaths {
     config_dir: PathBuf,
@@ -41,6 +43,10 @@ fn get_config_paths() -> anyhow::Result<CfgPaths> {
     })
 }
 
+pub fn get_why3_config_file() -> anyhow::Result<PathBuf> {
+    get_config_paths().map(|config| config.why3_config_file)
+}
+
 // helpers for diagnostics of a creusot installation.
 // used by the implementation of the various subcommands.
 struct Issue {
@@ -66,7 +72,10 @@ impl fmt::Display for Issue {
 fn diagnostic_config(paths: &CfgPaths, config: &Config, check_builtins: bool) -> Vec<Issue> {
     let mut issues: Vec<Issue> = Vec::new();
 
-    let mut bins = vec![(WHY3, config.why3.check_version, config.why3.path.clone(), false)];
+    let mut bins = vec![
+        (WHY3, config.why3.check_version, config.why3.path.clone(), false),
+        (WHY3FIND, config.why3find.check_version, config.why3find.path.clone(), false),
+    ];
     for (bin, cfgbin) in [
         (ALTERGO.bin, &config.altergo),
         (Z3.bin, &config.z3),
@@ -196,6 +205,7 @@ pub struct ManagedFlag {
 pub struct InstallFlags {
     pub provers_parallelism: usize,
     pub why3: ExternalFlag,
+    pub why3find: ExternalFlag,
     pub altergo: ManagedFlag,
     pub z3: ManagedFlag,
     pub cvc4: ManagedFlag,
@@ -238,6 +248,7 @@ pub fn install(flags: InstallFlags) -> anyhow::Result<()> {
     let config = Config {
         provers_parallelism: std::cmp::max(1, flags.provers_parallelism),
         why3: external_tool(WHY3, flags.why3)?,
+        why3find: external_tool(WHY3FIND, flags.why3find)?,
         altergo: managed_tool(ALTERGO.bin, flags.altergo)?,
         z3: managed_tool(Z3.bin, flags.z3)?,
         cvc4: managed_tool(CVC4.bin, flags.cvc4)?,
@@ -302,5 +313,9 @@ fn apply_config(paths: &CfgPaths, cfg: &Config) -> anyhow::Result<()> {
     )?;
 
     // write the config file to disk
-    cfg.write_to_file(&paths.config_file)
+    cfg.write_to_file(&paths.config_file)?;
+
+    // install the why3find package
+    why3find_install();
+    Ok(())
 }
