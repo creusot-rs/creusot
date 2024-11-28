@@ -24,7 +24,7 @@ use why3::{
     Ident, QName,
 };
 
-use super::ty::slice_create_qname;
+use super::ty::{slice_qname};
 
 mod elaborator;
 
@@ -72,7 +72,7 @@ impl PreludeModule {
             PreludeModule::Opaque => QName::from_string("prelude.prelude.Opaque"),
             PreludeModule::Bool => QName::from_string("prelude.prelude.Bool"),
             PreludeModule::Borrow => QName::from_string("prelude.prelude.Borrow"),
-            PreludeModule::Slice => slice_create_qname(),
+            PreludeModule::Slice => slice_qname(),
             PreludeModule::Intrinsic => QName::from_string("prelude.prelude.Intrinsic"),
         }
     }
