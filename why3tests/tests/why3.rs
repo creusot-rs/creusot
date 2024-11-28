@@ -1,10 +1,11 @@
 use assert_cmd::prelude::*;
 use clap::Parser;
 use git2::Repository;
+use regex::Regex;
 use std::{
     fs::File,
     io::{BufRead, BufReader, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::exit,
 };
 use termcolor::*;
@@ -38,15 +39,18 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
+    std::env::set_current_dir("..").unwrap();
+
     let mut out = StandardStream::stdout(ColorChoice::Always);
     let orange = Color::Ansi256(214);
+    let tactic_re = Regex::new(r"TACTIC (\S*)").unwrap();
 
     let changed =
         if let Some(diff) = args.diff_from { Some(changed_comas(&diff).unwrap()) } else { None };
 
     let mut success = true;
     let mut obsolete = false;
-    for file in glob::glob("../creusot/tests/**/*.coma").unwrap() {
+    for file in glob::glob("creusot/tests/**/*.coma").unwrap() {
         // Check for early abort
         if args.fail_early && (!success || obsolete) {
             break;
@@ -61,8 +65,7 @@ fn main() {
         }
 
         if let Some(changed_list) = &changed {
-            let file = file.strip_prefix("../").unwrap();
-            if !changed_list.iter().any(|p| p == file) {
+            if !changed_list.iter().any(|p| *p == file) {
                 continue;
             }
         }
@@ -88,17 +91,26 @@ fn main() {
         let mut sessiondir = file.clone();
         sessiondir.set_file_name(file.file_stem().unwrap());
 
-        let mut sessionfile = sessiondir.clone();
-        sessionfile.push("why3session.xml");
-
         let output;
-        let mut command = creusot_dev_config::why3_command().unwrap();
-        command.arg("--warn-off=unused_variable");
-        command.arg("--warn-off=clone_not_abstract");
-        command.arg("--warn-off=axiom_abstract");
-        command.arg("--debug=coma_no_trivial,stack_trace");
+        let mut why3 = creusot_dev_config::why3_command().unwrap();
+        why3.arg("--warn-off=unused_variable");
+        why3.arg("--warn-off=clone_not_abstract");
+        why3.arg("--warn-off=axiom_abstract");
+        why3.arg("--debug=coma_no_trivial,stack_trace");
 
-        if sessionfile.is_file() {
+        if header_line.contains("WHY3PROVE")
+            || file.file_name().unwrap() == "creusot-contracts.coma"
+        {
+            let mut sessionfile = sessiondir.clone();
+            sessionfile.push("why3session.xml");
+            if !sessionfile.is_file() {
+                out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
+                writeln!(&mut out, "missing why3 session").unwrap();
+                out.reset().unwrap();
+                success = false;
+                continue;
+            }
+
             let Some(proved) =
                 BufReader::new(File::open(&sessionfile).unwrap()).lines().find_map(|l| {
                     match l.unwrap().as_str() {
@@ -131,22 +143,22 @@ fn main() {
             }
 
             // There is a session directory. Try to replay the session.
-            command.arg("replay");
-            command.args(&["-L", ".."]);
+            why3.arg("replay");
+            why3.args(&["-L", "."]);
 
             match args.replay {
                 ReplayLevel::None => {
-                    command.arg("--merging-only");
+                    why3.arg("--merging-only");
                 }
 
                 ReplayLevel::Obsolete => {
-                    command.arg("--obsolete-only");
+                    why3.arg("--obsolete-only");
                 }
                 ReplayLevel::All => {}
             };
 
-            command.arg(sessiondir.clone());
-            output = command.ok();
+            why3.arg(sessiondir.clone());
+            output = why3.ok();
             if output.is_ok() {
                 let outputstring = std::str::from_utf8(&output.as_ref().unwrap().stderr).unwrap();
 
@@ -168,27 +180,30 @@ fn main() {
                 }
                 out.reset().unwrap();
             }
-        } else {
-            // No session directory. Check that this is expected.
-            if !header_line.contains("NO_REPLAY") {
-                out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
-                writeln!(&mut out, "missing why3 session").unwrap();
-                out.reset().unwrap();
-
-                success = false;
-                continue;
-            }
-
+        } else if header_line.contains("NO_REPLAY") {
             // Simply parse the file using "why3 prove".
-            command.arg("prove");
-            command.args(&["-L", "..", "-F", "coma"]);
-            command.arg(file);
-            output = command.ok();
+            why3.arg("prove");
+            why3.args(&["-L", ".", "-F", "coma"]);
+            why3.arg(file);
+            output = why3.ok();
             if output.is_ok() {
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
                 writeln!(&mut out, "syntax ok").unwrap();
                 out.reset().unwrap();
             }
+        } else {
+            let mut why3find = creusot_dev_config::why3find_command().unwrap();
+            why3find.arg("prove").arg(file);
+            if let Some(tactic) = tactic_re.captures_iter(&header_line).next() {
+                why3find.arg("--tactic");
+                why3find.arg(tactic.get(1).unwrap().as_str());
+            }
+            output = why3find.ok();
+            if output.is_ok() {
+                out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
+                writeln!(&mut out, "proved").unwrap();
+            }
+            out.reset().unwrap();
         }
 
         if !output.is_ok() {
@@ -233,7 +248,7 @@ fn main() {
 }
 
 fn changed_comas(from: &str) -> Result<Vec<PathBuf>, git2::Error> {
-    let repo = Repository::open("..")?;
+    let repo = Repository::open(".")?;
     let rev = repo.revparse_single(from)?.id();
     let commit = repo.find_commit(rev)?;
     let diff = repo.diff_tree_to_workdir_with_index(Some(&commit.tree()?), None)?;

@@ -157,6 +157,7 @@ pub fn status() -> anyhow::Result<()> {
 
 pub struct CreusotFlags {
     pub why3_path: PathBuf,
+    pub why3find_path: PathBuf,
     pub why3_config: PathBuf,
 }
 
@@ -187,6 +188,7 @@ pub fn status_for_creusot() -> anyhow::Result<CreusotFlags> {
             }
             Ok(CreusotFlags {
                 why3_path: cfg.why3.path.to_path_buf(),
+                why3find_path: cfg.why3find.path.to_path_buf(),
                 why3_config: paths.why3_config_file,
             })
         }
