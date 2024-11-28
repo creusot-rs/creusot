@@ -206,7 +206,7 @@ fn sig_spec_item(tag: Ident, mut sig: Signature, p: Term) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
-    let documentation = document_spec("requires", attr.clone());
+    let documentation = document_spec("requires", doc::LogicBody::Some(attr.clone()));
 
     let mut item = parse_macro_input!(tokens as ContractSubject);
     let term = parse_macro_input!(attr as Term);
@@ -256,7 +256,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
 #[proc_macro_attribute]
 pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
-    let documentation = document_spec("ensures", attr.clone());
+    let documentation = document_spec("ensures", doc::LogicBody::Some(attr.clone()));
 
     let mut item = parse_macro_input!(tokens as ContractSubject);
     let term = parse_macro_input!(attr as Term);
@@ -376,7 +376,7 @@ pub fn snapshot(assertion: TS1) -> TS1 {
 
 #[proc_macro_attribute]
 pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
-    let documentation = document_spec("terminates", TS1::new());
+    let documentation = document_spec("terminates", doc::LogicBody::None);
     if let Ok(item) = syn::parse::<ImplItemFn>(tokens.clone()) {
         if let Some(def) = item.defaultness {
             return syn::Error::new(
@@ -395,7 +395,7 @@ pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
 
 #[proc_macro_attribute]
 pub fn pure(_: TS1, tokens: TS1) -> TS1 {
-    let documentation = document_spec("pure", TS1::new());
+    let documentation = document_spec("pure", doc::LogicBody::None);
     if let Ok(item) = syn::parse::<ImplItemFn>(tokens.clone()) {
         if let Some(def) = item.defaultness {
             return syn::Error::new(
@@ -474,6 +474,21 @@ impl Parse for LogicInput {
     }
 }
 
+impl LogicInput {
+    fn logic_body(&self) -> doc::LogicBody {
+        match self {
+            LogicInput::Item(log_item) => {
+                if doc::is_trusted(&log_item.attrs) {
+                    doc::LogicBody::Trusted
+                } else {
+                    doc::LogicBody::Some(log_item.body.to_token_stream().into())
+                }
+            }
+            LogicInput::Sig(_) => doc::LogicBody::None,
+        }
+    }
+}
+
 #[proc_macro_attribute]
 pub fn logic(prophetic: TS1, tokens: TS1) -> TS1 {
     let prophetic = if prophetic.is_empty() {
@@ -489,10 +504,7 @@ pub fn logic(prophetic: TS1, tokens: TS1) -> TS1 {
     let log = parse_macro_input!(tokens as LogicInput);
     let documentation = document_spec(
         if prophetic.is_some() { "logic(prophetic)" } else { "logic" },
-        match &log {
-            LogicInput::Item(log_item) => log_item.body.to_token_stream().into(),
-            LogicInput::Sig(_) => TS1::new(),
-        },
+        log.logic_body(),
     );
     match log {
         LogicInput::Item(log) => logic_item(log, prophetic, documentation),
@@ -583,10 +595,7 @@ pub fn predicate(prophetic: TS1, tokens: TS1) -> TS1 {
 
     let documentation = document_spec(
         if prophetic.is_some() { "logic(prophetic)" } else { "logic" },
-        match &pred {
-            LogicInput::Item(log_item) => log_item.body.to_token_stream().into(),
-            LogicInput::Sig(_) => TS1::new(),
-        },
+        pred.logic_body(),
     );
 
     match pred {

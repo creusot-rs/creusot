@@ -1,11 +1,21 @@
 use proc_macro::TokenStream as TS1;
 use proc_macro2::TokenStream;
 use syn::{
-    GenericArgument, Generics, Ident, Lifetime, Path, PathArguments, QSelf, ReturnType, Type,
+    Attribute, GenericArgument, Generics, Ident, Lifetime, Path, PathArguments, QSelf, ReturnType,
+    Type,
 };
 
+/// The body of a logical function or a spec.
+pub(crate) enum LogicBody {
+    Some(TS1),
+    /// The function does not have a body. For example, if it is a trait function.
+    None,
+    /// The function has a body, but it is ignored because the function is `#[trusted]`
+    Trusted,
+}
+
 /// Generates a piece of documentation corresponding to the spec.
-pub(crate) fn document_spec(spec_name: &str, spec: TS1) -> TokenStream {
+pub(crate) fn document_spec(spec_name: &str, spec: LogicBody) -> TokenStream {
     let spec_color = match spec_name {
         "requires" => "Tomato",
         "ensures" => "DodgerBlue",
@@ -14,13 +24,16 @@ pub(crate) fn document_spec(spec_name: &str, spec: TS1) -> TokenStream {
     };
     let spec_name =
         format!("> <span style=\"color:{spec_color};\"><samp>{spec_name}</samp></span>");
-    if spec.is_empty() {
-        return quote::quote! {
-            #[cfg_attr(not(doctest), doc = "")]
-            #[cfg_attr(not(doctest), doc = #spec_name)]
-            #[cfg_attr(not(doctest), doc = "")]
-        };
-    }
+    let spec = match spec {
+        LogicBody::Some(s) if !s.is_empty() => s,
+        _ => {
+            return quote::quote! {
+                #[cfg_attr(not(doctest), doc = "")]
+                #[cfg_attr(not(doctest), doc = #spec_name)]
+                #[cfg_attr(not(doctest), doc = "")]
+            }
+        }
+    };
     let mut spec = {
         let mut span = None;
         for t in spec {
@@ -54,6 +67,24 @@ pub(crate) fn document_spec(spec_name: &str, spec: TS1) -> TokenStream {
         #[cfg_attr(not(doctest), doc = #spec_name)]
         #[cfg_attr(not(doctest), doc = #spec)]
     }
+}
+
+pub(crate) fn is_trusted(attrs: &[Attribute]) -> bool {
+    for attr in attrs {
+        let path = attr.path();
+
+        if path.is_ident("trusted")
+            || (path.segments.len() == 3
+                && path
+                    .segments
+                    .iter()
+                    .zip(["creusot", "decl", "trusted"])
+                    .all(|(s1, s2)| s1.ident == s2))
+        {
+            return true;
+        }
+    }
+    false
 }
 
 /// Create an item name from a type or a trait.
