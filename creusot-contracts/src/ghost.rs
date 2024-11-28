@@ -45,7 +45,7 @@ pub struct GhostBox<T>(#[cfg(creusot)] Box<T>, #[cfg(not(creusot))] std::marker:
 where
     T: ?Sized;
 
-impl<T: ?Sized + Clone> Clone for GhostBox<T> {
+impl<T: Clone> Clone for GhostBox<T> {
     #[ensures(result == *self)]
     fn clone(&self) -> Self {
         #[cfg(creusot)]
