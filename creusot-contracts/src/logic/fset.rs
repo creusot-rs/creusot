@@ -28,6 +28,13 @@ impl<T: ?Sized> FSet<T> {
     #[creusot::builtins = "set.Fset.empty"]
     pub const EMPTY: Self = { FSet(std::marker::PhantomData) };
 
+    /// Returns the empty set.
+    #[logic]
+    #[open]
+    pub fn empty() -> Self {
+        Self::EMPTY
+    }
+
     #[open]
     #[predicate]
     #[why3::attr = "inline:trivial"]
@@ -141,7 +148,7 @@ impl<T: ?Sized> FSet<T> {
     #[ensures(result.is_empty())]
     #[allow(unreachable_code)]
     pub fn new() -> GhostBox<Self> {
-        ghost!(loop {})
+        ghost!(panic!())
     }
 
     /// Returns the number of elements in the set.
