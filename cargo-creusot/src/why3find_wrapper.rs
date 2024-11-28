@@ -1,11 +1,27 @@
 use anyhow::Result;
-use creusot_args::options::*;
+use clap::*;
 use creusot_setup::{get_why3_config_file, PROVERS};
 use std::{
     path::{Path, PathBuf},
     process::{Command, Stdio},
     str::FromStr,
 };
+
+#[derive(Debug, Parser)]
+pub struct ProveArgs {
+    /// Run Why3 IDE on next unproved goal.
+    #[clap(short = 'i', default_value_t = false, action = clap::ArgAction::SetTrue)]
+    pub ide: bool,
+    /// Files to prove; default to everything in `verif/`.
+    pub files: Vec<PathBuf>,
+}
+
+#[derive(Debug, Parser)]
+pub struct ConfigArgs {
+    /// All arguments are forwarded to `why3find config`; see `why3find config --help` for a list of options.
+    #[clap(allow_hyphen_values = true)]
+    pub args: Vec<String>,
+}
 
 fn why3find_json_exists() -> bool {
     Path::new("why3find.json").exists()

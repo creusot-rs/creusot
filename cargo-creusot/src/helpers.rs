@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::Error;
 use cargo_metadata;
-use creusot_args::options::CargoCreusotArgs;
+use creusot_args::options::CommonOptions;
 pub type Result<T> = anyhow::Result<T>;
 
 pub(crate) fn make_cargo_metadata() -> Result<cargo_metadata::Metadata> {
@@ -38,25 +38,25 @@ fn get_crate_() -> Result<String> {
 
 const OUTPUT_PREFIX: &str = "verif";
 
-pub(crate) fn get_coma(cargs: &CargoCreusotArgs) -> (PathBuf, Option<String>) {
+pub(crate) fn get_coma(options: &CommonOptions) -> (PathBuf, Option<String>) {
     let coma_src: PathBuf; // coma output file name or directory
     let coma_glob: Option<String>; // glob pattern for all coma files under coma_src
-    if let Some(f) = &cargs.options.output_file {
+    if let Some(f) = &options.output_file {
         coma_src = f.into();
         coma_glob = None;
-    } else if cargs.options.stdout {
+    } else if options.stdout {
         coma_src = PathBuf::new(); // don't care, dummy value
         coma_glob = None;
     } else {
         // default to --output-dir=target/creusot
-        let mut dir = match &cargs.options.output_dir {
+        let mut dir = match &options.output_dir {
             Some(dir) => dir.clone(),
             None => PathBuf::from("."),
         };
         dir.push(OUTPUT_PREFIX);
 
         let Ok(krate) = get_crate_() else { return (PathBuf::new(), None) };
-        if cargs.options.monolithic {
+        if options.monolithic {
             coma_glob = dir.to_str().map(|s| s.to_string() + "/" + &krate + ".coma");
         } else {
             dir.push(krate);
