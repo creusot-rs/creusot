@@ -74,33 +74,6 @@ pub enum CreusotSubCommand {
     Doc,
 }
 
-#[derive(Debug, Parser)]
-pub struct CargoCreusotArgs {
-    #[clap(flatten)]
-    pub options: CommonOptions,
-    /// Subcommand: why3, setup
-    #[command(subcommand)]
-    pub subcommand: Option<CargoCreusotSubCommand>,
-    /// Additional flags to pass to the underlying cargo invocation.
-    #[clap(last = true)]
-    #[clap(global = true)]
-    pub cargo_flags: Vec<String>,
-}
-
-#[derive(Debug, Subcommand)]
-pub enum CargoCreusotSubCommand {
-    /// Setup and manage Creusot's installation
-    #[command(arg_required_else_help(true))]
-    Setup {
-        #[command(subcommand)]
-        command: SetupSubCommand,
-    },
-    #[command(flatten)]
-    Creusot(CreusotSubCommand),
-    Config(ConfigArgs),
-    Prove(ProveArgs),
-}
-
 #[derive(Debug, ValueEnum, Serialize, Deserialize, Clone)]
 pub enum Why3SubCommand {
     Prove,
@@ -126,31 +99,6 @@ pub enum SetupTool {
     CVC5,
 }
 
-fn default_provers_parallelism() -> usize {
-    match std::thread::available_parallelism() {
-        Ok(n) => n.get(),
-        Err(_) => 1,
-    }
-}
-
-#[derive(Debug, Parser, Clone)]
-pub enum SetupSubCommand {
-    /// Show the current status of the Creusot installation
-    Status,
-    /// Setup Creusot or update an existing installation
-    Install {
-        /// Maximum number of provers to run in parallel
-        #[arg(long, default_value_t = default_provers_parallelism())]
-        provers_parallelism: usize,
-        /// Look-up <TOOL> from PATH instead of using the built-in version
-        #[arg(long, value_name = "TOOL")]
-        external: Vec<SetupManagedTool>,
-        /// Do not error if <TOOL>'s version does not match the one expected by creusot
-        #[arg(long, value_name = "TOOL")]
-        no_check_version: Vec<SetupTool>,
-    },
-}
-
 /// Parse a single key-value pair
 fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn Error + Send + Sync + 'static>>
 where
@@ -169,31 +117,9 @@ impl CreusotArgs {
     }
 }
 
-impl CargoCreusotArgs {
-    pub fn parse_from<I: Into<OsString> + Clone>(it: impl IntoIterator<Item = I>) -> Self {
-        Parser::parse_from(it)
-    }
-}
-
 #[derive(Debug, clap::ValueEnum, Clone, Deserialize, Serialize)]
 pub enum SpanMode {
     Relative,
     Absolute,
     Off,
-}
-
-#[derive(Debug, Parser)]
-pub struct ProveArgs {
-    /// Run Why3 IDE on next unproved goal.
-    #[clap(short = 'i', default_value_t = false, action = clap::ArgAction::SetTrue)]
-    pub ide: bool,
-    /// Files to prove; default to everything in `verif/`.
-    pub files: Vec<PathBuf>,
-}
-
-#[derive(Debug, Parser)]
-pub struct ConfigArgs {
-    /// All arguments are forwarded to `why3find config`; see `why3find config --help` for a list of options.
-    #[clap(allow_hyphen_values = true)]
-    pub args: Vec<String>,
 }
