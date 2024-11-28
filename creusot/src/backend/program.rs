@@ -1,4 +1,4 @@
-use self::ty::{concret_intty, concret_uintty};
+use self::ty::{concret_intty, concret_uintty, slice_create_qname};
 
 use crate::{
     backend::{
@@ -47,6 +47,8 @@ use why3::{
     ty::Type,
     Ident, QName,
 };
+
+
 
 pub(crate) fn translate_function<'tcx, 'sess>(
     ctx: &mut Why3Generator<'tcx>,
@@ -347,7 +349,15 @@ impl<'tcx> RValue<'tcx> {
 
                         // convert the right operand to an logical integer
                         let mut module = prelude.qname();
-                        module.push_ident("to_int");
+
+                        // todo laurent valider l'approche
+                        match r_ty.kind() {
+                            TyKind::Int(_) => module.push_ident("to_int"),
+                            TyKind::Uint(_) => module.push_ident("to_uint"),
+                            _ => unreachable!("right operande, non-integer type for binary operation {op:?} {ty:?}"),
+                        }
+
+                        
                         module = module.without_search_path();
 
                         // build the expression for this convertion
@@ -518,7 +528,7 @@ impl<'tcx> RValue<'tcx> {
                 Exp::var(id)
             }
             RValue::Repeat(e, len) => {
-                let slice_create = QName::from_string("Slice.create");
+                let slice_create = slice_create_qname();
                 let param_ty = lower.ty(e.ty(lower.ctx.tcx, lower.locals));
                 let args = vec![
                     Arg::Ty(param_ty),

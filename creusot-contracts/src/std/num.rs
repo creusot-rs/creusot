@@ -32,21 +32,62 @@ macro_rules! mach_int {
     };
 }
 
-mach_int!(u8, "prelude.prelude.UInt8", 0u8);
-mach_int!(u16, "prelude.prelude.UInt16", 0u16);
-mach_int!(u32, "prelude.prelude.UInt32", 0u32);
-mach_int!(u64, "prelude.prelude.UInt64", 0u64);
-mach_int!(u128, "prelude.prelude.UInt128", 0u128);
+macro_rules! mach_uint { // TODO laurent factoriser avec mach_int
+    ($t:ty, $ty_nm:expr, $zero:expr) => {
+        impl View for $t {
+            type ViewTy = Int;
+            #[logic]
+            #[trusted]
+            #[creusot::builtins = concat!($ty_nm, ".to_uint")]
+            fn view(self) -> Self::ViewTy {
+                dead
+            }
+        }
+
+        impl DeepModel for $t {
+            type DeepModelTy = Int;
+            #[logic]
+            #[open]
+            fn deep_model(self) -> Self::DeepModelTy {
+                pearlite! { self@ }
+            }
+        }
+
+        impl Default for $t {
+            #[predicate]
+            #[open]
+            fn is_default(self) -> bool {
+                pearlite! { self == $zero }
+            }
+        }
+    };
+}
+
+mach_uint!(u8, "prelude.prelude.UInt8", 0u8);
+mach_uint!(u16, "prelude.prelude.UInt16", 0u16);
+mach_uint!(u32, "prelude.prelude.UInt32", 0u32);
+mach_uint!(u64, "prelude.prelude.UInt64", 0u64);
+mach_uint!(u128, "prelude.prelude.UInt128", 0u128);
 // mach_int!(usize, "prelude.prelude.UIntSize.to_uint", 0usize);
-mach_int!(usize, "prelude.prelude.UInt64", 0usize); // TODO laurent
+#[cfg(target_pointer_width = "64")]
+mach_uint!(usize, "prelude.prelude.UInt64", 0usize); // laurent voir si on garde 0usize
+#[cfg(target_pointer_width = "32")]
+mach_uint!(usize, "prelude.prelude.UInt64", 0usize); // laurent voir si on garde 0usize
+#[cfg(target_pointer_width = "16")]
+mach_uint!(usize, "prelude.prelude.UInt64", 0usize); // laurent voir si on garde 0usize
 
 mach_int!(i8, "prelude.prelude.Int8", 0i8);
 mach_int!(i16, "prelude.prelude.Int16", 0i16);
 mach_int!(i32, "prelude.prelude.Int32", 0i32);
 mach_int!(i64, "prelude.prelude.Int64", 0i64);
 mach_int!(i128, "prelude.prelude.Int128", 0i128);
-// mach_int!(isize, "prelude.prelude.IntSize.to_int", 0isize);
-mach_int!(isize, "prelude.prelude.Int64", 0isize); // TODO laurent
+#[cfg(target_pointer_width = "64")]
+mach_int!(isize, "prelude.prelude.Int64", 0isize); // laurent voir si on garde 0isize
+#[cfg(target_pointer_width = "32")]
+mach_int!(isize, "prelude.prelude.Int64", 0isize); // laurent voir si on garde 0isize
+#[cfg(target_pointer_width = "16")]
+mach_int!(isize, "prelude.prelude.Int64", 0isize); // laurent voir si on garde 0isize
+
 
 /// Adds specifications for checked, wrapping, saturating, and overflowing operations on the given
 /// integer type

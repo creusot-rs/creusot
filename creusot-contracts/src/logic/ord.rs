@@ -175,8 +175,8 @@ macro_rules! ord_logic_impl {
     };
 }
 
-
-macro_rules! ord_logic_impl_test_laurent {
+// laurent voir si on garde  ord_logic_impl_with_signed et ord_logic_impl_with_signed_symbol.
+macro_rules! ord_logic_impl_with_signed_symbol {
     ($t:ty, $module:literal, $signed_sym:expr) => {
         impl OrdLogic for $t {
             #[logic]
@@ -228,27 +228,45 @@ macro_rules! ord_logic_impl_test_laurent {
     };
 }
 
+macro_rules! ord_logic_unsigned_impl {
+    ($t:ty, $module:literal) => {
+        ord_logic_impl_with_signed_symbol!($t, $module, "u");
+    }
+}
+
+
+macro_rules! ord_logic_signed_impl {
+    ($t:ty, $module:literal) => {
+        ord_logic_impl_with_signed_symbol!($t, $module, "s");
+    }
+}
+
 ord_logic_impl!(Int, "int.Int");
 
-ord_logic_impl!(u8, "int.Int");
-ord_logic_impl!(u16, "int.Int");
-ord_logic_impl_test_laurent!(u32, "prelude.prelude.UInt32", "u");
-ord_logic_impl!(u64, "int.Int");
-ord_logic_impl!(u128, "int.Int");
-ord_logic_impl!(usize, "int.Int");
-
-ord_logic_impl!(i8, "int.Int");
-ord_logic_impl!(i16, "int.Int");
-ord_logic_impl!(i32, "int.Int");
-ord_logic_impl!(i64, "int.Int");
-ord_logic_impl!(i128, "int.Int");
-
+ord_logic_unsigned_impl!(u8, "prelude.prelude.UInt8");
+ord_logic_unsigned_impl!(u16, "prelude.prelude.UInt16");
+ord_logic_unsigned_impl!(u32, "prelude.prelude.UInt32");
+ord_logic_unsigned_impl!(u64, "prelude.prelude.UInt64");
+ord_logic_unsigned_impl!(u128, "prelude.prelude.UInt128");
 #[cfg(target_pointer_width = "64")]
-ord_logic_impl!(isize, "UInt64");
+ord_logic_unsigned_impl!(usize, "prelude.prelude.UInt64");
 #[cfg(target_pointer_width = "32")]
-ord_logic_impl!(isize, "UInt32");
+ord_logic_unsigned_impl!(usize, "prelude.prelude.UInt32");
 #[cfg(target_pointer_width = "16")]
-ord_logic_impl!(isize, "UInt16");
+ord_logic_unsigned_impl!(usize, "prelude.prelude.UInt16");
+
+
+ord_logic_signed_impl!(i8, "prelude.prelude.Int8");
+ord_logic_signed_impl!(i16, "prelude.prelude.Int16");
+ord_logic_signed_impl!(i32, "prelude.prelude.Int32");
+ord_logic_signed_impl!(i64, "prelude.prelude.Int64");
+ord_logic_signed_impl!(i128, "prelude.prelude.Int128");
+#[cfg(target_pointer_width = "64")]
+ord_logic_signed_impl!(isize, "prelude.prelude.Int64");
+#[cfg(target_pointer_width = "32")]
+ord_logic_signed_impl!(isize, "prelude.prelude.Int32");
+#[cfg(target_pointer_width = "16")]
+ord_logic_signed_impl!(isize, "prelude.prelude.Int16");
 
 impl OrdLogic for bool {
     #[open]

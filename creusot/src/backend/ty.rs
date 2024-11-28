@@ -539,3 +539,30 @@ pub(crate) fn i64_ty() -> MlT {
 pub(crate) fn i128_ty() -> MlT {
     MlT::TConstructor(QName::from_string("Int128.t"))
 }
+
+pub(crate) fn slice_create_qname() -> QName {
+    #[cfg(target_pointer_width = "64")]
+    return QName::from_string("Slice64.create");
+    #[cfg(target_pointer_width = "32")]
+    return QName::from_string("Slice32.create");
+    #[cfg(target_pointer_width = "16")]
+    return QName::from_string("Slice16.create");
+}
+
+pub(crate)fn slice_get_qname() -> QName {
+    #[cfg(target_pointer_width = "64")]
+    return QName::from_string("Slice64.get");
+    #[cfg(target_pointer_width = "32")]
+    return QName::from_string("Slice32.get");
+    #[cfg(target_pointer_width = "16")]
+    return QName::from_string("Slice16.get");
+}
+
+pub(crate) fn slice_set_qname() -> QName {
+    #[cfg(target_pointer_width = "64")]
+    return QName::from_string("Slice64.set");
+    #[cfg(target_pointer_width = "32")]
+    return QName::from_string("Slice32.set");
+    #[cfg(target_pointer_width = "16")]
+    return QName::from_string("Slice16.set");
+}

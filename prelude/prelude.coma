@@ -34,6 +34,10 @@ module Bool
 
   function to_int (b : bool) : int =
     if b then 1 else 0
+(*
+  function to_BV256 (x: t) : BV256.t = if b then toBig 1 else toBig 0
+  function of_BV256 (x: BV256.t) : t = if b  =  0 then false else true
+  *)
 end
 
 module Borrow
@@ -581,6 +585,48 @@ module Snapshot
   axiom inner_spec [@rewrite]: forall x: snap_ty 't [inner x]. new (inner x) = x
 end
 
+
+module Slic64
+  use seq.Seq
+  use UInt64
+  use int.Int
+
+  type slice 'a =
+    { elts : seq 'a }
+    invariant { Seq.length elts <= UInt64.to_uint UInt64.max_uint }
+  axiom slice_ext :
+    forall x y: slice 'a. x.elts = y.elts -> x = y
+
+  type array 'a = slice 'a
+
+  function length (s : slice 'a) : UInt64.t
+  axiom spec : forall s : slice 'a . (UInt64.to_uint (length s)) = Seq.length s.elts
+
+
+  let get < 'a > (s : slice 'a) (ix : UInt64.t) (ret (res : 'a)) =
+    { UInt64.to_uint ix < Seq.length s.elts }
+    ret {Seq.get s.elts (to_int ix)}
+
+
+  let set < 'a > (s : slice 'a) (ix : UInt64.t) (v : 'a)
+    { 0 <= UInt64.to_uint ix < Seq.length s.elts }
+    (ret (result : slice 'a)
+      { Seq.length result.elts = Seq.length s.elts }
+      { result.elts[UInt64.to_uint ix] = v }
+      { forall j. 0 <= j < Seq.length s.elts /\ j <> UInt64.to_uint ix -> result.elts[j] = s.elts[j] }
+    ) = any
+
+
+  let create < 'a > (len : UInt64.t) (f : int -> 'a)
+    { 0 <= UInt64.to_uint len }
+  (ret (result : slice 'a )
+    { Seq.length result.elts = UInt64.to_uint len }
+    { forall i . 0 <= i < UInt64.to_uint len -> result.elts[i] = f i }
+  ) = any
+
+end
+
+(*
 module Slice
   use seq.Seq
   use UInt64
@@ -636,3 +682,5 @@ module Slice
   *)
   function id (s : slice 'a) : seq 'a = s.elts
 end
+
+*)
