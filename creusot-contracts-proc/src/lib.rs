@@ -218,21 +218,27 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
     let name_tag = format!("{}", quote! { #req_name });
 
     match item {
-        ContractSubject::FnOrMethod(fn_or_meth) if fn_or_meth.is_trait_signature() => {
+        ContractSubject::FnOrMethod(mut fn_or_meth) if fn_or_meth.is_trait_signature() => {
+            let attrs = std::mem::take(&mut fn_or_meth.attrs);
             let requires_tokens = sig_spec_item(req_name, fn_or_meth.sig.clone(), term);
             TS1::from(quote! {
               #requires_tokens
               #[creusot::clause::requires=#name_tag]
+              #(#attrs)*
               #documentation
               #fn_or_meth
             })
         }
         ContractSubject::FnOrMethod(mut f) => {
+            let attrs = std::mem::take(&mut f.attrs);
             let requires_tokens = fn_spec_item(req_name, None, term);
 
-            f.body.as_mut().map(|b| b.stmts.insert(0, Stmt::Item(Item::Verbatim(requires_tokens))));
+            if let Some(b) = f.body.as_mut() {
+                b.stmts.insert(0, Stmt::Item(Item::Verbatim(requires_tokens)))
+            }
             TS1::from(quote! {
               #[creusot::clause::requires=#name_tag]
+              #(#attrs)*
               #documentation
               #f
             })
@@ -261,7 +267,8 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
     let name_tag = format!("{}", quote! { #ens_name });
 
     match item {
-        ContractSubject::FnOrMethod(s) if s.is_trait_signature() => {
+        ContractSubject::FnOrMethod(mut s) if s.is_trait_signature() => {
+            let attrs = std::mem::take(&mut s.attrs);
             let result = match s.sig.output {
                 ReturnType::Default => parse_quote! { result : () },
                 ReturnType::Type(_, ref ty) => parse_quote! { result : #ty },
@@ -273,20 +280,25 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
             TS1::from(quote! {
               #ensures_tokens
               #[creusot::clause::ensures=#name_tag]
+              #(#attrs)*
               #documentation
               #s
             })
         }
         ContractSubject::FnOrMethod(mut f) => {
+            let attrs = std::mem::take(&mut f.attrs);
             let result = match f.sig.output {
                 ReturnType::Default => parse_quote! { result : () },
                 ReturnType::Type(_, ref ty) => parse_quote! { result : #ty },
             };
             let ensures_tokens = fn_spec_item(ens_name, Some(result), term);
 
-            f.body.as_mut().map(|b| b.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens))));
+            if let Some(b) = f.body.as_mut() {
+                b.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens)))
+            }
             TS1::from(quote! {
                 #[creusot::clause::ensures=#name_tag]
+                #(#attrs)*
                 #documentation
                 #f
             })
@@ -302,10 +314,11 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
                     #attrs
                     |result| {::creusot_contracts::__stubs::closure_result(res, result); #req_body }
                 ;
-                res});
+                res
+            });
             TS1::from(quote! {
-              #[creusot::clause::ensures=#name_tag]
-              #clos
+                #[creusot::clause::ensures=#name_tag]
+                #clos
             })
         }
     }
@@ -334,7 +347,7 @@ impl syn::parse::Parse for VariantAnnotation {
 pub fn variant(attr: TS1, tokens: TS1) -> TS1 {
     match variant_inner(attr, tokens) {
         Ok(r) => r,
-        Err(err) => return TS1::from(err.to_compile_error()),
+        Err(err) => TS1::from(err.to_compile_error()),
     }
 }
 
@@ -345,9 +358,7 @@ fn variant_inner(attr: TS1, tokens: TS1) -> Result<TS1> {
 
     let var_name = generate_unique_ident("variant");
 
-    let var_body = pretyping::encode_term(&p).unwrap_or_else(|e| {
-        return e.into_tokens();
-    });
+    let var_body = pretyping::encode_term(&p).unwrap_or_else(|e| e.into_tokens());
     let name_tag = format!("{}", quote! { #var_name });
 
     let variant_attr = match tgt {
