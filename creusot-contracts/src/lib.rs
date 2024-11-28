@@ -216,9 +216,9 @@ pub mod snapshot {
     impl<T: ?Sized> Copy for Snapshot<T> {}
 }
 
-pub mod ghost_ptr;
 pub mod invariant;
 pub mod model;
+pub mod ptr_own;
 pub mod resolve;
 pub mod util;
 pub mod well_founded;
@@ -251,6 +251,7 @@ mod base_prelude {
     pub use crate::std::{
         iter::{SkipExt as _, TakeExt as _},
         ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
+        ptr::PointerExt as _,
         slice::SliceExt as _,
     };
 }

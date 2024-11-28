@@ -129,6 +129,23 @@ impl<T: ?Sized> GhostBox<T> {
         }
     }
 
+    /// Conjures a `GhostBox<T>` out of thin air.
+    /// This would be unsound in verified code, hence the `false` precondition.
+    /// This function is nevertheless useful to create a `GhostBox` in "trusted"
+    /// contexts, when axiomatizing an API that is believed to be sound for
+    /// external reasons.
+    #[requires(false)]
+    pub fn conjure() -> Self {
+        #[cfg(creusot)]
+        {
+            loop {}
+        }
+        #[cfg(not(creusot))]
+        {
+            GhostBox(std::marker::PhantomData)
+        }
+    }
+
     // Internal function to easily create a GhostBox in non-creusot mode.
     #[cfg(not(creusot))]
     #[doc(hidden)]
