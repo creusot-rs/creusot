@@ -28,6 +28,7 @@ impl<T: View + ?Sized> View for Snapshot<T> {
 }
 
 impl<T: ?Sized> Clone for Snapshot<T> {
+    #[pure]
     #[ensures(result == *self)]
     fn clone(&self) -> Self {
         snapshot! { **self }
