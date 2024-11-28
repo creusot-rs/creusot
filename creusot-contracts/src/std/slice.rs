@@ -44,9 +44,27 @@ impl<T: DeepModel> DeepModel for [T] {
     }
 }
 
+//TODO laurent valider l'approche de separation en 3 block
+#[cfg(target_pointer_width = "64")]
 #[logic]
 #[trusted]
-#[creusot::builtins = "prelude.prelude.Slice.id"]
+#[creusot::builtins = "prelude.prelude.Slice64.id"]
+fn slice_model<T>(_: &[T]) -> Seq<T> {
+    dead
+}
+
+#[cfg(target_pointer_width = "32")]
+#[logic]
+#[trusted]
+#[creusot::builtins = "prelude.prelude.Slice32.id"]
+fn slice_model<T>(_: &[T]) -> Seq<T> {
+    dead
+}
+
+#[cfg(target_pointer_width = "16")]
+#[logic]
+#[trusted]
+#[creusot::builtins = "prelude.prelude.Slice16.id"]
 fn slice_model<T>(_: &[T]) -> Seq<T> {
     dead
 }

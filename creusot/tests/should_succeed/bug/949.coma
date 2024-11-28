@@ -56,7 +56,7 @@ module M_949__main [#"949.rs" 4 0 4 13]
   
   type t_Option'0  =
     | C_None'0
-    | C_Some'0 int32
+    | C_Some'0 Int32.t
   
   use map.Map
   
@@ -99,27 +99,27 @@ module M_949__main [#"949.rs" 4 0 4 13]
   
   axiom inv_axiom'1 [@rewrite] : forall x : borrowed (t_GhostPtrToken'0) [inv'1 x] . inv'1 x = true
   
-  predicate inv'2 (_1 : int32)
+  predicate inv'2 (_1 : Int32.t)
   
-  axiom inv_axiom'2 [@rewrite] : forall x : int32 [inv'2 x] . inv'2 x = true
+  axiom inv_axiom'2 [@rewrite] : forall x : Int32.t [inv'2 x] . inv'2 x = true
   
   function contains'0 [@inline:trivial] (self : t_FMap'0) (k : opaque_ptr) : bool =
     [%#sfmap17] get_unsized'0 self k <> C_None'0
   
-  function make_sized'0 (self : int32) : int32
+  function make_sized'0 (self : Int32.t) : Int32.t
   
-  axiom make_sized'0_spec : forall self : int32 . [%#sutil29] make_sized'0 self = self
+  axiom make_sized'0_spec : forall self : Int32.t . [%#sutil29] make_sized'0 self = self
   
   use map.Map
   
-  function insert'0 (self : t_FMap'0) (k : opaque_ptr) (v : int32) : t_FMap'0
+  function insert'0 (self : t_FMap'0) (k : opaque_ptr) (v : Int32.t) : t_FMap'0
   
-  axiom insert'0_spec : forall self : t_FMap'0, k : opaque_ptr, v : int32 . ([%#sfmap18] view'1 (insert'0 self k v)
+  axiom insert'0_spec : forall self : t_FMap'0, k : opaque_ptr, v : Int32.t . ([%#sfmap18] view'1 (insert'0 self k v)
   = Map.set (view'1 self) k (C_Some'0 (make_sized'0 v)))
   && ([%#sfmap19] contains'0 self k  -> len'0 (insert'0 self k v) = len'0 self)
   && ([%#sfmap20] not contains'0 self k  -> len'0 (insert'0 self k v) = len'0 self + 1)
   
-  let rec ptr_from_box'0 (self:borrowed (t_GhostPtrToken'0)) (val':int32) (return'  (ret:opaque_ptr))= {[@expl:ptr_from_box 'self' type invariant] [%#sghost_ptr5] inv'1 self}
+  let rec ptr_from_box'0 (self:borrowed (t_GhostPtrToken'0)) (val':Int32.t) (return'  (ret:opaque_ptr))= {[@expl:ptr_from_box 'self' type invariant] [%#sghost_ptr5] inv'1 self}
     {[@expl:ptr_from_box 'val' type invariant] [%#sghost_ptr6] inv'2 val'}
     any
     [ return' (result:opaque_ptr)-> {[%#sghost_ptr7] not contains'0 (view'0 self.current) result}
@@ -127,12 +127,12 @@ module M_949__main [#"949.rs" 4 0 4 13]
       (! return' {result}) ]
     
   
-  function unwrap'0 (op : t_Option'0) : int32
+  function unwrap'0 (op : t_Option'0) : Int32.t
   
   axiom unwrap'0_spec : forall op : t_Option'0 . ([%#sutil30] op <> C_None'0)
    -> ([%#sutil31] C_Some'0 (unwrap'0 op) = op)
   
-  function lookup_unsized'0 [@inline:trivial] (self : t_FMap'0) (k : opaque_ptr) : int32 =
+  function lookup_unsized'0 [@inline:trivial] (self : t_FMap'0) (k : opaque_ptr) : Int32.t =
     [%#sfmap21] unwrap'0 (get_unsized'0 self k)
   
   function remove'0 (self : t_FMap'0) (k : opaque_ptr) : t_FMap'0
@@ -141,10 +141,10 @@ module M_949__main [#"949.rs" 4 0 4 13]
   = Map.set (view'1 self) k (C_None'0))
   && ([%#sfmap23] len'0 (remove'0 self k) = (if contains'0 self k then len'0 self - 1 else len'0 self))
   
-  let rec ptr_to_box'0 (self:borrowed (t_GhostPtrToken'0)) (ptr:opaque_ptr) (return'  (ret:int32))= {[@expl:ptr_to_box 'self' type invariant] [%#sghost_ptr9] inv'1 self}
+  let rec ptr_to_box'0 (self:borrowed (t_GhostPtrToken'0)) (ptr:opaque_ptr) (return'  (ret:Int32.t))= {[@expl:ptr_to_box 'self' type invariant] [%#sghost_ptr9] inv'1 self}
     {[@expl:ptr_to_box requires] [%#sghost_ptr10] contains'0 (view'0 self.current) ptr}
     any
-    [ return' (result:int32)-> {[%#sghost_ptr11] inv'2 result}
+    [ return' (result:Int32.t)-> {[%#sghost_ptr11] inv'2 result}
       {[%#sghost_ptr12] result = lookup_unsized'0 (view'0 self.current) ptr}
       {[%#sghost_ptr13] view'0 self.final = remove'0 (view'0 self.current) ptr}
       (! return' {result}) ]
@@ -156,7 +156,7 @@ module M_949__main [#"949.rs" 4 0 4 13]
   
   let rec main'0 (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0 [ s0 = new'0 {[%#s9490] ()} (fun (_ret':t_GhostPtrToken'0) ->  [ &tok <- _ret' ] s1) | s1 = bb1 ] 
-    | bb1 = s0 [ s0 =  [ &b <- [%#s9491] (1 : int32) ] s1 | s1 = bb2 ] 
+    | bb1 = s0 [ s0 =  [ &b <- [%#s9491] (1 : Int32.t) ] s1 | s1 = bb2 ] 
     | bb2 = s0
       [ s0 = Borrow.borrow_mut <t_GhostPtrToken'0> {tok}
           (fun (_ret':borrowed (t_GhostPtrToken'0)) ->  [ &_4 <- _ret' ]  [ &tok <- _ret'.final ] s1)
@@ -166,19 +166,19 @@ module M_949__main [#"949.rs" 4 0 4 13]
     | bb3 = s0
       [ s0 = Borrow.borrow_mut <t_GhostPtrToken'0> {tok}
           (fun (_ret':borrowed (t_GhostPtrToken'0)) ->  [ &_7 <- _ret' ]  [ &tok <- _ret'.final ] s1)
-      | s1 = ptr_to_box'0 {_7} {p} (fun (_ret':int32) ->  [ &r <- _ret' ] s2)
+      | s1 = ptr_to_box'0 {_7} {p} (fun (_ret':Int32.t) ->  [ &r <- _ret' ] s2)
       | s2 = bb4 ]
       
-    | bb4 = s0 [ s0 = Int32.add {r} {[%#s9492] (5 : int32)} (fun (_ret':int32) ->  [ &r <- _ret' ] s1) | s1 = bb5 ] 
+    | bb4 = s0 [ s0 = Int32.add {r} {[%#s9492] (5 : Int32.t)} (fun (_ret':Int32.t) ->  [ &r <- _ret' ] s1) | s1 = bb5 ] 
     | bb5 = bb6
     | bb6 = return' {_0} ]
     )
     [ & _0 : () = any_l ()
     | & tok : t_GhostPtrToken'0 = any_l ()
-    | & b : int32 = any_l ()
+    | & b : Int32.t = any_l ()
     | & p : opaque_ptr = any_l ()
     | & _4 : borrowed (t_GhostPtrToken'0) = any_l ()
-    | & r : int32 = any_l ()
+    | & r : Int32.t = any_l ()
     | & _7 : borrowed (t_GhostPtrToken'0) = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end

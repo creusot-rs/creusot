@@ -22,16 +22,16 @@ module M_02_gnome__gnome_sort [#"02_gnome.rs" 22 0 24 29]
   let%span scmp20 = "../../../../creusot-contracts/src/std/cmp.rs" 36 26 36 77
   let%span svec21 = "../../../../creusot-contracts/src/std/vec.rs" 175 26 175 42
   let%span svec22 = "../../../../creusot-contracts/src/std/vec.rs" 176 26 176 48
-  let%span sslice23 = "../../../../creusot-contracts/src/std/slice.rs" 257 19 257 35
-  let%span sslice24 = "../../../../creusot-contracts/src/std/slice.rs" 258 19 258 35
-  let%span sslice25 = "../../../../creusot-contracts/src/std/slice.rs" 259 18 259 50
+  let%span sslice23 = "../../../../creusot-contracts/src/std/slice.rs" 275 19 275 35
+  let%span sslice24 = "../../../../creusot-contracts/src/std/slice.rs" 276 19 276 35
+  let%span sslice25 = "../../../../creusot-contracts/src/std/slice.rs" 277 18 277 50
   let%span svec26 = "../../../../creusot-contracts/src/std/vec.rs" 29 14 29 47
   let%span svec27 = "../../../../creusot-contracts/src/std/vec.rs" 30 14 31 51
   let%span s02_gnome28 = "02_gnome.rs" 17 4 17 31
   let%span svec29 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   let%span smodel30 = "../../../../creusot-contracts/src/model.rs" 88 8 88 22
-  let%span sslice31 = "../../../../creusot-contracts/src/std/slice.rs" 122 20 122 37
-  let%span sslice32 = "../../../../creusot-contracts/src/std/slice.rs" 129 20 129 37
+  let%span sslice31 = "../../../../creusot-contracts/src/std/slice.rs" 140 20 140 37
+  let%span sslice32 = "../../../../creusot-contracts/src/std/slice.rs" 147 20 147 37
   let%span smodel33 = "../../../../creusot-contracts/src/model.rs" 79 8 79 28
   let%span sslice34 = "../../../../creusot-contracts/src/std/slice.rs" 28 14 28 41
   let%span sslice35 = "../../../../creusot-contracts/src/std/slice.rs" 29 14 29 42
@@ -59,7 +59,9 @@ module M_02_gnome__gnome_sort [#"02_gnome.rs" 22 0 24 29]
   
   use prelude.prelude.Snapshot
   
-  use prelude.prelude.UIntSize
+  use prelude.prelude.Int
+  
+  use prelude.prelude.UInt64
   
   use prelude.prelude.Borrow
   
@@ -72,13 +74,13 @@ module M_02_gnome__gnome_sort [#"02_gnome.rs" 22 0 24 29]
     { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
   
   type t_Cap'0  =
-    { t_Cap__0'0: usize }
+    { t_Cap__0'0: UInt64.t }
   
   type t_RawVec'0  =
     { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
   
   type t_Vec'0  =
-    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
   type t_T'0
   
@@ -86,15 +88,13 @@ module M_02_gnome__gnome_sort [#"02_gnome.rs" 22 0 24 29]
   
   use seq.Seq
   
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
+  use prelude.prelude.UInt64
   
   function view'2 (self : t_Vec'0) : Seq.seq t_T'0
   
-  axiom view'2_spec : forall self : t_Vec'0 . [%#svec29] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  axiom view'2_spec : forall self : t_Vec'0 . [%#svec29] Seq.length (view'2 self) <= UInt64.to_uint (v_MAX'0 : UInt64.t)
   
   function view'0 (self : borrowed (t_Vec'0)) : Seq.seq t_T'0 =
     [%#smodel12] view'2 self.current
@@ -236,17 +236,17 @@ module M_02_gnome__gnome_sort [#"02_gnome.rs" 22 0 24 29]
   function view'4 (self : t_Vec'0) : Seq.seq t_T'0 =
     [%#smodel30] view'2 self
   
-  let rec len'0 (self:t_Vec'0) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'4 self}
+  let rec len'0 (self:t_Vec'0) (return'  (ret:UInt64.t))= {[@expl:len 'self' type invariant] inv'4 self}
     any
-    [ return' (result:usize)-> {[%#svec17] UIntSize.to_int result = Seq.length (view'4 self)} (! return' {result}) ]
+    [ return' (result:UInt64.t)-> {[%#svec17] UInt64.to_uint result = Seq.length (view'4 self)} (! return' {result}) ]
     
   
-  predicate inv'5 (_1 : usize)
+  predicate inv'5 (_1 : UInt64.t)
   
-  axiom inv_axiom'5 [@rewrite] : forall x : usize [inv'5 x] . inv'5 x = true
+  axiom inv_axiom'5 [@rewrite] : forall x : UInt64.t [inv'5 x] . inv'5 x = true
   
-  predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq t_T'0) =
-    [%#sslice31] UIntSize.to_int self < Seq.length seq
+  predicate in_bounds'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq t_T'0) =
+    [%#sslice31] UInt64.to_uint self < Seq.length seq
   
   predicate invariant'5 (self : t_T'0) =
     [%#sinvariant54] inv'8 self
@@ -255,10 +255,10 @@ module M_02_gnome__gnome_sort [#"02_gnome.rs" 22 0 24 29]
   
   axiom inv_axiom'6 [@rewrite] : forall x : t_T'0 [inv'6 x] . inv'6 x = invariant'5 x
   
-  predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq t_T'0) (out : t_T'0) =
-    [%#sslice32] Seq.get seq (UIntSize.to_int self) = out
+  predicate has_value'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq t_T'0) (out : t_T'0) =
+    [%#sslice32] Seq.get seq (UInt64.to_uint self) = out
   
-  let rec index'0 (self:t_Vec'0) (index:usize) (return'  (ret:t_T'0))= {[@expl:index 'self' type invariant] inv'4 self}
+  let rec index'0 (self:t_Vec'0) (index:UInt64.t) (return'  (ret:t_T'0))= {[@expl:index 'self' type invariant] inv'4 self}
     {[@expl:index 'index' type invariant] inv'5 index}
     {[@expl:index requires] [%#svec18] in_bounds'0 index (view'4 self)}
     any
@@ -282,15 +282,15 @@ module M_02_gnome__gnome_sort [#"02_gnome.rs" 22 0 24 29]
   
   axiom inv_axiom'3 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'3 x] . inv'3 x = invariant'3 x
   
-  use prelude.prelude.Slice
+  use Slice64.create
   
-  use prelude.prelude.Slice
+  use prelude.prelude.Slice64
   
   function view'6 (self : slice t_T'0) : Seq.seq t_T'0
   
   axiom view'6_spec : forall self : slice t_T'0 . ([%#sslice34] Seq.length (view'6 self)
-  <= UIntSize.to_int (v_MAX'0 : usize))
-  && ([%#sslice35] view'6 self = Slice.id self)
+  <= UInt64.to_uint (v_MAX'0 : UInt64.t))
+  && ([%#sslice35] view'6 self = Slice64.id self)
   
   predicate invariant'1 (self : slice t_T'0) =
     [%#sslice52] inv'7 (view'6 self)
@@ -319,11 +319,11 @@ module M_02_gnome__gnome_sort [#"02_gnome.rs" 22 0 24 29]
   
   use seq.Permut
   
-  let rec swap'0 (self:borrowed (slice t_T'0)) (a:usize) (b:usize) (return'  (ret:()))= {[@expl:swap 'self' type invariant] inv'2 self}
-    {[@expl:swap requires #0] [%#sslice23] UIntSize.to_int a < Seq.length (view'5 self)}
-    {[@expl:swap requires #1] [%#sslice24] UIntSize.to_int b < Seq.length (view'5 self)}
+  let rec swap'0 (self:borrowed (slice t_T'0)) (a:UInt64.t) (b:UInt64.t) (return'  (ret:()))= {[@expl:swap 'self' type invariant] inv'2 self}
+    {[@expl:swap requires #0] [%#sslice23] UInt64.to_uint a < Seq.length (view'5 self)}
+    {[@expl:swap requires #1] [%#sslice24] UInt64.to_uint b < Seq.length (view'5 self)}
     any
-    [ return' (result:())-> {[%#sslice25] Permut.exchange (view'6 self.final) (view'5 self) (UIntSize.to_int a) (UIntSize.to_int b)}
+    [ return' (result:())-> {[%#sslice25] Permut.exchange (view'6 self.final) (view'5 self) (UInt64.to_uint a) (UInt64.to_uint b)}
       (! return' {result}) ]
     
   
@@ -349,24 +349,26 @@ module M_02_gnome__gnome_sort [#"02_gnome.rs" 22 0 24 29]
   let rec gnome_sort'0 (v:borrowed (t_Vec'0)) (return'  (ret:()))= {[@expl:gnome_sort 'v' type invariant] [%#s02_gnome9] inv'3 v}
     (! bb0
     [ bb0 = s0 [ s0 =  [ &old_v <- [%#s02_gnome0] Snapshot.new v ] s1 | s1 = bb1 ] 
-    | bb1 = s0 [ s0 =  [ &i <- [%#s02_gnome1] (0 : usize) ] s1 | s1 =  [ &old_2_0 <- Snapshot.new v ] s2 | s2 = bb2 ] 
+    | bb1 = s0
+      [ s0 =  [ &i <- [%#s02_gnome1] (0 : UInt64.t) ] s1 | s1 =  [ &old_2_0 <- Snapshot.new v ] s2 | s2 = bb2 ]
+      
     | bb2 = bb2
       [ bb2 = {[@expl:mut invariant] (Snapshot.inner old_2_0).final = v.final}
-        {[@expl:loop invariant #0] [%#s02_gnome3] sorted_range'0 (deep_model'0 v) 0 (UIntSize.to_int i)}
+        {[@expl:loop invariant #0] [%#s02_gnome3] sorted_range'0 (deep_model'0 v) 0 (UInt64.to_uint i)}
         {[@expl:loop invariant #1] [%#s02_gnome2] permutation_of'0 (view'0 v) (view'1 old_v)}
         (! s0) [ s0 = bb3 ] 
-        [ bb3 = s0 [ s0 = len'0 {v.current} (fun (_ret':usize) ->  [ &_12 <- _ret' ] s1) | s1 = bb4 ] 
+        [ bb3 = s0 [ s0 = len'0 {v.current} (fun (_ret':UInt64.t) ->  [ &_12 <- _ret' ] s1) | s1 = bb4 ] 
         | bb4 = s0
-          [ s0 = UIntSize.lt {i} {_12} (fun (_ret':bool) ->  [ &_10 <- _ret' ] s1)
+          [ s0 = UInt64.lt {i} {_12} (fun (_ret':bool) ->  [ &_10 <- _ret' ] s1)
           | s1 = any [ br0 -> {_10 = false} (! bb17) | br1 -> {_10} (! bb5) ]  ]
           
         | bb5 = s0
-          [ s0 = UIntSize.eq {i} {[%#s02_gnome4] (0 : usize)} (fun (_ret':bool) ->  [ &_14 <- _ret' ] s1)
+          [ s0 = UInt64.eq {i} {[%#s02_gnome4] (0 : UInt64.t)} (fun (_ret':bool) ->  [ &_14 <- _ret' ] s1)
           | s1 = any [ br0 -> {_14 = false} (! bb7) | br1 -> {_14} (! bb6) ]  ]
           
         | bb6 = bb12
         | bb7 = s0
-          [ s0 = UIntSize.sub {i} {[%#s02_gnome5] (1 : usize)} (fun (_ret':usize) ->  [ &_20 <- _ret' ] s1)
+          [ s0 = UInt64.sub {i} {[%#s02_gnome5] (1 : UInt64.t)} (fun (_ret':UInt64.t) ->  [ &_20 <- _ret' ] s1)
           | s1 = index'0 {v.current} {_20} (fun (_ret':t_T'0) ->  [ &_18 <- _ret' ] s2)
           | s2 = bb8 ]
           
@@ -377,7 +379,8 @@ module M_02_gnome__gnome_sort [#"02_gnome.rs" 22 0 24 29]
         | bb10 = any [ br0 -> {_16 = false} (! bb13) | br1 -> {_16} (! bb11) ] 
         | bb11 = bb12
         | bb12 = s0
-          [ s0 = UIntSize.add {i} {[%#s02_gnome6] (1 : usize)} (fun (_ret':usize) ->  [ &i <- _ret' ] s1) | s1 = bb16 ]
+          [ s0 = UInt64.add {i} {[%#s02_gnome6] (1 : UInt64.t)} (fun (_ret':UInt64.t) ->  [ &i <- _ret' ] s1)
+          | s1 = bb16 ]
           
         | bb13 = s0
           [ s0 = {inv'0 v.current}
@@ -398,14 +401,14 @@ module M_02_gnome__gnome_sort [#"02_gnome.rs" 22 0 24 29]
                 -{inv'1 _ret'.final}-
                  [ &_29 <- { _29 with current = _ret'.final } ] 
                 s1)
-          | s1 = UIntSize.sub {i} {[%#s02_gnome7] (1 : usize)} (fun (_ret':usize) ->  [ &_31 <- _ret' ] s2)
+          | s1 = UInt64.sub {i} {[%#s02_gnome7] (1 : UInt64.t)} (fun (_ret':UInt64.t) ->  [ &_31 <- _ret' ] s2)
           | s2 = swap'0 {_28} {_31} {i} (fun (_ret':()) ->  [ &_27 <- _ret' ] s3)
           | s3 = bb15 ]
           
         | bb15 = s0
           [ s0 = {[@expl:type invariant] inv'2 _29} s1
           | s1 = -{resolve'0 _29}- s2
-          | s2 = UIntSize.sub {i} {[%#s02_gnome8] (1 : usize)} (fun (_ret':usize) ->  [ &i <- _ret' ] s3)
+          | s2 = UInt64.sub {i} {[%#s02_gnome8] (1 : UInt64.t)} (fun (_ret':UInt64.t) ->  [ &i <- _ret' ] s3)
           | s3 = bb16 ]
           
         | bb16 = bb2 ]
@@ -416,20 +419,20 @@ module M_02_gnome__gnome_sort [#"02_gnome.rs" 22 0 24 29]
     [ & _0 : () = any_l ()
     | & v : borrowed (t_Vec'0) = v
     | & old_v : Snapshot.snap_ty (borrowed (t_Vec'0)) = any_l ()
-    | & i : usize = any_l ()
+    | & i : UInt64.t = any_l ()
     | & _10 : bool = any_l ()
-    | & _12 : usize = any_l ()
+    | & _12 : UInt64.t = any_l ()
     | & _14 : bool = any_l ()
     | & _16 : bool = any_l ()
     | & _18 : t_T'0 = any_l ()
-    | & _20 : usize = any_l ()
+    | & _20 : UInt64.t = any_l ()
     | & _23 : t_T'0 = any_l ()
     | & _24 : t_T'0 = any_l ()
     | & _27 : () = any_l ()
     | & _28 : borrowed (slice t_T'0) = any_l ()
     | & _29 : borrowed (slice t_T'0) = any_l ()
     | & _30 : borrowed (t_Vec'0) = any_l ()
-    | & _31 : usize = any_l ()
+    | & _31 : UInt64.t = any_l ()
     | & old_2_0 : Snapshot.snap_ty (borrowed (t_Vec'0)) = any_l () ]
     
     [ return' (result:())-> {[@expl:gnome_sort ensures #0] [%#s02_gnome10] sorted'0 (deep_model'1 v.final)}

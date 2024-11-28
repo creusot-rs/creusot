@@ -1,48 +1,118 @@
 module M_inc_max_repeat__take_max [#"inc_max_repeat.rs" 6 0 6 64]
   let%span sinc_max_repeat0 = "inc_max_repeat.rs" 4 0 5 56
   let%span sresolve1 = "../../../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span sord2 = "../../../../creusot-contracts/src/logic/ord.rs" 78 39 78 89
+  let%span sord3 = "../../../../creusot-contracts/src/logic/ord.rs" 83 39 83 86
+  let%span sord4 = "../../../../creusot-contracts/src/logic/ord.rs" 88 39 88 86
+  let%span sord5 = "../../../../creusot-contracts/src/logic/ord.rs" 93 39 93 89
+  let%span sord6 = "../../../../creusot-contracts/src/logic/ord.rs" 98 39 98 70
+  let%span sord7 = "../../../../creusot-contracts/src/logic/ord.rs" 103 40 103 57
+  let%span sord8 = "../../../../creusot-contracts/src/logic/ord.rs" 104 40 104 57
+  let%span sord9 = "../../../../creusot-contracts/src/logic/ord.rs" 105 39 105 56
+  let%span sord10 = "../../../../creusot-contracts/src/logic/ord.rs" 110 40 110 70
+  let%span sord11 = "../../../../creusot-contracts/src/logic/ord.rs" 111 39 111 72
+  let%span sord12 = "../../../../creusot-contracts/src/logic/ord.rs" 116 40 116 73
+  let%span sord13 = "../../../../creusot-contracts/src/logic/ord.rs" 117 39 117 69
+  let%span sord14 = "../../../../creusot-contracts/src/logic/ord.rs" 122 39 122 84
+  let%span sord15 = "../../../../creusot-contracts/src/logic/ord.rs" 185 16 191 17
   
   use prelude.prelude.UInt32
   
   use prelude.prelude.Borrow
   
-  predicate resolve'1 (self : borrowed uint32) =
+  use prelude.prelude.Int
+  
+  predicate resolve'1 (self : borrowed UInt32.t) =
     [%#sresolve1] self.final = self.current
   
-  predicate resolve'0 (_1 : borrowed uint32) =
+  predicate resolve'0 (_1 : borrowed UInt32.t) =
     resolve'1 _1
   
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Int
+  type t_Ordering'0  =
+    | C_Less'0
+    | C_Equal'0
+    | C_Greater'0
+  
+  use prelude.prelude.UInt32
+  
+  function cmp_log'0 (self : UInt32.t) (o : UInt32.t) : t_Ordering'0 =
+    [%#sord15] if UInt32.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+  
+  function eq_cmp'0 (x : UInt32.t) (y : UInt32.t) : ()
+  
+  axiom eq_cmp'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord14] (x = y) = (cmp_log'0 x y = C_Equal'0)
+  
+  function antisym2'0 (x : UInt32.t) (y : UInt32.t) : ()
+  
+  axiom antisym2'0_spec : forall x : UInt32.t, y : UInt32.t . ([%#sord12] cmp_log'0 x y = C_Greater'0)
+   -> ([%#sord13] cmp_log'0 y x = C_Less'0)
+  
+  function antisym1'0 (x : UInt32.t) (y : UInt32.t) : ()
+  
+  axiom antisym1'0_spec : forall x : UInt32.t, y : UInt32.t . ([%#sord10] cmp_log'0 x y = C_Less'0)
+   -> ([%#sord11] cmp_log'0 y x = C_Greater'0)
+  
+  function trans'0 (x : UInt32.t) (y : UInt32.t) (z : UInt32.t) (o : t_Ordering'0) : ()
+  
+  axiom trans'0_spec : forall x : UInt32.t, y : UInt32.t, z : UInt32.t, o : t_Ordering'0 . ([%#sord7] cmp_log'0 x y = o)
+   -> ([%#sord8] cmp_log'0 y z = o)  -> ([%#sord9] cmp_log'0 x z = o)
+  
+  function refl'0 (x : UInt32.t) : ()
+  
+  axiom refl'0_spec : forall x : UInt32.t . [%#sord6] cmp_log'0 x x = C_Equal'0
+  
+  use prelude.prelude.UInt32
+  
+  function cmp_gt_log'0 (x : UInt32.t) (y : UInt32.t) : ()
+  
+  axiom cmp_gt_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord5] UInt32.ugt x y = (cmp_log'0 x y = C_Greater'0)
+  
+  use prelude.prelude.UInt32
+  
+  function cmp_ge_log'0 (x : UInt32.t) (y : UInt32.t) : ()
+  
+  axiom cmp_ge_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord4] UInt32.uge x y = (cmp_log'0 x y <> C_Less'0)
+  
+  function cmp_lt_log'0 (x : UInt32.t) (y : UInt32.t) : ()
+  
+  axiom cmp_lt_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord3] UInt32.ult x y = (cmp_log'0 x y = C_Less'0)
+  
+  use prelude.prelude.UInt32
+  
+  function cmp_le_log'0 (x : UInt32.t) (y : UInt32.t) : ()
+  
+  axiom cmp_le_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord2] UInt32.ule x y
+  = (cmp_log'0 x y <> C_Greater'0)
   
   meta "compute_max_steps" 1000000
   
-  let rec take_max'0 (ma:borrowed uint32) (mb:borrowed uint32) (return'  (ret:borrowed uint32))= (! bb0
+  let rec take_max'0 (ma:borrowed UInt32.t) (mb:borrowed UInt32.t) (return'  (ret:borrowed UInt32.t))= (! bb0
     [ bb0 = s0
       [ s0 = UInt32.ge {ma.current} {mb.current} (fun (_ret':bool) ->  [ &_6 <- _ret' ] s1)
       | s1 = any [ br0 -> {_6 = false} (! bb2) | br1 -> {_6} (! bb1) ]  ]
       
     | bb1 = s0
       [ s0 = -{resolve'0 mb}- s1
-      | s1 = Borrow.borrow_final <uint32> {ma.current} {Borrow.get_id ma}
-          (fun (_ret':borrowed uint32) ->  [ &_9 <- _ret' ]  [ &ma <- { ma with current = _ret'.final } ] s2)
-      | s2 = Borrow.borrow_final <uint32> {_9.current} {Borrow.get_id _9}
-          (fun (_ret':borrowed uint32) ->  [ &_5 <- _ret' ]  [ &_9 <- { _9 with current = _ret'.final } ] s3)
+      | s1 = Borrow.borrow_final <UInt32.t> {ma.current} {Borrow.get_id ma}
+          (fun (_ret':borrowed UInt32.t) ->  [ &_9 <- _ret' ]  [ &ma <- { ma with current = _ret'.final } ] s2)
+      | s2 = Borrow.borrow_final <UInt32.t> {_9.current} {Borrow.get_id _9}
+          (fun (_ret':borrowed UInt32.t) ->  [ &_5 <- _ret' ]  [ &_9 <- { _9 with current = _ret'.final } ] s3)
       | s3 = -{resolve'0 _9}- s4
       | s4 = bb3 ]
       
     | bb2 = s0
       [ s0 = -{resolve'0 ma}- s1
-      | s1 = Borrow.borrow_final <uint32> {mb.current} {Borrow.get_id mb}
-          (fun (_ret':borrowed uint32) ->  [ &_5 <- _ret' ]  [ &mb <- { mb with current = _ret'.final } ] s2)
+      | s1 = Borrow.borrow_final <UInt32.t> {mb.current} {Borrow.get_id mb}
+          (fun (_ret':borrowed UInt32.t) ->  [ &_5 <- _ret' ]  [ &mb <- { mb with current = _ret'.final } ] s2)
       | s2 = bb3 ]
       
     | bb3 = s0
-      [ s0 = Borrow.borrow_final <uint32> {_5.current} {Borrow.get_id _5}
-          (fun (_ret':borrowed uint32) ->  [ &_3 <- _ret' ]  [ &_5 <- { _5 with current = _ret'.final } ] s1)
-      | s1 = Borrow.borrow_final <uint32> {_3.current} {Borrow.get_id _3}
-          (fun (_ret':borrowed uint32) ->  [ &_0 <- _ret' ]  [ &_3 <- { _3 with current = _ret'.final } ] s2)
+      [ s0 = Borrow.borrow_final <UInt32.t> {_5.current} {Borrow.get_id _5}
+          (fun (_ret':borrowed UInt32.t) ->  [ &_3 <- _ret' ]  [ &_5 <- { _5 with current = _ret'.final } ] s1)
+      | s1 = Borrow.borrow_final <UInt32.t> {_3.current} {Borrow.get_id _3}
+          (fun (_ret':borrowed UInt32.t) ->  [ &_0 <- _ret' ]  [ &_3 <- { _3 with current = _ret'.final } ] s2)
       | s2 = -{resolve'0 _5}- s3
       | s3 = -{resolve'0 _3}- s4
       | s4 = -{resolve'0 mb}- s5
@@ -50,15 +120,15 @@ module M_inc_max_repeat__take_max [#"inc_max_repeat.rs" 6 0 6 64]
       | s6 = return' {_0} ]
        ]
     )
-    [ & _0 : borrowed uint32 = any_l ()
-    | & ma : borrowed uint32 = ma
-    | & mb : borrowed uint32 = mb
-    | & _3 : borrowed uint32 = any_l ()
-    | & _5 : borrowed uint32 = any_l ()
+    [ & _0 : borrowed UInt32.t = any_l ()
+    | & ma : borrowed UInt32.t = ma
+    | & mb : borrowed UInt32.t = mb
+    | & _3 : borrowed UInt32.t = any_l ()
+    | & _5 : borrowed UInt32.t = any_l ()
     | & _6 : bool = any_l ()
-    | & _9 : borrowed uint32 = any_l () ]
+    | & _9 : borrowed UInt32.t = any_l () ]
     
-    [ return' (result:borrowed uint32)-> {[@expl:take_max ensures] [%#sinc_max_repeat0] if ma.current >= mb.current then
+    [ return' (result:borrowed UInt32.t)-> {[@expl:take_max ensures] [%#sinc_max_repeat0] if UInt32.uge ma.current mb.current then
         mb.current = mb.final /\ result = ma
       else
         ma.current = ma.final /\ result = mb
@@ -91,14 +161,30 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 15 0 15 53]
   let%span srange21 = "../../../../creusot-contracts/src/std/iter/range.rs" 42 15 42 32
   let%span srange22 = "../../../../creusot-contracts/src/std/iter/range.rs" 43 15 43 32
   let%span srange23 = "../../../../creusot-contracts/src/std/iter/range.rs" 44 14 44 42
-  let%span snum24 = "../../../../creusot-contracts/src/std/num.rs" 21 28 21 33
+  let%span snum24 = "../../../../creusot-contracts/src/std/num.rs" 52 28 52 33
   let%span srange25 = "../../../../creusot-contracts/src/std/iter/range.rs" 15 12 15 78
   let%span sresolve26 = "../../../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span sord27 = "../../../../creusot-contracts/src/logic/ord.rs" 78 39 78 89
+  let%span sord28 = "../../../../creusot-contracts/src/logic/ord.rs" 83 39 83 86
+  let%span sord29 = "../../../../creusot-contracts/src/logic/ord.rs" 88 39 88 86
+  let%span sord30 = "../../../../creusot-contracts/src/logic/ord.rs" 93 39 93 89
+  let%span sord31 = "../../../../creusot-contracts/src/logic/ord.rs" 98 39 98 70
+  let%span sord32 = "../../../../creusot-contracts/src/logic/ord.rs" 103 40 103 57
+  let%span sord33 = "../../../../creusot-contracts/src/logic/ord.rs" 104 40 104 57
+  let%span sord34 = "../../../../creusot-contracts/src/logic/ord.rs" 105 39 105 56
+  let%span sord35 = "../../../../creusot-contracts/src/logic/ord.rs" 110 40 110 70
+  let%span sord36 = "../../../../creusot-contracts/src/logic/ord.rs" 111 39 111 72
+  let%span sord37 = "../../../../creusot-contracts/src/logic/ord.rs" 116 40 116 73
+  let%span sord38 = "../../../../creusot-contracts/src/logic/ord.rs" 117 39 117 69
+  let%span sord39 = "../../../../creusot-contracts/src/logic/ord.rs" 122 39 122 84
+  let%span sord40 = "../../../../creusot-contracts/src/logic/ord.rs" 185 16 191 17
+  
+  use prelude.prelude.Int
   
   use prelude.prelude.UInt32
   
   type t_Range'0  =
-    { t_Range__start'0: uint32; t_Range__end'0: uint32 }
+    { t_Range__start'0: UInt32.t; t_Range__end'0: UInt32.t }
   
   predicate inv'0 (_1 : t_Range'0)
   
@@ -128,20 +214,18 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 15 0 15 53]
   
   use seq.Seq
   
-  use prelude.prelude.Int
-  
   use prelude.prelude.Snapshot
   
   use prelude.prelude.Snapshot
   
   use seq.Seq
   
-  function deep_model'0 (self : uint32) : int =
-    [%#snum24] UInt32.to_int self
+  function deep_model'0 (self : UInt32.t) : int =
+    [%#snum24] UInt32.to_uint self
   
   use seq.Seq
   
-  predicate produces'0 (self : t_Range'0) (visited : Seq.seq uint32) (o : t_Range'0) =
+  predicate produces'0 (self : t_Range'0) (visited : Seq.seq UInt32.t) (o : t_Range'0) =
     [%#srange11] self.t_Range__end'0 = o.t_Range__end'0
     /\ deep_model'0 self.t_Range__start'0 <= deep_model'0 o.t_Range__start'0
     /\ (Seq.length visited > 0  -> deep_model'0 o.t_Range__start'0 <= deep_model'0 o.t_Range__end'0)
@@ -149,10 +233,10 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 15 0 15 53]
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> deep_model'0 (Seq.get visited i) = deep_model'0 self.t_Range__start'0 + i)
   
-  function produces_trans'0 (a : t_Range'0) (ab : Seq.seq uint32) (b : t_Range'0) (bc : Seq.seq uint32) (c : t_Range'0) : ()
+  function produces_trans'0 (a : t_Range'0) (ab : Seq.seq UInt32.t) (b : t_Range'0) (bc : Seq.seq UInt32.t) (c : t_Range'0) : ()
     
   
-  axiom produces_trans'0_spec : forall a : t_Range'0, ab : Seq.seq uint32, b : t_Range'0, bc : Seq.seq uint32, c : t_Range'0 . ([%#srange18] inv'0 a)
+  axiom produces_trans'0_spec : forall a : t_Range'0, ab : Seq.seq UInt32.t, b : t_Range'0, bc : Seq.seq UInt32.t, c : t_Range'0 . ([%#srange18] inv'0 a)
    -> ([%#srange19] inv'0 b)
    -> ([%#srange20] inv'0 c)
    -> ([%#srange21] produces'0 a ab b)
@@ -161,11 +245,11 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 15 0 15 53]
   function produces_refl'0 (self : t_Range'0) : ()
   
   axiom produces_refl'0_spec : forall self : t_Range'0 . ([%#srange16] inv'0 self)
-   -> ([%#srange17] produces'0 self (Seq.empty  : Seq.seq uint32) self)
+   -> ([%#srange17] produces'0 self (Seq.empty  : Seq.seq UInt32.t) self)
   
-  predicate inv'1 (_1 : Seq.seq uint32)
+  predicate inv'1 (_1 : Seq.seq UInt32.t)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq uint32 [inv'1 x] . inv'1 x = true
+  axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq UInt32.t [inv'1 x] . inv'1 x = true
   
   use prelude.prelude.Borrow
   
@@ -175,7 +259,7 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 15 0 15 53]
   
   type t_Option'0  =
     | C_None'0
-    | C_Some'0 uint32
+    | C_Some'0 UInt32.t
   
   predicate inv'3 (_1 : t_Option'0)
   
@@ -203,13 +287,70 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 15 0 15 53]
   predicate resolve'0 (_1 : borrowed (t_Range'0)) =
     resolve'2 _1
   
-  let rec v_Some'0 (input:t_Option'0) (ret  (field_0:uint32))= any
-    [ good (field_0:uint32)-> {C_Some'0 field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : uint32 [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
+  let rec v_Some'0 (input:t_Option'0) (ret  (field_0:UInt32.t))= any
+    [ good (field_0:UInt32.t)-> {C_Some'0 field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0 : UInt32.t [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
     
   
-  let rec take_max'0 (ma:borrowed uint32) (mb:borrowed uint32) (return'  (ret:borrowed uint32))= any
-    [ return' (result:borrowed uint32)-> {[%#sinc_max_repeat13] if ma.current >= mb.current then
+  type t_Ordering'0  =
+    | C_Less'0
+    | C_Equal'0
+    | C_Greater'0
+  
+  use prelude.prelude.UInt32
+  
+  function cmp_log'0 (self : UInt32.t) (o : UInt32.t) : t_Ordering'0 =
+    [%#sord40] if UInt32.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+  
+  function eq_cmp'0 (x : UInt32.t) (y : UInt32.t) : ()
+  
+  axiom eq_cmp'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord39] (x = y) = (cmp_log'0 x y = C_Equal'0)
+  
+  function antisym2'0 (x : UInt32.t) (y : UInt32.t) : ()
+  
+  axiom antisym2'0_spec : forall x : UInt32.t, y : UInt32.t . ([%#sord37] cmp_log'0 x y = C_Greater'0)
+   -> ([%#sord38] cmp_log'0 y x = C_Less'0)
+  
+  function antisym1'0 (x : UInt32.t) (y : UInt32.t) : ()
+  
+  axiom antisym1'0_spec : forall x : UInt32.t, y : UInt32.t . ([%#sord35] cmp_log'0 x y = C_Less'0)
+   -> ([%#sord36] cmp_log'0 y x = C_Greater'0)
+  
+  function trans'0 (x : UInt32.t) (y : UInt32.t) (z : UInt32.t) (o : t_Ordering'0) : ()
+  
+  axiom trans'0_spec : forall x : UInt32.t, y : UInt32.t, z : UInt32.t, o : t_Ordering'0 . ([%#sord32] cmp_log'0 x y
+  = o)  -> ([%#sord33] cmp_log'0 y z = o)  -> ([%#sord34] cmp_log'0 x z = o)
+  
+  function refl'0 (x : UInt32.t) : ()
+  
+  axiom refl'0_spec : forall x : UInt32.t . [%#sord31] cmp_log'0 x x = C_Equal'0
+  
+  use prelude.prelude.UInt32
+  
+  function cmp_gt_log'0 (x : UInt32.t) (y : UInt32.t) : ()
+  
+  axiom cmp_gt_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord30] UInt32.ugt x y
+  = (cmp_log'0 x y = C_Greater'0)
+  
+  use prelude.prelude.UInt32
+  
+  function cmp_ge_log'0 (x : UInt32.t) (y : UInt32.t) : ()
+  
+  axiom cmp_ge_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord29] UInt32.uge x y = (cmp_log'0 x y <> C_Less'0)
+  
+  function cmp_lt_log'0 (x : UInt32.t) (y : UInt32.t) : ()
+  
+  axiom cmp_lt_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord28] UInt32.ult x y = (cmp_log'0 x y = C_Less'0)
+  
+  use prelude.prelude.UInt32
+  
+  function cmp_le_log'0 (x : UInt32.t) (y : UInt32.t) : ()
+  
+  axiom cmp_le_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord27] UInt32.ule x y
+  = (cmp_log'0 x y <> C_Greater'0)
+  
+  let rec take_max'0 (ma:borrowed UInt32.t) (mb:borrowed UInt32.t) (return'  (ret:borrowed UInt32.t))= any
+    [ return' (result:borrowed UInt32.t)-> {[%#sinc_max_repeat13] if UInt32.uge ma.current mb.current then
         mb.current = mb.final /\ result = ma
       else
         ma.current = ma.final /\ result = mb
@@ -217,10 +358,10 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 15 0 15 53]
       (! return' {result}) ]
     
   
-  predicate resolve'3 (self : borrowed uint32) =
+  predicate resolve'3 (self : borrowed UInt32.t) =
     [%#sresolve26] self.final = self.current
   
-  predicate resolve'1 (_1 : borrowed uint32) =
+  predicate resolve'1 (_1 : borrowed UInt32.t) =
     resolve'3 _1
   
   use prelude.prelude.Intrinsic
@@ -231,28 +372,29 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 15 0 15 53]
   
   meta "compute_max_steps" 1000000
   
-  let rec inc_max_repeat'0 (a:uint32) (b:uint32) (n:uint32) (return'  (ret:()))= {[@expl:inc_max_repeat requires] [%#sinc_max_repeat9] a
-    <= (1000000 : uint32)
-    /\ b <= (1000000 : uint32) /\ n <= (1000000 : uint32)}
+  let rec inc_max_repeat'0 (a:UInt32.t) (b:UInt32.t) (n:UInt32.t) (return'  (ret:()))= {[@expl:inc_max_repeat requires] [%#sinc_max_repeat9] UInt32.ule a (1000000 : UInt32.t)
+    /\ UInt32.ule b (1000000 : UInt32.t) /\ UInt32.ule n (1000000 : UInt32.t)}
     (! bb0
     [ bb0 = s0
-      [ s0 =  [ &_7 <- { t_Range__start'0 = ([%#sinc_max_repeat0] (0 : uint32)); t_Range__end'0 = n } ] s1
+      [ s0 =  [ &_7 <- { t_Range__start'0 = ([%#sinc_max_repeat0] (0 : UInt32.t)); t_Range__end'0 = n } ] s1
       | s1 = into_iter'0 {_7} (fun (_ret':t_Range'0) ->  [ &iter <- _ret' ] s2)
       | s2 = bb1 ]
       
     | bb1 = s0 [ s0 =  [ &iter_old <- [%#sinc_max_repeat1] Snapshot.new iter ] s1 | s1 = bb2 ] 
-    | bb2 = s0 [ s0 =  [ &produced <- [%#sinc_max_repeat2] Snapshot.new (Seq.empty  : Seq.seq uint32) ] s1 | s1 = bb3 ] 
+    | bb2 = s0
+      [ s0 =  [ &produced <- [%#sinc_max_repeat2] Snapshot.new (Seq.empty  : Seq.seq UInt32.t) ] s1 | s1 = bb3 ]
+      
     | bb3 = bb4
     | bb4 = bb4
       [ bb4 = {[@expl:for invariant] [%#sinc_max_repeat5] inv'1 (Snapshot.inner produced)}
         {[@expl:for invariant] [%#sinc_max_repeat5] inv'0 iter}
         {[@expl:for invariant] [%#sinc_max_repeat5] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
-        {[@expl:loop invariant #0] [%#sinc_max_repeat4] UInt32.to_int a
+        {[@expl:loop invariant #0] [%#sinc_max_repeat4] UInt32.to_uint a
         <= 1000000 + Seq.length (Snapshot.inner produced)
-        /\ UInt32.to_int b <= 1000000 + Seq.length (Snapshot.inner produced)}
-        {[@expl:loop invariant #1] [%#sinc_max_repeat3] UInt32.to_int a
-        >= UInt32.to_int b + Seq.length (Snapshot.inner produced)
-        \/ UInt32.to_int b >= UInt32.to_int a + Seq.length (Snapshot.inner produced)}
+        /\ UInt32.to_uint b <= 1000000 + Seq.length (Snapshot.inner produced)}
+        {[@expl:loop invariant #1] [%#sinc_max_repeat3] UInt32.to_uint a
+        >= UInt32.to_uint b + Seq.length (Snapshot.inner produced)
+        \/ UInt32.to_uint b >= UInt32.to_uint a + Seq.length (Snapshot.inner produced)}
         (! s0) [ s0 = bb5 ] 
         [ bb5 = s0
           [ s0 = Borrow.borrow_mut <t_Range'0> {iter}
@@ -267,11 +409,11 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 15 0 15 53]
           
         | bb6 = s0
           [ s0 = -{resolve'0 _21}- s1
-          | s1 = any [ br0 -> {_19 = C_None'0 } (! bb9) | br1 (x0:uint32)-> {_19 = C_Some'0 x0} (! bb8) ]  ]
+          | s1 = any [ br0 -> {_19 = C_None'0 } (! bb9) | br1 (x0:UInt32.t)-> {_19 = C_Some'0 x0} (! bb8) ]  ]
           
         | bb8 = bb10
         | bb10 = s0
-          [ s0 = v_Some'0 {_19} (fun (r0'0:uint32) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
+          [ s0 = v_Some'0 {_19} (fun (r0'0:UInt32.t) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
           | s1 = 
             [ &_24 <- [%#sinc_max_repeat6] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
             
@@ -280,35 +422,35 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 15 0 15 53]
           
         | bb11 = s0
           [ s0 =  [ &produced <- _24 ] s1
-          | s1 = Borrow.borrow_mut <uint32> {a}
-              (fun (_ret':borrowed uint32) ->  [ &_28 <- _ret' ]  [ &a <- _ret'.final ] s2)
-          | s2 = Borrow.borrow_final <uint32> {_28.current} {Borrow.get_id _28}
-              (fun (_ret':borrowed uint32) ->  [ &_27 <- _ret' ]  [ &_28 <- { _28 with current = _ret'.final } ] s3)
-          | s3 = Borrow.borrow_mut <uint32> {b}
-              (fun (_ret':borrowed uint32) ->  [ &_30 <- _ret' ]  [ &b <- _ret'.final ] s4)
-          | s4 = Borrow.borrow_final <uint32> {_30.current} {Borrow.get_id _30}
-              (fun (_ret':borrowed uint32) ->  [ &_29 <- _ret' ]  [ &_30 <- { _30 with current = _ret'.final } ] s5)
-          | s5 = take_max'0 {_27} {_29} (fun (_ret':borrowed uint32) ->  [ &mc <- _ret' ] s6)
+          | s1 = Borrow.borrow_mut <UInt32.t> {a}
+              (fun (_ret':borrowed UInt32.t) ->  [ &_28 <- _ret' ]  [ &a <- _ret'.final ] s2)
+          | s2 = Borrow.borrow_final <UInt32.t> {_28.current} {Borrow.get_id _28}
+              (fun (_ret':borrowed UInt32.t) ->  [ &_27 <- _ret' ]  [ &_28 <- { _28 with current = _ret'.final } ] s3)
+          | s3 = Borrow.borrow_mut <UInt32.t> {b}
+              (fun (_ret':borrowed UInt32.t) ->  [ &_30 <- _ret' ]  [ &b <- _ret'.final ] s4)
+          | s4 = Borrow.borrow_final <UInt32.t> {_30.current} {Borrow.get_id _30}
+              (fun (_ret':borrowed UInt32.t) ->  [ &_29 <- _ret' ]  [ &_30 <- { _30 with current = _ret'.final } ] s5)
+          | s5 = take_max'0 {_27} {_29} (fun (_ret':borrowed UInt32.t) ->  [ &mc <- _ret' ] s6)
           | s6 = bb12 ]
           
         | bb12 = s0
           [ s0 = -{resolve'1 _30}- s1
           | s1 = -{resolve'1 _28}- s2
-          | s2 = UInt32.add {mc.current} {[%#sinc_max_repeat7] (1 : uint32)}
-              (fun (_ret':uint32) ->  [ &mc <- { mc with current = _ret' } ] s3)
+          | s2 = UInt32.add {mc.current} {[%#sinc_max_repeat7] (1 : UInt32.t)}
+              (fun (_ret':UInt32.t) ->  [ &mc <- { mc with current = _ret' } ] s3)
           | s3 = -{resolve'1 mc}- s4
           | s4 = bb4 ]
            ]
          ]
       
     | bb9 = s0
-      [ s0 = UInt32.add {b} {n} (fun (_ret':uint32) ->  [ &_35 <- _ret' ] s1)
+      [ s0 = UInt32.add {b} {n} (fun (_ret':UInt32.t) ->  [ &_35 <- _ret' ] s1)
       | s1 = UInt32.ge {a} {_35} (fun (_ret':bool) ->  [ &_33 <- _ret' ] s2)
       | s2 = any [ br0 -> {_33 = false} (! bb14) | br1 -> {_33} (! bb13) ]  ]
       
     | bb13 = bb17
     | bb14 = s0
-      [ s0 = UInt32.add {a} {n} (fun (_ret':uint32) ->  [ &_40 <- _ret' ] s1)
+      [ s0 = UInt32.add {a} {n} (fun (_ret':UInt32.t) ->  [ &_40 <- _ret' ] s1)
       | s1 = UInt32.ge {b} {_40} (fun (_ret':bool) ->  [ &_38 <- _ret' ] s2)
       | s2 = any [ br0 -> {_38 = false} (! bb16) | br1 -> {_38} (! bb15) ]  ]
       
@@ -317,26 +459,26 @@ module M_inc_max_repeat__inc_max_repeat [#"inc_max_repeat.rs" 15 0 15 53]
     | bb16 = {[%#sinc_max_repeat8] false} any ]
     )
     [ & _0 : () = any_l ()
-    | & a : uint32 = a
-    | & b : uint32 = b
-    | & n : uint32 = n
+    | & a : UInt32.t = a
+    | & b : UInt32.t = b
+    | & n : UInt32.t = n
     | & iter : t_Range'0 = any_l ()
     | & _7 : t_Range'0 = any_l ()
     | & iter_old : Snapshot.snap_ty (t_Range'0) = any_l ()
-    | & produced : Snapshot.snap_ty (Seq.seq uint32) = any_l ()
+    | & produced : Snapshot.snap_ty (Seq.seq UInt32.t) = any_l ()
     | & _19 : t_Option'0 = any_l ()
     | & _20 : borrowed (t_Range'0) = any_l ()
     | & _21 : borrowed (t_Range'0) = any_l ()
-    | & __creusot_proc_iter_elem : uint32 = any_l ()
-    | & _24 : Snapshot.snap_ty (Seq.seq uint32) = any_l ()
-    | & mc : borrowed uint32 = any_l ()
-    | & _27 : borrowed uint32 = any_l ()
-    | & _28 : borrowed uint32 = any_l ()
-    | & _29 : borrowed uint32 = any_l ()
-    | & _30 : borrowed uint32 = any_l ()
+    | & __creusot_proc_iter_elem : UInt32.t = any_l ()
+    | & _24 : Snapshot.snap_ty (Seq.seq UInt32.t) = any_l ()
+    | & mc : borrowed UInt32.t = any_l ()
+    | & _27 : borrowed UInt32.t = any_l ()
+    | & _28 : borrowed UInt32.t = any_l ()
+    | & _29 : borrowed UInt32.t = any_l ()
+    | & _30 : borrowed UInt32.t = any_l ()
     | & _33 : bool = any_l ()
-    | & _35 : uint32 = any_l ()
+    | & _35 : UInt32.t = any_l ()
     | & _38 : bool = any_l ()
-    | & _40 : uint32 = any_l () ]
+    | & _40 : UInt32.t = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end

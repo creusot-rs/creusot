@@ -28,24 +28,24 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
   type t_Unique'0  =
     { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
   
-  use prelude.prelude.UIntSize
+  use prelude.prelude.Int
+  
+  use prelude.prelude.UInt64
   
   type t_Cap'0  =
-    { t_Cap__0'0: usize }
+    { t_Cap__0'0: UInt64.t }
   
   type t_RawVec'0  =
     { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
   
   type t_Vec'0  =
-    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
   use seq.Seq
   
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
+  use prelude.prelude.UInt64
   
   type t_T'0
   
@@ -53,7 +53,7 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
   
   function view'0 (self : t_Vec'0) : Seq.seq t_T'0
   
-  axiom view'0_spec : forall self : t_Vec'0 . [%#svec10] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  axiom view'0_spec : forall self : t_Vec'0 . [%#svec10] Seq.length (view'0 self) <= UInt64.to_uint (v_MAX'0 : UInt64.t)
   
   use seq.Seq
   
@@ -90,16 +90,16 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
   function view'1 (self : borrowed (t_Vec'0)) : Seq.seq t_T'0 =
     [%#smodel11] view'0 self.current
   
-  let rec reserve'0 (self:borrowed (t_Vec'0)) (additional:usize) (return'  (ret:()))= {[@expl:reserve 'self' type invariant] inv'1 self}
+  let rec reserve'0 (self:borrowed (t_Vec'0)) (additional:UInt64.t) (return'  (ret:()))= {[@expl:reserve 'self' type invariant] inv'1 self}
     any [ return' (result:())-> {[%#svec6] view'0 self.final = view'1 self} (! return' {result}) ] 
   
-  let rec reserve_exact'0 (self:borrowed (t_Vec'0)) (additional:usize) (return'  (ret:()))= {[@expl:reserve_exact 'self' type invariant] inv'1 self}
+  let rec reserve_exact'0 (self:borrowed (t_Vec'0)) (additional:UInt64.t) (return'  (ret:()))= {[@expl:reserve_exact 'self' type invariant] inv'1 self}
     any [ return' (result:())-> {[%#svec7] view'0 self.final = view'1 self} (! return' {result}) ] 
   
   let rec shrink_to_fit'0 (self:borrowed (t_Vec'0)) (return'  (ret:()))= {[@expl:shrink_to_fit 'self' type invariant] inv'1 self}
     any [ return' (result:())-> {[%#svec8] view'0 self.final = view'1 self} (! return' {result}) ] 
   
-  let rec shrink_to'0 (self:borrowed (t_Vec'0)) (min_capacity:usize) (return'  (ret:()))= {[@expl:shrink_to 'self' type invariant] inv'1 self}
+  let rec shrink_to'0 (self:borrowed (t_Vec'0)) (min_capacity:UInt64.t) (return'  (ret:()))= {[@expl:shrink_to 'self' type invariant] inv'1 self}
     any [ return' (result:())-> {[%#svec9] view'0 self.final = view'1 self} (! return' {result}) ] 
   
   predicate resolve'1 (self : borrowed (t_Vec'0)) =
@@ -127,7 +127,7 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
             -{inv'0 _ret'.final}-
              [ &v <- { v with current = _ret'.final } ] 
             s1)
-      | s1 = reserve'0 {_5} {[%#s09_capacity0] (100 : usize)} (fun (_ret':()) ->  [ &_4 <- _ret' ] s2)
+      | s1 = reserve'0 {_5} {[%#s09_capacity0] (100 : UInt64.t)} (fun (_ret':()) ->  [ &_4 <- _ret' ] s2)
       | s2 = bb1 ]
       
     | bb1 = s0
@@ -138,7 +138,7 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
             -{inv'0 _ret'.final}-
              [ &v <- { v with current = _ret'.final } ] 
             s1)
-      | s1 = reserve_exact'0 {_7} {[%#s09_capacity1] (200 : usize)} (fun (_ret':()) ->  [ &_6 <- _ret' ] s2)
+      | s1 = reserve_exact'0 {_7} {[%#s09_capacity1] (200 : UInt64.t)} (fun (_ret':()) ->  [ &_6 <- _ret' ] s2)
       | s2 = bb2 ]
       
     | bb2 = s0
@@ -160,7 +160,7 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
             -{inv'0 _ret'.final}-
              [ &v <- { v with current = _ret'.final } ] 
             s1)
-      | s1 = shrink_to'0 {_11} {[%#s09_capacity2] (1 : usize)} (fun (_ret':()) ->  [ &_10 <- _ret' ] s2)
+      | s1 = shrink_to'0 {_11} {[%#s09_capacity2] (1 : UInt64.t)} (fun (_ret':()) ->  [ &_10 <- _ret' ] s2)
       | s2 = bb4 ]
       
     | bb4 = s0 [ s0 = {[@expl:type invariant] inv'1 v} s1 | s1 = -{resolve'0 v}- s2 | s2 = return' {_0} ]  ]
@@ -204,24 +204,24 @@ module M_09_capacity__clear_vec [#"09_capacity.rs" 14 0 14 35]
   type t_Unique'0  =
     { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
   
-  use prelude.prelude.UIntSize
+  use prelude.prelude.Int
+  
+  use prelude.prelude.UInt64
   
   type t_Cap'0  =
-    { t_Cap__0'0: usize }
+    { t_Cap__0'0: UInt64.t }
   
   type t_RawVec'0  =
     { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
   
   type t_Vec'0  =
-    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
   use seq.Seq
   
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
-  use prelude.prelude.UIntSize
-  
-  use prelude.prelude.Int
+  use prelude.prelude.UInt64
   
   type t_T'0
   
@@ -229,7 +229,7 @@ module M_09_capacity__clear_vec [#"09_capacity.rs" 14 0 14 35]
   
   function view'0 (self : t_Vec'0) : Seq.seq t_T'0
   
-  axiom view'0_spec : forall self : t_Vec'0 . [%#svec3] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  axiom view'0_spec : forall self : t_Vec'0 . [%#svec3] Seq.length (view'0 self) <= UInt64.to_uint (v_MAX'0 : UInt64.t)
   
   use seq.Seq
   

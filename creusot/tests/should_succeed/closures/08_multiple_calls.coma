@@ -16,6 +16,8 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   let%span sops14 = "../../../../creusot-contracts/src/std/ops.rs" 118 14 118 28
   let%span sops15 = "../../../../creusot-contracts/src/std/ops.rs" 123 14 124 105
   
+  use prelude.prelude.Int
+  
   use prelude.prelude.UInt32
   
   use prelude.prelude.Intrinsic
@@ -54,18 +56,20 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   
   axiom inv_axiom'1 [@rewrite] : forall x : closure0'1 [inv'1 x] . inv'1 x = invariant'1 x
   
-  let rec closure0'0 (_1:closure0'1) (return'  (ret:uint32))= {[@expl:closure '_1' type invariant] inv'1 _1}
+  let rec closure0'0 (_1:closure0'1) (return'  (ret:UInt32.t))= {[@expl:closure '_1' type invariant] inv'1 _1}
     {[@expl:closure requires] [%#s08_multiple_calls2] _1.field_0'0 = _1.field_0'0}
     (! bb0
     [ bb0 = s0
-      [ s0 =  [ &res <- [%#s08_multiple_calls1] (0 : uint32) ] s1 | s1 =  [ &_0 <- res ] s2 | s2 = return' {_0} ]
+      [ s0 =  [ &res <- [%#s08_multiple_calls1] (0 : UInt32.t) ] s1 | s1 =  [ &_0 <- res ] s2 | s2 = return' {_0} ]
        ]
-    ) [ & _0 : uint32 = any_l () | & res : uint32 = any_l () ]  [ return' (result:uint32)-> (! return' {result}) ] 
+    ) [ & _0 : UInt32.t = any_l () | & res : UInt32.t = any_l () ] 
+    [ return' (result:UInt32.t)-> (! return' {result}) ]
+    
   
   predicate precondition'0 (self : closure0'1) (args : ()) =
     [%#s08_multiple_calls2] let () = args in self.field_0'0 = self.field_0'0
   
-  predicate postcondition_once'1 (self : closure0'1) (args : ()) (result : uint32) =
+  predicate postcondition_once'1 (self : closure0'1) (args : ()) (result : UInt32.t) =
     let () = args in true
   
   predicate resolve'2 (_1 : t_T'0)
@@ -76,12 +80,12 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   predicate unnest'1 (self : closure0'1) (_2 : closure0'1) =
     _2.field_0'0 = self.field_0'0
   
-  predicate postcondition_mut'1 (self : closure0'1) (args : ()) (result_state : closure0'1) (result : uint32) =
+  predicate postcondition_mut'1 (self : closure0'1) (args : ()) (result_state : closure0'1) (result : UInt32.t) =
     (let () = args in true) /\ unnest'1 self result_state
   
-  function fn_mut_once'1 (self : closure0'1) (args : ()) (res : uint32) : ()
+  function fn_mut_once'1 (self : closure0'1) (args : ()) (res : UInt32.t) : ()
   
-  axiom fn_mut_once'1_spec : forall self : closure0'1, args : (), res : uint32 . [%#sops15] postcondition_once'1 self args res
+  axiom fn_mut_once'1_spec : forall self : closure0'1, args : (), res : UInt32.t . [%#sops15] postcondition_once'1 self args res
   = (exists res_state : closure0'1 . postcondition_mut'1 self args res_state res /\ resolve'1 res_state)
   
   function unnest_trans'1 (self : closure0'1) (b : closure0'1) (c : closure0'1) : ()
@@ -93,36 +97,36 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   
   axiom unnest_refl'1_spec : forall self : closure0'1 . [%#sops11] unnest'1 self self
   
-  function postcondition_mut_unnest'1 (self : closure0'1) (args : ()) (res_state : closure0'1) (res : uint32) : ()
+  function postcondition_mut_unnest'1 (self : closure0'1) (args : ()) (res_state : closure0'1) (res : UInt32.t) : ()
   
-  axiom postcondition_mut_unnest'1_spec : forall self : closure0'1, args : (), res_state : closure0'1, res : uint32 . ([%#sops9] postcondition_mut'1 self args res_state res)
+  axiom postcondition_mut_unnest'1_spec : forall self : closure0'1, args : (), res_state : closure0'1, res : UInt32.t . ([%#sops9] postcondition_mut'1 self args res_state res)
    -> ([%#sops10] unnest'1 self res_state)
   
-  predicate postcondition'1 (self : closure0'1) (args : ()) (result : uint32) =
+  predicate postcondition'1 (self : closure0'1) (args : ()) (result : UInt32.t) =
     let () = args in true
   
-  function fn_once'1 (self : closure0'1) (args : ()) (res : uint32) : ()
+  function fn_once'1 (self : closure0'1) (args : ()) (res : UInt32.t) : ()
   
-  axiom fn_once'1_spec : forall self : closure0'1, args : (), res : uint32 . [%#sops7] postcondition_once'1 self args res
+  axiom fn_once'1_spec : forall self : closure0'1, args : (), res : UInt32.t . [%#sops7] postcondition_once'1 self args res
   = (resolve'1 self /\ postcondition'1 self args res)
   
-  function fn_mut'1 (self : closure0'1) (args : ()) (res_state : closure0'1) (res : uint32) : ()
+  function fn_mut'1 (self : closure0'1) (args : ()) (res_state : closure0'1) (res : UInt32.t) : ()
   
-  axiom fn_mut'1_spec : forall self : closure0'1, args : (), res_state : closure0'1, res : uint32 . [%#sops6] postcondition_mut'1 self args res_state res
+  axiom fn_mut'1_spec : forall self : closure0'1, args : (), res_state : closure0'1, res : UInt32.t . [%#sops6] postcondition_mut'1 self args res_state res
   = (self = res_state /\ postcondition'1 self args res)
   
-  predicate postcondition_once'0 (self : closure0'1) (args : ()) (result : uint32) =
+  predicate postcondition_once'0 (self : closure0'1) (args : ()) (result : UInt32.t) =
     postcondition'1 self args result
   
   predicate resolve'0 (_1 : closure0'1) =
     true
   
-  predicate postcondition_mut'0 (self : closure0'1) (args : ()) (result_state : closure0'1) (result : uint32) =
+  predicate postcondition_mut'0 (self : closure0'1) (args : ()) (result_state : closure0'1) (result : UInt32.t) =
     postcondition'1 self args result /\ self = result_state
   
-  function fn_mut_once'0 (self : closure0'1) (args : ()) (res : uint32) : ()
+  function fn_mut_once'0 (self : closure0'1) (args : ()) (res : UInt32.t) : ()
   
-  axiom fn_mut_once'0_spec : forall self : closure0'1, args : (), res : uint32 . [%#sops15] postcondition_once'0 self args res
+  axiom fn_mut_once'0_spec : forall self : closure0'1, args : (), res : UInt32.t . [%#sops15] postcondition_once'0 self args res
   = (exists res_state : closure0'1 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
   
   predicate unnest'0 (self : closure0'1) (_2 : closure0'1)
@@ -136,28 +140,28 @@ module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
   
   axiom unnest_refl'0_spec : forall self : closure0'1 . [%#sops11] unnest'0 self self
   
-  function postcondition_mut_unnest'0 (self : closure0'1) (args : ()) (res_state : closure0'1) (res : uint32) : ()
+  function postcondition_mut_unnest'0 (self : closure0'1) (args : ()) (res_state : closure0'1) (res : UInt32.t) : ()
   
-  axiom postcondition_mut_unnest'0_spec : forall self : closure0'1, args : (), res_state : closure0'1, res : uint32 . ([%#sops9] postcondition_mut'0 self args res_state res)
+  axiom postcondition_mut_unnest'0_spec : forall self : closure0'1, args : (), res_state : closure0'1, res : UInt32.t . ([%#sops9] postcondition_mut'0 self args res_state res)
    -> ([%#sops10] unnest'0 self res_state)
   
-  predicate postcondition'0 (self : closure0'1) (args : ()) (result : uint32) =
+  predicate postcondition'0 (self : closure0'1) (args : ()) (result : UInt32.t) =
     postcondition'1 self args result
   
-  function fn_once'0 (self : closure0'1) (args : ()) (res : uint32) : ()
+  function fn_once'0 (self : closure0'1) (args : ()) (res : UInt32.t) : ()
   
-  axiom fn_once'0_spec : forall self : closure0'1, args : (), res : uint32 . [%#sops7] postcondition_once'0 self args res
+  axiom fn_once'0_spec : forall self : closure0'1, args : (), res : UInt32.t . [%#sops7] postcondition_once'0 self args res
   = (resolve'0 self /\ postcondition'0 self args res)
   
-  function fn_mut'0 (self : closure0'1) (args : ()) (res_state : closure0'1) (res : uint32) : ()
+  function fn_mut'0 (self : closure0'1) (args : ()) (res_state : closure0'1) (res : UInt32.t) : ()
   
-  axiom fn_mut'0_spec : forall self : closure0'1, args : (), res_state : closure0'1, res : uint32 . [%#sops6] postcondition_mut'0 self args res_state res
+  axiom fn_mut'0_spec : forall self : closure0'1, args : (), res_state : closure0'1, res : UInt32.t . [%#sops6] postcondition_mut'0 self args res_state res
   = (self = res_state /\ postcondition'0 self args res)
   
   let rec uses_fn'0 (f:closure0'1) (return'  (ret:()))= {[@expl:uses_fn 'f' type invariant] [%#s08_multiple_calls3] inv'2 f}
     {[@expl:uses_fn requires] [%#s08_multiple_calls4] precondition'0 f ()}
     any
-    [ return' (result:())-> {[%#s08_multiple_calls5] exists f2 : closure0'1, r : uint32 . f2 = f
+    [ return' (result:())-> {[%#s08_multiple_calls5] exists f2 : closure0'1, r : UInt32.t . f2 = f
       /\ postcondition'0 f2 () r}
       (! return' {result}) ]
     

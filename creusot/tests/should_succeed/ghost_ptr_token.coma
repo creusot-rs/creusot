@@ -75,7 +75,7 @@ module M_ghost_ptr_token__test [#"ghost_ptr_token.rs" 3 0 3 13]
   
   type t_Option'0  =
     | C_None'0
-    | C_Some'0 int32
+    | C_Some'0 Int32.t
   
   use map.Map
   
@@ -118,27 +118,27 @@ module M_ghost_ptr_token__test [#"ghost_ptr_token.rs" 3 0 3 13]
   
   axiom inv_axiom'1 [@rewrite] : forall x : borrowed (t_GhostPtrToken'0) [inv'1 x] . inv'1 x = true
   
-  predicate inv'2 (_1 : int32)
+  predicate inv'2 (_1 : Int32.t)
   
-  axiom inv_axiom'2 [@rewrite] : forall x : int32 [inv'2 x] . inv'2 x = true
+  axiom inv_axiom'2 [@rewrite] : forall x : Int32.t [inv'2 x] . inv'2 x = true
   
   function contains'0 [@inline:trivial] (self : t_FMap'0) (k : opaque_ptr) : bool =
     [%#sfmap31] get_unsized'0 self k <> C_None'0
   
-  function make_sized'0 (self : int32) : int32
+  function make_sized'0 (self : Int32.t) : Int32.t
   
-  axiom make_sized'0_spec : forall self : int32 . [%#sutil48] make_sized'0 self = self
+  axiom make_sized'0_spec : forall self : Int32.t . [%#sutil48] make_sized'0 self = self
   
   use map.Map
   
-  function insert'0 (self : t_FMap'0) (k : opaque_ptr) (v : int32) : t_FMap'0
+  function insert'0 (self : t_FMap'0) (k : opaque_ptr) (v : Int32.t) : t_FMap'0
   
-  axiom insert'0_spec : forall self : t_FMap'0, k : opaque_ptr, v : int32 . ([%#sfmap32] view'2 (insert'0 self k v)
+  axiom insert'0_spec : forall self : t_FMap'0, k : opaque_ptr, v : Int32.t . ([%#sfmap32] view'2 (insert'0 self k v)
   = Map.set (view'2 self) k (C_Some'0 (make_sized'0 v)))
   && ([%#sfmap33] contains'0 self k  -> len'0 (insert'0 self k v) = len'0 self)
   && ([%#sfmap34] not contains'0 self k  -> len'0 (insert'0 self k v) = len'0 self + 1)
   
-  let rec ptr_from_box'0 (self:borrowed (t_GhostPtrToken'0)) (val':int32) (return'  (ret:opaque_ptr))= {[@expl:ptr_from_box 'self' type invariant] [%#sghost_ptr5] inv'1 self}
+  let rec ptr_from_box'0 (self:borrowed (t_GhostPtrToken'0)) (val':Int32.t) (return'  (ret:opaque_ptr))= {[@expl:ptr_from_box 'self' type invariant] [%#sghost_ptr5] inv'1 self}
     {[@expl:ptr_from_box 'val' type invariant] [%#sghost_ptr6] inv'2 val'}
     any
     [ return' (result:opaque_ptr)-> {[%#sghost_ptr7] not contains'0 (view'0 self.current) result}
@@ -165,16 +165,16 @@ module M_ghost_ptr_token__test [#"ghost_ptr_token.rs" 3 0 3 13]
       (! return' {result}) ]
     
   
-  predicate inv'3 (_1 : borrowed int32)
+  predicate inv'3 (_1 : borrowed Int32.t)
   
-  axiom inv_axiom'3 [@rewrite] : forall x : borrowed int32 [inv'3 x] . inv'3 x = true
+  axiom inv_axiom'3 [@rewrite] : forall x : borrowed Int32.t [inv'3 x] . inv'3 x = true
   
-  function unwrap'0 (op : t_Option'0) : int32
+  function unwrap'0 (op : t_Option'0) : Int32.t
   
   axiom unwrap'0_spec : forall op : t_Option'0 . ([%#sutil49] op <> C_None'0)
    -> ([%#sutil50] C_Some'0 (unwrap'0 op) = op)
   
-  function lookup_unsized'0 [@inline:trivial] (self : t_FMap'0) (k : opaque_ptr) : int32 =
+  function lookup_unsized'0 [@inline:trivial] (self : t_FMap'0) (k : opaque_ptr) : Int32.t =
     [%#sfmap37] unwrap'0 (get_unsized'0 self k)
   
   function remove'0 (self : t_FMap'0) (k : opaque_ptr) : t_FMap'0
@@ -183,9 +183,9 @@ module M_ghost_ptr_token__test [#"ghost_ptr_token.rs" 3 0 3 13]
   = Map.set (view'2 self) k (C_None'0))
   && ([%#sfmap39] len'0 (remove'0 self k) = (if contains'0 self k then len'0 self - 1 else len'0 self))
   
-  let rec take_mut'0 (self:borrowed (t_GhostPtrTokenMut'0)) (ptr:opaque_ptr) (return'  (ret:borrowed int32))= {[@expl:take_mut requires] [%#sghost_ptr12] contains'0 (cur'0 self.current) ptr}
+  let rec take_mut'0 (self:borrowed (t_GhostPtrTokenMut'0)) (ptr:opaque_ptr) (return'  (ret:borrowed Int32.t))= {[@expl:take_mut requires] [%#sghost_ptr12] contains'0 (cur'0 self.current) ptr}
     any
-    [ return' (result:borrowed int32)-> {[%#sghost_ptr13] inv'3 result}
+    [ return' (result:borrowed Int32.t)-> {[%#sghost_ptr13] inv'3 result}
       {[%#sghost_ptr14] result.current = lookup_unsized'0 (cur'0 self.current) ptr}
       {[%#sghost_ptr15] cur'0 self.final = remove'0 (cur'0 self.current) ptr}
       {[%#sghost_ptr16] fin'0 self.current = insert'0 (fin'0 self.final) ptr result.final}
@@ -201,24 +201,24 @@ module M_ghost_ptr_token__test [#"ghost_ptr_token.rs" 3 0 3 13]
   
   use prelude.prelude.Intrinsic
   
-  let rec promoted3__test'0 (return'  (ret:int32))= bb0
-    [ bb0 = s0 [ s0 =  [ &_0 <- [%#sghost_ptr_token18] (1 : int32) ] s1 | s1 = return' {_0} ]  ]
-     [ & _0 : int32 = any_l () ]  [ return' (result:int32)-> return' {result} ] 
+  let rec promoted3__test'0 (return'  (ret:Int32.t))= bb0
+    [ bb0 = s0 [ s0 =  [ &_0 <- [%#sghost_ptr_token18] (1 : Int32.t) ] s1 | s1 = return' {_0} ]  ]
+     [ & _0 : Int32.t = any_l () ]  [ return' (result:Int32.t)-> return' {result} ] 
   
-  let rec promoted2__test'0 (return'  (ret:int32))= bb0
-    [ bb0 = s0 [ s0 =  [ &_0 <- [%#sghost_ptr_token19] (2 : int32) ] s1 | s1 = return' {_0} ]  ]
-     [ & _0 : int32 = any_l () ]  [ return' (result:int32)-> return' {result} ] 
+  let rec promoted2__test'0 (return'  (ret:Int32.t))= bb0
+    [ bb0 = s0 [ s0 =  [ &_0 <- [%#sghost_ptr_token19] (2 : Int32.t) ] s1 | s1 = return' {_0} ]  ]
+     [ & _0 : Int32.t = any_l () ]  [ return' (result:Int32.t)-> return' {result} ] 
   
-  let rec swap'0 (x:borrowed int32) (y:borrowed int32) (return'  (ret:()))= {[@expl:swap 'x' type invariant] inv'3 x}
+  let rec swap'0 (x:borrowed Int32.t) (y:borrowed Int32.t) (return'  (ret:()))= {[@expl:swap 'x' type invariant] inv'3 x}
     {[@expl:swap 'y' type invariant] inv'3 y}
     any
     [ return' (result:())-> {[%#smem20] x.final = y.current} {[%#smem21] y.final = x.current} (! return' {result}) ]
     
   
-  predicate resolve'3 (self : borrowed int32) =
+  predicate resolve'3 (self : borrowed Int32.t) =
     [%#sresolve41] self.final = self.current
   
-  predicate resolve'1 (_1 : borrowed int32) =
+  predicate resolve'1 (_1 : borrowed Int32.t) =
     resolve'3 _1
   
   predicate inv'4 (_1 : t_GhostPtrToken'0)
@@ -228,25 +228,25 @@ module M_ghost_ptr_token__test [#"ghost_ptr_token.rs" 3 0 3 13]
   function view'1 (self : t_GhostPtrToken'0) : t_FMap'0 =
     [%#smodel42] view'0 self
   
-  predicate inv'5 (_1 : int32)
+  predicate inv'5 (_1 : Int32.t)
   
-  axiom inv_axiom'5 [@rewrite] : forall x : int32 [inv'5 x] . inv'5 x = true
+  axiom inv_axiom'5 [@rewrite] : forall x : Int32.t [inv'5 x] . inv'5 x = true
   
-  let rec ptr_as_ref'0 (self:t_GhostPtrToken'0) (ptr:opaque_ptr) (return'  (ret:int32))= {[@expl:ptr_as_ref 'self' type invariant] [%#sghost_ptr22] inv'4 self}
+  let rec ptr_as_ref'0 (self:t_GhostPtrToken'0) (ptr:opaque_ptr) (return'  (ret:Int32.t))= {[@expl:ptr_as_ref 'self' type invariant] [%#sghost_ptr22] inv'4 self}
     {[@expl:ptr_as_ref requires] [%#sghost_ptr23] contains'0 (view'1 self) ptr}
     any
-    [ return' (result:int32)-> {[%#sghost_ptr24] inv'5 result}
+    [ return' (result:Int32.t)-> {[%#sghost_ptr24] inv'5 result}
       {[%#sghost_ptr25] result = lookup_unsized'0 (view'1 self) ptr}
       (! return' {result}) ]
     
   
-  let rec promoted1__test'0 (return'  (ret:int32))= bb0
-    [ bb0 = s0 [ s0 =  [ &_0 <- [%#sghost_ptr_token26] (2 : int32) ] s1 | s1 = return' {_0} ]  ]
-     [ & _0 : int32 = any_l () ]  [ return' (result:int32)-> return' {result} ] 
+  let rec promoted1__test'0 (return'  (ret:Int32.t))= bb0
+    [ bb0 = s0 [ s0 =  [ &_0 <- [%#sghost_ptr_token26] (2 : Int32.t) ] s1 | s1 = return' {_0} ]  ]
+     [ & _0 : Int32.t = any_l () ]  [ return' (result:Int32.t)-> return' {result} ] 
   
-  let rec promoted0__test'0 (return'  (ret:int32))= bb0
-    [ bb0 = s0 [ s0 =  [ &_0 <- [%#sghost_ptr_token27] (1 : int32) ] s1 | s1 = return' {_0} ]  ]
-     [ & _0 : int32 = any_l () ]  [ return' (result:int32)-> return' {result} ] 
+  let rec promoted0__test'0 (return'  (ret:Int32.t))= bb0
+    [ bb0 = s0 [ s0 =  [ &_0 <- [%#sghost_ptr_token27] (1 : Int32.t) ] s1 | s1 = return' {_0} ]  ]
+     [ & _0 : Int32.t = any_l () ]  [ return' (result:Int32.t)-> return' {result} ] 
   
   type t_AssertKind'0  =
     | C_Eq'0
@@ -265,7 +265,8 @@ module M_ghost_ptr_token__test [#"ghost_ptr_token.rs" 3 0 3 13]
       | s1 = bb2 ]
       
     | bb2 = s0
-      [ s0 = ptr_from_box'0 {_3} {[%#sghost_ptr_token1] (1 : int32)} (fun (_ret':opaque_ptr) ->  [ &ptr1 <- _ret' ] s1)
+      [ s0 = ptr_from_box'0 {_3} {[%#sghost_ptr_token1] (1 : Int32.t)}
+          (fun (_ret':opaque_ptr) ->  [ &ptr1 <- _ret' ] s1)
       | s1 = bb3 ]
       
     | bb3 = s0
@@ -274,7 +275,8 @@ module M_ghost_ptr_token__test [#"ghost_ptr_token.rs" 3 0 3 13]
       | s1 = bb4 ]
       
     | bb4 = s0
-      [ s0 = ptr_from_box'0 {_6} {[%#sghost_ptr_token2] (2 : int32)} (fun (_ret':opaque_ptr) ->  [ &ptr2 <- _ret' ] s1)
+      [ s0 = ptr_from_box'0 {_6} {[%#sghost_ptr_token2] (2 : Int32.t)}
+          (fun (_ret':opaque_ptr) ->  [ &ptr2 <- _ret' ] s1)
       | s1 = bb5 ]
       
     | bb5 = s0
@@ -286,18 +288,18 @@ module M_ghost_ptr_token__test [#"ghost_ptr_token.rs" 3 0 3 13]
     | bb6 = s0
       [ s0 = Borrow.borrow_mut <t_GhostPtrTokenMut'0> {token_mut}
           (fun (_ret':borrowed (t_GhostPtrTokenMut'0)) ->  [ &_11 <- _ret' ]  [ &token_mut <- _ret'.final ] s1)
-      | s1 = take_mut'0 {_11} {ptr1} (fun (_ret':borrowed int32) ->  [ &m1 <- _ret' ] s2)
+      | s1 = take_mut'0 {_11} {ptr1} (fun (_ret':borrowed Int32.t) ->  [ &m1 <- _ret' ] s2)
       | s2 = bb7 ]
       
     | bb7 = s0
       [ s0 = Borrow.borrow_mut <t_GhostPtrTokenMut'0> {token_mut}
           (fun (_ret':borrowed (t_GhostPtrTokenMut'0)) ->  [ &_14 <- _ret' ]  [ &token_mut <- _ret'.final ] s1)
-      | s1 = take_mut'0 {_14} {ptr2} (fun (_ret':borrowed int32) ->  [ &m2 <- _ret' ] s2)
+      | s1 = take_mut'0 {_14} {ptr2} (fun (_ret':borrowed Int32.t) ->  [ &m2 <- _ret' ] s2)
       | s2 = bb8 ]
       
     | bb8 = s0
       [ s0 = -{resolve'0 token_mut}- s1
-      | s1 = promoted3__test'0 (fun (pr3:int32) ->  [ &_104 <- pr3 ] s2)
+      | s1 = promoted3__test'0 (fun (pr3:Int32.t) ->  [ &_104 <- pr3 ] s2)
       | s2 =  [ &_17 <- (m1.current, _104) ] s3
       | s3 =  [ &left_val <- let (r'0, _) = _17 in r'0 ] s4
       | s4 =  [ &right_val <- let (_, r'1) = _17 in r'1 ] s5
@@ -305,7 +307,7 @@ module M_ghost_ptr_token__test [#"ghost_ptr_token.rs" 3 0 3 13]
       | s6 = any [ br0 -> {_23 = false} (! bb10) | br1 -> {_23} (! bb9) ]  ]
       
     | bb9 = s0
-      [ s0 = promoted2__test'0 (fun (pr2:int32) ->  [ &_103 <- pr2 ] s1)
+      [ s0 = promoted2__test'0 (fun (pr2:Int32.t) ->  [ &_103 <- pr2 ] s1)
       | s1 =  [ &_36 <- (m2.current, _103) ] s2
       | s2 =  [ &left_val1 <- let (r'0, _) = _36 in r'0 ] s3
       | s3 =  [ &right_val1 <- let (_, r'1) = _36 in r'1 ] s4
@@ -313,30 +315,30 @@ module M_ghost_ptr_token__test [#"ghost_ptr_token.rs" 3 0 3 13]
       | s5 = any [ br0 -> {_42 = false} (! bb12) | br1 -> {_42} (! bb11) ]  ]
       
     | bb11 = s0
-      [ s0 = Borrow.borrow_final <int32> {m1.current} {Borrow.get_id m1}
-          (fun (_ret':borrowed int32) ->  [ &_55 <- _ret' ]  [ &m1 <- { m1 with current = _ret'.final } ] s1)
-      | s1 = Borrow.borrow_final <int32> {m2.current} {Borrow.get_id m2}
-          (fun (_ret':borrowed int32) ->  [ &_56 <- _ret' ]  [ &m2 <- { m2 with current = _ret'.final } ] s2)
+      [ s0 = Borrow.borrow_final <Int32.t> {m1.current} {Borrow.get_id m1}
+          (fun (_ret':borrowed Int32.t) ->  [ &_55 <- _ret' ]  [ &m1 <- { m1 with current = _ret'.final } ] s1)
+      | s1 = Borrow.borrow_final <Int32.t> {m2.current} {Borrow.get_id m2}
+          (fun (_ret':borrowed Int32.t) ->  [ &_56 <- _ret' ]  [ &m2 <- { m2 with current = _ret'.final } ] s2)
       | s2 = swap'0 {_55} {_56} (fun (_ret':()) ->  [ &_54 <- _ret' ] s3)
       | s3 = bb13 ]
       
     | bb13 = s0
       [ s0 = -{resolve'1 m2}- s1
       | s1 = -{resolve'1 m1}- s2
-      | s2 = ptr_as_ref'0 {token} {ptr1} (fun (_ret':int32) ->  [ &_60 <- _ret' ] s3)
+      | s2 = ptr_as_ref'0 {token} {ptr1} (fun (_ret':Int32.t) ->  [ &_60 <- _ret' ] s3)
       | s3 = bb14 ]
       
     | bb14 = s0
-      [ s0 = promoted1__test'0 (fun (pr1:int32) ->  [ &_102 <- pr1 ] s1)
+      [ s0 = promoted1__test'0 (fun (pr1:Int32.t) ->  [ &_102 <- pr1 ] s1)
       | s1 =  [ &_58 <- (_60, _102) ] s2
       | s2 =  [ &left_val2 <- let (r'0, _) = _58 in r'0 ] s3
       | s3 =  [ &right_val2 <- let (_, r'1) = _58 in r'1 ] s4
       | s4 = Int32.eq {left_val2} {right_val2} (fun (_ret':bool) ->  [ &_67 <- _ret' ] s5)
       | s5 = any [ br0 -> {_67 = false} (! bb16) | br1 -> {_67} (! bb15) ]  ]
       
-    | bb15 = s0 [ s0 = ptr_as_ref'0 {token} {ptr2} (fun (_ret':int32) ->  [ &_82 <- _ret' ] s1) | s1 = bb17 ] 
+    | bb15 = s0 [ s0 = ptr_as_ref'0 {token} {ptr2} (fun (_ret':Int32.t) ->  [ &_82 <- _ret' ] s1) | s1 = bb17 ] 
     | bb17 = s0
-      [ s0 = promoted0__test'0 (fun (pr0:int32) ->  [ &_101 <- pr0 ] s1)
+      [ s0 = promoted0__test'0 (fun (pr0:Int32.t) ->  [ &_101 <- pr0 ] s1)
       | s1 =  [ &_80 <- (_82, _101) ] s2
       | s2 =  [ &left_val3 <- let (r'0, _) = _80 in r'0 ] s3
       | s3 =  [ &right_val3 <- let (_, r'1) = _80 in r'1 ] s4
@@ -379,46 +381,46 @@ module M_ghost_ptr_token__test [#"ghost_ptr_token.rs" 3 0 3 13]
     | & _6 : borrowed (t_GhostPtrToken'0) = any_l ()
     | & token_mut : t_GhostPtrTokenMut'0 = any_l ()
     | & _9 : borrowed (t_GhostPtrToken'0) = any_l ()
-    | & m1 : borrowed int32 = any_l ()
+    | & m1 : borrowed Int32.t = any_l ()
     | & _11 : borrowed (t_GhostPtrTokenMut'0) = any_l ()
-    | & m2 : borrowed int32 = any_l ()
+    | & m2 : borrowed Int32.t = any_l ()
     | & _14 : borrowed (t_GhostPtrTokenMut'0) = any_l ()
-    | & _17 : (int32, int32) = any_l ()
-    | & left_val : int32 = any_l ()
-    | & right_val : int32 = any_l ()
+    | & _17 : (Int32.t, Int32.t) = any_l ()
+    | & left_val : Int32.t = any_l ()
+    | & right_val : Int32.t = any_l ()
     | & _23 : bool = any_l ()
     | & kind : t_AssertKind'0 = any_l ()
-    | & _31 : int32 = any_l ()
-    | & _33 : int32 = any_l ()
-    | & _36 : (int32, int32) = any_l ()
-    | & left_val1 : int32 = any_l ()
-    | & right_val1 : int32 = any_l ()
+    | & _31 : Int32.t = any_l ()
+    | & _33 : Int32.t = any_l ()
+    | & _36 : (Int32.t, Int32.t) = any_l ()
+    | & left_val1 : Int32.t = any_l ()
+    | & right_val1 : Int32.t = any_l ()
     | & _42 : bool = any_l ()
     | & kind1 : t_AssertKind'0 = any_l ()
-    | & _50 : int32 = any_l ()
-    | & _52 : int32 = any_l ()
+    | & _50 : Int32.t = any_l ()
+    | & _52 : Int32.t = any_l ()
     | & _54 : () = any_l ()
-    | & _55 : borrowed int32 = any_l ()
-    | & _56 : borrowed int32 = any_l ()
-    | & _58 : (int32, int32) = any_l ()
-    | & _60 : int32 = any_l ()
-    | & left_val2 : int32 = any_l ()
-    | & right_val2 : int32 = any_l ()
+    | & _55 : borrowed Int32.t = any_l ()
+    | & _56 : borrowed Int32.t = any_l ()
+    | & _58 : (Int32.t, Int32.t) = any_l ()
+    | & _60 : Int32.t = any_l ()
+    | & left_val2 : Int32.t = any_l ()
+    | & right_val2 : Int32.t = any_l ()
     | & _67 : bool = any_l ()
     | & kind2 : t_AssertKind'0 = any_l ()
-    | & _75 : int32 = any_l ()
-    | & _77 : int32 = any_l ()
-    | & _80 : (int32, int32) = any_l ()
-    | & _82 : int32 = any_l ()
-    | & left_val3 : int32 = any_l ()
-    | & right_val3 : int32 = any_l ()
+    | & _75 : Int32.t = any_l ()
+    | & _77 : Int32.t = any_l ()
+    | & _80 : (Int32.t, Int32.t) = any_l ()
+    | & _82 : Int32.t = any_l ()
+    | & left_val3 : Int32.t = any_l ()
+    | & right_val3 : Int32.t = any_l ()
     | & _89 : bool = any_l ()
     | & kind3 : t_AssertKind'0 = any_l ()
-    | & _97 : int32 = any_l ()
-    | & _99 : int32 = any_l ()
-    | & _101 : int32 = any_l ()
-    | & _102 : int32 = any_l ()
-    | & _103 : int32 = any_l ()
-    | & _104 : int32 = any_l () ]
+    | & _97 : Int32.t = any_l ()
+    | & _99 : Int32.t = any_l ()
+    | & _101 : Int32.t = any_l ()
+    | & _102 : Int32.t = any_l ()
+    | & _103 : Int32.t = any_l ()
+    | & _104 : Int32.t = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
