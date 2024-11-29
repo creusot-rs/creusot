@@ -1,10 +1,24 @@
+//! Definition for using orderings in pearlite.
+
 use crate::{std::cmp::Ordering, *};
 
+/// Trait for comparison operations (`<`, `>`, `<=`, `>=`) in pearlite.
+///
+/// Types that implement this trait must have a total order. In particular, the order
+/// must be:
+/// - [reflexive](Self::refl)
+/// - [transitive](Self::trans)
+/// - antisymmetric ([part1](Self::antisym1), [part2](Self::antisym2))
 #[allow(unused)]
 pub trait OrdLogic {
+    /// The comparison operation. Returns:
+    /// - [`Ordering::Less`] if `self` is smaller than `other`
+    /// - [`Ordering::Equal`] if `self` is equal to `other`
+    /// - [`Ordering::Greater`] if `self` is greater than `other`
     #[logic]
-    fn cmp_log(self, _: Self) -> Ordering;
+    fn cmp_log(self, other: Self) -> Ordering;
 
+    /// The logical `<=` operation.
     #[logic]
     #[open]
     fn le_log(self, o: Self) -> bool {
@@ -15,6 +29,7 @@ pub trait OrdLogic {
     #[ensures(x.le_log(y) == (x.cmp_log(y) != Ordering::Greater))]
     fn cmp_le_log(x: Self, y: Self);
 
+    /// The logical `<` operation.
     #[logic]
     #[open]
     fn lt_log(self, o: Self) -> bool {
@@ -25,6 +40,7 @@ pub trait OrdLogic {
     #[ensures(x.lt_log(y) == (x.cmp_log(y) == Ordering::Less))]
     fn cmp_lt_log(x: Self, y: Self);
 
+    /// The logical `>=` operation.
     #[logic]
     #[open]
     fn ge_log(self, o: Self) -> bool {
@@ -35,6 +51,7 @@ pub trait OrdLogic {
     #[ensures(x.ge_log(y) == (x.cmp_log(y) != Ordering::Less))]
     fn cmp_ge_log(x: Self, y: Self);
 
+    /// The logical `>` operation.
     #[logic]
     #[open]
     fn gt_log(self, o: Self) -> bool {
@@ -45,31 +62,65 @@ pub trait OrdLogic {
     #[ensures(x.gt_log(y) == (x.cmp_log(y) == Ordering::Greater))]
     fn cmp_gt_log(x: Self, y: Self);
 
+    /// Reflexivity of the order
     #[law]
     #[ensures(x.cmp_log(x) == Ordering::Equal)]
     fn refl(x: Self);
 
+    /// Transitivity of the order
     #[law]
     #[requires(x.cmp_log(y) == o)]
     #[requires(y.cmp_log(z) == o)]
     #[ensures(x.cmp_log(z) == o)]
     fn trans(x: Self, y: Self, z: Self, o: Ordering);
 
+    /// Antisymmetry of the order (`x < y ==> !(y < x)`)
+    ///
+    /// The antisymmetry is in two part; here is the [second](Self::antisym2) part.
     #[law]
     #[requires(x.cmp_log(y) == Ordering::Less)]
     #[ensures(y.cmp_log(x) == Ordering::Greater)]
     fn antisym1(x: Self, y: Self);
 
+    /// Antisymmetry of the order (`x > y ==> !(y > x)`)
+    ///
+    /// The antisymmetry is in two part; here is the [first](Self::antisym1) part.
     #[law]
     #[requires(x.cmp_log(y) == Ordering::Greater)]
     #[ensures(y.cmp_log(x) == Ordering::Less)]
     fn antisym2(x: Self, y: Self);
 
+    /// Compatibility between [`Ordering::Equal`] and equality (`==`).
     #[law]
     #[ensures((x == y) == (x.cmp_log(y) == Ordering::Equal))]
     fn eq_cmp(x: Self, y: Self);
 }
 
+/// A macro to easily implements the various `#[law]`s of [`OrdLogic`].
+///
+/// # Usage
+///
+/// Simply use this macro in the trait impl:
+/// ```
+/// # use creusot_contracts::{logic::ord::{OrdLogic, ord_laws_impl}, *};
+/// use ::std::cmp::Ordering;
+/// struct MyInt(Int);
+///
+/// impl OrdLogic for MyInt {
+///     #[logic] #[open(self)]
+///     fn cmp_log(self, other: Self) -> Ordering { todo!() }
+///     #[logic] #[open(self)]
+///     fn le_log(self, other: Self) -> Ordering { todo!() }
+///     #[logic] #[open(self)]
+///     fn lt_log(self, other: Self) -> Ordering { todo!() }
+///     #[logic] #[open(self)]
+///     fn ge_log(self, other: Self) -> Ordering { todo!() }
+///     #[logic] #[open(self)]
+///     fn gt_log(self, other: Self) -> Ordering { todo!() }
+///
+///     ord_laws_impl! {}
+/// }
+/// ```
 #[macro_export]
 macro_rules! ord_laws_impl {
     () => {
