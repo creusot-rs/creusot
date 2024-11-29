@@ -52,7 +52,7 @@ pub fn get_why3_config_file() -> anyhow::Result<PathBuf> {
 struct Issue {
     error: bool,
     tool: String,
-    cur_version: Option<String>,
+    cur_version: anyhow::Result<String>,
     expected_version: String,
     builtin_tool: bool,
 }
@@ -60,12 +60,12 @@ struct Issue {
 impl fmt::Display for Issue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let Issue { error, tool, cur_version, expected_version, builtin_tool: _ } = self;
-        write!(
-            f,
-            "{}: {tool} has version {}, but version {expected_version} is expected",
-            (if *error { "Error" } else { "Warning" }),
-            cur_version.as_deref().unwrap_or("(not detected)")
-        )
+        let header = if *error { "Error" } else { "Warning" };
+        match cur_version {
+            Ok(cur_version) => write!(f,
+                "{header}: {tool} has version {cur_version}, expected version is {expected_version}"),
+            Err(err) => write!(f, "{header}: {err}"),
+        }
     }
 }
 
@@ -101,14 +101,15 @@ fn diagnostic_config(paths: &CfgPaths, config: &Config, check_builtins: bool) ->
 
     // check versions of binaries (passing --version) vs expected version
     for (bin, check_version, path, builtin_tool) in bins {
-        if let DetectedVersion::Bad(ver) = bin.detect_version(&path) {
-            issues.push(Issue {
+        match bin.detect_version(&path) {
+            Ok(version) if version == bin.version => continue,
+            bad_version => issues.push(Issue {
                 error: check_version,
                 tool: bin.display_name.to_owned(),
-                cur_version: ver,
+                cur_version: bad_version,
                 expected_version: bin.version.to_owned(),
                 builtin_tool,
-            })
+            }),
         }
     }
 
