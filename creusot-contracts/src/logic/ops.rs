@@ -2,9 +2,11 @@ use ::std::alloc::Allocator;
 
 use crate::*;
 
+/// Used for indexing operations (`container[index]`) in pearlite.
 pub trait IndexLogic<I: ?Sized> {
     type Item;
 
+    /// Performs the indexing (`container[index]`) operation.
     #[logic]
     #[rustc_diagnostic_item = "index_logic_method"]
     fn index_logic(self, idx: I) -> Self::Item;

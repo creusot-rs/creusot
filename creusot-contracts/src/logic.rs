@@ -1,3 +1,7 @@
+//! Definitions for pearlite code
+//!
+//! This contains types and traits that are meant to be used in logical code.
+
 #![cfg_attr(not(creusot), allow(unused_imports))]
 
 mod fmap;
