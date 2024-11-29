@@ -4,6 +4,7 @@ use crate::{
     *,
 };
 
+/// A mapping, where keys may not have an associated value.
 #[cfg_attr(not(creusot), allow(dead_code))]
 type PMap<K, V> = Mapping<K, Option<SizedW<V>>>;
 
@@ -39,6 +40,7 @@ impl<K, V: ?Sized> FMap<K, V> {
         dead
     }
 
+    /// The number of elements in the map, also called its length.
     #[trusted]
     #[logic]
     #[ensures(result >= 0)]
@@ -46,13 +48,24 @@ impl<K, V: ?Sized> FMap<K, V> {
         dead
     }
 
+    /// Injectivity lemma for [`Self::view`].
     #[trusted]
     #[logic]
-    #[ensures(Self::mk(result) == self)] // injectivity
+    #[ensures(forall<m1: Self, m2: Self> m1 != m2 ==> Self::view(m1) != Self::view(m2))]
+    pub fn view_injective() {
+        dead
+    }
+
+    /// View of the map
+    ///
+    /// This represents the actual content of the map: other methods are specified relative to this.
+    #[trusted]
+    #[logic]
     pub fn view(self) -> PMap<K, V> {
         dead
     }
 
+    /// Returns a new map, where the key-value pair `(k, v)` have been inserted.
     #[trusted]
     #[logic]
     #[ensures(result.view() == self.view().set(k, Some(v.make_sized())))]
@@ -62,6 +75,7 @@ impl<K, V: ?Sized> FMap<K, V> {
         dead
     }
 
+    /// Returns a new map, where the key `k` is not longer present.
     #[trusted]
     #[logic]
     #[ensures(result.view() == self.view().set(k, None))]
@@ -70,6 +84,9 @@ impl<K, V: ?Sized> FMap<K, V> {
         dead
     }
 
+    /// Get the value associated with key `k` in the map.
+    ///
+    /// If no value is present, returns [`None`].
     #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
@@ -83,6 +100,7 @@ impl<K, V: ?Sized> FMap<K, V> {
         }
     }
 
+    /// Same as [`Self::get`], but can handle unsized values.
     #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
@@ -90,13 +108,9 @@ impl<K, V: ?Sized> FMap<K, V> {
         self.view().get(k)
     }
 
-    #[logic]
-    #[open]
-    #[why3::attr = "inline:trivial"]
-    pub fn lookup_unsized(self, k: K) -> SizedW<V> {
-        unwrap(self.get_unsized(k))
-    }
-
+    /// Get the value associated with key `k` in the map.
+    ///
+    /// If no value is present, the returned value is meaningless.
     #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
@@ -107,6 +121,15 @@ impl<K, V: ?Sized> FMap<K, V> {
         *self.lookup_unsized(k)
     }
 
+    /// Same as [`Self::lookup`], but can handle unsized values.
+    #[logic]
+    #[open]
+    #[why3::attr = "inline:trivial"]
+    pub fn lookup_unsized(self, k: K) -> SizedW<V> {
+        unwrap(self.get_unsized(k))
+    }
+
+    /// Returns `true` if the map contains a value for the specified key.
     #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
@@ -114,18 +137,21 @@ impl<K, V: ?Sized> FMap<K, V> {
         self.get_unsized(k) != None
     }
 
+    /// Returns `true` if the map contains no elements.
     #[logic]
     #[open]
     pub fn is_empty(self) -> bool {
         self.ext_eq(FMap::empty())
     }
 
+    /// Returns `true` if the two maps have no key in common.
     #[logic]
     #[open]
     pub fn disjoint(self, other: Self) -> bool {
         pearlite! {forall<k: K> !self.contains(k) || !other.contains(k)}
     }
 
+    /// Returns `true` if all key-value pairs in `self` are also in `other`.
     #[logic]
     #[open]
     pub fn subset(self, other: Self) -> bool {
@@ -134,6 +160,9 @@ impl<K, V: ?Sized> FMap<K, V> {
         }
     }
 
+    /// Returns a new map, which is the union of `self` and `other`.
+    ///
+    /// If `self` and `other` are not [`disjoint`](Self::disjoint), the result is unspecified.
     #[trusted]
     #[logic]
     #[requires(self.disjoint(other))]
@@ -149,6 +178,8 @@ impl<K, V: ?Sized> FMap<K, V> {
         dead
     }
 
+    /// Returns a new map, that contains all the key-value pairs of `self` such that the
+    /// key is not in `other`.
     #[trusted]
     #[logic]
     #[ensures(forall<k: K> result.get_unsized(k) == if other.contains(k) {
@@ -160,6 +191,10 @@ impl<K, V: ?Sized> FMap<K, V> {
         dead
     }
 
+    /// Same as [`Self::subtract_keys`], but the result is meaningless if `other` is not
+    /// a [`subset`](Self::subset) of `self`.
+    ///
+    /// In return, this gives more guarantees than `Self::subtract_keys`.
     #[logic]
     #[open]
     #[requires(other.subset(self))]
@@ -174,6 +209,11 @@ impl<K, V: ?Sized> FMap<K, V> {
         self.subtract_keys(other)
     }
 
+    /// Extensional equality.
+    ///
+    /// Returns `true` if `self` and `other` contain exactly the same key-value pairs.
+    ///
+    /// This is in fact equivalent with normal equality.
     #[logic]
     #[open]
     #[ensures(result ==> self == other)]
