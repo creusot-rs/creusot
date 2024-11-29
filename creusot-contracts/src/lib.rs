@@ -178,6 +178,7 @@ mod macros {
     pub use base_macros::open_inv_result;
 }
 
+#[doc(hidden)]
 #[cfg(creusot)]
 #[path = "stubs.rs"]
 pub mod __stubs;
