@@ -1,4 +1,4 @@
-use self::ty::{concret_intty, concret_uintty, slice_create_qname};
+use self::ty::{concret_intty, concret_uintty, slice_create_qname, slice_length_qname};
 
 use crate::{
     backend::{
@@ -337,7 +337,7 @@ impl<'tcx> RValue<'tcx> {
                     // right operand must be converted to integer
                     BinOp::Shl | BinOp::ShlUnchecked | BinOp::Shr | BinOp::ShrUnchecked => {
                         let r_ty = r.ty(lower.ctx.tcx, lower.locals);
-
+                        
                         // rust allows shifting by a value of any integer type
                         // so we need to import the prelude for the right operand
                         let prelude: PreludeModule = match r_ty.kind() {
@@ -492,7 +492,7 @@ impl<'tcx> RValue<'tcx> {
             }
             RValue::Len(pl) => {
                 let len_call =
-                    Exp::qvar(QName::from_string("Slice.length")).app_to(pl.to_why(lower, istmts));
+                    Exp::qvar(slice_length_qname()).app_to(pl.to_why(lower, istmts));
                 len_call
             }
             RValue::Array(fields) => {

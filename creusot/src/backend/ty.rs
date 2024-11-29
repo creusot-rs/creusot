@@ -575,3 +575,12 @@ pub(crate) fn slice_set_qname() -> QName {
     #[cfg(target_pointer_width = "16")]
     return QName::from_string("Slice16.set");
 }
+
+pub(crate) fn slice_length_qname() -> QName {
+    #[cfg(target_pointer_width = "64")]
+    return QName::from_string("Slice64.length");
+    #[cfg(target_pointer_width = "32")]
+    return QName::from_string("Slice32.length");
+    #[cfg(target_pointer_width = "16")]
+    return QName::from_string("Slice16.length");
+}
