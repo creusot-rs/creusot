@@ -386,5 +386,5 @@ fn run(cmd: &mut Command) -> anyhow::Result<std::process::Output> {
 }
 
 pub fn why3find_install() {
-    Command::new("why3find").arg("install").arg("prelude").status().unwrap();
+    Command::new("why3find").args(["install", "--global", "prelude"]).status().unwrap();
 }
