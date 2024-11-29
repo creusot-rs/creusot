@@ -1,5 +1,6 @@
 extern crate proc_macro;
 
+#[path = "../../creusot-contracts-proc/src/ghost.rs"]
 mod ghost;
 
 use proc_macro::TokenStream as TS1;
