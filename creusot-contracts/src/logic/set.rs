@@ -1,15 +1,18 @@
 use crate::*;
 
+/// An (possibly infinite) set type.
 #[trusted]
 #[cfg_attr(creusot, creusot::builtins = "set.Set.set")]
 pub struct Set<T: ?Sized>(std::marker::PhantomData<T>);
 
 impl<T: ?Sized> Set<T> {
+    /// The empty set.
     #[cfg(creusot)]
     #[trusted]
     #[creusot::builtins = "set.Set.empty"]
     pub const EMPTY: Self = { Set(std::marker::PhantomData) };
 
+    /// Returns `true` if `e` is in the set.
     #[open]
     #[predicate]
     #[why3::attr = "inline:trivial"]
@@ -17,6 +20,9 @@ impl<T: ?Sized> Set<T> {
         Self::mem(e, self)
     }
 
+    /// [`Self::contains`], but with the order of arguments flipped.
+    ///
+    /// This is how the function is defined in why3.
     #[doc(hidden)]
     #[trusted]
     #[logic]
@@ -25,6 +31,7 @@ impl<T: ?Sized> Set<T> {
         dead
     }
 
+    /// Returns a new set, where `e` has been added if it was not present.
     #[open]
     #[logic]
     #[why3::attr = "inline:trivial"]
@@ -32,6 +39,9 @@ impl<T: ?Sized> Set<T> {
         Self::add(e, self)
     }
 
+    /// [`Self::insert`], but with the order of arguments flipped.
+    ///
+    /// This is how the function is defined in why3.
     #[doc(hidden)]
     #[trusted]
     #[logic]
@@ -40,6 +50,7 @@ impl<T: ?Sized> Set<T> {
         dead
     }
 
+    /// Returns `true` if the set contains no elements.
     #[trusted]
     #[predicate]
     #[creusot::builtins = "set.Set.is_empty"]
@@ -47,6 +58,7 @@ impl<T: ?Sized> Set<T> {
         dead
     }
 
+    /// Returns a new set, where `e` is not longer present.
     #[open]
     #[logic]
     #[why3::attr = "inline:trivial"]
@@ -54,6 +66,9 @@ impl<T: ?Sized> Set<T> {
         Self::rem(a, self)
     }
 
+    /// [`Self::remove`], but with the order of arguments flipped.
+    ///
+    /// This is how the function is defined in why3.
     #[doc(hidden)]
     #[trusted]
     #[logic]
@@ -62,6 +77,9 @@ impl<T: ?Sized> Set<T> {
         dead
     }
 
+    /// Returns a new set, which is the union of `self` and `other`.
+    ///
+    /// An element is in the result if it is in `self` _or_ if it is in `other`.
     #[trusted]
     #[logic]
     #[creusot::builtins = "set.Set.union"]

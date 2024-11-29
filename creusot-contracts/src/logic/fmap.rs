@@ -8,7 +8,9 @@ use crate::{
 #[cfg_attr(not(creusot), allow(dead_code))]
 type PMap<K, V> = Mapping<K, Option<SizedW<V>>>;
 
-/// A Map type usable in pearlite and `ghost!` blocks.
+/// A finite map type usable in pearlite and `ghost!` blocks.
+///
+/// If you need an infinite map, see [`Mapping`].
 ///
 /// # Ghost
 ///

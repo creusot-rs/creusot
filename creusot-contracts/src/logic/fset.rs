@@ -1,6 +1,8 @@
 use crate::*;
 
-/// A Set type usable in pearlite and `ghost!` blocks.
+/// A finite set type usable in pearlite and `ghost!` blocks.
+///
+/// If you need an infinite set, see [`Set`](super::Set).
 ///
 /// # Ghost
 ///
