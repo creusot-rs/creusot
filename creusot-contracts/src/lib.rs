@@ -183,8 +183,6 @@ mod macros {
 #[path = "stubs.rs"]
 pub mod __stubs;
 
-pub mod logic;
-
 #[cfg_attr(not(creusot), allow(unused))]
 pub mod std;
 
@@ -192,35 +190,12 @@ pub mod std;
 pub mod num_rational;
 
 pub mod ghost;
-
-#[cfg(creusot)]
-pub mod snapshot;
-
-#[cfg(not(creusot))]
-pub mod snapshot {
-    pub struct Snapshot<T>(std::marker::PhantomData<T>)
-    where
-        T: ?Sized;
-
-    impl<T: ?Sized> Snapshot<T> {
-        pub fn from_fn(_: fn() -> T) -> Self {
-            Snapshot(std::marker::PhantomData)
-        }
-    }
-
-    impl<T: ?Sized> Clone for Snapshot<T> {
-        fn clone(&self) -> Self {
-            Snapshot(std::marker::PhantomData)
-        }
-    }
-
-    impl<T: ?Sized> Copy for Snapshot<T> {}
-}
-
 pub mod invariant;
+pub mod logic;
 pub mod model;
 pub mod ptr_own;
 pub mod resolve;
+pub mod snapshot;
 pub mod util;
 pub mod well_founded;
 
