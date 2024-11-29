@@ -8,7 +8,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned, ToTokens, TokenStreamExt};
 use std::iter;
 use syn::{
-    parse::{discouraged::Speculative, Parse, Result},
+    parse::{Parse, Result},
     spanned::Spanned,
     *,
 };
@@ -43,7 +43,7 @@ impl<'a> FilterAttrs<'a> for &'a [Attribute] {
     }
 }
 
-fn generate_unique_ident(prefix: &str) -> Ident {
+pub(crate) fn generate_unique_ident(prefix: &str) -> Ident {
     let uuid = uuid::Uuid::new_v4();
     let ident = format!("{}_{}", prefix, uuid).replace('-', "_");
 
@@ -322,70 +322,11 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
     }
 }
 
-enum VariantAnnotation {
-    Fn(ItemFn),
-    WhileLoop(ExprWhile),
-}
-
-impl syn::parse::Parse for VariantAnnotation {
-    fn parse(input: parse::ParseStream) -> Result<Self> {
-        let fork = input.fork();
-        if let Ok(f) = fork.parse() {
-            input.advance_to(&fork);
-            Ok(VariantAnnotation::Fn(f))
-        } else if let Ok(w) = input.parse() {
-            Ok(VariantAnnotation::WhileLoop(w))
-        } else {
-            Err(Error::new(Span::call_site(), "TEST?"))
-        }
-    }
-}
-
 #[proc_macro_attribute]
 pub fn variant(attr: TS1, tokens: TS1) -> TS1 {
-    match variant_inner(attr, tokens) {
-        Ok(r) => r,
-        Err(err) => TS1::from(err.to_compile_error()),
-    }
-}
-
-fn variant_inner(attr: TS1, tokens: TS1) -> Result<TS1> {
-    let p: pearlite_syn::Term = parse(attr)?;
-
-    let tgt: VariantAnnotation = parse(tokens)?;
-
-    let var_name = generate_unique_ident("variant");
-
-    let var_body = pretyping::encode_term(&p).unwrap_or_else(|e| e.into_tokens());
-    let name_tag = format!("{}", quote! { #var_name });
-
-    let variant_attr = match tgt {
-        VariantAnnotation::Fn(_) => quote! { #[creusot::spec::variant] },
-        VariantAnnotation::WhileLoop(_) => quote! { #[creusot::spec::variant::loop_] },
-    };
-    let variant_tokens = quote! {
-        #[allow(unused_must_use)]
-        let _ =
-            #[creusot::no_translate]
-            #[creusot::item=#name_tag]
-            #variant_attr
-            #[creusot::spec]
-            ||{ ::creusot_contracts::__stubs::variant_check(#var_body) }
-        ;
-    };
-
-    match tgt {
-        VariantAnnotation::Fn(mut f) => {
-            f.block.stmts.insert(0, Stmt::Item(Item::Verbatim(variant_tokens)));
-            Ok(TS1::from(quote! {
-              #[creusot::clause::variant=#name_tag]
-              #f
-            }))
-        }
-        VariantAnnotation::WhileLoop(w) => Ok(TS1::from(quote! {
-          { #variant_tokens; #w }
-        })),
-    }
+    invariant::desugar_variant(attr.into(), tokens.into())
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into()
 }
 
 struct Assertion(Vec<TermStmt>);
@@ -755,12 +696,10 @@ pub fn maintains(attr: TS1, body: TS1) -> TS1 {
 }
 
 #[proc_macro_attribute]
-pub fn invariant(invariant: TS1, loopb: TS1) -> TS1 {
-    let loop_ = match invariant::parse(invariant.into(), loopb.into()) {
-        Ok(l) => l,
-        Err(e) => return e.to_compile_error().into(),
-    };
-    invariant::lower(loop_).into()
+pub fn invariant(invariant: TS1, tokens: TS1) -> TS1 {
+    invariant::desugar_invariant(invariant.into(), tokens.into())
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into()
 }
 
 #[proc_macro_attribute]
