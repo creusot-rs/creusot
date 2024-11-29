@@ -5,13 +5,12 @@ pub use ::std::ptr::*;
 /// metadata*.
 ///
 /// This is to account for provenance
-/// (https://doc.rust-lang.org/std/ptr/index.html#using-strict-provenance) and
+/// (<https://doc.rust-lang.org/std/ptr/index.html#using-strict-provenance>) and
 /// wide pointers. See e.g.
-/// https://doc.rust-lang.org/std/primitive.pointer.html#method.is_null: "unsized
+/// <https://doc.rust-lang.org/std/primitive.pointer.html#method.is_null>: "unsized
 /// types have many possible null pointers, as only the raw data pointer is
 /// considered, not their length, vtable, etc. Therefore, two pointers that are
 /// null may still not compare equal to each other."
-
 #[allow(dead_code)]
 pub struct PtrDeepModel {
     pub addr: Int,
@@ -59,6 +58,7 @@ impl<T: ?Sized> View for *const T {
 }
 
 pub trait PointerExt<T: ?Sized>: Sized {
+    /// _logical_ address of the pointer
     #[logic]
     fn addr_logic(self) -> Int;
 

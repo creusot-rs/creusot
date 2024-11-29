@@ -1,31 +1,33 @@
+//! Raw pointers with ghost code
+
 #[cfg(creusot)]
 use crate::util::SizedW;
 use crate::*;
 
-/// Raw pointer whose ownership is tracked by a ghost [PtrOwn].
+/// Raw pointer whose ownership is tracked by a ghost [`PtrOwn`].
 pub type RawPtr<T> = *const T;
 
-/// Token that represents the ownership of a memory cell. A [PtrOwn] value only
+/// Token that represents the ownership of a memory cell. A `PtrOwn` value only
 /// exists in the ghost world, but can be used in combination with a
-/// corresponding [RawPtr] to access and modify memory.
+/// corresponding [`RawPtr`] to access and modify memory.
 ///
 /// A warning regarding memory leaks: dropping a `GhostBox<PtrOwn<T>>` (we only
-/// ever handle ghost [PtrOwn] values) cannot deallocate the memory
+/// ever handle ghost `PtrOwn` values) cannot deallocate the memory
 /// corresponding to the pointer because it is a ghost value. One must thus
-/// remember to explicitly call [drop] in order to free the memory tracked by a
-/// [PtrOwn] token.
+/// remember to explicitly call [`drop`] in order to free the memory tracked by a
+/// `PtrOwn` token.
 #[trusted]
 pub struct PtrOwn<T: ?Sized>(std::marker::PhantomData<T>);
 
 impl<T: ?Sized> PtrOwn<T> {
-    /// The raw pointer whose ownership is tracked by this [PtrOwn]
+    /// The raw pointer whose ownership is tracked by this `PtrOwn`
     #[trusted]
     #[logic]
     pub fn ptr(&self) -> RawPtr<T> {
         dead
     }
 
-    /// The value currently stored at address [self.ptr()]
+    /// The value currently stored at address [`self.ptr()`](Self::ptr)
     #[trusted]
     #[logic]
     pub fn val(&self) -> SizedW<T> {
@@ -44,7 +46,7 @@ impl<T: ?Sized> Invariant for PtrOwn<T> {
 }
 
 impl<T> PtrOwn<T> {
-    /// Creates a new [PtrOwn] and associated [RawPtr] by allocating a new memory
+    /// Creates a new `PtrOwn` and associated [`RawPtr`] by allocating a new memory
     /// cell initialized with `v`.
     #[ensures(result.1.ptr() == result.0 && *result.1.val() == v)]
     pub fn new(v: T) -> (RawPtr<T>, GhostBox<PtrOwn<T>>) {
@@ -53,7 +55,7 @@ impl<T> PtrOwn<T> {
 }
 
 impl<T: ?Sized> PtrOwn<T> {
-    /// Creates a ghost [PtrOwn] and associated [RawPtr] from an existing [Box].
+    /// Creates a ghost `PtrOwn` and associated [`RawPtr`] from an existing [`Box`].
     #[trusted]
     #[ensures(result.1.ptr() == result.0 && *result.1.val() == *val)]
     pub fn from_box(val: Box<T>) -> (RawPtr<T>, GhostBox<PtrOwn<T>>) {
@@ -82,7 +84,7 @@ impl<T: ?Sized> PtrOwn<T> {
         unsafe { &mut *(ptr as *mut _) }
     }
 
-    /// Transfers ownership of `own` back into a [Box].
+    /// Transfers ownership of `own` back into a [`Box`].
     #[trusted]
     #[requires(ptr == own.ptr())]
     #[ensures(*result == *own.val())]
@@ -97,7 +99,7 @@ impl<T: ?Sized> PtrOwn<T> {
         let _ = Self::to_box(ptr, own);
     }
 
-    /// If one owns two [PtrOwn]s in ghost code, then they are for different pointers.
+    /// If one owns two `PtrOwn`s in ghost code, then they are for different pointers.
     #[trusted]
     #[ensures(own1.ptr().addr_logic() != own2.ptr().addr_logic())]
     #[allow(unused_variables)]
