@@ -22,14 +22,15 @@ pub(crate) fn document_spec(spec_name: &str, spec: LogicBody) -> TokenStream {
         "terminates" | "pure" | "logic" | "logic(prophetic)" | "law" => "Violet",
         _ => "LightGray",
     };
-    let spec_name =
-        format!("> <span style=\"color:{spec_color};\"><samp>{spec_name}</samp></span>");
+    let styled_spec_name = format!(
+        "<span style=\"color:{spec_color}; white-space:nowrap;\"><samp>{spec_name}</samp></span>"
+    );
     let spec = match spec {
         LogicBody::Some(s) if !s.is_empty() => s,
         _ => {
             return quote::quote! {
                 #[cfg_attr(not(doctest), doc = "")]
-                #[cfg_attr(not(doctest), doc = #spec_name)]
+                #[cfg_attr(not(doctest), doc = #styled_spec_name)]
                 #[cfg_attr(not(doctest), doc = "")]
             }
         }
@@ -52,20 +53,37 @@ pub(crate) fn document_spec(spec_name: &str, spec: LogicBody) -> TokenStream {
                     std::cmp::min(leading_whitespace, line.len() - line.trim_start().len());
             }
             let mut trimmed_res = String::new();
-            for line in body.lines() {
+            for (i, line) in body.lines().enumerate() {
+                if i != 0 {
+                    trimmed_res.push('\n');
+                }
                 trimmed_res.push_str(&line[leading_whitespace..]);
-                trimmed_res.push('\n');
             }
             res = trimmed_res;
         }
         res
     };
-    spec = spec.replace('\n', "\n> > ");
-    spec = format!("> > ```\n> > {spec}\n> > ```");
-    quote::quote! {
-        #[cfg_attr(not(doctest), doc = "")]
-        #[cfg_attr(not(doctest), doc = #spec_name)]
-        #[cfg_attr(not(doctest), doc = #spec)]
+
+    if spec.len() > 80 - spec_name.len() || spec.contains('\n') {
+        spec = spec.replace('\n', "\n> ");
+        spec = format!("> ```\n> {spec}\n> ```");
+        quote::quote! {
+            #[cfg_attr(not(doctest), doc = "")]
+            #[cfg_attr(not(doctest), doc = #styled_spec_name)]
+            #[cfg_attr(not(doctest), doc = #spec)]
+        }
+    } else {
+        spec = format!("```\n{spec}\n```");
+        quote::quote! {
+            #[cfg_attr(not(doctest), doc = "<div class=\"container\" style=\"display:flex; align-items:center; gap:5px; clip-path:inset(0.5em 0% 1.1em 0%);\"> <p>")]
+            #[cfg_attr(not(doctest), doc = #styled_spec_name)]
+            #[cfg_attr(not(doctest), doc = "   </p> <p>")]
+            #[cfg_attr(not(doctest), doc = "")]
+            #[cfg_attr(not(doctest), doc = #spec)]
+            #[cfg_attr(not(doctest), doc = "")]
+            #[cfg_attr(not(doctest), doc = "</p> </div>")]
+            #[cfg_attr(not(doctest), doc = "")]
+        }
     }
 }
 
