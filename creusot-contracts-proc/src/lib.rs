@@ -489,45 +489,67 @@ impl LogicInput {
     }
 }
 
+enum LogicKind {
+    None,
+    Prophetic,
+    Law,
+}
+
+impl ToTokens for LogicKind {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        match self {
+            Self::None | Self::Law => {}
+            Self::Prophetic => tokens.extend(quote!(#[creusot::decl::logic::prophetic])),
+        }
+    }
+}
+
 #[proc_macro_attribute]
-pub fn logic(prophetic: TS1, tokens: TS1) -> TS1 {
-    let prophetic = if prophetic.is_empty() {
-        None
+pub fn logic(kind: TS1, tokens: TS1) -> TS1 {
+    let kind = if kind.is_empty() {
+        LogicKind::None
     } else {
-        let t = parse_macro_input!(prophetic as Ident);
+        let t = parse_macro_input!(kind as Ident);
         if t == "prophetic" {
-            Some(quote!(#[creusot::decl::logic::prophetic]))
+            LogicKind::Prophetic
+        } else if t == "law" {
+            LogicKind::Law
         } else {
-            None
+            return syn::Error::new(
+                t.span(),
+                "unsupported modifier. The only supported modifier at the moment is `prophetic`",
+            )
+            .into_compile_error()
+            .into();
         }
     };
     let log = parse_macro_input!(tokens as LogicInput);
     let documentation = document_spec(
-        if prophetic.is_some() { "logic(prophetic)" } else { "logic" },
-        log.logic_body(),
+        match kind {
+            LogicKind::None => "logic",
+            LogicKind::Prophetic => "logic(prophetic)",
+            LogicKind::Law => "law",
+        },
+        if matches!(kind, LogicKind::Law) { doc::LogicBody::None } else { log.logic_body() },
     );
     match log {
-        LogicInput::Item(log) => logic_item(log, prophetic, documentation),
-        LogicInput::Sig(sig) => logic_sig(sig, prophetic, documentation),
+        LogicInput::Item(log) => logic_item(log, kind, documentation),
+        LogicInput::Sig(sig) => logic_sig(sig, kind, documentation),
     }
 }
 
-fn logic_sig(
-    sig: TraitItemSignature,
-    prophetic: Option<TokenStream>,
-    documentation: TokenStream,
-) -> TS1 {
+fn logic_sig(sig: TraitItemSignature, kind: LogicKind, documentation: TokenStream) -> TS1 {
     let span = sig.span();
 
     TS1::from(quote_spanned! {span =>
         #[creusot::decl::logic]
-        #prophetic
+        #kind
         #documentation
         #sig
     })
 }
 
-fn logic_item(log: LogicItem, prophetic: Option<TokenStream>, documentation: TokenStream) -> TS1 {
+fn logic_item(log: LogicItem, kind: LogicKind, documentation: TokenStream) -> TS1 {
     let span = log.sig.span();
 
     let term = log.body;
@@ -539,7 +561,7 @@ fn logic_item(log: LogicItem, prophetic: Option<TokenStream>, documentation: Tok
 
     TS1::from(quote_spanned! {span =>
         #[creusot::decl::logic]
-        #prophetic
+        #kind
         #documentation
         #(#attrs)*
         #vis #def #sig {
@@ -554,7 +576,7 @@ pub fn law(_: TS1, tokens: TS1) -> TS1 {
     TS1::from(quote! {
         #[creusot::decl::law]
         #[creusot::decl::no_trigger]
-        #[::creusot_contracts::logic]
+        #[::creusot_contracts::logic(law)]
         #tokens
     })
 }

@@ -19,7 +19,7 @@ pub(crate) fn document_spec(spec_name: &str, spec: LogicBody) -> TokenStream {
     let spec_color = match spec_name {
         "requires" => "Tomato",
         "ensures" => "DodgerBlue",
-        "terminates" | "pure" | "logic" | "logic(prophetic)" => "Violet",
+        "terminates" | "pure" | "logic" | "logic(prophetic)" | "law" => "Violet",
         _ => "LightGray",
     };
     let spec_name =
