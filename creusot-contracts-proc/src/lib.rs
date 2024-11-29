@@ -374,6 +374,19 @@ pub fn snapshot(assertion: TS1) -> TS1 {
     })
 }
 
+/// A structure to parse some attributes followed by something else.
+struct Attributes {
+    attrs: Vec<Attribute>,
+    rest: proc_macro2::TokenStream,
+}
+impl Parse for Attributes {
+    fn parse(input: parse::ParseStream) -> Result<Self> {
+        let attrs = Attribute::parse_outer(input).unwrap_or_else(|_| Vec::new());
+        let rest = input.parse()?;
+        Ok(Self { attrs, rest })
+    }
+}
+
 #[proc_macro_attribute]
 pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
     let documentation = document_spec("terminates", doc::LogicBody::None);
@@ -388,9 +401,14 @@ pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
         }
     };
 
-    let mut result = TS1::from(quote! { #[creusot::clause::terminates] #documentation });
-    result.extend(tokens);
-    result
+    let Attributes { attrs, rest } = syn::parse(tokens).unwrap();
+    quote! {
+        #[creusot::clause::terminates]
+        #(#attrs)*
+        #documentation
+        #rest
+    }
+    .into()
 }
 
 #[proc_macro_attribute]
@@ -406,11 +424,15 @@ pub fn pure(_: TS1, tokens: TS1) -> TS1 {
             .into();
         }
     };
-    let mut result = TS1::from(
-        quote! { #[creusot::clause::no_panic] #[creusot::clause::terminates] #documentation },
-    );
-    result.extend(tokens);
-    result
+    let Attributes { attrs, rest } = syn::parse(tokens).unwrap();
+    quote! {
+        #[creusot::clause::no_panic]
+        #[creusot::clause::terminates]
+        #(#attrs)*
+        #documentation
+        #rest
+    }
+    .into()
 }
 
 #[proc_macro]
@@ -538,12 +560,14 @@ pub fn logic(kind: TS1, tokens: TS1) -> TS1 {
     }
 }
 
-fn logic_sig(sig: TraitItemSignature, kind: LogicKind, documentation: TokenStream) -> TS1 {
+fn logic_sig(mut sig: TraitItemSignature, kind: LogicKind, documentation: TokenStream) -> TS1 {
     let span = sig.span();
+    let attrs = std::mem::take(&mut sig.attrs);
 
     TS1::from(quote_spanned! {span =>
         #[creusot::decl::logic]
         #kind
+        #(#attrs)*
         #documentation
         #sig
     })
@@ -562,8 +586,8 @@ fn logic_item(log: LogicItem, kind: LogicKind, documentation: TokenStream) -> TS
     TS1::from(quote_spanned! {span =>
         #[creusot::decl::logic]
         #kind
-        #documentation
         #(#attrs)*
+        #documentation
         #vis #def #sig {
             #req_body
         }
@@ -627,14 +651,16 @@ pub fn predicate(prophetic: TS1, tokens: TS1) -> TS1 {
 }
 
 fn predicate_sig(
-    sig: TraitItemSignature,
+    mut sig: TraitItemSignature,
     prophetic: Option<TokenStream>,
     documentation: TokenStream,
 ) -> TS1 {
     let span = sig.span();
+    let attrs = std::mem::take(&mut sig.attrs);
     TS1::from(quote_spanned! {span =>
         #[creusot::decl::predicate]
         #prophetic
+        #(#attrs)*
         #documentation
         #sig
     })
@@ -657,8 +683,8 @@ fn predicate_item(
     TS1::from(quote_spanned! {span =>
         #[creusot::decl::predicate]
         #prophetic
-        #documentation
         #(#attrs)*
+        #documentation
         #vis #def #sig {
             #req_body
         }
