@@ -48,12 +48,6 @@ impl<K, V: ?Sized> FMap<K, V> {
 
     #[trusted]
     #[logic]
-    pub fn mk(_m: PMap<K, V>) -> Self {
-        dead
-    }
-
-    #[trusted]
-    #[logic]
     #[ensures(Self::mk(result) == self)] // injectivity
     pub fn view(self) -> PMap<K, V> {
         dead
