@@ -26,9 +26,10 @@ impl Int {
     #[trusted]
     #[pure]
     #[ensures(*result == value@)]
+    #[allow(unreachable_code)]
     pub fn new(value: i128) -> GhostBox<Self> {
         let _ = value;
-        loop {}
+        ghost!(panic!())
     }
 
     #[trusted]

@@ -16,6 +16,7 @@ use syn::{
 mod derive;
 mod doc;
 mod extern_spec;
+mod ghost;
 mod invariant;
 mod maintains;
 mod pretyping;
@@ -414,7 +415,7 @@ pub fn pure(_: TS1, tokens: TS1) -> TS1 {
 
 #[proc_macro]
 pub fn ghost(body: TS1) -> TS1 {
-    let body = proc_macro2::TokenStream::from(body);
+    let body = proc_macro2::TokenStream::from(ghost::ghost_preprocess(body));
     TS1::from(quote! {
         {
             ::creusot_contracts::__stubs::ghost_from_fn({

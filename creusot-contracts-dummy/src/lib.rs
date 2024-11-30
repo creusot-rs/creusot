@@ -1,5 +1,8 @@
 extern crate proc_macro;
 
+#[path = "../../creusot-contracts-proc/src/ghost.rs"]
+mod ghost;
+
 use proc_macro::TokenStream as TS1;
 
 #[proc_macro_attribute]
@@ -35,7 +38,7 @@ pub fn snapshot(_: TS1) -> TS1 {
 
 #[proc_macro]
 pub fn ghost(body: TS1) -> TS1 {
-    let body = proc_macro2::TokenStream::from(body);
+    let body = proc_macro2::TokenStream::from(ghost::ghost_preprocess(body));
     quote::quote! { ::creusot_contracts::ghost::GhostBox::from_fn(|| { #body }) }.into()
 }
 
