@@ -6,6 +6,7 @@ use syn::{
 };
 
 /// The body of a logical function or a spec.
+#[derive(Debug)]
 pub(crate) enum LogicBody {
     Some(TS1),
     /// The function does not have a body. For example, if it is a trait function.
@@ -15,7 +16,7 @@ pub(crate) enum LogicBody {
 }
 
 /// Generates a piece of documentation corresponding to the spec.
-pub(crate) fn document_spec(spec_name: &str, spec: LogicBody) -> TokenStream {
+pub(crate) fn document_spec(spec_name: &str, spec_body: LogicBody) -> TokenStream {
     let spec_color = match spec_name {
         "requires" => "Tomato",
         "ensures" => "DodgerBlue",
@@ -25,14 +26,19 @@ pub(crate) fn document_spec(spec_name: &str, spec: LogicBody) -> TokenStream {
     let styled_spec_name = format!(
         "<span style=\"color:{spec_color}; white-space:nowrap;\"><samp>{spec_name}</samp></span>"
     );
-    let spec = match spec {
+    let spec = match spec_body {
         LogicBody::Some(s) if !s.is_empty() => s,
         _ => {
+            let spec = if matches!(spec_body, LogicBody::Trusted) {
+                format!("{styled_spec_name} <span class=\"tooltip\" style=\"color:Red; white-space:nowrap;\" data-title=\"this function is trusted\"><sup>&#9888;</sup></span>")
+            } else {
+                styled_spec_name
+            };
             return quote::quote! {
                 #[cfg_attr(not(doctest), doc = "")]
-                #[cfg_attr(not(doctest), doc = #styled_spec_name)]
+                #[cfg_attr(not(doctest), doc = #spec)]
                 #[cfg_attr(not(doctest), doc = "")]
-            }
+            };
         }
     };
     let mut spec = {
@@ -43,7 +49,7 @@ pub(crate) fn document_spec(spec_name: &str, spec: LogicBody) -> TokenStream {
                 Some(s) => span = s.join(t.span()),
             }
         }
-        let mut res = span.unwrap().source_text().unwrap();
+        let mut res = span.unwrap_or(proc_macro::Span::call_site()).source_text().unwrap();
         // hack to handle logic functions
         if res.starts_with("{\n") && res.ends_with("}") {
             let body = res[2..res.len() - 1].trim_end();
@@ -73,7 +79,7 @@ pub(crate) fn document_spec(spec_name: &str, spec: LogicBody) -> TokenStream {
             #[cfg_attr(not(doctest), doc = #spec)]
         }
     } else {
-        spec = format!("```\n{spec}\n```");
+        let spec = format!("```\n{spec}\n```");
         quote::quote! {
             #[cfg_attr(not(doctest), doc = "<div class=\"container\" style=\"display:flex; align-items:center; gap:5px; clip-path:inset(0.5em 0% 1.1em 0%);\"> <p>")]
             #[cfg_attr(not(doctest), doc = #styled_spec_name)]
