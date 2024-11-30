@@ -131,6 +131,8 @@ impl<T: ?Sized> Seq<T> {
     #[logic]
     #[creusot::builtins = "seq.Seq.([..])"]
     pub fn subsequence(self, start: Int, end: Int) -> Self {
+        let _ = start;
+        let _ = end;
         dead
     }
 
