@@ -50,19 +50,12 @@ impl<K, V: ?Sized> FMap<K, V> {
         dead
     }
 
-    /// Injectivity lemma for [`Self::view`].
-    #[trusted]
-    #[logic]
-    #[ensures(forall<m1: Self, m2: Self> m1 != m2 ==> Self::view(m1) != Self::view(m2))]
-    pub fn view_injective() {
-        dead
-    }
-
     /// View of the map
     ///
     /// This represents the actual content of the map: other methods are specified relative to this.
     #[trusted]
     #[logic]
+    #[ensures(forall<m1: Self, m2: Self> m1 != m2 ==> Self::view(m1) != Self::view(m2))]
     pub fn view(self) -> PMap<K, V> {
         dead
     }
