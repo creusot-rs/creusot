@@ -1,4 +1,4 @@
-//! The "standart library" of Creusot.
+//! The "standard library" of Creusot.
 //!
 //! To start using Creusot, you should always import that crate. The recommended way is
 //! to have a glob import:
@@ -21,7 +21,7 @@
 //! }
 //! ```
 //!
-//! For a more detailled explanation, see the [guide](https://creusot-rs.github.io/creusot/guide).
+//! For a more detailed explanation, see the [guide](https://creusot-rs.github.io/creusot/guide).
 
 #![cfg_attr(
     creusot,
@@ -144,18 +144,18 @@ pub mod macros {
     /// ```
     pub use base_macros::ghost;
 
-    /// Indicate that the function terminates: fullfilling the `requires` clauses
-    /// ensures that this function will not loop indefinitively.
+    /// Indicate that the function terminates: fulfilling the `requires` clauses
+    /// ensures that this function will not loop forever.
     pub use base_macros::terminates;
 
-    /// Indicate that the function is pure: fullfilling the `requires` clauses ensures
+    /// Indicate that the function is pure: fulfilling the `requires` clauses ensures
     /// that this function will terminate, and will not panic.
     ///
     /// # No panics ?
     ///
     /// "But I though Creusot was supposed to check the absence of panics ?"
     ///
-    /// That's true, but with a caveat: some functions of the standart library are
+    /// That's true, but with a caveat: some functions of the standard library are
     /// allowed to panic in specific cases. The main example is `Vec::push`: we want its
     /// specification to be
     /// ```ignore
@@ -406,7 +406,7 @@ mod base_prelude {
             // For Clone and PartialEq, this is important for the derive macro.
             // If the user write the glob pattern "use creusot_contracts::*", then
             // rustc will either shadow the old identifier or complain about the
-            // ambiguïty (ex: for the derive macros Clone and PartialEq, a glob
+            // ambiguity (ex: for the derive macros Clone and PartialEq, a glob
             // pattern is not enough to force rustc to use our version, but at least
             // we get an error message).
             clone::Clone,

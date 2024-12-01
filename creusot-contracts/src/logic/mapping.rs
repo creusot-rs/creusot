@@ -4,7 +4,7 @@ use crate::*;
 ///
 /// # Pearlite syntax
 ///
-/// Mapping have special suppport in pearlite code: you may write a closure to create a
+/// Mappings have special support in pearlite code: you may write a closure to create a
 /// mapping.
 ///
 /// ## Example

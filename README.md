@@ -89,7 +89,7 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
 # Verifying with Creusot and Why3
 
 - To learn how to write code with creusot: [guide](https://creusot-rs.github.io/creusot/guide)
-- To see the API of `creusot_contracts` (creusot's "standart library"): [creusot_contracts API](https://creusot-rs.github.io/creusot/doc/creusot_contracts)
+- To see the API of `creusot_contracts` (creusot's "standard library"): [creusot_contracts API](https://creusot-rs.github.io/creusot/doc/creusot_contracts)
 
 # Hacking on Creusot
 

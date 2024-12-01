@@ -84,7 +84,7 @@ impl<T: ?Sized> FSet<T> {
         dead
     }
 
-    /// Returns a new set, where `e` is not longer present.
+    /// Returns a new set, where `e` is no longer present.
     #[open]
     #[logic]
     #[why3::attr = "inline:trivial"]

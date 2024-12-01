@@ -28,7 +28,7 @@ use crate::{
 /// proof may need a notion of non-duplicable token to carry around.
 ///
 /// Conceptually, a `GhostBox<T>` is a pointer to an item of type `T` that resides in
-/// a special "ghost" heap. This heap is innacessible from normal code, and `GhostBox`
+/// a special "ghost" heap. This heap is inaccessible from normal code, and `GhostBox`
 /// values cannot be used to influence the behavior of normal code.
 ///
 /// This box can be dereferenced in a `ghost` block:

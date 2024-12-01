@@ -1,6 +1,6 @@
 use crate::*;
 
-/// An (possibly infinite) set type.
+/// A (possibly infinite) set type.
 #[trusted]
 #[cfg_attr(creusot, creusot::builtins = "set.Set.set")]
 pub struct Set<T: ?Sized>(std::marker::PhantomData<T>);
@@ -58,7 +58,7 @@ impl<T: ?Sized> Set<T> {
         dead
     }
 
-    /// Returns a new set, where `e` is not longer present.
+    /// Returns a new set, where `e` is no longer present.
     #[open]
     #[logic]
     #[why3::attr = "inline:trivial"]

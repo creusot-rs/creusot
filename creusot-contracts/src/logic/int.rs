@@ -42,8 +42,8 @@ impl Copy for Int {}
 impl Int {
     /// Create a new `Int` value
     ///
-    /// The result is wrapped in a [`GhostBox`], so that it can only be access inside of
-    /// a [`ghost!`] block.
+    /// The result is wrapped in a [`GhostBox`], so that it can only be access inside a
+    /// [`ghost!`] block.
     ///
     /// You should not have to use this method directly: instead, use the `int` suffix
     /// inside of a `ghost` block:
@@ -111,7 +111,7 @@ impl Int {
         dead
     }
 
-    /// Compute the euclidian division of `self` by `d`.
+    /// Compute the euclidean division of `self` by `d`.
     ///
     /// # Example
     ///
@@ -127,7 +127,7 @@ impl Int {
         dead
     }
 
-    /// Compute the remainder of the euclidian division of `self` by `d`.
+    /// Compute the remainder of the euclidean division of `self` by `d`.
     ///
     /// # Example
     ///

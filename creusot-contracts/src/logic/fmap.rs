@@ -70,7 +70,7 @@ impl<K, V: ?Sized> FMap<K, V> {
         dead
     }
 
-    /// Returns a new map, where the key `k` is not longer present.
+    /// Returns a new map, where the key `k` is no longer present.
     #[trusted]
     #[logic]
     #[ensures(result.view() == self.view().set(k, None))]

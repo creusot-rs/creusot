@@ -26,7 +26,7 @@ impl<T: ?Sized> MakeSized for T {
 
 /// Indicates unreachable code.
 ///
-/// This function indicate a logical branch that should be impossible to reach.
+/// This function indicates a logical branch that should be impossible to reach.
 #[trusted]
 #[allow(unconditional_recursion)]
 #[logic]
