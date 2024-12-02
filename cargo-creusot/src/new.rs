@@ -59,7 +59,7 @@ fn bin_template(name: &str) -> String {
     not(creusot),
     feature(stmt_expr_attributes, proc_macro_hygiene, register_tool)
 )]
-#![cfg_attr(not(creusot),register_tool(creusot))]
+#![cfg_attr(not(creusot), register_tool(creusot))]
 
 #[allow(unused_imports)]
 use creusot_contracts::*;
@@ -74,7 +74,7 @@ fn main() {{
     )
 }
 
-const TEST_TEMPLATE: &str = r#"#![cfg_attr(not(creusot),feature(stmt_expr_attributes,proc_macro_hygiene))]
+const TEST_TEMPLATE: &str = r#"#![cfg_attr(not(creusot), feature(stmt_expr_attributes, proc_macro_hygiene))]
 use creusot_contracts::*;
 
 #[test]
@@ -83,7 +83,7 @@ fn it_works() {
 }
 "#;
 
-const LIB_TEMPLATE: &str = r#"#![cfg_attr(not(creusot),feature(stmt_expr_attributes,proc_macro_hygiene))]
+const LIB_TEMPLATE: &str = r#"#![cfg_attr(not(creusot), feature(stmt_expr_attributes, proc_macro_hygiene))]
 use creusot_contracts::*;
 
 #[requires(a@ + b@ <= usize::MAX@)]
