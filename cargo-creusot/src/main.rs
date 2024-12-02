@@ -13,6 +13,8 @@ mod why3_launcher;
 use why3_launcher::*;
 mod why3find_wrapper;
 use why3find_wrapper::*;
+mod new;
+use new::*;
 
 fn main() -> Result<()> {
     let cargs = CargoCreusotArgs::parse_from(std::env::args().skip(1));
@@ -43,6 +45,8 @@ fn main() -> Result<()> {
         }
         Some(Config(args)) => why3find_config(args),
         Some(Prove(args)) => why3find_prove(args),
+        Some(New(args)) => new(args),
+        Some(Init(args)) => init(args),
     }
 }
 
@@ -190,8 +194,14 @@ pub enum CargoCreusotSubCommand {
     },
     #[command(flatten)]
     Creusot(CreusotSubCommand),
+    /// Generate prover configuration
     Config(ConfigArgs),
+    /// Run prover on translated files
     Prove(ProveArgs),
+    /// Create new project in a sub-directory
+    New(NewArgs),
+    /// Create new project in current directory
+    Init(InitArgs),
 }
 use CargoCreusotSubCommand::*;
 
