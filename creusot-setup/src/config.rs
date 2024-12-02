@@ -8,7 +8,7 @@ use std::{
 // the goal is to avoid silently mis-interpreting a past or future version of
 // the config file whenever its format changes.
 // NOTE: update ci/creusot-config-dummy.toml whenever you change this.
-pub const CURRENT_CONFIG_VERSION: i64 = 5;
+pub const CURRENT_CONFIG_VERSION: i64 = 6;
 
 // bump CURRENT_CONFIG_VERSION if you change this definition
 #[derive(Serialize, Deserialize)]
