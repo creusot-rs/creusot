@@ -2,6 +2,10 @@ use crate::*;
 use ::std::marker::Tuple;
 pub use ::std::ops::*;
 
+// Note: we should NOT give a generic extern spec for Deref::deref, since this
+// method is an exception being used both as a logic function and as a program
+// function. See #1235.
+
 /// `FnOnceExt` is an extension trait for the `FnOnce` trait, used for
 /// adding a specification to closures. It should not be used directly.
 pub trait FnOnceExt<Args: Tuple> {
