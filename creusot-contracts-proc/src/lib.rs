@@ -8,7 +8,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned, ToTokens, TokenStreamExt};
 use std::iter;
 use syn::{
-    parse::{discouraged::Speculative, Parse, Result},
+    parse::{Parse, Result},
     spanned::Spanned,
     *,
 };
@@ -16,6 +16,7 @@ use syn::{
 mod derive;
 mod doc;
 mod extern_spec;
+mod ghost;
 mod invariant;
 mod maintains;
 mod pretyping;
@@ -43,7 +44,7 @@ impl<'a> FilterAttrs<'a> for &'a [Attribute] {
     }
 }
 
-fn generate_unique_ident(prefix: &str) -> Ident {
+pub(crate) fn generate_unique_ident(prefix: &str) -> Ident {
     let uuid = uuid::Uuid::new_v4();
     let ident = format!("{}_{}", prefix, uuid).replace('-', "_");
 
@@ -151,21 +152,19 @@ impl Parse for ContractSubject {
             return Err(lookahead.error());
         };
 
-        return Ok(ContractSubject::FnOrMethod(FnOrMethod {
+        Ok(ContractSubject::FnOrMethod(FnOrMethod {
             defaultness,
             visibility: vis,
             attrs,
             sig,
             body: brace_token.map(|brace_token| Block { brace_token, stmts }),
             semi_token,
-        }));
+        }))
     }
 }
 
 fn req_body(p: &Term) -> TokenStream {
-    pretyping::encode_term(p).unwrap_or_else(|e| {
-        return e.into_tokens();
-    })
+    pretyping::encode_term(p).unwrap_or_else(|e| e.into_tokens())
 }
 
 fn spec_attrs(tag: &Ident) -> TokenStream {
@@ -207,7 +206,7 @@ fn sig_spec_item(tag: Ident, mut sig: Signature, p: Term) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
-    let documentation = document_spec("requires", attr.clone());
+    let documentation = document_spec("requires", doc::LogicBody::Some(attr.clone()));
 
     let mut item = parse_macro_input!(tokens as ContractSubject);
     let term = parse_macro_input!(attr as Term);
@@ -218,21 +217,27 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
     let name_tag = format!("{}", quote! { #req_name });
 
     match item {
-        ContractSubject::FnOrMethod(fn_or_meth) if fn_or_meth.is_trait_signature() => {
+        ContractSubject::FnOrMethod(mut fn_or_meth) if fn_or_meth.is_trait_signature() => {
+            let attrs = std::mem::take(&mut fn_or_meth.attrs);
             let requires_tokens = sig_spec_item(req_name, fn_or_meth.sig.clone(), term);
             TS1::from(quote! {
               #requires_tokens
               #[creusot::clause::requires=#name_tag]
+              #(#attrs)*
               #documentation
               #fn_or_meth
             })
         }
         ContractSubject::FnOrMethod(mut f) => {
+            let attrs = std::mem::take(&mut f.attrs);
             let requires_tokens = fn_spec_item(req_name, None, term);
 
-            f.body.as_mut().map(|b| b.stmts.insert(0, Stmt::Item(Item::Verbatim(requires_tokens))));
+            if let Some(b) = f.body.as_mut() {
+                b.stmts.insert(0, Stmt::Item(Item::Verbatim(requires_tokens)))
+            }
             TS1::from(quote! {
               #[creusot::clause::requires=#name_tag]
+              #(#attrs)*
               #documentation
               #f
             })
@@ -251,7 +256,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
 #[proc_macro_attribute]
 pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
-    let documentation = document_spec("ensures", attr.clone());
+    let documentation = document_spec("ensures", doc::LogicBody::Some(attr.clone()));
 
     let mut item = parse_macro_input!(tokens as ContractSubject);
     let term = parse_macro_input!(attr as Term);
@@ -261,7 +266,8 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
     let name_tag = format!("{}", quote! { #ens_name });
 
     match item {
-        ContractSubject::FnOrMethod(s) if s.is_trait_signature() => {
+        ContractSubject::FnOrMethod(mut s) if s.is_trait_signature() => {
+            let attrs = std::mem::take(&mut s.attrs);
             let result = match s.sig.output {
                 ReturnType::Default => parse_quote! { result : () },
                 ReturnType::Type(_, ref ty) => parse_quote! { result : #ty },
@@ -273,20 +279,25 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
             TS1::from(quote! {
               #ensures_tokens
               #[creusot::clause::ensures=#name_tag]
+              #(#attrs)*
               #documentation
               #s
             })
         }
         ContractSubject::FnOrMethod(mut f) => {
+            let attrs = std::mem::take(&mut f.attrs);
             let result = match f.sig.output {
                 ReturnType::Default => parse_quote! { result : () },
                 ReturnType::Type(_, ref ty) => parse_quote! { result : #ty },
             };
             let ensures_tokens = fn_spec_item(ens_name, Some(result), term);
 
-            f.body.as_mut().map(|b| b.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens))));
+            if let Some(b) = f.body.as_mut() {
+                b.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens)))
+            }
             TS1::from(quote! {
                 #[creusot::clause::ensures=#name_tag]
+                #(#attrs)*
                 #documentation
                 #f
             })
@@ -302,81 +313,21 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
                     #attrs
                     |result| {::creusot_contracts::__stubs::closure_result(res, result); #req_body }
                 ;
-                res});
+                res
+            });
             TS1::from(quote! {
-              #[creusot::clause::ensures=#name_tag]
-              #clos
+                #[creusot::clause::ensures=#name_tag]
+                #clos
             })
-        }
-    }
-}
-
-enum VariantAnnotation {
-    Fn(ItemFn),
-    WhileLoop(ExprWhile),
-}
-
-impl syn::parse::Parse for VariantAnnotation {
-    fn parse(input: parse::ParseStream) -> Result<Self> {
-        let fork = input.fork();
-        if let Ok(f) = fork.parse() {
-            input.advance_to(&fork);
-            Ok(VariantAnnotation::Fn(f))
-        } else if let Ok(w) = input.parse() {
-            Ok(VariantAnnotation::WhileLoop(w))
-        } else {
-            Err(Error::new(Span::call_site(), "TEST?"))
         }
     }
 }
 
 #[proc_macro_attribute]
 pub fn variant(attr: TS1, tokens: TS1) -> TS1 {
-    match variant_inner(attr, tokens) {
-        Ok(r) => r,
-        Err(err) => return TS1::from(err.to_compile_error()),
-    }
-}
-
-fn variant_inner(attr: TS1, tokens: TS1) -> Result<TS1> {
-    let p: pearlite_syn::Term = parse(attr)?;
-
-    let tgt: VariantAnnotation = parse(tokens)?;
-
-    let var_name = generate_unique_ident("variant");
-
-    let var_body = pretyping::encode_term(&p).unwrap_or_else(|e| {
-        return e.into_tokens();
-    });
-    let name_tag = format!("{}", quote! { #var_name });
-
-    let variant_attr = match tgt {
-        VariantAnnotation::Fn(_) => quote! { #[creusot::spec::variant] },
-        VariantAnnotation::WhileLoop(_) => quote! { #[creusot::spec::variant::loop_] },
-    };
-    let variant_tokens = quote! {
-        #[allow(unused_must_use)]
-        let _ =
-            #[creusot::no_translate]
-            #[creusot::item=#name_tag]
-            #variant_attr
-            #[creusot::spec]
-            ||{ ::creusot_contracts::__stubs::variant_check(#var_body) }
-        ;
-    };
-
-    match tgt {
-        VariantAnnotation::Fn(mut f) => {
-            f.block.stmts.insert(0, Stmt::Item(Item::Verbatim(variant_tokens)));
-            Ok(TS1::from(quote! {
-              #[creusot::clause::variant=#name_tag]
-              #f
-            }))
-        }
-        VariantAnnotation::WhileLoop(w) => Ok(TS1::from(quote! {
-          { #variant_tokens; #w }
-        })),
-    }
+    invariant::desugar_variant(attr.into(), tokens.into())
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into()
 }
 
 struct Assertion(Vec<TermStmt>);
@@ -423,9 +374,22 @@ pub fn snapshot(assertion: TS1) -> TS1 {
     })
 }
 
+/// A structure to parse some attributes followed by something else.
+struct Attributes {
+    attrs: Vec<Attribute>,
+    rest: proc_macro2::TokenStream,
+}
+impl Parse for Attributes {
+    fn parse(input: parse::ParseStream) -> Result<Self> {
+        let attrs = Attribute::parse_outer(input).unwrap_or_else(|_| Vec::new());
+        let rest = input.parse()?;
+        Ok(Self { attrs, rest })
+    }
+}
+
 #[proc_macro_attribute]
 pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
-    let documentation = document_spec("terminates", TS1::new());
+    let documentation = document_spec("terminates", doc::LogicBody::None);
     if let Ok(item) = syn::parse::<ImplItemFn>(tokens.clone()) {
         if let Some(def) = item.defaultness {
             return syn::Error::new(
@@ -437,14 +401,19 @@ pub fn terminates(_: TS1, tokens: TS1) -> TS1 {
         }
     };
 
-    let mut result = TS1::from(quote! { #[creusot::clause::terminates] #documentation });
-    result.extend(tokens);
-    result
+    let Attributes { attrs, rest } = syn::parse(tokens).unwrap();
+    quote! {
+        #[creusot::clause::terminates]
+        #(#attrs)*
+        #documentation
+        #rest
+    }
+    .into()
 }
 
 #[proc_macro_attribute]
 pub fn pure(_: TS1, tokens: TS1) -> TS1 {
-    let documentation = document_spec("pure", TS1::new());
+    let documentation = document_spec("pure", doc::LogicBody::None);
     if let Ok(item) = syn::parse::<ImplItemFn>(tokens.clone()) {
         if let Some(def) = item.defaultness {
             return syn::Error::new(
@@ -455,21 +424,25 @@ pub fn pure(_: TS1, tokens: TS1) -> TS1 {
             .into();
         }
     };
-    let mut result = TS1::from(
-        quote! { #[creusot::clause::no_panic] #[creusot::clause::terminates] #documentation },
-    );
-    result.extend(tokens);
-    result
+    let Attributes { attrs, rest } = syn::parse(tokens).unwrap();
+    quote! {
+        #[creusot::clause::no_panic]
+        #[creusot::clause::terminates]
+        #(#attrs)*
+        #documentation
+        #rest
+    }
+    .into()
 }
 
 #[proc_macro]
 pub fn ghost(body: TS1) -> TS1 {
-    let body = proc_macro2::TokenStream::from(body);
+    let body = proc_macro2::TokenStream::from(ghost::ghost_preprocess(body));
     TS1::from(quote! {
         {
             ::creusot_contracts::__stubs::ghost_from_fn({
                 #[creusot::ghost]
-                #[pure]
+                #[::creusot_contracts::pure]
                 || ::creusot_contracts::ghost::GhostBox::new({ #body })
             },
             ())
@@ -506,12 +479,7 @@ impl Parse for LogicInput {
         let lookahead = input.lookahead1();
         if lookahead.peek(Token![;]) {
             let semi_token: Token![;] = input.parse()?;
-            return Ok(LogicInput::Sig(TraitItemSignature {
-                attrs,
-                defaultness: default,
-                sig,
-                semi_token,
-            }));
+            Ok(LogicInput::Sig(TraitItemSignature { attrs, defaultness: default, sig, semi_token }))
         } else {
             let body;
             let brace_token = braced!(body in input);
@@ -528,49 +496,84 @@ impl Parse for LogicInput {
     }
 }
 
+impl LogicInput {
+    fn logic_body(&self) -> doc::LogicBody {
+        match self {
+            LogicInput::Item(log_item) => {
+                if doc::is_trusted(&log_item.attrs) {
+                    doc::LogicBody::Trusted
+                } else {
+                    doc::LogicBody::Some(log_item.body.to_token_stream().into())
+                }
+            }
+            LogicInput::Sig(_) => doc::LogicBody::None,
+        }
+    }
+}
+
+enum LogicKind {
+    None,
+    Prophetic,
+    Law,
+}
+
+impl ToTokens for LogicKind {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        match self {
+            Self::None | Self::Law => {}
+            Self::Prophetic => tokens.extend(quote!(#[creusot::decl::logic::prophetic])),
+        }
+    }
+}
+
 #[proc_macro_attribute]
-pub fn logic(prophetic: TS1, tokens: TS1) -> TS1 {
-    let prophetic = if prophetic.is_empty() {
-        None
+pub fn logic(kind: TS1, tokens: TS1) -> TS1 {
+    let kind = if kind.is_empty() {
+        LogicKind::None
     } else {
-        let t = parse_macro_input!(prophetic as Ident);
-        if t.to_string() == "prophetic" {
-            Some(quote!(#[creusot::decl::logic::prophetic]))
+        let t = parse_macro_input!(kind as Ident);
+        if t == "prophetic" {
+            LogicKind::Prophetic
+        } else if t == "law" {
+            LogicKind::Law
         } else {
-            None
+            return syn::Error::new(
+                t.span(),
+                "unsupported modifier. The only supported modifier at the moment is `prophetic`",
+            )
+            .into_compile_error()
+            .into();
         }
     };
     let log = parse_macro_input!(tokens as LogicInput);
     let documentation = document_spec(
-        if prophetic.is_some() { "logic(prophetic)" } else { "logic" },
-        match &log {
-            LogicInput::Item(log_item) => log_item.body.to_token_stream().into(),
-            LogicInput::Sig(_) => TS1::new(),
+        match kind {
+            LogicKind::None => "logic",
+            LogicKind::Prophetic => "logic(prophetic)",
+            LogicKind::Law => "law",
         },
+        if matches!(kind, LogicKind::Law) { doc::LogicBody::None } else { log.logic_body() },
     );
     match log {
-        LogicInput::Item(log) => logic_item(log, prophetic, documentation),
-        LogicInput::Sig(sig) => logic_sig(sig, prophetic, documentation),
+        LogicInput::Item(log) => logic_item(log, kind, documentation),
+        LogicInput::Sig(sig) => logic_sig(sig, kind, documentation),
     }
 }
 
-fn logic_sig(
-    sig: TraitItemSignature,
-    prophetic: Option<TokenStream>,
-    documentation: TokenStream,
-) -> TS1 {
+fn logic_sig(mut sig: TraitItemSignature, kind: LogicKind, documentation: TokenStream) -> TS1 {
     let span = sig.span();
+    let attrs = std::mem::take(&mut sig.attrs);
 
     TS1::from(quote_spanned! {span =>
-        #[::creusot_contracts::pure]
         #[creusot::decl::logic]
-        #prophetic
+        #kind
+        #(#attrs)*
         #documentation
         #sig
     })
 }
 
-fn logic_item(log: LogicItem, prophetic: Option<TokenStream>, documentation: TokenStream) -> TS1 {
+fn logic_item(log: LogicItem, kind: LogicKind, documentation: TokenStream) -> TS1 {
     let span = log.sig.span();
 
     let term = log.body;
@@ -581,11 +584,10 @@ fn logic_item(log: LogicItem, prophetic: Option<TokenStream>, documentation: Tok
     let req_body = pretyping::encode_block(&term.stmts).unwrap_or_else(|e| e.into_tokens());
 
     TS1::from(quote_spanned! {span =>
-        #[::creusot_contracts::pure]
         #[creusot::decl::logic]
-        #prophetic
-        #documentation
+        #kind
         #(#attrs)*
+        #documentation
         #vis #def #sig {
             #req_body
         }
@@ -598,7 +600,7 @@ pub fn law(_: TS1, tokens: TS1) -> TS1 {
     TS1::from(quote! {
         #[creusot::decl::law]
         #[creusot::decl::no_trigger]
-        #[::creusot_contracts::logic]
+        #[::creusot_contracts::logic(law)]
         #tokens
     })
 }
@@ -609,7 +611,7 @@ pub fn predicate(prophetic: TS1, tokens: TS1) -> TS1 {
         None
     } else {
         let t = parse_macro_input!(prophetic as Ident);
-        if t.to_string() == "prophetic" {
+        if t == "prophetic" {
             Some(quote!(#[creusot::decl::logic::prophetic]))
         } else {
             None
@@ -639,10 +641,7 @@ pub fn predicate(prophetic: TS1, tokens: TS1) -> TS1 {
 
     let documentation = document_spec(
         if prophetic.is_some() { "logic(prophetic)" } else { "logic" },
-        match &pred {
-            LogicInput::Item(log_item) => log_item.body.to_token_stream().into(),
-            LogicInput::Sig(_) => TS1::new(),
-        },
+        pred.logic_body(),
     );
 
     match pred {
@@ -652,15 +651,16 @@ pub fn predicate(prophetic: TS1, tokens: TS1) -> TS1 {
 }
 
 fn predicate_sig(
-    sig: TraitItemSignature,
+    mut sig: TraitItemSignature,
     prophetic: Option<TokenStream>,
     documentation: TokenStream,
 ) -> TS1 {
     let span = sig.span();
+    let attrs = std::mem::take(&mut sig.attrs);
     TS1::from(quote_spanned! {span =>
-        #[::creusot_contracts::pure]
         #[creusot::decl::predicate]
         #prophetic
+        #(#attrs)*
         #documentation
         #sig
     })
@@ -681,11 +681,10 @@ fn predicate_item(
     let req_body = pretyping::encode_block(&term.stmts).unwrap_or_else(|e| e.into_tokens());
 
     TS1::from(quote_spanned! {span =>
-        #[::creusot_contracts::pure]
         #[creusot::decl::predicate]
         #prophetic
-        #documentation
         #(#attrs)*
+        #documentation
         #vis #def #sig {
             #req_body
         }
@@ -737,11 +736,11 @@ pub fn extern_spec(tokens: TS1) -> TS1 {
         specs.push(spec.to_tokens());
     }
 
-    return TS1::from(quote! {
+    TS1::from(quote! {
         #(#[creusot::extern_spec]
           #specs
         )*
-    });
+    })
 }
 
 #[proc_macro_attribute]
@@ -749,18 +748,16 @@ pub fn maintains(attr: TS1, body: TS1) -> TS1 {
     let tokens = maintains::maintains_impl(attr, body);
 
     match tokens {
-        Ok(tokens) => tokens.into(),
+        Ok(tokens) => tokens,
         Err(err) => err.to_compile_error().into(),
     }
 }
 
 #[proc_macro_attribute]
-pub fn invariant(invariant: TS1, loopb: TS1) -> TS1 {
-    let loop_ = match invariant::parse(invariant.into(), loopb.into()) {
-        Ok(l) => l,
-        Err(e) => return e.to_compile_error().into(),
-    };
-    invariant::lower(loop_).into()
+pub fn invariant(invariant: TS1, tokens: TS1) -> TS1 {
+    invariant::desugar_invariant(invariant.into(), tokens.into())
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into()
 }
 
 #[proc_macro_attribute]
@@ -787,24 +784,22 @@ pub fn open(attr: TS1, body: TS1) -> TS1 {
     };
 
     match item {
-        ContractSubject::FnOrMethod(fn_or_meth) if fn_or_meth.is_trait_signature() => {
-            return TS1::from(
-                Error::new(Span::call_site(), "Cannot mark trait item signature as open")
-                    .to_compile_error(),
-            )
-        }
+        ContractSubject::FnOrMethod(fn_or_meth) if fn_or_meth.is_trait_signature() => TS1::from(
+            Error::new(Span::call_site(), "Cannot mark trait item signature as open")
+                .to_compile_error(),
+        ),
         ContractSubject::FnOrMethod(mut f) => {
-            f.body.as_mut().map(|b| b.stmts.insert(0, Stmt::Item(Item::Verbatim(open_tokens))));
+            if let Some(b) = f.body.as_mut() {
+                b.stmts.insert(0, Stmt::Item(Item::Verbatim(open_tokens)))
+            }
             TS1::from(quote! {
               #[creusot::clause::open=#name_tag]
               #f
             })
         }
-        ContractSubject::Closure(_) => {
-            return TS1::from(
-                Error::new(Span::call_site(), "Cannot mark closure as open").to_compile_error(),
-            )
-        }
+        ContractSubject::Closure(_) => TS1::from(
+            Error::new(Span::call_site(), "Cannot mark closure as open").to_compile_error(),
+        ),
     }
 }
 

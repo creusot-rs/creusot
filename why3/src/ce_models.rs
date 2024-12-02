@@ -279,7 +279,7 @@ pub enum ConcreteTerm {
     Fraction {
         #[cfg_attr(feature = "serde", serde(rename = "frac_num"))]
         num: Real,
-        #[cfg_attr(feature = "serde", serde(rename = "frac_num"))]
+        #[cfg_attr(feature = "serde", serde(rename = "frac_denom"))]
         denom: Real,
         #[cfg_attr(feature = "serde", serde(rename = "frac_verbatim"))]
         verbatim: String,

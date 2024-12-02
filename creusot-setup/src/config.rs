@@ -32,6 +32,7 @@ pub enum ManagedTool {
 pub struct Config {
     pub provers_parallelism: usize,
     pub why3: ExternalTool,
+    pub why3find: ExternalTool,
     pub altergo: ManagedTool,
     pub z3: ManagedTool,
     pub cvc4: ManagedTool,

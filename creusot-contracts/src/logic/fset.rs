@@ -1,6 +1,8 @@
 use crate::*;
 
-/// A Set type usable in pearlite and `ghost!` blocks.
+/// A finite set type usable in pearlite and `ghost!` blocks.
+///
+/// If you need an infinite set, see [`Set`](super::Set).
 ///
 /// # Ghost
 ///
@@ -23,11 +25,20 @@ use crate::*;
 pub struct FSet<T: ?Sized>(std::marker::PhantomData<T>);
 
 impl<T: ?Sized> FSet<T> {
+    /// The empty set.
     #[cfg(creusot)]
     #[trusted]
     #[creusot::builtins = "set.Fset.empty"]
     pub const EMPTY: Self = { FSet(std::marker::PhantomData) };
 
+    /// Returns the empty set.
+    #[logic]
+    #[open]
+    pub fn empty() -> Self {
+        Self::EMPTY
+    }
+
+    /// Returns `true` if `e` is in the set.
     #[open]
     #[predicate]
     #[why3::attr = "inline:trivial"]
@@ -35,6 +46,9 @@ impl<T: ?Sized> FSet<T> {
         Self::mem(e, self)
     }
 
+    /// [`Self::contains`], but with the order of arguments flipped.
+    ///
+    /// This is how the function is defined in why3.
     #[doc(hidden)]
     #[trusted]
     #[logic]
@@ -43,6 +57,7 @@ impl<T: ?Sized> FSet<T> {
         dead
     }
 
+    /// Returns a new set, where `e` has been added if it was not present.
     #[open]
     #[logic]
     #[why3::attr = "inline:trivial"]
@@ -50,6 +65,9 @@ impl<T: ?Sized> FSet<T> {
         Self::add(e, self)
     }
 
+    /// [`Self::insert`], but with the order of arguments flipped.
+    ///
+    /// This is how the function is defined in why3.
     #[doc(hidden)]
     #[trusted]
     #[logic]
@@ -58,6 +76,7 @@ impl<T: ?Sized> FSet<T> {
         dead
     }
 
+    /// Returns `true` if the set contains no elements.
     #[trusted]
     #[predicate]
     #[creusot::builtins = "set.Fset.is_empty"]
@@ -65,13 +84,17 @@ impl<T: ?Sized> FSet<T> {
         dead
     }
 
+    /// Returns a new set, where `e` is no longer present.
     #[open]
     #[logic]
     #[why3::attr = "inline:trivial"]
-    pub fn remove(self, a: T) -> Self {
-        Self::rem(a, self)
+    pub fn remove(self, e: T) -> Self {
+        Self::rem(e, self)
     }
 
+    /// [`Self::remove`], but with the order of arguments flipped.
+    ///
+    /// This is how the function is defined in why3.
     #[doc(hidden)]
     #[trusted]
     #[logic]
@@ -80,20 +103,27 @@ impl<T: ?Sized> FSet<T> {
         dead
     }
 
+    /// Returns a new set, which is the union of `self` and `other`.
+    ///
+    /// An element is in the result if it is in `self` _or_ if it is in `other`.
     #[trusted]
     #[logic]
     #[creusot::builtins = "set.Fset.union"]
-    pub fn union(self, _: Self) -> Self {
+    pub fn union(self, other: Self) -> Self {
+        let _ = other;
         dead
     }
 
+    /// Returns `true` if every element of `self` is in `other`.
     #[trusted]
     #[predicate]
     #[creusot::builtins = "set.Fset.subset"]
-    pub fn is_subset(self, _: Self) -> bool {
+    pub fn is_subset(self, other: Self) -> bool {
+        let _ = other;
         dead
     }
 
+    /// Returns `true` if every element of `other` is in `self`.
     #[open]
     #[predicate]
     #[why3::attr = "inline:trivial"]
@@ -101,6 +131,7 @@ impl<T: ?Sized> FSet<T> {
         Self::is_subset(other, self)
     }
 
+    /// Returns the number of elements in the set, also called its length.
     #[trusted]
     #[logic]
     #[creusot::builtins = "set.Fset.cardinal"]
@@ -108,6 +139,12 @@ impl<T: ?Sized> FSet<T> {
         dead
     }
 
+    /// Get an arbitrary element of the set.
+    ///
+    /// # Returns
+    ///
+    /// - If the set is nonempty, the result is guaranteed to be in the set
+    /// - If the set is empty, the result is unspecified
     #[trusted]
     #[logic]
     #[creusot::builtins = "set.Fset.pick"]
@@ -118,6 +155,11 @@ impl<T: ?Sized> FSet<T> {
         dead
     }
 
+    /// Extensional equality
+    ///
+    /// Returns `true` if `self` and `other` contain exactly the same elements.
+    ///
+    /// This is in fact equivalent with normal equality.
     // FIXME: remove `trusted`
     #[trusted]
     #[open]
@@ -141,7 +183,7 @@ impl<T: ?Sized> FSet<T> {
     #[ensures(result.is_empty())]
     #[allow(unreachable_code)]
     pub fn new() -> GhostBox<Self> {
-        ghost!(loop {})
+        ghost!(panic!())
     }
 
     /// Returns the number of elements in the set.
