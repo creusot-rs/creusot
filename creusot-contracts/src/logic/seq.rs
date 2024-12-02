@@ -12,10 +12,8 @@ use crate::{
 /// accessed via its [view](crate::View) (The `@` operator).
 ///
 /// ```rust,creusot
-/// use creusot_contracts::*;
-///
+/// # use creusot_contracts::*;
 /// #[logic]
-/// #[open]
 /// fn get_model<T>(v: Vec<T>) -> Seq<T> {
 ///     pearlite!(v@)
 /// }
@@ -42,6 +40,7 @@ pub struct Seq<T: ?Sized>(std::marker::PhantomData<T>);
 
 /// Logical definitions
 impl<T: ?Sized> Seq<T> {
+    /// The empty sequence.
     #[cfg(creusot)]
     #[trusted]
     #[creusot::builtins = "seq.Seq.empty"]
@@ -57,6 +56,15 @@ impl<T: ?Sized> Seq<T> {
     /// Create a new sequence in pearlite.
     ///
     /// The new sequence will be of length `n`, and will contain `mapping[i]` at index `i`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// let s = snapshot!(Seq::create(5, |i| i + 1));
+    /// proof_assert!(s.len() == 5);
+    /// proof_assert!(forall<i: Int> 0 <= i && i < 5 ==> s[i] == i + 1);
+    /// ```
     #[trusted]
     #[logic]
     #[creusot::builtins = "seq.Seq.create"]
@@ -66,6 +74,9 @@ impl<T: ?Sized> Seq<T> {
         dead
     }
 
+    /// Returns the value at index `ix`.
+    ///
+    /// If `ix` is out of bounds, return `None`.
     #[logic]
     #[open]
     pub fn get(self, ix: Int) -> Option<T>
@@ -79,27 +90,83 @@ impl<T: ?Sized> Seq<T> {
         }
     }
 
+    /// Returns the value at index `ix`.
+    ///
+    /// If `ix` is out of bounds, the returned value is meaningless.
+    ///
+    /// You should prefer using the indexing operator `s[ix]`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// let s = snapshot!(Seq::singleton(2));
+    /// proof_assert!(s.index_logic_unsized(0) == 2);
+    /// proof_assert!(s[0] == 2); // prefer this
+    /// ```
     #[trusted]
     #[logic]
     #[creusot::builtins = "seq.Seq.get"]
-    pub fn index_logic_unsized(self, _: Int) -> Box<T> {
+    pub fn index_logic_unsized(self, ix: Int) -> Box<T> {
+        let _ = ix;
         dead
     }
 
+    /// Returns the subsequence between indices `start` and `end`.
+    ///
+    /// If either `start` or `end` are out of bounds, the result is meaningless.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// let subs = snapshot! {
+    ///     let s: Seq<Int> = Seq::create(10, |i| i);
+    ///     s.subsequence(2, 5)
+    /// };
+    /// proof_assert!(subs.len() == 3);
+    /// proof_assert!(subs[0] == 2 && subs[1] == 3 && subs[2] == 4);
+    /// ```
     #[trusted]
     #[logic]
     #[creusot::builtins = "seq.Seq.([..])"]
-    pub fn subsequence(self, _: Int, _: Int) -> Self {
+    pub fn subsequence(self, start: Int, end: Int) -> Self {
+        let _ = start;
+        let _ = end;
         dead
     }
 
+    /// Create a sequence containing one element.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// let s = snapshot!(Seq::singleton(42));
+    /// proof_assert!(s.len() == 1);
+    /// proof_assert!(s[0] == 42);
+    /// ```
     #[trusted]
     #[logic]
     #[creusot::builtins = "seq.Seq.singleton"]
-    pub fn singleton(_: T) -> Self {
+    pub fn singleton(value: T) -> Self {
+        let _ = value;
         dead
     }
 
+    /// Returns the sequence without its first element.
+    ///
+    /// If the sequence is empty, the result is meaningless.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// let s = snapshot!(Seq::singleton(5).push_back(10).push_back(15));
+    /// proof_assert!(s.tail() == Seq::singleton(10).push_back(15));
+    /// proof_assert!(s.tail().tail() == Seq::singleton(15));
+    /// proof_assert!(s.tail().tail().tail() == Seq::EMPTY);
+    /// ```
     #[logic]
     #[open]
     pub fn tail(self) -> Self {
@@ -108,8 +175,10 @@ impl<T: ?Sized> Seq<T> {
 
     /// Returns the number of elements in the sequence, also referred to as its 'length'.
     ///
-    /// This function should be used in pearlite:
-    /// ```rust,creusot
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
     /// #[requires(v@.len() > 0)]
     /// fn f<T>(v: Vec<T>) { /* ... */ }
     /// ```
@@ -120,17 +189,39 @@ impl<T: ?Sized> Seq<T> {
         dead
     }
 
+    /// Returns a new sequence, where the element at index `ix` has been replaced by `x`.
+    ///
+    /// If `ix` is out of bounds, the result is meaningless.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// let s = snapshot!(Seq::create(2, |_| 0));
+    /// let s2 = snapshot!(s.set(1, 3));
+    /// proof_assert!(s2[0] == 0);
+    /// proof_assert!(s2[1] == 3);
+    /// ```
     #[trusted]
     #[logic]
     #[creusot::builtins = "seq.Seq.set"]
-    pub fn set(self, _: Int, _: T) -> Self {
+    pub fn set(self, ix: Int, x: T) -> Self {
+        let _ = ix;
+        let _ = x;
         dead
     }
 
+    /// Extensional equality
+    ///
+    /// Returns `true` if `self` and `other` have the same length, and contain the same
+    /// elements at the same indices.
+    ///
+    /// This is in fact equivalent with normal equality.
     #[trusted]
     #[predicate]
     #[creusot::builtins = "seq.Seq.(==)"]
-    pub fn ext_eq(self, _: Self) -> bool {
+    pub fn ext_eq(self, other: Self) -> bool {
+        let _ = other;
         dead
     }
 
@@ -143,6 +234,16 @@ impl<T: ?Sized> Seq<T> {
         dead
     }
 
+    /// Returns a new sequence, where `x` has been prepended to `self`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let s = snapshot!(Seq::singleton(1));
+    /// let s2 = snapshot!(s.push_front(2));
+    /// proof_assert!(s2[0] == 2);
+    /// proof_assert!(s2[1] == 1);
+    /// ```
     #[logic]
     #[open]
     #[why3::attr = "inline:trivial"]
@@ -150,20 +251,57 @@ impl<T: ?Sized> Seq<T> {
         Self::cons(x, self)
     }
 
+    /// Returns a new sequence, where `x` has been appended to `self`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let s = snapshot!(Seq::singleton(1));
+    /// let s2 = snapshot!(s.push_back(2));
+    /// proof_assert!(s2[0] == 1);
+    /// proof_assert!(s2[1] == 2);
+    /// ```
     #[trusted]
     #[logic]
     #[creusot::builtins = "seq.Seq.snoc"]
-    pub fn push_back(self, _: T) -> Self {
+    pub fn push_back(self, x: T) -> Self {
+        let _ = x;
         dead
     }
 
+    /// Returns a new sequence, made of the concatenation of `self` and `other`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// let s1 = snapshot!(Seq::singleton(1));
+    /// let s2 = snapshot!(Seq::create(2, |i| i));
+    /// let s = snapshot!(s1.concat(s2));
+    /// proof_assert!(s[0] == 1);
+    /// proof_assert!(s[1] == 0);
+    /// proof_assert!(s[2] == 1);
+    /// ```
     #[trusted]
     #[logic]
     #[creusot::builtins = "seq.Seq.(++)"]
-    pub fn concat(self, _: Self) -> Self {
+    pub fn concat(self, other: Self) -> Self {
+        let _ = other;
         dead
     }
 
+    /// Returns a new sequence, which is `self` in reverse order.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use creusot_contracts::*;
+    /// let s = snapshot!(Seq::create(3, |i| i));
+    /// let s2 = snapshot!(s.reverse());
+    /// proof_assert!(s2[0] == 2);
+    /// proof_assert!(s2[1] == 1);
+    /// proof_assert!(s2[2] == 0);
+    /// ```
     #[trusted]
     #[logic]
     #[creusot::builtins = "seq.Reverse.reverse"]
@@ -171,46 +309,65 @@ impl<T: ?Sized> Seq<T> {
         dead
     }
 
+    /// Returns `true` if `other` is a permutation of `self`.
     #[predicate]
     #[open]
-    pub fn permutation_of(self, o: Self) -> bool {
-        self.permut(o, 0, self.len())
+    pub fn permutation_of(self, other: Self) -> bool {
+        self.permut(other, 0, self.len())
     }
 
+    /// Returns `true` if:
+    /// - `self` and `other` have the same length
+    /// - `start` and `end` are in bounds (between `0` and `self.len()` included)
+    /// - Every element of `self` between `start` (included) and `end` (excluded) can
+    ///   also be found in `other` between `start` and `end`, and vice-versa
     #[trusted]
     #[predicate]
     #[creusot::builtins = "seq.Permut.permut"]
-    pub fn permut(self, _: Self, _: Int, _: Int) -> bool {
+    pub fn permut(self, other: Self, start: Int, end: Int) -> bool {
+        let _ = other;
+        let _ = start;
+        let _ = end;
         dead
     }
 
+    /// Returns `true` if:
+    /// - `self` and `other` have the same length
+    /// - `i` and `j` are in bounds (between `0` and `self.len()` excluded)
+    /// - `other` is equal to `self` where the elements at `i` and `j` are swapped
     #[trusted]
     #[predicate]
     #[creusot::builtins = "seq.Permut.exchange"]
-    pub fn exchange(self, _: Self, _: Int, _: Int) -> bool {
+    pub fn exchange(self, other: Self, i: Int, j: Int) -> bool {
+        let _ = other;
+        let _ = i;
+        let _ = j;
         dead
     }
 
+    /// Returns `true` if there is an index `i` such that `self[i] == x`.
     #[open]
     #[predicate]
-    pub fn contains(self, e: T) -> bool
+    pub fn contains(self, x: T) -> bool
     where
         T: Sized, // TODO : don't require this (problem: uses index)
     {
-        pearlite! { exists<i : Int> 0 <= i &&  i < self.len() && self[i] == e }
+        pearlite! { exists<i : Int> 0 <= i &&  i < self.len() && self[i] == x }
     }
 
+    /// Returns `true` if `self` is sorted between `start` and `end`.
     #[open]
     #[predicate]
-    pub fn sorted_range(self, l: Int, u: Int) -> bool
+    pub fn sorted_range(self, start: Int, end: Int) -> bool
     where
         T: OrdLogic + Sized, // TODO : don't require this (problem: uses index)
     {
         pearlite! {
-            forall<i : Int, j : Int> l <= i && i <= j && j < u ==> self[i] <= self[j]
+            forall<i : Int, j : Int> start <= i && i <= j && j < end ==> self[i] <= self[j]
         }
     }
 
+    /// Returns `true` if `self` is sorted.
     #[open]
     #[predicate]
     pub fn sorted(self) -> bool
@@ -222,6 +379,9 @@ impl<T: ?Sized> Seq<T> {
 }
 
 impl<T: ?Sized> Seq<&T> {
+    /// Convert `Seq<&T>` to `Seq<T>`.
+    ///
+    /// This is simply a utility method, because `&T` is equivalent to `T` in pearlite.
     #[logic]
     #[trusted]
     #[creusot::builtins = "identity"]

@@ -1,3 +1,20 @@
+//! Definitions for ghost code
+//!
+//! Ghost code is code that will be erased during the normal compilation of the program.
+//! To use ghost code in creusot, you must use the [`ghost!`] macro:
+//!
+//! ```
+//! # use creusot_contracts::*;
+//! let x: GhostBox<i32> = ghost!(1);
+//! ghost! {
+//!     let y: i32 = *x;
+//!     assert!(y == 1);
+//! };
+//! ```
+//!
+//! There are restrictions on the values that can enter/exit a `ghost!` block: see
+//! [`GhostBox`] and [`ghost!`] for more details.
+
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{
@@ -11,7 +28,7 @@ use crate::{
 /// proof may need a notion of non-duplicable token to carry around.
 ///
 /// Conceptually, a `GhostBox<T>` is a pointer to an item of type `T` that resides in
-/// a special "ghost" heap. This heap is innacessible from normal code, and `GhostBox`
+/// a special "ghost" heap. This heap is inaccessible from normal code, and `GhostBox`
 /// values cannot be used to influence the behavior of normal code.
 ///
 /// This box can be dereferenced in a `ghost` block:
