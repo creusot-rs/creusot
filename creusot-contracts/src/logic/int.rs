@@ -1,4 +1,5 @@
 use crate::{
+    logic::ops::{AddLogic, DivLogic, MulLogic, NegLogic, RemLogic, SubLogic},
     std::ops::{Add, Div, Mul, Neg, Rem, Sub},
     *,
 };
@@ -164,68 +165,73 @@ impl Int {
     }
 }
 
-#[cfg(creusot)]
-impl Add<Int> for Int {
-    type Output = Int;
+impl AddLogic for Int {
+    type Output = Self;
+    #[logic]
     #[trusted]
     #[creusot::no_translate]
     #[creusot::builtins = "add_int"]
-    fn add(self, _: Int) -> Self {
-        panic!()
+    fn add(self, other: Self) -> Self {
+        let _ = other;
+        dead
     }
 }
 
-#[cfg(creusot)]
-impl Sub<Int> for Int {
-    type Output = Int;
+impl SubLogic for Int {
+    type Output = Self;
+    #[logic]
     #[trusted]
     #[creusot::no_translate]
     #[creusot::builtins = "sub_int"]
-    fn sub(self, _: Int) -> Self {
-        panic!()
+    fn sub(self, other: Self) -> Self {
+        let _ = other;
+        dead
     }
 }
 
-#[cfg(creusot)]
-impl Mul<Int> for Int {
-    type Output = Int;
+impl MulLogic for Int {
+    type Output = Self;
+    #[logic]
     #[trusted]
     #[creusot::no_translate]
     #[creusot::builtins = "mul_int"]
-    fn mul(self, _: Int) -> Self {
-        panic!()
+    fn mul(self, other: Self) -> Self {
+        let _ = other;
+        dead
     }
 }
 
-#[cfg(creusot)]
-impl Div<Int> for Int {
-    type Output = Int;
+impl DivLogic for Int {
+    type Output = Self;
+    #[logic]
     #[trusted]
     #[creusot::no_translate]
     #[creusot::builtins = "div_int"]
-    fn div(self, _: Int) -> Self {
-        panic!()
+    fn div(self, other: Self) -> Self {
+        let _ = other;
+        dead
     }
 }
 
-#[cfg(creusot)]
-impl Rem<Int> for Int {
-    type Output = Int;
+impl RemLogic for Int {
+    type Output = Self;
+    #[logic]
     #[trusted]
     #[creusot::no_translate]
     #[creusot::builtins = "rem_int"]
-    fn rem(self, _: Int) -> Self {
-        panic!()
+    fn rem(self, other: Self) -> Self {
+        let _ = other;
+        dead
     }
 }
 
-#[cfg(creusot)]
-impl Neg for Int {
-    type Output = Int;
+impl NegLogic for Int {
+    type Output = Self;
+    #[logic]
     #[trusted]
     #[creusot::no_translate]
     #[creusot::builtins = "neg_int"]
     fn neg(self) -> Self {
-        panic!()
+        dead
     }
 }
