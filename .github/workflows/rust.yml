@@ -150,16 +150,18 @@ jobs:
           ~/.local/share/creusot
           _opam/lib/why3find/packages
         key: ${{ runner.os }}-cargo-creusot-setup-${{ hashFiles('creusot-deps.opam', 'creusot-setup/src/tools_versions_urls.rs', 'creusot-setup/src/config.rs') }}
-    - run: cargo creusot setup install
-      if: steps.cache-creusot-setup.outputs.cache-hit != 'true'
     - name: download why3 and why3find
       uses: actions/download-artifact@v4
       with:
         name: why3-deps
-    - name: setup opam PATH
+    - name: unpack why3 and why3find
+      run: tar -xzf _opam.tar.gz
+    - name: setup creusot
       run: |
-        tar -xzf _opam.tar.gz
-        echo /home/runner/work/creusot/creusot/_opam/bin >> $GITHUB_PATH
+        # Add /home/runner/work/creusot/creusot/_opam/bin to PATH just for this step
+        export PATH=/home/runner/work/creusot/creusot/_opam/bin:$PATH
+        cargo creusot setup install
+      if: steps.cache-creusot-setup.outputs.cache-hit != 'true'
     - name: test cargo creusot new
       run: |
         set -x
