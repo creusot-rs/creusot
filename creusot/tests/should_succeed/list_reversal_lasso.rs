@@ -2,7 +2,7 @@
 
 extern crate creusot_contracts;
 
-use creusot_contracts::{logic::IndexLogic, *};
+use creusot_contracts::{logic::ops::IndexLogic, *};
 use std::ops::{Index, IndexMut};
 
 /* Memory model */
