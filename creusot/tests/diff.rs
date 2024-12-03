@@ -19,8 +19,9 @@ pub fn differ(
     stdout: &Path,
     stderr: Option<&Path>,
     should_succeed: bool,
+    enable_color: bool,
 ) -> Result<(bool, Buffer), Box<dyn Error>> {
-    let mut buf = Buffer::ansi();
+    let mut buf = if enable_color { Buffer::ansi() } else { Buffer::no_color() };
     match output.clone().ok() {
         Ok(output) => {
             let expect_out = &std::fs::read(stdout).unwrap_or_else(|_| Vec::new());
