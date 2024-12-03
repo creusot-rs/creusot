@@ -1,5 +1,5 @@
-use crate::{inv, logic::*, macros::*, std::ops::*, Invariant, Iterator};
-use std::iter::Filter;
+use crate::{logic::Mapping, std::ops::*, *};
+use ::std::iter::Filter;
 
 pub trait FilterExt<I, F> {
     #[logic]

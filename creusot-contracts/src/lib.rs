@@ -397,7 +397,7 @@ pub mod well_founded;
 mod base_prelude {
     pub use crate::{
         ghost::GhostBox,
-        logic::{IndexLogic as _, Int, OrdLogic, Seq},
+        logic::{ops::IndexLogic as _, Int, OrdLogic, Seq},
         model::{DeepModel, View},
         resolve::*,
         snapshot::Snapshot,
