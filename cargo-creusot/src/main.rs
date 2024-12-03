@@ -75,11 +75,11 @@ fn creusot(
 
     // Default output_dir to "." if not specified
     let include_dir = Some(options.output_dir.clone().unwrap_or(".".into()));
-    let config_args = setup::status_for_creusot()?;
+    let paths = setup::creusot_paths()?;
     let creusot_args = CreusotArgs {
         options,
-        why3_path: config_args.why3_path.clone(),
-        why3_config_file: config_args.why3_config.clone(),
+        why3_path: paths.why3.clone(),
+        why3_config_file: paths.why3.clone(),
         subcommand: creusot_rustc_subcmd.clone(),
     };
 
@@ -98,8 +98,8 @@ fn creusot(
 
         // why3 configuration
         let why3 = Why3Launcher {
-            why3_path: config_args.why3_path,
-            config_file: config_args.why3_config,
+            why3_path: paths.why3,
+            config_file: paths.why3_config,
             mode,
             include_dir,
             coma_files,

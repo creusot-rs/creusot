@@ -5,7 +5,7 @@ use std::{
     fs::File,
     io::{BufRead, BufReader, Write},
     path::PathBuf,
-    process::exit,
+    process::{exit, Command},
 };
 use termcolor::*;
 
@@ -92,7 +92,9 @@ fn main() {
         sessionfile.push("why3session.xml");
 
         let output;
-        let mut command = creusot_dev_config::why3_command().unwrap();
+        let paths = creusot_setup::creusot_paths().unwrap();
+        let mut command = Command::new(paths.why3.clone());
+        command.arg("-C").arg(paths.why3_config);
         command.arg("--warn-off=unused_variable");
         command.arg("--warn-off=clone_not_abstract");
         command.arg("--warn-off=axiom_abstract");
