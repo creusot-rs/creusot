@@ -156,16 +156,15 @@ pub fn status() -> anyhow::Result<()> {
     Ok(())
 }
 
-pub struct CreusotFlags {
-    pub why3_path: PathBuf,
-    pub why3find_path: PathBuf,
+pub struct Paths {
+    pub why3: PathBuf,
+    pub why3find: PathBuf,
     pub why3_config: PathBuf,
 }
 
-/// compute the flags to pass to creusot-rustc.
-/// fail if the installation is not in an acceptable state, which means we will
-/// stop there and do not attempt launching creusot-rustc.
-pub fn status_for_creusot() -> anyhow::Result<CreusotFlags> {
+/// Get paths to tools from Config.toml.
+/// fail if the installation is not in an acceptable state
+pub fn creusot_paths() -> anyhow::Result<Paths> {
     let paths = get_config_paths()?;
     match Config::read_from_file(&paths.config_file) {
         Err(err) => bail!(
@@ -187,9 +186,9 @@ pub fn status_for_creusot() -> anyhow::Result<CreusotFlags> {
                      to diagnostic and fix the issue(s)"
                 )
             }
-            Ok(CreusotFlags {
-                why3_path: cfg.why3.path.to_path_buf(),
-                why3find_path: cfg.why3find.path.to_path_buf(),
+            Ok(Paths {
+                why3: cfg.why3.path.to_path_buf(),
+                why3find: cfg.why3find.path.to_path_buf(),
                 why3_config: paths.why3_config_file,
             })
         }

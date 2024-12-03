@@ -81,7 +81,7 @@ fn run_creusot(
     base_path.push("creusot");
     base_path.push("debug");
 
-    let config_paths = creusot_dev_config::paths().unwrap();
+    let config_paths = creusot_setup::creusot_paths().unwrap();
 
     let creusot_contract_path = base_path.join("libcreusot_contracts.rlib");
     let creusot_contract_path =
