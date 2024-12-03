@@ -59,8 +59,8 @@ impl Int {
     #[pure]
     #[ensures(*result == value@)]
     #[allow(unreachable_code)]
+    #[allow(unused_variables)]
     pub fn new(value: i128) -> GhostBox<Self> {
-        let _ = value;
         ghost!(panic!())
     }
 
@@ -75,8 +75,8 @@ impl Int {
     #[trusted]
     #[logic]
     #[creusot::builtins = "int.Power.power"]
+    #[allow(unused_variables)]
     pub fn pow(self, p: Int) -> Int {
-        let _ = p;
         dead
     }
 
@@ -91,8 +91,8 @@ impl Int {
     #[trusted]
     #[logic]
     #[creusot::builtins = "int.MinMax.max"]
+    #[allow(unused_variables)]
     pub fn max(self, x: Int) -> Int {
-        let _ = x;
         dead
     }
 
@@ -107,8 +107,8 @@ impl Int {
     #[logic]
     #[creusot::builtins = "int.MinMax.min"]
     #[trusted]
+    #[allow(unused_variables)]
     pub fn min(self, x: Int) -> Int {
-        let _ = x;
         dead
     }
 
@@ -123,8 +123,8 @@ impl Int {
     #[trusted]
     #[logic]
     #[creusot::builtins = "int.EuclideanDivision.div"]
+    #[allow(unused_variables)]
     pub fn div_euclid(self, d: Int) -> Int {
-        let _ = d;
         dead
     }
 
@@ -139,8 +139,8 @@ impl Int {
     #[trusted]
     #[logic]
     #[creusot::builtins = "int.EuclideanDivision.mod"]
+    #[allow(unused_variables)]
     pub fn rem_euclid(self, d: Int) -> Int {
-        let _ = d;
         dead
     }
 
@@ -171,8 +171,8 @@ impl AddLogic for Int {
     #[trusted]
     #[creusot::no_translate]
     #[creusot::builtins = "add_int"]
+    #[allow(unused_variables)]
     fn add(self, other: Self) -> Self {
-        let _ = other;
         dead
     }
 }
@@ -183,8 +183,8 @@ impl SubLogic for Int {
     #[trusted]
     #[creusot::no_translate]
     #[creusot::builtins = "sub_int"]
+    #[allow(unused_variables)]
     fn sub(self, other: Self) -> Self {
-        let _ = other;
         dead
     }
 }
@@ -195,8 +195,8 @@ impl MulLogic for Int {
     #[trusted]
     #[creusot::no_translate]
     #[creusot::builtins = "mul_int"]
+    #[allow(unused_variables)]
     fn mul(self, other: Self) -> Self {
-        let _ = other;
         dead
     }
 }
@@ -207,8 +207,8 @@ impl DivLogic for Int {
     #[trusted]
     #[creusot::no_translate]
     #[creusot::builtins = "div_int"]
+    #[allow(unused_variables)]
     fn div(self, other: Self) -> Self {
-        let _ = other;
         dead
     }
 }
@@ -219,8 +219,8 @@ impl RemLogic for Int {
     #[trusted]
     #[creusot::no_translate]
     #[creusot::builtins = "rem_int"]
+    #[allow(unused_variables)]
     fn rem(self, other: Self) -> Self {
-        let _ = other;
         dead
     }
 }
@@ -242,8 +242,8 @@ impl PartialEq for Int {
     #[trusted]
     #[pure]
     #[ensures(result == (*self == *other))]
+    #[allow(unused_variables)]
     fn eq(&self, other: &Self) -> bool {
-        let _ = other;
         unreachable!("BUG: called ghost function in normal code")
     }
 }
@@ -253,8 +253,8 @@ impl Add for Int {
     #[trusted]
     #[pure]
     #[ensures(result == self + other)]
+    #[allow(unused_variables)]
     fn add(self, other: Int) -> Self {
-        let _ = other;
         unreachable!("BUG: called ghost function in normal code")
     }
 }
@@ -264,8 +264,8 @@ impl Sub for Int {
     #[trusted]
     #[pure]
     #[ensures(result == self - other)]
+    #[allow(unused_variables)]
     fn sub(self, other: Int) -> Self {
-        let _ = other;
         unreachable!("BUG: called ghost function in normal code")
     }
 }
@@ -275,8 +275,8 @@ impl Mul for Int {
     #[trusted]
     #[pure]
     #[ensures(result == self * other)]
+    #[allow(unused_variables)]
     fn mul(self, other: Int) -> Self {
-        let _ = other;
         unreachable!("BUG: called ghost function in normal code")
     }
 }
@@ -286,8 +286,8 @@ impl Div for Int {
     #[trusted]
     #[pure]
     #[ensures(result == self / other)]
+    #[allow(unused_variables)]
     fn div(self, other: Int) -> Self {
-        let _ = other;
         unreachable!("BUG: called ghost function in normal code")
     }
 }
@@ -297,8 +297,8 @@ impl Rem for Int {
     #[trusted]
     #[pure]
     #[ensures(result == self % other)]
+    #[allow(unused_variables)]
     fn rem(self, other: Int) -> Self {
-        let _ = other;
         unreachable!("BUG: called ghost function in normal code")
     }
 }
