@@ -2,8 +2,9 @@ use assert_cmd::prelude::*;
 use clap::Parser;
 use git2::Repository;
 use std::{
+    env,
     fs::File,
-    io::{BufRead, BufReader, Write},
+    io::{BufRead, BufReader, IsTerminal, Write},
     path::PathBuf,
     process::{exit, Command},
 };
@@ -27,7 +28,12 @@ struct Args {
     /// Fail as soon as a single test fails
     #[clap(long = "fail-early")]
     fail_early: bool,
-
+    /// Suppress all output other than failing test cases
+    #[clap(long)]
+    quiet: bool,
+    /// Force color output
+    #[clap(long)]
+    force_color: bool,
     /// Skip any files which are marked with `UNSTABLE` on the first line
     #[clap(long = "skip-unstable")]
     skip_unstable: bool,
@@ -36,9 +42,18 @@ struct Args {
 }
 
 fn main() {
-    let args = Args::parse();
+    let mut args = Args::parse();
+    if env::var("CI").is_ok() {
+        args.quiet = true;
+        args.force_color = true;
+    }
 
-    let mut out = StandardStream::stdout(ColorChoice::Always);
+    let is_tty = std::io::stdout().is_terminal();
+    let mut out = StandardStream::stdout(if args.force_color || is_tty {
+        ColorChoice::Always
+    } else {
+        ColorChoice::Never
+    });
     let orange = Color::Ansi256(214);
 
     let changed =
@@ -71,12 +86,19 @@ fn main() {
             .unwrap_or_else(|_| panic!("no rust file for {:?}", file));
         let header_line = BufReader::new(rs_file).lines().nth(0).unwrap().unwrap();
 
-        write!(&mut out, "Testing {} ... ", file.display()).unwrap();
-        out.flush().unwrap();
+        // Default (not `quiet`): print "Testing tests/current/test ... " and flush before running the test
+        // if `quiet` enabled: postpone printing, store the message in `current`, only print it if the test case fails
+        let mut current: &str = &format!("Testing {} ... ", file.display());
+        if !args.quiet {
+            write!(out, "{}", current).unwrap();
+            current = "";
+            out.flush().unwrap();
+        }
 
         if header_line.contains("WHY3SKIP")
             || (args.skip_unstable && header_line.contains("UNSTABLE"))
         {
+            write!(out, "{current}").unwrap();
             out.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
             writeln!(&mut out, "skipped").unwrap();
             out.reset().unwrap();
@@ -110,12 +132,13 @@ fn main() {
                     }
                 })
             else {
-                writeln!(&mut out, "error").unwrap();
+                writeln!(out, "{current}error").unwrap();
                 success = false;
                 continue;
             };
 
             if !proved && !should_fail {
+                write!(out, "{current}").unwrap();
                 out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
                 writeln!(&mut out, "not proved").unwrap();
                 out.reset().unwrap();
@@ -124,6 +147,7 @@ fn main() {
                 continue;
             }
             if proved && should_fail {
+                write!(out, "{current}").unwrap();
                 out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
                 writeln!(&mut out, "proof exists").unwrap();
                 out.reset().unwrap();
@@ -155,17 +179,26 @@ fn main() {
                 match session_obsolete(outputstring) {
                     Obsolete::Obsolete => {
                         obsolete = true;
+                        write!(out, "{current}").unwrap();
                         out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
                         writeln!(&mut out, "obsolete").unwrap();
                     }
                     Obsolete::Detached => {
                         obsolete = true;
+                        write!(out, "{current}").unwrap();
                         out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
                         writeln!(&mut out, "detached goals").unwrap();
                     }
                     Obsolete::Good => {
-                        out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
-                        writeln!(&mut out, "replayed").unwrap();
+                        if !args.quiet {
+                            if is_tty {
+                                // Move to beginning of line and clear line.
+                                write!(out, "\x1b[G\x1b[2K").unwrap();
+                            } else {
+                                out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
+                                writeln!(out, "replayed").unwrap();
+                            }
+                        }
                     }
                 }
                 out.reset().unwrap();
@@ -173,6 +206,7 @@ fn main() {
         } else {
             // No session directory. Check that this is expected.
             if !header_line.contains("NO_REPLAY") {
+                write!(out, "{current}").unwrap();
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
                 writeln!(&mut out, "missing why3 session").unwrap();
                 out.reset().unwrap();
@@ -187,13 +221,20 @@ fn main() {
             command.arg(file);
             output = command.ok();
             if output.is_ok() {
-                out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
-                writeln!(&mut out, "syntax ok").unwrap();
-                out.reset().unwrap();
+                if !args.quiet {
+                    if is_tty {
+                        // Move to beginning of line and clear line.
+                        write!(out, "\x1b[G\x1b[2K").unwrap();
+                    } else {
+                        out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
+                        writeln!(out, "syntax ok").unwrap();
+                    }
+                }
             }
         }
 
         if !output.is_ok() {
+            write!(out, "{current}").unwrap();
             out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
             writeln!(&mut out, "failure").unwrap();
             out.reset().unwrap();
@@ -213,7 +254,7 @@ fn main() {
 
     if success {
         if obsolete {
-            write!(&mut out, "Some of session files were ").unwrap();
+            write!(&mut out, "Some session files were ").unwrap();
             out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
             write!(&mut out, "obsolete").unwrap();
             out.reset().unwrap();
