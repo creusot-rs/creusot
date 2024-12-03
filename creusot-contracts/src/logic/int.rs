@@ -235,3 +235,80 @@ impl NegLogic for Int {
         dead
     }
 }
+
+// ========== Ghost operations =============
+
+impl PartialEq for Int {
+    #[trusted]
+    #[pure]
+    #[ensures(result == (*self == *other))]
+    fn eq(&self, other: &Self) -> bool {
+        let _ = other;
+        unreachable!("BUG: called ghost function in normal code")
+    }
+}
+
+impl Add for Int {
+    type Output = Int;
+    #[trusted]
+    #[pure]
+    #[ensures(result == self + other)]
+    fn add(self, other: Int) -> Self {
+        let _ = other;
+        unreachable!("BUG: called ghost function in normal code")
+    }
+}
+
+impl Sub for Int {
+    type Output = Int;
+    #[trusted]
+    #[pure]
+    #[ensures(result == self - other)]
+    fn sub(self, other: Int) -> Self {
+        let _ = other;
+        unreachable!("BUG: called ghost function in normal code")
+    }
+}
+
+impl Mul for Int {
+    type Output = Int;
+    #[trusted]
+    #[pure]
+    #[ensures(result == self * other)]
+    fn mul(self, other: Int) -> Self {
+        let _ = other;
+        unreachable!("BUG: called ghost function in normal code")
+    }
+}
+
+impl Div for Int {
+    type Output = Int;
+    #[trusted]
+    #[pure]
+    #[ensures(result == self / other)]
+    fn div(self, other: Int) -> Self {
+        let _ = other;
+        unreachable!("BUG: called ghost function in normal code")
+    }
+}
+
+impl Rem for Int {
+    type Output = Int;
+    #[trusted]
+    #[pure]
+    #[ensures(result == self % other)]
+    fn rem(self, other: Int) -> Self {
+        let _ = other;
+        unreachable!("BUG: called ghost function in normal code")
+    }
+}
+
+impl Neg for Int {
+    type Output = Int;
+    #[trusted]
+    #[pure]
+    #[ensures(result == -self)]
+    fn neg(self) -> Self {
+        unreachable!("BUG: called ghost function in normal code")
+    }
+}
