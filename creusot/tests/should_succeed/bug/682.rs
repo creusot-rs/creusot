@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-#[requires((*a)@ <= u64::MAX / 2u64)]
+#[requires((*a)@ <= u64::MAX@ / 2)]
 #[ensures(^a > *a)]
 fn add_some(a: &mut u64) {
     *a += 1;
