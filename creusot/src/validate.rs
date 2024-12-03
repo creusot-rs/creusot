@@ -51,7 +51,7 @@ pub(crate) fn validate_opacity(ctx: &mut TranslationCtx, item: DefId) -> Option<
             }
         }
 
-        fn error(&self, id: DefId, span: Span) -> () {
+        fn error(&self, id: DefId, span: Span) {
             self.ctx.error(
                 span,
                 &format!(
@@ -127,8 +127,7 @@ pub(crate) fn validate_traits(ctx: &mut TranslationCtx) {
 fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
     if let Some(name) = tcx.get_diagnostic_name(def_id) {
         match name.as_str() {
-            "mul" | "add" | "sub" | "div" | "rem" | "neg" | "box_new" | "deref_method"
-            | "deref_mut_method" => true,
+            "box_new" | "deref_method" | "deref_mut_method" => true,
             _ => {
                 is_snapshot_deref(tcx, def_id)
                     || is_ghost_deref(tcx, def_id)
@@ -244,7 +243,7 @@ pub(crate) enum Purity {
 }
 
 impl Purity {
-    pub(crate) fn of_def_id<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Self {
+    pub(crate) fn of_def_id(ctx: &mut TranslationCtx, def_id: DefId) -> Self {
         let is_snapshot = is_snapshot_closure(ctx.tcx, def_id);
         if is_predicate(ctx.tcx, def_id) && is_prophetic(ctx.tcx, def_id)
             || is_logic(ctx.tcx, def_id) && is_prophetic(ctx.tcx, def_id)

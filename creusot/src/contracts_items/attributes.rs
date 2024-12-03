@@ -148,7 +148,7 @@ fn get_attr<'a>(
         }
 
         let matches =
-            attr.path.segments.iter().zip(path.iter()).all(|(seg, s)| &*seg.ident.as_str() == *s);
+            attr.path.segments.iter().zip(path.iter()).all(|(seg, s)| seg.ident.as_str() == *s);
 
         if matches {
             return Some(attr);
@@ -172,7 +172,7 @@ fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
         }
 
         let matches =
-            item.path.segments.iter().zip(path.iter()).all(|(seg, s)| &*seg.ident.as_str() == *s);
+            item.path.segments.iter().zip(path.iter()).all(|(seg, s)| seg.ident.as_str() == *s);
 
         if matches {
             matched.push(attr)

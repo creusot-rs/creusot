@@ -1,7 +1,5 @@
-use crate::{
-    invariant::*, logic::*, macros::*, resolve, std::ops::*, structural_resolve, Iterator, Resolve,
-};
-use std::iter::Map;
+use crate::{std::ops::*, structural_resolve, *};
+use ::std::iter::Map;
 
 pub trait MapExt<I, F> {
     #[logic]

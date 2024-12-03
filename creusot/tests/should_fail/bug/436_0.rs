@@ -2,16 +2,16 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 struct S {
-    g: Snapshot<i32>,
+    g: Snapshot<Int>,
 }
 
 #[logic(prophetic)]
-fn prophecy(x: &mut S) -> i32 {
+fn prophecy(x: &mut S) -> Int {
     pearlite! { *(^x).g }
 }
 
 pub fn f() {
-    let b = &mut S { g: snapshot! { 1i32 } };
-    b.g = snapshot! { prophecy(b) + 1i32 };
+    let b = &mut S { g: snapshot! { 1 } };
+    b.g = snapshot! { prophecy(b) + 1 };
     proof_assert! { false }
 }

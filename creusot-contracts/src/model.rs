@@ -117,6 +117,16 @@ impl DeepModel for bool {
     }
 }
 
+impl DeepModel for Int {
+    type DeepModelTy = Int;
+
+    #[logic]
+    #[open]
+    fn deep_model(self) -> Self::DeepModelTy {
+        self
+    }
+}
+
 impl View for String {
     type ViewTy = Seq<char>;
 
