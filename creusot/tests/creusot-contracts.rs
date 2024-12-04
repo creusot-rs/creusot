@@ -57,8 +57,6 @@ fn main() {
         "--span-mode=relative",
         "--spans-relative-to=creusot/tests/creusot-contracts",
         "--",
-        "--target-dir",
-        "target/creusot",
         "--package",
         "creusot-contracts",
     ]);
