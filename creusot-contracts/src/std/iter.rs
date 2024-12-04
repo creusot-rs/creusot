@@ -1,6 +1,7 @@
 use crate::{invariant::*, *};
 pub use ::std::iter::*;
 
+mod array;
 mod cloned;
 mod copied;
 mod empty;
@@ -13,6 +14,7 @@ mod once;
 mod range;
 mod repeat;
 mod skip;
+mod str;
 mod take;
 mod zip;
 
@@ -151,7 +153,7 @@ extern_spec! {
 
                 #[pure]
                 // These two requirements are here only to prove the absence of overflows
-                #[requires(forall<i: &mut Self_> inv(i) && i.completed() ==> i.produces(Seq::EMPTY, ^i))]
+                #[requires(forall<i: &mut Self_> inv(i) && (*i).completed() ==> (*i).produces(Seq::EMPTY, ^i))]
                 #[requires(forall<s: Seq<Self_::Item>, i: Self_>
                             inv(s) && inv(i) && self.produces(s, i) ==>
                             s.len() < std::usize::MAX@)]
@@ -210,4 +212,34 @@ extern_spec! {
             fn repeat<T: Clone>(elt: T) -> Repeat<T>;
         }
     }
+}
+
+impl<I: Iterator + ?Sized> Iterator for &mut I {
+    #[open]
+    #[predicate(prophetic)]
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+        (*self).produces(visited, *o)
+    }
+
+    #[open]
+    #[predicate(prophetic)]
+    fn completed(&mut self) -> bool {
+        (**self).completed()
+    }
+
+    #[law]
+    #[open]
+    #[requires(inv(self))]
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
+
+    #[law]
+    #[open]
+    #[requires(inv(a))]
+    #[requires(inv(b))]
+    #[requires(inv(c))]
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
