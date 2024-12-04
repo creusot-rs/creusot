@@ -430,3 +430,12 @@ impl<K, V: ?Sized> FMap<K, V> {
         panic!()
     }
 }
+
+impl<K: Clone, V: Clone> Clone for FMap<K, V> {
+    #[pure]
+    #[ensures(result == *self)]
+    #[trusted]
+    fn clone(&self) -> Self {
+        Self(self.0, self.1)
+    }
+}

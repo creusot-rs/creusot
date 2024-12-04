@@ -304,3 +304,12 @@ impl<T: ?Sized> FSet<T> {
         panic!()
     }
 }
+
+impl<T: Clone> Clone for FSet<T> {
+    #[pure]
+    #[ensures(result == *self)]
+    #[trusted]
+    fn clone(&self) -> Self {
+        Self(self.0)
+    }
+}

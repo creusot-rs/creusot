@@ -602,6 +602,15 @@ impl<T> Seq<T> {
     }
 }
 
+impl<T: Clone> Clone for Seq<T> {
+    #[pure]
+    #[ensures(result == *self)]
+    #[trusted]
+    fn clone(&self) -> Self {
+        Self(self.0)
+    }
+}
+
 impl<T: ?Sized> Invariant for Seq<T> {
     #[predicate(prophetic)]
     #[open]
