@@ -137,6 +137,9 @@ fn invoke_cargo(args: &CreusotArgs, cargo_flags: Vec<String>) {
         .args(cargo_flags)
         .env("RUSTC", creusot_rustc_path)
         .env("CARGO_CREUSOT", "1");
+    // Incremental compilation causes Creusot to not see all of a crate's code
+    // (the `mir_borrowck` hook in `creusot/src/callbacks.rs` is not called on all closures).
+    cmd.env("CARGO_INCREMENTAL", "0");
 
     // Append flags to any pre-existing ones
     // CARGO_ENCODED_RUSTFLAGS contains options to pass to rustc, separated by '\x1f'.
