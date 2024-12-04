@@ -62,9 +62,7 @@ fn main() {
         temp_file.as_os_str(),
         "--output-file=/dev/null".as_ref(),
     ]);
-    metadata_file
-        .args(&["--", "--target-dir", "target/creusot", "--package", "creusot-contracts"])
-        .env("CREUSOT_CONTINUE", "true");
+    metadata_file.args(&["--", "--package", "creusot-contracts"]).env("CREUSOT_CONTINUE", "true");
 
     if !metadata_file.status().expect("could not dump metadata for `creusot_contracts`").success() {
         // eprintln!("{}", String::from_utf8_lossy(&metadata_file.output().unwrap().stderr));

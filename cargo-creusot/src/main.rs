@@ -141,6 +141,11 @@ fn invoke_cargo(args: &CreusotArgs, cargo_flags: Vec<String>) {
     // (the `mir_borrowck` hook in `creusot/src/callbacks.rs` is not called on all closures).
     cmd.env("CARGO_INCREMENTAL", "0");
 
+    // Prevent `cargo creusot` and `cargo` from invalidating each other's caches.
+    if env::var_os("CARGO_TARGET_DIR").is_none() {
+        cmd.env("CARGO_TARGET_DIR", "target/creusot");
+    }
+
     // Append flags to any pre-existing ones
     // CARGO_ENCODED_RUSTFLAGS contains options to pass to rustc, separated by '\x1f'.
     // https://doc.rust-lang.org/cargo/reference/environment-variables.html
