@@ -1,4 +1,4 @@
-use crate::{invariant::*, std::iter::Fuse, *};
+use crate::{std::iter::Fuse, *};
 
 impl<I: Iterator> View for Fuse<I> {
     type ViewTy = Option<I>;
@@ -17,7 +17,7 @@ impl<I: Iterator> Iterator for Fuse<I> {
     #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-            (self@ == None || exists<it:&mut I> inv(it) && it.completed() && self@ == Some(*it)) &&
+            (self@ == None || exists<it:&mut I> it.completed() && self@ == Some(*it)) &&
             (^self)@ == None
         }
     }
@@ -38,15 +38,11 @@ impl<I: Iterator> Iterator for Fuse<I> {
 
     #[law]
     #[open]
-    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
     #[open]
-    #[requires(inv(a))]
-    #[requires(inv(b))]
-    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -55,9 +51,6 @@ impl<I: Iterator> Iterator for Fuse<I> {
 
 pub trait FusedIterator: ::std::iter::FusedIterator + Iterator {
     #[law]
-    #[requires(inv(self))]
-    #[requires(inv(next))]
-    #[requires(inv(steps))]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
     #[ensures(steps == Seq::EMPTY && ^self == next)]
@@ -67,9 +60,6 @@ pub trait FusedIterator: ::std::iter::FusedIterator + Iterator {
 impl<I: Iterator> FusedIterator for Fuse<I> {
     #[law]
     #[open]
-    #[requires(inv(self))]
-    #[requires(inv(next))]
-    #[requires(inv(steps))]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
     #[ensures(steps == Seq::EMPTY && ^self == next)]

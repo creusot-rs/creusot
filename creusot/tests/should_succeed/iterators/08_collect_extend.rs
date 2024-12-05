@@ -39,7 +39,7 @@ pub fn extend<T, I: Iterator<Item = T>>(vec: &mut Vec<T>, iter: I) {
 //  We prove the specific instance for vector
 #[ensures(
   exists<done : &mut I, prod: Seq<_>>
-    done.completed() && iter.produces(prod, *done) && result@ == prod
+    resolve(&^done) && done.completed() && iter.produces(prod, *done) && result@ == prod
 )]
 pub fn collect<I: Iterator>(iter: I) -> Vec<I::Item> {
     let mut res = Vec::new();

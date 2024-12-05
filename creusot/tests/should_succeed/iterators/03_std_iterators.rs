@@ -93,13 +93,15 @@ fn equiv_reverse_range<T>(s1: Seq<T>, s2: Seq<T>, l: Int, u: Int, n: Int) -> boo
 #[ensures((^slice)@.ext_eq(slice@.reverse()))]
 pub fn my_reverse<T>(slice: &mut [T]) {
     let n = slice.len();
-    let old_v: Snapshot<&mut [T]> = snapshot! { slice };
+    let old_v: Snapshot<Seq<T>> = snapshot! { slice@ };
     #[invariant(n@ == slice@.len())]
-    #[invariant(equiv_range(slice@, old_v@, produced.len(), n@-produced.len()))]
-    #[invariant(equiv_reverse_range(slice@, old_v@, 0, produced.len(), n@-1))]
-    #[invariant(equiv_reverse_range(slice@, old_v@, n@-produced.len(), n@, n@-1))]
+    #[invariant(equiv_range(slice@, *old_v, produced.len(), n@-produced.len()))]
+    #[invariant(equiv_reverse_range(slice@, *old_v, 0, produced.len(), n@-1))]
+    #[invariant(equiv_reverse_range(slice@, *old_v, n@-produced.len(), n@, n@-1))]
     for (i, j) in (0..n / 2).zip(0..n / 2) {
         slice.swap(i, n - j - 1);
-        proof_assert!(old_v[n@ - j@ - 1] == slice[i]);
+        proof_assert!(i == j);
+        proof_assert!(slice@[i@] == old_v[n@ - j@ - 1]);
+        proof_assert!(slice@[n@ - j@ - 1] == old_v[i@]);
     }
 }
