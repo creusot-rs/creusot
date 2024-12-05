@@ -316,3 +316,13 @@ impl<T: Clone + Copy> Clone for FSet<T> {
 
 // Having `Copy` guarantees that the operation is pure, even if we decide to change the definition of `Clone`.
 impl<T: Clone + Copy> Copy for FSet<T> {}
+
+impl<T: ?Sized> Invariant for FSet<T> {
+    #[predicate(prophetic)]
+    #[open]
+    #[creusot::trusted_ignore_structural_inv]
+    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
+    fn invariant(self) -> bool {
+        pearlite! { forall<x: &T> self.contains(*x) ==> inv(*x) }
+    }
+}

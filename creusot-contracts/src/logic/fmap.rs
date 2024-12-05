@@ -442,3 +442,13 @@ impl<K: Clone + Copy, V: Clone + Copy> Clone for FMap<K, V> {
 
 // Having `Copy` guarantees that the operation is pure, even if we decide to change the definition of `Clone`.
 impl<K: Clone + Copy, V: Clone + Copy> Copy for FMap<K, V> {}
+
+impl<K, V: ?Sized> Invariant for FMap<K, V> {
+    #[predicate(prophetic)]
+    #[open]
+    #[creusot::trusted_ignore_structural_inv]
+    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
+    fn invariant(self) -> bool {
+        pearlite! { forall<k: K> self.contains(k) ==> inv(k) && inv(self.lookup_unsized(k)) }
+    }
+}
