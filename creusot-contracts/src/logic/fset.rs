@@ -305,11 +305,14 @@ impl<T: ?Sized> FSet<T> {
     }
 }
 
-impl<T: Clone> Clone for FSet<T> {
+impl<T: Clone + Copy> Clone for FSet<T> {
     #[pure]
     #[ensures(result == *self)]
     #[trusted]
     fn clone(&self) -> Self {
-        Self(self.0)
+        *self
     }
 }
+
+// Having `Copy` guarantees that the operation is pure, even if we decide to change the definition of `Clone`.
+impl<T: Clone + Copy> Copy for FSet<T> {}

@@ -431,11 +431,14 @@ impl<K, V: ?Sized> FMap<K, V> {
     }
 }
 
-impl<K: Clone, V: Clone> Clone for FMap<K, V> {
+impl<K: Clone + Copy, V: Clone + Copy> Clone for FMap<K, V> {
     #[pure]
     #[ensures(result == *self)]
     #[trusted]
     fn clone(&self) -> Self {
-        Self(self.0, self.1)
+        *self
     }
 }
+
+// Having `Copy` guarantees that the operation is pure, even if we decide to change the definition of `Clone`.
+impl<K: Clone + Copy, V: Clone + Copy> Copy for FMap<K, V> {}
