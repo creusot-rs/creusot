@@ -6,6 +6,7 @@ use creusot_contracts::*;
 mod common;
 use common::Iterator;
 
+#[derive(Resolve)]
 pub struct Cloned<I: Iterator> {
     iter: I,
 }

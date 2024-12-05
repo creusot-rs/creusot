@@ -10,6 +10,7 @@ use creusot_contracts::{
 mod common;
 use common::Iterator;
 
+#[derive(Resolve)]
 struct IterMut<'a, T> {
     inner: &'a mut [T],
 }

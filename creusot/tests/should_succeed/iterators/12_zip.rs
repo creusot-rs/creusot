@@ -6,6 +6,7 @@ mod common;
 use common::Iterator;
 
 #[allow(dead_code)]
+#[derive(Resolve)]
 struct Zip<A: Iterator, B: Iterator> {
     a: A,
     b: B,

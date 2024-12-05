@@ -43,6 +43,23 @@ impl<T> View for Sparse<T> {
     }
 }
 
+impl<T> Resolve for Sparse<T> {
+    #[open(self)]
+    #[predicate(prophetic)]
+    fn resolve(self) -> bool {
+        pearlite! {
+            forall<i: _> 0 <= i && i < self.size@ ==> resolve(&self@[i])
+        }
+    }
+
+    #[open(self)]
+    #[logic(prophetic)]
+    #[requires(inv(self))]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
+}
+
 impl<T> Invariant for Sparse<T> {
     #[open(self)]
     #[predicate]
@@ -131,7 +148,7 @@ impl<T> Sparse<T> {
  */
 #[ensures(result.size == sz)]
 #[ensures(forall<i: Int> 0 <= i && i < sz@ ==> result@[i] == None)]
-pub fn create<T: Clone + Copy>(sz: usize, dummy: T) -> Sparse<T> {
+pub fn create<T: Copy>(sz: usize, dummy: T) -> Sparse<T> {
     Sparse { size: sz, n: 0, values: vec![dummy; sz], idx: vec![0; sz], back: vec![0; sz] }
 }
 

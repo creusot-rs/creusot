@@ -6,6 +6,7 @@ use creusot_contracts::*;
 mod common;
 use common::Iterator;
 
+#[derive(Resolve)]
 pub struct Copied<I> {
     iter: I,
 }

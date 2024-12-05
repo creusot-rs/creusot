@@ -5,6 +5,7 @@ use creusot_contracts::*;
 mod common;
 use common::Iterator;
 
+#[derive(Resolve)]
 pub struct Once<T>(Option<T>);
 
 impl<T> Iterator for Once<T> {

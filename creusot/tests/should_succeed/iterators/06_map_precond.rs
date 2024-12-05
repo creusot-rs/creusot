@@ -6,14 +6,14 @@ use creusot_contracts::{invariant::Invariant, *};
 mod common;
 use common::Iterator;
 
-// FIXME: make it Map<I, A, F> again
-pub struct Map<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> {
+#[derive(Resolve)]
+pub struct Map<I: Iterator, F> {
     iter: I,
     func: F,
     produced: Snapshot<Seq<I::Item>>,
 }
 
-impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator for Map<I, B, F> {
+impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator for Map<I, F> {
     type Item = B;
 
     #[open]
@@ -80,7 +80,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator fo
     }
 }
 
-impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, B, F> {
+impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
     #[predicate(prophetic)]
     fn next_precondition(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {
@@ -157,7 +157,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, B, F
     }
 }
 
-impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invariant for Map<I, B, F> {
+impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invariant for Map<I, F> {
     #[predicate(prophetic)]
     #[open(self)]
     fn invariant(self) -> bool {
@@ -172,13 +172,13 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invariant f
 #[requires(forall<e : I::Item, i2 : I>
                 iter.produces(Seq::singleton(e), i2) ==>
                 func.precondition((e, Snapshot::new(Seq::EMPTY))))]
-#[requires(Map::<I, B, F>::reinitialize())]
-#[requires(Map::<I, B, F>::preservation(iter, func))]
+#[requires(Map::<I, F>::reinitialize())]
+#[requires(Map::<I, F>::preservation(iter, func))]
 #[ensures(result == Map { iter, func, produced: Snapshot::new(Seq::EMPTY) })]
 pub fn map<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B>(
     iter: I,
     func: F,
-) -> Map<I, B, F> {
+) -> Map<I, F> {
     Map { iter, func, produced: snapshot! {Seq::EMPTY} }
 }
 
@@ -199,7 +199,7 @@ pub fn increment<U: Iterator<Item = u32>>(iter: U) {
     );
 
     proof_assert! {
-        forall<prod : _, fin: Map< _, _, _>> i.produces(prod, fin) ==>
+        forall<prod : _, fin: Map< _, _>> i.produces(prod, fin) ==>
             forall<x : _> 0 <= x && x < prod.len() ==> prod[x] <= 11u32
     };
 }

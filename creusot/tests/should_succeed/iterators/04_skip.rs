@@ -6,6 +6,7 @@ use creusot_contracts::{invariant::inv, *};
 mod common;
 use common::Iterator;
 
+#[derive(Resolve)]
 pub struct Skip<I: Iterator> {
     iter: I,
     n: usize,

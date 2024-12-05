@@ -6,6 +6,7 @@ use creusot_contracts::{invariant::Invariant, *};
 mod common;
 use common::Iterator;
 
+#[derive(Resolve)]
 pub struct Enumerate<I: Iterator> {
     iter: I,
     count: usize,
