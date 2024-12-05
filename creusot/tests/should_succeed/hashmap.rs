@@ -46,7 +46,6 @@ impl<K: DeepModel, V> List<(K, V)> {
     }
 }
 
-
 impl<K: DeepModel, V> Resolve for List<(K, V)> {
     #[open(self)]
     #[predicate(prophetic)]
