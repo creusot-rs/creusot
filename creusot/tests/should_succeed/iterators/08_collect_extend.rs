@@ -21,8 +21,7 @@ use creusot_contracts::{
 // Here we prove the specific instance of `extend` for `Vec<T>`.
 #[ensures(
   exists<done : &mut I, prod: Seq<_>>
-    inv(done) && inv(prod) && done.completed() &&
-    iter.produces(prod, *done) && (^vec)@ == vec@.concat(prod)
+    done.completed() && iter.produces(prod, *done) && (^vec)@ == vec@.concat(prod)
 )]
 pub fn extend<T, I: Iterator<Item = T>>(vec: &mut Vec<T>, iter: I) {
     let old_vec = snapshot! { vec };
@@ -40,8 +39,7 @@ pub fn extend<T, I: Iterator<Item = T>>(vec: &mut Vec<T>, iter: I) {
 //  We prove the specific instance for vector
 #[ensures(
   exists<done : &mut I, prod: Seq<_>>
-    inv(done) && inv(prod) && done.completed() &&
-    iter.produces(prod, *done) && result@ == prod
+    done.completed() && iter.produces(prod, *done) && result@ == prod
 )]
 pub fn collect<I: Iterator>(iter: I) -> Vec<I::Item> {
     let mut res = Vec::new();
@@ -62,7 +60,7 @@ pub fn extend_index(mut v1: Vec<u32>, v2: Vec<u32>) {
     proof_assert! { v1@.ext_eq(oldv1@.concat(oldv2@)) };
 }
 
-#[requires(forall<prod : Seq<u32>, fin: I> inv(fin) && iter.produces(prod, fin) ==>
+#[requires(forall<prod : Seq<u32>, fin: I> iter.produces(prod, fin) ==>
             forall<i : _> 0 <= i && i < prod.len() ==> prod[i]@ == i)]
 pub fn collect_example<I: Iterator<Item = u32>>(iter: I) {
     let v: Vec<u32> = collect(iter);

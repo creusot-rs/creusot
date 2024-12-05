@@ -1,10 +1,7 @@
 #![feature(unboxed_closures)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{
-    invariant::{inv, Invariant},
-    *,
-};
+use creusot_contracts::{invariant::Invariant, *};
 
 mod common;
 use common::Iterator;
@@ -28,15 +25,11 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, B, F> {
 
     #[law]
     #[open]
-    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
     #[open]
-    #[requires(inv(a))]
-    #[requires(inv(b))]
-    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -48,10 +41,10 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, B, F> {
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             self.func.unnest(succ.func)
-            && exists<fs: Seq<&mut F>> inv(fs) && fs.len() == visited.len()
+            && exists<fs: Seq<&mut F>> fs.len() == visited.len()
             && exists<s : Seq<I::Item>>
                 #![trigger self.iter.produces(s, succ.iter)]
-                inv(s) && s.len() == visited.len() && self.iter.produces(s, succ.iter)
+                s.len() == visited.len() && self.iter.produces(s, succ.iter)
             && (forall<i : Int> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == *fs[i])
             && if visited.len() == 0 { self.func == succ.func }
                else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
@@ -84,7 +77,6 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
         pearlite! {
             forall<e: I::Item, i: I>
                 #![trigger iter.produces(Seq::singleton(e), i)]
-                inv(e) && inv(i) ==>
                 iter.produces(Seq::singleton(e), i) ==>
                 func.precondition((e,))
         }
@@ -95,7 +87,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 #![trigger iter.produces(s.push_back(e1).push_back(e2), i), (*f).postcondition_mut((e1,), ^f, b)]
-                inv(s) && inv(e1) && inv(e2) && inv(f) && inv(i) && func.unnest(*f) ==>
+                func.unnest(*f) ==>
                 iter.produces(s.push_back(e1).push_back(e2), i) ==>
                 (*f).precondition((e1,)) ==>
                 (*f).postcondition_mut((e1,), ^f, b) ==>
@@ -107,18 +99,13 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
     fn reinitialize() -> bool {
         pearlite! {
             forall<iter: &mut I, func: F>
-                inv(iter) && inv(func) ==>
                 iter.completed() ==>
                 Self::next_precondition(^iter, func) && Self::preservation(^iter, func)
         }
     }
 
     #[logic]
-    #[requires(inv(self))]
-    #[requires(inv(e))]
-    #[requires(inv(r))]
-    #[requires(inv(f))]
-    #[requires(inv(iter))]
+    #[requires(self.invariant())]
     #[requires(self.iter.produces(Seq::singleton(e), iter))]
     #[requires(*f == self.func)]
     #[requires((*f).postcondition_mut((e,), ^f, r) )]
@@ -127,7 +114,6 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
     fn produces_one_invariant(self, e: I::Item, r: B, f: &mut F, iter: I) {
         proof_assert! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, i: I>
-                inv(s) && inv(e1) && inv(e2) && inv(i) ==>
                 iter.produces(s.push_back(e1).push_back(e2), i) ==>
                 self.iter.produces(Seq::singleton(e).concat(s).push_back(e1).push_back(e2), i)
         }
@@ -139,7 +125,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, B, F> {
         pearlite! {
             exists<f: &mut F, e: I::Item>
                 #![trigger (*f).postcondition_mut((e,), ^f, visited)]
-                inv(f) && inv(e) && *f == self.func && ^f == succ.func
+                *f == self.func && ^f == succ.func
                 && self.iter.produces(Seq::singleton(e), succ.iter)
                 && (*f).precondition((e,))
                 && (*f).postcondition_mut((e,), ^f, visited)
@@ -159,7 +145,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, B, F> {
     }
 }
 
-#[requires(forall<e : I::Item, i2 : I> inv(e) && inv(i2) ==>
+#[requires(forall<e : I::Item, i2 : I>
                 iter.produces(Seq::singleton(e), i2) ==>
                 func.precondition((e,)))]
 #[requires(Map::<I, B, F>::reinitialize())]
