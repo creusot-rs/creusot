@@ -1,4 +1,4 @@
-use crate::{invariant::*, std::iter::Once, *};
+use crate::{std::iter::Once, *};
 
 impl<T> View for Once<T> {
     type ViewTy = Option<T>;
@@ -22,21 +22,17 @@ impl<T> Iterator for Once<T> {
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::EMPTY && self == o ||
-            exists<e: Self::Item> inv(e) && self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
+            exists<e: Self::Item> self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
         }
     }
 
     #[law]
     #[open(self)]
-    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
     #[open(self)]
-    #[requires(inv(a))]
-    #[requires(inv(b))]
-    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
