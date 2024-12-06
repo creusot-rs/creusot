@@ -24,3 +24,13 @@ impl Default for bool {
         pearlite! { self == false }
     }
 }
+
+// `RandomState::default()` is defined as `RandomState::new()`
+// which produces random values.
+impl Default for std::hash::RandomState {
+    #[predicate]
+    #[open]
+    fn is_default(self) -> bool {
+        pearlite! { true }
+    }
+}

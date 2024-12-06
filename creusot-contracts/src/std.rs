@@ -3,6 +3,10 @@ pub use ::std::*;
 pub mod array;
 pub mod boxed;
 pub mod clone;
+pub mod collections {
+    pub mod hash_map;
+    pub mod hash_set;
+}
 pub mod cmp;
 pub mod default;
 pub mod deque;
