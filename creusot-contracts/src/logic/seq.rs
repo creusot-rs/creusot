@@ -602,6 +602,18 @@ impl<T> Seq<T> {
     }
 }
 
+// Having `Copy` guarantees that the operation is pure, even if we decide to change the definition of `Clone`.
+impl<T: Clone + Copy> Clone for Seq<T> {
+    #[pure]
+    #[ensures(result == *self)]
+    #[trusted]
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<T: Clone + Copy> Copy for Seq<T> {}
+
 impl<T: ?Sized> Invariant for Seq<T> {
     #[predicate(prophetic)]
     #[open]
