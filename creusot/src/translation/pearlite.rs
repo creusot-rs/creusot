@@ -1479,6 +1479,12 @@ impl<'tcx> Term<'tcx> {
         self.forall_trig(tcx, binder, vec![])
     }
 
+    pub(crate) fn exists(self, tcx: TyCtxt<'tcx>, binder: (Symbol, Ty<'tcx>)) -> Self {
+        let ty = Ty::new_tup(tcx, &[binder.1]);
+
+        self.quant(QuantKind::Exists, (vec![Ident::new(binder.0, DUMMY_SP)], ty), vec![])
+    }
+
     pub(crate) fn quant(
         self,
         quant_kind: QuantKind,

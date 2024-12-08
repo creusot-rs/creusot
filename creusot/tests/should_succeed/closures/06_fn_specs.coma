@@ -87,7 +87,7 @@ module M_06_fn_specs__weaken_std [#"06_fn_specs.rs" 8 0 8 62]
   
   meta "compute_max_steps" 1000000
   
-  let rec weaken_std'0 (f:t_F'0) (a:t_A'0) (return'  (ret:t_Output'0))= {[@expl:weaken_std 'f' type invariant] [%#s06_fn_specs0] inv'0 f}
+  let rec weaken_std'0[#"06_fn_specs.rs" 8 0 8 62] (f:t_F'0) (a:t_A'0) (return'  (ret:t_Output'0))= {[@expl:weaken_std 'f' type invariant] [%#s06_fn_specs0] inv'0 f}
     {[@expl:weaken_std 'a' type invariant] [%#s06_fn_specs1] inv'1 a}
     {[@expl:weaken_std requires] [%#s06_fn_specs2] precondition'0 f a}
     (! bb0
@@ -178,7 +178,7 @@ module M_06_fn_specs__weaken_2_std [#"06_fn_specs.rs" 14 0 14 63]
   
   meta "compute_max_steps" 1000000
   
-  let rec weaken_2_std'0 (f:t_F'0) (a:t_A'0) (return'  (ret:t_Output'0))= {[@expl:weaken_2_std 'f' type invariant] [%#s06_fn_specs0] inv'0 f}
+  let rec weaken_2_std'0[#"06_fn_specs.rs" 14 0 14 63] (f:t_F'0) (a:t_A'0) (return'  (ret:t_Output'0))= {[@expl:weaken_2_std 'f' type invariant] [%#s06_fn_specs0] inv'0 f}
     {[@expl:weaken_2_std 'a' type invariant] [%#s06_fn_specs1] inv'1 a}
     {[@expl:weaken_2_std requires] [%#s06_fn_specs2] precondition'0 f a}
     (! bb0
@@ -232,7 +232,7 @@ module M_06_fn_specs__weaken_3_std [#"06_fn_specs.rs" 20 0 20 64]
   
   meta "compute_max_steps" 1000000
   
-  let rec weaken_3_std'0 (f:t_F'0) (a:t_A'0) (return'  (ret:t_Output'0))= {[@expl:weaken_3_std 'f' type invariant] [%#s06_fn_specs0] inv'0 f}
+  let rec weaken_3_std'0[#"06_fn_specs.rs" 20 0 20 64] (f:t_F'0) (a:t_A'0) (return'  (ret:t_Output'0))= {[@expl:weaken_3_std 'f' type invariant] [%#s06_fn_specs0] inv'0 f}
     {[@expl:weaken_3_std 'a' type invariant] [%#s06_fn_specs1] inv'1 a}
     {[@expl:weaken_3_std requires] [%#s06_fn_specs2] precondition'0 f a}
     (! bb0
@@ -281,7 +281,7 @@ module M_06_fn_specs__fn_once_user [#"06_fn_specs.rs" 26 0 26 43]
   
   meta "compute_max_steps" 1000000
   
-  let rec fn_once_user'0 (f:t_F'0) (return'  (ret:()))= {[@expl:fn_once_user 'f' type invariant] [%#s06_fn_specs1] inv'0 f}
+  let rec fn_once_user'0[#"06_fn_specs.rs" 26 0 26 43] (f:t_F'0) (return'  (ret:()))= {[@expl:fn_once_user 'f' type invariant] [%#s06_fn_specs1] inv'0 f}
     {[@expl:fn_once_user requires] [%#s06_fn_specs2] precondition'0 f ((0 : usize))}
     (! bb0
     [ bb0 = bb1
@@ -299,21 +299,22 @@ end
 module M_06_fn_specs__caller [#"06_fn_specs.rs" 30 0 30 15]
   let%span s06_fn_specs0 = "06_fn_specs.rs" 26 38 26 39
   let%span s06_fn_specs1 = "06_fn_specs.rs" 25 11 25 36
+  let%span s06_fn_specs2 = "06_fn_specs.rs" 31 17 31 20
   
   use prelude.prelude.Intrinsic
   
   use prelude.prelude.UIntSize
   
-  let rec closure0'0 (_1:()) (_2:usize) (return'  (ret:()))= (! bb0 [ bb0 = return' {_0} ] ) [ & _0 : () = any_l () ] 
-    [ return' (result:())-> (! return' {result}) ]
-  
+  let rec closure0'0[#"06_fn_specs.rs" 31 17 31 20] [@coma:extspec] (_1:()) (_2:usize) (return'  (ret:()))= bb0
+    [ bb0 = return' {_0} ]
+     [ & _0 : () = any_l () ]  [ return' (result:())-> return' {result} ] 
   
   predicate inv'0 (_1 : ())
   
   axiom inv_axiom'0 [@rewrite] : forall x : () [inv'0 x] . inv'0 x = true
   
   predicate precondition'0 (self : ()) (args : usize) =
-    let (_2) = args in true
+    [%#s06_fn_specs2] let (_2) = args in closure0'0'pre self _2
   
   let rec fn_once_user'0 (f:()) (return'  (ret:()))= {[@expl:fn_once_user 'f' type invariant] [%#s06_fn_specs0] inv'0 f}
     {[@expl:fn_once_user requires] [%#s06_fn_specs1] precondition'0 f ((0 : usize))}
@@ -321,7 +322,7 @@ module M_06_fn_specs__caller [#"06_fn_specs.rs" 30 0 30 15]
   
   meta "compute_max_steps" 1000000
   
-  let rec caller'0 (_1:()) (return'  (ret:()))= (! bb0
+  let rec caller'0[#"06_fn_specs.rs" 30 0 30 15] (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &_1 <- () ] s1 | s1 = fn_once_user'0 {_1} (fun (_ret':()) ->  [ &_0 <- _ret' ] s2) | s2 = bb1 ]
     
