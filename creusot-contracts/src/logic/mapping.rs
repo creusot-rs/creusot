@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{logic::ops::IndexLogic, *};
 
 /// A mapping: map every value of type `A` to a value of type `B`.
 ///
@@ -20,15 +20,25 @@ use crate::*;
 pub struct Mapping<A: ?Sized, B: ?Sized>(std::marker::PhantomData<A>, std::marker::PhantomData<B>);
 
 impl<A: ?Sized, B: ?Sized> Mapping<A, B> {
+    /// Create a map, with no known information about its return values.
+    ///
+    /// Note that two maps created this way will compare equal.
+    #[trusted]
+    #[logic]
+    #[ensures(true)]
+    pub fn unknown() -> Self {
+        dead
+    }
+
     /// Get the value associated with `a` in the map.
     #[trusted]
     #[logic]
     #[creusot::builtins = "map.Map.get"]
+    #[allow(unused_variables)]
     pub fn get(self, a: A) -> B
     where
         B: Sized, // TODO : don't require this (problem: return type needs to be sized)
     {
-        let _ = a;
         dead
     }
 
@@ -36,9 +46,8 @@ impl<A: ?Sized, B: ?Sized> Mapping<A, B> {
     #[trusted]
     #[logic]
     #[creusot::builtins = "map.Map.set"]
+    #[allow(unused_variables)]
     pub fn set(self, a: A, b: B) -> Self {
-        let _ = a;
-        let _ = b;
         dead
     }
 
@@ -46,8 +55,18 @@ impl<A: ?Sized, B: ?Sized> Mapping<A, B> {
     #[trusted]
     #[logic]
     #[creusot::builtins = "map.Const.const"]
+    #[allow(unused_variables)]
     pub fn cst(b: B) -> Self {
-        let _ = b;
         dead
+    }
+}
+
+impl<A: ?Sized, B> IndexLogic<A> for Mapping<A, B> {
+    type Item = B;
+
+    #[logic]
+    #[open]
+    fn index_logic(self, a: A) -> B {
+        self.get(a)
     }
 }
