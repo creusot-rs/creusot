@@ -4,6 +4,10 @@ use crate::*;
 use ::std::alloc::Allocator;
 
 /// Used for indexing operations (`container[index]`) in pearlite.
+#[diagnostic::on_unimplemented(
+    message = "the type `{Self}` cannot be indexed by `{I}` in logic",
+    label = "`{Self}` cannot be indexed by `{I}` in logic"
+)]
 pub trait IndexLogic<I: ?Sized> {
     type Item;
 

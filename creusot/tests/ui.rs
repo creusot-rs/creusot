@@ -65,7 +65,6 @@ fn main() {
     metadata_file.args(&["--", "--package", "creusot-contracts"]).env("CREUSOT_CONTINUE", "true");
 
     if !metadata_file.status().expect("could not dump metadata for `creusot_contracts`").success() {
-        // eprintln!("{}", String::from_utf8_lossy(&metadata_file.output().unwrap().stderr));
         std::process::exit(1);
     }
 
@@ -166,6 +165,19 @@ where
     glob_runner(s, args, b, false);
 }
 
+/// Replace global paths in `s` with ".", provided `s` is in fact a string.
+fn erase_global_paths(s: &mut Vec<u8>) {
+    let mut base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    base_path.pop();
+    let base_path = base_path.display().to_string();
+
+    let Ok(err) = std::str::from_utf8(s) else { return };
+    if err.contains(&base_path) {
+        let new_stderr = err.replacen(&base_path, ".", usize::MAX);
+        *s = new_stderr.into();
+    }
+}
+
 fn glob_runner<B>(s: &str, args: &Args, command_builder: B, should_succeed: bool)
 where
     B: Fn(&Path) -> Option<std::process::Command>,
@@ -191,7 +203,12 @@ where
         }
         let output = match command_builder(&entry) {
             None => continue,
-            Some(mut c) => c.output().unwrap(),
+            Some(mut c) => {
+                let mut o = c.output().unwrap();
+                // Replace global paths in stderr with (a simulacrum of) local paths
+                erase_global_paths(&mut o.stderr);
+                o
+            }
         };
 
         let stderr = entry.with_extension("stderr");
