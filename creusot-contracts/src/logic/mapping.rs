@@ -20,16 +20,6 @@ use crate::{logic::ops::IndexLogic, *};
 pub struct Mapping<A: ?Sized, B: ?Sized>(std::marker::PhantomData<A>, std::marker::PhantomData<B>);
 
 impl<A: ?Sized, B: ?Sized> Mapping<A, B> {
-    /// Create a map, with no known information about its return values.
-    ///
-    /// Note that two maps created this way will compare equal.
-    #[trusted]
-    #[logic]
-    #[ensures(true)]
-    pub fn unknown() -> Self {
-        dead
-    }
-
     /// Get the value associated with `a` in the map.
     #[trusted]
     #[logic]

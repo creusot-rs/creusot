@@ -24,6 +24,20 @@ impl<T: ?Sized> MakeSized for T {
     }
 }
 
+/// Creates a logical value ex nihilo.
+///
+/// No information is known about this new value.
+///
+/// Note that two calls to `conjure` (with the same type) yield the same value, so e.g.
+/// `conjure::<i32>() == conjure::<i32>()`.
+#[trusted]
+#[logic]
+#[requires(true)]
+#[ensures(true)]
+pub fn conjure<T>() -> T {
+    dead
+}
+
 /// Indicates unreachable code.
 ///
 /// This function indicates a logical branch that should be impossible to reach.
