@@ -13,7 +13,7 @@ jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Rust fmt
       run: |
         shopt -s globstar
@@ -21,8 +21,8 @@ jobs:
   contracts-build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
+    - uses: actions/checkout@v4
+    - uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry
@@ -34,8 +34,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
+    - uses: actions/checkout@v4
+    - uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry
@@ -53,14 +53,14 @@ jobs:
   why3-deps:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
+    - uses: actions/checkout@v4
+    - uses: actions/cache@v4
       id: cache-opam
       with:
         path: |
           /home/runner/work/creusot/creusot/_opam
         key: ${{ runner.os }}-opam-${{ hashFiles('creusot-deps.opam') }}
-    - uses: ocaml/setup-ocaml@v2
+    - uses: ocaml/setup-ocaml@v3
       if: steps.cache-opam.outputs.cache-hit != 'true'
       with:
         ocaml-compiler: 4.14.1
@@ -87,20 +87,20 @@ jobs:
     needs: why3-deps
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         fetch-depth: ${{ github.event.pull_request.commits }}
     - name: Fetch target branch
       if: github.base_ref
       run: git fetch --no-tags --prune --depth=1 origin +refs/heads/${{github.base_ref}}:refs/remotes/origin/${{github.base_ref}}
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
           target
         key: ${{ runner.os }}-cargo-creusot-${{ hashFiles('**/Cargo.lock') }}
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       id: cache-creusot-setup
       with:
         path: |
@@ -130,8 +130,8 @@ jobs:
     needs: why3-deps
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
+    - uses: actions/checkout@v4
+    - uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry
@@ -142,7 +142,7 @@ jobs:
       run: |
         cargo install --path cargo-creusot
         cargo install --path creusot-rustc
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       id: cache-creusot-setup
       with:
         path: |
