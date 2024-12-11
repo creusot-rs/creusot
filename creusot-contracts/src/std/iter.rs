@@ -147,7 +147,7 @@ extern_spec! {
 
                 #[pure]
                 // These two requirements are here only to prove the absence of overflows
-                #[requires(forall<i: &mut Self_> i.completed() ==> i.produces(Seq::EMPTY, ^i))]
+                #[requires(forall<i: &mut Self_> (*i).completed() ==> (*i).produces(Seq::EMPTY, ^i))]
                 #[requires(forall<s: Seq<Self_::Item>, i: Self_> self.produces(s, i) ==> s.len() < std::usize::MAX@)]
                 #[ensures(result.iter() == self && result.n() == 0)]
                 fn enumerate(self) -> Enumerate<Self>;
@@ -202,4 +202,30 @@ extern_spec! {
             fn repeat<T: Clone>(elt: T) -> Repeat<T>;
         }
     }
+}
+
+impl<I: Iterator + ?Sized> Iterator for &mut I {
+    #[open]
+    #[predicate(prophetic)]
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+        pearlite! { (*self).produces(visited, *o) && ^self == ^o }
+    }
+
+    #[open]
+    #[predicate(prophetic)]
+    fn completed(&mut self) -> bool {
+        pearlite! { (*self).completed() && ^*self == ^^self }
+    }
+
+    #[law]
+    #[open]
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
+
+    #[law]
+    #[open]
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }

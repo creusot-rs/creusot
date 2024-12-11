@@ -46,7 +46,7 @@ impl<I: Iterator> Invariant for Enumerate<I> {
                 #![trigger self.iter().produces(s, i)]
                 self.iter().produces(s, i) ==>
                 self.n() + s.len() < std::usize::MAX@)
-            && (forall<i: &mut I> i.completed() ==> i.produces(Seq::EMPTY, ^i))
+            && (forall<i: &mut I> (*i).completed() ==> (*i).produces(Seq::EMPTY, ^i))
         }
     }
 }
