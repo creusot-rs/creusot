@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use clap::*;
 use creusot_setup::{creusot_paths, Paths, PROVERS};
 use std::{
@@ -44,11 +44,17 @@ fn raw_config(args: &Vec<String>, paths: &Paths) -> Result<()> {
     }
     why3find
         .env("WHY3CONFIG", &paths.why3_config)
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
         .status()
-        .map_err(|e| anyhow::Error::new(e).context("why3find config failed"))
-        .map(|_| ())
+        .map_err(|e| anyhow::Error::new(e).context("'why3find config' failed to launch"))
+        .and_then(
+            |status| {
+                if status.success() {
+                    Ok(())
+                } else {
+                    Err(anyhow!("'why3find config' failed"))
+                }
+            },
+        )
 }
 
 fn raw_prove(args: ProveArgs, paths: &Paths) -> Result<()> {
@@ -71,11 +77,17 @@ fn raw_prove(args: ProveArgs, paths: &Paths) -> Result<()> {
     }
     why3find
         .env("WHY3CONFIG", &paths.why3_config)
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
         .status()
-        .map_err(|e| anyhow::Error::new(e).context("why3find prove failed"))
-        .map(|_| ())
+        .map_err(|e| anyhow::Error::new(e).context("'why3find prove' failed to launch"))
+        .and_then(
+            |status| {
+                if status.success() {
+                    Ok(())
+                } else {
+                    Err(anyhow!("'why3find prove' failed"))
+                }
+            },
+        )
 }
 
 pub fn why3find_config(args: ConfigArgs) -> Result<()> {
