@@ -3,7 +3,7 @@ use clap::*;
 use creusot_setup::{creusot_paths, Paths, PROVERS};
 use std::{
     path::{Path, PathBuf},
-    process::{Command, Stdio},
+    process::Command,
     str::FromStr,
 };
 
