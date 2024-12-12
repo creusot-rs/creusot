@@ -24,6 +24,18 @@ impl<T: ?Sized> MakeSized for T {
     }
 }
 
+/// Creates a logical value satisfying the property given by `p`.
+///
+/// This is also called the "epsilon operator": its goal is not extract from `∃x. P(x)`
+/// a `x` satisfying `P`.
+#[trusted]
+#[logic]
+#[requires(exists<x: T> p[x])]
+#[ensures(p[result])]
+pub fn such_that<T>(p: crate::logic::Mapping<T, bool>) -> T {
+    dead
+}
+
 /// Indicates unreachable code.
 ///
 /// This function indicates a logical branch that should be impossible to reach.
