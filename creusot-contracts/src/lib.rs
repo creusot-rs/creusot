@@ -424,6 +424,9 @@ mod base_prelude {
         ptr::PointerExt as _,
         slice::SliceExt as _,
     };
+
+    #[cfg(creusot)]
+    pub use crate::util::such_that;
 }
 pub mod prelude {
     pub use crate::{base_prelude::*, macros::*};
