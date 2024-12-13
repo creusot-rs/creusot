@@ -114,6 +114,17 @@ impl<T: ?Sized> FSet<T> {
         dead
     }
 
+    /// Returns a new set, which is the union of `self` and `other`.
+    ///
+    /// An element is in the result if it is in `self` _or_ if it is in `other`.
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "set.Fset.inter"]
+    pub fn intersection(self, other: Self) -> Self {
+        let _ = other;
+        dead
+    }
+
     /// Returns `true` if every element of `self` is in `other`.
     #[trusted]
     #[predicate]
