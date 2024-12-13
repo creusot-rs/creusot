@@ -56,6 +56,45 @@ extern_spec! {
                 #[ensures(self.deep_model() <= o.deep_model() ==> result == o)]
                 #[ensures(o.deep_model() < self.deep_model() ==> result == self)]
                 fn max(self, o: Self) -> Self;
+
+                #[ensures(result.deep_model() <= self.deep_model())]
+                #[ensures(result.deep_model() <= o.deep_model())]
+                #[ensures(result == self || result == o)]
+                #[ensures(self.deep_model() < o.deep_model() ==> result == self)]
+                #[ensures(o.deep_model() <= self.deep_model() ==> result == o)]
+                fn min(self, o: Self) -> Self;
+
+                #[ensures(result.deep_model() >= min.deep_model())]
+                #[ensures(result.deep_model() <= max.deep_model())]
+                #[ensures(result == self || result == min || result == max)]
+                #[ensures(if self.deep_model() > max.deep_model() {
+                    result == max
+                } else if self.deep_model() < min.deep_model() {
+                    result == min
+                } else { result == self })]
+                fn clamp(self, min: Self, max: Self) -> Self;
+            }
+
+            #[ensures(result.deep_model() >= v1.deep_model())]
+            #[ensures(result.deep_model() >= v2.deep_model())]
+            #[ensures(result == v1 || result == v2)]
+            #[ensures(v1.deep_model() <= v2.deep_model() ==> result == v2)]
+            #[ensures(v2.deep_model() < v1.deep_model() ==> result == v1)]
+            fn max<T>(v1: T, v2: T) -> T
+                where T: Ord + DeepModel, T::DeepModelTy: OrdLogic
+            {
+                <T as Ord>::max(v1, v2)
+            }
+
+            #[ensures(result.deep_model() <= v1.deep_model())]
+            #[ensures(result.deep_model() <= v2.deep_model())]
+            #[ensures(result == v1 || result == v2)]
+            #[ensures(v1.deep_model() < v2.deep_model() ==> result == v1)]
+            #[ensures(v2.deep_model() <= v1.deep_model() ==> result == v2)]
+            fn min<T>(v1: T, v2: T) -> T
+                where T: Ord + DeepModel, T::DeepModelTy: OrdLogic
+            {
+                <T as Ord>::min(v1, v2)
             }
         }
     }
