@@ -3,7 +3,7 @@ use crate::{
     std::iter::{FromIterator, IntoIterator, Iterator},
     *,
 };
-use ::std::{collections::hash_set::*, hash::*};
+use ::std::{borrow::Borrow, collections::hash_set::*, hash::*};
 
 impl<T: DeepModel, S> View for HashSet<T, S> {
     type ViewTy = FSet<T::DeepModelTy>;
@@ -31,6 +31,12 @@ extern_spec! {
                 {
                     #[ensures(result@ == self@.intersection(other@))]
                     fn intersection<'a>(&'a self, other: &'a HashSet<T,S>) -> Intersection<'a, T, S>;
+
+                    #[ensures(result == self@.contains(value.deep_model()))]
+                    fn contains<Q: ?Sized>(&self, value: &Q) -> bool
+                    where
+                        T: Borrow<Q>,
+                        Q: Eq + Hash + DeepModel<DeepModelTy = T::DeepModelTy>;
                 }
             }
         }

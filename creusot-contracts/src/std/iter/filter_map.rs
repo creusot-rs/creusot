@@ -1,7 +1,7 @@
 use crate::{logic::Mapping, std::ops::*, *};
-use ::std::iter::Filter;
+use ::std::iter::FilterMap;
 
-pub trait FilterExt<I, F> {
+pub trait FilterMapExt<I, F> {
     #[logic]
     fn iter(self) -> I;
 
@@ -9,7 +9,7 @@ pub trait FilterExt<I, F> {
     fn func(self) -> F;
 }
 
-impl<I, F> FilterExt<I, F> for Filter<I, F> {
+impl<I, F> FilterMapExt<I, F> for FilterMap<I, F> {
     #[trusted]
     #[logic]
     #[ensures(inv(self) ==> inv(result))]
@@ -25,19 +25,17 @@ impl<I, F> FilterExt<I, F> for Filter<I, F> {
     }
 }
 
-impl<I: Iterator, F: FnMut(&I::Item) -> bool> Invariant for Filter<I, F> {
+impl<B, I: Iterator, F: FnMut(I::Item) -> Option<B>> Invariant for FilterMap<I, F> {
     #[predicate(prophetic)]
     #[open(self)]
     fn invariant(self) -> bool {
         pearlite! {
             // trivial precondition: simplification for sake of proof complexity
-            forall<f : F, i : &I::Item> f.precondition((i,)) &&
+            no_precondition(self.func()) &&
             // immutable state: simplification for sake of proof complexity
-            (forall<f : F, g : F> f.unnest(g) ==> f == g) &&
-            // precision of postcondition. This is not *necessary*, but simplifies the proof that we have returned *all* elements which evaluate to true.
-            // If we remove this we could prove an alternate statement of produces that says we returned `true` for elements in `visited`, and `false` for
-            // ones which we didn't remove. *if* the postcondition happened to be precise, these two statements would be equivalent .
-            (forall<f1 : F, f2 : F, i : _> !(f1.postcondition_mut((i,), f2, true) && f1.postcondition_mut((i,), f2, false)))
+            immutable(self.func()) &&
+            // precision of postcondition
+            precise(self.func())
         }
     }
 }
@@ -46,36 +44,36 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Invariant for Filter<I, F> {
 /// In a future release this restriction may be lifted or weakened
 #[open]
 #[predicate(prophetic)]
-pub fn no_precondition<A, F: FnMut(A) -> bool>(_: F) -> bool {
-    pearlite! { forall<f : F, i : A> f.precondition((i,)) }
+pub fn no_precondition<A, B, F: FnMut(A) -> Option<B>>(f: F) -> bool {
+    pearlite! { forall<i : A> f.precondition((i,)) }
 }
 
 /// Asserts that the captures of `f` are used immutably
 /// In a future release this restriction may be lifted or weakened
 #[open]
 #[predicate(prophetic)]
-pub fn immutable<A, F: FnMut(A) -> bool>(_: F) -> bool {
-    pearlite! { forall<f : F, g : F> f.unnest(g) ==> f == g }
+pub fn immutable<A, B, F: FnMut(A) -> Option<B>>(f: F) -> bool {
+    pearlite! { forall<g : F> f.unnest(g) ==> f == g }
 }
 
 /// Asserts that the postcondition of `f` is *precise*: that there are never two possible values matching the postcondition
 #[open]
 #[predicate(prophetic)]
-pub fn precise<A, F: FnMut(A) -> bool>(_: F) -> bool {
-    pearlite! { forall<f1 : F, f2 : F, i : _> !(f1.postcondition_mut((i,), f2, true) && f1.postcondition_mut((i,), f2, false)) }
+pub fn precise<A, B, F: FnMut(A) -> Option<B>>(f1: F) -> bool {
+    pearlite! { forall<f2 : F, i : _> !((exists<b: B> f1.postcondition_mut((i,), f2, Some(b))) && f1.postcondition_mut((i,), f2, None)) }
 }
 
-impl<I, F> Iterator for Filter<I, F>
+impl<I, B, F> Iterator for FilterMap<I, F>
 where
     I: Iterator,
-    F: FnMut(&I::Item) -> bool,
+    F: FnMut(I::Item) -> Option<B>,
 {
     #[open]
     #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
             (exists<s: Seq<_>, e : &mut I > self.iter().produces(s, *e) && e.completed() &&
-                forall<i : _> 0 <= i && i < s.len() ==> (*self).func().postcondition_mut((&s[i],), (^self).func(), false))
+                forall<i : _> 0 <= i && i < s.len() ==> (*self).func().postcondition_mut((s[i],), (^self).func(), None))
             && (*self).func() == (^self).func()
         }
     }
@@ -89,13 +87,15 @@ where
             // f here is a mapping from indices of `visited` to those of `s`, where `s` is the whole sequence produced by the underlying iterator
             // Interestingly, Z3 guesses `f` quite readily but gives up *totally* on `s`. However, the addition of the final assertions on the correctness of the values
             // blocks z3's guess for `f`.
-            exists<s : Seq<Self::Item>, f : Mapping<Int, Int>> self.iter().produces(s, succ.iter()) &&
+            exists<s : Seq<I::Item>, f : Mapping<Int, Int>> self.iter().produces(s, succ.iter()) &&
                 (forall<i: Int> 0 <= i && i < visited.len() ==> 0 <= f.get(i) && f.get(i) < s.len()) &&
                 // `f` is a monotone mapping
                 (forall<i: _, j:_ > 0 <= i && i < j && j < visited.len() ==> f.get(i) < f.get(j)) &&
-                (forall<i : _, > 0 <= i && i < visited.len() ==> visited[i] == s[f.get(i)]) &&
-                (forall<i : _> 0 <= i &&  i < s.len() ==>
-                    (exists<j : _> 0 <= j && j < visited.len() && f.get(j) == i) == self.func().postcondition_mut((&s[i],), self.func(), true))
+                // `f` points to elements produced in `s` (by the underlying `iter`) for which the predicate `self.func()` returned `Some`.
+                (forall<i: Int> 0 <= i && i < visited.len() ==> self.func().postcondition_mut((s[f.get(i)],), self.func(), Some(visited[i]))) &&
+                // For other elements not in the image of `f`, the predicate `self.func()` returned `None`.
+                (forall<j: Int> 0 <= j && j < s.len()
+                    ==> (!exists<i: Int> 0 <= i && i < visited.len() && f.get(i) == j) == self.func().postcondition_mut((s[j],), self.func(), None))
         }
     }
 
