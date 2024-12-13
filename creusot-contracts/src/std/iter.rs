@@ -6,6 +6,7 @@ mod copied;
 mod empty;
 mod enumerate;
 mod filter;
+mod filter_map;
 mod fuse;
 mod map;
 mod map_inv;
@@ -20,6 +21,7 @@ pub use cloned::ClonedExt;
 pub use copied::CopiedExt;
 pub use enumerate::EnumerateExt;
 pub use filter::FilterExt;
+pub use filter_map::FilterMapExt;
 pub use fuse::FusedIterator;
 pub use map::MapExt;
 pub use map_inv::MapInv;
@@ -144,6 +146,13 @@ extern_spec! {
                 fn filter<P>(self, f: P) -> Filter<Self, P>
                     where  P : for<'a> FnMut(&Self_::Item) -> bool;
 
+                #[pure]
+                #[requires(filter_map::immutable(f))]
+                #[requires(filter_map::no_precondition(f))]
+                #[requires(filter_map::precise(f))]
+                #[ensures(result.iter() == self && result.func() == f)]
+                fn filter_map<B, F>(self, f: F) -> FilterMap<Self, F>
+                    where F : for<'a> FnMut(Self_::Item) -> Option<B>;
 
                 #[pure]
                 // These two requirements are here only to prove the absence of overflows
