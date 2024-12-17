@@ -525,7 +525,7 @@ fn fn_mut_postcond_term<'tcx>(
     );
     let res = Term::var(Symbol::intern("result"), ty_res);
     match ty_self.kind() {
-        TyKind::Closure(did, _) => Some(ctx.closure_contract(*did).postcond_mut.clone().unwrap()),
+        TyKind::Closure(did, _) => ctx.closure_contract(*did).postcond_mut.clone(),
         TyKind::Ref(_, cl, Mutability::Mut) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
@@ -566,7 +566,7 @@ fn fn_postcond_term<'tcx>(
     );
     let res = Term::var(Symbol::intern("result"), ty_res);
     match ty_self.kind() {
-        TyKind::Closure(did, _) => Some(ctx.closure_contract(*did).postcond.clone().unwrap()),
+        TyKind::Closure(did, _) => ctx.closure_contract(*did).postcond.clone(),
         TyKind::Ref(_, cl, Mutability::Not) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);

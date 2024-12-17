@@ -862,20 +862,23 @@ impl<'tcx> TranslationCtx<'tcx> {
                 let mut ret_params = params.clone();
                 ret_params.push(Term::var(Symbol::intern("result"), retty));
 
-                self.inferred_postcondition_term(
-                    target_kind,
-                    def_id,
-                    subst,
-                    kind,
-                    self_.clone(),
-                    ret_params,
-                    span,
-                )
+                if target_kind == kind {
+                    self.inferred_postcondition_term(
+                        def_id,
+                        subst,
+                        kind,
+                        self_.clone(),
+                        ret_params,
+                        span,
+                    )
+                } else {
+                    return None;
+                }
             } else {
                 contract.ensures_conj(self.tcx)
             };
 
-            pearlite::Term {
+            Some(pearlite::Term {
                 span: postcondition.span,
                 kind: TermKind::Let {
                     pattern: arg_pat.clone(),
@@ -883,7 +886,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                     body: Box::new(postcondition),
                 },
                 ty: self.types.bool,
-            }
+            })
         };
 
         precondition = pearlite::Term {
@@ -928,11 +931,11 @@ impl<'tcx> TranslationCtx<'tcx> {
             let self_ = Term::var(Symbol::intern("self"), env_ty);
             let mut csubst =
                 closure_capture_subst(self, def_id, subst, false, Some(self_.clone()), self_);
-            let mut postcondition = postcond(ClosureKind::Fn);
+            if let Some(mut postcondition) = postcond(ClosureKind::Fn) {
+                csubst.visit_mut_term(&mut postcondition);
 
-            csubst.visit_mut_term(&mut postcondition);
-
-            contracts.postcond = Some(postcondition);
+                contracts.postcond = Some(postcondition);
+            }
         }
 
         if kind.extends(ClosureKind::FnMut) {
@@ -947,29 +950,31 @@ impl<'tcx> TranslationCtx<'tcx> {
                 result_state.clone(),
             );
 
-            let mut postcondition = postcond(ClosureKind::FnMut);
-            csubst.visit_mut_term(&mut postcondition);
+            if let Some(mut postcondition) = postcond(ClosureKind::FnMut) {
+                csubst.visit_mut_term(&mut postcondition);
 
-            let args = subst.as_closure().sig().inputs().skip_binder()[0];
-            let unnest_subst = self.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty)]);
+                let args = subst.as_closure().sig().inputs().skip_binder()[0];
+                let unnest_subst =
+                    self.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty)]);
 
-            let unnest_id = get_fn_mut_impl_unnest(self.tcx);
+                let unnest_id = get_fn_mut_impl_unnest(self.tcx);
 
-            let mut postcondition: Term<'tcx> = postcondition;
-            postcondition = postcondition.conj(Term::call_no_normalize(
-                self.tcx,
-                unnest_id,
-                unnest_subst,
-                vec![self_, result_state],
-            ));
+                let mut postcondition: Term<'tcx> = postcondition;
+                postcondition = postcondition.conj(Term::call_no_normalize(
+                    self.tcx,
+                    unnest_id,
+                    unnest_subst,
+                    vec![self_, result_state],
+                ));
 
-            postcondition = normalize(self.tcx, self.typing_env(def_id), postcondition);
+                postcondition = normalize(self.tcx, self.typing_env(def_id), postcondition);
+                contracts.postcond_mut = Some(postcondition);
+            }
 
             let mut unnest = closure_unnest(self.tcx, def_id, subst);
             unnest = normalize(self.tcx, self.typing_env(def_id), unnest);
 
             contracts.unnest = Some(unnest);
-            contracts.postcond_mut = Some(postcondition);
         }
 
         // FnOnce
@@ -977,9 +982,10 @@ impl<'tcx> TranslationCtx<'tcx> {
         let mut csubst =
             closure_capture_subst(self, def_id, subst, true, Some(self_.clone()), self_);
 
-        let mut postcondition = postcond(ClosureKind::FnOnce);
-        csubst.visit_mut_term(&mut postcondition);
-        contracts.postcond_once = Some(postcondition);
+        if let Some(mut postcondition) = postcond(ClosureKind::FnOnce) {
+            csubst.visit_mut_term(&mut postcondition);
+            contracts.postcond_once = Some(postcondition);
+        }
 
         contracts
     }
@@ -1027,7 +1033,6 @@ impl<'tcx> TranslationCtx<'tcx> {
     /// Infers the `postcond_kind` version of the postcondition predicate for the provided closure.
     fn inferred_postcondition_term(
         &self,
-        postcond_kind: ClosureKind,
         def_id: DefId,
         args: GenericArgsRef<'tcx>,
         closure_kind: ClosureKind,
@@ -1058,23 +1063,13 @@ impl<'tcx> TranslationCtx<'tcx> {
                     span,
                 };
 
-                match postcond_kind {
-                    ClosureKind::FnOnce => base
-                        .conj(bor_self.cur().bin_op(self.tcx, BinOp::Eq, closure_env))
-                        .exists(self.tcx, (Symbol::intern("__bor_self"), env_ty)),
-                    ClosureKind::FnMut => base
-                        .conj(bor_self.clone().cur().bin_op(self.tcx, BinOp::Eq, closure_env))
-                        .conj(bor_self.fin().bin_op(
-                            self.tcx,
-                            BinOp::Eq,
-                            Term::var(Symbol::intern("result_state"), env_ty),
-                        ))
-                        .exists(self.tcx, (Symbol::intern("__bor_self"), env_ty)),
-                    ClosureKind::Fn => self.crash_and_error(
-                        span,
-                        "An `FnMut` closure cannot have an `Fn` postcondition",
-                    ),
-                }
+                base.conj(bor_self.clone().cur().bin_op(self.tcx, BinOp::Eq, closure_env))
+                    .conj(bor_self.fin().bin_op(
+                        self.tcx,
+                        BinOp::Eq,
+                        Term::var(Symbol::intern("result_state"), env_ty),
+                    ))
+                    .exists(self.tcx, (Symbol::intern("__bor_self"), env_ty))
             }
         }
     }
