@@ -66,6 +66,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
             | TyKind::FnDef(_, _)
             | TyKind::FnPtr(_)
             | TyKind::RawPtr(_, _) => (),
+            TyKind::Dynamic(_, _, _) => return false,
             _ => unimplemented!("{ty:?}"),
         }
     }
@@ -130,7 +131,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
             }
         }
 
-        if matches!(ty.kind(), TyKind::Alias(..) | TyKind::Param(_)) {
+        if matches!(ty.kind(), TyKind::Alias(..) | TyKind::Param(_) | TyKind::Dynamic(_, _, _)) {
             use_imples = true
         } else {
             rhs = rhs.conj(self.structural_invariant(subject, ty))
