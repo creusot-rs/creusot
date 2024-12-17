@@ -199,9 +199,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     if !open_body {
         postcond = Expr::BlackBox(Box::new(postcond));
         postcond = ensures.rfold(postcond, |acc, cond| Expr::Assert(Box::new(cond), Box::new(acc)));
-    }
 
-    if !open_body {
         body = Expr::BlackBox(Box::new(body))
     };
 
