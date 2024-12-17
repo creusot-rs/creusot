@@ -224,13 +224,13 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
         LoweringState { ctx, names, locals: &body.locals, name_supply: Default::default(), def_id };
     let (head, tl) = match c {
         Component::Vertex(v) => {
-            let block = body.blocks.remove(&v).unwrap();
+            let block = body.blocks.shift_remove(&v).unwrap();
             return block.to_why(&mut lower, v);
         }
         Component::Component(v, tls) => (v, tls),
     };
 
-    let block = body.blocks.remove(&head).unwrap();
+    let block = body.blocks.shift_remove(&head).unwrap();
     let mut block = block.to_why(&mut lower, head);
 
     let defns = tl.into_iter().map(|id| component_to_defn(body, ctx, names, def_id, id)).collect();

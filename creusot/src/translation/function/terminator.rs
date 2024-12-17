@@ -94,7 +94,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         unreachable!()
                     };
                     let TyKind::Closure(def_id, _) = ty.kind() else { unreachable!() };
-                    let mut assertion = self.snapshots.remove(def_id).unwrap();
+                    let mut assertion = self.snapshots.shift_remove(def_id).unwrap();
                     assertion.subst(&inv_subst(
                         self.tcx(),
                         self.body,
