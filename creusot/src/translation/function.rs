@@ -212,7 +212,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             let mut invariants = Vec::new();
             let mut variant = None;
 
-            for (kind, mut body) in self.invariants.remove(&bb).unwrap_or_else(Vec::new) {
+            for (kind, mut body) in self.invariants.shift_remove(&bb).unwrap_or_else(Vec::new) {
                 body.subst(&inv_subst(
                     self.tcx(),
                     self.body,

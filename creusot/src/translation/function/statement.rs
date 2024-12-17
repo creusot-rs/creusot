@@ -148,7 +148,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         if is_variant(self.tcx(), *def_id) || is_before_loop(self.tcx(), *def_id) {
                             return;
                         } else if is_invariant(self.tcx(), *def_id) {
-                            match self.invariant_assertions.remove(def_id) {
+                            match self.invariant_assertions.shift_remove(def_id) {
                                 None => return,
                                 Some((mut assertion, expl)) => {
                                     assertion.subst(&inv_subst(
@@ -168,7 +168,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         } else if is_assertion(self.tcx(), *def_id) {
                             let mut assertion = self
                                 .assertions
-                                .remove(def_id)
+                                .shift_remove(def_id)
                                 .expect("Could not find body of assertion");
                             assertion.subst(&inv_subst(self.tcx(), &self.body, &self.locals, si));
                             self.check_frozen_in_logic(&assertion, loc);
