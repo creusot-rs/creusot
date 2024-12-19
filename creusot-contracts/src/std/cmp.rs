@@ -18,7 +18,9 @@ extern_spec! {
                 fn ne(&self, rhs: &Rhs) -> bool
                 where
                     Self: DeepModel,
-                    Rhs: DeepModel<DeepModelTy = Self::DeepModelTy>;
+                    Rhs: DeepModel<DeepModelTy = Self::DeepModelTy> {
+                    !(self == rhs)
+                }
             }
 
             // TODO: for now, we only support total orders
@@ -31,16 +33,36 @@ extern_spec! {
                 fn partial_cmp(&self, rhs: &Rhs) -> Option<Ordering>;
 
                 #[ensures(result == (self.deep_model() < other.deep_model()))]
-                fn lt(&self, other: &Rhs) -> bool;
+                fn lt(&self, other: &Rhs) -> bool {
+                    match self.partial_cmp(other) {
+                        Some(Ordering::Less) => true,
+                        _ => false,
+                    }
+                }
 
                 #[ensures(result == (self.deep_model() <= other.deep_model()))]
-                fn le(&self, other: &Rhs) -> bool;
+                fn le(&self, other: &Rhs) -> bool {
+                    match self.partial_cmp(other) {
+                        Some(Ordering::Less | Ordering::Equal) => true,
+                        _ => false,
+                    }
+                }
 
                 #[ensures(result == (self.deep_model() > other.deep_model()))]
-                fn gt(&self, other: &Rhs) -> bool;
+                fn gt(&self, other: &Rhs) -> bool {
+                    match self.partial_cmp(other) {
+                        Some(Ordering::Greater) => true,
+                        _ => false,
+                    }
+                }
 
                 #[ensures(result == (self.deep_model() >= other.deep_model()))]
-                fn ge(&self, other: &Rhs) -> bool;
+                fn ge(&self, other: &Rhs) -> bool {
+                    match self.partial_cmp(other) {
+                        Some(Ordering::Greater | Ordering::Equal) => true,
+                        _ => false,
+                    }
+                }
             }
 
             trait Ord
@@ -55,7 +77,53 @@ extern_spec! {
                 #[ensures(result == self || result == o)]
                 #[ensures(self.deep_model() <= o.deep_model() ==> result == o)]
                 #[ensures(o.deep_model() < self.deep_model() ==> result == self)]
-                fn max(self, o: Self) -> Self;
+                fn max(self, o: Self) -> Self {
+                    if self <= o { o } else { self }
+                }
+
+                #[ensures(result.deep_model() <= self.deep_model())]
+                #[ensures(result.deep_model() <= o.deep_model())]
+                #[ensures(result == self || result == o)]
+                #[ensures(self.deep_model() < o.deep_model() ==> result == self)]
+                #[ensures(o.deep_model() <= self.deep_model() ==> result == o)]
+                fn min(self, o: Self) -> Self {
+                    if self < o { self } else { o }
+                }
+
+                #[requires(min.deep_model() <= max.deep_model())]
+                #[ensures(result.deep_model() >= min.deep_model())]
+                #[ensures(result.deep_model() <= max.deep_model())]
+                #[ensures(result == self || result == min || result == max)]
+                #[ensures(if self.deep_model() > max.deep_model() {
+                    result == max
+                } else if self.deep_model() < min.deep_model() {
+                    result == min
+                } else { result == self })]
+                fn clamp(self, min: Self, max: Self) -> Self {
+                    if self > max { max } else if self < min { min } else { self }
+                }
+            }
+
+            #[ensures(result.deep_model() >= v1.deep_model())]
+            #[ensures(result.deep_model() >= v2.deep_model())]
+            #[ensures(result == v1 || result == v2)]
+            #[ensures(v1.deep_model() <= v2.deep_model() ==> result == v2)]
+            #[ensures(v2.deep_model() < v1.deep_model() ==> result == v1)]
+            fn max<T>(v1: T, v2: T) -> T
+                where T: Ord + DeepModel, T::DeepModelTy: OrdLogic
+            {
+                <T as Ord>::max(v1, v2)
+            }
+
+            #[ensures(result.deep_model() <= v1.deep_model())]
+            #[ensures(result.deep_model() <= v2.deep_model())]
+            #[ensures(result == v1 || result == v2)]
+            #[ensures(v1.deep_model() < v2.deep_model() ==> result == v1)]
+            #[ensures(v2.deep_model() <= v1.deep_model() ==> result == v2)]
+            fn min<T>(v1: T, v2: T) -> T
+                where T: Ord + DeepModel, T::DeepModelTy: OrdLogic
+            {
+                <T as Ord>::min(v1, v2)
             }
         }
     }
