@@ -224,18 +224,21 @@ where
         }
 
         if args.bless {
-            if !args.quiet {
-                out.set_color(ColorSpec::new().set_fg(Some(Color::Blue))).unwrap();
-                writeln!(&mut out, "blessed").unwrap();
-                out.reset().unwrap();
-            }
             let (success, _) =
                 differ(output.clone(), &stdout, Some(&stderr), should_succeed, is_tty).unwrap();
 
-            if !success {
+            if success {
+                if is_tty {
+                    // Move to beginning of line and clear line.
+                    write!(out, "\x1b[G\x1b[2K").unwrap();
+                } else {
+                    out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
+                    writeln!(out, "ok").unwrap();
+                }
+            } else {
                 write!(out, "{current}").unwrap();
-                out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
-                writeln!(&mut out, "failure").unwrap();
+                out.set_color(ColorSpec::new().set_fg(Some(Color::Blue))).unwrap();
+                writeln!(&mut out, "blessed").unwrap();
                 out.reset().unwrap();
             }
 
