@@ -36,7 +36,10 @@ pub(crate) fn validate_trusted(ctx: &mut TranslationCtx) {
     }
 }
 
-pub(crate) fn validate_opacity(ctx: &mut TranslationCtx, item: DefId) -> Option<()> {
+pub(crate) fn validate_opacity(
+    ctx: &mut TranslationCtx,
+    item: DefId,
+) -> Result<(), CannotFetchThir> {
     struct OpacityVisitor<'a, 'tcx> {
         ctx: &'a TranslationCtx<'tcx>,
         opacity: Option<DefId>,
@@ -86,11 +89,11 @@ pub(crate) fn validate_opacity(ctx: &mut TranslationCtx, item: DefId) -> Option<
     }
 
     if is_spec(ctx.tcx, item) {
-        return Some(());
+        return Ok(());
     }
 
     // UGLY clone...
-    let term = ctx.term(item)?.clone();
+    let Some(term) = ctx.term(item)?.cloned() else { return Ok(()) };
 
     if ctx.visibility(item) != Visibility::Restricted(parent_module(ctx.tcx, item))
         && opacity_witness_name(ctx.tcx, item).is_none()
@@ -100,7 +103,7 @@ pub(crate) fn validate_opacity(ctx: &mut TranslationCtx, item: DefId) -> Option<
 
     let opacity = ctx.opacity(item).scope();
     OpacityVisitor { opacity, ctx, source_item: item }.visit_term(&term);
-    Some(())
+    Ok(())
 }
 
 // Validate that laws have no additional generic parameters.

@@ -5,6 +5,7 @@ use rustc_span::{RealFileName, Span};
 use crate::{
     contracts_items::{is_resolve_function, is_spec, is_trusted},
     ctx::{ItemType, TranslatedItem, TranslationCtx},
+    error::CannotFetchThir,
     naming::ModulePath,
     options::SpanMode,
     run_why3::SpanMap,
@@ -52,7 +53,7 @@ impl<'tcx> Why3Generator<'tcx> {
         Why3Generator { ctx, functions: Default::default(), span_map: Default::default() }
     }
 
-    pub(crate) fn translate(&mut self, def_id: DefId) {
+    pub(crate) fn translate(&mut self, def_id: DefId) -> Result<(), CannotFetchThir> {
         debug!("translating {:?}", def_id);
 
         // eprintln!("{:?}", self.param_env(def_id));
@@ -66,7 +67,7 @@ impl<'tcx> Why3Generator<'tcx> {
                 self.functions.push(TranslatedItem::Logic { proof_modl: None });
             }
             ItemType::Logic { .. } | ItemType::Predicate { .. } => {
-                let proof_modl = logic::translate_logic_or_predicate(self, def_id);
+                let proof_modl = logic::translate_logic_or_predicate(self, def_id)?;
                 self.functions.push(TranslatedItem::Logic { proof_modl });
             }
             ItemType::Program => {
@@ -80,9 +81,10 @@ impl<'tcx> Why3Generator<'tcx> {
             ),
             _ => (),
         }
+        Ok(())
     }
 
-    pub(crate) fn modules<'a>(&'a mut self) -> impl Iterator<Item = TranslatedItem> + 'a {
+    pub(crate) fn modules(&mut self) -> impl Iterator<Item = TranslatedItem> + '_ {
         self.functions.drain(..)
     }
 
@@ -148,11 +150,8 @@ impl<'tcx> Why3Generator<'tcx> {
                 None => return None, // The last segment is CrateRoot. Skip it.
                 Some(parent_id) => parent_id,
             };
-            match key.disambiguated_data.data {
-                rustc_hir::definitions::DefPathData::Impl => {
-                    return Some(display_impl_subject(&tcx.impl_subject(id).skip_binder()))
-                }
-                _ => {}
+            if key.disambiguated_data.data == rustc_hir::definitions::DefPathData::Impl {
+                return Some(display_impl_subject(&tcx.impl_subject(id).skip_binder()));
             }
             id.index = parent_id;
         }

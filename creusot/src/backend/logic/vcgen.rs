@@ -144,20 +144,20 @@ fn is_structurally_recursive(ctx: &mut Why3Generator<'_>, self_id: DefId, t: &Te
                     let mut binds = Default::default();
                     pattern.binds(&mut binds);
                     let old_smaller = self.smaller_than.clone();
-                    self.smaller_than.retain(|nm, _| !binds.contains(&nm));
+                    self.smaller_than.retain(|nm, _| !binds.contains(nm));
                     binds.into_iter().for_each(|b| self.smaller_than(b, arg));
                     self.visit_term(body);
                     self.smaller_than = old_smaller;
                 }
 
                 TermKind::Match { arms, scrutinee } => {
-                    self.visit_term(&scrutinee);
+                    self.visit_term(scrutinee);
 
                     for (pat, exp) in arms {
                         let mut binds = Default::default();
                         pat.binds(&mut binds);
                         let old_smaller = self.smaller_than.clone();
-                        self.smaller_than.retain(|nm, _| !binds.contains(&nm));
+                        self.smaller_than.retain(|nm, _| !binds.contains(nm));
                         binds.into_iter().for_each(|b| self.smaller_than(b, scrutinee));
                         self.visit_term(exp);
                         self.smaller_than = old_smaller;
@@ -176,7 +176,7 @@ fn is_structurally_recursive(ctx: &mut Why3Generator<'_>, self_id: DefId, t: &Te
         orig_args,
     };
 
-    s.visit_term(&t);
+    s.visit_term(t);
 
     s.valid()
 }
@@ -299,10 +299,10 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 // BinOp::Or => self.build_vc(lhs, &|lhs| {
                 //     Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_vc(rhs, k)?,))
                 // }),
-                BinOp::Div => self.build_vc(&lhs, &|lhs| {
+                BinOp::Div => self.build_vc(lhs, &|lhs| {
                     self.build_vc(rhs, &|rhs| k(Exp::var("div").app(vec![lhs.clone(), rhs])))
                 }),
-                _ => self.build_vc(&lhs, &|lhs| {
+                _ => self.build_vc(lhs, &|lhs| {
                     self.build_vc(rhs, &|rhs| {
                         k(Exp::BinaryOp(binop_to_binop(*op), Box::new(lhs.clone()), Box::new(rhs)))
                     })
@@ -359,9 +359,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 })
             }
             // VC( * T, Q) = VC(T, |t| Q(*t))
-            TermKind::Cur { term } => self.build_vc(&term, &|term| k(term.field("current"))),
+            TermKind::Cur { term } => self.build_vc(term, &|term| k(term.field("current"))),
             // VC( ^ T, Q) = VC(T, |t| Q(^t))
-            TermKind::Fin { term } => self.build_vc(&term, &|term| k(term.field("final"))),
+            TermKind::Fin { term } => self.build_vc(term, &|term| k(term.field("final"))),
             // VC(A -> B, Q) = VC(A, VC(B, Q(A -> B)))
             TermKind::Impl { lhs, rhs } => self.build_vc(lhs, &|lhs| {
                 Ok(Exp::if_(lhs, self.build_vc(rhs, k)?, k(Exp::mk_true())?))
@@ -372,7 +372,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     && arms.len() == 2
                     && arms.iter().all(|a| a.0.get_bool().is_some()) =>
             {
-                self.build_vc(&scrutinee, &|scrut| {
+                self.build_vc(scrutinee, &|scrut| {
                     let mut arms: Vec<_> = arms
                         .iter()
                         .map(&|arm: &(Pattern<'tcx>, Term<'tcx>)| {
@@ -461,11 +461,11 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         match pat {
             Pattern::Constructor { variant, fields, substs } => {
                 let fields =
-                    fields.into_iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect();
+                    fields.iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect();
                 let substs = self.ctx.borrow().normalize_erasing_regions(self.param_env, *substs);
                 if self.ctx.borrow().def_kind(variant) == DefKind::Variant {
                     Pat::ConsP(self.names.borrow_mut().constructor(*variant, substs), fields)
-                } else if fields.len() == 0 {
+                } else if fields.is_empty() {
                     Pat::TupleP(vec![])
                 } else {
                     Pat::RecP(
@@ -500,9 +500,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     Pat::mk_false()
                 }
             }
-            Pattern::Tuple(pats) => Pat::TupleP(
-                pats.into_iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect(),
-            ),
+            Pattern::Tuple(pats) => {
+                Pat::TupleP(pats.iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect())
+            }
             Pattern::Deref { pointee, kind } => match kind {
                 PointerKind::Box | PointerKind::Shr => self.build_pattern_inner(bounds, pointee),
                 PointerKind::Mut => {
@@ -516,7 +516,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         let occ = self.subst.borrow().occ(id);
 
         if occ == 0 {
-            return id.clone();
+            id.clone()
         } else {
             Ident::from_string(format!("{}_{occ}", &**id))
         }
@@ -574,7 +574,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         let top_level_args = self.top_level_args();
 
         let mut subst: Environment =
-            top_level_args.into_iter().zip(call_args.into_iter().cloned()).collect();
+            top_level_args.into_iter().zip(call_args.iter().cloned()).collect();
         let orig_variant = self.self_sig().contract.variant.remove(0);
         let mut rec_var_exp = orig_variant.clone();
         rec_var_exp.subst(&mut subst);
@@ -588,7 +588,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
     /// Produces the top-level call expression for the function being verified
     fn top_level_args(&self) -> Vec<Ident> {
         let sig = self.self_sig();
-        let (arg_names, _) = binders_to_args(*self.ctx.borrow_mut(), sig.args);
+        let (arg_names, _) = binders_to_args(sig.args);
         arg_names
     }
 
@@ -613,7 +613,7 @@ pub(crate) fn get_func_name<'tcx>(
             // Add dependency
             names.value(id, subst);
 
-            QName::from_string(&a.as_str()).without_search_path()
+            QName::from_string(a.as_str()).without_search_path()
         })
         .unwrap_or_else(|| names.value(id, subst))
 }

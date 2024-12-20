@@ -319,7 +319,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         called_id: DefId,
         generic_args: GenericArgsRef<'tcx>,
         call_span: Span,
-    ) {
+    ) -> Result<(), CannotFetchThir> {
         let tcx = ctx.tcx;
         let (called_id, generic_args) = if TraitResolved::is_trait_item(tcx, called_id) {
             match TraitResolved::resolve_item(tcx, param_env, called_id, generic_args) {
@@ -339,7 +339,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
 
             let ghost_node = self.insert_function(tcx, GraphNode::Function(*ghost_def_id));
             self.graph.update_edge(node, ghost_node, CallKind::Ghost);
-            return;
+            return Ok(());
         }
 
         // TODO: this code is kind of a soup, rework or refactor into a function
@@ -376,7 +376,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                     default_function: called_id,
                     impl_block: spec_impl_id,
                 };
-                let Some(node) = self.visit_specialized_default_function(ctx, default_node) else {
+                let Some(node) = self.visit_specialized_default_function(ctx, default_node)? else {
                     break 'not_default;
                 };
                 let bounds = self.default_functions_bounds[&node];
@@ -417,6 +417,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                 );
             }
         }
+        Ok(())
     }
 
     /// This visit the special function that is called when calling:
@@ -439,10 +440,14 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         &mut self,
         ctx: &mut TranslationCtx<'tcx>,
         graph_node: ImplDefaultTransparent,
-    ) -> Option<graph::NodeIndex> {
-        let node = *self.graph_node_to_index.get(&GraphNode::ImplDefaultTransparent(graph_node))?;
+    ) -> Result<Option<graph::NodeIndex>, CannotFetchThir> {
+        let Some(&node) =
+            self.graph_node_to_index.get(&GraphNode::ImplDefaultTransparent(graph_node))
+        else {
+            return Ok(None);
+        };
         if !self.visited_default_specialization.insert(node) {
-            return Some(node);
+            return Ok(Some(node));
         }
         let tcx = ctx.tcx;
         let ImplDefaultTransparent { default_function: item_id, impl_block: impl_id } = graph_node;
@@ -450,7 +455,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
 
         let impl_id = impl_id.to_def_id();
         let param_env = tcx.param_env(impl_id);
-        let term = ctx.term(item_id).unwrap();
+        let term = ctx.term(item_id)?.unwrap();
         let mut visitor = TermCalls { results: IndexSet::new() };
         visitor.visit_term(term);
 
@@ -486,9 +491,9 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                 EarlyBinder::bind(generic_args),
             );
 
-            self.function_call(ctx, node, param_env, called_id, actual_args, call_span);
+            self.function_call(ctx, node, param_env, called_id, actual_args, call_span)?;
         }
-        Some(node)
+        Ok(Some(node))
     }
 }
 
@@ -594,7 +599,7 @@ impl CallGraph {
                     called_id,
                     generic_args,
                     call_span,
-                );
+                )?;
             }
         }
 

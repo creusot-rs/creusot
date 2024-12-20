@@ -116,7 +116,7 @@ pub enum ItemType {
 }
 
 impl ItemType {
-    pub(crate) fn to_str(&self) -> &str {
+    pub(crate) fn to_str(self) -> &'static str {
         match self {
             ItemType::Logic { prophetic: false } => "logic function",
             ItemType::Logic { prophetic: true } => "prophetic logic function",
@@ -195,12 +195,12 @@ fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, Vec<usize>> {
 
     let (resolver, cr) = &*tcx.resolver_for_lowering().borrow();
 
-    let mut visit = VisitFns(HashMap::new(), &resolver);
-    visit.visit_crate(&*cr);
+    let mut visit = VisitFns(HashMap::new(), resolver);
+    visit.visit_crate(cr);
     visit.0
 }
 
-impl<'tcx, 'sess> TranslationCtx<'tcx> {
+impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn new(tcx: TyCtxt<'tcx>, opts: Options) -> Self {
         let params_open_inv = gather_params_open_inv(tcx);
         let creusot_items = creusot_items::local_creusot_items(tcx);
@@ -257,30 +257,42 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         self.fmir_body.get(&body_id).unwrap()
     }
 
-    pub(crate) fn term(&mut self, def_id: DefId) -> Option<&Term<'tcx>> {
-        if !def_id.is_local() {
-            return self.externs.term(def_id);
-        }
+    /// Compute the pearlite term associated with `def_id`.
+    ///
+    /// # Returns
+    /// - `Ok(None)` if `def_id` does not have a body
+    /// - `Ok(Some(term))` if `def_id` has a body, in this crate or in a dependency.
+    /// - `Err(CannotFetchThir)` if typechecking the body of `def_id` failed.
+    pub(crate) fn term(&mut self, def_id: DefId) -> Result<Option<&Term<'tcx>>, CannotFetchThir> {
+        let Some(local_id) = def_id.as_local() else { return Ok(self.externs.term(def_id)) };
 
-        if self.has_body(def_id) {
+        if self.tcx.hir().maybe_body_owned_by(local_id).is_some() {
             if !self.terms.contains_key(&def_id) {
-                let mut term = match pearlite::pearlite(self, def_id.expect_local()) {
+                let mut term = match pearlite::pearlite(self, local_id) {
                     Ok(t) => t,
                     Err(Error::MustPrint(msg)) => msg.emit(self.tcx),
-                    Err(Error::TypeCheck(thir)) => {
-                        // FIXME: bubble up the thir error
-                        self.tcx.dcx().abort_if_errors();
-                        return None;
-                    }
+                    Err(Error::TypeCheck(thir)) => return Err(thir),
                 };
                 term = pearlite::normalize(self.tcx, self.param_env(def_id), term);
 
                 self.terms.insert(def_id, term);
             };
-            self.terms.get(&def_id)
+            Ok(self.terms.get(&def_id))
         } else {
-            None
+            Ok(None)
         }
+    }
+
+    /// Same as [`Self::term`], but aborts if an error was found.
+    ///
+    /// This should only be used in [`after_analysis`](crate::translation::after_analysis),
+    /// where we are confident that typechecking errors have already been reported.
+    pub(crate) fn term_fail_fast(&mut self, def_id: DefId) -> Option<&Term<'tcx>> {
+        let tcx = self.tcx;
+        self.term(def_id).unwrap_or_else(|_| {
+            tcx.dcx().abort_if_errors();
+            None
+        })
     }
 
     pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&Vec<usize>> {
@@ -296,12 +308,13 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         let body = self.body_with_facts(body_id.def_id);
         match body_id.promoted {
             None => &body.body,
-            Some(promoted) => &body.promoted.get(promoted).unwrap(),
+            Some(promoted) => body.promoted.get(promoted).unwrap(),
         }
     }
 
     pub(crate) fn body_with_facts(&mut self, def_id: LocalDefId) -> &BodyWithBorrowckFacts<'tcx> {
-        if !self.bodies.contains_key(&def_id) {
+        let entry = self.bodies.entry(def_id);
+        entry.or_insert_with(|| {
             let mut body = callbacks::get_body(self.tcx, def_id)
                 .unwrap_or_else(|| panic!("did not find body for {def_id:?}"));
 
@@ -317,10 +330,8 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                 }
             }
 
-            self.bodies.insert(def_id, body);
-        };
-
-        self.bodies.get(&def_id).unwrap()
+            body
+        })
     }
 
     pub(crate) fn type_invariant(
@@ -374,9 +385,9 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     /// We encodes the opacity of functions using 'witnesses', funcitons that have the target opacity
     /// set as their *visibility*.
     pub(crate) fn opacity(&mut self, item: DefId) -> &Opacity {
-        if self.opacity.get(&item).is_none() {
+        if !self.opacity.contains_key(&item) {
             self.opacity.insert(item, self.mk_opacity(item));
-        };
+        }
 
         &self.opacity[&item]
     }
@@ -441,7 +452,9 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             self.tcx.hir().maybe_body_owned_by(local_id).is_some()
         } else {
             match self.item_type(def_id) {
-                ItemType::Logic { .. } | ItemType::Predicate { .. } => self.term(def_id).is_some(),
+                ItemType::Logic { .. } | ItemType::Predicate { .. } => {
+                    matches!(self.term(def_id), Ok(Some(_)))
+                }
                 _ => false,
             }
         }
@@ -471,7 +484,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                 self.extern_spec_items.insert(def_id, i);
 
                 for id in c.iter_ids() {
-                    self.term(id).unwrap();
+                    self.term(id)?.unwrap();
                 }
             }
         }
@@ -481,7 +494,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             self.extern_specs.values().flat_map(|e| e.contract.iter_ids()).collect();
 
         for id in need_to_load {
-            self.term(id);
+            self.term(id)?;
         }
 
         for def_id in traits_or_impls {

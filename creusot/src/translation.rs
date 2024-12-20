@@ -67,8 +67,9 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn st
         if (is_spec(ctx.tcx, def_id) || is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
             && !is_trusted_function(ctx.tcx, def_id)
         {
+            // OK to ignore this error, because we abort after the loop.
             let _ = ctx.term(def_id);
-            validate_opacity(ctx, def_id);
+            let _ = validate_opacity(ctx, def_id);
         }
     }
     ctx.tcx.dcx().abort_if_errors();
@@ -117,14 +118,17 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn std::err
         }
 
         info!("Translating body {:?}", def_id);
-        why3.translate(def_id);
+        // Ok to ignore, because we call `abort_if_errors` at the end of the next loop
+        let _ = why3.translate(def_id);
     }
 
     for impls in why3.all_local_trait_impls(()).values() {
         for impl_id in impls {
-            why3.translate(impl_id.to_def_id());
+            // Ok to ignore, because we call `abort_if_errors` at the end of the loop
+            let _ = why3.translate(impl_id.to_def_id());
         }
     }
+    why3.tcx.dcx().abort_if_errors();
 
     debug!("after_analysis_translate: {:?}", start.elapsed());
     let start = Instant::now();
@@ -184,9 +188,9 @@ fn show_attribute(attr: &Attribute) -> String {
 
 fn modular_output<T: Write>(modl: &FileModule, out: &mut T) -> std::io::Result<()> {
     let FileModule { path: _, modl: Module { name: _, decls, attrs, meta } } = modl;
-    let attrs = attrs.into_iter().map(|attr| Decl::Comment(show_attribute(attr)));
-    let meta = meta.into_iter().map(|s| Decl::Comment(s.clone()));
-    let decls: Vec<Decl> = attrs.chain(meta).chain(decls.into_iter().cloned()).collect();
+    let attrs = attrs.iter().map(|attr| Decl::Comment(show_attribute(attr)));
+    let meta = meta.iter().map(|s| Decl::Comment(s.clone()));
+    let decls: Vec<Decl> = attrs.chain(meta).chain(decls.iter().cloned()).collect();
     pretty_blocks(&decls, &printer::ALLOC).1.render(120, out)?;
     writeln!(out)?;
     Ok(())
