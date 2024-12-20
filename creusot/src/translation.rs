@@ -14,7 +14,7 @@ use crate::{
         are_contracts_loaded, is_logic, is_no_translate, is_predicate, is_spec, AreContractsLoaded,
     },
     ctx::{self},
-    error::InternalError,
+    error::{Error, InternalError},
     metadata,
     options::Output,
     translated_item::FileModule,
@@ -27,13 +27,13 @@ use ctx::TranslationCtx;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::DUMMY_SP;
-use std::{error::Error, fs::File, io::Write, path::PathBuf};
+use std::{fs::File, io::Write, path::PathBuf, time::Instant};
 use why3::{
     declaration::{Attribute, Decl, Module},
     printer::{self, pretty_blocks, Print},
 };
 
-pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
+pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
 
     match are_contracts_loaded(ctx.tcx) {
@@ -53,20 +53,28 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
     }
 
     ctx.load_metadata();
-    ctx.load_extern_specs().map_err(|_| Box::new(InternalError("Failed to load extern specs")))?;
+    match ctx.load_extern_specs() {
+        Ok(()) => {}
+        Err(Error::MustPrint(msg)) => msg.emit(ctx.tcx),
+        Err(Error::TypeCheck(_)) => ctx.tcx.dcx().abort_if_errors(),
+    };
 
     for def_id in ctx.tcx.hir().body_owners() {
-        validate_purity(ctx, def_id);
+        // OK to ignore this error, because we abort after the loop.
+        let _ = validate_purity(ctx, def_id);
 
         let def_id = def_id.to_def_id();
-        if is_spec(ctx.tcx, def_id) || is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id) {
-            if !is_trusted_function(ctx.tcx, def_id) {
-                let _ = ctx.term(def_id);
-                validate_opacity(ctx, def_id);
-            }
+        if (is_spec(ctx.tcx, def_id) || is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
+            && !is_trusted_function(ctx.tcx, def_id)
+        {
+            let _ = ctx.term(def_id);
+            validate_opacity(ctx, def_id);
         }
     }
-    validate_terminates(ctx);
+    ctx.tcx.dcx().abort_if_errors();
+    // OK to ignore this error, because we abort right after.
+    let _ = validate_terminates(ctx);
+    ctx.tcx.dcx().abort_if_errors();
 
     // Check that all trait laws are well-formed
     validate_traits(ctx);
@@ -91,9 +99,8 @@ fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
     }
 }
 
-use std::time::Instant;
 // TODO: Move the main loop out of `translation.rs`
-pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn Error>> {
+pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn std::error::Error>> {
     let mut why3 = Why3Generator::new(ctx);
 
     let start = Instant::now();

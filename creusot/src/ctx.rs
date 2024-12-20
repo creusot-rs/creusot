@@ -6,7 +6,7 @@ use crate::{
         opacity_witness_name,
     },
     creusot_items::{self, CreusotItems},
-    error::CreusotResult,
+    error::{CannotFetchThir, CreusotResult, Error},
     metadata::{BinaryMetadata, Metadata},
     options::Options,
     specification::{pre_sig_of, PreSignature},
@@ -36,6 +36,7 @@ use rustc_infer::traits::ObligationCause;
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{Body, Promoted, TerminatorKind},
+    thir,
     ty::{
         Clause, GenericArg, GenericArgsRef, ParamEnv, Predicate, ResolverAstLowering, Ty, TyCtxt,
         Visibility,
@@ -227,6 +228,23 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         self.externs.load(self.tcx, &self.opts.extern_paths);
     }
 
+    /// Fetch the THIR of the given function.
+    ///
+    /// If type-checking this function fails, this will return [`CannotFetchThir`], which
+    /// should then be bubbled up the stack.
+    pub(crate) fn fetch_thir(
+        &self,
+        local_id: LocalDefId,
+    ) -> Result<
+        (&'tcx rustc_data_structures::steal::Steal<thir::Thir<'tcx>>, thir::ExprId),
+        CannotFetchThir,
+    > {
+        match self.tcx.thir_body(local_id) {
+            Ok(body) => Ok(body),
+            Err(_) => Err(CannotFetchThir),
+        }
+    }
+
     queryish!(trait_impl, &TraitImpl<'tcx>, translate_impl);
 
     queryish!(closure_contract, &ClosureContract<'tcx>, build_closure_contract);
@@ -246,8 +264,15 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
         if self.has_body(def_id) {
             if !self.terms.contains_key(&def_id) {
-                let mut term = pearlite::pearlite(self, def_id.expect_local())
-                    .unwrap_or_else(|e| e.emit(self.tcx));
+                let mut term = match pearlite::pearlite(self, def_id.expect_local()) {
+                    Ok(t) => t,
+                    Err(Error::MustPrint(msg)) => msg.emit(self.tcx),
+                    Err(Error::TypeCheck(thir)) => {
+                        // FIXME: bubble up the thir error
+                        self.tcx.dcx().abort_if_errors();
+                        return None;
+                    }
+                };
                 term = pearlite::normalize(self.tcx, self.param_env(def_id), term);
 
                 self.terms.insert(def_id, term);

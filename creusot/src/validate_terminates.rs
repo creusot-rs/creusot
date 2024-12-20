@@ -37,6 +37,7 @@ use crate::{
         has_variant_clause, is_ghost_closure, is_ghost_from_fn, is_no_translate, is_pearlite,
     },
     ctx::TranslationCtx,
+    error::CannotFetchThir,
     pearlite::{TermKind, TermVisitor},
     specification::contract_of,
     traits::TraitResolved,
@@ -58,15 +59,15 @@ use rustc_trait_selection::traits::normalize_param_env_or_error;
 
 /// Validate that a `#[terminates]` function cannot loop indefinitely. This includes:
 /// - forbidding program function from using loops of any kind (this should be relaxed
-/// later).
+///   later).
 /// - forbidding (mutual) recursive calls, especially when traits are involved.
 ///
 /// Note that for logical functions, these are relaxed: we don't check loops, nor simple
 /// recursion, because why3 will handle it for us.
-pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
+pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) -> Result<(), CannotFetchThir> {
     ctx.tcx.dcx().abort_if_errors(); // There may have been errors before, if a `#[terminates]` calls a non-`#[terminates]`.
 
-    let CallGraph { graph: mut call_graph, additional_data } = CallGraph::build(ctx);
+    let CallGraph { graph: mut call_graph, additional_data } = CallGraph::build(ctx)?;
 
     // Detect simple recursion, and loops
     for fun_index in call_graph.node_indices() {
@@ -157,7 +158,7 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
             let last = idx == cycle.len();
             if let Some(e) = call_graph.edges_connecting(current_node, next_node).next() {
                 let call = *e.weight();
-                let adverb = if last && cycle.len() >= 1 { "finally" } else { "then" };
+                let adverb = if last && !cycle.is_empty() { "finally" } else { "then" };
                 let punct = if last { "." } else { "..." };
                 let f1 =
                     ctx.tcx.def_path_str(call_graph.node_weight(current_node).unwrap().def_id());
@@ -185,6 +186,7 @@ pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) {
     }
 
     ctx.tcx.dcx().abort_if_errors();
+    Ok(())
 }
 
 struct CallGraph {
@@ -495,7 +497,7 @@ impl CallGraph {
     /// exclusively for the purpose of termination checking.
     ///
     /// In particular, this means it only contains `#[terminates]` functions.
-    fn build(ctx: &mut TranslationCtx) -> Self {
+    fn build(ctx: &mut TranslationCtx) -> Result<Self, CannotFetchThir> {
         let tcx = ctx.tcx;
         let mut build_call_graph = BuildFunctionsGraph::default();
 
@@ -569,9 +571,18 @@ impl CallGraph {
             let (thir, expr) = ctx.thir_body(local_id).unwrap();
             let thir = thir.borrow();
             // Collect functions called by this function
-            let mut visitor =
-                FunctionCalls { thir: &thir, tcx, calls: IndexSet::new(), has_loops: None };
+            let mut visitor = FunctionCalls {
+                thir: &thir,
+                tcx,
+                calls: IndexSet::new(),
+                has_loops: None,
+                thir_failed: false,
+            };
             <FunctionCalls as thir::visit::Visitor>::visit_expr(&mut visitor, &thir[expr]);
+
+            if visitor.thir_failed {
+                return Err(CannotFetchThir);
+            }
 
             build_call_graph.additional_data[&node].has_loops = visitor.has_loops;
 
@@ -587,7 +598,10 @@ impl CallGraph {
             }
         }
 
-        Self { graph: build_call_graph.graph, additional_data: build_call_graph.additional_data }
+        Ok(Self {
+            graph: build_call_graph.graph,
+            additional_data: build_call_graph.additional_data,
+        })
     }
 }
 
@@ -602,6 +616,8 @@ struct FunctionCalls<'thir, 'tcx> {
     calls: IndexSet<(DefId, &'tcx GenericArgs<'tcx>, Span)>,
     /// `Some` if the function contains a loop construct.
     has_loops: Option<Span>,
+    /// If `true`, we should error with a [`CannotFetchThir`] error.
+    thir_failed: bool,
 }
 
 impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tcx> {
@@ -617,10 +633,10 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tc
                 }
             }
             thir::ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
-                let (thir, expr) = self.tcx.thir_body(closure_id).unwrap_or_else(|_| {
-                    crate::error::Error::from(crate::error::InternalError("Cannot fetch THIR body"))
-                        .emit(self.tcx)
-                });
+                let Ok((thir, expr)) = self.tcx.thir_body(closure_id) else {
+                    self.thir_failed = true;
+                    return;
+                };
                 let thir = thir.borrow();
 
                 let mut closure_visitor = FunctionCalls {
@@ -628,8 +644,13 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tc
                     tcx: self.tcx,
                     calls: std::mem::take(&mut self.calls),
                     has_loops: None,
+                    thir_failed: false,
                 };
                 thir::visit::walk_expr(&mut closure_visitor, &thir[expr]);
+                if closure_visitor.thir_failed {
+                    self.thir_failed = true;
+                    return;
+                }
                 self.calls.extend(closure_visitor.calls);
                 self.has_loops = self.has_loops.or(closure_visitor.has_loops);
             }

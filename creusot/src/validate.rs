@@ -15,7 +15,7 @@ use crate::{
         is_spec, is_trusted, opacity_witness_name,
     },
     ctx::TranslationCtx,
-    error::{Error, InternalError},
+    error::CannotFetchThir,
     pearlite::{pearlite_stub, Stub},
     specification::contract_of,
     traits::TraitResolved,
@@ -287,26 +287,32 @@ impl Purity {
     }
 }
 
-pub(crate) fn validate_purity(ctx: &mut TranslationCtx, def_id: LocalDefId) {
-    let (thir, expr) = ctx
-        .thir_body(def_id)
-        .unwrap_or_else(|_| Error::from(InternalError("Cannot fetch THIR body")).emit(ctx.tcx));
+pub(crate) fn validate_purity(
+    ctx: &mut TranslationCtx,
+    def_id: LocalDefId,
+) -> Result<(), CannotFetchThir> {
+    let (thir, expr) = ctx.fetch_thir(def_id)?;
     let thir = thir.borrow();
     if thir.exprs.is_empty() {
-        Error::new(ctx.def_span(def_id), "type checking failed").emit(ctx.tcx);
+        // TODO: put this inside `fetch_thir`?
+        return Err(CannotFetchThir);
     }
 
     let def_id = def_id.to_def_id();
     let purity = Purity::of_def_id(ctx, def_id);
     if matches!(purity, Purity::Program { .. }) && is_no_translate(ctx.tcx, def_id) {
-        return;
+        return Ok(());
     }
     let param_env = ctx.tcx.param_env(def_id);
 
-    thir::visit::walk_expr(
-        &mut PurityVisitor { ctx, thir: &thir, context: purity, param_env },
-        &thir[expr],
-    );
+    let mut visitor =
+        PurityVisitor { ctx, thir: &thir, context: purity, param_env, thir_failed: false };
+    thir::visit::walk_expr(&mut visitor, &thir[expr]);
+    if visitor.thir_failed {
+        Err(CannotFetchThir)
+    } else {
+        Ok(())
+    }
 }
 
 struct PurityVisitor<'a, 'tcx> {
@@ -315,6 +321,8 @@ struct PurityVisitor<'a, 'tcx> {
     context: Purity,
     /// Typing environment of the caller function
     param_env: ParamEnv<'tcx>,
+    // If `true`, we should error with a [`CannotFetchThir`] error.
+    thir_failed: bool,
 }
 
 impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
@@ -395,20 +403,24 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                     return;
                 }
 
-                let (thir, expr) = self.ctx.thir_body(closure_id).unwrap_or_else(|_| {
-                    Error::from(InternalError("Cannot fetch THIR body")).emit(self.ctx.tcx)
-                });
+                let Ok((thir, expr)) = self.ctx.thir_body(closure_id) else {
+                    self.thir_failed = true;
+                    return;
+                };
                 let thir = thir.borrow();
 
-                thir::visit::walk_expr(
-                    &mut PurityVisitor {
-                        ctx: self.ctx,
-                        thir: &thir,
-                        context: self.context,
-                        param_env: self.param_env,
-                    },
-                    &thir[expr],
-                );
+                let mut visitor = PurityVisitor {
+                    ctx: self.ctx,
+                    thir: &thir,
+                    context: self.context,
+                    param_env: self.param_env,
+                    thir_failed: false,
+                };
+                thir::visit::walk_expr(&mut visitor, &thir[expr]);
+                if visitor.thir_failed {
+                    self.thir_failed = true;
+                    return;
+                }
             }
             _ => {}
         }
