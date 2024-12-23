@@ -191,13 +191,40 @@ fn monolithic_output<T: Write>(modl: &FileModule, out: &mut T) -> std::io::Resul
     Ok(())
 }
 
+// Remove coma files in the `verif/{krate}/` directory to avoid obsolete files left after
+// (re)moving functions in source code.
+// We don't want to just `remove_dir_all()` because it may contain
+// `proof.json`, `why3session.xml`, and `why3shapes.xml` files that users want to preserve.
+fn remove_coma_files(dir: &PathBuf) -> std::io::Result<()> {
+    if dir.exists() {
+        for entry in std::fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                remove_coma_files(&path)?;
+                let _ = std::fs::remove_dir(path); // remove the directory if it's empty, do nothing otherwise
+            } else if path.extension().map_or(false, |ext| ext == "coma") {
+                std::fs::remove_file(&path)?;
+            }
+        }
+    }
+    Ok(())
+}
+
 fn print_crate<I: Iterator<Item = FileModule>>(
     output_target: Output,
     prefix: Vec<why3::Ident>,
     modules: I,
 ) -> std::io::Result<Option<PathBuf>> {
     let (root, mut output) = match output_target {
-        Output::Directory(dir) => (Some(dir.clone()), OutputHandle::Directory(dir, prefix)),
+        Output::Directory(dir) => {
+            let mut outdir = dir.clone();
+            for m in &prefix {
+                outdir.push(m.as_str());
+            }
+            remove_coma_files(&outdir)?;
+            (Some(dir.clone()), OutputHandle::Directory(dir, prefix))
+        }
         Output::File(ref f) => {
             std::fs::create_dir_all(f.parent().unwrap()).unwrap();
             (
