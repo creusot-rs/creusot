@@ -6,3 +6,8 @@ pub fn test_mut_ref() {
     assert_eq!((&mut a).next(), Some(&2));
     assert_eq!((&mut a).next(), None);
 }
+
+pub fn test_filter_map() {
+    let a = [true, false, true].iter().filter_map(|b| if *b { Some(false) } else { None } ).collect::<Vec<_>>();
+    assert_eq!(a, [false, false]);
+}
