@@ -12,12 +12,11 @@ mod vcgen;
 
 use self::vcgen::vc;
 
-use super::{is_trusted_function, signature::signature_of, term::lower_pure, Why3Generator};
+use super::{
+    is_trusted_function, signature::signature_of, term::lower_pure, CannotFetchThir, Why3Generator,
+};
 
-pub(crate) fn binders_to_args(
-    ctx: &mut Why3Generator,
-    binders: Vec<Binder>,
-) -> (Vec<Ident>, Vec<Binder>) {
+pub(crate) fn binders_to_args(binders: Vec<Binder>) -> (Vec<Ident>, Vec<Binder>) {
     let mut args = Vec::new();
     let mut out_binders = Vec::new();
     let mut fresh = 0;
@@ -30,11 +29,11 @@ pub(crate) fn binders_to_args(
             }
             Binder::UnNamed(_) => unreachable!("unnamed parameter in logical function signature"),
             Binder::Named(ref nm) => {
-                args.push(nm.clone().into());
+                args.push(nm.clone());
                 out_binders.push(b);
             }
             Binder::Typed(ghost, binders, ty) => {
-                let (inner_args, inner_binders) = binders_to_args(ctx, binders);
+                let (inner_args, inner_binders) = binders_to_args(binders);
                 args.extend(inner_args);
                 out_binders.push(Binder::Typed(ghost, inner_binders, ty));
             }
@@ -43,16 +42,16 @@ pub(crate) fn binders_to_args(
     (args, out_binders)
 }
 
-pub(crate) fn translate_logic_or_predicate<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
+pub(crate) fn translate_logic_or_predicate(
+    ctx: &mut Why3Generator,
     def_id: DefId,
-) -> Option<FileModule> {
+) -> Result<Option<FileModule>, CannotFetchThir> {
     let mut names = Dependencies::new(ctx, def_id);
 
     // Check that we don't have both `builtins` and a contract at the same time (which are contradictory)
     if get_builtin(ctx.tcx, def_id).is_some() {
         if signature_of(ctx, &mut names, "".into(), def_id).contract.is_empty() {
-            return None;
+            return Ok(None);
         }
 
         ctx.crash_and_error(
@@ -69,14 +68,14 @@ pub(crate) fn translate_logic_or_predicate<'tcx>(
         || is_trusted_function(ctx.tcx, def_id)
         || !ctx.has_body(def_id)
     {
-        return None;
+        return Ok(None);
     }
 
-    let term = ctx.ctx.term(def_id).unwrap().clone();
+    let term = ctx.ctx.term(def_id)?.unwrap().clone();
 
     let mut body_decls = Vec::new();
 
-    let (arg_names, new_binders) = binders_to_args(ctx, sig.args);
+    let (arg_names, new_binders) = binders_to_args(sig.args);
 
     let param_decls = arg_names.iter().zip(new_binders.iter()).map(|(nm, binder)| {
         Decl::LogicDecl(LogicDecl {
@@ -129,7 +128,7 @@ pub(crate) fn translate_logic_or_predicate<'tcx>(
     let meta = ctx.display_impl_of(def_id);
     let path = ctx.module_path(def_id);
     let name = path.why3_ident();
-    Some(FileModule { path, modl: Module { name, decls, attrs, meta } })
+    Ok(Some(FileModule { path, modl: Module { name, decls, attrs, meta } }))
 }
 
 pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
@@ -234,8 +233,8 @@ fn limited_function_encode(
     let lim_call = function_call(&lim_sig);
     lim_sig.trigger = Some(Trigger::single(lim_call.clone()));
     decls.push(Decl::LogicDecl(LogicDecl { kind, sig: lim_sig }));
-    decls.push(Decl::Axiom(definition_axiom(&sig, body, "def")));
-    decls.push(Decl::Axiom(definition_axiom(&sig, lim_call, "def_lim")));
+    decls.push(Decl::Axiom(definition_axiom(sig, body, "def")));
+    decls.push(Decl::Axiom(definition_axiom(sig, lim_call, "def_lim")));
 }
 
 pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {

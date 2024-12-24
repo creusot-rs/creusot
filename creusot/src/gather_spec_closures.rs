@@ -29,16 +29,16 @@ pub(crate) struct SpecClosures<'tcx> {
 impl<'tcx> SpecClosures<'tcx> {
     pub(crate) fn collect(ctx: &mut TranslationCtx<'tcx>, body: &Body<'tcx>) -> Self {
         let mut visitor = Closures::new(ctx.tcx);
-        visitor.visit_body(&body);
+        visitor.visit_body(body);
 
         let mut assertions = IndexMap::new();
         let mut snapshots = IndexMap::new();
         for clos in visitor.closures.into_iter() {
             if is_assertion(ctx.tcx, clos) {
-                let term = ctx.term(clos).unwrap().clone();
+                let term = ctx.term_fail_fast(clos).unwrap().clone();
                 assertions.insert(clos, term);
             } else if is_snapshot_closure(ctx.tcx, clos) {
-                let term = ctx.term(clos).unwrap().clone();
+                let term = ctx.term_fail_fast(clos).unwrap().clone();
                 snapshots.insert(clos, term);
             }
         }
@@ -113,7 +113,7 @@ impl<'a, 'tcx> InvariantsVisitor<'a, 'tcx> {
             if preds.len() > 1 {
                 return Some(block);
             }
-            let Some(pred) = preds.get(0) else {
+            let Some(pred) = preds.first() else {
                 // Reached the top of the function. Impossible.
                 panic!("The impossible happened: Missing 'before_loop' marker.");
             };
@@ -140,7 +140,7 @@ impl<'a, 'tcx> Visitor<'tcx> for InvariantsVisitor<'a, 'tcx> {
                 }
                 return;
             };
-            let term = self.ctx.term(*id).unwrap().clone();
+            let term = self.ctx.term_fail_fast(*id).unwrap().clone();
             match self.find_loop_header(loc) {
                 None if let LoopSpecKind::Invariant(expl) = kind => {
                     self.ctx.warn(
