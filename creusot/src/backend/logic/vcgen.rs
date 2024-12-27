@@ -184,11 +184,11 @@ fn is_structurally_recursive(ctx: &mut Why3Generator<'_>, self_id: DefId, t: &Te
 #[derive(Debug)]
 pub enum VCError<'tcx> {
     /// `old` doesn't currently make sense inside of a lemma function
-    Old(Span),
+    OldInLemma(Span),
     /// Too lazy to implement this atm.
-    Reborrow(Span),
+    UnimplementedReborrow(Span),
     /// Same here...
-    Closure(Span),
+    UnimplementedClosure(Span),
     /// Variants are currently restricted to `Int`
     #[allow(dead_code)] // this lint is too agressive
     UnsupportedVariant(Ty<'tcx>, Span),
@@ -197,9 +197,9 @@ pub enum VCError<'tcx> {
 impl<'tcx> VCError<'tcx> {
     pub fn span(&self) -> Span {
         match self {
-            VCError::Old(s) => *s,
-            VCError::Reborrow(s) => *s,
-            VCError::Closure(s) => *s,
+            VCError::OldInLemma(s) => *s,
+            VCError::UnimplementedReborrow(s) => *s,
+            VCError::UnimplementedClosure(s) => *s,
             VCError::UnsupportedVariant(_, s) => *s,
         }
     }
@@ -432,9 +432,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
                 self.build_vc(lhs, &|lhs| k(lhs.field(&field)))
             }
-            TermKind::Old { .. } => Err(VCError::Old(t.span)),
-            TermKind::Closure { .. } => Err(VCError::Closure(t.span)),
-            TermKind::Reborrow { .. } => Err(VCError::Reborrow(t.span)),
+            TermKind::Old { .. } => Err(VCError::OldInLemma(t.span)),
+            TermKind::Closure { .. } => Err(VCError::UnimplementedClosure(t.span)),
+            TermKind::Reborrow { .. } => Err(VCError::UnimplementedReborrow(t.span)),
         }
     }
 
