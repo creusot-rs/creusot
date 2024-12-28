@@ -1,6 +1,7 @@
 pub use ::std::*;
 
 pub mod array;
+pub mod borrow;
 pub mod boxed;
 pub mod clone;
 pub mod collections {
