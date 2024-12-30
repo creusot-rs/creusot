@@ -112,7 +112,7 @@ pub(crate) fn translate_logic_or_predicate(
 
     let body = match body {
         Ok(body) => body,
-        Err(e) => ctx.fatal_error(e.span(), &format!("{e:?}")).emit(),
+        Err(e) => ctx.fatal_error(e.span(), &format!("translate_logic_or_predicate: {e:?}")).emit(),
     };
 
     let requires = sig.contract.requires.into_iter().map(Condition::unlabelled_exp);
