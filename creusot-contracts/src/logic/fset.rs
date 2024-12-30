@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{*, logic::Mapping};
 
 /// A finite set type usable in pearlite and `ghost!` blocks.
 ///
@@ -142,6 +142,13 @@ impl<T: ?Sized> FSet<T> {
         Self::is_subset(other, self)
     }
 
+    #[trusted]
+    #[predicate]
+    #[creusot::builtins = "set.Fset.disjoint"]
+    pub fn disjoint(self, _: Self) -> bool {
+        dead
+    }
+
     /// Returns the number of elements in the set, also called its length.
     #[trusted]
     #[logic]
@@ -183,6 +190,61 @@ impl<T: ?Sized> FSet<T> {
         pearlite! {
             forall <e: T> self.contains(e) == other.contains(e)
         }
+    }
+}
+
+impl<T> FSet<T> {
+    /// Returns the set containing only the given element.
+    #[logic]
+    #[open]
+    #[ensures(forall<y: T> result.contains(y) == (x == y))]
+    pub fn singleton(x: T) -> Self {
+        FSet::empty().insert(x)
+    }
+
+    #[logic]
+    #[open]
+    #[ensures(forall<y: U> result.contains(y) == exists<x: T> self.contains(x) && f.get(x).contains(y))]
+    #[variant(self.len())]
+    pub fn unions<U>(self, f: Mapping<T, FSet<U>>) -> FSet<U> {
+        if self.len() == 0 {
+            FSet::empty()
+        } else {
+            let x = self.peek();
+            f.get(x).union(self.remove(x).unions(f))
+        }
+    }
+
+    #[logic]
+    #[trusted]
+    #[creusot::builtins = "set.Fset.map"]
+    pub fn fmap<U>(_: Mapping<T, U>, _: Self) -> FSet<U> {
+        dead
+    }
+
+    #[logic]
+    #[open]
+    #[ensures(forall<y: U> result.contains(y) == exists<x: T> self.contains(x) && f.get(x) == y)]
+    pub fn map<U>(self, f: Mapping<T, U>) -> FSet<U> {
+        FSet::fmap(f, self)
+    }
+
+    #[logic]
+    #[trusted]
+    #[creusot::builtins = "set.Fset.filter"]
+    // #[ensures(forall<x: T> result.contains(x) == self.contains(x) && f.get(x))]
+    pub fn filter(self, f: Mapping<T, bool>) -> Self {
+        dead
+    }
+}
+
+impl FSet<Int> {
+    #[logic]
+    #[open]
+    #[trusted]
+    #[creusot::builtins = "set.FsetInt.interval"]
+    pub fn interval(i: Int, j: Int) -> FSet<Int> {
+        dead
     }
 }
 
