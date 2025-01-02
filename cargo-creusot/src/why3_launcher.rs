@@ -63,13 +63,11 @@ impl Why3Launcher {
             None => {}
         }
 
-        for file in &self.coma_files {
-            command.arg(&file);
-        }
-
         command.arg("-C").arg(&self.config_file);
 
-        if !self.args.is_empty() {
+        if self.args.is_empty() {
+            command.args(&self.coma_files);
+        } else {
             command.args(self.args.split_ascii_whitespace());
         }
 
