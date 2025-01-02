@@ -178,8 +178,6 @@ impl<T: ?Sized> FSet<T> {
     /// Returns `true` if `self` and `other` contain exactly the same elements.
     ///
     /// This is in fact equivalent with normal equality.
-    // FIXME: remove `trusted`
-    #[trusted]
     #[open]
     #[predicate]
     #[ensures(result ==> self == other)]
