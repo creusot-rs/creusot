@@ -633,3 +633,8 @@ impl<T: ?Sized> Invariant for Seq<T> {
         pearlite! { forall<i:Int> 0 <= i && i < self.len() ==> inv(self.index_logic_unsized(i)) }
     }
 }
+
+#[logic]
+#[open]
+#[ensures(forall<x: T, xs: Seq<T>, ys: Seq<T>> xs.push_front(x).concat(ys) == xs.concat(ys).push_front(x))]
+pub fn cons_concat<T>() {}

@@ -1,4 +1,7 @@
-use crate::{*, logic::Mapping};
+use crate::{
+    logic::{seq, Mapping},
+    *,
+};
 
 /// A finite set type usable in pearlite and `ghost!` blocks.
 ///
@@ -231,8 +234,58 @@ impl<T> FSet<T> {
     #[trusted]
     #[creusot::builtins = "set.Fset.filter"]
     // #[ensures(forall<x: T> result.contains(x) == self.contains(x) && f.get(x))]
+    // TODO put this in a test
     pub fn filter(self, f: Mapping<T, bool>) -> Self {
         dead
+    }
+
+    #[logic]
+    #[trusted] // TODO: remove. Needs support for closures in logic functions with constraints
+    #[open]
+    #[ensures(forall<xs: Seq<T>> result.contains(xs) == (0 < xs.len() && s.contains(xs[0]) && ss.contains(xs.tail())))]
+    pub fn cons(s: FSet<T>, ss: FSet<Seq<T>>) -> FSet<Seq<T>> {
+        s.unions(|x| ss.map(|xs: Seq<_>| xs.push_front(x)))
+    }
+
+    #[logic]
+    #[trusted] // TODO: remove. Needs support for closures in logic functions with constraints
+    #[open]
+    #[ensures(forall<xs: Seq<T>> result.contains(xs) == (exists<ys: Seq<T>, zs: Seq<T>> s.contains(ys) && t.contains(zs) && xs == ys.concat(zs)))]
+    pub fn concat(s: FSet<Seq<T>>, t: FSet<Seq<T>>) -> FSet<Seq<T>> {
+        s.unions(|ys: Seq<_>| t.map(|zs| ys.concat(zs)))
+    }
+
+    #[open]
+    #[logic]
+    #[requires(n >= 0)]
+    #[ensures(forall<xs: Seq<T>> result.contains(xs) == (xs.len() == n && forall<x: T> xs.contains(x) ==> self.contains(x)))]
+    #[variant(n)]
+    pub fn replicate(self, n: Int) -> FSet<Seq<T>> {
+        pearlite! {
+            if n == 0 {
+                proof_assert! { forall<xs: Seq<T>> xs.len() == 0 ==> xs == Seq::EMPTY };
+                FSet::singleton(Seq::EMPTY)
+            } else {
+                proof_assert! { forall<xs: Seq<T>, i: Int> 0 < i && i < xs.len() ==> xs[i] == xs.tail()[i-1] };
+                FSet::cons(self, self.replicate(n - 1))
+            }
+        }
+    }
+
+    #[open]
+    #[logic]
+    #[requires(n >= 0)]
+    #[ensures(forall<xs: Seq<T>> result.contains(xs) == (xs.len() <= n && forall<x: T> xs.contains(x) ==> self.contains(x)))]
+    #[variant(n)]
+    pub fn replicate_up_to(self, n: Int) -> FSet<Seq<T>> {
+        pearlite! {
+            if n == 0 {
+                proof_assert! { forall<xs: Seq<T>> xs.len() == 0 ==> xs == Seq::EMPTY };
+                FSet::singleton(Seq::EMPTY)
+            } else {
+                self.replicate_up_to(n - 1).union(self.replicate(n))
+            }
+        }
     }
 }
 
@@ -395,5 +448,83 @@ impl<T: ?Sized> Invariant for FSet<T> {
     #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { forall<x: &T> self.contains(*x) ==> inv(*x) }
+    }
+}
+
+// Properties
+
+#[logic]
+#[open]
+#[ensures(forall<s1: FSet<T>, s2: FSet<T>, f: Mapping<T, FSet<U>>> s1.union(s2).unions(f) == s1.unions(f).union(s2.unions(f)))]
+#[ensures(forall<s: FSet<T>, f: Mapping<T, FSet<U>>, g: Mapping<T, FSet<U>>>
+    s.unions(|x| f.get(x).union(g.get(x))) ==
+        s.unions(f).union(s.unions(g)))]
+pub fn unions_union<T, U>() {}
+
+#[logic]
+#[open]
+#[ensures(forall<s: FSet<T>, t: FSet<T>, f: Mapping<T, U>> s.union(t).map(f) == s.map(f).union(t.map(f)))]
+pub fn map_union<T, U>() {}
+
+#[logic]
+#[open]
+#[ensures(forall<s1: FSet<Seq<T>>, s2: FSet<Seq<T>>, t: FSet<Seq<T>>>
+    FSet::concat(s1.union(s2), t) == FSet::concat(s1, t).union(FSet::concat(s2, t)))]
+#[ensures(forall<s: FSet<Seq<T>>, t1: FSet<Seq<T>>, t2: FSet<Seq<T>>>
+    FSet::concat(s, t1.union(t2)) == FSet::concat(s, t1).union(FSet::concat(s, t2)))]
+pub fn concat_union<T>() {
+    // FSet::<Seq<T>>::unions_union::<Seq<T>>();
+    // FSet::<Seq<T>>::fset_map_union::<Seq<T>>();
+}
+
+#[logic]
+#[open]
+#[ensures(forall<s: FSet<T>, t: FSet<Seq<T>>, u: FSet<Seq<T>>> FSet::concat(FSet::cons(s, t), u) == FSet::cons(s, FSet::concat(t, u)))]
+pub fn cons_concat<T>() {
+    seq::cons_concat::<T>();
+    proof_assert! { forall<x: T, ys: Seq<T>> ys.push_front(x).tail() == ys };
+    proof_assert! { forall<ys: Seq<T>> 0 < ys.len() ==> ys == ys.tail().push_front(ys[0]) };
+}
+
+#[logic]
+#[open]
+#[requires(0 <= n && 0 <= m)]
+#[ensures(s.replicate(n + m) == FSet::concat(s.replicate(n), s.replicate(m)))]
+#[variant(n)]
+pub fn concat_replicate<T>(n: Int, m: Int, s: FSet<T>) {
+    pearlite! {
+        if n == 0 {
+            concat_empty(s.replicate(m));
+        } else {
+            cons_concat::<T>();
+            concat_replicate(n - 1, m, s);
+        }
+    }
+}
+
+#[logic]
+#[open]
+#[ensures(FSet::concat(FSet::singleton(Seq::EMPTY), s) == s)]
+#[ensures(FSet::concat(s, FSet::singleton(Seq::EMPTY)) == s)]
+pub fn concat_empty<T>(s: FSet<Seq<T>>) {
+    proof_assert! { forall<xs: Seq<T>> xs.concat(Seq::EMPTY) == xs };
+    proof_assert! { forall<xs: Seq<T>> Seq::EMPTY.concat(xs) == xs };
+}
+
+#[logic]
+#[open]
+#[requires(0 <= n && n < m)]
+#[ensures(s.replicate_up_to(m) == s.replicate_up_to(n).union(
+    FSet::concat(s.replicate(n + 1), s.replicate_up_to(m - n - 1))))]
+#[variant(m)]
+pub fn concat_replicate_up_to<T>(n: Int, m: Int, s: FSet<T>) {
+    pearlite! {
+        if n + 1 == m {
+            concat_empty(s.replicate(n + 1));
+        } else {
+            concat_union::<T>();
+            concat_replicate(n, m - n - 1, s);
+            concat_replicate_up_to(n, m - 1, s);
+        }
     }
 }

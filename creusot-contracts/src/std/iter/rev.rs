@@ -1,4 +1,7 @@
-use crate::{std::iter::{Iterator, DoubleEndedIterator, Rev}, *};
+use crate::{
+    std::iter::{DoubleEndedIterator, Iterator, Rev},
+    *,
+};
 
 pub trait RevExt<I> {
     #[logic]
