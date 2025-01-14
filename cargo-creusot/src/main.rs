@@ -3,6 +3,7 @@ use creusot_args::{options::*, CREUSOT_RUSTC_ARGS};
 use creusot_setup as setup;
 use std::{
     env,
+    path::PathBuf,
     process::{exit, Command},
 };
 use tempdir::TempDir;
@@ -20,11 +21,20 @@ fn main() -> Result<()> {
     let cargs = CargoCreusotArgs::parse_from(std::env::args().skip(1));
 
     match cargs.subcommand {
-        None => creusot(None, cargs.options, cargs.cargo_flags),
-        Some(Creusot(subcmd)) => creusot(Some(subcmd), cargs.options, cargs.cargo_flags),
+        None => creusot(None, cargs.options, cargs.creusot_rustc, cargs.cargo_flags),
+        Some(Creusot(subcmd)) => {
+            creusot(Some(subcmd), cargs.options, cargs.creusot_rustc, cargs.cargo_flags)
+        }
         Some(Setup { command: SetupSubCommand::Status }) => setup::status(),
         Some(Setup {
-            command: SetupSubCommand::Install { provers_parallelism, external, no_check_version },
+            command:
+                SetupSubCommand::Install {
+                    provers_parallelism,
+                    external,
+                    no_check_version,
+                    only_creusot_rustc,
+                    skip_creusot_rustc,
+                },
         }) => {
             let extflag =
                 |name| setup::ExternalFlag { check_version: !no_check_version.contains(&name) };
@@ -40,12 +50,14 @@ fn main() -> Result<()> {
                 z3: managedflag(SetupTool::Z3, SetupManagedTool::Z3),
                 cvc4: managedflag(SetupTool::CVC4, SetupManagedTool::CVC4),
                 cvc5: managedflag(SetupTool::CVC5, SetupManagedTool::CVC5),
+                only_creusot_rustc,
+                skip_creusot_rustc,
             };
             setup::install(flags)
         }
         Some(Config(args)) => why3find_config(args),
         Some(Prove(args)) => {
-            creusot(None, cargs.options, cargs.cargo_flags)?;
+            creusot(None, cargs.options, cargs.creusot_rustc, cargs.cargo_flags)?;
             why3find_prove(args)
         }
         Some(New(args)) => new(args),
@@ -56,6 +68,7 @@ fn main() -> Result<()> {
 fn creusot(
     subcmd: Option<CreusotSubCommand>,
     options: CommonOptions,
+    creusot_rustc: Option<PathBuf>,
     cargo_flags: Vec<String>,
 ) -> Result<()> {
     let (coma_src, coma_glob) = get_coma(&options);
@@ -86,7 +99,7 @@ fn creusot(
         subcommand: creusot_rustc_subcmd.clone(),
     };
 
-    invoke_cargo(&creusot_args, cargo_flags);
+    invoke_cargo(&creusot_args, creusot_rustc, cargo_flags);
 
     if let Some((mode, coma_src, args)) = launch_why3 {
         let mut coma_files = vec![coma_src];
@@ -116,11 +129,7 @@ fn creusot(
     Ok(())
 }
 
-fn invoke_cargo(args: &CreusotArgs, cargo_flags: Vec<String>) {
-    let creusot_rustc_path = std::env::current_exe()
-        .expect("current executable path invalid")
-        .with_file_name("creusot-rustc");
-
+fn invoke_cargo(args: &CreusotArgs, creusot_rustc: Option<PathBuf>, cargo_flags: Vec<String>) {
     let cargo_path = env::var("CARGO_PATH").unwrap_or_else(|_| "cargo".to_string());
     let cargo_cmd = match &args.subcommand {
         Some(CreusotSubCommand::Doc { .. }) => "doc",
@@ -132,8 +141,19 @@ fn invoke_cargo(args: &CreusotArgs, cargo_flags: Vec<String>) {
             }
         }
     };
-    let toolchain = toolchain_channel()
-        .expect("Expected `cargo-creusot` to be built with a valid toolchain file");
+    let toolchain = setup::toolchain_channel();
+    let creusot_rustc_path = match creusot_rustc {
+        Some(path) => path,
+        None => setup::toolchain_dir(&setup::get_data_dir().unwrap(), &toolchain)
+            .join("bin")
+            .join("creusot-rustc"),
+    };
+    // creusot_rustc binary exists
+    if !creusot_rustc_path.exists() {
+        eprintln!("creusot-rustc not found (expected at {creusot_rustc_path:?})");
+        eprintln!("Run 'cargo creusot setup install' in the source directory of Creusot to install creusot-rustc");
+        exit(1);
+    }
     let mut cmd = Command::new(cargo_path);
     cmd.arg(format!("+{toolchain}"))
         .arg(cargo_cmd)
@@ -176,16 +196,13 @@ fn invoke_cargo(args: &CreusotArgs, cargo_flags: Vec<String>) {
     }
 }
 
-fn toolchain_channel() -> Option<String> {
-    let toolchain: toml::Value = toml::from_str(include_str!("../../rust-toolchain")).ok()?;
-    let channel = toolchain["toolchain"]["channel"].as_str()?;
-    Some(channel.into())
-}
-
 #[derive(Debug, Parser)]
 pub struct CargoCreusotArgs {
     #[clap(flatten)]
     pub options: CommonOptions,
+    /// Path to creusot-rustc (for testing)
+    #[clap(long, value_name = "PATH")]
+    pub creusot_rustc: Option<PathBuf>,
     /// Subcommand: why3, setup
     #[command(subcommand)]
     pub subcommand: Option<CargoCreusotSubCommand>,
@@ -231,6 +248,12 @@ pub enum SetupSubCommand {
         /// Do not error if <TOOL>'s version does not match the one expected by creusot
         #[arg(long, value_name = "TOOL")]
         no_check_version: Vec<SetupTool>,
+        /// Only install creusot-rustc
+        #[arg(long)]
+        only_creusot_rustc: bool,
+        /// Skip installing creusot-rustc
+        #[arg(long, conflicts_with = "only_creusot_rustc")]
+        skip_creusot_rustc: bool,
     },
 }
 
