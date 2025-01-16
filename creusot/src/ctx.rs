@@ -174,8 +174,8 @@ impl<'tcx> Deref for TranslationCtx<'tcx> {
 }
 
 fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, Vec<usize>> {
-    struct VisitFns<'a>(HashMap<DefId, Vec<usize>>, &'a ResolverAstLowering);
-    impl<'a> Visitor<'a> for VisitFns<'a> {
+    struct VisitFns<'tcx, 'a>(TyCtxt<'tcx>, HashMap<DefId, Vec<usize>>, &'a ResolverAstLowering);
+    impl<'tcx, 'a> Visitor<'a> for VisitFns<'tcx, 'a> {
         fn visit_fn(&mut self, fk: FnKind<'a>, _: Span, node: NodeId) {
             let decl = match fk {
                 FnKind::Fn(_, _, FnSig { decl, .. }, _, _, _) => decl,
@@ -183,21 +183,21 @@ fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, Vec<usize>> {
             };
             let mut open_inv_params = vec![];
             for (i, p) in decl.inputs.iter().enumerate() {
-                if is_open_inv_param(p) {
+                if is_open_inv_param(self.0, p) {
                     open_inv_params.push(i);
                 }
             }
-            let defid = self.1.node_id_to_def_id[&node].to_def_id();
-            assert!(self.0.insert(defid, open_inv_params).is_none());
+            let defid = self.2.node_id_to_def_id[&node].to_def_id();
+            assert!(self.1.insert(defid, open_inv_params).is_none());
             walk_fn(self, fk)
         }
     }
 
     let (resolver, cr) = &*tcx.resolver_for_lowering().borrow();
 
-    let mut visit = VisitFns(HashMap::new(), resolver);
+    let mut visit = VisitFns(tcx, HashMap::new(), resolver);
     visit.visit_crate(cr);
-    visit.0
+    visit.1
 }
 
 impl<'tcx> TranslationCtx<'tcx> {
