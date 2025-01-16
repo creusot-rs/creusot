@@ -8,37 +8,35 @@ module UInt8
     constant max_uint : t = 0xFF
     function to_BV256 (x: t) : BV256.t = toBig x
     function of_BV256 (x: BV256.t) : t = toSmall x
-    function bv256_to_uint (x: BV256.t) : int = BV256.t'int x
+    function bv256_to_int (x: BV256.t) : int = BV256.t'int x
     constant max_uint_as_BV256 : BV256.t = to_BV256 max_uint
 
-    function to_uint(x:t): int = t'int x
-
-    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_uint a = to_uint b } { result <-> a = b }) = any
-    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <> to_uint b } { result <-> a <> b }) = any
-    let le (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <= to_uint b }  { result <-> ule a b }) = any
-    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a < to_uint b } { result <-> ult a b }) = any
-    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_uint a >= to_uint b } { result <-> uge a b }) = any
-    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a > to_uint b } { result <-> ugt a b }) = any
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_int a = to_int b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_int a <> to_int b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_int a <= to_int b }  { result <-> ule a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_int a < to_int b } { result <-> ult a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_int a >= to_int b } { result <-> uge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_int a > to_int b } { result <-> ugt a b }) = any
 
     let add (a:t) (b:t)
-        { [@expl:arithmetic overflow] to_uint a + to_uint b < two_power_size \/ BV256.ule (BV256.add (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
-        (ret (result :t)  { to_uint result = to_uint a + to_uint b } { result = add a b })
+        { [@expl:arithmetic overflow] to_int a + to_int b < two_power_size \/ BV256.ule (BV256.add (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result :t)  { to_int result = to_int a + to_int b } { result = add a b })
         = any
     let sub (a:t)  (b:t)
-        { [@expl:arithmetic overflow] to_uint a >= to_uint b \/ uge a b }
-        (ret (result: t) { to_uint result = to_uint a - to_uint b } { result = sub a b })
+        { [@expl:arithmetic overflow] to_int a >= to_int b \/ uge a b }
+        (ret (result: t) { to_int result = to_int a - to_int b } { result = sub a b })
         = any
     let mul (a:t) (b:t)
-        { [@expl:arithmetic overflow] to_uint a * to_uint b < two_power_size \/ BV256.ule (BV256.mul (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
-        (ret (result: t) { result = mul a b } { to_int result = to_uint a * to_uint b })
+        { [@expl:arithmetic overflow] to_int a * to_int b < two_power_size \/ BV256.ule (BV256.mul (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result: t) { result = mul a b } { to_int result = to_int a * to_int b })
         = any
     let div (a:t) (b:t)
-        { [@expl:division by zero] b <> zeros \/ to_uint b <> 0 }
-        (ret (result: t) { to_uint result = ED.div (to_uint a) (to_uint b) } { result = udiv a b })
+        { [@expl:division by zero] b <> zeros \/ to_int b <> 0 }
+        (ret (result: t) { to_int result = ED.div (to_int a) (to_int b) } { result = udiv a b })
         = any
     let rem (a:t) (b:t)
-        { [@expl:remainder by zero] b <> zeros  \/ to_uint b <> 0 }
-        (ret (result: t) { to_uint result = ED.mod (to_uint a) (to_uint b) } { result = urem a b })
+        { [@expl:remainder by zero] b <> zeros  \/ to_int b <> 0 }
+        (ret (result: t) { to_int result = ED.mod (to_int a) (to_int b) } { result = urem a b })
         = any
 
     let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
@@ -58,7 +56,7 @@ module UInt8
         (ret (result: BV256.t) { result = to_BV256 a })
         = any
     let of_bv256 (a:BV256.t)
-        { [@expl:arithmetic overflow] bv256_to_uint a >= 0 /\ bv256_to_uint a < two_power_size }
+        { [@expl:arithmetic overflow] bv256_to_int a >= 0 /\ bv256_to_int a < two_power_size }
         (ret (result: t) { result = of_BV256 a })
         = any
 end
@@ -72,37 +70,35 @@ module UInt16
     constant max_uint : t = 0xFFFF
     function to_BV256 (x: t) : BV256.t = toBig x
     function of_BV256 (x: BV256.t) : t = toSmall x
-    function bv256_to_uint (x: BV256.t) : int = BV256.t'int x
+    function bv256_to_int (x: BV256.t) : int = BV256.t'int x
     constant max_uint_as_BV256 : BV256.t = to_BV256 max_uint
 
-    function to_uint(x:t): int = t'int x
-
-    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_uint a = to_uint b } { result <-> a = b }) = any
-    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <> to_uint b } { result <-> a <> b }) = any
-    let le (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <= to_uint b }  { result <-> ule a b }) = any
-    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a < to_uint b } { result <-> ult a b }) = any
-    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_uint a >= to_uint b } { result <-> uge a b }) = any
-    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a > to_uint b } { result <-> ugt a b }) = any
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_int a = to_int b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_int a <> to_int b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_int a <= to_int b }  { result <-> ule a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_int a < to_int b } { result <-> ult a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_int a >= to_int b } { result <-> uge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_int a > to_int b } { result <-> ugt a b }) = any
 
     let add (a:t) (b:t)
-        { [@expl:arithmetic overflow] to_uint a + to_uint b < two_power_size \/ BV256.ule (BV256.add (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
-        (ret (result :t)  { to_uint result = to_uint a + to_uint b } { result = add a b })
+        { [@expl:arithmetic overflow] to_int a + to_int b < two_power_size \/ BV256.ule (BV256.add (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result :t)  { to_int result = to_int a + to_int b } { result = add a b })
         = any
     let sub (a:t)  (b:t)
-        { [@expl:arithmetic overflow] to_uint a >= to_uint b \/ uge a b }
-        (ret (result: t) { to_uint result = to_uint a - to_uint b } { result = sub a b })
+        { [@expl:arithmetic overflow] to_int a >= to_int b \/ uge a b }
+        (ret (result: t) { to_int result = to_int a - to_int b } { result = sub a b })
         = any
     let mul (a:t) (b:t)
-        { [@expl:arithmetic overflow] to_uint a * to_uint b < two_power_size \/ BV256.ule (BV256.mul (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
-        (ret (result: t) { result = mul a b } { to_int result = to_uint a * to_uint b })
+        { [@expl:arithmetic overflow] to_int a * to_int b < two_power_size \/ BV256.ule (BV256.mul (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result: t) { result = mul a b } { to_int result = to_int a * to_int b })
         = any
     let div (a:t) (b:t)
-        { [@expl:division by zero] b <> zeros \/ to_uint b <> 0 }
-        (ret (result: t) { to_uint result = ED.div (to_uint a) (to_uint b) } { result = udiv a b })
+        { [@expl:division by zero] b <> zeros \/ to_int b <> 0 }
+        (ret (result: t) { to_int result = ED.div (to_int a) (to_int b) } { result = udiv a b })
         = any
     let rem (a:t) (b:t)
-        { [@expl:remainder by zero] b <> zeros  \/ to_uint b <> 0 }
-        (ret (result: t) { to_uint result = ED.mod (to_uint a) (to_uint b) } { result = urem a b })
+        { [@expl:remainder by zero] b <> zeros  \/ to_int b <> 0 }
+        (ret (result: t) { to_int result = ED.mod (to_int a) (to_int b) } { result = urem a b })
         = any
 
     let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
@@ -122,7 +118,7 @@ module UInt16
         (ret (result: BV256.t) { result = to_BV256 a })
         = any
     let of_bv256 (a:BV256.t)
-        { [@expl:arithmetic overflow] bv256_to_uint a >= 0 /\ bv256_to_uint a < two_power_size }
+        { [@expl:arithmetic overflow] bv256_to_int a >= 0 /\ bv256_to_int a < two_power_size }
         (ret (result: t) { result = of_BV256 a })
         = any
 end
@@ -136,37 +132,35 @@ module UInt32
     constant max_uint : t = 0xFFFFFFFF
     function to_BV256 (x: t) : BV256.t = toBig x
     function of_BV256 (x: BV256.t) : t = toSmall x
-    function bv256_to_uint (x: BV256.t) : int = BV256.t'int x
+    function bv256_to_int (x: BV256.t) : int = BV256.t'int x
     constant max_uint_as_BV256 : BV256.t = to_BV256 max_uint
 
-    function to_uint(x:t): int = t'int x
-
-    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_uint a = to_uint b } { result <-> a = b }) = any
-    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <> to_uint b } { result <-> a <> b }) = any
-    let le (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <= to_uint b }  { result <-> ule a b }) = any
-    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a < to_uint b } { result <-> ult a b }) = any
-    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_uint a >= to_uint b } { result <-> uge a b }) = any
-    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a > to_uint b } { result <-> ugt a b }) = any
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_int a = to_int b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_int a <> to_int b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_int a <= to_int b }  { result <-> ule a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_int a < to_int b } { result <-> ult a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_int a >= to_int b } { result <-> uge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_int a > to_int b } { result <-> ugt a b }) = any
 
     let add (a:t) (b:t)
-        { [@expl:arithmetic overflow] to_uint a + to_uint b < two_power_size \/ BV256.ule (BV256.add (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
-        (ret (result :t)  { to_uint result = to_uint a + to_uint b } { result = add a b })
+        { [@expl:arithmetic overflow] to_int a + to_int b < two_power_size \/ BV256.ule (BV256.add (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result :t)  { to_int result = to_int a + to_int b } { result = add a b })
         = any
     let sub (a:t)  (b:t)
-        { [@expl:arithmetic overflow] to_uint a >= to_uint b \/ uge a b }
-        (ret (result: t) { to_uint result = to_uint a - to_uint b } { result = sub a b })
+        { [@expl:arithmetic overflow] to_int a >= to_int b \/ uge a b }
+        (ret (result: t) { to_int result = to_int a - to_int b } { result = sub a b })
         = any
     let mul (a:t) (b:t)
-        { [@expl:arithmetic overflow] to_uint a * to_uint b < two_power_size \/ BV256.ule (BV256.mul (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
-        (ret (result: t) { result = mul a b } { to_int result = to_uint a * to_uint b })
+        { [@expl:arithmetic overflow] to_int a * to_int b < two_power_size \/ BV256.ule (BV256.mul (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result: t) { result = mul a b } { to_int result = to_int a * to_int b })
         = any
     let div (a:t) (b:t)
-        { [@expl:division by zero] b <> zeros \/ to_uint b <> 0 }
-        (ret (result: t) { to_uint result = ED.div (to_uint a) (to_uint b) } { result = udiv a b })
+        { [@expl:division by zero] b <> zeros \/ to_int b <> 0 }
+        (ret (result: t) { to_int result = ED.div (to_int a) (to_int b) } { result = udiv a b })
         = any
     let rem (a:t) (b:t)
-        { [@expl:remainder by zero] b <> zeros  \/ to_uint b <> 0 }
-        (ret (result: t) { to_uint result = ED.mod (to_uint a) (to_uint b) } { result = urem a b })
+        { [@expl:remainder by zero] b <> zeros  \/ to_int b <> 0 }
+        (ret (result: t) { to_int result = ED.mod (to_int a) (to_int b) } { result = urem a b })
         = any
 
     let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
@@ -186,7 +180,7 @@ module UInt32
         (ret (result: BV256.t) { result = to_BV256 a })
         = any
     let of_bv256 (a:BV256.t)
-        { [@expl:arithmetic overflow] bv256_to_uint a >= 0 /\ bv256_to_uint a < two_power_size }
+        { [@expl:arithmetic overflow] bv256_to_int a >= 0 /\ bv256_to_int a < two_power_size }
         (ret (result: t) { result = of_BV256 a })
         = any
 end
@@ -200,37 +194,35 @@ module UInt64
     constant max_uint : t = 0xFFFFFFFFFFFFFFFF
     function to_BV256 (x: t) : BV256.t = toBig x
     function of_BV256 (x: BV256.t) : t = toSmall x
-    function bv256_to_uint (x: BV256.t) : int = BV256.t'int x
+    function bv256_to_int (x: BV256.t) : int = BV256.t'int x
     constant max_uint_as_BV256 : BV256.t = to_BV256 max_uint
 
-    function to_uint(x:t): int = t'int x
-
-    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_uint a = to_uint b } { result <-> a = b }) = any
-    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <> to_uint b } { result <-> a <> b }) = any
-    let le (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <= to_uint b }  { result <-> ule a b }) = any
-    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a < to_uint b } { result <-> ult a b }) = any
-    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_uint a >= to_uint b } { result <-> uge a b }) = any
-    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a > to_uint b } { result <-> ugt a b }) = any
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_int a = to_int b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_int a <> to_int b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_int a <= to_int b }  { result <-> ule a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_int a < to_int b } { result <-> ult a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_int a >= to_int b } { result <-> uge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_int a > to_int b } { result <-> ugt a b }) = any
 
     let add (a:t) (b:t)
-        { [@expl:arithmetic overflow] to_uint a + to_uint b < two_power_size \/ BV256.ule (BV256.add (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
-        (ret (result :t)  { to_uint result = to_uint a + to_uint b } { result = add a b })
+        { [@expl:arithmetic overflow] to_int a + to_int b < two_power_size \/ BV256.ule (BV256.add (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result :t)  { to_int result = to_int a + to_int b } { result = add a b })
         = any
     let sub (a:t)  (b:t)
-        { [@expl:arithmetic overflow] to_uint a >= to_uint b \/ uge a b }
-        (ret (result: t) { to_uint result = to_uint a - to_uint b } { result = sub a b })
+        { [@expl:arithmetic overflow] to_int a >= to_int b \/ uge a b }
+        (ret (result: t) { to_int result = to_int a - to_int b } { result = sub a b })
         = any
     let mul (a:t) (b:t)
-        { [@expl:arithmetic overflow] to_uint a * to_uint b < two_power_size \/ BV256.ule (BV256.mul (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
-        (ret (result: t) { result = mul a b } { to_int result = to_uint a * to_uint b })
+        { [@expl:arithmetic overflow] to_int a * to_int b < two_power_size \/ BV256.ule (BV256.mul (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result: t) { result = mul a b } { to_int result = to_int a * to_int b })
         = any
     let div (a:t) (b:t)
-        { [@expl:division by zero] b <> zeros \/ to_uint b <> 0 }
-        (ret (result: t) { to_uint result = ED.div (to_uint a) (to_uint b) } { result = udiv a b })
+        { [@expl:division by zero] b <> zeros \/ to_int b <> 0 }
+        (ret (result: t) { to_int result = ED.div (to_int a) (to_int b) } { result = udiv a b })
         = any
     let rem (a:t) (b:t)
-        { [@expl:remainder by zero] b <> zeros  \/ to_uint b <> 0 }
-        (ret (result: t) { to_uint result = ED.mod (to_uint a) (to_uint b) } { result = urem a b })
+        { [@expl:remainder by zero] b <> zeros  \/ to_int b <> 0 }
+        (ret (result: t) { to_int result = ED.mod (to_int a) (to_int b) } { result = urem a b })
         = any
 
     let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
@@ -250,7 +242,7 @@ module UInt64
         (ret (result: BV256.t) { result = to_BV256 a })
         = any
     let of_bv256 (a:BV256.t)
-        { [@expl:arithmetic overflow] bv256_to_uint a >= 0 /\ bv256_to_uint a < two_power_size }
+        { [@expl:arithmetic overflow] bv256_to_int a >= 0 /\ bv256_to_int a < two_power_size }
         (ret (result: t) { result = of_BV256 a })
         = any
 end
@@ -264,37 +256,35 @@ module UInt128
     constant max_uint : t = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
     function to_BV256 (x: t) : BV256.t = toBig x
     function of_BV256 (x: BV256.t) : t = toSmall x
-    function bv256_to_uint (x: BV256.t) : int = BV256.t'int x
+    function bv256_to_int (x: BV256.t) : int = BV256.t'int x
     constant max_uint_as_BV256 : BV256.t = to_BV256 max_uint
 
-    function to_uint(x:t): int = t'int x
-
-    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_uint a = to_uint b } { result <-> a = b }) = any
-    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <> to_uint b } { result <-> a <> b }) = any
-    let le (a: t) (b: t) (ret (result: bool) { result <-> to_uint a <= to_uint b }  { result <-> ule a b }) = any
-    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a < to_uint b } { result <-> ult a b }) = any
-    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_uint a >= to_uint b } { result <-> uge a b }) = any
-    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_uint a > to_uint b } { result <-> ugt a b }) = any
+    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_int a = to_int b } { result <-> a = b }) = any
+    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_int a <> to_int b } { result <-> a <> b }) = any
+    let le (a: t) (b: t) (ret (result: bool) { result <-> to_int a <= to_int b }  { result <-> ule a b }) = any
+    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_int a < to_int b } { result <-> ult a b }) = any
+    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_int a >= to_int b } { result <-> uge a b }) = any
+    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_int a > to_int b } { result <-> ugt a b }) = any
 
     let add (a:t) (b:t)
-        { [@expl:arithmetic overflow] to_uint a + to_uint b < two_power_size \/ BV256.ule (BV256.add (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
-        (ret (result :t)  { to_uint result = to_uint a + to_uint b } { result = add a b })
+        { [@expl:arithmetic overflow] to_int a + to_int b < two_power_size \/ BV256.ule (BV256.add (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result :t)  { to_int result = to_int a + to_int b } { result = add a b })
         = any
     let sub (a:t)  (b:t)
-        { [@expl:arithmetic overflow] to_uint a >= to_uint b \/ uge a b }
-        (ret (result: t) { to_uint result = to_uint a - to_uint b } { result = sub a b })
+        { [@expl:arithmetic overflow] to_int a >= to_int b \/ uge a b }
+        (ret (result: t) { to_int result = to_int a - to_int b } { result = sub a b })
         = any
     let mul (a:t) (b:t)
-        { [@expl:arithmetic overflow] to_uint a * to_uint b < two_power_size \/ BV256.ule (BV256.mul (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
-        (ret (result: t) { result = mul a b } { to_int result = to_uint a * to_uint b })
+        { [@expl:arithmetic overflow] to_int a * to_int b < two_power_size \/ BV256.ule (BV256.mul (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
+        (ret (result: t) { result = mul a b } { to_int result = to_int a * to_int b })
         = any
     let div (a:t) (b:t)
-        { [@expl:division by zero] b <> zeros \/ to_uint b <> 0 }
-        (ret (result: t) { to_uint result = ED.div (to_uint a) (to_uint b) } { result = udiv a b })
+        { [@expl:division by zero] b <> zeros \/ to_int b <> 0 }
+        (ret (result: t) { to_int result = ED.div (to_int a) (to_int b) } { result = udiv a b })
         = any
     let rem (a:t) (b:t)
-        { [@expl:remainder by zero] b <> zeros  \/ to_uint b <> 0 }
-        (ret (result: t) { to_uint result = ED.mod (to_uint a) (to_uint b) } { result = urem a b })
+        { [@expl:remainder by zero] b <> zeros  \/ to_int b <> 0 }
+        (ret (result: t) { to_int result = ED.mod (to_int a) (to_int b) } { result = urem a b })
         = any
 
     let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
@@ -314,7 +304,7 @@ module UInt128
         (ret (result: BV256.t) { result = to_BV256 a })
         = any
     let of_bv256 (a:BV256.t)
-        { [@expl:arithmetic overflow] bv256_to_uint a >= 0 /\ bv256_to_uint a < two_power_size }
+        { [@expl:arithmetic overflow] bv256_to_int a >= 0 /\ bv256_to_int a < two_power_size }
         (ret (result: t) { result = of_BV256 a })
         = any
 end
@@ -328,7 +318,6 @@ module Int8
 
     constant min_sint : t = 0x80
     constant max_sint : t = 0x7F
-    (*constant two_power_size_minus_one : int = 0x80 *)
     constant minus_one : t = 0xFF
 
     function to_BV256 (x: t) : BV256.t = stoBig x
@@ -336,8 +325,6 @@ module Int8
     function bv256_to_int (x: BV256.t) : int = BV256.t'int x
     constant min_sint_as_BV256 : BV256.t = to_BV256 min_sint
     constant max_sint_as_BV256 : BV256.t = to_BV256 max_sint
-
-    function to_uint(x:t): int = t'int x
 
     let eq (a: t) (b: t) (ret (result: bool) { result <-> to_int a = to_int b } { result <-> a = b }) = any
     let ne (a: t) (b: t) (ret (result: bool) { result <-> to_int a <> to_int b } { result <-> a <> b }) = any
@@ -401,7 +388,6 @@ module Int16
 
     constant min_sint : t = 0x8000
     constant max_sint : t = 0x7FFF
-    (*constant two_power_size_minus_one : int = 0x8000*)
     constant minus_one : t = 0xFFFF
 
     function to_BV256 (x: t) : BV256.t = stoBig x
@@ -409,8 +395,6 @@ module Int16
     function bv256_to_int (x: BV256.t) : int = BV256.t'int x
     constant min_sint_as_BV256 : BV256.t = to_BV256 min_sint
     constant max_sint_as_BV256 : BV256.t = to_BV256 max_sint
-
-    function to_uint(x:t): int = t'int x
 
     let eq (a: t) (b: t) (ret (result: bool) { result <-> to_int a = to_int b } { result <-> a = b }) = any
     let ne (a: t) (b: t) (ret (result: bool) { result <-> to_int a <> to_int b } { result <-> a <> b }) = any
@@ -474,7 +458,6 @@ module Int32
 
     constant min_sint : t = 0x80000000
     constant max_sint : t = 0x7FFFFFFF
-    (*constant two_power_size_minus_one : int = 0x80000000*)
     constant minus_one : t = 0xFFFFFFFF
 
     function to_BV256 (x: t) : BV256.t = stoBig x
@@ -482,8 +465,6 @@ module Int32
     function bv256_to_int (x: BV256.t) : int = BV256.t'int x
     constant min_sint_as_BV256 : BV256.t = to_BV256 min_sint
     constant max_sint_as_BV256 : BV256.t = to_BV256 max_sint
-
-    function to_uint(x:t): int = t'int x
 
     let eq (a: t) (b: t) (ret (result: bool) { result <-> to_int a = to_int b } { result <-> a = b }) = any
     let ne (a: t) (b: t) (ret (result: bool) { result <-> to_int a <> to_int b } { result <-> a <> b }) = any
@@ -547,7 +528,6 @@ module Int64
 
     constant min_sint : t = 0x8000000000000000
     constant max_sint : t = 0x7FFFFFFFFFFFFFFF
-    (*constant two_power_size_minus_one : int = 0x8000000000000000*)
     constant minus_one : t = 0xFFFFFFFFFFFFFFFF
 
     function to_BV256 (x: t) : BV256.t = stoBig x
@@ -555,8 +535,6 @@ module Int64
     function bv256_to_int (x: BV256.t) : int = BV256.t'int x
     constant min_sint_as_BV256 : BV256.t = to_BV256 min_sint
     constant max_sint_as_BV256 : BV256.t = to_BV256 max_sint
-
-    function to_uint(x:t): int = t'int x
 
     let eq (a: t) (b: t) (ret (result: bool) { result <-> to_int a = to_int b } { result <-> a = b }) = any
     let ne (a: t) (b: t) (ret (result: bool) { result <-> to_int a <> to_int b } { result <-> a <> b }) = any
@@ -620,7 +598,6 @@ module Int128
 
     constant min_sint : t = 0x80000000000000000000000000000000
     constant max_sint : t = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-    (*constant two_power_size_minus_one : int = 0x80000000000000000000000000000000*)
     constant minus_one : t = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 
     function to_BV256 (x: t) : BV256.t = stoBig x
@@ -628,8 +605,6 @@ module Int128
     function bv256_to_int (x: BV256.t) : int = BV256.t'int x
     constant min_sint_as_BV256 : BV256.t = to_BV256 min_sint
     constant max_sint_as_BV256 : BV256.t = to_BV256 max_sint
-
-    function to_uint(x:t): int = t'int x
 
     let eq (a: t) (b: t) (ret (result: bool) { result <-> to_int a = to_int b } { result <-> a = b }) = any
     let ne (a: t) (b: t) (ret (result: bool) { result <-> to_int a <> to_int b } { result <-> a <> b }) = any

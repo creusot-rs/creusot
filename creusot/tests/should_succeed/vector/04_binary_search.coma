@@ -92,14 +92,14 @@ module M_04_binary_search__binary_search [#"04_binary_search.rs" 26 0 26 71]
   
   function view'1 (self : t_Vec'0) : Seq.seq UInt32.t
   
-  axiom view'1_spec : forall self : t_Vec'0 . [%#svec21] Seq.length (view'1 self) <= UInt64.to_uint (v_MAX'0 : UInt64.t)
+  axiom view'1_spec : forall self : t_Vec'0 . [%#svec21] Seq.length (view'1 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
   function view'0 (self : t_Vec'0) : Seq.seq UInt32.t =
     [%#smodel16] view'1 self
   
   let rec len'0 (self:t_Vec'0) (return'  (ret:UInt64.t))= {[@expl:len 'self' type invariant] inv'0 self}
     any
-    [ return' (result:UInt64.t)-> {[%#svec15] UInt64.to_uint result = Seq.length (view'0 self)} (! return' {result}) ]
+    [ return' (result:UInt64.t)-> {[%#svec15] UInt64.t'int result = Seq.length (view'0 self)} (! return' {result}) ]
     
   
   type t_Result'0  =
@@ -225,14 +225,14 @@ module M_04_binary_search__binary_search [#"04_binary_search.rs" 26 0 26 71]
   axiom inv_axiom'1 [@rewrite] : forall x : UInt64.t [inv'1 x] . inv'1 x = true
   
   predicate in_bounds'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq UInt32.t) =
-    [%#sslice48] UInt64.to_uint self < Seq.length seq
+    [%#sslice48] UInt64.t'int self < Seq.length seq
   
   predicate inv'2 (_1 : UInt32.t)
   
   axiom inv_axiom'2 [@rewrite] : forall x : UInt32.t [inv'2 x] . inv'2 x = true
   
   predicate has_value'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq UInt32.t) (out : UInt32.t) =
-    [%#sslice49] Seq.get seq (UInt64.to_uint self) = out
+    [%#sslice49] Seq.get seq (UInt64.t'int self) = out
   
   let rec index'0 (self:t_Vec'0) (index:UInt64.t) (return'  (ret:UInt32.t))= {[@expl:index 'self' type invariant] inv'0 self}
     {[@expl:index 'index' type invariant] inv'1 index}
@@ -255,7 +255,7 @@ module M_04_binary_search__binary_search [#"04_binary_search.rs" 26 0 26 71]
   meta "compute_max_steps" 1000000
   
   let rec binary_search'0 (arr:t_Vec'0) (elem:UInt32.t) (return'  (ret:t_Result'0))= {[@expl:binary_search requires #0] [%#s04_binary_search10] Seq.length (view'0 arr)
-    <= UInt64.to_uint (v_MAX'0 : UInt64.t)}
+    <= UInt64.t'int (v_MAX'0 : UInt64.t)}
     {[@expl:binary_search requires #1] [%#s04_binary_search11] sorted'0 (view'0 arr)}
     (! bb0
     [ bb0 = s0 [ s0 = len'0 {arr} (fun (_ret':UInt64.t) ->  [ &_10 <- _ret' ] s1) | s1 = bb1 ] 
@@ -267,14 +267,13 @@ module M_04_binary_search__binary_search [#"04_binary_search.rs" 26 0 26 71]
     | bb3 = s0 [ s0 = len'0 {arr} (fun (_ret':UInt64.t) ->  [ &size <- _ret' ] s1) | s1 = bb4 ] 
     | bb4 = s0 [ s0 =  [ &base <- [%#s04_binary_search2] (0 : UInt64.t) ] s1 | s1 = bb5 ] 
     | bb5 = bb5
-      [ bb5 = {[@expl:loop invariant #0] [%#s04_binary_search5] 0 < UInt64.to_uint size
-        /\ UInt64.to_uint size + UInt64.to_uint base <= Seq.length (view'0 arr)}
+      [ bb5 = {[@expl:loop invariant #0] [%#s04_binary_search5] 0 < UInt64.t'int size
+        /\ UInt64.t'int size + UInt64.t'int base <= Seq.length (view'0 arr)}
         {[@expl:loop invariant #1] [%#s04_binary_search4] forall i : UInt64.t . UInt64.ult i base
-         -> UInt32.ule (index_logic'0 arr (UInt64.to_uint i)) elem}
-        {[@expl:loop invariant #2] [%#s04_binary_search3] forall i : UInt64.t . UInt64.to_uint base
-        + UInt64.to_uint size
-        < UInt64.to_uint i
-        /\ UInt64.to_uint i < Seq.length (view'0 arr)  -> UInt32.ult elem (index_logic'0 arr (UInt64.to_uint i))}
+         -> UInt32.ule (index_logic'0 arr (UInt64.t'int i)) elem}
+        {[@expl:loop invariant #2] [%#s04_binary_search3] forall i : UInt64.t . UInt64.t'int base + UInt64.t'int size
+        < UInt64.t'int i
+        /\ UInt64.t'int i < Seq.length (view'0 arr)  -> UInt32.ult elem (index_logic'0 arr (UInt64.t'int i))}
         (! s0) [ s0 = bb6 ] 
         [ bb6 = s0
           [ s0 = UInt64.gt {size} {[%#s04_binary_search6] (1 : UInt64.t)} (fun (_ret':bool) ->  [ &_21 <- _ret' ] s1)
@@ -348,12 +347,12 @@ module M_04_binary_search__binary_search [#"04_binary_search.rs" 26 0 26 71]
     | & _51 : UInt64.t = any_l () ]
     
     [ return' (result:t_Result'0)-> {[@expl:binary_search ensures #0] [%#s04_binary_search12] forall x : UInt64.t . result
-      = C_Ok'0 x  -> index_logic'0 arr (UInt64.to_uint x) = elem}
+      = C_Ok'0 x  -> index_logic'0 arr (UInt64.t'int x) = elem}
       {[@expl:binary_search ensures #1] [%#s04_binary_search13] forall x : UInt64.t . result = C_Err'0 x
-       -> (forall i : UInt64.t . UInt64.ult i x  -> UInt32.ule (index_logic'0 arr (UInt64.to_uint i)) elem)}
+       -> (forall i : UInt64.t . UInt64.ult i x  -> UInt32.ule (index_logic'0 arr (UInt64.t'int i)) elem)}
       {[@expl:binary_search ensures #2] [%#s04_binary_search14] forall x : UInt64.t . result = C_Err'0 x
-       -> (forall i : UInt64.t . UInt64.ult x i /\ UInt64.to_uint i < Seq.length (view'0 arr)
-       -> UInt32.ult elem (index_logic'0 arr (UInt64.to_uint i)))}
+       -> (forall i : UInt64.t . UInt64.ult x i /\ UInt64.t'int i < Seq.length (view'0 arr)
+       -> UInt32.ult elem (index_logic'0 arr (UInt64.t'int i)))}
       (! return' {result}) ]
     
 end

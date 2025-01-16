@@ -81,8 +81,58 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
 
                 match op {
-                    Div => Exp::var("div").app(vec![lhs, rhs]),
-                    Rem => Exp::var("mod").app(vec![lhs, rhs]),
+                    Div => {
+                        //TODO laurent voir si on factorise TyKind::Int et TyKind::Uint
+                        // voir si on passe par Exp::BinaryOp
+                        let ty_kind = term.creusot_ty().kind();
+                        match ty_kind {
+                            TyKind::Int(ity) => {
+                                let prelude = int_to_prelude(concret_intty(*ity, self.names.tcx().target_spec().pointer_width));
+                                self.names.import_prelude_module(prelude);
+                                let mut module = prelude.qname();
+                                module.push_ident("sdiv");
+                                let fname = module.without_search_path();
+                                Exp::qvar(fname).app(vec![lhs, rhs])
+                            },
+                            TyKind::Uint(uty) => {
+                                let prelude = uint_to_prelude(concret_uintty(*uty, self.names.tcx().target_spec().pointer_width));
+                                self.names.import_prelude_module(prelude);
+                                let mut module = prelude.qname();
+                                module.push_ident("udiv");
+                                let fname = module.without_search_path();
+                                Exp::qvar(fname).app(vec![lhs, rhs])
+                            },
+                            _ => {
+                                Exp::var("div").app(vec![lhs, rhs]) // keeps the same behavior as before the BitVectors
+                            },
+                        }
+                    }
+                    Rem => {
+                        //TODO laurent voir si on factorise TyKind::Int et TyKind::Uint
+                        // voir si on passe par Exp::BinaryOp
+                        let ty_kind = term.creusot_ty().kind();
+                        match ty_kind {
+                            TyKind::Int(ity) => {
+                                let prelude = int_to_prelude(concret_intty(*ity, self.names.tcx().target_spec().pointer_width));
+                                self.names.import_prelude_module(prelude);
+                                let mut module = prelude.qname();
+                                module.push_ident("srem");
+                                let fname = module.without_search_path();
+                                Exp::qvar(fname).app(vec![lhs, rhs])
+                            },
+                            TyKind::Uint(uty) => {
+                                let prelude = uint_to_prelude(concret_uintty(*uty, self.names.tcx().target_spec().pointer_width));
+                                self.names.import_prelude_module(prelude);
+                                let mut module = prelude.qname();
+                                module.push_ident("urem");
+                                let fname = module.without_search_path();
+                                Exp::qvar(fname).app(vec![lhs, rhs])
+                            },
+                            _ => {
+                                Exp::var("mod").app(vec![lhs, rhs]) // keeps the same behavior as before the BitVectors
+                            },
+                        }
+                    }
                     BitAnd | BitOr | BitXor | Shl | Shr => {
                         let ty_kind = term.creusot_ty().kind();
                         let prelude: PreludeModule = match ty_kind {
@@ -336,7 +386,6 @@ pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
         }
         Literal::MachUnsigned(u, uty) => {
             let why_ty = uintty_to_ty(names, &uty);
-
             Constant::Uint(u, Some(why_ty)).into()
         }
         Literal::Bool(true) => Constant::const_true().into(),

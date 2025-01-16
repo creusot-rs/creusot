@@ -19,7 +19,7 @@ module M_02_std__binary_search [#"02_std.rs" 8 0 8 40]
   let%span sslice17 = "../../../../creusot-contracts/src/std/slice.rs" 28 14 28 41
   let%span sslice18 = "../../../../creusot-contracts/src/std/slice.rs" 29 14 29 42
   let%span sseq19 = "../../../../creusot-contracts/src/logic/seq.rs" 210 12 210 85
-  let%span snum20 = "../../../../creusot-contracts/src/std/num.rs" 52 28 52 33
+  let%span snum20 = "../../../../creusot-contracts/src/std/num.rs" 54 32 54 37
   let%span sord21 = "../../../../creusot-contracts/src/logic/ord.rs" 78 39 78 89
   let%span sord22 = "../../../../creusot-contracts/src/logic/ord.rs" 83 39 83 86
   let%span sord23 = "../../../../creusot-contracts/src/logic/ord.rs" 88 39 88 86
@@ -74,7 +74,7 @@ module M_02_std__binary_search [#"02_std.rs" 8 0 8 40]
   function view'1 (self : slice UInt32.t) : Seq.seq UInt32.t
   
   axiom view'1_spec : forall self : slice UInt32.t . ([%#sslice17] Seq.length (view'1 self)
-  <= UInt64.to_uint (v_MAX'0 : UInt64.t))
+  <= UInt64.t'int (v_MAX'0 : UInt64.t))
   && ([%#sslice18] view'1 self = Slice64.id self)
   
   function view'0 (self : slice UInt32.t) : Seq.seq UInt32.t =
@@ -92,7 +92,7 @@ module M_02_std__binary_search [#"02_std.rs" 8 0 8 40]
   use prelude.prelude.UInt32
   
   function deep_model'3 (self : UInt32.t) : int =
-    [%#snum20] UInt32.to_uint self
+    [%#snum20] UInt32.t'int self
   
   function deep_model'1 (self : slice UInt32.t) : Seq.seq int
   
@@ -179,16 +179,15 @@ module M_02_std__binary_search [#"02_std.rs" 8 0 8 40]
     {[@expl:binary_search requires] [%#sslice4] sorted'0 (deep_model'0 self)}
     any
     [ return' (result:t_Result'0)-> {[%#sslice5] forall i : UInt64.t . result = C_Ok'0 i
-       -> UInt64.to_uint i < Seq.length (view'0 self)
-      /\ Seq.get (deep_model'1 self) (UInt64.to_uint i) = deep_model'2 x}
+       -> UInt64.t'int i < Seq.length (view'0 self) /\ Seq.get (deep_model'1 self) (UInt64.t'int i) = deep_model'2 x}
       {[%#sslice6] forall i : UInt64.t . result = C_Err'0 i
-       -> UInt64.to_uint i <= Seq.length (view'0 self)
+       -> UInt64.t'int i <= Seq.length (view'0 self)
       /\ (forall j : int . 0 <= j /\ j < Seq.length (view'0 self)  -> Seq.get (deep_model'0 self) j <> deep_model'2 x)}
       {[%#sslice7] forall i : UInt64.t . result = C_Err'0 i
-       -> (forall j : UInt64.t . UInt64.ult j i  -> Seq.get (deep_model'0 self) (UInt64.to_uint j) < deep_model'2 x)}
+       -> (forall j : UInt64.t . UInt64.ult j i  -> Seq.get (deep_model'0 self) (UInt64.t'int j) < deep_model'2 x)}
       {[%#sslice8] forall i : UInt64.t . result = C_Err'0 i
-       -> (forall j : UInt64.t . UInt64.ule i j /\ UInt64.to_uint j < Seq.length (view'0 self)
-       -> deep_model'2 x < Seq.get (deep_model'0 self) (UInt64.to_uint j))}
+       -> (forall j : UInt64.t . UInt64.ule i j /\ UInt64.t'int j < Seq.length (view'0 self)
+       -> deep_model'2 x < Seq.get (deep_model'0 self) (UInt64.t'int j))}
       (! return' {result}) ]
     
   
@@ -208,7 +207,7 @@ module M_02_std__binary_search [#"02_std.rs" 8 0 8 40]
   
   let rec binary_search'0 (s:slice UInt32.t) (return'  (ret:UInt64.t))= {[@expl:binary_search requires #0] [%#s02_std1] forall i : int . 0
     <= i
-    /\ i < Seq.length (view'0 s)  -> UInt32.to_uint (index_logic'0 s i) = i}
+    /\ i < Seq.length (view'0 s)  -> UInt32.t'int (index_logic'0 s i) = i}
     {[@expl:binary_search requires #1] [%#s02_std2] Seq.length (view'0 s) = 5}
     (! bb0
     [ bb0 = s0
@@ -219,7 +218,7 @@ module M_02_std__binary_search [#"02_std.rs" 8 0 8 40]
       
     | bb1 = s0 [ s0 = unwrap'0 {_5} (fun (_ret':UInt64.t) ->  [ &ix <- _ret' ] s1) | s1 = bb2 ] 
     | bb2 = s0
-      [ s0 = {[@expl:assertion] [%#s02_std0] UInt64.to_uint ix < 5} s1 | s1 =  [ &_0 <- ix ] s2 | s2 = return' {_0} ]
+      [ s0 = {[@expl:assertion] [%#s02_std0] UInt64.t'int ix < 5} s1 | s1 =  [ &_0 <- ix ] s2 | s2 = return' {_0} ]
        ]
     )
     [ & _0 : UInt64.t = any_l ()

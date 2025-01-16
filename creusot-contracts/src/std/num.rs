@@ -1,5 +1,6 @@
 use crate::{Default, *};
 pub use ::std::num::*;
+use paste::paste;
 
 macro_rules! mach_int {
     ($t:ty, $ty_nm:expr, $zero:expr) => {
@@ -34,30 +35,32 @@ macro_rules! mach_int {
 
 macro_rules! mach_uint { // TODO laurent factoriser avec mach_int
     ($t:ty, $ty_nm:expr, $zero:expr) => {
-        impl View for $t {
-            type ViewTy = Int;
-            #[logic]
-            #[trusted]
-            #[creusot::builtins = concat!($ty_nm, ".to_uint")]
-            fn view(self) -> Self::ViewTy {
-                dead
+        paste! {
+            impl View for $t {
+                type ViewTy = Int;
+                #[logic]
+                #[trusted]
+                #[creusot::builtins = $ty_nm ".t'int"] // TODO laurent: on ne génère pas ".to_int" pour les types non signé car on a besoin de la version non signée, or le clone substitue la
+                fn view(self) -> Self::ViewTy {
+                    dead
+                }
             }
-        }
 
-        impl DeepModel for $t {
-            type DeepModelTy = Int;
-            #[logic]
-            #[open]
-            fn deep_model(self) -> Self::DeepModelTy {
-                pearlite! { self@ }
+            impl DeepModel for $t {
+                type DeepModelTy = Int;
+                #[logic]
+                #[open]
+                fn deep_model(self) -> Self::DeepModelTy {
+                    pearlite! { self@ }
+                }
             }
-        }
 
-        impl Default for $t {
-            #[predicate]
-            #[open]
-            fn is_default(self) -> bool {
-                pearlite! { self == $zero }
+            impl Default for $t {
+                #[predicate]
+                #[open]
+                fn is_default(self) -> bool {
+                    pearlite! { self == $zero }
+                }
             }
         }
     };

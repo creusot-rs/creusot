@@ -1,4 +1,4 @@
-use self::ty::{concret_intty, concret_uintty, slice_create_qname, slice_length_qname};
+use self::ty::{concret_intty, concret_uintty, intty_to_ty, slice_create_qname, slice_length_qname, uintty_to_ty};
 
 use crate::{
     backend::{
@@ -353,7 +353,7 @@ impl<'tcx> RValue<'tcx> {
                         // todo laurent valider l'approche
                         match r_ty.kind() {
                             TyKind::Int(_) => module.push_ident("to_int"),
-                            TyKind::Uint(_) => module.push_ident("to_uint"),
+                            TyKind::Uint(_) => module.push_ident(".t'int"),
                             _ => unreachable!("right operande, non-integer type for binary operation {op:?} {ty:?}"),
                         }
 
@@ -619,8 +619,10 @@ impl<'tcx> Terminator<'tcx> {
         match self {
             Terminator::Goto(bb) => (istmts, Expr::Symbol(format!("bb{}", bb.as_usize()).into())),
             Terminator::Switch(switch, branches) => {
+                let ty = switch.ty(lower.ctx.tcx, lower.locals);
+                let ty_kind = ty.kind();
                 let discr = switch.to_why(lower, &mut istmts);
-                (istmts, branches.to_why(lower.ctx, lower.names, discr))
+                (istmts, branches.to_why(lower.ctx, lower.names, discr, ty_kind))
             }
             Terminator::Return => {
                 (istmts, Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("_0"))]))
@@ -642,21 +644,40 @@ impl<'tcx> Branches<'tcx> {
         ctx: &mut Why3Generator<'tcx>,
         names: &mut N,
         discr: Exp,
+        discr_ty: &'tcx TyKind<'tcx>,
     ) -> coma::Expr {
         match self {
             Branches::Int(brs, def) => {
+                let intty = match discr_ty {
+                    TyKind::Int(intty) => intty,
+                    _ => panic!("Branches::Int try to evaluate a type that is not Int"),
+                };
+
                 let mut brs = mk_switch_branches(
                     discr,
-                    brs.into_iter().map(|(val, tgt)| (Exp::int(val), mk_goto(tgt))).collect(),
+                    brs.into_iter().map(|(val, tgt)| {
+                        let why_ty = intty_to_ty(names, intty);
+                        let e = Exp::Const(Constant::Int(val, Some(why_ty)));
+                        (e, mk_goto(tgt))
+                    }).collect(),
                 );
 
                 brs.push(Defn::simple("default", Expr::BlackBox(Box::new(mk_goto(def)))));
                 Expr::Defn(Box::new(Expr::Any), false, brs)
             }
             Branches::Uint(brs, def) => {
+                let uintty = match discr_ty {
+                    TyKind::Uint(uintty) => uintty,
+                    _ => panic!("Branches::Uint try to evaluate a type that is not Uint"),
+                };
+
                 let mut brs = mk_switch_branches(
                     discr,
-                    brs.into_iter().map(|(val, tgt)| (Exp::uint(val), mk_goto(tgt))).collect(),
+                    brs.into_iter().map(|(val, tgt)| {
+                        let why_ty = uintty_to_ty(names, uintty);
+                        let e = Exp::Const(Constant::Uint(val, Some(why_ty)));
+                        (e, mk_goto(tgt))
+                    }).collect(),
                 );
 
                 brs.push(Defn::simple("default", Expr::BlackBox(Box::new(mk_goto(def)))));

@@ -83,7 +83,9 @@ pub(crate) fn is_pearlite(tcx: TyCtxt, def_id: DefId) -> bool {
 pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "builtins"]).and_then(|a| {
         match &a.args {
-            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l.symbol),
+            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => {
+                Some(l.symbol)
+            },
             _ => None,
         }
     })

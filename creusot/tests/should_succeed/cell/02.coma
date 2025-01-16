@@ -148,13 +148,13 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
   
   function view'1 (self : t_Vec'0) : Seq.seq (t_Cell'0)
   
-  axiom view'1_spec : forall self : t_Vec'0 . [%#svec34] Seq.length (view'1 self) <= UInt64.to_uint (v_MAX'0 : UInt64.t)
+  axiom view'1_spec : forall self : t_Vec'0 . [%#svec34] Seq.length (view'1 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
   function view'0 (self : t_Vec'0) : Seq.seq (t_Cell'0) =
     [%#smodel29] view'1 self
   
   predicate in_bounds'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq (t_Cell'0)) =
-    [%#sslice30] UInt64.to_uint self < Seq.length seq
+    [%#sslice30] UInt64.t'int self < Seq.length seq
   
   predicate inv'2 (_1 : t_Cell'0)
   
@@ -163,7 +163,7 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
   use seq.Seq
   
   predicate has_value'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq (t_Cell'0)) (out : t_Cell'0) =
-    [%#sslice31] Seq.get seq (UInt64.to_uint self) = out
+    [%#sslice31] Seq.get seq (UInt64.t'int self) = out
   
   let rec index'0 (self:t_Vec'0) (index:UInt64.t) (return'  (ret:t_Cell'0))= {[@expl:index 'self' type invariant] inv'0 self}
     {[@expl:index 'index' type invariant] inv'1 index}
@@ -186,7 +186,7 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
   predicate inv'4 [#"02.rs" 70 4 70 43] (self : t_Fib'0) (v : t_Option'0) =
     [%#s0232] match v with
       | C_None'0 -> true
-      | C_Some'0 i -> UInt64.to_uint i = fib'0 (UInt64.to_uint self.t_Fib__ix'0)
+      | C_Some'0 i -> UInt64.t'int i = fib'0 (UInt64.t'int self.t_Fib__ix'0)
       end
   
   let rec get'0 (self:t_Cell'0) (return'  (ret:t_Option'0))= {[@expl:get 'self' type invariant] [%#s0215] inv'2 self}
@@ -205,8 +205,7 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
   
   function lemma_max_int'0 [#"02.rs" 62 0 62 22] (_1 : ()) : ()
   
-  axiom lemma_max_int'0_spec : forall _1 : () . [%#s0218] Power.power 2 63
-  < UInt64.to_uint (18446744073709551615 : UInt64.t)
+  axiom lemma_max_int'0_spec : forall _1 : () . [%#s0218] Power.power 2 63 < 18446744073709551615
   
   use prelude.prelude.Snapshot
   
@@ -239,13 +238,13 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
     [%#sops33] Seq.get (view'1 self) ix
   
   predicate fib_cell'0 [#"02.rs" 84 0 84 32] (v : t_Vec'0) =
-    [%#s0228] forall i : int . UInt64.to_uint ((index_logic'0 v i).t_Cell__ghost_inv'0).t_Fib__ix'0 = i
+    [%#s0228] forall i : int . UInt64.t'int ((index_logic'0 v i).t_Cell__ghost_inv'0).t_Fib__ix'0 = i
   
   meta "compute_max_steps" 1000000
   
   let rec fib_memo'0 (mem:t_Vec'0) (i:UInt64.t) (return'  (ret:UInt64.t))= {[@expl:fib_memo requires #0] [%#s029] fib_cell'0 mem}
-    {[@expl:fib_memo requires #1] [%#s0210] UInt64.to_uint i < Seq.length (view'0 mem)}
-    {[@expl:fib_memo requires #2] [%#s0211] UInt64.to_uint i <= 63}
+    {[@expl:fib_memo requires #1] [%#s0210] UInt64.t'int i < Seq.length (view'0 mem)}
+    {[@expl:fib_memo requires #2] [%#s0211] UInt64.t'int i <= 63}
     (! bb0
     [ bb0 = s0 [ s0 = index'0 {mem} {i} (fun (_ret':t_Cell'0) ->  [ &_9 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0 [ s0 = get'0 {_9} (fun (_ret':t_Option'0) ->  [ &_7 <- _ret' ] s1) | s1 = bb2 ] 
@@ -277,7 +276,7 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
     | bb14 = s0 [ s0 = UInt64.add {_23} {_27} (fun (_ret':UInt64.t) ->  [ &fib_i <- _ret' ] s1) | s1 = bb15 ] 
     | bb15 = bb16
     | bb16 = s0
-      [ s0 = {[@expl:assertion] [%#s028] UInt64.to_uint fib_i = fib'0 (UInt64.to_uint i)} s1
+      [ s0 = {[@expl:assertion] [%#s028] UInt64.t'int fib_i = fib'0 (UInt64.t'int i)} s1
       | s1 = index'0 {mem} {i} (fun (_ret':t_Cell'0) ->  [ &_35 <- _ret' ] s2)
       | s2 = bb17 ]
       
@@ -308,7 +307,7 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
     | & _35 : t_Cell'0 = any_l ()
     | & _38 : t_Option'0 = any_l () ]
     
-    [ return' (result:UInt64.t)-> {[@expl:fib_memo ensures] [%#s0212] UInt64.to_uint result = fib'0 (UInt64.to_uint i)}
+    [ return' (result:UInt64.t)-> {[@expl:fib_memo ensures] [%#s0212] UInt64.t'int result = fib'0 (UInt64.t'int i)}
       (! return' {result}) ]
     
 end

@@ -126,27 +126,27 @@ fn optimize_builtin<'tcx>(
             lhs: Box::new(args.remove(0)),
             rhs: Box::new(args.remove(0)),
         },
-        "prelude.prelude.UInt8.to_int"
+        "prelude.prelude.UInt8.t'int"
             if let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind =>
         {
             TermKind::Lit(Literal::Integer(c as i128))
         }
-        "prelude.prelude.UInt16.to_int"
+        "prelude.prelude.UInt16.t'int"
             if let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind =>
         {
             TermKind::Lit(Literal::Integer(c as i128))
         }
-        "prelude.prelude.UInt32.to_int"
+        "prelude.prelude.UInt32.t'int"
             if let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind =>
         {
             TermKind::Lit(Literal::Integer(c as i128))
         }
-        "prelude.prelude.UInt64.to_int"
+        "prelude.prelude.UInt64.t'int"
             if let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind =>
         {
             TermKind::Lit(Literal::Integer(c as i128))
         }
-        "prelude.prelude.UInt128.to_int"
+        "prelude.prelude.UInt128.t'int"
             if let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind =>
         {
             if c > isize::MAX as u128 {

@@ -62,344 +62,6 @@ module Real
     use real.Real
 end
 
-
-(* Signed Integer *)
-(*
-module Int8
-  use int.Int
-
-  type int8 = < range -0x80 0x7f >
-
-  constant min : int = - 0x80
-  constant max : int =   0x7f
-
-  function to_int (x : int8) : int = int8'int x
-  meta coercion function to_int
-  meta "model_projection" function to_int
-
-  predicate in_bounds (n:int) = min <= n <= max
-
-  axiom to_int_in_bounds: forall n:int8. in_bounds n
-
-  let of_int (n:int) { [@expl:integer overflow] in_bounds n }
-    (ret (result : int8) { result = n }) = any
-
-  let add (a:int8) (b:int8) { [@expl:integer overflow] in_bounds (a + b) } (ret (result : int8) { result = a + b }) = any
-
-  let sub (a:int8) (b:int8) { [@expl:integer overflow] in_bounds (a - b) } (ret (result : int8) { result = a - b }) = any
-
-  let mul (a:int8) (b:int8) { [@expl:integer overflow] in_bounds (a * b) } (ret (result : int8) { result = a * b }) = any
-
-  let neg (a:int8) { [@expl:integer overflow] in_bounds (- a) } (ret (result : int8) { result = - a }) = any
-
-  axiom extensionality: forall x y: int8. to_int x = to_int y -> x = y
-
-  let eq (a:int8) (b:int8) (ret (result : bool) { result <-> a = b } { to_int a = to_int b -> result }) = any
-
-  let ne (a:int8) (b:int8) (ret (result : bool) { result <-> a <> b } { to_int a <> to_int b -> result }) = any
-
-  let le (a:int8) (b:int8) (ret (result : bool) { result <-> to_int a <= to_int b }) = any
-
-  let lt (a:int8) (b:int8) (ret (result : bool) { result <-> to_int a < to_int b }) = any
-
-  let ge (a:int8) (b:int8) (ret (result : bool) { result <-> to_int a >= to_int b }) = any
-
-  let gt (a:int8) (b:int8) (ret (result : bool) { result <-> to_int a > to_int b }) = any
-
-  use int.ComputerDivision
-
-  let div (a:int8) (b:int8)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (div a b) }
-    (ret (result : int8) { result = div a b }) = any
-
-  let rem (a:int8) (b:int8)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (mod a b) }
-    (ret (result : int8) { result = mod a b }) = any
-end
-
-module Int16
-    use export bv.BV16
-    use bv.BV128 as BV128
-    use bv.BVConverter_16_128
-    use bv.Pow2int
-    use int.Int
-    use int.ComputerDivision as CD
-
-    constant min_sint : t = 0x8000
-    constant max_sint : t = 0x7FFF
-    constant two_power_size_minus_one : int = 0x8000
-    constant minus_one : t = 0xFFFF
-
-    function sto_bv128 (x: t) : BV128.t = stoBig x
-    constant min_sint_as_bv128 : BV128.t = sto_bv128 min_sint
-    constant max_sint_as_bv128 : BV128.t = sto_bv128 max_sint
-
-    function to_uint(x:t): int = t'int x
-
-    let eq (a: t) (b: t) (ret (result: bool) { result <-> to_int a = to_int b } { result <-> a = b }) = any
-    let ne (a: t) (b: t) (ret (result: bool) { result <-> to_int a <> to_int b } { result <-> a <> b }) = any
-    let le (a: t) (b: t) (ret (result: bool) { result <-> to_int a <= to_int b }  { result <-> sle a b }) = any
-    let lt (a: t) (b: t) (ret (result: bool) { result <-> to_int a < to_int b } { result <-> slt a b }) = any
-    let ge (a: t) (b: t) (ret (result: bool) { result <-> to_int a >= to_int b } { result <-> sge a b }) = any
-    let gt (a: t) (b: t) (ret (result: bool) { result <-> to_int a > to_int b } { result <-> sgt a b }) = any
-
-    let add (a:t) (b:t)
-        { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a + to_int b < two_power_size_minus_one \/ let r = BV128.add (sto_bv128 a) (sto_bv128 b) in (BV128.sle min_sint_as_bv128 r /\ BV128.sle r max_sint_as_bv128) }
-        (ret (result :t)  { to_int result = to_int a + to_int b } { result = add a b })
-        = any
-    let sub (a:t)  (b:t)
-        { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a - to_int b < two_power_size_minus_one \/ let r = BV128.sub (sto_bv128 a) (sto_bv128 b) in (BV128.sle min_sint_as_bv128 r /\ BV128.sle r max_sint_as_bv128) }
-        (ret (result: t) { to_int result = to_int a - to_int b } { result = sub a b })
-        = any
-    let mul (a:t) (b:t)
-        { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a * to_int b < two_power_size_minus_one \/ let r = BV128.mul (sto_bv128 a) (sto_bv128 b) in (BV128.sle min_sint_as_bv128 r /\ BV128.sle r max_sint_as_bv128) }
-        (ret (result: t) { to_int result = to_int a * to_int b } { result = mul a b })
-        = any
-    let div (a:t) (b:t)
-        { [@expl:division by zero] b <> zeros  \/ to_int b <> 0 }
-        { [@expl:signed division overflow check] (a <> min_sint \/ b <> minus_one) \/ (to_int a <> to_int min_sint \/ to_int b <> -1) }
-        (ret (result: t) { to_int result = CD.div (to_int a) (to_int b) } { result = sdiv a b })
-        = any
-    let rem (a:t) (b:t)
-        { [@expl:remainder by zero] b <> zeros \/ to_int b <> 0 }
-        (ret (result: t) { to_int result = CD.mod (to_int a) (to_int b) } { result = srem a b })
-        = any
-
-    let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
-    let bw_or (a:t) (b:t) (ret (result :t)) = ret { bw_or a b }
-    let bw_xor (a:t) (b:t) (ret (result :t)) = ret { bw_xor a b }
-    let bw_not (a:t) (ret (result :t)) = ret { bw_not a }
-    let shl (a:t) (b:t)
-        { [@expl:out-of-bounds shifting] ult b size_bv \/ to_uint b < size  }
-        { [@expl:out-of-bounds shifting] sle zeros a \/ to_int a >= 0 }
-        { [@expl:arithmetic overflow] (to_int a) * (pow2 (to_int b)) < two_power_size_minus_one \/ let r = BV128.lsl_bv (sto_bv128 a) (sto_bv128 b) in (BV128.sle min_sint_as_bv128 r /\ BV128.sle r max_sint_as_bv128)}
-        (ret (result :t) { result = lsl_bv a b } { result = lsl a (to_uint b) })
-        = any
-    let shr (a:t) (b:t)
-        { [@expl:out-of-bounds shifting] ult b size_bv \/ to_uint b < size }
-        (ret (result :t) { result = asr_bv a b } { result = asr a (to_uint b) })
-        = any
-end
-module Int32
-  use int.Int
-
-  type int32 = < range -0x80000000 0x7fffffff >
-
-  constant min : int = - 0x8000_0000
-  constant max : int =   0x7fff_ffff
-
-  function to_int (x : int32) : int = int32'int x
-  meta coercion function to_int
-  meta "model_projection" function to_int
-
-  predicate in_bounds (n:int) = min <= n <= max
-
-  axiom to_int_in_bounds: forall n:int32. in_bounds n
-
-  let of_int (n:int) { [@expl:integer overflow] in_bounds n }
-    (ret (result : int32) { result = n }) = any
-
-  let add (a:int32) (b:int32) { [@expl:integer overflow] in_bounds (a + b) } (ret (result : int32) { result = a + b }) = any
-
-  let sub (a:int32) (b:int32) { [@expl:integer overflow] in_bounds (a - b) } (ret (result : int32) { result = a - b }) = any
-
-  let mul (a:int32) (b:int32) { [@expl:integer overflow] in_bounds (a * b) } (ret (result : int32) { result = a * b }) = any
-
-  let neg (a:int32) { [@expl:integer overflow] in_bounds (- a) } (ret (result : int32) { result = - a }) = any
-
-  axiom extensionality: forall x y: int32. to_int x = to_int y -> x = y
-
-  let eq (a:int32) (b:int32) (ret (result : bool) { result <-> a = b } { to_int a = to_int b -> result }) = any
-
-  let ne (a:int32) (b:int32) (ret (result : bool) { result <-> a <> b } { to_int a <> to_int b -> result }) = any
-
-  let le (a:int32) (b:int32) (ret (result : bool) { result <-> to_int a <= to_int b }) = any
-
-  let lt (a:int32) (b:int32) (ret (result : bool) { result <-> to_int a < to_int b }) = any
-
-  let ge (a:int32) (b:int32) (ret (result : bool) { result <-> to_int a >= to_int b }) = any
-
-  let gt (a:int32) (b:int32) (ret (result : bool) { result <-> to_int a > to_int b }) = any
-
-  use int.ComputerDivision
-
-  let div (a:int32) (b:int32)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (div a b) }
-    (ret (result : int32) { result = div a b }) = any
-
-  let rem (a:int32) (b:int32)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (mod a b) }
-    (ret (result : int32) { result = mod a b }) = any
-end
-module Int64
-  use int.Int
-
-  type int64 = < range -0x8000_0000_0000_0000 0x7fff_ffff_ffff_ffff>
-
-  constant min : int = - 0x8000_0000_0000_0000
-  constant max : int =   0x7fff_ffff_ffff_ffff
-
-  function to_int (x : int64) : int = int64'int x
-  meta coercion function to_int
-  meta "model_projection" function to_int
-
-  predicate in_bounds (n:int) = min <= n <= max
-
-  axiom to_int_in_bounds: forall n: int64. in_bounds n
-
-  let of_int (n:int) { [@expl:integer overflow] in_bounds n }
-    (ret (result : int64) { result = n }) = any
-
-  let add (a:int64) (b:int64) { [@expl:integer overflow] in_bounds (a + b) } (ret (result : int64) { result = a + b }) = any
-
-  let sub (a:int64) (b:int64) { [@expl:integer overflow] in_bounds (a - b) } (ret (result : int64) { result = a - b }) = any
-
-  let mul (a:int64) (b:int64) { [@expl:integer overflow] in_bounds (a * b) } (ret (result : int64) { result = a * b }) = any
-
-  let neg (a:int64) { [@expl:integer overflow] in_bounds (- a) } (ret (result : int64) { result = - a }) = any
-
-  axiom extensionality: forall x y :int64. to_int x = to_int y -> x = y
-
-  let eq (a:int64) (b:int64) (ret (result : bool) { result <-> a = b } { to_int a = to_int b -> result }) = any
-
-  let ne (a:int64) (b:int64) (ret (result : bool) { result <-> a <> b } { to_int a <> to_int b -> result }) = any
-
-  let le (a:int64) (b:int64) (ret (result : bool) { result <-> to_int a <= to_int b }) = any
-
-  let lt (a:int64) (b:int64) (ret (result : bool) { result <-> to_int a < to_int b }) = any
-
-  let ge (a:int64) (b:int64) (ret (result : bool) { result <-> to_int a >= to_int b }) = any
-
-  let gt (a:int64) (b:int64) (ret (result : bool) { result <-> to_int a > to_int b }) = any
-
-  use int.ComputerDivision
-
-  let div (a:int64) (b:int64)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (div a b) }
-    (ret (result : int64) { result = div a b }) = any
-
-  let rem (a:int64) (b:int64)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (mod a b) }
-    (ret (result : int64) { result = mod a b }) = any
-end
-module Int128
-  use int.Int
-
- type int128 = < range -0x8000_0000_0000_0000_0000_0000_0000_0000 0x7fff_ffff_ffff_ffff_ffff_ffff_ffff_ffff >
-
-  constant min : int = - 0x8000_0000_0000_0000_0000_0000_0000_0000
-  constant max : int =   0x7fff_ffff_ffff_ffff_ffff_ffff_ffff_ffff
-
-  function to_int (x : int128) : int = int128'int x
-  meta coercion function to_int
-  meta "model_projection" function to_int
-
-  predicate in_bounds (n:int) = min <= n <= max
-
-  axiom to_int_in_bounds: forall n:int128. in_bounds n
-
-  let of_int (n:int) { [@expl:integer overflow] in_bounds n }
-    (ret (result : int128) { result = n }) = any
-
-  let add (a:int128) (b:int128) { [@expl:integer overflow] in_bounds (a + b) } (ret (result : int128) { result = a + b }) = any
-
-  let sub (a:int128) (b:int128) { [@expl:integer overflow] in_bounds (a - b) } (ret (result : int128) { result = a - b }) = any
-
-  let mul (a:int128) (b:int128) { [@expl:integer overflow] in_bounds (a * b) } (ret (result : int128) { result = a * b }) = any
-
-  let neg (a:int128) { [@expl:integer overflow] in_bounds (- a) } (ret (result : int128) { result = - a }) = any
-
-  axiom extensionality: forall x y: int128. to_int x = to_int y -> x = y
-
-  let eq (a:int128) (b:int128) (ret (result : bool) { result <-> a = b } { to_int a = to_int b -> result }) = any
-
-  let ne (a:int128) (b:int128) (ret (result : bool) { result <-> a <> b } { to_int a <> to_int b -> result }) = any
-
-  let le (a:int128) (b:int128) (ret (result : bool) { result <-> to_int a <= to_int b }) = any
-
-  let lt (a:int128) (b:int128) (ret (result : bool) { result <-> to_int a < to_int b }) = any
-
-  let ge (a:int128) (b:int128) (ret (result : bool) { result <-> to_int a >= to_int b }) = any
-
-  let gt (a:int128) (b:int128) (ret (result : bool) { result <-> to_int a > to_int b }) = any
-
-  use int.ComputerDivision
-
-  let div (a:int128) (b:int128)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (div a b) }
-    (ret (result : int128) { result = div a b }) = any
-
-  let rem (a:int128) (b:int128)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (mod a b) }
-    (ret (result : int128) { result = mod a b }) = any
-end
-
-*)
-
-(*
-module IntSize
-  use int.Int
-
-  type isize = < range -0x8000_0000_0000_0000 0x7fff_ffff_ffff_ffff>
-
-  constant min : int = - 0x8000_0000_0000_0000
-  constant max : int =   0x7fff_ffff_ffff_ffff
-
-  function to_int (x : isize) : int = isize'int x
-  meta coercion function to_int
-  meta "model_projection" function to_int
-
-  predicate in_bounds (n:int) = min <= n <= max
-
-  axiom to_int_in_bounds: forall n:isize. in_bounds n
-
-  let of_int (n:int) { [@expl:integer overflow] in_bounds n }
-    (ret (result :isize) { result = n }) = any
-
-  let add (a:isize) (b:isize) { [@expl:integer overflow] in_bounds (a + b) } (ret (result :isize) { result = a + b }) = any
-
-  let sub (a:isize) (b:isize) { [@expl:integer overflow] in_bounds (a - b) } (ret (result :isize) { result = a - b }) = any
-
-  let mul (a:isize) (b:isize) { [@expl:integer overflow] in_bounds (a * b) } (ret (result :isize) { result = a * b }) = any
-
-  let neg (a:isize) { [@expl:integer overflow] in_bounds (- a) } (ret (result :isize) { result = - a }) = any
-
-  axiom extensionality: forall x y: isize. to_int x = to_int y -> x = y
-
-  let eq (a:isize) (b:isize) (ret (result : bool) { result <-> a = b } { to_int a = to_int b -> result }) = any
-
-  let ne (a:isize) (b:isize) (ret (result : bool) { result <-> a <> b } { to_int a <> to_int b -> result }) = any
-
-  let le (a:isize) (b:isize) (ret (result : bool) { result <-> to_int a <= to_int b }) = any
-
-  let lt (a:isize) (b:isize) (ret (result : bool) { result <-> to_int a < to_int b }) = any
-
-  let ge (a:isize) (b:isize) (ret (result : bool) { result <-> to_int a >= to_int b }) = any
-
-  let gt (a:isize) (b:isize) (ret (result : bool) { result <-> to_int a > to_int b }) = any
-
-  use int.ComputerDivision
-
-  let div (a:isize) (b:isize)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (div a b) }
-    (ret (result :isize) { result = div a b }) = any
-
-  let rem (a:isize) (b:isize)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (mod a b) }
-    (ret (result :isize) { result = mod a b }) = any
-end
-*)
-
 (* Int *)
 module UInt8
   use export prelude.int.UInt8
@@ -416,7 +78,6 @@ end
 module UInt128
   use export prelude.int.UInt128
 end
-
 module Int8
   use export prelude.int.Int8
 end
@@ -433,118 +94,6 @@ module Int128
   use export prelude.int.Int128
 end
 
-
-(*
-module UInt128
-  use int.Int
-
-  type uint128 = < range -0x0 0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff >
-
-  constant min : int = - 0x0
-  constant max : int =   0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff
-
-  function to_int (x : uint128) : int = uint128'int x
-  meta coercion function to_int
-  meta "model_projection" function to_int
-
-  predicate in_bounds (n:int) = min <= n <= max
-
-  axiom to_int_in_bounds: forall n:uint128. in_bounds n
-
-  let of_int (n:int) { [@expl:integer overflow] in_bounds n }
-    (ret (result : uint128) { result = n }) = any
-
-  let add (a:uint128) (b:uint128) { [@expl:integer overflow] in_bounds (a + b) } (ret (result : uint128) { result = a + b }) = any
-
-  let sub (a:uint128) (b:uint128) { [@expl:integer overflow] in_bounds (a - b) } (ret (result : uint128) { result = a - b }) = any
-
-  let mul (a:uint128) (b:uint128) { [@expl:integer overflow] in_bounds (a * b) } (ret (result : uint128) { result = a * b }) = any
-
-  let neg (a:uint128) { [@expl:integer overflow] in_bounds (- a) } (ret (result :uint128) { result = - a }) = any
-
-  axiom extensionality: forall x y: uint128. to_int x = to_int y -> x = y
-
-  let eq (a:uint128) (b:uint128) (ret (result : bool) { result <-> a = b } { to_int a = to_int b -> result }) = any
-
-  let ne (a:uint128) (b:uint128) (ret (result : bool) { result <-> a <> b } { to_int a <> to_int b -> result }) = any
-
-  let le (a:uint128) (b:uint128) (ret (result : bool) { result <-> to_int a <= to_int b }) = any
-
-  let lt (a:uint128) (b:uint128) (ret (result : bool) { result <-> to_int a < to_int b }) = any
-
-  let ge (a:uint128) (b:uint128) (ret (result : bool) { result <-> to_int a >= to_int b }) = any
-
-  let gt (a:uint128) (b:uint128) (ret (result : bool) { result <-> to_int a > to_int b }) = any
-
-  use int.ComputerDivision
-
-  let div (a:uint128) (b:uint128)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (div a b) }
-    (ret (result :uint128) { result = div a b }) = any
-
-  let rem (a:uint128) (b:uint128)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (mod a b) }
-    (ret (result :uint128) { result = mod a b }) = any
-end
-*)
-
-(*
-module UIntSize
-  use int.Int
-
-  type usize = < range -0x0 0xffff_ffff_ffff_ffff >
-
-  constant min : int = - 0x0
-  constant max : int =   0xffff_ffff_ffff_ffff
-
-  function to_int (x : usize) : int = usize'int x
-  meta coercion function to_int
-  meta "model_projection" function to_int
-
-  predicate in_bounds (n:int) = min <= n <= max
-
-  axiom to_int_in_bounds: forall n:usize. in_bounds n
-
-  let of_int (n:int) { [@expl:integer overflow] in_bounds n }
-    (ret (result : usize ) { result = n }) = any
-
-  let add (a:usize) (b:usize) { [@expl:integer overflow] in_bounds (a + b) } (ret (result : usize) { result = a + b }) = any
-
-  let sub (a:usize) (b:usize) { [@expl:integer overflow] in_bounds (a - b) } (ret (result : usize) { result = a - b }) = any
-
-  let mul (a:usize) (b:usize) { [@expl:integer overflow] in_bounds (a * b) } (ret (result : usize) { result = a * b }) = any
-
-  let neg (a:usize) { [@expl:integer overflow] in_bounds (- a) } (ret (result : usize) { result = - a }) = any
-
-  axiom extensionality: forall x y: usize. to_int x = to_int y -> x = y
-
-  let eq (a:usize) (b:usize) (ret (result : bool) { result <-> a = b } { to_int a = to_int b -> result }) = any
-
-  let ne (a:usize) (b:usize) (ret (result : bool) { result <-> a <> b } { to_int a <> to_int b -> result }) = any
-
-  let le (a:usize) (b:usize) (ret (result : bool) { result <-> to_int a <= to_int b }) = any
-
-  let lt (a:usize) (b:usize) (ret (result : bool) { result <-> to_int a < to_int b }) = any
-
-  let ge (a:usize) (b:usize) (ret (result : bool) { result <-> to_int a >= to_int b }) = any
-
-  let gt (a:usize) (b:usize) (ret (result : bool) { result <-> to_int a > to_int b }) = any
-
-  use int.ComputerDivision
-
-  let div (a:usize) (b:usize)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (div a b) }
-    (ret (result : usize) { result = div a b }) = any
-
-  let rem (a:usize) (b:usize)
-    { [@expl:division by zero] b <> 0 }
-    { [@expl:integer overflow] in_bounds (mod a b) }
-    (ret (result : usize) { result = mod a b }) = any
-end
-*)
 (* Floats *)
 module Float32
   use export prelude.float.Float32
@@ -593,95 +142,36 @@ module Slice64
 
   type slice 'a =
     { elts : seq 'a }
-    invariant { Seq.length elts <= UInt64.to_uint UInt64.max_uint }
+    invariant { Seq.length elts <= UInt64.to_int UInt64.max_uint }
   axiom slice_ext :
     forall x y: slice 'a. x.elts = y.elts -> x = y
 
   type array 'a = slice 'a
 
   function length (s : slice 'a) : UInt64.t
-  axiom spec : forall s : slice 'a . (UInt64.to_uint (length s)) = Seq.length s.elts
+  axiom spec : forall s : slice 'a . (UInt64.to_int (length s)) = Seq.length s.elts
 
 
   let get < 'a > (s : slice 'a) (ix : UInt64.t) (ret (res : 'a)) =
-    { UInt64.to_uint ix < Seq.length s.elts }
+    { UInt64.to_int ix < Seq.length s.elts }
     ret {Seq.get s.elts (to_int ix)}
 
 
   let set < 'a > (s : slice 'a) (ix : UInt64.t) (v : 'a)
-    { 0 <= UInt64.to_uint ix < Seq.length s.elts }
+    { 0 <= UInt64.to_int ix < Seq.length s.elts }
     (ret (result : slice 'a)
       { Seq.length result.elts = Seq.length s.elts }
-      { result.elts[UInt64.to_uint ix] = v }
-      { forall j. 0 <= j < Seq.length s.elts /\ j <> UInt64.to_uint ix -> result.elts[j] = s.elts[j] }
+      { result.elts[UInt64.to_int ix] = v }
+      { forall j. 0 <= j < Seq.length s.elts /\ j <> UInt64.to_int ix -> result.elts[j] = s.elts[j] }
     ) = any
 
 
   let create < 'a > (len : UInt64.t) (f : int -> 'a)
-    { 0 <= UInt64.to_uint len }
+    { 0 <= UInt64.to_int len }
   (ret (result : slice 'a )
-    { Seq.length result.elts = UInt64.to_uint len }
-    { forall i . 0 <= i < UInt64.to_uint len -> result.elts[i] = f i }
+    { Seq.length result.elts = UInt64.to_int len }
+    { forall i . 0 <= i < UInt64.to_int len -> result.elts[i] = f i }
   ) = any
 
   function id (s : slice 'a) : seq 'a = s.elts
 end
-
-(*
-module Slice
-  use seq.Seq
-  use UInt64
-  use int.Int
-
-  type slice 'a =
-    { elts : seq 'a }
-    invariant { Seq.length elts <= UInt64.to_uint UInt64.max_uint }
-  axiom slice_ext :
-    forall x y: slice 'a. x.elts = y.elts -> x = y
-
-  type array 'a = slice 'a
-
-  function length (s : slice 'a) : UInt64.t
-  axiom spec : forall s : slice 'a . (UInt64.to_uint (length s)) = Seq.length s.elts
-  (*
-  : usize = of_int (Seq.length s.elts)
-  *)
-
-  let get < 'a > (s : slice 'a) (ix : UInt64.t) (ret (res : 'a)) =
-    { UInt64.to_uint ix < Seq.length s.elts }
-    ret {Seq.get s.elts (to_int ix)}
-
-
-  let set < 'a > (s : slice 'a) (ix : UInt64.t) (v : 'a)
-    { 0 <= UInt64.to_uint ix < Seq.length s.elts }
-    (ret (result : slice 'a)
-      { Seq.length result.elts = Seq.length s.elts }
-      { result.elts[UInt64.to_uint ix] = v }
-      { forall j. 0 <= j < Seq.length s.elts /\ j <> UInt64.to_uint ix -> result.elts[j] = s.elts[j] }
-    ) = any
-
-
-  let create < 'a > (len : UInt64.t) (f : int -> 'a)
-    { 0 <= UInt64.to_uint len }
-  (ret (result : slice 'a )
-    { Seq.length result.elts = UInt64.to_uint len }
-    { forall i . 0 <= i < UInt64.to_uint len -> result.elts[i] = f i }
-  ) = any
-
-
-  (*
-  let function get < 'a > (s : slice 'a) (ix : UInt64.t) : 'a =
-    requires { ix < Seq.length s.elts }
-    Seq.get s.elts (to_int ix)
-
-  let set (s : slice 'a) (ix : UInt64.t) (v : 'a) : slice 'a =
-    requires { 0 <= ix < Seq.length s.elts }
-    ensures { Seq.length result.elts = Seq.length s.elts }
-    ensures { result.elts[ix] = v }
-    ensures { forall j. 0 <= j < Seq.length s.elts /\ j <> ix -> result.elts[j] = s.elts[j] }
-    { elts = Seq.set s.elts (to_int ix) v }
-  *)
-  function id (s : slice 'a) : seq 'a = s.elts
-end
-
-*)
