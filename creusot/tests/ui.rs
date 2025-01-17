@@ -5,6 +5,11 @@ use std::{
     io::{BufRead, BufReader, IsTerminal, Write},
     path::{Path, PathBuf},
     process::Command,
+    sync::{
+        atomic::{self, AtomicUsize},
+        Mutex,
+    },
+    thread,
 };
 use termcolor::*;
 
@@ -153,14 +158,14 @@ fn run_creusot(
 
 fn should_succeed<B>(s: &str, args: &Args, b: B)
 where
-    B: Fn(&Path) -> Option<std::process::Command>,
+    B: Fn(&Path) -> Option<std::process::Command> + Send + Sync,
 {
     glob_runner(s, args, b, true);
 }
 
 fn should_fail<B>(s: &str, args: &Args, b: B)
 where
-    B: Fn(&Path) -> Option<std::process::Command>,
+    B: Fn(&Path) -> Option<std::process::Command> + Send + Sync,
 {
     glob_runner(s, args, b, false);
 }
@@ -180,106 +185,122 @@ fn erase_global_paths(s: &mut Vec<u8>) {
 
 fn glob_runner<B>(s: &str, args: &Args, command_builder: B, should_succeed: bool)
 where
-    B: Fn(&Path) -> Option<std::process::Command>,
+    B: Fn(&Path) -> Option<std::process::Command> + Send + Sync,
 {
     let is_tty = std::io::stdout().is_terminal();
-    let mut out = StandardStream::stdout(if args.force_color || is_tty {
+    let out = Mutex::new(StandardStream::stdout(if args.force_color || is_tty {
         ColorChoice::Always
     } else {
         ColorChoice::Never
-    });
+    }));
 
-    let mut test_count = 0;
-    let mut test_failures = 0;
+    let test_count = AtomicUsize::new(0);
+    let test_failures = AtomicUsize::new(0);
 
-    for entry in glob::glob(s).expect("Failed to read glob pattern") {
-        test_count += 1;
-        let entry = entry.unwrap();
+    let entries = Mutex::new(glob::glob(s).expect("Failed to read glob pattern"));
+    let nb_threads = thread::available_parallelism().map(|n| n.into()).unwrap_or(1usize);
 
-        if let Some(ref filter) = args.filter {
-            if !entry.to_str().map(|entry| entry.contains(filter)).unwrap_or(false) {
-                continue;
-            }
-        }
-        let output = match command_builder(&entry) {
-            None => continue,
-            Some(mut c) => {
-                let mut o = c.output().unwrap();
-                // Replace global paths in stderr with (a simulacrum of) local paths
-                erase_global_paths(&mut o.stderr);
-                o
-            }
-        };
+    thread::scope(|s| {
+        let worker = || {
+            loop {
+                let Some(entry) = entries.lock().unwrap().next() else {
+                    return;
+                };
+                test_count.fetch_add(1, atomic::Ordering::SeqCst);
+                let entry = entry.unwrap();
 
-        let stderr = entry.with_extension("stderr");
-        let stdout = entry.with_extension("coma");
-
-        // Default (not `quiet`): print "Testing tests/current/test ... " and flush before running the test
-        // if `quiet` enabled: postpone printing, store the message in `current`, only print it if the test case fails
-        let mut current: &str = &format!("Testing {} ... ", entry.display());
-        if !args.quiet {
-            write!(out, "{}", current).unwrap();
-            current = "";
-            out.flush().unwrap();
-        }
-
-        if args.bless {
-            let (success, _) =
-                differ(output.clone(), &stdout, Some(&stderr), should_succeed, is_tty).unwrap();
-
-            if success {
-                if is_tty {
-                    // Move to beginning of line and clear line.
-                    write!(out, "\x1b[G\x1b[2K").unwrap();
-                } else {
-                    out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
-                    writeln!(out, "ok").unwrap();
-                }
-            } else {
-                write!(out, "{current}").unwrap();
-                out.set_color(ColorSpec::new().set_fg(Some(Color::Blue))).unwrap();
-                writeln!(&mut out, "blessed").unwrap();
-                out.reset().unwrap();
-            }
-
-            if output.stdout.is_empty() {
-                let _ = std::fs::remove_file(stdout);
-            } else {
-                std::fs::write(stdout, &output.stdout).unwrap();
-            }
-
-            if output.stderr.is_empty() {
-                let _ = std::fs::remove_file(stderr);
-            } else {
-                std::fs::write(stderr, &output.stderr).unwrap();
-            }
-        } else {
-            let (success, buf) =
-                differ(output.clone(), &stdout, Some(&stderr), should_succeed, is_tty).unwrap();
-
-            if success {
-                if !args.quiet {
-                    if is_tty {
-                        // Move to beginning of line and clear line.
-                        write!(out, "\x1b[G\x1b[2K").unwrap();
-                    } else {
-                        out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
-                        writeln!(out, "ok").unwrap();
+                if let Some(ref filter) = args.filter {
+                    if !entry.to_str().map(|entry| entry.contains(filter)).unwrap_or(false) {
+                        continue;
                     }
                 }
-            } else {
-                write!(out, "{current}").unwrap();
-                out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
-                writeln!(&mut out, "failure").unwrap();
+                let output = match command_builder(&entry) {
+                    None => continue,
+                    Some(mut c) => {
+                        let mut o = c.output().unwrap();
+                        // Replace global paths in stderr with (a simulacrum of) local paths
+                        erase_global_paths(&mut o.stderr);
+                        o
+                    }
+                };
 
-                test_failures += 1;
-            };
-            out.reset().unwrap();
+                let stderr = entry.with_extension("stderr");
+                let stdout = entry.with_extension("coma");
 
-            let wrt = BufferWriter::stdout(ColorChoice::Always);
-            wrt.print(&buf).unwrap();
+                let (success, buf) =
+                    differ(output.clone(), &stdout, Some(&stderr), should_succeed, is_tty).unwrap();
+
+                // Default (not `quiet`): print "Testing tests/current/test ... " and flush. This happens after running the test to avoid messing up the output.
+                // if `quiet` enabled: postpone printing, store the message in `current`, only print it if the test case fails
+                let mut current: &str = &format!("Test {}: ", entry.display());
+                let mut out = out.lock().unwrap();
+                if !args.quiet {
+                    write!(out, "{}", current).unwrap();
+                    current = "";
+                    out.flush().unwrap();
+                }
+
+                if args.bless {
+                    if success {
+                        if is_tty {
+                            // Move to beginning of line and clear line.
+                            write!(out, "\x1b[G\x1b[2K").unwrap();
+                        } else {
+                            out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
+                            writeln!(out, "ok").unwrap();
+                        }
+                    } else {
+                        write!(out, "{current}").unwrap();
+                        out.set_color(ColorSpec::new().set_fg(Some(Color::Blue))).unwrap();
+                        writeln!(&mut out, "blessed").unwrap();
+                        out.reset().unwrap();
+                    }
+
+                    if output.stdout.is_empty() {
+                        let _ = std::fs::remove_file(stdout);
+                    } else {
+                        std::fs::write(stdout, &output.stdout).unwrap();
+                    }
+
+                    if output.stderr.is_empty() {
+                        let _ = std::fs::remove_file(stderr);
+                    } else {
+                        std::fs::write(stderr, &output.stderr).unwrap();
+                    }
+                } else {
+                    if success {
+                        if !args.quiet {
+                            if is_tty {
+                                // Move to beginning of line and clear line.
+                                write!(out, "\x1b[G\x1b[2K").unwrap();
+                            } else {
+                                out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
+                                writeln!(out, "ok").unwrap();
+                            }
+                        }
+                    } else {
+                        write!(out, "{current}").unwrap();
+                        out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
+                        writeln!(&mut out, "failure").unwrap();
+
+                        test_failures.fetch_add(1, atomic::Ordering::SeqCst);
+                    };
+                    out.reset().unwrap();
+
+                    let wrt = BufferWriter::stdout(ColorChoice::Always);
+                    wrt.print(&buf).unwrap();
+                }
+            }
+        };
+        let mut handles = Vec::new();
+        for _ in 0..nb_threads {
+            handles.push(s.spawn(worker));
         }
-    }
+    });
+
+    let test_count = test_count.load(atomic::Ordering::SeqCst);
+    let test_failures = test_failures.load(atomic::Ordering::SeqCst);
+    let mut out = out.into_inner().unwrap();
 
     if test_failures > 0 {
         out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
