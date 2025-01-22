@@ -44,7 +44,10 @@ fn main() -> Result<()> {
             setup::install(flags)
         }
         Some(Config(args)) => why3find_config(args),
-        Some(Prove(args)) => why3find_prove(args),
+        Some(Prove(args)) => {
+            creusot(None, cargs.options, cargs.cargo_flags);
+            why3find_prove(args)
+        }
         Some(New(args)) => new(args),
         Some(Init(args)) => init(args),
     }
