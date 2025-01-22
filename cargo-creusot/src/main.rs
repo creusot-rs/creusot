@@ -45,7 +45,7 @@ fn main() -> Result<()> {
         }
         Some(Config(args)) => why3find_config(args),
         Some(Prove(args)) => {
-            creusot(None, cargs.options, cargs.cargo_flags);
+            creusot(None, cargs.options, cargs.cargo_flags)?;
             why3find_prove(args)
         }
         Some(New(args)) => new(args),
