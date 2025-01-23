@@ -51,17 +51,15 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
    $ eval $(opam env)
    ```
    This will build `why3`, `why3find`, and their ocaml dependencies in a local `_opam` directory.
-5. Build **Creusot**:
+5. Install **Creusot**:
     ```
-    $ cargo install --path creusot-rustc
     $ cargo install --path cargo-creusot
+    $ cargo creusot setup install
     ```
-    this will build the `cargo-creusot` and `creusot-rustc` executables and place them in `~/.cargo/bin`.
-6. Set up **Creusot**:
-   ```
-   $ cargo creusot setup install
-   ```
-   this will download additional solvers (Alt-Ergo, Z3, CVC4, CVC5) and configure Why3 to use them.
+    The first command will build the `cargo-creusot` executable and place it in `~/.cargo/bin/`.
+    The second command will download solvers (Alt-Ergo, Z3, CVC4, CVC5), configure Why3 to use them,
+    then it will install the `creusot-rustc` executable; configuration files are stored in
+    `~/.config/creusot/` and executables are stored in `~/.local/share/creusot/`.
 
 # Upgrading Creusot 
 

@@ -74,6 +74,8 @@ fn main() {
     let mut metadata_file = cargo_creusot;
     metadata_file.current_dir(base_path);
     metadata_file.arg("creusot").args(&[
+        "--creusot-rustc".as_ref(),
+        creusot_rustc.path().as_os_str(),
         "--metadata-path".as_ref(),
         temp_file.as_os_str(),
         "--output-file=/dev/null".as_ref(),
