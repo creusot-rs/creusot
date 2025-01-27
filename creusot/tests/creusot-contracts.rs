@@ -27,7 +27,7 @@ fn main() {
         args.force_color = true;
     }
     // Build creusot-rustc to make it available to cargo-creusot
-    let _ = escargot::CargoBuild::new()
+    let creusot_rustc = escargot::CargoBuild::new()
         .bin("creusot-rustc")
         .current_release()
         .manifest_path("../creusot-rustc/Cargo.toml")
@@ -52,6 +52,8 @@ fn main() {
         .unwrap();
     cargo_creusot.current_dir(&base_path).args([
         "creusot",
+        "--creusot-rustc",
+        creusot_rustc.path().to_str().unwrap(),
         "--stdout",
         "--export-metadata=false",
         "--span-mode=relative",

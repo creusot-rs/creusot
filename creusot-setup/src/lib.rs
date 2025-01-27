@@ -1,6 +1,6 @@
 use anyhow::{anyhow, bail, Context};
 use directories::ProjectDirs;
-use std::{fmt, fs, path::PathBuf};
+use std::{fmt, fs, path::PathBuf, process::Command};
 
 mod config;
 mod tools;
@@ -41,6 +41,10 @@ fn get_config_paths() -> anyhow::Result<CfgPaths> {
         bin_subdir: dirs.data_dir().join("bin"),
         cache_dir: PathBuf::from(dirs.cache_dir()),
     })
+}
+
+pub fn get_data_dir() -> anyhow::Result<PathBuf> {
+    get_config_paths().map(|config| config.data_dir)
 }
 
 pub fn get_why3_config_file() -> anyhow::Result<PathBuf> {
@@ -212,11 +216,22 @@ pub struct InstallFlags {
     pub z3: ManagedFlag,
     pub cvc4: ManagedFlag,
     pub cvc5: ManagedFlag,
+    pub only_creusot_rustc: bool,
+    pub skip_creusot_rustc: bool,
 }
 
 pub fn install(flags: InstallFlags) -> anyhow::Result<()> {
     let paths = get_config_paths()?;
+    if !flags.skip_creusot_rustc {
+        install_creusot_rustc(&paths)?;
+    }
+    if !flags.only_creusot_rustc {
+        install_tools(&paths, flags)?;
+    }
+    Ok(())
+}
 
+fn install_tools(paths: &CfgPaths, flags: InstallFlags) -> anyhow::Result<()> {
     // helpers to generate the ExternalTool/ManagedTool config sections
 
     let getpath = |bin: Binary| -> anyhow::Result<PathBuf> {
@@ -276,7 +291,7 @@ pub fn install(flags: InstallFlags) -> anyhow::Result<()> {
 fn apply_config(paths: &CfgPaths, cfg: &Config) -> anyhow::Result<()> {
     // erase any previous existing config (but not the cache)
     let _ = fs::remove_dir_all(&paths.config_dir);
-    let _ = fs::remove_dir_all(&paths.data_dir);
+    let _ = fs::remove_dir_all(&paths.data_dir.join("bin"));
 
     // create directories
     fs::create_dir_all(&paths.config_dir)?;
@@ -320,4 +335,42 @@ fn apply_config(paths: &CfgPaths, cfg: &Config) -> anyhow::Result<()> {
     // install the why3find package
     why3find_install(&cfg.why3find.path)?;
     Ok(())
+}
+
+fn install_creusot_rustc(cfg: &CfgPaths) -> anyhow::Result<()> {
+    println! {"Installing creusot-rustc..."};
+    let toolchain = toolchain_channel();
+    // The `toolchain` hard-coded in toolchain_channel must match the active toolchain
+    let active_toolchain = active_toolchain();
+    if !active_toolchain.starts_with(&toolchain) {
+        // Ignore the target triple in the full toolchain identifier
+        panic!("Active toolchain: {active_toolchain}; expected: {toolchain}; cargo-creusot is probably out of date.");
+    }
+    let _ = fs::remove_dir_all(&cfg.data_dir.join("toolchains"));
+    // Usually ~/.local/share/creusot/toolchains/nightly-YYYY-MM-DD/
+    let toolchain_dir =
+        &toolchain_dir(&cfg.data_dir, &toolchain).into_os_string().into_string().unwrap();
+    let mut cmd = Command::new("cargo");
+    cmd.args(["install", "--path", "creusot-rustc", "--root", toolchain_dir, "--quiet"]);
+    if !cmd.status()?.success() {
+        bail!("Failed to install creusot-rustc")
+    }
+    Ok(())
+}
+
+fn active_toolchain() -> String {
+    let output = Command::new("rustup").args(&["show", "active-toolchain"]).output().unwrap();
+    let output = String::from_utf8(output.stdout).unwrap();
+    let toolchain = output.split(" ").next().unwrap();
+    toolchain.to_string()
+}
+
+pub fn toolchain_dir(data_dir: &PathBuf, toolchain: &str) -> PathBuf {
+    data_dir.join("toolchains").join(toolchain)
+}
+
+pub fn toolchain_channel() -> String {
+    let toolchain: toml::Value = toml::from_str(include_str!("../../rust-toolchain"))
+        .expect("Expected `cargo-creusot` to be built with a valid toolchain file");
+    toolchain["toolchain"]["channel"].as_str().unwrap().to_string()
 }

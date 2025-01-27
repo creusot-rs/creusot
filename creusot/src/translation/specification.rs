@@ -134,7 +134,7 @@ impl ContractClauses {
         let n_requires = self.requires.len();
         for req_id in self.requires {
             log::trace!("require clause {:?}", req_id);
-            let term = ctx.term(req_id).unwrap().clone();
+            let term = ctx.term_fail_fast(req_id).unwrap().clone();
             let expl = if n_requires == 1 {
                 format!("expl:{} requires", fn_name)
             } else {
@@ -146,7 +146,7 @@ impl ContractClauses {
         let n_ensures = self.ensures.len();
         for ens_id in self.ensures {
             log::trace!("ensures clause {:?}", ens_id);
-            let term = ctx.term(ens_id).unwrap().clone();
+            let term = ctx.term_fail_fast(ens_id).unwrap().clone();
             let expl = if n_ensures == 1 {
                 format!("expl:{} ensures", fn_name)
             } else {
@@ -157,7 +157,7 @@ impl ContractClauses {
 
         if let Some(var_id) = self.variant {
             log::trace!("variant clause {:?}", var_id);
-            let term = ctx.term(var_id).unwrap().clone();
+            let term = ctx.term_fail_fast(var_id).unwrap().clone();
             out.variant = Some(term);
         };
         log::trace!("no_panic: {}", self.no_panic);
@@ -226,10 +226,10 @@ impl<'tcx> ScopeTree<'tcx> {
 
         while let Some(s) = to_visit.take() {
             let d = (HashSet::new(), None);
-            self.0.get(&s).unwrap_or_else(|| &d).0.iter().for_each(|(id, loc)| {
+            self.0.get(&s).unwrap_or(&d).0.iter().for_each(|(id, loc)| {
                 locals.entry(*id).or_insert(*loc);
             });
-            to_visit = self.0.get(&s).unwrap_or_else(|| &d).1.clone();
+            to_visit = self.0.get(&s).unwrap_or(&d).1;
         }
 
         locals
@@ -257,7 +257,7 @@ pub(crate) fn inv_subst<'tcx>(
 /// Translate a place to a term. The place must represent a single named variable, so it can be
 /// - A simple `mir::Local`.
 /// - A capture. In this case, the place will simply be a local (the capture's envirnoment)
-/// followed by
+///   followed by
 ///   + a `Deref` projection if the closure is FnMut.
 ///   + a `Field` projection.
 ///   + a `Deref` projection if the capture is mutable.
@@ -470,7 +470,7 @@ pub(crate) fn pre_sig_of<'tcx>(
                 unnest_subst,
                 vec![Term::var(self_, env_ty).cur(), Term::var(self_, env_ty).fin()],
             );
-            let expl = format!("expl:closure unnest");
+            let expl = "expl:closure unnest".to_string();
             contract.ensures.push(Condition { term, expl });
         };
 
@@ -576,10 +576,7 @@ pub(crate) fn pre_sig_of<'tcx>(
     PreSignature { inputs, output, contract }
 }
 
-fn inputs_and_output<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    def_id: DefId,
-) -> (impl Iterator<Item = (Ident, Ty<'tcx>)>, Ty<'tcx>) {
+fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (impl Iterator<Item = (Ident, Ty)>, Ty) {
     let ty = tcx.type_of(def_id).instantiate_identity();
     let (inputs, output): (Box<dyn Iterator<Item = (rustc_span::symbol::Ident, _)>>, _) = match ty
         .kind()

@@ -1,6 +1,6 @@
 //! Defines all the internal creusot attributes.
 
-use rustc_ast::{AttrArgs, AttrArgsEq, Attribute, Param};
+use rustc_ast::{AttrArgs, Attribute, Param};
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
@@ -27,7 +27,7 @@ macro_rules! attribute_functions {
             #[doc = concat!("Detect if `def_id` has the attribute `", stringify!($($p)*), "`")]
             pub(crate) fn $fn_name(tcx: TyCtxt, def_id: DefId) -> bool {
                 let path = &path_to_str!($($p)*);
-                let has_attr = get_attr(tcx.get_attrs_unchecked(def_id), path).is_some();
+                let has_attr = get_attr(tcx, tcx.get_attrs_unchecked(def_id), path).is_some();
                 attribute_functions!(@negate $($not)? has_attr)
             }
         )+
@@ -60,12 +60,8 @@ attribute_functions! {
 }
 
 pub fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "invariant"]).map(|a| {
-        match a.args {
-            AttrArgs::Eq(_, AttrArgsEq::Hir(ref expl)) => expl.symbol.to_string(),
-            _ => "expl:loop invariant".to_string(),
-        }
-    })
+    get_attr(tcx, tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "invariant"])
+        .map(|a| a.value_str().map_or("expl:loop invariant".to_string(), |s| s.to_string()))
 }
 
 pub(crate) fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
@@ -82,21 +78,19 @@ pub(crate) fn is_pearlite(tcx: TyCtxt, def_id: DefId) -> bool {
 
 /// Get the string on the right of `creusot::builtin = ...`
 pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "builtins"]).and_then(|a| {
-        match &a.args {
-            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l.symbol),
-            _ => None,
-        }
+    get_attr(tcx, tcx.get_attrs_unchecked(def_id), &["creusot", "builtins"]).map(|a| {
+        a.value_str().unwrap_or_else(|| {
+            tcx.dcx().span_fatal(
+                a.span,
+                "Attribute `creusot::builtin` should be followed by a string.".to_string(),
+            )
+        })
     })
 }
 
 pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "clause", "open"]).and_then(|item| {
-        match &item.args {
-            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l.symbol),
-            _ => None,
-        }
-    })
+    get_attr(tcx, tcx.get_attrs_unchecked(def_id), &["creusot", "clause", "open"])
+        .map(|a| a.value_str().expect("invalid creusot::clause::open"))
 }
 
 pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::Attribute> {
@@ -122,39 +116,15 @@ pub(crate) fn creusot_clause_attrs<'tcx>(
 }
 
 pub(crate) fn get_creusot_item(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
-    match &get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "item"])?.args {
-        AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l.symbol),
-        _ => unreachable!("invalid creusot::item attribute"),
-    }
+    Some(
+        get_attr(tcx, tcx.get_attrs_unchecked(def_id), &["creusot", "item"])?
+            .value_str()
+            .expect("invalid creusot::item attribute"),
+    )
 }
 
-pub(crate) fn is_open_inv_param(p: &Param) -> bool {
-    return get_attr(&p.attrs, &["creusot", "open_inv"]).is_some();
-}
-
-fn get_attr<'a>(
-    attrs: &'a [rustc_ast::Attribute],
-    path: &[&str],
-) -> Option<&'a rustc_ast::AttrItem> {
-    for attr in attrs.iter() {
-        if attr.is_doc_comment() {
-            continue;
-        }
-
-        let attr = attr.get_normal_item();
-
-        if attr.path.segments.len() != path.len() {
-            continue;
-        }
-
-        let matches =
-            attr.path.segments.iter().zip(path.iter()).all(|(seg, s)| seg.ident.as_str() == *s);
-
-        if matches {
-            return Some(attr);
-        }
-    }
-    None
+pub(crate) fn is_open_inv_param<'tcx>(tcx: TyCtxt<'tcx>, p: &Param) -> bool {
+    return get_attr(tcx, &p.attrs, &["creusot", "open_inv"]).is_some();
 }
 
 fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
@@ -179,4 +149,17 @@ fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
         }
     }
     matched
+}
+
+fn get_attr<'a, 'tcx>(
+    tcx: TyCtxt<'tcx>,
+    attrs: &'a [rustc_ast::Attribute],
+    path: &[&str],
+) -> Option<&'a Attribute> {
+    let matched = get_attrs(attrs, path);
+    match matched.len() {
+        0 => return None,
+        1 => return Some(matched[0]),
+        _ => tcx.dcx().span_fatal(matched[0].span, "Unexpected duplicate attribute.".to_string()),
+    }
 }
