@@ -3,7 +3,8 @@ use creusot_args::{options::*, CREUSOT_RUSTC_ARGS};
 use creusot_setup as setup;
 use std::{
     env,
-    path::PathBuf,
+    io::Write,
+    path::{Display, PathBuf},
     process::{exit, Command},
 };
 use tempdir::TempDir;
@@ -62,6 +63,7 @@ fn main() -> Result<()> {
         }
         Some(New(args)) => new(args),
         Some(Init(args)) => init(args),
+        Some(Clean(args)) => clean(args),
     }
 }
 
@@ -100,6 +102,7 @@ fn creusot(
     };
 
     invoke_cargo(&creusot_args, creusot_rustc, cargo_flags);
+    warn_if_dangling()?;
 
     if let Some((mode, coma_src, args)) = launch_why3 {
         let mut coma_files = vec![coma_src];
@@ -230,6 +233,8 @@ pub enum CargoCreusotSubCommand {
     New(NewArgs),
     /// Create new project in current directory
     Init(InitArgs),
+    /// Clean dangling files in verif/
+    Clean(CleanArgs),
 }
 use CargoCreusotSubCommand::*;
 
@@ -261,5 +266,150 @@ fn default_provers_parallelism() -> usize {
     match std::thread::available_parallelism() {
         Ok(n) => n.get(),
         Err(_) => 1,
+    }
+}
+
+/// Arguments for `cargo creusot clean`.
+#[derive(Debug, Parser)]
+pub struct CleanArgs {
+    /// Remove dangling files without asking for confirmation.
+    #[clap(long)]
+    force: bool,
+    /// Do not remove any files, only print what would be removed.
+    #[clap(long, conflicts_with = "force")]
+    dry_run: bool,
+}
+
+const OUTPUT_PREFIX: &str = "verif";
+
+/// Remove dangling files in `verif/`
+fn clean(options: CleanArgs) -> Result<()> {
+    let dangling = find_dangling(&PathBuf::from(OUTPUT_PREFIX))?;
+    if dangling.is_empty() {
+        eprintln!("No dangling files found");
+        return Ok(());
+    }
+    if !options.force {
+        // Ask for confirmation
+        eprintln!("The following files and directories will be removed:");
+        for path in &dangling {
+            eprintln!("  {}", path.display());
+        }
+        if options.dry_run {
+            return Ok(());
+        }
+        eprint!("Do you want to proceed? [y/N] ");
+        std::io::stderr().flush()?;
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input)?;
+        if !input.trim().eq_ignore_ascii_case("y") {
+            return Ok(());
+        }
+    }
+    for path in dangling {
+        path.remove()?;
+    }
+    Ok(())
+}
+
+/// Print a warning if there are dangling files in `verif/`
+fn warn_if_dangling() -> Result<()> {
+    let dangling = find_dangling(&PathBuf::from(OUTPUT_PREFIX))?;
+    if !dangling.is_empty() {
+        eprintln!("Warning: found dangling files and directories:");
+        for path in dangling {
+            eprintln!("  {}", path.display());
+        }
+        eprintln!("Run 'cargo creusot clean' to remove them");
+    }
+    Ok(())
+}
+
+enum FileOrDirectory {
+    File(PathBuf),
+    Directory(PathBuf),
+}
+
+use FileOrDirectory::*;
+
+impl FileOrDirectory {
+    fn display(&self) -> Display<'_> {
+        match self {
+            File(path) => path.display(),
+            Directory(path) => path.display(),
+        }
+    }
+
+    fn remove(&self) -> std::io::Result<()> {
+        match self {
+            File(path) => std::fs::remove_file(&path),
+            Directory(path) => std::fs::remove_dir_all(&path),
+        }
+    }
+}
+
+/// Find dangling files in directory `dir`: files named `why3session.xml`, `why3shapes.gz`, and `proof.json`
+/// that are not associated with a `.coma` file.
+fn find_dangling(dir: &PathBuf) -> Result<Vec<FileOrDirectory>> {
+    if !dir.is_dir() {
+        return Ok(Vec::new());
+    }
+    match find_dangling_rec(dir)? {
+        None => Ok(vec![Directory(dir.clone())]),
+        Some(dangling) => Ok(dangling),
+    }
+}
+
+/// Find dangling files in directory `dir`.
+/// Return `None` if the directory `dir` contains only dangling files,
+/// otherwise there must be some non-dangling files in `dir`, return `Some` of only the dangling files and subdirectories.
+/// Assumes `dir` exists and is a directory.
+fn find_dangling_rec(dir: &PathBuf) -> Result<Option<Vec<FileOrDirectory>>> {
+    let mut all_dangling = true;
+    let mut dangling = Vec::new();
+    let mut has_coma = None; // whether the file "{dir}.coma" exists; only check if needed.
+    for entry in std::fs::read_dir(dir)? {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        let path = entry.path();
+        if file_type.is_dir() {
+            match find_dangling_rec(&path)? {
+                Some(more_dangling) => {
+                    dangling.extend(more_dangling);
+                    all_dangling = false;
+                }
+                None => dangling.push(Directory(path)),
+            }
+        } else if file_type.is_file() {
+            let file_name = entry.file_name();
+            if [
+                "proof.json",
+                "why3session.xml",
+                "why3shapes.gz",
+                "why3session.xml.bak",
+                "why3shapes.gz.bak",
+            ]
+            .contains(&file_name.to_str().unwrap())
+            {
+                if has_coma.is_none() {
+                    has_coma = Some(dir.with_extension("coma").exists());
+                }
+                if has_coma == Some(false) {
+                    dangling.push(File(path));
+                } else {
+                    all_dangling = false;
+                }
+            } else {
+                all_dangling = false;
+            }
+        } else {
+            // Don't touch symlinks (if they exist maybe there's a good reason)
+            all_dangling = false;
+        }
+    }
+    if all_dangling {
+        Ok(None)
+    } else {
+        Ok(Some(dangling))
     }
 }
