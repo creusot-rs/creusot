@@ -1,5 +1,5 @@
 /*!
-  Highlight.js v11.11.1 (git: 95e4b50f48)
+  Highlight.js v11.11.1 (git: 67e407c172)
   (c) 2006-2025 Josh Goebel <hello@joshgoebel.com> and other contributors
   License: BSD-3-Clause
  */
@@ -43,51 +43,51 @@ return new r(this,this.options).value()}finalize(){
 return this.closeAllNodes(),!0}}function l(e){
 return e?"string"==typeof e?e:e.source:null}function g(e){return h("(?=",e,")")}
 function u(e){return h("(?:",e,")*")}function d(e){return h("(?:",e,")?")}
-function h(...e){return e.map((e=>l(e))).join("")}function f(...e){const t=(e=>{
+function h(...e){return e.map((e=>l(e))).join("")}function p(...e){const t=(e=>{
 const t=e[e.length-1]
 ;return"object"==typeof t&&t.constructor===Object?(e.splice(e.length-1,1),t):{}
 })(e);return"("+(t.capture?"":"?:")+e.map((e=>l(e))).join("|")+")"}
-function p(e){return RegExp(e.toString()+"|").exec("").length-1}
+function f(e){return RegExp(e.toString()+"|").exec("").length-1}
 const b=/\[(?:[^\\\]]|\\.)*\]|\(\??|\\([1-9][0-9]*)|\\./
 ;function m(e,{joinWith:t}){let n=0;return e.map((e=>{n+=1;const t=n
 ;let i=l(e),s="";for(;i.length>0;){const e=b.exec(i);if(!e){s+=i;break}
 s+=i.substring(0,e.index),
 i=i.substring(e.index+e[0].length),"\\"===e[0][0]&&e[1]?s+="\\"+(Number(e[1])+t):(s+=e[0],
 "("===e[0]&&n++)}return s})).map((e=>`(${e})`)).join(t)}
-const _="[a-zA-Z]\\w*",E="[a-zA-Z_]\\w*",y="\\b\\d+(\\.\\d+)?",x="(-?)(\\b0[xX][a-fA-F0-9]+|(\\b\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)",w="\\b(0b[01]+)",N={
-begin:"\\\\[\\s\\S]",relevance:0},O={scope:"string",begin:"'",end:"'",
-illegal:"\\n",contains:[N]},k={scope:"string",begin:'"',end:'"',illegal:"\\n",
-contains:[N]},v=(e,t,n={})=>{const s=i({scope:"comment",begin:e,end:t,
+const _="[a-zA-Z]\\w*",E="[a-zA-Z_]\\w*",y="\\b\\d+(\\.\\d+)?",w="(-?)(\\b0[xX][a-fA-F0-9]+|(\\b\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)",x="\\b(0b[01]+)",k={
+begin:"\\\\[\\s\\S]",relevance:0},N={scope:"string",begin:"'",end:"'",
+illegal:"\\n",contains:[k]},O={scope:"string",begin:'"',end:'"',illegal:"\\n",
+contains:[k]},v=(e,t,n={})=>{const s=i({scope:"comment",begin:e,end:t,
 contains:[]},n);s.contains.push({scope:"doctag",
 begin:"[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)",
 end:/(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):/,excludeBegin:!0,relevance:0})
-;const r=f("I","a","is","so","us","to","at","if","in","it","on",/[A-Za-z]+['](d|ve|re|ll|t|s|n)/,/[A-Za-z]+[-][a-z]+/,/[A-Za-z][a-z]{2,}/)
+;const r=p("I","a","is","so","us","to","at","if","in","it","on",/[A-Za-z]+['](d|ve|re|ll|t|s|n)/,/[A-Za-z]+[-][a-z]+/,/[A-Za-z][a-z]{2,}/)
 ;return s.contains.push({begin:h(/[ ]+/,"(",r,/[.]?[:]?([.][ ]|[ ])/,"){3}")}),s
 },S=v("//","$"),M=v("/\\*","\\*/"),R=v("#","$");var A=Object.freeze({
-__proto__:null,APOS_STRING_MODE:O,BACKSLASH_ESCAPE:N,BINARY_NUMBER_MODE:{
-scope:"number",begin:w,relevance:0},BINARY_NUMBER_RE:w,COMMENT:v,
+__proto__:null,APOS_STRING_MODE:N,BACKSLASH_ESCAPE:k,BINARY_NUMBER_MODE:{
+scope:"number",begin:x,relevance:0},BINARY_NUMBER_RE:x,COMMENT:v,
 C_BLOCK_COMMENT_MODE:M,C_LINE_COMMENT_MODE:S,C_NUMBER_MODE:{scope:"number",
-begin:x,relevance:0},C_NUMBER_RE:x,END_SAME_AS_BEGIN:e=>Object.assign(e,{
+begin:w,relevance:0},C_NUMBER_RE:w,END_SAME_AS_BEGIN:e=>Object.assign(e,{
 "on:begin":(e,t)=>{t.data._beginMatch=e[1]},"on:end":(e,t)=>{
 t.data._beginMatch!==e[1]&&t.ignoreMatch()}}),HASH_COMMENT_MODE:R,IDENT_RE:_,
 MATCH_NOTHING_RE:/\b\B/,METHOD_GUARD:{begin:"\\.\\s*"+E,relevance:0},
 NUMBER_MODE:{scope:"number",begin:y,relevance:0},NUMBER_RE:y,
 PHRASAL_WORDS_MODE:{
 begin:/\b(a|an|the|are|I'm|isn't|don't|doesn't|won't|but|just|should|pretty|simply|enough|gonna|going|wtf|so|such|will|you|your|they|like|more)\b/
-},QUOTE_STRING_MODE:k,REGEXP_MODE:{scope:"regexp",begin:/\/(?=[^/\n]*\/)/,
-end:/\/[gimuy]*/,contains:[N,{begin:/\[/,end:/\]/,relevance:0,contains:[N]}]},
+},QUOTE_STRING_MODE:O,REGEXP_MODE:{scope:"regexp",begin:/\/(?=[^/\n]*\/)/,
+end:/\/[gimuy]*/,contains:[k,{begin:/\[/,end:/\]/,relevance:0,contains:[k]}]},
 RE_STARTERS_RE:"!|!=|!==|%|%=|&|&&|&=|\\*|\\*=|\\+|\\+=|,|-|-=|/=|/|:|;|<<|<<=|<=|<|===|==|=|>>>=|>>=|>=|>>>|>>|>|\\?|\\[|\\{|\\(|\\^|\\^=|\\||\\|=|\\|\\||~",
 SHEBANG:(e={})=>{const t=/^#![ ]*\//
 ;return e.binary&&(e.begin=h(t,/.*\b/,e.binary,/\b.*/)),i({scope:"meta",begin:t,
 end:/$/,relevance:0,"on:begin":(e,t)=>{0!==e.index&&t.ignoreMatch()}},e)},
 TITLE_MODE:{scope:"title",begin:_,relevance:0},UNDERSCORE_IDENT_RE:E,
 UNDERSCORE_TITLE_MODE:{scope:"title",begin:E,relevance:0}});function I(e,t){
-"."===e.input[e.index-1]&&t.ignoreMatch()}function j(e,t){
-void 0!==e.className&&(e.scope=e.className,delete e.className)}function T(e,t){
+"."===e.input[e.index-1]&&t.ignoreMatch()}function T(e,t){
+void 0!==e.className&&(e.scope=e.className,delete e.className)}function j(e,t){
 t&&e.beginKeywords&&(e.begin="\\b("+e.beginKeywords.split(" ").join("|")+")(?!\\.)(?=\\b|\\s)",
 e.__beforeBegin=I,e.keywords=e.keywords||e.beginKeywords,delete e.beginKeywords,
 void 0===e.relevance&&(e.relevance=0))}function L(e,t){
-Array.isArray(e.illegal)&&(e.illegal=f(...e.illegal))}function B(e,t){
+Array.isArray(e.illegal)&&(e.illegal=p(...e.illegal))}function B(e,t){
 if(e.match){
 if(e.begin||e.end)throw Error("begin & end are not supported with match")
 ;e.begin=e.match,delete e.match}}function D(e,t){
@@ -107,7 +107,7 @@ return t?Number(t):(e=>P.includes(e.toLowerCase()))(e)?0:1}const z={},U=e=>{
 console.error(e)},F=(e,...t)=>{console.log("WARN: "+e,...t)},W=(e,t)=>{
 z[`${e}/${t}`]||(console.log(`Deprecated as of ${e}. ${t}`),z[`${e}/${t}`]=!0)
 },G=Error();function X(e,t,{key:n}){let i=0;const s=e[n],r={},o={}
-;for(let e=1;e<=t.length;e++)o[e+i]=s[e],r[e+i]=!0,i+=p(t[e-1])
+;for(let e=1;e<=t.length;e++)o[e+i]=s[e],r[e+i]=!0,i+=f(t[e-1])
 ;e[n]=o,e[n]._emit=r,e[n]._multi=!0}function K(e){(e=>{
 e.scope&&"object"==typeof e.scope&&null!==e.scope&&(e.beginScope=e.scope,
 delete e.scope)})(e),"string"==typeof e.beginScope&&(e.beginScope={
@@ -128,7 +128,7 @@ return RegExp(l(t),"m"+(e.case_insensitive?"i":"")+(e.unicodeRegex?"u":"")+(n?"g
 this.matchIndexes={},this.regexes=[],this.matchAt=1,this.position=0}
 addRule(e,t){
 t.position=this.position++,this.matchIndexes[this.matchAt]=t,this.regexes.push([t,e]),
-this.matchAt+=p(e)+1}compile(){0===this.regexes.length&&(this.exec=()=>null)
+this.matchAt+=f(e)+1}compile(){0===this.regexes.length&&(this.exec=()=>null)
 ;const e=this.regexes.map((e=>e[1]));this.matcherRe=t(m(e,{joinWith:"|"
 }),!0),this.lastIndex=0}exec(e){this.matcherRe.lastIndex=this.lastIndex
 ;const t=this.matcherRe.exec(e);if(!t)return null
@@ -151,8 +151,8 @@ if(e.compilerExtensions||(e.compilerExtensions=[]),
 e.contains&&e.contains.includes("self"))throw Error("ERR: contains `self` is not supported at the top-level of a language.  See documentation.")
 ;return e.classNameAliases=i(e.classNameAliases||{}),function n(r,o){const a=r
 ;if(r.isCompiled)return a
-;[j,B,K,C].forEach((e=>e(r,o))),e.compilerExtensions.forEach((e=>e(r,o))),
-r.__beforeBegin=null,[T,L,D].forEach((e=>e(r,o))),r.isCompiled=!0;let c=null
+;[T,B,K,C].forEach((e=>e(r,o))),e.compilerExtensions.forEach((e=>e(r,o))),
+r.__beforeBegin=null,[j,L,D].forEach((e=>e(r,o))),r.isCompiled=!0;let c=null
 ;return"object"==typeof r.keywords&&r.keywords.$pattern&&(r.keywords=Object.assign({},r.keywords),
 c=r.keywords.$pattern,
 delete r.keywords.$pattern),c=c||/\w+/,r.keywords&&(r.keywords=H(r.keywords,e.case_insensitive)),
@@ -174,11 +174,11 @@ constructor(e,t){super(e),this.name="HTMLInjectionError",this.html=t}}
 const J=n,Q=i,Y=Symbol("nomatch"),ee=n=>{
 const i=Object.create(null),s=Object.create(null),r=[];let o=!0
 ;const a="Could not find the language '{}', did you forget to load/include a language module?",l={
-disableAutodetect:!0,name:"Plain text",contains:[]};let p={
+disableAutodetect:!0,name:"Plain text",contains:[]};let f={
 ignoreUnescapedHTML:!1,throwUnescapedHTML:!1,noHighlightRe:/^(no-?highlight)$/i,
 languageDetectRe:/\blang(?:uage)?-([\w-]+)\b/i,classPrefix:"hljs-",
 cssSelector:"pre code",languages:null,__emitter:c};function b(e){
-return p.noHighlightRe.test(e)}function m(e,t,n){let i="",s=""
+return f.noHighlightRe.test(e)}function m(e,t,n){let i="",s=""
 ;"object"==typeof t?(i=e,
 n=t.ignoreIllegals,s=t.language):(W("10.7.0","highlight(lang, code, ...args) has been deprecated."),
 W("10.7.0","Please use highlight(code, options) instead.\nhttps://github.com/highlightjs/highlight.js/issues/2277"),
@@ -188,10 +188,10 @@ s=e,i=t),void 0===n&&(n=!0);const r={code:i,language:s};v("before:highlight",r)
 const c=Object.create(null);function l(){if(!v.keywords)return void M.addText(R)
 ;let e=0;v.keywordPatternRe.lastIndex=0;let t=v.keywordPatternRe.exec(R),n=""
 ;for(;t;){n+=R.substring(e,t.index)
-;const s=w.case_insensitive?t[0].toLowerCase():t[0],r=(i=s,v.keywords[i]);if(r){
+;const s=x.case_insensitive?t[0].toLowerCase():t[0],r=(i=s,v.keywords[i]);if(r){
 const[e,i]=r
 ;if(M.addText(n),n="",c[s]=(c[s]||0)+1,c[s]<=7&&(A+=i),e.startsWith("_"))n+=t[0];else{
-const n=w.classNameAliases[e]||e;u(t[0],n)}}else n+=t[0]
+const n=x.classNameAliases[e]||e;u(t[0],n)}}else n+=t[0]
 ;e=v.keywordPatternRe.lastIndex,t=v.keywordPatternRe.exec(R)}var i
 ;n+=R.substring(e),M.addText(n)}function g(){null!=v.subLanguage?(()=>{
 if(""===R)return;let e=null;if("string"==typeof v.subLanguage){
@@ -202,25 +202,25 @@ if(!i[v.subLanguage])return void M.addText(R)
 })():l(),R=""}function u(e,t){
 ""!==e&&(M.startScope(t),M.addText(e),M.endScope())}function d(e,t){let n=1
 ;const i=t.length-1;for(;n<=i;){if(!e._emit[n]){n++;continue}
-const i=w.classNameAliases[e[n]]||e[n],s=t[n];i?u(s,i):(R=s,l(),R=""),n++}}
+const i=x.classNameAliases[e[n]]||e[n],s=t[n];i?u(s,i):(R=s,l(),R=""),n++}}
 function h(e,t){
-return e.scope&&"string"==typeof e.scope&&M.openNode(w.classNameAliases[e.scope]||e.scope),
-e.beginScope&&(e.beginScope._wrap?(u(R,w.classNameAliases[e.beginScope._wrap]||e.beginScope._wrap),
+return e.scope&&"string"==typeof e.scope&&M.openNode(x.classNameAliases[e.scope]||e.scope),
+e.beginScope&&(e.beginScope._wrap?(u(R,x.classNameAliases[e.beginScope._wrap]||e.beginScope._wrap),
 R=""):e.beginScope._multi&&(d(e.beginScope,t),R="")),v=Object.create(e,{parent:{
-value:v}}),v}function f(e,n,i){let s=((e,t)=>{const n=e&&e.exec(t)
+value:v}}),v}function p(e,n,i){let s=((e,t)=>{const n=e&&e.exec(t)
 ;return n&&0===n.index})(e.endRe,i);if(s){if(e["on:end"]){const i=new t(e)
 ;e["on:end"](n,i),i.isMatchIgnored&&(s=!1)}if(s){
 for(;e.endsParent&&e.parent;)e=e.parent;return e}}
-if(e.endsWithParent)return f(e.parent,n,i)}function b(e){
-return 0===v.matcher.regexIndex?(R+=e[0],1):(T=!0,0)}function m(e){
-const t=e[0],i=n.substring(e.index),s=f(v,e,i);if(!s)return Y;const r=v
+if(e.endsWithParent)return p(e.parent,n,i)}function b(e){
+return 0===v.matcher.regexIndex?(R+=e[0],1):(j=!0,0)}function m(e){
+const t=e[0],i=n.substring(e.index),s=p(v,e,i);if(!s)return Y;const r=v
 ;v.endScope&&v.endScope._wrap?(g(),
 u(t,v.endScope._wrap)):v.endScope&&v.endScope._multi?(g(),
 d(v.endScope,e)):r.skip?R+=t:(r.returnEnd||r.excludeEnd||(R+=t),
 g(),r.excludeEnd&&(R=t));do{
 v.scope&&M.closeNode(),v.skip||v.subLanguage||(A+=v.relevance),v=v.parent
 }while(v!==s.parent);return s.starts&&h(s.starts,e),r.returnEnd?0:t.length}
-let y={};function x(i,r){const a=r&&r[0];if(R+=i,null==a)return g(),0
+let y={};function w(i,r){const a=r&&r[0];if(R+=i,null==a)return g(),0
 ;if("begin"===y.type&&"end"===r.type&&y.index===r.index&&""===a){
 if(R+=n.slice(r.index,r.index+1),!o){const t=Error(`0 width match regex (${e})`)
 ;throw t.languageName=e,t.badRule=y.rule,t}return 1}
@@ -233,86 +233,89 @@ g(),i.returnBegin||i.excludeBegin||(R=n)),h(i,e),i.returnBegin?0:n.length})(r)
 const e=Error('Illegal lexeme "'+a+'" for mode "'+(v.scope||"<unnamed>")+'"')
 ;throw e.mode=v,e}if("end"===r.type){const e=m(r);if(e!==Y)return e}
 if("illegal"===r.type&&""===a)return r.index===n.length||(R+="\n"),1
-;if(j>1e5&&j>3*r.index)throw Error("potential infinite loop, way more iterations than matches")
-;return R+=a,a.length}const w=N(e)
-;if(!w)throw U(a.replace("{}",e)),Error('Unknown language: "'+e+'"')
-;const O=Z(w);let k="",v=r||O;const S={},M=new p.__emitter(p);(()=>{const e=[]
-;for(let t=v;t!==w;t=t.parent)t.scope&&e.unshift(t.scope)
-;e.forEach((e=>M.openNode(e)))})();let R="",A=0,I=0,j=0,T=!1;try{
-if(w.__emitTokens)w.__emitTokens(n,M);else{for(v.matcher.considerAll();;){
-j++,T?T=!1:v.matcher.considerAll(),v.matcher.lastIndex=I
-;const e=v.matcher.exec(n);if(!e)break;const t=x(n.substring(I,e.index),e)
-;I=e.index+t}x(n.substring(I))}return M.finalize(),k=M.toHTML(),{language:e,
-value:k,relevance:A,illegal:!1,_emitter:M,_top:v}}catch(t){
+;if(T>1e5&&T>3*r.index)throw Error("potential infinite loop, way more iterations than matches")
+;return R+=a,a.length}const x=k(e)
+;if(!x)throw U(a.replace("{}",e)),Error('Unknown language: "'+e+'"')
+;const N=Z(x);let O="",v=r||N;const S={},M=new f.__emitter(f);(()=>{const e=[]
+;for(let t=v;t!==x;t=t.parent)t.scope&&e.unshift(t.scope)
+;e.forEach((e=>M.openNode(e)))})();let R="",A=0,I=0,T=0,j=!1;try{
+if(x.__emitTokens)x.__emitTokens(n,M);else{for(v.matcher.considerAll();;){
+T++,j?j=!1:v.matcher.considerAll(),v.matcher.lastIndex=I
+;const e=v.matcher.exec(n);if(!e)break;const t=w(n.substring(I,e.index),e)
+;I=e.index+t}w(n.substring(I))}return M.finalize(),O=M.toHTML(),{language:e,
+value:O,relevance:A,illegal:!1,_emitter:M,_top:v}}catch(t){
 if(t.message&&t.message.includes("Illegal"))return{language:e,value:J(n),
 illegal:!0,relevance:0,_illegalBy:{message:t.message,index:I,
-context:n.slice(I-100,I+100),mode:t.mode,resultSoFar:k},_emitter:M};if(o)return{
+context:n.slice(I-100,I+100),mode:t.mode,resultSoFar:O},_emitter:M};if(o)return{
 language:e,value:J(n),illegal:!1,relevance:0,errorRaised:t,_emitter:M,_top:v}
-;throw t}}function E(e,t){t=t||p.languages||Object.keys(i);const n=(e=>{
-const t={value:J(e),illegal:!1,relevance:0,_top:l,_emitter:new p.__emitter(p)}
-;return t._emitter.addText(e),t})(e),s=t.filter(N).filter(k).map((t=>_(t,e,!1)))
+;throw t}}function E(e,t){t=t||f.languages||Object.keys(i);const n=(e=>{
+const t={value:J(e),illegal:!1,relevance:0,_top:l,_emitter:new f.__emitter(f)}
+;return t._emitter.addText(e),t})(e),s=t.filter(k).filter(O).map((t=>_(t,e,!1)))
 ;s.unshift(n);const r=s.sort(((e,t)=>{
 if(e.relevance!==t.relevance)return t.relevance-e.relevance
-;if(e.language&&t.language){if(N(e.language).supersetOf===t.language)return 1
-;if(N(t.language).supersetOf===e.language)return-1}return 0})),[o,a]=r,c=o
+;if(e.language&&t.language){if(k(e.language).supersetOf===t.language)return 1
+;if(k(t.language).supersetOf===e.language)return-1}return 0})),[o,a]=r,c=o
 ;return c.secondBest=a,c}function y(e){let t=null;const n=(e=>{
 let t=e.className+" ";t+=e.parentNode?e.parentNode.className:""
-;const n=p.languageDetectRe.exec(t);if(n){const t=N(n[1])
+;const n=f.languageDetectRe.exec(t);if(n){const t=k(n[1])
 ;return t||(F(a.replace("{}",n[1])),
 F("Falling back to no-highlight mode for this block.",e)),t?n[1]:"no-highlight"}
-return t.split(/\s+/).find((e=>b(e)||N(e)))})(e);if(b(n))return
+return t.split(/\s+/).find((e=>b(e)||k(e)))})(e);if(b(n))return
 ;if(v("before:highlightElement",{el:e,language:n
 }),e.dataset.highlighted)return void console.log("Element previously highlighted. To highlight again, first unset `dataset.highlighted`.",e)
-;if(e.children.length>0&&(p.ignoreUnescapedHTML||(console.warn("One of your code blocks includes unescaped HTML. This is a potentially serious security risk."),
+;if(e.children.length>0&&(f.ignoreUnescapedHTML||(console.warn("One of your code blocks includes unescaped HTML. This is a potentially serious security risk."),
 console.warn("https://github.com/highlightjs/highlight.js/wiki/security"),
 console.warn("The element with unescaped HTML:"),
-console.warn(e)),p.throwUnescapedHTML))throw new V("One of your code blocks includes unescaped HTML.",e.innerHTML)
+console.warn(e)),f.throwUnescapedHTML))throw new V("One of your code blocks includes unescaped HTML.",e.innerHTML)
 ;t=e;const i=t.textContent,r=n?m(i,{language:n,ignoreIllegals:!0}):E(i)
 ;e.innerHTML=r.value,e.dataset.highlighted="yes",((e,t,n)=>{const i=t&&s[t]||n
 ;e.classList.add("hljs"),e.classList.add("language-"+i)
 })(e,n,r.language),e.result={language:r.language,re:r.relevance,
 relevance:r.relevance},r.secondBest&&(e.secondBest={
 language:r.secondBest.language,relevance:r.secondBest.relevance
-}),v("after:highlightElement",{el:e,result:r,text:i})}let x=!1;function w(){
-if("loading"===document.readyState)return x||window.addEventListener("DOMContentLoaded",(()=>{
-w()}),!1),void(x=!0);document.querySelectorAll(p.cssSelector).forEach(y)}
-function N(e){return e=(e||"").toLowerCase(),i[e]||i[s[e]]}
-function O(e,{languageName:t}){"string"==typeof e&&(e=[e]),e.forEach((e=>{
-s[e.toLowerCase()]=t}))}function k(e){const t=N(e)
+}),v("after:highlightElement",{el:e,result:r,text:i})}let w=!1;function x(){
+if("loading"===document.readyState)return w||window.addEventListener("DOMContentLoaded",(()=>{
+x()}),!1),void(w=!0);document.querySelectorAll(f.cssSelector).forEach(y)}
+function k(e){return e=(e||"").toLowerCase(),i[e]||i[s[e]]}
+function N(e,{languageName:t}){"string"==typeof e&&(e=[e]),e.forEach((e=>{
+s[e.toLowerCase()]=t}))}function O(e){const t=k(e)
 ;return t&&!t.disableAutodetect}function v(e,t){const n=e;r.forEach((e=>{
-e[n]&&e[n](t)}))}Object.assign(n,{highlight:m,highlightAuto:E,highlightAll:w,
+e[n]&&e[n](t)}))}Object.assign(n,{highlight:m,highlightAuto:E,highlightAll:x,
 highlightElement:y,
 highlightBlock:e=>(W("10.7.0","highlightBlock will be removed entirely in v12.0"),
-W("10.7.0","Please use highlightElement now."),y(e)),configure:e=>{p=Q(p,e)},
+W("10.7.0","Please use highlightElement now."),y(e)),configure:e=>{f=Q(f,e)},
 initHighlighting:()=>{
-w(),W("10.6.0","initHighlighting() deprecated.  Use highlightAll() now.")},
+x(),W("10.6.0","initHighlighting() deprecated.  Use highlightAll() now.")},
 initHighlightingOnLoad:()=>{
-w(),W("10.6.0","initHighlightingOnLoad() deprecated.  Use highlightAll() now.")
+x(),W("10.6.0","initHighlightingOnLoad() deprecated.  Use highlightAll() now.")
 },registerLanguage:(e,t)=>{let s=null;try{s=t(n)}catch(t){
 if(U("Language definition for '{}' could not be registered.".replace("{}",e)),
 !o)throw t;U(t),s=l}
-s.name||(s.name=e),i[e]=s,s.rawDefinition=t.bind(null,n),s.aliases&&O(s.aliases,{
+s.name||(s.name=e),i[e]=s,s.rawDefinition=t.bind(null,n),s.aliases&&N(s.aliases,{
 languageName:e})},unregisterLanguage:e=>{delete i[e]
 ;for(const t of Object.keys(s))s[t]===e&&delete s[t]},
-listLanguages:()=>Object.keys(i),getLanguage:N,registerAliases:O,
-autoDetection:k,inherit:Q,addPlugin:e=>{(e=>{
+listLanguages:()=>Object.keys(i),getLanguage:k,registerAliases:N,
+autoDetection:O,inherit:Q,addPlugin:e=>{(e=>{
 e["before:highlightBlock"]&&!e["before:highlightElement"]&&(e["before:highlightElement"]=t=>{
 e["before:highlightBlock"](Object.assign({block:t.el},t))
 }),e["after:highlightBlock"]&&!e["after:highlightElement"]&&(e["after:highlightElement"]=t=>{
 e["after:highlightBlock"](Object.assign({block:t.el},t))})})(e),r.push(e)},
 removePlugin:e=>{const t=r.indexOf(e);-1!==t&&r.splice(t,1)}}),n.debugMode=()=>{
 o=!1},n.safeMode=()=>{o=!0},n.versionString="11.11.1",n.regex={concat:h,
-lookahead:g,either:f,optional:d,anyNumberOfTimes:u}
+lookahead:g,either:p,optional:d,anyNumberOfTimes:u}
 ;for(const t in A)"object"==typeof A[t]&&e(A[t]);return Object.assign(n,A),n
 },te=ee({});te.newInstance=()=>ee({});var ne=Object.freeze({__proto__:null,
 grmr_rust:e=>{
 const t=e.regex,n=/(r#)?/,i=t.concat(n,e.UNDERSCORE_IDENT_RE),s=t.concat(n,e.IDENT_RE),r={
 className:"title.function.invoke",relevance:0,
 begin:t.concat(/\b/,/(?!(?:let|for|while|if|else|match)\b)/,s,t.lookahead(/\s*\(/))
-},o="([ui](8|16|32|64|128|size)|f(32|64))?",a=["drop ","Copy","Send","Sized","Sync","Drop","Fn","FnMut","FnOnce","ToOwned","Clone","Debug","PartialEq","PartialOrd","Eq","Ord","AsRef","AsMut","Into","From","Default","Iterator","Extend","IntoIterator","DoubleEndedIterator","ExactSizeIterator","SliceConcatExt","ToString","assert!","assert_eq!","bitflags!","bytes!","cfg!","col!","concat!","concat_idents!","debug_assert!","debug_assert_eq!","env!","eprintln!","panic!","file!","format!","format_args!","include_bytes!","include_str!","line!","local_data_key!","module_path!","option_env!","print!","println!","select!","stringify!","try!","unimplemented!","unreachable!","vec!","write!","writeln!","macro_rules!","assert_ne!","debug_assert_ne!"],c=["i8","i16","i32","i64","i128","isize","u8","u16","u32","u64","u128","usize","f32","f64","str","char","bool","Box","Option","Result","String","Vec"]
-;return{name:"Rust",aliases:["rs"],keywords:{$pattern:e.IDENT_RE+"!?",type:c,
-keyword:["abstract","as","async","await","become","box","break","const","continue","crate","do","dyn","else","enum","extern","false","final","fn","for","if","impl","in","let","loop","macro","match","mod","move","mut","override","priv","pub","ref","return","self","Self","static","struct","super","trait","true","try","type","typeof","union","unsafe","unsized","use","virtual","where","while","yield"],
-literal:["true","false","Some","None","Ok","Err"],built_in:a},illegal:"</",
+},o="([ui](8|16|32|64|128|size)|f(32|64)|int)?",a=["abstract","as","async","await","become","box","break","const","continue","crate","do","dyn","else","enum","extern","false","final","fn","for","if","impl","in","let","loop","macro","match","mod","move","mut","override","priv","pub","ref","return","self","Self","static","struct","super","trait","true","try","type","typeof","union","unsafe","unsized","use","virtual","where","while","yield"],c=["drop ","Copy","Send","Sized","Sync","Drop","Fn","FnMut","FnOnce","ToOwned","Clone","Debug","PartialEq","PartialOrd","Eq","Ord","AsRef","AsMut","Into","From","Default","Iterator","Extend","IntoIterator","DoubleEndedIterator","ExactSizeIterator","SliceConcatExt","ToString","assert!","assert_eq!","bitflags!","bytes!","cfg!","col!","concat!","concat_idents!","debug_assert!","debug_assert_eq!","env!","eprintln!","panic!","file!","format!","format_args!","include_bytes!","include_str!","line!","local_data_key!","module_path!","option_env!","print!","println!","select!","stringify!","try!","unimplemented!","unreachable!","vec!","write!","writeln!","macro_rules!","assert_ne!","debug_assert_ne!"],l=["i8","i16","i32","i64","i128","isize","u8","u16","u32","u64","u128","usize","f32","f64","str","char","bool","Box","Option","Result","String","Vec"],g=[e.C_LINE_COMMENT_MODE,e.COMMENT("/\\*","\\*/",{
+contains:["self"]}),{scope:"number",variants:[{begin:"\\b0b([01_]+)"+o},{
+begin:"\\b0o([0-7_]+)"+o},{begin:"\\b0x([A-Fa-f0-9_]+)"+o},{
+begin:"\\b(\\d[\\d_]*(\\.[0-9_]+)?([eE][+-]?[0-9_]+)?)"+o}]
+},r],u=["forall","exists"].concat(a);return{name:"Rust",aliases:["rs"],
+keywords:{$pattern:e.IDENT_RE+"!?",type:l,keyword:a,
+literal:["true","false","Some","None","Ok","Err"],built_in:c},illegal:"</",
 contains:[e.C_LINE_COMMENT_MODE,e.COMMENT("/\\*","\\*/",{contains:["self"]
 }),e.inherit(e.QUOTE_STRING_MODE,{begin:/b?"/,illegal:null}),{
 className:"symbol",begin:/'[a-zA-Z_][a-zA-Z0-9_]*(?!')/},{scope:"string",
@@ -322,14 +325,29 @@ className:"number",variants:[{begin:"\\b0b([01_]+)"+o},{begin:"\\b0o([0-7_]+)"+o
 },{begin:"\\b0x([A-Fa-f0-9_]+)"+o},{
 begin:"\\b(\\d[\\d_]*(\\.[0-9_]+)?([eE][+-]?[0-9_]+)?)"+o}],relevance:0},{
 begin:[/fn/,/\s+/,i],className:{1:"keyword",3:"title.function"}},{
-className:"meta",begin:"#!?\\[",end:"\\]",contains:[{className:"string",
-begin:/"/,end:/"/,contains:[e.BACKSLASH_ESCAPE]}]},{
+scope:"keyword.creusot",match:/\bghost\s*!/},{className:"meta",begin:"#!?\\[",
+end:"\\]",keywords:{
+"keyword.creusot":["law","logic","open","predicate","prophetic","pure","terminates","trusted"]
+},contains:[{scope:"creusot",begin:/(?:requires|ensures|invariant|variant)\(/,
+beginScope:"keyword.creusot",endScope:"keyword.creusot",end:/[()]/,
+"on:begin":(e,t)=>{t.data.nesting=0},"on:end":(e,t)=>{
+"("===e[0]?(t.data.nesting++,
+t.ignoreMatch()):0!==t.data.nesting&&(t.data.nesting--,t.ignoreMatch())},
+contains:g,keywords:u},{className:"string",begin:/"/,end:/"/,
+contains:[e.BACKSLASH_ESCAPE]}]},{scope:"creusot",beginScope:"keyword.creusot",
+endScope:"keyword.creusot",contains:g,keywords:u,"on:begin":(e,t)=>{
+t.data.nesting=0},"on:end":(e,t)=>{
+"("===e[0]||"["===e[0]||"{"===e[0]?(t.data.nesting++,
+t.ignoreMatch()):0!==t.data.nesting&&(t.data.nesting--,t.ignoreMatch())},
+variants:[{begin:/\b(?:snapshot|proof_assert|pearlite)\s*!\s*\(/,end:/[()]/},{
+begin:/\b(?:snapshot|proof_assert|pearlite)\s*!\s*\[/,end:/[\[\]]/},{
+begin:/\b(?:snapshot|proof_assert|pearlite)\s*!\s*{/,end:/[{}]/}]},{
 begin:[/let/,/\s+/,/(?:mut\s+)?/,i],className:{1:"keyword",3:"keyword",
 4:"variable"}},{begin:[/for/,/\s+/,i,/\s+/,/in/],className:{1:"keyword",
 3:"variable",5:"keyword"}},{begin:[/type/,/\s+/,i],className:{1:"keyword",
 3:"title.class"}},{begin:[/(?:trait|enum|struct|union|impl|for)/,/\s+/,i],
 className:{1:"keyword",3:"title.class"}},{begin:e.IDENT_RE+"::",keywords:{
-keyword:"Self",built_in:a,type:c}},{className:"punctuation",begin:"->"},r]}}})
+keyword:"Self",built_in:c,type:l}},{className:"punctuation",begin:"->"},r]}}})
 ;const ie=te;for(const e of Object.keys(ne)){
 const t=e.replace("grmr_","").replace("_","-");ie.registerLanguage(t,ne[e])}
 return ie}()
