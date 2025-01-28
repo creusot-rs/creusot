@@ -63,7 +63,7 @@ impl<T: ?Sized> Deref for GhostBox<T> {
     type Target = T;
 
     /// This function can only be called in `ghost!` context
-    #[rustc_diagnostic_item = "ghost_box_deref"]
+    #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_box_deref")]
     #[pure]
     #[ensures(*(*self).0 == *result)]
     fn deref(&self) -> &Self::Target {
@@ -79,7 +79,7 @@ impl<T: ?Sized> Deref for GhostBox<T> {
 }
 impl<T: ?Sized> DerefMut for GhostBox<T> {
     /// This function can only be called in `ghost!` context
-    #[rustc_diagnostic_item = "ghost_box_deref_mut"]
+    #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_box_deref_mut")]
     #[pure]
     #[ensures(result == &mut *self.0)]
     fn deref_mut(&mut self) -> &mut Self::Target {
@@ -181,7 +181,7 @@ impl<T> GhostBox<T> {
     /// This function can only be called in `ghost!` code.
     #[pure]
     #[ensures(*result.0 == x)]
-    #[rustc_diagnostic_item = "ghost_box_new"]
+    #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_box_new")]
     pub fn new(x: T) -> Self {
         #[cfg(creusot)]
         {
@@ -206,7 +206,7 @@ impl<T> GhostBox<T> {
     /// This function can only be called in `ghost!` context.
     #[pure]
     #[ensures(result == *self.0)]
-    #[rustc_diagnostic_item = "ghost_box_into_inner"]
+    #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_box_into_inner")]
     pub fn into_inner(self) -> T {
         #[cfg(creusot)]
         {

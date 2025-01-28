@@ -1,6 +1,9 @@
-use crate::{invariant::*, std::alloc::Allocator, *};
+use crate::{invariant::*, *};
+#[cfg(feature = "nightly")]
+use ::std::alloc::Allocator;
 pub use ::std::boxed::*;
 
+#[cfg(feature = "nightly")]
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
     type DeepModelTy = Box<T::DeepModelTy>;
     #[logic]
@@ -10,6 +13,7 @@ impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T: View + ?Sized, A: Allocator> View for Box<T, A> {
     type ViewTy = T::ViewTy;
     #[logic]
@@ -19,6 +23,7 @@ impl<T: View + ?Sized, A: Allocator> View for Box<T, A> {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T: ?Sized, A: Allocator> Invariant for Box<T, A> {
     #[predicate(prophetic)]
     #[open]
@@ -51,3 +56,17 @@ extern_spec! {
         }
     }
 }
+
+/// Dummy impls that don't use the unstable trait Allocator
+#[cfg(not(feature = "nightly"))]
+impl<T: DeepModel + ?Sized> DeepModel for Box<T> {
+    type DeepModelTy = Box<T::DeepModelTy>;
+}
+
+#[cfg(not(feature = "nightly"))]
+impl<T: View + ?Sized> View for Box<T> {
+    type ViewTy = T::ViewTy;
+}
+
+#[cfg(not(feature = "nightly"))]
+impl<T: ?Sized> Invariant for Box<T> {}
