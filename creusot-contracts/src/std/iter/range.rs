@@ -1,11 +1,11 @@
 use crate::{
-    std::{
-        iter::Step,
-        ops::{Range, RangeInclusive},
-    },
+    std::ops::{Range, RangeInclusive},
     *,
 };
+#[cfg(feature = "nightly")]
+use ::std::iter::Step;
 
+#[cfg(feature = "nightly")]
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
     #[predicate(prophetic)]
     #[open]
@@ -50,6 +50,7 @@ pub fn range_inclusive_len<Idx: DeepModel<DeepModelTy = Int>>(r: RangeInclusive<
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> {
     #[predicate(prophetic)]
     #[open]
@@ -83,3 +84,17 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> 
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
+
+/// Dummy impls that don't use the unstable trait Step
+#[cfg(not(feature = "nightly"))]
+macro_rules! impl_range {
+    ( $( $ty:tt ),+ ) => {
+        $(
+            impl Iterator for Range<$ty> {}
+            impl Iterator for RangeInclusive<$ty> {}
+        )+
+    };
+}
+
+#[cfg(not(feature = "nightly"))]
+impl_range! { char, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize }

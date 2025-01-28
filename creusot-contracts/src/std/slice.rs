@@ -1,12 +1,11 @@
 use crate::{
     invariant::*,
     resolve::structural_resolve,
-    std::{
-        alloc::Allocator,
-        ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
-    },
+    std::ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
     *,
 };
+#[cfg(feature = "nightly")]
+use ::std::alloc::Allocator;
 pub use ::std::slice::*;
 
 impl<T> Invariant for [T] {

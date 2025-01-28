@@ -2,14 +2,16 @@ use crate::{
     invariant::*,
     resolve::structural_resolve,
     std::{
-        alloc::Allocator,
         ops::{Deref, DerefMut, Index, IndexMut},
         slice::SliceIndex,
     },
     Default, *,
 };
+#[cfg(feature = "nightly")]
+use ::std::alloc::Allocator;
 pub use ::std::vec::*;
 
+#[cfg(feature = "nightly")]
 impl<T, A: Allocator> View for Vec<T, A> {
     type ViewTy = Seq<T>;
 
@@ -21,6 +23,7 @@ impl<T, A: Allocator> View for Vec<T, A> {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
@@ -42,6 +45,7 @@ impl<T> Default for Vec<T> {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T, A: Allocator> Resolve for Vec<T, A> {
     #[open]
     #[predicate(prophetic)]
@@ -56,6 +60,7 @@ impl<T, A: Allocator> Resolve for Vec<T, A> {
     fn resolve_coherence(&self) {}
 }
 
+#[cfg(feature = "nightly")]
 impl<T, A: Allocator> Invariant for Vec<T, A> {
     #[predicate(prophetic)]
     #[open]
@@ -184,6 +189,7 @@ extern_spec! {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T, A: Allocator> IntoIterator for Vec<T, A> {
     #[predicate]
     #[open]
@@ -198,6 +204,7 @@ impl<T, A: Allocator> IntoIterator for Vec<T, A> {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T, A: Allocator> IntoIterator for &Vec<T, A> {
     #[predicate]
     #[open]
@@ -212,6 +219,7 @@ impl<T, A: Allocator> IntoIterator for &Vec<T, A> {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T, A: Allocator> IntoIterator for &mut Vec<T, A> {
     #[predicate]
     #[open]
@@ -226,6 +234,7 @@ impl<T, A: Allocator> IntoIterator for &mut Vec<T, A> {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T, A: Allocator> View for std::vec::IntoIter<T, A> {
     type ViewTy = Seq<T>;
 
@@ -236,6 +245,7 @@ impl<T, A: Allocator> View for std::vec::IntoIter<T, A> {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
     #[open]
     #[predicate(prophetic)]
@@ -250,6 +260,7 @@ impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
     fn resolve_coherence(&self) {}
 }
 
+#[cfg(feature = "nightly")]
 impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     #[predicate(prophetic)]
     #[open]
@@ -284,4 +295,27 @@ impl<T> FromIterator<T> for Vec<T> {
     fn from_iter_post(prod: Seq<T>, res: Self) -> bool {
         pearlite! { prod == res@ }
     }
+}
+
+/// Dummy impls that don't use the unstable trait Allocator
+#[cfg(not(feature = "nightly"))]
+mod impls {
+    use super::*;
+    impl<T> View for Vec<T> {
+        type ViewTy = Seq<T>;
+    }
+
+    impl<T: DeepModel> DeepModel for Vec<T> {
+        type DeepModelTy = Seq<T::DeepModelTy>;
+    }
+    impl<T> Resolve for Vec<T> {}
+    impl<T> Invariant for Vec<T> {}
+    impl<T> IntoIterator for Vec<T> {}
+    impl<T> IntoIterator for &Vec<T> {}
+    impl<T> IntoIterator for &mut Vec<T> {}
+    impl<T> View for std::vec::IntoIter<T> {
+        type ViewTy = Seq<T>;
+    }
+    impl<T> Resolve for std::vec::IntoIter<T> {}
+    impl<T> Iterator for std::vec::IntoIter<T> {}
 }
