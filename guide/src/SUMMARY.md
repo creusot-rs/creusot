@@ -20,3 +20,4 @@
   - [Ghost structures](ghost/ghost-structures.md)
   - [`Int` in ghost](ghost/int-in-ghost.md)
 - [Type invariants](./type_invariants.md)
+- [Command-line interface](./command_line_interface.md)
