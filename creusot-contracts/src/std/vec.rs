@@ -2,14 +2,16 @@ use crate::{
     invariant::*,
     resolve::structural_resolve,
     std::{
-        alloc::Allocator,
         ops::{Deref, DerefMut, Index, IndexMut},
         slice::SliceIndex,
     },
     Default, *,
 };
+#[cfg(creusot)]
+use ::std::alloc::Allocator;
 pub use ::std::vec::*;
 
+#[cfg(creusot)]
 impl<T, A: Allocator> View for Vec<T, A> {
     type ViewTy = Seq<T>;
 
@@ -21,6 +23,7 @@ impl<T, A: Allocator> View for Vec<T, A> {
     }
 }
 
+#[cfg(creusot)]
 impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
@@ -42,6 +45,7 @@ impl<T> Default for Vec<T> {
     }
 }
 
+#[cfg(creusot)]
 impl<T, A: Allocator> Resolve for Vec<T, A> {
     #[open]
     #[predicate(prophetic)]
@@ -56,6 +60,7 @@ impl<T, A: Allocator> Resolve for Vec<T, A> {
     fn resolve_coherence(&self) {}
 }
 
+#[cfg(creusot)]
 impl<T, A: Allocator> Invariant for Vec<T, A> {
     #[predicate(prophetic)]
     #[open]
@@ -184,6 +189,7 @@ extern_spec! {
     }
 }
 
+#[cfg(creusot)]
 impl<T, A: Allocator> IntoIterator for Vec<T, A> {
     #[predicate]
     #[open]
@@ -198,6 +204,7 @@ impl<T, A: Allocator> IntoIterator for Vec<T, A> {
     }
 }
 
+#[cfg(creusot)]
 impl<T, A: Allocator> IntoIterator for &Vec<T, A> {
     #[predicate]
     #[open]
@@ -212,6 +219,7 @@ impl<T, A: Allocator> IntoIterator for &Vec<T, A> {
     }
 }
 
+#[cfg(creusot)]
 impl<T, A: Allocator> IntoIterator for &mut Vec<T, A> {
     #[predicate]
     #[open]
@@ -226,6 +234,7 @@ impl<T, A: Allocator> IntoIterator for &mut Vec<T, A> {
     }
 }
 
+#[cfg(creusot)]
 impl<T, A: Allocator> View for std::vec::IntoIter<T, A> {
     type ViewTy = Seq<T>;
 
@@ -236,6 +245,7 @@ impl<T, A: Allocator> View for std::vec::IntoIter<T, A> {
     }
 }
 
+#[cfg(creusot)]
 impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
     #[open]
     #[predicate(prophetic)]
@@ -250,6 +260,7 @@ impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
     fn resolve_coherence(&self) {}
 }
 
+#[cfg(creusot)]
 impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     #[predicate(prophetic)]
     #[open]
@@ -285,3 +296,39 @@ impl<T> FromIterator<T> for Vec<T> {
         pearlite! { prod == res@ }
     }
 }
+
+#[cfg(not(creusot))]
+impl<T> View for Vec<T> {
+    type ViewTy = Seq<T>;
+}
+
+#[cfg(not(creusot))]
+impl<T: DeepModel> DeepModel for Vec<T> {
+    type DeepModelTy = Seq<T::DeepModelTy>;
+}
+
+#[cfg(not(creusot))]
+impl<T> Resolve for Vec<T> {}
+
+#[cfg(not(creusot))]
+impl<T> Invariant for Vec<T> {}
+
+#[cfg(not(creusot))]
+impl<T> IntoIterator for Vec<T> {}
+
+#[cfg(not(creusot))]
+impl<T> IntoIterator for &Vec<T> {}
+
+#[cfg(not(creusot))]
+impl<T> IntoIterator for &mut Vec<T> {}
+
+#[cfg(not(creusot))]
+impl<T> View for std::vec::IntoIter<T> {
+    type ViewTy = Seq<T>;
+}
+
+#[cfg(not(creusot))]
+impl<T> Resolve for std::vec::IntoIter<T> {}
+
+#[cfg(not(creusot))]
+impl<T> Iterator for std::vec::IntoIter<T> {}

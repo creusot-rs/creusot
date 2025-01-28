@@ -1,6 +1,9 @@
 use crate::*;
-use ::std::{alloc::Allocator, sync::Arc};
+#[cfg(creusot)]
+use ::std::alloc::Allocator;
+use ::std::sync::Arc;
 
+#[cfg(creusot)]
 impl<T: DeepModel, A: Allocator> DeepModel for Arc<T, A> {
     type DeepModelTy = T::DeepModelTy;
     #[logic]
@@ -10,6 +13,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for Arc<T, A> {
     }
 }
 
+#[cfg(creusot)]
 impl<T, A: Allocator> View for Arc<T, A> {
     type ViewTy = T;
     #[logic]
@@ -33,4 +37,14 @@ extern_spec! {
             }
         }
     }
+}
+
+#[cfg(not(creusot))]
+impl<T: DeepModel> DeepModel for Arc<T> {
+    type DeepModelTy = T::DeepModelTy;
+}
+
+#[cfg(not(creusot))]
+impl<T> View for Arc<T> {
+    type ViewTy = T;
 }

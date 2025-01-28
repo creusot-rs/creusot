@@ -1,11 +1,11 @@
 use crate::{
-    std::{
-        iter::Step,
-        ops::{Range, RangeInclusive},
-    },
+    std::ops::{Range, RangeInclusive},
     *,
 };
+#[cfg(creusot)]
+use ::std::iter::Step;
 
+#[cfg(creusot)]
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
     #[predicate(prophetic)]
     #[open]
@@ -50,6 +50,7 @@ pub fn range_inclusive_len<Idx: DeepModel<DeepModelTy = Int>>(r: RangeInclusive<
     }
 }
 
+#[cfg(creusot)]
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> {
     #[predicate(prophetic)]
     #[open]

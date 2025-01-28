@@ -1,5 +1,6 @@
 use crate::*;
 use ::core::fmt;
+#[cfg(creusot)]
 pub use ::core::panicking::*;
 use ::std::any::Any;
 

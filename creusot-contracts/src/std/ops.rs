@@ -1,4 +1,5 @@
 use crate::*;
+#[cfg(creusot)]
 use ::std::marker::Tuple;
 pub use ::std::ops::*;
 
@@ -8,6 +9,7 @@ pub use ::std::ops::*;
 
 /// `FnOnceExt` is an extension trait for the `FnOnce` trait, used for
 /// adding a specification to closures. It should not be used directly.
+#[cfg(creusot)]
 pub trait FnOnceExt<Args: Tuple> {
     type Output;
 
@@ -20,6 +22,7 @@ pub trait FnOnceExt<Args: Tuple> {
 
 /// `FnMutExt` is an extension trait for the `FnMut` trait, used for
 /// adding a specification to closures. It should not be used directly.
+#[cfg(creusot)]
 pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
     #[predicate(prophetic)]
     fn postcondition_mut(self, _: Args, _: Self, _: Self::Output) -> bool;
@@ -52,6 +55,7 @@ pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
 
 /// `FnExt` is an extension trait for the `Fn` trait, used for
 /// adding a specification to closures. It should not be used directly.
+#[cfg(creusot)]
 pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
     #[predicate(prophetic)]
     fn postcondition(self, _: Args, _: Self::Output) -> bool;
@@ -67,6 +71,7 @@ pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
         Self: Sized;
 }
 
+#[cfg(creusot)]
 impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
     type Output = <Self as FnOnce<Args>>::Output;
 
@@ -87,6 +92,7 @@ impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
     }
 }
 
+#[cfg(creusot)]
 impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
     #[predicate(prophetic)]
     #[open]
@@ -129,6 +135,7 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
     fn fn_mut_once(self, args: Args, res: Self::Output) {}
 }
 
+#[cfg(creusot)]
 impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
     #[predicate]
     #[open]
@@ -254,3 +261,27 @@ extern_spec! {
         }
     }
 }
+
+#[cfg(not(creusot))]
+pub trait FnOnceExt<Args> {
+    type Output;
+}
+
+#[cfg(not(creusot))]
+pub trait FnMutExt<Args>: FnOnceExt<Args> {}
+
+/// `FnExt` is an extension trait for the `Fn` trait, used for
+/// adding a specification to closures. It should not be used directly.
+#[cfg(not(creusot))]
+pub trait FnExt<Args>: FnMutExt<Args> {}
+
+#[cfg(not(creusot))]
+impl<A, O, F: FnOnce(A) -> O> FnOnceExt<(A,)> for F {
+    type Output = O;
+}
+
+#[cfg(not(creusot))]
+impl<A, O, F: FnMut(A) -> O> FnMutExt<(A,)> for F {}
+
+#[cfg(not(creusot))]
+impl<A, O, F: Fn(A) -> O> FnExt<(A,)> for F {}

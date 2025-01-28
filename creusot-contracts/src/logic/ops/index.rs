@@ -1,6 +1,7 @@
 //! Definition of [`IndexLogic`]
 
 use crate::*;
+#[cfg(creusot)]
 use ::std::alloc::Allocator;
 
 /// Used for indexing operations (`container[index]`) in pearlite.
@@ -17,6 +18,7 @@ pub trait IndexLogic<I: ?Sized> {
     fn index_logic(self, idx: I) -> Self::Item;
 }
 
+#[cfg(creusot)]
 impl<T, A: Allocator> IndexLogic<Int> for Vec<T, A> {
     type Item = T;
 
@@ -28,6 +30,7 @@ impl<T, A: Allocator> IndexLogic<Int> for Vec<T, A> {
     }
 }
 
+#[cfg(creusot)]
 impl<T, A: Allocator> IndexLogic<usize> for Vec<T, A> {
     type Item = T;
 
@@ -92,4 +95,14 @@ impl<T> IndexLogic<Int> for Snapshot<Seq<T>> {
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { (*self)[ix] }
     }
+}
+
+#[cfg(not(creusot))]
+impl<T> IndexLogic<Int> for Vec<T> {
+    type Item = T;
+}
+
+#[cfg(not(creusot))]
+impl<T> IndexLogic<usize> for Vec<T> {
+    type Item = T;
 }

@@ -1,6 +1,9 @@
-use crate::{invariant::*, std::alloc::Allocator, *};
+use crate::{invariant::*, *};
+#[cfg(creusot)]
+use ::std::alloc::Allocator;
 pub use ::std::boxed::*;
 
+#[cfg(creusot)]
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
     type DeepModelTy = Box<T::DeepModelTy>;
     #[logic]
@@ -10,6 +13,7 @@ impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
     }
 }
 
+#[cfg(creusot)]
 impl<T: View + ?Sized, A: Allocator> View for Box<T, A> {
     type ViewTy = T::ViewTy;
     #[logic]
@@ -19,6 +23,7 @@ impl<T: View + ?Sized, A: Allocator> View for Box<T, A> {
     }
 }
 
+#[cfg(creusot)]
 impl<T: ?Sized, A: Allocator> Invariant for Box<T, A> {
     #[predicate(prophetic)]
     #[open]
@@ -51,3 +56,16 @@ extern_spec! {
         }
     }
 }
+
+#[cfg(not(creusot))]
+impl<T: DeepModel + ?Sized> DeepModel for Box<T> {
+    type DeepModelTy = Box<T::DeepModelTy>;
+}
+
+#[cfg(not(creusot))]
+impl<T: View + ?Sized> View for Box<T> {
+    type ViewTy = T::ViewTy;
+}
+
+#[cfg(not(creusot))]
+impl<T: ?Sized> Invariant for Box<T> {}

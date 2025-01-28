@@ -6,6 +6,7 @@ pub trait Invariant {
     fn invariant(self) -> bool;
 }
 
+#[cfg(creusot)]
 impl Invariant for ! {
     #[predicate(prophetic)]
     #[open]
