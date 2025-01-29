@@ -220,9 +220,7 @@ at every iteration of the loop.
 A loop invariant looks like this:
 
 ```rust
-    #[cfg_attr(creusot,
-        invariant(i@ <= n@)
-    )]
+    #[invariant(i@ <= n@)]
     while i < n {
         i += 1;
         sum += i;
@@ -321,10 +319,8 @@ Complete the invariant. Below we extended the invariant with a placeholder for y
 Intuitively, the invariant should reflect the idea that at every step, `sum` is the sum of numbers from `0` to `i` included.
 
 ```rust
-    #[cfg_attr(creusot,
-        invariant(i@ <= n@),
-        invariant(true /* YOUR INVARIANT HERE */)
-    )]
+    #[invariant(i@ <= n@)]
+    #[invariant(true /* YOUR INVARIANT HERE */)]
     while i < n {
         i += 1;
         sum += i;
@@ -337,10 +333,8 @@ Completed invariant
 </summary>
 
 ```rust
-    #[cfg_attr(creusot,
-        invariant(i@ <= n@),
-        invariant(sum@ == i@ * (i@ + 1) / 2)
-    )]
+    #[invariant(i@ <= n@)]
+    #[invariant(sum@ == i@ * (i@ + 1) / 2)]
     while i < n {
         i += 1;
         sum += i;
@@ -361,10 +355,8 @@ Complete <code>sum_up_to</code> function with all annotations
 pub fn sum_up_to(n: u64) -> u64 {
     let mut sum = 0;
     let mut i = 0;
-    #[cfg_attr(creusot,
-        invariant(i@ <= n@),
-        invariant(sum@ == i@ * (i@ + 1) / 2)
-    )]
+    #[invariant(i@ <= n@)]
+    #[invariant(sum@ == i@ * (i@ + 1) / 2)]
     while i < n {
         i += 1;
         sum += i;
@@ -393,9 +385,7 @@ previously produced by the iterator of a `for` loop.
 Using that variable, we can restate the invariant about `sum`:
 
 ```rust
-    #[cfg_attr(creusot,
-        invariant(sum@ == produced.len() * (produced.len() + 1) / 2)
-    )]
+    #[invariant(sum@ == produced.len() * (produced.len() + 1) / 2)]
     for i in 1..=n {
         sum += i;
     }
@@ -413,9 +403,7 @@ But the solvers can't figure it out for some reason. It may be that solvers have
 We can tweak the invariant to avoid relying on division, and the proof goes through.
 
 ```rust
-    #[cfg_attr(creusot,
-        invariant(sum@ * 2 == produced.len() * (produced.len() + 1))
-    )]
+    #[invariant(sum@ * 2 == produced.len() * (produced.len() + 1))]
     for i in 1..=n {
         sum += i;
     }
@@ -433,9 +421,7 @@ Complete <code>sum_up_to</code> function with all annotations (<code>for</code> 
 #[ensures(result@ == n@ * (n@ + 1) / 2)]
 pub fn sum_up_to(n: u64) -> u64 {
     let mut sum = 0;
-    #[cfg_attr(creusot,
-        invariant(sum@ * 2 == produced.len() * (produced.len() + 1)),
-    )]
+    #[invariant(sum@ * 2 == produced.len() * (produced.len() + 1))]
     for i in 1..=n {
         sum += i;
     }
