@@ -42,3 +42,21 @@ An `invariant` generates two verification conditions in Why3:
 
 - First, that the invariants holds before the loop (initialization).
 - Second, that if the invariant holds at the beginning of a loop iteration, then it holds at the end of it.
+
+## Compiling with `rustc`
+
+Make sure that functions that contain `#[invariant(...)]` attributes also have
+an `#[ensures(...)]` or `#[requires(...)]` attribute.
+You can always add `#[ensures(true)]` as a trivial contract.
+
+That enables compilation (`cargo build`) with a stable Rust compiler,
+preventing the following error:
+
+```
+error[E0658]: attributes on expressions are experimental
+```
+
+Indeed, the `#[invariant(...)]` attribute on loops is only allowed by unstable features
+(`stmt_expr_attributes`, `proc_macro_hygiene`). For compatibility with stable Rust,
+the `requires` and `ensures` macros remove `#[invariant(...)]`
+attributes during normal compilation.
