@@ -6,7 +6,8 @@ use crate::*;
 ///
 /// # Ghost
 ///
-/// Since [`std::collections::HashSet`] and [`std::collections::BTreeSet`] have finite
+/// Since [`std::collections::HashSet`](::std::collections::HashSet) and
+/// [`std::collections::BTreeSet`](::std::collections::BTreeSet) have finite
 /// capacity, this could cause some issues in ghost code:
 /// ```rust,creusot,compile_fail
 /// ghost! {
@@ -110,6 +111,17 @@ impl<T: ?Sized> FSet<T> {
     #[logic]
     #[creusot::builtins = "set.Fset.union"]
     pub fn union(self, other: Self) -> Self {
+        let _ = other;
+        dead
+    }
+
+    /// Returns a new set, which is the union of `self` and `other`.
+    ///
+    /// An element is in the result if it is in `self` _or_ if it is in `other`.
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "set.Fset.inter"]
+    pub fn intersection(self, other: Self) -> Self {
         let _ = other;
         dead
     }

@@ -1,5 +1,3 @@
-use ::std::{rc::Rc, sync::Arc};
-
 use crate::*;
 
 /// The view of a type is its logical model as typically used to specify a data
@@ -29,45 +27,9 @@ pub trait DeepModel {
     fn deep_model(self) -> Self::DeepModelTy;
 }
 
-impl<T: DeepModel> DeepModel for Rc<T> {
-    type DeepModelTy = T::DeepModelTy;
-    #[logic]
-    #[open]
-    fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { self.view().deep_model() }
-    }
-}
-
-impl<T> View for Rc<T> {
-    type ViewTy = T;
-    #[logic]
-    #[trusted]
-    fn view(self) -> Self::ViewTy {
-        dead
-    }
-}
-
 impl View for str {
     type ViewTy = Seq<char>;
 
-    #[logic]
-    #[trusted]
-    fn view(self) -> Self::ViewTy {
-        dead
-    }
-}
-
-impl<T: DeepModel> DeepModel for Arc<T> {
-    type DeepModelTy = T::DeepModelTy;
-    #[logic]
-    #[open]
-    fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { self@.deep_model() }
-    }
-}
-
-impl<T> View for Arc<T> {
-    type ViewTy = T;
     #[logic]
     #[trusted]
     fn view(self) -> Self::ViewTy {

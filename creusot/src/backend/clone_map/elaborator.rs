@@ -130,7 +130,7 @@ impl DepElab for ProgElab {
         };
 
         let coma = program::to_why(ctx, &mut names, name, bid);
-        return vec![Decl::Coma(coma)];
+        vec![Decl::Coma(coma)]
     }
 }
 
@@ -289,23 +289,18 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         param_env: ParamEnv<'tcx>,
         initial: impl Iterator<Item = Dependency<'tcx>>,
     ) -> Self {
-        let exp = Self {
+        Self {
             graph: Default::default(),
             namer,
             self_key,
             param_env,
             expansion_queue: initial.map(|b| (self_key, Strength::Strong, b)).collect(),
             dep_bodies: Default::default(),
-        };
-        exp
+        }
     }
 
     fn namer(&mut self, source: Dependency<'tcx>) -> ExpansionProxy<'_, 'tcx> {
-        ExpansionProxy {
-            namer: &mut self.namer,
-            expansion_queue: &mut self.expansion_queue,
-            source,
-        }
+        ExpansionProxy { namer: self.namer, expansion_queue: &mut self.expansion_queue, source }
     }
 
     /// Expand the graph with new entries
@@ -421,11 +416,7 @@ fn expand_laws<'tcx>(
     }
 }
 
-fn val<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
-    mut sig: Signature,
-    kind: Option<DeclKind>,
-) -> Vec<Decl> {
+fn val(ctx: &mut Why3Generator, mut sig: Signature, kind: Option<DeclKind>) -> Vec<Decl> {
     sig.contract.variant = Vec::new();
     if let Some(k) = kind {
         let ax = if !sig.contract.is_empty() { Some(spec_axiom(&sig)) } else { None };
@@ -473,7 +464,7 @@ fn resolve_term<'tcx>(
             }
             traits::TraitResolved::UnknownFound | traits::TraitResolved::UnknownNotFound => {
                 // We don't know the instance => body is opaque
-                return None;
+                None
             }
             traits::TraitResolved::NoInstance => {
                 // We know there is no instance => body is true
@@ -603,7 +594,7 @@ fn term<'tcx>(
                 let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
                 let ty = ctx.tcx.normalize_erasing_regions(param_env, ty);
                 let span = ctx.def_span(def_id);
-                let res = from_ty_const(&mut ctx.ctx, constant, ty, param_env, span);
+                let res = from_ty_const(&ctx.ctx, constant, ty, param_env, span);
                 Some(res)
             } else if is_resolve_function(ctx.tcx, def_id) {
                 resolve_term(ctx, param_env, def_id, subst)
@@ -623,7 +614,7 @@ fn term<'tcx>(
                 let TyKind::Closure(did, _) = subst.type_at(1).kind() else { return None };
                 Some(ctx.closure_contract(*did).unnest.clone().unwrap())
             } else {
-                let term = ctx.term(def_id).unwrap().clone();
+                let term = ctx.term_fail_fast(def_id).unwrap().clone();
                 let term = normalize(
                     ctx.tcx,
                     param_env,

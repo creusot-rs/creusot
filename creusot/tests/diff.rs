@@ -41,7 +41,6 @@ pub fn differ(
             let output = err.as_output().unwrap();
 
             write!(buf, "{}", from_utf8(&output.stderr)?)?;
-            // let success = compare_str(&mut buf, from_utf8(&output.stderr)?, from_utf8(expect_err)?);
             Ok((false, buf))
         }
         Err(err) => {
@@ -75,7 +74,6 @@ fn compare_str(buf: &mut Buffer, got: &str, expect: &str) -> bool {
         .algorithm(Algorithm::Patience)
         .diff_lines(&expect, &got);
 
-    // let result = TextDiff::from_lines(expect, got);
     if result.ratio() == 1.0 {
         buf.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
         write!(buf, "  <Differences in spans and line ending only.>").unwrap();
@@ -125,7 +123,6 @@ fn normalize_cargo_paths(input: &str) -> String {
 }
 
 fn print_diff<'a, W: WriteColor>(mut buf: W, diff: TextDiff<'a, 'a, 'a, str>) {
-    // let mut last_lines: ArrayDeque<[_; 3], Wrapping> = ArrayDeque::new();
     let mut multiple_diffs = false;
 
     for ops in diff.grouped_ops(3) {

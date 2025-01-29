@@ -376,6 +376,16 @@ impl<T: ?Sized> Seq<T> {
     {
         self.sorted_range(0, self.len())
     }
+
+    #[open]
+    #[logic]
+    #[ensures(forall<a: Seq<T>, b: Seq<T>, x: T>
+        a.concat(b).contains(x) == a.contains(x) || b.contains(x))]
+    pub fn concat_contains()
+    where
+        T: Sized,
+    {
+    }
 }
 
 impl<T: ?Sized> Seq<&T> {

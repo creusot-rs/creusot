@@ -3,16 +3,21 @@ use rustc_span::{Span, DUMMY_SP};
 
 pub type CreusotResult<T> = Result<T, Error>;
 
+pub(crate) enum Error {
+    MustPrint(Message),
+    TypeCheck(CannotFetchThir),
+}
+
 // TODO: make this a vector of spans and strings
 #[derive(Debug)]
-pub struct Error {
+pub struct Message {
     span: Span,
     msg: String,
 }
 
-impl Error {
+impl Message {
     pub(crate) fn new(span: Span, msg: impl Into<String>) -> Self {
-        Error { span, msg: msg.into() }
+        Self { span, msg: msg.into() }
     }
 
     pub(crate) fn emit(self, tcx: TyCtxt) -> ! {
@@ -21,12 +26,35 @@ impl Error {
     }
 }
 
+impl Error {
+    pub(crate) fn msg(span: Span, msg: impl Into<String>) -> Self {
+        Self::MustPrint(Message { span, msg: msg.into() })
+    }
+}
+
+impl From<Message> for Error {
+    fn from(value: Message) -> Self {
+        Self::MustPrint(value)
+    }
+}
+impl From<CannotFetchThir> for Error {
+    fn from(value: CannotFetchThir) -> Self {
+        Self::TypeCheck(value)
+    }
+}
+
+/// This error is raised when fetching a function's THIR failed, because of a typechecking error.
+///
+/// It should usually be bubbled up to the caller, which should then throw it away and
+/// proceed to call `tcx.dcx().abort_if_errors()`.
+pub(crate) struct CannotFetchThir;
+
 #[derive(Debug, Clone)]
 pub struct InternalError(pub &'static str);
 
 impl From<InternalError> for Error {
     fn from(err: InternalError) -> Error {
-        Error::new(DUMMY_SP, format!("internal error: {}", err.0))
+        Error::MustPrint(Message::new(DUMMY_SP, format!("internal error: {}", err.0)))
     }
 }
 

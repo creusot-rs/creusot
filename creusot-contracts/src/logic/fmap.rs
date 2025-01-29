@@ -14,7 +14,8 @@ type PMap<K, V> = Mapping<K, Option<SizedW<V>>>;
 ///
 /// # Ghost
 ///
-/// Since [`std::collections::HashMap`] and [`std::collections::BTreeMap`] have finite
+/// Since [`std::collections::HashMap`](::std::collections::HashMap) and
+/// [`std::collections::BTreeMap`](::std::collections::BTreeMap) have finite
 /// capacity, this could cause some issues in ghost code:
 /// ```rust,creusot,compile_fail
 /// ghost! {
