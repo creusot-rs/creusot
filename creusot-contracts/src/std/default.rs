@@ -1,6 +1,24 @@
 use crate::*;
-pub use ::std::default::*;
 
+#[cfg(creusot)]
+pub use creusot_contracts_proc::Default;
+
+/// Extension of the standard [`Default`](::std::default::Default) trait.
+///
+/// This allows Creusot to specify the behavior of [`default`](::std::default::Default::default).
+///
+/// # Derive macro
+///
+/// Similarly to `std`, Creusot defines a derive macro for `Default`:
+/// ```
+/// use creusot_contracts::Default;
+///
+/// #[derive(Default)]
+/// struct S(i32);
+/// ```
+///
+/// This will implement both `Default` traits, and generate a proof obligation to show
+/// that they agree.
 pub trait Default: ::std::default::Default {
     #[predicate(prophetic)]
     fn is_default(self) -> bool;
