@@ -8,7 +8,7 @@ module M_mutex__qyi5425553346843331945__call [#"mutex.rs" 100 4 100 23] (* <Adds
   let%span smutex6 = "mutex.rs" 49 4 49 35
   let%span smutex7 = "mutex.rs" 56 22 56 23
   let%span smutex8 = "mutex.rs" 55 4 55 30
-  let%span smutex9 = "mutex.rs" 67 8 67 24
+  let%span smutex9 = "mutex.rs" 67 8 67 25
   
   use prelude.prelude.Borrow
   
@@ -39,28 +39,30 @@ module M_mutex__qyi5425553346843331945__call [#"mutex.rs" 100 4 100 23] (* <Adds
       (! return' {result}) ]
     
   
-  use prelude.prelude.Int
+  use prelude.prelude.UInt32
+  
+  predicate inv'1 (_1 : uint32)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : uint32 [inv'1 x] . inv'1 x = true
   
   use prelude.prelude.UInt32
   
-  predicate inv'1 (_1 : UInt32.t)
+  use prelude.prelude.Int
   
-  axiom inv_axiom'1 [@rewrite] : forall x : UInt32.t [inv'1 x] . inv'1 x = true
+  predicate inv'2 [#"mutex.rs" 66 4 66 33] (self : ()) (x : uint32) =
+    [%#smutex9] mod (UInt32.to_int x) 2 = 0
   
-  predicate inv'2 [#"mutex.rs" 66 4 66 33] (self : ()) (x : UInt32.t) =
-    [%#smutex9] UInt32.urem x (2 : UInt32.t) = (0 : UInt32.t)
-  
-  let rec deref'0 (self:t_MutexGuard'0) (return'  (ret:UInt32.t))= any
-    [ return' (result:UInt32.t)-> {[%#smutex5] inv'1 result}
+  let rec deref'0 (self:t_MutexGuard'0) (return'  (ret:uint32))= any
+    [ return' (result:uint32)-> {[%#smutex5] inv'1 result}
       {[%#smutex6] inv'2 (Snapshot.inner self.t_MutexGuard__1'0) result}
       (! return' {result}) ]
     
   
-  predicate inv'3 (_1 : UInt32.t)
+  predicate inv'3 (_1 : uint32)
   
-  axiom inv_axiom'2 [@rewrite] : forall x : UInt32.t [inv'3 x] . inv'3 x = true
+  axiom inv_axiom'2 [@rewrite] : forall x : uint32 [inv'3 x] . inv'3 x = true
   
-  let rec set'0 (self:borrowed (t_MutexGuard'0)) (v:UInt32.t) (return'  (ret:()))= {[@expl:set 'v' type invariant] [%#smutex7] inv'3 v}
+  let rec set'0 (self:borrowed (t_MutexGuard'0)) (v:uint32) (return'  (ret:()))= {[@expl:set 'v' type invariant] [%#smutex7] inv'3 v}
     {[@expl:set requires] [%#smutex8] inv'2 (Snapshot.inner (self.current).t_MutexGuard__1'0) v}
     any [ return' (result:())-> (! return' {result}) ] 
   
@@ -70,16 +72,16 @@ module M_mutex__qyi5425553346843331945__call [#"mutex.rs" 100 4 100 23] (* <Adds
   
   let rec call'0 (self:t_AddsTwo'0) (return'  (ret:()))= (! bb0
     [ bb0 = s0 [ s0 = lock'0 {self.t_AddsTwo__mutex'0} (fun (_ret':t_MutexGuard'0) ->  [ &v <- _ret' ] s1) | s1 = bb1 ] 
-    | bb1 = s0 [ s0 = deref'0 {v} (fun (_ret':UInt32.t) ->  [ &_5 <- _ret' ] s1) | s1 = bb2 ] 
+    | bb1 = s0 [ s0 = deref'0 {v} (fun (_ret':uint32) ->  [ &_5 <- _ret' ] s1) | s1 = bb2 ] 
     | bb2 = s0
       [ s0 =  [ &val' <- _5 ] s1
-      | s1 = UInt32.lt {val'} {[%#smutex0] (100000 : UInt32.t)} (fun (_ret':bool) ->  [ &_7 <- _ret' ] s2)
+      | s1 = UInt32.lt {val'} {[%#smutex0] (100000 : uint32)} (fun (_ret':bool) ->  [ &_7 <- _ret' ] s2)
       | s2 = any [ br0 -> {_7 = false} (! bb5) | br1 -> {_7} (! bb3) ]  ]
       
     | bb3 = s0
       [ s0 = Borrow.borrow_mut <t_MutexGuard'0> {v}
           (fun (_ret':borrowed (t_MutexGuard'0)) ->  [ &_10 <- _ret' ]  [ &v <- _ret'.final ] s1)
-      | s1 = UInt32.add {val'} {[%#smutex1] (2 : UInt32.t)} (fun (_ret':UInt32.t) ->  [ &_11 <- _ret' ] s2)
+      | s1 = UInt32.add {val'} {[%#smutex1] (2 : uint32)} (fun (_ret':uint32) ->  [ &_11 <- _ret' ] s2)
       | s2 = set'0 {_10} {_11} (fun (_ret':()) ->  [ &_9 <- _ret' ] s3)
       | s3 = bb4 ]
       
@@ -87,7 +89,7 @@ module M_mutex__qyi5425553346843331945__call [#"mutex.rs" 100 4 100 23] (* <Adds
     | bb5 = s0
       [ s0 = Borrow.borrow_mut <t_MutexGuard'0> {v}
           (fun (_ret':borrowed (t_MutexGuard'0)) ->  [ &_14 <- _ret' ]  [ &v <- _ret'.final ] s1)
-      | s1 = set'0 {_14} {[%#smutex2] (0 : UInt32.t)} (fun (_ret':()) ->  [ &_13 <- _ret' ] s2)
+      | s1 = set'0 {_14} {[%#smutex2] (0 : uint32)} (fun (_ret':()) ->  [ &_13 <- _ret' ] s2)
       | s2 = bb6 ]
       
     | bb6 = bb7
@@ -97,12 +99,12 @@ module M_mutex__qyi5425553346843331945__call [#"mutex.rs" 100 4 100 23] (* <Adds
     [ & _0 : () = any_l ()
     | & self : t_AddsTwo'0 = self
     | & v : t_MutexGuard'0 = any_l ()
-    | & val' : UInt32.t = any_l ()
-    | & _5 : UInt32.t = any_l ()
+    | & val' : uint32 = any_l ()
+    | & _5 : uint32 = any_l ()
     | & _7 : bool = any_l ()
     | & _9 : () = any_l ()
     | & _10 : borrowed (t_MutexGuard'0) = any_l ()
-    | & _11 : UInt32.t = any_l ()
+    | & _11 : uint32 = any_l ()
     | & _13 : () = any_l ()
     | & _14 : borrowed (t_MutexGuard'0) = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
@@ -120,19 +122,17 @@ module M_mutex__concurrent [#"mutex.rs" 163 0 163 19]
   let%span smutex9 = "mutex.rs" 130 11 130 27
   let%span smutex10 = "mutex.rs" 121 21 121 34
   let%span smutex11 = "mutex.rs" 117 14 120 5
-  let%span smutex12 = "mutex.rs" 67 8 67 24
+  let%span smutex12 = "mutex.rs" 67 8 67 25
   let%span sresolve13 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   let%span smutex14 = "mutex.rs" 92 8 92 12
   let%span smutex15 = "mutex.rs" 149 4 149 16
   let%span smutex16 = "mutex.rs" 97 8 97 12
   
-  use prelude.prelude.Int
-  
   use prelude.prelude.UInt32
   
-  predicate inv'0 (_1 : UInt32.t)
+  predicate inv'0 (_1 : uint32)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : UInt32.t [inv'0 x] . inv'0 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : uint32 [inv'0 x] . inv'0 x = true
   
   predicate inv'1 (_1 : ())
   
@@ -140,8 +140,12 @@ module M_mutex__concurrent [#"mutex.rs" 163 0 163 19]
   
   use prelude.prelude.Borrow
   
-  predicate inv'2 [#"mutex.rs" 66 4 66 33] (self : ()) (x : UInt32.t) =
-    [%#smutex12] UInt32.urem x (2 : UInt32.t) = (0 : UInt32.t)
+  use prelude.prelude.UInt32
+  
+  use prelude.prelude.Int
+  
+  predicate inv'2 [#"mutex.rs" 66 4 66 33] (self : ()) (x : uint32) =
+    [%#smutex12] mod (UInt32.to_int x) 2 = 0
   
   type t_MutexInner'0
   
@@ -152,7 +156,7 @@ module M_mutex__concurrent [#"mutex.rs" 163 0 163 19]
   
   axiom inv_axiom'2 [@rewrite] : forall x : t_Mutex'0 [inv'3 x] . inv'3 x = true
   
-  let rec new'0 (val':UInt32.t) (i:()) (return'  (ret:t_Mutex'0))= {[@expl:new 'val' type invariant] [%#smutex1] inv'0 val'}
+  let rec new'0 (val':uint32) (i:()) (return'  (ret:t_Mutex'0))= {[@expl:new 'val' type invariant] [%#smutex1] inv'0 val'}
     {[@expl:new 'i' type invariant] [%#smutex2] inv'1 i}
     {[@expl:new requires] [%#smutex3] inv'2 i val'}
     any [ return' (result:t_Mutex'0)-> {[%#smutex4] inv'3 result} (! return' {result}) ] 
@@ -234,7 +238,7 @@ module M_mutex__concurrent [#"mutex.rs" 163 0 163 19]
   let rec concurrent'0 (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &_5 <- () ] s1
-      | s1 = new'0 {[%#smutex0] (0 : UInt32.t)} {_5} (fun (_ret':t_Mutex'0) ->  [ &_4 <- _ret' ] s2)
+      | s1 = new'0 {[%#smutex0] (0 : uint32)} {_5} (fun (_ret':t_Mutex'0) ->  [ &_4 <- _ret' ] s2)
       | s2 = bb1 ]
       
     | bb1 = bb2

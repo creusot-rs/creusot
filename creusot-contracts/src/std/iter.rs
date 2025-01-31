@@ -1,4 +1,4 @@
-use crate::{invariant::*, *};
+use crate::*;
 pub use ::std::iter::*;
 
 mod cloned;
@@ -35,14 +35,10 @@ pub trait Iterator: ::std::iter::Iterator {
     fn completed(&mut self) -> bool;
 
     #[law]
-    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self);
 
     #[law]
-    #[requires(inv(a))]
-    #[requires(inv(b))]
-    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -50,7 +46,7 @@ pub trait Iterator: ::std::iter::Iterator {
 
     // FIXME: remove `trusted`
     #[trusted]
-    #[requires(forall<e : Self::Item, i2 : Self> inv(e) && inv(i2) ==>
+    #[requires(forall<e : Self::Item, i2 : Self>
                     self.produces(Seq::singleton(e), i2) ==>
                     func.precondition((e, Snapshot::new(Seq::EMPTY))))]
     #[requires(MapInv::<Self, _, F>::reinitialize())]
@@ -131,7 +127,7 @@ extern_spec! {
                         Self: Sized + Iterator<Item = &'a T>;
 
                 #[pure]
-                #[requires(forall<e : _, i2 : _> inv(e) && inv(i2) ==>
+                #[requires(forall<e : _, i2 : _>
                                 self.produces(Seq::singleton(e), i2) ==>
                                 f.precondition((e,)))]
                 #[requires(map::reinitialize::<Self_, B, F>())]
@@ -151,10 +147,8 @@ extern_spec! {
 
                 #[pure]
                 // These two requirements are here only to prove the absence of overflows
-                #[requires(forall<i: &mut Self_> inv(i) && i.completed() ==> i.produces(Seq::EMPTY, ^i))]
-                #[requires(forall<s: Seq<Self_::Item>, i: Self_>
-                            inv(s) && inv(i) && self.produces(s, i) ==>
-                            s.len() < std::usize::MAX@)]
+                #[requires(forall<i: &mut Self_> (*i).completed() ==> (*i).produces(Seq::EMPTY, ^i))]
+                #[requires(forall<s: Seq<Self_::Item>, i: Self_> self.produces(s, i) ==> s.len() < std::usize::MAX@)]
                 #[ensures(result.iter() == self && result.n() == 0)]
                 fn enumerate(self) -> Enumerate<Self>;
 
@@ -170,8 +164,7 @@ extern_spec! {
 
                 // TODO: Investigate why Self_ needed
                 #[ensures(exists<done : &mut Self_, prod: Seq<_>>
-                    inv(done) && inv(prod) && resolve(&^done) && done.completed() &&
-                    self.produces(prod, *done) && B::from_iter_post(prod, result))]
+                    resolve(&^done) && done.completed() && self.produces(prod, *done) && B::from_iter_post(prod, result))]
                 fn collect<B>(self) -> B
                     where B: FromIterator<Self::Item>;
             }
@@ -190,7 +183,6 @@ extern_spec! {
 
                 #[requires(iter.into_iter_pre())]
                 #[ensures(exists<into_iter: T::IntoIter, done: &mut T::IntoIter, prod: Seq<A>>
-                            inv(into_iter) && inv(done) && inv(prod) &&
                             iter.into_iter_post(into_iter) &&
                             into_iter.produces(prod, *done) && done.completed() && resolve(&^done) &&
                             Self_::from_iter_post(prod, result))]
@@ -210,4 +202,30 @@ extern_spec! {
             fn repeat<T: Clone>(elt: T) -> Repeat<T>;
         }
     }
+}
+
+impl<I: Iterator + ?Sized> Iterator for &mut I {
+    #[open]
+    #[predicate(prophetic)]
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+        pearlite! { (*self).produces(visited, *o) && ^self == ^o }
+    }
+
+    #[open]
+    #[predicate(prophetic)]
+    fn completed(&mut self) -> bool {
+        pearlite! { (*self).completed() && ^*self == ^^self }
+    }
+
+    #[law]
+    #[open]
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
+
+    #[law]
+    #[open]
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }

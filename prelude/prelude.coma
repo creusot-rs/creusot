@@ -142,35 +142,35 @@ module Slice64
 
   type slice 'a =
     { elts : seq 'a }
-    invariant { Seq.length elts <= UInt64.to_int UInt64.max_uint }
+    invariant { Seq.length elts <= UInt64.t'int UInt64.max_uint }
   axiom slice_ext :
     forall x y: slice 'a. x.elts = y.elts -> x = y
 
   type array 'a = slice 'a
 
   function length (s : slice 'a) : UInt64.t
-  axiom spec : forall s : slice 'a . (UInt64.to_int (length s)) = Seq.length s.elts
+  axiom spec : forall s : slice 'a . (UInt64.t'int (length s)) = Seq.length s.elts
 
 
   let get < 'a > (s : slice 'a) (ix : UInt64.t) (ret (res : 'a)) =
-    { UInt64.to_int ix < Seq.length s.elts }
-    ret {Seq.get s.elts (to_int ix)}
+    { UInt64.t'int ix < Seq.length s.elts }
+    ret {Seq.get s.elts (UInt64.t'int ix)}
 
 
   let set < 'a > (s : slice 'a) (ix : UInt64.t) (v : 'a)
-    { 0 <= UInt64.to_int ix < Seq.length s.elts }
+    { 0 <= UInt64.t'int ix < Seq.length s.elts }
     (ret (result : slice 'a)
       { Seq.length result.elts = Seq.length s.elts }
-      { result.elts[UInt64.to_int ix] = v }
-      { forall j. 0 <= j < Seq.length s.elts /\ j <> UInt64.to_int ix -> result.elts[j] = s.elts[j] }
+      { result.elts[UInt64.t'int ix] = v }
+      { forall j. 0 <= j < Seq.length s.elts /\ j <> UInt64.t'int ix -> result.elts[j] = s.elts[j] }
     ) = any
 
 
   let create < 'a > (len : UInt64.t) (f : int -> 'a)
-    { 0 <= UInt64.to_int len }
+    { 0 <= UInt64.t'int len }
   (ret (result : slice 'a )
-    { Seq.length result.elts = UInt64.to_int len }
-    { forall i . 0 <= i < UInt64.to_int len -> result.elts[i] = f i }
+    { Seq.length result.elts = UInt64.t'int len }
+    { forall i . 0 <= i < UInt64.t'int len -> result.elts[i] = f i }
   ) = any
 
   function id (s : slice 'a) : seq 'a = s.elts

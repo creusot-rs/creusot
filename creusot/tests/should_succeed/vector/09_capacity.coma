@@ -10,12 +10,12 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
   let%span svec8 = "../../../../creusot-contracts/src/std/vec.rs" 126 26 126 43
   let%span svec9 = "../../../../creusot-contracts/src/std/vec.rs" 130 26 130 43
   let%span svec10 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
-  let%span smodel11 = "../../../../creusot-contracts/src/model.rs" 106 8 106 22
-  let%span sops12 = "../../../../creusot-contracts/src/logic/ops.rs" 20 8 20 31
+  let%span smodel11 = "../../../../creusot-contracts/src/model.rs" 110 8 110 22
+  let%span sindex12 = "../../../../creusot-contracts/src/logic/ops/index.rs" 27 8 27 31
   let%span sresolve13 = "../../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   let%span svec14 = "../../../../creusot-contracts/src/std/vec.rs" 65 20 65 41
   let%span sinvariant15 = "../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
-  let%span sseq16 = "../../../../creusot-contracts/src/logic/seq.rs" 451 20 451 95
+  let%span sseq16 = "../../../../creusot-contracts/src/logic/seq.rs" 633 20 633 95
   let%span sboxed17 = "../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
   use prelude.prelude.Borrow
@@ -28,24 +28,24 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
   type t_Unique'0  =
     { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
   
-  use prelude.prelude.Int
-  
-  use prelude.prelude.UInt64
+  use prelude.prelude.UIntSize
   
   type t_Cap'0  =
-    { t_Cap__0'0: UInt64.t }
+    { t_Cap__0'0: usize }
   
   type t_RawVec'0  =
     { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
   
   type t_Vec'0  =
-    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
   
   use seq.Seq
   
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  use prelude.prelude.UInt64
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
   
   type t_T'0
   
@@ -53,7 +53,7 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
   
   function view'0 (self : t_Vec'0) : Seq.seq t_T'0
   
-  axiom view'0_spec : forall self : t_Vec'0 . [%#svec10] Seq.length (view'0 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
+  axiom view'0_spec : forall self : t_Vec'0 . [%#svec10] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
   use seq.Seq
   
@@ -90,16 +90,16 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
   function view'1 (self : borrowed (t_Vec'0)) : Seq.seq t_T'0 =
     [%#smodel11] view'0 self.current
   
-  let rec reserve'0 (self:borrowed (t_Vec'0)) (additional:UInt64.t) (return'  (ret:()))= {[@expl:reserve 'self' type invariant] inv'1 self}
+  let rec reserve'0 (self:borrowed (t_Vec'0)) (additional:usize) (return'  (ret:()))= {[@expl:reserve 'self' type invariant] inv'1 self}
     any [ return' (result:())-> {[%#svec6] view'0 self.final = view'1 self} (! return' {result}) ] 
   
-  let rec reserve_exact'0 (self:borrowed (t_Vec'0)) (additional:UInt64.t) (return'  (ret:()))= {[@expl:reserve_exact 'self' type invariant] inv'1 self}
+  let rec reserve_exact'0 (self:borrowed (t_Vec'0)) (additional:usize) (return'  (ret:()))= {[@expl:reserve_exact 'self' type invariant] inv'1 self}
     any [ return' (result:())-> {[%#svec7] view'0 self.final = view'1 self} (! return' {result}) ] 
   
   let rec shrink_to_fit'0 (self:borrowed (t_Vec'0)) (return'  (ret:()))= {[@expl:shrink_to_fit 'self' type invariant] inv'1 self}
     any [ return' (result:())-> {[%#svec8] view'0 self.final = view'1 self} (! return' {result}) ] 
   
-  let rec shrink_to'0 (self:borrowed (t_Vec'0)) (min_capacity:UInt64.t) (return'  (ret:()))= {[@expl:shrink_to 'self' type invariant] inv'1 self}
+  let rec shrink_to'0 (self:borrowed (t_Vec'0)) (min_capacity:usize) (return'  (ret:()))= {[@expl:shrink_to 'self' type invariant] inv'1 self}
     any [ return' (result:())-> {[%#svec9] view'0 self.final = view'1 self} (! return' {result}) ] 
   
   predicate resolve'1 (self : borrowed (t_Vec'0)) =
@@ -113,7 +113,7 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : t_T'0 =
-    [%#sops12] Seq.get (view'0 self) ix
+    [%#sindex12] Seq.get (view'0 self) ix
   
   meta "compute_max_steps" 1000000
   
@@ -127,7 +127,7 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
             -{inv'0 _ret'.final}-
              [ &v <- { v with current = _ret'.final } ] 
             s1)
-      | s1 = reserve'0 {_5} {[%#s09_capacity0] (100 : UInt64.t)} (fun (_ret':()) ->  [ &_4 <- _ret' ] s2)
+      | s1 = reserve'0 {_5} {[%#s09_capacity0] (100 : usize)} (fun (_ret':()) ->  [ &_4 <- _ret' ] s2)
       | s2 = bb1 ]
       
     | bb1 = s0
@@ -138,7 +138,7 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
             -{inv'0 _ret'.final}-
              [ &v <- { v with current = _ret'.final } ] 
             s1)
-      | s1 = reserve_exact'0 {_7} {[%#s09_capacity1] (200 : UInt64.t)} (fun (_ret':()) ->  [ &_6 <- _ret' ] s2)
+      | s1 = reserve_exact'0 {_7} {[%#s09_capacity1] (200 : usize)} (fun (_ret':()) ->  [ &_6 <- _ret' ] s2)
       | s2 = bb2 ]
       
     | bb2 = s0
@@ -160,7 +160,7 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
             -{inv'0 _ret'.final}-
              [ &v <- { v with current = _ret'.final } ] 
             s1)
-      | s1 = shrink_to'0 {_11} {[%#s09_capacity2] (1 : UInt64.t)} (fun (_ret':()) ->  [ &_10 <- _ret' ] s2)
+      | s1 = shrink_to'0 {_11} {[%#s09_capacity2] (1 : usize)} (fun (_ret':()) ->  [ &_10 <- _ret' ] s2)
       | s2 = bb4 ]
       
     | bb4 = s0 [ s0 = {[@expl:type invariant] inv'1 v} s1 | s1 = -{resolve'0 v}- s2 | s2 = return' {_0} ]  ]
@@ -191,7 +191,7 @@ module M_09_capacity__clear_vec [#"09_capacity.rs" 14 0 14 35]
   let%span sresolve4 = "../../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   let%span svec5 = "../../../../creusot-contracts/src/std/vec.rs" 65 20 65 41
   let%span sinvariant6 = "../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
-  let%span sseq7 = "../../../../creusot-contracts/src/logic/seq.rs" 451 20 451 95
+  let%span sseq7 = "../../../../creusot-contracts/src/logic/seq.rs" 633 20 633 95
   let%span sboxed8 = "../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
   use prelude.prelude.Borrow
@@ -204,24 +204,24 @@ module M_09_capacity__clear_vec [#"09_capacity.rs" 14 0 14 35]
   type t_Unique'0  =
     { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
   
-  use prelude.prelude.Int
-  
-  use prelude.prelude.UInt64
+  use prelude.prelude.UIntSize
   
   type t_Cap'0  =
-    { t_Cap__0'0: UInt64.t }
+    { t_Cap__0'0: usize }
   
   type t_RawVec'0  =
     { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
   
   type t_Vec'0  =
-    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
   
   use seq.Seq
   
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  use prelude.prelude.UInt64
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
   
   type t_T'0
   
@@ -229,7 +229,7 @@ module M_09_capacity__clear_vec [#"09_capacity.rs" 14 0 14 35]
   
   function view'0 (self : t_Vec'0) : Seq.seq t_T'0
   
-  axiom view'0_spec : forall self : t_Vec'0 . [%#svec3] Seq.length (view'0 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
+  axiom view'0_spec : forall self : t_Vec'0 . [%#svec3] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
   use seq.Seq
   

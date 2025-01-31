@@ -1,0 +1,85 @@
+name: Deploy
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-guide:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install latest mdbook
+        run: |
+          tag=$(curl 'https://api.github.com/repos/rust-lang/mdbook/releases/latest' | jq -r '.tag_name')
+          url="https://github.com/rust-lang/mdbook/releases/download/${tag}/mdbook-${tag}-x86_64-unknown-linux-gnu.tar.gz"
+          mkdir mdbook
+          curl -sSL $url | tar -xz --directory=./mdbook
+          echo `pwd`/mdbook >> $GITHUB_PATH
+      - name: Build Book
+        run: |
+          mdbook build guide
+      - name: Upload guide artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: guide
+          path: |
+            guide/book/
+  
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/cache@v4
+      with:
+        path: |
+          ~/.rustup
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+    - name: Build creusot-rustc
+      run: cargo build -p creusot-rustc --release
+    - name: Dummy creusot setup
+      run: |
+        mkdir -p ~/.config/creusot
+        cp ci/creusot-config-dummy.toml ~/.config/creusot/Config.toml
+    - name: Build doc
+      run: cargo run -p cargo-creusot --release -- creusot doc -- -p creusot-contracts --no-deps --target-dir ci/build-docs/
+    - name: Upload creusot_contracts artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: creusot_contracts
+        path: |
+          ci/build-docs/doc/
+  
+  deploy:
+    needs: [build-guide, build-docs]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # To push a branch 
+      pages: write  # To push to a GitHub Pages site
+      id-token: write # To update the deployment status
+    steps:
+    - name: Remove previous dir
+      run: |
+        rm -rf ci/deploy-output
+    - name: Download guide artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: guide
+        path: ci/deploy-output/guide/
+    - name: Download creusot_contracts artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: creusot_contracts
+        path: ci/deploy-output/doc/
+    - name: Setup Pages
+      uses: actions/configure-pages@v5
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: 'ci/deploy-output'
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4

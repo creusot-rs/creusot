@@ -1,7 +1,9 @@
 use super::BodyTranslator;
 use crate::{
     analysis::NotFinalPlaces,
-    contracts_items::{is_assertion, is_invariant, is_snapshot_closure, is_spec, is_variant},
+    contracts_items::{
+        is_assertion, is_before_loop, is_invariant, is_snapshot_closure, is_spec, is_variant,
+    },
     extended_location::ExtendedLocation,
     fmir::Operand,
     translation::{
@@ -138,18 +140,36 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         RValue::Constructor(variant, subst, fields)
                     }
                     Closure(def_id, subst) => {
-                        if is_invariant(self.tcx(), *def_id) || is_variant(self.tcx(), *def_id) {
+                        if is_variant(self.tcx(), *def_id) || is_before_loop(self.tcx(), *def_id) {
                             return;
+                        } else if is_invariant(self.tcx(), *def_id) {
+                            match self.invariant_assertions.shift_remove(def_id) {
+                                None => return,
+                                Some((mut assertion, expl)) => {
+                                    assertion.subst(&inv_subst(
+                                        self.tcx(),
+                                        &self.body,
+                                        &self.locals,
+                                        si,
+                                    ));
+                                    self.check_frozen_in_logic(&assertion, loc);
+                                    self.emit_statement(fmir::Statement::Assertion {
+                                        cond: assertion,
+                                        msg: expl,
+                                    });
+                                    return;
+                                }
+                            }
                         } else if is_assertion(self.tcx(), *def_id) {
                             let mut assertion = self
                                 .assertions
-                                .remove(def_id)
+                                .shift_remove(def_id)
                                 .expect("Could not find body of assertion");
                             assertion.subst(&inv_subst(self.tcx(), &self.body, &self.locals, si));
                             self.check_frozen_in_logic(&assertion, loc);
                             self.emit_statement(fmir::Statement::Assertion {
                                 cond: assertion,
-                                msg: "assertion".to_owned(),
+                                msg: "expl:assertion".to_owned(),
                             });
                             return;
                         } else if is_spec(self.tcx(), *def_id) {

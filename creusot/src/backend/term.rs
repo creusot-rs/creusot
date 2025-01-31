@@ -13,6 +13,7 @@ use crate::{
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};
 use rustc_target::spec::HasTargetSpec;
+use rustc_type_ir::UintTy;
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat},
     ty::Type,
@@ -288,7 +289,17 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Reborrow { cur, fin, inner, projection } => {
                 let inner = self.lower_term(&*inner);
-                let borrow_id = borrow_generated_id(inner, &projection, |x| self.lower_term(x));
+                let borrow_id = borrow_generated_id(inner, &projection, |x| {
+                    if matches!(x.ty.kind(), TyKind::Uint(UintTy::Usize)) {
+                        let target_width = self.ctx.tcx.sess.target.pointer_width;
+                        Exp::Call(
+                            Box::new(Exp::qvar(QName::from_string(&format!("UInt{target_width}.t'int")))),
+                            vec![self.lower_term(x)],
+                        )
+                    } else {
+                        self.lower_term(x)
+                    }                 
+                });
 
                 Exp::qvar("Borrow.borrow_logic".into()).app(vec![
                     self.lower_term(&*cur),
@@ -374,14 +385,18 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 }
 
 pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
-    _: &mut TranslationCtx<'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut N,
     lit: &Literal<'tcx>,
 ) -> Exp {
     match *lit {
         Literal::Integer(i) => Constant::Int(i, None).into(),
-        Literal::MachSigned(u, intty) => {
+        Literal::MachSigned(mut u, intty) => {
             let why_ty = intty_to_ty(names, &intty);
+            if u < 0 {
+                let target_width = ctx.tcx.sess.target.pointer_width;
+                u += 1 << intty.normalize(target_width).bit_width().unwrap(); // FIXME for Int128 --> overflow
+            }
             Constant::Int(u, Some(why_ty)).into()
         }
         Literal::MachUnsigned(u, uty) => {

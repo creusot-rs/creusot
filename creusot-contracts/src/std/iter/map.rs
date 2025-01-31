@@ -1,7 +1,5 @@
-use crate::{
-    invariant::*, logic::*, macros::*, resolve, std::ops::*, structural_resolve, Iterator, Resolve,
-};
-use std::iter::Map;
+use crate::{std::ops::*, structural_resolve, *};
+use ::std::iter::Map;
 
 pub trait MapExt<I, F> {
     #[logic]
@@ -52,8 +50,9 @@ where
     #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-        (exists<inner : &mut _> inv(inner) && *inner == self.iter() && ^inner == (^self).iter()
-            && inner.completed()) && (*self).func() == (^self).func() }
+            (exists<inner : &mut _> *inner == self.iter() && ^inner == (^self).iter() && inner.completed())
+            && (*self).func() == (^self).func()
+        }
     }
 
     #[open]
@@ -62,10 +61,10 @@ where
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             self.func().unnest(succ.func())
-            && exists<fs: Seq<&mut F>> inv(fs) && fs.len() == visited.len()
+            && exists<fs: Seq<&mut F>> fs.len() == visited.len()
             && exists<s : Seq<I::Item>>
                 #![trigger self.iter().produces(s, succ.iter())]
-                inv(s) && s.len() == visited.len() && self.iter().produces(s, succ.iter())
+                s.len() == visited.len() && self.iter().produces(s, succ.iter())
             && (forall<i : Int> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == *fs[i])
             && if visited.len() == 0 { self.func() == succ.func() }
                else { *fs[0] == self.func() &&  ^fs[visited.len() - 1] == succ.func() }
@@ -78,15 +77,11 @@ where
 
     #[law]
     #[open(self)]
-    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
     #[open(self)]
-    #[requires(inv(a))]
-    #[requires(inv(b))]
-    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -103,7 +98,6 @@ where
     pearlite! {
         forall<e: I::Item, i: I>
             #![trigger iter.produces(Seq::singleton(e), i)]
-            inv(e) && inv(i) ==>
             iter.produces(Seq::singleton(e), i) ==>
             func.precondition((e,))
     }
@@ -119,7 +113,7 @@ where
     pearlite! {
         forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
             #![trigger iter.produces(s.push_back(e1).push_back(e2), i), (*f).postcondition_mut((e1,), ^f, b)]
-            inv(s) && inv(e1) && inv(e2) && inv(f) && inv(i) && func.unnest(*f) ==>
+            func.unnest(*f) ==>
             iter.produces(s.push_back(e1).push_back(e2), i) ==>
             (*f).precondition((e1,)) ==>
             (*f).postcondition_mut((e1,), ^f, b) ==>
@@ -136,8 +130,6 @@ where
 {
     pearlite! {
         forall<iter: &mut I, func: F>
-            inv(iter) && inv(func) ==>
-            iter.completed() ==>
-            next_precondition(^iter, func) && preservation(^iter, func)
+            iter.completed() ==> next_precondition(^iter, func) && preservation(^iter, func)
     }
 }

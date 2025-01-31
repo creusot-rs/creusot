@@ -81,7 +81,8 @@ struct BodyTranslator<'a, 'tcx> {
     fresh_id: usize,
 
     invariants: IndexMap<BasicBlock, Vec<(LoopSpecKind, Term<'tcx>)>>,
-
+    /// Invariants to translate as assertions.
+    invariant_assertions: IndexMap<DefId, (Term<'tcx>, String)>,
     /// Map of the `proof_assert!` blocks to their translated version.
     assertions: IndexMap<DefId, Term<'tcx>>,
     /// Map of the `snapshot!` blocks to their translated version.
@@ -167,7 +168,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             past_blocks: Default::default(),
             ctx,
             fresh_id: body.basic_blocks.len(),
-            invariants,
+            invariants: invariants.loop_headers,
+            invariant_assertions: invariants.assertions,
             assertions,
             snapshots,
             is_ghost_closure: is_ghost_closure(tcx, body_id.def_id()),
@@ -210,7 +212,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             let mut invariants = Vec::new();
             let mut variant = None;
 
-            for (kind, mut body) in self.invariants.remove(&bb).unwrap_or_else(Vec::new) {
+            for (kind, mut body) in self.invariants.shift_remove(&bb).unwrap_or_else(Vec::new) {
                 body.subst(&inv_subst(
                     self.tcx(),
                     self.body,

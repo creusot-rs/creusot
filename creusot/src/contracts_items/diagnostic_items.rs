@@ -88,7 +88,7 @@ contracts_items! {
         is_ghost_deref                  get_ghost_deref
     fn GhostBox::deref_mut               ["ghost_box_deref_mut"]
         is_ghost_deref_mut              get_ghost_deref_mut
-    fn IndexLogic::index_logic           ["index_logic_method"]
+    fn IndexLogic::index_logic           ["creusot_index_logic_method"]
         is_index_logic                  get_index_logic
     fn Deref::deref                      ["deref_method"]
         is_deref                        get_deref

@@ -20,6 +20,13 @@ pub const WHY3: Binary = Binary {
     detect_version: detect_why3_version,
 };
 
+pub const WHY3FIND: Binary = Binary {
+    display_name: "why3find",
+    binary_name: "why3find",
+    version: WHY3FIND_VERSION,
+    detect_version: detect_why3find_version,
+};
+
 pub const ALTERGO: ManagedBinary = ManagedBinary {
     bin: Binary {
         display_name: "Alt-Ergo",
@@ -64,6 +71,8 @@ pub const CVC5: ManagedBinary = ManagedBinary {
     download_with: download_from_url_with_cache,
 };
 
+pub const PROVERS: &[ManagedBinary] = &[ALTERGO, Z3, CVC4, CVC5];
+
 // ----
 
 #[derive(Clone, Copy)]
@@ -78,7 +87,7 @@ pub struct Binary {
     pub display_name: &'static str,
     pub binary_name: &'static str,
     pub version: &'static str,
-    detect_version: fn(&Path) -> Option<String>,
+    detect_version: fn(&Path) -> anyhow::Result<String>,
 }
 
 // download a list [ManagedBinary]s
@@ -159,37 +168,31 @@ fn download_from_url_with_cache(
 
 // helpers: external binaries
 
-pub enum DetectedVersion {
-    Good,
-    Bad(Option<String>),
-}
-
 impl Binary {
     pub fn detect_path(&self) -> Option<PathBuf> {
         use which::which;
         which(self.binary_name).ok()
     }
 
-    pub fn detect_version(&self, path: &Path) -> DetectedVersion {
-        let detect_version = self.detect_version;
-        match detect_version(&path) {
-            None => DetectedVersion::Bad(None),
-            Some(ver) if ver != self.version => DetectedVersion::Bad(Some(ver)),
-            Some(_) => DetectedVersion::Good,
-        }
+    pub fn detect_version(&self, path: &Path) -> anyhow::Result<String> {
+        (self.detect_version)(path)
     }
 }
 
 // helpers: why3
 
-fn detect_why3_version(why3: &Path) -> Option<String> {
-    let output = Command::new(&why3).arg("--version").output().ok()?;
-    let version_full = String::from_utf8(output.stdout).ok()?;
-    let version = version_full.strip_prefix("Why3 platform, version ");
-    version.map(|ver| {
-        let parts: Vec<_> = ver.trim_end().split(|c| c == '.' || c == '+').collect();
-        String::from(&parts[..3].join("."))
-    })
+fn detect_why3_version(why3: &Path) -> anyhow::Result<String> {
+    let output = run(Command::new(&why3).arg("--version"))?;
+    let version_full = String::from_utf8(output.stdout)?;
+    match version_full.strip_prefix("Why3 platform, version ") {
+        Some(version) => {
+            let parts: Vec<_> = version.trim_end().split(|c| c == '.' || c == '+').collect();
+            Ok(String::from(&parts[..3].join(".")))
+        }
+        None => {
+            bail!("bad Why3 version: {}", version_full)
+        }
+    }
 }
 
 pub fn generate_why3_conf(
@@ -256,22 +259,39 @@ fn generate_strategy(f: &mut dyn Write) -> anyhow::Result<()> {
     Ok(())
 }
 
+// helpers: why3find
+
+pub fn detect_why3find_version(why3find: &Path) -> anyhow::Result<String> {
+    let output = run(Command::new(&why3find).arg("--version"))?;
+    let version_full = String::from_utf8(output.stdout)?;
+    match version_full.strip_prefix("why3find v") {
+        Some(version) => {
+            let parts: Vec<_> = version.trim_end().split(|c| c == '.' || c == '+').collect();
+            Ok(String::from(&parts[..3].join(".")))
+        }
+        None => bail!("bad Why3find version: {}", version_full),
+    }
+}
+
 // helpers: alt-ergo
 
-fn detect_altergo_version(altergo: &Path) -> Option<String> {
-    let output = Command::new(&altergo).arg("--version").output().ok()?;
-    let out_s = String::from_utf8(output.stdout).ok()?;
-    out_s.trim_end().strip_prefix("v").map(String::from)
+fn detect_altergo_version(altergo: &Path) -> anyhow::Result<String> {
+    let output = run(Command::new(&altergo).arg("--version"))?;
+    let version_full = String::from_utf8(output.stdout)?;
+    let version = version_full.trim_end().strip_prefix("v").map(String::from);
+    version.ok_or(anyhow!("bad Altergo version: {}", version_full))
 }
 
 // helpers: Z3
 
 // assumes a version string of the form: "Z3 version 4.12.4 - 64 bit"
-fn detect_z3_version(z3: &Path) -> Option<String> {
-    let output = Command::new(&z3).arg("--version").output().ok()?;
-    let out_s = String::from_utf8(output.stdout).ok()?;
-    let out_s = out_s.strip_prefix("Z3 version ")?;
-    out_s.split_ascii_whitespace().next().map(String::from)
+fn detect_z3_version(z3: &Path) -> anyhow::Result<String> {
+    let output = run(Command::new(&z3).arg("--version"))?;
+    let version_full = String::from_utf8(output.stdout)?;
+    let version = version_full
+        .strip_prefix("Z3 version ")
+        .and_then(|version| version.split_ascii_whitespace().next().map(String::from));
+    version.ok_or(anyhow!("bad Z3 version: {}", version_full))
 }
 
 // Z3 releases come as a .zip archive that includes many things. We are only
@@ -308,21 +328,25 @@ fn download_z3_from_url(
 // cvc4
 
 // assumes a version of the form: "This is CVC4 version 1.8 [git HEAD 52479010]\n....."
-fn detect_cvc4_version(cvc4: &Path) -> Option<String> {
-    let output = Command::new(&cvc4).arg("--version").output().ok()?;
-    let out_s = String::from_utf8(output.stdout).ok()?;
-    let out_s = out_s.strip_prefix("This is CVC4 version ")?;
-    out_s.split_ascii_whitespace().next().map(String::from)
+fn detect_cvc4_version(cvc4: &Path) -> anyhow::Result<String> {
+    let output = run(Command::new(&cvc4).arg("--version"))?;
+    let version_full = String::from_utf8(output.stdout)?;
+    let version = version_full
+        .strip_prefix("This is CVC4 version ")
+        .and_then(|version| version.split_ascii_whitespace().next().map(String::from));
+    version.ok_or(anyhow!("bad CVC4 version: {}", version_full))
 }
 
 // cvc5
 
 // assumes a version of the form: "This is cvc5 version 1.0.5 [git ...]\n....."
-fn detect_cvc5_version(cvc5: &Path) -> Option<String> {
-    let output = Command::new(&cvc5).arg("--version").output().ok()?;
-    let out_s = String::from_utf8(output.stdout).ok()?;
-    let out_s = out_s.strip_prefix("This is cvc5 version ")?;
-    out_s.split_ascii_whitespace().next().map(String::from)
+fn detect_cvc5_version(cvc5: &Path) -> anyhow::Result<String> {
+    let output = run(Command::new(&cvc5).arg("--version"))?;
+    let version_full = String::from_utf8(output.stdout)?;
+    let version = version_full
+        .strip_prefix("This is cvc5 version ")
+        .and_then(|version| version.split_ascii_whitespace().next().map(String::from));
+    version.ok_or(anyhow!("bad CVC5 version: {}", version_full))
 }
 
 // cross-platform wrappers
@@ -348,4 +372,20 @@ pub fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link: Q) -> std
     {
         std::os::windows::fs::symlink_file(original, link)
     }
+}
+
+// Wrapper for Command::output(), error is wrapped in anyhow::Error
+fn run(cmd: &mut Command) -> anyhow::Result<std::process::Output> {
+    cmd.output().map_err(|e| {
+        if e.kind() == std::io::ErrorKind::NotFound {
+            anyhow!("{:?} not found", cmd.get_program())
+        } else {
+            anyhow!("{:?}: {}", cmd, e)
+        }
+    })
+}
+
+pub fn why3find_install(why3find: &PathBuf) -> anyhow::Result<()> {
+    Command::new(why3find).args(["install", "--global", "prelude"]).status()?;
+    Ok(())
 }

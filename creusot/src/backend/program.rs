@@ -229,13 +229,13 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
         LoweringState { ctx, names, locals: &body.locals, name_supply: Default::default(), def_id };
     let (head, tl) = match c {
         Component::Vertex(v) => {
-            let block = body.blocks.remove(&v).unwrap();
+            let block = body.blocks.shift_remove(&v).unwrap();
             return block.to_why(&mut lower, v);
         }
         Component::Component(v, tls) => (v, tls),
     };
 
-    let block = body.blocks.remove(&head).unwrap();
+    let block = body.blocks.shift_remove(&head).unwrap();
     let mut block = block.to_why(&mut lower, head);
 
     let defns = tl.into_iter().map(|id| component_to_defn(body, ctx, names, def_id, id)).collect();
@@ -655,7 +655,11 @@ impl<'tcx> Branches<'tcx> {
 
                 let mut brs = mk_switch_branches(
                     discr,
-                    brs.into_iter().map(|(val, tgt)| {
+                    brs.into_iter().map(|(mut val, tgt)| {
+                        if val < 0 {
+                            let target_width = ctx.tcx.sess.target.pointer_width;
+                            val += 1 << intty.normalize(target_width).bit_width().unwrap(); // FIXME for Int128 --> overflow
+                        }
                         let why_ty = intty_to_ty(names, intty);
                         let e = Exp::Const(Constant::Int(val, Some(why_ty)));
                         (e, mk_goto(tgt))
@@ -967,7 +971,12 @@ impl<'tcx> Statement<'tcx> {
                         &rhs.projection[deref_index + 1..],
                         |sym| {
                             let v = ident_of(*sym);
-                            Exp::var(v)
+
+                            let target_width = lower.borrow().ctx.tcx.sess.target.pointer_width;
+                            Exp::Call(
+                                Box::new(Exp::qvar(QName::from_string(&format!("UInt{target_width}.t'int")))),
+                                vec![Exp::var(v)],
+                            )
                         },
                     );
 
@@ -1044,7 +1053,7 @@ impl<'tcx> Statement<'tcx> {
                 istmts.extend([IntermediateStmt::Assume(exp)]);
             }
             Statement::Assertion { cond, msg } => istmts.push(IntermediateStmt::Assert(Exp::Attr(
-                Attribute::Attr(format!("expl:{msg}")),
+                Attribute::Attr(msg),
                 Box::new(lower_pure(lower.ctx, lower.names, &cond)),
             ))),
             Statement::AssertTyInv { pl } => {

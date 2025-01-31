@@ -6,6 +6,7 @@ use creusot_contracts::{invariant::inv, *};
 mod common;
 use common::Iterator;
 
+#[derive(Resolve)]
 pub struct Skip<I: Iterator> {
     iter: I,
     n: usize,
@@ -22,8 +23,8 @@ where
     fn completed(&mut self) -> bool {
         pearlite! {
             (^self).n@ == 0 &&
-            exists<s: Seq<Self::Item>, i: &mut I> inv(s) && inv(i)
-                && s.len() <= self.n@
+            exists<s: Seq<Self::Item>, i: &mut I>
+                   s.len() <= self.n@
                 && self.iter.produces(s, *i)
                 && (forall<i: Int> 0 <= i && i < s.len() ==> resolve(&s[i]))
                 && i.completed()
@@ -37,8 +38,8 @@ where
         pearlite! {
             visited == Seq::EMPTY && self == o ||
             o.n@ == 0 && visited.len() > 0
-            && exists<s: Seq<Self::Item>> inv(s)
-                && s.len() == self.n@
+            && exists<s: Seq<Self::Item>>
+                   s.len() == self.n@
                 && self.iter.produces(s.concat(visited), o.iter)
                 && forall<i: Int> 0 <= i && i < s.len() ==> resolve(&s[i])
         }
@@ -46,15 +47,11 @@ where
 
     #[law]
     #[open]
-    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
     #[open]
-    #[requires(inv(a))]
-    #[requires(inv(b))]
-    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -70,7 +67,6 @@ where
         let mut skipped = snapshot! { Seq::EMPTY };
 
         #[invariant(inv(self))]
-        #[invariant(inv(*skipped))]
         #[invariant(skipped.len() + n@ == old_self.n@)]
         #[invariant(old_self.iter.produces(skipped.inner(), self.iter))]
         #[invariant(forall<i: Int> 0 <= i && i < skipped.len() ==> resolve(&skipped[i]))]

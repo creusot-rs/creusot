@@ -1,4 +1,4 @@
-use crate::{logic::IndexLogic, resolve::structural_resolve, std::alloc::Allocator, *};
+use crate::{logic::ops::IndexLogic, resolve::structural_resolve, std::alloc::Allocator, *};
 pub use ::std::collections::VecDeque;
 use ::std::{
     collections::vec_deque::Iter,

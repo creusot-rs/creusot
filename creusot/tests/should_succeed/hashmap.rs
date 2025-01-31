@@ -46,6 +46,23 @@ impl<K: DeepModel, V> List<(K, V)> {
     }
 }
 
+impl<K: DeepModel, V> Resolve for List<(K, V)> {
+    #[open(self)]
+    #[predicate(prophetic)]
+    fn resolve(self) -> bool {
+        // FIXME: we don't resolve keys because we only have access to their deep model.
+        pearlite! {
+            forall<k: K::DeepModelTy> resolve(&self.get(k))
+        }
+    }
+
+    #[open(self)]
+    #[logic(prophetic)]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
+}
+
 // A slightly simplified version of the Rust hashing mechanisms, this sufficiently captures the behavior though
 trait Hash: DeepModel {
     #[ensures(result@ == Self::hash_log(self.deep_model()))]
@@ -80,6 +97,25 @@ impl<K: Hash, V> View for MyHashMap<K, V> {
         |k| self.bucket(k).get(k)
     }
 }
+
+impl<K: Hash, V> Resolve for MyHashMap<K, V> {
+    #[open(self)]
+    #[predicate(prophetic)]
+    fn resolve(self) -> bool {
+        // FIXME: we don't resolve keys because we only have access to their deep model.
+        pearlite! {
+            forall<k: K::DeepModelTy> resolve(&self@.get(k))
+        }
+    }
+
+    #[open(self)]
+    #[logic(prophetic)]
+    #[requires(inv(self))]
+    #[requires(structural_resolve(self))]
+    #[ensures((*self).resolve())]
+    fn resolve_coherence(&self) {}
+}
+
 impl<K: Hash, V> MyHashMap<K, V> {
     #[logic]
     fn bucket(self, k: K::DeepModelTy) -> List<(K, V)> {

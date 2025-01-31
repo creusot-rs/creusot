@@ -2,7 +2,7 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
   let%span sinvariant_moves0 = "invariant_moves.rs" 6 16 6 22
   let%span svec1 = "../../../creusot-contracts/src/std/vec.rs" 91 26 96 17
   let%span svec2 = "../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
-  let%span smodel3 = "../../../creusot-contracts/src/model.rs" 106 8 106 22
+  let%span smodel3 = "../../../creusot-contracts/src/model.rs" 110 8 110 22
   let%span sresolve4 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   
   use prelude.prelude.Borrow
@@ -15,18 +15,16 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
   type t_Unique'0  =
     { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
   
-  use prelude.prelude.Int
-  
-  use prelude.prelude.UInt64
+  use prelude.prelude.UIntSize
   
   type t_Cap'0  =
-    { t_Cap__0'0: UInt64.t }
+    { t_Cap__0'0: usize }
   
   type t_RawVec'0  =
     { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
   
   type t_Vec'0  =
-    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
   
   predicate inv'0 (_1 : borrowed (t_Vec'0))
   
@@ -36,7 +34,7 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
   
   type t_Option'0  =
     | C_None'0
-    | C_Some'0 UInt32.t
+    | C_Some'0 uint32
   
   predicate inv'1 (_1 : t_Option'0)
   
@@ -44,17 +42,19 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
   
   use seq.Seq
   
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  use prelude.prelude.UInt64
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
   
   use seq.Seq
   
-  function view'0 (self : t_Vec'0) : Seq.seq UInt32.t
+  function view'0 (self : t_Vec'0) : Seq.seq uint32
   
-  axiom view'0_spec : forall self : t_Vec'0 . [%#svec2] Seq.length (view'0 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
+  axiom view'0_spec : forall self : t_Vec'0 . [%#svec2] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
-  function view'1 (self : borrowed (t_Vec'0)) : Seq.seq UInt32.t =
+  function view'1 (self : borrowed (t_Vec'0)) : Seq.seq uint32 =
     [%#smodel3] view'0 self.current
   
   use seq.Seq
@@ -84,24 +84,24 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
   
   let rec test_invariant_move'0 (x:t_Vec'0) (return'  (ret:()))= (! bb0
     [ bb0 = bb1
-    | bb1 = bb2
-    | bb2 = bb2
-      [ bb2 = {[@expl:loop invariant] [%#sinvariant_moves0] x = x}
-        (! s0) [ s0 = bb3 ] 
-        [ bb3 = s0
+    | bb1 = bb1
+      [ bb1 = {[@expl:loop invariant] [%#sinvariant_moves0] x = x}
+        (! s0) [ s0 = bb2 ] 
+        [ bb2 = bb3
+        | bb3 = s0
           [ s0 = Borrow.borrow_mut <t_Vec'0> {x}
-              (fun (_ret':borrowed (t_Vec'0)) ->  [ &_6 <- _ret' ]  [ &x <- _ret'.final ] s1)
-          | s1 = Borrow.borrow_final <t_Vec'0> {_6.current} {Borrow.get_id _6}
-              (fun (_ret':borrowed (t_Vec'0)) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _ret'.final } ] s2)
-          | s2 = pop'0 {_5} (fun (_ret':t_Option'0) ->  [ &_4 <- _ret' ] s3)
+              (fun (_ret':borrowed (t_Vec'0)) ->  [ &_7 <- _ret' ]  [ &x <- _ret'.final ] s1)
+          | s1 = Borrow.borrow_final <t_Vec'0> {_7.current} {Borrow.get_id _7}
+              (fun (_ret':borrowed (t_Vec'0)) ->  [ &_6 <- _ret' ]  [ &_7 <- { _7 with current = _ret'.final } ] s2)
+          | s2 = pop'0 {_6} (fun (_ret':t_Option'0) ->  [ &_5 <- _ret' ] s3)
           | s3 = bb4 ]
           
         | bb4 = s0
-          [ s0 = -{resolve'0 _6}- s1
-          | s1 = any [ br0 -> {_4 = C_None'0 } (! bb7) | br1 (x0:UInt32.t)-> {_4 = C_Some'0 x0} (! bb5) ]  ]
+          [ s0 = -{resolve'0 _7}- s1
+          | s1 = any [ br0 -> {_5 = C_None'0 } (! bb7) | br1 (x0:uint32)-> {_5 = C_Some'0 x0} (! bb5) ]  ]
           
         | bb5 = bb6
-        | bb6 = bb2 ]
+        | bb6 = bb1 ]
          ]
       
     | bb7 = bb8
@@ -109,8 +109,8 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
     )
     [ & _0 : () = any_l ()
     | & x : t_Vec'0 = x
-    | & _4 : t_Option'0 = any_l ()
-    | & _5 : borrowed (t_Vec'0) = any_l ()
-    | & _6 : borrowed (t_Vec'0) = any_l () ]
+    | & _5 : t_Option'0 = any_l ()
+    | & _6 : borrowed (t_Vec'0) = any_l ()
+    | & _7 : borrowed (t_Vec'0) = any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end

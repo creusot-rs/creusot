@@ -1,9 +1,10 @@
 extern crate creusot_contracts;
-use creusot_contracts::{invariant::inv, logic::Seq, *};
+use creusot_contracts::{logic::Seq, *};
 
 mod common;
 use common::Iterator;
 
+#[derive(Resolve)]
 pub struct Fuse<I: Iterator> {
     iter: Option<I>,
 }
@@ -15,8 +16,8 @@ impl<I: Iterator> Iterator for Fuse<I> {
     #[predicate(prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-            (self.iter == None || exists<it:&mut I> inv(it) && it.completed() && self.iter == Some(*it)) &&
-            (^self).iter == None
+            (self.iter == None || exists<it:&mut I> it.completed() && self.iter == Some(*it))
+            && (^self).iter == None
         }
     }
 
@@ -51,15 +52,11 @@ impl<I: Iterator> Iterator for Fuse<I> {
 
     #[law]
     #[open]
-    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
     #[open]
-    #[requires(inv(a))]
-    #[requires(inv(b))]
-    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -70,9 +67,6 @@ impl<I: Iterator> Iterator for Fuse<I> {
 // extern_spec! version should be though.
 pub trait FusedIterator: Iterator {
     #[law]
-    #[requires(inv(self))]
-    #[requires(inv(next))]
-    #[requires(inv(steps))]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
     #[ensures(steps == Seq::EMPTY && ^self == next)]
@@ -82,9 +76,6 @@ pub trait FusedIterator: Iterator {
 impl<I: Iterator> FusedIterator for Fuse<I> {
     #[law]
     #[open]
-    #[requires(inv(self))]
-    #[requires(inv(next))]
-    #[requires(inv(steps))]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
     #[ensures(steps == Seq::EMPTY && ^self == next)]

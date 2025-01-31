@@ -12,8 +12,6 @@ module M_492__reborrow_tuple [#"492.rs" 5 0 5 52]
   
   predicate inv'0 (_1 : t_T'0)
   
-  use prelude.prelude.Int
-  
   use prelude.prelude.UInt32
   
   predicate invariant'0 (self : borrowed t_T'0) =
@@ -31,14 +29,14 @@ module M_492__reborrow_tuple [#"492.rs" 5 0 5 52]
   
   use prelude.prelude.Intrinsic
   
-  predicate inv'2 (_1 : (borrowed t_T'0, UInt32.t))
+  predicate inv'2 (_1 : (borrowed t_T'0, uint32))
   
-  axiom inv_axiom'1 [@rewrite] : forall x : (borrowed t_T'0, UInt32.t) [inv'2 x] . inv'2 x
+  axiom inv_axiom'1 [@rewrite] : forall x : (borrowed t_T'0, uint32) [inv'2 x] . inv'2 x
   = (let (x0, x1) = x in inv'1 x0)
   
   meta "compute_max_steps" 1000000
   
-  let rec reborrow_tuple'0 (x:borrowed t_T'0) (return'  (ret:(borrowed t_T'0, UInt32.t)))= {[@expl:reborrow_tuple 'x' type invariant] [%#s4921] inv'1 x}
+  let rec reborrow_tuple'0 (x:borrowed t_T'0) (return'  (ret:(borrowed t_T'0, uint32)))= {[@expl:reborrow_tuple 'x' type invariant] [%#s4921] inv'1 x}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 x.current}
@@ -48,13 +46,13 @@ module M_492__reborrow_tuple [#"492.rs" 5 0 5 52]
             -{inv'0 _ret'.final}-
              [ &x <- { x with current = _ret'.final } ] 
             s1)
-      | s1 =  [ &_0 <- (_3, ([%#s4920] (32 : UInt32.t))) ] s2
+      | s1 =  [ &_0 <- (_3, ([%#s4920] (32 : uint32))) ] s2
       | s2 = {[@expl:type invariant] inv'1 x} s3
       | s3 = -{resolve'0 x}- s4
       | s4 = return' {_0} ]
        ]
-    ) [ & _0 : (borrowed t_T'0, UInt32.t) = any_l () | & x : borrowed t_T'0 = x | & _3 : borrowed t_T'0 = any_l () ] 
-    [ return' (result:(borrowed t_T'0, UInt32.t))-> {[@expl:reborrow_tuple result type invariant] [%#s4922] inv'2 result}
+    ) [ & _0 : (borrowed t_T'0, uint32) = any_l () | & x : borrowed t_T'0 = x | & _3 : borrowed t_T'0 = any_l () ] 
+    [ return' (result:(borrowed t_T'0, uint32))-> {[@expl:reborrow_tuple result type invariant] [%#s4922] inv'2 result}
       {[@expl:reborrow_tuple ensures] [%#s4923] (let (a, _) = result in a).current = x.current}
       (! return' {result}) ]
     
@@ -69,33 +67,31 @@ module M_492__test [#"492.rs" 10 0 10 13]
   let%span s4926 = "492.rs" 4 10 4 27
   let%span sresolve7 = "../../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   
-  use prelude.prelude.Int
-  
   use prelude.prelude.Int32
   
   use prelude.prelude.Borrow
   
-  predicate inv'0 (_1 : borrowed Int32.t)
+  predicate inv'0 (_1 : borrowed int32)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed Int32.t [inv'0 x] . inv'0 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : borrowed int32 [inv'0 x] . inv'0 x = true
   
   use prelude.prelude.UInt32
   
-  predicate inv'1 (_1 : (borrowed Int32.t, UInt32.t))
+  predicate inv'1 (_1 : (borrowed int32, uint32))
   
-  axiom inv_axiom'1 [@rewrite] : forall x : (borrowed Int32.t, UInt32.t) [inv'1 x] . inv'1 x = true
+  axiom inv_axiom'1 [@rewrite] : forall x : (borrowed int32, uint32) [inv'1 x] . inv'1 x = true
   
-  let rec reborrow_tuple'0 (x:borrowed Int32.t) (return'  (ret:(borrowed Int32.t, UInt32.t)))= {[@expl:reborrow_tuple 'x' type invariant] [%#s4924] inv'0 x}
+  let rec reborrow_tuple'0 (x:borrowed int32) (return'  (ret:(borrowed int32, uint32)))= {[@expl:reborrow_tuple 'x' type invariant] [%#s4924] inv'0 x}
     any
-    [ return' (result:(borrowed Int32.t, UInt32.t))-> {[%#s4925] inv'1 result}
+    [ return' (result:(borrowed int32, uint32))-> {[%#s4925] inv'1 result}
       {[%#s4926] (let (a, _) = result in a).current = x.current}
       (! return' {result}) ]
     
   
-  predicate resolve'1 (self : borrowed Int32.t) =
+  predicate resolve'1 (self : borrowed int32) =
     [%#sresolve7] self.final = self.current
   
-  predicate resolve'0 (_1 : borrowed Int32.t) =
+  predicate resolve'0 (_1 : borrowed int32) =
     resolve'1 _1
   
   use prelude.prelude.Intrinsic
@@ -104,28 +100,27 @@ module M_492__test [#"492.rs" 10 0 10 13]
   
   let rec test'0 (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
-      [ s0 =  [ &x <- [%#s4920] (5 : Int32.t) ] s1
-      | s1 = Borrow.borrow_mut <Int32.t> {x}
-          (fun (_ret':borrowed Int32.t) ->  [ &_6 <- _ret' ]  [ &x <- _ret'.final ] s2)
-      | s2 = Borrow.borrow_final <Int32.t> {_6.current} {Borrow.get_id _6}
-          (fun (_ret':borrowed Int32.t) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _ret'.final } ] s3)
-      | s3 = reborrow_tuple'0 {_5} (fun (_ret':(borrowed Int32.t, UInt32.t)) ->  [ &_4 <- _ret' ] s4)
+      [ s0 =  [ &x <- [%#s4920] (5 : int32) ] s1
+      | s1 = Borrow.borrow_mut <int32> {x} (fun (_ret':borrowed int32) ->  [ &_6 <- _ret' ]  [ &x <- _ret'.final ] s2)
+      | s2 = Borrow.borrow_final <int32> {_6.current} {Borrow.get_id _6}
+          (fun (_ret':borrowed int32) ->  [ &_5 <- _ret' ]  [ &_6 <- { _6 with current = _ret'.final } ] s3)
+      | s3 = reborrow_tuple'0 {_5} (fun (_ret':(borrowed int32, uint32)) ->  [ &_4 <- _ret' ] s4)
       | s4 = bb1 ]
       
     | bb1 = s0
       [ s0 =  [ &res <- let (r'0, _) = _4 in r'0 ] s1
       | s1 = -{resolve'0 _6}- s2
-      | s2 = {[@expl:assertion] [%#s4921] res.final = (5 : Int32.t)} s3
-      | s3 =  [ &res <- { res with current = ([%#s4922] (10 : Int32.t)) } ] s4
+      | s2 = {[@expl:assertion] [%#s4921] res.final = (5 : int32)} s3
+      | s3 =  [ &res <- { res with current = ([%#s4922] (10 : int32)) } ] s4
       | s4 = -{resolve'0 res}- s5
       | s5 = return' {_0} ]
        ]
     )
     [ & _0 : () = any_l ()
-    | & x : Int32.t = any_l ()
-    | & res : borrowed Int32.t = any_l ()
-    | & _4 : (borrowed Int32.t, UInt32.t) = any_l ()
-    | & _5 : borrowed Int32.t = any_l ()
-    | & _6 : borrowed Int32.t = any_l () ]
+    | & x : int32 = any_l ()
+    | & res : borrowed int32 = any_l ()
+    | & _4 : (borrowed int32, uint32) = any_l ()
+    | & _5 : borrowed int32 = any_l ()
+    | & _6 : borrowed int32 = any_l () ]
      [ return' (result:())-> {[@expl:test ensures] [%#s4923] false} (! return' {result}) ] 
 end

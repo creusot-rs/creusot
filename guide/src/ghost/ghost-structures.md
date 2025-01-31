@@ -31,7 +31,7 @@ use creusot_contracts::{proof_assert, ghost, Int, logic::Seq};
 ghost! {
     let mut s: Seq<Int> = Seq::new();
     for _ in 0..=usize::MAX as u128 + 1 {
-        s.push_ghost(*Int::new(0));
+        s.push_ghost(0);
     }
     // proof_assert!(s.len() <= usize::MAX@); // fails
     proof_assert!(s.len() > usize::MAX@);

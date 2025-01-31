@@ -18,7 +18,7 @@ use rustc_driver::RunCompiler;
 use rustc_session::{config::ErrorOutputType, EarlyDiagCtxt};
 use std::{env, panic, process::Command};
 
-const BUG_REPORT_URL: &'static str = &"https://github.com/creusot-rs/creusot/issues/new";
+const BUG_REPORT_URL: &str = "https://github.com/creusot-rs/creusot/issues/new";
 
 struct DefaultCallbacks;
 impl rustc_driver::Callbacks for DefaultCallbacks {}
@@ -75,7 +75,10 @@ fn setup_plugin() {
             };
             RunCompiler::new(&args, &mut ToWhy::new(opts)).run().unwrap();
         }
-        _ => RunCompiler::new(&args, &mut DefaultCallbacks).run().unwrap(),
+        _ => {
+            args.push("--cfg=creusot".to_string());
+            RunCompiler::new(&args, &mut DefaultCallbacks).run().unwrap()
+        }
     }
 }
 

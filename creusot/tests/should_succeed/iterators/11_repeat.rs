@@ -1,10 +1,11 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::{invariant::inv, *};
+use creusot_contracts::*;
 
 mod common;
 use common::Iterator;
 
+#[derive(Resolve)]
 pub struct Repeat<A> {
     element: A,
 }
@@ -29,15 +30,11 @@ impl<A: Clone> Iterator for Repeat<A> {
 
     #[law]
     #[open]
-    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
     #[open]
-    #[requires(inv(a))]
-    #[requires(inv(b))]
-    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

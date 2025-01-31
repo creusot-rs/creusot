@@ -64,7 +64,7 @@ impl Inv<u32> for Even {
     #[open(self)]
     #[predicate]
     fn inv(&self, x: u32) -> bool {
-        x % 2u32 == 0u32
+        x.view() % 2 == 0
     }
 }
 

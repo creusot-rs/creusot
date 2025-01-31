@@ -1,11 +1,31 @@
-use std::{io::Write as _, path::PathBuf};
+use clap::Parser;
+use std::{
+    env,
+    io::{IsTerminal, Write as _},
+    path::PathBuf,
+};
 use termcolor::{BufferWriter, Color, ColorChoice, ColorSpec, StandardStream, WriteColor as _};
 
 mod diff;
 use diff::differ;
 
+#[derive(Debug, Parser)]
+struct Args {
+    /// Force color output
+    #[clap(long)]
+    force_color: bool,
+    /// Overwrite expected output files with actual output
+    #[clap(long)]
+    bless: bool,
+    /// Only run tests which contain this string
+    filter: Option<String>,
+}
+
 fn main() {
-    let bless = std::env::args().any(|arg| arg == "--bless");
+    let mut args = Args::parse();
+    if env::var("CI").is_ok() {
+        args.force_color = true;
+    }
     // Build creusot-rustc to make it available to cargo-creusot
     let _ = escargot::CargoBuild::new()
         .bin("creusot-rustc")
@@ -37,19 +57,25 @@ fn main() {
         "--span-mode=relative",
         "--spans-relative-to=creusot/tests/creusot-contracts",
         "--",
-        "--target-dir",
-        "target/creusot",
         "--package",
         "creusot-contracts",
     ]);
 
-    let output = cargo_creusot.output().unwrap();
-    let mut out = StandardStream::stdout(ColorChoice::Always);
+    let is_tty = std::io::stdout().is_terminal();
+    let mut out = StandardStream::stdout(if args.force_color || is_tty {
+        ColorChoice::Always
+    } else {
+        ColorChoice::Never
+    });
 
+    write!(out, "Testing creusot-contracts ... ").unwrap();
+    out.flush().unwrap();
+
+    let output = cargo_creusot.output().unwrap();
     let stdout = PathBuf::from("tests/creusot-contracts/creusot-contracts.coma");
 
     let mut failed = false;
-    if bless {
+    if args.bless {
         if output.stdout.is_empty() {
             panic!(
                 "creusot-contracts should have an output! stderr is:\n\n{}",
@@ -59,7 +85,7 @@ fn main() {
         out.set_color(ColorSpec::new().set_fg(Some(Color::Blue))).unwrap();
         writeln!(&mut out, "blessed").unwrap();
         out.reset().unwrap();
-        let (success, _) = differ(output.clone(), &stdout, None, true).unwrap();
+        let (success, _) = differ(output.clone(), &stdout, None, true, is_tty).unwrap();
 
         if !success {
             out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
@@ -69,7 +95,7 @@ fn main() {
 
         std::fs::write(stdout, &output.stdout).unwrap();
     } else {
-        let (success, mut buf) = differ(output.clone(), &stdout, None, true).unwrap();
+        let (success, buf) = differ(output.clone(), &stdout, None, true, is_tty).unwrap();
 
         if success {
             out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
@@ -82,7 +108,6 @@ fn main() {
         };
         out.reset().unwrap();
 
-        buf.reset().unwrap();
         let wrt = BufferWriter::stdout(ColorChoice::Always);
         wrt.print(&buf).unwrap();
     }

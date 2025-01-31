@@ -11,18 +11,18 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   let%span svec9 = "../../../../creusot-contracts/src/std/vec.rs" 162 27 162 46
   let%span svec10 = "../../../../creusot-contracts/src/std/vec.rs" 163 26 163 54
   let%span scmp11 = "../../../../creusot-contracts/src/std/cmp.rs" 11 26 11 75
-  let%span smodel12 = "../../../../creusot-contracts/src/model.rs" 106 8 106 22
-  let%span sslice13 = "../../../../creusot-contracts/src/std/slice.rs" 140 20 140 37
-  let%span sslice14 = "../../../../creusot-contracts/src/std/slice.rs" 147 20 147 37
+  let%span smodel12 = "../../../../creusot-contracts/src/model.rs" 110 8 110 22
+  let%span sslice13 = "../../../../creusot-contracts/src/std/slice.rs" 122 20 122 37
+  let%span sslice14 = "../../../../creusot-contracts/src/std/slice.rs" 129 20 129 37
   let%span svec15 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
-  let%span sslice16 = "../../../../creusot-contracts/src/std/slice.rs" 154 20 154 94
+  let%span sslice16 = "../../../../creusot-contracts/src/std/slice.rs" 136 20 136 94
   let%span sresolve17 = "../../../../creusot-contracts/src/resolve.rs" 54 20 54 34
-  let%span smodel18 = "../../../../creusot-contracts/src/model.rs" 88 8 88 22
-  let%span smodel19 = "../../../../creusot-contracts/src/model.rs" 79 8 79 28
+  let%span smodel18 = "../../../../creusot-contracts/src/model.rs" 92 8 92 22
+  let%span smodel19 = "../../../../creusot-contracts/src/model.rs" 83 8 83 28
   let%span svec20 = "../../../../creusot-contracts/src/std/vec.rs" 65 20 65 41
   let%span sinvariant21 = "../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   let%span sinvariant22 = "../../../../creusot-contracts/src/invariant.rs" 24 8 24 18
-  let%span sseq23 = "../../../../creusot-contracts/src/logic/seq.rs" 451 20 451 95
+  let%span sseq23 = "../../../../creusot-contracts/src/logic/seq.rs" 633 20 633 95
   let%span sboxed24 = "../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
   use prelude.prelude.Borrow
@@ -35,24 +35,24 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   type t_Unique'0  =
     { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
   
-  use prelude.prelude.Int
-  
-  use prelude.prelude.UInt64
+  use prelude.prelude.UIntSize
   
   type t_Cap'0  =
-    { t_Cap__0'0: UInt64.t }
+    { t_Cap__0'0: usize }
   
   type t_RawVec'0  =
     { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
   
   type t_Vec'0  =
-    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
   
   use seq.Seq
   
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
+  constant v_MAX'0 : usize = (18446744073709551615 : usize)
   
-  use prelude.prelude.UInt64
+  use prelude.prelude.UIntSize
+  
+  use prelude.prelude.Int
   
   type t_T'0
   
@@ -60,7 +60,7 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   
   function view'1 (self : t_Vec'0) : Seq.seq t_T'0
   
-  axiom view'1_spec : forall self : t_Vec'0 . [%#svec15] Seq.length (view'1 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
+  axiom view'1_spec : forall self : t_Vec'0 . [%#svec15] Seq.length (view'1 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
   use seq.Seq
   
@@ -94,15 +94,15 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   
   axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'2 x] . inv'2 x = invariant'2 x
   
-  predicate inv'4 (_1 : UInt64.t)
+  predicate inv'4 (_1 : usize)
   
-  axiom inv_axiom'3 [@rewrite] : forall x : UInt64.t [inv'4 x] . inv'4 x = true
+  axiom inv_axiom'3 [@rewrite] : forall x : usize [inv'4 x] . inv'4 x = true
   
   function view'0 (self : borrowed (t_Vec'0)) : Seq.seq t_T'0 =
     [%#smodel12] view'1 self.current
   
-  predicate in_bounds'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq t_T'0) =
-    [%#sslice13] UInt64.t'int self < Seq.length seq
+  predicate in_bounds'0 [@inline:trivial] (self : usize) (seq : Seq.seq t_T'0) =
+    [%#sslice13] UIntSize.to_int self < Seq.length seq
   
   predicate invariant'1 (self : borrowed t_T'0) =
     [%#sinvariant21] inv'3 self.current /\ inv'3 self.final
@@ -113,14 +113,14 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   
   use seq.Seq
   
-  predicate has_value'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq t_T'0) (out : t_T'0) =
-    [%#sslice14] Seq.get seq (UInt64.t'int self) = out
+  predicate has_value'0 [@inline:trivial] (self : usize) (seq : Seq.seq t_T'0) (out : t_T'0) =
+    [%#sslice14] Seq.get seq (UIntSize.to_int self) = out
   
-  predicate resolve_elswhere'0 [@inline:trivial] (self : UInt64.t) (old' : Seq.seq t_T'0) (fin : Seq.seq t_T'0) =
-    [%#sslice16] forall i : int . 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old'
+  predicate resolve_elswhere'0 [@inline:trivial] (self : usize) (old' : Seq.seq t_T'0) (fin : Seq.seq t_T'0) =
+    [%#sslice16] forall i : int . 0 <= i /\ i <> UIntSize.to_int self /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
   
-  let rec index_mut'0 (self:borrowed (t_Vec'0)) (index:UInt64.t) (return'  (ret:borrowed t_T'0))= {[@expl:index_mut 'self' type invariant] inv'2 self}
+  let rec index_mut'0 (self:borrowed (t_Vec'0)) (index:usize) (return'  (ret:borrowed t_T'0))= {[@expl:index_mut 'self' type invariant] inv'2 self}
     {[@expl:index_mut 'index' type invariant] inv'4 index}
     {[@expl:index_mut requires] [%#svec4] in_bounds'0 index (view'0 self)}
     any
@@ -155,7 +155,7 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   
   axiom inv_axiom'5 [@rewrite] : forall x : t_T'0 [inv'6 x] . inv'6 x = invariant'4 x
   
-  let rec index'0 (self:t_Vec'0) (index:UInt64.t) (return'  (ret:t_T'0))= {[@expl:index 'self' type invariant] inv'5 self}
+  let rec index'0 (self:t_Vec'0) (index:usize) (return'  (ret:t_T'0))= {[@expl:index 'self' type invariant] inv'5 self}
     {[@expl:index 'index' type invariant] inv'4 index}
     {[@expl:index requires] [%#svec9] in_bounds'0 index (view'2 self)}
     any
@@ -183,9 +183,9 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   
   meta "compute_max_steps" 1000000
   
-  let rec read_write'0 (a:borrowed (t_Vec'0)) (i:UInt64.t) (x:t_T'0) (return'  (ret:()))= {[@expl:read_write 'a' type invariant] [%#s07_read_write1] inv'2 a}
+  let rec read_write'0 (a:borrowed (t_Vec'0)) (i:usize) (x:t_T'0) (return'  (ret:()))= {[@expl:read_write 'a' type invariant] [%#s07_read_write1] inv'2 a}
     {[@expl:read_write 'x' type invariant] [%#s07_read_write2] inv'3 x}
-    {[@expl:read_write requires] [%#s07_read_write3] UInt64.t'int i < Seq.length (view'0 a)}
+    {[@expl:read_write requires] [%#s07_read_write3] UIntSize.to_int i < Seq.length (view'0 a)}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 a.current}
@@ -216,7 +216,7 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
     )
     [ & _0 : () = any_l ()
     | & a : borrowed (t_Vec'0) = a
-    | & i : UInt64.t = i
+    | & i : usize = i
     | & x : t_T'0 = x
     | & _6 : borrowed t_T'0 = any_l ()
     | & _7 : borrowed (t_Vec'0) = any_l ()

@@ -6,7 +6,7 @@
 
 **Creusot** is a *deductive verifier* for Rust code. It verifies your code is safe from panics, overflows, and assertion failures. By adding annotations you can take it further and verify your code does the *correct* thing.
 
-Creusot works by translating Rust code to WhyML, the verification and specification language of [Why3](https://why3.lri.fr). Users can then leverage the full power of Why3 to (semi)-automatically discharge the verification conditions!
+Creusot works by translating Rust code to WhyML, the verification and specification language of [Why3](https://www.why3.org). Users can then leverage the full power of Why3 to (semi)-automatically discharge the verification conditions!
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for technical details.
 
@@ -45,12 +45,12 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
     $ git clone https://github.com/creusot-rs/creusot
     $ cd creusot
     ```
-4. Set up **Why3**. Create a local `opam` switch with why3:
+4. Set up **Why3** and **Why3find**. Create a local `opam` switch with why3:
    ```
    $ opam switch create -y . ocaml.4.14.1
    $ eval $(opam env)
    ```
-   This will build why3 and its ocaml dependencies in a local `_opam` directory.
+   This will build `why3`, `why3find`, and their ocaml dependencies in a local `_opam` directory.
 5. Build **Creusot**:
     ```
     $ cargo install --path creusot-rustc
@@ -88,8 +88,8 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
 
 # Verifying with Creusot and Why3
 
-See the [guide](https://creusot-rs.github.io/creusot/).
-
+- To learn how to write code with creusot: [guide](https://creusot-rs.github.io/creusot/guide)
+- To see the API of `creusot_contracts` (creusot's "standard library"): [creusot_contracts API](https://creusot-rs.github.io/creusot/doc/creusot_contracts)
 
 # Hacking on Creusot
 

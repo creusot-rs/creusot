@@ -13,7 +13,7 @@ jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Rust fmt
       run: |
         shopt -s globstar
@@ -21,8 +21,8 @@ jobs:
   contracts-build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
+    - uses: actions/checkout@v4
+    - uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry
@@ -34,8 +34,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/cache@v2
+    - uses: actions/checkout@v4
+    - uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry
@@ -50,36 +50,17 @@ jobs:
         cp ci/creusot-config-dummy.toml ~/.config/creusot/Config.toml
     - name: Run tests
       run: cargo test
-  why3:
-    runs-on: ubuntu-22.04
+  why3-deps:
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: ${{ github.event.pull_request.commits }}
-    - name: Fetch target branch
-      if: github.base_ref
-      run: git fetch --no-tags --prune --depth=1 origin +refs/heads/${{github.base_ref}}:refs/remotes/origin/${{github.base_ref}}
-    - uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-creusot-${{ hashFiles('**/Cargo.lock') }}
-    - uses: actions/cache@v2
-      id: cache-creusot-setup
-      with:
-        path: |
-          ~/.config/creusot
-          ~/.local/share/creusot
-        key: ${{ runner.os }}-cargo-creusot-setup-${{ hashFiles('creusot-deps.opam', 'creusot-setup/src/tools_versions_urls.rs', 'creusot-setup/src/config.rs') }}
-    - uses: actions/cache@v2
+    - uses: actions/checkout@v4
+    - uses: actions/cache@v4
       id: cache-opam
       with:
         path: |
           /home/runner/work/creusot/creusot/_opam
         key: ${{ runner.os }}-opam-${{ hashFiles('creusot-deps.opam') }}
-    - uses: ocaml/setup-ocaml@v2
+    - uses: ocaml/setup-ocaml@v3
       if: steps.cache-opam.outputs.cache-hit != 'true'
       with:
         ocaml-compiler: 4.14.1
@@ -90,11 +71,50 @@ jobs:
         opam --cli=2.1 var --global in-creusot-ci=true
         opam install .
         mkdir /tmp/to-delete
-        opam info --list-files why3 > keep
+        opam info --list-files why3 why3find > keep
         sed -i 's/^.*\/_opam\///' keep
         rsync -a -r --remove-source-files --exclude-from=keep _opam/ /tmp/to-delete
+    - name: archive why3 and why3find
+      run: tar -czf _opam.tar.gz _opam
+      # use tar because upload-artifact does not preserve file permissions
+      # https://github.com/actions/upload-artifact/tree/v4/?tab=readme-ov-file#permission-loss
+    - name: upload why3 and why3find
+      uses: actions/upload-artifact@v4
+      with:
+        name: why3-deps
+        path: _opam.tar.gz
+  why3:
+    needs: why3-deps
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: ${{ github.event.pull_request.commits }}
+    - name: Fetch target branch
+      if: github.base_ref
+      run: git fetch --no-tags --prune --depth=1 origin +refs/heads/${{github.base_ref}}:refs/remotes/origin/${{github.base_ref}}
+    - uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-creusot-${{ hashFiles('**/Cargo.lock') }}
+    - uses: actions/cache@v4
+      id: cache-creusot-setup
+      with:
+        path: |
+          ~/.config/creusot
+          ~/.local/share/creusot
+          _opam/lib/why3find/packages
+        key: ${{ runner.os }}-cargo-creusot-setup-${{ hashFiles('creusot-deps.opam', 'creusot-setup/src/tools_versions_urls.rs', 'creusot-setup/src/config.rs') }}
+    - name: download why3 and why3find
+      uses: actions/download-artifact@v4
+      with:
+        name: why3-deps
     - name: setup opam PATH
       run: |
+        tar -xzf _opam.tar.gz
         echo /home/runner/work/creusot/creusot/_opam/bin >> $GITHUB_PATH
     - name: run cargo creusot setup install
       if: steps.cache-creusot-setup.outputs.cache-hit != 'true'
@@ -106,3 +126,49 @@ jobs:
         cat ~/.config/creusot/why3.conf
     - run: cargo test --test why3 "" -- --replay=none --diff-from=origin/master
     - run: cargo test --test why3 "" -- --skip-unstable
+  install:
+    needs: why3-deps
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-install-${{ hashFiles('**/Cargo.lock') }}
+    - name: Install
+      run: |
+        cargo install --path cargo-creusot
+        cargo install --path creusot-rustc
+    - uses: actions/cache@v4
+      id: cache-creusot-setup
+      with:
+        path: |
+          ~/.config/creusot
+          ~/.local/share/creusot
+          _opam/lib/why3find/packages
+        key: ${{ runner.os }}-cargo-creusot-setup-${{ hashFiles('creusot-deps.opam', 'creusot-setup/src/tools_versions_urls.rs', 'creusot-setup/src/config.rs') }}
+    - name: download why3 and why3find
+      uses: actions/download-artifact@v4
+      with:
+        name: why3-deps
+    - name: unpack why3 and why3find
+      run: tar -xzf _opam.tar.gz
+    - name: setup creusot
+      run: |
+        # Add /home/runner/work/creusot/creusot/_opam/bin to PATH just for this step
+        export PATH=/home/runner/work/creusot/creusot/_opam/bin:$PATH
+        cargo creusot setup install
+      if: steps.cache-creusot-setup.outputs.cache-hit != 'true'
+    - name: test cargo creusot new
+      run: |
+        set -x
+        cd ..
+        cargo creusot new test-project --main --creusot-contracts ../creusot/creusot-contracts
+        cd test-project
+        cargo fmt --check
+        cargo build
+        cargo creusot
+        cargo creusot prove

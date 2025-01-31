@@ -7,6 +7,10 @@ use crate::*;
 /// other types contained by the datastructure.
 /// This kind of model is mostly useful for notation purposes,
 /// because this trait is linked to the @ notation of pearlite.
+#[diagnostic::on_unimplemented(
+    message = "Cannot take the model of `{Self}`",
+    label = "no implementation for `{Self}@`"
+)]
 pub trait View {
     type ViewTy;
     #[logic]
@@ -109,6 +113,16 @@ impl<T: View + ?Sized> View for &mut T {
 
 impl DeepModel for bool {
     type DeepModelTy = bool;
+
+    #[logic]
+    #[open]
+    fn deep_model(self) -> Self::DeepModelTy {
+        self
+    }
+}
+
+impl DeepModel for Int {
+    type DeepModelTy = Int;
 
     #[logic]
     #[open]

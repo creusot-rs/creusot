@@ -28,14 +28,14 @@ use rustc_middle::{
         SourceInfo, StatementKind, SwitchTargets,
         TerminatorKind::{self, *},
     },
-    ty::{self, AssocItem, EarlyBinder, GenericArgKind, GenericArgsRef, ParamEnv, Ty, TyKind},
+    ty::{self, AssocItem, GenericArgKind, GenericArgsRef, ParamEnv, Ty, TyKind},
 };
 use rustc_mir_dataflow::{
     move_paths::{HasMoveData, LookupResult},
     on_all_children_bits,
 };
 use rustc_span::{source_map::Spanned, Span};
-use rustc_trait_selection::{error_reporting::InferCtxtErrorExt, infer::InferCtxtExt};
+use rustc_trait_selection::error_reporting::InferCtxtErrorExt;
 use std::collections::{HashMap, HashSet};
 
 // Translate the terminator of a basic block.
@@ -94,7 +94,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         unreachable!()
                     };
                     let TyKind::Closure(def_id, _) = ty.kind() else { unreachable!() };
-                    let mut assertion = self.snapshots.remove(def_id).unwrap();
+                    let mut assertion = self.snapshots.shift_remove(def_id).unwrap();
                     assertion.subst(&inv_subst(
                         self.tcx(),
                         self.body,
@@ -377,44 +377,16 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     rustc_errors::Applicability::MachineApplicable,
                 )
                 .emit();
-        } else {
-            let func_param_env = self.ctx.param_env(fun_def_id);
-            // Check and reject instantiation of a <T: Deref> with a ghost parameter.
-            let deref_trait_id = self.ctx.require_lang_item(rustc_hir::LangItem::Deref, None);
-            let infer_ctx = self.ctx.infer_ctxt().build();
-            for bound in func_param_env.caller_bounds() {
-                let Some(trait_clause) = bound.as_trait_clause() else { continue };
-                if trait_clause.def_id() != deref_trait_id {
-                    continue;
-                }
-                let ty = trait_clause.self_ty().skip_binder();
-                let caller_ty = self
-                    .ctx
-                    .instantiate_and_normalize_erasing_regions(
-                        subst,
-                        self.param_env(),
-                        EarlyBinder::bind(trait_clause.self_ty()),
-                    )
-                    .skip_binder();
-                let deref_in_callee = infer_ctx
-                    .type_implements_trait(deref_trait_id, std::iter::once(ty), func_param_env)
-                    .may_apply();
-                let ghost_in_caller = self.is_ghost_box(caller_ty);
-                let ghost_in_callee = self.is_ghost_box(ty);
-                if deref_in_callee && ghost_in_caller && !ghost_in_callee {
-                    self.ctx.error(fn_span, &format!("Cannot instantiate a generic type {ty} implementing `Deref` with the ghost type {caller_ty}")).emit();
-                }
-            }
         }
     }
 
     fn get_explanation(&mut self, msg: &mir::AssertKind<Operand<'tcx>>) -> String {
         match msg {
-            AssertKind::BoundsCheck { len: _, index: _ } => format!("index in bounds"),
-            AssertKind::Overflow(op, _a, _b) => format!("{op:?} overflow"),
-            AssertKind::OverflowNeg(_op) => format!("negation overflow"),
-            AssertKind::DivisionByZero(_) => format!("division by zero"),
-            AssertKind::RemainderByZero(_) => format!("remainder by zero"),
+            AssertKind::BoundsCheck { len: _, index: _ } => format!("expl:index in bounds"),
+            AssertKind::Overflow(op, _a, _b) => format!("expl:{op:?} overflow"),
+            AssertKind::OverflowNeg(_op) => format!("expl:negation overflow"),
+            AssertKind::DivisionByZero(_) => format!("expl:division by zero"),
+            AssertKind::RemainderByZero(_) => format!("expl:remainder by zero"),
             _ => unreachable!("Resume assertions"),
         }
     }

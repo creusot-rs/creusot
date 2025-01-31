@@ -1,4 +1,4 @@
-use crate::{invariant::*, std::iter::Repeat, *};
+use crate::{std::iter::Repeat, *};
 
 impl<T> View for Repeat<T> {
     type ViewTy = T;
@@ -28,15 +28,11 @@ impl<T: Clone> Iterator for Repeat<T> {
 
     #[law]
     #[open(self)]
-    #[requires(inv(self))]
     #[ensures(self.produces(Seq::EMPTY, self))]
     fn produces_refl(self) {}
 
     #[law]
     #[open(self)]
-    #[requires(inv(a))]
-    #[requires(inv(b))]
-    #[requires(inv(c))]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

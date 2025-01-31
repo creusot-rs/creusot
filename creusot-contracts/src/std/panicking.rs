@@ -36,6 +36,10 @@ extern_spec! {
 
             #[pure]
             #[requires(false)]
+            fn unreachable_display<T: fmt::Display>(x: &T) -> !;
+
+            #[pure]
+            #[requires(false)]
             fn assert_failed<T, U>(kind: AssertKind, left: &T, right: &U, args: Option<fmt::Arguments<'_>>) -> !
             where
                 T: fmt::Debug + ?Sized,

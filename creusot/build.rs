@@ -20,32 +20,32 @@ fn int_prelude_maker(filepath: &impl AsRef<Path>) -> Result<(), Box<dyn Error>> 
                     function bv256_to_int (x: BV256.t) : int = BV256.t'int x
                     constant max_uint_as_BV256 : BV256.t = to_BV256 max_uint
     
-                    let eq (a: t) (b: t) (ret (result: bool) {{ result <-> to_int a = to_int b }} {{ result <-> a = b }}) = any
-                    let ne (a: t) (b: t) (ret (result: bool) {{ result <-> to_int a <> to_int b }} {{ result <-> a <> b }}) = any
-                    let le (a: t) (b: t) (ret (result: bool) {{ result <-> to_int a <= to_int b }}  {{ result <-> ule a b }}) = any
-                    let lt (a: t) (b: t) (ret (result: bool) {{ result <-> to_int a < to_int b }} {{ result <-> ult a b }}) = any
-                    let ge (a: t) (b: t) (ret (result: bool) {{ result <-> to_int a >= to_int b }} {{ result <-> uge a b }}) = any
-                    let gt (a: t) (b: t) (ret (result: bool) {{ result <-> to_int a > to_int b }} {{ result <-> ugt a b }}) = any
-    
+                    let eq (a: t) (b: t) (ret (result: bool) {{ result <-> t'int a = t'int b }} {{ result <-> a = b }}) = any
+                    let ne (a: t) (b: t) (ret (result: bool) {{ result <-> t'int a <> t'int b }} {{ result <-> a <> b }}) = any
+                    let le (a: t) (b: t) (ret (result: bool) {{ result <-> t'int a <= t'int b }}  {{ result <-> ule a b }}) = any
+                    let lt (a: t) (b: t) (ret (result: bool) {{ result <-> t'int a < t'int b }} {{ result <-> ult a b }}) = any
+                    let ge (a: t) (b: t) (ret (result: bool) {{ result <-> t'int a >= t'int b }} {{ result <-> uge a b }}) = any
+                    let gt (a: t) (b: t) (ret (result: bool) {{ result <-> t'int a > t'int b }} {{ result <-> ugt a b }}) = any
+                    
                     let add (a:t) (b:t)
-                        {{ [@expl:arithmetic overflow] to_int a + to_int b < two_power_size \/ BV256.ule (BV256.add (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }}
-                        (ret (result :t)  {{ to_int result = to_int a + to_int b }} {{ result = add a b }})
+                        {{ [@expl:arithmetic overflow] t'int a + t'int b < two_power_size \/ BV256.ule (BV256.add (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }}
+                        (ret (result :t)  {{ t'int result = t'int a + t'int b }} {{ result = add a b }})
                         = any
                     let sub (a:t)  (b:t)
-                        {{ [@expl:arithmetic overflow] to_int a >= to_int b \/ uge a b }}
-                        (ret (result: t) {{ to_int result = to_int a - to_int b }} {{ result = sub a b }})
+                        {{ [@expl:arithmetic overflow] t'int a >= t'int b \/ uge a b }}
+                        (ret (result: t) {{ t'int result = t'int a - t'int b }} {{ result = sub a b }})
                         = any
                     let mul (a:t) (b:t)
-                        {{ [@expl:arithmetic overflow] to_int a * to_int b < two_power_size \/ BV256.ule (BV256.mul (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }}
-                        (ret (result: t) {{ result = mul a b }} {{ to_int result = to_int a * to_int b }})
+                        {{ [@expl:arithmetic overflow] t'int a * t'int b < two_power_size \/ BV256.ule (BV256.mul (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }}
+                        (ret (result: t) {{ result = mul a b }} {{ t'int result = t'int a * t'int b }})
                         = any
                     let div (a:t) (b:t)
-                        {{ [@expl:division by zero] b <> zeros \/ to_int b <> 0 }}
-                        (ret (result: t) {{ to_int result = ED.div (to_int a) (to_int b) }} {{ result = udiv a b }})
+                        {{ [@expl:division by zero] b <> zeros \/ t'int b <> 0 }}
+                        (ret (result: t) {{ t'int result = ED.div (t'int a) (t'int b) }} {{ result = udiv a b }})
                         = any
                     let rem (a:t) (b:t)
-                        {{ [@expl:remainder by zero] b <> zeros  \/ to_int b <> 0 }}
-                        (ret (result: t) {{ to_int result = ED.mod (to_int a) (to_int b) }} {{ result = urem a b }})
+                        {{ [@expl:remainder by zero] b <> zeros  \/ t'int b <> 0 }}
+                        (ret (result: t) {{ t'int result = ED.mod (t'int a) (t'int b) }} {{ result = urem a b }})
                         = any
     
                     let bw_and (a:t) (b:t) (ret (result :t)) = ret {{ bw_and a b }}
@@ -95,7 +95,7 @@ fn int_prelude_maker(filepath: &impl AsRef<Path>) -> Result<(), Box<dyn Error>> 
     
                     function to_BV256 (x: t) : BV256.t = stoBig x
                     function of_BV256 (x: BV256.t) : t = toSmall x
-                    function bv256_to_int (x: BV256.t) : int = BV256.t'int x
+                    function bv256_to_int (x: BV256.t) : int = BV256.to_int x
                     constant min_sint_as_BV256 : BV256.t = to_BV256 min_sint
                     constant max_sint_as_BV256 : BV256.t = to_BV256 max_sint
     
@@ -106,6 +106,10 @@ fn int_prelude_maker(filepath: &impl AsRef<Path>) -> Result<(), Box<dyn Error>> 
                     let ge (a: t) (b: t) (ret (result: bool) {{ result <-> to_int a >= to_int b }} {{ result <-> sge a b }}) = any
                     let gt (a: t) (b: t) (ret (result: bool) {{ result <-> to_int a > to_int b }} {{ result <-> sgt a b }}) = any
     
+                    let neg (a:t) 
+                        {{ [@expl:arithmetic overflow] a <> min_sint }}
+                        (ret (result :t)  {{ to_int result = - to_int a  }} {{ result = neg a}})
+                        = any
                     let add (a:t) (b:t)
                         {{ [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a + to_int b < two_power_size_minus_one \/ let r = BV256.add (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }}
                         (ret (result :t)  {{ to_int result = to_int a + to_int b }} {{ result = add a b }})

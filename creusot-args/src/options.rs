@@ -74,31 +74,6 @@ pub enum CreusotSubCommand {
     Doc,
 }
 
-#[derive(Debug, Parser)]
-pub struct CargoCreusotArgs {
-    #[clap(flatten)]
-    pub options: CommonOptions,
-    /// Subcommand: why3, setup
-    #[command(subcommand)]
-    pub subcommand: Option<CargoCreusotSubCommand>,
-    /// Additional flags to pass to the underlying cargo invocation.
-    #[clap(last = true)]
-    #[clap(global = true)]
-    pub cargo_flags: Vec<String>,
-}
-
-#[derive(Debug, Subcommand)]
-pub enum CargoCreusotSubCommand {
-    /// Setup and manage Creusot's installation
-    #[command(arg_required_else_help(true))]
-    Setup {
-        #[command(subcommand)]
-        command: SetupSubCommand,
-    },
-    #[command(flatten)]
-    Creusot(CreusotSubCommand),
-}
-
 #[derive(Debug, ValueEnum, Serialize, Deserialize, Clone)]
 pub enum Why3SubCommand {
     Prove,
@@ -117,35 +92,11 @@ pub enum SetupManagedTool {
 #[derive(Debug, ValueEnum, Serialize, Deserialize, Clone, PartialEq)]
 pub enum SetupTool {
     Why3,
+    Why3find,
     AltErgo,
     Z3,
     CVC4,
     CVC5,
-}
-
-fn default_provers_parallelism() -> usize {
-    match std::thread::available_parallelism() {
-        Ok(n) => n.get(),
-        Err(_) => 1,
-    }
-}
-
-#[derive(Debug, Parser, Clone)]
-pub enum SetupSubCommand {
-    /// Show the current status of the Creusot installation
-    Status,
-    /// Setup Creusot or update an existing installation
-    Install {
-        /// Maximum number of provers to run in parallel
-        #[arg(long, default_value_t = default_provers_parallelism())]
-        provers_parallelism: usize,
-        /// Look-up <TOOL> from PATH instead of using the built-in version
-        #[arg(long, value_name = "TOOL")]
-        external: Vec<SetupManagedTool>,
-        /// Do not error if <TOOL>'s version does not match the one expected by creusot
-        #[arg(long, value_name = "TOOL")]
-        no_check_version: Vec<SetupTool>,
-    },
 }
 
 /// Parse a single key-value pair
@@ -161,12 +112,6 @@ where
 }
 
 impl CreusotArgs {
-    pub fn parse_from<I: Into<OsString> + Clone>(it: impl IntoIterator<Item = I>) -> Self {
-        Parser::parse_from(it)
-    }
-}
-
-impl CargoCreusotArgs {
     pub fn parse_from<I: Into<OsString> + Clone>(it: impl IntoIterator<Item = I>) -> Self {
         Parser::parse_from(it)
     }

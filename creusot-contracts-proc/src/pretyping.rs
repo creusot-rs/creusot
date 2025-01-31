@@ -1,6 +1,6 @@
 use pearlite_syn::Term as RT;
 use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
-use syn::{spanned::Spanned, ExprMacro, Pat};
+use syn::{spanned::Spanned, ExprMacro, Pat, UnOp};
 
 use pearlite_syn::term::*;
 use quote::{quote, quote_spanned, ToTokens};
@@ -50,14 +50,27 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             let mut right = right;
 
             use syn::BinOp::*;
-            if matches!(op, Eq(_) | Ne(_) | Ge(_) | Le(_) | Gt(_) | Lt(_)) {
+            if matches!(
+                op,
+                Eq(_)
+                    | Ne(_)
+                    | Ge(_)
+                    | Le(_)
+                    | Gt(_)
+                    | Lt(_)
+                    | Add(_)
+                    | Sub(_)
+                    | Mul(_)
+                    | Div(_)
+                    | Rem(_)
+            ) {
                 left = match &**left {
-                    RT::Paren(TermParen { expr, .. }) => &expr,
-                    _ => &*left,
+                    RT::Paren(TermParen { expr, .. }) => expr,
+                    _ => left,
                 };
                 right = match &**right {
-                    RT::Paren(TermParen { expr, .. }) => &expr,
-                    _ => &*right,
+                    RT::Paren(TermParen { expr, .. }) => expr,
+                    _ => right,
                 };
             }
 
@@ -81,6 +94,21 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                 ),
                 Gt(_) => Ok(
                     quote_spanned! {sp=> ::creusot_contracts::logic::OrdLogic::gt_log(#left, #right) },
+                ),
+                Add(_) => Ok(
+                    quote_spanned! {sp=> ::creusot_contracts::logic::ops::AddLogic::add(#left, #right) },
+                ),
+                Sub(_) => Ok(
+                    quote_spanned! {sp=> ::creusot_contracts::logic::ops::SubLogic::sub(#left, #right) },
+                ),
+                Mul(_) => Ok(
+                    quote_spanned! {sp=> ::creusot_contracts::logic::ops::MulLogic::mul(#left, #right) },
+                ),
+                Div(_) => Ok(
+                    quote_spanned! {sp=> ::creusot_contracts::logic::ops::DivLogic::div(#left, #right) },
+                ),
+                Rem(_) => Ok(
+                    quote_spanned! {sp=> ::creusot_contracts::logic::ops::RemLogic::rem(#left, #right) },
                 ),
                 _ => Ok(quote_spanned! {sp=> #left #op #right }),
             }
@@ -124,8 +152,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             Ok(quote_spanned! {sp=> if #cond { #(#then_branch)* } #else_branch })
         }
         RT::Index(TermIndex { expr, index, .. }) => {
-            let expr =
-                if let RT::Paren(TermParen { expr, .. }) = &**expr { &**expr } else { &*expr };
+            let expr = if let RT::Paren(TermParen { expr, .. }) = &**expr { &**expr } else { expr };
 
             let expr = encode_term(expr)?;
             let index = encode_term(index)?;
@@ -140,10 +167,14 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             Lit::Int(int) if int.suffix() == "" => {
                 Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) })
             }
+            Lit::Int(int) if int.suffix() == "int" => {
+                let lit = syn::LitInt::new(int.base10_digits(), int.span());
+                Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) })
+            }
             _ => Ok(quote_spanned! {sp=> #lit }),
         },
         RT::Match(TermMatch { expr, arms, .. }) => {
-            let arms: Vec<_> = arms.into_iter().map(encode_arm).collect::<Result<_, _>>()?;
+            let arms: Vec<_> = arms.iter().map(encode_arm).collect::<Result<_, _>>()?;
             let expr = encode_term(expr)?;
             Ok(quote_spanned! {sp=> match #expr { #(#arms)* } })
         }
@@ -206,9 +237,13 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         RT::Type(ty) => Ok(quote_spanned! {sp=> #ty }),
         RT::Unary(TermUnary { op, expr }) => {
             let term = encode_term(expr)?;
-            Ok(quote_spanned! {sp=>
-                #op #term
-            })
+            if matches!(op, UnOp::Neg(_)) {
+                Ok(quote_spanned! {sp=> ::creusot_contracts::logic::ops::NegLogic::neg(#term) })
+            } else {
+                Ok(quote_spanned! {sp=>
+                    #op #term
+                })
+            }
         }
         RT::Final(TermFinal { term, .. }) => {
             let term = encode_term(term)?;
@@ -218,8 +253,8 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         }
         RT::Model(TermModel { term, .. }) => {
             let term = match &**term {
-                RT::Paren(TermParen { expr, .. }) => &expr,
-                _ => &*term,
+                RT::Paren(TermParen { expr, .. }) => expr,
+                _ => term,
             };
             let term = encode_term(term)?;
             Ok(quote_spanned! {sp=>
@@ -250,7 +285,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         }
         RT::Quant(TermQuant { quant_token, args, trigger, term, .. }) => {
             let mut ts = encode_term(term)?;
-            ts = encode_trigger(&trigger, ts)?;
+            ts = encode_trigger(trigger, ts)?;
             ts = quote_spanned! {sp=>
                 ::creusot_contracts::__stubs::#quant_token(
                     #[creusot::no_translate]
@@ -264,7 +299,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         RT::Closure(clos) => {
             let inputs = &clos.inputs;
             let retty = &clos.output;
-            let clos = encode_term(&*clos.body)?;
+            let clos = encode_term(&clos.body)?;
 
             Ok(
                 quote_spanned! {sp=> ::creusot_contracts::__stubs::mapping_from_fn(#[creusot::no_translate] |#inputs| #retty #clos)},
@@ -290,7 +325,7 @@ fn encode_trigger(
     Ok(ts)
 }
 
-pub fn encode_block(block: &Vec<TermStmt>) -> Result<TokenStream, EncodeError> {
+pub fn encode_block(block: &[TermStmt]) -> Result<TokenStream, EncodeError> {
     let stmts: Vec<_> = block.iter().map(encode_stmt).collect::<Result<_, _>>()?;
     Ok(quote! { { #(#stmts)* } })
 }

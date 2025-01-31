@@ -1,6 +1,5 @@
 use crate::{Default, *};
 pub use ::std::num::*;
-use paste::paste;
 
 macro_rules! mach_int {
     ($t:ty, $ty_nm:expr, $zero:expr) => {
@@ -35,32 +34,30 @@ macro_rules! mach_int {
 
 macro_rules! mach_uint { // TODO laurent factoriser avec mach_int
     ($t:ty, $ty_nm:expr, $zero:expr) => {
-        paste! {
-            impl View for $t {
-                type ViewTy = Int;
-                #[logic]
-                #[trusted]
-                #[creusot::builtins = $ty_nm ".t'int"] // TODO laurent: on ne génère pas ".to_int" pour les types non signé car on a besoin de la version non signée, or le clone substitue la
-                fn view(self) -> Self::ViewTy {
-                    dead
-                }
+        impl View for $t {
+            type ViewTy = Int;
+            #[logic]
+            #[trusted]
+            #[creusot::builtins = concat!($ty_nm, ".t'int")] // TODO laurent: on ne génère pas ".to_int" pour les types non signé car on a besoin de la version non signée, or le clone substitue la
+            fn view(self) -> Self::ViewTy {
+                dead
             }
+        }
 
-            impl DeepModel for $t {
-                type DeepModelTy = Int;
-                #[logic]
-                #[open]
-                fn deep_model(self) -> Self::DeepModelTy {
-                    pearlite! { self@ }
-                }
+        impl DeepModel for $t {
+            type DeepModelTy = Int;
+            #[logic]
+            #[open]
+            fn deep_model(self) -> Self::DeepModelTy {
+                pearlite! { self@ }
             }
+        }
 
-            impl Default for $t {
-                #[predicate]
-                #[open]
-                fn is_default(self) -> bool {
-                    pearlite! { self == $zero }
-                }
+        impl Default for $t {
+            #[predicate]
+            #[open]
+            fn is_default(self) -> bool {
+                pearlite! { self == $zero }
             }
         }
     };
@@ -75,9 +72,9 @@ mach_uint!(u128, "prelude.prelude.UInt128", 0u128);
 #[cfg(target_pointer_width = "64")]
 mach_uint!(usize, "prelude.prelude.UInt64", 0usize); // laurent voir si on garde 0usize
 #[cfg(target_pointer_width = "32")]
-mach_uint!(usize, "prelude.prelude.UInt64", 0usize); // laurent voir si on garde 0usize
+mach_uint!(usize, "prelude.prelude.UInt32", 0usize); // laurent voir si on garde 0usize
 #[cfg(target_pointer_width = "16")]
-mach_uint!(usize, "prelude.prelude.UInt64", 0usize); // laurent voir si on garde 0usize
+mach_uint!(usize, "prelude.prelude.UInt16", 0usize); // laurent voir si on garde 0usize
 
 mach_int!(i8, "prelude.prelude.Int8", 0i8);
 mach_int!(i16, "prelude.prelude.Int16", 0i16);
@@ -87,9 +84,9 @@ mach_int!(i128, "prelude.prelude.Int128", 0i128);
 #[cfg(target_pointer_width = "64")]
 mach_int!(isize, "prelude.prelude.Int64", 0isize); // laurent voir si on garde 0isize
 #[cfg(target_pointer_width = "32")]
-mach_int!(isize, "prelude.prelude.Int64", 0isize); // laurent voir si on garde 0isize
+mach_int!(isize, "prelude.prelude.Int32", 0isize); // laurent voir si on garde 0isize
 #[cfg(target_pointer_width = "16")]
-mach_int!(isize, "prelude.prelude.Int64", 0isize); // laurent voir si on garde 0isize
+mach_int!(isize, "prelude.prelude.Int16", 0isize); // laurent voir si on garde 0isize
 
 
 /// Adds specifications for checked, wrapping, saturating, and overflowing operations on the given

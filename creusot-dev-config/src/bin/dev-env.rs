@@ -3,7 +3,7 @@ use std::{env, path::PathBuf};
 use which::which;
 
 pub fn main() -> anyhow::Result<()> {
-    let paths = creusot_dev_config::paths()?;
+    let paths = creusot_setup::creusot_paths()?;
 
     let why3_path = which(&paths.why3)?;
     eprintln!("Using Why3 at: {}", &why3_path.display());
