@@ -76,7 +76,6 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
    ```
 3. Rebuild and reinstall Creusot:
    ```
-   $ cargo install --path creusot-rustc
    $ cargo install --path cargo-creusot
    ```
 4. Re-run Creusot's setup:
