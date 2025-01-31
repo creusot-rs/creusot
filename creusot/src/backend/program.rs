@@ -353,7 +353,7 @@ impl<'tcx> RValue<'tcx> {
                         // todo laurent valider l'approche
                         match r_ty.kind() {
                             TyKind::Int(_) => module.push_ident("to_int"),
-                            TyKind::Uint(_) => module.push_ident(".t'int"),
+                            TyKind::Uint(_) => module.push_ident("t'int"),
                             _ => unreachable!("right operande, non-integer type for binary operation {op:?} {ty:?}"),
                         }
 
