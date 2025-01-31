@@ -532,9 +532,9 @@ impl Print for Exp {
                         }),
                         alloc.hardline(),
                     )
+                    .append("end")
                     .indent(2),
-                )
-                .append("end"),
+                ),
             Exp::IfThenElse(s, i, e) => alloc
                 .text("if ")
                 .append(s.pretty(alloc))
