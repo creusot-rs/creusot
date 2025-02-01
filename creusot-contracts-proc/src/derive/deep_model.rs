@@ -14,24 +14,22 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     let vis = input.vis;
 
-    let (deep_model_ty_name, ty) =
-        if let Some(attr) = input.attrs.into_iter().find(|p| p.path().is_ident("DeepModelTy")) {
-            let parse = parse_deep_model_ty_attr(attr.meta);
-            let name = match parse {
-                Err(e) => return e.to_compile_error().into(),
-                Ok(o) => o,
-            };
-
-            (name, None)
-        } else {
-            let ident = Ident::new(
-                &format!("{}DeepModel", name.to_string()),
-                proc_macro::Span::def_site().into(),
-            );
-            let deep_model_ty = deep_model_ty(&ident, &generics, &input.data);
-
-            (ident.into(), Some(quote! { #vis #deep_model_ty }))
+    let (deep_model_ty_name, ty) = if let Some(attr) =
+        input.attrs.into_iter().find(|p| p.path().is_ident("DeepModelTy"))
+    {
+        let parse = parse_deep_model_ty_attr(attr.meta);
+        let name = match parse {
+            Err(e) => return e.to_compile_error().into(),
+            Ok(o) => o,
         };
+
+        (name, None)
+    } else {
+        let ident = Ident::new(&format!("{}DeepModel", name), proc_macro::Span::def_site().into());
+        let deep_model_ty = deep_model_ty(&ident, &generics, &input.data);
+
+        (ident.into(), Some(quote! { #vis #deep_model_ty }))
+    };
 
     let eq = deep_model(&name, &deep_model_ty_name, &input.data);
 
@@ -96,7 +94,7 @@ fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
             }
         }
         Fields::Unnamed(ref fields) => {
-            let recurse = fields.unnamed.iter().enumerate().map(|(_, f)| {
+            let recurse = fields.unnamed.iter().map(|f| {
                 let ty = &f.ty;
                 let vis = &f.vis;
                 quote_spanned! {f.span()=>
