@@ -432,6 +432,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
                 self.build_vc(lhs, &|lhs| k(lhs.field(&field)))
             }
+            TermKind::Precondition { .. } => Err(VCError::UnimplementedClosure(t.span)),
+            TermKind::Postcondition { .. } => Err(VCError::UnimplementedClosure(t.span)),
             TermKind::Old { .. } => Err(VCError::OldInLemma(t.span)),
             TermKind::Closure { .. } => Err(VCError::UnimplementedClosure(t.span)),
             TermKind::Reborrow { .. } => Err(VCError::UnimplementedReborrow(t.span)),
@@ -615,5 +617,6 @@ pub(crate) fn get_func_name<'tcx>(
 
             QName::from_string(a.as_str()).without_search_path()
         })
+        .map(QName::without_search_path)
         .unwrap_or_else(|| names.value(id, subst))
 }
