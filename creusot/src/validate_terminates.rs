@@ -1,8 +1,7 @@
 //! Detection of loops and mutually recursive functions.
 //!
 //! Care is taken around the interaction with traits, like the following example:
-//! ```
-//! # use creusot_contracts::*;
+//! ```ignore
 //! pub trait Foo {
 //!     #[terminates]
 //!     fn foo() {}
@@ -424,8 +423,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
     /// - a default function in a trait (or in a default impl)
     /// - that is logical
     /// - and visible at the point of implementation, that is
-    ///   ```
-    ///   # use creusot_contracts::*;
+    ///   ```ignore
     ///   trait Tr {
     ///       #[logic] #[open(self)] fn f() {}
     ///   }
