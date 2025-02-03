@@ -3,7 +3,7 @@ use crate::{
     contracts_items::{get_builtin, get_inv_function},
     ctx::*,
     options::SpanMode,
-    util::erased_identity_for_item,
+    util::{erased_identity_for_item, path_of_span},
 };
 use elaborator::Strength;
 use indexmap::{IndexMap, IndexSet};
@@ -15,9 +15,9 @@ use rustc_hir::{
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::Promoted,
-    ty::{self, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable},
+    ty::{self, GenericArgsRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv},
 };
-use rustc_span::{FileName, Span, Symbol};
+use rustc_span::{Span, Symbol};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use why3::{
     declaration::{Attribute, Decl, TyDecl},
@@ -166,7 +166,7 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
         _: &TranslationCtx<'tcx>,
         ty: T,
     ) -> T {
-        self.tcx().normalize_erasing_regions(self.param_env, ty)
+        self.tcx().normalize_erasing_regions(self.typing_env, ty)
     }
 
     fn insert(&mut self, key: Dependency<'tcx>) -> &Kind {
@@ -179,27 +179,11 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
     }
 
     fn span(&mut self, span: Span) -> Option<why3::declaration::Attribute> {
-        if span.is_dummy() {
-            return None;
-        }
-
-        let lo = self.tcx.sess.source_map().lookup_char_pos(span.lo());
-        let rustc_span::FileName::Real(path) = &lo.file.name else { return None };
-        match (&self.span_mode, path) {
-            (SpanMode::Relative(_), rustc_span::RealFileName::Remapped { .. }) => return None,
-            _ => (),
-        };
+        let path = path_of_span(self.tcx, span, &self.span_mode)?;
 
         let cnt = self.spans.len();
         let name = self.spans.entry(span).or_insert_with(|| {
-            let lo = self.tcx.sess.source_map().lookup_char_pos(span.lo());
-
-            if let FileName::Real(real_name) = &lo.file.name {
-                let path = real_name.local_path_if_available();
-                Symbol::intern(&format!("s{}{cnt}", path.file_stem().unwrap().to_str().unwrap()))
-            } else {
-                Symbol::intern(&format!("span{cnt}"))
-            }
+            Symbol::intern(&format!("s{}{cnt}", path.file_stem().unwrap().to_str().unwrap()))
         });
         Some(Attribute::NamedSpan(name.to_string()))
     }
@@ -211,7 +195,7 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
         ctx: &TranslationCtx<'tcx>,
         ty: T,
     ) -> T {
-        self.tcx().normalize_erasing_regions(ctx.param_env(self.self_id), ty)
+        self.tcx().normalize_erasing_regions(ctx.typing_env(self.self_id), ty)
     }
 
     fn tcx(&self) -> TyCtxt<'tcx> {
@@ -257,7 +241,7 @@ pub struct CloneNames<'tcx> {
     /// Maps spans to a unique name
     spans: IndexMap<Span, Symbol>,
     // To normalize during dependency stuff (deprecated)
-    param_env: ParamEnv<'tcx>,
+    typing_env: TypingEnv<'tcx>,
 
     // Internal state, used to determine whether we should emit spans at all
     span_mode: SpanMode,
@@ -274,13 +258,13 @@ impl std::fmt::Debug for CloneNames<'_> {
 }
 
 impl<'tcx> CloneNames<'tcx> {
-    fn new(tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>, span_mode: SpanMode) -> Self {
+    fn new(tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>, span_mode: SpanMode) -> Self {
         CloneNames {
             tcx,
             counts: Default::default(),
             names: Default::default(),
             spans: Default::default(),
-            param_env,
+            typing_env,
             span_mode,
         }
     }
@@ -353,7 +337,7 @@ impl Kind {
 
 impl<'tcx> Dependencies<'tcx> {
     pub(crate) fn new(ctx: &TranslationCtx<'tcx>, self_id: DefId) -> Self {
-        let names = CloneNames::new(ctx.tcx, ctx.param_env(self_id), ctx.opts.span_mode.clone());
+        let names = CloneNames::new(ctx.tcx, ctx.typing_env(self_id), ctx.opts.span_mode.clone());
         debug!("cloning self: {:?}", self_id);
         let self_subst = erased_identity_for_item(ctx.tcx, self_id);
         let mut deps =
@@ -368,11 +352,11 @@ impl<'tcx> Dependencies<'tcx> {
         trace!("emitting dependencies for {:?}", self.self_id);
         let mut decls = Vec::new();
 
-        let param_env = ctx.param_env(self.self_id);
+        let typing_env = ctx.typing_env(self.self_id);
 
         let self_node = Dependency::Item(self.self_id, self.self_subst);
         let graph =
-            Expander::new(&mut self.names, self_node, param_env, self.dep_set.iter().copied());
+            Expander::new(&mut self.names, self_node, typing_env, self.dep_set.iter().copied());
 
         // Update the clone graph with any new entries.
         let (graph, mut bodies) = graph.update_graph(ctx);

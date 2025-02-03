@@ -1,5 +1,5 @@
 use rustc_borrowck::consumers::PlaceConflictBias;
-use rustc_index::bit_set::ChunkedBitSet;
+use rustc_index::bit_set::MixedBitSet;
 use rustc_middle::{
     mir::{
         self,
@@ -8,9 +8,7 @@ use rustc_middle::{
     },
     ty::{List, TyCtxt},
 };
-use rustc_mir_dataflow::{
-    fmt::DebugWithContext, AnalysisDomain, Backward, GenKill, GenKillAnalysis, ResultsCursor,
-};
+use rustc_mir_dataflow::{fmt::DebugWithContext, Analysis, Backward, GenKill, ResultsCursor};
 use std::collections::{hash_map, HashMap};
 
 use crate::extended_location::ExtendedLocation;
@@ -175,7 +173,7 @@ impl<'tcx> NotFinalPlaces<'tcx> {
         let analysis: &Self = cursor.analysis();
 
         let id = analysis.infos[&place.as_ref()].id;
-        if cursor.contains(id) {
+        if cursor.get().contains(id) {
             return None;
         }
         Some(deref_position)
@@ -211,7 +209,7 @@ impl<'tcx> NotFinalPlaces<'tcx> {
     }
 }
 
-impl<'tcx> DebugWithContext<NotFinalPlaces<'tcx>> for ChunkedBitSet<PlaceId> {
+impl<'tcx> DebugWithContext<NotFinalPlaces<'tcx>> for MixedBitSet<PlaceId> {
     fn fmt_with(
         &self,
         ctxt: &NotFinalPlaces<'tcx>,
@@ -221,44 +219,35 @@ impl<'tcx> DebugWithContext<NotFinalPlaces<'tcx>> for ChunkedBitSet<PlaceId> {
     }
 }
 
-impl<'tcx> AnalysisDomain<'tcx> for NotFinalPlaces<'tcx> {
-    type Domain = ChunkedBitSet<PlaceId>;
+// The NotFinalPlaces analysis computes, for each location, places which either:
+// - do not contain a mutable borrow deref and may be moved or borrowed in the future
+//      i.e., if such a place contains a borrow, then this borrow may be written to before its resolution
+// - do contain one or more mutable borrow deref, and may be written to in the future
 
+impl<'tcx> Analysis<'tcx> for NotFinalPlaces<'tcx> {
+    type Domain = MixedBitSet<PlaceId>;
     type Direction = Backward;
 
     const NAME: &'static str = "not_final_places";
 
     fn bottom_value(&self, _: &mir::Body<'tcx>) -> Self::Domain {
         // bottom = all borrows are final
-        ChunkedBitSet::new_empty(self.places.len())
+        MixedBitSet::new_empty(self.places.len())
     }
 
     // no initialization, because we are doing backward analysis.
     fn initialize_start_block(&self, _: &mir::Body<'tcx>, _: &mut Self::Domain) {}
-}
 
-// The NotFinalPlaces analysis computes, for each location, places which either:
-// - do not contain a mutable borrow deref and may be moved or borrowed in the future
-//      i.e., if such a place contains a borrow, then this borrow may be written to before its resolution
-// - do contain one or more mutable borrow deref, and may be written to in the future
-
-impl<'tcx> GenKillAnalysis<'tcx> for NotFinalPlaces<'tcx> {
-    type Idx = PlaceId;
-
-    fn domain_size(&self, _: &mir::Body<'tcx>) -> usize {
-        self.places.len()
-    }
-
-    fn statement_effect(
+    fn apply_primary_statement_effect(
         &mut self,
-        trans: &mut impl GenKill<Self::Idx>,
+        trans: &mut Self::Domain,
         statement: &mir::Statement<'tcx>,
         location: mir::Location,
     ) {
         PlaceVisitor { info: self, trans }.visit_statement(statement, location);
     }
 
-    fn terminator_effect<'mir>(
+    fn apply_primary_terminator_effect<'mir>(
         &mut self,
         trans: &mut Self::Domain,
         terminator: &'mir mir::Terminator<'tcx>,
@@ -272,14 +261,6 @@ impl<'tcx> GenKillAnalysis<'tcx> for NotFinalPlaces<'tcx> {
         }
         visitor.visit_terminator(terminator, location);
         terminator.edges()
-    }
-
-    fn call_return_effect(
-        &mut self,
-        _trans: &mut Self::Domain,
-        _block: mir::BasicBlock,
-        _return_places: mir::CallReturnPlaces<'_, 'tcx>,
-    ) {
     }
 }
 

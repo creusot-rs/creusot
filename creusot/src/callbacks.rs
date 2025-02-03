@@ -1,7 +1,7 @@
 use rustc_borrowck::consumers::{BodyWithBorrowckFacts, ConsumerOptions};
 use rustc_driver::{Callbacks, Compilation};
 use rustc_hir::def_id::LocalDefId;
-use rustc_interface::{interface::Compiler, Config, Queries};
+use rustc_interface::{interface::Compiler, Config};
 use rustc_middle::ty::TyCtxt;
 
 use std::{cell::RefCell, collections::HashMap, thread_local};
@@ -70,7 +70,7 @@ impl Callbacks for ToWhy {
         // HACK: remove this once `config.locale_resources` is defined as a Vec
         let mut locale_resources = config.locale_resources.to_vec();
         locale_resources.push(crate::DEFAULT_LOCALE_RESOURCE);
-        config.locale_resources = locale_resources.leak();
+        config.locale_resources = locale_resources;
         config.override_queries = Some(|_sess, providers| {
             providers.mir_built = |tcx, def_id| {
                 let mir = (rustc_interface::DEFAULT_QUERY_PROVIDERS.mir_built)(tcx, def_id);
@@ -116,13 +116,11 @@ impl Callbacks for ToWhy {
         }))
     }
 
-    fn after_expansion<'tcx>(&mut self, c: &Compiler, queries: &'tcx Queries<'tcx>) -> Compilation {
-        let _ = queries.global_ctxt().unwrap().enter(|tcx| {
-            let mut ctx = ctx::TranslationCtx::new(tcx, self.opts.clone());
-            let _ = crate::translation::before_analysis(&mut ctx);
-            let _ = tcx.analysis(());
-            let _ = crate::translation::after_analysis(ctx);
-        });
+    fn after_expansion<'tcx>(&mut self, c: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
+        let mut ctx = ctx::TranslationCtx::new(tcx, self.opts.clone());
+        let _ = crate::translation::before_analysis(&mut ctx);
+        let _ = tcx.analysis(());
+        let _ = crate::translation::after_analysis(ctx);
 
         c.sess.dcx().abort_if_errors();
 

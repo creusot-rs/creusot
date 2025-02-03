@@ -16,7 +16,7 @@ use crate::{
     pearlite::{super_visit_term, Literal, Pattern, PointerKind, Term, TermVisitor},
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::{EarlyBinder, GenericArgsRef, ParamEnv, Ty, TyKind};
+use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyKind, TypingEnv};
 use rustc_span::{Span, Symbol};
 use why3::{declaration::Signature, exp::Environment, ty::Type, Exp, Ident, QName};
 
@@ -39,7 +39,7 @@ struct VCGen<'a, 'tcx> {
     names: RefCell<&'a mut Dependencies<'tcx>>,
     self_id: DefId,
     structurally_recursive: bool,
-    param_env: ParamEnv<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     subst: RefCell<Environment>,
 }
 
@@ -59,7 +59,7 @@ pub(super) fn vc<'tcx>(
         .map(|arg| (arg.0.as_str().into(), Exp::var(arg.0.as_str())))
         .collect();
     let gen = VCGen {
-        param_env: ctx.param_env(self_id),
+        typing_env: ctx.typing_env(self_id),
         ctx: RefCell::new(ctx),
         names: RefCell::new(names),
         self_id,
@@ -252,7 +252,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let pre_sig = EarlyBinder::bind(self.ctx.borrow_mut().sig(*id).clone())
                     .instantiate(tcx, subst);
 
-                let pre_sig = pre_sig.normalize(tcx, self.param_env);
+                let pre_sig = pre_sig.normalize(tcx, self.typing_env);
                 let arg_subst = pre_sig
                     .inputs
                     .iter()
@@ -346,7 +346,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // Same as for tuples
             TermKind::Constructor { variant, fields, .. } => {
                 let ty =
-                    self.ctx.borrow().normalize_erasing_regions(self.param_env, t.creusot_ty());
+                    self.ctx.borrow().normalize_erasing_regions(self.typing_env, t.creusot_ty());
                 let TyKind::Adt(adt, subst) = ty.kind() else { unreachable!() };
                 self.build_vc_slice(fields, &|fields| {
                     let ctor = constructor(
@@ -407,7 +407,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // VC(A.f, Q) = VC(A, |a| Q(a.f))
             TermKind::Projection { lhs, name } => {
                 let ty =
-                    self.ctx.borrow().normalize_erasing_regions(self.param_env, lhs.creusot_ty());
+                    self.ctx.borrow().normalize_erasing_regions(self.typing_env, lhs.creusot_ty());
                 let field = match ty.kind() {
                     TyKind::Closure(did, substs) => {
                         self.names.borrow_mut().field(*did, substs, *name).as_ident()
@@ -462,7 +462,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             Pattern::Constructor { variant, fields, substs } => {
                 let fields =
                     fields.iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect();
-                let substs = self.ctx.borrow().normalize_erasing_regions(self.param_env, *substs);
+                let substs = self.ctx.borrow().normalize_erasing_regions(self.typing_env, *substs);
                 if self.ctx.borrow().def_kind(variant) == DefKind::Variant {
                     Pat::ConsP(self.names.borrow_mut().constructor(*variant, substs), fields)
                 } else if fields.is_empty() {

@@ -96,7 +96,7 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
                 self.read_place(pl);
                 self.read_place(pl)
             }
-            Statement::Assertion { cond, msg: _ } => {
+            Statement::Assertion { cond, msg: _, trusted: _ } => {
                 // Make assertions stop propagation because it would require Expr -> Term translation
                 self.visit_term(cond);
                 self.visit_term(cond);
@@ -112,7 +112,7 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
     fn visit_rvalue(&mut self, r: &RValue<'tcx>) {
         match r {
             RValue::Ghost(t) => self.visit_term(t),
-            RValue::Borrow(_, p, _) => {
+            RValue::Borrow(_, p, _) | RValue::Ptr(p) => {
                 self.read_place(p);
                 self.read_place(p)
             }
@@ -254,7 +254,7 @@ impl<'tcx> SimplePropagator<'tcx> {
                     out_stmts.push(s)
                 }
                 Statement::Assignment(ref l, ref r, _) if self.should_erase(l.local) && r.is_pure() => {
-                      self.dead.insert(l.local);
+                    self.dead.insert(l.local);
                 }
                 Statement::Resolve{ pl: ref p, .. } => {
                   if let Some(l) = p.as_symbol() && self.dead.contains(&l) {
@@ -283,7 +283,7 @@ impl<'tcx> SimplePropagator<'tcx> {
                     && self.dead.contains(&l)
                 {}
             }
-            Statement::Assertion { cond, msg: _ } => self.visit_term(cond),
+            Statement::Assertion { cond, msg: _, trusted: _ } => self.visit_term(cond),
             Statement::Call(_, _, _, args, _) => {
                 args.iter_mut().for_each(|a| self.visit_operand(a))
             }
@@ -294,7 +294,7 @@ impl<'tcx> SimplePropagator<'tcx> {
     fn visit_rvalue(&mut self, r: &mut RValue<'tcx>) {
         match r {
             RValue::Ghost(t) => self.visit_term(t),
-            RValue::Borrow(_, p, _) => {
+            RValue::Ptr(p) | RValue::Borrow(_, p, _) => {
                 assert!(self.prop.get(&p.local).is_none(), "Trying to propagate borrowed variable")
             }
             RValue::Operand(op) => self.visit_operand(op),

@@ -1,8 +1,8 @@
 #![feature(rustc_private, register_tool)]
-#![feature(box_patterns, control_flow_enum, extract_if)]
+#![feature(box_patterns, extract_if)]
 #![feature(let_chains, never_type, try_blocks)]
 #![feature(closure_lifetime_binder)]
-#![feature(if_let_guard, slice_take, is_none_or)]
+#![feature(if_let_guard, slice_take)]
 
 extern crate either;
 #[macro_use]

@@ -4,7 +4,7 @@ use rustc_hir::{
 };
 use rustc_middle::{
     thir::{self, ClosureExpr, ExprKind, Thir},
-    ty::{FnDef, ParamEnv, TyCtxt, Visibility},
+    ty::{FnDef, TyCtxt, TypingEnv, Visibility},
 };
 use rustc_span::Span;
 
@@ -306,10 +306,10 @@ pub(crate) fn validate_purity(
     if matches!(purity, Purity::Program { .. }) && is_no_translate(ctx.tcx, def_id) {
         return Ok(());
     }
-    let param_env = ctx.tcx.param_env(def_id);
+    let typing_env = ctx.typing_env(def_id);
 
     let mut visitor =
-        PurityVisitor { ctx, thir: &thir, context: purity, param_env, thir_failed: false };
+        PurityVisitor { ctx, thir: &thir, context: purity, typing_env, thir_failed: false };
     thir::visit::walk_expr(&mut visitor, &thir[expr]);
     if visitor.thir_failed {
         Err(CannotFetchThir)
@@ -323,7 +323,7 @@ struct PurityVisitor<'a, 'tcx> {
     thir: &'a Thir<'tcx>,
     context: Purity,
     /// Typing environment of the caller function
-    param_env: ParamEnv<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     // If `true`, we should error with a [`CannotFetchThir`] error.
     thir_failed: bool,
 }
@@ -366,7 +366,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                     let func_did = if TraitResolved::is_trait_item(self.ctx.tcx, func_did) {
                         match TraitResolved::resolve_item(
                             self.ctx.tcx,
-                            self.param_env,
+                            self.typing_env,
                             func_did,
                             subst,
                         ) {
@@ -416,7 +416,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                     ctx: self.ctx,
                     thir: &thir,
                     context: self.context,
-                    param_env: self.param_env,
+                    typing_env: self.typing_env,
                     thir_failed: false,
                 };
                 thir::visit::walk_expr(&mut visitor, &thir[expr]);

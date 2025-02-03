@@ -1,22 +1,18 @@
-use rustc_borrowck::{
-    borrow_set::BorrowSet,
-    consumers::{
-        calculate_borrows_out_of_scope_at_location, BorrowIndex, PlaceConflictBias, PlaceExt,
-        RegionInferenceContext,
-    },
+use rustc_borrowck::consumers::{
+    calculate_borrows_out_of_scope_at_location, BorrowIndex, BorrowSet, PlaceConflictBias,
+    PlaceExt, RegionInferenceContext,
 };
 use rustc_data_structures::fx::FxIndexMap;
-use std::fmt;
+use rustc_index::bit_set::MixedBitSet;
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-use rustc_index::bit_set::BitSet;
 use rustc_middle::{
-    mir::{self, Body, CallReturnPlaces, Location, Place, TerminatorEdges},
+    mir::{self, Body, Location, Place, TerminatorEdges},
     ty::TyCtxt,
 };
-use rustc_mir_dataflow::{fmt::DebugWithContext, AnalysisDomain, GenKill, GenKillAnalysis};
+use rustc_mir_dataflow::{Analysis, GenKill};
 
 pub struct Borrows<'a, 'mir, 'tcx> {
     tcx: TyCtxt<'tcx>,
@@ -44,10 +40,6 @@ impl<'a, 'mir, 'tcx> Borrows<'a, 'mir, 'tcx> {
         let borrows_out_of_scope_at_location =
             calculate_borrows_out_of_scope_at_location(body, regioncx, &*borrow_set);
         Borrows { tcx, body, borrow_set, borrows_out_of_scope_at_location }
-    }
-
-    pub fn location(&self, idx: BorrowIndex) -> &Location {
-        &self.borrow_set[idx].reserve_location
     }
 
     /// Add all borrows to the kill set, if those borrows are out of scope at `location`.
@@ -79,7 +71,7 @@ impl<'a, 'mir, 'tcx> Borrows<'a, 'mir, 'tcx> {
 
         let other_borrows_of_local = self
             .borrow_set
-            .local_map
+            .local_map()
             .get(&place.local)
             .into_iter()
             .flat_map(|bs| bs.iter())
@@ -103,7 +95,7 @@ impl<'a, 'mir, 'tcx> Borrows<'a, 'mir, 'tcx> {
             rustc_borrowck::consumers::places_conflict(
                 self.tcx,
                 self.body,
-                self.borrow_set[i].borrowed_place,
+                self.borrow_set[i].borrowed_place(),
                 place,
                 PlaceConflictBias::NoOverlap,
             )
@@ -113,32 +105,24 @@ impl<'a, 'mir, 'tcx> Borrows<'a, 'mir, 'tcx> {
     }
 }
 
-impl<'tcx> AnalysisDomain<'tcx> for Borrows<'_, '_, 'tcx> {
-    type Domain = BitSet<BorrowIndex>;
+impl<'tcx> Analysis<'tcx> for Borrows<'_, '_, 'tcx> {
+    type Domain = MixedBitSet<BorrowIndex>;
 
     const NAME: &'static str = "borrows";
 
     fn bottom_value(&self, _: &mir::Body<'tcx>) -> Self::Domain {
         // bottom = nothing is reserved or activated yet;
-        BitSet::new_empty(self.borrow_set.len())
+        MixedBitSet::new_empty(self.borrow_set.location_map().len())
     }
 
     fn initialize_start_block(&self, _: &mir::Body<'tcx>, _: &mut Self::Domain) {
         // no borrows of code region_scopes have been taken prior to
         // function execution, so this method has no effect.
     }
-}
 
-impl<'tcx> GenKillAnalysis<'tcx> for Borrows<'_, '_, 'tcx> {
-    type Idx = BorrowIndex;
-
-    fn domain_size(&self, _: &mir::Body<'tcx>) -> usize {
-        self.borrow_set.len()
-    }
-
-    fn statement_effect(
+    fn apply_primary_statement_effect(
         &mut self,
-        trans: &mut impl GenKill<Self::Idx>,
+        trans: &mut Self::Domain,
         stmt: &mir::Statement<'tcx>,
         location: Location,
     ) {
@@ -150,11 +134,11 @@ impl<'tcx> GenKillAnalysis<'tcx> for Borrows<'_, '_, 'tcx> {
                     if !place.ignore_borrow(
                         self.tcx,
                         self.body,
-                        &self.borrow_set.locals_state_at_exit,
+                        &self.borrow_set.locals_state_at_exit(),
                     ) {
                         let index = self
                             .borrow_set
-                            .location_map
+                            .location_map()
                             .get_index_of(&location)
                             .map(BorrowIndex::from)
                             .unwrap_or_else(|| {
@@ -185,11 +169,12 @@ impl<'tcx> GenKillAnalysis<'tcx> for Borrows<'_, '_, 'tcx> {
             | mir::StatementKind::Coverage(..)
             | mir::StatementKind::Intrinsic(..)
             | mir::StatementKind::ConstEvalCounter
-            | mir::StatementKind::Nop => {}
+            | mir::StatementKind::Nop
+            | mir::StatementKind::BackwardIncompatibleDropHint { .. } => {}
         }
     }
 
-    fn terminator_effect<'mir>(
+    fn apply_primary_terminator_effect<'mir>(
         &mut self,
         trans: &mut Self::Domain,
         terminator: &'mir mir::Terminator<'tcx>,
@@ -207,19 +192,5 @@ impl<'tcx> GenKillAnalysis<'tcx> for Borrows<'_, '_, 'tcx> {
             }
         }
         terminator.edges()
-    }
-
-    fn call_return_effect(
-        &mut self,
-        _trans: &mut Self::Domain,
-        _block: mir::BasicBlock,
-        _return_places: CallReturnPlaces<'_, 'tcx>,
-    ) {
-    }
-}
-
-impl DebugWithContext<Borrows<'_, '_, '_>> for BorrowIndex {
-    fn fmt_with(&self, ctxt: &Borrows<'_, '_, '_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", ctxt.location(*self))
     }
 }

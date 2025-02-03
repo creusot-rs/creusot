@@ -1,8 +1,7 @@
 //! Detection of loops and mutually recursive functions.
 //!
 //! Care is taken around the interaction with traits, like the following example:
-//! ```
-//! # use creusot_contracts::*;
+//! ```ignore
 //! pub trait Foo {
 //!     #[terminates]
 //!     fn foo() {}
@@ -50,8 +49,8 @@ use rustc_infer::{infer::TyCtxtInferExt as _, traits::ObligationCause};
 use rustc_middle::{
     thir,
     ty::{
-        Clauses, EarlyBinder, FnDef, GenericArgKind, GenericArgs, GenericArgsRef, ParamEnv, TyCtxt,
-        TyKind,
+        Clauses, EarlyBinder, FnDef, GenericArgKind, GenericArgs, GenericArgsRef, TyCtxt, TyKind,
+        TypingEnv, TypingMode,
     },
 };
 use rustc_span::Span;
@@ -315,14 +314,14 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         &mut self,
         ctx: &mut TranslationCtx<'tcx>,
         node: graph::NodeIndex,
-        param_env: ParamEnv<'tcx>,
+        typing_env: TypingEnv<'tcx>,
         called_id: DefId,
         generic_args: GenericArgsRef<'tcx>,
         call_span: Span,
     ) -> Result<(), CannotFetchThir> {
         let tcx = ctx.tcx;
         let (called_id, generic_args) = if TraitResolved::is_trait_item(tcx, called_id) {
-            match TraitResolved::resolve_item(tcx, param_env, called_id, generic_args) {
+            match TraitResolved::resolve_item(tcx, typing_env, called_id, generic_args) {
                 TraitResolved::Instance(def_id, subst) => (def_id, subst),
                 _ => (called_id, generic_args),
             }
@@ -367,7 +366,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                     }
                 };
                 let Some(spec_impl_id) =
-                    TraitResolved::impl_id_of_trait(tcx, param_env, trait_id, generic_args)
+                    TraitResolved::impl_id_of_trait(tcx, typing_env, trait_id, generic_args)
                         .and_then(|id| id.as_local())
                 else {
                     break 'not_default;
@@ -405,7 +404,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             let subst = EarlyBinder::bind(trait_ref.args).instantiate(tcx, generic_args);
             for &item in tcx.associated_item_def_ids(trait_ref.def_id) {
                 let TraitResolved::Instance(item_id, _) =
-                    TraitResolved::resolve_item(tcx, param_env, item, subst)
+                    TraitResolved::resolve_item(tcx, typing_env, item, subst)
                 else {
                     continue;
                 };
@@ -424,8 +423,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
     /// - a default function in a trait (or in a default impl)
     /// - that is logical
     /// - and visible at the point of implementation, that is
-    ///   ```
-    ///   # use creusot_contracts::*;
+    ///   ```ignore
     ///   trait Tr {
     ///       #[logic] #[open(self)] fn f() {}
     ///   }
@@ -454,7 +452,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         let specialization_node = &self.specialization_nodes[&node];
 
         let impl_id = impl_id.to_def_id();
-        let param_env = tcx.param_env(impl_id);
+        let typing_env = ctx.typing_env(impl_id);
         let term = ctx.term(item_id)?.unwrap();
         let mut visitor = TermCalls { results: IndexSet::new() };
         visitor.visit_term(term);
@@ -462,10 +460,10 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         let trait_id = tcx.trait_id_of_impl(impl_id).unwrap();
 
         // translate the args of the impl to match the trait.
-        let infcx = tcx.infer_ctxt().build();
+        let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
         let impl_args = rustc_trait_selection::traits::translate_args(
             &infcx,
-            param_env,
+            typing_env.param_env,
             impl_id,
             erased_identity_for_item(tcx, impl_id),
             specialization_node.defining_node,
@@ -477,21 +475,22 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             erased_identity_for_item(tcx, item_id).rebase_onto(tcx, trait_id, impl_args);
 
         // data for when we call this function
-        let item_param_env = tcx.param_env(item_id);
-        let item_param_env = EarlyBinder::bind(item_param_env).instantiate(tcx, func_impl_args);
-        let bounds = normalize_param_env_or_error(tcx, item_param_env, ObligationCause::dummy())
-            .caller_bounds();
+        let item_typing_env = ctx.typing_env(item_id);
+        let item_typing_env = EarlyBinder::bind(item_typing_env).instantiate(tcx, func_impl_args);
+        let bounds =
+            normalize_param_env_or_error(tcx, item_typing_env.param_env, ObligationCause::dummy())
+                .caller_bounds();
         self.default_functions_bounds.insert(node, bounds);
 
         for (called_id, generic_args, call_span) in visitor.results {
             // Instantiate the args for the call with the context we just built up.
             let actual_args = tcx.instantiate_and_normalize_erasing_regions(
                 func_impl_args,
-                item_param_env,
+                item_typing_env,
                 EarlyBinder::bind(generic_args),
             );
 
-            self.function_call(ctx, node, param_env, called_id, actual_args, call_span)?;
+            self.function_call(ctx, node, typing_env, called_id, actual_args, call_span)?;
         }
         Ok(Some(node))
     }
@@ -572,7 +571,7 @@ impl CallGraph {
                 continue;
             }
 
-            let param_env = ctx.tcx.param_env(def_id);
+            let typing_env = ctx.typing_env(def_id);
             let (thir, expr) = ctx.thir_body(local_id).unwrap();
             let thir = thir.borrow();
             // Collect functions called by this function
@@ -595,7 +594,7 @@ impl CallGraph {
                 build_call_graph.function_call(
                     ctx,
                     node,
-                    param_env,
+                    typing_env,
                     called_id,
                     generic_args,
                     call_span,

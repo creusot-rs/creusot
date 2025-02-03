@@ -1,4 +1,4 @@
-use rustc_index::bit_set::ChunkedBitSet;
+use rustc_index::bit_set::MixedBitSet;
 use rustc_middle::{
     mir::{
         self,
@@ -9,7 +9,7 @@ use rustc_middle::{
 };
 use rustc_mir_dataflow::{
     move_paths::{HasMoveData, LookupResult, MoveData, MovePathIndex},
-    on_all_children_bits, AnalysisDomain, Backward, GenKill, GenKillAnalysis, MoveDataParamEnv,
+    on_all_children_bits, Analysis, Backward, GenKill,
 };
 
 use crate::resolve::place_contains_borrow_deref;
@@ -29,59 +29,46 @@ use crate::resolve::place_contains_borrow_deref;
 ///   borrows for writing is still considered as a Use.
 pub struct MaybeLiveExceptDrop<'a, 'tcx> {
     body: &'a mir::Body<'tcx>,
-    mdpe: &'a MoveDataParamEnv<'tcx>,
+    move_data: &'a MoveData<'tcx>,
     tcx: TyCtxt<'tcx>,
 }
 
 impl<'a, 'tcx> MaybeLiveExceptDrop<'a, 'tcx> {
-    pub fn new(
-        body: &'a mir::Body<'tcx>,
-        mdpe: &'a MoveDataParamEnv<'tcx>,
-        tcx: TyCtxt<'tcx>,
-    ) -> Self {
-        MaybeLiveExceptDrop { body, mdpe, tcx }
+    pub fn new(tcx: TyCtxt<'tcx>, body: &'a mir::Body<'tcx>, mdpe: &'a MoveData<'tcx>) -> Self {
+        MaybeLiveExceptDrop { body, move_data: mdpe, tcx }
     }
 }
 
-impl<'a, 'tcx> AnalysisDomain<'tcx> for MaybeLiveExceptDrop<'a, 'tcx> {
-    type Domain = ChunkedBitSet<MovePathIndex>;
+impl<'a, 'tcx> HasMoveData<'tcx> for MaybeLiveExceptDrop<'a, 'tcx> {
+    fn move_data(&self) -> &MoveData<'tcx> {
+        &self.move_data
+    }
+}
+
+impl<'a, 'tcx> Analysis<'tcx> for MaybeLiveExceptDrop<'a, 'tcx> {
+    type Domain = MixedBitSet<MovePathIndex>;
     type Direction = Backward;
 
     const NAME: &'static str = "liveness-two";
 
     fn bottom_value(&self, _body: &mir::Body<'tcx>) -> Self::Domain {
         // bottom = not live
-        ChunkedBitSet::new_empty(self.move_data().move_paths.len())
+        MixedBitSet::new_empty(self.move_data().move_paths.len())
     }
 
     fn initialize_start_block(&self, _: &mir::Body<'tcx>, _: &mut Self::Domain) {
         // No variables are live until we observe a use
     }
-}
-
-impl<'a, 'tcx> HasMoveData<'tcx> for MaybeLiveExceptDrop<'a, 'tcx> {
-    fn move_data(&self) -> &MoveData<'tcx> {
-        &self.mdpe.move_data
-    }
-}
-
-impl<'a, 'tcx> GenKillAnalysis<'tcx> for MaybeLiveExceptDrop<'a, 'tcx> {
-    type Idx = MovePathIndex;
-
-    fn domain_size(&self, _body: &mir::Body<'tcx>) -> usize {
-        self.move_data().move_paths.len()
-    }
-
-    fn statement_effect(
+    fn apply_primary_statement_effect(
         &mut self,
-        trans: &mut impl GenKill<Self::Idx>,
+        trans: &mut Self::Domain,
         statement: &mir::Statement<'tcx>,
         location: Location,
     ) {
         TransferFunction(trans, self).visit_statement(statement, location);
     }
 
-    fn terminator_effect<'mir>(
+    fn apply_primary_terminator_effect<'mir>(
         &mut self,
         trans: &mut Self::Domain,
         terminator: &'mir mir::Terminator<'tcx>,
@@ -91,7 +78,7 @@ impl<'a, 'tcx> GenKillAnalysis<'tcx> for MaybeLiveExceptDrop<'a, 'tcx> {
         terminator.edges()
     }
 
-    fn call_return_effect(
+    fn apply_call_return_effect(
         &mut self,
         trans: &mut Self::Domain,
         _block: mir::BasicBlock,
@@ -130,7 +117,7 @@ where
             ()
         }
 
-        DefUse::for_place(place, context, self.1).apply(self.0, place, &self.1.mdpe.move_data);
+        DefUse::for_place(place, context, self.1).apply(self.0, place, &self.1.move_data);
 
         // Visit indices of arrays/slices, which appear as locals
         self.visit_projection(place.as_ref(), context, location);
@@ -211,12 +198,12 @@ impl DefUse {
 
             // All other contexts are uses...
             PlaceContext::MutatingUse(
-                MutatingUseContext::AddressOf
+                MutatingUseContext::RawBorrow
                 | MutatingUseContext::Borrow
                 | MutatingUseContext::Retag,
             )
             | PlaceContext::NonMutatingUse(
-                NonMutatingUseContext::AddressOf
+                NonMutatingUseContext::RawBorrow
                 | NonMutatingUseContext::Copy
                 | NonMutatingUseContext::Inspect
                 | NonMutatingUseContext::Move

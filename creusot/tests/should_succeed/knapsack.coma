@@ -17,7 +17,7 @@ module M_knapsack__max [#"knapsack.rs" 16 0 16 35]
     [ bb0 = s0
       [ s0 = UIntSize.lt {a} {b} (fun (_ret':bool) ->  [ &_5 <- _ret' ] s1)
       | s1 = any [ br0 -> {_5 = false} (! bb2) | br1 -> {_5} (! bb1) ]  ]
-      
+    
     | bb1 = s0 [ s0 =  [ &_0 <- b ] s1 | s1 = bb3 ] 
     | bb2 = s0 [ s0 =  [ &_0 <- a ] s1 | s1 = bb3 ] 
     | bb3 = return' {_0} ]
@@ -25,7 +25,7 @@ module M_knapsack__max [#"knapsack.rs" 16 0 16 35]
     [ return' (result:usize)-> {[@expl:max ensures] [%#sknapsack1] UIntSize.to_int result
       = MinMax.max (UIntSize.to_int a) (UIntSize.to_int b)}
       (! return' {result}) ]
-    
+
 end
 module M_knapsack__m [#"knapsack.rs" 35 0 35 57]
   let%span sknapsack0 = "knapsack.rs" 32 11 32 37
@@ -84,7 +84,7 @@ module M_knapsack__m [#"knapsack.rs" 35 0 35 57]
       - UIntSize.to_int (Seq.get items (i - 1)).t_Item__weight'0)
       + UIntSize.to_int (Seq.get items (i - 1)).t_Item__value'0)
       >= 0)))
-    
+  
   )
 end
 module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
@@ -163,11 +163,14 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
   type t_Unique'0  =
     { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
   
-  type t_Cap'0  =
-    { t_Cap__0'0: usize }
+  type t_UsizeNoHighBit'0  =
+    { t_UsizeNoHighBit__0'0: usize }
+  
+  type t_RawVecInner'0  =
+    { t_RawVecInner__ptr'0: t_Unique'0; t_RawVecInner__cap'0: t_UsizeNoHighBit'0; t_RawVecInner__alloc'0: () }
   
   type t_RawVec'0  =
-    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+    { t_RawVec__inner'0: t_RawVecInner'0; t_RawVec__qy95zmarker'0: () }
   
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
@@ -201,18 +204,12 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
       {[%#svec28] Seq.length (view'1 result) = UIntSize.to_int n}
       {[%#svec29] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'2 result i = elem}
       (! return' {result}) ]
-    
+  
   
   use prelude.prelude.Borrow
   
-  type t_NonNull'3  =
-    { t_NonNull__pointer'3: opaque_ptr }
-  
-  type t_Unique'3  =
-    { t_Unique__pointer'3: t_NonNull'3; t_Unique__qy95zmarker'3: () }
-  
   type t_RawVec'3  =
-    { t_RawVec__ptr'3: t_Unique'3; t_RawVec__cap'3: t_Cap'0; t_RawVec__alloc'3: () }
+    { t_RawVec__inner'3: t_RawVecInner'0; t_RawVec__qy95zmarker'3: () }
   
   type t_Vec'3  =
     { t_Vec__buf'3: t_RawVec'3; t_Vec__len'3: usize }
@@ -275,16 +272,10 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
   let rec len'0 (self:t_Vec'3) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'1 self}
     any
     [ return' (result:usize)-> {[%#svec30] UIntSize.to_int result = Seq.length (view'0 self)} (! return' {result}) ]
-    
   
-  type t_NonNull'1  =
-    { t_NonNull__pointer'1: opaque_ptr }
-  
-  type t_Unique'1  =
-    { t_Unique__pointer'1: t_NonNull'1; t_Unique__qy95zmarker'1: () }
   
   type t_RawVec'1  =
-    { t_RawVec__ptr'1: t_Unique'1; t_RawVec__cap'1: t_Cap'0; t_RawVec__alloc'1: () }
+    { t_RawVec__inner'1: t_RawVecInner'0; t_RawVec__qy95zmarker'1: () }
   
   type t_Vec'1  =
     { t_Vec__buf'1: t_RawVec'1; t_Vec__len'1: usize }
@@ -312,7 +303,7 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
       {[%#svec28] Seq.length (view'2 result) = UIntSize.to_int n}
       {[%#svec29] forall i : int . 0 <= i /\ i < UIntSize.to_int n  -> index_logic'0 result i = elem}
       (! return' {result}) ]
-    
+  
   
   use seq.Seq
   
@@ -332,7 +323,7 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
     else
       MinMax.max (m'0 items (i - 1) w) (m'0 items (i - 1) (w - UIntSize.to_int (Seq.get items (i - 1)).t_Item__weight'0)
       + UIntSize.to_int (Seq.get items (i - 1)).t_Item__value'0)
-    
+  
   )
   
   axiom m'0_spec : forall items : Seq.seq (t_Item'0), i : int, w : int . ([%#sknapsack34] 0 <= i
@@ -358,7 +349,7 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
     [ return' (result:t_Item'0)-> {inv'5 result}
       {[%#svec40] has_value'0 index (view'0 self) result}
       (! return' {result}) ]
-    
+  
   
   predicate inv'6 (_1 : t_Vec'1)
   
@@ -384,7 +375,7 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
     [ return' (result:t_Vec'0)-> {inv'7 result}
       {[%#svec40] has_value'1 index (view'4 self) result}
       (! return' {result}) ]
-    
+  
   
   function view'5 (self : t_Vec'0) : Seq.seq usize =
     [%#smodel31] view'1 self
@@ -404,14 +395,14 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
     {[@expl:index requires] [%#svec39] in_bounds'2 index (view'5 self)}
     any
     [ return' (result:usize)-> {inv'8 result} {[%#svec40] has_value'2 index (view'5 self) result} (! return' {result}) ]
-    
+  
   
   let rec max'0 (a:usize) (b:usize) (return'  (ret:usize))= {[@expl:max requires] [%#sknapsack41] true}
     any
     [ return' (result:usize)-> {[%#sknapsack42] UIntSize.to_int result
       = MinMax.max (UIntSize.to_int a) (UIntSize.to_int b)}
       (! return' {result}) ]
-    
+  
   
   predicate inv'9 (_1 : borrowed (t_Vec'1))
   
@@ -438,7 +429,7 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
       {[%#svec46] resolve_elswhere'0 index (view'6 self) (view'2 self.final)}
       {[%#svec47] Seq.length (view'2 self.final) = Seq.length (view'6 self)}
       (! return' {result}) ]
-    
+  
   
   function view'7 (self : borrowed (t_Vec'0)) : Seq.seq usize =
     [%#smodel52] view'1 self.current
@@ -461,7 +452,7 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
       {[%#svec46] resolve_elswhere'1 index (view'7 self) (view'1 self.final)}
       {[%#svec47] Seq.length (view'1 self.final) = Seq.length (view'7 self)}
       (! return' {result}) ]
-    
+  
   
   predicate resolve'2 (self : borrowed usize) =
     [%#sresolve54] self.final = self.current
@@ -475,14 +466,8 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
   predicate resolve'1 (_1 : borrowed (t_Vec'0)) =
     resolve'3 _1
   
-  type t_NonNull'2  =
-    { t_NonNull__pointer'2: opaque_ptr }
-  
-  type t_Unique'2  =
-    { t_Unique__pointer'2: t_NonNull'2; t_Unique__qy95zmarker'2: () }
-  
   type t_RawVec'2  =
-    { t_RawVec__ptr'2: t_Unique'2; t_RawVec__cap'2: t_Cap'0; t_RawVec__alloc'2: () }
+    { t_RawVec__inner'2: t_RawVecInner'0; t_RawVec__qy95zmarker'2: () }
   
   type t_Vec'2  =
     { t_Vec__buf'2: t_RawVec'2; t_Vec__len'2: usize }
@@ -520,7 +505,7 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
   
   let rec with_capacity'0 (capacity:usize) (return'  (ret:t_Vec'2))= any
     [ return' (result:t_Vec'2)-> {inv'0 result} {[%#svec48] Seq.length (view'8 result) = 0} (! return' {result}) ]
-    
+  
   
   predicate invariant'3 (self : borrowed (t_Vec'2)) =
     [%#sinvariant57] inv'0 self.current /\ inv'0 self.final
@@ -555,13 +540,13 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
       [ s0 = UIntSize.add {max_weight} {[%#sknapsack0] (1 : usize)} (fun (_ret':usize) ->  [ &_8 <- _ret' ] s1)
       | s1 = from_elem'0 {[%#sknapsack1] (0 : usize)} {_8} (fun (_ret':t_Vec'0) ->  [ &_7 <- _ret' ] s2)
       | s2 = bb1 ]
-      
+    
     | bb1 = s0 [ s0 = len'0 {items} (fun (_ret':usize) ->  [ &_11 <- _ret' ] s1) | s1 = bb2 ] 
     | bb2 = s0
       [ s0 = UIntSize.add {_11} {[%#sknapsack2] (1 : usize)} (fun (_ret':usize) ->  [ &_10 <- _ret' ] s1)
       | s1 = from_elem'1 {_7} {_10} (fun (_ret':t_Vec'1) ->  [ &best_value <- _ret' ] s2)
       | s2 = bb3 ]
-      
+    
     | bb3 = s0 [ s0 =  [ &i <- [%#sknapsack3] (0 : usize) ] s1 | s1 = bb4 ] 
     | bb4 = bb4
       [ bb4 = {[@expl:loop invariant #0] [%#sknapsack7] Seq.length (view'0 items) + 1 = Seq.length (view'2 best_value)}
@@ -582,7 +567,7 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
         | bb10 = s0
           [ s0 = UIntSize.lt {i} {_23} (fun (_ret':bool) ->  [ &_21 <- _ret' ] s1)
           | s1 = any [ br0 -> {_21 = false} (! bb34) | br1 -> {_21} (! bb11) ]  ]
-          
+        
         | bb11 = s0 [ s0 = index'0 {items} {i} (fun (_ret':t_Item'0) ->  [ &_26 <- _ret' ] s1) | s1 = bb12 ] 
         | bb12 = s0 [ s0 =  [ &it <- _26 ] s1 | s1 =  [ &w <- [%#sknapsack8] (0 : usize) ] s2 | s2 = bb13 ] 
         | bb13 = bb13
@@ -608,11 +593,11 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
             | bb19 = s0
               [ s0 = UIntSize.le {w} {max_weight} (fun (_ret':bool) ->  [ &_37 <- _ret' ] s1)
               | s1 = any [ br0 -> {_37 = false} (! bb33) | br1 -> {_37} (! bb20) ]  ]
-              
+            
             | bb20 = s0
               [ s0 = UIntSize.gt {it.t_Item__weight'0} {w} (fun (_ret':bool) ->  [ &_41 <- _ret' ] s1)
               | s1 = any [ br0 -> {_41 = false} (! bb24) | br1 -> {_41} (! bb21) ]  ]
-              
+            
             | bb21 = s0 [ s0 = index'1 {best_value} {i} (fun (_ret':t_Vec'0) ->  [ &_46 <- _ret' ] s1) | s1 = bb22 ] 
             | bb22 = s0 [ s0 = index'2 {_46} {w} (fun (_ret':usize) ->  [ &_44 <- _ret' ] s1) | s1 = bb23 ] 
             | bb23 = s0 [ s0 =  [ &_40 <- _44 ] s1 | s1 = bb30 ] 
@@ -623,12 +608,12 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
               [ s0 = UIntSize.sub {w} {it.t_Item__weight'0} (fun (_ret':usize) ->  [ &_64 <- _ret' ] s1)
               | s1 = index'2 {_61} {_64} (fun (_ret':usize) ->  [ &_59 <- _ret' ] s2)
               | s2 = bb28 ]
-              
+            
             | bb28 = s0
               [ s0 = UIntSize.add {_59} {it.t_Item__value'0} (fun (_ret':usize) ->  [ &_57 <- _ret' ] s1)
               | s1 = max'0 {_51} {_57} (fun (_ret':usize) ->  [ &_40 <- _ret' ] s2)
               | s2 = bb29 ]
-              
+            
             | bb29 = bb30
             | bb30 = s0
               [ s0 = Borrow.borrow_mut <t_Vec'1> {best_value}
@@ -636,7 +621,7 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
               | s1 = UIntSize.add {i} {[%#sknapsack14] (1 : usize)} (fun (_ret':usize) ->  [ &_72 <- _ret' ] s2)
               | s2 = index_mut'0 {_71} {_72} (fun (_ret':borrowed (t_Vec'0)) ->  [ &_70 <- _ret' ] s3)
               | s3 = bb31 ]
-              
+            
             | bb31 = s0
               [ s0 = Borrow.borrow_final <t_Vec'0> {_70.current} {Borrow.get_id _70}
                   (fun (_ret':borrowed (t_Vec'0)) ->
@@ -645,28 +630,28 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
                     s1)
               | s1 = index_mut'1 {_69} {w} (fun (_ret':borrowed usize) ->  [ &_68 <- _ret' ] s2)
               | s2 = bb32 ]
-              
+            
             | bb32 = s0
               [ s0 =  [ &_68 <- { _68 with current = _40 } ] s1
               | s1 = -{resolve'0 _68}- s2
               | s2 = -{resolve'1 _70}- s3
               | s3 = UIntSize.add {w} {[%#sknapsack15] (1 : usize)} (fun (_ret':usize) ->  [ &w <- _ret' ] s4)
               | s4 = bb13 ]
-               ]
              ]
-          
+           ]
+        
         | bb33 = s0
           [ s0 = UIntSize.add {i} {[%#sknapsack16] (1 : usize)} (fun (_ret':usize) ->  [ &i <- _ret' ] s1) | s1 = bb4 ]
-           ]
          ]
-      
+       ]
+    
     | bb34 = s0 [ s0 = len'0 {items} (fun (_ret':usize) ->  [ &_78 <- _ret' ] s1) | s1 = bb35 ] 
     | bb35 = s0 [ s0 = with_capacity'0 {_78} (fun (_ret':t_Vec'2) ->  [ &result <- _ret' ] s1) | s1 = bb36 ] 
     | bb36 = s0
       [ s0 =  [ &left_weight <- max_weight ] s1
       | s1 = len'0 {items} (fun (_ret':usize) ->  [ &j <- _ret' ] s2)
       | s2 = bb37 ]
-      
+    
     | bb37 = bb38
     | bb38 = bb38
       [ bb38 = {[@expl:loop invariant #0] [%#sknapsack19] inv'0 result}
@@ -677,25 +662,25 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
         | bb40 = s0
           [ s0 = UIntSize.lt {[%#sknapsack20] (0 : usize)} {j} (fun (_ret':bool) ->  [ &_88 <- _ret' ] s1)
           | s1 = any [ br0 -> {_88 = false} (! bb51) | br1 -> {_88} (! bb41) ]  ]
-          
+        
         | bb41 = s0
           [ s0 = UIntSize.sub {j} {[%#sknapsack21] (1 : usize)} (fun (_ret':usize) ->  [ &j <- _ret' ] s1)
           | s1 = index'0 {items} {j} (fun (_ret':t_Item'0) ->  [ &_91 <- _ret' ] s2)
           | s2 = bb42 ]
-          
+        
         | bb42 = s0
           [ s0 =  [ &it1 <- _91 ] s1
           | s1 = UIntSize.add {j} {[%#sknapsack22] (1 : usize)} (fun (_ret':usize) ->  [ &_100 <- _ret' ] s2)
           | s2 = index'1 {best_value} {_100} (fun (_ret':t_Vec'0) ->  [ &_98 <- _ret' ] s3)
           | s3 = bb43 ]
-          
+        
         | bb43 = s0 [ s0 = index'2 {_98} {left_weight} (fun (_ret':usize) ->  [ &_96 <- _ret' ] s1) | s1 = bb44 ] 
         | bb44 = s0 [ s0 = index'1 {best_value} {j} (fun (_ret':t_Vec'0) ->  [ &_106 <- _ret' ] s1) | s1 = bb45 ] 
         | bb45 = s0 [ s0 = index'2 {_106} {left_weight} (fun (_ret':usize) ->  [ &_104 <- _ret' ] s1) | s1 = bb46 ] 
         | bb46 = s0
           [ s0 = UIntSize.ne {_96} {_104} (fun (_ret':bool) ->  [ &_94 <- _ret' ] s1)
           | s1 = any [ br0 -> {_94 = false} (! bb49) | br1 -> {_94} (! bb47) ]  ]
-          
+        
         | bb47 = s0
           [ s0 = {inv'0 result}
             Borrow.borrow_mut <t_Vec'2> {result}
@@ -706,15 +691,15 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
                 s1)
           | s1 = push'0 {_111} {it1} (fun (_ret':()) ->  [ &_110 <- _ret' ] s2)
           | s2 = bb48 ]
-          
+        
         | bb48 = s0
           [ s0 = UIntSize.sub {left_weight} {it1.t_Item__weight'0} (fun (_ret':usize) ->  [ &left_weight <- _ret' ] s1)
           | s1 = bb50 ]
-          
+        
         | bb49 = bb50
         | bb50 = bb38 ]
-         ]
-      
+       ]
+    
     | bb51 = s0 [ s0 =  [ &_0 <- result ] s1 | s1 = bb52 ] 
     | bb52 = bb53
     | bb53 = return' {_0} ]
@@ -767,5 +752,5 @@ module M_knapsack__knapsack01_dyn [#"knapsack.rs" 49 0 49 91]
     
     [ return' (result:t_Vec'2)-> {[@expl:knapsack01_dyn result type invariant] [%#sknapsack27] inv'0 result}
       (! return' {result}) ]
-    
+
 end

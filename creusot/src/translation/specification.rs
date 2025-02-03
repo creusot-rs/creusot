@@ -11,12 +11,11 @@ use crate::{
     translation::pearlite::{self, normalize, Literal, Term, TermKind},
     util::erased_identity_for_item,
 };
-use rustc_ast::ast::{AttrArgs, AttrArgsEq};
-use rustc_hir::{def_id::DefId, Safety};
+use rustc_hir::{def_id::DefId, AttrArgs, Safety};
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{self, Body, Local, SourceInfo, SourceScope, OUTERMOST_SOURCE_SCOPE},
-    ty::{EarlyBinder, GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind},
+    ty::{EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv},
 };
 use rustc_span::{
     symbol::{kw, Ident},
@@ -53,10 +52,10 @@ impl<'tcx> PreContract<'tcx> {
         }
     }
 
-    pub(crate) fn normalize(mut self, tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>) -> Self {
+    pub(crate) fn normalize(mut self, tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>) -> Self {
         for term in self.terms_mut() {
             *term =
-                normalize(tcx, param_env, std::mem::replace(term, /*Dummy*/ Term::mk_true(tcx)));
+                normalize(tcx, typing_env, std::mem::replace(term, /*Dummy*/ Term::mk_true(tcx)));
         }
         self
     }
@@ -316,7 +315,7 @@ pub(crate) fn contract_clauses_of(
 
     let get_creusot_item = |arg: &AttrArgs| {
         let predicate_name = match arg {
-            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => l.symbol,
+            AttrArgs::Eq { expr: l, .. } => l.symbol,
             _ => return Err(InvalidTokens { id: def_id }),
         };
         ctx.creusot_item(predicate_name).ok_or(InvalidTerm { id: def_id })
@@ -411,7 +410,7 @@ pub(crate) fn contract_of<'tcx>(
             });
         }
 
-        contract.normalize(ctx.tcx, ctx.param_env(def_id))
+        contract.normalize(ctx.tcx, ctx.typing_env(def_id))
     }
 }
 
@@ -426,8 +425,8 @@ pub struct PreSignature<'tcx> {
 }
 
 impl<'tcx> PreSignature<'tcx> {
-    pub(crate) fn normalize(mut self, tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>) -> Self {
-        self.contract = self.contract.normalize(tcx, param_env);
+    pub(crate) fn normalize(mut self, tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>) -> Self {
+        self.contract = self.contract.normalize(tcx, typing_env);
         self
     }
 }
@@ -465,7 +464,7 @@ pub(crate) fn pre_sig_of<'tcx>(
 
             let term = Term::call(
                 ctx.tcx,
-                ctx.param_env(def_id),
+                ctx.typing_env(def_id),
                 unnest_id,
                 unnest_subst,
                 vec![Term::var(self_, env_ty).cur(), Term::var(self_, env_ty).fin()],
@@ -584,7 +583,8 @@ fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (impl Iterator<Item = (Ident
         TyKind::FnDef(..) => {
             let gen_sig = tcx
                 .instantiate_bound_regions_with_erased(tcx.fn_sig(def_id).instantiate_identity());
-            let sig = tcx.normalize_erasing_regions(tcx.param_env(def_id), gen_sig);
+            let sig =
+                tcx.normalize_erasing_regions(TypingEnv::non_body_analysis(tcx, def_id), gen_sig);
             let iter = tcx.fn_arg_names(def_id).iter().cloned().zip(sig.inputs().iter().cloned());
             (Box::new(iter), sig.output())
         }
@@ -592,7 +592,7 @@ fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (impl Iterator<Item = (Ident
             let sig = tcx.instantiate_bound_regions_with_erased(
                 tcx.signature_unclosure(subst.as_closure().sig(), Safety::Safe),
             );
-            let sig = tcx.normalize_erasing_regions(tcx.param_env(def_id), sig);
+            let sig = tcx.normalize_erasing_regions(TypingEnv::non_body_analysis(tcx, def_id), sig);
             let env_ty = tcx.closure_env_ty(ty, subst.as_closure().kind(), tcx.lifetimes.re_erased);
 
             // I wish this could be called "self"

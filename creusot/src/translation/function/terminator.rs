@@ -28,7 +28,7 @@ use rustc_middle::{
         SourceInfo, StatementKind, SwitchTargets,
         TerminatorKind::{self, *},
     },
-    ty::{self, AssocItem, GenericArgKind, GenericArgsRef, ParamEnv, Ty, TyKind},
+    ty::{self, AssocItem, GenericArgKind, GenericArgsRef, Ty, TyKind, TypingEnv, TypingMode},
 };
 use rustc_mir_dataflow::{
     move_paths::{HasMoveData, LookupResult},
@@ -134,11 +134,15 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             .map(|p| p.predicates_for(self.tcx(), subst))
                             .unwrap_or_else(Vec::new);
 
-                        let infcx = self.ctx.infer_ctxt().ignoring_regions().build();
+                        let infcx = self
+                            .ctx
+                            .infer_ctxt()
+                            .ignoring_regions()
+                            .build(TypingMode::non_body_analysis());
                         let res = traits::evaluate_additional_predicates(
                             &infcx,
                             predicates,
-                            self.param_env(),
+                            self.typing_env().param_env,
                             span,
                         );
                         if let Err(errs) = res {
@@ -156,7 +160,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 };
                             resolve_function(
                                 self.ctx,
-                                self.param_env(),
+                                self.typing_env(),
                                 fun_id,
                                 subst,
                                 (self.body, span, location),
@@ -166,7 +170,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         if self.ctx.sig(fun_def_id).contract.is_requires_false() {
                             target = None
                         } else {
-                            let subst = self.ctx.normalize_erasing_regions(self.param_env(), subst);
+                            let subst =
+                                self.ctx.normalize_erasing_regions(self.typing_env(), subst);
 
                             self.emit_statement(Statement::Call(
                                 self.translate_place(destination.as_ref()),
@@ -193,8 +198,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
             }
             Assert { cond, expected, msg, target, unwind: _ } => {
-                let msg = self.get_explanation(msg);
-
                 let mut cond = match cond {
                     Operand::Copy(pl) | Operand::Move(pl) => {
                         if let Some(locl) = pl.as_local() {
@@ -217,7 +220,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         kind: TermKind::Unary { op: UnOp::Not, arg: Box::new(cond) },
                     };
                 }
-                self.emit_statement(Statement::Assertion { cond, msg });
+                let msg = self.get_explanation(msg);
+                self.emit_statement(Statement::Assertion { cond, msg, trusted: false });
                 term = mk_goto(*target)
             }
             Drop { target, place, .. } => {
@@ -289,12 +293,12 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             let TyKind::Closure(ghost_def_id, ghost_args_ty) = ty.kind() else { unreachable!() };
 
             // Check that all captures are `GhostBox`s
-            let param_env = self.ctx.param_env(*ghost_def_id);
+            let typing_env = self.ctx.typing_env(*ghost_def_id);
             let captures = self.ctx.closure_captures(ghost_def_id.expect_local());
             for capture in captures.into_iter().rev() {
                 let copy_allowed = match capture.info.capture_kind {
                     ty::UpvarCapture::ByRef(
-                        ty::BorrowKind::MutBorrow | ty::BorrowKind::UniqueImmBorrow,
+                        ty::BorrowKind::Mutable | ty::BorrowKind::UniqueImmutable,
                     ) => false,
                     _ => true,
                 };
@@ -302,7 +306,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
                 let is_ghost = self.is_ghost_box(place_ty);
                 let is_copy =
-                    copy_allowed && place_ty.is_copy_modulo_regions(self.tcx(), param_env);
+                    copy_allowed && self.tcx().type_is_copy_modulo_regions(typing_env, place_ty);
 
                 if !is_ghost && !is_copy {
                     let mut error = self.ctx.error(
@@ -397,14 +401,16 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 /// - `report_location`: used to emit an eventual warning.
 fn resolve_function<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    param_env: ParamEnv<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
     report_location: (&mir::Body<'tcx>, Span, Location),
 ) -> (DefId, GenericArgsRef<'tcx>) {
     let res;
-    if let Some(AssocItem { container: ty::TraitContainer, .. }) = ctx.opt_associated_item(def_id) {
-        res = traits::TraitResolved::resolve_item(ctx.tcx, param_env, def_id, subst)
+    if let Some(AssocItem { container: ty::AssocItemContainer::Trait, .. }) =
+        ctx.opt_associated_item(def_id)
+    {
+        res = traits::TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst)
             .to_opt(def_id, subst)
             .expect("could not find instance")
     } else {

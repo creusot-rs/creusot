@@ -15,8 +15,8 @@ module M_02__fib [#"02.rs" 32 0 32 25]
       true
     else
       (0 <= ([%#s020] i) /\ ([%#s020] i - 1) < ([%#s020] i)) /\ 0 <= ([%#s020] i) /\ ([%#s020] i - 2) < ([%#s020] i)
-    
   
+
 end
 module M_02__lemma_fib_bound [#"02.rs" 47 0 47 30]
   let%span s020 = "02.rs" 44 11 44 17
@@ -51,7 +51,7 @@ module M_02__lemma_fib_bound [#"02.rs" 47 0 47 30]
        -> (let _ = lemma_fib_bound'0 (i - 2) in (([@expl:lemma_fib_bound requires] [%#s020] 0 <= i - 1)
       /\ 0 <= ([%#s022] i) /\ ([%#s022] i - 1) < ([%#s022] i))
       /\ (([%#s021] fib'0 (i - 1) <= Power.power 2 (i - 1))  -> ([%#s021] fib'0 i <= Power.power 2 i))))
-    
+  
   )
 end
 module M_02__fib_memo [#"02.rs" 95 0 95 50]
@@ -103,11 +103,14 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
   
   use prelude.prelude.UIntSize
   
-  type t_Cap'0  =
-    { t_Cap__0'0: usize }
+  type t_UsizeNoHighBit'0  =
+    { t_UsizeNoHighBit__0'0: usize }
+  
+  type t_RawVecInner'0  =
+    { t_RawVecInner__ptr'0: t_Unique'0; t_RawVecInner__cap'0: t_UsizeNoHighBit'0; t_RawVecInner__alloc'0: () }
   
   type t_RawVec'0  =
-    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+    { t_RawVec__inner'0: t_RawVecInner'0; t_RawVec__qy95zmarker'0: () }
   
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
@@ -172,7 +175,7 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
     [ return' (result:t_Cell'0)-> {inv'2 result}
       {[%#svec14] has_value'0 index (view'0 self) result}
       (! return' {result}) ]
-    
+  
   
   predicate inv'3 (_1 : t_Option'0)
   
@@ -194,12 +197,12 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
     [ return' (result:t_Option'0)-> {[%#s0216] inv'3 result}
       {[%#s0217] inv'4 self.t_Cell__ghost_inv'0 result}
       (! return' {result}) ]
-    
+  
   
   let rec v_Some'0 (input:t_Option'0) (ret  (field_0:usize))= any
     [ good (field_0:usize)-> {C_Some'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0 : usize [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
-    
+  
   
   use int.Power
   
@@ -255,12 +258,12 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
     | bb5 = s0
       [ s0 = UIntSize.eq {i} {[%#s020] (0 : usize)} (fun (_ret':bool) ->  [ &_15 <- _ret' ] s1)
       | s1 = any [ br0 -> {_15 = false} (! bb8) | br1 -> {_15} (! bb7) ]  ]
-      
+    
     | bb7 = s0 [ s0 =  [ &fib_i <- [%#s021] (0 : usize) ] s1 | s1 = bb16 ] 
     | bb8 = s0
       [ s0 = UIntSize.eq {i} {[%#s022] (1 : usize)} (fun (_ret':bool) ->  [ &_17 <- _ret' ] s1)
       | s1 = any [ br0 -> {_17 = false} (! bb10) | br1 -> {_17} (! bb9) ]  ]
-      
+    
     | bb9 = s0 [ s0 =  [ &fib_i <- [%#s023] (1 : usize) ] s1 | s1 = bb15 ] 
     | bb10 = s0 [ s0 =  [ &_19 <- [%#s024] Snapshot.new () ] s1 | s1 = bb11 ] 
     | bb11 = s0 [ s0 =  [ &_21 <- [%#s025] Snapshot.new () ] s1 | s1 = bb12 ] 
@@ -268,24 +271,24 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
       [ s0 = UIntSize.sub {i} {[%#s026] (1 : usize)} (fun (_ret':usize) ->  [ &_25 <- _ret' ] s1)
       | s1 = fib_memo'0 {mem} {_25} (fun (_ret':usize) ->  [ &_23 <- _ret' ] s2)
       | s2 = bb13 ]
-      
+    
     | bb13 = s0
       [ s0 = UIntSize.sub {i} {[%#s027] (2 : usize)} (fun (_ret':usize) ->  [ &_29 <- _ret' ] s1)
       | s1 = fib_memo'0 {mem} {_29} (fun (_ret':usize) ->  [ &_27 <- _ret' ] s2)
       | s2 = bb14 ]
-      
+    
     | bb14 = s0 [ s0 = UIntSize.add {_23} {_27} (fun (_ret':usize) ->  [ &fib_i <- _ret' ] s1) | s1 = bb15 ] 
     | bb15 = bb16
     | bb16 = s0
       [ s0 = {[@expl:assertion] [%#s028] UIntSize.to_int fib_i = fib'0 (UIntSize.to_int i)} s1
       | s1 = index'0 {mem} {i} (fun (_ret':t_Cell'0) ->  [ &_35 <- _ret' ] s2)
       | s2 = bb17 ]
-      
+    
     | bb17 = s0
       [ s0 =  [ &_38 <- C_Some'0 fib_i ] s1
       | s1 = set'0 {_35} {_38} (fun (_ret':()) ->  [ &_33 <- _ret' ] s2)
       | s2 = bb18 ]
-      
+    
     | bb18 = s0 [ s0 =  [ &_0 <- fib_i ] s1 | s1 = bb19 ] 
     | bb19 = return' {_0} ]
     )
@@ -310,5 +313,5 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
     
     [ return' (result:usize)-> {[@expl:fib_memo ensures] [%#s0212] UIntSize.to_int result = fib'0 (UIntSize.to_int i)}
       (! return' {result}) ]
-    
+
 end

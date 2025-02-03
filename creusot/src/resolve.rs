@@ -1,12 +1,7 @@
-use std::rc::Rc;
-
 use crate::analysis::{Borrows, MaybeLiveExceptDrop};
 use either::Either;
-use rustc_borrowck::{
-    borrow_set::BorrowSet,
-    consumers::{BorrowIndex, PlaceExt, RegionInferenceContext},
-};
-use rustc_index::bit_set::{BitSet, ChunkedBitSet};
+use rustc_borrowck::consumers::{BorrowIndex, BorrowSet, PlaceExt, RegionInferenceContext};
+use rustc_index::bit_set::MixedBitSet;
 use rustc_middle::{
     mir::{
         traversal, BasicBlock, Body, Location, PlaceRef, ProjectionElem, Rvalue, Statement,
@@ -17,46 +12,42 @@ use rustc_middle::{
 use rustc_mir_dataflow::{
     impls::MaybeUninitializedPlaces,
     move_paths::{HasMoveData, LookupResult, MoveData, MovePathIndex},
-    on_all_children_bits, Analysis, GenKillAnalysis, MoveDataParamEnv, ResultsCursor,
+    on_all_children_bits, Analysis, ResultsCursor,
 };
 
 use crate::extended_location::ExtendedLocation;
 
 pub struct Resolver<'a, 'tcx> {
     live: ResultsCursor<'a, 'tcx, MaybeLiveExceptDrop<'a, 'tcx>>,
-    uninit: ResultsCursor<'a, 'tcx, MaybeUninitializedPlaces<'a, 'a, 'tcx>>,
+    uninit: ResultsCursor<'a, 'tcx, MaybeUninitializedPlaces<'a, 'tcx>>,
     borrows: ResultsCursor<'a, 'tcx, Borrows<'a, 'a, 'tcx>>,
     borrow_set: &'a BorrowSet<'tcx>,
-    mdpe: &'a MoveDataParamEnv<'tcx>,
+    move_data: &'a MoveData<'tcx>,
     body: &'a Body<'tcx>,
     tcx: TyCtxt<'tcx>,
 }
 
 impl<'a, 'tcx> HasMoveData<'tcx> for Resolver<'a, 'tcx> {
     fn move_data(&self) -> &MoveData<'tcx> {
-        &self.mdpe.move_data
+        &self.move_data
     }
 }
 
 pub trait HasMoveDataExt<'tcx>: HasMoveData<'tcx> {
-    fn empty_bitset(&self) -> BitSet<MovePathIndex>;
-    fn filled_bitset(&self) -> BitSet<MovePathIndex>;
+    fn empty_bitset(&self) -> MixedBitSet<MovePathIndex>;
 }
 
 impl<'tcx, T: HasMoveData<'tcx>> HasMoveDataExt<'tcx> for T {
-    fn empty_bitset(&self) -> BitSet<MovePathIndex> {
-        BitSet::new_empty(self.move_data().move_paths.len())
-    }
-    fn filled_bitset(&self) -> BitSet<MovePathIndex> {
-        BitSet::new_filled(self.move_data().move_paths.len())
+    fn empty_bitset(&self) -> MixedBitSet<MovePathIndex> {
+        MixedBitSet::new_empty(self.move_data().move_paths.len())
     }
 }
 
 #[derive(Debug)]
 struct State {
-    live: ChunkedBitSet<MovePathIndex>,
-    uninit: ChunkedBitSet<MovePathIndex>,
-    borrows: BitSet<BorrowIndex>,
+    live: MixedBitSet<MovePathIndex>,
+    uninit: MixedBitSet<MovePathIndex>,
+    borrows: MixedBitSet<BorrowIndex>,
 }
 
 impl<'a, 'tcx> Resolver<'a, 'tcx> {
@@ -64,37 +55,34 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
         tcx: TyCtxt<'tcx>,
         body: &'a Body<'tcx>,
         borrow_set: &'a BorrowSet<'tcx>,
-        regioncx: Rc<RegionInferenceContext<'tcx>>,
-        mdpe: &'a MoveDataParamEnv<'tcx>,
+        regioncx: &'a RegionInferenceContext<'tcx>,
+        move_data: &'a MoveData<'tcx>,
     ) -> Resolver<'a, 'tcx> {
-        let uninit = MaybeUninitializedPlaces::new(tcx, body, mdpe)
+        let uninit = MaybeUninitializedPlaces::new(tcx, body, move_data)
             .mark_inactive_variants_as_uninit()
-            .into_engine(tcx, body)
-            .iterate_to_fixpoint()
+            .iterate_to_fixpoint(tcx, body, None)
             .into_results_cursor(body);
 
         // MaybeLiveExceptDrop ignores `drop` for the purpose of resolve liveness... unclear that this can
         // be sound.
-        let live = MaybeLiveExceptDrop::new(body, mdpe, tcx)
-            .into_engine(tcx, body)
-            .iterate_to_fixpoint()
+        let live = MaybeLiveExceptDrop::new(tcx, body, move_data)
+            .iterate_to_fixpoint(tcx, body, None)
             .into_results_cursor(body);
 
         let borrows = Borrows::new(tcx, body, &regioncx, borrow_set)
-            .into_engine(tcx, body)
-            .iterate_to_fixpoint()
+            .iterate_to_fixpoint(tcx, body, None)
             .into_results_cursor(body);
 
-        Resolver { live, uninit, borrows, borrow_set, mdpe, body, tcx }
+        Resolver { live, uninit, borrows, borrow_set, move_data, body, tcx }
     }
 
     /// Get the set of frozen move paths corresponding to the given set of borrows.
     /// If both components of a tuple are borrowed, then each component is
     /// considered frozen independently, and not the parent move path.
-    fn frozen_of_borrows(&self, borrows: &BitSet<BorrowIndex>) -> BitSet<MovePathIndex> {
+    fn frozen_of_borrows(&self, borrows: &MixedBitSet<BorrowIndex>) -> MixedBitSet<MovePathIndex> {
         let mut frozen = self.empty_bitset();
         for bi in borrows.iter() {
-            let place = self.borrow_set[bi].borrowed_place;
+            let place = self.borrow_set[bi].borrowed_place();
             match self.move_data().rev_lookup.find(place.as_ref()) {
                 LookupResult::Exact(mp) => on_all_children_bits(&self.move_data(), mp, |mp| {
                     frozen.insert(mp);
@@ -107,25 +95,23 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
 
     /// Places that need to be resolved eventually
     /// = (live ∪ frozen) ∩ initialized
-    fn need_resolve_places(&self, st: &State) -> BitSet<MovePathIndex> {
+    fn need_resolve_places(&self, st: &State) -> MixedBitSet<MovePathIndex> {
         let mut should_resolve = self.frozen_of_borrows(&st.borrows);
         should_resolve.union(&st.live);
-
-        let mut x = self.empty_bitset();
-        x.union(&st.uninit);
-        should_resolve.subtract(&x);
+        should_resolve.subtract(&st.uninit);
         should_resolve
     }
 
     /// Places that have already been resolved
     /// = not live ∩ not frozen ∩ initialized
     /// = initialized - need_resolve_places
-    fn resolved_places(&self, st: &State) -> BitSet<MovePathIndex> {
+    fn resolved_places(&self, st: &State) -> MixedBitSet<MovePathIndex> {
         let mut x = self.frozen_of_borrows(&st.borrows);
         x.union(&st.live);
         x.union(&st.uninit);
 
-        let mut resolved = self.filled_bitset();
+        let mut resolved = self.empty_bitset();
+        resolved.insert_all();
         resolved.subtract(&x);
         resolved
     }
@@ -189,10 +175,10 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
                     if !place.ignore_borrow(
                         self.tcx,
                         self.body,
-                        &self.borrow_set.locals_state_at_exit,
+                        &self.borrow_set.locals_state_at_exit(),
                     ) {
                         let index = BorrowIndex::from(
-                            self.borrow_set.location_map.get_index_of(&loc).unwrap(),
+                            self.borrow_set.location_map().get_index_of(&loc).unwrap(),
                         );
                         borrows.insert(index);
                     }
@@ -202,18 +188,26 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
                 if let TerminatorEdges::AssignOnReturn { return_, place, .. } = term.edges() {
                     self.uninit.seek_after_primary_effect(loc);
                     uninit = self.uninit.get().clone();
-                    self.uninit.mut_analysis().call_return_effect(&mut uninit, loc.block, place);
+                    self.uninit.mut_analysis().apply_call_return_effect(
+                        &mut uninit,
+                        loc.block,
+                        place,
+                    );
 
                     self.borrows.seek_before_primary_effect(loc);
                     borrows = self.borrows.get().clone();
-                    self.borrows.mut_analysis().call_return_effect(&mut borrows, loc.block, place);
+                    self.borrows.mut_analysis().apply_call_return_effect(
+                        &mut borrows,
+                        loc.block,
+                        place,
+                    );
 
                     if return_.len() == 1 {
                         self.live.seek_after_primary_effect(return_[0].start_location());
                         live = self.live.get().clone();
                     } else {
                         assert_eq!(return_.len(), 0);
-                        live = ChunkedBitSet::new_empty(self.move_data().move_paths.len());
+                        live = MixedBitSet::new_empty(self.move_data().move_paths.len());
                     }
                 } else {
                     return self.state_at_loc(ExtendedLocation::Mid(loc));
@@ -236,7 +230,7 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
     pub fn need_resolve_resolved_places_at(
         &mut self,
         loc: ExtendedLocation,
-    ) -> (BitSet<MovePathIndex>, BitSet<MovePathIndex>) {
+    ) -> (MixedBitSet<MovePathIndex>, MixedBitSet<MovePathIndex>) {
         let st = self.state_at_loc(loc);
         (self.need_resolve_places(&st), self.resolved_places(&st))
     }
@@ -244,11 +238,17 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
     pub fn resolved_places_during(
         &mut self,
         loc: ExtendedLocation,
-    ) -> (BitSet<MovePathIndex>, BitSet<MovePathIndex>) {
+    ) -> (MixedBitSet<MovePathIndex>, MixedBitSet<MovePathIndex>) {
         let (mut res, resolved) =
             self.need_resolve_resolved_places_at(ExtendedLocation::Start(loc.loc()));
         let st_after = self.state_at_loc(loc);
-        res.intersect(&self.resolved_places(&st_after));
+
+        // MixedBitSet::intersect is not implemented in rustc, substract is...
+        //res.intersect(&self.resolved_places(&st_after));
+        let mut not_res = res.clone();
+        not_res.subtract(&self.resolved_places(&st_after));
+        res.subtract(&not_res);
+
         (res, resolved)
     }
 
@@ -256,7 +256,7 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
         &mut self,
         from: BasicBlock,
         to: BasicBlock,
-    ) -> (BitSet<MovePathIndex>, BitSet<MovePathIndex>) {
+    ) -> (MixedBitSet<MovePathIndex>, MixedBitSet<MovePathIndex>) {
         // if some places still need to be resolved at the end of the current block
         // but not at the start of the next block, we also need to resolve them now
         // see the init_join function in the resolve_uninit test
@@ -273,17 +273,17 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
         (res, self.resolved_places(&state_from))
     }
 
-    pub fn uninit_places_before(&mut self, loc: Location) -> ChunkedBitSet<MovePathIndex> {
+    pub fn uninit_places_before(&mut self, loc: Location) -> MixedBitSet<MovePathIndex> {
         ExtendedLocation::Start(loc).seek_to(&mut self.uninit);
         self.uninit.get().clone()
     }
 
-    pub fn live_places_before(&mut self, loc: Location) -> ChunkedBitSet<MovePathIndex> {
+    pub fn live_places_before(&mut self, loc: Location) -> MixedBitSet<MovePathIndex> {
         ExtendedLocation::Start(loc).seek_to(&mut self.live);
         self.live.get().clone()
     }
 
-    pub fn frozen_places_before(&mut self, loc: Location) -> BitSet<MovePathIndex> {
+    pub fn frozen_places_before(&mut self, loc: Location) -> MixedBitSet<MovePathIndex> {
         ExtendedLocation::Start(loc).seek_to(&mut self.borrows);
         self.frozen_of_borrows(self.borrows.get())
     }

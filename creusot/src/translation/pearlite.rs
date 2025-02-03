@@ -35,8 +35,8 @@ use rustc_middle::{
         AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
     },
     ty::{
-        int_ty, uint_ty, CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, ParamEnv, Ty,
-        TyCtxt, TyKind, TypeFoldable, TypeVisitable, TypeVisitableExt, UserType,
+        int_ty, uint_ty, CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, Ty, TyCtxt,
+        TyKind, TypeFoldable, TypeVisitable, TypeVisitableExt, TypingEnv, UserTypeKind,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
@@ -179,10 +179,10 @@ impl<'tcx> TermKind<'tcx> {
         tcx: TyCtxt<'tcx>,
     ) -> Self {
         let Some(user_ty) = user_ty else { return Self::Item(def_id, subst) };
-
-        match user_ty.value {
-            UserType::Ty(_) => Self::Item(def_id, subst),
-            UserType::TypeOf(def_id2, u_subst) => {
+        assert!(user_ty.value.bounds.is_empty());
+        match user_ty.value.kind {
+            UserTypeKind::Ty(_) => Self::Item(def_id, subst),
+            UserTypeKind::TypeOf(def_id2, u_subst) => {
                 assert_eq!(def_id, def_id2);
                 if u_subst.args.len() != subst.len() {
                     return Self::Item(def_id, subst);
@@ -652,23 +652,29 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     .map(|f| Ok((f.name, self.expr_term(f.expr)?)))
                     .collect::<Result<_, Error>>()?;
 
-                if let Some(base) = base {
-                    let variant = &adt_def.variant(variant_index);
+                match base {
+                    thir::AdtExprBase::None => (),
+                    thir::AdtExprBase::Base(base) => {
+                        let variant = &adt_def.variant(variant_index);
 
-                    let base = self.expr_term(base.base)?;
-                    let missing: Vec<_> = (0..variant.fields.len())
-                        .filter(|i| !fields.iter().any(|(f, _)| i == &f.as_usize()))
-                        .collect();
+                        let base = self.expr_term(base.base)?;
+                        let missing: Vec<_> = (0..variant.fields.len())
+                            .filter(|i| !fields.iter().any(|(f, _)| i == &f.as_usize()))
+                            .collect();
 
-                    for missing_field in missing {
-                        fields.push((
-                            missing_field.into(),
-                            Term {
-                                ty: variant.fields[missing_field.into()].ty(self.ctx.tcx, args),
-                                span: DUMMY_SP,
-                                kind: mk_projection(base.clone(), missing_field.into()),
-                            },
-                        ));
+                        for missing_field in missing {
+                            fields.push((
+                                missing_field.into(),
+                                Term {
+                                    ty: variant.fields[missing_field.into()].ty(self.ctx.tcx, args),
+                                    span: DUMMY_SP,
+                                    kind: mk_projection(base.clone(), missing_field.into()),
+                                },
+                            ));
+                        }
+                    }
+                    thir::AdtExprBase::DefaultFields(_) => {
+                        unimplemented!("default_field_values is not supported in pearlite")
                     }
                 }
 
@@ -915,7 +921,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 } else {
                     let span = self.ctx.hir().span(HirId {
                         owner: OwnerId { def_id: self.item_id },
-                        local_id: init_scope.id,
+                        local_id: init_scope.local_id,
                     });
                     Err(Error::msg(span, "let-bindings must have values"))
                 }
@@ -1119,7 +1125,8 @@ pub(crate) fn type_invariant_term<'tcx>(
     // assert!(!name.as_str().is_empty(), "name has len 0, env={env_did:?}, ty={ty:?}");
     let arg = Term { ty, span, kind: TermKind::Var(name) };
 
-    let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(ctx.tcx.param_env(env_did), ty)?;
+    let (inv_fn_did, inv_fn_substs) =
+        ctx.type_invariant(TypingEnv::non_body_analysis(ctx.tcx, env_did), ty)?;
     let inv_fn_ty = ctx.type_of(inv_fn_did).instantiate(ctx.tcx, inv_fn_substs);
     assert!(matches!(inv_fn_ty.kind(), TyKind::FnDef(id, _) if id == &inv_fn_did));
 
@@ -1347,13 +1354,13 @@ impl<'tcx> Term<'tcx> {
 
     pub(crate) fn call(
         tcx: TyCtxt<'tcx>,
-        param_env: ParamEnv<'tcx>,
+        typing_env: TypingEnv<'tcx>,
         def_id: DefId,
         subst: GenericArgsRef<'tcx>,
         args: Vec<Term<'tcx>>,
     ) -> Self {
         let mut res = Self::call_no_normalize(tcx, def_id, subst, args);
-        res.ty = tcx.normalize_erasing_regions(param_env, res.ty);
+        res.ty = tcx.normalize_erasing_regions(typing_env, res.ty);
         res
     }
 

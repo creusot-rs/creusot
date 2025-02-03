@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::Error;
-use cargo_metadata;
+use cargo_metadata::{self, CrateType};
 use creusot_args::options::CommonOptions;
 pub type Result<T> = anyhow::Result<T>;
 
@@ -27,8 +27,8 @@ pub(crate) fn get_crate(m: &cargo_metadata::Metadata) -> Result<String> {
     let target = package.targets.first().ok_or(Error::msg("No target found"))?;
     let krate_name = target.name.replace("-", "_");
     let krate_type = target.crate_types.first().ok_or(Error::msg("No crate type found"))?;
-    let krate_type = if krate_type == "lib" { "rlib" } else { krate_type };
-    Ok(krate_name + "_" + krate_type)
+    let krate_type = if krate_type == &CrateType::Lib { &CrateType::RLib } else { krate_type };
+    Ok(krate_name + "_" + &krate_type.to_string())
 }
 
 fn get_crate_() -> Result<String> {

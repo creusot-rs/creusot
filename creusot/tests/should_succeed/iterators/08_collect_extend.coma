@@ -66,11 +66,14 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 26 0 26 66]
   
   use prelude.prelude.UIntSize
   
-  type t_Cap'0  =
-    { t_Cap__0'0: usize }
+  type t_UsizeNoHighBit'0  =
+    { t_UsizeNoHighBit__0'0: usize }
+  
+  type t_RawVecInner'0  =
+    { t_RawVecInner__ptr'0: t_Unique'0; t_RawVecInner__cap'0: t_UsizeNoHighBit'0; t_RawVecInner__alloc'0: () }
   
   type t_RawVec'0  =
-    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+    { t_RawVec__inner'0: t_RawVecInner'0; t_RawVec__qy95zmarker'0: () }
   
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
@@ -184,7 +187,7 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 26 0 26 66]
         | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
-    
+  
   
   predicate resolve'3 (self : borrowed t_I'0) =
     [%#sresolve23] self.final = self.current
@@ -195,7 +198,7 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 26 0 26 66]
   let rec v_Some'0 (input:t_Option'0) (ret  (field_0:t_T'0))= any
     [ good (field_0:t_T'0)-> {C_Some'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0 : t_T'0 [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
-    
+  
   
   use seq.Seq
   
@@ -228,7 +231,7 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 26 0 26 66]
     | bb3 = s0 [ s0 =  [ &iter_old <- [%#s08_collect_extend1] Snapshot.new iter1 ] s1 | s1 = bb4 ] 
     | bb4 = s0
       [ s0 =  [ &produced <- [%#s08_collect_extend2] Snapshot.new (Seq.empty  : Seq.seq t_T'0) ] s1 | s1 = bb5 ]
-      
+    
     | bb5 = s0 [ s0 =  [ &old_6_0 <- Snapshot.new vec ] s1 | s1 = bb6 ] 
     | bb6 = bb6
       [ bb6 = {[@expl:mut invariant] (Snapshot.inner old_6_0).final = vec.final}
@@ -253,12 +256,12 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 26 0 26 66]
                 s2)
           | s2 = next'0 {_20} (fun (_ret':t_Option'0) ->  [ &_19 <- _ret' ] s3)
           | s3 = bb10 ]
-          
+        
         | bb10 = s0
           [ s0 = {[@expl:type invariant] inv'3 _21} s1
           | s1 = -{resolve'0 _21}- s2
           | s2 = any [ br0 -> {_19 = C_None'0 } (! bb13) | br1 (x0:t_T'0)-> {_19 = C_Some'0 x0} (! bb12) ]  ]
-          
+        
         | bb12 = bb14
         | bb14 = s0
           [ s0 = v_Some'0 {_19} (fun (r0'0:t_T'0) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
@@ -267,7 +270,7 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 26 0 26 66]
             
             s2
           | s2 = bb15 ]
-          
+        
         | bb15 = s0
           [ s0 =  [ &produced <- _24 ] s1
           | s1 =  [ &x <- __creusot_proc_iter_elem ] s2
@@ -280,20 +283,20 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 26 0 26 66]
                 s3)
           | s3 = push'0 {_28} {x} (fun (_ret':()) ->  [ &_27 <- _ret' ] s4)
           | s4 = bb16 ]
-          
+        
         | bb16 = bb17
         | bb17 = bb18
         | bb18 = bb19
         | bb19 = bb6 ]
-         ]
-      
+       ]
+    
     | bb13 = s0
       [ s0 = {[@expl:type invariant] inv'1 iter1} s1
       | s1 = -{resolve'1 iter1}- s2
       | s2 = {[@expl:type invariant] inv'0 vec} s3
       | s3 = -{resolve'2 vec}- s4
       | s4 = bb20 ]
-      
+    
     | bb20 = bb21
     | bb21 = bb22
     | bb22 = return' {_0} ]
@@ -318,7 +321,7 @@ module M_08_collect_extend__extend [#"08_collect_extend.rs" 26 0 26 66]
     [ return' (result:())-> {[@expl:extend ensures] [%#s08_collect_extend9] exists done' : borrowed t_I'0, prod : Seq.seq t_T'0 . completed'0 done'
       /\ produces'0 iter prod done'.current /\ view'2 vec.final = Seq.(++) (view'0 vec) prod}
       (! return' {result}) ]
-    
+
 end
 module M_08_collect_extend__collect [#"08_collect_extend.rs" 44 0 44 52]
   let%span s08_collect_extend0 = "08_collect_extend.rs" 45 18 45 28
@@ -359,11 +362,14 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 44 0 44 52]
   
   use prelude.prelude.UIntSize
   
-  type t_Cap'0  =
-    { t_Cap__0'0: usize }
+  type t_UsizeNoHighBit'0  =
+    { t_UsizeNoHighBit__0'0: usize }
+  
+  type t_RawVecInner'0  =
+    { t_RawVecInner__ptr'0: t_Unique'0; t_RawVecInner__cap'0: t_UsizeNoHighBit'0; t_RawVecInner__alloc'0: () }
   
   type t_RawVec'0  =
-    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+    { t_RawVec__inner'0: t_RawVecInner'0; t_RawVec__qy95zmarker'0: () }
   
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
@@ -411,7 +417,7 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 44 0 44 52]
   
   let rec new'0 (_1:()) (return'  (ret:t_Vec'0))= any
     [ return' (result:t_Vec'0)-> {inv'0 result} {[%#svec10] Seq.length (view'0 result) = 0} (! return' {result}) ]
-    
+  
   
   type t_I'0
   
@@ -487,7 +493,7 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 44 0 44 52]
         | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return' {result}) ]
-    
+  
   
   predicate resolve'2 (self : borrowed t_I'0) =
     [%#sresolve21] self.final = self.current
@@ -498,7 +504,7 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 44 0 44 52]
   let rec v_Some'0 (input:t_Option'0) (ret  (field_0:t_Item'0))= any
     [ good (field_0:t_Item'0)-> {C_Some'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0 : t_Item'0 [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
-    
+  
   
   predicate invariant'3 (self : borrowed (t_Vec'0)) =
     [%#sinvariant25] inv'0 self.current /\ inv'0 self.final
@@ -534,7 +540,7 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 44 0 44 52]
     | bb3 = s0 [ s0 =  [ &iter_old <- [%#s08_collect_extend1] Snapshot.new iter1 ] s1 | s1 = bb4 ] 
     | bb4 = s0
       [ s0 =  [ &produced <- [%#s08_collect_extend2] Snapshot.new (Seq.empty  : Seq.seq t_Item'0) ] s1 | s1 = bb5 ]
-      
+    
     | bb5 = bb6
     | bb6 = bb6
       [ bb6 = {[@expl:for invariant] [%#s08_collect_extend5] inv'2 (Snapshot.inner produced)}
@@ -560,12 +566,12 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 44 0 44 52]
                 s2)
           | s2 = next'0 {_19} (fun (_ret':t_Option'0) ->  [ &_18 <- _ret' ] s3)
           | s3 = bb12 ]
-          
+        
         | bb12 = s0
           [ s0 = {[@expl:type invariant] inv'3 _20} s1
           | s1 = -{resolve'0 _20}- s2
           | s2 = any [ br0 -> {_18 = C_None'0 } (! bb15) | br1 (x0:t_Item'0)-> {_18 = C_Some'0 x0} (! bb14) ]  ]
-          
+        
         | bb14 = bb16
         | bb16 = s0
           [ s0 = v_Some'0 {_18} (fun (r0'0:t_Item'0) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
@@ -574,7 +580,7 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 44 0 44 52]
             
             s2
           | s2 = bb17 ]
-          
+        
         | bb17 = s0
           [ s0 =  [ &produced <- _23 ] s1
           | s1 =  [ &x <- __creusot_proc_iter_elem ] s2
@@ -583,13 +589,13 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 44 0 44 52]
               (fun (_ret':borrowed (t_Vec'0)) ->  [ &_27 <- _ret' ] -{inv'0 _ret'.final}-  [ &res <- _ret'.final ] s3)
           | s3 = push'0 {_27} {x} (fun (_ret':()) ->  [ &_26 <- _ret' ] s4)
           | s4 = bb18 ]
-          
+        
         | bb18 = bb19
         | bb19 = bb20
         | bb20 = bb21
         | bb21 = bb6 ]
-         ]
-      
+       ]
+    
     | bb15 = s0 [ s0 = {[@expl:type invariant] inv'1 iter1} s1 | s1 = -{resolve'1 iter1}- s2 | s2 = bb22 ] 
     | bb22 = bb23
     | bb23 = s0 [ s0 =  [ &_0 <- res ] s1 | s1 = bb24 ] 
@@ -615,7 +621,7 @@ module M_08_collect_extend__collect [#"08_collect_extend.rs" 44 0 44 52]
       {[@expl:collect ensures] [%#s08_collect_extend9] exists done' : borrowed t_I'0, prod : Seq.seq t_Item'0 . resolve'1 done'.final
       /\ completed'0 done' /\ produces'0 iter prod done'.current /\ view'0 result = prod}
       (! return' {result}) ]
-    
+
 end
 module M_08_collect_extend__extend_index [#"08_collect_extend.rs" 55 0 55 51]
   let%span s08_collect_extend0 = "08_collect_extend.rs" 56 16 56 32
@@ -647,19 +653,22 @@ module M_08_collect_extend__extend_index [#"08_collect_extend.rs" 55 0 55 51]
   
   use prelude.prelude.Opaque
   
-  type t_NonNull'0  =
-    { t_NonNull__pointer'0: opaque_ptr }
+  type t_NonNull'1  =
+    { t_NonNull__pointer'1: opaque_ptr }
   
   type t_Unique'0  =
-    { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
+    { t_Unique__pointer'0: t_NonNull'1; t_Unique__qy95zmarker'0: () }
   
   use prelude.prelude.UIntSize
   
-  type t_Cap'0  =
-    { t_Cap__0'0: usize }
+  type t_UsizeNoHighBit'0  =
+    { t_UsizeNoHighBit__0'0: usize }
+  
+  type t_RawVecInner'0  =
+    { t_RawVecInner__ptr'0: t_Unique'0; t_RawVecInner__cap'0: t_UsizeNoHighBit'0; t_RawVecInner__alloc'0: () }
   
   type t_RawVec'0  =
-    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+    { t_RawVec__inner'0: t_RawVecInner'0; t_RawVec__qy95zmarker'0: () }
   
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
@@ -670,6 +679,9 @@ module M_08_collect_extend__extend_index [#"08_collect_extend.rs" 55 0 55 51]
   
   predicate into_iter_pre'0 (self : t_Vec'0) =
     [%#svec9] true
+  
+  type t_NonNull'0  =
+    { t_NonNull__pointer'0: opaque_ptr }
   
   type t_ManuallyDrop'0  =
     { t_ManuallyDrop__value'0: () }
@@ -711,7 +723,7 @@ module M_08_collect_extend__extend_index [#"08_collect_extend.rs" 55 0 55 51]
     {[@expl:into_iter requires] [%#siter3] into_iter_pre'0 self}
     any
     [ return' (result:t_IntoIter'0)-> {inv'1 result} {[%#siter3] into_iter_post'0 self result} (! return' {result}) ]
-    
+  
   
   predicate inv'2 (_1 : borrowed (t_Vec'0))
   
@@ -725,7 +737,7 @@ module M_08_collect_extend__extend_index [#"08_collect_extend.rs" 55 0 55 51]
     [%#svec12] view'4 self = Seq.(++) visited (view'4 rhs)
   
   function produces_trans'0 (a : t_IntoIter'0) (ab : Seq.seq uint32) (b : t_IntoIter'0) (bc : Seq.seq uint32) (c : t_IntoIter'0) : ()
-    
+  
    =
     [%#svec21] ()
   
@@ -755,7 +767,7 @@ module M_08_collect_extend__extend_index [#"08_collect_extend.rs" 55 0 55 51]
     [ return' (result:())-> {[%#s08_collect_extend6] exists done' : borrowed (t_IntoIter'0), prod : Seq.seq uint32 . completed'0 done'
       /\ produces'0 iter prod done'.current /\ view'0 vec.final = Seq.(++) (view'2 vec) prod}
       (! return' {result}) ]
-    
+  
   
   predicate resolve'1 (self : borrowed (t_Vec'0)) =
     [%#sresolve14] self.final = self.current
@@ -789,14 +801,14 @@ module M_08_collect_extend__extend_index [#"08_collect_extend.rs" 55 0 55 51]
           (fun (_ret':borrowed (t_Vec'0)) ->  [ &_8 <- _ret' ]  [ &_9 <- { _9 with current = _ret'.final } ] s2)
       | s2 = into_iter'0 {v2} (fun (_ret':t_IntoIter'0) ->  [ &_10 <- _ret' ] s3)
       | s3 = bb3 ]
-      
+    
     | bb3 = s0 [ s0 = extend'0 {_8} {_10} (fun (_ret':()) ->  [ &_7 <- _ret' ] s1) | s1 = bb4 ] 
     | bb4 = s0
       [ s0 = -{resolve'0 _9}- s1
       | s1 = {[@expl:assertion] [%#s08_collect_extend2] Seq.(==) (view'0 v1) (Seq.(++) (view'1 oldv1) (view'1 oldv2))}
         s2
       | s2 = bb5 ]
-      
+    
     | bb5 = bb6
     | bb6 = bb7
     | bb7 = return' {_0} ]
@@ -840,11 +852,14 @@ module M_08_collect_extend__collect_example [#"08_collect_extend.rs" 65 0 65 56]
   
   use prelude.prelude.UIntSize
   
-  type t_Cap'0  =
-    { t_Cap__0'0: usize }
+  type t_UsizeNoHighBit'0  =
+    { t_UsizeNoHighBit__0'0: usize }
+  
+  type t_RawVecInner'0  =
+    { t_RawVecInner__ptr'0: t_Unique'0; t_RawVecInner__cap'0: t_UsizeNoHighBit'0; t_RawVecInner__alloc'0: () }
   
   type t_RawVec'0  =
-    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+    { t_RawVec__inner'0: t_RawVecInner'0; t_RawVec__qy95zmarker'0: () }
   
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
@@ -896,7 +911,7 @@ module M_08_collect_extend__collect_example [#"08_collect_extend.rs" 65 0 65 56]
       {[%#s08_collect_extend5] exists done' : borrowed t_I'0, prod : Seq.seq uint32 . resolve'0 done'.final
       /\ completed'0 done' /\ produces'0 iter prod done'.current /\ view'0 result = prod}
       (! return' {result}) ]
-    
+  
   
   use seq.Seq
   
@@ -920,11 +935,11 @@ module M_08_collect_extend__collect_example [#"08_collect_extend.rs" 65 0 65 56]
          -> UInt32.to_int (index_logic'0 v i) = i}
         s1
       | s1 = bb3 ]
-      
+    
     | bb3 = bb4
     | bb4 = bb5
     | bb5 = return' {_0} ]
     ) [ & _0 : () = any_l () | & iter : t_I'0 = iter | & v : t_Vec'0 = any_l () ] 
     [ return' (result:())-> (! return' {result}) ]
-    
+
 end

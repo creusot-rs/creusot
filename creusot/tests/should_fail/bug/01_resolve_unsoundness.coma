@@ -20,11 +20,14 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   
   use prelude.prelude.UIntSize
   
-  type t_Cap'0  =
-    { t_Cap__0'0: usize }
+  type t_UsizeNoHighBit'0  =
+    { t_UsizeNoHighBit__0'0: usize }
+  
+  type t_RawVecInner'0  =
+    { t_RawVecInner__ptr'0: t_Unique'0; t_RawVecInner__cap'0: t_UsizeNoHighBit'0; t_RawVecInner__alloc'0: () }
   
   type t_RawVec'0  =
-    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+    { t_RawVec__inner'0: t_RawVecInner'0; t_RawVec__qy95zmarker'0: () }
   
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
@@ -49,7 +52,7 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   
   let rec new'0 (_1:()) (return'  (ret:t_Vec'0))= any
     [ return' (result:t_Vec'0)-> {inv'0 result} {[%#svec6] Seq.length (view'0 result) = 0} (! return' {result}) ]
-    
+  
   
   use prelude.prelude.Borrow
   
@@ -77,7 +80,7 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   let rec make_vec_of_size'0 (n:usize) (return'  (ret:t_Vec'0))= (! bb0
     [ bb0 = s0
       [ s0 = new'0 {[%#s01_resolve_unsoundness0] ()} (fun (_ret':t_Vec'0) ->  [ &out <- _ret' ] s1) | s1 = bb1 ]
-      
+    
     | bb1 = s0 [ s0 =  [ &i <- [%#s01_resolve_unsoundness1] (0 : usize) ] s1 | s1 = bb2 ] 
     | bb2 = bb2
       [ bb2 = {[@expl:loop invariant] [%#s01_resolve_unsoundness2] (0 : usize) <= i /\ i <= n}
@@ -85,19 +88,19 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
         [ bb3 = s0
           [ s0 = UIntSize.le {i} {n} (fun (_ret':bool) ->  [ &_10 <- _ret' ] s1)
           | s1 = any [ br0 -> {_10 = false} (! bb6) | br1 -> {_10} (! bb4) ]  ]
-          
+        
         | bb4 = s0
           [ s0 = Borrow.borrow_mut <t_Vec'0> {out}
               (fun (_ret':borrowed (t_Vec'0)) ->  [ &_14 <- _ret' ]  [ &out <- _ret'.final ] s1)
           | s1 = push'0 {_14} {[%#s01_resolve_unsoundness3] false} (fun (_ret':()) ->  [ &_13 <- _ret' ] s2)
           | s2 = bb5 ]
-          
+        
         | bb5 = s0
           [ s0 = UIntSize.add {i} {[%#s01_resolve_unsoundness4] (1 : usize)} (fun (_ret':usize) ->  [ &i <- _ret' ] s1)
           | s1 = bb2 ]
-           ]
          ]
-      
+       ]
+    
     | bb6 = s0 [ s0 =  [ &_0 <- out ] s1 | s1 = bb7 ] 
     | bb7 = return' {_0} ]
     )
@@ -112,5 +115,5 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
     [ return' (result:t_Vec'0)-> {[@expl:make_vec_of_size ensures] [%#s01_resolve_unsoundness5] Seq.length (view'0 result)
       = UIntSize.to_int n}
       (! return' {result}) ]
-    
+
 end

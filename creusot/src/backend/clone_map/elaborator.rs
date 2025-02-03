@@ -30,11 +30,11 @@ use petgraph::graphmap::DiGraphMap;
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{
-    Const, ConstKind, GenericArg, GenericArgsRef, ParamEnv, TraitRef, Ty, TyCtxt, TyKind,
-    TypeFoldable, UnevaluatedConst,
+    Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv,
+    UnevaluatedConst,
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
-use rustc_type_ir::EarlyBinder;
+use rustc_type_ir::{ConstKind, EarlyBinder};
 use why3::{
     declaration::{Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
     QName,
@@ -55,7 +55,7 @@ pub(super) struct Expander<'a, 'tcx> {
     dep_bodies: HashMap<Dependency<'tcx>, Vec<Decl>>,
     namer: &'a mut CloneNames<'tcx>,
     self_key: Dependency<'tcx>,
-    param_env: ParamEnv<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     expansion_queue: VecDeque<(Dependency<'tcx>, Strength, Dependency<'tcx>)>,
 }
 
@@ -114,7 +114,7 @@ impl DepElab for ProgElab {
         {
             let sig = ctx.sig(def_id).clone();
             let sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
-            let sig = sig.normalize(ctx.tcx, elab.param_env);
+            let sig = sig.normalize(ctx.tcx, elab.typing_env);
             let sig = signature(ctx, elab, sig, dep);
             return vec![program::val(ctx, sig)];
         }
@@ -187,12 +187,12 @@ impl DepElab for LogicElab {
 
         let sig = ctx.sig(def_id).clone();
         let mut sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
-        sig = sig.normalize(ctx.tcx, elab.param_env);
+        sig = sig.normalize(ctx.tcx, elab.typing_env);
 
         let trait_resol = ctx
             .tcx
             .trait_of_item(def_id)
-            .map(|_| traits::TraitResolved::resolve_item(ctx.tcx, elab.param_env, def_id, subst));
+            .map(|_| traits::TraitResolved::resolve_item(ctx.tcx, elab.typing_env, def_id, subst));
 
         let is_opaque = matches!(
             trait_resol,
@@ -201,7 +201,7 @@ impl DepElab for LogicElab {
             || is_trusted_function(ctx.tcx, def_id);
 
         let mut sig = signature(ctx, elab, sig, dep);
-        if !is_opaque && let Some(term) = term(ctx, elab.param_env, dep) {
+        if !is_opaque && let Some(term) = term(ctx, elab.typing_env, dep) {
             lower_logical_defn(ctx, &mut elab.namer(dep), sig, kind, term)
         } else {
             if let Some(DeclKind::Predicate) = kind {
@@ -218,7 +218,7 @@ fn expand_ty_inv_axiom<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
     ty: Ty<'tcx>,
 ) -> Vec<Decl> {
-    let param_env = elab.param_env;
+    let param_env = elab.typing_env;
     let mut names = elab.namer(Dependency::TyInvAxiom(ty));
 
     let mut elab = InvariantElaborator::new(param_env, ctx);
@@ -239,7 +239,7 @@ impl DepElab for TyElab {
         dep: Dependency<'tcx>,
     ) -> Vec<why3::declaration::Decl> {
         let Dependency::Type(ty) = dep else { unreachable!() };
-        let param_env = elab.param_env;
+        let param_env = elab.typing_env;
         let mut names = elab.namer(dep);
         match ty.kind() {
             TyKind::Param(_) => vec![Decl::TyDecl(TyDecl::Opaque {
@@ -250,7 +250,7 @@ impl DepElab for TyElab {
                 let (def_id, subst) = dep.did().unwrap();
                 assert_eq!(
                     ctx.tcx.associated_item(def_id).container,
-                    rustc_middle::ty::TraitContainer
+                    rustc_middle::ty::AssocItemContainer::Trait
                 );
                 vec![Decl::TyDecl(TyDecl::Opaque {
                     ty_name: names.ty(def_id, subst).as_ident(),
@@ -286,14 +286,14 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     pub fn new(
         namer: &'a mut CloneNames<'tcx>,
         self_key: Dependency<'tcx>,
-        param_env: ParamEnv<'tcx>,
+        typing_env: TypingEnv<'tcx>,
         initial: impl Iterator<Item = Dependency<'tcx>>,
     ) -> Self {
         Self {
             graph: Default::default(),
             namer,
             self_key,
-            param_env,
+            typing_env,
             expansion_queue: initial.map(|b| (self_key, Strength::Strong, b)).collect(),
             dep_bodies: Default::default(),
         }
@@ -313,9 +313,9 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             if let Dependency::Item(item, substs) = t
                 && ctx.trait_of_item(item).is_some()
                 && let TraitResolved::Instance(did, subst) =
-                    TraitResolved::resolve_item(ctx.tcx, self.param_env, item, substs)
+                    TraitResolved::resolve_item(ctx.tcx, self.typing_env, item, substs)
             {
-                t = ctx.normalize_erasing_regions(self.param_env, Dependency::Item(did, subst))
+                t = ctx.normalize_erasing_regions(self.typing_env, Dependency::Item(did, subst))
             }
 
             if let Some(old) = self.graph.add_edge(s, t, strength)
@@ -366,7 +366,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
 
 fn traitref_of_item<'tcx>(
     tcx: TyCtxt<'tcx>,
-    param_env: ParamEnv<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     did: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Option<TraitRef<'tcx>> {
@@ -379,7 +379,7 @@ fn traitref_of_item<'tcx>(
     }
 
     let trait_ref = tcx.impl_trait_ref(cont)?.instantiate(tcx, subst);
-    Some(tcx.normalize_erasing_regions(param_env, trait_ref))
+    Some(tcx.normalize_erasing_regions(typing_env, trait_ref))
 }
 
 fn expand_laws<'tcx>(
@@ -396,8 +396,8 @@ fn expand_laws<'tcx>(
     let item_container = item_ai.container_id(ctx.tcx);
 
     // Dont clone laws into the trait / impl which defines them.
-    if let Some(tr_item) = traitref_of_item(ctx.tcx, elab.param_env, item_did, item_subst)
-        && let Some(tr_self) = traitref_of_item(ctx.tcx, elab.param_env, self_did, self_subst)
+    if let Some(tr_item) = traitref_of_item(ctx.tcx, elab.typing_env, item_did, item_subst)
+        && let Some(tr_self) = traitref_of_item(ctx.tcx, elab.typing_env, self_did, self_subst)
         && tr_item == tr_self
     {
         return;
@@ -443,24 +443,24 @@ fn val(ctx: &mut Why3Generator, mut sig: Signature, kind: Option<DeclKind>) -> V
 
 fn resolve_term<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    param_env: ParamEnv<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Option<Term<'tcx>> {
     let trait_meth_id = get_resolve_method(ctx.tcx);
     let sig = ctx.sig(def_id).clone();
     let mut pre_sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
-    pre_sig = pre_sig.normalize(ctx.tcx, param_env);
+    pre_sig = pre_sig.normalize(ctx.tcx, typing_env);
 
     let arg = Term::var(pre_sig.inputs[0].0, pre_sig.inputs[0].2);
 
     if let &TyKind::Closure(def_id, subst) = subst[0].as_type().unwrap().kind() {
         Some(closure_resolve(ctx, def_id, subst))
     } else {
-        match traits::TraitResolved::resolve_item(ctx.tcx, param_env, trait_meth_id, subst) {
+        match traits::TraitResolved::resolve_item(ctx.tcx, typing_env, trait_meth_id, subst) {
             traits::TraitResolved::Instance(meth_did, meth_substs) => {
                 // We know the instance => body points to it
-                Some(Term::call(ctx.tcx, param_env, meth_did, meth_substs, vec![arg]))
+                Some(Term::call(ctx.tcx, typing_env, meth_did, meth_substs, vec![arg]))
             }
             traits::TraitResolved::UnknownFound | traits::TraitResolved::UnknownNotFound => {
                 // We don't know the instance => body is opaque
@@ -476,7 +476,7 @@ fn resolve_term<'tcx>(
 
 fn fn_once_postcond_term<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    param_env: ParamEnv<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     subst: GenericArgsRef<'tcx>,
 ) -> Option<Term<'tcx>> {
     let tcx = ctx.tcx;
@@ -485,7 +485,7 @@ fn fn_once_postcond_term<'tcx>(
     let args = Term::var(Symbol::intern("args"), subst.type_at(0));
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
-        param_env,
+        typing_env,
         EarlyBinder::bind(ctx.sig(get_fn_once_impl_postcond(tcx)).inputs[2].2),
     );
     let res = Term::var(Symbol::intern("result"), ty_res);
@@ -496,14 +496,14 @@ fn fn_once_postcond_term<'tcx>(
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let args = vec![self_.clone().cur(), args, self_.fin(), res];
-            Some(Term::call(tcx, param_env, get_fn_mut_impl_postcond(tcx), subst_postcond, args))
+            Some(Term::call(tcx, typing_env, get_fn_mut_impl_postcond(tcx), subst_postcond, args))
         }
         TyKind::Ref(_, cl, Mutability::Not) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let args = vec![self_.cur(), args, res];
-            Some(Term::call(tcx, param_env, get_fn_impl_postcond(tcx), subst_postcond, args))
+            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, args))
         }
         _ => None,
     }
@@ -511,7 +511,7 @@ fn fn_once_postcond_term<'tcx>(
 
 fn fn_mut_postcond_term<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    param_env: ParamEnv<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     subst: GenericArgsRef<'tcx>,
 ) -> Option<Term<'tcx>> {
     let tcx = ctx.tcx;
@@ -521,7 +521,7 @@ fn fn_mut_postcond_term<'tcx>(
     let result_state = Term::var(Symbol::intern("result_state"), ty_self);
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
-        param_env,
+        typing_env,
         EarlyBinder::bind(ctx.sig(get_fn_mut_impl_postcond(tcx)).inputs[3].2),
     );
     let res = Term::var(Symbol::intern("result"), ty_res);
@@ -533,7 +533,7 @@ fn fn_mut_postcond_term<'tcx>(
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let args = vec![self_.clone().cur(), args, result_state.clone().cur(), res];
             Some(
-                Term::call(tcx, param_env, get_fn_mut_impl_postcond(tcx), subst_postcond, args)
+                Term::call(tcx, typing_env, get_fn_mut_impl_postcond(tcx), subst_postcond, args)
                     .conj(Term::eq(ctx.tcx, self_.fin(), result_state.fin())),
             )
         }
@@ -543,7 +543,7 @@ fn fn_mut_postcond_term<'tcx>(
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let args = vec![self_.clone().cur(), args, res];
             Some(
-                Term::call(tcx, param_env, get_fn_impl_postcond(tcx), subst_postcond, args)
+                Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, args)
                     .conj(Term::eq(ctx.tcx, self_, result_state)),
             )
         }
@@ -553,7 +553,7 @@ fn fn_mut_postcond_term<'tcx>(
 
 fn fn_postcond_term<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    param_env: ParamEnv<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     subst: GenericArgsRef<'tcx>,
 ) -> Option<Term<'tcx>> {
     let tcx = ctx.tcx;
@@ -562,7 +562,7 @@ fn fn_postcond_term<'tcx>(
     let args = Term::var(Symbol::intern("args"), subst.type_at(0));
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
-        param_env,
+        typing_env,
         EarlyBinder::bind(ctx.sig(get_fn_impl_postcond(tcx)).inputs[2].2),
     );
     let res = Term::var(Symbol::intern("result"), ty_res);
@@ -573,7 +573,7 @@ fn fn_postcond_term<'tcx>(
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let args = vec![self_.clone().cur(), args, res];
-            Some(Term::call(tcx, param_env, get_fn_impl_postcond(tcx), subst_postcond, args))
+            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, args))
         }
         _ => None,
     }
@@ -583,30 +583,30 @@ fn fn_postcond_term<'tcx>(
 // Currently, it does not handle invariant axioms but otherwise returns all logical terms.
 fn term<'tcx>(
     ctx: &mut Why3Generator<'tcx>,
-    param_env: ParamEnv<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     dep: Dependency<'tcx>,
 ) -> Option<Term<'tcx>> {
     match dep {
         Dependency::Item(def_id, subst) => {
             if matches!(ctx.item_type(def_id), ItemType::Constant) {
-                let uneval = UnevaluatedConst::new(def_id, subst);
-                let constant = Const::new(ctx.tcx, ConstKind::Unevaluated(uneval));
+                let ct = UnevaluatedConst::new(def_id, subst);
+                let constant = Const::new(ctx.tcx, ConstKind::Unevaluated(ct));
                 let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
-                let ty = ctx.tcx.normalize_erasing_regions(param_env, ty);
+                let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
                 let span = ctx.def_span(def_id);
-                let res = from_ty_const(&ctx.ctx, constant, ty, param_env, span);
+                let res = from_ty_const(&ctx.ctx, constant, ty, typing_env, span);
                 Some(res)
             } else if is_resolve_function(ctx.tcx, def_id) {
-                resolve_term(ctx, param_env, def_id, subst)
+                resolve_term(ctx, typing_env, def_id, subst)
             } else if is_structural_resolve(ctx.tcx, def_id) {
                 let subj = ctx.sig(def_id).inputs[0].0;
                 structural_resolve(ctx, subj, subst.type_at(0))
             } else if is_fn_once_impl_postcond(ctx.tcx, def_id) {
-                fn_once_postcond_term(ctx, param_env, subst)
+                fn_once_postcond_term(ctx, typing_env, subst)
             } else if is_fn_mut_impl_postcond(ctx.tcx, def_id) {
-                fn_mut_postcond_term(ctx, param_env, subst)
+                fn_mut_postcond_term(ctx, typing_env, subst)
             } else if is_fn_impl_postcond(ctx.tcx, def_id) {
-                fn_postcond_term(ctx, param_env, subst)
+                fn_postcond_term(ctx, typing_env, subst)
             } else if is_fn_once_impl_precond(ctx.tcx, def_id) {
                 let TyKind::Closure(did, _) = subst.type_at(1).kind() else { return None };
                 Some(ctx.closure_contract(*did).precond.clone())
@@ -617,7 +617,7 @@ fn term<'tcx>(
                 let term = ctx.term_fail_fast(def_id).unwrap().clone();
                 let term = normalize(
                     ctx.tcx,
-                    param_env,
+                    typing_env,
                     EarlyBinder::bind(term).instantiate(ctx.tcx, subst),
                 );
                 Some(term)

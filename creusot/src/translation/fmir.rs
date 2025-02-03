@@ -77,7 +77,7 @@ impl<'a, 'tcx> PlaceRef<'a, 'tcx> {
 pub enum Statement<'tcx> {
     Assignment(Place<'tcx>, RValue<'tcx>, Span),
     Resolve { did: DefId, subst: GenericArgsRef<'tcx>, pl: Place<'tcx> },
-    Assertion { cond: Term<'tcx>, msg: String },
+    Assertion { cond: Term<'tcx>, msg: String, trusted: bool },
     // Todo: fold into `Assertion`
     AssertTyInv { pl: Place<'tcx> },
     Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Vec<Operand<'tcx>>, Span),
@@ -115,19 +115,50 @@ pub enum RValue<'tcx> {
     Len(Operand<'tcx>),
     Array(Vec<Operand<'tcx>>),
     Repeat(Operand<'tcx>, Operand<'tcx>),
+    Ptr(Place<'tcx>),
 }
 
 impl<'tcx> RValue<'tcx> {
-    /// Returns true if the expression generates verification conditions
+    /// Returns false if the expression generates verification conditions
     pub fn is_pure(&self) -> bool {
-        match &self {
+        match self {
             RValue::Operand(_) => true,
-            RValue::BinOp(BinOp::Add | BinOp::Mul | BinOp::Rem | BinOp::Div | BinOp::Sub, _, _) => {
-                false
-            }
-            RValue::BinOp(_, _, _) => true,
+            RValue::BinOp(
+                BinOp::Add
+                | BinOp::AddUnchecked
+                | BinOp::Mul
+                | BinOp::MulUnchecked
+                | BinOp::Rem
+                | BinOp::Div
+                | BinOp::Sub
+                | BinOp::SubUnchecked
+                | BinOp::Shl
+                | BinOp::ShlUnchecked
+                | BinOp::Shr
+                | BinOp::ShrUnchecked
+                | BinOp::Offset,
+                _,
+                _,
+            ) => false,
+            RValue::BinOp(
+                BinOp::AddWithOverflow
+                | BinOp::SubWithOverflow
+                | BinOp::MulWithOverflow
+                | BinOp::BitAnd
+                | BinOp::BitOr
+                | BinOp::BitXor
+                | BinOp::Cmp
+                | BinOp::Eq
+                | BinOp::Ne
+                | BinOp::Lt
+                | BinOp::Le
+                | BinOp::Gt
+                | BinOp::Ge,
+                _,
+                _,
+            ) => true,
             RValue::UnaryOp(UnOp::Neg, _) => false,
-            RValue::UnaryOp(_, _) => true,
+            RValue::UnaryOp(UnOp::Not | UnOp::PtrMetadata, _) => true,
             RValue::Constructor(_, _, _) => true,
             RValue::Cast(_, _, _) => false,
             RValue::Tuple(_) => true,
@@ -135,7 +166,8 @@ impl<'tcx> RValue<'tcx> {
             RValue::Array(_) => true,
             RValue::Repeat(_, _) => true,
             RValue::Ghost(_) => true,
-            RValue::Borrow(_, _, _) => false,
+            RValue::Borrow(_, _, _) => true,
+            RValue::Ptr(_) => true,
         }
     }
 }
@@ -423,6 +455,9 @@ pub(crate) fn super_visit_rvalue<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, rv
         RValue::Repeat(op1, op2) => {
             visitor.visit_operand(op1);
             visitor.visit_operand(op2);
+        }
+        RValue::Ptr(pl) => {
+            visitor.visit_place(pl);
         }
     }
 }
