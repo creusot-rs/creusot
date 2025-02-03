@@ -5,7 +5,7 @@
 #![cfg_attr(not(creusot), allow(unused_imports))]
 
 mod fmap;
-mod fset;
+pub mod fset;
 mod int;
 mod mapping;
 pub mod ops;
