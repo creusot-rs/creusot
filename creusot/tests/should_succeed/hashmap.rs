@@ -1,4 +1,3 @@
-// UNSTABLE
 extern crate creusot_contracts;
 use creusot_contracts::{
     invariant::{inv, Invariant},
