@@ -1,3 +1,4 @@
+// WHY3PROVE
 #![feature(min_specialization)]
 extern crate creusot_contracts;
 use creusot_contracts::*;
