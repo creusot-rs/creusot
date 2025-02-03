@@ -183,7 +183,7 @@ pub fn creusot_paths() -> anyhow::Result<Paths> {
                 // warnings) if there's a hard error. Otherwise we're spamming
                 // testsuite logs, etc.
                 for issue in &issues {
-                    println!("{issue}")
+                    eprintln!("{issue}")
                 }
                 bail!(
                     "Please run 'cargo creusot setup status' \
@@ -278,7 +278,7 @@ fn install_tools(paths: &CfgPaths, flags: InstallFlags) -> anyhow::Result<()> {
 
     let issues = diagnostic_config(&paths, &config, false);
     for issue in &issues {
-        println!("{issue}")
+        eprintln!("{issue}")
     }
     if issues.iter().any(|issue| issue.error) {
         bail!("Aborting")
