@@ -30,9 +30,9 @@ Once you are satisfied with the coma output, you can validate the proofs of Creu
 If you add a test that you believe should include a proof, you can add it using the `./ide` script provided in Creusot.
 Load your test case in the Why3 IDE, solve the proof and save the result, it will now be checked as part of CI.
 
-Because verifying the proofs can be tedious during development the `cargo test --test why3` command accepts two flags: `--diff-from=` which accepts a Git ref and only checks the coma files that have changed since then, and `--replay=` which accepts one of three values: `none`, `obsolete`, `all` and guides which proofs should actually be run or only just typecheked.
+Options:
 
-Helpful cheatsheet:
-- `cargo test --test why3 -- --diff-from=master --replay=none`: only typecheck the test cases that have changed
-- `cargo test --test why3 -- --diff-from=master --replay=obsolete`: run the proofs for all changed test cases, which in normal circumstances should be the only ones that matter
+- `--update`: update `proof.json` files (for `why3find` tests). (`why3session.xml` files
+    for `why3` tests with obsolete goals are automatically updated.)
 
+- `--diff-from=` (accepts a Git ref): only check the coma files that have changed since then.
