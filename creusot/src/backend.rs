@@ -1,6 +1,6 @@
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
-use rustc_span::{RealFileName, Span};
+use rustc_span::Span;
 
 use crate::{
     contracts_items::{is_resolve_function, is_spec, is_trusted},
@@ -9,8 +9,12 @@ use crate::{
     naming::ModulePath,
     options::SpanMode,
     run_why3::SpanMap,
+    util::path_of_span,
 };
-use std::ops::{Deref, DerefMut};
+use std::{
+    ops::{Deref, DerefMut},
+    path::PathBuf,
+};
 
 pub(crate) use clone_map::*;
 
@@ -93,43 +97,46 @@ impl<'tcx> Why3Generator<'tcx> {
     }
 
     pub(crate) fn span_attr(&mut self, span: Span) -> Option<why3::declaration::Attribute> {
-        if span.is_dummy() {
-            return None;
-        }
+        let path = path_of_span(self.tcx, span, &self.opts.span_mode)?;
+
         if let Some(span) = self.span_map.encode_span(&self.ctx.opts, span) {
             return Some(span);
         };
+
         let lo = self.sess.source_map().lookup_char_pos(span.lo());
         let hi = self.sess.source_map().lookup_char_pos(span.hi());
 
-        let rustc_span::FileName::Real(path) = &lo.file.name else { return None };
-
-        // If we ask for relative paths and the paths comes from the standard library, then we prefer returning
-        // None, since the relative path of the stdlib is not stable.
-        let path = match (&self.opts.span_mode, path) {
-            (SpanMode::Relative(_), RealFileName::Remapped { .. }) => return None,
-            _ => path.local_path_if_available(),
-        };
-
-        let to_absolute = |path: &std::path::Path| -> std::path::PathBuf {
-            if path.is_relative() {
-                let mut buf = std::env::current_dir().unwrap();
-                buf.push(path);
-                buf
-            } else {
-                path.to_owned()
-            }
+        let path: PathBuf = if path.is_relative() {
+            let mut buf = std::env::current_dir().unwrap();
+            buf.push(path);
+            buf
+        } else {
+            path.into()
         };
 
         let filename = match &self.opts.span_mode {
-            SpanMode::Absolute => to_absolute(path).to_string_lossy().into_owned(),
+            SpanMode::Absolute => path.to_string_lossy().into_owned(),
             SpanMode::Relative(base) => {
-                let path = to_absolute(path);
-                let base = to_absolute(base);
+                if let Some(rustc_base) = &self.sess.opts.real_rust_source_base_dir
+                    && path.starts_with(rustc_base)
+                {
+                    // HACK: don't produce relative paths to standard library
+                    // HACK: this seems awfully specific to stdlib
+                    return None;
+                }
+
+                let base = if base.is_relative() {
+                    let mut buf = std::env::current_dir().unwrap();
+                    buf.push(base);
+                    buf
+                } else {
+                    base.into()
+                };
+
                 let diff = pathdiff::diff_paths(&path, &base)?;
                 diff.to_string_lossy().into_owned()
             }
-            SpanMode::Off => return None,
+            SpanMode::Off => unreachable!(),
         };
 
         Some(why3::declaration::Attribute::Span(

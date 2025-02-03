@@ -3,7 +3,7 @@ use crate::{
     contracts_items::{get_builtin, get_inv_function},
     ctx::*,
     options::SpanMode,
-    util::erased_identity_for_item,
+    util::{erased_identity_for_item, path_of_span},
 };
 use elaborator::Strength;
 use indexmap::{IndexMap, IndexSet};
@@ -17,7 +17,7 @@ use rustc_middle::{
     mir::Promoted,
     ty::{self, GenericArgsRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv},
 };
-use rustc_span::{FileName, Span, Symbol};
+use rustc_span::{Span, Symbol};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use why3::{
     declaration::{Attribute, Decl, TyDecl},
@@ -179,27 +179,11 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
     }
 
     fn span(&mut self, span: Span) -> Option<why3::declaration::Attribute> {
-        if span.is_dummy() {
-            return None;
-        }
-
-        let lo = self.tcx.sess.source_map().lookup_char_pos(span.lo());
-        let rustc_span::FileName::Real(path) = &lo.file.name else { return None };
-        match (&self.span_mode, path) {
-            (SpanMode::Relative(_), rustc_span::RealFileName::Remapped { .. }) => return None,
-            _ => (),
-        };
+        let path = path_of_span(self.tcx, span, &self.span_mode)?;
 
         let cnt = self.spans.len();
         let name = self.spans.entry(span).or_insert_with(|| {
-            let lo = self.tcx.sess.source_map().lookup_char_pos(span.lo());
-
-            if let FileName::Real(real_name) = &lo.file.name {
-                let path = real_name.local_path_if_available();
-                Symbol::intern(&format!("s{}{cnt}", path.file_stem().unwrap().to_str().unwrap()))
-            } else {
-                Symbol::intern(&format!("span{cnt}"))
-            }
+            Symbol::intern(&format!("s{}{cnt}", path.file_stem().unwrap().to_str().unwrap()))
         });
         Some(Attribute::NamedSpan(name.to_string()))
     }
