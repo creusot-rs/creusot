@@ -1,6 +1,7 @@
 //! Definition of [`IndexLogic`]
 
 use crate::*;
+#[cfg(feature = "nightly")]
 use ::std::alloc::Allocator;
 
 /// Used for indexing operations (`container[index]`) in pearlite.
@@ -17,6 +18,7 @@ pub trait IndexLogic<I: ?Sized> {
     fn index_logic(self, idx: I) -> Self::Item;
 }
 
+#[cfg(feature = "nightly")]
 impl<T, A: Allocator> IndexLogic<Int> for Vec<T, A> {
     type Item = T;
 
@@ -28,6 +30,7 @@ impl<T, A: Allocator> IndexLogic<Int> for Vec<T, A> {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T, A: Allocator> IndexLogic<usize> for Vec<T, A> {
     type Item = T;
 
@@ -92,4 +95,15 @@ impl<T> IndexLogic<Int> for Snapshot<Seq<T>> {
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { (*self)[ix] }
     }
+}
+
+/// Dummy impls that don't use the unstable trait Allocator
+#[cfg(not(feature = "nightly"))]
+impl<T> IndexLogic<Int> for Vec<T> {
+    type Item = T;
+}
+
+#[cfg(not(feature = "nightly"))]
+impl<T> IndexLogic<usize> for Vec<T> {
+    type Item = T;
 }

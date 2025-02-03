@@ -1,10 +1,13 @@
-use crate::{logic::ops::IndexLogic, resolve::structural_resolve, std::alloc::Allocator, *};
+use crate::{logic::ops::IndexLogic, resolve::structural_resolve, *};
+#[cfg(feature = "nightly")]
+use ::std::alloc::Allocator;
 pub use ::std::collections::VecDeque;
 use ::std::{
     collections::vec_deque::Iter,
     ops::{Index, IndexMut},
 };
 
+#[cfg(feature = "nightly")]
 impl<T, A: Allocator> View for VecDeque<T, A> {
     type ViewTy = Seq<T>;
 
@@ -16,6 +19,7 @@ impl<T, A: Allocator> View for VecDeque<T, A> {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
     type DeepModelTy = Seq<T::DeepModelTy>;
 
@@ -29,6 +33,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for VecDeque<T, A> {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T, A: Allocator> IndexLogic<Int> for VecDeque<T, A> {
     type Item = T;
 
@@ -40,6 +45,7 @@ impl<T, A: Allocator> IndexLogic<Int> for VecDeque<T, A> {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T, A: Allocator> IndexLogic<usize> for VecDeque<T, A> {
     type Item = T;
 
@@ -133,6 +139,7 @@ extern_spec! {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T, A: Allocator> IntoIterator for &VecDeque<T, A> {
     #[predicate]
     #[open]
@@ -183,4 +190,23 @@ impl<'a, T> Iterator for Iter<'a, T> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
+
+/// Dummy impls that don't use the unstable trait Allocator
+#[cfg(not(feature = "nightly"))]
+mod impls {
+    use super::*;
+    impl<T> View for VecDeque<T> {
+        type ViewTy = Seq<T>;
+    }
+    impl<T: DeepModel> DeepModel for VecDeque<T> {
+        type DeepModelTy = Seq<T::DeepModelTy>;
+    }
+    impl<T> IndexLogic<Int> for VecDeque<T> {
+        type Item = T;
+    }
+    impl<T> IndexLogic<usize> for VecDeque<T> {
+        type Item = T;
+    }
+    impl<T> IntoIterator for &VecDeque<T> {}
 }
