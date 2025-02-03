@@ -1,7 +1,7 @@
 use crate::{
-    backend::{
+    backend::{program::{int_to_prelude, uint_to_prelude}, {
         program::borrow_generated_id,
-        ty::{constructor, floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty},
+        ty::{concret_intty, concret_uintty, constructor, floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty}},
         Why3Generator,
     },
     contracts_items::get_builtin,
@@ -12,6 +12,8 @@ use crate::{
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};
+use rustc_target::spec::HasTargetSpec;
+use rustc_type_ir::UintTy;
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat},
     ty::Type,
@@ -80,8 +82,84 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
 
                 match op {
-                    Div => Exp::var("div").app(vec![lhs, rhs]),
-                    Rem => Exp::var("mod").app(vec![lhs, rhs]),
+                    Div => {
+                        //TODO laurent voir si on factorise TyKind::Int et TyKind::Uint
+                        // voir si on passe par Exp::BinaryOp
+                        let ty_kind = term.creusot_ty().kind();
+                        match ty_kind {
+                            TyKind::Int(ity) => {
+                                let prelude = int_to_prelude(concret_intty(*ity, self.names.tcx().target_spec().pointer_width));
+                                self.names.import_prelude_module(prelude);
+                                let mut module = prelude.qname();
+                                module.push_ident("sdiv");
+                                let fname = module.without_search_path();
+                                Exp::qvar(fname).app(vec![lhs, rhs])
+                            },
+                            TyKind::Uint(uty) => {
+                                let prelude = uint_to_prelude(concret_uintty(*uty, self.names.tcx().target_spec().pointer_width));
+                                self.names.import_prelude_module(prelude);
+                                let mut module = prelude.qname();
+                                module.push_ident("udiv");
+                                let fname = module.without_search_path();
+                                Exp::qvar(fname).app(vec![lhs, rhs])
+                            },
+                            _ => {
+                                Exp::var("div").app(vec![lhs, rhs]) // keeps the same behavior as before the BitVectors
+                            },
+                        }
+                    }
+                    Rem => {
+                        //TODO laurent voir si on factorise TyKind::Int et TyKind::Uint
+                        // voir si on passe par Exp::BinaryOp
+                        let ty_kind = term.creusot_ty().kind();
+                        match ty_kind {
+                            TyKind::Int(ity) => {
+                                let prelude = int_to_prelude(concret_intty(*ity, self.names.tcx().target_spec().pointer_width));
+                                self.names.import_prelude_module(prelude);
+                                let mut module = prelude.qname();
+                                module.push_ident("srem");
+                                let fname = module.without_search_path();
+                                Exp::qvar(fname).app(vec![lhs, rhs])
+                            },
+                            TyKind::Uint(uty) => {
+                                let prelude = uint_to_prelude(concret_uintty(*uty, self.names.tcx().target_spec().pointer_width));
+                                self.names.import_prelude_module(prelude);
+                                let mut module = prelude.qname();
+                                module.push_ident("urem");
+                                let fname = module.without_search_path();
+                                Exp::qvar(fname).app(vec![lhs, rhs])
+                            },
+                            _ => {
+                                Exp::var("mod").app(vec![lhs, rhs]) // keeps the same behavior as before the BitVectors
+                            },
+                        }
+                    }
+                    BitAnd | BitOr | BitXor | Shl | Shr => {
+                        let ty_kind = term.creusot_ty().kind();
+                        let prelude: PreludeModule = match ty_kind {
+                            TyKind::Int(ity) => int_to_prelude(concret_intty(*ity, self.names.tcx().target_spec().pointer_width)),
+                            TyKind::Uint(uty) => uint_to_prelude(concret_uintty(*uty, self.names.tcx().target_spec().pointer_width)),
+                            _ => unreachable!("the bitwise operator are only available on integer"),
+                        };
+
+                        self.names.import_prelude_module(prelude);
+
+                        let func_name = match (op, ty_kind) {
+                            (BitAnd, _) => "bw_and",
+                            (BitOr, _) => "bw_or",
+                            (BitXor, _) => "bw_xor",
+                            (Shl, _) => "lsl_bv",
+                            (Shr, TyKind::Int(_)) => "asr_bv",
+                            (Shr, TyKind::Uint(_)) => "lsr_bv",
+                            _ => unreachable!("this is not an executable path"),
+                        };
+
+                        let mut module = prelude.qname();
+                        module.push_ident(func_name);
+                        let fname = module.without_search_path();
+
+                        Exp::qvar(fname).app(vec![lhs, rhs])
+                    },
                     _ => Exp::BinaryOp(binop_to_binop(*op), Box::new(lhs), Box::new(rhs)),
                 }
             }
@@ -211,7 +289,17 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Reborrow { cur, fin, inner, projection } => {
                 let inner = self.lower_term(&*inner);
-                let borrow_id = borrow_generated_id(inner, &projection, |x| self.lower_term(x));
+                let borrow_id = borrow_generated_id(inner, &projection, |x| {
+                    if matches!(x.ty.kind(), TyKind::Uint(UintTy::Usize)) {
+                        let target_width = self.ctx.tcx.sess.target.pointer_width;
+                        Exp::Call(
+                            Box::new(Exp::qvar(QName::from_string(&format!("UInt{target_width}.t'int")))),
+                            vec![self.lower_term(x)],
+                        )
+                    } else {
+                        self.lower_term(x)
+                    }                 
+                });
 
                 Exp::qvar("Borrow.borrow_logic".into()).app(vec![
                     self.lower_term(&*cur),
@@ -297,19 +385,22 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 }
 
 pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
-    _: &mut TranslationCtx<'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut N,
     lit: &Literal<'tcx>,
 ) -> Exp {
     match *lit {
         Literal::Integer(i) => Constant::Int(i, None).into(),
-        Literal::MachSigned(u, intty) => {
-            let why_ty = intty_to_ty(names, intty);
+        Literal::MachSigned(mut u, intty) => {
+            let why_ty = intty_to_ty(names, &intty);
+            if u < 0 {
+                let target_width = ctx.tcx.sess.target.pointer_width;
+                u += 1 << intty.normalize(target_width).bit_width().unwrap(); // FIXME for Int128 --> overflow
+            }
             Constant::Int(u, Some(why_ty)).into()
         }
         Literal::MachUnsigned(u, uty) => {
-            let why_ty = uintty_to_ty(names, uty);
-
+            let why_ty = uintty_to_ty(names, &uty);
             Constant::Uint(u, Some(why_ty)).into()
         }
         Literal::Bool(true) => Constant::const_true().into(),
@@ -340,6 +431,11 @@ pub(crate) fn binop_to_binop(op: pearlite::BinOp) -> why3::exp::BinOp {
         pearlite::BinOp::Ne => BinOp::Ne,
         pearlite::BinOp::And => BinOp::LogAnd,
         pearlite::BinOp::Or => BinOp::LogOr,
+        pearlite::BinOp::BitAnd => BinOp::BitAnd,
+        pearlite::BinOp::BitOr => BinOp::BitOr,
+        pearlite::BinOp::BitXor => BinOp::BitXor,
+        pearlite::BinOp::Shl => BinOp::Shl,
+        pearlite::BinOp::Shr => BinOp::Shr,
         pearlite::BinOp::Div => todo!("Refactor binop_to_binop to support Div"),
         pearlite::BinOp::Rem => todo!("Refactor binop_to_binop to support Rem"),
     }

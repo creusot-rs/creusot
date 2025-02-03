@@ -106,22 +106,26 @@ fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
     let Some(bits) = c.get_bits(ctx.tcx, env, ty) else {
         ctx.fatal_error(span, &format!("Could not determine value of constant. Creusot currently does not support generic associated constants.")).emit()
     };
+
+    let target_width = ctx.tcx.sess.target.pointer_width;
+
     match ty.kind() {
         Int(ity) => {
-            let bits: i128 = match *ity {
+            let bits: i128 = match ity.normalize(target_width) {
                 IntTy::I128 => bits as i128,
-                IntTy::Isize => bits as i64 as i128,
+                IntTy::Isize => unreachable!("IntTy::Isize for Literal"),  
                 IntTy::I8 => bits as i8 as i128,
                 IntTy::I16 => bits as i16 as i128,
                 IntTy::I32 => bits as i32 as i128,
                 IntTy::I64 => bits as i64 as i128,
             };
+
             Literal::MachSigned(bits, *ity)
         }
         Uint(uty) => {
-            let bits: u128 = match *uty {
+            let bits: u128 = match uty.normalize(target_width) {
                 UintTy::U128 => bits as u128,
-                UintTy::Usize => bits as u64 as u128,
+                UintTy::Usize => unreachable!("UintTy::Usize for Literal"),  
                 UintTy::U8 => bits as u8 as u128,
                 UintTy::U16 => bits as u16 as u128,
                 UintTy::U32 => bits as u32 as u128,

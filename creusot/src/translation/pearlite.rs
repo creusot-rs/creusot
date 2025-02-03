@@ -55,6 +55,11 @@ pub enum BinOp {
     Mul,
     Div,
     Rem,
+    BitXor,
+    BitAnd,
+    BitOr,
+    Shl,
+    Shr,
     Lt,
     Le,
     Ge,
@@ -412,36 +417,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     Mul | MulUnchecked => BinOp::Mul,
                     Div => BinOp::Div,
                     Rem => BinOp::Rem,
-                    BitXor => {
-                        return Err(Error::msg(
-                            self.thir[expr].span,
-                            "bitwise-xors are currently unsupported",
-                        ))
-                    }
-                    BitAnd => {
-                        return Err(Error::msg(
-                            self.thir[expr].span,
-                            "bitwise-ands are currently unsupported",
-                        ))
-                    }
-                    BitOr => {
-                        return Err(Error::msg(
-                            self.thir[expr].span,
-                            "bitwise-ors are currently unsupported",
-                        ))
-                    }
-                    Shl | ShlUnchecked => {
-                        return Err(Error::msg(
-                            self.thir[expr].span,
-                            "shifts are currently unsupported",
-                        ))
-                    }
-                    Shr | ShrUnchecked => {
-                        return Err(Error::msg(
-                            self.thir[expr].span,
-                            "shifts are currently unsupported",
-                        ))
-                    }
+                    BitXor => BinOp::BitXor,
+                    BitAnd => BinOp::BitAnd,
+                    BitOr => BinOp::BitOr,
+                    Shl | ShlUnchecked => BinOp::Shl,
+                    Shr | ShrUnchecked => BinOp::Shr,
                     Lt => BinOp::Lt,
                     Le => BinOp::Le,
                     Ge => BinOp::Ge,

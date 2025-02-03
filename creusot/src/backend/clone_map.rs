@@ -24,6 +24,8 @@ use why3::{
     Ident, QName,
 };
 
+use super::ty::{slice_prelude_qname};
+
 mod elaborator;
 
 // Prelude modules
@@ -37,13 +39,11 @@ pub enum PreludeModule {
     Int32,
     Int64,
     Int128,
-    Isize,
     UInt8,
     UInt16,
     UInt32,
     UInt64,
     UInt128,
-    Usize,
     Char,
     Bool,
     Borrow,
@@ -70,11 +70,9 @@ impl PreludeModule {
             PreludeModule::UInt128 => QName::from_string("prelude.prelude.UInt128"),
             PreludeModule::Char => QName::from_string("prelude.prelude.Char"),
             PreludeModule::Opaque => QName::from_string("prelude.prelude.Opaque"),
-            PreludeModule::Isize => QName::from_string("prelude.prelude.IntSize"),
-            PreludeModule::Usize => QName::from_string("prelude.prelude.UIntSize"),
             PreludeModule::Bool => QName::from_string("prelude.prelude.Bool"),
             PreludeModule::Borrow => QName::from_string("prelude.prelude.Borrow"),
-            PreludeModule::Slice => QName::from_string("prelude.prelude.Slice"),
+            PreludeModule::Slice => slice_prelude_qname(),
             PreludeModule::Intrinsic => QName::from_string("prelude.prelude.Intrinsic"),
         }
     }
