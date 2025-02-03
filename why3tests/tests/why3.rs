@@ -28,9 +28,6 @@ struct Args {
     /// Force color output
     #[clap(long)]
     force_color: bool,
-    /// Skip any files which are marked with `UNSTABLE` on the first line
-    #[clap(long = "skip-unstable")]
-    skip_unstable: bool,
     /// Only run tests which contain this string
     filter: Option<String>,
 }
@@ -92,9 +89,7 @@ fn main() {
             out.flush().unwrap();
         }
 
-        if header_line.contains("WHY3SKIP")
-            || (args.skip_unstable && header_line.contains("UNSTABLE"))
-        {
+        if header_line.contains("WHY3SKIP") {
             write!(out, "{current}").unwrap();
             out.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
             writeln!(&mut out, "skipped").unwrap();
