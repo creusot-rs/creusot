@@ -99,7 +99,7 @@ fn filter_invariants(
     let mut invariants = Vec::new();
     parse_push_invariant(&mut invariants, tag, invariant)?;
 
-    let attrs = attrs.extract_if(|attr| {
+    let attrs = attrs.extract_if(0.., |attr| {
         attr.path().get_ident().map_or(false, |i| i == "invariant" || i == "variant")
     });
     for attr in attrs {

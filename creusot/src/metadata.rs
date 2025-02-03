@@ -227,7 +227,7 @@ fn creusot_metadata_binary_path(mut path: PathBuf) -> PathBuf {
 fn external_crates(tcx: TyCtxt<'_>) -> Vec<CrateNum> {
     let mut deps = Vec::new();
     for cr in tcx.crates(()) {
-        if let Some(extern_crate) = tcx.extern_crate(cr.as_def_id()) {
+        if let Some(extern_crate) = tcx.extern_crate(*cr) {
             if extern_crate.is_direct() {
                 deps.push(*cr);
             }

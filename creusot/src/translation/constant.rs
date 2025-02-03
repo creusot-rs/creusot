@@ -7,15 +7,15 @@ use crate::{
 };
 use rustc_middle::{
     mir::{self, interpret::AllocRange, ConstValue, UnevaluatedConst},
-    ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt},
+    ty::{Const, ConstKind, Ty, TyCtxt, TypingEnv},
 };
-use rustc_span::Span;
+use rustc_span::{Span, DUMMY_SP};
 use rustc_target::abi::Size;
 
 use super::pearlite::{Term, TermKind};
 
 pub(crate) fn from_mir_constant<'tcx>(
-    env: ParamEnv<'tcx>,
+    env: TypingEnv<'tcx>,
     ctx: &TranslationCtx<'tcx>,
     c: &rustc_middle::mir::ConstOperand<'tcx>,
 ) -> fmir::Operand<'tcx> {
@@ -25,7 +25,7 @@ pub(crate) fn from_mir_constant<'tcx>(
 fn from_mir_constant_kind<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     ck: mir::Const<'tcx>,
-    env: ParamEnv<'tcx>,
+    env: TypingEnv<'tcx>,
     span: Span,
 ) -> fmir::Operand<'tcx> {
     if let mir::Const::Ty(ty, c) = ck {
@@ -75,7 +75,7 @@ pub(crate) fn from_ty_const<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     c: Const<'tcx>,
     ty: Ty<'tcx>,
-    env: ParamEnv<'tcx>,
+    env: TypingEnv<'tcx>,
     span: Span,
 ) -> Term<'tcx> {
     // Check if a constant is builtin and thus should not be evaluated further
@@ -95,8 +95,7 @@ pub(crate) fn from_ty_const<'tcx>(
 
 fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
     ctx: &TranslationCtx<'tcx>,
-    // names: &mut CloneMap<'tcx>,
-    env: ParamEnv<'tcx>,
+    env: TypingEnv<'tcx>,
     ty: Ty<'tcx>,
     span: Span,
     c: C,
@@ -160,16 +159,26 @@ fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
 }
 
 trait ToBits<'tcx> {
-    fn get_bits(&self, tcx: TyCtxt<'tcx>, env: ParamEnv<'tcx>, ty: Ty<'tcx>) -> Option<u128>;
+    fn get_bits(&self, tcx: TyCtxt<'tcx>, env: TypingEnv<'tcx>, ty: Ty<'tcx>) -> Option<u128>;
 }
 
 impl<'tcx> ToBits<'tcx> for Const<'tcx> {
-    fn get_bits(&self, tcx: TyCtxt<'tcx>, env: ParamEnv<'tcx>, _: Ty<'tcx>) -> Option<u128> {
-        self.try_eval_bits(tcx, env)
+    fn get_bits(&self, tcx: TyCtxt<'tcx>, env: TypingEnv<'tcx>, ty: Ty<'tcx>) -> Option<u128> {
+        let scalar = match self.kind() {
+            ConstKind::Value(_, _) => self.try_to_scalar()?.0,
+            ConstKind::Unevaluated(u) => {
+                tcx.const_eval_resolve_for_typeck(env, u, DUMMY_SP).ok()?.ok()?.try_to_scalar()?
+            }
+            _ => return None,
+        };
+        let input = env.with_post_analysis_normalized(tcx).as_query_input(ty);
+        let size = tcx.layout_of(input).ok()?.size;
+        Some(scalar.try_to_scalar_int().ok()?.to_bits(size))
     }
 }
+
 impl<'tcx> ToBits<'tcx> for mir::Const<'tcx> {
-    fn get_bits(&self, tcx: TyCtxt<'tcx>, env: ParamEnv<'tcx>, _: Ty<'tcx>) -> Option<u128> {
+    fn get_bits(&self, tcx: TyCtxt<'tcx>, env: TypingEnv<'tcx>, _: Ty<'tcx>) -> Option<u128> {
         self.try_eval_bits(tcx, env)
     }
 }

@@ -1,7 +1,7 @@
 use crate::{backend::Namer, fmir::Place, naming::ident_of};
 use rustc_middle::{
     mir::{self, tcx::PlaceTy, ProjectionElem},
-    ty::{self, Ty, TyCtxt, TyKind},
+    ty::{Ty, TyCtxt, TyKind},
 };
 use rustc_span::Symbol;
 use std::{cell::RefCell, rc::Rc};
@@ -294,5 +294,5 @@ pub fn projection_ty<'tcx>(
     tcx: TyCtxt<'tcx>,
     elem: ProjectionElem<Symbol, Ty<'tcx>>,
 ) -> PlaceTy<'tcx> {
-    pty.projection_ty_core(tcx, ty::ParamEnv::empty(), &elem, |_, _, ty| ty, |_, ty| ty)
+    pty.projection_ty_core(tcx, &elem, |_, _, ty| ty, |_, ty| ty)
 }

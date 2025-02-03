@@ -4,22 +4,22 @@ use crate::{
     traits::TraitResolved,
 };
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{ParamEnv, TyCtxt};
+use rustc_middle::ty::{TyCtxt, TypingEnv};
 
 use super::{super_visit_mut_term, BinOp, TermVisitorMut};
 
 pub(crate) fn normalize<'tcx>(
     tcx: TyCtxt<'tcx>,
-    param_env: ParamEnv<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     mut term: Term<'tcx>,
 ) -> Term<'tcx> {
-    NormalizeTerm { param_env, tcx }.visit_mut_term(&mut term);
-    let term = tcx.normalize_erasing_regions(param_env, term);
+    NormalizeTerm { typing_env, tcx }.visit_mut_term(&mut term);
+    let term = tcx.normalize_erasing_regions(typing_env, term);
     term
 }
 
 struct NormalizeTerm<'tcx> {
-    param_env: ParamEnv<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     tcx: TyCtxt<'tcx>,
 }
 
@@ -29,7 +29,7 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
         match &mut term.kind {
             TermKind::Call { id, subst, args } => {
                 if self.tcx.trait_of_item(*id).is_some() {
-                    let method = TraitResolved::resolve_item(self.tcx, self.param_env, *id, subst)
+                    let method = TraitResolved::resolve_item(self.tcx, self.typing_env, *id, subst)
                         .to_opt(*id, subst)
                         .unwrap_or_else(|| {
                             panic!("could not resolve trait instance {:?}", (*id, *subst))
@@ -50,7 +50,7 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
             }
             TermKind::Item(id, subst) => {
                 if self.tcx.trait_of_item(*id).is_some() {
-                    let method = TraitResolved::resolve_item(self.tcx, self.param_env, *id, subst)
+                    let method = TraitResolved::resolve_item(self.tcx, self.typing_env, *id, subst)
                         .to_opt(*id, subst)
                         .unwrap_or_else(|| {
                             panic!("could not resolve trait instance {:?}", (*id, *subst))

@@ -1,12 +1,16 @@
 module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   let%span stwo_phase0 = "two_phase.rs" 5 10 5 37
-  let%span svec1 = "../../../../creusot-contracts/src/std/vec.rs" 83 26 83 48
-  let%span svec2 = "../../../../creusot-contracts/src/std/vec.rs" 87 26 87 56
-  let%span smodel3 = "../../../../creusot-contracts/src/model.rs" 72 8 72 22
-  let%span sindex4 = "../../../../creusot-contracts/src/logic/ops/index.rs" 27 8 27 31
-  let%span smodel5 = "../../../../creusot-contracts/src/model.rs" 54 8 54 22
-  let%span svec6 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
-  let%span sresolve7 = "../../../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span smod1 = "../../../../../../../.rustup/toolchains/nightly-2025-01-31-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc/src/vec/mod.rs" 2682 22 2682 26
+  let%span svec2 = "../../../../creusot-contracts/src/std/vec.rs" 83 26 83 48
+  let%span smod3 = "../../../../../../../.rustup/toolchains/nightly-2025-01-31-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc/src/vec/mod.rs" 2417 21 2417 25
+  let%span smod4 = "../../../../../../../.rustup/toolchains/nightly-2025-01-31-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc/src/vec/mod.rs" 2417 27 2417 32
+  let%span svec5 = "../../../../creusot-contracts/src/std/vec.rs" 87 26 87 56
+  let%span smodel6 = "../../../../creusot-contracts/src/model.rs" 72 8 72 22
+  let%span sindex7 = "../../../../creusot-contracts/src/logic/ops/index.rs" 27 8 27 31
+  let%span smodel8 = "../../../../creusot-contracts/src/model.rs" 54 8 54 22
+  let%span svec9 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span sresolve10 = "../../../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span suint_macros11 = "../../../../../../../.rustup/toolchains/nightly-2025-01-31-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/num/uint_macros.rs" 49 8 49 27
   
   use prelude.prelude.Borrow
   
@@ -20,11 +24,14 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   
   use prelude.prelude.UIntSize
   
-  type t_Cap'0  =
-    { t_Cap__0'0: usize }
+  type t_UsizeNoHighBit'0  =
+    { t_UsizeNoHighBit__0'0: usize }
+  
+  type t_RawVecInner'0  =
+    { t_RawVecInner__ptr'0: t_Unique'0; t_RawVecInner__cap'0: t_UsizeNoHighBit'0; t_RawVecInner__alloc'0: () }
   
   type t_RawVec'0  =
-    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+    { t_RawVec__inner'0: t_RawVecInner'0; t_RawVec__qy95zmarker'0: () }
   
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
@@ -39,19 +46,19 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   
   use seq.Seq
   
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#suint_macros11] (18446744073709551615 : usize)
   
   use prelude.prelude.Int
   
   function view'2 (self : t_Vec'0) : Seq.seq usize
   
-  axiom view'2_spec : forall self : t_Vec'0 . [%#svec6] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  axiom view'2_spec : forall self : t_Vec'0 . [%#svec9] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
   function view'1 (self : t_Vec'0) : Seq.seq usize =
-    [%#smodel5] view'2 self
+    [%#smodel8] view'2 self
   
-  let rec len'0 (self:t_Vec'0) (return'  (ret:usize))= {[@expl:len 'self' type invariant] inv'0 self}
-    any [ return' (result:usize)-> {[%#svec1] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ] 
+  let rec len'0 (self:t_Vec'0) (return'  (ret:usize))= {[@expl:len 'self' type invariant] [%#smod1] inv'0 self}
+    any [ return' (result:usize)-> {[%#svec2] UIntSize.to_int result = Seq.length (view'1 self)} (! return' {result}) ] 
   
   predicate inv'1 (_1 : borrowed (t_Vec'0))
   
@@ -62,16 +69,16 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   axiom inv_axiom'2 [@rewrite] : forall x : usize [inv'2 x] . inv'2 x = true
   
   function view'0 (self : borrowed (t_Vec'0)) : Seq.seq usize =
-    [%#smodel3] view'2 self.current
+    [%#smodel6] view'2 self.current
   
   use seq.Seq
   
-  let rec push'0 (self:borrowed (t_Vec'0)) (value:usize) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'1 self}
-    {[@expl:push 'value' type invariant] inv'2 value}
-    any [ return' (result:())-> {[%#svec2] view'2 self.final = Seq.snoc (view'0 self) value} (! return' {result}) ] 
+  let rec push'0 (self:borrowed (t_Vec'0)) (value:usize) (return'  (ret:()))= {[@expl:push 'self' type invariant] [%#smod3] inv'1 self}
+    {[@expl:push 'value' type invariant] [%#smod4] inv'2 value}
+    any [ return' (result:())-> {[%#svec5] view'2 self.final = Seq.snoc (view'0 self) value} (! return' {result}) ] 
   
   predicate resolve'1 (self : borrowed (t_Vec'0)) =
-    [%#sresolve7] self.final = self.current
+    [%#sresolve10] self.final = self.current
   
   predicate resolve'0 (_1 : borrowed (t_Vec'0)) =
     resolve'1 _1
@@ -81,7 +88,7 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : usize =
-    [%#sindex4] Seq.get (view'2 self) ix
+    [%#sindex7] Seq.get (view'2 self) ix
   
   meta "compute_max_steps" 1000000
   

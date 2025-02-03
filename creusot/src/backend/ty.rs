@@ -7,7 +7,7 @@ use crate::{
     ctx::*,
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::{AliasTy, AliasTyKind, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{AliasTy, AliasTyKind, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv};
 use rustc_span::{Span, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, TyKind::*, UintTy};
@@ -110,7 +110,7 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         {
             MlT::Tuple(vec![])
         }
-        FnPtr(_) => {
+        FnPtr(..) => {
             names.import_prelude_module(PreludeModule::Opaque);
             MlT::TConstructor(QName::from_string("opaque_ptr"))
         }
@@ -177,7 +177,7 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
     ctx: &mut Why3Generator<'tcx>,
     names: &mut N,
     (did, subst): (DefId, GenericArgsRef<'tcx>),
-    param_env: ParamEnv<'tcx>,
+    typing_env: TypingEnv<'tcx>,
 ) -> Vec<Decl> {
     // Trusted types (opaque)
     if is_trusted(ctx.tcx, did) {
@@ -199,7 +199,7 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
                     .iter()
                     .map(|f| {
                         let ty = f.ty(ctx.tcx, subst);
-                        let ty = ctx.normalize_erasing_regions(param_env, ty);
+                        let ty = ctx.normalize_erasing_regions(typing_env, ty);
                         translate_ty(ctx, names, ctx.def_span(f.did), ty)
                     })
                     .collect(),
@@ -216,7 +216,7 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
             .map(|(ix, f)| {
                 let name = names.field(did, subst, ix).as_ident();
                 let ty = f.ty(ctx.tcx, subst);
-                let ty = ctx.normalize_erasing_regions(param_env, ty);
+                let ty = ctx.normalize_erasing_regions(typing_env, ty);
                 let ty = translate_ty(ctx, names, ctx.def_span(f.did), ty);
                 FieldDecl { name, ty }
             })

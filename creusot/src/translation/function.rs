@@ -20,22 +20,22 @@ use crate::{
     },
 };
 use indexmap::IndexMap;
-use rustc_borrowck::borrow_set::BorrowSet;
+use rustc_borrowck::consumers::BorrowSet;
 use rustc_hir::def_id::DefId;
-use rustc_index::{bit_set::BitSet, Idx};
+use rustc_index::{bit_set::MixedBitSet, Idx};
 use rustc_middle::{
     mir::{
         self, traversal::reverse_postorder, BasicBlock, Body, Local, Location, Operand, Place,
         PlaceRef, TerminatorKind, START_BLOCK,
     },
     ty::{
-        BorrowKind, ClosureKind, GenericArg, GenericArgsRef, ParamEnv, Ty, TyCtxt, TyKind,
-        TypeVisitableExt, UpvarCapture,
+        BorrowKind, ClosureKind, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypeVisitableExt,
+        TypingEnv, UpvarCapture,
     },
 };
 use rustc_mir_dataflow::{
     move_paths::{HasMoveData, LookupResult, MoveData, MovePathIndex},
-    on_all_children_bits, Analysis as _, MoveDataParamEnv,
+    on_all_children_bits, Analysis as _,
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_target::abi::{FieldIdx, VariantIdx};
@@ -51,8 +51,7 @@ use terminator::discriminator_for_switch;
 
 /// Translate a function from rustc's MIR to fMIR.
 pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, body_id: BodyId) -> fmir::Body<'tcx> {
-    let body = ctx.body(body_id).clone();
-    BodyTranslator::with_context(ctx, &body, body_id, |func_translator| func_translator.translate())
+    BodyTranslator::with_context(ctx, body_id, |func_translator| func_translator.translate())
 }
 
 /// Translate a MIR body (rustc) to FMIR (creusot).
@@ -64,10 +63,12 @@ struct BodyTranslator<'a, 'tcx> {
 
     resolver: Option<Resolver<'a, 'tcx>>,
 
-    mdpe: &'a MoveDataParamEnv<'tcx>,
+    move_data: &'a MoveData<'tcx>,
+
+    typing_env: TypingEnv<'tcx>,
 
     /// Spec / Snapshot variables
-    erased_locals: BitSet<Local>,
+    erased_locals: MixedBitSet<Local>,
 
     /// Current block being generated
     current_block: (Vec<fmir::Statement<'tcx>>, Option<fmir::Terminator<'tcx>>),
@@ -100,7 +101,7 @@ struct BodyTranslator<'a, 'tcx> {
 
 impl<'a, 'tcx> HasMoveData<'tcx> for BodyTranslator<'a, 'tcx> {
     fn move_data(&self) -> &MoveData<'tcx> {
-        &self.mdpe.move_data
+        &self.move_data
     }
 }
 
@@ -111,18 +112,42 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     fn with_context<R, F: for<'b> FnOnce(BodyTranslator<'b, 'tcx>) -> R>(
         ctx: &'body mut TranslationCtx<'tcx>,
-        body: &'body Body<'tcx>,
         body_id: BodyId,
         f: F,
     ) -> R {
         let tcx = ctx.tcx;
-        let param_env = tcx.param_env(body.source.def_id());
-        let move_data = MoveData::gather_moves(body, tcx, param_env, |_| true);
-        let mdpe = &MoveDataParamEnv { move_data, param_env };
+
+        let body_with_facts = ctx.body_with_facts(body_id.def_id).clone();
+        let (body, move_data, resolver, borrows);
+        match body_id.promoted {
+            None => {
+                body = &body_with_facts.body;
+                move_data = MoveData::gather_moves(body, tcx, |_| true);
+                resolver = Some(Resolver::new(
+                    tcx,
+                    body,
+                    &body_with_facts.borrow_set,
+                    &body_with_facts.region_inference_context,
+                    &move_data,
+                ));
+                // eprintln!("--------------- {:?}", body_id);
+                // eprintln!("{:?}", move_data);
+                // resolver.debug();
+                borrows = Some(&body_with_facts.borrow_set)
+            }
+            Some(promoted) => {
+                body = &body_with_facts.promoted.get(promoted).unwrap();
+                move_data = MoveData::gather_moves(body, tcx, |_| true);
+                resolver = None;
+                borrows = None;
+            }
+        };
+
+        let typing_env = ctx.typing_env(body.source.def_id());
 
         let invariants = corrected_invariant_names_and_locations(ctx, &body);
         let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, &body);
-        let mut erased_locals = BitSet::new_empty(body.local_decls.len());
+        let mut erased_locals = MixedBitSet::new_empty(body.local_decls.len());
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
@@ -132,35 +157,14 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             }
         });
 
-        let bor;
-        let (resolver, borrows) = match body_id.promoted {
-            None => {
-                let with_facts = ctx.body_with_facts(body_id.def_id);
-                bor = with_facts.borrow_set.clone();
-                let borrows = bor.as_ref();
-                #[allow(unused_mut)]
-                let mut resolver = Resolver::new(
-                    tcx,
-                    body,
-                    borrows,
-                    with_facts.region_inference_context.clone(),
-                    mdpe,
-                );
-                // eprintln!("--------------- {:?}", body_id);
-                // eprintln!("{:?}", mdpe.move_data);
-                // resolver.debug();
-                (Some(resolver), Some(borrows))
-            }
-            Some(_) => (None, None),
-        };
-
         let (vars, locals) = translate_vars(&body, &erased_locals);
 
         f(BodyTranslator {
             body,
             body_id,
             resolver,
-            mdpe,
+            move_data: &move_data,
+            typing_env,
             locals,
             vars,
             erased_locals,
@@ -191,8 +195,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     fn translate_body(&mut self) {
         let mut not_final_places = NotFinalPlaces::new(self.tcx(), self.body)
-            .into_engine(self.tcx(), self.body)
-            .iterate_to_fixpoint()
+            .iterate_to_fixpoint(self.tcx(), self.body, None)
             .into_results_cursor(self.body);
 
         for (bb, bbd) in reverse_postorder(self.body) {
@@ -258,8 +261,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         }
     }
 
-    fn param_env(&self) -> ParamEnv<'tcx> {
-        self.ctx.param_env(self.body_id.def_id())
+    fn typing_env(&self) -> TypingEnv<'tcx> {
+        self.ctx.typing_env(self.body_id.def_id())
     }
 
     fn emit_statement(&mut self, s: fmir::Statement<'tcx>) {
@@ -268,8 +271,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     /// These types cannot contain mutable borrows and thus do not need to be resolved.
     fn skip_resolve_type(&self, ty: Ty<'tcx>) -> bool {
-        let ty = self.ctx.normalize_erasing_regions(self.param_env(), ty);
-        ty.is_copy_modulo_regions(self.tcx(), self.param_env())
+        let ty = self.ctx.normalize_erasing_regions(self.typing_env(), ty);
+        self.tcx().type_is_copy_modulo_regions(self.typing_env(), ty)
             || !(ty.has_erased_regions() || ty.still_further_specializable())
     }
 
@@ -292,11 +295,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         let p = self.translate_place(pl);
 
-        if !is_tyinv_trivial(self.tcx(), self.param_env(), place_ty.ty) {
+        if !is_tyinv_trivial(self.tcx(), self.typing_env(), place_ty.ty) {
             self.emit_statement(fmir::Statement::AssertTyInv { pl: p.clone() });
         }
 
-        if let Some((did, subst)) = resolve_predicate_of(self.ctx, self.param_env(), place_ty.ty) {
+        if let Some((did, subst)) = resolve_predicate_of(self.ctx, self.typing_env(), place_ty.ty) {
             self.emit_statement(fmir::Statement::Resolve { did, subst, pl: p });
         }
     }
@@ -320,7 +323,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let p = self.translate_place(rhs.as_ref());
 
         let rhs_ty = rhs.ty(self.body, self.tcx()).ty;
-        let triv_inv = if is_tyinv_trivial(self.tcx(), self.param_env(), rhs_ty) {
+        let triv_inv = if is_tyinv_trivial(self.tcx(), self.typing_env(), rhs_ty) {
             TrivialInv::Trivial
         } else {
             TrivialInv::NonTrivial
@@ -348,8 +351,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     fn resolve_before_assignment(
         &mut self,
-        need: BitSet<MovePathIndex>,
-        resolved: &BitSet<MovePathIndex>,
+        need: MixedBitSet<MovePathIndex>,
+        resolved: &MixedBitSet<MovePathIndex>,
         location: Location,
         destination: Place<'tcx>,
     ) {
@@ -510,7 +513,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         for (pred, resolved) in iter::zip(pred_blocks, resolved_between) {
             // If no resolves occured in block transition then skip entirely
-            if resolved.0.count() == 0 {
+            if resolved.0.is_empty() {
                 continue;
             };
 
@@ -541,8 +544,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     /// but taking care of type opacity and recursive types.
     fn resolve_places(
         &mut self,
-        to_resolve: BitSet<MovePathIndex>,
-        resolved: &BitSet<MovePathIndex>,
+        to_resolve: MixedBitSet<MovePathIndex>,
+        resolved: &MixedBitSet<MovePathIndex>,
     ) {
         let mut to_resolve_full = to_resolve.clone();
         for mp in to_resolve.iter() {
@@ -582,7 +585,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 continue;
             }
             let ty = pl.ty(&self.body.local_decls, self.tcx());
-            let ty = self.ctx.normalize_erasing_regions(self.mdpe.param_env, ty);
+            let ty = self.ctx.normalize_erasing_regions(self.typing_env, ty);
             let mut insert = |pl: Place<'tcx>| {
                 if !matches!(self.move_data().rev_lookup.find(pl.as_ref()), LookupResult::Exact(_))
                 {
@@ -647,12 +650,13 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 | TyKind::Error(_)
                 | TyKind::Ref(_, _, _)
                 | TyKind::FnDef(_, _)
-                | TyKind::FnPtr(_)
+                | TyKind::FnPtr(..)
                 | TyKind::Dynamic(_, _, _)
                 | TyKind::CoroutineClosure(_, _)
                 | TyKind::Coroutine(_, _)
                 | TyKind::CoroutineWitness(_, _)
-                | TyKind::Never => unreachable!("{}", ty.ty),
+                | TyKind::Never
+                | TyKind::UnsafeBinder(_) => unreachable!("{}", ty.ty),
             }
         }
 
@@ -668,7 +672,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let kind = match operand {
             Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(pl.as_ref())),
             Operand::Move(pl) => fmir::Operand::Move(self.translate_place(pl.as_ref())),
-            Operand::Constant(c) => from_mir_constant(self.param_env(), self.ctx, c),
+            Operand::Constant(c) => from_mir_constant(self.typing_env(), self.ctx, c),
         };
         kind
     }
@@ -723,7 +727,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 ///   mir local (the `vars` variable).
 fn translate_vars<'tcx>(
     body: &Body<'tcx>,
-    erased_locals: &BitSet<Local>,
+    erased_locals: &MixedBitSet<Local>,
 ) -> (LocalDecls<'tcx>, HashMap<Local, Symbol>) {
     let mut vars = LocalDecls::with_capacity(body.local_decls.len());
     let mut locals = HashMap::new();
@@ -914,10 +918,10 @@ impl<'tcx> TranslationCtx<'tcx> {
                 vec![self_, result_state],
             ));
 
-            postcondition = normalize(self.tcx, self.param_env(def_id), postcondition);
+            postcondition = normalize(self.tcx, self.typing_env(def_id), postcondition);
 
             let mut unnest = closure_unnest(self.tcx, def_id, subst);
-            unnest = normalize(self.tcx, self.param_env(def_id), unnest);
+            unnest = normalize(self.tcx, self.typing_env(def_id), unnest);
 
             contracts.unnest = Some(unnest);
             contracts.postcond_mut = Some(postcondition);
@@ -945,7 +949,7 @@ pub(crate) fn closure_resolve<'tcx>(
 
     let self_ = Term::var(Symbol::intern("_1"), ctx.type_of(def_id).instantiate_identity());
     let csubst = subst.as_closure();
-    let param_env = ctx.param_env(def_id);
+    let typing_env = TypingEnv::non_body_analysis(ctx.tcx, def_id);
     for (ix, ty) in csubst.upvar_tys().iter().enumerate() {
         let proj = Term {
             ty,
@@ -953,8 +957,8 @@ pub(crate) fn closure_resolve<'tcx>(
             span: DUMMY_SP,
         };
 
-        if let Some((id, subst)) = resolve_predicate_of(ctx, param_env, ty) {
-            resolve = Term::call(ctx.tcx, param_env, id, subst, vec![proj]).conj(resolve);
+        if let Some((id, subst)) = resolve_predicate_of(ctx, typing_env, ty) {
+            resolve = Term::call(ctx.tcx, typing_env, id, subst, vec![proj]).conj(resolve);
         }
     }
 
@@ -993,7 +997,7 @@ fn closure_unnest<'tcx>(
                 use rustc_middle::ty::BorrowKind;
 
                 let unnest_one = match is_mut {
-                    BorrowKind::ImmBorrow => Term::eq(tcx, (acc)(fin), (acc)(cur)),
+                    BorrowKind::Immutable => Term::eq(tcx, (acc)(fin), (acc)(cur)),
                     _ => Term::eq(tcx, (acc)(fin).fin(), (acc)(cur).fin()),
                 };
 
@@ -1035,7 +1039,7 @@ impl<'a, 'tcx> ClosureSubst<'a, 'tcx> {
                 }
                 Some(proj)
             }
-            UpvarCapture::ByRef(BorrowKind::MutBorrow | BorrowKind::UniqueImmBorrow)
+            UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable)
                 if self.self_consumed =>
             {
                 Some(proj.fin())
@@ -1152,7 +1156,7 @@ pub(crate) fn closure_capture_subst<'a, 'tcx>(
 
 fn resolve_predicate_of<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    param_env: ParamEnv<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     ty: Ty<'tcx>,
 ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
     let trait_meth_id = get_resolve_method(ctx.tcx);
@@ -1162,7 +1166,7 @@ fn resolve_predicate_of<'tcx>(
     // a resolve
     if !ty.is_closure()
         && matches!(
-            traits::TraitResolved::resolve_item(ctx.tcx, param_env, trait_meth_id, substs),
+            traits::TraitResolved::resolve_item(ctx.tcx, typing_env, trait_meth_id, substs),
             traits::TraitResolved::NoInstance
         )
     {

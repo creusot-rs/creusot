@@ -14,7 +14,7 @@ extern crate log;
 use creusot::callbacks::*;
 use creusot_args::CREUSOT_RUSTC_ARGS;
 use options::CreusotArgs;
-use rustc_driver::RunCompiler;
+use rustc_driver::run_compiler;
 use rustc_session::{config::ErrorOutputType, EarlyDiagCtxt};
 use std::{env, panic, process::Command};
 
@@ -73,11 +73,11 @@ fn setup_plugin() {
                 Ok(opts) => opts,
                 Err(msg) => panic!("Error: {msg}"),
             };
-            RunCompiler::new(&args, &mut ToWhy::new(opts)).run().unwrap();
+            run_compiler(&args, &mut ToWhy::new(opts))
         }
         _ => {
             args.push("--cfg=creusot".to_string());
-            RunCompiler::new(&args, &mut DefaultCallbacks).run().unwrap()
+            run_compiler(&args, &mut DefaultCallbacks)
         }
     }
 }

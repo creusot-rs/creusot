@@ -12,7 +12,8 @@ use rustc_infer::{
 };
 use rustc_middle::ty::{
     AssocItemContainer, Const, ConstKind, EarlyBinder, GenericArgsRef, ParamConst, ParamEnv,
-    ParamTy, Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder,
+    ParamTy, Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypingEnv,
+    TypingMode,
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::{
@@ -94,7 +95,8 @@ impl<'tcx> TranslationCtx<'tcx> {
                 .map(|p| p.predicates_for(self.tcx, refn_subst))
                 .unwrap_or_else(Vec::new);
 
-            let infcx = self.tcx.infer_ctxt().ignoring_regions().build();
+            let infcx =
+                self.tcx.infer_ctxt().ignoring_regions().build(TypingMode::non_body_analysis());
 
             let res = evaluate_additional_predicates(
                 &infcx,
@@ -128,8 +130,8 @@ fn logic_refinement_term<'tcx>(
     // Get the contract of the trait version
     let trait_sig = {
         let pre_sig = ctx.sig(trait_item_id).clone();
-        let param_env = ctx.param_env(impl_item_id);
-        EarlyBinder::bind(pre_sig).instantiate(ctx.tcx, refn_subst).normalize(ctx.tcx, param_env)
+        let typing_env = ctx.typing_env(impl_item_id);
+        EarlyBinder::bind(pre_sig).instantiate(ctx.tcx, refn_subst).normalize(ctx.tcx, typing_env)
     };
 
     let impl_sig = ctx.sig(impl_item_id).clone();
@@ -215,36 +217,38 @@ impl<'tcx> TraitResolved<'tcx> {
     /// Use this on an arbitrary `def_id` to avoid panics in [`Self::resolve_item`].
     pub(crate) fn is_trait_item(tcx: TyCtxt<'tcx>, def_id: DefId) -> bool {
         let Some(assoc) = tcx.opt_associated_item(def_id) else { return false };
-        assoc.container == AssocItemContainer::TraitContainer
+        assoc.container == AssocItemContainer::Trait
     }
 
     /// Try to resolve a trait item to the item in an `impl` block, given some typing context.
     ///
     /// # Parameters
     /// - `tcx`: The global context
-    /// - `param_env`: The scope of type variables, see <https://rustc-dev-guide.rust-lang.org/param_env/param_env_summary.html>.
+    /// - `typing_env`: The scope of type variables, see <https://rustc-dev-guide.rust-lang.org/param_env/param_env_summary.html>.
     /// - `trait_item_def_id`: The trait item we are trying to resolve.
     /// - `substs`: The type parameters we are instantiating the trait item with. This
     ///   can include the `Self` parameter.
     pub(crate) fn resolve_item(
         tcx: TyCtxt<'tcx>,
-        param_env: ParamEnv<'tcx>,
+        typing_env: TypingEnv<'tcx>,
         trait_item_def_id: DefId,
         substs: GenericArgsRef<'tcx>,
     ) -> Self {
         trace!("TraitResolved::resolve {:?} {:?}", trait_item_def_id, substs);
         let assoc = tcx.opt_associated_item(trait_item_def_id).unwrap();
 
-        assert!(assoc.container == AssocItemContainer::TraitContainer);
+        assert!(assoc.container == AssocItemContainer::Trait);
 
         let trait_ref =
             TraitRef::from_method(tcx, tcx.trait_of_item(trait_item_def_id).unwrap(), substs);
-        let trait_ref = tcx.normalize_erasing_regions(param_env, trait_ref);
+        let trait_ref = tcx.normalize_erasing_regions(typing_env, trait_ref);
 
-        let source = if let Ok(source) = tcx.codegen_select_candidate((param_env, trait_ref)) {
+        let source = if let Ok(source) =
+            tcx.codegen_select_candidate(typing_env.as_query_input(trait_ref))
+        {
             source
         } else {
-            if still_specializable(tcx, param_env, trait_item_def_id, trait_ref, None) {
+            if still_specializable(tcx, typing_env.param_env, trait_item_def_id, trait_ref, None) {
                 return TraitResolved::UnknownNotFound;
             } else {
                 return TraitResolved::NoInstance;
@@ -254,7 +258,13 @@ impl<'tcx> TraitResolved<'tcx> {
 
         match source {
             ImplSource::UserDefined(impl_data) => {
-                if still_specializable(tcx, param_env, trait_item_def_id, trait_ref, Some(source)) {
+                if still_specializable(
+                    tcx,
+                    typing_env.param_env,
+                    trait_item_def_id,
+                    trait_ref,
+                    Some(source),
+                ) {
                     return TraitResolved::UnknownFound;
                 }
 
@@ -269,11 +279,11 @@ impl<'tcx> TraitResolved<'tcx> {
                     });
 
                 // Translate the original substitution into one on the selected impl method
-                let infcx = tcx.infer_ctxt().build();
+                let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
 
                 let args = rustc_trait_selection::traits::translate_args(
                     &infcx,
-                    param_env,
+                    typing_env.param_env,
                     impl_data.impl_def_id,
                     impl_data.args,
                     leaf_def.defining_node,
@@ -298,14 +308,14 @@ impl<'tcx> TraitResolved<'tcx> {
     /// this trait.
     pub(crate) fn impl_id_of_trait(
         tcx: TyCtxt<'tcx>,
-        param_env: ParamEnv<'tcx>,
+        typing_env: TypingEnv<'tcx>,
         trait_def_id: DefId,
         substs: GenericArgsRef<'tcx>,
     ) -> Option<DefId> {
         let trait_ref = TraitRef::from_method(tcx, trait_def_id, substs);
-        let trait_ref = tcx.normalize_erasing_regions(param_env, trait_ref);
+        let trait_ref = tcx.normalize_erasing_regions(typing_env, trait_ref);
 
-        let Ok(source) = tcx.codegen_select_candidate((param_env, trait_ref)) else {
+        let Ok(source) = tcx.codegen_select_candidate(typing_env.as_query_input(trait_ref)) else {
             return None;
         };
         trace!("TraitResolved::impl_id_of_trait {source:?}",);
@@ -397,8 +407,8 @@ fn still_specializable<'tcx>(
 
     // Check whether we know all the nodes.
     // We take inspiration from rustc_next_solver::cohenrence::trait_ref_is_knowable,
-    // but ignore future-compatiility.
-    let infcx = tcx.infer_ctxt().ignoring_regions().intercrate(true).build();
+    // but ignore future-compatibility.
+    let infcx = tcx.infer_ctxt().ignoring_regions().build(rustc_type_ir::TypingMode::Coherence);
     let (param_env, trait_ref) =
         instantiate_params_with_infer(&infcx, param_env.and(trait_ref)).into_parts();
     if orphan_check_trait_ref(&infcx, trait_ref, InCrate::Remote, |ty| Ok::<_, !>(ty))

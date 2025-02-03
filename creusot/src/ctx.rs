@@ -24,7 +24,7 @@ use crate::{
 use indexmap::IndexMap;
 use rustc_ast::{
     visit::{walk_fn, FnKind, Visitor},
-    FnSig, NodeId,
+    Fn, FnSig, NodeId,
 };
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
 use rustc_errors::{Diag, FatalAbort};
@@ -35,16 +35,16 @@ use rustc_hir::{
 use rustc_infer::traits::ObligationCause;
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
-    mir::{Body, Promoted, TerminatorKind},
+    mir::{Promoted, TerminatorKind},
     thir,
     ty::{
         Clause, GenericArg, GenericArgsRef, ParamEnv, Predicate, ResolverAstLowering, Ty, TyCtxt,
-        Visibility,
+        TypingEnv, TypingMode, Visibility,
     },
 };
 use rustc_span::{Span, Symbol};
 use rustc_trait_selection::traits::normalize_param_env_or_error;
-use std::{collections::HashMap, ops::Deref};
+use std::{collections::HashMap, ops::Deref, rc::Rc};
 
 pub(crate) use crate::{backend::clone_map::*, translated_item::*};
 
@@ -159,7 +159,7 @@ pub struct TranslationCtx<'tcx> {
     extern_spec_items: HashMap<LocalDefId, DefId>,
     trait_impl: HashMap<DefId, TraitImpl<'tcx>>,
     sig: HashMap<DefId, PreSignature<'tcx>>,
-    bodies: HashMap<LocalDefId, BodyWithBorrowckFacts<'tcx>>,
+    bodies: HashMap<LocalDefId, Rc<BodyWithBorrowckFacts<'tcx>>>,
     opacity: HashMap<DefId, Opacity>,
     closure_contract: HashMap<DefId, ClosureContract<'tcx>>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
@@ -178,8 +178,8 @@ fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, Vec<usize>> {
     impl<'tcx, 'a> Visitor<'a> for VisitFns<'tcx, 'a> {
         fn visit_fn(&mut self, fk: FnKind<'a>, _: Span, node: NodeId) {
             let decl = match fk {
-                FnKind::Fn(_, _, FnSig { decl, .. }, _, _, _) => decl,
-                FnKind::Closure(_, decl, _) => decl,
+                FnKind::Fn(_, _, _, Fn { sig: FnSig { decl, .. }, .. }) => decl,
+                FnKind::Closure(_, _, decl, _) => decl,
             };
             let mut open_inv_params = vec![];
             for (i, p) in decl.inputs.iter().enumerate() {
@@ -273,7 +273,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                     Err(Error::MustPrint(msg)) => msg.emit(self.tcx),
                     Err(Error::TypeCheck(thir)) => return Err(thir),
                 };
-                term = pearlite::normalize(self.tcx, self.param_env(def_id), term);
+                term = pearlite::normalize(self.tcx, self.typing_env(def_id), term);
 
                 self.terms.insert(def_id, term);
             };
@@ -304,15 +304,10 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     queryish!(sig, &PreSignature<'tcx>, |ctx: &mut Self, key| { pre_sig_of(&mut *ctx, key) });
 
-    pub(crate) fn body(&mut self, body_id: BodyId) -> &Body<'tcx> {
-        let body = self.body_with_facts(body_id.def_id);
-        match body_id.promoted {
-            None => &body.body,
-            Some(promoted) => body.promoted.get(promoted).unwrap(),
-        }
-    }
-
-    pub(crate) fn body_with_facts(&mut self, def_id: LocalDefId) -> &BodyWithBorrowckFacts<'tcx> {
+    pub(crate) fn body_with_facts(
+        &mut self,
+        def_id: LocalDefId,
+    ) -> &Rc<BodyWithBorrowckFacts<'tcx>> {
         let entry = self.bodies.entry(def_id);
         entry.or_insert_with(|| {
             let mut body = callbacks::get_body(self.tcx, def_id)
@@ -330,17 +325,17 @@ impl<'tcx> TranslationCtx<'tcx> {
                 }
             }
 
-            body
+            Rc::new(body)
         })
     }
 
     pub(crate) fn type_invariant(
         &self,
-        param_env: ParamEnv<'tcx>,
+        typing_env: TypingEnv<'tcx>,
         ty: Ty<'tcx>,
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-        let ty = self.normalize_erasing_regions(param_env, ty);
-        if is_tyinv_trivial(self.tcx, param_env, ty) {
+        let ty = self.normalize_erasing_regions(typing_env, ty);
+        if is_tyinv_trivial(self.tcx, typing_env, ty) {
             None
         } else {
             let inv_did = get_inv_function(self.tcx);
@@ -438,13 +433,18 @@ impl<'tcx> TranslationCtx<'tcx> {
                 .chain(additional_predicates)
                 .map(Predicate::expect_clause)
                 .collect::<Vec<_>>();
-            let res =
-                ParamEnv::new(self.mk_clauses(&clauses), rustc_infer::traits::Reveal::UserFacing);
+            let res = ParamEnv::new(self.mk_clauses(&clauses));
             let res = normalize_param_env_or_error(self.tcx, res, ObligationCause::dummy());
             res
         } else {
             self.tcx.param_env(def_id)
         }
+    }
+
+    pub(crate) fn typing_env(&self, def_id: DefId) -> TypingEnv<'tcx> {
+        // FIXME: is it correct to pretend we are doing a non-body analysis?
+        let param_env = self.param_env(def_id);
+        TypingEnv { typing_mode: TypingMode::non_body_analysis(), param_env }
     }
 
     pub(crate) fn has_body(&mut self, def_id: DefId) -> bool {

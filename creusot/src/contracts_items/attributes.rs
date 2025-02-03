@@ -1,7 +1,7 @@
 //! Defines all the internal creusot attributes.
 
-use rustc_ast::{AttrArgs, Attribute, Param};
-use rustc_hir::def_id::DefId;
+use rustc_ast::Param;
+use rustc_hir::{def_id::DefId, AttrArgs, Attribute};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
 
@@ -94,8 +94,7 @@ pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol>
 }
 
 pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::Attribute> {
-    let matches = get_attrs(tcx.get_attrs_unchecked(def_id), &["why3", "attr"]);
-    matches
+    get_attrs(tcx.get_attrs_unchecked(def_id), &["why3", "attr"])
         .into_iter()
         .map(|a| why3::declaration::Attribute::Attr(a.value_str().unwrap().as_str().into()))
         .collect()
@@ -124,7 +123,34 @@ pub(crate) fn get_creusot_item(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
 }
 
 pub(crate) fn is_open_inv_param<'tcx>(tcx: TyCtxt<'tcx>, p: &Param) -> bool {
-    return get_attr(tcx, &p.attrs, &["creusot", "open_inv"]).is_some();
+    let mut found = false;
+    for a in &p.attrs {
+        if a.is_doc_comment() {
+            continue;
+        }
+
+        let item = a.get_normal_item();
+
+        if item.path.segments.len() != 2 {
+            continue;
+        }
+
+        if item
+            .path
+            .segments
+            .iter()
+            .zip(&["creusot", "open_inv"])
+            .all(|(seg, s)| seg.ident.as_str() == *s)
+        {
+            if found {
+                tcx.dcx().span_fatal(a.span, "Unexpected duplicate attribute.".to_string())
+            }
+
+            found = true
+        }
+    }
+
+    return found;
 }
 
 fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
@@ -141,8 +167,7 @@ fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
             continue;
         }
 
-        let matches =
-            item.path.segments.iter().zip(path.iter()).all(|(seg, s)| seg.ident.as_str() == *s);
+        let matches = item.path.segments.iter().zip(path).all(|(seg, s)| seg.name.as_str() == *s);
 
         if matches {
             matched.push(attr)
@@ -153,7 +178,7 @@ fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
 
 fn get_attr<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
-    attrs: &'a [rustc_ast::Attribute],
+    attrs: &'a [Attribute],
     path: &[&str],
 ) -> Option<&'a Attribute> {
     let matched = get_attrs(attrs, path);

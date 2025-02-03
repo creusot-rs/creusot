@@ -11,7 +11,7 @@ use crate::{
         specification::inv_subst,
     },
 };
-use rustc_borrowck::borrow_set::TwoPhaseActivation;
+use rustc_borrowck::consumers::TwoPhaseActivation;
 use rustc_middle::{
     mir::{
         BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
@@ -44,7 +44,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
             }
 
-            // All these instructions are no-opsin the dynamic semantics, but may trigger resolution
+            // All these instructions are no-ops in the dynamic semantics, but may trigger resolution
             Nop
             | StorageDead(_)
             | StorageLive(_)
@@ -53,7 +53,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             | Retag(_, _)
             | Coverage(_)
             | PlaceMention(_)
-            | ConstEvalCounter => {
+            | ConstEvalCounter
+            | BackwardIncompatibleDropHint { .. } => {
                 if let Some(resolver) = &mut self.resolver {
                     let (mut need, resolved) =
                         resolver.resolved_places_during(ExtendedLocation::End(loc));
@@ -63,7 +64,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         let (need_start, _) =
                             resolver.need_resolve_resolved_places_at(ExtendedLocation::Start(loc));
                         for mp in need_start.clone().iter() {
-                            if self.mdpe.move_data.base_local(mp) == local {
+                            if self.move_data.base_local(mp) == local {
                                 need.insert(mp);
                             }
                         }
@@ -109,10 +110,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         return;
                     }
 
-                    let op = Operand::Copy(
+                    RValue::Operand(Operand::Copy(
                         self.translate_place(self.compute_ref_place(*pl, loc).as_ref()),
-                    );
-                    RValue::Operand(op)
+                    ))
                 }
                 Mut { .. } => {
                     if self.erased_locals.contains(pl.local) {
@@ -150,17 +150,18 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         } else if is_invariant(self.tcx(), *def_id) {
                             match self.invariant_assertions.shift_remove(def_id) {
                                 None => return,
-                                Some((mut assertion, expl)) => {
-                                    assertion.subst(&inv_subst(
+                                Some((mut cond, msg)) => {
+                                    cond.subst(&inv_subst(
                                         self.tcx(),
                                         &self.body,
                                         &self.locals,
                                         si,
                                     ));
-                                    self.check_frozen_in_logic(&assertion, loc);
+                                    self.check_frozen_in_logic(&cond, loc);
                                     self.emit_statement(fmir::Statement::Assertion {
-                                        cond: assertion,
-                                        msg: expl,
+                                        cond,
+                                        msg,
+                                        trusted: false,
                                     });
                                     return;
                                 }
@@ -175,6 +176,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             self.emit_statement(fmir::Statement::Assertion {
                                 cond: assertion,
                                 msg: "expl:assertion".to_owned(),
+                                trusted: false,
                             });
                             return;
                         } else if is_spec(self.tcx(), *def_id) {
@@ -204,12 +206,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     self.ctx,
                     *len,
                     self.ctx.types.usize,
-                    self.param_env(),
+                    self.typing_env(),
                     si.span,
                 )),
             ),
-
-            Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize), op, ty) => {
+            Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize, _), op, ty) => {
                 if let Some(t) = ty.builtin_deref(true)
                     && t.is_slice()
                 {
@@ -220,11 +221,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     return;
                 }
             }
+            Rvalue::RawPtr(_, pl) => RValue::Ptr(self.translate_place(pl.as_ref())),
             Rvalue::Cast(
-                CastKind::PointerCoercion(_)
+                CastKind::PointerCoercion(..)
                 | CastKind::PointerExposeProvenance
                 | CastKind::PointerWithExposedProvenance
-                | CastKind::DynStar
                 | CastKind::IntToFloat
                 | CastKind::FloatToInt
                 | CastKind::FnPtrToPtr
@@ -239,8 +240,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Rvalue::CopyForDeref(_)
             | Rvalue::ShallowInitBox(_, _)
             | Rvalue::NullaryOp(_, _)
-            | Rvalue::ThreadLocalRef(_)
-            | Rvalue::AddressOf(_, _) => self.ctx.crash_and_error(
+            | Rvalue::ThreadLocalRef(_) => self.ctx.crash_and_error(
                 si.span,
                 &format!("MIR code used an unsupported Rvalue {:?}", rvalue),
             ),
@@ -256,12 +256,12 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
         let dom = self.body.basic_blocks.dominators();
         let two_phase = borrows
-            .local_map
+            .local_map()
             .get(&pl.local)
             .iter()
             .flat_map(|is| is.iter())
             .filter(|i| {
-                let res_loc = borrows[**i].reserve_location;
+                let res_loc = borrows[**i].reserve_location();
                 if res_loc.block == loc.block {
                     res_loc.statement_index <= loc.statement_index
                 } else {
@@ -269,7 +269,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
             })
             .filter(|i| {
-                if let TwoPhaseActivation::ActivatedAt(act_loc) = borrows[**i].activation_location {
+                if let TwoPhaseActivation::ActivatedAt(act_loc) = borrows[**i].activation_location()
+                {
                     if act_loc.block == loc.block {
                         loc.statement_index < act_loc.statement_index
                     } else {
@@ -279,10 +280,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     false
                 }
             })
-            .nth(0);
+            .next();
 
         if let Some(two_phase) = two_phase {
-            let place = borrows[*two_phase].assigned_place.clone();
+            let place = borrows[*two_phase].assigned_place().clone();
             self.ctx.mk_place_deref(place)
         } else {
             pl

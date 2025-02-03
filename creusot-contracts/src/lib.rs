@@ -36,7 +36,6 @@
     allocator_api,
     unboxed_closures,
     tuple_trait,
-    strict_provenance,
     panic_internals,
     libstd_sys_internals,
     rt,
@@ -359,7 +358,7 @@ pub mod macros {
     ///     #[ensures(result == x + 1)]
     ///     pub(super) fn foo(x: Int) -> Int {
     ///         // ...
-    /// # x + 1    
+    /// # x + 1
     ///     }
     /// }
     ///

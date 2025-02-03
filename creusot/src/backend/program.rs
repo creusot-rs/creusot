@@ -283,8 +283,7 @@ impl<'tcx> Operand<'tcx> {
         istmts: &mut Vec<IntermediateStmt>,
     ) -> Exp {
         match self {
-            Operand::Move(pl) => rplace_to_expr(lower, &pl, istmts),
-            Operand::Copy(pl) => rplace_to_expr(lower, &pl, istmts),
+            Operand::Move(pl) | Operand::Copy(pl) => rplace_to_expr(lower, &pl, istmts),
             Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
             Operand::Promoted(pid, ty) => {
                 let promoted = Expr::Symbol(lower.names.promoted(lower.def_id, pid));
@@ -416,10 +415,8 @@ impl<'tcx> RValue<'tcx> {
 
                 Exp::var("_res")
             }
-            RValue::Len(pl) => {
-                let len_call =
-                    Exp::qvar(QName::from_string("Slice.length")).app_to(pl.to_why(lower, istmts));
-                len_call
+            RValue::Len(op) => {
+                Exp::qvar(QName::from_string("Slice.length")).app_to(op.to_why(lower, istmts))
             }
             RValue::Array(fields) => {
                 let id = Ident::build("__arr_temp");
@@ -476,7 +473,42 @@ impl<'tcx> RValue<'tcx> {
             }
             RValue::Ghost(t) => lower_pure(lower.ctx, lower.names, &t),
             RValue::Borrow(_, _, _) => unreachable!(), // Handled in Statement::to_why
-            RValue::UnaryOp(UnOp::PtrMetadata, _) => todo!(),
+            RValue::UnaryOp(UnOp::PtrMetadata, op) => {
+                match op.ty(lower.ctx.tcx, lower.locals).kind() {
+                    TyKind::Ref(_, ty, mu) => {
+                        assert!(ty.is_slice());
+                        let mut op = op.to_why(lower, istmts);
+                        if mu.is_mut() {
+                            op = op.field("current")
+                        }
+                        Exp::qvar(QName::from_string("Slice.length")).app_to(op)
+                    }
+                    TyKind::RawPtr(ty, _) => {
+                        assert!(ty.is_slice());
+                        Exp::qvar(QName::from_string("Opaque.slice_ptr_len"))
+                            .app_to(op.to_why(lower, istmts))
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            RValue::Ptr(pl) => {
+                istmts.push(IntermediateStmt::call(
+                    "_ptr".into(),
+                    lower.ty(ty),
+                    Expr::Symbol(QName::from_string("Opaque.fresh_ptr")),
+                    vec![],
+                ));
+
+                if pl.ty(lower.ctx.tcx, lower.locals).is_slice() {
+                    let lhs = Exp::qvar(QName::from_string("Opaque.slice_ptr_len"))
+                        .app_to(Exp::qvar(QName::from_string("_ptr")));
+                    let rhs = Exp::qvar(QName::from_string("Slice.length"))
+                        .app_to(rplace_to_expr(lower, &pl, istmts));
+                    istmts.push(IntermediateStmt::Assume(lhs.eq(rhs)));
+                }
+
+                Exp::var("_ptr")
+            }
         };
 
         e
@@ -948,10 +980,17 @@ impl<'tcx> Statement<'tcx> {
 
                 istmts.extend([IntermediateStmt::Assume(exp)]);
             }
-            Statement::Assertion { cond, msg } => istmts.push(IntermediateStmt::Assert(Exp::Attr(
-                Attribute::Attr(msg),
-                Box::new(lower_pure(lower.ctx, lower.names, &cond)),
-            ))),
+            Statement::Assertion { cond, msg, trusted } => {
+                let e = Exp::Attr(
+                    Attribute::Attr(msg),
+                    Box::new(lower_pure(lower.ctx, lower.names, &cond)),
+                );
+                if trusted {
+                    istmts.push(IntermediateStmt::Assume(e))
+                } else {
+                    istmts.push(IntermediateStmt::Assert(e))
+                }
+            }
             Statement::AssertTyInv { pl } => {
                 let inv_fun = Exp::qvar(lower.names.ty_inv(pl.ty(lower.ctx.tcx, lower.locals)));
                 let loc = pl.local;

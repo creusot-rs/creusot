@@ -50,7 +50,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let (id, subst) = visit.items.pop().unwrap();
 
     let (id, _) = if ctx.trait_of_item(id).is_some() {
-        traits::TraitResolved::resolve_item(ctx.tcx, ctx.param_env(def_id.to_def_id()), id, subst).to_opt(id, subst).unwrap_or_else(|| {
+        traits::TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id.to_def_id()), id, subst).to_opt(id, subst).unwrap_or_else(|| {
             let mut err = ctx.fatal_error(
                 ctx.def_span(def_id.to_def_id()),
                 "could not derive original instance from external specification",
@@ -67,13 +67,6 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let mut inner_subst = erased_identity_for_item(ctx.tcx, id).to_vec();
     // Generics of our stub.
     let outer_subst = erased_identity_for_item(ctx.tcx, def_id.to_def_id());
-
-    // FIXME(xavier): Handle this better.
-    // "Host effects" are related to the wip effects feature of Rust. For the moment let's just ignore them.
-    let has_host_effect = ctx.generics_of(id).host_effect_index.is_some();
-    if has_host_effect {
-        inner_subst.pop();
-    }
 
     // FIXME(xavier): I don't remember the original reason for introducing this...
     let extra_parameters = inner_subst.len() - outer_subst.len();

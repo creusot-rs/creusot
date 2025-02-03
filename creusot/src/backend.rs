@@ -160,14 +160,6 @@ impl<'tcx> Why3Generator<'tcx> {
     pub(crate) fn module_path(&self, def_id: DefId) -> ModulePath {
         ModulePath::new(self.tcx, def_id)
     }
-
-    pub fn prefix(&self) -> Option<&Vec<why3::Ident>> {
-        use crate::options::Output;
-        match &self.opts.output {
-            Output::Directory(_) => Some(&self.opts.prefix),
-            Output::File(_) | Output::Stdout | Output::None => None,
-        }
-    }
 }
 
 fn display_impl_subject(i: &rustc_middle::ty::ImplSubject<'_>) -> String {

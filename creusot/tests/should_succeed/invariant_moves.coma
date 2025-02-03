@@ -1,9 +1,12 @@
 module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
   let%span sinvariant_moves0 = "invariant_moves.rs" 6 16 6 22
-  let%span svec1 = "../../../creusot-contracts/src/std/vec.rs" 91 26 96 17
-  let%span svec2 = "../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
-  let%span smodel3 = "../../../creusot-contracts/src/model.rs" 72 8 72 22
-  let%span sresolve4 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span smod1 = "../../../../../../.rustup/toolchains/nightly-2025-01-31-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc/src/vec/mod.rs" 2503 20 2503 24
+  let%span smod2 = "../../../../../../.rustup/toolchains/nightly-2025-01-31-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc/src/vec/mod.rs" 2503 4 2503 38
+  let%span svec3 = "../../../creusot-contracts/src/std/vec.rs" 91 26 96 17
+  let%span svec4 = "../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
+  let%span smodel5 = "../../../creusot-contracts/src/model.rs" 72 8 72 22
+  let%span sresolve6 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span suint_macros7 = "../../../../../../.rustup/toolchains/nightly-2025-01-31-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/num/uint_macros.rs" 49 8 49 27
   
   use prelude.prelude.Borrow
   
@@ -17,11 +20,14 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
   
   use prelude.prelude.UIntSize
   
-  type t_Cap'0  =
-    { t_Cap__0'0: usize }
+  type t_UsizeNoHighBit'0  =
+    { t_UsizeNoHighBit__0'0: usize }
+  
+  type t_RawVecInner'0  =
+    { t_RawVecInner__ptr'0: t_Unique'0; t_RawVecInner__cap'0: t_UsizeNoHighBit'0; t_RawVecInner__alloc'0: () }
   
   type t_RawVec'0  =
-    { t_RawVec__ptr'0: t_Unique'0; t_RawVec__cap'0: t_Cap'0; t_RawVec__alloc'0: () }
+    { t_RawVec__inner'0: t_RawVecInner'0; t_RawVec__qy95zmarker'0: () }
   
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
@@ -42,7 +48,7 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
   
   use seq.Seq
   
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  constant v_MAX'0 : usize = [%#suint_macros7] (18446744073709551615 : usize)
   
   use prelude.prelude.UIntSize
   
@@ -52,19 +58,19 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
   
   function view'0 (self : t_Vec'0) : Seq.seq uint32
   
-  axiom view'0_spec : forall self : t_Vec'0 . [%#svec2] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  axiom view'0_spec : forall self : t_Vec'0 . [%#svec4] Seq.length (view'0 self) <= UIntSize.to_int (v_MAX'0 : usize)
   
   function view'1 (self : borrowed (t_Vec'0)) : Seq.seq uint32 =
-    [%#smodel3] view'0 self.current
+    [%#smodel5] view'0 self.current
   
   use seq.Seq
   
   use seq.Seq
   
-  let rec pop'0 (self:borrowed (t_Vec'0)) (return'  (ret:t_Option'0))= {[@expl:pop 'self' type invariant] inv'0 self}
+  let rec pop'0 (self:borrowed (t_Vec'0)) (return'  (ret:t_Option'0))= {[@expl:pop 'self' type invariant] [%#smod1] inv'0 self}
     any
-    [ return' (result:t_Option'0)-> {inv'1 result}
-      {[%#svec1] match result with
+    [ return' (result:t_Option'0)-> {[%#smod2] inv'1 result}
+      {[%#svec3] match result with
         | C_Some'0 t -> view'0 self.final = Seq.([..]) (view'1 self) 0 (Seq.length (view'1 self) - 1)
         /\ view'1 self = Seq.snoc (view'0 self.final) t
         | C_None'0 -> self.current = self.final /\ Seq.length (view'1 self) = 0
@@ -73,7 +79,7 @@ module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
     
   
   predicate resolve'1 (self : borrowed (t_Vec'0)) =
-    [%#sresolve4] self.final = self.current
+    [%#sresolve6] self.final = self.current
   
   predicate resolve'0 (_1 : borrowed (t_Vec'0)) =
     resolve'1 _1

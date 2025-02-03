@@ -123,19 +123,18 @@ impl<CTX> VeryStableHash<CTX> for DefPathData {
             DefPathData::Ctor => {}
             DefPathData::AnonConst => {}
             DefPathData::OpaqueTy => {}
-            DefPathData::AnonAdt => {}
         }
     }
 }
 
-impl VeryStableHash<TyCtxt<'_>> for ty::Ty<'_> {
-    fn very_stable_hash(&self, tcx: &TyCtxt<'_>, hcx: &mut StableHasher) {
+impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::Ty<'tcx> {
+    fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
         self.kind().very_stable_hash(tcx, hcx);
     }
 }
 
-impl VeryStableHash<TyCtxt<'_>> for ty::TyKind<'_> {
-    fn very_stable_hash(&self, tcx: &TyCtxt<'_>, hcx: &mut StableHasher) {
+impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::TyKind<'tcx> {
+    fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
         std::mem::discriminant(self).hash(hcx);
         match self {
             Bool => {}
@@ -167,7 +166,10 @@ impl VeryStableHash<TyCtxt<'_>> for ty::TyKind<'_> {
                 def_id.very_stable_hash(tcx, hcx);
                 substs.very_stable_hash(tcx, hcx);
             }
-            FnPtr(sig) => sig.very_stable_hash(tcx, hcx),
+            FnPtr(binder, sig) => {
+                binder.very_stable_hash(tcx, hcx);
+                sig.very_stable_hash(tcx, hcx);
+            }
             Dynamic(trait_ty, region, kind) => {
                 trait_ty.very_stable_hash(tcx, hcx);
                 region.very_stable_hash(tcx, hcx);
@@ -204,19 +206,20 @@ impl VeryStableHash<TyCtxt<'_>> for ty::TyKind<'_> {
             Param(p) => p.very_stable_hash(tcx, hcx),
             Bound(i, _) => i.very_stable_hash(tcx, hcx),
             Placeholder(p) => p.very_stable_hash(tcx, hcx),
+            UnsafeBinder(b) => b.very_stable_hash(tcx, hcx),
         }
     }
 }
 
-impl VeryStableHash<TyCtxt<'_>> for ty::TraitRef<'_> {
-    fn very_stable_hash(&self, tcx: &TyCtxt, hcx: &mut StableHasher) {
+impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::TraitRef<'tcx> {
+    fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
         self.def_id.very_stable_hash(tcx, hcx);
         self.args.very_stable_hash(tcx, hcx);
     }
 }
 
-impl VeryStableHash<TyCtxt<'_>> for ty::ImplSubject<'_> {
-    fn very_stable_hash(&self, tcx: &TyCtxt, hcx: &mut StableHasher) {
+impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::ImplSubject<'tcx> {
+    fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
         std::mem::discriminant(self).hash(hcx);
         match self {
             ty::ImplSubject::Inherent(ty) => ty.very_stable_hash(tcx, hcx),
@@ -225,23 +228,23 @@ impl VeryStableHash<TyCtxt<'_>> for ty::ImplSubject<'_> {
     }
 }
 
-impl VeryStableHash<TyCtxt<'_>> for ty::ExistentialTraitRef<'_> {
-    fn very_stable_hash(&self, tcx: &TyCtxt<'_>, hcx: &mut StableHasher) {
+impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::ExistentialTraitRef<'tcx> {
+    fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
         self.def_id.very_stable_hash(tcx, hcx);
         self.args.very_stable_hash(tcx, hcx);
     }
 }
 
-impl VeryStableHash<TyCtxt<'_>> for ty::ExistentialProjection<'_> {
-    fn very_stable_hash(&self, tcx: &TyCtxt<'_>, hcx: &mut StableHasher) {
+impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::ExistentialProjection<'tcx> {
+    fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
         self.def_id.very_stable_hash(tcx, hcx);
         self.args.very_stable_hash(tcx, hcx);
         todo! {"self.term.very_stable_hash(tcx, hcx);"} // Do we want to hash terms
     }
 }
 
-impl VeryStableHash<TyCtxt<'_>> for ty::ExistentialPredicate<'_> {
-    fn very_stable_hash(&self, tcx: &TyCtxt<'_>, hcx: &mut StableHasher) {
+impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::ExistentialPredicate<'tcx> {
+    fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
         std::mem::discriminant(self).hash(hcx);
         match self {
             ty::ExistentialPredicate::Trait(trait_ref) => trait_ref.very_stable_hash(tcx, hcx),
@@ -253,8 +256,8 @@ impl VeryStableHash<TyCtxt<'_>> for ty::ExistentialPredicate<'_> {
     }
 }
 
-impl VeryStableHash<TyCtxt<'_>> for ty::PatternKind<'_> {
-    fn very_stable_hash(&self, tcx: &TyCtxt<'_>, hcx: &mut StableHasher) {
+impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::PatternKind<'tcx> {
+    fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
         let ty::PatternKind::Range { start, end, include_end } = self;
         start.very_stable_hash(tcx, hcx);
         end.very_stable_hash(tcx, hcx);
@@ -262,15 +265,14 @@ impl VeryStableHash<TyCtxt<'_>> for ty::PatternKind<'_> {
     }
 }
 
-impl VeryStableHash<TyCtxt<'_>> for ty::Pattern<'_> {
-    fn very_stable_hash(&self, tcx: &TyCtxt<'_>, hcx: &mut StableHasher) {
+impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::Pattern<'tcx> {
+    fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
         (**self).very_stable_hash(tcx, hcx);
     }
 }
 
-impl VeryStableHash<TyCtxt<'_>> for ty::FnSig<'_> {
+impl VeryStableHash<TyCtxt<'_>> for ty::FnHeader<TyCtxt<'_>> {
     fn very_stable_hash(&self, tcx: &TyCtxt<'_>, hcx: &mut StableHasher) {
-        self.inputs_and_output.very_stable_hash(tcx, hcx);
         self.c_variadic.hash(hcx);
         self.safety.very_stable_hash(tcx, hcx);
         self.abi.very_stable_hash(tcx, hcx);
@@ -295,6 +297,12 @@ impl<'ctx, T: VeryStableHash<TyCtxt<'ctx>>> VeryStableHash<TyCtxt<'ctx>> for ty:
     }
 }
 
+impl<'ctx> VeryStableHash<TyCtxt<'ctx>> for ty::FnSigTys<TyCtxt<'ctx>> {
+    fn very_stable_hash(&self, tcx: &TyCtxt<'ctx>, hcx: &mut StableHasher) {
+        self.inputs_and_output.very_stable_hash(tcx, hcx);
+    }
+}
+
 impl<'tcx, CTX, T: VeryStableHash<CTX>> VeryStableHash<CTX> for ty::EarlyBinder<'tcx, T> {
     fn very_stable_hash(&self, tcx: &CTX, hcx: &mut StableHasher) {
         self.as_ref().skip_binder().very_stable_hash(tcx, hcx);
@@ -313,8 +321,8 @@ impl<CTX> VeryStableHash<CTX> for ty::AliasTyKind {
     }
 }
 
-impl VeryStableHash<TyCtxt<'_>> for ty::AliasTy<'_> {
-    fn very_stable_hash(&self, tcx: &TyCtxt<'_>, hcx: &mut StableHasher) {
+impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::AliasTy<'tcx> {
+    fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
         self.args.very_stable_hash(tcx, hcx);
         self.def_id.very_stable_hash(tcx, hcx);
     }
@@ -342,7 +350,21 @@ impl<CTX> VeryStableHash<CTX> for ty::DebruijnIndex {
 impl VeryStableHash<TyCtxt<'_>> for ty::LateParamRegion {
     fn very_stable_hash(&self, tcx: &TyCtxt<'_>, hcx: &mut StableHasher) {
         self.scope.very_stable_hash(tcx, hcx);
-        self.bound_region.very_stable_hash(tcx, hcx);
+        self.kind.very_stable_hash(tcx, hcx);
+    }
+}
+
+impl VeryStableHash<TyCtxt<'_>> for ty::LateParamRegionKind {
+    fn very_stable_hash(&self, tcx: &TyCtxt<'_>, hcx: &mut StableHasher) {
+        std::mem::discriminant(self).hash(hcx);
+        match self {
+            ty::LateParamRegionKind::Anon(n) => n.very_stable_hash(tcx, hcx),
+            ty::LateParamRegionKind::Named(def_id, symbol) => {
+                def_id.very_stable_hash(tcx, hcx);
+                symbol.very_stable_hash(tcx, hcx);
+            }
+            ty::LateParamRegionKind::ClosureEnv => {}
+        }
     }
 }
 
@@ -350,12 +372,12 @@ impl VeryStableHash<TyCtxt<'_>> for ty::BoundRegionKind {
     fn very_stable_hash(&self, tcx: &TyCtxt<'_>, hcx: &mut StableHasher) {
         std::mem::discriminant(self).hash(hcx);
         match self {
-            ty::BoundRegionKind::BrAnon => {}
-            ty::BoundRegionKind::BrNamed(id, name) => {
+            ty::BoundRegionKind::Anon => {}
+            ty::BoundRegionKind::Named(id, name) => {
                 id.very_stable_hash(tcx, hcx);
                 name.very_stable_hash(tcx, hcx);
             }
-            ty::BoundRegionKind::BrEnv => {}
+            ty::BoundRegionKind::ClosureEnv => {}
         }
     }
 }
@@ -466,8 +488,8 @@ impl<CTX, T: VeryStableHash<CTX>> VeryStableHash<CTX> for ty::List<T> {
     }
 }
 
-impl VeryStableHash<TyCtxt<'_>> for ty::Const<'_> {
-    fn very_stable_hash(&self, tcx: &TyCtxt<'_>, hcx: &mut StableHasher) {
+impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::Const<'tcx> {
+    fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
         self.kind().very_stable_hash(tcx, hcx);
     }
 }
@@ -495,8 +517,8 @@ impl<CTX> VeryStableHash<CTX> for ty::ParamConst {
     }
 }
 
-impl VeryStableHash<TyCtxt<'_>> for ty::ConstKind<'_> {
-    fn very_stable_hash(&self, tcx: &TyCtxt<'_>, hcx: &mut StableHasher) {
+impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::ConstKind<'tcx> {
+    fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
         std::mem::discriminant(self).hash(hcx);
         match self {
             ty::ConstKind::Unevaluated(unev) => unev.very_stable_hash(tcx, hcx),
@@ -517,15 +539,15 @@ impl VeryStableHash<TyCtxt<'_>> for ty::ConstKind<'_> {
     }
 }
 
-impl VeryStableHash<TyCtxt<'_>> for ty::UnevaluatedConst<'_> {
-    fn very_stable_hash(&self, tcx: &TyCtxt, hcx: &mut StableHasher) {
+impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::UnevaluatedConst<'tcx> {
+    fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
         self.def.very_stable_hash(tcx, hcx);
         self.args.very_stable_hash(tcx, hcx);
     }
 }
 
-impl VeryStableHash<TyCtxt<'_>> for ty::GenericArg<'_> {
-    fn very_stable_hash(&self, tcx: &TyCtxt, hcx: &mut StableHasher) {
+impl<'tcx> VeryStableHash<TyCtxt<'tcx>> for ty::GenericArg<'tcx> {
+    fn very_stable_hash(&self, tcx: &TyCtxt<'tcx>, hcx: &mut StableHasher) {
         let gak = self.unpack();
         std::mem::discriminant(&gak).hash(hcx);
         match gak {
