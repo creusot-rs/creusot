@@ -38,14 +38,16 @@ jobs:
           ~/.cargo/git
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-    - name: Build creusot-rustc
-      run: cargo build -p creusot-rustc --release
+    - name: Install Creusot
+      run: |
+        cargo install --path cargo-creusot
+        cargo creusot setup install --only-creusot-rustc
     - name: Dummy creusot setup
       run: |
         mkdir -p ~/.config/creusot
         cp ci/creusot-config-dummy.toml ~/.config/creusot/Config.toml
     - name: Build doc
-      run: cargo run -p cargo-creusot --release -- creusot doc -- -p creusot-contracts --no-deps --target-dir ci/build-docs/
+      run: cargo creusot doc -- -p creusot-contracts --no-deps --target-dir ci/build-docs/
     - name: Upload creusot_contracts artifact
       uses: actions/upload-artifact@v4
       with:

@@ -4,14 +4,24 @@
 
 Install Creusot and why3 as described in the [README](https://github.com/creusot-rs/creusot).
 
-## Write specifications
+## Create a project
 
-Create a new project, and import creusot-contracts to start writing specifications:
+Create a new project with this command:
+
+```
+cargo creusot new project-name --creusot-contracts /PATH/TO/CREUSOT/creusot-contracts
+```
+
+**Remark** The path `/PATH/TO/CREUSOT` should be either absolute, or relative to the `package-name` directory to be created by that command,
+not relative to the current directory.
+
+That command creates a directory `package-name` containing the basic elements of a Rust project verified with Creusot.
+The command-line option `--creusot-contracts /PATH/TO/CREUSOT/creusot-contracts` sets the dependency path in the package manifest `Cargo.toml`:
 
 ```toml
 # Cargo.toml
 [package]
-name = "add_one"
+name = "project-name"
 version = "0.1.0"
 edition = "2021"
 
@@ -19,22 +29,30 @@ edition = "2021"
 creusot-contracts = { path = "/PATH/TO/CREUSOT/creusot-contracts" }
 ```
 
-**Remark** This may only work if you're using the same rust toolchain that was used to build `creusot`:
-you can copy the [`rust-toolchain`](https://github.com/creusot-rs/creusot/blob/master/ci/rust-toolchain) file into the root of your project to
-make sure the correct toolchain is selected.
-
-Then you can start writing specifications:
+The project is initialized with an example function annotated with a contract:
 
 ```rust
 // src/lib.rs
 use creusot_contracts::*;
 
-#[requires(x < i32::MAX)]
+#[requires(x@ < i64::MAX@)]
 #[ensures(result@ == x@ + 1)]
-pub fn add_one(x: i32) -> i32 {
+pub fn add_one(x: i64) -> i64 {
     x + 1
 }
 ```
+
+## Compile and prove
+
+To verify this project, run this command:
+
+```
+cargo creusot prove
+```
+
+A successful run gives us the certainty that functions defined in this package satisfy their contracts:
+for all arguments satisfying the preconditions (`requires` clauses), the result of the function will
+satisfy the postconditions (`ensures` clauses).
 
 ## Prove with Why3
 

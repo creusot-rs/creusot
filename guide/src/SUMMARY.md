@@ -1,6 +1,7 @@
 # Summary
 
 - [Quickstart](./quickstart.md)
+- [Tutorial](./tutorial.md)
 - [Basic concepts](./basic_concepts.md)
   - [`requires` and `ensures`](basic_concepts/requires_ensures.md)
   - [Invariants](basic_concepts/invariants.md)
@@ -19,3 +20,4 @@
   - [Ghost structures](ghost/ghost-structures.md)
   - [`Int` in ghost](ghost/int-in-ghost.md)
 - [Type invariants](./type_invariants.md)
+- [Command-line interface](./command_line_interface.md)

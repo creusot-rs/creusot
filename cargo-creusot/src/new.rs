@@ -67,7 +67,7 @@ use {name}::*;
 
 #[allow(creusot::experimental)]
 fn main() {{
-    assert!(add(1, 2) == 3);
+    assert!(add_one(2) == 3);
     println!("Hello, world!");
 }}
 "#
@@ -86,10 +86,10 @@ fn it_works() {
 const LIB_TEMPLATE: &str = r#"#![cfg_attr(not(creusot), feature(stmt_expr_attributes, proc_macro_hygiene))]
 use creusot_contracts::*;
 
-#[requires(a@ + b@ <= usize::MAX@)]
-#[ensures(result@ == a@ + b@)]
-pub fn add(a: usize, b: usize) -> usize {
-    a + b
+#[requires(a@ < i64::MAX@)]
+#[ensures(result@ == a@ + 1)]
+pub fn add_one(a: i64) -> i64 {
+    a + 1
 }
 "#;
 

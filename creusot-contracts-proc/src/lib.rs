@@ -823,3 +823,8 @@ pub fn derive_deep_model(tokens: TS1) -> TS1 {
 pub fn derive_resolve(tokens: TS1) -> TS1 {
     derive::derive_resolve(tokens)
 }
+
+#[proc_macro_derive(Default, attributes(default))]
+pub fn derive_default(tokens: TS1) -> TS1 {
+    derive::derive_default(tokens)
+}
