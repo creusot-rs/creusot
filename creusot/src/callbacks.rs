@@ -52,7 +52,7 @@ impl ToWhy {
             self.opts.output = Output::File(dir.clone());
         } else {
             // prefix: "verif/{krate}/"
-            self.opts.prefix = vec![why3::Ident::build(OUTPUT_PREFIX), why3::Ident::build(&krate)];
+            self.opts.prefix = vec![why3::IdentString::from(OUTPUT_PREFIX), why3::IdentString::from(krate)];
         }
     }
 }

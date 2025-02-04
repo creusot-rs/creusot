@@ -278,7 +278,7 @@ impl LocalIdent {
 
     pub(crate) fn symbol(&self) -> Symbol {
         match &self {
-            LocalIdent::User(id) => Symbol::intern(&format!("{}", &*ident_of(*id))),
+            LocalIdent::User(id) => Symbol::intern(ident_of(*id).as_str()),
             LocalIdent::Anon(loc) => Symbol::intern(&format!("_{}", loc.index())),
         }
     }

@@ -1,4 +1,4 @@
-use std::{borrow::Cow, fmt::Write, ops::Deref};
+use std::{borrow::Cow, fmt::Write, ops::Deref, sync::atomic::AtomicU64};
 
 use indexmap::Equivalent;
 #[cfg(feature = "serialize")]
@@ -6,54 +6,65 @@ use serde::{Deserialize, Serialize};
 
 use crate::exp::Exp;
 
+static FRESH_COUNTER: AtomicU64 = AtomicU64::new(0);
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct Ident(pub(crate) String);
+pub struct IdentString(String);
 
-impl Ident {
-    // Constructs a valid why3 identifier representing a given string
-    pub fn build(name: &str) -> Self {
-        if RESERVED.contains(&name) {
-            return Ident(format!("{}'", name));
-        }
-        // TODO: ensure that all characters are valid
-        Ident(name.into())
-    }
-
-    pub fn from_string(mut name: String) -> Self {
-        if RESERVED.contains(&&*name) {
-            name.write_str("'").unwrap();
-        }
-        Ident(name)
-    }
-
-    pub fn to_string(self) -> String {
-        self.0
-    }
-
+impl IdentString {
     pub fn as_str(&self) -> &str {
         &self.0
     }
+}
 
-    pub fn decapitalize(&mut self) {
-        self.0[..1].make_ascii_lowercase();
-    }
-
-    pub fn capitalize(&mut self) {
-        self.0[..1].make_ascii_uppercase();
+impl From<String> for IdentString {
+    fn from(mut name: String) -> Self {
+        // TODO: ensure that all characters are valid
+        if RESERVED.contains(&&*name) {
+            name.write_str("'").unwrap();
+        }
+        IdentString(name)
     }
 }
 
+impl From<&str> for IdentString {
+    fn from(name: &str) -> Self {
+        IdentString::from(name.to_string())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct Ident {
+    name: IdentString,
+    id: u64,
+}
+
+impl Ident {
+    // TODO: remove this
+    pub fn as_str(&self) -> &str {
+        self.name.as_str()
+    }
+}
+
+
 // TODO: Make this try_from and test for validity
 impl From<&str> for Ident {
-    fn from(nm: &str) -> Self {
-        Ident::build(nm)
+    fn from(name: &str) -> Self {
+        Ident {
+            name: IdentString::from(name),
+            id: FRESH_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+        }
     }
 }
 
 impl From<String> for Ident {
-    fn from(nm: String) -> Self {
-        Ident::build(&nm)
+    fn from(name: String) -> Self {
+        Ident {
+            name: IdentString::from(name),
+            id: FRESH_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+        }
     }
 }
 
@@ -63,6 +74,7 @@ impl From<QName> for Exp {
     }
 }
 
+/*
 impl<'a> From<&'a Ident> for Cow<'a, str> {
     fn from(id: &'a Ident) -> Cow<'a, str> {
         (&id.0).into()
@@ -76,26 +88,27 @@ impl Deref for Ident {
         &self.0
     }
 }
+ */
 
 impl Equivalent<QName> for Ident {
     fn equivalent(&self, key: &QName) -> bool {
-        key.is_ident(self)
+        key.is_ident(&self.name)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct QName {
-    pub module: Vec<Ident>,
-    pub name: Ident,
+    pub module: Vec<IdentString>,
+    pub name: IdentString,
 }
 
 impl QName {
-    pub fn is_ident(&self, id: &Ident) -> bool {
+    pub fn is_ident(&self, id: &IdentString) -> bool {
         self.module.is_empty() && &self.name == id
     }
 
-    pub fn as_ident(&self) -> Ident {
+    pub fn as_ident(&self) -> IdentString {
         assert!(self.module.is_empty());
         self.name.clone()
     }
@@ -103,13 +116,23 @@ impl QName {
     pub fn without_search_path(mut self) -> QName {
         let mut i = 0;
         while i < self.module.len() {
-            if self.module[i].starts_with(char::is_lowercase) {
+            if self.module[i].0.starts_with(char::is_lowercase) {
                 self.module.remove(i);
             } else {
                 i += 1
             }
         }
         self
+    }
+
+    pub fn to_string(&self) -> String {
+        let mut s = String::new();
+        for i in self.module.iter() {
+            s.push_str(i.as_str());
+            s.push('.');
+        }
+        s.push_str(self.name.as_str());
+        s
     }
 }
 
@@ -122,8 +145,8 @@ impl From<&str> for QName {
                 '(' => in_paren = false,
                 '.' => {
                     if !in_paren {
-                        let name = s[i + 1..].into();
-                        let module = s[..i].split('.').map(|s| s.into()).collect();
+                        let name = IdentString::from(&s[i + 1..]);
+                        let module = s[..i].split('.').map(|s| IdentString::from(s)).collect();
                         return QName { module, name };
                     }
                 }
@@ -138,12 +161,6 @@ impl From<&str> for QName {
 impl From<String> for QName {
     fn from(s: String) -> Self {
         s.as_str().into()
-    }
-}
-
-impl From<Ident> for QName {
-    fn from(name: Ident) -> Self {
-        QName { module: vec![], name }
     }
 }
 
@@ -219,6 +236,6 @@ mod tests {
     use super::*;
     #[test]
     fn reserved_idents_made_valid() {
-        assert_eq!(Ident::build("clone").0, "clone'")
+        assert_eq!(IdentString::from("clone").0, "clone'")
     }
 }

@@ -158,7 +158,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn std::err
 }
 
 pub enum OutputHandle {
-    Directory(PathBuf, Vec<why3::Ident>), // One file per Coma module, second component is a prefix for all files
+    Directory(PathBuf, Vec<why3::IdentString>), // One file per Coma module, second component is a prefix for all files
     File(Box<dyn Write>),                 // Monolithic output
 }
 
@@ -224,7 +224,7 @@ fn remove_coma_files(dir: &PathBuf) -> std::io::Result<()> {
 
 fn print_crate<I: Iterator<Item = FileModule>>(
     output_target: Output,
-    prefix: Vec<why3::Ident>,
+    prefix: Vec<why3::IdentString>,
     modules: I,
 ) -> std::io::Result<Option<PathBuf>> {
     let (root, mut output) = match output_target {
