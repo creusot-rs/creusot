@@ -104,8 +104,10 @@ fn normalize_trailing_spaces(input: &str) -> String {
 
 /// Replace numbered spans with "spanxxxx" for better diffs
 fn normalize_spans(s: &str) -> String {
+    let re0 = Regex::new(r#"\[#"[^"]*\.rs" [0-9]* [0-9]* [0-9]* [0-9]*\]"#).unwrap();
+    let s = re0.replace_all(s, r#"[#"xxxx.rs" 0 0 0 0]"#);
     let re1 = Regex::new(r"\[%#[^\]]*\]").unwrap();
-    let s = re1.replace_all(s, "[%#xxxx]");
+    let s = re1.replace_all(&s, "[%#xxxx]");
     let re2 = Regex::new(r"let%span.*").unwrap();
     let s = re2.replace_all(&s, "let%span xxxx =");
     s.into_owned()
