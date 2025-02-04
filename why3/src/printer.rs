@@ -48,16 +48,6 @@ macro_rules! parens {
     };
 }
 
-macro_rules! ty_parens {
-    ($alloc:ident, $e:ident) => {
-        if $e.complex() {
-            $e.pretty($alloc).parens()
-        } else {
-            $e.pretty($alloc)
-        }
-    };
-}
-
 fn parens<'b, 'a: 'b, A: DocAllocator<'a>>(
     alloc: &'a A,
     prec: Precedence,
@@ -76,6 +66,16 @@ where
     } else {
         child.pretty(alloc)
     }
+}
+
+macro_rules! ty_parens {
+    ($alloc:ident, $e:ident) => {
+        if $e.complex() {
+            $e.pretty($alloc).parens()
+        } else {
+            $e.pretty($alloc)
+        }
+    };
 }
 
 impl Print for Span {
@@ -135,7 +135,7 @@ impl Print for Module {
     {
         let doc = alloc
             .text("module ")
-            .append(&*self.name)
+            .append(self.name.as_str())
             .append(if self.attrs.is_empty() {
                 alloc.nil()
             } else {
@@ -307,7 +307,7 @@ impl Print for Use {
         alloc
             .text("use ")
             .append(if self.export { alloc.text("export ") } else { alloc.nil() })
-            .append(alloc.intersperse(self.name.iter().map(|t| alloc.text(&t.0)), "."))
+            .append(alloc.intersperse(self.name.iter().map(|t| alloc.text(t.as_str())), "."))
             .append(if let Some(as_) = &self.as_ {
                 alloc.text(" as ").append(as_.pretty(alloc))
             } else {
@@ -415,7 +415,7 @@ impl Print for Type {
     {
         use Type::*;
         match self {
-            TVar(v) => alloc.text(format!("'{}", v.0)),
+            TVar(v) => alloc.text(format!("'{}", v.as_str())),
             TConstructor(ty) => ty.pretty(alloc),
             TFun(a, b) => ty_parens!(alloc, a).append(" -> ").append(ty_parens!(alloc, b)),
             TApp(tyf, args) => {
@@ -912,7 +912,7 @@ impl Print for FieldDecl {
     where
         A::Doc: Clone,
     {
-        alloc.text(&self.name).append(alloc.text(": ")).append(self.ty.pretty(alloc))
+        alloc.text(self.name.as_str()).append(alloc.text(": ")).append(self.ty.pretty(alloc))
     }
 }
 
@@ -921,7 +921,7 @@ impl Print for Ident {
     where
         A::Doc: Clone,
     {
-        alloc.text(&self.0)
+        alloc.text(self.as_str())
     }
 }
 
@@ -930,7 +930,7 @@ impl Print for QName {
     where
         A::Doc: Clone,
     {
-        let module_path = self.module.iter().map(|t| alloc.text(&t.0));
-        alloc.intersperse(module_path.chain(std::iter::once(alloc.text(self.name.0.clone()))), ".")
+        let module_path = self.module.iter().map(|t| alloc.text(t.as_str()));
+        alloc.intersperse(module_path.chain(std::iter::once(alloc.text(self.name.as_str()))), ".")
     }
 }
