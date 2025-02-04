@@ -1,4 +1,3 @@
-// WHY3PROVE
 // The following code is the Sparse Arrays Verification Challenge from
 // the VACID0 benchmark
 //
@@ -15,7 +14,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::{
     invariant::{inv, Invariant},
-    logic::{Int, Seq},
+    logic::{FSet, Int, Seq},
     vec, *,
 };
 
@@ -71,10 +70,8 @@ impl<T> Invariant for Sparse<T> {
                 && self.idx@.len() == self.size@
                 && self.back@.len() == self.size@
                 && forall<i: Int> 0 <= i && i < self.n@ ==>
-                match self.back[i] {
-                    j => 0 <= j@ && j@ < self.size@
-                        && self.idx[j@]@ == i
-                }
+                { let j = self.back[i];
+                  0 <= j@ && j@ < self.size@ && self.idx[j@]@ == i }
         }
     }
 }
@@ -87,9 +84,7 @@ impl<T> Sparse<T> {
      */
     #[logic]
     fn is_elt(&self, i: Int) -> bool {
-        pearlite! { self.idx[i]@ < self.n@
-                    && self.back[self.idx[i]@]@ == i
-        }
+        pearlite! { self.idx[i]@ < self.n@ && self.back[self.idx[i]@]@ == i }
     }
 
     /* The method for accessing
@@ -119,7 +114,43 @@ impl<T> Sparse<T> {
     #[requires(self.n == self.size)]
     #[requires(0 <= i && i < self.size@)]
     #[ensures(self.is_elt(i))]
-    fn lemma_permutation(self, i: Int) {}
+    fn lemma_permutation(self, i: Int) {
+        self.lemma_permutation_aux(FSet::EMPTY, i, i);
+    }
+
+    #[logic]
+    #[variant(self.size@ - seen.len())]
+    #[requires(inv(self))]
+    #[requires(self.n == self.size)]
+    #[requires(0 <= cur && cur < self.size@)]
+    #[requires(forall<k: Int> seen.contains(k) ==>
+        0 <= k && k < self.size@ &&
+        (k == i || seen.contains(self.idx[k]@)))]
+    #[requires(i == cur || (seen.contains(i) && seen.contains(self.idx[cur]@)))]
+    #[requires(!seen.contains(cur))]
+    #[ensures(0 <= result && result < self.size@)]
+    #[ensures(self.back[result]@ == i)]
+    fn lemma_permutation_aux(self, seen: FSet<Int>, i: Int, cur: Int) -> Int {
+        pearlite! {
+            if self.back[cur]@ == i {
+                cur
+            } else {
+                Self::bounded_fset_len(seen, self.size@);
+                self.lemma_permutation_aux(seen.insert(cur), i, self.back[cur]@)
+            }
+        }
+    }
+
+    #[logic]
+    #[variant(bnd)]
+    #[requires(forall<x: Int> s.contains(x) ==> 0 <= x && x < bnd)]
+    #[requires(bnd >= 0)]
+    #[ensures(s.len() <= bnd)]
+    fn bounded_fset_len(s: FSet<Int>, bnd: Int) {
+        if bnd > 0 {
+            Self::bounded_fset_len(s.remove(bnd - 1), bnd - 1)
+        }
+    }
 
     /* The method for modifying
      */
