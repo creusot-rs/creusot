@@ -12,13 +12,19 @@ use crate::{
         Namer as _, Why3Generator,
     },
     contracts_items::get_builtin,
+    ctx::PreludeModule,
     naming::ident_of,
     pearlite::{super_visit_term, Literal, Pattern, PointerKind, Term, TermVisitor},
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyKind, TypingEnv};
 use rustc_span::{Span, Symbol};
-use why3::{declaration::Signature, exp::Environment, ty::Type, Exp, Ident, QName};
+use why3::{
+    declaration::Signature,
+    exp::{BinOp, Environment},
+    ty::Type,
+    Exp, Ident, QName,
+};
 
 /// Verification conditions for lemma functions.
 ///
@@ -579,7 +585,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         let mut rec_var_exp = orig_variant.clone();
         rec_var_exp.subst(&mut subst);
         if is_int(self.ctx.borrow().tcx, variant.creusot_ty()) {
-            Ok(Exp::int(0).leq(orig_variant.clone()).log_and(rec_var_exp.lt(orig_variant)))
+            self.names.borrow_mut().import_prelude_module(PreludeModule::Int);
+            Ok(Exp::BinaryOp(BinOp::Le, Box::new(Exp::int(0)), Box::new(orig_variant.clone()))
+                .log_and(Exp::BinaryOp(BinOp::Lt, Box::new(rec_var_exp), Box::new(orig_variant))))
         } else {
             Err(VCError::UnsupportedVariant(variant.creusot_ty(), variant.span))
         }
