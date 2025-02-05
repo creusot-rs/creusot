@@ -46,7 +46,7 @@ pub(crate) fn validate_opacity(
         source_item: DefId,
     }
 
-    impl<'a, 'tcx> OpacityVisitor<'a, 'tcx> {
+    impl OpacityVisitor<'_, '_> {
         fn is_visible_enough(&self, id: DefId) -> bool {
             match self.opacity {
                 None => self.ctx.visibility(id) == Visibility::Public,
@@ -65,7 +65,7 @@ pub(crate) fn validate_opacity(
         }
     }
 
-    impl<'a, 'tcx> TermVisitor<'tcx> for OpacityVisitor<'a, 'tcx> {
+    impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
         fn visit_term(&mut self, term: &crate::translation::pearlite::Term<'tcx>) {
             match &term.kind {
                 TermKind::Item(id, _) => {
@@ -328,7 +328,7 @@ struct PurityVisitor<'a, 'tcx> {
     thir_failed: bool,
 }
 
-impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
+impl PurityVisitor<'_, '_> {
     fn purity(&mut self, fun: thir::ExprId, func_did: DefId) -> Purity {
         let stub = pearlite_stub(self.ctx.tcx, self.thir[fun].ty);
 
@@ -378,7 +378,12 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                     };
 
                     let fn_purity = self.purity(fun, func_did);
+                    let fn_alias_purity = match self.ctx.logical_alias(func_did) {
+                        Some(alias_did) => self.purity(fun, alias_did),
+                        None => fn_purity,
+                    };
                     if !self.context.can_call(fn_purity)
+                        && !self.context.can_call(fn_alias_purity)
                         && !is_overloaded_item(self.ctx.tcx, func_did)
                     {
                         let (caller, callee) = match (self.context, fn_purity) {

@@ -53,6 +53,11 @@ pub fn pure(_: TS1, tokens: TS1) -> TS1 {
 }
 
 #[proc_macro_attribute]
+pub fn has_logical_alias(_: TS1, tokens: TS1) -> TS1 {
+    tokens
+}
+
+#[proc_macro_attribute]
 pub fn logic(_: TS1, _: TS1) -> TS1 {
     TS1::new()
 }

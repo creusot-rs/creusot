@@ -5,6 +5,8 @@ use rustc_hir::{def_id::DefId, AttrArgs, Attribute};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
 
+use crate::{ctx::TranslationCtx, error::CannotFetchThir};
+
 /// Helper macro, converts `creusot::foo::bar` into `["creusot", "foo", "bar"]`.
 macro_rules! path_to_str {
     ([ :: $($p:tt)* ] ; [ $($acc:expr,)* ]) => {
@@ -114,6 +116,37 @@ pub(crate) fn creusot_clause_attrs<'tcx>(
         .map(|a| &a.get_normal_item().args)
 }
 
+/// If a function is annotated with `#[has_logical_alias(f)]`, return the [`DefId`] of `f`.
+pub(crate) fn function_has_logical_alias(
+    ctx: &mut TranslationCtx,
+    def_id: DefId,
+) -> Result<Option<DefId>, CannotFetchThir> {
+    let mut attrs =
+        get_attrs(ctx.get_attrs_unchecked(def_id), &["creusot", "decl", "logical_alias_path"]);
+    if attrs.len() >= 2 {
+        let _ = ctx.dcx().span_err(
+            attrs.iter().map(|attr| attr.span()).collect::<Vec<_>>(),
+            "A function cannot have multiple logical aliases",
+        );
+        return Err(CannotFetchThir);
+    }
+    let Some(attr) = attrs.pop() else { return Ok(None) };
+    let symbol = match &attr.get_normal_item().args {
+        AttrArgs::Eq { expr, .. } => expr.symbol,
+        _ => unreachable!(),
+    };
+    // the `ensures(result == f(args))` clause
+    let ensures_def_id = ctx.creusot_item(symbol).unwrap();
+    let ensures_body = ctx.term(ensures_def_id)?.unwrap();
+    match &ensures_body.kind {
+        crate::pearlite::TermKind::Binary { rhs, .. } => match &rhs.kind {
+            crate::pearlite::TermKind::Call { id, .. } => Ok(Some(*id)),
+            _ => unreachable!(),
+        },
+        _ => unreachable!(),
+    }
+}
+
 pub(crate) fn get_creusot_item(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     Some(
         get_attr(tcx, tcx.get_attrs_unchecked(def_id), &["creusot", "item"])?
@@ -122,7 +155,7 @@ pub(crate) fn get_creusot_item(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     )
 }
 
-pub(crate) fn is_open_inv_param<'tcx>(tcx: TyCtxt<'tcx>, p: &Param) -> bool {
+pub(crate) fn is_open_inv_param(tcx: TyCtxt, p: &Param) -> bool {
     let mut found = false;
     for a in &p.attrs {
         if a.is_doc_comment() {
@@ -150,7 +183,7 @@ pub(crate) fn is_open_inv_param<'tcx>(tcx: TyCtxt<'tcx>, p: &Param) -> bool {
         }
     }
 
-    return found;
+    found
 }
 
 fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
@@ -176,15 +209,11 @@ fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
     matched
 }
 
-fn get_attr<'a, 'tcx>(
-    tcx: TyCtxt<'tcx>,
-    attrs: &'a [Attribute],
-    path: &[&str],
-) -> Option<&'a Attribute> {
+fn get_attr<'a>(tcx: TyCtxt, attrs: &'a [Attribute], path: &[&str]) -> Option<&'a Attribute> {
     let matched = get_attrs(attrs, path);
     match matched.len() {
-        0 => return None,
-        1 => return Some(matched[0]),
+        0 => None,
+        1 => Some(matched[0]),
         _ => tcx.dcx().span_fatal(matched[0].span, "Unexpected duplicate attribute.".to_string()),
     }
 }

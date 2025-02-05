@@ -58,6 +58,9 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn st
         Err(Error::MustPrint(msg)) => msg.emit(ctx.tcx),
         Err(Error::TypeCheck(_)) => ctx.tcx.dcx().abort_if_errors(),
     };
+    // OK to ignore this error, because we abort just below.
+    let _ = ctx.load_logical_aliases();
+    ctx.tcx.dcx().abort_if_errors();
 
     for def_id in ctx.tcx.hir().body_owners() {
         // OK to ignore this error, because we abort after the loop.
@@ -214,7 +217,7 @@ fn remove_coma_files(dir: &PathBuf) -> std::io::Result<()> {
             if path.is_dir() {
                 remove_coma_files(&path)?;
                 let _ = std::fs::remove_dir(path); // remove the directory if it's empty, do nothing otherwise
-            } else if path.extension().map_or(false, |ext| ext == "coma") {
+            } else if path.extension().is_some_and(|ext| ext == "coma") {
                 std::fs::remove_file(&path)?;
             }
         }

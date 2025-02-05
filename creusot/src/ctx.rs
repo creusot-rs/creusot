@@ -2,8 +2,8 @@ use crate::{
     backend::ty_inv::is_tyinv_trivial,
     callbacks,
     contracts_items::{
-        get_inv_function, is_extern_spec, is_logic, is_open_inv_param, is_predicate, is_prophetic,
-        opacity_witness_name,
+        function_has_logical_alias, get_inv_function, is_extern_spec, is_logic, is_open_inv_param,
+        is_predicate, is_prophetic, opacity_witness_name,
     },
     creusot_items::{self, CreusotItems},
     error::{CannotFetchThir, CreusotResult, Error},
@@ -157,6 +157,9 @@ pub struct TranslationCtx<'tcx> {
     creusot_items: CreusotItems,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
+    /// Maps the [`DefId`] of a program function `f` with a `#[has_logical_alias(f')]`
+    /// attribute to the logical function `f'`
+    logical_aliases: HashMap<DefId, DefId>,
     trait_impl: HashMap<DefId, TraitImpl<'tcx>>,
     sig: HashMap<DefId, PreSignature<'tcx>>,
     bodies: HashMap<LocalDefId, Rc<BodyWithBorrowckFacts<'tcx>>>,
@@ -175,7 +178,7 @@ impl<'tcx> Deref for TranslationCtx<'tcx> {
 
 fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, Vec<usize>> {
     struct VisitFns<'tcx, 'a>(TyCtxt<'tcx>, HashMap<DefId, Vec<usize>>, &'a ResolverAstLowering);
-    impl<'tcx, 'a> Visitor<'a> for VisitFns<'tcx, 'a> {
+    impl<'a> Visitor<'a> for VisitFns<'_, 'a> {
         fn visit_fn(&mut self, fk: FnKind<'a>, _: Span, node: NodeId) {
             let decl = match fk {
                 FnKind::Fn(_, _, _, Fn { sig: FnSig { decl, .. }, .. }) => decl,
@@ -214,6 +217,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             opts,
             extern_specs: Default::default(),
             extern_spec_items: Default::default(),
+            logical_aliases: Default::default(),
             fmir_body: Default::default(),
             trait_impl: Default::default(),
             sig: Default::default(),
@@ -518,6 +522,38 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
 
         Ok(())
+    }
+
+    /// Get the _logical alias_ of the given program function, if any.
+    ///
+    /// Logical aliases are defined with the `#[has_logical_alias(...)]` attribute.
+    pub(crate) fn logical_alias(&self, def_id: DefId) -> Option<DefId> {
+        self.logical_aliases.get(&def_id).copied()
+    }
+
+    pub(crate) fn load_logical_aliases(&mut self) -> Result<(), CannotFetchThir> {
+        // FIXME: what about functions from another crate?
+        // FIXME: ensure here that the functions have the correct purity (program & logical)
+        let mut has_err = false;
+        for def_id in self.tcx.hir().body_owners() {
+            match function_has_logical_alias(self, def_id.to_def_id()) {
+                Ok(Some(aliased)) => {
+                    trace!(
+                        "`{}` is an alias for `{}`",
+                        self.def_path_str(def_id),
+                        self.def_path_str(aliased),
+                    );
+                    self.logical_aliases.insert(def_id.to_def_id(), aliased);
+                }
+                Ok(None) => {}
+                Err(_) => has_err = true,
+            }
+        }
+        if has_err {
+            Err(CannotFetchThir)
+        } else {
+            Ok(())
+        }
     }
 
     pub(crate) fn item_type(&self, def_id: DefId) -> ItemType {

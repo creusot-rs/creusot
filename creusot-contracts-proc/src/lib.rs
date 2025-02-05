@@ -256,6 +256,10 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
 #[proc_macro_attribute]
 pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
+    ensures_inner(attr, tokens, false)
+}
+
+fn ensures_inner(attr: TS1, tokens: TS1, logical_alias_path: bool) -> TS1 {
     let documentation = document_spec("ensures", doc::LogicBody::Some(attr.clone()));
 
     let mut item = parse_macro_input!(tokens as ContractSubject);
@@ -264,6 +268,11 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
 
     let ens_name = generate_unique_ident(&item.name());
     let name_tag = format!("{}", quote! { #ens_name });
+    let logical_alias = if logical_alias_path {
+        quote!(#[creusot::decl::logical_alias_path = #name_tag])
+    } else {
+        quote!()
+    };
 
     match item {
         ContractSubject::FnOrMethod(mut s) if s.is_trait_signature() => {
@@ -278,7 +287,8 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
             let ensures_tokens = sig_spec_item(ens_name, sig, term);
             TS1::from(quote! {
               #ensures_tokens
-              #[creusot::clause::ensures=#name_tag]
+              #[creusot::clause::ensures = #name_tag]
+              #logical_alias
               #(#attrs)*
               #documentation
               #s
@@ -296,13 +306,15 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
                 b.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens)))
             }
             TS1::from(quote! {
-                #[creusot::clause::ensures=#name_tag]
+                #[creusot::clause::ensures = #name_tag]
+                #logical_alias
                 #(#attrs)*
                 #documentation
                 #f
             })
         }
         ContractSubject::Closure(mut clos) => {
+            // TODO: forbid logical aliases in this case
             let req_body = req_body(&term);
             let attrs = spec_attrs(&ens_name);
             let body = &clos.body;
@@ -433,6 +445,27 @@ pub fn pure(_: TS1, tokens: TS1) -> TS1 {
         #rest
     }
     .into()
+}
+
+#[proc_macro_attribute]
+pub fn has_logical_alias(attr: TS1, tokens: TS1) -> TS1 {
+    let logic_path = match syn::parse::<Path>(attr.clone()) {
+        Ok(path) => path,
+        Err(err) => {
+            return syn::Error::new(err.span(), "`has_logical_alias` should contain a path to a logical function with the same signature").to_compile_error().into()
+        }
+    };
+    let tokens_2 = tokens.clone();
+    let func = parse_macro_input!(tokens_2 as ImplItemFn);
+    let args = func.sig.inputs.iter().map(|a| match a {
+        FnArg::Receiver(receiver) => quote_spanned!(receiver.span() => self),
+        FnArg::Typed(pat_type) => {
+            let pat = &pat_type.pat;
+            quote!(#pat)
+        }
+    });
+    let ensures_contract = quote!(result == #logic_path(#(#args),*));
+    ensures_inner(ensures_contract.into(), tokens, true)
 }
 
 #[proc_macro]
