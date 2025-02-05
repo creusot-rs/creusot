@@ -1,6 +1,6 @@
 use anyhow::{anyhow, bail, Context};
 use directories::ProjectDirs;
-use std::{fmt, fs, path::PathBuf, process::Command};
+use std::{cmp::Ordering, fmt, fs, path::PathBuf, process::Command};
 
 mod config;
 mod tools;
@@ -120,6 +120,15 @@ fn diagnostic_config(paths: &CfgPaths, config: &Config, check_builtins: bool) ->
     issues
 }
 
+// Best-effort comparison of version strings
+fn version_cmp(v1: &str, v2: &str) -> Option<Ordering> {
+    let to_parts = |v: &str| {
+        let res: Result<Vec<_>, _> = v.split(|c| c == '.').map(|x| x.parse::<u64>()).collect();
+        res
+    };
+    Some(Vec::cmp(&to_parts(v1).ok()?, &to_parts(v2).ok()?))
+}
+
 // display the status of the creusot installation to the user
 pub fn status() -> anyhow::Result<()> {
     let paths = get_config_paths()?;
@@ -148,11 +157,33 @@ pub fn status() -> anyhow::Result<()> {
             for issue in &issues {
                 println!("{issue}")
             }
-            if issues.iter().any(|issue| issue.builtin_tool) {
+            // Try to provide hints for solving the issues
+            let needs_upgrade = |issue: &Issue| match &issue.cur_version {
+                Err(_) => true,
+                Ok(cur_version) => {
+                    matches!(
+                        version_cmp(&cur_version, &issue.expected_version),
+                        Some(Ordering::Less)
+                    )
+                }
+            };
+            if issues.iter().any(|issue| issue.builtin_tool && needs_upgrade(&issue)) {
+                println!("Hint: upgrade builtin tools by running 'cargo creusot setup install'.")
+            }
+            if issues.iter().any(|issue| !issue.builtin_tool && needs_upgrade(&issue)) {
+                println!("Hint: upgrade external tools installed using opam: run 'opam pin . -y' \
+                          from your creusot opam switch, followed by 'cargo creusot setup install'.")
+            }
+            if issues.iter().any(|issue| match &issue.cur_version {
+                Err(_) => false,
+                Ok(cur_version) => matches!(
+                    version_cmp(&cur_version, &issue.expected_version),
+                    Some(Ordering::Greater)
+                ),
+            }) {
                 println!(
-                    "Hint: for tools installed by Creusot, \
-                     re-run 'cargo creusot setup install' \n\
-                     to upgrade them to the expected version."
+                    "Hint: your creusot binary may be outdated. Upgrade it by running \
+                          'cargo install --path cargo-creusot' from the creusot sources"
                 )
             }
         }
