@@ -114,6 +114,9 @@ pub enum TermKind<'tcx> {
         trigger: Vec<Trigger<'tcx>>,
         body: Box<Term<'tcx>>,
     },
+    /// A function call.
+    ///
+    /// Be careful when building this case, that it respects [logical aliases](TranslationCtx::logical_alias).
     // TODO: Get rid of (id, subst).
     Call {
         id: DefId,
@@ -202,7 +205,7 @@ impl<'tcx> TermKind<'tcx> {
     }
 }
 
-impl<'tcx, I: Interner> TypeFoldable<I> for Literal<'tcx> {
+impl<I: Interner> TypeFoldable<I> for Literal<'_> {
     fn try_fold_with<F: rustc_middle::ty::FallibleTypeFolder<I>>(
         self,
         _: &mut F,
@@ -211,7 +214,7 @@ impl<'tcx, I: Interner> TypeFoldable<I> for Literal<'tcx> {
     }
 }
 
-impl<'tcx, I: Interner> TypeVisitable<I> for Literal<'tcx> {
+impl<I: Interner> TypeVisitable<I> for Literal<'_> {
     fn visit_with<V: rustc_middle::ty::TypeVisitor<I>>(&self, _: &mut V) -> V::Result {
         V::Result::output()
     }
@@ -278,14 +281,14 @@ pub enum PointerKind {
     Mut,
 }
 
-const TRIGGER_ERROR: &str = "Triggers can only be used inside quantifiers";
+/// Transform a function or a spec closure into a [`Term`].
 pub(crate) fn pearlite<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
 ) -> CreusotResult<Term<'tcx>> {
     let (triggers, term) = pearlite_with_triggers(ctx, id)?;
     if !triggers.is_empty() {
-        Err(Error::msg(ctx.def_span(id), TRIGGER_ERROR))
+        Err(Error::msg(ctx.def_span(id), "Triggers can only be used inside quantifiers"))
     } else {
         Ok(term)
     }
@@ -314,7 +317,7 @@ struct ThirTerm<'a, 'tcx> {
 
 // TODO: Ensure that types are correct during this translation, in particular
 // - Box, & and &mut
-impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
+impl<'tcx> ThirTerm<'_, 'tcx> {
     fn body_term(&self, expr: ExprId) -> CreusotResult<(Vec<Trigger<'tcx>>, Term<'tcx>)> {
         let mut triggers = vec![];
         let expr = self.collect_triggers(expr, &mut triggers)?;
@@ -624,6 +627,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                                 .iter()
                                 .map(|arg| self.expr_term(*arg))
                                 .collect::<Result<Vec<_>, _>>()?;
+
+                            let id = match self.ctx.logical_alias(id) {
+                                None => id,
+                                Some(alias_id) => alias_id
+                            };
 
                             Ok(Term { ty, span, kind: TermKind::Call { id, subst, args } })
                         }
@@ -1202,7 +1210,7 @@ pub fn zip_binder<'a, 'tcx>(
     binder.0.iter().map(|x| x.name).zip(binder.1.tuple_fields())
 }
 
-impl<'tcx> Pattern<'tcx> {
+impl Pattern<'_> {
     pub(crate) fn get_bool(&self) -> Option<bool> {
         match self {
             Pattern::Boolean(b) => Some(*b),
@@ -1341,6 +1349,7 @@ impl<'tcx> Term<'tcx> {
         Term { ty: tcx.types.bool, kind: TermKind::Lit(Literal::Bool(false)), span: DUMMY_SP }
     }
 
+    /// Same as [`Self::call`], but does not normalize the type of the result.
     pub(crate) fn call_no_normalize(
         tcx: TyCtxt<'tcx>,
         def_id: DefId,
@@ -1352,6 +1361,11 @@ impl<'tcx> Term<'tcx> {
         Term { ty: result, span: DUMMY_SP, kind: TermKind::Call { id: def_id, subst, args } }
     }
 
+    /// Generate a [`TermKind::Call`] for a special function described by `(def_id, subst)`
+    /// (e.g. `resolve`, `inv`, etc)
+    ///
+    /// Note that this should not be used for regular function calls, in particular because
+    /// it does not consider [logical aliases](TranslationCtx::logical_alias).
     pub(crate) fn call(
         tcx: TyCtxt<'tcx>,
         typing_env: TypingEnv<'tcx>,
