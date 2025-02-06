@@ -145,10 +145,11 @@ impl Contract {
         let requires = self.requires.iter().map(|cond| cond.exp.clone());
         requires.rfold(conclusion, |acc, arg| arg.implies(acc))
     }
-/*
+
     pub fn subst(&mut self, subst: &HashMap<Ident, Exp>) {
-        self.visit_mut(subst, subst, subst);
-    } */
+        // TODO
+        // self.visit_mut(subst, subst, subst);
+    }
 
     pub fn visit_mut<T: ExpMutVisitor>(
         &mut self,

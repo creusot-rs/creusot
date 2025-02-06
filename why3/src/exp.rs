@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{declaration::Attribute, ty::Type, Ident, QName};
+use crate::{declaration::Attribute, ty::Type, Ident, IdentString, QName};
 use indexmap::IndexSet;
 
 #[cfg(feature = "serialize")]
@@ -397,10 +397,6 @@ pub fn super_visit_trigger<T: ExpVisitor>(f: &mut T, trigger: &Trigger) {
 impl Exp {
     pub fn qvar(q: QName) -> Self {
         Exp::QVar(q)
-    }
-
-    pub fn var(v: impl Into<Ident>) -> Self {
-        Exp::Var(v.into())
     }
 
     pub fn lazy_conj(l: Exp, r: Exp) -> Self {
@@ -888,7 +884,7 @@ impl ExpMutVisitor for Environment {
 
                 for binder in binders {
                     binder.fvs().into_iter().for_each(|id| {
-                        bound_here.insert(id.clone(), Exp::var(id));
+                        bound_here.insert(id.clone(), Exp::Var(id));
                     });
                 }
 
@@ -904,7 +900,7 @@ impl ExpMutVisitor for Environment {
 
                 let mut bound_here = HashMap::default();
                 bound.drain(..).for_each(|k| {
-                    bound_here.insert(k.clone(), Exp::var(k));
+                    bound_here.insert(k.clone(), Exp::Var(k));
                 });
 
                 self.add_subst(bound_here);
@@ -917,7 +913,7 @@ impl ExpMutVisitor for Environment {
                 for (pat, br) in brs {
                     let mut bound_here = HashMap::default();
                     pat.binders().drain(..).for_each(|k| {
-                        bound_here.insert(k.clone(), Exp::var(k));
+                        bound_here.insert(k.clone(), Exp::Var(k));
                     });
 
                     self.add_subst(bound_here);
@@ -929,7 +925,7 @@ impl ExpMutVisitor for Environment {
                 let mut bound_here = HashMap::default();
 
                 binders.iter().for_each(|k| {
-                    bound_here.insert(k.0.clone(), Exp::var(k.0.clone()));
+                    bound_here.insert(k.0.clone(), Exp::Var(k.0.clone()));
                 });
 
                 self.add_subst(bound_here);
@@ -941,7 +937,7 @@ impl ExpMutVisitor for Environment {
                 let mut bound_here = HashMap::default();
 
                 binders.iter().for_each(|k| {
-                    bound_here.insert(k.0.clone(), Exp::var(k.0.clone()));
+                    bound_here.insert(k.0.clone(), Exp::Var(k.0.clone()));
                 });
 
                 self.add_subst(bound_here);
@@ -985,8 +981,8 @@ impl Binder {
 
     fn flatten_inner(self, ty: &Type, out: &mut Vec<(Ident, Type)>) {
         match self {
-            Binder::Wild => out.push(("_".into(), ty.clone())),
-            Binder::UnNamed(_) => out.push(("_".into(), ty.clone())),
+            Binder::Wild => out.push((Ident::fresh("_"), ty.clone())),
+            Binder::UnNamed(_) => out.push((Ident::fresh("_"), ty.clone())),
             Binder::Named(id) => out.push((id, ty.clone())),
             Binder::Typed(_, ids, ty2) => {
                 assert!(ty == &ty2);
@@ -1050,7 +1046,7 @@ pub enum Pattern {
     VarP(Ident),
     TupleP(Vec<Pattern>),
     ConsP(QName, Vec<Pattern>),
-    RecP(Vec<(Ident, Pattern)>),
+    RecP(Vec<(IdentString, Pattern)>),
 }
 
 impl Pattern {

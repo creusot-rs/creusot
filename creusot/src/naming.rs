@@ -52,16 +52,16 @@ pub(crate) fn item_symb(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Symbol {
     }
 }
 
-pub(crate) fn ident_of(sym: Symbol) -> Ident {
+pub(crate) fn ident_of(sym: Symbol) -> IdentString {
     let mut id = sym.to_string();
 
     id[..1].make_ascii_lowercase();
 
     if sym.as_str() == id {
-        Ident::from(id)
+        IdentString::from(id)
     } else {
         id += &"'";
-        Ident::from(id)
+        IdentString::from(id)
     }
 }
 
@@ -125,14 +125,14 @@ impl ModulePath {
 
     // `M_krate__modl__f`
     // Note: each fragment doesn't need to go through Ident (unlike why3_qname and file_name)
-    pub fn why3_ident(&self) -> Ident {
+    pub fn why3_ident(&self) -> IdentString {
         let mut path = "M_".to_owned();
         for m in &self.path {
             path += m.as_str();
             path += "__";
         }
         path += self.basename.as_str();
-        Ident::from(path)
+        IdentString::from(path)
     }
 
     // `prefix/krate/modl/M_f.coma`
@@ -144,7 +144,7 @@ impl ModulePath {
             path.push(m.as_str());
         }
         for m in &self.path {
-            path.push(Ident::from(m.as_str()).as_str());
+            path.push(IdentString::from(m.as_str()).as_str());
         }
         path.push(format!("M_{}.coma", self.basename));
         path

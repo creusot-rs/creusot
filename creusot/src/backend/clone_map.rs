@@ -24,8 +24,7 @@ use rustc_middle::{
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use why3::{
-    declaration::{Attribute, Decl, TyDecl},
-    Ident, QName,
+    declaration::{Attribute, Decl, TyDecl}, Ident, IdentString, QName
 };
 
 mod elaborator;
@@ -94,19 +93,21 @@ pub(crate) trait Namer<'tcx> {
     /// * `def_id` - The id of the type or closure being projected
     /// * `subst` - Substitution that type is being accessed at
     /// * `ix` - The field in that constructor being accessed.
-    fn field(&self, def_id: DefId, subst: GenericArgsRef<'tcx>, ix: FieldIdx) -> QName {
-        let node = match self.tcx().def_kind(def_id) {
-            DefKind::Closure => Dependency::ClosureAccessor(def_id, subst, ix.as_u32()),
-            DefKind::Struct | DefKind::Union => {
-                let field_did =
-                    self.tcx().adt_def(def_id).variants()[VariantIdx::ZERO].fields[ix].did;
-                Dependency::Item(field_did, subst)
-            }
-            _ => unreachable!(),
-        };
+    fn field(&self, def_id: DefId, subst: GenericArgsRef<'tcx>, ix: FieldIdx) -> IdentString {
+    let node = match self.tcx().def_kind(def_id) {
+        DefKind::Closure => Dependency::ClosureAccessor(def_id, subst, ix.as_u32()),
+        DefKind::Struct | DefKind::Union => {
+            let field_did =
+                self.tcx().adt_def(def_id).variants()[VariantIdx::ZERO].fields[ix].did;
+            Dependency::Item(field_did, subst)
+        }
+        _ => unreachable!(),
+    };
 
-        self.dependency(node).qname()
-    }
+
+
+        self.dependency(node).qname().as_ident()
+}
 
     fn eliminator(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         self.dependency(Dependency::Eliminator(def_id, subst)).qname()

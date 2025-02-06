@@ -49,6 +49,10 @@ struct VCGen<'a, 'tcx> {
     subst: RefCell<Environment>,
 }
 
+struct Environment {
+    substs: Vec<HashMap<Symbol, Exp>>
+}
+
 pub(super) fn vc<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &mut Dependencies<'tcx>,
@@ -312,8 +316,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     .map(|(nm, res)| (ident_of(nm.0), res))
                     .collect();
                 let fname = self.names.item(*id, subst);
-                let mut sig = sig_to_why3(self.ctx, self.names, "".into(), pre_sig, *id);
-                sig.contract.subst(&arg_subst);
+                let mut sig =  sig_to_why3(self.ctx, self.names, Ident::fresh(""), // ???
+                    pre_sig, *id).contract;
+                contract.subst(&arg_subst);
                 let variant =
                     if *id == self.self_id { self.build_variant(&args)? } else { Exp::mk_true() };
 
@@ -322,15 +327,14 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 } else {
                     Exp::qvar(fname).app(args)
                 };
-                sig.contract.subst(&[("result".into(), call.clone())].into_iter().collect());
+                contract.subst(&[("result".into(), call.clone())].into_iter().collect());
 
                 let inner = k(call)?;
 
-                let post = sig
-                    .contract
+                let post = contract
                     .requires_conj_labelled()
                     .log_and(variant)
-                    .log_and(sig.contract.ensures_conj().implies(inner));
+                    .log_and(contract.ensures_conj().implies(inner));
 
                 Ok(post)
             }),
@@ -346,7 +350,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_vc(rhs, k)?))
                 }),
                 BinOp::Div => self.build_vc(lhs, &|lhs| {
-                    self.build_vc(rhs, &|rhs| k(Exp::var("div").app(vec![lhs.clone(), rhs])))
+                    self.build_vc(rhs, &|rhs| k(Exp::QVar("div".into()).app(vec![lhs.clone(), rhs])))
                 }),
                 BinOp::Rem => self.build_vc(lhs, &|lhs| {
                     self.build_vc(rhs, &|rhs| k(Exp::var("mod").app(vec![lhs.clone(), rhs])))
@@ -373,7 +377,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let forall_pre = self.build_vc(body, &|_| Ok(Exp::mk_true()))?;
 
                 let forall_pre = Exp::forall(
-                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.ty(t))).collect(),
+                    zip_binder(binder).map(|(s, t)| (Ident::fresh(s.to_string()), self.ty(t))).collect(),
                     forall_pre,
                 );
                 let forall_pure = self.lower_pure(t);
@@ -384,7 +388,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let exists_pre = self.build_vc(body, &|_| Ok(Exp::mk_true()))?;
 
                 let exists_pre = Exp::forall(
-                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.ty(t))).collect(),
+                    zip_binder(binder).map(|(s, t)| (Ident::fresh(s.to_string()), self.ty(t))).collect(),
                     exists_pre,
                 );
                 let exists_pure = self.lower_pure(t);
@@ -452,27 +456,28 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, lhs.creusot_ty());
                 let field = match ty.kind() {
                     TyKind::Closure(did, substs) => {
-                        self.names.field(*did, substs, *name).as_ident()
+                        self.names.field(*did, substs, *name)
                     }
                     TyKind::Adt(def, substs) => {
-                        self.names.field(def.did(), substs, *name).as_ident()
+                        self.names.field(def.did(), substs, *name)
                     }
                     TyKind::Tuple(f) => {
                         let mut fields = vec![why3::exp::Pattern::Wildcard; f.len()];
-                        fields[name.as_usize()] = why3::exp::Pattern::VarP("a".into());
+                        let a = Ident::fresh("a");
+                        fields[name.as_usize()] = why3::exp::Pattern::VarP(a);
 
                         return self.build_vc(lhs, &|lhs| {
                             k(Exp::Let {
                                 pattern: why3::exp::Pattern::TupleP(fields.clone()),
                                 arg: Box::new(lhs),
-                                body: Box::new(Exp::var("a")),
+                                body: Box::new(Exp::Var(a)),
                             })
                         });
                     }
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                self.build_vc(lhs, &|lhs| k(lhs.field(&field)))
+                self.build_vc(lhs, &|lhs| k(lhs.field(field.as_str())))
             }
             TermKind::Old { .. } => Err(VCError::OldInLemma(t.span)),
             TermKind::Closure { .. } => Err(VCError::UnimplementedClosure(t.span)),
@@ -513,11 +518,12 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     Pat::TupleP(vec![])
                 } else {
                     Pat::RecP(
-                        fields
+
+                                    fields
                             .into_iter()
                             .enumerate()
                             .map(|(i, f)| {
-                                (self.names.field(*variant, substs, i.into()).as_ident(), f)
+                                (self.names.field(*variant, substs, i.into()), f)
                             })
                             .filter(|(_, f)| !matches!(f, Pat::Wildcard))
                             .collect(),
@@ -627,16 +633,16 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
     /// Produces the top-level call expression for the function being verified
     fn top_level_args(&self) -> Vec<Ident> {
-        let sig = self.self_sig();
-        let (arg_names, _) = binders_to_args(sig.args);
-        arg_names
-    }
+let sig = self.self_sig();
+let (arg_names, _) = binders_to_args(sig.args);
+arg_names
+}
 
-    fn add_bounds(&self, bounds: HashMap<Ident, Exp>) {
-        self.subst.borrow_mut().add_subst(bounds);
+    fn add_bounds(&self, bounds: HashMap<Symbol, Exp>) {
+        self.subst.substs.push(bounds);
     }
 
     fn pop_bounds(&self) {
-        self.subst.borrow_mut().pop_subst();
+        self.subst.substs.pop();
     }
 }

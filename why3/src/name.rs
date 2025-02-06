@@ -18,6 +18,12 @@ impl IdentString {
     }
 }
 
+impl From<IdentString> for String {
+    fn from(id: IdentString) -> Self {
+        id.0
+    }
+}
+
 impl From<String> for IdentString {
     fn from(mut name: String) -> Self {
         // TODO: ensure that all characters are valid
@@ -42,29 +48,16 @@ pub struct Ident {
 }
 
 impl Ident {
+    pub fn fresh(name: impl Into<String>) -> Self {
+        Ident {
+            name: IdentString::from(name.into()),
+            id: FRESH_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+        }
+    }
+
     // TODO: remove this
     pub fn as_str(&self) -> &str {
         self.name.as_str()
-    }
-}
-
-
-// TODO: Make this try_from and test for validity
-impl From<&str> for Ident {
-    fn from(name: &str) -> Self {
-        Ident {
-            name: IdentString::from(name),
-            id: FRESH_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
-        }
-    }
-}
-
-impl From<String> for Ident {
-    fn from(name: String) -> Self {
-        Ident {
-            name: IdentString::from(name),
-            id: FRESH_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
-        }
     }
 }
 

@@ -5,10 +5,7 @@ use crate::{
         self, AdtDecl, Attribute, Axiom, ConstructorDecl, Contract, Decl, DeclKind, FieldDecl,
         Goal, LogicDecl, LogicDefn, Meta, MetaArg, MetaIdent, Module, Predicate, Signature, Span,
         SumRecord, TyDecl, Use,
-    },
-    exp::{AssocDir, BinOp, Binder, Constant, Pattern, Precedence, Trigger, UnOp},
-    ty::Type,
-    Exp, Ident, QName,
+    }, exp::{AssocDir, BinOp, Binder, Constant, Pattern, Precedence, Trigger, UnOp}, ty::Type, Exp, Ident, IdentString, QName
 };
 use num::{Float, Zero};
 use pretty::*;
@@ -913,6 +910,15 @@ impl Print for FieldDecl {
         A::Doc: Clone,
     {
         alloc.text(self.name.as_str()).append(alloc.text(": ")).append(self.ty.pretty(alloc))
+    }
+}
+
+impl Print for IdentString {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        alloc.text(self.as_str())
     }
 }
 
