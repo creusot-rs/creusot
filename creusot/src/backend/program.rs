@@ -46,6 +46,8 @@ use why3::{
     Ident, QName,
 };
 
+use super::signature::PreSignature2;
+
 pub(crate) fn translate_function<'tcx, 'sess>(
     ctx: &Why3Generator<'tcx>,
     def_id: DefId,
@@ -154,14 +156,14 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         .into_iter()
         .map(|(id, decl)| {
             let ty = translate_ty(ctx, names, decl.span, decl.ty);
+            let id = Ident::fresh(id.as_str()); // ???
 
             let init = if decl.arg {
-                Exp::var(Ident::build(id.as_str()))
+                Exp::Var(id)
             } else {
-                Exp::qvar(names.from_prelude(PreludeModule::Intrinsic, "any_l"))
-                    .app_to(Exp::Tuple(Vec::new()))
+                Exp::QVar(names.from_prelude(PreludeModule::Intrinsic, "any_l")).app_to(Exp::unit())
             };
-            coma::Var(Ident::build(id.as_str()), ty.clone(), init, coma::IsRef::Ref)
+            coma::Var(id, ty.clone(), init, coma::IsRef::Ref)
         })
         .collect();
 
@@ -170,7 +172,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         signature_of(ctx, names, name, body_id.def_id())
     } else {
         let ret = ret.unwrap();
-        Signature {
+        PreSignature2 {
             name,
             trigger: None,
             attrs: vec![],
@@ -179,9 +181,13 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
             contract: Contract::default(),
         }
     };
-    let mut body = Expr::Defn(Box::new(Expr::Symbol("bb0".into())), true, blocks);
+    let bb0 = Ident::fresh("bb0"); // TODO bound in blocks
+    let retu = Ident::fresh("return");
+    let ret = Ident::fresh("ret");
+    let result = Ident::fresh("result");
+    let mut body = Expr::Defn(Box::new(Expr::Variable(bb0)), true, blocks);
 
-    let mut postcond = Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("result"))]);
+    let mut postcond = Expr::Variable(retu.clone()).app(vec![Arg::Term(Exp::Var(result.clone()))]);
 
     let inferred_closure_spec = ctx.is_closure_like(body_id.def_id())
         && !ctx.sig(body_id.def_id()).contract.has_user_contract;
@@ -212,10 +218,10 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         Box::new(body),
         false,
         vec![Defn {
-            name: "return".into(),
+            name: retu.clone(),
             writes: Vec::new(),
             attrs: vec![],
-            params: vec![Param::Term("result".into(), sig.retty.clone().unwrap())],
+            params: vec![Param::Term(result.clone(), sig.retty.clone().unwrap())],
             body: postcond,
         }],
     );
@@ -227,12 +233,11 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     let params = sig
         .args
         .into_iter()
-        .flat_map(|b| b.var_type_pairs())
         .map(|(v, ty)| Param::Term(v, ty))
         .chain([Param::Cont(
-            "return".into(),
+            retu,
             Vec::new(),
-            vec![Param::Term("ret".into(), sig.retty.unwrap())],
+            vec![Param::Term(ret, sig.retty.unwrap())],
         )])
         .collect();
     coma::Defn { name: sig.name, writes: Vec::new(), attrs: sig.attrs, params, body }
@@ -243,10 +248,11 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     def_id: LocalDefId,
+    retu: Ident,
     c: Component<BasicBlock>,
 ) -> coma::Defn {
     let mut lower =
-        LoweringState { ctx, names, locals: &body.locals, name_supply: Default::default(), def_id };
+        LoweringState { ctx, names, locals: &body.locals, name_supply: Default::default(), def_id, retu: retu };
     let (head, tl) = match c {
         Component::Vertex(v) => {
             let block = body.blocks.shift_remove(&v).unwrap();
@@ -258,7 +264,7 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
     let block = body.blocks.shift_remove(&head).unwrap();
     let mut block = block.to_why(&mut lower, head);
 
-    let defns = tl.into_iter().map(|id| component_to_defn(body, ctx, names, def_id, id)).collect();
+    let defns = tl.into_iter().map(|id| component_to_defn(body, ctx, names, def_id, retu, id)).collect();
 
     if !block.body.is_guarded() {
         block.body = Expr::BlackBox(Box::new(block.body));
@@ -266,7 +272,7 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
 
     let inner = Expr::Defn(Box::new(block.body), true, defns);
     block.body = Expr::Defn(
-        Box::new(Expr::Symbol(block.name.clone().into())),
+        Box::new(Expr::Variable(block.name.clone())),
         true,
         vec![Defn::simple(block.name.clone(), inner)],
     );
@@ -279,6 +285,7 @@ pub(crate) struct LoweringState<'a, 'tcx, N: Namer<'tcx>> {
     pub(super) locals: &'a LocalDecls<'tcx>,
     pub(super) name_supply: RefCell<NameSupply>,
     pub(super) def_id: LocalDefId,
+    retu: Ident,
 }
 
 impl<'a, 'tcx, N: Namer<'tcx>> LoweringState<'a, 'tcx, N> {
@@ -295,7 +302,7 @@ impl<'a, 'tcx, N: Namer<'tcx>> LoweringState<'a, 'tcx, N> {
     }
 
     pub(super) fn fresh_from(&self, base: impl AsRef<str>) -> Ident {
-        self.fresh_sym_from(base).to_string().into()
+        Ident::fresh(self.fresh_sym_from(base).to_string())
     }
 }
 
@@ -309,11 +316,10 @@ impl<'tcx> Operand<'tcx> {
             Operand::Move(pl) | Operand::Copy(pl) => rplace_to_expr(lower, &pl, istmts),
             Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
             Operand::Promoted(pid, ty) => {
-                let promoted = Expr::Symbol(lower.names.promoted(lower.def_id, pid));
-                let var: Ident = Ident::build(&format!("pr{}", pid.as_usize()));
+                let promoted = Expr::Constant(lower.names.promoted(lower.def_id, pid));
+                let var: Ident = Ident::fresh(&format!("pr{}", pid.as_usize()));
                 istmts.push(IntermediateStmt::call(var.clone(), lower.ty(ty), promoted, vec![]));
-
-                Exp::var(var)
+                Exp::Var(var)
             }
         }
     }
@@ -332,19 +338,18 @@ impl<'tcx> RValue<'tcx> {
                 l.to_why(lower, istmts).lazy_and(r.to_why(lower, istmts))
             }
             RValue::BinOp(BinOp::Eq, l, r) if l.ty(lower.ctx.tcx, lower.locals).is_bool() => {
-                Exp::qvar(lower.names.from_prelude(PreludeModule::Bool, "eq"))
+                Exp::QVar(lower.names.from_prelude(PreludeModule::Bool, "eq"))
                     .app(vec![l.to_why(lower, istmts), r.to_why(lower, istmts)])
             }
             RValue::BinOp(BinOp::Ne, l, r) if l.ty(lower.ctx.tcx, lower.locals).is_bool() => {
-                Exp::qvar(lower.names.from_prelude(PreludeModule::Bool, "ne"))
+                Exp::QVar(lower.names.from_prelude(PreludeModule::Bool, "ne"))
                     .app(vec![l.to_why(lower, istmts), r.to_why(lower, istmts)])
             }
             RValue::BinOp(op, l, r) => {
                 let l_ty = l.ty(lower.ctx.tcx, lower.locals);
-
                 let fname = binop_to_binop(lower.names, l_ty, op);
-                let call = coma::Expr::Symbol(fname);
-
+                let call = coma::Expr::Constant(fname);
+                let ret = Ident::fresh("_ret'");
                 // some operator need to convert the right operand
                 let r = match op {
                     // right operand must be converted to integer
@@ -366,12 +371,12 @@ impl<'tcx> RValue<'tcx> {
                 };
 
                 let args = vec![Arg::Term(l.to_why(lower, istmts)), Arg::Term(r)];
-                istmts.extend([IntermediateStmt::call("_ret'".into(), lower.ty(ty), call, args)]);
+                istmts.extend([IntermediateStmt::call(ret, lower.ty(ty), call, args)]);
                 // let ty = l.ty(lower.ctx.tcx, locals);
                 // // Hack
                 // translate_ty(ctx, names, DUMMY_SP, ty);
 
-                Exp::var("_ret'")
+                Exp::Var(ret)
                 // let op_ty = l.ty(ctx.tcx, locals);
                 // // Hack
                 // translate_ty(ctx, names, DUMMY_SP, op_ty);
@@ -411,17 +416,17 @@ impl<'tcx> RValue<'tcx> {
 
                 let neg = lower.names.from_prelude(prelude, "neg");
 
-                let id: Ident = "_ret".into();
+                let ret = Ident::fresh("_ret'");
                 let ty = lower.ty(ty);
                 let arg = arg.to_why(lower, istmts);
                 istmts.push(IntermediateStmt::call(
-                    id.clone(),
+                    ret.clone(),
                     ty,
-                    Expr::Symbol(neg),
+                    Expr::Constant(neg),
                     vec![Arg::Term(arg)],
                 ));
 
-                Exp::var(id)
+                Exp::Var(ret)
             }
             RValue::Constructor(id, subst, args) => {
                 if lower.ctx.def_kind(id) == DefKind::Closure {
@@ -448,10 +453,10 @@ impl<'tcx> RValue<'tcx> {
                                 "bool cast to non integral casts are currently unsupported",
                             ),
                         };
-                        let of_ret_id: Ident = "_ret_from".into();
+                        let of_ret_id: Ident = Ident::fresh("_ret_from");
                         let of_arg = Arg::Term(e.to_why(lower, istmts));
                         istmts.extend([IntermediateStmt::call(
-                            of_ret_id.clone(),
+                            of_ret_id,
                             lower.ty(ty),
                             Expr::Symbol(of_fname),
                             vec![of_arg],
@@ -485,7 +490,7 @@ impl<'tcx> RValue<'tcx> {
                         };
 
                         // convert source to BV256.t / int
-                        let to_ret_id: Ident = "_ret_to".into();
+                        let to_ret_id: Ident = Ident::fresh("_ret_to");
                         let to_arg = Arg::Term(e.to_why(lower, istmts));
                         istmts.push(IntermediateStmt::call(
                             to_ret_id.clone(),
@@ -495,7 +500,7 @@ impl<'tcx> RValue<'tcx> {
                         ));
 
                         // convert BV256.t / int to target
-                        let of_ret_id: Ident = "_ret_from".into();
+                        let of_ret_id: Ident = Ident::fresh("_ret_from");
                         let of_fname = match target.kind() {
                             TyKind::Int(ity) => {
                                 let fct_name =
@@ -536,12 +541,12 @@ impl<'tcx> RValue<'tcx> {
             RValue::Len(op) => Exp::qvar(lower.names.from_prelude(PreludeModule::Slice, "length"))
                 .app_to(op.to_why(lower, istmts)),
             RValue::Array(fields) => {
-                let id = Ident::build("__arr_temp");
+                let id = Ident::fresh("__arr_temp");
                 let ty = lower.ty(ty);
 
                 let len = fields.len();
 
-                let arr_var = Exp::var(id.clone());
+                let arr_var = Exp::Var(id.clone());
                 let arr_elts =
                     Exp::RecField { record: Box::new(arr_var.clone()), label: "elts".into() };
 
@@ -550,14 +555,14 @@ impl<'tcx> RValue<'tcx> {
                     .into_iter()
                     .enumerate()
                     .map(|(ix, f)| {
-                        Exp::qvar("Seq.get".into())
+                        Exp::qvar(QName::from("Seq.get"))
                             .app(vec![
                                 arr_elts.clone(),
                                 Exp::Const(Constant::Int(ix as i128, None)),
                             ])
                             .eq(f.to_why(lower, istmts))
                     })
-                    .chain([Exp::qvar("Seq.length".into())
+                    .chain([Exp::qvar(QName::from("Seq.length"))
                         .app_to(arr_elts.clone())
                         .eq(Exp::Const(Constant::Int(len as i128, None)))])
                     .reduce(Exp::log_and)
@@ -565,7 +570,7 @@ impl<'tcx> RValue<'tcx> {
                 assumptions.reassociate();
 
                 istmts.push(IntermediateStmt::Assume(assumptions));
-                Exp::var(id)
+                Exp::Var(id)
             }
             RValue::Repeat(e, len) => {
                 let param_ty = lower.ty(e.ty(lower.ctx.tcx, lower.locals));
@@ -577,15 +582,16 @@ impl<'tcx> RValue<'tcx> {
                         Box::new(e.to_why(lower, istmts)),
                     )),
                 ];
+                let res = Ident::fresh("_res");
 
                 istmts.push(IntermediateStmt::call(
-                    "_res".into(),
+                    res.clone(),
                     lower.ty(ty),
-                    Expr::Symbol(lower.names.from_prelude(PreludeModule::Slice, "create")),
+                    Expr::Constant(lower.names.from_prelude(PreludeModule::Slice, "create")),
                     args,
                 ));
 
-                Exp::var("_res")
+                Exp::Var(res)
             }
             RValue::Snapshot(t) => lower_pure(lower.ctx, lower.names, &t),
             RValue::Borrow(_, _, _) => unreachable!(), // Handled in Statement::to_why
@@ -609,23 +615,24 @@ impl<'tcx> RValue<'tcx> {
                 }
             }
             RValue::Ptr(pl) => {
+                let ptr = Ident::fresh("_ptr");
                 istmts.push(IntermediateStmt::call(
-                    "_ptr".into(),
+                    ptr.clone(),
                     lower.ty(ty),
-                    Expr::Symbol("Opaque.fresh_ptr".into()),
+                    Expr::Constant("Opaque.fresh_ptr".into()),
                     vec![],
                 ));
 
                 if pl.ty(lower.ctx.tcx, lower.locals).is_slice() {
                     let lhs =
-                        Exp::qvar(lower.names.from_prelude(PreludeModule::Slice, "slice_ptr_len"))
-                            .app_to(Exp::qvar("_ptr".into()));
-                    let rhs = Exp::qvar(lower.names.from_prelude(PreludeModule::Slice, "length"))
+                        Exp::QVar(lower.names.from_prelude(PreludeModule::Slice, "slice_ptr_len"))
+                            .app_to(ptr);
+                    let rhs = Exp::QVar(lower.names.from_prelude(PreludeModule::Slice, "length"))
                         .app_to(rplace_to_expr(lower, &pl, istmts));
                     istmts.push(IntermediateStmt::Assume(lhs.eq(rhs)));
                 }
 
-                Exp::var("_ptr")
+                Exp::Var(ptr)
             }
         };
 
@@ -693,14 +700,14 @@ impl<'tcx> Terminator<'tcx> {
         use coma::*;
         let mut istmts = vec![];
         match self {
-            Terminator::Goto(bb) => (istmts, Expr::Symbol(format!("bb{}", bb.as_usize()).into())),
+            Terminator::Goto(bb) => (istmts, Expr::Variable(Ident::fresh(format!("bb{}", bb.as_usize())))), // TODO: where are the bb names stored
             Terminator::Switch(switch, branches) => {
                 let ty = switch.ty(lower.ctx.tcx, lower.locals);
                 let discr = switch.to_why(lower, &mut istmts);
                 (istmts, branches.to_why(lower.ctx, lower.names, discr, &ty))
             }
             Terminator::Return => {
-                (istmts, Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("_0"))]))
+                (istmts, Expr::Variable("return".into()).app(vec![Arg::Term(Exp::var("_0"))]))
             }
             Terminator::Abort(span) => {
                 let mut exp = Exp::mk_false();
@@ -947,7 +954,7 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug, T: Debug, N: Namer<'tcx>>(
     mut translate_index: impl FnMut(&V) -> Exp,
 ) -> Exp {
     let mut borrow_id = Exp::Call(
-        Box::new(Exp::qvar(names.from_prelude(PreludeModule::Borrow, "get_id"))),
+        Box::new(Exp::QVar(names.from_prelude(PreludeModule::Borrow, "get_id"))),
         vec![original_borrow],
     );
     for proj in projection {
@@ -957,13 +964,13 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug, T: Debug, N: Namer<'tcx>>(
             }
             ProjectionElem::Field(idx, _) => {
                 borrow_id = Exp::Call(
-                    Box::new(Exp::qvar(names.from_prelude(PreludeModule::Borrow, "inherit_id"))),
+                    Box::new(Exp::QVar(names.from_prelude(PreludeModule::Borrow, "inherit_id"))),
                     vec![borrow_id, Exp::Const(Constant::Int(idx.as_u32() as i128 + 1, None))],
                 );
             }
             ProjectionElem::Index(x) => {
                 borrow_id = Exp::Call(
-                    Box::new(Exp::qvar(names.from_prelude(PreludeModule::Borrow, "inherit_id"))),
+                    Box::new(Exp::QVar(names.from_prelude(PreludeModule::Borrow, "inherit_id"))),
                     vec![borrow_id, translate_index(x)],
                 );
             }
@@ -1021,7 +1028,7 @@ impl<'tcx> Statement<'tcx> {
                     None
                 };
 
-                let func = coma::Expr::Symbol(lower.names.from_prelude(
+                let func = coma::Expr::Constant(lower.names.from_prelude(
                     PreludeModule::Borrow,
                     match bor_kind {
                         BorrowKind::Mut => "borrow_mut",

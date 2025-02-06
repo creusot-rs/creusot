@@ -98,7 +98,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     let args = vec![Arg::Term(focus.call(istmts))];
                     istmts.push(IntermediateStmt::Call(
                         fields.clone(),
-                        Expr::Symbol(acc_name),
+                        Expr::Constant(acc_name),
                         args,
                     ));
 
@@ -119,12 +119,13 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     let focus1 = focus.clone();
 
                     focus = Focus::new(move |is| {
-                        focus.call(is).field(&lower.names.field(def.did(), subst, *ix).as_ident())
+                        focus.call(is).field(&lower.names.field(def.did(), subst, *ix).as_str())
                     });
 
                     constructor = Box::new(move |is, t| {
                         let updates = vec![(
-                            lower.names.field(def.did(), subst, *ix).as_ident().to_string(),
+                            lower.names.field(def.did(), subst, *ix)
+                                .to_string(),
                             t,
                         )];
                         if def.all_fields().count() == 1 {
@@ -173,12 +174,14 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     let focus1 = focus.clone();
 
                     focus = Focus::new(move |is| {
-                        focus.call(is).field(&lower.names.field(*id, subst, *ix).as_ident())
+                        focus
+                            .call(is)
+                            .field(&lower.names.field(*id, subst, *ix))
                     });
 
                     constructor = Box::new(move |is, t| {
                         let updates =
-                            vec![(lower.names.field(*id, subst, *ix).as_ident().to_string(), t)];
+                            vec![(lower.names.field(*id, subst, *ix).to_string(), t)];
 
                         if subst.as_closure().upvar_tys().len() == 1 {
                             constructor(is, Exp::Record { fields: updates })

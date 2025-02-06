@@ -122,7 +122,7 @@ pub(crate) fn translate_closure_ty<'tcx, N: Namer<'tcx>>(
         .enumerate()
         .map(|(ix, uv)| FieldDecl {
             ty: translate_ty(ctx, names, DUMMY_SP, uv),
-            name: names.field(did, subst, ix.into()).as_ident(),
+            name: names.field(did, subst, ix.into()),
         })
         .collect();
 
@@ -153,7 +153,7 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
     }
 
     let adt = ctx.tcx.adt_def(did);
-    let ty_name = names.ty(did, subst).as_ident();
+    let ty_name = names.ty(did, subst).as_ident(); // TODO: global names for Ident?
 
     let sumrecord = if adt.is_enum() {
         let mut ml_ty_def = Vec::new();
@@ -181,7 +181,7 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
             .fields
             .iter_enumerated()
             .map(|(ix, f)| {
-                let name = names.field(did, subst, ix).as_ident();
+                let name = names.field(did, subst, ix);
                 let ty = f.ty(ctx.tcx, subst);
                 let ty = ctx.normalize_erasing_regions(typing_env, ty);
                 let ty = translate_ty(ctx, names, ctx.def_span(f.did), ty);
@@ -212,9 +212,9 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
         .iter()
         .map(|fld| {
             let id = if fld.name.as_str().as_bytes()[0].is_ascii_digit() {
-                Ident::build(&format!("field_{}", fld.name))
+                Ident::fresh(&format!("field_{}", fld.name))
             } else {
-                Ident::build(fld.name.as_str())
+                Ident::fresh(fld.name.as_str())
             };
             let ty =
                 translate_ty(ctx, names, DUMMY_SP, names.normalize(ctx, fld.ty(ctx.tcx, subst)));
@@ -227,19 +227,24 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
 
     let constr = names.constructor(variant_id, subst);
     let cons_test =
-        Exp::qvar(constr).app(fields.iter().map(|(nm, _)| Exp::var(nm.clone())).collect());
+        Exp::qvar(constr).app(fields.iter().map(|(nm, _)| Exp::Var(nm.clone())).collect());
 
-    let ret = Expr::Symbol("ret".into())
-        .app(fields.iter().map(|(nm, _)| Arg::Term(Exp::var(nm.clone()))).collect());
+    let ret = Ident::fresh("ret");
+    let input = Ident::fresh("input");
+    let good = Ident::fresh("good");
+    let bad = Ident::fresh("bad");
+
+    let ret_call = Expr::Variable(ret)
+        .app(fields.iter().map(|(nm, _)| Arg::Term(Exp::Var(nm.clone()))).collect());
 
     let good_branch: coma::Defn = coma::Defn {
-        name: format!("good").into(),
+        name: good,
         writes: vec![],
         attrs: vec![],
         params: field_args.clone(),
         body: Expr::Assert(
-            Box::new(cons_test.clone().eq(Exp::var("input"))),
-            Box::new(Expr::BlackBox(Box::new(ret))),
+            Box::new(cons_test.clone().eq(Exp::Var(input))),
+            Box::new(Expr::BlackBox(Box::new(ret_call))),
         ),
     };
 
@@ -250,18 +255,18 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
 
         let fields: Vec<_> = fields.iter().cloned().collect();
         let negative_assertion = if fields.is_empty() {
-            cons_test.neq(Exp::var("input"))
+            cons_test.neq(Exp::Var(input))
         } else {
             // TODO: Replace this with a pattern match to generat more readable goals
             Exp::Forall(
                 fields,
                 vec![Trigger::single(cons_test.clone().ascribe(ty.clone()))],
-                Box::new(cons_test.neq(Exp::var("input"))),
+                Box::new(cons_test.neq(Exp::Var(input))),
             )
         };
 
         Some(coma::Defn {
-            name: format!("bad").into(),
+            name: bad,
             writes: vec![],
             params: vec![],
             attrs: vec![],
@@ -271,13 +276,13 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
         None
     };
 
-    let ret_cont = Param::Cont("ret".into(), Vec::new(), field_args);
+    let ret_cont = Param::Cont(ret, Vec::new(), field_args);
 
-    let input = Param::Term("input".into(), ty);
+    let input = Param::Term(input, ty);
 
     let branches = std::iter::once(good_branch).chain(bad_branch).collect();
     Decl::Coma(Defn {
-        name: names.eliminator(variant_id, subst).as_ident(),
+        name: names.eliminator(variant_id, subst).as_ident(), // TODO: add a variant for global names to Ident?
         writes: vec![],
         params: vec![input, ret_cont],
         body: Expr::Defn(Box::new(Expr::Any), false, branches),
@@ -303,12 +308,36 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
                 let fields = fields
                     .into_iter()
                     .enumerate()
-                    .map(|(ix, f)| (names.field(did, subst, ix.into()).as_ident().to_string(), f))
+                    .map(|(ix, f)| (names.field(did, subst, ix.into()).to_string(), f))
                     .collect();
                 Exp::Record { fields }
             }
         }
         _ => unreachable!(),
+    }
+}
+
+pub(crate) fn intty_to_ty<'tcx, N: Namer<'tcx>>(names: &N, ity: IntTy) -> MlT {
+    names.import_prelude_module(int_to_prelude(ity));
+    match ity {
+        IntTy::Isize => MlT::TConstructor(QName::from("isize")),
+        IntTy::I8 => MlT::TConstructor(QName::from("int8")),
+        IntTy::I16 => MlT::TConstructor(QName::from("int16")),
+        IntTy::I32 => MlT::TConstructor(QName::from("int32")),
+        IntTy::I64 => MlT::TConstructor(QName::from("int64")),
+        IntTy::I128 => MlT::TConstructor(QName::from("int128")),
+    }
+}
+
+pub(crate) fn uintty_to_ty<'tcx, N: Namer<'tcx>>(names: &N, uty: UintTy) -> MlT {
+    names.import_prelude_module(uint_to_prelude(uty));
+    match uty {
+        UintTy::Usize => MlT::TConstructor(QName::from("usize")),
+        UintTy::U8 => MlT::TConstructor(QName::from("uint8")),
+        UintTy::U16 => MlT::TConstructor(QName::from("uint16")),
+        UintTy::U32 => MlT::TConstructor(QName::from("uint32")),
+        UintTy::U64 => MlT::TConstructor(QName::from("uint64")),
+        UintTy::U128 => MlT::TConstructor(QName::from("uint128")),
     }
 }
 

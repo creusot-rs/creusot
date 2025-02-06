@@ -127,7 +127,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     item
                 }
             }
-            TermKind::Var(v) => Exp::var(ident_of(*v)),
+            TermKind::Var(v) => Exp::Var(Ident::fresh(ident_of(*v))), // TODO
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -226,7 +226,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Quant { kind, binder, box body, trigger } => {
                 let bound = zip_binder(binder)
-                    .map(|(s, t)| (s.to_string().into(), self.lower_ty(t)))
+                    .map(|(s, t)| (Ident::fresh(s.to_string()), self.lower_ty(t)))  // TODO store this fresh somewhere
                     .collect();
                 let body = self.lower_term(body);
                 let trigger = self.lower_trigger(trigger);
@@ -293,18 +293,19 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     TyKind::Adt(def, substs) => self.names.field(def.did(), substs, *name),
                     TyKind::Tuple(f) => {
                         let mut fields = vec![Pat::Wildcard; f.len()];
-                        fields[name.as_usize()] = Pat::VarP("a".into());
+                        let a = Ident::fresh("a");
+                        fields[name.as_usize()] = Pat::VarP(a.clone());
 
                         return Exp::Let {
                             pattern: Pat::TupleP(fields),
                             arg: Box::new(lhs_low),
-                            body: Box::new(Exp::var("a")),
+                            body: Box::new(Exp::Var(a)),
                         };
                     }
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                lhs_low.field(&field.as_ident())
+                lhs_low.field(field.as_str())
             }
             TermKind::Closure { body, .. } => {
                 let TyKind::Closure(id, subst) = term.creusot_ty().kind() else {
@@ -316,7 +317,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let sig = self.ctx.sig(*id).clone();
                 let sig = EarlyBinder::bind(sig).instantiate(self.ctx.tcx, subst);
                 for arg in sig.inputs.iter().skip(1) {
-                    let nm = Ident::build(&arg.0.to_string());
+                    let nm = Ident::fresh(&arg.0.to_string());
                     let ty = self.names.normalize(self.ctx, arg.2);
                     binders.push(Binder::typed(nm, self.lower_ty(ty)))
                 }
@@ -376,7 +377,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                             .into_iter()
                             .enumerate()
                             .map(|(i, f)| {
-                                (self.names.field(*variant, substs, i.into()).as_ident(), f)
+                                (Ident::fresh(self.names.field(*variant, substs, i.into())), f)
                             })
                             .filter(|(_, f)| !matches!(f, Pat::Wildcard))
                             .collect(),
@@ -384,7 +385,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
             }
             Pattern::Wildcard => Pat::Wildcard,
-            Pattern::Binder(name) => Pat::VarP(name.to_string().into()),
+            Pattern::Binder(name) => Pat::VarP(Ident::fresh(name.to_string())),
             Pattern::Boolean(b) => {
                 if *b {
                     Pat::mk_true()
@@ -397,7 +398,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             Pattern::Deref { pointee, kind } => match kind {
                 PointerKind::Box | PointerKind::Shr => self.lower_pat(pointee),
-                PointerKind::Mut => Pat::RecP(vec![("current".into(), self.lower_pat(pointee))]),
+                PointerKind::Mut => Pat::RecP(vec![(Ident::fresh("current"), self.lower_pat(pointee))]),
             },
         }
     }

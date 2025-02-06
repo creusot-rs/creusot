@@ -13,7 +13,7 @@ mod vcgen;
 use self::vcgen::vc;
 
 use super::{
-    is_trusted_function, signature::signature_of, term::lower_pure, CannotFetchThir, Why3Generator,
+    is_trusted_function, signature::{signature_of, PreSignature2}, term::lower_pure, CannotFetchThir, Why3Generator,
 };
 
 pub(crate) fn binders_to_args(binders: Vec<Binder>) -> (Vec<Ident>, Vec<Binder>) {
@@ -216,13 +216,13 @@ fn subst_qname(body: &mut Exp, name: &Ident, lim_name: &Ident) {
 // extensionality axioms.
 fn limited_function_encode(
     decls: &mut Vec<Decl>,
-    sig: &Signature,
+    sig: &PreSignature2,
     mut body: Exp,
     kind: Option<DeclKind>,
 ) {
-    let lim_name = Ident::from_string(format!("{}_lim", &*sig.name));
+    let lim_name = Ident::fresh(format!("{}_lim", sig.name.as_str()));
     subst_qname(&mut body, &sig.name, &lim_name);
-    let mut lim_sig = Signature {
+    let mut lim_sig = PreSignature2 {
         name: lim_name,
         trigger: None,
         attrs: vec![],
@@ -232,7 +232,7 @@ fn limited_function_encode(
     };
     let lim_call = function_call(&lim_sig);
     lim_sig.trigger = Some(Trigger::single(lim_call.clone()));
-    decls.push(Decl::LogicDecl(LogicDecl { kind, sig: lim_sig }));
+    decls.push(Decl::LogicDecl(LogicDecl { kind, sig: lim_sig.into() }));
     decls.push(Decl::Axiom(definition_axiom(sig, body, "def")));
     decls.push(Decl::Axiom(definition_axiom(sig, lim_call, "def_lim")));
 }
@@ -258,34 +258,30 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
     Axiom { name: format!("{}_spec", &*sig.name).into(), rewrite: false, axiom }
 }
 
-pub fn function_call(sig: &Signature) -> Exp {
+pub fn function_call(sig: &PreSignature2) -> Exp {
     let mut args: Vec<_> = sig
         .args
         .iter()
         .cloned()
-        .flat_map(|b| b.var_type_pairs())
-        .filter(|arg| &*arg.0 != "_")
-        .map(|arg| Exp::var(arg.0))
+        .map(|arg| Exp::Var(arg.0))
         .collect();
     if args.is_empty() {
         args = vec![Exp::Tuple(vec![])];
     }
 
-    Exp::var(sig.name.clone()).app(args)
+    Exp::Var(sig.name.clone()).app(args)
 }
 
-fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
+fn definition_axiom(sig: &PreSignature2, body: Exp, suffix: &str) -> Axiom {
     let call = function_call(sig);
     let trigger = sig.trigger.clone().into_iter().collect();
 
     let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
     let condition = sig.contract.requires_implies(equation);
 
-    let args: Vec<_> = sig.args.clone().into_iter().flat_map(|b| b.var_type_pairs()).collect();
-
     let axiom =
-        if args.is_empty() { condition } else { Exp::forall_trig(args, trigger, condition) };
+        if sig.args.is_empty() { condition } else { Exp::forall_trig(sig.args.clone(), trigger, condition) };
 
-    let name = format!("{}_{suffix}", &*sig.name);
-    Axiom { name: name.into(), rewrite: false, axiom }
+    let name = Ident::fresh(format!("{}_{suffix}", sig.name.as_str()));
+    Axiom { name, rewrite: false, axiom }
 }

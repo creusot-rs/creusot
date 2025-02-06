@@ -15,12 +15,36 @@ use crate::{
 
 use super::{logic::function_call, term::lower_pure, Namer, Why3Generator};
 
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct PreSignature2 {
+    pub name: Ident,
+    pub trigger: Option<Trigger>, // None means we should use the "simple_trigger"
+    pub attrs: Vec<why3::declaration::Attribute>,
+    pub retty: Option<why3::ty::Type>,
+    pub args: Vec<(Ident, why3::ty::Type)>,
+    pub contract: Contract,
+}
+
+impl From<PreSignature2> for Signature {
+    fn from(sig: PreSignature2) -> Self {
+        Signature {
+            name: sig.name,
+            trigger: sig.trigger,
+            attrs: sig.attrs,
+            retty: sig.retty,
+            args: sig.args.into_iter().map(|(id, ty)| Binder::typed(id, ty)).collect(),
+            contract: sig.contract,
+        }
+    }
+}
+
 pub(crate) fn signature_of<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     name: Ident,
     def_id: DefId,
-) -> Signature {
+) -> PreSignature2 {
     debug!("signature_of {def_id:?}");
     let pre_sig = ctx.sig(def_id).clone();
     sig_to_why3(ctx, names, name, pre_sig, def_id)
@@ -34,11 +58,11 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
     // FIXME: Get rid of this def id
     // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
     def_id: DefId,
-) -> Signature {
+) -> PreSignature2 {
     let contract = contract_to_why3(pre_sig.contract, ctx, names);
 
     let span = ctx.tcx.def_span(def_id);
-    let args: Vec<Binder> = pre_sig
+    let args: Vec<_> = pre_sig
         .inputs
         .iter()
         .enumerate()
@@ -49,7 +73,7 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
             } else {
                 ident_of(*id)
             };
-            Binder::typed(id, ty)
+            (Ident::fresh(id), ty)
         })
         .collect();
 
@@ -63,7 +87,7 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
 
     let retty = backend::ty::translate_ty(ctx, names, span, pre_sig.output);
 
-    let mut sig = Signature { name, trigger: None, attrs, retty: Some(retty), args, contract };
+    let mut sig = PreSignature2 { name, trigger: None, attrs, retty: Some(retty), args, contract };
     let trigger = if ctx.opts.simple_triggers && should_replace_trigger(ctx.tcx, def_id) {
         Some(Trigger::single(function_call(&sig)))
     } else {
