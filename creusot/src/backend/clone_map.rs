@@ -485,7 +485,7 @@ impl<'tcx> Dependencies<'tcx> {
                     };
 
                 Some(why3::declaration::Span {
-                    name: b.0.as_str().into(),
+                    name: Ident::fresh(b.0.as_str()),
                     path,
                     start_line,
                     start_column,
