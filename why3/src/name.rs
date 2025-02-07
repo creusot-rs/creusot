@@ -1,26 +1,39 @@
-use std::{borrow::Cow, fmt::Write, ops::Deref, sync::atomic::AtomicU64};
+use std::{borrow::Cow, fmt::Write, ops::Deref, sync::{atomic::AtomicU64, LazyLock, RwLock}};
 
 use indexmap::Equivalent;
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
+use string_interner::{DefaultStringInterner, DefaultSymbol};
 
 use crate::exp::Exp;
 
 static FRESH_COUNTER: AtomicU64 = AtomicU64::new(0);
+static INTERNER: LazyLock<RwLock<DefaultStringInterner>> = LazyLock::new(|| RwLock::new(DefaultStringInterner::new()));
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct IdentString(String);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct IdentString(DefaultSymbol);
 
 impl IdentString {
-    pub fn as_str(&self) -> &str {
-        &self.0
+    pub fn as_str(self) -> String {
+        String::from(self)
+    }
+}
+
+impl Serialize for IdentString {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        todo!{}
+    }
+}
+
+impl<'d> Deserialize<'d> for IdentString {
+    fn deserialize<D: serde::Deserializer<'d>>(deserializer: D) -> Result<Self, D::Error> {
+        todo!{}
     }
 }
 
 impl From<IdentString> for String {
     fn from(id: IdentString) -> Self {
-        id.0
+        INTERNER.read().unwrap().resolve(id.0).unwrap().to_string()
     }
 }
 
@@ -30,7 +43,8 @@ impl From<String> for IdentString {
         if RESERVED.contains(&&*name) {
             name.write_str("'").unwrap();
         }
-        IdentString(name)
+        let s = INTERNER.write().unwrap().get_or_intern(name);
+        IdentString(s)
     }
 }
 
@@ -40,7 +54,7 @@ impl From<&str> for IdentString {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Ident {
     name: IdentString,
@@ -56,8 +70,8 @@ impl Ident {
     }
 
     // TODO: remove this
-    pub fn as_str(&self) -> &str {
-        self.name.as_str()
+    pub fn as_str(&self) -> String {
+        self.name.into()
     }
 }
 
@@ -109,7 +123,7 @@ impl QName {
     pub fn without_search_path(mut self) -> QName {
         let mut i = 0;
         while i < self.module.len() {
-            if self.module[i].0.starts_with(char::is_lowercase) {
+            if String::from(self.module[i]).starts_with(char::is_lowercase) {
                 self.module.remove(i);
             } else {
                 i += 1
@@ -121,10 +135,10 @@ impl QName {
     pub fn to_string(&self) -> String {
         let mut s = String::new();
         for i in self.module.iter() {
-            s.push_str(i.as_str());
+            s.push_str(&i.as_str());
             s.push('.');
         }
-        s.push_str(self.name.as_str());
+        s.push_str(&self.name.as_str());
         s
     }
 }
@@ -229,6 +243,6 @@ mod tests {
     use super::*;
     #[test]
     fn reserved_idents_made_valid() {
-        assert_eq!(IdentString::from("clone").0, "clone'")
+        assert_eq!(IdentString::from("clone").as_str(), "clone'")
     }
 }
