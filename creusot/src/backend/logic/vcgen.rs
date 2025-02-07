@@ -50,7 +50,7 @@ struct VCGen<'a, 'tcx> {
 }
 
 struct Environment {
-    substs: Vec<HashMap<Symbol, Exp>>
+    substs: Vec<HashMap<Symbol, Ident>>
 }
 
 impl Default for Environment {
@@ -72,7 +72,7 @@ pub(super) fn vc<'tcx>(
         .sig(self_id)
         .inputs
         .iter()
-        .map(|arg| (arg.0.as_str().into(), Exp::Var(arg.0.as_str())))
+        .map(|arg| (arg.0, Ident::fresh(arg.0.as_str())))
         .collect();
     let gen = VCGen {
         typing_env: ctx.typing_env(self_id),
@@ -237,9 +237,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         match &t.kind {
             // VC(v, Q) = Q(v)
             TermKind::Var(v) => {
-                let id = ident_of(*v);
-                let exp = self.subst.borrow().get(&id).unwrap_or(Exp::var(id));
-                k(exp)
+                let id = ident_of(*v); // ???
+                let v = self.get_var(*v).unwrap_or_else(|| Ident::fresh(id)); // ???
+                k(Exp::Var(v))
             }
             // VC(l, Q) = Q(l)
             TermKind::Lit(l) => k(self.lower_literal(l)),
@@ -644,7 +644,11 @@ let (arg_names, _) = binders_to_args(sig.args);
 arg_names
 }
 
-    fn add_bounds(&self, bounds: HashMap<Symbol, Exp>) {
+    fn get_var(&self, s: Symbol) -> Option<Ident> {
+        self.subst.borrow().get(&s)
+    }
+
+    fn add_bounds(&self, bounds: HashMap<Symbol, Ident>) {
         self.subst.substs.push(bounds);
     }
 
