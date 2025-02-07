@@ -72,7 +72,7 @@ pub(super) fn vc<'tcx>(
         .sig(self_id)
         .inputs
         .iter()
-        .map(|arg| (arg.0.as_str().into(), Exp::var(arg.0.as_str())))
+        .map(|arg| (arg.0.as_str().into(), Exp::Var(arg.0.as_str())))
         .collect();
     let gen = VCGen {
         typing_env: ctx.typing_env(self_id),
