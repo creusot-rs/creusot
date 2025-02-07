@@ -35,10 +35,7 @@ use rustc_middle::ty::{
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_type_ir::{ConstKind, EarlyBinder};
-use why3::{
-    declaration::{Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use},
-    QName,
-};
+use why3::declaration::{Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use};
 
 /// Weak dependencies are allowed to form cycles in the graph, but strong ones cannot,
 /// weak dependencies are used to perform an initial stratification of the dependency graph.
@@ -180,9 +177,18 @@ impl DepElab for LogicElab {
             _ => None,
         };
 
-        if let Some(b) = get_builtin(ctx.tcx, def_id) {
-            let Some(name) = QName::from_string(b.as_str()).module_qname() else { return vec![] };
-            return vec![Decl::UseDecl(Use { name, as_: None, export: false })];
+        if get_builtin(ctx.tcx, def_id).is_some() {
+            match elab.namer.insert(dep) {
+                Kind::Named(_) => return vec![],
+                Kind::UsedBuiltin(qname) => {
+                    return vec![Decl::UseDecl(Use {
+                        name: qname.module.clone(),
+                        as_: None,
+                        export: false,
+                    })]
+                }
+                Kind::Unnamed => unreachable!(),
+            }
         }
 
         let sig = ctx.sig(def_id).clone();
@@ -226,7 +232,7 @@ fn expand_ty_inv_axiom<'tcx>(
     let rewrite = elab.rewrite;
     let exp = lower_pure(ctx, &mut names, &term);
     let axiom =
-        Axiom { name: names.insert(Dependency::TyInvAxiom(ty)).qname().name, rewrite, axiom: exp };
+        Axiom { name: names.insert(Dependency::TyInvAxiom(ty)).ident(), rewrite, axiom: exp };
     vec![Decl::Axiom(axiom)]
 }
 
@@ -259,19 +265,12 @@ impl DepElab for TyElab {
             }
             TyKind::Closure(did, subst) => translate_closure_ty(ctx, &mut names, *did, subst)
                 .map_or(vec![], |d| vec![Decl::TyDecl(d)]),
-            TyKind::Adt(adt_def, subst)
-                if let Some(why3_modl) = get_builtin(ctx.tcx, adt_def.did()) =>
-            {
-                assert!(matches!(names.insert(dep), Kind::UsedBuiltin(_, _)));
-
+            TyKind::Adt(adt_def, subst) if get_builtin(ctx.tcx, adt_def.did()).is_some() => {
                 for ty in subst.types() {
-                    translate_ty(ctx, &mut elab.namer(dep), DUMMY_SP, ty);
+                    translate_ty(ctx, &mut names, DUMMY_SP, ty);
                 }
-
-                let qname = QName::from_string(why3_modl.as_str());
-                let Some(name) = qname.module_qname() else { return vec![] };
-                let use_decl = Use { as_: None, name, export: false };
-                vec![Decl::UseDecl(use_decl)]
+                let Kind::UsedBuiltin(qname) = names.insert(dep) else { unreachable!() };
+                vec![Decl::UseDecl(Use { as_: None, name: qname.module.clone(), export: false })]
             }
             TyKind::Adt(_, _) => {
                 let (def_id, subst) = dep.did().unwrap();

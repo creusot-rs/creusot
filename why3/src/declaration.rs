@@ -284,7 +284,7 @@ pub struct LogicDecl {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Use {
-    pub name: QName,
+    pub name: Vec<Ident>,
     pub as_: Option<Ident>,
     pub export: bool,
 }

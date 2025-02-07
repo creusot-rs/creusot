@@ -307,7 +307,7 @@ impl Print for Use {
         alloc
             .text("use ")
             .append(if self.export { alloc.text("export ") } else { alloc.nil() })
-            .append(self.name.pretty(alloc))
+            .append(alloc.intersperse(self.name.iter().map(|t| alloc.text(&t.0)), "."))
             .append(if let Some(as_) = &self.as_ {
                 alloc.text(" as ").append(as_.pretty(alloc))
             } else {
@@ -926,7 +926,6 @@ impl Print for QName {
         A::Doc: Clone,
     {
         let module_path = self.module.iter().map(|t| alloc.text(&t.0));
-
         alloc.intersperse(module_path.chain(std::iter::once(alloc.text(self.name.0.clone()))), ".")
     }
 }

@@ -81,7 +81,7 @@ pub(crate) fn from_ty_const<'tcx>(
     // Check if a constant is builtin and thus should not be evaluated further
     // Builtin constants are given a body which panics
     if let ConstKind::Unevaluated(u) = c.kind()
-        && let Some(_) = get_builtin(ctx.tcx, u.def)
+        && get_builtin(ctx.tcx, u.def).is_some()
     {
         return Term { kind: TermKind::Lit(Literal::Function(u.def, u.args)), ty, span };
     };

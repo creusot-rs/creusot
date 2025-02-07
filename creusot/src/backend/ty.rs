@@ -15,7 +15,7 @@ use why3::{
     declaration::{AdtDecl, ConstructorDecl, Decl, FieldDecl, SumRecord, TyDecl},
     exp::{Exp, Trigger},
     ty::Type as MlT,
-    Ident, QName,
+    Ident,
 };
 
 pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
@@ -44,9 +44,7 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
                 return MlT::Integer;
             }
 
-            if let Some(_) =
-                get_builtin(ctx.tcx, def.did()).map(|a| QName::from_string(&a.as_str()))
-            {
+            if get_builtin(ctx.tcx, def.did()).is_some() {
                 let cons = MlT::TConstructor(names.ty(def.did(), s).without_search_path());
                 let args: Vec<_> = s.types().map(|t| translate_ty(ctx, names, span, t)).collect();
                 MlT::TApp(Box::new(cons), args)
@@ -92,7 +90,7 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         Never => MlT::Tuple(vec![]),
         RawPtr(_, _) => {
             names.import_prelude_module(PreludeModule::Opaque);
-            MlT::TConstructor(QName::from_string("opaque_ptr"))
+            MlT::TConstructor("opaque_ptr".into())
         }
         Closure(id, subst) => {
             if is_logic(ctx.tcx, *id) {
@@ -112,16 +110,16 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         }
         FnPtr(..) => {
             names.import_prelude_module(PreludeModule::Opaque);
-            MlT::TConstructor(QName::from_string("opaque_ptr"))
+            MlT::TConstructor("opaque_ptr".into())
         }
         Dynamic(_, _, _) => {
             names.import_prelude_module(PreludeModule::Opaque);
-            MlT::TConstructor(QName::from_string("dyn"))
+            MlT::TConstructor("dyn".into())
         }
 
         Foreign(_) => {
             names.import_prelude_module(PreludeModule::Opaque);
-            MlT::TConstructor(QName::from_string("foreign"))
+            MlT::TConstructor("foreign".into())
         }
         Error(_) => MlT::UNIT,
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
@@ -345,32 +343,32 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
 pub(crate) fn intty_to_ty<'tcx, N: Namer<'tcx>>(names: &mut N, ity: IntTy) -> MlT {
     names.import_prelude_module(int_to_prelude(ity));
     match ity {
-        IntTy::Isize => MlT::TConstructor(QName::from_string("isize")),
-        IntTy::I8 => MlT::TConstructor(QName::from_string("int8")),
-        IntTy::I16 => MlT::TConstructor(QName::from_string("int16")),
-        IntTy::I32 => MlT::TConstructor(QName::from_string("int32")),
-        IntTy::I64 => MlT::TConstructor(QName::from_string("int64")),
-        IntTy::I128 => MlT::TConstructor(QName::from_string("int128")),
+        IntTy::Isize => MlT::TConstructor("isize".into()),
+        IntTy::I8 => MlT::TConstructor("int8".into()),
+        IntTy::I16 => MlT::TConstructor("int16".into()),
+        IntTy::I32 => MlT::TConstructor("int32".into()),
+        IntTy::I64 => MlT::TConstructor("int64".into()),
+        IntTy::I128 => MlT::TConstructor("int128".into()),
     }
 }
 
 pub(crate) fn uintty_to_ty<'tcx, N: Namer<'tcx>>(names: &mut N, uty: UintTy) -> MlT {
     names.import_prelude_module(uint_to_prelude(uty));
     match uty {
-        UintTy::Usize => MlT::TConstructor(QName::from_string("usize")),
-        UintTy::U8 => MlT::TConstructor(QName::from_string("uint8")),
-        UintTy::U16 => MlT::TConstructor(QName::from_string("uint16")),
-        UintTy::U32 => MlT::TConstructor(QName::from_string("uint32")),
-        UintTy::U64 => MlT::TConstructor(QName::from_string("uint64")),
-        UintTy::U128 => MlT::TConstructor(QName::from_string("uint128")),
+        UintTy::Usize => MlT::TConstructor("usize".into()),
+        UintTy::U8 => MlT::TConstructor("uint8".into()),
+        UintTy::U16 => MlT::TConstructor("uint16".into()),
+        UintTy::U32 => MlT::TConstructor("uint32".into()),
+        UintTy::U64 => MlT::TConstructor("uint64".into()),
+        UintTy::U128 => MlT::TConstructor("uint128".into()),
     }
 }
 
 pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(names: &mut N, fty: FloatTy) -> MlT {
     names.import_prelude_module(floatty_to_prelude(fty));
     match fty {
-        FloatTy::F32 => MlT::TConstructor(QName::from_string("Float32.t")),
-        FloatTy::F64 => MlT::TConstructor(QName::from_string("Float64.t")),
+        FloatTy::F32 => MlT::TConstructor("Float32.t".into()),
+        FloatTy::F64 => MlT::TConstructor("Float64.t".into()),
         FloatTy::F128 | FloatTy::F16 => todo!("Unsupported: {fty:?}"),
     }
 }
