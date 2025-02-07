@@ -218,7 +218,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     let foc = focus.call(is);
                     is.push(IntermediateStmt::Call(
                         vec![Param::Term(result.clone(), elt_ty1.clone())],
-                        Expr::Symbol(QName::from_string("Slice.get")),
+                        Expr::Symbol(QName::from("Slice.get")),
                         vec![Arg::Ty(elt_ty1), Arg::Term(foc), Arg::Term(ix_exp1)],
                     ));
 
@@ -232,7 +232,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
 
                     is.push(IntermediateStmt::Call(
                         vec![Param::Term(out.clone(), ty)],
-                        Expr::Symbol(QName::from_string("Slice.set")),
+                        Expr::Symbol(QName::from("Slice.set")),
                         vec![Arg::Ty(elt_ty), Arg::Term(foc), Arg::Term(ix_exp), Arg::Term(rhs)],
                     ));
                     constructor(is, Exp::qvar(out.into()))

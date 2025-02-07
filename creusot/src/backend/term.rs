@@ -15,7 +15,7 @@ use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat},
     ty::Type,
-    Ident, QName,
+    Ident,
 };
 
 pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
@@ -53,16 +53,13 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Item(id, subst) => {
                 let method = (*id, *subst);
                 debug!("resolved_method={:?}", method);
-                let is_constant = matches!(self.ctx.def_kind(*id), DefKind::AssocConst);
-                let item = self.lookup_builtin(method, &Vec::new()).unwrap_or_else(|| {
-                    let clone = self.names.value(*id, subst);
-                    match self.ctx.type_of(id).instantiate_identity().kind() {
-                        TyKind::FnDef(_, _) => Exp::Tuple(Vec::new()),
-                        _ => Exp::qvar(clone),
-                    }
-                });
+                let clone = self.names.value(*id, subst);
+                let item = match self.ctx.type_of(id).instantiate_identity().kind() {
+                    TyKind::FnDef(_, _) => Exp::Tuple(Vec::new()),
+                    _ => Exp::qvar(clone),
+                };
 
-                if is_constant {
+                if matches!(self.ctx.def_kind(*id), DefKind::AssocConst) {
                     let ty = translate_ty(self.ctx, self.names, term.span, term.ty);
                     item.ascribe(ty)
                 } else {
@@ -278,12 +275,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         let def_id = method.0;
         let substs = method.1;
 
-        let def_id = Some(def_id);
-        let builtin_attr = get_builtin(self.ctx.tcx, def_id.unwrap());
-
-        if let Some(builtin) = builtin_attr.map(|a| QName::from_string(&a.as_str())) {
-            self.names.value(def_id.unwrap(), substs);
-            return Some(Exp::qvar(builtin.without_search_path()).app(args.clone()));
+        if get_builtin(self.ctx.tcx, def_id).is_some() {
+            return Some(Exp::qvar(self.names.value(def_id, substs)).app(args.clone()));
         }
         None
     }

@@ -17,13 +17,13 @@ use crate::{
     pearlite::{super_visit_term, Literal, Pattern, PointerKind, Term, TermVisitor},
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyKind, TypingEnv};
+use rustc_middle::ty::{EarlyBinder, Ty, TyKind, TypingEnv};
 use rustc_span::{Span, Symbol};
 use why3::{
     declaration::Signature,
     exp::{BinOp, Environment},
     ty::Type,
-    Exp, Ident, QName,
+    Exp, Ident,
 };
 
 /// Verification conditions for lemma functions.
@@ -236,8 +236,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // Items are just global names so
             // VC(i, Q) = Q(i)
             TermKind::Item(id, sub) => {
-                let item_name =
-                    get_func_name(*self.ctx.borrow_mut(), *self.names.borrow_mut(), *id, sub);
+                let item_name = self.names.borrow_mut().value(*id, sub);
 
                 if get_builtin(self.ctx.borrow().tcx, *id).is_some() {
                     // Builtins can leverage Why3 polymorphism and sometimes can cause typeck errors in why3 due to ambiguous type variables so lets fix the type now.
@@ -265,8 +264,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     .zip(args.clone())
                     .map(|(nm, res)| (ident_of(nm.0), res))
                     .collect();
-                let fname =
-                    get_func_name(*self.ctx.borrow_mut(), *self.names.borrow_mut(), *id, subst);
+                let fname = self.names.borrow_mut().value(*id, subst);
                 let mut sig = sig_to_why3(
                     *self.ctx.borrow_mut(),
                     *self.names.borrow_mut(),
@@ -607,21 +605,4 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
     fn pop_bounds(&self) {
         self.subst.borrow_mut().pop_subst();
     }
-}
-
-// Push into `CloneMap::value`?
-pub(crate) fn get_func_name<'tcx>(
-    ctx: &Why3Generator<'tcx>,
-    names: &mut Dependencies<'tcx>,
-    id: DefId,
-    subst: GenericArgsRef<'tcx>,
-) -> QName {
-    get_builtin(ctx.tcx, id)
-        .map(|a| {
-            // Add dependency
-            names.value(id, subst);
-
-            QName::from_string(a.as_str()).without_search_path()
-        })
-        .unwrap_or_else(|| names.value(id, subst))
 }

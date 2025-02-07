@@ -100,26 +100,6 @@ impl QName {
         self.name
     }
 
-    // ooof this is a bad function
-    pub fn module_ident(&self) -> Option<&Ident> {
-        self.module.last()
-    }
-
-    /// Given `Module.name` replaces `name` with `id`.
-    pub fn push_ident(&mut self, id: impl Into<Ident>) {
-        let old = std::mem::replace(&mut self.name, id.into());
-        self.module.push(old);
-    }
-
-    pub fn module_qname(mut self) -> Option<QName> {
-        if self.module.is_empty() {
-            return None;
-        }
-        let id = self.module.pop().unwrap();
-        self.name = id;
-        Some(self)
-    }
-
     pub fn without_search_path(mut self) -> QName {
         let mut i = 0;
         while i < self.module.len() {
@@ -131,8 +111,10 @@ impl QName {
         }
         self
     }
+}
 
-    pub fn from_string(s: &str) -> QName {
+impl From<&str> for QName {
+    fn from(s: &str) -> Self {
         let mut in_paren = false;
         for (i, c) in s.char_indices().rev() {
             match c {
@@ -149,37 +131,19 @@ impl QName {
             }
         }
 
-        s.into()
-    }
-
-    pub fn to_string(&self) -> String {
-        let mut s = String::new();
-        for i in self.module.iter() {
-            s.push_str(i.as_str());
-            s.push('.');
-        }
-        s.push_str(self.name.as_str());
-        s
+        QName { module: vec![], name: s.into() }
     }
 }
 
-impl From<&str> for QName {
-    fn from(nm: &str) -> Self {
-        QName { module: vec![], name: nm.into() }
-    }
-}
-
-// TODO: deprecate this
 impl From<String> for QName {
-    fn from(nm: String) -> Self {
-        QName { module: vec![], name: nm.into() }
+    fn from(s: String) -> Self {
+        s.as_str().into()
     }
 }
 
-// TODO: deprecate this
 impl From<Ident> for QName {
-    fn from(nm: Ident) -> Self {
-        QName { module: vec![], name: nm }
+    fn from(name: Ident) -> Self {
+        QName { module: vec![], name }
     }
 }
 

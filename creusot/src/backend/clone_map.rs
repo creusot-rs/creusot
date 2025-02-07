@@ -53,30 +53,31 @@ pub enum PreludeModule {
 }
 
 impl PreludeModule {
-    pub fn qname(&self) -> QName {
-        match self {
-            PreludeModule::Float32 => QName::from_string("prelude.prelude.Float32"),
-            PreludeModule::Float64 => QName::from_string("prelude.prelude.Float64"),
-            PreludeModule::Int => QName::from_string("prelude.prelude.Int"),
-            PreludeModule::Int8 => QName::from_string("prelude.prelude.Int8"),
-            PreludeModule::Int16 => QName::from_string("prelude.prelude.Int16"),
-            PreludeModule::Int32 => QName::from_string("prelude.prelude.Int32"),
-            PreludeModule::Int64 => QName::from_string("prelude.prelude.Int64"),
-            PreludeModule::Int128 => QName::from_string("prelude.prelude.Int128"),
-            PreludeModule::UInt8 => QName::from_string("prelude.prelude.UInt8"),
-            PreludeModule::UInt16 => QName::from_string("prelude.prelude.UInt16"),
-            PreludeModule::UInt32 => QName::from_string("prelude.prelude.UInt32"),
-            PreludeModule::UInt64 => QName::from_string("prelude.prelude.UInt64"),
-            PreludeModule::UInt128 => QName::from_string("prelude.prelude.UInt128"),
-            PreludeModule::Char => QName::from_string("prelude.prelude.Char"),
-            PreludeModule::Opaque => QName::from_string("prelude.prelude.Opaque"),
-            PreludeModule::Isize => QName::from_string("prelude.prelude.IntSize"),
-            PreludeModule::Usize => QName::from_string("prelude.prelude.UIntSize"),
-            PreludeModule::Bool => QName::from_string("prelude.prelude.Bool"),
-            PreludeModule::Borrow => QName::from_string("prelude.prelude.Borrow"),
-            PreludeModule::Slice => QName::from_string("prelude.prelude.Slice"),
-            PreludeModule::Intrinsic => QName::from_string("prelude.prelude.Intrinsic"),
-        }
+    pub fn qname(&self) -> Vec<Ident> {
+        let qname: QName = match self {
+            PreludeModule::Float32 => "prelude.prelude.Float32.".into(),
+            PreludeModule::Float64 => "prelude.prelude.Float64.".into(),
+            PreludeModule::Int => "prelude.prelude.Int.".into(),
+            PreludeModule::Int8 => "prelude.prelude.Int8.".into(),
+            PreludeModule::Int16 => "prelude.prelude.Int16.".into(),
+            PreludeModule::Int32 => "prelude.prelude.Int32.".into(),
+            PreludeModule::Int64 => "prelude.prelude.Int64.".into(),
+            PreludeModule::Int128 => "prelude.prelude.Int128.".into(),
+            PreludeModule::UInt8 => "prelude.prelude.UInt8.".into(),
+            PreludeModule::UInt16 => "prelude.prelude.UInt16.".into(),
+            PreludeModule::UInt32 => "prelude.prelude.UInt32.".into(),
+            PreludeModule::UInt64 => "prelude.prelude.UInt64.".into(),
+            PreludeModule::UInt128 => "prelude.prelude.UInt128.".into(),
+            PreludeModule::Char => "prelude.prelude.Char.".into(),
+            PreludeModule::Opaque => "prelude.prelude.Opaque.".into(),
+            PreludeModule::Isize => "prelude.prelude.IntSize.".into(),
+            PreludeModule::Usize => "prelude.prelude.UIntSize.".into(),
+            PreludeModule::Bool => "prelude.prelude.Bool.".into(),
+            PreludeModule::Borrow => "prelude.prelude.Borrow.".into(),
+            PreludeModule::Slice => "prelude.prelude.Slice.".into(),
+            PreludeModule::Intrinsic => "prelude.prelude.Intrinsic.".into(),
+        };
+        qname.module
     }
 }
 
@@ -274,12 +275,11 @@ impl<'tcx> CloneNames<'tcx> {
             if let Some((did, _)) = key.did()
                 && let Some(why3_modl) = get_builtin(self.tcx, did)
             {
-                let qname = QName::from_string(why3_modl.as_str());
-                let name = qname.name.clone();
-                if let Some(modl) = qname.module_qname() {
-                    return Kind::UsedBuiltin(modl, Symbol::intern(&*name));
+                let qname = QName::from(why3_modl.as_str());
+                if qname.module.is_empty() {
+                    return Kind::Named(Symbol::intern(&qname.name));
                 } else {
-                    return Kind::Named(Symbol::intern(&*name));
+                    return Kind::UsedBuiltin(qname);
                 }
             }
             key.base_ident(self.tcx)
@@ -308,7 +308,7 @@ pub enum Kind {
     /// This symbol is locally defined
     Named(Symbol),
     /// Used, UsedBuiltin: the symbols in the last argument must be acompanied by a `use` statement in Why3
-    UsedBuiltin(QName, Symbol),
+    UsedBuiltin(QName),
 }
 
 impl Kind {
@@ -316,7 +316,7 @@ impl Kind {
         match self {
             Kind::Unnamed => panic!("Unnamed item"),
             Kind::Named(nm) => nm.as_str().into(),
-            Kind::UsedBuiltin(_, _) => {
+            Kind::UsedBuiltin(_) => {
                 panic!("cannot get ident of used module {self:?}")
             }
         }
@@ -326,11 +326,7 @@ impl Kind {
         match self {
             Kind::Unnamed => panic!("Unnamed item"),
             Kind::Named(nm) => nm.as_str().into(),
-            Kind::UsedBuiltin(modl, id) => {
-                let mut module = modl.module.clone();
-                module.push(modl.name.clone());
-                QName { module, name: id.as_str().into() }
-            }
+            Kind::UsedBuiltin(qname) => qname.clone().without_search_path(),
         }
     }
 }
