@@ -53,6 +53,12 @@ struct Environment {
     substs: Vec<HashMap<Symbol, Exp>>
 }
 
+impl Default for Environment {
+    fn default() -> Self {
+        Self { substs: vec![] }
+    }
+}
+
 pub(super) fn vc<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &mut Dependencies<'tcx>,
