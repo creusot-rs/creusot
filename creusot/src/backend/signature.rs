@@ -78,7 +78,10 @@ fn lower_condition<'tcx, N: Namer<'tcx>>(
     names: &mut N,
     cond: Condition<'tcx>,
 ) -> why3::declaration::Condition {
-    why3::declaration::Condition { exp: lower_pure(ctx, names, &cond.term), expl: cond.expl }
+    why3::declaration::Condition {
+        exp: lower_pure(ctx, names, &names.normalize(ctx, cond.term)),
+        expl: cond.expl,
+    }
 }
 
 fn contract_to_why3<'tcx, N: Namer<'tcx>>(

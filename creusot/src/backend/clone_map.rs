@@ -94,7 +94,8 @@ pub(crate) trait Namer<'tcx> {
             }
             DefKind::AssocTy => Ty::new_projection(self.tcx(), def_id, subst),
             DefKind::Closure => Ty::new_closure(self.tcx(), def_id, subst),
-            _ => unreachable!(),
+            DefKind::OpaqueTy => Ty::new_opaque(self.tcx(), def_id, subst),
+            k => unreachable!("{k:?}"),
         };
 
         self.insert(Dependency::Type(ty)).qname()
@@ -143,11 +144,7 @@ pub(crate) trait Namer<'tcx> {
         self.insert(Dependency::Promoted(def_id, prom)).qname()
     }
 
-    fn normalize<T: TypeFoldable<TyCtxt<'tcx>> + Copy>(
-        &self,
-        ctx: &TranslationCtx<'tcx>,
-        ty: T,
-    ) -> T;
+    fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, ctx: &TranslationCtx<'tcx>, ty: T) -> T;
 
     fn import_prelude_module(&mut self, module: PreludeModule) {
         self.insert(Dependency::Builtin(module));
@@ -162,11 +159,7 @@ pub(crate) trait Namer<'tcx> {
 
 impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
     // TODO: get rid of this. It feels like it should be unnecessary
-    fn normalize<T: TypeFoldable<TyCtxt<'tcx>> + Copy>(
-        &self,
-        _: &TranslationCtx<'tcx>,
-        ty: T,
-    ) -> T {
+    fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, _: &TranslationCtx<'tcx>, ty: T) -> T {
         self.tcx().normalize_erasing_regions(self.typing_env, ty)
     }
 
@@ -191,11 +184,7 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
 }
 
 impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
-    fn normalize<T: TypeFoldable<TyCtxt<'tcx>> + Copy>(
-        &self,
-        ctx: &TranslationCtx<'tcx>,
-        ty: T,
-    ) -> T {
+    fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, ctx: &TranslationCtx<'tcx>, ty: T) -> T {
         self.tcx().normalize_erasing_regions(ctx.typing_env(self.self_id), ty)
     }
 

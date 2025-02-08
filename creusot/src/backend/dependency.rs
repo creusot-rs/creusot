@@ -40,6 +40,7 @@ impl<'tcx> Dependency<'tcx> {
                 TyKind::Adt(def, substs) => Some((def.did(), substs)),
                 TyKind::Closure(id, substs) => Some((*id, substs)),
                 TyKind::Alias(AliasTyKind::Projection, aty) => Some((aty.def_id, aty.args)),
+                TyKind::Alias(AliasTyKind::Opaque, aty) => Some((aty.def_id, aty.args)),
                 _ => None,
             },
             _ => None,
@@ -57,6 +58,10 @@ impl<'tcx> Dependency<'tcx> {
                 TyKind::Adt(def, _) if !def.is_box() => {
                     Some(item_symb(tcx, def.did(), rustc_hir::def::Namespace::TypeNS))
                 }
+                TyKind::Alias(AliasTyKind::Opaque, aty) => Some(Symbol::intern(&format!(
+                    "opaque{}",
+                    tcx.def_path(aty.def_id).data.last().unwrap().disambiguator
+                ))),
                 TyKind::Alias(_, aty) => {
                     Some(Symbol::intern(&type_name(tcx.item_name(aty.def_id).as_str())))
                 }
