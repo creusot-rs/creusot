@@ -69,7 +69,9 @@ impl<'tcx> Dependency<'tcx> {
                     "closure{}",
                     tcx.def_path(*def_id).data.last().unwrap().disambiguator
                 ))),
-                TyKind::Param(p) => Some(Symbol::intern(&type_name(p.name.as_str()))),
+                TyKind::Param(p) => {
+                    Some(Symbol::intern(&type_name(&p.name.as_str().replace(" ", "_"))))
+                }
                 _ => None,
             },
             Dependency::Item(did, _) => match tcx.def_kind(did) {
