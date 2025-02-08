@@ -62,9 +62,9 @@ impl<'tcx> Dependency<'tcx> {
                     "opaque{}",
                     tcx.def_path(aty.def_id).data.last().unwrap().disambiguator
                 ))),
-                TyKind::Alias(_, aty) => {
-                    Some(Symbol::intern(&type_name(tcx.item_name(aty.def_id).as_str())))
-                }
+                TyKind::Alias(_, aty) => Some(Symbol::intern(&type_name(
+                    tcx.opt_item_name(aty.def_id).unwrap_or(Symbol::intern("synthetic")).as_str(),
+                ))),
                 TyKind::Closure(def_id, _) => Some(Symbol::intern(&format!(
                     "closure{}",
                     tcx.def_path(*def_id).data.last().unwrap().disambiguator
