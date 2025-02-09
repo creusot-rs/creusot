@@ -286,15 +286,63 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
         }
         ContractSubject::FnOrMethod(mut f) => {
             let attrs = std::mem::take(&mut f.attrs);
-            let result = match f.sig.output {
-                ReturnType::Default => parse_quote! { result : () },
-                ReturnType::Type(_, ref ty) => parse_quote! { result : #ty },
-            };
-            let ensures_tokens = fn_spec_item(ens_name, Some(result), term);
+            // let result = match f.sig.output {
+            //     ReturnType::Default => parse_quote! { result : () },
+            //     ReturnType::Type(_, ref ty) => parse_quote! { result : #ty },
+            // };
+            let req_body = req_body(&term);
+            let sattrs = spec_attrs(&ens_name);
+            // let ensures_tokens = fn_spec_item(ens_name, Some(result), term);
 
-            if let Some(b) = f.body.as_mut() {
-                b.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens)))
-            }
+            let name = f.sig.ident.clone();
+            let is_method = f.sig.inputs.len() > 0 && matches!(f.sig.inputs[0], FnArg::Receiver(_));
+            let args = f.sig.inputs.iter().map(|arg: &FnArg| -> Expr {
+                match arg {
+                    FnArg::Receiver(r) => {
+                        parse_quote! { self }
+                    }
+                    FnArg::Typed(pat) => match &*pat.pat {
+                        Pat::Ident(i) => parse_quote! { i },
+                        _ => unimplemented!(),
+                    },
+                }
+            });
+
+            let call = if is_method {
+                let args = args.skip(1);
+                quote! { self.#name(#(#args,)*) }
+            } else {
+                quote! {#name(#(#args,)*) }
+            };
+
+            let toks = quote!({
+                #[allow(unused_must_use)]
+                let _ =
+                    #sattrs
+                    |result| { ::creusot_contracts::__stubs::closure_result(#call, result); #req_body }
+                ;
+            });
+
+            // if let Some(b) = f.body.as_mut() {
+            //     b.stmts.insert(0, Stmt::Item(Item::Verbatim(toks)))
+            // }
+
+            let b = f.body.unwrap();
+
+            f.body = Some(parse_quote!({
+                let __result = #b;
+
+                #[allow(unused_must_use)]
+                let _ =
+                    #sattrs
+                    |result| { ::creusot_contracts::__stubs::closure_result(__result, result); #req_body }
+                ;
+
+                __result
+            }));
+
+            // eprintln!("{}", f.to_token_stream());
+
             TS1::from(quote! {
                 #[creusot::clause::ensures=#name_tag]
                 #(#attrs)*

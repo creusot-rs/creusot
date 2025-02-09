@@ -118,15 +118,15 @@ extern_spec! {
 
     mod std {
         mod ptr {
-            #[ensures(result.is_null_logic())]
-            fn null<T>() -> *const T
-            where
-                T: std::ptr::Thin + ?Sized;
+            // #[ensures(result.is_null_logic())]
+            // fn null<T>() -> *const T
+            // where
+            //     T: std::ptr::Thin + ?Sized;
 
-            #[ensures(result.is_null_logic())]
-            fn null_mut<T>() -> *mut T
-            where
-                T: std::ptr::Thin + ?Sized;
+            // #[ensures(result.is_null_logic())]
+            // fn null_mut<T>() -> *mut T
+            // where
+            //     T: std::ptr::Thin + ?Sized;
 
             #[ensures(result == (p.addr_logic() == q.addr_logic()))]
             fn addr_eq<T, U>(p: *const T, q: *const U) -> bool
