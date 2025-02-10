@@ -43,8 +43,13 @@ struct Args {
 }
 
 fn main() {
-    // Build `creusot-rustc` and `cargo-creusot`
+    let mut args = Args::parse();
+    if env::var("CI").is_ok() {
+        args.quiet = true;
+        args.force_color = true;
+    }
 
+    println! {"Building creusot-rustc..."};
     let creusot_rustc = escargot::CargoBuild::new()
         .bin("creusot-rustc")
         .current_release()
@@ -52,15 +57,7 @@ fn main() {
         .current_target()
         .run()
         .unwrap();
-
-    let cargo_creusot = escargot::CargoBuild::new()
-        .bin("cargo-creusot")
-        .current_release()
-        .manifest_path("../cargo-creusot/Cargo.toml")
-        .current_target()
-        .run()
-        .unwrap()
-        .command();
+    let creusot_rustc = creusot_rustc.path();
 
     let mut base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     base_path.pop();
@@ -71,35 +68,112 @@ fn main() {
     temp_file.push("debug");
     temp_file.push("libcreusot_contracts.cmeta");
 
-    let mut metadata_file = cargo_creusot;
-    metadata_file.current_dir(base_path);
-    metadata_file.arg("creusot").args(&[
-        "--creusot-rustc".as_ref(),
-        creusot_rustc.path().as_os_str(),
-        "--metadata-path".as_ref(),
-        temp_file.as_os_str(),
-        "--output-file=/dev/null".as_ref(),
-    ]);
-    metadata_file.args(&["--", "--package", "creusot-contracts"]).env("CREUSOT_CONTINUE", "true");
-
-    if !metadata_file.status().expect("could not dump metadata for `creusot_contracts`").success() {
-        std::process::exit(1);
-    }
-
-    let mut args = Args::parse();
-    if env::var("CI").is_ok() {
-        args.quiet = true;
-        args.force_color = true;
-    }
+    translate_creusot_contracts(&args, creusot_rustc, &base_path, &temp_file);
 
     should_fail("tests/should_fail/**/*.rs", &args, |p| {
-        run_creusot(creusot_rustc.path(), p, &temp_file.to_string_lossy())
+        run_creusot(creusot_rustc, p, &temp_file.to_string_lossy())
     });
     should_succeed("tests/should_succeed/**/*.rs", &args, |p| {
-        run_creusot(creusot_rustc.path(), p, &temp_file.to_string_lossy())
+        run_creusot(creusot_rustc, p, &temp_file.to_string_lossy())
     });
 
     println!("All tests passed!");
+}
+
+fn translate_creusot_contracts(
+    args: &Args,
+    creusot_rustc: &Path,
+    base_path: &PathBuf,
+    temp_file: &PathBuf,
+) {
+    println! {"Building cargo-creusot..."};
+    let cargo_creusot = escargot::CargoBuild::new()
+        .bin("cargo-creusot")
+        .current_release()
+        .manifest_path("../cargo-creusot/Cargo.toml")
+        .current_target()
+        .run()
+        .unwrap()
+        .command();
+
+    print! {"Translating creusot-contracts... "};
+    std::io::stdout().flush().unwrap();
+    std::process::Command::new("touch")
+        .current_dir(&base_path)
+        .args(["creusot-contracts/src/lib.rs"])
+        .status()
+        .unwrap();
+    let mut creusot_contracts = cargo_creusot;
+    creusot_contracts.current_dir(base_path);
+    creusot_contracts
+        .arg("creusot")
+        .args(&[
+            "--creusot-rustc",
+            creusot_rustc.to_str().unwrap(),
+            "--metadata-path",
+            temp_file.to_str().unwrap(),
+            "--stdout",
+            "--span-mode=relative",
+            "--spans-relative-to=creusot/tests/creusot-contracts",
+            "--",
+            "--package",
+            "creusot-contracts",
+        ])
+        .env("CREUSOT_CONTINUE", "true");
+
+    let output = creusot_contracts.output().expect("could not translate `creusot_contracts`");
+    let expect = PathBuf::from("tests/creusot-contracts/creusot-contracts.coma");
+
+    let is_tty = std::io::stdout().is_terminal();
+    let mut out = StandardStream::stdout(if args.force_color || is_tty {
+        ColorChoice::Always
+    } else {
+        ColorChoice::Never
+    });
+
+    let mut failed = false;
+    if args.bless {
+        if output.stdout.is_empty() {
+            panic!(
+                "creusot-contracts should have an output! stderr is:\n\n{}",
+                std::str::from_utf8(&output.stderr).unwrap()
+            )
+        }
+        let (success, _) = differ(output.clone(), &expect, None, true, is_tty).unwrap();
+
+        if success {
+            out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
+            writeln!(&mut out, "unchanged").unwrap();
+            out.reset().unwrap();
+        } else {
+            out.set_color(ColorSpec::new().set_fg(Some(Color::Blue))).unwrap();
+            writeln!(&mut out, "blessed").unwrap();
+            out.reset().unwrap();
+            std::fs::write(expect, &output.stdout).unwrap();
+        }
+    } else {
+        let (success, buf) = differ(output.clone(), &expect, None, true, is_tty).unwrap();
+
+        if success {
+            out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
+            writeln!(&mut out, "ok").unwrap();
+        } else {
+            out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
+            writeln!(&mut out, "failure").unwrap();
+
+            failed = true;
+        };
+        out.reset().unwrap();
+
+        let wrt = BufferWriter::stdout(ColorChoice::Always);
+        wrt.print(&buf).unwrap();
+        out.flush().unwrap();
+    }
+
+    if !output.status.success() || failed {
+        eprintln!("Translation of creusot-contracts failed");
+        std::process::exit(1);
+    }
 }
 
 fn run_creusot(
