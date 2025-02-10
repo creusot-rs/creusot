@@ -4,7 +4,7 @@ use crate::{
     ctx::FileModule,
 };
 use rustc_hir::def_id::DefId;
-use why3::declaration::{Decl, Goal, Module};
+use why3::{declaration::{Decl, Goal, Module}, Ident};
 
 pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<FileModule> {
     let data = ctx.trait_impl(def_id).clone();
@@ -21,7 +21,8 @@ pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<
         let mut names = Dependencies::new(ctx, impl_did);
         let goal = lower_pure(ctx, &mut names, &refn.refn.clone());
         let mut decls = names.provide_deps(ctx);
-        decls.push(Decl::Goal(Goal { name: "refines".into(), goal }));
+        let refines = Ident::fresh("refines");
+        decls.push(Decl::Goal(Goal { name: refines, goal }));
 
         let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(impl_did)));
         let meta = ctx.display_impl_of(impl_did);

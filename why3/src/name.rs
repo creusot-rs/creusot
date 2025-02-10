@@ -7,7 +7,7 @@ use string_interner::{DefaultStringInterner, DefaultSymbol};
 
 use crate::exp::Exp;
 
-static FRESH_COUNTER: AtomicU64 = AtomicU64::new(0);
+static FRESH_COUNTER: AtomicU64 = AtomicU64::new(1);
 static INTERNER: LazyLock<RwLock<DefaultStringInterner>> = LazyLock::new(|| RwLock::new(DefaultStringInterner::new()));
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -58,14 +58,25 @@ impl From<&str> for IdentString {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Ident {
     name: IdentString,
-    id: u64,
+    id: u64, // 0 for "bound" identifiers, >0 for "fresh" identifiers
 }
 
 impl Ident {
+    /// Every call to `fresh` returns a new unique identifier.
+    /// Use this for translating source identifiers and for generated identifiers.
     pub fn fresh(name: impl Into<String>) -> Self {
         Ident {
             name: IdentString::from(name.into()),
             id: FRESH_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+        }
+    }
+
+    /// All `bound` names from the same string are equal.
+    /// Use this for fixed identifiers (result, ret)
+    pub fn bound(name: impl Into<String>) -> Self {
+        Ident {
+            name: IdentString::from(name.into()),
+            id: 0,
         }
     }
 

@@ -102,13 +102,13 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                         args,
                     ));
 
-                    let foc = Exp::var(fields[ix.as_usize()].as_term().0.clone());
+                    let foc = Exp::Var(fields[ix.as_usize()].as_term().0.clone());
                     focus = Focus::new(|_| foc);
 
                     constructor = Box::new(|is, t| {
                         let constr = Exp::qvar(lower.names.constructor(variant.def_id, subst));
                         let mut fields: Vec<_> =
-                            fields.into_iter().map(|f| Exp::var(f.as_term().0.clone())).collect();
+                            fields.into_iter().map(|f| Exp::Var(f.as_term().0.clone())).collect();
                         fields[ix.as_usize()] = t;
                         constructor(is, constr.app(fields))
                     });
@@ -146,7 +146,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                         Let {
                             pattern: TupleP(pat.clone()),
                             arg: Box::new(focus.call(is)),
-                            body: Box::new(Exp::var(var)),
+                            body: Box::new(Exp::Var(var)),
                         }
                     });
 
@@ -158,7 +158,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                             var_names.clone().into_iter().map(VarP).collect::<Vec<_>>();
                         field_pats[ix.as_usize()] = Wildcard;
 
-                        let mut varexps = var_names.into_iter().map(Exp::var).collect::<Vec<_>>();
+                        let mut varexps = var_names.into_iter().map(Exp::Var).collect::<Vec<_>>();
                         varexps[ix.as_usize()] = t;
 
                         let tuple = Let {
@@ -198,7 +198,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                 let elt_ty = lower.ty(elt_ty.ty);
                 let ty = lower.ty(place_ty.ty);
                 // TODO: Use [_] syntax
-                let ix_exp = Exp::var(Ident::build(ix.as_str()));
+                let ix_exp = Exp::Var(Ident::build(ix.as_str()));
 
                 let focus1 = focus.clone();
                 let elt_ty1 = elt_ty.clone();
@@ -251,7 +251,7 @@ pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
         lower,
         istmts,
         place_ty,
-        Focus::new(|_| Exp::var(ident_of(pl.local))),
+        Focus::new(|_| Exp::Var(ident_of(pl.local))),
         Box::new(|_, _| unreachable!()),
         &pl.projection,
     );
@@ -269,7 +269,7 @@ fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
         lower,
         istmts,
         place_ty,
-        Focus::new(|_| Exp::var(ident_of(pl.local))),
+        Focus::new(|_| Exp::Var(ident_of(pl.local))),
         Box::new(|_, x| x),
         &pl.projection,
     );

@@ -540,7 +540,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             Pattern::Binder(name) => {
                 let name_id = name.as_str().into();
                 let new = self.uniq_occ(&name_id);
-                bounds.insert(name_id, Exp::var(new.clone()));
+                bounds.insert(name_id, Exp::Var(new.clone()));
                 Pat::VarP(new)
             }
             Pattern::Boolean(b) => {
