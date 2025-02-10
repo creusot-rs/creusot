@@ -40,18 +40,15 @@ pub fn skip_take<I: Iterator>(iter: I, n: usize) {
 }
 
 pub fn counter(v: Vec<u32>) {
-    let mut cnt = 0;
+    let mut cnt: usize = 0;
 
     let x: Vec<u32> = v
         .iter()
-        .map_inv(
-            #[requires(cnt@ == (*_prod).len() && cnt < usize::MAX)]
-            #[ensures(cnt@ == old(cnt)@ + 1 && cnt@ == (*_prod).len() + 1 && result == *x)]
-            |x, _prod| {
-                cnt += 1;
-                *x
-            },
-        )
+        .map_inv(|x, _prod| {
+            proof_assert!(cnt@ == _prod.len());
+            cnt += 1;
+            *x
+        })
         .collect();
 
     proof_assert! { x@.len() == v@.len() };

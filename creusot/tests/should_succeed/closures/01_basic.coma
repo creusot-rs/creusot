@@ -8,13 +8,13 @@ module M_01_basic__uses_closure [#"01_basic.rs" 6 0 6 21]
   type closure0'1  =
     { field_0'0: bool }
   
-  let rec closure0'0 (_1:closure0'1) (return'  (ret:bool))= (! bb0
+  let rec closure0'0[#"01_basic.rs" 8 14 8 16] [@coma:extspec] (_1:closure0'1) (return'  (ret:bool))= bb0
     [ bb0 = s0 [ s0 =  [ &_0 <- _1.field_0'0 ] s1 | s1 = return' {_0} ]  ]
-    ) [ & _0 : bool = any_l () | & _1 : closure0'1 = _1 ]  [ return' (result:bool)-> (! return' {result}) ] 
+     [ & _0 : bool = any_l () | & _1 : closure0'1 = _1 ]  [ return' (result:bool)-> return' {result} ] 
   
   meta "compute_max_steps" 1000000
   
-  let rec uses_closure'0 (_1:()) (return'  (ret:()))= (! bb0
+  let rec uses_closure'0[#"01_basic.rs" 6 0 6 21] (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &y <- [%#s01_basic0] true ] s1
       | s1 =  [ &_4 <- { field_0'0 = y } ] s2
@@ -40,15 +40,13 @@ module M_01_basic__multi_arg [#"01_basic.rs" 11 0 11 18]
   
   use prelude.prelude.Borrow
   
-  let rec closure0'0 (_1:()) (a:int32) (b:int32) (return'  (ret:int32))= (! bb0
+  let rec closure0'0[#"01_basic.rs" 12 12 12 18] [@coma:extspec] (_1:()) (a:int32) (b:int32) (return'  (ret:int32))= bb0
     [ bb0 = s0 [ s0 = Int32.add {a} {b} (fun (_ret':int32) ->  [ &_0 <- _ret' ] s1) | s1 = return' {_0} ]  ]
-    ) [ & _0 : int32 = any_l () | & a : int32 = a | & b : int32 = b ] 
-    [ return' (result:int32)-> (! return' {result}) ]
-  
+     [ & _0 : int32 = any_l () | & a : int32 = a | & b : int32 = b ]  [ return' (result:int32)-> return' {result} ] 
   
   meta "compute_max_steps" 1000000
   
-  let rec multi_arg'0 (_1:()) (return'  (ret:()))= (! bb0
+  let rec multi_arg'0[#"01_basic.rs" 11 0 11 18] (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &x <- () ] s1
       | s1 =  [ &_4 <- (([%#s01_basic0] (0 : int32)), ([%#s01_basic1] (3 : int32))) ] s2
@@ -88,8 +86,7 @@ module M_01_basic__move_closure [#"01_basic.rs" 18 0 18 21]
   
   use prelude.prelude.Intrinsic
   
-  predicate postcondition_once'0 (self : closure0'1) (args : ()) (result : ()) =
-    let () = args in true
+  predicate postcondition_once'0 (self : closure0'1) (args : ()) (result : ())
   
   predicate resolve'4 (self : borrowed int32) =
     [%#sresolve2] self.final = self.current
@@ -103,8 +100,21 @@ module M_01_basic__move_closure [#"01_basic.rs" 18 0 18 21]
   predicate unnest'0 (self : closure0'1) (_2 : closure0'1) =
     true
   
+  let rec closure0'0[#"01_basic.rs" 21 16 21 23] [@coma:extspec] (_1:borrowed closure0'1) (return'  (ret:()))= bb0
+    [ bb0 = s0
+      [ s0 = Int32.add {((_1.current).field_0'0).current} {[%#s01_basic1] (1 : int32)}
+          (fun (_ret':int32) ->
+             [ &_1 <- { _1 with current = { field_0'0 = { (_1.current).field_0'0 with current = _ret' } } } ] 
+            s1)
+      | s1 = -{resolve'1 _1}- s2
+      | s2 = return' {_0} ]
+     ]
+     [ & _0 : () = any_l () | & _1 : borrowed closure0'1 = _1 ]  [ return' (result:())-> return' {result} ] 
+  
   predicate postcondition_mut'0 (self : closure0'1) (args : ()) (result_state : closure0'1) (result : ()) =
-    (let () = args in true) /\ unnest'0 self result_state
+    (let () = args in exists __bor_self : borrowed closure0'1 . closure0'0'post'return' __bor_self result
+    /\ __bor_self.current = self /\ __bor_self.final = result_state)
+    /\ unnest'0 self result_state
   
   function fn_mut_once'0 (self : closure0'1) (args : ()) (res : ()) : ()
   
@@ -125,22 +135,9 @@ module M_01_basic__move_closure [#"01_basic.rs" 18 0 18 21]
   axiom postcondition_mut_unnest'0_spec : forall self : closure0'1, args : (), res_state : closure0'1, res : () . ([%#sops3] postcondition_mut'0 self args res_state res)
    -> ([%#sops4] unnest'0 self res_state)
   
-  let rec closure0'0 (_1:borrowed closure0'1) (return'  (ret:()))= (! bb0
-    [ bb0 = s0
-      [ s0 = Int32.add {((_1.current).field_0'0).current} {[%#s01_basic1] (1 : int32)}
-          (fun (_ret':int32) ->
-             [ &_1 <- { _1 with current = { field_0'0 = { (_1.current).field_0'0 with current = _ret' } } } ] 
-            s1)
-      | s1 = -{resolve'1 _1}- s2
-      | s2 = return' {_0} ]
-     ]
-    ) [ & _0 : () = any_l () | & _1 : borrowed closure0'1 = _1 ] 
-    [ return' (result:())-> {[@expl:closure unnest] unnest'0 _1.current _1.final} (! return' {result}) ]
-  
-  
   meta "compute_max_steps" 1000000
   
-  let rec move_closure'0 (_1:()) (return'  (ret:()))= (! bb0
+  let rec move_closure'0[#"01_basic.rs" 18 0 18 21] (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &_2 <- [%#s01_basic0] (0 : int32) ] s1
       | s1 = Borrow.borrow_mut <int32> {_2} (fun (_ret':borrowed int32) ->  [ &a <- _ret' ]  [ &_2 <- _ret'.final ] s2)
@@ -212,8 +209,7 @@ module M_01_basic__move_mut [#"01_basic.rs" 34 0 34 17]
   
   use prelude.prelude.Intrinsic
   
-  predicate postcondition_once'0 (self : closure0'1) (args : ()) (result : ()) =
-    let () = args in true
+  predicate postcondition_once'0 (self : closure0'1) (args : ()) (result : ())
   
   predicate resolve'0 (_1 : closure0'1) =
     resolve'1 _1.field_0'0
@@ -221,8 +217,32 @@ module M_01_basic__move_mut [#"01_basic.rs" 34 0 34 17]
   predicate unnest'0 (self : closure0'1) (_2 : closure0'1) =
     true
   
+  let rec closure0'0[#"01_basic.rs" 37 16 37 23] [@coma:extspec] (_1:borrowed closure0'1) (return'  (ret:()))= bb0
+    [ bb0 = s0 [ s0 = new_ref'0 {[%#s01_basic1] ()} (fun (_ret':borrowed uint32) ->  [ &_3 <- _ret' ] s1) | s1 = bb1 ] 
+    | bb1 = s0
+      [ s0 = Borrow.borrow_final <uint32> {_3.current} {Borrow.get_id _3}
+          (fun (_ret':borrowed uint32) ->  [ &_2 <- _ret' ]  [ &_3 <- { _3 with current = _ret'.final } ] s1)
+      | s1 = -{match _1 with
+          | {current = {field_0'0 = x'0}} -> resolve'1 x'0
+          | _ -> true
+          end}-
+        s2
+      | s2 =  [ &_1 <- { _1 with current = { field_0'0 = _2 } } ] s3
+      | s3 = -{resolve'2 _1}- s4
+      | s4 = -{resolve'1 _3}- s5
+      | s5 = return' {_0} ]
+     ]
+    
+    [ & _0 : () = any_l ()
+    | & _1 : borrowed closure0'1 = _1
+    | & _2 : borrowed uint32 = any_l ()
+    | & _3 : borrowed uint32 = any_l () ]
+     [ return' (result:())-> return' {result} ] 
+  
   predicate postcondition_mut'0 (self : closure0'1) (args : ()) (result_state : closure0'1) (result : ()) =
-    (let () = args in true) /\ unnest'0 self result_state
+    (let () = args in exists __bor_self : borrowed closure0'1 . closure0'0'post'return' __bor_self result
+    /\ __bor_self.current = self /\ __bor_self.final = result_state)
+    /\ unnest'0 self result_state
   
   function fn_mut_once'0 (self : closure0'1) (args : ()) (res : ()) : ()
   
@@ -243,31 +263,9 @@ module M_01_basic__move_mut [#"01_basic.rs" 34 0 34 17]
   axiom postcondition_mut_unnest'0_spec : forall self : closure0'1, args : (), res_state : closure0'1, res : () . ([%#sops4] postcondition_mut'0 self args res_state res)
    -> ([%#sops5] unnest'0 self res_state)
   
-  let rec closure0'0 (_1:borrowed closure0'1) (return'  (ret:()))= (! bb0
-    [ bb0 = s0 [ s0 = new_ref'0 {[%#s01_basic1] ()} (fun (_ret':borrowed uint32) ->  [ &_3 <- _ret' ] s1) | s1 = bb1 ] 
-    | bb1 = s0
-      [ s0 = Borrow.borrow_final <uint32> {_3.current} {Borrow.get_id _3}
-          (fun (_ret':borrowed uint32) ->  [ &_2 <- _ret' ]  [ &_3 <- { _3 with current = _ret'.final } ] s1)
-      | s1 = -{match _1 with
-          | {current = {field_0'0 = x'0}} -> resolve'1 x'0
-          | _ -> true
-          end}-
-        s2
-      | s2 =  [ &_1 <- { _1 with current = { field_0'0 = _2 } } ] s3
-      | s3 = -{resolve'2 _1}- s4
-      | s4 = -{resolve'1 _3}- s5
-      | s5 = return' {_0} ]
-     ]
-    )
-    [ & _0 : () = any_l ()
-    | & _1 : borrowed closure0'1 = _1
-    | & _2 : borrowed uint32 = any_l ()
-    | & _3 : borrowed uint32 = any_l () ]
-     [ return' (result:())-> {[@expl:closure unnest] unnest'0 _1.current _1.final} (! return' {result}) ] 
-  
   meta "compute_max_steps" 1000000
   
-  let rec move_mut'0 (_1:()) (return'  (ret:()))= (! bb0
+  let rec move_mut'0[#"01_basic.rs" 34 0 34 17] (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &_2 <- [%#s01_basic0] (0 : uint32) ] s1
       | s1 = Borrow.borrow_mut <uint32> {_2}

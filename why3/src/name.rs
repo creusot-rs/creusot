@@ -95,9 +95,17 @@ impl QName {
         self.module.is_empty() && &self.name == id
     }
 
-    pub fn as_ident(self) -> Ident {
+    pub fn as_ident(&self) -> Ident {
         assert!(self.module.is_empty());
-        self.name
+        self.name.clone()
+    }
+
+    pub fn ident(&self) -> Option<&Ident> {
+        if self.module.is_empty() {
+            Some(&self.name)
+        } else {
+            None
+        }
     }
 
     pub fn without_search_path(mut self) -> QName {
