@@ -120,15 +120,15 @@ pub enum Exp {
     Var(Ident),
     QVar(QName),
     Record {
-        fields: Vec<(String, Exp)>,
+        fields: Vec<(IdentString, Exp)>,
     },
     RecUp {
         record: Box<Exp>,
-        updates: Vec<(String, Exp)>,
+        updates: Vec<(IdentString, Exp)>,
     },
     RecField {
         record: Box<Exp>,
-        label: String,
+        label: IdentString,
     },
     Tuple(Vec<Exp>),
     Constructor {
@@ -429,7 +429,7 @@ impl Exp {
         self
     }
 
-    pub fn field(self, field: &str) -> Self {
+    pub fn field(self, field: impl Into<IdentString>) -> Self {
         Self::RecField { record: Box::new(self), label: field.into() }
     }
 
