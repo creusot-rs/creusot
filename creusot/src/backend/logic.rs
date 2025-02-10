@@ -19,13 +19,12 @@ use super::{
 pub(crate) fn binders_to_args(binders: Vec<Binder>) -> (Vec<Ident>, Vec<Binder>) {
     let mut args = Vec::new();
     let mut out_binders = Vec::new();
-    let mut fresh = 0;
     for b in binders {
         match b {
             Binder::Wild => {
-                args.push(format!("_wild{fresh}").into());
-                out_binders.push(Binder::Named(format!("_wild{fresh}").into()));
-                fresh += 1;
+                let wild = Ident::fresh("_wild");
+                args.push(wild);
+                out_binders.push(Binder::Named(wild));
             }
             Binder::UnNamed(_) => unreachable!("unnamed parameter in logical function signature"),
             Binder::Named(ref nm) => {
@@ -50,7 +49,8 @@ pub(crate) fn translate_logic_or_predicate(
 
     // Check that we don't have both `builtins` and a contract at the same time (which are contradictory)
     if get_builtin(ctx.tcx, def_id).is_some() {
-        if signature_of(ctx, &mut names, "".into(), def_id).contract.is_empty() {
+        let nm = Ident::bound(""); // TODO ???
+        if signature_of(ctx, &mut names, nm, def_id).contract.is_empty() {
             return Ok(None);
         }
 
@@ -60,8 +60,8 @@ pub(crate) fn translate_logic_or_predicate(
         );
     }
 
-    let name = names.item(names.self_id, names.self_subst).as_ident();
-    let mut sig = signature_of(ctx, &mut names, name, def_id);
+    let name = Ident::bound(names.item(names.self_id, names.self_subst).as_ident());
+    let sig = signature_of(ctx, &mut names, name, def_id);
 
     if sig.contract.is_empty()
         || !def_id.is_local()
@@ -75,25 +75,22 @@ pub(crate) fn translate_logic_or_predicate(
 
     let mut body_decls = Vec::new();
 
-    let (arg_names, new_binders) = binders_to_args(sig.args);
-
-    let param_decls = arg_names.iter().zip(new_binders.iter()).map(|(nm, binder)| {
+    let param_decls = sig.args.iter().map(|(nm, ty)| {
         Decl::LogicDecl(LogicDecl {
             kind: Some(DeclKind::Constant),
             sig: Signature {
                 name: nm.clone(),
                 trigger: None,
                 attrs: Vec::new(),
-                retty: binder.type_of().cloned(),
+                retty: Some(ty.clone()),
                 args: Vec::new(),
                 contract: Default::default(),
             },
         })
     });
     body_decls.extend(param_decls);
-    sig.args = new_binders;
 
-    let mut val_sig = sig.clone();
+    let mut val_sig = Signature::from(sig.clone());
     val_sig.contract = Default::default();
     let val_decl = match ctx.item_type(def_id) {
         ItemType::Logic { .. } => LogicDecl { sig: val_sig, kind: Some(DeclKind::Function) },
@@ -108,7 +105,7 @@ pub(crate) fn translate_logic_or_predicate(
     body_decls.push(Decl::LogicDecl(val_decl));
 
     let postcondition = sig.contract.ensures_conj();
-    let body = vc(ctx, &mut names, def_id, term, "result".into(), postcondition.clone());
+    let body = vc(ctx, &mut names, def_id, term, Ident::bound("result"), postcondition.clone());
 
     let body = match body {
         Ok(body) => body,
@@ -118,8 +115,9 @@ pub(crate) fn translate_logic_or_predicate(
     let requires = sig.contract.requires.into_iter().map(Condition::unlabelled_exp);
     let body = requires.fold(body, |acc, pre| pre.implies(acc));
 
+    let goal_ident = Ident::fresh(format!("vc_{}", sig.name.as_str()));
     body_decls
-        .extend([Decl::Goal(Goal { name: format!("vc_{}", (&*sig.name)).into(), goal: body })]);
+        .extend([Decl::Goal(Goal { name: goal_ident, goal: body })]);
 
     let mut decls = names.provide_deps(ctx);
     decls.extend(body_decls);
@@ -134,7 +132,7 @@ pub(crate) fn translate_logic_or_predicate(
 pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
-    mut sig: Signature,
+    mut sig: PreSignature2,
     kind: Option<DeclKind>,
     body: Term<'tcx>,
 ) -> Vec<Decl> {
@@ -147,7 +145,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
     let body = lower_pure(ctx, names, &body);
 
     if sig.contract.variant.is_empty() {
-        let mut sig = sig.clone();
+        let mut sig = Signature::from(sig.clone());
         sig.contract = Default::default();
 
         let decl = match kind {
@@ -163,7 +161,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
 
         decls.push(decl)
     } else {
-        let mut decl_sig = sig.clone();
+        let mut decl_sig = Signature::from(sig.clone());
         decl_sig.contract = Contract::new();
         decls.push(Decl::LogicDecl(LogicDecl { kind, sig: decl_sig }));
 
@@ -176,7 +174,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
 
     if !sig.contract.ensures.is_empty() {
         if sig.uses_simple_triggers() && !sig.contract.variant.is_empty() {
-            let lim_name = Ident::from_string(format!("{}_lim", &*sig.name));
+            let lim_name = Ident::bound(format!("{}_lim", sig.name.as_str()));
             let mut lim_sig = sig;
             lim_sig.name = lim_name;
             lim_sig.trigger = Some(Trigger::single(function_call(&lim_sig)));
@@ -198,7 +196,7 @@ fn subst_qname(body: &mut Exp, name: &Ident, lim_name: &Ident) {
     impl<'a> ExpMutVisitor for QNameSubst<'a> {
         fn visit_mut(&mut self, exp: &mut Exp) {
             match exp {
-                Exp::QVar(qname) if qname.is_ident(self.0) => *exp = Exp::var(self.1.clone()),
+                Exp::QVar(qname) if qname.is_ident(self.0) => *exp = Exp::Var(self.1.clone()), // TODO: ???
                 _ => super_visit_mut(self, exp),
             }
         }
@@ -237,25 +235,24 @@ fn limited_function_encode(
     decls.push(Decl::Axiom(definition_axiom(sig, lim_call, "def_lim")));
 }
 
-pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
+pub(crate) fn spec_axiom(sig: &PreSignature2) -> Axiom {
     let postcondition = sig.contract.ensures_conj();
     let mut condition = sig.contract.requires_implies(postcondition);
 
     let func_call = function_call(sig);
     let trigger = sig.trigger.clone().into_iter().collect();
-    condition.subst(&mut [("result".into(), func_call.clone())].into_iter().collect());
+    condition.subst(&mut [(Ident::bound("result"), func_call.clone())].into_iter().collect());
     let args: Vec<(_, _)> = sig
         .args
         .iter()
         .cloned()
-        .flat_map(|b| b.var_type_pairs())
-        .filter(|arg| &*arg.0 != "_")
+        // .filter(|arg| &*arg.0 != "_")  // TODO: is it ok to remove this?
         .collect();
 
     let axiom =
         if args.is_empty() { condition } else { Exp::forall_trig(args, trigger, condition) };
 
-    Axiom { name: format!("{}_spec", &*sig.name).into(), rewrite: false, axiom }
+    Axiom { name: Ident::fresh(format!("{}_spec", sig.name.as_str())), rewrite: false, axiom }
 }
 
 pub fn function_call(sig: &PreSignature2) -> Exp {

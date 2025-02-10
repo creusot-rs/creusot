@@ -16,7 +16,7 @@ use crate::{
 use super::{logic::function_call, term::lower_pure, Namer, Why3Generator};
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+// #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct PreSignature2 {
     pub name: Ident,
     pub trigger: Option<Trigger>, // None means we should use the "simple_trigger"
@@ -24,6 +24,12 @@ pub struct PreSignature2 {
     pub retty: Option<why3::ty::Type>,
     pub args: Vec<(Ident, why3::ty::Type)>,
     pub contract: Contract,
+}
+
+impl PreSignature2 {
+    pub fn uses_simple_triggers(&self) -> bool {
+        self.trigger.is_some()
+    }
 }
 
 impl From<PreSignature2> for Signature {

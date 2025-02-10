@@ -1046,7 +1046,7 @@ pub enum Pattern {
     VarP(Ident),
     TupleP(Vec<Pattern>),
     ConsP(QName, Vec<Pattern>),
-    RecP(Vec<(IdentString, Pattern)>),
+    RecP(Vec<(Ident, Pattern)>),
 }
 
 impl Pattern {

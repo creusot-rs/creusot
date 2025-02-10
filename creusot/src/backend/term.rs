@@ -305,7 +305,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                lhs_low.field(field.as_str())
+                lhs_low.field(&field.as_str())
             }
             TermKind::Closure { body, .. } => {
                 let TyKind::Closure(id, subst) = term.creusot_ty().kind() else {

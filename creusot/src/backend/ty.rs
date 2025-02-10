@@ -121,8 +121,8 @@ pub(crate) fn translate_closure_ty<'tcx, N: Namer<'tcx>>(
         .iter()
         .enumerate()
         .map(|(ix, uv)| FieldDecl {
-            ty: translate_ty(ctx, names, DUMMY_SP, uv),
             name: names.field(did, subst, ix.into()),
+            ty: translate_ty(ctx, names, DUMMY_SP, uv),
         })
         .collect();
 
