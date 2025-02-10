@@ -459,7 +459,7 @@ impl Print for Exp {
             Exp::Var(v) => v.pretty(alloc),
             Exp::QVar(v) => v.pretty(alloc),
             Exp::RecField { record, label } => {
-                parens!(alloc, self.precedence().next(), record).append(".").append(label.as_str())
+                parens!(alloc, self.precedence().next(), record).append(".").append(label)
             }
 
             Exp::Tuple(args) => alloc
@@ -596,7 +596,7 @@ impl Print for Exp {
                     alloc
                         .intersperse(
                             updates.iter().map(|(nm, a)| {
-                                alloc.text(nm.as_str()).append(" = ").append(parens!(
+                                alloc.text(nm).append(" = ").append(parens!(
                                     alloc,
                                     Precedence::Attr.next(),
                                     a
@@ -615,7 +615,7 @@ impl Print for Exp {
                     alloc
                         .intersperse(
                             fields.iter().map(|(nm, a)| {
-                                alloc.text(nm.as_str()).append(" = ").append(parens!(
+                                alloc.text(nm).append(" = ").append(parens!(
                                     alloc,
                                     Precedence::Attr.next(),
                                     a
