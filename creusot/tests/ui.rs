@@ -71,9 +71,7 @@ fn main() {
 
     translate_creusot_contracts(&args, creusot_rustc, &base_path, &temp_file);
 
-    should_fail("tests/should_fail/**/*.rs", &args, |p| {
-        run_creusot(creusot_rustc, p, &temp_file)
-    });
+    should_fail("tests/should_fail/**/*.rs", &args, |p| run_creusot(creusot_rustc, p, &temp_file));
     should_succeed("tests/should_succeed/**/*.rs", &args, |p| {
         run_creusot(creusot_rustc, p, &temp_file)
     });
