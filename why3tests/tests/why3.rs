@@ -28,6 +28,9 @@ struct Args {
     /// Force color output
     #[clap(long)]
     force_color: bool,
+    /// Ignore why3find cache
+    #[clap(long)]
+    no_cache: bool,
     /// Only run tests which contain this string
     filter: Option<String>,
 }
@@ -215,6 +218,9 @@ fn main() {
             if let Some(tactic) = tactic_re.captures_iter(&header_line).next() {
                 why3find.arg("--tactic");
                 why3find.arg(tactic.get(1).unwrap().as_str());
+            }
+            if args.no_cache {
+                why3find.arg("--no-cache");
             }
             if !args.update {
                 why3find.arg("-r");
