@@ -86,6 +86,12 @@ impl Ident {
     }
 }
 
+impl From<Ident> for IdentString {
+    fn from(id: Ident) -> Self {
+        id.name
+    }
+}
+
 impl From<QName> for Exp {
     fn from(q: QName) -> Self {
         Exp::qvar(q)

@@ -530,7 +530,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                             .into_iter()
                             .enumerate()
                             .map(|(i, f)| {
-                                (self.names.field(*variant, substs, i.into()), f)
+                                (Ident::bound(self.names.field(*variant, substs, i.into()).as_str()), f)
                             })
                             .filter(|(_, f)| !matches!(f, Pat::Wildcard))
                             .collect(),
