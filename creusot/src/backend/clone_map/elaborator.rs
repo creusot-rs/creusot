@@ -436,7 +436,7 @@ fn expand_laws<'tcx>(
     }
 }
 
-fn val(ctx: &Why3Generator, mut sig: Signature, kind: Option<DeclKind>) -> Vec<Decl> {
+fn val(ctx: &Why3Generator, mut sig: PreSignature2, kind: Option<DeclKind>) -> Vec<Decl> {
     sig.contract.variant = Vec::new();
     if let Some(k) = kind {
         let ax = if !sig.contract.is_empty() { Some(spec_axiom(&sig)) } else { None };
@@ -446,6 +446,7 @@ fn val(ctx: &Why3Generator, mut sig: Signature, kind: Option<DeclKind>) -> Vec<D
             sig.retty = None;
         };
 
+        let sig = Signature::from(sig);
         if let DeclKind::Constant = k {
             return vec![Decl::LogicDecl(LogicDecl { kind, sig })];
         }
@@ -457,7 +458,7 @@ fn val(ctx: &Why3Generator, mut sig: Signature, kind: Option<DeclKind>) -> Vec<D
         }
         d
     } else {
-        vec![program::val(ctx, sig)]
+        vec![program::val(ctx, sig.into())]
     }
 }
 

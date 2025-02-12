@@ -224,14 +224,15 @@ impl<'tcx> CloneNames<'tcx> {
                     why3_modl.as_str().replace("$BW$", if self.bitwise_mode { "BW" } else { "" });
                 let qname = QName::from(why3_modl);
                 if qname.module.is_empty() {
-                    return Box::new(Kind::Named(Symbol::intern(&qname.name)));
+                    panic! { "should this happen?" }
+                    // return Box::new(Kind::Named(&qname.name)); // TODO
                 } else {
                     return Box::new(Kind::UsedBuiltin(qname));
                 }
             }
             Box::new(
                 key.base_ident(tcx).map_or(Kind::Unnamed, |base| {
-                    Kind::Named(self.counts.borrow_mut().freshen(base))
+                    Kind::Named(Ident::fresh(self.counts.borrow_mut().freshen(base).as_str())) // TODO
                 }),
             )
         })
@@ -340,7 +341,7 @@ pub enum Kind {
     /// This does not corresponds to a defined symbol
     Unnamed,
     /// This symbol is locally defined
-    Named(Symbol),
+    Named(Ident),
     /// Used, UsedBuiltin: the symbols in the last argument must be acompanied by a `use` statement in Why3
     UsedBuiltin(QName),
 }
@@ -349,7 +350,7 @@ impl Kind {
     fn ident(&self) -> Ident {
         match self {
             Kind::Unnamed => panic!("Unnamed item"),
-            Kind::Named(nm) => nm.as_str().into(),
+            Kind::Named(nm) => *nm,
             Kind::UsedBuiltin(_) => {
                 panic!("cannot get ident of used module {self:?}")
             }
@@ -359,7 +360,7 @@ impl Kind {
     fn qname(&self) -> QName {
         match self {
             Kind::Unnamed => panic!("Unnamed item"),
-            Kind::Named(nm) => nm.as_str().into(),
+            Kind::Named(nm) => nm.as_str().into(), // TODO
             Kind::UsedBuiltin(qname) => qname.clone().without_search_path(),
         }
     }
