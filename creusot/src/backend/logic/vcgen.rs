@@ -341,7 +341,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let post = contract
                     .requires_conj_labelled()
                     .log_and(variant)
-                    .log_and(sig.contract.ensures_conj().implies(inner));
+                    .log_and(contract.ensures_conj().implies(inner));
 
                 Ok(post)
             }),
@@ -638,10 +638,28 @@ sig.args.iter().map(|(nm, _)| nm).cloned().collect()
     }
 
     fn add_bounds(&self, bounds: HashMap<Symbol, Ident>) {
-        self.subst.substs.push(bounds);
+        self.subst.borrow_mut().push(bounds);
     }
 
     fn pop_bounds(&self) {
-        self.subst.substs.pop();
+        self.subst.borrow_mut().pop();
+    }
+}
+
+impl Environment {
+    pub fn get(&self, id: &Symbol) -> Option<Ident> {
+        for sub in self.substs.iter().rev() {
+            if let Some(e) = sub.get(id) {
+                return Some(e.clone());
+            }
+        }
+        None
+    }
+
+    pub fn push(&mut self, bounds: HashMap<Symbol, Ident>) {
+        self.substs.push(bounds);
+    }
+    pub fn pop(&mut self) {
+        self.substs.pop();
     }
 }
