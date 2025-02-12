@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     backend::{
         program::borrow_generated_id,
@@ -12,7 +14,7 @@ use crate::{
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};
-use rustc_span::DUMMY_SP;
+use rustc_span::{DUMMY_SP, Symbol};
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat},
@@ -23,10 +25,11 @@ use why3::{
 pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
+    renaming: &mut Renaming,
     term: &Term<'tcx>,
 ) -> Exp {
     let span = term.span;
-    let mut term = Lower { ctx, names }.lower_term(term);
+    let mut term = Lower { ctx, names, renaming }.lower_term(term);
     term.reassociate();
     if let Some(attr) = names.span(span) {
         term.with_attr(attr)
@@ -39,14 +42,57 @@ pub(crate) fn lower_pat<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     pat: &Pattern<'tcx>,
+    renaming: &mut Renaming,
+    undo: &mut UnRenaming,
 ) -> Pat {
-    Lower { ctx, names }.lower_pat(pat)
+    Lower { ctx, names, renaming }.lower_pat(pat, undo)
+}
+
+/// Map Pearlite identifiers to Why3 identifiers.
+struct Renaming(HashMap<Symbol, Ident>);
+
+/// When variables are shadowed in Pearlite, remember their previous renamings
+/// so they can be restored after processing the body where they are shadowed.
+struct UnRenaming(Vec<(Symbol, Option<Ident>)>);
+
+impl Renaming {
+    pub fn new() -> Self {
+        Renaming(HashMap::new())
+    }
+
+    pub fn fresh(&mut self, sym: Symbol, undo: &mut UnRenaming) -> Ident {
+        let ident = Ident::fresh(sym.to_string());
+        undo.0.push((sym, self.0.insert(sym, ident)));
+        ident
+    }
+
+    fn get(&self, sym: &Symbol) -> Option<Ident> {
+        self.0.get(sym).copied()
+    }
+
+    fn revert(&mut self, undo: UnRenaming) {
+        undo.0.into_iter().for_each(|(sym, old)| {
+            if let Some(old) = old {
+                self.0.insert(sym, old);
+            } else {
+                self.0.remove(&sym);
+            }
+        });
+    }
+}
+
+impl UnRenaming {
+    pub fn new() -> Self {
+        UnRenaming(Vec::new())
+    }
 }
 
 struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     ctx: &'a Why3Generator<'tcx>,
     names: &'a N,
+    renaming: &'a mut Renaming,
 }
+
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     fn lower_term(&self, term: &Term<'tcx>) -> Exp {
         match &term.kind {
@@ -127,7 +173,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     item
                 }
             }
-            TermKind::Var(v) => Exp::Var(Ident::fresh(ident_of(*v))), // TODO
+            TermKind::Var(v) => Exp::Var(self.renaming.get(&v.name).unwrap_or_else(|| { panic!("Unbound variable: {:?}", v.as_str()) })),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -225,10 +271,15 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 })
             }
             TermKind::Quant { kind, binder, box body, trigger } => {
+                let mut undo = UnRenaming::new();
                 let bound = zip_binder(binder)
-                    .map(|(s, t)| (Ident::fresh(s.to_string()), self.lower_ty(t)))  // TODO store this fresh somewhere
+                    .map(|(s, t)| {
+                        // Generate fresh names for binders, remember old names
+                        let new = self.renaming.fresh(s, &mut undo);
+                        (new, self.lower_ty(t)) })  // TODO store this fresh somewhere
                     .collect();
                 let body = self.lower_term(body);
+                self.renaming.revert(undo);
                 let trigger = self.lower_trigger(trigger);
                 match kind {
                     QuantKind::Forall => Exp::forall_trig(bound, trigger, body),
@@ -272,16 +323,29 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     let _ = self.lower_ty(scrutinee.ty);
                     let arms = arms
                         .iter()
-                        .map(|(pat, body)| (self.lower_pat(pat), self.lower_term(body)))
+                        .map(|(pat, body)| {
+                            let mut undo = UnRenaming::new();
+                            let pat = self.lower_pat(pat, &mut undo);
+                            let body = self.lower_term(body);
+                            self.renaming.revert(undo);
+                            (pat, body)
+                        })
                         .collect();
                     Exp::Match(Box::new(self.lower_term(scrutinee)), arms)
                 }
             }
-            TermKind::Let { pattern, box arg, box body } => Exp::Let {
-                pattern: self.lower_pat(pattern),
-                arg: Box::new(self.lower_term(arg)),
-                body: Box::new(self.lower_term(body)),
-            },
+            TermKind::Let { pattern, box arg, box body } => {
+                let arg = Box::new(self.lower_term(arg));
+                let mut undo = UnRenaming::new();
+                let pattern = self.lower_pat(pattern, &mut undo);
+                let body = Box::new(self.lower_term(body));
+                self.renaming.revert(undo);
+                Exp::Let {
+                    pattern,
+                    arg,
+                    body,
+                }
+            }
             TermKind::Tuple { fields } => {
                 Exp::Tuple(fields.into_iter().map(|f| self.lower_term(f)).collect())
             }
@@ -311,17 +375,17 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let TyKind::Closure(id, subst) = term.creusot_ty().kind() else {
                     unreachable!("closure has non closure type")
                 };
-                let body = self.lower_term(&*body);
-
                 let mut binders = Vec::new();
                 let sig = self.ctx.sig(*id).clone();
                 let sig = EarlyBinder::bind(sig).instantiate(self.ctx.tcx, subst);
+                let mut undo = UnRenaming::new();
                 for arg in sig.inputs.iter().skip(1) {
-                    let nm = Ident::fresh(&arg.0.to_string());
+                    let nm = self.renaming.fresh(arg.0, &mut undo);
                     let ty = self.names.normalize(self.ctx, arg.2);
                     binders.push(Binder::typed(nm, self.lower_ty(ty)))
                 }
-
+                let body = self.lower_term(&*body);
+                self.renaming.revert(undo);
                 Exp::Abs(binders, Box::new(body))
             }
             TermKind::Reborrow { cur, fin, inner, projection } => {
@@ -366,7 +430,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     fn lower_pat(&self, pat: &Pattern<'tcx>) -> Pat {
         match pat {
             Pattern::Constructor { variant, fields, substs } => {
-                let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
+                let fields = fields.into_iter().map(|pat| self.lower_pat(pat, undo)).collect();
                 if self.ctx.def_kind(variant) == DefKind::Variant {
                     Pat::ConsP(self.names.constructor(*variant, *substs), fields)
                 } else if fields.len() == 0 {
@@ -385,7 +449,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
             }
             Pattern::Wildcard => Pat::Wildcard,
-            Pattern::Binder(name) => Pat::VarP(Ident::fresh(name.to_string())),
+            Pattern::Binder(name) => Pat::VarP(self.renaming.fresh(*name, undo)),
             Pattern::Boolean(b) => {
                 if *b {
                     Pat::mk_true()
@@ -394,11 +458,11 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
             }
             Pattern::Tuple(pats) => {
-                Pat::TupleP(pats.into_iter().map(|pat| self.lower_pat(pat)).collect())
+                Pat::TupleP(pats.into_iter().map(|pat| self.lower_pat(pat, undo)).collect())
             }
             Pattern::Deref { pointee, kind } => match kind {
-                PointerKind::Box | PointerKind::Shr => self.lower_pat(pointee),
-                PointerKind::Mut => Pat::RecP(vec![(Ident::fresh("current"), self.lower_pat(pointee))]),
+                PointerKind::Box | PointerKind::Shr => self.lower_pat(pointee, undo),
+                PointerKind::Mut => Pat::RecP(vec![(Ident::bound("current"), self.lower_pat(pointee, undo))]),
             },
         }
     }
