@@ -12,7 +12,7 @@ use why3::{
     declaration::{AdtDecl, ConstructorDecl, Decl, FieldDecl, SumRecord, TyDecl},
     exp::{Exp, Trigger},
     ty::Type as MlT,
-    Ident,
+    Ident, QName,
 };
 
 pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
@@ -114,14 +114,14 @@ pub(crate) fn translate_closure_ty<'tcx, N: Namer<'tcx>>(
     did: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Option<TyDecl> {
-    let ty_name = names.ty(did, subst).as_ident();
+    let ty_name = Ident::bound(names.ty(did, subst).as_ident().as_str());
     let closure_subst = subst.as_closure();
     let fields: Vec<_> = closure_subst
         .upvar_tys()
         .iter()
         .enumerate()
         .map(|(ix, uv)| FieldDecl {
-            name: names.field(did, subst, ix.into()),
+            name: Ident::bound(names.field(did, subst, ix.into()).as_str()),
             ty: translate_ty(ctx, names, DUMMY_SP, uv),
         })
         .collect();
@@ -148,19 +148,19 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
 ) -> Vec<Decl> {
     // Trusted types (opaque)
     if is_trusted(ctx.tcx, did) {
-        let ty_name = names.ty(did, subst).as_ident();
+        let ty_name = Ident::bound(names.ty(did, subst).as_ident());
         return vec![Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: vec![] })];
     }
 
     let adt = ctx.tcx.adt_def(did);
-    let ty_name = names.ty(did, subst).as_ident(); // TODO: global names for Ident?
+    let ty_name = Ident::bound(names.ty(did, subst).as_ident());
 
     let sumrecord = if adt.is_enum() {
         let mut ml_ty_def = Vec::new();
 
         for var_def in adt.variants().iter() {
             ml_ty_def.push(ConstructorDecl {
-                name: names.constructor(var_def.def_id, subst).as_ident(),
+                name: Ident::bound(names.constructor(var_def.def_id, subst).as_ident()),
                 fields: var_def
                     .fields
                     .iter()
@@ -181,7 +181,7 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
             .fields
             .iter_enumerated()
             .map(|(ix, f)| {
-                let name = names.field(did, subst, ix);
+                let name = Ident::bound(names.field(did, subst, ix));
                 let ty = f.ty(ctx.tcx, subst);
                 let ty = ctx.normalize_erasing_regions(typing_env, ty);
                 let ty = translate_ty(ctx, names, ctx.def_span(f.did), ty);
@@ -282,7 +282,7 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
 
     let branches = std::iter::once(good_branch).chain(bad_branch).collect();
     Decl::Coma(Defn {
-        name: names.eliminator(variant_id, subst).as_ident(), // TODO: add a variant for global names to Ident?
+        name: Ident::bound(names.eliminator(variant_id, subst).as_ident()),
         writes: vec![],
         params: vec![input, ret_cont],
         body: Expr::Defn(Box::new(Expr::Any), false, branches),
@@ -308,7 +308,7 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
                 let fields = fields
                     .into_iter()
                     .enumerate()
-                    .map(|(ix, f)| (names.field(did, subst, ix.into()).to_string(), f))
+                    .map(|(ix, f)| (names.field(did, subst, ix.into()), f))
                     .collect();
                 Exp::Record { fields }
             }
@@ -319,14 +319,15 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
 
 pub(crate) fn intty_to_ty<'tcx, N: Namer<'tcx>>(names: &N, ity: IntTy) -> MlT {
     names.import_prelude_module(int_to_prelude(ity));
-    match ity {
-        IntTy::Isize => MlT::TConstructor(QName::from("isize")),
-        IntTy::I8 => MlT::TConstructor(QName::from("int8")),
-        IntTy::I16 => MlT::TConstructor(QName::from("int16")),
-        IntTy::I32 => MlT::TConstructor(QName::from("int32")),
-        IntTy::I64 => MlT::TConstructor(QName::from("int64")),
-        IntTy::I128 => MlT::TConstructor(QName::from("int128")),
-    }
+    let name = match ity {
+        IntTy::Isize => "isize",
+        IntTy::I8 => "int8",
+        IntTy::I16 => "int16",
+        IntTy::I32 => "int32",
+        IntTy::I64 => "int64",
+        IntTy::I128 =>"int128",
+    };
+    MlT::TConstructor(QName::from(name))
 }
 
 pub(crate) fn uintty_to_ty<'tcx, N: Namer<'tcx>>(names: &N, uty: UintTy) -> MlT {
