@@ -74,12 +74,12 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
 
 pub struct InvariantElaborator<'a, 'tcx> {
     typing_env: TypingEnv<'tcx>,
-    ctx: &'a mut Why3Generator<'tcx>,
+    ctx: &'a Why3Generator<'tcx>,
     pub rewrite: bool,
 }
 
 impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
-    pub(crate) fn new(typing_env: TypingEnv<'tcx>, ctx: &'a mut Why3Generator<'tcx>) -> Self {
+    pub(crate) fn new(typing_env: TypingEnv<'tcx>, ctx: &'a Why3Generator<'tcx>) -> Self {
         InvariantElaborator { typing_env, ctx, rewrite: false }
     }
 

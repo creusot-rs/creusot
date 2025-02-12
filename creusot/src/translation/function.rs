@@ -52,7 +52,7 @@ use terminator::discriminator_for_switch;
 use self::pearlite::BinOp;
 
 /// Translate a function from rustc's MIR to fMIR.
-pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, body_id: BodyId) -> fmir::Body<'tcx> {
+pub(crate) fn fmir<'tcx>(ctx: &TranslationCtx<'tcx>, body_id: BodyId) -> fmir::Body<'tcx> {
     BodyTranslator::with_context(ctx, body_id, |func_translator| func_translator.translate())
 }
 
@@ -78,7 +78,7 @@ struct BodyTranslator<'a, 'tcx> {
     past_blocks: IndexMap<BasicBlock, fmir::Block<'tcx>>,
 
     // Type translation context
-    ctx: &'a mut TranslationCtx<'tcx>,
+    ctx: &'a TranslationCtx<'tcx>,
 
     // Fresh BlockId
     fresh_id: usize,
@@ -113,13 +113,13 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn with_context<R, F: for<'b> FnOnce(BodyTranslator<'b, 'tcx>) -> R>(
-        ctx: &'body mut TranslationCtx<'tcx>,
+        ctx: &'body TranslationCtx<'tcx>,
         body_id: BodyId,
         f: F,
     ) -> R {
         let tcx = ctx.tcx;
 
-        let body_with_facts = ctx.body_with_facts(body_id.def_id).clone();
+        let body_with_facts = ctx.body_with_facts(body_id.def_id);
         let (body, move_data, resolver, borrows);
         match body_id.promoted {
             None => {
@@ -801,7 +801,7 @@ pub(crate) struct ClosureContract<'tcx> {
 }
 
 impl<'tcx> TranslationCtx<'tcx> {
-    pub(crate) fn build_closure_contract(&mut self, def_id: DefId) -> ClosureContract<'tcx> {
+    pub(crate) fn build_closure_contract(&self, def_id: DefId) -> ClosureContract<'tcx> {
         let TyKind::Closure(_, subst) = self.type_of(def_id).instantiate_identity().kind() else {
             unreachable!()
         };
@@ -1076,7 +1076,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 }
 
 pub(crate) fn closure_resolve<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Term<'tcx> {
@@ -1290,7 +1290,7 @@ pub(crate) fn closure_capture_subst<'a, 'tcx>(
 }
 
 fn resolve_predicate_of<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
     ty: Ty<'tcx>,
 ) -> Option<(DefId, GenericArgsRef<'tcx>)> {

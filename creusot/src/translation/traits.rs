@@ -54,7 +54,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         laws
     }
 
-    pub(crate) fn translate_impl(&mut self, impl_id: DefId) -> TraitImpl<'tcx> {
+    pub(crate) fn translate_impl(&self, impl_id: DefId) -> TraitImpl<'tcx> {
         assert!(self.trait_id_of_impl(impl_id).is_some(), "{impl_id:?} is not a trait impl");
         let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
 
@@ -122,7 +122,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 }
 
 fn logic_refinement_term<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     impl_item_id: DefId,
     trait_item_id: DefId,
     refn_subst: GenericArgsRef<'tcx>,

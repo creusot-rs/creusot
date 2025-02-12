@@ -46,7 +46,7 @@ use why3::{
 };
 
 pub(crate) fn translate_function<'tcx, 'sess>(
-    ctx: &mut Why3Generator<'tcx>,
+    ctx: &Why3Generator<'tcx>,
     def_id: DefId,
 ) -> Option<FileModule> {
     let mut names = Dependencies::new(ctx, def_id);
@@ -55,7 +55,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
         return None;
     }
 
-    let name = names.value(names.self_id, names.self_subst).as_ident();
+    let name = names.item(names.self_id, names.self_subst).as_ident();
     let body = Decl::Coma(to_why(ctx, &mut names, name, BodyId::new(def_id.expect_local(), None)));
 
     let mut decls = names.provide_deps(ctx);
@@ -72,7 +72,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     Some(FileModule { path, modl: Module { name, decls, attrs, meta } })
 }
 
-pub fn val<'tcx>(_: &mut Why3Generator<'tcx>, sig: Signature) -> Decl {
+pub fn val<'tcx>(_: &Why3Generator<'tcx>, sig: Signature) -> Decl {
     let params = sig
         .args
         .into_iter()
@@ -129,8 +129,8 @@ pub(crate) fn node_graph(x: &Body) -> petgraph::graphmap::DiGraphMap<BasicBlock,
 }
 
 pub fn to_why<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
     name: Ident,
     body_id: BodyId,
 ) -> coma::Defn {
@@ -241,8 +241,8 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
 
 fn component_to_defn<'tcx, N: Namer<'tcx>>(
     body: &mut Body<'tcx>,
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
     def_id: LocalDefId,
     c: Component<BasicBlock>,
 ) -> coma::Defn {
@@ -275,29 +275,27 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
 }
 
 pub(crate) struct LoweringState<'a, 'tcx, N: Namer<'tcx>> {
-    pub(super) ctx: &'a mut Why3Generator<'tcx>,
-    pub(super) names: &'a mut N,
+    pub(super) ctx: &'a Why3Generator<'tcx>,
+    pub(super) names: &'a N,
     pub(super) locals: &'a LocalDecls<'tcx>,
-    pub(super) name_supply: NameSupply,
+    pub(super) name_supply: RefCell<NameSupply>,
     pub(super) def_id: LocalDefId,
 }
 
 impl<'a, 'tcx, N: Namer<'tcx>> LoweringState<'a, 'tcx, N> {
-    pub(super) fn ty(&mut self, ty: Ty<'tcx>) -> Type {
+    pub(super) fn ty(&self, ty: Ty<'tcx>) -> Type {
         translate_ty(self.ctx, self.names, DUMMY_SP, ty)
     }
 
-    fn assignment(&mut self, lhs: &Place<'tcx>, rhs: Term, istmts: &mut Vec<IntermediateStmt>) {
+    fn assignment(&self, lhs: &Place<'tcx>, rhs: Term, istmts: &mut Vec<IntermediateStmt>) {
         place::create_assign_inner(self, lhs, rhs, istmts)
     }
 
-    fn reset_names(&mut self) {}
-
-    pub(super) fn fresh_sym_from(&mut self, base: impl AsRef<str>) -> Symbol {
-        self.name_supply.freshen(Symbol::intern(base.as_ref()))
+    pub(super) fn fresh_sym_from(&self, base: impl AsRef<str>) -> Symbol {
+        self.name_supply.borrow_mut().freshen(Symbol::intern(base.as_ref()))
     }
 
-    pub(super) fn fresh_from(&mut self, base: impl AsRef<str>) -> Ident {
+    pub(super) fn fresh_from(&self, base: impl AsRef<str>) -> Ident {
         self.fresh_sym_from(base).to_string().into()
     }
 }
@@ -390,7 +388,7 @@ impl<'tcx> RValue<'tcx> {
             }
             RValue::Constructor(id, subst, args) => {
                 if lower.ctx.def_kind(id) == DefKind::Closure {
-                    lower.names.insert(Dependency::Item(id, subst));
+                    lower.names.dependency(Dependency::Item(id, subst));
                 }
                 let args = args.into_iter().map(|a| a.to_why(lower, istmts)).collect();
                 constructor(lower.names, args, id, subst)
@@ -618,8 +616,8 @@ impl<'tcx> Terminator<'tcx> {
 impl<'tcx> Branches<'tcx> {
     fn to_why<N: Namer<'tcx>>(
         self,
-        ctx: &mut Why3Generator<'tcx>,
-        names: &mut N,
+        ctx: &Why3Generator<'tcx>,
+        names: &N,
         discr: Exp,
     ) -> coma::Expr {
         match self {
@@ -662,8 +660,8 @@ fn mk_goto(bb: BasicBlock) -> coma::Expr {
 }
 
 fn mk_adt_switch<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
     adt: AdtDef<'tcx>,
     subst: GenericArgsRef<'tcx>,
     discr: Exp,
@@ -740,7 +738,6 @@ impl<'tcx> Block<'tcx> {
         let mut statements = vec![];
 
         for (ix, s) in self.stmts.into_iter().enumerate() {
-            lower.reset_names();
             let stmt = s.to_why(lower);
 
             let body = assemble_intermediates(
@@ -887,8 +884,6 @@ impl<'tcx> Statement<'tcx> {
                     None
                 };
 
-                let lower = RefCell::new(lower);
-
                 let func = match bor_kind {
                     BorrowKind::Mut => coma::Expr::Symbol("Borrow.borrow_mut".into()),
                     BorrowKind::Final(_) => coma::Expr::Symbol("Borrow.borrow_final".into()),
@@ -901,7 +896,7 @@ impl<'tcx> Statement<'tcx> {
                 if let BorrowKind::Final(deref_index) = bor_kind {
                     let (original_borrow_ty, original_borrow, original_borrow_constr) =
                         place::projections_to_expr(
-                            &lower,
+                            lower,
                             &mut istmts,
                             rhs_local_ty,
                             place::Focus::new(|_| Exp::var(ident_of(rhs.local))),
@@ -909,7 +904,7 @@ impl<'tcx> Statement<'tcx> {
                             &rhs.projection[..deref_index],
                         );
                     let (_, foc, constr) = place::projections_to_expr(
-                        &lower,
+                        lower,
                         &mut istmts,
                         original_borrow_ty,
                         original_borrow.clone(),
@@ -954,7 +949,7 @@ impl<'tcx> Statement<'tcx> {
 
                 let borrow_call = IntermediateStmt::call("_ret'".into(), lhs_ty_low, func, args);
                 istmts.push(borrow_call);
-                lower.borrow_mut().assignment(&lhs, Exp::var("_ret'"), &mut istmts);
+                lower.assignment(&lhs, Exp::var("_ret'"), &mut istmts);
 
                 let reassign = Exp::var("_ret'").field("final");
 
@@ -978,7 +973,7 @@ impl<'tcx> Statement<'tcx> {
                 lower.assignment(&dest, Exp::var("_ret'"), &mut istmts);
             }
             Statement::Resolve { did, subst, pl } => {
-                let rp = Exp::qvar(lower.names.value(did, subst));
+                let rp = Exp::qvar(lower.names.item(did, subst));
                 let loc = pl.local;
 
                 let bound = lower.fresh_sym_from("x");
@@ -1145,12 +1140,12 @@ fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
         args.into_iter().map(|a| a.to_why(lower, istmts)).map(|a| coma::Arg::Term(a)).collect()
     };
 
-    let fname = lower.names.value(id, subst);
+    let fname = lower.names.item(id, subst);
 
     (coma::Expr::Symbol(fname), args)
 }
 
-pub(crate) fn binop_to_binop<'tcx, N: Namer<'tcx>>(names: &mut N, ty: Ty, op: mir::BinOp) -> QName {
+pub(crate) fn binop_to_binop<'tcx, N: Namer<'tcx>>(names: &N, ty: Ty, op: mir::BinOp) -> QName {
     let prelude: PreludeModule = match ty.kind() {
         TyKind::Int(ity) => int_to_prelude(*ity),
         TyKind::Uint(uty) => uint_to_prelude(*uty),

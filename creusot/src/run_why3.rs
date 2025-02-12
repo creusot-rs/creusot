@@ -69,7 +69,7 @@ pub(super) fn run_why3<'tcx>(ctx: &Why3Generator<'tcx>, file: Option<PathBuf>) {
 
     if matches!(why3_cmd.sub, Why3Sub::Prove) {
         command.arg("--json");
-        let span_map = &ctx.span_map;
+        let span_map = &ctx.span_map.borrow();
         let mut child = command.stdout(Stdio::piped()).spawn().expect("could not run why3");
         let mut stdout = BufReader::new(child.stdout.take().unwrap());
         let de = Deserializer::from_reader(&mut stdout);

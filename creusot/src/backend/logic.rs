@@ -43,7 +43,7 @@ pub(crate) fn binders_to_args(binders: Vec<Binder>) -> (Vec<Ident>, Vec<Binder>)
 }
 
 pub(crate) fn translate_logic_or_predicate(
-    ctx: &mut Why3Generator,
+    ctx: &Why3Generator,
     def_id: DefId,
 ) -> Result<Option<FileModule>, CannotFetchThir> {
     let mut names = Dependencies::new(ctx, def_id);
@@ -60,7 +60,7 @@ pub(crate) fn translate_logic_or_predicate(
         );
     }
 
-    let name = names.value(names.self_id, names.self_subst).as_ident();
+    let name = names.item(names.self_id, names.self_subst).as_ident();
     let mut sig = signature_of(ctx, &mut names, name, def_id);
 
     if sig.contract.is_empty()
@@ -132,8 +132,8 @@ pub(crate) fn translate_logic_or_predicate(
 }
 
 pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
     mut sig: Signature,
     kind: Option<DeclKind>,
     body: Term<'tcx>,

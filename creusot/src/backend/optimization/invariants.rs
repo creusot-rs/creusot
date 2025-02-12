@@ -27,7 +27,7 @@ use crate::translation::fmir::{Block, FmirVisitor, Place, RValue, Statement, Ter
 /// (1) types with invariants being mutated inside of a loop
 /// (2) mutable borrows being mutated inside of a loop.
 
-pub fn infer_proph_invariants<'tcx>(ctx: &mut TranslationCtx<'tcx>, body: &mut fmir::Body<'tcx>) {
+pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir::Body<'tcx>) {
     let graph = node_graph(body);
 
     let wto = weak_topological_order(&graph, START_BLOCK);
