@@ -17,7 +17,7 @@ use rustc_type_ir::{IntTy, UintTy};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat},
     ty::Type,
-    Ident,
+    Ident, QName,
 };
 
 pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
@@ -350,14 +350,14 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Precondition { item, args, params } => {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
                 let mut sym = self.names.item(*item, args);
-                sym.name = format!("{}'pre", &*sym.name).into();
+                sym.name = format!("{}'pre", &sym.name.as_str()).into();
 
                 Exp::qvar(sym).app(params)
             }
             TermKind::Postcondition { item, args, params } => {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
                 let mut sym = self.names.item(*item, args);
-                sym.name = format!("{}'post'return'", &*sym.name).into();
+                sym.name = format!("{}'post'return'", &sym.name.as_str()).into();
                 Exp::qvar(sym).app(params)
             }
         }
