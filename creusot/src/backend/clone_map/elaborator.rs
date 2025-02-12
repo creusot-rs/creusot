@@ -9,7 +9,7 @@ use crate::{
         is_trusted_function,
         logic::{lower_logical_defn, spec_axiom},
         program,
-        signature::sig_to_why3,
+        signature::{sig_to_why3, PreSignature2},
         structural_resolve::structural_resolve,
         term::lower_pure,
         ty::{eliminator, translate_closure_ty, translate_ty, translate_tydecl},
@@ -120,7 +120,7 @@ impl DepElab for ProgElab {
             let sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
             let sig = sig.normalize(ctx.tcx, elab.typing_env);
             let sig = signature(ctx, elab, sig, dep);
-            return vec![program::val(ctx, sig)];
+            return vec![program::val(ctx, sig.into())];
         }
 
         // Inline the body of closures and promoted
@@ -144,7 +144,7 @@ fn signature<'tcx>(
     elab: &mut Expander<'_, 'tcx>,
     sig: PreSignature<'tcx>,
     dep: Dependency<'tcx>,
-) -> Signature {
+) -> PreSignature2 {
     let mut names = elab.namer(dep);
     let (def_id, _) = dep.did().unwrap();
     let id = names.dependency(dep).ident();
