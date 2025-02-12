@@ -38,7 +38,7 @@ use rustc_middle::ty::{
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_type_ir::{ConstKind, EarlyBinder};
-use why3::declaration::{Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use};
+use why3::{declaration::{Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use}, Ident};
 
 /// Weak dependencies are allowed to form cycles in the graph, but strong ones cannot,
 /// weak dependencies are used to perform an initial stratification of the dependency graph.
@@ -220,7 +220,7 @@ impl DepElab for LogicElab {
             if let Some(DeclKind::Predicate) = kind {
                 sig.retty = None;
             }
-            val(ctx, sig, kind)
+            val(ctx, sig.into(), kind)
         }
     }
 }
@@ -256,7 +256,7 @@ impl DepElab for TyElab {
         let mut names = elab.namer(dep);
         match ty.kind() {
             TyKind::Param(_) => vec![Decl::TyDecl(TyDecl::Opaque {
-                ty_name: names.ty_param(ty).as_ident(),
+                ty_name: Ident::bound(names.ty_param(ty).as_ident().as_str()), // TODO
                 ty_params: vec![],
             })],
             TyKind::Alias(_, _) => {
@@ -266,7 +266,7 @@ impl DepElab for TyElab {
                     rustc_middle::ty::AssocItemContainer::Trait
                 );
                 vec![Decl::TyDecl(TyDecl::Opaque {
-                    ty_name: names.ty(def_id, subst).as_ident(),
+                    ty_name: Ident::fresh(names.ty(def_id, subst).as_ident().as_str()),  // TODO
                     ty_params: vec![],
                 })]
             }
