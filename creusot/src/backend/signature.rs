@@ -16,8 +16,8 @@ use crate::{
 use super::{logic::function_call, term::lower_pure, Namer, Why3Generator};
 
 pub(crate) fn signature_of<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
     name: Ident,
     def_id: DefId,
 ) -> Signature {
@@ -27,8 +27,8 @@ pub(crate) fn signature_of<'tcx, N: Namer<'tcx>>(
 }
 
 pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
     name: Ident,
     pre_sig: PreSignature<'tcx>,
     // FIXME: Get rid of this def id
@@ -74,8 +74,8 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
 }
 
 fn lower_condition<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
     cond: Condition<'tcx>,
 ) -> why3::declaration::Condition {
     why3::declaration::Condition { exp: lower_pure(ctx, names, &cond.term), expl: cond.expl }
@@ -83,8 +83,8 @@ fn lower_condition<'tcx, N: Namer<'tcx>>(
 
 fn contract_to_why3<'tcx, N: Namer<'tcx>>(
     pre: PreContract<'tcx>,
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
 ) -> Contract {
     let mut out = Contract::new();
     for cond in pre.requires.into_iter() {

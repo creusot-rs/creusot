@@ -22,7 +22,7 @@ pub(crate) fn promoted_signature<'tcx>(body: &Body<'tcx>) -> PreSignature<'tcx> 
 }
 
 pub(crate) fn translate_promoted<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     body_id: BodyId,
 ) -> CreusotResult<(PreSignature<'tcx>, fmir::Body<'tcx>)> {
     let body = ctx.body(body_id).clone();

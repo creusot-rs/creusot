@@ -19,8 +19,8 @@ use why3::{
 };
 
 pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
     term: &Term<'tcx>,
 ) -> Exp {
     let span = term.span;
@@ -34,16 +34,16 @@ pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
 }
 
 pub(crate) fn lower_pat<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
     pat: &Pattern<'tcx>,
 ) -> Pat {
     Lower { ctx, names }.lower_pat(pat)
 }
 
 struct Lower<'a, 'tcx, N: Namer<'tcx>> {
-    ctx: &'a mut Why3Generator<'tcx>,
-    names: &'a mut N,
+    ctx: &'a Why3Generator<'tcx>,
+    names: &'a N,
 }
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     fn lower_term(&mut self, term: &Term<'tcx>) -> Exp {
@@ -53,7 +53,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Item(id, subst) => {
                 let method = (*id, *subst);
                 debug!("resolved_method={:?}", method);
-                let clone = self.names.value(*id, subst);
+                let clone = self.names.item(*id, subst);
                 let item = match self.ctx.type_of(id).instantiate_identity().kind() {
                     TyKind::FnDef(_, _) => Exp::Tuple(Vec::new()),
                     _ => Exp::qvar(clone),
@@ -103,7 +103,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
 
                 self.lookup_builtin(method, &mut args).unwrap_or_else(|| {
-                    let clone = self.names.value(method.0, method.1);
+                    let clone = self.names.item(method.0, method.1);
                     Exp::qvar(clone).app(args)
                 })
             }
@@ -222,14 +222,14 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Precondition { item, args, params } => {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
-                let mut sym = self.names.value(*item, args);
+                let mut sym = self.names.item(*item, args);
                 sym.name = format!("{}'pre", &*sym.name).into();
 
                 Exp::qvar(sym).app(params)
             }
             TermKind::Postcondition { item, args, params } => {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
-                let mut sym = self.names.value(*item, args);
+                let mut sym = self.names.item(*item, args);
                 sym.name = format!("{}'post'return'", &*sym.name).into();
                 Exp::qvar(sym).app(params)
             }
@@ -289,7 +289,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         let substs = method.1;
 
         if get_builtin(self.ctx.tcx, def_id).is_some() {
-            return Some(Exp::qvar(self.names.value(def_id, substs)).app(args.clone()));
+            return Some(Exp::qvar(self.names.item(def_id, substs)).app(args.clone()));
         }
         None
     }
@@ -303,8 +303,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 }
 
 pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
-    _: &mut TranslationCtx<'tcx>,
-    names: &mut N,
+    _: &TranslationCtx<'tcx>,
+    names: &N,
     lit: &Literal<'tcx>,
 ) -> Exp {
     match *lit {
@@ -321,7 +321,7 @@ pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
         Literal::Bool(true) => Constant::const_true().into(),
         Literal::Bool(false) => Constant::const_false().into(),
         Literal::Function(id, subst) => {
-            names.value(id, subst);
+            names.item(id, subst);
             Exp::Tuple(Vec::new())
         }
         Literal::Float(ref f, fty) => {

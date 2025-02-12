@@ -41,8 +41,8 @@ use why3::{
 /// 1. Conjunction: 2. Exists & Forall: 3. Function calls:
 
 struct VCGen<'a, 'tcx> {
-    ctx: RefCell<&'a mut Why3Generator<'tcx>>,
-    names: RefCell<&'a mut Dependencies<'tcx>>,
+    ctx: &'a Why3Generator<'tcx>,
+    names: &'a Dependencies<'tcx>,
     self_id: DefId,
     structurally_recursive: bool,
     typing_env: TypingEnv<'tcx>,
@@ -50,7 +50,7 @@ struct VCGen<'a, 'tcx> {
 }
 
 pub(super) fn vc<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
+    ctx: &Why3Generator<'tcx>,
     names: &mut Dependencies<'tcx>,
     self_id: DefId,
     t: Term<'tcx>,
@@ -66,11 +66,11 @@ pub(super) fn vc<'tcx>(
         .collect();
     let gen = VCGen {
         typing_env: ctx.typing_env(self_id),
-        ctx: RefCell::new(ctx),
-        names: RefCell::new(names),
+        ctx,
+        names,
         self_id,
         structurally_recursive,
-        subst: RefCell::new(Default::default()),
+        subst: Default::default(),
     };
     gen.add_bounds(bounds);
     gen.build_vc(&t, &|exp| Ok(Exp::let_(dest.clone(), exp, post.clone())))
@@ -88,7 +88,7 @@ pub(super) fn vc<'tcx>(
 /// ``` match x { Cons(_, tl) => recursive((tl, 0).0) } ```
 ///
 /// This check can be extended in the future
-fn is_structurally_recursive(ctx: &mut Why3Generator<'_>, self_id: DefId, t: &Term<'_>) -> bool {
+fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'_>) -> bool {
     struct StructuralRecursion {
         smaller_than: HashMap<Symbol, Symbol>,
         self_id: DefId,
@@ -215,11 +215,11 @@ type PostCont<'a, 'tcx, A, R = Exp> = &'a dyn Fn(A) -> Result<R, VCError<'tcx>>;
 
 impl<'a, 'tcx> VCGen<'a, 'tcx> {
     fn lower_literal(&self, lit: &Literal<'tcx>) -> Exp {
-        lower_literal(*self.ctx.borrow_mut(), *self.names.borrow_mut(), lit)
+        lower_literal(self.ctx, self.names, lit)
     }
 
     fn lower_pure(&self, lit: &Term<'tcx>) -> Exp {
-        lower_pure(*self.ctx.borrow_mut(), *self.names.borrow_mut(), lit)
+        lower_pure(self.ctx, self.names, lit)
     }
 
     fn build_vc(&self, t: &Term<'tcx>, k: PostCont<'_, 'tcx, Exp>) -> Result<Exp, VCError<'tcx>> {
@@ -236,9 +236,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // Items are just global names so
             // VC(i, Q) = Q(i)
             TermKind::Item(id, sub) => {
-                let item_name = self.names.borrow_mut().value(*id, sub);
+                let item_name = self.names.item(*id, sub);
 
-                if get_builtin(self.ctx.borrow().tcx, *id).is_some() {
+                if get_builtin(self.ctx.tcx, *id).is_some() {
                     // Builtins can leverage Why3 polymorphism and sometimes can cause typeck errors in why3 due to ambiguous type variables so lets fix the type now.
                     k(Exp::qvar(item_name).ascribe(self.ty(t.ty)))
                 } else {
@@ -253,25 +253,18 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             //  pre(f)(a0..an) /\ variant(f)(a0..an) /\ (post(f)(a0..an, F(a0..an)) -> Q(F a0..an))
             // ))
             TermKind::Call { id, subst, args } => self.build_vc_slice(args, &|args| {
-                let tcx = self.ctx.borrow().tcx;
-                let pre_sig = EarlyBinder::bind(self.ctx.borrow_mut().sig(*id).clone())
-                    .instantiate(tcx, subst);
+                let pre_sig =
+                    EarlyBinder::bind(self.ctx.sig(*id).clone()).instantiate(self.ctx.tcx, subst);
 
-                let pre_sig = pre_sig.normalize(tcx, self.typing_env);
+                let pre_sig = pre_sig.normalize(self.ctx.tcx, self.typing_env);
                 let arg_subst = pre_sig
                     .inputs
                     .iter()
                     .zip(args.clone())
                     .map(|(nm, res)| (ident_of(nm.0), res))
                     .collect();
-                let fname = self.names.borrow_mut().value(*id, subst);
-                let mut sig = sig_to_why3(
-                    *self.ctx.borrow_mut(),
-                    *self.names.borrow_mut(),
-                    "".into(),
-                    pre_sig,
-                    *id,
-                );
+                let fname = self.names.item(*id, subst);
+                let mut sig = sig_to_why3(self.ctx, self.names, "".into(), pre_sig, *id);
                 sig.contract.subst(&arg_subst);
                 let variant =
                     if *id == self.self_id { self.build_variant(&args)? } else { Exp::mk_true() };
@@ -349,16 +342,10 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             TermKind::Tuple { fields } => self.build_vc_slice(fields, &|flds| k(Exp::Tuple(flds))),
             // Same as for tuples
             TermKind::Constructor { variant, fields, .. } => {
-                let ty =
-                    self.ctx.borrow().normalize_erasing_regions(self.typing_env, t.creusot_ty());
+                let ty = self.ctx.normalize_erasing_regions(self.typing_env, t.creusot_ty());
                 let TyKind::Adt(adt, subst) = ty.kind() else { unreachable!() };
                 self.build_vc_slice(fields, &|fields| {
-                    let ctor = constructor(
-                        *self.names.borrow_mut(),
-                        fields,
-                        adt.variant(*variant).def_id,
-                        subst,
-                    );
+                    let ctor = constructor(self.names, fields, adt.variant(*variant).def_id, subst);
                     k(ctor)
                 })
             }
@@ -410,14 +397,13 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             }),
             // VC(A.f, Q) = VC(A, |a| Q(a.f))
             TermKind::Projection { lhs, name } => {
-                let ty =
-                    self.ctx.borrow().normalize_erasing_regions(self.typing_env, lhs.creusot_ty());
+                let ty = self.ctx.normalize_erasing_regions(self.typing_env, lhs.creusot_ty());
                 let field = match ty.kind() {
                     TyKind::Closure(did, substs) => {
-                        self.names.borrow_mut().field(*did, substs, *name).as_ident()
+                        self.names.field(*did, substs, *name).as_ident()
                     }
                     TyKind::Adt(def, substs) => {
-                        self.names.borrow_mut().field(def.did(), substs, *name).as_ident()
+                        self.names.field(def.did(), substs, *name).as_ident()
                     }
                     TyKind::Tuple(f) => {
                         let mut fields = vec![why3::exp::Pattern::Wildcard; f.len()];
@@ -468,9 +454,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             Pattern::Constructor { variant, fields, substs } => {
                 let fields =
                     fields.iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect();
-                let substs = self.ctx.borrow().normalize_erasing_regions(self.typing_env, *substs);
-                if self.ctx.borrow().def_kind(variant) == DefKind::Variant {
-                    Pat::ConsP(self.names.borrow_mut().constructor(*variant, substs), fields)
+                let substs = self.ctx.normalize_erasing_regions(self.typing_env, *substs);
+                if self.ctx.def_kind(variant) == DefKind::Variant {
+                    Pat::ConsP(self.names.constructor(*variant, substs), fields)
                 } else if fields.is_empty() {
                     Pat::TupleP(vec![])
                 } else {
@@ -479,13 +465,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                             .into_iter()
                             .enumerate()
                             .map(|(i, f)| {
-                                (
-                                    self.names
-                                        .borrow_mut()
-                                        .field(*variant, substs, i.into())
-                                        .as_ident(),
-                                    f,
-                                )
+                                (self.names.field(*variant, substs, i.into()).as_ident(), f)
                             })
                             .filter(|(_, f)| !matches!(f, Pat::Wildcard))
                             .collect(),
@@ -557,11 +537,11 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
     }
 
     fn ty(&self, ty: Ty<'tcx>) -> Type {
-        translate_ty(*self.ctx.borrow_mut(), *self.names.borrow_mut(), rustc_span::DUMMY_SP, ty)
+        translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty)
     }
 
     fn self_sig(&self) -> Signature {
-        signature_of(*self.ctx.borrow_mut(), *self.names.borrow_mut(), "".into(), self.self_id)
+        signature_of(self.ctx, self.names, "".into(), self.self_id)
     }
 
     // Generates the expression to test the validity of the variant for a recursive call.
@@ -574,7 +554,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         if self.structurally_recursive {
             return Ok(Exp::mk_true());
         }
-        let variant = self.ctx.borrow_mut().sig(self.self_id).contract.variant.clone();
+        let variant = self.ctx.sig(self.self_id).contract.variant.clone();
         let Some(variant) = variant else { return Ok(Exp::mk_false()) };
 
         let top_level_args = self.top_level_args();
@@ -584,8 +564,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         let orig_variant = self.self_sig().contract.variant.remove(0);
         let mut rec_var_exp = orig_variant.clone();
         rec_var_exp.subst(&mut subst);
-        if is_int(self.ctx.borrow().tcx, variant.creusot_ty()) {
-            self.names.borrow_mut().import_prelude_module(PreludeModule::Int);
+        if is_int(self.ctx.tcx, variant.creusot_ty()) {
+            self.names.import_prelude_module(PreludeModule::Int);
             Ok(Exp::BinaryOp(BinOp::Le, Box::new(Exp::int(0)), Box::new(orig_variant.clone()))
                 .log_and(Exp::BinaryOp(BinOp::Lt, Box::new(rec_var_exp), Box::new(orig_variant))))
         } else {

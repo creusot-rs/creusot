@@ -400,7 +400,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 ///
 /// - `report_location`: used to emit an eventual warning.
 fn resolve_function<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
