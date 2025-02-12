@@ -6,7 +6,7 @@ use std::{
 use super::{binders_to_args, Dependencies};
 use crate::{
     backend::{
-        signature::{sig_to_why3, signature_of},
+        signature::{sig_to_why3, signature_of, PreSignature2},
         term::{binop_to_binop, lower_literal, lower_pure},
         ty::{constructor, is_int, ity_to_prelude, translate_ty, uty_to_prelude},
         Namer as _, Why3Generator,
@@ -21,7 +21,7 @@ use rustc_middle::ty::{EarlyBinder, Ty, TyKind, TypingEnv};
 use rustc_span::{Span, Symbol};
 use why3::{
     declaration::Signature,
-    exp::{BinOp, Environment},
+    exp::BinOp,
     ty::Type,
     Exp, Ident,
 };
@@ -319,11 +319,12 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     .inputs
                     .iter()
                     .zip(args.clone())
-                    .map(|(nm, res)| (ident_of(nm.0), res))
+                    .map(|(nm, res)| (Ident::fresh(nm.0.as_str()), res))
                     .collect();
                 let fname = self.names.item(*id, subst);
-                let mut sig =  sig_to_why3(self.ctx, self.names, Ident::fresh(""), // ???
-                    pre_sig, *id).contract;
+                let sig =  sig_to_why3(self.ctx, self.names, Ident::fresh(""), // ???
+                    pre_sig, *id);
+                let mut contract = sig.contract;
                 contract.subst(&arg_subst);
                 let variant =
                     if *id == self.self_id { self.build_variant(&args)? } else { Exp::mk_true() };
@@ -333,14 +334,14 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 } else {
                     Exp::qvar(fname).app(args)
                 };
-                contract.subst(&[("result".into(), call.clone())].into_iter().collect());
+                contract.subst(&[(Ident::bound("result"), call.clone())].into_iter().collect());
 
                 let inner = k(call)?;
 
                 let post = contract
                     .requires_conj_labelled()
                     .log_and(variant)
-                    .log_and(contract.ensures_conj().implies(inner));
+                    .log_and(sig.contract.ensures_conj().implies(inner));
 
                 Ok(post)
             }),
@@ -483,7 +484,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                self.build_vc(lhs, &|lhs| k(lhs.field(field.as_str())))
+                self.build_vc(lhs, &|lhs| k(lhs.field(&field.as_str())))
             }
             TermKind::Old { .. } => Err(VCError::OldInLemma(t.span)),
             TermKind::Closure { .. } => Err(VCError::UnimplementedClosure(t.span)),
@@ -509,7 +510,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
     fn build_pattern_inner(
         &self,
-        bounds: &mut HashMap<Ident, Exp>,
+        bounds: &mut HashMap<Symbol, Ident>,
         pat: &Pattern<'tcx>,
     ) -> why3::exp::Pattern {
         use why3::exp::Pattern as Pat;
@@ -538,9 +539,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             }
             Pattern::Wildcard => Pat::Wildcard,
             Pattern::Binder(name) => {
-                let name_id = name.as_str().into();
-                let new = self.uniq_occ(&name_id);
-                bounds.insert(name_id, Exp::Var(new.clone()));
+                let new = Ident::fresh(name.as_str());
+                bounds.insert(*name, new);
                 Pat::VarP(new)
             }
             Pattern::Boolean(b) => {
@@ -556,19 +556,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             Pattern::Deref { pointee, kind } => match kind {
                 PointerKind::Box | PointerKind::Shr => self.build_pattern_inner(bounds, pointee),
                 PointerKind::Mut => {
-                    Pat::RecP(vec![("current".into(), self.build_pattern_inner(bounds, pointee))])
+                    Pat::RecP(vec![(Ident::bound("current"), self.build_pattern_inner(bounds, pointee))])
                 }
             },
-        }
-    }
-
-    fn uniq_occ(&self, id: &Ident) -> Ident {
-        let occ = self.subst.borrow().occ(id);
-
-        if occ == 0 {
-            id.clone()
-        } else {
-            Ident::from_string(format!("{}_{occ}", &**id))
         }
     }
 
@@ -604,8 +594,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty)
     }
 
-    fn self_sig(&self) -> Signature {
-        signature_of(self.ctx, self.names, "".into(), self.self_id)
+    fn self_sig(&self) -> PreSignature2 {
+        signature_of(self.ctx, self.names, Ident::bound(""), self.self_id) // TODO
     }
 
     // Generates the expression to test the validity of the variant for a recursive call.
@@ -623,7 +613,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
         let top_level_args = self.top_level_args();
 
-        let mut subst: Environment =
+        let mut subst: ::why3::exp::Environment =
             top_level_args.into_iter().zip(call_args.iter().cloned()).collect();
         let orig_variant = self.self_sig().contract.variant.remove(0);
         let mut rec_var_exp = orig_variant.clone();
@@ -640,8 +630,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
     /// Produces the top-level call expression for the function being verified
     fn top_level_args(&self) -> Vec<Ident> {
 let sig = self.self_sig();
-let (arg_names, _) = binders_to_args(sig.args);
-arg_names
+sig.args.iter().map(|(nm, _)| nm).cloned().collect()
 }
 
     fn get_var(&self, s: Symbol) -> Option<Ident> {
