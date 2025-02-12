@@ -34,7 +34,7 @@ pub(crate) fn create_assign_inner<'tcx, N: Namer<'tcx>>(
     istmts: &mut Vec<IntermediateStmt>,
 ) {
     let rhs = lplace_to_expr(lower, lhs, rhs, istmts);
-    istmts.push(IntermediateStmt::Assign(Ident::build(lhs.local.as_str()), rhs));
+    istmts.push(IntermediateStmt::Assign(Ident::bound(lhs.local.as_str()), rhs));
 }
 
 #[derive(Clone)]
