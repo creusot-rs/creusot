@@ -84,6 +84,13 @@ impl Ident {
     pub fn as_str(&self) -> String {
         self.name.into()
     }
+
+    pub fn refresh(&self) -> Self {
+        Ident {
+            name: self.name,
+            id: FRESH_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+        }
+    }
 }
 
 impl From<Ident> for IdentString {
