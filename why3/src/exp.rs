@@ -229,7 +229,7 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
 pub fn super_visit_mut_trigger<T: ExpMutVisitor>(f: &mut T, trigger: &mut Trigger) {
     trigger.0.iter_mut().for_each(|t| f.visit_mut(t))
 }
-/*
+
 impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
     fn visit_mut(&mut self, exp: &mut Exp) {
         match exp {
@@ -284,12 +284,12 @@ impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
                 let mut extended = HashMap::new();
                 for (_, exp) in &mut subst {
                     for id in &bnds & &exp.fvs() {
-                        extended.insert(id.clone(), Exp::var(format!("{}'", &*id)));
+                        extended.insert(id, Exp::Var(id.refresh()));
                     }
                 }
                 binders.iter_mut().for_each(|(id, _)| {
-                    if extended.contains_key(id) {
-                        *id = format!("{}'", &**id).into();
+                    if let Some(Exp::Var(id2)) = extended.get(id) {
+                        *id = *id2;
                     }
                 });
                 subst.extend(extended);
@@ -307,12 +307,12 @@ impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
                 let mut extended = HashMap::new();
                 for (_, exp) in &mut subst {
                     for id in &bnds & &exp.fvs() {
-                        extended.insert(id.clone(), Exp::var(format!("{}'", &*id)));
+                        extended.insert(id, Exp::Var(id.refresh()));
                     }
                 }
                 binders.iter_mut().for_each(|(id, _)| {
-                    if extended.contains_key(id) {
-                        *id = format!("{}'", &**id).into();
+                    if let Some(Exp::Var(id2)) = extended.get(id) {
+                        *id = *id2;
                     }
                 });
                 subst.extend(extended);
@@ -324,7 +324,7 @@ impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
             _ => super_visit_mut(self, exp),
         }
     }
-} */
+}
 
 pub trait ExpVisitor: Sized {
     fn visit(&mut self, exp: &Exp) {

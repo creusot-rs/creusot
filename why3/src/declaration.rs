@@ -147,8 +147,7 @@ impl Contract {
     }
 
     pub fn subst(&mut self, subst: &HashMap<Ident, Exp>) {
-        // TODO
-        // self.visit_mut(subst, subst, subst);
+        self.visit_mut(subst, subst, subst);
     }
 
     pub fn visit_mut<T: ExpMutVisitor>(

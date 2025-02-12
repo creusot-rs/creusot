@@ -224,8 +224,7 @@ impl<'tcx> CloneNames<'tcx> {
                     why3_modl.as_str().replace("$BW$", if self.bitwise_mode { "BW" } else { "" });
                 let qname = QName::from(why3_modl);
                 if qname.module.is_empty() {
-                    panic! { "should this happen?" }
-                    // return Box::new(Kind::Named(&qname.name)); // TODO
+                    return Box::new(Kind::Named(Ident::bound(qname.name))); // TODO
                 } else {
                     return Box::new(Kind::UsedBuiltin(qname));
                 }
