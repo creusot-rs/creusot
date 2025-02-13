@@ -1,4 +1,5 @@
 use rustc_hir::def_id::DefId;
+use rustc_span::Symbol;
 use why3::{
     declaration::{Contract, Signature},
     exp::{Binder, Trigger},
@@ -13,7 +14,7 @@ use crate::{
     translation::specification::PreContract,
 };
 
-use super::{logic::function_call, term::lower_pure, Namer, Why3Generator};
+use super::{logic::function_call, term::{lower_pure, Renaming, UnRenaming}, Namer, Why3Generator};
 
 #[derive(Debug, Clone)]
 // #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
@@ -65,8 +66,6 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
     // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
     def_id: DefId,
 ) -> PreSignature2 {
-    let contract = contract_to_why3(pre_sig.contract, ctx, names);
-
     let span = ctx.tcx.def_span(def_id);
     let args: Vec<_> = pre_sig
         .inputs
@@ -75,14 +74,15 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
         .map(|(ix, (id, _, ty))| {
             let ty = backend::ty::translate_ty(ctx, names, span, *ty);
             let id = if id.is_empty() {
-                anonymous_param_symbol(ix).as_str().into()
+                Ident::fresh(format!{"_{ix}"})
             } else {
-                ident_of(*id)
+                Ident::fresh(id.as_str())
             };
-            (Ident::fresh(id), ty)
+            (id, ty)
         })
         .collect();
-
+    let mut renaming = pre_sig.inputs.into_iter().zip(&args).map(|((old, _, _), (new, _))| (old, *new)).collect();
+    let contract = contract_to_why3(pre_sig.contract, ctx, &mut renaming, names);
     let mut attrs = why3_attrs(ctx.tcx, def_id);
 
     def_id
@@ -106,25 +106,30 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
 fn lower_condition<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
+    renaming: &mut Renaming,
     cond: Condition<'tcx>,
 ) -> why3::declaration::Condition {
-    why3::declaration::Condition { exp: lower_pure(ctx, names, &cond.term), expl: cond.expl }
+    why3::declaration::Condition { exp: lower_pure(ctx, names, renaming, &cond.term), expl: cond.expl }
 }
 
 fn contract_to_why3<'tcx, N: Namer<'tcx>>(
     pre: PreContract<'tcx>,
     ctx: &Why3Generator<'tcx>,
+    renaming: &mut Renaming,
     names: &N,
 ) -> Contract {
     let mut out = Contract::new();
     for cond in pre.requires.into_iter() {
-        out.requires.push(lower_condition(ctx, names, cond));
+        out.requires.push(lower_condition(ctx, names, renaming, cond));
     }
+    let mut undo = UnRenaming::new();
+    renaming.bound(Symbol::intern("result"), "result", &mut undo);
     for cond in pre.ensures.into_iter() {
-        out.ensures.push(lower_condition(ctx, names, cond));
+        out.ensures.push(lower_condition(ctx, names, renaming, cond));
     }
+    renaming.revert(undo);
     if let Some(term) = &pre.variant {
-        out.variant = vec![lower_pure(ctx, names, &term)];
+        out.variant = vec![lower_pure(ctx, names, renaming, &term)];
     }
 
     out

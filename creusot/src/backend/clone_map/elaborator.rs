@@ -11,7 +11,7 @@ use crate::{
         program,
         signature::{sig_to_why3, PreSignature2},
         structural_resolve::structural_resolve,
-        term::lower_pure,
+        term::lower_pure0,
         ty::{eliminator, translate_closure_ty, translate_ty, translate_tydecl},
         ty_inv::InvariantElaborator,
         Namer, TranslationCtx, Why3Generator,
@@ -237,7 +237,7 @@ fn expand_ty_inv_axiom<'tcx>(
     let mut elab = InvariantElaborator::new(param_env, ctx);
     let Some(term) = elab.elaborate_inv(ty, false) else { return vec![] };
     let rewrite = elab.rewrite;
-    let exp = lower_pure(ctx, &mut names, &term);
+    let exp = lower_pure0(ctx, &mut names, &term);
     let axiom =
         Axiom { name: names.dependency(Dependency::TyInvAxiom(ty)).ident(), rewrite, axiom: exp };
     vec![Decl::Axiom(axiom)]

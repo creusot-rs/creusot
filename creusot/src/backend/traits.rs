@@ -1,5 +1,5 @@
 use crate::{
-    backend::{clone_map::Dependencies, term::lower_pure, Why3Generator},
+    backend::{clone_map::Dependencies, term::lower_pure0, Why3Generator},
     contracts_items::is_snapshot_deref,
     ctx::FileModule,
 };
@@ -19,7 +19,7 @@ pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<
         }
 
         let mut names = Dependencies::new(ctx, impl_did);
-        let goal = lower_pure(ctx, &mut names, &refn.refn.clone());
+        let goal = lower_pure0(ctx, &mut names, &refn.refn.clone());
         let mut decls = names.provide_deps(ctx);
         let refines = Ident::fresh("refines");
         decls.push(Decl::Goal(Goal { name: refines, goal }));
