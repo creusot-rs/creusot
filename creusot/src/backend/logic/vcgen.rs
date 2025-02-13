@@ -3,11 +3,11 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
-use super::{binders_to_args, Dependencies};
+use super::Dependencies;
 use crate::{
     backend::{
         signature::{sig_to_why3, signature_of, PreSignature2},
-        term::{binop_to_binop, lower_literal, lower_pure},
+        term::{binop_to_binop, lower_literal, lower_pure, Renaming},
         ty::{constructor, is_int, ity_to_prelude, translate_ty, uty_to_prelude},
         Namer as _, Why3Generator,
     },
@@ -20,7 +20,6 @@ use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind, TypingEnv};
 use rustc_span::{Span, Symbol};
 use why3::{
-    declaration::Signature,
     exp::BinOp,
     ty::Type,
     Exp, Ident,
@@ -46,17 +45,7 @@ struct VCGen<'a, 'tcx> {
     self_id: DefId,
     structurally_recursive: bool,
     typing_env: TypingEnv<'tcx>,
-    subst: RefCell<Environment>,
-}
-
-struct Environment {
-    substs: Vec<HashMap<Symbol, Ident>>
-}
-
-impl Default for Environment {
-    fn default() -> Self {
-        Self { substs: vec![] }
-    }
+    renaming: RefCell<Renaming>,
 }
 
 pub(super) fn vc<'tcx>(
@@ -80,9 +69,8 @@ pub(super) fn vc<'tcx>(
         names,
         self_id,
         structurally_recursive,
-        subst: Default::default(),
+        renaming: RefCell::new(bounds),
     };
-    gen.add_bounds(bounds);
     gen.build_vc(&t, &|exp| Ok(Exp::let_(dest.clone(), exp, post.clone())))
 }
 
@@ -229,7 +217,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
     }
 
     fn lower_pure(&self, lit: &Term<'tcx>) -> Exp {
-        lower_pure(self.ctx, self.names, lit)
+        lower_pure(self.ctx, self.names, &mut self.renaming.borrow_mut(), lit)
     }
 
     fn build_vc(&self, t: &Term<'tcx>, k: PostCont<'_, 'tcx, Exp>) -> Result<Exp, VCError<'tcx>> {
@@ -499,25 +487,23 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         pat: &Pattern<'tcx>,
         k: PostCont<'_, 'tcx, why3::exp::Pattern, A>,
     ) -> Result<A, VCError<'tcx>> {
-        let mut bounds = Default::default();
-        let pat = self.build_pattern_inner(&mut bounds, pat);
-        self.add_bounds(bounds);
+        self.open_scope();
+        let pat = self.build_pattern_inner(pat);
         // FIXME: this totally breaks the tail-call potential... which needs desparate fixing.
         let r = k(pat);
-        self.pop_bounds();
+        self.close_scope();
         r
     }
 
     fn build_pattern_inner(
         &self,
-        bounds: &mut HashMap<Symbol, Ident>,
         pat: &Pattern<'tcx>,
     ) -> why3::exp::Pattern {
         use why3::exp::Pattern as Pat;
         match pat {
             Pattern::Constructor { variant, fields, substs } => {
                 let fields =
-                    fields.iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect();
+                    fields.iter().map(|pat| self.build_pattern_inner(pat)).collect();
                 let substs = self.ctx.normalize_erasing_regions(self.typing_env, *substs);
                 if self.ctx.def_kind(variant) == DefKind::Variant {
                     Pat::ConsP(self.names.constructor(*variant, substs), fields)
@@ -538,11 +524,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 }
             }
             Pattern::Wildcard => Pat::Wildcard,
-            Pattern::Binder(name) => {
-                let new = Ident::fresh(name.as_str());
-                bounds.insert(*name, new);
-                Pat::VarP(new)
-            }
+            Pattern::Binder(name) => Pat::VarP(self.fresh(*name)),
             Pattern::Boolean(b) => {
                 if *b {
                     Pat::mk_true()
@@ -551,12 +533,12 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 }
             }
             Pattern::Tuple(pats) => {
-                Pat::TupleP(pats.iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect())
+                Pat::TupleP(pats.iter().map(|pat| self.build_pattern_inner(pat)).collect())
             }
             Pattern::Deref { pointee, kind } => match kind {
-                PointerKind::Box | PointerKind::Shr => self.build_pattern_inner(bounds, pointee),
+                PointerKind::Box | PointerKind::Shr => self.build_pattern_inner(pointee),
                 PointerKind::Mut => {
-                    Pat::RecP(vec![(Ident::bound("current"), self.build_pattern_inner(bounds, pointee))])
+                    Pat::RecP(vec![(Ident::bound("current"), self.build_pattern_inner(pointee))])
                 }
             },
         }
@@ -629,37 +611,23 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
     /// Produces the top-level call expression for the function being verified
     fn top_level_args(&self) -> Vec<Ident> {
-let sig = self.self_sig();
-sig.args.iter().map(|(nm, _)| nm).cloned().collect()
+    let sig = self.self_sig();
+    sig.args.iter().map(|(_, nm, _)| nm).cloned().collect()
 }
 
     fn get_var(&self, s: Symbol) -> Option<Ident> {
-        self.subst.borrow().get(&s)
+        self.renaming.borrow().get(&s)
     }
 
-    fn add_bounds(&self, bounds: HashMap<Symbol, Ident>) {
-        self.subst.borrow_mut().push(bounds);
+    fn open_scope(&self) {
+        self.renaming.borrow_mut().open_scope();
     }
 
-    fn pop_bounds(&self) {
-        self.subst.borrow_mut().pop();
-    }
-}
-
-impl Environment {
-    pub fn get(&self, id: &Symbol) -> Option<Ident> {
-        for sub in self.substs.iter().rev() {
-            if let Some(e) = sub.get(id) {
-                return Some(e.clone());
-            }
-        }
-        None
+    fn close_scope(&self) {
+        self.renaming.borrow_mut().close_scope();
     }
 
-    pub fn push(&mut self, bounds: HashMap<Symbol, Ident>) {
-        self.substs.push(bounds);
-    }
-    pub fn pop(&mut self) {
-        self.substs.pop();
+    fn fresh(&self, s: Symbol) -> Ident{
+        self.renaming.borrow_mut().fresh(s)
     }
 }

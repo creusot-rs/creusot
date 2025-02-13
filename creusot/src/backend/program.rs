@@ -46,7 +46,7 @@ use why3::{
     Ident, QName,
 };
 
-use super::{signature::PreSignature2, term::{Renaming, UnRenaming}};
+use super::{signature::PreSignature2, term::Renaming};
 
 pub(crate) fn translate_function<'tcx, 'sess>(
     ctx: &Why3Generator<'tcx>,
@@ -235,7 +235,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     let params = sig
         .args
         .into_iter()
-        .map(|(v, ty)| Param::Term(v, ty))
+        .map(|(_, v, ty)| Param::Term(v, ty))
         .chain([Param::Cont(
             ret_ident,
             Vec::new(),
@@ -1158,16 +1158,16 @@ impl<'tcx> Statement<'tcx> {
 
 fn exp_of_place<'tcx, N: Namer<'tcx>>(lower: &mut LoweringState<'_, 'tcx, N>, rp: Exp, pl: Place<'tcx>) -> Exp {
     let pl_sym = pl.local;
-    let loc = lower.renaming.get(&pl_sym);
+    let loc = lower.renaming.get_unwrap(&pl_sym);
     // Reuse pl_sym to bind the place's value; pat will be either be discarded or renamed immediately by lower_pat
     let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, pl_sym);
     if let pearlite::Pattern::Binder(_) = pat {
         rp.app_to(Exp::Var(loc))
     } else {
-        let mut undo = UnRenaming::new();
-        let pat = lower_pat(lower.ctx, lower.names, &pat, lower.renaming, &mut undo);
-        let pl_ident = lower.renaming.get(&pl_sym);
-        lower.renaming.revert(undo);
+        lower.renaming.open_scope();
+        let pat = lower_pat(lower.ctx, lower.names, &pat, lower.renaming);
+        let pl_ident = lower.renaming.get_unwrap(&pl_sym);
+        lower.renaming.close_scope();
         Exp::Match(
             Box::new(Exp::Var(loc)),
             vec![

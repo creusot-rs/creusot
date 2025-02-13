@@ -9,12 +9,11 @@ use why3::{
 use crate::{
     backend,
     contracts_items::{should_replace_trigger, why3_attrs},
-    naming::{anonymous_param_symbol, ident_of},
     specification::{Condition, PreSignature},
     translation::specification::PreContract,
 };
 
-use super::{logic::function_call, term::{lower_pure, Renaming, UnRenaming}, Namer, Why3Generator};
+use super::{logic::function_call, term::{lower_pure, Renaming}, Namer, Why3Generator};
 
 #[derive(Debug, Clone)]
 // #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
@@ -23,7 +22,7 @@ pub struct PreSignature2 {
     pub trigger: Option<Trigger>, // None means we should use the "simple_trigger"
     pub attrs: Vec<why3::declaration::Attribute>,
     pub retty: Option<why3::ty::Type>,
-    pub args: Vec<(Ident, why3::ty::Type)>,
+    pub args: Vec<(Symbol, Ident, why3::ty::Type)>,
     pub contract: Contract,
 }
 
@@ -40,7 +39,7 @@ impl From<PreSignature2> for Signature {
             trigger: sig.trigger,
             attrs: sig.attrs,
             retty: sig.retty,
-            args: sig.args.into_iter().map(|(id, ty)| Binder::typed(id, ty)).collect(),
+            args: sig.args.into_iter().map(|(_, id, ty)| Binder::typed(id, ty)).collect(),
             contract: sig.contract,
         }
     }
@@ -69,19 +68,19 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
     let span = ctx.tcx.def_span(def_id);
     let args: Vec<_> = pre_sig
         .inputs
-        .iter()
+        .into_iter()
         .enumerate()
-        .map(|(ix, (id, _, ty))| {
-            let ty = backend::ty::translate_ty(ctx, names, span, *ty);
-            let id = if id.is_empty() {
+        .map(|(ix, (sym, _, ty))| {
+            let ty = backend::ty::translate_ty(ctx, names, span, ty);
+            let id = if sym.is_empty() {
                 Ident::fresh(format!{"_{ix}"})
             } else {
-                Ident::fresh(id.as_str())
+                Ident::fresh(sym.as_str())
             };
-            (id, ty)
+            (sym, id, ty)
         })
         .collect();
-    let mut renaming = pre_sig.inputs.into_iter().zip(&args).map(|((old, _, _), (new, _))| (old, *new)).collect();
+    let mut renaming = args.iter().map(|(old, new, _)| (*old, *new)).collect();
     let contract = contract_to_why3(pre_sig.contract, ctx, &mut renaming, names);
     let mut attrs = why3_attrs(ctx.tcx, def_id);
 
@@ -122,15 +121,14 @@ fn contract_to_why3<'tcx, N: Namer<'tcx>>(
     for cond in pre.requires.into_iter() {
         out.requires.push(lower_condition(ctx, names, renaming, cond));
     }
-    let mut undo = UnRenaming::new();
-    renaming.bound(Symbol::intern("result"), "result", &mut undo);
+    renaming.open_scope();
+    renaming.bound(Symbol::intern("result"), "result");
     for cond in pre.ensures.into_iter() {
         out.ensures.push(lower_condition(ctx, names, renaming, cond));
     }
-    renaming.revert(undo);
+    renaming.close_scope();
     if let Some(term) = &pre.variant {
         out.variant = vec![lower_pure(ctx, names, renaming, &term)];
     }
-
     out
 }
