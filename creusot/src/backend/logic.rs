@@ -75,7 +75,7 @@ pub(crate) fn translate_logic_or_predicate(
 
     let mut body_decls = Vec::new();
 
-    let param_decls = sig.args.iter().map(|(nm, ty)| {
+    let param_decls = sig.args.iter().map(|(_, nm, ty)| {
         Decl::LogicDecl(LogicDecl {
             kind: Some(DeclKind::Constant),
             sig: Signature {
@@ -142,7 +142,8 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
 
     let mut decls = vec![];
 
-    let body = lower_pure(ctx, names, &body);
+    let mut renaming = sig.args.iter().map(|(old, new, _)| (*old, *new)).collect();
+    let body = lower_pure(ctx, names, &mut renaming, &body);
 
     if sig.contract.variant.is_empty() {
         let mut sig = Signature::from(sig.clone());
@@ -245,8 +246,7 @@ pub(crate) fn spec_axiom(sig: &PreSignature2) -> Axiom {
     let args: Vec<(_, _)> = sig
         .args
         .iter()
-        .cloned()
-        // .filter(|arg| &*arg.0 != "_")  // TODO: is it ok to remove this?
+        .filter_map(|(old, new, ty)| if old.is_empty() { None } else { Some((*new, ty.clone())) })
         .collect();
 
     let axiom =
@@ -260,7 +260,7 @@ pub fn function_call(sig: &PreSignature2) -> Exp {
         .args
         .iter()
         .cloned()
-        .map(|arg| Exp::Var(arg.0))
+        .map(|arg| Exp::Var(arg.1))
         .collect();
     if args.is_empty() {
         args = vec![Exp::Tuple(vec![])];
@@ -275,9 +275,14 @@ fn definition_axiom(sig: &PreSignature2, body: Exp, suffix: &str) -> Axiom {
 
     let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
     let condition = sig.contract.requires_implies(equation);
+    let args: Vec<(_, _)> = sig
+        .args
+        .iter()
+        .filter_map(|(old, new, ty)| if old.is_empty() { None } else { Some((*new, ty.clone())) })
+        .collect();
 
     let axiom =
-        if sig.args.is_empty() { condition } else { Exp::forall_trig(sig.args.clone(), trigger, condition) };
+        if sig.args.is_empty() { condition } else { Exp::forall_trig(args, trigger, condition) };
 
     let name = Ident::fresh(format!("{}_{suffix}", sig.name.as_str()));
     Axiom { name, rewrite: false, axiom }

@@ -241,7 +241,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
 }
 
 pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
-    lower: &mut LoweringState<'_, 'tcx, N>,
+    lower: &LoweringState<'_, 'tcx, N>,
     pl: &Place<'tcx>,
     istmts: &mut Vec<IntermediateStmt>,
 ) -> Exp {
