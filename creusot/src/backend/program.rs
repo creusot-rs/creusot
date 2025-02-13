@@ -46,7 +46,7 @@ use why3::{
     Ident, QName,
 };
 
-use super::signature::PreSignature2;
+use super::{signature::PreSignature2, term::{Renaming, UnRenaming}};
 
 pub(crate) fn translate_function<'tcx, 'sess>(
     ctx: &Why3Generator<'tcx>,
@@ -149,9 +149,10 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
     infer_proph_invariants(ctx, &mut body);
 
+    let mut renaming = Renaming::new();
     let blocks: Vec<Defn> = wto
         .into_iter()
-        .map(|c| component_to_defn(&mut body, ctx, names, body_id.def_id, c))
+        .map(|c| component_to_defn(&mut body, ctx, names, &mut renaming, body_id.def_id, c))
         .collect();
     let ret = body.locals.first().map(|(_, decl)| decl.clone());
 
@@ -248,11 +249,12 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
     body: &mut Body<'tcx>,
     ctx: &Why3Generator<'tcx>,
     names: &N,
+    renaming: &mut Renaming,
     def_id: LocalDefId,
     c: Component<BasicBlock>,
 ) -> coma::Defn {
     let mut lower =
-        LoweringState { ctx, names, locals: &body.locals, name_supply: Default::default(), def_id };
+        LoweringState { ctx, names, locals: &body.locals, renaming, name_supply: Default::default(), def_id };
     let (head, tl) = match c {
         Component::Vertex(v) => {
             let block = body.blocks.shift_remove(&v).unwrap();
@@ -264,7 +266,7 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
     let block = body.blocks.shift_remove(&head).unwrap();
     let mut block = block.to_why(&mut lower, head);
 
-    let defns = tl.into_iter().map(|id| component_to_defn(body, ctx, names, def_id, id)).collect();
+    let defns = tl.into_iter().map(|id| component_to_defn(body, ctx, names, renaming, def_id, id)).collect();
 
     if !block.body.is_guarded() {
         block.body = Expr::BlackBox(Box::new(block.body));
@@ -283,6 +285,7 @@ pub(crate) struct LoweringState<'a, 'tcx, N: Namer<'tcx>> {
     pub(super) ctx: &'a Why3Generator<'tcx>,
     pub(super) names: &'a N,
     pub(super) locals: &'a LocalDecls<'tcx>,
+    pub(super) renaming: &'a mut Renaming,
     pub(super) name_supply: RefCell<NameSupply>,
     pub(super) def_id: LocalDefId,
 }
@@ -313,7 +316,7 @@ impl<'tcx> Operand<'tcx> {
     ) -> Exp {
         match self {
             Operand::Move(pl) | Operand::Copy(pl) => rplace_to_expr(lower, &pl, istmts),
-            Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
+            Operand::Constant(c) => lower_pure(lower.ctx, lower.names, lower.renaming, &c),
             Operand::Promoted(pid, ty) => {
                 let promoted = Expr::Constant(lower.names.promoted(lower.def_id, pid));
                 let var: Ident = Ident::fresh(&format!("pr{}", pid.as_usize()));
@@ -592,7 +595,7 @@ impl<'tcx> RValue<'tcx> {
 
                 Exp::Var(res)
             }
-            RValue::Snapshot(t) => lower_pure(lower.ctx, lower.names, &t),
+            RValue::Snapshot(t) => lower_pure(lower.ctx, lower.names, lower.renaming, &t),
             RValue::Borrow(_, _, _) => unreachable!(), // Handled in Statement::to_why
             RValue::UnaryOp(UnOp::PtrMetadata, op) => {
                 match op.ty(lower.ctx.tcx, lower.locals).kind() {
@@ -900,7 +903,7 @@ impl<'tcx> Block<'tcx> {
             body = Expr::Assert(
                 Box::new(Term::Attr(
                     Attribute::Attr(i.expl),
-                    Box::new(lower_pure(lower.ctx, lower.names, &i.body)),
+                    Box::new(lower_pure(lower.ctx, lower.names, lower.renaming, &i.body)),
                 )),
                 Box::new(body),
             );
@@ -1128,32 +1131,13 @@ impl<'tcx> Statement<'tcx> {
             }
             Statement::Resolve { did, subst, pl } => {
                 let rp = Exp::qvar(lower.names.item(did, subst));
-                let loc = pl.local;
-
-                let bound = lower.fresh_sym_from("x");
-
-                let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
-
-                let pat = lower_pat(lower.ctx, lower.names, &pat);
-                let loc_ident = Ident::fresh(ident_of(loc).as_str());
-                let exp = if let Pattern::VarP(_) = pat {
-                    rp.app_to(Exp::Var(loc_ident))
-                } else {
-                    Exp::Match(
-                        Box::new(Exp::Var(loc_ident)),
-                        vec![
-                            (pat, rp.app_to(Exp::Var(Ident::fresh(bound.as_str())))), // TODO
-                            (Pattern::Wildcard, Exp::mk_true()),
-                        ],
-                    )
-                };
-
-                istmts.extend([IntermediateStmt::Assume(exp)]);
+                let exp = exp_of_place(lower, rp, pl);
+                istmts.push(IntermediateStmt::Assume(exp));
             }
             Statement::Assertion { cond, msg, trusted } => {
                 let e = Exp::Attr(
                     Attribute::Attr(msg),
-                    Box::new(lower_pure(lower.ctx, lower.names, &cond)),
+                    Box::new(lower_pure(lower.ctx, lower.names, lower.renaming, &cond)),
                 );
                 if trusted {
                     istmts.push(IntermediateStmt::Assume(e))
@@ -1163,31 +1147,34 @@ impl<'tcx> Statement<'tcx> {
             }
             Statement::AssertTyInv { pl } => {
                 let inv_fun = Exp::qvar(lower.names.ty_inv(pl.ty(lower.ctx.tcx, lower.locals)));
-                let loc = pl.local;
-
-                let bound = lower.fresh_sym_from("x");
-
-                let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
-                let pat = lower_pat(lower.ctx, lower.names, &pat);
-                let loc_ident = Ident::fresh(ident_of(loc).as_str());
-                let exp = if let Pattern::VarP(_) = pat {
-                    inv_fun.app_to(Exp::Var(loc_ident))
-                } else {
-                    Exp::Match(
-                        Box::new(Exp::Var(loc_ident)),
-                        vec![
-                            (pat, inv_fun.app_to(Exp::Var(Ident::fresh(bound.as_str())))), // TODO
-                            (Pattern::Wildcard, Exp::mk_true()),
-                        ],
-                    )
-                };
-
+                let exp = exp_of_place(lower, inv_fun, pl);
                 let exp = Exp::Attr(Attribute::Attr(format!("expl:type invariant")), Box::new(exp));
-
                 istmts.push(IntermediateStmt::Assert(exp));
             }
         }
         istmts
+    }
+}
+
+fn exp_of_place<'tcx, N: Namer<'tcx>>(lower: &mut LoweringState<'_, 'tcx, N>, rp: Exp, pl: Place<'tcx>) -> Exp {
+    let pl_sym = pl.local;
+    let loc = lower.renaming.get(&pl_sym);
+    // Reuse pl_sym to bind the place's value; pat will be either be discarded or renamed immediately by lower_pat
+    let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, pl_sym);
+    if let pearlite::Pattern::Binder(_) = pat {
+        rp.app_to(Exp::Var(loc))
+    } else {
+        let mut undo = UnRenaming::new();
+        let pat = lower_pat(lower.ctx, lower.names, &pat, lower.renaming, &mut undo);
+        let pl_ident = lower.renaming.get(&pl_sym);
+        lower.renaming.revert(undo);
+        Exp::Match(
+            Box::new(Exp::Var(loc)),
+            vec![
+                (pat, rp.app_to(Exp::Var(pl_ident))),
+                (Pattern::Wildcard, Exp::mk_true()),
+            ],
+        )
     }
 }
 

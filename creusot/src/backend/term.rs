@@ -22,6 +22,14 @@ use why3::{
     Ident, QName,
 };
 
+pub(crate) fn lower_pure0<'tcx, N: Namer<'tcx>>(
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
+    term: &Term<'tcx>,
+) -> Exp {
+    lower_pure(ctx, names, &mut Renaming::new(), term)
+}
+
 pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
@@ -49,11 +57,11 @@ pub(crate) fn lower_pat<'tcx, N: Namer<'tcx>>(
 }
 
 /// Map Pearlite identifiers to Why3 identifiers.
-struct Renaming(HashMap<Symbol, Ident>);
+pub struct Renaming(HashMap<Symbol, Ident>);
 
 /// When variables are shadowed in Pearlite, remember their previous renamings
 /// so they can be restored after processing the body where they are shadowed.
-struct UnRenaming(Vec<(Symbol, Option<Ident>)>);
+pub struct UnRenaming(Vec<(Symbol, Option<Ident>)>);
 
 impl Renaming {
     pub fn new() -> Self {
@@ -66,18 +74,30 @@ impl Renaming {
         ident
     }
 
-    fn get(&self, sym: &Symbol) -> Option<Ident> {
-        self.0.get(sym).copied()
+    pub fn bound(&mut self, sym: Symbol, str: &str, undo: &mut UnRenaming) -> Ident {
+        let ident = Ident::bound(str);
+        undo.0.push((sym, self.0.insert(sym, ident)));
+        ident
     }
 
-    fn revert(&mut self, undo: UnRenaming) {
-        undo.0.into_iter().for_each(|(sym, old)| {
+    pub fn get(&self, sym: &Symbol) -> Ident {
+        self.0.get(sym).unwrap_or_else(|| panic!("Unbound variable: {:?}", sym.as_str())).clone()
+    }
+
+    pub fn revert(&mut self, undo: UnRenaming) {
+        undo.0.into_iter().rev().for_each(|(sym, old)| {
             if let Some(old) = old {
                 self.0.insert(sym, old);
             } else {
                 self.0.remove(&sym);
             }
         });
+    }
+}
+
+impl FromIterator<(Symbol, Ident)> for Renaming {
+    fn from_iter<T: IntoIterator<Item = (Symbol, Ident)>>(iter: T) -> Self {
+        Renaming(iter.into_iter().collect())
     }
 }
 
@@ -173,7 +193,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     item
                 }
             }
-            TermKind::Var(v) => Exp::Var(self.renaming.get(&v.name).unwrap_or_else(|| { panic!("Unbound variable: {:?}", v.as_str()) })),
+            TermKind::Var(v) => Exp::Var(self.renaming.get(v)),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);

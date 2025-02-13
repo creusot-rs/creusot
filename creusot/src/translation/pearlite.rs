@@ -98,7 +98,7 @@ pub type QuantBinder<'tcx> = (Vec<Ident>, Ty<'tcx>);
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum TermKind<'tcx> {
-    Var(Ident),
+    Var(Symbol),
     Lit(Literal<'tcx>),
     Cast {
         arg: Box<Term<'tcx>>,
