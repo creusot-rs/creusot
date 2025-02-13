@@ -4,7 +4,7 @@ use crate::{
 use rustc_hir::def_id::DefId;
 use why3::{
     declaration::*,
-    exp::{super_visit_mut, BinOp, Binder, Exp, ExpMutVisitor, Trigger},
+    exp::{super_visit_mut, BinOp, Exp, ExpMutVisitor, Trigger},
     Ident,
 };
 
@@ -15,31 +15,6 @@ use self::vcgen::vc;
 use super::{
     is_trusted_function, signature::{signature_of, PreSignature2}, term::lower_pure, CannotFetchThir, Why3Generator,
 };
-
-pub(crate) fn binders_to_args(binders: Vec<Binder>) -> (Vec<Ident>, Vec<Binder>) {
-    let mut args = Vec::new();
-    let mut out_binders = Vec::new();
-    for b in binders {
-        match b {
-            Binder::Wild => {
-                let wild = Ident::fresh("_wild");
-                args.push(wild);
-                out_binders.push(Binder::Named(wild));
-            }
-            Binder::UnNamed(_) => unreachable!("unnamed parameter in logical function signature"),
-            Binder::Named(ref nm) => {
-                args.push(nm.clone());
-                out_binders.push(b);
-            }
-            Binder::Typed(ghost, binders, ty) => {
-                let (inner_args, inner_binders) = binders_to_args(binders);
-                args.extend(inner_args);
-                out_binders.push(Binder::Typed(ghost, inner_binders, ty));
-            }
-        }
-    }
-    (args, out_binders)
-}
 
 pub(crate) fn translate_logic_or_predicate(
     ctx: &Why3Generator,
