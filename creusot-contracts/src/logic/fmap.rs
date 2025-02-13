@@ -351,6 +351,43 @@ impl<K, V: ?Sized> FMap<K, V> {
         panic!()
     }
 
+    /// Returns a mutable reference to the value corresponding to a key, while still allowing
+    /// modification on the other keys.
+    ///
+    /// # Example
+    /// ```rust,creusot
+    /// use creusot_contracts::{logic::FMap, *};
+    ///
+    /// let mut map = FMap::new();
+    /// ghost! {
+    ///     map.insert_ghost(1, 21);
+    ///     map.insert_ghost(2, 42);
+    ///     if let (Some(x), map2) = map.split_mut_ghost(&1) {
+    ///         *x = 22;
+    ///         map2.insert_ghost(3, 30);
+    ///         map2.insert_ghost(1, 56); // This modification will be ignored on `map`
+    ///     }
+    ///     proof_assert!(map.lookup(1i32) == 22i32);
+    ///     proof_assert!(map.lookup(2i32) == 42i32);
+    ///     proof_assert!(map.lookup(3i32) == 30i32);
+    /// };
+    /// ```
+    #[trusted]
+    #[pure]
+    #[ensures(if self.contains(*key) {
+        *result.1 == (*self).remove(*key) &&
+        match result.0 {
+            None => false,
+            Some(r) => *(*self).lookup_unsized(*key) == *r && ^self == (^result.1).insert(*key, ^r),
+        }
+    } else {
+        result.0 == None && result.1 == self
+    })]
+    pub fn split_mut_ghost(&mut self, key: &K) -> (Option<&mut V>, &mut Self) {
+        let _ = key;
+        panic!()
+    }
+
     /// Inserts a key-value pair into the map.
     ///
     /// If the map did not have this key present, `None` is returned.
