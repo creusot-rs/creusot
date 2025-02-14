@@ -105,7 +105,5 @@ impl<T: ?Sized> PtrOwn<T> {
     #[ensures(own1.ptr().addr_logic() != own2.ptr().addr_logic())]
     #[ensures(*own1 == ^own1)]
     #[allow(unused_variables)]
-    pub fn disjoint_lemma(own1: &mut PtrOwn<T>, own2: &PtrOwn<T>) {
-        panic!()
-    }
+    pub fn disjoint_lemma(own1: &mut PtrOwn<T>, own2: &PtrOwn<T>) {}
 }
