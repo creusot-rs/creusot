@@ -12,6 +12,12 @@ use ::std::{cell::UnsafeCell, marker::PhantomData};
 /// A "permission" cell allowing interior mutability via a ghost token.
 ///
 /// When writing/reading the cell, you need to explicitely pass a [`PCellOwn`] object.
+///
+/// # Safety
+///
+/// When using Creusot to verify the code, all methods should be safe to call. Indeed,
+/// Creusot ensures that every operation on the inner value uses the right [`PCellOwn`] object
+/// created by [`PCell::new`], ensuring safety in a manner similar to [ghost_cell](https://docs.rs/ghost-cell/latest/ghost_cell/).
 #[repr(transparent)]
 pub struct PCell<T: ?Sized>(UnsafeCell<T>);
 
@@ -93,12 +99,20 @@ impl<T> PCell<T> {
     }
 
     /// Sets the contained value.
+    ///
+    /// # Safety
+    ///
+    /// You must ensure that no other borrows to the inner value of `self` exists when calling
+    /// this function.
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](PCell).
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(val == (^perm.inner_logic())@)]
     #[ensures(resolve(&(*perm.inner_logic())@))]
     #[ensures(self.id() == (^perm.inner_logic()).id())]
-    pub fn set(&self, perm: GhostBox<&mut PCellOwn<T>>, val: T) {
+    pub unsafe fn set(&self, perm: GhostBox<&mut PCellOwn<T>>, val: T) {
         let _ = perm;
         unsafe {
             *self.0.get() = val;
@@ -106,12 +120,20 @@ impl<T> PCell<T> {
     }
 
     /// Replaces the contained value with `val`, and returns the old contained value.
+    ///
+    /// # Safety
+    ///
+    /// You must ensure that no other borrows to the inner value of `self` exists when calling
+    /// this function.
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](PCell).
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(val == (^perm.inner_logic())@)]
     #[ensures(result == (*perm.inner_logic())@)]
     #[ensures(self.id() == (^perm.inner_logic()).id())]
-    pub fn replace(&self, perm: GhostBox<&mut PCellOwn<T>>, val: T) -> T {
+    pub unsafe fn replace(&self, perm: GhostBox<&mut PCellOwn<T>>, val: T) -> T {
         let _ = perm;
         unsafe { std::ptr::replace(self.0.get(), val) }
     }
@@ -129,10 +151,18 @@ impl<T> PCell<T> {
     ///
     /// The permission also acts as a guard, preventing writes to the underlying value
     /// while it is borrowed.
+    ///
+    /// # Safety
+    ///
+    /// You must ensure that no mutable borrow to the inner value of `self` exists when calling
+    /// this function.
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](PCell).
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(*result == perm@)]
-    pub fn borrow<'a>(&'a self, perm: GhostBox<&'a PCellOwn<T>>) -> &'a T {
+    pub unsafe fn borrow<'a>(&'a self, perm: GhostBox<&'a PCellOwn<T>>) -> &'a T {
         let _ = perm;
         unsafe { &*self.0.get() }
     }
@@ -141,12 +171,20 @@ impl<T> PCell<T> {
     ///
     /// The permission also acts as a guard, preventing accesses to the underlying value
     /// while it is borrowed.
+    ///
+    /// # Safety
+    ///
+    /// You must ensure that no other borrows to the inner value of `self` exists when calling
+    /// this function.
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](PCell).
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(self.id() == (^perm.inner_logic()).id())]
     #[ensures(*result == (*perm.inner_logic())@)]
     #[ensures(^result == (^perm.inner_logic())@)]
-    pub fn borrow_mut<'a>(&'a self, perm: GhostBox<&'a mut PCellOwn<T>>) -> &'a mut T {
+    pub unsafe fn borrow_mut<'a>(&'a self, perm: GhostBox<&'a mut PCellOwn<T>>) -> &'a mut T {
         let _ = perm;
         unsafe { &mut *self.0.get() }
     }
@@ -157,10 +195,18 @@ where
     T: Copy,
 {
     /// Returns a copy of the contained value.
+    ///
+    /// # Safety
+    ///
+    /// You must ensure that no mutable borrow to the inner value of `self` exists when calling
+    /// this function.
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](PCell).
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(result == (**perm)@)]
-    pub fn get(&self, perm: GhostBox<&PCellOwn<T>>) -> T {
+    pub unsafe fn get(&self, perm: GhostBox<&PCellOwn<T>>) -> T {
         let _ = perm;
         unsafe { *self.0.get() }
     }
@@ -202,11 +248,19 @@ where
     T: crate::std::default::Default,
 {
     /// Takes the value of the cell, leaving `Default::default()` in its place.
+    ///
+    /// # Safety
+    ///
+    /// You must ensure that no other borrows to the inner value of `self` exists when calling
+    /// this function.
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](PCell).
     #[requires(self.id() == perm.id())]
     #[ensures(self.id() == (^perm.inner_logic()).id())]
     #[ensures(result == (*perm.inner_logic())@)]
     #[ensures((^perm.inner_logic())@.is_default())]
-    pub fn take(&self, perm: GhostBox<&mut PCellOwn<T>>) -> T {
+    pub unsafe fn take(&self, perm: GhostBox<&mut PCellOwn<T>>) -> T {
         self.replace(perm, T::default())
     }
 }
