@@ -461,17 +461,15 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             }
             // VC((T...), Q) = VC(T[0], |t0| ... VC(T[N], |tn| Q(t0..tn))))
             TermKind::Tuple { fields } => {
-                let fields = fields.iter().map(|field| (Ident::fresh(""), field)).collect();
-                q.subst(Exp::Tuple(fields.iter().map(|(_, v)| Exp::Var(v)).collect()));
-                let vc = self.build_vc_slice(fields, q);
-                q.undo_subst();
-                vc
+                let fields: Vec<_> = fields.iter().map(|field| (field, Ident::fresh(""))).collect();
+                let post = q.subst_to_exp(Exp::Tuple(fields.iter().map(|&(_, v)| Exp::Var(v)).collect()));
+                self.build_vc_slice(&fields, post)
             }
             // Same as for tuples
             TermKind::Constructor { variant, fields, .. } => {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, t.creusot_ty());
                 let TyKind::Adt(adt, subst) = ty.kind() else { unreachable!() };
-                self.build_vc_slice(fields, &|fields| {
+                self.build_vc_slice(&fields, &|fields| {
                     let ctor = constructor(self.names, fields, adt.variant(*variant).def_id, subst);
                     k(ctor)
                 })
