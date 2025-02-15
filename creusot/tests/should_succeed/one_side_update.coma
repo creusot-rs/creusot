@@ -4,17 +4,17 @@ module M_one_side_update__f [#"one_side_update.rs" 5 0 5 10]
   let%span sone_side_update2 = "one_side_update.rs" 11 19 11 20
   let%span sresolve3 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   
-  use prelude.prelude.UIntSize
+  use prelude.int.UInt64
   
   type t_MyInt'0  =
-    { t_MyInt__0'0: usize }
+    { t_MyInt__0'0: UInt64.t }
   
-  use prelude.prelude.Borrow
+  use prelude.prelude.MutBorrow
   
-  predicate resolve'1 (self : borrowed (t_MyInt'0)) =
+  predicate resolve'1 (self : MutBorrow.t (t_MyInt'0)) =
     [%#sresolve3] self.final = self.current
   
-  predicate resolve'0 (_1 : borrowed (t_MyInt'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t (t_MyInt'0)) =
     resolve'1 _1
   
   use prelude.prelude.Intrinsic
@@ -23,23 +23,23 @@ module M_one_side_update__f [#"one_side_update.rs" 5 0 5 10]
   
   let rec f'0[#"one_side_update.rs" 5 0 5 10] (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
-      [ s0 =  [ &a <- { t_MyInt__0'0 = ([%#sone_side_update1] (10 : usize)) } ] s1
-      | s1 = Borrow.borrow_mut <t_MyInt'0> {a}
-          (fun (_ret':borrowed (t_MyInt'0)) ->  [ &b <- _ret' ]  [ &a <- _ret'.final ] s2)
+      [ s0 =  [ &a <- { t_MyInt__0'0 = ([%#sone_side_update1] (10 : UInt64.t)) } ] s1
+      | s1 = MutBorrow.borrow_mut <t_MyInt'0> {a}
+          (fun (_ret':MutBorrow.t (t_MyInt'0)) ->  [ &b <- _ret' ]  [ &a <- _ret'.final ] s2)
       | s2 = any [ br0 -> {false} (! bb2) | br1 -> {true} (! bb1) ]  ]
     
     | bb1 = s0 [ s0 = -{resolve'0 b}- s1 | s1 = bb3 ] 
     | bb2 = s0
-      [ s0 =  [ &_6 <- { t_MyInt__0'0 = ([%#sone_side_update2] (5 : usize)) } ] s1
+      [ s0 =  [ &_6 <- { t_MyInt__0'0 = ([%#sone_side_update2] (5 : UInt64.t)) } ] s1
       | s1 =  [ &b <- { b with current = _6 } ] s2
       | s2 = -{resolve'0 b}- s3
       | s3 = bb3 ]
     
     | bb3 = return' {_0} ]
     )
-    [ & _0 : () = any_l ()
-    | & a : t_MyInt'0 = any_l ()
-    | & b : borrowed (t_MyInt'0) = any_l ()
-    | & _6 : t_MyInt'0 = any_l () ]
+    [ & _0 : () = Intrinsic.any_l ()
+    | & a : t_MyInt'0 = Intrinsic.any_l ()
+    | & b : MutBorrow.t (t_MyInt'0) = Intrinsic.any_l ()
+    | & _6 : t_MyInt'0 = Intrinsic.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end

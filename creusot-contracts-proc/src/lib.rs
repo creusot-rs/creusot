@@ -803,6 +803,15 @@ pub fn open(attr: TS1, body: TS1) -> TS1 {
     }
 }
 
+#[proc_macro_attribute]
+pub fn bitwise_proof(_: TS1, tokens: TS1) -> TS1 {
+    let tokens: TokenStream = tokens.into();
+    TS1::from(quote! {
+        #[creusot::bitwise]
+        #tokens
+    })
+}
+
 // Derive Macros
 #[proc_macro_derive(PartialEq)]
 pub fn derive_partial_eq(tokens: TS1) -> TS1 {

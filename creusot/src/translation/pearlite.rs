@@ -55,6 +55,11 @@ pub enum BinOp {
     Mul,
     Div,
     Rem,
+    BitXor,
+    BitAnd,
+    BitOr,
+    Shl,
+    Shr,
     Lt,
     Le,
     Ge,
@@ -95,6 +100,9 @@ pub type QuantBinder<'tcx> = (Vec<Ident>, Ty<'tcx>);
 pub enum TermKind<'tcx> {
     Var(Symbol),
     Lit(Literal<'tcx>),
+    Cast {
+        arg: Box<Term<'tcx>>,
+    },
     Item(DefId, GenericArgsRef<'tcx>),
     Assert {
         cond: Box<Term<'tcx>>,
@@ -253,6 +261,7 @@ impl From<f64> for Float {
 // FIXME: Clean up this type: clarify use of ZST, Function, Integer types
 #[derive(Clone, Debug, TyDecodable, TyEncodable)]
 pub enum Literal<'tcx> {
+    Char(char),
     Bool(bool),
     // TODO: Find a way to make this a BigInt type
     Integer(i128),
@@ -424,36 +433,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     Mul | MulUnchecked => BinOp::Mul,
                     Div => BinOp::Div,
                     Rem => BinOp::Rem,
-                    BitXor => {
-                        return Err(Error::msg(
-                            self.thir[expr].span,
-                            "bitwise-xors are currently unsupported",
-                        ))
-                    }
-                    BitAnd => {
-                        return Err(Error::msg(
-                            self.thir[expr].span,
-                            "bitwise-ands are currently unsupported",
-                        ))
-                    }
-                    BitOr => {
-                        return Err(Error::msg(
-                            self.thir[expr].span,
-                            "bitwise-ors are currently unsupported",
-                        ))
-                    }
-                    Shl | ShlUnchecked => {
-                        return Err(Error::msg(
-                            self.thir[expr].span,
-                            "shifts are currently unsupported",
-                        ))
-                    }
-                    Shr | ShrUnchecked => {
-                        return Err(Error::msg(
-                            self.thir[expr].span,
-                            "shifts are currently unsupported",
-                        ))
-                    }
+                    BitXor => BinOp::BitXor,
+                    BitAnd => BinOp::BitAnd,
+                    BitOr => BinOp::BitOr,
+                    Shl | ShlUnchecked => BinOp::Shl,
+                    Shr | ShrUnchecked => BinOp::Shr,
                     Lt => BinOp::Lt,
                     Le => BinOp::Le,
                     Ge => BinOp::Ge,
@@ -780,6 +764,10 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     let bound = self.ctx.fn_arg_names(closure_id).iter().map(|i| i.name).collect();
                     Ok(Term { ty, span, kind: TermKind::Closure { bound, body: Box::new(term) } })
                 }
+            }
+            ExprKind::Cast { source } => {
+                let source = self.expr_term(source)?;
+                Ok(Term { ty, span, kind: TermKind::Cast { arg: Box::new(source) } })
             }
             ref ek => todo!("lower_expr: {:?}", ek),
         };
@@ -1245,6 +1233,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
     match &term.kind {
         TermKind::Var(_) => {}
         TermKind::Lit(_) => {}
+        TermKind::Cast { arg } => visitor.visit_term(arg),
         TermKind::Item(_, _) => {}
         TermKind::Binary { op: _, lhs, rhs } => {
             visitor.visit_term(lhs);
@@ -1300,6 +1289,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
     match &mut term.kind {
         TermKind::Var(_) => {}
         TermKind::Lit(_) => {}
+        TermKind::Cast { arg } => visitor.visit_mut_term(&mut *arg),
         TermKind::Item(_, _) => {}
         TermKind::Binary { op: _, lhs, rhs } => {
             visitor.visit_mut_term(&mut *lhs);
@@ -1542,6 +1532,7 @@ impl<'tcx> Term<'tcx> {
                 }
             }
             TermKind::Lit(_) => {}
+            TermKind::Cast { arg } => arg.subst_with_inner(bound, inv_subst),
             TermKind::Item(_, _) => {}
             TermKind::Binary { lhs, rhs, .. } => {
                 lhs.subst_with_inner(bound, inv_subst);
@@ -1623,6 +1614,7 @@ impl<'tcx> Term<'tcx> {
                 }
             }
             TermKind::Lit(_) => {}
+            TermKind::Cast { arg } => arg.free_vars_inner(bound, free),
             TermKind::Item(_, _) => {}
             TermKind::Binary { lhs, rhs, .. } => {
                 lhs.free_vars_inner(bound, free);

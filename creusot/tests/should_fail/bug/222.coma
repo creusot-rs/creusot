@@ -1,9 +1,9 @@
 module M_222__A__is_true [#"222.rs" 14 4 14 16]
   let%span s2220 = "222.rs" 13 14 13 34
   
-  use prelude.prelude.Int
-  
   function mktrue'0 [#"222.rs" 7 4 7 22] (_1 : ()) : int
+  
+  use mach.int.Int
   
   constant _1  : ()
   
@@ -21,7 +21,7 @@ module M_222__uses_invariant [#"222.rs" 40 0 40 41]
   let%span sresolve6 = "../../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   let%span sinvariant7 = "../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   
-  use prelude.prelude.Borrow
+  use prelude.prelude.MutBorrow
   
   type t_T'0
   
@@ -42,14 +42,14 @@ module M_222__uses_invariant [#"222.rs" 40 0 40 41]
   type t_Once'0  =
     { t_Once__0'0: t_Option'0 }
   
-  predicate invariant'2 (self : borrowed (t_Option'0)) =
+  predicate invariant'2 (self : MutBorrow.t (t_Option'0)) =
     [%#sinvariant7] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'2 (_1 : borrowed (t_Option'0))
+  predicate inv'2 (_1 : MutBorrow.t (t_Option'0))
   
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_Option'0) [inv'2 x] . inv'2 x = invariant'2 x
+  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t (t_Option'0) [inv'2 x] . inv'2 x = invariant'2 x
   
-  let rec take'0 (self:borrowed (t_Option'0)) (return'  (ret:t_Option'0))= {[@expl:take 'self' type invariant] inv'2 self}
+  let rec take'0 (self:MutBorrow.t (t_Option'0)) (return'  (ret:t_Option'0))= {[@expl:take 'self' type invariant] inv'2 self}
     any
     [ return' (result:t_Option'0)-> {inv'0 result}
       {[%#soption3] result = self.current /\ self.final = C_None'0}
@@ -74,17 +74,17 @@ module M_222__uses_invariant [#"222.rs" 40 0 40 41]
     | {t_Once__0'0 = a_0} -> inv'0 a_0
     end
   
-  predicate invariant'1 (self : borrowed (t_Once'0)) =
+  predicate invariant'1 (self : MutBorrow.t (t_Once'0)) =
     [%#sinvariant7] inv'4 self.current /\ inv'4 self.final
   
-  predicate inv'1 (_1 : borrowed (t_Once'0))
+  predicate inv'1 (_1 : MutBorrow.t (t_Once'0))
   
-  axiom inv_axiom'1 [@rewrite] : forall x : borrowed (t_Once'0) [inv'1 x] . inv'1 x = invariant'1 x
+  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t (t_Once'0) [inv'1 x] . inv'1 x = invariant'1 x
   
-  predicate resolve'3 (self : borrowed (t_Once'0)) =
+  predicate resolve'3 (self : MutBorrow.t (t_Once'0)) =
     [%#sresolve6] self.final = self.current
   
-  predicate resolve'1 (_1 : borrowed (t_Once'0)) =
+  predicate resolve'1 (_1 : MutBorrow.t (t_Once'0)) =
     resolve'3 _1
   
   use prelude.prelude.Intrinsic
@@ -94,13 +94,13 @@ module M_222__uses_invariant [#"222.rs" 40 0 40 41]
   
   meta "compute_max_steps" 1000000
   
-  let rec uses_invariant'0[#"222.rs" 40 0 40 41] (x:borrowed (t_Once'0)) (return'  (ret:()))= {[@expl:uses_invariant 'x' type invariant] [%#s2220] inv'1 x}
+  let rec uses_invariant'0[#"222.rs" 40 0 40 41] (x:MutBorrow.t (t_Once'0)) (return'  (ret:()))= {[@expl:uses_invariant 'x' type invariant] [%#s2220] inv'1 x}
     {[@expl:uses_invariant requires] [%#s2221] invariant'0 x.current}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 (x.current).t_Once__0'0}
-        Borrow.borrow_final <t_Option'0> {(x.current).t_Once__0'0} {Borrow.inherit_id (Borrow.get_id x) 1}
-          (fun (_ret':borrowed (t_Option'0)) ->
+        MutBorrow.borrow_final <t_Option'0> {(x.current).t_Once__0'0} {MutBorrow.inherit_id (MutBorrow.get_id x) 1}
+          (fun (_ret':MutBorrow.t (t_Option'0)) ->
              [ &_5 <- _ret' ] 
             -{inv'0 _ret'.final}-
              [ &x <- { x with current = { t_Once__0'0 = _ret'.final } } ] 
@@ -113,9 +113,9 @@ module M_222__uses_invariant [#"222.rs" 40 0 40 41]
     | bb1 = s0 [ s0 = {[@expl:type invariant] inv'1 x} s1 | s1 = -{resolve'1 x}- s2 | s2 = bb2 ] 
     | bb2 = return' {_0} ]
     )
-    [ & _0 : () = any_l ()
-    | & x : borrowed (t_Once'0) = x
-    | & _4 : t_Option'0 = any_l ()
-    | & _5 : borrowed (t_Option'0) = any_l () ]
+    [ & _0 : () = Intrinsic.any_l ()
+    | & x : MutBorrow.t (t_Once'0) = x
+    | & _4 : t_Option'0 = Intrinsic.any_l ()
+    | & _5 : MutBorrow.t (t_Option'0) = Intrinsic.any_l () ]
      [ return' (result:())-> {[@expl:uses_invariant ensures] [%#s2222] invariant'0 x.final} (! return' {result}) ] 
 end

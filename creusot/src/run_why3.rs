@@ -342,10 +342,10 @@ fn cterm_to_ast(t: &ConcreteTerm) -> Expr {
             app("funlit!", [arr, cterm_to_ast(other)])
         }
         ConcreteTerm::Proj { name, value } => match (&**name, &**value) {
-            ("prelude.prelude.UInt8.uint8'int", ConcreteTerm::Integer(n)) => {
+            ("prelude.int.UInt8.uint8'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("u8"))
             }
-            ("prelude.prelude.UInt16.uint16'int", ConcreteTerm::Integer(n)) => {
+            ("prelude.int.UInt16.uint16'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("u16"))
             }
             ("mach.int.UInt32Gen.uint32'int", ConcreteTerm::Integer(n)) => {
@@ -354,13 +354,13 @@ fn cterm_to_ast(t: &ConcreteTerm) -> Expr {
             ("mach.int.UInt64Gen.uint64'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("u64"))
             }
-            ("prelude.prelude.UInt128.uint16'int", ConcreteTerm::Integer(n)) => {
+            ("prelude.int.UInt128.uint16'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("u128"))
             }
-            ("prelude.prelude.Int8.int8'int", ConcreteTerm::Integer(n)) => {
+            ("prelude.int.Int8.int8'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("i8"))
             }
-            ("prelude.prelude.Int16.int16'int", ConcreteTerm::Integer(n)) => {
+            ("prelude.int.Int16.int16'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("i16"))
             }
             ("mach.int.Int32.int32'int", ConcreteTerm::Integer(n)) => {
@@ -369,7 +369,7 @@ fn cterm_to_ast(t: &ConcreteTerm) -> Expr {
             ("mach.int.Int64.int64'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("i64"))
             }
-            ("prelude.prelude.Int128.int128'int", ConcreteTerm::Integer(n)) => {
+            ("prelude.int.Int128.int128'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("i128"))
             }
             _ => app("proj!", [name_to_path(name), cterm_to_ast(value)]),

@@ -1,7 +1,7 @@
 use crate::{
     backend::{
         program::borrow_generated_id,
-        ty::{constructor, floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty},
+        ty::{constructor, floatty_to_prelude, ity_to_prelude, translate_ty, uty_to_prelude},
         Why3Generator,
     },
     contracts_items::get_builtin,
@@ -12,6 +12,8 @@ use crate::{
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};
+use rustc_span::DUMMY_SP;
+use rustc_type_ir::{IntTy, UintTy};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat},
     ty::Type,
@@ -46,9 +48,68 @@ struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     names: &'a N,
 }
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
-    fn lower_term(&mut self, term: &Term<'tcx>) -> Exp {
+    fn lower_term(&self, term: &Term<'tcx>) -> Exp {
         match &term.kind {
             TermKind::Lit(l) => lower_literal(self.ctx, self.names, l),
+            TermKind::Cast { box arg } => match arg.ty.kind() {
+                TyKind::Bool => {
+                    let (fct_name, prelude_kind) = match term.ty.kind() {
+                        TyKind::Int(ity) => ("of_bool", ity_to_prelude(self.ctx.tcx, *ity)),
+                        TyKind::Uint(uty) => ("of_bool", uty_to_prelude(self.ctx.tcx, *uty)),
+                        _ => self.ctx.crash_and_error(
+                            DUMMY_SP,
+                            "bool cast to non integral casts are currently unsupported",
+                        ),
+                    };
+
+                    let qname = self.names.from_prelude(prelude_kind, fct_name);
+                    Exp::Call(Box::new(Exp::qvar(qname)), vec![self.lower_term(arg)])
+                }
+                TyKind::Int(_) | TyKind::Uint(_) => {
+                    // to
+                    let (to_fct_name, to_prelude_kind) = match arg.ty.kind() {
+                        TyKind::Int(ity) => (
+                            if self.names.bitwise_mode() { "to_BV256" } else { "to_int" },
+                            ity_to_prelude(self.ctx.tcx, *ity),
+                        ),
+                        TyKind::Uint(ity) => (
+                            if self.names.bitwise_mode() { "to_BV256" } else { "to_int" },
+                            uty_to_prelude(self.ctx.tcx, *ity),
+                        ),
+                        _ => self.ctx.crash_and_error(
+                            DUMMY_SP,
+                            &format!("casts {:?} are currently unsupported", arg.ty.kind()),
+                        ),
+                    };
+
+                    // of
+                    let (of_fct_name, of_prelude_kind) = match term.ty.kind() {
+                        TyKind::Int(ity) => (
+                            if self.names.bitwise_mode() { "of_BV256" } else { "of_int" },
+                            ity_to_prelude(self.ctx.tcx, *ity),
+                        ),
+                        TyKind::Uint(ity) => (
+                            if self.names.bitwise_mode() { "of_BV256" } else { "of_int" },
+                            uty_to_prelude(self.ctx.tcx, *ity),
+                        ),
+                        _ => self.ctx.crash_and_error(
+                            DUMMY_SP,
+                            &format!("casts {:?} are currently unsupported", arg.ty.kind()),
+                        ),
+                    };
+
+                    let to_qname = self.names.from_prelude(to_prelude_kind, to_fct_name);
+                    let of_qname = self.names.from_prelude(of_prelude_kind, of_fct_name);
+
+                    let to_exp =
+                        Exp::Call(Box::new(Exp::qvar(to_qname)), vec![self.lower_term(arg)]);
+                    Exp::Call(Box::new(Exp::qvar(of_qname)), vec![to_exp])
+                }
+                _ => self.ctx.crash_and_error(
+                    DUMMY_SP,
+                    "casting from a type that is not a boolean is not supported",
+                ),
+            },
             // FIXME: this is a weird dance.
             TermKind::Item(id, subst) => {
                 let method = (*id, *subst);
@@ -72,17 +133,73 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let rhs = self.lower_term(rhs);
 
                 use pearlite::BinOp::*;
-                if matches!(op, Add | Sub | Mul | Div | Rem | Le | Ge | Lt | Gt) {
-                    self.names.import_prelude_module(PreludeModule::Int);
-                }
-
                 match op {
-                    Div => Exp::var("div").app(vec![lhs, rhs]),
-                    Rem => Exp::var("mod").app(vec![lhs, rhs]),
-                    _ => Exp::BinaryOp(binop_to_binop(*op), Box::new(lhs), Box::new(rhs)),
+                    Div => {
+                        let ty_kind = term.creusot_ty().kind();
+                        match ty_kind {
+                            TyKind::Int(ity) => {
+                                let prelude = ity_to_prelude(self.names.tcx(), *ity);
+                                Exp::qvar(self.names.from_prelude(prelude, "sdiv"))
+                                    .app(vec![lhs, rhs])
+                            }
+                            TyKind::Uint(uty) => {
+                                let prelude = uty_to_prelude(self.names.tcx(), *uty);
+                                Exp::qvar(self.names.from_prelude(prelude, "udiv"))
+                                    .app(vec![lhs, rhs])
+                            }
+                            _ => Exp::qvar(self.names.from_prelude(PreludeModule::Int, "div"))
+                                .app(vec![lhs, rhs]),
+                        }
+                    }
+                    Rem => {
+                        let ty_kind = term.creusot_ty().kind();
+                        match ty_kind {
+                            TyKind::Int(ity) => {
+                                let prelude = ity_to_prelude(self.names.tcx(), *ity);
+                                Exp::qvar(self.names.from_prelude(prelude, "srem"))
+                                    .app(vec![lhs, rhs])
+                            }
+                            TyKind::Uint(uty) => {
+                                let prelude = uty_to_prelude(self.names.tcx(), *uty);
+                                Exp::qvar(self.names.from_prelude(prelude, "urem"))
+                                    .app(vec![lhs, rhs])
+                            }
+                            _ => Exp::qvar(self.names.from_prelude(PreludeModule::Int, "mod"))
+                                .app(vec![lhs, rhs]),
+                        }
+                    }
+                    BitAnd | BitOr | BitXor | Shl | Shr => {
+                        let ty_kind = term.creusot_ty().kind();
+                        let prelude = match ty_kind {
+                            TyKind::Int(ity) => ity_to_prelude(self.names.tcx(), *ity),
+                            TyKind::Uint(uty) => uty_to_prelude(self.names.tcx(), *uty),
+                            _ => unreachable!("the bitwise operator are only available on integer"),
+                        };
+
+                        let func_name = match (op, ty_kind) {
+                            (BitAnd, _) => "bw_and",
+                            (BitOr, _) => "bw_or",
+                            (BitXor, _) => "bw_xor",
+                            (Shl, _) => "lsl_bv",
+                            (Shr, TyKind::Int(_)) => "asr_bv",
+                            (Shr, TyKind::Uint(_)) => "lsr_bv",
+                            _ => unreachable!(),
+                        };
+
+                        Exp::qvar(self.names.from_prelude(prelude, func_name)).app(vec![lhs, rhs])
+                    }
+                    _ => {
+                        if matches!(op, Add | Sub | Mul | Le | Ge | Lt | Gt) {
+                            self.names.import_prelude_module(PreludeModule::Int);
+                        }
+                        Exp::BinaryOp(binop_to_binop(*op), Box::new(lhs), Box::new(rhs))
+                    }
                 }
             }
             TermKind::Unary { op, box arg } => {
+                if matches!(op, pearlite::UnOp::Neg) {
+                    self.names.import_prelude_module(PreludeModule::Int);
+                }
                 let op = match op {
                     pearlite::UnOp::Not => why3::exp::UnOp::Not,
                     pearlite::UnOp::Neg => why3::exp::UnOp::Neg,
@@ -208,9 +325,18 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Reborrow { cur, fin, inner, projection } => {
                 let inner = self.lower_term(&*inner);
-                let borrow_id = borrow_generated_id(inner, &projection, |x| self.lower_term(x));
+                let borrow_id = borrow_generated_id(self.names, inner, &projection, |x| {
+                    if matches!(x.ty.kind(), TyKind::Uint(UintTy::Usize)) {
+                        let qname = self
+                            .names
+                            .from_prelude(uty_to_prelude(self.ctx.tcx, UintTy::Usize), "t'int");
+                        Exp::Call(Box::new(Exp::qvar(qname)), vec![self.lower_term(x)])
+                    } else {
+                        self.lower_term(x)
+                    }
+                });
 
-                Exp::qvar("Borrow.borrow_logic".into()).app(vec![
+                Exp::qvar(self.names.from_prelude(PreludeModule::Borrow, "borrow_logic")).app(vec![
                     self.lower_term(&*cur),
                     self.lower_term(&*fin),
                     borrow_id,
@@ -236,7 +362,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         }
     }
 
-    fn lower_pat(&mut self, pat: &Pattern<'tcx>) -> Pat {
+    fn lower_pat(&self, pat: &Pattern<'tcx>) -> Pat {
         match pat {
             Pattern::Constructor { variant, fields, substs } => {
                 let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
@@ -276,12 +402,12 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         }
     }
 
-    fn lower_ty(&mut self, ty: Ty<'tcx>) -> Type {
+    fn lower_ty(&self, ty: Ty<'tcx>) -> Type {
         translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty)
     }
 
     pub(crate) fn lookup_builtin(
-        &mut self,
+        &self,
         method: (DefId, GenericArgsRef<'tcx>),
         args: &Vec<Exp>,
     ) -> Option<Exp> {
@@ -294,7 +420,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         None
     }
 
-    fn lower_trigger(&mut self, triggers: &[Trigger<'tcx>]) -> Vec<why3::exp::Trigger> {
+    fn lower_trigger(&self, triggers: &[Trigger<'tcx>]) -> Vec<why3::exp::Trigger> {
         triggers
             .iter()
             .map(|x| why3::exp::Trigger(x.0.iter().map(|x| self.lower_term(x)).collect()))
@@ -303,29 +429,44 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 }
 
 pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
-    _: &TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     names: &N,
     lit: &Literal<'tcx>,
 ) -> Exp {
     match *lit {
         Literal::Integer(i) => Constant::Int(i, None).into(),
-        Literal::MachSigned(u, intty) => {
-            let why_ty = intty_to_ty(names, intty);
-            Constant::Int(u, Some(why_ty)).into()
+        Literal::MachSigned(mut i, ity) => {
+            let why_ty = Type::TConstructor(names.from_prelude(ity_to_prelude(ctx.tcx, ity), "t"));
+            if names.bitwise_mode() {
+                // In bitwise mode, integers are bit vectors, whose literals are always unsigned
+                if i < 0 && ity != IntTy::I128 {
+                    let target_width = ctx.tcx.sess.target.pointer_width;
+                    i += 1 << ity.normalize(target_width).bit_width().unwrap();
+                }
+                Constant::Uint(i as u128, Some(why_ty)).into()
+            } else {
+                Constant::Int(i, Some(why_ty)).into()
+            }
         }
         Literal::MachUnsigned(u, uty) => {
-            let why_ty = uintty_to_ty(names, uty);
-
+            let why_ty = Type::TConstructor(names.from_prelude(uty_to_prelude(ctx.tcx, uty), "t"));
             Constant::Uint(u, Some(why_ty)).into()
         }
         Literal::Bool(true) => Constant::const_true().into(),
         Literal::Bool(false) => Constant::const_false().into(),
+        Literal::Char(c) => {
+            let of_int = names.from_prelude(PreludeModule::Char, "of_int");
+            Exp::Call(
+                Box::new(Exp::qvar(of_int)),
+                vec![Constant::Int(c as u32 as i128, None).into()],
+            )
+        }
         Literal::Function(id, subst) => {
             names.item(id, subst);
             Exp::Tuple(Vec::new())
         }
         Literal::Float(ref f, fty) => {
-            let why_ty = floatty_to_ty(names, fty);
+            let why_ty = Type::TConstructor(names.from_prelude(floatty_to_prelude(fty), "t"));
             Constant::Float(f.0, Some(why_ty)).into()
         }
         Literal::ZST => Exp::Tuple(Vec::new()),
@@ -346,6 +487,11 @@ pub(crate) fn binop_to_binop(op: pearlite::BinOp) -> why3::exp::BinOp {
         pearlite::BinOp::Ne => BinOp::Ne,
         pearlite::BinOp::And => BinOp::LogAnd,
         pearlite::BinOp::Or => BinOp::LogOr,
+        pearlite::BinOp::BitAnd => BinOp::BitAnd,
+        pearlite::BinOp::BitOr => BinOp::BitOr,
+        pearlite::BinOp::BitXor => BinOp::BitXor,
+        pearlite::BinOp::Shl => BinOp::Shl,
+        pearlite::BinOp::Shr => BinOp::Shr,
         pearlite::BinOp::Div => todo!("Refactor binop_to_binop to support Div"),
         pearlite::BinOp::Rem => todo!("Refactor binop_to_binop to support Rem"),
     }

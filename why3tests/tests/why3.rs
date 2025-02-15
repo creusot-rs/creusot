@@ -163,7 +163,7 @@ fn main() {
 
             // There is a session directory. Try to replay the session.
             why3.arg("replay");
-            why3.args(&["-L", "."]);
+            why3.args(&["-L", "target/"]);
             why3.arg(sessiondir.clone());
 
             output = why3.ok();
@@ -200,7 +200,7 @@ fn main() {
         } else if header_line.contains("NO_REPLAY") {
             // Simply parse the file using "why3 prove".
             why3.arg("prove");
-            why3.args(&["-L", ".", "-F", "coma"]);
+            why3.args(&["-L", "target/", "-F", "coma"]);
             why3.arg(file);
             output = why3.ok();
             if output.is_ok() && !args.quiet {
@@ -215,7 +215,9 @@ fn main() {
         } else {
             let mut why3find = Command::new(paths.why3find);
             why3find.env("WHY3CONFIG", &paths.why3_config);
-            why3find.arg("prove").arg(file);
+            why3find.arg("prove").arg(file.canonicalize().unwrap());
+            why3find.arg("--root");
+            why3find.arg("target");
             if let Some(tactic) = tactic_re.captures_iter(&header_line).next() {
                 why3find.args(["--tactic", tactic.get(1).unwrap().as_str()]);
             }
@@ -228,6 +230,7 @@ fn main() {
             if !args.update {
                 why3find.arg("-r");
             }
+
             output = why3find.ok();
             if output.is_ok() && !args.quiet {
                 if is_tty {

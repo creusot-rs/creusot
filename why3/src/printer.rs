@@ -415,10 +415,6 @@ impl Print for Type {
     {
         use Type::*;
         match self {
-            Bool => alloc.text("bool"),
-            Char => alloc.text("char"),
-            Integer => alloc.text("int"),
-            MutableBorrow(t) => alloc.text("borrowed ").append(ty_parens!(alloc, t)),
             TVar(v) => alloc.text(format!("'{}", v.0)),
             TConstructor(ty) => ty.pretty(alloc),
             TFun(a, b) => ty_parens!(alloc, a).append(" -> ").append(ty_parens!(alloc, b)),
@@ -726,6 +722,11 @@ fn bin_op_to_string(op: &BinOp) -> &str {
         LazyAnd => "&&",
         LogOr => "\\/",
         LazyOr => "||",
+        BitAnd => unreachable!("the & operator can't be instanced in infix notation"),
+        BitOr => unreachable!("the | operator can't be instanced in infix notation"),
+        BitXor => unreachable!("the ^ operator can't be instanced in infix notation"),
+        Shl => unreachable!("the << operator can't be instanced in infix notation"),
+        Shr => unreachable!("the >> operator can't be instanced in infix notation"),
         Add => "+",
         Sub => "-",
         Mul => "*",
@@ -762,6 +763,10 @@ impl Print for Constant {
                 } else {
                     alloc.text("false")
                 }
+            }
+            Constant::Char(c, t) => {
+                let c = *c as u32;
+                alloc.as_string(c).append(" : ").append(t.pretty(alloc)).parens()
             }
             Constant::Int(i, Some(t)) => {
                 alloc.as_string(i).append(" : ").append(t.pretty(alloc)).parens()

@@ -9,20 +9,20 @@ module M_16_impl_cloning__test [#"16_impl_cloning.rs" 16 0 16 30]
   let%span sseq7 = "../../../../creusot-contracts/src/logic/seq.rs" 633 20 633 95
   let%span sboxed8 = "../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
-  use prelude.prelude.Borrow
+  use prelude.prelude.MutBorrow
   
   use prelude.prelude.Opaque
   
   type t_NonNull'0  =
-    { t_NonNull__pointer'0: opaque_ptr }
+    { t_NonNull__pointer'0: Opaque.ptr }
   
   type t_Unique'0  =
     { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
   
-  use prelude.prelude.UIntSize
+  use prelude.int.UInt64
   
   type t_UsizeNoHighBit'0  =
-    { t_UsizeNoHighBit__0'0: usize }
+    { t_UsizeNoHighBit__0'0: UInt64.t }
   
   type t_RawVecInner'0  =
     { t_RawVecInner__ptr'0: t_Unique'0; t_RawVecInner__cap'0: t_UsizeNoHighBit'0; t_RawVecInner__alloc'0: () }
@@ -31,18 +31,18 @@ module M_16_impl_cloning__test [#"16_impl_cloning.rs" 16 0 16 30]
     { t_RawVec__inner'0: t_RawVecInner'0; t_RawVec__qy95zmarker'0: () }
   
   type t_Vec'1  =
-    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: usize }
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
   type t_Vec'0  =
     { t_Vec__0'0: t_Vec'1 }
   
   use seq.Seq
   
-  constant v_MAX'0 : usize = (18446744073709551615 : usize)
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
-  use prelude.prelude.UIntSize
+  use prelude.int.UInt64
   
-  use prelude.prelude.Int
+  use mach.int.Int
   
   type t_T'0
   
@@ -50,7 +50,7 @@ module M_16_impl_cloning__test [#"16_impl_cloning.rs" 16 0 16 30]
   
   function view'2 (self : t_Vec'1) : Seq.seq t_T'0
   
-  axiom view'2_spec : forall self : t_Vec'1 . [%#svec6] Seq.length (view'2 self) <= UIntSize.to_int (v_MAX'0 : usize)
+  axiom view'2_spec : forall self : t_Vec'1 . [%#svec6] Seq.length (view'2 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
   use seq.Seq
   
@@ -84,31 +84,31 @@ module M_16_impl_cloning__test [#"16_impl_cloning.rs" 16 0 16 30]
     | {t_Vec__0'0 = a_0} -> inv'2 a_0
     end
   
-  predicate invariant'0 (self : borrowed (t_Vec'0)) =
+  predicate invariant'0 (self : MutBorrow.t (t_Vec'0)) =
     [%#sinvariant4] inv'1 self.current /\ inv'1 self.final
   
-  predicate inv'0 (_1 : borrowed (t_Vec'0))
+  predicate inv'0 (_1 : MutBorrow.t (t_Vec'0))
   
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_Vec'0) [inv'0 x] . inv'0 x = invariant'0 x
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t (t_Vec'0) [inv'0 x] . inv'0 x = invariant'0 x
   
-  predicate resolve'1 (self : borrowed (t_Vec'0)) =
+  predicate resolve'1 (self : MutBorrow.t (t_Vec'0)) =
     [%#sresolve3] self.final = self.current
   
-  predicate resolve'0 (_1 : borrowed (t_Vec'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t (t_Vec'0)) =
     resolve'1 _1
   
   use prelude.prelude.Intrinsic
   
   function view'1 [#"16_impl_cloning.rs" 10 4 10 33] (self : t_Vec'0) : Seq.seq t_T'0
   
-  function view'0 (self : borrowed (t_Vec'0)) : Seq.seq t_T'0 =
+  function view'0 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
     [%#smodel2] view'1 self.current
   
   meta "compute_max_steps" 1000000
   
-  let rec test'0[#"16_impl_cloning.rs" 16 0 16 30] (x:borrowed (t_Vec'0)) (return'  (ret:()))= {[@expl:test 'x' type invariant] [%#s16_impl_cloning0] inv'0 x}
+  let rec test'0[#"16_impl_cloning.rs" 16 0 16 30] (x:MutBorrow.t (t_Vec'0)) (return'  (ret:()))= {[@expl:test 'x' type invariant] [%#s16_impl_cloning0] inv'0 x}
     (! bb0 [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'0 x} s1 | s1 = -{resolve'0 x}- s2 | s2 = return' {_0} ]  ] )
-    [ & _0 : () = any_l () | & x : borrowed (t_Vec'0) = x ]
+    [ & _0 : () = Intrinsic.any_l () | & x : MutBorrow.t (t_Vec'0) = x ]
     
     [ return' (result:())-> {[@expl:test ensures] [%#s16_impl_cloning1] view'0 x = view'1 x.current}
       (! return' {result}) ]

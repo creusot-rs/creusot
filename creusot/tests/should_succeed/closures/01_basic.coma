@@ -3,14 +3,12 @@ module M_01_basic__uses_closure [#"01_basic.rs" 6 0 6 21]
   
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Borrow
-  
   type closure0'1  =
     { field_0'0: bool }
   
   let rec closure0'0[#"01_basic.rs" 8 14 8 16] [@coma:extspec] (_1:closure0'1) (return'  (ret:bool))= bb0
     [ bb0 = s0 [ s0 =  [ &_0 <- _1.field_0'0 ] s1 | s1 = return' {_0} ]  ]
-     [ & _0 : bool = any_l () | & _1 : closure0'1 = _1 ]  [ return' (result:bool)-> return' {result} ] 
+     [ & _0 : bool = Intrinsic.any_l () | & _1 : closure0'1 = _1 ]  [ return' (result:bool)-> return' {result} ] 
   
   meta "compute_max_steps" 1000000
   
@@ -23,41 +21,44 @@ module M_01_basic__uses_closure [#"01_basic.rs" 6 0 6 21]
     
     | bb1 = return' {_0} ]
     )
-    [ & _0 : () = any_l ()
-    | & y : bool = any_l ()
-    | & _x : bool = any_l ()
-    | & _4 : closure0'1 = any_l ()
-    | & _6 : () = any_l () ]
+    [ & _0 : () = Intrinsic.any_l ()
+    | & y : bool = Intrinsic.any_l ()
+    | & _x : bool = Intrinsic.any_l ()
+    | & _4 : closure0'1 = Intrinsic.any_l ()
+    | & _6 : () = Intrinsic.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
 module M_01_basic__multi_arg [#"01_basic.rs" 11 0 11 18]
   let%span s01_basic0 = "01_basic.rs" 13 17 13 18
   let%span s01_basic1 = "01_basic.rs" 13 20 13 21
   
-  use prelude.prelude.Int32
+  use prelude.int.Int32
   
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Borrow
+  let rec closure0'0[#"01_basic.rs" 12 12 12 18] [@coma:extspec] (_1:()) (a:Int32.t) (b:Int32.t) (return'  (ret:Int32.t))= bb0
+    [ bb0 = s0 [ s0 = Int32.add {a} {b} (fun (_ret':Int32.t) ->  [ &_0 <- _ret' ] s1) | s1 = return' {_0} ]  ]
+     [ & _0 : Int32.t = Intrinsic.any_l () | & a : Int32.t = a | & b : Int32.t = b ] 
+    [ return' (result:Int32.t)-> return' {result} ]
   
-  let rec closure0'0[#"01_basic.rs" 12 12 12 18] [@coma:extspec] (_1:()) (a:int32) (b:int32) (return'  (ret:int32))= bb0
-    [ bb0 = s0 [ s0 = Int32.add {a} {b} (fun (_ret':int32) ->  [ &_0 <- _ret' ] s1) | s1 = return' {_0} ]  ]
-     [ & _0 : int32 = any_l () | & a : int32 = a | & b : int32 = b ]  [ return' (result:int32)-> return' {result} ] 
   
   meta "compute_max_steps" 1000000
   
   let rec multi_arg'0[#"01_basic.rs" 11 0 11 18] (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &x <- () ] s1
-      | s1 =  [ &_4 <- (([%#s01_basic0] (0 : int32)), ([%#s01_basic1] (3 : int32))) ] s2
+      | s1 =  [ &_4 <- (([%#s01_basic0] (0 : Int32.t)), ([%#s01_basic1] (3 : Int32.t))) ] s2
       | s2 = closure0'0 {x} {let (r'0, _) = _4 in r'0} {let (_, r'1) = _4 in r'1}
-          (fun (_ret':int32) ->  [ &_a <- _ret' ] s3)
+          (fun (_ret':Int32.t) ->  [ &_a <- _ret' ] s3)
       | s3 = bb1 ]
     
     | bb1 = return' {_0} ]
-    ) [ & _0 : () = any_l () | & x : () = any_l () | & _a : int32 = any_l () | & _4 : (int32, int32) = any_l () ] 
-    [ return' (result:())-> (! return' {result}) ]
-
+    )
+    [ & _0 : () = Intrinsic.any_l ()
+    | & x : () = Intrinsic.any_l ()
+    | & _a : Int32.t = Intrinsic.any_l ()
+    | & _4 : (Int32.t, Int32.t) = Intrinsic.any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
 end
 module M_01_basic__move_closure [#"01_basic.rs" 18 0 18 21]
   let%span s01_basic0 = "01_basic.rs" 19 17 19 21
@@ -71,27 +72,27 @@ module M_01_basic__move_closure [#"01_basic.rs" 18 0 18 21]
   let%span sops8 = "../../../../creusot-contracts/src/std/ops.rs" 122 14 122 28
   let%span sops9 = "../../../../creusot-contracts/src/std/ops.rs" 127 14 128 105
   
-  use prelude.prelude.Int32
+  use prelude.int.Int32
   
-  use prelude.prelude.Borrow
+  use prelude.prelude.MutBorrow
   
   type closure0'1  =
-    { field_0'0: borrowed int32 }
+    { field_0'0: MutBorrow.t Int32.t }
   
-  predicate resolve'3 (self : borrowed closure0'1) =
+  predicate resolve'3 (self : MutBorrow.t closure0'1) =
     [%#sresolve2] self.final = self.current
   
-  predicate resolve'1 (_1 : borrowed closure0'1) =
+  predicate resolve'1 (_1 : MutBorrow.t closure0'1) =
     resolve'3 _1
   
   use prelude.prelude.Intrinsic
   
   predicate postcondition_once'0 (self : closure0'1) (args : ()) (result : ())
   
-  predicate resolve'4 (self : borrowed int32) =
+  predicate resolve'4 (self : MutBorrow.t Int32.t) =
     [%#sresolve2] self.final = self.current
   
-  predicate resolve'2 (_1 : borrowed int32) =
+  predicate resolve'2 (_1 : MutBorrow.t Int32.t) =
     resolve'4 _1
   
   predicate resolve'0 (_1 : closure0'1) =
@@ -100,19 +101,21 @@ module M_01_basic__move_closure [#"01_basic.rs" 18 0 18 21]
   predicate unnest'0 (self : closure0'1) (_2 : closure0'1) =
     true
   
-  let rec closure0'0[#"01_basic.rs" 21 16 21 23] [@coma:extspec] (_1:borrowed closure0'1) (return'  (ret:()))= bb0
+  let rec closure0'0[#"01_basic.rs" 21 16 21 23] [@coma:extspec] (_1:MutBorrow.t closure0'1) (return'  (ret:()))= bb0
     [ bb0 = s0
-      [ s0 = Int32.add {((_1.current).field_0'0).current} {[%#s01_basic1] (1 : int32)}
-          (fun (_ret':int32) ->
+      [ s0 = Int32.add {((_1.current).field_0'0).current} {[%#s01_basic1] (1 : Int32.t)}
+          (fun (_ret':Int32.t) ->
              [ &_1 <- { _1 with current = { field_0'0 = { (_1.current).field_0'0 with current = _ret' } } } ] 
             s1)
       | s1 = -{resolve'1 _1}- s2
       | s2 = return' {_0} ]
      ]
-     [ & _0 : () = any_l () | & _1 : borrowed closure0'1 = _1 ]  [ return' (result:())-> return' {result} ] 
+     [ & _0 : () = Intrinsic.any_l () | & _1 : MutBorrow.t closure0'1 = _1 ] 
+    [ return' (result:())-> return' {result} ]
+  
   
   predicate postcondition_mut'0 (self : closure0'1) (args : ()) (result_state : closure0'1) (result : ()) =
-    (let () = args in exists __bor_self : borrowed closure0'1 . closure0'0'post'return' __bor_self result
+    (let () = args in exists __bor_self : MutBorrow.t closure0'1 . closure0'0'post'return' __bor_self result
     /\ __bor_self.current = self /\ __bor_self.final = result_state)
     /\ unnest'0 self result_state
   
@@ -139,32 +142,33 @@ module M_01_basic__move_closure [#"01_basic.rs" 18 0 18 21]
   
   let rec move_closure'0[#"01_basic.rs" 18 0 18 21] (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
-      [ s0 =  [ &_2 <- [%#s01_basic0] (0 : int32) ] s1
-      | s1 = Borrow.borrow_mut <int32> {_2} (fun (_ret':borrowed int32) ->  [ &a <- _ret' ]  [ &_2 <- _ret'.final ] s2)
+      [ s0 =  [ &_2 <- [%#s01_basic0] (0 : Int32.t) ] s1
+      | s1 = MutBorrow.borrow_mut <Int32.t> {_2}
+          (fun (_ret':MutBorrow.t Int32.t) ->  [ &a <- _ret' ]  [ &_2 <- _ret'.final ] s2)
       | s2 =  [ &x <- { field_0'0 = a } ] s3
-      | s3 = Borrow.borrow_mut <closure0'1> {x}
-          (fun (_ret':borrowed closure0'1) ->  [ &_5 <- _ret' ]  [ &x <- _ret'.final ] s4)
+      | s3 = MutBorrow.borrow_mut <closure0'1> {x}
+          (fun (_ret':MutBorrow.t closure0'1) ->  [ &_5 <- _ret' ]  [ &x <- _ret'.final ] s4)
       | s4 = closure0'0 {_5} (fun (_ret':()) ->  [ &_4 <- _ret' ] s5)
       | s5 = bb1 ]
     
     | bb1 = s0
-      [ s0 = Borrow.borrow_mut <closure0'1> {x}
-          (fun (_ret':borrowed closure0'1) ->  [ &_8 <- _ret' ]  [ &x <- _ret'.final ] s1)
+      [ s0 = MutBorrow.borrow_mut <closure0'1> {x}
+          (fun (_ret':MutBorrow.t closure0'1) ->  [ &_8 <- _ret' ]  [ &x <- _ret'.final ] s1)
       | s1 = closure0'0 {_8} (fun (_ret':()) ->  [ &_7 <- _ret' ] s2)
       | s2 = bb2 ]
     
     | bb2 = s0 [ s0 = -{resolve'0 x}- s1 | s1 = return' {_0} ]  ]
     )
-    [ & _0 : () = any_l ()
-    | & a : borrowed int32 = any_l ()
-    | & _2 : int32 = any_l ()
-    | & x : closure0'1 = any_l ()
-    | & _4 : () = any_l ()
-    | & _5 : borrowed closure0'1 = any_l ()
-    | & _6 : () = any_l ()
-    | & _7 : () = any_l ()
-    | & _8 : borrowed closure0'1 = any_l ()
-    | & _9 : () = any_l () ]
+    [ & _0 : () = Intrinsic.any_l ()
+    | & a : MutBorrow.t Int32.t = Intrinsic.any_l ()
+    | & _2 : Int32.t = Intrinsic.any_l ()
+    | & x : closure0'1 = Intrinsic.any_l ()
+    | & _4 : () = Intrinsic.any_l ()
+    | & _5 : MutBorrow.t closure0'1 = Intrinsic.any_l ()
+    | & _6 : () = Intrinsic.any_l ()
+    | & _7 : () = Intrinsic.any_l ()
+    | & _8 : MutBorrow.t closure0'1 = Intrinsic.any_l ()
+    | & _9 : () = Intrinsic.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
 module M_01_basic__move_mut [#"01_basic.rs" 34 0 34 17]
@@ -180,31 +184,31 @@ module M_01_basic__move_mut [#"01_basic.rs" 34 0 34 17]
   let%span sops9 = "../../../../creusot-contracts/src/std/ops.rs" 122 14 122 28
   let%span sops10 = "../../../../creusot-contracts/src/std/ops.rs" 127 14 128 105
   
-  use prelude.prelude.UInt32
+  use prelude.int.UInt32
   
-  use prelude.prelude.Borrow
+  use prelude.prelude.MutBorrow
   
-  predicate inv'0 (_1 : borrowed uint32)
+  predicate inv'0 (_1 : MutBorrow.t UInt32.t)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed uint32 [inv'0 x] . inv'0 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t UInt32.t [inv'0 x] . inv'0 x = true
   
-  let rec new_ref'0 (_1:()) (return'  (ret:borrowed uint32))= any
-    [ return' (result:borrowed uint32)-> {[%#s01_basic2] inv'0 result} (! return' {result}) ]
+  let rec new_ref'0 (_1:()) (return'  (ret:MutBorrow.t UInt32.t))= any
+    [ return' (result:MutBorrow.t UInt32.t)-> {[%#s01_basic2] inv'0 result} (! return' {result}) ]
   
   
-  predicate resolve'3 (self : borrowed uint32) =
+  predicate resolve'3 (self : MutBorrow.t UInt32.t) =
     [%#sresolve3] self.final = self.current
   
-  predicate resolve'1 (_1 : borrowed uint32) =
+  predicate resolve'1 (_1 : MutBorrow.t UInt32.t) =
     resolve'3 _1
   
   type closure0'1  =
-    { field_0'0: borrowed uint32 }
+    { field_0'0: MutBorrow.t UInt32.t }
   
-  predicate resolve'4 (self : borrowed closure0'1) =
+  predicate resolve'4 (self : MutBorrow.t closure0'1) =
     [%#sresolve3] self.final = self.current
   
-  predicate resolve'2 (_1 : borrowed closure0'1) =
+  predicate resolve'2 (_1 : MutBorrow.t closure0'1) =
     resolve'4 _1
   
   use prelude.prelude.Intrinsic
@@ -217,11 +221,13 @@ module M_01_basic__move_mut [#"01_basic.rs" 34 0 34 17]
   predicate unnest'0 (self : closure0'1) (_2 : closure0'1) =
     true
   
-  let rec closure0'0[#"01_basic.rs" 37 16 37 23] [@coma:extspec] (_1:borrowed closure0'1) (return'  (ret:()))= bb0
-    [ bb0 = s0 [ s0 = new_ref'0 {[%#s01_basic1] ()} (fun (_ret':borrowed uint32) ->  [ &_3 <- _ret' ] s1) | s1 = bb1 ] 
+  let rec closure0'0[#"01_basic.rs" 37 16 37 23] [@coma:extspec] (_1:MutBorrow.t closure0'1) (return'  (ret:()))= bb0
+    [ bb0 = s0
+      [ s0 = new_ref'0 {[%#s01_basic1] ()} (fun (_ret':MutBorrow.t UInt32.t) ->  [ &_3 <- _ret' ] s1) | s1 = bb1 ]
+    
     | bb1 = s0
-      [ s0 = Borrow.borrow_final <uint32> {_3.current} {Borrow.get_id _3}
-          (fun (_ret':borrowed uint32) ->  [ &_2 <- _ret' ]  [ &_3 <- { _3 with current = _ret'.final } ] s1)
+      [ s0 = MutBorrow.borrow_final <UInt32.t> {_3.current} {MutBorrow.get_id _3}
+          (fun (_ret':MutBorrow.t UInt32.t) ->  [ &_2 <- _ret' ]  [ &_3 <- { _3 with current = _ret'.final } ] s1)
       | s1 = -{match _1 with
           | {current = {field_0'0 = x'0}} -> resolve'1 x'0
           | _ -> true
@@ -233,14 +239,14 @@ module M_01_basic__move_mut [#"01_basic.rs" 34 0 34 17]
       | s5 = return' {_0} ]
      ]
     
-    [ & _0 : () = any_l ()
-    | & _1 : borrowed closure0'1 = _1
-    | & _2 : borrowed uint32 = any_l ()
-    | & _3 : borrowed uint32 = any_l () ]
+    [ & _0 : () = Intrinsic.any_l ()
+    | & _1 : MutBorrow.t closure0'1 = _1
+    | & _2 : MutBorrow.t UInt32.t = Intrinsic.any_l ()
+    | & _3 : MutBorrow.t UInt32.t = Intrinsic.any_l () ]
      [ return' (result:())-> return' {result} ] 
   
   predicate postcondition_mut'0 (self : closure0'1) (args : ()) (result_state : closure0'1) (result : ()) =
-    (let () = args in exists __bor_self : borrowed closure0'1 . closure0'0'post'return' __bor_self result
+    (let () = args in exists __bor_self : MutBorrow.t closure0'1 . closure0'0'post'return' __bor_self result
     /\ __bor_self.current = self /\ __bor_self.final = result_state)
     /\ unnest'0 self result_state
   
@@ -267,32 +273,32 @@ module M_01_basic__move_mut [#"01_basic.rs" 34 0 34 17]
   
   let rec move_mut'0[#"01_basic.rs" 34 0 34 17] (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
-      [ s0 =  [ &_2 <- [%#s01_basic0] (0 : uint32) ] s1
-      | s1 = Borrow.borrow_mut <uint32> {_2}
-          (fun (_ret':borrowed uint32) ->  [ &x <- _ret' ]  [ &_2 <- _ret'.final ] s2)
+      [ s0 =  [ &_2 <- [%#s01_basic0] (0 : UInt32.t) ] s1
+      | s1 = MutBorrow.borrow_mut <UInt32.t> {_2}
+          (fun (_ret':MutBorrow.t UInt32.t) ->  [ &x <- _ret' ]  [ &_2 <- _ret'.final ] s2)
       | s2 =  [ &a <- { field_0'0 = x } ] s3
-      | s3 = Borrow.borrow_mut <closure0'1> {a}
-          (fun (_ret':borrowed closure0'1) ->  [ &_5 <- _ret' ]  [ &a <- _ret'.final ] s4)
+      | s3 = MutBorrow.borrow_mut <closure0'1> {a}
+          (fun (_ret':MutBorrow.t closure0'1) ->  [ &_5 <- _ret' ]  [ &a <- _ret'.final ] s4)
       | s4 = closure0'0 {_5} (fun (_ret':()) ->  [ &_4 <- _ret' ] s5)
       | s5 = bb1 ]
     
     | bb1 = s0
-      [ s0 = Borrow.borrow_mut <closure0'1> {a}
-          (fun (_ret':borrowed closure0'1) ->  [ &_8 <- _ret' ]  [ &a <- _ret'.final ] s1)
+      [ s0 = MutBorrow.borrow_mut <closure0'1> {a}
+          (fun (_ret':MutBorrow.t closure0'1) ->  [ &_8 <- _ret' ]  [ &a <- _ret'.final ] s1)
       | s1 = closure0'0 {_8} (fun (_ret':()) ->  [ &_7 <- _ret' ] s2)
       | s2 = bb2 ]
     
     | bb2 = s0 [ s0 = -{resolve'0 a}- s1 | s1 = return' {_0} ]  ]
     )
-    [ & _0 : () = any_l ()
-    | & x : borrowed uint32 = any_l ()
-    | & _2 : uint32 = any_l ()
-    | & a : closure0'1 = any_l ()
-    | & _4 : () = any_l ()
-    | & _5 : borrowed closure0'1 = any_l ()
-    | & _6 : () = any_l ()
-    | & _7 : () = any_l ()
-    | & _8 : borrowed closure0'1 = any_l ()
-    | & _9 : () = any_l () ]
+    [ & _0 : () = Intrinsic.any_l ()
+    | & x : MutBorrow.t UInt32.t = Intrinsic.any_l ()
+    | & _2 : UInt32.t = Intrinsic.any_l ()
+    | & a : closure0'1 = Intrinsic.any_l ()
+    | & _4 : () = Intrinsic.any_l ()
+    | & _5 : MutBorrow.t closure0'1 = Intrinsic.any_l ()
+    | & _6 : () = Intrinsic.any_l ()
+    | & _7 : () = Intrinsic.any_l ()
+    | & _8 : MutBorrow.t closure0'1 = Intrinsic.any_l ()
+    | & _9 : () = Intrinsic.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end

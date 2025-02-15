@@ -87,6 +87,10 @@ impl<'a, 'tcx> Namer<'tcx> for ExpansionProxy<'a, 'tcx> {
     fn span(&self, span: Span) -> Option<why3::declaration::Attribute> {
         self.namer.span(span)
     }
+
+    fn bitwise_mode(&self) -> bool {
+        self.namer.bitwise_mode()
+    }
 }
 
 trait DepElab {
@@ -272,8 +276,15 @@ impl DepElab for TyElab {
                 for ty in subst.types() {
                     translate_ty(ctx, &mut names, DUMMY_SP, ty);
                 }
-                let Kind::UsedBuiltin(qname) = names.dependency(dep) else { unreachable!() };
-                vec![Decl::UseDecl(Use { as_: None, name: qname.module.clone(), export: false })]
+                if let Kind::UsedBuiltin(qname) = names.dependency(dep) {
+                    vec![Decl::UseDecl(Use {
+                        as_: None,
+                        name: qname.module.clone(),
+                        export: false,
+                    })]
+                } else {
+                    vec![]
+                }
             }
             TyKind::Adt(_, _) => {
                 let (def_id, subst) = dep.did().unwrap();
@@ -357,7 +368,11 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             Dependency::TyInvAxiom(_) => LogicElab::expand(self, ctx, dep),
             Dependency::ClosureAccessor(_, _, _) => vec![],
             Dependency::Builtin(b) => {
-                vec![Decl::UseDecl(Use { name: b.qname(), as_: None, export: false })]
+                vec![Decl::UseDecl(Use {
+                    name: self.namer.prelude_module_name(b),
+                    as_: None,
+                    export: false,
+                })]
             }
             Dependency::Eliminator(def_id, subst) => {
                 vec![eliminator(ctx, &mut self.namer(dep), def_id, subst)]
