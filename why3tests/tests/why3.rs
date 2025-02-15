@@ -28,6 +28,9 @@ struct Args {
     /// Force color output
     #[clap(long)]
     force_color: bool,
+    /// Ignore why3find cache
+    #[clap(long)]
+    no_cache: bool,
     /// Only run tests which contain this string
     filter: Option<String>,
 }
@@ -48,6 +51,7 @@ fn main() {
 
     let orange = Color::Ansi256(214);
     let tactic_re = Regex::new(r"TACTIC (\S*)").unwrap();
+    let time_re = Regex::new(r"TIME (\d+)").unwrap();
 
     std::env::set_current_dir("..").unwrap();
 
@@ -213,8 +217,13 @@ fn main() {
             why3find.env("WHY3CONFIG", &paths.why3_config);
             why3find.arg("prove").arg(file);
             if let Some(tactic) = tactic_re.captures_iter(&header_line).next() {
-                why3find.arg("--tactic");
-                why3find.arg(tactic.get(1).unwrap().as_str());
+                why3find.args(["--tactic", tactic.get(1).unwrap().as_str()]);
+            }
+            if let Some(time) = time_re.captures_iter(&header_line).next() {
+                why3find.args(["--time", time.get(1).unwrap().as_str()]);
+            }
+            if args.no_cache {
+                why3find.arg("--no-cache");
             }
             if !args.update {
                 why3find.arg("-r");

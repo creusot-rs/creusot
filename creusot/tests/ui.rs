@@ -67,14 +67,13 @@ fn main() {
     temp_file.push("creusot");
     temp_file.push("debug");
     temp_file.push("libcreusot_contracts.cmeta");
+    let temp_file = temp_file.to_string_lossy();
 
     translate_creusot_contracts(&args, creusot_rustc, &base_path, &temp_file);
 
-    should_fail("tests/should_fail/**/*.rs", &args, |p| {
-        run_creusot(creusot_rustc, p, &temp_file.to_string_lossy())
-    });
+    should_fail("tests/should_fail/**/*.rs", &args, |p| run_creusot(creusot_rustc, p, &temp_file));
     should_succeed("tests/should_succeed/**/*.rs", &args, |p| {
-        run_creusot(creusot_rustc, p, &temp_file.to_string_lossy())
+        run_creusot(creusot_rustc, p, &temp_file)
     });
 
     println!("All tests passed!");
@@ -84,7 +83,7 @@ fn translate_creusot_contracts(
     args: &Args,
     creusot_rustc: &Path,
     base_path: &PathBuf,
-    temp_file: &PathBuf,
+    temp_file: &str,
 ) {
     println! {"Building cargo-creusot..."};
     let cargo_creusot = escargot::CargoBuild::new()
@@ -111,7 +110,7 @@ fn translate_creusot_contracts(
             "--creusot-rustc",
             creusot_rustc.to_str().unwrap(),
             "--metadata-path",
-            temp_file.to_str().unwrap(),
+            temp_file,
             "--stdout",
             "--span-mode=relative",
             "--spans-relative-to=creusot/tests/creusot-contracts",
