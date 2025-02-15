@@ -100,14 +100,6 @@ impl QName {
         self.name.clone()
     }
 
-    pub fn ident(&self) -> Option<&Ident> {
-        if self.module.is_empty() {
-            Some(&self.name)
-        } else {
-            None
-        }
-    }
-
     pub fn without_search_path(mut self) -> QName {
         let mut i = 0;
         while i < self.module.len() {

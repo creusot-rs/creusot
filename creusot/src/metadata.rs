@@ -3,6 +3,7 @@ use crate::{
 };
 use creusot_metadata::{decode_metadata, encode_metadata};
 use indexmap::IndexMap;
+use once_map::unsync::OnceMap;
 use rustc_hir::def_id::{CrateNum, DefId};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::ty::TyCtxt;
@@ -140,15 +141,15 @@ pub(crate) struct BinaryMetadata<'tcx> {
 
 impl<'tcx> BinaryMetadata<'tcx> {
     pub(crate) fn from_parts(
-        terms: &IndexMap<DefId, Term<'tcx>>,
+        terms: &mut OnceMap<DefId, Box<Option<Term<'tcx>>>>,
         items: &CreusotItems,
         extern_specs: &HashMap<DefId, ExternSpec<'tcx>>,
         params_open_inv: &HashMap<DefId, Vec<usize>>,
     ) -> Self {
         let terms = terms
-            .iter()
-            .filter(|(def_id, _)| def_id.is_local())
-            .map(|(id, t)| (*id, t.clone()))
+            .iter_mut()
+            .filter(|(def_id, t)| def_id.is_local() && t.is_some())
+            .map(|(id, t)| (*id, t.clone().unwrap()))
             .collect();
 
         BinaryMetadata {
@@ -170,8 +171,8 @@ fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
     })
 }
 
-pub(crate) fn dump_exports(ctx: &TranslationCtx, out: &Option<String>) {
-    let out_filename = export_file(ctx, out);
+pub(crate) fn dump_exports(ctx: &mut TranslationCtx) {
+    let out_filename = export_file(ctx, &ctx.opts.metadata_path);
     debug!("dump_exports={:?}", out_filename);
 
     dump_binary_metadata(ctx.tcx, &out_filename, ctx.metadata()).unwrap_or_else(|err| {

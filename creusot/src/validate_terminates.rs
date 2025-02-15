@@ -63,7 +63,7 @@ use rustc_trait_selection::traits::normalize_param_env_or_error;
 ///
 /// Note that for logical functions, these are relaxed: we don't check loops, nor simple
 /// recursion, because why3 will handle it for us.
-pub(crate) fn validate_terminates(ctx: &mut TranslationCtx) -> Result<(), CannotFetchThir> {
+pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> Result<(), CannotFetchThir> {
     ctx.tcx.dcx().abort_if_errors(); // There may have been errors before, if a `#[terminates]` calls a non-`#[terminates]`.
 
     let CallGraph { graph: mut call_graph, additional_data } = CallGraph::build(ctx)?;
@@ -312,7 +312,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
     /// Process the call from `node` to `called_id`.
     fn function_call(
         &mut self,
-        ctx: &mut TranslationCtx<'tcx>,
+        ctx: &TranslationCtx<'tcx>,
         node: graph::NodeIndex,
         typing_env: TypingEnv<'tcx>,
         called_id: DefId,
@@ -436,7 +436,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
     /// We use this function, so that only those specialization that are actually called are visited.
     fn visit_specialized_default_function(
         &mut self,
-        ctx: &mut TranslationCtx<'tcx>,
+        ctx: &TranslationCtx<'tcx>,
         graph_node: ImplDefaultTransparent,
     ) -> Result<Option<graph::NodeIndex>, CannotFetchThir> {
         let Some(&node) =
@@ -501,7 +501,7 @@ impl CallGraph {
     /// exclusively for the purpose of termination checking.
     ///
     /// In particular, this means it only contains `#[terminates]` functions.
-    fn build(ctx: &mut TranslationCtx) -> Result<Self, CannotFetchThir> {
+    fn build(ctx: &TranslationCtx) -> Result<Self, CannotFetchThir> {
         let tcx = ctx.tcx;
         let mut build_call_graph = BuildFunctionsGraph::default();
 

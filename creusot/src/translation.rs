@@ -138,7 +138,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn std::err
     }
 
     if why3.should_export() {
-        metadata::dump_exports(&why3, &why3.opts.metadata_path);
+        metadata::dump_exports(&mut why3);
     }
 
     if why3.should_compile() {

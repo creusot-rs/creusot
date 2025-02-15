@@ -23,7 +23,7 @@ use crate::{
     util::parent_module,
 };
 
-pub(crate) fn validate_trusted(ctx: &mut TranslationCtx) {
+pub(crate) fn validate_trusted(ctx: &TranslationCtx) {
     for def_id in ctx.hir_crate_items(()).definitions() {
         let def_id = def_id.to_def_id();
         if get_builtin(ctx.tcx, def_id).is_some() && !is_trusted(ctx.tcx, def_id) {
@@ -36,10 +36,7 @@ pub(crate) fn validate_trusted(ctx: &mut TranslationCtx) {
     }
 }
 
-pub(crate) fn validate_opacity(
-    ctx: &mut TranslationCtx,
-    item: DefId,
-) -> Result<(), CannotFetchThir> {
+pub(crate) fn validate_opacity(ctx: &TranslationCtx, item: DefId) -> Result<(), CannotFetchThir> {
     struct OpacityVisitor<'a, 'tcx> {
         ctx: &'a TranslationCtx<'tcx>,
         opacity: Option<DefId>,
@@ -108,7 +105,7 @@ pub(crate) fn validate_opacity(
 
 // Validate that laws have no additional generic parameters.
 // This is because laws are auto-loaded, and we do not want to generate polymorphic WhyML code
-pub(crate) fn validate_traits(ctx: &mut TranslationCtx) {
+pub(crate) fn validate_traits(ctx: &TranslationCtx) {
     let mut law_violations = Vec::new();
 
     for trait_item_id in ctx.hir_crate_items(()).trait_items() {
@@ -142,7 +139,7 @@ fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
     }
 }
 
-pub(crate) fn validate_impls(ctx: &mut TranslationCtx) {
+pub(crate) fn validate_impls(ctx: &TranslationCtx) {
     for impl_id in ctx.all_local_trait_impls(()).values().flat_map(|i| i.iter()) {
         if !matches!(ctx.def_kind(*impl_id), DefKind::Impl { .. }) {
             continue;
@@ -246,7 +243,7 @@ pub(crate) enum Purity {
 }
 
 impl Purity {
-    pub(crate) fn of_def_id(ctx: &mut TranslationCtx, def_id: DefId) -> Self {
+    pub(crate) fn of_def_id(ctx: &TranslationCtx, def_id: DefId) -> Self {
         let is_snapshot = is_snapshot_closure(ctx.tcx, def_id);
         if is_predicate(ctx.tcx, def_id) && is_prophetic(ctx.tcx, def_id)
             || is_logic(ctx.tcx, def_id) && is_prophetic(ctx.tcx, def_id)
@@ -291,7 +288,7 @@ impl Purity {
 }
 
 pub(crate) fn validate_purity(
-    ctx: &mut TranslationCtx,
+    ctx: &TranslationCtx,
     def_id: LocalDefId,
 ) -> Result<(), CannotFetchThir> {
     let (thir, expr) = ctx.fetch_thir(def_id)?;
@@ -319,7 +316,7 @@ pub(crate) fn validate_purity(
 }
 
 struct PurityVisitor<'a, 'tcx> {
-    ctx: &'a mut TranslationCtx<'tcx>,
+    ctx: &'a TranslationCtx<'tcx>,
     thir: &'a Thir<'tcx>,
     context: Purity,
     /// Typing environment of the caller function
@@ -329,7 +326,7 @@ struct PurityVisitor<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
-    fn purity(&mut self, fun: thir::ExprId, func_did: DefId) -> Purity {
+    fn purity(&self, fun: thir::ExprId, func_did: DefId) -> Purity {
         let stub = pearlite_stub(self.ctx.tcx, self.thir[fun].ty);
 
         if matches!(stub, Some(Stub::Fin))

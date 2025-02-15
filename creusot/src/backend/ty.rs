@@ -19,8 +19,8 @@ use why3::{
 };
 
 pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
     span: Span,
     ty: Ty<'tcx>,
 ) -> MlT {
@@ -127,8 +127,8 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
 }
 
 fn translate_projection_ty<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
     pty: &AliasTy<'tcx>,
 ) -> MlT {
     let ty = Ty::new_alias(ctx.tcx, AliasTyKind::Projection, *pty);
@@ -140,8 +140,8 @@ fn translate_projection_ty<'tcx, N: Namer<'tcx>>(
 }
 
 pub(crate) fn translate_closure_ty<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
     did: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Option<TyDecl> {
@@ -172,8 +172,8 @@ pub(crate) fn translate_closure_ty<'tcx, N: Namer<'tcx>>(
 //
 // Mutually recursive types are translated separately, are later merged by the elaborator
 pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
     (did, subst): (DefId, GenericArgsRef<'tcx>),
     typing_env: TypingEnv<'tcx>,
 ) -> Vec<Decl> {
@@ -228,8 +228,8 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
 }
 
 pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
-    ctx: &mut Why3Generator<'tcx>,
-    names: &mut N,
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
     variant_id: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Decl {
@@ -317,7 +317,7 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
 }
 
 pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
-    names: &mut N,
+    names: &N,
     fields: Vec<Exp>,
     did: DefId,
     subst: GenericArgsRef<'tcx>,
@@ -343,7 +343,7 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
     }
 }
 
-pub(crate) fn intty_to_ty<'tcx, N: Namer<'tcx>>(names: &mut N, ity: IntTy) -> MlT {
+pub(crate) fn intty_to_ty<'tcx, N: Namer<'tcx>>(names: &N, ity: IntTy) -> MlT {
     names.import_prelude_module(int_to_prelude(ity));
     match ity {
         IntTy::Isize => MlT::TConstructor("isize".into()),
@@ -355,7 +355,7 @@ pub(crate) fn intty_to_ty<'tcx, N: Namer<'tcx>>(names: &mut N, ity: IntTy) -> Ml
     }
 }
 
-pub(crate) fn uintty_to_ty<'tcx, N: Namer<'tcx>>(names: &mut N, uty: UintTy) -> MlT {
+pub(crate) fn uintty_to_ty<'tcx, N: Namer<'tcx>>(names: &N, uty: UintTy) -> MlT {
     names.import_prelude_module(uint_to_prelude(uty));
     match uty {
         UintTy::Usize => MlT::TConstructor("usize".into()),
@@ -367,7 +367,7 @@ pub(crate) fn uintty_to_ty<'tcx, N: Namer<'tcx>>(names: &mut N, uty: UintTy) -> 
     }
 }
 
-pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(names: &mut N, fty: FloatTy) -> MlT {
+pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(names: &N, fty: FloatTy) -> MlT {
     names.import_prelude_module(floatty_to_prelude(fty));
     match fty {
         FloatTy::F32 => MlT::TConstructor("Float32.t".into()),
@@ -384,7 +384,7 @@ pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
     }
 }
 
-pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &mut Why3Generator<'tcx>, names: &mut N) -> MlT {
+pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &Why3Generator<'tcx>, names: &N) -> MlT {
     let int_id = get_int_ty(ctx.tcx);
     let ty = ctx.type_of(int_id).skip_binder();
     translate_ty(ctx, names, DUMMY_SP, ty)

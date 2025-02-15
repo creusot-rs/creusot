@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use crate::{
     backend::{clone_map::elaborator::Expander, dependency::Dependency, Why3Generator},
     contracts_items::{get_builtin, get_inv_function},
@@ -7,6 +9,8 @@ use crate::{
 };
 use elaborator::Strength;
 use indexmap::{IndexMap, IndexSet};
+use itertools::Itertools;
+use once_map::unsync::OnceMap;
 use petgraph::prelude::DiGraphMap;
 use rustc_hir::{
     def::DefKind,
@@ -82,12 +86,12 @@ impl PreludeModule {
 }
 
 pub(crate) trait Namer<'tcx> {
-    fn value(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
+    fn item(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let node = Dependency::Item(def_id, subst);
-        self.insert(node).qname()
+        self.dependency(node).qname()
     }
 
-    fn ty(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
+    fn ty(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let ty = match self.tcx().def_kind(def_id) {
             DefKind::Enum | DefKind::Struct | DefKind::Union => {
                 Ty::new_adt(self.tcx(), self.tcx().adt_def(def_id), subst)
@@ -97,23 +101,23 @@ pub(crate) trait Namer<'tcx> {
             _ => unreachable!(),
         };
 
-        self.insert(Dependency::Type(ty)).qname()
+        self.dependency(Dependency::Type(ty)).qname()
     }
 
-    fn ty_param(&mut self, ty: Ty<'tcx>) -> QName {
+    fn ty_param(&self, ty: Ty<'tcx>) -> QName {
         assert!(matches!(ty.kind(), TyKind::Param(_)));
-        self.insert(Dependency::Type(ty)).qname()
+        self.dependency(Dependency::Type(ty)).qname()
     }
 
-    fn constructor(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
+    fn constructor(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let node = Dependency::Item(def_id, subst);
-        self.insert(node).qname()
+        self.dependency(node).qname()
     }
 
-    fn ty_inv(&mut self, ty: Ty<'tcx>) -> QName {
+    fn ty_inv(&self, ty: Ty<'tcx>) -> QName {
         let def_id = get_inv_function(self.tcx());
         let subst = self.tcx().mk_args(&[ty::GenericArg::from(ty)]);
-        self.value(def_id, subst)
+        self.item(def_id, subst)
     }
 
     /// Creates a name for a struct or closure projection ie: x.field1
@@ -121,7 +125,7 @@ pub(crate) trait Namer<'tcx> {
     /// * `def_id` - The id of the type or closure being projected
     /// * `subst` - Substitution that type is being accessed at
     /// * `ix` - The field in that constructor being accessed.
-    fn field(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>, ix: FieldIdx) -> QName {
+    fn field(&self, def_id: DefId, subst: GenericArgsRef<'tcx>, ix: FieldIdx) -> QName {
         let node = match self.tcx().def_kind(def_id) {
             DefKind::Closure => Dependency::ClosureAccessor(def_id, subst, ix.as_u32()),
             DefKind::Struct | DefKind::Union => {
@@ -132,15 +136,15 @@ pub(crate) trait Namer<'tcx> {
             _ => unreachable!(),
         };
 
-        self.insert(node).qname()
+        self.dependency(node).qname()
     }
 
-    fn eliminator(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
-        self.insert(Dependency::Eliminator(def_id, subst)).qname()
+    fn eliminator(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
+        self.dependency(Dependency::Eliminator(def_id, subst)).qname()
     }
 
-    fn promoted(&mut self, def_id: LocalDefId, prom: Promoted) -> QName {
-        self.insert(Dependency::Promoted(def_id, prom)).qname()
+    fn promoted(&self, def_id: LocalDefId, prom: Promoted) -> QName {
+        self.dependency(Dependency::Promoted(def_id, prom)).qname()
     }
 
     fn normalize<T: TypeFoldable<TyCtxt<'tcx>> + Copy>(
@@ -149,15 +153,15 @@ pub(crate) trait Namer<'tcx> {
         ty: T,
     ) -> T;
 
-    fn import_prelude_module(&mut self, module: PreludeModule) {
-        self.insert(Dependency::Builtin(module));
+    fn import_prelude_module(&self, module: PreludeModule) {
+        self.dependency(Dependency::Builtin(module));
     }
 
-    fn insert(&mut self, dep: Dependency<'tcx>) -> &Kind;
+    fn dependency(&self, dep: Dependency<'tcx>) -> &Kind;
 
     fn tcx(&self) -> TyCtxt<'tcx>;
 
-    fn span(&mut self, span: Span) -> Option<why3::declaration::Attribute>;
+    fn span(&self, span: Span) -> Option<why3::declaration::Attribute>;
 }
 
 impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
@@ -170,23 +174,47 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
         self.tcx().normalize_erasing_regions(self.typing_env, ty)
     }
 
-    fn insert(&mut self, key: Dependency<'tcx>) -> &Kind {
+    fn dependency(&self, key: Dependency<'tcx>) -> &Kind {
         let key = key.erase_regions(self.tcx);
-        CloneNames::insert(self, key)
+        self.insert(self.tcx, key)
     }
 
     fn tcx(&self) -> TyCtxt<'tcx> {
         self.tcx
     }
 
-    fn span(&mut self, span: Span) -> Option<why3::declaration::Attribute> {
+    fn span(&self, span: Span) -> Option<why3::declaration::Attribute> {
         let path = path_of_span(self.tcx, span, &self.span_mode)?;
-
         let cnt = self.spans.len();
-        let name = self.spans.entry(span).or_insert_with(|| {
-            Symbol::intern(&format!("s{}{cnt}", path.file_stem().unwrap().to_str().unwrap()))
+        let name = self.spans.insert(span, |_| {
+            Box::new((
+                Symbol::intern(&format!("s{}{cnt}", path.file_stem().unwrap().to_str().unwrap())),
+                cnt,
+            ))
         });
-        Some(Attribute::NamedSpan(name.to_string()))
+        Some(Attribute::NamedSpan(name.0.to_string()))
+    }
+}
+
+impl<'tcx> CloneNames<'tcx> {
+    fn insert(&self, tcx: TyCtxt<'tcx>, key: Dependency<'tcx>) -> &Kind {
+        self.names.insert(key, |_| {
+            if let Some((did, _)) = key.did()
+                && let Some(why3_modl) = get_builtin(tcx, did)
+            {
+                let qname = QName::from(why3_modl.as_str());
+                if qname.module.is_empty() {
+                    return Box::new(Kind::Named(Symbol::intern(&qname.name)));
+                } else {
+                    return Box::new(Kind::UsedBuiltin(qname));
+                }
+            }
+            Box::new(
+                key.base_ident(tcx).map_or(Kind::Unnamed, |base| {
+                    Kind::Named(self.counts.borrow_mut().freshen(base))
+                }),
+            )
+        })
     }
 }
 
@@ -203,25 +231,23 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
         self.tcx
     }
 
-    fn insert(&mut self, key: Dependency<'tcx>) -> &Kind {
+    fn dependency(&self, key: Dependency<'tcx>) -> &Kind {
         let key = key.erase_regions(self.tcx);
-        self.dep_set.insert(key);
-        self.names.insert(key)
+        self.dep_set.borrow_mut().insert(key);
+        self.names.dependency(key)
     }
 
-    fn span(&mut self, span: Span) -> Option<Attribute> {
+    fn span(&self, span: Span) -> Option<Attribute> {
         self.names.span(span)
     }
 }
 
-#[derive(Clone)]
 pub(crate) struct Dependencies<'tcx> {
     tcx: TyCtxt<'tcx>,
-
-    pub names: CloneNames<'tcx>,
+    names: CloneNames<'tcx>,
 
     // A hacky thing which is used to remember the dependncies we need to seed the expander with
-    dep_set: IndexSet<Dependency<'tcx>>,
+    dep_set: RefCell<IndexSet<Dependency<'tcx>>>,
 
     pub(crate) self_id: DefId,
     pub(crate) self_subst: GenericArgsRef<'tcx>,
@@ -232,59 +258,31 @@ pub(crate) struct NameSupply {
     name_counts: IndexMap<Symbol, usize>,
 }
 
-#[derive(Clone)]
-pub struct CloneNames<'tcx> {
+pub(crate) struct CloneNames<'tcx> {
     tcx: TyCtxt<'tcx>,
-    /// Freshens a symbol by appending a number to the end
-    counts: NameSupply,
-    /// Tracks the name given to each dependency
-    names: IndexMap<Dependency<'tcx>, Kind>,
-    /// Maps spans to a unique name
-    spans: IndexMap<Span, Symbol>,
     // To normalize during dependency stuff (deprecated)
     typing_env: TypingEnv<'tcx>,
-
     // Internal state, used to determine whether we should emit spans at all
     span_mode: SpanMode,
-}
 
-impl std::fmt::Debug for CloneNames<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for (n, k) in &self.names {
-            writeln!(f, "{n:?} -> {k:?}")?;
-        }
-
-        Ok(())
-    }
+    /// Freshens a symbol by appending a number to the end
+    counts: RefCell<NameSupply>,
+    /// Tracks the name given to each dependency
+    names: OnceMap<Dependency<'tcx>, Box<Kind>>,
+    /// Maps spans to a unique name
+    spans: OnceMap<Span, Box<(Symbol, usize)>>,
 }
 
 impl<'tcx> CloneNames<'tcx> {
     fn new(tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>, span_mode: SpanMode) -> Self {
         CloneNames {
             tcx,
+            typing_env,
+            span_mode,
             counts: Default::default(),
             names: Default::default(),
             spans: Default::default(),
-            typing_env,
-            span_mode,
         }
-    }
-
-    fn insert(&mut self, key: Dependency<'tcx>) -> &Kind {
-        self.names.entry(key).or_insert_with(|| {
-            if let Some((did, _)) = key.did()
-                && let Some(why3_modl) = get_builtin(self.tcx, did)
-            {
-                let qname = QName::from(why3_modl.as_str());
-                if qname.module.is_empty() {
-                    return Kind::Named(Symbol::intern(&qname.name));
-                } else {
-                    return Kind::UsedBuiltin(qname);
-                }
-            }
-            key.base_ident(self.tcx)
-                .map_or(Kind::Unnamed, |base| Kind::Named(self.counts.freshen(base)))
-        })
     }
 }
 
@@ -336,23 +334,27 @@ impl<'tcx> Dependencies<'tcx> {
         let names = CloneNames::new(ctx.tcx, ctx.typing_env(self_id), ctx.opts.span_mode.clone());
         debug!("cloning self: {:?}", self_id);
         let self_subst = erased_identity_for_item(ctx.tcx, self_id);
-        let mut deps =
+        let deps =
             Dependencies { tcx: ctx.tcx, self_id, self_subst, names, dep_set: Default::default() };
 
         let node = Dependency::Item(self_id, self_subst);
-        deps.names.insert(node);
+        deps.names.dependency(node);
         deps
     }
 
-    pub(crate) fn provide_deps(mut self, ctx: &mut Why3Generator<'tcx>) -> Vec<Decl> {
+    pub(crate) fn provide_deps(mut self, ctx: &Why3Generator<'tcx>) -> Vec<Decl> {
         trace!("emitting dependencies for {:?}", self.self_id);
         let mut decls = Vec::new();
 
         let typing_env = ctx.typing_env(self.self_id);
 
         let self_node = Dependency::Item(self.self_id, self.self_subst);
-        let graph =
-            Expander::new(&mut self.names, self_node, typing_env, self.dep_set.iter().copied());
+        let graph = Expander::new(
+            &mut self.names,
+            self_node,
+            typing_env,
+            self.dep_set.into_inner().into_iter(),
+        );
 
         // Update the clone graph with any new entries.
         let (graph, mut bodies) = graph.update_graph(ctx);
@@ -435,7 +437,8 @@ impl<'tcx> Dependencies<'tcx> {
             .names
             .spans
             .into_iter()
-            .filter_map(|(sp, name)| {
+            .sorted_by_key(|(_, b)| b.1)
+            .filter_map(|(sp, b)| {
                 let (path, start_line, start_column, end_line, end_column) =
                     if let Some(Attribute::Span(path, l1, c1, l2, c2)) = ctx.span_attr(sp) {
                         (path, l1, c1, l2, c2)
@@ -444,7 +447,7 @@ impl<'tcx> Dependencies<'tcx> {
                     };
 
                 Some(why3::declaration::Span {
-                    name: name.as_str().into(),
+                    name: b.0.as_str().into(),
                     path,
                     start_line,
                     start_column,

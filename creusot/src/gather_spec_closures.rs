@@ -27,7 +27,7 @@ pub(crate) struct SpecClosures<'tcx> {
 }
 
 impl<'tcx> SpecClosures<'tcx> {
-    pub(crate) fn collect(ctx: &mut TranslationCtx<'tcx>, body: &Body<'tcx>) -> Self {
+    pub(crate) fn collect(ctx: &TranslationCtx<'tcx>, body: &Body<'tcx>) -> Self {
         let mut visitor = Closures::new(ctx.tcx);
         visitor.visit_body(body);
 
@@ -91,7 +91,7 @@ pub(crate) struct Invariants<'tcx> {
 }
 
 struct InvariantsVisitor<'a, 'tcx> {
-    ctx: &'a mut TranslationCtx<'tcx>,
+    ctx: &'a TranslationCtx<'tcx>,
     body: &'a Body<'tcx>,
     before_loop: IndexSet<BasicBlock>,
     invariants: Invariants<'tcx>,
@@ -166,7 +166,7 @@ impl<'a, 'tcx> Visitor<'tcx> for InvariantsVisitor<'a, 'tcx> {
 
 // Calculate the *actual* location of invariants in MIR
 pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     body: &Body<'tcx>,
 ) -> Invariants<'tcx> {
     let mut invs_gather = InvariantsVisitor {

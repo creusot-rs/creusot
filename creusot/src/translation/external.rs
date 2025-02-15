@@ -36,7 +36,7 @@ impl<'tcx> ExternSpec<'tcx> {
 
 // Must be run before MIR generation.
 pub(crate) fn extract_extern_specs_from_item<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     def_id: LocalDefId,
 ) -> CreusotResult<(DefId, ExternSpec<'tcx>)> {
     // Handle error gracefully

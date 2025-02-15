@@ -131,7 +131,7 @@ impl ContractClauses {
 
     fn get_pre<'tcx>(
         self,
-        ctx: &mut TranslationCtx<'tcx>,
+        ctx: &TranslationCtx<'tcx>,
         fn_name: &str,
     ) -> EarlyBinder<'tcx, PreContract<'tcx>> {
         let mut out = PreContract::default();
@@ -374,10 +374,7 @@ pub(crate) fn inherited_extern_spec<'tcx>(
     }
 }
 
-pub(crate) fn contract_of<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> PreContract<'tcx> {
+pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> PreContract<'tcx> {
     let fn_name = ctx.opt_item_name(def_id);
     let fn_name = match &fn_name {
         Some(fn_name) => fn_name.as_str(),
@@ -438,10 +435,7 @@ impl<'tcx> PreSignature<'tcx> {
     }
 }
 
-pub(crate) fn pre_sig_of<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> PreSignature<'tcx> {
+pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> PreSignature<'tcx> {
     let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
 
     let mut contract = crate::specification::contract_of(ctx, def_id);

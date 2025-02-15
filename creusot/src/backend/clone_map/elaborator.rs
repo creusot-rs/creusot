@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::{
+    cell::RefCell,
+    collections::{HashMap, HashSet, VecDeque},
+};
 
 use crate::{
     backend::{
@@ -58,7 +61,7 @@ pub(super) struct Expander<'a, 'tcx> {
 
 struct ExpansionProxy<'a, 'tcx> {
     namer: &'a mut CloneNames<'tcx>,
-    expansion_queue: &'a mut VecDeque<(Dependency<'tcx>, Strength, Dependency<'tcx>)>,
+    expansion_queue: RefCell<&'a mut VecDeque<(Dependency<'tcx>, Strength, Dependency<'tcx>)>>,
     source: Dependency<'tcx>,
 }
 
@@ -71,17 +74,17 @@ impl<'a, 'tcx> Namer<'tcx> for ExpansionProxy<'a, 'tcx> {
         self.namer.normalize(ctx, ty)
     }
 
-    fn insert(&mut self, dep: Dependency<'tcx>) -> &Kind {
+    fn dependency(&self, dep: Dependency<'tcx>) -> &Kind {
         let dep = dep.erase_regions(self.tcx());
-        self.expansion_queue.push_back((self.source, Strength::Strong, dep));
-        self.namer.insert(dep)
+        self.expansion_queue.borrow_mut().push_back((self.source, Strength::Strong, dep));
+        self.namer.dependency(dep)
     }
 
     fn tcx(&self) -> TyCtxt<'tcx> {
         self.namer.tcx()
     }
 
-    fn span(&mut self, span: Span) -> Option<why3::declaration::Attribute> {
+    fn span(&self, span: Span) -> Option<why3::declaration::Attribute> {
         self.namer.span(span)
     }
 }
@@ -93,7 +96,7 @@ trait DepElab {
 
     fn expand<'tcx>(
         elab: &mut Expander<'_, 'tcx>,
-        ctx: &mut Why3Generator<'tcx>,
+        ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
     ) -> Vec<why3::declaration::Decl>;
 }
@@ -103,7 +106,7 @@ struct ProgElab;
 impl DepElab for ProgElab {
     fn expand<'tcx>(
         elab: &mut Expander<'_, 'tcx>,
-        ctx: &mut Why3Generator<'tcx>,
+        ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
     ) -> Vec<why3::declaration::Decl> {
         if let Dependency::Item(def_id, subst) = dep
@@ -118,7 +121,7 @@ impl DepElab for ProgElab {
 
         // Inline the body of closures and promoted
         let mut names = elab.namer(dep);
-        let name = names.insert(dep).ident();
+        let name = names.dependency(dep).ident();
 
         let bid = match dep {
             Dependency::Item(def_id, _) => BodyId { def_id: def_id.expect_local(), promoted: None },
@@ -133,15 +136,15 @@ impl DepElab for ProgElab {
 
 // What is the difference with `sig` below and `sigs` in logic?
 fn signature<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
+    ctx: &Why3Generator<'tcx>,
     elab: &mut Expander<'_, 'tcx>,
     sig: PreSignature<'tcx>,
     dep: Dependency<'tcx>,
 ) -> Signature {
     let mut names = elab.namer(dep);
-    let name = names.insert(dep).ident();
     let (def_id, _) = dep.did().unwrap();
-    sig_to_why3(ctx, &mut names, name, sig, def_id)
+    let id = names.dependency(dep).ident();
+    sig_to_why3(ctx, &mut names, id, sig, def_id)
 }
 
 struct LogicElab;
@@ -149,7 +152,7 @@ struct LogicElab;
 impl DepElab for LogicElab {
     fn expand<'tcx>(
         elab: &mut Expander<'_, 'tcx>,
-        ctx: &mut Why3Generator<'tcx>,
+        ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
     ) -> Vec<why3::declaration::Decl> {
         assert!(matches!(dep, Dependency::Item(_, _) | Dependency::TyInvAxiom(_)));
@@ -178,7 +181,7 @@ impl DepElab for LogicElab {
         };
 
         if get_builtin(ctx.tcx, def_id).is_some() {
-            match elab.namer.insert(dep) {
+            match elab.namer.dependency(dep) {
                 Kind::Named(_) => return vec![],
                 Kind::UsedBuiltin(qname) => {
                     return vec![Decl::UseDecl(Use {
@@ -221,7 +224,7 @@ impl DepElab for LogicElab {
 // TODO Deprecate and fold into LogicElab
 fn expand_ty_inv_axiom<'tcx>(
     elab: &mut Expander<'_, 'tcx>,
-    ctx: &mut Why3Generator<'tcx>,
+    ctx: &Why3Generator<'tcx>,
     ty: Ty<'tcx>,
 ) -> Vec<Decl> {
     let param_env = elab.typing_env;
@@ -232,7 +235,7 @@ fn expand_ty_inv_axiom<'tcx>(
     let rewrite = elab.rewrite;
     let exp = lower_pure(ctx, &mut names, &term);
     let axiom =
-        Axiom { name: names.insert(Dependency::TyInvAxiom(ty)).ident(), rewrite, axiom: exp };
+        Axiom { name: names.dependency(Dependency::TyInvAxiom(ty)).ident(), rewrite, axiom: exp };
     vec![Decl::Axiom(axiom)]
 }
 
@@ -241,7 +244,7 @@ struct TyElab;
 impl DepElab for TyElab {
     fn expand<'tcx>(
         elab: &mut Expander<'_, 'tcx>,
-        ctx: &mut Why3Generator<'tcx>,
+        ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
     ) -> Vec<why3::declaration::Decl> {
         let Dependency::Type(ty) = dep else { unreachable!() };
@@ -269,7 +272,7 @@ impl DepElab for TyElab {
                 for ty in subst.types() {
                     translate_ty(ctx, &mut names, DUMMY_SP, ty);
                 }
-                let Kind::UsedBuiltin(qname) = names.insert(dep) else { unreachable!() };
+                let Kind::UsedBuiltin(qname) = names.dependency(dep) else { unreachable!() };
                 vec![Decl::UseDecl(Use { as_: None, name: qname.module.clone(), export: false })]
             }
             TyKind::Adt(_, _) => {
@@ -299,13 +302,17 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
     }
 
     fn namer(&mut self, source: Dependency<'tcx>) -> ExpansionProxy<'_, 'tcx> {
-        ExpansionProxy { namer: self.namer, expansion_queue: &mut self.expansion_queue, source }
+        ExpansionProxy {
+            namer: self.namer,
+            expansion_queue: RefCell::new(&mut self.expansion_queue),
+            source,
+        }
     }
 
     /// Expand the graph with new entries
     pub fn update_graph(
         mut self,
-        ctx: &mut Why3Generator<'tcx>,
+        ctx: &Why3Generator<'tcx>,
     ) -> (DiGraphMap<Dependency<'tcx>, Strength>, HashMap<Dependency<'tcx>, Vec<Decl>>) {
         let mut visited = HashSet::new();
         while let Some((s, strength, mut t)) = self.expansion_queue.pop_front() {
@@ -332,7 +339,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
         (self.graph, self.dep_bodies)
     }
 
-    fn expand(&mut self, ctx: &mut Why3Generator<'tcx>, dep: Dependency<'tcx>) {
+    fn expand(&mut self, ctx: &Why3Generator<'tcx>, dep: Dependency<'tcx>) {
         expand_laws(self, ctx, dep);
 
         let decls = match dep {
@@ -341,8 +348,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                 if ctx.is_logical(def_id) || matches!(ctx.item_type(def_id), ItemType::Constant) {
                     LogicElab::expand(self, ctx, dep)
                 } else if matches!(ctx.def_kind(def_id), DefKind::Field | DefKind::Variant) {
-                    let mut namer = self.namer(dep);
-                    namer.ty(ctx.parent(def_id), subst);
+                    self.namer(dep).ty(ctx.parent(def_id), subst);
                     vec![]
                 } else {
                     ProgElab::expand(self, ctx, dep)
@@ -383,7 +389,7 @@ fn traitref_of_item<'tcx>(
 
 fn expand_laws<'tcx>(
     elab: &mut Expander<'_, 'tcx>,
-    ctx: &mut Why3Generator<'tcx>,
+    ctx: &Why3Generator<'tcx>,
     dep: Dependency<'tcx>,
 ) {
     let (self_did, self_subst) = elab.self_key.did().unwrap();
@@ -415,7 +421,7 @@ fn expand_laws<'tcx>(
     }
 }
 
-fn val(ctx: &mut Why3Generator, mut sig: Signature, kind: Option<DeclKind>) -> Vec<Decl> {
+fn val(ctx: &Why3Generator, mut sig: Signature, kind: Option<DeclKind>) -> Vec<Decl> {
     sig.contract.variant = Vec::new();
     if let Some(k) = kind {
         let ax = if !sig.contract.is_empty() { Some(spec_axiom(&sig)) } else { None };
@@ -441,7 +447,7 @@ fn val(ctx: &mut Why3Generator, mut sig: Signature, kind: Option<DeclKind>) -> V
 }
 
 fn resolve_term<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
+    ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
@@ -474,7 +480,7 @@ fn resolve_term<'tcx>(
 }
 
 fn fn_once_postcond_term<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
+    ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
     subst: GenericArgsRef<'tcx>,
 ) -> Option<Term<'tcx>> {
@@ -509,7 +515,7 @@ fn fn_once_postcond_term<'tcx>(
 }
 
 fn fn_mut_postcond_term<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
+    ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
     subst: GenericArgsRef<'tcx>,
 ) -> Option<Term<'tcx>> {
@@ -551,7 +557,7 @@ fn fn_mut_postcond_term<'tcx>(
 }
 
 fn fn_postcond_term<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
+    ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
     subst: GenericArgsRef<'tcx>,
 ) -> Option<Term<'tcx>> {
@@ -581,7 +587,7 @@ fn fn_postcond_term<'tcx>(
 // Returns a resolved and normalized term for a dependency.
 // Currently, it does not handle invariant axioms but otherwise returns all logical terms.
 fn term<'tcx>(
-    ctx: &mut Why3Generator<'tcx>,
+    ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
     dep: Dependency<'tcx>,
 ) -> Option<Term<'tcx>> {
