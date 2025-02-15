@@ -126,55 +126,55 @@ fn optimize_builtin<'tcx>(
             lhs: Box::new(args.remove(0)),
             rhs: Box::new(args.remove(0)),
         },
-        "prelude.prelude.UInt8.to_int"
+        "prelude.int.UInt8$BW$.t'int"
             if let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind =>
         {
             TermKind::Lit(Literal::Integer(c as i128))
         }
-        "prelude.prelude.UInt16.to_int"
+        "prelude.int.UInt16$BW$.t'int"
             if let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind =>
         {
             TermKind::Lit(Literal::Integer(c as i128))
         }
-        "prelude.prelude.UInt32.to_int"
+        "prelude.int.UInt32$BW$.t'int"
             if let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind =>
         {
             TermKind::Lit(Literal::Integer(c as i128))
         }
-        "prelude.prelude.UInt64.to_int"
+        "prelude.int.UInt64$BW$.t'int"
             if let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind =>
         {
             TermKind::Lit(Literal::Integer(c as i128))
         }
-        "prelude.prelude.UInt128.to_int"
+        "prelude.int.UInt128$BW$.t'int"
             if let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind =>
         {
             if c > isize::MAX as u128 {
-                panic!("integer constant too large")
+                return None;
             }
             TermKind::Lit(Literal::Integer(c as i128))
         }
-        "prelude.prelude.Int8.to_int"
+        "prelude.int.Int8$BW$.to_int"
             if let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind =>
         {
             TermKind::Lit(Literal::Integer(c as i128))
         }
-        "prelude.prelude.Int16.to_int"
+        "prelude.int.Int16$BW$.to_int"
             if let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind =>
         {
             TermKind::Lit(Literal::Integer(c as i128))
         }
-        "prelude.prelude.Int32.to_int"
+        "prelude.int.Int32$BW$.to_int"
             if let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind =>
         {
             TermKind::Lit(Literal::Integer(c as i128))
         }
-        "prelude.prelude.Int64.to_int"
+        "prelude.int.Int64$BW$.to_int"
             if let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind =>
         {
             TermKind::Lit(Literal::Integer(c as i128))
         }
-        "prelude.prelude.Int128.to_int"
+        "prelude.int.Int128$BW$.to_int"
             if let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind =>
         {
             TermKind::Lit(Literal::Integer(c as i128))

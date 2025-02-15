@@ -2,7 +2,7 @@ use crate::*;
 use ::num_rational::BigRational;
 use ::std::{cmp::Ordering, marker::PhantomData};
 
-#[cfg_attr(creusot, creusot::builtins = "prelude.prelude.Real.real")]
+#[cfg_attr(creusot, creusot::builtins = "real.Real.real")]
 #[trusted]
 pub struct Real(PhantomData<*mut ()>);
 
@@ -40,32 +40,32 @@ impl OrdLogic for Real {
 
     #[trusted]
     #[open]
-    #[logic]
-    #[creusot::builtins = "prelude.prelude.Real.(<=)"]
+    #[predicate]
+    #[creusot::builtins = "real.Real.(<=)"]
     fn le_log(self, _: Self) -> bool {
         true
     }
 
     #[trusted]
     #[open]
-    #[logic]
-    #[creusot::builtins = "prelude.prelude.Real.(<)"]
+    #[predicate]
+    #[creusot::builtins = "real.Real.(<)"]
     fn lt_log(self, _: Self) -> bool {
         true
     }
 
     #[trusted]
     #[open]
-    #[logic]
-    #[creusot::builtins = "prelude.prelude.Real.(>=)"]
+    #[predicate]
+    #[creusot::builtins = "real.Real.(>=)"]
     fn ge_log(self, _: Self) -> bool {
         true
     }
 
     #[trusted]
     #[open]
-    #[logic]
-    #[creusot::builtins = "prelude.prelude.Real.(>)"]
+    #[predicate]
+    #[creusot::builtins = "real.Real.(>)"]
     fn gt_log(self, _: Self) -> bool {
         true
     }

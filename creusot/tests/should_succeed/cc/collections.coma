@@ -31,23 +31,21 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
   let%span sfmap29 = "../../../../creusot-contracts/src/logic/fmap.rs" 218 8 218 35
   let%span sfmap30 = "../../../../creusot-contracts/src/logic/fmap.rs" 59 14 59 86
   
-  use prelude.prelude.UInt64
+  use prelude.int.UInt64
   
   type t_RandomState'0  =
-    { t_RandomState__k0'0: uint64; t_RandomState__k1'0: uint64 }
-  
-  use prelude.prelude.UIntSize
+    { t_RandomState__k0'0: UInt64.t; t_RandomState__k1'0: UInt64.t }
   
   use prelude.prelude.Opaque
   
   type t_NonNull'0  =
-    { t_NonNull__pointer'0: opaque_ptr }
+    { t_NonNull__pointer'0: Opaque.ptr }
   
   type t_RawTableInner'0  =
-    { t_RawTableInner__bucket_mask'0: usize;
+    { t_RawTableInner__bucket_mask'0: UInt64.t;
       t_RawTableInner__ctrl'0: t_NonNull'0;
-      t_RawTableInner__growth_left'0: usize;
-      t_RawTableInner__items'0: usize }
+      t_RawTableInner__growth_left'0: UInt64.t;
+      t_RawTableInner__items'0: UInt64.t }
   
   type t_RawTable'0  =
     { t_RawTable__table'0: t_RawTableInner'0; t_RawTable__alloc'0: (); t_RawTable__marker'0: () }
@@ -65,16 +63,16 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
   predicate into_iter_pre'0 (self : t_HashMap'0) =
     [%#shash_map11] true
   
-  use prelude.prelude.UInt16
+  use prelude.int.UInt16
   
   type t_BitMask'0  =
-    { t_BitMask__0'0: uint16 }
+    { t_BitMask__0'0: UInt16.t }
   
   type t_BitMaskIter'0  =
     { t_BitMaskIter__0'0: t_BitMask'0 }
   
   type t_NonNull'1  =
-    { t_NonNull__pointer'1: opaque_ptr }
+    { t_NonNull__pointer'1: Opaque.ptr }
   
   type t_Bucket'0  =
     { t_Bucket__ptr'0: t_NonNull'1 }
@@ -82,11 +80,11 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
   type t_RawIterRange'0  =
     { t_RawIterRange__current_group'0: t_BitMaskIter'0;
       t_RawIterRange__data'0: t_Bucket'0;
-      t_RawIterRange__next_ctrl'0: opaque_ptr;
-      t_RawIterRange__end'0: opaque_ptr }
+      t_RawIterRange__next_ctrl'0: Opaque.ptr;
+      t_RawIterRange__end'0: Opaque.ptr }
   
   type t_RawIter'0  =
-    { t_RawIter__iter'0: t_RawIterRange'0; t_RawIter__items'0: usize }
+    { t_RawIter__iter'0: t_RawIterRange'0; t_RawIter__items'0: UInt64.t }
   
   type t_AlignmentEnum'0  =
     | C_qy95zAlign1Shl0'0
@@ -158,7 +156,7 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
     { t_Alignment__0'0: t_AlignmentEnum'0 }
   
   type t_Layout'0  =
-    { t_Layout__size'0: usize; t_Layout__align'0: t_Alignment'0 }
+    { t_Layout__size'0: UInt64.t; t_Layout__align'0: t_Alignment'0 }
   
   type t_Option'2  =
     | C_None'2
@@ -192,7 +190,7 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_IntoIter'0 [inv'1 x] . inv'1 x = true
   
-  use prelude.prelude.Borrow
+  use prelude.prelude.MutBorrow
   
   type t_K'0
   
@@ -203,7 +201,7 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
   predicate resolve'0 (_1 : t_IntoIter'0) =
     true
   
-  use prelude.prelude.Int
+  use mach.int.Int
   
   function len'0 (self : t_FMap'0) : int
   
@@ -279,10 +277,10 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
   
   axiom produces_refl'0_spec : forall self : t_IntoIter'0 . [%#shash_map14] produces'0 self (Seq.empty : Seq.seq (t_K'0, t_V'0)) self
   
-  predicate resolve'1 (self : borrowed (t_IntoIter'0)) =
+  predicate resolve'1 (self : MutBorrow.t (t_IntoIter'0)) =
     [%#sresolve20] self.final = self.current
   
-  function view'1 (self : borrowed (t_IntoIter'0)) : t_FMap'0 =
+  function view'1 (self : MutBorrow.t (t_IntoIter'0)) : t_FMap'0 =
     [%#smodel21] view'2 self.current
   
   use map.Const
@@ -301,7 +299,7 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
   function is_empty'0 (self : t_FMap'0) : bool =
     [%#sfmap22] ext_eq'0 self (empty'0 ())
   
-  predicate completed'0 (self : borrowed (t_IntoIter'0)) =
+  predicate completed'0 (self : MutBorrow.t (t_IntoIter'0)) =
     [%#shash_map6] resolve'1 self /\ is_empty'0 (view'1 self)
   
   predicate from_iter_post'0 (prod : Seq.seq (t_K'0, t_V'0)) (res : t_HashMap'0) =
@@ -315,7 +313,7 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
   let rec collect'0 (self:t_IntoIter'0) (return'  (ret:t_HashMap'0))= {[@expl:collect 'self' type invariant] inv'1 self}
     any
     [ return' (result:t_HashMap'0)-> {inv'0 result}
-      {[%#siter5] exists done' : borrowed (t_IntoIter'0), prod : Seq.seq (t_K'0, t_V'0) . resolve'0 done'.final
+      {[%#siter5] exists done' : MutBorrow.t (t_IntoIter'0), prod : Seq.seq (t_K'0, t_V'0) . resolve'0 done'.final
       /\ completed'0 done' /\ produces'0 self prod done'.current /\ from_iter_post'0 prod result}
       (! return' {result}) ]
   
@@ -337,7 +335,7 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
     | bb2 = s0 [ s0 =  [ &it0 <- [%#scollections0] Snapshot.new it ] s1 | s1 = bb3 ] 
     | bb3 = s0 [ s0 = collect'0 {it} (fun (_ret':t_HashMap'0) ->  [ &r <- _ret' ] s1) | s1 = bb4 ] 
     | bb4 = s0
-      [ s0 = {[@expl:assertion] [%#scollections1] exists prod : Seq.seq (t_K'0, t_V'0), it1 : borrowed (t_IntoIter'0) . completed'0 it1
+      [ s0 = {[@expl:assertion] [%#scollections1] exists prod : Seq.seq (t_K'0, t_V'0), it1 : MutBorrow.t (t_IntoIter'0) . completed'0 it1
         /\ produces'0 (Snapshot.inner it0) prod it1.current
         /\ (forall k : t_DeepModelTy'0, v : t_V'0 . get'0 (view'0 r) k = C_Some'0 v
          -> (exists k1 : t_K'0 . deep_model'0 k1 = k /\ contains'0 prod (k1, v)))}
@@ -355,11 +353,11 @@ module M_collections__roundtrip_hashmap_into_iter [#"collections.rs" 15 0 17 18]
     | bb8 = bb9
     | bb9 = return' {_0} ]
     )
-    [ & _0 : t_HashMap'0 = any_l ()
+    [ & _0 : t_HashMap'0 = Intrinsic.any_l ()
     | & xs : t_HashMap'0 = xs
-    | & it : t_IntoIter'0 = any_l ()
-    | & it0 : Snapshot.snap_ty (t_IntoIter'0) = any_l ()
-    | & r : t_HashMap'0 = any_l () ]
+    | & it : t_IntoIter'0 = Intrinsic.any_l ()
+    | & it0 : Snapshot.snap_ty (t_IntoIter'0) = Intrinsic.any_l ()
+    | & r : t_HashMap'0 = Intrinsic.any_l () ]
     
     [ return' (result:t_HashMap'0)-> {[@expl:roundtrip_hashmap_into_iter ensures] [%#scollections3] view'0 result
       = view'0 xs}
@@ -397,25 +395,21 @@ module M_collections__roundtrip_hashmap_iter [#"collections.rs" 32 0 32 97]
   let%span sfmap27 = "../../../../creusot-contracts/src/logic/fmap.rs" 218 8 218 35
   let%span sfmap28 = "../../../../creusot-contracts/src/logic/fmap.rs" 59 14 59 86
   
-  use prelude.prelude.Borrow
-  
-  use prelude.prelude.UInt64
+  use prelude.int.UInt64
   
   type t_RandomState'0  =
-    { t_RandomState__k0'0: uint64; t_RandomState__k1'0: uint64 }
-  
-  use prelude.prelude.UIntSize
+    { t_RandomState__k0'0: UInt64.t; t_RandomState__k1'0: UInt64.t }
   
   use prelude.prelude.Opaque
   
   type t_NonNull'0  =
-    { t_NonNull__pointer'0: opaque_ptr }
+    { t_NonNull__pointer'0: Opaque.ptr }
   
   type t_RawTableInner'0  =
-    { t_RawTableInner__bucket_mask'0: usize;
+    { t_RawTableInner__bucket_mask'0: UInt64.t;
       t_RawTableInner__ctrl'0: t_NonNull'0;
-      t_RawTableInner__growth_left'0: usize;
-      t_RawTableInner__items'0: usize }
+      t_RawTableInner__growth_left'0: UInt64.t;
+      t_RawTableInner__items'0: UInt64.t }
   
   type t_RawTable'1  =
     { t_RawTable__table'1: t_RawTableInner'0; t_RawTable__alloc'1: (); t_RawTable__marker'1: () }
@@ -437,16 +431,16 @@ module M_collections__roundtrip_hashmap_iter [#"collections.rs" 32 0 32 97]
   function view'1 (self : t_HashMap'1) : t_FMap'1 =
     [%#smodel10] view'4 self
   
-  use prelude.prelude.UInt16
+  use prelude.int.UInt16
   
   type t_BitMask'0  =
-    { t_BitMask__0'0: uint16 }
+    { t_BitMask__0'0: UInt16.t }
   
   type t_BitMaskIter'0  =
     { t_BitMaskIter__0'0: t_BitMask'0 }
   
   type t_NonNull'1  =
-    { t_NonNull__pointer'1: opaque_ptr }
+    { t_NonNull__pointer'1: Opaque.ptr }
   
   type t_Bucket'0  =
     { t_Bucket__ptr'0: t_NonNull'1 }
@@ -454,11 +448,11 @@ module M_collections__roundtrip_hashmap_iter [#"collections.rs" 32 0 32 97]
   type t_RawIterRange'0  =
     { t_RawIterRange__current_group'0: t_BitMaskIter'0;
       t_RawIterRange__data'0: t_Bucket'0;
-      t_RawIterRange__next_ctrl'0: opaque_ptr;
-      t_RawIterRange__end'0: opaque_ptr }
+      t_RawIterRange__next_ctrl'0: Opaque.ptr;
+      t_RawIterRange__end'0: Opaque.ptr }
   
   type t_RawIter'0  =
-    { t_RawIter__iter'0: t_RawIterRange'0; t_RawIter__items'0: usize }
+    { t_RawIter__iter'0: t_RawIterRange'0; t_RawIter__items'0: UInt64.t }
   
   type t_Iter'1  =
     { t_Iter__inner'0: t_RawIter'0; t_Iter__marker'0: () }
@@ -490,6 +484,8 @@ module M_collections__roundtrip_hashmap_iter [#"collections.rs" 32 0 32 97]
   
   axiom inv_axiom'2 [@rewrite] : forall x : t_HashMap'0 [inv'2 x] . inv'2 x = true
   
+  use prelude.prelude.MutBorrow
+  
   type t_K'0
   
   type t_V'0
@@ -499,7 +495,7 @@ module M_collections__roundtrip_hashmap_iter [#"collections.rs" 32 0 32 97]
   predicate resolve'0 (_1 : t_Iter'0) =
     true
   
-  use prelude.prelude.Int
+  use mach.int.Int
   
   function len'0 (self : t_FMap'1) : int
   
@@ -578,10 +574,10 @@ module M_collections__roundtrip_hashmap_iter [#"collections.rs" 32 0 32 97]
   
   axiom produces_refl'0_spec : forall self : t_Iter'0 . [%#shash_map12] produces'0 self (Seq.empty : Seq.seq (t_K'0, t_V'0)) self
   
-  predicate resolve'1 (self : borrowed (t_Iter'0)) =
+  predicate resolve'1 (self : MutBorrow.t (t_Iter'0)) =
     [%#sresolve18] self.final = self.current
   
-  function view'3 (self : borrowed (t_Iter'0)) : t_FMap'1 =
+  function view'3 (self : MutBorrow.t (t_Iter'0)) : t_FMap'1 =
     [%#smodel19] view'2 self.current
   
   use map.Const
@@ -600,7 +596,7 @@ module M_collections__roundtrip_hashmap_iter [#"collections.rs" 32 0 32 97]
   function is_empty'0 (self : t_FMap'1) : bool =
     [%#sfmap20] ext_eq'0 self (empty'0 ())
   
-  predicate completed'0 (self : borrowed (t_Iter'0)) =
+  predicate completed'0 (self : MutBorrow.t (t_Iter'0)) =
     [%#shash_map5] resolve'1 self /\ is_empty'0 (view'3 self)
   
   type t_FMap'0
@@ -644,7 +640,7 @@ module M_collections__roundtrip_hashmap_iter [#"collections.rs" 32 0 32 97]
   let rec collect'0 (self:t_Iter'0) (return'  (ret:t_HashMap'0))= {[@expl:collect 'self' type invariant] inv'1 self}
     any
     [ return' (result:t_HashMap'0)-> {inv'2 result}
-      {[%#siter4] exists done' : borrowed (t_Iter'0), prod : Seq.seq (t_K'0, t_V'0) . resolve'0 done'.final
+      {[%#siter4] exists done' : MutBorrow.t (t_Iter'0), prod : Seq.seq (t_K'0, t_V'0) . resolve'0 done'.final
       /\ completed'0 done' /\ produces'0 self prod done'.current /\ from_iter_post'0 prod result}
       (! return' {result}) ]
   
@@ -662,7 +658,7 @@ module M_collections__roundtrip_hashmap_iter [#"collections.rs" 32 0 32 97]
     | bb1 = s0 [ s0 =  [ &it0 <- [%#scollections0] Snapshot.new it ] s1 | s1 = bb2 ] 
     | bb2 = s0 [ s0 = collect'0 {it} (fun (_ret':t_HashMap'0) ->  [ &r <- _ret' ] s1) | s1 = bb3 ] 
     | bb3 = s0
-      [ s0 = {[@expl:assertion] [%#scollections1] exists prod : Seq.seq (t_K'0, t_V'0), it1 : borrowed (t_Iter'0) . completed'0 it1
+      [ s0 = {[@expl:assertion] [%#scollections1] exists prod : Seq.seq (t_K'0, t_V'0), it1 : MutBorrow.t (t_Iter'0) . completed'0 it1
         /\ produces'0 (Snapshot.inner it0) prod it1.current
         /\ (forall k : t_DeepModelTy'0, v : t_V'0 . get'0 (view'0 r) k = C_Some'0 v
          -> (exists k1 : t_K'0 . deep_model'0 k1 = k /\ contains'0 prod (k1, v)))}
@@ -672,11 +668,11 @@ module M_collections__roundtrip_hashmap_iter [#"collections.rs" 32 0 32 97]
     | bb4 = s0 [ s0 =  [ &_0 <- r ] s1 | s1 = bb5 ] 
     | bb5 = return' {_0} ]
     )
-    [ & _0 : t_HashMap'0 = any_l ()
+    [ & _0 : t_HashMap'0 = Intrinsic.any_l ()
     | & xs : t_HashMap'1 = xs
-    | & it : t_Iter'0 = any_l ()
-    | & it0 : Snapshot.snap_ty (t_Iter'0) = any_l ()
-    | & r : t_HashMap'0 = any_l () ]
+    | & it : t_Iter'0 = Intrinsic.any_l ()
+    | & it0 : Snapshot.snap_ty (t_Iter'0) = Intrinsic.any_l ()
+    | & r : t_HashMap'0 = Intrinsic.any_l () ]
     
     [ return' (result:t_HashMap'0)-> {[@expl:roundtrip_hashmap_iter ensures] [%#scollections2] forall k : t_DeepModelTy'0, v : t_V'0 . (get'0 (view'0 result) k
       = C_Some'0 v)
@@ -723,25 +719,23 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 48 0 50 24]
   let%span sutil35 = "../../../../creusot-contracts/src/util.rs" 55 11 55 21
   let%span sutil36 = "../../../../creusot-contracts/src/util.rs" 56 10 56 28
   
-  use prelude.prelude.Borrow
+  use prelude.prelude.MutBorrow
   
-  use prelude.prelude.UInt64
+  use prelude.int.UInt64
   
   type t_RandomState'0  =
-    { t_RandomState__k0'0: uint64; t_RandomState__k1'0: uint64 }
-  
-  use prelude.prelude.UIntSize
+    { t_RandomState__k0'0: UInt64.t; t_RandomState__k1'0: UInt64.t }
   
   use prelude.prelude.Opaque
   
   type t_NonNull'0  =
-    { t_NonNull__pointer'0: opaque_ptr }
+    { t_NonNull__pointer'0: Opaque.ptr }
   
   type t_RawTableInner'0  =
-    { t_RawTableInner__bucket_mask'0: usize;
+    { t_RawTableInner__bucket_mask'0: UInt64.t;
       t_RawTableInner__ctrl'0: t_NonNull'0;
-      t_RawTableInner__growth_left'0: usize;
-      t_RawTableInner__items'0: usize }
+      t_RawTableInner__growth_left'0: UInt64.t;
+      t_RawTableInner__items'0: UInt64.t }
   
   type t_RawTable'0  =
     { t_RawTable__table'0: t_RawTableInner'0; t_RawTable__alloc'0: (); t_RawTable__marker'0: () }
@@ -752,20 +746,20 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 48 0 50 24]
   type t_HashMap'0  =
     { t_HashMap__base'0: t_HashMap'2 }
   
-  predicate inv'0 (_1 : borrowed (t_HashMap'0))
+  predicate inv'0 (_1 : MutBorrow.t (t_HashMap'0))
   
-  axiom inv_axiom'0 [@rewrite] : forall x : borrowed (t_HashMap'0) [inv'0 x] . inv'0 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t (t_HashMap'0) [inv'0 x] . inv'0 x = true
   
-  use prelude.prelude.UInt16
+  use prelude.int.UInt16
   
   type t_BitMask'0  =
-    { t_BitMask__0'0: uint16 }
+    { t_BitMask__0'0: UInt16.t }
   
   type t_BitMaskIter'0  =
     { t_BitMaskIter__0'0: t_BitMask'0 }
   
   type t_NonNull'1  =
-    { t_NonNull__pointer'1: opaque_ptr }
+    { t_NonNull__pointer'1: Opaque.ptr }
   
   type t_Bucket'0  =
     { t_Bucket__ptr'0: t_NonNull'1 }
@@ -773,11 +767,11 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 48 0 50 24]
   type t_RawIterRange'0  =
     { t_RawIterRange__current_group'0: t_BitMaskIter'0;
       t_RawIterRange__data'0: t_Bucket'0;
-      t_RawIterRange__next_ctrl'0: opaque_ptr;
-      t_RawIterRange__end'0: opaque_ptr }
+      t_RawIterRange__next_ctrl'0: Opaque.ptr;
+      t_RawIterRange__end'0: Opaque.ptr }
   
   type t_RawIter'0  =
-    { t_RawIter__iter'0: t_RawIterRange'0; t_RawIter__items'0: usize }
+    { t_RawIter__iter'0: t_RawIterRange'0; t_RawIter__items'0: UInt64.t }
   
   type t_IterMut'1  =
     { t_IterMut__inner'0: t_RawIter'0; t_IterMut__marker'0: () }
@@ -818,7 +812,7 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 48 0 50 24]
   
   type t_Option'1  =
     | C_None'1
-    | C_Some'2 (borrowed t_V'0)
+    | C_Some'2 (MutBorrow.t t_V'0)
   
   use map.Map
   
@@ -849,28 +843,28 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 48 0 50 24]
   function index_logic'1 [@inline:trivial] (self : t_FMap'1) (key : t_DeepModelTy'0) : t_V'0 =
     [%#sfmap14] lookup'1 self key
   
-  function unwrap'0 (op : t_Option'1) : borrowed t_V'0
+  function unwrap'0 (op : t_Option'1) : MutBorrow.t t_V'0
   
   axiom unwrap'0_spec : forall op : t_Option'1 . ([%#sutil35] op <> C_None'1)
    -> ([%#sutil36] C_Some'2 (unwrap'0 op) = op)
   
-  function lookup_unsized'0 [@inline:trivial] (self : t_FMap'0) (k : t_DeepModelTy'0) : borrowed t_V'0 =
+  function lookup_unsized'0 [@inline:trivial] (self : t_FMap'0) (k : t_DeepModelTy'0) : MutBorrow.t t_V'0 =
     [%#sfmap34] unwrap'0 (get_unsized'0 self k)
   
-  function lookup'0 [@inline:trivial] (self : t_FMap'0) (k : t_DeepModelTy'0) : borrowed t_V'0 =
+  function lookup'0 [@inline:trivial] (self : t_FMap'0) (k : t_DeepModelTy'0) : MutBorrow.t t_V'0 =
     [%#sfmap27] lookup_unsized'0 self k
   
-  function index_logic'0 [@inline:trivial] (self : t_FMap'0) (key : t_DeepModelTy'0) : borrowed t_V'0 =
+  function index_logic'0 [@inline:trivial] (self : t_FMap'0) (key : t_DeepModelTy'0) : MutBorrow.t t_V'0 =
     [%#sfmap14] lookup'0 self key
   
-  predicate into_iter_post'0 (self : borrowed (t_HashMap'0)) (res : t_IterMut'0) =
+  predicate into_iter_post'0 (self : MutBorrow.t (t_HashMap'0)) (res : t_IterMut'0) =
     [%#shash_map15] forall k : t_DeepModelTy'0 . contains'2 (view'2 self.current) k = contains'2 (view'2 self.final) k
     /\ (forall k : t_DeepModelTy'0 . contains'2 (view'2 self.current) k = contains'1 (view'4 res) k)
     /\ (forall k : t_DeepModelTy'0 . contains'2 (view'2 self.current) k
      -> index_logic'1 (view'2 self.current) k = (index_logic'0 (view'4 res) k).current
     /\ index_logic'1 (view'2 self.final) k = (index_logic'0 (view'4 res) k).final)
   
-  let rec iter_mut'0 (self:borrowed (t_HashMap'0)) (return'  (ret:t_IterMut'0))= {[@expl:iter_mut 'self' type invariant] inv'0 self}
+  let rec iter_mut'0 (self:MutBorrow.t (t_HashMap'0)) (return'  (ret:t_IterMut'0))= {[@expl:iter_mut 'self' type invariant] inv'0 self}
     any [ return' (result:t_IterMut'0)-> {[%#shash_map5] into_iter_post'0 self result} (! return' {result}) ] 
   
   use prelude.prelude.Snapshot
@@ -899,7 +893,7 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 48 0 50 24]
   predicate resolve'1 (_1 : t_IterMut'0) =
     true
   
-  use prelude.prelude.Int
+  use mach.int.Int
   
   function len'0 (self : t_FMap'0) : int
   
@@ -909,14 +903,14 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 48 0 50 24]
   
   use seq.Seq
   
-  predicate contains'0 (self : Seq.seq (t_K'0, borrowed t_V'0)) (x : (t_K'0, borrowed t_V'0)) =
+  predicate contains'0 (self : Seq.seq (t_K'0, MutBorrow.t t_V'0)) (x : (t_K'0, MutBorrow.t t_V'0)) =
     [%#sseq11] exists i : int . 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
   function deep_model'1 (self : t_K'0) : t_DeepModelTy'0
   
   type t_Option'0  =
     | C_None'0
-    | C_Some'0 (borrowed t_V'0)
+    | C_Some'0 (MutBorrow.t t_V'0)
   
   function get'0 [@inline:trivial] (self : t_FMap'0) (k : t_DeepModelTy'0) : t_Option'0 =
     [%#sfmap9] match get_unsized'0 self k with
@@ -931,14 +925,14 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 48 0 50 24]
   
   use seq.Seq
   
-  predicate produces'0 (self : t_IterMut'0) (visited : Seq.seq (t_K'0, borrowed t_V'0)) (o : t_IterMut'0) =
+  predicate produces'0 (self : t_IterMut'0) (visited : Seq.seq (t_K'0, MutBorrow.t t_V'0)) (o : t_IterMut'0) =
     [%#shash_map8] len'0 (view'4 self) = Seq.length visited + len'0 (view'4 o)
-    /\ (forall k : t_K'0, v : borrowed t_V'0 . contains'0 visited (k, v)
+    /\ (forall k : t_K'0, v : MutBorrow.t t_V'0 . contains'0 visited (k, v)
      -> get'0 (view'4 self) (deep_model'1 k) = C_Some'0 v /\ get'0 (view'4 o) (deep_model'1 k) = C_None'0)
-    /\ (forall k : t_DeepModelTy'0, v : borrowed t_V'0 . get'0 (view'4 o) k = C_Some'0 v
+    /\ (forall k : t_DeepModelTy'0, v : MutBorrow.t t_V'0 . get'0 (view'4 o) k = C_Some'0 v
      -> get'0 (view'4 self) k = C_Some'0 v
-    /\ not (exists k2 : t_K'0, v2 : borrowed t_V'0 . deep_model'0 k2 = k /\ contains'0 visited (k2, v2)))
-    /\ (forall k : t_DeepModelTy'0, v : borrowed t_V'0 . get'0 (view'4 self) k = C_Some'0 v
+    /\ not (exists k2 : t_K'0, v2 : MutBorrow.t t_V'0 . deep_model'0 k2 = k /\ contains'0 visited (k2, v2)))
+    /\ (forall k : t_DeepModelTy'0, v : MutBorrow.t t_V'0 . get'0 (view'4 self) k = C_Some'0 v
      -> (exists k1 : t_K'0 . deep_model'0 k1 = k /\ contains'0 visited (k1, v)) \/ get'0 (view'4 o) k = C_Some'0 v)
     /\ (forall i1 : int, i2 : int . 0 <= i1
     /\ i1 < Seq.length visited
@@ -947,23 +941,23 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 48 0 50 24]
     /\ deep_model'0 (let (a, _) = Seq.get visited i1 in a) = deep_model'0 (let (a, _) = Seq.get visited i2 in a)
      -> i1 = i2)
   
-  function produces_trans'0 (a : t_IterMut'0) (ab : Seq.seq (t_K'0, borrowed t_V'0)) (b : t_IterMut'0) (bc : Seq.seq (t_K'0, borrowed t_V'0)) (c : t_IterMut'0) : ()
+  function produces_trans'0 (a : t_IterMut'0) (ab : Seq.seq (t_K'0, MutBorrow.t t_V'0)) (b : t_IterMut'0) (bc : Seq.seq (t_K'0, MutBorrow.t t_V'0)) (c : t_IterMut'0) : ()
   
    =
     [%#shash_map22] let _ = () in ()
   
-  axiom produces_trans'0_spec : forall a : t_IterMut'0, ab : Seq.seq (t_K'0, borrowed t_V'0), b : t_IterMut'0, bc : Seq.seq (t_K'0, borrowed t_V'0), c : t_IterMut'0 . ([%#shash_map19] produces'0 a ab b)
+  axiom produces_trans'0_spec : forall a : t_IterMut'0, ab : Seq.seq (t_K'0, MutBorrow.t t_V'0), b : t_IterMut'0, bc : Seq.seq (t_K'0, MutBorrow.t t_V'0), c : t_IterMut'0 . ([%#shash_map19] produces'0 a ab b)
    -> ([%#shash_map20] produces'0 b bc c)  -> ([%#shash_map21] produces'0 a (Seq.(++) ab bc) c)
   
   function produces_refl'0 (self : t_IterMut'0) : () =
     [%#shash_map18] ()
   
-  axiom produces_refl'0_spec : forall self : t_IterMut'0 . [%#shash_map17] produces'0 self (Seq.empty : Seq.seq (t_K'0, borrowed t_V'0)) self
+  axiom produces_refl'0_spec : forall self : t_IterMut'0 . [%#shash_map17] produces'0 self (Seq.empty : Seq.seq (t_K'0, MutBorrow.t t_V'0)) self
   
-  predicate resolve'2 (self : borrowed (t_IterMut'0)) =
+  predicate resolve'2 (self : MutBorrow.t (t_IterMut'0)) =
     [%#sresolve23] self.final = self.current
   
-  function view'3 (self : borrowed (t_IterMut'0)) : t_FMap'0 =
+  function view'3 (self : MutBorrow.t (t_IterMut'0)) : t_FMap'0 =
     [%#smodel12] view'4 self.current
   
   use map.Const
@@ -982,13 +976,13 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 48 0 50 24]
   function is_empty'0 (self : t_FMap'0) : bool =
     [%#sfmap24] ext_eq'0 self (empty'0 ())
   
-  predicate completed'0 (self : borrowed (t_IterMut'0)) =
+  predicate completed'0 (self : MutBorrow.t (t_IterMut'0)) =
     [%#shash_map7] resolve'2 self /\ is_empty'0 (view'3 self)
   
   function view'0 (self : t_HashMap'1) : t_FMap'0
   
-  predicate from_iter_post'0 (prod : Seq.seq (t_K'0, borrowed t_V'0)) (res : t_HashMap'1) =
-    [%#shash_map16] forall k : t_DeepModelTy'0, v : borrowed t_V'0 . (get'0 (view'0 res) k = C_Some'0 v)
+  predicate from_iter_post'0 (prod : Seq.seq (t_K'0, MutBorrow.t t_V'0)) (res : t_HashMap'1) =
+    [%#shash_map16] forall k : t_DeepModelTy'0, v : MutBorrow.t t_V'0 . (get'0 (view'0 res) k = C_Some'0 v)
     = (exists i : int, k1 : t_K'0 . 0 <= i
     /\ i < Seq.length prod
     /\ deep_model'0 k1 = k
@@ -998,24 +992,24 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 48 0 50 24]
   let rec collect'0 (self:t_IterMut'0) (return'  (ret:t_HashMap'1))= {[@expl:collect 'self' type invariant] inv'1 self}
     any
     [ return' (result:t_HashMap'1)-> {inv'2 result}
-      {[%#siter6] exists done' : borrowed (t_IterMut'0), prod : Seq.seq (t_K'0, borrowed t_V'0) . resolve'1 done'.final
+      {[%#siter6] exists done' : MutBorrow.t (t_IterMut'0), prod : Seq.seq (t_K'0, MutBorrow.t t_V'0) . resolve'1 done'.final
       /\ completed'0 done' /\ produces'0 self prod done'.current /\ from_iter_post'0 prod result}
       (! return' {result}) ]
   
   
   use prelude.prelude.Snapshot
   
-  predicate resolve'3 (self : borrowed (t_HashMap'0)) =
+  predicate resolve'3 (self : MutBorrow.t (t_HashMap'0)) =
     [%#sresolve23] self.final = self.current
   
-  predicate resolve'0 (_1 : borrowed (t_HashMap'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t (t_HashMap'0)) =
     resolve'3 _1
   
   use prelude.prelude.Intrinsic
   
   use prelude.prelude.Snapshot
   
-  function view'1 (self : borrowed (t_HashMap'0)) : t_FMap'1 =
+  function view'1 (self : MutBorrow.t (t_HashMap'0)) : t_FMap'1 =
     [%#smodel12] view'2 self.current
   
   type t_Option'2  =
@@ -1030,19 +1024,19 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 48 0 50 24]
   
   meta "compute_max_steps" 1000000
   
-  let rec roundtrip_hashmap_iter_mut'0[#"collections.rs" 48 0 50 24] (xs:borrowed (t_HashMap'0)) (return'  (ret:t_HashMap'1))= (! bb0
+  let rec roundtrip_hashmap_iter_mut'0[#"collections.rs" 48 0 50 24] (xs:MutBorrow.t (t_HashMap'0)) (return'  (ret:t_HashMap'1))= (! bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_final <t_HashMap'0> {xs.current} {Borrow.get_id xs}
-          (fun (_ret':borrowed (t_HashMap'0)) ->  [ &_6 <- _ret' ]  [ &xs <- { xs with current = _ret'.final } ] s1)
+      [ s0 = MutBorrow.borrow_final <t_HashMap'0> {xs.current} {MutBorrow.get_id xs}
+          (fun (_ret':MutBorrow.t (t_HashMap'0)) ->  [ &_6 <- _ret' ]  [ &xs <- { xs with current = _ret'.final } ] s1)
       | s1 = iter_mut'0 {_6} (fun (_ret':t_IterMut'0) ->  [ &it <- _ret' ] s2)
       | s2 = bb1 ]
     
     | bb1 = s0 [ s0 =  [ &it0 <- [%#scollections0] Snapshot.new it ] s1 | s1 = bb2 ] 
     | bb2 = s0 [ s0 = collect'0 {it} (fun (_ret':t_HashMap'1) ->  [ &r <- _ret' ] s1) | s1 = bb3 ] 
     | bb3 = s0
-      [ s0 = {[@expl:assertion] [%#scollections1] exists prod : Seq.seq (t_K'0, borrowed t_V'0), it1 : borrowed (t_IterMut'0) . completed'0 it1
+      [ s0 = {[@expl:assertion] [%#scollections1] exists prod : Seq.seq (t_K'0, MutBorrow.t t_V'0), it1 : MutBorrow.t (t_IterMut'0) . completed'0 it1
         /\ produces'0 (Snapshot.inner it0) prod it1.current
-        /\ (forall k : t_DeepModelTy'0, v : borrowed t_V'0 . get'0 (view'0 r) k = C_Some'0 v
+        /\ (forall k : t_DeepModelTy'0, v : MutBorrow.t t_V'0 . get'0 (view'0 r) k = C_Some'0 v
          -> (exists k1 : t_K'0 . deep_model'0 k1 = k /\ contains'0 prod (k1, v)))}
         s1
       | s1 = bb4 ]
@@ -1050,14 +1044,14 @@ module M_collections__roundtrip_hashmap_iter_mut [#"collections.rs" 48 0 50 24]
     | bb4 = s0 [ s0 =  [ &_0 <- r ] s1 | s1 = bb5 ] 
     | bb5 = s0 [ s0 = -{resolve'0 xs}- s1 | s1 = return' {_0} ]  ]
     )
-    [ & _0 : t_HashMap'1 = any_l ()
-    | & xs : borrowed (t_HashMap'0) = xs
-    | & it : t_IterMut'0 = any_l ()
-    | & _6 : borrowed (t_HashMap'0) = any_l ()
-    | & it0 : Snapshot.snap_ty (t_IterMut'0) = any_l ()
-    | & r : t_HashMap'1 = any_l () ]
+    [ & _0 : t_HashMap'1 = Intrinsic.any_l ()
+    | & xs : MutBorrow.t (t_HashMap'0) = xs
+    | & it : t_IterMut'0 = Intrinsic.any_l ()
+    | & _6 : MutBorrow.t (t_HashMap'0) = Intrinsic.any_l ()
+    | & it0 : Snapshot.snap_ty (t_IterMut'0) = Intrinsic.any_l ()
+    | & r : t_HashMap'1 = Intrinsic.any_l () ]
     
-    [ return' (result:t_HashMap'1)-> {[@expl:roundtrip_hashmap_iter_mut ensures #0] [%#scollections2] forall k : t_DeepModelTy'0, v : borrowed t_V'0 . get'0 (view'0 result) k
+    [ return' (result:t_HashMap'1)-> {[@expl:roundtrip_hashmap_iter_mut ensures #0] [%#scollections2] forall k : t_DeepModelTy'0, v : MutBorrow.t t_V'0 . get'0 (view'0 result) k
       = C_Some'0 v  -> get'1 (view'1 xs) k = C_Some'1 (v.current) /\ get'1 (view'2 xs.final) k = C_Some'1 (v.final)}
       {[@expl:roundtrip_hashmap_iter_mut ensures #1] [%#scollections3] forall k : t_DeepModelTy'0, v : t_V'0 . get'1 (view'1 xs) k
       = C_Some'1 v  -> contains'1 (view'0 result) k /\ (index_logic'0 (view'0 result) k).current = v}
@@ -1092,23 +1086,21 @@ module M_collections__roundtrip_hashset_into_iter [#"collections.rs" 64 0 64 90]
   let%span sseq22 = "../../../../creusot-contracts/src/logic/seq.rs" 382 14 383 65
   let%span sseq23 = "../../../../creusot-contracts/src/logic/seq.rs" 381 4 381 12
   
-  use prelude.prelude.UInt64
+  use prelude.int.UInt64
   
   type t_RandomState'0  =
-    { t_RandomState__k0'0: uint64; t_RandomState__k1'0: uint64 }
-  
-  use prelude.prelude.UIntSize
+    { t_RandomState__k0'0: UInt64.t; t_RandomState__k1'0: UInt64.t }
   
   use prelude.prelude.Opaque
   
   type t_NonNull'0  =
-    { t_NonNull__pointer'0: opaque_ptr }
+    { t_NonNull__pointer'0: Opaque.ptr }
   
   type t_RawTableInner'0  =
-    { t_RawTableInner__bucket_mask'0: usize;
+    { t_RawTableInner__bucket_mask'0: UInt64.t;
       t_RawTableInner__ctrl'0: t_NonNull'0;
-      t_RawTableInner__growth_left'0: usize;
-      t_RawTableInner__items'0: usize }
+      t_RawTableInner__growth_left'0: UInt64.t;
+      t_RawTableInner__items'0: UInt64.t }
   
   type t_RawTable'0  =
     { t_RawTable__table'0: t_RawTableInner'0; t_RawTable__alloc'0: (); t_RawTable__marker'0: () }
@@ -1129,16 +1121,16 @@ module M_collections__roundtrip_hashset_into_iter [#"collections.rs" 64 0 64 90]
   predicate into_iter_pre'0 (self : t_HashSet'0) =
     [%#shash_set3] true
   
-  use prelude.prelude.UInt16
+  use prelude.int.UInt16
   
   type t_BitMask'0  =
-    { t_BitMask__0'0: uint16 }
+    { t_BitMask__0'0: UInt16.t }
   
   type t_BitMaskIter'0  =
     { t_BitMaskIter__0'0: t_BitMask'0 }
   
   type t_NonNull'1  =
-    { t_NonNull__pointer'1: opaque_ptr }
+    { t_NonNull__pointer'1: Opaque.ptr }
   
   type t_Bucket'0  =
     { t_Bucket__ptr'0: t_NonNull'1 }
@@ -1146,11 +1138,11 @@ module M_collections__roundtrip_hashset_into_iter [#"collections.rs" 64 0 64 90]
   type t_RawIterRange'0  =
     { t_RawIterRange__current_group'0: t_BitMaskIter'0;
       t_RawIterRange__data'0: t_Bucket'0;
-      t_RawIterRange__next_ctrl'0: opaque_ptr;
-      t_RawIterRange__end'0: opaque_ptr }
+      t_RawIterRange__next_ctrl'0: Opaque.ptr;
+      t_RawIterRange__end'0: Opaque.ptr }
   
   type t_RawIter'0  =
-    { t_RawIter__iter'0: t_RawIterRange'0; t_RawIter__items'0: usize }
+    { t_RawIter__iter'0: t_RawIterRange'0; t_RawIter__items'0: UInt64.t }
   
   type t_AlignmentEnum'0  =
     | C_qy95zAlign1Shl0'0
@@ -1222,7 +1214,7 @@ module M_collections__roundtrip_hashset_into_iter [#"collections.rs" 64 0 64 90]
     { t_Alignment__0'0: t_AlignmentEnum'0 }
   
   type t_Layout'0  =
-    { t_Layout__size'0: usize; t_Layout__align'0: t_Alignment'0 }
+    { t_Layout__size'0: UInt64.t; t_Layout__align'0: t_Alignment'0 }
   
   type t_Option'0  =
     | C_None'0
@@ -1259,7 +1251,7 @@ module M_collections__roundtrip_hashset_into_iter [#"collections.rs" 64 0 64 90]
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_IntoIter'0 [inv'1 x] . inv'1 x = true
   
-  use prelude.prelude.Borrow
+  use prelude.prelude.MutBorrow
   
   type t_T'0
   
@@ -1272,7 +1264,7 @@ module M_collections__roundtrip_hashset_into_iter [#"collections.rs" 64 0 64 90]
   
   use seq.Seq
   
-  use prelude.prelude.Int
+  use mach.int.Int
   
   use set.Fset
   
@@ -1334,12 +1326,12 @@ module M_collections__roundtrip_hashset_into_iter [#"collections.rs" 64 0 64 90]
   
   axiom produces_refl'0_spec : forall self : t_IntoIter'0 . [%#shash_set8] produces'0 self (Seq.empty : Seq.seq t_T'0) self
   
-  function view'2 (self : borrowed (t_IntoIter'0)) : Fset.fset t_DeepModelTy'0 =
+  function view'2 (self : MutBorrow.t (t_IntoIter'0)) : Fset.fset t_DeepModelTy'0 =
     [%#smodel14] view'1 self.current
   
   use set.Fset
   
-  predicate completed'0 (self : borrowed (t_IntoIter'0)) =
+  predicate completed'0 (self : MutBorrow.t (t_IntoIter'0)) =
     [%#shash_set5] Fset.is_empty (view'2 self)
   
   predicate from_iter_post'0 (prod : Seq.seq t_T'0) (res : t_HashSet'0) =
@@ -1349,7 +1341,7 @@ module M_collections__roundtrip_hashset_into_iter [#"collections.rs" 64 0 64 90]
   let rec collect'0 (self:t_IntoIter'0) (return'  (ret:t_HashSet'0))= {[@expl:collect 'self' type invariant] inv'1 self}
     any
     [ return' (result:t_HashSet'0)-> {inv'0 result}
-      {[%#siter2] exists done' : borrowed (t_IntoIter'0), prod : Seq.seq t_T'0 . resolve'0 done'.final
+      {[%#siter2] exists done' : MutBorrow.t (t_IntoIter'0), prod : Seq.seq t_T'0 . resolve'0 done'.final
       /\ completed'0 done' /\ produces'0 self prod done'.current /\ from_iter_post'0 prod result}
       (! return' {result}) ]
   
@@ -1364,7 +1356,7 @@ module M_collections__roundtrip_hashset_into_iter [#"collections.rs" 64 0 64 90]
     | bb2 = s0 [ s0 = collect'0 {_3} (fun (_ret':t_HashSet'0) ->  [ &_0 <- _ret' ] s1) | s1 = bb3 ] 
     | bb3 = bb4
     | bb4 = return' {_0} ]
-    ) [ & _0 : t_HashSet'0 = any_l () | & xs : t_HashSet'0 = xs | & _3 : t_IntoIter'0 = any_l () ] 
+    ) [ & _0 : t_HashSet'0 = Intrinsic.any_l () | & xs : t_HashSet'0 = xs | & _3 : t_IntoIter'0 = Intrinsic.any_l () ] 
     [ return' (result:t_HashSet'0)-> {[@expl:roundtrip_hashset_into_iter ensures] [%#scollections0] view'0 result
       = view'0 xs}
       (! return' {result}) ]
@@ -1396,25 +1388,21 @@ module M_collections__roundtrip_hashset_iter [#"collections.rs" 69 0 69 87]
   let%span sseq22 = "../../../../creusot-contracts/src/logic/seq.rs" 382 14 383 65
   let%span sseq23 = "../../../../creusot-contracts/src/logic/seq.rs" 381 4 381 12
   
-  use prelude.prelude.Borrow
-  
-  use prelude.prelude.UInt64
+  use prelude.int.UInt64
   
   type t_RandomState'0  =
-    { t_RandomState__k0'0: uint64; t_RandomState__k1'0: uint64 }
-  
-  use prelude.prelude.UIntSize
+    { t_RandomState__k0'0: UInt64.t; t_RandomState__k1'0: UInt64.t }
   
   use prelude.prelude.Opaque
   
   type t_NonNull'0  =
-    { t_NonNull__pointer'0: opaque_ptr }
+    { t_NonNull__pointer'0: Opaque.ptr }
   
   type t_RawTableInner'0  =
-    { t_RawTableInner__bucket_mask'0: usize;
+    { t_RawTableInner__bucket_mask'0: UInt64.t;
       t_RawTableInner__ctrl'0: t_NonNull'0;
-      t_RawTableInner__growth_left'0: usize;
-      t_RawTableInner__items'0: usize }
+      t_RawTableInner__growth_left'0: UInt64.t;
+      t_RawTableInner__items'0: UInt64.t }
   
   type t_RawTable'1  =
     { t_RawTable__table'1: t_RawTableInner'0; t_RawTable__alloc'1: (); t_RawTable__marker'1: () }
@@ -1441,16 +1429,16 @@ module M_collections__roundtrip_hashset_iter [#"collections.rs" 69 0 69 87]
   function view'1 (self : t_HashSet'1) : Fset.fset t_DeepModelTy'0 =
     [%#smodel3] view'3 self
   
-  use prelude.prelude.UInt16
+  use prelude.int.UInt16
   
   type t_BitMask'0  =
-    { t_BitMask__0'0: uint16 }
+    { t_BitMask__0'0: UInt16.t }
   
   type t_BitMaskIter'0  =
     { t_BitMaskIter__0'0: t_BitMask'0 }
   
   type t_NonNull'1  =
-    { t_NonNull__pointer'1: opaque_ptr }
+    { t_NonNull__pointer'1: Opaque.ptr }
   
   type t_Bucket'0  =
     { t_Bucket__ptr'0: t_NonNull'1 }
@@ -1458,11 +1446,11 @@ module M_collections__roundtrip_hashset_iter [#"collections.rs" 69 0 69 87]
   type t_RawIterRange'0  =
     { t_RawIterRange__current_group'0: t_BitMaskIter'0;
       t_RawIterRange__data'0: t_Bucket'0;
-      t_RawIterRange__next_ctrl'0: opaque_ptr;
-      t_RawIterRange__end'0: opaque_ptr }
+      t_RawIterRange__next_ctrl'0: Opaque.ptr;
+      t_RawIterRange__end'0: Opaque.ptr }
   
   type t_RawIter'0  =
-    { t_RawIter__iter'0: t_RawIterRange'0; t_RawIter__items'0: usize }
+    { t_RawIter__iter'0: t_RawIterRange'0; t_RawIter__items'0: UInt64.t }
   
   type t_Iter'2  =
     { t_Iter__inner'0: t_RawIter'0; t_Iter__marker'0: () }
@@ -1501,6 +1489,8 @@ module M_collections__roundtrip_hashset_iter [#"collections.rs" 69 0 69 87]
   
   axiom inv_axiom'2 [@rewrite] : forall x : t_HashSet'0 [inv'2 x] . inv'2 x = true
   
+  use prelude.prelude.MutBorrow
+  
   type t_T'0
   
   use seq.Seq
@@ -1512,7 +1502,7 @@ module M_collections__roundtrip_hashset_iter [#"collections.rs" 69 0 69 87]
   
   use seq.Seq
   
-  use prelude.prelude.Int
+  use mach.int.Int
   
   use set.Fset
   
@@ -1576,12 +1566,12 @@ module M_collections__roundtrip_hashset_iter [#"collections.rs" 69 0 69 87]
   
   axiom produces_refl'0_spec : forall self : t_Iter'0 . [%#shash_set7] produces'0 self (Seq.empty : Seq.seq t_T'0) self
   
-  function view'4 (self : borrowed (t_Iter'0)) : Fset.fset t_DeepModelTy'0 =
+  function view'4 (self : MutBorrow.t (t_Iter'0)) : Fset.fset t_DeepModelTy'0 =
     [%#smodel13] view'2 self.current
   
   use set.Fset
   
-  predicate completed'0 (self : borrowed (t_Iter'0)) =
+  predicate completed'0 (self : MutBorrow.t (t_Iter'0)) =
     [%#shash_set4] Fset.is_empty (view'4 self)
   
   function view'0 (self : t_HashSet'0) : Fset.fset t_DeepModelTy'0
@@ -1593,7 +1583,7 @@ module M_collections__roundtrip_hashset_iter [#"collections.rs" 69 0 69 87]
   let rec collect'0 (self:t_Iter'0) (return'  (ret:t_HashSet'0))= {[@expl:collect 'self' type invariant] inv'1 self}
     any
     [ return' (result:t_HashSet'0)-> {inv'2 result}
-      {[%#siter2] exists done' : borrowed (t_Iter'0), prod : Seq.seq t_T'0 . resolve'0 done'.final
+      {[%#siter2] exists done' : MutBorrow.t (t_Iter'0), prod : Seq.seq t_T'0 . resolve'0 done'.final
       /\ completed'0 done' /\ produces'0 self prod done'.current /\ from_iter_post'0 prod result}
       (! return' {result}) ]
   
@@ -1606,7 +1596,7 @@ module M_collections__roundtrip_hashset_iter [#"collections.rs" 69 0 69 87]
     [ bb0 = s0 [ s0 = iter'0 {xs} (fun (_ret':t_Iter'0) ->  [ &_3 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0 [ s0 = collect'0 {_3} (fun (_ret':t_HashSet'0) ->  [ &_0 <- _ret' ] s1) | s1 = bb2 ] 
     | bb2 = return' {_0} ]
-    ) [ & _0 : t_HashSet'0 = any_l () | & xs : t_HashSet'1 = xs | & _3 : t_Iter'0 = any_l () ] 
+    ) [ & _0 : t_HashSet'0 = Intrinsic.any_l () | & xs : t_HashSet'1 = xs | & _3 : t_Iter'0 = Intrinsic.any_l () ] 
     [ return' (result:t_HashSet'0)-> {[@expl:roundtrip_hashset_iter ensures] [%#scollections0] view'0 result
       = view'1 xs}
       (! return' {result}) ]
@@ -1648,25 +1638,21 @@ module M_collections__hashset_intersection [#"collections.rs" 74 0 77 15]
   let%span sseq32 = "../../../../creusot-contracts/src/logic/seq.rs" 382 14 383 65
   let%span sseq33 = "../../../../creusot-contracts/src/logic/seq.rs" 381 4 381 12
   
-  use prelude.prelude.Borrow
-  
-  use prelude.prelude.UInt64
+  use prelude.int.UInt64
   
   type t_RandomState'0  =
-    { t_RandomState__k0'0: uint64; t_RandomState__k1'0: uint64 }
-  
-  use prelude.prelude.UIntSize
+    { t_RandomState__k0'0: UInt64.t; t_RandomState__k1'0: UInt64.t }
   
   use prelude.prelude.Opaque
   
   type t_NonNull'0  =
-    { t_NonNull__pointer'0: opaque_ptr }
+    { t_NonNull__pointer'0: Opaque.ptr }
   
   type t_RawTableInner'0  =
-    { t_RawTableInner__bucket_mask'0: usize;
+    { t_RawTableInner__bucket_mask'0: UInt64.t;
       t_RawTableInner__ctrl'0: t_NonNull'0;
-      t_RawTableInner__growth_left'0: usize;
-      t_RawTableInner__items'0: usize }
+      t_RawTableInner__growth_left'0: UInt64.t;
+      t_RawTableInner__items'0: UInt64.t }
   
   type t_RawTable'0  =
     { t_RawTable__table'0: t_RawTableInner'0; t_RawTable__alloc'0: (); t_RawTable__marker'0: () }
@@ -1684,16 +1670,16 @@ module M_collections__hashset_intersection [#"collections.rs" 74 0 77 15]
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_HashSet'0 [inv'0 x] . inv'0 x = true
   
-  use prelude.prelude.UInt16
+  use prelude.int.UInt16
   
   type t_BitMask'0  =
-    { t_BitMask__0'0: uint16 }
+    { t_BitMask__0'0: UInt16.t }
   
   type t_BitMaskIter'0  =
     { t_BitMaskIter__0'0: t_BitMask'0 }
   
   type t_NonNull'1  =
-    { t_NonNull__pointer'1: opaque_ptr }
+    { t_NonNull__pointer'1: Opaque.ptr }
   
   type t_Bucket'0  =
     { t_Bucket__ptr'0: t_NonNull'1 }
@@ -1701,11 +1687,11 @@ module M_collections__hashset_intersection [#"collections.rs" 74 0 77 15]
   type t_RawIterRange'0  =
     { t_RawIterRange__current_group'0: t_BitMaskIter'0;
       t_RawIterRange__data'0: t_Bucket'0;
-      t_RawIterRange__next_ctrl'0: opaque_ptr;
-      t_RawIterRange__end'0: opaque_ptr }
+      t_RawIterRange__next_ctrl'0: Opaque.ptr;
+      t_RawIterRange__end'0: Opaque.ptr }
   
   type t_RawIter'0  =
-    { t_RawIter__iter'0: t_RawIterRange'0; t_RawIter__items'0: usize }
+    { t_RawIter__iter'0: t_RawIterRange'0; t_RawIter__items'0: UInt64.t }
   
   type t_Iter'2  =
     { t_Iter__inner'0: t_RawIter'0; t_Iter__marker'0: () }
@@ -1765,6 +1751,8 @@ module M_collections__hashset_intersection [#"collections.rs" 74 0 77 15]
   
   axiom inv_axiom'3 [@rewrite] : forall x : t_HashSet'0 [inv'3 x] . inv'3 x = true
   
+  use prelude.prelude.MutBorrow
+  
   type t_T'0
   
   use seq.Seq
@@ -1786,7 +1774,7 @@ module M_collections__hashset_intersection [#"collections.rs" 74 0 77 15]
   
   use seq.Seq
   
-  use prelude.prelude.Int
+  use mach.int.Int
   
   use set.Fset
   
@@ -1872,19 +1860,19 @@ module M_collections__hashset_intersection [#"collections.rs" 74 0 77 15]
   
   axiom produces_refl'0_spec : forall self : t_Copied'0 . [%#scopied10] produces'0 self (Seq.empty : Seq.seq t_T'0) self
   
-  predicate resolve'3 (self : borrowed (t_Intersection'0)) =
+  predicate resolve'3 (self : MutBorrow.t (t_Intersection'0)) =
     [%#sresolve24] self.final = self.current
   
-  function view'3 (self : borrowed (t_Intersection'0)) : Fset.fset t_DeepModelTy'0 =
+  function view'3 (self : MutBorrow.t (t_Intersection'0)) : Fset.fset t_DeepModelTy'0 =
     [%#smodel25] view'2 self.current
   
   use set.Fset
   
-  predicate completed'1 (self : borrowed (t_Intersection'0)) =
+  predicate completed'1 (self : MutBorrow.t (t_Intersection'0)) =
     [%#shash_set14] resolve'3 self /\ Fset.is_empty (view'3 self)
   
-  predicate completed'0 (self : borrowed (t_Copied'0)) =
-    [%#scopied6] exists inner : borrowed (t_Intersection'0) . inner.current = iter'0 self.current
+  predicate completed'0 (self : MutBorrow.t (t_Copied'0)) =
+    [%#scopied6] exists inner : MutBorrow.t (t_Intersection'0) . inner.current = iter'0 self.current
     /\ inner.final = iter'0 self.final /\ completed'1 inner
   
   predicate contains'1 (self : Seq.seq t_T'0) (x : t_T'0) =
@@ -1897,7 +1885,7 @@ module M_collections__hashset_intersection [#"collections.rs" 74 0 77 15]
   let rec collect'0 (self:t_Copied'0) (return'  (ret:t_HashSet'0))= {[@expl:collect 'self' type invariant] inv'2 self}
     any
     [ return' (result:t_HashSet'0)-> {inv'3 result}
-      {[%#siter3] exists done' : borrowed (t_Copied'0), prod : Seq.seq t_T'0 . resolve'0 done'.final
+      {[%#siter3] exists done' : MutBorrow.t (t_Copied'0), prod : Seq.seq t_T'0 . resolve'0 done'.final
       /\ completed'0 done' /\ produces'0 self prod done'.current /\ from_iter_post'0 prod result}
       (! return' {result}) ]
   
@@ -1912,11 +1900,11 @@ module M_collections__hashset_intersection [#"collections.rs" 74 0 77 15]
     | bb2 = s0 [ s0 = collect'0 {_4} (fun (_ret':t_HashSet'0) ->  [ &_0 <- _ret' ] s1) | s1 = bb3 ] 
     | bb3 = return' {_0} ]
     )
-    [ & _0 : t_HashSet'0 = any_l ()
+    [ & _0 : t_HashSet'0 = Intrinsic.any_l ()
     | & xs : t_HashSet'0 = xs
     | & ys : t_HashSet'0 = ys
-    | & _4 : t_Copied'0 = any_l ()
-    | & _5 : t_Intersection'0 = any_l () ]
+    | & _4 : t_Copied'0 = Intrinsic.any_l ()
+    | & _5 : t_Intersection'0 = Intrinsic.any_l () ]
     
     [ return' (result:t_HashSet'0)-> {[@expl:hashset_intersection ensures] [%#scollections0] view'0 result
       = Fset.inter (view'1 xs) (view'1 ys)}

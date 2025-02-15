@@ -22,13 +22,9 @@ use crate::{
 ///
 /// Note that those operators are _not_ available in ghost code.
 #[trusted]
-#[cfg_attr(
-    creusot,
-    rustc_diagnostic_item = "creusot_int",
-    creusot::builtins = "prelude.prelude.Int.int"
-)]
+#[cfg_attr(creusot, rustc_diagnostic_item = "creusot_int", creusot::builtins = "int")]
 #[allow(dead_code)]
-pub struct Int(*mut ());
+pub struct Int();
 
 impl crate::Clone for Int {
     #[trusted]

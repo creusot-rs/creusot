@@ -13,6 +13,11 @@ pub enum BinOp {
     LogOr,   // i.e., \/
     LazyAnd, // i.e., &&
     LazyOr,  // i.e., ||
+    BitAnd,
+    BitOr,
+    BitXor,
+    Shl,
+    Shr,
     Add,
     FloatAdd,
     Sub,
@@ -43,6 +48,11 @@ impl BinOp {
             BinOp::LazyAnd => Conj,
             BinOp::LogOr => Disj,
             BinOp::LazyOr => Disj,
+            BinOp::BitAnd => Infix2,
+            BinOp::BitOr => Infix2,
+            BinOp::BitXor => Infix2,
+            BinOp::Shl => Infix2,
+            BinOp::Shr => Infix2,
             BinOp::Add => Infix2,
             BinOp::Sub => Infix2,
             BinOp::Mul => Infix3,
@@ -1015,6 +1025,7 @@ pub enum Constant {
     String(String),
     Other(String),
     Bool(bool),
+    Char(char, Type),
 }
 
 impl From<Constant> for Exp {

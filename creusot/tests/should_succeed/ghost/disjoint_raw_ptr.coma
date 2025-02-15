@@ -30,11 +30,11 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   let%span sresolve28 = "../../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   let%span sresolve29 = "../../../../creusot-contracts/src/resolve.rs" 68 8 68 23
   
-  use prelude.prelude.Int32
+  use prelude.int.Int32
   
-  predicate inv'0 (_1 : int32)
+  predicate inv'0 (_1 : Int32.t)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : int32 [inv'0 x] . inv'0 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : Int32.t [inv'0 x] . inv'0 x = true
   
   use prelude.prelude.Opaque
   
@@ -43,59 +43,59 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   type t_GhostBox'0  =
     { t_GhostBox__0'0: t_PtrOwn'0 }
   
-  predicate inv'1 (_1 : (opaque_ptr, t_GhostBox'0))
+  predicate inv'1 (_1 : (Opaque.ptr, t_GhostBox'0))
   
-  axiom inv_axiom'1 [@rewrite] : forall x : (opaque_ptr, t_GhostBox'0) [inv'1 x] . inv'1 x = true
+  axiom inv_axiom'1 [@rewrite] : forall x : (Opaque.ptr, t_GhostBox'0) [inv'1 x] . inv'1 x = true
   
   function inner_logic'0 (self : t_GhostBox'0) : t_PtrOwn'0 =
     [%#sghost7] self.t_GhostBox__0'0
   
-  use prelude.prelude.Borrow
+  function ptr'0 (self : t_PtrOwn'0) : Opaque.ptr
   
-  function ptr'0 (self : t_PtrOwn'0) : opaque_ptr
+  function val'0 (self : t_PtrOwn'0) : Int32.t
   
-  function val'0 (self : t_PtrOwn'0) : int32
-  
-  let rec new'0 (v:int32) (return'  (ret:(opaque_ptr, t_GhostBox'0)))= {[@expl:new 'v' type invariant] [%#sptr_own4] inv'0 v}
+  let rec new'0 (v:Int32.t) (return'  (ret:(Opaque.ptr, t_GhostBox'0)))= {[@expl:new 'v' type invariant] [%#sptr_own4] inv'0 v}
     any
-    [ return' (result:(opaque_ptr, t_GhostBox'0))-> {[%#sptr_own5] inv'1 result}
+    [ return' (result:(Opaque.ptr, t_GhostBox'0))-> {[%#sptr_own5] inv'1 result}
       {[%#sptr_own6] ptr'0 (inner_logic'0 (let (_, a) = result in a)) = (let (a, _) = result in a)
       /\ val'0 (inner_logic'0 (let (_, a) = result in a)) = v}
       (! return' {result}) ]
   
   
-  predicate inv'2 (_1 : borrowed (t_GhostBox'0))
+  use prelude.prelude.MutBorrow
   
-  axiom inv_axiom'2 [@rewrite] : forall x : borrowed (t_GhostBox'0) [inv'2 x] . inv'2 x = true
+  predicate inv'2 (_1 : MutBorrow.t (t_GhostBox'0))
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t (t_GhostBox'0) [inv'2 x] . inv'2 x = true
   
   type t_GhostBox'2  =
-    { t_GhostBox__0'2: borrowed (t_PtrOwn'0) }
+    { t_GhostBox__0'2: MutBorrow.t (t_PtrOwn'0) }
   
   predicate inv'3 (_1 : t_GhostBox'2)
   
   axiom inv_axiom'3 [@rewrite] : forall x : t_GhostBox'2 [inv'3 x] . inv'3 x = true
   
-  let rec borrow_mut'0 (self:borrowed (t_GhostBox'0)) (return'  (ret:t_GhostBox'2))= {[@expl:borrow_mut 'self' type invariant] [%#sghost8] inv'2 self}
+  let rec borrow_mut'0 (self:MutBorrow.t (t_GhostBox'0)) (return'  (ret:t_GhostBox'2))= {[@expl:borrow_mut 'self' type invariant] [%#sghost8] inv'2 self}
     any
     [ return' (result:t_GhostBox'2)-> {[%#sghost9] inv'3 result}
       {[%#sghost10] result.t_GhostBox__0'2
-      = Borrow.borrow_logic (self.current).t_GhostBox__0'0 (self.final).t_GhostBox__0'0 (Borrow.inherit_id (Borrow.get_id self) 1)}
+      = MutBorrow.borrow_logic (self.current).t_GhostBox__0'0 (self.final).t_GhostBox__0'0 (MutBorrow.inherit_id (MutBorrow.get_id self) 1)}
       (! return' {result}) ]
   
   
-  predicate inv'4 (_1 : borrowed (t_GhostBox'2))
+  predicate inv'4 (_1 : MutBorrow.t (t_GhostBox'2))
   
-  axiom inv_axiom'4 [@rewrite] : forall x : borrowed (t_GhostBox'2) [inv'4 x] . inv'4 x = true
+  axiom inv_axiom'4 [@rewrite] : forall x : MutBorrow.t (t_GhostBox'2) [inv'4 x] . inv'4 x = true
   
-  predicate inv'5 (_1 : borrowed (borrowed (t_PtrOwn'0)))
+  predicate inv'5 (_1 : MutBorrow.t (MutBorrow.t (t_PtrOwn'0)))
   
-  axiom inv_axiom'5 [@rewrite] : forall x : borrowed (borrowed (t_PtrOwn'0)) [inv'5 x] . inv'5 x = true
+  axiom inv_axiom'5 [@rewrite] : forall x : MutBorrow.t (MutBorrow.t (t_PtrOwn'0)) [inv'5 x] . inv'5 x = true
   
-  let rec deref_mut'0 (self:borrowed (t_GhostBox'2)) (return'  (ret:borrowed (borrowed (t_PtrOwn'0))))= {[@expl:deref_mut 'self' type invariant] [%#sghost11] inv'4 self}
+  let rec deref_mut'0 (self:MutBorrow.t (t_GhostBox'2)) (return'  (ret:MutBorrow.t (MutBorrow.t (t_PtrOwn'0))))= {[@expl:deref_mut 'self' type invariant] [%#sghost11] inv'4 self}
     any
-    [ return' (result:borrowed (borrowed (t_PtrOwn'0)))-> {[%#sghost12] inv'5 result}
+    [ return' (result:MutBorrow.t (MutBorrow.t (t_PtrOwn'0)))-> {[%#sghost12] inv'5 result}
       {[%#sghost13] result
-      = Borrow.borrow_logic (self.current).t_GhostBox__0'2 (self.final).t_GhostBox__0'2 (Borrow.inherit_id (Borrow.get_id self) 1)}
+      = MutBorrow.borrow_logic (self.current).t_GhostBox__0'2 (self.final).t_GhostBox__0'2 (MutBorrow.inherit_id (MutBorrow.get_id self) 1)}
       (! return' {result}) ]
   
   
@@ -147,19 +147,17 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   predicate resolve'0 (_1 : t_GhostBox'3) =
     resolve'4 _1
   
-  predicate inv'10 (_1 : borrowed (t_PtrOwn'0))
+  predicate inv'10 (_1 : MutBorrow.t (t_PtrOwn'0))
   
-  axiom inv_axiom'10 [@rewrite] : forall x : borrowed (t_PtrOwn'0) [inv'10 x] . inv'10 x = true
+  axiom inv_axiom'10 [@rewrite] : forall x : MutBorrow.t (t_PtrOwn'0) [inv'10 x] . inv'10 x = true
   
   predicate inv'11 (_1 : t_PtrOwn'0)
   
   axiom inv_axiom'11 [@rewrite] : forall x : t_PtrOwn'0 [inv'11 x] . inv'11 x = true
   
-  use prelude.prelude.Int
+  function addr_logic'0 (self : Opaque.ptr) : int
   
-  function addr_logic'0 (self : opaque_ptr) : int
-  
-  let rec disjoint_lemma'0 (own1:borrowed (t_PtrOwn'0)) (own2:t_PtrOwn'0) (return'  (ret:()))= {[@expl:disjoint_lemma 'own1' type invariant] [%#sptr_own20] inv'10 own1}
+  let rec disjoint_lemma'0 (own1:MutBorrow.t (t_PtrOwn'0)) (own2:t_PtrOwn'0) (return'  (ret:()))= {[@expl:disjoint_lemma 'own1' type invariant] [%#sptr_own20] inv'10 own1}
     {[@expl:disjoint_lemma 'own2' type invariant] [%#sptr_own21] inv'11 own2}
     any
     [ return' (result:())-> {[%#sptr_own22] addr_logic'0 (ptr'0 own1.current) <> addr_logic'0 (ptr'0 own2)}
@@ -167,16 +165,16 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
       (! return' {result}) ]
   
   
-  predicate resolve'15 (self : borrowed (t_PtrOwn'0)) =
+  predicate resolve'15 (self : MutBorrow.t (t_PtrOwn'0)) =
     [%#sresolve28] self.final = self.current
   
-  predicate resolve'14 (_1 : borrowed (t_PtrOwn'0)) =
+  predicate resolve'14 (_1 : MutBorrow.t (t_PtrOwn'0)) =
     resolve'15 _1
   
-  predicate resolve'12 (self : borrowed (t_PtrOwn'0)) =
+  predicate resolve'12 (self : MutBorrow.t (t_PtrOwn'0)) =
     [%#sresolve29] resolve'14 self
   
-  predicate resolve'9 (_1 : borrowed (t_PtrOwn'0)) =
+  predicate resolve'9 (_1 : MutBorrow.t (t_PtrOwn'0)) =
     resolve'12 _1
   
   predicate resolve'5 (self : t_GhostBox'2) =
@@ -185,19 +183,19 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   predicate resolve'1 (_1 : t_GhostBox'2) =
     resolve'5 _1
   
-  predicate resolve'6 (self : borrowed (borrowed (t_PtrOwn'0))) =
+  predicate resolve'6 (self : MutBorrow.t (MutBorrow.t (t_PtrOwn'0))) =
     [%#sresolve28] self.final = self.current
   
-  predicate resolve'2 (_1 : borrowed (borrowed (t_PtrOwn'0))) =
+  predicate resolve'2 (_1 : MutBorrow.t (MutBorrow.t (t_PtrOwn'0))) =
     resolve'6 _1
   
   type closure0'1  =
-    { field_0'0: borrowed (t_GhostBox'0); field_1'0: t_GhostBox'0 }
+    { field_0'0: MutBorrow.t (t_GhostBox'0); field_1'0: t_GhostBox'0 }
   
-  predicate resolve'10 (self : borrowed (t_GhostBox'0)) =
+  predicate resolve'10 (self : MutBorrow.t (t_GhostBox'0)) =
     [%#sresolve28] self.final = self.current
   
-  predicate resolve'7 (_1 : borrowed (t_GhostBox'0)) =
+  predicate resolve'7 (_1 : MutBorrow.t (t_GhostBox'0)) =
     resolve'10 _1
   
   predicate resolve'3 (_1 : closure0'1) =
@@ -225,8 +223,8 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
   
   let rec closure0'0[#"disjoint_raw_ptr.rs" 8 4 10 5] [@coma:extspec] (_1:closure0'1) (return'  (ret:t_GhostBox'1))= bb0
     [ bb0 = s0
-      [ s0 = Borrow.borrow_final <t_GhostBox'0> {(_1.field_0'0).current} {Borrow.get_id _1.field_0'0}
-          (fun (_ret':borrowed (t_GhostBox'0)) ->
+      [ s0 = MutBorrow.borrow_final <t_GhostBox'0> {(_1.field_0'0).current} {MutBorrow.get_id _1.field_0'0}
+          (fun (_ret':MutBorrow.t (t_GhostBox'0)) ->
              [ &_8 <- _ret' ] 
              [ &_1 <- { _1 with field_0'0 = { _1.field_0'0 with current = _ret'.final } } ] 
             s1)
@@ -234,14 +232,14 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
       | s2 = bb1 ]
     
     | bb1 = s0
-      [ s0 = Borrow.borrow_mut <t_GhostBox'2> {_7}
-          (fun (_ret':borrowed (t_GhostBox'2)) ->  [ &_6 <- _ret' ]  [ &_7 <- _ret'.final ] s1)
-      | s1 = deref_mut'0 {_6} (fun (_ret':borrowed (borrowed (t_PtrOwn'0))) ->  [ &_5 <- _ret' ] s2)
+      [ s0 = MutBorrow.borrow_mut <t_GhostBox'2> {_7}
+          (fun (_ret':MutBorrow.t (t_GhostBox'2)) ->  [ &_6 <- _ret' ]  [ &_7 <- _ret'.final ] s1)
+      | s1 = deref_mut'0 {_6} (fun (_ret':MutBorrow.t (MutBorrow.t (t_PtrOwn'0))) ->  [ &_5 <- _ret' ] s2)
       | s2 = bb2 ]
     
     | bb2 = s0
-      [ s0 = Borrow.borrow_mut <t_PtrOwn'0> {(_5.current).current}
-          (fun (_ret':borrowed (t_PtrOwn'0)) ->
+      [ s0 = MutBorrow.borrow_mut <t_PtrOwn'0> {(_5.current).current}
+          (fun (_ret':MutBorrow.t (t_PtrOwn'0)) ->
              [ &_4 <- _ret' ] 
              [ &_5 <- { _5 with current = { _5.current with current = _ret'.final } } ] 
             s1)
@@ -259,39 +257,41 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
     | bb7 = s0 [ s0 = new'1 {_2} (fun (_ret':t_GhostBox'1) ->  [ &_0 <- _ret' ] s1) | s1 = bb8 ] 
     | bb8 = return' {_0} ]
     
-    [ & _0 : t_GhostBox'1 = any_l ()
+    [ & _0 : t_GhostBox'1 = Intrinsic.any_l ()
     | & _1 : closure0'1 = _1
-    | & _2 : () = any_l ()
-    | & _3 : () = any_l ()
-    | & _4 : borrowed (t_PtrOwn'0) = any_l ()
-    | & _5 : borrowed (borrowed (t_PtrOwn'0)) = any_l ()
-    | & _6 : borrowed (t_GhostBox'2) = any_l ()
-    | & _7 : t_GhostBox'2 = any_l ()
-    | & _8 : borrowed (t_GhostBox'0) = any_l ()
-    | & _10 : t_PtrOwn'0 = any_l ()
-    | & _12 : t_GhostBox'3 = any_l () ]
+    | & _2 : () = Intrinsic.any_l ()
+    | & _3 : () = Intrinsic.any_l ()
+    | & _4 : MutBorrow.t (t_PtrOwn'0) = Intrinsic.any_l ()
+    | & _5 : MutBorrow.t (MutBorrow.t (t_PtrOwn'0)) = Intrinsic.any_l ()
+    | & _6 : MutBorrow.t (t_GhostBox'2) = Intrinsic.any_l ()
+    | & _7 : t_GhostBox'2 = Intrinsic.any_l ()
+    | & _8 : MutBorrow.t (t_GhostBox'0) = Intrinsic.any_l ()
+    | & _10 : t_PtrOwn'0 = Intrinsic.any_l ()
+    | & _12 : t_GhostBox'3 = Intrinsic.any_l () ]
      [ return' (result:t_GhostBox'1)-> return' {result} ] 
   
   meta "compute_max_steps" 1000000
   
   let rec foo'0[#"disjoint_raw_ptr.rs" 4 0 4 12] (_1:()) (return'  (ret:()))= (! bb0
     [ bb0 = s0
-      [ s0 = new'0 {[%#sdisjoint_raw_ptr0] (1 : int32)} (fun (_ret':(opaque_ptr, t_GhostBox'0)) ->  [ &_3 <- _ret' ] s1)
+      [ s0 = new'0 {[%#sdisjoint_raw_ptr0] (1 : Int32.t)}
+          (fun (_ret':(Opaque.ptr, t_GhostBox'0)) ->  [ &_3 <- _ret' ] s1)
       | s1 = bb1 ]
     
     | bb1 = s0
       [ s0 =  [ &p1 <- let (r'0, _) = _3 in r'0 ] s1 | s1 =  [ &own1 <- let (_, r'1) = _3 in r'1 ] s2 | s2 = bb2 ]
     
     | bb2 = s0
-      [ s0 = new'0 {[%#sdisjoint_raw_ptr1] (1 : int32)} (fun (_ret':(opaque_ptr, t_GhostBox'0)) ->  [ &_6 <- _ret' ] s1)
+      [ s0 = new'0 {[%#sdisjoint_raw_ptr1] (1 : Int32.t)}
+          (fun (_ret':(Opaque.ptr, t_GhostBox'0)) ->  [ &_6 <- _ret' ] s1)
       | s1 = bb3 ]
     
     | bb3 = s0
       [ s0 =  [ &p2 <- let (r'0, _) = _6 in r'0 ] s1 | s1 =  [ &own2 <- let (_, r'1) = _6 in r'1 ] s2 | s2 = bb4 ]
     
     | bb4 = s0
-      [ s0 = Borrow.borrow_mut <t_GhostBox'0> {own1}
-          (fun (_ret':borrowed (t_GhostBox'0)) ->  [ &_9 <- _ret' ]  [ &own1 <- _ret'.final ] s1)
+      [ s0 = MutBorrow.borrow_mut <t_GhostBox'0> {own1}
+          (fun (_ret':MutBorrow.t (t_GhostBox'0)) ->  [ &_9 <- _ret' ]  [ &own1 <- _ret'.final ] s1)
       | s1 =  [ &_8 <- { field_0'0 = _9; field_1'0 = own2 } ] s2
       | s2 = closure0'0 {_8} (fun (_ret':t_GhostBox'1) ->  [ &_7 <- _ret' ] s3)
       | s3 = bb5 ]
@@ -302,16 +302,16 @@ module M_disjoint_raw_ptr__foo [#"disjoint_raw_ptr.rs" 4 0 4 12]
     | bb8 = bb9
     | bb9 = return' {_0} ]
     )
-    [ & _0 : () = any_l ()
-    | & p1 : opaque_ptr = any_l ()
-    | & own1 : t_GhostBox'0 = any_l ()
-    | & _3 : (opaque_ptr, t_GhostBox'0) = any_l ()
-    | & p2 : opaque_ptr = any_l ()
-    | & own2 : t_GhostBox'0 = any_l ()
-    | & _6 : (opaque_ptr, t_GhostBox'0) = any_l ()
-    | & _7 : t_GhostBox'1 = any_l ()
-    | & _8 : closure0'1 = any_l ()
-    | & _9 : borrowed (t_GhostBox'0) = any_l ()
-    | & _11 : () = any_l () ]
+    [ & _0 : () = Intrinsic.any_l ()
+    | & p1 : Opaque.ptr = Intrinsic.any_l ()
+    | & own1 : t_GhostBox'0 = Intrinsic.any_l ()
+    | & _3 : (Opaque.ptr, t_GhostBox'0) = Intrinsic.any_l ()
+    | & p2 : Opaque.ptr = Intrinsic.any_l ()
+    | & own2 : t_GhostBox'0 = Intrinsic.any_l ()
+    | & _6 : (Opaque.ptr, t_GhostBox'0) = Intrinsic.any_l ()
+    | & _7 : t_GhostBox'1 = Intrinsic.any_l ()
+    | & _8 : closure0'1 = Intrinsic.any_l ()
+    | & _9 : MutBorrow.t (t_GhostBox'0) = Intrinsic.any_l ()
+    | & _11 : () = Intrinsic.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end

@@ -127,7 +127,10 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             let func = encode_term(func)?;
             Ok(quote_spanned! {sp=> #func (#(#args),*)})
         }
-        RT::Cast(_) => Err(EncodeError::Unsupported(term.span(), "Cast".into())),
+        RT::Cast(TermCast { expr, as_token, ty }) => {
+            let expr_token = encode_term(expr)?;
+            Ok(quote_spanned! {sp=> #expr_token #as_token  #ty})
+        }
         RT::Field(TermField { base, member, .. }) => {
             let base = encode_term(base)?;
             Ok(quote!({ #base . #member }))

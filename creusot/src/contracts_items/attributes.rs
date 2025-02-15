@@ -57,6 +57,7 @@ attribute_functions! {
     [creusot::trusted_ignore_structural_inv] => is_ignore_structural_inv
     [creusot::trusted_is_tyinv_trivial_if_param_trivial] => is_tyinv_trivial_if_param_trivial
     [creusot::clause::variant]               => has_variant_clause
+    [creusot::bitwise]                       => is_bitwise
 }
 
 pub fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {

@@ -19,7 +19,7 @@ pub trait OrdLogic {
     fn cmp_log(self, other: Self) -> Ordering;
 
     /// The logical `<=` operation.
-    #[logic]
+    #[predicate]
     #[open]
     fn le_log(self, o: Self) -> bool {
         pearlite! { self.cmp_log(o) != Ordering::Greater }
@@ -30,7 +30,7 @@ pub trait OrdLogic {
     fn cmp_le_log(x: Self, y: Self);
 
     /// The logical `<` operation.
-    #[logic]
+    #[predicate]
     #[open]
     fn lt_log(self, o: Self) -> bool {
         pearlite! { self.cmp_log(o) == Ordering::Less }
@@ -41,7 +41,7 @@ pub trait OrdLogic {
     fn cmp_lt_log(x: Self, y: Self);
 
     /// The logical `>=` operation.
-    #[logic]
+    #[predicate]
     #[open]
     fn ge_log(self, o: Self) -> bool {
         pearlite! { self.cmp_log(o) != Ordering::Less }
@@ -52,7 +52,7 @@ pub trait OrdLogic {
     fn cmp_ge_log(x: Self, y: Self);
 
     /// The logical `>` operation.
-    #[logic]
+    #[predicate]
     #[open]
     fn gt_log(self, o: Self) -> bool {
         pearlite! { self.cmp_log(o) == Ordering::Greater }
@@ -109,14 +109,14 @@ pub trait OrdLogic {
 /// impl OrdLogic for MyInt {
 ///     #[logic] #[open(self)]
 ///     fn cmp_log(self, other: Self) -> Ordering { todo!() }
-///     #[logic] #[open(self)]
-///     fn le_log(self, other: Self) -> Ordering { todo!() }
-///     #[logic] #[open(self)]
-///     fn lt_log(self, other: Self) -> Ordering { todo!() }
-///     #[logic] #[open(self)]
-///     fn ge_log(self, other: Self) -> Ordering { todo!() }
-///     #[logic] #[open(self)]
-///     fn gt_log(self, other: Self) -> Ordering { todo!() }
+///     #[predicate] #[open(self)]
+///     fn le_log(self, other: Self) -> bool { todo!() }
+///     #[predicate] #[open(self)]
+///     fn lt_log(self, other: Self) -> bool { todo!() }
+///     #[predicate] #[open(self)]
+///     fn ge_log(self, other: Self) -> bool { todo!() }
+///     #[predicate] #[open(self)]
+///     fn gt_log(self, other: Self) -> bool { todo!() }
 ///
 ///     ord_laws_impl! {}
 /// }
@@ -177,8 +177,52 @@ macro_rules! ord_laws_impl {
 
 pub use ord_laws_impl;
 
-macro_rules! ord_logic_impl {
-    ($t:ty) => {
+impl OrdLogic for Int {
+    #[logic]
+    #[open]
+    fn cmp_log(self, o: Self) -> Ordering {
+        if self < o {
+            Ordering::Less
+        } else if self == o {
+            Ordering::Equal
+        } else {
+            Ordering::Greater
+        }
+    }
+
+    #[trusted]
+    #[predicate]
+    #[creusot::builtins = "int.Int.(<=)"]
+    fn le_log(self, _: Self) -> bool {
+        dead
+    }
+
+    #[trusted]
+    #[predicate]
+    #[creusot::builtins = "int.Int.(<)"]
+    fn lt_log(self, _: Self) -> bool {
+        dead
+    }
+
+    #[trusted]
+    #[predicate]
+    #[creusot::builtins = "int.Int.(>=)"]
+    fn ge_log(self, _: Self) -> bool {
+        dead
+    }
+
+    #[trusted]
+    #[predicate]
+    #[creusot::builtins = "int.Int.(>)"]
+    fn gt_log(self, _: Self) -> bool {
+        dead
+    }
+
+    ord_laws_impl! {}
+}
+
+macro_rules! ord_logic_impl_with_signed_symbol {
+    ($t:ty, $module:literal, $signed_sym:expr) => {
         impl OrdLogic for $t {
             #[logic]
             #[open]
@@ -193,31 +237,35 @@ macro_rules! ord_logic_impl {
             }
 
             #[trusted]
-            #[logic]
-            #[creusot::builtins = "int.Int.(<=)"]
+            #[open]
+            #[predicate]
+            #[creusot::builtins = concat!($module, ".", $signed_sym, "le")]
             fn le_log(self, _: Self) -> bool {
-                dead
+                true
             }
 
             #[trusted]
-            #[logic]
-            #[creusot::builtins = "int.Int.(<)"]
+            #[open]
+            #[predicate]
+            #[creusot::builtins = concat!($module, ".", $signed_sym, "lt")]
             fn lt_log(self, _: Self) -> bool {
-                dead
+                true
             }
 
             #[trusted]
-            #[logic]
-            #[creusot::builtins = "int.Int.(>=)"]
+            #[open]
+            #[predicate]
+            #[creusot::builtins = concat!($module, ".", $signed_sym, "ge")]
             fn ge_log(self, _: Self) -> bool {
-                dead
+                true
             }
 
             #[trusted]
-            #[logic]
-            #[creusot::builtins = "int.Int.(>)"]
+            #[open]
+            #[predicate]
+            #[creusot::builtins = concat!($module, ".", $signed_sym, "gt")]
             fn gt_log(self, _: Self) -> bool {
-                dead
+                true
             }
 
             ord_laws_impl! {}
@@ -225,21 +273,41 @@ macro_rules! ord_logic_impl {
     };
 }
 
-ord_logic_impl!(Int);
+macro_rules! ord_logic_unsigned_impl {
+    ($t:ty, $module:literal) => {
+        ord_logic_impl_with_signed_symbol!($t, $module, "u");
+    };
+}
 
-ord_logic_impl!(u8);
-ord_logic_impl!(u16);
-ord_logic_impl!(u32);
-ord_logic_impl!(u64);
-ord_logic_impl!(u128);
-ord_logic_impl!(usize);
+macro_rules! ord_logic_signed_impl {
+    ($t:ty, $module:literal) => {
+        ord_logic_impl_with_signed_symbol!($t, $module, "s");
+    };
+}
 
-ord_logic_impl!(i8);
-ord_logic_impl!(i16);
-ord_logic_impl!(i32);
-ord_logic_impl!(i64);
-ord_logic_impl!(i128);
-ord_logic_impl!(isize);
+ord_logic_unsigned_impl!(u8, "prelude.int.UInt8$BW$");
+ord_logic_unsigned_impl!(u16, "prelude.int.UInt16$BW$");
+ord_logic_unsigned_impl!(u32, "prelude.int.UInt32$BW$");
+ord_logic_unsigned_impl!(u64, "prelude.int.UInt64$BW$");
+ord_logic_unsigned_impl!(u128, "prelude.int.UInt128$BW$");
+#[cfg(target_pointer_width = "64")]
+ord_logic_unsigned_impl!(usize, "prelude.int.UInt64$BW$");
+#[cfg(target_pointer_width = "32")]
+ord_logic_unsigned_impl!(usize, "prelude.int.UInt32$BW$");
+#[cfg(target_pointer_width = "16")]
+ord_logic_unsigned_impl!(usize, "prelude.int.UInt16$BW$");
+
+ord_logic_signed_impl!(i8, "prelude.int.Int8$BW$");
+ord_logic_signed_impl!(i16, "prelude.int.Int16$BW$");
+ord_logic_signed_impl!(i32, "prelude.int.Int32$BW$");
+ord_logic_signed_impl!(i64, "prelude.int.Int64$BW$");
+ord_logic_signed_impl!(i128, "prelude.int.Int128$BW$");
+#[cfg(target_pointer_width = "64")]
+ord_logic_signed_impl!(isize, "prelude.int.Int64$BW$");
+#[cfg(target_pointer_width = "32")]
+ord_logic_signed_impl!(isize, "prelude.int.Int32$BW$");
+#[cfg(target_pointer_width = "16")]
+ord_logic_signed_impl!(isize, "prelude.int.Int16$BW$");
 
 impl OrdLogic for bool {
     #[open]
@@ -270,25 +338,25 @@ impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
         } }
     }
 
-    #[logic]
+    #[predicate]
     #[open]
     fn le_log(self, o: Self) -> bool {
         pearlite! { (self.0 == o.0 && self.1 <= o.1) || self.0 < o.0 }
     }
 
-    #[logic]
+    #[predicate]
     #[open]
     fn lt_log(self, o: Self) -> bool {
         pearlite! { (self.0 == o.0 && self.1 < o.1) || self.0 < o.0 }
     }
 
-    #[logic]
+    #[predicate]
     #[open]
     fn ge_log(self, o: Self) -> bool {
         pearlite! { (self.0 == o.0 && self.1 >= o.1) || self.0 > o.0 }
     }
 
-    #[logic]
+    #[predicate]
     #[open]
     fn gt_log(self, o: Self) -> bool {
         pearlite! { (self.0 == o.0 && self.1 > o.1) || self.0 > o.0 }

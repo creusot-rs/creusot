@@ -47,7 +47,7 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
     ```
 4. Set up **Why3** and **Why3find**. Create a local `opam` switch with why3:
    ```
-   $ opam switch create -y . ocaml.4.14.1
+   $ opam switch create -y . ocaml.5.3.0
    $ eval $(opam env)
    ```
    This will build `why3`, `why3find`, and their ocaml dependencies in a local `_opam` directory.
@@ -61,7 +61,7 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
     then it will install the `creusot-rustc` executable; configuration files are stored in
     `~/.config/creusot/` and executables are stored in `~/.local/share/creusot/`.
 
-# Upgrading Creusot 
+# Upgrading Creusot
 
 1. Enter the cloned Creusot git repository used previously to install Creusot
 2. Update Creusot's sources:

@@ -8,7 +8,7 @@ use crate::{
     backend::{
         signature::{sig_to_why3, signature_of},
         term::{binop_to_binop, lower_literal, lower_pure},
-        ty::{constructor, is_int, translate_ty},
+        ty::{constructor, is_int, ity_to_prelude, translate_ty, uty_to_prelude},
         Namer as _, Why3Generator,
     },
     contracts_items::get_builtin,
@@ -233,6 +233,54 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             }
             // VC(l, Q) = Q(l)
             TermKind::Lit(l) => k(self.lower_literal(l)),
+            TermKind::Cast { arg } => match arg.ty.kind() {
+                TyKind::Bool => self.build_vc(arg, &|arg| {
+                    let (fct_name, prelude_kind) = match t.ty.kind() {
+                        TyKind::Int(ity) => ("of_bool", ity_to_prelude(self.ctx.tcx, *ity)),
+                        TyKind::Uint(uty) => ("of_bool", uty_to_prelude(self.ctx.tcx, *uty)),
+                        _ => self.ctx.crash_and_error(
+                            t.span,
+                            "bool cast to non integral casts are currently unsupported",
+                        ),
+                    };
+
+                    let qname = self.names.from_prelude(prelude_kind, fct_name);
+                    k(Exp::Call(Box::new(Exp::qvar(qname)), vec![arg]))
+                }),
+                TyKind::Int(_) | TyKind::Uint(_) => {
+                    // to
+                    let to_fct_name = if self.names.bitwise_mode() { "to_BV256" } else { "to_int" };
+                    let to_prelude = match arg.ty.kind() {
+                        TyKind::Int(ity) => ity_to_prelude(self.ctx.tcx, *ity),
+                        TyKind::Uint(ity) => uty_to_prelude(self.ctx.tcx, *ity),
+                        _ => self.ctx.crash_and_error(
+                            t.span,
+                            &format!("casts {:?} are currently unsupported", arg.ty.kind()),
+                        ),
+                    };
+
+                    // of
+                    let of_fct_name = if self.names.bitwise_mode() { "of_BV256" } else { "of_int" };
+                    let of_prelude = match t.ty.kind() {
+                        TyKind::Int(ity) => ity_to_prelude(self.ctx.tcx, *ity),
+                        TyKind::Uint(ity) => uty_to_prelude(self.ctx.tcx, *ity),
+                        _ => self.ctx.crash_and_error(
+                            t.span,
+                            &format!("casts {:?} are currently unsupported", arg.ty.kind()),
+                        ),
+                    };
+
+                    self.build_vc(arg, &|arg| {
+                        let to_qname = self.names.from_prelude(to_prelude, to_fct_name);
+                        let of_qname = self.names.from_prelude(of_prelude, of_fct_name);
+                        k(Exp::qvar(of_qname).app(vec![Exp::qvar(to_qname).app(vec![arg])]))
+                    })
+                }
+                _ => self.ctx.crash_and_error(
+                    t.span,
+                    "casting from a type that is not a boolean is not supported",
+                ),
+            },
             // Items are just global names so
             // VC(i, Q) = Q(i)
             TermKind::Item(id, sub) => {
@@ -288,16 +336,20 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             }),
 
             // VC(A && B, Q) = VC(A, |a| if a then VC(B, Q) else Q(false))
+            // VC(A || B, Q) = VC(A, |a| if a then Q(true) else VC(B, Q))
             // VC(A OP B, Q) = VC(A, |a| VC(B, |b| Q(a OP B)))
             TermKind::Binary { op, lhs, rhs } => match op {
                 BinOp::And => self.build_vc(lhs, &|lhs| {
                     Ok(Exp::if_(lhs, self.build_vc(rhs, k)?, k(Exp::mk_false())?))
                 }),
-                // BinOp::Or => self.build_vc(lhs, &|lhs| {
-                //     Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_vc(rhs, k)?,))
-                // }),
+                BinOp::Or => self.build_vc(lhs, &|lhs| {
+                    Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_vc(rhs, k)?))
+                }),
                 BinOp::Div => self.build_vc(lhs, &|lhs| {
                     self.build_vc(rhs, &|rhs| k(Exp::var("div").app(vec![lhs.clone(), rhs])))
+                }),
+                BinOp::Rem => self.build_vc(lhs, &|lhs| {
+                    self.build_vc(rhs, &|rhs| k(Exp::var("mod").app(vec![lhs.clone(), rhs])))
                 }),
                 _ => self.build_vc(lhs, &|lhs| {
                     self.build_vc(rhs, &|rhs| {

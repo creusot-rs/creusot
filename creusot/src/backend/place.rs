@@ -1,4 +1,4 @@
-use crate::{backend::Namer, fmir::Place, naming::ident_of};
+use crate::{backend::Namer, ctx::PreludeModule, fmir::Place, naming::ident_of};
 use rustc_middle::{
     mir::{self, tcx::PlaceTy, ProjectionElem},
     ty::{Ty, TyCtxt, TyKind},
@@ -11,7 +11,7 @@ use why3::{
         Exp::{self, *},
         Pattern::*,
     },
-    Ident, QName,
+    Ident,
 };
 
 use super::program::{IntermediateStmt, LoweringState};
@@ -205,7 +205,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     let foc = focus.call(is);
                     is.push(IntermediateStmt::Call(
                         vec![Param::Term(result.clone(), elt_ty1.clone())],
-                        Expr::Symbol(QName::from("Slice.get")),
+                        Expr::Symbol(lower.names.from_prelude(PreludeModule::Slice, "get")),
                         vec![Arg::Ty(elt_ty1), Arg::Term(foc), Arg::Term(ix_exp1)],
                     ));
 
@@ -219,7 +219,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
 
                     is.push(IntermediateStmt::Call(
                         vec![Param::Term(out.clone(), ty)],
-                        Expr::Symbol(QName::from("Slice.set")),
+                        Expr::Symbol(lower.names.from_prelude(PreludeModule::Slice, "set")),
                         vec![Arg::Ty(elt_ty), Arg::Term(foc), Arg::Term(ix_exp), Arg::Term(rhs)],
                     ));
                     constructor(is, Exp::qvar(out.into()))

@@ -7,7 +7,9 @@ use crate::{
         place::{self, rplace_to_expr},
         signature::signature_of,
         term::{lower_pat, lower_pure},
-        ty::{self, constructor, int_ty, translate_ty},
+        ty::{
+            constructor, floatty_to_prelude, int_ty, ity_to_prelude, translate_ty, uty_to_prelude,
+        },
         wto::{weak_topological_order, Component},
         NameSupply, Namer, Why3Generator,
     },
@@ -33,7 +35,7 @@ use rustc_middle::{
 };
 use rustc_span::{Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
-use rustc_type_ir::{FloatTy, IntTy, UintTy};
+use rustc_type_ir::{IntTy, UintTy};
 use std::{cell::RefCell, fmt::Debug};
 use why3::{
     coma::{self, Arg, Defn, Expr, Param, Term},
@@ -152,13 +154,13 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         .locals
         .into_iter()
         .map(|(id, decl)| {
-            let ty = ty::translate_ty(ctx, names, decl.span, decl.ty);
+            let ty = translate_ty(ctx, names, decl.span, decl.ty);
 
             let init = if decl.arg {
                 Exp::var(Ident::build(id.as_str()))
             } else {
-                names.import_prelude_module(PreludeModule::Intrinsic);
-                Exp::var("any_l").app_to(Exp::Tuple(Vec::new()))
+                Exp::qvar(names.from_prelude(PreludeModule::Intrinsic, "any_l"))
+                    .app_to(Exp::Tuple(Vec::new()))
             };
             coma::Var(Ident::build(id.as_str()), ty.clone(), init, coma::IsRef::Ref)
         })
@@ -173,7 +175,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
             name,
             trigger: None,
             attrs: vec![],
-            retty: Some(ty::translate_ty(ctx, names, ret.span, ret.ty)),
+            retty: Some(translate_ty(ctx, names, ret.span, ret.ty)),
             args: vec![],
             contract: Contract::default(),
         }
@@ -333,23 +335,40 @@ impl<'tcx> RValue<'tcx> {
                 l.to_why(lower, istmts).lazy_and(r.to_why(lower, istmts))
             }
             RValue::BinOp(BinOp::Eq, l, r) if l.ty(lower.ctx.tcx, lower.locals).is_bool() => {
-                lower.names.import_prelude_module(PreludeModule::Bool);
-
-                Exp::qvar("Bool.eq".into())
+                Exp::qvar(lower.names.from_prelude(PreludeModule::Bool, "eq"))
                     .app(vec![l.to_why(lower, istmts), r.to_why(lower, istmts)])
             }
             RValue::BinOp(BinOp::Ne, l, r) if l.ty(lower.ctx.tcx, lower.locals).is_bool() => {
-                lower.names.import_prelude_module(PreludeModule::Bool);
-
-                Exp::qvar("Bool.ne".into())
+                Exp::qvar(lower.names.from_prelude(PreludeModule::Bool, "ne"))
                     .app(vec![l.to_why(lower, istmts), r.to_why(lower, istmts)])
             }
             RValue::BinOp(op, l, r) => {
                 let l_ty = l.ty(lower.ctx.tcx, lower.locals);
+
                 let fname = binop_to_binop(lower.names, l_ty, op);
                 let call = coma::Expr::Symbol(fname);
-                let args =
-                    vec![Arg::Term(l.to_why(lower, istmts)), Arg::Term(r.to_why(lower, istmts))];
+
+                // some operator need to convert the right operand
+                let r = match op {
+                    // right operand must be converted to integer
+                    BinOp::Shl | BinOp::ShlUnchecked | BinOp::Shr | BinOp::ShrUnchecked => {
+                        let r_ty = r.ty(lower.ctx.tcx, lower.locals);
+
+                        // rust allows shifting by a value of any integer type
+                        // so we need to import the prelude for the right operand
+                        let qname = match r_ty.kind() {
+                            TyKind::Int(ity) => lower.names.from_prelude(ity_to_prelude(lower.ctx.tcx, *ity), "to_int"),
+                            TyKind::Uint(uty) => lower.names.from_prelude(uty_to_prelude(lower.ctx.tcx, *uty), "t'int"),
+                            _ => unreachable!("right operand, non-integer type for binary operation {op:?} {ty:?}"),
+                        };
+
+                        // build the expression for this convertion
+                        Exp::qvar(qname).app_to(r.to_why(lower, istmts))
+                    }
+                    _ => r.to_why(lower, istmts),
+                };
+
+                let args = vec![Arg::Term(l.to_why(lower, istmts)), Arg::Term(r)];
                 istmts.extend([IntermediateStmt::call("_ret'".into(), lower.ty(ty), call, args)]);
                 // let ty = l.ty(lower.ctx.tcx, locals);
                 // // Hack
@@ -360,19 +379,40 @@ impl<'tcx> RValue<'tcx> {
                 // // Hack
                 // translate_ty(ctx, names, DUMMY_SP, op_ty);
             }
-            RValue::UnaryOp(UnOp::Not, arg) => arg.to_why(lower, istmts).not(),
+            RValue::UnaryOp(UnOp::Not, arg) => {
+                let a_ty = arg.ty(lower.ctx.tcx, lower.locals);
+                match a_ty.kind() {
+                    TyKind::Bool => arg.to_why(lower, istmts).not(),
+                    TyKind::Int(_) | TyKind::Uint(_) => {
+                        let prelude: PreludeModule = match a_ty.kind() {
+                            TyKind::Int(ity) => ity_to_prelude(lower.ctx.tcx, *ity),
+                            TyKind::Uint(uty) => uty_to_prelude(lower.ctx.tcx, *uty),
+                            _ => unreachable!("this is not an executable path {ty:?}"),
+                        };
+
+                        let call = coma::Expr::Symbol(lower.names.from_prelude(prelude, "bw_not"));
+                        let args = vec![Arg::Term(arg.to_why(lower, istmts))];
+                        istmts.push(IntermediateStmt::call(
+                            "_ret'".into(),
+                            lower.ty(ty),
+                            call,
+                            args,
+                        ));
+                        Exp::var("_ret'")
+                    }
+                    _ => unreachable!("the not operator is not supported for {ty:?}"),
+                }
+            }
             RValue::UnaryOp(UnOp::Neg, arg) => {
                 let prelude: PreludeModule = match ty.kind() {
-                    TyKind::Int(ity) => int_to_prelude(*ity),
-                    TyKind::Uint(uty) => uint_to_prelude(*uty),
+                    TyKind::Int(ity) => ity_to_prelude(lower.ctx.tcx, *ity),
+                    TyKind::Uint(uty) => uty_to_prelude(lower.ctx.tcx, *uty),
                     TyKind::Float(fty) => floatty_to_prelude(*fty),
                     TyKind::Bool => PreludeModule::Bool,
                     _ => unreachable!("non-primitive type for negation {ty:?}"),
                 };
 
-                lower.names.import_prelude_module(prelude);
-                let neg =
-                    QName { module: prelude.qname(), name: "neg".into() }.without_search_path();
+                let neg = lower.names.from_prelude(prelude, "neg");
 
                 let id: Ident = "_ret".into();
                 let ty = lower.ty(ty);
@@ -397,48 +437,107 @@ impl<'tcx> RValue<'tcx> {
                 Exp::Tuple(f.into_iter().map(|f| f.to_why(lower, istmts)).collect())
             }
             RValue::Cast(e, source, target) => {
-                let to_int = match source.kind() {
-                    TyKind::Int(ity) => {
-                        lower.names.import_prelude_module(int_to_prelude(*ity));
-                        int_to_int(*ity)
-                    }
-                    TyKind::Uint(uty) => {
-                        lower.names.import_prelude_module(uint_to_prelude(*uty));
-                        uint_to_int(*uty)
-                    }
+                match source.kind() {
                     TyKind::Bool => {
-                        lower.names.import_prelude_module(PreludeModule::Bool);
-                        Exp::qvar("Bool.to_int".into())
+                        let of_fname = match target.kind() {
+                            TyKind::Int(ity) => lower
+                                .names
+                                .from_prelude(ity_to_prelude(lower.ctx.tcx, *ity), "of_bool"),
+                            TyKind::Uint(uty) => lower
+                                .names
+                                .from_prelude(uty_to_prelude(lower.ctx.tcx, *uty), "of_bool"),
+                            _ => lower.ctx.crash_and_error(
+                                DUMMY_SP,
+                                "bool cast to non integral casts are currently unsupported",
+                            ),
+                        };
+                        let of_ret_id: Ident = "_ret_from".into();
+                        let of_arg = Arg::Term(e.to_why(lower, istmts));
+                        istmts.extend([IntermediateStmt::call(
+                            of_ret_id.clone(),
+                            lower.ty(ty),
+                            Expr::Symbol(of_fname),
+                            vec![of_arg],
+                        )]);
+                        Exp::var(of_ret_id)
                     }
-                    _ => lower
-                        .ctx
-                        .crash_and_error(DUMMY_SP, "Non integral casts are currently unsupported"),
-                };
+                    _ => {
+                        let tmp_ty = Type::TConstructor(
+                            if lower.names.bitwise_mode() { "BV256.t" } else { "int" }.into(),
+                        );
 
-                let from_int = match target.kind() {
-                    TyKind::Int(ity) => int_from_int(*ity),
-                    TyKind::Uint(uty) => uint_from_int(*uty),
-                    TyKind::Char => {
-                        lower.names.import_prelude_module(PreludeModule::Char);
-                        "Char.chr".into()
+                        let to_fname = match source.kind() {
+                            TyKind::Int(ity) => {
+                                let fct_name =
+                                    if lower.names.bitwise_mode() { "to_BV256" } else { "to_int" };
+                                lower
+                                    .names
+                                    .from_prelude(ity_to_prelude(lower.ctx.tcx, *ity), fct_name)
+                            }
+                            TyKind::Uint(ity) => {
+                                let fct_name =
+                                    if lower.names.bitwise_mode() { "to_BV256" } else { "to_int" };
+                                lower
+                                    .names
+                                    .from_prelude(uty_to_prelude(lower.ctx.tcx, *ity), fct_name)
+                            }
+                            _ => lower.ctx.crash_and_error(
+                                DUMMY_SP,
+                                &format!("casts {:?} are currently unsupported", source.kind()),
+                            ),
+                        };
+
+                        // convert source to BV256.t / int
+                        let to_ret_id: Ident = "_ret_to".into();
+                        let to_arg = Arg::Term(e.to_why(lower, istmts));
+                        istmts.push(IntermediateStmt::call(
+                            to_ret_id.clone(),
+                            tmp_ty,
+                            Expr::Symbol(to_fname),
+                            vec![to_arg],
+                        ));
+
+                        // convert BV256.t / int to target
+                        let of_ret_id: Ident = "_ret_from".into();
+                        let of_fname = match target.kind() {
+                            TyKind::Int(ity) => {
+                                let fct_name =
+                                    if lower.names.bitwise_mode() { "of_BV256" } else { "of_int" };
+                                lower
+                                    .names
+                                    .from_prelude(ity_to_prelude(lower.ctx.tcx, *ity), fct_name)
+                            }
+                            TyKind::Uint(uty) => {
+                                let fct_name =
+                                    if lower.names.bitwise_mode() { "of_BV256" } else { "of_int" };
+                                lower
+                                    .names
+                                    .from_prelude(uty_to_prelude(lower.ctx.tcx, *uty), fct_name)
+                            }
+                            TyKind::Char => {
+                                let fct_name =
+                                    if lower.names.bitwise_mode() { "of_BV256" } else { "of_int" };
+                                lower.names.from_prelude(PreludeModule::Char, fct_name)
+                            }
+                            _ => lower.ctx.crash_and_error(
+                                DUMMY_SP,
+                                "Non integral casts are currently unsupported",
+                            ),
+                        };
+
+                        // create final statement
+                        istmts.extend([IntermediateStmt::call(
+                            of_ret_id.clone(),
+                            lower.ty(ty),
+                            Expr::Symbol(of_fname),
+                            vec![Arg::Term(Term::Var(to_ret_id))],
+                        )]);
+                        Exp::var(of_ret_id)
                     }
-                    _ => lower
-                        .ctx
-                        .crash_and_error(DUMMY_SP, "Non integral casts are currently unsupported"),
-                };
-
-                let int = to_int.app_to(e.to_why(lower, istmts));
-
-                istmts.push(IntermediateStmt::call(
-                    "_res".into(),
-                    lower.ty(ty),
-                    Expr::Symbol(from_int),
-                    vec![Arg::Term(int)],
-                ));
-
-                Exp::var("_res")
+                }
             }
-            RValue::Len(op) => Exp::qvar("Slice.length".into()).app_to(op.to_why(lower, istmts)),
+            RValue::Len(op) => Exp::qvar(lower.names.from_prelude(PreludeModule::Slice, "length"))
+                .app_to(op.to_why(lower, istmts)),
             RValue::Array(fields) => {
                 let id = Ident::build("__arr_temp");
                 let ty = lower.ty(ty);
@@ -485,7 +584,7 @@ impl<'tcx> RValue<'tcx> {
                 istmts.push(IntermediateStmt::call(
                     "_res".into(),
                     lower.ty(ty),
-                    Expr::Symbol("Slice.create".into()),
+                    Expr::Symbol(lower.names.from_prelude(PreludeModule::Slice, "create")),
                     args,
                 ));
 
@@ -501,11 +600,13 @@ impl<'tcx> RValue<'tcx> {
                         if mu.is_mut() {
                             op = op.field("current")
                         }
-                        Exp::qvar("Slice.length".into()).app_to(op)
+                        Exp::qvar(lower.names.from_prelude(PreludeModule::Slice, "length"))
+                            .app_to(op)
                     }
                     TyKind::RawPtr(ty, _) => {
                         assert!(ty.is_slice());
-                        Exp::qvar("Opaque.slice_ptr_len".into()).app_to(op.to_why(lower, istmts))
+                        Exp::qvar(lower.names.from_prelude(PreludeModule::Slice, "slice_ptr_len"))
+                            .app_to(op.to_why(lower, istmts))
                     }
                     _ => unreachable!(),
                 }
@@ -520,9 +621,10 @@ impl<'tcx> RValue<'tcx> {
 
                 if pl.ty(lower.ctx.tcx, lower.locals).is_slice() {
                     let lhs =
-                        Exp::qvar("Opaque.slice_ptr_len".into()).app_to(Exp::qvar("_ptr".into()));
-                    let rhs =
-                        Exp::qvar("Slice.length".into()).app_to(rplace_to_expr(lower, &pl, istmts));
+                        Exp::qvar(lower.names.from_prelude(PreludeModule::Slice, "slice_ptr_len"))
+                            .app_to(Exp::qvar("_ptr".into()));
+                    let rhs = Exp::qvar(lower.names.from_prelude(PreludeModule::Slice, "length"))
+                        .app_to(rplace_to_expr(lower, &pl, istmts));
                     istmts.push(IntermediateStmt::Assume(lhs.eq(rhs)));
                 }
 
@@ -596,8 +698,9 @@ impl<'tcx> Terminator<'tcx> {
         match self {
             Terminator::Goto(bb) => (istmts, Expr::Symbol(format!("bb{}", bb.as_usize()).into())),
             Terminator::Switch(switch, branches) => {
+                let ty = switch.ty(lower.ctx.tcx, lower.locals);
                 let discr = switch.to_why(lower, &mut istmts);
-                (istmts, branches.to_why(lower.ctx, lower.names, discr))
+                (istmts, branches.to_why(lower.ctx, lower.names, discr, &ty))
             }
             Terminator::Return => {
                 (istmts, Expr::Symbol("return".into()).app(vec![Arg::Term(Exp::var("_0"))]))
@@ -619,21 +722,56 @@ impl<'tcx> Branches<'tcx> {
         ctx: &Why3Generator<'tcx>,
         names: &N,
         discr: Exp,
+        discr_ty: &Ty<'tcx>,
     ) -> coma::Expr {
         match self {
             Branches::Int(brs, def) => {
+                let TyKind::Int(ity) = discr_ty.kind() else {
+                    panic!("Branches::Int try to evaluate a type that is not Int")
+                };
+
                 let mut brs = mk_switch_branches(
                     discr,
-                    brs.into_iter().map(|(val, tgt)| (Exp::int(val), mk_goto(tgt))).collect(),
+                    brs.into_iter()
+                        .map(|(mut val, tgt)| {
+                            let why_ty = Type::TConstructor(
+                                names.from_prelude(ity_to_prelude(ctx.tcx, *ity), "t"),
+                            );
+                            let e = if names.bitwise_mode() {
+                                // In bitwise mode, integers are bit vectors, whose literals are always unsigned
+                                if val < 0 && *ity != IntTy::I128 {
+                                    let target_width = ctx.tcx.sess.target.pointer_width;
+                                    val += 1 << ity.normalize(target_width).bit_width().unwrap();
+                                }
+                                Exp::Const(Constant::Uint(val as u128, Some(why_ty)))
+                            } else {
+                                Exp::Const(Constant::Int(val, Some(why_ty)))
+                            };
+                            (e, mk_goto(tgt))
+                        })
+                        .collect(),
                 );
 
                 brs.push(Defn::simple("default", Expr::BlackBox(Box::new(mk_goto(def)))));
                 Expr::Defn(Box::new(Expr::Any), false, brs)
             }
             Branches::Uint(brs, def) => {
+                let uty = match discr_ty.kind() {
+                    TyKind::Uint(uty) => uty,
+                    _ => panic!("Branches::Uint try to evaluate a type that is not Uint"),
+                };
+
                 let mut brs = mk_switch_branches(
                     discr,
-                    brs.into_iter().map(|(val, tgt)| (Exp::uint(val), mk_goto(tgt))).collect(),
+                    brs.into_iter()
+                        .map(|(val, tgt)| {
+                            let why_ty = Type::TConstructor(
+                                names.from_prelude(uty_to_prelude(ctx.tcx, *uty), "t"),
+                            );
+                            let e = Exp::Const(Constant::Uint(val, Some(why_ty)));
+                            (e, mk_goto(tgt))
+                        })
+                        .collect(),
                 );
 
                 brs.push(Defn::simple("default", Expr::BlackBox(Box::new(mk_goto(def)))));
@@ -805,13 +943,16 @@ where
     })
 }
 
-pub(crate) fn borrow_generated_id<V: Debug, T: Debug>(
+pub(crate) fn borrow_generated_id<'tcx, V: Debug, T: Debug, N: Namer<'tcx>>(
+    names: &N,
     original_borrow: Exp,
     projection: &[ProjectionElem<V, T>],
     mut translate_index: impl FnMut(&V) -> Exp,
 ) -> Exp {
-    let mut borrow_id =
-        Exp::Call(Box::new(Exp::qvar("Borrow.get_id".into())), vec![original_borrow]);
+    let mut borrow_id = Exp::Call(
+        Box::new(Exp::qvar(names.from_prelude(PreludeModule::Borrow, "get_id"))),
+        vec![original_borrow],
+    );
     for proj in projection {
         match proj {
             ProjectionElem::Deref => {
@@ -819,13 +960,13 @@ pub(crate) fn borrow_generated_id<V: Debug, T: Debug>(
             }
             ProjectionElem::Field(idx, _) => {
                 borrow_id = Exp::Call(
-                    Box::new(Exp::qvar("Borrow.inherit_id".into())),
+                    Box::new(Exp::qvar(names.from_prelude(PreludeModule::Borrow, "inherit_id"))),
                     vec![borrow_id, Exp::Const(Constant::Int(idx.as_u32() as i128 + 1, None))],
                 );
             }
             ProjectionElem::Index(x) => {
                 borrow_id = Exp::Call(
-                    Box::new(Exp::qvar("Borrow.inherit_id".into())),
+                    Box::new(Exp::qvar(names.from_prelude(PreludeModule::Borrow, "inherit_id"))),
                     vec![borrow_id, translate_index(x)],
                 );
             }
@@ -871,10 +1012,9 @@ impl<'tcx> Statement<'tcx> {
         let mut istmts = Vec::new();
         match self {
             Statement::Assignment(lhs, RValue::Borrow(bor_kind, rhs, triv_inv), _span) => {
-                let tcx = lower.ctx.tcx;
-                let lhs_ty = lhs.ty(tcx, lower.locals);
+                let lhs_ty = lhs.ty(lower.ctx.tcx, lower.locals);
                 let lhs_ty_low = lower.ty(lhs_ty);
-                let rhs_ty = rhs.ty(tcx, lower.locals);
+                let rhs_ty = rhs.ty(lower.ctx.tcx, lower.locals);
                 let rhs_ty_low = lower.ty(rhs_ty);
                 let rhs_local_ty = PlaceTy::from_ty(lower.locals[&rhs.local].ty);
 
@@ -884,10 +1024,13 @@ impl<'tcx> Statement<'tcx> {
                     None
                 };
 
-                let func = match bor_kind {
-                    BorrowKind::Mut => coma::Expr::Symbol("Borrow.borrow_mut".into()),
-                    BorrowKind::Final(_) => coma::Expr::Symbol("Borrow.borrow_final".into()),
-                };
+                let func = coma::Expr::Symbol(lower.names.from_prelude(
+                    PreludeModule::Borrow,
+                    match bor_kind {
+                        BorrowKind::Mut => "borrow_mut",
+                        BorrowKind::Final(_) => "borrow_final",
+                    },
+                ));
 
                 let bor_id_arg;
                 let rhs_rplace;
@@ -915,11 +1058,17 @@ impl<'tcx> Statement<'tcx> {
                     rhs_constr = constr;
 
                     let borrow_id = borrow_generated_id(
+                        lower.names,
                         original_borrow.call(&mut istmts),
                         &rhs.projection[deref_index + 1..],
                         |sym| {
                             let v = ident_of(*sym);
-                            Exp::var(v)
+                            let qname = lower.names.from_prelude(
+                                uty_to_prelude(lower.ctx.tcx, UintTy::Usize),
+                                "t'int",
+                            );
+
+                            Exp::Call(Box::new(Exp::qvar(qname)), vec![Exp::var(v)])
                         },
                     );
 
@@ -1147,115 +1296,40 @@ fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
 
 pub(crate) fn binop_to_binop<'tcx, N: Namer<'tcx>>(names: &N, ty: Ty, op: mir::BinOp) -> QName {
     let prelude: PreludeModule = match ty.kind() {
-        TyKind::Int(ity) => int_to_prelude(*ity),
-        TyKind::Uint(uty) => uint_to_prelude(*uty),
+        TyKind::Int(ity) => ity_to_prelude(names.tcx(), *ity),
+        TyKind::Uint(uty) => uty_to_prelude(names.tcx(), *uty),
         TyKind::Float(fty) => floatty_to_prelude(*fty),
         TyKind::Bool => PreludeModule::Bool,
+        TyKind::Char => PreludeModule::Char,
         _ => unreachable!("non-primitive type for binary operation {op:?} {ty:?}"),
     };
 
-    names.import_prelude_module(prelude);
-
     use BinOp::*;
     let name = match op {
-        Add => "add".into(),
-        AddUnchecked => "add".into(),
-        Sub => "sub".into(),
-        SubUnchecked => "sub".into(),
-        Mul => "mul".into(),
-        MulUnchecked => "mul".into(),
-        Div => "div".into(),
-        Rem => "rem".into(),
-        BitXor => "bw_xor".into(),
-        BitAnd => "bw_and".into(),
-        BitOr => "bw_or".into(),
-        Shl => "shl".into(),
-        ShlUnchecked => "shl".into(),
-        Shr => "shr".into(),
-        ShrUnchecked => "shr".into(),
-        Eq => "eq".into(),
-        Lt => "lt".into(),
-        Le => "le".into(),
-        Ne => "ne".into(),
-        Ge => "ge".into(),
-        Gt => "gt".into(),
+        Add => "add",
+        AddUnchecked => "add",
+        Sub => "sub",
+        SubUnchecked => "sub",
+        Mul => "mul",
+        MulUnchecked => "mul",
+        Div => "div",
+        Rem => "rem",
+        BitXor => "bw_xor",
+        BitAnd => "bw_and",
+        BitOr => "bw_or",
+        Shl => "shl",
+        ShlUnchecked => "shl",
+        Shr => "shr",
+        ShrUnchecked => "shr",
+        Eq => "eq",
+        Lt => "lt",
+        Le => "le",
+        Ne => "ne",
+        Ge => "ge",
+        Gt => "gt",
         Cmp | AddWithOverflow | SubWithOverflow | MulWithOverflow => todo!(),
         Offset => unimplemented!("pointer offsets are unsupported"),
     };
 
-    QName { module: prelude.qname(), name }.without_search_path()
-}
-
-pub(crate) fn int_to_prelude(ity: IntTy) -> PreludeModule {
-    match ity {
-        IntTy::Isize => PreludeModule::Isize,
-        IntTy::I8 => PreludeModule::Int8,
-        IntTy::I16 => PreludeModule::Int16,
-        IntTy::I32 => PreludeModule::Int32,
-        IntTy::I64 => PreludeModule::Int64,
-        IntTy::I128 => PreludeModule::Int128,
-    }
-}
-
-pub(crate) fn uint_to_prelude(ity: UintTy) -> PreludeModule {
-    match ity {
-        UintTy::Usize => PreludeModule::Usize,
-        UintTy::U8 => PreludeModule::UInt8,
-        UintTy::U16 => PreludeModule::UInt16,
-        UintTy::U32 => PreludeModule::UInt32,
-        UintTy::U64 => PreludeModule::UInt64,
-        UintTy::U128 => PreludeModule::UInt128,
-    }
-}
-
-pub(crate) fn floatty_to_prelude(fty: FloatTy) -> PreludeModule {
-    match fty {
-        FloatTy::F32 => PreludeModule::Float32,
-        FloatTy::F64 => PreludeModule::Float64,
-        FloatTy::F16 | FloatTy::F128 => todo!("unsupported: {fty:?}"),
-    }
-}
-
-pub(crate) fn int_from_int(ity: IntTy) -> QName {
-    match ity {
-        IntTy::Isize => "IntSize.of_int".into(),
-        IntTy::I8 => "Int8.of_int".into(),
-        IntTy::I16 => "Int16.of_int".into(),
-        IntTy::I32 => "Int32.of_int".into(),
-        IntTy::I64 => "Int64.of_int".into(),
-        IntTy::I128 => "Int128.of_int".into(),
-    }
-}
-
-pub(crate) fn uint_from_int(uty: UintTy) -> QName {
-    match uty {
-        UintTy::Usize => "UIntSize.of_int".into(),
-        UintTy::U8 => "UInt8.of_int".into(),
-        UintTy::U16 => "UInt16.of_int".into(),
-        UintTy::U32 => "UInt32.of_int".into(),
-        UintTy::U64 => "UInt64.of_int".into(),
-        UintTy::U128 => "UInt128.of_int".into(),
-    }
-}
-
-pub(crate) fn int_to_int(ity: IntTy) -> Exp {
-    match ity {
-        IntTy::Isize => Exp::qvar("IntSize.to_int".into()),
-        IntTy::I8 => Exp::qvar("Int8.to_int".into()),
-        IntTy::I16 => Exp::qvar("Int16.to_int".into()),
-        IntTy::I32 => Exp::qvar("Int32.to_int".into()),
-        IntTy::I64 => Exp::qvar("Int64.to_int".into()),
-        IntTy::I128 => Exp::qvar("Int128.to_int".into()),
-    }
-}
-
-pub(crate) fn uint_to_int(uty: UintTy) -> Exp {
-    match uty {
-        UintTy::Usize => Exp::qvar("UIntSize.to_int".into()),
-        UintTy::U8 => Exp::qvar("UInt8.to_int".into()),
-        UintTy::U16 => Exp::qvar("UInt16.to_int".into()),
-        UintTy::U32 => Exp::qvar("UInt32.to_int".into()),
-        UintTy::U64 => Exp::qvar("UInt64.to_int".into()),
-        UintTy::U128 => Exp::qvar("UInt128.to_int".into()),
-    }
+    names.from_prelude(prelude, name)
 }

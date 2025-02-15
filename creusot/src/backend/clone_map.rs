@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use crate::{
     backend::{clone_map::elaborator::Expander, dependency::Dependency, Why3Generator},
-    contracts_items::{get_builtin, get_inv_function},
+    contracts_items::{get_builtin, get_inv_function, is_bitwise},
     ctx::*,
     options::SpanMode,
     util::{erased_identity_for_item, path_of_span},
@@ -41,48 +41,17 @@ pub enum PreludeModule {
     Int32,
     Int64,
     Int128,
-    Isize,
     UInt8,
     UInt16,
     UInt32,
     UInt64,
     UInt128,
-    Usize,
     Char,
     Bool,
     Borrow,
     Slice,
     Opaque,
     Intrinsic,
-}
-
-impl PreludeModule {
-    pub fn qname(&self) -> Vec<Ident> {
-        let qname: QName = match self {
-            PreludeModule::Float32 => "prelude.prelude.Float32.".into(),
-            PreludeModule::Float64 => "prelude.prelude.Float64.".into(),
-            PreludeModule::Int => "prelude.prelude.Int.".into(),
-            PreludeModule::Int8 => "prelude.prelude.Int8.".into(),
-            PreludeModule::Int16 => "prelude.prelude.Int16.".into(),
-            PreludeModule::Int32 => "prelude.prelude.Int32.".into(),
-            PreludeModule::Int64 => "prelude.prelude.Int64.".into(),
-            PreludeModule::Int128 => "prelude.prelude.Int128.".into(),
-            PreludeModule::UInt8 => "prelude.prelude.UInt8.".into(),
-            PreludeModule::UInt16 => "prelude.prelude.UInt16.".into(),
-            PreludeModule::UInt32 => "prelude.prelude.UInt32.".into(),
-            PreludeModule::UInt64 => "prelude.prelude.UInt64.".into(),
-            PreludeModule::UInt128 => "prelude.prelude.UInt128.".into(),
-            PreludeModule::Char => "prelude.prelude.Char.".into(),
-            PreludeModule::Opaque => "prelude.prelude.Opaque.".into(),
-            PreludeModule::Isize => "prelude.prelude.IntSize.".into(),
-            PreludeModule::Usize => "prelude.prelude.UIntSize.".into(),
-            PreludeModule::Bool => "prelude.prelude.Bool.".into(),
-            PreludeModule::Borrow => "prelude.prelude.Borrow.".into(),
-            PreludeModule::Slice => "prelude.prelude.Slice.".into(),
-            PreludeModule::Intrinsic => "prelude.prelude.Intrinsic.".into(),
-        };
-        qname.module
-    }
 }
 
 pub(crate) trait Namer<'tcx> {
@@ -157,11 +126,55 @@ pub(crate) trait Namer<'tcx> {
         self.dependency(Dependency::Builtin(module));
     }
 
+    fn prelude_module_name(&self, module: PreludeModule) -> Vec<Ident> {
+        self.dependency(Dependency::Builtin(module));
+        let qname: QName = match (module, self.bitwise_mode()) {
+            (PreludeModule::Float32, _) => "prelude.float.Float32.".into(),
+            (PreludeModule::Float64, _) => "prelude.float.Float64.".into(),
+            (PreludeModule::Int, _) => "mach.int.Int.".into(),
+            (PreludeModule::Int8, false) => "prelude.int.Int8.".into(),
+            (PreludeModule::Int16, false) => "prelude.int.Int16.".into(),
+            (PreludeModule::Int32, false) => "prelude.int.Int32.".into(),
+            (PreludeModule::Int64, false) => "prelude.int.Int64.".into(),
+            (PreludeModule::Int128, false) => "prelude.int.Int128.".into(),
+            (PreludeModule::UInt8, false) => "prelude.int.UInt8.".into(),
+            (PreludeModule::UInt16, false) => "prelude.int.UInt16.".into(),
+            (PreludeModule::UInt32, false) => "prelude.int.UInt32.".into(),
+            (PreludeModule::UInt64, false) => "prelude.int.UInt64.".into(),
+            (PreludeModule::UInt128, false) => "prelude.int.UInt128.".into(),
+            (PreludeModule::Int8, true) => "prelude.int.Int8BW.".into(),
+            (PreludeModule::Int16, true) => "prelude.int.Int16BW.".into(),
+            (PreludeModule::Int32, true) => "prelude.int.Int32BW.".into(),
+            (PreludeModule::Int64, true) => "prelude.int.Int64BW.".into(),
+            (PreludeModule::Int128, true) => "prelude.int.Int128BW.".into(),
+            (PreludeModule::UInt8, true) => "prelude.int.UInt8BW.".into(),
+            (PreludeModule::UInt16, true) => "prelude.int.UInt16BW.".into(),
+            (PreludeModule::UInt32, true) => "prelude.int.UInt32BW.".into(),
+            (PreludeModule::UInt64, true) => "prelude.int.UInt64BW.".into(),
+            (PreludeModule::UInt128, true) => "prelude.int.UInt128BW.".into(),
+            (PreludeModule::Char, _) => "prelude.prelude.Char.".into(),
+            (PreludeModule::Opaque, _) => "prelude.prelude.Opaque.".into(),
+            (PreludeModule::Bool, _) => "prelude.prelude.Bool.".into(),
+            (PreludeModule::Borrow, _) => "prelude.prelude.MutBorrow.".into(),
+            (PreludeModule::Slice, _) => {
+                format!("prelude.slice.Slice{}.", self.tcx().sess.target.pointer_width).into()
+            }
+            (PreludeModule::Intrinsic, _) => "prelude.prelude.Intrinsic.".into(),
+        };
+        qname.module
+    }
+
+    fn from_prelude(&self, module: PreludeModule, name: &str) -> QName {
+        QName { module: self.prelude_module_name(module), name: name.into() }.without_search_path()
+    }
+
     fn dependency(&self, dep: Dependency<'tcx>) -> &Kind;
 
     fn tcx(&self) -> TyCtxt<'tcx>;
 
     fn span(&self, span: Span) -> Option<why3::declaration::Attribute>;
+
+    fn bitwise_mode(&self) -> bool;
 }
 
 impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
@@ -194,6 +207,10 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
         });
         Some(Attribute::NamedSpan(name.0.to_string()))
     }
+
+    fn bitwise_mode(&self) -> bool {
+        self.bitwise_mode
+    }
 }
 
 impl<'tcx> CloneNames<'tcx> {
@@ -202,7 +219,9 @@ impl<'tcx> CloneNames<'tcx> {
             if let Some((did, _)) = key.did()
                 && let Some(why3_modl) = get_builtin(tcx, did)
             {
-                let qname = QName::from(why3_modl.as_str());
+                let why3_modl =
+                    why3_modl.as_str().replace("$BW$", if self.bitwise_mode { "BW" } else { "" });
+                let qname = QName::from(why3_modl);
                 if qname.module.is_empty() {
                     return Box::new(Kind::Named(Symbol::intern(&qname.name)));
                 } else {
@@ -215,6 +234,10 @@ impl<'tcx> CloneNames<'tcx> {
                 }),
             )
         })
+    }
+
+    fn bitwise_mode(&self) -> bool {
+        self.bitwise_mode
     }
 }
 
@@ -240,6 +263,10 @@ impl<'tcx> Namer<'tcx> for Dependencies<'tcx> {
     fn span(&self, span: Span) -> Option<Attribute> {
         self.names.span(span)
     }
+
+    fn bitwise_mode(&self) -> bool {
+        self.names.bitwise_mode()
+    }
 }
 
 pub(crate) struct Dependencies<'tcx> {
@@ -264,6 +291,8 @@ pub(crate) struct CloneNames<'tcx> {
     typing_env: TypingEnv<'tcx>,
     // Internal state, used to determine whether we should emit spans at all
     span_mode: SpanMode,
+    // Should we use the BW version of the machine integer prelude?
+    bitwise_mode: bool,
 
     /// Freshens a symbol by appending a number to the end
     counts: RefCell<NameSupply>,
@@ -274,11 +303,17 @@ pub(crate) struct CloneNames<'tcx> {
 }
 
 impl<'tcx> CloneNames<'tcx> {
-    fn new(tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>, span_mode: SpanMode) -> Self {
+    fn new(
+        tcx: TyCtxt<'tcx>,
+        typing_env: TypingEnv<'tcx>,
+        span_mode: SpanMode,
+        bitwise_mode: bool,
+    ) -> Self {
         CloneNames {
             tcx,
             typing_env,
             span_mode,
+            bitwise_mode,
             counts: Default::default(),
             names: Default::default(),
             spans: Default::default(),
@@ -331,7 +366,9 @@ impl Kind {
 
 impl<'tcx> Dependencies<'tcx> {
     pub(crate) fn new(ctx: &TranslationCtx<'tcx>, self_id: DefId) -> Self {
-        let names = CloneNames::new(ctx.tcx, ctx.typing_env(self_id), ctx.opts.span_mode.clone());
+        let bw = is_bitwise(ctx.tcx, self_id);
+        let names =
+            CloneNames::new(ctx.tcx, ctx.typing_env(self_id), ctx.opts.span_mode.clone(), bw);
         debug!("cloning self: {:?}", self_id);
         let self_subst = erased_identity_for_item(ctx.tcx, self_id);
         let deps =

@@ -1,8 +1,5 @@
 use crate::{
-    backend::{
-        program::{floatty_to_prelude, int_to_prelude, uint_to_prelude},
-        Why3Generator,
-    },
+    backend::Why3Generator,
     contracts_items::{get_builtin, get_int_ty, is_int_ty, is_logic, is_trusted},
     ctx::*,
 };
@@ -26,26 +23,18 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
 ) -> MlT {
     let ty = names.normalize(ctx, ty);
     match ty.kind() {
-        Bool => MlT::Bool,
-        Char => {
-            names.import_prelude_module(PreludeModule::Char);
-            MlT::Char
-        }
-        Int(ity) => intty_to_ty(names, *ity),
-        Uint(uity) => uintty_to_ty(names, *uity),
-        Float(flty) => floatty_to_ty(names, *flty),
+        Bool => MlT::TConstructor("bool".into()),
+        Char => MlT::TConstructor(names.from_prelude(PreludeModule::Char, "t")),
+        Int(ity) => MlT::TConstructor(names.from_prelude(ity_to_prelude(ctx.tcx, *ity), "t")),
+        Uint(uty) => MlT::TConstructor(names.from_prelude(uty_to_prelude(ctx.tcx, *uty), "t")),
+        Float(flty) => MlT::TConstructor(names.from_prelude(floatty_to_prelude(*flty), "t")),
         Adt(def, s) => {
             if def.is_box() {
                 return translate_ty(ctx, names, span, s[0].expect_ty());
             }
 
-            if is_int(ctx.tcx, ty) {
-                names.import_prelude_module(PreludeModule::Int);
-                return MlT::Integer;
-            }
-
             if get_builtin(ctx.tcx, def.did()).is_some() {
-                let cons = MlT::TConstructor(names.ty(def.did(), s).without_search_path());
+                let cons = MlT::TConstructor(names.ty(def.did(), s));
                 let args: Vec<_> = s.types().map(|t| translate_ty(ctx, names, span, t)).collect();
                 MlT::TApp(Box::new(cons), args)
             } else {
@@ -65,33 +54,23 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         Alias(AliasTyKind::Projection, pty) => translate_projection_ty(ctx, names, pty),
         Ref(_, ty, borkind) => {
             use rustc_ast::Mutability::*;
-            names.import_prelude_module(PreludeModule::Borrow);
             match borkind {
-                Mut => MlT::MutableBorrow(Box::new(translate_ty(ctx, names, span, *ty))),
+                Mut => MlT::TConstructor(names.from_prelude(PreludeModule::Borrow, "t"))
+                    .tapp(vec![translate_ty(ctx, names, span, *ty)]),
                 Not => translate_ty(ctx, names, span, *ty),
             }
         }
-        Slice(ty) => {
-            names.import_prelude_module(PreludeModule::Slice);
-            MlT::TApp(
-                Box::new(MlT::TConstructor("slice".into())),
-                vec![translate_ty(ctx, names, span, *ty)],
-            )
-        }
-        Array(ty, _) => {
-            names.import_prelude_module(PreludeModule::Slice);
-            MlT::TApp(
-                Box::new(MlT::TConstructor("array".into())),
-                vec![translate_ty(ctx, names, span, *ty)],
-            )
-        }
+        Slice(ty) => MlT::TApp(
+            Box::new(MlT::TConstructor(names.from_prelude(PreludeModule::Slice, "slice"))),
+            vec![translate_ty(ctx, names, span, *ty)],
+        ),
+        Array(ty, _) => MlT::TApp(
+            Box::new(MlT::TConstructor(names.from_prelude(PreludeModule::Slice, "array"))),
+            vec![translate_ty(ctx, names, span, *ty)],
+        ),
         Str => MlT::TConstructor("string".into()),
-        // Slice()
         Never => MlT::Tuple(vec![]),
-        RawPtr(_, _) => {
-            names.import_prelude_module(PreludeModule::Opaque);
-            MlT::TConstructor("opaque_ptr".into())
-        }
+        RawPtr(_, _) => MlT::TConstructor(names.from_prelude(PreludeModule::Opaque, "ptr")),
         Closure(id, subst) => {
             if is_logic(ctx.tcx, *id) {
                 return MlT::Tuple(Vec::new());
@@ -108,19 +87,9 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         {
             MlT::Tuple(vec![])
         }
-        FnPtr(..) => {
-            names.import_prelude_module(PreludeModule::Opaque);
-            MlT::TConstructor("opaque_ptr".into())
-        }
-        Dynamic(_, _, _) => {
-            names.import_prelude_module(PreludeModule::Opaque);
-            MlT::TConstructor("dyn".into())
-        }
-
-        Foreign(_) => {
-            names.import_prelude_module(PreludeModule::Opaque);
-            MlT::TConstructor("foreign".into())
-        }
+        FnPtr(..) => MlT::TConstructor(names.from_prelude(PreludeModule::Opaque, "ptr")),
+        Dynamic(_, _, _) => MlT::TConstructor(names.from_prelude(PreludeModule::Opaque, "dyn")),
+        Foreign(_) => MlT::TConstructor(names.from_prelude(PreludeModule::Opaque, "foreign")),
         Error(_) => MlT::UNIT,
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
     }
@@ -343,39 +312,6 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
     }
 }
 
-pub(crate) fn intty_to_ty<'tcx, N: Namer<'tcx>>(names: &N, ity: IntTy) -> MlT {
-    names.import_prelude_module(int_to_prelude(ity));
-    match ity {
-        IntTy::Isize => MlT::TConstructor("isize".into()),
-        IntTy::I8 => MlT::TConstructor("int8".into()),
-        IntTy::I16 => MlT::TConstructor("int16".into()),
-        IntTy::I32 => MlT::TConstructor("int32".into()),
-        IntTy::I64 => MlT::TConstructor("int64".into()),
-        IntTy::I128 => MlT::TConstructor("int128".into()),
-    }
-}
-
-pub(crate) fn uintty_to_ty<'tcx, N: Namer<'tcx>>(names: &N, uty: UintTy) -> MlT {
-    names.import_prelude_module(uint_to_prelude(uty));
-    match uty {
-        UintTy::Usize => MlT::TConstructor("usize".into()),
-        UintTy::U8 => MlT::TConstructor("uint8".into()),
-        UintTy::U16 => MlT::TConstructor("uint16".into()),
-        UintTy::U32 => MlT::TConstructor("uint32".into()),
-        UintTy::U64 => MlT::TConstructor("uint64".into()),
-        UintTy::U128 => MlT::TConstructor("uint128".into()),
-    }
-}
-
-pub(crate) fn floatty_to_ty<'tcx, N: Namer<'tcx>>(names: &N, fty: FloatTy) -> MlT {
-    names.import_prelude_module(floatty_to_prelude(fty));
-    match fty {
-        FloatTy::F32 => MlT::TConstructor("Float32.t".into()),
-        FloatTy::F64 => MlT::TConstructor("Float64.t".into()),
-        FloatTy::F128 | FloatTy::F16 => todo!("Unsupported: {fty:?}"),
-    }
-}
-
 pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
     if let TyKind::Adt(def, _) = ty.kind() {
         is_int_ty(tcx, def.did())
@@ -388,4 +324,34 @@ pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &Why3Generator<'tcx>, names: &N) -> MlT
     let int_id = get_int_ty(ctx.tcx);
     let ty = ctx.type_of(int_id).skip_binder();
     translate_ty(ctx, names, DUMMY_SP, ty)
+}
+
+pub(crate) fn ity_to_prelude(tcx: TyCtxt, ity: IntTy) -> PreludeModule {
+    match ity.normalize(tcx.sess.target.pointer_width) {
+        IntTy::Isize => unreachable!(),
+        IntTy::I8 => PreludeModule::Int8,
+        IntTy::I16 => PreludeModule::Int16,
+        IntTy::I32 => PreludeModule::Int32,
+        IntTy::I64 => PreludeModule::Int64,
+        IntTy::I128 => PreludeModule::Int128,
+    }
+}
+
+pub(crate) fn uty_to_prelude(tcx: TyCtxt, uty: UintTy) -> PreludeModule {
+    match uty.normalize(tcx.sess.target.pointer_width) {
+        UintTy::Usize => unreachable!(),
+        UintTy::U8 => PreludeModule::UInt8,
+        UintTy::U16 => PreludeModule::UInt16,
+        UintTy::U32 => PreludeModule::UInt32,
+        UintTy::U64 => PreludeModule::UInt64,
+        UintTy::U128 => PreludeModule::UInt128,
+    }
+}
+
+pub(crate) fn floatty_to_prelude(fty: FloatTy) -> PreludeModule {
+    match fty {
+        FloatTy::F32 => PreludeModule::Float32,
+        FloatTy::F64 => PreludeModule::Float64,
+        FloatTy::F16 | FloatTy::F128 => todo!("unsupported: {fty:?}"),
+    }
 }

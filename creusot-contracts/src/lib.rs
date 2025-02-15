@@ -369,6 +369,10 @@ pub mod macros {
     /// This attribute can be used on a function or closure to instruct Creusot not to ensure as a postcondition that the
     /// return value of the function satisfies its [type invariant](crate::Invariant).
     pub use base_macros::open_inv_result;
+
+    /// This attribute indicates that the function need to be proved in "bitwise" mode, which means that Creusot will use
+    /// the bitvector theory of SMT solvers.
+    pub use base_macros::bitwise_proof;
 }
 
 #[doc(hidden)]
