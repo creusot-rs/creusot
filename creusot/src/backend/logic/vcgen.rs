@@ -44,6 +44,7 @@ struct VCGen<'a, 'tcx> {
     names: &'a Dependencies<'tcx>,
     self_id: DefId,
     structurally_recursive: bool,
+    variant: Option<Exp>,
     typing_env: TypingEnv<'tcx>,
     renaming: RefCell<Renaming>,
 }
@@ -57,21 +58,27 @@ pub(super) fn vc<'tcx>(
     post: Exp,
 ) -> Result<Exp, VCError<'tcx>> {
     let structurally_recursive = is_structurally_recursive(ctx, self_id, &t);
-    let bounds = ctx
-        .sig(self_id)
+    let sig = ctx.sig(self_id);
+    let bounds = sig
         .inputs
         .iter()
-        .map(|arg| (arg.0, Ident::fresh(arg.0.as_str())))
+        .map(|(sym, _, _)| (*sym, Ident::fresh(sym.as_str())))
         .collect();
+    let renaming = RefCell::new(bounds);
+    let variant = sig.contract.variant.as_ref().map(|term|
+            lower_pure(ctx, names, &mut renaming.borrow_mut(), term));
     let gen = VCGen {
         typing_env: ctx.typing_env(self_id),
         ctx,
         names,
         self_id,
         structurally_recursive,
-        renaming: RefCell::new(bounds),
+        variant,
+        renaming,
     };
-    gen.build_vc(&t, &|exp| Ok(Exp::let_(dest.clone(), exp, post.clone())))
+    let hole = Ident::fresh("");
+    let exp = Exp::let_(dest.clone(), Exp::Var(hole), post.clone());
+    gen.build_vc(&t, &mut Post::new(exp, hole))
 }
 
 /// Verifies whether a given term is structurally recursive: that is, each recursive call is made to
@@ -209,6 +216,30 @@ impl<'tcx> VCError<'tcx> {
     }
 }
 
+struct Post {
+    exp: Exp,
+    substs: Vec<(Ident, Exp)>,
+    hole: Ident,
+}
+
+impl Post {
+    fn new(exp: Exp, hole: Ident) -> Self {
+        Self { exp, substs: Vec::new(), hole }
+    }
+
+    fn subst(&mut self, exp: Exp) {
+        todo!()
+    }
+
+    fn undo_subst(&mut self) {
+        todo!()
+    }
+
+    fn subst_to_exp(&self, exp: Exp) -> Exp {
+        todo!()
+    }
+}
+
 type PostCont<'a, 'tcx, A, R = Exp> = &'a dyn Fn(A) -> Result<R, VCError<'tcx>>;
 
 impl<'a, 'tcx> VCGen<'a, 'tcx> {
@@ -220,15 +251,11 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         lower_pure(self.ctx, self.names, &mut self.renaming.borrow_mut(), lit)
     }
 
-    fn build_vc(&self, t: &Term<'tcx>, k: PostCont<'_, 'tcx, Exp>) -> Result<Exp, VCError<'tcx>> {
+    fn build_vc(&self, t: &Term<'tcx>, q: &mut Post) -> Result<Exp, VCError<'tcx>> {
         use crate::pearlite::*;
         match &t.kind {
             // VC(v, Q) = Q(v)
-            TermKind::Var(v) => {
-                let id = ident_of(*v); // ???
-                let v = self.get_var(*v).unwrap_or_else(|| Ident::fresh(id)); // ???
-                k(Exp::Var(v))
-            }
+            TermKind::Var(v) => Ok(q.subst_to_exp(Exp::Var(self.get_var(*v)))),
             // VC(l, Q) = Q(l)
             TermKind::Lit(l) => k(self.lower_literal(l)),
             TermKind::Cast { arg } => match arg.ty.kind() {
@@ -283,61 +310,76 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // VC(i, Q) = Q(i)
             TermKind::Item(id, sub) => {
                 let item_name = self.names.item(*id, sub);
-
                 if get_builtin(self.ctx.tcx, *id).is_some() {
                     // Builtins can leverage Why3 polymorphism and sometimes can cause typeck errors in why3 due to ambiguous type variables so lets fix the type now.
-                    k(Exp::qvar(item_name).ascribe(self.ty(t.ty)))
+                    Ok(q.subst_to_exp(Exp::qvar(item_name).ascribe(self.ty(t.ty))))
                 } else {
-                    k(Exp::qvar(item_name))
+                    Ok(q.subst_to_exp(Exp::qvar(item_name)))
                 }
             }
             // VC(assert { C }, Q) => VC(C, |c| c && Q(()))
             TermKind::Assert { cond } => {
-                self.build_vc(cond, &|exp| Ok(exp.lazy_and(k(Exp::Tuple(Vec::new()))?)))
+                let hole = q.hole;
+                let exp = Exp::Var(hole).lazy_and(q.subst_to_exp(Exp::Tuple(Vec::new())));
+                self.build_vc(cond, &mut Post::new(exp, hole))
             }
             // VC(f As, Q) = VC(A0, |a0| ... VC(An, |an|
             //  pre(f)(a0..an) /\ variant(f)(a0..an) /\ (post(f)(a0..an, F(a0..an)) -> Q(F a0..an))
             // ))
-            TermKind::Call { id, subst, args } => self.build_vc_slice(args, &|args| {
+            TermKind::Call { id, subst, args } => {
+                let args: Vec<_> = args.into_iter().map(|arg| (arg, self.fresh(rustc_span::kw::Empty))).collect();
                 let pre_sig =
                     EarlyBinder::bind(self.ctx.sig(*id).clone()).instantiate(self.ctx.tcx, subst);
 
                 let pre_sig = pre_sig.normalize(self.ctx.tcx, self.typing_env);
-                let arg_subst = pre_sig
-                    .inputs
-                    .iter()
-                    .zip(args.clone())
-                    .map(|(nm, res)| (Ident::fresh(nm.0.as_str()), res))
-                    .collect();
-                let fname = self.names.item(*id, subst);
                 let sig =  sig_to_why3(self.ctx, self.names, Ident::fresh(""), // ???
                     pre_sig, *id);
+                let arg_subst = sig
+                    .args
+                    .iter()
+                    .zip(&args)
+                    .map(|(&(_, arg, _), &(_, hole))| (arg, Exp::Var(hole)))
+                    .collect();
                 let mut contract = sig.contract;
                 contract.subst(&arg_subst);
-                let variant =
-                    if *id == self.self_id { self.build_variant(&args)? } else { Exp::mk_true() };
+                // Generates the expression to test the validity of the variant for a recursive call.
+                // Currently restricted to `Int` until we sort out `WellFounded` (soon?)
+                //
+                // If V is the variant expression at entry and V' is the variant expression of the recursive call it generates
+                //  0 <= V && V' < V
+                //  Weirdly (to me Xavier) this doesn't check `0 <= V'` but this is actually the same behavior as Why3
+                let variant = if *id == self.self_id && !self.structurally_recursive {
+                    let variant = contract.variant.remove(0);
+                    let orig_variant = self.variant.unwrap().clone();
+                    self.names.import_prelude_module(PreludeModule::Int);
+                    Exp::BinaryOp(why3::exp::BinOp::Le, Box::new(Exp::int(0)), Box::new(orig_variant))
+                        .log_and(Exp::BinaryOp(why3::exp::BinOp::Lt, Box::new(variant), Box::new(orig_variant)))
+                    /* TODO: check type is int when translating the variant Err(VCError::UnsupportedVariant(variant.creusot_ty(), variant.span)); */
+                } else { Exp::mk_true() };
 
+                let fname = self.names.item(*id, subst);
                 let call = if args.is_empty() {
-                    Exp::qvar(fname).app_to(Exp::Tuple(Vec::new()))
+                    Exp::qvar(fname).app_to(Exp::unit())
                 } else {
-                    Exp::qvar(fname).app(args)
+                    Exp::qvar(fname).app(args.iter().map(|(_, arg)| Exp::Var(*arg)).collect())
                 };
                 contract.subst(&[(Ident::bound("result"), call.clone())].into_iter().collect());
 
-                let inner = k(call)?;
+                let inner = q.subst_to_exp(call);
 
                 let post = contract
                     .requires_conj_labelled()
                     .log_and(variant)
                     .log_and(contract.ensures_conj().implies(inner));
 
-                Ok(post)
-            }),
+                self.build_vc_slice(&args, post)
+            }
 
             // VC(A && B, Q) = VC(A, |a| if a then VC(B, Q) else Q(false))
             // VC(A || B, Q) = VC(A, |a| if a then Q(true) else VC(B, Q))
             // VC(A OP B, Q) = VC(A, |a| VC(B, |b| Q(a OP B)))
             TermKind::Binary { op, lhs, rhs } => match op {
+<<<<<<< LEFT
                 BinOp::And => self.build_vc(lhs, &|lhs| {
                     Ok(Exp::if_(lhs, self.build_vc(rhs, k)?, k(Exp::mk_false())?))
                 }),
@@ -355,42 +397,76 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                         k(Exp::BinaryOp(binop_to_binop(*op), Box::new(lhs.clone()), Box::new(rhs)))
                     })
                 }),
+||||||| BASE
+                BinOp::And => self.build_vc(lhs, &|lhs| {
+                    Ok(Exp::if_(lhs, self.build_vc(rhs, k)?, k(Exp::mk_false())?))
+                }),
+                // BinOp::Or => self.build_vc(lhs, &|lhs| {
+                //     Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_vc(rhs, k)?,))
+                // }),
+                BinOp::Div => self.build_vc(lhs, &|lhs| {
+                    self.build_vc(rhs, &|rhs| k(Exp::QVar("div".into()).app(vec![lhs.clone(), rhs])))
+                }),
+                _ => self.build_vc(lhs, &|lhs| {
+                    self.build_vc(rhs, &|rhs| {
+                        k(Exp::BinaryOp(binop_to_binop(*op), Box::new(lhs.clone()), Box::new(rhs)))
+                    })
+                }),
+=======
+                BinOp::And => {
+                    let vc_rhs = self.build_vc(rhs, q)?;
+                    let hole = q.hole;
+                    let exp = Exp::if_(Exp::Var(hole), vc_rhs, q.subst_to_exp(Exp::mk_false()));
+                    self.build_vc(lhs, &mut Post::new(exp, hole))
+                }
+                // BinOp::Or => self.build_vc(lhs, &|lhs| {
+                //     Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_vc(rhs, k)?,))
+                // }),
+                BinOp::Div => {
+                    let lhs_hole = Ident::fresh("");
+                    q.subst(Exp::QVar("div".into()).app(vec![Exp::Var(lhs_hole), Exp::Var(q.hole)]));
+                    let vc_rhs = self.build_vc(rhs, q)?;
+                    q.undo_subst();
+                    self.build_vc(lhs, &mut Post::new(vc_rhs, lhs_hole))
+                }
+                _ => {
+                    let lhs_hole = Ident::fresh("");
+                    q.subst(Exp::BinaryOp(binop_to_binop(*op), Exp::Var(lhs_hole).into(), Exp::Var(q.hole).into()));
+                    let vc_rhs = self.build_vc(rhs, q)?;
+                    q.undo_subst();
+                    self.build_vc(lhs, &mut Post::new(vc_rhs, lhs_hole))
+                }
+>>>>>>> RIGHT
             },
-            // VC(OP A, Q) = VC(A |a| Q(OP a))
-            TermKind::Unary { op, arg } => self.build_vc(arg, &|arg| {
+            // VC(OP A, Q) = VC(A, |a| Q(OP a))
+            TermKind::Unary { op, arg } => {
                 let op = match op {
                     UnOp::Not => why3::exp::UnOp::Not,
                     UnOp::Neg => why3::exp::UnOp::Neg,
                 };
-
-                k(Exp::UnaryOp(op, Box::new(arg)))
-            }),
-            // // the dual rule should be the one below but that seems weird...
-            // // VC(forall<x> P(x), Q) => (exists<x> VC(P, false)) \/ Q(forall<x>P(x))
-            // // Instead, I think the rule should just be the same as for the existential quantifiers?
-            TermKind::Quant { kind: QuantKind::Forall, binder, body, .. } => {
-                let forall_pre = self.build_vc(body, &|_| Ok(Exp::mk_true()))?;
-
-                let forall_pre = Exp::forall(
-                    zip_binder(binder).map(|(s, t)| (Ident::fresh(s.to_string()), self.ty(t))).collect(),
-                    forall_pre,
-                );
-                let forall_pure = self.lower_pure(t);
-                Ok(forall_pre.log_and(k(forall_pure)?))
+                q.subst(Exp::UnaryOp(op, Exp::Var(q.hole).into()));
+                let vc = self.build_vc(arg, q);
+                q.undo_subst();
+                vc
             }
-            // // VC(exists<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(exists<x>P(x))
-            TermKind::Quant { kind: QuantKind::Exists, binder, body, .. } => {
-                let exists_pre = self.build_vc(body, &|_| Ok(Exp::mk_true()))?;
-
-                let exists_pre = Exp::forall(
-                    zip_binder(binder).map(|(s, t)| (Ident::fresh(s.to_string()), self.ty(t))).collect(),
-                    exists_pre,
-                );
-                let exists_pure = self.lower_pure(t);
-                Ok(exists_pre.log_and(k(exists_pure)?))
+            // VC(QUANTIFIER<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(QUANTIFIER<x> P(x))
+            TermKind::Quant { binder, body, .. } => {
+                self.open_scope();
+                let binder = zip_binder(binder).map(|(sym, ty)| (self.fresh(sym), self.ty(ty))).collect();
+                let forall_pre = self.build_vc(body, &mut Post::new(Exp::mk_true(), q.hole))?;
+                self.close_scope();
+                let forall_pre = Exp::forall(binder, forall_pre);
+                let q_t = q.subst_to_exp(self.lower_pure(t));
+                Ok(forall_pre.log_and(q_t))
             }
             // VC((T...), Q) = VC(T[0], |t0| ... VC(T[N], |tn| Q(t0..tn))))
-            TermKind::Tuple { fields } => self.build_vc_slice(fields, &|flds| k(Exp::Tuple(flds))),
+            TermKind::Tuple { fields } => {
+                let fields = fields.iter().map(|field| (Ident::fresh(""), field)).collect();
+                q.subst(Exp::Tuple(fields.iter().map(|(_, v)| Exp::Var(v)).collect()));
+                let vc = self.build_vc_slice(fields, q);
+                q.undo_subst();
+                vc
+            }
             // Same as for tuples
             TermKind::Constructor { variant, fields, .. } => {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, t.creusot_ty());
@@ -546,30 +622,13 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
     fn build_vc_slice(
         &self,
-        t: &[Term<'tcx>],
-        k: PostCont<'_, 'tcx, Vec<Exp>>,
-    ) -> Result<Exp, VCError<'tcx>> {
-        self.build_vc_slice_inner(t, &|mut args| {
-            args.reverse();
-            k(args)
-        })
-    }
-
-    fn build_vc_slice_inner(
-        &self,
-        t: &[Term<'tcx>],
-        k: PostCont<'_, 'tcx, Vec<Exp>>,
-    ) -> Result<Exp, VCError<'tcx>> {
-        if t.is_empty() {
-            k(Vec::new())
-        } else {
-            self.build_vc(&t[0], &|v| {
-                self.build_vc_slice_inner(&t[1..], &|mut vs| {
-                    vs.push(v.clone());
-                    k(vs)
-                })
-            })
+        t: &[(&Term<'tcx>, Ident)],
+        mut q: Exp,
+    ) -> Result<Exp, VCError<'tcx>>  {
+        for &(field, hole) in t.into_iter().rev() {
+            q = self.build_vc(field, &mut Post::new(q, hole))?;
         }
+        Ok(q)
     }
 
     fn ty(&self, ty: Ty<'tcx>) -> Type {
@@ -580,43 +639,14 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         signature_of(self.ctx, self.names, Ident::bound(""), self.self_id) // TODO
     }
 
-    // Generates the expression to test the validity of the variant for a recursive call.
-    // Currently restricted to `Int` until we sort out `WellFounded` (soon?)
-    //
-    // If V is the variant expression at entry and V' is the variant expression of the recursive call it generates
-    //  0 <= V && V' < V
-    //  Weirdly (to me Xavier) this doesn't check `0 <= V'` but this is actually the same behavior as Why3
-    fn build_variant(&self, call_args: &[Exp]) -> Result<Exp, VCError<'tcx>> {
-        if self.structurally_recursive {
-            return Ok(Exp::mk_true());
-        }
-        let variant = self.ctx.sig(self.self_id).contract.variant.clone();
-        let Some(variant) = variant else { return Ok(Exp::mk_false()) };
-
-        let top_level_args = self.top_level_args();
-
-        let mut subst: ::why3::exp::Environment =
-            top_level_args.into_iter().zip(call_args.iter().cloned()).collect();
-        let orig_variant = self.self_sig().contract.variant.remove(0);
-        let mut rec_var_exp = orig_variant.clone();
-        rec_var_exp.subst(&mut subst);
-        if is_int(self.ctx.tcx, variant.creusot_ty()) {
-            self.names.import_prelude_module(PreludeModule::Int);
-            Ok(Exp::BinaryOp(BinOp::Le, Box::new(Exp::int(0)), Box::new(orig_variant.clone()))
-                .log_and(Exp::BinaryOp(BinOp::Lt, Box::new(rec_var_exp), Box::new(orig_variant))))
-        } else {
-            Err(VCError::UnsupportedVariant(variant.creusot_ty(), variant.span))
-        }
-    }
-
     /// Produces the top-level call expression for the function being verified
     fn top_level_args(&self) -> Vec<Ident> {
-    let sig = self.self_sig();
-    sig.args.iter().map(|(_, nm, _)| nm).cloned().collect()
+let sig = self.self_sig();
+sig.args.iter().map(|(_, nm, _)| nm).cloned().collect()
 }
 
-    fn get_var(&self, s: Symbol) -> Option<Ident> {
-        self.renaming.borrow().get(&s)
+    fn get_var(&self, s: Symbol) -> Ident {
+        self.renaming.borrow().get_unwrap(&s)
     }
 
     fn open_scope(&self) {
