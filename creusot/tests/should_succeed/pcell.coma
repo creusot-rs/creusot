@@ -52,14 +52,14 @@ module M_pcell__foo [#"pcell.rs" 5 0 5 19]
   let%span sboxed50 = "../../../creusot-contracts/src/std/boxed.rs" 18 8 18 22
   let%span smodel51 = "../../../creusot-contracts/src/model.rs" 54 8 54 22
   
-  use prelude.prelude.Int32
+  use prelude.int.Int32
   
-  predicate inv'0 (_1 : int32)
+  predicate inv'0 (_1 : Int32.t)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : int32 [inv'0 x] . inv'0 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : Int32.t [inv'0 x] . inv'0 x = true
   
   type t_UnsafeCell'0  =
-    { t_UnsafeCell__value'0: int32 }
+    { t_UnsafeCell__value'0: Int32.t }
   
   type t_PCell'0  =
     { t_PCell__0'0: t_UnsafeCell'0 }
@@ -67,7 +67,7 @@ module M_pcell__foo [#"pcell.rs" 5 0 5 19]
   type t_Id'0
   
   type t_PCellOwn'0  =
-    { t_PCellOwn__qy95zprivate'0: (); t_PCellOwn__id'0: t_Id'0; t_PCellOwn__val'0: int32 }
+    { t_PCellOwn__qy95zprivate'0: (); t_PCellOwn__id'0: t_Id'0; t_PCellOwn__val'0: Int32.t }
   
   type t_GhostBox'0  =
     { t_GhostBox__0'0: t_PCellOwn'0 }
@@ -84,18 +84,16 @@ module M_pcell__foo [#"pcell.rs" 5 0 5 19]
   function id'1 (self : t_PCellOwn'0) : t_Id'0 =
     [%#spcell46] self.t_PCellOwn__id'0
   
-  function view'0 (self : t_PCellOwn'0) : int32 =
+  function view'0 (self : t_PCellOwn'0) : Int32.t =
     [%#spcell47] self.t_PCellOwn__val'0
   
-  let rec new'0 (value:int32) (return'  (ret:(t_PCell'0, t_GhostBox'0)))= {[@expl:new 'value' type invariant] [%#spcell10] inv'0 value}
+  let rec new'0 (value:Int32.t) (return'  (ret:(t_PCell'0, t_GhostBox'0)))= {[@expl:new 'value' type invariant] [%#spcell10] inv'0 value}
     any
     [ return' (result:(t_PCell'0, t_GhostBox'0))-> {[%#spcell11] inv'1 result}
       {[%#spcell12] id'0 (let (a, _) = result in a) = id'1 (inner_logic'0 (let (_, a) = result in a))}
       {[%#spcell13] view'0 (inner_logic'0 (let (_, a) = result in a)) = value}
       (! return' {result}) ]
   
-  
-  use prelude.prelude.Borrow
   
   predicate inv'2 (_1 : t_GhostBox'0)
   
@@ -122,75 +120,77 @@ module M_pcell__foo [#"pcell.rs" 5 0 5 19]
   function inner_logic'1 (self : t_GhostBox'1) : t_PCellOwn'0 =
     [%#sghost45] self.t_GhostBox__0'1
   
-  predicate inv'5 (_1 : int32)
+  predicate inv'5 (_1 : Int32.t)
   
-  axiom inv_axiom'5 [@rewrite] : forall x : int32 [inv'5 x] . inv'5 x = true
+  axiom inv_axiom'5 [@rewrite] : forall x : Int32.t [inv'5 x] . inv'5 x = true
   
-  function view'5 (self : t_PCellOwn'0) : int32 =
+  function view'5 (self : t_PCellOwn'0) : Int32.t =
     [%#smodel51] view'0 self
   
-  function view'3 (self : t_PCellOwn'0) : int32 =
+  function view'3 (self : t_PCellOwn'0) : Int32.t =
     [%#sboxed50] view'5 self
   
-  function view'1 (self : t_GhostBox'1) : int32 =
+  function view'1 (self : t_GhostBox'1) : Int32.t =
     [%#sghost48] view'3 self.t_GhostBox__0'1
   
-  let rec borrow'1 (self:t_PCell'0) (perm:t_GhostBox'1) (return'  (ret:int32))= {[@expl:borrow 'self' type invariant] [%#spcell17] inv'4 self}
+  let rec borrow'1 (self:t_PCell'0) (perm:t_GhostBox'1) (return'  (ret:Int32.t))= {[@expl:borrow 'self' type invariant] [%#spcell17] inv'4 self}
     {[@expl:borrow 'perm' type invariant] [%#spcell18] inv'3 perm}
     {[@expl:borrow requires] [%#spcell19] id'0 self = id'1 (inner_logic'1 perm)}
     any
-    [ return' (result:int32)-> {[%#spcell20] inv'5 result} {[%#spcell21] result = view'1 perm} (! return' {result}) ]
+    [ return' (result:Int32.t)-> {[%#spcell20] inv'5 result} {[%#spcell21] result = view'1 perm} (! return' {result}) ]
   
   
-  predicate inv'6 (_1 : borrowed (t_GhostBox'0))
+  use prelude.prelude.MutBorrow
   
-  axiom inv_axiom'6 [@rewrite] : forall x : borrowed (t_GhostBox'0) [inv'6 x] . inv'6 x = true
+  predicate inv'6 (_1 : MutBorrow.t (t_GhostBox'0))
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : MutBorrow.t (t_GhostBox'0) [inv'6 x] . inv'6 x = true
   
   type t_GhostBox'2  =
-    { t_GhostBox__0'2: borrowed (t_PCellOwn'0) }
+    { t_GhostBox__0'2: MutBorrow.t (t_PCellOwn'0) }
   
   predicate inv'7 (_1 : t_GhostBox'2)
   
   axiom inv_axiom'7 [@rewrite] : forall x : t_GhostBox'2 [inv'7 x] . inv'7 x = true
   
-  let rec borrow_mut'0 (self:borrowed (t_GhostBox'0)) (return'  (ret:t_GhostBox'2))= {[@expl:borrow_mut 'self' type invariant] [%#sghost22] inv'6 self}
+  let rec borrow_mut'0 (self:MutBorrow.t (t_GhostBox'0)) (return'  (ret:t_GhostBox'2))= {[@expl:borrow_mut 'self' type invariant] [%#sghost22] inv'6 self}
     any
     [ return' (result:t_GhostBox'2)-> {[%#sghost23] inv'7 result}
       {[%#sghost24] result.t_GhostBox__0'2
-      = Borrow.borrow_logic (self.current).t_GhostBox__0'0 (self.final).t_GhostBox__0'0 (Borrow.inherit_id (Borrow.get_id self) 1)}
+      = MutBorrow.borrow_logic (self.current).t_GhostBox__0'0 (self.final).t_GhostBox__0'0 (MutBorrow.inherit_id (MutBorrow.get_id self) 1)}
       (! return' {result}) ]
   
   
-  function inner_logic'2 (self : t_GhostBox'2) : borrowed (t_PCellOwn'0) =
+  function inner_logic'2 (self : t_GhostBox'2) : MutBorrow.t (t_PCellOwn'0) =
     [%#sghost45] self.t_GhostBox__0'2
   
-  predicate inv'8 (_1 : borrowed int32)
+  predicate inv'8 (_1 : MutBorrow.t Int32.t)
   
-  axiom inv_axiom'8 [@rewrite] : forall x : borrowed int32 [inv'8 x] . inv'8 x = true
+  axiom inv_axiom'8 [@rewrite] : forall x : MutBorrow.t Int32.t [inv'8 x] . inv'8 x = true
   
-  let rec borrow_mut'1 (self:t_PCell'0) (perm:t_GhostBox'2) (return'  (ret:borrowed int32))= {[@expl:borrow_mut 'self' type invariant] [%#spcell25] inv'4 self}
+  let rec borrow_mut'1 (self:t_PCell'0) (perm:t_GhostBox'2) (return'  (ret:MutBorrow.t Int32.t))= {[@expl:borrow_mut 'self' type invariant] [%#spcell25] inv'4 self}
     {[@expl:borrow_mut 'perm' type invariant] [%#spcell26] inv'7 perm}
     {[@expl:borrow_mut requires] [%#spcell27] id'0 self = id'1 (inner_logic'2 perm).current}
     any
-    [ return' (result:borrowed int32)-> {[%#spcell28] inv'8 result}
+    [ return' (result:MutBorrow.t Int32.t)-> {[%#spcell28] inv'8 result}
       {[%#spcell29] id'0 self = id'1 (inner_logic'2 perm).final}
       {[%#spcell30] result.current = view'0 (inner_logic'2 perm).current}
       {[%#spcell31] result.final = view'0 (inner_logic'2 perm).final}
       (! return' {result}) ]
   
   
-  predicate resolve'1 (self : borrowed int32) =
+  predicate resolve'1 (self : MutBorrow.t Int32.t) =
     [%#sresolve49] self.final = self.current
   
-  predicate resolve'0 (_1 : borrowed int32) =
+  predicate resolve'0 (_1 : MutBorrow.t Int32.t) =
     resolve'1 _1
   
-  let rec replace'0 (self:t_PCell'0) (perm:t_GhostBox'2) (val':int32) (return'  (ret:int32))= {[@expl:replace 'self' type invariant] [%#spcell32] inv'4 self}
+  let rec replace'0 (self:t_PCell'0) (perm:t_GhostBox'2) (val':Int32.t) (return'  (ret:Int32.t))= {[@expl:replace 'self' type invariant] [%#spcell32] inv'4 self}
     {[@expl:replace 'perm' type invariant] [%#spcell33] inv'7 perm}
     {[@expl:replace 'val' type invariant] [%#spcell34] inv'0 val'}
     {[@expl:replace requires] [%#spcell35] id'0 self = id'1 (inner_logic'2 perm).current}
     any
-    [ return' (result:int32)-> {[%#spcell36] inv'0 result}
+    [ return' (result:Int32.t)-> {[%#spcell36] inv'0 result}
       {[%#spcell37] val' = view'0 (inner_logic'2 perm).final}
       {[%#spcell38] result = view'0 (inner_logic'2 perm).current}
       {[%#spcell39] id'0 self = id'1 (inner_logic'2 perm).final}
@@ -205,93 +205,94 @@ module M_pcell__foo [#"pcell.rs" 5 0 5 19]
   
   axiom inv_axiom'10 [@rewrite] : forall x : t_GhostBox'0 [inv'10 x] . inv'10 x = true
   
-  function view'4 (self : t_PCellOwn'0) : int32 =
+  function view'4 (self : t_PCellOwn'0) : Int32.t =
     [%#sboxed50] view'0 self
   
-  function view'2 (self : t_GhostBox'0) : int32 =
+  function view'2 (self : t_GhostBox'0) : Int32.t =
     [%#sghost48] view'4 self.t_GhostBox__0'0
   
-  let rec into_inner'0 (self:t_PCell'0) (perm:t_GhostBox'0) (return'  (ret:int32))= {[@expl:into_inner 'self' type invariant] [%#spcell40] inv'9 self}
+  let rec into_inner'0 (self:t_PCell'0) (perm:t_GhostBox'0) (return'  (ret:Int32.t))= {[@expl:into_inner 'self' type invariant] [%#spcell40] inv'9 self}
     {[@expl:into_inner 'perm' type invariant] [%#spcell41] inv'10 perm}
     {[@expl:into_inner requires] [%#spcell42] id'0 self = id'1 (inner_logic'0 perm)}
     any
-    [ return' (result:int32)-> {[%#spcell43] inv'0 result} {[%#spcell44] result = view'2 perm} (! return' {result}) ]
+    [ return' (result:Int32.t)-> {[%#spcell43] inv'0 result} {[%#spcell44] result = view'2 perm} (! return' {result}) ]
   
   
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Int32
+  use prelude.int.Int32
   
   meta "compute_max_steps" 1000000
   
-  let rec foo'0[#"pcell.rs" 5 0 5 19] (_1:()) (return'  (ret:int32))= (! bb0
+  let rec foo'0[#"pcell.rs" 5 0 5 19] (_1:()) (return'  (ret:Int32.t))= (! bb0
     [ bb0 = s0
-      [ s0 = new'0 {[%#spcell0] (1 : int32)} (fun (_ret':(t_PCell'0, t_GhostBox'0)) ->  [ &_4 <- _ret' ] s1)
+      [ s0 = new'0 {[%#spcell0] (1 : Int32.t)} (fun (_ret':(t_PCell'0, t_GhostBox'0)) ->  [ &_4 <- _ret' ] s1)
       | s1 = bb1 ]
     
     | bb1 = s0
       [ s0 =  [ &p <- let (r'0, _) = _4 in r'0 ] s1 | s1 =  [ &own <- let (_, r'1) = _4 in r'1 ] s2 | s2 = bb2 ]
     
     | bb2 = s0 [ s0 = borrow'0 {own} (fun (_ret':t_GhostBox'1) ->  [ &_10 <- _ret' ] s1) | s1 = bb3 ] 
-    | bb3 = s0 [ s0 = borrow'1 {p} {_10} (fun (_ret':int32) ->  [ &_8 <- _ret' ] s1) | s1 = bb4 ] 
+    | bb3 = s0 [ s0 = borrow'1 {p} {_10} (fun (_ret':Int32.t) ->  [ &_8 <- _ret' ] s1) | s1 = bb4 ] 
     | bb4 = s0
-      [ s0 = Int32.eq {_8} {[%#spcell1] (1 : int32)} (fun (_ret':bool) ->  [ &_6 <- _ret' ] s1)
+      [ s0 = Int32.eq {_8} {[%#spcell1] (1 : Int32.t)} (fun (_ret':bool) ->  [ &_6 <- _ret' ] s1)
       | s1 = any [ br0 -> {_6 = false} (! bb6) | br1 -> {_6} (! bb5) ]  ]
     
     | bb5 = s0
-      [ s0 = Borrow.borrow_mut <t_GhostBox'0> {own}
-          (fun (_ret':borrowed (t_GhostBox'0)) ->  [ &_17 <- _ret' ]  [ &own <- _ret'.final ] s1)
+      [ s0 = MutBorrow.borrow_mut <t_GhostBox'0> {own}
+          (fun (_ret':MutBorrow.t (t_GhostBox'0)) ->  [ &_17 <- _ret' ]  [ &own <- _ret'.final ] s1)
       | s1 = borrow_mut'0 {_17} (fun (_ret':t_GhostBox'2) ->  [ &_16 <- _ret' ] s2)
       | s2 = bb7 ]
     
-    | bb7 = s0 [ s0 = borrow_mut'1 {p} {_16} (fun (_ret':borrowed int32) ->  [ &_14 <- _ret' ] s1) | s1 = bb8 ] 
+    | bb7 = s0 [ s0 = borrow_mut'1 {p} {_16} (fun (_ret':MutBorrow.t Int32.t) ->  [ &_14 <- _ret' ] s1) | s1 = bb8 ] 
     | bb8 = s0
-      [ s0 =  [ &_14 <- { _14 with current = ([%#spcell2] (2 : int32)) } ] s1
+      [ s0 =  [ &_14 <- { _14 with current = ([%#spcell2] (2 : Int32.t)) } ] s1
       | s1 = -{resolve'0 _14}- s2
       | s2 = borrow'0 {own} (fun (_ret':t_GhostBox'1) ->  [ &_23 <- _ret' ] s3)
       | s3 = bb9 ]
     
-    | bb9 = s0 [ s0 = borrow'1 {p} {_23} (fun (_ret':int32) ->  [ &_21 <- _ret' ] s1) | s1 = bb10 ] 
+    | bb9 = s0 [ s0 = borrow'1 {p} {_23} (fun (_ret':Int32.t) ->  [ &_21 <- _ret' ] s1) | s1 = bb10 ] 
     | bb10 = s0
-      [ s0 = Int32.eq {_21} {[%#spcell3] (2 : int32)} (fun (_ret':bool) ->  [ &_19 <- _ret' ] s1)
+      [ s0 = Int32.eq {_21} {[%#spcell3] (2 : Int32.t)} (fun (_ret':bool) ->  [ &_19 <- _ret' ] s1)
       | s1 = any [ br0 -> {_19 = false} (! bb12) | br1 -> {_19} (! bb11) ]  ]
     
     | bb11 = s0
-      [ s0 = Borrow.borrow_mut <t_GhostBox'0> {own}
-          (fun (_ret':borrowed (t_GhostBox'0)) ->  [ &_31 <- _ret' ]  [ &own <- _ret'.final ] s1)
+      [ s0 = MutBorrow.borrow_mut <t_GhostBox'0> {own}
+          (fun (_ret':MutBorrow.t (t_GhostBox'0)) ->  [ &_31 <- _ret' ]  [ &own <- _ret'.final ] s1)
       | s1 = borrow_mut'0 {_31} (fun (_ret':t_GhostBox'2) ->  [ &_30 <- _ret' ] s2)
       | s2 = bb13 ]
     
     | bb13 = s0
-      [ s0 = replace'0 {p} {_30} {[%#spcell4] (3 : int32)} (fun (_ret':int32) ->  [ &_28 <- _ret' ] s1) | s1 = bb14 ]
+      [ s0 = replace'0 {p} {_30} {[%#spcell4] (3 : Int32.t)} (fun (_ret':Int32.t) ->  [ &_28 <- _ret' ] s1)
+      | s1 = bb14 ]
     
     | bb14 = s0
-      [ s0 = Int32.eq {_28} {[%#spcell5] (2 : int32)} (fun (_ret':bool) ->  [ &_27 <- _ret' ] s1)
+      [ s0 = Int32.eq {_28} {[%#spcell5] (2 : Int32.t)} (fun (_ret':bool) ->  [ &_27 <- _ret' ] s1)
       | s1 = any [ br0 -> {_27 = false} (! bb16) | br1 -> {_27} (! bb15) ]  ]
     
-    | bb15 = s0 [ s0 = into_inner'0 {p} {own} (fun (_ret':int32) ->  [ &_0 <- _ret' ] s1) | s1 = bb17 ] 
+    | bb15 = s0 [ s0 = into_inner'0 {p} {own} (fun (_ret':Int32.t) ->  [ &_0 <- _ret' ] s1) | s1 = bb17 ] 
     | bb17 = bb18
     | bb18 = return' {_0}
     | bb16 = {[%#spcell6] false} any
     | bb12 = {[%#spcell7] false} any
     | bb6 = {[%#spcell8] false} any ]
     )
-    [ & _0 : int32 = any_l ()
-    | & p : t_PCell'0 = any_l ()
-    | & own : t_GhostBox'0 = any_l ()
-    | & _4 : (t_PCell'0, t_GhostBox'0) = any_l ()
-    | & _6 : bool = any_l ()
-    | & _8 : int32 = any_l ()
-    | & _10 : t_GhostBox'1 = any_l ()
-    | & _14 : borrowed int32 = any_l ()
-    | & _16 : t_GhostBox'2 = any_l ()
-    | & _17 : borrowed (t_GhostBox'0) = any_l ()
-    | & _19 : bool = any_l ()
-    | & _21 : int32 = any_l ()
-    | & _23 : t_GhostBox'1 = any_l ()
-    | & _27 : bool = any_l ()
-    | & _28 : int32 = any_l ()
-    | & _30 : t_GhostBox'2 = any_l ()
-    | & _31 : borrowed (t_GhostBox'0) = any_l () ]
-     [ return' (result:int32)-> {[@expl:foo ensures] [%#spcell9] Int32.to_int result = 3} (! return' {result}) ] 
+    [ & _0 : Int32.t = Intrinsic.any_l ()
+    | & p : t_PCell'0 = Intrinsic.any_l ()
+    | & own : t_GhostBox'0 = Intrinsic.any_l ()
+    | & _4 : (t_PCell'0, t_GhostBox'0) = Intrinsic.any_l ()
+    | & _6 : bool = Intrinsic.any_l ()
+    | & _8 : Int32.t = Intrinsic.any_l ()
+    | & _10 : t_GhostBox'1 = Intrinsic.any_l ()
+    | & _14 : MutBorrow.t Int32.t = Intrinsic.any_l ()
+    | & _16 : t_GhostBox'2 = Intrinsic.any_l ()
+    | & _17 : MutBorrow.t (t_GhostBox'0) = Intrinsic.any_l ()
+    | & _19 : bool = Intrinsic.any_l ()
+    | & _21 : Int32.t = Intrinsic.any_l ()
+    | & _23 : t_GhostBox'1 = Intrinsic.any_l ()
+    | & _27 : bool = Intrinsic.any_l ()
+    | & _28 : Int32.t = Intrinsic.any_l ()
+    | & _30 : t_GhostBox'2 = Intrinsic.any_l ()
+    | & _31 : MutBorrow.t (t_GhostBox'0) = Intrinsic.any_l () ]
+     [ return' (result:Int32.t)-> {[@expl:foo ensures] [%#spcell9] Int32.to_int result = 3} (! return' {result}) ] 
 end
