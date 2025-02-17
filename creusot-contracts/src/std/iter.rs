@@ -6,12 +6,14 @@ mod copied;
 mod empty;
 mod enumerate;
 mod filter;
+mod filter_map;
 mod fuse;
 mod map;
 mod map_inv;
 mod once;
 mod range;
 mod repeat;
+mod rev;
 mod skip;
 mod take;
 mod zip;
@@ -20,9 +22,11 @@ pub use cloned::ClonedExt;
 pub use copied::CopiedExt;
 pub use enumerate::EnumerateExt;
 pub use filter::FilterExt;
+pub use filter_map::FilterMapExt;
 pub use fuse::FusedIterator;
 pub use map::MapExt;
 pub use map_inv::MapInv;
+pub use rev::RevExt;
 pub use skip::SkipExt;
 pub use take::TakeExt;
 pub use zip::ZipExt;
@@ -94,6 +98,21 @@ pub trait FromIterator<A>: ::std::iter::FromIterator<A> {
     fn from_iter_post(prod: Seq<A>, res: Self) -> bool;
 }
 
+pub trait DoubleEndedIterator: ::std::iter::DoubleEndedIterator + Iterator {
+    #[predicate(prophetic)]
+    fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool;
+
+    #[law]
+    #[ensures(self.produces_back(Seq::EMPTY, self))]
+    fn produces_back_refl(self);
+
+    #[law]
+    #[requires(a.produces_back(ab, b))]
+    #[requires(b.produces_back(bc, c))]
+    #[ensures(a.produces_back(ab.concat(bc), c))]
+    fn produces_back_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
+}
+
 extern_spec! {
     mod std {
         mod iter {
@@ -144,6 +163,13 @@ extern_spec! {
                 fn filter<P>(self, f: P) -> Filter<Self, P>
                     where  P : for<'a> FnMut(&Self_::Item) -> bool;
 
+                #[pure]
+                #[requires(filter_map::immutable(f))]
+                #[requires(filter_map::no_precondition(f))]
+                #[requires(filter_map::precise(f))]
+                #[ensures(result.iter() == self && result.func() == f)]
+                fn filter_map<B, F>(self, f: F) -> FilterMap<Self, F>
+                    where F : for<'a> FnMut(Self_::Item) -> Option<B>;
 
                 #[pure]
                 // These two requirements are here only to prove the absence of overflows
@@ -167,6 +193,11 @@ extern_spec! {
                     resolve(&^done) && done.completed() && self.produces(prod, *done) && B::from_iter_post(prod, result))]
                 fn collect<B>(self) -> B
                     where B: FromIterator<Self::Item>;
+
+                #[pure]
+                #[ensures(result.iter() == self)]
+                fn rev(self) -> Rev<Self>
+                    where Self: Sized + DoubleEndedIterator;
             }
 
             trait IntoIterator
@@ -200,6 +231,15 @@ extern_spec! {
             #[pure]
             #[ensures(result@ == elt)]
             fn repeat<T: Clone>(elt: T) -> Repeat<T>;
+
+            trait DoubleEndedIterator
+                where Self: DoubleEndedIterator {
+                #[ensures(match result {
+                    None => self.completed(),
+                    Some(v) => (*self).produces_back(Seq::singleton(v), ^self)
+                })]
+                fn next_back(&mut self) -> Option<Self::Item>;
+            }
         }
     }
 }
