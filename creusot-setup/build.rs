@@ -29,7 +29,7 @@ fn int_prelude_maker(template_filepath: &Path, int_prelude_filepath: &Path) -> i
             + &std::iter::repeat_n("0", bits_count as usize / 4).collect::<String>();
         let r = r.replace("$two_power_size$", &s);
 
-        writer.write(r.as_bytes())?;
+        writer.write_all(r.as_bytes())?;
         writeln!(writer)
     };
 
@@ -52,7 +52,7 @@ fn slice_prelude_maker(template_filepath: &Path, slice_prelude_filepath: &Path) 
 
         let r = template.replace("$bits_count$", &bits_count);
 
-        writer.write(r.as_bytes())?;
+        writer.write_all(r.as_bytes())?;
         writeln!(writer)
     };
 
