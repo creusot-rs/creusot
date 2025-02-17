@@ -81,24 +81,6 @@ pub enum Why3SubCommand {
     Replay,
 }
 
-#[derive(Debug, ValueEnum, Serialize, Deserialize, Clone, PartialEq)]
-pub enum SetupManagedTool {
-    AltErgo,
-    Z3,
-    CVC4,
-    CVC5,
-}
-
-#[derive(Debug, ValueEnum, Serialize, Deserialize, Clone, PartialEq)]
-pub enum SetupTool {
-    Why3,
-    Why3find,
-    AltErgo,
-    Z3,
-    CVC4,
-    CVC5,
-}
-
 /// Parse a single key-value pair
 fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn Error + Send + Sync + 'static>>
 where

@@ -37,7 +37,7 @@ fn raw_config(args: &Vec<String>, paths: &Paths) -> Result<()> {
         .arg("--package")
         .arg("prelude");
     for prover in PROVERS {
-        why3find.arg("--prover").arg(format!("+{}", prover.bin.binary_name));
+        why3find.arg("--prover").arg(format!("+{}", prover.binary_name));
     }
     for arg in args {
         why3find.arg(arg);
