@@ -182,7 +182,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
 
                     let fn_purity = self.purity(fun, func_did);
                     if !(self.context.can_call(fn_purity)
-                        || fn_purity.is_logic() && is_overloaded_item(self.ctx.tcx, func_did))
+                        || self.context.is_logic() && is_overloaded_item(self.ctx.tcx, func_did))
                     {
                         // Emit a nicer error specifically for calls of ghost functions.
                         if fn_purity == Purity::Ghost
@@ -199,7 +199,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                                 "cannot create a ghost variable in program context"
                             };
 
-                            let mut err = self.ctx.error(self.thir[fun].span, msg);
+                            let mut err = self.ctx.error(expr.span, msg);
                             if is_ghost_new(tcx, func_did) {
                                 err = err.with_span_suggestion(
                                     expr.span,
