@@ -34,6 +34,7 @@ jobs:
         echo $(opam var bin) >> $GITHUB_PATH
     - name: run cargo creusot setup install
       if: steps.cache-creusot-setup.outputs.cache-hit != 'true'
+      # Use only 2 parallel provers, because more provers (4) makes replaying proofs unstable
       run: |
-        cargo run --bin cargo-creusot creusot setup install --no-check-version why3 --no-check-version why3find
+        cargo run --bin cargo-creusot creusot setup install --provers-parallelism 2 --no-check-version why3 --no-check-version why3find
     - run: cargo test --test why3
