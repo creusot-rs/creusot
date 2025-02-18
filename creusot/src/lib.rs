@@ -60,7 +60,6 @@ mod translation;
 use translation::*;
 mod util;
 mod validate;
-mod validate_terminates;
 mod very_stable_hash;
 
 rustc_fluent_macro::fluent_messages! { "../messages.ftl" }

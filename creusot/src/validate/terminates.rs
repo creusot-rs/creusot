@@ -719,7 +719,7 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for GhostLoops<'thir, 'tcx> 
                 lint_level: thir::LintLevel::Explicit(hir_id),
                 value: _,
             } => {
-                if crate::validate::is_ghost_block(self.tcx, hir_id) {
+                if super::is_ghost_block(self.tcx, hir_id) {
                     let old_is_ghost = std::mem::replace(&mut self.is_in_ghost, true);
                     thir::visit::walk_expr(self, expr);
                     self.is_in_ghost = old_is_ghost;

@@ -99,7 +99,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         terminator.source_info,
                     ));
                     self.check_use_in_logic(&assertion, location);
-                    self.emit_ghost_assign(*destination, assertion, span);
+                    self.emit_snapshot_assign(*destination, assertion, span);
                 } else {
                     let mut func_args: Vec<_> =
                         args.iter().map(|arg| self.translate_operand(&arg.node)).collect();

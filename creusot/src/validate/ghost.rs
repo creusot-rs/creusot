@@ -4,17 +4,9 @@ use rustc_hir::HirId;
 use rustc_hir_typeck::expr_use_visitor::{Delegate, ExprUseVisitor, PlaceWithHirId};
 use rustc_lint::{LateLintPass, LintPass};
 use rustc_middle::ty::{Ty, TyCtxt};
-use rustc_span::Symbol;
 use std::collections::HashSet;
 
 use crate::contracts_items::is_ghost_ty;
-
-pub(crate) fn is_ghost_block(tcx: TyCtxt, id: HirId) -> bool {
-    let attrs = tcx.hir().attrs(id);
-    attrs
-        .iter()
-        .any(|a| a.path_matches(&[Symbol::intern("creusot"), Symbol::intern("ghost_block")]))
-}
 
 pub struct GhostValidate {}
 
@@ -33,7 +25,7 @@ impl<'tcx> LateLintPass<'tcx> for GhostValidate {
         cx: &rustc_lint::LateContext<'tcx>,
         expr: &'tcx rustc_hir::Expr<'tcx>,
     ) {
-        if !is_ghost_block(cx.tcx, expr.hir_id) {
+        if !super::is_ghost_block(cx.tcx, expr.hir_id) {
             return;
         }
 
