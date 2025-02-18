@@ -1,3 +1,7 @@
+mod ghost;
+
+pub(crate) use self::ghost::{is_ghost_block, GhostValidate};
+
 use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LocalDefId},
@@ -10,9 +14,9 @@ use rustc_span::Span;
 
 use crate::{
     contracts_items::{
-        get_builtin, is_ghost_deref, is_ghost_deref_mut, is_law, is_logic, is_no_translate,
-        is_open_inv_result, is_predicate, is_prophetic, is_snapshot_closure, is_snapshot_deref,
-        is_spec, is_trusted, opacity_witness_name,
+        get_builtin, is_ghost_deref, is_ghost_deref_mut, is_ghost_into_inner, is_ghost_new, is_law,
+        is_logic, is_no_translate, is_open_inv_result, is_predicate, is_prophetic,
+        is_snapshot_closure, is_snapshot_deref, is_spec, is_trusted, opacity_witness_name,
     },
     ctx::TranslationCtx,
     error::CannotFetchThir,
@@ -43,7 +47,7 @@ pub(crate) fn validate_opacity(ctx: &TranslationCtx, item: DefId) -> Result<(), 
         source_item: DefId,
     }
 
-    impl<'a, 'tcx> OpacityVisitor<'a, 'tcx> {
+    impl OpacityVisitor<'_, '_> {
         fn is_visible_enough(&self, id: DefId) -> bool {
             match self.opacity {
                 None => self.ctx.visibility(id) == Visibility::Public,
@@ -62,7 +66,7 @@ pub(crate) fn validate_opacity(ctx: &TranslationCtx, item: DefId) -> Result<(), 
         }
     }
 
-    impl<'a, 'tcx> TermVisitor<'tcx> for OpacityVisitor<'a, 'tcx> {
+    impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
         fn visit_term(&mut self, term: &crate::translation::pearlite::Term<'tcx>) {
             match &term.kind {
                 TermKind::Item(id, _) => {
@@ -238,8 +242,16 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Purity {
-    Program { terminates: bool, no_panic: bool },
-    Logic { prophetic: bool },
+    /// Same as `Program { terminates: true, no_panic: true }`, but can also call the few
+    /// ghost-only functions (e.g. `GhostBox::new`).
+    Ghost,
+    Program {
+        terminates: bool,
+        no_panic: bool,
+    },
+    Logic {
+        prophetic: bool,
+    },
 }
 
 impl Purity {
@@ -260,6 +272,10 @@ impl Purity {
         }
     }
 
+    fn is_logic(self) -> bool {
+        matches!(self, Self::Logic { .. })
+    }
+
     fn can_call(self, other: Purity) -> bool {
         match (self, other) {
             (Purity::Logic { prophetic }, Purity::Logic { prophetic: prophetic2 }) => {
@@ -269,12 +285,17 @@ impl Purity {
                 Purity::Program { no_panic, terminates },
                 Purity::Program { no_panic: no_panic2, terminates: terminates2 },
             ) => no_panic <= no_panic2 && terminates <= terminates2,
+            (
+                Purity::Ghost,
+                Purity::Ghost | Purity::Program { no_panic: true, terminates: true },
+            ) => true,
             (_, _) => false,
         }
     }
 
     fn as_str(&self) -> &'static str {
         match self {
+            Purity::Ghost => "ghost",
             Purity::Program { terminates, no_panic } => match (*terminates, *no_panic) {
                 (true, true) => "program (pure)",
                 (true, false) => "program (terminates)",
@@ -325,21 +346,28 @@ struct PurityVisitor<'a, 'tcx> {
     thir_failed: bool,
 }
 
-impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
+impl PurityVisitor<'_, '_> {
     fn purity(&self, fun: thir::ExprId, func_did: DefId) -> Purity {
-        let stub = pearlite_stub(self.ctx.tcx, self.thir[fun].ty);
+        let tcx = self.ctx.tcx;
+        let stub = pearlite_stub(tcx, self.thir[fun].ty);
 
         if matches!(stub, Some(Stub::Fin))
-            || is_predicate(self.ctx.tcx, func_did) && is_prophetic(self.ctx.tcx, func_did)
-            || is_logic(self.ctx.tcx, func_did) && is_prophetic(self.ctx.tcx, func_did)
+            || is_predicate(tcx, func_did) && is_prophetic(tcx, func_did)
+            || is_logic(tcx, func_did) && is_prophetic(tcx, func_did)
         {
             Purity::Logic { prophetic: true }
-        } else if is_predicate(self.ctx.tcx, func_did)
-            || is_logic(self.ctx.tcx, func_did)
-            || get_builtin(self.ctx.tcx, func_did).is_some()
+        } else if is_predicate(tcx, func_did)
+            || is_logic(tcx, func_did)
+            || get_builtin(tcx, func_did).is_some()
             || stub.is_some()
         {
             Purity::Logic { prophetic: false }
+        } else if is_ghost_into_inner(tcx, func_did)
+            || is_ghost_new(tcx, func_did)
+            || is_ghost_deref(tcx, func_did)
+            || is_ghost_deref_mut(tcx, func_did)
+        {
+            Purity::Ghost
         } else {
             let contract = contract_of(self.ctx, func_did);
             let terminates = contract.terminates;
@@ -356,7 +384,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
 
     fn visit_expr(&mut self, expr: &'a thir::Expr<'tcx>) {
         match expr.kind {
-            ExprKind::Call { fun, .. } => {
+            ExprKind::Call { fun, ref args, .. } => {
                 if let &FnDef(func_did, subst) = self.thir[fun].ty.kind() {
                     // try to specialize the called function if it is a trait method.
                     let subst = self.ctx.erase_regions(subst);
@@ -375,25 +403,60 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                     };
 
                     let fn_purity = self.purity(fun, func_did);
-                    if !self.context.can_call(fn_purity)
-                        && !is_overloaded_item(self.ctx.tcx, func_did)
+                    if !(self.context.can_call(fn_purity)
+                        || fn_purity.is_logic() && is_overloaded_item(self.ctx.tcx, func_did))
                     {
-                        let (caller, callee) = match (self.context, fn_purity) {
-                            (Purity::Program { .. }, Purity::Program { .. })
-                            | (Purity::Logic { .. }, Purity::Logic { .. }) => {
-                                (self.context.as_str(), fn_purity.as_str())
-                            }
-                            (Purity::Program { .. }, Purity::Logic { .. }) => ("program", "logic"),
-                            (Purity::Logic { .. }, Purity::Program { .. }) => ("logic", "program"),
-                        };
-                        let msg = format!(
-                            "called {callee} function `{}` in {caller} context",
-                            self.ctx.def_path_str(func_did),
-                        );
+                        // Emit a nicer error specifically for calls of ghost functions.
+                        if fn_purity == Purity::Ghost
+                            && matches!(self.context, Purity::Program { .. })
+                        {
+                            let tcx = self.ctx.tcx;
+                            let msg = if is_ghost_into_inner(tcx, func_did) {
+                                "trying to access the contents of a ghost variable in program context"
+                            } else if is_ghost_deref(tcx, func_did)
+                                || is_ghost_deref_mut(tcx, func_did)
+                            {
+                                "dereference of a ghost variable in program context"
+                            } else {
+                                "cannot create a ghost variable in program context"
+                            };
 
-                        self.ctx.dcx().span_err(self.thir[fun].span, msg);
+                            let mut err = self.ctx.error(self.thir[fun].span, msg);
+                            if is_ghost_new(tcx, func_did) {
+                                err = err.with_span_suggestion(
+                                    expr.span,
+                                    "try wrapping this expression in `ghost!` instead",
+                                    format!(
+                                        "ghost!({})",
+                                        self.ctx
+                                            .sess
+                                            .source_map()
+                                            .span_to_snippet(self.thir.exprs[args[0]].span)
+                                            .unwrap()
+                                    ),
+                                    rustc_errors::Applicability::MachineApplicable,
+                                );
+                            }
+                            err.emit();
+                        } else {
+                            let (caller, callee) = match (self.context, fn_purity) {
+                                (Purity::Program { .. } | Purity::Ghost, Purity::Logic { .. }) => {
+                                    ("program", "logic")
+                                }
+                                (Purity::Logic { .. }, Purity::Program { .. } | Purity::Ghost) => {
+                                    ("logic", "program")
+                                }
+                                _ => (self.context.as_str(), fn_purity.as_str()),
+                            };
+                            let msg = format!(
+                                "called {callee} function `{}` in {caller} context",
+                                self.ctx.def_path_str(func_did),
+                            );
+
+                            self.ctx.dcx().span_err(self.thir[fun].span, msg);
+                        }
                     }
-                } else if !matches!(self.context, Purity::Program { .. }) {
+                } else if matches!(self.context, Purity::Logic { .. }) {
                     // TODO Add a "code" back in
                     self.ctx.dcx().span_fatal(expr.span, "non function call in logical context")
                 }
@@ -419,6 +482,18 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                 thir::visit::walk_expr(&mut visitor, &thir[expr]);
                 if visitor.thir_failed {
                     self.thir_failed = true;
+                    return;
+                }
+            }
+            ExprKind::Scope {
+                region_scope: _,
+                lint_level: thir::LintLevel::Explicit(hir_id),
+                value: _,
+            } => {
+                if self::ghost::is_ghost_block(self.ctx.tcx, hir_id) {
+                    let old_context = std::mem::replace(&mut self.context, Purity::Ghost);
+                    thir::visit::walk_expr(self, expr);
+                    self.context = old_context;
                     return;
                 }
             }
