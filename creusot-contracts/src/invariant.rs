@@ -6,6 +6,7 @@ pub trait Invariant {
     fn invariant(self) -> bool;
 }
 
+#[cfg(feature = "nightly")]
 impl Invariant for ! {
     #[predicate(prophetic)]
     #[open]

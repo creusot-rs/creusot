@@ -4,15 +4,21 @@ extern crate proc_macro;
 mod ghost;
 
 use proc_macro::TokenStream as TS1;
+use quote::ToTokens as _;
+use syn::visit_mut::VisitMut;
 
 #[proc_macro_attribute]
 pub fn requires(_: TS1, tokens: TS1) -> TS1 {
-    tokens
+    let mut item = syn::parse_macro_input!(tokens as syn::ImplItemFn);
+    delete_invariants(&mut item);
+    TS1::from(item.into_token_stream())
 }
 
 #[proc_macro_attribute]
 pub fn ensures(_: TS1, tokens: TS1) -> TS1 {
-    tokens
+    let mut item = syn::parse_macro_input!(tokens as syn::ImplItemFn);
+    delete_invariants(&mut item);
+    TS1::from(item.into_token_stream())
 }
 
 #[proc_macro_attribute]
@@ -110,4 +116,53 @@ pub fn derive_deep_model(_: TS1) -> TS1 {
 #[proc_macro_derive(Resolve)]
 pub fn derive_resolve(_: TS1) -> TS1 {
     TS1::new()
+}
+
+/// Visitor to delete all `#[invariant]` and `#[creusot_contracts::invariant]`
+/// attributes on loops.
+struct DeleteInvariants;
+
+impl VisitMut for DeleteInvariants {
+    fn visit_expr_for_loop_mut(&mut self, i: &mut syn::ExprForLoop) {
+        delete_invariants_attrs(&mut i.attrs);
+        syn::visit_mut::visit_expr_for_loop_mut(self, i)
+    }
+
+    fn visit_expr_while_mut(&mut self, i: &mut syn::ExprWhile) {
+        delete_invariants_attrs(&mut i.attrs);
+        syn::visit_mut::visit_expr_while_mut(self, i)
+    }
+
+    fn visit_expr_loop_mut(&mut self, i: &mut syn::ExprLoop) {
+        delete_invariants_attrs(&mut i.attrs);
+        syn::visit_mut::visit_expr_loop_mut(self, i)
+    }
+}
+
+// `invariant` or `creusot_contracts::invariant` or `::creusot_contracts::invariant`
+fn is_invariant(path: &syn::Path) -> bool {
+    if path.is_ident("invariant") {
+        return true;
+    }
+    let mut segments = path.segments.iter();
+    if let Some(first) = segments.next() {
+        if let Some(second) = segments.next() {
+            return first.ident == "creusot_contracts" && second.ident == "invariant";
+        }
+    }
+    false
+}
+
+fn delete_invariants_attrs(attrs: &mut Vec<syn::Attribute>) {
+    attrs.retain(|attr| {
+        if let syn::Meta::List(meta) = &attr.meta {
+            !is_invariant(&meta.path)
+        } else {
+            true
+        }
+    });
+}
+
+fn delete_invariants(item: &mut syn::ImplItemFn) {
+    DeleteInvariants.visit_impl_item_fn_mut(item);
 }

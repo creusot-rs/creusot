@@ -1,6 +1,9 @@
 use crate::*;
-use ::std::{alloc::Allocator, sync::Arc};
+#[cfg(feature = "nightly")]
+use ::std::alloc::Allocator;
+use ::std::sync::Arc;
 
+#[cfg(feature = "nightly")]
 impl<T: DeepModel, A: Allocator> DeepModel for Arc<T, A> {
     type DeepModelTy = T::DeepModelTy;
     #[logic]
@@ -10,6 +13,7 @@ impl<T: DeepModel, A: Allocator> DeepModel for Arc<T, A> {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T, A: Allocator> View for Arc<T, A> {
     type ViewTy = T;
     #[logic]
@@ -33,4 +37,15 @@ extern_spec! {
             }
         }
     }
+}
+
+/// Dummy impls that don't use the unstable trait Allocator
+#[cfg(not(feature = "nightly"))]
+impl<T: DeepModel> DeepModel for Arc<T> {
+    type DeepModelTy = T::DeepModelTy;
+}
+
+#[cfg(not(feature = "nightly"))]
+impl<T> View for Arc<T> {
+    type ViewTy = T;
 }

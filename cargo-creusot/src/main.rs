@@ -161,6 +161,7 @@ fn invoke_cargo(args: &CreusotArgs, creusot_rustc: Option<PathBuf>, cargo_flags:
     cmd.arg(format!("+{toolchain}"))
         .arg(cargo_cmd)
         .args(cargo_flags)
+        .args(["-F", "creusot-contracts/nightly"])
         .env("RUSTC", creusot_rustc_path)
         .env("CARGO_CREUSOT", "1");
     // Incremental compilation causes Creusot to not see all of a crate's code

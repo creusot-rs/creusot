@@ -26,8 +26,11 @@ use crate::std::ops::Deref;
 /// let m: Snapshot<Mapping<Int, Int>> = snapshot!(|x| x + 1);
 /// ```
 #[trusted]
-#[rustc_diagnostic_item = "snapshot_ty"]
-#[cfg_attr(creusot, creusot::builtins = "prelude.prelude.Snapshot.snap_ty")]
+#[cfg_attr(
+    creusot,
+    rustc_diagnostic_item = "snapshot_ty",
+    creusot::builtins = "prelude.prelude.Snapshot.snap_ty"
+)]
 pub struct Snapshot<T: ?Sized>(pub(crate) std::marker::PhantomData<T>);
 
 #[cfg(creusot)]
