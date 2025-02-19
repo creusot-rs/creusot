@@ -5,14 +5,17 @@ use creusot_setup::{
     self as setup,
     config::{Config, ExternalTool, ManagedTool},
     tools_versions_urls::*,
-    Binary,
+    Binary, CfgPaths,
 };
 use indoc::writedoc;
 use reqwest::blocking::Client;
 use std::{
-    env, fs,
+    env,
+    ffi::OsStr,
+    fs,
     fs::{copy, create_dir_all, read_to_string, File},
     io::{self, BufWriter, Write},
+    os::unix::ffi::OsStrExt as _,
     path::{Path, PathBuf},
     process::Command,
 };
@@ -80,6 +83,7 @@ fn default_provers_parallelism() -> usize {
 
 #[derive(Debug, ValueEnum, Clone, PartialEq)]
 enum SetupManagedTool {
+    Why3AndWhy3find, // skips opam setup
     AltErgo,
     Z3,
     CVC4,
@@ -107,6 +111,9 @@ fn main() -> anyhow::Result<()> {
 
 fn install(args: Args) -> anyhow::Result<()> {
     let paths = setup::get_config_paths()?;
+    if !args.external.contains(&SetupManagedTool::Why3AndWhy3find) {
+        install_why3(&paths)?;
+    }
     if !args.skip_cargo_creusot {
         install_cargo_creusot()?;
     }
@@ -115,6 +122,28 @@ fn install(args: Args) -> anyhow::Result<()> {
     }
     if !args.skip_extra_tools {
         install_tools(&paths, args)?;
+    }
+    Ok(())
+}
+
+fn install_why3(cfg: &CfgPaths) -> anyhow::Result<()> {
+    println! {"Installing Why3 and Why3find..."};
+    if fs::exists(cfg.data_dir.join("_opam"))? {
+        // Upgrade existing switch
+        fs::copy(PathBuf::from("creusot-deps.opam"), &cfg.data_dir.join("creusot-deps.opam"))?;
+        let mut cmd = Command::new("opam");
+        cmd.args(["install", "creusot-deps", "-y", "--switch", &cfg.data_dir.to_string_lossy()]); // use creusot-deps.opam
+        if !cmd.status()?.success() {
+            bail!("Failed to upgrade why3 and why3find")
+        }
+    } else {
+        fs::create_dir_all(&cfg.data_dir)?;
+        fs::copy(PathBuf::from("creusot-deps.opam"), &cfg.data_dir.join("creusot-deps.opam"))?;
+        let mut cmd = Command::new("opam");
+        cmd.args(["switch", "create", "-y", &cfg.data_dir.to_string_lossy()]);
+        if !cmd.status()?.success() {
+            bail!("Failed to create opam switch")
+        }
     }
     Ok(())
 }
@@ -151,7 +180,7 @@ fn install_tools(paths: &setup::CfgPaths, args: Args) -> anyhow::Result<()> {
 
     // helpers to generate the ExternalTool/ManagedTool config sections
 
-    let getpath = |bin: Binary| -> anyhow::Result<PathBuf> {
+    let get_path = |bin: Binary| -> anyhow::Result<PathBuf> {
         let path = bin.detect_path().ok_or(anyhow!(
             "{} not found. Please install {} version {}",
             &bin.display_name,
@@ -161,18 +190,21 @@ fn install_tools(paths: &setup::CfgPaths, args: Args) -> anyhow::Result<()> {
         println!("Found {} at path: {}", &bin.display_name, &path.display());
         Ok(path)
     };
-
-    let external_tool = |bin: Binary, name: SetupTool| -> anyhow::Result<ExternalTool> {
-        Ok(ExternalTool {
-            path: getpath(bin)?,
-            check_version: !args.no_check_version.contains(&name),
-        })
+    let get_opam_path = |tool| -> anyhow::Result<PathBuf> {
+        let data_dir = &paths.data_dir.to_string_lossy();
+        let output = Command::new("opam")
+            .args(["exec", "--switch", data_dir, "--", "which", tool])
+            .output()?;
+        Ok(PathBuf::from(OsStr::from_bytes(output.stdout.trim_ascii_end())))
+    };
+    let external_tool = |path: PathBuf, name: SetupTool| -> anyhow::Result<ExternalTool> {
+        Ok(ExternalTool { path, check_version: !args.no_check_version.contains(&name) })
     };
     let managed_tool =
         |bin: Binary, name: SetupTool, mname: SetupManagedTool| -> anyhow::Result<ManagedTool> {
             if args.external.contains(&mname) {
                 Ok(ManagedTool::External(ExternalTool {
-                    path: getpath(bin)?,
+                    path: get_path(bin)?,
                     check_version: !args.no_check_version.contains(&name),
                 }))
             } else {
@@ -180,12 +212,18 @@ fn install_tools(paths: &setup::CfgPaths, args: Args) -> anyhow::Result<()> {
             }
         };
 
+    let (why3_path, why3find_path) = if args.external.contains(&SetupManagedTool::Why3AndWhy3find) {
+        (get_path(setup::WHY3)?, get_path(setup::WHY3FIND)?)
+    } else {
+        (get_opam_path("why3")?, get_opam_path("why3find")?)
+    };
+
     // build the corresponding configuration
 
     let config = Config {
         provers_parallelism: std::cmp::max(1, args.provers_parallelism),
-        why3: external_tool(setup::WHY3, SetupTool::Why3)?,
-        why3find: external_tool(setup::WHY3FIND, SetupTool::Why3find)?,
+        why3: external_tool(why3_path, SetupTool::Why3)?,
+        why3find: external_tool(why3find_path, SetupTool::Why3find)?,
         altergo: managed_tool(ALTERGO.bin, SetupTool::AltErgo, SetupManagedTool::AltErgo)?,
         z3: managed_tool(Z3.bin, SetupTool::Z3, SetupManagedTool::Z3)?,
         cvc4: managed_tool(CVC4.bin, SetupTool::CVC4, SetupManagedTool::CVC4)?,

@@ -8,32 +8,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/cache@v4
+    - name: Cache Cargo build
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-    - uses: actions/cache@v4
-      id: cache-creusot-setup
+    - name: Cache Opam switch
+      uses: actions/cache@v4
       with:
-        path: |
-          ~/.config/creusot
-          ~/.local/share/creusot
-        key: ${{ runner.os }}-cargo-creusot-setup-${{ hashFiles('creusot-deps.opam', 'creusot-setup/src/tools_versions_urls.rs', 'creusot-setup/src/config.rs') }}
-    - name: Install OCaml
+        path: ~/.local/share/creusot/_opam
+        key: ${{ runner.os }}-opam-${{ hashFiles('creusot-deps.opam') }}
+        restore-keys: ${{ runner.os }}-opam-
+    - name: Install Opam
       uses: ocaml/setup-ocaml@v3
       with:
         ocaml-compiler: 5.3.0
-        opam-local-packages: ci/creusot-deps-nightly.opam
-    - name: Build opam packages
+        opam-pin: false
+    - name: Setup environment
       run: |
         sudo apt update
-        opam install creusot-deps-nightly
-        echo $(opam var bin) >> $GITHUB_PATH
+        opam --cli=2.1 var --global in-creusot-ci=true
     - name: Install Creusot
-      if: steps.cache-creusot-setup.outputs.cache-hit != 'true'
       # Use only 2 parallel provers, because more provers (4) makes replaying proofs unstable
-      run: ./INSTALL --provers-parallelism 2 --no-check-version why3 --no-check-version why3find
+      run: ./INSTALL --provers-parallelism 2
     - run: cargo test --test why3

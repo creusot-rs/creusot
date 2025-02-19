@@ -40,31 +40,26 @@ More examples are found in [tests/should_succeed](tests/should_succeed).
 1. [Install `rustup`](https://www.rust-lang.org/tools/install), to get the suitable Rust toolchain
 2. [Get `opam`](https://opam.ocaml.org/doc/Install.html), the package manager for OCaml
 3. Clone the [creusot](https://github.com/creusot-rs/creusot/) repository,
-   then *move into the `creusot` directory* for the rest of the setup.
+   then move into the `creusot` directory.
     ```
     $ git clone https://github.com/creusot-rs/creusot
     $ cd creusot
     ```
-4. Set up **Why3** and **Why3find**. Create a local `opam` switch with why3:
-   ```
-   $ opam switch create -y . ocaml.5.3.0
-   $ eval $(opam env)
-   ```
-   This will build `why3`, `why3find`, and their ocaml dependencies in a local `_opam` directory.
-5. Install **Creusot**:
+4. Install **Creusot**:
    ```
    $ ./INSTALL
    ```
-   The installation consists of:
+   A regular installation consists of:
    - the `cargo-creusot` executable in `~/.cargo/bin/`;
    - the `creusot-rustc` executable in `~/.local/share/creusot/toolchains/$TOOLCHAIN/bin`;
+   - the `why3` and `why3find` executables in `~/.local/share/creusot/_opam/bin` (in a local opam switch);
+   - the Creusot prelude in `~/.local/share/creusot/_opam/lib/why3find/packages/creusot`;
    - SMT solvers (Alt-Ergo, CVC4, CVC5, Z3) in `~/.local/share/creusot/bin`;
    - configuration files in `~/.config/creusot/`.
 
-## Configuring the installation
-
-You can create a text file `INSTALL.opts` to remember command-line options to be passed
-to the installation script. Type `./INSTALL --help` for a list of possible options.
+Installation options can be set in a text file `INSTALL.opts`.
+They are just space-separated command-line arguments.
+Type `./INSTALL --help` for a list of available options.
 For example:
 
 ```
