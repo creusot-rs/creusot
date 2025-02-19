@@ -174,6 +174,7 @@ mod implementation {
         #[ensures((^self).root_of() == (*self).root_of().set(result, result))]
         #[ensures((^self).values() == (*self).values().set(result, value))]
         pub fn make(&mut self, value: T) -> Element<T> {
+            let value_snap = snapshot!(value);
             let (ptr, perm) = PtrOwn::new(Content::Root { rank: 0, value });
             let element = Element(ptr);
             let mut map = self.map.borrow_mut();
@@ -186,7 +187,7 @@ mod implementation {
                 map.insert_ghost(element.addr(), perm);
             };
             self.domain = snapshot!(self.domain.insert(element));
-            self.values = snapshot!(self.values.set(element, value));
+            self.values = snapshot!(self.values.set(element, *value_snap));
             self.distance = snapshot!(self.distance.set(element, 0));
             self.root_of = snapshot!(self.root_of.set(element, element));
             element

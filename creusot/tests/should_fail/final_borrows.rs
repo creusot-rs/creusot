@@ -55,7 +55,9 @@ pub fn move_place_without_deref<T>(bor: Box<&mut T>) {
     #[trusted]
     #[ensures(**x == ^*x)]
     fn inner<T>(x: Box<&mut T>) {}
+    let bor_snap = snapshot!(*bor);
     let b1 = &mut **bor;
     inner(bor);
-    proof_assert!(b1 == *bor);
+    proof_assert!(*b1 == **bor_snap && ^b1 == ^*bor_snap); // Passes
+    proof_assert!(b1 == *bor_snap); // Fails
 }
