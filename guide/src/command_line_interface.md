@@ -114,15 +114,7 @@ Generate `why3find` configuration.
 This is used to set up Creusot in an existing Rust package.
 You don't need to run this command if you used `cargo creusot new` or `cargo creusot init`.
 
-## Install Creusot
-
-### `setup install`
-
-```
-cargo creusot setup install
-```
-
-See the [README](https://github.com/creusot-rs/creusot) for installation instructions.
+## Show configuration
 
 ### `setup status`
 

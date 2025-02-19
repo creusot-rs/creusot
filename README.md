@@ -52,14 +52,25 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
    ```
    This will build `why3`, `why3find`, and their ocaml dependencies in a local `_opam` directory.
 5. Install **Creusot**:
-    ```
-    $ cargo install --path cargo-creusot
-    $ cargo creusot setup install
-    ```
-    The first command will build the `cargo-creusot` executable and place it in `~/.cargo/bin/`.
-    The second command will download solvers (Alt-Ergo, Z3, CVC4, CVC5), configure Why3 to use them,
-    then it will install the `creusot-rustc` executable; configuration files are stored in
-    `~/.config/creusot/` and executables are stored in `~/.local/share/creusot/`.
+   ```
+   $ ./INSTALL
+   ```
+   The installation consists of:
+   - the `cargo-creusot` executable in `~/.cargo/bin/`;
+   - the `creusot-rustc` executable in `~/.local/share/creusot/toolchains/$TOOLCHAIN/bin`;
+   - SMT solvers (Alt-Ergo, CVC4, CVC5, Z3) in `~/.local/share/creusot/bin`;
+   - configuration files in `~/.config/creusot/`.
+
+## Configuring the installation
+
+You can create a text file `INSTALL.opts` to remember command-line options to be passed
+to the installation script. Type `./INSTALL --help` for a list of possible options.
+For example:
+
+```
+echo "--external z3" > INSTALL.opts
+./INSTALL
+```
 
 # Upgrading Creusot
 
@@ -74,13 +85,9 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
    $ opam update
    $ opam pin . -y
    ```
-3. Rebuild and reinstall Creusot:
+3. Reinstall Creusot:
    ```
-   $ cargo install --path cargo-creusot
-   ```
-4. Re-run Creusot's setup:
-   ```
-   $ cargo creusot setup install
+   $ ./INSTALL
    ```
 
 # Verifying with Creusot and Why3

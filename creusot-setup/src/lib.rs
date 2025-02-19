@@ -1,23 +1,21 @@
-use anyhow::{anyhow, bail, Context};
+use anyhow::{bail, Context};
 use directories::ProjectDirs;
-use std::{cmp::Ordering, fmt, fs, path::PathBuf, process::Command};
+use std::{cmp::Ordering, fmt, path::PathBuf};
 
-mod config;
+pub mod config;
 mod tools;
-mod tools_versions_urls;
+pub mod tools_versions_urls;
 use config::*;
-use tools::*;
-
-pub use tools::PROVERS;
+pub use tools::*;
 
 // CAUTION: on MacOS, [config_dir] and [data_dir] are in fact the same directory
-struct CfgPaths {
-    config_dir: PathBuf,
-    config_file: PathBuf,
-    why3_config_file: PathBuf,
-    data_dir: PathBuf,
-    bin_subdir: PathBuf,
-    cache_dir: PathBuf,
+pub struct CfgPaths {
+    pub config_dir: PathBuf,
+    pub config_file: PathBuf,
+    pub why3_config_file: PathBuf,
+    pub data_dir: PathBuf,
+    pub bin_subdir: PathBuf,
+    pub cache_dir: PathBuf,
 }
 
 impl fmt::Display for CfgPaths {
@@ -28,7 +26,7 @@ impl fmt::Display for CfgPaths {
     }
 }
 
-fn get_config_paths() -> anyhow::Result<CfgPaths> {
+pub fn get_config_paths() -> anyhow::Result<CfgPaths> {
     // arguments: qualifier, organization, application
     let dirs = ProjectDirs::from("", "creusot", "creusot")
         .context("failed to compute configuration paths")?;
@@ -53,8 +51,8 @@ pub fn get_why3_config_file() -> anyhow::Result<PathBuf> {
 
 // helpers for diagnostics of a creusot installation.
 // used by the implementation of the various subcommands.
-struct Issue {
-    error: bool,
+pub struct Issue {
+    pub error: bool,
     tool: String,
     cur_version: anyhow::Result<String>,
     expected_version: String,
@@ -73,19 +71,16 @@ impl fmt::Display for Issue {
     }
 }
 
-fn diagnostic_config(paths: &CfgPaths, config: &Config, check_builtins: bool) -> Vec<Issue> {
+pub fn diagnostic_config(paths: &CfgPaths, config: &Config, check_builtins: bool) -> Vec<Issue> {
     let mut issues: Vec<Issue> = Vec::new();
 
     let mut bins = vec![
         (WHY3, config.why3.check_version, config.why3.path.clone(), false),
         (WHY3FIND, config.why3find.check_version, config.why3find.path.clone(), false),
     ];
-    for (bin, cfgbin) in [
-        (ALTERGO.bin, &config.altergo),
-        (Z3.bin, &config.z3),
-        (CVC4.bin, &config.cvc4),
-        (CVC5.bin, &config.cvc5),
-    ] {
+    for (bin, cfgbin) in
+        [(ALTERGO, &config.altergo), (Z3, &config.z3), (CVC4, &config.cvc4), (CVC5, &config.cvc5)]
+    {
         match cfgbin {
             ManagedTool::Builtin { check_version } => {
                 if check_builtins {
@@ -134,11 +129,7 @@ pub fn status() -> anyhow::Result<()> {
     let paths = get_config_paths()?;
     match Config::read_from_file(&paths.config_file) {
         Err(err) => {
-            println!("{err}");
-            println!(
-                "Hint: run 'cargo creusot setup install' to setup Creusot,\n\
-                      or run 'cargo creusot setup' for more information."
-            );
+            println!("Creusot installation not found: {err}");
         }
         Ok(cfg) => {
             println!("Creusot installation found.");
@@ -168,11 +159,13 @@ pub fn status() -> anyhow::Result<()> {
                 }
             };
             if issues.iter().any(|issue| issue.builtin_tool && needs_upgrade(&issue)) {
-                println!("Hint: upgrade builtin tools by running 'cargo creusot setup install'.")
+                println!("Hint: reinstall Creusot to upgrade builtin tools.")
             }
             if issues.iter().any(|issue| !issue.builtin_tool && needs_upgrade(&issue)) {
-                println!("Hint: upgrade external tools installed using opam: run 'opam pin . -y' \
-                          from your creusot opam switch, followed by 'cargo creusot setup install'.")
+                println!(
+                    "Hint: upgrade external tools installed using opam: run 'opam pin . -y' \
+                          from your creusot opam switch; you may also need to reinstall Creusot."
+                )
             }
             if issues.iter().any(|issue| match &issue.cur_version {
                 Err(_) => false,
@@ -181,10 +174,7 @@ pub fn status() -> anyhow::Result<()> {
                     Some(Ordering::Greater)
                 ),
             }) {
-                println!(
-                    "Hint: your creusot binary may be outdated. Upgrade it by running \
-                          'cargo install --path cargo-creusot' from the creusot sources"
-                )
+                println!("Hint: your creusot binary may be outdated. Please reinstall Creusot.")
             }
         }
     };
@@ -228,172 +218,6 @@ pub fn creusot_paths() -> anyhow::Result<Paths> {
             })
         }
     }
-}
-
-pub struct ExternalFlag {
-    pub check_version: bool,
-}
-
-pub struct ManagedFlag {
-    pub external: bool,
-    pub check_version: bool,
-}
-
-pub struct InstallFlags {
-    pub provers_parallelism: usize,
-    pub why3: ExternalFlag,
-    pub why3find: ExternalFlag,
-    pub altergo: ManagedFlag,
-    pub z3: ManagedFlag,
-    pub cvc4: ManagedFlag,
-    pub cvc5: ManagedFlag,
-    pub only_creusot_rustc: bool,
-    pub skip_creusot_rustc: bool,
-}
-
-pub fn install(flags: InstallFlags) -> anyhow::Result<()> {
-    let paths = get_config_paths()?;
-    if !flags.skip_creusot_rustc {
-        install_creusot_rustc(&paths)?;
-    }
-    if !flags.only_creusot_rustc {
-        install_tools(&paths, flags)?;
-    }
-    Ok(())
-}
-
-fn install_tools(paths: &CfgPaths, flags: InstallFlags) -> anyhow::Result<()> {
-    // helpers to generate the ExternalTool/ManagedTool config sections
-
-    let getpath = |bin: Binary| -> anyhow::Result<PathBuf> {
-        let path = bin.detect_path().ok_or(anyhow!(
-            "{} not found. Please install {} version {}",
-            &bin.display_name,
-            &bin.display_name,
-            &bin.version
-        ))?;
-        println!("Found {} at path: {}", &bin.display_name, &path.display());
-        Ok(path)
-    };
-
-    let external_tool = |bin: Binary, flag: ExternalFlag| -> anyhow::Result<ExternalTool> {
-        Ok(ExternalTool { path: getpath(bin)?, check_version: flag.check_version })
-    };
-
-    let managed_tool = |bin: Binary, flag: ManagedFlag| -> anyhow::Result<ManagedTool> {
-        if flag.external {
-            Ok(ManagedTool::External(ExternalTool {
-                path: getpath(bin)?,
-                check_version: flag.check_version,
-            }))
-        } else {
-            Ok(ManagedTool::Builtin { check_version: flag.check_version })
-        }
-    };
-
-    // build the corresponding configuration
-
-    let config = Config {
-        provers_parallelism: std::cmp::max(1, flags.provers_parallelism),
-        why3: external_tool(WHY3, flags.why3)?,
-        why3find: external_tool(WHY3FIND, flags.why3find)?,
-        altergo: managed_tool(ALTERGO.bin, flags.altergo)?,
-        z3: managed_tool(Z3.bin, flags.z3)?,
-        cvc4: managed_tool(CVC4.bin, flags.cvc4)?,
-        cvc5: managed_tool(CVC5.bin, flags.cvc5)?,
-    };
-
-    // check for issues (incorrect versions of external binaries).
-    // do not attempt checking version of builtin solvers (we haven't installed
-    // them yet, and we know they will be of the expected version).
-
-    let issues = diagnostic_config(&paths, &config, false);
-    for issue in &issues {
-        eprintln!("{issue}")
-    }
-    if issues.iter().any(|issue| issue.error) {
-        bail!("Aborting")
-    }
-
-    // apply the configuration to disk
-    apply_config(&paths, &config)
-}
-
-fn apply_config(paths: &CfgPaths, cfg: &Config) -> anyhow::Result<()> {
-    // erase any previous existing config (but not the cache)
-    let _ = fs::remove_dir_all(&paths.config_dir);
-    let _ = fs::remove_dir_all(&paths.data_dir.join("bin"));
-
-    // create directories
-    fs::create_dir_all(&paths.config_dir)?;
-    fs::create_dir_all(&paths.data_dir)?;
-    fs::create_dir_all(&paths.bin_subdir)?;
-    fs::create_dir_all(&paths.cache_dir)?;
-
-    // separate managed tools into "builtin" (we need to download the binary)
-    // and "external" (we have a path to the binary)
-    let mut builtin: Vec<ManagedBinary> = Vec::new();
-    let mut external: Vec<(ManagedBinary, PathBuf)> = Vec::new();
-
-    for (bin, mode) in
-        [(ALTERGO, &cfg.altergo), (Z3, &cfg.z3), (CVC4, &cfg.cvc4), (CVC5, &cfg.cvc5)]
-    {
-        match mode {
-            ManagedTool::Builtin { check_version: _ } => builtin.push(bin),
-            ManagedTool::External(tool) => external.push((bin, tool.path.clone())),
-        }
-    }
-
-    // download binaries for builtins
-    download_all(&builtin, &paths.cache_dir, &paths.bin_subdir)?;
-
-    // create symbolic links for external tools so that why3 picks them up
-    for (bin, path) in external {
-        symlink_file(path, &paths.bin_subdir.join(bin.bin.binary_name))?;
-    }
-
-    // generate the corresponding .why3.conf
-    generate_why3_conf(
-        cfg.provers_parallelism,
-        &cfg.why3.path,
-        &paths.bin_subdir,
-        &paths.why3_config_file,
-    )?;
-
-    // write the config file to disk
-    cfg.write_to_file(&paths.config_file)?;
-
-    // install the why3find package
-    why3find_install(&cfg.why3find.path)?;
-    Ok(())
-}
-
-fn install_creusot_rustc(cfg: &CfgPaths) -> anyhow::Result<()> {
-    println! {"Installing creusot-rustc..."};
-    let toolchain = toolchain_channel();
-    // The `toolchain` hard-coded in toolchain_channel must match the active toolchain
-    let active_toolchain = active_toolchain();
-    if !active_toolchain.starts_with(&toolchain) {
-        // Ignore the target triple in the full toolchain identifier
-        panic!("Active toolchain: {active_toolchain}; expected: {toolchain}; cargo-creusot is probably out of date.");
-    }
-    let _ = fs::remove_dir_all(&cfg.data_dir.join("toolchains"));
-    // Usually ~/.local/share/creusot/toolchains/nightly-YYYY-MM-DD/
-    let toolchain_dir =
-        &toolchain_dir(&cfg.data_dir, &toolchain).into_os_string().into_string().unwrap();
-    let mut cmd = Command::new("cargo");
-    cmd.args(["install", "--path", "creusot-rustc", "--root", toolchain_dir, "--quiet"]);
-    if !cmd.status()?.success() {
-        bail!("Failed to install creusot-rustc")
-    }
-    Ok(())
-}
-
-fn active_toolchain() -> String {
-    let output = Command::new("rustup").args(&["show", "active-toolchain"]).output().unwrap();
-    let output = String::from_utf8(output.stdout).unwrap();
-    let toolchain = output.split(" ").next().unwrap();
-    toolchain.to_string()
 }
 
 pub fn toolchain_dir(data_dir: &PathBuf, toolchain: &str) -> PathBuf {
