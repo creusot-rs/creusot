@@ -101,8 +101,6 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
 
         let mut use_imples = false;
 
-        matches!(ty.kind(), TyKind::Alias(..) | TyKind::Param(_));
-
         let mut rhs = Term::mk_true(self.ctx.tcx);
 
         match resolve_user_inv(self.ctx.tcx, ty, self.typing_env) {
