@@ -101,7 +101,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         &self.locals,
                         terminator.source_info,
                     ));
-                    self.check_frozen_in_logic(&assertion, location);
+                    self.check_use_in_logic(&assertion, location);
                     self.emit_ghost_assign(*destination, assertion, span);
                 } else {
                     let call_ghost = self.check_ghost_call(fun_def_id, subst);
