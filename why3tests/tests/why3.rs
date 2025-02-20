@@ -55,6 +55,15 @@ fn main() {
 
     std::env::set_current_dir("..").unwrap();
 
+    let build_prelude_success = Command::new("cargo")
+        .args(["run", "-p", "creusot-install", "--", "--only-build-prelude"])
+        .status()
+        .unwrap()
+        .success();
+    if !build_prelude_success {
+        exit(1);
+    }
+
     let changed =
         if let Some(diff) = args.diff_from { Some(changed_comas(&diff).unwrap()) } else { None };
 
