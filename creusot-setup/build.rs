@@ -68,7 +68,7 @@ fn main() {
 
         // Get the path  to the crate directory
         let crate_dirpath = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
-        let tgt_prelude_dirpath = crate_dirpath.join("..").join("target").join("prelude");
+        let tgt_prelude_dirpath = crate_dirpath.join("..").join("target").join("creusot");
         create_dir_all(&tgt_prelude_dirpath)?;
 
         let src_prelude_dirpath = crate_dirpath.join("..").join("prelude");

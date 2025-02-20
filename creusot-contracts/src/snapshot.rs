@@ -29,7 +29,7 @@ use crate::std::ops::Deref;
 #[cfg_attr(
     creusot,
     rustc_diagnostic_item = "snapshot_ty",
-    creusot::builtins = "prelude.prelude.Snapshot.snap_ty"
+    creusot::builtins = "creusot.prelude.Snapshot.snap_ty"
 )]
 pub struct Snapshot<T: ?Sized>(pub(crate) std::marker::PhantomData<T>);
 
@@ -40,7 +40,7 @@ impl<T: ?Sized> Deref for Snapshot<T> {
     #[trusted]
     #[logic]
     #[rustc_diagnostic_item = "snapshot_deref"]
-    #[creusot::builtins = "prelude.prelude.Snapshot.inner"]
+    #[creusot::builtins = "creusot.prelude.Snapshot.inner"]
     fn deref(&self) -> &Self::Target {
         dead
     }
@@ -70,7 +70,7 @@ impl<T: ?Sized> Snapshot<T> {
     /// Create a new snapshot in logic code.
     #[trusted]
     #[logic]
-    #[creusot::builtins = "prelude.prelude.Snapshot.new"]
+    #[creusot::builtins = "creusot.prelude.Snapshot.new"]
     #[rustc_diagnostic_item = "snapshot_new"]
     pub fn new(value: T) -> Snapshot<T> {
         let _ = value;
@@ -91,7 +91,7 @@ impl<T: ?Sized> Snapshot<T> {
     #[trusted]
     #[logic]
     #[rustc_diagnostic_item = "snapshot_inner"]
-    #[creusot::builtins = "prelude.prelude.Snapshot.inner"]
+    #[creusot::builtins = "creusot.prelude.Snapshot.inner"]
     pub fn inner(self) -> T
     where
         T: Sized, // TODO: don't require T: Sized here. Problem: return type is T.

@@ -243,7 +243,7 @@ fn apply_config(paths: &setup::CfgPaths, cfg: &Config) -> anyhow::Result<()> {
     // write the config file to disk
     cfg.write_to_file(&paths.config_file)?;
 
-    // install the why3find package `prelude`
+    // install the why3find package `creusot`
     install_prelude(&cfg.why3find.path)?;
     Ok(())
 }
@@ -251,7 +251,7 @@ fn apply_config(paths: &setup::CfgPaths, cfg: &Config) -> anyhow::Result<()> {
 fn install_prelude(why3find: &PathBuf) -> anyhow::Result<()> {
     Command::new(why3find)
         .current_dir("target")
-        .args(["install", "--global", "prelude"])
+        .args(["install", "--global", "creusot"])
         .status()?;
     Ok(())
 }
