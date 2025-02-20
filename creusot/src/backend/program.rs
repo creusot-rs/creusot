@@ -13,7 +13,6 @@ use crate::{
         wto::{weak_topological_order, Component},
         NameSupply, Namer, Why3Generator,
     },
-    contracts_items::is_ghost_closure,
     ctx::{BodyId, Dependencies},
     fmir::{self, Body, BorrowKind, Operand, TrivialInv},
     naming::ident_of,
@@ -192,9 +191,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         // a closure with no contract
         || inferred_closure_spec
         // a promoted item
-        || body_id.promoted.is_some()
-        // a ghost closure
-        || is_ghost_closure(ctx.tcx, body_id.def_id());
+        || body_id.promoted.is_some();
 
     let ensures = sig.contract.ensures.into_iter().map(Condition::labelled_exp);
 
@@ -590,7 +587,7 @@ impl<'tcx> RValue<'tcx> {
 
                 Exp::var("_res")
             }
-            RValue::Ghost(t) => lower_pure(lower.ctx, lower.names, &t),
+            RValue::Snapshot(t) => lower_pure(lower.ctx, lower.names, &t),
             RValue::Borrow(_, _, _) => unreachable!(), // Handled in Statement::to_why
             RValue::UnaryOp(UnOp::PtrMetadata, op) => {
                 match op.ty(lower.ctx.tcx, lower.locals).kind() {

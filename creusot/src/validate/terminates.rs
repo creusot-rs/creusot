@@ -32,9 +32,7 @@
 
 use crate::{
     backend::is_trusted_function,
-    contracts_items::{
-        has_variant_clause, is_ghost_closure, is_ghost_from_fn, is_no_translate, is_pearlite,
-    },
+    contracts_items::{has_variant_clause, is_no_translate, is_pearlite},
     ctx::TranslationCtx,
     error::CannotFetchThir,
     pearlite::{TermKind, TermVisitor},
@@ -48,10 +46,7 @@ use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_infer::{infer::TyCtxtInferExt as _, traits::ObligationCause};
 use rustc_middle::{
     thir,
-    ty::{
-        Clauses, EarlyBinder, FnDef, GenericArgKind, GenericArgs, GenericArgsRef, TyCtxt, TyKind,
-        TypingEnv, TypingMode,
-    },
+    ty::{Clauses, EarlyBinder, FnDef, GenericArgs, GenericArgsRef, TyCtxt, TypingEnv, TypingMode},
 };
 use rustc_span::Span;
 use rustc_trait_selection::traits::normalize_param_env_or_error;
@@ -66,7 +61,12 @@ use rustc_trait_selection::traits::normalize_param_env_or_error;
 pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> Result<(), CannotFetchThir> {
     ctx.tcx.dcx().abort_if_errors(); // There may have been errors before, if a `#[terminates]` calls a non-`#[terminates]`.
 
-    let CallGraph { graph: mut call_graph, additional_data } = CallGraph::build(ctx)?;
+    let CallGraph { graph: mut call_graph, additional_data, loops_in_ghost } =
+        CallGraph::build(ctx)?;
+
+    for loop_in_ghost in loops_in_ghost {
+        ctx.error(loop_in_ghost, "`ghost!` blocks must not contain loops.").emit();
+    }
 
     // Detect simple recursion, and loops
     for fun_index in call_graph.node_indices() {
@@ -94,11 +94,7 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> Result<(), CannotFetc
         };
         if let Some(loop_span) = function_data.has_loops {
             let fun_span = ctx.tcx.def_span(def_id);
-            let mut error = if is_ghost_closure(ctx.tcx, def_id) {
-                ctx.error(fun_span, "`ghost!` block must not contain loops.")
-            } else {
-                ctx.error(fun_span, "`#[terminates]` function must not contain loops.")
-            };
+            let mut error = ctx.error(fun_span, "`#[terminates]` function must not contain loops.");
             error.span_note(loop_span, "looping occurs here");
             error.emit();
         }
@@ -167,7 +163,6 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> Result<(), CannotFetc
                     CallKind::Direct(span) => {
                         error.span_note(span, format!("{adverb} `{f1}` calls `{f2}`{punct}"));
                     }
-                    CallKind::Ghost => { /* skip the ghost call in the message */ }
                     CallKind::GenericBound(indirect_id, span) => {
                         let f3 = ctx.tcx.def_path_str(indirect_id);
                         error.span_note(
@@ -191,6 +186,7 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> Result<(), CannotFetc
 struct CallGraph {
     graph: graph::DiGraph<GraphNode, CallKind>,
     additional_data: IndexMap<graph::NodeIndex, FunctionData>,
+    loops_in_ghost: Vec<Span>,
 }
 
 #[derive(Default)]
@@ -259,8 +255,6 @@ impl GraphNode {
 enum CallKind {
     /// Call of a function.
     Direct(Span),
-    /// Call of the closure inside a `ghost!` block.
-    Ghost,
     /// 'Indirect' call, this is an egde going inside an `impl` block. This happens when
     /// calling a generic function while specializing a type. For example:
     /// ```rust
@@ -328,18 +322,6 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         } else {
             (called_id, generic_args)
         };
-        if is_ghost_from_fn(tcx, called_id) {
-            // This is a `ghost!` call, so it needs special handling.
-            let &[_, ty] = generic_args.as_slice() else {
-                unreachable!();
-            };
-            let GenericArgKind::Type(ty) = ty.unpack() else { unreachable!() };
-            let TyKind::Closure(ghost_def_id, _) = ty.kind() else { unreachable!() };
-
-            let ghost_node = self.insert_function(tcx, GraphNode::Function(*ghost_def_id));
-            self.graph.update_edge(node, ghost_node, CallKind::Ghost);
-            return Ok(());
-        }
 
         // TODO: this code is kind of a soup, rework or refactor into a function
         let (called_node, bounds, impl_self_bound) = 'bl: {
@@ -556,6 +538,26 @@ impl CallGraph {
             }
         }
 
+        let mut loops_in_ghost = Vec::new();
+
+        for local_id in ctx.hir().body_owners() {
+            let def_id = local_id.to_def_id();
+            if is_trusted_function(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {
+                continue;
+            }
+            let (thir, expr) = ctx.thir_body(local_id).unwrap();
+            let thir = thir.borrow();
+            let mut visitor = GhostLoops {
+                thir: &thir,
+                tcx,
+                thir_failed: false,
+                loops_in_ghost: Vec::new(),
+                is_in_ghost: false,
+            };
+            <GhostLoops as thir::visit::Visitor>::visit_expr(&mut visitor, &thir[expr]);
+            loops_in_ghost.extend(visitor.loops_in_ghost);
+        }
+
         for local_id in ctx.hir().body_owners() {
             if !(is_pearlite(ctx.tcx, local_id.to_def_id())
                 || contract_of(ctx, local_id.to_def_id()).terminates)
@@ -605,6 +607,7 @@ impl CallGraph {
         Ok(Self {
             graph: build_call_graph.graph,
             additional_data: build_call_graph.additional_data,
+            loops_in_ghost,
         })
     }
 }
@@ -658,7 +661,71 @@ impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for FunctionCalls<'thir, 'tc
                 self.calls.extend(closure_visitor.calls);
                 self.has_loops = self.has_loops.or(closure_visitor.has_loops);
             }
-            thir::ExprKind::Loop { .. } => self.has_loops = Some(expr.span),
+            thir::ExprKind::Loop { .. } => {
+                self.has_loops = Some(expr.span);
+            }
+            _ => {}
+        }
+        thir::visit::walk_expr(self, expr);
+    }
+}
+
+/// Gather the loops in `ghost!` code for a given function.
+struct GhostLoops<'thir, 'tcx> {
+    thir: &'thir thir::Thir<'tcx>,
+    tcx: TyCtxt<'tcx>,
+    /// loop constructs in ghost code are forbidden for now.
+    loops_in_ghost: Vec<Span>,
+    is_in_ghost: bool,
+    /// If `true`, we should error with a [`CannotFetchThir`] error.
+    thir_failed: bool,
+}
+
+impl<'thir, 'tcx> thir::visit::Visitor<'thir, 'tcx> for GhostLoops<'thir, 'tcx> {
+    fn thir(&self) -> &'thir thir::Thir<'tcx> {
+        self.thir
+    }
+
+    fn visit_expr(&mut self, expr: &'thir thir::Expr<'tcx>) {
+        match expr.kind {
+            thir::ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
+                let Ok((thir, expr)) = self.tcx.thir_body(closure_id) else {
+                    self.thir_failed = true;
+                    return;
+                };
+                let thir = thir.borrow();
+
+                let mut closure_visitor = GhostLoops {
+                    thir: &thir,
+                    tcx: self.tcx,
+                    loops_in_ghost: Vec::new(),
+                    is_in_ghost: self.is_in_ghost,
+                    thir_failed: false,
+                };
+                thir::visit::walk_expr(&mut closure_visitor, &thir[expr]);
+                if closure_visitor.thir_failed {
+                    self.thir_failed = true;
+                    return;
+                }
+                self.loops_in_ghost.extend(closure_visitor.loops_in_ghost);
+            }
+            thir::ExprKind::Loop { .. } => {
+                if self.is_in_ghost {
+                    self.loops_in_ghost.push(expr.span);
+                }
+            }
+            thir::ExprKind::Scope {
+                region_scope: _,
+                lint_level: thir::LintLevel::Explicit(hir_id),
+                value: _,
+            } => {
+                if super::is_ghost_block(self.tcx, hir_id) {
+                    let old_is_ghost = std::mem::replace(&mut self.is_in_ghost, true);
+                    thir::visit::walk_expr(self, expr);
+                    self.is_in_ghost = old_is_ghost;
+                    return;
+                }
+            }
             _ => {}
         }
         thir::visit::walk_expr(self, expr);

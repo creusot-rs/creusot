@@ -14,6 +14,7 @@ fn f() {
     recursive();
 }
 
+#[allow(unreachable_code)]
 pub fn looping() {
     let _g: GhostBox<i32> = ghost! {
         loop {}

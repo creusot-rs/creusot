@@ -3,8 +3,8 @@ use crate::{
     backend::ty_inv::is_tyinv_trivial,
     constant::from_mir_constant,
     contracts_items::{
-        get_fn_mut_impl_unnest, get_resolve_function, get_resolve_method, is_ghost_closure,
-        is_snapshot_closure, is_spec,
+        get_fn_mut_impl_unnest, get_resolve_function, get_resolve_method, is_snapshot_closure,
+        is_spec,
     },
     ctx::*,
     extended_location::ExtendedLocation,
@@ -90,8 +90,6 @@ struct BodyTranslator<'a, 'tcx> {
     assertions: IndexMap<DefId, Term<'tcx>>,
     /// Map of the `snapshot!` blocks to their translated version.
     snapshots: IndexMap<DefId, Term<'tcx>>,
-    /// Indicate that the current function is a `ghost!` closure.
-    is_ghost_closure: bool,
 
     borrows: Option<&'a BorrowSet<'tcx>>,
 
@@ -178,7 +176,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             invariant_assertions: invariants.assertions,
             assertions,
             snapshots,
-            is_ghost_closure: is_ghost_closure(tcx, body_id.def_id()),
             borrows,
         })
     }
@@ -342,8 +339,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         );
     }
 
-    fn emit_ghost_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>, span: Span) {
-        self.emit_assignment(&lhs, fmir::RValue::Ghost(rhs), span)
+    fn emit_snapshot_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>, span: Span) {
+        self.emit_assignment(&lhs, fmir::RValue::Snapshot(rhs), span)
     }
 
     fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: RValue<'tcx>, span: Span) {
@@ -360,7 +357,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     ) {
         // The assignement may, in theory, modify a variable that needs to be resolved.
         // Hence we resolve before the assignment.
-        self.resolve_places(need, &resolved);
+        self.resolve_places(need, resolved);
 
         // We resolve the destination place, if necessary
         match self.move_data().rev_lookup.find(destination.as_ref()) {

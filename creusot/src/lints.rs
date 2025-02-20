@@ -9,5 +9,6 @@ pub fn register_lints(_sess: &Session, store: &mut LintStore) {
         experimental_types::EXPERIMENTAL,
         contractless_external_function::CONTRACTLESS_EXTERNAL_FUNCTION,
     ]);
+    store.register_late_pass(move |_| Box::new(crate::validate::GhostValidate {}));
     store.register_late_pass(move |_| Box::new(experimental_types::Experimental {}));
 }

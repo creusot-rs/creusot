@@ -104,7 +104,7 @@ pub enum TrivialInv {
 
 #[derive(Clone, Debug)]
 pub enum RValue<'tcx> {
-    Ghost(Term<'tcx>),
+    Snapshot(Term<'tcx>),
     Borrow(BorrowKind, Place<'tcx>, TrivialInv),
     Operand(Operand<'tcx>),
     BinOp(BinOp, Operand<'tcx>, Operand<'tcx>),
@@ -118,7 +118,7 @@ pub enum RValue<'tcx> {
     Ptr(Place<'tcx>),
 }
 
-impl<'tcx> RValue<'tcx> {
+impl RValue<'_> {
     /// Returns false if the expression generates verification conditions
     pub fn is_pure(&self) -> bool {
         match self {
@@ -165,7 +165,7 @@ impl<'tcx> RValue<'tcx> {
             RValue::Len(_) => true,
             RValue::Array(_) => true,
             RValue::Repeat(_, _) => true,
-            RValue::Ghost(_) => true,
+            RValue::Snapshot(_) => true,
             RValue::Borrow(_, _, _) => true,
             RValue::Ptr(_) => true,
         }
@@ -415,7 +415,7 @@ pub(crate) fn super_visit_terminator<'tcx, V: FmirVisitor<'tcx>>(
 
 pub(crate) fn super_visit_rvalue<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, rval: &RValue<'tcx>) {
     match rval {
-        RValue::Ghost(term) => {
+        RValue::Snapshot(term) => {
             visitor.visit_term(term);
         }
         RValue::Borrow(_, place, _) => {
