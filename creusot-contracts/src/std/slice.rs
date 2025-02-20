@@ -45,9 +45,9 @@ impl<T: DeepModel> DeepModel for [T] {
 
 #[logic]
 #[trusted]
-#[cfg_attr(target_pointer_width = "16", creusot::builtins = "prelude.slice.Slice16.id")]
-#[cfg_attr(target_pointer_width = "32", creusot::builtins = "prelude.slice.Slice32.id")]
-#[cfg_attr(target_pointer_width = "64", creusot::builtins = "prelude.slice.Slice64.id")]
+#[cfg_attr(target_pointer_width = "16", creusot::builtins = "creusot.slice.Slice16.id")]
+#[cfg_attr(target_pointer_width = "32", creusot::builtins = "creusot.slice.Slice32.id")]
+#[cfg_attr(target_pointer_width = "64", creusot::builtins = "creusot.slice.Slice64.id")]
 fn slice_model<T>(_: &[T]) -> Seq<T> {
     dead
 }
