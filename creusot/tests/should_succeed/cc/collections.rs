@@ -15,6 +15,7 @@ pub fn any<T>() -> T {
 pub fn roundtrip_hashmap_into_iter<K: Eq + Hash + DeepModel, V>(
     xs: HashMap<K, V>,
 ) -> HashMap<K, V> {
+    let xs_snap = snapshot!(xs);
     let it = xs.into_iter();
     let it0 = snapshot! { it };
     let r: HashMap<K, V> = it.collect();
@@ -24,7 +25,7 @@ pub fn roundtrip_hashmap_into_iter<K: Eq + Hash + DeepModel, V>(
             forall<k: K::DeepModelTy, v: V> r@.get(k) == Some(v)
                 ==> exists<k1: K> k1.deep_model() == k && prod.contains((k1, v))
     };
-    proof_assert! { forall<k: K::DeepModelTy> r@.contains(k) == xs@.contains(k) };
+    proof_assert! { forall<k: K::DeepModelTy> r@.contains(k) == (*xs_snap)@.contains(k) };
     r
 }
 
