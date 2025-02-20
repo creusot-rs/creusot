@@ -69,22 +69,40 @@ fn main() {
     temp_file.push("libcreusot_contracts.cmeta");
     let temp_file = temp_file.to_string_lossy();
 
-    translate_creusot_contracts(&args, creusot_rustc, &base_path, &temp_file);
+    let success = translate_creusot_contracts(&args, creusot_rustc, &base_path, &temp_file);
 
-    should_fail("tests/should_fail/**/*.rs", &args, |p| run_creusot(creusot_rustc, p, &temp_file));
-    should_succeed("tests/should_succeed/**/*.rs", &args, |p| {
+    let (fail1, total1) = should_fail("tests/should_fail/**/*.rs", &args, |p| {
         run_creusot(creusot_rustc, p, &temp_file)
     });
+    let (fail2, total2) = should_succeed("tests/should_succeed/**/*.rs", &args, |p| {
+        run_creusot(creusot_rustc, p, &temp_file)
+    });
+
+    let total = 1 + total1 + total2;
+    let failed = if success { 0 } else { 1 } + fail1 + fail2;
+    if failed > 0 {
+        let mut out =
+            StandardStream::stdout(if args.force_color || std::io::stdout().is_terminal() {
+                ColorChoice::Always
+            } else {
+                ColorChoice::Never
+            });
+        out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
+        writeln!(&mut out, "{failed} failures out of {total} tests").unwrap();
+        drop(out);
+        std::process::exit(1);
+    }
 
     println!("All tests passed!");
 }
 
+/// Returns `false` if the translation changed
 fn translate_creusot_contracts(
     args: &Args,
     creusot_rustc: &Path,
     base_path: &PathBuf,
     temp_file: &str,
-) {
+) -> bool {
     println! {"Building cargo-creusot..."};
     let cargo_creusot = escargot::CargoBuild::new()
         .bin("cargo-creusot")
@@ -130,7 +148,7 @@ fn translate_creusot_contracts(
         ColorChoice::Never
     });
 
-    let mut failed = false;
+    let mut succeeded = true;
     if args.bless {
         if output.stdout.is_empty() {
             panic!(
@@ -160,7 +178,7 @@ fn translate_creusot_contracts(
             out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
             writeln!(&mut out, "failure").unwrap();
 
-            failed = true;
+            succeeded = false;
         };
         out.reset().unwrap();
 
@@ -169,10 +187,11 @@ fn translate_creusot_contracts(
         out.flush().unwrap();
     }
 
-    if !output.status.success() || failed {
+    if !output.status.success() {
         eprintln!("Translation of creusot-contracts failed");
         std::process::exit(1);
     }
+    succeeded
 }
 
 fn run_creusot(
@@ -242,18 +261,18 @@ fn run_creusot(
     Some(cmd)
 }
 
-fn should_succeed<B>(s: &str, args: &Args, b: B)
+fn should_succeed<B>(s: &str, args: &Args, b: B) -> (usize, usize)
 where
     B: Fn(&Path) -> Option<std::process::Command> + Send + Sync,
 {
-    glob_runner(s, args, b, true);
+    glob_runner(s, args, b, true)
 }
 
-fn should_fail<B>(s: &str, args: &Args, b: B)
+fn should_fail<B>(s: &str, args: &Args, b: B) -> (usize, usize)
 where
     B: Fn(&Path) -> Option<std::process::Command> + Send + Sync,
 {
-    glob_runner(s, args, b, false);
+    glob_runner(s, args, b, false)
 }
 
 /// Replace global paths in `s` with ".", provided `s` is in fact a string.
@@ -269,7 +288,8 @@ fn erase_global_paths(s: &mut Vec<u8>) {
     }
 }
 
-fn glob_runner<B>(s: &str, args: &Args, command_builder: B, should_succeed: bool)
+/// Returns `(tests failed, total tests)`
+fn glob_runner<B>(s: &str, args: &Args, command_builder: B, should_succeed: bool) -> (usize, usize)
 where
     B: Fn(&Path) -> Option<std::process::Command> + Send + Sync,
 {
@@ -420,12 +440,6 @@ where
 
     let test_count = test_count.load(atomic::Ordering::SeqCst);
     let test_failures = test_failures.load(atomic::Ordering::SeqCst);
-    let (_, mut out) = out.into_inner().unwrap();
 
-    if test_failures > 0 {
-        out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
-        writeln!(&mut out, "{test_failures} failures out of {test_count} tests").unwrap();
-        drop(out);
-        std::process::exit(1);
-    }
+    (test_failures, test_count)
 }
