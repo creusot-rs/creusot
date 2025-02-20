@@ -29,16 +29,14 @@ impl<'tcx> LateLintPass<'tcx> for GhostValidate {
             return;
         }
 
+        let tcx = cx.tcx;
+
         // Check that all captures are ghost/copy
-        let mut places = GhostValidatePlaces {
-            bound_variables: HashSet::new(),
-            tcx: cx.tcx,
-            errors: Vec::new(),
-        };
+        let mut places =
+            GhostValidatePlaces { bound_variables: HashSet::new(), tcx, errors: Vec::new() };
         let visitor = ExprUseVisitor::for_clippy(cx, expr.hir_id.owner.def_id, &mut places);
         // Error type is `!`
         let _ = visitor.walk_expr(expr);
-        let tcx = cx.tcx;
         for &(id, base, written) in &places.errors {
             let mut err = if written {
                 tcx.dcx().struct_err("cannot write to a non-ghost variable in a `ghost!` block")
@@ -58,7 +56,7 @@ impl<'tcx> LateLintPass<'tcx> for GhostValidate {
             }
             err.emit();
         }
-        cx.tcx.dcx().abort_if_errors();
+        tcx.dcx().abort_if_errors();
     }
 }
 
@@ -116,6 +114,16 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
         if self.bound_in_block(place_with_id) || self.is_ghost_box(ty) {
             return;
         }
+
+        let mut enclosing_def_ids = self.tcx.hir().parent_iter(place_with_id.hir_id);
+        if enclosing_def_ids.any(|(_, node)| {
+            node.associated_body().is_some_and(|(def_id, _)| {
+                crate::contracts_items::is_pearlite(self.tcx, def_id.to_def_id())
+            })
+        }) {
+            // Moving into a pearlite closure is ok
+            return;
+        }
         self.errors.push((diag_expr_id, base_hir_node(place_with_id), false));
     }
 
@@ -126,16 +134,13 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
         bk: rustc_middle::ty::BorrowKind,
     ) {
         let ty = place_with_id.place.ty();
-        if self.bound_in_block(place_with_id) || self.is_ghost_box(ty) {
+        if self.bound_in_block(place_with_id)
+            || self.is_ghost_box(ty)
+            || bk == rustc_middle::ty::BorrowKind::Immutable
+        {
             return;
         }
-        match bk {
-            rustc_middle::ty::BorrowKind::Immutable => {}
-            rustc_middle::ty::BorrowKind::UniqueImmutable
-            | rustc_middle::ty::BorrowKind::Mutable => {
-                self.errors.push((diag_expr_id, base_hir_node(place_with_id), true));
-            }
-        }
+        self.errors.push((diag_expr_id, base_hir_node(place_with_id), true));
     }
 
     fn mutate(&mut self, assignee_place: &PlaceWithHirId<'tcx>, diag_expr_id: HirId) {
