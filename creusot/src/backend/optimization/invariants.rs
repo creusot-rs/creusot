@@ -83,7 +83,7 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
                 }
                 prev_block.stmts.push(Statement::Assignment(
                     Place { local, projection: Vec::new() },
-                    RValue::Ghost(Term::call_no_normalize(
+                    RValue::Snapshot(Term::call_no_normalize(
                         tcx,
                         snap_new,
                         subst,
