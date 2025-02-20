@@ -132,8 +132,6 @@ module M_682__foo [#"682.rs" 12 0 12 23]
   
   use prelude.prelude.MutBorrow
   
-  use prelude.prelude.Snapshot
-  
   use prelude.int.UInt64
   
   use prelude.int.UInt64
@@ -209,18 +207,14 @@ module M_682__foo [#"682.rs" 12 0 12 23]
   predicate resolve'0 (_1 : MutBorrow.t UInt64.t) =
     resolve'1 _1
   
-  use prelude.prelude.Snapshot
-  
   use prelude.prelude.Intrinsic
-  
-  use prelude.prelude.Snapshot
   
   meta "compute_max_steps" 1000000
   
   let rec foo'0[#"682.rs" 12 0 12 23] (a:MutBorrow.t UInt64.t) (return'  (ret:()))= {[@expl:foo requires] [%#s6822] a.current
     = (3 : UInt64.t)}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &a_p <- [%#s6820] Snapshot.new a.current ] s1 | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 =  [ &a_p <- [%#s6820] a.current ] s1 | s1 = bb1 ] 
     | bb1 = s0
       [ s0 = MutBorrow.borrow_final <UInt64.t> {a.current} {MutBorrow.get_id a}
           (fun (_ret':MutBorrow.t UInt64.t) ->  [ &_7 <- _ret' ]  [ &a <- { a with current = _ret'.final } ] s1)
@@ -228,14 +222,12 @@ module M_682__foo [#"682.rs" 12 0 12 23]
       | s2 = bb2 ]
     
     | bb2 = s0
-      [ s0 = -{resolve'0 a}- s1
-      | s1 = {[@expl:assertion] [%#s6821] UInt64.ugt a.current (Snapshot.inner a_p)} s2
-      | s2 = return' {_0} ]
+      [ s0 = -{resolve'0 a}- s1 | s1 = {[@expl:assertion] [%#s6821] UInt64.ugt a.current a_p} s2 | s2 = return' {_0} ]
      ]
     )
     [ & _0 : () = Intrinsic.any_l ()
     | & a : MutBorrow.t UInt64.t = a
-    | & a_p : Snapshot.snap_ty UInt64.t = Intrinsic.any_l ()
+    | & a_p : UInt64.t = Intrinsic.any_l ()
     | & _6 : () = Intrinsic.any_l ()
     | & _7 : MutBorrow.t UInt64.t = Intrinsic.any_l () ]
      [ return' (result:())-> {[@expl:foo ensures] [%#s6823] UInt64.ugt a.final a.current} (! return' {result}) ] 

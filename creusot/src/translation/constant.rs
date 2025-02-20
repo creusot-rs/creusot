@@ -90,7 +90,7 @@ pub(crate) fn from_ty_const<'tcx>(
         ctx.crash_and_error(span, "const generic parameters are not yet supported");
     }
 
-    return Term { kind: TermKind::Lit(try_to_bits(ctx, env, ty, span, c)), ty: ty, span };
+    return Term { kind: TermKind::Lit(try_to_bits(ctx, env, ty, span, c)), ty, span };
 }
 
 fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(

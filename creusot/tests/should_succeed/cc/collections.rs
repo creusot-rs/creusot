@@ -25,6 +25,7 @@ pub fn roundtrip_hashmap_into_iter<K: Eq + Hash + DeepModel, V>(
                 ==> exists<k1: K> k1.deep_model() == k && prod.contains((k1, v))
     };
     proof_assert! { forall<k: K::DeepModelTy> r@.contains(k) == xs@.contains(k) };
+    proof_assert! { forall<k: K::DeepModelTy> r@[k] == xs@[k] };
     r
 }
 

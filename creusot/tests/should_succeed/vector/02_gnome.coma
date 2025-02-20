@@ -57,8 +57,6 @@ module M_02_gnome__gnome_sort [#"02_gnome.rs" 22 0 24 29]
   let%span sseq55 = "../../../../creusot-contracts/src/logic/seq.rs" 633 20 633 95
   let%span sboxed56 = "../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
-  use prelude.prelude.Snapshot
-  
   use prelude.int.UInt64
   
   use prelude.prelude.MutBorrow
@@ -102,15 +100,11 @@ module M_02_gnome__gnome_sort [#"02_gnome.rs" 22 0 24 29]
   function view'0 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
     [%#smodel12] view'2 self.current
   
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
-  
   function view'3 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
     [%#smodel30] view'0 self
   
-  function view'1 (self : Snapshot.snap_ty (MutBorrow.t (t_Vec'0))) : Seq.seq t_T'0 =
-    [%#ssnapshot13] view'3 (Snapshot.inner self)
+  function view'1 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
+    [%#ssnapshot13] view'3 self
   
   use seq.Permut
   
@@ -351,12 +345,10 @@ module M_02_gnome__gnome_sort [#"02_gnome.rs" 22 0 24 29]
   
   let rec gnome_sort'0[#"02_gnome.rs" 22 0 24 29] (v:MutBorrow.t (t_Vec'0)) (return'  (ret:()))= {[@expl:gnome_sort 'v' type invariant] [%#s02_gnome9] inv'3 v}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &old_v <- [%#s02_gnome0] Snapshot.new v ] s1 | s1 = bb1 ] 
-    | bb1 = s0
-      [ s0 =  [ &i <- [%#s02_gnome1] (0 : UInt64.t) ] s1 | s1 =  [ &old_2_0 <- Snapshot.new v ] s2 | s2 = bb2 ]
-    
+    [ bb0 = s0 [ s0 =  [ &old_v <- [%#s02_gnome0] v ] s1 | s1 = bb1 ] 
+    | bb1 = s0 [ s0 =  [ &i <- [%#s02_gnome1] (0 : UInt64.t) ] s1 | s1 =  [ &old_2_0 <- v ] s2 | s2 = bb2 ] 
     | bb2 = bb2
-      [ bb2 = {[@expl:mut invariant] (Snapshot.inner old_2_0).final = v.final}
+      [ bb2 = {[@expl:mut invariant] old_2_0.final = v.final}
         {[@expl:loop invariant #0] [%#s02_gnome3] sorted_range'0 (deep_model'0 v) 0 (UInt64.t'int i)}
         {[@expl:loop invariant #1] [%#s02_gnome2] permutation_of'0 (view'0 v) (view'1 old_v)}
         (! s0) [ s0 = bb3 ] 
@@ -419,7 +411,7 @@ module M_02_gnome__gnome_sort [#"02_gnome.rs" 22 0 24 29]
     )
     [ & _0 : () = Intrinsic.any_l ()
     | & v : MutBorrow.t (t_Vec'0) = v
-    | & old_v : Snapshot.snap_ty (MutBorrow.t (t_Vec'0)) = Intrinsic.any_l ()
+    | & old_v : MutBorrow.t (t_Vec'0) = Intrinsic.any_l ()
     | & i : UInt64.t = Intrinsic.any_l ()
     | & _11 : bool = Intrinsic.any_l ()
     | & _13 : UInt64.t = Intrinsic.any_l ()
@@ -433,7 +425,7 @@ module M_02_gnome__gnome_sort [#"02_gnome.rs" 22 0 24 29]
     | & _29 : MutBorrow.t (Slice64.slice t_T'0) = Intrinsic.any_l ()
     | & _30 : MutBorrow.t (t_Vec'0) = Intrinsic.any_l ()
     | & _31 : UInt64.t = Intrinsic.any_l ()
-    | & old_2_0 : Snapshot.snap_ty (MutBorrow.t (t_Vec'0)) = Intrinsic.any_l () ]
+    | & old_2_0 : MutBorrow.t (t_Vec'0) = Intrinsic.any_l () ]
     
     [ return' (result:())-> {[@expl:gnome_sort ensures #0] [%#s02_gnome10] sorted'0 (deep_model'1 v.final)}
       {[@expl:gnome_sort ensures #1] [%#s02_gnome11] permutation_of'0 (view'2 v.final) (view'0 v)}

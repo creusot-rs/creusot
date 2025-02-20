@@ -11,8 +11,6 @@ module M_mapping_test__incr [#"mapping_test.rs" 29 0 29 18]
   let%span sresolve9 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   let%span smodel10 = "../../../creusot-contracts/src/model.rs" 54 8 54 22
   
-  use prelude.prelude.Snapshot
-  
   use prelude.int.Int32
   
   type t_T'0  =
@@ -39,18 +37,14 @@ module M_mapping_test__incr [#"mapping_test.rs" 29 0 29 18]
   axiom view'0_spec : forall self : t_T'0 . [%#smapping_test6] forall i : int . Map.get (view'0 self) i
   = (if 0 <= i /\ i < Int32.to_int self.t_T__a'0 then 1 else 0)
   
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
-  
   function view'2 (self : MutBorrow.t (t_T'0)) : Map.map (int) (int) =
     [%#smodel8] view'0 self.current
   
   function view'3 (self : MutBorrow.t (t_T'0)) : Map.map (int) (int) =
     [%#smodel10] view'2 self
   
-  function view'1 (self : Snapshot.snap_ty (MutBorrow.t (t_T'0))) : Map.map (int) (int) =
-    [%#ssnapshot7] view'3 (Snapshot.inner self)
+  function view'1 (self : MutBorrow.t (t_T'0)) : Map.map (int) (int) =
+    [%#ssnapshot7] view'3 self
   
   use map.Map
   
@@ -62,20 +56,20 @@ module M_mapping_test__incr [#"mapping_test.rs" 29 0 29 18]
     <= Int32.to_int (t.current).t_T__a'0}
     {[@expl:incr requires #1] [%#smapping_test4] Int32.to_int (t.current).t_T__a'0 < 1000}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &old_t <- [%#smapping_test0] Snapshot.new t ] s1 | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 =  [ &old_t <- [%#smapping_test0] t ] s1 | s1 = bb1 ] 
     | bb1 = s0
       [ s0 = Int32.add {(t.current).t_T__a'0} {[%#smapping_test1] (1 : Int32.t)}
           (fun (_ret':Int32.t) ->  [ &t <- { t with current = { t_T__a'0 = _ret' } } ] s1)
       | s1 = -{resolve'0 t}- s2
       | s2 = {[@expl:assertion] [%#smapping_test2] view'0 t.final
-        = Map.set (view'1 old_t) (Int32.to_int ((Snapshot.inner old_t).current).t_T__a'0) 1}
+        = Map.set (view'1 old_t) (Int32.to_int (old_t.current).t_T__a'0) 1}
         s3
       | s3 = return' {_0} ]
      ]
     )
     [ & _0 : () = Intrinsic.any_l ()
     | & t : MutBorrow.t (t_T'0) = t
-    | & old_t : Snapshot.snap_ty (MutBorrow.t (t_T'0)) = Intrinsic.any_l () ]
+    | & old_t : MutBorrow.t (t_T'0) = Intrinsic.any_l () ]
     
     [ return' (result:())-> {[@expl:incr ensures] [%#smapping_test5] view'0 t.final
       = Map.set (view'2 t) (Int32.to_int (t.current).t_T__a'0) 1}

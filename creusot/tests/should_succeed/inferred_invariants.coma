@@ -35,8 +35,6 @@ module M_inferred_invariants__simple [#"inferred_invariants.rs" 6 0 6 27]
   let%span sinferred_invariants1 = "inferred_invariants.rs" 6 17 6 18
   let%span sinvariant2 = "../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   
-  use prelude.prelude.Snapshot
-  
   use prelude.prelude.MutBorrow
   
   type t_T'0
@@ -50,22 +48,18 @@ module M_inferred_invariants__simple [#"inferred_invariants.rs" 6 0 6 27]
   
   axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_T'0 [inv'0 x] . inv'0 x = invariant'0 x
   
-  use prelude.prelude.Snapshot
-  
   let rec f'0 (_1:MutBorrow.t t_T'0) (return'  (ret:()))= {[@expl:f '_1' type invariant] inv'0 _1}
     any [ return' (result:())-> (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Snapshot
-  
   meta "compute_max_steps" 1000000
   
   let rec simple'0[#"inferred_invariants.rs" 6 0 6 27] (x:MutBorrow.t t_T'0) (return'  (ret:()))= {[@expl:simple 'x' type invariant] [%#sinferred_invariants1] inv'0 x}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &old_1_0 <- Snapshot.new x ] s1 | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 =  [ &old_1_0 <- x ] s1 | s1 = bb1 ] 
     | bb1 = bb1
-      [ bb1 = {[@expl:mut invariant] (Snapshot.inner old_1_0).final = x.final}
+      [ bb1 = {[@expl:mut invariant] old_1_0.final = x.final}
         {[@expl:loop invariant] [%#sinferred_invariants0] inv'0 x}
         (! s0) [ s0 = bb2 ] 
         [ bb2 = s0
@@ -86,7 +80,7 @@ module M_inferred_invariants__simple [#"inferred_invariants.rs" 6 0 6 27]
     [ & x : MutBorrow.t t_T'0 = x
     | & _4 : () = Intrinsic.any_l ()
     | & _6 : MutBorrow.t t_T'0 = Intrinsic.any_l ()
-    | & old_1_0 : Snapshot.snap_ty (MutBorrow.t t_T'0) = Intrinsic.any_l () ]
+    | & old_1_0 : MutBorrow.t t_T'0 = Intrinsic.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
 module M_inferred_invariants__swapper [#"inferred_invariants.rs" 13 0 13 57]
@@ -288,8 +282,6 @@ module M_inferred_invariants__y [#"inferred_invariants.rs" 41 0 41 26]
   let%span sslice19 = "../../../creusot-contracts/src/std/slice.rs" 138 20 138 94
   let%span sresolve20 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   
-  use prelude.prelude.Snapshot
-  
   use prelude.int.UInt64
   
   use prelude.int.UInt64
@@ -318,13 +310,9 @@ module M_inferred_invariants__y [#"inferred_invariants.rs" 41 0 41 26]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  use prelude.prelude.Snapshot
-  
   use prelude.int.Int32
   
   use seq.Seq
-  
-  use prelude.prelude.Snapshot
   
   use seq.Seq
   
@@ -340,8 +328,8 @@ module M_inferred_invariants__y [#"inferred_invariants.rs" 41 0 41 26]
   function view'2 (self : MutBorrow.t (t_Vec'0)) : Seq.seq Int32.t =
     [%#smodel15] view'1 self
   
-  function view'0 (self : Snapshot.snap_ty (MutBorrow.t (t_Vec'0))) : Seq.seq Int32.t =
-    [%#ssnapshot7] view'2 (Snapshot.inner self)
+  function view'0 (self : MutBorrow.t (t_Vec'0)) : Seq.seq Int32.t =
+    [%#ssnapshot7] view'2 self
   
   predicate inv'0 (_1 : t_Vec'0)
   
@@ -406,14 +394,10 @@ module M_inferred_invariants__y [#"inferred_invariants.rs" 41 0 41 26]
   meta "compute_max_steps" 1000000
   
   let rec y'0[#"inferred_invariants.rs" 41 0 41 26] (v:MutBorrow.t (t_Vec'0)) (return'  (ret:()))= (! bb0
-    [ bb0 = s0 [ s0 =  [ &old_v <- [%#sinferred_invariants0] Snapshot.new v ] s1 | s1 = bb1 ] 
-    | bb1 = s0
-      [ s0 =  [ &i <- [%#sinferred_invariants1] (0 : UInt64.t) ] s1
-      | s1 =  [ &old_2_0 <- Snapshot.new v ] s2
-      | s2 = bb2 ]
-    
+    [ bb0 = s0 [ s0 =  [ &old_v <- [%#sinferred_invariants0] v ] s1 | s1 = bb1 ] 
+    | bb1 = s0 [ s0 =  [ &i <- [%#sinferred_invariants1] (0 : UInt64.t) ] s1 | s1 =  [ &old_2_0 <- v ] s2 | s2 = bb2 ] 
     | bb2 = bb2
-      [ bb2 = {[@expl:mut invariant] (Snapshot.inner old_2_0).final = v.final}
+      [ bb2 = {[@expl:mut invariant] old_2_0.final = v.final}
         {[@expl:loop invariant #0] [%#sinferred_invariants3] Seq.length (view'0 old_v) = Seq.length (view'1 v)}
         {[@expl:loop invariant #1] [%#sinferred_invariants2] UInt64.t'int i <= 10}
         (! s0) [ s0 = bb3 ] 
@@ -446,14 +430,14 @@ module M_inferred_invariants__y [#"inferred_invariants.rs" 41 0 41 26]
     )
     [ & _0 : () = Intrinsic.any_l ()
     | & v : MutBorrow.t (t_Vec'0) = v
-    | & old_v : Snapshot.snap_ty (MutBorrow.t (t_Vec'0)) = Intrinsic.any_l ()
+    | & old_v : MutBorrow.t (t_Vec'0) = Intrinsic.any_l ()
     | & i : UInt64.t = Intrinsic.any_l ()
     | & _10 : bool = Intrinsic.any_l ()
     | & _12 : UInt64.t = Intrinsic.any_l ()
     | & _14 : MutBorrow.t Int32.t = Intrinsic.any_l ()
     | & _15 : MutBorrow.t (t_Vec'0) = Intrinsic.any_l ()
     | & _17 : bool = Intrinsic.any_l ()
-    | & old_2_0 : Snapshot.snap_ty (MutBorrow.t (t_Vec'0)) = Intrinsic.any_l () ]
+    | & old_2_0 : MutBorrow.t (t_Vec'0) = Intrinsic.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
 module M_inferred_invariants__nested_loops [#"inferred_invariants.rs" 60 0 60 32]
@@ -472,11 +456,7 @@ module M_inferred_invariants__nested_loops [#"inferred_invariants.rs" 60 0 60 32
   
   use prelude.int.Int32
   
-  use prelude.prelude.Snapshot
-  
   use prelude.prelude.MutBorrow
-  
-  use prelude.prelude.Snapshot
   
   predicate resolve'1 (self : MutBorrow.t Int32.t) =
     [%#sresolve11] self.final = self.current
@@ -486,20 +466,14 @@ module M_inferred_invariants__nested_loops [#"inferred_invariants.rs" 60 0 60 32
   
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Snapshot
-  
   meta "compute_max_steps" 1000000
   
   let rec nested_loops'0[#"inferred_invariants.rs" 60 0 60 32] (x:MutBorrow.t Int32.t) (return'  (ret:()))= {[@expl:nested_loops requires] [%#sinferred_invariants9] x.current
     = (0 : Int32.t)}
     (! bb0
-    [ bb0 = s0
-      [ s0 =  [ &i <- [%#sinferred_invariants0] (0 : Int32.t) ] s1
-      | s1 =  [ &old_1_0 <- Snapshot.new x ] s2
-      | s2 = bb1 ]
-    
+    [ bb0 = s0 [ s0 =  [ &i <- [%#sinferred_invariants0] (0 : Int32.t) ] s1 | s1 =  [ &old_1_0 <- x ] s2 | s2 = bb1 ] 
     | bb1 = bb1
-      [ bb1 = {[@expl:mut invariant] (Snapshot.inner old_1_0).final = x.final}
+      [ bb1 = {[@expl:mut invariant] old_1_0.final = x.final}
         {[@expl:loop invariant] [%#sinferred_invariants1] x.current = (0 : Int32.t)}
         (! s0) [ s0 = bb2 ] 
         [ bb2 = s0
@@ -509,11 +483,11 @@ module M_inferred_invariants__nested_loops [#"inferred_invariants.rs" 60 0 60 32
         | bb4 = s0
           [ s0 = Int32.add {i} {[%#sinferred_invariants3] (1 : Int32.t)} (fun (_ret':Int32.t) ->  [ &i <- _ret' ] s1)
           | s1 =  [ &j <- [%#sinferred_invariants4] (0 : Int32.t) ] s2
-          | s2 =  [ &old_5_0 <- Snapshot.new x ] s3
+          | s2 =  [ &old_5_0 <- x ] s3
           | s3 = bb5 ]
         
         | bb5 = bb5
-          [ bb5 = {[@expl:mut invariant] (Snapshot.inner old_5_0).final = x.final}
+          [ bb5 = {[@expl:mut invariant] old_5_0.final = x.final}
             {[@expl:loop invariant] [%#sinferred_invariants5] x.current = (0 : Int32.t)}
             (! s0) [ s0 = bb6 ] 
             [ bb6 = s0
@@ -539,8 +513,8 @@ module M_inferred_invariants__nested_loops [#"inferred_invariants.rs" 60 0 60 32
     | & _9 : bool = Intrinsic.any_l ()
     | & j : Int32.t = Intrinsic.any_l ()
     | & _16 : bool = Intrinsic.any_l ()
-    | & old_5_0 : Snapshot.snap_ty (MutBorrow.t Int32.t) = Intrinsic.any_l ()
-    | & old_1_0 : Snapshot.snap_ty (MutBorrow.t Int32.t) = Intrinsic.any_l () ]
+    | & old_5_0 : MutBorrow.t Int32.t = Intrinsic.any_l ()
+    | & old_1_0 : MutBorrow.t Int32.t = Intrinsic.any_l () ]
     
     [ return' (result:())-> {[@expl:nested_loops ensures] [%#sinferred_invariants10] x.final = (0 : Int32.t)}
       (! return' {result}) ]
@@ -562,15 +536,7 @@ module M_inferred_invariants__nested_borrows [#"inferred_invariants.rs" 86 0 86 
   
   use prelude.int.Int32
   
-  use prelude.prelude.Snapshot
-  
   use prelude.prelude.MutBorrow
-  
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
   
   predicate inv'0 (_1 : MutBorrow.t (MutBorrow.t Int32.t))
   
@@ -603,10 +569,6 @@ module M_inferred_invariants__nested_borrows [#"inferred_invariants.rs" 86 0 86 
   
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
-  
   meta "compute_max_steps" 1000000
   
   let rec nested_borrows'0[#"inferred_invariants.rs" 86 0 86 69] (x:MutBorrow.t (MutBorrow.t Int32.t)) (y:MutBorrow.t Int32.t) (return'  (ret:()))= {[@expl:nested_borrows requires] [%#sinferred_invariants6] (x.current).current
@@ -614,13 +576,13 @@ module M_inferred_invariants__nested_borrows [#"inferred_invariants.rs" 86 0 86 
     (! bb0
     [ bb0 = s0
       [ s0 =  [ &i <- [%#sinferred_invariants0] (0 : Int32.t) ] s1
-      | s1 =  [ &old_1_0 <- Snapshot.new x ] s2
-      | s2 =  [ &old_1_1 <- Snapshot.new x.current ] s3
+      | s1 =  [ &old_1_0 <- x ] s2
+      | s2 =  [ &old_1_1 <- x.current ] s3
       | s3 = bb1 ]
     
     | bb1 = bb1
-      [ bb1 = {[@expl:mut invariant] (Snapshot.inner old_1_1).final = (x.current).final}
-        {[@expl:mut invariant] (Snapshot.inner old_1_0).final = x.final}
+      [ bb1 = {[@expl:mut invariant] old_1_1.final = (x.current).final}
+        {[@expl:mut invariant] old_1_0.final = x.final}
         {[@expl:loop invariant] [%#sinferred_invariants1] (x.current).current = (0 : Int32.t)}
         (! s0) [ s0 = bb2 ] 
         [ bb2 = s0
@@ -663,8 +625,8 @@ module M_inferred_invariants__nested_borrows [#"inferred_invariants.rs" 86 0 86 
     | & b : MutBorrow.t Int32.t = Intrinsic.any_l ()
     | & _16 : MutBorrow.t (MutBorrow.t Int32.t) = Intrinsic.any_l ()
     | & _17 : MutBorrow.t Int32.t = Intrinsic.any_l ()
-    | & old_1_0 : Snapshot.snap_ty (MutBorrow.t (MutBorrow.t Int32.t)) = Intrinsic.any_l ()
-    | & old_1_1 : Snapshot.snap_ty (MutBorrow.t Int32.t) = Intrinsic.any_l () ]
+    | & old_1_0 : MutBorrow.t (MutBorrow.t Int32.t) = Intrinsic.any_l ()
+    | & old_1_1 : MutBorrow.t Int32.t = Intrinsic.any_l () ]
     
     [ return' (result:())-> {[@expl:nested_borrows ensures #0] [%#sinferred_invariants7] x.final = y}
       {[@expl:nested_borrows ensures #1] [%#sinferred_invariants8] (x.current).final = (1 : Int32.t)}

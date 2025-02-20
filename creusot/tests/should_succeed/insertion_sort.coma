@@ -77,8 +77,6 @@ module M_insertion_sort__insertion_sort [#"insertion_sort.rs" 21 0 21 40]
   let%span sord75 = "../../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
   let%span sord76 = "../../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
   
-  use prelude.prelude.Snapshot
-  
   use prelude.slice.Slice64
   
   use prelude.int.Int32
@@ -132,19 +130,11 @@ module M_insertion_sort__insertion_sort [#"insertion_sort.rs" 21 0 21 40]
     {[@expl:into_iter requires] [%#siter24] into_iter_pre'0 self}
     any [ return' (result:t_Range'0)-> {inv'0 result} {[%#siter24] into_iter_post'0 self result} (! return' {result}) ] 
   
-  use prelude.prelude.Snapshot
-  
   use seq.Seq
   
   use seq.Seq
-  
-  use prelude.prelude.Snapshot
   
   use prelude.prelude.MutBorrow
-  
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
   
   function view'1 (self : MutBorrow.t (Slice64.slice Int32.t)) : Seq.seq Int32.t =
     [%#smodel26] view'2 self.current
@@ -152,15 +142,13 @@ module M_insertion_sort__insertion_sort [#"insertion_sort.rs" 21 0 21 40]
   function view'4 (self : MutBorrow.t (Slice64.slice Int32.t)) : Seq.seq Int32.t =
     [%#smodel39] view'1 self
   
-  function view'0 (self : Snapshot.snap_ty (MutBorrow.t (Slice64.slice Int32.t))) : Seq.seq Int32.t =
-    [%#ssnapshot25] view'4 (Snapshot.inner self)
+  function view'0 (self : MutBorrow.t (Slice64.slice Int32.t)) : Seq.seq Int32.t =
+    [%#ssnapshot25] view'4 self
   
   use seq.Permut
   
   predicate permutation_of'0 (self : Seq.seq Int32.t) (other : Seq.seq Int32.t) =
     [%#sseq27] Permut.permut self other 0 (Seq.length self)
-  
-  use prelude.prelude.Snapshot
   
   use seq.Seq
   
@@ -223,10 +211,6 @@ module M_insertion_sort__insertion_sort [#"insertion_sort.rs" 21 0 21 40]
   
   predicate sorted_range'0 [#"insertion_sort.rs" 6 0 6 63] (s : Seq.seq Int32.t) (l : int) (u : int) =
     [%#sinsertion_sort28] forall i : int, j : int . l <= i /\ i < j /\ j < u  -> Int32.sle (Seq.get s i) (Seq.get s j)
-  
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
   
   use seq.Seq
   
@@ -378,35 +362,28 @@ module M_insertion_sort__insertion_sort [#"insertion_sort.rs" 21 0 21 40]
   
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
-  
   predicate sorted'0 [#"insertion_sort.rs" 13 0 13 41] (s : Seq.seq Int32.t) =
     [%#sinsertion_sort38] sorted_range'0 s 0 (Seq.length s)
   
   meta "compute_max_steps" 1000000
   
   let rec insertion_sort'0[#"insertion_sort.rs" 21 0 21 40] (array:MutBorrow.t (Slice64.slice Int32.t)) (return'  (ret:()))= (! bb0
-    [ bb0 = s0 [ s0 =  [ &original <- [%#sinsertion_sort0] Snapshot.new array ] s1 | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 =  [ &original <- [%#sinsertion_sort0] array ] s1 | s1 = bb1 ] 
     | bb1 = s0 [ s0 = len'0 {array.current} (fun (_ret':UInt64.t) ->  [ &n <- _ret' ] s1) | s1 = bb2 ] 
     | bb2 = s0
       [ s0 =  [ &_10 <- { t_Range__start'0 = ([%#sinsertion_sort1] (1 : UInt64.t)); t_Range__end'0 = n } ] s1
       | s1 = into_iter'0 {_10} (fun (_ret':t_Range'0) ->  [ &iter <- _ret' ] s2)
       | s2 = bb3 ]
     
-    | bb3 = s0 [ s0 =  [ &iter_old <- [%#sinsertion_sort2] Snapshot.new iter ] s1 | s1 = bb4 ] 
-    | bb4 = s0
-      [ s0 =  [ &produced <- [%#sinsertion_sort3] Snapshot.new (Seq.empty : Seq.seq UInt64.t) ] s1 | s1 = bb5 ]
-    
-    | bb5 = s0 [ s0 =  [ &old_6_0 <- Snapshot.new array ] s1 | s1 = bb6 ] 
+    | bb3 = s0 [ s0 =  [ &iter_old <- [%#sinsertion_sort2] iter ] s1 | s1 = bb4 ] 
+    | bb4 = s0 [ s0 =  [ &produced <- [%#sinsertion_sort3] Seq.empty : Seq.seq UInt64.t ] s1 | s1 = bb5 ] 
+    | bb5 = s0 [ s0 =  [ &old_6_0 <- array ] s1 | s1 = bb6 ] 
     | bb6 = bb6
-      [ bb6 = {[@expl:mut invariant] (Snapshot.inner old_6_0).final = array.final}
-        {[@expl:for invariant] [%#sinsertion_sort7] inv'1 (Snapshot.inner produced)}
+      [ bb6 = {[@expl:mut invariant] old_6_0.final = array.final}
+        {[@expl:for invariant] [%#sinsertion_sort7] inv'1 produced}
         {[@expl:for invariant] [%#sinsertion_sort7] inv'0 iter}
-        {[@expl:for invariant] [%#sinsertion_sort7] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
-        {[@expl:loop invariant #0] [%#sinsertion_sort6] sorted_range'0 (view'1 array) 0 (Seq.length (Snapshot.inner produced)
-        + 1)}
+        {[@expl:for invariant] [%#sinsertion_sort7] produces'0 iter_old produced iter}
+        {[@expl:loop invariant #0] [%#sinsertion_sort6] sorted_range'0 (view'1 array) 0 (Seq.length produced + 1)}
         {[@expl:loop invariant #1] [%#sinsertion_sort5] Seq.length (view'1 array) = UInt64.t'int n}
         {[@expl:loop invariant #2] [%#sinsertion_sort4] permutation_of'0 (view'0 original) (view'1 array)}
         (! s0) [ s0 = bb7 ] 
@@ -428,21 +405,18 @@ module M_insertion_sort__insertion_sort [#"insertion_sort.rs" 21 0 21 40]
         | bb10 = bb12
         | bb12 = s0
           [ s0 = v_Some'0 {_24} (fun (r0'0:UInt64.t) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
-          | s1 = 
-            [ &_29 <- [%#sinsertion_sort8] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
-            
-            s2
+          | s1 =  [ &_29 <- [%#sinsertion_sort8] Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb13 ]
         
         | bb13 = s0
           [ s0 =  [ &produced <- _29 ] s1
           | s1 =  [ &i <- __creusot_proc_iter_elem ] s2
           | s2 =  [ &j <- i ] s3
-          | s3 =  [ &old_14_0 <- Snapshot.new array ] s4
+          | s3 =  [ &old_14_0 <- array ] s4
           | s4 = bb14 ]
         
         | bb14 = bb14
-          [ bb14 = {[@expl:mut invariant] (Snapshot.inner old_14_0).final = array.final}
+          [ bb14 = {[@expl:mut invariant] old_14_0.final = array.final}
             {[@expl:loop invariant #0] [%#sinsertion_sort13] UInt64.ule j i}
             {[@expl:loop invariant #1] [%#sinsertion_sort12] Seq.length (view'1 array) = UInt64.t'int n}
             {[@expl:loop invariant #2] [%#sinsertion_sort11] permutation_of'0 (view'0 original) (view'1 array)}
@@ -519,17 +493,17 @@ module M_insertion_sort__insertion_sort [#"insertion_sort.rs" 21 0 21 40]
     )
     [ & _0 : () = Intrinsic.any_l ()
     | & array : MutBorrow.t (Slice64.slice Int32.t) = array
-    | & original : Snapshot.snap_ty (MutBorrow.t (Slice64.slice Int32.t)) = Intrinsic.any_l ()
+    | & original : MutBorrow.t (Slice64.slice Int32.t) = Intrinsic.any_l ()
     | & n : UInt64.t = Intrinsic.any_l ()
     | & iter : t_Range'0 = Intrinsic.any_l ()
     | & _10 : t_Range'0 = Intrinsic.any_l ()
-    | & iter_old : Snapshot.snap_ty (t_Range'0) = Intrinsic.any_l ()
-    | & produced : Snapshot.snap_ty (Seq.seq UInt64.t) = Intrinsic.any_l ()
+    | & iter_old : t_Range'0 = Intrinsic.any_l ()
+    | & produced : Seq.seq UInt64.t = Intrinsic.any_l ()
     | & _24 : t_Option'0 = Intrinsic.any_l ()
     | & _25 : MutBorrow.t (t_Range'0) = Intrinsic.any_l ()
     | & _26 : MutBorrow.t (t_Range'0) = Intrinsic.any_l ()
     | & __creusot_proc_iter_elem : UInt64.t = Intrinsic.any_l ()
-    | & _29 : Snapshot.snap_ty (Seq.seq UInt64.t) = Intrinsic.any_l ()
+    | & _29 : Seq.seq UInt64.t = Intrinsic.any_l ()
     | & i : UInt64.t = Intrinsic.any_l ()
     | & j : UInt64.t = Intrinsic.any_l ()
     | & _39 : bool = Intrinsic.any_l ()
@@ -545,8 +519,8 @@ module M_insertion_sort__insertion_sort [#"insertion_sort.rs" 21 0 21 40]
     | & _54 : () = Intrinsic.any_l ()
     | & _55 : MutBorrow.t (Slice64.slice Int32.t) = Intrinsic.any_l ()
     | & _56 : UInt64.t = Intrinsic.any_l ()
-    | & old_14_0 : Snapshot.snap_ty (MutBorrow.t (Slice64.slice Int32.t)) = Intrinsic.any_l ()
-    | & old_6_0 : Snapshot.snap_ty (MutBorrow.t (Slice64.slice Int32.t)) = Intrinsic.any_l () ]
+    | & old_14_0 : MutBorrow.t (Slice64.slice Int32.t) = Intrinsic.any_l ()
+    | & old_6_0 : MutBorrow.t (Slice64.slice Int32.t) = Intrinsic.any_l () ]
     
     [ return' (result:())-> {[@expl:insertion_sort ensures #0] [%#sinsertion_sort21] permutation_of'0 (view'1 array) (view'2 array.final)}
       {[@expl:insertion_sort ensures #1] [%#sinsertion_sort22] sorted'0 (view'2 array.final)}

@@ -179,8 +179,6 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
   let%span sseq66 = "../../../creusot-contracts/src/logic/seq.rs" 633 20 633 95
   let%span sboxed67 = "../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
-  use prelude.prelude.Snapshot
-  
   use prelude.int.UInt64
   
   use mach.int.Int
@@ -308,18 +306,14 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
   axiom cmp_le_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord42] le_log'0 x y
   = (cmp_log'0 x y <> C_Greater'0)
   
-  use prelude.prelude.Snapshot
-  
   function view'0 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
     [%#smodel25] view'2 self.current
-  
-  use prelude.prelude.Snapshot
   
   function view'3 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
     [%#smodel55] view'0 self
   
-  function view'1 (self : Snapshot.snap_ty (MutBorrow.t (t_Vec'0))) : Seq.seq t_T'0 =
-    [%#ssnapshot27] view'3 (Snapshot.inner self)
+  function view'1 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
+    [%#ssnapshot27] view'3 self
   
   use seq.Permut
   
@@ -480,20 +474,20 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
     {[@expl:sift_down requires #1] [%#sheapsort_generic17] UInt64.t'int start < UInt64.t'int end'}
     {[@expl:sift_down requires #2] [%#sheapsort_generic18] UInt64.t'int end' <= Seq.length (view'0 v)}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &old_v <- [%#sheapsort_generic0] Snapshot.new v ] s1 | s1 = bb1 ] 
-    | bb1 = s0 [ s0 =  [ &i <- start ] s1 | s1 =  [ &old_2_0 <- Snapshot.new v ] s2 | s2 = bb2 ] 
+    [ bb0 = s0 [ s0 =  [ &old_v <- [%#sheapsort_generic0] v ] s1 | s1 = bb1 ] 
+    | bb1 = s0 [ s0 =  [ &i <- start ] s1 | s1 =  [ &old_2_0 <- v ] s2 | s2 = bb2 ] 
     | bb2 = bb2
-      [ bb2 = {[@expl:mut invariant] (Snapshot.inner old_2_0).final = v.final}
+      [ bb2 = {[@expl:mut invariant] old_2_0.final = v.final}
         {[@expl:loop invariant #0] [%#sheapsort_generic7] inv'0 v}
         {[@expl:loop invariant #1] [%#sheapsort_generic6] permutation_of'0 (view'0 v) (view'1 old_v)}
         {[@expl:loop invariant #2] [%#sheapsort_generic5] UInt64.t'int start <= UInt64.t'int i
         /\ UInt64.t'int i < UInt64.t'int end'}
         {[@expl:loop invariant #3] [%#sheapsort_generic4] forall j : int . 0 <= j /\ j < UInt64.t'int start
         \/ UInt64.t'int end' <= j /\ j < Seq.length (view'0 v)
-         -> index_logic'0 (Snapshot.inner old_v).current j = index_logic'0 v.current j}
+         -> index_logic'0 old_v.current j = index_logic'0 v.current j}
         {[@expl:loop invariant #4] [%#sheapsort_generic3] forall m : t_DeepModelTy'0 . (forall j : int . UInt64.t'int start
         <= j
-        /\ j < UInt64.t'int end'  -> le_log'0 (Seq.get (deep_model'0 (Snapshot.inner old_v)) j) m)
+        /\ j < UInt64.t'int end'  -> le_log'0 (Seq.get (deep_model'0 old_v) j) m)
          -> (forall j : int . UInt64.t'int start <= j /\ j < UInt64.t'int end'
          -> le_log'0 (Seq.get (deep_model'0 v) j) m)}
         {[@expl:loop invariant #5] [%#sheapsort_generic2] forall j : int . UInt64.t'int start <= parent'0 j
@@ -586,7 +580,7 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
     | & v : MutBorrow.t (t_Vec'0) = v
     | & start : UInt64.t = start
     | & end' : UInt64.t = end'
-    | & old_v : Snapshot.snap_ty (MutBorrow.t (t_Vec'0)) = Intrinsic.any_l ()
+    | & old_v : MutBorrow.t (t_Vec'0) = Intrinsic.any_l ()
     | & i : UInt64.t = Intrinsic.any_l ()
     | & _26 : bool = Intrinsic.any_l ()
     | & _28 : UInt64.t = Intrinsic.any_l ()
@@ -606,7 +600,7 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
     | & _62 : MutBorrow.t (Slice64.slice t_T'0) = Intrinsic.any_l ()
     | & _63 : MutBorrow.t (Slice64.slice t_T'0) = Intrinsic.any_l ()
     | & _64 : MutBorrow.t (t_Vec'0) = Intrinsic.any_l ()
-    | & old_2_0 : Snapshot.snap_ty (MutBorrow.t (t_Vec'0)) = Intrinsic.any_l () ]
+    | & old_2_0 : MutBorrow.t (t_Vec'0) = Intrinsic.any_l () ]
     
     [ return' (result:())-> {[@expl:sift_down ensures #0] [%#sheapsort_generic19] heap_frag'0 (deep_model'1 v.final) (UInt64.t'int start) (UInt64.t'int end')}
       {[@expl:sift_down ensures #1] [%#sheapsort_generic20] permutation_of'0 (view'2 v.final) (view'0 v)}
@@ -698,8 +692,6 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
   let%span sinvariant74 = "../../../creusot-contracts/src/invariant.rs" 24 8 24 18
   let%span sseq75 = "../../../creusot-contracts/src/logic/seq.rs" 633 20 633 95
   let%span sboxed76 = "../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
-  
-  use prelude.prelude.Snapshot
   
   use prelude.prelude.Opaque
   
@@ -875,15 +867,11 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
     [%#sheapsort_generic26] forall i : int . start <= parent'0 i /\ i < end'
      -> le_log'0 (Seq.get s i) (Seq.get s (parent'0 i))
   
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
-  
   function view'4 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
     [%#smodel52] view'0 self
   
-  function view'1 (self : Snapshot.snap_ty (MutBorrow.t (t_Vec'0))) : Seq.seq t_T'0 =
-    [%#ssnapshot27] view'4 (Snapshot.inner self)
+  function view'1 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
+    [%#ssnapshot27] view'4 self
   
   use seq.Permut
   
@@ -995,7 +983,7 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
   let rec heap_sort'0[#"heapsort_generic.rs" 94 0 96 29] (v:MutBorrow.t (t_Vec'0)) (return'  (ret:()))= {[@expl:heap_sort 'v' type invariant] [%#sheapsort_generic19] inv'1 v}
     {[@expl:heap_sort requires] [%#sheapsort_generic20] Seq.length (view'0 v) < Int.div (UInt64.t'int v_MAX'0) 2}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &old_v <- [%#sheapsort_generic0] Snapshot.new v ] s1 | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 =  [ &old_v <- [%#sheapsort_generic0] v ] s1 | s1 = bb1 ] 
     | bb1 = s0 [ s0 = len'0 {v.current} (fun (_ret':UInt64.t) ->  [ &_8 <- _ret' ] s1) | s1 = bb2 ] 
     | bb2 = s0
       [ s0 = UInt64.eq {[%#sheapsort_generic2] (2 : UInt64.t)} {[%#sheapsort_generic1] (0 : UInt64.t)}
@@ -1005,11 +993,11 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
     
     | bb3 = s0
       [ s0 = UInt64.div {_8} {[%#sheapsort_generic2] (2 : UInt64.t)} (fun (_ret':UInt64.t) ->  [ &start <- _ret' ] s1)
-      | s1 =  [ &old_4_0 <- Snapshot.new v ] s2
+      | s1 =  [ &old_4_0 <- v ] s2
       | s2 = bb4 ]
     
     | bb4 = bb4
-      [ bb4 = {[@expl:mut invariant] (Snapshot.inner old_4_0).final = v.final}
+      [ bb4 = {[@expl:mut invariant] old_4_0.final = v.final}
         {[@expl:loop invariant #0] [%#sheapsort_generic5] permutation_of'0 (view'0 v) (view'1 old_v)}
         {[@expl:loop invariant #1] [%#sheapsort_generic4] heap_frag'0 (deep_model'0 v) (UInt64.t'int start) (Seq.length (view'0 v))}
         {[@expl:loop invariant #2] [%#sheapsort_generic3] UInt64.t'int start <= Int.div (Seq.length (view'0 v)) 2}
@@ -1036,9 +1024,9 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
        ]
     
     | bb9 = s0 [ s0 = len'0 {v.current} (fun (_ret':UInt64.t) ->  [ &end' <- _ret' ] s1) | s1 = bb10 ] 
-    | bb10 = s0 [ s0 =  [ &old_11_0 <- Snapshot.new v ] s1 | s1 = bb11 ] 
+    | bb10 = s0 [ s0 =  [ &old_11_0 <- v ] s1 | s1 = bb11 ] 
     | bb11 = bb11
-      [ bb11 = {[@expl:mut invariant] (Snapshot.inner old_11_0).final = v.final}
+      [ bb11 = {[@expl:mut invariant] old_11_0.final = v.final}
         {[@expl:loop invariant #0] [%#sheapsort_generic13] inv'1 v}
         {[@expl:loop invariant #1] [%#sheapsort_generic12] UInt64.t'int end' <= Seq.length (view'0 v)}
         {[@expl:loop invariant #2] [%#sheapsort_generic11] permutation_of'0 (view'0 v) (view'1 old_v)}
@@ -1102,7 +1090,7 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
     )
     [ & _0 : () = Intrinsic.any_l ()
     | & v : MutBorrow.t (t_Vec'0) = v
-    | & old_v : Snapshot.snap_ty (MutBorrow.t (t_Vec'0)) = Intrinsic.any_l ()
+    | & old_v : MutBorrow.t (t_Vec'0) = Intrinsic.any_l ()
     | & start : UInt64.t = Intrinsic.any_l ()
     | & _8 : UInt64.t = Intrinsic.any_l ()
     | & _10 : bool = Intrinsic.any_l ()
@@ -1118,8 +1106,8 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
     | & _39 : MutBorrow.t (t_Vec'0) = Intrinsic.any_l ()
     | & _43 : () = Intrinsic.any_l ()
     | & _44 : MutBorrow.t (t_Vec'0) = Intrinsic.any_l ()
-    | & old_4_0 : Snapshot.snap_ty (MutBorrow.t (t_Vec'0)) = Intrinsic.any_l ()
-    | & old_11_0 : Snapshot.snap_ty (MutBorrow.t (t_Vec'0)) = Intrinsic.any_l () ]
+    | & old_4_0 : MutBorrow.t (t_Vec'0) = Intrinsic.any_l ()
+    | & old_11_0 : MutBorrow.t (t_Vec'0) = Intrinsic.any_l () ]
     
     [ return' (result:())-> {[@expl:heap_sort ensures #0] [%#sheapsort_generic21] sorted'0 (deep_model'1 v.final)}
       {[@expl:heap_sort ensures #1] [%#sheapsort_generic22] permutation_of'0 (view'2 v.final) (view'0 v)}

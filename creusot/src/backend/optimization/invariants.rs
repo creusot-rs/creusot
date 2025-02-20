@@ -11,7 +11,7 @@ use crate::{
         program::node_graph,
         wto::{weak_topological_order, Component},
     },
-    contracts_items::{get_snap_ty, get_snaphot_new, get_snapshot_deref},
+    contracts_items::get_snap_ty,
     ctx::TranslationCtx,
     pearlite::{mk_projection, BinOp, Term},
     translation::fmir,
@@ -37,8 +37,6 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
     let res = borrow_prophecy_analysis(ctx, &body, &wto);
 
     let snap_ty = get_snap_ty(ctx.tcx);
-    let snap_new = get_snaphot_new(ctx.tcx);
-    let snap_deref = get_snapshot_deref(ctx.tcx);
     let tcx = ctx.tcx;
     for (k, unchanged) in res.iter() {
         let inc = graph.neighbors_directed(*k, Direction::Incoming);
@@ -83,12 +81,7 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
                 }
                 prev_block.stmts.push(Statement::Assignment(
                     Place { local, projection: Vec::new() },
-                    RValue::Ghost(Term::call_no_normalize(
-                        tcx,
-                        snap_new,
-                        subst,
-                        vec![pterm.clone()],
-                    )),
+                    RValue::Snapshot(pterm.clone().coerce(ty, DUMMY_SP)),
                     DUMMY_SP,
                 ));
             }
@@ -96,12 +89,14 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
             let old = Term::var(local, ty);
             let blk = body.blocks.get_mut(k).unwrap();
 
-            let mut snap_old = Term::call_no_normalize(ctx.tcx, snap_deref, subst, vec![old]);
-            snap_old.ty = u.ty(tcx, &body.locals);
             blk.invariants.insert(
                 0,
                 fmir::Invariant {
-                    body: snap_old.fin().bin_op(tcx, BinOp::Eq, pterm.fin()),
+                    body: old.coerce(u.ty(tcx, &body.locals), DUMMY_SP).fin().bin_op(
+                        tcx,
+                        BinOp::Eq,
+                        pterm.fin(),
+                    ),
                     expl: "expl:mut invariant".to_string(),
                 },
             );

@@ -108,6 +108,7 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
         fn is_smaller_than(&self, t: &Term, nm: Symbol) -> bool {
             match &t.kind {
                 TermKind::Var(s) => self.smaller_than.get(s) == Some(&nm),
+                TermKind::Coerce { arg } => self.is_smaller_than(arg, nm),
                 _ => false,
             }
         }
@@ -115,14 +116,14 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
         // TODO: could make this a `pattern` to term comparison to make it more powerful
         /// Mark `sym` as smaller than `term`. Currently, this only updates the relation if `term` is a variable.
         fn smaller_than(&mut self, sym: Symbol, term: &Term<'_>) {
-            let var = match &term.kind {
-                TermKind::Var(s) => s,
-                _ => return,
-            };
-
-            let parent = self.smaller_than.get(var).unwrap_or(var);
-
-            self.smaller_than.insert(sym, *parent);
+            match &term.kind {
+                TermKind::Var(var) => {
+                    let parent = self.smaller_than.get(var).unwrap_or(var);
+                    self.smaller_than.insert(sym, *parent);
+                }
+                TermKind::Coerce { arg } => self.smaller_than(sym, arg),
+                _ => (),
+            }
         }
     }
 
@@ -281,6 +282,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     "casting from a type that is not a boolean is not supported",
                 ),
             },
+            TermKind::Coerce { arg } => self.build_vc(arg, k),
             // Items are just global names so
             // VC(i, Q) = Q(i)
             TermKind::Item(id, sub) => {
@@ -603,11 +605,14 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
     //  0 <= V && V' < V
     //  Weirdly (to me Xavier) this doesn't check `0 <= V'` but this is actually the same behavior as Why3
     fn build_variant(&self, call_args: &[Exp]) -> Result<Exp, VCError<'tcx>> {
-        if self.structurally_recursive {
-            return Ok(Exp::mk_true());
-        }
         let variant = self.ctx.sig(self.self_id).contract.variant.clone();
-        let Some(variant) = variant else { return Ok(Exp::mk_false()) };
+        let Some(variant) = variant else {
+            if self.structurally_recursive {
+                return Ok(Exp::mk_true());
+            } else {
+                return Ok(Exp::mk_false());
+            }
+        };
 
         let top_level_args = self.top_level_args();
 

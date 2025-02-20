@@ -342,8 +342,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         );
     }
 
-    fn emit_ghost_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>, span: Span) {
-        self.emit_assignment(&lhs, fmir::RValue::Ghost(rhs), span)
+    fn emit_snapshot_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>, span: Span) {
+        self.emit_assignment(&lhs, fmir::RValue::Snapshot(rhs), span)
     }
 
     fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: RValue<'tcx>, span: Span) {

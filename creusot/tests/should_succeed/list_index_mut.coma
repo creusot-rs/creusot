@@ -36,10 +36,6 @@ module M_list_index_mut__index_mut [#"list_index_mut.rs" 37 0 37 61]
   let%span sresolve34 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   let%span sord35 = "../../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
   
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
-  
   use mach.int.Int
   
   use prelude.prelude.MutBorrow
@@ -75,19 +71,13 @@ module M_list_index_mut__index_mut [#"list_index_mut.rs" 37 0 37 61]
       C_Some'0 i
   
   
-  use prelude.prelude.Snapshot
-  
   use prelude.int.UInt64
-  
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
   
   function view'1 (self : UInt64.t) : int =
     [%#smodel20] UInt64.t'int self
   
-  function view'0 (self : Snapshot.snap_ty UInt64.t) : int =
-    [%#ssnapshot16] view'1 (Snapshot.inner self)
+  function view'0 (self : UInt64.t) : int =
+    [%#ssnapshot16] view'1 self
   
   type t_Ordering'0  =
     | C_Less'0
@@ -200,29 +190,27 @@ module M_list_index_mut__index_mut [#"list_index_mut.rs" 37 0 37 61]
   
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Snapshot
-  
   meta "compute_max_steps" 1000000
   
   let rec index_mut'0[#"list_index_mut.rs" 37 0 37 61] (l:MutBorrow.t (t_List'0)) (ix:UInt64.t) (return'  (ret:MutBorrow.t UInt32.t))= {[@expl:index_mut requires] [%#slist_index_mut9] UInt64.t'int ix
     < len'0 l.current}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &old_l <- [%#slist_index_mut0] Snapshot.new l ] s1 | s1 = bb1 ] 
-    | bb1 = s0 [ s0 =  [ &old_ix <- [%#slist_index_mut1] Snapshot.new ix ] s1 | s1 = bb2 ] 
+    [ bb0 = s0 [ s0 =  [ &old_l <- [%#slist_index_mut0] l ] s1 | s1 = bb1 ] 
+    | bb1 = s0 [ s0 =  [ &old_ix <- [%#slist_index_mut1] ix ] s1 | s1 = bb2 ] 
     | bb2 = bb3
     | bb3 = bb3
       [ bb3 = {[@expl:loop invariant #0] [%#slist_index_mut6] UInt64.ule (0 : UInt64.t) ix
         /\ UInt64.t'int ix < len'0 l.current}
         {[@expl:loop invariant #1] [%#slist_index_mut5] get'0 l.current (UInt64.t'int ix)
-        = get'0 (Snapshot.inner old_l).current (view'0 old_ix)}
+        = get'0 old_l.current (view'0 old_ix)}
         {[@expl:loop invariant #2] [%#slist_index_mut4] get'0 l.final (UInt64.t'int ix)
-        = get'0 (Snapshot.inner old_l).final (view'0 old_ix)}
+        = get'0 old_l.final (view'0 old_ix)}
         {[@expl:loop invariant #3] [%#slist_index_mut3] len'0 l.final = len'0 l.current
-         -> len'0 (Snapshot.inner old_l).final = len'0 (Snapshot.inner old_l).current}
+         -> len'0 old_l.final = len'0 old_l.current}
         {[@expl:loop invariant #4] [%#slist_index_mut2] (forall i : int . 0 <= i
         /\ i < len'0 l.current /\ i <> UInt64.t'int ix  -> get'0 l.final i = get'0 l.current i)
-         -> (forall i : int . 0 <= i /\ i < len'0 (Snapshot.inner old_l).current /\ i <> view'0 old_ix
-         -> get'0 (Snapshot.inner old_l).final i = get'0 (Snapshot.inner old_l).current i)}
+         -> (forall i : int . 0 <= i /\ i < len'0 old_l.current /\ i <> view'0 old_ix
+         -> get'0 old_l.final i = get'0 old_l.current i)}
         (! s0) [ s0 = bb4 ] 
         [ bb4 = s0
           [ s0 = UInt64.gt {ix} {[%#slist_index_mut7] (0 : UInt64.t)} (fun (_ret':bool) ->  [ &_21 <- _ret' ] s1)
@@ -275,8 +263,8 @@ module M_list_index_mut__index_mut [#"list_index_mut.rs" 37 0 37 61]
     | & l : MutBorrow.t (t_List'0) = l
     | & ix : UInt64.t = ix
     | & _3 : MutBorrow.t UInt32.t = Intrinsic.any_l ()
-    | & old_l : Snapshot.snap_ty (MutBorrow.t (t_List'0)) = Intrinsic.any_l ()
-    | & old_ix : Snapshot.snap_ty UInt64.t = Intrinsic.any_l ()
+    | & old_l : MutBorrow.t (t_List'0) = Intrinsic.any_l ()
+    | & old_ix : UInt64.t = Intrinsic.any_l ()
     | & _21 : bool = Intrinsic.any_l ()
     | & _23 : MutBorrow.t (t_List'0) = Intrinsic.any_l ()
     | & _24 : MutBorrow.t (t_List'0) = Intrinsic.any_l ()

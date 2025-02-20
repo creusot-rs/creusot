@@ -13,8 +13,8 @@ use std::{
 
 use crate::{
     contracts_items::{
-        get_ghost_inner_logic, get_index_logic, get_snap_inner, is_assertion, is_deref,
-        is_ghost_ty, is_snap_ty, is_spec,
+        get_ghost_inner_logic, get_index_logic, is_assertion, is_deref, is_ghost_ty, is_snap_ty,
+        is_spec,
     },
     error::{CannotFetchThir, CreusotResult, Error},
     naming::anonymous_param_symbol,
@@ -101,6 +101,9 @@ pub enum TermKind<'tcx> {
     Var(Symbol),
     Lit(Literal<'tcx>),
     Cast {
+        arg: Box<Term<'tcx>>,
+    },
+    Coerce {
         arg: Box<Term<'tcx>>,
     },
     Item(DefId, GenericArgsRef<'tcx>),
@@ -627,9 +630,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 }
             }
             ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } => {
-                let mut e = self.expr_term(arg)?;
-                e.ty = ty;
-                Ok(e)
+                Ok(self.expr_term(arg)?.coerce(ty, span))
             }
             ExprKind::Borrow { arg, .. } => {
                 let t = self.logical_reborrow(arg)?;
@@ -687,13 +688,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     },
                 })
             }
-            // TODO: If we deref a shared borrow this should be erased?
-            // Can it happen?
             ExprKind::Deref { arg } => {
-                let mut arg_trans = self.expr_term(arg)?;
+                let arg_trans = self.expr_term(arg)?;
                 if self.thir[arg].ty.is_box() || self.thir[arg].ty.ref_mutability() == Some(Not) {
-                    arg_trans.ty = arg_trans.ty.builtin_deref(false).expect("expected &T");
-                    Ok(arg_trans)
+                    let ty = arg_trans.ty.builtin_deref(false).expect("expected &T or Box<T>");
+                    Ok(arg_trans.coerce(ty, span))
                 } else {
                     Ok(Term { ty, span, kind: TermKind::Cur { term: Box::new(arg_trans) } })
                 }
@@ -1009,12 +1008,12 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } = self.thir[args[0]].kind else { unreachable!() };
 
                     let (cur, fin, inner, proj) = self.logical_reborrow_inner(arg)?;
-                    let deref_method = get_snap_inner(self.ctx.tcx);
                     // Extract the `T` from `Snapshot<T>`
                     let TyKind::Adt(_, subst) = self.thir[arg].ty.peel_refs().kind() else { unreachable!() };
+                    let ty = subst.type_at(0);
                     return Ok((
-                        Term::call_no_normalize(self.ctx.tcx, deref_method, subst, vec![cur]),
-                        Term::call_no_normalize(self.ctx.tcx, deref_method, subst, vec![fin]),
+                        cur.coerce(ty, span),
+                        fin.coerce(ty, span),
                         inner,
                         proj
                     ));
@@ -1234,6 +1233,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         TermKind::Var(_) => {}
         TermKind::Lit(_) => {}
         TermKind::Cast { arg } => visitor.visit_term(arg),
+        TermKind::Coerce { arg } => visitor.visit_term(arg),
         TermKind::Item(_, _) => {}
         TermKind::Binary { op: _, lhs, rhs } => {
             visitor.visit_term(lhs);
@@ -1290,6 +1290,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         TermKind::Var(_) => {}
         TermKind::Lit(_) => {}
         TermKind::Cast { arg } => visitor.visit_mut_term(&mut *arg),
+        TermKind::Coerce { arg } => visitor.visit_mut_term(arg),
         TermKind::Item(_, _) => {}
         TermKind::Binary { op: _, lhs, rhs } => {
             visitor.visit_mut_term(&mut *lhs);
@@ -1496,6 +1497,10 @@ impl<'tcx> Term<'tcx> {
         }
     }
 
+    pub(crate) fn coerce(self, ty: Ty<'tcx>, span: Span) -> Self {
+        Term { ty, kind: TermKind::Coerce { arg: Box::new(self) }, span }
+    }
+
     pub(crate) fn span(mut self, sp: Span) -> Self {
         self.span = sp;
         self
@@ -1533,6 +1538,7 @@ impl<'tcx> Term<'tcx> {
             }
             TermKind::Lit(_) => {}
             TermKind::Cast { arg } => arg.subst_with_inner(bound, inv_subst),
+            TermKind::Coerce { arg } => arg.subst_with_inner(bound, inv_subst),
             TermKind::Item(_, _) => {}
             TermKind::Binary { lhs, rhs, .. } => {
                 lhs.subst_with_inner(bound, inv_subst);
@@ -1615,6 +1621,7 @@ impl<'tcx> Term<'tcx> {
             }
             TermKind::Lit(_) => {}
             TermKind::Cast { arg } => arg.free_vars_inner(bound, free),
+            TermKind::Coerce { arg } => arg.free_vars_inner(bound, free),
             TermKind::Item(_, _) => {}
             TermKind::Binary { lhs, rhs, .. } => {
                 lhs.free_vars_inner(bound, free);

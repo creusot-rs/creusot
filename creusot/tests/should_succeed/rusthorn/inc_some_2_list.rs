@@ -27,9 +27,7 @@ impl List {
         }
     }
 
-    // TODO: Make this ghost
     #[logic]
-    #[variant(*self)]
     #[ensures(self.sum() >= 0)]
     fn lemma_sum_nonneg(&self) {
         match self {

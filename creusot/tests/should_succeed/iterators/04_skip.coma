@@ -191,8 +191,6 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
   let%span scommon26 = "common.rs" 20 14 20 42
   let%span sinvariant27 = "../../../../creusot-contracts/src/invariant.rs" 34 20 34 44
   
-  use prelude.prelude.Snapshot
-  
   use prelude.prelude.MutBorrow
   
   use prelude.int.UInt64
@@ -247,28 +245,18 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
   
   axiom produces_refl'0_spec : forall self : t_I'0 . [%#scommon23] produces'0 self (Seq.empty : Seq.seq t_Item'0) self
   
-  use prelude.prelude.Snapshot
-  
   use prelude.int.UInt64
   
   use mach.int.Int
   
-  use prelude.prelude.Snapshot
+  use seq.Seq
   
   use seq.Seq
   
-  use prelude.prelude.Snapshot
-  
-  use seq.Seq
-  
-  function index_logic'0 [@inline:trivial] (self : Snapshot.snap_ty (Seq.seq t_Item'0)) (ix : int) : t_Item'0 =
-    [%#sindex15] Seq.get (Snapshot.inner self) ix
+  function index_logic'0 [@inline:trivial] (self : Seq.seq t_Item'0) (ix : int) : t_Item'0 =
+    [%#sindex15] Seq.get self ix
   
   predicate resolve'1 (_1 : t_Item'0)
-  
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
   
   predicate inv'1 (_1 : t_I'0)
   
@@ -334,8 +322,6 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
   
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Snapshot
-  
   predicate completed'0 [#"04_skip.rs" 24 4 24 35] (self : MutBorrow.t (t_Skip'0)) =
     [%#s04_skip19] UInt64.t'int (self.final).t_Skip__n'0 = 0
     /\ (exists s : Seq.seq t_Item'0, i : MutBorrow.t t_I'0 . Seq.length s <= UInt64.t'int (self.current).t_Skip__n'0
@@ -355,7 +341,7 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
   
   let rec next'0[#"04_skip.rs" 65 4 65 41] (self:MutBorrow.t (t_Skip'0)) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] [%#s04_skip10] inv'0 self}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &old_self <- [%#s04_skip0] Snapshot.new self ] s1 | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 =  [ &old_self <- [%#s04_skip0] self ] s1 | s1 = bb1 ] 
     | bb1 = s0
       [ s0 = MutBorrow.borrow_final
           <UInt64.t>
@@ -371,18 +357,16 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
       | s3 = bb2 ]
     
     | bb2 = s0
-      [ s0 = -{resolve'0 _7}- s1
-      | s1 =  [ &skipped <- [%#s04_skip1] Snapshot.new (Seq.empty : Seq.seq t_Item'0) ] s2
-      | s2 = bb3 ]
+      [ s0 = -{resolve'0 _7}- s1 | s1 =  [ &skipped <- [%#s04_skip1] Seq.empty : Seq.seq t_Item'0 ] s2 | s2 = bb3 ]
     
-    | bb3 = s0 [ s0 =  [ &old_4_0 <- Snapshot.new self ] s1 | s1 = bb4 ] 
+    | bb3 = s0 [ s0 =  [ &old_4_0 <- self ] s1 | s1 = bb4 ] 
     | bb4 = bb4
-      [ bb4 = {[@expl:mut invariant] (Snapshot.inner old_4_0).final = self.final}
+      [ bb4 = {[@expl:mut invariant] old_4_0.final = self.final}
         {[@expl:loop invariant #0] [%#s04_skip6] inv'0 self}
-        {[@expl:loop invariant #1] [%#s04_skip5] Seq.length (Snapshot.inner skipped) + UInt64.t'int n
-        = UInt64.t'int ((Snapshot.inner old_self).current).t_Skip__n'0}
-        {[@expl:loop invariant #2] [%#s04_skip4] produces'0 ((Snapshot.inner old_self).current).t_Skip__iter'0 (Snapshot.inner skipped) (self.current).t_Skip__iter'0}
-        {[@expl:loop invariant #3] [%#s04_skip3] forall i : int . 0 <= i /\ i < Seq.length (Snapshot.inner skipped)
+        {[@expl:loop invariant #1] [%#s04_skip5] Seq.length skipped + UInt64.t'int n
+        = UInt64.t'int (old_self.current).t_Skip__n'0}
+        {[@expl:loop invariant #2] [%#s04_skip4] produces'0 (old_self.current).t_Skip__iter'0 skipped (self.current).t_Skip__iter'0}
+        {[@expl:loop invariant #3] [%#s04_skip3] forall i : int . 0 <= i /\ i < Seq.length skipped
          -> resolve'1 (index_logic'0 skipped i)}
         {[@expl:loop invariant #4] [%#s04_skip2] UInt64.t'int (self.current).t_Skip__n'0 = 0}
         (! s0) [ s0 = bb5 ] 
@@ -407,7 +391,7 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
           [ s0 = v_Some'0 {r} (fun (r0'0:t_Item'0) ->  [ &x <- r0'0 ] s1)
           | s1 = {[@expl:type invariant] inv'2 x} s2
           | s2 = -{resolve'1 x}- s3
-          | s3 =  [ &_26 <- [%#s04_skip8] Snapshot.new (Seq.(++) (Snapshot.inner skipped) (Seq.singleton x)) ] s4
+          | s3 =  [ &_26 <- [%#s04_skip8] Seq.(++) skipped (Seq.singleton x) ] s4
           | s4 = bb12 ]
         
         | bb12 = s0
@@ -430,17 +414,17 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
     )
     [ & _0 : t_Option'0 = Intrinsic.any_l ()
     | & self : MutBorrow.t (t_Skip'0) = self
-    | & old_self : Snapshot.snap_ty (MutBorrow.t (t_Skip'0)) = Intrinsic.any_l ()
+    | & old_self : MutBorrow.t (t_Skip'0) = Intrinsic.any_l ()
     | & n : UInt64.t = Intrinsic.any_l ()
     | & _6 : MutBorrow.t UInt64.t = Intrinsic.any_l ()
     | & _7 : MutBorrow.t UInt64.t = Intrinsic.any_l ()
-    | & skipped : Snapshot.snap_ty (Seq.seq t_Item'0) = Intrinsic.any_l ()
+    | & skipped : Seq.seq t_Item'0 = Intrinsic.any_l ()
     | & r : t_Option'0 = Intrinsic.any_l ()
     | & _19 : MutBorrow.t t_I'0 = Intrinsic.any_l ()
     | & _21 : bool = Intrinsic.any_l ()
     | & x : t_Item'0 = Intrinsic.any_l ()
-    | & _26 : Snapshot.snap_ty (Seq.seq t_Item'0) = Intrinsic.any_l ()
-    | & old_4_0 : Snapshot.snap_ty (MutBorrow.t (t_Skip'0)) = Intrinsic.any_l () ]
+    | & _26 : Seq.seq t_Item'0 = Intrinsic.any_l ()
+    | & old_4_0 : MutBorrow.t (t_Skip'0) = Intrinsic.any_l () ]
     
     [ return' (result:t_Option'0)-> {[@expl:next result type invariant] [%#s04_skip11] inv'3 result}
       {[@expl:next ensures] [%#s04_skip12] match result with

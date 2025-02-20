@@ -148,15 +148,9 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
       (! return' {result}) ]
   
   
-  use prelude.prelude.Snapshot
-  
   use seq.Seq
   
   use seq.Seq
-  
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
   
   use seq.Seq
   
@@ -169,10 +163,6 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
     [%#s08_haystack22] len <= Seq.length (view'0 needle)
     /\ pos <= Seq.length (view'0 haystack) - len
     /\ (forall i : int . 0 <= i /\ i < len  -> index_logic'0 needle i = index_logic'0 haystack (pos + i))
-  
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
   
   use seq.Seq
   
@@ -265,10 +255,6 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
     {[@expl:into_iter requires] [%#siter20] into_iter_pre'1 self}
     any [ return' (result:t_Range'0)-> {inv'2 result} {[%#siter20] into_iter_post'1 self result} (! return' {result}) ] 
   
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
-  
   predicate produces'1 (self : t_Range'0) (visited : Seq.seq UInt64.t) (o : t_Range'0) =
     [%#srange25] self.t_Range__end'0 = o.t_Range__end'0
     /\ deep_model'0 self.t_Range__start'0 <= deep_model'0 o.t_Range__start'0
@@ -332,12 +318,6 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
-  
   meta "compute_max_steps" 1000000
   
   let rec search'0[#"08_haystack.rs" 21 0 21 60] (needle:t_Vec'0) (haystack:t_Vec'0) (return'  (ret:UInt64.t))= {[@expl:search requires] [%#s08_haystack12] Seq.length (view'0 needle)
@@ -352,14 +332,14 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
       | s2 = bb3 ]
     
     | bb3 = s0 [ s0 = into_iter'0 {_10} (fun (_ret':t_RangeInclusive'0) ->  [ &iter <- _ret' ] s1) | s1 = bb4 ] 
-    | bb4 = s0 [ s0 =  [ &iter_old <- [%#s08_haystack1] Snapshot.new iter ] s1 | s1 = bb5 ] 
-    | bb5 = s0 [ s0 =  [ &produced <- [%#s08_haystack2] Snapshot.new (Seq.empty : Seq.seq UInt64.t) ] s1 | s1 = bb6 ] 
+    | bb4 = s0 [ s0 =  [ &iter_old <- [%#s08_haystack1] iter ] s1 | s1 = bb5 ] 
+    | bb5 = s0 [ s0 =  [ &produced <- [%#s08_haystack2] Seq.empty : Seq.seq UInt64.t ] s1 | s1 = bb6 ] 
     | bb6 = bb7
     | bb7 = bb7
-      [ bb7 = {[@expl:for invariant] [%#s08_haystack4] inv'1 (Snapshot.inner produced)}
+      [ bb7 = {[@expl:for invariant] [%#s08_haystack4] inv'1 produced}
         {[@expl:for invariant] [%#s08_haystack4] inv'0 iter}
-        {[@expl:for invariant] [%#s08_haystack4] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
-        {[@expl:loop invariant] [%#s08_haystack3] forall k : int . 0 <= k /\ k < Seq.length (Snapshot.inner produced)
+        {[@expl:for invariant] [%#s08_haystack4] produces'0 iter_old produced iter}
+        {[@expl:loop invariant] [%#s08_haystack3] forall k : int . 0 <= k /\ k < Seq.length produced
          -> not match_at'0 needle haystack k (Seq.length (view'0 needle))}
         (! s0) [ s0 = bb8 ] 
         [ bb8 = s0
@@ -380,10 +360,7 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
         | bb11 = bb13
         | bb13 = s0
           [ s0 = v_Some'0 {_26} (fun (r0'0:UInt64.t) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
-          | s1 = 
-            [ &_31 <- [%#s08_haystack5] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
-            
-            s2
+          | s1 =  [ &_31 <- [%#s08_haystack5] Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb14 ]
         
         | bb14 = s0
@@ -397,16 +374,14 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
           | s1 = into_iter'1 {_37} (fun (_ret':t_Range'0) ->  [ &iter1 <- _ret' ] s2)
           | s2 = bb16 ]
         
-        | bb16 = s0 [ s0 =  [ &iter_old1 <- [%#s08_haystack7] Snapshot.new iter1 ] s1 | s1 = bb17 ] 
-        | bb17 = s0
-          [ s0 =  [ &produced1 <- [%#s08_haystack8] Snapshot.new (Seq.empty : Seq.seq UInt64.t) ] s1 | s1 = bb18 ]
-        
+        | bb16 = s0 [ s0 =  [ &iter_old1 <- [%#s08_haystack7] iter1 ] s1 | s1 = bb17 ] 
+        | bb17 = s0 [ s0 =  [ &produced1 <- [%#s08_haystack8] Seq.empty : Seq.seq UInt64.t ] s1 | s1 = bb18 ] 
         | bb18 = bb19
         | bb19 = bb19
-          [ bb19 = {[@expl:for invariant] [%#s08_haystack10] inv'1 (Snapshot.inner produced1)}
+          [ bb19 = {[@expl:for invariant] [%#s08_haystack10] inv'1 produced1}
             {[@expl:for invariant] [%#s08_haystack10] inv'2 iter1}
-            {[@expl:for invariant] [%#s08_haystack10] produces'1 (Snapshot.inner iter_old1) (Snapshot.inner produced1) iter1}
-            {[@expl:loop invariant] [%#s08_haystack9] match_at'0 needle haystack (UInt64.t'int i) (Seq.length (Snapshot.inner produced1))}
+            {[@expl:for invariant] [%#s08_haystack10] produces'1 iter_old1 produced1 iter1}
+            {[@expl:loop invariant] [%#s08_haystack9] match_at'0 needle haystack (UInt64.t'int i) (Seq.length produced1)}
             (! s0) [ s0 = bb20 ] 
             [ bb20 = s0
               [ s0 = MutBorrow.borrow_mut <t_Range'0> {iter1}
@@ -426,10 +401,7 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
             | bb23 = bb25
             | bb25 = s0
               [ s0 = v_Some'0 {_49} (fun (r0'0:UInt64.t) ->  [ &__creusot_proc_iter_elem1 <- r0'0 ] s1)
-              | s1 = 
-                [ &_54 <- [%#s08_haystack11] Snapshot.new (Seq.(++) (Snapshot.inner produced1) (Seq.singleton __creusot_proc_iter_elem1)) ]
-                
-                s2
+              | s1 =  [ &_54 <- [%#s08_haystack11] Seq.(++) produced1 (Seq.singleton __creusot_proc_iter_elem1) ] s2
               | s2 = bb26 ]
             
             | bb26 = s0
@@ -466,24 +438,24 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
     | & _11 : UInt64.t = Intrinsic.any_l ()
     | & _12 : UInt64.t = Intrinsic.any_l ()
     | & _14 : UInt64.t = Intrinsic.any_l ()
-    | & iter_old : Snapshot.snap_ty (t_RangeInclusive'0) = Intrinsic.any_l ()
-    | & produced : Snapshot.snap_ty (Seq.seq UInt64.t) = Intrinsic.any_l ()
+    | & iter_old : t_RangeInclusive'0 = Intrinsic.any_l ()
+    | & produced : Seq.seq UInt64.t = Intrinsic.any_l ()
     | & _26 : t_Option'0 = Intrinsic.any_l ()
     | & _27 : MutBorrow.t (t_RangeInclusive'0) = Intrinsic.any_l ()
     | & _28 : MutBorrow.t (t_RangeInclusive'0) = Intrinsic.any_l ()
     | & __creusot_proc_iter_elem : UInt64.t = Intrinsic.any_l ()
-    | & _31 : Snapshot.snap_ty (Seq.seq UInt64.t) = Intrinsic.any_l ()
+    | & _31 : Seq.seq UInt64.t = Intrinsic.any_l ()
     | & i : UInt64.t = Intrinsic.any_l ()
     | & iter1 : t_Range'0 = Intrinsic.any_l ()
     | & _37 : t_Range'0 = Intrinsic.any_l ()
     | & _38 : UInt64.t = Intrinsic.any_l ()
-    | & iter_old1 : Snapshot.snap_ty (t_Range'0) = Intrinsic.any_l ()
-    | & produced1 : Snapshot.snap_ty (Seq.seq UInt64.t) = Intrinsic.any_l ()
+    | & iter_old1 : t_Range'0 = Intrinsic.any_l ()
+    | & produced1 : Seq.seq UInt64.t = Intrinsic.any_l ()
     | & _49 : t_Option'0 = Intrinsic.any_l ()
     | & _50 : MutBorrow.t (t_Range'0) = Intrinsic.any_l ()
     | & _51 : MutBorrow.t (t_Range'0) = Intrinsic.any_l ()
     | & __creusot_proc_iter_elem1 : UInt64.t = Intrinsic.any_l ()
-    | & _54 : Snapshot.snap_ty (Seq.seq UInt64.t) = Intrinsic.any_l ()
+    | & _54 : Seq.seq UInt64.t = Intrinsic.any_l ()
     | & j : UInt64.t = Intrinsic.any_l ()
     | & _57 : bool = Intrinsic.any_l ()
     | & _59 : UInt8.t = Intrinsic.any_l ()

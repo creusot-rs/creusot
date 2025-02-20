@@ -1,6 +1,6 @@
 use crate::{
     backend::Why3Generator,
-    contracts_items::{get_builtin, get_int_ty, is_int_ty, is_logic, is_trusted},
+    contracts_items::{get_builtin, get_int_ty, is_int_ty, is_logic, is_snap_ty, is_trusted},
     ctx::*,
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
@@ -28,23 +28,24 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         Int(ity) => MlT::TConstructor(names.from_prelude(ity_to_prelude(ctx.tcx, *ity), "t")),
         Uint(uty) => MlT::TConstructor(names.from_prelude(uty_to_prelude(ctx.tcx, *uty), "t")),
         Float(flty) => MlT::TConstructor(names.from_prelude(floatty_to_prelude(*flty), "t")),
+        Adt(def, s) if def.is_box() => translate_ty(ctx, names, span, s[0].expect_ty()),
+        Adt(def, s) if is_snap_ty(ctx.tcx, def.did()) => {
+            // Make sure we create a cycle of dependency if we create a type which is recursive through Snapshot
+            // See test should_fail/bug/436_2.rs, and #436
+            names.ty(def.did(), s);
+            translate_ty(ctx, names, span, s[0].expect_ty())
+        }
+        Adt(def, s) if get_builtin(ctx.tcx, def.did()).is_some() => {
+            let cons = MlT::TConstructor(names.ty(def.did(), s));
+            let args: Vec<_> = s.types().map(|t| translate_ty(ctx, names, span, t)).collect();
+            MlT::TApp(Box::new(cons), args)
+        }
+        Adt(def, _) if def.is_struct() && def.variant(VariantIdx::ZERO).fields.is_empty() => {
+            MlT::UNIT
+        }
         Adt(def, s) => {
-            if def.is_box() {
-                return translate_ty(ctx, names, span, s[0].expect_ty());
-            }
-
-            if get_builtin(ctx.tcx, def.did()).is_some() {
-                let cons = MlT::TConstructor(names.ty(def.did(), s));
-                let args: Vec<_> = s.types().map(|t| translate_ty(ctx, names, span, t)).collect();
-                MlT::TApp(Box::new(cons), args)
-            } else {
-                if def.is_struct() && def.variant(VariantIdx::ZERO).fields.is_empty() {
-                    MlT::UNIT
-                } else {
-                    let cons = MlT::TConstructor(names.ty(def.did(), s));
-                    MlT::TApp(Box::new(cons), vec![])
-                }
-            }
+            let cons = MlT::TConstructor(names.ty(def.did(), s));
+            MlT::TApp(Box::new(cons), vec![])
         }
         Tuple(ref args) => {
             let tys = (*args).iter().map(|t| translate_ty(ctx, names, span, t)).collect();

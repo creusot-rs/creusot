@@ -181,8 +181,6 @@ module M_final_borrows__call_changes_prophecy [#"final_borrows.rs" 28 0 28 43]
   let%span sfinal_borrows5 = "final_borrows.rs" 30 14 30 26
   let%span sresolve6 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   
-  use prelude.prelude.Snapshot
-  
   use prelude.prelude.MutBorrow
   
   use prelude.int.Int32
@@ -199,20 +197,16 @@ module M_final_borrows__call_changes_prophecy [#"final_borrows.rs" 28 0 28 43]
   predicate resolve'0 (_1 : MutBorrow.t Int32.t) =
     resolve'1 _1
   
-  use prelude.prelude.Snapshot
-  
   use prelude.prelude.Intrinsic
-  
-  use prelude.prelude.Snapshot
   
   meta "compute_max_steps" 1000000
   
   let rec call_changes_prophecy'0[#"final_borrows.rs" 28 0 28 43] (bor:MutBorrow.t Int32.t) (return'  (ret:()))= (! bb0
-    [ bb0 = s0 [ s0 =  [ &bor_snap <- [%#sfinal_borrows0] Snapshot.new bor ] s1 | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 =  [ &bor_snap <- [%#sfinal_borrows0] bor ] s1 | s1 = bb1 ] 
     | bb1 = s0
       [ s0 = MutBorrow.borrow_mut <Int32.t> {bor.current}
           (fun (_ret':MutBorrow.t Int32.t) ->  [ &b1 <- _ret' ]  [ &bor <- { bor with current = _ret'.final } ] s1)
-      | s1 =  [ &b1_snap <- [%#sfinal_borrows1] Snapshot.new b1 ] s2
+      | s1 =  [ &b1_snap <- [%#sfinal_borrows1] b1 ] s2
       | s2 = bb2 ]
     
     | bb2 = s0 [ s0 = inner'0 {[%#sfinal_borrows2] ()} (fun (_ret':Int32.t) ->  [ &_7 <- _ret' ] s1) | s1 = bb3 ] 
@@ -225,15 +219,15 @@ module M_final_borrows__call_changes_prophecy [#"final_borrows.rs" 28 0 28 43]
     | bb4 = s0
       [ s0 =  [ &bor <- { bor with current = _8 } ] s1
       | s1 = -{resolve'0 bor}- s2
-      | s2 = {[@expl:assertion] [%#sfinal_borrows4] Snapshot.inner b1_snap = Snapshot.inner bor_snap} s3
+      | s2 = {[@expl:assertion] [%#sfinal_borrows4] b1_snap = bor_snap} s3
       | s3 = return' {_0} ]
      ]
     )
     [ & _0 : () = Intrinsic.any_l ()
     | & bor : MutBorrow.t Int32.t = bor
-    | & bor_snap : Snapshot.snap_ty (MutBorrow.t Int32.t) = Intrinsic.any_l ()
+    | & bor_snap : MutBorrow.t Int32.t = Intrinsic.any_l ()
     | & b1 : MutBorrow.t Int32.t = Intrinsic.any_l ()
-    | & b1_snap : Snapshot.snap_ty (MutBorrow.t Int32.t) = Intrinsic.any_l ()
+    | & b1_snap : MutBorrow.t Int32.t = Intrinsic.any_l ()
     | & _7 : Int32.t = Intrinsic.any_l ()
     | & _8 : Int32.t = Intrinsic.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 

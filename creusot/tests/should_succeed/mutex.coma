@@ -24,16 +24,12 @@ module M_mutex__qyi5425553346843331945__call [#"mutex.rs" 100 4 100 23] (* <Adds
   
   type t_GuardInner'0
   
-  use prelude.prelude.Snapshot
-  
   type t_MutexGuard'0  =
-    { t_MutexGuard__0'0: t_GuardInner'0; t_MutexGuard__1'0: Snapshot.snap_ty () }
-  
-  use prelude.prelude.Snapshot
+    { t_MutexGuard__0'0: t_GuardInner'0; t_MutexGuard__1'0: () }
   
   let rec lock'0 (self:t_Mutex'0) (return'  (ret:t_MutexGuard'0))= {[@expl:lock 'self' type invariant] [%#smutex3] inv'0 self}
     any
-    [ return' (result:t_MutexGuard'0)-> {[%#smutex4] self.t_Mutex__1'0 = Snapshot.inner result.t_MutexGuard__1'0}
+    [ return' (result:t_MutexGuard'0)-> {[%#smutex4] self.t_Mutex__1'0 = result.t_MutexGuard__1'0}
       (! return' {result}) ]
   
   
@@ -52,7 +48,7 @@ module M_mutex__qyi5425553346843331945__call [#"mutex.rs" 100 4 100 23] (* <Adds
   
   let rec deref'0 (self:t_MutexGuard'0) (return'  (ret:UInt32.t))= any
     [ return' (result:UInt32.t)-> {[%#smutex5] inv'1 result}
-      {[%#smutex6] inv'2 (Snapshot.inner self.t_MutexGuard__1'0) result}
+      {[%#smutex6] inv'2 self.t_MutexGuard__1'0 result}
       (! return' {result}) ]
   
   
@@ -63,7 +59,7 @@ module M_mutex__qyi5425553346843331945__call [#"mutex.rs" 100 4 100 23] (* <Adds
   axiom inv_axiom'2 [@rewrite] : forall x : UInt32.t [inv'3 x] . inv'3 x = true
   
   let rec set'0 (self:MutBorrow.t (t_MutexGuard'0)) (v:UInt32.t) (return'  (ret:()))= {[@expl:set 'v' type invariant] [%#smutex7] inv'3 v}
-    {[@expl:set requires] [%#smutex8] inv'2 (Snapshot.inner (self.current).t_MutexGuard__1'0) v}
+    {[@expl:set requires] [%#smutex8] inv'2 (self.current).t_MutexGuard__1'0 v}
     any [ return' (result:())-> (! return' {result}) ] 
   
   use prelude.prelude.Intrinsic
@@ -197,10 +193,8 @@ module M_mutex__concurrent [#"mutex.rs" 163 0 163 19]
   type t_SpawnPostCond'0  =
     { t_SpawnPostCond__f'0: t_AddsTwo'0 }
   
-  use prelude.prelude.Snapshot
-  
   type t_JoinHandle'0  =
-    { t_JoinHandle__0'0: t_JoinHandleInner'0; t_JoinHandle__1'0: Snapshot.snap_ty (t_SpawnPostCond'0) }
+    { t_JoinHandle__0'0: t_JoinHandleInner'0; t_JoinHandle__1'0: t_SpawnPostCond'0 }
   
   let rec spawn'0 (f:t_AddsTwo'0) (return'  (ret:t_JoinHandle'0))= {[@expl:spawn 'f' type invariant] [%#smutex8] inv'6 f}
     {[@expl:spawn requires] [%#smutex9] precondition'0 f}
@@ -214,8 +208,6 @@ module M_mutex__concurrent [#"mutex.rs" 163 0 163 19]
   
   axiom inv_axiom'6 [@rewrite] : forall x : t_Result'0 [inv'7 x] . inv'7 x = true
   
-  use prelude.prelude.Snapshot
-  
   predicate postcondition'0 [#"mutex.rs" 96 4 96 41] (self : t_AddsTwo'0) (_2 : ()) =
     [%#smutex16] true
   
@@ -225,7 +217,7 @@ module M_mutex__concurrent [#"mutex.rs" 163 0 163 19]
   let rec join'0 (self:t_JoinHandle'0) (return'  (ret:t_Result'0))= any
     [ return' (result:t_Result'0)-> {[%#smutex10] inv'7 result}
       {[%#smutex11] match result with
-        | C_Ok'0 v -> inv'8 (Snapshot.inner self.t_JoinHandle__1'0) v
+        | C_Ok'0 v -> inv'8 self.t_JoinHandle__1'0 v
         | _ -> true
         end}
       (! return' {result}) ]

@@ -77,8 +77,6 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   let%span sseq75 = "../../../creusot-contracts/src/logic/seq.rs" 633 20 633 95
   let%span sboxed76 = "../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   
-  use prelude.prelude.Snapshot
-  
   use prelude.prelude.Opaque
   
   type t_NonNull'0  =
@@ -174,13 +172,9 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
     {[@expl:into_iter requires] [%#siter21] into_iter_pre'0 self}
     any [ return' (result:t_Range'0)-> {inv'0 result} {[%#siter21] into_iter_post'0 self result} (! return' {result}) ] 
   
-  use prelude.prelude.Snapshot
-  
   use seq.Seq
   
   use seq.Seq
-  
-  use prelude.prelude.Snapshot
   
   use prelude.prelude.MutBorrow
   
@@ -208,8 +202,6 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   
   function deep_model'0 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_DeepModelTy'0 =
     [%#smodel22] deep_model'1 self.current
-  
-  use prelude.prelude.Snapshot
   
   use seq.Seq
   
@@ -283,24 +275,16 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   function view'0 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
     [%#smodel25] view'2 self.current
   
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
-  
   function view'4 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
     [%#smodel42] view'0 self
   
-  function view'1 (self : Snapshot.snap_ty (MutBorrow.t (t_Vec'0))) : Seq.seq t_T'0 =
-    [%#ssnapshot26] view'4 (Snapshot.inner self)
+  function view'1 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
+    [%#ssnapshot26] view'4 self
   
   use seq.Permut
   
   predicate permutation_of'0 (self : Seq.seq t_T'0) (other : Seq.seq t_T'0) =
     [%#sseq27] Permut.permut self other 0 (Seq.length self)
-  
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
   
   use seq.Seq
   
@@ -472,10 +456,6 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   
   use prelude.prelude.Intrinsic
   
-  use prelude.prelude.Snapshot
-  
-  use prelude.prelude.Snapshot
-  
   predicate sorted'0 [#"selection_sort_generic.rs" 16 0 16 41] (s : Seq.seq t_DeepModelTy'0) =
     [%#sselection_sort_generic40] sorted_range'0 s 0 (Seq.length s)
   
@@ -483,26 +463,24 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   
   let rec selection_sort'0[#"selection_sort_generic.rs" 29 0 31 29] (v:MutBorrow.t (t_Vec'0)) (return'  (ret:()))= {[@expl:selection_sort 'v' type invariant] [%#sselection_sort_generic17] inv'5 v}
     (! bb0
-    [ bb0 = s0 [ s0 =  [ &old_v <- [%#sselection_sort_generic0] Snapshot.new v ] s1 | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 =  [ &old_v <- [%#sselection_sort_generic0] v ] s1 | s1 = bb1 ] 
     | bb1 = s0 [ s0 = len'0 {v.current} (fun (_ret':UInt64.t) ->  [ &_8 <- _ret' ] s1) | s1 = bb2 ] 
     | bb2 = s0
       [ s0 =  [ &_7 <- { t_Range__start'0 = ([%#sselection_sort_generic1] (0 : UInt64.t)); t_Range__end'0 = _8 } ] s1
       | s1 = into_iter'0 {_7} (fun (_ret':t_Range'0) ->  [ &iter <- _ret' ] s2)
       | s2 = bb3 ]
     
-    | bb3 = s0 [ s0 =  [ &iter_old <- [%#sselection_sort_generic2] Snapshot.new iter ] s1 | s1 = bb4 ] 
-    | bb4 = s0
-      [ s0 =  [ &produced <- [%#sselection_sort_generic3] Snapshot.new (Seq.empty : Seq.seq UInt64.t) ] s1 | s1 = bb5 ]
-    
-    | bb5 = s0 [ s0 =  [ &old_6_0 <- Snapshot.new v ] s1 | s1 = bb6 ] 
+    | bb3 = s0 [ s0 =  [ &iter_old <- [%#sselection_sort_generic2] iter ] s1 | s1 = bb4 ] 
+    | bb4 = s0 [ s0 =  [ &produced <- [%#sselection_sort_generic3] Seq.empty : Seq.seq UInt64.t ] s1 | s1 = bb5 ] 
+    | bb5 = s0 [ s0 =  [ &old_6_0 <- v ] s1 | s1 = bb6 ] 
     | bb6 = bb6
-      [ bb6 = {[@expl:mut invariant] (Snapshot.inner old_6_0).final = v.final}
-        {[@expl:for invariant] [%#sselection_sort_generic7] inv'1 (Snapshot.inner produced)}
+      [ bb6 = {[@expl:mut invariant] old_6_0.final = v.final}
+        {[@expl:for invariant] [%#sselection_sort_generic7] inv'1 produced}
         {[@expl:for invariant] [%#sselection_sort_generic7] inv'0 iter}
-        {[@expl:for invariant] [%#sselection_sort_generic7] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter}
+        {[@expl:for invariant] [%#sselection_sort_generic7] produces'0 iter_old produced iter}
         {[@expl:loop invariant #0] [%#sselection_sort_generic6] permutation_of'0 (view'0 v) (view'1 old_v)}
-        {[@expl:loop invariant #1] [%#sselection_sort_generic5] sorted_range'0 (deep_model'0 v) 0 (Seq.length (Snapshot.inner produced))}
-        {[@expl:loop invariant #2] [%#sselection_sort_generic4] partition'0 (deep_model'0 v) (Seq.length (Snapshot.inner produced))}
+        {[@expl:loop invariant #1] [%#sselection_sort_generic5] sorted_range'0 (deep_model'0 v) 0 (Seq.length produced)}
+        {[@expl:loop invariant #2] [%#sselection_sort_generic4] partition'0 (deep_model'0 v) (Seq.length produced)}
         (! s0) [ s0 = bb7 ] 
         [ bb7 = s0
           [ s0 = MutBorrow.borrow_mut <t_Range'0> {iter}
@@ -522,10 +500,7 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
         | bb10 = bb12
         | bb12 = s0
           [ s0 = v_Some'0 {_22} (fun (r0'0:UInt64.t) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
-          | s1 = 
-            [ &_27 <- [%#sselection_sort_generic8] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
-            
-            s2
+          | s1 =  [ &_27 <- [%#sselection_sort_generic8] Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb13 ]
         
         | bb13 = s0
@@ -542,21 +517,20 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
           | s1 = into_iter'0 {_33} (fun (_ret':t_Range'0) ->  [ &iter1 <- _ret' ] s2)
           | s2 = bb15 ]
         
-        | bb15 = s0 [ s0 =  [ &iter_old1 <- [%#sselection_sort_generic10] Snapshot.new iter1 ] s1 | s1 = bb16 ] 
+        | bb15 = s0 [ s0 =  [ &iter_old1 <- [%#sselection_sort_generic10] iter1 ] s1 | s1 = bb16 ] 
         | bb16 = s0
-          [ s0 =  [ &produced1 <- [%#sselection_sort_generic11] Snapshot.new (Seq.empty : Seq.seq UInt64.t) ] s1
-          | s1 = bb17 ]
+          [ s0 =  [ &produced1 <- [%#sselection_sort_generic11] Seq.empty : Seq.seq UInt64.t ] s1 | s1 = bb17 ]
         
         | bb17 = bb18
         | bb18 = bb18
-          [ bb18 = {[@expl:for invariant] [%#sselection_sort_generic14] inv'1 (Snapshot.inner produced1)}
+          [ bb18 = {[@expl:for invariant] [%#sselection_sort_generic14] inv'1 produced1}
             {[@expl:for invariant] [%#sselection_sort_generic14] inv'0 iter1}
-            {[@expl:for invariant] [%#sselection_sort_generic14] produces'0 (Snapshot.inner iter_old1) (Snapshot.inner produced1) iter1}
+            {[@expl:for invariant] [%#sselection_sort_generic14] produces'0 iter_old1 produced1 iter1}
             {[@expl:loop invariant #0] [%#sselection_sort_generic13] forall k : int . UInt64.t'int i <= k
-            /\ k < Seq.length (Snapshot.inner produced1) + UInt64.t'int i + 1
+            /\ k < Seq.length produced1 + UInt64.t'int i + 1
              -> le_log'0 (Seq.get (deep_model'0 v) (UInt64.t'int min)) (Seq.get (deep_model'0 v) k)}
             {[@expl:loop invariant #1] [%#sselection_sort_generic12] UInt64.t'int i <= UInt64.t'int min
-            /\ UInt64.t'int min < Seq.length (Snapshot.inner produced1) + UInt64.t'int i + 1}
+            /\ UInt64.t'int min < Seq.length produced1 + UInt64.t'int i + 1}
             (! s0) [ s0 = bb19 ] 
             [ bb19 = s0
               [ s0 = MutBorrow.borrow_mut <t_Range'0> {iter1}
@@ -577,7 +551,7 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
             | bb24 = s0
               [ s0 = v_Some'0 {_48} (fun (r0'0:UInt64.t) ->  [ &__creusot_proc_iter_elem1 <- r0'0 ] s1)
               | s1 = 
-                [ &_53 <- [%#sselection_sort_generic15] Snapshot.new (Seq.(++) (Snapshot.inner produced1) (Seq.singleton __creusot_proc_iter_elem1)) ]
+                [ &_53 <- [%#sselection_sort_generic15] Seq.(++) produced1 (Seq.singleton __creusot_proc_iter_elem1) ]
                 
                 s2
               | s2 = bb25 ]
@@ -621,7 +595,7 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
         | bb33 = s0
           [ s0 = {[@expl:type invariant] inv'4 _69} s1
           | s1 = -{resolve'1 _69}- s2
-          | s2 = {[@expl:assertion] [%#sselection_sort_generic16] let i = Seq.length (Snapshot.inner produced) in forall k1 : int, k2 : int . 0
+          | s2 = {[@expl:assertion] [%#sselection_sort_generic16] let i = Seq.length produced in forall k1 : int, k2 : int . 0
             <= k1
             /\ k1 < i /\ i <= k2 /\ k2 < Seq.length (deep_model'0 v)
              -> le_log'0 (Seq.get (deep_model'0 v) k1) (Seq.get (deep_model'0 v) k2)}
@@ -634,30 +608,30 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
     )
     [ & _0 : () = Intrinsic.any_l ()
     | & v : MutBorrow.t (t_Vec'0) = v
-    | & old_v : Snapshot.snap_ty (MutBorrow.t (t_Vec'0)) = Intrinsic.any_l ()
+    | & old_v : MutBorrow.t (t_Vec'0) = Intrinsic.any_l ()
     | & iter : t_Range'0 = Intrinsic.any_l ()
     | & _7 : t_Range'0 = Intrinsic.any_l ()
     | & _8 : UInt64.t = Intrinsic.any_l ()
-    | & iter_old : Snapshot.snap_ty (t_Range'0) = Intrinsic.any_l ()
-    | & produced : Snapshot.snap_ty (Seq.seq UInt64.t) = Intrinsic.any_l ()
+    | & iter_old : t_Range'0 = Intrinsic.any_l ()
+    | & produced : Seq.seq UInt64.t = Intrinsic.any_l ()
     | & _22 : t_Option'0 = Intrinsic.any_l ()
     | & _23 : MutBorrow.t (t_Range'0) = Intrinsic.any_l ()
     | & _24 : MutBorrow.t (t_Range'0) = Intrinsic.any_l ()
     | & __creusot_proc_iter_elem : UInt64.t = Intrinsic.any_l ()
-    | & _27 : Snapshot.snap_ty (Seq.seq UInt64.t) = Intrinsic.any_l ()
+    | & _27 : Seq.seq UInt64.t = Intrinsic.any_l ()
     | & i : UInt64.t = Intrinsic.any_l ()
     | & min : UInt64.t = Intrinsic.any_l ()
     | & iter1 : t_Range'0 = Intrinsic.any_l ()
     | & _33 : t_Range'0 = Intrinsic.any_l ()
     | & _34 : UInt64.t = Intrinsic.any_l ()
     | & _36 : UInt64.t = Intrinsic.any_l ()
-    | & iter_old1 : Snapshot.snap_ty (t_Range'0) = Intrinsic.any_l ()
-    | & produced1 : Snapshot.snap_ty (Seq.seq UInt64.t) = Intrinsic.any_l ()
+    | & iter_old1 : t_Range'0 = Intrinsic.any_l ()
+    | & produced1 : Seq.seq UInt64.t = Intrinsic.any_l ()
     | & _48 : t_Option'0 = Intrinsic.any_l ()
     | & _49 : MutBorrow.t (t_Range'0) = Intrinsic.any_l ()
     | & _50 : MutBorrow.t (t_Range'0) = Intrinsic.any_l ()
     | & __creusot_proc_iter_elem1 : UInt64.t = Intrinsic.any_l ()
-    | & _53 : Snapshot.snap_ty (Seq.seq UInt64.t) = Intrinsic.any_l ()
+    | & _53 : Seq.seq UInt64.t = Intrinsic.any_l ()
     | & j : UInt64.t = Intrinsic.any_l ()
     | & _56 : bool = Intrinsic.any_l ()
     | & _58 : t_T'0 = Intrinsic.any_l ()
@@ -666,7 +640,7 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
     | & _68 : MutBorrow.t (Slice64.slice t_T'0) = Intrinsic.any_l ()
     | & _69 : MutBorrow.t (Slice64.slice t_T'0) = Intrinsic.any_l ()
     | & _70 : MutBorrow.t (t_Vec'0) = Intrinsic.any_l ()
-    | & old_6_0 : Snapshot.snap_ty (MutBorrow.t (t_Vec'0)) = Intrinsic.any_l () ]
+    | & old_6_0 : MutBorrow.t (t_Vec'0) = Intrinsic.any_l () ]
     
     [ return' (result:())-> {[@expl:selection_sort ensures #0] [%#sselection_sort_generic18] sorted'0 (deep_model'1 v.final)}
       {[@expl:selection_sort ensures #1] [%#sselection_sort_generic19] permutation_of'0 (view'2 v.final) (view'0 v)}

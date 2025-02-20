@@ -110,6 +110,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     "casting from a type that is not a boolean is not supported",
                 ),
             },
+            TermKind::Coerce { arg } => self.lower_term(arg),
             // FIXME: this is a weird dance.
             TermKind::Item(id, subst) => {
                 let method = (*id, *subst);
