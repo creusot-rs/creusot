@@ -1,3 +1,4 @@
+#![feature(try_blocks, unbounded_shifts)]
 use anyhow::{anyhow, bail, Context as _};
 use clap::*;
 use creusot_setup::{
@@ -9,8 +10,9 @@ use creusot_setup::{
 use indoc::writedoc;
 use reqwest::blocking::Client;
 use std::{
-    fs,
-    io::Write,
+    env, fs,
+    fs::{copy, create_dir_all, read_to_string, File},
+    io::{self, BufWriter, Write},
     path::{Path, PathBuf},
     process::Command,
 };
@@ -43,11 +45,6 @@ const CVC5: ManagedBinary = ManagedBinary {
     download_with: download_from_url_with_cache,
 };
 
-fn main() -> anyhow::Result<()> {
-    let args = Args::parse();
-    install(args)
-}
-
 /// Install Creusot
 #[derive(Debug, Parser)]
 struct Args {
@@ -69,6 +66,9 @@ struct Args {
     /// Skip installing Why3, Why3find, and provers
     #[arg(long)]
     skip_extra_tools: bool,
+    /// Only build the prelude, don't install anything (implies the skip options)
+    #[arg(long)]
+    only_build_prelude: bool,
 }
 
 fn default_provers_parallelism() -> usize {
@@ -94,6 +94,15 @@ enum SetupTool {
     Z3,
     CVC4,
     CVC5,
+}
+
+fn main() -> anyhow::Result<()> {
+    let args = Args::parse();
+    build_prelude()?;
+    if args.only_build_prelude {
+        return Ok(());
+    }
+    install(args)
 }
 
 fn install(args: Args) -> anyhow::Result<()> {
@@ -447,4 +456,103 @@ fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link: Q) -> std::io
     {
         std::os::windows::fs::symlink_file(original, link)
     }
+}
+
+fn int_prelude_maker(template_filepath: &Path, int_prelude_filepath: &Path) -> io::Result<()> {
+    let template = read_to_string(template_filepath)?;
+
+    let file = File::create(int_prelude_filepath)?;
+    let mut writer = BufWriter::new(file);
+
+    // take the template and replace each variable for integer type (signed and unsigned)
+    let mut write_modules = |bits_count| {
+        let min_signed_value = format!("0x{:X}", 1u128 << (bits_count - 1));
+        let max_signed_value = format!("0x{:X}", (1u128 << (bits_count - 1)) - 1);
+        let max_unsigned_value = format!("0x{:X}", 1u128.unbounded_shl(bits_count).wrapping_sub(1));
+
+        let r = template.replace("$bits_count$", &bits_count.to_string());
+        let r = r.replace("$min_signed_value$", &min_signed_value);
+        let r = r.replace("$max_signed_value$", &max_signed_value);
+        let r = r.replace("$max_unsigned_value$", &max_unsigned_value);
+        let s = String::from("0x1")
+            + &std::iter::repeat_n("0", bits_count as usize / 4).collect::<String>();
+        let r = r.replace("$two_power_size$", &s);
+
+        writer.write_all(r.as_bytes())?;
+        writeln!(writer)
+    };
+
+    write_modules(8)?;
+    write_modules(16)?;
+    write_modules(32)?;
+    write_modules(64)?;
+    write_modules(128)
+}
+
+fn slice_prelude_maker(template_filepath: &Path, slice_prelude_filepath: &Path) -> io::Result<()> {
+    let template = read_to_string(template_filepath)?;
+
+    let file = File::create(slice_prelude_filepath)?;
+    let mut writer = BufWriter::new(file);
+
+    // take the template and replace each variable for integer type (signed and unsigned)
+    let mut write_modules = |bits_count: u8| {
+        let bits_count = bits_count.to_string();
+
+        let r = template.replace("$bits_count$", &bits_count);
+
+        writer.write_all(r.as_bytes())?;
+        writeln!(writer)
+    };
+
+    write_modules(16)?;
+    write_modules(32)?;
+    write_modules(64)
+}
+
+// This needs to run when installing Creusot of course,
+// and also before replaying the proofs in the test suite.
+fn build_prelude() -> anyhow::Result<()> {
+    println!("Building prelude...");
+
+    // Get the path  to the crate directory
+    let crate_dirpath = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
+    let tgt_prelude_dirpath = crate_dirpath.join("..").join("target").join("creusot");
+    create_dir_all(&tgt_prelude_dirpath)?;
+
+    let src_prelude_dirpath = crate_dirpath.join("..").join("prelude");
+
+    // Create integer prelude
+    let int_template_filepath = src_prelude_dirpath.join("int.in.coma");
+    int_prelude_maker(&int_template_filepath, &tgt_prelude_dirpath.join("int.coma"))?;
+
+    // Create slice prelude
+    let slice_template_filepath = src_prelude_dirpath.join("slice.in.coma");
+    slice_prelude_maker(&slice_template_filepath, &tgt_prelude_dirpath.join("slice.coma"))?;
+
+    // Copy prelude in target directory
+    copy_if_newer(
+        src_prelude_dirpath.join("prelude.coma"),
+        tgt_prelude_dirpath.join("prelude.coma"),
+    )?;
+    copy_if_newer(src_prelude_dirpath.join("float.coma"), tgt_prelude_dirpath.join("float.coma"))?;
+
+    // Copy why3find conf in target directory
+    copy_if_newer(
+        crate_dirpath.join("..").join("why3find.json"),
+        crate_dirpath.join("..").join("target").join("why3find.json"),
+    )?;
+
+    Ok(())
+}
+
+fn copy_if_newer(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
+    let src_meta = fs::metadata(&src)?;
+    if let Ok(dst_meta) = fs::metadata(&dst) {
+        if src_meta.modified().unwrap() <= dst_meta.modified().unwrap() {
+            return Ok(());
+        }
+    }
+    copy(src, dst).unwrap();
+    Ok(())
 }
