@@ -51,13 +51,7 @@ fn main() {
     std::env::set_current_dir("..").unwrap();
 
     println! {"Building creusot-rustc..."};
-    let creusot_rustc = escargot::CargoBuild::new()
-        .bin("creusot-rustc")
-        .current_release()
-        .manifest_path("creusot-rustc/Cargo.toml")
-        .current_target()
-        .run()
-        .unwrap();
+    let creusot_rustc = escargot::CargoBuild::new().bin("creusot-rustc").run().unwrap();
     let creusot_rustc = creusot_rustc.path();
 
     let mut base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -123,14 +117,7 @@ fn translate_creusot_contracts(
     test_creusot_contracts: bool,
 ) -> bool {
     println! {"Building cargo-creusot..."};
-    let cargo_creusot = escargot::CargoBuild::new()
-        .bin("cargo-creusot")
-        .current_release()
-        .manifest_path("cargo-creusot/Cargo.toml")
-        .current_target()
-        .run()
-        .unwrap()
-        .command();
+    let cargo_creusot = escargot::CargoBuild::new().bin("cargo-creusot").run().unwrap().command();
 
     if test_creusot_contracts {
         print!("Translating creusot-contracts... ");
