@@ -1,0 +1,179 @@
+module M_08_multiple_calls__multi_use [#"08_multiple_calls.rs" 4 0 4 26]
+  let%span s08_multiple_calls0 = "08_multiple_calls.rs" 4 20 4 21
+  let%span s08_multiple_calls1 = "08_multiple_calls.rs" 8 8 8 9
+  let%span s08_multiple_calls2 = "08_multiple_calls.rs" 5 23 5 29
+  let%span s08_multiple_calls3 = "08_multiple_calls.rs" 19 27 19 28
+  let%span s08_multiple_calls4 = "08_multiple_calls.rs" 17 11 17 29
+  let%span s08_multiple_calls5 = "08_multiple_calls.rs" 18 10 18 68
+  let%span sops6 = "../../../creusot-contracts/src/std/ops.rs" 150 14 150 114
+  let%span sops7 = "../../../creusot-contracts/src/std/ops.rs" 155 14 155 101
+  let%span sinvariant8 = "../../../creusot-contracts/src/invariant.rs" 25 8 25 18
+  let%span sops9 = "../../../creusot-contracts/src/std/ops.rs" 115 15 115 59
+  let%span sops10 = "../../../creusot-contracts/src/std/ops.rs" 116 14 116 36
+  let%span sops11 = "../../../creusot-contracts/src/std/ops.rs" 121 14 121 31
+  let%span sops12 = "../../../creusot-contracts/src/std/ops.rs" 126 15 126 29
+  let%span sops13 = "../../../creusot-contracts/src/std/ops.rs" 127 15 127 26
+  let%span sops14 = "../../../creusot-contracts/src/std/ops.rs" 128 14 128 28
+  let%span sops15 = "../../../creusot-contracts/src/std/ops.rs" 133 14 134 105
+  
+  use creusot.int.UInt32
+  
+  use creusot.prelude.Intrinsic
+  
+  type t_T'0
+  
+  type closure0'1  =
+    { field_0'0: t_T'0 }
+  
+  predicate inv'4 (_1 : t_T'0)
+  
+  predicate invariant'0 (self : t_T'0) =
+    [%#sinvariant8] inv'4 self
+  
+  predicate inv'0 (_1 : t_T'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_T'0 [inv'0 x] . inv'0 x = invariant'0 x
+  
+  predicate invariant'2 (self : t_T'0) =
+    [%#sinvariant8] inv'0 self
+  
+  predicate inv'3 (_1 : t_T'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_T'0 [inv'3 x] . inv'3 x = invariant'2 x
+  
+  predicate inv'2 (_1 : closure0'1)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : closure0'1 [inv'2 x] . inv'2 x = (let {field_0'0 = x0} = x in inv'3 x0)
+  
+  predicate invariant'1 (self : closure0'1) =
+    [%#sinvariant8] inv'2 self
+  
+  predicate inv'1 (_1 : closure0'1)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : closure0'1 [inv'1 x] . inv'1 x = invariant'1 x
+  
+  let rec closure0'0[#"08_multiple_calls.rs" 5 12 5 31] (_1:closure0'1) (return'  (ret:UInt32.t))= {[@expl:closure '_1' type invariant] inv'1 _1}
+    {[@expl:closure requires] [%#s08_multiple_calls2] _1.field_0'0 = _1.field_0'0}
+    (! bb0
+    [ bb0 = s0
+      [ s0 =  [ &res <- [%#s08_multiple_calls1] (0 : UInt32.t) ] s1 | s1 =  [ &_0 <- res ] s2 | s2 = return' {_0} ]
+     ]
+    ) [ & _0 : UInt32.t = Intrinsic.any_l () | & res : UInt32.t = Intrinsic.any_l () ] 
+    [ return' (result:UInt32.t)-> (! return' {result}) ]
+  
+  
+  predicate precondition'0 (self : closure0'1) (args : ()) =
+    [%#s08_multiple_calls2] let () = args in self.field_0'0 = self.field_0'0
+  
+  predicate postcondition_once'1 (self : closure0'1) (args : ()) (result : UInt32.t) =
+    let () = args in true
+  
+  predicate resolve'2 (_1 : t_T'0)
+  
+  predicate resolve'1 (_1 : closure0'1) =
+    resolve'2 _1.field_0'0
+  
+  predicate unnest'1 (self : closure0'1) (_2 : closure0'1) =
+    _2.field_0'0 = self.field_0'0
+  
+  predicate postcondition_mut'1 (self : closure0'1) (args : ()) (result_state : closure0'1) (result : UInt32.t) =
+    (let () = args in true) /\ unnest'1 self result_state
+  
+  function fn_mut_once'1 (self : closure0'1) (args : ()) (res : UInt32.t) : ()
+  
+  axiom fn_mut_once'1_spec : forall self : closure0'1, args : (), res : UInt32.t . [%#sops15] postcondition_once'1 self args res
+  = (exists res_state : closure0'1 . postcondition_mut'1 self args res_state res /\ resolve'1 res_state)
+  
+  function unnest_trans'1 (self : closure0'1) (b : closure0'1) (c : closure0'1) : ()
+  
+  axiom unnest_trans'1_spec : forall self : closure0'1, b : closure0'1, c : closure0'1 . ([%#sops12] unnest'1 self b)
+   -> ([%#sops13] unnest'1 b c)  -> ([%#sops14] unnest'1 self c)
+  
+  function unnest_refl'1 (self : closure0'1) : ()
+  
+  axiom unnest_refl'1_spec : forall self : closure0'1 . [%#sops11] unnest'1 self self
+  
+  function postcondition_mut_unnest'1 (self : closure0'1) (args : ()) (res_state : closure0'1) (res : UInt32.t) : ()
+  
+  axiom postcondition_mut_unnest'1_spec : forall self : closure0'1, args : (), res_state : closure0'1, res : UInt32.t . ([%#sops9] postcondition_mut'1 self args res_state res)
+   -> ([%#sops10] unnest'1 self res_state)
+  
+  predicate postcondition'1 (self : closure0'1) (args : ()) (result : UInt32.t) =
+    let () = args in true
+  
+  function fn_once'1 (self : closure0'1) (args : ()) (res : UInt32.t) : ()
+  
+  axiom fn_once'1_spec : forall self : closure0'1, args : (), res : UInt32.t . [%#sops7] postcondition_once'1 self args res
+  = (resolve'1 self /\ postcondition'1 self args res)
+  
+  function fn_mut'1 (self : closure0'1) (args : ()) (res_state : closure0'1) (res : UInt32.t) : ()
+  
+  axiom fn_mut'1_spec : forall self : closure0'1, args : (), res_state : closure0'1, res : UInt32.t . [%#sops6] postcondition_mut'1 self args res_state res
+  = (self = res_state /\ postcondition'1 self args res)
+  
+  predicate postcondition_once'0 (self : closure0'1) (args : ()) (result : UInt32.t) =
+    postcondition'1 self args result
+  
+  predicate resolve'0 (_1 : closure0'1) =
+    true
+  
+  predicate postcondition_mut'0 (self : closure0'1) (args : ()) (result_state : closure0'1) (result : UInt32.t) =
+    postcondition'1 self args result /\ self = result_state
+  
+  function fn_mut_once'0 (self : closure0'1) (args : ()) (res : UInt32.t) : ()
+  
+  axiom fn_mut_once'0_spec : forall self : closure0'1, args : (), res : UInt32.t . [%#sops15] postcondition_once'0 self args res
+  = (exists res_state : closure0'1 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  predicate unnest'0 (self : closure0'1) (_2 : closure0'1)
+  
+  function unnest_trans'0 (self : closure0'1) (b : closure0'1) (c : closure0'1) : ()
+  
+  axiom unnest_trans'0_spec : forall self : closure0'1, b : closure0'1, c : closure0'1 . ([%#sops12] unnest'0 self b)
+   -> ([%#sops13] unnest'0 b c)  -> ([%#sops14] unnest'0 self c)
+  
+  function unnest_refl'0 (self : closure0'1) : ()
+  
+  axiom unnest_refl'0_spec : forall self : closure0'1 . [%#sops11] unnest'0 self self
+  
+  function postcondition_mut_unnest'0 (self : closure0'1) (args : ()) (res_state : closure0'1) (res : UInt32.t) : ()
+  
+  axiom postcondition_mut_unnest'0_spec : forall self : closure0'1, args : (), res_state : closure0'1, res : UInt32.t . ([%#sops9] postcondition_mut'0 self args res_state res)
+   -> ([%#sops10] unnest'0 self res_state)
+  
+  predicate postcondition'0 (self : closure0'1) (args : ()) (result : UInt32.t) =
+    postcondition'1 self args result
+  
+  function fn_once'0 (self : closure0'1) (args : ()) (res : UInt32.t) : ()
+  
+  axiom fn_once'0_spec : forall self : closure0'1, args : (), res : UInt32.t . [%#sops7] postcondition_once'0 self args res
+  = (resolve'0 self /\ postcondition'0 self args res)
+  
+  function fn_mut'0 (self : closure0'1) (args : ()) (res_state : closure0'1) (res : UInt32.t) : ()
+  
+  axiom fn_mut'0_spec : forall self : closure0'1, args : (), res_state : closure0'1, res : UInt32.t . [%#sops6] postcondition_mut'0 self args res_state res
+  = (self = res_state /\ postcondition'0 self args res)
+  
+  let rec uses_fn'0 (f:closure0'1) (return'  (ret:()))= {[@expl:uses_fn 'f' type invariant] [%#s08_multiple_calls3] inv'2 f}
+    {[@expl:uses_fn requires] [%#s08_multiple_calls4] precondition'0 f ()}
+    any
+    [ return' (result:())-> {[%#s08_multiple_calls5] exists f2 : closure0'1, r : UInt32.t . f2 = f
+      /\ postcondition'0 f2 () r}
+      (! return' {result}) ]
+  
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec multi_use'0[#"08_multiple_calls.rs" 4 0 4 26] (x:t_T'0) (return'  (ret:()))= {[@expl:multi_use 'x' type invariant] [%#s08_multiple_calls0] inv'0 x}
+    (! bb0
+    [ bb0 = s0
+      [ s0 =  [ &c <- { field_0'0 = x } ] s1 | s1 = uses_fn'0 {c} (fun (_ret':()) ->  [ &_4 <- _ret' ] s2) | s2 = bb1 ]
+    
+    | bb1 = return' {_0} ]
+    )
+    [ & _0 : () = Intrinsic.any_l ()
+    | & x : t_T'0 = x
+    | & c : closure0'1 = Intrinsic.any_l ()
+    | & _4 : () = Intrinsic.any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end

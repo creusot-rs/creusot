@@ -1,0 +1,189 @@
+module M_projection_toggle__proj_toggle [#"projection_toggle.rs" 5 0 5 87]
+  let%span sprojection_toggle0 = "projection_toggle.rs" 5 47 5 48
+  let%span sprojection_toggle1 = "projection_toggle.rs" 5 61 5 62
+  let%span sprojection_toggle2 = "projection_toggle.rs" 5 78 5 87
+  let%span sprojection_toggle3 = "projection_toggle.rs" 4 0 4 82
+  let%span sresolve4 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span sinvariant5 = "../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  
+  use creusot.prelude.MutBorrow
+  
+  type t_T'0
+  
+  predicate inv'1 (_1 : t_T'0)
+  
+  predicate invariant'0 (self : MutBorrow.t t_T'0) =
+    [%#sinvariant5] inv'1 self.current /\ inv'1 self.final
+  
+  predicate inv'0 (_1 : MutBorrow.t t_T'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_T'0 [inv'0 x] . inv'0 x = invariant'0 x
+  
+  predicate resolve'1 (self : MutBorrow.t t_T'0) =
+    [%#sresolve4] self.final = self.current
+  
+  predicate resolve'0 (_1 : MutBorrow.t t_T'0) =
+    resolve'1 _1
+  
+  use creusot.prelude.Intrinsic
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec proj_toggle'0[#"projection_toggle.rs" 5 0 5 87] (toggle:bool) (a:MutBorrow.t t_T'0) (b:MutBorrow.t t_T'0) (return'  (ret:MutBorrow.t t_T'0))= {[@expl:proj_toggle 'a' type invariant] [%#sprojection_toggle0] inv'0 a}
+    {[@expl:proj_toggle 'b' type invariant] [%#sprojection_toggle1] inv'0 b}
+    (! bb0
+    [ bb0 = any [ br0 -> {toggle = false} (! bb2) | br1 -> {toggle} (! bb1) ] 
+    | bb1 = s0
+      [ s0 = {[@expl:type invariant] inv'0 b} s1
+      | s1 = -{resolve'0 b}- s2
+      | s2 = {inv'1 a.current}
+        MutBorrow.borrow_final <t_T'0> {a.current} {MutBorrow.get_id a}
+          (fun (_ret':MutBorrow.t t_T'0) ->
+             [ &_8 <- _ret' ] 
+            -{inv'1 _ret'.final}-
+             [ &a <- { a with current = _ret'.final } ] 
+            s3)
+      | s3 = {inv'1 _8.current}
+        MutBorrow.borrow_final <t_T'0> {_8.current} {MutBorrow.get_id _8}
+          (fun (_ret':MutBorrow.t t_T'0) ->
+             [ &_6 <- _ret' ] 
+            -{inv'1 _ret'.final}-
+             [ &_8 <- { _8 with current = _ret'.final } ] 
+            s4)
+      | s4 = {[@expl:type invariant] inv'0 _8} s5
+      | s5 = -{resolve'0 _8}- s6
+      | s6 = bb3 ]
+    
+    | bb2 = s0
+      [ s0 = {[@expl:type invariant] inv'0 a} s1
+      | s1 = -{resolve'0 a}- s2
+      | s2 = {inv'1 b.current}
+        MutBorrow.borrow_final <t_T'0> {b.current} {MutBorrow.get_id b}
+          (fun (_ret':MutBorrow.t t_T'0) ->
+             [ &_6 <- _ret' ] 
+            -{inv'1 _ret'.final}-
+             [ &b <- { b with current = _ret'.final } ] 
+            s3)
+      | s3 = bb3 ]
+    
+    | bb3 = s0
+      [ s0 = {inv'1 _6.current}
+        MutBorrow.borrow_final <t_T'0> {_6.current} {MutBorrow.get_id _6}
+          (fun (_ret':MutBorrow.t t_T'0) ->
+             [ &_4 <- _ret' ] 
+            -{inv'1 _ret'.final}-
+             [ &_6 <- { _6 with current = _ret'.final } ] 
+            s1)
+      | s1 = {inv'1 _4.current}
+        MutBorrow.borrow_final <t_T'0> {_4.current} {MutBorrow.get_id _4}
+          (fun (_ret':MutBorrow.t t_T'0) ->
+             [ &_0 <- _ret' ] 
+            -{inv'1 _ret'.final}-
+             [ &_4 <- { _4 with current = _ret'.final } ] 
+            s2)
+      | s2 = {[@expl:type invariant] inv'0 _6} s3
+      | s3 = -{resolve'0 _6}- s4
+      | s4 = {[@expl:type invariant] inv'0 _4} s5
+      | s5 = -{resolve'0 _4}- s6
+      | s6 = {[@expl:type invariant] inv'0 b} s7
+      | s7 = -{resolve'0 b}- s8
+      | s8 = {[@expl:type invariant] inv'0 a} s9
+      | s9 = -{resolve'0 a}- s10
+      | s10 = return' {_0} ]
+     ]
+    )
+    [ & _0 : MutBorrow.t t_T'0 = Intrinsic.any_l ()
+    | & toggle : bool = toggle
+    | & a : MutBorrow.t t_T'0 = a
+    | & b : MutBorrow.t t_T'0 = b
+    | & _4 : MutBorrow.t t_T'0 = Intrinsic.any_l ()
+    | & _6 : MutBorrow.t t_T'0 = Intrinsic.any_l ()
+    | & _8 : MutBorrow.t t_T'0 = Intrinsic.any_l () ]
+    
+    [ return' (result:MutBorrow.t t_T'0)-> {[@expl:proj_toggle result type invariant] [%#sprojection_toggle2] inv'0 result}
+      {[@expl:proj_toggle ensures] [%#sprojection_toggle3] if toggle then
+        result = a /\ b.final = b.current
+      else
+        result = b /\ a.final = a.current
+      }
+      (! return' {result}) ]
+
+end
+module M_projection_toggle__f [#"projection_toggle.rs" 13 0 13 10]
+  let%span sprojection_toggle0 = "projection_toggle.rs" 14 16 14 18
+  let%span sprojection_toggle1 = "projection_toggle.rs" 15 16 15 17
+  let%span sprojection_toggle2 = "projection_toggle.rs" 17 24 17 28
+  let%span sprojection_toggle3 = "projection_toggle.rs" 19 10 19 11
+  let%span sprojection_toggle4 = "projection_toggle.rs" 20 17 20 19
+  let%span sprojection_toggle5 = "projection_toggle.rs" 20 4 20 20
+  let%span sprojection_toggle6 = "projection_toggle.rs" 5 47 5 48
+  let%span sprojection_toggle7 = "projection_toggle.rs" 5 61 5 62
+  let%span sprojection_toggle8 = "projection_toggle.rs" 5 78 5 87
+  let%span sprojection_toggle9 = "projection_toggle.rs" 4 0 4 82
+  let%span sresolve10 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  
+  use creusot.int.Int32
+  
+  use creusot.prelude.MutBorrow
+  
+  predicate inv'0 (_1 : MutBorrow.t Int32.t)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t Int32.t [inv'0 x] . inv'0 x = true
+  
+  let rec proj_toggle'0 (toggle:bool) (a:MutBorrow.t Int32.t) (b:MutBorrow.t Int32.t) (return'  (ret:MutBorrow.t Int32.t))= {[@expl:proj_toggle 'a' type invariant] [%#sprojection_toggle6] inv'0 a}
+    {[@expl:proj_toggle 'b' type invariant] [%#sprojection_toggle7] inv'0 b}
+    any
+    [ return' (result:MutBorrow.t Int32.t)-> {[%#sprojection_toggle8] inv'0 result}
+      {[%#sprojection_toggle9] if toggle then result = a /\ b.final = b.current else result = b /\ a.final = a.current}
+      (! return' {result}) ]
+  
+  
+  predicate resolve'1 (self : MutBorrow.t Int32.t) =
+    [%#sresolve10] self.final = self.current
+  
+  predicate resolve'0 (_1 : MutBorrow.t Int32.t) =
+    resolve'1 _1
+  
+  use creusot.prelude.Intrinsic
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec f'0[#"projection_toggle.rs" 13 0 13 10] (_1:()) (return'  (ret:()))= (! bb0
+    [ bb0 = s0
+      [ s0 =  [ &a <- [%#sprojection_toggle0] (10 : Int32.t) ] s1
+      | s1 =  [ &b <- [%#sprojection_toggle1] (5 : Int32.t) ] s2
+      | s2 = MutBorrow.borrow_mut <Int32.t> {a}
+          (fun (_ret':MutBorrow.t Int32.t) ->  [ &_5 <- _ret' ]  [ &a <- _ret'.final ] s3)
+      | s3 = MutBorrow.borrow_final <Int32.t> {_5.current} {MutBorrow.get_id _5}
+          (fun (_ret':MutBorrow.t Int32.t) ->  [ &_4 <- _ret' ]  [ &_5 <- { _5 with current = _ret'.final } ] s4)
+      | s4 = MutBorrow.borrow_mut <Int32.t> {b}
+          (fun (_ret':MutBorrow.t Int32.t) ->  [ &_7 <- _ret' ]  [ &b <- _ret'.final ] s5)
+      | s5 = MutBorrow.borrow_final <Int32.t> {_7.current} {MutBorrow.get_id _7}
+          (fun (_ret':MutBorrow.t Int32.t) ->  [ &_6 <- _ret' ]  [ &_7 <- { _7 with current = _ret'.final } ] s6)
+      | s6 = proj_toggle'0 {[%#sprojection_toggle2] true} {_4} {_6}
+          (fun (_ret':MutBorrow.t Int32.t) ->  [ &x <- _ret' ] s7)
+      | s7 = bb1 ]
+    
+    | bb1 = s0
+      [ s0 = -{resolve'0 _7}- s1
+      | s1 = -{resolve'0 _5}- s2
+      | s2 = Int32.add {x.current} {[%#sprojection_toggle3] (5 : Int32.t)}
+          (fun (_ret':Int32.t) ->  [ &x <- { x with current = _ret' } ] s3)
+      | s3 = -{resolve'0 x}- s4
+      | s4 = Int32.eq {a} {[%#sprojection_toggle4] (15 : Int32.t)} (fun (_ret':bool) ->  [ &_9 <- _ret' ] s5)
+      | s5 = any [ br0 -> {_9 = false} (! bb3) | br1 -> {_9} (! bb2) ]  ]
+    
+    | bb2 = return' {_0}
+    | bb3 = {[%#sprojection_toggle5] false} any ]
+    )
+    [ & _0 : () = Intrinsic.any_l ()
+    | & a : Int32.t = Intrinsic.any_l ()
+    | & b : Int32.t = Intrinsic.any_l ()
+    | & x : MutBorrow.t Int32.t = Intrinsic.any_l ()
+    | & _4 : MutBorrow.t Int32.t = Intrinsic.any_l ()
+    | & _5 : MutBorrow.t Int32.t = Intrinsic.any_l ()
+    | & _6 : MutBorrow.t Int32.t = Intrinsic.any_l ()
+    | & _7 : MutBorrow.t Int32.t = Intrinsic.any_l ()
+    | & _9 : bool = Intrinsic.any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end

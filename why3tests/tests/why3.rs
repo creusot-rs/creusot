@@ -69,7 +69,7 @@ fn main() {
 
     let mut success = true;
     let mut obsolete = false;
-    for file in glob::glob("creusot/tests/**/*.coma").unwrap() {
+    for file in glob::glob("tests/**/*.coma").unwrap() {
         // Check for early abort
         if args.fail_early && (!success || obsolete) {
             break;
