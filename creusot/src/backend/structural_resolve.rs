@@ -5,7 +5,7 @@ use rustc_type_ir::TyKind;
 
 use crate::{
     contracts_items::{get_builtin, get_resolve_function, is_snap_ty, is_trusted},
-    pearlite::{BinOp, Pattern, Term, TermKind},
+    pearlite::{Pattern, Term, TermKind},
 };
 
 use super::Why3Generator;
@@ -17,7 +17,7 @@ pub fn structural_resolve<'tcx>(
 ) -> Option<Term<'tcx>> {
     let subject = Term::var(subject, ty);
     match ty.kind() {
-        TyKind::Adt(adt, _) if adt.is_box() => Some(resolve_of(ctx, subject.cur())),
+        TyKind::Adt(adt, args) if adt.is_box() => Some(resolve_of(ctx, subject.coerce(args.type_at(0)))),
         TyKind::Adt(adt, _) if is_trusted(ctx.tcx, adt.did()) => None,
         TyKind::Adt(adt, _) if is_snap_ty(ctx.tcx, adt.did()) => Some(Term::mk_true(ctx.tcx)),
         TyKind::Adt(adt, _) if get_builtin(ctx.tcx, adt.did()).is_some() => {
@@ -66,13 +66,13 @@ pub fn structural_resolve<'tcx>(
                 ty: ctx.types.bool,
                 kind: TermKind::Match {
                     scrutinee: Box::new(subject),
-                    arms: vec![(Pattern::Tuple(fields), body)],
+                    arms: Box::new([(Pattern::Tuple(fields), body)]),
                 },
                 span: DUMMY_SP,
             })
         }
         TyKind::Ref(_, _, Mutability::Mut) => {
-            Some(subject.clone().fin().bin_op(ctx.tcx, BinOp::Eq, subject.cur()))
+            Some(subject.clone().fin().eq(ctx.tcx, subject.cur()))
         }
         TyKind::Closure(..) | TyKind::Param(_) => None,
         _ => Some(Term::mk_true(ctx.tcx)),
@@ -83,5 +83,5 @@ fn resolve_of<'tcx>(ctx: &Why3Generator<'tcx>, term: Term<'tcx>) -> Term<'tcx> {
     let trait_meth_id = get_resolve_function(ctx.tcx);
     let substs = ctx.mk_args(&[GenericArg::from(term.ty)]);
 
-    Term::call_no_normalize(ctx.tcx, trait_meth_id, substs, vec![term])
+    Term::call_no_normalize(ctx.tcx, trait_meth_id, substs, Box::new([term]))
 }

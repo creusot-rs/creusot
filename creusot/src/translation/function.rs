@@ -49,8 +49,6 @@ mod statement;
 mod terminator;
 use terminator::discriminator_for_switch;
 
-use self::pearlite::BinOp;
-
 /// Translate a function from rustc's MIR to fMIR.
 pub(crate) fn fmir<'tcx>(ctx: &TranslationCtx<'tcx>, body_id: BodyId) -> fmir::Body<'tcx> {
     BodyTranslator::with_context(ctx, body_id, |func_translator| func_translator.translate())
@@ -964,7 +962,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                     self.tcx,
                     unnest_id,
                     unnest_subst,
-                    vec![self_, result_state],
+                    Box::new([self_, result_state]),
                 ));
 
                 postcondition = normalize(self.tcx, self.typing_env(def_id), postcondition);
@@ -992,7 +990,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     fn inferred_precondition_term(
         &self,
-        def_id: DefId,
+        item: DefId,
         args: GenericArgsRef<'tcx>,
         kind: ClosureKind,
         closure_env: Term<'tcx>,
@@ -1009,9 +1007,8 @@ impl<'tcx> TranslationCtx<'tcx> {
         match kind {
             ClosureKind::Fn | ClosureKind::FnOnce => {
                 closure_args.insert(0, closure_env.clone());
-
                 Term {
-                    kind: TermKind::Precondition { item: def_id, args, params: closure_args },
+                    kind: TermKind::Precondition { item, args, params: closure_args.into() },
                     ty: self.types.bool,
                     span,
                 }
@@ -1019,11 +1016,11 @@ impl<'tcx> TranslationCtx<'tcx> {
             ClosureKind::FnMut => {
                 closure_args.insert(0, bor_self.clone());
                 let base = Term {
-                    kind: TermKind::Precondition { item: def_id, args, params: closure_args },
+                    kind: TermKind::Precondition { item, args, params: closure_args.into() },
                     ty: self.types.bool,
                     span,
                 };
-                (bor_self.clone().cur().bin_op(self.tcx, BinOp::Eq, closure_env))
+                (bor_self.clone().cur().eq(self.tcx, closure_env))
                     .implies(base)
                     .forall(self.tcx, (Symbol::intern("__bor_self"), env_ty))
             }
@@ -1033,7 +1030,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     /// Infers the `postcond_kind` version of the postcondition predicate for the provided closure.
     fn inferred_postcondition_term(
         &self,
-        def_id: DefId,
+        item: DefId,
         args: GenericArgsRef<'tcx>,
         closure_kind: ClosureKind,
         closure_env: Term<'tcx>,
@@ -1045,9 +1042,8 @@ impl<'tcx> TranslationCtx<'tcx> {
         match closure_kind {
             ClosureKind::Fn | ClosureKind::FnOnce => {
                 closure_args.insert(0, closure_env.clone());
-
                 let base = Term {
-                    kind: TermKind::Postcondition { item: def_id, args, params: closure_args },
+                    kind: TermKind::Postcondition { item, args, params: closure_args.into() },
                     ty: self.types.bool,
                     span,
                 };
@@ -1058,17 +1054,17 @@ impl<'tcx> TranslationCtx<'tcx> {
                 closure_args.insert(0, bor_self.clone());
 
                 let base = Term {
-                    kind: TermKind::Postcondition { item: def_id, args, params: closure_args },
+                    kind: TermKind::Postcondition { item, args, params: closure_args.into() },
                     ty: self.types.bool,
                     span,
                 };
 
-                base.conj(bor_self.clone().cur().bin_op(self.tcx, BinOp::Eq, closure_env))
-                    .conj(bor_self.fin().bin_op(
-                        self.tcx,
-                        BinOp::Eq,
-                        Term::var(Symbol::intern("result_state"), env_ty),
-                    ))
+                base.conj(bor_self.clone().cur().eq(self.tcx, closure_env))
+                    .conj(
+                        bor_self
+                            .fin()
+                            .eq(self.tcx, Term::var(Symbol::intern("result_state"), env_ty)),
+                    )
                     .exists(self.tcx, (Symbol::intern("__bor_self"), env_ty))
             }
         }
@@ -1093,7 +1089,7 @@ pub(crate) fn closure_resolve<'tcx>(
         };
 
         if let Some((id, subst)) = resolve_predicate_of(ctx, typing_env, ty) {
-            resolve = Term::call(ctx.tcx, typing_env, id, subst, vec![proj]).conj(resolve);
+            resolve = Term::call(ctx.tcx, typing_env, id, subst, Box::new([proj])).conj(resolve);
         }
     }
 
@@ -1132,8 +1128,8 @@ fn closure_unnest<'tcx>(
                 use rustc_middle::ty::BorrowKind;
 
                 let unnest_one = match is_mut {
-                    BorrowKind::Immutable => Term::eq(tcx, (acc)(fin), (acc)(cur)),
-                    _ => Term::eq(tcx, (acc)(fin).fin(), (acc)(cur).fin()),
+                    BorrowKind::Immutable => acc(fin).eq(tcx, acc(cur)),
+                    _ => acc(fin).fin().eq(tcx, acc(cur).fin()),
                 };
 
                 unnest = unnest_one.conj(unnest);
@@ -1174,12 +1170,16 @@ impl<'a, 'tcx> ClosureSubst<'a, 'tcx> {
                 }
                 Some(proj)
             }
-            UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable)
-                if self.self_consumed =>
-            {
-                Some(proj.fin())
+            UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
+                if self.self_consumed {
+                    Some(proj.fin())
+                } else {
+                    Some(proj.cur())
+                }
             }
-            UpvarCapture::ByRef(_) => Some(proj.cur()),
+            UpvarCapture::ByRef(BorrowKind::Immutable) => {
+                Some(proj.coerce(ty.builtin_deref(false).unwrap()))
+            }
         }
     }
 

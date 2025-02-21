@@ -113,7 +113,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         // TODO: Remove this, push the 0-ary handling down to why3 backend
                         // We use tuple as a dummy argument for 0-ary functions
                         func_args.push(fmir::Operand::Constant(Term {
-                            kind: TermKind::Tuple { fields: Vec::new() },
+                            kind: TermKind::Tuple { fields: Box::new([]) },
                             ty: self.ctx.types.unit,
                             span,
                         }))

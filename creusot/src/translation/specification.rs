@@ -280,12 +280,10 @@ fn place_to_term<'tcx>(
         let ty = place_ref.ty(&body.local_decls, tcx).ty;
         match proj {
             mir::ProjectionElem::Deref => {
-                let mutable = match ty.kind() {
-                    TyKind::Ref(_, _, mutability) => mutability.is_mut(),
-                    _ => continue,
-                };
-                if mutable {
+                if ty.is_mutable_ptr() {
                     kind = TermKind::Cur { term: Box::new(Term { ty, span, kind }) };
+                } else {
+                    kind = TermKind::Coerce { arg: Box::new(Term { ty, span, kind }) }
                 }
             }
             mir::ProjectionElem::Field(field_idx, _) => {
@@ -447,8 +445,13 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
         let kind = subst.as_closure().kind();
         let env_ty = ctx.closure_env_ty(fn_ty, kind, ctx.lifetimes.re_erased);
 
-        let self_pre =
-            if env_ty.is_ref() { Term::var(self_, env_ty).cur() } else { Term::var(self_, env_ty) };
+        let self_pre = if env_ty.is_ref() && env_ty.is_mutable_ptr() {
+            Term::var(self_, env_ty).cur()
+        } else if env_ty.is_ref() {
+            Term::var(self_, env_ty).coerce(env_ty.peel_refs())
+        } else {
+            Term::var(self_, env_ty)
+        };
 
         let mut pre_subst =
             closure_capture_subst(ctx, def_id, subst, false, None, self_pre.clone());
@@ -468,14 +471,14 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
                 ctx.typing_env(def_id),
                 unnest_id,
                 unnest_subst,
-                vec![Term::var(self_, env_ty).cur(), Term::var(self_, env_ty).fin()],
+                Box::new([Term::var(self_, env_ty).cur(), Term::var(self_, env_ty).fin()]),
             );
             let expl = "expl:closure unnest".to_string();
             contract.ensures.push(Condition { term, expl });
         };
 
         let self_post = match kind {
-            ClosureKind::Fn => Term::var(self_, env_ty).cur(),
+            ClosureKind::Fn => Term::var(self_, env_ty).coerce(env_ty.peel_refs()),
             ClosureKind::FnMut => Term::var(self_, env_ty).fin(),
             ClosureKind::FnOnce => Term::var(self_, env_ty),
         };

@@ -4,7 +4,6 @@ pub(crate) mod external;
 pub(crate) mod fmir;
 pub(crate) mod function;
 pub(crate) mod pearlite;
-mod projection_vec;
 pub(crate) mod specification;
 pub(crate) mod traits;
 

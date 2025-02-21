@@ -1,6 +1,5 @@
 module UInt$bits_count$
-  use int.Int
-  use int.ComputerDivision
+  use mach.int.Int
 
   type t = < range 0 $max_unsigned_value$ >
 
@@ -98,8 +97,7 @@ module UInt$bits_count$BW
   use export bv.BV$bits_count$
   use bv.BV256 as BV256
   use bv.BVConverter_$bits_count$_256
-  use int.Int
-  use int.ComputerDivision as CD
+  use mach.int.Int
 
   constant max_uint_as_BV256 : BV256.t = $max_unsigned_value$
 
@@ -137,11 +135,11 @@ module UInt$bits_count$BW
       = any
   let div (a:t) (b:t)
       { [@expl:division by zero] b <> zeros \/ t'int b <> 0 }
-      (ret (result: t) { t'int result = CD.div (t'int a) (t'int b) } { result = udiv a b })
+      (ret (result: t) { t'int result = div (t'int a) (t'int b) } { result = udiv a b })
       = any
   let rem (a:t) (b:t)
       { [@expl:remainder by zero] b <> zeros  \/ t'int b <> 0 }
-      (ret (result: t) { t'int result = CD.mod (t'int a) (t'int b) } { result = urem a b })
+      (ret (result: t) { t'int result = mod (t'int a) (t'int b) } { result = urem a b })
       = any
 
   let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }
@@ -159,8 +157,7 @@ module UInt$bits_count$BW
 end
 
 module Int$bits_count$
-  use int.Int
-  use int.ComputerDivision
+  use mach.int.Int
 
   type t = < range -$min_signed_value$ $max_signed_value$ >
 
@@ -266,8 +263,7 @@ module Int$bits_count$BW
   use export bv.BV$bits_count$
   use bv.BV256 as BV256
   use bv.BVConverter_$bits_count$_256
-  use int.Int
-  use int.ComputerDivision as CD
+  use mach.int.Int
 
   constant min_sint : t = $min_signed_value$
   constant minus_one : t = $max_unsigned_value$
@@ -313,11 +309,11 @@ module Int$bits_count$BW
   let div (a:t) (b:t)
       { [@expl:division by zero] b <> zeros \/ to_int b <> 0 }
       { [@expl:signed division overflow check] (a <> min_sint \/ b <> minus_one) \/ (to_int a <> to_int min_sint \/ to_int b <> -1) }
-      (ret (result: t) { to_int result = CD.div (to_int a) (to_int b) } { result = sdiv a b })
+      (ret (result: t) { to_int result = div (to_int a) (to_int b) } { result = sdiv a b })
       = any
   let rem (a:t) (b:t)
       { [@expl:remainder by zero] b <> zeros \/ to_int b <> 0 }
-      (ret (result: t) { to_int result = CD.mod (to_int a) (to_int b) } { result = srem a b })
+      (ret (result: t) { to_int result = mod (to_int a) (to_int b) } { result = srem a b })
       = any
 
   let bw_and (a:t) (b:t) (ret (result :t)) = ret { bw_and a b }

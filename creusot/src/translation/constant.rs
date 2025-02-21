@@ -34,7 +34,7 @@ fn from_mir_constant_kind<'tcx>(
 
     if ck.ty().is_unit() {
         return Operand::Constant(Term {
-            kind: TermKind::Tuple { fields: Vec::new() },
+            kind: TermKind::Tuple { fields: Box::new([]) },
             ty: ck.ty(),
             span,
         });

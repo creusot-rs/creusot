@@ -950,7 +950,7 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug, T: Debug, N: Namer<'tcx>>(
     mut translate_index: impl FnMut(&V) -> Exp,
 ) -> Exp {
     let mut borrow_id = Exp::Call(
-        Box::new(Exp::qvar(names.from_prelude(PreludeModule::Borrow, "get_id"))),
+        Box::new(Exp::qvar(names.from_prelude(PreludeModule::MutBorrow, "get_id"))),
         vec![original_borrow],
     );
     for proj in projection {
@@ -960,13 +960,13 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug, T: Debug, N: Namer<'tcx>>(
             }
             ProjectionElem::Field(idx, _) => {
                 borrow_id = Exp::Call(
-                    Box::new(Exp::qvar(names.from_prelude(PreludeModule::Borrow, "inherit_id"))),
+                    Box::new(Exp::qvar(names.from_prelude(PreludeModule::MutBorrow, "inherit_id"))),
                     vec![borrow_id, Exp::Const(Constant::Int(idx.as_u32() as i128 + 1, None))],
                 );
             }
             ProjectionElem::Index(x) => {
                 borrow_id = Exp::Call(
-                    Box::new(Exp::qvar(names.from_prelude(PreludeModule::Borrow, "inherit_id"))),
+                    Box::new(Exp::qvar(names.from_prelude(PreludeModule::MutBorrow, "inherit_id"))),
                     vec![borrow_id, translate_index(x)],
                 );
             }
@@ -1025,7 +1025,7 @@ impl<'tcx> Statement<'tcx> {
                 };
 
                 let func = coma::Expr::Symbol(lower.names.from_prelude(
-                    PreludeModule::Borrow,
+                    PreludeModule::MutBorrow,
                     match bor_kind {
                         BorrowKind::Mut => "borrow_mut",
                         BorrowKind::Final(_) => "borrow_final",

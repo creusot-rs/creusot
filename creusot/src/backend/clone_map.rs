@@ -48,7 +48,7 @@ pub enum PreludeModule {
     UInt128,
     Char,
     Bool,
-    Borrow,
+    MutBorrow,
     Slice,
     Opaque,
     Intrinsic,
@@ -155,7 +155,7 @@ pub(crate) trait Namer<'tcx> {
             (PreludeModule::Char, _) => "prelude.prelude.Char.".into(),
             (PreludeModule::Opaque, _) => "prelude.prelude.Opaque.".into(),
             (PreludeModule::Bool, _) => "prelude.prelude.Bool.".into(),
-            (PreludeModule::Borrow, _) => "prelude.prelude.MutBorrow.".into(),
+            (PreludeModule::MutBorrow, _) => "prelude.prelude.MutBorrow.".into(),
             (PreludeModule::Slice, _) => {
                 format!("prelude.slice.Slice{}.", self.tcx().sess.target.pointer_width).into()
             }

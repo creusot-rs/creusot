@@ -56,7 +56,7 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         Ref(_, ty, borkind) => {
             use rustc_ast::Mutability::*;
             match borkind {
-                Mut => MlT::TConstructor(names.from_prelude(PreludeModule::Borrow, "t"))
+                Mut => MlT::TConstructor(names.from_prelude(PreludeModule::MutBorrow, "t"))
                     .tapp(vec![translate_ty(ctx, names, span, *ty)]),
                 Not => translate_ty(ctx, names, span, *ty),
             }

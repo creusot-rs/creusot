@@ -87,12 +87,12 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         let subject = Term::var(Symbol::intern("x"), ty);
         let inv_id = get_inv_function(self.ctx.tcx);
         let subst = self.ctx.mk_args(&[GenericArg::from(subject.ty)]);
-        let lhs = Term::call(self.ctx.tcx, self.typing_env, inv_id, subst, vec![subject.clone()]);
-        let trig = vec![Trigger(vec![lhs.clone()])];
+        let lhs = Term::call(self.ctx.tcx, self.typing_env, inv_id, subst, Box::new([subject.clone()]));
+        let trig = Box::new([Trigger(Box::new([lhs.clone()]))]);
 
         if is_tyinv_trivial(self.ctx.tcx, self.typing_env, ty) {
             self.rewrite = true;
-            return Some(Term::eq(self.ctx.tcx, lhs, Term::mk_true(self.ctx.tcx)).forall_trig(
+            return Some(lhs.eq(self.ctx.tcx, Term::mk_true(self.ctx.tcx)).forall_trig(
                 self.ctx.tcx,
                 (Symbol::intern("x"), ty),
                 trig,
@@ -112,7 +112,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                     self.typing_env,
                     uinv_did,
                     uinv_subst,
-                    vec![subject.clone()],
+                    Box::new([subject.clone()]),
                 ))
             }
             TraitResolved::UnknownNotFound if !for_deps => use_imples = true,
@@ -125,7 +125,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                     self.typing_env,
                     trait_item_did,
                     subst,
-                    vec![subject.clone()],
+                    Box::new([subject.clone()]),
                 ))
             }
         }
@@ -143,7 +143,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
             Term::implies(lhs, rhs)
         } else {
             self.rewrite = true;
-            Term::eq(self.ctx.tcx, lhs, rhs)
+            lhs.eq(self.ctx.tcx, rhs)
         };
 
         Some(term.forall_trig(self.ctx.tcx, (Symbol::intern("x"), ty), trig))
@@ -208,7 +208,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
 
     pub(crate) fn mk_inv_call(&mut self, term: Term<'tcx>) -> Term<'tcx> {
         if let Some((inv_id, subst)) = self.ctx.type_invariant(self.typing_env, term.ty) {
-            Term::call(self.ctx.tcx, self.typing_env, inv_id, subst, vec![term])
+            Term::call(self.ctx.tcx, self.typing_env, inv_id, subst, Box::new([term]))
         } else {
             Term::mk_true(self.ctx.tcx)
         }
@@ -250,7 +250,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         }
 
         Term {
-            kind: TermKind::Match { scrutinee: Box::new(term), arms },
+            kind: TermKind::Match { scrutinee: Box::new(term), arms: arms.into() },
             ty: self.ctx.types.bool,
             span: DUMMY_SP,
         }

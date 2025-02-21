@@ -13,7 +13,7 @@ use crate::{
     },
     contracts_items::get_snap_ty,
     ctx::TranslationCtx,
-    pearlite::{mk_projection, BinOp, Term},
+    pearlite::{mk_projection, Term},
     translation::fmir,
 };
 use petgraph::Direction;
@@ -81,7 +81,7 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
                 }
                 prev_block.stmts.push(Statement::Assignment(
                     Place { local, projection: Vec::new() },
-                    RValue::Snapshot(pterm.clone().coerce(ty, DUMMY_SP)),
+                    RValue::Snapshot(pterm.clone().coerce(ty)),
                     DUMMY_SP,
                 ));
             }
@@ -92,11 +92,7 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
             blk.invariants.insert(
                 0,
                 fmir::Invariant {
-                    body: old.coerce(u.ty(tcx, &body.locals), DUMMY_SP).fin().bin_op(
-                        tcx,
-                        BinOp::Eq,
-                        pterm.fin(),
-                    ),
+                    body: old.coerce(u.ty(tcx, &body.locals)).fin().eq(tcx, pterm.fin()),
                     expl: "expl:mut invariant".to_string(),
                 },
             );

@@ -192,28 +192,28 @@ impl OrdLogic for Int {
 
     #[trusted]
     #[predicate]
-    #[creusot::builtins = "int.Int.(<=)"]
+    #[creusot::builtins = "mach.int.Int.(<=)"]
     fn le_log(self, _: Self) -> bool {
         dead
     }
 
     #[trusted]
     #[predicate]
-    #[creusot::builtins = "int.Int.(<)"]
+    #[creusot::builtins = "mach.int.Int.(<)"]
     fn lt_log(self, _: Self) -> bool {
         dead
     }
 
     #[trusted]
     #[predicate]
-    #[creusot::builtins = "int.Int.(>=)"]
+    #[creusot::builtins = "mach.int.Int.(>=)"]
     fn ge_log(self, _: Self) -> bool {
         dead
     }
 
     #[trusted]
     #[predicate]
-    #[creusot::builtins = "int.Int.(>)"]
+    #[creusot::builtins = "mach.int.Int.(>)"]
     fn gt_log(self, _: Self) -> bool {
         dead
     }

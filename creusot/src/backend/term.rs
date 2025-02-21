@@ -136,8 +136,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 use pearlite::BinOp::*;
                 match op {
                     Div => {
-                        let ty_kind = term.creusot_ty().kind();
-                        match ty_kind {
+                        match term.ty.kind() {
                             TyKind::Int(ity) => {
                                 let prelude = ity_to_prelude(self.names.tcx(), *ity);
                                 Exp::qvar(self.names.from_prelude(prelude, "sdiv"))
@@ -148,13 +147,11 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                                 Exp::qvar(self.names.from_prelude(prelude, "udiv"))
                                     .app(vec![lhs, rhs])
                             }
-                            _ => Exp::qvar(self.names.from_prelude(PreludeModule::Int, "div"))
-                                .app(vec![lhs, rhs]),
+                            _ => unreachable!(),
                         }
                     }
                     Rem => {
-                        let ty_kind = term.creusot_ty().kind();
-                        match ty_kind {
+                        match term.ty.kind() {
                             TyKind::Int(ity) => {
                                 let prelude = ity_to_prelude(self.names.tcx(), *ity);
                                 Exp::qvar(self.names.from_prelude(prelude, "srem"))
@@ -165,19 +162,17 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                                 Exp::qvar(self.names.from_prelude(prelude, "urem"))
                                     .app(vec![lhs, rhs])
                             }
-                            _ => Exp::qvar(self.names.from_prelude(PreludeModule::Int, "mod"))
-                                .app(vec![lhs, rhs]),
+                            _ => unreachable!(),
                         }
                     }
                     BitAnd | BitOr | BitXor | Shl | Shr => {
-                        let ty_kind = term.creusot_ty().kind();
-                        let prelude = match ty_kind {
+                        let prelude = match term.ty.kind() {
                             TyKind::Int(ity) => ity_to_prelude(self.names.tcx(), *ity),
                             TyKind::Uint(uty) => uty_to_prelude(self.names.tcx(), *uty),
                             _ => unreachable!("the bitwise operator are only available on integer"),
                         };
 
-                        let func_name = match (op, ty_kind) {
+                        let func_name = match (op, term.ty.kind()) {
                             (BitAnd, _) => "bw_and",
                             (BitOr, _) => "bw_or",
                             (BitXor, _) => "bw_xor",
@@ -237,20 +232,17 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
             }
             TermKind::Constructor { variant, fields, .. } => {
-                let TyKind::Adt(adt, subst) = term.creusot_ty().kind() else { unreachable!() };
+                let TyKind::Adt(adt, subst) = term.ty.kind() else { unreachable!() };
                 let fields = fields.into_iter().map(|f| self.lower_term(f)).collect();
                 constructor(self.names, fields, adt.variant(*variant).def_id, subst)
             }
             TermKind::Cur { box term } => {
-                if term.creusot_ty().is_mutable_ptr() {
-                    self.names.import_prelude_module(PreludeModule::Borrow);
-                    self.lower_term(term).field("current")
-                } else {
-                    self.lower_term(term)
-                }
+                assert!(term.ty.is_mutable_ptr() && term.ty.is_ref());
+                self.names.import_prelude_module(PreludeModule::MutBorrow);
+                self.lower_term(term).field("current")
             }
             TermKind::Fin { box term } => {
-                self.names.import_prelude_module(PreludeModule::Borrow);
+                self.names.import_prelude_module(PreludeModule::MutBorrow);
                 self.lower_term(term).field("final")
             }
             TermKind::Impl { box lhs, box rhs } => {
@@ -289,7 +281,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Projection { box lhs, name } => {
                 let lhs_low = self.lower_term(lhs);
 
-                let field = match lhs.creusot_ty().kind() {
+                let field = match lhs.ty.kind() {
                     TyKind::Closure(did, substs) => self.names.field(*did, substs, *name),
                     TyKind::Adt(def, substs) => self.names.field(def.did(), substs, *name),
                     TyKind::Tuple(f) => {
@@ -308,7 +300,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 lhs_low.field(&field.as_ident())
             }
             TermKind::Closure { body, .. } => {
-                let TyKind::Closure(id, subst) = term.creusot_ty().kind() else {
+                let TyKind::Closure(id, subst) = term.ty.kind() else {
                     unreachable!("closure has non closure type")
                 };
                 let body = self.lower_term(&*body);
@@ -337,7 +329,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     }
                 });
 
-                Exp::qvar(self.names.from_prelude(PreludeModule::Borrow, "borrow_logic")).app(vec![
+                Exp::qvar(self.names.from_prelude(PreludeModule::MutBorrow, "borrow_logic")).app(vec![
                     self.lower_term(&*cur),
                     self.lower_term(&*fin),
                     borrow_id,

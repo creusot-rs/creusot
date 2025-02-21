@@ -18,7 +18,7 @@ use crate::{
     },
     error::{CannotFetchThir, CreusotResult, Error},
     naming::anonymous_param_symbol,
-    translation::{projection_vec::*, TranslationCtx},
+    translation::TranslationCtx,
 };
 use itertools::Itertools;
 use log::*;
@@ -92,9 +92,11 @@ pub enum QuantKind {
 }
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
-pub struct Trigger<'tcx>(pub(crate) Vec<Term<'tcx>>);
+pub struct Trigger<'tcx>(pub(crate) Box<[Term<'tcx>]>);
 
 pub type QuantBinder<'tcx> = (Vec<Ident>, Ty<'tcx>);
+
+pub type Projections<V, T> = Box<[ProjectionElem<V, T>]>;
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum TermKind<'tcx> {
@@ -122,24 +124,23 @@ pub enum TermKind<'tcx> {
     Quant {
         kind: QuantKind,
         binder: QuantBinder<'tcx>,
-        trigger: Vec<Trigger<'tcx>>,
+        trigger: Box<[Trigger<'tcx>]>,
         body: Box<Term<'tcx>>,
     },
     // TODO: Get rid of (id, subst).
     Call {
         id: DefId,
         subst: GenericArgsRef<'tcx>,
-        args: Vec<Term<'tcx>>,
+        args: Box<[Term<'tcx>]>,
     },
     Constructor {
         typ: DefId,
         variant: VariantIdx,
-        fields: Vec<Term<'tcx>>,
+        fields: Box<[Term<'tcx>]>,
     },
     Tuple {
-        fields: Vec<Term<'tcx>>,
+        fields: Box<[Term<'tcx>]>,
     },
-    // FIXME: Rename to Deref
     Cur {
         term: Box<Term<'tcx>>,
     },
@@ -152,7 +153,7 @@ pub enum TermKind<'tcx> {
     },
     Match {
         scrutinee: Box<Term<'tcx>>,
-        arms: Vec<(Pattern<'tcx>, Term<'tcx>)>,
+        arms: Box<[(Pattern<'tcx>, Term<'tcx>)]>,
     },
     Let {
         pattern: Pattern<'tcx>,
@@ -171,26 +172,26 @@ pub enum TermKind<'tcx> {
         term: Box<Term<'tcx>>,
     },
     Closure {
-        bound: Vec<Symbol>,
+        bound: Box<[Symbol]>,
         body: Box<Term<'tcx>>,
     },
     Reborrow {
         inner: Box<Term<'tcx>>,
         cur: Box<Term<'tcx>>,
         fin: Box<Term<'tcx>>,
-        projection: ProjectionVec<Term<'tcx>, Ty<'tcx>>,
+        projection: Projections<Term<'tcx>, Ty<'tcx>>,
     },
     /// Inferred preconditions for `(item, args)`
     Precondition {
         item: DefId,
         args: GenericArgsRef<'tcx>,
-        params: Vec<Term<'tcx>>,
+        params: Box<[Term<'tcx>]>,
     },
     /// Inferred postconditions for `(item, args)`
     Postcondition {
         item: DefId,
         args: GenericArgsRef<'tcx>,
-        params: Vec<Term<'tcx>>,
+        params: Box<[Term<'tcx>]>,
     },
 }
 
@@ -238,6 +239,20 @@ impl<'tcx, I: Interner> TypeVisitable<I> for Literal<'tcx> {
     fn visit_with<V: rustc_middle::ty::TypeVisitor<I>>(&self, _: &mut V) -> V::Result {
         V::Result::output()
     }
+}
+
+pub fn visit_projections<V, T>(v: &Projections<V, T>, mut f: impl FnMut(&V)) {
+    v.iter().for_each(|elem| match elem {
+        ProjectionElem::Index(v) => f(v),
+        _ => {}
+    })
+}
+
+pub fn visit_projections_mut<V, T>(v: &mut Projections<V, T>, mut f: impl FnMut(&mut V)) {
+    v.iter_mut().for_each(|elem| match elem {
+        ProjectionElem::Index(v) => f(v),
+        _ => {}
+    })
 }
 
 #[derive(Clone, Debug)]
@@ -318,7 +333,7 @@ pub(crate) fn pearlite<'tcx>(
 pub(crate) fn pearlite_with_triggers<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
-) -> CreusotResult<(Vec<Trigger<'tcx>>, Term<'tcx>)> {
+) -> CreusotResult<(Box<[Trigger<'tcx>]>, Term<'tcx>)> {
     let (thir, expr) = ctx.fetch_thir(id)?;
     let thir = thir.borrow();
     if thir.exprs.is_empty() {
@@ -339,7 +354,7 @@ struct ThirTerm<'a, 'tcx> {
 // TODO: Ensure that types are correct during this translation, in particular
 // - Box, & and &mut
 impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
-    fn body_term(&self, expr: ExprId) -> CreusotResult<(Vec<Trigger<'tcx>>, Term<'tcx>)> {
+    fn body_term(&self, expr: ExprId) -> CreusotResult<(Box<[Trigger<'tcx>]>, Term<'tcx>)> {
         let mut triggers = vec![];
         let expr = self.collect_triggers(expr, &mut triggers)?;
         let body = self.expr_term(expr)?;
@@ -371,7 +386,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     }
                 }
             })?;
-        Ok((triggers, res))
+        Ok((triggers.into(), res))
     }
 
     fn collect_triggers(
@@ -416,7 +431,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let Block { ref stmts, expr, .. } = self.thir[block];
                 let mut inner = match expr {
                     Some(e) => self.expr_term(e)?,
-                    None => Term { ty, span, kind: TermKind::Tuple { fields: vec![] } },
+                    None => Term { ty, span, kind: TermKind::Tuple { fields: Box::new([]) } },
                 };
 
                 for stmt in stmts.iter().rev().filter(|id| not_spec(self.ctx.tcx, self.thir, **id))
@@ -584,7 +599,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         Ok(Term { ty, span, kind: TermKind::Old { term: Box::new(term) } })
                     }
                     Some(ResultCheck) => {
-                        Ok(Term { ty, span, kind: TermKind::Tuple { fields: vec![] } })
+                        Ok(Term { ty, span, kind: TermKind::Tuple { fields: Box::new([]) } })
                     }
                     Some(Dead) => Err(Error::msg(
                         span,
@@ -615,23 +630,23 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                                 kind: TermKind::Call {
                                     id: inner_id,
                                     subst: new_subst,
-                                    args: vec![term],
+                                    args: Box::new([term]),
                                 },
                             })
                         } else {
                             let args = args
                                 .iter()
                                 .map(|arg| self.expr_term(*arg))
-                                .collect::<Result<Vec<_>, _>>()?;
+                                .collect::<Result<_, _>>()?;
 
                             Ok(Term { ty, span, kind: TermKind::Call { id, subst, args } })
                         }
                     }
                 }
             }
-            ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } => {
-                Ok(self.expr_term(arg)?.coerce(ty, span))
-            }
+            ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } => Ok({
+                Term { ty, kind: TermKind::Coerce { arg: Box::new(self.expr_term(arg)?) }, span }
+            }),
             ExprKind::Borrow { arg, .. } => {
                 let t = self.logical_reborrow(arg)?;
                 Ok(Term { ty, span, kind: t })
@@ -692,7 +707,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let arg_trans = self.expr_term(arg)?;
                 if self.thir[arg].ty.is_box() || self.thir[arg].ty.ref_mutability() == Some(Not) {
                     let ty = arg_trans.ty.builtin_deref(false).expect("expected &T or Box<T>");
-                    Ok(arg_trans.coerce(ty, span))
+                    Ok(Term { ty, kind: TermKind::Coerce { arg: Box::new(arg_trans) }, span })
                 } else {
                     Ok(Term { ty, span, kind: TermKind::Cur { term: Box::new(arg_trans) } })
                 }
@@ -713,14 +728,21 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let els = if let Some(els) = else_opt {
                     self.expr_term(els)?
                 } else {
-                    Term { span, ty: self.ctx.types.unit, kind: TermKind::Tuple { fields: vec![] } }
+                    Term {
+                        span,
+                        ty: self.ctx.types.unit,
+                        kind: TermKind::Tuple { fields: Box::new([]) },
+                    }
                 };
                 Ok(Term {
                     ty,
                     span,
                     kind: TermKind::Match {
                         scrutinee: Box::new(cond),
-                        arms: vec![(Pattern::Boolean(true), then), (Pattern::Boolean(false), els)],
+                        arms: Box::new([
+                            (Pattern::Boolean(true), then),
+                            (Pattern::Boolean(false), els),
+                        ]),
                     },
                 })
             }
@@ -729,8 +751,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 Ok(Term { ty, span, kind: mk_projection(lhs, name) })
             }
             ExprKind::Tuple { ref fields } => {
-                let fields: Vec<_> =
-                    fields.iter().map(|f| self.expr_term(*f)).collect::<Result<_, _>>()?;
+                let fields = fields.iter().map(|f| self.expr_term(*f)).collect::<Result<_, _>>()?;
                 Ok(Term { ty, span, kind: TermKind::Tuple { fields } })
             }
             ExprKind::Use { source } => self.expr_term(source),
@@ -931,7 +952,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     fn quant_term(
         &self,
         body: ExprId,
-    ) -> Result<(Vec<Ident>, (Vec<Trigger<'tcx>>, Term<'tcx>)), Error> {
+    ) -> Result<(Vec<Ident>, (Box<[Trigger<'tcx>]>, Term<'tcx>)), Error> {
         trace!("{:?}", self.thir[body].kind);
         match self.thir[body].kind {
             ExprKind::Scope { value, .. } => self.quant_term(value),
@@ -973,15 +994,17 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             cur: Box::new(cur),
             fin: Box::new(fin),
             inner: Box::new(inner),
-            projection,
+            projection: projection.into(),
         })
     }
 
     fn logical_reborrow_inner(
         &self,
         rebor_id: ExprId,
-    ) -> Result<(Term<'tcx>, Term<'tcx>, Term<'tcx>, ProjectionVec<Term<'tcx>, Ty<'tcx>>), Error>
-    {
+    ) -> Result<
+        (Term<'tcx>, Term<'tcx>, Term<'tcx>, Vec<ProjectionElem<Term<'tcx>, Ty<'tcx>>>),
+        Error,
+    > {
         let ty = self.thir[rebor_id].ty;
         let span = self.thir[rebor_id].span;
         match &self.thir[rebor_id].kind {
@@ -1012,8 +1035,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     let TyKind::Adt(_, subst) = self.thir[arg].ty.peel_refs().kind() else { unreachable!() };
                     let ty = subst.type_at(0);
                     return Ok((
-                        cur.coerce(ty, span),
-                        fin.coerce(ty, span),
+                        Term { ty, kind: TermKind::Coerce { arg: Box::new(cur) }, span },
+                        Term { ty, kind: TermKind::Coerce { arg: Box::new(fin) }, span },
                         inner,
                         proj
                     ));
@@ -1059,13 +1082,13 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                             self.ctx.tcx,
                             index_logic_method,
                             subst,
-                            vec![cur, index.clone()],
+                            Box::new([cur, index.clone()]),
                         ),
                         Term::call_no_normalize(
                             self.ctx.tcx,
                             index_logic_method,
                             subst,
-                            vec![fin, index],
+                            Box::new([fin, index]),
                         ),
                         inner,
                         proj
@@ -1132,7 +1155,7 @@ pub(crate) fn type_invariant_term<'tcx>(
     Some(Term {
         ty: ctx.fn_sig(inv_fn_did).skip_binder().output().skip_binder(),
         span,
-        kind: TermKind::Call { id: inv_fn_did, subst: inv_fn_substs, args: vec![arg] },
+        kind: TermKind::Call { id: inv_fn_did, subst: inv_fn_substs, args: Box::new([arg]) },
     })
 }
 
@@ -1356,7 +1379,7 @@ impl<'tcx> Term<'tcx> {
         tcx: TyCtxt<'tcx>,
         def_id: DefId,
         subst: GenericArgsRef<'tcx>,
-        args: Vec<Term<'tcx>>,
+        args: Box<[Term<'tcx>]>,
     ) -> Self {
         let ty = tcx.type_of(def_id).instantiate(tcx, subst);
         let result = ty.fn_sig(tcx).skip_binder().output();
@@ -1368,7 +1391,7 @@ impl<'tcx> Term<'tcx> {
         typing_env: TypingEnv<'tcx>,
         def_id: DefId,
         subst: GenericArgsRef<'tcx>,
-        args: Vec<Term<'tcx>>,
+        args: Box<[Term<'tcx>]>,
     ) -> Self {
         let mut res = Self::call_no_normalize(tcx, def_id, subst, args);
         res.ty = tcx.normalize_erasing_regions(typing_env, res.ty);
@@ -1380,7 +1403,7 @@ impl<'tcx> Term<'tcx> {
     }
 
     pub(crate) fn cur(self) -> Self {
-        assert!(self.ty.is_ref() || self.ty.is_box(), "cannot dereference type {:?}", self.ty);
+        assert!(self.ty.is_mutable_ptr() && self.ty.is_ref(), "cannot cur type {:?}", self.ty);
 
         Term {
             ty: self.ty.builtin_deref(false).unwrap(),
@@ -1423,16 +1446,16 @@ impl<'tcx> Term<'tcx> {
         }
     }
 
-    pub(crate) fn bin_op(self, tcx: TyCtxt<'tcx>, op: BinOp, rhs: Self) -> Self {
+    pub(crate) fn bin_op(self, ty: Ty<'tcx>, op: BinOp, rhs: Self) -> Self {
         Term {
-            ty: tcx.types.bool,
+            ty,
             kind: TermKind::Binary { op, lhs: Box::new(self), rhs: Box::new(rhs) },
             span: DUMMY_SP,
         }
     }
 
-    pub(crate) fn eq(tcx: TyCtxt<'tcx>, lhs: Self, rhs: Self) -> Self {
-        lhs.bin_op(tcx, BinOp::Eq, rhs)
+    pub(crate) fn eq(self, tcx: TyCtxt<'tcx>, rhs: Self) -> Self {
+        self.bin_op(tcx.types.bool, BinOp::Eq, rhs)
     }
 
     pub(crate) fn implies(self, rhs: Self) -> Self {
@@ -1460,27 +1483,27 @@ impl<'tcx> Term<'tcx> {
         self,
         tcx: TyCtxt<'tcx>,
         binder: (Symbol, Ty<'tcx>),
-        trigger: Vec<Trigger<'tcx>>,
+        trigger: Box<[Trigger<'tcx>]>,
     ) -> Self {
         let ty = Ty::new_tup(tcx, &[binder.1]);
         self.quant(QuantKind::Forall, (vec![Ident::new(binder.0, DUMMY_SP)], ty), trigger)
     }
 
     pub(crate) fn forall(self, tcx: TyCtxt<'tcx>, binder: (Symbol, Ty<'tcx>)) -> Self {
-        self.forall_trig(tcx, binder, vec![])
+        self.forall_trig(tcx, binder, Box::new([]))
     }
 
     pub(crate) fn exists(self, tcx: TyCtxt<'tcx>, binder: (Symbol, Ty<'tcx>)) -> Self {
         let ty = Ty::new_tup(tcx, &[binder.1]);
 
-        self.quant(QuantKind::Exists, (vec![Ident::new(binder.0, DUMMY_SP)], ty), vec![])
+        self.quant(QuantKind::Exists, (vec![Ident::new(binder.0, DUMMY_SP)], ty), Box::new([]))
     }
 
     pub(crate) fn quant(
         self,
         quant_kind: QuantKind,
         binder: QuantBinder<'tcx>,
-        trigger: Vec<Trigger<'tcx>>,
+        trigger: Box<[Trigger<'tcx>]>,
     ) -> Self {
         assert!(self.ty.is_bool());
 
@@ -1497,8 +1520,8 @@ impl<'tcx> Term<'tcx> {
         }
     }
 
-    pub(crate) fn coerce(self, ty: Ty<'tcx>, span: Span) -> Self {
-        Term { ty, kind: TermKind::Coerce { arg: Box::new(self) }, span }
+    pub(crate) fn coerce(self, ty: Ty<'tcx>) -> Self {
+        Term { ty, kind: TermKind::Coerce { arg: Box::new(self) }, span: DUMMY_SP }
     }
 
     pub(crate) fn span(mut self, sp: Span) -> Self {
@@ -1694,10 +1717,6 @@ impl<'tcx> Term<'tcx> {
             }
         }
     }
-
-    pub fn creusot_ty(&self) -> Ty<'tcx> {
-        strip_all_refs(self.ty)
-    }
 }
 
 #[allow(dead_code)]
@@ -1778,15 +1797,4 @@ fn print_thir_expr(fmt: &mut Formatter, thir: &Thir, expr_id: ExprId) -> std::fm
         }
     }
     Ok(())
-}
-
-fn strip_all_refs(ty: Ty) -> Ty {
-    let mut ty = ty;
-    loop {
-        if ty.ref_mutability() == Some(Not) || ty.is_box() {
-            ty = ty.builtin_deref(true).unwrap();
-        } else {
-            return ty;
-        }
-    }
 }

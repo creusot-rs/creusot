@@ -396,7 +396,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             TermKind::Tuple { fields } => self.build_vc_slice(fields, &|flds| k(Exp::Tuple(flds))),
             // Same as for tuples
             TermKind::Constructor { variant, fields, .. } => {
-                let ty = self.ctx.normalize_erasing_regions(self.typing_env, t.creusot_ty());
+                let ty = self.ctx.normalize_erasing_regions(self.typing_env, t.ty);
                 let TyKind::Adt(adt, subst) = ty.kind() else { unreachable!() };
                 self.build_vc_slice(fields, &|fields| {
                     let ctor = constructor(self.names, fields, adt.variant(*variant).def_id, subst);
@@ -451,7 +451,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             }),
             // VC(A.f, Q) = VC(A, |a| Q(a.f))
             TermKind::Projection { lhs, name } => {
-                let ty = self.ctx.normalize_erasing_regions(self.typing_env, lhs.creusot_ty());
+                let ty = self.ctx.normalize_erasing_regions(self.typing_env, lhs.ty);
                 let field = match ty.kind() {
                     TyKind::Closure(did, substs) => {
                         self.names.field(*did, substs, *name).as_ident()
@@ -621,12 +621,12 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         let orig_variant = self.self_sig().contract.variant.remove(0);
         let mut rec_var_exp = orig_variant.clone();
         rec_var_exp.subst(&mut subst);
-        if is_int(self.ctx.tcx, variant.creusot_ty()) {
+        if is_int(self.ctx.tcx, variant.ty) {
             self.names.import_prelude_module(PreludeModule::Int);
             Ok(Exp::BinaryOp(BinOp::Le, Box::new(Exp::int(0)), Box::new(orig_variant.clone()))
                 .log_and(Exp::BinaryOp(BinOp::Lt, Box::new(rec_var_exp), Box::new(orig_variant))))
         } else {
-            Err(VCError::UnsupportedVariant(variant.creusot_ty(), variant.span))
+            Err(VCError::UnsupportedVariant(variant.ty, variant.span))
         }
     }
 
