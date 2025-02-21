@@ -1,0 +1,36 @@
+module M_02__omg [#"02.rs" 11 0 11 30]
+  let%span s020 = "02.rs" 11 17 11 18
+  let%span s021 = "02.rs" 10 10 10 24
+  let%span s022 = "02.rs" 7 16 7 20
+  let%span s023 = "02.rs" 6 14 6 28
+  let%span sinvariant4 = "../../../creusot-contracts/src/invariant.rs" 25 8 25 18
+  
+  type t_T'0
+  
+  predicate inv'0 (_1 : t_T'0)
+  
+  predicate invariant'0 (self : t_T'0) =
+    [%#sinvariant4] inv'0 self
+  
+  predicate inv'1 (_1 : t_T'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_T'0 [inv'1 x] . inv'1 x = invariant'0 x
+  
+  let rec is_true'0 (self:t_T'0) (return'  (ret:bool))= {[@expl:is_true 'self' type invariant] [%#s022] inv'1 self}
+    any [ return' (result:bool)-> {[%#s023] result = true} (! return' {result}) ] 
+  
+  predicate resolve'0 (_1 : t_T'0)
+  
+  use creusot.prelude.Intrinsic
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec omg'0[#"02.rs" 11 0 11 30] (a:t_T'0) (return'  (ret:bool))= {[@expl:omg 'a' type invariant] [%#s020] inv'0 a}
+    (! bb0
+    [ bb0 = s0 [ s0 = is_true'0 {a} (fun (_ret':bool) ->  [ &_0 <- _ret' ] s1) | s1 = bb1 ] 
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'0 a} s1 | s1 = -{resolve'0 a}- s2 | s2 = bb2 ] 
+    | bb2 = return' {_0} ]
+    ) [ & _0 : bool = Intrinsic.any_l () | & a : t_T'0 = a ] 
+    [ return' (result:bool)-> {[@expl:omg ensures] [%#s021] result = true} (! return' {result}) ]
+
+end

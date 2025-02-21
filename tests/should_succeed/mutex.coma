@@ -1,0 +1,310 @@
+module M_mutex__qyi5425553346843331945__call [#"mutex.rs" 100 4 100 23] (* <AddsTwo<'a> as FakeFnOnce> *)
+  let%span smutex0 = "mutex.rs" 103 17 103 23
+  let%span smutex1 = "mutex.rs" 104 24 104 25
+  let%span smutex2 = "mutex.rs" 106 18 106 19
+  let%span smutex3 = "mutex.rs" 37 17 37 21
+  let%span smutex4 = "mutex.rs" 36 14 36 33
+  let%span smutex5 = "mutex.rs" 50 23 50 25
+  let%span smutex6 = "mutex.rs" 49 4 49 35
+  let%span smutex7 = "mutex.rs" 56 22 56 23
+  let%span smutex8 = "mutex.rs" 55 4 55 30
+  let%span smutex9 = "mutex.rs" 67 8 67 25
+  
+  type t_MutexInner'0
+  
+  type t_Mutex'0  =
+    { t_Mutex__0'0: t_MutexInner'0; t_Mutex__1'0: () }
+  
+  type t_AddsTwo'0  =
+    { t_AddsTwo__mutex'0: t_Mutex'0 }
+  
+  predicate inv'0 (_1 : t_Mutex'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Mutex'0 [inv'0 x] . inv'0 x = true
+  
+  type t_GuardInner'0
+  
+  use creusot.prelude.Snapshot
+  
+  type t_MutexGuard'0  =
+    { t_MutexGuard__0'0: t_GuardInner'0; t_MutexGuard__1'0: Snapshot.snap_ty () }
+  
+  use creusot.prelude.Snapshot
+  
+  let rec lock'0 (self:t_Mutex'0) (return'  (ret:t_MutexGuard'0))= {[@expl:lock 'self' type invariant] [%#smutex3] inv'0 self}
+    any
+    [ return' (result:t_MutexGuard'0)-> {[%#smutex4] self.t_Mutex__1'0 = Snapshot.inner result.t_MutexGuard__1'0}
+      (! return' {result}) ]
+  
+  
+  use creusot.int.UInt32
+  
+  predicate inv'1 (_1 : UInt32.t)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : UInt32.t [inv'1 x] . inv'1 x = true
+  
+  use creusot.int.UInt32
+  
+  use mach.int.Int
+  
+  predicate inv'2 [#"mutex.rs" 66 4 66 33] (self : ()) (x : UInt32.t) =
+    [%#smutex9] Int.mod (UInt32.t'int x) 2 = 0
+  
+  let rec deref'0 (self:t_MutexGuard'0) (return'  (ret:UInt32.t))= any
+    [ return' (result:UInt32.t)-> {[%#smutex5] inv'1 result}
+      {[%#smutex6] inv'2 (Snapshot.inner self.t_MutexGuard__1'0) result}
+      (! return' {result}) ]
+  
+  
+  use creusot.prelude.MutBorrow
+  
+  predicate inv'3 (_1 : UInt32.t)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : UInt32.t [inv'3 x] . inv'3 x = true
+  
+  let rec set'0 (self:MutBorrow.t (t_MutexGuard'0)) (v:UInt32.t) (return'  (ret:()))= {[@expl:set 'v' type invariant] [%#smutex7] inv'3 v}
+    {[@expl:set requires] [%#smutex8] inv'2 (Snapshot.inner (self.current).t_MutexGuard__1'0) v}
+    any [ return' (result:())-> (! return' {result}) ] 
+  
+  use creusot.prelude.Intrinsic
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec call'0[#"mutex.rs" 100 4 100 23] (self:t_AddsTwo'0) (return'  (ret:()))= (! bb0
+    [ bb0 = s0 [ s0 = lock'0 {self.t_AddsTwo__mutex'0} (fun (_ret':t_MutexGuard'0) ->  [ &v <- _ret' ] s1) | s1 = bb1 ] 
+    | bb1 = s0 [ s0 = deref'0 {v} (fun (_ret':UInt32.t) ->  [ &_5 <- _ret' ] s1) | s1 = bb2 ] 
+    | bb2 = s0
+      [ s0 =  [ &val' <- _5 ] s1
+      | s1 = UInt32.lt {val'} {[%#smutex0] (100000 : UInt32.t)} (fun (_ret':bool) ->  [ &_7 <- _ret' ] s2)
+      | s2 = any [ br0 -> {_7 = false} (! bb5) | br1 -> {_7} (! bb3) ]  ]
+    
+    | bb3 = s0
+      [ s0 = MutBorrow.borrow_mut <t_MutexGuard'0> {v}
+          (fun (_ret':MutBorrow.t (t_MutexGuard'0)) ->  [ &_10 <- _ret' ]  [ &v <- _ret'.final ] s1)
+      | s1 = UInt32.add {val'} {[%#smutex1] (2 : UInt32.t)} (fun (_ret':UInt32.t) ->  [ &_11 <- _ret' ] s2)
+      | s2 = set'0 {_10} {_11} (fun (_ret':()) ->  [ &_9 <- _ret' ] s3)
+      | s3 = bb4 ]
+    
+    | bb4 = bb7
+    | bb5 = s0
+      [ s0 = MutBorrow.borrow_mut <t_MutexGuard'0> {v}
+          (fun (_ret':MutBorrow.t (t_MutexGuard'0)) ->  [ &_14 <- _ret' ]  [ &v <- _ret'.final ] s1)
+      | s1 = set'0 {_14} {[%#smutex2] (0 : UInt32.t)} (fun (_ret':()) ->  [ &_13 <- _ret' ] s2)
+      | s2 = bb6 ]
+    
+    | bb6 = bb7
+    | bb7 = bb8
+    | bb8 = return' {_0} ]
+    )
+    [ & _0 : () = Intrinsic.any_l ()
+    | & self : t_AddsTwo'0 = self
+    | & v : t_MutexGuard'0 = Intrinsic.any_l ()
+    | & val' : UInt32.t = Intrinsic.any_l ()
+    | & _5 : UInt32.t = Intrinsic.any_l ()
+    | & _7 : bool = Intrinsic.any_l ()
+    | & _9 : () = Intrinsic.any_l ()
+    | & _10 : MutBorrow.t (t_MutexGuard'0) = Intrinsic.any_l ()
+    | & _11 : UInt32.t = Intrinsic.any_l ()
+    | & _13 : () = Intrinsic.any_l ()
+    | & _14 : MutBorrow.t (t_MutexGuard'0) = Intrinsic.any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end
+module M_mutex__concurrent [#"mutex.rs" 163 0 163 19]
+  let%span smutex0 = "mutex.rs" 164 49 164 50
+  let%span smutex1 = "mutex.rs" 18 15 18 18
+  let%span smutex2 = "mutex.rs" 18 23 18 24
+  let%span smutex3 = "mutex.rs" 17 15 17 25
+  let%span smutex4 = "mutex.rs" 18 32 18 36
+  let%span smutex5 = "mutex.rs" 159 19 159 20
+  let%span smutex6 = "mutex.rs" 159 33 159 42
+  let%span smutex7 = "mutex.rs" 158 10 158 23
+  let%span smutex8 = "mutex.rs" 132 4 132 5
+  let%span smutex9 = "mutex.rs" 130 11 130 27
+  let%span smutex10 = "mutex.rs" 121 21 121 34
+  let%span smutex11 = "mutex.rs" 117 14 120 5
+  let%span smutex12 = "mutex.rs" 67 8 67 25
+  let%span sresolve13 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span smutex14 = "mutex.rs" 92 8 92 12
+  let%span smutex15 = "mutex.rs" 149 4 149 16
+  let%span smutex16 = "mutex.rs" 97 8 97 12
+  
+  use creusot.int.UInt32
+  
+  predicate inv'0 (_1 : UInt32.t)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : UInt32.t [inv'0 x] . inv'0 x = true
+  
+  predicate inv'1 (_1 : ())
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : () [inv'1 x] . inv'1 x = true
+  
+  use creusot.int.UInt32
+  
+  use mach.int.Int
+  
+  predicate inv'2 [#"mutex.rs" 66 4 66 33] (self : ()) (x : UInt32.t) =
+    [%#smutex12] Int.mod (UInt32.t'int x) 2 = 0
+  
+  type t_MutexInner'0
+  
+  type t_Mutex'0  =
+    { t_Mutex__0'0: t_MutexInner'0; t_Mutex__1'0: () }
+  
+  predicate inv'3 (_1 : t_Mutex'0)
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Mutex'0 [inv'3 x] . inv'3 x = true
+  
+  let rec new'0 (val':UInt32.t) (i:()) (return'  (ret:t_Mutex'0))= {[@expl:new 'val' type invariant] [%#smutex1] inv'0 val'}
+    {[@expl:new 'i' type invariant] [%#smutex2] inv'1 i}
+    {[@expl:new requires] [%#smutex3] inv'2 i val'}
+    any [ return' (result:t_Mutex'0)-> {[%#smutex4] inv'3 result} (! return' {result}) ] 
+  
+  predicate inv'4 (_1 : t_Mutex'0)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Mutex'0 [inv'4 x] . inv'4 x = true
+  
+  use creusot.prelude.MutBorrow
+  
+  predicate inv'5 (_1 : MutBorrow.t (t_Mutex'0))
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : MutBorrow.t (t_Mutex'0) [inv'5 x] . inv'5 x = true
+  
+  let rec leak'0 (b:t_Mutex'0) (return'  (ret:MutBorrow.t (t_Mutex'0)))= {[@expl:leak 'b' type invariant] [%#smutex5] inv'4 b}
+    any
+    [ return' (result:MutBorrow.t (t_Mutex'0))-> {[%#smutex6] inv'5 result}
+      {[%#smutex7] result.current = b}
+      (! return' {result}) ]
+  
+  
+  predicate resolve'1 (self : MutBorrow.t (t_Mutex'0)) =
+    [%#sresolve13] self.final = self.current
+  
+  predicate resolve'0 (_1 : MutBorrow.t (t_Mutex'0)) =
+    resolve'1 _1
+  
+  type t_AddsTwo'0  =
+    { t_AddsTwo__mutex'0: t_Mutex'0 }
+  
+  predicate inv'6 (_1 : t_AddsTwo'0)
+  
+  axiom inv_axiom'5 [@rewrite] : forall x : t_AddsTwo'0 [inv'6 x] . inv'6 x = true
+  
+  predicate precondition'0 [#"mutex.rs" 91 4 91 33] (self : t_AddsTwo'0) =
+    [%#smutex14] true
+  
+  type t_JoinHandleInner'0
+  
+  type t_SpawnPostCond'0  =
+    { t_SpawnPostCond__f'0: t_AddsTwo'0 }
+  
+  use creusot.prelude.Snapshot
+  
+  type t_JoinHandle'0  =
+    { t_JoinHandle__0'0: t_JoinHandleInner'0; t_JoinHandle__1'0: Snapshot.snap_ty (t_SpawnPostCond'0) }
+  
+  let rec spawn'0 (f:t_AddsTwo'0) (return'  (ret:t_JoinHandle'0))= {[@expl:spawn 'f' type invariant] [%#smutex8] inv'6 f}
+    {[@expl:spawn requires] [%#smutex9] precondition'0 f}
+    any [ return' (result:t_JoinHandle'0)-> (! return' {result}) ] 
+  
+  type t_Result'0  =
+    | C_Ok'0 ()
+    | C_Err'0 ()
+  
+  predicate inv'7 (_1 : t_Result'0)
+  
+  axiom inv_axiom'6 [@rewrite] : forall x : t_Result'0 [inv'7 x] . inv'7 x = true
+  
+  use creusot.prelude.Snapshot
+  
+  predicate postcondition'0 [#"mutex.rs" 96 4 96 41] (self : t_AddsTwo'0) (_2 : ()) =
+    [%#smutex16] true
+  
+  predicate inv'8 [#"mutex.rs" 150 4 150 39] (self : t_SpawnPostCond'0) (v : ()) =
+    [%#smutex15] postcondition'0 self.t_SpawnPostCond__f'0 v
+  
+  let rec join'0 (self:t_JoinHandle'0) (return'  (ret:t_Result'0))= any
+    [ return' (result:t_Result'0)-> {[%#smutex10] inv'7 result}
+      {[%#smutex11] match result with
+        | C_Ok'0 v -> inv'8 (Snapshot.inner self.t_JoinHandle__1'0) v
+        | _ -> true
+        end}
+      (! return' {result}) ]
+  
+  
+  use creusot.prelude.Intrinsic
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec concurrent'0[#"mutex.rs" 163 0 163 19] (_1:()) (return'  (ret:()))= (! bb0
+    [ bb0 = s0
+      [ s0 =  [ &_5 <- () ] s1
+      | s1 = new'0 {[%#smutex0] (0 : UInt32.t)} {_5} (fun (_ret':t_Mutex'0) ->  [ &_4 <- _ret' ] s2)
+      | s2 = bb1 ]
+    
+    | bb1 = bb2
+    | bb2 = s0 [ s0 = leak'0 {_4} (fun (_ret':MutBorrow.t (t_Mutex'0)) ->  [ &_2 <- _ret' ] s1) | s1 = bb3 ] 
+    | bb3 = s0
+      [ s0 =  [ &m <- _2.current ] s1
+      | s1 = -{resolve'0 _2}- s2
+      | s2 =  [ &_8 <- m ] s3
+      | s3 =  [ &t1 <- { t_AddsTwo__mutex'0 = _8 } ] s4
+      | s4 = spawn'0 {t1} (fun (_ret':t_JoinHandle'0) ->  [ &j1 <- _ret' ] s5)
+      | s5 = bb4 ]
+    
+    | bb4 = s0
+      [ s0 =  [ &_13 <- m ] s1
+      | s1 =  [ &t2 <- { t_AddsTwo__mutex'0 = _13 } ] s2
+      | s2 = spawn'0 {t2} (fun (_ret':t_JoinHandle'0) ->  [ &j2 <- _ret' ] s3)
+      | s3 = bb5 ]
+    
+    | bb5 = s0 [ s0 = join'0 {j1} (fun (_ret':t_Result'0) ->  [ &_16 <- _ret' ] s1) | s1 = bb6 ] 
+    | bb6 = s0 [ s0 = join'0 {j2} (fun (_ret':t_Result'0) ->  [ &_18 <- _ret' ] s1) | s1 = bb7 ] 
+    | bb7 = bb8
+    | bb8 = bb9
+    | bb9 = return' {_0} ]
+    )
+    [ & _0 : () = Intrinsic.any_l ()
+    | & m : t_Mutex'0 = Intrinsic.any_l ()
+    | & _2 : MutBorrow.t (t_Mutex'0) = Intrinsic.any_l ()
+    | & _4 : t_Mutex'0 = Intrinsic.any_l ()
+    | & _5 : () = Intrinsic.any_l ()
+    | & t1 : t_AddsTwo'0 = Intrinsic.any_l ()
+    | & _8 : t_Mutex'0 = Intrinsic.any_l ()
+    | & j1 : t_JoinHandle'0 = Intrinsic.any_l ()
+    | & t2 : t_AddsTwo'0 = Intrinsic.any_l ()
+    | & _13 : t_Mutex'0 = Intrinsic.any_l ()
+    | & j2 : t_JoinHandle'0 = Intrinsic.any_l ()
+    | & _16 : t_Result'0 = Intrinsic.any_l ()
+    | & _18 : t_Result'0 = Intrinsic.any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end
+module M_mutex__qyi5425553346843331945__call__refines [#"mutex.rs" 100 4 100 23] (* <AddsTwo<'a> as FakeFnOnce> *)
+  let%span smutex0 = "mutex.rs" 100 4 100 23
+  let%span smutex1 = "mutex.rs" 92 8 92 12
+  let%span smutex2 = "mutex.rs" 97 8 97 12
+  
+  type t_MutexInner'0
+  
+  type t_Mutex'0  =
+    { t_Mutex__0'0: t_MutexInner'0; t_Mutex__1'0: () }
+  
+  type t_AddsTwo'0  =
+    { t_AddsTwo__mutex'0: t_Mutex'0 }
+  
+  predicate precondition'0 [#"mutex.rs" 91 4 91 33] (self : t_AddsTwo'0) =
+    [%#smutex1] true
+  
+  predicate inv'0 (_1 : t_AddsTwo'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_AddsTwo'0 [inv'0 x] . inv'0 x = true
+  
+  predicate postcondition'0 [#"mutex.rs" 96 4 96 41] (self : t_AddsTwo'0) (_2 : ()) =
+    [%#smutex2] true
+  
+  predicate inv'1 (_1 : ())
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : () [inv'1 x] . inv'1 x = true
+  
+  goal refines : [%#smutex0] forall self : t_AddsTwo'0 . precondition'0 self /\ inv'0 self
+   -> (forall result : () . postcondition'0 self result /\ inv'1 result)
+end

@@ -1,0 +1,119 @@
+module M_invariant_moves__test_invariant_move [#"invariant_moves.rs" 5 0 5 43]
+  let%span sinvariant_moves0 = "invariant_moves.rs" 6 16 6 22
+  let%span svec1 = "../../creusot-contracts/src/std/vec.rs" 96 26 101 17
+  let%span svec2 = "../../creusot-contracts/src/std/vec.rs" 20 14 20 41
+  let%span smodel3 = "../../creusot-contracts/src/model.rs" 72 8 72 22
+  let%span sresolve4 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  
+  use creusot.prelude.MutBorrow
+  
+  use creusot.prelude.Opaque
+  
+  type t_NonNull'0  =
+    { t_NonNull__pointer'0: Opaque.ptr }
+  
+  type t_Unique'0  =
+    { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
+  
+  use creusot.int.UInt64
+  
+  type t_UsizeNoHighBit'0  =
+    { t_UsizeNoHighBit__0'0: UInt64.t }
+  
+  type t_RawVecInner'0  =
+    { t_RawVecInner__ptr'0: t_Unique'0; t_RawVecInner__cap'0: t_UsizeNoHighBit'0; t_RawVecInner__alloc'0: () }
+  
+  type t_RawVec'0  =
+    { t_RawVec__inner'0: t_RawVecInner'0; t_RawVec__qy95zmarker'0: () }
+  
+  type t_Vec'0  =
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
+  
+  predicate inv'0 (_1 : MutBorrow.t (t_Vec'0))
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t (t_Vec'0) [inv'0 x] . inv'0 x = true
+  
+  use creusot.int.UInt32
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 UInt32.t
+  
+  predicate inv'1 (_1 : t_Option'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x = true
+  
+  use seq.Seq
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
+  
+  use creusot.int.UInt64
+  
+  use mach.int.Int
+  
+  use seq.Seq
+  
+  function view'0 (self : t_Vec'0) : Seq.seq UInt32.t
+  
+  axiom view'0_spec : forall self : t_Vec'0 . [%#svec2] Seq.length (view'0 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
+  
+  function view'1 (self : MutBorrow.t (t_Vec'0)) : Seq.seq UInt32.t =
+    [%#smodel3] view'0 self.current
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  let rec pop'0 (self:MutBorrow.t (t_Vec'0)) (return'  (ret:t_Option'0))= {[@expl:pop 'self' type invariant] inv'0 self}
+    any
+    [ return' (result:t_Option'0)-> {inv'1 result}
+      {[%#svec1] match result with
+        | C_Some'0 t -> view'0 self.final = Seq.([..]) (view'1 self) 0 (Seq.length (view'1 self) - 1)
+        /\ view'1 self = Seq.snoc (view'0 self.final) t
+        | C_None'0 -> self.current = self.final /\ Seq.length (view'1 self) = 0
+        end}
+      (! return' {result}) ]
+  
+  
+  predicate resolve'1 (self : MutBorrow.t (t_Vec'0)) =
+    [%#sresolve4] self.final = self.current
+  
+  predicate resolve'0 (_1 : MutBorrow.t (t_Vec'0)) =
+    resolve'1 _1
+  
+  use creusot.prelude.Intrinsic
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec test_invariant_move'0[#"invariant_moves.rs" 5 0 5 43] (x:t_Vec'0) (return'  (ret:()))= (! bb0
+    [ bb0 = bb1
+    | bb1 = bb1
+      [ bb1 = {[@expl:loop invariant] [%#sinvariant_moves0] x = x}
+        (! s0) [ s0 = bb2 ] 
+        [ bb2 = bb3
+        | bb3 = s0
+          [ s0 = MutBorrow.borrow_mut <t_Vec'0> {x}
+              (fun (_ret':MutBorrow.t (t_Vec'0)) ->  [ &_7 <- _ret' ]  [ &x <- _ret'.final ] s1)
+          | s1 = MutBorrow.borrow_final <t_Vec'0> {_7.current} {MutBorrow.get_id _7}
+              (fun (_ret':MutBorrow.t (t_Vec'0)) ->  [ &_6 <- _ret' ]  [ &_7 <- { _7 with current = _ret'.final } ] s2)
+          | s2 = pop'0 {_6} (fun (_ret':t_Option'0) ->  [ &_5 <- _ret' ] s3)
+          | s3 = bb4 ]
+        
+        | bb4 = s0
+          [ s0 = -{resolve'0 _7}- s1
+          | s1 = any [ br0 -> {_5 = C_None'0 } (! bb7) | br1 (x0:UInt32.t)-> {_5 = C_Some'0 x0} (! bb5) ]  ]
+        
+        | bb5 = bb6
+        | bb6 = bb1 ]
+       ]
+    
+    | bb7 = bb8
+    | bb8 = return' {_0} ]
+    )
+    [ & _0 : () = Intrinsic.any_l ()
+    | & x : t_Vec'0 = x
+    | & _5 : t_Option'0 = Intrinsic.any_l ()
+    | & _6 : MutBorrow.t (t_Vec'0) = Intrinsic.any_l ()
+    | & _7 : MutBorrow.t (t_Vec'0) = Intrinsic.any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end
