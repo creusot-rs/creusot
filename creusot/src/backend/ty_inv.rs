@@ -215,42 +215,43 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
     }
 
     fn build_inv_term_adt(&mut self, term: Term<'tcx>) -> Term<'tcx> {
-        let TyKind::Adt(adt_def, subst) = term.ty.kind() else {
+        let TyKind::Adt(adt_def, substs) = term.ty.kind() else {
             unreachable!("asked to build ADT invariant for non-ADT type {:?}", term.ty)
         };
 
-        use crate::pearlite::*;
+        let arms = adt_def
+            .variants()
+            .iter()
+            .map(|var_def| {
+                let tuple_var = var_def.ctor.is_some();
 
-        let mut arms: Vec<(_, Term<'tcx>)> = vec![];
+                let mut exp = Some(Term::mk_true(self.ctx.tcx));
+                let fields = var_def
+                    .fields
+                    .iter()
+                    .enumerate()
+                    .map(|(field_idx, field_def)| {
+                        let field_name: Symbol = if tuple_var {
+                            Symbol::intern(&format!("a_{field_idx}"))
+                        } else {
+                            field_def.name
+                        };
 
-        for var_def in adt_def.variants() {
-            let tuple_var = var_def.ctor.is_some();
+                        let field_ty = field_def.ty(self.ctx.tcx, substs);
 
-            let mut pats: Vec<Pattern<'tcx>> = vec![];
-            let mut exp: Term<'tcx> = Term::mk_true(self.ctx.tcx);
-            for (field_idx, field_def) in var_def.fields.iter().enumerate() {
-                let field_name: Symbol = if tuple_var {
-                    Symbol::intern(&format!("a_{field_idx}"))
-                } else {
-                    field_def.name
-                };
+                        let var = Term::var(field_name, field_ty);
+                        let f_exp = self.mk_inv_call(var);
+                        exp = Some(std::mem::replace(&mut exp, None).unwrap().conj(f_exp));
+                        Pattern::Binder(field_name)
+                    })
+                    .collect();
 
-                let field_ty = field_def.ty(self.ctx.tcx, subst);
-
-                let var = Term::var(field_name, field_ty);
-                let f_exp = self.mk_inv_call(var);
-                exp = exp.conj(f_exp);
-                pats.push(Pattern::Binder(field_name));
-            }
-
-            arms.push((
-                Pattern::Constructor { variant: var_def.def_id, substs: subst, fields: pats },
-                exp,
-            ));
-        }
+                (Pattern::Constructor { variant: var_def.def_id, substs, fields }, exp.unwrap())
+            })
+            .collect();
 
         Term {
-            kind: TermKind::Match { scrutinee: Box::new(term), arms: arms.into() },
+            kind: TermKind::Match { scrutinee: Box::new(term), arms },
             ty: self.ctx.types.bool,
             span: DUMMY_SP,
         }

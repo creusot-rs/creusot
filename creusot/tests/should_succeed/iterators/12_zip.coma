@@ -37,9 +37,12 @@ module M_12_zip__qyi5005316258240146725__produces_refl [#"12_zip.rs" 43 4 43 26]
   let%span scommon5 = "common.rs" 19 15 19 32
   let%span scommon6 = "common.rs" 20 14 20 42
   
-  use seq.Seq
-  
   type t_A'0
+  
+  type t_B'0
+  
+  type t_Zip'0  =
+    { t_Zip__a'0: t_A'0; t_Zip__b'0: t_B'0 }
   
   use seq.Seq
   
@@ -60,8 +63,6 @@ module M_12_zip__qyi5005316258240146725__produces_refl [#"12_zip.rs" 43 4 43 26]
   function produces_refl'1 [#"common.rs" 15 4 15 27] (self : t_A'0) : ()
   
   axiom produces_refl'1_spec : forall self : t_A'0 . [%#scommon3] produces'1 self (Seq.empty : Seq.seq t_Item'0) self
-  
-  type t_B'0
   
   use seq.Seq
   
@@ -85,9 +86,6 @@ module M_12_zip__qyi5005316258240146725__produces_refl [#"12_zip.rs" 43 4 43 26]
   
   use seq.Seq
   
-  type t_Zip'0  =
-    { t_Zip__a'0: t_A'0; t_Zip__b'0: t_B'0 }
-  
   use seq.Seq
   
   use seq.Seq
@@ -109,6 +107,8 @@ module M_12_zip__qyi5005316258240146725__produces_refl [#"12_zip.rs" 43 4 43 26]
     /\ Seq.length p2 = Seq.length visited
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited  -> Seq.get visited i = (Seq.get p1 i, Seq.get p2 i))
     /\ produces'1 self.t_Zip__a'0 p1 tl.t_Zip__a'0 /\ produces'2 self.t_Zip__b'0 p2 tl.t_Zip__b'0
+  
+  use seq.Seq
   
   constant self  : t_Zip'0
   
@@ -367,17 +367,17 @@ module M_12_zip__qyi5005316258240146725__next [#"12_zip.rs" 56 4 56 44] (* <Zip<
     | {t_Zip__a'0 = a ; t_Zip__b'0 = b} -> inv'0 a /\ inv'1 b
     end
   
-  predicate invariant'0 (self : MutBorrow.t (t_Zip'0)) =
+  predicate invariant'0 (self : MutBorrow.t t_Zip'0) =
     [%#sinvariant13] inv'11 self.current /\ inv'11 self.final
   
-  predicate inv'2 (_1 : MutBorrow.t (t_Zip'0))
+  predicate inv'2 (_1 : MutBorrow.t t_Zip'0)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t (t_Zip'0) [inv'2 x] . inv'2 x = invariant'0 x
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_Zip'0 [inv'2 x] . inv'2 x = invariant'0 x
   
-  predicate resolve'2 (self : MutBorrow.t (t_Zip'0)) =
+  predicate resolve'2 (self : MutBorrow.t t_Zip'0) =
     [%#sresolve12] self.final = self.current
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_Zip'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t t_Zip'0) =
     resolve'2 _1
   
   let rec v_Some'1 (input:t_Option'1) (ret  (field_0:t_Item'1))= any
@@ -406,14 +406,12 @@ module M_12_zip__qyi5005316258240146725__next [#"12_zip.rs" 56 4 56 44] (* <Zip<
     | C_Some'2 a_0 -> inv'9 a_0
     end
   
-  predicate completed'0 [#"12_zip.rs" 20 4 20 35] (self : MutBorrow.t (t_Zip'0)) =
+  predicate completed'0 [#"12_zip.rs" 20 4 20 35] (self : MutBorrow.t t_Zip'0) =
     [%#s12_zip6] completed'1 (MutBorrow.borrow_logic (self.current).t_Zip__a'0 (self.final).t_Zip__a'0 (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
     /\ (self.current).t_Zip__b'0 = (self.final).t_Zip__b'0
     \/ (exists x : t_Item'0 . produces'1 (self.current).t_Zip__a'0 (Seq.singleton x) (self.final).t_Zip__a'0
     /\ resolve'1 x
     /\ completed'2 (MutBorrow.borrow_logic (self.current).t_Zip__b'0 (self.final).t_Zip__b'0 (MutBorrow.inherit_id (MutBorrow.get_id self) 2)))
-  
-  use seq.Seq
   
   use seq.Seq
   
@@ -439,9 +437,11 @@ module M_12_zip__qyi5005316258240146725__next [#"12_zip.rs" 56 4 56 44] (* <Zip<
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited  -> Seq.get visited i = (Seq.get p1 i, Seq.get p2 i))
     /\ produces'1 self.t_Zip__a'0 p1 tl.t_Zip__a'0 /\ produces'2 self.t_Zip__b'0 p2 tl.t_Zip__b'0
   
+  use seq.Seq
+  
   meta "compute_max_steps" 1000000
   
-  let rec next'0[#"12_zip.rs" 56 4 56 44] (self:MutBorrow.t (t_Zip'0)) (return'  (ret:t_Option'2))= {[@expl:next 'self' type invariant] [%#s12_zip0] inv'2 self}
+  let rec next'0[#"12_zip.rs" 56 4 56 44] (self:MutBorrow.t t_Zip'0) (return'  (ret:t_Option'2))= {[@expl:next 'self' type invariant] [%#s12_zip0] inv'2 self}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 (self.current).t_Zip__a'0}
@@ -493,7 +493,7 @@ module M_12_zip__qyi5005316258240146725__next [#"12_zip.rs" 56 4 56 44] (* <Zip<
     | bb23 = return' {_0} ]
     )
     [ & _0 : t_Option'2 = Any.any_l ()
-    | & self : MutBorrow.t (t_Zip'0) = self
+    | & self : MutBorrow.t t_Zip'0 = self
     | & x : t_Item'0 = Any.any_l ()
     | & _4 : t_Option'0 = Any.any_l ()
     | & _5 : MutBorrow.t t_A'0 = Any.any_l ()
@@ -587,12 +587,12 @@ module M_12_zip__qyi5005316258240146725__next__refines [#"12_zip.rs" 56 4 56 44]
     | {t_Zip__a'0 = a ; t_Zip__b'0 = b} -> inv'6 a /\ inv'7 b
     end
   
-  predicate invariant'0 (self : MutBorrow.t (t_Zip'0)) =
+  predicate invariant'0 (self : MutBorrow.t t_Zip'0) =
     [%#sinvariant3] inv'3 self.current /\ inv'3 self.final
   
-  predicate inv'0 (_1 : MutBorrow.t (t_Zip'0))
+  predicate inv'0 (_1 : MutBorrow.t t_Zip'0)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t (t_Zip'0) [inv'0 x] . inv'0 x = invariant'0 x
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_Zip'0 [inv'0 x] . inv'0 x = invariant'0 x
   
   use seq.Seq
   
@@ -646,14 +646,12 @@ module M_12_zip__qyi5005316258240146725__next__refines [#"12_zip.rs" 56 4 56 44]
   
   predicate completed'2 [#"common.rs" 11 4 11 36] (self : MutBorrow.t t_B'0)
   
-  predicate completed'0 [#"12_zip.rs" 20 4 20 35] (self : MutBorrow.t (t_Zip'0)) =
+  predicate completed'0 [#"12_zip.rs" 20 4 20 35] (self : MutBorrow.t t_Zip'0) =
     [%#s12_zip1] completed'1 (MutBorrow.borrow_logic (self.current).t_Zip__a'0 (self.final).t_Zip__a'0 (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
     /\ (self.current).t_Zip__b'0 = (self.final).t_Zip__b'0
     \/ (exists x : t_Item'0 . produces'1 (self.current).t_Zip__a'0 (Seq.singleton x) (self.final).t_Zip__a'0
     /\ resolve'0 x
     /\ completed'2 (MutBorrow.borrow_logic (self.current).t_Zip__b'0 (self.final).t_Zip__b'0 (MutBorrow.inherit_id (MutBorrow.get_id self) 2)))
-  
-  use seq.Seq
   
   use seq.Seq
   
@@ -679,6 +677,8 @@ module M_12_zip__qyi5005316258240146725__next__refines [#"12_zip.rs" 56 4 56 44]
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited  -> Seq.get visited i = (Seq.get p1 i, Seq.get p2 i))
     /\ produces'1 self.t_Zip__a'0 p1 tl.t_Zip__a'0 /\ produces'2 self.t_Zip__b'0 p2 tl.t_Zip__b'0
   
+  use seq.Seq
+  
   predicate inv'4 (_1 : t_Item'0)
   
   predicate inv'5 (_1 : t_Item'1)
@@ -696,7 +696,7 @@ module M_12_zip__qyi5005316258240146725__next__refines [#"12_zip.rs" 56 4 56 44]
     | C_Some'0 a_0 -> inv'2 a_0
     end
   
-  goal refines : [%#s12_zip0] forall self : MutBorrow.t (t_Zip'0) . inv'0 self
+  goal refines : [%#s12_zip0] forall self : MutBorrow.t t_Zip'0 . inv'0 self
    -> inv'0 self
   /\ (forall result : t_Option'0 . match result with
     | C_None'0 -> completed'0 self
@@ -814,8 +814,6 @@ module M_12_zip__qyi5005316258240146725__produces_refl__refines [#"12_zip.rs" 43
   
   use seq.Seq
   
-  use seq.Seq
-  
   type t_Item'0
   
   use seq.Seq
@@ -875,6 +873,8 @@ module M_12_zip__qyi5005316258240146725__produces_refl__refines [#"12_zip.rs" 43
     /\ Seq.length p2 = Seq.length visited
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited  -> Seq.get visited i = (Seq.get p1 i, Seq.get p2 i))
     /\ produces'1 self.t_Zip__a'0 p1 tl.t_Zip__a'0 /\ produces'2 self.t_Zip__b'0 p2 tl.t_Zip__b'0
+  
+  use seq.Seq
   
   goal refines : [%#s12_zip0] forall self : t_Zip'0 . forall result : () . produces'0 self (Seq.empty : Seq.seq (t_Item'0, t_Item'1)) self
    -> produces'0 self (Seq.empty : Seq.seq (t_Item'0, t_Item'1)) self

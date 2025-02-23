@@ -80,7 +80,7 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
                     panic!()
                 }
                 prev_block.stmts.push(Statement::Assignment(
-                    Place { local, projection: Vec::new() },
+                    Place { local, projection: Box::new([]) },
                     RValue::Snapshot(pterm.clone().coerce(ty)),
                     DUMMY_SP,
                 ));
@@ -198,7 +198,9 @@ fn borrow_prophecy_analysis_inner<'a, 'tcx>(
                         continue 'active_borrows;
                     }
 
-                    if p.projection.pop() == None {
+                    p.projection = if let Some((_, tl)) = p.projection.split_last() {
+                        tl.iter().cloned().collect()
+                    } else {
                         break;
                     }
                 }
@@ -226,13 +228,14 @@ impl<'a, 'tcx> BorrowProph<'a, 'tcx> {
     fn record_write_to(&mut self, pl: &Place<'tcx>) {
         self.overwritten_values.insert(pl.clone());
 
-        let mut b = Place { local: pl.local, projection: vec![] };
         let mut bty = PlaceTy::from_ty(self.locals[&pl.local].ty);
+        let mut proj = vec![];
         for &pr in &pl.projection {
+            let b = Place { projection: proj.clone().into(), ..*pl };
             if matches!(pr, ProjectionElem::Deref) && bty.ty.is_ref() && bty.ty.is_mutable_ptr() {
                 self.active_borrows.insert(b.clone());
             }
-            b.projection.push(pr);
+            proj.push(pr);
             bty = projection_ty(bty, self.tcx, pr);
         }
     }

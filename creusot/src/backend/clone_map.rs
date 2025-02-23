@@ -126,7 +126,7 @@ pub(crate) trait Namer<'tcx> {
         self.dependency(Dependency::Builtin(module));
     }
 
-    fn prelude_module_name(&self, module: PreludeModule) -> Vec<Ident> {
+    fn prelude_module_name(&self, module: PreludeModule) -> Box<[Ident]> {
         self.dependency(Dependency::Builtin(module));
         let qname: QName = match (module, self.bitwise_mode()) {
             (PreludeModule::Float32, _) => "prelude.float.Float32.".into(),
@@ -470,7 +470,7 @@ impl<'tcx> Dependencies<'tcx> {
             self.self_id
         );
 
-        let spans: Vec<why3::declaration::Span> = self
+        let spans: Box<[why3::declaration::Span]> = self
             .names
             .spans
             .into_iter()

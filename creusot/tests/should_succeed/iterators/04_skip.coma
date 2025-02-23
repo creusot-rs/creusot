@@ -38,9 +38,14 @@ module M_04_skip__qyi11393468722733824414__produces_refl [#"04_skip.rs" 52 4 52 
   let%span scommon5 = "common.rs" 19 15 19 32
   let%span scommon6 = "common.rs" 20 14 20 42
   
-  use seq.Seq
-  
   type t_I'0
+  
+  use prelude.int.UInt64
+  
+  type t_Skip'0  =
+    { t_Skip__iter'0: t_I'0; t_Skip__n'0: UInt64.t }
+  
+  use seq.Seq
   
   use seq.Seq
   
@@ -62,18 +67,13 @@ module M_04_skip__qyi11393468722733824414__produces_refl [#"04_skip.rs" 52 4 52 
   
   use prelude.int.UInt64
   
-  type t_Skip'0  =
-    { t_Skip__iter'0: t_I'0; t_Skip__n'0: UInt64.t }
-  
-  use prelude.int.UInt64
-  
   use seq.Seq
   
   use mach.int.Int
   
-  use seq.Seq
-  
   predicate resolve'0 (_1 : t_Item'0)
+  
+  use seq.Seq
   
   predicate produces'0 [#"04_skip.rs" 38 4 38 64] (self : t_Skip'0) (visited : Seq.seq t_Item'0) (o : t_Skip'0) =
     [%#s04_skip2] visited = (Seq.empty : Seq.seq t_Item'0) /\ self = o
@@ -133,9 +133,9 @@ module M_04_skip__qyi11393468722733824414__produces_trans [#"04_skip.rs" 59 4 59
   
   use mach.int.Int
   
-  use seq.Seq
-  
   predicate resolve'0 (_1 : t_Item'0)
+  
+  use seq.Seq
   
   predicate produces'0 [#"04_skip.rs" 38 4 38 64] (self : t_Skip'0) (visited : Seq.seq t_Item'0) (o : t_Skip'0) =
     [%#s04_skip4] visited = (Seq.empty : Seq.seq t_Item'0) /\ self = o
@@ -251,12 +251,12 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
   
   use seq.Seq
   
+  predicate resolve'1 (_1 : t_Item'0)
+  
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : Seq.seq t_Item'0) (ix : int) : t_Item'0 =
     [%#sindex15] Seq.get self ix
-  
-  predicate resolve'1 (_1 : t_Item'0)
   
   predicate inv'1 (_1 : t_I'0)
   
@@ -267,12 +267,12 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
     | {t_Skip__iter'0 = iter ; t_Skip__n'0 = n} -> inv'1 iter
     end
   
-  predicate invariant'0 (self : MutBorrow.t (t_Skip'0)) =
+  predicate invariant'0 (self : MutBorrow.t t_Skip'0) =
     [%#sinvariant27] inv'7 self.current /\ inv'7 self.final
   
-  predicate inv'0 (_1 : MutBorrow.t (t_Skip'0))
+  predicate inv'0 (_1 : MutBorrow.t t_Skip'0)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t (t_Skip'0) [inv'0 x] . inv'0 x = invariant'0 x
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_Skip'0 [inv'0 x] . inv'0 x = invariant'0 x
   
   predicate invariant'1 (self : MutBorrow.t t_I'0) =
     [%#sinvariant27] inv'1 self.current /\ inv'1 self.final
@@ -314,15 +314,15 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
     | bad -> {forall field_0 : t_Item'0 [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
   
   
-  predicate resolve'4 (self : MutBorrow.t (t_Skip'0)) =
+  predicate resolve'4 (self : MutBorrow.t t_Skip'0) =
     [%#sresolve22] self.final = self.current
   
-  predicate resolve'2 (_1 : MutBorrow.t (t_Skip'0)) =
+  predicate resolve'2 (_1 : MutBorrow.t t_Skip'0) =
     resolve'4 _1
   
   use prelude.prelude.Any
   
-  predicate completed'0 [#"04_skip.rs" 24 4 24 35] (self : MutBorrow.t (t_Skip'0)) =
+  predicate completed'0 [#"04_skip.rs" 24 4 24 35] (self : MutBorrow.t t_Skip'0) =
     [%#s04_skip19] UInt64.t'int (self.final).t_Skip__n'0 = 0
     /\ (exists s : Seq.seq t_Item'0, i : MutBorrow.t t_I'0 . Seq.length s <= UInt64.t'int (self.current).t_Skip__n'0
     /\ produces'0 (self.current).t_Skip__iter'0 s i.current
@@ -339,7 +339,7 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
   
   meta "compute_max_steps" 1000000
   
-  let rec next'0[#"04_skip.rs" 65 4 65 41] (self:MutBorrow.t (t_Skip'0)) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] [%#s04_skip10] inv'0 self}
+  let rec next'0[#"04_skip.rs" 65 4 65 41] (self:MutBorrow.t t_Skip'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] [%#s04_skip10] inv'0 self}
     (! bb0
     [ bb0 = s0 [ s0 =  [ &old_self <- [%#s04_skip0] self ] s1 | s1 = bb1 ] 
     | bb1 = s0
@@ -413,8 +413,8 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
     | bb16 = return' {_0} ]
     )
     [ & _0 : t_Option'0 = Any.any_l ()
-    | & self : MutBorrow.t (t_Skip'0) = self
-    | & old_self : MutBorrow.t (t_Skip'0) = Any.any_l ()
+    | & self : MutBorrow.t t_Skip'0 = self
+    | & old_self : MutBorrow.t t_Skip'0 = Any.any_l ()
     | & n : UInt64.t = Any.any_l ()
     | & _6 : MutBorrow.t UInt64.t = Any.any_l ()
     | & _7 : MutBorrow.t UInt64.t = Any.any_l ()
@@ -424,7 +424,7 @@ module M_04_skip__qyi11393468722733824414__next [#"04_skip.rs" 65 4 65 41] (* <S
     | & _21 : bool = Any.any_l ()
     | & x : t_Item'0 = Any.any_l ()
     | & _26 : Seq.seq t_Item'0 = Any.any_l ()
-    | & old_4_0 : MutBorrow.t (t_Skip'0) = Any.any_l () ]
+    | & old_4_0 : MutBorrow.t t_Skip'0 = Any.any_l () ]
     
     [ return' (result:t_Option'0)-> {[@expl:next result type invariant] [%#s04_skip11] inv'3 result}
       {[@expl:next ensures] [%#s04_skip12] match result with
@@ -506,12 +506,12 @@ module M_04_skip__qyi11393468722733824414__next__refines [#"04_skip.rs" 65 4 65 
     | {t_Skip__iter'0 = iter ; t_Skip__n'0 = n} -> inv'4 iter
     end
   
-  predicate invariant'0 (self : MutBorrow.t (t_Skip'0)) =
+  predicate invariant'0 (self : MutBorrow.t t_Skip'0) =
     [%#sinvariant3] inv'3 self.current /\ inv'3 self.final
   
-  predicate inv'0 (_1 : MutBorrow.t (t_Skip'0))
+  predicate inv'0 (_1 : MutBorrow.t t_Skip'0)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t (t_Skip'0) [inv'0 x] . inv'0 x = invariant'0 x
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_Skip'0 [inv'0 x] . inv'0 x = invariant'0 x
   
   use seq.Seq
   
@@ -543,20 +543,18 @@ module M_04_skip__qyi11393468722733824414__next__refines [#"04_skip.rs" 65 4 65 
   
   use mach.int.Int
   
-  use seq.Seq
-  
   predicate resolve'0 (_1 : t_Item'0)
+  
+  use seq.Seq
   
   predicate completed'1 [#"common.rs" 11 4 11 36] (self : MutBorrow.t t_I'0)
   
-  predicate completed'0 [#"04_skip.rs" 24 4 24 35] (self : MutBorrow.t (t_Skip'0)) =
+  predicate completed'0 [#"04_skip.rs" 24 4 24 35] (self : MutBorrow.t t_Skip'0) =
     [%#s04_skip1] UInt64.t'int (self.final).t_Skip__n'0 = 0
     /\ (exists s : Seq.seq t_Item'0, i : MutBorrow.t t_I'0 . Seq.length s <= UInt64.t'int (self.current).t_Skip__n'0
     /\ produces'1 (self.current).t_Skip__iter'0 s i.current
     /\ (forall i : int . 0 <= i /\ i < Seq.length s  -> resolve'0 (Seq.get s i))
     /\ completed'1 i /\ i.final = (self.final).t_Skip__iter'0)
-  
-  use seq.Seq
   
   predicate produces'0 [#"04_skip.rs" 38 4 38 64] (self : t_Skip'0) (visited : Seq.seq t_Item'0) (o : t_Skip'0) =
     [%#s04_skip2] visited = (Seq.empty : Seq.seq t_Item'0) /\ self = o
@@ -565,6 +563,8 @@ module M_04_skip__qyi11393468722733824414__next__refines [#"04_skip.rs" 65 4 65 
     /\ (exists s : Seq.seq t_Item'0 . Seq.length s = UInt64.t'int self.t_Skip__n'0
     /\ produces'1 self.t_Skip__iter'0 (Seq.(++) s visited) o.t_Skip__iter'0
     /\ (forall i : int . 0 <= i /\ i < Seq.length s  -> resolve'0 (Seq.get s i)))
+  
+  use seq.Seq
   
   predicate inv'2 (_1 : t_Item'0)
   
@@ -576,7 +576,7 @@ module M_04_skip__qyi11393468722733824414__next__refines [#"04_skip.rs" 65 4 65 
     | C_Some'0 a_0 -> inv'2 a_0
     end
   
-  goal refines : [%#s04_skip0] forall self : MutBorrow.t (t_Skip'0) . inv'0 self
+  goal refines : [%#s04_skip0] forall self : MutBorrow.t t_Skip'0 . inv'0 self
    -> inv'0 self
   /\ (forall result : t_Option'0 . match result with
     | C_None'0 -> completed'0 self
@@ -630,9 +630,9 @@ module M_04_skip__qyi11393468722733824414__produces_refl__refines [#"04_skip.rs"
   
   use mach.int.Int
   
-  use seq.Seq
-  
   predicate resolve'0 (_1 : t_Item'0)
+  
+  use seq.Seq
   
   predicate produces'0 [#"04_skip.rs" 38 4 38 64] (self : t_Skip'0) (visited : Seq.seq t_Item'0) (o : t_Skip'0) =
     [%#s04_skip1] visited = (Seq.empty : Seq.seq t_Item'0) /\ self = o
@@ -686,9 +686,9 @@ module M_04_skip__qyi11393468722733824414__produces_trans__refines [#"04_skip.rs
   
   use mach.int.Int
   
-  use seq.Seq
-  
   predicate resolve'0 (_1 : t_Item'0)
+  
+  use seq.Seq
   
   predicate produces'0 [#"04_skip.rs" 38 4 38 64] (self : t_Skip'0) (visited : Seq.seq t_Item'0) (o : t_Skip'0) =
     [%#s04_skip1] visited = (Seq.empty : Seq.seq t_Item'0) /\ self = o

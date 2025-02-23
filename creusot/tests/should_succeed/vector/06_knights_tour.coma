@@ -180,9 +180,9 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
   
   use seq.Seq
   
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
   use prelude.int.UInt64
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   use mach.int.Int
   
@@ -307,10 +307,10 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
   predicate precondition'0 (self : closure3'1) (args : (UInt64.t, Seq.seq UInt64.t)) =
     let (_2, _3) = args in true
   
-  predicate resolve'5 (self : MutBorrow.t (t_Range'0)) =
+  predicate resolve'5 (self : MutBorrow.t t_Range'0) =
     [%#sresolve29] self.final = self.current
   
-  predicate completed'1 (self : MutBorrow.t (t_Range'0)) =
+  predicate completed'1 (self : MutBorrow.t t_Range'0) =
     [%#srange38] resolve'5 self
     /\ deep_model'0 (self.current).t_Range__start'0 >= deep_model'0 (self.current).t_Range__end'0
   
@@ -327,7 +327,7 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
      -> postcondition_mut'0 f.current (e1, s) f.final b  -> precondition'0 f.final (e2, Seq.snoc s e1)
   
   predicate reinitialize'0 (_1 : ()) =
-    [%#smap_inv23] forall iter : MutBorrow.t (t_Range'0), func : closure3'1 . completed'1 iter
+    [%#smap_inv23] forall iter : MutBorrow.t t_Range'0, func : closure3'1 . completed'1 iter
      -> next_precondition'0 iter.final func (Seq.empty : Seq.seq UInt64.t) /\ preservation'0 iter.final func
   
   type t_MapInv'0  =
@@ -393,7 +393,7 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
   
   use seq.Seq
   
-  predicate produces'1 [@inline:trivial] (self : t_MapInv'0) (visited : Seq.seq (t_Vec'1)) (succ : t_MapInv'0) =
+  predicate produces'1 [@inline:trivial] (self : t_MapInv'0) (visited : Seq.seq t_Vec'1) (succ : t_MapInv'0) =
     [%#smap_inv26] unnest'0 self.t_MapInv__func'0 succ.t_MapInv__func'0
     /\ (exists fs : Seq.seq (MutBorrow.t closure3'1) . Seq.length fs = Seq.length visited
     /\ (exists s : Seq.seq UInt64.t . Seq.length s = Seq.length visited
@@ -411,32 +411,32 @@ module M_06_knights_tour__qyi4580598960913230815__new [#"06_knights_tour.rs" 40 
     /\ precondition'0 (Seq.get fs i).current (Seq.get s i, Seq.(++) self.t_MapInv__produced'0 (Seq.([..]) s 0 i))
     /\ postcondition_mut'0 (Seq.get fs i).current (Seq.get s i, Seq.(++) self.t_MapInv__produced'0 (Seq.([..]) s 0 i)) (Seq.get fs i).final (Seq.get visited i))))
   
-  function produces_trans'2 (a : t_MapInv'0) (ab : Seq.seq (t_Vec'1)) (b : t_MapInv'0) (bc : Seq.seq (t_Vec'1)) (c : t_MapInv'0) : ()
+  function produces_trans'2 (a : t_MapInv'0) (ab : Seq.seq t_Vec'1) (b : t_MapInv'0) (bc : Seq.seq t_Vec'1) (c : t_MapInv'0) : ()
   
   
-  axiom produces_trans'2_spec : forall a : t_MapInv'0, ab : Seq.seq (t_Vec'1), b : t_MapInv'0, bc : Seq.seq (t_Vec'1), c : t_MapInv'0 . ([%#smap_inv42] produces'1 a ab b)
+  axiom produces_trans'2_spec : forall a : t_MapInv'0, ab : Seq.seq t_Vec'1, b : t_MapInv'0, bc : Seq.seq t_Vec'1, c : t_MapInv'0 . ([%#smap_inv42] produces'1 a ab b)
    -> ([%#smap_inv43] produces'1 b bc c)  -> ([%#smap_inv44] produces'1 a (Seq.(++) ab bc) c)
   
   function produces_refl'2 (self : t_MapInv'0) : ()
   
-  axiom produces_refl'2_spec : forall self : t_MapInv'0 . [%#smap_inv41] produces'1 self (Seq.empty : Seq.seq (t_Vec'1)) self
+  axiom produces_refl'2_spec : forall self : t_MapInv'0 . [%#smap_inv41] produces'1 self (Seq.empty : Seq.seq t_Vec'1) self
   
-  predicate completed'0 (self : MutBorrow.t (t_MapInv'0)) =
+  predicate completed'0 (self : MutBorrow.t t_MapInv'0) =
     [%#smap_inv25] (self.final).t_MapInv__produced'0 = (Seq.empty : Seq.seq UInt64.t)
     /\ completed'1 (MutBorrow.borrow_logic (self.current).t_MapInv__iter'0 (self.final).t_MapInv__iter'0 (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
     /\ (self.current).t_MapInv__func'0 = (self.final).t_MapInv__func'0
   
-  function view'1 (self : t_Vec'0) : Seq.seq (t_Vec'1)
+  function view'1 (self : t_Vec'0) : Seq.seq t_Vec'1
   
   axiom view'1_spec : forall self : t_Vec'0 . [%#svec17] Seq.length (view'1 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
-  predicate from_iter_post'0 (prod : Seq.seq (t_Vec'1)) (res : t_Vec'0) =
+  predicate from_iter_post'0 (prod : Seq.seq t_Vec'1) (res : t_Vec'0) =
     [%#svec27] prod = view'1 res
   
   let rec collect'0 (self:t_MapInv'0) (return'  (ret:t_Vec'0))= {[@expl:collect 'self' type invariant] inv'2 self}
     any
     [ return' (result:t_Vec'0)-> {inv'3 result}
-      {[%#siter13] exists done' : MutBorrow.t (t_MapInv'0), prod : Seq.seq (t_Vec'1) . resolve'1 done'.final
+      {[%#siter13] exists done' : MutBorrow.t t_MapInv'0, prod : Seq.seq t_Vec'1 . resolve'1 done'.final
       /\ completed'0 done' /\ produces'1 self prod done'.current /\ from_iter_post'0 prod result}
       (! return' {result}) ]
   
@@ -492,8 +492,8 @@ module M_06_knights_tour__qyi4580598960913230815__available [#"06_knights_tour.r
   let%span svec7 = "../../../../creusot-contracts/src/std/vec.rs" 163 26 163 54
   let%span s06_knights_tour8 = "06_knights_tour.rs" 32 12 34 93
   let%span s06_knights_tour9 = "06_knights_tour.rs" 63 12 63 75
-  let%span smodel10 = "../../../../creusot-contracts/src/model.rs" 54 8 54 22
-  let%span sslice11 = "../../../../creusot-contracts/src/std/slice.rs" 124 20 124 37
+  let%span sslice10 = "../../../../creusot-contracts/src/std/slice.rs" 124 20 124 37
+  let%span smodel11 = "../../../../creusot-contracts/src/model.rs" 54 8 54 22
   let%span sslice12 = "../../../../creusot-contracts/src/std/slice.rs" 131 20 131 37
   let%span svec13 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   let%span sindex14 = "../../../../creusot-contracts/src/logic/ops/index.rs" 27 8 27 31
@@ -544,23 +544,23 @@ module M_06_knights_tour__qyi4580598960913230815__available [#"06_knights_tour.r
   
   use seq.Seq
   
-  use seq.Seq
-  
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
   use prelude.int.UInt64
+  
+  use seq.Seq
   
   use mach.int.Int
   
-  function view'2 (self : t_Vec'1) : Seq.seq (t_Vec'0)
+  predicate in_bounds'1 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq t_Vec'0) =
+    [%#sslice10] UInt64.t'int self < Seq.length seq
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
+  
+  function view'2 (self : t_Vec'1) : Seq.seq t_Vec'0
   
   axiom view'2_spec : forall self : t_Vec'1 . [%#svec13] Seq.length (view'2 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
-  function view'0 (self : t_Vec'1) : Seq.seq (t_Vec'0) =
-    [%#smodel10] view'2 self
-  
-  predicate in_bounds'1 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq (t_Vec'0)) =
-    [%#sslice11] UInt64.t'int self < Seq.length seq
+  function view'0 (self : t_Vec'1) : Seq.seq t_Vec'0 =
+    [%#smodel11] view'2 self
   
   predicate inv'2 (_1 : t_Vec'0)
   
@@ -568,7 +568,7 @@ module M_06_knights_tour__qyi4580598960913230815__available [#"06_knights_tour.r
   
   use seq.Seq
   
-  predicate has_value'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq (t_Vec'0)) (out : t_Vec'0) =
+  predicate has_value'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq t_Vec'0) (out : t_Vec'0) =
     [%#sslice12] Seq.get seq (UInt64.t'int self) = out
   
   let rec index'0 (self:t_Vec'1) (index:UInt64.t) (return'  (ret:t_Vec'0))= {[@expl:index 'self' type invariant] inv'0 self}
@@ -584,15 +584,15 @@ module M_06_knights_tour__qyi4580598960913230815__available [#"06_knights_tour.r
   
   use seq.Seq
   
+  predicate in_bounds'2 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq UInt64.t) =
+    [%#sslice10] UInt64.t'int self < Seq.length seq
+  
   function view'3 (self : t_Vec'0) : Seq.seq UInt64.t
   
   axiom view'3_spec : forall self : t_Vec'0 . [%#svec13] Seq.length (view'3 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
   function view'1 (self : t_Vec'0) : Seq.seq UInt64.t =
-    [%#smodel10] view'3 self
-  
-  predicate in_bounds'2 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq UInt64.t) =
-    [%#sslice11] UInt64.t'int self < Seq.length seq
+    [%#smodel11] view'3 self
   
   predicate inv'3 (_1 : UInt64.t)
   
@@ -732,9 +732,9 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree [#"06_knights_tou
   
   use seq.Seq
   
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
   use prelude.int.UInt64
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   use mach.int.Int
   
@@ -766,12 +766,12 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree [#"06_knights_tou
   
   axiom view'0_spec : forall self : t_Vec'0 . [%#svec25] Seq.length (view'0 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
+  use prelude.int.Int64
+  
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : (Int64.t, Int64.t) =
     [%#sindex26] Seq.get (view'0 self) ix
-  
-  use prelude.int.Int64
   
   let rec moves'0 (_1:()) (return'  (ret:t_Vec'0))= any
     [ return' (result:t_Vec'0)-> {[%#s06_knights_tour10] Seq.length (view'0 result) = 8}
@@ -845,9 +845,9 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree [#"06_knights_tou
   
   use prelude.prelude.MutBorrow
   
-  predicate inv'3 (_1 : MutBorrow.t (t_IntoIter'0))
+  predicate inv'3 (_1 : MutBorrow.t t_IntoIter'0)
   
-  axiom inv_axiom'3 [@rewrite] : forall x : MutBorrow.t (t_IntoIter'0) [inv'3 x] . inv'3 x = true
+  axiom inv_axiom'3 [@rewrite] : forall x : MutBorrow.t t_IntoIter'0 [inv'3 x] . inv'3 x = true
   
   type t_Option'0  =
     | C_None'0
@@ -857,18 +857,18 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree [#"06_knights_tou
   
   axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
   
-  predicate resolve'1 (self : MutBorrow.t (t_IntoIter'0)) =
+  predicate resolve'1 (self : MutBorrow.t t_IntoIter'0) =
     [%#sresolve36] self.final = self.current
   
-  function view'4 (self : MutBorrow.t (t_IntoIter'0)) : Seq.seq (Int64.t, Int64.t) =
+  function view'4 (self : MutBorrow.t t_IntoIter'0) : Seq.seq (Int64.t, Int64.t) =
     [%#smodel37] view'1 self.current
   
-  predicate completed'0 (self : MutBorrow.t (t_IntoIter'0)) =
+  predicate completed'0 (self : MutBorrow.t t_IntoIter'0) =
     [%#svec35] resolve'1 self /\ view'4 self = (Seq.empty : Seq.seq (Int64.t, Int64.t))
   
   use seq.Seq
   
-  let rec next'0 (self:MutBorrow.t (t_IntoIter'0)) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'3 self}
+  let rec next'0 (self:MutBorrow.t t_IntoIter'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'3 self}
     any
     [ return' (result:t_Option'0)-> {inv'4 result}
       {[%#siter14] match result with
@@ -878,7 +878,7 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree [#"06_knights_tou
       (! return' {result}) ]
   
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_IntoIter'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t t_IntoIter'0) =
     resolve'1 _1
   
   let rec v_Some'0 (input:t_Option'0) (ret  (field_0:(Int64.t, Int64.t)))= any
@@ -927,14 +927,9 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree [#"06_knights_tou
   
   use seq.Seq
   
-  function view'2 (self : t_Vec'1) : Seq.seq (t_Vec'2)
+  function view'2 (self : t_Vec'1) : Seq.seq t_Vec'2
   
   axiom view'2_spec : forall self : t_Vec'1 . [%#svec25] Seq.length (view'2 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
-  
-  use seq.Seq
-  
-  function index_logic'1 [@inline:trivial] (self : t_Vec'1) (ix : int) : t_Vec'2 =
-    [%#sindex26] Seq.get (view'2 self) ix
   
   use seq.Seq
   
@@ -943,6 +938,11 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree [#"06_knights_tou
   function view'3 (self : t_Vec'2) : Seq.seq UInt64.t
   
   axiom view'3_spec : forall self : t_Vec'2 . [%#svec25] Seq.length (view'3 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
+  
+  use seq.Seq
+  
+  function index_logic'1 [@inline:trivial] (self : t_Vec'1) (ix : int) : t_Vec'2 =
+    [%#sindex26] Seq.get (view'2 self) ix
   
   predicate wf'0 [#"06_knights_tour.rs" 30 4 30 23] (self : t_Board'0) =
     [%#s06_knights_tour23] UInt64.t'int self.t_Board__size'0 <= 1000
@@ -984,9 +984,9 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree [#"06_knights_tou
         | bb7 = bb8
         | bb8 = s0
           [ s0 = MutBorrow.borrow_mut <t_IntoIter'0> {iter}
-              (fun (_ret':MutBorrow.t (t_IntoIter'0)) ->  [ &_21 <- _ret' ]  [ &iter <- _ret'.final ] s1)
+              (fun (_ret':MutBorrow.t t_IntoIter'0) ->  [ &_21 <- _ret' ]  [ &iter <- _ret'.final ] s1)
           | s1 = MutBorrow.borrow_final <t_IntoIter'0> {_21.current} {MutBorrow.get_id _21}
-              (fun (_ret':MutBorrow.t (t_IntoIter'0)) ->
+              (fun (_ret':MutBorrow.t t_IntoIter'0) ->
                  [ &_20 <- _ret' ] 
                  [ &_21 <- { _21 with current = _ret'.final } ] 
                 s2)
@@ -1035,8 +1035,8 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree [#"06_knights_tou
     | & iter_old : t_IntoIter'0 = Any.any_l ()
     | & produced : Seq.seq (Int64.t, Int64.t) = Any.any_l ()
     | & _19 : t_Option'0 = Any.any_l ()
-    | & _20 : MutBorrow.t (t_IntoIter'0) = Any.any_l ()
-    | & _21 : MutBorrow.t (t_IntoIter'0) = Any.any_l ()
+    | & _20 : MutBorrow.t t_IntoIter'0 = Any.any_l ()
+    | & _21 : MutBorrow.t t_IntoIter'0 = Any.any_l ()
     | & __creusot_proc_iter_elem : (Int64.t, Int64.t) = Any.any_l ()
     | & _24 : Seq.seq (Int64.t, Int64.t) = Any.any_l ()
     | & m : (Int64.t, Int64.t) = Any.any_l ()
@@ -1057,8 +1057,8 @@ module M_06_knights_tour__qyi4580598960913230815__set [#"06_knights_tour.rs" 87 
   let%span svec8 = "../../../../creusot-contracts/src/std/vec.rs" 156 26 156 55
   let%span s06_knights_tour9 = "06_knights_tour.rs" 32 12 34 93
   let%span s06_knights_tour10 = "06_knights_tour.rs" 63 12 63 75
-  let%span smodel11 = "../../../../creusot-contracts/src/model.rs" 72 8 72 22
-  let%span sslice12 = "../../../../creusot-contracts/src/std/slice.rs" 124 20 124 37
+  let%span sslice11 = "../../../../creusot-contracts/src/std/slice.rs" 124 20 124 37
+  let%span smodel12 = "../../../../creusot-contracts/src/model.rs" 72 8 72 22
   let%span sslice13 = "../../../../creusot-contracts/src/std/slice.rs" 131 20 131 37
   let%span svec14 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   let%span sslice15 = "../../../../creusot-contracts/src/std/slice.rs" 138 20 138 94
@@ -1097,9 +1097,9 @@ module M_06_knights_tour__qyi4580598960913230815__set [#"06_knights_tour.rs" 87 
   type t_Point'0  =
     { t_Point__x'0: Int64.t; t_Point__y'0: Int64.t }
   
-  predicate inv'0 (_1 : MutBorrow.t (t_Vec'0))
+  predicate inv'0 (_1 : MutBorrow.t t_Vec'0)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t (t_Vec'0) [inv'0 x] . inv'0 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'0 x] . inv'0 x = true
   
   predicate inv'1 (_1 : UInt64.t)
   
@@ -1113,43 +1113,42 @@ module M_06_knights_tour__qyi4580598960913230815__set [#"06_knights_tour.rs" 87 
   
   use seq.Seq
   
-  use seq.Seq
-  
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
   use prelude.int.UInt64
+  
+  use seq.Seq
   
   use mach.int.Int
   
-  function view'1 (self : t_Vec'0) : Seq.seq (t_Vec'1)
+  predicate in_bounds'1 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq t_Vec'1) =
+    [%#sslice11] UInt64.t'int self < Seq.length seq
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
+  
+  function view'1 (self : t_Vec'0) : Seq.seq t_Vec'1
   
   axiom view'1_spec : forall self : t_Vec'0 . [%#svec14] Seq.length (view'1 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
-  function view'0 (self : MutBorrow.t (t_Vec'0)) : Seq.seq (t_Vec'1) =
-    [%#smodel11] view'1 self.current
+  function view'0 (self : MutBorrow.t t_Vec'0) : Seq.seq t_Vec'1 =
+    [%#smodel12] view'1 self.current
   
-  predicate in_bounds'1 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq (t_Vec'1)) =
-    [%#sslice12] UInt64.t'int self < Seq.length seq
+  predicate inv'2 (_1 : MutBorrow.t t_Vec'1)
   
-  predicate inv'2 (_1 : MutBorrow.t (t_Vec'1))
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t (t_Vec'1) [inv'2 x] . inv'2 x = true
+  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_Vec'1 [inv'2 x] . inv'2 x = true
   
   use seq.Seq
   
-  predicate has_value'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq (t_Vec'1)) (out : t_Vec'1) =
+  predicate has_value'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq t_Vec'1) (out : t_Vec'1) =
     [%#sslice13] Seq.get seq (UInt64.t'int self) = out
   
-  predicate resolve_elswhere'0 [@inline:trivial] (self : UInt64.t) (old' : Seq.seq (t_Vec'1)) (fin : Seq.seq (t_Vec'1))
-   =
+  predicate resolve_elswhere'0 [@inline:trivial] (self : UInt64.t) (old' : Seq.seq t_Vec'1) (fin : Seq.seq t_Vec'1) =
     [%#sslice15] forall i : int . 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
   
-  let rec index_mut'0 (self:MutBorrow.t (t_Vec'0)) (index:UInt64.t) (return'  (ret:MutBorrow.t (t_Vec'1)))= {[@expl:index_mut 'self' type invariant] inv'0 self}
+  let rec index_mut'0 (self:MutBorrow.t t_Vec'0) (index:UInt64.t) (return'  (ret:MutBorrow.t t_Vec'1))= {[@expl:index_mut 'self' type invariant] inv'0 self}
     {[@expl:index_mut 'index' type invariant] inv'1 index}
     {[@expl:index_mut requires] [%#svec4] in_bounds'1 index (view'0 self)}
     any
-    [ return' (result:MutBorrow.t (t_Vec'1))-> {inv'2 result}
+    [ return' (result:MutBorrow.t t_Vec'1)-> {inv'2 result}
       {[%#svec5] has_value'0 index (view'0 self) result.current}
       {[%#svec6] has_value'0 index (view'1 self.final) result.final}
       {[%#svec7] resolve_elswhere'0 index (view'0 self) (view'1 self.final)}
@@ -1161,15 +1160,15 @@ module M_06_knights_tour__qyi4580598960913230815__set [#"06_knights_tour.rs" 87 
   
   use seq.Seq
   
+  predicate in_bounds'2 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq UInt64.t) =
+    [%#sslice11] UInt64.t'int self < Seq.length seq
+  
   function view'3 (self : t_Vec'1) : Seq.seq UInt64.t
   
   axiom view'3_spec : forall self : t_Vec'1 . [%#svec14] Seq.length (view'3 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
-  function view'2 (self : MutBorrow.t (t_Vec'1)) : Seq.seq UInt64.t =
-    [%#smodel11] view'3 self.current
-  
-  predicate in_bounds'2 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq UInt64.t) =
-    [%#sslice12] UInt64.t'int self < Seq.length seq
+  function view'2 (self : MutBorrow.t t_Vec'1) : Seq.seq UInt64.t =
+    [%#smodel12] view'3 self.current
   
   predicate inv'3 (_1 : MutBorrow.t UInt64.t)
   
@@ -1184,7 +1183,7 @@ module M_06_knights_tour__qyi4580598960913230815__set [#"06_knights_tour.rs" 87 
     [%#sslice15] forall i : int . 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
   
-  let rec index_mut'1 (self:MutBorrow.t (t_Vec'1)) (index:UInt64.t) (return'  (ret:MutBorrow.t UInt64.t))= {[@expl:index_mut 'self' type invariant] inv'2 self}
+  let rec index_mut'1 (self:MutBorrow.t t_Vec'1) (index:UInt64.t) (return'  (ret:MutBorrow.t UInt64.t))= {[@expl:index_mut 'self' type invariant] inv'2 self}
     {[@expl:index_mut 'index' type invariant] inv'1 index}
     {[@expl:index_mut requires] [%#svec4] in_bounds'2 index (view'2 self)}
     any
@@ -1202,16 +1201,16 @@ module M_06_knights_tour__qyi4580598960913230815__set [#"06_knights_tour.rs" 87 
   predicate resolve'0 (_1 : MutBorrow.t UInt64.t) =
     resolve'3 _1
   
-  predicate resolve'4 (self : MutBorrow.t (t_Vec'1)) =
+  predicate resolve'4 (self : MutBorrow.t t_Vec'1) =
     [%#sresolve16] self.final = self.current
   
-  predicate resolve'1 (_1 : MutBorrow.t (t_Vec'1)) =
+  predicate resolve'1 (_1 : MutBorrow.t t_Vec'1) =
     resolve'4 _1
   
-  predicate resolve'5 (self : MutBorrow.t (t_Board'0)) =
+  predicate resolve'5 (self : MutBorrow.t t_Board'0) =
     [%#sresolve16] self.final = self.current
   
-  predicate resolve'2 (_1 : MutBorrow.t (t_Board'0)) =
+  predicate resolve'2 (_1 : MutBorrow.t t_Board'0) =
     resolve'5 _1
   
   use prelude.prelude.Any
@@ -1234,7 +1233,7 @@ module M_06_knights_tour__qyi4580598960913230815__set [#"06_knights_tour.rs" 87 
   
   meta "compute_max_steps" 1000000
   
-  let rec set'0[#"06_knights_tour.rs" 87 4 87 41] (self:MutBorrow.t (t_Board'0)) (p:t_Point'0) (v:UInt64.t) (return'  (ret:()))= {[@expl:set requires #0] [%#s06_knights_tour0] wf'0 self.current}
+  let rec set'0[#"06_knights_tour.rs" 87 4 87 41] (self:MutBorrow.t t_Board'0) (p:t_Point'0) (v:UInt64.t) (return'  (ret:()))= {[@expl:set requires #0] [%#s06_knights_tour0] wf'0 self.current}
     {[@expl:set requires #1] [%#s06_knights_tour1] in_bounds'0 self.current p}
     (! bb0
     [ bb0 = s0
@@ -1242,17 +1241,17 @@ module M_06_knights_tour__qyi4580598960913230815__set [#"06_knights_tour.rs" 87 
           <t_Vec'0>
           {(self.current).t_Board__field'0}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
-          (fun (_ret':MutBorrow.t (t_Vec'0)) ->
+          (fun (_ret':MutBorrow.t t_Vec'0) ->
              [ &_12 <- _ret' ] 
              [ &self <- { self with current = { self.current with t_Board__field'0 = _ret'.final } } ] 
             s1)
       | s1 = UInt64.of_int {Int64.to_int p.t_Point__x'0} (fun (_ret_from:UInt64.t) ->  [ &_13 <- _ret_from ] s2)
-      | s2 = index_mut'0 {_12} {_13} (fun (_ret':MutBorrow.t (t_Vec'1)) ->  [ &_11 <- _ret' ] s3)
+      | s2 = index_mut'0 {_12} {_13} (fun (_ret':MutBorrow.t t_Vec'1) ->  [ &_11 <- _ret' ] s3)
       | s3 = bb1 ]
     
     | bb1 = s0
       [ s0 = MutBorrow.borrow_final <t_Vec'1> {_11.current} {MutBorrow.get_id _11}
-          (fun (_ret':MutBorrow.t (t_Vec'1)) ->  [ &_10 <- _ret' ]  [ &_11 <- { _11 with current = _ret'.final } ] s1)
+          (fun (_ret':MutBorrow.t t_Vec'1) ->  [ &_10 <- _ret' ]  [ &_11 <- { _11 with current = _ret'.final } ] s1)
       | s1 = UInt64.of_int {Int64.to_int p.t_Point__y'0} (fun (_ret_from:UInt64.t) ->  [ &_15 <- _ret_from ] s2)
       | s2 = index_mut'1 {_10} {_15} (fun (_ret':MutBorrow.t UInt64.t) ->  [ &_9 <- _ret' ] s3)
       | s3 = bb2 ]
@@ -1266,13 +1265,13 @@ module M_06_knights_tour__qyi4580598960913230815__set [#"06_knights_tour.rs" 87 
      ]
     )
     [ & _0 : () = Any.any_l ()
-    | & self : MutBorrow.t (t_Board'0) = self
+    | & self : MutBorrow.t t_Board'0 = self
     | & p : t_Point'0 = p
     | & v : UInt64.t = v
     | & _9 : MutBorrow.t UInt64.t = Any.any_l ()
-    | & _10 : MutBorrow.t (t_Vec'1) = Any.any_l ()
-    | & _11 : MutBorrow.t (t_Vec'1) = Any.any_l ()
-    | & _12 : MutBorrow.t (t_Vec'0) = Any.any_l ()
+    | & _10 : MutBorrow.t t_Vec'1 = Any.any_l ()
+    | & _11 : MutBorrow.t t_Vec'1 = Any.any_l ()
+    | & _12 : MutBorrow.t t_Vec'0 = Any.any_l ()
     | & _13 : UInt64.t = Any.any_l ()
     | & _15 : UInt64.t = Any.any_l () ]
     
@@ -1307,9 +1306,9 @@ module M_06_knights_tour__min [#"06_knights_tour.rs" 110 0 110 58]
   let%span sslice22 = "../../../../creusot-contracts/src/std/slice.rs" 400 20 400 61
   let%span sresolve23 = "../../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   let%span sindex24 = "../../../../creusot-contracts/src/logic/ops/index.rs" 49 8 49 31
-  let%span smodel25 = "../../../../creusot-contracts/src/model.rs" 72 8 72 22
-  let%span sslice26 = "../../../../creusot-contracts/src/std/slice.rs" 28 14 28 41
-  let%span sslice27 = "../../../../creusot-contracts/src/std/slice.rs" 29 14 29 42
+  let%span sslice25 = "../../../../creusot-contracts/src/std/slice.rs" 28 14 28 41
+  let%span sslice26 = "../../../../creusot-contracts/src/std/slice.rs" 29 14 29 42
+  let%span smodel27 = "../../../../creusot-contracts/src/model.rs" 72 8 72 22
   
   use prelude.int.UInt64
   
@@ -1359,9 +1358,9 @@ module M_06_knights_tour__min [#"06_knights_tour.rs" 110 0 110 58]
   
   use seq.Seq
   
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
   use prelude.int.UInt64
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   use mach.int.Int
   
@@ -1374,18 +1373,18 @@ module M_06_knights_tour__min [#"06_knights_tour.rs" 110 0 110 58]
   
   use prelude.slice.Slice64
   
-  function view'2 (self : t_Iter'0) : Slice64.slice (UInt64.t, t_Point'0)
-  
   use prelude.slice.Slice64
   
-  function view'5 (self : Slice64.slice (UInt64.t, t_Point'0)) : Seq.seq (UInt64.t, t_Point'0)
+  function view'4 (self : Slice64.slice (UInt64.t, t_Point'0)) : Seq.seq (UInt64.t, t_Point'0)
   
-  axiom view'5_spec : forall self : Slice64.slice (UInt64.t, t_Point'0) . ([%#sslice26] Seq.length (view'5 self)
+  axiom view'4_spec : forall self : Slice64.slice (UInt64.t, t_Point'0) . ([%#sslice25] Seq.length (view'4 self)
   <= UInt64.t'int (v_MAX'0 : UInt64.t))
-  && ([%#sslice27] view'5 self = Slice64.id self)
+  && ([%#sslice26] view'4 self = Slice64.id self)
   
   function view'3 (self : Slice64.slice (UInt64.t, t_Point'0)) : Seq.seq (UInt64.t, t_Point'0) =
-    [%#smodel7] view'5 self
+    [%#smodel7] view'4 self
+  
+  function view'2 (self : t_Iter'0) : Slice64.slice (UInt64.t, t_Point'0)
   
   predicate into_iter_post'0 (self : t_Vec'0) (res : t_Iter'0) =
     [%#svec12] view'0 self = view'3 (view'2 res)
@@ -1412,7 +1411,7 @@ module M_06_knights_tour__min [#"06_knights_tour.rs" 110 0 110 58]
   function index_logic'1 [@inline:trivial] (self : Slice64.slice (UInt64.t, t_Point'0)) (ix : int) : (UInt64.t, t_Point'0)
   
    =
-    [%#sindex24] Seq.get (view'5 self) ix
+    [%#sindex24] Seq.get (view'4 self) ix
   
   function to_ref_seq'0 (self : Slice64.slice (UInt64.t, t_Point'0)) : Seq.seq (UInt64.t, t_Point'0)
   
@@ -1451,20 +1450,20 @@ module M_06_knights_tour__min [#"06_knights_tour.rs" 110 0 110 58]
   
   axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
   
-  predicate resolve'1 (self : MutBorrow.t (t_Iter'0)) =
+  predicate resolve'1 (self : MutBorrow.t t_Iter'0) =
     [%#sresolve23] self.final = self.current
   
-  function view'4 (self : MutBorrow.t (t_Iter'0)) : Slice64.slice (UInt64.t, t_Point'0) =
-    [%#smodel25] view'2 self.current
+  function view'5 (self : MutBorrow.t t_Iter'0) : Slice64.slice (UInt64.t, t_Point'0) =
+    [%#smodel27] view'2 self.current
   
   use seq.Seq
   
-  predicate completed'0 (self : MutBorrow.t (t_Iter'0)) =
-    [%#sslice22] resolve'1 self /\ view'5 (view'4 self) = (Seq.empty : Seq.seq (UInt64.t, t_Point'0))
+  predicate completed'0 (self : MutBorrow.t t_Iter'0) =
+    [%#sslice22] resolve'1 self /\ view'4 (view'5 self) = (Seq.empty : Seq.seq (UInt64.t, t_Point'0))
   
   use seq.Seq
   
-  let rec next'0 (self:MutBorrow.t (t_Iter'0)) (return'  (ret:t_Option'0))= any
+  let rec next'0 (self:MutBorrow.t t_Iter'0) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {inv'3 result}
       {[%#siter10] match result with
         | C_None'0 -> completed'0 self
@@ -1473,7 +1472,7 @@ module M_06_knights_tour__min [#"06_knights_tour.rs" 110 0 110 58]
       (! return' {result}) ]
   
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_Iter'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t t_Iter'0) =
     resolve'1 _1
   
   let rec v_Some'0 (input:t_Option'0) (ret  (field_0:(UInt64.t, t_Point'0)))= any
@@ -1505,9 +1504,9 @@ module M_06_knights_tour__min [#"06_knights_tour.rs" 110 0 110 58]
         (! s0) [ s0 = bb5 ] 
         [ bb5 = s0
           [ s0 = MutBorrow.borrow_mut <t_Iter'0> {iter}
-              (fun (_ret':MutBorrow.t (t_Iter'0)) ->  [ &_19 <- _ret' ]  [ &iter <- _ret'.final ] s1)
+              (fun (_ret':MutBorrow.t t_Iter'0) ->  [ &_19 <- _ret' ]  [ &iter <- _ret'.final ] s1)
           | s1 = MutBorrow.borrow_final <t_Iter'0> {_19.current} {MutBorrow.get_id _19}
-              (fun (_ret':MutBorrow.t (t_Iter'0)) ->
+              (fun (_ret':MutBorrow.t t_Iter'0) ->
                  [ &_18 <- _ret' ] 
                  [ &_19 <- { _19 with current = _ret'.final } ] 
                 s2)
@@ -1555,8 +1554,8 @@ module M_06_knights_tour__min [#"06_knights_tour.rs" 110 0 110 58]
     | & iter_old : t_Iter'0 = Any.any_l ()
     | & produced : Seq.seq (UInt64.t, t_Point'0) = Any.any_l ()
     | & _17 : t_Option'0 = Any.any_l ()
-    | & _18 : MutBorrow.t (t_Iter'0) = Any.any_l ()
-    | & _19 : MutBorrow.t (t_Iter'0) = Any.any_l ()
+    | & _18 : MutBorrow.t t_Iter'0 = Any.any_l ()
+    | & _19 : MutBorrow.t t_Iter'0 = Any.any_l ()
     | & __creusot_proc_iter_elem : (UInt64.t, t_Point'0) = Any.any_l ()
     | & _22 : Seq.seq (UInt64.t, t_Point'0) = Any.any_l ()
     | & x : (UInt64.t, t_Point'0) = Any.any_l ()
@@ -1719,14 +1718,9 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
   
   use seq.Seq
   
-  function view'1 (self : t_Vec'2) : Seq.seq (t_Vec'3)
+  function view'1 (self : t_Vec'2) : Seq.seq t_Vec'3
   
   axiom view'1_spec : forall self : t_Vec'2 . [%#svec39] Seq.length (view'1 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
-  
-  use seq.Seq
-  
-  function index_logic'1 [@inline:trivial] (self : t_Vec'2) (ix : int) : t_Vec'3 =
-    [%#sindex40] Seq.get (view'1 self) ix
   
   use seq.Seq
   
@@ -1735,6 +1729,11 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
   function view'2 (self : t_Vec'3) : Seq.seq UInt64.t
   
   axiom view'2_spec : forall self : t_Vec'3 . [%#svec39] Seq.length (view'2 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
+  
+  use seq.Seq
+  
+  function index_logic'1 [@inline:trivial] (self : t_Vec'2) (ix : int) : t_Vec'3 =
+    [%#sindex40] Seq.get (view'1 self) ix
   
   predicate wf'0 [#"06_knights_tour.rs" 30 4 30 23] (self : t_Board'0) =
     [%#s06_knights_tour33] UInt64.t'int self.t_Board__size'0 <= 1000
@@ -1764,7 +1763,7 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
     /\ Int64.to_int p.t_Point__x'0 < UInt64.t'int self.t_Board__size'0
     /\ 0 <= Int64.to_int p.t_Point__y'0 /\ Int64.to_int p.t_Point__y'0 < UInt64.t'int self.t_Board__size'0
   
-  let rec set'0 (self:MutBorrow.t (t_Board'0)) (p:t_Point'0) (v:UInt64.t) (return'  (ret:()))= {[@expl:set requires #0] [%#s06_knights_tour24] wf'0 self.current}
+  let rec set'0 (self:MutBorrow.t t_Board'0) (p:t_Point'0) (v:UInt64.t) (return'  (ret:()))= {[@expl:set requires #0] [%#s06_knights_tour24] wf'0 self.current}
     {[@expl:set requires #1] [%#s06_knights_tour25] in_bounds'0 self.current p}
     any
     [ return' (result:())-> {[%#s06_knights_tour26] wf'0 self.final}
@@ -1826,9 +1825,9 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
   
   axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq UInt64.t [inv'1 x] . inv'1 x = true
   
-  predicate inv'4 (_1 : MutBorrow.t (t_Range'0))
+  predicate inv'4 (_1 : MutBorrow.t t_Range'0)
   
-  axiom inv_axiom'4 [@rewrite] : forall x : MutBorrow.t (t_Range'0) [inv'4 x] . inv'4 x = true
+  axiom inv_axiom'4 [@rewrite] : forall x : MutBorrow.t t_Range'0 [inv'4 x] . inv'4 x = true
   
   type t_Option'0  =
     | C_None'0
@@ -1838,16 +1837,16 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
   
   axiom inv_axiom'5 [@rewrite] : forall x : t_Option'0 [inv'5 x] . inv'5 x = true
   
-  predicate resolve'2 (self : MutBorrow.t (t_Range'0)) =
+  predicate resolve'2 (self : MutBorrow.t t_Range'0) =
     [%#sresolve62] self.final = self.current
   
-  predicate completed'0 (self : MutBorrow.t (t_Range'0)) =
+  predicate completed'0 (self : MutBorrow.t t_Range'0) =
     [%#srange61] resolve'2 self
     /\ deep_model'0 (self.current).t_Range__start'0 >= deep_model'0 (self.current).t_Range__end'0
   
   use seq.Seq
   
-  let rec next'0 (self:MutBorrow.t (t_Range'0)) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'4 self}
+  let rec next'0 (self:MutBorrow.t t_Range'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'4 self}
     any
     [ return' (result:t_Option'0)-> {inv'5 result}
       {[%#siter35] match result with
@@ -1857,7 +1856,7 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
       (! return' {result}) ]
   
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_Range'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t t_Range'0) =
     resolve'2 _1
   
   let rec v_Some'0 (input:t_Option'0) (ret  (field_0:UInt64.t))= any
@@ -1981,9 +1980,9 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
   
   axiom inv_axiom'3 [@rewrite] : forall x : Seq.seq (Int64.t, Int64.t) [inv'3 x] . inv'3 x = true
   
-  predicate inv'8 (_1 : MutBorrow.t (t_IntoIter'0))
+  predicate inv'8 (_1 : MutBorrow.t t_IntoIter'0)
   
-  axiom inv_axiom'8 [@rewrite] : forall x : MutBorrow.t (t_IntoIter'0) [inv'8 x] . inv'8 x = true
+  axiom inv_axiom'8 [@rewrite] : forall x : MutBorrow.t t_IntoIter'0 [inv'8 x] . inv'8 x = true
   
   type t_Option'1  =
     | C_None'1
@@ -1993,18 +1992,18 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
   
   axiom inv_axiom'9 [@rewrite] : forall x : t_Option'1 [inv'9 x] . inv'9 x = true
   
-  predicate resolve'3 (self : MutBorrow.t (t_IntoIter'0)) =
+  predicate resolve'3 (self : MutBorrow.t t_IntoIter'0) =
     [%#sresolve62] self.final = self.current
   
-  function view'7 (self : MutBorrow.t (t_IntoIter'0)) : Seq.seq (Int64.t, Int64.t) =
+  function view'7 (self : MutBorrow.t t_IntoIter'0) : Seq.seq (Int64.t, Int64.t) =
     [%#smodel72] view'4 self.current
   
-  predicate completed'1 (self : MutBorrow.t (t_IntoIter'0)) =
+  predicate completed'1 (self : MutBorrow.t t_IntoIter'0) =
     [%#svec71] resolve'3 self /\ view'7 self = (Seq.empty : Seq.seq (Int64.t, Int64.t))
   
   use seq.Seq
   
-  let rec next'1 (self:MutBorrow.t (t_IntoIter'0)) (return'  (ret:t_Option'1))= {[@expl:next 'self' type invariant] inv'8 self}
+  let rec next'1 (self:MutBorrow.t t_IntoIter'0) (return'  (ret:t_Option'1))= {[@expl:next 'self' type invariant] inv'8 self}
     any
     [ return' (result:t_Option'1)-> {inv'9 result}
       {[%#siter35] match result with
@@ -2014,7 +2013,7 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
       (! return' {result}) ]
   
   
-  predicate resolve'1 (_1 : MutBorrow.t (t_IntoIter'0)) =
+  predicate resolve'1 (_1 : MutBorrow.t t_IntoIter'0) =
     resolve'3 _1
   
   let rec v_Some'1 (input:t_Option'1) (ret  (field_0:(Int64.t, Int64.t)))= any
@@ -2048,20 +2047,20 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
     {[@expl:count_degree requires #1] [%#s06_knights_tour51] in_bounds'0 self p}
     any [ return' (result:UInt64.t)-> (! return' {result}) ] 
   
-  predicate inv'10 (_1 : MutBorrow.t (t_Vec'0))
+  predicate inv'10 (_1 : MutBorrow.t t_Vec'0)
   
-  axiom inv_axiom'10 [@rewrite] : forall x : MutBorrow.t (t_Vec'0) [inv'10 x] . inv'10 x = true
+  axiom inv_axiom'10 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'10 x] . inv'10 x = true
   
   predicate inv'11 (_1 : (UInt64.t, t_Point'0))
   
   axiom inv_axiom'11 [@rewrite] : forall x : (UInt64.t, t_Point'0) [inv'11 x] . inv'11 x = true
   
-  function view'5 (self : MutBorrow.t (t_Vec'0)) : Seq.seq (UInt64.t, t_Point'0) =
-    [%#smodel72] view'0 self.current
-  
   use seq.Seq
   
-  let rec push'0 (self:MutBorrow.t (t_Vec'0)) (value:(UInt64.t, t_Point'0)) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'10 self}
+  function view'5 (self : MutBorrow.t t_Vec'0) : Seq.seq (UInt64.t, t_Point'0) =
+    [%#smodel72] view'0 self.current
+  
+  let rec push'0 (self:MutBorrow.t t_Vec'0) (value:(UInt64.t, t_Point'0)) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'10 self}
     {[@expl:push 'value' type invariant] inv'11 value}
     any [ return' (result:())-> {[%#svec52] view'0 self.final = Seq.snoc (view'5 self) value} (! return' {result}) ] 
   
@@ -2087,7 +2086,7 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
   
   type t_Option'3  =
     | C_None'3
-    | C_Some'3 (t_Board'0)
+    | C_Some'3 t_Board'0
   
   use prelude.prelude.Any
   
@@ -2161,7 +2160,7 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
       | s1 = Int64.of_int {UInt64.t'int y} (fun (_ret_from:Int64.t) ->  [ &_12 <- _ret_from ] s2)
       | s2 =  [ &p <- { t_Point__x'0 = _10; t_Point__y'0 = _12 } ] s3
       | s3 = MutBorrow.borrow_mut <t_Board'0> {board}
-          (fun (_ret':MutBorrow.t (t_Board'0)) ->  [ &_15 <- _ret' ]  [ &board <- _ret'.final ] s4)
+          (fun (_ret':MutBorrow.t t_Board'0) ->  [ &_15 <- _ret' ]  [ &board <- _ret'.final ] s4)
       | s4 = set'0 {_15} {p} {[%#s06_knights_tour0] (1 : UInt64.t)} (fun (_ret':()) ->  [ &_14 <- _ret' ] s5)
       | s5 = bb2 ]
     
@@ -2187,9 +2186,9 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
         | bb9 = bb10
         | bb10 = s0
           [ s0 = MutBorrow.borrow_mut <t_Range'0> {iter}
-              (fun (_ret':MutBorrow.t (t_Range'0)) ->  [ &_39 <- _ret' ]  [ &iter <- _ret'.final ] s1)
+              (fun (_ret':MutBorrow.t t_Range'0) ->  [ &_39 <- _ret' ]  [ &iter <- _ret'.final ] s1)
           | s1 = MutBorrow.borrow_final <t_Range'0> {_39.current} {MutBorrow.get_id _39}
-              (fun (_ret':MutBorrow.t (t_Range'0)) ->
+              (fun (_ret':MutBorrow.t t_Range'0) ->
                  [ &_38 <- _ret' ] 
                  [ &_39 <- { _39 with current = _ret'.final } ] 
                 s2)
@@ -2233,9 +2232,9 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
             | bb25 = bb26
             | bb26 = s0
               [ s0 = MutBorrow.borrow_mut <t_IntoIter'0> {iter1}
-                  (fun (_ret':MutBorrow.t (t_IntoIter'0)) ->  [ &_60 <- _ret' ]  [ &iter1 <- _ret'.final ] s1)
+                  (fun (_ret':MutBorrow.t t_IntoIter'0) ->  [ &_60 <- _ret' ]  [ &iter1 <- _ret'.final ] s1)
               | s1 = MutBorrow.borrow_final <t_IntoIter'0> {_60.current} {MutBorrow.get_id _60}
-                  (fun (_ret':MutBorrow.t (t_IntoIter'0)) ->
+                  (fun (_ret':MutBorrow.t t_IntoIter'0) ->
                      [ &_59 <- _ret' ] 
                      [ &_60 <- { _60 with current = _ret'.final } ] 
                     s2)
@@ -2271,7 +2270,7 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
             
             | bb36 = s0
               [ s0 = MutBorrow.borrow_mut <t_Vec'0> {candidates}
-                  (fun (_ret':MutBorrow.t (t_Vec'0)) ->  [ &_79 <- _ret' ]  [ &candidates <- _ret'.final ] s1)
+                  (fun (_ret':MutBorrow.t t_Vec'0) ->  [ &_79 <- _ret' ]  [ &candidates <- _ret'.final ] s1)
               | s1 =  [ &_80 <- (degree, adj) ] s2
               | s2 = push'0 {_79} {_80} (fun (_ret':()) ->  [ &_78 <- _ret' ] s3)
               | s3 = bb37 ]
@@ -2295,7 +2294,7 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
           [ s0 = v_Some'2 {_85} (fun (r0'0:(UInt64.t, t_Point'0)) ->  [ &adj1 <- let (_, r'0) = r0'0 in r'0 ] s1)
           | s1 =  [ &p <- adj1 ] s2
           | s2 = MutBorrow.borrow_mut <t_Board'0> {board}
-              (fun (_ret':MutBorrow.t (t_Board'0)) ->  [ &_93 <- _ret' ]  [ &board <- _ret'.final ] s3)
+              (fun (_ret':MutBorrow.t t_Board'0) ->  [ &_93 <- _ret' ]  [ &board <- _ret'.final ] s3)
           | s3 = set'0 {_93} {p} {step} (fun (_ret':()) ->  [ &_92 <- _ret' ] s4)
           | s4 = bb46 ]
         
@@ -2320,7 +2319,7 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
     | & _10 : Int64.t = Any.any_l ()
     | & _12 : Int64.t = Any.any_l ()
     | & _14 : () = Any.any_l ()
-    | & _15 : MutBorrow.t (t_Board'0) = Any.any_l ()
+    | & _15 : MutBorrow.t t_Board'0 = Any.any_l ()
     | & _17 : () = Any.any_l ()
     | & iter : t_Range'0 = Any.any_l ()
     | & _21 : t_Range'0 = Any.any_l ()
@@ -2328,8 +2327,8 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
     | & iter_old : t_Range'0 = Any.any_l ()
     | & produced : Seq.seq UInt64.t = Any.any_l ()
     | & _37 : t_Option'0 = Any.any_l ()
-    | & _38 : MutBorrow.t (t_Range'0) = Any.any_l ()
-    | & _39 : MutBorrow.t (t_Range'0) = Any.any_l ()
+    | & _38 : MutBorrow.t t_Range'0 = Any.any_l ()
+    | & _39 : MutBorrow.t t_Range'0 = Any.any_l ()
     | & __creusot_proc_iter_elem : UInt64.t = Any.any_l ()
     | & _42 : Seq.seq UInt64.t = Any.any_l ()
     | & step : UInt64.t = Any.any_l ()
@@ -2339,8 +2338,8 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
     | & iter_old1 : t_IntoIter'0 = Any.any_l ()
     | & produced1 : Seq.seq (Int64.t, Int64.t) = Any.any_l ()
     | & _58 : t_Option'1 = Any.any_l ()
-    | & _59 : MutBorrow.t (t_IntoIter'0) = Any.any_l ()
-    | & _60 : MutBorrow.t (t_IntoIter'0) = Any.any_l ()
+    | & _59 : MutBorrow.t t_IntoIter'0 = Any.any_l ()
+    | & _60 : MutBorrow.t t_IntoIter'0 = Any.any_l ()
     | & __creusot_proc_iter_elem1 : (Int64.t, Int64.t) = Any.any_l ()
     | & _63 : Seq.seq (Int64.t, Int64.t) = Any.any_l ()
     | & m : (Int64.t, Int64.t) = Any.any_l ()
@@ -2349,13 +2348,13 @@ module M_06_knights_tour__knights_tour [#"06_knights_tour.rs" 135 0 135 69]
     | & _72 : bool = Any.any_l ()
     | & degree : UInt64.t = Any.any_l ()
     | & _78 : () = Any.any_l ()
-    | & _79 : MutBorrow.t (t_Vec'0) = Any.any_l ()
+    | & _79 : MutBorrow.t t_Vec'0 = Any.any_l ()
     | & _80 : (UInt64.t, t_Point'0) = Any.any_l ()
     | & _85 : t_Option'2 = Any.any_l ()
     | & _87 : t_Vec'0 = Any.any_l ()
     | & adj1 : t_Point'0 = Any.any_l ()
     | & _92 : () = Any.any_l ()
-    | & _93 : MutBorrow.t (t_Board'0) = Any.any_l () ]
+    | & _93 : MutBorrow.t t_Board'0 = Any.any_l () ]
      [ return' (result:t_Option'3)-> (! return' {result}) ] 
 end
 module M_06_knights_tour__qyi50474406909270761__clone__refines [#"06_knights_tour.rs" 4 15 4 20] (* <Point as creusot_contracts::Clone> *)

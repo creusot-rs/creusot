@@ -34,17 +34,17 @@ pub enum Expr {
     App(Box<Expr>, Box<Arg>),
     /// Functions, used for anonymous closures
     /// fun pl -> e
-    Lambda(Vec<Param>, Box<Expr>),
+    Lambda(Box<[Param]>, Box<Expr>),
     /// Handler group definitions, binds a set of (mutually recursive) handlers
     /// Can be read as a "where" clause in haskell.
     //
     /// e / rec? h p e and ...
-    Defn(Box<Expr>, bool, Vec<Defn>),
+    Defn(Box<Expr>, bool, Box<[Defn]>),
     /// Similarly to handlers, the assignment should be read "backwards", the expression happens in a context where
     /// the identifiers have been updated
-    Assign(Box<Expr>, Vec<(Ident, Term)>),
+    Assign(Box<Expr>, Box<[(Ident, Term)]>),
     /// Let binding, introduces a new lexical scope.
-    Let(Box<Expr>, Vec<Var>),
+    Let(Box<Expr>, Box<[Var]>),
     /// Asserts that the term holds before evaluating the expression
     Assert(Box<Term>, Box<Expr>),
     /// Syntactic sugar for assuming that a term holds before evaluating the inner expression
@@ -84,7 +84,7 @@ pub enum Param {
     Term(Ident, Type),
     Reference(Ident, Type),
     /// Continuations accept a set of handlers and a set of ordinary parameters
-    Cont(Ident, Vec<Ident>, Vec<Param>),
+    Cont(Ident, Box<[Ident]>, Box<[Param]>),
 }
 
 impl Param {
@@ -115,9 +115,7 @@ pub enum Arg {
 pub struct Defn {
     pub name: Ident,
     pub attrs: Vec<Attribute>,
-    /// Only relevant if using references
-    pub writes: Vec<Ident>,
-    pub params: Vec<Param>,
+    pub params: Box<[Param]>,
     pub body: Expr,
 }
 
@@ -125,23 +123,23 @@ pub struct Defn {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Decl {
     /// Coma definitions
-    Defn(Vec<Defn>),
+    Defn(Box<[Defn]>),
     /// Escape hatch for type declarations, predicates etc...
     PureDecl(crate::declaration::Decl),
     Use(Use),
 }
 
 #[derive(Clone, Debug)]
-pub struct Module(pub Vec<Decl>);
+pub struct Module(pub Box<[Decl]>);
 
 impl Defn {
     pub fn simple(name: impl Into<Ident>, body: Expr) -> Self {
-        Defn { name: name.into(), attrs: vec![], writes: vec![], params: vec![], body }
+        Defn { name: name.into(), attrs: vec![], params: Box::new([]), body }
     }
 }
 
 impl Expr {
-    pub fn app(self, args: Vec<Arg>) -> Self {
+    pub fn app(self, args: impl IntoIterator<Item = Arg>) -> Self {
         args.into_iter().fold(self, |acc, a| Expr::App(Box::new(acc), Box::new(a)))
     }
 
@@ -151,18 +149,19 @@ impl Expr {
             //     asgns.push((lhs, rhs));
             //     self
             // }
-            _ => Expr::Assign(Box::new(self), vec![(lhs, rhs)]),
+            _ => Expr::Assign(Box::new(self), Box::new([(lhs, rhs)])),
         }
     }
 
     /// Adds a set of mutually recursive where bindings around `self`
-    pub fn where_(self, mut defs: Vec<Defn>) -> Self {
+    pub fn where_(self, defs: Box<[Defn]>) -> Self {
         // If we have `x [ x = z ]` replace this by `z`
         if defs.len() == 1
             && !defs[0].body.occurs_cont(&defs[0].name)
             && self.as_symbol().is_some_and(|qn| qn.is_ident(&defs[0].name))
         {
-            defs.remove(0).body
+            let [d] = *defs.into_array::<1>().unwrap();
+            d.body
         } else {
             Expr::Defn(Box::new(self), true, defs)
         }
@@ -451,8 +450,6 @@ where
         defn.name.pretty(alloc),
         alloc.intersperse(defn.attrs.iter().map(|a| a.pretty(alloc)), alloc.space()),
         alloc.space(),
-        bracket_list(alloc, defn.writes.iter().map(|a| a.pretty(alloc)), " "),
-        if defn.writes.is_empty() { alloc.nil() } else { alloc.space() },
         alloc.intersperse(defn.params.iter().map(|a| a.pretty(alloc)), " "),
         arrow_kind,
         alloc.space(),

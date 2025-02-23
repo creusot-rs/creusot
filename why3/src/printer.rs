@@ -154,15 +154,15 @@ impl Print for Module {
 }
 
 // Items separated by empty lines
-pub fn pretty_blocks<'a, T: Print, A: DocAllocator<'a>>(
-    items: &'a Vec<T>,
+pub fn pretty_blocks<'a, T: Print + 'a, A: DocAllocator<'a>>(
+    items: impl IntoIterator<Item = &'a T>,
     alloc: &'a A,
 ) -> DocBuilder<'a, A>
 where
     A::Doc: Clone,
 {
     alloc.intersperse(
-        items.iter().map(|item| item.pretty(alloc)),
+        items.into_iter().map(|item| item.pretty(alloc)),
         alloc.hardline().append(alloc.hardline()),
     )
 }
@@ -398,7 +398,7 @@ impl Print for Contract {
             )
         }
 
-        for var in &self.variant {
+        if let Some(ref var) = self.variant {
             doc = doc.append(
                 alloc.text("variant ").append(var.pretty(alloc).braces()).append(alloc.hardline()),
             )
@@ -931,6 +931,6 @@ impl Print for QName {
         A::Doc: Clone,
     {
         let module_path = self.module.iter().map(|t| alloc.text(&t.0));
-        alloc.intersperse(module_path.chain(std::iter::once(alloc.text(self.name.0.clone()))), ".")
+        alloc.intersperse(module_path.chain([alloc.text(self.name.0.clone())]), ".")
     }
 }

@@ -28,7 +28,7 @@ pub fn structural_resolve<'tcx>(
                 .variants()
                 .into_iter()
                 .map(|var| {
-                    let (fields, exps): (_, Vec<_>) = var
+                    let (fields, exps): (Vec<_>, Vec<_>) = var
                         .fields
                         .iter_enumerated()
                         .map(|(ix, f)| {
@@ -39,7 +39,14 @@ pub fn structural_resolve<'tcx>(
                         .unzip();
 
                     let body = exps.into_iter().rfold(Term::mk_true(ctx.tcx), Term::conj);
-                    (Pattern::Constructor { variant: var.def_id, substs: args, fields }, body)
+                    (
+                        Pattern::Constructor {
+                            variant: var.def_id,
+                            substs: args,
+                            fields: fields.into(),
+                        },
+                        body,
+                    )
                 })
                 .collect();
 
@@ -50,7 +57,7 @@ pub fn structural_resolve<'tcx>(
             })
         }
         TyKind::Tuple(tys) => {
-            let (fields, exps): (_, Vec<_>) = tys
+            let (fields, exps): (Vec<_>, Vec<_>) = tys
                 .iter()
                 .enumerate()
                 .map(|(i, ty)| {
@@ -66,7 +73,7 @@ pub fn structural_resolve<'tcx>(
                 ty: ctx.types.bool,
                 kind: TermKind::Match {
                     scrutinee: Box::new(subject),
-                    arms: Box::new([(Pattern::Tuple(fields), body)]),
+                    arms: Box::new([(Pattern::Tuple(fields.into()), body)]),
                 },
                 span: DUMMY_SP,
             })

@@ -1,6 +1,7 @@
 use std::{
     cell::RefCell,
     collections::{HashMap, HashSet},
+    iter::repeat_n,
 };
 
 use super::{binders_to_args, Dependencies};
@@ -245,9 +246,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                             "bool cast to non integral casts are currently unsupported",
                         ),
                     };
-
-                    let qname = self.names.from_prelude(prelude_kind, fct_name);
-                    k(Exp::Call(Box::new(Exp::qvar(qname)), vec![arg]))
+                    k(Exp::qvar(self.names.from_prelude(prelude_kind, fct_name)).app([arg]))
                 }),
                 TyKind::Int(_) | TyKind::Uint(_) => {
                     // to
@@ -281,7 +280,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     self.build_vc(arg, &|arg| {
                         let to_qname = self.names.from_prelude(to_prelude, to_fct_name);
                         let of_qname = self.names.from_prelude(of_prelude, of_fct_name);
-                        k(Exp::qvar(of_qname).app(vec![Exp::qvar(to_qname).app(vec![arg])]))
+                        k(Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([arg])]))
                     })
                 }
                 _ => self.ctx.crash_and_error(t.span, "unsupported cast"),
@@ -301,7 +300,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             }
             // VC(assert { C }, Q) => VC(C, |c| c && Q(()))
             TermKind::Assert { cond } => {
-                self.build_vc(cond, &|exp| Ok(exp.lazy_and(k(Exp::Tuple(Vec::new()))?)))
+                self.build_vc(cond, &|exp| Ok(exp.lazy_and(k(Exp::unit())?)))
             }
             // VC(f As, Q) = VC(A0, |a0| ... VC(An, |an|
             //  pre(f)(a0..an) /\ variant(f)(a0..an) /\ (post(f)(a0..an, F(a0..an)) -> Q(F a0..an))
@@ -314,8 +313,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let arg_subst = pre_sig
                     .inputs
                     .iter()
-                    .zip(args.clone())
-                    .map(|(nm, res)| (ident_of(nm.0), res))
+                    .zip(&args)
+                    .map(|(nm, res)| (ident_of(nm.0), res.clone()))
                     .collect();
                 let fname = self.names.item(*id, subst);
                 let mut sig = sig_to_why3(self.ctx, self.names, "".into(), pre_sig, *id);
@@ -324,7 +323,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     if *id == self.self_id { self.build_variant(&args)? } else { Exp::mk_true() };
 
                 let call = if args.is_empty() {
-                    Exp::qvar(fname).app_to(Exp::Tuple(Vec::new()))
+                    Exp::qvar(fname).app([Exp::unit()])
                 } else {
                     Exp::qvar(fname).app(args)
                 };
@@ -352,10 +351,10 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_vc(rhs, k)?))
                 }),
                 BinOp::Div => self.build_vc(lhs, &|lhs| {
-                    self.build_vc(rhs, &|rhs| k(Exp::var("div").app(vec![lhs.clone(), rhs])))
+                    self.build_vc(rhs, &|rhs| k(Exp::var("div").app([lhs.clone(), rhs])))
                 }),
                 BinOp::Rem => self.build_vc(lhs, &|lhs| {
-                    self.build_vc(rhs, &|rhs| k(Exp::var("mod").app(vec![lhs.clone(), rhs])))
+                    self.build_vc(rhs, &|rhs| k(Exp::var("mod").app([lhs.clone(), rhs])))
                 }),
                 _ => self.build_vc(lhs, &|lhs| {
                     self.build_vc(rhs, &|rhs| {
@@ -436,12 +435,12 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
             // VC(match A {P -> E}, Q) = VC(A, |a| match a {P -> VC(E, Q)})
             TermKind::Match { scrutinee, arms } => self.build_vc(scrutinee, &|scrut| {
-                let arms: Vec<_> = arms
+                let arms = arms
                     .iter()
-                    .map(&|arm: &(Pattern<'tcx>, Term<'tcx>)| {
+                    .map(|arm| {
                         self.build_pattern(&arm.0, &|pat| Ok((pat, self.build_vc(&arm.1, k)?)))
                     })
-                    .collect::<Result<_, _>>()?;
+                    .collect::<Result<Box<[_]>, _>>()?;
 
                 Ok(Exp::Match(Box::new(scrut), arms))
             }),
@@ -449,7 +448,6 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             TermKind::Let { pattern, arg, body } => self.build_vc(arg, &|arg| {
                 self.build_pattern(pattern, &|pattern| {
                     let body = self.build_vc(body, k)?;
-
                     Ok(Exp::Let { pattern, arg: Box::new(arg.clone()), body: Box::new(body) })
                 })
             }),
@@ -464,7 +462,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                         self.names.field(def.did(), substs, *name).as_ident()
                     }
                     TyKind::Tuple(f) => {
-                        let mut fields = vec![why3::exp::Pattern::Wildcard; f.len()];
+                        let mut fields: Box<_> =
+                            repeat_n(why3::exp::Pattern::Wildcard, f.len()).collect();
                         fields[name.as_usize()] = why3::exp::Pattern::VarP("a".into());
 
                         return self.build_vc(lhs, &|lhs| {
@@ -516,10 +515,11 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 if self.ctx.def_kind(variant) == DefKind::Variant {
                     Pat::ConsP(self.names.constructor(*variant, substs), fields)
                 } else if fields.is_empty() {
-                    Pat::TupleP(vec![])
+                    Pat::TupleP(Box::new([]))
                 } else {
                     Pat::RecP(
                         fields
+                            .to_vec()
                             .into_iter()
                             .enumerate()
                             .map(|(i, f)| {
@@ -550,7 +550,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             Pattern::Deref { pointee, kind } => match kind {
                 PointerKind::Box | PointerKind::Shr => self.build_pattern_inner(bounds, pointee),
                 PointerKind::Mut => {
-                    Pat::RecP(vec![("current".into(), self.build_pattern_inner(bounds, pointee))])
+                    Pat::RecP(Box::new([("current".into(), self.build_pattern_inner(bounds, pointee))]))
                 }
             },
         }
@@ -569,26 +569,24 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
     fn build_vc_slice(
         &self,
         t: &[Term<'tcx>],
-        k: PostCont<'_, 'tcx, Vec<Exp>>,
+        k: PostCont<'_, 'tcx, Box<[Exp]>>,
     ) -> Result<Exp, VCError<'tcx>> {
-        self.build_vc_slice_inner(t, &|mut args| {
-            args.reverse();
-            k(args)
-        })
+        self.build_vc_slice_inner(t.len(), t, k)
     }
 
     fn build_vc_slice_inner(
         &self,
+        len: usize,
         t: &[Term<'tcx>],
-        k: PostCont<'_, 'tcx, Vec<Exp>>,
+        k: PostCont<'_, 'tcx, Box<[Exp]>>,
     ) -> Result<Exp, VCError<'tcx>> {
         if t.is_empty() {
-            k(Vec::new())
+            k(repeat_n(/* Dummy */ Exp::mk_true(), len).collect())
         } else {
             self.build_vc(&t[0], &|v| {
-                self.build_vc_slice_inner(&t[1..], &|mut vs| {
-                    vs.push(v.clone());
-                    k(vs)
+                self.build_vc_slice_inner(len, &t[1..], &|mut args| {
+                    args[len - t.len()] = v.clone();
+                    k(args)
                 })
             })
         }
@@ -622,7 +620,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
         let mut subst: Environment =
             top_level_args.into_iter().zip(call_args.iter().cloned()).collect();
-        let orig_variant = self.self_sig().contract.variant.remove(0);
+        let orig_variant = self.self_sig().contract.variant.unwrap();
         let mut rec_var_exp = orig_variant.clone();
         rec_var_exp.subst(&mut subst);
         if is_int(self.ctx.tcx, variant.ty) {

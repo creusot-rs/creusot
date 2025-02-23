@@ -43,21 +43,7 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 7 0 7 42]
   
   use seq.Seq
   
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
-  use prelude.int.UInt64
-  
   use mach.int.Int
-  
-  use prelude.slice.Slice64
-  
-  use seq.Seq
-  
-  function view'2 (self : Slice64.slice t_T'0) : Seq.seq t_T'0
-  
-  axiom view'2_spec : forall self : Slice64.slice t_T'0 . ([%#sslice27] Seq.length (view'2 self)
-  <= UInt64.t'int (v_MAX'0 : UInt64.t))
-  && ([%#sslice28] view'2 self = Slice64.id self)
   
   use seq.Seq
   
@@ -70,12 +56,26 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 7 0 7 42]
   
   axiom inv_axiom'8 [@rewrite] : forall x : t_T'0 [inv'9 x] . inv'9 x = invariant'6 x
   
+  use seq.Seq
+  
   predicate invariant'5 (self : Seq.seq t_T'0) =
     [%#sseq30] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'9 (Seq.get self i)
   
   predicate inv'8 (_1 : Seq.seq t_T'0)
   
   axiom inv_axiom'7 [@rewrite] : forall x : Seq.seq t_T'0 [inv'8 x] . inv'8 x = invariant'5 x
+  
+  use prelude.int.UInt64
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
+  
+  use prelude.slice.Slice64
+  
+  function view'2 (self : Slice64.slice t_T'0) : Seq.seq t_T'0
+  
+  axiom view'2_spec : forall self : Slice64.slice t_T'0 . ([%#sslice27] Seq.length (view'2 self)
+  <= UInt64.t'int (v_MAX'0 : UInt64.t))
+  && ([%#sslice28] view'2 self = Slice64.id self)
   
   predicate invariant'4 (self : Slice64.slice t_T'0) =
     [%#sslice34] inv'8 (view'2 self)
@@ -158,8 +158,6 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 7 0 7 42]
   
   axiom produces_refl'0_spec : forall self : t_Iter'0 . [%#sslice17] produces'0 self (Seq.empty : Seq.seq t_T'0) self
   
-  use seq.Seq
-  
   predicate invariant'3 (self : t_T'0) =
     [%#sinvariant32] inv'7 self
   
@@ -173,6 +171,8 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 7 0 7 42]
   predicate inv'4 (_1 : t_T'0)
   
   axiom inv_axiom'4 [@rewrite] : forall x : t_T'0 [inv'4 x] . inv'4 x = invariant'2 x
+  
+  use seq.Seq
   
   predicate invariant'0 (self : Seq.seq t_T'0) =
     [%#sseq30] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
@@ -195,20 +195,20 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 7 0 7 42]
     | C_Some'0 a_0 -> inv'5 a_0
     end
   
-  predicate resolve'1 (self : MutBorrow.t (t_Iter'0)) =
+  predicate resolve'1 (self : MutBorrow.t t_Iter'0) =
     [%#sresolve26] self.final = self.current
   
-  function view'3 (self : MutBorrow.t (t_Iter'0)) : Slice64.slice t_T'0 =
+  function view'3 (self : MutBorrow.t t_Iter'0) : Slice64.slice t_T'0 =
     [%#smodel31] view'1 self.current
   
   use seq.Seq
   
-  predicate completed'0 (self : MutBorrow.t (t_Iter'0)) =
+  predicate completed'0 (self : MutBorrow.t t_Iter'0) =
     [%#sslice25] resolve'1 self /\ view'2 (view'3 self) = (Seq.empty : Seq.seq t_T'0)
   
   use seq.Seq
   
-  let rec next'0 (self:MutBorrow.t (t_Iter'0)) (return'  (ret:t_Option'0))= any
+  let rec next'0 (self:MutBorrow.t t_Iter'0) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {inv'3 result}
       {[%#siter13] match result with
         | C_None'0 -> completed'0 self
@@ -217,7 +217,7 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 7 0 7 42]
       (! return' {result}) ]
   
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_Iter'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t t_Iter'0) =
     resolve'1 _1
   
   let rec v_Some'0 (input:t_Option'0) (ret  (field_0:t_T'0))= any
@@ -249,9 +249,9 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 7 0 7 42]
         (! s0) [ s0 = bb6 ] 
         [ bb6 = s0
           [ s0 = MutBorrow.borrow_mut <t_Iter'0> {iter}
-              (fun (_ret':MutBorrow.t (t_Iter'0)) ->  [ &_21 <- _ret' ]  [ &iter <- _ret'.final ] s1)
+              (fun (_ret':MutBorrow.t t_Iter'0) ->  [ &_21 <- _ret' ]  [ &iter <- _ret'.final ] s1)
           | s1 = MutBorrow.borrow_final <t_Iter'0> {_21.current} {MutBorrow.get_id _21}
-              (fun (_ret':MutBorrow.t (t_Iter'0)) ->
+              (fun (_ret':MutBorrow.t t_Iter'0) ->
                  [ &_20 <- _ret' ] 
                  [ &_21 <- { _21 with current = _ret'.final } ] 
                 s2)
@@ -285,8 +285,8 @@ module M_03_std_iterators__slice_iter [#"03_std_iterators.rs" 7 0 7 42]
     | & iter_old : t_Iter'0 = Any.any_l ()
     | & produced : Seq.seq t_T'0 = Any.any_l ()
     | & _19 : t_Option'0 = Any.any_l ()
-    | & _20 : MutBorrow.t (t_Iter'0) = Any.any_l ()
-    | & _21 : MutBorrow.t (t_Iter'0) = Any.any_l ()
+    | & _20 : MutBorrow.t t_Iter'0 = Any.any_l ()
+    | & _21 : MutBorrow.t t_Iter'0 = Any.any_l ()
     | & __creusot_proc_iter_elem : t_T'0 = Any.any_l ()
     | & _24 : Seq.seq t_T'0 = Any.any_l () ]
     
@@ -325,9 +325,9 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 18 0 18 41]
   let%span svec26 = "../../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   let%span sindex27 = "../../../../creusot-contracts/src/logic/ops/index.rs" 49 8 49 31
   let%span sseq28 = "../../../../creusot-contracts/src/logic/seq.rs" 633 20 633 95
-  let%span smodel29 = "../../../../creusot-contracts/src/model.rs" 72 8 72 22
-  let%span sslice30 = "../../../../creusot-contracts/src/std/slice.rs" 28 14 28 41
-  let%span sslice31 = "../../../../creusot-contracts/src/std/slice.rs" 29 14 29 42
+  let%span sslice29 = "../../../../creusot-contracts/src/std/slice.rs" 28 14 28 41
+  let%span sslice30 = "../../../../creusot-contracts/src/std/slice.rs" 29 14 29 42
+  let%span smodel31 = "../../../../creusot-contracts/src/model.rs" 72 8 72 22
   let%span sinvariant32 = "../../../../creusot-contracts/src/invariant.rs" 24 8 24 18
   let%span sboxed33 = "../../../../creusot-contracts/src/std/boxed.rs" 28 8 28 18
   let%span svec34 = "../../../../creusot-contracts/src/std/vec.rs" 65 20 65 41
@@ -354,21 +354,11 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 18 0 18 41]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  use seq.Seq
-  
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
-  use prelude.int.UInt64
-  
-  use mach.int.Int
-  
   type t_T'0
   
   use seq.Seq
   
-  function view'2 (self : t_Vec'0) : Seq.seq t_T'0
-  
-  axiom view'2_spec : forall self : t_Vec'0 . [%#svec26] Seq.length (view'2 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
+  use mach.int.Int
   
   use seq.Seq
   
@@ -381,12 +371,22 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 18 0 18 41]
   
   axiom inv_axiom'8 [@rewrite] : forall x : t_T'0 [inv'9 x] . inv'9 x = invariant'6 x
   
+  use seq.Seq
+  
   predicate invariant'5 (self : Seq.seq t_T'0) =
     [%#sseq28] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'9 (Seq.get self i)
   
   predicate inv'8 (_1 : Seq.seq t_T'0)
   
   axiom inv_axiom'7 [@rewrite] : forall x : Seq.seq t_T'0 [inv'8 x] . inv'8 x = invariant'5 x
+  
+  use prelude.int.UInt64
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
+  
+  function view'2 (self : t_Vec'0) : Seq.seq t_T'0
+  
+  axiom view'2_spec : forall self : t_Vec'0 . [%#svec26] Seq.length (view'2 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
   predicate invariant'4 (self : t_Vec'0) =
     [%#svec34] inv'8 (view'2 self)
@@ -416,18 +416,18 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 18 0 18 41]
   
   use prelude.slice.Slice64
   
-  function view'1 (self : t_Iter'0) : Slice64.slice t_T'0
-  
   use prelude.slice.Slice64
   
-  function view'5 (self : Slice64.slice t_T'0) : Seq.seq t_T'0
+  function view'4 (self : Slice64.slice t_T'0) : Seq.seq t_T'0
   
-  axiom view'5_spec : forall self : Slice64.slice t_T'0 . ([%#sslice30] Seq.length (view'5 self)
+  axiom view'4_spec : forall self : Slice64.slice t_T'0 . ([%#sslice29] Seq.length (view'4 self)
   <= UInt64.t'int (v_MAX'0 : UInt64.t))
-  && ([%#sslice31] view'5 self = Slice64.id self)
+  && ([%#sslice30] view'4 self = Slice64.id self)
   
   function view'3 (self : Slice64.slice t_T'0) : Seq.seq t_T'0 =
-    [%#smodel13] view'5 self
+    [%#smodel13] view'4 self
+  
+  function view'1 (self : t_Iter'0) : Slice64.slice t_T'0
   
   predicate into_iter_post'0 (self : t_Vec'0) (res : t_Iter'0) =
     [%#svec15] view'0 self = view'3 (view'1 res)
@@ -449,7 +449,7 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 18 0 18 41]
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : Slice64.slice t_T'0) (ix : int) : t_T'0 =
-    [%#sindex27] Seq.get (view'5 self) ix
+    [%#sindex27] Seq.get (view'4 self) ix
   
   function to_ref_seq'0 (self : Slice64.slice t_T'0) : Seq.seq t_T'0
   
@@ -477,8 +477,6 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 18 0 18 41]
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Iter'0 [inv'0 x] . inv'0 x = true
   
-  use seq.Seq
-  
   predicate invariant'3 (self : t_T'0) =
     [%#sinvariant32] inv'7 self
   
@@ -492,6 +490,8 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 18 0 18 41]
   predicate inv'4 (_1 : t_T'0)
   
   axiom inv_axiom'4 [@rewrite] : forall x : t_T'0 [inv'4 x] . inv'4 x = invariant'2 x
+  
+  use seq.Seq
   
   predicate invariant'0 (self : Seq.seq t_T'0) =
     [%#sseq28] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'4 (Seq.get self i)
@@ -514,20 +514,20 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 18 0 18 41]
     | C_Some'0 a_0 -> inv'5 a_0
     end
   
-  predicate resolve'1 (self : MutBorrow.t (t_Iter'0)) =
+  predicate resolve'1 (self : MutBorrow.t t_Iter'0) =
     [%#sresolve25] self.final = self.current
   
-  function view'4 (self : MutBorrow.t (t_Iter'0)) : Slice64.slice t_T'0 =
-    [%#smodel29] view'1 self.current
+  function view'5 (self : MutBorrow.t t_Iter'0) : Slice64.slice t_T'0 =
+    [%#smodel31] view'1 self.current
   
   use seq.Seq
   
-  predicate completed'0 (self : MutBorrow.t (t_Iter'0)) =
-    [%#sslice24] resolve'1 self /\ view'5 (view'4 self) = (Seq.empty : Seq.seq t_T'0)
+  predicate completed'0 (self : MutBorrow.t t_Iter'0) =
+    [%#sslice24] resolve'1 self /\ view'4 (view'5 self) = (Seq.empty : Seq.seq t_T'0)
   
   use seq.Seq
   
-  let rec next'0 (self:MutBorrow.t (t_Iter'0)) (return'  (ret:t_Option'0))= any
+  let rec next'0 (self:MutBorrow.t t_Iter'0) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {inv'3 result}
       {[%#siter12] match result with
         | C_None'0 -> completed'0 self
@@ -536,7 +536,7 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 18 0 18 41]
       (! return' {result}) ]
   
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_Iter'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t t_Iter'0) =
     resolve'1 _1
   
   let rec v_Some'0 (input:t_Option'0) (ret  (field_0:t_T'0))= any
@@ -567,9 +567,9 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 18 0 18 41]
         (! s0) [ s0 = bb5 ] 
         [ bb5 = s0
           [ s0 = MutBorrow.borrow_mut <t_Iter'0> {iter}
-              (fun (_ret':MutBorrow.t (t_Iter'0)) ->  [ &_20 <- _ret' ]  [ &iter <- _ret'.final ] s1)
+              (fun (_ret':MutBorrow.t t_Iter'0) ->  [ &_20 <- _ret' ]  [ &iter <- _ret'.final ] s1)
           | s1 = MutBorrow.borrow_final <t_Iter'0> {_20.current} {MutBorrow.get_id _20}
-              (fun (_ret':MutBorrow.t (t_Iter'0)) ->
+              (fun (_ret':MutBorrow.t t_Iter'0) ->
                  [ &_19 <- _ret' ] 
                  [ &_20 <- { _20 with current = _ret'.final } ] 
                 s2)
@@ -602,8 +602,8 @@ module M_03_std_iterators__vec_iter [#"03_std_iterators.rs" 18 0 18 41]
     | & iter_old : t_Iter'0 = Any.any_l ()
     | & produced : Seq.seq t_T'0 = Any.any_l ()
     | & _18 : t_Option'0 = Any.any_l ()
-    | & _19 : MutBorrow.t (t_Iter'0) = Any.any_l ()
-    | & _20 : MutBorrow.t (t_Iter'0) = Any.any_l ()
+    | & _19 : MutBorrow.t t_Iter'0 = Any.any_l ()
+    | & _20 : MutBorrow.t t_Iter'0 = Any.any_l ()
     | & __creusot_proc_iter_elem : t_T'0 = Any.any_l ()
     | & _23 : Seq.seq t_T'0 = Any.any_l () ]
     
@@ -673,9 +673,9 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 29 0 29 35]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  predicate inv'2 (_1 : MutBorrow.t (t_Vec'0))
+  predicate inv'2 (_1 : MutBorrow.t t_Vec'0)
   
-  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t (t_Vec'0) [inv'2 x] . inv'2 x = true
+  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'2 x] . inv'2 x = true
   
   use prelude.slice.Slice64
   
@@ -687,9 +687,9 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 29 0 29 35]
   
   use seq.Seq
   
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
   use prelude.int.UInt64
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   use mach.int.Int
   
@@ -708,10 +708,10 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 29 0 29 35]
   
   axiom view'0_spec : forall self : t_Vec'0 . [%#svec15] Seq.length (view'0 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
-  function view'1 (self : MutBorrow.t (t_Vec'0)) : Seq.seq UInt64.t =
+  function view'1 (self : MutBorrow.t t_Vec'0) : Seq.seq UInt64.t =
     [%#smodel16] view'0 self.current
   
-  let rec deref_mut'0 (self:MutBorrow.t (t_Vec'0)) (return'  (ret:MutBorrow.t (Slice64.slice UInt64.t)))= {[@expl:deref_mut 'self' type invariant] inv'2 self}
+  let rec deref_mut'0 (self:MutBorrow.t t_Vec'0) (return'  (ret:MutBorrow.t (Slice64.slice UInt64.t)))= {[@expl:deref_mut 'self' type invariant] inv'2 self}
     any
     [ return' (result:MutBorrow.t (Slice64.slice UInt64.t))-> {inv'3 result}
       {[%#svec8] view'2 result = view'1 self}
@@ -809,20 +809,20 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 29 0 29 35]
   
   axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
   
-  predicate resolve'6 (self : MutBorrow.t (t_IterMut'0)) =
+  predicate resolve'6 (self : MutBorrow.t t_IterMut'0) =
     [%#sresolve23] self.final = self.current
   
-  function view'5 (self : MutBorrow.t (t_IterMut'0)) : MutBorrow.t (Slice64.slice UInt64.t) =
+  function view'5 (self : MutBorrow.t t_IterMut'0) : MutBorrow.t (Slice64.slice UInt64.t) =
     [%#smodel16] view'4 self.current
   
   use seq.Seq
   
-  predicate completed'0 (self : MutBorrow.t (t_IterMut'0)) =
+  predicate completed'0 (self : MutBorrow.t t_IterMut'0) =
     [%#sslice32] resolve'6 self /\ view'3 (view'5 self).current = (Seq.empty : Seq.seq UInt64.t)
   
   use seq.Seq
   
-  let rec next'0 (self:MutBorrow.t (t_IterMut'0)) (return'  (ret:t_Option'0))= any
+  let rec next'0 (self:MutBorrow.t t_IterMut'0) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {inv'4 result}
       {[%#siter14] match result with
         | C_None'0 -> completed'0 self
@@ -831,7 +831,7 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 29 0 29 35]
       (! return' {result}) ]
   
   
-  predicate resolve'1 (_1 : MutBorrow.t (t_IterMut'0)) =
+  predicate resolve'1 (_1 : MutBorrow.t t_IterMut'0) =
     resolve'6 _1
   
   let rec v_Some'0 (input:t_Option'0) (ret  (field_0:MutBorrow.t UInt64.t))= any
@@ -853,10 +853,10 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 29 0 29 35]
   predicate resolve'3 (_1 : t_IterMut'0) =
     resolve'8 _1
   
-  predicate resolve'9 (self : MutBorrow.t (t_Vec'0)) =
+  predicate resolve'9 (self : MutBorrow.t t_Vec'0) =
     [%#sresolve23] self.final = self.current
   
-  predicate resolve'4 (_1 : MutBorrow.t (t_Vec'0)) =
+  predicate resolve'4 (_1 : MutBorrow.t t_Vec'0) =
     resolve'9 _1
   
   use prelude.prelude.Any
@@ -866,10 +866,10 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 29 0 29 35]
   
   meta "compute_max_steps" 1000000
   
-  let rec all_zero'0[#"03_std_iterators.rs" 29 0 29 35] (v:MutBorrow.t (t_Vec'0)) (return'  (ret:()))= (! bb0
+  let rec all_zero'0[#"03_std_iterators.rs" 29 0 29 35] (v:MutBorrow.t t_Vec'0) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_Vec'0> {v.current} {MutBorrow.get_id v}
-          (fun (_ret':MutBorrow.t (t_Vec'0)) ->  [ &_8 <- _ret' ]  [ &v <- { v with current = _ret'.final } ] s1)
+          (fun (_ret':MutBorrow.t t_Vec'0) ->  [ &_8 <- _ret' ]  [ &v <- { v with current = _ret'.final } ] s1)
       | s1 = deref_mut'0 {_8} (fun (_ret':MutBorrow.t (Slice64.slice UInt64.t)) ->  [ &_7 <- _ret' ] s2)
       | s2 = bb1 ]
     
@@ -897,9 +897,9 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 29 0 29 35]
         (! s0) [ s0 = bb7 ] 
         [ bb7 = s0
           [ s0 = MutBorrow.borrow_mut <t_IterMut'0> {iter}
-              (fun (_ret':MutBorrow.t (t_IterMut'0)) ->  [ &_21 <- _ret' ]  [ &iter <- _ret'.final ] s1)
+              (fun (_ret':MutBorrow.t t_IterMut'0) ->  [ &_21 <- _ret' ]  [ &iter <- _ret'.final ] s1)
           | s1 = MutBorrow.borrow_final <t_IterMut'0> {_21.current} {MutBorrow.get_id _21}
-              (fun (_ret':MutBorrow.t (t_IterMut'0)) ->
+              (fun (_ret':MutBorrow.t t_IterMut'0) ->
                  [ &_20 <- _ret' ] 
                  [ &_21 <- { _21 with current = _ret'.final } ] 
                 s2)
@@ -930,17 +930,17 @@ module M_03_std_iterators__all_zero [#"03_std_iterators.rs" 29 0 29 35]
     | bb11 = s0 [ s0 = -{resolve'3 iter}- s1 | s1 = -{resolve'4 v}- s2 | s2 = return' {_0} ]  ]
     )
     [ & _0 : () = Any.any_l ()
-    | & v : MutBorrow.t (t_Vec'0) = v
+    | & v : MutBorrow.t t_Vec'0 = v
     | & iter : t_IterMut'0 = Any.any_l ()
     | & _5 : t_IterMut'0 = Any.any_l ()
     | & _6 : MutBorrow.t (Slice64.slice UInt64.t) = Any.any_l ()
     | & _7 : MutBorrow.t (Slice64.slice UInt64.t) = Any.any_l ()
-    | & _8 : MutBorrow.t (t_Vec'0) = Any.any_l ()
+    | & _8 : MutBorrow.t t_Vec'0 = Any.any_l ()
     | & iter_old : t_IterMut'0 = Any.any_l ()
     | & produced : Seq.seq (MutBorrow.t UInt64.t) = Any.any_l ()
     | & _19 : t_Option'0 = Any.any_l ()
-    | & _20 : MutBorrow.t (t_IterMut'0) = Any.any_l ()
-    | & _21 : MutBorrow.t (t_IterMut'0) = Any.any_l ()
+    | & _20 : MutBorrow.t t_IterMut'0 = Any.any_l ()
+    | & _21 : MutBorrow.t t_IterMut'0 = Any.any_l ()
     | & __creusot_proc_iter_elem : MutBorrow.t UInt64.t = Any.any_l ()
     | & _24 : Seq.seq (MutBorrow.t UInt64.t) = Any.any_l ()
     | & x : MutBorrow.t UInt64.t = Any.any_l () ]
@@ -1006,9 +1006,9 @@ module M_03_std_iterators__skip_take [#"03_std_iterators.rs" 36 0 36 48]
   
   use mach.int.Int
   
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
   use prelude.int.UInt64
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function n'0 (self : t_Take'0) : int
   
@@ -1048,12 +1048,12 @@ module M_03_std_iterators__skip_take [#"03_std_iterators.rs" 36 0 36 48]
   
   use prelude.prelude.MutBorrow
   
-  predicate invariant'0 (self : MutBorrow.t (t_Skip'0)) =
+  predicate invariant'0 (self : MutBorrow.t t_Skip'0) =
     [%#sinvariant18] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'4 (_1 : MutBorrow.t (t_Skip'0))
+  predicate inv'4 (_1 : MutBorrow.t t_Skip'0)
   
-  axiom inv_axiom'3 [@rewrite] : forall x : MutBorrow.t (t_Skip'0) [inv'4 x] . inv'4 x = invariant'0 x
+  axiom inv_axiom'3 [@rewrite] : forall x : MutBorrow.t t_Skip'0 [inv'4 x] . inv'4 x = invariant'0 x
   
   type t_Item'0
   
@@ -1103,9 +1103,9 @@ module M_03_std_iterators__skip_take [#"03_std_iterators.rs" 36 0 36 48]
   
   axiom produces_refl'1_spec : forall self : t_Take'0 . [%#stake19] produces'1 self (Seq.empty : Seq.seq t_Item'0) self
   
-  use seq.Seq
-  
   predicate resolve'4 (_1 : t_Item'0)
+  
+  use seq.Seq
   
   predicate produces'0 (self : t_Skip'0) (visited : Seq.seq t_Item'0) (o : t_Skip'0) =
     [%#sskip9] visited = (Seq.empty : Seq.seq t_Item'0) /\ self = o
@@ -1125,34 +1125,34 @@ module M_03_std_iterators__skip_take [#"03_std_iterators.rs" 36 0 36 48]
   
   axiom produces_refl'0_spec : forall self : t_Skip'0 . [%#sskip12] produces'0 self (Seq.empty : Seq.seq t_Item'0) self
   
-  predicate resolve'8 (self : MutBorrow.t (t_Take'0)) =
+  predicate resolve'8 (self : MutBorrow.t t_Take'0) =
     [%#sresolve29] self.final = self.current
   
-  predicate resolve'6 (_1 : MutBorrow.t (t_Take'0)) =
+  predicate resolve'6 (_1 : MutBorrow.t t_Take'0) =
     resolve'8 _1
-  
-  function iter_mut'0 (self : MutBorrow.t (t_Take'0)) : MutBorrow.t t_I'0
-  
-  axiom iter_mut'0_spec : forall self : MutBorrow.t (t_Take'0) . [%#stake23] iter'0 self.current
-  = (iter_mut'0 self).current
-  /\ iter'0 self.final = (iter_mut'0 self).final
   
   predicate completed'2 (self : MutBorrow.t t_I'0)
   
-  predicate completed'1 (self : MutBorrow.t (t_Take'0)) =
+  function iter_mut'0 (self : MutBorrow.t t_Take'0) : MutBorrow.t t_I'0
+  
+  axiom iter_mut'0_spec : forall self : MutBorrow.t t_Take'0 . [%#stake23] iter'0 self.current
+  = (iter_mut'0 self).current
+  /\ iter'0 self.final = (iter_mut'0 self).final
+  
+  predicate completed'1 (self : MutBorrow.t t_Take'0) =
     [%#stake17] n'0 self.current = 0 /\ resolve'6 self
     \/ n'0 self.current > 0 /\ n'0 self.current = n'0 self.final + 1 /\ completed'2 (iter_mut'0 self)
   
-  predicate completed'0 (self : MutBorrow.t (t_Skip'0)) =
+  predicate completed'0 (self : MutBorrow.t t_Skip'0) =
     [%#sskip8] n'1 self.final = 0
-    /\ (exists s : Seq.seq t_Item'0, i : MutBorrow.t (t_Take'0) . Seq.length s <= n'1 self.current
+    /\ (exists s : Seq.seq t_Item'0, i : MutBorrow.t t_Take'0 . Seq.length s <= n'1 self.current
     /\ produces'1 (iter'1 self.current) s i.current
     /\ (forall i : int . 0 <= i /\ i < Seq.length s  -> resolve'4 (Seq.get s i))
     /\ completed'1 i /\ i.final = iter'1 self.final)
   
   use seq.Seq
   
-  let rec next'0 (self:MutBorrow.t (t_Skip'0)) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'4 self}
+  let rec next'0 (self:MutBorrow.t t_Skip'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'4 self}
     any
     [ return' (result:t_Option'0)-> {inv'1 result}
       {[%#siter3] match result with
@@ -1196,7 +1196,7 @@ module M_03_std_iterators__skip_take [#"03_std_iterators.rs" 36 0 36 48]
     | bb2 = s0
       [ s0 = {inv'0 _5}
         MutBorrow.borrow_mut <t_Skip'0> {_5}
-          (fun (_ret':MutBorrow.t (t_Skip'0)) ->  [ &_4 <- _ret' ] -{inv'0 _ret'.final}-  [ &_5 <- _ret'.final ] s1)
+          (fun (_ret':MutBorrow.t t_Skip'0) ->  [ &_4 <- _ret' ] -{inv'0 _ret'.final}-  [ &_5 <- _ret'.final ] s1)
       | s1 = next'0 {_4} (fun (_ret':t_Option'0) ->  [ &res <- _ret' ] s2)
       | s2 = bb3 ]
     
@@ -1216,7 +1216,7 @@ module M_03_std_iterators__skip_take [#"03_std_iterators.rs" 36 0 36 48]
     | & iter : t_I'0 = iter
     | & n : UInt64.t = n
     | & res : t_Option'0 = Any.any_l ()
-    | & _4 : MutBorrow.t (t_Skip'0) = Any.any_l ()
+    | & _4 : MutBorrow.t t_Skip'0 = Any.any_l ()
     | & _5 : t_Skip'0 = Any.any_l ()
     | & _6 : t_Take'0 = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
@@ -1312,9 +1312,9 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
   
   use seq.Seq
   
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
   use prelude.int.UInt64
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   use mach.int.Int
   
@@ -1492,15 +1492,15 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
     let (x, _prod) = args in forall __bor_self : MutBorrow.t closure0'1 . __bor_self.current = self
      -> closure0'0'pre __bor_self x _prod
   
-  predicate resolve'5 (self : MutBorrow.t (t_Iter'0)) =
+  predicate resolve'5 (self : MutBorrow.t t_Iter'0) =
     [%#sresolve32] self.final = self.current
   
-  function view'5 (self : MutBorrow.t (t_Iter'0)) : Slice64.slice UInt32.t =
+  function view'5 (self : MutBorrow.t t_Iter'0) : Slice64.slice UInt32.t =
     [%#smodel50] view'3 self.current
   
   use seq.Seq
   
-  predicate completed'1 (self : MutBorrow.t (t_Iter'0)) =
+  predicate completed'1 (self : MutBorrow.t t_Iter'0) =
     [%#sslice42] resolve'5 self /\ view'4 (view'5 self) = (Seq.empty : Seq.seq UInt32.t)
   
   predicate next_precondition'0 (iter : t_Iter'0) (func : closure0'1) (produced : Seq.seq UInt32.t) =
@@ -1516,7 +1516,7 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
      -> postcondition_mut'0 f.current (e1, s) f.final b  -> precondition'0 f.final (e2, Seq.snoc s e1)
   
   predicate reinitialize'0 (_1 : ()) =
-    [%#smap_inv25] forall iter : MutBorrow.t (t_Iter'0), func : closure0'1 . completed'1 iter
+    [%#smap_inv25] forall iter : MutBorrow.t t_Iter'0, func : closure0'1 . completed'1 iter
      -> next_precondition'0 iter.final func (Seq.empty : Seq.seq UInt32.t) /\ preservation'0 iter.final func
   
   type t_MapInv'0  =
@@ -1596,7 +1596,7 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
   
   axiom produces_refl'2_spec : forall self : t_MapInv'0 . [%#smap_inv45] produces'1 self (Seq.empty : Seq.seq UInt32.t) self
   
-  predicate completed'0 (self : MutBorrow.t (t_MapInv'0)) =
+  predicate completed'0 (self : MutBorrow.t t_MapInv'0) =
     [%#smap_inv27] (self.final).t_MapInv__produced'0 = (Seq.empty : Seq.seq UInt32.t)
     /\ completed'1 (MutBorrow.borrow_logic (self.current).t_MapInv__iter'0 (self.final).t_MapInv__iter'0 (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
     /\ (self.current).t_MapInv__func'0 = (self.final).t_MapInv__func'0
@@ -1607,7 +1607,7 @@ module M_03_std_iterators__counter [#"03_std_iterators.rs" 42 0 42 27]
   let rec collect'0 (self:t_MapInv'0) (return'  (ret:t_Vec'0))= {[@expl:collect 'self' type invariant] inv'4 self}
     any
     [ return' (result:t_Vec'0)-> {inv'5 result}
-      {[%#siter15] exists done' : MutBorrow.t (t_MapInv'0), prod : Seq.seq UInt32.t . resolve'1 done'.final
+      {[%#siter15] exists done' : MutBorrow.t t_MapInv'0, prod : Seq.seq UInt32.t . resolve'1 done'.final
       /\ completed'0 done' /\ produces'1 self prod done'.current /\ from_iter_post'0 prod result}
       (! return' {result}) ]
   
@@ -1806,9 +1806,9 @@ module M_03_std_iterators__sum_range [#"03_std_iterators.rs" 61 0 61 35]
   
   use prelude.prelude.MutBorrow
   
-  predicate inv'2 (_1 : MutBorrow.t (t_Range'0))
+  predicate inv'2 (_1 : MutBorrow.t t_Range'0)
   
-  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t (t_Range'0) [inv'2 x] . inv'2 x = true
+  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_Range'0 [inv'2 x] . inv'2 x = true
   
   type t_Option'0  =
     | C_None'0
@@ -1818,16 +1818,16 @@ module M_03_std_iterators__sum_range [#"03_std_iterators.rs" 61 0 61 35]
   
   axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
   
-  predicate resolve'1 (self : MutBorrow.t (t_Range'0)) =
+  predicate resolve'1 (self : MutBorrow.t t_Range'0) =
     [%#sresolve34] self.final = self.current
   
-  predicate completed'0 (self : MutBorrow.t (t_Range'0)) =
+  predicate completed'0 (self : MutBorrow.t t_Range'0) =
     [%#srange33] resolve'1 self
     /\ deep_model'0 (self.current).t_Range__start'0 >= deep_model'0 (self.current).t_Range__end'0
   
   use seq.Seq
   
-  let rec next'0 (self:MutBorrow.t (t_Range'0)) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'2 self}
+  let rec next'0 (self:MutBorrow.t t_Range'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'2 self}
     any
     [ return' (result:t_Option'0)-> {inv'3 result}
       {[%#siter12] match result with
@@ -1837,7 +1837,7 @@ module M_03_std_iterators__sum_range [#"03_std_iterators.rs" 61 0 61 35]
       (! return' {result}) ]
   
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_Range'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t t_Range'0) =
     resolve'1 _1
   
   let rec v_Some'0 (input:t_Option'0) (ret  (field_0:Int64.t))= any
@@ -1869,9 +1869,9 @@ module M_03_std_iterators__sum_range [#"03_std_iterators.rs" 61 0 61 35]
         (! s0) [ s0 = bb5 ] 
         [ bb5 = s0
           [ s0 = MutBorrow.borrow_mut <t_Range'0> {iter}
-              (fun (_ret':MutBorrow.t (t_Range'0)) ->  [ &_21 <- _ret' ]  [ &iter <- _ret'.final ] s1)
+              (fun (_ret':MutBorrow.t t_Range'0) ->  [ &_21 <- _ret' ]  [ &iter <- _ret'.final ] s1)
           | s1 = MutBorrow.borrow_final <t_Range'0> {_21.current} {MutBorrow.get_id _21}
-              (fun (_ret':MutBorrow.t (t_Range'0)) ->
+              (fun (_ret':MutBorrow.t t_Range'0) ->
                  [ &_20 <- _ret' ] 
                  [ &_21 <- { _21 with current = _ret'.final } ] 
                 s2)
@@ -1905,8 +1905,8 @@ module M_03_std_iterators__sum_range [#"03_std_iterators.rs" 61 0 61 35]
     | & iter_old : t_Range'0 = Any.any_l ()
     | & produced : Seq.seq Int64.t = Any.any_l ()
     | & _19 : t_Option'0 = Any.any_l ()
-    | & _20 : MutBorrow.t (t_Range'0) = Any.any_l ()
-    | & _21 : MutBorrow.t (t_Range'0) = Any.any_l ()
+    | & _20 : MutBorrow.t t_Range'0 = Any.any_l ()
+    | & _21 : MutBorrow.t t_Range'0 = Any.any_l ()
     | & __creusot_proc_iter_elem : Int64.t = Any.any_l ()
     | & _24 : Seq.seq Int64.t = Any.any_l () ]
      [ return' (result:Int64.t)-> {[@expl:sum_range ensures] [%#s03_std_iterators9] result = n} (! return' {result}) ] 
@@ -1989,10 +1989,10 @@ module M_03_std_iterators__enumerate_range [#"03_std_iterators.rs" 70 0 70 24]
   
   axiom produces_refl'1_spec : forall self : t_Range'0 . [%#srange24] produces'1 self (Seq.empty : Seq.seq UInt64.t) self
   
-  predicate resolve'2 (self : MutBorrow.t (t_Range'0)) =
+  predicate resolve'2 (self : MutBorrow.t t_Range'0) =
     [%#sresolve23] self.final = self.current
   
-  predicate completed'0 (self : MutBorrow.t (t_Range'0)) =
+  predicate completed'0 (self : MutBorrow.t t_Range'0) =
     [%#srange13] resolve'2 self
     /\ deep_model'0 (self.current).t_Range__start'0 >= deep_model'0 (self.current).t_Range__end'0
   
@@ -2018,7 +2018,7 @@ module M_03_std_iterators__enumerate_range [#"03_std_iterators.rs" 70 0 70 24]
   function n'0 (self : t_Enumerate'0) : int
   
   let rec enumerate'0 (self:t_Range'0) (return'  (ret:t_Enumerate'0))= {[@expl:enumerate 'self' type invariant] inv'3 self}
-    {[@expl:enumerate requires #0] [%#siter7] forall i : MutBorrow.t (t_Range'0) . completed'0 i
+    {[@expl:enumerate requires #0] [%#siter7] forall i : MutBorrow.t t_Range'0 . completed'0 i
      -> produces'1 i.current (Seq.empty : Seq.seq UInt64.t) i.final}
     {[@expl:enumerate requires #1] [%#siter8] forall s : Seq.seq UInt64.t, i : t_Range'0 . produces'1 self s i
      -> Seq.length s < UInt64.t'int v_MAX'0}
@@ -2075,12 +2075,12 @@ module M_03_std_iterators__enumerate_range [#"03_std_iterators.rs" 70 0 70 24]
   
   axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq (UInt64.t, UInt64.t) [inv'1 x] . inv'1 x = true
   
-  predicate invariant'1 (self : MutBorrow.t (t_Enumerate'0)) =
+  predicate invariant'1 (self : MutBorrow.t t_Enumerate'0) =
     [%#sinvariant29] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'2 (_1 : MutBorrow.t (t_Enumerate'0))
+  predicate inv'2 (_1 : MutBorrow.t t_Enumerate'0)
   
-  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t (t_Enumerate'0) [inv'2 x] . inv'2 x = invariant'1 x
+  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_Enumerate'0 [inv'2 x] . inv'2 x = invariant'1 x
   
   type t_Option'0  =
     | C_None'0
@@ -2090,13 +2090,13 @@ module M_03_std_iterators__enumerate_range [#"03_std_iterators.rs" 70 0 70 24]
   
   axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
   
-  predicate completed'1 (self : MutBorrow.t (t_Enumerate'0)) =
-    [%#senumerate22] exists inner : MutBorrow.t (t_Range'0) . inner.current = iter'0 self.current
+  predicate completed'1 (self : MutBorrow.t t_Enumerate'0) =
+    [%#senumerate22] exists inner : MutBorrow.t t_Range'0 . inner.current = iter'0 self.current
     /\ inner.final = iter'0 self.final /\ completed'0 inner /\ n'0 self.current = n'0 self.final
   
   use seq.Seq
   
-  let rec next'0 (self:MutBorrow.t (t_Enumerate'0)) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'2 self}
+  let rec next'0 (self:MutBorrow.t t_Enumerate'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'2 self}
     any
     [ return' (result:t_Option'0)-> {inv'4 result}
       {[%#siter12] match result with
@@ -2106,10 +2106,10 @@ module M_03_std_iterators__enumerate_range [#"03_std_iterators.rs" 70 0 70 24]
       (! return' {result}) ]
   
   
-  predicate resolve'1 (self : MutBorrow.t (t_Enumerate'0)) =
+  predicate resolve'1 (self : MutBorrow.t t_Enumerate'0) =
     [%#sresolve23] self.final = self.current
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_Enumerate'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t t_Enumerate'0) =
     resolve'1 _1
   
   let rec v_Some'0 (input:t_Option'0) (ret  (field_0:(UInt64.t, UInt64.t)))= any
@@ -2147,14 +2147,14 @@ module M_03_std_iterators__enumerate_range [#"03_std_iterators.rs" 70 0 70 24]
         [ bb6 = s0
           [ s0 = {inv'0 iter}
             MutBorrow.borrow_mut <t_Enumerate'0> {iter}
-              (fun (_ret':MutBorrow.t (t_Enumerate'0)) ->
+              (fun (_ret':MutBorrow.t t_Enumerate'0) ->
                  [ &_16 <- _ret' ] 
                 -{inv'0 _ret'.final}-
                  [ &iter <- _ret'.final ] 
                 s1)
           | s1 = {inv'0 _16.current}
             MutBorrow.borrow_final <t_Enumerate'0> {_16.current} {MutBorrow.get_id _16}
-              (fun (_ret':MutBorrow.t (t_Enumerate'0)) ->
+              (fun (_ret':MutBorrow.t t_Enumerate'0) ->
                  [ &_15 <- _ret' ] 
                 -{inv'0 _ret'.final}-
                  [ &_16 <- { _16 with current = _ret'.final } ] 
@@ -2192,8 +2192,8 @@ module M_03_std_iterators__enumerate_range [#"03_std_iterators.rs" 70 0 70 24]
     | & iter_old : t_Enumerate'0 = Any.any_l ()
     | & produced : Seq.seq (UInt64.t, UInt64.t) = Any.any_l ()
     | & _14 : t_Option'0 = Any.any_l ()
-    | & _15 : MutBorrow.t (t_Enumerate'0) = Any.any_l ()
-    | & _16 : MutBorrow.t (t_Enumerate'0) = Any.any_l ()
+    | & _15 : MutBorrow.t t_Enumerate'0 = Any.any_l ()
+    | & _16 : MutBorrow.t t_Enumerate'0 = Any.any_l ()
     | & __creusot_proc_iter_elem : (UInt64.t, UInt64.t) = Any.any_l ()
     | & _19 : Seq.seq (UInt64.t, UInt64.t) = Any.any_l ()
     | & ix : UInt64.t = Any.any_l ()
@@ -2240,8 +2240,8 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
   let%span smodel36 = "../../../../creusot-contracts/src/model.rs" 54 8 54 22
   let%span siter37 = "../../../../creusot-contracts/src/std/iter.rs" 86 20 86 24
   let%span szip38 = "../../../../creusot-contracts/src/std/iter/zip.rs" 14 14 14 39
-  let%span szip39 = "../../../../creusot-contracts/src/std/iter/zip.rs" 21 14 21 39
-  let%span siter40 = "../../../../creusot-contracts/src/std/iter.rs" 92 8 92 19
+  let%span siter39 = "../../../../creusot-contracts/src/std/iter.rs" 92 8 92 19
+  let%span szip40 = "../../../../creusot-contracts/src/std/iter/zip.rs" 21 14 21 39
   let%span szip41 = "../../../../creusot-contracts/src/std/iter/zip.rs" 55 14 55 45
   let%span szip42 = "../../../../creusot-contracts/src/std/iter/zip.rs" 60 15 60 32
   let%span szip43 = "../../../../creusot-contracts/src/std/iter/zip.rs" 61 15 61 32
@@ -2267,23 +2267,7 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
   
   use seq.Seq
   
-  use prelude.int.UInt64
-  
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
-  use prelude.int.UInt64
-  
   use mach.int.Int
-  
-  use prelude.slice.Slice64
-  
-  use seq.Seq
-  
-  function view'1 (self : Slice64.slice t_T'0) : Seq.seq t_T'0
-  
-  axiom view'1_spec : forall self : Slice64.slice t_T'0 . ([%#sslice34] Seq.length (view'1 self)
-  <= UInt64.t'int (v_MAX'0 : UInt64.t))
-  && ([%#sslice35] view'1 self = Slice64.id self)
   
   use seq.Seq
   
@@ -2296,12 +2280,28 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
   
   axiom inv_axiom'10 [@rewrite] : forall x : t_T'0 [inv'10 x] . inv'10 x = invariant'4 x
   
+  use seq.Seq
+  
   predicate invariant'3 (self : Seq.seq t_T'0) =
     [%#sseq57] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'10 (Seq.get self i)
   
   predicate inv'9 (_1 : Seq.seq t_T'0)
   
   axiom inv_axiom'9 [@rewrite] : forall x : Seq.seq t_T'0 [inv'9 x] . inv'9 x = invariant'3 x
+  
+  use prelude.int.UInt64
+  
+  use prelude.int.UInt64
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
+  
+  use prelude.slice.Slice64
+  
+  function view'1 (self : Slice64.slice t_T'0) : Seq.seq t_T'0
+  
+  axiom view'1_spec : forall self : Slice64.slice t_T'0 . ([%#sslice34] Seq.length (view'1 self)
+  <= UInt64.t'int (v_MAX'0 : UInt64.t))
+  && ([%#sslice35] view'1 self = Slice64.id self)
   
   predicate invariant'0 (self : Slice64.slice t_T'0) =
     [%#sslice54] inv'9 (view'1 self)
@@ -2355,12 +2355,12 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
   
   axiom itera'0_spec : forall self : t_Zip'0 . [%#szip38] inv'0 self  -> inv'5 (itera'0 self)
   
+  predicate into_iter_post'0 (self : t_Range'0) (res : t_Range'0) =
+    [%#siter39] self = res
+  
   function iterb'0 (self : t_Zip'0) : t_Range'0
   
-  axiom iterb'0_spec : forall self : t_Zip'0 . [%#szip39] inv'0 self  -> inv'5 (iterb'0 self)
-  
-  predicate into_iter_post'0 (self : t_Range'0) (res : t_Range'0) =
-    [%#siter40] self = res
+  axiom iterb'0_spec : forall self : t_Zip'0 . [%#szip40] inv'0 self  -> inv'5 (iterb'0 self)
   
   let rec zip'0 (self:t_Range'0) (other:t_Range'0) (return'  (ret:t_Zip'0))= {[@expl:zip 'self' type invariant] inv'5 self}
     {[@expl:zip 'other' type invariant] inv'5 other}
@@ -2376,7 +2376,7 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
     [%#siter37] true
   
   predicate into_iter_post'1 (self : t_Zip'0) (res : t_Zip'0) =
-    [%#siter40] self = res
+    [%#siter39] self = res
   
   let rec into_iter'0 (self:t_Zip'0) (return'  (ret:t_Zip'0))= {[@expl:into_iter 'self' type invariant] inv'0 self}
     {[@expl:into_iter requires] [%#siter24] into_iter_pre'1 self}
@@ -2388,12 +2388,12 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
   
   use seq.Seq
   
-  use seq.Seq
-  
   predicate equiv_reverse_range'0 [#"03_std_iterators.rs" 85 0 85 81] (s1 : Seq.seq t_T'0) (s2 : Seq.seq t_T'0) (l : int) (u : int) (n : int)
   
    =
     [%#s03_std_iterators26] forall i : int . l <= i /\ i < u  -> Seq.get s1 i = Seq.get s2 (n - i)
+  
+  use seq.Seq
   
   predicate equiv_range'0 [#"03_std_iterators.rs" 78 0 78 65] (s1 : Seq.seq t_T'0) (s2 : Seq.seq t_T'0) (l : int) (u : int)
   
@@ -2455,9 +2455,9 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
   
   axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq (UInt64.t, UInt64.t) [inv'1 x] . inv'1 x = true
   
-  predicate inv'6 (_1 : MutBorrow.t (t_Zip'0))
+  predicate inv'6 (_1 : MutBorrow.t t_Zip'0)
   
-  axiom inv_axiom'6 [@rewrite] : forall x : MutBorrow.t (t_Zip'0) [inv'6 x] . inv'6 x = true
+  axiom inv_axiom'6 [@rewrite] : forall x : MutBorrow.t t_Zip'0 [inv'6 x] . inv'6 x = true
   
   type t_Option'0  =
     | C_None'0
@@ -2467,14 +2467,14 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
   
   axiom inv_axiom'7 [@rewrite] : forall x : t_Option'0 [inv'7 x] . inv'7 x = true
   
-  predicate resolve'6 (self : MutBorrow.t (t_Range'0)) =
+  predicate resolve'6 (self : MutBorrow.t t_Range'0) =
     [%#sresolve47] self.final = self.current
   
-  predicate completed'1 (self : MutBorrow.t (t_Range'0)) =
+  predicate completed'1 (self : MutBorrow.t t_Range'0) =
     [%#srange53] resolve'6 self
     /\ deep_model'0 (self.current).t_Range__start'0 >= deep_model'0 (self.current).t_Range__end'0
   
-  predicate resolve'4 (_1 : MutBorrow.t (t_Range'0)) =
+  predicate resolve'4 (_1 : MutBorrow.t t_Range'0) =
     resolve'6 _1
   
   predicate inv'8 (_1 : UInt64.t)
@@ -2486,8 +2486,8 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
   predicate resolve'5 (_1 : UInt64.t) =
     true
   
-  predicate completed'0 (self : MutBorrow.t (t_Zip'0)) =
-    [%#szip46] exists a : MutBorrow.t (t_Range'0), b : MutBorrow.t (t_Range'0) . a.current = itera'0 self.current
+  predicate completed'0 (self : MutBorrow.t t_Zip'0) =
+    [%#szip46] exists a : MutBorrow.t t_Range'0, b : MutBorrow.t t_Range'0 . a.current = itera'0 self.current
     /\ b.current = iterb'0 self.current
     /\ a.final = itera'0 self.final
     /\ b.final = iterb'0 self.final
@@ -2497,7 +2497,7 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
   
   use seq.Seq
   
-  let rec next'0 (self:MutBorrow.t (t_Zip'0)) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'6 self}
+  let rec next'0 (self:MutBorrow.t t_Zip'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'6 self}
     any
     [ return' (result:t_Option'0)-> {inv'7 result}
       {[%#siter29] match result with
@@ -2507,10 +2507,10 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
       (! return' {result}) ]
   
   
-  predicate resolve'2 (self : MutBorrow.t (t_Zip'0)) =
+  predicate resolve'2 (self : MutBorrow.t t_Zip'0) =
     [%#sresolve47] self.final = self.current
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_Zip'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t t_Zip'0) =
     resolve'2 _1
   
   let rec v_Some'0 (input:t_Option'0) (ret  (field_0:(UInt64.t, UInt64.t)))= any
@@ -2548,9 +2548,9 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
   
   use prelude.prelude.Any
   
-  use seq.Reverse
-  
   use seq.Seq
+  
+  use seq.Reverse
   
   meta "compute_max_steps" 1000000
   
@@ -2595,12 +2595,9 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
         (! s0) [ s0 = bb10 ] 
         [ bb10 = s0
           [ s0 = MutBorrow.borrow_mut <t_Zip'0> {iter}
-              (fun (_ret':MutBorrow.t (t_Zip'0)) ->  [ &_32 <- _ret' ]  [ &iter <- _ret'.final ] s1)
+              (fun (_ret':MutBorrow.t t_Zip'0) ->  [ &_32 <- _ret' ]  [ &iter <- _ret'.final ] s1)
           | s1 = MutBorrow.borrow_final <t_Zip'0> {_32.current} {MutBorrow.get_id _32}
-              (fun (_ret':MutBorrow.t (t_Zip'0)) ->
-                 [ &_31 <- _ret' ] 
-                 [ &_32 <- { _32 with current = _ret'.final } ] 
-                s2)
+              (fun (_ret':MutBorrow.t t_Zip'0) ->  [ &_31 <- _ret' ]  [ &_32 <- { _32 with current = _ret'.final } ] s2)
           | s2 = next'0 {_31} (fun (_ret':t_Option'0) ->  [ &_30 <- _ret' ] s3)
           | s3 = bb11 ]
         
@@ -2662,8 +2659,8 @@ module M_03_std_iterators__my_reverse [#"03_std_iterators.rs" 92 0 92 37]
     | & iter_old : t_Zip'0 = Any.any_l ()
     | & produced : Seq.seq (UInt64.t, UInt64.t) = Any.any_l ()
     | & _30 : t_Option'0 = Any.any_l ()
-    | & _31 : MutBorrow.t (t_Zip'0) = Any.any_l ()
-    | & _32 : MutBorrow.t (t_Zip'0) = Any.any_l ()
+    | & _31 : MutBorrow.t t_Zip'0 = Any.any_l ()
+    | & _32 : MutBorrow.t t_Zip'0 = Any.any_l ()
     | & __creusot_proc_iter_elem : (UInt64.t, UInt64.t) = Any.any_l ()
     | & _35 : Seq.seq (UInt64.t, UInt64.t) = Any.any_l ()
     | & i : UInt64.t = Any.any_l ()

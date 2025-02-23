@@ -257,7 +257,7 @@ impl DepElab for TyElab {
         match ty.kind() {
             TyKind::Param(_) => vec![Decl::TyDecl(TyDecl::Opaque {
                 ty_name: names.ty_param(ty).as_ident(),
-                ty_params: vec![],
+                ty_params: Box::new([]),
             })],
             TyKind::Alias(_, _) => {
                 let (def_id, subst) = dep.did().unwrap();
@@ -267,7 +267,7 @@ impl DepElab for TyElab {
                 );
                 vec![Decl::TyDecl(TyDecl::Opaque {
                     ty_name: names.ty(def_id, subst).as_ident(),
-                    ty_params: vec![],
+                    ty_params: Box::new([]),
                 })]
             }
             TyKind::Closure(did, subst) => translate_closure_ty(ctx, &mut names, *did, subst)
@@ -437,7 +437,7 @@ fn expand_laws<'tcx>(
 }
 
 fn val(ctx: &Why3Generator, mut sig: Signature, kind: Option<DeclKind>) -> Vec<Decl> {
-    sig.contract.variant = Vec::new();
+    sig.contract.variant = None;
     if let Some(k) = kind {
         let ax = if !sig.contract.is_empty() { Some(spec_axiom(&sig)) } else { None };
 

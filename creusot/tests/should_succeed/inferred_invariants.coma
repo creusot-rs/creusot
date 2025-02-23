@@ -286,6 +286,8 @@ module M_inferred_invariants__y [#"inferred_invariants.rs" 41 0 41 26]
   
   use mach.int.Int
   
+  use seq.Seq
+  
   use prelude.prelude.MutBorrow
   
   use prelude.prelude.Opaque
@@ -312,21 +314,19 @@ module M_inferred_invariants__y [#"inferred_invariants.rs" 41 0 41 26]
   
   use seq.Seq
   
-  use seq.Seq
-  
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function view'3 (self : t_Vec'0) : Seq.seq Int32.t
   
   axiom view'3_spec : forall self : t_Vec'0 . [%#svec16] Seq.length (view'3 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
-  function view'1 (self : MutBorrow.t (t_Vec'0)) : Seq.seq Int32.t =
+  function view'1 (self : MutBorrow.t t_Vec'0) : Seq.seq Int32.t =
     [%#smodel8] view'3 self.current
   
-  function view'2 (self : MutBorrow.t (t_Vec'0)) : Seq.seq Int32.t =
+  function view'2 (self : MutBorrow.t t_Vec'0) : Seq.seq Int32.t =
     [%#smodel15] view'1 self
   
-  function view'0 (self : MutBorrow.t (t_Vec'0)) : Seq.seq Int32.t =
+  function view'0 (self : MutBorrow.t t_Vec'0) : Seq.seq Int32.t =
     [%#ssnapshot7] view'2 self
   
   predicate inv'0 (_1 : t_Vec'0)
@@ -339,9 +339,9 @@ module M_inferred_invariants__y [#"inferred_invariants.rs" 41 0 41 26]
   let rec len'0 (self:t_Vec'0) (return'  (ret:UInt64.t))= {[@expl:len 'self' type invariant] inv'0 self}
     any [ return' (result:UInt64.t)-> {[%#svec9] UInt64.t'int result = Seq.length (view'4 self)} (! return' {result}) ] 
   
-  predicate inv'1 (_1 : MutBorrow.t (t_Vec'0))
+  predicate inv'1 (_1 : MutBorrow.t t_Vec'0)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t (t_Vec'0) [inv'1 x] . inv'1 x = true
+  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'1 x] . inv'1 x = true
   
   predicate inv'2 (_1 : UInt64.t)
   
@@ -363,7 +363,7 @@ module M_inferred_invariants__y [#"inferred_invariants.rs" 41 0 41 26]
     [%#sslice19] forall i : int . 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
   
-  let rec index_mut'0 (self:MutBorrow.t (t_Vec'0)) (index:UInt64.t) (return'  (ret:MutBorrow.t Int32.t))= {[@expl:index_mut 'self' type invariant] inv'1 self}
+  let rec index_mut'0 (self:MutBorrow.t t_Vec'0) (index:UInt64.t) (return'  (ret:MutBorrow.t Int32.t))= {[@expl:index_mut 'self' type invariant] inv'1 self}
     {[@expl:index_mut 'index' type invariant] inv'2 index}
     {[@expl:index_mut requires] [%#svec10] in_bounds'0 index (view'1 self)}
     any
@@ -381,17 +381,17 @@ module M_inferred_invariants__y [#"inferred_invariants.rs" 41 0 41 26]
   predicate resolve'0 (_1 : MutBorrow.t Int32.t) =
     resolve'2 _1
   
-  predicate resolve'3 (self : MutBorrow.t (t_Vec'0)) =
+  predicate resolve'3 (self : MutBorrow.t t_Vec'0) =
     [%#sresolve20] self.final = self.current
   
-  predicate resolve'1 (_1 : MutBorrow.t (t_Vec'0)) =
+  predicate resolve'1 (_1 : MutBorrow.t t_Vec'0) =
     resolve'3 _1
   
   use prelude.prelude.Any
   
   meta "compute_max_steps" 1000000
   
-  let rec y'0[#"inferred_invariants.rs" 41 0 41 26] (v:MutBorrow.t (t_Vec'0)) (return'  (ret:()))= (! bb0
+  let rec y'0[#"inferred_invariants.rs" 41 0 41 26] (v:MutBorrow.t t_Vec'0) (return'  (ret:()))= (! bb0
     [ bb0 = s0 [ s0 =  [ &old_v <- [%#sinferred_invariants0] v ] s1 | s1 = bb1 ] 
     | bb1 = s0 [ s0 =  [ &i <- [%#sinferred_invariants1] (0 : UInt64.t) ] s1 | s1 =  [ &old_2_0 <- v ] s2 | s2 = bb2 ] 
     | bb2 = bb2
@@ -405,7 +405,7 @@ module M_inferred_invariants__y [#"inferred_invariants.rs" 41 0 41 26]
         
         | bb5 = s0
           [ s0 = MutBorrow.borrow_mut <t_Vec'0> {v.current}
-              (fun (_ret':MutBorrow.t (t_Vec'0)) ->  [ &_15 <- _ret' ]  [ &v <- { v with current = _ret'.final } ] s1)
+              (fun (_ret':MutBorrow.t t_Vec'0) ->  [ &_15 <- _ret' ]  [ &v <- { v with current = _ret'.final } ] s1)
           | s1 = index_mut'0 {_15} {i} (fun (_ret':MutBorrow.t Int32.t) ->  [ &_14 <- _ret' ] s2)
           | s2 = bb6 ]
         
@@ -426,15 +426,15 @@ module M_inferred_invariants__y [#"inferred_invariants.rs" 41 0 41 26]
     | bb9 = s0 [ s0 = -{resolve'1 v}- s1 | s1 = return' {_0} ]  ]
     )
     [ & _0 : () = Any.any_l ()
-    | & v : MutBorrow.t (t_Vec'0) = v
-    | & old_v : MutBorrow.t (t_Vec'0) = Any.any_l ()
+    | & v : MutBorrow.t t_Vec'0 = v
+    | & old_v : MutBorrow.t t_Vec'0 = Any.any_l ()
     | & i : UInt64.t = Any.any_l ()
     | & _10 : bool = Any.any_l ()
     | & _12 : UInt64.t = Any.any_l ()
     | & _14 : MutBorrow.t Int32.t = Any.any_l ()
-    | & _15 : MutBorrow.t (t_Vec'0) = Any.any_l ()
+    | & _15 : MutBorrow.t t_Vec'0 = Any.any_l ()
     | & _17 : bool = Any.any_l ()
-    | & old_2_0 : MutBorrow.t (t_Vec'0) = Any.any_l () ]
+    | & old_2_0 : MutBorrow.t t_Vec'0 = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
 module M_inferred_invariants__nested_loops [#"inferred_invariants.rs" 60 0 60 32]

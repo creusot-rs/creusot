@@ -31,8 +31,6 @@ module M_heapsort_generic__heap_frag_max [#"heapsort_generic.rs" 25 0 25 58]
   function parent'0 [#"heapsort_generic.rs" 10 0 10 24] (i : int) : int =
     [%#sheapsort_generic6] Int.div (i + 1) 2 - 1
   
-  use seq.Seq
-  
   type t_Ordering'0  =
     | C_Less'0
     | C_Equal'0
@@ -87,6 +85,8 @@ module M_heapsort_generic__heap_frag_max [#"heapsort_generic.rs" 25 0 25 58]
   
   axiom cmp_le_log'0_spec : forall x : t_T'0, y : t_T'0 . [%#sord7] le_log'0 x y = (cmp_log'0 x y <> C_Greater'0)
   
+  use seq.Seq
+  
   predicate heap_frag'0 [#"heapsort_generic.rs" 15 0 15 66] (s : Seq.seq t_T'0) (start : int) (end' : int) =
     [%#sheapsort_generic5] forall i : int . start <= parent'0 i /\ i < end'
      -> le_log'0 (Seq.get s i) (Seq.get s (parent'0 i))
@@ -139,8 +139,8 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
   let%span smodel24 = "../../../creusot-contracts/src/model.rs" 63 8 63 28
   let%span smodel25 = "../../../creusot-contracts/src/model.rs" 72 8 72 22
   let%span sindex26 = "../../../creusot-contracts/src/logic/ops/index.rs" 27 8 27 31
-  let%span ssnapshot27 = "../../../creusot-contracts/src/snapshot.rs" 52 20 52 39
-  let%span sseq28 = "../../../creusot-contracts/src/logic/seq.rs" 316 8 316 41
+  let%span sseq27 = "../../../creusot-contracts/src/logic/seq.rs" 316 8 316 41
+  let%span ssnapshot28 = "../../../creusot-contracts/src/snapshot.rs" 52 20 52 39
   let%span svec29 = "../../../creusot-contracts/src/std/vec.rs" 162 27 162 46
   let%span svec30 = "../../../creusot-contracts/src/std/vec.rs" 163 26 163 54
   let%span scmp31 = "../../../creusot-contracts/src/std/cmp.rs" 35 26 35 76
@@ -190,66 +190,7 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
   function parent'0 [#"heapsort_generic.rs" 10 0 10 24] (i : int) : int =
     [%#sheapsort_generic23] Int.div (i + 1) 2 - 1
   
-  use prelude.prelude.MutBorrow
-  
-  use prelude.prelude.Opaque
-  
-  type t_NonNull'0  =
-    { t_NonNull__pointer'0: Opaque.ptr }
-  
-  type t_Unique'0  =
-    { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
-  
-  use prelude.int.UInt64
-  
-  type t_UsizeNoHighBit'0  =
-    { t_UsizeNoHighBit__0'0: UInt64.t }
-  
-  type t_RawVecInner'0  =
-    { t_RawVecInner__ptr'0: t_Unique'0; t_RawVecInner__cap'0: t_UsizeNoHighBit'0; t_RawVecInner__alloc'0: () }
-  
-  type t_RawVec'0  =
-    { t_RawVec__inner'0: t_RawVecInner'0; t_RawVec__qy95zmarker'0: () }
-  
-  type t_Vec'0  =
-    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
-  
   type t_DeepModelTy'0
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
-  type t_T'0
-  
-  use seq.Seq
-  
-  function view'2 (self : t_Vec'0) : Seq.seq t_T'0
-  
-  axiom view'2_spec : forall self : t_Vec'0 . [%#svec41] Seq.length (view'2 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : t_T'0 =
-    [%#sindex26] Seq.get (view'2 self) ix
-  
-  function deep_model'3 (self : t_T'0) : t_DeepModelTy'0
-  
-  function deep_model'1 (self : t_Vec'0) : Seq.seq t_DeepModelTy'0
-  
-  axiom deep_model'1_spec : forall self : t_Vec'0 . ([%#svec39] Seq.length (view'2 self)
-  = Seq.length (deep_model'1 self))
-  && ([%#svec40] forall i : int . 0 <= i /\ i < Seq.length (view'2 self)
-   -> Seq.get (deep_model'1 self) i = deep_model'3 (index_logic'0 self i))
-  
-  function deep_model'0 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_DeepModelTy'0 =
-    [%#smodel24] deep_model'1 self.current
   
   type t_Ordering'0  =
     | C_Less'0
@@ -310,21 +251,78 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
   axiom cmp_le_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord42] le_log'0 x y
   = (cmp_log'0 x y <> C_Greater'0)
   
-  function view'0 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
+  use seq.Seq
+  
+  use prelude.prelude.MutBorrow
+  
+  use prelude.prelude.Opaque
+  
+  type t_NonNull'0  =
+    { t_NonNull__pointer'0: Opaque.ptr }
+  
+  type t_Unique'0  =
+    { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
+  
+  use prelude.int.UInt64
+  
+  type t_UsizeNoHighBit'0  =
+    { t_UsizeNoHighBit__0'0: UInt64.t }
+  
+  type t_RawVecInner'0  =
+    { t_RawVecInner__ptr'0: t_Unique'0; t_RawVecInner__cap'0: t_UsizeNoHighBit'0; t_RawVecInner__alloc'0: () }
+  
+  type t_RawVec'0  =
+    { t_RawVec__inner'0: t_RawVecInner'0; t_RawVec__qy95zmarker'0: () }
+  
+  type t_Vec'0  =
+    { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
+  
+  type t_T'0
+  
+  use seq.Seq
+  
+  function view'2 (self : t_Vec'0) : Seq.seq t_T'0
+  
+  axiom view'2_spec : forall self : t_Vec'0 . [%#svec41] Seq.length (view'2 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
+  
+  use seq.Seq
+  
+  function deep_model'3 (self : t_T'0) : t_DeepModelTy'0
+  
+  use seq.Seq
+  
+  function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : t_T'0 =
+    [%#sindex26] Seq.get (view'2 self) ix
+  
+  function deep_model'1 (self : t_Vec'0) : Seq.seq t_DeepModelTy'0
+  
+  axiom deep_model'1_spec : forall self : t_Vec'0 . ([%#svec39] Seq.length (view'2 self)
+  = Seq.length (deep_model'1 self))
+  && ([%#svec40] forall i : int . 0 <= i /\ i < Seq.length (view'2 self)
+   -> Seq.get (deep_model'1 self) i = deep_model'3 (index_logic'0 self i))
+  
+  function deep_model'0 (self : MutBorrow.t t_Vec'0) : Seq.seq t_DeepModelTy'0 =
+    [%#smodel24] deep_model'1 self.current
+  
+  function view'0 (self : MutBorrow.t t_Vec'0) : Seq.seq t_T'0 =
     [%#smodel25] view'2 self.current
-  
-  function view'3 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
-    [%#smodel55] view'0 self
-  
-  function view'1 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
-    [%#ssnapshot27] view'3 self
   
   use seq.Permut
   
   predicate permutation_of'0 (self : Seq.seq t_T'0) (other : Seq.seq t_T'0) =
-    [%#sseq28] Permut.permut self other 0 (Seq.length self)
+    [%#sseq27] Permut.permut self other 0 (Seq.length self)
   
-  use seq.Seq
+  function view'3 (self : MutBorrow.t t_Vec'0) : Seq.seq t_T'0 =
+    [%#smodel55] view'0 self
+  
+  function view'1 (self : MutBorrow.t t_Vec'0) : Seq.seq t_T'0 =
+    [%#ssnapshot28] view'3 self
   
   predicate inv'8 (_1 : t_T'0)
   
@@ -334,6 +332,8 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
   predicate inv'9 (_1 : t_T'0)
   
   axiom inv_axiom'8 [@rewrite] : forall x : t_T'0 [inv'9 x] . inv'9 x = invariant'7 x
+  
+  use seq.Seq
   
   predicate invariant'6 (self : Seq.seq t_T'0) =
     [%#sseq66] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'9 (Seq.get self i)
@@ -349,12 +349,12 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_Vec'0 [inv'1 x] . inv'1 x = invariant'1 x
   
-  predicate invariant'0 (self : MutBorrow.t (t_Vec'0)) =
+  predicate invariant'0 (self : MutBorrow.t t_Vec'0) =
     [%#sinvariant62] inv'1 self.current /\ inv'1 self.final
   
-  predicate inv'0 (_1 : MutBorrow.t (t_Vec'0))
+  predicate inv'0 (_1 : MutBorrow.t t_Vec'0)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t (t_Vec'0) [inv'0 x] . inv'0 x = invariant'0 x
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'0 x] . inv'0 x = invariant'0 x
   
   predicate invariant'4 (self : t_Vec'0) =
     [%#sinvariant65] inv'1 self
@@ -367,11 +367,11 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
   
   axiom inv_axiom'5 [@rewrite] : forall x : UInt64.t [inv'5 x] . inv'5 x = true
   
-  function view'4 (self : t_Vec'0) : Seq.seq t_T'0 =
-    [%#smodel55] view'2 self
-  
   predicate in_bounds'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq t_T'0) =
     [%#sslice56] UInt64.t'int self < Seq.length seq
+  
+  function view'4 (self : t_Vec'0) : Seq.seq t_T'0 =
+    [%#smodel55] view'2 self
   
   predicate invariant'5 (self : t_T'0) =
     [%#sinvariant65] inv'8 self
@@ -434,7 +434,7 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
   function view'5 (self : MutBorrow.t (Slice64.slice t_T'0)) : Seq.seq t_T'0 =
     [%#smodel25] view'6 self.current
   
-  let rec deref_mut'0 (self:MutBorrow.t (t_Vec'0)) (return'  (ret:MutBorrow.t (Slice64.slice t_T'0)))= {[@expl:deref_mut 'self' type invariant] inv'0 self}
+  let rec deref_mut'0 (self:MutBorrow.t t_Vec'0) (return'  (ret:MutBorrow.t (Slice64.slice t_T'0)))= {[@expl:deref_mut 'self' type invariant] inv'0 self}
     any
     [ return' (result:MutBorrow.t (Slice64.slice t_T'0))-> {inv'3 result}
       {[%#svec33] view'5 result = view'0 self}
@@ -458,10 +458,10 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
   predicate resolve'0 (_1 : MutBorrow.t (Slice64.slice t_T'0)) =
     resolve'2 _1
   
-  predicate resolve'3 (self : MutBorrow.t (t_Vec'0)) =
+  predicate resolve'3 (self : MutBorrow.t t_Vec'0) =
     [%#sresolve61] self.final = self.current
   
-  predicate resolve'1 (_1 : MutBorrow.t (t_Vec'0)) =
+  predicate resolve'1 (_1 : MutBorrow.t t_Vec'0) =
     resolve'3 _1
   
   use prelude.prelude.Any
@@ -472,7 +472,7 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
   
   meta "compute_max_steps" 1000000
   
-  let rec sift_down'0[#"heapsort_generic.rs" 41 0 43 29] (v:MutBorrow.t (t_Vec'0)) (start:UInt64.t) (end':UInt64.t) (return'  (ret:()))= {[@expl:sift_down 'v' type invariant] [%#sheapsort_generic15] inv'0 v}
+  let rec sift_down'0[#"heapsort_generic.rs" 41 0 43 29] (v:MutBorrow.t t_Vec'0) (start:UInt64.t) (end':UInt64.t) (return'  (ret:()))= {[@expl:sift_down 'v' type invariant] [%#sheapsort_generic15] inv'0 v}
     {[@expl:sift_down requires #0] [%#sheapsort_generic16] heap_frag'0 (deep_model'0 v) (UInt64.t'int start
     + 1) (UInt64.t'int end')}
     {[@expl:sift_down requires #1] [%#sheapsort_generic17] UInt64.t'int start < UInt64.t'int end'}
@@ -548,7 +548,7 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
         | bb20 = s0
           [ s0 = {inv'1 v.current}
             MutBorrow.borrow_mut <t_Vec'0> {v.current}
-              (fun (_ret':MutBorrow.t (t_Vec'0)) ->
+              (fun (_ret':MutBorrow.t t_Vec'0) ->
                  [ &_64 <- _ret' ] 
                 -{inv'1 _ret'.final}-
                  [ &v <- { v with current = _ret'.final } ] 
@@ -580,10 +580,10 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
     | bb23 = return' {_0} ]
     )
     [ & _0 : () = Any.any_l ()
-    | & v : MutBorrow.t (t_Vec'0) = v
+    | & v : MutBorrow.t t_Vec'0 = v
     | & start : UInt64.t = start
     | & end' : UInt64.t = end'
-    | & old_v : MutBorrow.t (t_Vec'0) = Any.any_l ()
+    | & old_v : MutBorrow.t t_Vec'0 = Any.any_l ()
     | & i : UInt64.t = Any.any_l ()
     | & _26 : bool = Any.any_l ()
     | & _28 : UInt64.t = Any.any_l ()
@@ -602,8 +602,8 @@ module M_heapsort_generic__sift_down [#"heapsort_generic.rs" 41 0 43 29]
     | & _61 : () = Any.any_l ()
     | & _62 : MutBorrow.t (Slice64.slice t_T'0) = Any.any_l ()
     | & _63 : MutBorrow.t (Slice64.slice t_T'0) = Any.any_l ()
-    | & _64 : MutBorrow.t (t_Vec'0) = Any.any_l ()
-    | & old_2_0 : MutBorrow.t (t_Vec'0) = Any.any_l () ]
+    | & _64 : MutBorrow.t t_Vec'0 = Any.any_l ()
+    | & old_2_0 : MutBorrow.t t_Vec'0 = Any.any_l () ]
     
     [ return' (result:())-> {[@expl:sift_down ensures #0] [%#sheapsort_generic19] heap_frag'0 (deep_model'1 v.final) (UInt64.t'int start) (UInt64.t'int end')}
       {[@expl:sift_down ensures #1] [%#sheapsort_generic20] permutation_of'0 (view'2 v.final) (view'0 v)}
@@ -643,10 +643,10 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
   let%span sheapsort_generic22 = "heapsort_generic.rs" 93 10 93 34
   let%span svec23 = "../../../creusot-contracts/src/std/vec.rs" 83 26 83 48
   let%span smodel24 = "../../../creusot-contracts/src/model.rs" 72 8 72 22
-  let%span smodel25 = "../../../creusot-contracts/src/model.rs" 63 8 63 28
-  let%span sheapsort_generic26 = "heapsort_generic.rs" 16 16 17 24
-  let%span ssnapshot27 = "../../../creusot-contracts/src/snapshot.rs" 52 20 52 39
-  let%span sseq28 = "../../../creusot-contracts/src/logic/seq.rs" 316 8 316 41
+  let%span sheapsort_generic25 = "heapsort_generic.rs" 16 16 17 24
+  let%span smodel26 = "../../../creusot-contracts/src/model.rs" 63 8 63 28
+  let%span sseq27 = "../../../creusot-contracts/src/logic/seq.rs" 316 8 316 41
+  let%span ssnapshot28 = "../../../creusot-contracts/src/snapshot.rs" 52 20 52 39
   let%span sheapsort_generic29 = "heapsort_generic.rs" 41 33 41 34
   let%span sheapsort_generic30 = "heapsort_generic.rs" 31 11 31 54
   let%span sheapsort_generic31 = "heapsort_generic.rs" 32 11 32 24
@@ -666,9 +666,9 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
   let%span sheapsort_generic45 = "heapsort_generic.rs" 23 10 23 22
   let%span sheapsort_generic46 = "heapsort_generic.rs" 24 10 24 11
   let%span sheapsort_generic47 = "heapsort_generic.rs" 26 4 28 5
-  let%span svec48 = "../../../creusot-contracts/src/std/vec.rs" 29 14 29 47
-  let%span svec49 = "../../../creusot-contracts/src/std/vec.rs" 30 14 31 51
-  let%span sheapsort_generic50 = "heapsort_generic.rs" 87 8 87 35
+  let%span sheapsort_generic48 = "heapsort_generic.rs" 87 8 87 35
+  let%span svec49 = "../../../creusot-contracts/src/std/vec.rs" 29 14 29 47
+  let%span svec50 = "../../../creusot-contracts/src/std/vec.rs" 30 14 31 51
   let%span svec51 = "../../../creusot-contracts/src/std/vec.rs" 18 14 18 41
   let%span smodel52 = "../../../creusot-contracts/src/model.rs" 54 8 54 22
   let%span sheapsort_generic53 = "heapsort_generic.rs" 11 4 11 19
@@ -718,21 +718,11 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  use seq.Seq
-  
-  constant v_MAX'1 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
-  use prelude.int.UInt64
-  
-  use mach.int.Int
-  
   type t_T'0
   
   use seq.Seq
   
-  function view'2 (self : t_Vec'0) : Seq.seq t_T'0
-  
-  axiom view'2_spec : forall self : t_Vec'0 . [%#svec51] Seq.length (view'2 self) <= UInt64.t'int (v_MAX'1 : UInt64.t)
+  use mach.int.Int
   
   use seq.Seq
   
@@ -745,12 +735,22 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
   
   axiom inv_axiom'6 [@rewrite] : forall x : t_T'0 [inv'6 x] . inv'6 x = invariant'6 x
   
+  use seq.Seq
+  
   predicate invariant'5 (self : Seq.seq t_T'0) =
     [%#sseq75] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'6 (Seq.get self i)
   
   predicate inv'5 (_1 : Seq.seq t_T'0)
   
   axiom inv_axiom'5 [@rewrite] : forall x : Seq.seq t_T'0 [inv'5 x] . inv'5 x = invariant'5 x
+  
+  use prelude.int.UInt64
+  
+  constant v_MAX'1 : UInt64.t = (18446744073709551615 : UInt64.t)
+  
+  function view'2 (self : t_Vec'0) : Seq.seq t_T'0
+  
+  axiom view'2_spec : forall self : t_Vec'0 . [%#svec51] Seq.length (view'2 self) <= UInt64.t'int (v_MAX'1 : UInt64.t)
   
   predicate invariant'0 (self : t_Vec'0) =
     [%#svec71] inv'5 (view'2 self)
@@ -774,37 +774,16 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
     [ return' (result:UInt64.t)-> {[%#svec23] UInt64.t'int result = Seq.length (view'3 self)} (! return' {result}) ]
   
   
+  use mach.int.Int
+  
   use prelude.prelude.MutBorrow
   
-  function view'0 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
+  function view'0 (self : MutBorrow.t t_Vec'0) : Seq.seq t_T'0 =
     [%#smodel24] view'2 self.current
-  
-  use mach.int.Int
   
   type t_DeepModelTy'0
   
   use seq.Seq
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : t_T'0 =
-    [%#sindex54] Seq.get (view'2 self) ix
-  
-  function deep_model'2 (self : t_T'0) : t_DeepModelTy'0
-  
-  function deep_model'1 (self : t_Vec'0) : Seq.seq t_DeepModelTy'0
-  
-  axiom deep_model'1_spec : forall self : t_Vec'0 . ([%#svec48] Seq.length (view'2 self)
-  = Seq.length (deep_model'1 self))
-  && ([%#svec49] forall i : int . 0 <= i /\ i < Seq.length (view'2 self)
-   -> Seq.get (deep_model'1 self) i = deep_model'2 (index_logic'0 self i))
-  
-  function deep_model'0 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_DeepModelTy'0 =
-    [%#smodel25] deep_model'1 self.current
   
   function parent'0 [#"heapsort_generic.rs" 10 0 10 24] (i : int) : int =
     [%#sheapsort_generic53] Int.div (i + 1) 2 - 1
@@ -868,29 +847,50 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
   axiom cmp_le_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord55] le_log'0 x y
   = (cmp_log'0 x y <> C_Greater'0)
   
+  use seq.Seq
+  
   predicate heap_frag'0 [#"heapsort_generic.rs" 15 0 15 66] (s : Seq.seq t_DeepModelTy'0) (start : int) (end' : int) =
-    [%#sheapsort_generic26] forall i : int . start <= parent'0 i /\ i < end'
+    [%#sheapsort_generic25] forall i : int . start <= parent'0 i /\ i < end'
      -> le_log'0 (Seq.get s i) (Seq.get s (parent'0 i))
   
-  function view'4 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
-    [%#smodel52] view'0 self
+  use seq.Seq
   
-  function view'1 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
-    [%#ssnapshot27] view'4 self
+  function deep_model'2 (self : t_T'0) : t_DeepModelTy'0
+  
+  use seq.Seq
+  
+  function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : t_T'0 =
+    [%#sindex54] Seq.get (view'2 self) ix
+  
+  function deep_model'1 (self : t_Vec'0) : Seq.seq t_DeepModelTy'0
+  
+  axiom deep_model'1_spec : forall self : t_Vec'0 . ([%#svec49] Seq.length (view'2 self)
+  = Seq.length (deep_model'1 self))
+  && ([%#svec50] forall i : int . 0 <= i /\ i < Seq.length (view'2 self)
+   -> Seq.get (deep_model'1 self) i = deep_model'2 (index_logic'0 self i))
+  
+  function deep_model'0 (self : MutBorrow.t t_Vec'0) : Seq.seq t_DeepModelTy'0 =
+    [%#smodel26] deep_model'1 self.current
   
   use seq.Permut
   
   predicate permutation_of'0 (self : Seq.seq t_T'0) (other : Seq.seq t_T'0) =
-    [%#sseq28] Permut.permut self other 0 (Seq.length self)
+    [%#sseq27] Permut.permut self other 0 (Seq.length self)
   
-  predicate invariant'1 (self : MutBorrow.t (t_Vec'0)) =
+  function view'4 (self : MutBorrow.t t_Vec'0) : Seq.seq t_T'0 =
+    [%#smodel52] view'0 self
+  
+  function view'1 (self : MutBorrow.t t_Vec'0) : Seq.seq t_T'0 =
+    [%#ssnapshot28] view'4 self
+  
+  predicate invariant'1 (self : MutBorrow.t t_Vec'0) =
     [%#sinvariant72] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'1 (_1 : MutBorrow.t (t_Vec'0))
+  predicate inv'1 (_1 : MutBorrow.t t_Vec'0)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t (t_Vec'0) [inv'1 x] . inv'1 x = invariant'1 x
+  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'1 x] . inv'1 x = invariant'1 x
   
-  let rec sift_down'0 (v:MutBorrow.t (t_Vec'0)) (start:UInt64.t) (end':UInt64.t) (return'  (ret:()))= {[@expl:sift_down 'v' type invariant] [%#sheapsort_generic29] inv'1 v}
+  let rec sift_down'0 (v:MutBorrow.t t_Vec'0) (start:UInt64.t) (end':UInt64.t) (return'  (ret:()))= {[@expl:sift_down 'v' type invariant] [%#sheapsort_generic29] inv'1 v}
     {[@expl:sift_down requires #0] [%#sheapsort_generic30] heap_frag'0 (deep_model'0 v) (UInt64.t'int start
     + 1) (UInt64.t'int end')}
     {[@expl:sift_down requires #1] [%#sheapsort_generic31] UInt64.t'int start < UInt64.t'int end'}
@@ -937,7 +937,7 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
   function view'5 (self : MutBorrow.t (Slice64.slice t_T'0)) : Seq.seq t_T'0 =
     [%#smodel24] view'6 self.current
   
-  let rec deref_mut'0 (self:MutBorrow.t (t_Vec'0)) (return'  (ret:MutBorrow.t (Slice64.slice t_T'0)))= {[@expl:deref_mut 'self' type invariant] inv'1 self}
+  let rec deref_mut'0 (self:MutBorrow.t t_Vec'0) (return'  (ret:MutBorrow.t (Slice64.slice t_T'0)))= {[@expl:deref_mut 'self' type invariant] inv'1 self}
     any
     [ return' (result:MutBorrow.t (Slice64.slice t_T'0))-> {inv'3 result}
       {[%#svec38] view'5 result = view'0 self}
@@ -970,10 +970,10 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
   axiom heap_frag_max'0_spec : forall s : Seq.seq t_DeepModelTy'0, i : int, end' : int . ([%#sheapsort_generic43] heap_frag'0 s 0 end')
    -> ([%#sheapsort_generic44] 0 <= i /\ i < end')  -> ([%#sheapsort_generic45] le_log'0 (Seq.get s i) (Seq.get s 0))
   
-  predicate resolve'3 (self : MutBorrow.t (t_Vec'0)) =
+  predicate resolve'3 (self : MutBorrow.t t_Vec'0) =
     [%#sresolve70] self.final = self.current
   
-  predicate resolve'1 (_1 : MutBorrow.t (t_Vec'0)) =
+  predicate resolve'1 (_1 : MutBorrow.t t_Vec'0) =
     resolve'3 _1
   
   use prelude.prelude.Any
@@ -981,11 +981,11 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   predicate sorted'0 [#"heapsort_generic.rs" 85 0 85 41] (s : Seq.seq t_DeepModelTy'0) =
-    [%#sheapsort_generic50] sorted_range'0 s 0 (Seq.length s)
+    [%#sheapsort_generic48] sorted_range'0 s 0 (Seq.length s)
   
   meta "compute_max_steps" 1000000
   
-  let rec heap_sort'0[#"heapsort_generic.rs" 94 0 96 29] (v:MutBorrow.t (t_Vec'0)) (return'  (ret:()))= {[@expl:heap_sort 'v' type invariant] [%#sheapsort_generic19] inv'1 v}
+  let rec heap_sort'0[#"heapsort_generic.rs" 94 0 96 29] (v:MutBorrow.t t_Vec'0) (return'  (ret:()))= {[@expl:heap_sort 'v' type invariant] [%#sheapsort_generic19] inv'1 v}
     {[@expl:heap_sort requires] [%#sheapsort_generic20] Seq.length (view'0 v) < Int.div (UInt64.t'int v_MAX'0) 2}
     (! bb0
     [ bb0 = s0 [ s0 =  [ &old_v <- [%#sheapsort_generic0] v ] s1 | s1 = bb1 ] 
@@ -1015,7 +1015,7 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
               (fun (_ret':UInt64.t) ->  [ &start <- _ret' ] s1)
           | s1 = {inv'0 v.current}
             MutBorrow.borrow_mut <t_Vec'0> {v.current}
-              (fun (_ret':MutBorrow.t (t_Vec'0)) ->
+              (fun (_ret':MutBorrow.t t_Vec'0) ->
                  [ &_20 <- _ret' ] 
                 -{inv'0 _ret'.final}-
                  [ &v <- { v with current = _ret'.final } ] 
@@ -1049,7 +1049,7 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
               (fun (_ret':UInt64.t) ->  [ &end' <- _ret' ] s1)
           | s1 = {inv'0 v.current}
             MutBorrow.borrow_mut <t_Vec'0> {v.current}
-              (fun (_ret':MutBorrow.t (t_Vec'0)) ->
+              (fun (_ret':MutBorrow.t t_Vec'0) ->
                  [ &_39 <- _ret' ] 
                 -{inv'0 _ret'.final}-
                  [ &v <- { v with current = _ret'.final } ] 
@@ -1078,7 +1078,7 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
             s3
           | s3 = {inv'0 v.current}
             MutBorrow.borrow_mut <t_Vec'0> {v.current}
-              (fun (_ret':MutBorrow.t (t_Vec'0)) ->
+              (fun (_ret':MutBorrow.t t_Vec'0) ->
                  [ &_44 <- _ret' ] 
                 -{inv'0 _ret'.final}-
                  [ &v <- { v with current = _ret'.final } ] 
@@ -1093,25 +1093,25 @@ module M_heapsort_generic__heap_sort [#"heapsort_generic.rs" 94 0 96 29]
     | bb17 = s0 [ s0 = {[@expl:type invariant] inv'1 v} s1 | s1 = -{resolve'1 v}- s2 | s2 = return' {_0} ]  ]
     )
     [ & _0 : () = Any.any_l ()
-    | & v : MutBorrow.t (t_Vec'0) = v
-    | & old_v : MutBorrow.t (t_Vec'0) = Any.any_l ()
+    | & v : MutBorrow.t t_Vec'0 = v
+    | & old_v : MutBorrow.t t_Vec'0 = Any.any_l ()
     | & start : UInt64.t = Any.any_l ()
     | & _8 : UInt64.t = Any.any_l ()
     | & _10 : bool = Any.any_l ()
     | & _17 : bool = Any.any_l ()
     | & _19 : () = Any.any_l ()
-    | & _20 : MutBorrow.t (t_Vec'0) = Any.any_l ()
+    | & _20 : MutBorrow.t t_Vec'0 = Any.any_l ()
     | & _22 : UInt64.t = Any.any_l ()
     | & end' : UInt64.t = Any.any_l ()
     | & _34 : bool = Any.any_l ()
     | & _36 : () = Any.any_l ()
     | & _37 : MutBorrow.t (Slice64.slice t_T'0) = Any.any_l ()
     | & _38 : MutBorrow.t (Slice64.slice t_T'0) = Any.any_l ()
-    | & _39 : MutBorrow.t (t_Vec'0) = Any.any_l ()
+    | & _39 : MutBorrow.t t_Vec'0 = Any.any_l ()
     | & _43 : () = Any.any_l ()
-    | & _44 : MutBorrow.t (t_Vec'0) = Any.any_l ()
-    | & old_4_0 : MutBorrow.t (t_Vec'0) = Any.any_l ()
-    | & old_11_0 : MutBorrow.t (t_Vec'0) = Any.any_l () ]
+    | & _44 : MutBorrow.t t_Vec'0 = Any.any_l ()
+    | & old_4_0 : MutBorrow.t t_Vec'0 = Any.any_l ()
+    | & old_11_0 : MutBorrow.t t_Vec'0 = Any.any_l () ]
     
     [ return' (result:())-> {[@expl:heap_sort ensures #0] [%#sheapsort_generic21] sorted'0 (deep_model'1 v.final)}
       {[@expl:heap_sort ensures #1] [%#sheapsort_generic22] permutation_of'0 (view'2 v.final) (view'0 v)}

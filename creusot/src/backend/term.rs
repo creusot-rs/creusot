@@ -1,17 +1,18 @@
+use std::iter::repeat_n;
+
 use crate::{
     backend::{
         program::borrow_generated_id,
         ty::{constructor, floatty_to_prelude, ity_to_prelude, translate_ty, uty_to_prelude},
         Why3Generator,
     },
-    contracts_items::get_builtin,
     ctx::*,
     naming::ident_of,
     pearlite::{self, Literal, Pattern, PointerKind, Term, TermKind},
     translation::pearlite::{zip_binder, QuantKind, Trigger},
 };
-use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};
+use rustc_hir::def::DefKind;
+use rustc_middle::ty::{EarlyBinder, Ty, TyKind};
 use rustc_span::DUMMY_SP;
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
@@ -63,7 +64,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     };
 
                     let qname = self.names.from_prelude(prelude_kind, fct_name);
-                    Exp::Call(Box::new(Exp::qvar(qname)), vec![self.lower_term(arg)])
+                    Exp::qvar(qname).app([self.lower_term(arg)])
                 }
                 TyKind::Int(_) | TyKind::Uint(_) => {
                     // to
@@ -101,9 +102,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     let to_qname = self.names.from_prelude(to_prelude_kind, to_fct_name);
                     let of_qname = self.names.from_prelude(of_prelude_kind, of_fct_name);
 
-                    let to_exp =
-                        Exp::Call(Box::new(Exp::qvar(to_qname)), vec![self.lower_term(arg)]);
-                    Exp::Call(Box::new(Exp::qvar(of_qname)), vec![to_exp])
+                    Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([self.lower_term(arg)])])
                 }
                 _ => self.ctx.crash_and_error(
                     DUMMY_SP,
@@ -117,7 +116,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 debug!("resolved_method={:?}", method);
                 let clone = self.names.item(*id, subst);
                 let item = match self.ctx.type_of(id).instantiate_identity().kind() {
-                    TyKind::FnDef(_, _) => Exp::Tuple(Vec::new()),
+                    TyKind::FnDef(_, _) => Exp::unit(),
                     _ => Exp::qvar(clone),
                 };
 
@@ -156,7 +155,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                             _ => unreachable!(),
                         };
 
-                        Exp::qvar(self.names.from_prelude(prelude, func_name)).app(vec![lhs, rhs])
+                        Exp::qvar(self.names.from_prelude(prelude, func_name)).app([lhs, rhs])
                     }
                     _ => {
                         if matches!(op, Add | Sub | Mul | Le | Ge | Lt | Gt) {
@@ -177,22 +176,14 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::UnaryOp(op, Box::new(self.lower_term(arg)))
             }
             TermKind::Call { id, subst, args, .. } => {
-                let mut args: Vec<_> = args.into_iter().map(|arg| self.lower_term(arg)).collect();
+                let var = Exp::qvar(self.names.item(*id, *subst));
+                let mut args = args.into_iter().map(|arg| self.lower_term(arg)).peekable();
 
-                if args.is_empty() {
-                    args = vec![Exp::Tuple(vec![])];
+                if args.peek().is_none() {
+                    var.app([Exp::unit()])
+                } else {
+                    var.app(args)
                 }
-
-                let method = (*id, *subst);
-
-                if is_identity_from(self.ctx.tcx, *id, method.1) {
-                    return args.remove(0);
-                }
-
-                self.lookup_builtin(method, &mut args).unwrap_or_else(|| {
-                    let clone = self.names.item(method.0, method.1);
-                    Exp::qvar(clone).app(args)
-                })
             }
             TermKind::Quant { kind, binder, box body, trigger } => {
                 let bound = zip_binder(binder)
@@ -259,7 +250,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     TyKind::Closure(did, substs) => self.names.field(*did, substs, *name),
                     TyKind::Adt(def, substs) => self.names.field(def.did(), substs, *name),
                     TyKind::Tuple(f) => {
-                        let mut fields = vec![Pat::Wildcard; f.len()];
+                        let mut fields: Box<_> = repeat_n(Pat::Wildcard, f.len()).collect();
                         fields[name.as_usize()] = Pat::VarP("a".into());
 
                         return Exp::Let {
@@ -279,14 +270,18 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 };
                 let body = self.lower_term(&*body);
 
-                let mut binders = Vec::new();
                 let sig = self.ctx.sig(*id).clone();
                 let sig = EarlyBinder::bind(sig).instantiate(self.ctx.tcx, subst);
-                for arg in sig.inputs.iter().skip(1) {
-                    let nm = Ident::build(&arg.0.to_string());
-                    let ty = self.names.normalize(self.ctx, arg.2);
-                    binders.push(Binder::typed(nm, self.lower_ty(ty)))
-                }
+                let binders = sig
+                    .inputs
+                    .iter()
+                    .skip(1)
+                    .map(|arg| {
+                        let nm = Ident::build(&arg.0.to_string());
+                        let ty = self.names.normalize(self.ctx, arg.2);
+                        Binder::typed(nm, self.lower_ty(ty))
+                    })
+                    .collect();
 
                 Exp::Abs(binders, Box::new(body))
             }
@@ -297,22 +292,19 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                         let qname = self
                             .names
                             .from_prelude(uty_to_prelude(self.ctx.tcx, UintTy::Usize), "t'int");
-                        Exp::Call(Box::new(Exp::qvar(qname)), vec![self.lower_term(x)])
+                        Exp::qvar(qname).app([self.lower_term(x)])
                     } else {
                         self.lower_term(x)
                     }
                 });
 
-                Exp::qvar(self.names.from_prelude(PreludeModule::MutBorrow, "borrow_logic")).app(vec![
+                Exp::qvar(self.names.from_prelude(PreludeModule::MutBorrow, "borrow_logic")).app([
                     self.lower_term(&*cur),
                     self.lower_term(&*fin),
                     borrow_id,
                 ])
             }
-            TermKind::Assert { .. } => {
-                // Discard cond, use unit
-                Exp::Tuple(vec![])
-            }
+            TermKind::Assert { .. } => Exp::unit(), // Discard cond, use unit
             TermKind::Precondition { item, args, params } => {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
                 let mut sym = self.names.item(*item, args);
@@ -336,10 +328,11 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 if self.ctx.def_kind(variant) == DefKind::Variant {
                     Pat::ConsP(self.names.constructor(*variant, *substs), fields)
                 } else if fields.len() == 0 {
-                    Pat::TupleP(vec![])
+                    Pat::TupleP(Box::new([]))
                 } else {
                     Pat::RecP(
                         fields
+                            .to_vec()
                             .into_iter()
                             .enumerate()
                             .map(|(i, f)| {
@@ -364,7 +357,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             Pattern::Deref { pointee, kind } => match kind {
                 PointerKind::Box | PointerKind::Shr => self.lower_pat(pointee),
-                PointerKind::Mut => Pat::RecP(vec![("current".into(), self.lower_pat(pointee))]),
+                PointerKind::Mut => {
+                    Pat::RecP(Box::new([("current".into(), self.lower_pat(pointee))]))
+                }
             },
         }
     }
@@ -373,21 +368,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty)
     }
 
-    pub(crate) fn lookup_builtin(
-        &self,
-        method: (DefId, GenericArgsRef<'tcx>),
-        args: &Vec<Exp>,
-    ) -> Option<Exp> {
-        let def_id = method.0;
-        let substs = method.1;
-
-        if get_builtin(self.ctx.tcx, def_id).is_some() {
-            return Some(Exp::qvar(self.names.item(def_id, substs)).app(args.clone()));
-        }
-        None
-    }
-
-    fn lower_trigger(&self, triggers: &[Trigger<'tcx>]) -> Vec<why3::exp::Trigger> {
+    fn lower_trigger(&self, triggers: &[Trigger<'tcx>]) -> Box<[why3::exp::Trigger]> {
         triggers
             .iter()
             .map(|x| why3::exp::Trigger(x.0.iter().map(|x| self.lower_term(x)).collect()))
@@ -422,22 +403,17 @@ pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
         }
         Literal::Bool(true) => Constant::const_true().into(),
         Literal::Bool(false) => Constant::const_false().into(),
-        Literal::Char(c) => {
-            let of_int = names.from_prelude(PreludeModule::Char, "of_int");
-            Exp::Call(
-                Box::new(Exp::qvar(of_int)),
-                vec![Constant::Int(c as u32 as i128, None).into()],
-            )
-        }
+        Literal::Char(c) => Exp::qvar(names.from_prelude(PreludeModule::Char, "of_int"))
+            .app([Constant::Int(c as u32 as i128, None).into()]),
         Literal::Function(id, subst) => {
             names.item(id, subst);
-            Exp::Tuple(Vec::new())
+            Exp::unit()
         }
         Literal::Float(ref f, fty) => {
             let why_ty = Type::TConstructor(names.from_prelude(floatty_to_prelude(fty), "t"));
             Constant::Float(f.0, Some(why_ty)).into()
         }
-        Literal::ZST => Exp::Tuple(Vec::new()),
+        Literal::ZST => Exp::unit(),
         Literal::String(ref string) => Constant::String(string.clone()).into(),
     }
 }
@@ -463,12 +439,4 @@ pub(crate) fn binop_to_binop(op: pearlite::BinOp) -> why3::exp::BinOp {
         pearlite::BinOp::Div => todo!("Refactor binop_to_binop to support Div"),
         pearlite::BinOp::Rem => todo!("Refactor binop_to_binop to support Rem"),
     }
-}
-
-fn is_identity_from<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, subst: GenericArgsRef<'tcx>) -> bool {
-    if tcx.def_path_str(id) == "std::convert::From::from" && subst.len() == 1 {
-        let out_ty: Ty<'tcx> = tcx.fn_sig(id).no_bound_vars().unwrap().output().skip_binder();
-        return subst[0].expect_ty() == EarlyBinder::bind(out_ty).instantiate(tcx, subst);
-    }
-    false
 }

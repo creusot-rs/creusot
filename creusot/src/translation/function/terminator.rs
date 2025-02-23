@@ -24,8 +24,8 @@ use rustc_hir::def_id::DefId;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
     mir::{
-        self, AssertKind, BasicBlock, BasicBlockData, Local, Location, Operand, Place, Rvalue,
-        SourceInfo, StatementKind, SwitchTargets,
+        self, AssertKind, BasicBlockData, Local, Location, Operand, Place, Rvalue, SourceInfo,
+        StatementKind, SwitchTargets,
         TerminatorKind::{self, *},
     },
     ty::{self, AssocItem, GenericArgKind, GenericArgsRef, Ty, TyKind, TypingEnv, TypingMode},
@@ -107,26 +107,19 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     let call_ghost = self.check_ghost_call(fun_def_id, subst);
                     self.check_no_ghost_in_program(args, *fn_span, fun_def_id, subst);
 
-                    let mut func_args: Vec<_> =
-                        args.iter().map(|arg| self.translate_operand(&arg.node)).collect();
-                    if func_args.is_empty() {
-                        // TODO: Remove this, push the 0-ary handling down to why3 backend
-                        // We use tuple as a dummy argument for 0-ary functions
-                        func_args.push(fmir::Operand::Constant(Term {
+                    let func_args: Box<[_]> = if args.is_empty() {
+                        Box::new([fmir::Operand::Constant(Term {
                             kind: TermKind::Tuple { fields: Box::new([]) },
                             ty: self.ctx.types.unit,
                             span,
-                        }))
-                    }
+                        })])
+                    } else {
+                        args.iter().map(|arg| self.translate_operand(&arg.node)).collect()
+                    };
 
                     if is_box_new(self.tcx(), fun_def_id) {
-                        assert_eq!(func_args.len(), 1);
-
-                        self.emit_assignment(
-                            &destination,
-                            RValue::Operand(func_args.remove(0)),
-                            span,
-                        );
+                        let [arg] = *func_args.into_array().unwrap();
+                        self.emit_assignment(&destination, RValue::Operand(arg), span);
                     } else {
                         let predicates = self
                             .ctx
@@ -477,17 +470,15 @@ fn make_switch<'tcx>(
             let d_to_var: HashMap<_, _> =
                 def.discriminants(ctx.tcx).map(|(idx, d)| (d.val, idx)).collect();
 
-            let branches: Vec<_> =
-                targets.iter().map(|(disc, tgt)| (d_to_var[&disc], (tgt))).collect();
+            let branches = targets.iter().map(|(disc, tgt)| (d_to_var[&disc], (tgt))).collect();
 
-            let default;
-            if targets.iter().map(|(disc, _)| disc).collect::<HashSet<_>>().len()
+            let default = if targets.iter().map(|(disc, _)| disc).collect::<HashSet<_>>().len()
                 == def.variants().len()
             {
-                default = None
+                None
             } else {
-                default = Some(targets.otherwise())
-            }
+                Some(targets.otherwise())
+            };
 
             Terminator::Switch(discr, Branches::Constructor(*def, substs, branches, default))
         }
@@ -496,7 +487,7 @@ fn make_switch<'tcx>(
                 .iter()
                 .sorted()
                 .map(|tgt| tgt.1)
-                .chain(std::iter::once(targets.otherwise()))
+                .chain([targets.otherwise()])
                 .take(2)
                 .collect_tuple()
                 .unwrap();
@@ -507,14 +498,11 @@ fn make_switch<'tcx>(
             ctx.crash_and_error(si.span, "Float patterns are currently unsupported")
         }
         TyKind::Uint(_) => {
-            let branches: Vec<(_, BasicBlock)> =
-                targets.iter().map(|(val, tgt)| (val, tgt)).collect();
+            let branches = targets.iter().map(|(val, tgt)| (val, tgt)).collect();
             Terminator::Switch(discr, Branches::Uint(branches, targets.otherwise()))
         }
         TyKind::Int(_) => {
-            let branches: Vec<(_, BasicBlock)> =
-                targets.iter().map(|(val, tgt)| (val as i128, tgt)).collect();
-
+            let branches = targets.iter().map(|(val, tgt)| (val as i128, tgt)).collect();
             Terminator::Switch(discr, Branches::Int(branches, targets.otherwise()))
         }
         ty => ctx.crash_and_error(si.span, &format!("match on {:?} is currently unsupported", ty)),

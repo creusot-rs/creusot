@@ -42,21 +42,11 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  use seq.Seq
-  
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
-  use prelude.int.UInt64
-  
-  use mach.int.Int
-  
   type t_T'0
   
   use seq.Seq
   
-  function view'0 (self : t_Vec'0) : Seq.seq t_T'0
-  
-  axiom view'0_spec : forall self : t_Vec'0 . [%#svec10] Seq.length (view'0 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
+  use mach.int.Int
   
   use seq.Seq
   
@@ -69,12 +59,22 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
   
   axiom inv_axiom'3 [@rewrite] : forall x : t_T'0 [inv'3 x] . inv'3 x = invariant'3 x
   
+  use seq.Seq
+  
   predicate invariant'2 (self : Seq.seq t_T'0) =
     [%#sseq16] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'3 (Seq.get self i)
   
   predicate inv'2 (_1 : Seq.seq t_T'0)
   
   axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_T'0 [inv'2 x] . inv'2 x = invariant'2 x
+  
+  use prelude.int.UInt64
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
+  
+  function view'0 (self : t_Vec'0) : Seq.seq t_T'0
+  
+  axiom view'0_spec : forall self : t_Vec'0 . [%#svec10] Seq.length (view'0 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
   predicate invariant'0 (self : t_Vec'0) =
     [%#svec14] inv'2 (view'0 self)
@@ -83,32 +83,32 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = invariant'0 x
   
-  predicate invariant'1 (self : MutBorrow.t (t_Vec'0)) =
+  predicate invariant'1 (self : MutBorrow.t t_Vec'0) =
     [%#sinvariant15] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'1 (_1 : MutBorrow.t (t_Vec'0))
+  predicate inv'1 (_1 : MutBorrow.t t_Vec'0)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t (t_Vec'0) [inv'1 x] . inv'1 x = invariant'1 x
+  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'1 x] . inv'1 x = invariant'1 x
   
-  function view'1 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
+  function view'1 (self : MutBorrow.t t_Vec'0) : Seq.seq t_T'0 =
     [%#smodel11] view'0 self.current
   
-  let rec reserve'0 (self:MutBorrow.t (t_Vec'0)) (additional:UInt64.t) (return'  (ret:()))= {[@expl:reserve 'self' type invariant] inv'1 self}
+  let rec reserve'0 (self:MutBorrow.t t_Vec'0) (additional:UInt64.t) (return'  (ret:()))= {[@expl:reserve 'self' type invariant] inv'1 self}
     any [ return' (result:())-> {[%#svec6] view'0 self.final = view'1 self} (! return' {result}) ] 
   
-  let rec reserve_exact'0 (self:MutBorrow.t (t_Vec'0)) (additional:UInt64.t) (return'  (ret:()))= {[@expl:reserve_exact 'self' type invariant] inv'1 self}
+  let rec reserve_exact'0 (self:MutBorrow.t t_Vec'0) (additional:UInt64.t) (return'  (ret:()))= {[@expl:reserve_exact 'self' type invariant] inv'1 self}
     any [ return' (result:())-> {[%#svec7] view'0 self.final = view'1 self} (! return' {result}) ] 
   
-  let rec shrink_to_fit'0 (self:MutBorrow.t (t_Vec'0)) (return'  (ret:()))= {[@expl:shrink_to_fit 'self' type invariant] inv'1 self}
+  let rec shrink_to_fit'0 (self:MutBorrow.t t_Vec'0) (return'  (ret:()))= {[@expl:shrink_to_fit 'self' type invariant] inv'1 self}
     any [ return' (result:())-> {[%#svec8] view'0 self.final = view'1 self} (! return' {result}) ] 
   
-  let rec shrink_to'0 (self:MutBorrow.t (t_Vec'0)) (min_capacity:UInt64.t) (return'  (ret:()))= {[@expl:shrink_to 'self' type invariant] inv'1 self}
+  let rec shrink_to'0 (self:MutBorrow.t t_Vec'0) (min_capacity:UInt64.t) (return'  (ret:()))= {[@expl:shrink_to 'self' type invariant] inv'1 self}
     any [ return' (result:())-> {[%#svec9] view'0 self.final = view'1 self} (! return' {result}) ] 
   
-  predicate resolve'1 (self : MutBorrow.t (t_Vec'0)) =
+  predicate resolve'1 (self : MutBorrow.t t_Vec'0) =
     [%#sresolve13] self.final = self.current
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_Vec'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t t_Vec'0) =
     resolve'1 _1
   
   use prelude.prelude.Any
@@ -120,12 +120,12 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
   
   meta "compute_max_steps" 1000000
   
-  let rec change_capacity'0[#"09_capacity.rs" 6 0 6 41] (v:MutBorrow.t (t_Vec'0)) (return'  (ret:()))= {[@expl:change_capacity 'v' type invariant] [%#s09_capacity3] inv'1 v}
+  let rec change_capacity'0[#"09_capacity.rs" 6 0 6 41] (v:MutBorrow.t t_Vec'0) (return'  (ret:()))= {[@expl:change_capacity 'v' type invariant] [%#s09_capacity3] inv'1 v}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 v.current}
         MutBorrow.borrow_mut <t_Vec'0> {v.current}
-          (fun (_ret':MutBorrow.t (t_Vec'0)) ->
+          (fun (_ret':MutBorrow.t t_Vec'0) ->
              [ &_5 <- _ret' ] 
             -{inv'0 _ret'.final}-
              [ &v <- { v with current = _ret'.final } ] 
@@ -136,7 +136,7 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
     | bb1 = s0
       [ s0 = {inv'0 v.current}
         MutBorrow.borrow_mut <t_Vec'0> {v.current}
-          (fun (_ret':MutBorrow.t (t_Vec'0)) ->
+          (fun (_ret':MutBorrow.t t_Vec'0) ->
              [ &_7 <- _ret' ] 
             -{inv'0 _ret'.final}-
              [ &v <- { v with current = _ret'.final } ] 
@@ -147,7 +147,7 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
     | bb2 = s0
       [ s0 = {inv'0 v.current}
         MutBorrow.borrow_mut <t_Vec'0> {v.current}
-          (fun (_ret':MutBorrow.t (t_Vec'0)) ->
+          (fun (_ret':MutBorrow.t t_Vec'0) ->
              [ &_9 <- _ret' ] 
             -{inv'0 _ret'.final}-
              [ &v <- { v with current = _ret'.final } ] 
@@ -158,7 +158,7 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
     | bb3 = s0
       [ s0 = {inv'0 v.current}
         MutBorrow.borrow_final <t_Vec'0> {v.current} {MutBorrow.get_id v}
-          (fun (_ret':MutBorrow.t (t_Vec'0)) ->
+          (fun (_ret':MutBorrow.t t_Vec'0) ->
              [ &_11 <- _ret' ] 
             -{inv'0 _ret'.final}-
              [ &v <- { v with current = _ret'.final } ] 
@@ -169,15 +169,15 @@ module M_09_capacity__change_capacity [#"09_capacity.rs" 6 0 6 41]
     | bb4 = s0 [ s0 = {[@expl:type invariant] inv'1 v} s1 | s1 = -{resolve'0 v}- s2 | s2 = return' {_0} ]  ]
     )
     [ & _0 : () = Any.any_l ()
-    | & v : MutBorrow.t (t_Vec'0) = v
+    | & v : MutBorrow.t t_Vec'0 = v
     | & _4 : () = Any.any_l ()
-    | & _5 : MutBorrow.t (t_Vec'0) = Any.any_l ()
+    | & _5 : MutBorrow.t t_Vec'0 = Any.any_l ()
     | & _6 : () = Any.any_l ()
-    | & _7 : MutBorrow.t (t_Vec'0) = Any.any_l ()
+    | & _7 : MutBorrow.t t_Vec'0 = Any.any_l ()
     | & _8 : () = Any.any_l ()
-    | & _9 : MutBorrow.t (t_Vec'0) = Any.any_l ()
+    | & _9 : MutBorrow.t t_Vec'0 = Any.any_l ()
     | & _10 : () = Any.any_l ()
-    | & _11 : MutBorrow.t (t_Vec'0) = Any.any_l () ]
+    | & _11 : MutBorrow.t t_Vec'0 = Any.any_l () ]
     
     [ return' (result:())-> {[@expl:change_capacity ensures #0] [%#s09_capacity4] Seq.length (view'0 v.final)
       = Seq.length (view'1 v)}
@@ -221,21 +221,11 @@ module M_09_capacity__clear_vec [#"09_capacity.rs" 14 0 14 35]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  use seq.Seq
-  
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
-  use prelude.int.UInt64
-  
-  use mach.int.Int
-  
   type t_T'0
   
   use seq.Seq
   
-  function view'0 (self : t_Vec'0) : Seq.seq t_T'0
-  
-  axiom view'0_spec : forall self : t_Vec'0 . [%#svec3] Seq.length (view'0 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
+  use mach.int.Int
   
   use seq.Seq
   
@@ -248,12 +238,22 @@ module M_09_capacity__clear_vec [#"09_capacity.rs" 14 0 14 35]
   
   axiom inv_axiom'3 [@rewrite] : forall x : t_T'0 [inv'3 x] . inv'3 x = invariant'3 x
   
+  use seq.Seq
+  
   predicate invariant'2 (self : Seq.seq t_T'0) =
     [%#sseq7] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'3 (Seq.get self i)
   
   predicate inv'2 (_1 : Seq.seq t_T'0)
   
   axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq t_T'0 [inv'2 x] . inv'2 x = invariant'2 x
+  
+  use prelude.int.UInt64
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
+  
+  function view'0 (self : t_Vec'0) : Seq.seq t_T'0
+  
+  axiom view'0_spec : forall self : t_Vec'0 . [%#svec3] Seq.length (view'0 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
   predicate invariant'0 (self : t_Vec'0) =
     [%#svec5] inv'2 (view'0 self)
@@ -262,32 +262,32 @@ module M_09_capacity__clear_vec [#"09_capacity.rs" 14 0 14 35]
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = invariant'0 x
   
-  predicate invariant'1 (self : MutBorrow.t (t_Vec'0)) =
+  predicate invariant'1 (self : MutBorrow.t t_Vec'0) =
     [%#sinvariant6] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'1 (_1 : MutBorrow.t (t_Vec'0))
+  predicate inv'1 (_1 : MutBorrow.t t_Vec'0)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t (t_Vec'0) [inv'1 x] . inv'1 x = invariant'1 x
+  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'1 x] . inv'1 x = invariant'1 x
   
-  let rec clear'0 (self:MutBorrow.t (t_Vec'0)) (return'  (ret:()))= {[@expl:clear 'self' type invariant] inv'1 self}
+  let rec clear'0 (self:MutBorrow.t t_Vec'0) (return'  (ret:()))= {[@expl:clear 'self' type invariant] inv'1 self}
     any [ return' (result:())-> {[%#svec2] Seq.length (view'0 self.final) = 0} (! return' {result}) ] 
   
-  predicate resolve'1 (self : MutBorrow.t (t_Vec'0)) =
+  predicate resolve'1 (self : MutBorrow.t t_Vec'0) =
     [%#sresolve4] self.final = self.current
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_Vec'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t t_Vec'0) =
     resolve'1 _1
   
   use prelude.prelude.Any
   
   meta "compute_max_steps" 1000000
   
-  let rec clear_vec'0[#"09_capacity.rs" 14 0 14 35] (v:MutBorrow.t (t_Vec'0)) (return'  (ret:()))= {[@expl:clear_vec 'v' type invariant] [%#s09_capacity0] inv'1 v}
+  let rec clear_vec'0[#"09_capacity.rs" 14 0 14 35] (v:MutBorrow.t t_Vec'0) (return'  (ret:()))= {[@expl:clear_vec 'v' type invariant] [%#s09_capacity0] inv'1 v}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 v.current}
         MutBorrow.borrow_final <t_Vec'0> {v.current} {MutBorrow.get_id v}
-          (fun (_ret':MutBorrow.t (t_Vec'0)) ->
+          (fun (_ret':MutBorrow.t t_Vec'0) ->
              [ &_4 <- _ret' ] 
             -{inv'0 _ret'.final}-
              [ &v <- { v with current = _ret'.final } ] 
@@ -298,9 +298,9 @@ module M_09_capacity__clear_vec [#"09_capacity.rs" 14 0 14 35]
     | bb1 = s0 [ s0 = {[@expl:type invariant] inv'1 v} s1 | s1 = -{resolve'0 v}- s2 | s2 = return' {_0} ]  ]
     )
     [ & _0 : () = Any.any_l ()
-    | & v : MutBorrow.t (t_Vec'0) = v
+    | & v : MutBorrow.t t_Vec'0 = v
     | & _3 : () = Any.any_l ()
-    | & _4 : MutBorrow.t (t_Vec'0) = Any.any_l () ]
+    | & _4 : MutBorrow.t t_Vec'0 = Any.any_l () ]
     
     [ return' (result:())-> {[@expl:clear_vec ensures] [%#s09_capacity1] Seq.length (view'0 v.final) = 0}
       (! return' {result}) ]

@@ -17,14 +17,12 @@ module M_01_range__qyi16572111325853806140__produces_refl [#"01_range.rs" 44 4 4
   let%span sord15 = "../../../../creusot-contracts/src/logic/ord.rs" 173 39 173 84
   let%span sord16 = "../../../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
   
-  use seq.Seq
-  
   use prelude.int.Int64
-  
-  use seq.Seq
   
   type t_Range'0  =
     { t_Range__start'0: Int64.t; t_Range__end'0: Int64.t }
+  
+  use seq.Seq
   
   type t_Ordering'0  =
     | C_Less'0
@@ -96,6 +94,8 @@ module M_01_range__qyi16572111325853806140__produces_refl [#"01_range.rs" 44 4 4
     /\ Seq.length visited = Int64.to_int o.t_Range__start'0 - Int64.to_int self.t_Range__start'0
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.t_Range__start'0 + i)
+  
+  use seq.Seq
   
   constant self  : t_Range'0
   
@@ -248,10 +248,10 @@ module M_01_range__qyi16572111325853806140__next [#"01_range.rs" 57 4 57 39] (* 
   
   use prelude.prelude.MutBorrow
   
-  predicate resolve'1 (self : MutBorrow.t (t_Range'0)) =
+  predicate resolve'1 (self : MutBorrow.t t_Range'0) =
     [%#sresolve4] self.final = self.current
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_Range'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t t_Range'0) =
     resolve'1 _1
   
   type t_Option'0  =
@@ -315,10 +315,8 @@ module M_01_range__qyi16572111325853806140__next [#"01_range.rs" 57 4 57 39] (* 
   
   axiom cmp_le_log'0_spec : forall x : Int64.t, y : Int64.t . [%#sord5] Int64.le x y = (cmp_log'0 x y <> C_Greater'0)
   
-  predicate completed'0 [#"01_range.rs" 23 4 23 35] (self : MutBorrow.t (t_Range'0)) =
+  predicate completed'0 [#"01_range.rs" 23 4 23 35] (self : MutBorrow.t t_Range'0) =
     [%#s01_range2] resolve'1 self /\ Int64.ge (self.current).t_Range__start'0 (self.current).t_Range__end'0
-  
-  use seq.Seq
   
   use seq.Seq
   
@@ -338,9 +336,11 @@ module M_01_range__qyi16572111325853806140__next [#"01_range.rs" 57 4 57 39] (* 
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.t_Range__start'0 + i)
   
+  use seq.Seq
+  
   meta "compute_max_steps" 1000000
   
-  let rec next'0[#"01_range.rs" 57 4 57 39] (self:MutBorrow.t (t_Range'0)) (return'  (ret:t_Option'0))= (! bb0
+  let rec next'0[#"01_range.rs" 57 4 57 39] (self:MutBorrow.t t_Range'0) (return'  (ret:t_Option'0))= (! bb0
     [ bb0 = s0
       [ s0 =  [ &_3 <- Int64.ge (self.current).t_Range__start'0 (self.current).t_Range__end'0 ] s1
       | s1 = any [ br0 -> {_3 = false} (! bb2) | br1 -> {_3} (! bb1) ]  ]
@@ -359,7 +359,7 @@ module M_01_range__qyi16572111325853806140__next [#"01_range.rs" 57 4 57 39] (* 
     | bb3 = return' {_0} ]
     )
     [ & _0 : t_Option'0 = Any.any_l ()
-    | & self : MutBorrow.t (t_Range'0) = self
+    | & self : MutBorrow.t t_Range'0 = self
     | & _3 : bool = Any.any_l ()
     | & r : Int64.t = Any.any_l () ]
     
@@ -535,15 +535,15 @@ module M_01_range__sum_range [#"01_range.rs" 77 0 77 35]
     | C_None'0
     | C_Some'0 Int64.t
   
-  predicate resolve'0 (self : MutBorrow.t (t_Range'0)) =
+  predicate resolve'0 (self : MutBorrow.t t_Range'0) =
     [%#sresolve35] self.final = self.current
   
-  predicate completed'0 [#"01_range.rs" 23 4 23 35] (self : MutBorrow.t (t_Range'0)) =
+  predicate completed'0 [#"01_range.rs" 23 4 23 35] (self : MutBorrow.t t_Range'0) =
     [%#s01_range33] resolve'0 self /\ Int64.ge (self.current).t_Range__start'0 (self.current).t_Range__end'0
   
   use seq.Seq
   
-  let rec next'0 (self:MutBorrow.t (t_Range'0)) (return'  (ret:t_Option'0))= any
+  let rec next'0 (self:MutBorrow.t t_Range'0) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {[%#s01_range13] match result with
         | C_None'0 -> completed'0 self
         | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
@@ -579,7 +579,7 @@ module M_01_range__sum_range [#"01_range.rs" 77 0 77 35]
         (! s0) [ s0 = bb5 ] 
         [ bb5 = s0
           [ s0 = MutBorrow.borrow_mut <t_Range'0> {it}
-              (fun (_ret':MutBorrow.t (t_Range'0)) ->  [ &_19 <- _ret' ]  [ &it <- _ret'.final ] s1)
+              (fun (_ret':MutBorrow.t t_Range'0) ->  [ &_19 <- _ret' ]  [ &it <- _ret'.final ] s1)
           | s1 = next'0 {_19} (fun (_ret':t_Option'0) ->  [ &_18 <- _ret' ] s2)
           | s2 = bb6 ]
         
@@ -607,7 +607,7 @@ module M_01_range__sum_range [#"01_range.rs" 77 0 77 35]
     | & iter_old : t_Range'0 = Any.any_l ()
     | & produced : Seq.seq Int64.t = Any.any_l ()
     | & _18 : t_Option'0 = Any.any_l ()
-    | & _19 : MutBorrow.t (t_Range'0) = Any.any_l ()
+    | & _19 : MutBorrow.t t_Range'0 = Any.any_l ()
     | & x : Int64.t = Any.any_l ()
     | & _22 : Seq.seq Int64.t = Any.any_l () ]
      [ return' (result:Int64.t)-> {[@expl:sum_range ensures] [%#s01_range10] result = n} (! return' {result}) ] 
@@ -742,15 +742,15 @@ module M_01_range__qyi16572111325853806140__next__refines [#"01_range.rs" 57 4 5
   type t_Range'0  =
     { t_Range__start'0: Int64.t; t_Range__end'0: Int64.t }
   
-  predicate inv'0 (_1 : MutBorrow.t (t_Range'0))
+  predicate inv'0 (_1 : MutBorrow.t t_Range'0)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t (t_Range'0) [inv'0 x] . inv'0 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_Range'0 [inv'0 x] . inv'0 x = true
   
   type t_Option'0  =
     | C_None'0
     | C_Some'0 Int64.t
   
-  predicate resolve'0 (self : MutBorrow.t (t_Range'0)) =
+  predicate resolve'0 (self : MutBorrow.t t_Range'0) =
     [%#sresolve3] self.final = self.current
   
   type t_Ordering'0  =
@@ -808,10 +808,8 @@ module M_01_range__qyi16572111325853806140__next__refines [#"01_range.rs" 57 4 5
   
   axiom cmp_le_log'0_spec : forall x : Int64.t, y : Int64.t . [%#sord4] Int64.le x y = (cmp_log'0 x y <> C_Greater'0)
   
-  predicate completed'0 [#"01_range.rs" 23 4 23 35] (self : MutBorrow.t (t_Range'0)) =
+  predicate completed'0 [#"01_range.rs" 23 4 23 35] (self : MutBorrow.t t_Range'0) =
     [%#s01_range1] resolve'0 self /\ Int64.ge (self.current).t_Range__start'0 (self.current).t_Range__end'0
-  
-  use seq.Seq
   
   use seq.Seq
   
@@ -831,11 +829,13 @@ module M_01_range__qyi16572111325853806140__next__refines [#"01_range.rs" 57 4 5
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.t_Range__start'0 + i)
   
+  use seq.Seq
+  
   predicate inv'1 (_1 : t_Option'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x = true
   
-  goal refines : [%#s01_range0] forall self : MutBorrow.t (t_Range'0) . inv'0 self
+  goal refines : [%#s01_range0] forall self : MutBorrow.t t_Range'0 . inv'0 self
    -> (forall result : t_Option'0 . match result with
     | C_None'0 -> completed'0 self
     | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
@@ -868,8 +868,6 @@ module M_01_range__qyi16572111325853806140__produces_refl__refines [#"01_range.r
   
   type t_Range'0  =
     { t_Range__start'0: Int64.t; t_Range__end'0: Int64.t }
-  
-  use seq.Seq
   
   use seq.Seq
   
@@ -943,6 +941,8 @@ module M_01_range__qyi16572111325853806140__produces_refl__refines [#"01_range.r
     /\ Seq.length visited = Int64.to_int o.t_Range__start'0 - Int64.to_int self.t_Range__start'0
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.t_Range__start'0 + i)
+  
+  use seq.Seq
   
   goal refines : [%#s01_range0] forall self : t_Range'0 . forall result : () . produces'0 self (Seq.empty : Seq.seq Int64.t) self
    -> produces'0 self (Seq.empty : Seq.seq Int64.t) self

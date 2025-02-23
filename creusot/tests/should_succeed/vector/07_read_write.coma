@@ -49,21 +49,11 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  use seq.Seq
-  
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
-  use prelude.int.UInt64
-  
-  use mach.int.Int
-  
   type t_T'0
   
   use seq.Seq
   
-  function view'1 (self : t_Vec'0) : Seq.seq t_T'0
-  
-  axiom view'1_spec : forall self : t_Vec'0 . [%#svec15] Seq.length (view'1 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
+  use mach.int.Int
   
   use seq.Seq
   
@@ -76,12 +66,22 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   
   axiom inv_axiom'7 [@rewrite] : forall x : t_T'0 [inv'8 x] . inv'8 x = invariant'6 x
   
+  use seq.Seq
+  
   predicate invariant'5 (self : Seq.seq t_T'0) =
     [%#sseq23] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'8 (Seq.get self i)
   
   predicate inv'7 (_1 : Seq.seq t_T'0)
   
   axiom inv_axiom'6 [@rewrite] : forall x : Seq.seq t_T'0 [inv'7 x] . inv'7 x = invariant'5 x
+  
+  use prelude.int.UInt64
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
+  
+  function view'1 (self : t_Vec'0) : Seq.seq t_T'0
+  
+  axiom view'1_spec : forall self : t_Vec'0 . [%#svec15] Seq.length (view'1 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
   predicate invariant'0 (self : t_Vec'0) =
     [%#svec20] inv'7 (view'1 self)
@@ -90,22 +90,22 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = invariant'0 x
   
-  predicate invariant'2 (self : MutBorrow.t (t_Vec'0)) =
+  predicate invariant'2 (self : MutBorrow.t t_Vec'0) =
     [%#sinvariant21] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'2 (_1 : MutBorrow.t (t_Vec'0))
+  predicate inv'2 (_1 : MutBorrow.t t_Vec'0)
   
-  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t (t_Vec'0) [inv'2 x] . inv'2 x = invariant'2 x
+  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'2 x] . inv'2 x = invariant'2 x
   
   predicate inv'4 (_1 : UInt64.t)
   
   axiom inv_axiom'3 [@rewrite] : forall x : UInt64.t [inv'4 x] . inv'4 x = true
   
-  function view'0 (self : MutBorrow.t (t_Vec'0)) : Seq.seq t_T'0 =
-    [%#smodel12] view'1 self.current
-  
   predicate in_bounds'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq t_T'0) =
     [%#sslice13] UInt64.t'int self < Seq.length seq
+  
+  function view'0 (self : MutBorrow.t t_Vec'0) : Seq.seq t_T'0 =
+    [%#smodel12] view'1 self.current
   
   predicate invariant'1 (self : MutBorrow.t t_T'0) =
     [%#sinvariant21] inv'3 self.current /\ inv'3 self.final
@@ -123,7 +123,7 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
     [%#sslice16] forall i : int . 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
   
-  let rec index_mut'0 (self:MutBorrow.t (t_Vec'0)) (index:UInt64.t) (return'  (ret:MutBorrow.t t_T'0))= {[@expl:index_mut 'self' type invariant] inv'2 self}
+  let rec index_mut'0 (self:MutBorrow.t t_Vec'0) (index:UInt64.t) (return'  (ret:MutBorrow.t t_T'0))= {[@expl:index_mut 'self' type invariant] inv'2 self}
     {[@expl:index_mut 'index' type invariant] inv'4 index}
     {[@expl:index_mut requires] [%#svec4] in_bounds'0 index (view'0 self)}
     any
@@ -176,24 +176,24 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
     {[@expl:eq 'other' type invariant] inv'6 other}
     any [ return' (result:bool)-> {[%#scmp11] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ] 
   
-  predicate resolve'3 (self : MutBorrow.t (t_Vec'0)) =
+  predicate resolve'3 (self : MutBorrow.t t_Vec'0) =
     [%#sresolve17] self.final = self.current
   
-  predicate resolve'1 (_1 : MutBorrow.t (t_Vec'0)) =
+  predicate resolve'1 (_1 : MutBorrow.t t_Vec'0) =
     resolve'3 _1
   
   use prelude.prelude.Any
   
   meta "compute_max_steps" 1000000
   
-  let rec read_write'0[#"07_read_write.rs" 6 0 6 75] (a:MutBorrow.t (t_Vec'0)) (i:UInt64.t) (x:t_T'0) (return'  (ret:()))= {[@expl:read_write 'a' type invariant] [%#s07_read_write1] inv'2 a}
+  let rec read_write'0[#"07_read_write.rs" 6 0 6 75] (a:MutBorrow.t t_Vec'0) (i:UInt64.t) (x:t_T'0) (return'  (ret:()))= {[@expl:read_write 'a' type invariant] [%#s07_read_write1] inv'2 a}
     {[@expl:read_write 'x' type invariant] [%#s07_read_write2] inv'3 x}
     {[@expl:read_write requires] [%#s07_read_write3] UInt64.t'int i < Seq.length (view'0 a)}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 a.current}
         MutBorrow.borrow_final <t_Vec'0> {a.current} {MutBorrow.get_id a}
-          (fun (_ret':MutBorrow.t (t_Vec'0)) ->
+          (fun (_ret':MutBorrow.t t_Vec'0) ->
              [ &_7 <- _ret' ] 
             -{inv'0 _ret'.final}-
              [ &a <- { a with current = _ret'.final } ] 
@@ -218,11 +218,11 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
     | bb5 = {[%#s07_read_write0] false} any ]
     )
     [ & _0 : () = Any.any_l ()
-    | & a : MutBorrow.t (t_Vec'0) = a
+    | & a : MutBorrow.t t_Vec'0 = a
     | & i : UInt64.t = i
     | & x : t_T'0 = x
     | & _6 : MutBorrow.t t_T'0 = Any.any_l ()
-    | & _7 : MutBorrow.t (t_Vec'0) = Any.any_l ()
+    | & _7 : MutBorrow.t t_Vec'0 = Any.any_l ()
     | & _10 : bool = Any.any_l ()
     | & _12 : t_T'0 = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 

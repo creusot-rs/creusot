@@ -251,7 +251,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             self.translate_terminator(bbd.terminator(), loc);
 
             let block = fmir::Block {
-                invariants,
+                invariants: invariants.into(),
                 variant,
                 stmts: std::mem::take(&mut self.current_block.0),
                 terminator: std::mem::replace(&mut self.current_block.1, None).unwrap(),
@@ -522,7 +522,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             self.emit_terminator(fmir::Terminator::Goto(bb));
             let resolve_block = fmir::Block {
                 variant: None,
-                invariants: Vec::new(),
+                invariants: vec![],
                 stmts: std::mem::take(&mut self.current_block.0),
                 terminator: std::mem::replace(&mut self.current_block.1, None).unwrap(),
             };

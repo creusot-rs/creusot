@@ -94,7 +94,7 @@ pub enum QuantKind {
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub struct Trigger<'tcx>(pub(crate) Box<[Term<'tcx>]>);
 
-pub type QuantBinder<'tcx> = (Vec<Ident>, Ty<'tcx>);
+pub type QuantBinder<'tcx> = (Box<[Ident]>, Ty<'tcx>);
 
 pub type Projections<V, T> = Box<[ProjectionElem<V, T>]>;
 
@@ -297,14 +297,14 @@ pub enum Pattern<'tcx> {
     Constructor {
         variant: DefId,
         substs: GenericArgsRef<'tcx>,
-        fields: Vec<Pattern<'tcx>>,
+        fields: Box<[Pattern<'tcx>]>,
     },
     /// Matches the pointed element of a pointer, so for `Box<T>` it matches `T`, for mutable borrows it matches the *current* value
     Deref {
         pointee: Box<Pattern<'tcx>>,
         kind: PointerKind,
     },
-    Tuple(Vec<Pattern<'tcx>>),
+    Tuple(Box<[Pattern<'tcx>]>),
     Wildcard,
     Binder(Symbol),
     Boolean(bool),
@@ -953,14 +953,14 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     fn quant_term(
         &self,
         body: ExprId,
-    ) -> Result<(Vec<Ident>, (Box<[Trigger<'tcx>]>, Term<'tcx>)), Error> {
+    ) -> Result<(Box<[Ident]>, (Box<[Trigger<'tcx>]>, Term<'tcx>)), Error> {
         trace!("{:?}", self.thir[body].kind);
         match self.thir[body].kind {
             ExprKind::Scope { value, .. } => self.quant_term(value),
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
                 let names = self.ctx.fn_arg_names(closure_id);
 
-                Ok((names.to_vec(), pearlite_with_triggers(self.ctx, closure_id)?))
+                Ok((names.into(), pearlite_with_triggers(self.ctx, closure_id)?))
             }
             _ => Err(Error::msg(self.thir[body].span, "unexpected error in quantifier")),
         }
@@ -1042,7 +1042,6 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         proj
                     ));
                 };
-
 
                 match self.thir[*arg].ty.kind() {
                     TyKind::Ref(_, _, Mutability::Mut) => {
@@ -1487,7 +1486,7 @@ impl<'tcx> Term<'tcx> {
         trigger: Box<[Trigger<'tcx>]>,
     ) -> Self {
         let ty = Ty::new_tup(tcx, &[binder.1]);
-        self.quant(QuantKind::Forall, (vec![Ident::new(binder.0, DUMMY_SP)], ty), trigger)
+        self.quant(QuantKind::Forall, (Box::new([Ident::new(binder.0, DUMMY_SP)]), ty), trigger)
     }
 
     pub(crate) fn forall(self, tcx: TyCtxt<'tcx>, binder: (Symbol, Ty<'tcx>)) -> Self {
@@ -1497,7 +1496,7 @@ impl<'tcx> Term<'tcx> {
     pub(crate) fn exists(self, tcx: TyCtxt<'tcx>, binder: (Symbol, Ty<'tcx>)) -> Self {
         let ty = Ty::new_tup(tcx, &[binder.1]);
 
-        self.quant(QuantKind::Exists, (vec![Ident::new(binder.0, DUMMY_SP)], ty), Box::new([]))
+        self.quant(QuantKind::Exists, (Box::new([Ident::new(binder.0, DUMMY_SP)]), ty), Box::new([]))
     }
 
     pub(crate) fn quant(

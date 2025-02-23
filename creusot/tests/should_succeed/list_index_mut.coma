@@ -38,13 +38,11 @@ module M_list_index_mut__index_mut [#"list_index_mut.rs" 37 0 37 61]
   
   use mach.int.Int
   
-  use prelude.prelude.MutBorrow
-  
   use prelude.int.UInt32
   
   type t_Option'0  =
     | C_None'0
-    | C_Some'1 (t_List'0)
+    | C_Some'1 t_List'0
   with t_List'0  =
     { t_List__0'0: UInt32.t; t_List__1'0: t_Option'0 }
   
@@ -54,6 +52,8 @@ module M_list_index_mut__index_mut [#"list_index_mut.rs" 37 0 37 61]
       | C_Some'1 ls -> len'0 ls
       | C_None'0 -> 0
       end
+  
+  use prelude.prelude.MutBorrow
   
   use prelude.int.UInt64
   
@@ -135,50 +135,50 @@ module M_list_index_mut__index_mut [#"list_index_mut.rs" 37 0 37 61]
   axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord21] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
-  predicate inv'0 (_1 : MutBorrow.t (t_Option'0))
+  predicate inv'0 (_1 : MutBorrow.t t_Option'0)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t (t_Option'0) [inv'0 x] . inv'0 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_Option'0 [inv'0 x] . inv'0 x = true
   
   type t_Option'1  =
     | C_None'2
-    | C_Some'2 (MutBorrow.t (t_List'0))
+    | C_Some'2 (MutBorrow.t t_List'0)
   
   predicate inv'1 (_1 : t_Option'1)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_Option'1 [inv'1 x] . inv'1 x = true
   
-  let rec as_mut'0 (self:MutBorrow.t (t_Option'0)) (return'  (ret:t_Option'1))= {[@expl:as_mut 'self' type invariant] inv'0 self}
+  let rec as_mut'0 (self:MutBorrow.t t_Option'0) (return'  (ret:t_Option'1))= {[@expl:as_mut 'self' type invariant] inv'0 self}
     any
     [ return' (result:t_Option'1)-> {inv'1 result}
       {[%#soption17] self.current = C_None'0  -> result = C_None'2 /\ self.final = C_None'0}
       {[%#soption18] self.current = C_None'0
-      \/ (exists r : MutBorrow.t (t_List'0) . result = C_Some'2 r
+      \/ (exists r : MutBorrow.t t_List'0 . result = C_Some'2 r
       /\ self.current = C_Some'1 (r.current) /\ self.final = C_Some'1 (r.final))}
       (! return' {result}) ]
   
   
-  predicate inv'2 (_1 : MutBorrow.t (t_List'0))
+  predicate inv'2 (_1 : MutBorrow.t t_List'0)
   
-  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t (t_List'0) [inv'2 x] . inv'2 x = true
+  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_List'0 [inv'2 x] . inv'2 x = true
   
-  let rec unwrap'0 (self:t_Option'1) (return'  (ret:MutBorrow.t (t_List'0)))= {[@expl:unwrap 'self' type invariant] inv'1 self}
+  let rec unwrap'0 (self:t_Option'1) (return'  (ret:MutBorrow.t t_List'0))= {[@expl:unwrap 'self' type invariant] inv'1 self}
     {[@expl:unwrap requires] [%#soption19] self <> C_None'2}
     any
-    [ return' (result:MutBorrow.t (t_List'0))-> {inv'2 result}
+    [ return' (result:MutBorrow.t t_List'0)-> {inv'2 result}
       {[%#soption19] C_Some'2 result = self}
       (! return' {result}) ]
   
   
-  predicate resolve'3 (self : MutBorrow.t (t_List'0)) =
+  predicate resolve'3 (self : MutBorrow.t t_List'0) =
     [%#sresolve34] self.final = self.current
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_List'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t t_List'0) =
     resolve'3 _1
   
-  predicate resolve'4 (self : MutBorrow.t (t_List'0)) =
+  predicate resolve'4 (self : MutBorrow.t t_List'0) =
     [%#sresolve34] self.final = self.current
   
-  predicate resolve'1 (_1 : MutBorrow.t (t_List'0)) =
+  predicate resolve'1 (_1 : MutBorrow.t t_List'0) =
     resolve'4 _1
   
   predicate resolve'5 (self : MutBorrow.t UInt32.t) =
@@ -191,7 +191,7 @@ module M_list_index_mut__index_mut [#"list_index_mut.rs" 37 0 37 61]
   
   meta "compute_max_steps" 1000000
   
-  let rec index_mut'0[#"list_index_mut.rs" 37 0 37 61] (l:MutBorrow.t (t_List'0)) (ix:UInt64.t) (return'  (ret:MutBorrow.t UInt32.t))= {[@expl:index_mut requires] [%#slist_index_mut9] UInt64.t'int ix
+  let rec index_mut'0[#"list_index_mut.rs" 37 0 37 61] (l:MutBorrow.t t_List'0) (ix:UInt64.t) (return'  (ret:MutBorrow.t UInt32.t))= {[@expl:index_mut requires] [%#slist_index_mut9] UInt64.t'int ix
     < len'0 l.current}
     (! bb0
     [ bb0 = s0 [ s0 =  [ &old_l <- [%#slist_index_mut0] l ] s1 | s1 = bb1 ] 
@@ -220,17 +220,17 @@ module M_list_index_mut__index_mut [#"list_index_mut.rs" 37 0 37 61]
               <t_Option'0>
               {(l.current).t_List__1'0}
               {MutBorrow.inherit_id (MutBorrow.get_id l) 2}
-              (fun (_ret':MutBorrow.t (t_Option'0)) ->
+              (fun (_ret':MutBorrow.t t_Option'0) ->
                  [ &_26 <- _ret' ] 
                  [ &l <- { l with current = { l.current with t_List__1'0 = _ret'.final } } ] 
                 s1)
           | s1 = as_mut'0 {_26} (fun (_ret':t_Option'1) ->  [ &_25 <- _ret' ] s2)
           | s2 = bb6 ]
         
-        | bb6 = s0 [ s0 = unwrap'0 {_25} (fun (_ret':MutBorrow.t (t_List'0)) ->  [ &_24 <- _ret' ] s1) | s1 = bb7 ] 
+        | bb6 = s0 [ s0 = unwrap'0 {_25} (fun (_ret':MutBorrow.t t_List'0) ->  [ &_24 <- _ret' ] s1) | s1 = bb7 ] 
         | bb7 = s0
           [ s0 = MutBorrow.borrow_final <t_List'0> {_24.current} {MutBorrow.get_id _24}
-              (fun (_ret':MutBorrow.t (t_List'0)) ->
+              (fun (_ret':MutBorrow.t t_List'0) ->
                  [ &_23 <- _ret' ] 
                  [ &_24 <- { _24 with current = _ret'.final } ] 
                 s1)
@@ -259,16 +259,16 @@ module M_list_index_mut__index_mut [#"list_index_mut.rs" 37 0 37 61]
      ]
     )
     [ & _0 : MutBorrow.t UInt32.t = Any.any_l ()
-    | & l : MutBorrow.t (t_List'0) = l
+    | & l : MutBorrow.t t_List'0 = l
     | & ix : UInt64.t = ix
     | & _3 : MutBorrow.t UInt32.t = Any.any_l ()
-    | & old_l : MutBorrow.t (t_List'0) = Any.any_l ()
+    | & old_l : MutBorrow.t t_List'0 = Any.any_l ()
     | & old_ix : UInt64.t = Any.any_l ()
     | & _21 : bool = Any.any_l ()
-    | & _23 : MutBorrow.t (t_List'0) = Any.any_l ()
-    | & _24 : MutBorrow.t (t_List'0) = Any.any_l ()
+    | & _23 : MutBorrow.t t_List'0 = Any.any_l ()
+    | & _24 : MutBorrow.t t_List'0 = Any.any_l ()
     | & _25 : t_Option'1 = Any.any_l ()
-    | & _26 : MutBorrow.t (t_Option'0) = Any.any_l ()
+    | & _26 : MutBorrow.t t_Option'0 = Any.any_l ()
     | & _28 : MutBorrow.t UInt32.t = Any.any_l () ]
     
     [ return' (result:MutBorrow.t UInt32.t)-> {[@expl:index_mut ensures #0] [%#slist_index_mut10] C_Some'0 (result.current)
@@ -300,7 +300,7 @@ module M_list_index_mut__write [#"list_index_mut.rs" 63 0 63 45]
   
   type t_Option'0  =
     | C_None'0
-    | C_Some'1 (t_List'0)
+    | C_Some'1 t_List'0
   with t_List'0  =
     { t_List__0'0: UInt32.t; t_List__1'0: t_Option'0 }
   
@@ -331,7 +331,7 @@ module M_list_index_mut__write [#"list_index_mut.rs" 63 0 63 45]
   
   use prelude.int.UInt64
   
-  let rec index_mut'0 (l:MutBorrow.t (t_List'0)) (ix:UInt64.t) (return'  (ret:MutBorrow.t UInt32.t))= {[@expl:index_mut requires] [%#slist_index_mut4] UInt64.t'int ix
+  let rec index_mut'0 (l:MutBorrow.t t_List'0) (ix:UInt64.t) (return'  (ret:MutBorrow.t UInt32.t))= {[@expl:index_mut requires] [%#slist_index_mut4] UInt64.t'int ix
     < len'0 l.current}
     any
     [ return' (result:MutBorrow.t UInt32.t)-> {[%#slist_index_mut5] C_Some'0 (result.current)
@@ -349,22 +349,22 @@ module M_list_index_mut__write [#"list_index_mut.rs" 63 0 63 45]
   predicate resolve'0 (_1 : MutBorrow.t UInt32.t) =
     resolve'2 _1
   
-  predicate resolve'3 (self : MutBorrow.t (t_List'0)) =
+  predicate resolve'3 (self : MutBorrow.t t_List'0) =
     [%#sresolve11] self.final = self.current
   
-  predicate resolve'1 (_1 : MutBorrow.t (t_List'0)) =
+  predicate resolve'1 (_1 : MutBorrow.t t_List'0) =
     resolve'3 _1
   
   use prelude.prelude.Any
   
   meta "compute_max_steps" 1000000
   
-  let rec write'0[#"list_index_mut.rs" 63 0 63 45] (l:MutBorrow.t (t_List'0)) (ix:UInt64.t) (v:UInt32.t) (return'  (ret:()))= {[@expl:write requires] [%#slist_index_mut0] UInt64.t'int ix
+  let rec write'0[#"list_index_mut.rs" 63 0 63 45] (l:MutBorrow.t t_List'0) (ix:UInt64.t) (v:UInt32.t) (return'  (ret:()))= {[@expl:write requires] [%#slist_index_mut0] UInt64.t'int ix
     < len'0 l.current}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_List'0> {l.current} {MutBorrow.get_id l}
-          (fun (_ret':MutBorrow.t (t_List'0)) ->  [ &_10 <- _ret' ]  [ &l <- { l with current = _ret'.final } ] s1)
+          (fun (_ret':MutBorrow.t t_List'0) ->  [ &_10 <- _ret' ]  [ &l <- { l with current = _ret'.final } ] s1)
       | s1 = index_mut'0 {_10} {ix} (fun (_ret':MutBorrow.t UInt32.t) ->  [ &_9 <- _ret' ] s2)
       | s2 = bb1 ]
     
@@ -376,11 +376,11 @@ module M_list_index_mut__write [#"list_index_mut.rs" 63 0 63 45]
      ]
     )
     [ & _0 : () = Any.any_l ()
-    | & l : MutBorrow.t (t_List'0) = l
+    | & l : MutBorrow.t t_List'0 = l
     | & ix : UInt64.t = ix
     | & v : UInt32.t = v
     | & _9 : MutBorrow.t UInt32.t = Any.any_l ()
-    | & _10 : MutBorrow.t (t_List'0) = Any.any_l () ]
+    | & _10 : MutBorrow.t t_List'0 = Any.any_l () ]
     
     [ return' (result:())-> {[@expl:write ensures #0] [%#slist_index_mut1] C_Some'0 v = get'0 l.final (UInt64.t'int ix)}
       {[@expl:write ensures #1] [%#slist_index_mut2] len'0 l.final = len'0 l.current}
@@ -408,7 +408,7 @@ module M_list_index_mut__f [#"list_index_mut.rs" 67 0 67 10]
     { t_List__0'0: UInt32.t; t_List__1'0: t_Option'0 }
   with t_Option'0  =
     | C_None'0
-    | C_Some'0 (t_List'0)
+    | C_Some'0 t_List'0
   
   use prelude.prelude.MutBorrow
   
@@ -439,7 +439,7 @@ module M_list_index_mut__f [#"list_index_mut.rs" 67 0 67 10]
       C_Some'1 i
   
   
-  let rec write'0 (l:MutBorrow.t (t_List'0)) (ix:UInt64.t) (v:UInt32.t) (return'  (ret:()))= {[@expl:write requires] [%#slist_index_mut4] UInt64.t'int ix
+  let rec write'0 (l:MutBorrow.t t_List'0) (ix:UInt64.t) (v:UInt32.t) (return'  (ret:()))= {[@expl:write requires] [%#slist_index_mut4] UInt64.t'int ix
     < len'0 l.current}
     any
     [ return' (result:())-> {[%#slist_index_mut5] C_Some'1 v = get'0 l.final (UInt64.t'int ix)}
@@ -449,10 +449,10 @@ module M_list_index_mut__f [#"list_index_mut.rs" 67 0 67 10]
       (! return' {result}) ]
   
   
-  predicate resolve'1 (self : MutBorrow.t (t_List'0)) =
+  predicate resolve'1 (self : MutBorrow.t t_List'0) =
     [%#sresolve10] self.final = self.current
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_List'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t t_List'0) =
     resolve'1 _1
   
   use prelude.prelude.Any
@@ -472,9 +472,9 @@ module M_list_index_mut__f [#"list_index_mut.rs" 67 0 67 10]
     
     | bb4 = s0
       [ s0 = MutBorrow.borrow_mut <t_List'0> {l}
-          (fun (_ret':MutBorrow.t (t_List'0)) ->  [ &_8 <- _ret' ]  [ &l <- _ret'.final ] s1)
+          (fun (_ret':MutBorrow.t t_List'0) ->  [ &_8 <- _ret' ]  [ &l <- _ret'.final ] s1)
       | s1 = MutBorrow.borrow_final <t_List'0> {_8.current} {MutBorrow.get_id _8}
-          (fun (_ret':MutBorrow.t (t_List'0)) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _ret'.final } ] s2)
+          (fun (_ret':MutBorrow.t t_List'0) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _ret'.final } ] s2)
       | s2 = write'0 {_7} {[%#slist_index_mut2] (0 : UInt64.t)} {[%#slist_index_mut3] (2 : UInt32.t)}
           (fun (_ret':()) ->  [ &_6 <- _ret' ] s3)
       | s3 = bb5 ]
@@ -488,7 +488,7 @@ module M_list_index_mut__f [#"list_index_mut.rs" 67 0 67 10]
     | & _4 : t_List'0 = Any.any_l ()
     | & _5 : t_Option'0 = Any.any_l ()
     | & _6 : () = Any.any_l ()
-    | & _7 : MutBorrow.t (t_List'0) = Any.any_l ()
-    | & _8 : MutBorrow.t (t_List'0) = Any.any_l () ]
+    | & _7 : MutBorrow.t t_List'0 = Any.any_l ()
+    | & _8 : MutBorrow.t t_List'0 = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
