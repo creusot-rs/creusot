@@ -22,13 +22,13 @@ If you would like to cite Creusot in academic contexts, we encourage you to use 
 
 To get an idea of what verifying a program with Creusot looks like, we encourage you to take a look at some of our test suite:
 
-- [Zeroing out a vector](creusot/tests/should_succeed/vector/01.rs)
-- [Binary search on Vectors](creusot/tests/should_succeed/vector/04_binary_search.rs)
-- [Sorting a vector](creusot/tests/should_succeed/vector/02_gnome.rs)
-- [IterMut](creusot/tests/should_succeed/iterators/02_iter_mut.rs)
-- [Normalizing If-Then-Else Expressions](creusot/tests/should_succeed/ite_normalize.rs)
+- [Zeroing out a vector](tests/should_succeed/vector/01.rs)
+- [Binary search on Vectors](tests/should_succeed/vector/04_binary_search.rs)
+- [Sorting a vector](tests/should_succeed/vector/02_gnome.rs)
+- [IterMut](tests/should_succeed/iterators/02_iter_mut.rs)
+- [Normalizing If-Then-Else Expressions](tests/should_succeed/ite_normalize.rs)
 
-More examples are found in [creusot/tests/should_succeed](creusot/tests/should_succeed).
+More examples are found in [tests/should_succeed](tests/should_succeed).
 
 ## Projects built with Creusot
 

@@ -46,9 +46,9 @@ Additional useful parameters, to avoid replaying *every* proof in development:
 ## Inspecting/fixing the proof of a test
 
 If the proof of a test is broken (e.g.
-`creusot/tests/should_succeed/cell/01.rs`), launch the why3 ide with `./ide`:
+`tests/should_succeed/cell/01.rs`), launch the why3 ide with `./ide`:
 ```
-./ide creusot/tests/should_succeed/cell/01
+./ide tests/should_succeed/cell/01
 ```
 
 ## Calling why3 (and why3_tools, etc): shell environment setup
