@@ -101,7 +101,7 @@ module M_695__inversed_if [#"695.rs" 7 0 7 78]
     {[@expl:call_once requires] [%#sops8] precondition'1 self args}
     any [ return' (result:())-> {inv'3 result} {[%#sops8] postcondition_once'0 self args result} (! return' {result}) ] 
   
-  use prelude.prelude.Intrinsic
+  use prelude.prelude.Any
   
   meta "compute_max_steps" 1000000
   
@@ -133,13 +133,13 @@ module M_695__inversed_if [#"695.rs" 7 0 7 78]
     | bb9 = bb10
     | bb10 = return' {_0} ]
     )
-    [ & _0 : () = Intrinsic.any_l ()
+    [ & _0 : () = Any.any_l ()
     | & cond : t_C'0 = cond
     | & branch : t_B'0 = branch
-    | & _5 : bool = Intrinsic.any_l ()
-    | & _7 : () = Intrinsic.any_l ()
-    | & _9 : bool = Intrinsic.any_l ()
-    | & _11 : bool = Intrinsic.any_l () ]
+    | & _5 : bool = Any.any_l ()
+    | & _7 : () = Any.any_l ()
+    | & _9 : bool = Any.any_l ()
+    | & _11 : bool = Any.any_l () ]
     
     [ return' (result:())-> {[@expl:inversed_if ensures] [%#s6955] exists b : bool . postcondition'0 cond () b
       /\ postcondition_once'0 branch (not b) ()}
@@ -186,7 +186,7 @@ module M_695__valid [#"695.rs" 16 0 16 27]
   
   use prelude.int.UInt32
   
-  use prelude.prelude.Intrinsic
+  use prelude.prelude.Any
   
   type closure1'1  =
     { field_0'0: UInt32.t }
@@ -199,7 +199,7 @@ module M_695__valid [#"695.rs" 16 0 16 27]
   use prelude.int.UInt32
   
   function cmp_log'0 (self : UInt32.t) (o : UInt32.t) : t_Ordering'0 =
-    [%#sord35] if UInt32.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord35] if UInt32.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt32.t) (y : UInt32.t) : ()
   
@@ -228,34 +228,33 @@ module M_695__valid [#"695.rs" 16 0 16 27]
   
   function cmp_gt_log'0 (x : UInt32.t) (y : UInt32.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord15] UInt32.ugt x y
-  = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord15] UInt32.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   use prelude.int.UInt32
   
   function cmp_ge_log'0 (x : UInt32.t) (y : UInt32.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord14] UInt32.uge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord14] UInt32.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt32.t) (y : UInt32.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord13] UInt32.ult x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord13] UInt32.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use prelude.int.UInt32
   
   function cmp_le_log'0 (x : UInt32.t) (y : UInt32.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord12] UInt32.ule x y
+  axiom cmp_le_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord12] UInt32.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
   let rec closure1'0[#"695.rs" 18 15 18 47] (_1:closure1'1) (return'  (ret:bool))= (! bb0
     [ bb0 = s0
-      [ s0 = UInt32.gt {_1.field_0'0} {[%#s6953] (7 : UInt32.t)} (fun (_ret':bool) ->  [ &res <- _ret' ] s1)
+      [ s0 =  [ &res <- UInt32.gt _1.field_0'0 ([%#s6953] (7 : UInt32.t)) ] s1
       | s1 =  [ &_0 <- res ] s2
       | s2 = return' {_0} ]
      ]
-    ) [ & _0 : bool = Intrinsic.any_l () | & _1 : closure1'1 = _1 | & res : bool = Intrinsic.any_l () ] 
-    [ return' (result:bool)-> {[@expl:closure ensures] [%#s6954] result = UInt32.ugt _1.field_0'0 (7 : UInt32.t)}
+    ) [ & _0 : bool = Any.any_l () | & _1 : closure1'1 = _1 | & res : bool = Any.any_l () ] 
+    [ return' (result:bool)-> {[@expl:closure ensures] [%#s6954] result = UInt32.gt _1.field_0'0 (7 : UInt32.t)}
       (! return' {result}) ]
   
   
@@ -320,10 +319,7 @@ module M_695__valid [#"695.rs" 16 0 16 27]
       | s2 = return' {_0} ]
      ]
     )
-    [ & _0 : () = Intrinsic.any_l ()
-    | & _1 : MutBorrow.t closure2'1 = _1
-    | & b : bool = b
-    | & _4 : UInt32.t = Intrinsic.any_l () ]
+    [ & _0 : () = Any.any_l () | & _1 : MutBorrow.t closure2'1 = _1 | & b : bool = b | & _4 : UInt32.t = Any.any_l () ]
     
     [ return' (result:())-> {[@expl:closure ensures] [%#s6957] b /\ ((_1.final).field_0'1).current = (2 : UInt32.t)
       \/ not b /\ ((_1.final).field_0'1).current = (1 : UInt32.t)}
@@ -346,7 +342,7 @@ module M_695__valid [#"695.rs" 16 0 16 27]
     let (b) = args in true
   
   predicate postcondition_once'1 (self : closure1'1) (args : ()) (result : bool) =
-    [%#s6954] let () = args in result = UInt32.ugt self.field_0'0 (7 : UInt32.t)
+    [%#s6954] let () = args in result = UInt32.gt self.field_0'0 (7 : UInt32.t)
   
   predicate resolve'3 (_1 : closure1'1) =
     true
@@ -355,7 +351,7 @@ module M_695__valid [#"695.rs" 16 0 16 27]
     _2.field_0'0 = self.field_0'0
   
   predicate postcondition_mut'1 (self : closure1'1) (args : ()) (result_state : closure1'1) (result : bool) =
-    (let () = args in result = UInt32.ugt result_state.field_0'0 (7 : UInt32.t)) /\ unnest'1 self result_state
+    (let () = args in result = UInt32.gt result_state.field_0'0 (7 : UInt32.t)) /\ unnest'1 self result_state
   
   function fn_mut_once'1 (self : closure1'1) (args : ()) (res : bool) : ()
   
@@ -377,7 +373,7 @@ module M_695__valid [#"695.rs" 16 0 16 27]
    -> ([%#sops27] unnest'1 self res_state)
   
   predicate postcondition'0 (self : closure1'1) (args : ()) (result : bool) =
-    [%#s6954] let () = args in result = UInt32.ugt self.field_0'0 (7 : UInt32.t)
+    [%#s6954] let () = args in result = UInt32.gt self.field_0'0 (7 : UInt32.t)
   
   function fn_once'0 (self : closure1'1) (args : ()) (res : bool) : ()
   
@@ -412,17 +408,16 @@ module M_695__valid [#"695.rs" 16 0 16 27]
     
     | bb1 = s0 [ s0 = {[@expl:assertion] [%#s6951] false} s1 | s1 =  [ &_0 <- r ] s2 | s2 = return' {_0} ]  ]
     )
-    [ & _0 : UInt32.t = Intrinsic.any_l ()
+    [ & _0 : UInt32.t = Any.any_l ()
     | & n : UInt32.t = n
-    | & r : UInt32.t = Intrinsic.any_l ()
-    | & cond : closure1'1 = Intrinsic.any_l ()
-    | & branch : closure2'1 = Intrinsic.any_l ()
-    | & _7 : MutBorrow.t UInt32.t = Intrinsic.any_l ()
-    | & _8 : () = Intrinsic.any_l () ]
+    | & r : UInt32.t = Any.any_l ()
+    | & cond : closure1'1 = Any.any_l ()
+    | & branch : closure2'1 = Any.any_l ()
+    | & _7 : MutBorrow.t UInt32.t = Any.any_l ()
+    | & _8 : () = Any.any_l () ]
     
-    [ return' (result:UInt32.t)-> {[@expl:valid ensures] [%#s6952] UInt32.ugt n (7 : UInt32.t)
-      /\ result = (2 : UInt32.t)
-      \/ UInt32.ule n (7 : UInt32.t) /\ result = (1 : UInt32.t)}
+    [ return' (result:UInt32.t)-> {[@expl:valid ensures] [%#s6952] UInt32.gt n (7 : UInt32.t) /\ result = (2 : UInt32.t)
+      \/ UInt32.le n (7 : UInt32.t) /\ result = (1 : UInt32.t)}
       (! return' {result}) ]
 
 end

@@ -73,7 +73,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                             ity_to_prelude(self.ctx.tcx, *ity),
                         ),
                         TyKind::Uint(ity) => (
-                            if self.names.bitwise_mode() { "to_BV256" } else { "to_int" },
+                            if self.names.bitwise_mode() { "to_BV256" } else { "t'int" },
                             uty_to_prelude(self.ctx.tcx, *ity),
                         ),
                         _ => self.ctx.crash_and_error(
@@ -135,41 +135,11 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                 use pearlite::BinOp::*;
                 match op {
-                    Div => {
-                        match term.ty.kind() {
-                            TyKind::Int(ity) => {
-                                let prelude = ity_to_prelude(self.names.tcx(), *ity);
-                                Exp::qvar(self.names.from_prelude(prelude, "sdiv"))
-                                    .app(vec![lhs, rhs])
-                            }
-                            TyKind::Uint(uty) => {
-                                let prelude = uty_to_prelude(self.names.tcx(), *uty);
-                                Exp::qvar(self.names.from_prelude(prelude, "udiv"))
-                                    .app(vec![lhs, rhs])
-                            }
-                            _ => unreachable!(),
-                        }
-                    }
-                    Rem => {
-                        match term.ty.kind() {
-                            TyKind::Int(ity) => {
-                                let prelude = ity_to_prelude(self.names.tcx(), *ity);
-                                Exp::qvar(self.names.from_prelude(prelude, "srem"))
-                                    .app(vec![lhs, rhs])
-                            }
-                            TyKind::Uint(uty) => {
-                                let prelude = uty_to_prelude(self.names.tcx(), *uty);
-                                Exp::qvar(self.names.from_prelude(prelude, "urem"))
-                                    .app(vec![lhs, rhs])
-                            }
-                            _ => unreachable!(),
-                        }
-                    }
-                    BitAnd | BitOr | BitXor | Shl | Shr => {
+                    BitAnd | BitOr | BitXor | Shl | Shr | Div | Rem => {
                         let prelude = match term.ty.kind() {
                             TyKind::Int(ity) => ity_to_prelude(self.names.tcx(), *ity),
                             TyKind::Uint(uty) => uty_to_prelude(self.names.tcx(), *uty),
-                            _ => unreachable!("the bitwise operator are only available on integer"),
+                            _ => unreachable!("the operator {op:?} is only available on integer"),
                         };
 
                         let func_name = match (op, term.ty.kind()) {
@@ -179,6 +149,10 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                             (Shl, _) => "lsl_bv",
                             (Shr, TyKind::Int(_)) => "asr_bv",
                             (Shr, TyKind::Uint(_)) => "lsr_bv",
+                            (Div, TyKind::Int(_)) => "sdiv",
+                            (Div, TyKind::Uint(_)) => "udiv",
+                            (Rem, TyKind::Int(_)) => "srem",
+                            (Rem, TyKind::Uint(_)) => "urem",
                             _ => unreachable!(),
                         };
 
@@ -428,6 +402,7 @@ pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
 ) -> Exp {
     match *lit {
         Literal::Integer(i) => Constant::Int(i, None).into(),
+        Literal::UInteger(i) => Constant::Uint(i, None).into(),
         Literal::MachSigned(mut i, ity) => {
             let why_ty = Type::TConstructor(names.from_prelude(ity_to_prelude(ctx.tcx, ity), "t"));
             if names.bitwise_mode() {

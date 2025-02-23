@@ -76,7 +76,7 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   use prelude.int.UInt64
   
   function cmp_log'0 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
-    [%#sord23] if UInt64.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord23] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt64.t) (y : UInt64.t) : ()
   
@@ -105,25 +105,23 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   
   function cmp_gt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord12] UInt64.ugt x y
-  = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord12] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   use prelude.int.UInt64
   
   function cmp_ge_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord11] UInt64.uge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord11] UInt64.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord10] UInt64.ult x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord10] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use prelude.int.UInt64
   
   function cmp_le_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord9] UInt64.ule x y
-  = (cmp_log'0 x y <> C_Greater'0)
+  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord9] UInt64.le x y = (cmp_log'0 x y <> C_Greater'0)
   
   use prelude.prelude.MutBorrow
   
@@ -144,7 +142,7 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
     {[@expl:push 'value' type invariant] inv'2 value}
     any [ return' (result:())-> {[%#svec7] view'0 self.final = Seq.snoc (view'1 self) value} (! return' {result}) ] 
   
-  use prelude.prelude.Intrinsic
+  use prelude.prelude.Any
   
   meta "compute_max_steps" 1000000
   
@@ -154,11 +152,10 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
     
     | bb1 = s0 [ s0 =  [ &i <- [%#s01_resolve_unsoundness1] (0 : UInt64.t) ] s1 | s1 = bb2 ] 
     | bb2 = bb2
-      [ bb2 = {[@expl:loop invariant] [%#s01_resolve_unsoundness2] UInt64.ule (0 : UInt64.t) i /\ UInt64.ule i n}
+      [ bb2 = {[@expl:loop invariant] [%#s01_resolve_unsoundness2] UInt64.le (0 : UInt64.t) i /\ UInt64.le i n}
         (! s0) [ s0 = bb3 ] 
         [ bb3 = s0
-          [ s0 = UInt64.le {i} {n} (fun (_ret':bool) ->  [ &_10 <- _ret' ] s1)
-          | s1 = any [ br0 -> {_10 = false} (! bb6) | br1 -> {_10} (! bb4) ]  ]
+          [ s0 =  [ &_10 <- UInt64.le i n ] s1 | s1 = any [ br0 -> {_10 = false} (! bb6) | br1 -> {_10} (! bb4) ]  ]
         
         | bb4 = s0
           [ s0 = MutBorrow.borrow_mut <t_Vec'0> {out}
@@ -176,13 +173,13 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
     | bb6 = s0 [ s0 =  [ &_0 <- out ] s1 | s1 = bb7 ] 
     | bb7 = return' {_0} ]
     )
-    [ & _0 : t_Vec'0 = Intrinsic.any_l ()
+    [ & _0 : t_Vec'0 = Any.any_l ()
     | & n : UInt64.t = n
-    | & out : t_Vec'0 = Intrinsic.any_l ()
-    | & i : UInt64.t = Intrinsic.any_l ()
-    | & _10 : bool = Intrinsic.any_l ()
-    | & _13 : () = Intrinsic.any_l ()
-    | & _14 : MutBorrow.t (t_Vec'0) = Intrinsic.any_l () ]
+    | & out : t_Vec'0 = Any.any_l ()
+    | & i : UInt64.t = Any.any_l ()
+    | & _10 : bool = Any.any_l ()
+    | & _13 : () = Any.any_l ()
+    | & _14 : MutBorrow.t (t_Vec'0) = Any.any_l () ]
     
     [ return' (result:t_Vec'0)-> {[@expl:make_vec_of_size ensures] [%#s01_resolve_unsoundness5] Seq.length (view'0 result)
       = UInt64.t'int n}

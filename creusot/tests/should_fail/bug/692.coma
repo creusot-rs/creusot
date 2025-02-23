@@ -25,7 +25,7 @@ module M_692__incorrect [#"692.rs" 9 0 9 76]
   
   predicate resolve'1 (_1 : t_C'0)
   
-  use prelude.prelude.Intrinsic
+  use prelude.prelude.Any
   
   predicate precondition'0 (self : t_C'0) (args : ())
   
@@ -86,7 +86,7 @@ module M_692__incorrect [#"692.rs" 9 0 9 76]
     | bb1 = bb2
     | bb2 = bb3
     | bb3 = return' {_0} ]
-    ) [ & _0 : () = Intrinsic.any_l () | & cond : t_C'0 = cond | & branch : t_B'0 = branch ] 
+    ) [ & _0 : () = Any.any_l () | & cond : t_C'0 = cond | & branch : t_B'0 = branch ] 
     [ return' (result:())-> {[@expl:incorrect ensures] [%#s6923] false} (! return' {result}) ]
 
 end
@@ -129,7 +129,7 @@ module M_692__valid_normal [#"692.rs" 12 0 12 34]
   
   use prelude.int.UInt32
   
-  use prelude.prelude.Intrinsic
+  use prelude.prelude.Any
   
   type closure1'1  =
     { field_0'0: UInt32.t }
@@ -142,7 +142,7 @@ module M_692__valid_normal [#"692.rs" 12 0 12 34]
   use prelude.int.UInt32
   
   function cmp_log'0 (self : UInt32.t) (o : UInt32.t) : t_Ordering'0 =
-    [%#sord34] if UInt32.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord34] if UInt32.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt32.t) (y : UInt32.t) : ()
   
@@ -171,34 +171,33 @@ module M_692__valid_normal [#"692.rs" 12 0 12 34]
   
   function cmp_gt_log'0 (x : UInt32.t) (y : UInt32.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord14] UInt32.ugt x y
-  = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord14] UInt32.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   use prelude.int.UInt32
   
   function cmp_ge_log'0 (x : UInt32.t) (y : UInt32.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord13] UInt32.uge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord13] UInt32.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt32.t) (y : UInt32.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord12] UInt32.ult x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord12] UInt32.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use prelude.int.UInt32
   
   function cmp_le_log'0 (x : UInt32.t) (y : UInt32.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord11] UInt32.ule x y
+  axiom cmp_le_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord11] UInt32.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
   let rec closure1'0[#"692.rs" 14 15 14 47] (_1:closure1'1) (return'  (ret:bool))= (! bb0
     [ bb0 = s0
-      [ s0 = UInt32.gt {_1.field_0'0} {[%#s6922] (7 : UInt32.t)} (fun (_ret':bool) ->  [ &res <- _ret' ] s1)
+      [ s0 =  [ &res <- UInt32.gt _1.field_0'0 ([%#s6922] (7 : UInt32.t)) ] s1
       | s1 =  [ &_0 <- res ] s2
       | s2 = return' {_0} ]
      ]
-    ) [ & _0 : bool = Intrinsic.any_l () | & _1 : closure1'1 = _1 | & res : bool = Intrinsic.any_l () ] 
-    [ return' (result:bool)-> {[@expl:closure ensures] [%#s6923] result = UInt32.ugt _1.field_0'0 (7 : UInt32.t)}
+    ) [ & _0 : bool = Any.any_l () | & _1 : closure1'1 = _1 | & res : bool = Any.any_l () ] 
+    [ return' (result:bool)-> {[@expl:closure ensures] [%#s6923] result = UInt32.gt _1.field_0'0 (7 : UInt32.t)}
       (! return' {result}) ]
   
   
@@ -263,10 +262,7 @@ module M_692__valid_normal [#"692.rs" 12 0 12 34]
       | s2 = return' {_0} ]
      ]
     )
-    [ & _0 : () = Intrinsic.any_l ()
-    | & _1 : MutBorrow.t closure2'1 = _1
-    | & b : bool = b
-    | & _4 : UInt32.t = Intrinsic.any_l () ]
+    [ & _0 : () = Any.any_l () | & _1 : MutBorrow.t closure2'1 = _1 | & b : bool = b | & _4 : UInt32.t = Any.any_l () ]
     
     [ return' (result:())-> {[@expl:closure ensures] [%#s6926] b /\ ((_1.final).field_0'1).current = (2 : UInt32.t)
       \/ not b /\ ((_1.final).field_0'1).current = (1 : UInt32.t)}
@@ -289,7 +285,7 @@ module M_692__valid_normal [#"692.rs" 12 0 12 34]
     let (b) = args in true
   
   predicate postcondition_once'1 (self : closure1'1) (args : ()) (result : bool) =
-    [%#s6923] let () = args in result = UInt32.ugt self.field_0'0 (7 : UInt32.t)
+    [%#s6923] let () = args in result = UInt32.gt self.field_0'0 (7 : UInt32.t)
   
   predicate resolve'3 (_1 : closure1'1) =
     true
@@ -298,7 +294,7 @@ module M_692__valid_normal [#"692.rs" 12 0 12 34]
     _2.field_0'0 = self.field_0'0
   
   predicate postcondition_mut'1 (self : closure1'1) (args : ()) (result_state : closure1'1) (result : bool) =
-    (let () = args in result = UInt32.ugt result_state.field_0'0 (7 : UInt32.t)) /\ unnest'1 self result_state
+    (let () = args in result = UInt32.gt result_state.field_0'0 (7 : UInt32.t)) /\ unnest'1 self result_state
   
   function fn_mut_once'1 (self : closure1'1) (args : ()) (res : bool) : ()
   
@@ -320,7 +316,7 @@ module M_692__valid_normal [#"692.rs" 12 0 12 34]
    -> ([%#sops26] unnest'1 self res_state)
   
   predicate postcondition'0 (self : closure1'1) (args : ()) (result : bool) =
-    [%#s6923] let () = args in result = UInt32.ugt self.field_0'0 (7 : UInt32.t)
+    [%#s6923] let () = args in result = UInt32.gt self.field_0'0 (7 : UInt32.t)
   
   function fn_once'0 (self : closure1'1) (args : ()) (res : bool) : ()
   
@@ -353,12 +349,12 @@ module M_692__valid_normal [#"692.rs" 12 0 12 34]
     
     | bb1 = s0 [ s0 =  [ &_0 <- r ] s1 | s1 = return' {_0} ]  ]
     )
-    [ & _0 : UInt32.t = Intrinsic.any_l ()
+    [ & _0 : UInt32.t = Any.any_l ()
     | & n : UInt32.t = n
-    | & r : UInt32.t = Intrinsic.any_l ()
-    | & cond : closure1'1 = Intrinsic.any_l ()
-    | & branch : closure2'1 = Intrinsic.any_l ()
-    | & _7 : MutBorrow.t UInt32.t = Intrinsic.any_l ()
-    | & _8 : () = Intrinsic.any_l () ]
+    | & r : UInt32.t = Any.any_l ()
+    | & cond : closure1'1 = Any.any_l ()
+    | & branch : closure2'1 = Any.any_l ()
+    | & _7 : MutBorrow.t UInt32.t = Any.any_l ()
+    | & _8 : () = Any.any_l () ]
      [ return' (result:UInt32.t)-> {[@expl:valid_normal ensures] [%#s6921] false} (! return' {result}) ] 
 end

@@ -29,7 +29,7 @@ module M_rightmostbit__rightmost_bit_8 [#"rightmostbit.rs" 28 0 28 35]
     [ return' (result:Int8BW.t)-> {[%#snum5] result = Int8BW.neg self} (! return' {result}) ]
   
   
-  use prelude.prelude.Intrinsic
+  use prelude.prelude.Any
   
   type t_Ordering'0  =
     | C_Less'0
@@ -39,7 +39,7 @@ module M_rightmostbit__rightmost_bit_8 [#"rightmostbit.rs" 28 0 28 35]
   use prelude.int.Int8BW
   
   function cmp_log'0 (self : Int8BW.t) (o : Int8BW.t) : t_Ordering'0 =
-    [%#sord20] if Int8BW.slt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord20] if Int8BW.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : Int8BW.t) (y : Int8BW.t) : ()
   
@@ -68,25 +68,23 @@ module M_rightmostbit__rightmost_bit_8 [#"rightmostbit.rs" 28 0 28 35]
   
   function cmp_gt_log'0 (x : Int8BW.t) (y : Int8BW.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : Int8BW.t, y : Int8BW.t . [%#sord10] Int8BW.sgt x y
-  = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : Int8BW.t, y : Int8BW.t . [%#sord10] Int8BW.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   use prelude.int.Int8BW
   
   function cmp_ge_log'0 (x : Int8BW.t) (y : Int8BW.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : Int8BW.t, y : Int8BW.t . [%#sord9] Int8BW.sge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : Int8BW.t, y : Int8BW.t . [%#sord9] Int8BW.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : Int8BW.t) (y : Int8BW.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : Int8BW.t, y : Int8BW.t . [%#sord8] Int8BW.slt x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : Int8BW.t, y : Int8BW.t . [%#sord8] Int8BW.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use prelude.int.Int8BW
   
   function cmp_le_log'0 (x : Int8BW.t) (y : Int8BW.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : Int8BW.t, y : Int8BW.t . [%#sord7] Int8BW.sle x y
-  = (cmp_log'0 x y <> C_Greater'0)
+  axiom cmp_le_log'0_spec : forall x : Int8BW.t, y : Int8BW.t . [%#sord7] Int8BW.le x y = (cmp_log'0 x y <> C_Greater'0)
   
   constant v_MIN'0 : Int8BW.t = (128 : Int8BW.t)
   
@@ -108,17 +106,17 @@ module M_rightmostbit__rightmost_bit_8 [#"rightmostbit.rs" 28 0 28 35]
   
   let rec rightmost_bit_8'0[#"rightmostbit.rs" 28 0 28 35] (x:Int8BW.t) (return'  (ret:Int8BW.t))= (! bb0
     [ bb0 = s0 [ s0 = wrapping_neg'0 {x} (fun (_ret':Int8BW.t) ->  [ &_8 <- _ret' ] s1) | s1 = bb1 ] 
-    | bb1 = s0 [ s0 = Int8BW.bw_and {x} {_8} (fun (_ret':Int8BW.t) ->  [ &_0 <- _ret' ] s1) | s1 = return' {_0} ]  ]
-    ) [ & _0 : Int8BW.t = Intrinsic.any_l () | & x : Int8BW.t = x | & _8 : Int8BW.t = Intrinsic.any_l () ] 
-    [ return' (result:Int8BW.t)-> {[@expl:rightmost_bit_8 ensures #0] [%#srightmostbit0] Int8BW.sge x (0 : Int8BW.t)
-       -> Int8BW.sle (0 : Int8BW.t) result /\ Int8BW.sle result x}
-      {[@expl:rightmost_bit_8 ensures #1] [%#srightmostbit1] Int8BW.sle x (0 : Int8BW.t)
-      /\ Int8BW.sgt x (v_MIN'0 : Int8BW.t)
-       -> Int8BW.sle (0 : Int8BW.t) result /\ Int8BW.to_int result <= - Int8BW.to_int x}
+    | bb1 = s0 [ s0 =  [ &_0 <- Int8BW.bw_and x _8 ] s1 | s1 = return' {_0} ]  ]
+    ) [ & _0 : Int8BW.t = Any.any_l () | & x : Int8BW.t = x | & _8 : Int8BW.t = Any.any_l () ] 
+    [ return' (result:Int8BW.t)-> {[@expl:rightmost_bit_8 ensures #0] [%#srightmostbit0] Int8BW.ge x (0 : Int8BW.t)
+       -> Int8BW.le (0 : Int8BW.t) result /\ Int8BW.le result x}
+      {[@expl:rightmost_bit_8 ensures #1] [%#srightmostbit1] Int8BW.le x (0 : Int8BW.t)
+      /\ Int8BW.gt x (v_MIN'0 : Int8BW.t)
+       -> Int8BW.le (0 : Int8BW.t) result /\ Int8BW.to_int result <= - Int8BW.to_int x}
       {[@expl:rightmost_bit_8 ensures #2] [%#srightmostbit2] (x = (v_MIN'0 : Int8BW.t))
       = (result = (v_MIN'0 : Int8BW.t))}
-      {[@expl:rightmost_bit_8 ensures #3] [%#srightmostbit3] forall i : Int8BW.t . Int8BW.sle (0 : Int8BW.t) i
-      /\ Int8BW.slt i result  -> Int8BW.bw_and i x = (0 : Int8BW.t)}
+      {[@expl:rightmost_bit_8 ensures #3] [%#srightmostbit3] forall i : Int8BW.t . Int8BW.le (0 : Int8BW.t) i
+      /\ Int8BW.lt i result  -> Int8BW.bw_and i x = (0 : Int8BW.t)}
       {[@expl:rightmost_bit_8 ensures #4] [%#srightmostbit4] x <> (0 : Int8BW.t)  -> count8_log'0 result = 1}
       (! return' {result}) ]
 
@@ -152,7 +150,7 @@ module M_rightmostbit__rightmost_bit_64 [#"rightmostbit.rs" 37 0 37 38]
     [ return' (result:Int64BW.t)-> {[%#snum4] result = Int64BW.neg self} (! return' {result}) ]
   
   
-  use prelude.prelude.Intrinsic
+  use prelude.prelude.Any
   
   type t_Ordering'0  =
     | C_Less'0
@@ -162,7 +160,7 @@ module M_rightmostbit__rightmost_bit_64 [#"rightmostbit.rs" 37 0 37 38]
   use prelude.int.Int64BW
   
   function cmp_log'0 (self : Int64BW.t) (o : Int64BW.t) : t_Ordering'0 =
-    [%#sord18] if Int64BW.slt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord18] if Int64BW.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : Int64BW.t) (y : Int64BW.t) : ()
   
@@ -191,25 +189,24 @@ module M_rightmostbit__rightmost_bit_64 [#"rightmostbit.rs" 37 0 37 38]
   
   function cmp_gt_log'0 (x : Int64BW.t) (y : Int64BW.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : Int64BW.t, y : Int64BW.t . [%#sord8] Int64BW.sgt x y
+  axiom cmp_gt_log'0_spec : forall x : Int64BW.t, y : Int64BW.t . [%#sord8] Int64BW.gt x y
   = (cmp_log'0 x y = C_Greater'0)
   
   use prelude.int.Int64BW
   
   function cmp_ge_log'0 (x : Int64BW.t) (y : Int64BW.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : Int64BW.t, y : Int64BW.t . [%#sord7] Int64BW.sge x y
-  = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : Int64BW.t, y : Int64BW.t . [%#sord7] Int64BW.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : Int64BW.t) (y : Int64BW.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : Int64BW.t, y : Int64BW.t . [%#sord6] Int64BW.slt x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : Int64BW.t, y : Int64BW.t . [%#sord6] Int64BW.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use prelude.int.Int64BW
   
   function cmp_le_log'0 (x : Int64BW.t) (y : Int64BW.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : Int64BW.t, y : Int64BW.t . [%#sord5] Int64BW.sle x y
+  axiom cmp_le_log'0_spec : forall x : Int64BW.t, y : Int64BW.t . [%#sord5] Int64BW.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
   constant v_MIN'0 : Int64BW.t = (9223372036854775808 : Int64BW.t)
@@ -222,17 +219,17 @@ module M_rightmostbit__rightmost_bit_64 [#"rightmostbit.rs" 37 0 37 38]
   
   let rec rightmost_bit_64'0[#"rightmostbit.rs" 37 0 37 38] (x:Int64BW.t) (return'  (ret:Int64BW.t))= (! bb0
     [ bb0 = s0 [ s0 = wrapping_neg'0 {x} (fun (_ret':Int64BW.t) ->  [ &_7 <- _ret' ] s1) | s1 = bb1 ] 
-    | bb1 = s0 [ s0 = Int64BW.bw_and {x} {_7} (fun (_ret':Int64BW.t) ->  [ &_0 <- _ret' ] s1) | s1 = return' {_0} ]  ]
-    ) [ & _0 : Int64BW.t = Intrinsic.any_l () | & x : Int64BW.t = x | & _7 : Int64BW.t = Intrinsic.any_l () ] 
-    [ return' (result:Int64BW.t)-> {[@expl:rightmost_bit_64 ensures #0] [%#srightmostbit0] Int64BW.sge x (0 : Int64BW.t)
-       -> Int64BW.sle (0 : Int64BW.t) result /\ Int64BW.sle result x}
-      {[@expl:rightmost_bit_64 ensures #1] [%#srightmostbit1] Int64BW.sle x (0 : Int64BW.t)
-      /\ Int64BW.sgt x (v_MIN'0 : Int64BW.t)
-       -> Int64BW.sle (0 : Int64BW.t) result /\ Int64BW.to_int result <= - Int64BW.to_int x}
+    | bb1 = s0 [ s0 =  [ &_0 <- Int64BW.bw_and x _7 ] s1 | s1 = return' {_0} ]  ]
+    ) [ & _0 : Int64BW.t = Any.any_l () | & x : Int64BW.t = x | & _7 : Int64BW.t = Any.any_l () ] 
+    [ return' (result:Int64BW.t)-> {[@expl:rightmost_bit_64 ensures #0] [%#srightmostbit0] Int64BW.ge x (0 : Int64BW.t)
+       -> Int64BW.le (0 : Int64BW.t) result /\ Int64BW.le result x}
+      {[@expl:rightmost_bit_64 ensures #1] [%#srightmostbit1] Int64BW.le x (0 : Int64BW.t)
+      /\ Int64BW.gt x (v_MIN'0 : Int64BW.t)
+       -> Int64BW.le (0 : Int64BW.t) result /\ Int64BW.to_int result <= - Int64BW.to_int x}
       {[@expl:rightmost_bit_64 ensures #2] [%#srightmostbit2] (x = (v_MIN'0 : Int64BW.t))
       = (result = (v_MIN'0 : Int64BW.t))}
-      {[@expl:rightmost_bit_64 ensures #3] [%#srightmostbit3] forall i : Int64BW.t . Int64BW.sle (0 : Int64BW.t) i
-      /\ Int64BW.slt i result  -> Int64BW.bw_and i x = (0 : Int64BW.t)}
+      {[@expl:rightmost_bit_64 ensures #3] [%#srightmostbit3] forall i : Int64BW.t . Int64BW.le (0 : Int64BW.t) i
+      /\ Int64BW.lt i result  -> Int64BW.bw_and i x = (0 : Int64BW.t)}
       (! return' {result}) ]
 
 end

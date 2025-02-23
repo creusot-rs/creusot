@@ -20,7 +20,7 @@ module M_mc91__mc91 [#"mc91.rs" 7 0 7 26]
   
   use prelude.int.UInt32
   
-  use prelude.prelude.Intrinsic
+  use prelude.prelude.Any
   
   type t_Ordering'0  =
     | C_Less'0
@@ -30,7 +30,7 @@ module M_mc91__mc91 [#"mc91.rs" 7 0 7 26]
   use prelude.int.UInt32
   
   function cmp_log'0 (self : UInt32.t) (o : UInt32.t) : t_Ordering'0 =
-    [%#sord17] if UInt32.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord17] if UInt32.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt32.t) (y : UInt32.t) : ()
   
@@ -59,24 +59,23 @@ module M_mc91__mc91 [#"mc91.rs" 7 0 7 26]
   
   function cmp_gt_log'0 (x : UInt32.t) (y : UInt32.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord7] UInt32.ugt x y = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord7] UInt32.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   use prelude.int.UInt32
   
   function cmp_ge_log'0 (x : UInt32.t) (y : UInt32.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord6] UInt32.uge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord6] UInt32.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt32.t) (y : UInt32.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord5] UInt32.ult x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord5] UInt32.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use prelude.int.UInt32
   
   function cmp_le_log'0 (x : UInt32.t) (y : UInt32.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord4] UInt32.ule x y
-  = (cmp_log'0 x y <> C_Greater'0)
+  axiom cmp_le_log'0_spec : forall x : UInt32.t, y : UInt32.t . [%#sord4] UInt32.le x y = (cmp_log'0 x y <> C_Greater'0)
   
   use prelude.int.UInt32
   
@@ -86,7 +85,7 @@ module M_mc91__mc91 [#"mc91.rs" 7 0 7 26]
   
   let rec mc91'0[#"mc91.rs" 7 0 7 26] (x:UInt32.t) (return'  (ret:UInt32.t))= (! bb0
     [ bb0 = s0
-      [ s0 = UInt32.gt {x} {[%#smc910] (100 : UInt32.t)} (fun (_ret':bool) ->  [ &_3 <- _ret' ] s1)
+      [ s0 =  [ &_3 <- UInt32.gt x ([%#smc910] (100 : UInt32.t)) ] s1
       | s1 = any [ br0 -> {_3 = false} (! bb2) | br1 -> {_3} (! bb1) ]  ]
     
     | bb1 = s0
@@ -101,14 +100,14 @@ module M_mc91__mc91 [#"mc91.rs" 7 0 7 26]
     | bb4 = bb5
     | bb5 = return' {_0} ]
     )
-    [ & _0 : UInt32.t = Intrinsic.any_l ()
+    [ & _0 : UInt32.t = Any.any_l ()
     | & x : UInt32.t = x
-    | & _3 : bool = Intrinsic.any_l ()
-    | & _6 : UInt32.t = Intrinsic.any_l ()
-    | & _7 : UInt32.t = Intrinsic.any_l () ]
+    | & _3 : bool = Any.any_l ()
+    | & _6 : UInt32.t = Any.any_l ()
+    | & _7 : UInt32.t = Any.any_l () ]
     
-    [ return' (result:UInt32.t)-> {[@expl:mc91 ensures] [%#smc913] UInt32.ule x (100 : UInt32.t)
-       -> UInt32.t'int result = 91 /\ UInt32.ugt x (100 : UInt32.t)  -> UInt32.t'int result = UInt32.t'int x - 10}
+    [ return' (result:UInt32.t)-> {[@expl:mc91 ensures] [%#smc913] UInt32.le x (100 : UInt32.t)
+       -> UInt32.t'int result = 91 /\ UInt32.gt x (100 : UInt32.t)  -> UInt32.t'int result = UInt32.t'int x - 10}
       (! return' {result}) ]
 
 end

@@ -239,6 +239,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     let (fct_name, prelude_kind) = match t.ty.kind() {
                         TyKind::Int(ity) => ("of_bool", ity_to_prelude(self.ctx.tcx, *ity)),
                         TyKind::Uint(uty) => ("of_bool", uty_to_prelude(self.ctx.tcx, *uty)),
+                        _ if is_int(self.ctx.tcx, t.ty) => ("to_int", PreludeModule::Bool),
                         _ => self.ctx.crash_and_error(
                             t.span,
                             "bool cast to non integral casts are currently unsupported",
@@ -250,7 +251,13 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 }),
                 TyKind::Int(_) | TyKind::Uint(_) => {
                     // to
-                    let to_fct_name = if self.names.bitwise_mode() { "to_BV256" } else { "to_int" };
+                    let to_fct_name = if self.names.bitwise_mode() {
+                        "to_BV256"
+                    } else if let TyKind::Uint(_) = arg.ty.kind() {
+                        "t'int"
+                    } else {
+                        "to_int"
+                    };
                     let to_prelude = match arg.ty.kind() {
                         TyKind::Int(ity) => ity_to_prelude(self.ctx.tcx, *ity),
                         TyKind::Uint(ity) => uty_to_prelude(self.ctx.tcx, *ity),
@@ -277,10 +284,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                         k(Exp::qvar(of_qname).app(vec![Exp::qvar(to_qname).app(vec![arg])]))
                     })
                 }
-                _ => self.ctx.crash_and_error(
-                    t.span,
-                    "casting from a type that is not a boolean is not supported",
-                ),
+                _ => self.ctx.crash_and_error(t.span, "unsupported cast"),
             },
             TermKind::Coerce { arg } => self.build_vc(arg, k),
             // Items are just global names so

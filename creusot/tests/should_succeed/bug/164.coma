@@ -64,7 +64,7 @@ module M_164__main [#"164.rs" 5 0 5 13]
   use prelude.int.UInt64
   
   function cmp_log'0 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
-    [%#sord53] if UInt64.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord53] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt64.t) (y : UInt64.t) : ()
   
@@ -93,24 +93,23 @@ module M_164__main [#"164.rs" 5 0 5 13]
   
   function cmp_gt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord34] UInt64.ugt x y
-  = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord34] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   use prelude.int.UInt64
   
   function cmp_ge_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord33] UInt64.uge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord33] UInt64.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord32] UInt64.ult x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord32] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use prelude.int.UInt64
   
   function cmp_le_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord31] UInt64.ule x y
+  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord31] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
   use prelude.int.Int32
@@ -212,7 +211,7 @@ module M_164__main [#"164.rs" 5 0 5 13]
     | bad -> {forall field_0 : Int32.t [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
   
   
-  use prelude.prelude.Intrinsic
+  use prelude.prelude.Any
   
   meta "compute_max_steps" 1000000
   
@@ -220,7 +219,7 @@ module M_164__main [#"164.rs" 5 0 5 13]
     [ bb0 = s0 [ s0 =  [ &x <- [%#s1640] (0 : UInt64.t) ] s1 | s1 = bb1 ] 
     | bb1 = s0
       [ s0 = {[@expl:loop invariant] [%#s1641] x = (0 : UInt64.t)} s1
-      | s1 = UInt64.eq {x} {[%#s1642] (0 : UInt64.t)} (fun (_ret':bool) ->  [ &_6 <- _ret' ] s2)
+      | s1 =  [ &_6 <- x = ([%#s1642] (0 : UInt64.t)) ] s2
       | s2 = any [ br0 -> {_6 = false} (! bb3) | br1 -> {_6} (! bb2) ]  ]
     
     | bb2 = s0 [ s0 =  [ &x <- [%#s1643] (1 : UInt64.t) ] s1 | s1 = bb4 ] 
@@ -228,7 +227,7 @@ module M_164__main [#"164.rs" 5 0 5 13]
     | bb4 = bb5
     | bb5 = s0
       [ s0 = {[@expl:loop invariant] [%#s1644] x = (1 : UInt64.t)} s1
-      | s1 = UInt64.eq {x} {[%#s1645] (1 : UInt64.t)} (fun (_ret':bool) ->  [ &_13 <- _ret' ] s2)
+      | s1 =  [ &_13 <- x = ([%#s1645] (1 : UInt64.t)) ] s2
       | s2 = any [ br0 -> {_13 = false} (! bb8) | br1 -> {_13} (! bb6) ]  ]
     
     | bb6 = bb7
@@ -242,7 +241,7 @@ module M_164__main [#"164.rs" 5 0 5 13]
     | bb15 = bb15
       [ bb15 = (! bb16)
         [ bb16 = s0
-          [ s0 = UInt64.ne {x} {[%#s1649] (3 : UInt64.t)} (fun (_ret':bool) ->  [ &_27 <- _ret' ] s1)
+          [ s0 =  [ &_27 <- x <> ([%#s1649] (3 : UInt64.t)) ] s1
           | s1 = any [ br0 -> {_27 = false} (! bb18) | br1 -> {_27} (! bb17) ]  ]
         
         | bb17 = s0 [ s0 =  [ &x <- [%#s16410] (3 : UInt64.t) ] s1 | s1 = bb15 ]  ]
@@ -250,17 +249,17 @@ module M_164__main [#"164.rs" 5 0 5 13]
     
     | bb18 = bb19
     | bb19 = bb19
-      [ bb19 = {[@expl:loop invariant] [%#s16411] UInt64.ule x (4 : UInt64.t)}
+      [ bb19 = {[@expl:loop invariant] [%#s16411] UInt64.le x (4 : UInt64.t)}
         (! s0) [ s0 = bb20 ] 
         [ bb20 = s0
-          [ s0 = UInt64.lt {x} {[%#s16412] (4 : UInt64.t)} (fun (_ret':bool) ->  [ &_35 <- _ret' ] s1)
+          [ s0 =  [ &_35 <- UInt64.lt x ([%#s16412] (4 : UInt64.t)) ] s1
           | s1 = any [ br0 -> {_35 = false} (! bb25) | br1 -> {_35} (! bb21) ]  ]
         
         | bb21 = bb22
         | bb22 = s0
-          [ s0 = {[@expl:loop invariant] [%#s16413] UInt64.ule x (3 : UInt64.t)} s1
+          [ s0 = {[@expl:loop invariant] [%#s16413] UInt64.le x (3 : UInt64.t)} s1
           | s1 =  [ &x <- [%#s16414] (4 : UInt64.t) ] s2
-          | s2 = UInt64.eq {x} {[%#s16415] (4 : UInt64.t)} (fun (_ret':bool) ->  [ &_40 <- _ret' ] s3)
+          | s2 =  [ &_40 <- x = ([%#s16415] (4 : UInt64.t)) ] s3
           | s3 = any [ br0 -> {_40 = false} (! bb24) | br1 -> {_40} (! bb23) ]  ]
         
         | bb23 = bb19 ]
@@ -272,7 +271,7 @@ module M_164__main [#"164.rs" 5 0 5 13]
     | bb27 = bb27
       [ bb27 = (! bb28)
         [ bb28 = s0
-          [ s0 = UInt64.ne {x} {[%#s16418] (5 : UInt64.t)} (fun (_ret':bool) ->  [ &_49 <- _ret' ] s1)
+          [ s0 =  [ &_49 <- x <> ([%#s16418] (5 : UInt64.t)) ] s1
           | s1 = any [ br0 -> {_49 = false} (! bb30) | br1 -> {_49} (! bb29) ]  ]
         
         | bb29 = s0 [ s0 =  [ &x <- [%#s16419] (5 : UInt64.t) ] s1 | s1 = bb27 ]  ]
@@ -318,22 +317,22 @@ module M_164__main [#"164.rs" 5 0 5 13]
     | bb41 = bb44
     | bb44 = return' {_0} ]
     )
-    [ & _0 : () = Intrinsic.any_l ()
-    | & x : UInt64.t = Intrinsic.any_l ()
-    | & _6 : bool = Intrinsic.any_l ()
-    | & _13 : bool = Intrinsic.any_l ()
-    | & _27 : bool = Intrinsic.any_l ()
-    | & _35 : bool = Intrinsic.any_l ()
-    | & _40 : bool = Intrinsic.any_l ()
-    | & _49 : bool = Intrinsic.any_l ()
-    | & iter : t_Range'0 = Intrinsic.any_l ()
-    | & _57 : t_Range'0 = Intrinsic.any_l ()
-    | & iter_old : t_Range'0 = Intrinsic.any_l ()
-    | & produced : Seq.seq Int32.t = Intrinsic.any_l ()
-    | & _67 : t_Option'0 = Intrinsic.any_l ()
-    | & _68 : MutBorrow.t (t_Range'0) = Intrinsic.any_l ()
-    | & _69 : MutBorrow.t (t_Range'0) = Intrinsic.any_l ()
-    | & __creusot_proc_iter_elem : Int32.t = Intrinsic.any_l ()
-    | & _72 : Seq.seq Int32.t = Intrinsic.any_l () ]
+    [ & _0 : () = Any.any_l ()
+    | & x : UInt64.t = Any.any_l ()
+    | & _6 : bool = Any.any_l ()
+    | & _13 : bool = Any.any_l ()
+    | & _27 : bool = Any.any_l ()
+    | & _35 : bool = Any.any_l ()
+    | & _40 : bool = Any.any_l ()
+    | & _49 : bool = Any.any_l ()
+    | & iter : t_Range'0 = Any.any_l ()
+    | & _57 : t_Range'0 = Any.any_l ()
+    | & iter_old : t_Range'0 = Any.any_l ()
+    | & produced : Seq.seq Int32.t = Any.any_l ()
+    | & _67 : t_Option'0 = Any.any_l ()
+    | & _68 : MutBorrow.t (t_Range'0) = Any.any_l ()
+    | & _69 : MutBorrow.t (t_Range'0) = Any.any_l ()
+    | & __creusot_proc_iter_elem : Int32.t = Any.any_l ()
+    | & _72 : Seq.seq Int32.t = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end

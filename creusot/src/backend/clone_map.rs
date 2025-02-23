@@ -51,7 +51,7 @@ pub enum PreludeModule {
     MutBorrow,
     Slice,
     Opaque,
-    Intrinsic,
+    Any,
 }
 
 pub(crate) trait Namer<'tcx> {
@@ -159,7 +159,7 @@ pub(crate) trait Namer<'tcx> {
             (PreludeModule::Slice, _) => {
                 format!("prelude.slice.Slice{}.", self.tcx().sess.target.pointer_width).into()
             }
-            (PreludeModule::Intrinsic, _) => "prelude.prelude.Intrinsic.".into(),
+            (PreludeModule::Any, _) => "prelude.prelude.Any.".into(),
         };
         qname.module
     }

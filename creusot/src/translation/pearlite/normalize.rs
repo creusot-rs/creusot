@@ -104,10 +104,8 @@ fn optimize_builtin<'tcx>(
             | "prelude.int.UInt32$BW$.t'int"
             | "prelude.int.UInt64$BW$.t'int"
             | "prelude.int.UInt128$BW$.t'int",
-        ) if let box [Term { kind: Lit(MachUnsigned(c, _)), .. }] = args
-            && c <= i128::MAX as u128 =>
-        {
-            return Lit(Integer(c as i128))
+        ) if let box [Term { kind: Lit(MachUnsigned(c, _)), .. }] = args => {
+            return Lit(UInteger(c));
         }
         Some(
             "prelude.int.Int8$BW$.to_int"

@@ -283,6 +283,7 @@ pub enum Literal<'tcx> {
     Bool(bool),
     // TODO: Find a way to make this a BigInt type
     Integer(i128),
+    UInteger(u128),
     MachSigned(i128, IntTy),
     MachUnsigned(u128, UintTy),
     Float(Float, FloatTy),
