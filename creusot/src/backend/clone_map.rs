@@ -127,7 +127,7 @@ pub(crate) trait Namer<'tcx> {
         self.dependency(Dependency::Builtin(module));
     }
 
-    fn prelude_module_name(&self, module: PreludeModule) -> Vec<Ident> {
+    fn prelude_module_name(&self, module: PreludeModule) -> Vec<IdentString> {
         self.dependency(Dependency::Builtin(module));
         let qname: QName = match (module, self.bitwise_mode()) {
             (PreludeModule::Float32, _) => "creusot.float.Float32.".into(),
