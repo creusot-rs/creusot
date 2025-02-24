@@ -7,7 +7,7 @@ use rustc_hir::{
 };
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
-use why3::{Ident, IdentString};
+use why3::IdentString;
 
 use crate::very_stable_hash::get_very_stable_hash;
 

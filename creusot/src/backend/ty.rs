@@ -1,6 +1,6 @@
 use crate::{
     backend::Why3Generator,
-    contracts_items::{get_builtin, get_int_ty, is_int_ty, is_logic, is_trusted},
+    contracts_items::{get_builtin, get_int_ty, is_logic, is_trusted},
     ctx::*,
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
@@ -12,7 +12,7 @@ use why3::{
     declaration::{AdtDecl, ConstructorDecl, Decl, FieldDecl, SumRecord, TyDecl},
     exp::{Exp, Trigger},
     ty::Type as MlT,
-    Ident, QName,
+    Ident,
 };
 
 pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
@@ -314,14 +314,6 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
             }
         }
         _ => unreachable!(),
-    }
-}
-
-pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
-    if let TyKind::Adt(def, _) = ty.kind() {
-        is_int_ty(tcx, def.did())
-    } else {
-        false
     }
 }
 

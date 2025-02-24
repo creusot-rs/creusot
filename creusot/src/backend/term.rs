@@ -18,7 +18,7 @@ use rustc_type_ir::{IntTy, UintTy};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat},
     ty::Type,
-    Ident, QName,
+    Ident,
 };
 
 pub(crate) fn lower_pure0<'tcx, N: Namer<'tcx>>(
@@ -97,10 +97,6 @@ impl Renaming {
 
     pub fn rename(&mut self, sym: Symbol, ident: Ident) {
         self.undo.last_mut().unwrap().push((sym, self.renaming.insert(sym, ident)));
-    }
-
-    pub fn get_unwrap(&self, sym: &Symbol) -> Ident {
-        self.get(sym).unwrap_or_else(|| panic!("Unbound variable: {:?}", sym))
     }
 
     pub fn get(&self, sym: &Symbol) -> Option<Ident> {
@@ -203,7 +199,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     item
                 }
             }
-            TermKind::Var(v) => Exp::Var(self.get(*v).expect(&format!{"unbound {:?} in {:?}", v, self.ctx.current})),
+            TermKind::Var(v) => Exp::Var(self.var(*v).expect(&format!{"unbound {:?} in {:?}", v, self.ctx.current})),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -522,11 +518,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             .collect()
     }
 
-    fn get_var(&self, s: Symbol) -> Ident {
-        self.renaming.borrow().get_unwrap(&s)
-    }
-
-    fn get(&self, s: Symbol) -> Option<Ident> {
+    fn var(&self, s: Symbol) -> Option<Ident> {
         self.renaming.borrow().get(&s)
     }
 
