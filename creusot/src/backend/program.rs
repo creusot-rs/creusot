@@ -149,10 +149,10 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
     infer_proph_invariants(ctx, &mut body);
 
-    let mut renaming = Renaming::new();
+    let renaming = RefCell::new(Renaming::new());
     let blocks: Vec<Defn> = wto
         .into_iter()
-        .map(|c| component_to_defn(&mut body, ctx, names, &mut renaming, body_id.def_id, c))
+        .map(|c| component_to_defn(&mut body, ctx, names, &renaming, body_id.def_id, c))
         .collect();
     let ret = body.locals.first().map(|(_, decl)| decl.clone());
 
@@ -249,7 +249,7 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
     body: &mut Body<'tcx>,
     ctx: &Why3Generator<'tcx>,
     names: &N,
-    renaming: &mut Renaming,
+    renaming: &RefCell<Renaming>,
     def_id: LocalDefId,
     c: Component<BasicBlock>,
 ) -> coma::Defn {
@@ -285,7 +285,7 @@ pub(crate) struct LoweringState<'a, 'tcx, N: Namer<'tcx>> {
     pub(super) ctx: &'a Why3Generator<'tcx>,
     pub(super) names: &'a N,
     pub(super) locals: &'a LocalDecls<'tcx>,
-    pub(super) renaming: &'a mut Renaming,
+    pub(super) renaming: &'a RefCell<Renaming>,
     pub(super) name_supply: RefCell<NameSupply>,
     pub(super) def_id: LocalDefId,
 }
@@ -1157,18 +1157,18 @@ impl<'tcx> Statement<'tcx> {
     }
 }
 
-fn exp_of_place<'tcx, N: Namer<'tcx>>(lower: &mut LoweringState<'_, 'tcx, N>, rp: Exp, pl: Place<'tcx>) -> Exp {
+fn exp_of_place<'tcx, N: Namer<'tcx>>(lower: &LoweringState<'_, 'tcx, N>, rp: Exp, pl: Place<'tcx>) -> Exp {
     let pl_sym = pl.local;
-    let loc = lower.renaming.get_unwrap(&pl_sym);
+    let loc = lower.renaming.borrow_mut().get_unwrap(&pl_sym);
     // Reuse pl_sym to bind the place's value; pat will be either be discarded or renamed immediately by lower_pat
     let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, pl_sym);
     if let pearlite::Pattern::Binder(_) = pat {
         rp.app_to(Exp::Var(loc))
     } else {
-        lower.renaming.open_scope();
+        lower.renaming.borrow_mut().open_scope();
         let pat = lower_pat(lower.ctx, lower.names, &pat, lower.renaming);
-        let pl_ident = lower.renaming.get_unwrap(&pl_sym);
-        lower.renaming.close_scope();
+        let pl_ident = lower.renaming.borrow_mut().get_unwrap(&pl_sym);
+        lower.renaming.borrow_mut().close_scope();
         Exp::Match(
             Box::new(Exp::Var(loc)),
             vec![

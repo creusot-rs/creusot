@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use rustc_hir::def_id::DefId;
 use rustc_span::Symbol;
 use why3::{
@@ -80,8 +82,8 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
             (sym, id, ty)
         })
         .collect();
-    let mut renaming = args.iter().map(|(old, new, _)| (*old, *new)).collect();
-    let contract = contract_to_why3(pre_sig.contract, ctx, &mut renaming, names);
+    let renaming = RefCell::new(args.iter().map(|(old, new, _)| (*old, *new)).collect());
+    let contract = contract_to_why3(pre_sig.contract, ctx, &renaming, names);
     let mut attrs = why3_attrs(ctx.tcx, def_id);
 
     def_id
@@ -105,7 +107,7 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
 fn lower_condition<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
-    renaming: &mut Renaming,
+    renaming: &RefCell<Renaming>,
     cond: Condition<'tcx>,
 ) -> why3::declaration::Condition {
     why3::declaration::Condition { exp: lower_pure(ctx, names, renaming, &cond.term), expl: cond.expl }
@@ -114,19 +116,19 @@ fn lower_condition<'tcx, N: Namer<'tcx>>(
 fn contract_to_why3<'tcx, N: Namer<'tcx>>(
     pre: PreContract<'tcx>,
     ctx: &Why3Generator<'tcx>,
-    renaming: &mut Renaming,
+    renaming: &RefCell<Renaming>,
     names: &N,
 ) -> Contract {
     let mut out = Contract::new();
     for cond in pre.requires.into_iter() {
         out.requires.push(lower_condition(ctx, names, renaming, cond));
     }
-    renaming.open_scope();
-    renaming.bound(Symbol::intern("result"), "result");
+    renaming.borrow_mut().open_scope();
+    renaming.borrow_mut().bound(Symbol::intern("result"), "result");
     for cond in pre.ensures.into_iter() {
         out.ensures.push(lower_condition(ctx, names, renaming, cond));
     }
-    renaming.close_scope();
+    renaming.borrow_mut().close_scope();
     if let Some(term) = &pre.variant {
         out.variant = vec![lower_pure(ctx, names, renaming, &term)];
     }

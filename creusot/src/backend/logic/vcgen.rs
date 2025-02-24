@@ -66,7 +66,7 @@ pub(super) fn vc<'tcx>(
         .collect();
     let renaming = RefCell::new(bounds);
     let variant = sig.contract.variant.as_ref().map(|term|
-            lower_pure(ctx, names, &mut renaming.borrow_mut(), term));
+            lower_pure(ctx, names, &renaming, term));
     let gen = VCGen {
         typing_env: ctx.typing_env(self_id),
         ctx,
@@ -240,15 +240,13 @@ impl Post {
     }
 }
 
-type PostCont<'a, 'tcx, A, R = Exp> = &'a dyn Fn(A) -> Result<R, VCError<'tcx>>;
-
 impl<'a, 'tcx> VCGen<'a, 'tcx> {
     fn lower_literal(&self, lit: &Literal<'tcx>) -> Exp {
         lower_literal(self.ctx, self.names, lit)
     }
 
     fn lower_pure(&self, lit: &Term<'tcx>) -> Exp {
-        lower_pure(self.ctx, self.names, &mut self.renaming.borrow_mut(), lit)
+        lower_pure(self.ctx, self.names, &self.renaming, lit)
     }
 
     fn build_vc(&self, t: &Term<'tcx>, q: &mut Post) -> Result<Exp, VCError<'tcx>> {
