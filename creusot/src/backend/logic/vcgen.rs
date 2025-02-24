@@ -355,9 +355,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 //  Weirdly (to me Xavier) this doesn't check `0 <= V'` but this is actually the same behavior as Why3
                 let variant = if *id == self.self_id && !self.structurally_recursive {
                     let variant = contract.variant.remove(0);
-                    let orig_variant = self.variant.unwrap().clone();
+                    let orig_variant = self.variant.clone().unwrap();
                     self.names.import_prelude_module(PreludeModule::Int);
-                    Exp::BinaryOp(why3::exp::BinOp::Le, Box::new(Exp::int(0)), Box::new(orig_variant))
+                    Exp::BinaryOp(why3::exp::BinOp::Le, Box::new(Exp::int(0)), Box::new(orig_variant.clone()))
                         .log_and(Exp::BinaryOp(why3::exp::BinOp::Lt, Box::new(variant), Box::new(orig_variant)))
                     /* TODO: check type is int when translating the variant Err(VCError::UnsupportedVariant(variant.creusot_ty(), variant.span)); */
                 } else { Exp::mk_true() };
@@ -401,7 +401,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     q.undo_subst();
                     self.build_vc(lhs, &mut Post::new(vc_rhs, lhs_hole))
                 }
-                BinOp::Div => {
+                BinOp::Rem => {
                     let lhs_hole = Ident::fresh("");
                     q.subst(Exp::QVar("mod".into()).app(vec![Exp::Var(lhs_hole), Exp::Var(q.hole)]));
                     let vc_rhs = self.build_vc(rhs, q)?;
@@ -447,10 +447,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             TermKind::Constructor { variant, fields, .. } => {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, t.creusot_ty());
                 let TyKind::Adt(adt, subst) = ty.kind() else { unreachable!() };
-                self.build_vc_slice(&fields, &|fields| {
-                    let ctor = constructor(self.names, fields, adt.variant(*variant).def_id, subst);
-                    k(ctor)
-                })
+                let fields: Vec<_> = fields.iter().map(|field| (field, Ident::fresh(""))).collect();
+                let post = q.subst_to_exp(constructor(self.names, fields.iter().map(|&(_, v)| Exp::Var(v)).collect(), adt.variant(*variant).def_id, subst));
+                self.build_vc_slice(&fields, post)
             }
             // VC( * T, Q) = VC(T, |t| Q(*t))
             TermKind::Cur { term } => {
@@ -478,65 +477,68 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     && arms.len() == 2
                     && arms.iter().all(|a| a.0.get_bool().is_some()) =>
             {
-                self.build_vc(scrutinee, &|scrut| {
-                    let mut arms: Vec<_> = arms
-                        .iter()
-                        .map(&|arm: &(Pattern<'tcx>, Term<'tcx>)| {
-                            Ok((arm.0.get_bool().unwrap(), self.build_vc(&arm.1, k)?))
-                        })
-                        .collect::<Result<_, _>>()?;
-                    arms.sort_by(|a, b| b.0.cmp(&a.0));
-
-                    Ok(Exp::if_(scrut, arms.remove(0).1, arms.remove(0).1))
-                })
-            }
-
-            // VC(match A {P -> E}, Q) = VC(A, |a| match a {P -> VC(E, Q)})
-            TermKind::Match { scrutinee, arms } => self.build_vc(scrutinee, &|scrut| {
-                let arms: Vec<_> = arms
+                let mut arms: Vec<_> = arms
                     .iter()
-                    .map(&|arm: &(Pattern<'tcx>, Term<'tcx>)| {
-                        self.build_pattern(&arm.0, &|pat| Ok((pat, self.build_vc(&arm.1, k)?)))
+                    .map(|arm: &(Pattern<'tcx>, Term<'tcx>)| {
+                        Ok((arm.0.get_bool().unwrap(), self.build_vc(&arm.1, q)?))
                     })
                     .collect::<Result<_, _>>()?;
-
-                Ok(Exp::Match(Box::new(scrut), arms))
-            }),
+                arms.sort_by(|a, b| b.0.cmp(&a.0));
+                let exp = Exp::if_(Exp::Var(q.hole), arms.remove(0).1, arms.remove(0).1);
+                self.build_vc(scrutinee, &mut Post::new(exp, q.hole))
+            }
+            // VC(match A {P -> E}, Q) = VC(A, |a| match a {P -> VC(E, Q)})
+            TermKind::Match { scrutinee, arms } => {
+                let arms: Vec<_> = arms
+                    .iter()
+                    .map(|arm: &(Pattern<'tcx>, Term<'tcx>)| {
+                        self.open_scope();
+                        let pat = self.build_pattern(&arm.0);
+                        let vc = self.build_vc(&arm.1, q)?;
+                        self.close_scope();
+                        Ok((pat, vc))
+                    })
+                    .collect::<Result<_, _>>()?;
+                let exp = Exp::Match(Box::new(Exp::Var(q.hole)), arms);
+                self.build_vc(scrutinee, &mut Post::new(exp, q.hole))
+            }
             // VC(let P = A in B, Q) = VC(A, |a| let P = a in VC(B, Q))
-            TermKind::Let { pattern, arg, body } => self.build_vc(arg, &|arg| {
-                self.build_pattern(pattern, &|pattern| {
-                    let body = self.build_vc(body, k)?;
-
-                    Ok(Exp::Let { pattern, arg: Box::new(arg.clone()), body: Box::new(body) })
-                })
-            }),
+            TermKind::Let { pattern, arg, body } => {
+                self.open_scope();
+                let pattern = self.build_pattern(pattern);
+                let body = self.build_vc(body, q)?;
+                self.close_scope();
+                let exp = Exp::Let { pattern, arg: Box::new(Exp::Var(q.hole)), body: Box::new(body) };
+                self.build_vc(arg, &mut Post::new(exp, q.hole))
+            }
             // VC(A.f, Q) = VC(A, |a| Q(a.f))
             TermKind::Projection { lhs, name } => {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, lhs.creusot_ty());
                 let field = match ty.kind() {
                     TyKind::Closure(did, substs) => {
-                        self.names.field(*did, substs, *name)
+                        let field = self.names.field(*did, substs, *name);
+                        Exp::Var(q.hole).field(&field.as_str())
                     }
                     TyKind::Adt(def, substs) => {
-                        self.names.field(def.did(), substs, *name)
+                        let field = self.names.field(def.did(), substs, *name);
+                        Exp::Var(q.hole).field(&field.as_str())
                     }
                     TyKind::Tuple(f) => {
                         let mut fields = vec![why3::exp::Pattern::Wildcard; f.len()];
                         let a = Ident::fresh("a");
                         fields[name.as_usize()] = why3::exp::Pattern::VarP(a);
-
-                        return self.build_vc(lhs, &|lhs| {
-                            k(Exp::Let {
+                        Exp::Let {
                                 pattern: why3::exp::Pattern::TupleP(fields.clone()),
-                                arg: Box::new(lhs),
+                                arg: Box::new(Exp::Var(q.hole)),
                                 body: Box::new(Exp::Var(a)),
-                            })
-                        });
+                            }
                     }
                     k => unreachable!("Projection from {k:?}"),
                 };
-
-                self.build_vc(lhs, &|lhs| k(lhs.field(&field.as_str())))
+                q.subst(field);
+                let vc = self.build_vc(lhs, q)?;
+                q.undo_subst();
+                Ok(vc)
             }
             TermKind::Old { .. } => Err(VCError::OldInLemma(t.span)),
             TermKind::Closure { .. } => Err(VCError::UnimplementedClosure(t.span)),
@@ -546,20 +548,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         }
     }
 
-    fn build_pattern<A>(
-        &self,
-        pat: &Pattern<'tcx>,
-        k: PostCont<'_, 'tcx, why3::exp::Pattern, A>,
-    ) -> Result<A, VCError<'tcx>> {
-        self.open_scope();
-        let pat = self.build_pattern_inner(pat);
-        // FIXME: this totally breaks the tail-call potential... which needs desparate fixing.
-        let r = k(pat);
-        self.close_scope();
-        r
-    }
-
-    fn build_pattern_inner(
+    fn build_pattern(
         &self,
         pat: &Pattern<'tcx>,
     ) -> why3::exp::Pattern {
@@ -567,7 +556,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         match pat {
             Pattern::Constructor { variant, fields, substs } => {
                 let fields =
-                    fields.iter().map(|pat| self.build_pattern_inner(pat)).collect();
+                    fields.iter().map(|pat| self.build_pattern(pat)).collect();
                 let substs = self.ctx.normalize_erasing_regions(self.typing_env, *substs);
                 if self.ctx.def_kind(variant) == DefKind::Variant {
                     Pat::ConsP(self.names.constructor(*variant, substs), fields)
@@ -597,12 +586,12 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 }
             }
             Pattern::Tuple(pats) => {
-                Pat::TupleP(pats.iter().map(|pat| self.build_pattern_inner(pat)).collect())
+                Pat::TupleP(pats.iter().map(|pat| self.build_pattern(pat)).collect())
             }
             Pattern::Deref { pointee, kind } => match kind {
-                PointerKind::Box | PointerKind::Shr => self.build_pattern_inner(pointee),
+                PointerKind::Box | PointerKind::Shr => self.build_pattern(pointee),
                 PointerKind::Mut => {
-                    Pat::RecP(vec![(Ident::bound("current"), self.build_pattern_inner(pointee))])
+                    Pat::RecP(vec![(Ident::bound("current"), self.build_pattern(pointee))])
                 }
             },
         }
