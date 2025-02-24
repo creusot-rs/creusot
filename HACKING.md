@@ -22,7 +22,7 @@ To avoid first installing the `cargo-creusot` binary before running `cargo
 
 ## Running the testsuite
 
-- Test the output of creusot (coma files) against reference files:
+Test the output of creusot (coma files) against reference files:
 ```
 cargo test --test ui
 ```
@@ -32,16 +32,21 @@ Then, to update an out-of-date reference file:
 cargo test --test ui -- "optional-string" --bless
 ```
 
-(NB: to bless all the tests, you need to pass the empty string `""`)
-
-- Replay proofs:
+Replay proofs:
 ```
 cargo test --test why3
 ```
 
 Additional useful parameters, to avoid replaying *every* proof in development:
 - `--diff-from=GIT_REF`
-- `--replay=<none|obsolete|all>`
+
+Update `proof.json` of selected tests:
+```
+cargo test --test why3 -- "optional-string" --update
+```
+
+Note: the `why3` tests require Creusot to be installed so that the necessary tools can be found
+(Why3, Why3find, and provers).
 
 ## Inspecting/fixing the proof of a test
 
