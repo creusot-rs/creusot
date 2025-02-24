@@ -266,7 +266,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         use crate::pearlite::*;
         match &t.kind {
             // VC(v, Q) = Q(v)
-            TermKind::Var(v) => Ok(q.subst_to_exp(Exp::Var(self.get_var(*v)))),
+            TermKind::Var(v) => Ok(q.subst_to_exp(Exp::Var(self.get_var(*v).expect(&format!{"Unbound {:?} in {:?}", v, self.ctx.current})))),
             // VC(l, Q) = Q(l)
             TermKind::Lit(l) => Ok(q.subst_to_exp(self.lower_literal(l))),
             // VC(cast(arg), Q) = VC(arg, |a| Q(cast(a)))
@@ -588,7 +588,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 }
             }
             Pattern::Wildcard => Pat::Wildcard,
-            Pattern::Binder(name) => Pat::VarP(self.get_var(*name)),
+            Pattern::Binder(name) => Pat::VarP(self.get_var(*name).expect(&format!{"Unbound {:?} in {:?}", name, self.ctx.current})),
             Pattern::Boolean(b) => {
                 if *b {
                     Pat::mk_true()
@@ -633,8 +633,8 @@ let sig = self.self_sig();
 sig.args.iter().map(|(_, nm, _)| nm).cloned().collect()
 }
 
-    fn get_var(&self, s: Symbol) -> Ident {
-        self.renaming.borrow().get_unwrap(&s)
+    fn get_var(&self, s: Symbol) -> Option<Ident> {
+        self.renaming.borrow().get(&s)
     }
 
     fn open_scope(&self) {

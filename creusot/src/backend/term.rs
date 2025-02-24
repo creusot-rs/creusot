@@ -203,7 +203,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     item
                 }
             }
-            TermKind::Var(v) => Exp::Var(self.get_var(*v)),
+            TermKind::Var(v) => Exp::Var(self.get(*v).expect(&format!{"unbound {:?} in {:?}", v, self.ctx.current})),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -309,8 +309,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                         (new, self.lower_ty(t)) })  // TODO store this fresh somewhere
                     .collect();
                 let body = self.lower_term(body);
-                self.close_scope();
                 let trigger = self.lower_trigger(trigger);
+                self.close_scope();
                 match kind {
                     QuantKind::Forall => Exp::forall_trig(bound, trigger, body),
                     QuantKind::Exists => Exp::exists_trig(bound, trigger, body),
@@ -524,6 +524,10 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
     fn get_var(&self, s: Symbol) -> Ident {
         self.renaming.borrow().get_unwrap(&s)
+    }
+
+    fn get(&self, s: Symbol) -> Option<Ident> {
+        self.renaming.borrow().get(&s)
     }
 
     fn open_scope(&self) {
