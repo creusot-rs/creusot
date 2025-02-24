@@ -20,7 +20,7 @@ use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind, TypingEnv};
 use rustc_span::{Span, Symbol};
 use why3::{
-    exp::BinOp,
+    exp::{BinOp, Environment},
     ty::Type,
     Exp, Ident,
 };
@@ -228,15 +228,28 @@ impl Post {
     }
 
     fn subst(&mut self, exp: Exp) {
-        todo!()
+        self.substs.push((self.hole, exp));
     }
 
     fn undo_subst(&mut self) {
-        todo!()
+        if let Some((hole, _)) = self.substs.pop() {
+            self.hole = hole;
+        } else {
+            panic!("No subst to undo");
+        }
     }
 
-    fn subst_to_exp(&self, exp: Exp) -> Exp {
-        todo!()
+    fn subst_to_exp(&self, mut exp: Exp) -> Exp {
+        let mut env = Environment::new();
+        let mut hole = self.hole;
+        for (h, e) in self.substs.iter().rev() {
+            env.add_subst(std::iter::once((hole,e.clone())).collect());
+            let mut e = e.clone();
+            e.subst(&mut env);
+            exp = e;
+            hole = *h;
+        }
+        exp
     }
 }
 
