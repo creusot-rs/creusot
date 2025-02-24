@@ -1159,7 +1159,7 @@ impl<'tcx> Statement<'tcx> {
 
 fn exp_of_place<'tcx, N: Namer<'tcx>>(lower: &LoweringState<'_, 'tcx, N>, rp: Exp, pl: Place<'tcx>) -> Exp {
     let pl_sym = pl.local;
-    let loc = lower.renaming.borrow_mut().get_unwrap(&pl_sym);
+    let loc = lower.renaming.borrow_mut().get(&pl_sym).expect(&format!{"Unbound {:?} in {:?}", pl_sym, lower.ctx.current});
     // Reuse pl_sym to bind the place's value; pat will be either be discarded or renamed immediately by lower_pat
     let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, pl_sym);
     if let pearlite::Pattern::Binder(_) = pat {
@@ -1167,7 +1167,7 @@ fn exp_of_place<'tcx, N: Namer<'tcx>>(lower: &LoweringState<'_, 'tcx, N>, rp: Ex
     } else {
         lower.renaming.borrow_mut().open_scope();
         let pat = lower_pat(lower.ctx, lower.names, &pat, lower.renaming);
-        let pl_ident = lower.renaming.borrow_mut().get_unwrap(&pl_sym);
+        let pl_ident = lower.renaming.borrow_mut().get(&pl_sym).expect(&format!{"Unbound {:?} in {:?}", pl_sym, lower.ctx.current});
         lower.renaming.borrow_mut().close_scope();
         Exp::Match(
             Box::new(Exp::Var(loc)),
