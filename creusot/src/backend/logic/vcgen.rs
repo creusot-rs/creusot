@@ -257,9 +257,10 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // VC(v, Q) = Q(v)
             TermKind::Var(v) => Ok(q.subst_to_exp(Exp::Var(self.get_var(*v)))),
             // VC(l, Q) = Q(l)
-            TermKind::Lit(l) => k(self.lower_literal(l)),
+            TermKind::Lit(l) => Ok(q.subst_to_exp(self.lower_literal(l))),
+            // VC(cast(arg), Q) = VC(arg, |a| Q(cast(a)))
             TermKind::Cast { arg } => match arg.ty.kind() {
-                TyKind::Bool => self.build_vc(arg, &|arg| {
+                TyKind::Bool => {
                     let (fct_name, prelude_kind) = match t.ty.kind() {
                         TyKind::Int(ity) => ("of_bool", ity_to_prelude(self.ctx.tcx, *ity)),
                         TyKind::Uint(uty) => ("of_bool", uty_to_prelude(self.ctx.tcx, *uty)),
@@ -270,8 +271,11 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     };
 
                     let qname = self.names.from_prelude(prelude_kind, fct_name);
-                    k(Exp::Call(Box::new(Exp::qvar(qname)), vec![arg]))
-                }),
+                    q.subst(Exp::Call(Box::new(Exp::qvar(qname)), vec![Exp::Var(q.hole)]));
+                    let vc = self.build_vc(arg, q)?;
+                    q.undo_subst();
+                    Ok(vc)
+                },
                 TyKind::Int(_) | TyKind::Uint(_) => {
                     // to
                     let to_fct_name = if self.names.bitwise_mode() { "to_BV256" } else { "to_int" };
@@ -295,11 +299,12 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                         ),
                     };
 
-                    self.build_vc(arg, &|arg| {
-                        let to_qname = self.names.from_prelude(to_prelude, to_fct_name);
-                        let of_qname = self.names.from_prelude(of_prelude, of_fct_name);
-                        k(Exp::qvar(of_qname).app(vec![Exp::qvar(to_qname).app(vec![arg])]))
-                    })
+                    let to_qname = self.names.from_prelude(to_prelude, to_fct_name);
+                    let of_qname = self.names.from_prelude(of_prelude, of_fct_name);
+                    q.subst(Exp::qvar(of_qname).app(vec![Exp::qvar(to_qname).app(vec![Exp::Var(q.hole)])]));
+                    let vc = self.build_vc(arg, q)?;
+                    q.undo_subst();
+                    Ok(vc)
                 }
                 _ => self.ctx.crash_and_error(
                     t.span,
@@ -448,13 +453,25 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 })
             }
             // VC( * T, Q) = VC(T, |t| Q(*t))
-            TermKind::Cur { term } => self.build_vc(term, &|term| k(term.field("current"))),
+            TermKind::Cur { term } => {
+                q.subst(Exp::Var(q.hole).field("current"));
+                let vc = self.build_vc(term, q)?;
+                q.undo_subst();
+                Ok(vc)
+            }
             // VC( ^ T, Q) = VC(T, |t| Q(^t))
-            TermKind::Fin { term } => self.build_vc(term, &|term| k(term.field("final"))),
-            // VC(A -> B, Q) = VC(A, VC(B, Q(A -> B)))
-            TermKind::Impl { lhs, rhs } => self.build_vc(lhs, &|lhs| {
-                Ok(Exp::if_(lhs, self.build_vc(rhs, k)?, k(Exp::mk_true())?))
-            }),
+            TermKind::Fin { term } => {
+                q.subst(Exp::Var(q.hole).field("final"));
+                let vc = self.build_vc(term, q)?;
+                q.undo_subst();
+                Ok(vc)
+            }
+            // VC(A -> B, Q) = VC(A, |a| if a then VC(B, |b| Q(b)) else true)
+            TermKind::Impl { lhs, rhs } => {
+                let vc_b = self.build_vc(rhs, q)?;
+                let exp = Exp::if_(Exp::Var(q.hole), vc_b, Exp::mk_true());
+                self.build_vc(lhs, &mut Post::new(exp, q.hole))
+            }
             // VC(match A {P -> E}, Q) = VC(A, |a| match a {P -> VC(E, Q)})
             TermKind::Match { scrutinee, arms }
                 if scrutinee.ty.is_bool()
