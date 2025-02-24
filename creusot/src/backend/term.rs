@@ -100,7 +100,7 @@ impl Renaming {
     }
 
     pub fn get_unwrap(&self, sym: &Symbol) -> Ident {
-        self.get(sym).unwrap_or_else(|| panic!("Unbound variable: {:?}", sym.as_str()))
+        self.get(sym).unwrap_or_else(|| panic!("Unbound variable: {:?}", sym))
     }
 
     pub fn get(&self, sym: &Symbol) -> Option<Ident> {
