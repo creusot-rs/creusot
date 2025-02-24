@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap};
 
 use crate::{
     backend::{
@@ -120,7 +120,7 @@ impl FromIterator<(Symbol, Ident)> for Renaming {
 struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     ctx: &'a Why3Generator<'tcx>,
     names: &'a N,
-    renaming: &'a mut Renaming,
+    renaming: RefCell<Renaming>,
 }
 
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
@@ -203,7 +203,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     item
                 }
             }
-            TermKind::Var(v) => Exp::Var(self.renaming.get_unwrap(v)),
+            TermKind::Var(v) => Exp::Var(self.get_var(*v)),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -301,15 +301,15 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 })
             }
             TermKind::Quant { kind, binder, box body, trigger } => {
-                self.renaming.open_scope();
+                self.open_scope();
                 let bound = zip_binder(binder)
                     .map(|(s, t)| {
                         // Generate fresh names for binders, remember old names
-                        let new = self.renaming.fresh(s);
+                        let new = self.fresh(s);
                         (new, self.lower_ty(t)) })  // TODO store this fresh somewhere
                     .collect();
                 let body = self.lower_term(body);
-                self.renaming.close_scope();
+                self.close_scope();
                 let trigger = self.lower_trigger(trigger);
                 match kind {
                     QuantKind::Forall => Exp::forall_trig(bound, trigger, body),
@@ -354,10 +354,10 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     let arms = arms
                         .iter()
                         .map(|(pat, body)| {
-                            self.renaming.open_scope();
+                            self.open_scope();
                             let pat = self.lower_pat(pat);
                             let body = self.lower_term(body);
-                            self.renaming.close_scope();
+                            self.close_scope();
                             (pat, body)
                         })
                         .collect();
@@ -366,10 +366,10 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Let { pattern, box arg, box body } => {
                 let arg = Box::new(self.lower_term(arg));
-                self.renaming.open_scope();
+                self.open_scope();
                 let pattern = self.lower_pat(pattern);
                 let body = Box::new(self.lower_term(body));
-                self.renaming.close_scope();
+                self.close_scope();
                 Exp::Let {
                     pattern,
                     arg,
@@ -408,14 +408,14 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let mut binders = Vec::new();
                 let sig = self.ctx.sig(*id).clone();
                 let sig = EarlyBinder::bind(sig).instantiate(self.ctx.tcx, subst);
-                self.renaming.open_scope();
+                self.open_scope();
                 for arg in sig.inputs.iter().skip(1) {
-                    let nm = self.renaming.fresh(arg.0);
+                    let nm = self.fresh(arg.0);
                     let ty = self.names.normalize(self.ctx, arg.2);
                     binders.push(Binder::typed(nm, self.lower_ty(ty)))
                 }
                 let body = self.lower_term(&*body);
-                self.renaming.close_scope();
+                self.close_scope();
                 Exp::Abs(binders, Box::new(body))
             }
             TermKind::Reborrow { cur, fin, inner, projection } => {
@@ -479,7 +479,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
             }
             Pattern::Wildcard => Pat::Wildcard,
-            Pattern::Binder(name) => Pat::VarP(self.renaming.fresh(*name)),
+            Pattern::Binder(name) => Pat::VarP(self.fresh(*name)),
             Pattern::Boolean(b) => {
                 if *b {
                     Pat::mk_true()
@@ -520,6 +520,22 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             .iter()
             .map(|x| why3::exp::Trigger(x.0.iter().map(|x| self.lower_term(x)).collect()))
             .collect()
+    }
+
+    fn get_var(&self, s: Symbol) -> Ident {
+        self.renaming.borrow().get_unwrap(&s)
+    }
+
+    fn open_scope(&self) {
+        self.renaming.borrow_mut().open_scope();
+    }
+
+    fn close_scope(&self) {
+        self.renaming.borrow_mut().close_scope();
+    }
+
+    fn fresh(&self, s: Symbol) -> Ident{
+        self.renaming.borrow_mut().fresh(s)
     }
 }
 
