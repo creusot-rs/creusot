@@ -6,21 +6,20 @@ use std::{
 use super::Dependencies;
 use crate::{
     backend::{
-        signature::{sig_to_why3, signature_of, PreSignature2},
+        signature::sig_to_why3,
         term::{binop_to_binop, lower_literal, lower_pure, Renaming},
-        ty::{constructor, is_int, ity_to_prelude, translate_ty, uty_to_prelude},
+        ty::{constructor, ity_to_prelude, translate_ty, uty_to_prelude},
         Namer as _, Why3Generator,
     },
     contracts_items::get_builtin,
     ctx::PreludeModule,
-    naming::ident_of,
     pearlite::{super_visit_term, Literal, Pattern, PointerKind, Term, TermVisitor},
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind, TypingEnv};
 use rustc_span::{Span, Symbol};
 use why3::{
-    exp::{BinOp, Environment},
+    exp::Environment,
     ty::Type,
     Exp, Ident,
 };
@@ -239,16 +238,16 @@ impl Post {
         }
     }
 
-    fn subst_to_exp(&self, mut exp: Exp) -> Exp {
+    fn subst_to_exp(&self, exp: Exp) -> Exp {
         let mut env = Environment::new();
-        let mut hole = self.hole;
+        env.add_subst(std::iter::once((self.hole, exp.clone())).collect());
         for (h, e) in self.substs.iter().rev() {
-            env.add_subst(std::iter::once((hole,e.clone())).collect());
             let mut e = e.clone();
             e.subst(&mut env);
-            exp = e;
-            hole = *h;
+            env.add_subst(std::iter::once((*h,e.clone())).collect());
         }
+        let mut exp = self.exp.clone();
+        exp.subst(&mut env);
         exp
     }
 }
@@ -622,16 +621,6 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
     fn ty(&self, ty: Ty<'tcx>) -> Type {
         translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty)
     }
-
-    fn self_sig(&self) -> PreSignature2 {
-        signature_of(self.ctx, self.names, Ident::bound(""), self.self_id) // TODO
-    }
-
-    /// Produces the top-level call expression for the function being verified
-    fn top_level_args(&self) -> Vec<Ident> {
-let sig = self.self_sig();
-sig.args.iter().map(|(_, nm, _)| nm).cloned().collect()
-}
 
     fn get_var(&self, s: Symbol) -> Option<Ident> {
         self.renaming.borrow().get(&s)
