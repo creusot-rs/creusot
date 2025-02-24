@@ -26,13 +26,13 @@ pub(crate) fn lower_pure0<'tcx, N: Namer<'tcx>>(
     names: &N,
     term: &Term<'tcx>,
 ) -> Exp {
-    lower_pure(ctx, names, &mut Renaming::new(), term)
+    lower_pure(ctx, names, &RefCell::new(Renaming::new()), term)
 }
 
 pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
-    renaming: &mut Renaming,
+    renaming: &RefCell<Renaming>,
     term: &Term<'tcx>,
 ) -> Exp {
     let span = term.span;
@@ -49,7 +49,7 @@ pub(crate) fn lower_pat<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     pat: &Pattern<'tcx>,
-    renaming: &mut Renaming,
+    renaming: &RefCell<Renaming>,
 ) -> Pat {
     Lower { ctx, names, renaming }.lower_pat(pat)
 }
@@ -120,7 +120,7 @@ impl FromIterator<(Symbol, Ident)> for Renaming {
 struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     ctx: &'a Why3Generator<'tcx>,
     names: &'a N,
-    renaming: RefCell<Renaming>,
+    renaming: &'a RefCell<Renaming>,
 }
 
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {

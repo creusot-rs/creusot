@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use crate::{
     contracts_items::get_builtin, ctx::*, translated_item::FileModule, translation::pearlite::Term,
 };
@@ -117,8 +119,8 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
 
     let mut decls = vec![];
 
-    let mut renaming = sig.args.iter().map(|(old, new, _)| (*old, *new)).collect();
-    let body = lower_pure(ctx, names, &mut renaming, &body);
+    let renaming = RefCell::new(sig.args.iter().map(|(old, new, _)| (*old, *new)).collect());
+    let body = lower_pure(ctx, names, &renaming, &body);
 
     if sig.contract.variant.is_empty() {
         let mut sig = Signature::from(sig.clone());
