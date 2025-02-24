@@ -343,7 +343,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             //  pre(f)(a0..an) /\ variant(f)(a0..an) /\ (post(f)(a0..an, F(a0..an)) -> Q(F a0..an))
             // ))
             TermKind::Call { id, subst, args } => {
-                let args: Vec<_> = args.into_iter().map(|arg| (arg, self.fresh(rustc_span::kw::Empty))).collect();
+                let args: Vec<_> = args.into_iter().map(|arg| (arg, Ident::fresh(""))).collect();
                 let pre_sig =
                     EarlyBinder::bind(self.ctx.sig(*id).clone()).instantiate(self.ctx.tcx, subst);
 
@@ -588,7 +588,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 }
             }
             Pattern::Wildcard => Pat::Wildcard,
-            Pattern::Binder(name) => Pat::VarP(self.fresh(*name)),
+            Pattern::Binder(name) => Pat::VarP(self.get_var(*name)),
             Pattern::Boolean(b) => {
                 if *b {
                     Pat::mk_true()
