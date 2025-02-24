@@ -379,52 +379,26 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // VC(A || B, Q) = VC(A, |a| if a then Q(true) else VC(B, Q))
             // VC(A OP B, Q) = VC(A, |a| VC(B, |b| Q(a OP B)))
             TermKind::Binary { op, lhs, rhs } => match op {
-<<<<<<< LEFT
-                BinOp::And => self.build_vc(lhs, &|lhs| {
-                    Ok(Exp::if_(lhs, self.build_vc(rhs, k)?, k(Exp::mk_false())?))
-                }),
-                BinOp::Or => self.build_vc(lhs, &|lhs| {
-                    Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_vc(rhs, k)?))
-                }),
-                BinOp::Div => self.build_vc(lhs, &|lhs| {
-                    self.build_vc(rhs, &|rhs| k(Exp::QVar("div".into()).app(vec![lhs.clone(), rhs])))
-                }),
-                BinOp::Rem => self.build_vc(lhs, &|lhs| {
-                    self.build_vc(rhs, &|rhs| k(Exp::var("mod").app(vec![lhs.clone(), rhs])))
-                }),
-                _ => self.build_vc(lhs, &|lhs| {
-                    self.build_vc(rhs, &|rhs| {
-                        k(Exp::BinaryOp(binop_to_binop(*op), Box::new(lhs.clone()), Box::new(rhs)))
-                    })
-                }),
-||||||| BASE
-                BinOp::And => self.build_vc(lhs, &|lhs| {
-                    Ok(Exp::if_(lhs, self.build_vc(rhs, k)?, k(Exp::mk_false())?))
-                }),
-                // BinOp::Or => self.build_vc(lhs, &|lhs| {
-                //     Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_vc(rhs, k)?,))
-                // }),
-                BinOp::Div => self.build_vc(lhs, &|lhs| {
-                    self.build_vc(rhs, &|rhs| k(Exp::QVar("div".into()).app(vec![lhs.clone(), rhs])))
-                }),
-                _ => self.build_vc(lhs, &|lhs| {
-                    self.build_vc(rhs, &|rhs| {
-                        k(Exp::BinaryOp(binop_to_binop(*op), Box::new(lhs.clone()), Box::new(rhs)))
-                    })
-                }),
-=======
                 BinOp::And => {
                     let vc_rhs = self.build_vc(rhs, q)?;
-                    let hole = q.hole;
-                    let exp = Exp::if_(Exp::Var(hole), vc_rhs, q.subst_to_exp(Exp::mk_false()));
-                    self.build_vc(lhs, &mut Post::new(exp, hole))
+                    let exp = Exp::if_(Exp::Var(q.hole), vc_rhs, q.subst_to_exp(Exp::mk_false()));
+                    self.build_vc(lhs, &mut Post::new(exp, q.hole))
                 }
-                // BinOp::Or => self.build_vc(lhs, &|lhs| {
-                //     Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_vc(rhs, k)?,))
-                // }),
+                BinOp::Or => {
+                    let vc_rhs = self.build_vc(rhs, q)?;
+                    let exp = Exp::if_(Exp::Var(q.hole), q.subst_to_exp(Exp::mk_true()), vc_rhs);
+                    self.build_vc(lhs, &mut Post::new(exp, q.hole))
+                }
                 BinOp::Div => {
                     let lhs_hole = Ident::fresh("");
                     q.subst(Exp::QVar("div".into()).app(vec![Exp::Var(lhs_hole), Exp::Var(q.hole)]));
+                    let vc_rhs = self.build_vc(rhs, q)?;
+                    q.undo_subst();
+                    self.build_vc(lhs, &mut Post::new(vc_rhs, lhs_hole))
+                }
+                BinOp::Div => {
+                    let lhs_hole = Ident::fresh("");
+                    q.subst(Exp::QVar("mod".into()).app(vec![Exp::Var(lhs_hole), Exp::Var(q.hole)]));
                     let vc_rhs = self.build_vc(rhs, q)?;
                     q.undo_subst();
                     self.build_vc(lhs, &mut Post::new(vc_rhs, lhs_hole))
@@ -436,7 +410,6 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     q.undo_subst();
                     self.build_vc(lhs, &mut Post::new(vc_rhs, lhs_hole))
                 }
->>>>>>> RIGHT
             },
             // VC(OP A, Q) = VC(A, |a| Q(OP a))
             TermKind::Unary { op, arg } => {
