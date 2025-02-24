@@ -840,6 +840,10 @@ pub struct Environment {
 }
 
 impl Environment {
+    pub fn new() -> Self {
+        Environment { substs: Vec::new() }
+    }
+
     pub fn add_subst(&mut self, substs: HashMap<Ident, Exp>) {
         self.substs.push(substs);
     }
