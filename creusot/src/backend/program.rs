@@ -394,15 +394,16 @@ impl<'tcx> RValue<'tcx> {
                             _ => unreachable!("this is not an executable path {ty:?}"),
                         };
 
-                        let call = coma::Expr::Symbol(lower.names.from_prelude(prelude, "bw_not"));
+                        let call = coma::Expr::Constant(lower.names.from_prelude(prelude, "bw_not"));
                         let args = vec![Arg::Term(arg.to_why(lower, istmts))];
+                        let ret = Ident::fresh("_ret'");
                         istmts.push(IntermediateStmt::call(
-                            "_ret'".into(),
+                            ret,
                             lower.ty(ty),
                             call,
                             args,
                         ));
-                        Exp::var("_ret'")
+                        Exp::Var(ret)
                     }
                     _ => unreachable!("the not operator is not supported for {ty:?}"),
                 }
@@ -460,10 +461,10 @@ impl<'tcx> RValue<'tcx> {
                         istmts.extend([IntermediateStmt::call(
                             of_ret_id,
                             lower.ty(ty),
-                            Expr::Symbol(of_fname),
+                            Expr::Constant(of_fname),
                             vec![of_arg],
                         )]);
-                        Exp::var(of_ret_id)
+                        Exp::Var(of_ret_id)
                     }
                     _ => {
                         let tmp_ty = Type::TConstructor(
@@ -497,7 +498,7 @@ impl<'tcx> RValue<'tcx> {
                         istmts.push(IntermediateStmt::call(
                             to_ret_id.clone(),
                             tmp_ty,
-                            Expr::Symbol(to_fname),
+                            Expr::Constant(to_fname),
                             vec![to_arg],
                         ));
 
@@ -533,10 +534,10 @@ impl<'tcx> RValue<'tcx> {
                         istmts.extend([IntermediateStmt::call(
                             of_ret_id.clone(),
                             lower.ty(ty),
-                            Expr::Symbol(of_fname),
+                            Expr::Constant(of_fname),
                             vec![Arg::Term(Term::Var(to_ret_id))],
                         )]);
-                        Exp::var(of_ret_id)
+                        Exp::Var(of_ret_id)
                     }
                 }
             }
@@ -628,7 +629,7 @@ impl<'tcx> RValue<'tcx> {
                 if pl.ty(lower.ctx.tcx, lower.locals).is_slice() {
                     let lhs =
                         Exp::QVar(lower.names.from_prelude(PreludeModule::Slice, "slice_ptr_len"))
-                            .app_to(ptr);
+                            .app_to(Exp::Var(ptr));
                     let rhs = Exp::QVar(lower.names.from_prelude(PreludeModule::Slice, "length"))
                         .app_to(rplace_to_expr(lower, &pl, istmts));
                     istmts.push(IntermediateStmt::Assume(lhs.eq(rhs)));
@@ -1074,7 +1075,7 @@ impl<'tcx> Statement<'tcx> {
                                 uty_to_prelude(lower.ctx.tcx, UintTy::Usize),
                                 "t'int",
                             );
-                            Exp::Call(Box::new(Exp::qvar(qname)), vec![Exp::var(v)])
+                            Exp::Call(Box::new(Exp::qvar(qname)), vec![Exp::Var(v)])
                         },
                     );
 
