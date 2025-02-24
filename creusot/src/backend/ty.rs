@@ -317,31 +317,6 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
     }
 }
 
-pub(crate) fn intty_to_ty<'tcx, N: Namer<'tcx>>(names: &N, ity: IntTy) -> MlT {
-    names.import_prelude_module(int_to_prelude(ity));
-    let name = match ity {
-        IntTy::Isize => "isize",
-        IntTy::I8 => "int8",
-        IntTy::I16 => "int16",
-        IntTy::I32 => "int32",
-        IntTy::I64 => "int64",
-        IntTy::I128 =>"int128",
-    };
-    MlT::TConstructor(QName::from(name))
-}
-
-pub(crate) fn uintty_to_ty<'tcx, N: Namer<'tcx>>(names: &N, uty: UintTy) -> MlT {
-    names.import_prelude_module(uint_to_prelude(uty));
-    match uty {
-        UintTy::Usize => MlT::TConstructor(QName::from("usize")),
-        UintTy::U8 => MlT::TConstructor(QName::from("uint8")),
-        UintTy::U16 => MlT::TConstructor(QName::from("uint16")),
-        UintTy::U32 => MlT::TConstructor(QName::from("uint32")),
-        UintTy::U64 => MlT::TConstructor(QName::from("uint64")),
-        UintTy::U128 => MlT::TConstructor(QName::from("uint128")),
-    }
-}
-
 pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
     if let TyKind::Adt(def, _) = ty.kind() {
         is_int_ty(tcx, def.did())
