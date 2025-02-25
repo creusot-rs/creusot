@@ -6,8 +6,7 @@ use crate::{
     },
     ctx::*,
     function::closure_capture_subst,
-    naming::anonymous_param_symbol,
-    pearlite::TermVisitorMut,
+    pearlite::{Name, TermVisitorMut},
     translation::pearlite::{self, normalize, Literal, Term, TermKind},
     util::erased_identity_for_item,
 };
@@ -48,7 +47,7 @@ pub struct PreContract<'tcx> {
 }
 
 impl<'tcx> PreContract<'tcx> {
-    pub(crate) fn subst(&mut self, subst: &HashMap<Symbol, Term<'tcx>>) {
+    pub(crate) fn subst(&mut self, subst: &HashMap<Name, Term<'tcx>>) {
         for term in self.terms_mut() {
             term.subst(subst);
         }
@@ -270,7 +269,7 @@ pub(crate) fn inv_subst<'tcx>(
 fn place_to_term<'tcx>(
     tcx: TyCtxt<'tcx>,
     p: mir::Place<'tcx>,
-    locals: &HashMap<Local, Symbol>,
+    locals: &HashMap<Local, Name>,
     body: &Body<'tcx>,
 ) -> Term<'tcx> {
     let ty = p.ty(&body.local_decls, tcx).ty;
@@ -443,7 +442,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
     let fn_ty = ctx.tcx.type_of(def_id).instantiate_identity();
 
     if let TyKind::Closure(_, subst) = fn_ty.kind() {
-        let self_ = Symbol::intern("_1");
+        let self_ = Name::Arg(0);
         let kind = subst.as_closure().kind();
         let env_ty = ctx.closure_env_ty(fn_ty, kind, ctx.lifetimes.re_erased);
 

@@ -181,8 +181,3 @@ pub(crate) fn ident_path_segments(tcx: TyCtxt, def_id: DefId) -> Vec<String> {
         }))
         .collect()
 }
-
-pub(crate) fn anonymous_param_symbol(idx: usize) -> Symbol {
-    let name = format!("_{}", idx + 1);
-    Symbol::intern(&name)
-}
