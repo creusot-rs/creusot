@@ -8,7 +8,7 @@ Follow the instructions provided in the [README](./README.md). This will provide
 
 ## 2.1. UI Tests
 
-The UI tests are used to validate the translation of Creusot. They can be found in `creusot/tests/should_fail` and `creusot/tests/should_suceed`.
+The UI tests are used to validate the translation of Creusot. They can be found in `tests/should_fail` and `tests/should_suceed`.
 Ideally, each test includes a comment specifying the property or feature being checked.
 To validate the translation one can run `cargo test --test ui`, or to run only a subset of tests run `cargo test --test ui "pattern"`.
 
@@ -19,7 +19,7 @@ When contributing or updating tests, we ask that you minimize avoidable warnings
 The warnings and errors of each test are recorded in an accompanying `stderr` file if any were present.
 
 The `ui` test also runs the Creusot translation on `creusot-contracts`.
-The result is located at `creusot/tests/creusot-contracts/creusot-contracts.coma`.
+The result is located at `tests/creusot-contracts/creusot-contracts.coma`.
 To run the translation only on `creusot-contracts`, use a pattern that matches nothing, like `cargo test --test ui qq`
 
 # 3. Verifying proofs

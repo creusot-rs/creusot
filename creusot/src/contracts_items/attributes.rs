@@ -46,7 +46,6 @@ attribute_functions! {
     [creusot::before_loop]                   => is_before_loop
     [creusot::spec::assert]                  => is_assertion
     [creusot::spec::snapshot]                => is_snapshot_closure
-    [creusot::ghost]                         => is_ghost_closure
     [creusot::decl::logic]                   => is_logic
     [creusot::decl::logic::prophetic]        => is_prophetic
     [creusot::decl::predicate]               => is_predicate

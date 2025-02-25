@@ -22,13 +22,13 @@ If you would like to cite Creusot in academic contexts, we encourage you to use 
 
 To get an idea of what verifying a program with Creusot looks like, we encourage you to take a look at some of our test suite:
 
-- [Zeroing out a vector](creusot/tests/should_succeed/vector/01.rs)
-- [Binary search on Vectors](creusot/tests/should_succeed/vector/04_binary_search.rs)
-- [Sorting a vector](creusot/tests/should_succeed/vector/02_gnome.rs)
-- [IterMut](creusot/tests/should_succeed/iterators/02_iter_mut.rs)
-- [Normalizing If-Then-Else Expressions](creusot/tests/should_succeed/ite_normalize.rs)
+- [Zeroing out a vector](tests/should_succeed/vector/01.rs)
+- [Binary search on Vectors](tests/should_succeed/vector/04_binary_search.rs)
+- [Sorting a vector](tests/should_succeed/vector/02_gnome.rs)
+- [IterMut](tests/should_succeed/iterators/02_iter_mut.rs)
+- [Normalizing If-Then-Else Expressions](tests/should_succeed/ite_normalize.rs)
 
-More examples are found in [creusot/tests/should_succeed](creusot/tests/should_succeed).
+More examples are found in [tests/should_succeed](tests/should_succeed).
 
 ## Projects built with Creusot
 
@@ -40,26 +40,32 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
 1. [Install `rustup`](https://www.rust-lang.org/tools/install), to get the suitable Rust toolchain
 2. [Get `opam`](https://opam.ocaml.org/doc/Install.html), the package manager for OCaml
 3. Clone the [creusot](https://github.com/creusot-rs/creusot/) repository,
-   then *move into the `creusot` directory* for the rest of the setup.
+   then move into the `creusot` directory.
     ```
     $ git clone https://github.com/creusot-rs/creusot
     $ cd creusot
     ```
-4. Set up **Why3** and **Why3find**. Create a local `opam` switch with why3:
+4. Install **Creusot**:
    ```
-   $ opam switch create -y . ocaml.5.3.0
-   $ eval $(opam env)
+   $ ./INSTALL
    ```
-   This will build `why3`, `why3find`, and their ocaml dependencies in a local `_opam` directory.
-5. Install **Creusot**:
-    ```
-    $ cargo install --path cargo-creusot
-    $ cargo creusot setup install
-    ```
-    The first command will build the `cargo-creusot` executable and place it in `~/.cargo/bin/`.
-    The second command will download solvers (Alt-Ergo, Z3, CVC4, CVC5), configure Why3 to use them,
-    then it will install the `creusot-rustc` executable; configuration files are stored in
-    `~/.config/creusot/` and executables are stored in `~/.local/share/creusot/`.
+   A regular installation consists of:
+   - the `cargo-creusot` executable in `~/.cargo/bin/`;
+   - the `creusot-rustc` executable in `~/.local/share/creusot/toolchains/$TOOLCHAIN/bin`;
+   - the `why3` and `why3find` executables in `~/.local/share/creusot/_opam/bin` (in a local opam switch);
+   - the Creusot prelude in `~/.local/share/creusot/_opam/lib/why3find/packages/creusot`;
+   - SMT solvers (Alt-Ergo, CVC4, CVC5, Z3) in `~/.local/share/creusot/bin`;
+   - configuration files in `~/.config/creusot/`.
+
+Installation options can be set in a text file `INSTALL.opts`.
+They are just space-separated command-line arguments.
+Type `./INSTALL --help` for a list of available options.
+For example:
+
+```
+echo "--external z3" > INSTALL.opts
+./INSTALL
+```
 
 # Upgrading Creusot
 
@@ -74,13 +80,9 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
    $ opam update
    $ opam pin . -y
    ```
-3. Rebuild and reinstall Creusot:
+3. Reinstall Creusot:
    ```
-   $ cargo install --path cargo-creusot
-   ```
-4. Re-run Creusot's setup:
-   ```
-   $ cargo creusot setup install
+   $ ./INSTALL
    ```
 
 # Verifying with Creusot and Why3

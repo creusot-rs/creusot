@@ -1,0 +1,117 @@
+module M_fmap_indexing__foo [#"fmap_indexing.rs" 4 0 4 12]
+  let%span sfmap_indexing0 = "fmap_indexing.rs" 5 18 5 42
+  let%span sfmap_indexing1 = "fmap_indexing.rs" 6 10 6 37
+  let%span sfmap_indexing2 = "fmap_indexing.rs" 7 18 7 29
+  let%span sfmap_indexing3 = "fmap_indexing.rs" 8 10 8 38
+  let%span sfmap_indexing4 = "fmap_indexing.rs" 9 18 9 45
+  let%span sfmap_indexing5 = "fmap_indexing.rs" 10 10 10 37
+  let%span sfmap_indexing6 = "fmap_indexing.rs" 11 18 11 45
+  let%span sfmap7 = "../../creusot-contracts/src/logic/fmap.rs" 40 14 40 31
+  let%span sfmap8 = "../../creusot-contracts/src/logic/fmap.rs" 41 14 41 49
+  let%span sfmap9 = "../../creusot-contracts/src/logic/fmap.rs" 67 14 67 71
+  let%span sfmap10 = "../../creusot-contracts/src/logic/fmap.rs" 68 14 68 61
+  let%span sfmap11 = "../../creusot-contracts/src/logic/fmap.rs" 69 14 69 66
+  let%span sfmap12 = "../../creusot-contracts/src/logic/fmap.rs" 229 8 229 24
+  let%span sfmap13 = "../../creusot-contracts/src/logic/fmap.rs" 49 14 49 25
+  let%span sfmap14 = "../../creusot-contracts/src/logic/fmap.rs" 59 14 59 86
+  let%span sutil15 = "../../creusot-contracts/src/util.rs" 21 14 21 30
+  let%span sfmap16 = "../../creusot-contracts/src/logic/fmap.rs" 133 8 133 35
+  let%span sfmap17 = "../../creusot-contracts/src/logic/fmap.rs" 117 8 117 31
+  let%span sfmap18 = "../../creusot-contracts/src/logic/fmap.rs" 104 8 104 26
+  let%span sfmap19 = "../../creusot-contracts/src/logic/fmap.rs" 125 8 125 35
+  let%span sutil20 = "../../creusot-contracts/src/util.rs" 55 11 55 21
+  let%span sutil21 = "../../creusot-contracts/src/util.rs" 56 10 56 28
+  
+  use mach.int.Int
+  
+  type t_FMap'0
+  
+  function len'0 (self : t_FMap'0) : int
+  
+  axiom len'0_spec : forall self : t_FMap'0 . [%#sfmap13] len'0 self >= 0
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 int
+  
+  use map.Map
+  
+  function view'0 (self : t_FMap'0) : Map.map int t_Option'0
+  
+  axiom view'0_spec : forall self : t_FMap'0 . [%#sfmap14] forall m1 : t_FMap'0, m2 : t_FMap'0 . m1 <> m2
+   -> view'0 m1 <> view'0 m2
+  
+  use map.Const
+  
+  function empty'0 (_1 : ()) : t_FMap'0
+  
+  axiom empty'0_spec : forall _1 : () . ([%#sfmap7] len'0 (empty'0 _1) = 0)
+  && ([%#sfmap8] view'0 (empty'0 _1) = Const.const (C_None'0))
+  
+  use map.Map
+  
+  function make_sized'0 (self : int) : int
+  
+  axiom make_sized'0_spec : forall self : int . [%#sutil15] make_sized'0 self = self
+  
+  use map.Map
+  
+  function get_unsized'0 [@inline:trivial] (self : t_FMap'0) (k : int) : t_Option'0 =
+    [%#sfmap18] Map.get (view'0 self) k
+  
+  function contains'0 [@inline:trivial] (self : t_FMap'0) (k : int) : bool =
+    [%#sfmap16] get_unsized'0 self k <> C_None'0
+  
+  function insert'0 (self : t_FMap'0) (k : int) (v : int) : t_FMap'0
+  
+  axiom insert'0_spec : forall self : t_FMap'0, k : int, v : int . ([%#sfmap9] view'0 (insert'0 self k v)
+  = Map.set (view'0 self) k (C_Some'0 (make_sized'0 v)))
+  && ([%#sfmap10] contains'0 self k  -> len'0 (insert'0 self k v) = len'0 self)
+  && ([%#sfmap11] not contains'0 self k  -> len'0 (insert'0 self k v) = len'0 self + 1)
+  
+  function unwrap'0 (op : t_Option'0) : int
+  
+  axiom unwrap'0_spec : forall op : t_Option'0 . ([%#sutil20] op <> C_None'0)
+   -> ([%#sutil21] C_Some'0 (unwrap'0 op) = op)
+  
+  function lookup_unsized'0 [@inline:trivial] (self : t_FMap'0) (k : int) : int =
+    [%#sfmap19] unwrap'0 (get_unsized'0 self k)
+  
+  function lookup'0 [@inline:trivial] (self : t_FMap'0) (k : int) : int =
+    [%#sfmap17] lookup_unsized'0 self k
+  
+  function index_logic'0 [@inline:trivial] (self : t_FMap'0) (key : int) : int =
+    [%#sfmap12] lookup'0 self key
+  
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec foo'0[#"fmap_indexing.rs" 4 0 4 12] (_1:()) (return'  (ret:()))= (! bb0
+    [ bb0 = s0 [ s0 =  [ &map <- [%#sfmap_indexing0] empty'0 () ] s1 | s1 = bb1 ] 
+    | bb1 = s0 [ s0 =  [ &_3 <- [%#sfmap_indexing1] insert'0 map 1 3 ] s1 | s1 = bb2 ] 
+    | bb2 = s0
+      [ s0 =  [ &map <- _3 ] s1
+      | s1 = {[@expl:assertion] [%#sfmap_indexing2] index_logic'0 map 1 = 3} s2
+      | s2 =  [ &_7 <- [%#sfmap_indexing3] insert'0 map 2 42 ] s3
+      | s3 = bb3 ]
+    
+    | bb3 = s0
+      [ s0 =  [ &map <- _7 ] s1
+      | s1 = {[@expl:assertion] [%#sfmap_indexing4] index_logic'0 map 1 = 3 /\ index_logic'0 map 2 = 42} s2
+      | s2 =  [ &_11 <- [%#sfmap_indexing5] insert'0 map 1 4 ] s3
+      | s3 = bb4 ]
+    
+    | bb4 = s0
+      [ s0 =  [ &map <- _11 ] s1
+      | s1 = {[@expl:assertion] [%#sfmap_indexing6] index_logic'0 map 1 = 4 /\ index_logic'0 map 2 = 42} s2
+      | s2 = return' {_0} ]
+     ]
+    )
+    [ & _0 : () = Any.any_l ()
+    | & map : t_FMap'0 = Any.any_l ()
+    | & _3 : t_FMap'0 = Any.any_l ()
+    | & _7 : t_FMap'0 = Any.any_l ()
+    | & _11 : t_FMap'0 = Any.any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end

@@ -1,0 +1,118 @@
+module M_resolve_uninit__maybe_uninit [#"resolve_uninit.rs" 5 0 5 51]
+  let%span sresolve_uninit0 = "resolve_uninit.rs" 8 12 8 24
+  let%span sresolve_uninit1 = "resolve_uninit.rs" 5 41 5 42
+  let%span sresolve_uninit2 = "resolve_uninit.rs" 5 50 5 51
+  let%span sdefault3 = "../../creusot-contracts/src/std/default.rs" 31 26 31 45
+  
+  type t_T'0
+  
+  predicate inv'0 (_1 : t_T'0)
+  
+  predicate is_default'0 (self : t_T'0)
+  
+  let rec default'0 (_1:()) (return'  (ret:t_T'0))= any
+    [ return' (result:t_T'0)-> {inv'0 result} {[%#sdefault3] is_default'0 result} (! return' {result}) ]
+  
+  
+  predicate resolve'0 (_1 : t_T'0)
+  
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec maybe_uninit'0[#"resolve_uninit.rs" 5 0 5 51] (b:bool) (y:t_T'0) (return'  (ret:t_T'0))= {[@expl:maybe_uninit 'y' type invariant] [%#sresolve_uninit1] inv'0 y}
+    (! bb0
+    [ bb0 = any [ br0 -> {b = false} (! bb6) | br1 -> {b} (! bb1) ] 
+    | bb1 = s0 [ s0 = default'0 {[%#sresolve_uninit0] ()} (fun (_ret':t_T'0) ->  [ &_6 <- _ret' ] s1) | s1 = bb2 ] 
+    | bb2 = bb3
+    | bb3 = s0
+      [ s0 =  [ &x <- _6 ] s1 | s1 = {[@expl:type invariant] inv'0 x} s2 | s2 = -{resolve'0 x}- s3 | s3 = bb5 ]
+    
+    | bb5 = bb7
+    | bb6 = bb7
+    | bb7 = bb8
+    | bb8 = s0 [ s0 =  [ &x <- y ] s1 | s1 = bb10 ] 
+    | bb10 = s0 [ s0 =  [ &_0 <- x ] s1 | s1 = bb11 ] 
+    | bb11 = bb12
+    | bb12 = return' {_0} ]
+    )
+    [ & _0 : t_T'0 = Any.any_l ()
+    | & b : bool = b
+    | & y : t_T'0 = y
+    | & x : t_T'0 = Any.any_l ()
+    | & _6 : t_T'0 = Any.any_l () ]
+    
+    [ return' (result:t_T'0)-> {[@expl:maybe_uninit result type invariant] [%#sresolve_uninit2] inv'0 result}
+      (! return' {result}) ]
+
+end
+module M_resolve_uninit__init_join [#"resolve_uninit.rs" 15 0 15 37]
+  let%span sresolve_uninit0 = "resolve_uninit.rs" 27 9 27 10
+  let%span sresolve_uninit1 = "resolve_uninit.rs" 28 17 28 18
+  let%span sresolve_uninit2 = "resolve_uninit.rs" 28 4 28 19
+  let%span sresolve3 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  
+  use creusot.prelude.MutBorrow
+  
+  use creusot.int.Int32
+  
+  predicate resolve'1 (self : MutBorrow.t Int32.t) =
+    [%#sresolve3] self.final = self.current
+  
+  predicate resolve'0 (_1 : MutBorrow.t Int32.t) =
+    resolve'1 _1
+  
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec init_join'0[#"resolve_uninit.rs" 15 0 15 37] (b:bool) (x:Int32.t) (return'  (ret:()))= (! bb0
+    [ bb0 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ] 
+    | bb1 = s0
+      [ s0 = MutBorrow.borrow_mut <Int32.t> {x}
+          (fun (_ret':MutBorrow.t Int32.t) ->  [ &_8 <- _ret' ]  [ &x <- _ret'.final ] s1)
+      | s1 = MutBorrow.borrow_final <Int32.t> {_8.current} {MutBorrow.get_id _8}
+          (fun (_ret':MutBorrow.t Int32.t) ->  [ &_7 <- _ret' ]  [ &_8 <- { _8 with current = _ret'.final } ] s2)
+      | s2 =  [ &z <- _7 ] s3
+      | s3 = -{resolve'0 _8}- s4
+      | s4 = MutBorrow.borrow_final <Int32.t> {z.current} {MutBorrow.get_id z}
+          (fun (_ret':MutBorrow.t Int32.t) ->  [ &_10 <- _ret' ]  [ &z <- { z with current = _ret'.final } ] s5)
+      | s5 = MutBorrow.borrow_final <Int32.t> {_10.current} {MutBorrow.get_id _10}
+          (fun (_ret':MutBorrow.t Int32.t) ->  [ &_9 <- _ret' ]  [ &_10 <- { _10 with current = _ret'.final } ] s6)
+      | s6 =  [ &y <- _9 ] s7
+      | s7 = -{resolve'0 _10}- s8
+      | s8 = bb7 ]
+    
+    | bb7 = s0 [ s0 = -{resolve'0 z}- s1 | s1 = bb3 ] 
+    | bb2 = s0
+      [ s0 = MutBorrow.borrow_mut <Int32.t> {x}
+          (fun (_ret':MutBorrow.t Int32.t) ->  [ &_12 <- _ret' ]  [ &x <- _ret'.final ] s1)
+      | s1 = MutBorrow.borrow_final <Int32.t> {_12.current} {MutBorrow.get_id _12}
+          (fun (_ret':MutBorrow.t Int32.t) ->  [ &_11 <- _ret' ]  [ &_12 <- { _12 with current = _ret'.final } ] s2)
+      | s2 =  [ &y <- _11 ] s3
+      | s3 = -{resolve'0 _12}- s4
+      | s4 = bb3 ]
+    
+    | bb3 = s0
+      [ s0 =  [ &y <- { y with current = ([%#sresolve_uninit0] (5 : Int32.t)) } ] s1
+      | s1 = -{resolve'0 y}- s2
+      | s2 =  [ &_14 <- x = ([%#sresolve_uninit1] (5 : Int32.t)) ] s3
+      | s3 = any [ br0 -> {_14 = false} (! bb5) | br1 -> {_14} (! bb4) ]  ]
+    
+    | bb4 = return' {_0}
+    | bb5 = {[%#sresolve_uninit2] false} any ]
+    )
+    [ & _0 : () = Any.any_l ()
+    | & b : bool = b
+    | & x : Int32.t = x
+    | & y : MutBorrow.t Int32.t = Any.any_l ()
+    | & z : MutBorrow.t Int32.t = Any.any_l ()
+    | & _7 : MutBorrow.t Int32.t = Any.any_l ()
+    | & _8 : MutBorrow.t Int32.t = Any.any_l ()
+    | & _9 : MutBorrow.t Int32.t = Any.any_l ()
+    | & _10 : MutBorrow.t Int32.t = Any.any_l ()
+    | & _11 : MutBorrow.t Int32.t = Any.any_l ()
+    | & _12 : MutBorrow.t Int32.t = Any.any_l ()
+    | & _14 : bool = Any.any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end

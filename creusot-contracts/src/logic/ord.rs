@@ -273,32 +273,32 @@ macro_rules! ord_logic_impl {
     };
 }
 
-ord_logic_impl!(u8, "prelude.int.UInt8$BW$");
-ord_logic_impl!(u16, "prelude.int.UInt16$BW$");
-ord_logic_impl!(u32, "prelude.int.UInt32$BW$");
-ord_logic_impl!(u64, "prelude.int.UInt64$BW$");
-ord_logic_impl!(u128, "prelude.int.UInt128$BW$");
+ord_logic_impl!(u8, "creusot.int.UInt8$BW$");
+ord_logic_impl!(u16, "creusot.int.UInt16$BW$");
+ord_logic_impl!(u32, "creusot.int.UInt32$BW$");
+ord_logic_impl!(u64, "creusot.int.UInt64$BW$");
+ord_logic_impl!(u128, "creusot.int.UInt128$BW$");
 #[cfg(target_pointer_width = "64")]
-ord_logic_impl!(usize, "prelude.int.UInt64$BW$");
+ord_logic_impl!(usize, "creusot.int.UInt64$BW$");
 #[cfg(target_pointer_width = "32")]
-ord_logic_impl!(usize, "prelude.int.UInt32$BW$");
+ord_logic_impl!(usize, "creusot.int.UInt32$BW$");
 #[cfg(target_pointer_width = "16")]
-ord_logic_impl!(usize, "prelude.int.UInt16$BW$");
+ord_logic_impl!(usize, "creusot.int.UInt16$BW$");
 
-ord_logic_impl!(i8, "prelude.int.Int8$BW$");
-ord_logic_impl!(i16, "prelude.int.Int16$BW$");
-ord_logic_impl!(i32, "prelude.int.Int32$BW$");
-ord_logic_impl!(i64, "prelude.int.Int64$BW$");
-ord_logic_impl!(i128, "prelude.int.Int128$BW$");
+ord_logic_impl!(i8, "creusot.int.Int8$BW$");
+ord_logic_impl!(i16, "creusot.int.Int16$BW$");
+ord_logic_impl!(i32, "creusot.int.Int32$BW$");
+ord_logic_impl!(i64, "creusot.int.Int64$BW$");
+ord_logic_impl!(i128, "creusot.int.Int128$BW$");
 #[cfg(target_pointer_width = "64")]
-ord_logic_impl!(isize, "prelude.int.Int64$BW$");
+ord_logic_impl!(isize, "creusot.int.Int64$BW$");
 #[cfg(target_pointer_width = "32")]
-ord_logic_impl!(isize, "prelude.int.Int32$BW$");
+ord_logic_impl!(isize, "creusot.int.Int32$BW$");
 #[cfg(target_pointer_width = "16")]
-ord_logic_impl!(isize, "prelude.int.Int16$BW$");
+ord_logic_impl!(isize, "creusot.int.Int16$BW$");
 
-ord_logic_impl!(char, "prelude.prelude.Char");
-ord_logic_impl!(bool, "prelude.prelude.Bool");
+ord_logic_impl!(char, "creusot.prelude.Char");
+ord_logic_impl!(bool, "creusot.prelude.Bool");
 
 impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
     #[logic]

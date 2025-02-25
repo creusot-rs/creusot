@@ -114,7 +114,7 @@ pub enum RValue<'tcx> {
     Ptr(Place<'tcx>),
 }
 
-impl<'tcx> RValue<'tcx> {
+impl RValue<'_> {
     /// Returns false if the expression generates verification conditions
     pub fn is_pure(&self) -> bool {
         match self {

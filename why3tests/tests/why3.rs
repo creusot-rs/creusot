@@ -55,12 +55,25 @@ fn main() {
 
     std::env::set_current_dir("..").unwrap();
 
+    // Use the Creusot installation for Why3, Why3find, and solvers (because they're a pain to keep track of if we allow them to come from anywhere)
+    let creusot_setup::Paths { why3, why3find, why3_config } =
+        creusot_setup::creusot_paths().unwrap();
+    // Use the local prelude, so that it's easy to test quick changes.
+    let build_prelude_success = Command::new("cargo")
+        .args(["run", "-p", "creusot-install", "--", "--only-build-prelude"])
+        .status()
+        .unwrap()
+        .success();
+    if !build_prelude_success {
+        exit(1);
+    }
+
     let changed =
         if let Some(diff) = args.diff_from { Some(changed_comas(&diff).unwrap()) } else { None };
 
     let mut success = true;
     let mut obsolete = false;
-    for file in glob::glob("creusot/tests/**/*.coma").unwrap() {
+    for file in glob::glob("tests/**/*.coma").unwrap() {
         // Check for early abort
         if args.fail_early && (!success || obsolete) {
             break;
@@ -107,9 +120,8 @@ fn main() {
         sessiondir.set_file_name(file.file_stem().unwrap());
 
         let output;
-        let paths = creusot_setup::creusot_paths().unwrap();
-        let mut why3 = Command::new(paths.why3.clone());
-        why3.arg("-C").arg(&paths.why3_config);
+        let mut why3 = Command::new(&why3);
+        why3.arg("-C").arg(&why3_config);
         why3.arg("--warn-off=unused_variable");
         why3.arg("--warn-off=clone_not_abstract");
         why3.arg("--warn-off=axiom_abstract");
@@ -213,8 +225,8 @@ fn main() {
                 }
             }
         } else {
-            let mut why3find = Command::new(paths.why3find);
-            why3find.env("WHY3CONFIG", &paths.why3_config);
+            let mut why3find = Command::new(&why3find);
+            why3find.env("WHY3CONFIG", &why3_config);
             why3find.arg("prove").arg(file.canonicalize().unwrap());
             why3find.arg("--root");
             why3find.arg("target");

@@ -83,29 +83,29 @@ macro_rules! mach_int {
     };
 }
 
-mach_int!(u8, "prelude.int.UInt8$BW$", 0u8, ".t'int");
-mach_int!(u16, "prelude.int.UInt16$BW$", 0u16, ".t'int");
-mach_int!(u32, "prelude.int.UInt32$BW$", 0u32, ".t'int");
-mach_int!(u64, "prelude.int.UInt64$BW$", 0u64, ".t'int");
-mach_int!(u128, "prelude.int.UInt128$BW$", 0u128, ".t'int");
+mach_int!(u8, "creusot.int.UInt8$BW$", 0u8, ".t'int");
+mach_int!(u16, "creusot.int.UInt16$BW$", 0u16, ".t'int");
+mach_int!(u32, "creusot.int.UInt32$BW$", 0u32, ".t'int");
+mach_int!(u64, "creusot.int.UInt64$BW$", 0u64, ".t'int");
+mach_int!(u128, "creusot.int.UInt128$BW$", 0u128, ".t'int");
 #[cfg(target_pointer_width = "64")]
-mach_int!(usize, "prelude.int.UInt64$BW$", 0usize, ".t'int");
+mach_int!(usize, "creusot.int.UInt64$BW$", 0usize, ".t'int");
 #[cfg(target_pointer_width = "32")]
-mach_int!(usize, "prelude.int.UInt32$BW$", 0usize, ".t'int");
+mach_int!(usize, "creusot.int.UInt32$BW$", 0usize, ".t'int");
 #[cfg(target_pointer_width = "16")]
-mach_int!(usize, "prelude.int.UInt16$BW$", 0usize, ".t'int");
+mach_int!(usize, "creusot.int.UInt16$BW$", 0usize, ".t'int");
 
-mach_int!(i8, "prelude.int.Int8$BW$", 0i8, ".to_int");
-mach_int!(i16, "prelude.int.Int16$BW$", 0i16, ".to_int");
-mach_int!(i32, "prelude.int.Int32$BW$", 0i32, ".to_int");
-mach_int!(i64, "prelude.int.Int64$BW$", 0i64, ".to_int");
-mach_int!(i128, "prelude.int.Int128$BW$", 0i128, ".to_int");
+mach_int!(i8, "creusot.int.Int8$BW$", 0i8, ".to_int");
+mach_int!(i16, "creusot.int.Int16$BW$", 0i16, ".to_int");
+mach_int!(i32, "creusot.int.Int32$BW$", 0i32, ".to_int");
+mach_int!(i64, "creusot.int.Int64$BW$", 0i64, ".to_int");
+mach_int!(i128, "creusot.int.Int128$BW$", 0i128, ".to_int");
 #[cfg(target_pointer_width = "64")]
-mach_int!(isize, "prelude.int.Int64$BW$", 0isize, ".to_int");
+mach_int!(isize, "creusot.int.Int64$BW$", 0isize, ".to_int");
 #[cfg(target_pointer_width = "32")]
-mach_int!(isize, "prelude.int.Int32$BW$", 0isize, ".to_int");
+mach_int!(isize, "creusot.int.Int32$BW$", 0isize, ".to_int");
 #[cfg(target_pointer_width = "16")]
-mach_int!(isize, "prelude.int.Int16$BW$", 0isize, ".to_int");
+mach_int!(isize, "creusot.int.Int16$BW$", 0isize, ".to_int");
 
 /// Adds specifications for checked, wrapping, saturating, and overflowing operations on the given
 /// integer type

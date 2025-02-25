@@ -1,0 +1,81 @@
+module M_generated__use_foo [#"generated.rs" 19 0 19 61]
+  let%span sgenerated0 = "generated.rs" 20 18 20 35
+  let%span sgenerated1 = "generated.rs" 19 19 19 20
+  let%span sinvariant2 = "../../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  let%span sgenerated3 = "generated.rs" 10 20 10 43
+  
+  use creusot.prelude.MutBorrow
+  
+  use creusot.int.Int32
+  
+  type t_Sum10'0  =
+    { t_Sum10__0'0: Int32.t; t_Sum10__1'0: Int32.t }
+  
+  use creusot.int.UInt64
+  
+  use creusot.int.UInt32
+  
+  type t_Foo'1  =
+    | C_A'1 (MutBorrow.t t_Sum10'0) UInt64.t
+    | C_B'1 UInt32.t
+  
+  type t_Foo'0  =
+    | C_A'0 (MutBorrow.t t_Sum10'0) UInt64.t
+    | C_B'0 (t_Foo'1, MutBorrow.t t_Sum10'0)
+  
+  use creusot.int.Int32
+  
+  use mach.int.Int
+  
+  predicate invariant'1 [#"generated.rs" 9 4 9 30] (self : t_Sum10'0) =
+    [%#sgenerated3] Int32.to_int self.t_Sum10__0'0 + Int32.to_int self.t_Sum10__1'0 = 10
+  
+  predicate inv'4 (_1 : t_Sum10'0)
+  
+  axiom inv_axiom'4 [@rewrite] : forall x : t_Sum10'0 [inv'4 x] . inv'4 x
+  = (invariant'1 x
+  /\ match x with
+    | {t_Sum10__0'0 = a_0 ; t_Sum10__1'0 = a_1} -> true
+    end)
+  
+  predicate invariant'0 (self : MutBorrow.t t_Sum10'0) =
+    [%#sinvariant2] inv'4 self.current /\ inv'4 self.final
+  
+  predicate inv'1 (_1 : MutBorrow.t t_Sum10'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t t_Sum10'0 [inv'1 x] . inv'1 x = invariant'0 x
+  
+  predicate inv'3 (_1 : t_Foo'1)
+  
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Foo'1 [inv'3 x] . inv'3 x
+  = match x with
+    | C_A'1 f1 f2 -> inv'1 f1
+    | C_B'1 a_0 -> true
+    end
+  
+  predicate inv'2 (_1 : (t_Foo'1, MutBorrow.t t_Sum10'0))
+  
+  axiom inv_axiom'2 [@rewrite] : forall x : (t_Foo'1, MutBorrow.t t_Sum10'0) [inv'2 x] . inv'2 x
+  = (let (x0, x1) = x in inv'3 x0 /\ inv'1 x1)
+  
+  predicate inv'0 (_1 : t_Foo'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Foo'0 [inv'0 x] . inv'0 x
+  = match x with
+    | C_A'0 f1 f2 -> inv'1 f1
+    | C_B'0 a_0 -> inv'2 a_0
+    end
+  
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec use_foo'0[#"generated.rs" 19 0 19 61] (x:t_Foo'0) (return'  (ret:()))= {[@expl:use_foo 'x' type invariant] [%#sgenerated1] inv'0 x}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = {[@expl:type invariant] inv'0 x} s1
+      | s1 = {[@expl:assertion] [%#sgenerated0] inv'0 x} s2
+      | s2 = return' {_0} ]
+     ]
+    ) [ & _0 : () = Any.any_l () | & x : t_Foo'0 = x ]  [ return' (result:())-> (! return' {result}) ] 
+end

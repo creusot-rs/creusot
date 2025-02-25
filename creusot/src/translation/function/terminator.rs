@@ -1,9 +1,6 @@
 use super::BodyTranslator;
 use crate::{
-    contracts_items::{
-        is_box_new, is_deref, is_deref_mut, is_ghost_from_fn, is_ghost_into_inner, is_ghost_new,
-        is_ghost_ty, is_snap_from_fn,
-    },
+    contracts_items::{is_box_new, is_snap_from_fn},
     ctx::TranslationCtx,
     extended_location::ExtendedLocation,
     fmir,
@@ -34,7 +31,7 @@ use rustc_mir_dataflow::{
     move_paths::{HasMoveData, LookupResult},
     on_all_children_bits,
 };
-use rustc_span::{Span, source_map::Spanned};
+use rustc_span::Span;
 use rustc_trait_selection::error_reporting::InferCtxtErrorExt;
 use std::collections::{HashMap, HashSet};
 
@@ -83,7 +80,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 term = Terminator::Return
             }
             Unreachable => term = Terminator::Abort(terminator.source_info.span),
-            &Call { ref func, ref args, destination, mut target, fn_span, .. } => {
+            &Call { ref func, ref args, destination, mut target, .. } => {
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
                 if let Some((need, resolved)) = resolved_during.take() {
                     self.resolve_before_assignment(need, &resolved, location, destination)
@@ -101,12 +98,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         &self.locals,
                         terminator.source_info,
                     ));
-                    self.check_frozen_in_logic(&assertion, location);
+                    self.check_use_in_logic(&assertion, location);
                     self.emit_snapshot_assign(destination, assertion, span);
                 } else {
-                    let call_ghost = self.check_ghost_call(fun_def_id, subst);
-                    self.check_no_ghost_in_program(args, fn_span, fun_def_id, subst);
-
                     let func_args: Box<[_]> = if args.is_empty() {
                         Box::new([fmir::Operand::Constant(Term {
                             kind: TermKind::Tuple { fields: Box::new([]) },
@@ -125,7 +119,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             .ctx
                             .extern_spec(fun_def_id)
                             .map(|p| p.predicates_for(self.tcx(), subst))
-                            .unwrap_or_else(Vec::new);
+                            .unwrap_or_default();
 
                         let infcx = self
                             .ctx
@@ -142,23 +136,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             infcx.err_ctxt().report_fulfillment_errors(errs);
                         }
 
-                        let (fun_def_id, subst) = {
-                            let (fun_id, subst) =
-                                if let Some((ghost_def_id, ghost_args_ty)) = call_ghost {
-                                    // Directly call the ghost closure
-                                    assert_eq!(func_args.len(), 2);
-                                    (ghost_def_id, ghost_args_ty)
-                                } else {
-                                    (fun_def_id, subst)
-                                };
-                            resolve_function(
-                                self.ctx,
-                                self.typing_env(),
-                                fun_id,
-                                subst,
-                                (self.body, span, location),
-                            )
-                        };
+                        let (fun_def_id, subst) = resolve_function(
+                            self.ctx,
+                            self.typing_env(),
+                            fun_def_id,
+                            subst,
+                            (self.body, span, location),
+                        );
 
                         if self.ctx.sig(fun_def_id).contract.is_requires_false() {
                             target = None
@@ -256,125 +240,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             self.resolve_places(need, &resolved);
         }
         self.emit_terminator(term)
-    }
-
-    /// Determine if the given type `ty` is a `GhostBox`.
-    fn is_ghost_box(&self, ty: Ty<'tcx>) -> bool {
-        match ty.kind() {
-            rustc_type_ir::TyKind::Adt(containing_type, _) => {
-                is_ghost_ty(self.ctx.tcx, containing_type.did())
-            }
-            _ => false,
-        }
-    }
-
-    /// If the function we are calling represents a `ghost!` block, we need to:
-    /// - Check that all the captures of the ghost closure are correct with respect to
-    /// the ghost restrictions.
-    /// - Call the ghost closure directly. Here we return the function to call and its
-    /// type parameters.
-    fn check_ghost_call(
-        &mut self,
-        fun_def_id: DefId,
-        subst: GenericArgsRef<'tcx>,
-    ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-        if is_ghost_from_fn(self.ctx.tcx, fun_def_id) {
-            let &[_, ty] = subst.as_slice() else {
-                unreachable!();
-            };
-            let GenericArgKind::Type(ty) = ty.unpack() else { unreachable!() };
-            let TyKind::Closure(ghost_def_id, ghost_args_ty) = ty.kind() else { unreachable!() };
-
-            // Check that all captures are `GhostBox`s
-            let typing_env = self.ctx.typing_env(*ghost_def_id);
-            let captures = self.ctx.closure_captures(ghost_def_id.expect_local());
-            for capture in captures.into_iter().rev() {
-                let copy_allowed = match capture.info.capture_kind {
-                    ty::UpvarCapture::ByRef(
-                        ty::BorrowKind::Mutable | ty::BorrowKind::UniqueImmutable,
-                    ) => false,
-                    _ => true,
-                };
-                let place_ty = capture.place.ty();
-
-                let is_ghost = self.is_ghost_box(place_ty);
-                let is_copy =
-                    copy_allowed && self.tcx().type_is_copy_modulo_regions(typing_env, place_ty);
-
-                if !is_ghost && !is_copy {
-                    let mut error = self.ctx.error(
-                        capture.get_path_span(self.tcx()),
-                        &format!("not a ghost variable: {}", capture.var_ident.as_str()),
-                    );
-                    error.span_note(capture.var_ident.span, String::from("variable defined here"));
-                    error.emit();
-                }
-            }
-
-            Some((*ghost_def_id, ghost_args_ty))
-        } else {
-            None
-        }
-    }
-
-    /// This function will raise errors if we are in program code, and the function we
-    /// are calling is ghost-only.
-    ///
-    /// Ghost-only functions are `GhostBox::new` and `GhostBox::deref`.
-    fn check_no_ghost_in_program(
-        &self,
-        args: &[Spanned<Operand>],
-        fn_span: Span,
-        fun_def_id: DefId,
-        subst: GenericArgsRef<'tcx>,
-    ) {
-        if self.is_ghost_closure {
-            return;
-        }
-        // We are indeed in program code.
-
-        // Check that we do not call `GhostBox::into_inner` in normal code
-        if is_ghost_into_inner(self.ctx.tcx, fun_def_id) {
-            self.ctx
-                .error(
-                    fn_span,
-                    "trying to access the contents of a ghost variable in program context",
-                )
-                .with_note("This method can only be used inside a `ghost!` block")
-                .emit();
-        }
-
-        // Check that we do not create/dereference a ghost variable in normal code.
-        if is_deref(self.ctx.tcx, fun_def_id) || is_deref_mut(self.ctx.tcx, fun_def_id) {
-            let GenericArgKind::Type(ty) = subst.get(0).unwrap().unpack() else { unreachable!() };
-            if self.is_ghost_box(ty) {
-                self.ctx
-                    .error(fn_span, "dereference of a ghost variable in program context")
-                    .with_span_suggestion(
-                        fn_span,
-                        "try wrapping this expression in a ghost block",
-                        format!(
-                            "ghost!{{ {} }}",
-                            self.ctx.sess.source_map().span_to_snippet(fn_span).unwrap()
-                        ),
-                        rustc_errors::Applicability::MachineApplicable,
-                    )
-                    .emit();
-            }
-        } else if is_ghost_new(self.ctx.tcx, fun_def_id) {
-            self.ctx
-                .error(fn_span, "cannot create a ghost variable in program context")
-                .with_span_suggestion(
-                    fn_span,
-                    "try wrapping this expression in `ghost!` instead",
-                    format!(
-                        "ghost!({})",
-                        self.ctx.sess.source_map().span_to_snippet(args[0].span).unwrap()
-                    ),
-                    rustc_errors::Applicability::MachineApplicable,
-                )
-                .emit();
-        }
     }
 
     fn get_explanation(&mut self, msg: &mir::AssertKind<Operand<'tcx>>) -> String {
@@ -490,8 +355,7 @@ fn make_switch<'tcx>(
             ctx.crash_and_error(si.span, "Float patterns are currently unsupported")
         }
         TyKind::Uint(_) => {
-            let branches = targets.iter().map(|(val, tgt)| (val, tgt)).collect();
-            Terminator::Switch(discr, Branches::Uint(branches, targets.otherwise()))
+            Terminator::Switch(discr, Branches::Uint(targets.iter().collect(), targets.otherwise()))
         }
         TyKind::Int(_) => {
             let branches = targets.iter().map(|(val, tgt)| (val as i128, tgt)).collect();

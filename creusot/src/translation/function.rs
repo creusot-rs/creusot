@@ -3,8 +3,8 @@ use crate::{
     backend::ty_inv::is_tyinv_trivial,
     constant::from_mir_constant,
     contracts_items::{
-        get_fn_mut_impl_unnest, get_resolve_function, get_resolve_method, is_ghost_closure,
-        is_snapshot_closure, is_spec,
+        get_fn_mut_impl_unnest, get_resolve_function, get_resolve_method, is_snapshot_closure,
+        is_spec,
     },
     ctx::*,
     extended_location::ExtendedLocation,
@@ -89,8 +89,6 @@ struct BodyTranslator<'a, 'tcx> {
     assertions: IndexMap<DefId, Term<'tcx>>,
     /// Map of the `snapshot!` blocks to their translated version.
     snapshots: IndexMap<DefId, Term<'tcx>>,
-    /// Indicate that the current function is a `ghost!` closure.
-    is_ghost_closure: bool,
 
     borrows: Option<&'a BorrowSet<'tcx>>,
 
@@ -177,7 +175,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             invariant_assertions: invariants.assertions,
             assertions,
             snapshots,
-            is_ghost_closure: is_ghost_closure(tcx, body_id.def_id()),
             borrows,
         })
     }
@@ -223,7 +220,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     &self.locals,
                     *self.body.source_info(bb.start_location()),
                 ));
-                self.check_frozen_in_logic(&body, bb.start_location());
+                self.check_use_in_logic(&body, bb.start_location());
                 match kind {
                     LoopSpecKind::Variant => {
                         if variant.is_some() {
@@ -359,7 +356,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     ) {
         // The assignement may, in theory, modify a variable that needs to be resolved.
         // Hence we resolve before the assignment.
-        self.resolve_places(need, &resolved);
+        self.resolve_places(need, resolved);
 
         // We resolve the destination place, if necessary
         match self.move_data().rev_lookup.find(destination.as_ref()) {
@@ -700,17 +697,21 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         fmir::Place { local: self.locals[&pl.local], projection }
     }
 
-    fn check_frozen_in_logic(&mut self, term: &Term<'tcx>, location: Location) {
+    fn check_use_in_logic(&mut self, term: &Term<'tcx>, location: Location) {
         // TODO: We should refine this check to consider places and not only locals
         if let Some(resolver) = &mut self.resolver {
-            let frozen = resolver.frozen_places_before(location);
+            let mut bad_vars = resolver.frozen_places_before(location);
+            let uninit = resolver.uninit_places_before(location);
+            bad_vars.union(&uninit);
             let free_vars = term.free_vars();
-            for f in frozen.iter() {
-                if let Some(l) =
-                    self.move_data().move_paths[f].place.as_local().map(|l| self.locals[&l])
-                    && free_vars.contains(&l)
+            for f in bad_vars.iter() {
+                if let Some(l) = self.move_data().move_paths[f]
+                    .place
+                    .as_local()
+                    .and_then(|l| self.locals.get(&l))
+                    && free_vars.contains(l)
                 {
-                    let msg = format!("Use of borrowed variable {}", l);
+                    let msg = format!("Use of borrowed or uninitialized variable {}", l);
                     self.ctx.crash_and_error(term.span, &msg);
                 }
             }

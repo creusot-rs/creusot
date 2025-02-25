@@ -74,8 +74,6 @@ contracts_items! {
         is_snapshot_deref               get_snapshot_deref
     fn GhostBox::new                     ["ghost_box_new"]
         is_ghost_new                    get_ghost_new
-    fn GhostBox::from_fn                 ["ghost_from_fn"]
-        is_ghost_from_fn                get_ghost_from_fn
     fn GhostBox::into_inner              ["ghost_box_into_inner"]
         is_ghost_into_inner             get_ghost_into_inner
     fn GhostBox::inner_logic             ["ghost_box_inner_logic"]

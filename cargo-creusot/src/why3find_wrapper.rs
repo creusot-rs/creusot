@@ -35,9 +35,9 @@ fn raw_config(args: &Vec<String>, paths: &Paths) -> Result<()> {
         .arg("--why3-warn-off")
         .arg("unused_variable,axiom_abstract")
         .arg("--package")
-        .arg("prelude");
+        .arg("creusot");
     for prover in PROVERS {
-        why3find.arg("--prover").arg(format!("+{}", prover.bin.binary_name));
+        why3find.arg("--prover").arg(format!("+{}", prover.binary_name));
     }
     for arg in args {
         why3find.arg(arg);

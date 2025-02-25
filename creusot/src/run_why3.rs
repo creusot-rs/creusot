@@ -50,7 +50,7 @@ pub(super) fn run_why3<'tcx>(ctx: &Why3Generator<'tcx>, file: Option<PathBuf>) {
     }
     let temp_dir = TempDir::new("creusot_why3_prelude").expect("could not create temp dir");
     let mut prelude_dir: PathBuf = temp_dir.as_ref().into();
-    prelude_dir.push("prelude");
+    prelude_dir.push("creusot");
     std::fs::create_dir(&prelude_dir).unwrap();
 
     PRELUDE.extract(&prelude_dir).expect("could extract prelude into temp dir");
@@ -341,10 +341,10 @@ fn cterm_to_ast(t: &ConcreteTerm) -> Expr {
             app("funlit!", [arr, cterm_to_ast(other)])
         }
         ConcreteTerm::Proj { name, value } => match (&**name, &**value) {
-            ("prelude.int.UInt8.uint8'int", ConcreteTerm::Integer(n)) => {
+            ("creusot.int.UInt8.uint8'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("u8"))
             }
-            ("prelude.int.UInt16.uint16'int", ConcreteTerm::Integer(n)) => {
+            ("creusot.int.UInt16.uint16'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("u16"))
             }
             ("mach.int.UInt32Gen.uint32'int", ConcreteTerm::Integer(n)) => {
@@ -353,13 +353,13 @@ fn cterm_to_ast(t: &ConcreteTerm) -> Expr {
             ("mach.int.UInt64Gen.uint64'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("u64"))
             }
-            ("prelude.int.UInt128.uint16'int", ConcreteTerm::Integer(n)) => {
+            ("creusot.int.UInt128.uint16'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("u128"))
             }
-            ("prelude.int.Int8.int8'int", ConcreteTerm::Integer(n)) => {
+            ("creusot.int.Int8.int8'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("i8"))
             }
-            ("prelude.int.Int16.int16'int", ConcreteTerm::Integer(n)) => {
+            ("creusot.int.Int16.int16'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("i16"))
             }
             ("mach.int.Int32.int32'int", ConcreteTerm::Integer(n)) => {
@@ -368,7 +368,7 @@ fn cterm_to_ast(t: &ConcreteTerm) -> Expr {
             ("mach.int.Int64.int64'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("i64"))
             }
-            ("prelude.int.Int128.int128'int", ConcreteTerm::Integer(n)) => {
+            ("creusot.int.Int128.int128'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("i128"))
             }
             _ => app("proj!", [name_to_path(name), cterm_to_ast(value)]),

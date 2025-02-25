@@ -22,26 +22,43 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/cache@v4
+    - name: Cache Cargo build
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
           target
         key: ${{ runner.os }}-contracts-${{ hashFiles('creusot-contracts/Cargo.lock') }}
-    - name: Build creusot-contracts with rustc
-      run: cargo build -p creusot-contracts
+    - name: Build creusot-contracts with nightly rustc
+      run: cargo build -p creusot-contracts -F nightly
+  contracts-build-stable:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Cache Cargo build
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-contracts-stable-${{ hashFiles('creusot-contracts/Cargo.lock') }}
+    - name: Build creusot-contracts with stable rustc
+      run: cargo +stable build -p creusot-contracts
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/cache@v4
+    - name: Cache Cargo build
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: ${{ runner.os }}-cargo-
     - name: Build
       run: cargo build
     - name: dummy creusot setup
@@ -50,42 +67,7 @@ jobs:
         cp ci/creusot-config-dummy.toml ~/.config/creusot/Config.toml
     - name: Run tests
       run: cargo test
-  why3-deps:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/cache@v4
-      id: cache-opam
-      with:
-        path: |
-          /home/runner/work/creusot/creusot/_opam
-        key: ${{ runner.os }}-opam-${{ hashFiles('creusot-deps.opam') }}
-    - uses: ocaml/setup-ocaml@v3
-      if: steps.cache-opam.outputs.cache-hit != 'true'
-      with:
-        ocaml-compiler: 5.3.0
-    - name: install opam dependencies
-      if: steps.cache-opam.outputs.cache-hit != 'true'
-      run: |
-        sudo apt update
-        opam switch
-        opam --cli=2.1 var --global in-creusot-ci=true
-        opam install .
-        mkdir /tmp/to-delete
-        opam info --list-files why3 why3find > keep
-        sed -i 's/^.*\/_opam\///' keep
-        rsync -a -r --remove-source-files --exclude-from=keep _opam/ /tmp/to-delete
-    - name: archive why3 and why3find
-      run: tar -czf _opam.tar.gz _opam
-      # use tar because upload-artifact does not preserve file permissions
-      # https://github.com/actions/upload-artifact/tree/v4/?tab=readme-ov-file#permission-loss
-    - name: upload why3 and why3find
-      uses: actions/upload-artifact@v4
-      with:
-        name: why3-deps
-        path: _opam.tar.gz
   why3:
-    needs: why3-deps
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -94,75 +76,67 @@ jobs:
     - name: Fetch target branch
       if: github.base_ref
       run: git fetch --no-tags --prune --depth=1 origin +refs/heads/${{github.base_ref}}:refs/remotes/origin/${{github.base_ref}}
-    - uses: actions/cache@v4
+    - name: Cache Cargo build
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
           target
-        key: ${{ runner.os }}-cargo-creusot-${{ hashFiles('prelude/**', 'creusot-setup/build.rs', '**/Cargo.lock') }}
-    - uses: actions/cache@v4
-      id: cache-creusot-setup
+        key: ${{ runner.os }}-cargo-creusot-${{ hashFiles('prelude/**', '**/Cargo.lock') }}
+        restore-keys: ${{ runner.os }}-cargo-creusot-
+    - name: Cache Opam switch
+      uses: actions/cache/restore@v4 # This cache is saved by the install job
       with:
-        path: |
-          ~/.config/creusot
-          ~/.local/share/creusot
-          _opam/lib/why3find/packages
-        key: ${{ runner.os }}-cargo-creusot-setup-${{ hashFiles('prelude/**', 'creusot-setup/build.rs', 'creusot-deps.opam', 'creusot-setup/src/tools_versions_urls.rs', 'creusot-setup/src/config.rs') }}
-    - name: download why3 and why3find
-      uses: actions/download-artifact@v4
+        path: ~/.local/share/creusot/_opam
+        key: ${{ runner.os }}-opam-${{ hashFiles('creusot-deps.opam') }}
+        restore-keys: ${{ runner.os }}-opam-
+    - name: Install Opam
+      uses: ocaml/setup-ocaml@v3
       with:
-        name: why3-deps
-    - name: setup opam PATH
+        ocaml-compiler: 5.3.0
+        opam-pin: false
+    - name: Setup environment
       run: |
-        tar -xzf _opam.tar.gz
-        echo /home/runner/work/creusot/creusot/_opam/bin >> $GITHUB_PATH
-    - name: run cargo creusot setup install
-      if: steps.cache-creusot-setup.outputs.cache-hit != 'true'
+        sudo apt update
+        opam --cli=2.1 var --global in-creusot-ci=true
+    - name: Install solvers
       # Use only 2 parallel provers, because more provers (4) makes replaying proofs unstable
       run: |
-        cargo run --bin cargo-creusot creusot setup install --provers-parallelism 2
+        ./INSTALL --skip-cargo-creusot --skip-creusot-rustc --provers-parallelism 2
         echo -e "\n>> ~/.config/creusot/Config.toml:\n"
         cat ~/.config/creusot/Config.toml
         echo -e "\n>> ~/.config/creusot/why3.conf:\n"
         cat ~/.config/creusot/why3.conf
     - run: cargo test --test why3
   install:
-    needs: why3-deps
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/cache@v4
+    - name: Cache Cargo build
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
           target
         key: ${{ runner.os }}-cargo-install-${{ hashFiles('**/Cargo.lock') }}
-    - uses: actions/cache@v4
-      id: cache-creusot-setup
+    - name: Cache Opam switch
+      uses: actions/cache@v4
       with:
-        path: |
-          ~/.config/creusot
-          ~/.local/share/creusot
-          _opam/lib/why3find/packages
-        key: ${{ runner.os }}-cargo-creusot-setup-${{ hashFiles('creusot-deps.opam', 'creusot-setup/src/tools_versions_urls.rs', 'creusot-setup/src/config.rs') }}
-    - name: Install
-      run: |
-        cargo install --path cargo-creusot
-        cargo creusot setup install --only-creusot-rustc
-    - name: download why3 and why3find
-      uses: actions/download-artifact@v4
+        path: ~/.local/share/creusot/_opam
+        key: ${{ runner.os }}-opam-${{ hashFiles('creusot-deps.opam') }}
+        restore-keys: ${{ runner.os }}-opam-
+    - name: Install Opam
+      uses: ocaml/setup-ocaml@v3
       with:
-        name: why3-deps
-    - name: unpack why3 and why3find
-      run: tar -xzf _opam.tar.gz
-    - name: Setup
+        ocaml-compiler: 5.3.0
+        opam-pin: false
+    - name: Setup environment
       run: |
-        # Add /home/runner/work/creusot/creusot/_opam/bin to PATH just for this step
-        export PATH=/home/runner/work/creusot/creusot/_opam/bin:$PATH
-        cargo creusot setup install --skip-creusot-rustc
-      if: steps.cache-creusot-setup.outputs.cache-hit != 'true'
+        sudo apt update
+        opam --cli=2.1 var --global in-creusot-ci=true
+    - run: ./INSTALL
     - name: test cargo creusot new
       run: |
         set -x
@@ -173,3 +147,5 @@ jobs:
         cargo build
         cargo creusot
         cargo creusot prove
+    - name: Minimize Opam cache
+      run: rm -rf ~/.local/share/creusot/_opam/.opam-switch/{build,sources}

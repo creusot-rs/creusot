@@ -1,4 +1,5 @@
 use crate::*;
+#[cfg(feature = "nightly")]
 use ::std::marker::Tuple;
 pub use ::std::ops::*;
 
@@ -8,6 +9,7 @@ pub use ::std::ops::*;
 
 /// `FnOnceExt` is an extension trait for the `FnOnce` trait, used for
 /// adding a specification to closures. It should not be used directly.
+#[cfg(feature = "nightly")]
 pub trait FnOnceExt<Args: Tuple> {
     type Output;
 
@@ -20,6 +22,7 @@ pub trait FnOnceExt<Args: Tuple> {
 
 /// `FnMutExt` is an extension trait for the `FnMut` trait, used for
 /// adding a specification to closures. It should not be used directly.
+#[cfg(feature = "nightly")]
 pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
     #[predicate(prophetic)]
     fn postcondition_mut(self, _: Args, _: Self, _: Self::Output) -> bool;
@@ -52,6 +55,7 @@ pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
 
 /// `FnExt` is an extension trait for the `Fn` trait, used for
 /// adding a specification to closures. It should not be used directly.
+#[cfg(feature = "nightly")]
 pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
     #[predicate(prophetic)]
     fn postcondition(self, _: Args, _: Self::Output) -> bool;
@@ -67,6 +71,7 @@ pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
         Self: Sized;
 }
 
+#[cfg(feature = "nightly")]
 impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
     type Output = <Self as FnOnce<Args>>::Output;
 
@@ -87,6 +92,7 @@ impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
     #[predicate(prophetic)]
     #[open]
@@ -129,6 +135,7 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
     fn fn_mut_once(self, args: Args, res: Self::Output) {}
 }
 
+#[cfg(feature = "nightly")]
 impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
     #[predicate]
     #[open]
@@ -253,4 +260,49 @@ extern_spec! {
             }
         }
     }
+}
+
+#[cfg(not(feature = "nightly"))]
+pub trait FnOnceExt<Args> {
+    type Output;
+}
+
+#[cfg(not(feature = "nightly"))]
+pub trait FnMutExt<Args>: FnOnceExt<Args> {}
+
+/// `FnExt` is an extension trait for the `Fn` trait, used for
+/// adding a specification to closures. It should not be used directly.
+#[cfg(not(feature = "nightly"))]
+pub trait FnExt<Args>: FnMutExt<Args> {}
+
+/// Dummy impls that don't use the unstable traits Tuple, FnOnce<Args>, FnMut<Args>, Fn<Args>
+#[cfg(not(feature = "nightly"))]
+mod impls {
+    use super::*;
+
+    impl<O, F: FnOnce() -> O> FnOnceExt<()> for F {
+        type Output = O;
+    }
+    impl<O, F: FnMut() -> O> FnMutExt<()> for F {}
+    impl<O, F: Fn() -> O> FnExt<()> for F {}
+
+    macro_rules! impl_fn {
+        ( $( $tuple:tt ),+ ) => {
+            impl<$($tuple),+, O, F: FnOnce($($tuple),+) -> O> FnOnceExt<($($tuple),+,)> for F {
+                type Output = O;
+            }
+            impl<$($tuple),+, O, F: FnMut($($tuple),+) -> O> FnMutExt<($($tuple),+,)> for F {}
+            impl<$($tuple),+, O, F: Fn($($tuple),+) -> O> FnExt<($($tuple),+,)> for F {}
+        };
+    }
+
+    impl_fn! { A1 }
+    impl_fn! { A1, A2 }
+    impl_fn! { A1, A2, A3 }
+    impl_fn! { A1, A2, A3, A4 }
+    impl_fn! { A1, A2, A3, A4, A5 }
+    impl_fn! { A1, A2, A3, A4, A5, A6 }
+    impl_fn! { A1, A2, A3, A4, A5, A6, A7 }
+    impl_fn! { A1, A2, A3, A4, A5, A6, A7, A8 }
+    impl_fn! { A1, A2, A3, A4, A5, A6, A7, A8, A9 }
 }

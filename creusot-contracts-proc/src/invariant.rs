@@ -100,7 +100,7 @@ fn filter_invariants(
     parse_push_invariant(&mut invariants, tag, invariant)?;
 
     let attrs = attrs.extract_if(0.., |attr| {
-        attr.path().get_ident().map_or(false, |i| i == "invariant" || i == "variant")
+        attr.path().get_ident().is_some_and(|i| i == "invariant" || i == "variant")
     });
     for attr in attrs {
         let i = if attr.path().get_ident().map(|i| i == "invariant").unwrap_or(false) {

@@ -1,0 +1,366 @@
+module M_final_borrows__not_final_borrow [#"final_borrows.rs" 6 0 6 45]
+  let%span sfinal_borrows0 = "final_borrows.rs" 9 18 9 27
+  let%span sfinal_borrows1 = "final_borrows.rs" 6 33 6 36
+  let%span sresolve2 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span sinvariant3 = "../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  
+  use creusot.prelude.MutBorrow
+  
+  type t_T'0
+  
+  predicate inv'0 (_1 : t_T'0)
+  
+  predicate invariant'0 (self : MutBorrow.t t_T'0) =
+    [%#sinvariant3] inv'0 self.current /\ inv'0 self.final
+  
+  predicate inv'1 (_1 : MutBorrow.t t_T'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_T'0 [inv'1 x] . inv'1 x = invariant'0 x
+  
+  predicate resolve'1 (self : MutBorrow.t t_T'0) =
+    [%#sresolve2] self.final = self.current
+  
+  predicate resolve'0 (_1 : MutBorrow.t t_T'0) =
+    resolve'1 _1
+  
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec not_final_borrow'0[#"final_borrows.rs" 6 0 6 45] (bor:MutBorrow.t t_T'0) (return'  (ret:()))= {[@expl:not_final_borrow 'bor' type invariant] [%#sfinal_borrows1] inv'1 bor}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = {inv'0 bor.current}
+        MutBorrow.borrow_mut <t_T'0> {bor.current}
+          (fun (_ret':MutBorrow.t t_T'0) ->
+             [ &b1 <- _ret' ] 
+            -{inv'0 _ret'.final}-
+             [ &bor <- { bor with current = _ret'.final } ] 
+            s1)
+      | s1 = {[@expl:type invariant] inv'1 b1} s2
+      | s2 = -{resolve'0 b1}- s3
+      | s3 = {inv'0 bor.current}
+        MutBorrow.borrow_final <t_T'0> {bor.current} {MutBorrow.get_id bor}
+          (fun (_ret':MutBorrow.t t_T'0) ->
+             [ &_b2 <- _ret' ] 
+            -{inv'0 _ret'.final}-
+             [ &bor <- { bor with current = _ret'.final } ] 
+            s4)
+      | s4 = {[@expl:type invariant] inv'1 _b2} s5
+      | s5 = -{resolve'0 _b2}- s6
+      | s6 = {[@expl:type invariant] inv'1 bor} s7
+      | s7 = -{resolve'0 bor}- s8
+      | s8 = {[@expl:assertion] [%#sfinal_borrows0] b1 = bor} s9
+      | s9 = return' {_0} ]
+     ]
+    )
+    [ & _0 : () = Any.any_l ()
+    | & bor : MutBorrow.t t_T'0 = bor
+    | & b1 : MutBorrow.t t_T'0 = Any.any_l ()
+    | & _b2 : MutBorrow.t t_T'0 = Any.any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end
+module M_final_borrows__store_changes_prophecy [#"final_borrows.rs" 12 0 12 51]
+  let%span sfinal_borrows0 = "final_borrows.rs" 17 18 17 27
+  let%span sfinal_borrows1 = "final_borrows.rs" 12 39 12 42
+  let%span sresolve2 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span sinvariant3 = "../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  
+  use creusot.prelude.MutBorrow
+  
+  type t_T'0
+  
+  predicate inv'0 (_1 : t_T'0)
+  
+  predicate invariant'0 (self : MutBorrow.t t_T'0) =
+    [%#sinvariant3] inv'0 self.current /\ inv'0 self.final
+  
+  predicate inv'1 (_1 : MutBorrow.t t_T'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_T'0 [inv'1 x] . inv'1 x = invariant'0 x
+  
+  predicate resolve'1 (self : MutBorrow.t t_T'0) =
+    [%#sresolve2] self.final = self.current
+  
+  predicate resolve'0 (_1 : MutBorrow.t t_T'0) =
+    resolve'1 _1
+  
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec store_changes_prophecy'0[#"final_borrows.rs" 12 0 12 51] (bor:MutBorrow.t t_T'0) (return'  (ret:()))= {[@expl:store_changes_prophecy 'bor' type invariant] [%#sfinal_borrows1] inv'1 bor}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = {inv'0 bor.current}
+        MutBorrow.borrow_mut <t_T'0> {bor.current}
+          (fun (_ret':MutBorrow.t t_T'0) ->
+             [ &b1 <- _ret' ] 
+            -{inv'0 _ret'.final}-
+             [ &bor <- { bor with current = _ret'.final } ] 
+            s1)
+      | s1 = {[@expl:type invariant] inv'1 b1} s2
+      | s2 = -{resolve'0 b1}- s3
+      | s3 =  [ &val' <- b1.current ] s4
+      | s4 =  [ &bor <- { bor with current = val' } ] s5
+      | s5 = {[@expl:type invariant] inv'1 bor} s6
+      | s6 = -{resolve'0 bor}- s7
+      | s7 = {[@expl:assertion] [%#sfinal_borrows0] b1 = bor} s8
+      | s8 = return' {_0} ]
+     ]
+    )
+    [ & _0 : () = Any.any_l ()
+    | & bor : MutBorrow.t t_T'0 = bor
+    | & b1 : MutBorrow.t t_T'0 = Any.any_l ()
+    | & val' : t_T'0 = Any.any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end
+module M_final_borrows__store_changes_prophecy_2 [#"final_borrows.rs" 20 0 20 59]
+  let%span sfinal_borrows0 = "final_borrows.rs" 25 18 25 27
+  let%span sfinal_borrows1 = "final_borrows.rs" 20 41 20 44
+  let%span sfinal_borrows2 = "final_borrows.rs" 20 54 20 55
+  let%span sresolve3 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span sinvariant4 = "../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  
+  use creusot.prelude.MutBorrow
+  
+  type t_T'0
+  
+  predicate inv'0 (_1 : t_T'0)
+  
+  predicate invariant'0 (self : MutBorrow.t t_T'0) =
+    [%#sinvariant4] inv'0 self.current /\ inv'0 self.final
+  
+  predicate inv'1 (_1 : MutBorrow.t t_T'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_T'0 [inv'1 x] . inv'1 x = invariant'0 x
+  
+  predicate resolve'1 (self : MutBorrow.t t_T'0) =
+    [%#sresolve3] self.final = self.current
+  
+  predicate resolve'0 (_1 : MutBorrow.t t_T'0) =
+    resolve'1 _1
+  
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec store_changes_prophecy_2'0[#"final_borrows.rs" 20 0 20 59] (bor:MutBorrow.t t_T'0) (x:t_T'0) (return'  (ret:()))= {[@expl:store_changes_prophecy_2 'bor' type invariant] [%#sfinal_borrows1] inv'1 bor}
+    {[@expl:store_changes_prophecy_2 'x' type invariant] [%#sfinal_borrows2] inv'0 x}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = {inv'0 bor.current}
+        MutBorrow.borrow_mut <t_T'0> {bor.current}
+          (fun (_ret':MutBorrow.t t_T'0) ->
+             [ &b1 <- _ret' ] 
+            -{inv'0 _ret'.final}-
+             [ &bor <- { bor with current = _ret'.final } ] 
+            s1)
+      | s1 =  [ &b1 <- { b1 with current = x } ] s2
+      | s2 = {[@expl:type invariant] inv'1 b1} s3
+      | s3 = -{resolve'0 b1}- s4
+      | s4 =  [ &bor <- { bor with current = x } ] s5
+      | s5 = {[@expl:type invariant] inv'1 bor} s6
+      | s6 = -{resolve'0 bor}- s7
+      | s7 = {[@expl:assertion] [%#sfinal_borrows0] b1 = bor} s8
+      | s8 = return' {_0} ]
+     ]
+    )
+    [ & _0 : () = Any.any_l ()
+    | & bor : MutBorrow.t t_T'0 = bor
+    | & x : t_T'0 = x
+    | & b1 : MutBorrow.t t_T'0 = Any.any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end
+module M_final_borrows__call_changes_prophecy [#"final_borrows.rs" 28 0 28 43]
+  let%span sfinal_borrows0 = "final_borrows.rs" 34 19 34 33
+  let%span sfinal_borrows1 = "final_borrows.rs" 36 18 36 31
+  let%span sfinal_borrows2 = "final_borrows.rs" 37 10 37 17
+  let%span sfinal_borrows3 = "final_borrows.rs" 39 11 39 18
+  let%span sfinal_borrows4 = "final_borrows.rs" 40 18 40 39
+  let%span sfinal_borrows5 = "final_borrows.rs" 30 14 30 26
+  let%span sresolve6 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  
+  use creusot.prelude.MutBorrow
+  
+  use creusot.int.Int32
+  
+  use creusot.int.Int32
+  
+  let rec inner'0 (_1:()) (return'  (ret:Int32.t))= any
+    [ return' (result:Int32.t)-> {[%#sfinal_borrows5] Int32.to_int result = 2} (! return' {result}) ]
+  
+  
+  predicate resolve'1 (self : MutBorrow.t Int32.t) =
+    [%#sresolve6] self.final = self.current
+  
+  predicate resolve'0 (_1 : MutBorrow.t Int32.t) =
+    resolve'1 _1
+  
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec call_changes_prophecy'0[#"final_borrows.rs" 28 0 28 43] (bor:MutBorrow.t Int32.t) (return'  (ret:()))= (! bb0
+    [ bb0 = s0 [ s0 =  [ &bor_snap <- [%#sfinal_borrows0] bor ] s1 | s1 = bb1 ] 
+    | bb1 = s0
+      [ s0 = MutBorrow.borrow_mut <Int32.t> {bor.current}
+          (fun (_ret':MutBorrow.t Int32.t) ->  [ &b1 <- _ret' ]  [ &bor <- { bor with current = _ret'.final } ] s1)
+      | s1 =  [ &b1_snap <- [%#sfinal_borrows1] b1 ] s2
+      | s2 = bb2 ]
+    
+    | bb2 = s0 [ s0 = inner'0 {[%#sfinal_borrows2] ()} (fun (_ret':Int32.t) ->  [ &_7 <- _ret' ] s1) | s1 = bb3 ] 
+    | bb3 = s0
+      [ s0 =  [ &b1 <- { b1 with current = _7 } ] s1
+      | s1 = -{resolve'0 b1}- s2
+      | s2 = inner'0 {[%#sfinal_borrows3] ()} (fun (_ret':Int32.t) ->  [ &_8 <- _ret' ] s3)
+      | s3 = bb4 ]
+    
+    | bb4 = s0
+      [ s0 =  [ &bor <- { bor with current = _8 } ] s1
+      | s1 = -{resolve'0 bor}- s2
+      | s2 = {[@expl:assertion] [%#sfinal_borrows4] b1_snap = bor_snap} s3
+      | s3 = return' {_0} ]
+     ]
+    )
+    [ & _0 : () = Any.any_l ()
+    | & bor : MutBorrow.t Int32.t = bor
+    | & bor_snap : MutBorrow.t Int32.t = Any.any_l ()
+    | & b1 : MutBorrow.t Int32.t = Any.any_l ()
+    | & b1_snap : MutBorrow.t Int32.t = Any.any_l ()
+    | & _7 : Int32.t = Any.any_l ()
+    | & _8 : Int32.t = Any.any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end
+module M_final_borrows__unnesting_fails [#"final_borrows.rs" 43 0 43 24]
+  let%span sfinal_borrows0 = "final_borrows.rs" 44 16 44 17
+  let%span sfinal_borrows1 = "final_borrows.rs" 50 18 50 34
+  let%span sresolve2 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  
+  use creusot.int.Int32
+  
+  use creusot.prelude.MutBorrow
+  
+  predicate resolve'2 (self : MutBorrow.t Int32.t) =
+    [%#sresolve2] self.final = self.current
+  
+  predicate resolve'0 (_1 : MutBorrow.t Int32.t) =
+    resolve'2 _1
+  
+  predicate resolve'3 (self : MutBorrow.t (MutBorrow.t Int32.t)) =
+    [%#sresolve2] self.final = self.current
+  
+  predicate resolve'1 (_1 : MutBorrow.t (MutBorrow.t Int32.t)) =
+    resolve'3 _1
+  
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec unnesting_fails'0[#"final_borrows.rs" 43 0 43 24] (_1:()) (return'  (ret:()))= (! bb0
+    [ bb0 = s0
+      [ s0 =  [ &x <- [%#sfinal_borrows0] (0 : Int32.t) ] s1
+      | s1 = MutBorrow.borrow_mut <Int32.t> {x}
+          (fun (_ret':MutBorrow.t Int32.t) ->  [ &bor <- _ret' ]  [ &x <- _ret'.final ] s2)
+      | s2 = MutBorrow.borrow_mut <MutBorrow.t Int32.t> {bor}
+          (fun (_ret':MutBorrow.t (MutBorrow.t Int32.t)) ->  [ &nested <- _ret' ]  [ &bor <- _ret'.final ] s3)
+      | s3 = MutBorrow.borrow_mut <Int32.t> {(nested.current).current}
+          (fun (_ret':MutBorrow.t Int32.t) ->
+             [ &rebor1 <- _ret' ] 
+             [ &nested <- { nested with current = { nested.current with current = _ret'.final } } ] 
+            s4)
+      | s4 = -{resolve'0 rebor1}- s5
+      | s5 = MutBorrow.borrow_mut <Int32.t> {(nested.current).current}
+          (fun (_ret':MutBorrow.t Int32.t) ->
+             [ &rebor2 <- _ret' ] 
+             [ &nested <- { nested with current = { nested.current with current = _ret'.final } } ] 
+            s6)
+      | s6 = -{resolve'0 rebor2}- s7
+      | s7 = -{resolve'1 nested}- s8
+      | s8 = -{resolve'0 bor}- s9
+      | s9 = {[@expl:assertion] [%#sfinal_borrows1] rebor1 = rebor2} s10
+      | s10 = return' {_0} ]
+     ]
+    )
+    [ & _0 : () = Any.any_l ()
+    | & x : Int32.t = Any.any_l ()
+    | & bor : MutBorrow.t Int32.t = Any.any_l ()
+    | & nested : MutBorrow.t (MutBorrow.t Int32.t) = Any.any_l ()
+    | & rebor1 : MutBorrow.t Int32.t = Any.any_l ()
+    | & rebor2 : MutBorrow.t Int32.t = Any.any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end
+module M_final_borrows__move_place_without_deref [#"final_borrows.rs" 54 0 54 52]
+  let%span sfinal_borrows0 = "final_borrows.rs" 58 19 58 34
+  let%span sfinal_borrows1 = "final_borrows.rs" 61 18 61 56
+  let%span sfinal_borrows2 = "final_borrows.rs" 62 18 62 33
+  let%span sfinal_borrows3 = "final_borrows.rs" 54 35 54 38
+  let%span sfinal_borrows4 = "final_borrows.rs" 57 16 57 17
+  let%span sfinal_borrows5 = "final_borrows.rs" 56 14 56 24
+  let%span sresolve6 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span sinvariant7 = "../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  let%span sboxed8 = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
+  
+  use creusot.prelude.MutBorrow
+  
+  type t_T'0
+  
+  predicate inv'0 (_1 : t_T'0)
+  
+  predicate invariant'0 (self : MutBorrow.t t_T'0) =
+    [%#sinvariant7] inv'0 self.current /\ inv'0 self.final
+  
+  predicate inv'1 (_1 : MutBorrow.t t_T'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_T'0 [inv'1 x] . inv'1 x = invariant'0 x
+  
+  predicate resolve'1 (self : MutBorrow.t t_T'0) =
+    [%#sresolve6] self.final = self.current
+  
+  predicate resolve'0 (_1 : MutBorrow.t t_T'0) =
+    resolve'1 _1
+  
+  predicate invariant'1 (self : MutBorrow.t t_T'0) =
+    [%#sboxed8] inv'1 self
+  
+  predicate inv'2 (_1 : MutBorrow.t t_T'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t t_T'0 [inv'2 x] . inv'2 x = invariant'1 x
+  
+  let rec inner'0 (x:MutBorrow.t t_T'0) (return'  (ret:()))= {[@expl:inner 'x' type invariant] [%#sfinal_borrows4] inv'2 x}
+    any [ return' (result:())-> {[%#sfinal_borrows5] x.current = x.final} (! return' {result}) ] 
+  
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec move_place_without_deref'0[#"final_borrows.rs" 54 0 54 52] (bor:MutBorrow.t t_T'0) (return'  (ret:()))= {[@expl:move_place_without_deref 'bor' type invariant] [%#sfinal_borrows3] inv'2 bor}
+    (! bb0
+    [ bb0 = s0 [ s0 =  [ &bor_snap <- [%#sfinal_borrows0] bor ] s1 | s1 = bb1 ] 
+    | bb1 = s0
+      [ s0 = {inv'0 bor.current}
+        MutBorrow.borrow_mut <t_T'0> {bor.current}
+          (fun (_ret':MutBorrow.t t_T'0) ->
+             [ &b1 <- _ret' ] 
+            -{inv'0 _ret'.final}-
+             [ &bor <- { bor with current = _ret'.final } ] 
+            s1)
+      | s1 = {[@expl:type invariant] inv'1 b1} s2
+      | s2 = -{resolve'0 b1}- s3
+      | s3 = inner'0 {bor} (fun (_ret':()) ->  [ &_5 <- _ret' ] s4)
+      | s4 = bb2 ]
+    
+    | bb2 = s0
+      [ s0 = {[@expl:assertion] [%#sfinal_borrows1] b1.current = bor_snap.current /\ b1.final = bor_snap.final} s1
+      | s1 = {[@expl:assertion] [%#sfinal_borrows2] b1 = bor_snap} s2
+      | s2 = bb3 ]
+    
+    | bb3 = return' {_0} ]
+    )
+    [ & _0 : () = Any.any_l ()
+    | & bor : MutBorrow.t t_T'0 = bor
+    | & bor_snap : MutBorrow.t t_T'0 = Any.any_l ()
+    | & b1 : MutBorrow.t t_T'0 = Any.any_l ()
+    | & _5 : () = Any.any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end

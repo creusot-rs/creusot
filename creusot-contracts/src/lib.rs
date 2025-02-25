@@ -22,28 +22,27 @@
 //! ```
 //!
 //! For a more detailed explanation, see the [guide](https://creusot-rs.github.io/creusot/guide).
-
 #![cfg_attr(
-    creusot,
-    feature(unsized_locals, fn_traits),
-    allow(incomplete_features),
-    feature(slice_take),
-    feature(print_internals, fmt_internals, fmt_helpers_for_derive)
+    feature = "nightly",
+    allow(incomplete_features, internal_features),
+    feature(
+        unsized_locals,
+        fn_traits,
+        slice_take,
+        print_internals,
+        fmt_internals,
+        fmt_helpers_for_derive,
+        step_trait,
+        allocator_api,
+        unboxed_closures,
+        tuple_trait,
+        panic_internals,
+        libstd_sys_internals,
+        rt,
+        never_type,
+        ptr_metadata
+    )
 )]
-#![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns))]
-#![feature(
-    step_trait,
-    allocator_api,
-    unboxed_closures,
-    tuple_trait,
-    panic_internals,
-    libstd_sys_internals,
-    rt,
-    never_type,
-    ptr_metadata
-)]
-#![cfg_attr(not(creusot), feature(rustc_attrs))]
-#![cfg_attr(not(creusot), allow(internal_features))]
 
 extern crate self as creusot_contracts;
 

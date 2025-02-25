@@ -18,9 +18,9 @@ use crate::{
     options::Output,
     translated_item::FileModule,
     validate::{
-        validate_impls, validate_opacity, validate_purity, validate_traits, validate_trusted,
+        validate_impls, validate_opacity, validate_purity, validate_terminates, validate_traits,
+        validate_trusted,
     },
-    validate_terminates::validate_terminates,
 };
 use ctx::TranslationCtx;
 use rustc_hir::{def::DefKind, def_id::DefId};

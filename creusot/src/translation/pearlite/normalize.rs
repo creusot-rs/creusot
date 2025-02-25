@@ -99,20 +99,20 @@ fn optimize_builtin<'tcx>(
             return Unary { op: Neg, arg: Box::new(arg) };
         }
         Some(
-            "prelude.int.UInt8$BW$.t'int"
-            | "prelude.int.UInt16$BW$.t'int"
-            | "prelude.int.UInt32$BW$.t'int"
-            | "prelude.int.UInt64$BW$.t'int"
-            | "prelude.int.UInt128$BW$.t'int",
+            "creusot.int.UInt8$BW$.t'int"
+            | "creusot.int.UInt16$BW$.t'int"
+            | "creusot.int.UInt32$BW$.t'int"
+            | "creusot.int.UInt64$BW$.t'int"
+            | "creusot.int.UInt128$BW$.t'int",
         ) if let box [Term { kind: Lit(MachUnsigned(c, _)), .. }] = args => {
             return Lit(UInteger(c));
         }
         Some(
-            "prelude.int.Int8$BW$.to_int"
-            | "prelude.int.Int16$BW$.to_int"
-            | "prelude.int.Int32$BW$.to_int"
-            | "prelude.int.Int64$BW$.to_int"
-            | "prelude.int.Int128$BW$.to_int",
+            "creusot.int.Int8$BW$.to_int"
+            | "creusot.int.Int16$BW$.to_int"
+            | "creusot.int.Int32$BW$.to_int"
+            | "creusot.int.Int64$BW$.to_int"
+            | "creusot.int.Int128$BW$.to_int",
         ) if let box [Term { kind: Lit(MachSigned(c, _)), .. }] = args => return Lit(Integer(c)),
         _ => (),
     }
