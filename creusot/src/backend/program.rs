@@ -352,7 +352,7 @@ impl<'tcx> RValue<'tcx> {
                 let l_ty = l.ty(lower.ctx.tcx, lower.locals);
                 let fname = binop_to_binop(lower.names, l_ty, op);
                 let call = coma::Expr::Constant(fname);
-                let ret = Ident::fresh("_ret'");
+                let ret = Ident::bound("_ret'");
                 // some operator need to convert the right operand
                 let r = match op {
                     // right operand must be converted to integer
@@ -760,7 +760,7 @@ impl<'tcx> Branches<'tcx> {
                         .collect(),
                 );
 
-                brs.push(Defn::simple(Ident::fresh("default"), Expr::BlackBox(Box::new(mk_goto(def)))));  // TODO
+                brs.push(Defn::simple(Ident::bound("default"), Expr::BlackBox(Box::new(mk_goto(def)))));  // TODO
                 Expr::Defn(Box::new(Expr::Any), false, brs)
             }
             Branches::Uint(brs, def) => {
@@ -782,7 +782,7 @@ impl<'tcx> Branches<'tcx> {
                         .collect(),
                 );
 
-                brs.push(Defn::simple(Ident::fresh("default"), Expr::BlackBox(Box::new(mk_goto(def))))); // TODO
+                brs.push(Defn::simple(Ident::bound("default"), Expr::BlackBox(Box::new(mk_goto(def))))); // TODO
                 Expr::Defn(Box::new(Expr::Any), false, brs)
             }
             Branches::Constructor(adt, substs, vars, def) => {
@@ -850,7 +850,7 @@ fn mk_adt_switch<'tcx, N: Namer<'tcx>>(
                 Box::new(discr.clone().eq(body)),
                 Box::new(coma::Expr::BlackBox(Box::new(mk_goto(tgt)))),
             );
-            let name = Ident::fresh (format!("br{}", ix.as_usize())); // TODO
+            let name = Ident::fresh(format!("br{}", ix.as_usize())); // TODO
 
             coma::Defn { name, body, params, writes: Vec::new(), attrs: vec![] }
         })
