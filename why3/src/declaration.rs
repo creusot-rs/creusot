@@ -95,10 +95,6 @@ pub struct Contract {
 }
 
 impl Contract {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn is_empty(&self) -> bool {
         self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_none()
     }

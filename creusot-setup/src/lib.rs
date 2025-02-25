@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail, Context};
+use anyhow::{Context, anyhow, bail};
 use directories::ProjectDirs;
 use std::{cmp::Ordering, fmt, fs, path::PathBuf, process::Command};
 
@@ -66,8 +66,10 @@ impl fmt::Display for Issue {
         let Issue { error, tool, cur_version, expected_version, builtin_tool: _ } = self;
         let header = if *error { "Error" } else { "Warning" };
         match cur_version {
-            Ok(cur_version) => write!(f,
-                "{header}: {tool} has version {cur_version}, expected version is {expected_version}"),
+            Ok(cur_version) => write!(
+                f,
+                "{header}: {tool} has version {cur_version}, expected version is {expected_version}"
+            ),
             Err(err) => write!(f, "{header}: {err}"),
         }
     }
@@ -171,8 +173,10 @@ pub fn status() -> anyhow::Result<()> {
                 println!("Hint: upgrade builtin tools by running 'cargo creusot setup install'.")
             }
             if issues.iter().any(|issue| !issue.builtin_tool && needs_upgrade(&issue)) {
-                println!("Hint: upgrade external tools installed using opam: run 'opam pin . -y' \
-                          from your creusot opam switch, followed by 'cargo creusot setup install'.")
+                println!(
+                    "Hint: upgrade external tools installed using opam: run 'opam pin . -y' \
+                          from your creusot opam switch, followed by 'cargo creusot setup install'."
+                )
             }
             if issues.iter().any(|issue| match &issue.cur_version {
                 Err(_) => false,
@@ -375,7 +379,9 @@ fn install_creusot_rustc(cfg: &CfgPaths) -> anyhow::Result<()> {
     let active_toolchain = active_toolchain();
     if !active_toolchain.starts_with(&toolchain) {
         // Ignore the target triple in the full toolchain identifier
-        panic!("Active toolchain: {active_toolchain}; expected: {toolchain}; cargo-creusot is probably out of date.");
+        panic!(
+            "Active toolchain: {active_toolchain}; expected: {toolchain}; cargo-creusot is probably out of date."
+        );
     }
     let _ = fs::remove_dir_all(&cfg.data_dir.join("toolchains"));
     // Usually ~/.local/share/creusot/toolchains/nightly-YYYY-MM-DD/

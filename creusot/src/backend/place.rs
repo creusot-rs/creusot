@@ -1,17 +1,17 @@
 use crate::{backend::Namer, ctx::PreludeModule, fmir::Place, naming::ident_of};
 use rustc_middle::{
-    mir::{self, tcx::PlaceTy, ProjectionElem},
+    mir::{self, ProjectionElem, tcx::PlaceTy},
     ty::{Ty, TyCtxt, TyKind},
 };
 use rustc_span::Symbol;
 use std::{cell::RefCell, iter::repeat_n, rc::Rc};
 use why3::{
+    Ident,
     coma::{Arg, Param},
     exp::{
         Exp::{self, *},
         Pattern::*,
     },
-    Ident,
 };
 
 use super::program::{IntermediateStmt, LoweringState};
@@ -75,10 +75,10 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     focus = Focus::new(move |is| focus.call(is).field("current"));
                     constructor = Box::new(move |is, t| {
                         let record = Box::new(focus1.call(is));
-                        constructor(
-                            is,
-                            RecUp { record, updates: Box::new([("current".into(), t)]) },
-                        )
+                        constructor(is, RecUp {
+                            record,
+                            updates: Box::new([("current".into(), t)]),
+                        })
                     });
                 }
             }
@@ -106,11 +106,8 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
 
                     constructor = Box::new(move |is, t| {
                         let constr = Exp::qvar(lower.names.constructor(variant.def_id, subst));
-                        let mut fields: Box<[_]> = fields
-                            .to_vec()
-                            .into_iter()
-                            .map(|f| Exp::var(f.as_term().0.clone()))
-                            .collect();
+                        let mut fields: Box<[_]> =
+                            fields.into_iter().map(|f| Exp::var(f.as_term().0.clone())).collect();
                         fields[ix.as_usize()] = t;
                         constructor(is, constr.app(fields))
                     });

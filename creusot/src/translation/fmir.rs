@@ -2,7 +2,7 @@ use crate::{backend::place::projection_ty, naming::ident_of, pearlite::Term};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{tcx::PlaceTy, BasicBlock, BinOp, Local, ProjectionElem, Promoted, UnOp},
+    mir::{BasicBlock, BinOp, Local, ProjectionElem, Promoted, UnOp, tcx::PlaceTy},
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt},
 };
 use rustc_span::{Span, Symbol};
@@ -32,18 +32,14 @@ impl<'tcx> Place<'tcx> {
     }
 
     pub(crate) fn as_symbol(&self) -> Option<Symbol> {
-        if self.projection.is_empty() {
-            Some(self.local)
-        } else {
-            None
-        }
+        if self.projection.is_empty() { Some(self.local) } else { None }
     }
 
     pub(crate) fn iter_projections(
         &self,
     ) -> impl Iterator<Item = (PlaceRef<'_, 'tcx>, ProjectionElem<Symbol, Ty<'tcx>>)>
-           + DoubleEndedIterator
-           + '_ {
+    + DoubleEndedIterator
+    + '_ {
         self.projection.iter().enumerate().map(move |(i, proj)| {
             let base = PlaceRef { local: self.local, projection: &self.projection[..i] };
             (base, *proj)

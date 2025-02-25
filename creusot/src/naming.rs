@@ -1,4 +1,3 @@
-use std::{iter::once, path::PathBuf};
 use rustc_hir::{
     def::Namespace,
     def_id::DefId,
@@ -6,6 +5,7 @@ use rustc_hir::{
 };
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
+use std::{iter::once, path::PathBuf};
 use why3::Ident;
 
 use crate::very_stable_hash::get_very_stable_hash;

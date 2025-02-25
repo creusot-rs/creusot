@@ -84,13 +84,10 @@ impl<T> List<T> {
             ghost! { seq.push_back_ghost(cell_own.into_inner()) };
         } else {
             let seq = self.seq.borrow_mut();
-            let cell_last = PtrOwn::as_mut(
-                self.last,
-                ghost! {
-                    let off = minus_one(seq.len_ghost());
-                    seq.into_inner().get_mut_ghost(off).unwrap()
-                },
-            );
+            let cell_last = PtrOwn::as_mut(self.last, ghost! {
+                let off = minus_one(seq.len_ghost());
+                seq.into_inner().get_mut_ghost(off).unwrap()
+            });
             cell_last.next = cell_ptr;
             self.last = cell_ptr;
         }

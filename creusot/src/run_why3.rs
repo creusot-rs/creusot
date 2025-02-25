@@ -2,28 +2,31 @@ use crate::{
     backend::Why3Generator,
     options::{Options, Why3Sub},
 };
-use include_dir::{include_dir, Dir};
+use include_dir::{Dir, include_dir};
 use rustc_ast::{
+    Block, DUMMY_NODE_ID, Expr, ExprKind, Pat, PatKind, PathSegment, Ty, TyKind,
     mut_visit::DummyAstNode,
     ptr::P,
     token::{Lit, LitKind},
-    Block, Expr, ExprKind, Pat, PatKind, PathSegment, Ty, TyKind, DUMMY_NODE_ID,
 };
 use rustc_ast_pretty::pprust::expr_to_string;
 use rustc_span::{
-    def_id::LocalDefId, source_map::dummy_spanned, symbol::Ident, BytePos, Span, Symbol,
-    SyntaxContext, DUMMY_SP,
+    BytePos, DUMMY_SP, Span, Symbol, SyntaxContext, def_id::LocalDefId, source_map::dummy_spanned,
+    symbol::Ident,
 };
 use serde_json::Deserializer;
 use std::{
-    collections::{hash_map::Entry, HashMap},
+    collections::{HashMap, hash_map::Entry},
     fmt::{Display, Formatter, Write},
     io::BufReader,
     path::PathBuf,
     process::{Command, Stdio},
 };
 use tempdir::TempDir;
-use why3::ce_models::{ConcreteTerm, FunLitElt, Goal, Loc, ProverResult, TBool, Term, Why3Span};
+use why3::{
+    ce_models::{ConcreteTerm, FunLitElt, Goal, Loc, ProverResult, TBool, Term, Why3Span},
+    declaration::Attribute,
+};
 
 static PRELUDE: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/../prelude");
 
@@ -141,16 +144,12 @@ impl SpanMap {
     }
 
     // TODO(xavier): Refactor this so that we don't check the why3_cmd when translating spans!!
-    pub(crate) fn encode_span(
-        &mut self,
-        opts: &Options,
-        span: Span,
-    ) -> Option<why3::declaration::Attribute> {
+    pub(crate) fn encode_span(&mut self, opts: &Options, span: Span) -> Option<Attribute> {
         if let Some(cmd) = &opts.why3_cmd
             && matches!(cmd.sub, Why3Sub::Prove)
         {
             let data = span.data();
-            Some(why3::declaration::Attribute::Span(
+            Some(Attribute::Span(
                 "rustc_span".into(),
                 data.lo.0 as usize,
                 data.hi.0 as usize,

@@ -4,15 +4,16 @@ use rustc_borrowck::consumers::{BorrowIndex, BorrowSet, PlaceExt, RegionInferenc
 use rustc_index::bit_set::MixedBitSet;
 use rustc_middle::{
     mir::{
-        traversal, BasicBlock, Body, Location, PlaceRef, ProjectionElem, Rvalue, Statement,
-        StatementKind, TerminatorEdges,
+        BasicBlock, Body, Location, PlaceRef, ProjectionElem, Rvalue, Statement, StatementKind,
+        TerminatorEdges, traversal,
     },
     ty::{TyCtxt, TyKind},
 };
 use rustc_mir_dataflow::{
+    Analysis, ResultsCursor,
     impls::MaybeUninitializedPlaces,
     move_paths::{HasMoveData, LookupResult, MoveData, MovePathIndex},
-    on_all_children_bits, Analysis, ResultsCursor,
+    on_all_children_bits,
 };
 
 use crate::extended_location::ExtendedLocation;

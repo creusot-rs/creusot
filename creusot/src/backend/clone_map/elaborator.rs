@@ -5,6 +5,7 @@ use std::{
 
 use crate::{
     backend::{
+        Namer, TranslationCtx, Why3Generator,
         clone_map::{CloneNames, Dependency, Kind},
         is_trusted_function,
         logic::{lower_logical_defn, spec_axiom},
@@ -14,7 +15,6 @@ use crate::{
         term::lower_pure,
         ty::{eliminator, translate_closure_ty, translate_ty, translate_tydecl},
         ty_inv::InvariantElaborator,
-        Namer, TranslationCtx, Why3Generator,
     },
     constant::from_ty_const,
     contracts_items::{
@@ -25,7 +25,7 @@ use crate::{
     },
     ctx::{BodyId, ItemType},
     function::closure_resolve,
-    pearlite::{normalize, Term},
+    pearlite::{Term, normalize},
     specification::PreSignature,
     traits::{self, TraitResolved},
 };
@@ -36,9 +36,9 @@ use rustc_middle::ty::{
     Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv,
     UnevaluatedConst,
 };
-use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_type_ir::{ConstKind, EarlyBinder};
-use why3::declaration::{Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use};
+use why3::declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use};
 
 /// Weak dependencies are allowed to form cycles in the graph, but strong ones cannot,
 /// weak dependencies are used to perform an initial stratification of the dependency graph.
@@ -84,7 +84,7 @@ impl<'a, 'tcx> Namer<'tcx> for ExpansionProxy<'a, 'tcx> {
         self.namer.tcx()
     }
 
-    fn span(&self, span: Span) -> Option<why3::declaration::Attribute> {
+    fn span(&self, span: Span) -> Option<Attribute> {
         self.namer.span(span)
     }
 
@@ -102,7 +102,7 @@ trait DepElab {
         elab: &mut Expander<'_, 'tcx>,
         ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
-    ) -> Vec<why3::declaration::Decl>;
+    ) -> Vec<Decl>;
 }
 
 struct ProgElab;
@@ -112,7 +112,7 @@ impl DepElab for ProgElab {
         elab: &mut Expander<'_, 'tcx>,
         ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
-    ) -> Vec<why3::declaration::Decl> {
+    ) -> Vec<Decl> {
         if let Dependency::Item(def_id, subst) = dep
             && ctx.def_kind(def_id) != DefKind::Closure
         {
@@ -158,7 +158,7 @@ impl DepElab for LogicElab {
         elab: &mut Expander<'_, 'tcx>,
         ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
-    ) -> Vec<why3::declaration::Decl> {
+    ) -> Vec<Decl> {
         assert!(matches!(dep, Dependency::Item(_, _) | Dependency::TyInvAxiom(_)));
 
         // TODO: Fold into `term`, but requires first some sort of
@@ -192,7 +192,7 @@ impl DepElab for LogicElab {
                         name: qname.module.clone(),
                         as_: None,
                         export: false,
-                    })]
+                    })];
                 }
                 Kind::Unnamed => unreachable!(),
             }
@@ -250,7 +250,7 @@ impl DepElab for TyElab {
         elab: &mut Expander<'_, 'tcx>,
         ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
-    ) -> Vec<why3::declaration::Decl> {
+    ) -> Vec<Decl> {
         let Dependency::Type(ty) = dep else { unreachable!() };
         let param_env = elab.typing_env;
         let mut names = elab.namer(dep);

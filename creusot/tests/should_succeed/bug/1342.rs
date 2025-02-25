@@ -5,9 +5,5 @@ use creusot_contracts::{logic::FSet, *};
 #[logic]
 #[variant(fset.len())]
 pub fn bar<T>(fset: FSet<T>) -> FSet<T> {
-    if fset.is_empty() {
-        FSet::EMPTY
-    } else {
-        bar(FSet::EMPTY)
-    }
+    if fset.is_empty() { FSet::EMPTY } else { bar(FSet::EMPTY) }
 }

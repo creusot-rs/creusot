@@ -13,7 +13,7 @@
 
 extern crate creusot_contracts;
 use creusot_contracts::{
-    invariant::{inv, Invariant},
+    invariant::{Invariant, inv},
     logic::{FSet, Int, Seq},
     vec, *,
 };
@@ -100,11 +100,7 @@ impl<T> Sparse<T> {
     })]
     pub fn get(&self, i: usize) -> Option<&T> {
         let index = self.idx[i];
-        if index < self.n && self.back[index] == i {
-            Some(&self.values[i])
-        } else {
-            None
-        }
+        if index < self.n && self.back[index] == i { Some(&self.values[i]) } else { None }
     }
 
     /* A key lemma to prove for safety of access in `set()`

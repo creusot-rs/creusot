@@ -3,9 +3,9 @@ use crate::{
 };
 use rustc_hir::def_id::DefId;
 use why3::{
-    declaration::*,
-    exp::{super_visit_mut, BinOp, Binder, Exp, ExpMutVisitor, Trigger},
     Ident,
+    declaration::*,
+    exp::{BinOp, Binder, Exp, ExpMutVisitor, Trigger, super_visit_mut},
 };
 
 mod vcgen;
@@ -13,14 +13,13 @@ mod vcgen;
 use self::vcgen::vc;
 
 use super::{
-    is_trusted_function, signature::signature_of, term::lower_pure, CannotFetchThir, Why3Generator,
+    CannotFetchThir, Why3Generator, is_trusted_function, signature::signature_of, term::lower_pure,
 };
 
 pub(crate) fn binders_to_args(binders: Box<[Binder]>) -> (Vec<Ident>, Box<[Binder]>) {
     let mut args = Vec::new();
     let mut fresh = -1;
     let out_binders = binders
-        .to_vec()
         .into_iter()
         .map(|b| match b {
             Binder::Wild => {
@@ -116,7 +115,7 @@ pub(crate) fn translate_logic_or_predicate(
         Err(e) => ctx.fatal_error(e.span(), &format!("translate_logic_or_predicate: {e:?}")).emit(),
     };
 
-    let requires = sig.contract.requires.to_vec().into_iter().map(Condition::unlabelled_exp);
+    let requires = sig.contract.requires.into_iter().map(Condition::unlabelled_exp);
     let body = requires.fold(body, |acc, pre| pre.implies(acc));
 
     body_decls
@@ -165,7 +164,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
         decls.push(decl)
     } else {
         let mut decl_sig = sig.clone();
-        decl_sig.contract = Contract::new();
+        decl_sig.contract = Default::default();
         decls.push(Decl::LogicDecl(LogicDecl { kind, sig: decl_sig }));
 
         if sig.uses_simple_triggers() {
@@ -229,7 +228,7 @@ fn limited_function_encode(
         attrs: vec![],
         retty: sig.retty.clone(),
         args: sig.args.clone(),
-        contract: Contract::new(),
+        contract: Default::default(),
     };
     let lim_call = function_call(&lim_sig);
     lim_sig.trigger = Some(Trigger::single(lim_call.clone()));
@@ -283,7 +282,7 @@ fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
     let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
     let condition = sig.contract.requires_implies(equation);
 
-    let args: Box<[_]> = sig.args.clone().to_vec().into_iter().flat_map(|b| b.var_type_pairs()).collect();
+    let args: Box<[_]> = sig.args.clone().into_iter().flat_map(|b| b.var_type_pairs()).collect();
 
     let axiom =
         if args.is_empty() { condition } else { Exp::forall_trig(args, trigger, condition) };

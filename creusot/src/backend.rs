@@ -1,6 +1,7 @@
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
+use why3::declaration::Attribute;
 
 use crate::{
     contracts_items::{is_resolve_function, is_spec, is_trusted},
@@ -97,7 +98,7 @@ impl<'tcx> Why3Generator<'tcx> {
         matches!(self.item_type(item), ItemType::Logic { .. } | ItemType::Predicate { .. })
     }
 
-    pub(crate) fn span_attr(&self, span: Span) -> Option<why3::declaration::Attribute> {
+    pub(crate) fn span_attr(&self, span: Span) -> Option<Attribute> {
         let path = path_of_span(self.tcx, span, &self.opts.span_mode)?;
 
         if let Some(span) = self.span_map.borrow_mut().encode_span(&self.ctx.opts, span) {
@@ -140,13 +141,7 @@ impl<'tcx> Why3Generator<'tcx> {
             SpanMode::Off => unreachable!(),
         };
 
-        Some(why3::declaration::Attribute::Span(
-            filename,
-            lo.line,
-            lo.col_display,
-            hi.line,
-            hi.col_display,
-        ))
+        Some(Attribute::Span(filename, lo.line, lo.col_display, hi.line, hi.col_display))
     }
 
     pub fn display_impl_of(&self, def_id: DefId) -> Option<String> {

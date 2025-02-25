@@ -15,7 +15,7 @@ use creusot::callbacks::*;
 use creusot_args::CREUSOT_RUSTC_ARGS;
 use options::CreusotArgs;
 use rustc_driver::run_compiler;
-use rustc_session::{config::ErrorOutputType, EarlyDiagCtxt};
+use rustc_session::{EarlyDiagCtxt, config::ErrorOutputType};
 use std::{env, panic, process::Command};
 
 const BUG_REPORT_URL: &str = "https://github.com/creusot-rs/creusot/issues/new";
@@ -28,7 +28,10 @@ fn main() {
 
     // Rust verification tools crash too much for the ice hook to report `full` by default
     if std::env::var_os("RUST_BACKTRACE").is_none() {
-        std::env::set_var("RUST_BACKTRACE", "0");
+        unsafe {
+            // Safety: we are in single threaded code
+            std::env::set_var("RUST_BACKTRACE", "0");
+        }
     }
     rustc_driver::install_ice_hook(BUG_REPORT_URL, |_| ());
 

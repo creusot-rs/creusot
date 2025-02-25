@@ -12,7 +12,7 @@ use crate::{
     },
 };
 use rustc_middle::ty::{GenericArg, Ty, TyCtxt, TyKind, TypingEnv};
-use rustc_span::{Symbol, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Symbol};
 use std::collections::HashSet;
 
 pub(crate) fn is_tyinv_trivial<'tcx>(
@@ -87,7 +87,8 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         let subject = Term::var(Symbol::intern("x"), ty);
         let inv_id = get_inv_function(self.ctx.tcx);
         let subst = self.ctx.mk_args(&[GenericArg::from(subject.ty)]);
-        let lhs = Term::call(self.ctx.tcx, self.typing_env, inv_id, subst, Box::new([subject.clone()]));
+        let lhs =
+            Term::call(self.ctx.tcx, self.typing_env, inv_id, subst, Box::new([subject.clone()]));
         let trig = Box::new([Trigger(Box::new([lhs.clone()]))]);
 
         if is_tyinv_trivial(self.ctx.tcx, self.typing_env, ty) {

@@ -1,19 +1,19 @@
 use indexmap::{IndexMap, IndexSet};
 use rustc_middle::{
-    mir::{tcx::PlaceTy, BasicBlock, ProjectionElem, START_BLOCK},
+    mir::{BasicBlock, ProjectionElem, START_BLOCK, tcx::PlaceTy},
     ty::{Ty, TyCtxt},
 };
-use rustc_span::{Symbol, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Symbol};
 
 use crate::{
     backend::{
         place::projection_ty,
         program::node_graph,
-        wto::{weak_topological_order, Component},
+        wto::{Component, weak_topological_order},
     },
     contracts_items::get_snap_ty,
     ctx::TranslationCtx,
-    pearlite::{mk_projection, Term},
+    pearlite::{Term, mk_projection},
     translation::fmir,
 };
 use petgraph::Direction;
@@ -49,8 +49,12 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
             let subst = ctx.mk_args(&[u.ty(tcx, &body.locals).into()]);
             let ty = Ty::new_adt(ctx.tcx, ctx.adt_def(snap_ty), subst);
 
-            body.locals
-                .insert(local, fmir::LocalDecl { span: DUMMY_SP, ty, temp: true, arg: false });
+            body.locals.insert(local, fmir::LocalDecl {
+                span: DUMMY_SP,
+                ty,
+                temp: true,
+                arg: false,
+            });
 
             for p in &incoming {
                 let mut prev_block = body.blocks.get_mut(p).unwrap();
@@ -62,15 +66,12 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
                             *tgt = new_block;
                         }
                     }
-                    body.blocks.insert(
-                        new_block,
-                        Block {
-                            invariants: vec![],
-                            variant: None,
-                            stmts: vec![],
-                            terminator: Terminator::Goto(*k),
-                        },
-                    );
+                    body.blocks.insert(new_block, Block {
+                        invariants: vec![],
+                        variant: None,
+                        stmts: vec![],
+                        terminator: Terminator::Goto(*k),
+                    });
                     prev_block = body.blocks.get_mut(&new_block).unwrap();
                 }
                 if let Terminator::Goto(t) = prev_block.terminator
@@ -89,13 +90,10 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
             let old = Term::var(local, ty);
             let blk = body.blocks.get_mut(k).unwrap();
 
-            blk.invariants.insert(
-                0,
-                fmir::Invariant {
-                    body: old.coerce(u.ty(tcx, &body.locals)).fin().eq(tcx, pterm.fin()),
-                    expl: "expl:mut invariant".to_string(),
-                },
-            );
+            blk.invariants.insert(0, fmir::Invariant {
+                body: old.coerce(u.ty(tcx, &body.locals)).fin().eq(tcx, pterm.fin()),
+                expl: "expl:mut invariant".to_string(),
+            });
         }
     }
 }

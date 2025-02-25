@@ -102,7 +102,7 @@ impl QName {
 
     pub fn without_search_path(mut self) -> QName {
         self.module =
-            self.module.to_vec().into_iter().skip_while(|s| s.starts_with(char::is_lowercase)).collect();
+            self.module.into_iter().skip_while(|s| s.starts_with(char::is_lowercase)).collect();
         self
     }
 }

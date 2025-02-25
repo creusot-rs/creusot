@@ -8,23 +8,23 @@ use crate::{
     function::closure_capture_subst,
     naming::anonymous_param_symbol,
     pearlite::TermVisitorMut,
-    translation::pearlite::{self, normalize, Literal, Term, TermKind},
+    translation::pearlite::{self, Literal, Term, TermKind, normalize},
     util::erased_identity_for_item,
 };
-use rustc_hir::{def_id::DefId, AttrArgs, Safety};
+use rustc_hir::{AttrArgs, Safety, def_id::DefId};
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
-    mir::{self, Body, Local, SourceInfo, SourceScope, OUTERMOST_SOURCE_SCOPE},
+    mir::{self, Body, Local, OUTERMOST_SOURCE_SCOPE, SourceInfo, SourceScope},
     ty::{EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv},
 };
 use rustc_span::{
-    symbol::{kw, Ident},
-    Span, Symbol, DUMMY_SP,
+    DUMMY_SP, Span, Symbol,
+    symbol::{Ident, kw},
 };
 use rustc_type_ir::ClosureKind;
 use std::{
     collections::{HashMap, HashSet},
-    iter,
+    iter::{once, repeat},
 };
 
 /// A term with an "expl:" label (includes the "expl:" prefix)
@@ -601,17 +601,13 @@ fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (impl Iterator<Item = (Ident
 
             // I wish this could be called "self"
             let closure_env = (Ident::empty(), env_ty);
-            let names = tcx
-                .fn_arg_names(def_id)
-                .iter()
-                .cloned()
-                .chain(iter::repeat(rustc_span::symbol::Ident::empty()));
+            let names = tcx.fn_arg_names(def_id).iter().cloned().chain(repeat(Ident::empty()));
             (
-                Box::new(iter::once(closure_env).chain(names.zip(sig.inputs().iter().cloned()))),
+                Box::new(once(closure_env).chain(names.zip(sig.inputs().iter().cloned()))),
                 sig.output(),
             )
         }
-        _ => (Box::new(iter::empty()), tcx.type_of(def_id).instantiate_identity()),
+        _ => (Box::new([].into_iter()), tcx.type_of(def_id).instantiate_identity()),
     };
     (inputs, output)
 }

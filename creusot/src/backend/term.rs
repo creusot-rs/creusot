@@ -1,24 +1,26 @@
-use std::iter::repeat_n;
-
 use crate::{
     backend::{
+        Why3Generator,
         program::borrow_generated_id,
         ty::{constructor, floatty_to_prelude, ity_to_prelude, translate_ty, uty_to_prelude},
-        Why3Generator,
     },
     ctx::*,
     naming::ident_of,
-    pearlite::{self, Literal, Pattern, PointerKind, Term, TermKind},
-    translation::pearlite::{zip_binder, QuantKind, Trigger},
+    pearlite::{BinOp, Literal, Pattern, PointerKind, Term, TermKind, UnOp},
+    translation::pearlite::{QuantKind, Trigger, zip_binder},
 };
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind};
 use rustc_span::DUMMY_SP;
 use rustc_type_ir::{IntTy, UintTy};
+use std::iter::repeat_n;
 use why3::{
-    exp::{BinOp, Binder, Constant, Exp, Pattern as Pat},
-    ty::Type,
     Ident,
+    exp::{
+        BinOp as WBinOp, Binder, Constant, Exp, Pattern as WPattern, Trigger as WTrigger,
+        UnOp as WUnOp,
+    },
+    ty::Type,
 };
 
 pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
@@ -29,18 +31,14 @@ pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
     let span = term.span;
     let mut term = Lower { ctx, names }.lower_term(term);
     term.reassociate();
-    if let Some(attr) = names.span(span) {
-        term.with_attr(attr)
-    } else {
-        term
-    }
+    if let Some(attr) = names.span(span) { term.with_attr(attr) } else { term }
 }
 
 pub(crate) fn lower_pat<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     pat: &Pattern<'tcx>,
-) -> Pat {
+) -> WPattern {
     Lower { ctx, names }.lower_pat(pat)
 }
 
@@ -132,7 +130,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
 
-                use pearlite::BinOp::*;
+                use BinOp::*;
                 match op {
                     BitAnd | BitOr | BitXor | Shl | Shr | Div | Rem => {
                         let prelude = match term.ty.kind() {
@@ -166,12 +164,12 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
             }
             TermKind::Unary { op, box arg } => {
-                if matches!(op, pearlite::UnOp::Neg) {
+                if matches!(op, UnOp::Neg) {
                     self.names.import_prelude_module(PreludeModule::Int);
                 }
                 let op = match op {
-                    pearlite::UnOp::Not => why3::exp::UnOp::Not,
-                    pearlite::UnOp::Neg => why3::exp::UnOp::Neg,
+                    UnOp::Not => WUnOp::Not,
+                    UnOp::Neg => WUnOp::Neg,
                 };
                 Exp::UnaryOp(op, Box::new(self.lower_term(arg)))
             }
@@ -179,11 +177,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let var = Exp::qvar(self.names.item(*id, *subst));
                 let mut args = args.into_iter().map(|arg| self.lower_term(arg)).peekable();
 
-                if args.peek().is_none() {
-                    var.app([Exp::unit()])
-                } else {
-                    var.app(args)
-                }
+                if args.peek().is_none() { var.app([Exp::unit()]) } else { var.app(args) }
             }
             TermKind::Quant { kind, binder, box body, trigger } => {
                 let bound = zip_binder(binder)
@@ -250,11 +244,11 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     TyKind::Closure(did, substs) => self.names.field(*did, substs, *name),
                     TyKind::Adt(def, substs) => self.names.field(def.did(), substs, *name),
                     TyKind::Tuple(f) => {
-                        let mut fields: Box<_> = repeat_n(Pat::Wildcard, f.len()).collect();
-                        fields[name.as_usize()] = Pat::VarP("a".into());
+                        let mut fields: Box<_> = repeat_n(WPattern::Wildcard, f.len()).collect();
+                        fields[name.as_usize()] = WPattern::VarP("a".into());
 
                         return Exp::Let {
-                            pattern: Pat::TupleP(fields),
+                            pattern: WPattern::TupleP(fields),
                             arg: Box::new(lhs_low),
                             body: Box::new(Exp::var("a")),
                         };
@@ -321,44 +315,43 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         }
     }
 
-    fn lower_pat(&self, pat: &Pattern<'tcx>) -> Pat {
+    fn lower_pat(&self, pat: &Pattern<'tcx>) -> WPattern {
         match pat {
             Pattern::Constructor { variant, fields, substs } => {
                 let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
                 if self.ctx.def_kind(variant) == DefKind::Variant {
-                    Pat::ConsP(self.names.constructor(*variant, *substs), fields)
+                    WPattern::ConsP(self.names.constructor(*variant, *substs), fields)
                 } else if fields.len() == 0 {
-                    Pat::TupleP(Box::new([]))
+                    WPattern::TupleP(Box::new([]))
                 } else {
-                    Pat::RecP(
+                    WPattern::RecP(
                         fields
-                            .to_vec()
                             .into_iter()
                             .enumerate()
                             .map(|(i, f)| {
                                 (self.names.field(*variant, substs, i.into()).as_ident(), f)
                             })
-                            .filter(|(_, f)| !matches!(f, Pat::Wildcard))
+                            .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                             .collect(),
                     )
                 }
             }
-            Pattern::Wildcard => Pat::Wildcard,
-            Pattern::Binder(name) => Pat::VarP(name.to_string().into()),
+            Pattern::Wildcard => WPattern::Wildcard,
+            Pattern::Binder(name) => WPattern::VarP(name.to_string().into()),
             Pattern::Boolean(b) => {
                 if *b {
-                    Pat::mk_true()
+                    WPattern::mk_true()
                 } else {
-                    Pat::mk_false()
+                    WPattern::mk_false()
                 }
             }
             Pattern::Tuple(pats) => {
-                Pat::TupleP(pats.into_iter().map(|pat| self.lower_pat(pat)).collect())
+                WPattern::TupleP(pats.into_iter().map(|pat| self.lower_pat(pat)).collect())
             }
             Pattern::Deref { pointee, kind } => match kind {
                 PointerKind::Box | PointerKind::Shr => self.lower_pat(pointee),
                 PointerKind::Mut => {
-                    Pat::RecP(Box::new([("current".into(), self.lower_pat(pointee))]))
+                    WPattern::RecP(Box::new([("current".into(), self.lower_pat(pointee))]))
                 }
             },
         }
@@ -368,10 +361,10 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty)
     }
 
-    fn lower_trigger(&self, triggers: &[Trigger<'tcx>]) -> Box<[why3::exp::Trigger]> {
+    fn lower_trigger(&self, triggers: &[Trigger<'tcx>]) -> Box<[WTrigger]> {
         triggers
             .iter()
-            .map(|x| why3::exp::Trigger(x.0.iter().map(|x| self.lower_term(x)).collect()))
+            .map(|x| WTrigger(x.0.iter().map(|x| self.lower_term(x)).collect()))
             .collect()
     }
 }
@@ -418,25 +411,25 @@ pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
     }
 }
 
-pub(crate) fn binop_to_binop(op: pearlite::BinOp) -> why3::exp::BinOp {
+pub(crate) fn binop_to_binop(op: BinOp) -> WBinOp {
     match op {
-        pearlite::BinOp::Add => BinOp::Add,
-        pearlite::BinOp::Sub => BinOp::Sub,
-        pearlite::BinOp::Mul => BinOp::Mul,
-        pearlite::BinOp::Lt => BinOp::Lt,
-        pearlite::BinOp::Le => BinOp::Le,
-        pearlite::BinOp::Gt => BinOp::Gt,
-        pearlite::BinOp::Ge => BinOp::Ge,
-        pearlite::BinOp::Eq => BinOp::Eq,
-        pearlite::BinOp::Ne => BinOp::Ne,
-        pearlite::BinOp::And => BinOp::LogAnd,
-        pearlite::BinOp::Or => BinOp::LogOr,
-        pearlite::BinOp::BitAnd => BinOp::BitAnd,
-        pearlite::BinOp::BitOr => BinOp::BitOr,
-        pearlite::BinOp::BitXor => BinOp::BitXor,
-        pearlite::BinOp::Shl => BinOp::Shl,
-        pearlite::BinOp::Shr => BinOp::Shr,
-        pearlite::BinOp::Div => todo!("Refactor binop_to_binop to support Div"),
-        pearlite::BinOp::Rem => todo!("Refactor binop_to_binop to support Rem"),
+        BinOp::Add => WBinOp::Add,
+        BinOp::Sub => WBinOp::Sub,
+        BinOp::Mul => WBinOp::Mul,
+        BinOp::Lt => WBinOp::Lt,
+        BinOp::Le => WBinOp::Le,
+        BinOp::Gt => WBinOp::Gt,
+        BinOp::Ge => WBinOp::Ge,
+        BinOp::Eq => WBinOp::Eq,
+        BinOp::Ne => WBinOp::Ne,
+        BinOp::And => WBinOp::LogAnd,
+        BinOp::Or => WBinOp::LogOr,
+        BinOp::BitAnd => WBinOp::BitAnd,
+        BinOp::BitOr => WBinOp::BitOr,
+        BinOp::BitXor => WBinOp::BitXor,
+        BinOp::Shl => WBinOp::Shl,
+        BinOp::Shr => WBinOp::Shr,
+        BinOp::Div => todo!("Refactor binop_to_binop to support Div"),
+        BinOp::Rem => todo!("Refactor binop_to_binop to support Rem"),
     }
 }

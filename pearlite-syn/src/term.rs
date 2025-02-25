@@ -1,5 +1,5 @@
 use proc_macro2::{Delimiter, Span, TokenStream};
-use syn::{parse::discouraged::AnyDelimiter, punctuated::Punctuated, Pat, *};
+use syn::{Pat, parse::discouraged::AnyDelimiter, punctuated::Punctuated, *};
 
 #[cfg(feature = "printing")]
 use quote::IdentFragment;
@@ -1360,11 +1360,7 @@ pub(crate) mod parsing {
                 cond: Box::new(input.call(Term::parse_without_eager_brace)?),
                 then_branch: input.parse()?,
                 else_branch: {
-                    if input.peek(Token![else]) {
-                        Some(input.call(else_block)?)
-                    } else {
-                        None
-                    }
+                    if input.peek(Token![else]) { Some(input.call(else_block)?) } else { None }
                 },
             })
         }

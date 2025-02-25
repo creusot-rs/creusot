@@ -1,8 +1,8 @@
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, quote_spanned};
 use syn::{
-    parse_macro_input, parse_quote, spanned::Spanned, Data, DeriveInput, Error, Expr, ExprLit,
-    Fields, GenericParam, Generics, Index, Lit, Meta, MetaNameValue, Path,
+    Data, DeriveInput, Error, Expr, ExprLit, Fields, GenericParam, Generics, Index, Lit, Meta,
+    MetaNameValue, Path, parse_macro_input, parse_quote, spanned::Spanned,
 };
 
 pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -80,7 +80,7 @@ fn add_trait_bounds(mut generics: Generics) -> Generics {
 
 fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
     match fields {
-        Fields::Named(ref fields) => {
+        Fields::Named(fields) => {
             let recurse = fields.named.iter().map(|f| {
                 let name = &f.ident;
                 let ty = &f.ty;
@@ -93,7 +93,7 @@ fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
                  { #(#recurse),*}
             }
         }
-        Fields::Unnamed(ref fields) => {
+        Fields::Unnamed(fields) => {
             let recurse = fields.unnamed.iter().map(|f| {
                 let ty = &f.ty;
                 let vis = &f.vis;
@@ -111,12 +111,12 @@ fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
 
 fn deep_model_ty(base_ident: &Ident, generics: &Generics, data: &Data) -> TokenStream {
     match data {
-        Data::Struct(ref data) => {
+        Data::Struct(data) => {
             let semi_colon = data.semi_token;
             let data = deep_model_ty_fields(&data.fields);
             quote! { struct #base_ident #generics #data #semi_colon }
         }
-        Data::Enum(ref data) => {
+        Data::Enum(data) => {
             let arms = data.variants.iter().map(|v| {
                 let ident = &v.ident;
                 let fields = deep_model_ty_fields(&v.fields);

@@ -4,9 +4,10 @@ extern crate creusot_contracts;
 // This proof is largely adapted from the one in Vocal (see https://github.com/ocaml-gospel/vocal/blob/main/proofs/why3/UnionFind_impl.mlw)
 mod implementation {
     use creusot_contracts::{
+        Clone,
         logic::{FMap, FSet, Mapping},
         ptr_own::PtrOwn,
-        Clone, *,
+        *,
     };
 
     pub struct Element<T>(*const Content<T>);
@@ -80,7 +81,7 @@ mod implementation {
     impl<T> Invariant for UnionFind<T> {
         #[predicate]
         #[open(self)]
-        #[why3::attr = "inline:trivial"]
+        #[creusot::why3_attr = "inline:trivial"]
         fn invariant(self) -> bool {
             let domain = self.domain;
             pearlite! {
@@ -297,20 +298,10 @@ mod implementation {
             if rx < ry {
                 let perm_mut_x = ghost!(map.get_mut_ghost(&x.addr()).unwrap());
                 *PtrOwn::as_mut(x.0, perm_mut_x) = Content::Link(y);
-                self.root_of = snapshot!(|z| {
-                    if self.root_of[z] == x {
-                        y
-                    } else {
-                        self.root_of[z]
-                    }
-                });
-                self.values = snapshot!(|z| {
-                    if self.root_of[z] == y {
-                        *vy
-                    } else {
-                        self.values[z]
-                    }
-                });
+                self.root_of =
+                    snapshot!(|z| { if self.root_of[z] == x { y } else { self.root_of[z] } });
+                self.values =
+                    snapshot!(|z| { if self.root_of[z] == y { *vy } else { self.values[z] } });
                 self.max_depth = snapshot!(*self.max_depth + 1);
                 self.distance =
                     snapshot!(self.distance.set(y, 1 + self.distance[x].max(self.distance[y])));
@@ -325,20 +316,10 @@ mod implementation {
                         _ => {}
                     }
                 }
-                self.root_of = snapshot!(|z| {
-                    if self.root_of[z] == y {
-                        x
-                    } else {
-                        self.root_of[z]
-                    }
-                });
-                self.values = snapshot!(|z| {
-                    if self.root_of[z] == x {
-                        *vx
-                    } else {
-                        self.values[z]
-                    }
-                });
+                self.root_of =
+                    snapshot!(|z| { if self.root_of[z] == y { x } else { self.root_of[z] } });
+                self.values =
+                    snapshot!(|z| { if self.root_of[z] == x { *vx } else { self.values[z] } });
                 self.max_depth = snapshot!(*self.max_depth + 1);
                 self.distance =
                     snapshot!(self.distance.set(x, 1 + self.distance[x].max(self.distance[y])));

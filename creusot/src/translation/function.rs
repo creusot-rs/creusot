@@ -9,12 +9,12 @@ use crate::{
     ctx::*,
     extended_location::ExtendedLocation,
     fmir::{self, LocalDecl, LocalDecls, LocalIdent, RValue, TrivialInv},
-    gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind, SpecClosures},
+    gather_spec_closures::{LoopSpecKind, SpecClosures, corrected_invariant_names_and_locations},
     naming::anonymous_param_symbol,
-    pearlite::{normalize, Term},
-    resolve::{place_contains_borrow_deref, HasMoveDataExt, Resolver},
+    pearlite::{Term, normalize},
+    resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
     translation::{
-        pearlite::{self, super_visit_mut_term, TermKind, TermVisitorMut},
+        pearlite::{self, TermKind, TermVisitorMut, super_visit_mut_term},
         specification::{contract_of, inv_subst},
         traits,
     },
@@ -22,11 +22,11 @@ use crate::{
 use indexmap::IndexMap;
 use rustc_borrowck::consumers::BorrowSet;
 use rustc_hir::def_id::DefId;
-use rustc_index::{bit_set::MixedBitSet, Idx};
+use rustc_index::{Idx, bit_set::MixedBitSet};
 use rustc_middle::{
     mir::{
-        self, traversal::reverse_postorder, BasicBlock, Body, Local, Location, Mutability, Operand,
-        Place, PlaceRef, TerminatorKind, START_BLOCK,
+        self, BasicBlock, Body, Local, Location, Mutability, Operand, Place, PlaceRef, START_BLOCK,
+        TerminatorKind, traversal::reverse_postorder,
     },
     ty::{
         BorrowKind, ClosureKind, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypeVisitableExt,
@@ -34,14 +34,15 @@ use rustc_middle::{
     },
 };
 use rustc_mir_dataflow::{
+    Analysis as _,
     move_paths::{HasMoveData, LookupResult, MoveData, MovePathIndex},
-    on_all_children_bits, Analysis as _,
+    on_all_children_bits,
 };
-use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use std::{
     collections::{HashMap, HashSet},
-    iter,
+    iter::zip,
     ops::FnOnce,
 };
 
@@ -454,7 +455,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             .map(|&pred| resolver.resolved_places_between_blocks(pred, bb))
             .collect::<Vec<_>>();
 
-        for (pred, resolved) in iter::zip(pred_blocks, resolved_between.iter_mut()) {
+        for (pred, resolved) in zip(pred_blocks, resolved_between.iter_mut()) {
             // We do not need to resolve move path that we know are inactive
             // because of a preceding switch.
 
@@ -511,7 +512,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             return;
         }
 
-        for (pred, resolved) in iter::zip(pred_blocks, resolved_between) {
+        for (pred, resolved) in zip(pred_blocks, resolved_between) {
             // If no resolves occured in block transition then skip entirely
             if resolved.0.is_empty() {
                 continue;
@@ -772,15 +773,12 @@ fn translate_vars<'tcx>(
         }
         locals.insert(loc, s);
         let is_arg = 0 < loc.index() && loc.index() <= body.arg_count;
-        vars.insert(
-            s,
-            LocalDecl {
-                span: d.source_info.span,
-                ty: d.ty,
-                temp: !d.is_user_variable(),
-                arg: is_arg,
-            },
-        );
+        vars.insert(s, LocalDecl {
+            span: d.source_info.span,
+            ty: d.ty,
+            temp: !d.is_user_variable(),
+            arg: is_arg,
+        });
     }
     (vars, locals)
 }
@@ -1171,11 +1169,7 @@ impl<'a, 'tcx> ClosureSubst<'a, 'tcx> {
                 Some(proj)
             }
             UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
-                if self.self_consumed {
-                    Some(proj.fin())
-                } else {
-                    Some(proj.cur())
-                }
+                if self.self_consumed { Some(proj.fin()) } else { Some(proj.cur()) }
             }
             UpvarCapture::ByRef(BorrowKind::Immutable) => {
                 Some(proj.coerce(ty.builtin_deref(false).unwrap()))
@@ -1273,7 +1267,7 @@ pub(crate) fn closure_capture_subst<'a, 'tcx>(
 
     let captures = ctx.closure_captures(def_id.expect_local());
 
-    let map = std::iter::zip(captures, cs.as_closure().upvar_tys())
+    let map = zip(captures, cs.as_closure().upvar_tys())
         .enumerate()
         .map(|(ix, (cap, ty))| (cap.to_symbol(), (cap.info.capture_kind, ty, ix.into())))
         .collect();

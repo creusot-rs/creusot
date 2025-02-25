@@ -1,6 +1,10 @@
-use std::{fmt::Display, iter::once};
+use std::{
+    fmt::Display,
+    iter::{once, repeat},
+};
 
 use crate::{
+    Exp, Ident, QName,
     declaration::{
         self, AdtDecl, Attribute, Axiom, ConstructorDecl, Contract, Decl, DeclKind, FieldDecl,
         Goal, LogicDecl, LogicDefn, Meta, MetaArg, MetaIdent, Module, Predicate, Signature, Span,
@@ -8,7 +12,6 @@ use crate::{
     },
     exp::{AssocDir, BinOp, Binder, Constant, Pattern, Precedence, Trigger, UnOp},
     ty::Type,
-    Exp, Ident, QName,
 };
 use num::{Float, Zero};
 use pretty::*;
@@ -50,11 +53,7 @@ macro_rules! parens {
 
 macro_rules! ty_parens {
     ($alloc:ident, $e:ident) => {
-        if $e.complex() {
-            $e.pretty($alloc).parens()
-        } else {
-            $e.pretty($alloc)
-        }
+        if $e.complex() { $e.pretty($alloc).parens() } else { $e.pretty($alloc) }
     };
 }
 
@@ -280,9 +279,7 @@ fn arg_list<'b: 'a, 'a, A: DocAllocator<'a>>(alloc: &'a A, args: &'a [Binder]) -
 where
     A::Doc: Clone,
 {
-    {
-        alloc.intersperse(args.iter().map(|b| b.pretty(alloc)), alloc.space())
-    }
+    alloc.intersperse(args.iter().map(|b| b.pretty(alloc)), alloc.space())
 }
 
 impl Print for LogicDefn {
@@ -839,7 +836,6 @@ impl Print for TyDecl {
                 .append(alloc.text(" =").append(alloc.hardline()))
                 .append(alias.pretty(alloc).indent(2)),
             TyDecl::Adt { tys } => {
-                use std::iter::*;
                 let header = once("type").chain(repeat("with"));
 
                 let mut decls = Vec::new();

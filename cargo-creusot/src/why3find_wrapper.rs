@@ -1,6 +1,6 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use clap::*;
-use creusot_setup::{creusot_paths, Paths, PROVERS};
+use creusot_setup::{PROVERS, Paths, creusot_paths};
 use std::{
     path::{Path, PathBuf},
     process::Command,
@@ -48,11 +48,7 @@ fn raw_config(args: &Vec<String>, paths: &Paths) -> Result<()> {
         .map_err(|e| anyhow::Error::new(e).context("'why3find config' failed to launch"))
         .and_then(
             |status| {
-                if status.success() {
-                    Ok(())
-                } else {
-                    Err(anyhow!("'why3find config' failed"))
-                }
+                if status.success() { Ok(()) } else { Err(anyhow!("'why3find config' failed")) }
             },
         )
 }
@@ -81,11 +77,7 @@ fn raw_prove(args: ProveArgs, paths: &Paths) -> Result<()> {
         .map_err(|e| anyhow::Error::new(e).context("'why3find prove' failed to launch"))
         .and_then(
             |status| {
-                if status.success() {
-                    Ok(())
-                } else {
-                    Err(anyhow!("'why3find prove' failed"))
-                }
+                if status.success() { Ok(()) } else { Err(anyhow!("'why3find prove' failed")) }
             },
         )
 }
@@ -98,7 +90,9 @@ pub fn why3find_config(args: ConfigArgs) -> Result<()> {
 pub fn why3find_prove(args: ProveArgs) -> Result<()> {
     let paths = creusot_paths()?;
     if !why3find_json_exists() {
-        return Err(anyhow::anyhow!("why3find.json not found. Perhaps you are in the wrong directory, or you need to run `cargo creusot config`."));
+        return Err(anyhow::anyhow!(
+            "why3find.json not found. Perhaps you are in the wrong directory, or you need to run `cargo creusot config`."
+        ));
     }
     raw_prove(args, &paths)
 }

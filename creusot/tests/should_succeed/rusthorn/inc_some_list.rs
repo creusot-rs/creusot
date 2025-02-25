@@ -51,11 +51,7 @@ impl List {
         match self {
             Cons(ma, ml) => {
                 snapshot! { ml.lemma_sum_nonneg() };
-                if random() {
-                    ma
-                } else {
-                    ml.take_some()
-                }
+                if random() { ma } else { ml.take_some() }
             }
             Nil => loop {},
         }

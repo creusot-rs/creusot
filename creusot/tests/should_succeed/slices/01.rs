@@ -18,9 +18,5 @@ pub fn index_mut_slice(a: &mut [u32]) {
     None => a@.len() == 0
 })]
 pub fn slice_first<T>(a: &[T]) -> Option<&T> {
-    if a.len() > 0 {
-        Some(&a[0])
-    } else {
-        None
-    }
+    if a.len() > 0 { Some(&a[0]) } else { None }
 }

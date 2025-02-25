@@ -7,15 +7,15 @@ use crate::{
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{AliasTy, AliasTyKind, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv};
-use rustc_span::{Span, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, TyKind::*, UintTy};
 use why3::{
+    Ident,
     coma::{Arg, Defn, Expr, Param},
     declaration::{AdtDecl, ConstructorDecl, Decl, FieldDecl, SumRecord, TyDecl},
     exp::{Exp, Trigger},
     ty::Type as MlT,
-    Ident,
 };
 
 pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
@@ -244,13 +244,7 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
                 Box::new(cons_test.neq(Exp::var("input"))),
             )
         };
-
-        Some(Defn {
-            name: format!("bad").into(),
-            params: Box::new([]),
-            attrs: vec![],
-            body: Expr::Assert(Box::new(negative_assertion), Box::new(fail)),
-        })
+        Some(Defn::simple("bad", Expr::Assert(Box::new(negative_assertion), Box::new(fail))))
     } else {
         None
     };
@@ -284,7 +278,6 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
                 Exp::unit()
             } else {
                 let fields = fields
-                    .to_vec()
                     .into_iter()
                     .enumerate()
                     .map(|(ix, f)| (names.field(did, subst, ix.into()).as_ident().to_string(), f))
@@ -297,11 +290,7 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
 }
 
 pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
-    if let TyKind::Adt(def, _) = ty.kind() {
-        is_int_ty(tcx, def.did())
-    } else {
-        false
-    }
+    if let TyKind::Adt(def, _) = ty.kind() { is_int_ty(tcx, def.did()) } else { false }
 }
 
 pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &Why3Generator<'tcx>, names: &N) -> MlT {

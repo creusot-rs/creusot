@@ -8,11 +8,7 @@ use creusot_contracts::*;
 #[variant(i)]
 #[ensures(i == 0 ==> result == 0)]
 fn id(i: Int) -> Int {
-    if i == 0 {
-        0
-    } else {
-        id(i - 1) + 1
-    }
+    if i == 0 { 0 } else { id(i - 1) + 1 }
 }
 
 #[ensures(id(1) == 1)]

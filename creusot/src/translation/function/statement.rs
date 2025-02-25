@@ -17,7 +17,7 @@ use rustc_middle::{
         BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
         StatementKind,
     },
-    ty::{adjustment::PointerCoercion, TyKind},
+    ty::{TyKind, adjustment::PointerCoercion},
 };
 use rustc_mir_dataflow::ResultsCursor;
 

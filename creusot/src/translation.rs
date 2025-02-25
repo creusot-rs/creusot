@@ -8,9 +8,9 @@ pub(crate) mod specification;
 pub(crate) mod traits;
 
 use crate::{
-    backend::{is_trusted_function, Why3Generator},
+    backend::{Why3Generator, is_trusted_function},
     contracts_items::{
-        are_contracts_loaded, is_logic, is_no_translate, is_predicate, is_spec, AreContractsLoaded,
+        AreContractsLoaded, are_contracts_loaded, is_logic, is_no_translate, is_predicate, is_spec,
     },
     ctx::{self},
     error::{Error, InternalError},
@@ -28,8 +28,9 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::DUMMY_SP;
 use std::{fs::File, io::Write, path::PathBuf, time::Instant};
 use why3::{
+    Ident,
     declaration::{Attribute, Decl, Module},
-    printer::{self, pretty_blocks, Print},
+    printer::{self, Print, pretty_blocks},
 };
 
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn std::error::Error>> {
@@ -157,15 +158,15 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn std::err
 }
 
 pub enum OutputHandle {
-    Directory(PathBuf, Vec<why3::Ident>), // One file per Coma module, second component is a prefix for all files
-    File(Box<dyn Write>),                 // Monolithic output
+    Directory(PathBuf, Vec<Ident>), // One file per Coma module, second component is a prefix for all files
+    File(Box<dyn Write>),           // Monolithic output
 }
 
 fn module_output(modl: &FileModule, output: &mut OutputHandle) -> std::io::Result<()> {
     match output {
         OutputHandle::Directory(dir, prefix) => {
             let mut path = dir.clone();
-            path.push(modl.path.file_name(prefix));
+            path.push(modl.path.file_name(&*prefix));
             path.set_extension("coma");
             let prefix = path.parent().unwrap();
             std::fs::create_dir_all(prefix).unwrap();
@@ -223,7 +224,7 @@ fn remove_coma_files(dir: &PathBuf) -> std::io::Result<()> {
 
 fn print_crate<I: Iterator<Item = FileModule>>(
     output_target: Output,
-    prefix: Vec<why3::Ident>,
+    prefix: Vec<Ident>,
     modules: I,
 ) -> std::io::Result<Option<PathBuf>> {
     let (root, mut output) = match output_target {

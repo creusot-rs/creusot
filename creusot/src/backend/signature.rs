@@ -1,8 +1,8 @@
 use rustc_hir::def_id::DefId;
 use why3::{
-    declaration::{Contract, Signature},
-    exp::{Binder, Trigger},
     Ident,
+    declaration::{Condition as WCondition, Contract, Signature},
+    exp::{Binder, Trigger},
 };
 
 use crate::{
@@ -13,7 +13,7 @@ use crate::{
     translation::specification::PreContract,
 };
 
-use super::{logic::function_call, term::lower_pure, Namer, Why3Generator};
+use super::{Namer, Why3Generator, logic::function_call, term::lower_pure};
 
 pub(crate) fn signature_of<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
@@ -77,8 +77,8 @@ fn lower_condition<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     cond: Condition<'tcx>,
-) -> why3::declaration::Condition {
-    why3::declaration::Condition { exp: lower_pure(ctx, names, &cond.term), expl: cond.expl }
+) -> WCondition {
+    WCondition { exp: lower_pure(ctx, names, &cond.term), expl: cond.expl }
 }
 
 fn contract_to_why3<'tcx, N: Namer<'tcx>>(

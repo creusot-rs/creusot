@@ -1,6 +1,6 @@
 use crate::{
     contracts_items::{get_builtin, is_box_new},
-    pearlite::{super_visit_mut_term, BinOp, Literal, Term, TermKind, TermVisitorMut, UnOp},
+    pearlite::{BinOp, Literal, Term, TermKind, TermVisitorMut, UnOp, super_visit_mut_term},
     traits::TraitResolved,
 };
 use rustc_hir::def_id::DefId;

@@ -1,8 +1,8 @@
 use crate::{
+    Ident, QName,
     declaration::{Attribute, Use},
     printer::Print,
     ty::Type,
-    Ident, QName,
 };
 
 use pretty::docs;
@@ -89,11 +89,7 @@ pub enum Param {
 
 impl Param {
     pub fn as_term(&self) -> (&Ident, &Type) {
-        if let Param::Term(id, ty) = self {
-            (&id, &ty)
-        } else {
-            unreachable!()
-        }
+        if let Param::Term(id, ty) = self { (&id, &ty) } else { unreachable!() }
     }
 }
 
@@ -143,14 +139,8 @@ impl Expr {
         args.into_iter().fold(self, |acc, a| Expr::App(Box::new(acc), Box::new(a)))
     }
 
-    pub fn assign(mut self, lhs: Ident, rhs: Term) -> Self {
-        match &mut self {
-            // Expr::Assign(_, asgns) => {
-            //     asgns.push((lhs, rhs));
-            //     self
-            // }
-            _ => Expr::Assign(Box::new(self), Box::new([(lhs, rhs)])),
-        }
+    pub fn assign(self, lhs: Ident, rhs: Term) -> Self {
+        Expr::Assign(Box::new(self), Box::new([(lhs, rhs)]))
     }
 
     /// Adds a set of mutually recursive where bindings around `self`
@@ -168,11 +158,7 @@ impl Expr {
     }
 
     pub fn as_symbol(&self) -> Option<&QName> {
-        if let Expr::Symbol(nm) = self {
-            Some(nm)
-        } else {
-            None
-        }
+        if let Expr::Symbol(nm) = self { Some(nm) } else { None }
     }
 
     /// Checks whether the expression is protected by a black box.
@@ -408,11 +394,7 @@ fn brackets<'a, A: pretty::DocAllocator<'a>>(
 where
     A::Doc: Clone,
 {
-    if !matches!(&*doc.1, pretty::Doc::Nil) {
-        doc.brackets().nest(2)
-    } else {
-        doc
-    }
+    if !matches!(&*doc.1, pretty::Doc::Nil) { doc.brackets().nest(2) } else { doc }
 }
 
 fn bracket_list<'a, S, A: pretty::DocAllocator<'a>>(

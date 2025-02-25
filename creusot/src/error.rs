@@ -1,5 +1,5 @@
 use rustc_middle::ty::TyCtxt;
-use rustc_span::{Span, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Span};
 
 pub type CreusotResult<T> = Result<T, Error>;
 

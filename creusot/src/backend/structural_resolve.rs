@@ -1,6 +1,6 @@
 use rustc_ast::Mutability;
 use rustc_middle::ty::{GenericArg, Ty};
-use rustc_span::{Symbol, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Symbol};
 use rustc_type_ir::TyKind;
 
 use crate::{
@@ -17,7 +17,9 @@ pub fn structural_resolve<'tcx>(
 ) -> Option<Term<'tcx>> {
     let subject = Term::var(subject, ty);
     match ty.kind() {
-        TyKind::Adt(adt, args) if adt.is_box() => Some(resolve_of(ctx, subject.coerce(args.type_at(0)))),
+        TyKind::Adt(adt, args) if adt.is_box() => {
+            Some(resolve_of(ctx, subject.coerce(args.type_at(0))))
+        }
         TyKind::Adt(adt, _) if is_trusted(ctx.tcx, adt.did()) => None,
         TyKind::Adt(adt, _) if is_snap_ty(ctx.tcx, adt.did()) => Some(Term::mk_true(ctx.tcx)),
         TyKind::Adt(adt, _) if get_builtin(ctx.tcx, adt.did()).is_some() => {

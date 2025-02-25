@@ -9,10 +9,10 @@ use crate::{
     error::{CannotFetchThir, CreusotResult, Error},
     metadata::{BinaryMetadata, Metadata},
     options::Options,
-    specification::{pre_sig_of, PreSignature},
+    specification::{PreSignature, pre_sig_of},
     translation::{
         self,
-        external::{extract_extern_specs_from_item, ExternSpec},
+        external::{ExternSpec, extract_extern_specs_from_item},
         fmir,
         function::ClosureContract,
         pearlite::{self, Term},
@@ -23,8 +23,8 @@ use crate::{
 };
 use once_map::unsync::OnceMap;
 use rustc_ast::{
-    visit::{walk_fn, FnKind, Visitor},
     Fn, FnSig, NodeId,
+    visit::{FnKind, Visitor, walk_fn},
 };
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
 use rustc_errors::{Diag, FatalAbort};
@@ -485,15 +485,12 @@ impl<'tcx> TranslationCtx<'tcx> {
             // let additional_predicates = self.arena.alloc_slice(&additional_predicates);
             // let additional_predicates = rustc_middle::ty::GenericPredicates { parent: None, predicates: additional_predicates };
 
-            self.extern_specs.insert(
-                def_id,
-                ExternSpec {
-                    contract: ContractClauses::new(),
-                    subst: erased_identity_for_item(self.tcx, def_id),
-                    arg_subst: Vec::new(),
-                    additional_predicates,
-                },
-            );
+            self.extern_specs.insert(def_id, ExternSpec {
+                contract: ContractClauses::new(),
+                subst: erased_identity_for_item(self.tcx, def_id),
+                arg_subst: Vec::new(),
+                additional_predicates,
+            });
         }
 
         Ok(())

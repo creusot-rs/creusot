@@ -1,6 +1,7 @@
 use crate::{
+    Default,
     logic::ops::{AddLogic, MulLogic, NegLogic, SubLogic},
-    Default, *,
+    *,
 };
 pub use ::std::num::*;
 

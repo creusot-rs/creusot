@@ -20,11 +20,7 @@ impl Type {
 
     pub fn tapp(self, args: impl IntoIterator<Item = Self>) -> Self {
         let mut args = args.into_iter().peekable();
-        if args.peek().is_none() {
-            self
-        } else {
-            Self::TApp(Box::new(self), args.collect())
-        }
+        if args.peek().is_none() { self } else { Self::TApp(Box::new(self), args.collect()) }
     }
 
     pub(crate) fn complex(&self) -> bool {

@@ -22,7 +22,7 @@ impl<T, A: Allocator> IndexLogic<Int> for Vec<T, A> {
 
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { self@[ix] }
     }
@@ -33,7 +33,7 @@ impl<T, A: Allocator> IndexLogic<usize> for Vec<T, A> {
 
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
         pearlite! { self@[ix@] }
     }
@@ -44,7 +44,7 @@ impl<T> IndexLogic<Int> for [T] {
 
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { self@[ix] }
     }
@@ -55,7 +55,7 @@ impl<T> IndexLogic<usize> for [T] {
 
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
         pearlite! { self@[ix@] }
     }
@@ -66,7 +66,7 @@ impl<T, const N: usize> IndexLogic<Int> for [T; N] {
 
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { self@[ix] }
     }
@@ -77,7 +77,7 @@ impl<T, const N: usize> IndexLogic<usize> for [T; N] {
 
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
         pearlite! { self@[ix@] }
     }
@@ -88,7 +88,7 @@ impl<T> IndexLogic<Int> for Snapshot<Seq<T>> {
 
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { (*self)[ix] }
     }

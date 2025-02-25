@@ -3,7 +3,7 @@
 extern crate creusot_contracts;
 
 use creusot_contracts::{
-    invariant::{inv, Invariant},
+    invariant::{Invariant, inv},
     logic::Mapping,
     *,
 };

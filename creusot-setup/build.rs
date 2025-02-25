@@ -3,8 +3,9 @@
 use std::{
     env,
     error::Error,
-    fs::{copy, create_dir_all, read_to_string, File},
+    fs::{File, copy, create_dir_all, read_to_string},
     io::{self, BufWriter, Write},
+    iter::repeat_n,
     path::{Path, PathBuf},
     result::Result,
 };
@@ -25,8 +26,7 @@ fn int_prelude_maker(template_filepath: &Path, int_prelude_filepath: &Path) -> i
         let r = r.replace("$min_signed_value$", &min_signed_value);
         let r = r.replace("$max_signed_value$", &max_signed_value);
         let r = r.replace("$max_unsigned_value$", &max_unsigned_value);
-        let s = String::from("0x1")
-            + &std::iter::repeat_n("0", bits_count as usize / 4).collect::<String>();
+        let s = String::from("0x1") + &repeat_n("0", bits_count as usize / 4).collect::<String>();
         let r = r.replace("$two_power_size$", &s);
 
         writer.write_all(r.as_bytes())?;

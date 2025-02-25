@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 use std::{
-    collections::{hash_map, HashMap, HashSet},
+    collections::{HashMap, HashSet, hash_map},
     hash::Hash,
 };
 

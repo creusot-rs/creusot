@@ -33,7 +33,7 @@ macro_rules! snapshot_impl {
     };
 }
 
-use syn::{parse::Parse, Result};
+use syn::{Result, parse::Parse};
 
 pub trait Tokens {
     fn parse<T: Parse>(self) -> Result<T>;

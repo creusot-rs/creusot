@@ -16,10 +16,10 @@ use crate::{
     },
     ctx::TranslationCtx,
     error::CannotFetchThir,
-    pearlite::{pearlite_stub, Stub},
+    pearlite::{Stub, pearlite_stub},
     specification::contract_of,
     traits::TraitResolved,
-    translation::pearlite::{super_visit_term, TermKind, TermVisitor},
+    translation::pearlite::{TermKind, TermVisitor, super_visit_term},
     util::parent_module,
 };
 
@@ -308,11 +308,7 @@ pub(crate) fn validate_purity(
     let mut visitor =
         PurityVisitor { ctx, thir: &thir, context: purity, typing_env, thir_failed: false };
     thir::visit::walk_expr(&mut visitor, &thir[expr]);
-    if visitor.thir_failed {
-        Err(CannotFetchThir)
-    } else {
-        Ok(())
-    }
+    if visitor.thir_failed { Err(CannotFetchThir) } else { Ok(()) }
 }
 
 struct PurityVisitor<'a, 'tcx> {

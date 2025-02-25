@@ -1,8 +1,9 @@
 use rustc_borrowck::consumers::{BodyWithBorrowckFacts, ConsumerOptions};
 use rustc_driver::{Callbacks, Compilation};
 use rustc_hir::def_id::LocalDefId;
-use rustc_interface::{interface::Compiler, Config};
+use rustc_interface::{Config, interface::Compiler};
 use rustc_middle::ty::TyCtxt;
+use why3::Ident;
 
 use std::{cell::RefCell, collections::HashMap, thread_local};
 
@@ -52,7 +53,7 @@ impl ToWhy {
             self.opts.output = Output::File(dir.clone());
         } else {
             // prefix: "verif/{krate}/"
-            self.opts.prefix = vec![why3::Ident::build(OUTPUT_PREFIX), why3::Ident::build(&krate)];
+            self.opts.prefix = vec![Ident::build(OUTPUT_PREFIX), Ident::build(&krate)];
         }
     }
 }
@@ -124,11 +125,7 @@ impl Callbacks for ToWhy {
 
         c.sess.dcx().abort_if_errors();
 
-        if self.opts.in_cargo {
-            Compilation::Continue
-        } else {
-            Compilation::Stop
-        }
+        if self.opts.in_cargo { Compilation::Continue } else { Compilation::Stop }
     }
 }
 

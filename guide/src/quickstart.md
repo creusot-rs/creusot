@@ -23,7 +23,7 @@ The command-line option `--creusot-contracts /PATH/TO/CREUSOT/creusot-contracts`
 [package]
 name = "project-name"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 creusot-contracts = { path = "/PATH/TO/CREUSOT/creusot-contracts" }

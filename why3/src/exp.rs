@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{declaration::Attribute, ty::Type, Ident, QName};
+use crate::{Ident, QName, declaration::Attribute, ty::Type};
 use indexmap::IndexSet;
 
 #[cfg(feature = "serialize")]
@@ -498,11 +498,7 @@ impl Exp {
     ///
     /// Simplfies ∀ x, True into True
     pub fn forall_trig(bound: Box<[(Ident, Type)]>, trigger: Box<[Trigger]>, body: Exp) -> Self {
-        if body.is_true() {
-            body
-        } else {
-            Exp::Forall(bound, trigger, Box::new(body))
-        }
+        if body.is_true() { body } else { Exp::Forall(bound, trigger, Box::new(body)) }
     }
 
     /// Builds a quantifier
@@ -981,7 +977,7 @@ impl Binder {
             Binder::Named(id) => out.push((id, ty.clone())),
             Binder::Typed(_, ids, ty2) => {
                 assert!(ty == &ty2);
-                ids.to_vec().into_iter().for_each(|i| i.flatten_inner(ty, out))
+                ids.into_iter().for_each(|i| i.flatten_inner(ty, out))
             }
         }
     }

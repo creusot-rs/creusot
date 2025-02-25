@@ -1,5 +1,5 @@
 use crate::tools_versions_urls::*;
-use anyhow::{anyhow, bail, Context};
+use anyhow::{Context, anyhow, bail};
 use indoc::writedoc;
 use reqwest::blocking::Client;
 use std::{

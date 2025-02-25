@@ -15,10 +15,6 @@ pub(crate) fn set_max(s: FSet<Int>) -> Int {
         x
     } else {
         let rec = set_max(s);
-        if x >= rec {
-            x
-        } else {
-            rec
-        }
+        if x >= rec { x } else { rec }
     }
 }

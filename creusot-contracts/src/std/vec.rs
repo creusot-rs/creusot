@@ -1,4 +1,5 @@
 use crate::{
+    Default,
     invariant::*,
     resolve::structural_resolve,
     std::{
@@ -6,7 +7,7 @@ use crate::{
         ops::{Deref, DerefMut, Index, IndexMut},
         slice::SliceIndex,
     },
-    Default, *,
+    *,
 };
 pub use ::std::vec::*;
 

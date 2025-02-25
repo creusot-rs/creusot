@@ -223,11 +223,7 @@ pub struct Integer {
 
 impl Integer {
     fn try_to_u64(&self) -> Option<u64> {
-        if self.int_value != self.int_verbatim {
-            None
-        } else {
-            self.int_value.parse().ok()
-        }
+        if self.int_value != self.int_verbatim { None } else { self.int_value.parse().ok() }
     }
 }
 

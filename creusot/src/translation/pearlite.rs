@@ -22,10 +22,10 @@ use crate::{
 };
 use itertools::Itertools;
 use log::*;
-use rustc_ast::{visit::VisitorResult, ByRef, LitIntType, LitKind, Mutability};
+use rustc_ast::{ByRef, LitIntType, LitKind, Mutability, visit::VisitorResult};
 use rustc_hir::{
-    def_id::{DefId, LocalDefId},
     HirId, OwnerId,
+    def_id::{DefId, LocalDefId},
 };
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 pub(crate) use rustc_middle::thir;
@@ -35,12 +35,12 @@ use rustc_middle::{
         AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
     },
     ty::{
-        int_ty, uint_ty, CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, Ty, TyCtxt,
-        TyKind, TypeFoldable, TypeVisitable, TypeVisitableExt, TypingEnv, UserTypeKind,
+        CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind,
+        TypeFoldable, TypeVisitable, TypeVisitableExt, TypingEnv, UserTypeKind, int_ty, uint_ty,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
-use rustc_span::{symbol::Ident, Span, Symbol, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Span, Symbol, symbol::Ident};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
 
@@ -214,11 +214,7 @@ impl<'tcx> TermKind<'tcx> {
                 let subst = GenericArgs::for_item(tcx, def_id, |x, _| {
                     let s = subst[x.index as usize];
                     let us = u_subst.args[x.index as usize];
-                    if us.has_escaping_bound_vars() {
-                        s
-                    } else {
-                        us
-                    }
+                    if us.has_escaping_bound_vars() { s } else { us }
                 });
                 Self::Item(def_id, subst)
             }
@@ -324,11 +320,7 @@ pub(crate) fn pearlite<'tcx>(
     id: LocalDefId,
 ) -> CreusotResult<Term<'tcx>> {
     let (triggers, term) = pearlite_with_triggers(ctx, id)?;
-    if !triggers.is_empty() {
-        Err(Error::msg(ctx.def_span(id), TRIGGER_ERROR))
-    } else {
-        Ok(term)
-    }
+    if !triggers.is_empty() { Err(Error::msg(ctx.def_span(id), TRIGGER_ERROR)) } else { Ok(term) }
 }
 
 pub(crate) fn pearlite_with_triggers<'tcx>(
@@ -396,8 +388,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         triggers: &mut Vec<Trigger<'tcx>>,
     ) -> CreusotResult<ExprId> {
         match &self.thir[expr].kind {
-            ExprKind::Call { ty: f_ty, ref args, .. } => {
-                if let Some(Stub::Trigger) = pearlite_stub(self.ctx.tcx, *f_ty) {
+            ExprKind::Call { ty, args, .. } => {
+                if let Some(Stub::Trigger) = pearlite_stub(self.ctx.tcx, *ty) {
                     let trigger = self.expr_term(args[0])?;
                     if let TermKind::Tuple { fields } = trigger.kind {
                         triggers.push(Trigger(fields));
@@ -676,14 +668,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                             .collect();
 
                         for missing_field in missing {
-                            fields.push((
-                                missing_field.into(),
-                                Term {
-                                    ty: variant.fields[missing_field.into()].ty(self.ctx.tcx, args),
-                                    span: DUMMY_SP,
-                                    kind: mk_projection(base.clone(), missing_field.into()),
-                                },
-                            ));
+                            fields.push((missing_field.into(), Term {
+                                ty: variant.fields[missing_field.into()].ty(self.ctx.tcx, args),
+                                span: DUMMY_SP,
+                                kind: mk_projection(base.clone(), missing_field.into()),
+                            }));
                         }
                     }
                     thir::AdtExprBase::DefaultFields(_) => {
@@ -1022,52 +1011,68 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     Term { ty, span, kind: mk_projection(cur, *name) },
                     Term { ty, span, kind: mk_projection(fin, *name) },
                     inner,
-                    proj
+                    proj,
                 ))
             }
             ExprKind::Deref { arg } => {
                 // Detect * snapshot_deref & and treat that as a single 'projection'
                 if self.is_snapshot_deref(*arg) {
                     let ExprKind::Call { args, .. } = &self.thir[*arg].kind else { unreachable!() };
-                    let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } = self.thir[args[0]].kind else { unreachable!() };
+                    let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } =
+                        self.thir[args[0]].kind
+                    else {
+                        unreachable!()
+                    };
 
                     let (cur, fin, inner, proj) = self.logical_reborrow_inner(arg)?;
                     // Extract the `T` from `Snapshot<T>`
-                    let TyKind::Adt(_, subst) = self.thir[arg].ty.peel_refs().kind() else { unreachable!() };
+                    let TyKind::Adt(_, subst) = self.thir[arg].ty.peel_refs().kind() else {
+                        unreachable!()
+                    };
                     let ty = subst.type_at(0);
                     return Ok((
                         Term { ty, kind: TermKind::Coerce { arg: Box::new(cur) }, span },
                         Term { ty, kind: TermKind::Coerce { arg: Box::new(fin) }, span },
                         inner,
-                        proj
+                        proj,
                     ));
                 };
 
                 match self.thir[*arg].ty.kind() {
                     TyKind::Ref(_, _, Mutability::Mut) => {
                         let inner = self.expr_term(*arg)?;
-                        Ok((inner.clone().cur().span(span), inner.clone().fin().span(span), inner.span(span), Vec::new()))
+                        Ok((
+                            inner.clone().cur().span(span),
+                            inner.clone().fin().span(span),
+                            inner.span(span),
+                            Vec::new(),
+                        ))
                     }
                     TyKind::Adt(adtdef, _) if adtdef.is_box() => {
                         let mut res = self.logical_reborrow_inner(*arg)?;
                         res.3.push(ProjectionElem::Deref);
                         Ok(res)
                     }
-                    _ => unreachable!("Unexpected deref type: {ty:?}.")
+                    _ => unreachable!("Unexpected deref type: {ty:?}."),
                 }
             }
             e @ ExprKind::Call { ty: fn_ty, args, .. } if fn_ty.is_fn() => {
                 let index_logic_method = get_index_logic(self.ctx.tcx);
 
-                let TyKind::FnDef(id,_) = fn_ty.kind() else { panic!("expected function type") };
+                let TyKind::FnDef(id, _) = fn_ty.kind() else { panic!("expected function type") };
 
                 let (cur, fin, inner, mut proj) = self.logical_reborrow_inner(args[0])?;
 
-                if !matches!(self.thir[args[0]].ty.kind(), TyKind::Str | TyKind::Array(_, _) | TyKind::Slice(_)) {
+                if !matches!(
+                    self.thir[args[0]].ty.kind(),
+                    TyKind::Str | TyKind::Array(_, _) | TyKind::Slice(_)
+                ) {
                     return Err(Error::msg(
                         span,
-                        format!("unsupported logical reborrow of indexing {e:?}, only slice indexing is supported"),
-                    ))
+                        format!(
+                            "unsupported logical reborrow of indexing {e:?}, only slice indexing is supported"
+                        ),
+                    ));
                 }
 
                 if id == &index_logic_method {
@@ -1091,7 +1096,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                             Box::new([fin, index]),
                         ),
                         inner,
-                        proj
+                        proj,
                     ))
                 } else {
                     Err(Error::msg(span, format!("unsupported projection {id:?}")))
@@ -1099,7 +1104,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             }
             e => Err(Error::msg(
                 span,
-                format!("unsupported logical reborrow {e:?}, only field projections and slice indexing are supported"),
+                format!(
+                    "unsupported logical reborrow {e:?}, only field projections and slice indexing are supported"
+                ),
             )),
         }
     }
@@ -1123,11 +1130,7 @@ fn is_ghost_box_deref<'tcx>(
     }
     match ty.kind() {
         rustc_type_ir::TyKind::Adt(containing_type, new_subst) => {
-            if is_ghost_ty(tcx, containing_type.did()) {
-                Some(new_subst)
-            } else {
-                None
-            }
+            if is_ghost_ty(tcx, containing_type.did()) { Some(new_subst) } else { None }
         }
         _ => None,
     }
@@ -1496,7 +1499,11 @@ impl<'tcx> Term<'tcx> {
     pub(crate) fn exists(self, tcx: TyCtxt<'tcx>, binder: (Symbol, Ty<'tcx>)) -> Self {
         let ty = Ty::new_tup(tcx, &[binder.1]);
 
-        self.quant(QuantKind::Exists, (Box::new([Ident::new(binder.0, DUMMY_SP)]), ty), Box::new([]))
+        self.quant(
+            QuantKind::Exists,
+            (Box::new([Ident::new(binder.0, DUMMY_SP)]), ty),
+            Box::new([]),
+        )
     }
 
     pub(crate) fn quant(

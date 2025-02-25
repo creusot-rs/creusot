@@ -84,11 +84,7 @@ impl From<usize> for Expr {
 
 impl From<bool> for Expr {
     fn from(b: bool) -> Self {
-        if b {
-            Self::True
-        } else {
-            Self::False
-        }
+        if b { Self::True } else { Self::False }
     }
 }
 
@@ -192,11 +188,7 @@ impl Expr {
                 match *c {
                     Expr::Var { v } => {
                         if let Some(b) = state.get(&v) {
-                            if *b {
-                                t.simplify_helper(state)
-                            } else {
-                                e.simplify_helper(state)
-                            }
+                            if *b { t.simplify_helper(state) } else { e.simplify_helper(state) }
                         } else {
                             // Then
                             let mut state_t = state.clone();
@@ -217,11 +209,7 @@ impl Expr {
             }
             Expr::Var { v } => {
                 if let Some(b) = state.get(&v) {
-                    if *b {
-                        Self::True
-                    } else {
-                        Self::False
-                    }
+                    if *b { Self::True } else { Self::False }
                 } else {
                     Expr::Var { v }
                 }

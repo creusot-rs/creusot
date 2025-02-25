@@ -1,5 +1,5 @@
 use crate::{
-    logic::{ops::IndexLogic, Mapping},
+    logic::{Mapping, ops::IndexLogic},
     util::*,
     *,
 };
@@ -85,7 +85,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// If no value is present, returns [`None`].
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     pub fn get(self, k: K) -> Option<V>
     where
         V: Sized,
@@ -99,7 +99,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// Same as [`Self::get`], but can handle unsized values.
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     pub fn get_unsized(self, k: K) -> Option<SizedW<V>> {
         self.view().get(k)
     }
@@ -109,7 +109,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// If no value is present, the returned value is meaningless.
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     pub fn lookup(self, k: K) -> V
     where
         V: Sized,
@@ -120,7 +120,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// Same as [`Self::lookup`], but can handle unsized values.
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     pub fn lookup_unsized(self, k: K) -> SizedW<V> {
         unwrap(self.get_unsized(k))
     }
@@ -128,7 +128,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// Returns `true` if the map contains a value for the specified key.
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     pub fn contains(self, k: K) -> bool {
         self.get_unsized(k) != None
     }
@@ -224,7 +224,7 @@ impl<K, V> IndexLogic<K> for FMap<K, V> {
 
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, key: K) -> Self::Item {
         self.lookup(key)
     }

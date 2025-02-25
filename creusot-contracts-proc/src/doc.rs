@@ -30,7 +30,9 @@ pub(crate) fn document_spec(spec_name: &str, spec_body: LogicBody) -> TokenStrea
         LogicBody::Some(s) if !s.is_empty() => s,
         _ => {
             let spec = if matches!(spec_body, LogicBody::Trusted) {
-                format!("{styled_spec_name} <span class=\"tooltip\" style=\"color:Red; white-space:nowrap;\" data-title=\"this function is trusted\"><sup>&#9888;</sup></span>")
+                format!(
+                    "{styled_spec_name} <span class=\"tooltip\" style=\"color:Red; white-space:nowrap;\" data-title=\"this function is trusted\"><sup>&#9888;</sup></span>"
+                )
             } else {
                 styled_spec_name
             };

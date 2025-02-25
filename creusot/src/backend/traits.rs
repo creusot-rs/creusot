@@ -1,5 +1,5 @@
 use crate::{
-    backend::{clone_map::Dependencies, term::lower_pure, Why3Generator},
+    backend::{Why3Generator, clone_map::Dependencies, term::lower_pure},
     contracts_items::is_snapshot_deref,
     ctx::FileModule,
 };

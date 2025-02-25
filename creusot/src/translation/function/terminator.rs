@@ -8,7 +8,7 @@ use crate::{
     extended_location::ExtendedLocation,
     fmir,
     lints::contractless_external_function::{
-        ContractlessExternalFunction, CONTRACTLESS_EXTERNAL_FUNCTION,
+        CONTRACTLESS_EXTERNAL_FUNCTION, ContractlessExternalFunction,
     },
     resolve::HasMoveDataExt,
     translation::{
@@ -34,7 +34,7 @@ use rustc_mir_dataflow::{
     move_paths::{HasMoveData, LookupResult},
     on_all_children_bits,
 };
-use rustc_span::{source_map::Spanned, Span};
+use rustc_span::{Span, source_map::Spanned};
 use rustc_trait_selection::error_reporting::InferCtxtErrorExt;
 use std::collections::{HashMap, HashSet};
 
@@ -83,10 +83,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 term = Terminator::Return
             }
             Unreachable => term = Terminator::Abort(terminator.source_info.span),
-            Call { func, args, destination, mut target, fn_span, .. } => {
+            &Call { ref func, ref args, destination, mut target, fn_span, .. } => {
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
                 if let Some((need, resolved)) = resolved_during.take() {
-                    self.resolve_before_assignment(need, &resolved, location, *destination)
+                    self.resolve_before_assignment(need, &resolved, location, destination)
                 }
 
                 if is_snap_from_fn(self.ctx.tcx, fun_def_id) {
@@ -102,10 +102,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         terminator.source_info,
                     ));
                     self.check_frozen_in_logic(&assertion, location);
-                    self.emit_snapshot_assign(*destination, assertion, span);
+                    self.emit_snapshot_assign(destination, assertion, span);
                 } else {
                     let call_ghost = self.check_ghost_call(fun_def_id, subst);
-                    self.check_no_ghost_in_program(args, *fn_span, fun_def_id, subst);
+                    self.check_no_ghost_in_program(args, fn_span, fun_def_id, subst);
 
                     let func_args: Box<[_]> = if args.is_empty() {
                         Box::new([fmir::Operand::Constant(Term {
@@ -181,7 +181,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     if self.resolver.is_some() {
                         self.resolve_after_assignment(
                             target.unwrap().start_location(),
-                            *destination,
+                            destination,
                         );
                     }
 
@@ -430,11 +430,7 @@ fn resolve_function<'tcx>(
 // Try to extract a function defid from an operand
 fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<(DefId, GenericArgsRef<'tcx>)> {
     let fun_ty = op.constant().unwrap().const_.ty();
-    if let ty::TyKind::FnDef(def_id, subst) = fun_ty.kind() {
-        Some((*def_id, subst))
-    } else {
-        None
-    }
+    if let ty::TyKind::FnDef(def_id, subst) = fun_ty.kind() { Some((*def_id, subst)) } else { None }
 }
 
 // Find the place being discriminated, if there is one
@@ -448,11 +444,7 @@ pub(super) fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Opti
     if let StatementKind::Assign(box (pl, Rvalue::Discriminant(real_discr))) =
         bbd.statements.last()?.kind
     {
-        if discr.place() == Some(pl) {
-            Some(real_discr)
-        } else {
-            None
-        }
+        if discr.place() == Some(pl) { Some(real_discr) } else { None }
     } else {
         None
     }

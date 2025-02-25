@@ -8,11 +8,7 @@ pub fn reborrow_id<T>(r: &mut T) -> &mut T {
 
 #[ensures(if b { result == r1 } else { result == r2 })]
 pub fn select<'a, T>(b: bool, r1: &'a mut T, r2: &'a mut T) -> &'a mut T {
-    if b {
-        r1
-    } else {
-        r2
-    }
+    if b { r1 } else { r2 }
 }
 
 #[ensures(result == &mut r.0)]

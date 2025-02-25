@@ -41,7 +41,7 @@ fn cargo_template(name: &str, dep: &str) -> String {
         r#"[package]
 name = "{name}"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 creusot-contracts = {dep}

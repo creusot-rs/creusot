@@ -4,27 +4,27 @@ use std::{
     iter::repeat_n,
 };
 
-use super::{binders_to_args, Dependencies};
+use super::{Dependencies, binders_to_args};
 use crate::{
     backend::{
+        Namer as _, Why3Generator,
         signature::{sig_to_why3, signature_of},
         term::{binop_to_binop, lower_literal, lower_pure},
         ty::{constructor, is_int, ity_to_prelude, translate_ty, uty_to_prelude},
-        Namer as _, Why3Generator,
     },
     contracts_items::get_builtin,
     ctx::PreludeModule,
     naming::ident_of,
-    pearlite::{super_visit_term, Literal, Pattern, PointerKind, Term, TermVisitor},
+    pearlite::{Literal, Pattern, PointerKind, Term, TermVisitor, super_visit_term},
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind, TypingEnv};
 use rustc_span::{Span, Symbol};
 use why3::{
-    declaration::Signature,
-    exp::{BinOp, Environment},
-    ty::Type,
     Exp, Ident,
+    declaration::Signature,
+    exp::{BinOp, Environment, Pattern as WPattern, UnOp as WUnOp},
+    ty::Type,
 };
 
 /// Verification conditions for lemma functions.
@@ -65,7 +65,7 @@ pub(super) fn vc<'tcx>(
         .iter()
         .map(|arg| (arg.0.as_str().into(), Exp::var(arg.0.as_str())))
         .collect();
-    let gen = VCGen {
+    let vcgen = VCGen {
         typing_env: ctx.typing_env(self_id),
         ctx,
         names,
@@ -73,8 +73,8 @@ pub(super) fn vc<'tcx>(
         structurally_recursive,
         subst: Default::default(),
     };
-    gen.add_bounds(bounds);
-    gen.build_vc(&t, &|exp| Ok(Exp::let_(dest.clone(), exp, post.clone())))
+    vcgen.add_bounds(bounds);
+    vcgen.build_vc(&t, &|exp| Ok(Exp::let_(dest.clone(), exp, post.clone())))
 }
 
 /// Verifies whether a given term is structurally recursive: that is, each recursive call is made to
@@ -213,6 +213,8 @@ impl<'tcx> VCError<'tcx> {
     }
 }
 
+// We use Fn because some continuations may be called several times (in the case
+// the post condition appears several times).
 type PostCont<'a, 'tcx, A, R = Exp> = &'a dyn Fn(A) -> Result<R, VCError<'tcx>>;
 
 impl<'a, 'tcx> VCGen<'a, 'tcx> {
@@ -365,8 +367,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // VC(OP A, Q) = VC(A |a| Q(OP a))
             TermKind::Unary { op, arg } => self.build_vc(arg, &|arg| {
                 let op = match op {
-                    UnOp::Not => why3::exp::UnOp::Not,
-                    UnOp::Neg => why3::exp::UnOp::Neg,
+                    UnOp::Not => WUnOp::Not,
+                    UnOp::Neg => WUnOp::Neg,
                 };
 
                 k(Exp::UnaryOp(op, Box::new(arg)))
@@ -423,9 +425,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 self.build_vc(scrutinee, &|scrut| {
                     let mut arms: Vec<_> = arms
                         .iter()
-                        .map(&|arm: &(Pattern<'tcx>, Term<'tcx>)| {
-                            Ok((arm.0.get_bool().unwrap(), self.build_vc(&arm.1, k)?))
-                        })
+                        .map(|arm| Ok((arm.0.get_bool().unwrap(), self.build_vc(&arm.1, k)?)))
                         .collect::<Result<_, _>>()?;
                     arms.sort_by(|a, b| b.0.cmp(&a.0));
 
@@ -462,13 +462,11 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                         self.names.field(def.did(), substs, *name).as_ident()
                     }
                     TyKind::Tuple(f) => {
-                        let mut fields: Box<_> =
-                            repeat_n(why3::exp::Pattern::Wildcard, f.len()).collect();
-                        fields[name.as_usize()] = why3::exp::Pattern::VarP("a".into());
-
+                        let mut fields: Box<_> = repeat_n(WPattern::Wildcard, f.len()).collect();
+                        fields[name.as_usize()] = WPattern::VarP("a".into());
                         return self.build_vc(lhs, &|lhs| {
                             k(Exp::Let {
-                                pattern: why3::exp::Pattern::TupleP(fields.clone()),
+                                pattern: WPattern::TupleP(fields.clone()),
                                 arg: Box::new(lhs),
                                 body: Box::new(Exp::var("a")),
                             })
@@ -490,7 +488,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
     fn build_pattern<A>(
         &self,
         pat: &Pattern<'tcx>,
-        k: PostCont<'_, 'tcx, why3::exp::Pattern, A>,
+        k: PostCont<'_, 'tcx, WPattern, A>,
     ) -> Result<A, VCError<'tcx>> {
         let mut bounds = Default::default();
         let pat = self.build_pattern_inner(&mut bounds, pat);
@@ -505,65 +503,59 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         &self,
         bounds: &mut HashMap<Ident, Exp>,
         pat: &Pattern<'tcx>,
-    ) -> why3::exp::Pattern {
-        use why3::exp::Pattern as Pat;
+    ) -> WPattern {
         match pat {
             Pattern::Constructor { variant, fields, substs } => {
                 let fields =
                     fields.iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect();
                 let substs = self.ctx.normalize_erasing_regions(self.typing_env, *substs);
                 if self.ctx.def_kind(variant) == DefKind::Variant {
-                    Pat::ConsP(self.names.constructor(*variant, substs), fields)
+                    WPattern::ConsP(self.names.constructor(*variant, substs), fields)
                 } else if fields.is_empty() {
-                    Pat::TupleP(Box::new([]))
+                    WPattern::TupleP(Box::new([]))
                 } else {
-                    Pat::RecP(
+                    WPattern::RecP(
                         fields
-                            .to_vec()
                             .into_iter()
                             .enumerate()
                             .map(|(i, f)| {
                                 (self.names.field(*variant, substs, i.into()).as_ident(), f)
                             })
-                            .filter(|(_, f)| !matches!(f, Pat::Wildcard))
+                            .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                             .collect(),
                     )
                 }
             }
-            Pattern::Wildcard => Pat::Wildcard,
+            Pattern::Wildcard => WPattern::Wildcard,
             Pattern::Binder(name) => {
                 let name_id = name.as_str().into();
                 let new = self.uniq_occ(&name_id);
                 bounds.insert(name_id, Exp::var(new.clone()));
-                Pat::VarP(new)
+                WPattern::VarP(new)
             }
             Pattern::Boolean(b) => {
                 if *b {
-                    Pat::mk_true()
+                    WPattern::mk_true()
                 } else {
-                    Pat::mk_false()
+                    WPattern::mk_false()
                 }
             }
-            Pattern::Tuple(pats) => {
-                Pat::TupleP(pats.iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect())
-            }
+            Pattern::Tuple(pats) => WPattern::TupleP(
+                pats.iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect(),
+            ),
             Pattern::Deref { pointee, kind } => match kind {
                 PointerKind::Box | PointerKind::Shr => self.build_pattern_inner(bounds, pointee),
-                PointerKind::Mut => {
-                    Pat::RecP(Box::new([("current".into(), self.build_pattern_inner(bounds, pointee))]))
-                }
+                PointerKind::Mut => WPattern::RecP(Box::new([(
+                    "current".into(),
+                    self.build_pattern_inner(bounds, pointee),
+                )])),
             },
         }
     }
 
     fn uniq_occ(&self, id: &Ident) -> Ident {
         let occ = self.subst.borrow().occ(id);
-
-        if occ == 0 {
-            id.clone()
-        } else {
-            Ident::from_string(format!("{}_{occ}", &**id))
-        }
+        if occ == 0 { id.clone() } else { Ident::from_string(format!("{}_{occ}", &**id)) }
     }
 
     fn build_vc_slice(
@@ -634,9 +626,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
     /// Produces the top-level call expression for the function being verified
     fn top_level_args(&self) -> Vec<Ident> {
-        let sig = self.self_sig();
-        let (arg_names, _) = binders_to_args(sig.args);
-        arg_names
+        binders_to_args(self.self_sig().args).0
     }
 
     fn add_bounds(&self, bounds: HashMap<Ident, Exp>) {

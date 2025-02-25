@@ -3,11 +3,7 @@ use creusot_contracts::*;
 
 #[ensures(if toggle { result == a && ^b == *b } else { result == b && ^a == *a })]
 fn proj_toggle<'a, T: PartialEq>(toggle: bool, a: &'a mut T, b: &'a mut T) -> &'a mut T {
-    if toggle {
-        a
-    } else {
-        b
-    }
+    if toggle { a } else { b }
 }
 
 pub fn f() {

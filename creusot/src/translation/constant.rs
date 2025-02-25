@@ -6,10 +6,10 @@ use crate::{
     translation::pearlite::Literal,
 };
 use rustc_middle::{
-    mir::{self, interpret::AllocRange, ConstValue, UnevaluatedConst},
+    mir::{self, ConstValue, UnevaluatedConst, interpret::AllocRange},
     ty::{Const, ConstKind, Ty, TyCtxt, TypingEnv},
 };
-use rustc_span::{Span, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::Size;
 
 use super::pearlite::{Term, TermKind};

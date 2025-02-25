@@ -153,11 +153,7 @@ impl Int {
     #[logic]
     #[open]
     pub fn abs_diff(self, other: Int) -> Int {
-        if self < other {
-            other - self
-        } else {
-            self - other
-        }
+        if self < other { other - self } else { self - other }
     }
 }
 

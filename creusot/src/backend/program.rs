@@ -1,23 +1,23 @@
 use crate::{
     backend::{
+        NameSupply, Namer, Why3Generator,
         clone_map::PreludeModule,
         dependency::Dependency,
         is_trusted_function,
-        optimization::{self, infer_proph_invariants},
-        place::{self, rplace_to_expr},
+        optimization::{gather_usage, infer_proph_invariants, simplify_fmir},
+        place::{Focus, create_assign_inner, projections_to_expr, rplace_to_expr},
         signature::signature_of,
         term::{lower_pat, lower_pure},
         ty::{
             constructor, floatty_to_prelude, int_ty, ity_to_prelude, translate_ty, uty_to_prelude,
         },
-        wto::{weak_topological_order, Component},
-        NameSupply, Namer, Why3Generator,
+        wto::{Component, weak_topological_order},
     },
     contracts_items::is_ghost_closure,
     ctx::{BodyId, Dependencies},
-    fmir::{self, Body, BorrowKind, Operand, TrivialInv},
+    fmir::{Body, BorrowKind, Operand, TrivialInv},
     naming::ident_of,
-    pearlite::{self, PointerKind, Pattern},
+    pearlite::{Pattern, PointerKind},
     translated_item::FileModule,
     translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
 };
@@ -25,26 +25,30 @@ use crate::{
 use petgraph::graphmap::DiGraphMap;
 use rustc_ast::Mutability;
 use rustc_hir::{
+    Safety,
     def::DefKind,
     def_id::{DefId, LocalDefId},
-    Safety,
 };
 use rustc_middle::{
-    mir::{tcx::PlaceTy, BasicBlock, BinOp, ProjectionElem, UnOp, START_BLOCK},
+    mir::{BasicBlock, BinOp, ProjectionElem, START_BLOCK, UnOp, tcx::PlaceTy},
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt, TyKind},
 };
-use rustc_span::{Symbol, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Symbol};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{IntTy, UintTy};
-use std::{cell::RefCell, fmt::Debug, iter::{once, repeat_n}};
+use std::{
+    cell::RefCell,
+    fmt::Debug,
+    iter::{once, repeat_n},
+};
 use why3::{
-    coma::{self, Arg, Defn, Expr, Param, Term},
+    Ident, QName,
+    coma::{Arg, Defn, Expr, IsRef, Param, Term, Var},
     declaration::{
         Attribute, Condition, Contract, Decl, Meta, MetaArg, MetaIdent, Module, Signature,
     },
     exp::{Binder, Constant, Exp, Pattern as WPattern},
     ty::Type,
-    Ident, QName,
 };
 
 pub(crate) fn translate_function<'tcx, 'sess>(
@@ -77,7 +81,6 @@ pub(crate) fn translate_function<'tcx, 'sess>(
 pub fn val<'tcx>(_: &Why3Generator<'tcx>, sig: Signature) -> Decl {
     let params = sig
         .args
-        .to_vec()
         .into_iter()
         .flat_map(|b| b.var_type_pairs())
         .map(|(v, ty)| Param::Term(v, ty))
@@ -88,12 +91,12 @@ pub fn val<'tcx>(_: &Why3Generator<'tcx>, sig: Signature) -> Decl {
         )])
         .collect();
 
-    let requires = sig.contract.requires.to_vec().into_iter().map(Condition::labelled_exp);
+    let requires = sig.contract.requires.into_iter().map(Condition::labelled_exp);
     let body = requires.rfold(Expr::Any, |acc, cond| Expr::Assert(Box::new(cond), Box::new(acc)));
 
     let mut postcond = Expr::Symbol("return".into()).app([Arg::Term(Exp::var("result"))]);
     postcond = Expr::BlackBox(Box::new(postcond));
-    let ensures = sig.contract.ensures.to_vec().into_iter().map(Condition::unlabelled_exp);
+    let ensures = sig.contract.ensures.into_iter().map(Condition::unlabelled_exp);
     postcond = ensures.rfold(postcond, |acc, cond| Expr::Assert(Box::new(cond), Box::new(acc)));
 
     let body = Expr::Defn(
@@ -106,7 +109,7 @@ pub fn val<'tcx>(_: &Why3Generator<'tcx>, sig: Signature) -> Decl {
             body: postcond,
         }]),
     );
-    why3::declaration::Decl::Coma(Defn { name: sig.name, attrs: vec![], params, body })
+    Decl::Coma(Defn { name: sig.name, attrs: vec![], params, body })
 }
 
 // TODO: move to a more "central" location
@@ -127,11 +130,10 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     names: &N,
     name: Ident,
     body_id: BodyId,
-) -> coma::Defn {
+) -> Defn {
     let mut body = ctx.fmir_body(body_id).clone();
 
-    let usage = optimization::gather_usage(&body);
-    optimization::simplify_fmir(usage, &mut body);
+    simplify_fmir(gather_usage(&body), &mut body);
 
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
     infer_proph_invariants(ctx, &mut body);
@@ -153,7 +155,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
             } else {
                 Exp::qvar(names.from_prelude(PreludeModule::Any, "any_l")).app([Exp::unit()])
             };
-            coma::Var(Ident::build(id.as_str()), ty.clone(), init, coma::IsRef::Ref)
+            Var(Ident::build(id.as_str()), ty.clone(), init, IsRef::Ref)
         })
         .collect();
 
@@ -187,7 +189,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         // a ghost closure
         || is_ghost_closure(ctx.tcx, body_id.def_id());
 
-    let ensures = sig.contract.ensures.to_vec().into_iter().map(Condition::labelled_exp);
+    let ensures = sig.contract.ensures.into_iter().map(Condition::labelled_exp);
 
     if !open_body {
         postcond = Expr::BlackBox(Box::new(postcond));
@@ -213,13 +215,12 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         }]),
     );
 
-    let requires = sig.contract.requires.to_vec().into_iter().map(Condition::labelled_exp);
+    let requires = sig.contract.requires.into_iter().map(Condition::labelled_exp);
     if !open_body {
         body = requires.rfold(body, |acc, req| Expr::Assert(Box::new(req), Box::new(acc)));
     }
     let params = sig
         .args
-        .to_vec()
         .into_iter()
         .flat_map(|b| b.var_type_pairs())
         .map(|(v, ty)| Param::Term(v, ty))
@@ -229,7 +230,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
             Box::new([Param::Term("ret".into(), sig.retty.unwrap())]),
         )])
         .collect();
-    coma::Defn { name: sig.name, attrs: sig.attrs, params, body }
+    Defn { name: sig.name, attrs: sig.attrs, params, body }
 }
 
 fn component_to_defn<'tcx, N: Namer<'tcx>>(
@@ -238,7 +239,7 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
     names: &N,
     def_id: LocalDefId,
     c: Component<BasicBlock>,
-) -> coma::Defn {
+) -> Defn {
     let mut lower =
         LoweringState { ctx, names, locals: &body.locals, name_supply: Default::default(), def_id };
     let (head, tl) = match c {
@@ -281,7 +282,7 @@ impl<'a, 'tcx, N: Namer<'tcx>> LoweringState<'a, 'tcx, N> {
     }
 
     fn assignment(&self, lhs: &Place<'tcx>, rhs: Term, istmts: &mut Vec<IntermediateStmt>) {
-        place::create_assign_inner(self, lhs, rhs, istmts)
+        create_assign_inner(self, lhs, rhs, istmts)
     }
 
     pub(super) fn fresh_sym_from(&self, base: impl AsRef<str>) -> Symbol {
@@ -324,7 +325,7 @@ impl<'tcx> RValue<'tcx> {
         ty: Ty<'tcx>,
         istmts: &mut Vec<IntermediateStmt>,
     ) -> Exp {
-        let e = match self {
+        match self {
             RValue::Operand(op) => op.to_why(lower, istmts),
             RValue::BinOp(op, l, r) => {
                 let l_ty = l.ty(lower.ctx.tcx, lower.locals);
@@ -354,9 +355,15 @@ impl<'tcx> RValue<'tcx> {
                         // rust allows shifting by a value of any integer type
                         // so we need to import the prelude for the right operand
                         let qname = match r_ty.kind() {
-                            TyKind::Int(ity) => lower.names.from_prelude(ity_to_prelude(lower.ctx.tcx, *ity), "to_int"),
-                            TyKind::Uint(uty) => lower.names.from_prelude(uty_to_prelude(lower.ctx.tcx, *uty), "t'int"),
-                            _ => unreachable!("right operand, non-integer type for binary operation {op:?} {ty:?}"),
+                            TyKind::Int(ity) => lower
+                                .names
+                                .from_prelude(ity_to_prelude(lower.ctx.tcx, *ity), "to_int"),
+                            TyKind::Uint(uty) => lower
+                                .names
+                                .from_prelude(uty_to_prelude(lower.ctx.tcx, *uty), "t'int"),
+                            _ => unreachable!(
+                                "right operand, non-integer type for binary operation {op:?} {ty:?}"
+                            ),
                         };
 
                         // build the expression for this convertion
@@ -435,11 +442,11 @@ impl<'tcx> RValue<'tcx> {
                 if lower.ctx.def_kind(id) == DefKind::Closure {
                     lower.names.dependency(Dependency::Item(id, subst));
                 }
-                let args = args.to_vec().into_iter().map(|a| a.to_why(lower, istmts)).collect();
+                let args = args.into_iter().map(|a| a.to_why(lower, istmts)).collect();
                 constructor(lower.names, args, id, subst)
             }
             RValue::Tuple(f) => {
-                Exp::Tuple(f.to_vec().into_iter().map(|f| f.to_why(lower, istmts)).collect())
+                Exp::Tuple(f.into_iter().map(|f| f.to_why(lower, istmts)).collect())
             }
             RValue::Cast(e, source, target) => {
                 match source.kind() {
@@ -532,7 +539,6 @@ impl<'tcx> RValue<'tcx> {
 
                 istmts.push(IntermediateStmt::Any(id.clone(), ty.clone()));
                 let mut assumptions = fields
-                    .to_vec()
                     .into_iter()
                     .enumerate()
                     .map(|(ix, f)| {
@@ -551,9 +557,8 @@ impl<'tcx> RValue<'tcx> {
                 Exp::var(id)
             }
             RValue::Repeat(e, len) => {
-                let param_ty = lower.ty(e.ty(lower.ctx.tcx, lower.locals));
                 let args = Box::new([
-                    Arg::Ty(param_ty),
+                    Arg::Ty(lower.ty(e.ty(lower.ctx.tcx, lower.locals))),
                     Arg::Term(len.to_why(lower, istmts)),
                     Arg::Term(Exp::Abs(
                         Box::new([Binder::wild(int_ty(lower.ctx, lower.names))]),
@@ -610,9 +615,7 @@ impl<'tcx> RValue<'tcx> {
 
                 Exp::var("_ptr")
             }
-        };
-
-        e
+        }
     }
 }
 
@@ -672,8 +675,7 @@ impl<'tcx> Terminator<'tcx> {
     pub(crate) fn to_why<N: Namer<'tcx>>(
         self,
         lower: &mut LoweringState<'_, 'tcx, N>,
-    ) -> (Vec<IntermediateStmt>, coma::Expr) {
-        use coma::*;
+    ) -> (Vec<IntermediateStmt>, Expr) {
         let mut istmts = vec![];
         match self {
             Terminator::Goto(bb) => (istmts, Expr::Symbol(format!("bb{}", bb.as_usize()).into())),
@@ -711,7 +713,7 @@ impl<'tcx> Branches<'tcx> {
                 };
                 let brs = mk_switch_branches(
                     discr,
-                    brs.to_vec().into_iter().map(|(mut val, tgt)| {
+                    brs.into_iter().map(|(mut val, tgt)| {
                         let why_ty = Type::TConstructor(
                             names.from_prelude(ity_to_prelude(ctx.tcx, *ity), "t"),
                         );
@@ -740,7 +742,7 @@ impl<'tcx> Branches<'tcx> {
 
                 let brs = mk_switch_branches(
                     discr,
-                    brs.to_vec().into_iter().map(|(val, tgt)| {
+                    brs.into_iter().map(|(val, tgt)| {
                         let why_ty = Type::TConstructor(
                             names.from_prelude(uty_to_prelude(ctx.tcx, *uty), "t"),
                         );
@@ -757,10 +759,10 @@ impl<'tcx> Branches<'tcx> {
                 Expr::Defn(Box::new(Expr::Any), false, brs)
             }
             Branches::Bool(f, t) => {
-                let brs = mk_switch_branches(
-                    discr,
-                    vec![(Exp::mk_false(), mk_goto(f)), (Exp::mk_true(), mk_goto(t))],
-                );
+                let brs = mk_switch_branches(discr, vec![
+                    (Exp::mk_false(), mk_goto(f)),
+                    (Exp::mk_true(), mk_goto(t)),
+                ]);
 
                 Expr::Defn(Box::new(Expr::Any), false, brs.collect())
             }
@@ -768,8 +770,8 @@ impl<'tcx> Branches<'tcx> {
     }
 }
 
-fn mk_goto(bb: BasicBlock) -> coma::Expr {
-    coma::Expr::Symbol(format!("bb{}", bb.as_u32()).into())
+fn mk_goto(bb: BasicBlock) -> Expr {
+    Expr::Symbol(format!("bb{}", bb.as_u32()).into())
 }
 
 fn mk_adt_switch<'tcx, N: Namer<'tcx>>(
@@ -783,7 +785,7 @@ fn mk_adt_switch<'tcx, N: Namer<'tcx>>(
 ) -> Box<[Defn]> {
     assert!(adt.is_enum());
 
-    let mut brch = brch.to_vec().into_iter().peekable();
+    let mut brch = brch.into_iter().peekable();
 
     let res = adt
         .variants()
@@ -813,9 +815,9 @@ fn mk_adt_switch<'tcx, N: Namer<'tcx>>(
             let cons = names.constructor(var.def_id, subst);
 
             let body = Exp::qvar(cons).app(ids);
-            let body = coma::Expr::Assert(
+            let body = Expr::Assert(
                 Box::new(discr.clone().eq(body)),
-                Box::new(coma::Expr::BlackBox(Box::new(mk_goto(tgt)))),
+                Box::new(Expr::BlackBox(Box::new(mk_goto(tgt)))),
             );
             let name = format!("br{}", ix.as_usize()).into();
 
@@ -842,7 +844,7 @@ impl<'tcx> Block<'tcx> {
         self,
         lower: &mut LoweringState<'_, 'tcx, N>,
         id: BasicBlock,
-    ) -> coma::Defn {
+    ) -> Defn {
         let (istmts, terminator) = self.terminator.to_why(lower);
 
         let mut statements = vec![];
@@ -854,11 +856,11 @@ impl<'tcx> Block<'tcx> {
                 stmt.into_iter(),
                 Expr::Symbol(format!("s{}", ix + 1).into()),
             );
-            statements.push(coma::Defn::simple(format!("s{}", ix), body));
+            statements.push(Defn::simple(format!("s{}", ix), body));
         }
 
         let body = assemble_intermediates(istmts.into_iter(), terminator);
-        statements.push(coma::Defn::simple(format!("s{}", statements.len()), body));
+        statements.push(Defn::simple(format!("s{}", statements.len()), body));
 
         let mut body = Expr::Symbol("s0".into());
         if !self.invariants.is_empty() {
@@ -877,7 +879,7 @@ impl<'tcx> Block<'tcx> {
 
         body = body.where_(statements.into());
 
-        coma::Defn::simple(format!("bb{}", id.as_usize()), body)
+        Defn::simple(format!("bb{}", id.as_usize()), body)
     }
 }
 
@@ -891,8 +893,7 @@ where
         IntermediateStmt::Call(params, fun, args) => {
             let c = Expr::Lambda(params, Box::new(tail));
 
-            args.to_vec()
-                .into_iter()
+            args.into_iter()
                 .chain([Arg::Cont(c)])
                 .fold(Expr::Symbol(fun), |acc, arg| Expr::App(Box::new(acc), Box::new(arg)))
         }
@@ -986,13 +987,10 @@ impl<'tcx> Statement<'tcx> {
                     None
                 };
 
-                let func = lower.names.from_prelude(
-                    PreludeModule::MutBorrow,
-                    match bor_kind {
-                        BorrowKind::Mut => "borrow_mut",
-                        BorrowKind::Final(_) => "borrow_final",
-                    },
-                );
+                let func = lower.names.from_prelude(PreludeModule::MutBorrow, match bor_kind {
+                    BorrowKind::Mut => "borrow_mut",
+                    BorrowKind::Final(_) => "borrow_final",
+                });
 
                 let bor_id_arg;
                 let rhs_rplace;
@@ -1000,15 +998,15 @@ impl<'tcx> Statement<'tcx> {
 
                 if let BorrowKind::Final(deref_index) = bor_kind {
                     let (original_borrow_ty, original_borrow, original_borrow_constr) =
-                        place::projections_to_expr(
+                        projections_to_expr(
                             lower,
                             &mut istmts,
                             rhs_local_ty,
-                            place::Focus::new(|_| Exp::var(ident_of(rhs.local))),
+                            Focus::new(|_| Exp::var(ident_of(rhs.local))),
                             Box::new(|_, x| x),
                             &rhs.projection[..deref_index],
                         );
-                    let (_, foc, constr) = place::projections_to_expr(
+                    let (_, foc, constr) = projections_to_expr(
                         lower,
                         &mut istmts,
                         original_borrow_ty,
@@ -1034,11 +1032,11 @@ impl<'tcx> Statement<'tcx> {
 
                     bor_id_arg = Some(Arg::Term(borrow_id));
                 } else {
-                    let (_, foc, constr) = place::projections_to_expr(
+                    let (_, foc, constr) = projections_to_expr(
                         &lower,
                         &mut istmts,
                         rhs_local_ty,
-                        place::Focus::new(|_| Exp::var(ident_of(rhs.local))),
+                        Focus::new(|_| Exp::var(ident_of(rhs.local))),
                         Box::new(|_, x| x),
                         &rhs.projection,
                     );
@@ -1099,7 +1097,7 @@ impl<'tcx> Statement<'tcx> {
                         Box::new(Exp::var(ident_of(loc))),
                         Box::new([
                             (pat, rp.app([Exp::var(bound.as_str())])),
-                            (why3::exp::Pattern::Wildcard, Exp::mk_true()),
+                            (WPattern::Wildcard, Exp::mk_true()),
                         ]),
                     )
                 };
@@ -1150,11 +1148,11 @@ impl<'tcx> Statement<'tcx> {
 /// TODO: Transform this into a `match_place_logic` construct that handles everything
 fn pattern_of_place<'tcx>(
     tcx: TyCtxt<'tcx>,
-    locals: &fmir::LocalDecls<'tcx>,
-    pl: fmir::Place<'tcx>,
+    locals: &LocalDecls<'tcx>,
+    pl: Place<'tcx>,
     binder: Symbol,
-) -> pearlite::Pattern<'tcx> {
-    let mut pat = pearlite::Pattern::Binder(binder);
+) -> Pattern<'tcx> {
+    let mut pat = Pattern::Binder(binder);
 
     for (pl, el) in pl.iter_projections().rev() {
         let ty = pl.ty(tcx, locals);
@@ -1162,21 +1160,14 @@ fn pattern_of_place<'tcx>(
             ProjectionElem::Deref => match ty.ty.kind() {
                 TyKind::Ref(_, _, mutbl) => match mutbl {
                     Mutability::Not => {
-                        pat = pearlite::Pattern::Deref {
-                            pointee: Box::new(pat),
-                            kind: PointerKind::Shr,
-                        }
+                        pat = Pattern::Deref { pointee: Box::new(pat), kind: PointerKind::Shr }
                     }
                     Mutability::Mut => {
-                        pat = pearlite::Pattern::Deref {
-                            pointee: Box::new(pat),
-                            kind: PointerKind::Mut,
-                        }
+                        pat = Pattern::Deref { pointee: Box::new(pat), kind: PointerKind::Mut }
                     }
                 },
                 _ if ty.ty.is_box() => {
-                    pat =
-                        pearlite::Pattern::Deref { pointee: Box::new(pat), kind: PointerKind::Box }
+                    pat = Pattern::Deref { pointee: Box::new(pat), kind: PointerKind::Box }
                 }
                 _ => {
                     unreachable!("unsupported type of deref pattern: {:?}", ty.ty);
@@ -1189,19 +1180,19 @@ fn pattern_of_place<'tcx>(
                     let variant = variant_def.def_id;
                     let mut fields: Box<_> = repeat_n(Pattern::Wildcard, fields_len).collect();
                     fields[fidx.as_usize()] = pat;
-                    pat = pearlite::Pattern::Constructor { variant, substs, fields }
+                    pat = Pattern::Constructor { variant, substs, fields }
                 }
                 TyKind::Tuple(tys) => {
                     let mut fields: Box<_> = repeat_n(Pattern::Wildcard, tys.len()).collect();
                     fields[fidx.as_usize()] = pat;
-                    pat = pearlite::Pattern::Tuple(fields)
+                    pat = Pattern::Tuple(fields)
                 }
                 TyKind::Closure(did, substs) => {
                     let mut fields: Box<_> =
                         repeat_n(Pattern::Wildcard, substs.as_closure().upvar_tys().len())
                             .collect();
                     fields[fidx.as_usize()] = pat;
-                    pat = pearlite::Pattern::Constructor { variant: *did, substs, fields }
+                    pat = Pattern::Constructor { variant: *did, substs, fields }
                 }
                 _ => unreachable!(),
             },
@@ -1228,7 +1219,7 @@ fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
     subst: GenericArgsRef<'tcx>,
     args: Box<[Operand<'tcx>]>,
     istmts: &mut Vec<IntermediateStmt>,
-) -> (QName, Box<[coma::Arg]>) {
+) -> (QName, Box<[Arg]>) {
     // TODO(xavier): Perform this simplification earlier
     // Eliminate "rust-call" ABI
     let args: Box<[_]> = if lower.ctx.is_closure_like(id) {
@@ -1249,7 +1240,7 @@ fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
             }))
             .collect()
     } else {
-        args.to_vec().into_iter().map(|a| a.to_why(lower, istmts)).map(|a| coma::Arg::Term(a)).collect()
+        args.into_iter().map(|a| a.to_why(lower, istmts)).map(|a| Arg::Term(a)).collect()
     };
 
     (lower.names.item(id, subst), args)

@@ -43,7 +43,11 @@ use crate::{
     util::erased_identity_for_item,
 };
 use indexmap::{IndexMap, IndexSet};
-use petgraph::{graph, visit::EdgeRef as _};
+use petgraph::{
+    algo::tarjan_scc,
+    graph,
+    visit::{Control, DfsEvent, EdgeRef as _, depth_first_search},
+};
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_infer::{infer::TyCtxtInferExt as _, traits::ObligationCause};
 use rustc_middle::{
@@ -105,7 +109,7 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> Result<(), CannotFetc
     }
 
     // detect mutual recursion
-    let cycles = petgraph::algo::tarjan_scc(&call_graph);
+    let cycles = tarjan_scc(&call_graph);
     for mut cycle in cycles {
         // find a root as a local function
         let Some(root_idx) = cycle.iter().position(|n| {
@@ -123,22 +127,19 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> Result<(), CannotFetc
         let in_cycle: IndexSet<_> = cycle.into_iter().collect();
         let mut cycle = Vec::new();
         // Build the cycle in the right order.
-        petgraph::visit::depth_first_search(&call_graph, std::iter::once(root), |n| {
-            use petgraph::visit::Control;
-            match n {
-                petgraph::visit::DfsEvent::Discover(n, _) => {
-                    if in_cycle.contains(&n) {
-                        cycle.push(n);
-                        Control::Continue
-                    } else if n == root {
-                        Control::Continue
-                    } else {
-                        Control::Prune
-                    }
+        depth_first_search(&call_graph, [root], |n| match n {
+            DfsEvent::Discover(n, _) => {
+                if in_cycle.contains(&n) {
+                    cycle.push(n);
+                    Control::Continue
+                } else if n == root {
+                    Control::Continue
+                } else {
+                    Control::Prune
                 }
-                petgraph::visit::DfsEvent::BackEdge(_, n) if n == root => Control::Break(()),
-                _ => Control::Continue,
             }
+            DfsEvent::BackEdge(_, n) if n == root => Control::Break(()),
+            _ => Control::Continue,
         });
 
         let root_def_id = call_graph.node_weight(root).unwrap().def_id();
@@ -151,7 +152,7 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> Result<(), CannotFetc
         );
         let mut next_node = root;
         let mut current_node;
-        for (idx, &node) in cycle.iter().chain(std::iter::once(&root)).enumerate() {
+        for (idx, &node) in cycle.iter().chain([&root]).enumerate() {
             current_node = next_node;
             next_node = node;
             let last = idx == cycle.len();
@@ -295,14 +296,11 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             indexmap::map::Entry::Occupied(n) => *n.get(),
             indexmap::map::Entry::Vacant(entry) => {
                 let node = self.graph.add_node(graph_node);
-                self.additional_data.insert(
-                    node,
-                    FunctionData {
-                        is_pearlite: is_pearlite(tcx, def_id),
-                        has_variant: has_variant_clause(tcx, def_id),
-                        has_loops: None,
-                    },
-                );
+                self.additional_data.insert(node, FunctionData {
+                    is_pearlite: is_pearlite(tcx, def_id),
+                    has_variant: has_variant_clause(tcx, def_id),
+                    has_loops: None,
+                });
                 entry.insert(node);
                 node
             }
