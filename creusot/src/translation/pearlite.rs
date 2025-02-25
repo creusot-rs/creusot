@@ -6,7 +6,7 @@
 // The `lower` module then transforms a `Term` into a WhyML expression.
 
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fmt::{Display, Formatter},
     unreachable,
 };
@@ -46,6 +46,7 @@ use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
 mod normalize;
 
 pub(crate) use normalize::*;
+use why3;
 
 /// Pearlite variable names
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
@@ -106,7 +107,7 @@ pub type QuantBinder<'tcx> = (Vec<Ident>, Ty<'tcx>);
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum TermKind<'tcx> {
-    Var(Name),
+    Var(why3::Ident),
     Lit(Literal<'tcx>),
     Cast {
         arg: Box<Term<'tcx>>,
@@ -176,7 +177,7 @@ pub enum TermKind<'tcx> {
         term: Box<Term<'tcx>>,
     },
     Closure {
-        bound: Vec<Name>,
+        bound: Vec<why3::Ident>,
         body: Box<Term<'tcx>>,
     },
     Reborrow {
