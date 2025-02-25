@@ -609,8 +609,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         } else {
                             unreachable!("Call on non-function type");
                         };
-                        // HACK: allow dereferencing of GhostBox in pearlite
-                        if let Some(new_subst) = is_ghost_box_deref(
+                        // HACK: allow dereferencing of `Ghost` in pearlite
+                        if let Some(new_subst) = is_ghost_ty_deref(
                             self.ctx.tcx,
                             id,
                             subst.first().and_then(|arg| arg.as_type()),
@@ -1119,7 +1119,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     }
 }
 
-fn is_ghost_box_deref<'tcx>(
+fn is_ghost_ty_deref<'tcx>(
     tcx: TyCtxt<'tcx>,
     fn_id: DefId,
     ty: Option<Ty<'tcx>>,

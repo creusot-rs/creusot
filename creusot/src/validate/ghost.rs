@@ -126,8 +126,8 @@ impl<'tcx> GhostValidatePlaces<'tcx> {
         }
     }
 
-    /// Determine if the given type `ty` is a `GhostBox`.
-    fn is_ghost_box(&self, ty: Ty<'tcx>) -> bool {
+    /// Determine if the given type `ty` is a `Ghost`.
+    fn is_ghost_ty(&self, ty: Ty<'tcx>) -> bool {
         match ty.kind() {
             rustc_type_ir::TyKind::Adt(containing_type, _) => {
                 is_ghost_ty(self.tcx, containing_type.did())
@@ -153,7 +153,7 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
     fn consume(&mut self, place_with_id: &PlaceWithHirId<'tcx>, diag_expr_id: HirId) {
         let ty = place_with_id.place.ty();
         // No need to check for copy types, they cannot appear here
-        if self.bound_in_block(place_with_id) || self.is_ghost_box(ty) {
+        if self.bound_in_block(place_with_id) || self.is_ghost_ty(ty) {
             return;
         }
 
@@ -177,7 +177,7 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
     ) {
         let ty = place_with_id.place.ty();
         if self.bound_in_block(place_with_id)
-            || self.is_ghost_box(ty)
+            || self.is_ghost_ty(ty)
             || bk == rustc_middle::ty::BorrowKind::Immutable
         {
             return;
@@ -187,7 +187,7 @@ impl<'tcx> Delegate<'tcx> for GhostValidatePlaces<'tcx> {
 
     fn mutate(&mut self, assignee_place: &PlaceWithHirId<'tcx>, diag_expr_id: HirId) {
         let ty = assignee_place.place.ty();
-        if self.bound_in_block(assignee_place) || self.is_ghost_box(ty) {
+        if self.bound_in_block(assignee_place) || self.is_ghost_ty(ty) {
             return;
         }
         self.errors.push((diag_expr_id, base_hir_node(assignee_place), true));

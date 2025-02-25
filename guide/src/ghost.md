@@ -4,7 +4,7 @@ Sometimes, you may need code that will be used only in the proofs/specification,
 
 This is why there exists a separate mechanism: ghost code.
 
-`ghost!` and `GhostBox<T>` are the counterparts of `snapshot!` and `Snapshot<T>`.
+`ghost!` and `Ghost<T>` are the counterparts of `snapshot!` and `Snapshot<T>`.
 
 ## `ghost!` blocks
 
@@ -20,17 +20,17 @@ In `ghost!` block, you may write any kind of Rust code, with the following restr
 
 - ghost code must terminate (see [termination](termination.md) for details)
 - all functions called must have the `#[pure]` attribute
-- When reading an outer variable, the variable must be a `GhostBox<T>`, or implement `Copy`
-- When writing an outer variable, the variable must be a `GhostBox<T>`
-- The output of the `ghost!` block will automatically be wrapped in `GhostBox::new`
+- When reading an outer variable, the variable must be a `Ghost<T>`, or implement `Copy`
+- When writing an outer variable, the variable must be a `Ghost<T>`
+- The output of the `ghost!` block will automatically be wrapped in `Ghost::new`
 
 Those restriction exists to ensure that ghost code is **erasable**: its presence or absence does not affect the semantics of the actual running program, only the proofs.
 
-## `GhostBox<T>`
+## `Ghost<T>`
 
-The `GhostBox<T>` type is the type of "ghost data". In Creusot, it acts like a `Box<T>`, while in normal running code, it is an empty type. It has the same `View` as the underlying type, meaning you can use the `@` operator directly.
+The `Ghost<T>` type is the type of "ghost data". In Creusot, it acts like a `Box<T>`, while in normal running code, it is an empty type. It has the same `View` as the underlying type, meaning you can use the `@` operator directly.
 
-The only restriction of `GhostBox<T>` is that it may not be dereferenced nor created in non-ghost code.
+The only restriction of `Ghost<T>` is that it may not be dereferenced nor created in non-ghost code.
 
 ## Examples
 
@@ -71,8 +71,8 @@ struct Data {
 }
 
 impl Data {
-    fn new() -> (Data, GhostBox<Token>) { /* */ }
-    fn read(&self, token: &GhostBox<Token>) -> T { /* */ }
-    fn write(&self, t: T, token: &mut GhostBox<Token>) { /* */ }
+    fn new() -> (Data, Ghost<Token>) { /* */ }
+    fn read(&self, token: &Ghost<Token>) -> T { /* */ }
+    fn write(&self, t: T, token: &mut Ghost<Token>) { /* */ }
 }
 ```

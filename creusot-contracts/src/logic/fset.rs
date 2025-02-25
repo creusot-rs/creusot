@@ -325,8 +325,8 @@ impl<T: ?Sized> FSet<T> {
     #[pure]
     #[ensures(result.is_empty())]
     #[allow(unreachable_code)]
-    pub fn new() -> GhostBox<Self> {
-        ghost!(panic!())
+    pub fn new() -> Ghost<Self> {
+        Ghost::conjure()
     }
 
     /// Returns the number of elements in the set.
