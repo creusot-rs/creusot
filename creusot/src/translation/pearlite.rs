@@ -17,7 +17,6 @@ use crate::{
         is_ghost_ty, is_snap_ty, is_spec,
     },
     error::{CannotFetchThir, CreusotResult, Error},
-    naming::anonymous_param_symbol,
     translation::{projection_vec::*, TranslationCtx},
 };
 use itertools::Itertools;
@@ -47,6 +46,15 @@ use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
 mod normalize;
 
 pub(crate) use normalize::*;
+
+/// Pearlite variable names
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
+pub enum Name {
+    /// Names from the source code
+    Named(Symbol),
+    /// Unnamed function arguments
+    Arg(usize),
+}
 
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum BinOp {
@@ -98,7 +106,7 @@ pub type QuantBinder<'tcx> = (Vec<Ident>, Ty<'tcx>);
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum TermKind<'tcx> {
-    Var(Symbol),
+    Var(Name),
     Lit(Literal<'tcx>),
     Cast {
         arg: Box<Term<'tcx>>,
@@ -168,7 +176,7 @@ pub enum TermKind<'tcx> {
         term: Box<Term<'tcx>>,
     },
     Closure {
-        bound: Vec<Symbol>,
+        bound: Vec<Name>,
         body: Box<Term<'tcx>>,
     },
     Reborrow {
@@ -287,7 +295,7 @@ pub enum Pattern<'tcx> {
     },
     Tuple(Vec<Pattern<'tcx>>),
     Wildcard,
-    Binder(Symbol),
+    Binder(Name),
     Boolean(bool),
 }
 
@@ -360,7 +368,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             .fold_ok(body, |body, (idx, ty, pattern)| match pattern {
                 Pattern::Binder(_) | Pattern::Wildcard => body,
                 _ => {
-                    let arg = Box::new(Term::var(anonymous_param_symbol(idx), ty));
+                    let arg = Box::new(Term::var(Name::Arg(idx), ty));
                     Term {
                         ty: body.ty,
                         span: body.span,
@@ -479,13 +487,13 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             }
             ExprKind::VarRef { id } => {
                 let map = self.ctx.hir();
-                let name = map.name(id.0);
+                let name = Name::Named(map.name(id.0));
                 Ok(Term { ty, span, kind: TermKind::Var(name) })
             }
             // TODO: confirm this works
             ExprKind::UpvarRef { var_hir_id: id, .. } => {
                 let map = self.ctx.hir();
-                let name = map.name(id.0);
+                let name = Name::Named(map.name(id.0));
 
                 Ok(Term { ty, span, kind: TermKind::Var(name) })
             }
@@ -761,7 +769,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 if is_assertion(self.ctx.tcx, closure_id.to_def_id()) {
                     Ok(Term { ty, span, kind: TermKind::Assert { cond: Box::new(term) } })
                 } else {
-                    let bound = self.ctx.fn_arg_names(closure_id).iter().map(|i| i.name).collect();
+                    let bound = self.ctx.fn_arg_names(closure_id).iter().map(|i| Name::Named(i.name)).collect(); // TODO: What names for wildcard arguments?
                     Ok(Term { ty, span, kind: TermKind::Closure { bound, body: Box::new(term) } })
                 }
             }
@@ -801,7 +809,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 if !mut_allowed && mode.1 == Mutability::Mut {
                     return Err(Error::msg(pat.span, "mut binders are not supported in pearlite"));
                 }
-                Ok(Pattern::Binder(*name))
+                Ok(Pattern::Binder(Name::Named(*name)))
             }
             PatKind::Variant { subpatterns, adt_def, variant_index, args, .. } => {
                 let mut fields: Vec<_> = subpatterns
@@ -1123,7 +1131,7 @@ pub(crate) fn type_invariant_term<'tcx>(
     ty: Ty<'tcx>,
 ) -> Option<Term<'tcx>> {
     // assert!(!name.as_str().is_empty(), "name has len 0, env={env_did:?}, ty={ty:?}");
-    let arg = Term { ty, span, kind: TermKind::Var(name) };
+    let arg = Term { ty, span, kind: TermKind::Var(Name::Named(name)) };
 
     let (inv_fn_did, inv_fn_substs) =
         ctx.type_invariant(TypingEnv::non_body_analysis(ctx.tcx, env_did), ty)?;
@@ -1210,7 +1218,7 @@ impl<'tcx> Pattern<'tcx> {
         }
     }
 
-    pub(crate) fn binds(&self, binders: &mut HashSet<Symbol>) {
+    pub(crate) fn binds(&self, binders: &mut HashSet<Name>) {
         match self {
             Pattern::Constructor { fields, .. } => fields.iter().for_each(|f| f.binds(binders)),
             Pattern::Tuple(fields) => fields.iter().for_each(|f| f.binds(binders)),
@@ -1374,8 +1382,8 @@ impl<'tcx> Term<'tcx> {
         res
     }
 
-    pub(crate) fn var(sym: Symbol, ty: Ty<'tcx>) -> Self {
-        Term { ty, kind: TermKind::Var(sym), span: DUMMY_SP }
+    pub(crate) fn var(nm: Name, ty: Ty<'tcx>) -> Self {
+        Term { ty, kind: TermKind::Var(nm), span: DUMMY_SP }
     }
 
     pub(crate) fn cur(self) -> Self {
@@ -1509,17 +1517,17 @@ impl<'tcx> Term<'tcx> {
     /// If `inv_subst` containts `("x", 5)`:
     /// - If `self` is `x == 1`, `self.subst(inv_subst)` is `5 + 1`
     /// - If `self` is `forall<x: Int> x == 1`, `self.subst(inv_subst)` is still `forall<x: Int> x == 1`
-    pub(crate) fn subst(&mut self, inv_subst: &std::collections::HashMap<Symbol, Term<'tcx>>) {
+    pub(crate) fn subst(&mut self, inv_subst: &std::collections::HashMap<Name, Term<'tcx>>) {
         self.subst_with(|k| inv_subst.get(&k).cloned());
     }
 
-    pub(crate) fn subst_with<F: FnMut(Symbol) -> Option<Term<'tcx>>>(&mut self, mut f: F) {
+    pub(crate) fn subst_with<F: FnMut(Name) -> Option<Term<'tcx>>>(&mut self, mut f: F) {
         self.subst_with_inner(&HashSet::new(), &mut f)
     }
 
-    fn subst_with_inner<F: FnMut(Symbol) -> Option<Term<'tcx>>>(
+    fn subst_with_inner<F: FnMut(Name) -> Option<Term<'tcx>>>(
         &mut self,
-        bound: &HashSet<Symbol>,
+        bound: &HashSet<Name>,
         inv_subst: &mut F,
     ) {
         match &mut self.kind {
@@ -1600,13 +1608,13 @@ impl<'tcx> Term<'tcx> {
         }
     }
 
-    pub(crate) fn free_vars(&self) -> HashSet<Symbol> {
+    pub(crate) fn free_vars(&self) -> HashSet<Name> {
         let mut free = HashSet::new();
         self.free_vars_inner(&HashSet::new(), &mut free);
         free
     }
 
-    fn free_vars_inner(&self, bound: &HashSet<Symbol>, free: &mut HashSet<Symbol>) {
+    fn free_vars_inner(&self, bound: &HashSet<Name>, free: &mut HashSet<Name>) {
         match &self.kind {
             TermKind::Var(v) => {
                 if !bound.contains(v) {
