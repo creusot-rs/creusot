@@ -587,7 +587,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 }
             }
             Pattern::Wildcard => Pat::Wildcard,
-            Pattern::Binder(name) => Pat::VarP(self.get_var(*name).expect(&format!{"Unbound {:?} in {:?}", name, self.ctx.current})),
+            Pattern::Binder(name) => Pat::VarP(self.fresh(*name)),
             Pattern::Boolean(b) => {
                 if *b {
                     Pat::mk_true()

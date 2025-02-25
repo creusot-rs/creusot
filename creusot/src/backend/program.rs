@@ -149,19 +149,14 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
     infer_proph_invariants(ctx, &mut body);
 
-    let renaming = RefCell::new(Renaming::new());
-    let blocks: Vec<Defn> = wto
-        .into_iter()
-        .map(|c| component_to_defn(&mut body, ctx, names, &renaming, body_id.def_id, c))
-        .collect();
-    let ret = body.locals.first().map(|(_, decl)| decl.clone());
-
+    let mut renaming = Renaming::new();
+    renaming.open_scope();
     let vars: Vec<_> = body
         .locals
-        .into_iter()
+        .iter()
         .map(|(id, decl)| {
             let ty = translate_ty(ctx, names, decl.span, decl.ty);
-            let id = Ident::fresh(id.as_str()); // ???
+            let id = renaming.fresh(*id);
 
             let init = if decl.arg {
                 Exp::Var(id)
@@ -171,6 +166,12 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
             coma::Var(id, ty.clone(), init, coma::IsRef::Ref)
         })
         .collect();
+    let renaming = RefCell::new(renaming);
+    let blocks: Vec<Defn> = wto
+        .into_iter()
+        .map(|c| component_to_defn(&mut body, ctx, names, &renaming, body_id.def_id, c))
+        .collect();
+    let ret = body.locals.first().map(|(_, decl)| decl.clone());
 
     let bb0 = Ident::fresh("bb0"); // TODO bound in blocks
     // Remove the invariant from the contract here??
