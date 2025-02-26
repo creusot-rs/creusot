@@ -1576,7 +1576,7 @@ impl<'tcx> Term<'tcx> {
     /// If `inv_subst` containts `("x", 5)`:
     /// - If `self` is `x == 1`, `self.subst(inv_subst)` is `5 + 1`
     /// - If `self` is `forall<x: Int> x == 1`, `self.subst(inv_subst)` is still `forall<x: Int> x == 1`
-    pub(crate) fn subst(&mut self, inv_subst: &std::collections::HashMap<Ident, Term<'tcx>>) {
+    pub(crate) fn subst(&mut self, inv_subst: &std::collections::HashMap<why3::Ident, Term<'tcx>>) {
         self.subst_with(|k| inv_subst.get(&k).cloned());
     }
 

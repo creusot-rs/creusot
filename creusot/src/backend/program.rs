@@ -234,7 +234,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     let params = sig
         .args
         .into_iter()
-        .map(|(_, v, ty)| Param::Term(v, ty))
+        .map(|(ident, ty)| Param::Term(ident, ty))
         .chain([Param::Cont(
             ret_ident,
             Vec::new(),
@@ -1155,18 +1155,19 @@ impl<'tcx> Statement<'tcx> {
 }
 
 fn exp_of_place<'tcx, N: Namer<'tcx>>(lower: &LoweringState<'_, 'tcx, N>, rp: Exp, pl: Place<'tcx>) -> Exp {
+    let local = pl.local;
     // Reuse pl_sym to bind the place's value; pat will be either be discarded or renamed immediately by lower_pat
-    let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, pl.local);
+    let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, local);
     if let pearlite::Pattern::Binder(_) = pat {
-        rp.app_to(Exp::Var(pl.local))
+        rp.app_to(Exp::Var(local))
     } else {
         lower.renaming.borrow_mut().open_scope();
         let pat = lower_pat(lower.ctx, lower.names, &pat, lower.renaming);
         lower.renaming.borrow_mut().close_scope();
         Exp::Match(
-            Box::new(Exp::Var(pl.local)),
+            Box::new(Exp::Var(local)),
             vec![
-                (pat, rp.app_to(Exp::Var(pl.local))), // TODO the variable name looks wrong
+                (pat, rp.app_to(Exp::Var(local))), // TODO the variable name looks wrong
                 (Pattern::Wildcard, Exp::mk_true()),
             ],
         )

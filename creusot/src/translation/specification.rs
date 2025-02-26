@@ -6,7 +6,7 @@ use crate::{
     },
     ctx::*,
     function::closure_capture_subst,
-    pearlite::{Name, TermVisitorMut},
+    pearlite::TermVisitorMut,
     translation::pearlite::{self, normalize, Literal, Term, TermKind},
     util::erased_identity_for_item,
 };
@@ -47,7 +47,7 @@ pub struct PreContract<'tcx> {
 }
 
 impl<'tcx> PreContract<'tcx> {
-    pub(crate) fn subst(&mut self, subst: &HashMap<Name, Term<'tcx>>) {
+    pub(crate) fn subst(&mut self, subst: &HashMap<why3::Ident, Term<'tcx>>) {
         for term in self.terms_mut() {
             term.subst(subst);
         }
@@ -418,7 +418,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
 
 #[derive(TypeVisitable, TypeFoldable, Debug, Clone)]
 pub struct PreSignature<'tcx> {
-    pub(crate) inputs: Vec<(Option<why3::Ident>, Span, Ty<'tcx>)>,
+    pub(crate) inputs: Vec<(why3::Ident, Span, Ty<'tcx>)>,
     pub(crate) output: Ty<'tcx>,
     pub(crate) contract: PreContract<'tcx>,
     // trusted: bool,
@@ -509,12 +509,9 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             {
                 ctx.crash_and_error(ident.span, "`result` is not allowed as a parameter name")
             }
-            (Some(why3::Ident::fresh(ident.as_str())), ident.span, ty) // TODO: do we need to remember the original ident?
+            (why3::Ident::fresh(ident.as_str()), ident.span, ty) // TODO: do we need to remember the original ident?
         })
         .collect();
-    if ctx.type_of(def_id).instantiate_identity().is_fn() && inputs.is_empty() {
-        inputs.push((None, DUMMY_SP, ctx.tcx.types.unit));
-    };
 
     if !is_pearlite(ctx.tcx, def_id) {
         // Type invariants
@@ -538,7 +535,6 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             if params_open_inv.contains(&i) {
                 continue;
             }
-            let Some(name) = name else { continue };
             if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
                 let term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
                 let expl = format!("expl:{} '{}' type invariant", fn_name, name.as_str());

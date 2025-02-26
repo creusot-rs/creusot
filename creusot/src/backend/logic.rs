@@ -52,11 +52,11 @@ pub(crate) fn translate_logic_or_predicate(
 
     let mut body_decls = Vec::new();
 
-    let param_decls = sig.args.iter().map(|(nm, ty)| {
+    let param_decls = sig.args.iter().map(|(name, ty)| {
         Decl::LogicDecl(LogicDecl {
             kind: Some(DeclKind::Constant),
             sig: Signature {
-                name: nm.unwrap_or(Ident::bound("_tt")), // TODO: get rid of this Option?
+                name: *name,
                 trigger: None,
                 attrs: Vec::new(),
                 retty: Some(ty.clone()),
@@ -220,16 +220,10 @@ pub(crate) fn spec_axiom(sig: &PreSignature2) -> Axiom {
     let func_call = function_call(sig);
     let trigger = sig.trigger.clone().into_iter().collect();
     condition.subst(&mut [(Ident::bound("result"), func_call.clone())].into_iter().collect());
-    let args: Vec<(_, _)> = sig
-        .args
-        .iter()
-        .filter_map(|(name, ty)| name.map(|ident| (ident, ty.clone())))
-        .collect();
-
     let axiom =
-        if args.is_empty() { condition } else { Exp::forall_trig(args, trigger, condition) };
+        if sig.args.is_empty() { condition } else { Exp::forall_trig(sig.args.clone(), trigger, condition) };
 
-    Axiom { name: Ident::fresh(format!("{}_spec", sig.name.as_str())), rewrite: false, axiom }
+    Axiom { name: Ident::fresh(format!("{}_spec", sig.name.as_str())), rewrite: false, axiom }  // TODO fresh or not?
 }
 
 pub fn function_call(sig: &PreSignature2) -> Exp {
@@ -237,7 +231,7 @@ pub fn function_call(sig: &PreSignature2) -> Exp {
         .args
         .iter()
         .cloned()
-        .map(|arg| arg.0.map_or(Exp::unit(), Exp::Var))
+        .map(|(ident, _)| Exp::Var(ident))
         .collect();
     if args.is_empty() {
         args = vec![Exp::unit()];
@@ -252,14 +246,8 @@ fn definition_axiom(sig: &PreSignature2, body: Exp, suffix: &str) -> Axiom {
 
     let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
     let condition = sig.contract.requires_implies(equation);
-    let args: Vec<(_, _)> = sig
-        .args
-        .iter()
-        .filter_map(|(name, ty)| name.map(|ident| (ident, ty.clone())))
-        .collect();
-
     let axiom =
-        if sig.args.is_empty() { condition } else { Exp::forall_trig(args, trigger, condition) };
+        if sig.args.is_empty() { condition } else { Exp::forall_trig(sig.args.clone(), trigger, condition) };
 
     let name = Ident::fresh(format!("{}_{suffix}", sig.name.as_str()));
     Axiom { name, rewrite: false, axiom }

@@ -59,11 +59,11 @@ pub(super) fn vc<'tcx>(
 ) -> Result<Exp, VCError<'tcx>> {
     let structurally_recursive = is_structurally_recursive(ctx, self_id, &t);
     let sig = ctx.sig(self_id);
-    let bounds = sig
+    let bounds = todo!{}; /* TODO REMOVE THIS sig
         .inputs
         .iter()
         .map(|(sym, _, _)| (*sym, Ident::fresh(sym.as_str())))
-        .collect();
+        .collect(); */
     let renaming = RefCell::new(bounds);
     let variant = sig.contract.variant.as_ref().map(|term|
             lower_pure(ctx, names, &renaming, term));
@@ -354,7 +354,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     .args
                     .iter()
                     .zip(&args)
-                    .map(|(&(_, arg, _), &(_, hole))| (arg, Exp::Var(hole)))
+                    .map(|(&(arg, _), &(_, hole))| (arg, Exp::Var(hole)))
                     .collect();
                 let mut contract = sig.contract;
                 contract.subst(&arg_subst);

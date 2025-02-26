@@ -25,7 +25,7 @@ pub struct PreSignature2 {
     pub trigger: Option<Trigger>, // None means we should use the "simple_trigger"
     pub attrs: Vec<why3::declaration::Attribute>,
     pub retty: Option<why3::ty::Type>,
-    pub args: Vec<(Option<Ident>, why3::ty::Type)>, // TODO get rid of Option
+    pub args: Vec<(Ident, why3::ty::Type)>,
     pub contract: Contract,
 }
 
@@ -42,7 +42,7 @@ impl From<PreSignature2> for Signature {
             trigger: sig.trigger,
             attrs: sig.attrs,
             retty: sig.retty,
-            args: sig.args.into_iter().map(|(id, ty)| match id { Some(id) => Binder::typed(id, ty), None => Binder::wild(ty) }).collect(),
+            args: sig.args.into_iter().map(|(id, ty)| Binder::typed(id, ty)).collect(),
             contract: sig.contract,
         }
     }

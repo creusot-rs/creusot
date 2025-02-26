@@ -343,10 +343,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let sig = self.ctx.sig(*id).clone();
                 let sig = EarlyBinder::bind(sig).instantiate(self.ctx.tcx, subst);
                 self.open_scope();
-                for (name, _, ty) in sig.inputs.iter().skip(1) {
-                    let nm = name.unwrap(); // TODO
+                for (ident, _, ty) in sig.inputs.iter().skip(1) {
                     let ty = self.names.normalize(self.ctx, *ty);
-                    binders.push(Binder::typed(nm, self.lower_ty(ty)))
+                    binders.push(Binder::typed(*ident, self.lower_ty(ty)))
                 }
                 let body = self.lower_term(&*body);
                 self.close_scope();

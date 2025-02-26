@@ -620,7 +620,7 @@ fn term<'tcx>(
             } else if is_resolve_function(ctx.tcx, def_id) {
                 resolve_term(ctx, typing_env, def_id, subst)
             } else if is_structural_resolve(ctx.tcx, def_id) {
-                let subj = ctx.sig(def_id).inputs[0].0.expect("does this happen"); // TODO
+                let subj = ctx.sig(def_id).inputs[0].0;
                 structural_resolve(ctx, subj, subst.type_at(0))
             } else if is_fn_once_impl_postcond(ctx.tcx, def_id) {
                 fn_once_postcond_term(ctx, typing_env, subst)

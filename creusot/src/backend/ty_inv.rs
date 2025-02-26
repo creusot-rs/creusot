@@ -168,7 +168,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
             }
             TyKind::Tuple(tys) => {
                 let ids: Vec<_> =
-                    (0..tys.len()).map(|i| Symbol::intern(&format!("x{i}"))).collect();
+                    (0..tys.len()).map(|i| why3::Ident::fresh(&format!("x{i}"))).collect();
                 let body = Box::new(
                     ids.iter().zip(*tys).fold(Term::mk_true(self.ctx.tcx), |acc, (&id, ty)| {
                         acc.conj(self.mk_inv_call(Term::var(id, ty)))
@@ -184,7 +184,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
             TyKind::Closure(clos_did, substs) => {
                 let tys = substs.as_closure().upvar_tys();
                 let ids: Vec<_> =
-                    (0..tys.len()).map(|i| Symbol::intern(&format!("x{i}"))).collect();
+                    (0..tys.len()).map(|i| why3::Ident::fresh(&format!("x{i}"))).collect();
 
                 let body = Box::new(
                     ids.iter().zip(tys).fold(Term::mk_true(self.ctx.tcx), |acc, (&id, ty)| {
@@ -229,10 +229,10 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
             let mut pats: Vec<Pattern<'tcx>> = vec![];
             let mut exp: Term<'tcx> = Term::mk_true(self.ctx.tcx);
             for (field_idx, field_def) in var_def.fields.iter().enumerate() {
-                let field_name: Symbol = if tuple_var {
-                    Symbol::intern(&format!("a_{field_idx}"))
+                let field_name = if tuple_var {
+                    why3::Ident::fresh(&format!("a_{field_idx}"))
                 } else {
-                    field_def.name
+                    why3::Ident::fresh(field_def.name.as_str())
                 };
 
                 let field_ty = field_def.ty(self.ctx.tcx, subst);
