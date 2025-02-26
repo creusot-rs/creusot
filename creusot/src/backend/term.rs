@@ -54,65 +54,6 @@ pub(crate) fn lower_pat<'tcx, N: Namer<'tcx>>(
     Lower { ctx, names, renaming }.lower_pat(pat)
 }
 
-/// Map Pearlite identifiers to Why3 identifiers.
-pub struct Renaming {
-    renaming: HashMap<Symbol, Ident>,
-    undo: Vec<Vec<(Symbol, Option<Ident>)>>,
-}
-
-impl Renaming {
-    pub fn new() -> Self {
-        Renaming {
-            renaming: HashMap::new(),
-            undo: Vec::new(),
-        }
-    }
-
-    pub fn open_scope(&mut self) {
-        self.undo.push(Vec::new());
-    }
-
-    pub fn close_scope(&mut self) {
-        let undo = self.undo.pop().unwrap();
-        undo.into_iter().rev().for_each(|(sym, old)| {
-            if let Some(old) = old {
-                self.renaming.insert(sym, old);
-            } else {
-                self.renaming.remove(&sym);
-            }
-        });
-    }
-
-    pub fn fresh(&mut self, sym: Symbol) -> Ident {
-        let ident = Ident::fresh(sym.to_string());
-        self.rename(sym, ident);
-        ident
-    }
-
-    pub fn bound(&mut self, sym: Symbol, str: &str) -> Ident {
-        let ident = Ident::bound(str);
-        self.rename(sym, ident);
-        ident
-    }
-
-    pub fn rename(&mut self, sym: Symbol, ident: Ident) {
-        self.undo.last_mut().unwrap().push((sym, self.renaming.insert(sym, ident)));
-    }
-
-    pub fn get(&self, sym: &Symbol) -> Option<Ident> {
-        self.renaming.get(sym).cloned()
-    }
-}
-
-impl FromIterator<(Symbol, Ident)> for Renaming {
-    fn from_iter<T: IntoIterator<Item = (Symbol, Ident)>>(iter: T) -> Self {
-        Renaming {
-            renaming: iter.into_iter().collect(),
-            undo: Vec::new(),
-        }
-    }
-}
-
 struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     ctx: &'a Why3Generator<'tcx>,
     names: &'a N,

@@ -230,11 +230,10 @@ impl<'tcx> ScopeTree<'tcx> {
         let mut to_visit = Some(scope);
 
         while let Some(s) = to_visit.take() {
-            let d = (HashSet::new(), None);
-            self.0.get(&s).unwrap_or(&d).0.iter().for_each(|(id, loc)| {
+            self.0.get(&s).iter().for_each(|(d, _)| d.iter().for_each(|(id, loc)| {
                 locals.entry(*id).or_insert(*loc);
-            });
-            to_visit = self.0.get(&s).unwrap_or(&d).1;
+            }));
+            to_visit = self.0.get(&s).and_then(|(_, p)| *p);
         }
 
         locals
@@ -245,7 +244,7 @@ impl<'tcx> ScopeTree<'tcx> {
 pub(crate) fn inv_subst<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &Body<'tcx>,
-    locals: &HashMap<Local, Symbol>,
+    locals: &HashMap<Local, why3::Ident>,
     info: SourceInfo,
 ) -> HashMap<Symbol, Term<'tcx>> {
     let mut args = HashMap::new();
@@ -269,7 +268,7 @@ pub(crate) fn inv_subst<'tcx>(
 fn place_to_term<'tcx>(
     tcx: TyCtxt<'tcx>,
     p: mir::Place<'tcx>,
-    locals: &HashMap<Local, Name>,
+    locals: &HashMap<Local, why3::Ident>,
     body: &Body<'tcx>,
 ) -> Term<'tcx> {
     let ty = p.ty(&body.local_decls, tcx).ty;
@@ -419,7 +418,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
 
 #[derive(TypeVisitable, TypeFoldable, Debug, Clone)]
 pub struct PreSignature<'tcx> {
-    pub(crate) inputs: Vec<(Symbol, Span, Ty<'tcx>)>,
+    pub(crate) inputs: Vec<(why3::Ident, Span, Ty<'tcx>)>,
     pub(crate) output: Ty<'tcx>,
     pub(crate) contract: PreContract<'tcx>,
     // trusted: bool,
