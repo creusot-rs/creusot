@@ -149,6 +149,7 @@ fn translate_creusot_contracts(
     let output = creusot_contracts.output().expect("could not translate `creusot_contracts`");
     if !output.status.success() {
         eprintln!("Translation of creusot-contracts failed");
+        eprintln!("{}", String::from_utf8(output.stderr).unwrap());
         std::process::exit(1);
     }
 

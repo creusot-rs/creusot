@@ -332,6 +332,19 @@ extern_spec! {
         #[terminates] // can OOM (?)
         #[ensures(result@ == self_@)]
         fn into_vec<A: Allocator>(self_: Box<Self, A>) -> Vec<T, A>;
+
+        #[requires(ix.in_bounds(self@))]
+        #[ensures(ix.has_value(self@, *result))]
+        unsafe fn get_unchecked<I>(&self, ix: I) -> &<I as ::std::slice::SliceIndex<[T]>>::Output
+            where I : SliceIndex<[T]>;
+
+        #[requires(ix.in_bounds(self@))]
+        #[ensures(ix.has_value(self@, *result))]
+        #[ensures(ix.has_value((^self)@, ^result))]
+        #[ensures(ix.resolve_elswhere(self@, (^self)@))]
+        #[ensures((^self)@.len() == self@.len())]
+        unsafe fn get_unchecked_mut<I>(&mut self, ix: I) -> &mut <I as ::std::slice::SliceIndex<[T]>>::Output
+            where I : SliceIndex<[T]>;
     }
 
     impl<T, I> IndexMut<I> for [T]
