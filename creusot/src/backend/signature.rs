@@ -15,7 +15,8 @@ use crate::{
     translation::specification::PreContract,
 };
 
-use super::{logic::function_call, term::{lower_pure, Renaming}, Namer, Why3Generator};
+use super::{logic::function_call, term::lower_pure, Namer, Why3Generator};
+use crate::pearlite::Renaming;
 
 #[derive(Debug, Clone)]
 // #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
@@ -24,7 +25,7 @@ pub struct PreSignature2 {
     pub trigger: Option<Trigger>, // None means we should use the "simple_trigger"
     pub attrs: Vec<why3::declaration::Attribute>,
     pub retty: Option<why3::ty::Type>,
-    pub args: Vec<(Symbol, Ident, why3::ty::Type)>,
+    pub args: Vec<(Option<Ident>, why3::ty::Type)>, // TODO get rid of Option
     pub contract: Contract,
 }
 
@@ -41,7 +42,7 @@ impl From<PreSignature2> for Signature {
             trigger: sig.trigger,
             attrs: sig.attrs,
             retty: sig.retty,
-            args: sig.args.into_iter().map(|(_, id, ty)| Binder::typed(id, ty)).collect(),
+            args: sig.args.into_iter().map(|(id, ty)| match id { Some(id) => Binder::typed(id, ty), None => Binder::wild(ty) }).collect(),
             contract: sig.contract,
         }
     }
@@ -71,18 +72,12 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
     let args: Vec<_> = pre_sig
         .inputs
         .into_iter()
-        .enumerate()
-        .map(|(ix, (sym, _, ty))| {
+        .map(|(ident, _, ty)| {
             let ty = backend::ty::translate_ty(ctx, names, span, ty);
-            let id = if sym.is_empty() {
-                Ident::fresh(format!{"_{ix}"})
-            } else {
-                Ident::fresh(sym.as_str())
-            };
-            (sym, id, ty)
+            (ident, ty)
         })
         .collect();
-    let renaming = RefCell::new(args.iter().map(|(old, new, _)| (*old, *new)).collect());
+    let renaming = todo!{}; // TODO get rid of this RefCell::new(args.iter().map(|(old, new, _)| (*old, *new)).collect());
     let contract = contract_to_why3(pre_sig.contract, ctx, &renaming, names);
     let mut attrs = why3_attrs(ctx.tcx, def_id);
 

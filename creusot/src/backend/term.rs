@@ -8,8 +8,8 @@ use crate::{
     },
     contracts_items::get_builtin,
     ctx::*,
-    pearlite::{self, Literal, Pattern, PointerKind, Term, TermKind},
-    translation::pearlite::{zip_binder, QuantKind, Trigger},
+    pearlite::{self, Literal, Pattern, PointerKind, Term, TermKind, Renaming},
+    translation::pearlite::{QuantKind, Trigger},
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, Ty, TyCtxt, TyKind};
@@ -140,7 +140,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     item
                 }
             }
-            TermKind::Var(v) => Exp::Var(self.var(*v).expect(&format!{"unbound {:?} in {:?}", v, self.ctx.current})),
+            TermKind::Var(v) => Exp::Var(*v),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -239,11 +239,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Quant { kind, binder, box body, trigger } => {
                 self.open_scope();
-                let bound = zip_binder(binder)
-                    .map(|(s, t)| {
-                        // Generate fresh names for binders, remember old names
-                        let new = self.fresh(s);
-                        (new, self.lower_ty(t)) })  // TODO store this fresh somewhere
+                let bound = binder.iter()
+                    .map(|(ident, t)| (*ident, self.lower_ty(*t)))  // TODO store this fresh somewhere
                     .collect();
                 let body = self.lower_term(body);
                 let trigger = self.lower_trigger(trigger);
@@ -346,9 +343,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let sig = self.ctx.sig(*id).clone();
                 let sig = EarlyBinder::bind(sig).instantiate(self.ctx.tcx, subst);
                 self.open_scope();
-                for arg in sig.inputs.iter().skip(1) {
-                    let nm = self.fresh(arg.0);
-                    let ty = self.names.normalize(self.ctx, arg.2);
+                for (name, _, ty) in sig.inputs.iter().skip(1) {
+                    let nm = name.unwrap(); // TODO
+                    let ty = self.names.normalize(self.ctx, *ty);
                     binders.push(Binder::typed(nm, self.lower_ty(ty)))
                 }
                 let body = self.lower_term(&*body);
@@ -416,7 +413,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
             }
             Pattern::Wildcard => Pat::Wildcard,
-            Pattern::Binder(name) => Pat::VarP(self.fresh(*name)),
+            Pattern::Binder(name) => Pat::VarP(*name),
             Pattern::Boolean(b) => {
                 if *b {
                     Pat::mk_true()
@@ -460,7 +457,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     }
 
     fn var(&self, s: Symbol) -> Option<Ident> {
-        self.renaming.borrow().get(&s)
+        todo!{} // self.renaming.borrow().get(&s)
     }
 
     fn open_scope(&self) {
@@ -472,7 +469,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     }
 
     fn fresh(&self, s: Symbol) -> Ident{
-        self.renaming.borrow_mut().fresh(s)
+        todo!{} // self.renaming.borrow_mut().fresh(s)
     }
 }
 

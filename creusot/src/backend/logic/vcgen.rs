@@ -7,7 +7,7 @@ use super::Dependencies;
 use crate::{
     backend::{
         signature::sig_to_why3,
-        term::{binop_to_binop, lower_literal, lower_pure, Renaming},
+        term::{binop_to_binop, lower_literal, lower_pure},
         ty::{constructor, ity_to_prelude, translate_ty, uty_to_prelude},
         Namer as _, Why3Generator,
     },
@@ -17,12 +17,13 @@ use crate::{
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind, TypingEnv};
-use rustc_span::{Span, Symbol};
+use rustc_span::Span;
 use why3::{
     exp::Environment,
     ty::Type,
     Exp, Ident,
 };
+use crate::pearlite::Renaming;
 
 /// Verification conditions for lemma functions.
 ///
@@ -94,12 +95,12 @@ pub(super) fn vc<'tcx>(
 /// This check can be extended in the future
 fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'_>) -> bool {
     struct StructuralRecursion {
-        smaller_than: HashMap<Symbol, Symbol>,
+        smaller_than: HashMap<why3::Ident, why3::Ident>,
         self_id: DefId,
         /// Index of the decreasing argument
-        decreasing_args: HashSet<Symbol>,
+        decreasing_args: HashSet<why3::Ident>,
 
-        orig_args: Vec<Symbol>,
+        orig_args: Vec<why3::Ident>,
     }
     use crate::pearlite::TermKind;
 
@@ -109,7 +110,7 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
         }
 
         /// Is `t` smaller than the argument `nm`?
-        fn is_smaller_than(&self, t: &Term, nm: Symbol) -> bool {
+        fn is_smaller_than(&self, t: &Term, nm: why3::Ident) -> bool {
             match &t.kind {
                 TermKind::Var(s) => self.smaller_than.get(s) == Some(&nm),
                 _ => false,
@@ -118,7 +119,7 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
 
         // TODO: could make this a `pattern` to term comparison to make it more powerful
         /// Mark `sym` as smaller than `term`. Currently, this only updates the relation if `term` is a variable.
-        fn smaller_than(&mut self, sym: Symbol, term: &Term<'_>) {
+        fn smaller_than(&mut self, sym: why3::Ident, term: &Term<'_>) {
             let var = match &term.kind {
                 TermKind::Var(s) => s,
                 _ => return,
@@ -142,8 +143,8 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
                 }
                 TermKind::Quant { binder, body, .. } => {
                     let old_smaller = self.smaller_than.clone();
-                    for name in &binder.0 {
-                        self.smaller_than.remove(&name.name);
+                    for (name, _) in binder {
+                        self.smaller_than.remove(name);
                     }
                     self.visit_term(body);
                     self.smaller_than = old_smaller;
@@ -440,7 +441,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // VC(QUANTIFIER<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(QUANTIFIER<x> P(x))
             TermKind::Quant { binder, body, .. } => {
                 self.open_scope();
-                let binder = zip_binder(binder).map(|(sym, ty)| (self.fresh(sym), self.ty(ty))).collect();
+                let binder = binder.iter().map(|(ident, ty)| (*ident, self.ty(*ty))).collect();
                 let forall_pre = self.build_vc(body, &mut Post::new(Exp::mk_true(), q.hole))?;
                 self.close_scope();
                 let forall_pre = Exp::forall(binder, forall_pre);
@@ -622,8 +623,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty)
     }
 
-    fn get_var(&self, s: Symbol) -> Option<Ident> {
-        self.renaming.borrow().get(&s)
+    fn get_var(&self, s: why3::Ident) -> Option<Ident> {
+        todo!{} // self.renaming.borrow().get(&s)
     }
 
     fn open_scope(&self) {
@@ -634,7 +635,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         self.renaming.borrow_mut().close_scope();
     }
 
-    fn fresh(&self, s: Symbol) -> Ident{
-        self.renaming.borrow_mut().fresh(s)
+    fn fresh(&self, s: why3::Ident) -> Ident{
+        todo!{} // self.renaming.borrow_mut().fresh(s)
     }
 }

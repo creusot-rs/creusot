@@ -15,7 +15,6 @@ use crate::{
     },
     ctx::{BodyId, Dependencies},
     fmir::{self, Body, BorrowKind, Operand, TrivialInv},
-    naming::ident_of,
     pearlite::{self, PointerKind},
     translated_item::FileModule,
     translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
@@ -46,7 +45,8 @@ use why3::{
     Ident, QName,
 };
 
-use super::{signature::PreSignature2, term::Renaming};
+use super::signature::PreSignature2;
+use crate::pearlite::Renaming;
 
 pub(crate) fn translate_function<'tcx, 'sess>(
     ctx: &Why3Generator<'tcx>,
@@ -156,14 +156,12 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         .iter()
         .map(|(id, decl)| {
             let ty = translate_ty(ctx, names, decl.span, decl.ty);
-            let id = renaming.fresh(*id);
-
             let init = if decl.arg {
-                Exp::Var(id)
+                Exp::Var(*id)
             } else {
                 Exp::QVar(names.from_prelude(PreludeModule::Intrinsic, "any_l")).app_to(Exp::unit())
             };
-            coma::Var(id, ty.clone(), init, coma::IsRef::Ref)
+            coma::Var(*id, ty.clone(), init, coma::IsRef::Ref) // TODO: is this OK?
         })
         .collect();
     let renaming = RefCell::new(renaming);
@@ -1025,7 +1023,6 @@ impl<'tcx> Statement<'tcx> {
                 let rhs_ty = rhs.ty(lower.ctx.tcx, lower.locals);
                 let rhs_ty_low = lower.ty(rhs_ty);
                 let rhs_local_ty = PlaceTy::from_ty(lower.locals[&rhs.local].ty);
-                let rhs_local_ident = Ident::fresh(ident_of(rhs.local).as_str()); // TODO
 
                 let rhs_inv_fun = if matches!(triv_inv, TrivialInv::NonTrivial) {
                     Some(Exp::qvar(lower.names.ty_inv(rhs_ty)))
@@ -1051,7 +1048,7 @@ impl<'tcx> Statement<'tcx> {
                             lower,
                             &mut istmts,
                             rhs_local_ty,
-                            place::Focus::new(|_| Exp::Var(rhs_local_ident)),
+                            place::Focus::new(|_| Exp::Var(rhs.local)),
                             Box::new(|_, x| x),
                             &rhs.projection[..deref_index],
                         );
@@ -1070,13 +1067,12 @@ impl<'tcx> Statement<'tcx> {
                         lower.names,
                         original_borrow.call(&mut istmts),
                         &rhs.projection[deref_index + 1..],
-                        |sym| {
-                            let v = Ident::fresh(ident_of(*sym).as_str());
+                        |ident| {
                             let qname = lower.names.from_prelude(
                                 uty_to_prelude(lower.ctx.tcx, UintTy::Usize),
                                 "t'int",
                             );
-                            Exp::Call(Box::new(Exp::qvar(qname)), vec![Exp::Var(v)])
+                            Exp::Call(Box::new(Exp::qvar(qname)), vec![Exp::Var(*ident)])
                         },
                     );
 
@@ -1086,7 +1082,7 @@ impl<'tcx> Statement<'tcx> {
                         &lower,
                         &mut istmts,
                         rhs_local_ty,
-                        place::Focus::new(|_| Exp::Var(Ident::fresh(ident_of(rhs.local).as_str()))), // TODO
+                        place::Focus::new(|_| Exp::Var(rhs.local)), // TODO
                         Box::new(|_, x| x),
                         &rhs.projection,
                     );
@@ -1159,21 +1155,18 @@ impl<'tcx> Statement<'tcx> {
 }
 
 fn exp_of_place<'tcx, N: Namer<'tcx>>(lower: &LoweringState<'_, 'tcx, N>, rp: Exp, pl: Place<'tcx>) -> Exp {
-    let pl_sym = pl.local;
-    let loc = lower.renaming.borrow_mut().get(&pl_sym).expect(&format!{"Unbound {:?} in {:?}", pl_sym, lower.ctx.current});
     // Reuse pl_sym to bind the place's value; pat will be either be discarded or renamed immediately by lower_pat
-    let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, pl_sym);
+    let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, pl.local);
     if let pearlite::Pattern::Binder(_) = pat {
-        rp.app_to(Exp::Var(loc))
+        rp.app_to(Exp::Var(pl.local))
     } else {
         lower.renaming.borrow_mut().open_scope();
         let pat = lower_pat(lower.ctx, lower.names, &pat, lower.renaming);
-        let pl_ident = lower.renaming.borrow_mut().get(&pl_sym).expect(&format!{"Unbound {:?} in {:?}", pl_sym, lower.ctx.current});
         lower.renaming.borrow_mut().close_scope();
         Exp::Match(
-            Box::new(Exp::Var(loc)),
+            Box::new(Exp::Var(pl.local)),
             vec![
-                (pat, rp.app_to(Exp::Var(pl_ident))),
+                (pat, rp.app_to(Exp::Var(pl.local))), // TODO the variable name looks wrong
                 (Pattern::Wildcard, Exp::mk_true()),
             ],
         )
@@ -1186,7 +1179,7 @@ fn pattern_of_place<'tcx>(
     tcx: TyCtxt<'tcx>,
     locals: &fmir::LocalDecls<'tcx>,
     pl: fmir::Place<'tcx>,
-    binder: Symbol,
+    binder: why3::Ident,
 ) -> pearlite::Pattern<'tcx> {
     let mut pat = pearlite::Pattern::Binder(binder);
 

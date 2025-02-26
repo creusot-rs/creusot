@@ -1,9 +1,8 @@
-use crate::{backend::Namer, ctx::PreludeModule, fmir::Place, naming::ident_of};
+use crate::{backend::Namer, ctx::PreludeModule, fmir::Place};
 use rustc_middle::{
-    mir::{self, tcx::PlaceTy, ProjectionElem},
-    ty::{Ty, TyCtxt, TyKind},
+    mir::tcx::PlaceTy,
+    ty::{TyCtxt, TyKind},
 };
-use rustc_span::Symbol;
 use std::{cell::RefCell, rc::Rc};
 use why3::{
     coma::{Arg, Expr, Param},
@@ -62,7 +61,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
     // The term holding the currently 'focused' portion of the place
     mut focus: Focus<'a>,
     mut constructor: Constructor<'a>,
-    proj: &'a [mir::ProjectionElem<Symbol, Ty<'tcx>>],
+    proj: &'a [crate::fmir::ProjectionElem<'tcx>],
 ) -> (PlaceTy<'tcx>, Focus<'a>, Constructor<'a>) {
     for elem in proj {
         use rustc_middle::mir::ProjectionElem::*;
@@ -250,7 +249,7 @@ pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
         lower,
         istmts,
         place_ty,
-        Focus::new(|_| Exp::Var(Ident::bound(ident_of(pl.local).as_str()))),
+        Focus::new(|_| Exp::Var(pl.local)),
         Box::new(|_, _| unreachable!()),
         &pl.projection,
     );
@@ -268,7 +267,7 @@ fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
         lower,
         istmts,
         place_ty,
-        Focus::new(|_| Exp::Var(Ident::bound(ident_of(pl.local).as_str()))),
+        Focus::new(|_| Exp::Var(pl.local)),
         Box::new(|_, x| x),
         &pl.projection,
     );
@@ -279,7 +278,7 @@ fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
 pub fn projection_ty<'tcx>(
     pty: PlaceTy<'tcx>,
     tcx: TyCtxt<'tcx>,
-    elem: ProjectionElem<Symbol, Ty<'tcx>>,
+    elem: crate::translation::fmir::ProjectionElem<'tcx>,
 ) -> PlaceTy<'tcx> {
     pty.projection_ty_core(tcx, &elem, |_, _, ty| ty, |_, ty| ty)
 }

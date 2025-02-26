@@ -418,7 +418,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
 
 #[derive(TypeVisitable, TypeFoldable, Debug, Clone)]
 pub struct PreSignature<'tcx> {
-    pub(crate) inputs: Vec<(why3::Ident, Span, Ty<'tcx>)>,
+    pub(crate) inputs: Vec<(Option<why3::Ident>, Span, Ty<'tcx>)>,
     pub(crate) output: Ty<'tcx>,
     pub(crate) contract: PreContract<'tcx>,
     // trusted: bool,
@@ -499,8 +499,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
     }
 
     let mut inputs: Vec<_> = inputs
-        .enumerate()
-        .map(|(idx, (ident, ty))| {
+        .map(|(ident, ty)| {
             if ident.name.as_str() == "result"
                 && !is_fn_impl_postcond(ctx.tcx, def_id)
                 && !is_fn_mut_impl_postcond(ctx.tcx, def_id)
@@ -510,17 +509,11 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             {
                 ctx.crash_and_error(ident.span, "`result` is not allowed as a parameter name")
             }
-
-            let name = if ident.name.as_str().is_empty() {
-                anonymous_param_symbol(idx)
-            } else {
-                ident.name
-            };
-            (name, ident.span, ty)
+            (Some(why3::Ident::fresh(ident.as_str())), ident.span, ty) // TODO: do we need to remember the original ident?
         })
         .collect();
     if ctx.type_of(def_id).instantiate_identity().is_fn() && inputs.is_empty() {
-        inputs.push((kw::Empty, DUMMY_SP, ctx.tcx.types.unit));
+        inputs.push((None, DUMMY_SP, ctx.tcx.types.unit));
     };
 
     if !is_pearlite(ctx.tcx, def_id) {
@@ -545,9 +538,10 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             if params_open_inv.contains(&i) {
                 continue;
             }
+            let Some(name) = name else { continue };
             if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
                 let term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
-                let expl = format!("expl:{} '{}' type invariant", fn_name, name);
+                let expl = format!("expl:{} '{}' type invariant", fn_name, name.as_str());
                 requires.push(Condition { term, expl });
             }
         }
@@ -560,7 +554,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             && let Some(term) = pearlite::type_invariant_term(
                 ctx,
                 def_id,
-                Symbol::intern("result"),
+                why3::Ident::bound("result"),
                 ret_ty_span.unwrap_or_else(|| ctx.tcx.def_span(def_id)),
                 output,
             )

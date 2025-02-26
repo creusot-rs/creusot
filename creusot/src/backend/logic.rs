@@ -52,11 +52,11 @@ pub(crate) fn translate_logic_or_predicate(
 
     let mut body_decls = Vec::new();
 
-    let param_decls = sig.args.iter().map(|(_, nm, ty)| {
+    let param_decls = sig.args.iter().map(|(nm, ty)| {
         Decl::LogicDecl(LogicDecl {
             kind: Some(DeclKind::Constant),
             sig: Signature {
-                name: nm.clone(),
+                name: nm.unwrap_or(Ident::bound("_tt")), // TODO: get rid of this Option?
                 trigger: None,
                 attrs: Vec::new(),
                 retty: Some(ty.clone()),
@@ -119,7 +119,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
 
     let mut decls = vec![];
 
-    let renaming = RefCell::new(sig.args.iter().map(|(old, new, _)| (*old, *new)).collect());
+    let renaming = todo!{}; // Erase this RefCell::new(sig.args.iter().map(|(old, new, _)| (*old, *new)).collect());
     let body = lower_pure(ctx, names, &renaming, &body);
 
     if sig.contract.variant.is_empty() {
@@ -223,7 +223,7 @@ pub(crate) fn spec_axiom(sig: &PreSignature2) -> Axiom {
     let args: Vec<(_, _)> = sig
         .args
         .iter()
-        .filter_map(|(old, new, ty)| if old.is_empty() { None } else { Some((*new, ty.clone())) })
+        .filter_map(|(name, ty)| name.map(|ident| (ident, ty.clone())))
         .collect();
 
     let axiom =
@@ -237,10 +237,10 @@ pub fn function_call(sig: &PreSignature2) -> Exp {
         .args
         .iter()
         .cloned()
-        .map(|arg| Exp::Var(arg.1))
+        .map(|arg| arg.0.map_or(Exp::unit(), Exp::Var))
         .collect();
     if args.is_empty() {
-        args = vec![Exp::Tuple(vec![])];
+        args = vec![Exp::unit()];
     }
 
     Exp::Var(sig.name.clone()).app(args)
@@ -255,7 +255,7 @@ fn definition_axiom(sig: &PreSignature2, body: Exp, suffix: &str) -> Axiom {
     let args: Vec<(_, _)> = sig
         .args
         .iter()
-        .filter_map(|(old, new, ty)| if old.is_empty() { None } else { Some((*new, ty.clone())) })
+        .filter_map(|(name, ty)| name.map(|ident| (ident, ty.clone())))
         .collect();
 
     let axiom =

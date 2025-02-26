@@ -2,22 +2,24 @@ use crate::{backend::place::projection_ty, naming::ident_of, pearlite::Term};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{tcx::PlaceTy, BasicBlock, BinOp, Local, ProjectionElem, Promoted, UnOp},
+    mir::{tcx::PlaceTy, BasicBlock, BinOp, Local, Promoted, UnOp},
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt},
 };
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::VariantIdx;
 
+pub(crate) type ProjectionElem<'tcx> = rustc_middle::mir::ProjectionElem<why3::Ident, Ty<'tcx>>;
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Place<'tcx> {
-    pub(crate) local: Symbol,
-    pub(crate) projection: Vec<ProjectionElem<Symbol, Ty<'tcx>>>,
+    pub(crate) local: why3::Ident,
+    pub(crate) projection: Vec<ProjectionElem<'tcx>>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct PlaceRef<'a, 'tcx> {
-    pub local: Symbol,
-    pub projection: &'a [ProjectionElem<Symbol, Ty<'tcx>>],
+    pub local: why3::Ident,
+    pub projection: &'a [ProjectionElem<'tcx>],
 }
 
 impl<'tcx> Place<'tcx> {
@@ -31,7 +33,7 @@ impl<'tcx> Place<'tcx> {
         ty.ty
     }
 
-    pub(crate) fn as_symbol(&self) -> Option<Symbol> {
+    pub(crate) fn as_symbol(&self) -> Option<why3::Ident> {
         if self.projection.is_empty() {
             Some(self.local)
         } else {
@@ -41,7 +43,7 @@ impl<'tcx> Place<'tcx> {
 
     pub(crate) fn iter_projections(
         &self,
-    ) -> impl Iterator<Item = (PlaceRef<'_, 'tcx>, ProjectionElem<Symbol, Ty<'tcx>>)>
+    ) -> impl Iterator<Item = (PlaceRef<'_, 'tcx>, ProjectionElem<'tcx>)>
            + DoubleEndedIterator
            + '_ {
         self.projection.iter().enumerate().map(move |(i, proj)| {
@@ -52,7 +54,7 @@ impl<'tcx> Place<'tcx> {
 
     pub fn last_projection(
         &self,
-    ) -> Option<(PlaceRef<'_, 'tcx>, ProjectionElem<Symbol, Ty<'tcx>>)> {
+    ) -> Option<(PlaceRef<'_, 'tcx>, ProjectionElem<'tcx>)> {
         if let &[ref proj_base @ .., elem] = &self.projection[..] {
             Some((PlaceRef { local: self.local, projection: proj_base }, elem))
         } else {
@@ -284,7 +286,7 @@ impl LocalIdent {
     }
 }
 
-pub type LocalDecls<'tcx> = IndexMap<Symbol, LocalDecl<'tcx>>;
+pub type LocalDecls<'tcx> = IndexMap<why3::Ident, LocalDecl<'tcx>>;
 
 #[derive(Clone, Debug)]
 pub struct LocalDecl<'tcx> {

@@ -1,6 +1,6 @@
 use rustc_ast::Mutability;
 use rustc_middle::ty::{GenericArg, Ty};
-use rustc_span::{Symbol, DUMMY_SP};
+use rustc_span::DUMMY_SP;
 use rustc_type_ir::TyKind;
 
 use crate::{
@@ -12,7 +12,7 @@ use super::Why3Generator;
 
 pub fn structural_resolve<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    subject: Symbol,
+    subject: why3::Ident,
     ty: Ty<'tcx>,
 ) -> Option<Term<'tcx>> {
     let subject = Term::var(subject, ty);
@@ -30,11 +30,11 @@ pub fn structural_resolve<'tcx>(
                 .map(|var| {
                     let (fields, exps): (_, Vec<_>) = var
                         .fields
-                        .iter_enumerated()
-                        .map(|(ix, f)| {
-                            let sym = Symbol::intern(&format!("x{}", ix.as_usize()));
-                            let var = Term::var(sym, f.ty(ctx.tcx, args));
-                            (Pattern::Binder(sym), resolve_of(ctx, var))
+                        .iter()
+                        .map(|f| {
+                            let ident = why3::Ident::fresh(f.name.as_str());
+                            let var = Term::var(ident, f.ty(ctx.tcx, args));
+                            (Pattern::Binder(ident), resolve_of(ctx, var))
                         })
                         .unzip();
 
@@ -54,9 +54,9 @@ pub fn structural_resolve<'tcx>(
                 .iter()
                 .enumerate()
                 .map(|(i, ty)| {
-                    let sym = Symbol::intern(&format!("x{i}"));
-                    let var = Term::var(sym, ty);
-                    (Pattern::Binder(sym), resolve_of(ctx, var))
+                    let ident = why3::Ident::fresh(format!{"_{i}"});
+                    let var = Term::var(ident, ty);
+                    (Pattern::Binder(ident), resolve_of(ctx, var))
                 })
                 .unzip();
 
