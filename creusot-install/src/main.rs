@@ -131,7 +131,7 @@ fn install_why3(cfg: &CfgPaths) -> anyhow::Result<()> {
         // Upgrade existing switch
         fs::copy(PathBuf::from("creusot-deps.opam"), &cfg.data_dir.join("creusot-deps.opam"))?;
         let mut cmd = Command::new("opam");
-        cmd.args(["install", "creusot-deps", "-y", "--switch", &cfg.data_dir.to_string_lossy()]); // use creusot-deps.opam
+        cmd.args(["install", "creusot-deps", "-y", "--switch"]).arg(&cfg.data_dir); // use creusot-deps.opam
         if !cmd.status()?.success() {
             bail!("Failed to upgrade why3 and why3find")
         }
@@ -139,7 +139,7 @@ fn install_why3(cfg: &CfgPaths) -> anyhow::Result<()> {
         fs::create_dir_all(&cfg.data_dir)?;
         fs::copy(PathBuf::from("creusot-deps.opam"), &cfg.data_dir.join("creusot-deps.opam"))?;
         let mut cmd = Command::new("opam");
-        cmd.args(["switch", "create", "-y", &cfg.data_dir.to_string_lossy()]);
+        cmd.args(["switch", "create", "-y"]).arg(&cfg.data_dir);
         if !cmd.status()?.success() {
             bail!("Failed to create opam switch")
         }
@@ -162,10 +162,9 @@ fn install_creusot_rustc(cfg: &setup::CfgPaths) -> anyhow::Result<()> {
     let toolchain = setup::toolchain_channel();
     let _ = fs::remove_dir_all(&cfg.data_dir.join("toolchains"));
     // Usually ~/.local/share/creusot/toolchains/nightly-YYYY-MM-DD/
-    let toolchain_dir =
-        &setup::toolchain_dir(&cfg.data_dir, &toolchain).into_os_string().into_string().unwrap();
+    let toolchain_dir = &setup::toolchain_dir(&cfg.data_dir, &toolchain);
     let mut cmd = Command::new("cargo");
-    cmd.args(["install", "--path", "creusot-rustc", "--root", toolchain_dir, "--quiet"]);
+    cmd.args(["install", "--path", "creusot-rustc", "--quiet", "--root"]).arg(toolchain_dir);
     if !cmd.status()?.success() {
         bail!("Failed to install creusot-rustc")
     }
@@ -190,9 +189,11 @@ fn install_tools(paths: &setup::CfgPaths, args: Args) -> anyhow::Result<()> {
         Ok(path)
     };
     let get_opam_path = |tool| -> anyhow::Result<PathBuf> {
-        let data_dir = &paths.data_dir.to_string_lossy();
+        let data_dir = &paths.data_dir;
         let output = Command::new("opam")
-            .args(["exec", "--switch", data_dir, "--", "which", tool])
+            .args(["exec", "--switch"])
+            .arg(data_dir)
+            .args(["--", "which", tool])
             .output()?;
         Ok(PathBuf::from(OsStr::from_bytes(output.stdout.trim_ascii_end())))
     };
