@@ -11,6 +11,102 @@ Creusot is currently best suited for the verification of code like data-structur
 <!-- next-header -->
 
 ## [Unreleased] - ReleaseDate
+
+### Main features
+
+#### Bitwise mode
+
+The new `#[bitwise_proof]` attribute makes Creusot interpret machine integers as bit vectors instead of bounded integers,
+giving meaning to bitwise operations.
+Bitwise operators have an abstract specification when this attribute is not on.
+
+Along with this feature, Pearlite is also extended with:
+
+- arithmetic operations on machine integers, with a wrapping semantics;
+- casts (`n as usize`).
+
+Thanks to Laurent Schneider @laurentder.
+
+#### Closure inference
+
+Contracts for closures can now be omitted, to be inferred through Coma's novel `extspec` mechanism.
+
+#### Prove with Why3find
+
+The new command `cargo creusot prove` launches Why3find to automatically
+generate proofs. This removes the need for manually editing sessions through
+the Why3 IDE. The Why3 IDE remains useful to debug incomplete proofs,
+via `cargo creusot prove -i`.
+
+This more automated solution prevents the use of manual transformations,
+such as `exists` to instantiate existential quantifiers.
+This may require restructuring code to be more proof-friendly.
+There are known challenges of that sort surrounding the specification
+of iterators in `creusot-contracts`.
+
+#### Documentation
+
+- The [Creusot tutorial](https://creusot-rs.github.io/creusot/guide/tutorial.html) is an introduction to verify Rust programs with Creusot.
+- The `creusot-contracts` API documentation is [available online](https://creusot-rs.github.io/creusot/doc/creusot_contracts/). It contains information about Creusot's attributes and macros (supplementing the [guide](https://creusot-rs.github.io/creusot/guide/)), and lists available functions and methods along with their contracts, including logic functions (which would be omitted by a simple `cargo doc`).
+
+### Other improvements
+
+#### Installation
+
+The new `./INSTALL` script handles installing Creusot and tools (Why3, Why3find, and SMT solvers). It assumes that `cargo` and `opam` are installed.
+In particular, `./INSTALL` creates an Opam switch dedicated to Creusot to ensure Why3 and Why3find remain available at their expected versions.
+
+Just run `./INSTALL`.
+
+#### Setting up new projects
+
+The `cargo creusot new` and `cargo creusot init` generate the boilerplate to
+get you started with a new verified Rust project.
+
+#### Build with stable Rust compiler
+
+Rust code containing Creusot contracts can now be compiled with a stable Rust compiler.
+This is made possible by the following changes:
+
+- make `creusot-contracts` buildable with a stable Rust compiler;
+- hide `#[invariant(...)]` attributes, whose parsing requires the unstable features `proc_macro_hygiene` and `stmt_expr_attributes`.
+
+#### Coma
+
+Type translations are inlined in modules that use them. With this change, every Rust function is translated to a standalone module.
+
+Improved metadata on goals: source spans are more accurate and labels are more informative (ensures, requires, and invariants are numbered).
+
+The `prelude` (the Coma library imported by Creusot-translated artifacts) has been renamed to `creusot`.
+
+### Standard library (`creusot-contracts`)
+
+- Add extern specs for `get_unchecked` and `get_unchecked_mut` (slice methods) (#1382).
+- Add `Mapping::index_logic` (you can write `f[x]`) and `such_that` (#1296).
+- Implement `Clone` on `Seq`, `FMap`, `FSet` (#1289).
+- Add `FMap::index_logic` (#1254).
+- Rename `Seq::{push,pop}` to `{push_back,pop_back}`, add `{push_front,pop_front}` (#1224).
+- Add `std::cmp` and `Ord` functions (#1305).
+- Add specs for `HashSet`, `FSet`, and some iterators (ranges, `filter_map`, `rev`) (#1313).
+- Implement `View`, `DeepModel`, and `Default` for `char` (#1381).
+
+#### Iterators
+
+- Add `Iterator` impls for `[T;N]` and `&mut I` (#1290).
+- Add specs for iterators of `HashMap` and `HashSet` (#1306).
+- Remove redundant `inv` in iterator specs (#1291).
+
+#### Ghosts
+
+- Add `PCell`: interior mutability with ghost ownership (#1262).
+- Enable logic data structures to be used in ghost code (#1073).
+- Add `Int` literals for ghost code, e.g, `1int` (#1256).
+- Allow arithmetic operators on `Int` in ghost code (#1281).
+- Add specs for raw pointers and ghost ownership for pointers (#1169).
+- Add `FMap::split_mut_ghost` (#1356).
+- Fix spec of `FMap::get_mut_ghost` (#1253).
+- Strengthen `PtrOwn::disjoint_lemma` (#1295).
+
 ## [0.3.0] - 2024-10-27 
 
 ### Cargo Creusot
