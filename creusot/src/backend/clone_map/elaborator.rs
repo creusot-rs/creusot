@@ -5,6 +5,7 @@ use std::{
 
 use crate::{
     backend::{
+        Namer, TranslationCtx, Why3Generator,
         clone_map::{CloneNames, Dependency, Kind},
         is_trusted_function,
         logic::{lower_logical_defn, spec_axiom},
@@ -14,7 +15,6 @@ use crate::{
         term::lower_pure,
         ty::{eliminator, translate_closure_ty, translate_ty, translate_tydecl},
         ty_inv::InvariantElaborator,
-        Namer, TranslationCtx, Why3Generator,
     },
     constant::from_ty_const,
     contracts_items::{
@@ -25,7 +25,7 @@ use crate::{
     },
     ctx::{BodyId, ItemType},
     function::closure_resolve,
-    pearlite::{normalize, Term},
+    pearlite::{Term, normalize},
     specification::PreSignature,
     traits::{self, TraitResolved},
 };
@@ -36,9 +36,9 @@ use rustc_middle::ty::{
     Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv,
     UnevaluatedConst,
 };
-use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_type_ir::{ConstKind, EarlyBinder};
-use why3::declaration::{Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use};
+use why3::declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use};
 
 /// Weak dependencies are allowed to form cycles in the graph, but strong ones cannot,
 /// weak dependencies are used to perform an initial stratification of the dependency graph.
@@ -84,7 +84,7 @@ impl<'a, 'tcx> Namer<'tcx> for ExpansionProxy<'a, 'tcx> {
         self.namer.tcx()
     }
 
-    fn span(&self, span: Span) -> Option<why3::declaration::Attribute> {
+    fn span(&self, span: Span) -> Option<Attribute> {
         self.namer.span(span)
     }
 
@@ -102,7 +102,7 @@ trait DepElab {
         elab: &mut Expander<'_, 'tcx>,
         ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
-    ) -> Vec<why3::declaration::Decl>;
+    ) -> Vec<Decl>;
 }
 
 struct ProgElab;
@@ -112,7 +112,7 @@ impl DepElab for ProgElab {
         elab: &mut Expander<'_, 'tcx>,
         ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
-    ) -> Vec<why3::declaration::Decl> {
+    ) -> Vec<Decl> {
         if let Dependency::Item(def_id, subst) = dep
             && ctx.def_kind(def_id) != DefKind::Closure
         {
@@ -158,7 +158,7 @@ impl DepElab for LogicElab {
         elab: &mut Expander<'_, 'tcx>,
         ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
-    ) -> Vec<why3::declaration::Decl> {
+    ) -> Vec<Decl> {
         assert!(matches!(dep, Dependency::Item(_, _) | Dependency::TyInvAxiom(_)));
 
         // TODO: Fold into `term`, but requires first some sort of
@@ -192,7 +192,7 @@ impl DepElab for LogicElab {
                         name: qname.module.clone(),
                         as_: None,
                         export: false,
-                    })]
+                    })];
                 }
                 Kind::Unnamed => unreachable!(),
             }
@@ -250,14 +250,14 @@ impl DepElab for TyElab {
         elab: &mut Expander<'_, 'tcx>,
         ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
-    ) -> Vec<why3::declaration::Decl> {
+    ) -> Vec<Decl> {
         let Dependency::Type(ty) = dep else { unreachable!() };
         let param_env = elab.typing_env;
         let mut names = elab.namer(dep);
         match ty.kind() {
             TyKind::Param(_) => vec![Decl::TyDecl(TyDecl::Opaque {
                 ty_name: names.ty_param(ty).as_ident(),
-                ty_params: vec![],
+                ty_params: Box::new([]),
             })],
             TyKind::Alias(_, _) => {
                 let (def_id, subst) = dep.did().unwrap();
@@ -267,7 +267,7 @@ impl DepElab for TyElab {
                 );
                 vec![Decl::TyDecl(TyDecl::Opaque {
                     ty_name: names.ty(def_id, subst).as_ident(),
-                    ty_params: vec![],
+                    ty_params: Box::new([]),
                 })]
             }
             TyKind::Closure(did, subst) => translate_closure_ty(ctx, &mut names, *did, subst)
@@ -437,7 +437,7 @@ fn expand_laws<'tcx>(
 }
 
 fn val(ctx: &Why3Generator, mut sig: Signature, kind: Option<DeclKind>) -> Vec<Decl> {
-    sig.contract.variant = Vec::new();
+    sig.contract.variant = None;
     if let Some(k) = kind {
         let ax = if !sig.contract.is_empty() { Some(spec_axiom(&sig)) } else { None };
 
@@ -480,7 +480,7 @@ fn resolve_term<'tcx>(
         match traits::TraitResolved::resolve_item(ctx.tcx, typing_env, trait_meth_id, subst) {
             traits::TraitResolved::Instance(meth_did, meth_substs) => {
                 // We know the instance => body points to it
-                Some(Term::call(ctx.tcx, typing_env, meth_did, meth_substs, vec![arg]))
+                Some(Term::call(ctx.tcx, typing_env, meth_did, meth_substs, Box::new([arg])))
             }
             traits::TraitResolved::UnknownFound | traits::TraitResolved::UnknownNotFound => {
                 // We don't know the instance => body is opaque
@@ -515,14 +515,14 @@ fn fn_once_postcond_term<'tcx>(
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            let args = vec![self_.clone().cur(), args, self_.fin(), res];
+            let args = Box::new([self_.clone().cur(), args, self_.fin(), res]);
             Some(Term::call(tcx, typing_env, get_fn_mut_impl_postcond(tcx), subst_postcond, args))
         }
         TyKind::Ref(_, cl, Mutability::Not) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            let args = vec![self_.cur(), args, res];
+            let args = Box::new([self_.coerce(*cl), args, res]);
             Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, args))
         }
         _ => None,
@@ -551,20 +551,20 @@ fn fn_mut_postcond_term<'tcx>(
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            let args = vec![self_.clone().cur(), args, result_state.clone().cur(), res];
+            let args = Box::new([self_.clone().cur(), args, result_state.clone().cur(), res]);
             Some(
                 Term::call(tcx, typing_env, get_fn_mut_impl_postcond(tcx), subst_postcond, args)
-                    .conj(Term::eq(ctx.tcx, self_.fin(), result_state.fin())),
+                    .conj(self_.fin().eq(ctx.tcx, result_state.fin())),
             )
         }
         TyKind::Ref(_, cl, Mutability::Not) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            let args = vec![self_.clone().cur(), args, res];
+            let args = Box::new([self_.clone().coerce(*cl), args, res]);
             Some(
                 Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, args)
-                    .conj(Term::eq(ctx.tcx, self_, result_state)),
+                    .conj(self_.eq(ctx.tcx, result_state)),
             )
         }
         _ => None,
@@ -592,7 +592,7 @@ fn fn_postcond_term<'tcx>(
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            let args = vec![self_.clone().cur(), args, res];
+            let args = Box::new([self_.clone().coerce(*cl), args, res]);
             Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, args))
         }
         _ => None,

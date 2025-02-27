@@ -1,11 +1,11 @@
 use clap::*;
-use creusot_args::{options::*, CREUSOT_RUSTC_ARGS};
+use creusot_args::{CREUSOT_RUSTC_ARGS, options::*};
 use creusot_setup as setup;
 use std::{
     env,
     io::Write,
     path::{Display, PathBuf},
-    process::{exit, Command},
+    process::{Command, exit},
 };
 use tempdir::TempDir;
 
@@ -124,7 +124,9 @@ fn invoke_cargo(args: &CreusotArgs, creusot_rustc: Option<PathBuf>, cargo_flags:
     };
     // creusot_rustc binary exists
     if !creusot_rustc_path.exists() {
-        eprintln!("creusot-rustc not found (expected at {creusot_rustc_path:?}). You should reinstall Creusot.");
+        eprintln!(
+            "creusot-rustc not found (expected at {creusot_rustc_path:?}). You should reinstall Creusot."
+        );
         exit(1);
     }
     let mut cmd = Command::new(cargo_path);
@@ -353,9 +355,5 @@ fn find_dangling_rec(dir: &PathBuf) -> Result<Option<Vec<FileOrDirectory>>> {
             all_dangling = false;
         }
     }
-    if all_dangling {
-        Ok(None)
-    } else {
-        Ok(Some(dangling))
-    }
+    if all_dangling { Ok(None) } else { Ok(Some(dangling)) }
 }

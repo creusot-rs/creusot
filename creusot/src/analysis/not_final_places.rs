@@ -2,14 +2,16 @@ use rustc_borrowck::consumers::PlaceConflictBias;
 use rustc_index::bit_set::MixedBitSet;
 use rustc_middle::{
     mir::{
-        self,
+        self, Location, Place, PlaceRef, ProjectionElem, TerminatorKind,
         visit::{MutatingUseContext, NonMutatingUseContext, NonUseContext, PlaceContext, Visitor},
-        Location, Place, PlaceRef, ProjectionElem, TerminatorKind,
     },
     ty::{List, TyCtxt},
 };
-use rustc_mir_dataflow::{fmt::DebugWithContext, Analysis, Backward, GenKill, ResultsCursor};
-use std::collections::{hash_map, HashMap};
+use rustc_mir_dataflow::{Analysis, Backward, GenKill, ResultsCursor, fmt::DebugWithContext};
+use std::{
+    collections::{HashMap, hash_map},
+    iter::once,
+};
 
 use crate::extended_location::ExtendedLocation;
 
@@ -75,9 +77,7 @@ impl<'tcx> NotFinalPlaces<'tcx> {
         impl<'tcx> Visitor<'tcx> for VisitAllPlaces<'tcx> {
             fn visit_place(&mut self, place: &Place<'tcx>, _: PlaceContext, _: Location) {
                 let place_ref = place.as_ref();
-                for place in
-                    std::iter::once(place_ref).chain(place_ref.iter_projections().map(|(p, _)| p))
-                {
+                for place in once(place_ref).chain(place_ref.iter_projections().map(|(p, _)| p)) {
                     let idx = self.places_ids.len();
                     if let hash_map::Entry::Vacant(entry) = self.places_ids.entry(place) {
                         self.places.push(place);

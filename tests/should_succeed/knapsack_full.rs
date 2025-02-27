@@ -13,11 +13,7 @@ pub struct Item<Name> {
 
 #[ensures(result@ == a@.max(b@))]
 fn max(a: usize, b: usize) -> usize {
-    if a < b {
-        b
-    } else {
-        a
-    }
+    if a < b { b } else { a }
 }
 
 #[logic]

@@ -6,7 +6,7 @@ use std::collections::HashSet;
 
 use crate::translation::{
     fmir::*,
-    pearlite::{super_visit_term, Term, TermKind, TermVisitor},
+    pearlite::{Term, TermKind, TermVisitor, super_visit_term},
 };
 
 pub mod invariants;

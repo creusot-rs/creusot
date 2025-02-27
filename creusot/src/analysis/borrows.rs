@@ -1,6 +1,6 @@
 use rustc_borrowck::consumers::{
-    calculate_borrows_out_of_scope_at_location, BorrowIndex, BorrowSet, PlaceConflictBias,
-    PlaceExt, RegionInferenceContext,
+    BorrowIndex, BorrowSet, PlaceConflictBias, PlaceExt, RegionInferenceContext,
+    calculate_borrows_out_of_scope_at_location,
 };
 use rustc_data_structures::fx::FxIndexMap;
 use rustc_index::bit_set::MixedBitSet;

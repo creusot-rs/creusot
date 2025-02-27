@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 
 use crate::{
-    backend::{clone_map::elaborator::Expander, dependency::Dependency, Why3Generator},
+    backend::{Why3Generator, clone_map::elaborator::Expander, dependency::Dependency},
     contracts_items::{get_builtin, get_inv_function, is_bitwise},
     ctx::*,
     options::SpanMode,
@@ -24,8 +24,8 @@ use rustc_middle::{
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use why3::{
-    declaration::{Attribute, Decl, TyDecl},
     Ident, QName,
+    declaration::{Attribute, Decl, Span as WSpan, TyDecl},
 };
 
 mod elaborator;
@@ -48,10 +48,10 @@ pub enum PreludeModule {
     UInt128,
     Char,
     Bool,
-    Borrow,
+    MutBorrow,
     Slice,
     Opaque,
-    Intrinsic,
+    Any,
 }
 
 pub(crate) trait Namer<'tcx> {
@@ -126,7 +126,7 @@ pub(crate) trait Namer<'tcx> {
         self.dependency(Dependency::Builtin(module));
     }
 
-    fn prelude_module_name(&self, module: PreludeModule) -> Vec<Ident> {
+    fn prelude_module_name(&self, module: PreludeModule) -> Box<[Ident]> {
         self.dependency(Dependency::Builtin(module));
         let qname: QName = match (module, self.bitwise_mode()) {
             (PreludeModule::Float32, _) => "creusot.float.Float32.".into(),
@@ -155,11 +155,11 @@ pub(crate) trait Namer<'tcx> {
             (PreludeModule::Char, _) => "creusot.prelude.Char.".into(),
             (PreludeModule::Opaque, _) => "creusot.prelude.Opaque.".into(),
             (PreludeModule::Bool, _) => "creusot.prelude.Bool.".into(),
-            (PreludeModule::Borrow, _) => "creusot.prelude.MutBorrow.".into(),
+            (PreludeModule::MutBorrow, _) => "creusot.prelude.MutBorrow.".into(),
             (PreludeModule::Slice, _) => {
                 format!("creusot.slice.Slice{}.", self.tcx().sess.target.pointer_width).into()
             }
-            (PreludeModule::Intrinsic, _) => "creusot.prelude.Intrinsic.".into(),
+            (PreludeModule::Any, _) => "creusot.prelude.Any.".into(),
         };
         qname.module
     }
@@ -172,7 +172,7 @@ pub(crate) trait Namer<'tcx> {
 
     fn tcx(&self) -> TyCtxt<'tcx>;
 
-    fn span(&self, span: Span) -> Option<why3::declaration::Attribute>;
+    fn span(&self, span: Span) -> Option<Attribute>;
 
     fn bitwise_mode(&self) -> bool;
 }
@@ -196,7 +196,7 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
         self.tcx
     }
 
-    fn span(&self, span: Span) -> Option<why3::declaration::Attribute> {
+    fn span(&self, span: Span) -> Option<Attribute> {
         let path = path_of_span(self.tcx, span, &self.span_mode)?;
         let cnt = self.spans.len();
         let name = self.spans.insert(span, |_| {
@@ -470,7 +470,7 @@ impl<'tcx> Dependencies<'tcx> {
             self.self_id
         );
 
-        let spans: Vec<why3::declaration::Span> = self
+        let spans: Box<[WSpan]> = self
             .names
             .spans
             .into_iter()
@@ -482,15 +482,8 @@ impl<'tcx> Dependencies<'tcx> {
                     } else {
                         return None;
                     };
-
-                Some(why3::declaration::Span {
-                    name: b.0.as_str().into(),
-                    path,
-                    start_line,
-                    start_column,
-                    end_line,
-                    end_column,
-                })
+                let name = b.0.as_str().into();
+                Some(WSpan { name, path, start_line, start_column, end_line, end_column })
             })
             .collect();
 

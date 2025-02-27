@@ -1,17 +1,17 @@
 use crate::{backend::Namer, ctx::PreludeModule, fmir::Place, naming::ident_of};
 use rustc_middle::{
-    mir::{self, tcx::PlaceTy, ProjectionElem},
+    mir::{self, ProjectionElem, tcx::PlaceTy},
     ty::{Ty, TyCtxt, TyKind},
 };
 use rustc_span::Symbol;
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, iter::repeat_n, rc::Rc};
 use why3::{
-    coma::{Arg, Expr, Param},
+    Ident,
+    coma::{Arg, Param},
     exp::{
         Exp::{self, *},
         Pattern::*,
     },
-    Ident,
 };
 
 use super::program::{IntermediateStmt, LoweringState};
@@ -75,7 +75,10 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     focus = Focus::new(move |is| focus.call(is).field("current"));
                     constructor = Box::new(move |is, t| {
                         let record = Box::new(focus1.call(is));
-                        constructor(is, RecUp { record, updates: vec![("current".into(), t)] })
+                        constructor(is, RecUp {
+                            record,
+                            updates: Box::new([("current".into(), t)]),
+                        })
                     });
                 }
             }
@@ -83,7 +86,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                 TyKind::Adt(def, subst) if def.is_enum() => {
                     let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
                     let variant = &def.variants()[variant_id];
-                    let fields: Vec<_> = variant
+                    let fields: Box<[_]> = variant
                         .fields
                         .iter()
                         .map(|f| {
@@ -95,19 +98,15 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                         .collect();
 
                     let acc_name = lower.names.eliminator(variant.def_id, subst);
-                    let args = vec![Arg::Term(focus.call(istmts))];
-                    istmts.push(IntermediateStmt::Call(
-                        fields.clone(),
-                        Expr::Symbol(acc_name),
-                        args,
-                    ));
+                    let args = Box::new([Arg::Term(focus.call(istmts))]);
+                    istmts.push(IntermediateStmt::Call(fields.clone(), acc_name, args));
 
                     let foc = Exp::var(fields[ix.as_usize()].as_term().0.clone());
                     focus = Focus::new(|_| foc);
 
-                    constructor = Box::new(|is, t| {
+                    constructor = Box::new(move |is, t| {
                         let constr = Exp::qvar(lower.names.constructor(variant.def_id, subst));
-                        let mut fields: Vec<_> =
+                        let mut fields: Box<[_]> =
                             fields.into_iter().map(|f| Exp::var(f.as_term().0.clone())).collect();
                         fields[ix.as_usize()] = t;
                         constructor(is, constr.app(fields))
@@ -123,10 +122,10 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     });
 
                     constructor = Box::new(move |is, t| {
-                        let updates = vec![(
+                        let updates = Box::new([(
                             lower.names.field(def.did(), subst, *ix).as_ident().to_string(),
                             t,
-                        )];
+                        )]);
                         if def.all_fields().count() == 1 {
                             constructor(is, Exp::Record { fields: updates })
                         } else {
@@ -140,7 +139,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
 
                     focus = Focus::new(move |is| {
                         let var = lower.fresh_from("r");
-                        let mut pat = vec![Wildcard; fields.len()];
+                        let mut pat: Box<[_]> = repeat_n(Wildcard, fields.len()).collect();
                         pat[ix.as_usize()] = VarP(var.clone());
                         Let {
                             pattern: TupleP(pat.clone()),
@@ -154,10 +153,10 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                             fields.iter().map(|_| lower.fresh_from("r")).collect();
 
                         let mut field_pats =
-                            var_names.clone().into_iter().map(VarP).collect::<Vec<_>>();
+                            var_names.clone().into_iter().map(VarP).collect::<Box<[_]>>();
                         field_pats[ix.as_usize()] = Wildcard;
 
-                        let mut varexps = var_names.into_iter().map(Exp::var).collect::<Vec<_>>();
+                        let mut varexps = var_names.into_iter().map(Exp::var).collect::<Box<[_]>>();
                         varexps[ix.as_usize()] = t;
 
                         let tuple = Let {
@@ -177,8 +176,10 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     });
 
                     constructor = Box::new(move |is, t| {
-                        let updates =
-                            vec![(lower.names.field(*id, subst, *ix).as_ident().to_string(), t)];
+                        let updates = Box::new([(
+                            lower.names.field(*id, subst, *ix).as_ident().to_string(),
+                            t,
+                        )]);
 
                         if subst.as_closure().upvar_tys().len() == 1 {
                             constructor(is, Exp::Record { fields: updates })
@@ -204,9 +205,9 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     let result = lower.fresh_from("r");
                     let foc = focus.call(is);
                     is.push(IntermediateStmt::Call(
-                        vec![Param::Term(result.clone(), elt_ty1.clone())],
-                        Expr::Symbol(lower.names.from_prelude(PreludeModule::Slice, "get")),
-                        vec![Arg::Ty(elt_ty1), Arg::Term(foc), Arg::Term(ix_exp1)],
+                        Box::new([Param::Term(result.clone(), elt_ty1.clone())]),
+                        lower.names.from_prelude(PreludeModule::Slice, "get"),
+                        Box::new([Arg::Ty(elt_ty1), Arg::Term(foc), Arg::Term(ix_exp1)]),
                     ));
 
                     Exp::qvar(result.into())
@@ -218,9 +219,14 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     let foc = focus1.call(is);
 
                     is.push(IntermediateStmt::Call(
-                        vec![Param::Term(out.clone(), ty)],
-                        Expr::Symbol(lower.names.from_prelude(PreludeModule::Slice, "set")),
-                        vec![Arg::Ty(elt_ty), Arg::Term(foc), Arg::Term(ix_exp), Arg::Term(rhs)],
+                        Box::new([Param::Term(out.clone(), ty)]),
+                        lower.names.from_prelude(PreludeModule::Slice, "set"),
+                        Box::new([
+                            Arg::Ty(elt_ty),
+                            Arg::Term(foc),
+                            Arg::Term(ix_exp),
+                            Arg::Term(rhs),
+                        ]),
                     ));
                     constructor(is, Exp::qvar(out.into()))
                 });

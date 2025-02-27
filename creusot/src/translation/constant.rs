@@ -6,10 +6,10 @@ use crate::{
     translation::pearlite::Literal,
 };
 use rustc_middle::{
-    mir::{self, interpret::AllocRange, ConstValue, UnevaluatedConst},
+    mir::{self, ConstValue, UnevaluatedConst, interpret::AllocRange},
     ty::{Const, ConstKind, Ty, TyCtxt, TypingEnv},
 };
-use rustc_span::{Span, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::Size;
 
 use super::pearlite::{Term, TermKind};
@@ -34,7 +34,7 @@ fn from_mir_constant_kind<'tcx>(
 
     if ck.ty().is_unit() {
         return Operand::Constant(Term {
-            kind: TermKind::Tuple { fields: Vec::new() },
+            kind: TermKind::Tuple { fields: Box::new([]) },
             ty: ck.ty(),
             span,
         });
@@ -90,7 +90,7 @@ pub(crate) fn from_ty_const<'tcx>(
         ctx.crash_and_error(span, "const generic parameters are not yet supported");
     }
 
-    return Term { kind: TermKind::Lit(try_to_bits(ctx, env, ty, span, c)), ty: ty, span };
+    return Term { kind: TermKind::Lit(try_to_bits(ctx, env, ty, span, c)), ty, span };
 }
 
 fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(

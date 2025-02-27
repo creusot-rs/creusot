@@ -38,11 +38,12 @@ module M_15_enumerate__qyi3289565171142109185__produces_refl [#"15_enumerate.rs"
   let%span scommon5 = "common.rs" 19 15 19 32
   let%span scommon6 = "common.rs" 20 14 20 42
   
-  use seq.Seq
+  type t_I'0
   
   use creusot.int.UInt64
   
-  type t_I'0
+  type t_Enumerate'0  =
+    { t_Enumerate__iter'0: t_I'0; t_Enumerate__count'0: UInt64.t }
   
   use seq.Seq
   
@@ -66,9 +67,6 @@ module M_15_enumerate__qyi3289565171142109185__produces_refl [#"15_enumerate.rs"
   
   use seq.Seq
   
-  type t_Enumerate'0  =
-    { t_Enumerate__iter'0: t_I'0; t_Enumerate__count'0: UInt64.t }
-  
   use seq.Seq
   
   use creusot.int.UInt64
@@ -90,6 +88,8 @@ module M_15_enumerate__qyi3289565171142109185__produces_refl [#"15_enumerate.rs"
     /\ (forall i : int . 0 <= i /\ i < Seq.length s
      -> UInt64.t'int (let (a, _) = Seq.get visited i in a) = UInt64.t'int self.t_Enumerate__count'0 + i
     /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
+  
+  use seq.Seq
   
   constant self  : t_Enumerate'0
   
@@ -287,24 +287,24 @@ module M_15_enumerate__qyi3289565171142109185__next [#"15_enumerate.rs" 55 4 55 
     | {t_Enumerate__iter'0 = iter ; t_Enumerate__count'0 = count} -> inv'0 iter
     end)
   
-  predicate invariant'0 (self : MutBorrow.t (t_Enumerate'0)) =
+  predicate invariant'0 (self : MutBorrow.t t_Enumerate'0) =
     [%#sinvariant14] inv'7 self.current /\ inv'7 self.final
   
-  predicate inv'1 (_1 : MutBorrow.t (t_Enumerate'0))
+  predicate inv'1 (_1 : MutBorrow.t t_Enumerate'0)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t (t_Enumerate'0) [inv'1 x] . inv'1 x = invariant'0 x
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_Enumerate'0 [inv'1 x] . inv'1 x = invariant'0 x
   
-  predicate resolve'1 (self : MutBorrow.t (t_Enumerate'0)) =
+  predicate resolve'1 (self : MutBorrow.t t_Enumerate'0) =
     [%#sresolve13] self.final = self.current
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_Enumerate'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t t_Enumerate'0) =
     resolve'1 _1
   
   type t_Option'1  =
     | C_None'1
     | C_Some'1 (UInt64.t, t_Item'0)
   
-  use creusot.prelude.Intrinsic
+  use creusot.prelude.Any
   
   predicate inv'5 (_1 : (UInt64.t, t_Item'0))
   
@@ -321,11 +321,9 @@ module M_15_enumerate__qyi3289565171142109185__next [#"15_enumerate.rs" 55 4 55 
   predicate resolve'2 (self : MutBorrow.t UInt64.t) =
     [%#sresolve13] self.final = self.current
   
-  predicate completed'0 [#"15_enumerate.rs" 23 4 23 35] (self : MutBorrow.t (t_Enumerate'0)) =
+  predicate completed'0 [#"15_enumerate.rs" 23 4 23 35] (self : MutBorrow.t t_Enumerate'0) =
     [%#s15_enumerate7] completed'1 (MutBorrow.borrow_logic (self.current).t_Enumerate__iter'0 (self.final).t_Enumerate__iter'0 (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
     /\ resolve'2 (MutBorrow.borrow_logic (self.current).t_Enumerate__count'0 (self.final).t_Enumerate__count'0 (MutBorrow.inherit_id (MutBorrow.get_id self) 2))
-  
-  use seq.Seq
   
   use seq.Seq
   
@@ -345,9 +343,11 @@ module M_15_enumerate__qyi3289565171142109185__next [#"15_enumerate.rs" 55 4 55 
      -> UInt64.t'int (let (a, _) = Seq.get visited i in a) = UInt64.t'int self.t_Enumerate__count'0 + i
     /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
   
+  use seq.Seq
+  
   meta "compute_max_steps" 1000000
   
-  let rec next'0[#"15_enumerate.rs" 55 4 55 44] (self:MutBorrow.t (t_Enumerate'0)) (return'  (ret:t_Option'1))= {[@expl:next 'self' type invariant] [%#s15_enumerate1] inv'1 self}
+  let rec next'0[#"15_enumerate.rs" 55 4 55 44] (self:MutBorrow.t t_Enumerate'0) (return'  (ret:t_Option'1))= {[@expl:next 'self' type invariant] [%#s15_enumerate1] inv'1 self}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'0 (self.current).t_Enumerate__iter'0}
@@ -384,13 +384,13 @@ module M_15_enumerate__qyi3289565171142109185__next [#"15_enumerate.rs" 55 4 55 
     | bb9 = bb10
     | bb10 = return' {_0} ]
     )
-    [ & _0 : t_Option'1 = Intrinsic.any_l ()
-    | & self : MutBorrow.t (t_Enumerate'0) = self
-    | & _3 : t_Option'0 = Intrinsic.any_l ()
-    | & _4 : MutBorrow.t t_I'0 = Intrinsic.any_l ()
-    | & x : t_Item'0 = Intrinsic.any_l ()
-    | & n : UInt64.t = Intrinsic.any_l ()
-    | & _8 : (UInt64.t, t_Item'0) = Intrinsic.any_l () ]
+    [ & _0 : t_Option'1 = Any.any_l ()
+    | & self : MutBorrow.t t_Enumerate'0 = self
+    | & _3 : t_Option'0 = Any.any_l ()
+    | & _4 : MutBorrow.t t_I'0 = Any.any_l ()
+    | & x : t_Item'0 = Any.any_l ()
+    | & n : UInt64.t = Any.any_l ()
+    | & _8 : (UInt64.t, t_Item'0) = Any.any_l () ]
     
     [ return' (result:t_Option'1)-> {[@expl:next result type invariant] [%#s15_enumerate2] inv'2 result}
       {[@expl:next ensures] [%#s15_enumerate3] match result with
@@ -420,7 +420,7 @@ module M_15_enumerate__enumerate [#"15_enumerate.rs" 88 0 88 54]
   type t_Enumerate'0  =
     { t_Enumerate__iter'0: t_I'0; t_Enumerate__count'0: UInt64.t }
   
-  use creusot.prelude.Intrinsic
+  use creusot.prelude.Any
   
   predicate inv'0 (_1 : t_I'0)
   
@@ -450,9 +450,9 @@ module M_15_enumerate__enumerate [#"15_enumerate.rs" 88 0 88 54]
   
   use seq.Seq
   
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
   use creusot.int.UInt64
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   use mach.int.Int
   
@@ -485,7 +485,7 @@ module M_15_enumerate__enumerate [#"15_enumerate.rs" 88 0 88 54]
     
     | bb3 = bb4
     | bb4 = return' {_0} ]
-    ) [ & _0 : t_Enumerate'0 = Intrinsic.any_l () | & iter : t_I'0 = iter ] 
+    ) [ & _0 : t_Enumerate'0 = Any.any_l () | & iter : t_I'0 = iter ] 
     [ return' (result:t_Enumerate'0)-> {[@expl:enumerate result type invariant] [%#s15_enumerate4] inv'1 result}
       {[@expl:enumerate ensures] [%#s15_enumerate5] result.t_Enumerate__iter'0 = iter
       /\ UInt64.t'int result.t_Enumerate__count'0 = 0}
@@ -645,12 +645,12 @@ module M_15_enumerate__qyi3289565171142109185__next__refines [#"15_enumerate.rs"
     | {t_Enumerate__iter'0 = iter ; t_Enumerate__count'0 = count} -> inv'5 iter
     end)
   
-  predicate invariant'0 (self : MutBorrow.t (t_Enumerate'0)) =
+  predicate invariant'0 (self : MutBorrow.t t_Enumerate'0) =
     [%#sinvariant4] inv'3 self.current /\ inv'3 self.final
   
-  predicate inv'0 (_1 : MutBorrow.t (t_Enumerate'0))
+  predicate inv'0 (_1 : MutBorrow.t t_Enumerate'0)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t (t_Enumerate'0) [inv'0 x] . inv'0 x = invariant'0 x
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_Enumerate'0 [inv'0 x] . inv'0 x = invariant'0 x
   
   type t_Option'0  =
     | C_None'0
@@ -659,11 +659,9 @@ module M_15_enumerate__qyi3289565171142109185__next__refines [#"15_enumerate.rs"
   predicate resolve'0 (self : MutBorrow.t UInt64.t) =
     [%#sresolve3] self.final = self.current
   
-  predicate completed'0 [#"15_enumerate.rs" 23 4 23 35] (self : MutBorrow.t (t_Enumerate'0)) =
+  predicate completed'0 [#"15_enumerate.rs" 23 4 23 35] (self : MutBorrow.t t_Enumerate'0) =
     [%#s15_enumerate1] completed'1 (MutBorrow.borrow_logic (self.current).t_Enumerate__iter'0 (self.final).t_Enumerate__iter'0 (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
     /\ resolve'0 (MutBorrow.borrow_logic (self.current).t_Enumerate__count'0 (self.final).t_Enumerate__count'0 (MutBorrow.inherit_id (MutBorrow.get_id self) 2))
-  
-  use seq.Seq
   
   use seq.Seq
   
@@ -683,6 +681,8 @@ module M_15_enumerate__qyi3289565171142109185__next__refines [#"15_enumerate.rs"
      -> UInt64.t'int (let (a, _) = Seq.get visited i in a) = UInt64.t'int self.t_Enumerate__count'0 + i
     /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
   
+  use seq.Seq
+  
   predicate inv'4 (_1 : t_Item'0)
   
   predicate inv'2 (_1 : (UInt64.t, t_Item'0))
@@ -697,7 +697,7 @@ module M_15_enumerate__qyi3289565171142109185__next__refines [#"15_enumerate.rs"
     | C_Some'0 a_0 -> inv'2 a_0
     end
   
-  goal refines : [%#s15_enumerate0] forall self : MutBorrow.t (t_Enumerate'0) . inv'0 self
+  goal refines : [%#s15_enumerate0] forall self : MutBorrow.t t_Enumerate'0 . inv'0 self
    -> inv'0 self
   /\ (forall result : t_Option'0 . match result with
     | C_None'0 -> completed'0 self
@@ -795,8 +795,6 @@ module M_15_enumerate__qyi3289565171142109185__produces_refl__refines [#"15_enum
   
   use seq.Seq
   
-  use seq.Seq
-  
   type t_Item'0
   
   use seq.Seq
@@ -836,6 +834,8 @@ module M_15_enumerate__qyi3289565171142109185__produces_refl__refines [#"15_enum
     /\ (forall i : int . 0 <= i /\ i < Seq.length s
      -> UInt64.t'int (let (a, _) = Seq.get visited i in a) = UInt64.t'int self.t_Enumerate__count'0 + i
     /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
+  
+  use seq.Seq
   
   goal refines : [%#s15_enumerate0] forall self : t_Enumerate'0 . forall result : () . produces'0 self (Seq.empty : Seq.seq (UInt64.t, t_Item'0)) self
    -> produces'0 self (Seq.empty : Seq.seq (UInt64.t, t_Item'0)) self

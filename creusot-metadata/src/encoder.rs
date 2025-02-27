@@ -1,20 +1,20 @@
 use crate::{
-    AbsoluteBytePos, EncodedSourceFileId, Footer, SourceFileIndex, SYMBOL_OFFSET,
-    SYMBOL_PREINTERNED, SYMBOL_STR, TAG_FULL_SPAN, TAG_PARTIAL_SPAN,
+    AbsoluteBytePos, EncodedSourceFileId, Footer, SYMBOL_OFFSET, SYMBOL_PREINTERNED, SYMBOL_STR,
+    SourceFileIndex, TAG_FULL_SPAN, TAG_PARTIAL_SPAN,
 };
 use rustc_data_structures::{fx::FxHashMap, sync::Lrc};
 use rustc_hir::def_id::{CrateNum, DefId, DefIndex};
 use rustc_middle::{
     dep_graph::DepContext,
-    ty::{self, codec::TyEncoder, PredicateKind, Ty, TyCtxt},
+    ty::{self, PredicateKind, Ty, TyCtxt, codec::TyEncoder},
 };
 use rustc_serialize::{
-    opaque::{FileEncoder, IntEncodedWithFixedSize},
     Encodable, Encoder,
+    opaque::{FileEncoder, IntEncodedWithFixedSize},
 };
 use rustc_span::{
-    hygiene::{raw_encode_syntax_context, HygieneEncodeContext},
     ExpnId, SourceFile, Span, Symbol, SyntaxContext,
+    hygiene::{HygieneEncodeContext, raw_encode_syntax_context},
 };
 use std::{
     collections::hash_map::Entry,

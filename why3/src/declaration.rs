@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Module {
     pub name: Ident,
-    pub decls: Vec<Decl>,
+    pub decls: Box<[Decl]>,
     pub attrs: Vec<Attribute>,
     // Meta data stored in comments
     // Stores a pretty representation of the impl
@@ -45,7 +45,7 @@ pub enum Decl {
     Goal(Goal),
     ConstantDecl(Constant),
     Coma(Defn),
-    LetSpans(Vec<Span>),
+    LetSpans(Box<[Span]>),
     Meta(Meta),
     Comment(String),
 }
@@ -89,24 +89,14 @@ impl Condition {
 #[derive(Debug, Default, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Contract {
-    pub requires: Vec<Condition>,
-    pub ensures: Vec<Condition>,
-    pub variant: Vec<Exp>,
+    pub requires: Box<[Condition]>,
+    pub ensures: Box<[Condition]>,
+    pub variant: Option<Exp>,
 }
 
 impl Contract {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn is_empty(&self) -> bool {
-        self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_empty()
-    }
-
-    pub fn extend(&mut self, other: Contract) {
-        self.requires.extend(other.requires);
-        self.ensures.extend(other.ensures);
-        self.variant.extend(other.variant);
+        self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_none()
     }
 
     pub fn ensures_conj(&self) -> Exp {
@@ -164,7 +154,7 @@ impl Contract {
             ens_visitor.visit_mut(&mut ens.exp);
         }
 
-        for var in self.variant.iter_mut() {
+        if let Some(ref mut var) = self.variant {
             var_visitor.visit_mut(var);
         }
     }
@@ -180,7 +170,7 @@ impl Contract {
             qfvs.extend(ens.exp.qfvs());
         }
 
-        for var in &self.variant {
+        if let Some(ref var) = self.variant {
             qfvs.extend(var.qfvs());
         }
 
@@ -203,7 +193,7 @@ pub struct Signature {
     pub trigger: Option<Trigger>, // None means we should use the "simple_trigger"
     pub attrs: Vec<Attribute>,
     pub retty: Option<Type>,
-    pub args: Vec<Binder>,
+    pub args: Box<[Binder]>,
     pub contract: Contract,
 }
 
@@ -230,31 +220,31 @@ pub struct Predicate {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum TyDecl {
-    Adt { tys: Vec<AdtDecl> },
-    Alias { ty_name: Ident, ty_params: Vec<Ident>, alias: Type },
-    Opaque { ty_name: Ident, ty_params: Vec<Ident> },
+    Adt { tys: Box<[AdtDecl]> },
+    Alias { ty_name: Ident, ty_params: Box<[Ident]>, alias: Type },
+    Opaque { ty_name: Ident, ty_params: Box<[Ident]> },
 }
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct AdtDecl {
     pub ty_name: Ident,
-    pub ty_params: Vec<Ident>,
+    pub ty_params: Box<[Ident]>,
     pub sumrecord: SumRecord,
 }
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum SumRecord {
-    Sum(Vec<ConstructorDecl>),
-    Record(Vec<FieldDecl>),
+    Sum(Box<[ConstructorDecl]>),
+    Record(Box<[FieldDecl]>),
 }
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct ConstructorDecl {
     pub name: Ident,
-    pub fields: Vec<Type>,
+    pub fields: Box<[Type]>,
 }
 
 #[derive(Debug, Clone)]
@@ -284,7 +274,7 @@ pub struct LogicDecl {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Use {
-    pub name: Vec<Ident>,
+    pub name: Box<[Ident]>,
     pub as_: Option<Ident>,
     pub export: bool,
 }
@@ -324,7 +314,7 @@ pub struct Constant {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Meta {
     pub name: MetaIdent,
-    pub args: Vec<MetaArg>,
+    pub args: Box<[MetaArg]>,
 }
 
 #[derive(Debug, Clone)]

@@ -1,9 +1,10 @@
 //! Defines all the internal creusot attributes.
 
 use rustc_ast::Param;
-use rustc_hir::{def_id::DefId, AttrArgs, Attribute};
+use rustc_hir::{AttrArgs, Attribute, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
+use why3::declaration::Attribute as WAttribute;
 
 /// Helper macro, converts `creusot::foo::bar` into `["creusot", "foo", "bar"]`.
 macro_rules! path_to_str {
@@ -93,10 +94,10 @@ pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol>
         .map(|a| a.value_str().expect("invalid creusot::clause::open"))
 }
 
-pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::Attribute> {
-    get_attrs(tcx.get_attrs_unchecked(def_id), &["why3", "attr"])
+pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<WAttribute> {
+    get_attrs(tcx.get_attrs_unchecked(def_id), &["creusot", "why3_attr"])
         .into_iter()
-        .map(|a| why3::declaration::Attribute::Attr(a.value_str().unwrap().as_str().into()))
+        .map(|a| WAttribute::Attr(a.value_str().unwrap().as_str().into()))
         .collect()
 }
 

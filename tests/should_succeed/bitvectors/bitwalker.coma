@@ -22,7 +22,7 @@ module M_bitwalker__peek_bit_u8 [#"bitwalker.rs" 9 0 9 42]
   
   use creusot.int.UInt8
   
-  use creusot.prelude.Intrinsic
+  use creusot.prelude.Any
   
   type t_Ordering'0  =
     | C_Less'0
@@ -32,7 +32,7 @@ module M_bitwalker__peek_bit_u8 [#"bitwalker.rs" 9 0 9 42]
   use creusot.int.UInt64
   
   function cmp_log'0 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
-    [%#sord17] if UInt64.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord17] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt64.t) (y : UInt64.t) : ()
   
@@ -61,50 +61,49 @@ module M_bitwalker__peek_bit_u8 [#"bitwalker.rs" 9 0 9 42]
   
   function cmp_gt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord7] UInt64.ugt x y = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord7] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   use creusot.int.UInt64
   
   function cmp_ge_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord6] UInt64.uge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord6] UInt64.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord5] UInt64.ult x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord5] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use creusot.int.UInt64
   
   function cmp_le_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord4] UInt64.ule x y
-  = (cmp_log'0 x y <> C_Greater'0)
+  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord4] UInt64.le x y = (cmp_log'0 x y <> C_Greater'0)
   
   meta "compute_max_steps" 1000000
   
-  let rec peek_bit_u8'0[#"bitwalker.rs" 9 0 9 42] (x:UInt8.t) (left:UInt64.t) (return'  (ret:bool))= {[@expl:peek_bit_u8 requires] [%#sbitwalker3] UInt64.ult left (8 : UInt64.t)}
+  let rec peek_bit_u8'0[#"bitwalker.rs" 9 0 9 42] (x:UInt8.t) (left:UInt64.t) (return'  (ret:bool))= {[@expl:peek_bit_u8 requires] [%#sbitwalker3] UInt64.lt left (8 : UInt64.t)}
     (! bb0
     [ bb0 = s0
       [ s0 = UInt64.sub {[%#sbitwalker0] (7 : UInt64.t)} {left} (fun (_ret':UInt64.t) ->  [ &_5 <- _ret' ] s1)
       | s1 = UInt8.shl {[%#sbitwalker1] (1 : UInt8.t)} {UInt64.t'int _5} (fun (_ret':UInt8.t) ->  [ &mask <- _ret' ] s2)
-      | s2 = UInt8.bw_and {x} {mask} (fun (_ret':UInt8.t) ->  [ &_7 <- _ret' ] s3)
-      | s3 = UInt8.ne {_7} {[%#sbitwalker2] (0 : UInt8.t)} (fun (_ret':bool) ->  [ &_0 <- _ret' ] s4)
+      | s2 =  [ &_7 <- UInt8.bw_and x mask ] s3
+      | s3 =  [ &_0 <- _7 <> ([%#sbitwalker2] (0 : UInt8.t)) ] s4
       | s4 = return' {_0} ]
      ]
     )
-    [ & _0 : bool = Intrinsic.any_l ()
+    [ & _0 : bool = Any.any_l ()
     | & x : UInt8.t = x
     | & left : UInt64.t = left
-    | & mask : UInt8.t = Intrinsic.any_l ()
-    | & _5 : UInt64.t = Intrinsic.any_l ()
-    | & _7 : UInt8.t = Intrinsic.any_l () ]
+    | & mask : UInt8.t = Any.any_l ()
+    | & _5 : UInt64.t = Any.any_l ()
+    | & _7 : UInt8.t = Any.any_l () ]
      [ return' (result:bool)-> (! return' {result}) ] 
 end
 module M_bitwalker__peek_bit_array8 [#"bitwalker.rs" 15 0 15 52]
-  let%span sbitwalker0 = "bitwalker.rs" 16 19 16 27
-  let%span sbitwalker1 = "bitwalker.rs" 16 26 16 27
-  let%span sbitwalker2 = "bitwalker.rs" 17 35 17 43
-  let%span sbitwalker3 = "bitwalker.rs" 17 42 17 43
+  let%span sbitwalker0 = "bitwalker.rs" 16 26 16 27
+  let%span sbitwalker1 = "bitwalker.rs" 16 19 16 27
+  let%span sbitwalker2 = "bitwalker.rs" 17 42 17 43
+  let%span sbitwalker3 = "bitwalker.rs" 17 35 17 43
   let%span sbitwalker4 = "bitwalker.rs" 19 20 19 25
   let%span sbitwalker5 = "bitwalker.rs" 20 12 20 17
   let%span sbitwalker6 = "bitwalker.rs" 19 12 19 26
@@ -156,13 +155,16 @@ module M_bitwalker__peek_bit_array8 [#"bitwalker.rs" 15 0 15 52]
   
   use seq.Seq
   
-  use seq.Seq
-  
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
   use creusot.int.UInt64
   
+  use seq.Seq
+  
   use mach.int.Int
+  
+  predicate in_bounds'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq UInt8.t) =
+    [%#sslice12] UInt64.t'int self < Seq.length seq
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   use creusot.slice.Slice64
   
@@ -174,9 +176,6 @@ module M_bitwalker__peek_bit_array8 [#"bitwalker.rs" 15 0 15 52]
   
   function view'0 (self : Slice64.slice UInt8.t) : Seq.seq UInt8.t =
     [%#smodel11] view'1 self
-  
-  predicate in_bounds'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq UInt8.t) =
-    [%#sslice12] UInt64.t'int self < Seq.length seq
   
   use seq.Seq
   
@@ -206,7 +205,7 @@ module M_bitwalker__peek_bit_array8 [#"bitwalker.rs" 15 0 15 52]
   use creusot.int.UInt64
   
   function cmp_log'0 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
-    [%#sord29] if UInt64.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord29] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt64.t) (y : UInt64.t) : ()
   
@@ -235,30 +234,29 @@ module M_bitwalker__peek_bit_array8 [#"bitwalker.rs" 15 0 15 52]
   
   function cmp_gt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord19] UInt64.ugt x y
-  = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord19] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   use creusot.int.UInt64
   
   function cmp_ge_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord18] UInt64.uge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord18] UInt64.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord17] UInt64.ult x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord17] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use creusot.int.UInt64
   
   function cmp_le_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord16] UInt64.ule x y
+  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord16] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
-  let rec peek_bit_u8'0 (x:UInt8.t) (left:UInt64.t) (return'  (ret:bool))= {[@expl:peek_bit_u8 requires] [%#sbitwalker10] UInt64.ult left (8 : UInt64.t)}
+  let rec peek_bit_u8'0 (x:UInt8.t) (left:UInt64.t) (return'  (ret:bool))= {[@expl:peek_bit_u8 requires] [%#sbitwalker10] UInt64.lt left (8 : UInt64.t)}
     any [ return' (result:bool)-> (! return' {result}) ] 
   
-  use creusot.prelude.Intrinsic
+  use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000
   
@@ -266,13 +264,12 @@ module M_bitwalker__peek_bit_array8 [#"bitwalker.rs" 15 0 15 52]
     < 8 * Seq.length (view'0 addr)}
     (! bb0
     [ bb0 = s0
-      [ s0 = UInt64.eq {[%#sbitwalker1] (8 : UInt64.t)} {[%#sbitwalker0] (0 : UInt64.t)}
-          (fun (_ret':bool) ->  [ &_8 <- _ret' ] s1)
-      | s1 = {[@expl:division by zero] [%#sbitwalker0] not _8} s2
+      [ s0 =  [ &_8 <- ([%#sbitwalker0] (8 : UInt64.t)) = ([%#sbitwalker1] (0 : UInt64.t)) ] s1
+      | s1 = {[@expl:division by zero] [%#sbitwalker1] not _8} s2
       | s2 = bb1 ]
     
     | bb1 = s0
-      [ s0 = UInt64.div {left} {[%#sbitwalker1] (8 : UInt64.t)} (fun (_ret':UInt64.t) ->  [ &_6 <- _ret' ] s1)
+      [ s0 = UInt64.div {left} {[%#sbitwalker0] (8 : UInt64.t)} (fun (_ret':UInt64.t) ->  [ &_6 <- _ret' ] s1)
       | s1 = get'0 {addr} {_6} (fun (_ret':t_Option'0) ->  [ &_4 <- _ret' ] s2)
       | s2 = bb2 ]
     
@@ -280,13 +277,12 @@ module M_bitwalker__peek_bit_array8 [#"bitwalker.rs" 15 0 15 52]
     | bb4 = bb6
     | bb6 = s0
       [ s0 = v_Some'0 {_4} (fun (r0'0:UInt8.t) ->  [ &v <- r0'0 ] s1)
-      | s1 = UInt64.eq {[%#sbitwalker3] (8 : UInt64.t)} {[%#sbitwalker2] (0 : UInt64.t)}
-          (fun (_ret':bool) ->  [ &_14 <- _ret' ] s2)
-      | s2 = {[@expl:remainder by zero] [%#sbitwalker2] not _14} s3
+      | s1 =  [ &_14 <- ([%#sbitwalker2] (8 : UInt64.t)) = ([%#sbitwalker3] (0 : UInt64.t)) ] s2
+      | s2 = {[@expl:remainder by zero] [%#sbitwalker3] not _14} s3
       | s3 = bb7 ]
     
     | bb7 = s0
-      [ s0 = UInt64.rem {left} {[%#sbitwalker3] (8 : UInt64.t)} (fun (_ret':UInt64.t) ->  [ &_12 <- _ret' ] s1)
+      [ s0 = UInt64.rem {left} {[%#sbitwalker2] (8 : UInt64.t)} (fun (_ret':UInt64.t) ->  [ &_12 <- _ret' ] s1)
       | s1 = peek_bit_u8'0 {v} {_12} (fun (_ret':bool) ->  [ &_0 <- _ret' ] s2)
       | s2 = bb8 ]
     
@@ -296,15 +292,15 @@ module M_bitwalker__peek_bit_array8 [#"bitwalker.rs" 15 0 15 52]
     | bb11 = return' {_0}
     | bb9 = {[%#sbitwalker6] false} any ]
     )
-    [ & _0 : bool = Intrinsic.any_l ()
+    [ & _0 : bool = Any.any_l ()
     | & addr : Slice64.slice UInt8.t = addr
     | & left : UInt64.t = left
-    | & _4 : t_Option'0 = Intrinsic.any_l ()
-    | & _6 : UInt64.t = Intrinsic.any_l ()
-    | & _8 : bool = Intrinsic.any_l ()
-    | & v : UInt8.t = Intrinsic.any_l ()
-    | & _12 : UInt64.t = Intrinsic.any_l ()
-    | & _14 : bool = Intrinsic.any_l () ]
+    | & _4 : t_Option'0 = Any.any_l ()
+    | & _6 : UInt64.t = Any.any_l ()
+    | & _8 : bool = Any.any_l ()
+    | & v : UInt8.t = Any.any_l ()
+    | & _12 : UInt64.t = Any.any_l ()
+    | & _14 : bool = Any.any_l () ]
      [ return' (result:bool)-> (! return' {result}) ] 
 end
 module M_bitwalker__poke_bit_64 [#"bitwalker.rs" 28 0 28 58]
@@ -328,7 +324,7 @@ module M_bitwalker__poke_bit_64 [#"bitwalker.rs" 28 0 28 58]
   
   use creusot.int.UInt64
   
-  use creusot.prelude.Intrinsic
+  use creusot.prelude.Any
   
   type t_Ordering'0  =
     | C_Less'0
@@ -338,7 +334,7 @@ module M_bitwalker__poke_bit_64 [#"bitwalker.rs" 28 0 28 58]
   use creusot.int.UInt64
   
   function cmp_log'0 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
-    [%#sord16] if UInt64.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord16] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt64.t) (y : UInt64.t) : ()
   
@@ -367,28 +363,27 @@ module M_bitwalker__poke_bit_64 [#"bitwalker.rs" 28 0 28 58]
   
   function cmp_gt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord6] UInt64.ugt x y = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord6] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   use creusot.int.UInt64
   
   function cmp_ge_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord5] UInt64.uge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord5] UInt64.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord4] UInt64.ult x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord4] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use creusot.int.UInt64
   
   function cmp_le_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord3] UInt64.ule x y
-  = (cmp_log'0 x y <> C_Greater'0)
+  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord3] UInt64.le x y = (cmp_log'0 x y <> C_Greater'0)
   
   meta "compute_max_steps" 1000000
   
-  let rec poke_bit_64'0[#"bitwalker.rs" 28 0 28 58] (value:UInt64.t) (left:UInt64.t) (flag:bool) (return'  (ret:UInt64.t))= {[@expl:poke_bit_64 requires] [%#sbitwalker2] UInt64.ult left (64 : UInt64.t)}
+  let rec poke_bit_64'0[#"bitwalker.rs" 28 0 28 58] (value:UInt64.t) (left:UInt64.t) (flag:bool) (return'  (ret:UInt64.t))= {[@expl:poke_bit_64 requires] [%#sbitwalker2] UInt64.lt left (64 : UInt64.t)}
     (! bb0
     [ bb0 = s0
       [ s0 = UInt64.sub {[%#sbitwalker0] (63 : UInt64.t)} {left} (fun (_ret':UInt64.t) ->  [ &_6 <- _ret' ] s1)
@@ -396,21 +391,17 @@ module M_bitwalker__poke_bit_64 [#"bitwalker.rs" 28 0 28 58]
           (fun (_ret':UInt64.t) ->  [ &mask <- _ret' ] s2)
       | s2 = any [ br0 -> {flag = false} (! bb2) | br1 -> {flag} (! bb1) ]  ]
     
-    | bb1 = s0 [ s0 = UInt64.bw_or {value} {mask} (fun (_ret':UInt64.t) ->  [ &_0 <- _ret' ] s1) | s1 = bb3 ] 
-    | bb2 = s0
-      [ s0 = UInt64.bw_not {mask} (fun (_ret':UInt64.t) ->  [ &_14 <- _ret' ] s1)
-      | s1 = UInt64.bw_and {value} {_14} (fun (_ret':UInt64.t) ->  [ &_0 <- _ret' ] s2)
-      | s2 = bb3 ]
-    
+    | bb1 = s0 [ s0 =  [ &_0 <- UInt64.bw_or value mask ] s1 | s1 = bb3 ] 
+    | bb2 = s0 [ s0 =  [ &_14 <- UInt64.bw_not mask ] s1 | s1 =  [ &_0 <- UInt64.bw_and value _14 ] s2 | s2 = bb3 ] 
     | bb3 = return' {_0} ]
     )
-    [ & _0 : UInt64.t = Intrinsic.any_l ()
+    [ & _0 : UInt64.t = Any.any_l ()
     | & value : UInt64.t = value
     | & left : UInt64.t = left
     | & flag : bool = flag
-    | & mask : UInt64.t = Intrinsic.any_l ()
-    | & _6 : UInt64.t = Intrinsic.any_l ()
-    | & _14 : UInt64.t = Intrinsic.any_l () ]
+    | & mask : UInt64.t = Any.any_l ()
+    | & _6 : UInt64.t = Any.any_l ()
+    | & _14 : UInt64.t = Any.any_l () ]
      [ return' (result:UInt64.t)-> (! return' {result}) ] 
 end
 module M_bitwalker__peek [#"bitwalker.rs" 44 0 44 56]
@@ -457,9 +448,9 @@ module M_bitwalker__peek [#"bitwalker.rs" 44 0 44 56]
   
   use seq.Seq
   
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
   use creusot.int.UInt64
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   use mach.int.Int
   
@@ -491,7 +482,7 @@ module M_bitwalker__peek [#"bitwalker.rs" 44 0 44 56]
   use creusot.int.UInt64
   
   function cmp_log'0 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
-    [%#sord27] if UInt64.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord27] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt64.t) (y : UInt64.t) : ()
   
@@ -520,36 +511,35 @@ module M_bitwalker__peek [#"bitwalker.rs" 44 0 44 56]
   
   function cmp_gt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord17] UInt64.ugt x y
-  = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord17] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   use creusot.int.UInt64
   
   function cmp_ge_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord16] UInt64.uge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord16] UInt64.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord15] UInt64.ult x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord15] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use creusot.int.UInt64
   
   function cmp_le_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord14] UInt64.ule x y
+  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord14] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
-  let rec poke_bit_64'0 (value:UInt64.t) (left:UInt64.t) (flag:bool) (return'  (ret:UInt64.t))= {[@expl:poke_bit_64 requires] [%#sbitwalker10] UInt64.ult left (64 : UInt64.t)}
+  let rec poke_bit_64'0 (value:UInt64.t) (left:UInt64.t) (flag:bool) (return'  (ret:UInt64.t))= {[@expl:poke_bit_64 requires] [%#sbitwalker10] UInt64.lt left (64 : UInt64.t)}
     any [ return' (result:UInt64.t)-> (! return' {result}) ] 
   
-  use creusot.prelude.Intrinsic
+  use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000
   
   let rec peek'0[#"bitwalker.rs" 44 0 44 56] (start:UInt64.t) (length:UInt64.t) (addr:Slice64.slice UInt8.t) (return'  (ret:UInt64.t))= {[@expl:peek requires #0] [%#sbitwalker5] Seq.length (view'0 addr)
     < 10000000}
-    {[@expl:peek requires #1] [%#sbitwalker6] UInt64.ule length (64 : UInt64.t)}
+    {[@expl:peek requires #1] [%#sbitwalker6] UInt64.le length (64 : UInt64.t)}
     {[@expl:peek requires #2] [%#sbitwalker7] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (view'0 addr)}
     (! bb0
     [ bb0 = s0
@@ -559,7 +549,7 @@ module M_bitwalker__peek [#"bitwalker.rs" 44 0 44 56]
     
     | bb1 = s0
       [ s0 = UInt64.mul {[%#sbitwalker0] (8 : UInt64.t)} {_14} (fun (_ret':UInt64.t) ->  [ &_13 <- _ret' ] s1)
-      | s1 = UInt64.gt {_10} {_13} (fun (_ret':bool) ->  [ &_9 <- _ret' ] s2)
+      | s1 =  [ &_9 <- UInt64.gt _10 _13 ] s2
       | s2 = any [ br0 -> {_9 = false} (! bb3) | br1 -> {_9} (! bb2) ]  ]
     
     | bb2 = {false} any
@@ -571,7 +561,7 @@ module M_bitwalker__peek [#"bitwalker.rs" 44 0 44 56]
     | bb4 = bb4
       [ bb4 = (! bb5)
         [ bb5 = s0
-          [ s0 = UInt64.lt {i} {length} (fun (_ret':bool) ->  [ &_21 <- _ret' ] s1)
+          [ s0 =  [ &_21 <- UInt64.lt i length ] s1
           | s1 = any [ br0 -> {_21 = false} (! bb9) | br1 -> {_21} (! bb6) ]  ]
         
         | bb6 = s0
@@ -594,22 +584,22 @@ module M_bitwalker__peek [#"bitwalker.rs" 44 0 44 56]
     
     | bb9 = s0 [ s0 =  [ &_0 <- retval ] s1 | s1 = return' {_0} ]  ]
     )
-    [ & _0 : UInt64.t = Intrinsic.any_l ()
+    [ & _0 : UInt64.t = Any.any_l ()
     | & start : UInt64.t = start
     | & length : UInt64.t = length
     | & addr : Slice64.slice UInt8.t = addr
-    | & _9 : bool = Intrinsic.any_l ()
-    | & _10 : UInt64.t = Intrinsic.any_l ()
-    | & _13 : UInt64.t = Intrinsic.any_l ()
-    | & _14 : UInt64.t = Intrinsic.any_l ()
-    | & retval : UInt64.t = Intrinsic.any_l ()
-    | & i : UInt64.t = Intrinsic.any_l ()
-    | & _21 : bool = Intrinsic.any_l ()
-    | & flag : bool = Intrinsic.any_l ()
-    | & _26 : UInt64.t = Intrinsic.any_l ()
-    | & _29 : UInt64.t = Intrinsic.any_l ()
-    | & _31 : UInt64.t = Intrinsic.any_l ()
-    | & _32 : UInt64.t = Intrinsic.any_l () ]
+    | & _9 : bool = Any.any_l ()
+    | & _10 : UInt64.t = Any.any_l ()
+    | & _13 : UInt64.t = Any.any_l ()
+    | & _14 : UInt64.t = Any.any_l ()
+    | & retval : UInt64.t = Any.any_l ()
+    | & i : UInt64.t = Any.any_l ()
+    | & _21 : bool = Any.any_l ()
+    | & flag : bool = Any.any_l ()
+    | & _26 : UInt64.t = Any.any_l ()
+    | & _29 : UInt64.t = Any.any_l ()
+    | & _31 : UInt64.t = Any.any_l ()
+    | & _32 : UInt64.t = Any.any_l () ]
      [ return' (result:UInt64.t)-> (! return' {result}) ] 
 end
 module M_bitwalker__peek_64bit [#"bitwalker.rs" 63 0 63 46]
@@ -634,7 +624,7 @@ module M_bitwalker__peek_64bit [#"bitwalker.rs" 63 0 63 46]
   
   use creusot.int.UInt64
   
-  use creusot.prelude.Intrinsic
+  use creusot.prelude.Any
   
   type t_Ordering'0  =
     | C_Less'0
@@ -644,7 +634,7 @@ module M_bitwalker__peek_64bit [#"bitwalker.rs" 63 0 63 46]
   use creusot.int.UInt64
   
   function cmp_log'0 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
-    [%#sord17] if UInt64.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord17] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt64.t) (y : UInt64.t) : ()
   
@@ -673,44 +663,43 @@ module M_bitwalker__peek_64bit [#"bitwalker.rs" 63 0 63 46]
   
   function cmp_gt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord7] UInt64.ugt x y = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord7] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   use creusot.int.UInt64
   
   function cmp_ge_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord6] UInt64.uge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord6] UInt64.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord5] UInt64.ult x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord5] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use creusot.int.UInt64
   
   function cmp_le_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord4] UInt64.ule x y
-  = (cmp_log'0 x y <> C_Greater'0)
+  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord4] UInt64.le x y = (cmp_log'0 x y <> C_Greater'0)
   
   meta "compute_max_steps" 1000000
   
-  let rec peek_64bit'0[#"bitwalker.rs" 63 0 63 46] (value:UInt64.t) (left:UInt64.t) (return'  (ret:bool))= {[@expl:peek_64bit requires] [%#sbitwalker3] UInt64.ult left (64 : UInt64.t)}
+  let rec peek_64bit'0[#"bitwalker.rs" 63 0 63 46] (value:UInt64.t) (left:UInt64.t) (return'  (ret:bool))= {[@expl:peek_64bit requires] [%#sbitwalker3] UInt64.lt left (64 : UInt64.t)}
     (! bb0
     [ bb0 = s0
       [ s0 = UInt64.sub {[%#sbitwalker0] (63 : UInt64.t)} {left} (fun (_ret':UInt64.t) ->  [ &_5 <- _ret' ] s1)
       | s1 = UInt64.shl {[%#sbitwalker1] (1 : UInt64.t)} {UInt64.t'int _5}
           (fun (_ret':UInt64.t) ->  [ &mask <- _ret' ] s2)
-      | s2 = UInt64.bw_and {value} {mask} (fun (_ret':UInt64.t) ->  [ &_7 <- _ret' ] s3)
-      | s3 = UInt64.ne {_7} {[%#sbitwalker2] (0 : UInt64.t)} (fun (_ret':bool) ->  [ &_0 <- _ret' ] s4)
+      | s2 =  [ &_7 <- UInt64.bw_and value mask ] s3
+      | s3 =  [ &_0 <- _7 <> ([%#sbitwalker2] (0 : UInt64.t)) ] s4
       | s4 = return' {_0} ]
      ]
     )
-    [ & _0 : bool = Intrinsic.any_l ()
+    [ & _0 : bool = Any.any_l ()
     | & value : UInt64.t = value
     | & left : UInt64.t = left
-    | & mask : UInt64.t = Intrinsic.any_l ()
-    | & _5 : UInt64.t = Intrinsic.any_l ()
-    | & _7 : UInt64.t = Intrinsic.any_l () ]
+    | & mask : UInt64.t = Any.any_l ()
+    | & _5 : UInt64.t = Any.any_l ()
+    | & _7 : UInt64.t = Any.any_l () ]
      [ return' (result:bool)-> (! return' {result}) ] 
 end
 module M_bitwalker__poke_8bit [#"bitwalker.rs" 69 0 69 53]
@@ -736,7 +725,7 @@ module M_bitwalker__poke_8bit [#"bitwalker.rs" 69 0 69 53]
   
   use creusot.int.UInt8
   
-  use creusot.prelude.Intrinsic
+  use creusot.prelude.Any
   
   type t_Ordering'0  =
     | C_Less'0
@@ -746,7 +735,7 @@ module M_bitwalker__poke_8bit [#"bitwalker.rs" 69 0 69 53]
   use creusot.int.UInt64
   
   function cmp_log'0 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
-    [%#sord16] if UInt64.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord16] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt64.t) (y : UInt64.t) : ()
   
@@ -775,56 +764,51 @@ module M_bitwalker__poke_8bit [#"bitwalker.rs" 69 0 69 53]
   
   function cmp_gt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord6] UInt64.ugt x y = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord6] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   use creusot.int.UInt64
   
   function cmp_ge_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord5] UInt64.uge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord5] UInt64.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord4] UInt64.ult x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord4] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use creusot.int.UInt64
   
   function cmp_le_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord3] UInt64.ule x y
-  = (cmp_log'0 x y <> C_Greater'0)
+  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord3] UInt64.le x y = (cmp_log'0 x y <> C_Greater'0)
   
   meta "compute_max_steps" 1000000
   
-  let rec poke_8bit'0[#"bitwalker.rs" 69 0 69 53] (byte:UInt8.t) (left:UInt64.t) (flag:bool) (return'  (ret:UInt8.t))= {[@expl:poke_8bit requires] [%#sbitwalker2] UInt64.ult left (8 : UInt64.t)}
+  let rec poke_8bit'0[#"bitwalker.rs" 69 0 69 53] (byte:UInt8.t) (left:UInt64.t) (flag:bool) (return'  (ret:UInt8.t))= {[@expl:poke_8bit requires] [%#sbitwalker2] UInt64.lt left (8 : UInt64.t)}
     (! bb0
     [ bb0 = s0
       [ s0 = UInt64.sub {[%#sbitwalker0] (7 : UInt64.t)} {left} (fun (_ret':UInt64.t) ->  [ &_6 <- _ret' ] s1)
       | s1 = UInt8.shl {[%#sbitwalker1] (1 : UInt8.t)} {UInt64.t'int _6} (fun (_ret':UInt8.t) ->  [ &mask <- _ret' ] s2)
       | s2 = any [ br0 -> {flag = false} (! bb2) | br1 -> {flag} (! bb1) ]  ]
     
-    | bb1 = s0 [ s0 = UInt8.bw_or {byte} {mask} (fun (_ret':UInt8.t) ->  [ &_0 <- _ret' ] s1) | s1 = bb3 ] 
-    | bb2 = s0
-      [ s0 = UInt8.bw_not {mask} (fun (_ret':UInt8.t) ->  [ &_14 <- _ret' ] s1)
-      | s1 = UInt8.bw_and {byte} {_14} (fun (_ret':UInt8.t) ->  [ &_0 <- _ret' ] s2)
-      | s2 = bb3 ]
-    
+    | bb1 = s0 [ s0 =  [ &_0 <- UInt8.bw_or byte mask ] s1 | s1 = bb3 ] 
+    | bb2 = s0 [ s0 =  [ &_14 <- UInt8.bw_not mask ] s1 | s1 =  [ &_0 <- UInt8.bw_and byte _14 ] s2 | s2 = bb3 ] 
     | bb3 = return' {_0} ]
     )
-    [ & _0 : UInt8.t = Intrinsic.any_l ()
+    [ & _0 : UInt8.t = Any.any_l ()
     | & byte : UInt8.t = byte
     | & left : UInt64.t = left
     | & flag : bool = flag
-    | & mask : UInt8.t = Intrinsic.any_l ()
-    | & _6 : UInt64.t = Intrinsic.any_l ()
-    | & _14 : UInt8.t = Intrinsic.any_l () ]
+    | & mask : UInt8.t = Any.any_l ()
+    | & _6 : UInt64.t = Any.any_l ()
+    | & _14 : UInt8.t = Any.any_l () ]
      [ return' (result:UInt8.t)-> (! return' {result}) ] 
 end
 module M_bitwalker__poke_8bit_array [#"bitwalker.rs" 80 0 80 60]
-  let%span sbitwalker0 = "bitwalker.rs" 81 19 81 27
-  let%span sbitwalker1 = "bitwalker.rs" 81 26 81 27
-  let%span sbitwalker2 = "bitwalker.rs" 82 19 82 27
-  let%span sbitwalker3 = "bitwalker.rs" 82 26 82 27
+  let%span sbitwalker0 = "bitwalker.rs" 81 26 81 27
+  let%span sbitwalker1 = "bitwalker.rs" 81 19 81 27
+  let%span sbitwalker2 = "bitwalker.rs" 82 26 82 27
+  let%span sbitwalker3 = "bitwalker.rs" 82 19 82 27
   let%span sbitwalker4 = "bitwalker.rs" 83 24 83 31
   let%span sbitwalker5 = "bitwalker.rs" 83 4 83 11
   let%span sbitwalker6 = "bitwalker.rs" 78 11 78 34
@@ -865,7 +849,7 @@ module M_bitwalker__poke_8bit_array [#"bitwalker.rs" 80 0 80 60]
   use creusot.int.UInt64
   
   function cmp_log'0 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
-    [%#sord26] if UInt64.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord26] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt64.t) (y : UInt64.t) : ()
   
@@ -894,27 +878,26 @@ module M_bitwalker__poke_8bit_array [#"bitwalker.rs" 80 0 80 60]
   
   function cmp_gt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord16] UInt64.ugt x y
-  = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord16] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   use creusot.int.UInt64
   
   function cmp_ge_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord15] UInt64.uge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord15] UInt64.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord14] UInt64.ult x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord14] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use creusot.int.UInt64
   
   function cmp_le_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord13] UInt64.ule x y
+  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord13] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
-  let rec poke_8bit'0 (byte:UInt8.t) (left:UInt64.t) (flag:bool) (return'  (ret:UInt8.t))= {[@expl:poke_8bit requires] [%#sbitwalker8] UInt64.ult left (8 : UInt64.t)}
+  let rec poke_8bit'0 (byte:UInt8.t) (left:UInt64.t) (flag:bool) (return'  (ret:UInt8.t))= {[@expl:poke_8bit requires] [%#sbitwalker8] UInt64.lt left (8 : UInt64.t)}
     any [ return' (result:UInt8.t)-> (! return' {result}) ] 
   
   use creusot.prelude.MutBorrow
@@ -925,7 +908,7 @@ module M_bitwalker__poke_8bit_array [#"bitwalker.rs" 80 0 80 60]
   predicate resolve'0 (_1 : MutBorrow.t (Slice64.slice UInt8.t)) =
     resolve'1 _1
   
-  use creusot.prelude.Intrinsic
+  use creusot.prelude.Any
   
   use creusot.int.UInt64
   
@@ -954,25 +937,23 @@ module M_bitwalker__poke_8bit_array [#"bitwalker.rs" 80 0 80 60]
     < 8 * Seq.length (view'0 addr)}
     (! bb0
     [ bb0 = s0
-      [ s0 = UInt64.eq {[%#sbitwalker1] (8 : UInt64.t)} {[%#sbitwalker0] (0 : UInt64.t)}
-          (fun (_ret':bool) ->  [ &_8 <- _ret' ] s1)
-      | s1 = {[@expl:division by zero] [%#sbitwalker0] not _8} s2
+      [ s0 =  [ &_8 <- ([%#sbitwalker0] (8 : UInt64.t)) = ([%#sbitwalker1] (0 : UInt64.t)) ] s1
+      | s1 = {[@expl:division by zero] [%#sbitwalker1] not _8} s2
       | s2 = bb1 ]
     
     | bb1 = s0
-      [ s0 = UInt64.div {left} {[%#sbitwalker1] (8 : UInt64.t)} (fun (_ret':UInt64.t) ->  [ &i <- _ret' ] s1)
-      | s1 = UInt64.eq {[%#sbitwalker3] (8 : UInt64.t)} {[%#sbitwalker2] (0 : UInt64.t)}
-          (fun (_ret':bool) ->  [ &_11 <- _ret' ] s2)
-      | s2 = {[@expl:remainder by zero] [%#sbitwalker2] not _11} s3
+      [ s0 = UInt64.div {left} {[%#sbitwalker0] (8 : UInt64.t)} (fun (_ret':UInt64.t) ->  [ &i <- _ret' ] s1)
+      | s1 =  [ &_11 <- ([%#sbitwalker2] (8 : UInt64.t)) = ([%#sbitwalker3] (0 : UInt64.t)) ] s2
+      | s2 = {[@expl:remainder by zero] [%#sbitwalker3] not _11} s3
       | s3 = bb2 ]
     
     | bb2 = s0
-      [ s0 = UInt64.rem {left} {[%#sbitwalker3] (8 : UInt64.t)} (fun (_ret':UInt64.t) ->  [ &k <- _ret' ] s1)
+      [ s0 = UInt64.rem {left} {[%#sbitwalker2] (8 : UInt64.t)} (fun (_ret':UInt64.t) ->  [ &k <- _ret' ] s1)
       | s1 =  [ &_14 <- i ] s2
       | s2 = Opaque.fresh_ptr 
           (fun (_ptr:Opaque.ptr) -> -{Slice64.slice_ptr_len _ptr = Slice64.length addr.current}-  [ &_15 <- _ptr ] s3)
       | s3 =  [ &_16 <- Slice64.slice_ptr_len _15 ] s4
-      | s4 = UInt64.lt {_14} {_16} (fun (_ret':bool) ->  [ &_17 <- _ret' ] s5)
+      | s4 =  [ &_17 <- UInt64.lt _14 _16 ] s5
       | s5 = {[@expl:index in bounds] [%#sbitwalker4] _17} s6
       | s6 = bb3 ]
     
@@ -986,7 +967,7 @@ module M_bitwalker__poke_8bit_array [#"bitwalker.rs" 80 0 80 60]
       | s1 = Opaque.fresh_ptr 
           (fun (_ptr:Opaque.ptr) -> -{Slice64.slice_ptr_len _ptr = Slice64.length addr.current}-  [ &_21 <- _ptr ] s2)
       | s2 =  [ &_22 <- Slice64.slice_ptr_len _21 ] s3
-      | s3 = UInt64.lt {_20} {_22} (fun (_ret':bool) ->  [ &_23 <- _ret' ] s4)
+      | s3 =  [ &_23 <- UInt64.lt _20 _22 ] s4
       | s4 = {[@expl:index in bounds] [%#sbitwalker5] _23} s5
       | s5 = bb5 ]
     
@@ -997,23 +978,23 @@ module M_bitwalker__poke_8bit_array [#"bitwalker.rs" 80 0 80 60]
       | s2 = return' {_0} ]
      ]
     )
-    [ & _0 : () = Intrinsic.any_l ()
+    [ & _0 : () = Any.any_l ()
     | & addr : MutBorrow.t (Slice64.slice UInt8.t) = addr
     | & left : UInt64.t = left
     | & flag : bool = flag
-    | & i : UInt64.t = Intrinsic.any_l ()
-    | & _8 : bool = Intrinsic.any_l ()
-    | & k : UInt64.t = Intrinsic.any_l ()
-    | & _11 : bool = Intrinsic.any_l ()
-    | & _12 : UInt8.t = Intrinsic.any_l ()
-    | & _14 : UInt64.t = Intrinsic.any_l ()
-    | & _15 : Opaque.ptr = Intrinsic.any_l ()
-    | & _16 : UInt64.t = Intrinsic.any_l ()
-    | & _17 : bool = Intrinsic.any_l ()
-    | & _20 : UInt64.t = Intrinsic.any_l ()
-    | & _21 : Opaque.ptr = Intrinsic.any_l ()
-    | & _22 : UInt64.t = Intrinsic.any_l ()
-    | & _23 : bool = Intrinsic.any_l () ]
+    | & i : UInt64.t = Any.any_l ()
+    | & _8 : bool = Any.any_l ()
+    | & k : UInt64.t = Any.any_l ()
+    | & _11 : bool = Any.any_l ()
+    | & _12 : UInt8.t = Any.any_l ()
+    | & _14 : UInt64.t = Any.any_l ()
+    | & _15 : Opaque.ptr = Any.any_l ()
+    | & _16 : UInt64.t = Any.any_l ()
+    | & _17 : bool = Any.any_l ()
+    | & _20 : UInt64.t = Any.any_l ()
+    | & _21 : Opaque.ptr = Any.any_l ()
+    | & _22 : UInt64.t = Any.any_l ()
+    | & _23 : bool = Any.any_l () ]
     
     [ return' (result:())-> {[@expl:poke_8bit_array ensures] [%#sbitwalker7] Seq.length (view'1 addr.final)
       = Seq.length (view'0 addr)}
@@ -1076,9 +1057,9 @@ module M_bitwalker__poke [#"bitwalker.rs" 90 0 90 71]
   
   use creusot.int.UInt64
   
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
   use creusot.int.UInt64
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   use mach.int.Int
   
@@ -1108,8 +1089,6 @@ module M_bitwalker__poke [#"bitwalker.rs" 90 0 90 71]
   
   use creusot.int.Int8
   
-  use creusot.prelude.Snapshot
-  
   function view'0 (self : MutBorrow.t (Slice64.slice UInt8.t)) : Seq.seq UInt8.t =
     [%#smodel18] view'1 self.current
   
@@ -1121,7 +1100,7 @@ module M_bitwalker__poke [#"bitwalker.rs" 90 0 90 71]
   use creusot.int.UInt64
   
   function cmp_log'0 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
-    [%#sord39] if UInt64.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord39] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt64.t) (y : UInt64.t) : ()
   
@@ -1150,29 +1129,26 @@ module M_bitwalker__poke [#"bitwalker.rs" 90 0 90 71]
   
   function cmp_gt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord29] UInt64.ugt x y
-  = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord29] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   use creusot.int.UInt64
   
   function cmp_ge_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord28] UInt64.uge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord28] UInt64.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord27] UInt64.ult x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord27] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use creusot.int.UInt64
   
   function cmp_le_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord26] UInt64.ule x y
+  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord26] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
-  use creusot.prelude.Snapshot
-  
-  let rec peek_64bit'0 (value:UInt64.t) (left:UInt64.t) (return'  (ret:bool))= {[@expl:peek_64bit requires] [%#sbitwalker19] UInt64.ult left (64 : UInt64.t)}
+  let rec peek_64bit'0 (value:UInt64.t) (left:UInt64.t) (return'  (ret:bool))= {[@expl:peek_64bit requires] [%#sbitwalker19] UInt64.lt left (64 : UInt64.t)}
     any [ return' (result:bool)-> (! return' {result}) ] 
   
   let rec poke_8bit_array'0 (addr:MutBorrow.t (Slice64.slice UInt8.t)) (left:UInt64.t) (flag:bool) (return'  (ret:()))= {[@expl:poke_8bit_array requires] [%#sbitwalker20] UInt64.t'int left
@@ -1182,15 +1158,13 @@ module M_bitwalker__poke [#"bitwalker.rs" 90 0 90 71]
       (! return' {result}) ]
   
   
-  use creusot.prelude.Intrinsic
-  
-  use creusot.prelude.Snapshot
+  use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000
   
   let rec poke'0[#"bitwalker.rs" 90 0 90 71] (start:UInt64.t) (length:UInt64.t) (addr:MutBorrow.t (Slice64.slice UInt8.t)) (value:UInt64.t) (return'  (ret:Int8.t))= {[@expl:poke requires #0] [%#sbitwalker13] Seq.length (view'0 addr)
     < 10000000}
-    {[@expl:poke requires #1] [%#sbitwalker14] UInt64.ule length (64 : UInt64.t)}
+    {[@expl:poke requires #1] [%#sbitwalker14] UInt64.le length (64 : UInt64.t)}
     {[@expl:poke requires #2] [%#sbitwalker15] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (view'0 addr)}
     (! bb0
     [ bb0 = s0 [ s0 = len'0 {addr.current} (fun (_ret':UInt64.t) ->  [ &ghost_len <- _ret' ] s1) | s1 = bb1 ] 
@@ -1201,18 +1175,18 @@ module M_bitwalker__poke [#"bitwalker.rs" 90 0 90 71]
     
     | bb2 = s0
       [ s0 = UInt64.mul {[%#sbitwalker0] (8 : UInt64.t)} {_18} (fun (_ret':UInt64.t) ->  [ &_17 <- _ret' ] s1)
-      | s1 = UInt64.gt {_14} {_17} (fun (_ret':bool) ->  [ &_13 <- _ret' ] s2)
+      | s1 =  [ &_13 <- UInt64.gt _14 _17 ] s2
       | s2 = any [ br0 -> {_13 = false} (! bb4) | br1 -> {_13} (! bb3) ]  ]
     
     | bb3 = s0 [ s0 = -{resolve'0 addr}- s1 | s1 =  [ &_0 <- [%#sbitwalker1] (-1 : Int8.t) ] s2 | s2 = bb16 ] 
     | bb4 = s0
-      [ s0 = UInt64.lt {length} {[%#sbitwalker2] (64 : UInt64.t)} (fun (_ret':bool) ->  [ &_22 <- _ret' ] s1)
+      [ s0 =  [ &_22 <- UInt64.lt length ([%#sbitwalker2] (64 : UInt64.t)) ] s1
       | s1 = any [ br0 -> {_22 = false} (! bb6) | br1 -> {_22} (! bb5) ]  ]
     
     | bb5 = s0
       [ s0 = UInt64.shl {[%#sbitwalker3] (1 : UInt64.t)} {UInt64.t'int length}
           (fun (_ret':UInt64.t) ->  [ &_26 <- _ret' ] s1)
-      | s1 = UInt64.ge {value} {_26} (fun (_ret':bool) ->  [ &_24 <- _ret' ] s2)
+      | s1 =  [ &_24 <- UInt64.ge value _26 ] s2
       | s2 = any [ br0 -> {_24 = false} (! bb8) | br1 -> {_24} (! bb7) ]  ]
     
     | bb7 = s0 [ s0 = -{resolve'0 addr}- s1 | s1 =  [ &_0 <- [%#sbitwalker4] (-2 : Int8.t) ] s2 | s2 = bb16 ] 
@@ -1221,16 +1195,16 @@ module M_bitwalker__poke [#"bitwalker.rs" 90 0 90 71]
     | bb9 = s0
       [ s0 = UInt64.sub {[%#sbitwalker5] (64 : UInt64.t)} {length} (fun (_ret':UInt64.t) ->  [ &lstart <- _ret' ] s1)
       | s1 =  [ &i <- [%#sbitwalker6] (0 : UInt64.t) ] s2
-      | s2 =  [ &old_10_0 <- Snapshot.new addr ] s3
+      | s2 =  [ &old_10_0 <- addr ] s3
       | s3 = bb10 ]
     
     | bb10 = bb10
-      [ bb10 = {[@expl:mut invariant] (Snapshot.inner old_10_0).final = addr.final}
-        {[@expl:loop invariant #0] [%#sbitwalker8] UInt64.ule i length}
+      [ bb10 = {[@expl:mut invariant] old_10_0.final = addr.final}
+        {[@expl:loop invariant #0] [%#sbitwalker8] UInt64.le i length}
         {[@expl:loop invariant #1] [%#sbitwalker7] Seq.length (view'0 addr) = UInt64.t'int ghost_len}
         (! s0) [ s0 = bb11 ] 
         [ bb11 = s0
-          [ s0 = UInt64.lt {i} {length} (fun (_ret':bool) ->  [ &_37 <- _ret' ] s1)
+          [ s0 =  [ &_37 <- UInt64.lt i length ] s1
           | s1 = any [ br0 -> {_37 = false} (! bb15) | br1 -> {_37} (! bb12) ]  ]
         
         | bb12 = s0
@@ -1259,28 +1233,28 @@ module M_bitwalker__poke [#"bitwalker.rs" 90 0 90 71]
     | bb15 = s0 [ s0 = -{resolve'0 addr}- s1 | s1 =  [ &_0 <- [%#sbitwalker12] (0 : Int8.t) ] s2 | s2 = bb16 ] 
     | bb16 = return' {_0} ]
     )
-    [ & _0 : Int8.t = Intrinsic.any_l ()
+    [ & _0 : Int8.t = Any.any_l ()
     | & start : UInt64.t = start
     | & length : UInt64.t = length
     | & addr : MutBorrow.t (Slice64.slice UInt8.t) = addr
     | & value : UInt64.t = value
-    | & ghost_len : UInt64.t = Intrinsic.any_l ()
-    | & _13 : bool = Intrinsic.any_l ()
-    | & _14 : UInt64.t = Intrinsic.any_l ()
-    | & _17 : UInt64.t = Intrinsic.any_l ()
-    | & _18 : UInt64.t = Intrinsic.any_l ()
-    | & _22 : bool = Intrinsic.any_l ()
-    | & _24 : bool = Intrinsic.any_l ()
-    | & _26 : UInt64.t = Intrinsic.any_l ()
-    | & lstart : UInt64.t = Intrinsic.any_l ()
-    | & i : UInt64.t = Intrinsic.any_l ()
-    | & _37 : bool = Intrinsic.any_l ()
-    | & flag : bool = Intrinsic.any_l ()
-    | & _44 : UInt64.t = Intrinsic.any_l ()
-    | & _47 : () = Intrinsic.any_l ()
-    | & _48 : MutBorrow.t (Slice64.slice UInt8.t) = Intrinsic.any_l ()
-    | & _49 : UInt64.t = Intrinsic.any_l ()
-    | & old_10_0 : Snapshot.snap_ty (MutBorrow.t (Slice64.slice UInt8.t)) = Intrinsic.any_l () ]
+    | & ghost_len : UInt64.t = Any.any_l ()
+    | & _13 : bool = Any.any_l ()
+    | & _14 : UInt64.t = Any.any_l ()
+    | & _17 : UInt64.t = Any.any_l ()
+    | & _18 : UInt64.t = Any.any_l ()
+    | & _22 : bool = Any.any_l ()
+    | & _24 : bool = Any.any_l ()
+    | & _26 : UInt64.t = Any.any_l ()
+    | & lstart : UInt64.t = Any.any_l ()
+    | & i : UInt64.t = Any.any_l ()
+    | & _37 : bool = Any.any_l ()
+    | & flag : bool = Any.any_l ()
+    | & _44 : UInt64.t = Any.any_l ()
+    | & _47 : () = Any.any_l ()
+    | & _48 : MutBorrow.t (Slice64.slice UInt8.t) = Any.any_l ()
+    | & _49 : UInt64.t = Any.any_l ()
+    | & old_10_0 : MutBorrow.t (Slice64.slice UInt8.t) = Any.any_l () ]
     
     [ return' (result:Int8.t)-> {[@expl:poke ensures] [%#sbitwalker16] Seq.length (view'1 addr.final)
       = Seq.length (view'0 addr)}
@@ -1318,19 +1292,19 @@ module M_bitwalker__peekthenpoke [#"bitwalker.rs" 119 0 119 67]
   let%span sord27 = "../../../creusot-contracts/src/logic/ord.rs" 173 39 173 84
   let%span sord28 = "../../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
   
+  use seq.Seq
+  
   use creusot.slice.Slice64
   
   use creusot.int.UInt8
   
   use seq.Seq
   
-  use seq.Seq
+  use creusot.int.UInt64
   
   use creusot.int.UInt64
   
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
-  use creusot.int.UInt64
   
   use mach.int.Int
   
@@ -1353,7 +1327,7 @@ module M_bitwalker__peekthenpoke [#"bitwalker.rs" 119 0 119 67]
   use creusot.int.UInt64
   
   function cmp_log'0 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
-    [%#sord28] if UInt64.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord28] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt64.t) (y : UInt64.t) : ()
   
@@ -1382,29 +1356,28 @@ module M_bitwalker__peekthenpoke [#"bitwalker.rs" 119 0 119 67]
   
   function cmp_gt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord18] UInt64.ugt x y
-  = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord18] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   use creusot.int.UInt64
   
   function cmp_ge_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord17] UInt64.uge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord17] UInt64.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord16] UInt64.ult x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord16] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use creusot.int.UInt64
   
   function cmp_le_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord15] UInt64.ule x y
+  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord15] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
   let rec peek'0 (start:UInt64.t) (length:UInt64.t) (addr:Slice64.slice UInt8.t) (return'  (ret:UInt64.t))= {[@expl:peek requires #0] [%#sbitwalker3] Seq.length (view'1 addr)
     < 10000000}
-    {[@expl:peek requires #1] [%#sbitwalker4] UInt64.ule length (64 : UInt64.t)}
+    {[@expl:peek requires #1] [%#sbitwalker4] UInt64.le length (64 : UInt64.t)}
     {[@expl:peek requires #2] [%#sbitwalker5] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (view'1 addr)}
     any [ return' (result:UInt64.t)-> (! return' {result}) ] 
   
@@ -1417,7 +1390,7 @@ module M_bitwalker__peekthenpoke [#"bitwalker.rs" 119 0 119 67]
   
   let rec poke'0 (start:UInt64.t) (length:UInt64.t) (addr:MutBorrow.t (Slice64.slice UInt8.t)) (value:UInt64.t) (return'  (ret:Int8.t))= {[@expl:poke requires #0] [%#sbitwalker6] Seq.length (view'0 addr)
     < 10000000}
-    {[@expl:poke requires #1] [%#sbitwalker7] UInt64.ule length (64 : UInt64.t)}
+    {[@expl:poke requires #1] [%#sbitwalker7] UInt64.le length (64 : UInt64.t)}
     {[@expl:poke requires #2] [%#sbitwalker8] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (view'0 addr)}
     any
     [ return' (result:Int8.t)-> {[%#sbitwalker9] Seq.length (view'2 addr.final) = Seq.length (view'0 addr)}
@@ -1430,13 +1403,13 @@ module M_bitwalker__peekthenpoke [#"bitwalker.rs" 119 0 119 67]
   predicate resolve'0 (_1 : MutBorrow.t (Slice64.slice UInt8.t)) =
     resolve'1 _1
   
-  use creusot.prelude.Intrinsic
+  use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000
   
   let rec peekthenpoke'0[#"bitwalker.rs" 119 0 119 67] (start:UInt64.t) (length:UInt64.t) (addr:MutBorrow.t (Slice64.slice UInt8.t)) (return'  (ret:Int8.t))= {[@expl:peekthenpoke requires #0] [%#sbitwalker0] Seq.length (view'0 addr)
     < 10000000}
-    {[@expl:peekthenpoke requires #1] [%#sbitwalker1] UInt64.ule length (64 : UInt64.t)}
+    {[@expl:peekthenpoke requires #1] [%#sbitwalker1] UInt64.le length (64 : UInt64.t)}
     {[@expl:peekthenpoke requires #2] [%#sbitwalker2] UInt64.t'int start + UInt64.t'int length
     <= 8 * Seq.length (view'0 addr)}
     (! bb0
@@ -1454,13 +1427,13 @@ module M_bitwalker__peekthenpoke [#"bitwalker.rs" 119 0 119 67]
     
     | bb2 = s0 [ s0 = -{resolve'0 addr}- s1 | s1 =  [ &_0 <- res ] s2 | s2 = return' {_0} ]  ]
     )
-    [ & _0 : Int8.t = Intrinsic.any_l ()
+    [ & _0 : Int8.t = Any.any_l ()
     | & start : UInt64.t = start
     | & length : UInt64.t = length
     | & addr : MutBorrow.t (Slice64.slice UInt8.t) = addr
-    | & value : UInt64.t = Intrinsic.any_l ()
-    | & res : Int8.t = Intrinsic.any_l ()
-    | & _14 : MutBorrow.t (Slice64.slice UInt8.t) = Intrinsic.any_l () ]
+    | & value : UInt64.t = Any.any_l ()
+    | & res : Int8.t = Any.any_l ()
+    | & _14 : MutBorrow.t (Slice64.slice UInt8.t) = Any.any_l () ]
      [ return' (result:Int8.t)-> (! return' {result}) ] 
 end
 module M_bitwalker__pokethenpeek [#"bitwalker.rs" 133 0 133 84]
@@ -1506,9 +1479,9 @@ module M_bitwalker__pokethenpeek [#"bitwalker.rs" 133 0 133 84]
   
   use creusot.int.UInt64
   
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
   use creusot.int.UInt64
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   use mach.int.Int
   
@@ -1531,7 +1504,7 @@ module M_bitwalker__pokethenpeek [#"bitwalker.rs" 133 0 133 84]
   use creusot.int.UInt64
   
   function cmp_log'0 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
-    [%#sord28] if UInt64.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord28] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt64.t) (y : UInt64.t) : ()
   
@@ -1560,31 +1533,30 @@ module M_bitwalker__pokethenpeek [#"bitwalker.rs" 133 0 133 84]
   
   function cmp_gt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord18] UInt64.ugt x y
-  = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord18] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   use creusot.int.UInt64
   
   function cmp_ge_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord17] UInt64.uge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord17] UInt64.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord16] UInt64.ult x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord16] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use creusot.int.UInt64
   
   function cmp_le_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord15] UInt64.ule x y
+  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord15] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
   use creusot.int.Int8
   
   let rec poke'0 (start:UInt64.t) (length:UInt64.t) (addr:MutBorrow.t (Slice64.slice UInt8.t)) (value:UInt64.t) (return'  (ret:Int8.t))= {[@expl:poke requires #0] [%#sbitwalker3] Seq.length (view'0 addr)
     < 10000000}
-    {[@expl:poke requires #1] [%#sbitwalker4] UInt64.ule length (64 : UInt64.t)}
+    {[@expl:poke requires #1] [%#sbitwalker4] UInt64.le length (64 : UInt64.t)}
     {[@expl:poke requires #2] [%#sbitwalker5] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (view'0 addr)}
     any
     [ return' (result:Int8.t)-> {[%#sbitwalker6] Seq.length (view'1 addr.final) = Seq.length (view'0 addr)}
@@ -1596,7 +1568,7 @@ module M_bitwalker__pokethenpeek [#"bitwalker.rs" 133 0 133 84]
   
   let rec peek'0 (start:UInt64.t) (length:UInt64.t) (addr:Slice64.slice UInt8.t) (return'  (ret:UInt64.t))= {[@expl:peek requires #0] [%#sbitwalker7] Seq.length (view'2 addr)
     < 10000000}
-    {[@expl:peek requires #1] [%#sbitwalker8] UInt64.ule length (64 : UInt64.t)}
+    {[@expl:peek requires #1] [%#sbitwalker8] UInt64.le length (64 : UInt64.t)}
     {[@expl:peek requires #2] [%#sbitwalker9] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (view'2 addr)}
     any [ return' (result:UInt64.t)-> (! return' {result}) ] 
   
@@ -1606,13 +1578,13 @@ module M_bitwalker__pokethenpeek [#"bitwalker.rs" 133 0 133 84]
   predicate resolve'0 (_1 : MutBorrow.t (Slice64.slice UInt8.t)) =
     resolve'1 _1
   
-  use creusot.prelude.Intrinsic
+  use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000
   
   let rec pokethenpeek'0[#"bitwalker.rs" 133 0 133 84] (start:UInt64.t) (length:UInt64.t) (addr:MutBorrow.t (Slice64.slice UInt8.t)) (value:UInt64.t) (return'  (ret:UInt64.t))= {[@expl:pokethenpeek requires #0] [%#sbitwalker0] Seq.length (view'0 addr)
     < 10000000}
-    {[@expl:pokethenpeek requires #1] [%#sbitwalker1] UInt64.ule length (64 : UInt64.t)}
+    {[@expl:pokethenpeek requires #1] [%#sbitwalker1] UInt64.le length (64 : UInt64.t)}
     {[@expl:pokethenpeek requires #2] [%#sbitwalker2] UInt64.t'int start + UInt64.t'int length
     <= 8 * Seq.length (view'0 addr)}
     (! bb0
@@ -1630,13 +1602,13 @@ module M_bitwalker__pokethenpeek [#"bitwalker.rs" 133 0 133 84]
     
     | bb2 = s0 [ s0 = -{resolve'0 addr}- s1 | s1 =  [ &_0 <- peek_result ] s2 | s2 = return' {_0} ]  ]
     )
-    [ & _0 : UInt64.t = Intrinsic.any_l ()
+    [ & _0 : UInt64.t = Any.any_l ()
     | & start : UInt64.t = start
     | & length : UInt64.t = length
     | & addr : MutBorrow.t (Slice64.slice UInt8.t) = addr
     | & value : UInt64.t = value
-    | & _res : Int8.t = Intrinsic.any_l ()
-    | & _11 : MutBorrow.t (Slice64.slice UInt8.t) = Intrinsic.any_l ()
-    | & peek_result : UInt64.t = Intrinsic.any_l () ]
+    | & _res : Int8.t = Any.any_l ()
+    | & _11 : MutBorrow.t (Slice64.slice UInt8.t) = Any.any_l ()
+    | & peek_result : UInt64.t = Any.any_l () ]
      [ return' (result:UInt64.t)-> (! return' {result}) ] 
 end

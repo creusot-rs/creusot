@@ -14,7 +14,7 @@ pub(crate) use self::{
     traits::{validate_impls, validate_traits},
 };
 
-use rustc_hir::{def_id::DefId, HirId};
+use rustc_hir::{HirId, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
 

@@ -1,29 +1,30 @@
 use std::{
     cell::RefCell,
     collections::{HashMap, HashSet},
+    iter::repeat_n,
 };
 
-use super::{binders_to_args, Dependencies};
+use super::{Dependencies, binders_to_args};
 use crate::{
     backend::{
+        Namer as _, Why3Generator,
         signature::{sig_to_why3, signature_of},
         term::{binop_to_binop, lower_literal, lower_pure},
         ty::{constructor, is_int, ity_to_prelude, translate_ty, uty_to_prelude},
-        Namer as _, Why3Generator,
     },
     contracts_items::get_builtin,
     ctx::PreludeModule,
     naming::ident_of,
-    pearlite::{super_visit_term, Literal, Pattern, PointerKind, Term, TermVisitor},
+    pearlite::{Literal, Pattern, PointerKind, Term, TermVisitor, super_visit_term},
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind, TypingEnv};
 use rustc_span::{Span, Symbol};
 use why3::{
-    declaration::Signature,
-    exp::{BinOp, Environment},
-    ty::Type,
     Exp, Ident,
+    declaration::Signature,
+    exp::{BinOp, Environment, Pattern as WPattern, UnOp as WUnOp},
+    ty::Type,
 };
 
 /// Verification conditions for lemma functions.
@@ -64,7 +65,7 @@ pub(super) fn vc<'tcx>(
         .iter()
         .map(|arg| (arg.0.as_str().into(), Exp::var(arg.0.as_str())))
         .collect();
-    let gen = VCGen {
+    let vcgen = VCGen {
         typing_env: ctx.typing_env(self_id),
         ctx,
         names,
@@ -72,8 +73,8 @@ pub(super) fn vc<'tcx>(
         structurally_recursive,
         subst: Default::default(),
     };
-    gen.add_bounds(bounds);
-    gen.build_vc(&t, &|exp| Ok(Exp::let_(dest.clone(), exp, post.clone())))
+    vcgen.add_bounds(bounds);
+    vcgen.build_vc(&t, &|exp| Ok(Exp::let_(dest.clone(), exp, post.clone())))
 }
 
 /// Verifies whether a given term is structurally recursive: that is, each recursive call is made to
@@ -108,6 +109,7 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
         fn is_smaller_than(&self, t: &Term, nm: Symbol) -> bool {
             match &t.kind {
                 TermKind::Var(s) => self.smaller_than.get(s) == Some(&nm),
+                TermKind::Coerce { arg } => self.is_smaller_than(arg, nm),
                 _ => false,
             }
         }
@@ -115,14 +117,14 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
         // TODO: could make this a `pattern` to term comparison to make it more powerful
         /// Mark `sym` as smaller than `term`. Currently, this only updates the relation if `term` is a variable.
         fn smaller_than(&mut self, sym: Symbol, term: &Term<'_>) {
-            let var = match &term.kind {
-                TermKind::Var(s) => s,
-                _ => return,
-            };
-
-            let parent = self.smaller_than.get(var).unwrap_or(var);
-
-            self.smaller_than.insert(sym, *parent);
+            match &term.kind {
+                TermKind::Var(var) => {
+                    let parent = self.smaller_than.get(var).unwrap_or(var);
+                    self.smaller_than.insert(sym, *parent);
+                }
+                TermKind::Coerce { arg } => self.smaller_than(sym, arg),
+                _ => (),
+            }
         }
     }
 
@@ -211,6 +213,8 @@ impl<'tcx> VCError<'tcx> {
     }
 }
 
+// We use Fn because some continuations may be called several times (in the case
+// the post condition appears several times).
 type PostCont<'a, 'tcx, A, R = Exp> = &'a dyn Fn(A) -> Result<R, VCError<'tcx>>;
 
 impl<'a, 'tcx> VCGen<'a, 'tcx> {
@@ -238,18 +242,23 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     let (fct_name, prelude_kind) = match t.ty.kind() {
                         TyKind::Int(ity) => ("of_bool", ity_to_prelude(self.ctx.tcx, *ity)),
                         TyKind::Uint(uty) => ("of_bool", uty_to_prelude(self.ctx.tcx, *uty)),
+                        _ if is_int(self.ctx.tcx, t.ty) => ("to_int", PreludeModule::Bool),
                         _ => self.ctx.crash_and_error(
                             t.span,
                             "bool cast to non integral casts are currently unsupported",
                         ),
                     };
-
-                    let qname = self.names.from_prelude(prelude_kind, fct_name);
-                    k(Exp::Call(Box::new(Exp::qvar(qname)), vec![arg]))
+                    k(Exp::qvar(self.names.from_prelude(prelude_kind, fct_name)).app([arg]))
                 }),
                 TyKind::Int(_) | TyKind::Uint(_) => {
                     // to
-                    let to_fct_name = if self.names.bitwise_mode() { "to_BV256" } else { "to_int" };
+                    let to_fct_name = if self.names.bitwise_mode() {
+                        "to_BV256"
+                    } else if let TyKind::Uint(_) = arg.ty.kind() {
+                        "t'int"
+                    } else {
+                        "to_int"
+                    };
                     let to_prelude = match arg.ty.kind() {
                         TyKind::Int(ity) => ity_to_prelude(self.ctx.tcx, *ity),
                         TyKind::Uint(ity) => uty_to_prelude(self.ctx.tcx, *ity),
@@ -273,14 +282,12 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     self.build_vc(arg, &|arg| {
                         let to_qname = self.names.from_prelude(to_prelude, to_fct_name);
                         let of_qname = self.names.from_prelude(of_prelude, of_fct_name);
-                        k(Exp::qvar(of_qname).app(vec![Exp::qvar(to_qname).app(vec![arg])]))
+                        k(Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([arg])]))
                     })
                 }
-                _ => self.ctx.crash_and_error(
-                    t.span,
-                    "casting from a type that is not a boolean is not supported",
-                ),
+                _ => self.ctx.crash_and_error(t.span, "unsupported cast"),
             },
+            TermKind::Coerce { arg } => self.build_vc(arg, k),
             // Items are just global names so
             // VC(i, Q) = Q(i)
             TermKind::Item(id, sub) => {
@@ -295,7 +302,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             }
             // VC(assert { C }, Q) => VC(C, |c| c && Q(()))
             TermKind::Assert { cond } => {
-                self.build_vc(cond, &|exp| Ok(exp.lazy_and(k(Exp::Tuple(Vec::new()))?)))
+                self.build_vc(cond, &|exp| Ok(exp.lazy_and(k(Exp::unit())?)))
             }
             // VC(f As, Q) = VC(A0, |a0| ... VC(An, |an|
             //  pre(f)(a0..an) /\ variant(f)(a0..an) /\ (post(f)(a0..an, F(a0..an)) -> Q(F a0..an))
@@ -308,8 +315,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let arg_subst = pre_sig
                     .inputs
                     .iter()
-                    .zip(args.clone())
-                    .map(|(nm, res)| (ident_of(nm.0), res))
+                    .zip(&args)
+                    .map(|(nm, res)| (ident_of(nm.0), res.clone()))
                     .collect();
                 let fname = self.names.item(*id, subst);
                 let mut sig = sig_to_why3(self.ctx, self.names, "".into(), pre_sig, *id);
@@ -318,7 +325,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     if *id == self.self_id { self.build_variant(&args)? } else { Exp::mk_true() };
 
                 let call = if args.is_empty() {
-                    Exp::qvar(fname).app_to(Exp::Tuple(Vec::new()))
+                    Exp::qvar(fname).app([Exp::unit()])
                 } else {
                     Exp::qvar(fname).app(args)
                 };
@@ -346,10 +353,10 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_vc(rhs, k)?))
                 }),
                 BinOp::Div => self.build_vc(lhs, &|lhs| {
-                    self.build_vc(rhs, &|rhs| k(Exp::var("div").app(vec![lhs.clone(), rhs])))
+                    self.build_vc(rhs, &|rhs| k(Exp::var("div").app([lhs.clone(), rhs])))
                 }),
                 BinOp::Rem => self.build_vc(lhs, &|lhs| {
-                    self.build_vc(rhs, &|rhs| k(Exp::var("mod").app(vec![lhs.clone(), rhs])))
+                    self.build_vc(rhs, &|rhs| k(Exp::var("mod").app([lhs.clone(), rhs])))
                 }),
                 _ => self.build_vc(lhs, &|lhs| {
                     self.build_vc(rhs, &|rhs| {
@@ -360,8 +367,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // VC(OP A, Q) = VC(A |a| Q(OP a))
             TermKind::Unary { op, arg } => self.build_vc(arg, &|arg| {
                 let op = match op {
-                    UnOp::Not => why3::exp::UnOp::Not,
-                    UnOp::Neg => why3::exp::UnOp::Neg,
+                    UnOp::Not => WUnOp::Not,
+                    UnOp::Neg => WUnOp::Neg,
                 };
 
                 k(Exp::UnaryOp(op, Box::new(arg)))
@@ -394,7 +401,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             TermKind::Tuple { fields } => self.build_vc_slice(fields, &|flds| k(Exp::Tuple(flds))),
             // Same as for tuples
             TermKind::Constructor { variant, fields, .. } => {
-                let ty = self.ctx.normalize_erasing_regions(self.typing_env, t.creusot_ty());
+                let ty = self.ctx.normalize_erasing_regions(self.typing_env, t.ty);
                 let TyKind::Adt(adt, subst) = ty.kind() else { unreachable!() };
                 self.build_vc_slice(fields, &|fields| {
                     let ctor = constructor(self.names, fields, adt.variant(*variant).def_id, subst);
@@ -418,9 +425,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 self.build_vc(scrutinee, &|scrut| {
                     let mut arms: Vec<_> = arms
                         .iter()
-                        .map(&|arm: &(Pattern<'tcx>, Term<'tcx>)| {
-                            Ok((arm.0.get_bool().unwrap(), self.build_vc(&arm.1, k)?))
-                        })
+                        .map(|arm| Ok((arm.0.get_bool().unwrap(), self.build_vc(&arm.1, k)?)))
                         .collect::<Result<_, _>>()?;
                     arms.sort_by(|a, b| b.0.cmp(&a.0));
 
@@ -430,12 +435,12 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
             // VC(match A {P -> E}, Q) = VC(A, |a| match a {P -> VC(E, Q)})
             TermKind::Match { scrutinee, arms } => self.build_vc(scrutinee, &|scrut| {
-                let arms: Vec<_> = arms
+                let arms = arms
                     .iter()
-                    .map(&|arm: &(Pattern<'tcx>, Term<'tcx>)| {
+                    .map(|arm| {
                         self.build_pattern(&arm.0, &|pat| Ok((pat, self.build_vc(&arm.1, k)?)))
                     })
-                    .collect::<Result<_, _>>()?;
+                    .collect::<Result<Box<[_]>, _>>()?;
 
                 Ok(Exp::Match(Box::new(scrut), arms))
             }),
@@ -443,13 +448,12 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             TermKind::Let { pattern, arg, body } => self.build_vc(arg, &|arg| {
                 self.build_pattern(pattern, &|pattern| {
                     let body = self.build_vc(body, k)?;
-
                     Ok(Exp::Let { pattern, arg: Box::new(arg.clone()), body: Box::new(body) })
                 })
             }),
             // VC(A.f, Q) = VC(A, |a| Q(a.f))
             TermKind::Projection { lhs, name } => {
-                let ty = self.ctx.normalize_erasing_regions(self.typing_env, lhs.creusot_ty());
+                let ty = self.ctx.normalize_erasing_regions(self.typing_env, lhs.ty);
                 let field = match ty.kind() {
                     TyKind::Closure(did, substs) => {
                         self.names.field(*did, substs, *name).as_ident()
@@ -458,12 +462,11 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                         self.names.field(def.did(), substs, *name).as_ident()
                     }
                     TyKind::Tuple(f) => {
-                        let mut fields = vec![why3::exp::Pattern::Wildcard; f.len()];
-                        fields[name.as_usize()] = why3::exp::Pattern::VarP("a".into());
-
+                        let mut fields: Box<_> = repeat_n(WPattern::Wildcard, f.len()).collect();
+                        fields[name.as_usize()] = WPattern::VarP("a".into());
                         return self.build_vc(lhs, &|lhs| {
                             k(Exp::Let {
-                                pattern: why3::exp::Pattern::TupleP(fields.clone()),
+                                pattern: WPattern::TupleP(fields.clone()),
                                 arg: Box::new(lhs),
                                 body: Box::new(Exp::var("a")),
                             })
@@ -485,7 +488,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
     fn build_pattern<A>(
         &self,
         pat: &Pattern<'tcx>,
-        k: PostCont<'_, 'tcx, why3::exp::Pattern, A>,
+        k: PostCont<'_, 'tcx, WPattern, A>,
     ) -> Result<A, VCError<'tcx>> {
         let mut bounds = Default::default();
         let pat = self.build_pattern_inner(&mut bounds, pat);
@@ -500,89 +503,82 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         &self,
         bounds: &mut HashMap<Ident, Exp>,
         pat: &Pattern<'tcx>,
-    ) -> why3::exp::Pattern {
-        use why3::exp::Pattern as Pat;
+    ) -> WPattern {
         match pat {
             Pattern::Constructor { variant, fields, substs } => {
                 let fields =
                     fields.iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect();
                 let substs = self.ctx.normalize_erasing_regions(self.typing_env, *substs);
                 if self.ctx.def_kind(variant) == DefKind::Variant {
-                    Pat::ConsP(self.names.constructor(*variant, substs), fields)
+                    WPattern::ConsP(self.names.constructor(*variant, substs), fields)
                 } else if fields.is_empty() {
-                    Pat::TupleP(vec![])
+                    WPattern::TupleP(Box::new([]))
                 } else {
-                    Pat::RecP(
+                    WPattern::RecP(
                         fields
                             .into_iter()
                             .enumerate()
                             .map(|(i, f)| {
                                 (self.names.field(*variant, substs, i.into()).as_ident(), f)
                             })
-                            .filter(|(_, f)| !matches!(f, Pat::Wildcard))
+                            .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                             .collect(),
                     )
                 }
             }
-            Pattern::Wildcard => Pat::Wildcard,
+            Pattern::Wildcard => WPattern::Wildcard,
             Pattern::Binder(name) => {
                 let name_id = name.as_str().into();
                 let new = self.uniq_occ(&name_id);
                 bounds.insert(name_id, Exp::var(new.clone()));
-                Pat::VarP(new)
+                WPattern::VarP(new)
             }
             Pattern::Boolean(b) => {
                 if *b {
-                    Pat::mk_true()
+                    WPattern::mk_true()
                 } else {
-                    Pat::mk_false()
+                    WPattern::mk_false()
                 }
             }
-            Pattern::Tuple(pats) => {
-                Pat::TupleP(pats.iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect())
-            }
+            Pattern::Tuple(pats) => WPattern::TupleP(
+                pats.iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect(),
+            ),
             Pattern::Deref { pointee, kind } => match kind {
                 PointerKind::Box | PointerKind::Shr => self.build_pattern_inner(bounds, pointee),
-                PointerKind::Mut => {
-                    Pat::RecP(vec![("current".into(), self.build_pattern_inner(bounds, pointee))])
-                }
+                PointerKind::Mut => WPattern::RecP(Box::new([(
+                    "current".into(),
+                    self.build_pattern_inner(bounds, pointee),
+                )])),
             },
         }
     }
 
     fn uniq_occ(&self, id: &Ident) -> Ident {
         let occ = self.subst.borrow().occ(id);
-
-        if occ == 0 {
-            id.clone()
-        } else {
-            Ident::from_string(format!("{}_{occ}", &**id))
-        }
+        if occ == 0 { id.clone() } else { Ident::from_string(format!("{}_{occ}", &**id)) }
     }
 
     fn build_vc_slice(
         &self,
         t: &[Term<'tcx>],
-        k: PostCont<'_, 'tcx, Vec<Exp>>,
+        k: PostCont<'_, 'tcx, Box<[Exp]>>,
     ) -> Result<Exp, VCError<'tcx>> {
-        self.build_vc_slice_inner(t, &|mut args| {
-            args.reverse();
-            k(args)
-        })
+        self.build_vc_slice_inner(t.len(), t, k)
     }
 
     fn build_vc_slice_inner(
         &self,
+        len: usize,
         t: &[Term<'tcx>],
-        k: PostCont<'_, 'tcx, Vec<Exp>>,
+        k: PostCont<'_, 'tcx, Box<[Exp]>>,
     ) -> Result<Exp, VCError<'tcx>> {
         if t.is_empty() {
-            k(Vec::new())
+            k(repeat_n(/* Dummy */ Exp::mk_true(), len).collect())
         } else {
             self.build_vc(&t[0], &|v| {
-                self.build_vc_slice_inner(&t[1..], &|mut vs| {
-                    vs.push(v.clone());
-                    k(vs)
+                self.build_vc_slice_inner(len, &t[1..], &|mut args| {
+                    args[len - t.len()] = v.clone();
+                    k(args)
                 })
             })
         }
@@ -603,33 +599,34 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
     //  0 <= V && V' < V
     //  Weirdly (to me Xavier) this doesn't check `0 <= V'` but this is actually the same behavior as Why3
     fn build_variant(&self, call_args: &[Exp]) -> Result<Exp, VCError<'tcx>> {
-        if self.structurally_recursive {
-            return Ok(Exp::mk_true());
-        }
         let variant = self.ctx.sig(self.self_id).contract.variant.clone();
-        let Some(variant) = variant else { return Ok(Exp::mk_false()) };
+        let Some(variant) = variant else {
+            if self.structurally_recursive {
+                return Ok(Exp::mk_true());
+            } else {
+                return Ok(Exp::mk_false());
+            }
+        };
 
         let top_level_args = self.top_level_args();
 
         let mut subst: Environment =
             top_level_args.into_iter().zip(call_args.iter().cloned()).collect();
-        let orig_variant = self.self_sig().contract.variant.remove(0);
+        let orig_variant = self.self_sig().contract.variant.unwrap();
         let mut rec_var_exp = orig_variant.clone();
         rec_var_exp.subst(&mut subst);
-        if is_int(self.ctx.tcx, variant.creusot_ty()) {
+        if is_int(self.ctx.tcx, variant.ty) {
             self.names.import_prelude_module(PreludeModule::Int);
             Ok(Exp::BinaryOp(BinOp::Le, Box::new(Exp::int(0)), Box::new(orig_variant.clone()))
                 .log_and(Exp::BinaryOp(BinOp::Lt, Box::new(rec_var_exp), Box::new(orig_variant))))
         } else {
-            Err(VCError::UnsupportedVariant(variant.creusot_ty(), variant.span))
+            Err(VCError::UnsupportedVariant(variant.ty, variant.span))
         }
     }
 
     /// Produces the top-level call expression for the function being verified
     fn top_level_args(&self) -> Vec<Ident> {
-        let sig = self.self_sig();
-        let (arg_names, _) = binders_to_args(sig.args);
-        arg_names
+        binders_to_args(self.self_sig().args).0
     }
 
     fn add_bounds(&self, bounds: HashMap<Ident, Exp>) {

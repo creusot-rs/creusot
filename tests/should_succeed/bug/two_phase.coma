@@ -1,11 +1,11 @@
 module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   let%span stwo_phase0 = "two_phase.rs" 5 10 5 37
-  let%span svec1 = "../../../creusot-contracts/src/std/vec.rs" 88 26 88 48
-  let%span svec2 = "../../../creusot-contracts/src/std/vec.rs" 92 26 92 56
-  let%span smodel3 = "../../../creusot-contracts/src/model.rs" 72 8 72 22
-  let%span sindex4 = "../../../creusot-contracts/src/logic/ops/index.rs" 29 8 29 31
+  let%span svec1 = "../../../creusot-contracts/src/std/vec.rs" 89 26 89 48
+  let%span svec2 = "../../../creusot-contracts/src/std/vec.rs" 93 26 93 56
+  let%span sindex3 = "../../../creusot-contracts/src/logic/ops/index.rs" 29 8 29 31
+  let%span smodel4 = "../../../creusot-contracts/src/model.rs" 72 8 72 22
   let%span smodel5 = "../../../creusot-contracts/src/model.rs" 54 8 54 22
-  let%span svec6 = "../../../creusot-contracts/src/std/vec.rs" 20 14 20 41
+  let%span svec6 = "../../../creusot-contracts/src/std/vec.rs" 21 14 21 41
   let%span sresolve7 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   
   use creusot.prelude.MutBorrow
@@ -56,53 +56,53 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   let rec len'0 (self:t_Vec'0) (return'  (ret:UInt64.t))= {[@expl:len 'self' type invariant] inv'0 self}
     any [ return' (result:UInt64.t)-> {[%#svec1] UInt64.t'int result = Seq.length (view'1 self)} (! return' {result}) ] 
   
-  predicate inv'1 (_1 : MutBorrow.t (t_Vec'0))
+  predicate inv'1 (_1 : MutBorrow.t t_Vec'0)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t (t_Vec'0) [inv'1 x] . inv'1 x = true
+  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'1 x] . inv'1 x = true
   
   predicate inv'2 (_1 : UInt64.t)
   
   axiom inv_axiom'2 [@rewrite] : forall x : UInt64.t [inv'2 x] . inv'2 x = true
   
-  function view'0 (self : MutBorrow.t (t_Vec'0)) : Seq.seq UInt64.t =
-    [%#smodel3] view'2 self.current
-  
   use seq.Seq
   
-  let rec push'0 (self:MutBorrow.t (t_Vec'0)) (value:UInt64.t) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'1 self}
+  function view'0 (self : MutBorrow.t t_Vec'0) : Seq.seq UInt64.t =
+    [%#smodel4] view'2 self.current
+  
+  let rec push'0 (self:MutBorrow.t t_Vec'0) (value:UInt64.t) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'1 self}
     {[@expl:push 'value' type invariant] inv'2 value}
     any [ return' (result:())-> {[%#svec2] view'2 self.final = Seq.snoc (view'0 self) value} (! return' {result}) ] 
   
-  predicate resolve'1 (self : MutBorrow.t (t_Vec'0)) =
+  predicate resolve'1 (self : MutBorrow.t t_Vec'0) =
     [%#sresolve7] self.final = self.current
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_Vec'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t t_Vec'0) =
     resolve'1 _1
   
-  use creusot.prelude.Intrinsic
+  use creusot.prelude.Any
   
   use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : UInt64.t =
-    [%#sindex4] Seq.get (view'2 self) ix
+    [%#sindex3] Seq.get (view'2 self) ix
   
   meta "compute_max_steps" 1000000
   
-  let rec test'0[#"two_phase.rs" 6 0 6 31] (v:MutBorrow.t (t_Vec'0)) (return'  (ret:()))= (! bb0
+  let rec test'0[#"two_phase.rs" 6 0 6 31] (v:MutBorrow.t t_Vec'0) (return'  (ret:()))= (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_Vec'0> {v.current} {MutBorrow.get_id v}
-          (fun (_ret':MutBorrow.t (t_Vec'0)) ->  [ &_4 <- _ret' ]  [ &v <- { v with current = _ret'.final } ] s1)
+          (fun (_ret':MutBorrow.t t_Vec'0) ->  [ &_4 <- _ret' ]  [ &v <- { v with current = _ret'.final } ] s1)
       | s1 = len'0 {_4.current} (fun (_ret':UInt64.t) ->  [ &_5 <- _ret' ] s2)
       | s2 = bb1 ]
     
     | bb1 = s0 [ s0 = push'0 {_4} {_5} (fun (_ret':()) ->  [ &_3 <- _ret' ] s1) | s1 = bb2 ] 
     | bb2 = s0 [ s0 = -{resolve'0 v}- s1 | s1 = return' {_0} ]  ]
     )
-    [ & _0 : () = Intrinsic.any_l ()
-    | & v : MutBorrow.t (t_Vec'0) = v
-    | & _3 : () = Intrinsic.any_l ()
-    | & _4 : MutBorrow.t (t_Vec'0) = Intrinsic.any_l ()
-    | & _5 : UInt64.t = Intrinsic.any_l () ]
+    [ & _0 : () = Any.any_l ()
+    | & v : MutBorrow.t t_Vec'0 = v
+    | & _3 : () = Any.any_l ()
+    | & _4 : MutBorrow.t t_Vec'0 = Any.any_l ()
+    | & _5 : UInt64.t = Any.any_l () ]
     
     [ return' (result:())-> {[@expl:test ensures] [%#stwo_phase0] UInt64.t'int (index_logic'0 v.final (Seq.length (view'0 v)))
       = Seq.length (view'0 v)}

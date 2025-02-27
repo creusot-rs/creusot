@@ -8,93 +8,64 @@ module M_869__unsound [#"869.rs" 5 0 5 16]
   let%span s8696 = "869.rs" 21 20 21 37
   let%span sresolve7 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   
-  use creusot.prelude.Snapshot
-  
   use creusot.prelude.MutBorrow
   
-  use creusot.prelude.Snapshot
-  
-  predicate resolve'1 (self : MutBorrow.t (Snapshot.snap_ty bool)) =
+  predicate resolve'1 (self : MutBorrow.t bool) =
     [%#sresolve7] self.final = self.current
   
-  predicate resolve'0 (_1 : MutBorrow.t (Snapshot.snap_ty bool)) =
+  predicate resolve'0 (_1 : MutBorrow.t bool) =
     resolve'1 _1
   
-  use creusot.prelude.Snapshot
-  
-  use creusot.prelude.Snapshot
-  
-  use creusot.prelude.Snapshot
-  
-  use creusot.prelude.Intrinsic
-  
-  use creusot.prelude.Snapshot
+  use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000
   
   let rec unsound'0[#"869.rs" 5 0 5 16] (_1:()) (return'  (ret:()))= (! bb0
-    [ bb0 = s0 [ s0 =  [ &x <- [%#s8690] Snapshot.new true ] s1 | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 =  [ &x <- [%#s8690] true ] s1 | s1 = bb1 ] 
     | bb1 = s0
-      [ s0 = MutBorrow.borrow_mut <Snapshot.snap_ty bool> {x}
-          (fun (_ret':MutBorrow.t (Snapshot.snap_ty bool)) ->  [ &_4 <- _ret' ]  [ &x <- _ret'.final ] s1)
-      | s1 = MutBorrow.borrow_final <Snapshot.snap_ty bool> {_4.current} {MutBorrow.get_id _4}
-          (fun (_ret':MutBorrow.t (Snapshot.snap_ty bool)) ->
-             [ &xm <- _ret' ] 
-             [ &_4 <- { _4 with current = _ret'.final } ] 
-            s2)
+      [ s0 = MutBorrow.borrow_mut <bool> {x}
+          (fun (_ret':MutBorrow.t bool) ->  [ &_4 <- _ret' ]  [ &x <- _ret'.final ] s1)
+      | s1 = MutBorrow.borrow_final <bool> {_4.current} {MutBorrow.get_id _4}
+          (fun (_ret':MutBorrow.t bool) ->  [ &xm <- _ret' ]  [ &_4 <- { _4 with current = _ret'.final } ] s2)
       | s2 = -{resolve'0 _4}- s3
-      | s3 = MutBorrow.borrow_mut <Snapshot.snap_ty bool> {xm.current}
-          (fun (_ret':MutBorrow.t (Snapshot.snap_ty bool)) ->
-             [ &_6 <- _ret' ] 
-             [ &xm <- { xm with current = _ret'.final } ] 
-            s4)
-      | s4 = MutBorrow.borrow_final <Snapshot.snap_ty bool> {_6.current} {MutBorrow.get_id _6}
-          (fun (_ret':MutBorrow.t (Snapshot.snap_ty bool)) ->
-             [ &b <- _ret' ] 
-             [ &_6 <- { _6 with current = _ret'.final } ] 
-            s5)
+      | s3 = MutBorrow.borrow_mut <bool> {xm.current}
+          (fun (_ret':MutBorrow.t bool) ->  [ &_6 <- _ret' ]  [ &xm <- { xm with current = _ret'.final } ] s4)
+      | s4 = MutBorrow.borrow_final <bool> {_6.current} {MutBorrow.get_id _6}
+          (fun (_ret':MutBorrow.t bool) ->  [ &b <- _ret' ]  [ &_6 <- { _6 with current = _ret'.final } ] s5)
       | s5 = -{resolve'0 b}- s6
       | s6 = -{resolve'0 _6}- s7
-      | s7 =  [ &bg <- [%#s8691] Snapshot.new b ] s8
+      | s7 =  [ &bg <- [%#s8691] b ] s8
       | s8 = bb2 ]
     
     | bb2 = s0
-      [ s0 = {[@expl:assertion] [%#s8692] Snapshot.inner (Snapshot.inner bg).current = true
-        /\ Snapshot.inner (Snapshot.inner bg).final = true}
-        s1
-      | s1 = MutBorrow.borrow_final <Snapshot.snap_ty bool> {xm.current} {MutBorrow.get_id xm}
-          (fun (_ret':MutBorrow.t (Snapshot.snap_ty bool)) ->
-             [ &_12 <- _ret' ] 
-             [ &xm <- { xm with current = _ret'.final } ] 
-            s2)
-      | s2 = MutBorrow.borrow_final <Snapshot.snap_ty bool> {_12.current} {MutBorrow.get_id _12}
-          (fun (_ret':MutBorrow.t (Snapshot.snap_ty bool)) ->
-             [ &evil <- _ret' ] 
-             [ &_12 <- { _12 with current = _ret'.final } ] 
-            s3)
+      [ s0 = {[@expl:assertion] [%#s8692] bg.current = true /\ bg.final = true} s1
+      | s1 = MutBorrow.borrow_final <bool> {xm.current} {MutBorrow.get_id xm}
+          (fun (_ret':MutBorrow.t bool) ->  [ &_12 <- _ret' ]  [ &xm <- { xm with current = _ret'.final } ] s2)
+      | s2 = MutBorrow.borrow_final <bool> {_12.current} {MutBorrow.get_id _12}
+          (fun (_ret':MutBorrow.t bool) ->  [ &evil <- _ret' ]  [ &_12 <- { _12 with current = _ret'.final } ] s3)
       | s3 = -{resolve'0 _12}- s4
-      | s4 = {[@expl:assertion] [%#s8693] (evil = Snapshot.inner bg) = (Snapshot.inner evil.final = true)} s5
-      | s5 =  [ &_15 <- [%#s8694] Snapshot.new (if evil = Snapshot.inner bg then false else true) ] s6
+      | s4 = {[@expl:assertion] [%#s8693] (evil = bg) = (evil.final = true)} s5
+      | s5 =  [ &_15 <- [%#s8694] if evil = bg then false else true ] s6
       | s6 = bb3 ]
     
     | bb3 = s0
       [ s0 =  [ &evil <- { evil with current = _15 } ] s1
       | s1 = -{resolve'0 evil}- s2
       | s2 = -{resolve'0 xm}- s3
-      | s3 = {[@expl:assertion] [%#s8695] Snapshot.inner evil.current = (not Snapshot.inner evil.final)} s4
-      | s4 = {[@expl:assertion] [%#s8696] Snapshot.inner evil.current = (not Snapshot.inner evil.current)} s5
+      | s3 = {[@expl:assertion] [%#s8695] evil.current = (not evil.final)} s4
+      | s4 = {[@expl:assertion] [%#s8696] evil.current = (not evil.current)} s5
       | s5 = return' {_0} ]
      ]
     )
-    [ & _0 : () = Intrinsic.any_l ()
-    | & x : Snapshot.snap_ty bool = Intrinsic.any_l ()
-    | & xm : MutBorrow.t (Snapshot.snap_ty bool) = Intrinsic.any_l ()
-    | & _4 : MutBorrow.t (Snapshot.snap_ty bool) = Intrinsic.any_l ()
-    | & b : MutBorrow.t (Snapshot.snap_ty bool) = Intrinsic.any_l ()
-    | & _6 : MutBorrow.t (Snapshot.snap_ty bool) = Intrinsic.any_l ()
-    | & bg : Snapshot.snap_ty (MutBorrow.t (Snapshot.snap_ty bool)) = Intrinsic.any_l ()
-    | & evil : MutBorrow.t (Snapshot.snap_ty bool) = Intrinsic.any_l ()
-    | & _12 : MutBorrow.t (Snapshot.snap_ty bool) = Intrinsic.any_l ()
-    | & _15 : Snapshot.snap_ty bool = Intrinsic.any_l () ]
+    [ & _0 : () = Any.any_l ()
+    | & x : bool = Any.any_l ()
+    | & xm : MutBorrow.t bool = Any.any_l ()
+    | & _4 : MutBorrow.t bool = Any.any_l ()
+    | & b : MutBorrow.t bool = Any.any_l ()
+    | & _6 : MutBorrow.t bool = Any.any_l ()
+    | & bg : MutBorrow.t bool = Any.any_l ()
+    | & evil : MutBorrow.t bool = Any.any_l ()
+    | & _12 : MutBorrow.t bool = Any.any_l ()
+    | & _15 : bool = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end

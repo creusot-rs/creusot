@@ -1,4 +1,4 @@
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use directories::ProjectDirs;
 use std::{cmp::Ordering, fmt, path::PathBuf};
 
@@ -64,8 +64,10 @@ impl fmt::Display for Issue {
         let Issue { error, tool, cur_version, expected_version, builtin_tool: _ } = self;
         let header = if *error { "Error" } else { "Warning" };
         match cur_version {
-            Ok(cur_version) => write!(f,
-                "{header}: {tool} has version {cur_version}, expected version is {expected_version}"),
+            Ok(cur_version) => write!(
+                f,
+                "{header}: {tool} has version {cur_version}, expected version is {expected_version}"
+            ),
             Err(err) => write!(f, "{header}: {err}"),
         }
     }

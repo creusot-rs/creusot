@@ -2,7 +2,7 @@
 #![feature(box_patterns, extract_if)]
 #![feature(let_chains, never_type, try_blocks)]
 #![feature(closure_lifetime_binder)]
-#![feature(if_let_guard, slice_take)]
+#![feature(if_let_guard, slice_take, slice_as_array)]
 
 extern crate either;
 #[macro_use]

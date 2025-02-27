@@ -1,20 +1,20 @@
 use crate::{
-    AbsoluteBytePos, EncodedSourceFileId, Footer, SourceFileIndex, SYMBOL_OFFSET,
-    SYMBOL_PREINTERNED, SYMBOL_STR, TAG_FULL_SPAN, TAG_PARTIAL_SPAN,
+    AbsoluteBytePos, EncodedSourceFileId, Footer, SYMBOL_OFFSET, SYMBOL_PREINTERNED, SYMBOL_STR,
+    SourceFileIndex, TAG_FULL_SPAN, TAG_PARTIAL_SPAN,
 };
 use rustc_data_structures::{fx::FxHashMap, sync::Lrc};
 use rustc_hir::def_id::{CrateNum, DefId, DefIndex, DefPathHash, StableCrateId};
 use rustc_middle::{
     implement_ty_decoder,
-    ty::{codec::TyDecoder, Ty, TyCtxt},
+    ty::{Ty, TyCtxt, codec::TyDecoder},
 };
 use rustc_serialize::{
-    opaque::{IntEncodedWithFixedSize, MemDecoder},
     Decodable, Decoder,
+    opaque::{IntEncodedWithFixedSize, MemDecoder},
 };
 use rustc_span::{
+    BytePos, DUMMY_SP, ExpnData, ExpnHash, ExpnId, SourceFile, Span, Symbol, SyntaxContext,
     hygiene::{HygieneDecodeContext, SyntaxContextData},
-    BytePos, ExpnData, ExpnHash, ExpnId, SourceFile, Span, Symbol, SyntaxContext, DUMMY_SP,
 };
 
 // This is only safe to decode the metadata of a single crate or the `ty_rcache` might confuse shorthands (see #360)

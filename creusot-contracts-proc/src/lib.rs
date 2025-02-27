@@ -5,7 +5,7 @@ extern crate proc_macro;
 use pearlite_syn::*;
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
-use quote::{quote, quote_spanned, ToTokens, TokenStreamExt};
+use quote::{ToTokens, TokenStreamExt, quote, quote_spanned};
 use std::iter;
 use syn::{
     parse::{Parse, Result},
@@ -609,11 +609,7 @@ pub fn predicate(prophetic: TS1, tokens: TS1) -> TS1 {
         None
     } else {
         let t = parse_macro_input!(prophetic as Ident);
-        if t == "prophetic" {
-            Some(quote!(#[creusot::decl::logic::prophetic]))
-        } else {
-            None
-        }
+        if t == "prophetic" { Some(quote!(#[creusot::decl::logic::prophetic])) } else { None }
     };
 
     let pred = parse_macro_input!(tokens as LogicInput);

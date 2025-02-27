@@ -14,11 +14,7 @@ pub struct Item<Name> {
 #[requires(true)]
 #[ensures(result@ == a@.max(b@))]
 fn max(a: usize, b: usize) -> usize {
-    if a < b {
-        b
-    } else {
-        a
-    }
+    if a < b { b } else { a }
 }
 
 /// Check that values stored in ``best_value`` correspond to the function ``m`` from

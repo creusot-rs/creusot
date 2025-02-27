@@ -2,7 +2,7 @@ use crate::{backend::place::projection_ty, naming::ident_of, pearlite::Term};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{tcx::PlaceTy, BasicBlock, BinOp, Local, ProjectionElem, Promoted, UnOp},
+    mir::{BasicBlock, BinOp, Local, ProjectionElem, Promoted, UnOp, tcx::PlaceTy},
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt},
 };
 use rustc_span::{Span, Symbol};
@@ -11,7 +11,7 @@ use rustc_target::abi::VariantIdx;
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Place<'tcx> {
     pub(crate) local: Symbol,
-    pub(crate) projection: Vec<ProjectionElem<Symbol, Ty<'tcx>>>,
+    pub(crate) projection: Box<[ProjectionElem<Symbol, Ty<'tcx>>]>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -32,18 +32,14 @@ impl<'tcx> Place<'tcx> {
     }
 
     pub(crate) fn as_symbol(&self) -> Option<Symbol> {
-        if self.projection.is_empty() {
-            Some(self.local)
-        } else {
-            None
-        }
+        if self.projection.is_empty() { Some(self.local) } else { None }
     }
 
     pub(crate) fn iter_projections(
         &self,
     ) -> impl Iterator<Item = (PlaceRef<'_, 'tcx>, ProjectionElem<Symbol, Ty<'tcx>>)>
-           + DoubleEndedIterator
-           + '_ {
+    + DoubleEndedIterator
+    + '_ {
         self.projection.iter().enumerate().map(move |(i, proj)| {
             let base = PlaceRef { local: self.local, projection: &self.projection[..i] };
             (base, *proj)
@@ -80,7 +76,7 @@ pub enum Statement<'tcx> {
     Assertion { cond: Term<'tcx>, msg: String, trusted: bool },
     // Todo: fold into `Assertion`
     AssertTyInv { pl: Place<'tcx> },
-    Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Vec<Operand<'tcx>>, Span),
+    Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Box<[Operand<'tcx>]>, Span),
 }
 
 // TODO: Add shared borrows?
@@ -109,11 +105,11 @@ pub enum RValue<'tcx> {
     Operand(Operand<'tcx>),
     BinOp(BinOp, Operand<'tcx>, Operand<'tcx>),
     UnaryOp(UnOp, Operand<'tcx>),
-    Constructor(DefId, GenericArgsRef<'tcx>, Vec<Operand<'tcx>>),
+    Constructor(DefId, GenericArgsRef<'tcx>, Box<[Operand<'tcx>]>),
     Cast(Operand<'tcx>, Ty<'tcx>, Ty<'tcx>),
-    Tuple(Vec<Operand<'tcx>>),
+    Tuple(Box<[Operand<'tcx>]>),
     Len(Operand<'tcx>),
-    Array(Vec<Operand<'tcx>>),
+    Array(Box<[Operand<'tcx>]>),
     Repeat(Operand<'tcx>, Operand<'tcx>),
     Ptr(Place<'tcx>),
 }
@@ -201,12 +197,12 @@ pub enum Terminator<'tcx> {
 
 #[derive(Clone, Debug)]
 pub enum Branches<'tcx> {
-    Int(Vec<(i128, BasicBlock)>, BasicBlock),
-    Uint(Vec<(u128, BasicBlock)>, BasicBlock),
+    Int(Box<[(i128, BasicBlock)]>, BasicBlock),
+    Uint(Box<[(u128, BasicBlock)]>, BasicBlock),
     Constructor(
         AdtDef<'tcx>,
         GenericArgsRef<'tcx>,
-        Vec<(VariantIdx, BasicBlock)>,
+        Box<[(VariantIdx, BasicBlock)]>,
         Option<BasicBlock>,
     ),
     Bool(BasicBlock, BasicBlock),

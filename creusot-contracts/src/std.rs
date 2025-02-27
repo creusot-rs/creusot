@@ -8,6 +8,7 @@ pub mod collections {
     pub mod hash_map;
     pub mod hash_set;
 }
+pub mod char;
 pub mod cmp;
 pub mod default;
 pub mod deque;

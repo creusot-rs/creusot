@@ -1,5 +1,5 @@
 use clap::Parser;
-use libc::{c_ushort, ioctl, STDOUT_FILENO, TIOCGWINSZ};
+use libc::{STDOUT_FILENO, TIOCGWINSZ, c_ushort, ioctl};
 use std::{
     env,
     fs::File,
@@ -7,8 +7,8 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
     sync::{
-        atomic::{self, AtomicUsize},
         Mutex,
+        atomic::{self, AtomicUsize},
     },
     thread,
 };
@@ -239,11 +239,7 @@ fn run_creusot(
         .split(" ")
         .filter_map(|chunk| {
             let (first, rest) = chunk.split_once("=")?;
-            if first != "CREUSOT_ARG" {
-                None
-            } else {
-                Some(rest)
-            }
+            if first != "CREUSOT_ARG" { None } else { Some(rest) }
         })
         .collect();
 
@@ -374,7 +370,7 @@ where
                     Some(mut c) => {
                         if !args.quiet {
                             let mut out = out.lock().unwrap();
-                            let (ref mut in_flight, ref mut out) = &mut *out;
+                            let (in_flight, out) = &mut *out;
                             in_flight.push(entry_name.to_string());
                             erase_in_flight(out);
                             write_in_flight(in_flight, out);
@@ -394,7 +390,7 @@ where
                     differ(output.clone(), &stdout, Some(&stderr), should_succeed, is_tty).unwrap();
 
                 let mut out = out.lock().unwrap();
-                let (ref mut in_flight, ref mut out) = &mut *out;
+                let (in_flight, out) = &mut *out;
 
                 if !args.quiet {
                     if let Some(i) = in_flight.iter().position(|n| n == entry_name) {

@@ -8,26 +8,19 @@ use serde::{Deserialize, Serialize};
 pub enum Type {
     TVar(Ident),
     TConstructor(QName),
-    TApp(Box<Type>, Vec<Type>),
-    Tuple(Vec<Type>),
+    TApp(Box<Type>, Box<[Type]>),
+    Tuple(Box<[Type]>),
     TFun(Box<Type>, Box<Type>),
 }
 
 impl Type {
-    pub const UNIT: Self = Self::Tuple(Vec::new());
+    pub fn unit() -> Self {
+        Self::Tuple(Box::new([]))
+    }
 
-    pub fn tapp(mut self, args: Vec<Self>) -> Self {
-        if args.is_empty() {
-            self
-        } else {
-            match self {
-                Self::TApp(_, ref mut args1) => {
-                    args1.extend(args);
-                    self
-                }
-                _ => Self::TApp(Box::new(self), args),
-            }
-        }
+    pub fn tapp(self, args: impl IntoIterator<Item = Self>) -> Self {
+        let mut args = args.into_iter().peekable();
+        if args.peek().is_none() { self } else { Self::TApp(Box::new(self), args.collect()) }
     }
 
     pub(crate) fn complex(&self) -> bool {

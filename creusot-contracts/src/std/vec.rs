@@ -1,11 +1,12 @@
 use crate::{
+    Default,
     invariant::*,
     resolve::structural_resolve,
     std::{
         ops::{Deref, DerefMut, Index, IndexMut},
         slice::SliceIndex,
     },
-    Default, *,
+    *,
 };
 #[cfg(feature = "nightly")]
 use ::std::alloc::Allocator;

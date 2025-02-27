@@ -18,7 +18,7 @@ module M_switch_struct__test [#"switch_struct.rs" 8 0 8 30]
     | bad -> {forall field1 : UInt32.t [C_F'0 field1 : t_M'0] . C_F'0 field1 <> input} (! {false} any) ]
   
   
-  use creusot.prelude.Intrinsic
+  use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000
   
@@ -26,20 +26,20 @@ module M_switch_struct__test [#"switch_struct.rs" 8 0 8 30]
     [ bb0 = any [ br0 (x0:UInt32.t)-> {o = C_F'0 x0} (! bb2) | br1 (x0:UInt32.t)-> {o = C_G'0 x0} (! bb3) ] 
     | bb3 = s0
       [ s0 = v_G'0 {o} (fun (rfield2'0:UInt32.t) ->  [ &field2 <- rfield2'0 ] s1)
-      | s1 = UInt32.eq {field2} {[%#sswitch_struct0] (0 : UInt32.t)} (fun (_ret':bool) ->  [ &_0 <- _ret' ] s2)
+      | s1 =  [ &_0 <- field2 = ([%#sswitch_struct0] (0 : UInt32.t)) ] s2
       | s2 = bb5 ]
     
     | bb2 = bb4
     | bb4 = s0
       [ s0 = v_F'0 {o} (fun (rfield1'0:UInt32.t) ->  [ &field1 <- rfield1'0 ] s1)
-      | s1 = UInt32.gt {field1} {[%#sswitch_struct1] (0 : UInt32.t)} (fun (_ret':bool) ->  [ &_0 <- _ret' ] s2)
+      | s1 =  [ &_0 <- UInt32.gt field1 ([%#sswitch_struct1] (0 : UInt32.t)) ] s2
       | s2 = bb5 ]
     
     | bb5 = return' {_0} ]
     )
-    [ & _0 : bool = Intrinsic.any_l ()
+    [ & _0 : bool = Any.any_l ()
     | & o : t_M'0 = o
-    | & field1 : UInt32.t = Intrinsic.any_l ()
-    | & field2 : UInt32.t = Intrinsic.any_l () ]
+    | & field1 : UInt32.t = Any.any_l ()
+    | & field2 : UInt32.t = Any.any_l () ]
      [ return' (result:bool)-> (! return' {result}) ] 
 end

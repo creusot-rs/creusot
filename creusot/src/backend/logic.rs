@@ -3,9 +3,9 @@ use crate::{
 };
 use rustc_hir::def_id::DefId;
 use why3::{
-    declaration::*,
-    exp::{super_visit_mut, BinOp, Binder, Exp, ExpMutVisitor, Trigger},
     Ident,
+    declaration::*,
+    exp::{BinOp, Binder, Exp, ExpMutVisitor, Trigger, super_visit_mut},
 };
 
 mod vcgen;
@@ -13,32 +13,32 @@ mod vcgen;
 use self::vcgen::vc;
 
 use super::{
-    is_trusted_function, signature::signature_of, term::lower_pure, CannotFetchThir, Why3Generator,
+    CannotFetchThir, Why3Generator, is_trusted_function, signature::signature_of, term::lower_pure,
 };
 
-pub(crate) fn binders_to_args(binders: Vec<Binder>) -> (Vec<Ident>, Vec<Binder>) {
+pub(crate) fn binders_to_args(binders: Box<[Binder]>) -> (Vec<Ident>, Box<[Binder]>) {
     let mut args = Vec::new();
-    let mut out_binders = Vec::new();
-    let mut fresh = 0;
-    for b in binders {
-        match b {
+    let mut fresh = -1;
+    let out_binders = binders
+        .into_iter()
+        .map(|b| match b {
             Binder::Wild => {
                 args.push(format!("_wild{fresh}").into());
-                out_binders.push(Binder::Named(format!("_wild{fresh}").into()));
                 fresh += 1;
+                Binder::Named(format!("_wild{fresh}").into())
             }
             Binder::UnNamed(_) => unreachable!("unnamed parameter in logical function signature"),
             Binder::Named(ref nm) => {
                 args.push(nm.clone());
-                out_binders.push(b);
+                b
             }
             Binder::Typed(ghost, binders, ty) => {
                 let (inner_args, inner_binders) = binders_to_args(binders);
                 args.extend(inner_args);
-                out_binders.push(Binder::Typed(ghost, inner_binders, ty));
+                Binder::Typed(ghost, inner_binders, ty)
             }
-        }
-    }
+        })
+        .collect();
     (args, out_binders)
 }
 
@@ -83,9 +83,9 @@ pub(crate) fn translate_logic_or_predicate(
             sig: Signature {
                 name: nm.clone(),
                 trigger: None,
-                attrs: Vec::new(),
+                attrs: vec![],
                 retty: binder.type_of().cloned(),
-                args: Vec::new(),
+                args: Box::new([]),
                 contract: Default::default(),
             },
         })
@@ -124,11 +124,11 @@ pub(crate) fn translate_logic_or_predicate(
     let mut decls = names.provide_deps(ctx);
     decls.extend(body_decls);
 
-    let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(def_id)));
+    let attrs = ctx.span_attr(ctx.def_span(def_id)).into_iter().collect();
     let meta = ctx.display_impl_of(def_id);
     let path = ctx.module_path(def_id);
     let name = path.why3_ident();
-    Ok(Some(FileModule { path, modl: Module { name, decls, attrs, meta } }))
+    Ok(Some(FileModule { path, modl: Module { name, decls: decls.into(), attrs, meta } }))
 }
 
 pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
@@ -146,7 +146,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
 
     let body = lower_pure(ctx, names, &body);
 
-    if sig.contract.variant.is_empty() {
+    if sig.contract.variant.is_none() {
         let mut sig = sig.clone();
         sig.contract = Default::default();
 
@@ -164,7 +164,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
         decls.push(decl)
     } else {
         let mut decl_sig = sig.clone();
-        decl_sig.contract = Contract::new();
+        decl_sig.contract = Default::default();
         decls.push(Decl::LogicDecl(LogicDecl { kind, sig: decl_sig }));
 
         if sig.uses_simple_triggers() {
@@ -175,7 +175,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
     }
 
     if !sig.contract.ensures.is_empty() {
-        if sig.uses_simple_triggers() && !sig.contract.variant.is_empty() {
+        if sig.uses_simple_triggers() && !sig.contract.variant.is_none() {
             let lim_name = Ident::from_string(format!("{}_lim", &*sig.name));
             let mut lim_sig = sig;
             lim_sig.name = lim_name;
@@ -228,7 +228,7 @@ fn limited_function_encode(
         attrs: vec![],
         retty: sig.retty.clone(),
         args: sig.args.clone(),
-        contract: Contract::new(),
+        contract: Default::default(),
     };
     let lim_call = function_call(&lim_sig);
     lim_sig.trigger = Some(Trigger::single(lim_call.clone()));
@@ -244,7 +244,7 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
     let func_call = function_call(sig);
     let trigger = sig.trigger.clone().into_iter().collect();
     condition.subst(&mut [("result".into(), func_call.clone())].into_iter().collect());
-    let args: Vec<(_, _)> = sig
+    let args: Box<[(_, _)]> = sig
         .args
         .iter()
         .cloned()
@@ -259,19 +259,20 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
 }
 
 pub fn function_call(sig: &Signature) -> Exp {
-    let mut args: Vec<_> = sig
+    let mut args = sig
         .args
         .iter()
         .cloned()
         .flat_map(|b| b.var_type_pairs())
         .filter(|arg| &*arg.0 != "_")
         .map(|arg| Exp::var(arg.0))
-        .collect();
-    if args.is_empty() {
-        args = vec![Exp::Tuple(vec![])];
-    }
+        .peekable();
 
-    Exp::var(sig.name.clone()).app(args)
+    if args.peek().is_none() {
+        Exp::var(sig.name.clone()).app([Exp::unit()])
+    } else {
+        Exp::var(sig.name.clone()).app(args)
+    }
 }
 
 fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
@@ -281,7 +282,7 @@ fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
     let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
     let condition = sig.contract.requires_implies(equation);
 
-    let args: Vec<_> = sig.args.clone().into_iter().flat_map(|b| b.var_type_pairs()).collect();
+    let args: Box<[_]> = sig.args.clone().into_iter().flat_map(|b| b.var_type_pairs()).collect();
 
     let axiom =
         if args.is_empty() { condition } else { Exp::forall_trig(args, trigger, condition) };

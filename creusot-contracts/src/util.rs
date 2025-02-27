@@ -11,7 +11,7 @@ pub type SizedW<T> = Box<T>;
 pub trait MakeSized {
     /// Turn a `T` into a [`SizedW<T>`]
     #[logic]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     fn make_sized(&self) -> SizedW<Self>;
 }
 

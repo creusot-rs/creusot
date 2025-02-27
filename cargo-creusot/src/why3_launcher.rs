@@ -4,7 +4,7 @@ use std::{
 };
 
 use super::helpers::Result;
-use include_dir::{include_dir, Dir};
+use include_dir::{Dir, include_dir};
 
 static PRELUDE: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/../prelude");
 

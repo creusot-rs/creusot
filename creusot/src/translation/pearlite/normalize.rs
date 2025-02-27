@@ -1,12 +1,10 @@
 use crate::{
     contracts_items::{get_builtin, is_box_new},
-    pearlite::{self, Literal, Term, TermKind},
+    pearlite::{BinOp, Literal, Term, TermKind, TermVisitorMut, UnOp, super_visit_mut_term},
     traits::TraitResolved,
 };
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{TyCtxt, TypingEnv};
-
-use super::{super_visit_mut_term, BinOp, TermVisitorMut};
+use rustc_middle::ty::{GenericArgsRef, TyCtxt, TypingEnv};
 
 pub(crate) fn normalize<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -38,15 +36,8 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
                     *subst = method.1;
                 }
 
-                if is_box_new(self.tcx, *id) {
-                    let arg = args.remove(0);
-                    *term = arg;
-                    return;
-                }
-
-                if let Some(opt) = optimize_builtin(self.tcx, *id, args) {
-                    term.kind = opt;
-                }
+                term.kind =
+                    optimize_builtin(self.tcx, *id, subst, std::mem::replace(args, Box::new([])));
             }
             TermKind::Item(id, subst) => {
                 if self.tcx.trait_of_item(*id).is_some() {
@@ -66,120 +57,65 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
 
 fn optimize_builtin<'tcx>(
     tcx: TyCtxt<'tcx>,
-    def_id: DefId,
-    args: &mut Vec<Term<'tcx>>,
-) -> Option<TermKind<'tcx>> {
-    Some(match get_builtin(tcx, def_id)?.as_str() {
-        "add_int" => TermKind::Binary {
-            op: BinOp::Add,
-            lhs: Box::new(args.remove(0)),
-            rhs: Box::new(args.remove(0)),
-        },
-        "sub_int" => TermKind::Binary {
-            op: BinOp::Sub,
-            lhs: Box::new(args.remove(0)),
-            rhs: Box::new(args.remove(0)),
-        },
-        "mul_int" => TermKind::Binary {
-            op: BinOp::Mul,
-            lhs: Box::new(args.remove(0)),
-            rhs: Box::new(args.remove(0)),
-        },
-        "div_int" => TermKind::Binary {
-            op: BinOp::Div,
-            lhs: Box::new(args.remove(0)),
-            rhs: Box::new(args.remove(0)),
-        },
-        "rem_int" => TermKind::Binary {
-            op: BinOp::Rem,
-            lhs: Box::new(args.remove(0)),
-            rhs: Box::new(args.remove(0)),
-        },
-        "neg_int" => TermKind::Unary { op: pearlite::UnOp::Neg, arg: Box::new(args.remove(0)) },
-        "int.Int.(<=)" => TermKind::Binary {
-            op: BinOp::Le,
-            lhs: Box::new(args.remove(0)),
-            rhs: Box::new(args.remove(0)),
-        },
-        "int.Int.(<)" => TermKind::Binary {
-            op: BinOp::Lt,
-            lhs: Box::new(args.remove(0)),
-            rhs: Box::new(args.remove(0)),
-        },
-        "int.Int.(>=)" => TermKind::Binary {
-            op: BinOp::Ge,
-            lhs: Box::new(args.remove(0)),
-            rhs: Box::new(args.remove(0)),
-        },
-        "int.Int.(>)" => TermKind::Binary {
-            op: BinOp::Gt,
-            lhs: Box::new(args.remove(0)),
-            rhs: Box::new(args.remove(0)),
-        },
-        "==" => TermKind::Binary {
-            op: BinOp::Eq,
-            lhs: Box::new(args.remove(0)),
-            rhs: Box::new(args.remove(0)),
-        },
-        "!=" => TermKind::Binary {
-            op: BinOp::Ne,
-            lhs: Box::new(args.remove(0)),
-            rhs: Box::new(args.remove(0)),
-        },
-        "creusot.int.UInt8$BW$.t'int"
-            if let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind =>
-        {
-            TermKind::Lit(Literal::Integer(c as i128))
+    id: DefId,
+    subst: GenericArgsRef<'tcx>,
+    args: Box<[Term<'tcx>]>,
+) -> TermKind<'tcx> {
+    use BinOp::*;
+    use Literal::*;
+    use TermKind::*;
+    use UnOp::*;
+
+    let builtin = get_builtin(tcx, id);
+    let builtin_str = builtin.as_ref().map(|s| s.as_str());
+
+    if let Some(op) = match builtin_str {
+        Some("mach.int.Int.(+)") => Some(Add),
+        Some("mach.int.Int.(-)") => Some(Sub),
+        Some("mach.int.Int.(*)") => Some(Mul),
+        Some("mach.int.Int.(/)") => Some(Div),
+        Some("mach.int.Int.(%)") => Some(Rem),
+        Some("mach.int.Int.(<=)") => Some(Le),
+        Some("mach.int.Int.(<)") => Some(Lt),
+        Some("mach.int.Int.(>=)") => Some(Ge),
+        Some("mach.int.Int.(>)") => Some(Gt),
+        _ => None,
+    } {
+        let [lhs, rhs] = args.into_array().unwrap().map(Box::new);
+        return Binary { op, lhs, rhs };
+    }
+
+    match builtin_str {
+        None if is_box_new(tcx, id) => {
+            let [arg] = *args.into_array::<1>().unwrap();
+            return Coerce { arg: Box::new(arg) };
         }
-        "creusot.int.UInt16$BW$.t'int"
-            if let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind =>
-        {
-            TermKind::Lit(Literal::Integer(c as i128))
+        Some("identity") => {
+            let [arg] = *args.into_array::<1>().unwrap();
+            return Coerce { arg: Box::new(arg) };
         }
-        "creusot.int.UInt32$BW$.t'int"
-            if let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind =>
-        {
-            TermKind::Lit(Literal::Integer(c as i128))
+        Some("mach.int.Int.(-_)") => {
+            let [arg] = *args.into_array::<1>().unwrap();
+            return Unary { op: Neg, arg: Box::new(arg) };
         }
-        "creusot.int.UInt64$BW$.t'int"
-            if let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind =>
-        {
-            TermKind::Lit(Literal::Integer(c as i128))
+        Some(
+            "creusot.int.UInt8$BW$.t'int"
+            | "creusot.int.UInt16$BW$.t'int"
+            | "creusot.int.UInt32$BW$.t'int"
+            | "creusot.int.UInt64$BW$.t'int"
+            | "creusot.int.UInt128$BW$.t'int",
+        ) if let box [Term { kind: Lit(MachUnsigned(c, _)), .. }] = args => {
+            return Lit(UInteger(c));
         }
-        "creusot.int.UInt128$BW$.t'int"
-            if let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind =>
-        {
-            if c > isize::MAX as u128 {
-                return None;
-            }
-            TermKind::Lit(Literal::Integer(c as i128))
-        }
-        "creusot.int.Int8$BW$.to_int"
-            if let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind =>
-        {
-            TermKind::Lit(Literal::Integer(c as i128))
-        }
-        "creusot.int.Int16$BW$.to_int"
-            if let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind =>
-        {
-            TermKind::Lit(Literal::Integer(c as i128))
-        }
-        "creusot.int.Int32$BW$.to_int"
-            if let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind =>
-        {
-            TermKind::Lit(Literal::Integer(c as i128))
-        }
-        "creusot.int.Int64$BW$.to_int"
-            if let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind =>
-        {
-            TermKind::Lit(Literal::Integer(c as i128))
-        }
-        "creusot.int.Int128$BW$.to_int"
-            if let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind =>
-        {
-            TermKind::Lit(Literal::Integer(c as i128))
-        }
-        "identity" => args.remove(0).kind,
-        _ => return None,
-    })
+        Some(
+            "creusot.int.Int8$BW$.to_int"
+            | "creusot.int.Int16$BW$.to_int"
+            | "creusot.int.Int32$BW$.to_int"
+            | "creusot.int.Int64$BW$.to_int"
+            | "creusot.int.Int128$BW$.to_int",
+        ) if let box [Term { kind: Lit(MachSigned(c, _)), .. }] = args => return Lit(Integer(c)),
+        _ => (),
+    }
+
+    return Call { id, subst, args };
 }

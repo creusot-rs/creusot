@@ -1,3 +1,5 @@
+#![feature(slice_as_array)]
+
 pub mod ce_models;
 pub mod coma;
 pub mod declaration;

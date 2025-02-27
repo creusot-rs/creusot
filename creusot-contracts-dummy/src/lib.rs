@@ -154,11 +154,7 @@ fn is_invariant(path: &syn::Path) -> bool {
 
 fn delete_invariants_attrs(attrs: &mut Vec<syn::Attribute>) {
     attrs.retain(|attr| {
-        if let syn::Meta::List(meta) = &attr.meta {
-            !is_invariant(&meta.path)
-        } else {
-            true
-        }
+        if let syn::Meta::List(meta) = &attr.meta { !is_invariant(&meta.path) } else { true }
     });
 }
 

@@ -6,7 +6,7 @@ use crate::{
     contracts_items::{is_spec, opacity_witness_name},
     ctx::TranslationCtx,
     error::CannotFetchThir,
-    translation::pearlite::{super_visit_term, TermKind, TermVisitor},
+    translation::pearlite::{TermKind, TermVisitor, super_visit_term},
     util::parent_module,
 };
 

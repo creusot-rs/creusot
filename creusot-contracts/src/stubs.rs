@@ -56,7 +56,7 @@ pub fn dead<T: ?Sized>() -> Box<T> {
 
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "variant_check"]
-pub fn variant_check<R: crate::well_founded::WellFounded + ?Sized>(_: R) -> Box<R> {
+pub fn variant_check<R: crate::well_founded::WellFounded>(_: R) -> R {
     panic!()
 }
 
@@ -74,7 +74,7 @@ pub fn snapshot_from_fn<T: ?Sized, F: Fn() -> crate::Snapshot<T>>(_: F) -> crate
 #[logic]
 #[trusted]
 #[creusot::no_translate]
-#[creusot::builtins = "creusot.prelude.Mapping.from_fn"]
+#[creusot::builtins = "identity"]
 pub fn mapping_from_fn<A, B, F: FnOnce(A) -> B>(_: F) -> crate::logic::Mapping<A, B> {
     dead
 }

@@ -2,9 +2,10 @@
 extern crate creusot_contracts;
 
 use creusot_contracts::{
-    invariant::{inv, Invariant},
+    Clone,
+    invariant::{Invariant, inv},
     logic::Mapping,
-    Clone, *,
+    *,
 };
 use std::cmp::Ordering::*;
 

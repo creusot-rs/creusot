@@ -118,21 +118,21 @@ where
 impl<T> SliceIndex<[T]> for usize {
     #[predicate]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     fn in_bounds(self, seq: Seq<T>) -> bool {
         pearlite! { self@ < seq.len() }
     }
 
     #[predicate]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     fn has_value(self, seq: Seq<T>, out: T) -> bool {
         pearlite! { seq[self@] == out }
     }
 
     #[predicate]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
         pearlite! { forall<i : Int> 0 <= i && i != self@ && i < old.len() ==> old[i] == fin[i] }
     }

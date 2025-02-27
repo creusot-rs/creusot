@@ -15,10 +15,10 @@ use rustc_middle::ty::{
     ParamTy, Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypingEnv,
     TypingMode,
 };
-use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_trait_selection::{
     error_reporting::InferCtxtErrorExt,
-    traits::{orphan_check_trait_ref, FulfillmentError, ImplSource, InCrate, TraitEngineExt},
+    traits::{FulfillmentError, ImplSource, InCrate, TraitEngineExt, orphan_check_trait_ref},
 };
 use rustc_type_ir::fold::TypeSuperFoldable;
 use std::collections::HashMap;

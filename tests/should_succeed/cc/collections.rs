@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 use std::{
-    collections::{hash_map, HashMap, HashSet},
+    collections::{HashMap, HashSet, hash_map},
     hash::Hash,
 };
 
@@ -26,6 +26,7 @@ pub fn roundtrip_hashmap_into_iter<K: Eq + Hash + DeepModel, V>(
                 ==> exists<k1: K> k1.deep_model() == k && prod.contains((k1, v))
     };
     proof_assert! { forall<k: K::DeepModelTy> r@.contains(k) == (*xs_snap)@.contains(k) };
+    proof_assert! { forall<k: K::DeepModelTy> r@[k] == (*xs_snap)@[k] };
     r
 }
 

@@ -49,7 +49,7 @@ module M_164__main [#"164.rs" 5 0 5 13]
   let%span srange47 = "../../../creusot-contracts/src/std/iter/range.rs" 40 15 40 32
   let%span srange48 = "../../../creusot-contracts/src/std/iter/range.rs" 41 15 41 32
   let%span srange49 = "../../../creusot-contracts/src/std/iter/range.rs" 42 14 42 42
-  let%span snum50 = "../../../creusot-contracts/src/std/num.rs" 24 28 24 33
+  let%span snum50 = "../../../creusot-contracts/src/std/num.rs" 25 28 25 33
   let%span srange51 = "../../../creusot-contracts/src/std/iter/range.rs" 17 12 17 78
   let%span sresolve52 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
   let%span sord53 = "../../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
@@ -64,7 +64,7 @@ module M_164__main [#"164.rs" 5 0 5 13]
   use creusot.int.UInt64
   
   function cmp_log'0 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
-    [%#sord53] if UInt64.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord53] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt64.t) (y : UInt64.t) : ()
   
@@ -93,24 +93,23 @@ module M_164__main [#"164.rs" 5 0 5 13]
   
   function cmp_gt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord34] UInt64.ugt x y
-  = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord34] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   use creusot.int.UInt64
   
   function cmp_ge_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord33] UInt64.uge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord33] UInt64.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord32] UInt64.ult x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord32] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use creusot.int.UInt64
   
   function cmp_le_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord31] UInt64.ule x y
+  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord31] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
   use creusot.int.Int32
@@ -132,23 +131,13 @@ module M_164__main [#"164.rs" 5 0 5 13]
     {[@expl:into_iter requires] [%#siter28] into_iter_pre'0 self}
     any [ return' (result:t_Range'0)-> {inv'1 result} {[%#siter28] into_iter_post'0 self result} (! return' {result}) ] 
   
-  use creusot.prelude.Snapshot
-  
   use seq.Seq
   
   use seq.Seq
-  
-  use creusot.prelude.Snapshot
-  
-  use creusot.prelude.Snapshot
   
   predicate inv'0 (_1 : Seq.seq Int32.t)
   
   axiom inv_axiom'0 [@rewrite] : forall x : Seq.seq Int32.t [inv'0 x] . inv'0 x = true
-  
-  use creusot.prelude.Snapshot
-  
-  use creusot.prelude.Snapshot
   
   use seq.Seq
   
@@ -183,9 +172,9 @@ module M_164__main [#"164.rs" 5 0 5 13]
   
   use creusot.prelude.MutBorrow
   
-  predicate inv'2 (_1 : MutBorrow.t (t_Range'0))
+  predicate inv'2 (_1 : MutBorrow.t t_Range'0)
   
-  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t (t_Range'0) [inv'2 x] . inv'2 x = true
+  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_Range'0 [inv'2 x] . inv'2 x = true
   
   type t_Option'0  =
     | C_None'0
@@ -195,16 +184,16 @@ module M_164__main [#"164.rs" 5 0 5 13]
   
   axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
   
-  predicate resolve'1 (self : MutBorrow.t (t_Range'0)) =
+  predicate resolve'1 (self : MutBorrow.t t_Range'0) =
     [%#sresolve52] self.final = self.current
   
-  predicate completed'0 (self : MutBorrow.t (t_Range'0)) =
+  predicate completed'0 (self : MutBorrow.t t_Range'0) =
     [%#srange51] resolve'1 self
     /\ deep_model'0 (self.current).t_Range__start'0 >= deep_model'0 (self.current).t_Range__end'0
   
   use seq.Seq
   
-  let rec next'0 (self:MutBorrow.t (t_Range'0)) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'2 self}
+  let rec next'0 (self:MutBorrow.t t_Range'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'2 self}
     any
     [ return' (result:t_Option'0)-> {inv'3 result}
       {[%#siter30] match result with
@@ -214,7 +203,7 @@ module M_164__main [#"164.rs" 5 0 5 13]
       (! return' {result}) ]
   
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_Range'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t t_Range'0) =
     resolve'1 _1
   
   let rec v_Some'0 (input:t_Option'0) (ret  (field_0:Int32.t))= any
@@ -222,11 +211,7 @@ module M_164__main [#"164.rs" 5 0 5 13]
     | bad -> {forall field_0 : Int32.t [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
   
   
-  use creusot.prelude.Intrinsic
-  
-  use creusot.prelude.Snapshot
-  
-  use creusot.prelude.Snapshot
+  use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000
   
@@ -234,7 +219,7 @@ module M_164__main [#"164.rs" 5 0 5 13]
     [ bb0 = s0 [ s0 =  [ &x <- [%#s1640] (0 : UInt64.t) ] s1 | s1 = bb1 ] 
     | bb1 = s0
       [ s0 = {[@expl:loop invariant] [%#s1641] x = (0 : UInt64.t)} s1
-      | s1 = UInt64.eq {x} {[%#s1642] (0 : UInt64.t)} (fun (_ret':bool) ->  [ &_6 <- _ret' ] s2)
+      | s1 =  [ &_6 <- x = ([%#s1642] (0 : UInt64.t)) ] s2
       | s2 = any [ br0 -> {_6 = false} (! bb3) | br1 -> {_6} (! bb2) ]  ]
     
     | bb2 = s0 [ s0 =  [ &x <- [%#s1643] (1 : UInt64.t) ] s1 | s1 = bb4 ] 
@@ -242,7 +227,7 @@ module M_164__main [#"164.rs" 5 0 5 13]
     | bb4 = bb5
     | bb5 = s0
       [ s0 = {[@expl:loop invariant] [%#s1644] x = (1 : UInt64.t)} s1
-      | s1 = UInt64.eq {x} {[%#s1645] (1 : UInt64.t)} (fun (_ret':bool) ->  [ &_13 <- _ret' ] s2)
+      | s1 =  [ &_13 <- x = ([%#s1645] (1 : UInt64.t)) ] s2
       | s2 = any [ br0 -> {_13 = false} (! bb8) | br1 -> {_13} (! bb6) ]  ]
     
     | bb6 = bb7
@@ -256,7 +241,7 @@ module M_164__main [#"164.rs" 5 0 5 13]
     | bb15 = bb15
       [ bb15 = (! bb16)
         [ bb16 = s0
-          [ s0 = UInt64.ne {x} {[%#s1649] (3 : UInt64.t)} (fun (_ret':bool) ->  [ &_27 <- _ret' ] s1)
+          [ s0 =  [ &_27 <- x <> ([%#s1649] (3 : UInt64.t)) ] s1
           | s1 = any [ br0 -> {_27 = false} (! bb18) | br1 -> {_27} (! bb17) ]  ]
         
         | bb17 = s0 [ s0 =  [ &x <- [%#s16410] (3 : UInt64.t) ] s1 | s1 = bb15 ]  ]
@@ -264,17 +249,17 @@ module M_164__main [#"164.rs" 5 0 5 13]
     
     | bb18 = bb19
     | bb19 = bb19
-      [ bb19 = {[@expl:loop invariant] [%#s16411] UInt64.ule x (4 : UInt64.t)}
+      [ bb19 = {[@expl:loop invariant] [%#s16411] UInt64.le x (4 : UInt64.t)}
         (! s0) [ s0 = bb20 ] 
         [ bb20 = s0
-          [ s0 = UInt64.lt {x} {[%#s16412] (4 : UInt64.t)} (fun (_ret':bool) ->  [ &_35 <- _ret' ] s1)
+          [ s0 =  [ &_35 <- UInt64.lt x ([%#s16412] (4 : UInt64.t)) ] s1
           | s1 = any [ br0 -> {_35 = false} (! bb25) | br1 -> {_35} (! bb21) ]  ]
         
         | bb21 = bb22
         | bb22 = s0
-          [ s0 = {[@expl:loop invariant] [%#s16413] UInt64.ule x (3 : UInt64.t)} s1
+          [ s0 = {[@expl:loop invariant] [%#s16413] UInt64.le x (3 : UInt64.t)} s1
           | s1 =  [ &x <- [%#s16414] (4 : UInt64.t) ] s2
-          | s2 = UInt64.eq {x} {[%#s16415] (4 : UInt64.t)} (fun (_ret':bool) ->  [ &_40 <- _ret' ] s3)
+          | s2 =  [ &_40 <- x = ([%#s16415] (4 : UInt64.t)) ] s3
           | s3 = any [ br0 -> {_40 = false} (! bb24) | br1 -> {_40} (! bb23) ]  ]
         
         | bb23 = bb19 ]
@@ -286,7 +271,7 @@ module M_164__main [#"164.rs" 5 0 5 13]
     | bb27 = bb27
       [ bb27 = (! bb28)
         [ bb28 = s0
-          [ s0 = UInt64.ne {x} {[%#s16418] (5 : UInt64.t)} (fun (_ret':bool) ->  [ &_49 <- _ret' ] s1)
+          [ s0 =  [ &_49 <- x <> ([%#s16418] (5 : UInt64.t)) ] s1
           | s1 = any [ br0 -> {_49 = false} (! bb30) | br1 -> {_49} (! bb29) ]  ]
         
         | bb29 = s0 [ s0 =  [ &x <- [%#s16419] (5 : UInt64.t) ] s1 | s1 = bb27 ]  ]
@@ -303,18 +288,18 @@ module M_164__main [#"164.rs" 5 0 5 13]
       | s1 = into_iter'0 {_57} (fun (_ret':t_Range'0) ->  [ &iter <- _ret' ] s2)
       | s2 = bb34 ]
     
-    | bb34 = s0 [ s0 =  [ &iter_old <- [%#s16423] Snapshot.new iter ] s1 | s1 = bb35 ] 
-    | bb35 = s0 [ s0 =  [ &produced <- [%#s16424] Snapshot.new (Seq.empty : Seq.seq Int32.t) ] s1 | s1 = bb36 ] 
+    | bb34 = s0 [ s0 =  [ &iter_old <- [%#s16423] iter ] s1 | s1 = bb35 ] 
+    | bb35 = s0 [ s0 =  [ &produced <- [%#s16424] Seq.empty : Seq.seq Int32.t ] s1 | s1 = bb36 ] 
     | bb36 = bb37
     | bb37 = s0
-      [ s0 = {[@expl:for invariant] [%#s16425] inv'0 (Snapshot.inner produced)} s1
+      [ s0 = {[@expl:for invariant] [%#s16425] inv'0 produced} s1
       | s1 = {[@expl:for invariant] [%#s16425] inv'1 iter} s2
-      | s2 = {[@expl:for invariant] [%#s16425] produces'0 (Snapshot.inner iter_old) (Snapshot.inner produced) iter} s3
+      | s2 = {[@expl:for invariant] [%#s16425] produces'0 iter_old produced iter} s3
       | s3 = {[@expl:loop invariant] [%#s16426] x = (5 : UInt64.t)} s4
       | s4 = MutBorrow.borrow_mut <t_Range'0> {iter}
-          (fun (_ret':MutBorrow.t (t_Range'0)) ->  [ &_69 <- _ret' ]  [ &iter <- _ret'.final ] s5)
+          (fun (_ret':MutBorrow.t t_Range'0) ->  [ &_69 <- _ret' ]  [ &iter <- _ret'.final ] s5)
       | s5 = MutBorrow.borrow_final <t_Range'0> {_69.current} {MutBorrow.get_id _69}
-          (fun (_ret':MutBorrow.t (t_Range'0)) ->  [ &_68 <- _ret' ]  [ &_69 <- { _69 with current = _ret'.final } ] s6)
+          (fun (_ret':MutBorrow.t t_Range'0) ->  [ &_68 <- _ret' ]  [ &_69 <- { _69 with current = _ret'.final } ] s6)
       | s6 = next'0 {_68} (fun (_ret':t_Option'0) ->  [ &_67 <- _ret' ] s7)
       | s7 = bb38 ]
     
@@ -325,32 +310,29 @@ module M_164__main [#"164.rs" 5 0 5 13]
     | bb40 = bb42
     | bb42 = s0
       [ s0 = v_Some'0 {_67} (fun (r0'0:Int32.t) ->  [ &__creusot_proc_iter_elem <- r0'0 ] s1)
-      | s1 = 
-        [ &_72 <- [%#s16427] Snapshot.new (Seq.(++) (Snapshot.inner produced) (Seq.singleton __creusot_proc_iter_elem)) ]
-        
-        s2
+      | s1 =  [ &_72 <- [%#s16427] Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
       | s2 = bb43 ]
     
     | bb43 = s0 [ s0 =  [ &produced <- _72 ] s1 | s1 = bb44 ] 
     | bb41 = bb44
     | bb44 = return' {_0} ]
     )
-    [ & _0 : () = Intrinsic.any_l ()
-    | & x : UInt64.t = Intrinsic.any_l ()
-    | & _6 : bool = Intrinsic.any_l ()
-    | & _13 : bool = Intrinsic.any_l ()
-    | & _27 : bool = Intrinsic.any_l ()
-    | & _35 : bool = Intrinsic.any_l ()
-    | & _40 : bool = Intrinsic.any_l ()
-    | & _49 : bool = Intrinsic.any_l ()
-    | & iter : t_Range'0 = Intrinsic.any_l ()
-    | & _57 : t_Range'0 = Intrinsic.any_l ()
-    | & iter_old : Snapshot.snap_ty (t_Range'0) = Intrinsic.any_l ()
-    | & produced : Snapshot.snap_ty (Seq.seq Int32.t) = Intrinsic.any_l ()
-    | & _67 : t_Option'0 = Intrinsic.any_l ()
-    | & _68 : MutBorrow.t (t_Range'0) = Intrinsic.any_l ()
-    | & _69 : MutBorrow.t (t_Range'0) = Intrinsic.any_l ()
-    | & __creusot_proc_iter_elem : Int32.t = Intrinsic.any_l ()
-    | & _72 : Snapshot.snap_ty (Seq.seq Int32.t) = Intrinsic.any_l () ]
+    [ & _0 : () = Any.any_l ()
+    | & x : UInt64.t = Any.any_l ()
+    | & _6 : bool = Any.any_l ()
+    | & _13 : bool = Any.any_l ()
+    | & _27 : bool = Any.any_l ()
+    | & _35 : bool = Any.any_l ()
+    | & _40 : bool = Any.any_l ()
+    | & _49 : bool = Any.any_l ()
+    | & iter : t_Range'0 = Any.any_l ()
+    | & _57 : t_Range'0 = Any.any_l ()
+    | & iter_old : t_Range'0 = Any.any_l ()
+    | & produced : Seq.seq Int32.t = Any.any_l ()
+    | & _67 : t_Option'0 = Any.any_l ()
+    | & _68 : MutBorrow.t t_Range'0 = Any.any_l ()
+    | & _69 : MutBorrow.t t_Range'0 = Any.any_l ()
+    | & __creusot_proc_iter_elem : Int32.t = Any.any_l ()
+    | & _72 : Seq.seq Int32.t = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end

@@ -222,11 +222,7 @@ pub fn and_then() {
         result == None
     })]
     |x| {
-        if x == 1 {
-            Some(x + 1)
-        } else {
-            None
-        }
+        if x == 1 { Some(x + 1) } else { None }
     };
     assert!(some1.and_then(clos) == Some(2i32));
     assert!(some2.and_then(clos) == None);

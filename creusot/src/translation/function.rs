@@ -9,12 +9,12 @@ use crate::{
     ctx::*,
     extended_location::ExtendedLocation,
     fmir::{self, LocalDecl, LocalDecls, LocalIdent, RValue, TrivialInv},
-    gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind, SpecClosures},
+    gather_spec_closures::{LoopSpecKind, SpecClosures, corrected_invariant_names_and_locations},
     naming::anonymous_param_symbol,
-    pearlite::{normalize, Term},
-    resolve::{place_contains_borrow_deref, HasMoveDataExt, Resolver},
+    pearlite::{Term, normalize},
+    resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
     translation::{
-        pearlite::{self, super_visit_mut_term, TermKind, TermVisitorMut},
+        pearlite::{self, TermKind, TermVisitorMut, super_visit_mut_term},
         specification::{contract_of, inv_subst},
         traits,
     },
@@ -22,11 +22,11 @@ use crate::{
 use indexmap::IndexMap;
 use rustc_borrowck::consumers::BorrowSet;
 use rustc_hir::def_id::DefId;
-use rustc_index::{bit_set::MixedBitSet, Idx};
+use rustc_index::{Idx, bit_set::MixedBitSet};
 use rustc_middle::{
     mir::{
-        self, traversal::reverse_postorder, BasicBlock, Body, Local, Location, Mutability, Operand,
-        Place, PlaceRef, TerminatorKind, START_BLOCK,
+        self, BasicBlock, Body, Local, Location, Mutability, Operand, Place, PlaceRef, START_BLOCK,
+        TerminatorKind, traversal::reverse_postorder,
     },
     ty::{
         BorrowKind, ClosureKind, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypeVisitableExt,
@@ -34,22 +34,21 @@ use rustc_middle::{
     },
 };
 use rustc_mir_dataflow::{
+    Analysis as _,
     move_paths::{HasMoveData, LookupResult, MoveData, MovePathIndex},
-    on_all_children_bits, Analysis as _,
+    on_all_children_bits,
 };
-use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use std::{
     collections::{HashMap, HashSet},
-    iter,
+    iter::zip,
     ops::FnOnce,
 };
 
 mod statement;
 mod terminator;
 use terminator::discriminator_for_switch;
-
-use self::pearlite::BinOp;
 
 /// Translate a function from rustc's MIR to fMIR.
 pub(crate) fn fmir<'tcx>(ctx: &TranslationCtx<'tcx>, body_id: BodyId) -> fmir::Body<'tcx> {
@@ -250,7 +249,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             self.translate_terminator(bbd.terminator(), loc);
 
             let block = fmir::Block {
-                invariants,
+                invariants: invariants.into(),
                 variant,
                 stmts: std::mem::take(&mut self.current_block.0),
                 terminator: std::mem::replace(&mut self.current_block.1, None).unwrap(),
@@ -453,7 +452,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             .map(|&pred| resolver.resolved_places_between_blocks(pred, bb))
             .collect::<Vec<_>>();
 
-        for (pred, resolved) in iter::zip(pred_blocks, resolved_between.iter_mut()) {
+        for (pred, resolved) in zip(pred_blocks, resolved_between.iter_mut()) {
             // We do not need to resolve move path that we know are inactive
             // because of a preceding switch.
 
@@ -510,7 +509,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             return;
         }
 
-        for (pred, resolved) in iter::zip(pred_blocks, resolved_between) {
+        for (pred, resolved) in zip(pred_blocks, resolved_between) {
             // If no resolves occured in block transition then skip entirely
             if resolved.0.is_empty() {
                 continue;
@@ -521,7 +520,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             self.emit_terminator(fmir::Terminator::Goto(bb));
             let resolve_block = fmir::Block {
                 variant: None,
-                invariants: Vec::new(),
+                invariants: vec![],
                 stmts: std::mem::take(&mut self.current_block.0),
                 terminator: std::mem::replace(&mut self.current_block.1, None).unwrap(),
             };
@@ -775,15 +774,12 @@ fn translate_vars<'tcx>(
         }
         locals.insert(loc, s);
         let is_arg = 0 < loc.index() && loc.index() <= body.arg_count;
-        vars.insert(
-            s,
-            LocalDecl {
-                span: d.source_info.span,
-                ty: d.ty,
-                temp: !d.is_user_variable(),
-                arg: is_arg,
-            },
-        );
+        vars.insert(s, LocalDecl {
+            span: d.source_info.span,
+            ty: d.ty,
+            temp: !d.is_user_variable(),
+            arg: is_arg,
+        });
     }
     (vars, locals)
 }
@@ -965,7 +961,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                     self.tcx,
                     unnest_id,
                     unnest_subst,
-                    vec![self_, result_state],
+                    Box::new([self_, result_state]),
                 ));
 
                 postcondition = normalize(self.tcx, self.typing_env(def_id), postcondition);
@@ -993,7 +989,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     fn inferred_precondition_term(
         &self,
-        def_id: DefId,
+        item: DefId,
         args: GenericArgsRef<'tcx>,
         kind: ClosureKind,
         closure_env: Term<'tcx>,
@@ -1010,9 +1006,8 @@ impl<'tcx> TranslationCtx<'tcx> {
         match kind {
             ClosureKind::Fn | ClosureKind::FnOnce => {
                 closure_args.insert(0, closure_env.clone());
-
                 Term {
-                    kind: TermKind::Precondition { item: def_id, args, params: closure_args },
+                    kind: TermKind::Precondition { item, args, params: closure_args.into() },
                     ty: self.types.bool,
                     span,
                 }
@@ -1020,11 +1015,11 @@ impl<'tcx> TranslationCtx<'tcx> {
             ClosureKind::FnMut => {
                 closure_args.insert(0, bor_self.clone());
                 let base = Term {
-                    kind: TermKind::Precondition { item: def_id, args, params: closure_args },
+                    kind: TermKind::Precondition { item, args, params: closure_args.into() },
                     ty: self.types.bool,
                     span,
                 };
-                (bor_self.clone().cur().bin_op(self.tcx, BinOp::Eq, closure_env))
+                (bor_self.clone().cur().eq(self.tcx, closure_env))
                     .implies(base)
                     .forall(self.tcx, (Symbol::intern("__bor_self"), env_ty))
             }
@@ -1034,7 +1029,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     /// Infers the `postcond_kind` version of the postcondition predicate for the provided closure.
     fn inferred_postcondition_term(
         &self,
-        def_id: DefId,
+        item: DefId,
         args: GenericArgsRef<'tcx>,
         closure_kind: ClosureKind,
         closure_env: Term<'tcx>,
@@ -1046,9 +1041,8 @@ impl<'tcx> TranslationCtx<'tcx> {
         match closure_kind {
             ClosureKind::Fn | ClosureKind::FnOnce => {
                 closure_args.insert(0, closure_env.clone());
-
                 let base = Term {
-                    kind: TermKind::Postcondition { item: def_id, args, params: closure_args },
+                    kind: TermKind::Postcondition { item, args, params: closure_args.into() },
                     ty: self.types.bool,
                     span,
                 };
@@ -1059,17 +1053,17 @@ impl<'tcx> TranslationCtx<'tcx> {
                 closure_args.insert(0, bor_self.clone());
 
                 let base = Term {
-                    kind: TermKind::Postcondition { item: def_id, args, params: closure_args },
+                    kind: TermKind::Postcondition { item, args, params: closure_args.into() },
                     ty: self.types.bool,
                     span,
                 };
 
-                base.conj(bor_self.clone().cur().bin_op(self.tcx, BinOp::Eq, closure_env))
-                    .conj(bor_self.fin().bin_op(
-                        self.tcx,
-                        BinOp::Eq,
-                        Term::var(Symbol::intern("result_state"), env_ty),
-                    ))
+                base.conj(bor_self.clone().cur().eq(self.tcx, closure_env))
+                    .conj(
+                        bor_self
+                            .fin()
+                            .eq(self.tcx, Term::var(Symbol::intern("result_state"), env_ty)),
+                    )
                     .exists(self.tcx, (Symbol::intern("__bor_self"), env_ty))
             }
         }
@@ -1094,7 +1088,7 @@ pub(crate) fn closure_resolve<'tcx>(
         };
 
         if let Some((id, subst)) = resolve_predicate_of(ctx, typing_env, ty) {
-            resolve = Term::call(ctx.tcx, typing_env, id, subst, vec![proj]).conj(resolve);
+            resolve = Term::call(ctx.tcx, typing_env, id, subst, Box::new([proj])).conj(resolve);
         }
     }
 
@@ -1133,8 +1127,8 @@ fn closure_unnest<'tcx>(
                 use rustc_middle::ty::BorrowKind;
 
                 let unnest_one = match is_mut {
-                    BorrowKind::Immutable => Term::eq(tcx, (acc)(fin), (acc)(cur)),
-                    _ => Term::eq(tcx, (acc)(fin).fin(), (acc)(cur).fin()),
+                    BorrowKind::Immutable => acc(fin).eq(tcx, acc(cur)),
+                    _ => acc(fin).fin().eq(tcx, acc(cur).fin()),
                 };
 
                 unnest = unnest_one.conj(unnest);
@@ -1175,12 +1169,12 @@ impl<'a, 'tcx> ClosureSubst<'a, 'tcx> {
                 }
                 Some(proj)
             }
-            UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable)
-                if self.self_consumed =>
-            {
-                Some(proj.fin())
+            UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
+                if self.self_consumed { Some(proj.fin()) } else { Some(proj.cur()) }
             }
-            UpvarCapture::ByRef(_) => Some(proj.cur()),
+            UpvarCapture::ByRef(BorrowKind::Immutable) => {
+                Some(proj.coerce(ty.builtin_deref(false).unwrap()))
+            }
         }
     }
 
@@ -1274,7 +1268,7 @@ pub(crate) fn closure_capture_subst<'a, 'tcx>(
 
     let captures = ctx.closure_captures(def_id.expect_local());
 
-    let map = std::iter::zip(captures, cs.as_closure().upvar_tys())
+    let map = zip(captures, cs.as_closure().upvar_tys())
         .enumerate()
         .map(|(ix, (cap, ty))| (cap.to_symbol(), (cap.info.capture_kind, ty, ix.into())))
         .collect();

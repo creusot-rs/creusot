@@ -8,7 +8,7 @@ use crate::{
 use indexmap::{IndexMap, IndexSet};
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{visit::Visitor, AggregateKind, BasicBlock, Body, Location, Operand, Rvalue},
+    mir::{AggregateKind, BasicBlock, Body, Location, Operand, Rvalue, visit::Visitor},
     ty::{Ty, TyCtxt, TyKind},
 };
 

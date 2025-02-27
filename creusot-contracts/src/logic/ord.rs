@@ -192,28 +192,28 @@ impl OrdLogic for Int {
 
     #[trusted]
     #[predicate]
-    #[creusot::builtins = "int.Int.(<=)"]
+    #[creusot::builtins = "mach.int.Int.(<=)"]
     fn le_log(self, _: Self) -> bool {
         dead
     }
 
     #[trusted]
     #[predicate]
-    #[creusot::builtins = "int.Int.(<)"]
+    #[creusot::builtins = "mach.int.Int.(<)"]
     fn lt_log(self, _: Self) -> bool {
         dead
     }
 
     #[trusted]
     #[predicate]
-    #[creusot::builtins = "int.Int.(>=)"]
+    #[creusot::builtins = "mach.int.Int.(>=)"]
     fn ge_log(self, _: Self) -> bool {
         dead
     }
 
     #[trusted]
     #[predicate]
-    #[creusot::builtins = "int.Int.(>)"]
+    #[creusot::builtins = "mach.int.Int.(>)"]
     fn gt_log(self, _: Self) -> bool {
         dead
     }
@@ -221,8 +221,8 @@ impl OrdLogic for Int {
     ord_laws_impl! {}
 }
 
-macro_rules! ord_logic_impl_with_signed_symbol {
-    ($t:ty, $module:literal, $signed_sym:expr) => {
+macro_rules! ord_logic_impl {
+    ($t:ty, $module:literal) => {
         impl OrdLogic for $t {
             #[logic]
             #[open]
@@ -239,7 +239,7 @@ macro_rules! ord_logic_impl_with_signed_symbol {
             #[trusted]
             #[open]
             #[predicate]
-            #[creusot::builtins = concat!($module, ".", $signed_sym, "le")]
+            #[creusot::builtins = concat!($module, ".le")]
             fn le_log(self, _: Self) -> bool {
                 true
             }
@@ -247,7 +247,7 @@ macro_rules! ord_logic_impl_with_signed_symbol {
             #[trusted]
             #[open]
             #[predicate]
-            #[creusot::builtins = concat!($module, ".", $signed_sym, "lt")]
+            #[creusot::builtins = concat!($module, ".lt")]
             fn lt_log(self, _: Self) -> bool {
                 true
             }
@@ -255,7 +255,7 @@ macro_rules! ord_logic_impl_with_signed_symbol {
             #[trusted]
             #[open]
             #[predicate]
-            #[creusot::builtins = concat!($module, ".", $signed_sym, "ge")]
+            #[creusot::builtins = concat!($module, ".ge")]
             fn ge_log(self, _: Self) -> bool {
                 true
             }
@@ -263,7 +263,7 @@ macro_rules! ord_logic_impl_with_signed_symbol {
             #[trusted]
             #[open]
             #[predicate]
-            #[creusot::builtins = concat!($module, ".", $signed_sym, "gt")]
+            #[creusot::builtins = concat!($module, ".gt")]
             fn gt_log(self, _: Self) -> bool {
                 true
             }
@@ -273,56 +273,32 @@ macro_rules! ord_logic_impl_with_signed_symbol {
     };
 }
 
-macro_rules! ord_logic_unsigned_impl {
-    ($t:ty, $module:literal) => {
-        ord_logic_impl_with_signed_symbol!($t, $module, "u");
-    };
-}
-
-macro_rules! ord_logic_signed_impl {
-    ($t:ty, $module:literal) => {
-        ord_logic_impl_with_signed_symbol!($t, $module, "s");
-    };
-}
-
-ord_logic_unsigned_impl!(u8, "creusot.int.UInt8$BW$");
-ord_logic_unsigned_impl!(u16, "creusot.int.UInt16$BW$");
-ord_logic_unsigned_impl!(u32, "creusot.int.UInt32$BW$");
-ord_logic_unsigned_impl!(u64, "creusot.int.UInt64$BW$");
-ord_logic_unsigned_impl!(u128, "creusot.int.UInt128$BW$");
+ord_logic_impl!(u8, "creusot.int.UInt8$BW$");
+ord_logic_impl!(u16, "creusot.int.UInt16$BW$");
+ord_logic_impl!(u32, "creusot.int.UInt32$BW$");
+ord_logic_impl!(u64, "creusot.int.UInt64$BW$");
+ord_logic_impl!(u128, "creusot.int.UInt128$BW$");
 #[cfg(target_pointer_width = "64")]
-ord_logic_unsigned_impl!(usize, "creusot.int.UInt64$BW$");
+ord_logic_impl!(usize, "creusot.int.UInt64$BW$");
 #[cfg(target_pointer_width = "32")]
-ord_logic_unsigned_impl!(usize, "creusot.int.UInt32$BW$");
+ord_logic_impl!(usize, "creusot.int.UInt32$BW$");
 #[cfg(target_pointer_width = "16")]
-ord_logic_unsigned_impl!(usize, "creusot.int.UInt16$BW$");
+ord_logic_impl!(usize, "creusot.int.UInt16$BW$");
 
-ord_logic_signed_impl!(i8, "creusot.int.Int8$BW$");
-ord_logic_signed_impl!(i16, "creusot.int.Int16$BW$");
-ord_logic_signed_impl!(i32, "creusot.int.Int32$BW$");
-ord_logic_signed_impl!(i64, "creusot.int.Int64$BW$");
-ord_logic_signed_impl!(i128, "creusot.int.Int128$BW$");
+ord_logic_impl!(i8, "creusot.int.Int8$BW$");
+ord_logic_impl!(i16, "creusot.int.Int16$BW$");
+ord_logic_impl!(i32, "creusot.int.Int32$BW$");
+ord_logic_impl!(i64, "creusot.int.Int64$BW$");
+ord_logic_impl!(i128, "creusot.int.Int128$BW$");
 #[cfg(target_pointer_width = "64")]
-ord_logic_signed_impl!(isize, "creusot.int.Int64$BW$");
+ord_logic_impl!(isize, "creusot.int.Int64$BW$");
 #[cfg(target_pointer_width = "32")]
-ord_logic_signed_impl!(isize, "creusot.int.Int32$BW$");
+ord_logic_impl!(isize, "creusot.int.Int32$BW$");
 #[cfg(target_pointer_width = "16")]
-ord_logic_signed_impl!(isize, "creusot.int.Int16$BW$");
+ord_logic_impl!(isize, "creusot.int.Int16$BW$");
 
-impl OrdLogic for bool {
-    #[open]
-    #[logic]
-    fn cmp_log(self, o: Self) -> Ordering {
-        match (self, o) {
-            (false, false) => Ordering::Equal,
-            (true, true) => Ordering::Equal,
-            (false, true) => Ordering::Less,
-            (true, false) => Ordering::Greater,
-        }
-    }
-
-    ord_laws_impl! {}
-}
+ord_logic_impl!(char, "creusot.prelude.Char");
+ord_logic_impl!(bool, "creusot.prelude.Bool");
 
 impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
     #[logic]

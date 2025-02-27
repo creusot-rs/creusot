@@ -42,7 +42,7 @@ impl<T: ?Sized> FSet<T> {
     /// Returns `true` if `e` is in the set.
     #[open]
     #[predicate]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     pub fn contains(self, e: T) -> bool {
         Self::mem(e, self)
     }
@@ -61,7 +61,7 @@ impl<T: ?Sized> FSet<T> {
     /// Returns a new set, where `e` has been added if it was not present.
     #[open]
     #[logic]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     pub fn insert(self, e: T) -> Self {
         Self::add(e, self)
     }
@@ -88,7 +88,7 @@ impl<T: ?Sized> FSet<T> {
     /// Returns a new set, where `e` is no longer present.
     #[open]
     #[logic]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     pub fn remove(self, e: T) -> Self {
         Self::rem(e, self)
     }
@@ -138,7 +138,7 @@ impl<T: ?Sized> FSet<T> {
     /// Returns `true` if every element of `other` is in `self`.
     #[open]
     #[predicate]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     pub fn is_superset(self, other: Self) -> bool {
         Self::is_subset(other, self)
     }

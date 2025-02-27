@@ -1,9 +1,9 @@
 use pearlite_syn::Term as RT;
 use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
-use syn::{spanned::Spanned, ExprMacro, Pat, UnOp};
+use syn::{ExprMacro, Pat, UnOp, spanned::Spanned};
 
 use pearlite_syn::term::*;
-use quote::{quote, quote_spanned, ToTokens};
+use quote::{ToTokens, quote, quote_spanned};
 use syn::Lit;
 
 #[derive(Debug)]
@@ -165,17 +165,15 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             })
         }
         RT::Let(_) => Err(EncodeError::Unsupported(term.span(), "Let".into())),
-        RT::Lit(TermLit { ref lit }) => match lit {
+        RT::Lit(TermLit { lit: lit @ Lit::Int(int) }) if int.suffix() == "" => {
             // FIXME: allow unbounded integers
-            Lit::Int(int) if int.suffix() == "" => {
-                Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) })
-            }
-            Lit::Int(int) if int.suffix() == "int" => {
-                let lit = syn::LitInt::new(int.base10_digits(), int.span());
-                Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) })
-            }
-            _ => Ok(quote_spanned! {sp=> #lit }),
-        },
+            Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) })
+        }
+        RT::Lit(TermLit { lit: Lit::Int(int) }) if int.suffix() == "int" => {
+            let lit = syn::LitInt::new(int.base10_digits(), int.span());
+            Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) })
+        }
+        RT::Lit(TermLit { lit }) => Ok(quote_spanned! {sp=> #lit }),
         RT::Match(TermMatch { expr, arms, .. }) => {
             let arms: Vec<_> = arms.iter().map(encode_arm).collect::<Result<_, _>>()?;
             let expr = encode_term(expr)?;

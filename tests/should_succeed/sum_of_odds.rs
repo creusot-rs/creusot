@@ -16,11 +16,7 @@ fn is_square(y: Int) -> bool {
 #[logic]
 #[variant(x)]
 fn sum_of_odd(x: Int) -> Int {
-    if x <= 0 {
-        0
-    } else {
-        sum_of_odd(x - 1) + 2 * x - 1
-    }
+    if x <= 0 { 0 } else { sum_of_odd(x - 1) + 2 * x - 1 }
 }
 
 #[logic]

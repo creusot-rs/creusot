@@ -68,12 +68,8 @@ contracts_items! {
         is_invariant_method             get_invariant_method
     fn resolve                           ["creusot_resolve_method"]
         is_resolve_method               get_resolve_method
-    fn Snapshot::new                     ["snapshot_new"]
-        is_snaphot_new                  get_snaphot_new
     fn Snapshot::from_fn                 ["snapshot_from_fn"]
         is_snap_from_fn                 get_snap_from_fn
-    fn Snapshot::inner                   ["snapshot_inner"]
-        is_snap_inner                   get_snap_inner
     fn Snapshot::deref                   ["snapshot_deref"]
         is_snapshot_deref               get_snapshot_deref
     fn GhostBox::new                     ["ghost_box_new"]

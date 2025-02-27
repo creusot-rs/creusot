@@ -1,5 +1,7 @@
 use std::{collections::HashMap, path::PathBuf};
 
+use why3::Ident;
+
 #[derive(Debug, Clone)]
 pub enum SpanMode {
     Relative(PathBuf),
@@ -30,7 +32,7 @@ pub struct Options {
     pub should_output: bool,
     pub output: Output,
     pub monolithic: bool,
-    pub prefix: Vec<why3::Ident>,
+    pub prefix: Vec<Ident>,
     pub in_cargo: bool,
     pub span_mode: SpanMode,
     pub simple_triggers: bool,

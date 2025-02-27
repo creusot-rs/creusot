@@ -1,8 +1,8 @@
 use rustc_hir::def_id::DefId;
 use why3::{
-    declaration::{Contract, Signature},
-    exp::{Binder, Trigger},
     Ident,
+    declaration::{Condition as WCondition, Contract, Signature},
+    exp::{Binder, Trigger},
 };
 
 use crate::{
@@ -13,7 +13,7 @@ use crate::{
     translation::specification::PreContract,
 };
 
-use super::{logic::function_call, term::lower_pure, Namer, Why3Generator};
+use super::{Namer, Why3Generator, logic::function_call, term::lower_pure};
 
 pub(crate) fn signature_of<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
@@ -38,7 +38,7 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
     let contract = contract_to_why3(pre_sig.contract, ctx, names);
 
     let span = ctx.tcx.def_span(def_id);
-    let args: Vec<Binder> = pre_sig
+    let args: Box<[Binder]> = pre_sig
         .inputs
         .iter()
         .enumerate()
@@ -77,8 +77,8 @@ fn lower_condition<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     cond: Condition<'tcx>,
-) -> why3::declaration::Condition {
-    why3::declaration::Condition { exp: lower_pure(ctx, names, &cond.term), expl: cond.expl }
+) -> WCondition {
+    WCondition { exp: lower_pure(ctx, names, &cond.term), expl: cond.expl }
 }
 
 fn contract_to_why3<'tcx, N: Namer<'tcx>>(
@@ -86,16 +86,8 @@ fn contract_to_why3<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
 ) -> Contract {
-    let mut out = Contract::new();
-    for cond in pre.requires.into_iter() {
-        out.requires.push(lower_condition(ctx, names, cond));
-    }
-    for cond in pre.ensures.into_iter() {
-        out.ensures.push(lower_condition(ctx, names, cond));
-    }
-    if let Some(term) = &pre.variant {
-        out.variant = vec![lower_pure(ctx, names, &term)];
-    }
-
-    out
+    let requires = pre.requires.into_iter().map(|cond| lower_condition(ctx, names, cond)).collect();
+    let ensures = pre.ensures.into_iter().map(|cond| lower_condition(ctx, names, cond)).collect();
+    let variant = pre.variant.map(|term| lower_pure(ctx, names, &term));
+    Contract { requires, ensures, variant }
 }

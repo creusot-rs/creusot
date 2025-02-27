@@ -1,6 +1,10 @@
-use std::{fmt::Display, iter::once};
+use std::{
+    fmt::Display,
+    iter::{once, repeat},
+};
 
 use crate::{
+    Exp, Ident, QName,
     declaration::{
         self, AdtDecl, Attribute, Axiom, ConstructorDecl, Contract, Decl, DeclKind, FieldDecl,
         Goal, LogicDecl, LogicDefn, Meta, MetaArg, MetaIdent, Module, Predicate, Signature, Span,
@@ -8,7 +12,6 @@ use crate::{
     },
     exp::{AssocDir, BinOp, Binder, Constant, Pattern, Precedence, Trigger, UnOp},
     ty::Type,
-    Exp, Ident, QName,
 };
 use num::{Float, Zero};
 use pretty::*;
@@ -50,11 +53,7 @@ macro_rules! parens {
 
 macro_rules! ty_parens {
     ($alloc:ident, $e:ident) => {
-        if $e.complex() {
-            $e.pretty($alloc).parens()
-        } else {
-            $e.pretty($alloc)
-        }
+        if $e.complex() { $e.pretty($alloc).parens() } else { $e.pretty($alloc) }
     };
 }
 
@@ -154,15 +153,15 @@ impl Print for Module {
 }
 
 // Items separated by empty lines
-pub fn pretty_blocks<'a, T: Print, A: DocAllocator<'a>>(
-    items: &'a Vec<T>,
+pub fn pretty_blocks<'a, T: Print + 'a, A: DocAllocator<'a>>(
+    items: impl IntoIterator<Item = &'a T>,
     alloc: &'a A,
 ) -> DocBuilder<'a, A>
 where
     A::Doc: Clone,
 {
     alloc.intersperse(
-        items.iter().map(|item| item.pretty(alloc)),
+        items.into_iter().map(|item| item.pretty(alloc)),
         alloc.hardline().append(alloc.hardline()),
     )
 }
@@ -280,9 +279,7 @@ fn arg_list<'b: 'a, 'a, A: DocAllocator<'a>>(alloc: &'a A, args: &'a [Binder]) -
 where
     A::Doc: Clone,
 {
-    {
-        alloc.intersperse(args.iter().map(|b| b.pretty(alloc)), alloc.space())
-    }
+    alloc.intersperse(args.iter().map(|b| b.pretty(alloc)), alloc.space())
 }
 
 impl Print for LogicDefn {
@@ -398,7 +395,7 @@ impl Print for Contract {
             )
         }
 
-        for var in &self.variant {
+        if let Some(ref var) = self.variant {
             doc = doc.append(
                 alloc.text("variant ").append(var.pretty(alloc).braces()).append(alloc.hardline()),
             )
@@ -839,7 +836,6 @@ impl Print for TyDecl {
                 .append(alloc.text(" =").append(alloc.hardline()))
                 .append(alias.pretty(alloc).indent(2)),
             TyDecl::Adt { tys } => {
-                use std::iter::*;
                 let header = once("type").chain(repeat("with"));
 
                 let mut decls = Vec::new();
@@ -931,6 +927,6 @@ impl Print for QName {
         A::Doc: Clone,
     {
         let module_path = self.module.iter().map(|t| alloc.text(&t.0));
-        alloc.intersperse(module_path.chain(std::iter::once(alloc.text(self.name.0.clone()))), ".")
+        alloc.intersperse(module_path.chain([alloc.text(self.name.0.clone())]), ".")
     }
 }

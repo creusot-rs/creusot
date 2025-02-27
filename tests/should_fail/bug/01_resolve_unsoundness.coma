@@ -5,9 +5,9 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   let%span s01_resolve_unsoundness3 = "01_resolve_unsoundness.rs" 15 17 15 22
   let%span s01_resolve_unsoundness4 = "01_resolve_unsoundness.rs" 16 13 16 14
   let%span s01_resolve_unsoundness5 = "01_resolve_unsoundness.rs" 9 10 9 29
-  let%span svec6 = "../../../creusot-contracts/src/std/vec.rs" 79 26 79 44
-  let%span svec7 = "../../../creusot-contracts/src/std/vec.rs" 92 26 92 56
-  let%span svec8 = "../../../creusot-contracts/src/std/vec.rs" 20 14 20 41
+  let%span svec6 = "../../../creusot-contracts/src/std/vec.rs" 80 26 80 44
+  let%span svec7 = "../../../creusot-contracts/src/std/vec.rs" 93 26 93 56
+  let%span svec8 = "../../../creusot-contracts/src/std/vec.rs" 21 14 21 41
   let%span sord9 = "../../../creusot-contracts/src/logic/ord.rs" 129 39 129 89
   let%span sord10 = "../../../creusot-contracts/src/logic/ord.rs" 134 39 134 86
   let%span sord11 = "../../../creusot-contracts/src/logic/ord.rs" 139 39 139 86
@@ -52,9 +52,9 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   
   use seq.Seq
   
-  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
   use creusot.int.UInt64
+  
+  constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   use mach.int.Int
   
@@ -76,7 +76,7 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   use creusot.int.UInt64
   
   function cmp_log'0 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
-    [%#sord23] if UInt64.ult self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord23] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt64.t) (y : UInt64.t) : ()
   
@@ -105,46 +105,44 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   
   function cmp_gt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord12] UInt64.ugt x y
-  = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord12] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   use creusot.int.UInt64
   
   function cmp_ge_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord11] UInt64.uge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord11] UInt64.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord10] UInt64.ult x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord10] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
   
   use creusot.int.UInt64
   
   function cmp_le_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord9] UInt64.ule x y
-  = (cmp_log'0 x y <> C_Greater'0)
+  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord9] UInt64.le x y = (cmp_log'0 x y <> C_Greater'0)
   
   use creusot.prelude.MutBorrow
   
-  predicate inv'1 (_1 : MutBorrow.t (t_Vec'0))
+  predicate inv'1 (_1 : MutBorrow.t t_Vec'0)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t (t_Vec'0) [inv'1 x] . inv'1 x = true
+  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'1 x] . inv'1 x = true
   
   predicate inv'2 (_1 : bool)
   
   axiom inv_axiom'2 [@rewrite] : forall x : bool [inv'2 x] . inv'2 x = true
   
-  function view'1 (self : MutBorrow.t (t_Vec'0)) : Seq.seq bool =
-    [%#smodel22] view'0 self.current
-  
   use seq.Seq
   
-  let rec push'0 (self:MutBorrow.t (t_Vec'0)) (value:bool) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'1 self}
+  function view'1 (self : MutBorrow.t t_Vec'0) : Seq.seq bool =
+    [%#smodel22] view'0 self.current
+  
+  let rec push'0 (self:MutBorrow.t t_Vec'0) (value:bool) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'1 self}
     {[@expl:push 'value' type invariant] inv'2 value}
     any [ return' (result:())-> {[%#svec7] view'0 self.final = Seq.snoc (view'1 self) value} (! return' {result}) ] 
   
-  use creusot.prelude.Intrinsic
+  use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000
   
@@ -154,15 +152,14 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
     
     | bb1 = s0 [ s0 =  [ &i <- [%#s01_resolve_unsoundness1] (0 : UInt64.t) ] s1 | s1 = bb2 ] 
     | bb2 = bb2
-      [ bb2 = {[@expl:loop invariant] [%#s01_resolve_unsoundness2] UInt64.ule (0 : UInt64.t) i /\ UInt64.ule i n}
+      [ bb2 = {[@expl:loop invariant] [%#s01_resolve_unsoundness2] UInt64.le (0 : UInt64.t) i /\ UInt64.le i n}
         (! s0) [ s0 = bb3 ] 
         [ bb3 = s0
-          [ s0 = UInt64.le {i} {n} (fun (_ret':bool) ->  [ &_10 <- _ret' ] s1)
-          | s1 = any [ br0 -> {_10 = false} (! bb6) | br1 -> {_10} (! bb4) ]  ]
+          [ s0 =  [ &_10 <- UInt64.le i n ] s1 | s1 = any [ br0 -> {_10 = false} (! bb6) | br1 -> {_10} (! bb4) ]  ]
         
         | bb4 = s0
           [ s0 = MutBorrow.borrow_mut <t_Vec'0> {out}
-              (fun (_ret':MutBorrow.t (t_Vec'0)) ->  [ &_14 <- _ret' ]  [ &out <- _ret'.final ] s1)
+              (fun (_ret':MutBorrow.t t_Vec'0) ->  [ &_14 <- _ret' ]  [ &out <- _ret'.final ] s1)
           | s1 = push'0 {_14} {[%#s01_resolve_unsoundness3] false} (fun (_ret':()) ->  [ &_13 <- _ret' ] s2)
           | s2 = bb5 ]
         
@@ -176,13 +173,13 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
     | bb6 = s0 [ s0 =  [ &_0 <- out ] s1 | s1 = bb7 ] 
     | bb7 = return' {_0} ]
     )
-    [ & _0 : t_Vec'0 = Intrinsic.any_l ()
+    [ & _0 : t_Vec'0 = Any.any_l ()
     | & n : UInt64.t = n
-    | & out : t_Vec'0 = Intrinsic.any_l ()
-    | & i : UInt64.t = Intrinsic.any_l ()
-    | & _10 : bool = Intrinsic.any_l ()
-    | & _13 : () = Intrinsic.any_l ()
-    | & _14 : MutBorrow.t (t_Vec'0) = Intrinsic.any_l () ]
+    | & out : t_Vec'0 = Any.any_l ()
+    | & i : UInt64.t = Any.any_l ()
+    | & _10 : bool = Any.any_l ()
+    | & _13 : () = Any.any_l ()
+    | & _14 : MutBorrow.t t_Vec'0 = Any.any_l () ]
     
     [ return' (result:t_Vec'0)-> {[@expl:make_vec_of_size ensures] [%#s01_resolve_unsoundness5] Seq.length (view'0 result)
       = UInt64.t'int n}

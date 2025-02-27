@@ -11,13 +11,13 @@ module M_one_side_update__f [#"one_side_update.rs" 5 0 5 10]
   
   use creusot.prelude.MutBorrow
   
-  predicate resolve'1 (self : MutBorrow.t (t_MyInt'0)) =
+  predicate resolve'1 (self : MutBorrow.t t_MyInt'0) =
     [%#sresolve3] self.final = self.current
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_MyInt'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t t_MyInt'0) =
     resolve'1 _1
   
-  use creusot.prelude.Intrinsic
+  use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000
   
@@ -25,7 +25,7 @@ module M_one_side_update__f [#"one_side_update.rs" 5 0 5 10]
     [ bb0 = s0
       [ s0 =  [ &a <- { t_MyInt__0'0 = ([%#sone_side_update1] (10 : UInt64.t)) } ] s1
       | s1 = MutBorrow.borrow_mut <t_MyInt'0> {a}
-          (fun (_ret':MutBorrow.t (t_MyInt'0)) ->  [ &b <- _ret' ]  [ &a <- _ret'.final ] s2)
+          (fun (_ret':MutBorrow.t t_MyInt'0) ->  [ &b <- _ret' ]  [ &a <- _ret'.final ] s2)
       | s2 = any [ br0 -> {false} (! bb2) | br1 -> {true} (! bb1) ]  ]
     
     | bb1 = s0 [ s0 = -{resolve'0 b}- s1 | s1 = bb3 ] 
@@ -37,9 +37,9 @@ module M_one_side_update__f [#"one_side_update.rs" 5 0 5 10]
     
     | bb3 = return' {_0} ]
     )
-    [ & _0 : () = Intrinsic.any_l ()
-    | & a : t_MyInt'0 = Intrinsic.any_l ()
-    | & b : MutBorrow.t (t_MyInt'0) = Intrinsic.any_l ()
-    | & _6 : t_MyInt'0 = Intrinsic.any_l () ]
+    [ & _0 : () = Any.any_l ()
+    | & a : t_MyInt'0 = Any.any_l ()
+    | & b : MutBorrow.t t_MyInt'0 = Any.any_l ()
+    | & _6 : t_MyInt'0 = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end

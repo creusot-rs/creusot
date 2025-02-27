@@ -7,7 +7,7 @@ use std::{
     fs::File,
     io::{BufRead, BufReader, IsTerminal, Write},
     path::PathBuf,
-    process::{exit, Command},
+    process::{Command, exit},
 };
 use termcolor::*;
 

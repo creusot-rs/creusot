@@ -6,18 +6,10 @@ use creusot_contracts::{logic::Int, *};
 #[logic]
 #[open]
 pub fn max_int(a: Int, b: Int) -> Int {
-    if a < b {
-        b
-    } else {
-        a
-    }
+    if a < b { b } else { a }
 }
 
 #[ensures(result@ == max_int(a@, b@))]
 pub fn max_usize(a: usize, b: usize) -> usize {
-    if a < b {
-        b
-    } else {
-        a
-    }
+    if a < b { b } else { a }
 }

@@ -44,8 +44,8 @@ pub fn hard(x: &mut NonZero) {
 #[requires(x.1.0@ < i32::MAX@)]
 #[requires(x.1.0@ != -1)]
 pub fn tuple(mut x: (NonZero, &mut NonZero)) {
-    x.0 .0 = 0;
-    inc(&mut x.1 .0);
+    x.0.0 = 0;
+    inc(&mut x.1.0);
     // here we resolve x and thus assert x.inv() which is not provable
 }
 
@@ -53,7 +53,7 @@ pub fn tuple(mut x: (NonZero, &mut NonZero)) {
 #[requires(x.1.0@ != -1)]
 pub fn partial_move(x: (NonZero, &mut NonZero)) {
     let mut a = x.0;
-    inc(&mut x.1 .0);
+    inc(&mut x.1.0);
     a.0 = 0;
 }
 

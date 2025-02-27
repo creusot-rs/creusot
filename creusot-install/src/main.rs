@@ -1,11 +1,10 @@
 #![feature(try_blocks, unbounded_shifts)]
-use anyhow::{anyhow, bail, Context as _};
+use anyhow::{Context as _, anyhow, bail};
 use clap::*;
 use creusot_setup::{
-    self as setup,
+    self as setup, Binary, CfgPaths,
     config::{Config, ExternalTool, ManagedTool},
     tools_versions_urls::*,
-    Binary, CfgPaths,
 };
 use indoc::writedoc;
 use reqwest::blocking::Client;
@@ -13,7 +12,7 @@ use std::{
     env,
     ffi::OsStr,
     fs,
-    fs::{copy, create_dir_all, read_to_string, File},
+    fs::{File, copy, create_dir_all, read_to_string},
     io::{self, BufWriter, Write},
     os::unix::ffi::OsStrExt as _,
     path::{Path, PathBuf},

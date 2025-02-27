@@ -1,19 +1,19 @@
 use indexmap::{IndexMap, IndexSet};
 use rustc_middle::{
-    mir::{tcx::PlaceTy, BasicBlock, ProjectionElem, START_BLOCK},
+    mir::{BasicBlock, ProjectionElem, START_BLOCK, tcx::PlaceTy},
     ty::{Ty, TyCtxt},
 };
-use rustc_span::{Symbol, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Symbol};
 
 use crate::{
     backend::{
         place::projection_ty,
         program::node_graph,
-        wto::{weak_topological_order, Component},
+        wto::{Component, weak_topological_order},
     },
-    contracts_items::{get_snap_ty, get_snaphot_new, get_snapshot_deref},
+    contracts_items::get_snap_ty,
     ctx::TranslationCtx,
-    pearlite::{mk_projection, BinOp, Term},
+    pearlite::{Term, mk_projection},
     translation::fmir,
 };
 use petgraph::Direction;
@@ -37,8 +37,6 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
     let res = borrow_prophecy_analysis(ctx, &body, &wto);
 
     let snap_ty = get_snap_ty(ctx.tcx);
-    let snap_new = get_snaphot_new(ctx.tcx);
-    let snap_deref = get_snapshot_deref(ctx.tcx);
     let tcx = ctx.tcx;
     for (k, unchanged) in res.iter() {
         let inc = graph.neighbors_directed(*k, Direction::Incoming);
@@ -51,8 +49,12 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
             let subst = ctx.mk_args(&[u.ty(tcx, &body.locals).into()]);
             let ty = Ty::new_adt(ctx.tcx, ctx.adt_def(snap_ty), subst);
 
-            body.locals
-                .insert(local, fmir::LocalDecl { span: DUMMY_SP, ty, temp: true, arg: false });
+            body.locals.insert(local, fmir::LocalDecl {
+                span: DUMMY_SP,
+                ty,
+                temp: true,
+                arg: false,
+            });
 
             for p in &incoming {
                 let mut prev_block = body.blocks.get_mut(p).unwrap();
@@ -64,15 +66,12 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
                             *tgt = new_block;
                         }
                     }
-                    body.blocks.insert(
-                        new_block,
-                        Block {
-                            invariants: vec![],
-                            variant: None,
-                            stmts: vec![],
-                            terminator: Terminator::Goto(*k),
-                        },
-                    );
+                    body.blocks.insert(new_block, Block {
+                        invariants: vec![],
+                        variant: None,
+                        stmts: vec![],
+                        terminator: Terminator::Goto(*k),
+                    });
                     prev_block = body.blocks.get_mut(&new_block).unwrap();
                 }
                 if let Terminator::Goto(t) = prev_block.terminator
@@ -82,13 +81,8 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
                     panic!()
                 }
                 prev_block.stmts.push(Statement::Assignment(
-                    Place { local, projection: Vec::new() },
-                    RValue::Snapshot(Term::call_no_normalize(
-                        tcx,
-                        snap_new,
-                        subst,
-                        vec![pterm.clone()],
-                    )),
+                    Place { local, projection: Box::new([]) },
+                    RValue::Snapshot(pterm.clone().coerce(ty)),
                     DUMMY_SP,
                 ));
             }
@@ -96,15 +90,10 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
             let old = Term::var(local, ty);
             let blk = body.blocks.get_mut(k).unwrap();
 
-            let mut snap_old = Term::call_no_normalize(ctx.tcx, snap_deref, subst, vec![old]);
-            snap_old.ty = u.ty(tcx, &body.locals);
-            blk.invariants.insert(
-                0,
-                fmir::Invariant {
-                    body: snap_old.fin().bin_op(tcx, BinOp::Eq, pterm.fin()),
-                    expl: "expl:mut invariant".to_string(),
-                },
-            );
+            blk.invariants.insert(0, fmir::Invariant {
+                body: old.coerce(u.ty(tcx, &body.locals)).fin().eq(tcx, pterm.fin()),
+                expl: "expl:mut invariant".to_string(),
+            });
         }
     }
 }
@@ -207,7 +196,9 @@ fn borrow_prophecy_analysis_inner<'a, 'tcx>(
                         continue 'active_borrows;
                     }
 
-                    if p.projection.pop() == None {
+                    p.projection = if let Some((_, tl)) = p.projection.split_last() {
+                        tl.iter().cloned().collect()
+                    } else {
                         break;
                     }
                 }
@@ -235,13 +226,14 @@ impl<'a, 'tcx> BorrowProph<'a, 'tcx> {
     fn record_write_to(&mut self, pl: &Place<'tcx>) {
         self.overwritten_values.insert(pl.clone());
 
-        let mut b = Place { local: pl.local, projection: vec![] };
         let mut bty = PlaceTy::from_ty(self.locals[&pl.local].ty);
+        let mut proj = vec![];
         for &pr in &pl.projection {
+            let b = Place { projection: proj.clone().into(), ..*pl };
             if matches!(pr, ProjectionElem::Deref) && bty.ty.is_ref() && bty.ty.is_mutable_ptr() {
                 self.active_borrows.insert(b.clone());
             }
-            b.projection.push(pr);
+            proj.push(pr);
             bty = projection_ty(bty, self.tcx, pr);
         }
     }

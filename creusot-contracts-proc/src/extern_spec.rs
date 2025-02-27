@@ -1,7 +1,7 @@
 use crate::{doc::DocItemName, generate_unique_ident};
 use pearlite_syn::term::*;
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote};
 use syn::{
     parse::Parse,
     punctuated::{Pair, Punctuated},

@@ -39,7 +39,7 @@ impl<T, A: Allocator> IndexLogic<Int> for VecDeque<T, A> {
 
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: Int) -> Self::Item {
         pearlite! { self@[ix] }
     }
@@ -51,7 +51,7 @@ impl<T, A: Allocator> IndexLogic<usize> for VecDeque<T, A> {
 
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, ix: usize) -> Self::Item {
         pearlite! { self@[ix@] }
     }

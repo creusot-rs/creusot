@@ -31,11 +31,7 @@ pub mod nested {
 #[open]
 #[logic]
 pub fn arith(n: Int, b: bool) -> Int {
-    if !b {
-        -n + n - n * n
-    } else {
-        n
-    }
+    if !b { -n + n - n * n } else { n }
 }
 
 #[open]

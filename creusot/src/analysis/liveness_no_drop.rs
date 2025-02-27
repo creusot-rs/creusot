@@ -1,15 +1,15 @@
 use rustc_index::bit_set::MixedBitSet;
 use rustc_middle::{
     mir::{
-        self,
+        self, CallReturnPlaces, Local, Location, Place, TerminatorEdges,
         visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor},
-        CallReturnPlaces, Local, Location, Place, TerminatorEdges,
     },
     ty::TyCtxt,
 };
 use rustc_mir_dataflow::{
+    Analysis, Backward, GenKill,
     move_paths::{HasMoveData, LookupResult, MoveData, MovePathIndex},
-    on_all_children_bits, Analysis, Backward, GenKill,
+    on_all_children_bits,
 };
 
 use crate::resolve::place_contains_borrow_deref;

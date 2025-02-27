@@ -8,23 +8,23 @@ use crate::{
     function::closure_capture_subst,
     naming::anonymous_param_symbol,
     pearlite::TermVisitorMut,
-    translation::pearlite::{self, normalize, Literal, Term, TermKind},
+    translation::pearlite::{self, Literal, Term, TermKind, normalize},
     util::erased_identity_for_item,
 };
-use rustc_hir::{def_id::DefId, AttrArgs, Safety};
+use rustc_hir::{AttrArgs, Safety, def_id::DefId};
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
-    mir::{self, Body, Local, SourceInfo, SourceScope, OUTERMOST_SOURCE_SCOPE},
+    mir::{self, Body, Local, OUTERMOST_SOURCE_SCOPE, SourceInfo, SourceScope},
     ty::{EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv},
 };
 use rustc_span::{
-    symbol::{kw, Ident},
-    Span, Symbol, DUMMY_SP,
+    DUMMY_SP, Span, Symbol,
+    symbol::{Ident, kw},
 };
 use rustc_type_ir::ClosureKind;
 use std::{
     collections::{HashMap, HashSet},
-    iter,
+    iter::{once, repeat},
 };
 
 /// A term with an "expl:" label (includes the "expl:" prefix)
@@ -280,12 +280,10 @@ fn place_to_term<'tcx>(
         let ty = place_ref.ty(&body.local_decls, tcx).ty;
         match proj {
             mir::ProjectionElem::Deref => {
-                let mutable = match ty.kind() {
-                    TyKind::Ref(_, _, mutability) => mutability.is_mut(),
-                    _ => continue,
-                };
-                if mutable {
+                if ty.is_mutable_ptr() {
                     kind = TermKind::Cur { term: Box::new(Term { ty, span, kind }) };
+                } else {
+                    kind = TermKind::Coerce { arg: Box::new(Term { ty, span, kind }) }
                 }
             }
             mir::ProjectionElem::Field(field_idx, _) => {
@@ -447,8 +445,13 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
         let kind = subst.as_closure().kind();
         let env_ty = ctx.closure_env_ty(fn_ty, kind, ctx.lifetimes.re_erased);
 
-        let self_pre =
-            if env_ty.is_ref() { Term::var(self_, env_ty).cur() } else { Term::var(self_, env_ty) };
+        let self_pre = if env_ty.is_ref() && env_ty.is_mutable_ptr() {
+            Term::var(self_, env_ty).cur()
+        } else if env_ty.is_ref() {
+            Term::var(self_, env_ty).coerce(env_ty.peel_refs())
+        } else {
+            Term::var(self_, env_ty)
+        };
 
         let mut pre_subst =
             closure_capture_subst(ctx, def_id, subst, false, None, self_pre.clone());
@@ -468,14 +471,14 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
                 ctx.typing_env(def_id),
                 unnest_id,
                 unnest_subst,
-                vec![Term::var(self_, env_ty).cur(), Term::var(self_, env_ty).fin()],
+                Box::new([Term::var(self_, env_ty).cur(), Term::var(self_, env_ty).fin()]),
             );
             let expl = "expl:closure unnest".to_string();
             contract.ensures.push(Condition { term, expl });
         };
 
         let self_post = match kind {
-            ClosureKind::Fn => Term::var(self_, env_ty).cur(),
+            ClosureKind::Fn => Term::var(self_, env_ty).coerce(env_ty.peel_refs()),
             ClosureKind::FnMut => Term::var(self_, env_ty).fin(),
             ClosureKind::FnOnce => Term::var(self_, env_ty),
         };
@@ -598,17 +601,13 @@ fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (impl Iterator<Item = (Ident
 
             // I wish this could be called "self"
             let closure_env = (Ident::empty(), env_ty);
-            let names = tcx
-                .fn_arg_names(def_id)
-                .iter()
-                .cloned()
-                .chain(iter::repeat(rustc_span::symbol::Ident::empty()));
+            let names = tcx.fn_arg_names(def_id).iter().cloned().chain(repeat(Ident::empty()));
             (
-                Box::new(iter::once(closure_env).chain(names.zip(sig.inputs().iter().cloned()))),
+                Box::new(once(closure_env).chain(names.zip(sig.inputs().iter().cloned()))),
                 sig.output(),
             )
         }
-        _ => (Box::new(iter::empty()), tcx.type_of(def_id).instantiate_identity()),
+        _ => (Box::new([].into_iter()), tcx.type_of(def_id).instantiate_identity()),
     };
     (inputs, output)
 }

@@ -5,11 +5,7 @@ use creusot_contracts::*;
 #[requires(cond.precondition(()) && forall <b:bool> branch.precondition((b,)))]
 #[ensures(exists <b:bool> cond.postcondition((),b) && branch.postcondition_once((!b,),()))]
 pub fn inversed_if<C: Fn() -> bool, B: FnOnce(bool) -> ()>(cond: C, branch: B) {
-    if !cond() {
-        branch(true)
-    } else {
-        branch(false)
-    }
+    if !cond() { branch(true) } else { branch(false) }
 }
 
 #[ensures((n > 7u32 && result == 2u32) || (n <= 7u32 && result == 1u32))] // <- should fail !

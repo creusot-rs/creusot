@@ -261,6 +261,6 @@ where
     #[ensures(result == (*perm.inner_logic())@)]
     #[ensures((^perm.inner_logic())@.is_default())]
     pub unsafe fn take(&self, perm: GhostBox<&mut PCellOwn<T>>) -> T {
-        self.replace(perm, T::default())
+        unsafe { self.replace(perm, T::default()) }
     }
 }

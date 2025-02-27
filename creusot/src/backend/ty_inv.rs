@@ -12,7 +12,7 @@ use crate::{
     },
 };
 use rustc_middle::ty::{GenericArg, Ty, TyCtxt, TyKind, TypingEnv};
-use rustc_span::{Symbol, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Symbol};
 use std::collections::HashSet;
 
 pub(crate) fn is_tyinv_trivial<'tcx>(
@@ -87,12 +87,13 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         let subject = Term::var(Symbol::intern("x"), ty);
         let inv_id = get_inv_function(self.ctx.tcx);
         let subst = self.ctx.mk_args(&[GenericArg::from(subject.ty)]);
-        let lhs = Term::call(self.ctx.tcx, self.typing_env, inv_id, subst, vec![subject.clone()]);
-        let trig = vec![Trigger(vec![lhs.clone()])];
+        let lhs =
+            Term::call(self.ctx.tcx, self.typing_env, inv_id, subst, Box::new([subject.clone()]));
+        let trig = Box::new([Trigger(Box::new([lhs.clone()]))]);
 
         if is_tyinv_trivial(self.ctx.tcx, self.typing_env, ty) {
             self.rewrite = true;
-            return Some(Term::eq(self.ctx.tcx, lhs, Term::mk_true(self.ctx.tcx)).forall_trig(
+            return Some(lhs.eq(self.ctx.tcx, Term::mk_true(self.ctx.tcx)).forall_trig(
                 self.ctx.tcx,
                 (Symbol::intern("x"), ty),
                 trig,
@@ -112,7 +113,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                     self.typing_env,
                     uinv_did,
                     uinv_subst,
-                    vec![subject.clone()],
+                    Box::new([subject.clone()]),
                 ))
             }
             TraitResolved::UnknownNotFound if !for_deps => use_imples = true,
@@ -125,7 +126,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                     self.typing_env,
                     trait_item_did,
                     subst,
-                    vec![subject.clone()],
+                    Box::new([subject.clone()]),
                 ))
             }
         }
@@ -143,7 +144,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
             Term::implies(lhs, rhs)
         } else {
             self.rewrite = true;
-            Term::eq(self.ctx.tcx, lhs, rhs)
+            lhs.eq(self.ctx.tcx, rhs)
         };
 
         Some(term.forall_trig(self.ctx.tcx, (Symbol::intern("x"), ty), trig))
@@ -208,46 +209,47 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
 
     pub(crate) fn mk_inv_call(&mut self, term: Term<'tcx>) -> Term<'tcx> {
         if let Some((inv_id, subst)) = self.ctx.type_invariant(self.typing_env, term.ty) {
-            Term::call(self.ctx.tcx, self.typing_env, inv_id, subst, vec![term])
+            Term::call(self.ctx.tcx, self.typing_env, inv_id, subst, Box::new([term]))
         } else {
             Term::mk_true(self.ctx.tcx)
         }
     }
 
     fn build_inv_term_adt(&mut self, term: Term<'tcx>) -> Term<'tcx> {
-        let TyKind::Adt(adt_def, subst) = term.ty.kind() else {
+        let TyKind::Adt(adt_def, substs) = term.ty.kind() else {
             unreachable!("asked to build ADT invariant for non-ADT type {:?}", term.ty)
         };
 
-        use crate::pearlite::*;
+        let arms = adt_def
+            .variants()
+            .iter()
+            .map(|var_def| {
+                let tuple_var = var_def.ctor.is_some();
 
-        let mut arms: Vec<(_, Term<'tcx>)> = vec![];
+                let mut exp = Some(Term::mk_true(self.ctx.tcx));
+                let fields = var_def
+                    .fields
+                    .iter()
+                    .enumerate()
+                    .map(|(field_idx, field_def)| {
+                        let field_name: Symbol = if tuple_var {
+                            Symbol::intern(&format!("a_{field_idx}"))
+                        } else {
+                            field_def.name
+                        };
 
-        for var_def in adt_def.variants() {
-            let tuple_var = var_def.ctor.is_some();
+                        let field_ty = field_def.ty(self.ctx.tcx, substs);
 
-            let mut pats: Vec<Pattern<'tcx>> = vec![];
-            let mut exp: Term<'tcx> = Term::mk_true(self.ctx.tcx);
-            for (field_idx, field_def) in var_def.fields.iter().enumerate() {
-                let field_name: Symbol = if tuple_var {
-                    Symbol::intern(&format!("a_{field_idx}"))
-                } else {
-                    field_def.name
-                };
+                        let var = Term::var(field_name, field_ty);
+                        let f_exp = self.mk_inv_call(var);
+                        exp = Some(std::mem::replace(&mut exp, None).unwrap().conj(f_exp));
+                        Pattern::Binder(field_name)
+                    })
+                    .collect();
 
-                let field_ty = field_def.ty(self.ctx.tcx, subst);
-
-                let var = Term::var(field_name, field_ty);
-                let f_exp = self.mk_inv_call(var);
-                exp = exp.conj(f_exp);
-                pats.push(Pattern::Binder(field_name));
-            }
-
-            arms.push((
-                Pattern::Constructor { variant: var_def.def_id, substs: subst, fields: pats },
-                exp,
-            ));
-        }
+                (Pattern::Constructor { variant: var_def.def_id, substs, fields }, exp.unwrap())
+            })
+            .collect();
 
         Term {
             kind: TermKind::Match { scrutinee: Box::new(term), arms },
