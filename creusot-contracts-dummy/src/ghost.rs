@@ -1,0 +1,1 @@
+../../creusot-contracts-proc/src/ghost.rs
