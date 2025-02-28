@@ -82,13 +82,11 @@ echo "--external z3" > INSTALL.opts
    ```
    $ git pull
    ```
-2. Upgrade Why3 if needed:
+3. Update opam's package listing:
    ```
-   $ eval $(opam env)
-   $ opam update
-   $ opam pin . -y
+   opam update
    ```
-3. Reinstall Creusot:
+4. Reinstall Creusot:
    ```
    $ ./INSTALL
    ```
