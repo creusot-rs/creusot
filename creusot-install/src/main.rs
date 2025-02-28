@@ -263,9 +263,8 @@ fn install_tools(paths: &setup::CfgPaths, args: Args) -> anyhow::Result<()> {
 }
 
 fn apply_config(paths: &setup::CfgPaths, cfg: &Config) -> anyhow::Result<()> {
-    // erase any previous existing config (but not the cache)
-    let _ = fs::remove_dir_all(&paths.config_dir);
-    let _ = fs::remove_dir_all(&paths.data_dir.join("bin"));
+    // Reset solvers directory
+    let _ = fs::remove_dir_all(&paths.bin_subdir);
 
     // create directories
     fs::create_dir_all(&paths.config_dir)?;
