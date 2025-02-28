@@ -127,24 +127,38 @@ fn install(args: Args) -> anyhow::Result<()> {
 
 fn install_why3(cfg: &CfgPaths) -> anyhow::Result<()> {
     println! {"Installing Why3 and Why3find..."};
-    if fs::exists(cfg.data_dir.join("_opam"))? {
+    let switch_dir = opam_switch(cfg);
+    if fs::exists(switch_dir.join("_opam"))? {
         // Upgrade existing switch
-        fs::copy(PathBuf::from("creusot-deps.opam"), &cfg.data_dir.join("creusot-deps.opam"))?;
+        fs::copy(PathBuf::from("creusot-deps.opam"), switch_dir.join("creusot-deps.opam"))?;
         let mut cmd = Command::new("opam");
-        cmd.args(["install", "creusot-deps", "-y", "--switch"]).arg(&cfg.data_dir); // use creusot-deps.opam
+        cmd.args(["install", "creusot-deps", "-y", "--switch"]).arg(switch_dir);
         if !cmd.status()?.success() {
             bail!("Failed to upgrade why3 and why3find")
         }
     } else {
-        fs::create_dir_all(&cfg.data_dir)?;
-        fs::copy(PathBuf::from("creusot-deps.opam"), &cfg.data_dir.join("creusot-deps.opam"))?;
+        fs::create_dir_all(&switch_dir)?;
+        fs::copy(PathBuf::from("creusot-deps.opam"), switch_dir.join("creusot-deps.opam"))?;
         let mut cmd = Command::new("opam");
-        cmd.args(["switch", "create", "-y"]).arg(&cfg.data_dir);
+        cmd.args(["switch", "create", "-y"]).arg(switch_dir);
         if !cmd.status()?.success() {
             bail!("Failed to create opam switch")
         }
     }
     Ok(())
+}
+
+/// Pick opam switch location depending on OS.
+/// On macOS we use "$HOME/.creusot" instead of the data directory
+/// because Opam fails at handling the space in "Application Support".
+#[cfg(not(target_os = "macos"))]
+fn opam_switch(cfg: &CfgPaths) -> PathBuf {
+    cfg.data_dir.clone() // return a PathBuf because the MacOS version must do so.
+}
+
+#[cfg(target_os = "macos")]
+fn opam_switch(_: &CfgPaths) -> PathBuf {
+    directories::BaseDirs::new().expect("could not find home").home_dir().join(".creusot")
 }
 
 fn install_cargo_creusot() -> anyhow::Result<()> {
@@ -189,12 +203,14 @@ fn install_tools(paths: &setup::CfgPaths, args: Args) -> anyhow::Result<()> {
         Ok(path)
     };
     let get_opam_path = |tool| -> anyhow::Result<PathBuf> {
-        let data_dir = &paths.data_dir;
         let output = Command::new("opam")
             .args(["exec", "--switch"])
-            .arg(data_dir)
+            .arg(opam_switch(paths))
             .args(["--", "which", tool])
             .output()?;
+        if !output.status.success() {
+            bail!("opam failed to find {}", tool)
+        }
         Ok(PathBuf::from(OsStr::from_bytes(output.stdout.trim_ascii_end())))
     };
     let external_tool = |path: PathBuf, name: SetupTool| -> anyhow::Result<ExternalTool> {
@@ -247,9 +263,8 @@ fn install_tools(paths: &setup::CfgPaths, args: Args) -> anyhow::Result<()> {
 }
 
 fn apply_config(paths: &setup::CfgPaths, cfg: &Config) -> anyhow::Result<()> {
-    // erase any previous existing config (but not the cache)
-    let _ = fs::remove_dir_all(&paths.config_dir);
-    let _ = fs::remove_dir_all(&paths.data_dir.join("bin"));
+    // Reset solvers directory
+    let _ = fs::remove_dir_all(&paths.bin_subdir);
 
     // create directories
     fs::create_dir_all(&paths.config_dir)?;

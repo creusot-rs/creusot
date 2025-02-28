@@ -110,10 +110,14 @@ jobs:
         cat ~/.config/creusot/why3.conf
     - run: cargo test --test why3
   install:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
     - name: Cache Cargo build
+      if: matrix.os == 'ubuntu-latest'
       uses: actions/cache@v4
       with:
         path: |
@@ -122,9 +126,17 @@ jobs:
           target
         key: ${{ runner.os }}-cargo-install-${{ hashFiles('**/Cargo.lock') }}
     - name: Cache Opam switch
+      if: matrix.os == 'ubuntu-latest'
       uses: actions/cache@v4
       with:
         path: ~/.local/share/creusot/_opam
+        key: ${{ runner.os }}-opam-${{ hashFiles('creusot-deps.opam') }}
+        restore-keys: ${{ runner.os }}-opam-
+    - name: Cache Opam switch (MacOS)
+      if: matrix.os == 'macos-latest'
+      uses: actions/cache@v4
+      with:
+        path: ~/.creusot/_opam
         key: ${{ runner.os }}-opam-${{ hashFiles('creusot-deps.opam') }}
         restore-keys: ${{ runner.os }}-opam-
     - name: Install Opam
@@ -132,10 +144,9 @@ jobs:
       with:
         ocaml-compiler: 5.3.0
         opam-pin: false
-    - name: Setup environment
-      run: |
-        sudo apt update
-        opam --cli=2.1 var --global in-creusot-ci=true
+    - run: sudo apt update
+      if: matrix.os == 'ubuntu-latest'
+    - run: opam --cli=2.1 var --global in-creusot-ci=true
     - run: ./INSTALL
     - name: test cargo creusot new
       run: |
