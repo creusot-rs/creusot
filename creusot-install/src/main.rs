@@ -208,6 +208,9 @@ fn install_tools(paths: &setup::CfgPaths, args: Args) -> anyhow::Result<()> {
             .arg(opam_switch(paths))
             .args(["--", "which", tool])
             .output()?;
+        if !output.status.success() {
+            bail!("opam failed to find {}", tool)
+        }
         Ok(PathBuf::from(OsStr::from_bytes(output.stdout.trim_ascii_end())))
     };
     let external_tool = |path: PathBuf, name: SetupTool| -> anyhow::Result<ExternalTool> {
