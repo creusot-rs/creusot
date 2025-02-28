@@ -51,11 +51,19 @@ More examples are found in [tests/should_succeed](tests/should_succeed).
    ```
    A regular installation consists of:
    - the `cargo-creusot` executable in `~/.cargo/bin/`;
-   - the `creusot-rustc` executable in `~/.local/share/creusot/toolchains/$TOOLCHAIN/bin`;
-   - the `why3` and `why3find` executables in `~/.local/share/creusot/_opam/bin` (in a local opam switch);
-   - the Creusot prelude in `~/.local/share/creusot/_opam/lib/why3find/packages/creusot`;
-   - SMT solvers (Alt-Ergo, CVC4, CVC5, Z3) in `~/.local/share/creusot/bin`;
-   - configuration files in `~/.config/creusot/`.
+   - the `creusot-rustc` executable in `{DATA_DIR}/toolchains/$TOOLCHAIN/bin`;
+   - the `why3` and `why3find` executables in `{SWITCH}/bin`;
+   - the Creusot prelude in `{SWITCH}/lib/why3find/packages/creusot`;
+   - SMT solvers (Alt-Ergo, CVC4, CVC5, Z3) in `{DATA_DIR}/bin`;
+   - configuration files in `{CONFIG_DIR}`.
+
+where the directories depend on the OS:
+
+| | Linux | MacOS |
+|-|-|-|
+| `{DATA_DIR}` | `~/.local/share/creusot` | `~/Library/Application Support/creusot.creusot` |
+| `{CONFIG_DIR}` | `~/.config/creusot` | `~/Library/Application Support/creusot.creusot` |
+| `{SWITCH}` | `~/.local/share/creusot/_opam` | `~/.creusot/_opam` |
 
 Installation options can be set in a text file `INSTALL.opts`.
 They are just space-separated command-line arguments.
