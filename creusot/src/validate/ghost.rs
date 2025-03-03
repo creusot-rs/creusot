@@ -1,9 +1,10 @@
 //! Validate that `ghost!` does not modify program variables
 
-use rustc_hir::HirId;
+use rustc_hir::{HirId, intravisit::Visitor as _};
 use rustc_hir_typeck::expr_use_visitor::{Delegate, ExprUseVisitor, PlaceWithHirId};
 use rustc_lint::{LateLintPass, LintPass};
 use rustc_middle::ty::{Ty, TyCtxt};
+use rustc_span::Span;
 use std::collections::HashSet;
 
 use crate::contracts_items::is_ghost_ty;
@@ -29,6 +30,9 @@ impl<'tcx> LateLintPass<'tcx> for GhostValidate {
             return;
         }
 
+        let mut control_flow = GhostControlFlow { errors: Vec::new() };
+        control_flow.visit_expr(expr);
+
         let tcx = cx.tcx;
 
         // Check that all captures are ghost/copy
@@ -37,13 +41,22 @@ impl<'tcx> LateLintPass<'tcx> for GhostValidate {
         let visitor = ExprUseVisitor::for_clippy(cx, expr.hir_id.owner.def_id, &mut places);
         // Error type is `!`
         let _ = visitor.walk_expr(expr);
+
+        for (span, msg) in control_flow.errors {
+            tcx.dcx()
+                .struct_span_err(span, msg)
+                .with_note("control flow cannot escape the `ghost!` block")
+                .emit();
+        }
         for &(id, base, written) in &places.errors {
-            let mut err = if written {
-                tcx.dcx().struct_err("cannot write to a non-ghost variable in a `ghost!` block")
-            } else {
-                tcx.dcx().struct_err("cannot move a non-ghost variable into a `ghost!` block")
-            };
-            err.span(tcx.hir().span(id));
+            let mut err = tcx.dcx().struct_span_err(
+                tcx.hir().span(id),
+                if written {
+                    "cannot write to a non-ghost variable in a `ghost!` block"
+                } else {
+                    "cannot move a non-ghost variable into a `ghost!` block"
+                },
+            );
             if let Some(base) = base {
                 err.span_note(
                     tcx.hir().span(base),
@@ -56,10 +69,39 @@ impl<'tcx> LateLintPass<'tcx> for GhostValidate {
             }
             err.emit();
         }
-        tcx.dcx().abort_if_errors();
     }
 }
 
+/// Check that we do not escape the ghost block with e.g. `return`.
+struct GhostControlFlow {
+    errors: Vec<(Span, &'static str)>,
+}
+
+impl<'tcx> rustc_hir::intravisit::Visitor<'tcx> for GhostControlFlow {
+    fn visit_expr(&mut self, expr: &'tcx rustc_hir::Expr<'tcx>) -> Self::Result {
+        match expr.kind {
+            rustc_hir::ExprKind::Break { .. } => {
+                self.errors.push((expr.span, "cannot use `break` in ghost code"))
+            }
+            rustc_hir::ExprKind::Continue { .. } => {
+                self.errors.push((expr.span, "cannot use `continue` in ghost code"))
+            }
+            rustc_hir::ExprKind::Ret { .. } => {
+                self.errors.push((expr.span, "cannot use `return` in ghost code"))
+            }
+            rustc_hir::ExprKind::Become { .. } => {
+                self.errors.push((expr.span, "cannot use `become` in ghost code"))
+            }
+            rustc_hir::ExprKind::Yield { .. } => {
+                self.errors.push((expr.span, "cannot use `yield` in ghost code"))
+            }
+            _ => {}
+        }
+        rustc_hir::intravisit::walk_expr(self, expr)
+    }
+}
+
+/// Check that we do not change program variables in the ghost block.
 struct GhostValidatePlaces<'tcx> {
     bound_variables: HashSet<HirId>,
     tcx: TyCtxt<'tcx>,
