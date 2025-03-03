@@ -3,7 +3,6 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 #[trusted]
-#[allow(creusot::experimental)]
 pub fn call_external() {
     println!("Hello world!");
 }

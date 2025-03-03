@@ -14,13 +14,6 @@ pub struct Experimental {}
 
 impl_lint_pass!(Experimental => [EXPERIMENTAL]);
 
-fn is_str_ty(cx: &LateContext<'_>, e: &Expr<'_>) -> bool {
-    match cx.typeck_results().expr_ty(e).peel_refs().kind() {
-        ty::Str | ty::Char => true,
-        _ => false,
-    }
-}
-
 fn is_dyn_ty(cx: &LateContext<'_>, e: &Expr<'_>) -> bool {
     match cx.typeck_results().expr_ty(e).peel_refs().kind() {
         ty::Dynamic(_, _, _) => true,
@@ -37,12 +30,6 @@ impl<'tcx> LateLintPass<'tcx> for Experimental {
         let parent = cx.tcx.hir().parent_id_iter(e.hir_id).next().unwrap();
         if in_external_macro(cx.sess(), cx.tcx.hir().span(parent)) {
             return;
-        }
-
-        if is_str_ty(cx, e) {
-            cx.opt_span_lint(EXPERIMENTAL, Some(e.span), |lint| {
-                lint.primary_message("support for string types is limited and experimental");
-            });
         }
 
         if is_dyn_ty(cx, e) {
