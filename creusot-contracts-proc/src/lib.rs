@@ -330,12 +330,15 @@ pub fn variant(attr: TS1, tokens: TS1) -> TS1 {
         .into()
 }
 
-struct Assertion(Vec<TermStmt>);
+/// An assertion is a sequence of statements (`Vec<Stmt>`).
+/// The `brace_token` is artificially generated from the span of the body.
+struct Assertion(TBlock);
 
 impl Parse for Assertion {
     fn parse(input: parse::ParseStream) -> Result<Self> {
+        let brace_token = token::Brace(input.span());
         let stmts = input.call(TBlock::parse_within)?;
-        Ok(Assertion(stmts))
+        Ok(Assertion(TBlock { brace_token, stmts }))
     }
 }
 
@@ -351,7 +354,8 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
                 #[creusot::no_translate]
                 #[creusot::spec]
                 #[creusot::spec::assert]
-                || -> bool { #assert_body }
+                #[allow(unused_braces)]
+                || -> bool #assert_body
             };
         }
     })
@@ -363,14 +367,12 @@ pub fn snapshot(assertion: TS1) -> TS1 {
     let assert_body = pretyping::encode_block(&assert.0).unwrap_or_else(|e| e.into_tokens());
 
     TS1::from(quote! {
-        {
-            ::creusot_contracts::__stubs::snapshot_from_fn(
-                #[creusot::no_translate]
-                #[creusot::spec]
-                #[creusot::spec::snapshot]
-                || { ::creusot_contracts::snapshot::Snapshot::new (#assert_body) }
-            )
-        }
+        ::creusot_contracts::__stubs::snapshot_from_fn(
+            #[creusot::no_translate]
+            #[creusot::spec]
+            #[creusot::spec::snapshot]
+            || ::creusot_contracts::snapshot::Snapshot::new (#[allow(unused_braces)] #assert_body)
+        )
     })
 }
 
@@ -579,7 +581,7 @@ fn logic_item(log: LogicItem, kind: LogicKind, documentation: TokenStream) -> TS
     let def = log.defaultness;
     let sig = log.sig;
     let attrs = log.attrs;
-    let req_body = pretyping::encode_block(&term.stmts).unwrap_or_else(|e| e.into_tokens());
+    let req_body = pretyping::encode_block(&term).unwrap_or_else(|e| e.into_tokens());
 
     TS1::from(quote_spanned! {span =>
         #[creusot::decl::logic]
@@ -672,7 +674,7 @@ fn predicate_item(
     let sig = log.sig;
     let attrs = log.attrs;
 
-    let req_body = pretyping::encode_block(&term.stmts).unwrap_or_else(|e| e.into_tokens());
+    let req_body = pretyping::encode_block(&term).unwrap_or_else(|e| e.into_tokens());
 
     TS1::from(quote_spanned! {span =>
         #[creusot::decl::predicate]
@@ -731,9 +733,7 @@ pub fn extern_spec(tokens: TS1) -> TS1 {
     }
 
     TS1::from(quote! {
-        #(#[creusot::extern_spec]
-          #specs
-        )*
+        #(#specs)*
     })
 }
 
