@@ -14,9 +14,12 @@ pub(crate) enum AreContractsLoaded {
 
 macro_rules! contracts_items {
     (
-        $(
-            $kind:tt $name:path [ $symbol:literal ] $is_name:ident $get_name:ident
-        )*
+        $(#[$std_items:meta])?
+        {
+            $(
+                $kind:tt $name:path [ $symbol:literal ] $is_name:ident $get_name:ident
+            )*
+        }
     ) => {
         $(
             #[doc = concat!("Check if `def_id` is the `", stringify!($name), "` ", contracts_items!(@kind $kind))]
@@ -32,6 +35,16 @@ macro_rules! contracts_items {
             }
         )*
 
+        contracts_items! {
+            @are_contracts_loaded
+            $(#[$std_items])?
+            $($symbol)*
+        }
+    };
+    (@kind fn) => { "function" };
+    (@kind type) => { "type" };
+    (@are_contracts_loaded #[$std_items:meta] $($symbol:literal)*) => {};
+    (@are_contracts_loaded $($symbol:literal)*) => {
         /// Call this at the earlist point possible: if `creusot-contracts` is not loaded, we
         /// need to immediatly crash.
         pub(crate) fn are_contracts_loaded(tcx: TyCtxt) -> AreContractsLoaded {
@@ -53,11 +66,9 @@ macro_rules! contracts_items {
             }
         }
     };
-    (@kind fn) => { "function" };
-    (@kind type) => { "type" };
 }
 
-contracts_items! {
+contracts_items! {{
     fn inv                               ["creusot_invariant_internal"]
         is_inv_function                 get_inv_function
     fn resolve                           ["creusot_resolve"]
@@ -84,12 +95,6 @@ contracts_items! {
         is_ghost_deref_mut              get_ghost_deref_mut
     fn IndexLogic::index_logic           ["creusot_index_logic_method"]
         is_index_logic                  get_index_logic
-    fn Deref::deref                      ["deref_method"]
-        is_deref                        get_deref
-    fn Deref::deref_mut                  ["deref_mut_method"]
-        is_deref_mut                    get_deref_mut
-    fn Box::new                          ["box_new"]
-        is_box_new                      get_box_new
     fn FnOnceExt::precondition           ["fn_once_impl_precond"]
         is_fn_once_impl_precond         get_fn_once_impl_precond
     fn FnOnceExt::postcondition_once     ["fn_once_impl_postcond"]
@@ -106,4 +111,13 @@ contracts_items! {
         is_snap_ty                      get_snap_ty
     type GhostBox                        ["ghost_box"]
         is_ghost_ty                     get_ghost_ty
-}
+}}
+
+contracts_items! { #[std_items] {
+    fn Deref::deref                      ["deref_method"]
+        is_deref                        get_deref
+    fn Deref::deref_mut                  ["deref_mut_method"]
+        is_deref_mut                    get_deref_mut
+    fn Box::new                          ["box_new"]
+        is_box_new                      get_box_new
+}}
