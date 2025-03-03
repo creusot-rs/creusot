@@ -399,24 +399,30 @@ where
                 }
 
                 if args.bless {
-                    if !success {
-                        erase_in_flight(out);
-                        write!(out, "{}: ", entry.display()).unwrap();
-                        out.set_color(ColorSpec::new().set_fg(Some(Color::Blue))).unwrap();
-                        writeln!(out, "blessed").unwrap();
-                        out.reset().unwrap();
-                    }
-
                     if output.stdout.is_empty() {
                         let _ = std::fs::remove_file(stdout);
                     } else {
                         std::fs::write(stdout, &output.stdout).unwrap();
                     }
 
-                    if output.stderr.is_empty() {
+                    let no_warn = output.stderr.is_empty();
+                    if no_warn {
                         let _ = std::fs::remove_file(stderr);
                     } else {
                         std::fs::write(stderr, &output.stderr).unwrap();
+                    }
+
+                    if !success {
+                        erase_in_flight(out);
+                        write!(out, "{}: ", entry.display()).unwrap();
+                        if no_warn {
+                            out.set_color(ColorSpec::new().set_fg(Some(Color::Blue))).unwrap();
+                            writeln!(out, "blessed").unwrap();
+                        } else {
+                            out.set_color(ColorSpec::new().set_fg(Some(Color::Magenta))).unwrap();
+                            writeln!(out, "blessed (with warnings)").unwrap();
+                        }
+                        out.reset().unwrap();
                     }
                 } else {
                     if !success {
