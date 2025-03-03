@@ -59,7 +59,6 @@ fn bin_template(name: &str) -> String {
 use creusot_contracts::*;
 use {name}::*;
 
-#[cfg_attr(creusot, allow(creusot::experimental))]
 fn main() {{
     assert!(add_one(2) == 3);
     println!("Hello, world!");
