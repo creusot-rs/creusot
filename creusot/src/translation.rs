@@ -38,7 +38,7 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn st
 
     match are_contracts_loaded(ctx.tcx) {
         AreContractsLoaded::Yes => {},
-        AreContractsLoaded::No => ctx.fatal_error(DUMMY_SP, "The `creusot_contracts` crate is not loaded. You will not be able to verify any code using Creusot until you do so.").emit(),
+        AreContractsLoaded::No => ctx.fatal_error(DUMMY_SP, "The `creusot_contracts` crate is not loaded. You will not be able to verify any code using Creusot until you do so.").with_note("Don't forget to actually use creusot_contracts: `use creusot_contracts::*;`").emit(),
         AreContractsLoaded::MissingItems(missing) => {
             let mut message = String::from("The `creusot_contracts` crate is loaded, but the following items are missing: ");
             for (i, item) in missing.iter().enumerate() {
