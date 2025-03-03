@@ -831,3 +831,28 @@ pub fn derive_resolve(tokens: TS1) -> TS1 {
 pub fn derive_default(tokens: TS1) -> TS1 {
     derive::derive_default(tokens)
 }
+
+// Utilities for debugging
+
+#[allow(unused)]
+pub(crate) fn dump_tokens(tokens: &TokenStream) {
+    eprintln! {"{}", tokens};
+    eprint_tokens(tokens);
+}
+
+pub(crate) fn eprint_tokens(tokens: &TokenStream) {
+    for t in tokens.clone().into_iter() {
+        if let proc_macro2::TokenTree::Group(g) = t {
+            eprintln! {"Group {:?} {:?}", g.delimiter(), pretty_span(&g.span())};
+            eprint_tokens(&g.stream());
+        } else {
+            eprintln! {"{} {:?}", t, pretty_span(&t.span())};
+        }
+    }
+}
+
+pub(crate) fn pretty_span(span: &Span) -> String {
+    let start = span.start();
+    let end = span.end();
+    format! {"{:?}:{:?}:{:?}-{:?}:{:?}", span.unwrap().source_file().path(), start.line, start.column, end.line, end.column}
+}
