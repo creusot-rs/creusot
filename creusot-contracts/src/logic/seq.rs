@@ -548,7 +548,7 @@ impl<T> Seq<T> {
         None => self.get(index) == None && *self == ^self,
         Some(r) => self.get(index) == Some(*r) && ^r == (^self)[index],
     })]
-    #[ensures(forall<i: Int> i != index ==> (*self).get(index) == (^self).get(index))]
+    #[ensures(forall<i: Int> i != index ==> (*self).get(i) == (^self).get(i))]
     #[ensures((*self).len() == (^self).len())]
     pub fn get_mut_ghost(&mut self, index: Int) -> Option<&mut T> {
         let _ = index;

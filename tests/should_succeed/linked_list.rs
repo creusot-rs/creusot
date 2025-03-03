@@ -80,17 +80,15 @@ impl<T> List<T> {
         if self.last.is_null() {
             self.first = cell_ptr;
             self.last = cell_ptr;
-            let mut seq = self.seq.borrow_mut();
-            ghost! { seq.push_back_ghost(cell_own.into_inner()) };
         } else {
-            let seq = self.seq.borrow_mut();
             let cell_last = PtrOwn::as_mut(self.last, ghost! {
-                let off = minus_one(seq.len_ghost());
-                seq.into_inner().get_mut_ghost(off).unwrap()
+                let off = minus_one(self.seq.len_ghost());
+                self.seq.get_mut_ghost(off).unwrap()
             });
             cell_last.next = cell_ptr;
             self.last = cell_ptr;
         }
+        ghost! { self.seq.push_back_ghost(cell_own.into_inner()) };
     }
 
     #[ensures((^self)@ == (*self)@.push_front(x))]
@@ -100,7 +98,6 @@ impl<T> List<T> {
         if self.last.is_null() {
             self.last = cell_ptr;
         }
-        let mut seq = self.seq.borrow_mut();
-        ghost! { seq.push_front_ghost(cell_own.into_inner()) };
+        ghost! { self.seq.push_front_ghost(cell_own.into_inner()) };
     }
 }
