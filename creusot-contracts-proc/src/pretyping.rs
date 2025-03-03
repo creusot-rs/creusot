@@ -113,7 +113,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                 _ => Ok(quote_spanned! {sp=> #left #op #right }),
             }
         }
-        RT::Block(TermBlock { block, .. }) => encode_block(&block.stmts),
+        RT::Block(TermBlock { block, .. }) => encode_block(&block),
         RT::Call(TermCall { func, args, .. }) => {
             let args: Vec<_> = args.into_iter().map(encode_term).collect::<Result<_, _>>()?;
             if let RT::Path(p) = &**func {
@@ -185,9 +185,13 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
 
             Ok(quote_spanned! {sp=> #receiver . #method #turbofish ( #(#args),*) })
         }
-        RT::Paren(TermParen { expr, .. }) => {
+        RT::Paren(TermParen { paren_token, expr }) => {
+            let mut tokens = TokenStream::new();
             let term = encode_term(expr)?;
-            Ok(quote_spanned! {sp=> (#term) })
+            paren_token.surround(&mut tokens, |tokens| {
+                tokens.extend(term);
+            });
+            Ok(tokens)
         }
         RT::Path(_) => Ok(quote_spanned! {sp=> #term }),
         RT::Range(_) => Err(EncodeError::Unsupported(term.span(), "Range".into())),
@@ -326,9 +330,13 @@ fn encode_trigger(
     Ok(ts)
 }
 
-pub fn encode_block(block: &[TermStmt]) -> Result<TokenStream, EncodeError> {
-    let stmts: Vec<_> = block.iter().map(encode_stmt).collect::<Result<_, _>>()?;
-    Ok(quote! { { #(#stmts)* } })
+pub fn encode_block(block: &TBlock) -> Result<TokenStream, EncodeError> {
+    let stmts: Vec<_> = block.stmts.iter().map(encode_stmt).collect::<Result<_, _>>()?;
+    let mut tokens = TokenStream::new();
+    block
+        .brace_token
+        .surround(&mut tokens, |tokens| stmts.iter().for_each(|stmt| stmt.to_tokens(tokens)));
+    Ok(tokens)
 }
 
 pub fn encode_stmt(stmt: &TermStmt) -> Result<TokenStream, EncodeError> {
