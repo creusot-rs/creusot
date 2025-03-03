@@ -59,7 +59,7 @@ mod implementation {
         /// which "pointers" are involved
         domain: Snapshot<FSet<Element<T>>>,
         /// Maps an element to its logical content (represented by the permission to access it).
-        map: GhostBox<FMap<LogicAddr, PtrOwn<Content<T>>>>,
+        map: Ghost<FMap<LogicAddr, PtrOwn<Content<T>>>>,
         /// Map each element in [`Self::domain`] to its value.
         // `img` in the why3 proof
         values: Snapshot<Mapping<Element<T>, T>>,

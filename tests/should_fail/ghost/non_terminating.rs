@@ -16,7 +16,7 @@ fn f() {
 
 #[allow(unreachable_code)]
 pub fn looping() {
-    let _g: GhostBox<i32> = ghost! {
+    let _g: Ghost<i32> = ghost! {
         loop {}
     };
 }
