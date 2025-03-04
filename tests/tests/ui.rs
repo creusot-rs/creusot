@@ -143,6 +143,7 @@ fn translate_creusot_contracts(
             "--",
             "--package",
             "creusot-contracts",
+            "--quiet",
         ])
         .env("CREUSOT_CONTINUE", "true");
 
@@ -165,6 +166,17 @@ fn translate_creusot_contracts(
         ColorChoice::Never
     });
     let mut succeeded = true;
+    let (success, buf) = differ(output.clone(), &expect, None, true, is_tty).unwrap();
+
+    // Warnings in creusot-contracts will be counted as an error at the end,
+    // but we still allow --bless so we can experiment without resolving warnings immediately.
+    if !output.stderr.is_empty() {
+        out.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
+        writeln!(&mut out, "warnings").unwrap();
+        out.reset().unwrap();
+        writeln!(&mut out, "{}", std::str::from_utf8(&output.stderr).unwrap()).unwrap();
+        succeeded = false;
+    }
 
     if args.bless {
         if output.stdout.is_empty() {
@@ -173,7 +185,6 @@ fn translate_creusot_contracts(
                 std::str::from_utf8(&output.stderr).unwrap()
             )
         }
-        let (success, _) = differ(output.clone(), &expect, None, true, is_tty).unwrap();
 
         if success {
             out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
@@ -186,8 +197,6 @@ fn translate_creusot_contracts(
             std::fs::write(expect, &output.stdout).unwrap();
         }
     } else {
-        let (success, buf) = differ(output.clone(), &expect, None, true, is_tty).unwrap();
-
         if success {
             out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
             writeln!(&mut out, "ok").unwrap();
