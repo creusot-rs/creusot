@@ -16,6 +16,12 @@ pub type RawPtr<T> = *const T;
 /// corresponding to the pointer because it is a ghost value. One must thus
 /// remember to explicitly call [`drop`] in order to free the memory tracked by a
 /// `PtrOwn` token.
+///
+/// # Safety
+///
+/// When using Creusot to verify the code, all methods should be safe to call. Indeed,
+/// Creusot ensures that every operation on the inner value uses the right [`PtrOwn`] object
+/// created by [`PtrOwn::new`], ensuring safety in a manner similar to [ghost_cell](https://docs.rs/ghost-cell/latest/ghost_cell/).
 #[allow(dead_code)]
 pub struct PtrOwn<T: ?Sized> {
     ptr: RawPtr<T>,
@@ -65,15 +71,29 @@ impl<T: ?Sized> PtrOwn<T> {
     }
 
     /// Immutably borrows the underlying `T`.
+    ///
+    /// # Safety
+    ///
+    /// Safety requirements are the same as a direct dereference: `&*ptr`.
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](PtrOwn).
     #[trusted]
     #[requires(ptr == own.ptr())]
     #[ensures(*result == *own.val())]
     #[allow(unused_variables)]
-    pub fn as_ref(ptr: RawPtr<T>, own: GhostBox<&PtrOwn<T>>) -> &T {
+    pub unsafe fn as_ref(ptr: RawPtr<T>, own: GhostBox<&PtrOwn<T>>) -> &T {
         unsafe { &*ptr }
     }
 
     /// Mutably borrows the underlying `T`.
+    ///
+    /// # Safety
+    ///
+    /// Safety requirements are the same as a direct dereference: `&mut *ptr`.
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](PtrOwn).
     #[trusted]
     #[allow(unused_variables)]
     #[requires(ptr == own.ptr())]
@@ -81,22 +101,36 @@ impl<T: ?Sized> PtrOwn<T> {
     // Currently .inner_logic() is needed instead of *; see issue #1257
     #[ensures((^own.inner_logic()).ptr() == own.ptr())]
     #[ensures(*(^own.inner_logic()).val() == ^result)]
-    pub fn as_mut(ptr: RawPtr<T>, own: GhostBox<&mut PtrOwn<T>>) -> &mut T {
+    pub unsafe fn as_mut(ptr: RawPtr<T>, own: GhostBox<&mut PtrOwn<T>>) -> &mut T {
         unsafe { &mut *(ptr as *mut _) }
     }
 
     /// Transfers ownership of `own` back into a [`Box`].
+    ///
+    /// # Safety
+    ///
+    /// Safety requirements are the same as [`Box::from_raw`].
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](PtrOwn).
     #[trusted]
     #[requires(ptr == own.ptr())]
     #[ensures(*result == *own.val())]
     #[allow(unused_variables)]
-    pub fn to_box(ptr: RawPtr<T>, own: GhostBox<PtrOwn<T>>) -> Box<T> {
+    pub unsafe fn to_box(ptr: RawPtr<T>, own: GhostBox<PtrOwn<T>>) -> Box<T> {
         unsafe { Box::from_raw(ptr as *mut _) }
     }
 
     /// Deallocates the memory pointed by `ptr`.
+    ///
+    /// # Safety
+    ///
+    /// Safety requirements are the same as [`Box::from_raw`].
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](PtrOwn).
     #[requires(ptr == own.ptr())]
-    pub fn drop(ptr: RawPtr<T>, own: GhostBox<PtrOwn<T>>) {
+    pub unsafe fn drop(ptr: RawPtr<T>, own: GhostBox<PtrOwn<T>>) {
         let _ = Self::to_box(ptr, own);
     }
 
