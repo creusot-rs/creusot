@@ -398,7 +398,7 @@ where
                     }
                 }
 
-                if args.bless {
+                if args.bless && !(should_succeed && !output.status.success()) {
                     if output.stdout.is_empty() {
                         let _ = std::fs::remove_file(stdout);
                     } else {
