@@ -130,8 +130,15 @@ fn main() {
         if header_line.contains("WHY3PROVE")
             || file.file_name().unwrap() == "creusot-contracts.coma"
         {
-            let mut sessionfile = sessiondir.clone();
-            sessionfile.push("why3session.xml");
+            if sessiondir.join("proof.json").is_file() {
+                write!(out, "{current}").unwrap();
+                out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
+                writeln!(&mut out, "unused proof.json").unwrap();
+                out.reset().unwrap();
+                success = false;
+            }
+
+            let sessionfile = sessiondir.join("why3session.xml");
             if !sessionfile.is_file() {
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
                 writeln!(&mut out, "missing why3 session").unwrap();
@@ -225,6 +232,18 @@ fn main() {
                 }
             }
         } else {
+            let sessionfiles = ["why3session.xml", "why3shapes.gz"]
+                .into_iter()
+                .filter(|file| sessiondir.join(file).is_file())
+                .collect::<Vec<_>>();
+            if sessionfiles.len() > 0 {
+                write!(out, "{current}").unwrap();
+                out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
+                writeln!(&mut out, "unused {sessionfiles:?}").unwrap();
+                out.reset().unwrap();
+                success = false;
+            }
+
             let mut why3find = Command::new(&why3find);
             why3find.env("WHY3CONFIG", &why3_config);
             why3find.arg("prove").arg(file.canonicalize().unwrap());
@@ -271,6 +290,22 @@ fn main() {
             writeln!(&mut out, "{}", std::str::from_utf8(&output.stderr).unwrap()).unwrap();
             writeln!(&mut out, "************************").unwrap();
 
+            success = false;
+        }
+    }
+
+    // Fail if there are proofs or sessions without a coma file.
+    for file in glob::glob("tests/**/proof.json")
+        .unwrap()
+        .chain(glob::glob("tests/**/why3session.xml").unwrap())
+        .chain(glob::glob("tests/**/why3shapes.gz").unwrap())
+    {
+        let file = file.unwrap();
+        let coma = file.parent().unwrap().with_extension("coma");
+        if !coma.is_file() {
+            out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
+            writeln!(&mut out, "unused {file:?}").unwrap();
+            out.reset().unwrap();
             success = false;
         }
     }
