@@ -1,7 +1,7 @@
 use crate::{doc::DocItemName, generate_unique_ident};
 use pearlite_syn::term::*;
-use proc_macro2::TokenStream;
-use quote::{ToTokens, quote};
+use proc_macro2::{Span, TokenStream};
+use quote::{ToTokens, quote, quote_spanned};
 use syn::{
     parse::Parse,
     punctuated::{Pair, Punctuated},
@@ -62,6 +62,7 @@ struct ExternImpl {
 
 #[derive(Debug)]
 struct ExternMethod {
+    span: Span,
     attrs: Vec<Attribute>,
     sig: Signature,
     body: std::result::Result<Block, Token![;]>,
@@ -83,6 +84,7 @@ struct ImplData {
 }
 
 pub struct FlatSpec {
+    span: Span,
     signature: Signature,
     doc_item_name: DocItemName,
     attrs: Vec<Attribute>,
@@ -126,6 +128,7 @@ impl TraitOrImpl {
 
 impl FlatSpec {
     pub fn to_tokens(mut self) -> TokenStream {
+        let span = self.span;
         let err = escape_self_in_contracts(&mut self.attrs);
         if let Err(e) = err {
             return e.into_compile_error();
@@ -138,9 +141,9 @@ impl FlatSpec {
             .map(|inp| {
                 let (inp, comma) = inp.into_tuple();
                 let exp: Expr = if let FnArg::Typed(PatType { pat, .. }) = inp {
-                    Expr::Verbatim(quote! { #pat })
+                    Expr::Verbatim(pat.to_token_stream())
                 } else {
-                    Expr::Verbatim(quote! { self_ })
+                    Expr::Verbatim(quote_spanned! {span=> self_ })
                 };
                 Pair::new(exp, comma)
             })
@@ -151,7 +154,7 @@ impl FlatSpec {
             pound_token: Default::default(),
             style: AttrStyle::Outer,
             bracket_token: Default::default(),
-            meta: parse_quote! { creusot::no_translate },
+            meta: parse_quote_spanned! {span=> creusot::no_translate },
         });
 
         let block = Block {
@@ -194,12 +197,12 @@ impl FlatSpec {
                     // An `impl` block may have a `self` reciever, but we should replace it with the actual
                     // underlying type. This constructs the correct replacement for those cases.
                     let mut self_ty = replacer.self_ty.clone();
-                    if let Some((_, l)) = reference {
-                        self_ty = parse_quote! { & #l #mutability #self_ty};
+                    if let Some((and, l)) = reference {
+                        self_ty = parse_quote! { #and #l #mutability #self_ty};
                     };
                     *input = FnArg::Typed(PatType {
                         attrs: Vec::new(),
-                        pat: parse_quote! { self_ },
+                        pat: parse_quote_spanned! {span=> self_ },
                         colon_token: Default::default(),
                         ty: Box::new(self_ty),
                     });
@@ -211,9 +214,11 @@ impl FlatSpec {
 
             match data.self_ty {
                 TraitOrImpl::Trait(trait_name, generics) => {
-                    where_clause.predicates.push(parse_quote! { Self_ : #trait_name #generics });
+                    where_clause
+                        .predicates
+                        .push(parse_quote_spanned! {span=> Self_ : #trait_name #generics });
 
-                    self.signature.generics.params.insert(0, parse_quote! { Self_ });
+                    self.signature.generics.params.insert(0, parse_quote_spanned! {span=> Self_ });
 
                     where_clause.predicates.iter_mut().for_each(|pred| {
                         replacer.visit_where_predicate_mut(pred);
@@ -254,7 +259,7 @@ impl FlatSpec {
             None
         };
 
-        quote! { #[allow(dead_code)] #f #f_with_body }
+        quote_spanned! {span=> #[creusot::extern_spec] #[allow(dead_code)] #f #f_with_body }
     }
 }
 
@@ -307,7 +312,8 @@ fn escape_self_in_block(b: &mut Block) {
     impl VisitMut for BlockSelfRename {
         fn visit_expr_path_mut(&mut self, i: &mut ExprPath) {
             if i.path.is_ident("self") {
-                i.path = parse_quote!(self_);
+                let span = i.path.span();
+                i.path = parse_quote_spanned! {span=> self_};
             }
         }
     }
@@ -315,6 +321,7 @@ fn escape_self_in_block(b: &mut Block) {
 }
 
 fn escape_self_in_term(t: &mut Term) {
+    let span = t.span();
     match t {
         Term::Macro(_) => {}
         Term::Array(TermArray { elems, .. }) => {
@@ -372,7 +379,7 @@ fn escape_self_in_term(t: &mut Term) {
         Term::Path(TermPath { inner }) => {
             if let Some(id) = inner.path.get_ident() {
                 if id == "self" {
-                    inner.path = parse_quote! { self_ };
+                    inner.path = parse_quote_spanned! {span=> self_ };
                 }
             }
         }
@@ -530,6 +537,7 @@ fn flatten(
                 .push(PathSegment { ident: fun.sig.ident.clone(), arguments: PathArguments::None });
             item_name.add_ident(&fun.sig.ident);
             flat.push(FlatSpec {
+                span: fun.span,
                 signature: fun.sig,
                 doc_item_name: item_name,
                 attrs: fun.attrs,
@@ -722,12 +730,13 @@ impl Parse for ExternImpl {
 
 impl Parse for ExternMethod {
     fn parse(input: parse::ParseStream) -> Result<Self> {
+        let span = input.span();
         let attrs = input.call(Attribute::parse_outer)?;
         let sig: Signature = input.parse()?;
 
         let body =
             if let Ok(semi) = input.parse::<Token![;]>() { Err(semi) } else { Ok(input.parse()?) };
 
-        Ok(ExternMethod { attrs, sig, body })
+        Ok(ExternMethod { span, attrs, sig, body })
     }
 }

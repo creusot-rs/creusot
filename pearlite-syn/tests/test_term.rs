@@ -37,9 +37,9 @@ fn test_final() {
                     leading_colon: None,
                     segments: [
                         PathSegment {
-                            ident: Ident(
-                                a,
-                            ),
+                            ident: Ident {
+                                sym: a,
+                            },
                             arguments: PathArguments::None,
                         },
                     ],
@@ -62,9 +62,9 @@ fn test_model() {
                     leading_colon: None,
                     segments: [
                         PathSegment {
-                            ident: Ident(
-                                a,
-                            ),
+                            ident: Ident {
+                                sym: a,
+                            },
                             arguments: PathArguments::None,
                         },
                     ],
@@ -83,9 +83,9 @@ fn test_forall() {
         lt_token: Lt,
         args: [
             QuantArg {
-                ident: Ident(
-                    x,
-                ),
+                ident: Ident {
+                    sym: x,
+                },
                 colon_token: Colon,
                 ty: Type::Path {
                     qself: None,
@@ -93,9 +93,9 @@ fn test_forall() {
                         leading_colon: None,
                         segments: [
                             PathSegment {
-                                ident: Ident(
-                                    u32,
-                                ),
+                                ident: Ident {
+                                    sym: u32,
+                                },
                                 arguments: PathArguments::None,
                             },
                         ],
@@ -122,9 +122,9 @@ fn test_exists() {
         lt_token: Lt,
         args: [
             QuantArg {
-                ident: Ident(
-                    x,
-                ),
+                ident: Ident {
+                    sym: x,
+                },
                 colon_token: Colon,
                 ty: Type::Path {
                     qself: None,
@@ -132,9 +132,9 @@ fn test_exists() {
                         leading_colon: None,
                         segments: [
                             PathSegment {
-                                ident: Ident(
-                                    u32,
-                                ),
+                                ident: Ident {
+                                    sym: u32,
+                                },
                                 arguments: PathArguments::None,
                             },
                         ],
@@ -161,9 +161,9 @@ fn test_trigger() {
         lt_token: Lt,
         args: [
             QuantArg {
-                ident: Ident(
-                    x,
-                ),
+                ident: Ident {
+                    sym: x,
+                },
                 colon_token: Colon,
                 ty: Type::Path {
                     qself: None,
@@ -171,9 +171,9 @@ fn test_trigger() {
                         leading_colon: None,
                         segments: [
                             PathSegment {
-                                ident: Ident(
-                                    u32,
-                                ),
+                                ident: Ident {
+                                    sym: u32,
+                                },
                                 arguments: PathArguments::None,
                             },
                         ],
@@ -182,9 +182,9 @@ fn test_trigger() {
             },
             Comma,
             QuantArg {
-                ident: Ident(
-                    y,
-                ),
+                ident: Ident {
+                    sym: y,
+                },
                 colon_token: Colon,
                 ty: Type::Path {
                     qself: None,
@@ -192,9 +192,9 @@ fn test_trigger() {
                         leading_colon: None,
                         segments: [
                             PathSegment {
-                                ident: Ident(
-                                    u32,
-                                ),
+                                ident: Ident {
+                                    sym: u32,
+                                },
                                 arguments: PathArguments::None,
                             },
                         ],
@@ -219,9 +219,9 @@ fn test_trigger() {
                                     leading_colon: None,
                                     segments: [
                                         PathSegment {
-                                            ident: Ident(
-                                                f,
-                                            ),
+                                            ident: Ident {
+                                                sym: f,
+                                            },
                                             arguments: PathArguments::None,
                                         },
                                     ],
@@ -238,9 +238,9 @@ fn test_trigger() {
                                         leading_colon: None,
                                         segments: [
                                             PathSegment {
-                                                ident: Ident(
-                                                    x,
-                                                ),
+                                                ident: Ident {
+                                                    sym: x,
+                                                },
                                                 arguments: PathArguments::None,
                                             },
                                         ],
@@ -256,9 +256,9 @@ fn test_trigger() {
                                         leading_colon: None,
                                         segments: [
                                             PathSegment {
-                                                ident: Ident(
-                                                    y,
-                                                ),
+                                                ident: Ident {
+                                                    sym: y,
+                                                },
                                                 arguments: PathArguments::None,
                                             },
                                         ],
@@ -284,9 +284,9 @@ fn test_trigger() {
                                     leading_colon: None,
                                     segments: [
                                         PathSegment {
-                                            ident: Ident(
-                                                g,
-                                            ),
+                                            ident: Ident {
+                                                sym: g,
+                                            },
                                             arguments: PathArguments::None,
                                         },
                                     ],
@@ -303,9 +303,9 @@ fn test_trigger() {
                                         leading_colon: None,
                                         segments: [
                                             PathSegment {
-                                                ident: Ident(
-                                                    x,
-                                                ),
+                                                ident: Ident {
+                                                    sym: x,
+                                                },
                                                 arguments: PathArguments::None,
                                             },
                                         ],
@@ -324,9 +324,9 @@ fn test_trigger() {
                                     leading_colon: None,
                                     segments: [
                                         PathSegment {
-                                            ident: Ident(
-                                                g,
-                                            ),
+                                            ident: Ident {
+                                                sym: g,
+                                            },
                                             arguments: PathArguments::None,
                                         },
                                     ],
@@ -343,9 +343,9 @@ fn test_trigger() {
                                         leading_colon: None,
                                         segments: [
                                             PathSegment {
-                                                ident: Ident(
-                                                    y,
-                                                ),
+                                                ident: Ident {
+                                                    sym: y,
+                                                },
                                                 arguments: PathArguments::None,
                                             },
                                         ],
@@ -393,9 +393,9 @@ fn test_pearlite() {
                                 leading_colon: None,
                                 segments: [
                                     PathSegment {
-                                        ident: Ident(
-                                            x,
-                                        ),
+                                        ident: Ident {
+                                            sym: x,
+                                        },
                                         arguments: PathArguments::None,
                                     },
                                 ],
@@ -425,9 +425,9 @@ fn test_match() {
                     leading_colon: None,
                     segments: [
                         PathSegment {
-                            ident: Ident(
-                                x,
-                            ),
+                            ident: Ident {
+                                sym: x,
+                            },
                             arguments: PathArguments::None,
                         },
                     ],
@@ -444,9 +444,9 @@ fn test_match() {
                         leading_colon: None,
                         segments: [
                             PathSegment {
-                                ident: Ident(
-                                    Some,
-                                ),
+                                ident: Ident {
+                                    sym: Some,
+                                },
                                 arguments: PathArguments::None,
                             },
                         ],
@@ -457,9 +457,9 @@ fn test_match() {
                             attrs: [],
                             by_ref: None,
                             mutability: None,
-                            ident: Ident(
-                                x,
-                            ),
+                            ident: Ident {
+                                sym: x,
+                            },
                             subpat: None,
                         },
                     ],
@@ -480,9 +480,9 @@ fn test_match() {
                     attrs: [],
                     by_ref: None,
                     mutability: None,
-                    ident: Ident(
-                        None,
-                    ),
+                    ident: Ident {
+                        sym: None,
+                    },
                     subpat: None,
                 },
                 guard: None,
