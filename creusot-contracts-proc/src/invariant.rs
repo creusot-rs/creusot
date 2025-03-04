@@ -49,7 +49,7 @@ impl ToTokens for Invariant {
             },
         };
         tokens.extend(quote_spanned! {span=>
-            #[allow(unused_must_use)]
+            #[allow(let_underscore_drop)]
             let _ =
                 #[creusot::no_translate]
                 #[creusot::spec]
@@ -153,7 +153,7 @@ fn desugar_loop(invariants: Vec<Invariant>, mut l: ExprLoop) -> TokenStream {
     let span = l.loop_token.span;
     l.body.stmts.insert(0, Stmt::Expr(Expr::Verbatim(quote! { #(#invariants)* }), None));
     quote_spanned! {span=> {
-      #[allow(unused_must_use)]
+      #[allow(let_underscore_drop)]
       let _ = { #[creusot::no_translate] #[creusot::before_loop] || {} };
       #l
     }}
@@ -240,7 +240,7 @@ fn variant_to_tokens(span: Span, p: &pearlite_syn::Term) -> (String, TokenStream
     let name_tag = format!("{}", var_name);
 
     let variant_tokens = quote_spanned! {span=>
-        #[allow(unused_must_use)]
+        #[allow(let_underscore_drop)]
         let _ =
             #[creusot::no_translate]
             #[creusot::item=#name_tag]
