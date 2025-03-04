@@ -16,32 +16,33 @@ pub type RawPtr<T> = *const T;
 /// corresponding to the pointer because it is a ghost value. One must thus
 /// remember to explicitly call [`drop`] in order to free the memory tracked by a
 /// `PtrOwn` token.
-#[trusted]
-pub struct PtrOwn<T: ?Sized>(std::marker::PhantomData<T>);
+#[allow(dead_code)]
+pub struct PtrOwn<T: ?Sized> {
+    ptr: RawPtr<T>,
+    val: Box<T>,
+}
 
 impl<T: ?Sized> PtrOwn<T> {
     /// The raw pointer whose ownership is tracked by this `PtrOwn`
-    #[trusted]
     #[logic]
+    #[open(self)]
     pub fn ptr(&self) -> RawPtr<T> {
-        dead
+        self.ptr
     }
 
     /// The value currently stored at address [`self.ptr()`](Self::ptr)
-    #[trusted]
     #[logic]
+    #[open(self)]
     pub fn val(&self) -> SizedW<T> {
-        dead
+        self.val
     }
 }
 
 impl<T: ?Sized> Invariant for PtrOwn<T> {
-    #[predicate(prophetic)]
+    #[predicate]
     #[open]
-    #[creusot::trusted_ignore_structural_inv]
-    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
-        pearlite! { !self.ptr().is_null_logic() && inv(self.val()) }
+        !self.ptr().is_null_logic()
     }
 }
 
