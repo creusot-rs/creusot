@@ -184,7 +184,7 @@ fn fn_spec_item(tag: Ident, result: Option<FnArg>, p: Term) -> TokenStream {
     let attrs = spec_attrs(&tag);
 
     quote! {
-        #[allow(unused_must_use)]
+        #[allow(let_underscore_drop)]
         let _ =
             #attrs
             |#result|{ #req_body }
@@ -308,7 +308,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
             let body = &clos.body;
             *clos.body = parse_quote!({
                 let res = #body;
-                #[allow(unused_must_use)]
+                #[allow(let_underscore_drop)]
                 let _ =
                     #attrs
                     |result| {::creusot_contracts::__stubs::closure_result(res, result); #req_body }
@@ -346,7 +346,7 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
 
     TS1::from(quote! {
         {
-            #[allow(unused_must_use)]
+            #[allow(let_underscore_drop)]
             let _ = {
                 #[creusot::no_translate]
                 #[creusot::spec]
