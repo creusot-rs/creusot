@@ -158,14 +158,14 @@ fn logic_refinement_term<'tcx>(
 
     let post_refn = impl_postcond
         .implies(trait_postcond)
-        .forall(ctx.tcx, (result_ident(), retty))  // TODO Rename the "result" variables in requires
+        .forall((result_ident(), retty))  // TODO Rename the "result" variables in requires
         .span(span);
 
     let mut refn = trait_precond.implies(impl_precond.conj(post_refn));
     refn = if args.is_empty() {
         refn
     } else {
-        args.into_iter().rfold(refn, |acc, r| acc.forall(ctx.tcx, r).span(span))
+        args.into_iter().rfold(refn, |acc, r| acc.forall(r).span(span))
     };
 
     refn

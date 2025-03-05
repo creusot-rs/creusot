@@ -6,7 +6,7 @@
 // The `lower` module then transforms a `Term` into a WhyML expression.
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     fmt::{Display, Formatter},
     unreachable,
 };
@@ -46,7 +46,6 @@ use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
 mod normalize;
 
 pub(crate) use normalize::*;
-use why3;
 
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum BinOp {
@@ -345,19 +344,6 @@ struct ThirTerm<'a, 'tcx> {
 // TODO: Ensure that types are correct during this translation, in particular
 // - Box, & and &mut
 impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
-    fn fresh(&self, ident: Ident) -> why3::Ident {
-        todo!{}
-    }
-    fn open_scope(&self) {
-        todo!{}
-    }
-    fn close_scope(&self) {
-        todo!{}
-    }
-    fn get(&self, ident: Ident) -> why3::Ident {
-        todo!{}
-    }
-
     fn body_term(&self, expr: ExprId) -> CreusotResult<(Box<[Trigger<'tcx>]>, Term<'tcx>)> {
         let did = self.item_id.into();
         let owner_id = if is_spec(self.ctx.tcx, did) && self.ctx.tcx.is_closure_like(did) {
@@ -368,7 +354,6 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
         let (thir, _) = self.ctx.fetch_thir(owner_id)?;
         let thir: &Thir = &thir.borrow();
-        self.open_scope();
         let args = thir
             .params
             .iter()
@@ -390,7 +375,6 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     }
                 }
             })?;
-        self.close_scope();
         Ok((triggers.into(), res))
     }
 
@@ -773,10 +757,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     let term = pearlite(self.ctx, closure_id)?;
                     Ok(Term { ty, span, kind: TermKind::Assert { cond: Box::new(term) } })
                 } else {
-                    self.open_scope();
                     let bound = self.ctx.fn_arg_names(closure_id).into();
                     let term = pearlite(self.ctx, closure_id)?;
-                    self.close_scope();
                     Ok(Term { ty, span, kind: TermKind::Closure { bound, body: Box::new(term) } })
                 }
             }
@@ -952,10 +934,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         match self.thir[body].kind {
             ExprKind::Scope { value, .. } => self.quant_term(value),
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
-                self.open_scope();
                 let names = self.ctx.fn_arg_names(closure_id).into();
                 let result = pearlite_with_triggers(self.ctx, closure_id)?;
-                self.close_scope();
                 Ok((names, result))
             }
             _ => Err(Error::msg(self.thir[body].span, "unexpected error in quantifier")),
@@ -1485,18 +1465,17 @@ impl<'tcx> Term<'tcx> {
 
     pub(crate) fn forall_trig(
         self,
-        tcx: TyCtxt<'tcx>,
         binder: (Ident, Ty<'tcx>),
         trigger: Box<[Trigger<'tcx>]>,
     ) -> Self {
         self.quant(QuantKind::Forall, Box::new([binder]), trigger)
     }
 
-    pub(crate) fn forall(self, tcx: TyCtxt<'tcx>, binder: (Ident, Ty<'tcx>)) -> Self {
-        self.forall_trig(tcx, binder, Box::new([]))
+    pub(crate) fn forall(self, binder: (Ident, Ty<'tcx>)) -> Self {
+        self.forall_trig(binder, Box::new([]))
     }
 
-    pub(crate) fn exists(self, tcx: TyCtxt<'tcx>, binder: (Ident, Ty<'tcx>)) -> Self {
+    pub(crate) fn exists(self, binder: (Ident, Ty<'tcx>)) -> Self {
         self.quant(QuantKind::Exists, Box::new([binder]), Box::new([]))
     }
 
@@ -1572,7 +1551,7 @@ impl<'tcx> Term<'tcx> {
             TermKind::Quant { binder, body, .. } => {
                 let mut bound = bound.clone();
                 for (name, _) in binder {
-                    bound.insert(name);
+                    bound.insert(*name);
                 }
 
                 body.subst_with_inner(&bound, inv_subst);
@@ -1654,7 +1633,7 @@ impl<'tcx> Term<'tcx> {
             TermKind::Unary { arg, .. } => arg.free_vars_inner(bound, free),
             TermKind::Quant { binder, body, .. } => {
                 let mut bound = bound.clone();
-                for name in &binder.0 {
+                for (name, _) in binder {
                     bound.insert(name.name);
                 }
 
@@ -1807,4 +1786,28 @@ pub(crate) fn result_ident() -> Ident {
 
 pub(crate) fn self_ident() -> Ident {
     Ident::new(Symbol::intern("self"), DUMMY_SP)
+}
+
+pub(crate) fn result_state_ident() -> Ident {
+    Ident::new(Symbol::intern("result_state"), DUMMY_SP)
+}
+
+pub(crate) fn self_bor_ident() -> Ident {
+    Ident::new(Symbol::intern("__self_bor"), DUMMY_SP)
+}
+
+pub(crate) fn args_ident() -> Ident {
+    Ident::new(Symbol::intern("args"), DUMMY_SP)
+}
+
+pub(crate) fn final_ident() -> Ident {
+    Ident::new(Symbol::intern("final"), DUMMY_SP)
+}
+
+pub(crate) fn var_debug_info_to_ident(var: &VarDebugInfo) -> Ident {
+    Ident { name: var.name, span: var.debug_info.span }
+}
+
+pub(crate) fn _ident(n: usize) -> Ident {
+    Ident::new(Symbol::intern(&format!("_{}", n)), DUMMY_SP)
 }
