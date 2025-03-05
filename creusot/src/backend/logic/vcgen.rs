@@ -628,8 +628,10 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         &self,
         t: &[(&Term<'tcx>, Ident)],
     ) -> Result<Exp, VCError<'tcx>>  {
+        let q = _;
         for &(field, hole) in t.into_iter().rev() {
             q = self.build_vc(field, &mut Post::new(q, hole))?;
+        }
         signature_of(self.ctx, self.names, Ident::bound(""), self.self_id) // TODO
     }
 
@@ -667,9 +669,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
     /// Produces the top-level call expression for the function being verified
     fn top_level_args(&self) -> Vec<Ident> {
-let sig = self.self_sig();
-sig.args.iter().map(|(_, nm, _)| nm).cloned().collect()
-}
+        let sig = self.self_sig();
+        sig.args.iter().map(|(_, nm, _)| nm).cloned().collect()
+    }
 
     fn get_var(&self, s: why3::Ident) -> Option<Ident> {
         todo!{} // self.renaming.borrow().get(&s)
@@ -683,7 +685,7 @@ sig.args.iter().map(|(_, nm, _)| nm).cloned().collect()
         self.renaming.borrow_mut().close_scope();
     }
 
-    fn fresh(&self, s: why3::Ident) -> Ident{
+    fn fresh(&self, s: why3::Ident) -> Ident {
         todo!{} // self.renaming.borrow_mut().fresh(s)
     }
 }
