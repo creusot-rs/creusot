@@ -1,10 +1,10 @@
 use crate::{
-    backend::{Why3Generator, clone_map::Dependencies, term::lower_pure},
+    backend::{Why3Generator, clone_map::Dependencies, term::lower_pure0},
     contracts_items::is_snapshot_deref,
     ctx::FileModule,
 };
 use rustc_hir::def_id::DefId;
-use why3::declaration::{Decl, Goal, Module};
+use why3::{declaration::{Decl, Goal, Module}, Ident};
 
 pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<FileModule> {
     let data = ctx.trait_impl(def_id).clone();
@@ -19,9 +19,10 @@ pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<
         }
 
         let mut names = Dependencies::new(ctx, impl_did);
-        let goal = lower_pure(ctx, &mut names, &refn.refn.clone());
+        let goal = lower_pure0(ctx, &mut names, &refn.refn.clone());
         let mut decls = names.provide_deps(ctx);
-        decls.push(Decl::Goal(Goal { name: "refines".into(), goal }));
+        let refines = Ident::fresh("refines");
+        decls.push(Decl::Goal(Goal { name: refines, goal }));
 
         let attrs = ctx.span_attr(ctx.def_span(impl_did)).into_iter().collect();
         let meta = ctx.display_impl_of(impl_did);

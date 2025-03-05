@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{Ident, QName, declaration::Attribute, ty::Type};
+use crate::{Ident, QName, declaration::Attribute, ty::Type, IdentString};
 use indexmap::IndexSet;
 
 #[cfg(feature = "serialize")]
@@ -120,15 +120,15 @@ pub enum Exp {
     Var(Ident),
     QVar(QName),
     Record {
-        fields: Box<[(String, Exp)]>,
+        fields: Box<[(IdentString, Exp)]>,
     },
     RecUp {
         record: Box<Exp>,
-        updates: Box<[(String, Exp)]>,
+        updates: Box<[(IdentString, Exp)]>,
     },
     RecField {
         record: Box<Exp>,
-        label: String,
+        label: IdentString,
     },
     Tuple(Box<[Exp]>),
     Constructor {
@@ -284,12 +284,12 @@ impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
                 let mut extended = HashMap::new();
                 for (_, exp) in &mut subst {
                     for id in &bnds & &exp.fvs() {
-                        extended.insert(id.clone(), Exp::var(format!("{}'", &*id)));
+                        extended.insert(id, Exp::Var(id.refresh()));
                     }
                 }
                 binders.iter_mut().for_each(|(id, _)| {
-                    if extended.contains_key(id) {
-                        *id = format!("{}'", &**id).into();
+                    if let Some(Exp::Var(id2)) = extended.get(id) {
+                        *id = *id2;
                     }
                 });
                 subst.extend(extended);
@@ -307,12 +307,12 @@ impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
                 let mut extended = HashMap::new();
                 for (_, exp) in &mut subst {
                     for id in &bnds & &exp.fvs() {
-                        extended.insert(id.clone(), Exp::var(format!("{}'", &*id)));
+                        extended.insert(id, Exp::Var(id.refresh()));
                     }
                 }
                 binders.iter_mut().for_each(|(id, _)| {
-                    if extended.contains_key(id) {
-                        *id = format!("{}'", &**id).into();
+                    if let Some(Exp::Var(id2)) = extended.get(id) {
+                        *id = *id2;
                     }
                 });
                 subst.extend(extended);
@@ -401,10 +401,6 @@ impl Exp {
 
     pub fn qvar(q: QName) -> Self {
         Exp::QVar(q)
-    }
-
-    pub fn var(v: impl Into<Ident>) -> Self {
-        Exp::Var(v.into())
     }
 
     pub fn lazy_conj(l: Exp, r: Exp) -> Self {
@@ -573,6 +569,10 @@ impl Exp {
 
     pub fn uint(value: u128) -> Self {
         Exp::Const(Constant::Uint(value, None))
+    }
+
+    pub fn unit() -> Self {
+        Exp::Tuple(Vec::new())
     }
 
     pub fn reassociate(&mut self) {
@@ -827,6 +827,10 @@ pub struct Environment {
 }
 
 impl Environment {
+    pub fn new() -> Self {
+        Environment { substs: Vec::new() }
+    }
+
     pub fn add_subst(&mut self, substs: HashMap<Ident, Exp>) {
         self.substs.push(substs);
     }
@@ -875,7 +879,7 @@ impl ExpMutVisitor for Environment {
 
                 for binder in binders {
                     binder.fvs().into_iter().for_each(|id| {
-                        bound_here.insert(id.clone(), Exp::var(id));
+                        bound_here.insert(id.clone(), Exp::Var(id));
                     });
                 }
 
@@ -891,7 +895,7 @@ impl ExpMutVisitor for Environment {
 
                 let mut bound_here = HashMap::default();
                 bound.drain(..).for_each(|k| {
-                    bound_here.insert(k.clone(), Exp::var(k));
+                    bound_here.insert(k.clone(), Exp::Var(k));
                 });
 
                 self.add_subst(bound_here);
@@ -904,7 +908,7 @@ impl ExpMutVisitor for Environment {
                 for (pat, br) in brs {
                     let mut bound_here = HashMap::default();
                     pat.binders().drain(..).for_each(|k| {
-                        bound_here.insert(k.clone(), Exp::var(k));
+                        bound_here.insert(k.clone(), Exp::Var(k));
                     });
 
                     self.add_subst(bound_here);
@@ -916,7 +920,7 @@ impl ExpMutVisitor for Environment {
                 let mut bound_here = HashMap::default();
 
                 binders.iter().for_each(|k| {
-                    bound_here.insert(k.0.clone(), Exp::var(k.0.clone()));
+                    bound_here.insert(k.0.clone(), Exp::Var(k.0.clone()));
                 });
 
                 self.add_subst(bound_here);
@@ -928,7 +932,7 @@ impl ExpMutVisitor for Environment {
                 let mut bound_here = HashMap::default();
 
                 binders.iter().for_each(|k| {
-                    bound_here.insert(k.0.clone(), Exp::var(k.0.clone()));
+                    bound_here.insert(k.0.clone(), Exp::Var(k.0.clone()));
                 });
 
                 self.add_subst(bound_here);
@@ -972,8 +976,8 @@ impl Binder {
 
     fn flatten_inner(self, ty: &Type, out: &mut Vec<(Ident, Type)>) {
         match self {
-            Binder::Wild => out.push(("_".into(), ty.clone())),
-            Binder::UnNamed(_) => out.push(("_".into(), ty.clone())),
+            Binder::Wild => out.push((Ident::fresh("_"), ty.clone())),
+            Binder::UnNamed(_) => out.push((Ident::fresh("_"), ty.clone())),
             Binder::Named(id) => out.push((id, ty.clone())),
             Binder::Typed(_, ids, ty2) => {
                 assert!(ty == &ty2);

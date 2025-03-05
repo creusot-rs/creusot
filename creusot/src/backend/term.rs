@@ -1,3 +1,5 @@
+use std::{cell::RefCell, collections::HashMap};
+
 use crate::{
     backend::{
         Why3Generator,
@@ -5,13 +7,12 @@ use crate::{
         ty::{constructor, floatty_to_prelude, ity_to_prelude, translate_ty, uty_to_prelude},
     },
     ctx::*,
-    naming::ident_of,
-    pearlite::{BinOp, Literal, Pattern, PointerKind, Term, TermKind, UnOp},
-    translation::pearlite::{QuantKind, Trigger, zip_binder},
+    pearlite::{self, Literal, Pattern, PointerKind, Term, TermKind, Renaming},
+    translation::pearlite::{QuantKind, Trigger},
 };
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind};
-use rustc_span::DUMMY_SP;
+use rustc_span::{DUMMY_SP, Symbol};
 use rustc_type_ir::{IntTy, UintTy};
 use std::iter::repeat_n;
 use why3::{
@@ -23,13 +24,22 @@ use why3::{
     ty::Type,
 };
 
-pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
+pub(crate) fn lower_pure0<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     term: &Term<'tcx>,
 ) -> Exp {
+    lower_pure(ctx, names, &RefCell::new(Renaming::new()), term)
+}
+
+pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
+    renaming: &RefCell<Renaming>,
+    term: &Term<'tcx>,
+) -> Exp {
     let span = term.span;
-    let mut term = Lower { ctx, names }.lower_term(term);
+    let mut term = Lower { ctx, names, renaming }.lower_term(term);
     term.reassociate();
     if let Some(attr) = names.span(span) { term.with_attr(attr) } else { term }
 }
@@ -38,14 +48,17 @@ pub(crate) fn lower_pat<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     pat: &Pattern<'tcx>,
+    renaming: &mut Renaming,
 ) -> WPattern {
-    Lower { ctx, names }.lower_pat(pat)
+    Lower { ctx, names, renaming }.lower_pat(pat)
 }
 
 struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     ctx: &'a Why3Generator<'tcx>,
     names: &'a N,
+    renaming: &'a RefCell<Renaming>,
 }
+
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     fn lower_term(&self, term: &Term<'tcx>) -> Exp {
         match &term.kind {
@@ -125,7 +138,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     item
                 }
             }
-            TermKind::Var(v) => Exp::var(ident_of(*v)),
+            TermKind::Var(v) => Exp::Var(*v),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -180,11 +193,13 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 if args.peek().is_none() { var.app([Exp::unit()]) } else { var.app(args) }
             }
             TermKind::Quant { kind, binder, box body, trigger } => {
-                let bound = zip_binder(binder)
-                    .map(|(s, t)| (s.to_string().into(), self.lower_ty(t)))
+                self.open_scope();
+                let bound = binder.iter()
+                    .map(|(ident, t)| (*ident, self.lower_ty(*t)))  // TODO store this fresh somewhere
                     .collect();
                 let body = self.lower_term(body);
                 let trigger = self.lower_trigger(trigger);
+                self.close_scope();
                 match kind {
                     QuantKind::Forall => Exp::forall_trig(bound, trigger, body),
                     QuantKind::Exists => Exp::exists_trig(bound, trigger, body),
@@ -224,16 +239,29 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     let _ = self.lower_ty(scrutinee.ty);
                     let arms = arms
                         .iter()
-                        .map(|(pat, body)| (self.lower_pat(pat), self.lower_term(body)))
+                        .map(|(pat, body)| {
+                            self.open_scope();
+                            let pat = self.lower_pat(pat);
+                            let body = self.lower_term(body);
+                            self.close_scope();
+                            (pat, body)
+                        })
                         .collect();
                     Exp::Match(Box::new(self.lower_term(scrutinee)), arms)
                 }
             }
-            TermKind::Let { pattern, box arg, box body } => Exp::Let {
-                pattern: self.lower_pat(pattern),
-                arg: Box::new(self.lower_term(arg)),
-                body: Box::new(self.lower_term(body)),
-            },
+            TermKind::Let { pattern, box arg, box body } => {
+                let arg = Box::new(self.lower_term(arg));
+                self.open_scope();
+                let pattern = self.lower_pat(pattern);
+                let body = Box::new(self.lower_term(body));
+                self.close_scope();
+                Exp::Let {
+                    pattern,
+                    arg,
+                    body,
+                }
+            }
             TermKind::Tuple { fields } => {
                 Exp::Tuple(fields.into_iter().map(|f| self.lower_term(f)).collect())
             }
@@ -245,18 +273,18 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     TyKind::Adt(def, substs) => self.names.field(def.did(), substs, *name),
                     TyKind::Tuple(f) => {
                         let mut fields: Box<_> = repeat_n(WPattern::Wildcard, f.len()).collect();
-                        fields[name.as_usize()] = WPattern::VarP("a".into());
+                        fields[name.as_usize()] = WPattern::VarP(a);
 
                         return Exp::Let {
                             pattern: WPattern::TupleP(fields),
                             arg: Box::new(lhs_low),
-                            body: Box::new(Exp::var("a")),
+                            body: Box::new(Exp::Var(a)),
                         };
                     }
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                lhs_low.field(&field.as_ident())
+                lhs_low.field(&field.as_str())
             }
             TermKind::Closure { body, .. } => {
                 let TyKind::Closure(id, subst) = term.ty.kind() else {
@@ -266,17 +294,25 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                 let sig = self.ctx.sig(*id).clone();
                 let sig = EarlyBinder::bind(sig).instantiate(self.ctx.tcx, subst);
+/* skip? normalize?
+                self.renaming.open_scope();
                 let binders = sig
                     .inputs
                     .iter()
                     .skip(1)
                     .map(|arg| {
-                        let nm = Ident::build(&arg.0.to_string());
+                        let nm = Ident::fresh(&arg.0.to_string());
                         let ty = self.names.normalize(self.ctx, arg.2);
                         Binder::typed(nm, self.lower_ty(ty))
                     })
                     .collect();
-
+ */
+                self.open_scope();
+                for (ident, _, ty) in sig.inputs.iter().skip(1) {
+                    let ty = self.names.normalize(self.ctx, *ty);
+                    binders.push(Binder::typed(*ident, self.lower_ty(ty)))
+                }
+                self.renaming.close_scope();
                 Exp::Abs(binders, Box::new(body))
             }
             TermKind::Reborrow { cur, fin, inner, projection } => {
@@ -302,14 +338,14 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Precondition { item, args, params } => {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
                 let mut sym = self.names.item(*item, args);
-                sym.name = format!("{}'pre", &*sym.name).into();
+                sym.name = format!("{}'pre", &sym.name.as_str()).into();
 
                 Exp::qvar(sym).app(params)
             }
             TermKind::Postcondition { item, args, params } => {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
                 let mut sym = self.names.item(*item, args);
-                sym.name = format!("{}'post'return'", &*sym.name).into();
+                sym.name = format!("{}'post'return'", &sym.name.as_str()).into();
                 Exp::qvar(sym).app(params)
             }
         }
@@ -329,7 +365,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                             .into_iter()
                             .enumerate()
                             .map(|(i, f)| {
-                                (self.names.field(*variant, substs, i.into()).as_ident(), f)
+                                (Ident::fresh(self.names.field(*variant, substs, i.into())), f)
                             })
                             .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                             .collect(),
@@ -337,21 +373,12 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
             }
             Pattern::Wildcard => WPattern::Wildcard,
-            Pattern::Binder(name) => WPattern::VarP(name.to_string().into()),
+            Pattern::Binder(name) => WPattern::VarP(*name),
             Pattern::Boolean(b) => {
                 if *b {
                     WPattern::mk_true()
                 } else {
                     WPattern::mk_false()
-                }
-            }
-            Pattern::Tuple(pats) => {
-                WPattern::TupleP(pats.into_iter().map(|pat| self.lower_pat(pat)).collect())
-            }
-            Pattern::Deref { pointee, kind } => match kind {
-                PointerKind::Box | PointerKind::Shr => self.lower_pat(pointee),
-                PointerKind::Mut => {
-                    WPattern::RecP(Box::new([("current".into(), self.lower_pat(pointee))]))
                 }
             },
         }
@@ -366,6 +393,22 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             .iter()
             .map(|x| WTrigger(x.0.iter().map(|x| self.lower_term(x)).collect()))
             .collect()
+    }
+
+    fn var(&self, s: Symbol) -> Option<Ident> {
+        todo!{} // self.renaming.borrow().get(&s)
+    }
+
+    fn open_scope(&self) {
+        self.renaming.borrow_mut().open_scope();
+    }
+
+    fn close_scope(&self) {
+        self.renaming.borrow_mut().close_scope();
+    }
+
+    fn fresh(&self, s: Symbol) -> Ident{
+        todo!{} // self.renaming.borrow_mut().fresh(s)
     }
 }
 

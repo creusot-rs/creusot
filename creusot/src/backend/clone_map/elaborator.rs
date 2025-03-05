@@ -10,9 +10,9 @@ use crate::{
         is_trusted_function,
         logic::{lower_logical_defn, spec_axiom},
         program,
-        signature::sig_to_why3,
+        signature::{sig_to_why3, PreSignature2},
         structural_resolve::structural_resolve,
-        term::lower_pure,
+        term::lower_pure0,
         ty::{eliminator, translate_closure_ty, translate_ty, translate_tydecl},
         ty_inv::InvariantElaborator,
     },
@@ -38,7 +38,7 @@ use rustc_middle::ty::{
 };
 use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_type_ir::{ConstKind, EarlyBinder};
-use why3::declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use};
+use why3::{declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use}, Ident};
 
 /// Weak dependencies are allowed to form cycles in the graph, but strong ones cannot,
 /// weak dependencies are used to perform an initial stratification of the dependency graph.
@@ -120,7 +120,7 @@ impl DepElab for ProgElab {
             let sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
             let sig = sig.normalize(ctx.tcx, elab.typing_env);
             let sig = signature(ctx, elab, sig, dep);
-            return vec![program::val(ctx, sig)];
+            return vec![program::val(ctx, sig.into())];
         }
 
         // Inline the body of closures and promoted
@@ -144,7 +144,7 @@ fn signature<'tcx>(
     elab: &mut Expander<'_, 'tcx>,
     sig: PreSignature<'tcx>,
     dep: Dependency<'tcx>,
-) -> Signature {
+) -> PreSignature2 {
     let mut names = elab.namer(dep);
     let (def_id, _) = dep.did().unwrap();
     let id = names.dependency(dep).ident();
@@ -220,7 +220,7 @@ impl DepElab for LogicElab {
             if let Some(DeclKind::Predicate) = kind {
                 sig.retty = None;
             }
-            val(ctx, sig, kind)
+            val(ctx, sig.into(), kind)
         }
     }
 }
@@ -237,7 +237,7 @@ fn expand_ty_inv_axiom<'tcx>(
     let mut elab = InvariantElaborator::new(param_env, ctx);
     let Some(term) = elab.elaborate_inv(ty, false) else { return vec![] };
     let rewrite = elab.rewrite;
-    let exp = lower_pure(ctx, &mut names, &term);
+    let exp = lower_pure0(ctx, &mut names, &term);
     let axiom =
         Axiom { name: names.dependency(Dependency::TyInvAxiom(ty)).ident(), rewrite, axiom: exp };
     vec![Decl::Axiom(axiom)]
@@ -256,7 +256,7 @@ impl DepElab for TyElab {
         let mut names = elab.namer(dep);
         match ty.kind() {
             TyKind::Param(_) => vec![Decl::TyDecl(TyDecl::Opaque {
-                ty_name: names.ty_param(ty).as_ident(),
+                ty_name: Ident::bound(names.ty_param(ty).as_ident().as_str()), // TODO
                 ty_params: Box::new([]),
             })],
             TyKind::Alias(_, _) => {
@@ -266,7 +266,7 @@ impl DepElab for TyElab {
                     rustc_middle::ty::AssocItemContainer::Trait
                 );
                 vec![Decl::TyDecl(TyDecl::Opaque {
-                    ty_name: names.ty(def_id, subst).as_ident(),
+                    ty_name: Ident::fresh(names.ty(def_id, subst).as_ident().as_str()),  // TODO
                     ty_params: Box::new([]),
                 })]
             }
@@ -436,7 +436,7 @@ fn expand_laws<'tcx>(
     }
 }
 
-fn val(ctx: &Why3Generator, mut sig: Signature, kind: Option<DeclKind>) -> Vec<Decl> {
+fn val(ctx: &Why3Generator, mut sig: PreSignature2, kind: Option<DeclKind>) -> Vec<Decl> {
     sig.contract.variant = None;
     if let Some(k) = kind {
         let ax = if !sig.contract.is_empty() { Some(spec_axiom(&sig)) } else { None };
@@ -446,6 +446,7 @@ fn val(ctx: &Why3Generator, mut sig: Signature, kind: Option<DeclKind>) -> Vec<D
             sig.retty = None;
         };
 
+        let sig = Signature::from(sig);
         if let DeclKind::Constant = k {
             return vec![Decl::LogicDecl(LogicDecl { kind, sig })];
         }
@@ -457,7 +458,7 @@ fn val(ctx: &Why3Generator, mut sig: Signature, kind: Option<DeclKind>) -> Vec<D
         }
         d
     } else {
-        vec![program::val(ctx, sig)]
+        vec![program::val(ctx, sig.into())]
     }
 }
 

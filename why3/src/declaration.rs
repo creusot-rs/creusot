@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Module {
-    pub name: Ident,
+    pub name: IdentString,
     pub decls: Box<[Decl]>,
     pub attrs: Vec<Attribute>,
     // Meta data stored in comments
@@ -274,7 +274,7 @@ pub struct LogicDecl {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Use {
-    pub name: Box<[Ident]>,
+    pub name: Box<[IdentString]>,
     pub as_: Option<Ident>,
     pub export: bool,
 }

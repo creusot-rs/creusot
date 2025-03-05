@@ -38,6 +38,7 @@ pub struct Why3Generator<'tcx> {
     pub ctx: TranslationCtx<'tcx>,
     functions: Vec<TranslatedItem>,
     pub(crate) span_map: RefCell<SpanMap>,
+    pub(crate) current: Option<DefId>,
 }
 
 impl<'tcx> Deref for Why3Generator<'tcx> {
@@ -56,11 +57,12 @@ impl<'tcx> DerefMut for Why3Generator<'tcx> {
 
 impl<'tcx> Why3Generator<'tcx> {
     pub fn new(ctx: TranslationCtx<'tcx>) -> Self {
-        Why3Generator { ctx, functions: Default::default(), span_map: Default::default() }
+        Why3Generator { ctx, functions: Default::default(), span_map: Default::default(), current: None }
     }
 
     pub(crate) fn translate(&mut self, def_id: DefId) -> Result<(), CannotFetchThir> {
         debug!("translating {:?}", def_id);
+        self.current = Some(def_id);
 
         // eprintln!("{:?}", self.param_env(def_id));
 

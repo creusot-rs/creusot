@@ -4,28 +4,26 @@ use std::{
     iter::repeat_n,
 };
 
-use super::{Dependencies, binders_to_args};
+use super::Dependencies;
 use crate::{
     backend::{
-        Namer as _, Why3Generator,
-        signature::{sig_to_why3, signature_of},
-        term::{binop_to_binop, lower_literal, lower_pure},
-        ty::{constructor, is_int, ity_to_prelude, translate_ty, uty_to_prelude},
+        Namer as _, Why3Generator, term::{binop_to_binop, lower_literal, lower_pure}, ty::{constructor, ity_to_prelude, translate_ty, uty_to_prelude}, signature::sig_to_why3,
     },
     contracts_items::get_builtin,
     ctx::PreludeModule,
-    naming::ident_of,
     pearlite::{Literal, Pattern, PointerKind, Term, TermVisitor, super_visit_term},
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind, TypingEnv};
-use rustc_span::{Span, Symbol};
+use rustc_span::Span;
 use why3::{
+    exp::Environment,
     Exp, Ident,
     declaration::Signature,
     exp::{BinOp, Environment, Pattern as WPattern, UnOp as WUnOp},
     ty::Type,
 };
+use crate::pearlite::Renaming;
 
 /// Verification conditions for lemma functions.
 ///
@@ -46,8 +44,9 @@ struct VCGen<'a, 'tcx> {
     names: &'a Dependencies<'tcx>,
     self_id: DefId,
     structurally_recursive: bool,
+    variant: Option<Exp>,
     typing_env: TypingEnv<'tcx>,
-    subst: RefCell<Environment>,
+    renaming: RefCell<Renaming>,
 }
 
 pub(super) fn vc<'tcx>(
@@ -59,22 +58,28 @@ pub(super) fn vc<'tcx>(
     post: Exp,
 ) -> Result<Exp, VCError<'tcx>> {
     let structurally_recursive = is_structurally_recursive(ctx, self_id, &t);
-    let bounds = ctx
-        .sig(self_id)
+    let sig = ctx.sig(self_id);
+    let bounds = todo!{}; /* TODO REMOVE THIS sig
         .inputs
         .iter()
-        .map(|arg| (arg.0.as_str().into(), Exp::var(arg.0.as_str())))
-        .collect();
+        .map(|(sym, _, _)| (*sym, Ident::fresh(sym.as_str())))
+        .collect(); */
+    let renaming = RefCell::new(bounds);
+    let variant = sig.contract.variant.as_ref().map(|term|
+            lower_pure(ctx, names, &renaming, term));
     let vcgen = VCGen {
         typing_env: ctx.typing_env(self_id),
         ctx,
         names,
         self_id,
         structurally_recursive,
-        subst: Default::default(),
+        variant,
+        renaming,
     };
+    let hole = Ident::fresh("");
+    let exp = Exp::let_(dest.clone(), Exp::Var(hole), post.clone());
     vcgen.add_bounds(bounds);
-    vcgen.build_vc(&t, &|exp| Ok(Exp::let_(dest.clone(), exp, post.clone())))
+    vcgen.build_vc(&t, &mut Post::new(exp, hole))
 }
 
 /// Verifies whether a given term is structurally recursive: that is, each recursive call is made to
@@ -91,12 +96,12 @@ pub(super) fn vc<'tcx>(
 /// This check can be extended in the future
 fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'_>) -> bool {
     struct StructuralRecursion {
-        smaller_than: HashMap<Symbol, Symbol>,
+        smaller_than: HashMap<why3::Ident, why3::Ident>,
         self_id: DefId,
         /// Index of the decreasing argument
-        decreasing_args: HashSet<Symbol>,
+        decreasing_args: HashSet<why3::Ident>,
 
-        orig_args: Vec<Symbol>,
+        orig_args: Vec<why3::Ident>,
     }
     use crate::pearlite::TermKind;
 
@@ -106,26 +111,26 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
         }
 
         /// Is `t` smaller than the argument `nm`?
-        fn is_smaller_than(&self, t: &Term, nm: Symbol) -> bool {
-            match &t.kind {
-                TermKind::Var(s) => self.smaller_than.get(s) == Some(&nm),
-                TermKind::Coerce { arg } => self.is_smaller_than(arg, nm),
-                _ => false,
-            }
+        fn is_smaller_than(&self, t: &Term, nm: why3::Ident) -> bool {
+        match &t.kind {
+            TermKind::Var(s) => self.smaller_than.get(s) == Some(&nm),
+            TermKind::Coerce { arg } => self.is_smaller_than(arg, nm),
+            _ => false,
         }
+    }
 
         // TODO: could make this a `pattern` to term comparison to make it more powerful
         /// Mark `sym` as smaller than `term`. Currently, this only updates the relation if `term` is a variable.
-        fn smaller_than(&mut self, sym: Symbol, term: &Term<'_>) {
-            match &term.kind {
-                TermKind::Var(var) => {
-                    let parent = self.smaller_than.get(var).unwrap_or(var);
-                    self.smaller_than.insert(sym, *parent);
-                }
-                TermKind::Coerce { arg } => self.smaller_than(sym, arg),
-                _ => (),
+        fn smaller_than(&mut self, sym: why3::Ident, term: &Term<'_>) {
+        match &term.kind {
+            TermKind::Var(var) => {
+                let parent = self.smaller_than.get(var).unwrap_or(var);
+                self.smaller_than.insert(sym, *parent);
             }
+            TermKind::Coerce { arg } => self.smaller_than(sym, arg),
+            _ => (),
         }
+    }
     }
 
     impl TermVisitor<'_> for StructuralRecursion {
@@ -140,8 +145,8 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
                 }
                 TermKind::Quant { binder, body, .. } => {
                     let old_smaller = self.smaller_than.clone();
-                    for name in &binder.0 {
-                        self.smaller_than.remove(&name.name);
+                    for (name, _) in binder {
+                        self.smaller_than.remove(name);
                     }
                     self.visit_term(body);
                     self.smaller_than = old_smaller;
@@ -213,9 +218,42 @@ impl<'tcx> VCError<'tcx> {
     }
 }
 
-// We use Fn because some continuations may be called several times (in the case
-// the post condition appears several times).
-type PostCont<'a, 'tcx, A, R = Exp> = &'a dyn Fn(A) -> Result<R, VCError<'tcx>>;
+struct Post {
+    exp: Exp,
+    substs: Vec<(Ident, Exp)>,
+    hole: Ident,
+}
+
+impl Post {
+    fn new(exp: Exp, hole: Ident) -> Self {
+        Self { exp, substs: Vec::new(), hole }
+    }
+
+    fn subst(&mut self, exp: Exp) {
+        self.substs.push((self.hole, exp));
+    }
+
+    fn undo_subst(&mut self) {
+        if let Some((hole, _)) = self.substs.pop() {
+            self.hole = hole;
+        } else {
+            panic!("No subst to undo");
+        }
+    }
+
+    fn subst_to_exp(&self, exp: Exp) -> Exp {
+        let mut env = Environment::new();
+        env.add_subst(std::iter::once((self.hole, exp.clone())).collect());
+        for (h, e) in self.substs.iter().rev() {
+            let mut e = e.clone();
+            e.subst(&mut env);
+            env.add_subst(std::iter::once((*h,e.clone())).collect());
+        }
+        let mut exp = self.exp.clone();
+        exp.subst(&mut env);
+        exp
+    }
+}
 
 impl<'a, 'tcx> VCGen<'a, 'tcx> {
     fn lower_literal(&self, lit: &Literal<'tcx>) -> Exp {
@@ -223,22 +261,19 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
     }
 
     fn lower_pure(&self, lit: &Term<'tcx>) -> Exp {
-        lower_pure(self.ctx, self.names, lit)
+        lower_pure(self.ctx, self.names, &self.renaming, lit)
     }
 
-    fn build_vc(&self, t: &Term<'tcx>, k: PostCont<'_, 'tcx, Exp>) -> Result<Exp, VCError<'tcx>> {
+    fn build_vc(&self, t: &Term<'tcx>, q: &mut Post) -> Result<Exp, VCError<'tcx>> {
         use crate::pearlite::*;
         match &t.kind {
             // VC(v, Q) = Q(v)
-            TermKind::Var(v) => {
-                let id = ident_of(*v);
-                let exp = self.subst.borrow().get(&id).unwrap_or(Exp::var(id));
-                k(exp)
-            }
+            TermKind::Var(v) => Ok(q.subst_to_exp(Exp::Var(self.get_var(*v).expect(&format!{"Unbound {:?} in {:?}", v, self.ctx.current})))),
             // VC(l, Q) = Q(l)
-            TermKind::Lit(l) => k(self.lower_literal(l)),
+            TermKind::Lit(l) => Ok(q.subst_to_exp(self.lower_literal(l))),
+            // VC(cast(arg), Q) = VC(arg, |a| Q(cast(a)))
             TermKind::Cast { arg } => match arg.ty.kind() {
-                TyKind::Bool => self.build_vc(arg, &|arg| {
+                TyKind::Bool => {
                     let (fct_name, prelude_kind) = match t.ty.kind() {
                         TyKind::Int(ity) => ("of_bool", ity_to_prelude(self.ctx.tcx, *ity)),
                         TyKind::Uint(uty) => ("of_bool", uty_to_prelude(self.ctx.tcx, *uty)),
@@ -248,8 +283,12 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                             "bool cast to non integral casts are currently unsupported",
                         ),
                     };
-                    k(Exp::qvar(self.names.from_prelude(prelude_kind, fct_name)).app([arg]))
-                }),
+                    let qname = self.names.from_prelude(prelude_kind, fct_name);
+                    q.subst(Exp::qvar(qname).app([Exp::Var(q.hole)]));
+                    let vc = self.build_vc(arg, q)?;
+                    q.undo_subst();
+                    Ok(vc)
+                },
                 TyKind::Int(_) | TyKind::Uint(_) => {
                     // to
                     let to_fct_name = if self.names.bitwise_mode() {
@@ -279,11 +318,12 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                         ),
                     };
 
-                    self.build_vc(arg, &|arg| {
-                        let to_qname = self.names.from_prelude(to_prelude, to_fct_name);
-                        let of_qname = self.names.from_prelude(of_prelude, of_fct_name);
-                        k(Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([arg])]))
-                    })
+                    let to_qname = self.names.from_prelude(to_prelude, to_fct_name);
+                    let of_qname = self.names.from_prelude(of_prelude, of_fct_name);
+                    q.subst(Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([Exp::Var(q.hole)])]));
+                    let vc = self.build_vc(arg, q)?;
+                    q.undo_subst();
+                    Ok(vc)
                 }
                 _ => self.ctx.crash_and_error(t.span, "unsupported cast"),
             },
@@ -292,190 +332,239 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // VC(i, Q) = Q(i)
             TermKind::Item(id, sub) => {
                 let item_name = self.names.item(*id, sub);
-
                 if get_builtin(self.ctx.tcx, *id).is_some() {
                     // Builtins can leverage Why3 polymorphism and sometimes can cause typeck errors in why3 due to ambiguous type variables so lets fix the type now.
-                    k(Exp::qvar(item_name).ascribe(self.ty(t.ty)))
+                    Ok(q.subst_to_exp(Exp::qvar(item_name).ascribe(self.ty(t.ty))))
                 } else {
-                    k(Exp::qvar(item_name))
+                    Ok(q.subst_to_exp(Exp::qvar(item_name)))
                 }
             }
             // VC(assert { C }, Q) => VC(C, |c| c && Q(()))
             TermKind::Assert { cond } => {
-                self.build_vc(cond, &|exp| Ok(exp.lazy_and(k(Exp::unit())?)))
+                let hole = q.hole;
+                let exp = Exp::Var(hole).lazy_and(q.subst_to_exp(Exp::unit()));
+                self.build_vc(cond, &mut Post::new(exp, hole))
             }
             // VC(f As, Q) = VC(A0, |a0| ... VC(An, |an|
             //  pre(f)(a0..an) /\ variant(f)(a0..an) /\ (post(f)(a0..an, F(a0..an)) -> Q(F a0..an))
             // ))
-            TermKind::Call { id, subst, args } => self.build_vc_slice(args, &|args| {
+            TermKind::Call { id, subst, args } => {
+                let args: Vec<_> = args.into_iter().map(|arg| (arg, Ident::fresh(""))).collect();
                 let pre_sig =
                     EarlyBinder::bind(self.ctx.sig(*id).clone()).instantiate(self.ctx.tcx, subst);
 
                 let pre_sig = pre_sig.normalize(self.ctx.tcx, self.typing_env);
-                let arg_subst = pre_sig
-                    .inputs
+                let sig =  sig_to_why3(self.ctx, self.names, Ident::fresh(""), // ???
+                    pre_sig, *id);
+                let arg_subst = sig
+                    .args
                     .iter()
                     .zip(&args)
-                    .map(|(nm, res)| (ident_of(nm.0), res.clone()))
+                    .map(|(&(arg, _), &(_, hole))| (arg, Exp::Var(hole)))
                     .collect();
-                let fname = self.names.item(*id, subst);
-                let mut sig = sig_to_why3(self.ctx, self.names, "".into(), pre_sig, *id);
-                sig.contract.subst(&arg_subst);
-                let variant =
-                    if *id == self.self_id { self.build_variant(&args)? } else { Exp::mk_true() };
+                let mut contract = sig.contract;
+                contract.subst(&arg_subst);
+                // Generates the expression to test the validity of the variant for a recursive call.
+                // Currently restricted to `Int` until we sort out `WellFounded` (soon?)
+                //
+                // If V is the variant expression at entry and V' is the variant expression of the recursive call it generates
+                //  0 <= V && V' < V
+                //  Weirdly (to me Xavier) this doesn't check `0 <= V'` but this is actually the same behavior as Why3
+                let variant = if *id == self.self_id && !self.structurally_recursive {
+                    let variant = contract.variant.remove(0);
+                    let orig_variant = self.variant.clone().unwrap();
+                    self.names.import_prelude_module(PreludeModule::Int);
+                    Exp::BinaryOp(why3::exp::BinOp::Le, Box::new(Exp::int(0)), Box::new(orig_variant.clone()))
+                        .log_and(Exp::BinaryOp(why3::exp::BinOp::Lt, Box::new(variant), Box::new(orig_variant)))
+                    /* TODO: check type is int when translating the variant Err(VCError::UnsupportedVariant(variant.creusot_ty(), variant.span)); */
+                } else { Exp::mk_true() };
 
+                let fname = self.names.item(*id, subst);
                 let call = if args.is_empty() {
                     Exp::qvar(fname).app([Exp::unit()])
                 } else {
-                    Exp::qvar(fname).app(args)
+                    Exp::qvar(fname).app(args.iter().map(|(_, arg)| Exp::Var(*arg)).collect())
                 };
-                sig.contract.subst(&[("result".into(), call.clone())].into_iter().collect());
+                contract.subst(&[(Ident::bound("result"), call.clone())].into_iter().collect());
 
-                let inner = k(call)?;
+                let inner = q.subst_to_exp(call);
 
-                let post = sig
-                    .contract
+                let post = contract
                     .requires_conj_labelled()
                     .log_and(variant)
-                    .log_and(sig.contract.ensures_conj().implies(inner));
+                    .log_and(contract.ensures_conj().implies(inner));
 
-                Ok(post)
-            }),
+                self.build_vc_slice(&args, post)
+            }
 
             // VC(A && B, Q) = VC(A, |a| if a then VC(B, Q) else Q(false))
             // VC(A || B, Q) = VC(A, |a| if a then Q(true) else VC(B, Q))
             // VC(A OP B, Q) = VC(A, |a| VC(B, |b| Q(a OP B)))
             TermKind::Binary { op, lhs, rhs } => match op {
-                BinOp::And => self.build_vc(lhs, &|lhs| {
-                    Ok(Exp::if_(lhs, self.build_vc(rhs, k)?, k(Exp::mk_false())?))
-                }),
-                BinOp::Or => self.build_vc(lhs, &|lhs| {
-                    Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_vc(rhs, k)?))
-                }),
-                BinOp::Div => self.build_vc(lhs, &|lhs| {
-                    self.build_vc(rhs, &|rhs| k(Exp::var("div").app([lhs.clone(), rhs])))
-                }),
-                BinOp::Rem => self.build_vc(lhs, &|lhs| {
-                    self.build_vc(rhs, &|rhs| k(Exp::var("mod").app([lhs.clone(), rhs])))
-                }),
-                _ => self.build_vc(lhs, &|lhs| {
-                    self.build_vc(rhs, &|rhs| {
-                        k(Exp::BinaryOp(binop_to_binop(*op), Box::new(lhs.clone()), Box::new(rhs)))
-                    })
-                }),
+                BinOp::And => {
+                    let vc_rhs = self.build_vc(rhs, q)?;
+                    let exp = Exp::if_(Exp::Var(q.hole), vc_rhs, q.subst_to_exp(Exp::mk_false()));
+                    self.build_vc(lhs, &mut Post::new(exp, q.hole))
+                }
+                BinOp::Or => {
+                    let vc_rhs = self.build_vc(rhs, q)?;
+                    let exp = Exp::if_(Exp::Var(q.hole), q.subst_to_exp(Exp::mk_true()), vc_rhs);
+                    self.build_vc(lhs, &mut Post::new(exp, q.hole))
+                }
+                BinOp::Div => {
+                    let lhs_hole = Ident::fresh("");
+                    q.subst(Exp::QVar("div".into()).app(vec![Exp::Var(lhs_hole), Exp::Var(q.hole)]));
+                    let vc_rhs = self.build_vc(rhs, q)?;
+                    q.undo_subst();
+                    self.build_vc(lhs, &mut Post::new(vc_rhs, lhs_hole))
+                }
+                BinOp::Rem => {
+                    let lhs_hole = Ident::fresh("");
+                    q.subst(Exp::QVar("mod".into()).app(vec![Exp::Var(lhs_hole), Exp::Var(q.hole)]));
+                    let vc_rhs = self.build_vc(rhs, q)?;
+                    q.undo_subst();
+                    self.build_vc(lhs, &mut Post::new(vc_rhs, lhs_hole))
+                }
+                _ => {
+                    let lhs_hole = Ident::fresh("");
+                    q.subst(Exp::BinaryOp(binop_to_binop(*op), Exp::Var(lhs_hole).into(), Exp::Var(q.hole).into()));
+                    let vc_rhs = self.build_vc(rhs, q)?;
+                    q.undo_subst();
+                    self.build_vc(lhs, &mut Post::new(vc_rhs, lhs_hole))
+                }
             },
-            // VC(OP A, Q) = VC(A |a| Q(OP a))
-            TermKind::Unary { op, arg } => self.build_vc(arg, &|arg| {
+            // VC(OP A, Q) = VC(A, |a| Q(OP a))
+            TermKind::Unary { op, arg } => {
                 let op = match op {
                     UnOp::Not => WUnOp::Not,
                     UnOp::Neg => WUnOp::Neg,
                 };
-
-                k(Exp::UnaryOp(op, Box::new(arg)))
-            }),
-            // // the dual rule should be the one below but that seems weird...
-            // // VC(forall<x> P(x), Q) => (exists<x> VC(P, false)) \/ Q(forall<x>P(x))
-            // // Instead, I think the rule should just be the same as for the existential quantifiers?
-            TermKind::Quant { kind: QuantKind::Forall, binder, body, .. } => {
-                let forall_pre = self.build_vc(body, &|_| Ok(Exp::mk_true()))?;
-
-                let forall_pre = Exp::forall(
-                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.ty(t))).collect(),
-                    forall_pre,
-                );
-                let forall_pure = self.lower_pure(t);
-                Ok(forall_pre.log_and(k(forall_pure)?))
+                q.subst(Exp::UnaryOp(op, Exp::Var(q.hole).into()));
+                let vc = self.build_vc(arg, q);
+                q.undo_subst();
+                vc
             }
-            // // VC(exists<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(exists<x>P(x))
-            TermKind::Quant { kind: QuantKind::Exists, binder, body, .. } => {
-                let exists_pre = self.build_vc(body, &|_| Ok(Exp::mk_true()))?;
-
-                let exists_pre = Exp::forall(
-                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.ty(t))).collect(),
-                    exists_pre,
-                );
-                let exists_pure = self.lower_pure(t);
-                Ok(exists_pre.log_and(k(exists_pure)?))
+            // VC(QUANTIFIER<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(QUANTIFIER<x> P(x))
+            TermKind::Quant { binder, body, .. } => {
+                self.open_scope();
+                let binder = binder.iter().map(|(ident, ty)| (*ident, self.ty(*ty))).collect();
+                let forall_pre = self.build_vc(body, &mut Post::new(Exp::mk_true(), q.hole))?;
+                self.close_scope();
+                let forall_pre = Exp::forall(binder, forall_pre);
+                let q_t = q.subst_to_exp(self.lower_pure(t));
+                Ok(forall_pre.log_and(q_t))
             }
             // VC((T...), Q) = VC(T[0], |t0| ... VC(T[N], |tn| Q(t0..tn))))
-            TermKind::Tuple { fields } => self.build_vc_slice(fields, &|flds| k(Exp::Tuple(flds))),
+            TermKind::Tuple { fields } => {
+                let fields: Vec<_> = fields.iter().map(|field| (field, Ident::fresh(""))).collect();
+                let post = q.subst_to_exp(Exp::Tuple(fields.iter().map(|&(_, v)| Exp::Var(v)).collect()));
+                self.build_vc_slice(&fields, post)
+            }
             // Same as for tuples
             TermKind::Constructor { variant, fields, .. } => {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, t.ty);
                 let TyKind::Adt(adt, subst) = ty.kind() else { unreachable!() };
-                self.build_vc_slice(fields, &|fields| {
-                    let ctor = constructor(self.names, fields, adt.variant(*variant).def_id, subst);
-                    k(ctor)
-                })
+                let fields: Vec<_> = fields.iter().map(|field| (field, Ident::fresh(""))).collect();
+                let post = q.subst_to_exp(constructor(self.names, fields.iter().map(|&(_, v)| Exp::Var(v)).collect(), adt.variant(*variant).def_id, subst));
+                self.build_vc_slice(&fields, post)
             }
             // VC( * T, Q) = VC(T, |t| Q(*t))
-            TermKind::Cur { term } => self.build_vc(term, &|term| k(term.field("current"))),
+            TermKind::Cur { term } => {
+                q.subst(Exp::Var(q.hole).field("current"));
+                let vc = self.build_vc(term, q)?;
+                q.undo_subst();
+                Ok(vc)
+            }
             // VC( ^ T, Q) = VC(T, |t| Q(^t))
-            TermKind::Fin { term } => self.build_vc(term, &|term| k(term.field("final"))),
-            // VC(A -> B, Q) = VC(A, VC(B, Q(A -> B)))
-            TermKind::Impl { lhs, rhs } => self.build_vc(lhs, &|lhs| {
-                Ok(Exp::if_(lhs, self.build_vc(rhs, k)?, k(Exp::mk_true())?))
-            }),
+            TermKind::Fin { term } => {
+                q.subst(Exp::Var(q.hole).field("final"));
+                let vc = self.build_vc(term, q)?;
+                q.undo_subst();
+                Ok(vc)
+            }
+            // VC(A -> B, Q) = VC(A, |a| if a then VC(B, |b| Q(b)) else true)
+            TermKind::Impl { lhs, rhs } => {
+                let vc_b = self.build_vc(rhs, q)?;
+                let exp = Exp::if_(Exp::Var(q.hole), vc_b, Exp::mk_true());
+                self.build_vc(lhs, &mut Post::new(exp, q.hole))
+            }
             // VC(match A {P -> E}, Q) = VC(A, |a| match a {P -> VC(E, Q)})
             TermKind::Match { scrutinee, arms }
                 if scrutinee.ty.is_bool()
                     && arms.len() == 2
                     && arms.iter().all(|a| a.0.get_bool().is_some()) =>
             {
-                self.build_vc(scrutinee, &|scrut| {
-                    let mut arms: Vec<_> = arms
-                        .iter()
-                        .map(|arm| Ok((arm.0.get_bool().unwrap(), self.build_vc(&arm.1, k)?)))
-                        .collect::<Result<_, _>>()?;
-                    arms.sort_by(|a, b| b.0.cmp(&a.0));
-
-                    Ok(Exp::if_(scrut, arms.remove(0).1, arms.remove(0).1))
-                })
-            }
-
-            // VC(match A {P -> E}, Q) = VC(A, |a| match a {P -> VC(E, Q)})
-            TermKind::Match { scrutinee, arms } => self.build_vc(scrutinee, &|scrut| {
-                let arms = arms
+                let mut arms: Vec<_> = arms
                     .iter()
                     .map(|arm| {
-                        self.build_pattern(&arm.0, &|pat| Ok((pat, self.build_vc(&arm.1, k)?)))
+                        Ok((arm.0.get_bool().unwrap(), self.build_vc(&arm.1, q)?))
+                    })
+                    .collect::<Result<_, _>>()?;
+                arms.sort_by(|a, b| b.0.cmp(&a.0));
+                let exp = Exp::if_(Exp::Var(q.hole), arms.remove(0).1, arms.remove(0).1);
+                self.build_vc(scrutinee, &mut Post::new(exp, q.hole))
+            }
+            // VC(match A {P -> E}, Q) = VC(A, |a| match a {P -> VC(E, Q)})
+            TermKind::Match { scrutinee, arms } => {
+                let arms: Vec<_> = arms
+                    .iter()
+                    .map(|arm: &(Pattern<'tcx>, Term<'tcx>)| {
+                        self.open_scope();
+                        let pat = self.build_pattern(&arm.0);
+                        let vc = self.build_vc(&arm.1, q)?;
+                        self.close_scope();
+                        Ok((pat, vc))
                     })
                     .collect::<Result<Box<[_]>, _>>()?;
-
-                Ok(Exp::Match(Box::new(scrut), arms))
-            }),
+                let exp = Exp::Match(Box::new(Exp::Var(q.hole)), arms);
+                self.build_vc(scrutinee, &mut Post::new(exp, q.hole))
+            }
             // VC(let P = A in B, Q) = VC(A, |a| let P = a in VC(B, Q))
-            TermKind::Let { pattern, arg, body } => self.build_vc(arg, &|arg| {
-                self.build_pattern(pattern, &|pattern| {
-                    let body = self.build_vc(body, k)?;
-                    Ok(Exp::Let { pattern, arg: Box::new(arg.clone()), body: Box::new(body) })
-                })
-            }),
+            TermKind::Let { pattern, arg, body } => {
+                self.open_scope();
+                let pattern = self.build_pattern(pattern);
+                let body = self.build_vc(body, q)?;
+                self.close_scope();
+                let exp = Exp::Let { pattern, arg: Box::new(Exp::Var(q.hole)), body: Box::new(body) };
+                self.build_vc(arg, &mut Post::new(exp, q.hole))
+            }
             // VC(A.f, Q) = VC(A, |a| Q(a.f))
             TermKind::Projection { lhs, name } => {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, lhs.ty);
                 let field = match ty.kind() {
                     TyKind::Closure(did, substs) => {
-                        self.names.field(*did, substs, *name).as_ident()
+                        let field = self.names.field(*did, substs, *name);
+                        Exp::Var(q.hole).field(&field.as_str())
                     }
                     TyKind::Adt(def, substs) => {
-                        self.names.field(def.did(), substs, *name).as_ident()
+                        let field = self.names.field(def.did(), substs, *name);
+                        Exp::Var(q.hole).field(&field.as_str())
                     }
                     TyKind::Tuple(f) => {
                         let mut fields: Box<_> = repeat_n(WPattern::Wildcard, f.len()).collect();
-                        fields[name.as_usize()] = WPattern::VarP("a".into());
+                        let a = Ident::fresh("a");
+                        fields[name.as_usize()] = WPattern::VarP(a);
+/*
                         return self.build_vc(lhs, &|lhs| {
                             k(Exp::Let {
                                 pattern: WPattern::TupleP(fields.clone()),
                                 arg: Box::new(lhs),
-                                body: Box::new(Exp::var("a")),
-                            })
-                        });
+                                body: Box::new(Exp::Var(a)),
+                            })});
+*/
+                        fields[name.as_usize()] = why3::exp::Pattern::VarP(a);
+                        Exp::Let {
+                                pattern: why3::exp::Pattern::TupleP(fields.clone()),
+                                arg: Box::new(Exp::Var(q.hole)),
+                                body: Box::new(Exp::Var(a)),
+                            }
                     }
                     k => unreachable!("Projection from {k:?}"),
                 };
-
-                self.build_vc(lhs, &|lhs| k(lhs.field(&field)))
+                q.subst(field);
+                let vc = self.build_vc(lhs, q)?;
+                q.undo_subst();
+                Ok(vc)
             }
             TermKind::Old { .. } => Err(VCError::OldInLemma(t.span)),
             TermKind::Closure { .. } => Err(VCError::UnimplementedClosure(t.span)),
@@ -485,29 +574,15 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         }
     }
 
-    fn build_pattern<A>(
-        &self,
-        pat: &Pattern<'tcx>,
-        k: PostCont<'_, 'tcx, WPattern, A>,
-    ) -> Result<A, VCError<'tcx>> {
-        let mut bounds = Default::default();
-        let pat = self.build_pattern_inner(&mut bounds, pat);
-        self.add_bounds(bounds);
-        // FIXME: this totally breaks the tail-call potential... which needs desparate fixing.
-        let r = k(pat);
-        self.pop_bounds();
-        r
-    }
 
-    fn build_pattern_inner(
+    fn build_pattern(
         &self,
-        bounds: &mut HashMap<Ident, Exp>,
         pat: &Pattern<'tcx>,
     ) -> WPattern {
         match pat {
             Pattern::Constructor { variant, fields, substs } => {
                 let fields =
-                    fields.iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect();
+                    fields.iter().map(|pat| self.build_pattern(pat)).collect();
                 let substs = self.ctx.normalize_erasing_regions(self.typing_env, *substs);
                 if self.ctx.def_kind(variant) == DefKind::Variant {
                     WPattern::ConsP(self.names.constructor(*variant, substs), fields)
@@ -515,11 +590,12 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     WPattern::TupleP(Box::new([]))
                 } else {
                     WPattern::RecP(
-                        fields
+
+                                    fields
                             .into_iter()
                             .enumerate()
                             .map(|(i, f)| {
-                                (self.names.field(*variant, substs, i.into()).as_ident(), f)
+                                (Ident::bound(self.names.field(*variant, substs, i.into()).as_str()), f)
                             })
                             .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                             .collect(),
@@ -527,12 +603,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 }
             }
             Pattern::Wildcard => WPattern::Wildcard,
-            Pattern::Binder(name) => {
-                let name_id = name.as_str().into();
-                let new = self.uniq_occ(&name_id);
-                bounds.insert(name_id, Exp::var(new.clone()));
-                WPattern::VarP(new)
-            }
+            Pattern::Binder(name) => WPattern::VarP(self.fresh(*name)),
             Pattern::Boolean(b) => {
                 if *b {
                     WPattern::mk_true()
@@ -541,55 +612,25 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 }
             }
             Pattern::Tuple(pats) => WPattern::TupleP(
-                pats.iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect(),
+                pats.iter().map(|pat| self.build_pattern(pat)).collect(),
             ),
             Pattern::Deref { pointee, kind } => match kind {
-                PointerKind::Box | PointerKind::Shr => self.build_pattern_inner(bounds, pointee),
+                PointerKind::Box | PointerKind::Shr => self.build_pattern(pointee),
                 PointerKind::Mut => WPattern::RecP(Box::new([(
-                    "current".into(),
-                    self.build_pattern_inner(bounds, pointee),
+                    Ident::bound("current"),
+                    self.build_pattern(pointee),
                 )])),
             },
         }
     }
 
-    fn uniq_occ(&self, id: &Ident) -> Ident {
-        let occ = self.subst.borrow().occ(id);
-        if occ == 0 { id.clone() } else { Ident::from_string(format!("{}_{occ}", &**id)) }
-    }
-
     fn build_vc_slice(
         &self,
-        t: &[Term<'tcx>],
-        k: PostCont<'_, 'tcx, Box<[Exp]>>,
-    ) -> Result<Exp, VCError<'tcx>> {
-        self.build_vc_slice_inner(t.len(), t, k)
-    }
-
-    fn build_vc_slice_inner(
-        &self,
-        len: usize,
-        t: &[Term<'tcx>],
-        k: PostCont<'_, 'tcx, Box<[Exp]>>,
-    ) -> Result<Exp, VCError<'tcx>> {
-        if t.is_empty() {
-            k(repeat_n(/* Dummy */ Exp::mk_true(), len).collect())
-        } else {
-            self.build_vc(&t[0], &|v| {
-                self.build_vc_slice_inner(len, &t[1..], &|mut args| {
-                    args[len - t.len()] = v.clone();
-                    k(args)
-                })
-            })
-        }
-    }
-
-    fn ty(&self, ty: Ty<'tcx>) -> Type {
-        translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty)
-    }
-
-    fn self_sig(&self) -> Signature {
-        signature_of(self.ctx, self.names, "".into(), self.self_id)
+        t: &[(&Term<'tcx>, Ident)],
+    ) -> Result<Exp, VCError<'tcx>>  {
+        for &(field, hole) in t.into_iter().rev() {
+            q = self.build_vc(field, &mut Post::new(q, hole))?;
+        signature_of(self.ctx, self.names, Ident::bound(""), self.self_id) // TODO
     }
 
     // Generates the expression to test the validity of the variant for a recursive call.
@@ -610,7 +651,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
         let top_level_args = self.top_level_args();
 
-        let mut subst: Environment =
+        let mut subst: ::why3::exp::Environment =
             top_level_args.into_iter().zip(call_args.iter().cloned()).collect();
         let orig_variant = self.self_sig().contract.variant.unwrap();
         let mut rec_var_exp = orig_variant.clone();
@@ -626,14 +667,23 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
     /// Produces the top-level call expression for the function being verified
     fn top_level_args(&self) -> Vec<Ident> {
-        binders_to_args(self.self_sig().args).0
+let sig = self.self_sig();
+sig.args.iter().map(|(_, nm, _)| nm).cloned().collect()
+}
+
+    fn get_var(&self, s: why3::Ident) -> Option<Ident> {
+        todo!{} // self.renaming.borrow().get(&s)
     }
 
-    fn add_bounds(&self, bounds: HashMap<Ident, Exp>) {
-        self.subst.borrow_mut().add_subst(bounds);
+    fn open_scope(&self) {
+        self.renaming.borrow_mut().open_scope();
     }
 
-    fn pop_bounds(&self) {
-        self.subst.borrow_mut().pop_subst();
+    fn close_scope(&self) {
+        self.renaming.borrow_mut().close_scope();
+    }
+
+    fn fresh(&self, s: why3::Ident) -> Ident{
+        todo!{} // self.renaming.borrow_mut().fresh(s)
     }
 }

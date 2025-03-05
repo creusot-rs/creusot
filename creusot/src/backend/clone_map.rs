@@ -24,9 +24,8 @@ use rustc_middle::{
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use why3::{
-    Ident, QName,
-    declaration::{Attribute, Decl, Span as WSpan, TyDecl},
-};
+    Ident, QName
+    declaration::{Attribute, Decl, Span as WSpan, TyDecl}, IdentString, };
 
 mod elaborator;
 
@@ -94,19 +93,21 @@ pub(crate) trait Namer<'tcx> {
     /// * `def_id` - The id of the type or closure being projected
     /// * `subst` - Substitution that type is being accessed at
     /// * `ix` - The field in that constructor being accessed.
-    fn field(&self, def_id: DefId, subst: GenericArgsRef<'tcx>, ix: FieldIdx) -> QName {
-        let node = match self.tcx().def_kind(def_id) {
-            DefKind::Closure => Dependency::ClosureAccessor(def_id, subst, ix.as_u32()),
-            DefKind::Struct | DefKind::Union => {
-                let field_did =
-                    self.tcx().adt_def(def_id).variants()[VariantIdx::ZERO].fields[ix].did;
-                Dependency::Item(field_did, subst)
-            }
-            _ => unreachable!(),
-        };
+    fn field(&self, def_id: DefId, subst: GenericArgsRef<'tcx>, ix: FieldIdx) -> IdentString {
+    let node = match self.tcx().def_kind(def_id) {
+        DefKind::Closure => Dependency::ClosureAccessor(def_id, subst, ix.as_u32()),
+        DefKind::Struct | DefKind::Union => {
+            let field_did =
+                self.tcx().adt_def(def_id).variants()[VariantIdx::ZERO].fields[ix].did;
+            Dependency::Item(field_did, subst)
+        }
+        _ => unreachable!(),
+    };
 
-        self.dependency(node).qname()
-    }
+
+
+        self.dependency(node).qname().as_ident()
+}
 
     fn eliminator(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         self.dependency(Dependency::Eliminator(def_id, subst)).qname()
@@ -126,7 +127,7 @@ pub(crate) trait Namer<'tcx> {
         self.dependency(Dependency::Builtin(module));
     }
 
-    fn prelude_module_name(&self, module: PreludeModule) -> Box<[Ident]> {
+    fn prelude_module_name(&self, module: PreludeModule) -> Box<[IdentString]> {
         self.dependency(Dependency::Builtin(module));
         let qname: QName = match (module, self.bitwise_mode()) {
             (PreludeModule::Float32, _) => "creusot.float.Float32.".into(),
@@ -223,14 +224,14 @@ impl<'tcx> CloneNames<'tcx> {
                     why3_modl.as_str().replace("$BW$", if self.bitwise_mode { "BW" } else { "" });
                 let qname = QName::from(why3_modl);
                 if qname.module.is_empty() {
-                    return Box::new(Kind::Named(Symbol::intern(&qname.name)));
+                    return Box::new(Kind::Named(Ident::bound(qname.name))); // TODO
                 } else {
                     return Box::new(Kind::UsedBuiltin(qname));
                 }
             }
             Box::new(
                 key.base_ident(tcx).map_or(Kind::Unnamed, |base| {
-                    Kind::Named(self.counts.borrow_mut().freshen(base))
+                    Kind::Named(Ident::fresh(self.counts.borrow_mut().freshen(base).as_str())) // TODO
                 }),
             )
         })
@@ -339,7 +340,7 @@ pub enum Kind {
     /// This does not corresponds to a defined symbol
     Unnamed,
     /// This symbol is locally defined
-    Named(Symbol),
+    Named(Ident),
     /// Used, UsedBuiltin: the symbols in the last argument must be acompanied by a `use` statement in Why3
     UsedBuiltin(QName),
 }
@@ -348,7 +349,7 @@ impl Kind {
     fn ident(&self) -> Ident {
         match self {
             Kind::Unnamed => panic!("Unnamed item"),
-            Kind::Named(nm) => nm.as_str().into(),
+            Kind::Named(nm) => *nm,
             Kind::UsedBuiltin(_) => {
                 panic!("cannot get ident of used module {self:?}")
             }
@@ -358,7 +359,7 @@ impl Kind {
     fn qname(&self) -> QName {
         match self {
             Kind::Unnamed => panic!("Unnamed item"),
-            Kind::Named(nm) => nm.as_str().into(),
+            Kind::Named(nm) => nm.as_str().into(), // TODO
             Kind::UsedBuiltin(qname) => qname.clone().without_search_path(),
         }
     }
@@ -482,7 +483,7 @@ impl<'tcx> Dependencies<'tcx> {
                     } else {
                         return None;
                     };
-                let name = b.0.as_str().into();
+                let name = Ident::fresh(b.0.as_str());
                 Some(WSpan { name, path, start_line, start_column, end_line, end_column })
             })
             .collect();

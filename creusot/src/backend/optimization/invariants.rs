@@ -45,7 +45,7 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
         for (ix, u) in unchanged.iter().enumerate() {
             let Some(pterm) = place_to_term(u, tcx, &body.locals) else { continue };
 
-            let local = Symbol::intern(&format!("old_{}_{ix}", k.as_u32()));
+            let local = why3::Ident::fresh(todo!{}); // Symbol::intern(&format!("old_{}_{ix}", k.as_u32()));
             let subst = ctx.mk_args(&[u.ty(tcx, &body.locals).into()]);
             let ty = Ty::new_adt(ctx.tcx, ctx.adt_def(snap_ty), subst);
 
