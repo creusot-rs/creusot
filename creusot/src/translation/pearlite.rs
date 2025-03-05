@@ -1799,3 +1799,12 @@ fn print_thir_expr(fmt: &mut Formatter, thir: &Thir, expr_id: ExprId) -> std::fm
     }
     Ok(())
 }
+
+// Special Ident used by the translation
+pub(crate) fn result_ident() -> Ident {
+    Ident::new(Symbol::intern("result"), DUMMY_SP)
+}
+
+pub(crate) fn self_ident() -> Ident {
+    Ident::new(Symbol::intern("self"), DUMMY_SP)
+}
