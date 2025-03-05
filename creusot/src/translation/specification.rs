@@ -17,8 +17,8 @@ use rustc_middle::{
     ty::{EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv},
 };
 use rustc_span::{
-    DUMMY_SP, Span, Symbol,
-    symbol::{Ident, kw},
+    Span,
+    symbol::Ident,
 };
 use rustc_type_ir::ClosureKind;
 use std::{
@@ -439,7 +439,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
     let fn_ty = ctx.tcx.type_of(def_id).instantiate_identity();
 
     if let TyKind::Closure(_, subst) = fn_ty.kind() {
-        let self_ = _; // WAS why3::Ident::bound("self"); IDK what this does
+        let self_ = self_ident();
         let kind = subst.as_closure().kind();
         let env_ty = ctx.closure_env_ty(fn_ty, kind, ctx.lifetimes.re_erased);
 
@@ -553,7 +553,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             && let Some(term) = pearlite::type_invariant_term(
                 ctx,
                 def_id,
-                _, // TODO, WAS why3::Ident::bound("result"), // IDK what this does
+                result_ident(),
                 ret_ty_span.unwrap_or_else(|| ctx.tcx.def_span(def_id)),
                 output,
             )
