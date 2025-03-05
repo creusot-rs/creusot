@@ -15,7 +15,7 @@ use rustc_middle::ty::{
     ParamTy, Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypingEnv,
     TypingMode,
 };
-use rustc_span::{DUMMY_SP, Span, Symbol};
+use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::{
     error_reporting::InferCtxtErrorExt,
     traits::{FulfillmentError, ImplSource, InCrate, TraitEngineExt, orphan_check_trait_ref},
@@ -93,7 +93,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             let predicates = self
                 .extern_spec(trait_item)
                 .map(|p| p.predicates_for(self.tcx, refn_subst))
-                .unwrap_or_else(Vec::new);
+                .unwrap_or_else(|| Box::new([]));
 
             let infcx =
                 self.tcx.infer_ctxt().ignoring_regions().build(TypingMode::non_body_analysis());
@@ -158,7 +158,7 @@ fn logic_refinement_term<'tcx>(
 
     let post_refn = impl_postcond
         .implies(trait_postcond)
-        .forall(ctx.tcx, (Symbol::intern("result"), retty))
+        .forall(ctx.tcx, (result_ident(), retty))  // TODO Rename the "result" variables in requires
         .span(span);
 
     let mut refn = trait_precond.implies(impl_precond.conj(post_refn));
@@ -173,7 +173,7 @@ fn logic_refinement_term<'tcx>(
 
 pub(crate) fn evaluate_additional_predicates<'tcx>(
     infcx: &InferCtxt<'tcx>,
-    p: Vec<Predicate<'tcx>>,
+    p: impl IntoIterator<Item = Predicate<'tcx>>,
     param_env: ParamEnv<'tcx>,
     sp: Span,
 ) -> Result<(), Vec<FulfillmentError<'tcx>>> {
