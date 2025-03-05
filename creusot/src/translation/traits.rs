@@ -139,11 +139,11 @@ fn logic_refinement_term<'tcx>(
     let span = ctx.tcx.def_span(impl_item_id);
     let mut args = Vec::new();
     let mut subst = HashMap::new();
-    for (ix, ((id, _, _), (id2, _, ty))) in
+    for (ix, ((id, _), (id2, ty))) in
         trait_sig.inputs.iter().zip(impl_sig.inputs.iter()).enumerate()
     {
         args.push((*id, *ty));
-        subst.insert(id2, Term { ty: *ty, kind: TermKind::Var(*id), span });
+        subst.insert(*id2, Term { ty: *ty, kind: TermKind::Var(*id), span });
     }
 
     let mut impl_precond = impl_sig.contract.requires_conj(ctx.tcx);

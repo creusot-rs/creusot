@@ -47,7 +47,7 @@ pub struct PreContract<'tcx> {
 }
 
 impl<'tcx> PreContract<'tcx> {
-    pub(crate) fn subst(&mut self, subst: &HashMap<why3::Ident, Term<'tcx>>) {
+    pub(crate) fn subst(&mut self, subst: &HashMap<Ident, Term<'tcx>>) {
         for term in self.terms_mut() {
             term.subst(subst);
         }
@@ -179,7 +179,7 @@ impl ContractClauses {
 
 #[derive(Debug)]
 struct ScopeTree<'tcx>(
-    HashMap<SourceScope, (HashSet<(Symbol, mir::Place<'tcx>)>, Option<SourceScope>)>,
+    HashMap<SourceScope, (HashSet<(Ident, mir::Place<'tcx>)>, Option<SourceScope>)>,
 );
 
 impl<'tcx> ScopeTree<'tcx> {
@@ -202,7 +202,7 @@ impl<'tcx> ScopeTree<'tcx> {
 
             let entry = scope_tree.entry(scope).or_default();
 
-            let name = var_info.name;
+            let name = Ident{ name: var_info.name, span: var_info.source_info.span };  // TODO Pray this works
             entry.0.insert((name, p));
 
             if let Some(parent) = scope_data.parent_scope {
@@ -225,7 +225,7 @@ impl<'tcx> ScopeTree<'tcx> {
         ScopeTree(scope_tree)
     }
 
-    fn visible_places(&self, scope: SourceScope) -> HashMap<Symbol, mir::Place<'tcx>> {
+    fn visible_places(&self, scope: SourceScope) -> HashMap<Ident, mir::Place<'tcx>> {
         let mut locals = HashMap::new();
         let mut to_visit = Some(scope);
 
@@ -244,9 +244,9 @@ impl<'tcx> ScopeTree<'tcx> {
 pub(crate) fn inv_subst<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &Body<'tcx>,
-    locals: &HashMap<Local, why3::Ident>,
+    locals: &HashMap<Local, Ident>,
     info: SourceInfo,
-) -> HashMap<Symbol, Term<'tcx>> {
+) -> HashMap<Ident, Term<'tcx>> {
     let mut args = HashMap::new();
 
     let tree = ScopeTree::build(body);
@@ -268,7 +268,7 @@ pub(crate) fn inv_subst<'tcx>(
 fn place_to_term<'tcx>(
     tcx: TyCtxt<'tcx>,
     p: mir::Place<'tcx>,
-    locals: &HashMap<Local, why3::Ident>,
+    locals: &HashMap<Local, Ident>,
     body: &Body<'tcx>,
 ) -> Term<'tcx> {
     let ty = p.ty(&body.local_decls, tcx).ty;
@@ -416,7 +416,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
 
 #[derive(TypeVisitable, TypeFoldable, Debug, Clone)]
 pub struct PreSignature<'tcx> {
-    pub(crate) inputs: Vec<(why3::Ident, Span, Ty<'tcx>)>,
+    pub(crate) inputs: Vec<(Ident, Ty<'tcx>)>,
     pub(crate) output: Ty<'tcx>,
     pub(crate) contract: PreContract<'tcx>,
     // trusted: bool,
@@ -439,7 +439,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
     let fn_ty = ctx.tcx.type_of(def_id).instantiate_identity();
 
     if let TyKind::Closure(_, subst) = fn_ty.kind() {
-        let self_ = why3::Ident::bound("self");
+        let self_ = _; // WAS why3::Ident::bound("self"); IDK what this does
         let kind = subst.as_closure().kind();
         let env_ty = ctx.closure_env_ty(fn_ty, kind, ctx.lifetimes.re_erased);
 
@@ -512,7 +512,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             {
                 ctx.crash_and_error(ident.span, "`result` is not allowed as a parameter name")
             }
-            (why3::Ident::fresh(ident.as_str()), ident.span, ty) // TODO: do we need to remember the original ident?
+            (ident, ty) // TODO: do we need to remember the original ident?
         })
         .collect();
 
@@ -534,11 +534,11 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             .map(|&i| if ctx.tcx.is_closure_like(def_id) { i + 1 } else { i })
             .collect();
         let mut requires = Vec::new();
-        for (i, (name, span, ty)) in inputs.iter().enumerate() {
+        for (i, (ident, ty)) in inputs.iter().enumerate() {
             if params_open_inv.contains(&i) {
                 continue;
             }
-            if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
+            if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *ident, ident.span, *ty) {
                 let term = EarlyBinder::bind(term).instantiate(ctx.tcx, subst);
                 let expl = format!("expl:{} '{}' type invariant", fn_name, name.as_str());
                 requires.push(Condition { term, expl });
@@ -553,7 +553,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             && let Some(term) = pearlite::type_invariant_term(
                 ctx,
                 def_id,
-                why3::Ident::bound("result"),
+                _, // TODO, WAS why3::Ident::bound("result"), // IDK what this does
                 ret_ty_span.unwrap_or_else(|| ctx.tcx.def_span(def_id)),
                 output,
             )
