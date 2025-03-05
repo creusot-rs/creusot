@@ -1,4 +1,4 @@
-use std::{borrow::Cow, fmt::Write, ops::Deref, sync::{atomic::AtomicU64, LazyLock, RwLock}};
+use std::{fmt::Write, sync::{atomic::AtomicU64, LazyLock, RwLock}};
 
 use indexmap::Equivalent;
 #[cfg(feature = "serialize")]

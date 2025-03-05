@@ -571,10 +571,6 @@ impl Exp {
         Exp::Const(Constant::Uint(value, None))
     }
 
-    pub fn unit() -> Self {
-        Exp::Tuple(Vec::new())
-    }
-
     pub fn reassociate(&mut self) {
         struct Reassociate;
 

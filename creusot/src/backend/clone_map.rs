@@ -24,7 +24,7 @@ use rustc_middle::{
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use why3::{
-    Ident, QName
+    Ident, QName,
     declaration::{Attribute, Decl, Span as WSpan, TyDecl}, IdentString, };
 
 mod elaborator;
