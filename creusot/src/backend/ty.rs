@@ -2,7 +2,7 @@ use std::iter::once;
 
 use crate::{
     backend::Why3Generator,
-    contracts_items::{get_builtin, get_int_ty, is_int_ty, is_logic, is_snap_ty, is_trusted},
+    contracts_items::{get_builtin, get_int_ty, is_logic, is_snap_ty, is_trusted},
     ctx::*,
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
@@ -15,8 +15,7 @@ use why3::{
     coma::{Arg, Defn, Expr, Param},
     declaration::{AdtDecl, ConstructorDecl, Decl, FieldDecl, SumRecord, TyDecl},
     exp::{Exp, Trigger},
-    ty::Type as MlT,
-};
+    ty::Type as MlT, };
 
 pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
@@ -99,15 +98,15 @@ pub(crate) fn translate_closure_ty<'tcx, N: Namer<'tcx>>(
     did: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Option<TyDecl> {
-    let ty_name = names.ty(did, subst).as_ident();
+    let ty_name = Ident::bound(names.ty(did, subst).as_ident().as_str());
     let closure_subst = subst.as_closure();
     let fields: Box<[_]> = closure_subst
         .upvar_tys()
         .iter()
         .enumerate()
         .map(|(ix, uv)| FieldDecl {
+            name: Ident::bound(names.field(did, subst, ix.into()).as_str()),
             ty: translate_ty(ctx, names, DUMMY_SP, uv),
-            name: names.field(did, subst, ix.into()).as_ident(),
         })
         .collect();
 
@@ -137,19 +136,19 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
 ) -> Vec<Decl> {
     // Trusted types (opaque)
     if is_trusted(ctx.tcx, did) {
-        let ty_name = names.ty(did, subst).as_ident();
+        let ty_name = Ident::bound(names.ty(did, subst).as_ident());
         return vec![Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: Box::new([]) })];
     }
 
     let adt = ctx.tcx.adt_def(did);
-    let ty_name = names.ty(did, subst).as_ident();
+    let ty_name = Ident::bound(names.ty(did, subst).as_ident());
 
     let sumrecord = if adt.is_enum() {
         SumRecord::Sum(
             adt.variants()
                 .iter()
                 .map(|var_def| ConstructorDecl {
-                    name: names.constructor(var_def.def_id, subst).as_ident(),
+                    name: Ident::bound(names.constructor(var_def.def_id, subst).as_ident()),
                     fields: var_def
                         .fields
                         .iter()
@@ -169,7 +168,7 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
             .fields
             .iter_enumerated()
             .map(|(ix, f)| {
-                let name = names.field(did, subst, ix).as_ident();
+                let name = Ident::bound(names.field(did, subst, ix));
                 let ty = f.ty(ctx.tcx, subst);
                 let ty = ctx.normalize_erasing_regions(typing_env, ty);
                 let ty = translate_ty(ctx, names, ctx.def_span(f.did), ty);
@@ -200,9 +199,9 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
         .iter()
         .map(|fld| {
             let id = if fld.name.as_str().as_bytes()[0].is_ascii_digit() {
-                Ident::build(&format!("field_{}", fld.name))
+                Ident::fresh(&format!("field_{}", fld.name))
             } else {
-                Ident::build(fld.name.as_str())
+                Ident::fresh(fld.name.as_str())
             };
             let ty =
                 translate_ty(ctx, names, DUMMY_SP, names.normalize(ctx, fld.ty(ctx.tcx, subst)));
@@ -216,16 +215,21 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
     let constr = names.constructor(variant_id, subst);
     let cons_test = Exp::qvar(constr).app(fields.iter().map(|(nm, _)| Exp::var(nm.clone())));
 
-    let ret = Expr::Symbol("ret".into())
-        .app(fields.iter().map(|(nm, _)| Arg::Term(Exp::var(nm.clone()))));
+    let ret = Ident::fresh("ret");
+    let input = Ident::fresh("input");
+    let good = Ident::fresh("good");
+    let bad = Ident::fresh("bad");
+
+    let ret_call = Expr::Variable(ret)
+        .app(fields.iter().map(|(nm, _)| Arg::Term(Exp::Var(nm.clone()))));
 
     let good_branch: Defn = Defn {
-        name: format!("good").into(),
+        name: good,
         attrs: vec![],
         params: field_args.clone(),
         body: Expr::Assert(
-            Box::new(cons_test.clone().eq(Exp::var("input"))),
-            Box::new(Expr::BlackBox(Box::new(ret))),
+            Box::new(cons_test.clone().eq(Exp::Var(input))),
+            Box::new(Expr::BlackBox(Box::new(ret_call))),
         ),
     };
 
@@ -235,27 +239,27 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
             Expr::BlackBox(Box::new(Expr::Assert(Box::new(Exp::mk_false()), Box::new(Expr::Any))));
 
         let negative_assertion = if fields.is_empty() {
-            cons_test.neq(Exp::var("input"))
+            cons_test.neq(Exp::Var(input))
         } else {
             // TODO: Replace this with a pattern match to generat more readable goals
             Exp::Forall(
                 fields.clone(),
                 Box::new([Trigger::single(cons_test.clone().ascribe(ty.clone()))]),
-                Box::new(cons_test.neq(Exp::var("input"))),
+                Box::new(cons_test.neq(Exp::Var(input))),
             )
         };
-        Some(Defn::simple("bad", Expr::Assert(Box::new(negative_assertion), Box::new(fail))))
+        Some(Defn::simple(bad, Expr::Assert(Box::new(negative_assertion), Box::new(fail))))
     } else {
         None
     };
 
-    let ret_cont = Param::Cont("ret".into(), Box::new([]), field_args);
+    let ret_cont = Param::Cont(ret, Box::new([]), field_args);
 
-    let input = Param::Term("input".into(), ty);
+    let input = Param::Term(input, ty);
 
     let branches = once(good_branch).chain(bad_branch).collect();
     Decl::Coma(Defn {
-        name: names.eliminator(variant_id, subst).as_ident(),
+        name: Ident::bound(names.eliminator(variant_id, subst).as_ident()),
         params: Box::new([input, ret_cont]),
         body: Expr::Defn(Box::new(Expr::Any), false, branches),
         attrs: vec![],
@@ -280,17 +284,13 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
                 let fields = fields
                     .into_iter()
                     .enumerate()
-                    .map(|(ix, f)| (names.field(did, subst, ix.into()).as_ident().to_string(), f))
+                    .map(|(ix, f)| (names.field(did, subst, ix.into()), f))
                     .collect();
                 Exp::Record { fields }
             }
         }
         _ => unreachable!(),
     }
-}
-
-pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
-    if let TyKind::Adt(def, _) = ty.kind() { is_int_ty(tcx, def.did()) } else { false }
 }
 
 pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &Why3Generator<'tcx>, names: &N) -> MlT {

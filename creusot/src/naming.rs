@@ -6,7 +6,7 @@ use rustc_hir::{
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
 use std::{iter::once, path::PathBuf};
-use why3::Ident;
+use why3::IdentString;
 
 use crate::very_stable_hash::get_very_stable_hash;
 
@@ -51,16 +51,16 @@ pub(crate) fn item_symb(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Symbol {
     }
 }
 
-pub(crate) fn ident_of(sym: Symbol) -> Ident {
+pub(crate) fn ident_of(sym: Symbol) -> IdentString {
     let mut id = sym.to_string();
 
     id[..1].make_ascii_lowercase();
 
     if sym.as_str() == id {
-        Ident::build(&id)
+        IdentString::from(id)
     } else {
         id += &"'";
-        Ident::build(&id)
+        IdentString::from(id)
     }
 }
 
@@ -124,26 +124,26 @@ impl ModulePath {
 
     // `M_krate__modl__f`
     // Note: each fragment doesn't need to go through Ident (unlike why3_qname and file_name)
-    pub fn why3_ident(&self) -> Ident {
+    pub fn why3_ident(&self) -> IdentString {
         let mut path = "M_".to_owned();
         for m in &self.path {
             path += m.as_str();
             path += "__";
         }
         path += self.basename.as_str();
-        Ident::from_string(path)
+        IdentString::from(path)
     }
 
     // `prefix/krate/modl/M_f.coma`
-    // Note: pass each fragment through Ident::build() to filter out coma keywords
+    // Note: pass each fragment through IdentString::from() to filter out coma keywords
     // so that this produces the same names as `why3_qname()`.
-    pub fn file_name(&self, prefix: &Vec<Ident>) -> PathBuf {
+    pub fn file_name(&self, prefix: &Vec<IdentString>) -> PathBuf {
         let mut path = PathBuf::new();
         for m in prefix {
             path.push(m.as_str());
         }
         for m in &self.path {
-            path.push(Ident::build(m.as_str()).as_str());
+            path.push(IdentString::from(m.as_str()).as_str());
         }
         path.push(format!("M_{}.coma", self.basename));
         path
@@ -179,9 +179,4 @@ pub(crate) fn ident_path_segments(tcx: TyCtxt, def_id: DefId) -> Vec<String> {
             Segment::Other(data) => translate_name(&data.to_string()),
         }))
         .collect()
-}
-
-pub(crate) fn anonymous_param_symbol(idx: usize) -> Symbol {
-    let name = format!("_{}", idx + 1);
-    Symbol::intern(&name)
 }

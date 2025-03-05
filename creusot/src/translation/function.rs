@@ -93,7 +93,7 @@ struct BodyTranslator<'a, 'tcx> {
     borrows: Option<&'a BorrowSet<'tcx>>,
 
     // Translated locals
-    locals: HashMap<Local, Symbol>,
+    locals: HashMap<Local, why3::Ident>,
 
     vars: LocalDecls<'tcx>,
 }
@@ -711,7 +711,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     .and_then(|l| self.locals.get(&l))
                     && free_vars.contains(l)
                 {
-                    let msg = format!("Use of borrowed or uninitialized variable {}", l);
+                    let msg = format!("Use of borrowed or uninitialized variable {}", l.as_str());
                     self.ctx.crash_and_error(term.span, &msg);
                 }
             }
@@ -730,51 +730,28 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 fn translate_vars<'tcx>(
     body: &Body<'tcx>,
     erased_locals: &MixedBitSet<Local>,
-) -> (LocalDecls<'tcx>, HashMap<Local, Symbol>) {
+) -> (LocalDecls<'tcx>, HashMap<Local, why3::Ident>) {
     let mut vars = LocalDecls::with_capacity(body.local_decls.len());
     let mut locals = HashMap::new();
 
-    use mir::VarDebugInfoContents::Place;
-
-    let mut names = HashMap::new();
     for (loc, d) in body.local_decls.iter_enumerated() {
         if erased_locals.contains(loc) {
             continue;
         }
-        let sym = if !d.is_user_variable() {
-            LocalIdent::anon(loc)
+        let ident = if !d.is_user_variable() {
+            why3::Ident::fresh(format!{"_{}", loc.index()})
         } else {
             let x = body.var_debug_info.iter().find(|var_info| match var_info.value {
-                Place(p) => p.as_local().map(|l| l == loc).unwrap_or(false),
+                mir::VarDebugInfoContents::Place(p) => p.as_local().map(|l| l == loc).unwrap_or(false),
                 _ => false,
             });
 
             let debug_info = x.expect("expected user variable to have name");
-
-            let cnt = names.entry(debug_info.name).or_insert(0);
-
-            let sym = if *cnt == 0 {
-                debug_info.name
-            } else {
-                Symbol::intern(&format!("{}{}", debug_info.name, cnt))
-            };
-
-            let sym = LocalIdent::dbg_raw(loc, sym);
-
-            *cnt += 1;
-            sym
+            why3::Ident::fresh(debug_info.name.as_str())
         };
-
-        let symbol = sym.symbol();
-        let mut i = 0;
-        let mut s = symbol;
-        while vars.contains_key(&s) {
-            s = Symbol::intern(&format!("{}_{i}", symbol.as_str()));
-            i += 1;
-        }
-        locals.insert(loc, s);
+        locals.insert(loc, ident);
         let is_arg = 0 < loc.index() && loc.index() <= body.arg_count;
-        vars.insert(s, LocalDecl {
+        vars.insert(ident, LocalDecl {
             span: d.source_info.span,
             ty: d.ty,
             temp: !d.is_user_variable(),
@@ -814,20 +791,12 @@ impl<'tcx> TranslationCtx<'tcx> {
 
         let arg_ty = Ty::new_tup(self.tcx, &args_tys);
 
-        let arg_tuple = Term::var(Symbol::intern("args"), arg_ty);
+        let arg_tuple = Term::var(why3::Ident::bound("args"), arg_ty);
 
         let arg_pat = pearlite::Pattern::Tuple(
             args_nms
                 .iter()
-                .enumerate()
-                .map(|(idx, nm)| {
-                    if nm.is_empty() {
-                        // We skipped the first element
-                        pearlite::Pattern::Binder(anonymous_param_symbol(idx + 1))
-                    } else {
-                        pearlite::Pattern::Binder(*nm)
-                    }
-                })
+                .map(|nm| pearlite::Pattern::Binder(*nm))
                 .collect(),
         );
 
@@ -836,7 +805,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             kind,
             self.lifetimes.re_erased,
         );
-        let self_ = Term::var(Symbol::intern("self"), env_ty);
+        let self_ = Term::var(why3::Ident::bound("self"), env_ty);
         let params: Vec<_> =
             args_nms.iter().cloned().zip(args_tys).map(|(nm, ty)| Term::var(nm, ty)).collect();
 
@@ -1146,14 +1115,14 @@ pub(crate) struct ClosureSubst<'a, 'tcx> {
     self_: Term<'tcx>,
     old_self: Option<Term<'tcx>>,
     self_consumed: bool,
-    map: IndexMap<Symbol, (UpvarCapture, Ty<'tcx>, FieldIdx)>,
-    bound: HashSet<Symbol>,
+    map: IndexMap<why3::Ident, (UpvarCapture, Ty<'tcx>, FieldIdx)>,
+    bound: HashSet<why3::Ident>,
     pub use_of_consumed_var_error: Option<Span>,
 }
 
 impl<'a, 'tcx> ClosureSubst<'a, 'tcx> {
     // TODO: Simplify this logic.
-    fn var(&mut self, x: Symbol, span: Span) -> Option<Term<'tcx>> {
+    fn var(&mut self, x: why3::Ident, span: Span) -> Option<Term<'tcx>> {
         let (ck, ty, ix) = *self.map.get(&x)?;
 
         let proj = Term {
@@ -1178,7 +1147,7 @@ impl<'a, 'tcx> ClosureSubst<'a, 'tcx> {
         }
     }
 
-    fn old(&self, x: Symbol, span: Span) -> Option<Term<'tcx>> {
+    fn old(&self, x: why3::Ident, span: Span) -> Option<Term<'tcx>> {
         let (ck, ty, ix) = *self.map.get(&x)?;
 
         let old_self = self.old_self.clone().unwrap_or_else(|| {
@@ -1218,8 +1187,8 @@ impl<'a, 'tcx> TermVisitorMut<'tcx> for ClosureSubst<'a, 'tcx> {
             }
             TermKind::Quant { binder, .. } => {
                 let mut bound = self.bound.clone();
-                for name in &binder.0 {
-                    bound.insert(name.name);
+                for (name, _) in binder {
+                    bound.insert(*name);
                 }
                 std::mem::swap(&mut self.bound, &mut bound);
                 super_visit_mut_term(term, self);

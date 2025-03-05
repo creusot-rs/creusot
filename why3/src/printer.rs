@@ -9,9 +9,8 @@ use crate::{
         self, AdtDecl, Attribute, Axiom, ConstructorDecl, Contract, Decl, DeclKind, FieldDecl,
         Goal, LogicDecl, LogicDefn, Meta, MetaArg, MetaIdent, Module, Predicate, Signature, Span,
         SumRecord, TyDecl, Use,
-    },
-    exp::{AssocDir, BinOp, Binder, Constant, Pattern, Precedence, Trigger, UnOp},
-    ty::Type,
+    }, exp::{AssocDir, BinOp, Binder, Constant, Pattern, Precedence, Trigger, UnOp}, ty::Type,
+IdentString,
 };
 use num::{Float, Zero};
 use pretty::*;
@@ -51,12 +50,6 @@ macro_rules! parens {
     };
 }
 
-macro_rules! ty_parens {
-    ($alloc:ident, $e:ident) => {
-        if $e.complex() { $e.pretty($alloc).parens() } else { $e.pretty($alloc) }
-    };
-}
-
 fn parens<'b, 'a: 'b, A: DocAllocator<'a>>(
     alloc: &'a A,
     prec: Precedence,
@@ -75,6 +68,12 @@ where
     } else {
         child.pretty(alloc)
     }
+}
+
+macro_rules! ty_parens {
+    ($alloc:ident, $e:ident) => {
+        if $e.complex() { $e.pretty($alloc).parens() } else { $e.pretty($alloc) }
+    };
 }
 
 impl Print for Span {
@@ -134,7 +133,7 @@ impl Print for Module {
     {
         let doc = alloc
             .text("module ")
-            .append(&*self.name)
+            .append(self.name.as_str())
             .append(if self.attrs.is_empty() {
                 alloc.nil()
             } else {
@@ -304,7 +303,7 @@ impl Print for Use {
         alloc
             .text("use ")
             .append(if self.export { alloc.text("export ") } else { alloc.nil() })
-            .append(alloc.intersperse(self.name.iter().map(|t| alloc.text(&t.0)), "."))
+            .append(alloc.intersperse(self.name.iter().map(|t| alloc.text(t.as_str())), "."))
             .append(if let Some(as_) = &self.as_ {
                 alloc.text(" as ").append(as_.pretty(alloc))
             } else {
@@ -412,7 +411,7 @@ impl Print for Type {
     {
         use Type::*;
         match self {
-            TVar(v) => alloc.text(format!("'{}", v.0)),
+            TVar(v) => alloc.text(format!("'{}", v.as_str())),
             TConstructor(ty) => ty.pretty(alloc),
             TFun(a, b) => ty_parens!(alloc, a).append(" -> ").append(ty_parens!(alloc, b)),
             TApp(tyf, args) => {
@@ -459,7 +458,7 @@ impl Print for Exp {
             Exp::Var(v) => v.pretty(alloc),
             Exp::QVar(v) => v.pretty(alloc),
             Exp::RecField { record, label } => {
-                parens!(alloc, self.precedence().next(), record).append(".").append(label)
+                parens!(alloc, self.precedence().next(), record).append(".").append(label.as_str())
             }
 
             Exp::Tuple(args) => alloc
@@ -596,7 +595,7 @@ impl Print for Exp {
                     alloc
                         .intersperse(
                             updates.iter().map(|(nm, a)| {
-                                alloc.text(nm).append(" = ").append(parens!(
+                                alloc.text(nm.as_str()).append(" = ").append(parens!(
                                     alloc,
                                     Precedence::Attr.next(),
                                     a
@@ -615,7 +614,7 @@ impl Print for Exp {
                     alloc
                         .intersperse(
                             fields.iter().map(|(nm, a)| {
-                                alloc.text(nm).append(" = ").append(parens!(
+                                alloc.text(nm.as_str()).append(" = ").append(parens!(
                                     alloc,
                                     Precedence::Attr.next(),
                                     a
@@ -908,7 +907,16 @@ impl Print for FieldDecl {
     where
         A::Doc: Clone,
     {
-        alloc.text(&self.name).append(alloc.text(": ")).append(self.ty.pretty(alloc))
+        alloc.text(self.name.as_str()).append(alloc.text(": ")).append(self.ty.pretty(alloc))
+    }
+}
+
+impl Print for IdentString {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(&'a self, alloc: &'a A) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        alloc.text(self.as_str())
     }
 }
 
@@ -917,7 +925,7 @@ impl Print for Ident {
     where
         A::Doc: Clone,
     {
-        alloc.text(&self.0)
+        alloc.text(self.as_str())
     }
 }
 
@@ -926,7 +934,7 @@ impl Print for QName {
     where
         A::Doc: Clone,
     {
-        let module_path = self.module.iter().map(|t| alloc.text(&t.0));
-        alloc.intersperse(module_path.chain([alloc.text(self.name.0.clone())]), ".")
+        let module_path = self.module.iter().map(|t| alloc.text(t.as_str()));
+        alloc.intersperse(module_path.chain([alloc.text(self.name.as_str())]), ".")
     }
 }
