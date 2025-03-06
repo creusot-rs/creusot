@@ -6,7 +6,7 @@ use crate::{
         is_trusted_function,
         optimization::{gather_usage, infer_proph_invariants, simplify_fmir},
         place::{Focus, create_assign_inner, projections_to_expr, rplace_to_expr},
-        signature::signature_of,
+        signature::sig_to_why3,
         term::{lower_pat, lower_pure},
         ty::{
             constructor, floatty_to_prelude, int_ty, ity_to_prelude, translate_ty, uty_to_prelude,
@@ -160,7 +160,9 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
 
     // Remove the invariant from the contract here??
     let mut sig = if body_id.promoted.is_none() {
-        signature_of(ctx, names, name, body_id.def_id())
+        let def_id = body_id.def_id();
+        let pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, ctx.typing_env(def_id));
+        sig_to_why3(ctx, names, name, pre_sig, def_id)
     } else {
         let ret = ret.unwrap();
         Signature {

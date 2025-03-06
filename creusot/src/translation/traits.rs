@@ -139,13 +139,9 @@ fn logic_refinement_term<'tcx>(
     let span = ctx.tcx.def_span(impl_item_id);
     let mut args = Vec::new();
     let mut subst = HashMap::new();
-    for (ix, ((id, _, _), (id2, _, ty))) in
-        trait_sig.inputs.iter().zip(impl_sig.inputs.iter()).enumerate()
-    {
-        let id = if id.is_empty() { Symbol::intern(&format!("_{}'", ix + 1)) } else { *id };
-        let id2 = if id2.is_empty() { Symbol::intern(&format!("_{}'", ix + 1)) } else { *id2 };
-        args.push((id.clone(), *ty));
-        subst.insert(id2, Term { ty: *ty, kind: TermKind::Var(id), span });
+    for ((id, _, _), (id2, _, ty)) in trait_sig.inputs.iter().zip(impl_sig.inputs.iter()) {
+        args.push((*id, *ty));
+        subst.insert(*id2, Term { ty: *ty, kind: TermKind::Var(*id), span });
     }
 
     let mut impl_precond = impl_sig.contract.requires_conj(ctx.tcx);

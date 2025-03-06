@@ -26,7 +26,6 @@ use crate::{
     ctx::{BodyId, ItemType},
     function::closure_resolve,
     pearlite::{Term, normalize},
-    specification::PreSignature,
     traits::{self, TraitResolved},
 };
 use petgraph::graphmap::DiGraphMap;
@@ -113,20 +112,21 @@ impl DepElab for ProgElab {
         ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
     ) -> Vec<Decl> {
+        let typing_env = elab.typing_env;
+        let mut names = elab.namer(dep);
+        let name = names.dependency(dep).ident();
+
         if let Dependency::Item(def_id, subst) = dep
             && ctx.def_kind(def_id) != DefKind::Closure
         {
-            let sig = ctx.sig(def_id).clone();
-            let sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
-            let sig = sig.normalize(ctx.tcx, elab.typing_env);
-            let sig = signature(ctx, elab, sig, dep);
+            let pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
+                .instantiate(ctx.tcx, subst)
+                .normalize(ctx.tcx, typing_env);
+            let sig = sig_to_why3(ctx, &mut names, name, pre_sig, def_id);
             return vec![program::val(ctx, sig)];
         }
 
         // Inline the body of closures and promoted
-        let mut names = elab.namer(dep);
-        let name = names.dependency(dep).ident();
-
         let bid = match dep {
             Dependency::Item(def_id, _) => BodyId { def_id: def_id.expect_local(), promoted: None },
             Dependency::Promoted(def_id, prom) => BodyId { def_id, promoted: Some(prom) },
@@ -138,19 +138,6 @@ impl DepElab for ProgElab {
     }
 }
 
-// What is the difference with `sig` below and `sigs` in logic?
-fn signature<'tcx>(
-    ctx: &Why3Generator<'tcx>,
-    elab: &mut Expander<'_, 'tcx>,
-    sig: PreSignature<'tcx>,
-    dep: Dependency<'tcx>,
-) -> Signature {
-    let mut names = elab.namer(dep);
-    let (def_id, _) = dep.did().unwrap();
-    let id = names.dependency(dep).ident();
-    sig_to_why3(ctx, &mut names, id, sig, def_id)
-}
-
 struct LogicElab;
 
 impl DepElab for LogicElab {
@@ -159,13 +146,7 @@ impl DepElab for LogicElab {
         ctx: &Why3Generator<'tcx>,
         dep: Dependency<'tcx>,
     ) -> Vec<Decl> {
-        assert!(matches!(dep, Dependency::Item(_, _) | Dependency::TyInvAxiom(_)));
-
-        // TODO: Fold into `term`, but requires first some sort of
-        // handling for axioms
-        if let Dependency::TyInvAxiom(ty) = dep {
-            return expand_ty_inv_axiom(elab, ctx, ty);
-        }
+        assert!(matches!(dep, Dependency::Item(_, _)));
 
         let (def_id, subst) = dep.did().unwrap();
 
@@ -178,10 +159,10 @@ impl DepElab for LogicElab {
         }
 
         let kind = match ctx.item_type(def_id) {
-            ItemType::Logic { .. } => Some(DeclKind::Function),
-            ItemType::Predicate { .. } => Some(DeclKind::Predicate),
-            ItemType::Constant => Some(DeclKind::Constant),
-            _ => None,
+            ItemType::Logic { .. } => DeclKind::Function,
+            ItemType::Predicate { .. } => DeclKind::Predicate,
+            ItemType::Constant => DeclKind::Constant,
+            _ => unreachable!(),
         };
 
         if get_builtin(ctx.tcx, def_id).is_some() {
@@ -198,14 +179,15 @@ impl DepElab for LogicElab {
             }
         }
 
-        let sig = ctx.sig(def_id).clone();
-        let mut sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
-        sig = sig.normalize(ctx.tcx, elab.typing_env);
+        let typing_env = elab.typing_env;
+        let pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
+            .instantiate(ctx.tcx, subst)
+            .normalize(ctx.tcx, typing_env);
 
         let trait_resol = ctx
             .tcx
             .trait_of_item(def_id)
-            .map(|_| traits::TraitResolved::resolve_item(ctx.tcx, elab.typing_env, def_id, subst));
+            .map(|_| traits::TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst));
 
         let is_opaque = matches!(
             trait_resol,
@@ -213,14 +195,13 @@ impl DepElab for LogicElab {
         ) || !ctx.is_transparent_from(def_id, elab.self_key.did().unwrap().0)
             || is_trusted_function(ctx.tcx, def_id);
 
-        let mut sig = signature(ctx, elab, sig, dep);
-        if !is_opaque && let Some(term) = term(ctx, elab.typing_env, dep) {
-            lower_logical_defn(ctx, &mut elab.namer(dep), sig, kind, term)
+        let mut names = elab.namer(dep);
+        let name = names.dependency(dep).ident();
+        let sig = sig_to_why3(ctx, &mut names, name, pre_sig, def_id);
+        if !is_opaque && let Some(term) = term(ctx, typing_env, dep) {
+            lower_logical_defn(ctx, &mut names, sig, kind, term)
         } else {
-            if let Some(DeclKind::Predicate) = kind {
-                sig.retty = None;
-            }
-            val(ctx, sig, kind)
+            val(sig, kind)
         }
     }
 }
@@ -365,7 +346,7 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
                     ProgElab::expand(self, ctx, dep)
                 }
             }
-            Dependency::TyInvAxiom(_) => LogicElab::expand(self, ctx, dep),
+            Dependency::TyInvAxiom(ty) => expand_ty_inv_axiom(self, ctx, ty),
             Dependency::ClosureAccessor(_, _, _) => vec![],
             Dependency::Builtin(b) => {
                 vec![Decl::UseDecl(Use {
@@ -436,29 +417,25 @@ fn expand_laws<'tcx>(
     }
 }
 
-fn val(ctx: &Why3Generator, mut sig: Signature, kind: Option<DeclKind>) -> Vec<Decl> {
-    sig.contract.variant = None;
-    if let Some(k) = kind {
-        let ax = if !sig.contract.is_empty() { Some(spec_axiom(&sig)) } else { None };
-
-        sig.contract = Default::default();
-        if let DeclKind::Predicate = k {
-            sig.retty = None;
-        };
-
-        if let DeclKind::Constant = k {
-            return vec![Decl::LogicDecl(LogicDecl { kind, sig })];
-        }
-
-        let mut d = vec![Decl::LogicDecl(LogicDecl { kind, sig })];
-
-        if let Some(ax) = ax {
-            d.push(Decl::Axiom(ax))
-        }
-        d
-    } else {
-        vec![program::val(ctx, sig)]
+fn val(mut sig: Signature, kind: DeclKind) -> Vec<Decl> {
+    if let DeclKind::Predicate = kind {
+        sig.retty = None;
     }
+    sig.contract.variant = None;
+
+    let ax = if !sig.contract.ensures.is_empty() { Some(spec_axiom(&sig)) } else { None };
+
+    sig.contract = Default::default();
+
+    let mut d = vec![Decl::LogicDecl(LogicDecl { kind: Some(kind), sig })];
+
+    if !matches!(kind, DeclKind::Constant)
+        && let Some(ax) = ax
+    {
+        d.push(Decl::Axiom(ax))
+    }
+
+    d
 }
 
 fn resolve_term<'tcx>(
