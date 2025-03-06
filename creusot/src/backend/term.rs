@@ -173,12 +173,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 };
                 Exp::UnaryOp(op, Box::new(self.lower_term(arg)))
             }
-            TermKind::Call { id, subst, args, .. } => {
-                let var = Exp::qvar(self.names.item(*id, *subst));
-                let mut args = args.into_iter().map(|arg| self.lower_term(arg)).peekable();
-
-                if args.peek().is_none() { var.app([Exp::unit()]) } else { var.app(args) }
-            }
+            TermKind::Call { id, subst, args, .. } => Exp::qvar(self.names.item(*id, *subst))
+                .app(args.into_iter().map(|arg| self.lower_term(arg))),
             TermKind::Quant { kind, binder, box body, trigger } => {
                 let bound = zip_binder(binder)
                     .map(|(s, t)| (s.to_string().into(), self.lower_ty(t)))
@@ -303,7 +299,6 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
                 let mut sym = self.names.item(*item, args);
                 sym.name = format!("{}'pre", &*sym.name).into();
-
                 Exp::qvar(sym).app(params)
             }
             TermKind::Postcondition { item, args, params } => {

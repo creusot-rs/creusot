@@ -17,10 +17,7 @@ use rustc_middle::{
     mir::{self, Body, Local, OUTERMOST_SOURCE_SCOPE, SourceInfo, SourceScope},
     ty::{EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv},
 };
-use rustc_span::{
-    DUMMY_SP, Span, Symbol,
-    symbol::{Ident, kw},
-};
+use rustc_span::{Span, Symbol, symbol::Ident};
 use rustc_type_ir::ClosureKind;
 use std::{
     collections::{HashMap, HashSet},
@@ -503,7 +500,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
         assert!(contract.variant.is_none());
     }
 
-    let mut inputs: Vec<_> = inputs
+    let inputs: Vec<_> = inputs
         .enumerate()
         .map(|(idx, (ident, ty))| {
             if ident.name.as_str() == "result"
@@ -524,9 +521,6 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             (name, ident.span, ty)
         })
         .collect();
-    if ctx.type_of(def_id).instantiate_identity().is_fn() && inputs.is_empty() {
-        inputs.push((kw::Empty, DUMMY_SP, ctx.tcx.types.unit));
-    };
 
     if !is_pearlite(ctx.tcx, def_id) {
         // Type invariants
