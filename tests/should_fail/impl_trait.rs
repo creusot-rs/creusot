@@ -7,6 +7,7 @@ pub trait MyTrait {
 }
 
 impl MyTrait for () {
+    #[ensures(result)]
     fn a(&self) -> bool {
         true
     }
