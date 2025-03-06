@@ -4,7 +4,7 @@ use crate::{
         get_inv_function, get_invariant_method, is_ignore_structural_inv, is_trusted,
         is_tyinv_trivial_if_param_trivial,
     },
-    pearlite::Trigger,
+    pearlite::{a_ident, x_ident, Trigger, _ident},
     traits::TraitResolved,
     translation::{
         pearlite::{Pattern, Term, TermKind},
