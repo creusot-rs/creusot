@@ -1,4 +1,4 @@
-use super::pearlite::{Term, TermKind};
+use super::pearlite::{Term, TermKind, _ident};
 use crate::{
     contracts_items::{is_law, is_spec},
     ctx::*,
@@ -142,8 +142,10 @@ fn logic_refinement_term<'tcx>(
     for (ix, ((id, _), (id2, ty))) in
         trait_sig.inputs.iter().zip(impl_sig.inputs.iter()).enumerate()
     {
-        args.push((*id, *ty));
-        subst.insert(*id2, Term { ty: *ty, kind: TermKind::Var(*id), span });
+        let id = if id.name.is_empty() { _ident(ix) } else { *id };
+        let id2 = if id2.name.is_empty() { _ident(ix) } else { *id2 };
+        args.push((id, *ty));
+        subst.insert(id2, Term { ty: *ty, kind: TermKind::Var(id), span });
     }
 
     let mut impl_precond = impl_sig.contract.requires_conj(ctx.tcx);
@@ -158,7 +160,7 @@ fn logic_refinement_term<'tcx>(
 
     let post_refn = impl_postcond
         .implies(trait_postcond)
-        .forall((result_ident(), retty))  // TODO Rename the "result" variables in requires
+        .forall((crate::pearlite::result_ident(), retty))  // TODO Rename the "result" variables in requires
         .span(span);
 
     let mut refn = trait_precond.implies(impl_precond.conj(post_refn));

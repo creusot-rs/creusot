@@ -37,7 +37,7 @@ use rustc_mir_dataflow::{
     move_paths::{HasMoveData, LookupResult, MoveData, MovePathIndex},
     on_all_children_bits,
 };
-use rustc_span::{DUMMY_SP, Span};
+use rustc_span::{Ident, Span, DUMMY_SP};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use std::{
     collections::{HashMap, HashSet},
@@ -738,7 +738,7 @@ fn translate_vars<'tcx>(
             continue;
         }
         let ident = if !d.is_user_variable() {
-            _ident(loc.index()) // TODO this looks dangerous
+            pearlite::_ident(loc.index()) // TODO this looks dangerous
         } else {
             let x = body.var_debug_info.iter().find(|var_info| match var_info.value {
                 mir::VarDebugInfoContents::Place(p) => p.as_local().map(|l| l == loc).unwrap_or(false),
@@ -746,7 +746,7 @@ fn translate_vars<'tcx>(
             });
 
             let debug_info = x.expect("expected user variable to have name");
-            var_debug_info_to_ident(debug_info)
+            pearlite::var_debug_info_to_ident(debug_info)
         };
         locals.insert(loc, ident);
         let is_arg = 0 < loc.index() && loc.index() <= body.arg_count;
@@ -790,7 +790,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
         let arg_ty = Ty::new_tup(self.tcx, &args_tys);
 
-        let arg_tuple = Term::var(args_ident(), arg_ty);
+        let arg_tuple = Term::var(pearlite::args_ident(), arg_ty);
 
         let arg_pat = pearlite::Pattern::Tuple(
             args_nms
@@ -804,7 +804,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             kind,
             self.lifetimes.re_erased,
         );
-        let self_ = Term::var(self_ident(), env_ty);
+        let self_ = Term::var(pearlite::self_ident(), env_ty);
         let params: Vec<_> =
             args_nms.iter().cloned().zip(args_tys).map(|(nm, ty)| Term::var(nm, ty)).collect();
 
@@ -825,7 +825,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         let postcond = |target_kind| {
             let postcondition = if contract.is_empty() {
                 let mut ret_params = params.clone();
-                ret_params.push(Term::var(result_ident(), retty));
+                ret_params.push(Term::var(pearlite::result_ident(), retty));
 
                 if target_kind == kind {
                     self.inferred_postcondition_term(
@@ -873,7 +873,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             .peel_refs();
 
         let precond = {
-            let self_ = Term::var(self_ident(), env_ty);
+            let self_ = Term::var(pearlite::self_ident(), env_ty);
 
             // Preconditions are the same for every kind of closure
             let mut subst = closure_capture_subst(self, def_id, subst, false, None, self_.clone());
@@ -893,7 +893,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         };
 
         if kind.extends(ClosureKind::Fn) {
-            let self_ = Term::var(self_ident(), env_ty);
+            let self_ = Term::var(pearlite::self_ident(), env_ty);
             let mut csubst =
                 closure_capture_subst(self, def_id, subst, false, Some(self_.clone()), self_);
             if let Some(mut postcondition) = postcond(ClosureKind::Fn) {
@@ -904,8 +904,8 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
 
         if kind.extends(ClosureKind::FnMut) {
-            let self_ = Term::var(self_ident(), env_ty);
-            let result_state = Term::var(result_state_ident(), env_ty);
+            let self_ = Term::var(pearlite::self_ident(), env_ty);
+            let result_state = Term::var(pearlite::result_state_ident(), env_ty);
             let mut csubst = closure_capture_subst(
                 self,
                 def_id,
@@ -943,7 +943,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
 
         // FnOnce
-        let self_ = Term::var(self_ident(), env_ty);
+        let self_ = Term::var(pearlite::self_ident(), env_ty);
         let mut csubst =
             closure_capture_subst(self, def_id, subst, true, Some(self_.clone()), self_);
 
@@ -967,7 +967,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         let env_ty = closure_env.ty;
 
         let bor_self = Term::var(
-            bor_self_ident(),
+            pearlite::bor_self_ident(),
             Ty::new_ref(self.tcx, self.tcx.lifetimes.re_erased, env_ty, Mutability::Mut),
         );
         // Based on the underlying kind of closure we may need to wrap the call in a quantifier (at least for FnMut ones)
@@ -989,7 +989,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 };
                 (bor_self.clone().cur().eq(self.tcx, closure_env))
                     .implies(base)
-                    .forall((bor_self_ident(), env_ty))
+                    .forall((pearlite::bor_self_ident(), env_ty))
             }
         }
     }
@@ -1017,7 +1017,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 base
             }
             ClosureKind::FnMut => {
-                let bor_self = Term::var(bor_self_ident(), env_ty);
+                let bor_self = Term::var(pearlite::bor_self_ident(), env_ty);
                 closure_args.insert(0, bor_self.clone());
 
                 let base = Term {
@@ -1030,9 +1030,9 @@ impl<'tcx> TranslationCtx<'tcx> {
                     .conj(
                         bor_self
                             .fin()
-                            .eq(self.tcx, Term::var(result_state_ident(), env_ty)),
+                            .eq(self.tcx, Term::var(pearlite::result_state_ident(), env_ty)),
                     )
-                    .exists((bor_state_ident(), env_ty))
+                    .exists((pearlite::bor_self_ident(), env_ty))
             }
         }
     }
@@ -1045,7 +1045,7 @@ pub(crate) fn closure_resolve<'tcx>(
 ) -> Term<'tcx> {
     let mut resolve = Term::mk_true(ctx.tcx);
 
-    let self_ = Term::var(self_ident(), ctx.type_of(def_id).instantiate_identity());
+    let self_ = Term::var(pearlite::self_ident(), ctx.type_of(def_id).instantiate_identity());
     let csubst = subst.as_closure();
     let typing_env = TypingEnv::non_body_analysis(ctx.tcx, def_id);
     for (ix, ty) in csubst.upvar_tys().iter().enumerate() {
@@ -1072,7 +1072,7 @@ fn closure_unnest<'tcx>(
     let kind = subst.as_closure().kind();
     let env_ty = tcx.closure_env_ty(ty, kind, tcx.lifetimes.re_erased).peel_refs();
 
-    let self_ = Term::var(self_ident(), env_ty);
+    let self_ = Term::var(pearlite::self_ident(), env_ty);
 
     let captures =
         tcx.typeck(def_id.expect_local()).closure_min_captures_flattened(def_id.expect_local());
@@ -1090,7 +1090,7 @@ fn closure_unnest<'tcx>(
                     span: DUMMY_SP,
                 };
                 let cur = self_.clone();
-                let fin = Term::var(final_ident(), env_ty);
+                let fin = Term::var(pearlite::final_ident(), env_ty);
 
                 use rustc_middle::ty::BorrowKind;
 
@@ -1238,7 +1238,7 @@ pub(crate) fn closure_capture_subst<'a, 'tcx>(
 
     let map = zip(captures, cs.as_closure().upvar_tys())
         .enumerate()
-        .map(|(ix, (cap, ty))| (cap.to_symbol(), (cap.info.capture_kind, ty, ix.into())))
+        .map(|(ix, (cap, ty))| (pearlite::pseudo_ident(cap.to_symbol().as_str()), (cap.info.capture_kind, ty, ix.into())))
         .collect();
 
     ClosureSubst {

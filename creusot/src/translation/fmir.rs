@@ -5,20 +5,20 @@ use rustc_middle::{
     mir::{BasicBlock, BinOp, Local, Promoted, UnOp, tcx::PlaceTy},
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt},
 };
-use rustc_span::{Span, Symbol};
+use rustc_span::{Ident, Span, Symbol};
 use rustc_target::abi::VariantIdx;
 
-pub(crate) type ProjectionElem<'tcx> = rustc_middle::mir::ProjectionElem<why3::Ident, Ty<'tcx>>;
+pub(crate) type ProjectionElem<'tcx> = rustc_middle::mir::ProjectionElem<Ident, Ty<'tcx>>;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Place<'tcx> {
-    pub(crate) local: why3::Ident,
+    pub(crate) local: Ident,
     pub(crate) projection: Box<[ProjectionElem<'tcx>]>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct PlaceRef<'a, 'tcx> {
-    pub local: why3::Ident,
+    pub local: Ident,
     pub projection: &'a [ProjectionElem<'tcx>],
 }
 
@@ -33,7 +33,7 @@ impl<'tcx> Place<'tcx> {
         ty.ty
     }
 
-    pub(crate) fn as_symbol(&self) -> Option<why3::Ident> {
+    pub(crate) fn as_symbol(&self) -> Option<Ident> {
         if self.projection.is_empty() { Some(self.local) } else { None }
     }
 
@@ -282,7 +282,7 @@ impl LocalIdent {
     }
 }
 
-pub type LocalDecls<'tcx> = IndexMap<why3::Ident, LocalDecl<'tcx>>;
+pub type LocalDecls<'tcx> = IndexMap<Ident, LocalDecl<'tcx>>;
 
 #[derive(Clone, Debug)]
 pub struct LocalDecl<'tcx> {

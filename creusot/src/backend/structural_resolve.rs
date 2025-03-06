@@ -1,6 +1,6 @@
 use rustc_ast::Mutability;
 use rustc_middle::ty::{GenericArg, Ty};
-use rustc_span::DUMMY_SP;
+use rustc_span::{Ident, DUMMY_SP};
 use rustc_type_ir::TyKind;
 
 use crate::{
@@ -12,7 +12,7 @@ use super::Why3Generator;
 
 pub fn structural_resolve<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    subject: why3::Ident,
+    subject: Ident,
     ty: Ty<'tcx>,
 ) -> Option<Term<'tcx>> {
     let subject = Term::var(subject, ty);

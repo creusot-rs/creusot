@@ -39,7 +39,7 @@ use rustc_middle::{
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
-use rustc_span::{DUMMY_SP, Span, Symbol, symbol::Ident};
+use rustc_span::{DUMMY_SP, Span, Symbol, Ident};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
 
@@ -367,7 +367,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             .fold_ok(body, |body, (idx, ty, pattern)| match pattern {
                 Pattern::Binder(_) | Pattern::Wildcard => body,
                 _ => {
-                    let arg = Box::new(Term::var(Name::Arg(idx), ty));
+                    let arg = Box::new(Term::var(_ident(idx), ty));
                     Term {
                         ty: body.ty,
                         span: body.span,
@@ -1216,7 +1216,7 @@ impl<'tcx> Pattern<'tcx> {
         }
     }
 
-    pub(crate) fn binds(&self, binders: &mut HashSet<Name>) {
+    pub(crate) fn binds(&self, binders: &mut HashSet<Ident>) {
         match self {
             Pattern::Constructor { fields, .. } => fields.iter().for_each(|f| f.binds(binders)),
             Pattern::Tuple(fields) => fields.iter().for_each(|f| f.binds(binders)),
@@ -1609,13 +1609,13 @@ impl<'tcx> Term<'tcx> {
         }
     }
 
-    pub(crate) fn free_vars(&self) -> HashSet<Name> {
+    pub(crate) fn free_vars(&self) -> HashSet<Ident> {
         let mut free = HashSet::new();
         self.free_vars_inner(&HashSet::new(), &mut free);
         free
     }
 
-    fn free_vars_inner(&self, bound: &HashSet<Name>, free: &mut HashSet<Name>) {
+    fn free_vars_inner(&self, bound: &HashSet<Ident>, free: &mut HashSet<Ident>) {
         match &self.kind {
             TermKind::Var(v) => {
                 if !bound.contains(v) {
@@ -1634,7 +1634,7 @@ impl<'tcx> Term<'tcx> {
             TermKind::Quant { binder, body, .. } => {
                 let mut bound = bound.clone();
                 for (name, _) in binder {
-                    bound.insert(name.name);
+                    bound.insert(*name);
                 }
 
                 body.free_vars_inner(&bound, free);
@@ -1792,7 +1792,7 @@ pub(crate) fn result_state_ident() -> Ident {
     Ident::new(Symbol::intern("result_state"), DUMMY_SP)
 }
 
-pub(crate) fn self_bor_ident() -> Ident {
+pub(crate) fn bor_self_ident() -> Ident {
     Ident::new(Symbol::intern("__self_bor"), DUMMY_SP)
 }
 
@@ -1812,8 +1812,12 @@ pub(crate) fn a_ident(n: usize) -> Ident {
     Ident::new(Symbol::intern(&format!("a_{}", n)), DUMMY_SP)
 }
 
-pub(crate) fn var_debug_info_to_ident(var: &VarDebugInfo) -> Ident {
-    Ident { name: var.name, span: var.debug_info.span }
+pub(crate) fn var_debug_info_to_ident(var: &rustc_middle::mir::VarDebugInfo) -> Ident {
+    Ident { name: var.name, span: var.source_info.span }
+}
+
+pub(crate) fn pseudo_ident(s: &str) -> Ident {
+    Ident::new(Symbol::intern(s), DUMMY_SP)
 }
 
 pub(crate) fn _ident(n: usize) -> Ident {
