@@ -101,15 +101,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     self.check_use_in_logic(&assertion, location);
                     self.emit_snapshot_assign(destination, assertion, span);
                 } else {
-                    let func_args: Box<[_]> = if args.is_empty() {
-                        Box::new([fmir::Operand::Constant(Term {
-                            kind: TermKind::Tuple { fields: Box::new([]) },
-                            ty: self.ctx.types.unit,
-                            span,
-                        })])
-                    } else {
-                        args.iter().map(|arg| self.translate_operand(&arg.node)).collect()
-                    };
+                    let func_args: Box<[_]> =
+                        args.iter().map(|arg| self.translate_operand(&arg.node)).collect();
 
                     if is_box_new(self.tcx(), fun_def_id) {
                         let [arg] = *func_args.into_array().unwrap();

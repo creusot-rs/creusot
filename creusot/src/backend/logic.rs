@@ -259,20 +259,15 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
 }
 
 pub fn function_call(sig: &Signature) -> Exp {
-    let mut args = sig
+    let args = sig
         .args
         .iter()
         .cloned()
         .flat_map(|b| b.var_type_pairs())
         .filter(|arg| &*arg.0 != "_")
-        .map(|arg| Exp::var(arg.0))
-        .peekable();
+        .map(|arg| Exp::var(arg.0));
 
-    if args.peek().is_none() {
-        Exp::var(sig.name.clone()).app([Exp::unit()])
-    } else {
-        Exp::var(sig.name.clone()).app(args)
-    }
+    Exp::var(sig.name.clone()).app(args)
 }
 
 fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {

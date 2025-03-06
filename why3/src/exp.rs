@@ -429,8 +429,9 @@ impl Exp {
         Exp::BinaryOp(BinOp::Ne, Box::new(self), Box::new(rhs))
     }
 
-    pub fn app(self, arg: impl IntoIterator<Item = Self>) -> Self {
-        Exp::Call(Box::new(self), arg.into_iter().collect())
+    pub fn app(self, args: impl IntoIterator<Item = Self>) -> Self {
+        let args: Box<[Exp]> = args.into_iter().collect();
+        if args.is_empty() { return self } else { Exp::Call(Box::new(self), args) }
     }
 
     pub fn field(self, field: &str) -> Self {
