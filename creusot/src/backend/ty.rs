@@ -293,6 +293,10 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
     }
 }
 
+pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
+    if let TyKind::Adt(def, _) = ty.kind() { crate::contracts_items::is_int_ty(tcx, def.did()) } else { false }
+}
+
 pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &Why3Generator<'tcx>, names: &N) -> MlT {
     let int_id = get_int_ty(ctx.tcx);
     let ty = ctx.type_of(int_id).skip_binder();

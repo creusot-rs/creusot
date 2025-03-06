@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
 use rustc_middle::mir;
+use rustc_span::Ident;
 use std::collections::HashSet;
 
-use crate::translation::{
+use crate::{pearlite::return_value_ident, translation::{
     fmir::*,
-    pearlite::{Term, TermKind, TermVisitor, super_visit_term},
-};
+    pearlite::{super_visit_term, Term, TermKind, TermVisitor},
+}};
 
 pub mod invariants;
 
@@ -14,7 +15,7 @@ pub use invariants::*;
 
 pub(crate) struct LocalUsage<'a, 'tcx> {
     locals: &'a LocalDecls<'tcx>,
-    pub(crate) usages: HashMap<why3::Ident, Usage>,
+    pub(crate) usages: HashMap<Ident, Usage>,
 }
 
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
@@ -52,7 +53,7 @@ pub(crate) struct Usage {
     is_move_chain: bool,
 }
 
-pub(crate) fn gather_usage(b: &Body) -> HashMap<why3::Ident, Usage> {
+pub(crate) fn gather_usage(b: &Body) -> HashMap<Ident, Usage> {
     let mut usage = LocalUsage { locals: &b.locals, usages: HashMap::new() };
 
     usage.visit_body(b);
@@ -75,8 +76,8 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
         match t {
             Terminator::Switch(e, _) => self.visit_operand(e),
             Terminator::Return => {
-                self.read(why3::Ident::bound("_0"), true);
-                self.read(why3::Ident::bound("_0"), true);
+                self.read(return_value_ident(), true); // ???
+                self.read(return_value_ident(), true); // ???
             }
             _ => {}
         }
@@ -167,19 +168,19 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
         })
     }
 
-    fn move_chain(&mut self, local: why3::Ident) {
+    fn move_chain(&mut self, local: Ident) {
         if let Some(usage) = self.get(local) {
             usage.is_move_chain = true;
         }
     }
 
-    fn read(&mut self, local: why3::Ident, whole: bool) {
+    fn read(&mut self, local: Ident, whole: bool) {
         if let Some(usage) = self.get(local) {
             usage.read.inc(if whole { Whole::Whole } else { Whole::Part })
         };
     }
 
-    fn get(&mut self, local: why3::Ident) -> Option<&mut Usage> {
+    fn get(&mut self, local: Ident) -> Option<&mut Usage> {
         if !self.locals.contains_key(&local) {
             return None;
         }
@@ -191,13 +192,13 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
             }),
         )
     }
-    fn write(&mut self, local: why3::Ident, whole: bool) {
+    fn write(&mut self, local: Ident, whole: bool) {
         if let Some(usage) = self.get(local) {
             usage.write.inc(if whole { Whole::Whole } else { Whole::Part })
         };
     }
 
-    fn pure(&mut self, local: why3::Ident) {
+    fn pure(&mut self, local: Ident) {
         if let Some(usage) = self.get(local) {
             usage.used_in_pure_ctx = true
         };
@@ -218,12 +219,12 @@ impl<'a, 'tcx> TermVisitor<'tcx> for LocalUsage<'a, 'tcx> {
 
 struct SimplePropagator<'tcx> {
     /// Tracks how many reads and writes each variable has
-    usage: HashMap<why3::Ident, Usage>,
-    prop: HashMap<why3::Ident, Operand<'tcx>>,
-    dead: HashSet<why3::Ident>,
+    usage: HashMap<Ident, Usage>,
+    prop: HashMap<Ident, Operand<'tcx>>,
+    dead: HashSet<Ident>,
 }
 
-pub(crate) fn simplify_fmir<'tcx>(usage: HashMap<why3::Ident, Usage>, body: &mut Body) {
+pub(crate) fn simplify_fmir<'tcx>(usage: HashMap<Ident, Usage>, body: &mut Body) {
     SimplePropagator { usage, prop: HashMap::new(), dead: HashSet::new() }.visit_body(body);
 }
 impl<'tcx> SimplePropagator<'tcx> {
@@ -337,7 +338,7 @@ impl<'tcx> SimplePropagator<'tcx> {
         //   })
     }
 
-    fn should_propagate(&self, l: why3::Ident) -> bool {
+    fn should_propagate(&self, l: Ident) -> bool {
         self.usage
             .get(&l)
             .map(|u| {
@@ -349,7 +350,7 @@ impl<'tcx> SimplePropagator<'tcx> {
             .unwrap_or(false)
     }
 
-    fn should_erase(&self, l: why3::Ident) -> bool {
+    fn should_erase(&self, l: Ident) -> bool {
         self.usage
             .get(&l)
             .map(|u| {

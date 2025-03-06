@@ -255,7 +255,7 @@ pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
         lower,
         istmts,
         place_ty,
-        Focus::new(|_| Exp::Var(pl.local)),
+        Focus::new(|_| Exp::Var(lower.ctx.ident(pl.local))),
         Box::new(|_, _| unreachable!()),
         &pl.projection,
     );
@@ -273,7 +273,7 @@ fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
         lower,
         istmts,
         place_ty,
-        Focus::new(|_| Exp::Var(pl.local)),
+        Focus::new(|_| Exp::Var(lower.ctx.ident(pl.local))),
         Box::new(|_, x| x),
         &pl.projection,
     );

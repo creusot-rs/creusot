@@ -70,10 +70,10 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
         .into_iter()
         .map(|(ident, ty)| {
             let ty = backend::ty::translate_ty(ctx, names, span, ty);
-            (ident, ty)
+            (ctx.ident(ident), ty)
         })
         .collect();
-    let renaming = todo!{}; // TODO get rid of this RefCell::new(args.iter().map(|(old, new, _)| (*old, *new)).collect());
+    // TODO do we still need this: RefCell::new(args.iter().map(|(old, new, _)| (*old, *new)).collect());
     let contract = contract_to_why3(pre_sig.contract, ctx, names);
     let mut attrs = why3_attrs(ctx.tcx, def_id);
 

@@ -1804,6 +1804,10 @@ pub(crate) fn final_ident() -> Ident {
     Ident::new(Symbol::intern("final"), DUMMY_SP)
 }
 
+pub(crate) fn return_value_ident() -> Ident {
+    Ident::new(Symbol::intern("_0"), DUMMY_SP)
+}
+
 pub(crate) fn x_ident() -> Ident {
     Ident::new(Symbol::intern("x"), DUMMY_SP)
 }
@@ -1822,4 +1826,8 @@ pub(crate) fn pseudo_ident(s: &str) -> Ident {
 
 pub(crate) fn _ident(n: usize) -> Ident {
     Ident::new(Symbol::intern(&format!("_{}", n)), DUMMY_SP)
+}
+
+pub (crate) fn old_ident(n: usize) -> Ident {
+    Ident::new(Symbol::intern(&format!("old_{}", n)), DUMMY_SP)
 }
