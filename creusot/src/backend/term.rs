@@ -1,5 +1,3 @@
-use std::{cell::RefCell, collections::HashMap};
-
 use crate::{
     backend::{
         program::borrow_generated_id, ty::{constructor, floatty_to_prelude, ity_to_prelude, translate_ty, uty_to_prelude}, Why3Generator
@@ -10,7 +8,7 @@ use crate::{
 };
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind};
-use rustc_span::{Ident as RustIdent, DUMMY_SP};
+use rustc_span::DUMMY_SP;
 use rustc_type_ir::{IntTy, UintTy};
 use std::iter::repeat_n;
 use why3::{
@@ -22,24 +20,21 @@ use why3::{
     ty::Type,
 };
 
-type Renaming = HashMap<RustIdent, Ident>;
-
 pub(crate) fn lower_pure0<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     term: &Term<'tcx>,
 ) -> Exp {
-    lower_pure(ctx, names, &mut Renaming::new(), term)
+    lower_pure(ctx, names, term)
 }
 
 pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
-    renaming: &mut Renaming,
     term: &Term<'tcx>,
 ) -> Exp {
     let span = term.span;
-    let mut term = Lower { ctx, names, renaming: RefCell::new(renaming) }.lower_term(term);
+    let mut term = Lower { ctx, names }.lower_term(term);
     term.reassociate();
     if let Some(attr) = names.span(span) { term.with_attr(attr) } else { term }
 }
@@ -48,16 +43,14 @@ pub(crate) fn lower_pat<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     pat: &Pattern<'tcx>,
-    renaming: &mut Renaming,
 ) -> WPattern {
-    Lower { ctx, names, renaming: RefCell::new(renaming) }.lower_pat(pat)
+    Lower { ctx, names }.lower_pat(pat)
 }
 
 
 struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     ctx: &'a Why3Generator<'tcx>,
     names: &'a N,
-    renaming: RefCell<&'a mut Renaming>,
 }
 
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
@@ -139,7 +132,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     item
                 }
             }
-            TermKind::Var(v) => Exp::Var(self.ident(*v)),
+            TermKind::Var(v) => Exp::Var(self.ctx.ident(*v)),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -195,7 +188,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Quant { kind, binder, box body, trigger } => {
                 let bound = binder.iter()
-                    .map(|(ident, t)| (self.ident(*ident), self.lower_ty(*t)))
+                    .map(|(ident, t)| (self.ctx.ident(*ident), self.lower_ty(*t)))
                     .collect();
                 let body = self.lower_term(body);
                 let trigger = self.lower_trigger(trigger);
@@ -296,7 +289,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     .skip(1)
                     .map(|(ident, ty)| {
                         let ty = self.names.normalize(self.ctx, *ty);
-                        Binder::typed(self.ident(*ident), self.lower_ty(ty))
+                        Binder::typed(self.ctx.ident(*ident), self.lower_ty(ty))
                     })
                     .collect();
                 Exp::Abs(binders, Box::new(body))
@@ -359,7 +352,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
             }
             Pattern::Wildcard => WPattern::Wildcard,
-            Pattern::Binder(name) => WPattern::VarP(self.ident(*name)),
+            Pattern::Binder(name) => WPattern::VarP(self.ctx.ident(*name)),
             Pattern::Boolean(b) => {
                 if *b {
                     WPattern::mk_true()
@@ -386,10 +379,6 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             .iter()
             .map(|x| WTrigger(x.0.iter().map(|x| self.lower_term(x)).collect()))
             .collect()
-    }
-
-    fn ident(&self, ident: RustIdent) -> Ident {
-        *self.renaming.borrow_mut().entry(ident).or_insert_with(|| Ident::fresh(ident.name.as_str()))
     }
 }
 

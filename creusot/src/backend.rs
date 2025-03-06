@@ -13,9 +13,7 @@ use crate::{
     util::path_of_span,
 };
 use std::{
-    cell::RefCell,
-    ops::{Deref, DerefMut},
-    path::PathBuf,
+    cell::RefCell, collections::HashMap, ops::{Deref, DerefMut}, path::PathBuf
 };
 
 pub(crate) use clone_map::*;
@@ -39,6 +37,7 @@ pub struct Why3Generator<'tcx> {
     functions: Vec<TranslatedItem>,
     pub(crate) span_map: RefCell<SpanMap>,
     pub(crate) current: Option<DefId>,
+    renaming: RefCell<HashMap<rustc_span::Ident, why3::Ident>>,
 }
 
 impl<'tcx> Deref for Why3Generator<'tcx> {
@@ -57,7 +56,7 @@ impl<'tcx> DerefMut for Why3Generator<'tcx> {
 
 impl<'tcx> Why3Generator<'tcx> {
     pub fn new(ctx: TranslationCtx<'tcx>) -> Self {
-        Why3Generator { ctx, functions: Default::default(), span_map: Default::default(), current: None }
+        Why3Generator { ctx, functions: Default::default(), span_map: Default::default(), current: None, renaming: Default::default() }
     }
 
     pub(crate) fn translate(&mut self, def_id: DefId) -> Result<(), CannotFetchThir> {
@@ -164,6 +163,10 @@ impl<'tcx> Why3Generator<'tcx> {
 
     pub(crate) fn module_path(&self, def_id: DefId) -> ModulePath {
         ModulePath::new(self.tcx, def_id)
+    }
+
+    fn ident(&self, ident: rustc_span::Ident) -> why3::Ident {
+        *self.renaming.borrow_mut().entry(ident).or_insert_with(|| why3::Ident::fresh(ident.name.as_str()))
     }
 }
 

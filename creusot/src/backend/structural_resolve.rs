@@ -34,7 +34,7 @@ pub fn structural_resolve<'tcx>(
                         .fields
                         .iter()
                         .map(|f| {
-                            let ident = why3::Ident::fresh(f.name.as_str());
+                            let ident = why3::Ident::fresh(f.ident());
                             let var = Term::var(ident, f.ty(ctx.tcx, args));
                             (Pattern::Binder(ident), resolve_of(ctx, var))
                         })
