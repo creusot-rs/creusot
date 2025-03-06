@@ -1,7 +1,4 @@
-use std::cell::RefCell;
-
 use rustc_hir::def_id::DefId;
-use rustc_span::Symbol;
 use why3::{
     Ident,
     declaration::{Condition as WCondition, Contract, Signature},
@@ -16,7 +13,6 @@ use crate::{
 };
 
 use super::{Namer, Why3Generator, logic::function_call, term::lower_pure};
-use crate::pearlite::Renaming;
 
 #[derive(Debug, Clone)]
 // #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
@@ -25,7 +21,7 @@ pub struct PreSignature2 {
     pub trigger: Option<Trigger>, // None means we should use the "simple_trigger"
     pub attrs: Vec<why3::declaration::Attribute>,
     pub retty: Option<why3::ty::Type>,
-    pub args: Vec<(Ident, why3::ty::Type)>,
+    pub args: Box<[(Ident, why3::ty::Type)]>,
     pub contract: Contract,
 }
 
@@ -69,16 +65,16 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
     def_id: DefId,
 ) -> PreSignature2 {
     let span = ctx.tcx.def_span(def_id);
-    let args: Box<[Binder]> = pre_sig
+    let args: Box<[_]> = pre_sig
         .inputs
         .into_iter()
-        .map(|(ident, _, ty)| {
+        .map(|(ident, ty)| {
             let ty = backend::ty::translate_ty(ctx, names, span, ty);
             (ident, ty)
         })
         .collect();
     let renaming = todo!{}; // TODO get rid of this RefCell::new(args.iter().map(|(old, new, _)| (*old, *new)).collect());
-    let contract = contract_to_why3(pre_sig.contract, ctx, &renaming, names);
+    let contract = contract_to_why3(pre_sig.contract, ctx, names);
     let mut attrs = why3_attrs(ctx.tcx, def_id);
 
     def_id
@@ -102,23 +98,18 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
 fn lower_condition<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
-    renaming: &RefCell<Renaming>,
     cond: Condition<'tcx>,
 ) -> WCondition {
-    WCondition { exp: lower_pure(ctx, names, renaming, &cond.term), expl: cond.expl }
+    WCondition { exp: lower_pure(ctx, names, &cond.term), expl: cond.expl }
 }
 
 fn contract_to_why3<'tcx, N: Namer<'tcx>>(
     pre: PreContract<'tcx>,
     ctx: &Why3Generator<'tcx>,
-    renaming: &RefCell<Renaming>,
     names: &N,
 ) -> Contract {
     let requires = pre.requires.into_iter().map(|cond| lower_condition(ctx, names, cond)).collect();
-    renaming.borrow_mut().open_scope();
-    renaming.borrow_mut().bound(Symbol::intern("result"), "result");
     let ensures = pre.ensures.into_iter().map(|cond| lower_condition(ctx, names, cond)).collect();
-    renaming.borrow_mut().close_scope();
     let variant = pre.variant.map(|term| lower_pure(ctx, names, &term));
     Contract { requires, ensures, variant }
 }

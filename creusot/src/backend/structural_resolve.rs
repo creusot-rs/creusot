@@ -5,7 +5,7 @@ use rustc_type_ir::TyKind;
 
 use crate::{
     contracts_items::{get_builtin, get_resolve_function, is_snap_ty, is_trusted},
-    pearlite::{Pattern, Term, TermKind},
+    pearlite::{Pattern, Term, TermKind, _ident},
 };
 
 use super::Why3Generator;
@@ -34,7 +34,7 @@ pub fn structural_resolve<'tcx>(
                         .fields
                         .iter()
                         .map(|f| {
-                            let ident = why3::Ident::fresh(f.ident());
+                            let ident = f.ident(ctx.tcx);
                             let var = Term::var(ident, f.ty(ctx.tcx, args));
                             (Pattern::Binder(ident), resolve_of(ctx, var))
                         })
@@ -63,7 +63,7 @@ pub fn structural_resolve<'tcx>(
                 .iter()
                 .enumerate()
                 .map(|(i, ty)| {
-                    let ident = why3::Ident::fresh(format!{"_{i}"});
+                    let ident = _ident(i);
                     let var = Term::var(ident, ty);
                     (Pattern::Binder(ident), resolve_of(ctx, var))
                 })

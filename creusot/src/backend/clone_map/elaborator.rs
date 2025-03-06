@@ -5,16 +5,7 @@ use std::{
 
 use crate::{
     backend::{
-        Namer, TranslationCtx, Why3Generator,
-        clone_map::{CloneNames, Dependency, Kind},
-        is_trusted_function,
-        logic::{lower_logical_defn, spec_axiom},
-        program,
-        signature::{sig_to_why3, PreSignature2},
-        structural_resolve::structural_resolve,
-        term::lower_pure0,
-        ty::{eliminator, translate_closure_ty, translate_ty, translate_tydecl},
-        ty_inv::InvariantElaborator,
+        clone_map::{CloneNames, Dependency, Kind}, is_trusted_function, logic::{lower_logical_defn, spec_axiom}, program, signature::{sig_to_why3, PreSignature2}, structural_resolve::structural_resolve, term::lower_pure0, ty::{eliminator, translate_closure_ty, translate_ty, translate_tydecl}, ty_inv::InvariantElaborator, Namer, TranslationCtx, Why3Generator
     },
     constant::from_ty_const,
     contracts_items::{
@@ -25,7 +16,7 @@ use crate::{
     },
     ctx::{BodyId, ItemType},
     function::closure_resolve,
-    pearlite::{Term, normalize},
+    pearlite::{args_ident, normalize, result_ident, result_state_ident, self_ident, Term},
     specification::PreSignature,
     traits::{self, TraitResolved},
 };
@@ -36,7 +27,7 @@ use rustc_middle::ty::{
     Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv,
     UnevaluatedConst,
 };
-use rustc_span::{DUMMY_SP, Span, Symbol};
+use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::{ConstKind, EarlyBinder};
 use why3::{declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use}, Ident};
 
@@ -473,7 +464,7 @@ fn resolve_term<'tcx>(
     let mut pre_sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
     pre_sig = pre_sig.normalize(ctx.tcx, typing_env);
 
-    let arg = Term::var(pre_sig.inputs[0].0, pre_sig.inputs[0].2);
+    let arg = Term::var(pre_sig.inputs[0].0, pre_sig.inputs[0].1);
 
     if let &TyKind::Closure(def_id, subst) = subst[0].as_type().unwrap().kind() {
         Some(closure_resolve(ctx, def_id, subst))
@@ -502,14 +493,14 @@ fn fn_once_postcond_term<'tcx>(
 ) -> Option<Term<'tcx>> {
     let tcx = ctx.tcx;
     let ty_self = subst.type_at(1);
-    let self_ = Term::var(Symbol::intern("self"), ty_self);
-    let args = Term::var(Symbol::intern("args"), subst.type_at(0));
+    let self_ = Term::var(self_ident(), ty_self);
+    let args = Term::var(args_ident(), subst.type_at(0));
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.sig(get_fn_once_impl_postcond(tcx)).inputs[2].2),
+        EarlyBinder::bind(ctx.sig(get_fn_once_impl_postcond(tcx)).inputs[2].1),
     );
-    let res = Term::var(Symbol::intern("result"), ty_res);
+    let res = Term::var(result_ident(), ty_res);
     match ty_self.kind() {
         TyKind::Closure(did, _) => ctx.closure_contract(*did).postcond_once.clone(),
         TyKind::Ref(_, cl, Mutability::Mut) => {
@@ -537,15 +528,15 @@ fn fn_mut_postcond_term<'tcx>(
 ) -> Option<Term<'tcx>> {
     let tcx = ctx.tcx;
     let ty_self = subst.type_at(1);
-    let self_ = Term::var(Symbol::intern("self"), ty_self);
-    let args = Term::var(Symbol::intern("args"), subst.type_at(0));
-    let result_state = Term::var(Symbol::intern("result_state"), ty_self);
+    let self_ = Term::var(self_ident(), ty_self);
+    let args = Term::var(args_ident(), subst.type_at(0));
+    let result_state = Term::var(result_state_ident(), ty_self);
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.sig(get_fn_mut_impl_postcond(tcx)).inputs[3].2),
+        EarlyBinder::bind(ctx.sig(get_fn_mut_impl_postcond(tcx)).inputs[3].1),
     );
-    let res = Term::var(Symbol::intern("result"), ty_res);
+    let res = Term::var(result_ident(), ty_res);
     match ty_self.kind() {
         TyKind::Closure(did, _) => ctx.closure_contract(*did).postcond_mut.clone(),
         TyKind::Ref(_, cl, Mutability::Mut) => {
@@ -579,14 +570,14 @@ fn fn_postcond_term<'tcx>(
 ) -> Option<Term<'tcx>> {
     let tcx = ctx.tcx;
     let ty_self = subst.type_at(1);
-    let self_ = Term::var(Symbol::intern("self"), ty_self);
-    let args = Term::var(Symbol::intern("args"), subst.type_at(0));
+    let self_ = Term::var(self_ident(), ty_self);
+    let args = Term::var(args_ident(), subst.type_at(0));
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.sig(get_fn_impl_postcond(tcx)).inputs[2].2),
+        EarlyBinder::bind(ctx.sig(get_fn_impl_postcond(tcx)).inputs[2].1),
     );
-    let res = Term::var(Symbol::intern("result"), ty_res);
+    let res = Term::var(result_ident(), ty_res);
     match ty_self.kind() {
         TyKind::Closure(did, _) => ctx.closure_contract(*did).postcond.clone(),
         TyKind::Ref(_, cl, Mutability::Not) => {

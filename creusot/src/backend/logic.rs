@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-
 use crate::{
     contracts_items::get_builtin, ctx::*, translated_item::FileModule, translation::pearlite::Term,
 };
@@ -7,7 +5,7 @@ use rustc_hir::def_id::DefId;
 use why3::{
     Ident,
     declaration::*,
-    exp::{BinOp, Binder, Exp, ExpMutVisitor, Trigger, super_visit_mut},
+    exp::{BinOp, Exp, ExpMutVisitor, Trigger, super_visit_mut},
 };
 
 mod vcgen;
@@ -120,7 +118,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
     let mut decls = vec![];
 
     let renaming = todo!{}; // Erase this RefCell::new(sig.args.iter().map(|(old, new, _)| (*old, *new)).collect());
-    let body = lower_pure(ctx, names, &renaming, &body);
+    let body = lower_pure(ctx, names, &body);
 
     if sig.contract.variant.is_none() {
         let mut sig = Signature::from(sig.clone());
@@ -235,9 +233,9 @@ pub fn function_call(sig: &PreSignature2) -> Exp {
         .peekable();
 
     if args.peek().is_none() {
-        Exp::var(sig.name.clone()).app([Exp::unit()])
+        Exp::Var(sig.name).app([Exp::unit()])
     } else {
-        Exp::Var(sig.name.clone()).app(args)
+        Exp::Var(sig.name).app(args)
     }
 }
 
@@ -247,8 +245,8 @@ fn definition_axiom(sig: &PreSignature2, body: Exp, suffix: &str) -> Axiom {
 
     let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
     let condition = sig.contract.requires_implies(equation);
-    if sig.args.is_empty() { condition } else { Exp::forall_trig(sig.args.clone(), trigger, condition) };
-
+    let axiom =
+        if sig.args.is_empty() { condition } else { Exp::forall_trig(sig.args.clone(), trigger, condition) };
     let name = Ident::fresh(format!("{}_{suffix}", sig.name.as_str()));
     Axiom { name, rewrite: false, axiom }
 }

@@ -17,13 +17,11 @@ use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind, TypingEnv};
 use rustc_span::Span;
 use why3::{
-    exp::Environment,
     Exp, Ident,
     declaration::Signature,
     exp::{BinOp, Environment, Pattern as WPattern, UnOp as WUnOp},
     ty::Type,
 };
-use crate::pearlite::Renaming;
 
 /// Verification conditions for lemma functions.
 ///
@@ -46,7 +44,6 @@ struct VCGen<'a, 'tcx> {
     structurally_recursive: bool,
     variant: Option<Exp>,
     typing_env: TypingEnv<'tcx>,
-    renaming: RefCell<Renaming>,
 }
 
 pub(super) fn vc<'tcx>(
@@ -59,14 +56,8 @@ pub(super) fn vc<'tcx>(
 ) -> Result<Exp, VCError<'tcx>> {
     let structurally_recursive = is_structurally_recursive(ctx, self_id, &t);
     let sig = ctx.sig(self_id);
-    let bounds = todo!{}; /* TODO REMOVE THIS sig
-        .inputs
-        .iter()
-        .map(|(sym, _, _)| (*sym, Ident::fresh(sym.as_str())))
-        .collect(); */
-    let renaming = RefCell::new(bounds);
     let variant = sig.contract.variant.as_ref().map(|term|
-            lower_pure(ctx, names, &renaming, term));
+            lower_pure(ctx, names, term));
     let vcgen = VCGen {
         typing_env: ctx.typing_env(self_id),
         ctx,
@@ -74,11 +65,9 @@ pub(super) fn vc<'tcx>(
         self_id,
         structurally_recursive,
         variant,
-        renaming,
     };
     let hole = Ident::fresh("");
     let exp = Exp::let_(dest.clone(), Exp::Var(hole), post.clone());
-    vcgen.add_bounds(bounds);
     vcgen.build_vc(&t, &mut Post::new(exp, hole))
 }
 
@@ -95,8 +84,9 @@ pub(super) fn vc<'tcx>(
 ///
 /// This check can be extended in the future
 fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'_>) -> bool {
-    struct StructuralRecursion {
-        smaller_than: HashMap<why3::Ident, why3::Ident>,
+    struct StructuralRecursion<'tcx> {
+        ctx: &'tcx Why3Generator<'tcx>,
+        smaller_than: HashMap<rustc_span::Ident, why3::Ident>,
         self_id: DefId,
         /// Index of the decreasing argument
         decreasing_args: HashSet<why3::Ident>,
@@ -105,35 +95,35 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
     }
     use crate::pearlite::TermKind;
 
-    impl StructuralRecursion {
+    impl<'tcx> StructuralRecursion<'tcx> {
         fn valid(&self) -> bool {
             self.decreasing_args.len() == 1
         }
 
         /// Is `t` smaller than the argument `nm`?
         fn is_smaller_than(&self, t: &Term, nm: why3::Ident) -> bool {
-        match &t.kind {
-            TermKind::Var(s) => self.smaller_than.get(s) == Some(&nm),
-            TermKind::Coerce { arg } => self.is_smaller_than(arg, nm),
-            _ => false,
+            match &t.kind {
+                TermKind::Var(s) => self.smaller_than.get(s) == Some(&nm),
+                TermKind::Coerce { arg } => self.is_smaller_than(arg, nm),
+                _ => false,
+            }
         }
-    }
 
         // TODO: could make this a `pattern` to term comparison to make it more powerful
         /// Mark `sym` as smaller than `term`. Currently, this only updates the relation if `term` is a variable.
-        fn smaller_than(&mut self, sym: why3::Ident, term: &Term<'_>) {
-        match &term.kind {
-            TermKind::Var(var) => {
-                let parent = self.smaller_than.get(var).unwrap_or(var);
-                self.smaller_than.insert(sym, *parent);
+        fn smaller_than(&mut self, sym: rustc_span::Ident, term: &Term<'_>) {
+            match &term.kind {
+                TermKind::Var(var) => {
+                    let parent = self.smaller_than.get(var).unwrap_or(&self.ctx.ident(*var));
+                    self.smaller_than.insert(sym, *parent);
+                }
+                TermKind::Coerce { arg } => self.smaller_than(sym, arg),
+                _ => (),
             }
-            TermKind::Coerce { arg } => self.smaller_than(sym, arg),
-            _ => (),
         }
     }
-    }
 
-    impl TermVisitor<'_> for StructuralRecursion {
+    impl TermVisitor<'_> for StructuralRecursion<'_> {
         fn visit_term(&mut self, term: &Term<'_>) {
             match &term.kind {
                 TermKind::Call { id, args, .. } if *id == self.self_id => {
