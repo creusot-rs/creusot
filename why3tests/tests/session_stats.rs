@@ -1,5 +1,5 @@
 use clap::Parser;
-use git2::{build::CheckoutBuilder, Repository};
+use git2::{Repository, build::CheckoutBuilder};
 use roxmltree::Document;
 use std::{
     collections::HashMap,

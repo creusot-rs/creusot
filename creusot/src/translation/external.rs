@@ -8,7 +8,7 @@ use indexmap::IndexSet;
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
-    thir::{self, visit::Visitor, Expr, ExprKind, Thir},
+    thir::{self, Expr, ExprKind, Thir, visit::Visitor},
     ty::{Clause, EarlyBinder, GenericArgKind, GenericArgsRef, Predicate, TyCtxt, TyKind},
 };
 use rustc_span::Symbol;
@@ -36,7 +36,7 @@ impl<'tcx> ExternSpec<'tcx> {
 
 // Must be run before MIR generation.
 pub(crate) fn extract_extern_specs_from_item<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     def_id: LocalDefId,
 ) -> CreusotResult<(DefId, ExternSpec<'tcx>)> {
     // Handle error gracefully

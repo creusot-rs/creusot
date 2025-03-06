@@ -1,6 +1,7 @@
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
+use why3::declaration::Attribute;
 
 use crate::{
     contracts_items::{is_resolve_function, is_spec, is_trusted},
@@ -12,6 +13,7 @@ use crate::{
     util::path_of_span,
 };
 use std::{
+    cell::RefCell,
     ops::{Deref, DerefMut},
     path::PathBuf,
 };
@@ -33,9 +35,9 @@ pub(crate) mod ty_inv;
 pub(crate) mod wto;
 
 pub struct Why3Generator<'tcx> {
-    ctx: TranslationCtx<'tcx>,
+    pub ctx: TranslationCtx<'tcx>,
     functions: Vec<TranslatedItem>,
-    pub(crate) span_map: SpanMap,
+    pub(crate) span_map: RefCell<SpanMap>,
 }
 
 impl<'tcx> Deref for Why3Generator<'tcx> {
@@ -96,10 +98,10 @@ impl<'tcx> Why3Generator<'tcx> {
         matches!(self.item_type(item), ItemType::Logic { .. } | ItemType::Predicate { .. })
     }
 
-    pub(crate) fn span_attr(&mut self, span: Span) -> Option<why3::declaration::Attribute> {
+    pub(crate) fn span_attr(&self, span: Span) -> Option<Attribute> {
         let path = path_of_span(self.tcx, span, &self.opts.span_mode)?;
 
-        if let Some(span) = self.span_map.encode_span(&self.ctx.opts, span) {
+        if let Some(span) = self.span_map.borrow_mut().encode_span(&self.ctx.opts, span) {
             return Some(span);
         };
 
@@ -139,13 +141,7 @@ impl<'tcx> Why3Generator<'tcx> {
             SpanMode::Off => unreachable!(),
         };
 
-        Some(why3::declaration::Attribute::Span(
-            filename,
-            lo.line,
-            lo.col_display,
-            hi.line,
-            hi.col_display,
-        ))
+        Some(Attribute::Span(filename, lo.line, lo.col_display, hi.line, hi.col_display))
     }
 
     pub fn display_impl_of(&self, def_id: DefId) -> Option<String> {

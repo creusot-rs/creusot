@@ -4,7 +4,7 @@ use std::{
 };
 
 use super::helpers::Result;
-use include_dir::{include_dir, Dir};
+use include_dir::{Dir, include_dir};
 
 static PRELUDE: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/../prelude");
 
@@ -37,7 +37,7 @@ impl Why3Launcher {
     pub fn make(&self, temp_dir: &Path) -> Result<Command> {
         let mode = self.mode.to_string();
         let mut prelude_dir: PathBuf = temp_dir.into();
-        prelude_dir.push("prelude");
+        prelude_dir.push("creusot");
         std::fs::create_dir(&prelude_dir)?;
 
         PRELUDE

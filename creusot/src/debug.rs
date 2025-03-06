@@ -1,7 +1,7 @@
-use rustc_mir_dataflow::{impls::MaybeUninitializedPlaces, move_paths::MoveData, Analysis};
+use rustc_mir_dataflow::{Analysis, impls::MaybeUninitializedPlaces, move_paths::MoveData};
 
 use rustc_middle::{
-    mir::{traversal::preorder, Body},
+    mir::{Body, traversal::preorder},
     ty::TyCtxt,
 };
 

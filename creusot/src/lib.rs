@@ -2,7 +2,7 @@
 #![feature(box_patterns, extract_if)]
 #![feature(let_chains, never_type, try_blocks)]
 #![feature(closure_lifetime_binder)]
-#![feature(if_let_guard, slice_take)]
+#![feature(if_let_guard, slice_take, slice_as_array)]
 
 extern crate either;
 #[macro_use]
@@ -16,6 +16,7 @@ extern crate rustc_driver;
 extern crate rustc_errors;
 extern crate rustc_fluent_macro;
 extern crate rustc_hir;
+extern crate rustc_hir_typeck;
 extern crate rustc_index;
 extern crate rustc_infer;
 extern crate rustc_interface;
@@ -59,7 +60,6 @@ mod translation;
 use translation::*;
 mod util;
 mod validate;
-mod validate_terminates;
 mod very_stable_hash;
 
 rustc_fluent_macro::fluent_messages! { "../messages.ftl" }

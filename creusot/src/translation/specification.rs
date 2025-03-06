@@ -8,23 +8,20 @@ use crate::{
     function::closure_capture_subst,
     naming::anonymous_param_symbol,
     pearlite::TermVisitorMut,
-    translation::pearlite::{self, normalize, Literal, Term, TermKind},
+    translation::pearlite::{self, Literal, Term, TermKind, normalize},
     util::erased_identity_for_item,
 };
-use rustc_hir::{def_id::DefId, AttrArgs, Safety};
+use rustc_hir::{AttrArgs, Safety, def_id::DefId};
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
-    mir::{self, Body, Local, SourceInfo, SourceScope, OUTERMOST_SOURCE_SCOPE},
+    mir::{self, Body, Local, OUTERMOST_SOURCE_SCOPE, SourceInfo, SourceScope},
     ty::{EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv},
 };
-use rustc_span::{
-    symbol::{kw, Ident},
-    Span, Symbol, DUMMY_SP,
-};
+use rustc_span::{Span, Symbol, symbol::Ident};
 use rustc_type_ir::ClosureKind;
 use std::{
     collections::{HashMap, HashSet},
-    iter,
+    iter::{once, repeat},
 };
 
 /// A term with an "expl:" label (includes the "expl:" prefix)
@@ -43,6 +40,8 @@ pub struct PreContract<'tcx> {
     pub(crate) no_panic: bool,
     pub(crate) terminates: bool,
     pub(crate) extern_no_spec: bool,
+    /// Are any of the contract clauses here user provided? or merely Creusot inferred / provided?
+    pub(crate) has_user_contract: bool,
 }
 
 impl<'tcx> PreContract<'tcx> {
@@ -104,6 +103,9 @@ impl<'tcx> PreContract<'tcx> {
     }
 }
 
+/// [ContractClauses] is the most "raw" form of contract we have in Creusot,
+/// in this stage, we have only gathered the [DefId]s of the items that hold the various contract
+/// expressions.
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub struct ContractClauses {
     variant: Option<DefId>,
@@ -126,10 +128,12 @@ impl ContractClauses {
 
     fn get_pre<'tcx>(
         self,
-        ctx: &mut TranslationCtx<'tcx>,
+        ctx: &TranslationCtx<'tcx>,
         fn_name: &str,
     ) -> EarlyBinder<'tcx, PreContract<'tcx>> {
         let mut out = PreContract::default();
+        out.has_user_contract =
+            !self.requires.is_empty() || !self.ensures.is_empty() || self.variant.is_some();
         let n_requires = self.requires.len();
         for req_id in self.requires {
             log::trace!("require clause {:?}", req_id);
@@ -273,12 +277,10 @@ fn place_to_term<'tcx>(
         let ty = place_ref.ty(&body.local_decls, tcx).ty;
         match proj {
             mir::ProjectionElem::Deref => {
-                let mutable = match ty.kind() {
-                    TyKind::Ref(_, _, mutability) => mutability.is_mut(),
-                    _ => continue,
-                };
-                if mutable {
+                if ty.is_mutable_ptr() {
                     kind = TermKind::Cur { term: Box::new(Term { ty, span, kind }) };
+                } else {
+                    kind = TermKind::Coerce { arg: Box::new(Term { ty, span, kind }) }
                 }
             }
             mir::ProjectionElem::Field(field_idx, _) => {
@@ -367,10 +369,7 @@ pub(crate) fn inherited_extern_spec<'tcx>(
     }
 }
 
-pub(crate) fn contract_of<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> PreContract<'tcx> {
+pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> PreContract<'tcx> {
     let fn_name = ctx.opt_item_name(def_id);
     let fn_name = match &fn_name {
         Some(fn_name) => fn_name.as_str(),
@@ -419,9 +418,6 @@ pub struct PreSignature<'tcx> {
     pub(crate) inputs: Vec<(Symbol, Span, Ty<'tcx>)>,
     pub(crate) output: Ty<'tcx>,
     pub(crate) contract: PreContract<'tcx>,
-    // trusted: bool,
-    // span: Span,
-    // program: bool,
 }
 
 impl<'tcx> PreSignature<'tcx> {
@@ -431,10 +427,7 @@ impl<'tcx> PreSignature<'tcx> {
     }
 }
 
-pub(crate) fn pre_sig_of<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> PreSignature<'tcx> {
+pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> PreSignature<'tcx> {
     let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
 
     let mut contract = crate::specification::contract_of(ctx, def_id);
@@ -446,8 +439,13 @@ pub(crate) fn pre_sig_of<'tcx>(
         let kind = subst.as_closure().kind();
         let env_ty = ctx.closure_env_ty(fn_ty, kind, ctx.lifetimes.re_erased);
 
-        let self_pre =
-            if env_ty.is_ref() { Term::var(self_, env_ty).cur() } else { Term::var(self_, env_ty) };
+        let self_pre = if env_ty.is_ref() && env_ty.is_mutable_ptr() {
+            Term::var(self_, env_ty).cur()
+        } else if env_ty.is_ref() {
+            Term::var(self_, env_ty).coerce(env_ty.peel_refs())
+        } else {
+            Term::var(self_, env_ty)
+        };
 
         let mut pre_subst =
             closure_capture_subst(ctx, def_id, subst, false, None, self_pre.clone());
@@ -467,14 +465,14 @@ pub(crate) fn pre_sig_of<'tcx>(
                 ctx.typing_env(def_id),
                 unnest_id,
                 unnest_subst,
-                vec![Term::var(self_, env_ty).cur(), Term::var(self_, env_ty).fin()],
+                Box::new([Term::var(self_, env_ty).cur(), Term::var(self_, env_ty).fin()]),
             );
             let expl = "expl:closure unnest".to_string();
             contract.ensures.push(Condition { term, expl });
         };
 
         let self_post = match kind {
-            ClosureKind::Fn => Term::var(self_, env_ty).cur(),
+            ClosureKind::Fn => Term::var(self_, env_ty).coerce(env_ty.peel_refs()),
             ClosureKind::FnMut => Term::var(self_, env_ty).fin(),
             ClosureKind::FnOnce => Term::var(self_, env_ty),
         };
@@ -499,7 +497,7 @@ pub(crate) fn pre_sig_of<'tcx>(
         assert!(contract.variant.is_none());
     }
 
-    let mut inputs: Vec<_> = inputs
+    let inputs: Vec<_> = inputs
         .enumerate()
         .map(|(idx, (ident, ty))| {
             if ident.name.as_str() == "result"
@@ -520,9 +518,6 @@ pub(crate) fn pre_sig_of<'tcx>(
             (name, ident.span, ty)
         })
         .collect();
-    if ctx.type_of(def_id).instantiate_identity().is_fn() && inputs.is_empty() {
-        inputs.push((kw::Empty, DUMMY_SP, ctx.tcx.types.unit));
-    };
 
     if !is_pearlite(ctx.tcx, def_id) {
         // Type invariants
@@ -595,19 +590,14 @@ fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (impl Iterator<Item = (Ident
             let sig = tcx.normalize_erasing_regions(TypingEnv::non_body_analysis(tcx, def_id), sig);
             let env_ty = tcx.closure_env_ty(ty, subst.as_closure().kind(), tcx.lifetimes.re_erased);
 
-            // I wish this could be called "self"
-            let closure_env = (Ident::empty(), env_ty);
-            let names = tcx
-                .fn_arg_names(def_id)
-                .iter()
-                .cloned()
-                .chain(iter::repeat(rustc_span::symbol::Ident::empty()));
+            let closure_env = (Ident::from_str("_1"), env_ty);
+            let names = tcx.fn_arg_names(def_id).iter().cloned().chain(repeat(Ident::empty()));
             (
-                Box::new(iter::once(closure_env).chain(names.zip(sig.inputs().iter().cloned()))),
+                Box::new(once(closure_env).chain(names.zip(sig.inputs().iter().cloned()))),
                 sig.output(),
             )
         }
-        _ => (Box::new(iter::empty()), tcx.type_of(def_id).instantiate_identity()),
+        _ => (Box::new([].into_iter()), tcx.type_of(def_id).instantiate_identity()),
     };
     (inputs, output)
 }

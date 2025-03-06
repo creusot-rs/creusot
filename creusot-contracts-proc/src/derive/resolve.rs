@@ -1,6 +1,6 @@
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, quote_spanned};
-use syn::{parse_macro_input, spanned::Spanned, Data, DeriveInput, Fields, Index};
+use syn::{Data, DeriveInput, Fields, Index, parse_macro_input, spanned::Spanned};
 
 pub fn derive_resolve(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

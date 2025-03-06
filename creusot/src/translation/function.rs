@@ -3,18 +3,17 @@ use crate::{
     backend::ty_inv::is_tyinv_trivial,
     constant::from_mir_constant,
     contracts_items::{
-        get_fn_mut_impl_unnest, get_resolve_function, get_resolve_method, is_ghost_closure,
-        is_snapshot_closure, is_spec,
+        get_fn_mut_impl_unnest, get_resolve_function, get_resolve_method, is_snapshot_closure,
+        is_spec,
     },
     ctx::*,
     extended_location::ExtendedLocation,
     fmir::{self, LocalDecl, LocalDecls, LocalIdent, RValue, TrivialInv},
-    gather_spec_closures::{corrected_invariant_names_and_locations, LoopSpecKind, SpecClosures},
-    naming::anonymous_param_symbol,
-    pearlite::{normalize, Term},
-    resolve::{place_contains_borrow_deref, HasMoveDataExt, Resolver},
+    gather_spec_closures::{LoopSpecKind, SpecClosures, corrected_invariant_names_and_locations},
+    pearlite::{Term, normalize},
+    resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
     translation::{
-        pearlite::{self, super_visit_mut_term, TermKind, TermVisitorMut},
+        pearlite::{self, TermKind, TermVisitorMut, super_visit_mut_term},
         specification::{contract_of, inv_subst},
         traits,
     },
@@ -22,11 +21,11 @@ use crate::{
 use indexmap::IndexMap;
 use rustc_borrowck::consumers::BorrowSet;
 use rustc_hir::def_id::DefId;
-use rustc_index::{bit_set::MixedBitSet, Idx};
+use rustc_index::{Idx, bit_set::MixedBitSet};
 use rustc_middle::{
     mir::{
-        self, traversal::reverse_postorder, BasicBlock, Body, Local, Location, Operand, Place,
-        PlaceRef, TerminatorKind, START_BLOCK,
+        self, BasicBlock, Body, Local, Location, Mutability, Operand, Place, PlaceRef, START_BLOCK,
+        TerminatorKind, traversal::reverse_postorder,
     },
     ty::{
         BorrowKind, ClosureKind, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypeVisitableExt,
@@ -34,14 +33,15 @@ use rustc_middle::{
     },
 };
 use rustc_mir_dataflow::{
+    Analysis as _,
     move_paths::{HasMoveData, LookupResult, MoveData, MovePathIndex},
-    on_all_children_bits, Analysis as _,
+    on_all_children_bits,
 };
-use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use std::{
     collections::{HashMap, HashSet},
-    iter,
+    iter::zip,
     ops::FnOnce,
 };
 
@@ -50,7 +50,7 @@ mod terminator;
 use terminator::discriminator_for_switch;
 
 /// Translate a function from rustc's MIR to fMIR.
-pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, body_id: BodyId) -> fmir::Body<'tcx> {
+pub(crate) fn fmir<'tcx>(ctx: &TranslationCtx<'tcx>, body_id: BodyId) -> fmir::Body<'tcx> {
     BodyTranslator::with_context(ctx, body_id, |func_translator| func_translator.translate())
 }
 
@@ -76,7 +76,7 @@ struct BodyTranslator<'a, 'tcx> {
     past_blocks: IndexMap<BasicBlock, fmir::Block<'tcx>>,
 
     // Type translation context
-    ctx: &'a mut TranslationCtx<'tcx>,
+    ctx: &'a TranslationCtx<'tcx>,
 
     // Fresh BlockId
     fresh_id: usize,
@@ -88,8 +88,6 @@ struct BodyTranslator<'a, 'tcx> {
     assertions: IndexMap<DefId, Term<'tcx>>,
     /// Map of the `snapshot!` blocks to their translated version.
     snapshots: IndexMap<DefId, Term<'tcx>>,
-    /// Indicate that the current function is a `ghost!` closure.
-    is_ghost_closure: bool,
 
     borrows: Option<&'a BorrowSet<'tcx>>,
 
@@ -111,13 +109,13 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn with_context<R, F: for<'b> FnOnce(BodyTranslator<'b, 'tcx>) -> R>(
-        ctx: &'body mut TranslationCtx<'tcx>,
+        ctx: &'body TranslationCtx<'tcx>,
         body_id: BodyId,
         f: F,
     ) -> R {
         let tcx = ctx.tcx;
 
-        let body_with_facts = ctx.body_with_facts(body_id.def_id).clone();
+        let body_with_facts = ctx.body_with_facts(body_id.def_id);
         let (body, move_data, resolver, borrows);
         match body_id.promoted {
             None => {
@@ -176,7 +174,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             invariant_assertions: invariants.assertions,
             assertions,
             snapshots,
-            is_ghost_closure: is_ghost_closure(tcx, body_id.def_id()),
             borrows,
         })
     }
@@ -222,7 +219,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     &self.locals,
                     *self.body.source_info(bb.start_location()),
                 ));
-                self.check_frozen_in_logic(&body, bb.start_location());
+                self.check_use_in_logic(&body, bb.start_location());
                 match kind {
                     LoopSpecKind::Variant => {
                         if variant.is_some() {
@@ -251,7 +248,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             self.translate_terminator(bbd.terminator(), loc);
 
             let block = fmir::Block {
-                invariants,
+                invariants: invariants.into(),
                 variant,
                 stmts: std::mem::take(&mut self.current_block.0),
                 terminator: std::mem::replace(&mut self.current_block.1, None).unwrap(),
@@ -340,8 +337,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         );
     }
 
-    fn emit_ghost_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>, span: Span) {
-        self.emit_assignment(&lhs, fmir::RValue::Ghost(rhs), span)
+    fn emit_snapshot_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>, span: Span) {
+        self.emit_assignment(&lhs, fmir::RValue::Snapshot(rhs), span)
     }
 
     fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: RValue<'tcx>, span: Span) {
@@ -358,7 +355,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     ) {
         // The assignement may, in theory, modify a variable that needs to be resolved.
         // Hence we resolve before the assignment.
-        self.resolve_places(need, &resolved);
+        self.resolve_places(need, resolved);
 
         // We resolve the destination place, if necessary
         match self.move_data().rev_lookup.find(destination.as_ref()) {
@@ -454,7 +451,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             .map(|&pred| resolver.resolved_places_between_blocks(pred, bb))
             .collect::<Vec<_>>();
 
-        for (pred, resolved) in iter::zip(pred_blocks, resolved_between.iter_mut()) {
+        for (pred, resolved) in zip(pred_blocks, resolved_between.iter_mut()) {
             // We do not need to resolve move path that we know are inactive
             // because of a preceding switch.
 
@@ -511,7 +508,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             return;
         }
 
-        for (pred, resolved) in iter::zip(pred_blocks, resolved_between) {
+        for (pred, resolved) in zip(pred_blocks, resolved_between) {
             // If no resolves occured in block transition then skip entirely
             if resolved.0.is_empty() {
                 continue;
@@ -522,7 +519,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             self.emit_terminator(fmir::Terminator::Goto(bb));
             let resolve_block = fmir::Block {
                 variant: None,
-                invariants: Vec::new(),
+                invariants: vec![],
                 stmts: std::mem::take(&mut self.current_block.0),
                 terminator: std::mem::replace(&mut self.current_block.1, None).unwrap(),
             };
@@ -699,17 +696,21 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         fmir::Place { local: self.locals[&pl.local], projection }
     }
 
-    fn check_frozen_in_logic(&mut self, term: &Term<'tcx>, location: Location) {
+    fn check_use_in_logic(&mut self, term: &Term<'tcx>, location: Location) {
         // TODO: We should refine this check to consider places and not only locals
         if let Some(resolver) = &mut self.resolver {
-            let frozen = resolver.frozen_places_before(location);
+            let mut bad_vars = resolver.frozen_places_before(location);
+            let uninit = resolver.uninit_places_before(location);
+            bad_vars.union(&uninit);
             let free_vars = term.free_vars();
-            for f in frozen.iter() {
-                if let Some(l) =
-                    self.move_data().move_paths[f].place.as_local().map(|l| self.locals[&l])
-                    && free_vars.contains(&l)
+            for f in bad_vars.iter() {
+                if let Some(l) = self.move_data().move_paths[f]
+                    .place
+                    .as_local()
+                    .and_then(|l| self.locals.get(&l))
+                    && free_vars.contains(l)
                 {
-                    let msg = format!("Use of borrowed variable {}", l);
+                    let msg = format!("Use of borrowed or uninitialized variable {}", l);
                     self.ctx.crash_and_error(term.span, &msg);
                 }
             }
@@ -757,7 +758,7 @@ fn translate_vars<'tcx>(
                 Symbol::intern(&format!("{}{}", debug_info.name, cnt))
             };
 
-            let sym = LocalIdent::dbg_raw(loc, sym);
+            let sym = LocalIdent::user(loc, sym);
 
             *cnt += 1;
             sym
@@ -772,15 +773,12 @@ fn translate_vars<'tcx>(
         }
         locals.insert(loc, s);
         let is_arg = 0 < loc.index() && loc.index() <= body.arg_count;
-        vars.insert(
-            s,
-            LocalDecl {
-                span: d.source_info.span,
-                ty: d.ty,
-                temp: !d.is_user_variable(),
-                arg: is_arg,
-            },
-        );
+        vars.insert(s, LocalDecl {
+            span: d.source_info.span,
+            ty: d.ty,
+            temp: !d.is_user_variable(),
+            arg: is_arg,
+        });
     }
     (vars, locals)
 }
@@ -799,7 +797,7 @@ pub(crate) struct ClosureContract<'tcx> {
 }
 
 impl<'tcx> TranslationCtx<'tcx> {
-    pub(crate) fn build_closure_contract(&mut self, def_id: DefId) -> ClosureContract<'tcx> {
+    pub(crate) fn build_closure_contract(&self, def_id: DefId) -> ClosureContract<'tcx> {
         let TyKind::Closure(_, subst) = self.type_of(def_id).instantiate_identity().kind() else {
             unreachable!()
         };
@@ -807,8 +805,8 @@ impl<'tcx> TranslationCtx<'tcx> {
         let kind = subst.as_closure().kind();
 
         let contract = contract_of(self, def_id);
-        let mut postcondition: Term<'_> = contract.ensures_conj(self.tcx);
-        let mut precondition: Term<'_> = contract.requires_conj(self.tcx);
+
+        let span = self.def_span(def_id);
 
         let (args_nms, args_tys): (Vec<_>, Vec<_>) =
             self.sig(def_id).inputs.iter().skip(1).map(|&(nm, _, ref ty)| (nm, ty.clone())).unzip();
@@ -818,34 +816,69 @@ impl<'tcx> TranslationCtx<'tcx> {
         let arg_tuple = Term::var(Symbol::intern("args"), arg_ty);
 
         let arg_pat = pearlite::Pattern::Tuple(
-            args_nms
-                .iter()
-                .enumerate()
-                .map(|(idx, nm)| {
-                    if nm.is_empty() {
-                        // We skipped the first element
-                        pearlite::Pattern::Binder(anonymous_param_symbol(idx + 1))
-                    } else {
-                        pearlite::Pattern::Binder(*nm)
-                    }
-                })
-                .collect(),
+            args_nms.iter().copied().map(pearlite::Pattern::Binder).collect(),
         );
 
-        postcondition = pearlite::Term {
-            span: postcondition.span,
-            kind: TermKind::Let {
-                pattern: arg_pat.clone(),
-                arg: Box::new(arg_tuple.clone()),
-                body: Box::new(postcondition),
-            },
-            ty: self.types.bool,
+        let env_ty = self.closure_env_ty(
+            self.type_of(def_id).instantiate_identity(),
+            kind,
+            self.lifetimes.re_erased,
+        );
+        let self_ = Term::var(Symbol::intern("self"), env_ty);
+        let params: Vec<_> =
+            args_nms.iter().cloned().zip(args_tys).map(|(nm, ty)| Term::var(nm, ty)).collect();
+
+        let mut precondition = if contract.is_empty() {
+            self.inferred_precondition_term(
+                def_id,
+                subst,
+                kind,
+                self_.clone(),
+                params.clone(),
+                span,
+            )
+        } else {
+            contract.requires_conj(self.tcx)
         };
+
+        let retty = self.sig(def_id).output;
+        let postcond = |target_kind| {
+            let postcondition = if contract.is_empty() {
+                let mut ret_params = params.clone();
+                ret_params.push(Term::var(Symbol::intern("result"), retty));
+
+                if target_kind == kind {
+                    self.inferred_postcondition_term(
+                        def_id,
+                        subst,
+                        kind,
+                        self_.clone(),
+                        ret_params,
+                        span,
+                    )
+                } else {
+                    return None;
+                }
+            } else {
+                contract.ensures_conj(self.tcx)
+            };
+
+            Some(pearlite::Term {
+                span: postcondition.span,
+                kind: TermKind::Let {
+                    pattern: arg_pat.clone(),
+                    arg: Box::new(arg_tuple.clone()),
+                    body: Box::new(postcondition),
+                },
+                ty: self.types.bool,
+            })
+        };
+
         precondition = pearlite::Term {
             span: precondition.span,
             kind: TermKind::Let {
-                pattern: arg_pat,
-                arg: Box::new(arg_tuple),
+                pattern: arg_pat.clone(),
+                arg: Box::new(arg_tuple.clone()),
                 body: Box::new(precondition),
             },
             ty: self.types.bool,
@@ -883,11 +916,11 @@ impl<'tcx> TranslationCtx<'tcx> {
             let self_ = Term::var(Symbol::intern("self"), env_ty);
             let mut csubst =
                 closure_capture_subst(self, def_id, subst, false, Some(self_.clone()), self_);
-            let mut postcondition = postcondition.clone();
+            if let Some(mut postcondition) = postcond(ClosureKind::Fn) {
+                csubst.visit_mut_term(&mut postcondition);
 
-            csubst.visit_mut_term(&mut postcondition);
-
-            contracts.postcond = Some(postcondition);
+                contracts.postcond = Some(postcondition);
+            }
         }
 
         if kind.extends(ClosureKind::FnMut) {
@@ -902,29 +935,31 @@ impl<'tcx> TranslationCtx<'tcx> {
                 result_state.clone(),
             );
 
-            let mut postcondition = postcondition.clone();
-            csubst.visit_mut_term(&mut postcondition);
+            if let Some(mut postcondition) = postcond(ClosureKind::FnMut) {
+                csubst.visit_mut_term(&mut postcondition);
 
-            let args = subst.as_closure().sig().inputs().skip_binder()[0];
-            let unnest_subst = self.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty)]);
+                let args = subst.as_closure().sig().inputs().skip_binder()[0];
+                let unnest_subst =
+                    self.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty)]);
 
-            let unnest_id = get_fn_mut_impl_unnest(self.tcx);
+                let unnest_id = get_fn_mut_impl_unnest(self.tcx);
 
-            let mut postcondition: Term<'tcx> = postcondition;
-            postcondition = postcondition.conj(Term::call_no_normalize(
-                self.tcx,
-                unnest_id,
-                unnest_subst,
-                vec![self_, result_state],
-            ));
+                let mut postcondition: Term<'tcx> = postcondition;
+                postcondition = postcondition.conj(Term::call_no_normalize(
+                    self.tcx,
+                    unnest_id,
+                    unnest_subst,
+                    Box::new([self_, result_state]),
+                ));
 
-            postcondition = normalize(self.tcx, self.typing_env(def_id), postcondition);
+                postcondition = normalize(self.tcx, self.typing_env(def_id), postcondition);
+                contracts.postcond_mut = Some(postcondition);
+            }
 
             let mut unnest = closure_unnest(self.tcx, def_id, subst);
             unnest = normalize(self.tcx, self.typing_env(def_id), unnest);
 
             contracts.unnest = Some(unnest);
-            contracts.postcond_mut = Some(postcondition);
         }
 
         // FnOnce
@@ -932,16 +967,99 @@ impl<'tcx> TranslationCtx<'tcx> {
         let mut csubst =
             closure_capture_subst(self, def_id, subst, true, Some(self_.clone()), self_);
 
-        let mut postcondition = postcondition.clone();
-        csubst.visit_mut_term(&mut postcondition);
-        contracts.postcond_once = Some(postcondition);
+        if let Some(mut postcondition) = postcond(ClosureKind::FnOnce) {
+            csubst.visit_mut_term(&mut postcondition);
+            contracts.postcond_once = Some(postcondition);
+        }
 
         contracts
+    }
+
+    fn inferred_precondition_term(
+        &self,
+        item: DefId,
+        args: GenericArgsRef<'tcx>,
+        kind: ClosureKind,
+        closure_env: Term<'tcx>,
+        mut closure_args: Vec<Term<'tcx>>,
+        span: Span,
+    ) -> Term<'tcx> {
+        let env_ty = closure_env.ty;
+
+        let bor_self = Term::var(
+            Symbol::intern("__bor_self"),
+            Ty::new_ref(self.tcx, self.tcx.lifetimes.re_erased, env_ty, Mutability::Mut),
+        );
+        // Based on the underlying kind of closure we may need to wrap the call in a quantifier (at least for FnMut ones)
+        match kind {
+            ClosureKind::Fn | ClosureKind::FnOnce => {
+                closure_args.insert(0, closure_env.clone());
+                Term {
+                    kind: TermKind::Precondition { item, args, params: closure_args.into() },
+                    ty: self.types.bool,
+                    span,
+                }
+            }
+            ClosureKind::FnMut => {
+                closure_args.insert(0, bor_self.clone());
+                let base = Term {
+                    kind: TermKind::Precondition { item, args, params: closure_args.into() },
+                    ty: self.types.bool,
+                    span,
+                };
+                (bor_self.clone().cur().eq(self.tcx, closure_env))
+                    .implies(base)
+                    .forall(self.tcx, (Symbol::intern("__bor_self"), env_ty))
+            }
+        }
+    }
+
+    /// Infers the `postcond_kind` version of the postcondition predicate for the provided closure.
+    fn inferred_postcondition_term(
+        &self,
+        item: DefId,
+        args: GenericArgsRef<'tcx>,
+        closure_kind: ClosureKind,
+        closure_env: Term<'tcx>,
+        mut closure_args: Vec<Term<'tcx>>,
+        span: Span,
+    ) -> Term<'tcx> {
+        let env_ty = closure_env.ty;
+
+        match closure_kind {
+            ClosureKind::Fn | ClosureKind::FnOnce => {
+                closure_args.insert(0, closure_env.clone());
+                let base = Term {
+                    kind: TermKind::Postcondition { item, args, params: closure_args.into() },
+                    ty: self.types.bool,
+                    span,
+                };
+                base
+            }
+            ClosureKind::FnMut => {
+                let bor_self = Term::var(Symbol::intern("__bor_self"), env_ty);
+                closure_args.insert(0, bor_self.clone());
+
+                let base = Term {
+                    kind: TermKind::Postcondition { item, args, params: closure_args.into() },
+                    ty: self.types.bool,
+                    span,
+                };
+
+                base.conj(bor_self.clone().cur().eq(self.tcx, closure_env))
+                    .conj(
+                        bor_self
+                            .fin()
+                            .eq(self.tcx, Term::var(Symbol::intern("result_state"), env_ty)),
+                    )
+                    .exists(self.tcx, (Symbol::intern("__bor_self"), env_ty))
+            }
+        }
     }
 }
 
 pub(crate) fn closure_resolve<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Term<'tcx> {
@@ -958,7 +1076,7 @@ pub(crate) fn closure_resolve<'tcx>(
         };
 
         if let Some((id, subst)) = resolve_predicate_of(ctx, typing_env, ty) {
-            resolve = Term::call(ctx.tcx, typing_env, id, subst, vec![proj]).conj(resolve);
+            resolve = Term::call(ctx.tcx, typing_env, id, subst, Box::new([proj])).conj(resolve);
         }
     }
 
@@ -997,8 +1115,8 @@ fn closure_unnest<'tcx>(
                 use rustc_middle::ty::BorrowKind;
 
                 let unnest_one = match is_mut {
-                    BorrowKind::Immutable => Term::eq(tcx, (acc)(fin), (acc)(cur)),
-                    _ => Term::eq(tcx, (acc)(fin).fin(), (acc)(cur).fin()),
+                    BorrowKind::Immutable => acc(fin).eq(tcx, acc(cur)),
+                    _ => acc(fin).fin().eq(tcx, acc(cur).fin()),
                 };
 
                 unnest = unnest_one.conj(unnest);
@@ -1039,12 +1157,12 @@ impl<'a, 'tcx> ClosureSubst<'a, 'tcx> {
                 }
                 Some(proj)
             }
-            UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable)
-                if self.self_consumed =>
-            {
-                Some(proj.fin())
+            UpvarCapture::ByRef(BorrowKind::Mutable | BorrowKind::UniqueImmutable) => {
+                if self.self_consumed { Some(proj.fin()) } else { Some(proj.cur()) }
             }
-            UpvarCapture::ByRef(_) => Some(proj.cur()),
+            UpvarCapture::ByRef(BorrowKind::Immutable) => {
+                Some(proj.coerce(ty.builtin_deref(false).unwrap()))
+            }
         }
     }
 
@@ -1138,7 +1256,7 @@ pub(crate) fn closure_capture_subst<'a, 'tcx>(
 
     let captures = ctx.closure_captures(def_id.expect_local());
 
-    let map = std::iter::zip(captures, cs.as_closure().upvar_tys())
+    let map = zip(captures, cs.as_closure().upvar_tys())
         .enumerate()
         .map(|(ix, (cap, ty))| (cap.to_symbol(), (cap.info.capture_kind, ty, ix.into())))
         .collect();
@@ -1155,7 +1273,7 @@ pub(crate) fn closure_capture_subst<'a, 'tcx>(
 }
 
 fn resolve_predicate_of<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
     ty: Ty<'tcx>,
 ) -> Option<(DefId, GenericArgsRef<'tcx>)> {

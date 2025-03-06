@@ -4,9 +4,9 @@ use rustc_hir::def_id::DefId;
 use rustc_index::{Idx, IndexVec};
 use rustc_middle::{
     mir::{
-        visit::{MutVisitor, PlaceContext},
         AggregateKind, BasicBlock, BasicBlockData, Body, Local, Location, Rvalue, SourceInfo,
         StatementKind, Terminator, TerminatorKind,
+        visit::{MutVisitor, PlaceContext},
     },
     ty::TyCtxt,
 };

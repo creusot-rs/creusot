@@ -1,8 +1,8 @@
 use std::{collections::HashMap, hash::Hash};
 
 use petgraph::{
-    visit::{GraphBase, IntoNeighborsDirected, Visitable},
     Direction,
+    visit::{GraphBase, IntoNeighborsDirected, Visitable},
 };
 
 #[derive(Debug, Clone)]

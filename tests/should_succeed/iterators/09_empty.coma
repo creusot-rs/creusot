@@ -1,0 +1,221 @@
+module M_09_empty__qyi7971881024803823682__produces_refl [#"09_empty.rs" 29 4 29 26] (* <Empty<T> as common::Iterator> *)
+  let%span s09_empty0 = "09_empty.rs" 28 14 28 45
+  let%span s09_empty1 = "09_empty.rs" 29 27 29 29
+  let%span s09_empty2 = "09_empty.rs" 23 20 23 54
+  
+  type t_Empty'0  =
+    { t_Empty__0'0: () }
+  
+  type t_T'0
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate produces'0 [#"09_empty.rs" 22 4 22 64] (self : t_Empty'0) (visited : Seq.seq t_T'0) (o : t_Empty'0) =
+    [%#s09_empty2] visited = (Seq.empty : Seq.seq t_T'0) /\ self = o
+  
+  constant self  : t_Empty'0
+  
+  function produces_refl'0 [#"09_empty.rs" 29 4 29 26] (self : t_Empty'0) : ()
+  
+  goal vc_produces_refl'0 : [%#s09_empty0] produces'0 self (Seq.empty : Seq.seq t_T'0) self
+end
+module M_09_empty__qyi7971881024803823682__produces_trans [#"09_empty.rs" 36 4 36 90] (* <Empty<T> as common::Iterator> *)
+  let%span s09_empty0 = "09_empty.rs" 33 15 33 32
+  let%span s09_empty1 = "09_empty.rs" 34 15 34 32
+  let%span s09_empty2 = "09_empty.rs" 35 14 35 42
+  let%span s09_empty3 = "09_empty.rs" 36 91 36 93
+  let%span s09_empty4 = "09_empty.rs" 23 20 23 54
+  
+  type t_Empty'0  =
+    { t_Empty__0'0: () }
+  
+  type t_T'0
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate produces'0 [#"09_empty.rs" 22 4 22 64] (self : t_Empty'0) (visited : Seq.seq t_T'0) (o : t_Empty'0) =
+    [%#s09_empty4] visited = (Seq.empty : Seq.seq t_T'0) /\ self = o
+  
+  use seq.Seq
+  
+  constant a  : t_Empty'0
+  
+  constant ab  : Seq.seq t_T'0
+  
+  constant b  : t_Empty'0
+  
+  constant bc  : Seq.seq t_T'0
+  
+  constant c  : t_Empty'0
+  
+  function produces_trans'0 [#"09_empty.rs" 36 4 36 90] (a : t_Empty'0) (ab : Seq.seq t_T'0) (b : t_Empty'0) (bc : Seq.seq t_T'0) (c : t_Empty'0) : ()
+  
+  
+  goal vc_produces_trans'0 : ([%#s09_empty0] produces'0 a ab b)
+   -> ([%#s09_empty1] produces'0 b bc c)  -> ([%#s09_empty2] produces'0 a (Seq.(++) ab bc) c)
+end
+module M_09_empty__qyi7971881024803823682__next [#"09_empty.rs" 42 4 42 35] (* <Empty<T> as common::Iterator> *)
+  let%span s09_empty0 = "09_empty.rs" 42 26 42 35
+  let%span s09_empty1 = "09_empty.rs" 38 14 41 5
+  let%span s09_empty2 = "09_empty.rs" 17 20 17 34
+  let%span s09_empty3 = "09_empty.rs" 23 20 23 54
+  let%span sresolve4 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  
+  use creusot.prelude.MutBorrow
+  
+  type t_Empty'0  =
+    { t_Empty__0'0: () }
+  
+  predicate resolve'1 (self : MutBorrow.t t_Empty'0) =
+    [%#sresolve4] self.final = self.current
+  
+  predicate resolve'0 (_1 : MutBorrow.t t_Empty'0) =
+    resolve'1 _1
+  
+  type t_T'0
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_T'0
+  
+  use creusot.prelude.Any
+  
+  predicate inv'1 (_1 : t_T'0)
+  
+  predicate inv'0 (_1 : t_Option'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x
+  = match x with
+    | C_None'0 -> true
+    | C_Some'0 a_0 -> inv'1 a_0
+    end
+  
+  predicate completed'0 [#"09_empty.rs" 16 4 16 35] (self : MutBorrow.t t_Empty'0) =
+    [%#s09_empty2] resolve'1 self
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate produces'0 [#"09_empty.rs" 22 4 22 64] (self : t_Empty'0) (visited : Seq.seq t_T'0) (o : t_Empty'0) =
+    [%#s09_empty3] visited = (Seq.empty : Seq.seq t_T'0) /\ self = o
+  
+  use seq.Seq
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec next'0[#"09_empty.rs" 42 4 42 35] (self:MutBorrow.t t_Empty'0) (return'  (ret:t_Option'0))= (! bb0
+    [ bb0 = s0 [ s0 = -{resolve'0 self}- s1 | s1 =  [ &_0 <- C_None'0 ] s2 | s2 = return' {_0} ]  ]
+    ) [ & _0 : t_Option'0 = Any.any_l () | & self : MutBorrow.t t_Empty'0 = self ] 
+    [ return' (result:t_Option'0)-> {[@expl:next result type invariant] [%#s09_empty0] inv'0 result}
+      {[@expl:next ensures] [%#s09_empty1] match result with
+        | C_None'0 -> completed'0 self
+        | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
+        end}
+      (! return' {result}) ]
+
+end
+module M_09_empty__qyi7971881024803823682__produces_refl__refines [#"09_empty.rs" 29 4 29 26] (* <Empty<T> as common::Iterator> *)
+  let%span s09_empty0 = "09_empty.rs" 29 4 29 26
+  let%span s09_empty1 = "09_empty.rs" 23 20 23 54
+  
+  type t_Empty'0  =
+    { t_Empty__0'0: () }
+  
+  type t_T'0
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate produces'0 [#"09_empty.rs" 22 4 22 64] (self : t_Empty'0) (visited : Seq.seq t_T'0) (o : t_Empty'0) =
+    [%#s09_empty1] visited = (Seq.empty : Seq.seq t_T'0) /\ self = o
+  
+  goal refines : [%#s09_empty0] forall self : t_Empty'0 . forall result : () . produces'0 self (Seq.empty : Seq.seq t_T'0) self
+   -> produces'0 self (Seq.empty : Seq.seq t_T'0) self
+end
+module M_09_empty__qyi7971881024803823682__produces_trans__refines [#"09_empty.rs" 36 4 36 90] (* <Empty<T> as common::Iterator> *)
+  let%span s09_empty0 = "09_empty.rs" 36 4 36 90
+  let%span s09_empty1 = "09_empty.rs" 23 20 23 54
+  
+  type t_Empty'0  =
+    { t_Empty__0'0: () }
+  
+  type t_T'0
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate produces'0 [#"09_empty.rs" 22 4 22 64] (self : t_Empty'0) (visited : Seq.seq t_T'0) (o : t_Empty'0) =
+    [%#s09_empty1] visited = (Seq.empty : Seq.seq t_T'0) /\ self = o
+  
+  use seq.Seq
+  
+  goal refines : [%#s09_empty0] forall a : t_Empty'0 . forall ab : Seq.seq t_T'0 . forall b : t_Empty'0 . forall bc : Seq.seq t_T'0 . forall c : t_Empty'0 . produces'0 b bc c
+  /\ produces'0 a ab b
+   -> produces'0 b bc c
+  /\ produces'0 a ab b /\ (forall result : () . produces'0 a (Seq.(++) ab bc) c  -> produces'0 a (Seq.(++) ab bc) c)
+end
+module M_09_empty__qyi7971881024803823682__next__refines [#"09_empty.rs" 42 4 42 35] (* <Empty<T> as common::Iterator> *)
+  let%span s09_empty0 = "09_empty.rs" 42 4 42 35
+  let%span s09_empty1 = "09_empty.rs" 17 20 17 34
+  let%span s09_empty2 = "09_empty.rs" 23 20 23 54
+  let%span sresolve3 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  
+  use creusot.prelude.MutBorrow
+  
+  type t_Empty'0  =
+    { t_Empty__0'0: () }
+  
+  predicate inv'0 (_1 : MutBorrow.t t_Empty'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_Empty'0 [inv'0 x] . inv'0 x = true
+  
+  type t_T'0
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_T'0
+  
+  predicate resolve'0 (self : MutBorrow.t t_Empty'0) =
+    [%#sresolve3] self.final = self.current
+  
+  predicate completed'0 [#"09_empty.rs" 16 4 16 35] (self : MutBorrow.t t_Empty'0) =
+    [%#s09_empty1] resolve'0 self
+  
+  use seq.Seq
+  
+  use seq.Seq
+  
+  predicate produces'0 [#"09_empty.rs" 22 4 22 64] (self : t_Empty'0) (visited : Seq.seq t_T'0) (o : t_Empty'0) =
+    [%#s09_empty2] visited = (Seq.empty : Seq.seq t_T'0) /\ self = o
+  
+  use seq.Seq
+  
+  predicate inv'2 (_1 : t_T'0)
+  
+  predicate inv'1 (_1 : t_Option'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x
+  = match x with
+    | C_None'0 -> true
+    | C_Some'0 a_0 -> inv'2 a_0
+    end
+  
+  goal refines : [%#s09_empty0] forall self : MutBorrow.t t_Empty'0 . inv'0 self
+   -> (forall result : t_Option'0 . match result with
+    | C_None'0 -> completed'0 self
+    | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
+    end
+  /\ inv'1 result
+   -> match result with
+    | C_None'0 -> completed'0 self
+    | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
+    end
+  /\ inv'1 result)
+end

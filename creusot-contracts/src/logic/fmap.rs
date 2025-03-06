@@ -1,5 +1,5 @@
 use crate::{
-    logic::{ops::IndexLogic, Mapping},
+    logic::{Mapping, ops::IndexLogic},
     util::*,
     *,
 };
@@ -85,7 +85,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// If no value is present, returns [`None`].
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     pub fn get(self, k: K) -> Option<V>
     where
         V: Sized,
@@ -99,7 +99,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// Same as [`Self::get`], but can handle unsized values.
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     pub fn get_unsized(self, k: K) -> Option<SizedW<V>> {
         self.view().get(k)
     }
@@ -109,7 +109,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// If no value is present, the returned value is meaningless.
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     pub fn lookup(self, k: K) -> V
     where
         V: Sized,
@@ -120,7 +120,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// Same as [`Self::lookup`], but can handle unsized values.
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     pub fn lookup_unsized(self, k: K) -> SizedW<V> {
         unwrap(self.get_unsized(k))
     }
@@ -128,7 +128,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     /// Returns `true` if the map contains a value for the specified key.
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     pub fn contains(self, k: K) -> bool {
         self.get_unsized(k) != None
     }
@@ -224,7 +224,7 @@ impl<K, V> IndexLogic<K> for FMap<K, V> {
 
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     fn index_logic(self, key: K) -> Self::Item {
         self.lookup(key)
     }
@@ -238,7 +238,7 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[ensures(result.is_empty())]
     #[allow(unreachable_code)]
     pub fn new() -> GhostBox<Self> {
-        ghost!(panic!())
+        GhostBox::conjure()
     }
 
     /// Returns the number of elements in the map.
@@ -347,6 +347,43 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[ensures(forall<k: K> k != *key ==> (*self).get_unsized(k) == (^self).get_unsized(k))]
     #[ensures((*self).len() == (^self).len())]
     pub fn get_mut_ghost(&mut self, key: &K) -> Option<&mut V> {
+        let _ = key;
+        panic!()
+    }
+
+    /// Returns a mutable reference to the value corresponding to a key, while still allowing
+    /// modification on the other keys.
+    ///
+    /// # Example
+    /// ```rust,creusot
+    /// use creusot_contracts::{logic::FMap, *};
+    ///
+    /// let mut map = FMap::new();
+    /// ghost! {
+    ///     map.insert_ghost(1, 21);
+    ///     map.insert_ghost(2, 42);
+    ///     if let (Some(x), map2) = map.split_mut_ghost(&1) {
+    ///         *x = 22;
+    ///         map2.insert_ghost(3, 30);
+    ///         map2.insert_ghost(1, 56); // This modification will be ignored on `map`
+    ///     }
+    ///     proof_assert!(map.lookup(1i32) == 22i32);
+    ///     proof_assert!(map.lookup(2i32) == 42i32);
+    ///     proof_assert!(map.lookup(3i32) == 30i32);
+    /// };
+    /// ```
+    #[trusted]
+    #[pure]
+    #[ensures(if self.contains(*key) {
+        *result.1 == (*self).remove(*key) &&
+        match result.0 {
+            None => false,
+            Some(r) => *(*self).lookup_unsized(*key) == *r && ^self == (^result.1).insert(*key, ^r),
+        }
+    } else {
+        result.0 == None && result.1 == self
+    })]
+    pub fn split_mut_ghost(&mut self, key: &K) -> (Option<&mut V>, &mut Self) {
         let _ = key;
         panic!()
     }

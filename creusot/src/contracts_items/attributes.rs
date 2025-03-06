@@ -1,9 +1,10 @@
 //! Defines all the internal creusot attributes.
 
 use rustc_ast::Param;
-use rustc_hir::{def_id::DefId, AttrArgs, Attribute};
+use rustc_hir::{AttrArgs, Attribute, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
+use why3::declaration::Attribute as WAttribute;
 
 /// Helper macro, converts `creusot::foo::bar` into `["creusot", "foo", "bar"]`.
 macro_rules! path_to_str {
@@ -45,7 +46,6 @@ attribute_functions! {
     [creusot::before_loop]                   => is_before_loop
     [creusot::spec::assert]                  => is_assertion
     [creusot::spec::snapshot]                => is_snapshot_closure
-    [creusot::ghost]                         => is_ghost_closure
     [creusot::decl::logic]                   => is_logic
     [creusot::decl::logic::prophetic]        => is_prophetic
     [creusot::decl::predicate]               => is_predicate
@@ -57,6 +57,7 @@ attribute_functions! {
     [creusot::trusted_ignore_structural_inv] => is_ignore_structural_inv
     [creusot::trusted_is_tyinv_trivial_if_param_trivial] => is_tyinv_trivial_if_param_trivial
     [creusot::clause::variant]               => has_variant_clause
+    [creusot::bitwise]                       => is_bitwise
 }
 
 pub fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {
@@ -93,10 +94,10 @@ pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol>
         .map(|a| a.value_str().expect("invalid creusot::clause::open"))
 }
 
-pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::Attribute> {
-    get_attrs(tcx.get_attrs_unchecked(def_id), &["why3", "attr"])
+pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<WAttribute> {
+    get_attrs(tcx.get_attrs_unchecked(def_id), &["creusot", "why3_attr"])
         .into_iter()
-        .map(|a| why3::declaration::Attribute::Attr(a.value_str().unwrap().as_str().into()))
+        .map(|a| WAttribute::Attr(a.value_str().unwrap().as_str().into()))
         .collect()
 }
 

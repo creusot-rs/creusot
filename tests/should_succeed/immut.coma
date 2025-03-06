@@ -1,0 +1,34 @@
+module M_immut__f [#"immut.rs" 3 0 3 10]
+  let%span simmut0 = "immut.rs" 4 16 4 18
+  let%span sresolve1 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  
+  use creusot.int.UInt32
+  
+  use creusot.prelude.MutBorrow
+  
+  predicate resolve'1 (self : MutBorrow.t UInt32.t) =
+    [%#sresolve1] self.final = self.current
+  
+  predicate resolve'0 (_1 : MutBorrow.t UInt32.t) =
+    resolve'1 _1
+  
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec f'0[#"immut.rs" 3 0 3 10] (return'  (ret:()))= (! bb0
+    [ bb0 = s0
+      [ s0 =  [ &a <- [%#simmut0] (10 : UInt32.t) ] s1
+      | s1 = MutBorrow.borrow_mut <UInt32.t> {a}
+          (fun (_ret':MutBorrow.t UInt32.t) ->  [ &b <- _ret' ]  [ &a <- _ret'.final ] s2)
+      | s2 =  [ &_c <- b.current ] s3
+      | s3 = -{resolve'0 b}- s4
+      | s4 = return' {_0} ]
+     ]
+    )
+    [ & _0 : () = Any.any_l ()
+    | & a : UInt32.t = Any.any_l ()
+    | & b : MutBorrow.t UInt32.t = Any.any_l ()
+    | & _c : UInt32.t = Any.any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end

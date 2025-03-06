@@ -20,7 +20,9 @@ impl<T, const N: usize> View for [T; N] {
 
     #[logic]
     #[trusted]
-    #[creusot::builtins = "prelude.prelude.Slice.id"]
+    #[cfg_attr(target_pointer_width = "16", creusot::builtins = "creusot.slice.Slice16.id")]
+    #[cfg_attr(target_pointer_width = "32", creusot::builtins = "creusot.slice.Slice32.id")]
+    #[cfg_attr(target_pointer_width = "64", creusot::builtins = "creusot.slice.Slice64.id")]
     // TODO:
     // #[ensures(result.len() == N@)]
     // Warning: #[ensures] and #[trusted] are incompatible, so this might require

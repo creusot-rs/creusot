@@ -90,13 +90,12 @@ where
             // Interestingly, Z3 guesses `f` quite readily but gives up *totally* on `s`. However, the addition of the final assertions on the correctness of the values
             // blocks z3's guess for `f`.
             exists<s : Seq<Self::Item>, f : Mapping<Int, Int>> self.iter().produces(s, succ.iter()) &&
+                (forall<i: Int> 0 <= i && i < visited.len() ==> 0 <= f.get(i) && f.get(i) < s.len()) &&
                 // `f` is a monotone mapping
-                (forall<i : _, j :_ > 0 <= i && i <= j && j < visited.len() ==> 0 <= f.get(i) && f.get(i) <= f.get(j) && f.get(j) < s.len()) &&
+                (forall<i: _, j:_ > 0 <= i && i < j && j < visited.len() ==> f.get(i) < f.get(j)) &&
                 (forall<i : _, > 0 <= i && i < visited.len() ==> visited[i] == s[f.get(i)]) &&
-
                 (forall<i : _> 0 <= i &&  i < s.len() ==>
-                    (exists<j : _> 0 <= j && j < visited.len() && f.get(j) == i) == self.func().postcondition_mut((&s[i],), self.func(), true)
-                )
+                    (exists<j : _> 0 <= j && j < visited.len() && f.get(j) == i) == self.func().postcondition_mut((&s[i],), self.func(), true))
         }
     }
 

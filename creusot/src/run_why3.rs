@@ -2,28 +2,31 @@ use crate::{
     backend::Why3Generator,
     options::{Options, Why3Sub},
 };
-use include_dir::{include_dir, Dir};
+use include_dir::{Dir, include_dir};
 use rustc_ast::{
+    Block, DUMMY_NODE_ID, Expr, ExprKind, Pat, PatKind, PathSegment, Ty, TyKind,
     mut_visit::DummyAstNode,
     ptr::P,
     token::{Lit, LitKind},
-    Block, Expr, ExprKind, Pat, PatKind, PathSegment, Ty, TyKind, DUMMY_NODE_ID,
 };
 use rustc_ast_pretty::pprust::expr_to_string;
 use rustc_span::{
-    def_id::LocalDefId, source_map::dummy_spanned, symbol::Ident, BytePos, Span, Symbol,
-    SyntaxContext, DUMMY_SP,
+    BytePos, DUMMY_SP, Span, Symbol, SyntaxContext, def_id::LocalDefId, source_map::dummy_spanned,
+    symbol::Ident,
 };
 use serde_json::Deserializer;
 use std::{
-    collections::{hash_map::Entry, HashMap},
+    collections::{HashMap, hash_map::Entry},
     fmt::{Display, Formatter, Write},
     io::BufReader,
     path::PathBuf,
     process::{Command, Stdio},
 };
 use tempdir::TempDir;
-use why3::ce_models::{ConcreteTerm, FunLitElt, Goal, Loc, ProverResult, TBool, Term, Why3Span};
+use why3::{
+    ce_models::{ConcreteTerm, FunLitElt, Goal, Loc, ProverResult, TBool, Term, Why3Span},
+    declaration::Attribute,
+};
 
 static PRELUDE: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/../prelude");
 
@@ -47,7 +50,7 @@ pub(super) fn run_why3<'tcx>(ctx: &Why3Generator<'tcx>, file: Option<PathBuf>) {
     }
     let temp_dir = TempDir::new("creusot_why3_prelude").expect("could not create temp dir");
     let mut prelude_dir: PathBuf = temp_dir.as_ref().into();
-    prelude_dir.push("prelude");
+    prelude_dir.push("creusot");
     std::fs::create_dir(&prelude_dir).unwrap();
 
     PRELUDE.extract(&prelude_dir).expect("could extract prelude into temp dir");
@@ -69,7 +72,7 @@ pub(super) fn run_why3<'tcx>(ctx: &Why3Generator<'tcx>, file: Option<PathBuf>) {
 
     if matches!(why3_cmd.sub, Why3Sub::Prove) {
         command.arg("--json");
-        let span_map = &ctx.span_map;
+        let span_map = &ctx.span_map.borrow();
         let mut child = command.stdout(Stdio::piped()).spawn().expect("could not run why3");
         let mut stdout = BufReader::new(child.stdout.take().unwrap());
         let de = Deserializer::from_reader(&mut stdout);
@@ -141,16 +144,12 @@ impl SpanMap {
     }
 
     // TODO(xavier): Refactor this so that we don't check the why3_cmd when translating spans!!
-    pub(crate) fn encode_span(
-        &mut self,
-        opts: &Options,
-        span: Span,
-    ) -> Option<why3::declaration::Attribute> {
+    pub(crate) fn encode_span(&mut self, opts: &Options, span: Span) -> Option<Attribute> {
         if let Some(cmd) = &opts.why3_cmd
             && matches!(cmd.sub, Why3Sub::Prove)
         {
             let data = span.data();
-            Some(why3::declaration::Attribute::Span(
+            Some(Attribute::Span(
                 "rustc_span".into(),
                 data.lo.0 as usize,
                 data.hi.0 as usize,
@@ -342,10 +341,10 @@ fn cterm_to_ast(t: &ConcreteTerm) -> Expr {
             app("funlit!", [arr, cterm_to_ast(other)])
         }
         ConcreteTerm::Proj { name, value } => match (&**name, &**value) {
-            ("prelude.prelude.UInt8.uint8'int", ConcreteTerm::Integer(n)) => {
+            ("creusot.int.UInt8.uint8'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("u8"))
             }
-            ("prelude.prelude.UInt16.uint16'int", ConcreteTerm::Integer(n)) => {
+            ("creusot.int.UInt16.uint16'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("u16"))
             }
             ("mach.int.UInt32Gen.uint32'int", ConcreteTerm::Integer(n)) => {
@@ -354,13 +353,13 @@ fn cterm_to_ast(t: &ConcreteTerm) -> Expr {
             ("mach.int.UInt64Gen.uint64'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("u64"))
             }
-            ("prelude.prelude.UInt128.uint16'int", ConcreteTerm::Integer(n)) => {
+            ("creusot.int.UInt128.uint16'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("u128"))
             }
-            ("prelude.prelude.Int8.int8'int", ConcreteTerm::Integer(n)) => {
+            ("creusot.int.Int8.int8'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("i8"))
             }
-            ("prelude.prelude.Int16.int16'int", ConcreteTerm::Integer(n)) => {
+            ("creusot.int.Int16.int16'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("i16"))
             }
             ("mach.int.Int32.int32'int", ConcreteTerm::Integer(n)) => {
@@ -369,7 +368,7 @@ fn cterm_to_ast(t: &ConcreteTerm) -> Expr {
             ("mach.int.Int64.int64'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("i64"))
             }
-            ("prelude.prelude.Int128.int128'int", ConcreteTerm::Integer(n)) => {
+            ("creusot.int.Int128.int128'int", ConcreteTerm::Integer(n)) => {
                 lit(&n.int_value, LitKind::Integer, Some("i128"))
             }
             _ => app("proj!", [name_to_path(name), cterm_to_ast(value)]),

@@ -32,7 +32,7 @@ pub const URLS: Urls = Urls {
     cvc5: Url {
         url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.0.5/cvc5-Linux",
         sha256: "57fa94b740e0827f655a731b97dae84fedf86e65fa897c3a56a01a83d283d15e",
-    }
+    },
 };
 
 #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
@@ -52,7 +52,7 @@ pub const URLS: Urls = Urls {
     cvc5: Url {
         url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.0.5/cvc5-macOS",
         sha256: "0e74e40a3db82f3ac4d8ea23308931bedbc6afbcf3ed484b8b000da17c75885c",
-    }
+    },
 };
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
@@ -73,7 +73,7 @@ pub const URLS: Urls = Urls {
     cvc5: Url {
         url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.0.5/cvc5-macOS-arm64",
         sha256: "f1fe16664d88f9549da3df00853b6ddabafa68b1dc1c62d6dad0c0549cf95a33",
-    }
+    },
 };
 
 pub struct Urls {

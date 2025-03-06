@@ -4,14 +4,13 @@ pub(crate) mod external;
 pub(crate) mod fmir;
 pub(crate) mod function;
 pub(crate) mod pearlite;
-mod projection_vec;
 pub(crate) mod specification;
 pub(crate) mod traits;
 
 use crate::{
-    backend::{is_trusted_function, Why3Generator},
+    backend::{Why3Generator, is_trusted_function},
     contracts_items::{
-        are_contracts_loaded, is_logic, is_no_translate, is_predicate, is_spec, AreContractsLoaded,
+        AreContractsLoaded, are_contracts_loaded, is_logic, is_no_translate, is_predicate, is_spec,
     },
     ctx::{self},
     error::{Error, InternalError},
@@ -19,9 +18,9 @@ use crate::{
     options::Output,
     translated_item::FileModule,
     validate::{
-        validate_impls, validate_opacity, validate_purity, validate_traits, validate_trusted,
+        validate_impls, validate_opacity, validate_purity, validate_terminates, validate_traits,
+        validate_trusted,
     },
-    validate_terminates::validate_terminates,
 };
 use ctx::TranslationCtx;
 use rustc_hir::{def::DefKind, def_id::DefId};
@@ -29,8 +28,9 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::DUMMY_SP;
 use std::{fs::File, io::Write, path::PathBuf, time::Instant};
 use why3::{
+    Ident,
     declaration::{Attribute, Decl, Module},
-    printer::{self, pretty_blocks, Print},
+    printer::{self, Print, pretty_blocks},
 };
 
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn std::error::Error>> {
@@ -38,7 +38,7 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn st
 
     match are_contracts_loaded(ctx.tcx) {
         AreContractsLoaded::Yes => {},
-        AreContractsLoaded::No => ctx.fatal_error(DUMMY_SP, "The `creusot_contracts` crate is not loaded. You will not be able to verify any code using Creusot until you do so.").emit(),
+        AreContractsLoaded::No => ctx.fatal_error(DUMMY_SP, "The `creusot_contracts` crate is not loaded. You will not be able to verify any code using Creusot until you do so.").with_note("Don't forget to actually use creusot_contracts: `use creusot_contracts::*;`").emit(),
         AreContractsLoaded::MissingItems(missing) => {
             let mut message = String::from("The `creusot_contracts` crate is loaded, but the following items are missing: ");
             for (i, item) in missing.iter().enumerate() {
@@ -138,7 +138,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn std::err
     }
 
     if why3.should_export() {
-        metadata::dump_exports(&why3, &why3.opts.metadata_path);
+        metadata::dump_exports(&mut why3);
     }
 
     if why3.should_compile() {
@@ -158,15 +158,15 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn std::err
 }
 
 pub enum OutputHandle {
-    Directory(PathBuf, Vec<why3::Ident>), // One file per Coma module, second component is a prefix for all files
-    File(Box<dyn Write>),                 // Monolithic output
+    Directory(PathBuf, Vec<Ident>), // One file per Coma module, second component is a prefix for all files
+    File(Box<dyn Write>),           // Monolithic output
 }
 
 fn module_output(modl: &FileModule, output: &mut OutputHandle) -> std::io::Result<()> {
     match output {
         OutputHandle::Directory(dir, prefix) => {
             let mut path = dir.clone();
-            path.push(modl.path.file_name(prefix));
+            path.push(modl.path.file_name(&*prefix));
             path.set_extension("coma");
             let prefix = path.parent().unwrap();
             std::fs::create_dir_all(prefix).unwrap();
@@ -224,7 +224,7 @@ fn remove_coma_files(dir: &PathBuf) -> std::io::Result<()> {
 
 fn print_crate<I: Iterator<Item = FileModule>>(
     output_target: Output,
-    prefix: Vec<why3::Ident>,
+    prefix: Vec<Ident>,
     modules: I,
 ) -> std::io::Result<Option<PathBuf>> {
     let (root, mut output) = match output_target {

@@ -9,10 +9,10 @@ use crate::{
     error::{CannotFetchThir, CreusotResult, Error},
     metadata::{BinaryMetadata, Metadata},
     options::Options,
-    specification::{pre_sig_of, PreSignature},
+    specification::{PreSignature, pre_sig_of},
     translation::{
         self,
-        external::{extract_extern_specs_from_item, ExternSpec},
+        external::{ExternSpec, extract_extern_specs_from_item},
         fmir,
         function::ClosureContract,
         pearlite::{self, Term},
@@ -21,10 +21,10 @@ use crate::{
     },
     util::{erased_identity_for_item, parent_module},
 };
-use indexmap::IndexMap;
+use once_map::unsync::OnceMap;
 use rustc_ast::{
-    visit::{walk_fn, FnKind, Visitor},
     Fn, FnSig, NodeId,
+    visit::{FnKind, Visitor, walk_fn},
 };
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
 use rustc_errors::{Diag, FatalAbort};
@@ -44,29 +44,19 @@ use rustc_middle::{
 };
 use rustc_span::{Span, Symbol};
 use rustc_trait_selection::traits::normalize_param_env_or_error;
-use std::{collections::HashMap, ops::Deref, rc::Rc};
+use std::{collections::HashMap, ops::Deref};
 
 pub(crate) use crate::{backend::clone_map::*, translated_item::*};
 
 macro_rules! queryish {
-    ($name:ident, $res:ty, $builder:ident) => {
-        pub(crate) fn $name(&mut self, item: DefId) -> $res {
-            if self.$name.get(&item).is_none() {
-                let res = self.$builder(item);
-                self.$name.insert(item, res);
-            };
-
-            &self.$name[&item]
+    ($name:ident, $key:ty, $res:ty, $builder:ident) => {
+        pub(crate) fn $name(&self, item: $key) -> &$res {
+            self.$name.insert(item, |&item| Box::new(self.$builder(item)))
         }
     };
-    ($name:ident, $res:ty, $builder:expr) => {
-        pub(crate) fn $name(&mut self, item: DefId) -> $res {
-            if self.$name.get(&item).is_none() {
-                let res = ($builder)(self, item);
-                self.$name.insert(item, res);
-            };
-
-            &self.$name[&item]
+    ($name:ident, $key:ty, $res:ty, $builder:expr) => {
+        pub(crate) fn $name(&self, item: $key) -> &$res {
+            self.$name.insert(item, |&item| Box::new(($builder)(self, item)))
         }
     };
 }
@@ -149,20 +139,21 @@ impl ItemType {
 // TODO: The state in here should be as opaque as possible...
 pub struct TranslationCtx<'tcx> {
     pub tcx: TyCtxt<'tcx>,
-    laws: IndexMap<DefId, Vec<DefId>>,
-    fmir_body: IndexMap<BodyId, fmir::Body<'tcx>>,
-    terms: IndexMap<DefId, Term<'tcx>>,
+
     pub externs: Metadata<'tcx>,
     pub(crate) opts: Options,
     creusot_items: CreusotItems,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
-    trait_impl: HashMap<DefId, TraitImpl<'tcx>>,
-    sig: HashMap<DefId, PreSignature<'tcx>>,
-    bodies: HashMap<LocalDefId, Rc<BodyWithBorrowckFacts<'tcx>>>,
-    opacity: HashMap<DefId, Opacity>,
-    closure_contract: HashMap<DefId, ClosureContract<'tcx>>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
+    laws: OnceMap<DefId, Box<Vec<DefId>>>,
+    fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
+    terms: OnceMap<DefId, Box<Option<Term<'tcx>>>>,
+    trait_impl: OnceMap<DefId, Box<TraitImpl<'tcx>>>,
+    sig: OnceMap<DefId, Box<PreSignature<'tcx>>>,
+    bodies: OnceMap<LocalDefId, Box<BodyWithBorrowckFacts<'tcx>>>,
+    opacity: OnceMap<DefId, Box<Opacity>>,
+    closure_contract: OnceMap<DefId, Box<ClosureContract<'tcx>>>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -245,17 +236,11 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
     }
 
-    queryish!(trait_impl, &TraitImpl<'tcx>, translate_impl);
+    queryish!(trait_impl, DefId, TraitImpl<'tcx>, translate_impl);
 
-    queryish!(closure_contract, &ClosureContract<'tcx>, build_closure_contract);
+    queryish!(closure_contract, DefId, ClosureContract<'tcx>, build_closure_contract);
 
-    pub(crate) fn fmir_body(&mut self, body_id: BodyId) -> &fmir::Body<'tcx> {
-        if !self.fmir_body.contains_key(&body_id) {
-            let fmir = translation::function::fmir(self, body_id);
-            self.fmir_body.insert(body_id, fmir);
-        }
-        self.fmir_body.get(&body_id).unwrap()
-    }
+    queryish!(fmir_body, BodyId, fmir::Body<'tcx>, translation::function::fmir);
 
     /// Compute the pearlite term associated with `def_id`.
     ///
@@ -263,31 +248,35 @@ impl<'tcx> TranslationCtx<'tcx> {
     /// - `Ok(None)` if `def_id` does not have a body
     /// - `Ok(Some(term))` if `def_id` has a body, in this crate or in a dependency.
     /// - `Err(CannotFetchThir)` if typechecking the body of `def_id` failed.
-    pub(crate) fn term(&mut self, def_id: DefId) -> Result<Option<&Term<'tcx>>, CannotFetchThir> {
-        let Some(local_id) = def_id.as_local() else { return Ok(self.externs.term(def_id)) };
+    pub(crate) fn term<'a>(
+        &'a self,
+        def_id: DefId,
+    ) -> Result<Option<&'a Term<'tcx>>, CannotFetchThir> {
+        let Some(local_id) = def_id.as_local() else {
+            return Ok(self.externs.term(def_id));
+        };
 
-        if self.tcx.hir().maybe_body_owned_by(local_id).is_some() {
-            if !self.terms.contains_key(&def_id) {
-                let mut term = match pearlite::pearlite(self, local_id) {
-                    Ok(t) => t,
-                    Err(Error::MustPrint(msg)) => msg.emit(self.tcx),
-                    Err(Error::TypeCheck(thir)) => return Err(thir),
-                };
-                term = pearlite::normalize(self.tcx, self.typing_env(def_id), term);
-
-                self.terms.insert(def_id, term);
-            };
-            Ok(self.terms.get(&def_id))
-        } else {
-            Ok(None)
-        }
+        self.terms
+            .try_insert(def_id, |_| {
+                if self.tcx.hir().maybe_body_owned_by(local_id).is_some() {
+                    let term = match pearlite::pearlite(self, local_id) {
+                        Ok(t) => t,
+                        Err(Error::MustPrint(msg)) => msg.emit(self.tcx),
+                        Err(Error::TypeCheck(thir)) => return Err(thir),
+                    };
+                    Ok(Box::new(Some(pearlite::normalize(self.tcx, self.typing_env(def_id), term))))
+                } else {
+                    Ok(Box::new(None))
+                }
+            })
+            .map(|x| x.as_ref())
     }
 
     /// Same as [`Self::term`], but aborts if an error was found.
     ///
     /// This should only be used in [`after_analysis`](crate::translation::after_analysis),
     /// where we are confident that typechecking errors have already been reported.
-    pub(crate) fn term_fail_fast(&mut self, def_id: DefId) -> Option<&Term<'tcx>> {
+    pub(crate) fn term_fail_fast(&self, def_id: DefId) -> Option<&Term<'tcx>> {
         let tcx = self.tcx;
         self.term(def_id).unwrap_or_else(|_| {
             tcx.dcx().abort_if_errors();
@@ -302,14 +291,10 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.params_open_inv.get(&def_id)
     }
 
-    queryish!(sig, &PreSignature<'tcx>, |ctx: &mut Self, key| { pre_sig_of(&mut *ctx, key) });
+    queryish!(sig, DefId, PreSignature<'tcx>, (pre_sig_of));
 
-    pub(crate) fn body_with_facts(
-        &mut self,
-        def_id: LocalDefId,
-    ) -> &Rc<BodyWithBorrowckFacts<'tcx>> {
-        let entry = self.bodies.entry(def_id);
-        entry.or_insert_with(|| {
+    pub(crate) fn body_with_facts(&self, def_id: LocalDefId) -> &BodyWithBorrowckFacts<'tcx> {
+        self.bodies.insert(def_id, |_| {
             let mut body = callbacks::get_body(self.tcx, def_id)
                 .unwrap_or_else(|| panic!("did not find body for {def_id:?}"));
 
@@ -325,7 +310,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 }
             }
 
-            Rc::new(body)
+            Box::new(body)
         })
     }
 
@@ -362,7 +347,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.tcx.dcx().span_warn(span, msg.into())
     }
 
-    queryish!(laws, &[DefId], laws_inner);
+    queryish!(laws, DefId, [DefId], laws_inner);
 
     // TODO Make private
     pub(crate) fn extern_spec(&self, def_id: DefId) -> Option<&ExternSpec<'tcx>> {
@@ -377,16 +362,10 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.opts.should_output
     }
 
+    queryish!(opacity, DefId, Opacity, mk_opacity);
+
     /// We encodes the opacity of functions using 'witnesses', funcitons that have the target opacity
     /// set as their *visibility*.
-    pub(crate) fn opacity(&mut self, item: DefId) -> &Opacity {
-        if !self.opacity.contains_key(&item) {
-            self.opacity.insert(item, self.mk_opacity(item));
-        }
-
-        &self.opacity[&item]
-    }
-
     fn mk_opacity(&self, item: DefId) -> Opacity {
         if !matches!(self.item_type(item), ItemType::Predicate { .. } | ItemType::Logic { .. }) {
             return Opacity(Visibility::Public);
@@ -401,13 +380,13 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     /// Checks if `item` is transparent in the scope of `modl`.
     /// This will determine whether the solvers are allowed to unfold the body's definition.
-    pub(crate) fn is_transparent_from(&mut self, item: DefId, modl: DefId) -> bool {
+    pub(crate) fn is_transparent_from(&self, item: DefId, modl: DefId) -> bool {
         self.opacity(item).0.is_accessible_from(modl, self.tcx)
     }
 
-    pub(crate) fn metadata(&self) -> BinaryMetadata<'tcx> {
+    pub(crate) fn metadata(&mut self) -> BinaryMetadata<'tcx> {
         BinaryMetadata::from_parts(
-            &self.terms,
+            &mut self.terms,
             &self.creusot_items,
             &self.extern_specs,
             &self.params_open_inv,
@@ -452,7 +431,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         TypingEnv { typing_mode: mode, param_env }
     }
 
-    pub(crate) fn has_body(&mut self, def_id: DefId) -> bool {
+    pub(crate) fn has_body(&self, def_id: DefId) -> bool {
         if let Some(local_id) = def_id.as_local() {
             self.tcx.hir().maybe_body_owned_by(local_id).is_some()
         } else {
@@ -511,15 +490,12 @@ impl<'tcx> TranslationCtx<'tcx> {
             // let additional_predicates = self.arena.alloc_slice(&additional_predicates);
             // let additional_predicates = rustc_middle::ty::GenericPredicates { parent: None, predicates: additional_predicates };
 
-            self.extern_specs.insert(
-                def_id,
-                ExternSpec {
-                    contract: ContractClauses::new(),
-                    subst: erased_identity_for_item(self.tcx, def_id),
-                    arg_subst: Vec::new(),
-                    additional_predicates,
-                },
-            );
+            self.extern_specs.insert(def_id, ExternSpec {
+                contract: ContractClauses::new(),
+                subst: erased_identity_for_item(self.tcx, def_id),
+                arg_subst: Vec::new(),
+                additional_predicates,
+            });
         }
 
         Ok(())

@@ -1,9 +1,9 @@
 use crate::pretyping;
 use proc_macro2::{Span, TokenStream};
-use quote::{quote, quote_spanned, ToTokens};
+use quote::{ToTokens, quote, quote_spanned};
 use syn::{
-    parse_quote_spanned, spanned::Spanned, token::Brace, AttrStyle, Attribute, Block, Error, Expr,
-    ExprForLoop, ExprLoop, ExprWhile, Ident, ItemFn, Meta, Result, Stmt, Token,
+    AttrStyle, Attribute, Block, Error, Expr, ExprForLoop, ExprLoop, ExprWhile, Ident, ItemFn,
+    Meta, Result, Stmt, Token, parse_quote_spanned, spanned::Spanned, token::Brace,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -49,7 +49,7 @@ impl ToTokens for Invariant {
             },
         };
         tokens.extend(quote_spanned! {span=>
-            #[allow(unused_must_use)]
+            #[allow(let_underscore_drop)]
             let _ =
                 #[creusot::no_translate]
                 #[creusot::spec]
@@ -73,7 +73,7 @@ fn desugar(tag: Tag, invariant0: TokenStream, expr: TokenStream) -> Result<Token
             return Err(Error::new_spanned(
                 expr,
                 "invariants must be attached to either a `for`, `loop` or `while`",
-            ))
+            ));
         }
     }
 }
@@ -100,7 +100,7 @@ fn filter_invariants(
     parse_push_invariant(&mut invariants, tag, invariant)?;
 
     let attrs = attrs.extract_if(0.., |attr| {
-        attr.path().get_ident().map_or(false, |i| i == "invariant" || i == "variant")
+        attr.path().get_ident().is_some_and(|i| i == "invariant" || i == "variant")
     });
     for attr in attrs {
         let i = if attr.path().get_ident().map(|i| i == "invariant").unwrap_or(false) {
@@ -153,7 +153,7 @@ fn desugar_loop(invariants: Vec<Invariant>, mut l: ExprLoop) -> TokenStream {
     let span = l.loop_token.span;
     l.body.stmts.insert(0, Stmt::Expr(Expr::Verbatim(quote! { #(#invariants)* }), None));
     quote_spanned! {span=> {
-      #[allow(unused_must_use)]
+      #[allow(let_underscore_drop)]
       let _ = { #[creusot::no_translate] #[creusot::before_loop] || {} };
       #l
     }}
@@ -180,22 +180,17 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
         },
     );
 
-    invariants.insert(
-        0,
-        Invariant {
-            tag: Tag::Invariant(ForInvariant),
-            span: for_span,
-            term: parse_quote_spanned! {for_span=> ::creusot_contracts::invariant::inv(#it) },
-        },
-    );
+    invariants.insert(0, Invariant {
+        tag: Tag::Invariant(ForInvariant),
+        span: for_span,
+        term: parse_quote_spanned! {for_span=> ::creusot_contracts::invariant::inv(#it) },
+    });
 
-    invariants.insert(0,
-        Invariant {
-            tag: Tag::Invariant(ForInvariant),
-            span: for_span,
-            term: parse_quote_spanned! {for_span=> ::creusot_contracts::invariant::inv(*#produced) },
-        },
-    );
+    invariants.insert(0, Invariant {
+        tag: Tag::Invariant(ForInvariant),
+        span: for_span,
+        term: parse_quote_spanned! {for_span=> ::creusot_contracts::invariant::inv(*#produced) },
+    });
 
     let elem = Ident::new("__creusot_proc_iter_elem", proc_macro::Span::def_site().into());
 
@@ -245,7 +240,7 @@ fn variant_to_tokens(span: Span, p: &pearlite_syn::Term) -> (String, TokenStream
     let name_tag = format!("{}", var_name);
 
     let variant_tokens = quote_spanned! {span=>
-        #[allow(unused_must_use)]
+        #[allow(let_underscore_drop)]
         let _ =
             #[creusot::no_translate]
             #[creusot::item=#name_tag]

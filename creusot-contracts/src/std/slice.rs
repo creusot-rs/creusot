@@ -1,12 +1,11 @@
 use crate::{
     invariant::*,
     resolve::structural_resolve,
-    std::{
-        alloc::Allocator,
-        ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
-    },
+    std::ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
     *,
 };
+#[cfg(feature = "nightly")]
+use ::std::alloc::Allocator;
 pub use ::std::slice::*;
 
 impl<T> Invariant for [T] {
@@ -46,7 +45,9 @@ impl<T: DeepModel> DeepModel for [T] {
 
 #[logic]
 #[trusted]
-#[creusot::builtins = "prelude.prelude.Slice.id"]
+#[cfg_attr(target_pointer_width = "16", creusot::builtins = "creusot.slice.Slice16.id")]
+#[cfg_attr(target_pointer_width = "32", creusot::builtins = "creusot.slice.Slice32.id")]
+#[cfg_attr(target_pointer_width = "64", creusot::builtins = "creusot.slice.Slice64.id")]
 fn slice_model<T>(_: &[T]) -> Seq<T> {
     dead
 }
@@ -117,21 +118,21 @@ where
 impl<T> SliceIndex<[T]> for usize {
     #[predicate]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     fn in_bounds(self, seq: Seq<T>) -> bool {
         pearlite! { self@ < seq.len() }
     }
 
     #[predicate]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     fn has_value(self, seq: Seq<T>, out: T) -> bool {
         pearlite! { seq[self@] == out }
     }
 
     #[predicate]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
         pearlite! { forall<i : Int> 0 <= i && i != self@ && i < old.len() ==> old[i] == fin[i] }
     }
@@ -331,6 +332,19 @@ extern_spec! {
         #[terminates] // can OOM (?)
         #[ensures(result@ == self_@)]
         fn into_vec<A: Allocator>(self_: Box<Self, A>) -> Vec<T, A>;
+
+        #[requires(ix.in_bounds(self@))]
+        #[ensures(ix.has_value(self@, *result))]
+        unsafe fn get_unchecked<I>(&self, ix: I) -> &<I as ::std::slice::SliceIndex<[T]>>::Output
+            where I : SliceIndex<[T]>;
+
+        #[requires(ix.in_bounds(self@))]
+        #[ensures(ix.has_value(self@, *result))]
+        #[ensures(ix.has_value((^self)@, ^result))]
+        #[ensures(ix.resolve_elswhere(self@, (^self)@))]
+        #[ensures((^self)@.len() == self@.len())]
+        unsafe fn get_unchecked_mut<I>(&mut self, ix: I) -> &mut <I as ::std::slice::SliceIndex<[T]>>::Output
+            where I : SliceIndex<[T]>;
     }
 
     impl<T, I> IndexMut<I> for [T]

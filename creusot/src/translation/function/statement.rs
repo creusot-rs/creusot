@@ -14,10 +14,10 @@ use crate::{
 use rustc_borrowck::consumers::TwoPhaseActivation;
 use rustc_middle::{
     mir::{
-        BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
+        BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
         StatementKind,
     },
-    ty::{adjustment::PointerCoercion, TyKind},
+    ty::{TyKind, adjustment::PointerCoercion},
 };
 use rustc_mir_dataflow::ResultsCursor;
 
@@ -125,11 +125,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
             },
             Rvalue::Discriminant(_) => return,
-            Rvalue::BinaryOp(BinOp::BitAnd, box (l, _))
-                if !l.ty(self.body, self.tcx()).is_bool() =>
-            {
-                self.ctx.crash_and_error(si.span, "bitwise operations are currently unsupported")
-            }
             Rvalue::BinaryOp(op, box (l, r)) => {
                 RValue::BinOp(*op, self.translate_operand(l), self.translate_operand(r))
             }
@@ -157,7 +152,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                         &self.locals,
                                         si,
                                     ));
-                                    self.check_frozen_in_logic(&cond, loc);
+                                    self.check_use_in_logic(&cond, loc);
                                     self.emit_statement(fmir::Statement::Assertion {
                                         cond,
                                         msg,
@@ -172,7 +167,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 .shift_remove(def_id)
                                 .expect("Could not find body of assertion");
                             assertion.subst(&inv_subst(self.tcx(), &self.body, &self.locals, si));
-                            self.check_frozen_in_logic(&assertion, loc);
+                            self.check_use_in_logic(&assertion, loc);
                             self.emit_statement(fmir::Statement::Assertion {
                                 cond: assertion,
                                 msg: "expl:assertion".to_owned(),

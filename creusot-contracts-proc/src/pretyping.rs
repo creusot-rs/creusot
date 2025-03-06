@@ -1,9 +1,9 @@
 use pearlite_syn::Term as RT;
 use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
-use syn::{spanned::Spanned, ExprMacro, Pat, UnOp};
+use syn::{ExprMacro, Pat, UnOp, spanned::Spanned};
 
 use pearlite_syn::term::*;
-use quote::{quote, quote_spanned, ToTokens};
+use quote::{ToTokens, quote, quote_spanned};
 use syn::Lit;
 
 #[derive(Debug)]
@@ -113,7 +113,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                 _ => Ok(quote_spanned! {sp=> #left #op #right }),
             }
         }
-        RT::Block(TermBlock { block, .. }) => encode_block(&block.stmts),
+        RT::Block(TermBlock { block, .. }) => encode_block(&block),
         RT::Call(TermCall { func, args, .. }) => {
             let args: Vec<_> = args.into_iter().map(encode_term).collect::<Result<_, _>>()?;
             if let RT::Path(p) = &**func {
@@ -127,7 +127,10 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             let func = encode_term(func)?;
             Ok(quote_spanned! {sp=> #func (#(#args),*)})
         }
-        RT::Cast(_) => Err(EncodeError::Unsupported(term.span(), "Cast".into())),
+        RT::Cast(TermCast { expr, as_token, ty }) => {
+            let expr_token = encode_term(expr)?;
+            Ok(quote_spanned! {sp=> #expr_token #as_token  #ty})
+        }
         RT::Field(TermField { base, member, .. }) => {
             let base = encode_term(base)?;
             Ok(quote!({ #base . #member }))
@@ -162,17 +165,15 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             })
         }
         RT::Let(_) => Err(EncodeError::Unsupported(term.span(), "Let".into())),
-        RT::Lit(TermLit { ref lit }) => match lit {
+        RT::Lit(TermLit { lit: lit @ Lit::Int(int) }) if int.suffix() == "" => {
             // FIXME: allow unbounded integers
-            Lit::Int(int) if int.suffix() == "" => {
-                Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) })
-            }
-            Lit::Int(int) if int.suffix() == "int" => {
-                let lit = syn::LitInt::new(int.base10_digits(), int.span());
-                Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) })
-            }
-            _ => Ok(quote_spanned! {sp=> #lit }),
-        },
+            Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) })
+        }
+        RT::Lit(TermLit { lit: Lit::Int(int) }) if int.suffix() == "int" => {
+            let lit = syn::LitInt::new(int.base10_digits(), int.span());
+            Ok(quote_spanned! {sp=> ::creusot_contracts::model::View::view(#lit as i128) })
+        }
+        RT::Lit(TermLit { lit }) => Ok(quote_spanned! {sp=> #lit }),
         RT::Match(TermMatch { expr, arms, .. }) => {
             let arms: Vec<_> = arms.iter().map(encode_arm).collect::<Result<_, _>>()?;
             let expr = encode_term(expr)?;
@@ -184,9 +185,13 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
 
             Ok(quote_spanned! {sp=> #receiver . #method #turbofish ( #(#args),*) })
         }
-        RT::Paren(TermParen { expr, .. }) => {
+        RT::Paren(TermParen { paren_token, expr }) => {
+            let mut tokens = TokenStream::new();
             let term = encode_term(expr)?;
-            Ok(quote_spanned! {sp=> (#term) })
+            paren_token.surround(&mut tokens, |tokens| {
+                tokens.extend(term);
+            });
+            Ok(tokens)
         }
         RT::Path(_) => Ok(quote_spanned! {sp=> #term }),
         RT::Range(_) => Err(EncodeError::Unsupported(term.span(), "Range".into())),
@@ -325,18 +330,22 @@ fn encode_trigger(
     Ok(ts)
 }
 
-pub fn encode_block(block: &[TermStmt]) -> Result<TokenStream, EncodeError> {
-    let stmts: Vec<_> = block.iter().map(encode_stmt).collect::<Result<_, _>>()?;
-    Ok(quote! { { #(#stmts)* } })
+pub fn encode_block(block: &TBlock) -> Result<TokenStream, EncodeError> {
+    let stmts: Vec<_> = block.stmts.iter().map(encode_stmt).collect::<Result<_, _>>()?;
+    let mut tokens = TokenStream::new();
+    block
+        .brace_token
+        .surround(&mut tokens, |tokens| stmts.iter().for_each(|stmt| stmt.to_tokens(tokens)));
+    Ok(tokens)
 }
 
 pub fn encode_stmt(stmt: &TermStmt) -> Result<TokenStream, EncodeError> {
     match stmt {
-        TermStmt::Local(TLocal { pat, init, .. }) => {
-            if let Some((_, init)) = init {
+        TermStmt::Local(TLocal { let_token, pat, init, semi_token }) => {
+            if let Some((eq_token, init)) = init {
                 let pat = encode_pattern(pat)?;
                 let init = encode_term(init)?;
-                Ok(quote! { let #pat = #init ; })
+                Ok(quote! { #let_token #pat #eq_token #init #semi_token })
             } else {
                 Err(EncodeError::LocalErr)
             }

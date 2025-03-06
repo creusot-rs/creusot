@@ -45,7 +45,7 @@ pub struct GhostBox<T>(#[cfg(creusot)] Box<T>, #[cfg(not(creusot))] std::marker:
 where
     T: ?Sized;
 
-impl<T: ?Sized + Clone> Clone for GhostBox<T> {
+impl<T: Clone> Clone for GhostBox<T> {
     #[ensures(result == *self)]
     fn clone(&self) -> Self {
         #[cfg(creusot)]
@@ -63,7 +63,7 @@ impl<T: ?Sized> Deref for GhostBox<T> {
     type Target = T;
 
     /// This function can only be called in `ghost!` context
-    #[rustc_diagnostic_item = "ghost_box_deref"]
+    #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_box_deref")]
     #[pure]
     #[ensures(*(*self).0 == *result)]
     fn deref(&self) -> &Self::Target {
@@ -79,7 +79,7 @@ impl<T: ?Sized> Deref for GhostBox<T> {
 }
 impl<T: ?Sized> DerefMut for GhostBox<T> {
     /// This function can only be called in `ghost!` context
-    #[rustc_diagnostic_item = "ghost_box_deref_mut"]
+    #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_box_deref_mut")]
     #[pure]
     #[ensures(result == &mut *self.0)]
     fn deref_mut(&mut self) -> &mut Self::Target {
@@ -107,14 +107,17 @@ impl<T: ?Sized> Resolve for GhostBox<T> {
     #[open]
     #[predicate(prophetic)]
     fn resolve(self) -> bool {
-        resolve(&self.0)
+        self.0.resolve()
     }
 
-    #[trusted]
     #[logic(prophetic)]
-    #[requires(structural_resolve(&self))]
+    #[open(self)]
+    #[requires(inv(self))]
+    #[requires(structural_resolve(self))]
     #[ensures((*self).resolve())]
-    fn resolve_coherence(&self) {}
+    fn resolve_coherence(&self) {
+        self.0.resolve_coherence();
+    }
 }
 
 impl<T: ?Sized> GhostBox<T> {
@@ -151,11 +154,12 @@ impl<T: ?Sized> GhostBox<T> {
     /// This function is nevertheless useful to create a `GhostBox` in "trusted"
     /// contexts, when axiomatizing an API that is believed to be sound for
     /// external reasons.
+    #[pure]
     #[requires(false)]
     pub fn conjure() -> Self {
         #[cfg(creusot)]
         {
-            loop {}
+            panic!()
         }
         #[cfg(not(creusot))]
         {
@@ -177,7 +181,7 @@ impl<T> GhostBox<T> {
     /// This function can only be called in `ghost!` code.
     #[pure]
     #[ensures(*result.0 == x)]
-    #[rustc_diagnostic_item = "ghost_box_new"]
+    #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_box_new")]
     pub fn new(x: T) -> Self {
         #[cfg(creusot)]
         {
@@ -190,12 +194,19 @@ impl<T> GhostBox<T> {
         }
     }
 
+    #[logic]
+    #[open(self)]
+    #[ensures(*result.0 == x)]
+    pub fn new_logic(x: T) -> Self {
+        Self(Box::new(x))
+    }
+
     /// Returns the inner value of the `GhostBox`.
     ///
     /// This function can only be called in `ghost!` context.
     #[pure]
     #[ensures(result == *self.0)]
-    #[rustc_diagnostic_item = "ghost_box_into_inner"]
+    #[cfg_attr(creusot, rustc_diagnostic_item = "ghost_box_into_inner")]
     pub fn into_inner(self) -> T {
         #[cfg(creusot)]
         {
@@ -215,5 +226,21 @@ impl<T> GhostBox<T> {
     #[rustc_diagnostic_item = "ghost_box_inner_logic"]
     pub fn inner_logic(self) -> T {
         *self.0
+    }
+}
+
+impl<T, U> GhostBox<(T, U)> {
+    #[pure]
+    #[trusted]
+    #[ensures(*self == (*result.0, *result.1))]
+    pub fn split(self) -> (GhostBox<T>, GhostBox<U>) {
+        #[cfg(creusot)]
+        {
+            panic!()
+        }
+        #[cfg(not(creusot))]
+        {
+            (GhostBox(std::marker::PhantomData), GhostBox(std::marker::PhantomData))
+        }
     }
 }

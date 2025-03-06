@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{declaration::Attribute, ty::Type, Ident, QName};
+use crate::{Ident, QName, declaration::Attribute, ty::Type};
 use indexmap::IndexSet;
 
 #[cfg(feature = "serialize")]
@@ -13,6 +13,11 @@ pub enum BinOp {
     LogOr,   // i.e., \/
     LazyAnd, // i.e., &&
     LazyOr,  // i.e., ||
+    BitAnd,
+    BitOr,
+    BitXor,
+    Shl,
+    Shr,
     Add,
     FloatAdd,
     Sub,
@@ -43,6 +48,11 @@ impl BinOp {
             BinOp::LazyAnd => Conj,
             BinOp::LogOr => Disj,
             BinOp::LazyOr => Disj,
+            BinOp::BitAnd => Infix2,
+            BinOp::BitOr => Infix2,
+            BinOp::BitXor => Infix2,
+            BinOp::Shl => Infix2,
+            BinOp::Shr => Infix2,
             BinOp::Add => Infix2,
             BinOp::Sub => Infix2,
             BinOp::Mul => Infix3,
@@ -90,11 +100,11 @@ pub enum UnOp {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 // TODO: multi-trigger/multiple triggers
-pub struct Trigger(pub Vec<Exp>);
+pub struct Trigger(pub Box<[Exp]>);
 
 impl Trigger {
     pub fn single(exp: Exp) -> Self {
-        Trigger(vec![exp])
+        Trigger(Box::new([exp]))
     }
 }
 
@@ -110,46 +120,46 @@ pub enum Exp {
     Var(Ident),
     QVar(QName),
     Record {
-        fields: Vec<(String, Exp)>,
+        fields: Box<[(String, Exp)]>,
     },
     RecUp {
         record: Box<Exp>,
-        updates: Vec<(String, Exp)>,
+        updates: Box<[(String, Exp)]>,
     },
     RecField {
         record: Box<Exp>,
         label: String,
     },
-    Tuple(Vec<Exp>),
+    Tuple(Box<[Exp]>),
     Constructor {
         ctor: QName,
-        args: Vec<Exp>,
+        args: Box<[Exp]>,
     },
     Const(Constant),
     BinaryOp(BinOp, Box<Exp>, Box<Exp>),
     UnaryOp(UnOp, Box<Exp>),
-    Call(Box<Exp>, Vec<Exp>),
+    Call(Box<Exp>, Box<[Exp]>),
     Attr(Attribute, Box<Exp>),
     /// Lambda abstraction
-    Abs(Vec<Binder>, Box<Exp>),
+    Abs(Box<[Binder]>, Box<Exp>),
 
-    Match(Box<Exp>, Vec<(Pattern, Exp)>),
+    Match(Box<Exp>, Box<[(Pattern, Exp)]>),
     IfThenElse(Box<Exp>, Box<Exp>, Box<Exp>),
     Ascribe(Box<Exp>, Type),
     // Predicates
     Old(Box<Exp>),
     Impl(Box<Exp>, Box<Exp>),
-    Forall(Vec<(Ident, Type)>, Vec<Trigger>, Box<Exp>),
-    Exists(Vec<(Ident, Type)>, Vec<Trigger>, Box<Exp>),
+    Forall(Box<[(Ident, Type)]>, Box<[Trigger]>, Box<Exp>),
+    Exists(Box<[(Ident, Type)]>, Box<[Trigger]>, Box<Exp>),
 }
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Binder {
-    Wild,                           // let f _ = ..
-    UnNamed(Type),                  // let f int : bool = ..
-    Named(Ident),                   // let f a  = ..
-    Typed(bool, Vec<Binder>, Type), // let f (ghost? a int b : int) = ..
+    Wild,                             // let f _ = ..
+    UnNamed(Type),                    // let f int : bool = ..
+    Named(Ident),                     // let f a  = ..
+    Typed(bool, Box<[Binder]>, Type), // let f (ghost? a int b : int) = ..
 }
 
 pub trait ExpMutVisitor: Sized {
@@ -385,6 +395,10 @@ pub fn super_visit_trigger<T: ExpVisitor>(f: &mut T, trigger: &Trigger) {
 }
 
 impl Exp {
+    pub fn unit() -> Self {
+        Exp::Tuple(Box::new([]))
+    }
+
     pub fn qvar(q: QName) -> Self {
         Exp::QVar(q)
     }
@@ -415,25 +429,13 @@ impl Exp {
         Exp::BinaryOp(BinOp::Ne, Box::new(self), Box::new(rhs))
     }
 
-    pub fn app(mut self, arg: Vec<Self>) -> Self {
-        match self {
-            Exp::Call(_, ref mut args) => args.extend(arg),
-            _ => self = Exp::Call(Box::new(self), arg),
-        }
-        self
+    pub fn app(self, args: impl IntoIterator<Item = Self>) -> Self {
+        let args: Box<[Exp]> = args.into_iter().collect();
+        if args.is_empty() { return self } else { Exp::Call(Box::new(self), args) }
     }
 
     pub fn field(self, field: &str) -> Self {
         Self::RecField { record: Box::new(self), label: field.into() }
-    }
-
-    // Construct an application from this expression and an argument
-    pub fn app_to(mut self, arg: Self) -> Self {
-        match self {
-            Exp::Call(_, ref mut args) => args.push(arg),
-            _ => self = Exp::Call(Box::new(self), vec![arg]),
-        }
-        self
     }
 
     pub fn lazy_and(self, other: Self) -> Self {
@@ -496,27 +498,23 @@ impl Exp {
     /// Builds a quantifier with explicit trigger
     ///
     /// Simplfies ∀ x, True into True
-    pub fn forall_trig(bound: Vec<(Ident, Type)>, trigger: Vec<Trigger>, body: Exp) -> Self {
-        if body.is_true() {
-            body
-        } else {
-            Exp::Forall(bound, trigger, Box::new(body))
-        }
+    pub fn forall_trig(bound: Box<[(Ident, Type)]>, trigger: Box<[Trigger]>, body: Exp) -> Self {
+        if body.is_true() { body } else { Exp::Forall(bound, trigger, Box::new(body)) }
     }
 
     /// Builds a quantifier
     ///
     /// Simplfies ∀ x, True into True
-    pub fn forall(bound: Vec<(Ident, Type)>, body: Exp) -> Self {
-        Exp::forall_trig(bound, Vec::new(), body)
+    pub fn forall(bound: Box<[(Ident, Type)]>, body: Exp) -> Self {
+        Exp::forall_trig(bound, Box::new([]), body)
     }
 
-    pub fn exists_trig(bound: Vec<(Ident, Type)>, trigger: Vec<Trigger>, body: Exp) -> Self {
+    pub fn exists_trig(bound: Box<[(Ident, Type)]>, trigger: Box<[Trigger]>, body: Exp) -> Self {
         Exp::Exists(bound, trigger, Box::new(body))
     }
 
-    pub fn exists(bound: Vec<(Ident, Type)>, body: Exp) -> Self {
-        Exp::exists_trig(bound, Vec::new(), body)
+    pub fn exists(bound: Box<[(Ident, Type)]>, body: Exp) -> Self {
+        Exp::exists_trig(bound, Box::new([]), body)
     }
 
     pub fn with_attr(self, attr: Attribute) -> Self {
@@ -950,15 +948,15 @@ impl ExpMutVisitor for Environment {
 
 impl Binder {
     pub fn typed(id: Ident, ty: Type) -> Self {
-        Binder::Typed(false, vec![Binder::Named(id)], ty)
+        Binder::Typed(false, Box::new([Binder::Named(id)]), ty)
     }
 
     pub fn ghost(id: Ident, ty: Type) -> Self {
-        Binder::Typed(true, vec![Binder::Named(id)], ty)
+        Binder::Typed(true, Box::new([Binder::Named(id)]), ty)
     }
 
     pub fn wild(ty: Type) -> Self {
-        Binder::Typed(false, vec![Binder::Wild], ty)
+        Binder::Typed(false, Box::new([Binder::Wild]), ty)
     }
 
     pub fn fvs(&self) -> Vec<Ident> {
@@ -1015,6 +1013,7 @@ pub enum Constant {
     String(String),
     Other(String),
     Bool(bool),
+    Char(char, Type),
 }
 
 impl From<Constant> for Exp {
@@ -1037,18 +1036,18 @@ impl Constant {
 pub enum Pattern {
     Wildcard,
     VarP(Ident),
-    TupleP(Vec<Pattern>),
-    ConsP(QName, Vec<Pattern>),
-    RecP(Vec<(Ident, Pattern)>),
+    TupleP(Box<[Pattern]>),
+    ConsP(QName, Box<[Pattern]>),
+    RecP(Box<[(Ident, Pattern)]>),
 }
 
 impl Pattern {
     pub fn mk_true() -> Self {
-        Self::ConsP(QName { module: vec![], name: "True".into() }, vec![])
+        Self::ConsP(QName { module: Box::new([]), name: "True".into() }, Box::new([]))
     }
 
     pub fn mk_false() -> Self {
-        Self::ConsP(QName { module: vec![], name: "False".into() }, vec![])
+        Self::ConsP(QName { module: Box::new([]), name: "False".into() }, Box::new([]))
     }
 
     pub fn binders(&self) -> IndexSet<Ident> {

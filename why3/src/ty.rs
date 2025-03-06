@@ -6,40 +6,25 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Type {
-    Bool,
-    Char,
-    Integer,
-    MutableBorrow(Box<Type>),
     TVar(Ident),
     TConstructor(QName),
-    TApp(Box<Type>, Vec<Type>),
-    Tuple(Vec<Type>),
+    TApp(Box<Type>, Box<[Type]>),
+    Tuple(Box<[Type]>),
     TFun(Box<Type>, Box<Type>),
 }
 
 impl Type {
-    pub const UNIT: Self = Self::Tuple(Vec::new());
-
-    pub fn predicate(ty: Self) -> Self {
-        Self::TFun(Box::new(ty), Box::new(Self::Bool))
+    pub fn unit() -> Self {
+        Self::Tuple(Box::new([]))
     }
 
-    pub fn tapp(mut self, args: Vec<Self>) -> Self {
-        if args.is_empty() {
-            self
-        } else {
-            match self {
-                Self::TApp(_, ref mut args1) => {
-                    args1.extend(args);
-                    self
-                }
-                _ => Self::TApp(Box::new(self), args),
-            }
-        }
+    pub fn tapp(self, args: impl IntoIterator<Item = Self>) -> Self {
+        let args: Box<[_]> = args.into_iter().collect();
+        if args.is_empty() { self } else { Self::TApp(Box::new(self), args) }
     }
 
     pub(crate) fn complex(&self) -> bool {
         use Type::*;
-        !matches!(self, Bool | Char | Integer | TVar(_) | Tuple(_) | TConstructor(_))
+        !matches!(self, TVar(_) | Tuple(_) | TConstructor(_))
     }
 }

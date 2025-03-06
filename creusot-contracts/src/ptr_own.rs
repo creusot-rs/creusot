@@ -16,32 +16,39 @@ pub type RawPtr<T> = *const T;
 /// corresponding to the pointer because it is a ghost value. One must thus
 /// remember to explicitly call [`drop`] in order to free the memory tracked by a
 /// `PtrOwn` token.
-#[trusted]
-pub struct PtrOwn<T: ?Sized>(std::marker::PhantomData<T>);
+///
+/// # Safety
+///
+/// When using Creusot to verify the code, all methods should be safe to call. Indeed,
+/// Creusot ensures that every operation on the inner value uses the right [`PtrOwn`] object
+/// created by [`PtrOwn::new`], ensuring safety in a manner similar to [ghost_cell](https://docs.rs/ghost-cell/latest/ghost_cell/).
+#[allow(dead_code)]
+pub struct PtrOwn<T: ?Sized> {
+    ptr: RawPtr<T>,
+    val: Box<T>,
+}
 
 impl<T: ?Sized> PtrOwn<T> {
     /// The raw pointer whose ownership is tracked by this `PtrOwn`
-    #[trusted]
     #[logic]
+    #[open(self)]
     pub fn ptr(&self) -> RawPtr<T> {
-        dead
+        self.ptr
     }
 
     /// The value currently stored at address [`self.ptr()`](Self::ptr)
-    #[trusted]
     #[logic]
+    #[open(self)]
     pub fn val(&self) -> SizedW<T> {
-        dead
+        self.val
     }
 }
 
 impl<T: ?Sized> Invariant for PtrOwn<T> {
-    #[predicate(prophetic)]
+    #[predicate]
     #[open]
-    #[creusot::trusted_ignore_structural_inv]
-    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
     fn invariant(self) -> bool {
-        pearlite! { !self.ptr().is_null_logic() && inv(self.val()) }
+        !self.ptr().is_null_logic()
     }
 }
 
@@ -64,15 +71,29 @@ impl<T: ?Sized> PtrOwn<T> {
     }
 
     /// Immutably borrows the underlying `T`.
+    ///
+    /// # Safety
+    ///
+    /// Safety requirements are the same as a direct dereference: `&*ptr`.
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](PtrOwn).
     #[trusted]
     #[requires(ptr == own.ptr())]
     #[ensures(*result == *own.val())]
     #[allow(unused_variables)]
-    pub fn as_ref(ptr: RawPtr<T>, own: GhostBox<&PtrOwn<T>>) -> &T {
+    pub unsafe fn as_ref(ptr: RawPtr<T>, own: GhostBox<&PtrOwn<T>>) -> &T {
         unsafe { &*ptr }
     }
 
     /// Mutably borrows the underlying `T`.
+    ///
+    /// # Safety
+    ///
+    /// Safety requirements are the same as a direct dereference: `&mut *ptr`.
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](PtrOwn).
     #[trusted]
     #[allow(unused_variables)]
     #[requires(ptr == own.ptr())]
@@ -80,22 +101,36 @@ impl<T: ?Sized> PtrOwn<T> {
     // Currently .inner_logic() is needed instead of *; see issue #1257
     #[ensures((^own.inner_logic()).ptr() == own.ptr())]
     #[ensures(*(^own.inner_logic()).val() == ^result)]
-    pub fn as_mut(ptr: RawPtr<T>, own: GhostBox<&mut PtrOwn<T>>) -> &mut T {
+    pub unsafe fn as_mut(ptr: RawPtr<T>, own: GhostBox<&mut PtrOwn<T>>) -> &mut T {
         unsafe { &mut *(ptr as *mut _) }
     }
 
     /// Transfers ownership of `own` back into a [`Box`].
+    ///
+    /// # Safety
+    ///
+    /// Safety requirements are the same as [`Box::from_raw`].
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](PtrOwn).
     #[trusted]
     #[requires(ptr == own.ptr())]
     #[ensures(*result == *own.val())]
     #[allow(unused_variables)]
-    pub fn to_box(ptr: RawPtr<T>, own: GhostBox<PtrOwn<T>>) -> Box<T> {
+    pub unsafe fn to_box(ptr: RawPtr<T>, own: GhostBox<PtrOwn<T>>) -> Box<T> {
         unsafe { Box::from_raw(ptr as *mut _) }
     }
 
     /// Deallocates the memory pointed by `ptr`.
+    ///
+    /// # Safety
+    ///
+    /// Safety requirements are the same as [`Box::from_raw`].
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](PtrOwn).
     #[requires(ptr == own.ptr())]
-    pub fn drop(ptr: RawPtr<T>, own: GhostBox<PtrOwn<T>>) {
+    pub unsafe fn drop(ptr: RawPtr<T>, own: GhostBox<PtrOwn<T>>) {
         let _ = Self::to_box(ptr, own);
     }
 
@@ -105,7 +140,5 @@ impl<T: ?Sized> PtrOwn<T> {
     #[ensures(own1.ptr().addr_logic() != own2.ptr().addr_logic())]
     #[ensures(*own1 == ^own1)]
     #[allow(unused_variables)]
-    pub fn disjoint_lemma(own1: &mut PtrOwn<T>, own2: &PtrOwn<T>) {
-        panic!()
-    }
+    pub fn disjoint_lemma(own1: &mut PtrOwn<T>, own2: &PtrOwn<T>) {}
 }

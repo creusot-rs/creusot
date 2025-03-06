@@ -6,10 +6,10 @@ use crate::{
     translation::pearlite::Literal,
 };
 use rustc_middle::{
-    mir::{self, interpret::AllocRange, ConstValue, UnevaluatedConst},
+    mir::{self, ConstValue, UnevaluatedConst, interpret::AllocRange},
     ty::{Const, ConstKind, Ty, TyCtxt, TypingEnv},
 };
-use rustc_span::{Span, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::Size;
 
 use super::pearlite::{Term, TermKind};
@@ -34,7 +34,7 @@ fn from_mir_constant_kind<'tcx>(
 
     if ck.ty().is_unit() {
         return Operand::Constant(Term {
-            kind: TermKind::Tuple { fields: Vec::new() },
+            kind: TermKind::Tuple { fields: Box::new([]) },
             ty: ck.ty(),
             span,
         });
@@ -90,7 +90,7 @@ pub(crate) fn from_ty_const<'tcx>(
         ctx.crash_and_error(span, "const generic parameters are not yet supported");
     }
 
-    return Term { kind: TermKind::Lit(try_to_bits(ctx, env, ty, span, c)), ty: ty, span };
+    return Term { kind: TermKind::Lit(try_to_bits(ctx, env, ty, span, c)), ty, span };
 }
 
 fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
@@ -101,30 +101,38 @@ fn try_to_bits<'tcx, C: ToBits<'tcx> + std::fmt::Debug>(
     c: C,
 ) -> Literal<'tcx> {
     use rustc_middle::ty::{FloatTy, IntTy, UintTy};
-    use rustc_type_ir::TyKind::{Bool, Float, FnDef, Int, Uint};
+    use rustc_type_ir::TyKind::{Bool, Char, Float, FnDef, Int, Uint};
     let Some(bits) = c.get_bits(ctx.tcx, env, ty) else {
         ctx.fatal_error(span, &format!("Could not determine value of constant. Creusot currently does not support generic associated constants.")).emit()
     };
+
+    let target_width = ctx.tcx.sess.target.pointer_width;
+
     match ty.kind() {
+        Char => Literal::Char(
+            char::from_u32(bits as u32)
+                .unwrap_or_else(|| ctx.crash_and_error(span, "can't convert to char")),
+        ),
         Int(ity) => {
-            let bits: i128 = match *ity {
-                IntTy::I128 => bits as i128,
-                IntTy::Isize => bits as i64 as i128,
+            let bits: i128 = match ity.normalize(target_width) {
+                IntTy::Isize => unreachable!(),
                 IntTy::I8 => bits as i8 as i128,
                 IntTy::I16 => bits as i16 as i128,
                 IntTy::I32 => bits as i32 as i128,
                 IntTy::I64 => bits as i64 as i128,
+                IntTy::I128 => bits as i128,
             };
+
             Literal::MachSigned(bits, *ity)
         }
         Uint(uty) => {
-            let bits: u128 = match *uty {
-                UintTy::U128 => bits as u128,
-                UintTy::Usize => bits as u64 as u128,
+            let bits: u128 = match uty.normalize(target_width) {
+                UintTy::Usize => unreachable!(),
                 UintTy::U8 => bits as u8 as u128,
                 UintTy::U16 => bits as u16 as u128,
                 UintTy::U32 => bits as u32 as u128,
                 UintTy::U64 => bits as u64 as u128,
+                UintTy::U128 => bits as u128,
             };
             Literal::MachUnsigned(bits, *uty)
         }

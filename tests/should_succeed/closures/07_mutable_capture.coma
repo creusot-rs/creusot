@@ -1,0 +1,140 @@
+module M_07_mutable_capture__test_fnmut [#"07_mutable_capture.rs" 5 0 5 29]
+  let%span s07_mutable_capture0 = "07_mutable_capture.rs" 17 20 17 33
+  let%span s07_mutable_capture1 = "07_mutable_capture.rs" 4 11 4 24
+  let%span s07_mutable_capture2 = "07_mutable_capture.rs" 10 17 10 18
+  let%span s07_mutable_capture3 = "07_mutable_capture.rs" 11 12 11 13
+  let%span s07_mutable_capture4 = "07_mutable_capture.rs" 7 19 7 33
+  let%span s07_mutable_capture5 = "07_mutable_capture.rs" 8 18 8 35
+  let%span sresolve6 = "../../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span sops7 = "../../../creusot-contracts/src/std/ops.rs" 115 15 115 59
+  let%span sops8 = "../../../creusot-contracts/src/std/ops.rs" 116 14 116 36
+  let%span sops9 = "../../../creusot-contracts/src/std/ops.rs" 121 14 121 31
+  let%span sops10 = "../../../creusot-contracts/src/std/ops.rs" 126 15 126 29
+  let%span sops11 = "../../../creusot-contracts/src/std/ops.rs" 127 15 127 26
+  let%span sops12 = "../../../creusot-contracts/src/std/ops.rs" 128 14 128 28
+  let%span sops13 = "../../../creusot-contracts/src/std/ops.rs" 133 14 134 105
+  
+  use creusot.prelude.MutBorrow
+  
+  use creusot.int.UInt32
+  
+  type closure1'1  =
+    { field_0'0: MutBorrow.t UInt32.t }
+  
+  predicate resolve'3 (self : MutBorrow.t closure1'1) =
+    [%#sresolve6] self.final = self.current
+  
+  predicate resolve'1 (_1 : MutBorrow.t closure1'1) =
+    resolve'3 _1
+  
+  use creusot.int.Int32
+  
+  use creusot.prelude.Any
+  
+  use creusot.int.UInt32
+  
+  use mach.int.Int
+  
+  predicate postcondition_once'0 (self : closure1'1) (args : ()) (result : Int32.t) =
+    [%#s07_mutable_capture5] let () = args in UInt32.t'int (self.field_0'0).final
+    = UInt32.t'int (self.field_0'0).current + 1
+  
+  predicate resolve'4 (self : MutBorrow.t UInt32.t) =
+    [%#sresolve6] self.final = self.current
+  
+  predicate resolve'2 (_1 : MutBorrow.t UInt32.t) =
+    resolve'4 _1
+  
+  predicate resolve'0 (_1 : closure1'1) =
+    resolve'2 _1.field_0'0
+  
+  predicate unnest'0 (self : closure1'1) (_2 : closure1'1) =
+    (_2.field_0'0).final = (self.field_0'0).final
+  
+  predicate postcondition_mut'0 (self : closure1'1) (args : ()) (result_state : closure1'1) (result : Int32.t) =
+    (let () = args in UInt32.t'int (result_state.field_0'0).current = UInt32.t'int (self.field_0'0).current + 1)
+    /\ unnest'0 self result_state
+  
+  function fn_mut_once'0 (self : closure1'1) (args : ()) (res : Int32.t) : ()
+  
+  axiom fn_mut_once'0_spec : forall self : closure1'1, args : (), res : Int32.t . [%#sops13] postcondition_once'0 self args res
+  = (exists res_state : closure1'1 . postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
+  
+  function unnest_trans'0 (self : closure1'1) (b : closure1'1) (c : closure1'1) : ()
+  
+  axiom unnest_trans'0_spec : forall self : closure1'1, b : closure1'1, c : closure1'1 . ([%#sops10] unnest'0 self b)
+   -> ([%#sops11] unnest'0 b c)  -> ([%#sops12] unnest'0 self c)
+  
+  function unnest_refl'0 (self : closure1'1) : ()
+  
+  axiom unnest_refl'0_spec : forall self : closure1'1 . [%#sops9] unnest'0 self self
+  
+  function postcondition_mut_unnest'0 (self : closure1'1) (args : ()) (res_state : closure1'1) (res : Int32.t) : ()
+  
+  axiom postcondition_mut_unnest'0_spec : forall self : closure1'1, args : (), res_state : closure1'1, res : Int32.t . ([%#sops7] postcondition_mut'0 self args res_state res)
+   -> ([%#sops8] unnest'0 self res_state)
+  
+  let rec closure1'0[#"07_mutable_capture.rs" 8 8 8 37] (_1:MutBorrow.t closure1'1) (return'  (ret:Int32.t))= {[@expl:closure requires] [%#s07_mutable_capture4] UInt32.t'int ((_1.current).field_0'0).current
+    < 1000000}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = UInt32.add {((_1.current).field_0'0).current} {[%#s07_mutable_capture2] (1 : UInt32.t)}
+          (fun (_ret':UInt32.t) ->
+             [ &_1 <- { _1 with current = { field_0'0 = { (_1.current).field_0'0 with current = _ret' } } } ] 
+            s1)
+      | s1 = -{resolve'1 _1}- s2
+      | s2 =  [ &res1 <- [%#s07_mutable_capture3] (5 : Int32.t) ] s3
+      | s3 =  [ &res <- res1 ] s4
+      | s4 =  [ &_0 <- res ] s5
+      | s5 = return' {_0} ]
+     ]
+    )
+    [ & _0 : Int32.t = Any.any_l ()
+    | & _1 : MutBorrow.t closure1'1 = _1
+    | & res : Int32.t = Any.any_l ()
+    | & res1 : Int32.t = Any.any_l () ]
+    
+    [ return' (result:Int32.t)-> {[@expl:closure ensures] [%#s07_mutable_capture5] UInt32.t'int ((_1.final).field_0'0).current
+      = UInt32.t'int ((_1.current).field_0'0).current + 1}
+      {[@expl:closure unnest] unnest'0 _1.current _1.final}
+      (! return' {result}) ]
+  
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec test_fnmut'0[#"07_mutable_capture.rs" 5 0 5 29] (x:UInt32.t) (return'  (ret:()))= {[@expl:test_fnmut requires] [%#s07_mutable_capture1] UInt32.t'int x
+    = 100000}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_mut <UInt32.t> {x}
+          (fun (_ret':MutBorrow.t UInt32.t) ->  [ &_4 <- _ret' ]  [ &x <- _ret'.final ] s1)
+      | s1 =  [ &c <- { field_0'0 = _4 } ] s2
+      | s2 = MutBorrow.borrow_mut <closure1'1> {c}
+          (fun (_ret':MutBorrow.t closure1'1) ->  [ &_6 <- _ret' ]  [ &c <- _ret'.final ] s3)
+      | s3 = closure1'0 {_6} (fun (_ret':Int32.t) ->  [ &_5 <- _ret' ] s4)
+      | s4 = bb1 ]
+    
+    | bb1 = s0
+      [ s0 = MutBorrow.borrow_mut <closure1'1> {c}
+          (fun (_ret':MutBorrow.t closure1'1) ->  [ &_9 <- _ret' ]  [ &c <- _ret'.final ] s1)
+      | s1 = closure1'0 {_9} (fun (_ret':Int32.t) ->  [ &_8 <- _ret' ] s2)
+      | s2 = bb2 ]
+    
+    | bb2 = s0
+      [ s0 = -{resolve'0 c}- s1
+      | s1 = {[@expl:assertion] [%#s07_mutable_capture0] UInt32.t'int x = 100002} s2
+      | s2 = return' {_0} ]
+     ]
+    )
+    [ & _0 : () = Any.any_l ()
+    | & x : UInt32.t = x
+    | & c : closure1'1 = Any.any_l ()
+    | & _4 : MutBorrow.t UInt32.t = Any.any_l ()
+    | & _5 : Int32.t = Any.any_l ()
+    | & _6 : MutBorrow.t closure1'1 = Any.any_l ()
+    | & _7 : () = Any.any_l ()
+    | & _8 : Int32.t = Any.any_l ()
+    | & _9 : MutBorrow.t closure1'1 = Any.any_l ()
+    | & _10 : () = Any.any_l () ]
+     [ return' (result:())-> (! return' {result}) ] 
+end

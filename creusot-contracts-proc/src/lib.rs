@@ -5,7 +5,7 @@ extern crate proc_macro;
 use pearlite_syn::*;
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
-use quote::{quote, quote_spanned, ToTokens, TokenStreamExt};
+use quote::{ToTokens, TokenStreamExt, quote, quote_spanned};
 use std::iter;
 use syn::{
     parse::{Parse, Result},
@@ -184,7 +184,7 @@ fn fn_spec_item(tag: Ident, result: Option<FnArg>, p: Term) -> TokenStream {
     let attrs = spec_attrs(&tag);
 
     quote! {
-        #[allow(unused_must_use)]
+        #[allow(let_underscore_drop)]
         let _ =
             #attrs
             |#result|{ #req_body }
@@ -308,7 +308,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
             let body = &clos.body;
             *clos.body = parse_quote!({
                 let res = #body;
-                #[allow(unused_must_use)]
+                #[allow(let_underscore_drop)]
                 let _ =
                     #attrs
                     |result| {::creusot_contracts::__stubs::closure_result(res, result); #req_body }
@@ -330,12 +330,15 @@ pub fn variant(attr: TS1, tokens: TS1) -> TS1 {
         .into()
 }
 
-struct Assertion(Vec<TermStmt>);
+/// An assertion is a sequence of statements (`Vec<Stmt>`).
+/// The `brace_token` is artificially generated from the span of the body.
+struct Assertion(TBlock);
 
 impl Parse for Assertion {
     fn parse(input: parse::ParseStream) -> Result<Self> {
+        let brace_token = token::Brace(input.span());
         let stmts = input.call(TBlock::parse_within)?;
-        Ok(Assertion(stmts))
+        Ok(Assertion(TBlock { brace_token, stmts }))
     }
 }
 
@@ -346,12 +349,13 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
 
     TS1::from(quote! {
         {
-            #[allow(unused_must_use)]
+            #[allow(let_underscore_drop)]
             let _ = {
                 #[creusot::no_translate]
                 #[creusot::spec]
                 #[creusot::spec::assert]
-                || -> bool { #assert_body }
+                #[allow(unused_braces)]
+                || -> bool #assert_body
             };
         }
     })
@@ -363,14 +367,12 @@ pub fn snapshot(assertion: TS1) -> TS1 {
     let assert_body = pretyping::encode_block(&assert.0).unwrap_or_else(|e| e.into_tokens());
 
     TS1::from(quote! {
-        {
-            ::creusot_contracts::__stubs::snapshot_from_fn(
-                #[creusot::no_translate]
-                #[creusot::spec]
-                #[creusot::spec::snapshot]
-                || { ::creusot_contracts::snapshot::Snapshot::new (#assert_body) }
-            )
-        }
+        ::creusot_contracts::__stubs::snapshot_from_fn(
+            #[creusot::no_translate]
+            #[creusot::spec]
+            #[creusot::spec::snapshot]
+            || ::creusot_contracts::snapshot::Snapshot::new (#[allow(unused_braces)] #assert_body)
+        )
     })
 }
 
@@ -440,12 +442,10 @@ pub fn ghost(body: TS1) -> TS1 {
     let body = proc_macro2::TokenStream::from(ghost::ghost_preprocess(body));
     TS1::from(quote! {
         {
-            ::creusot_contracts::__stubs::ghost_from_fn({
-                #[creusot::ghost]
-                #[::creusot_contracts::pure]
-                || ::creusot_contracts::ghost::GhostBox::new({ #body })
-            },
-            ())
+            #[creusot::ghost_block]
+            {
+                ::creusot_contracts::ghost::GhostBox::new({ #body })
+            }
         }
     })
 }
@@ -581,7 +581,7 @@ fn logic_item(log: LogicItem, kind: LogicKind, documentation: TokenStream) -> TS
     let def = log.defaultness;
     let sig = log.sig;
     let attrs = log.attrs;
-    let req_body = pretyping::encode_block(&term.stmts).unwrap_or_else(|e| e.into_tokens());
+    let req_body = pretyping::encode_block(&term).unwrap_or_else(|e| e.into_tokens());
 
     TS1::from(quote_spanned! {span =>
         #[creusot::decl::logic]
@@ -611,11 +611,7 @@ pub fn predicate(prophetic: TS1, tokens: TS1) -> TS1 {
         None
     } else {
         let t = parse_macro_input!(prophetic as Ident);
-        if t == "prophetic" {
-            Some(quote!(#[creusot::decl::logic::prophetic]))
-        } else {
-            None
-        }
+        if t == "prophetic" { Some(quote!(#[creusot::decl::logic::prophetic])) } else { None }
     };
 
     let pred = parse_macro_input!(tokens as LogicInput);
@@ -678,7 +674,7 @@ fn predicate_item(
     let sig = log.sig;
     let attrs = log.attrs;
 
-    let req_body = pretyping::encode_block(&term.stmts).unwrap_or_else(|e| e.into_tokens());
+    let req_body = pretyping::encode_block(&term).unwrap_or_else(|e| e.into_tokens());
 
     TS1::from(quote_spanned! {span =>
         #[creusot::decl::predicate]
@@ -737,9 +733,7 @@ pub fn extern_spec(tokens: TS1) -> TS1 {
     }
 
     TS1::from(quote! {
-        #(#[creusot::extern_spec]
-          #specs
-        )*
+        #(#specs)*
     })
 }
 
@@ -803,6 +797,15 @@ pub fn open(attr: TS1, body: TS1) -> TS1 {
     }
 }
 
+#[proc_macro_attribute]
+pub fn bitwise_proof(_: TS1, tokens: TS1) -> TS1 {
+    let tokens: TokenStream = tokens.into();
+    TS1::from(quote! {
+        #[creusot::bitwise]
+        #tokens
+    })
+}
+
 // Derive Macros
 #[proc_macro_derive(PartialEq)]
 pub fn derive_partial_eq(tokens: TS1) -> TS1 {
@@ -827,4 +830,29 @@ pub fn derive_resolve(tokens: TS1) -> TS1 {
 #[proc_macro_derive(Default, attributes(default))]
 pub fn derive_default(tokens: TS1) -> TS1 {
     derive::derive_default(tokens)
+}
+
+// Utilities for debugging
+
+#[allow(unused)]
+pub(crate) fn dump_tokens(tokens: &TokenStream) {
+    eprintln! {"{}", tokens};
+    eprint_tokens(tokens);
+}
+
+pub(crate) fn eprint_tokens(tokens: &TokenStream) {
+    for t in tokens.clone().into_iter() {
+        if let proc_macro2::TokenTree::Group(g) = t {
+            eprintln! {"Group {:?} {:?}", g.delimiter(), pretty_span(&g.span())};
+            eprint_tokens(&g.stream());
+        } else {
+            eprintln! {"{} {:?}", t, pretty_span(&t.span())};
+        }
+    }
+}
+
+pub(crate) fn pretty_span(span: &Span) -> String {
+    let start = span.start();
+    let end = span.end();
+    format! {"{:?}:{:?}:{:?}-{:?}:{:?}", span.unwrap().source_file().path(), start.line, start.column, end.line, end.column}
 }

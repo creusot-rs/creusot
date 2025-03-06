@@ -15,10 +15,10 @@ use rustc_middle::ty::{
     ParamTy, Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypingEnv,
     TypingMode,
 };
-use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_trait_selection::{
     error_reporting::InferCtxtErrorExt,
-    traits::{orphan_check_trait_ref, FulfillmentError, ImplSource, InCrate, TraitEngineExt},
+    traits::{FulfillmentError, ImplSource, InCrate, TraitEngineExt, orphan_check_trait_ref},
 };
 use rustc_type_ir::fold::TypeSuperFoldable;
 use std::collections::HashMap;
@@ -54,7 +54,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         laws
     }
 
-    pub(crate) fn translate_impl(&mut self, impl_id: DefId) -> TraitImpl<'tcx> {
+    pub(crate) fn translate_impl(&self, impl_id: DefId) -> TraitImpl<'tcx> {
         assert!(self.trait_id_of_impl(impl_id).is_some(), "{impl_id:?} is not a trait impl");
         let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
 
@@ -122,7 +122,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 }
 
 fn logic_refinement_term<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     impl_item_id: DefId,
     trait_item_id: DefId,
     refn_subst: GenericArgsRef<'tcx>,
@@ -139,13 +139,9 @@ fn logic_refinement_term<'tcx>(
     let span = ctx.tcx.def_span(impl_item_id);
     let mut args = Vec::new();
     let mut subst = HashMap::new();
-    for (ix, ((id, _, _), (id2, _, ty))) in
-        trait_sig.inputs.iter().zip(impl_sig.inputs.iter()).enumerate()
-    {
-        let id = if id.is_empty() { Symbol::intern(&format!("_{}'", ix + 1)) } else { *id };
-        let id2 = if id2.is_empty() { Symbol::intern(&format!("_{}'", ix + 1)) } else { *id2 };
-        args.push((id.clone(), *ty));
-        subst.insert(id2, Term { ty: *ty, kind: TermKind::Var(id), span });
+    for ((id, _, _), (id2, _, ty)) in trait_sig.inputs.iter().zip(impl_sig.inputs.iter()) {
+        args.push((*id, *ty));
+        subst.insert(*id2, Term { ty: *ty, kind: TermKind::Var(*id), span });
     }
 
     let mut impl_precond = impl_sig.contract.requires_conj(ctx.tcx);

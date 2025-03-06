@@ -41,7 +41,7 @@ fn cargo_template(name: &str, dep: &str) -> String {
         r#"[package]
 name = "{name}"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 creusot-contracts = {dep}
@@ -55,17 +55,10 @@ unexpected_cfgs = {{ level = "warn", check-cfg = ['cfg(creusot)'] }}
 fn bin_template(name: &str) -> String {
     let name = name.replace("-", "_");
     format!(
-        r#"#![cfg_attr(
-    not(creusot),
-    feature(stmt_expr_attributes, proc_macro_hygiene, register_tool)
-)]
-#![cfg_attr(not(creusot), register_tool(creusot))]
-
-#[allow(unused_imports)]
+        r#"#[allow(unused_imports)]
 use creusot_contracts::*;
 use {name}::*;
 
-#[allow(creusot::experimental)]
 fn main() {{
     assert!(add_one(2) == 3);
     println!("Hello, world!");
@@ -74,7 +67,7 @@ fn main() {{
     )
 }
 
-const TEST_TEMPLATE: &str = r#"#![cfg_attr(not(creusot), feature(stmt_expr_attributes, proc_macro_hygiene))]
+const TEST_TEMPLATE: &str = r#"#[allow(unused_imports)]
 use creusot_contracts::*;
 
 #[test]
@@ -83,19 +76,13 @@ fn it_works() {
 }
 "#;
 
-const LIB_TEMPLATE: &str = r#"#![cfg_attr(not(creusot), feature(stmt_expr_attributes, proc_macro_hygiene))]
-use creusot_contracts::*;
+const LIB_TEMPLATE: &str = r#"use creusot_contracts::*;
 
 #[requires(a@ < i64::MAX@)]
 #[ensures(result@ == a@ + 1)]
 pub fn add_one(a: i64) -> i64 {
     a + 1
 }
-"#;
-
-const RUST_TOOLCHAIN: &str = r#"[toolchain]
-channel = "nightly-2024-07-25"
-components = [ "rustfmt" ]
 "#;
 
 pub fn new(args: NewArgs) -> Result<()> {
@@ -134,7 +121,6 @@ pub fn create_project(name: String, args: NewInitArgs) -> Result<()> {
         None => r#""*""#.to_string(),
     };
     write("Cargo.toml", &cargo_template(&name, &contract_dep));
-    write("rust-toolchain", RUST_TOOLCHAIN);
     if args.tests {
         fs::create_dir_all("tests")?;
         write("tests/test.rs", TEST_TEMPLATE);

@@ -1,0 +1,127 @@
+module M_all_zero__all_zero [#"all_zero.rs" 34 0 34 29]
+  let%span sall_zero0 = "all_zero.rs" 36 16 36 31
+  let%span sall_zero1 = "all_zero.rs" 42 16 42 82
+  let%span sall_zero2 = "all_zero.rs" 40 8 41 86
+  let%span sall_zero3 = "all_zero.rs" 44 17 44 18
+  let%span sall_zero4 = "all_zero.rs" 32 10 32 75
+  let%span sall_zero5 = "all_zero.rs" 33 10 33 34
+  let%span sall_zero6 = "all_zero.rs" 14 8 17 9
+  let%span sall_zero7 = "all_zero.rs" 22 8 28 9
+  let%span sresolve8 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  
+  use creusot.int.UInt32
+  
+  type t_List'0  =
+    | C_Cons'0 UInt32.t t_List'0
+    | C_Nil'0
+  
+  use mach.int.Int
+  
+  function len'0 [#"all_zero.rs" 13 4 13 23] (self : t_List'0) : int =
+    [%#sall_zero6] match self with
+      | C_Cons'0 _ ls -> 1 + len'0 ls
+      | C_Nil'0 -> 0
+      end
+  
+  use creusot.prelude.MutBorrow
+  
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 UInt32.t
+  
+  function get'0 [#"all_zero.rs" 21 4 21 40] (self : t_List'0) (ix : int) : t_Option'0 =
+    [%#sall_zero7] match self with
+      | C_Cons'0 x ls -> if ix = 0 then C_Some'0 x else get'0 ls (ix - 1)
+      | C_Nil'0 -> C_None'0
+      end
+  
+  let rec v_Cons'0 (input:t_List'0) (ret  (field_0:UInt32.t) (field_1:t_List'0))= any
+    [ good (field_0:UInt32.t) (field_1:t_List'0)-> {C_Cons'0 field_0 field_1 = input} (! ret {field_0} {field_1})
+    | bad -> {forall field_0 : UInt32.t, field_1 : t_List'0 [C_Cons'0 field_0 field_1 : t_List'0] . C_Cons'0 field_0 field_1
+      <> input}
+      (! {false}
+      any) ]
+  
+  
+  predicate resolve'3 (self : MutBorrow.t UInt32.t) =
+    [%#sresolve8] self.final = self.current
+  
+  predicate resolve'0 (_1 : MutBorrow.t UInt32.t) =
+    resolve'3 _1
+  
+  predicate resolve'4 (self : MutBorrow.t t_List'0) =
+    [%#sresolve8] self.final = self.current
+  
+  predicate resolve'1 (_1 : MutBorrow.t t_List'0) =
+    resolve'4 _1
+  
+  predicate resolve'5 (self : MutBorrow.t t_List'0) =
+    [%#sresolve8] self.final = self.current
+  
+  predicate resolve'2 (_1 : MutBorrow.t t_List'0) =
+    resolve'5 _1
+  
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  let rec all_zero'0[#"all_zero.rs" 34 0 34 29] (l:MutBorrow.t t_List'0) (return'  (ret:()))= (! bb0
+    [ bb0 = s0 [ s0 =  [ &old_l <- [%#sall_zero0] l ] s1 | s1 = bb1 ] 
+    | bb1 = s0 [ s0 =  [ &loop_l <- l ] s1 | s1 = bb2 ] 
+    | bb2 = bb2
+      [ bb2 = {[@expl:loop invariant #0] [%#sall_zero2] (forall i : int . 0 <= i /\ i < len'0 loop_l.current
+         -> get'0 loop_l.final i = C_Some'0 (0 : UInt32.t))
+         -> (forall i : int . 0 <= i /\ i < len'0 old_l.current  -> get'0 old_l.final i = C_Some'0 (0 : UInt32.t))}
+        {[@expl:loop invariant #1] [%#sall_zero1] len'0 loop_l.final = len'0 loop_l.current
+         -> len'0 old_l.final = len'0 old_l.current}
+        (! s0) [ s0 = bb3 ] 
+        [ bb3 = any
+          [ br0 (x0:UInt32.t) (x1:t_List'0)-> {loop_l.current = C_Cons'0 x0 x1} (! bb4)
+          | br1 -> {loop_l.current = C_Nil'0} (! bb6) ]
+        
+        | bb4 = bb5
+        | bb5 = s0
+          [ s0 = v_Cons'0 {loop_l.current}
+              (fun (r0'0:UInt32.t) (r1'0:t_List'0) ->
+                MutBorrow.borrow_final <UInt32.t> {r0'0} {MutBorrow.inherit_id (MutBorrow.get_id loop_l) 1}
+                  (fun (_ret':MutBorrow.t UInt32.t) ->
+                     [ &value <- _ret' ] 
+                     [ &loop_l <- { loop_l with current = C_Cons'0 _ret'.final r1'0 } ] 
+                    s1))
+          | s1 = v_Cons'0 {loop_l.current}
+              (fun (r0'1:UInt32.t) (r1'1:t_List'0) ->
+                MutBorrow.borrow_final <t_List'0> {r1'1} {MutBorrow.inherit_id (MutBorrow.get_id loop_l) 2}
+                  (fun (_ret':MutBorrow.t t_List'0) ->
+                     [ &next <- _ret' ] 
+                     [ &loop_l <- { loop_l with current = C_Cons'0 r0'1 _ret'.final } ] 
+                    s2))
+          | s2 =  [ &value <- { value with current = ([%#sall_zero3] (0 : UInt32.t)) } ] s3
+          | s3 = -{resolve'0 value}- s4
+          | s4 = MutBorrow.borrow_final <t_List'0> {next.current} {MutBorrow.get_id next}
+              (fun (_ret':MutBorrow.t t_List'0) ->
+                 [ &_14 <- _ret' ] 
+                 [ &next <- { next with current = _ret'.final } ] 
+                s5)
+          | s5 = -{resolve'1 loop_l}- s6
+          | s6 =  [ &loop_l <- _14 ] s7
+          | s7 = -{resolve'2 next}- s8
+          | s8 = bb2 ]
+         ]
+       ]
+    
+    | bb6 = s0 [ s0 = -{resolve'1 loop_l}- s1 | s1 = return' {_0} ]  ]
+    )
+    [ & _0 : () = Any.any_l ()
+    | & l : MutBorrow.t t_List'0 = l
+    | & old_l : MutBorrow.t t_List'0 = Any.any_l ()
+    | & loop_l : MutBorrow.t t_List'0 = Any.any_l ()
+    | & value : MutBorrow.t UInt32.t = Any.any_l ()
+    | & next : MutBorrow.t t_List'0 = Any.any_l ()
+    | & _14 : MutBorrow.t t_List'0 = Any.any_l () ]
+    
+    [ return' (result:())-> {[@expl:all_zero ensures #0] [%#sall_zero4] forall i : int . 0 <= i /\ i < len'0 l.current
+       -> get'0 l.final i = C_Some'0 (0 : UInt32.t)}
+      {[@expl:all_zero ensures #1] [%#sall_zero5] len'0 l.current = len'0 l.final}
+      (! return' {result}) ]
+
+end

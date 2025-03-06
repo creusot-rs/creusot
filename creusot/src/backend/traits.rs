@@ -1,12 +1,12 @@
 use crate::{
-    backend::{clone_map::Dependencies, term::lower_pure, Why3Generator},
+    backend::{Why3Generator, clone_map::Dependencies, term::lower_pure},
     contracts_items::is_snapshot_deref,
     ctx::FileModule,
 };
 use rustc_hir::def_id::DefId;
 use why3::declaration::{Decl, Goal, Module};
 
-pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Vec<FileModule> {
+pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<FileModule> {
     let data = ctx.trait_impl(def_id).clone();
     let mut res = vec![];
 
@@ -23,12 +23,12 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> 
         let mut decls = names.provide_deps(ctx);
         decls.push(Decl::Goal(Goal { name: "refines".into(), goal }));
 
-        let attrs = Vec::from_iter(ctx.span_attr(ctx.def_span(impl_did)));
+        let attrs = ctx.span_attr(ctx.def_span(impl_did)).into_iter().collect();
         let meta = ctx.display_impl_of(impl_did);
         let mut path = ctx.module_path(impl_did);
         path.add_suffix("__refines");
         let name = path.why3_ident();
-        res.push(FileModule { path, modl: Module { name, decls, attrs, meta } })
+        res.push(FileModule { path, modl: Module { name, decls: decls.into(), attrs, meta } })
     }
 
     res

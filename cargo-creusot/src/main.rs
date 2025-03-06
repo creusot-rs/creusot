@@ -1,11 +1,11 @@
 use clap::*;
-use creusot_args::{options::*, CREUSOT_RUSTC_ARGS};
+use creusot_args::{CREUSOT_RUSTC_ARGS, options::*};
 use creusot_setup as setup;
 use std::{
     env,
     io::Write,
     path::{Display, PathBuf},
-    process::{exit, Command},
+    process::{Command, exit},
 };
 use tempdir::TempDir;
 
@@ -27,35 +27,6 @@ fn main() -> Result<()> {
             creusot(Some(subcmd), cargs.options, cargs.creusot_rustc, cargs.cargo_flags)
         }
         Some(Setup { command: SetupSubCommand::Status }) => setup::status(),
-        Some(Setup {
-            command:
-                SetupSubCommand::Install {
-                    provers_parallelism,
-                    external,
-                    no_check_version,
-                    only_creusot_rustc,
-                    skip_creusot_rustc,
-                },
-        }) => {
-            let extflag =
-                |name| setup::ExternalFlag { check_version: !no_check_version.contains(&name) };
-            let managedflag = |name, mname| setup::ManagedFlag {
-                check_version: !no_check_version.contains(&name),
-                external: external.contains(&mname),
-            };
-            let flags = setup::InstallFlags {
-                provers_parallelism,
-                why3: extflag(SetupTool::Why3),
-                why3find: extflag(SetupTool::Why3find),
-                altergo: managedflag(SetupTool::AltErgo, SetupManagedTool::AltErgo),
-                z3: managedflag(SetupTool::Z3, SetupManagedTool::Z3),
-                cvc4: managedflag(SetupTool::CVC4, SetupManagedTool::CVC4),
-                cvc5: managedflag(SetupTool::CVC5, SetupManagedTool::CVC5),
-                only_creusot_rustc,
-                skip_creusot_rustc,
-            };
-            setup::install(flags)
-        }
         Some(Config(args)) => why3find_config(args),
         Some(Prove(args)) => {
             creusot(None, cargs.options, cargs.creusot_rustc, cargs.cargo_flags)?;
@@ -153,14 +124,16 @@ fn invoke_cargo(args: &CreusotArgs, creusot_rustc: Option<PathBuf>, cargo_flags:
     };
     // creusot_rustc binary exists
     if !creusot_rustc_path.exists() {
-        eprintln!("creusot-rustc not found (expected at {creusot_rustc_path:?})");
-        eprintln!("Run 'cargo creusot setup install' in the source directory of Creusot to install creusot-rustc");
+        eprintln!(
+            "creusot-rustc not found (expected at {creusot_rustc_path:?}). You should reinstall Creusot."
+        );
         exit(1);
     }
     let mut cmd = Command::new(cargo_path);
     cmd.arg(format!("+{toolchain}"))
         .arg(cargo_cmd)
         .args(cargo_flags)
+        .args(["-F", "creusot-contracts/nightly"])
         .env("RUSTC", creusot_rustc_path)
         .env("CARGO_CREUSOT", "1");
     // Incremental compilation causes Creusot to not see all of a crate's code
@@ -242,31 +215,6 @@ use CargoCreusotSubCommand::*;
 pub enum SetupSubCommand {
     /// Show the current status of the Creusot installation
     Status,
-    /// Setup Creusot or update an existing installation
-    Install {
-        /// Maximum number of provers to run in parallel
-        #[arg(long, default_value_t = default_provers_parallelism())]
-        provers_parallelism: usize,
-        /// Look-up <TOOL> from PATH instead of using the built-in version
-        #[arg(long, value_name = "TOOL")]
-        external: Vec<SetupManagedTool>,
-        /// Do not error if <TOOL>'s version does not match the one expected by creusot
-        #[arg(long, value_name = "TOOL")]
-        no_check_version: Vec<SetupTool>,
-        /// Only install creusot-rustc
-        #[arg(long)]
-        only_creusot_rustc: bool,
-        /// Skip installing creusot-rustc
-        #[arg(long, conflicts_with = "only_creusot_rustc")]
-        skip_creusot_rustc: bool,
-    },
-}
-
-fn default_provers_parallelism() -> usize {
-    match std::thread::available_parallelism() {
-        Ok(n) => n.get(),
-        Err(_) => 1,
-    }
 }
 
 /// Arguments for `cargo creusot clean`.
@@ -407,9 +355,5 @@ fn find_dangling_rec(dir: &PathBuf) -> Result<Option<Vec<FileOrDirectory>>> {
             all_dangling = false;
         }
     }
-    if all_dangling {
-        Ok(None)
-    } else {
-        Ok(Some(dangling))
-    }
+    if all_dangling { Ok(None) } else { Ok(Some(dangling)) }
 }

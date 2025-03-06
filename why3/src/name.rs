@@ -86,7 +86,7 @@ impl Equivalent<QName> for Ident {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct QName {
-    pub module: Vec<Ident>,
+    pub module: Box<[Ident]>,
     pub name: Ident,
 }
 
@@ -95,20 +95,14 @@ impl QName {
         self.module.is_empty() && &self.name == id
     }
 
-    pub fn as_ident(self) -> Ident {
+    pub fn as_ident(&self) -> Ident {
         assert!(self.module.is_empty());
-        self.name
+        self.name.clone()
     }
 
     pub fn without_search_path(mut self) -> QName {
-        let mut i = 0;
-        while i < self.module.len() {
-            if self.module[i].starts_with(char::is_lowercase) {
-                self.module.remove(i);
-            } else {
-                i += 1
-            }
-        }
+        self.module =
+            self.module.into_iter().skip_while(|s| s.starts_with(char::is_lowercase)).collect();
         self
     }
 }
@@ -131,7 +125,7 @@ impl From<&str> for QName {
             }
         }
 
-        QName { module: vec![], name: s.into() }
+        QName { module: Box::new([]), name: s.into() }
     }
 }
 
@@ -143,7 +137,7 @@ impl From<String> for QName {
 
 impl From<Ident> for QName {
     fn from(name: Ident) -> Self {
-        QName { module: vec![], name }
+        QName { module: Box::new([]), name }
     }
 }
 

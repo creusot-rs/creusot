@@ -1,6 +1,6 @@
 use crate::{
     invariant::*,
-    logic::{ops::IndexLogic, Mapping},
+    logic::{Mapping, ops::IndexLogic},
     *,
 };
 
@@ -83,11 +83,7 @@ impl<T: ?Sized> Seq<T> {
     where
         T: Sized, // TODO : don't require this (problem: return type needs to be sized)
     {
-        if 0 <= ix && ix < self.len() {
-            Some(self.index_logic(ix))
-        } else {
-            None
-        }
+        if 0 <= ix && ix < self.len() { Some(self.index_logic(ix)) } else { None }
     }
 
     /// Returns the value at index `ix`.
@@ -246,7 +242,7 @@ impl<T: ?Sized> Seq<T> {
     /// ```
     #[logic]
     #[open]
-    #[why3::attr = "inline:trivial"]
+    #[creusot::why3_attr = "inline:trivial"]
     pub fn push_front(self, x: T) -> Self {
         Self::cons(x, self)
     }
@@ -552,7 +548,7 @@ impl<T> Seq<T> {
         None => self.get(index) == None && *self == ^self,
         Some(r) => self.get(index) == Some(*r) && ^r == (^self)[index],
     })]
-    #[ensures(forall<i: Int> i != index ==> (*self).get(index) == (^self).get(index))]
+    #[ensures(forall<i: Int> i != index ==> (*self).get(i) == (^self).get(i))]
     #[ensures((*self).len() == (^self).len())]
     pub fn get_mut_ghost(&mut self, index: Int) -> Option<&mut T> {
         let _ = index;

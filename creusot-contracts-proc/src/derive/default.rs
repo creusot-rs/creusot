@@ -1,8 +1,8 @@
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{
-    parse_macro_input, parse_quote, spanned::Spanned, Data, DeriveInput, Fields, GenericParam,
-    Generics, Ident,
+    Data, DeriveInput, Fields, GenericParam, Generics, Ident, parse_macro_input, parse_quote,
+    spanned::Spanned,
 };
 
 /// Derive `Default` and `creusot_contracts::Default` on the given type.

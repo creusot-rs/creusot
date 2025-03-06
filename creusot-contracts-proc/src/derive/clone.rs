@@ -1,8 +1,8 @@
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, quote_spanned};
 use syn::{
-    parse_macro_input, parse_quote, spanned::Spanned, Data, DeriveInput, Fields, GenericParam,
-    Generics, Index,
+    Data, DeriveInput, Fields, GenericParam, Generics, Index, parse_macro_input, parse_quote,
+    spanned::Spanned,
 };
 
 pub fn derive_clone(input: proc_macro::TokenStream) -> proc_macro::TokenStream {

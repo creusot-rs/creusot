@@ -1,5 +1,3 @@
-use std::{iter, path::PathBuf};
-
 use rustc_hir::{
     def::Namespace,
     def_id::DefId,
@@ -7,6 +5,7 @@ use rustc_hir::{
 };
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
+use std::{iter::once, path::PathBuf};
 use why3::Ident;
 
 use crate::very_stable_hash::get_very_stable_hash;
@@ -174,7 +173,7 @@ fn ident_path_segments_(tcx: TyCtxt, def_id: DefId) -> Vec<Segment> {
 
 pub(crate) fn ident_path_segments(tcx: TyCtxt, def_id: DefId) -> Vec<String> {
     let krate = tcx.crate_name(def_id.krate);
-    iter::once(translate_name(krate.as_str()))
+    once(translate_name(krate.as_str()))
         .chain(ident_path_segments_(tcx, def_id).into_iter().map(|seg| match seg {
             Segment::Impl(hash) => format!("qyi{}", hash),
             Segment::Other(data) => translate_name(&data.to_string()),

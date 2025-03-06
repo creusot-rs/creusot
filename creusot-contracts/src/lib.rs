@@ -22,28 +22,27 @@
 //! ```
 //!
 //! For a more detailed explanation, see the [guide](https://creusot-rs.github.io/creusot/guide).
-
 #![cfg_attr(
-    creusot,
-    feature(unsized_locals, fn_traits),
-    allow(incomplete_features),
-    feature(slice_take),
-    feature(print_internals, fmt_internals, fmt_helpers_for_derive)
+    feature = "nightly",
+    allow(incomplete_features, internal_features),
+    feature(
+        unsized_locals,
+        fn_traits,
+        slice_take,
+        print_internals,
+        fmt_internals,
+        fmt_helpers_for_derive,
+        step_trait,
+        allocator_api,
+        unboxed_closures,
+        tuple_trait,
+        panic_internals,
+        libstd_sys_internals,
+        rt,
+        never_type,
+        ptr_metadata
+    )
 )]
-#![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns))]
-#![feature(
-    step_trait,
-    allocator_api,
-    unboxed_closures,
-    tuple_trait,
-    panic_internals,
-    libstd_sys_internals,
-    rt,
-    never_type,
-    ptr_metadata
-)]
-#![cfg_attr(not(creusot), feature(rustc_attrs))]
-#![cfg_attr(not(creusot), allow(internal_features))]
 
 extern crate self as creusot_contracts;
 
@@ -369,6 +368,10 @@ pub mod macros {
     /// This attribute can be used on a function or closure to instruct Creusot not to ensure as a postcondition that the
     /// return value of the function satisfies its [type invariant](crate::Invariant).
     pub use base_macros::open_inv_result;
+
+    /// This attribute indicates that the function need to be proved in "bitwise" mode, which means that Creusot will use
+    /// the bitvector theory of SMT solvers.
+    pub use base_macros::bitwise_proof;
 }
 
 #[doc(hidden)]
@@ -386,6 +389,7 @@ pub mod ghost;
 pub mod invariant;
 pub mod logic;
 pub mod model;
+pub mod pcell;
 pub mod ptr_own;
 pub mod resolve;
 pub mod snapshot;
@@ -396,7 +400,7 @@ pub mod well_founded;
 mod base_prelude {
     pub use crate::{
         ghost::GhostBox,
-        logic::{ops::IndexLogic as _, Int, OrdLogic, Seq},
+        logic::{Int, OrdLogic, Seq, ops::IndexLogic as _},
         model::{DeepModel, View},
         resolve::*,
         snapshot::Snapshot,

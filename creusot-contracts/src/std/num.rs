@@ -1,13 +1,17 @@
-use crate::{Default, *};
+use crate::{
+    Default,
+    logic::ops::{AddLogic, MulLogic, NegLogic, SubLogic},
+    *,
+};
 pub use ::std::num::*;
 
 macro_rules! mach_int {
-    ($t:ty, $ty_nm:expr, $zero:expr) => {
+    ($t:ty, $ty_nm:expr, $zero:expr, $to_int:literal) => {
         impl View for $t {
             type ViewTy = Int;
             #[logic]
             #[trusted]
-            #[creusot::builtins = concat!($ty_nm, ".to_int")]
+            #[creusot::builtins = concat!($ty_nm, $to_int)]
             fn view(self) -> Self::ViewTy {
                 dead
             }
@@ -29,22 +33,79 @@ macro_rules! mach_int {
                 pearlite! { self == $zero }
             }
         }
+
+        impl AddLogic for $t {
+            type Output = Self;
+            #[logic]
+            #[trusted]
+            #[creusot::no_translate]
+            #[creusot::builtins = concat!($ty_nm, ".add")]
+            #[allow(unused_variables)]
+            fn add(self, other: Self) -> Self {
+                dead
+            }
+        }
+
+        impl SubLogic for $t {
+            type Output = Self;
+            #[logic]
+            #[trusted]
+            #[creusot::no_translate]
+            #[creusot::builtins = concat!($ty_nm, ".sub")]
+            #[allow(unused_variables)]
+            fn sub(self, other: Self) -> Self {
+                dead
+            }
+        }
+
+        impl MulLogic for $t {
+            type Output = Self;
+            #[logic]
+            #[trusted]
+            #[creusot::no_translate]
+            #[creusot::builtins = concat!($ty_nm, ".mul")]
+            #[allow(unused_variables)]
+            fn mul(self, other: Self) -> Self {
+                dead
+            }
+        }
+
+        impl NegLogic for $t {
+            type Output = Self;
+            #[logic]
+            #[trusted]
+            #[creusot::no_translate]
+            #[creusot::builtins = concat!($ty_nm, ".neg")]
+            fn neg(self) -> Self {
+                dead
+            }
+        }
     };
 }
 
-mach_int!(u8, "prelude.prelude.UInt8", 0u8);
-mach_int!(u16, "prelude.prelude.UInt16", 0u16);
-mach_int!(u32, "prelude.prelude.UInt32", 0u32);
-mach_int!(u64, "prelude.prelude.UInt64", 0u64);
-mach_int!(u128, "prelude.prelude.UInt128", 0u128);
-mach_int!(usize, "prelude.prelude.UIntSize", 0usize);
+mach_int!(u8, "creusot.int.UInt8$BW$", 0u8, ".t'int");
+mach_int!(u16, "creusot.int.UInt16$BW$", 0u16, ".t'int");
+mach_int!(u32, "creusot.int.UInt32$BW$", 0u32, ".t'int");
+mach_int!(u64, "creusot.int.UInt64$BW$", 0u64, ".t'int");
+mach_int!(u128, "creusot.int.UInt128$BW$", 0u128, ".t'int");
+#[cfg(target_pointer_width = "64")]
+mach_int!(usize, "creusot.int.UInt64$BW$", 0usize, ".t'int");
+#[cfg(target_pointer_width = "32")]
+mach_int!(usize, "creusot.int.UInt32$BW$", 0usize, ".t'int");
+#[cfg(target_pointer_width = "16")]
+mach_int!(usize, "creusot.int.UInt16$BW$", 0usize, ".t'int");
 
-mach_int!(i8, "prelude.prelude.Int8", 0i8);
-mach_int!(i16, "prelude.prelude.Int16", 0i16);
-mach_int!(i32, "prelude.prelude.Int32", 0i32);
-mach_int!(i64, "prelude.prelude.Int64", 0i64);
-mach_int!(i128, "prelude.prelude.Int128", 0i128);
-mach_int!(isize, "prelude.prelude.IntSize", 0isize);
+mach_int!(i8, "creusot.int.Int8$BW$", 0i8, ".to_int");
+mach_int!(i16, "creusot.int.Int16$BW$", 0i16, ".to_int");
+mach_int!(i32, "creusot.int.Int32$BW$", 0i32, ".to_int");
+mach_int!(i64, "creusot.int.Int64$BW$", 0i64, ".to_int");
+mach_int!(i128, "creusot.int.Int128$BW$", 0i128, ".to_int");
+#[cfg(target_pointer_width = "64")]
+mach_int!(isize, "creusot.int.Int64$BW$", 0isize, ".to_int");
+#[cfg(target_pointer_width = "32")]
+mach_int!(isize, "creusot.int.Int32$BW$", 0isize, ".to_int");
+#[cfg(target_pointer_width = "16")]
+mach_int!(isize, "creusot.int.Int16$BW$", 0isize, ".to_int");
 
 /// Adds specifications for checked, wrapping, saturating, and overflowing operations on the given
 /// integer type
@@ -54,6 +115,15 @@ macro_rules! spec_type {
         spec_op_common!($type, +, checked_add, wrapping_add, saturating_add, overflowing_add);
         spec_op_common!($type, -, checked_sub, wrapping_sub, saturating_sub, overflowing_sub);
         spec_op_common!($type, *, checked_mul, wrapping_mul, saturating_mul, overflowing_mul);
+
+        extern_spec! {
+            impl $type {
+                #[allow(dead_code)]
+                #[pure]
+                #[ensures(result == -self)]
+                fn wrapping_neg(self) -> $type;
+            }
+        }
 
         // Specify division separately, because it has the additional precondition that the divisor
         // is non-zero. Overflow on division can only occur on signed types and only when computing
@@ -135,28 +205,7 @@ macro_rules! spec_op_common {
                 // Wrapping: performs the operation on `Int` and converts back to `$type`
                 #[allow(dead_code)]
                 #[pure]
-                // Returns result converted to `$type`
-                #[ensures(
-                    result@ == (self@ $op rhs@).rem_euclid(2.pow($type::BITS@)) + $type::MIN@
-                )]
-                // Returns the result if it is in range
-                #[ensures(
-                    (self@ $op rhs@) >= $type::MIN@ && (self@ $op rhs@) <= $type::MAX@
-                    ==> result@ == (self@ $op rhs@)
-                )]
-                // Returns the result shifted by a multiple of the type's range if it is out of
-                // range. For addition and subtraction, `k` (qualified over below) will always be 1
-                // or -1, but the verifier is able to deduce that.
-                #[ensures(
-                    (self@ $op rhs@) < $type::MIN@
-                    ==> exists<k: Int> k > 0
-                        && result@ == (self@ $op rhs@) + k * ($type::MAX@ - $type::MIN@ + 1)
-                )]
-                #[ensures(
-                    (self@ $op rhs@) > $type::MAX@
-                    ==> exists<k: Int> k > 0
-                        && result@ == (self@ $op rhs@) - k * ($type::MAX@ - $type::MIN@ + 1)
-                )]
+                #[ensures(result == self $op rhs)]
                 fn $wrapping(self, rhs: $type) -> $type;
 
                 // Saturating: performs the operation on `Int` and clamps the result between
@@ -177,10 +226,6 @@ macro_rules! spec_op_common {
                 // indicates whether an overflow occurred
                 #[allow(dead_code)]
                 #[pure]
-                // Returns result converted to `$type`
-                #[ensures(
-                    result.0@ == (self@ $op rhs@).rem_euclid(2.pow($type::BITS@)) + $type::MIN@
-                )]
                 // Returns the result if it is in range
                 #[ensures(
                     (self@ $op rhs@) >= $type::MIN@ && (self@ $op rhs@) <= $type::MAX@
@@ -190,14 +235,7 @@ macro_rules! spec_op_common {
                 // range. For addition and subtraction, `k` (qualified over below) will always be 1
                 // or -1, but the verifier is able to deduce that.
                 #[ensures(
-                    (self@ $op rhs@) < $type::MIN@
-                    ==> exists<k: Int> k > 0
-                        && result.0@ == (self@ $op rhs@) + k * ($type::MAX@ - $type::MIN@ + 1)
-                )]
-                #[ensures(
-                    (self@ $op rhs@) > $type::MAX@
-                    ==> exists<k: Int> k > 0
-                        && result.0@ == (self@ $op rhs@) - k * ($type::MAX@ - $type::MIN@ + 1)
+                    exists<k: Int> result.0@ == (self@ $op rhs@) + k * ($type::MAX@ - $type::MIN@ + 1)
                 )]
                 // Overflow occurred iff the result is out of range
                 #[ensures(

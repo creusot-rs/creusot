@@ -8,21 +8,19 @@ Follow the instructions provided in the [README](./README.md). This will provide
 
 ## 2.1. UI Tests
 
-The UI tests are used to validate the translation of Creusot. They can be found in `creusot/tests/should_fail` and `creusot/tests/should_suceed`.
+The UI tests are used to validate the translation of Creusot. They can be found in `tests/should_fail` and `tests/should_suceed`.
 Ideally, each test includes a comment specifying the property or feature being checked.
-To validate the translation one can run `cargo test --test ui`, or to run only a subset of tests run `cargo test --test ui -- "string-pattern"`.
+To validate the translation one can run `cargo test --test ui`, or to run only a subset of tests run `cargo test --test ui "pattern"`.
 
 ## 2.2. Updating UI tests
 
-If you have made changes to the Creusot translation and the UI tests show a diff you believe to be legitimate, you can tell Creusot to record the new output using `cargo test --test ui -- "pattern" --bless`.
+If you have made changes to the Creusot translation and the UI tests show a diff you believe to be legitimate, you can tell Creusot to record the new output using `cargo test --test ui "pattern" -- --bless`.
 When contributing or updating tests, we ask that you minimize avoidable warnings, in particular, top-level declarations should be marked public, and unused arguments removed or replaced by wildcards.
 The warnings and errors of each test are recorded in an accompanying `stderr` file if any were present.
 
-## 2.3. Testing `creusot-contracts`
-
-There is one special test used for the `creusot-contracts` crate, that can be run with `cargo test --test creusot-contracts`.
-
-The corresponding coma file is located at `creusot/tests/creusot-contracts/creusot-contracts.coma`. It can be updated with the `--bless` flag: `cargo test --test creusot-contracts -- --bless`. 
+The `ui` test also runs the Creusot translation on `creusot-contracts`.
+The result is located at `tests/creusot-contracts/creusot-contracts.coma`.
+To run the translation only on `creusot-contracts`, use a pattern that matches nothing, like `cargo test --test ui qq`
 
 # 3. Verifying proofs
 
