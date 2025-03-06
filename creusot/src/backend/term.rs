@@ -2,17 +2,15 @@ use std::{cell::RefCell, collections::HashMap};
 
 use crate::{
     backend::{
-        Why3Generator,
-        program::borrow_generated_id,
-        ty::{constructor, floatty_to_prelude, ity_to_prelude, translate_ty, uty_to_prelude},
+        program::borrow_generated_id, ty::{constructor, floatty_to_prelude, ity_to_prelude, translate_ty, uty_to_prelude}, Why3Generator
     },
     ctx::*,
-    pearlite::{self, Literal, Pattern, PointerKind, Term, TermKind, Renaming},
-    translation::pearlite::{QuantKind, Trigger},
+    pearlite::{Literal, Pattern, PointerKind, Term, TermKind},
+    translation::pearlite::{BinOp, QuantKind, Trigger, UnOp},
 };
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind};
-use rustc_span::{DUMMY_SP, Symbol};
+use rustc_span::{Ident as RustIdent, DUMMY_SP};
 use rustc_type_ir::{IntTy, UintTy};
 use std::iter::repeat_n;
 use why3::{
@@ -24,22 +22,24 @@ use why3::{
     ty::Type,
 };
 
+type Renaming = HashMap<RustIdent, Ident>;
+
 pub(crate) fn lower_pure0<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     term: &Term<'tcx>,
 ) -> Exp {
-    lower_pure(ctx, names, &RefCell::new(Renaming::new()), term)
+    lower_pure(ctx, names, &mut Renaming::new(), term)
 }
 
 pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
-    renaming: &RefCell<Renaming>,
+    renaming: &mut Renaming,
     term: &Term<'tcx>,
 ) -> Exp {
     let span = term.span;
-    let mut term = Lower { ctx, names, renaming }.lower_term(term);
+    let mut term = Lower { ctx, names, renaming: RefCell::new(renaming) }.lower_term(term);
     term.reassociate();
     if let Some(attr) = names.span(span) { term.with_attr(attr) } else { term }
 }
@@ -50,13 +50,14 @@ pub(crate) fn lower_pat<'tcx, N: Namer<'tcx>>(
     pat: &Pattern<'tcx>,
     renaming: &mut Renaming,
 ) -> WPattern {
-    Lower { ctx, names, renaming }.lower_pat(pat)
+    Lower { ctx, names, renaming: RefCell::new(renaming) }.lower_pat(pat)
 }
+
 
 struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     ctx: &'a Why3Generator<'tcx>,
     names: &'a N,
-    renaming: &'a RefCell<Renaming>,
+    renaming: RefCell<&'a mut Renaming>,
 }
 
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
@@ -138,7 +139,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     item
                 }
             }
-            TermKind::Var(v) => Exp::Var(*v),
+            TermKind::Var(v) => Exp::Var(self.ident(*v)),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -193,13 +194,11 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 if args.peek().is_none() { var.app([Exp::unit()]) } else { var.app(args) }
             }
             TermKind::Quant { kind, binder, box body, trigger } => {
-                self.open_scope();
                 let bound = binder.iter()
-                    .map(|(ident, t)| (*ident, self.lower_ty(*t)))  // TODO store this fresh somewhere
+                    .map(|(ident, t)| (self.ident(*ident), self.lower_ty(*t)))
                     .collect();
                 let body = self.lower_term(body);
                 let trigger = self.lower_trigger(trigger);
-                self.close_scope();
                 match kind {
                     QuantKind::Forall => Exp::forall_trig(bound, trigger, body),
                     QuantKind::Exists => Exp::exists_trig(bound, trigger, body),
@@ -240,10 +239,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     let arms = arms
                         .iter()
                         .map(|(pat, body)| {
-                            self.open_scope();
                             let pat = self.lower_pat(pat);
                             let body = self.lower_term(body);
-                            self.close_scope();
                             (pat, body)
                         })
                         .collect();
@@ -252,10 +249,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Let { pattern, box arg, box body } => {
                 let arg = Box::new(self.lower_term(arg));
-                self.open_scope();
                 let pattern = self.lower_pat(pattern);
                 let body = Box::new(self.lower_term(body));
-                self.close_scope();
                 Exp::Let {
                     pattern,
                     arg,
@@ -273,6 +268,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     TyKind::Adt(def, substs) => self.names.field(def.did(), substs, *name),
                     TyKind::Tuple(f) => {
                         let mut fields: Box<_> = repeat_n(WPattern::Wildcard, f.len()).collect();
+                        let a = Ident::fresh("a");
                         fields[name.as_usize()] = WPattern::VarP(a);
 
                         return Exp::Let {
@@ -294,25 +290,15 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                 let sig = self.ctx.sig(*id).clone();
                 let sig = EarlyBinder::bind(sig).instantiate(self.ctx.tcx, subst);
-/* skip? normalize?
-                self.renaming.open_scope();
-                let binders = sig
+                let binders: Box<[Binder]> = sig
                     .inputs
                     .iter()
                     .skip(1)
-                    .map(|arg| {
-                        let nm = Ident::fresh(&arg.0.to_string());
-                        let ty = self.names.normalize(self.ctx, arg.2);
-                        Binder::typed(nm, self.lower_ty(ty))
+                    .map(|(ident, ty)| {
+                        let ty = self.names.normalize(self.ctx, *ty);
+                        Binder::typed(self.ident(*ident), self.lower_ty(ty))
                     })
                     .collect();
- */
-                self.open_scope();
-                for (ident, _, ty) in sig.inputs.iter().skip(1) {
-                    let ty = self.names.normalize(self.ctx, *ty);
-                    binders.push(Binder::typed(*ident, self.lower_ty(ty)))
-                }
-                self.renaming.close_scope();
                 Exp::Abs(binders, Box::new(body))
             }
             TermKind::Reborrow { cur, fin, inner, projection } => {
@@ -373,7 +359,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
             }
             Pattern::Wildcard => WPattern::Wildcard,
-            Pattern::Binder(name) => WPattern::VarP(*name),
+            Pattern::Binder(name) => WPattern::VarP(self.ident(*name)),
             Pattern::Boolean(b) => {
                 if *b {
                     WPattern::mk_true()
@@ -381,6 +367,13 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     WPattern::mk_false()
                 }
             },
+            Pattern::Tuple(pats) => WPattern::TupleP(pats.into_iter().map(|p| self.lower_pat(p)).collect()),
+            Pattern::Deref { pointee, kind } => match kind {
+                PointerKind::Box | PointerKind::Shr => self.lower_pat(pointee),
+                PointerKind::Mut => {
+                    WPattern::RecP(Box::new([(Ident::bound("current"), self.lower_pat(pointee))]))
+                }
+            }
         }
     }
 
@@ -395,20 +388,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             .collect()
     }
 
-    fn var(&self, s: Symbol) -> Option<Ident> {
-        todo!{} // self.renaming.borrow().get(&s)
-    }
-
-    fn open_scope(&self) {
-        self.renaming.borrow_mut().open_scope();
-    }
-
-    fn close_scope(&self) {
-        self.renaming.borrow_mut().close_scope();
-    }
-
-    fn fresh(&self, s: Symbol) -> Ident{
-        todo!{} // self.renaming.borrow_mut().fresh(s)
+    fn ident(&self, ident: RustIdent) -> Ident {
+        *self.renaming.borrow_mut().entry(ident).or_insert_with(|| Ident::fresh(ident.name.as_str()))
     }
 }
 

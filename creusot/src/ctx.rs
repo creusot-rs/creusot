@@ -488,8 +488,8 @@ impl<'tcx> TranslationCtx<'tcx> {
             self.extern_specs.insert(def_id, ExternSpec {
                 contract: ContractClauses::new(),
                 subst: erased_identity_for_item(self.tcx, def_id),
-                arg_subst: Vec::new(),
-                additional_predicates,
+                arg_subst: Box::new([]),
+                additional_predicates: additional_predicates.into(),
             });
         }
 

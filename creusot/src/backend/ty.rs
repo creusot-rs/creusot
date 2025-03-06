@@ -213,7 +213,7 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
         fields.iter().cloned().map(|(nm, ty)| Param::Term(nm, ty)).collect();
 
     let constr = names.constructor(variant_id, subst);
-    let cons_test = Exp::qvar(constr).app(fields.iter().map(|(nm, _)| Exp::var(nm.clone())));
+    let cons_test = Exp::qvar(constr).app(fields.iter().map(|(nm, _)| Exp::Var(*nm)));
 
     let ret = Ident::fresh("ret");
     let input = Ident::fresh("input");
@@ -221,7 +221,7 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
     let bad = Ident::fresh("bad");
 
     let ret_call = Expr::Variable(ret)
-        .app(fields.iter().map(|(nm, _)| Arg::Term(Exp::Var(nm.clone()))));
+        .app(fields.iter().map(|(nm, _)| Arg::Term(Exp::Var(*nm))));
 
     let good_branch: Defn = Defn {
         name: good,

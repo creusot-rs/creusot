@@ -1804,6 +1804,14 @@ pub(crate) fn final_ident() -> Ident {
     Ident::new(Symbol::intern("final"), DUMMY_SP)
 }
 
+pub(crate) fn x_ident() -> Ident {
+    Ident::new(Symbol::intern("x"), DUMMY_SP)
+}
+
+pub(crate) fn a_ident(n: usize) -> Ident {
+    Ident::new(Symbol::intern(&format!("a_{}", n)), DUMMY_SP)
+}
+
 pub(crate) fn var_debug_info_to_ident(var: &VarDebugInfo) -> Ident {
     Ident { name: var.name, span: var.debug_info.span }
 }
