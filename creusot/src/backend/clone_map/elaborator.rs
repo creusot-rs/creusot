@@ -238,19 +238,8 @@ impl DepElab for TyElab {
                 ty_name: names.ty_param(ty).as_ident(),
                 ty_params: Box::new([]),
             })],
-            TyKind::Alias(AliasTyKind::Opaque, _) => {
+            TyKind::Alias(AliasTyKind::Opaque | AliasTyKind::Projection, _) => {
                 let (def_id, subst) = dep.did().unwrap();
-                vec![Decl::TyDecl(TyDecl::Opaque {
-                    ty_name: names.ty(def_id, subst).as_ident(),
-                    ty_params: Box::new([]),
-                })]
-            }
-            TyKind::Alias(_, _) => {
-                let (def_id, subst) = dep.did().unwrap();
-                assert_eq!(
-                    ctx.tcx.associated_item(def_id).container,
-                    rustc_middle::ty::AssocItemContainer::Trait
-                );
                 vec![Decl::TyDecl(TyDecl::Opaque {
                     ty_name: names.ty(def_id, subst).as_ident(),
                     ty_params: Box::new([]),

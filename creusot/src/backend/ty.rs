@@ -48,10 +48,8 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         Adt(def, s) => MlT::TConstructor(names.ty(def.did(), s)),
         Tuple(args) => MlT::Tuple(args.iter().map(|t| translate_ty(ctx, names, span, t)).collect()),
         Param(_) => MlT::TConstructor(names.ty_param(ty)),
-        Alias(AliasTyKind::Projection, pty) => translate_projection_ty(ctx, names, pty),
-        Alias(AliasTyKind::Opaque, AliasTy { args, def_id, .. }) => {
-            let name = names.ty(*def_id, args);
-            MlT::TConstructor(name)
+        Alias(AliasTyKind::Opaque | AliasTyKind::Projection, AliasTy { args, def_id, .. }) => {
+            MlT::TConstructor(names.ty(*def_id, args))
         }
         Ref(_, ty, borkind) => {
             use rustc_ast::Mutability::*;
@@ -82,19 +80,6 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         Error(_) => MlT::unit(),
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
     }
-}
-
-fn translate_projection_ty<'tcx, N: Namer<'tcx>>(
-    ctx: &Why3Generator<'tcx>,
-    names: &N,
-    pty: &AliasTy<'tcx>,
-) -> MlT {
-    let ty = Ty::new_alias(ctx.tcx, AliasTyKind::Projection, *pty);
-    let proj_ty = names.normalize(ctx, ty);
-    if let TyKind::Alias(AliasTyKind::Projection, aty) = proj_ty.kind() {
-        return MlT::TConstructor(names.ty(aty.def_id, aty.args));
-    };
-    translate_ty(ctx, names, DUMMY_SP, proj_ty)
 }
 
 pub(crate) fn translate_closure_ty<'tcx, N: Namer<'tcx>>(

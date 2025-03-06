@@ -39,8 +39,9 @@ impl<'tcx> Dependency<'tcx> {
             Dependency::Type(t) => match t.kind() {
                 TyKind::Adt(def, substs) => Some((def.did(), substs)),
                 TyKind::Closure(id, substs) => Some((*id, substs)),
-                TyKind::Alias(AliasTyKind::Projection, aty) => Some((aty.def_id, aty.args)),
-                TyKind::Alias(AliasTyKind::Opaque, aty) => Some((aty.def_id, aty.args)),
+                TyKind::Alias(AliasTyKind::Opaque | AliasTyKind::Projection, aty) => {
+                    Some((aty.def_id, aty.args))
+                }
                 _ => None,
             },
             _ => None,
@@ -62,7 +63,7 @@ impl<'tcx> Dependency<'tcx> {
                     "opaque{}",
                     tcx.def_path(aty.def_id).data.last().unwrap().disambiguator
                 ))),
-                TyKind::Alias(_, aty) => Some(Symbol::intern(&type_name(
+                TyKind::Alias(AliasTyKind::Projection, aty) => Some(Symbol::intern(&type_name(
                     tcx.opt_item_name(aty.def_id).unwrap_or(Symbol::intern("synthetic")).as_str(),
                 ))),
                 TyKind::Closure(def_id, _) => Some(Symbol::intern(&format!(
