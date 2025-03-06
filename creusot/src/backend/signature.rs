@@ -6,26 +6,13 @@ use why3::{
 };
 
 use crate::{
-    backend,
+    backend::{Namer, Why3Generator, logic::function_call, term::lower_pure, ty::translate_ty},
     contracts_items::{should_replace_trigger, why3_attrs},
-    naming::{anonymous_param_symbol, ident_of},
+    naming::ident_of,
     specification::{Condition, PreSignature},
-    translation::specification::PreContract,
 };
 
-use super::{Namer, Why3Generator, logic::function_call, term::lower_pure};
-
-pub(crate) fn signature_of<'tcx, N: Namer<'tcx>>(
-    ctx: &Why3Generator<'tcx>,
-    names: &N,
-    name: Ident,
-    def_id: DefId,
-) -> Signature {
-    debug!("signature_of {def_id:?}");
-    let pre_sig = ctx.sig(def_id).clone();
-    sig_to_why3(ctx, names, name, pre_sig, def_id)
-}
-
+// This should be given a normalized pre_sig!
 pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
@@ -35,21 +22,13 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
     // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
     def_id: DefId,
 ) -> Signature {
-    let contract = contract_to_why3(pre_sig.contract, ctx, names);
-
     let span = ctx.tcx.def_span(def_id);
     let args: Box<[Binder]> = pre_sig
         .inputs
         .iter()
-        .enumerate()
-        .map(|(ix, (id, _, ty))| {
-            let ty = backend::ty::translate_ty(ctx, names, span, *ty);
-            let id = if id.is_empty() {
-                anonymous_param_symbol(ix).as_str().into()
-            } else {
-                ident_of(*id)
-            };
-            Binder::typed(id, ty)
+        .map(|(id, span, ty)| {
+            let ty = translate_ty(ctx, names, *span, *ty);
+            Binder::typed(ident_of(*id), ty)
         })
         .collect();
 
@@ -61,15 +40,27 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
         .and_then(|span| ctx.span_attr(span))
         .map(|attr| attrs.push(attr));
 
-    let retty = backend::ty::translate_ty(ctx, names, span, pre_sig.output);
+    let retty = Some(translate_ty(ctx, names, span, pre_sig.output));
 
-    let mut sig = Signature { name, trigger: None, attrs, retty: Some(retty), args, contract };
-    let trigger = if ctx.opts.simple_triggers && should_replace_trigger(ctx.tcx, def_id) {
-        Some(Trigger::single(function_call(&sig)))
-    } else {
-        None
+    let requires = pre_sig
+        .contract
+        .requires
+        .into_iter()
+        .map(|cond| lower_condition(ctx, names, cond))
+        .collect();
+    let ensures = pre_sig
+        .contract
+        .ensures
+        .into_iter()
+        .map(|cond| lower_condition(ctx, names, cond))
+        .collect();
+    let variant = pre_sig.contract.variant.map(|term| lower_pure(ctx, names, &term));
+    let contract = Contract { requires, ensures, variant };
+
+    let mut sig = Signature { name, trigger: None, attrs, retty, args, contract };
+    if ctx.opts.simple_triggers && should_replace_trigger(ctx.tcx, def_id) {
+        sig.trigger = Some(Trigger::single(function_call(&sig)))
     };
-    sig.trigger = trigger;
     sig
 }
 
@@ -79,15 +70,4 @@ fn lower_condition<'tcx, N: Namer<'tcx>>(
     cond: Condition<'tcx>,
 ) -> WCondition {
     WCondition { exp: lower_pure(ctx, names, &cond.term), expl: cond.expl }
-}
-
-fn contract_to_why3<'tcx, N: Namer<'tcx>>(
-    pre: PreContract<'tcx>,
-    ctx: &Why3Generator<'tcx>,
-    names: &N,
-) -> Contract {
-    let requires = pre.requires.into_iter().map(|cond| lower_condition(ctx, names, cond)).collect();
-    let ensures = pre.ensures.into_iter().map(|cond| lower_condition(ctx, names, cond)).collect();
-    let variant = pre.variant.map(|term| lower_pure(ctx, names, &term));
-    Contract { requires, ensures, variant }
 }

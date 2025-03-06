@@ -95,10 +95,6 @@ pub struct Contract {
 }
 
 impl Contract {
-    pub fn is_empty(&self) -> bool {
-        self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_none()
-    }
-
     pub fn ensures_conj(&self) -> Exp {
         let mut ensures = self.ensures.iter().map(|cond| cond.exp.clone());
         let Some(mut postcond) = ensures.next() else { return Exp::mk_true() };
@@ -132,8 +128,9 @@ impl Contract {
     }
 
     pub fn requires_implies(&self, conclusion: Exp) -> Exp {
-        let requires = self.requires.iter().map(|cond| cond.exp.clone());
-        requires.rfold(conclusion, |acc, arg| arg.implies(acc))
+        self.requires
+            .iter()
+            .rfold(conclusion, |acc, cond| cond.clone().unlabelled_exp().implies(acc))
     }
 
     pub fn subst(&mut self, subst: &HashMap<Ident, Exp>) {

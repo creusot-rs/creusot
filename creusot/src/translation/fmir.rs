@@ -268,7 +268,7 @@ impl LocalIdent {
         LocalIdent::Anon(loc)
     }
 
-    pub(crate) fn dbg_raw(_: Local, name: Symbol) -> Self {
+    pub(crate) fn user(_: Local, name: Symbol) -> Self {
         LocalIdent::User(name)
     }
 

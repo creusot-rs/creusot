@@ -418,9 +418,6 @@ pub struct PreSignature<'tcx> {
     pub(crate) inputs: Vec<(Symbol, Span, Ty<'tcx>)>,
     pub(crate) output: Ty<'tcx>,
     pub(crate) contract: PreContract<'tcx>,
-    // trusted: bool,
-    // span: Span,
-    // program: bool,
 }
 
 impl<'tcx> PreSignature<'tcx> {
@@ -593,8 +590,7 @@ fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (impl Iterator<Item = (Ident
             let sig = tcx.normalize_erasing_regions(TypingEnv::non_body_analysis(tcx, def_id), sig);
             let env_ty = tcx.closure_env_ty(ty, subst.as_closure().kind(), tcx.lifetimes.re_erased);
 
-            // I wish this could be called "self"
-            let closure_env = (Ident::empty(), env_ty);
+            let closure_env = (Ident::from_str("_1"), env_ty);
             let names = tcx.fn_arg_names(def_id).iter().cloned().chain(repeat(Ident::empty()));
             (
                 Box::new(once(closure_env).chain(names.zip(sig.inputs().iter().cloned()))),

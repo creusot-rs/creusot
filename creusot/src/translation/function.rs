@@ -10,7 +10,6 @@ use crate::{
     extended_location::ExtendedLocation,
     fmir::{self, LocalDecl, LocalDecls, LocalIdent, RValue, TrivialInv},
     gather_spec_closures::{LoopSpecKind, SpecClosures, corrected_invariant_names_and_locations},
-    naming::anonymous_param_symbol,
     pearlite::{Term, normalize},
     resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
     translation::{
@@ -759,7 +758,7 @@ fn translate_vars<'tcx>(
                 Symbol::intern(&format!("{}{}", debug_info.name, cnt))
             };
 
-            let sym = LocalIdent::dbg_raw(loc, sym);
+            let sym = LocalIdent::user(loc, sym);
 
             *cnt += 1;
             sym
@@ -817,18 +816,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         let arg_tuple = Term::var(Symbol::intern("args"), arg_ty);
 
         let arg_pat = pearlite::Pattern::Tuple(
-            args_nms
-                .iter()
-                .enumerate()
-                .map(|(idx, nm)| {
-                    if nm.is_empty() {
-                        // We skipped the first element
-                        pearlite::Pattern::Binder(anonymous_param_symbol(idx + 1))
-                    } else {
-                        pearlite::Pattern::Binder(*nm)
-                    }
-                })
-                .collect(),
+            args_nms.iter().copied().map(pearlite::Pattern::Binder).collect(),
         );
 
         let env_ty = self.closure_env_ty(
