@@ -81,10 +81,12 @@ impl<T> List<T> {
             self.first = cell_ptr;
             self.last = cell_ptr;
         } else {
-            let cell_last = PtrOwn::as_mut(self.last, ghost! {
-                let off = minus_one(self.seq.len_ghost());
-                self.seq.get_mut_ghost(off).unwrap()
-            });
+            let cell_last = unsafe {
+                PtrOwn::as_mut(self.last, ghost! {
+                    let off = minus_one(self.seq.len_ghost());
+                    self.seq.get_mut_ghost(off).unwrap()
+                })
+            };
             cell_last.next = cell_ptr;
             self.last = cell_ptr;
         }

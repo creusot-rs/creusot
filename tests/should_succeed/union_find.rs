@@ -178,14 +178,13 @@ mod implementation {
             let value_snap = snapshot!(value);
             let (ptr, perm) = PtrOwn::new(Content::Root { rank: 0, value });
             let element = Element(ptr);
-            let mut map = self.map.borrow_mut();
             ghost! {
                 let perm = perm.into_inner();
-                match map.get_mut_ghost(&element.addr()) {
+                match self.map.get_mut_ghost(&element.addr()) {
                     None => {},
                     Some(other_perm) => PtrOwn::disjoint_lemma(other_perm, &perm),
                 }
-                map.insert_ghost(element.addr(), perm);
+                self.map.insert_ghost(element.addr(), perm);
             };
             self.domain = snapshot!(self.domain.insert(element));
             self.values = snapshot!(self.values.set(element, *value_snap));
@@ -202,17 +201,15 @@ mod implementation {
         #[ensures((^self).distance == (*self).distance)]
         #[ensures(self.distance[result] >= self.distance[elem])]
         fn find_inner(&mut self, elem: Element<T>) -> Element<T> {
-            let map = self.map.borrow();
-            let perm = ghost!(map.get_ghost(&elem.addr()).unwrap());
-            let value = PtrOwn::as_ref(elem.0, perm);
+            let perm = ghost!(self.map.get_ghost(&elem.addr()).unwrap());
+            let value = unsafe { PtrOwn::as_ref(elem.0, perm) };
             match value {
                 Content::Root { .. } => elem,
                 Content::Link(e) => {
                     let root = self.find_inner(*e);
                     // path compression
-                    let mut map = self.map.borrow_mut();
-                    let mut_perm = ghost!(map.get_mut_ghost(&elem.addr()).unwrap());
-                    *PtrOwn::as_mut(elem.0, mut_perm) = Content::Link(root);
+                    let mut_perm = ghost!(self.map.get_mut_ghost(&elem.addr()).unwrap());
+                    unsafe { *PtrOwn::as_mut(elem.0, mut_perm) = Content::Link(root) };
                     root
                 }
             }
@@ -233,9 +230,8 @@ mod implementation {
         #[requires(self.root_of()[elem] == elem)]
         #[ensures(*result == self.values()[elem])]
         pub fn get(&self, elem: Element<T>) -> &T {
-            let map = self.map.borrow();
-            let perm = ghost!(map.get_ghost(&elem.addr()).unwrap());
-            match PtrOwn::as_ref(elem.0, perm) {
+            let perm = ghost!(self.map.get_ghost(&elem.addr()).unwrap());
+            match unsafe { PtrOwn::as_ref(elem.0, perm) } {
                 Content::Root { value, .. } => value,
                 _ => loop {},
             }
@@ -287,18 +283,19 @@ mod implementation {
             if x == y {
                 return x;
             }
-            let mut map = self.map.borrow_mut();
-            let perm_x = ghost!(map.get_ghost(&x.addr()).unwrap());
-            let perm_y = ghost!(map.get_ghost(&y.addr()).unwrap());
-            let Content::Root { rank: rx, value: ref vx } = *PtrOwn::as_ref(x.0, perm_x) else {
-                unreachable!()
+            let perm_x = ghost!(self.map.get_ghost(&x.addr()).unwrap());
+            let perm_y = ghost!(self.map.get_ghost(&y.addr()).unwrap());
+            let (rx, vx) = match unsafe { PtrOwn::as_ref(x.0, perm_x) } {
+                Content::Root { rank, value } => (*rank, value),
+                _ => unreachable!(),
             };
-            let Content::Root { rank: ry, value: ref vy } = *PtrOwn::as_ref(y.0, perm_y) else {
-                unreachable!()
+            let (ry, vy) = match unsafe { PtrOwn::as_ref(y.0, perm_y) } {
+                Content::Root { rank, value } => (*rank, value),
+                _ => unreachable!(),
             };
             if rx < ry {
-                let perm_mut_x = ghost!(map.get_mut_ghost(&x.addr()).unwrap());
-                *PtrOwn::as_mut(x.0, perm_mut_x) = Content::Link(y);
+                let perm_mut_x = ghost!(self.map.get_mut_ghost(&x.addr()).unwrap());
+                unsafe { *PtrOwn::as_mut(x.0, perm_mut_x) = Content::Link(y) };
                 self.root_of =
                     snapshot!(|z| { if self.root_of[z] == x { y } else { self.root_of[z] } });
                 self.values =
@@ -308,11 +305,11 @@ mod implementation {
                     snapshot!(self.distance.set(y, 1 + self.distance[x].max(self.distance[y])));
                 y
             } else {
-                let perm_mut_y = ghost!(map.get_mut_ghost(&y.addr()).unwrap());
-                *PtrOwn::as_mut(y.0, perm_mut_y) = Content::Link(x);
+                let perm_mut_y = ghost!(self.map.get_mut_ghost(&y.addr()).unwrap());
+                unsafe { *PtrOwn::as_mut(y.0, perm_mut_y) = Content::Link(x) };
                 if rx == ry {
-                    let perm_mut_x = ghost!(map.get_mut_ghost(&x.addr()).unwrap());
-                    match PtrOwn::as_mut(x.0, perm_mut_x) {
+                    let perm_mut_x = ghost!(self.map.get_mut_ghost(&x.addr()).unwrap());
+                    match unsafe { PtrOwn::as_mut(x.0, perm_mut_x) } {
                         Content::Root { rank, value: _ } => *rank = add_no_overflow(rx, 1),
                         _ => {}
                     }
