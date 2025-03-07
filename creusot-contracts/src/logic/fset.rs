@@ -126,6 +126,17 @@ impl<T: ?Sized> FSet<T> {
         dead
     }
 
+    /// Returns a new set, which is the difference of `self` with `other`.
+    ///
+    /// An element is in the result if and only if it is in `self` but not in `other`.
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "set.Fset.diff"]
+    pub fn difference(self, other: Self) -> Self {
+        let _ = other;
+        dead
+    }
+
     /// Returns `true` if every element of `self` is in `other`.
     #[trusted]
     #[predicate]
