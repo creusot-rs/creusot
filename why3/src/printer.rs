@@ -113,7 +113,9 @@ impl Print for Decl {
             Decl::PredDecl(p) => p.pretty(alloc),
             Decl::TyDecl(t) => t.pretty(alloc),
             Decl::LogicDecl(v) => v.pretty(alloc),
-            Decl::UseDecl(u) => u.pretty(alloc),
+            Decl::UseDecls(uses) => {
+                alloc.intersperse(uses.iter().map(|u| u.pretty(alloc)), alloc.hardline())
+            }
             Decl::Axiom(a) => a.pretty(alloc),
             Decl::Goal(g) => g.pretty(alloc),
             Decl::ConstantDecl(c) => c.pretty(alloc),

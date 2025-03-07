@@ -9,7 +9,7 @@ use crate::{
 };
 use elaborator::Strength;
 use indexmap::{IndexMap, IndexSet};
-use itertools::Itertools;
+use itertools::{Either, Itertools};
 use once_map::unsync::OnceMap;
 use petgraph::prelude::DiGraphMap;
 use rustc_hir::{
@@ -458,6 +458,18 @@ impl<'tcx> Dependencies<'tcx> {
             bodies.keys().collect::<Vec<_>>(),
             self.self_id
         );
+
+        // Remove duplicates in `use` declarations, and move them at the beginning of the module
+        let (uses, mut decls): (IndexSet<_>, Vec<_>) = decls
+            .into_iter()
+            .flat_map(|d| {
+                if let Decl::UseDecls(u) = d { Either::Left(u) } else { Either::Right([d]) }
+                    .factor_into_iter()
+            })
+            .partition_map(|x| x);
+        if !uses.is_empty() {
+            decls.insert(0, Decl::UseDecls(uses.into_iter().collect()));
+        }
 
         let spans: Box<[WSpan]> = self
             .names

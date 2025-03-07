@@ -24,14 +24,17 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   let%span sord22 = "../../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
   
   use creusot.prelude.Opaque
+  use creusot.int.UInt64
+  use seq.Seq
+  use mach.int.Int
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
   
   type t_NonNull'0  =
     { t_NonNull__pointer'0: Opaque.ptr }
   
   type t_Unique'0  =
     { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
-  
-  use creusot.int.UInt64
   
   type t_UsizeNoHighBit'0  =
     { t_UsizeNoHighBit__0'0: UInt64.t }
@@ -49,15 +52,7 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
   
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use creusot.int.UInt64
-  
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
-  use mach.int.Int
   
   function view'0 (self : t_Vec'0) : Seq.seq bool
   
@@ -71,8 +66,6 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
     | C_Less'0
     | C_Equal'0
     | C_Greater'0
-  
-  use creusot.int.UInt64
   
   function cmp_log'0 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
     [%#sord22] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
@@ -100,13 +93,9 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   
   axiom refl'0_spec : forall x : UInt64.t . [%#sord12] cmp_log'0 x x = C_Equal'0
   
-  use creusot.int.UInt64
-  
   function cmp_gt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
   axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord11] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
-  
-  use creusot.int.UInt64
   
   function cmp_ge_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
@@ -116,13 +105,9 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   
   axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord9] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
   
-  use creusot.int.UInt64
-  
   function cmp_le_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
   axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord8] UInt64.le x y = (cmp_log'0 x y <> C_Greater'0)
-  
-  use creusot.prelude.MutBorrow
   
   predicate inv'1 (_1 : MutBorrow.t t_Vec'0)
   
@@ -132,16 +117,12 @@ module M_01_resolve_unsoundness__make_vec_of_size [#"01_resolve_unsoundness.rs" 
   
   axiom inv_axiom'2 [@rewrite] : forall x : bool [inv'2 x] . inv'2 x = true
   
-  use seq.Seq
-  
   function view'1 (self : MutBorrow.t t_Vec'0) : Seq.seq bool =
     [%#smodel21] view'0 self.current
   
   let rec push'0 (self:MutBorrow.t t_Vec'0) (value:bool) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'1 self}
     {[@expl:push 'value' type invariant] inv'2 value}
     any [ return' (result:())-> {[%#svec6] view'0 self.final = Seq.snoc (view'1 self) value} (! return' {result}) ] 
-  
-  use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000
   
