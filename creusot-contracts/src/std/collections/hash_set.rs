@@ -32,6 +32,9 @@ extern_spec! {
                     #[ensures(result@ == self@.intersection(other@))]
                     fn intersection<'a>(&'a self, other: &'a HashSet<T,S>) -> Intersection<'a, T, S>;
 
+                    #[ensures(result@ == self@.difference(other@))]
+                    fn difference<'a>(&'a self, other: &'a HashSet<T,S>) -> Difference<'a, T, S>;
+
                     #[ensures(result == self@.contains(value.deep_model()))]
                     fn contains<Q: ?Sized>(&self, value: &Q) -> bool
                     where
@@ -203,7 +206,46 @@ impl<'a, T: DeepModel, S> View for Intersection<'a, T, S> {
     }
 }
 
+impl<'a, T: DeepModel, S> View for Difference<'a, T, S> {
+    type ViewTy = FSet<T::DeepModelTy>;
+
+    #[logic]
+    #[trusted]
+    #[open]
+    fn view(self) -> Self::ViewTy {
+        dead
+    }
+}
+
 impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> Iterator for Intersection<'a, T, S> {
+    #[open]
+    #[predicate(prophetic)]
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+        set_produces(self, visited, o)
+    }
+
+    #[open]
+    #[predicate(prophetic)]
+    fn completed(&mut self) -> bool {
+        pearlite! { self.resolve() && (self@).is_empty() }
+    }
+
+    #[law]
+    #[open]
+    #[ensures(self.produces(Seq::EMPTY, self))]
+    fn produces_refl(self) {}
+
+    #[law]
+    #[open]
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
+        set_produces_trans(a, ab, b, bc, c);
+    }
+}
+
+impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> Iterator for Difference<'a, T, S> {
     #[open]
     #[predicate(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
