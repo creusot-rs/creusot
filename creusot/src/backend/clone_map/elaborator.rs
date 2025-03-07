@@ -65,11 +65,7 @@ struct ExpansionProxy<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> Namer<'tcx> for ExpansionProxy<'a, 'tcx> {
-    fn normalize<T: TypeFoldable<TyCtxt<'tcx>> + Copy>(
-        &self,
-        ctx: &TranslationCtx<'tcx>,
-        ty: T,
-    ) -> T {
+    fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, ctx: &TranslationCtx<'tcx>, ty: T) -> T {
         self.namer.normalize(ctx, ty)
     }
 
@@ -226,6 +222,8 @@ fn expand_ty_inv_axiom<'tcx>(
 
 struct TyElab;
 
+use rustc_middle::ty::AliasTyKind;
+
 impl DepElab for TyElab {
     fn expand<'tcx>(
         elab: &mut Expander<'_, 'tcx>,
@@ -240,12 +238,8 @@ impl DepElab for TyElab {
                 ty_name: names.ty_param(ty).as_ident(),
                 ty_params: Box::new([]),
             })],
-            TyKind::Alias(_, _) => {
+            TyKind::Alias(AliasTyKind::Opaque | AliasTyKind::Projection, _) => {
                 let (def_id, subst) = dep.did().unwrap();
-                assert_eq!(
-                    ctx.tcx.associated_item(def_id).container,
-                    rustc_middle::ty::AssocItemContainer::Trait
-                );
                 vec![Decl::TyDecl(TyDecl::Opaque {
                     ty_name: names.ty(def_id, subst).as_ident(),
                     ty_params: Box::new([]),

@@ -423,7 +423,12 @@ impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn typing_env(&self, def_id: DefId) -> TypingEnv<'tcx> {
         // FIXME: is it correct to pretend we are doing a non-body analysis?
         let param_env = self.param_env(def_id);
-        TypingEnv { typing_mode: TypingMode::non_body_analysis(), param_env }
+        let mode = if self.is_mir_available(def_id) && def_id.is_local() {
+            TypingMode::post_borrowck_analysis(self.tcx, def_id.as_local().unwrap())
+        } else {
+            TypingMode::non_body_analysis()
+        };
+        TypingEnv { typing_mode: mode, param_env }
     }
 
     pub(crate) fn has_body(&self, def_id: DefId) -> bool {

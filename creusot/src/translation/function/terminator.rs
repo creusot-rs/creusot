@@ -80,8 +80,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 term = Terminator::Return
             }
             Unreachable => term = Terminator::Abort(terminator.source_info.span),
-            &Call { ref func, ref args, destination, mut target, .. } => {
-                let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
+            &Call { ref func, ref args, destination, mut target, fn_span, .. } => {
+                let Some((fun_def_id, subst)) = func_defid(func) else {
+                    self.ctx.fatal_error(fn_span, "unsupported function call type").emit()
+                };
                 if let Some((need, resolved)) = resolved_during.take() {
                     self.resolve_before_assignment(need, &resolved, location, destination)
                 }
@@ -287,7 +289,7 @@ fn resolve_function<'tcx>(
 
 // Try to extract a function defid from an operand
 fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-    let fun_ty = op.constant().unwrap().const_.ty();
+    let fun_ty = op.constant()?.const_.ty();
     if let ty::TyKind::FnDef(def_id, subst) = fun_ty.kind() { Some((*def_id, subst)) } else { None }
 }
 

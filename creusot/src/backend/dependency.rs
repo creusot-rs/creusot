@@ -39,7 +39,9 @@ impl<'tcx> Dependency<'tcx> {
             Dependency::Type(t) => match t.kind() {
                 TyKind::Adt(def, substs) => Some((def.did(), substs)),
                 TyKind::Closure(id, substs) => Some((*id, substs)),
-                TyKind::Alias(AliasTyKind::Projection, aty) => Some((aty.def_id, aty.args)),
+                TyKind::Alias(AliasTyKind::Opaque | AliasTyKind::Projection, aty) => {
+                    Some((aty.def_id, aty.args))
+                }
                 _ => None,
             },
             _ => None,
@@ -57,14 +59,20 @@ impl<'tcx> Dependency<'tcx> {
                 TyKind::Adt(def, _) if !def.is_box() => {
                     Some(item_symb(tcx, def.did(), rustc_hir::def::Namespace::TypeNS))
                 }
-                TyKind::Alias(_, aty) => {
-                    Some(Symbol::intern(&type_name(tcx.item_name(aty.def_id).as_str())))
-                }
+                TyKind::Alias(AliasTyKind::Opaque, aty) => Some(Symbol::intern(&format!(
+                    "opaque{}",
+                    tcx.def_path(aty.def_id).data.last().unwrap().disambiguator
+                ))),
+                TyKind::Alias(AliasTyKind::Projection, aty) => Some(Symbol::intern(&type_name(
+                    tcx.opt_item_name(aty.def_id).unwrap_or(Symbol::intern("synthetic")).as_str(),
+                ))),
                 TyKind::Closure(def_id, _) => Some(Symbol::intern(&format!(
                     "closure{}",
                     tcx.def_path(*def_id).data.last().unwrap().disambiguator
                 ))),
-                TyKind::Param(p) => Some(Symbol::intern(&type_name(p.name.as_str()))),
+                TyKind::Param(p) => {
+                    Some(Symbol::intern(&type_name(&p.name.as_str().replace(" ", "_"))))
+                }
                 _ => None,
             },
             Dependency::Item(did, _) => match tcx.def_kind(did) {
