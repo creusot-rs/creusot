@@ -239,7 +239,7 @@ fn main() {
             if sessionfiles.len() > 0 {
                 write!(out, "{current}").unwrap();
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
-                writeln!(&mut out, "unused {sessionfiles:?}. Please update the proof.json file.").unwrap();
+                writeln!(&mut out, "unused {sessionfiles:?}. Please do not use Why3 sessions files for this test. Instead, update the proof.json file.").unwrap();
                 out.reset().unwrap();
                 success = false;
             }
