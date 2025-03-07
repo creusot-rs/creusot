@@ -41,10 +41,13 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   let%span snum39 = "../../../creusot-contracts/src/std/num.rs" 25 28 25 33
   
   use creusot.slice.Slice64
-  
   use creusot.int.Int32
-  
   use creusot.prelude.Any
+  use creusot.prelude.Opaque
+  use creusot.prelude.MutBorrow
+  use seq.Seq
+  use creusot.int.UInt64
+  use mach.int.Int
   
   let rec promoted5__test_array'0 (return'  (ret:Slice64.array Int32.t))= bb0
     [ bb0 = s0
@@ -61,8 +64,6 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
     [ return' (result:Slice64.array Int32.t)-> return' {result} ]
   
   
-  use creusot.prelude.Opaque
-  
   type t_NonNull'0  =
     { t_NonNull__pointer'0: Opaque.ptr }
   
@@ -78,8 +79,6 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   let rec iter'0 (self:Slice64.slice Int32.t) (return'  (ret:t_Iter'0))= {[@expl:iter 'self' type invariant] inv'0 self}
     any [ return' (result:t_Iter'0)-> {[%#sslice3] view'0 result = self} (! return' {result}) ] 
   
-  use creusot.prelude.MutBorrow
-  
   type t_Option'0  =
     | C_None'0
     | C_Some'0 Int32.t
@@ -88,23 +87,7 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x = true
   
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use seq.Seq
-  
-  use creusot.int.UInt64
-  
-  use creusot.int.UInt64
-  
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
-  
-  use mach.int.Int
-  
-  use creusot.slice.Slice64
   
   function view'1 (self : Slice64.slice Int32.t) : Seq.seq Int32.t
   
@@ -115,10 +98,6 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   function view'5 (self : Slice64.slice Int32.t) : Seq.seq Int32.t =
     [%#smodel37] view'1 self
   
-  use seq.Seq
-  
-  use seq.Seq
-  
   function index_logic'0 [@inline:trivial] (self : Slice64.slice Int32.t) (ix : int) : Int32.t =
     [%#sindex38] Seq.get (view'1 self) ix
   
@@ -128,10 +107,6 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   = Seq.length (view'5 self))
   && ([%#sslice29] forall i : int . 0 <= i /\ i < Seq.length (to_ref_seq'0 self)
    -> Seq.get (to_ref_seq'0 self) i = index_logic'0 self i)
-  
-  use seq.Seq
-  
-  use seq.Seq
   
   predicate produces'0 (self : t_Iter'0) (visited : Seq.seq Int32.t) (tl : t_Iter'0) =
     [%#sslice12] to_ref_seq'0 (view'0 self) = Seq.(++) visited (to_ref_seq'0 (view'0 tl))
@@ -155,12 +130,8 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   function view'2 (self : MutBorrow.t t_Iter'0) : Slice64.slice Int32.t =
     [%#smodel27] view'0 self.current
   
-  use seq.Seq
-  
   predicate completed'0 (self : MutBorrow.t t_Iter'0) =
     [%#sslice11] resolve'0 self /\ view'1 (view'2 self) = (Seq.empty : Seq.seq Int32.t)
-  
-  use seq.Seq
   
   let rec next'0 (self:MutBorrow.t t_Iter'0) (return'  (ret:t_Option'0))= any
     [ return' (result:t_Option'0)-> {inv'1 result}
@@ -186,8 +157,6 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   type t_Option'2  =
     | C_None'2
     | C_Some'2 int
-  
-  use creusot.int.Int32
   
   function deep_model'5 (self : Int32.t) : int =
     [%#snum39] Int32.to_int self
@@ -247,8 +216,6 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   
   axiom inv_axiom'4 [@rewrite] : forall x : t_IntoIter'0 [inv'4 x] . inv'4 x = true
   
-  use creusot.slice.Slice64
-  
   function view'3 (self : t_IntoIter'0) : Seq.seq Int32.t
   
   predicate into_iter_post'0 (self : Slice64.array Int32.t) (res : t_IntoIter'0) =
@@ -271,8 +238,6 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   predicate inv'6 (_1 : t_Option'1)
   
   axiom inv_axiom'6 [@rewrite] : forall x : t_Option'1 [inv'6 x] . inv'6 x = true
-  
-  use seq.Seq
   
   predicate produces'1 (self : t_IntoIter'0) (visited : Seq.seq Int32.t) (o : t_IntoIter'0) =
     [%#sarray17] view'3 self = Seq.(++) visited (view'3 o)
@@ -298,8 +263,6 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   
   predicate completed'1 (self : MutBorrow.t t_IntoIter'0) =
     [%#sarray16] resolve'1 self /\ view'4 self = (Seq.empty : Seq.seq Int32.t)
-  
-  use seq.Seq
   
   let rec next'1 (self:MutBorrow.t t_IntoIter'0) (return'  (ret:t_Option'1))= {[@expl:next 'self' type invariant] inv'5 self}
     any

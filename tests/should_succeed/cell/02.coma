@@ -27,13 +27,12 @@ module M_02__lemma_fib_bound [#"02.rs" 47 0 47 30]
   let%span s025 = "02.rs" 33 4 39 5
   
   use mach.int.Int
+  use int.Power
   
   function fib'0 [#"02.rs" 32 0 32 25] (i : int) : int
   
   axiom fib'0_def : forall i : int . fib'0 i
   = ([%#s025] if i <= 0 then 0 else if i = 1 then 1 else fib'0 (i - 1) + fib'0 (i - 2))
-  
-  use int.Power
   
   constant i  : int
   
@@ -92,14 +91,17 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
   let%span svec34 = "../../../creusot-contracts/src/std/vec.rs" 21 14 21 41
   
   use creusot.prelude.Opaque
+  use creusot.int.UInt64
+  use seq.Seq
+  use mach.int.Int
+  use int.Power
+  use creusot.prelude.Any
   
   type t_NonNull'0  =
     { t_NonNull__pointer'0: Opaque.ptr }
   
   type t_Unique'0  =
     { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
-  
-  use creusot.int.UInt64
   
   type t_UsizeNoHighBit'0  =
     { t_UsizeNoHighBit__0'0: UInt64.t }
@@ -137,14 +139,6 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
   
   axiom inv_axiom'1 [@rewrite] : forall x : UInt64.t [inv'1 x] . inv'1 x = true
   
-  use seq.Seq
-  
-  use creusot.int.UInt64
-  
-  use seq.Seq
-  
-  use mach.int.Int
-  
   predicate in_bounds'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq t_Cell'0) =
     [%#sslice30] UInt64.t'int self < Seq.length seq
   
@@ -160,8 +154,6 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
   predicate inv'2 (_1 : t_Cell'0)
   
   axiom inv_axiom'2 [@rewrite] : forall x : t_Cell'0 [inv'2 x] . inv'2 x = true
-  
-  use seq.Seq
   
   predicate has_value'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq t_Cell'0) (out : t_Cell'0) =
     [%#sslice31] Seq.get seq (UInt64.t'int self) = out
@@ -202,8 +194,6 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
     | bad -> {forall field_0 : UInt64.t [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
   
   
-  use int.Power
-  
   function lemma_max_int'0 [#"02.rs" 62 0 62 22]  : ()
   
   axiom lemma_max_int'0_spec : [%#s0218] Power.power 2 63 < 18446744073709551615
@@ -224,8 +214,6 @@ module M_02__fib_memo [#"02.rs" 95 0 95 50]
     {[@expl:set 'v' type invariant] [%#s0226] inv'3 v}
     {[@expl:set requires] [%#s0227] inv'4 self.t_Cell__ghost_inv'0 v}
     any [ return' (result:())-> (! return' {result}) ] 
-  
-  use creusot.prelude.Any
   
   function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : t_Cell'0 =
     [%#sindex33] Seq.get (view'1 self) ix

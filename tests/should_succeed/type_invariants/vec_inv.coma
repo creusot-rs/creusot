@@ -13,14 +13,18 @@ module M_vec_inv__vec [#"vec_inv.rs" 18 0 18 32]
   let%span svec_inv11 = "vec_inv.rs" 13 20 13 43
   
   use creusot.prelude.Opaque
+  use creusot.int.UInt64
+  use creusot.prelude.MutBorrow
+  use creusot.int.Int32
+  use seq.Seq
+  use mach.int.Int
+  use creusot.prelude.Any
   
   type t_NonNull'0  =
     { t_NonNull__pointer'0: Opaque.ptr }
   
   type t_Unique'0  =
     { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
-  
-  use creusot.int.UInt64
   
   type t_UsizeNoHighBit'0  =
     { t_UsizeNoHighBit__0'0: UInt64.t }
@@ -34,20 +38,8 @@ module M_vec_inv__vec [#"vec_inv.rs" 18 0 18 32]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  use creusot.prelude.MutBorrow
-  
-  use creusot.int.Int32
-  
   type t_SumTo10'0  =
     { t_SumTo10__a'0: Int32.t; t_SumTo10__b'0: Int32.t }
-  
-  use seq.Seq
-  
-  use mach.int.Int
-  
-  use seq.Seq
-  
-  use creusot.int.Int32
   
   predicate invariant'4 [#"vec_inv.rs" 12 4 12 30] (self : t_SumTo10'0) =
     [%#svec_inv11] Int32.to_int self.t_SumTo10__a'0 + Int32.to_int self.t_SumTo10__b'0 = 10
@@ -74,16 +66,12 @@ module M_vec_inv__vec [#"vec_inv.rs" 18 0 18 32]
   
   axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_SumTo10'0 [inv'2 x] . inv'2 x = invariant'2 x
   
-  use seq.Seq
-  
   predicate invariant'1 (self : Seq.seq (MutBorrow.t t_SumTo10'0)) =
     [%#sseq8] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'2 (Seq.get self i)
   
   predicate inv'1 (_1 : Seq.seq (MutBorrow.t t_SumTo10'0))
   
   axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq (MutBorrow.t t_SumTo10'0) [inv'1 x] . inv'1 x = invariant'1 x
-  
-  use creusot.int.UInt64
   
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
@@ -104,8 +92,6 @@ module M_vec_inv__vec [#"vec_inv.rs" 18 0 18 32]
   predicate resolve'2 (_1 : MutBorrow.t t_SumTo10'0) =
     resolve'3 _1
   
-  use seq.Seq
-  
   function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : MutBorrow.t t_SumTo10'0 =
     [%#sindex3] Seq.get (view'0 self) ix
   
@@ -114,8 +100,6 @@ module M_vec_inv__vec [#"vec_inv.rs" 18 0 18 32]
   
   predicate resolve'0 (_1 : t_Vec'0) =
     resolve'1 _1
-  
-  use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000
   

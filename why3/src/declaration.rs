@@ -40,7 +40,7 @@ pub enum Decl {
     LogicDefn(LogicDefn),
     TyDecl(TyDecl),
     PredDecl(Predicate),
-    UseDecl(Use),
+    UseDecls(Box<[Use]>),
     Axiom(Axiom),
     Goal(Goal),
     ConstantDecl(Constant),
@@ -268,7 +268,7 @@ pub struct LogicDecl {
     pub sig: Signature,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Use {
     pub name: Box<[Ident]>,

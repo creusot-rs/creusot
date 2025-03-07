@@ -79,14 +79,19 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   let%span sboxed77 = "../../creusot-contracts/src/std/boxed.rs" 33 8 33 18
   
   use creusot.prelude.Opaque
+  use creusot.int.UInt64
+  use seq.Seq
+  use mach.int.Int
+  use creusot.prelude.MutBorrow
+  use seq.Permut
+  use creusot.slice.Slice64
+  use creusot.prelude.Any
   
   type t_NonNull'0  =
     { t_NonNull__pointer'0: Opaque.ptr }
   
   type t_Unique'0  =
     { t_Unique__pointer'0: t_NonNull'0; t_Unique__qy95zmarker'0: () }
-  
-  use creusot.int.UInt64
   
   type t_UsizeNoHighBit'0  =
     { t_UsizeNoHighBit__0'0: UInt64.t }
@@ -102,12 +107,6 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   
   type t_T'0
   
-  use seq.Seq
-  
-  use mach.int.Int
-  
-  use seq.Seq
-  
   predicate inv'12 (_1 : t_T'0)
   
   predicate invariant'7 (self : t_T'0) =
@@ -117,16 +116,12 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   
   axiom inv_axiom'12 [@rewrite] : forall x : t_T'0 [inv'13 x] . inv'13 x = invariant'7 x
   
-  use seq.Seq
-  
   predicate invariant'6 (self : Seq.seq t_T'0) =
     [%#sseq76] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'13 (Seq.get self i)
   
   predicate inv'11 (_1 : Seq.seq t_T'0)
   
   axiom inv_axiom'11 [@rewrite] : forall x : Seq.seq t_T'0 [inv'11 x] . inv'11 x = invariant'6 x
-  
-  use creusot.int.UInt64
   
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
@@ -173,15 +168,7 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
     {[@expl:into_iter requires] [%#siter21] into_iter_pre'0 self}
     any [ return' (result:t_Range'0)-> {inv'0 result} {[%#siter22] into_iter_post'0 self result} (! return' {result}) ] 
   
-  use seq.Seq
-  
-  use seq.Seq
-  
   type t_DeepModelTy'0
-  
-  use seq.Seq
-  
-  use seq.Seq
   
   type t_Ordering'0  =
     | C_Less'0
@@ -242,17 +229,11 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   axiom cmp_le_log'0_spec : forall x : t_DeepModelTy'0, y : t_DeepModelTy'0 . [%#sord53] le_log'0 x y
   = (cmp_log'0 x y <> C_Greater'0)
   
-  use seq.Seq
-  
   predicate partition'0 [#"selection_sort_generic.rs" 23 0 23 52] (v : Seq.seq t_DeepModelTy'0) (i : int) =
     [%#sselection_sort_generic23] forall k1 : int, k2 : int . 0 <= k1 /\ k1 < i /\ i <= k2 /\ k2 < Seq.length v
      -> le_log'0 (Seq.get v k1) (Seq.get v k2)
   
-  use creusot.prelude.MutBorrow
-  
   function deep_model'4 (self : t_T'0) : t_DeepModelTy'0
-  
-  use seq.Seq
   
   function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : t_T'0 =
     [%#sindex71] Seq.get (view'2 self) ix
@@ -267,13 +248,9 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   function deep_model'0 (self : MutBorrow.t t_Vec'0) : Seq.seq t_DeepModelTy'0 =
     [%#smodel24] deep_model'1 self.current
   
-  use seq.Seq
-  
   predicate sorted_range'0 [#"selection_sort_generic.rs" 9 0 9 63] (s : Seq.seq t_DeepModelTy'0) (l : int) (u : int) =
     [%#sselection_sort_generic25] forall i : int, j : int . l <= i /\ i < j /\ j < u
      -> le_log'0 (Seq.get s i) (Seq.get s j)
-  
-  use seq.Permut
   
   predicate permutation_of'0 (self : Seq.seq t_T'0) (other : Seq.seq t_T'0) =
     [%#sseq26] Permut.permut self other 0 (Seq.length self)
@@ -287,12 +264,8 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   function view'1 (self : MutBorrow.t t_Vec'0) : Seq.seq t_T'0 =
     [%#ssnapshot28] view'4 self
   
-  use seq.Seq
-  
   function deep_model'2 (self : UInt64.t) : int =
     [%#snum50] UInt64.t'int self
-  
-  use seq.Seq
   
   predicate produces'0 (self : t_Range'0) (visited : Seq.seq UInt64.t) (o : t_Range'0) =
     [%#srange29] self.t_Range__end'0 = o.t_Range__end'0
@@ -334,8 +307,6 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   predicate completed'0 (self : MutBorrow.t t_Range'0) =
     [%#srange51] resolve'3 self
     /\ deep_model'2 (self.current).t_Range__start'0 >= deep_model'2 (self.current).t_Range__end'0
-  
-  use seq.Seq
   
   let rec next'0 (self:MutBorrow.t t_Range'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'7 self}
     any
@@ -391,16 +362,12 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
       (! return' {result}) ]
   
   
-  use creusot.slice.Slice64
-  
   predicate invariant'3 (self : MutBorrow.t t_Vec'0) =
     [%#sinvariant74] inv'2 self.current /\ inv'2 self.final
   
   predicate inv'5 (_1 : MutBorrow.t t_Vec'0)
   
   axiom inv_axiom'5 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'5 x] . inv'5 x = invariant'3 x
-  
-  use creusot.slice.Slice64
   
   function view'6 (self : Slice64.slice t_T'0) : Seq.seq t_T'0
   
@@ -433,8 +400,6 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
       (! return' {result}) ]
   
   
-  use seq.Permut
-  
   let rec swap'0 (self:MutBorrow.t (Slice64.slice t_T'0)) (a:UInt64.t) (b:UInt64.t) (return'  (ret:()))= {[@expl:swap 'self' type invariant] inv'4 self}
     {[@expl:swap requires #0] [%#sslice36] UInt64.t'int a < Seq.length (view'5 self)}
     {[@expl:swap requires #1] [%#sslice37] UInt64.t'int b < Seq.length (view'5 self)}
@@ -454,8 +419,6 @@ module M_selection_sort_generic__selection_sort [#"selection_sort_generic.rs" 29
   
   predicate resolve'2 (_1 : MutBorrow.t t_Vec'0) =
     resolve'5 _1
-  
-  use creusot.prelude.Any
   
   predicate sorted'0 [#"selection_sort_generic.rs" 16 0 16 41] (s : Seq.seq t_DeepModelTy'0) =
     [%#sselection_sort_generic39] sorted_range'0 s 0 (Seq.length s)

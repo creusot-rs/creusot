@@ -56,13 +56,16 @@ module M_164__main [#"164.rs" 5 0 5 13]
   let%span sord54 = "../../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
   
   use creusot.int.UInt64
+  use creusot.int.Int32
+  use seq.Seq
+  use mach.int.Int
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
   
   type t_Ordering'0  =
     | C_Less'0
     | C_Equal'0
     | C_Greater'0
-  
-  use creusot.int.UInt64
   
   function cmp_log'0 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
     [%#sord54] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
@@ -90,13 +93,9 @@ module M_164__main [#"164.rs" 5 0 5 13]
   
   axiom refl'0_spec : forall x : UInt64.t . [%#sord36] cmp_log'0 x x = C_Equal'0
   
-  use creusot.int.UInt64
-  
   function cmp_gt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
   axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord35] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
-  
-  use creusot.int.UInt64
   
   function cmp_ge_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
@@ -106,14 +105,10 @@ module M_164__main [#"164.rs" 5 0 5 13]
   
   axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord33] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
   
-  use creusot.int.UInt64
-  
   function cmp_le_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
   axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord32] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
-  
-  use creusot.int.Int32
   
   type t_Range'0  =
     { t_Range__start'0: Int32.t; t_Range__end'0: Int32.t }
@@ -132,26 +127,12 @@ module M_164__main [#"164.rs" 5 0 5 13]
     {[@expl:into_iter requires] [%#siter28] into_iter_pre'0 self}
     any [ return' (result:t_Range'0)-> {inv'1 result} {[%#siter29] into_iter_post'0 self result} (! return' {result}) ] 
   
-  use seq.Seq
-  
-  use seq.Seq
-  
   predicate inv'0 (_1 : Seq.seq Int32.t)
   
   axiom inv_axiom'0 [@rewrite] : forall x : Seq.seq Int32.t [inv'0 x] . inv'0 x = true
   
-  use seq.Seq
-  
-  use creusot.int.Int32
-  
   function deep_model'0 (self : Int32.t) : int =
     [%#snum51] Int32.to_int self
-  
-  use mach.int.Int
-  
-  use seq.Seq
-  
-  use seq.Seq
   
   predicate produces'0 (self : t_Range'0) (visited : Seq.seq Int32.t) (o : t_Range'0) =
     [%#srange30] self.t_Range__end'0 = o.t_Range__end'0
@@ -170,8 +151,6 @@ module M_164__main [#"164.rs" 5 0 5 13]
   function produces_refl'0 (self : t_Range'0) : ()
   
   axiom produces_refl'0_spec : forall self : t_Range'0 . [%#srange47] produces'0 self (Seq.empty : Seq.seq Int32.t) self
-  
-  use creusot.prelude.MutBorrow
   
   type t_Option'0  =
     | C_None'0
@@ -192,8 +171,6 @@ module M_164__main [#"164.rs" 5 0 5 13]
     [%#srange52] resolve'1 self
     /\ deep_model'0 (self.current).t_Range__start'0 >= deep_model'0 (self.current).t_Range__end'0
   
-  use seq.Seq
-  
   let rec next'0 (self:MutBorrow.t t_Range'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'2 self}
     any
     [ return' (result:t_Option'0)-> {inv'3 result}
@@ -211,8 +188,6 @@ module M_164__main [#"164.rs" 5 0 5 13]
     [ good (field_0:Int32.t)-> {C_Some'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0 : Int32.t [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
   
-  
-  use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000
   

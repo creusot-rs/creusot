@@ -165,11 +165,11 @@ impl DepElab for LogicElab {
             match elab.namer.dependency(dep) {
                 Kind::Named(_) => return vec![],
                 Kind::UsedBuiltin(qname) => {
-                    return vec![Decl::UseDecl(Use {
+                    return vec![Decl::UseDecls(Box::new([Use {
                         name: qname.module.clone(),
                         as_: None,
                         export: false,
-                    })];
+                    }]))];
                 }
                 Kind::Unnamed => unreachable!(),
             }
@@ -252,11 +252,11 @@ impl DepElab for TyElab {
                     translate_ty(ctx, &mut names, DUMMY_SP, ty);
                 }
                 if let Kind::UsedBuiltin(qname) = names.dependency(dep) {
-                    vec![Decl::UseDecl(Use {
+                    vec![Decl::UseDecls(Box::new([Use {
                         as_: None,
                         name: qname.module.clone(),
                         export: false,
-                    })]
+                    }]))]
                 } else {
                     vec![]
                 }
@@ -343,11 +343,11 @@ impl<'a, 'tcx> Expander<'a, 'tcx> {
             Dependency::TyInvAxiom(ty) => expand_ty_inv_axiom(self, ctx, ty),
             Dependency::ClosureAccessor(_, _, _) => vec![],
             Dependency::Builtin(b) => {
-                vec![Decl::UseDecl(Use {
+                vec![Decl::UseDecls(Box::new([Use {
                     name: self.namer.prelude_module_name(b),
                     as_: None,
                     export: false,
-                })]
+                }]))]
             }
             Dependency::Eliminator(def_id, subst) => {
                 vec![eliminator(ctx, &mut self.namer(dep), def_id, subst)]

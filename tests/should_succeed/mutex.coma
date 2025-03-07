@@ -10,6 +10,11 @@ module M_mutex__qyi5425553346843331945__call [#"mutex.rs" 100 4 100 23] (* <Adds
   let%span smutex8 = "mutex.rs" 55 4 55 30
   let%span smutex9 = "mutex.rs" 67 8 67 25
   
+  use creusot.int.UInt32
+  use mach.int.Int
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  
   type t_MutexInner'0
   
   type t_Mutex'0  =
@@ -33,15 +38,9 @@ module M_mutex__qyi5425553346843331945__call [#"mutex.rs" 100 4 100 23] (* <Adds
       (! return' {result}) ]
   
   
-  use creusot.int.UInt32
-  
   predicate inv'1 (_1 : UInt32.t)
   
   axiom inv_axiom'1 [@rewrite] : forall x : UInt32.t [inv'1 x] . inv'1 x = true
-  
-  use mach.int.Int
-  
-  use creusot.int.UInt32
   
   predicate inv'2 [#"mutex.rs" 66 4 66 33] (self : ()) (x : UInt32.t) =
     [%#smutex9] Int.mod (UInt32.t'int x) 2 = 0
@@ -52,8 +51,6 @@ module M_mutex__qyi5425553346843331945__call [#"mutex.rs" 100 4 100 23] (* <Adds
       (! return' {result}) ]
   
   
-  use creusot.prelude.MutBorrow
-  
   predicate inv'3 (_1 : UInt32.t)
   
   axiom inv_axiom'2 [@rewrite] : forall x : UInt32.t [inv'3 x] . inv'3 x = true
@@ -61,8 +58,6 @@ module M_mutex__qyi5425553346843331945__call [#"mutex.rs" 100 4 100 23] (* <Adds
   let rec set'0 (self:MutBorrow.t t_MutexGuard'0) (v:UInt32.t) (return'  (ret:()))= {[@expl:set 'v' type invariant] [%#smutex7] inv'3 v}
     {[@expl:set requires] [%#smutex8] inv'2 (self.current).t_MutexGuard__1'0 v}
     any [ return' (result:())-> (! return' {result}) ] 
-  
-  use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000
   
@@ -125,6 +120,9 @@ module M_mutex__concurrent [#"mutex.rs" 163 0 163 19]
   let%span smutex16 = "mutex.rs" 97 8 97 12
   
   use creusot.int.UInt32
+  use mach.int.Int
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
   
   type t_MutexInner'0
   
@@ -139,10 +137,6 @@ module M_mutex__concurrent [#"mutex.rs" 163 0 163 19]
   
   axiom inv_axiom'1 [@rewrite] : forall x : () [inv'1 x] . inv'1 x = true
   
-  use mach.int.Int
-  
-  use creusot.int.UInt32
-  
   predicate inv'2 [#"mutex.rs" 66 4 66 33] (self : ()) (x : UInt32.t) =
     [%#smutex12] Int.mod (UInt32.t'int x) 2 = 0
   
@@ -154,8 +148,6 @@ module M_mutex__concurrent [#"mutex.rs" 163 0 163 19]
     {[@expl:new 'i' type invariant] [%#smutex2] inv'1 i}
     {[@expl:new requires] [%#smutex3] inv'2 i val'}
     any [ return' (result:t_Mutex'0)-> {[%#smutex4] inv'3 result} (! return' {result}) ] 
-  
-  use creusot.prelude.MutBorrow
   
   predicate inv'4 (_1 : t_Mutex'0)
   
@@ -222,8 +214,6 @@ module M_mutex__concurrent [#"mutex.rs" 163 0 163 19]
         end}
       (! return' {result}) ]
   
-  
-  use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000
   
