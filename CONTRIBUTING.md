@@ -28,7 +28,7 @@ Once you are satisfied with the coma output, you can validate the proofs of Creu
 If you add a test that you believe should include a proof, you can add it using the `./ide` script provided in Creusot.
 Load your test case in the Why3 IDE, solve the proof and save the result, it will now be checked as part of CI.
 
-Options:
+Options of `cargo test --test why3`:
 
 - `--update`: update `proof.json` files (for `why3find` tests). (`why3session.xml` files
     for `why3` tests with obsolete goals are automatically updated.)
