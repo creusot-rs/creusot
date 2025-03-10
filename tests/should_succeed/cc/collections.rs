@@ -79,3 +79,11 @@ pub fn hashset_intersection<T: Eq + Hash + Copy + DeepModel>(
 ) -> HashSet<T> {
     xs.intersection(ys).copied().collect()
 }
+
+#[ensures(result@ == xs@.difference(ys@))]
+pub fn hashset_difference<T: Eq + Hash + Copy + DeepModel>(
+    xs: &HashSet<T>,
+    ys: &HashSet<T>,
+) -> HashSet<T> {
+    xs.difference(ys).copied().collect()
+}
