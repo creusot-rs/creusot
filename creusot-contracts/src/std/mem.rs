@@ -7,7 +7,11 @@ extern_spec! {
             #[pure]
             #[ensures(^dest == src)]
             #[ensures(result == *dest)]
-            fn replace<T>(dest: &mut T, src: T) -> T;
+            fn replace<T>(dest: &mut T, src: T) -> T {
+                let mut src = src;
+                swap(dest, &mut src);
+                src
+            }
 
             #[pure]
             #[ensures(^x == *y)]
@@ -16,7 +20,17 @@ extern_spec! {
 
             #[ensures(result == *dest)]
             #[ensures((^dest).is_default())]
-            fn take<T: Default>(dest: &mut T) -> T;
+            fn take<T: Default>(dest: &mut T) -> T {
+                replace(dest, T::default())
+            }
+
+            #[pure]
+            #[ensures(resolve(&_x))]
+            fn drop<T>(_x: T) {}
+
+            #[pure]
+            #[ensures(resolve(&t))]
+            fn forget<T>(t: T) {}
         }
     }
 }
