@@ -114,7 +114,7 @@ pub(crate) fn is_trusted(attrs: &[Attribute]) -> bool {
 }
 
 /// Create an item name from a type or a trait.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct DocItemName(pub(crate) String);
 
 impl DocItemName {
