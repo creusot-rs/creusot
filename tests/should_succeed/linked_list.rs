@@ -50,17 +50,6 @@ impl<T> View for List<T> {
     }
 }
 
-// TODO: see issue #1251
-#[trusted]
-#[pure]
-#[ensures(result == x - 1)]
-fn minus_one(x: Int) -> Int {
-    #[allow(unreachable_code)]
-    {
-        loop {}
-    }
-}
-
 #[logic]
 #[open(self)]
 pub fn seq_map<T, U>(s: Seq<T>, f: logic::Mapping<T, U>) -> Seq<U> {
@@ -83,7 +72,7 @@ impl<T> List<T> {
         } else {
             let cell_last = unsafe {
                 PtrOwn::as_mut(self.last, ghost! {
-                    let off = minus_one(self.seq.len_ghost());
+                    let off = self.seq.len_ghost() - 1int;
                     self.seq.get_mut_ghost(off).unwrap()
                 })
             };
