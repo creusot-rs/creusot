@@ -40,7 +40,8 @@
         libstd_sys_internals,
         rt,
         never_type,
-        ptr_metadata
+        ptr_metadata,
+        hint_must_use,
     )
 )]
 

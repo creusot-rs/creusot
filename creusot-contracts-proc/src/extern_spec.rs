@@ -33,26 +33,25 @@ struct ExternMod {
     content: Vec<ExternSpec>,
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 struct ExternTrait {
-    unsafety: Option<Unsafe>,
-    trait_token: Trait,
+    _unsafety: Option<Unsafe>,
+    _trait_token: Trait,
     ident: Ident,
     generics: Generics,
-    colon_token: Option<Colon>,
-    supertraits: Punctuated<TypeParamBound, Plus>,
-    brace_token: Brace,
+    _colon_token: Option<Colon>,
+    _supertraits: Punctuated<TypeParamBound, Plus>,
+    _brace_token: Brace,
     items: Vec<ExternMethod>,
 }
 
-#[allow(dead_code)]
+/// An 'impl' block, either for a trait or standalone
 #[derive(Debug)]
 struct ExternImpl {
-    attrs: Vec<Attribute>,
-    defaultness: Option<token::Default>,
-    unsafety: Option<Unsafe>,
-    impl_token: Impl,
+    _attrs: Vec<Attribute>,
+    _defaultness: Option<token::Default>,
+    _unsafety: Option<Unsafe>,
+    _impl_token: Impl,
     generics: Generics,
     trait_: Option<(Path, For)>,
     self_ty: Box<Type>,
@@ -83,6 +82,7 @@ struct ImplData {
     where_clause: Option<Punctuated<WherePredicate, Comma>>,
 }
 
+#[derive(Debug)]
 pub struct FlatSpec {
     span: Span,
     signature: Signature,
@@ -212,19 +212,16 @@ impl FlatSpec {
 
             replacer.visit_return_type_mut(&mut self.signature.output);
 
-            match data.self_ty {
-                TraitOrImpl::Trait(trait_name, generics) => {
-                    where_clause
-                        .predicates
-                        .push(parse_quote_spanned! {span=> Self_ : #trait_name #generics });
+            if let TraitOrImpl::Trait(trait_name, generics) = data.self_ty {
+                where_clause
+                    .predicates
+                    .push(parse_quote_spanned! {span=> Self_ : #trait_name #generics });
 
-                    self.signature.generics.params.insert(0, parse_quote_spanned! {span=> Self_ });
+                self.signature.generics.params.insert(0, parse_quote_spanned! {span=> Self_ });
 
-                    where_clause.predicates.iter_mut().for_each(|pred| {
-                        replacer.visit_where_predicate_mut(pred);
-                    });
-                }
-                _ => {}
+                where_clause.predicates.iter_mut().for_each(|pred| {
+                    replacer.visit_where_predicate_mut(pred);
+                });
             }
         }
 
@@ -269,19 +266,16 @@ struct SelfEscape {
 
 impl syn::visit_mut::VisitMut for SelfEscape {
     fn visit_type_mut(&mut self, ty: &mut Type) {
-        match ty {
-            Type::Path(TypePath { path, .. }) => {
-                if path.segments[0].ident == "Self" {
-                    if self.self_ty == parse_quote! { Self_ } {
-                        let mut ident: Ident = parse_quote! { Self_ };
-                        ident.set_span(path.segments[0].ident.span());
-                        path.segments[0].ident = ident;
-                    } else {
-                        *ty = self.self_ty.clone();
-                    }
+        if let Type::Path(TypePath { path, .. }) = ty {
+            if path.segments[0].ident == "Self" {
+                if self.self_ty == parse_quote! { Self_ } {
+                    let mut ident: Ident = parse_quote! { Self_ };
+                    ident.set_span(path.segments[0].ident.span());
+                    path.segments[0].ident = ident;
+                } else {
+                    *ty = self.self_ty.clone();
                 }
             }
-            _ => {}
         }
 
         visit_mut::visit_type_mut(self, ty);
@@ -292,14 +286,11 @@ fn escape_self_in_contracts(attrs: &mut Vec<Attribute>) -> Result<()> {
     for attr in attrs {
         if let Some(id) = attr.path().get_ident() {
             if id == "ensures" || id == "requires" {
-                match &mut attr.meta {
-                    Meta::List(l) => {
-                        let tokens = std::mem::take(&mut l.tokens);
-                        let mut term: Term = syn::parse2(tokens)?;
-                        escape_self_in_term(&mut term);
-                        l.tokens = term.into_token_stream();
-                    }
-                    _ => (),
+                if let Meta::List(l) = &mut attr.meta {
+                    let tokens = std::mem::take(&mut l.tokens);
+                    let mut term: Term = syn::parse2(tokens)?;
+                    escape_self_in_term(&mut term);
+                    l.tokens = term.into_token_stream();
                 }
             }
         }
@@ -572,7 +563,9 @@ impl Parse for ExternSpec {
             Ok(ExternSpec::Impl(input.parse()?))
         } else if lookahead.peek(Token![trait]) {
             Ok(ExternSpec::Trait(input.parse()?))
-        } else if lookahead.peek(Token![fn]) {
+        } else if lookahead.peek(Token![fn])
+            || (lookahead.peek(Token![unsafe]) && input.peek2(Token![fn]))
+        {
             let mut f: ExternMethod = input.parse()?;
             f.attrs.extend(attrs);
             Ok(ExternSpec::Fn(f))
@@ -630,13 +623,13 @@ impl Parse for ExternTrait {
         }
 
         Ok(ExternTrait {
-            unsafety,
-            trait_token,
+            _unsafety: unsafety,
+            _trait_token: trait_token,
             ident,
             generics,
-            colon_token,
-            supertraits,
-            brace_token,
+            _colon_token: colon_token,
+            _supertraits: supertraits,
+            _brace_token: brace_token,
             items,
         })
     }
@@ -715,10 +708,10 @@ impl Parse for ExternImpl {
         }
 
         Ok(ExternImpl {
-            attrs,
-            defaultness,
-            unsafety,
-            impl_token,
+            _attrs: attrs,
+            _defaultness: defaultness,
+            _unsafety: unsafety,
+            _impl_token: impl_token,
             generics,
             trait_,
             self_ty: Box::new(self_ty),
