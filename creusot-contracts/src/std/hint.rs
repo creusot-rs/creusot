@@ -8,7 +8,7 @@ extern_spec! {
             unsafe fn assert_unchecked(cond: bool) {}
 
             #[pure]
-            #[ensures(true)]
+            #[ensures(result == dummy)]
             fn black_box<T>(dummy: T) -> T {
                 dummy
             }
