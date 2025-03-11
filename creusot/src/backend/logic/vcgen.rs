@@ -13,7 +13,7 @@ use crate::{
         ty::{constructor, is_int, ity_to_prelude, translate_ty, uty_to_prelude},
     },
     contracts_items::get_builtin,
-    ctx::PreludeModule,
+    ctx::PreMod,
     naming::ident_of,
     pearlite::{Literal, Pattern, PointerKind, Term, TermVisitor, super_visit_term},
     util::erased_identity_for_item,
@@ -243,13 +243,13 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     let (fct_name, prelude_kind) = match t.ty.kind() {
                         TyKind::Int(ity) => ("of_bool", ity_to_prelude(self.ctx.tcx, *ity)),
                         TyKind::Uint(uty) => ("of_bool", uty_to_prelude(self.ctx.tcx, *uty)),
-                        _ if is_int(self.ctx.tcx, t.ty) => ("to_int", PreludeModule::Bool),
+                        _ if is_int(self.ctx.tcx, t.ty) => ("to_int", PreMod::Bool),
                         _ => self.ctx.crash_and_error(
                             t.span,
                             "bool cast to non integral casts are currently unsupported",
                         ),
                     };
-                    k(Exp::qvar(self.names.from_prelude(prelude_kind, fct_name)).app([arg]))
+                    k(Exp::qvar(self.names.in_pre(prelude_kind, fct_name)).app([arg]))
                 }),
                 TyKind::Int(_) | TyKind::Uint(_) => {
                     // to
@@ -281,8 +281,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     };
 
                     self.build_wp(arg, &|arg| {
-                        let to_qname = self.names.from_prelude(to_prelude, to_fct_name);
-                        let of_qname = self.names.from_prelude(of_prelude, of_fct_name);
+                        let to_qname = self.names.in_pre(to_prelude, to_fct_name);
+                        let of_qname = self.names.in_pre(of_prelude, of_fct_name);
                         k(Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([arg])]))
                     })
                 }
@@ -371,7 +371,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 }),
                 _ => self.build_wp(lhs, &|lhs| {
                     self.build_wp(rhs, &|rhs| {
-                        k(Exp::BinaryOp(binop_to_binop(*op), Box::new(lhs.clone()), Box::new(rhs)))
+                        k(Exp::BinaryOp(binop_to_binop(*op), lhs.clone().boxed(), rhs.boxed()))
                     })
                 }),
             },
@@ -382,7 +382,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     UnOp::Neg => WUnOp::Neg,
                 };
 
-                k(Exp::UnaryOp(op, Box::new(arg)))
+                k(Exp::UnaryOp(op, arg.boxed()))
             }),
             // // the dual rule should be the one below but that seems weird...
             // // VC(forall<x> P(x), Q) => (exists<x> VC(P, false)) \/ Q(forall<x>P(x))
@@ -391,7 +391,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let forall_pre = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
 
                 let forall_pre = Exp::forall(
-                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.ty(t))).collect(),
+                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.ty(t))),
                     forall_pre,
                 );
                 let forall_pure = self.lower_pure(t);
@@ -402,7 +402,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let exists_pre = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
 
                 let exists_pre = Exp::forall(
-                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.ty(t))).collect(),
+                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.ty(t))),
                     exists_pre,
                 );
                 let exists_pure = self.lower_pure(t);
@@ -420,9 +420,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 })
             }
             // VC( * T, Q) = VC(T, |t| Q(*t))
-            TermKind::Cur { term } => self.build_wp(term, &|term| k(term.field("current"))),
+            TermKind::Cur { term } => self.build_wp(term, &|term| k(term.field("current".into()))),
             // VC( ^ T, Q) = VC(T, |t| Q(^t))
-            TermKind::Fin { term } => self.build_wp(term, &|term| k(term.field("final"))),
+            TermKind::Fin { term } => self.build_wp(term, &|term| k(term.field("final".into()))),
             // VC(A -> B, Q) = VC(A, VC(B, Q(A -> B)))
             TermKind::Impl { lhs, rhs } => self.build_wp(lhs, &|lhs| {
                 Ok(Exp::if_(lhs, self.build_wp(rhs, k)?, k(Exp::mk_true())?))
@@ -453,40 +453,36 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     })
                     .collect::<Result<Box<[_]>, _>>()?;
 
-                Ok(Exp::Match(Box::new(scrut), arms))
+                Ok(scrut.match_(arms))
             }),
             // VC(let P = A in B, Q) = VC(A, |a| let P = a in VC(B, Q))
             TermKind::Let { pattern, arg, body } => self.build_wp(arg, &|arg| {
                 self.build_pattern(pattern, &|pattern| {
-                    let body = self.build_wp(body, k)?;
-                    Ok(Exp::Let { pattern, arg: Box::new(arg.clone()), body: Box::new(body) })
+                    let body = self.build_wp(body, k)?.boxed();
+                    Ok(Exp::Let { pattern, arg: arg.clone().boxed(), body })
                 })
             }),
             // VC(A.f, Q) = VC(A, |a| Q(a.f))
             TermKind::Projection { lhs, name } => {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, lhs.ty);
                 let field = match ty.kind() {
-                    TyKind::Closure(did, substs) => {
-                        self.names.field(*did, substs, *name).as_ident()
-                    }
-                    TyKind::Adt(def, substs) => {
-                        self.names.field(def.did(), substs, *name).as_ident()
-                    }
+                    TyKind::Closure(did, substs) => self.names.field(*did, substs, *name),
+                    TyKind::Adt(def, substs) => self.names.field(def.did(), substs, *name),
                     TyKind::Tuple(f) => {
                         let mut fields: Box<_> = repeat_n(WPattern::Wildcard, f.len()).collect();
                         fields[name.as_usize()] = WPattern::VarP("a".into());
                         return self.build_wp(lhs, &|lhs| {
                             k(Exp::Let {
                                 pattern: WPattern::TupleP(fields.clone()),
-                                arg: Box::new(lhs),
-                                body: Box::new(Exp::var("a")),
+                                arg: lhs.boxed(),
+                                body: Exp::var("a").boxed(),
                             })
                         });
                     }
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                self.build_wp(lhs, &|lhs| k(lhs.field(&field)))
+                self.build_wp(lhs, &|lhs| k(lhs.field(field.clone())))
             }
             TermKind::Old { .. } => Err(VCError::OldInLemma(t.span)),
             TermKind::Closure { .. } => Err(VCError::UnimplementedClosure(t.span)),
@@ -529,9 +525,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                         fields
                             .into_iter()
                             .enumerate()
-                            .map(|(i, f)| {
-                                (self.names.field(*variant, substs, i.into()).as_ident(), f)
-                            })
+                            .map(|(i, f)| (self.names.field(*variant, substs, i.into()), f))
                             .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                             .collect(),
                     )
@@ -617,9 +611,10 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         let mut rec_var_exp = orig_variant.clone();
         rec_var_exp.subst(&mut subst);
         if is_int(self.ctx.tcx, variant_ty) {
-            self.names.import_prelude_module(PreludeModule::Int);
-            Ok(Exp::BinaryOp(BinOp::Le, Box::new(Exp::int(0)), Box::new(orig_variant.clone()))
-                .log_and(Exp::BinaryOp(BinOp::Lt, Box::new(rec_var_exp), Box::new(orig_variant))))
+            self.names.import_prelude_module(PreMod::Int);
+            let orig_variant = orig_variant.boxed();
+            Ok(Exp::BinaryOp(BinOp::Le, Exp::int(0).boxed(), orig_variant.clone())
+                .log_and(Exp::BinaryOp(BinOp::Lt, rec_var_exp.boxed(), orig_variant)))
         } else {
             Err(VCError::UnsupportedVariant(variant_ty, span))
         }

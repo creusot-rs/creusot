@@ -61,7 +61,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                         ),
                     };
 
-                    let qname = self.names.from_prelude(prelude_kind, fct_name);
+                    let qname = self.names.in_pre(prelude_kind, fct_name);
                     Exp::qvar(qname).app([self.lower_term(arg)])
                 }
                 TyKind::Int(_) | TyKind::Uint(_) => {
@@ -97,8 +97,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                         ),
                     };
 
-                    let to_qname = self.names.from_prelude(to_prelude_kind, to_fct_name);
-                    let of_qname = self.names.from_prelude(of_prelude_kind, of_fct_name);
+                    let to_qname = self.names.in_pre(to_prelude_kind, to_fct_name);
+                    let of_qname = self.names.in_pre(of_prelude_kind, of_fct_name);
 
                     Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([self.lower_term(arg)])])
                 }
@@ -153,32 +153,31 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                             _ => unreachable!(),
                         };
 
-                        Exp::qvar(self.names.from_prelude(prelude, func_name)).app([lhs, rhs])
+                        Exp::qvar(self.names.in_pre(prelude, func_name)).app([lhs, rhs])
                     }
                     _ => {
                         if matches!(op, Add | Sub | Mul | Le | Ge | Lt | Gt) {
-                            self.names.import_prelude_module(PreludeModule::Int);
+                            self.names.import_prelude_module(PreMod::Int);
                         }
-                        Exp::BinaryOp(binop_to_binop(*op), Box::new(lhs), Box::new(rhs))
+                        Exp::BinaryOp(binop_to_binop(*op), lhs.boxed(), rhs.boxed())
                     }
                 }
             }
             TermKind::Unary { op, box arg } => {
                 if matches!(op, UnOp::Neg) {
-                    self.names.import_prelude_module(PreludeModule::Int);
+                    self.names.import_prelude_module(PreMod::Int);
                 }
                 let op = match op {
                     UnOp::Not => WUnOp::Not,
                     UnOp::Neg => WUnOp::Neg,
                 };
-                Exp::UnaryOp(op, Box::new(self.lower_term(arg)))
+                Exp::UnaryOp(op, self.lower_term(arg).boxed())
             }
             TermKind::Call { id, subst, args, .. } => Exp::qvar(self.names.item(*id, *subst))
                 .app(args.into_iter().map(|arg| self.lower_term(arg))),
             TermKind::Quant { kind, binder, box body, trigger } => {
-                let bound = zip_binder(binder)
-                    .map(|(s, t)| (s.to_string().into(), self.lower_ty(t)))
-                    .collect();
+                let bound =
+                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.lower_ty(t)));
                 let body = self.lower_term(body);
                 let trigger = self.lower_trigger(trigger);
                 match kind {
@@ -193,17 +192,17 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Cur { box term } => {
                 assert!(term.ty.is_mutable_ptr() && term.ty.is_ref());
-                self.names.import_prelude_module(PreludeModule::MutBorrow);
-                self.lower_term(term).field("current")
+                self.names.import_prelude_module(PreMod::MutBor);
+                self.lower_term(term).field("current".into())
             }
             TermKind::Fin { box term } => {
-                self.names.import_prelude_module(PreludeModule::MutBorrow);
-                self.lower_term(term).field("final")
+                self.names.import_prelude_module(PreMod::MutBor);
+                self.lower_term(term).field("final".into())
             }
             TermKind::Impl { box lhs, box rhs } => {
                 self.lower_term(lhs).implies(self.lower_term(rhs))
             }
-            TermKind::Old { box term } => Exp::Old(Box::new(self.lower_term(term))),
+            TermKind::Old { box term } => Exp::Old(self.lower_term(term).boxed()),
             TermKind::Match { box scrutinee, arms } => {
                 if scrutinee.ty.peel_refs().is_bool() {
                     let (true_br, false_br) = if let Pattern::Boolean(true) = arms[0].0 {
@@ -218,17 +217,15 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     )
                 } else {
                     let _ = self.lower_ty(scrutinee.ty);
-                    let arms = arms
-                        .iter()
-                        .map(|(pat, body)| (self.lower_pat(pat), self.lower_term(body)))
-                        .collect();
-                    Exp::Match(Box::new(self.lower_term(scrutinee)), arms)
+                    self.lower_term(scrutinee).match_(
+                        arms.iter().map(|(pat, body)| (self.lower_pat(pat), self.lower_term(body))),
+                    )
                 }
             }
             TermKind::Let { pattern, box arg, box body } => Exp::Let {
                 pattern: self.lower_pat(pattern),
-                arg: Box::new(self.lower_term(arg)),
-                body: Box::new(self.lower_term(body)),
+                arg: self.lower_term(arg).boxed(),
+                body: self.lower_term(body).boxed(),
             },
             TermKind::Tuple { fields } => {
                 Exp::Tuple(fields.into_iter().map(|f| self.lower_term(f)).collect())
@@ -236,23 +233,25 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Projection { box lhs, name } => {
                 let lhs_low = self.lower_term(lhs);
 
-                let field = match lhs.ty.kind() {
-                    TyKind::Closure(did, substs) => self.names.field(*did, substs, *name),
-                    TyKind::Adt(def, substs) => self.names.field(def.did(), substs, *name),
+                match lhs.ty.kind() {
+                    TyKind::Closure(did, substs) => {
+                        lhs_low.field(self.names.field(*did, substs, *name))
+                    }
+                    TyKind::Adt(def, substs) => {
+                        lhs_low.field(self.names.field(def.did(), substs, *name))
+                    }
                     TyKind::Tuple(f) => {
                         let mut fields: Box<_> = repeat_n(WPattern::Wildcard, f.len()).collect();
                         fields[name.as_usize()] = WPattern::VarP("a".into());
 
                         return Exp::Let {
                             pattern: WPattern::TupleP(fields),
-                            arg: Box::new(lhs_low),
-                            body: Box::new(Exp::var("a")),
+                            arg: lhs_low.boxed(),
+                            body: Exp::var("a").boxed(),
                         };
                     }
                     k => unreachable!("Projection from {k:?}"),
-                };
-
-                lhs_low.field(&field.as_ident())
+                }
             }
             TermKind::Closure { body, .. } => {
                 let TyKind::Closure(id, subst) = term.ty.kind() else {
@@ -273,22 +272,21 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     })
                     .collect();
 
-                Exp::Abs(binders, Box::new(body))
+                Exp::Lam(binders, body.boxed())
             }
             TermKind::Reborrow { cur, fin, inner, projection } => {
                 let inner = self.lower_term(&*inner);
                 let borrow_id = borrow_generated_id(self.names, inner, &projection, |x| {
                     if matches!(x.ty.kind(), TyKind::Uint(UintTy::Usize)) {
-                        let qname = self
-                            .names
-                            .from_prelude(uty_to_prelude(self.ctx.tcx, UintTy::Usize), "t'int");
+                        let qname =
+                            self.names.in_pre(uty_to_prelude(self.ctx.tcx, UintTy::Usize), "t'int");
                         Exp::qvar(qname).app([self.lower_term(x)])
                     } else {
                         self.lower_term(x)
                     }
                 });
 
-                Exp::qvar(self.names.from_prelude(PreludeModule::MutBorrow, "borrow_logic")).app([
+                Exp::qvar(self.names.in_pre(PreMod::MutBor, "borrow_logic")).app([
                     self.lower_term(&*cur),
                     self.lower_term(&*fin),
                     borrow_id,
@@ -323,9 +321,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                         fields
                             .into_iter()
                             .enumerate()
-                            .map(|(i, f)| {
-                                (self.names.field(*variant, substs, i.into()).as_ident(), f)
-                            })
+                            .map(|(i, f)| (self.names.field(*variant, substs, i.into()), f))
                             .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                             .collect(),
                     )
@@ -373,7 +369,7 @@ pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
         Literal::Integer(i) => Constant::Int(i, None).into(),
         Literal::UInteger(i) => Constant::Uint(i, None).into(),
         Literal::MachSigned(mut i, ity) => {
-            let why_ty = Type::TConstructor(names.from_prelude(ity_to_prelude(ctx.tcx, ity), "t"));
+            let why_ty = Type::TConstructor(names.in_pre(ity_to_prelude(ctx.tcx, ity), "t"));
             if names.bitwise_mode() {
                 // In bitwise mode, integers are bit vectors, whose literals are always unsigned
                 if i < 0 && ity != IntTy::I128 {
@@ -386,19 +382,22 @@ pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
             }
         }
         Literal::MachUnsigned(u, uty) => {
-            let why_ty = Type::TConstructor(names.from_prelude(uty_to_prelude(ctx.tcx, uty), "t"));
+            let why_ty = Type::TConstructor(names.in_pre(uty_to_prelude(ctx.tcx, uty), "t"));
             Constant::Uint(u, Some(why_ty)).into()
         }
         Literal::Bool(true) => Constant::const_true().into(),
         Literal::Bool(false) => Constant::const_false().into(),
-        Literal::Char(c) => Exp::qvar(names.from_prelude(PreludeModule::Char, "of_int"))
-            .app([Constant::Int(c as u32 as i128, None).into()]),
+        Literal::Char(c) => Exp::qvar(names.in_pre(PreMod::Char, "of_int")).app([Constant::Int(
+            c as u32 as i128,
+            None,
+        )
+        .into()]),
         Literal::Function(id, subst) => {
             names.item(id, subst);
             Exp::unit()
         }
         Literal::Float(ref f, fty) => {
-            let why_ty = Type::TConstructor(names.from_prelude(floatty_to_prelude(fty), "t"));
+            let why_ty = Type::TConstructor(names.in_pre(floatty_to_prelude(fty), "t"));
             Constant::Float(f.0, Some(why_ty)).into()
         }
         Literal::ZST => Exp::unit(),

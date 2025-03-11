@@ -92,5 +92,5 @@ fn resolve_of<'tcx>(ctx: &Why3Generator<'tcx>, term: Term<'tcx>) -> Term<'tcx> {
     let trait_meth_id = get_resolve_function(ctx.tcx);
     let substs = ctx.mk_args(&[GenericArg::from(term.ty)]);
 
-    Term::call_no_normalize(ctx.tcx, trait_meth_id, substs, Box::new([term]))
+    Term::call_no_normalize(ctx.tcx, trait_meth_id, substs, [term])
 }

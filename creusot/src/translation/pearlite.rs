@@ -1004,7 +1004,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 assert!(stmts.is_empty());
                 self.logical_reborrow_inner(expr.unwrap())
             }
-            ExprKind::Field { lhs, variant_index: _, name } => {
+            ExprKind::Field { lhs, name, .. } => {
                 let (cur, fin, inner, mut proj) = self.logical_reborrow_inner(*lhs)?;
                 proj.push(ProjectionElem::Field(*name, ty));
                 Ok((
@@ -1083,18 +1083,13 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         self.ctx.mk_args(&[GenericArg::from(cur.ty), GenericArg::from(index.ty)]);
 
                     Ok((
-                        Term::call_no_normalize(
-                            self.ctx.tcx,
-                            index_logic_method,
-                            subst,
-                            Box::new([cur, index.clone()]),
-                        ),
-                        Term::call_no_normalize(
-                            self.ctx.tcx,
-                            index_logic_method,
-                            subst,
-                            Box::new([fin, index]),
-                        ),
+                        Term::call_no_normalize(self.ctx.tcx, index_logic_method, subst, [
+                            cur,
+                            index.clone(),
+                        ]),
+                        Term::call_no_normalize(self.ctx.tcx, index_logic_method, subst, [
+                            fin, index,
+                        ]),
                         inner,
                         proj,
                     ))
@@ -1382,10 +1377,11 @@ impl<'tcx> Term<'tcx> {
         tcx: TyCtxt<'tcx>,
         def_id: DefId,
         subst: GenericArgsRef<'tcx>,
-        args: Box<[Term<'tcx>]>,
+        args: impl IntoIterator<Item = Term<'tcx>>,
     ) -> Self {
         let ty = tcx.type_of(def_id).instantiate(tcx, subst);
         let result = ty.fn_sig(tcx).skip_binder().output();
+        let args = args.into_iter().collect();
         Term { ty: result, span: DUMMY_SP, kind: TermKind::Call { id: def_id, subst, args } }
     }
 
@@ -1394,7 +1390,7 @@ impl<'tcx> Term<'tcx> {
         typing_env: TypingEnv<'tcx>,
         def_id: DefId,
         subst: GenericArgsRef<'tcx>,
-        args: Box<[Term<'tcx>]>,
+        args: impl IntoIterator<Item = Term<'tcx>>,
     ) -> Self {
         let mut res = Self::call_no_normalize(tcx, def_id, subst, args);
         res.ty = tcx.normalize_erasing_regions(typing_env, res.ty);

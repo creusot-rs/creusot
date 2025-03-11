@@ -112,36 +112,20 @@ impl Trigger {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Exp {
-    Let {
-        pattern: Pattern,
-        arg: Box<Exp>,
-        body: Box<Exp>,
-    },
+    Let { pattern: Pattern, arg: Box<Exp>, body: Box<Exp> },
     Var(Ident),
     QVar(QName),
-    Record {
-        fields: Box<[(String, Exp)]>,
-    },
-    RecUp {
-        record: Box<Exp>,
-        updates: Box<[(String, Exp)]>,
-    },
-    RecField {
-        record: Box<Exp>,
-        label: String,
-    },
+    Record { fields: Box<[(QName, Exp)]> },
+    RecUp { record: Box<Exp>, updates: Box<[(QName, Exp)]> },
+    RecField { record: Box<Exp>, label: QName },
     Tuple(Box<[Exp]>),
-    Constructor {
-        ctor: QName,
-        args: Box<[Exp]>,
-    },
+    Constructor { ctor: QName, args: Box<[Exp]> },
     Const(Constant),
     BinaryOp(BinOp, Box<Exp>, Box<Exp>),
     UnaryOp(UnOp, Box<Exp>),
     Call(Box<Exp>, Box<[Exp]>),
     Attr(Attribute, Box<Exp>),
-    /// Lambda abstraction
-    Abs(Box<[Binder]>, Box<Exp>),
+    Lam(Box<[Binder]>, Box<Exp>),
 
     Match(Box<Exp>, Box<[(Pattern, Exp)]>),
     IfThenElse(Box<Exp>, Box<Exp>, Box<Exp>),
@@ -197,7 +181,7 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
             f.visit_mut(func);
             args.iter_mut().for_each(|e| f.visit_mut(e))
         }
-        Exp::Abs(_, e) => f.visit_mut(e),
+        Exp::Lam(_, e) => f.visit_mut(e),
         Exp::Match(scrut, arms) => {
             f.visit_mut(scrut);
             arms.iter_mut().for_each(|(_, e)| f.visit_mut(e))
@@ -238,7 +222,7 @@ impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
                     *exp = e.clone()
                 }
             }
-            Exp::Abs(binders, body) => {
+            Exp::Lam(binders, body) => {
                 let mut subst = self.clone();
 
                 for binder in binders {
@@ -361,7 +345,7 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
             f.visit(func);
             args.iter().for_each(|e| f.visit(e))
         }
-        Exp::Abs(_, e) => f.visit(e),
+        Exp::Lam(_, e) => f.visit(e),
         Exp::Match(scrut, arms) => {
             f.visit(scrut);
             arms.iter().for_each(|(_, e)| f.visit(e))
@@ -395,6 +379,10 @@ pub fn super_visit_trigger<T: ExpVisitor>(f: &mut T, trigger: &Trigger) {
 }
 
 impl Exp {
+    pub fn boxed(self) -> Box<Self> {
+        Box::new(self)
+    }
+
     pub fn unit() -> Self {
         Exp::Tuple(Box::new([]))
     }
@@ -434,8 +422,12 @@ impl Exp {
         if args.is_empty() { return self } else { Exp::Call(Box::new(self), args) }
     }
 
-    pub fn field(self, field: &str) -> Self {
-        Self::RecField { record: Box::new(self), label: field.into() }
+    pub fn field(self, label: QName) -> Self {
+        Self::RecField { record: Box::new(self), label }
+    }
+
+    pub fn match_(self, branches: impl IntoIterator<Item = (Pattern, Exp)>) -> Self {
+        Exp::Match(Box::new(self), branches.into_iter().collect())
     }
 
     pub fn lazy_and(self, other: Self) -> Self {
@@ -498,23 +490,41 @@ impl Exp {
     /// Builds a quantifier with explicit trigger
     ///
     /// Simplfies ∀ x, True into True
-    pub fn forall_trig(bound: Box<[(Ident, Type)]>, trigger: Box<[Trigger]>, body: Exp) -> Self {
-        if body.is_true() { body } else { Exp::Forall(bound, trigger, Box::new(body)) }
+    pub fn forall_trig(
+        bound: impl IntoIterator<Item = (Ident, Type)>,
+        trigger: impl IntoIterator<Item = Trigger>,
+        body: Exp,
+    ) -> Self {
+        let mut bound = bound.into_iter().peekable();
+        if body.is_true() || bound.peek().is_none() {
+            body
+        } else {
+            Exp::Forall(bound.collect(), trigger.into_iter().collect(), Box::new(body))
+        }
     }
 
     /// Builds a quantifier
     ///
     /// Simplfies ∀ x, True into True
-    pub fn forall(bound: Box<[(Ident, Type)]>, body: Exp) -> Self {
-        Exp::forall_trig(bound, Box::new([]), body)
+    pub fn forall(bound: impl IntoIterator<Item = (Ident, Type)>, body: Exp) -> Self {
+        Exp::forall_trig(bound, [], body)
     }
 
-    pub fn exists_trig(bound: Box<[(Ident, Type)]>, trigger: Box<[Trigger]>, body: Exp) -> Self {
-        Exp::Exists(bound, trigger, Box::new(body))
+    pub fn exists_trig(
+        bound: impl IntoIterator<Item = (Ident, Type)>,
+        trigger: impl IntoIterator<Item = Trigger>,
+        body: Exp,
+    ) -> Self {
+        let mut bound = bound.into_iter().peekable();
+        if body.is_false() || bound.peek().is_none() {
+            body
+        } else {
+            Exp::Exists(bound.collect(), trigger.into_iter().collect(), Box::new(body))
+        }
     }
 
-    pub fn exists(bound: Box<[(Ident, Type)]>, body: Exp) -> Self {
-        Exp::exists_trig(bound, Box::new([]), body)
+    pub fn exists(bound: impl IntoIterator<Item = (Ident, Type)>, body: Exp) -> Self {
+        Exp::exists_trig(bound, [], body)
     }
 
     pub fn with_attr(self, attr: Attribute) -> Self {
@@ -711,7 +721,7 @@ impl Exp {
 
         match self {
             Exp::Let { .. } => IfLet,
-            Exp::Abs(_, _) => Abs,
+            Exp::Lam(_, _) => Abs,
             Exp::Var(_) => Atom,
             Exp::QVar(_) => Atom,
             Exp::RecUp { .. } => App,
@@ -871,7 +881,7 @@ impl ExpMutVisitor for Environment {
                     *exp = e.clone()
                 }
             }
-            Exp::Abs(binders, body) => {
+            Exp::Lam(binders, body) => {
                 let mut bound_here = HashMap::default();
 
                 for binder in binders {
@@ -1038,7 +1048,7 @@ pub enum Pattern {
     VarP(Ident),
     TupleP(Box<[Pattern]>),
     ConsP(QName, Box<[Pattern]>),
-    RecP(Box<[(Ident, Pattern)]>),
+    RecP(Box<[(QName, Pattern)]>),
 }
 
 impl Pattern {

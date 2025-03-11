@@ -11,7 +11,7 @@ use rustc_span::Symbol;
 use rustc_type_ir::AliasTyKind;
 
 use crate::{
-    backend::PreludeModule,
+    backend::PreMod,
     naming::{item_symb, translate_accessor_name, translate_name, type_name, value_name},
 };
 
@@ -27,7 +27,7 @@ pub(crate) enum Dependency<'tcx> {
     Item(DefId, GenericArgsRef<'tcx>),
     TyInvAxiom(Ty<'tcx>),
     ClosureAccessor(DefId, GenericArgsRef<'tcx>, u32),
-    Builtin(PreludeModule),
+    Builtin(PreMod),
     Eliminator(DefId, GenericArgsRef<'tcx>),
     Promoted(LocalDefId, Promoted),
 }

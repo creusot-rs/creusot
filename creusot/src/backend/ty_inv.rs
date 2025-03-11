@@ -87,8 +87,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         let subject = Term::var(Symbol::intern("x"), ty);
         let inv_id = get_inv_function(self.ctx.tcx);
         let subst = self.ctx.mk_args(&[GenericArg::from(subject.ty)]);
-        let lhs =
-            Term::call(self.ctx.tcx, self.typing_env, inv_id, subst, Box::new([subject.clone()]));
+        let lhs = Term::call(self.ctx.tcx, self.typing_env, inv_id, subst, [subject.clone()]);
         let trig = Box::new([Trigger(Box::new([lhs.clone()]))]);
 
         if is_tyinv_trivial(self.ctx.tcx, self.typing_env, ty) {
@@ -111,7 +110,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                     self.typing_env,
                     uinv_did,
                     uinv_subst,
-                    Box::new([subject.clone()]),
+                    [subject.clone()],
                 ))
             }
             TraitResolved::UnknownNotFound if !for_deps => use_imples = true,
@@ -124,7 +123,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                     self.typing_env,
                     trait_item_did,
                     subst,
-                    Box::new([subject.clone()]),
+                    [subject.clone()],
                 ))
             }
         }
@@ -207,7 +206,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
 
     pub(crate) fn mk_inv_call(&mut self, term: Term<'tcx>) -> Term<'tcx> {
         if let Some((inv_id, subst)) = self.ctx.type_invariant(self.typing_env, term.ty) {
-            Term::call(self.ctx.tcx, self.typing_env, inv_id, subst, Box::new([term]))
+            Term::call(self.ctx.tcx, self.typing_env, inv_id, subst, [term])
         } else {
             Term::mk_true(self.ctx.tcx)
         }

@@ -32,7 +32,7 @@ mod elaborator;
 
 // Prelude modules
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, TypeVisitable, TypeFoldable)]
-pub enum PreludeModule {
+pub enum PreMod {
     Float32,
     Float64,
     Int,
@@ -48,7 +48,7 @@ pub enum PreludeModule {
     UInt128,
     Char,
     Bool,
-    MutBorrow,
+    MutBor,
     Slice,
     Opaque,
     Any,
@@ -119,49 +119,49 @@ pub(crate) trait Namer<'tcx> {
 
     fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, ctx: &TranslationCtx<'tcx>, ty: T) -> T;
 
-    fn import_prelude_module(&self, module: PreludeModule) {
+    fn import_prelude_module(&self, module: PreMod) {
         self.dependency(Dependency::Builtin(module));
     }
 
-    fn prelude_module_name(&self, module: PreludeModule) -> Box<[Ident]> {
+    fn prelude_module_name(&self, module: PreMod) -> Box<[Ident]> {
         self.dependency(Dependency::Builtin(module));
         let qname: QName = match (module, self.bitwise_mode()) {
-            (PreludeModule::Float32, _) => "creusot.float.Float32.".into(),
-            (PreludeModule::Float64, _) => "creusot.float.Float64.".into(),
-            (PreludeModule::Int, _) => "mach.int.Int.".into(),
-            (PreludeModule::Int8, false) => "creusot.int.Int8.".into(),
-            (PreludeModule::Int16, false) => "creusot.int.Int16.".into(),
-            (PreludeModule::Int32, false) => "creusot.int.Int32.".into(),
-            (PreludeModule::Int64, false) => "creusot.int.Int64.".into(),
-            (PreludeModule::Int128, false) => "creusot.int.Int128.".into(),
-            (PreludeModule::UInt8, false) => "creusot.int.UInt8.".into(),
-            (PreludeModule::UInt16, false) => "creusot.int.UInt16.".into(),
-            (PreludeModule::UInt32, false) => "creusot.int.UInt32.".into(),
-            (PreludeModule::UInt64, false) => "creusot.int.UInt64.".into(),
-            (PreludeModule::UInt128, false) => "creusot.int.UInt128.".into(),
-            (PreludeModule::Int8, true) => "creusot.int.Int8BW.".into(),
-            (PreludeModule::Int16, true) => "creusot.int.Int16BW.".into(),
-            (PreludeModule::Int32, true) => "creusot.int.Int32BW.".into(),
-            (PreludeModule::Int64, true) => "creusot.int.Int64BW.".into(),
-            (PreludeModule::Int128, true) => "creusot.int.Int128BW.".into(),
-            (PreludeModule::UInt8, true) => "creusot.int.UInt8BW.".into(),
-            (PreludeModule::UInt16, true) => "creusot.int.UInt16BW.".into(),
-            (PreludeModule::UInt32, true) => "creusot.int.UInt32BW.".into(),
-            (PreludeModule::UInt64, true) => "creusot.int.UInt64BW.".into(),
-            (PreludeModule::UInt128, true) => "creusot.int.UInt128BW.".into(),
-            (PreludeModule::Char, _) => "creusot.prelude.Char.".into(),
-            (PreludeModule::Opaque, _) => "creusot.prelude.Opaque.".into(),
-            (PreludeModule::Bool, _) => "creusot.prelude.Bool.".into(),
-            (PreludeModule::MutBorrow, _) => "creusot.prelude.MutBorrow.".into(),
-            (PreludeModule::Slice, _) => {
+            (PreMod::Float32, _) => "creusot.float.Float32.".into(),
+            (PreMod::Float64, _) => "creusot.float.Float64.".into(),
+            (PreMod::Int, _) => "mach.int.Int.".into(),
+            (PreMod::Int8, false) => "creusot.int.Int8.".into(),
+            (PreMod::Int16, false) => "creusot.int.Int16.".into(),
+            (PreMod::Int32, false) => "creusot.int.Int32.".into(),
+            (PreMod::Int64, false) => "creusot.int.Int64.".into(),
+            (PreMod::Int128, false) => "creusot.int.Int128.".into(),
+            (PreMod::UInt8, false) => "creusot.int.UInt8.".into(),
+            (PreMod::UInt16, false) => "creusot.int.UInt16.".into(),
+            (PreMod::UInt32, false) => "creusot.int.UInt32.".into(),
+            (PreMod::UInt64, false) => "creusot.int.UInt64.".into(),
+            (PreMod::UInt128, false) => "creusot.int.UInt128.".into(),
+            (PreMod::Int8, true) => "creusot.int.Int8BW.".into(),
+            (PreMod::Int16, true) => "creusot.int.Int16BW.".into(),
+            (PreMod::Int32, true) => "creusot.int.Int32BW.".into(),
+            (PreMod::Int64, true) => "creusot.int.Int64BW.".into(),
+            (PreMod::Int128, true) => "creusot.int.Int128BW.".into(),
+            (PreMod::UInt8, true) => "creusot.int.UInt8BW.".into(),
+            (PreMod::UInt16, true) => "creusot.int.UInt16BW.".into(),
+            (PreMod::UInt32, true) => "creusot.int.UInt32BW.".into(),
+            (PreMod::UInt64, true) => "creusot.int.UInt64BW.".into(),
+            (PreMod::UInt128, true) => "creusot.int.UInt128BW.".into(),
+            (PreMod::Char, _) => "creusot.prelude.Char.".into(),
+            (PreMod::Opaque, _) => "creusot.prelude.Opaque.".into(),
+            (PreMod::Bool, _) => "creusot.prelude.Bool.".into(),
+            (PreMod::MutBor, _) => "creusot.prelude.MutBorrow.".into(),
+            (PreMod::Slice, _) => {
                 format!("creusot.slice.Slice{}.", self.tcx().sess.target.pointer_width).into()
             }
-            (PreludeModule::Any, _) => "creusot.prelude.Any.".into(),
+            (PreMod::Any, _) => "creusot.prelude.Any.".into(),
         };
         qname.module
     }
 
-    fn from_prelude(&self, module: PreludeModule, name: &str) -> QName {
+    fn in_pre(&self, module: PreMod, name: &str) -> QName {
         QName { module: self.prelude_module_name(module), name: name.into() }.without_search_path()
     }
 

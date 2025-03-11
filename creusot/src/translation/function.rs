@@ -949,7 +949,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                     self.tcx,
                     unnest_id,
                     unnest_subst,
-                    Box::new([self_, result_state]),
+                    [self_, result_state],
                 ));
 
                 postcondition = normalize(self.tcx, self.typing_env(def_id), postcondition);
@@ -1076,7 +1076,7 @@ pub(crate) fn closure_resolve<'tcx>(
         };
 
         if let Some((id, subst)) = resolve_predicate_of(ctx, typing_env, ty) {
-            resolve = Term::call(ctx.tcx, typing_env, id, subst, Box::new([proj])).conj(resolve);
+            resolve = Term::call(ctx.tcx, typing_env, id, subst, [proj]).conj(resolve);
         }
     }
 

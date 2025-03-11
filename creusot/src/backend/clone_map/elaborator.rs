@@ -451,7 +451,7 @@ fn resolve_term<'tcx>(
         match traits::TraitResolved::resolve_item(ctx.tcx, typing_env, trait_meth_id, subst) {
             traits::TraitResolved::Instance(meth_did, meth_substs) => {
                 // We know the instance => body points to it
-                Some(Term::call(ctx.tcx, typing_env, meth_did, meth_substs, Box::new([arg])))
+                Some(Term::call(ctx.tcx, typing_env, meth_did, meth_substs, [arg]))
             }
             traits::TraitResolved::UnknownFound | traits::TraitResolved::UnknownNotFound => {
                 // We don't know the instance => body is opaque
@@ -486,15 +486,22 @@ fn fn_once_postcond_term<'tcx>(
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            let args = Box::new([self_.clone().cur(), args, self_.fin(), res]);
-            Some(Term::call(tcx, typing_env, get_fn_mut_impl_postcond(tcx), subst_postcond, args))
+            Some(Term::call(tcx, typing_env, get_fn_mut_impl_postcond(tcx), subst_postcond, [
+                self_.clone().cur(),
+                args,
+                self_.fin(),
+                res,
+            ]))
         }
         TyKind::Ref(_, cl, Mutability::Not) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            let args = Box::new([self_.coerce(*cl), args, res]);
-            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, args))
+            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
+                self_.coerce(*cl),
+                args,
+                res,
+            ]))
         }
         _ => None,
     }
@@ -522,20 +529,27 @@ fn fn_mut_postcond_term<'tcx>(
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            let args = Box::new([self_.clone().cur(), args, result_state.clone().cur(), res]);
             Some(
-                Term::call(tcx, typing_env, get_fn_mut_impl_postcond(tcx), subst_postcond, args)
-                    .conj(self_.fin().eq(ctx.tcx, result_state.fin())),
+                Term::call(tcx, typing_env, get_fn_mut_impl_postcond(tcx), subst_postcond, [
+                    self_.clone().cur(),
+                    args,
+                    result_state.clone().cur(),
+                    res,
+                ])
+                .conj(self_.fin().eq(ctx.tcx, result_state.fin())),
             )
         }
         TyKind::Ref(_, cl, Mutability::Not) => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            let args = Box::new([self_.clone().coerce(*cl), args, res]);
             Some(
-                Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, args)
-                    .conj(self_.eq(ctx.tcx, result_state)),
+                Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
+                    self_.clone().coerce(*cl),
+                    args,
+                    res,
+                ])
+                .conj(self_.eq(ctx.tcx, result_state)),
             )
         }
         _ => None,
@@ -563,8 +577,11 @@ fn fn_postcond_term<'tcx>(
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            let args = Box::new([self_.clone().coerce(*cl), args, res]);
-            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, args))
+            Some(Term::call(tcx, typing_env, get_fn_impl_postcond(tcx), subst_postcond, [
+                self_.clone().coerce(*cl),
+                args,
+                res,
+            ]))
         }
         _ => None,
     }

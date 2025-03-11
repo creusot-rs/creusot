@@ -465,7 +465,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
                 ctx.typing_env(def_id),
                 unnest_id,
                 unnest_subst,
-                Box::new([Term::var(self_, env_ty).cur(), Term::var(self_, env_ty).fin()]),
+                [Term::var(self_, env_ty).cur(), Term::var(self_, env_ty).fin()],
             );
             let expl = "expl:closure unnest".to_string();
             contract.ensures.push(Condition { term, expl });

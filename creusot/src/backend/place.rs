@@ -1,4 +1,4 @@
-use crate::{backend::Namer, ctx::PreludeModule, fmir::Place, naming::ident_of};
+use crate::{backend::Namer, ctx::PreMod, fmir::Place, naming::ident_of};
 use rustc_middle::{
     mir::{self, ProjectionElem, tcx::PlaceTy},
     ty::{Ty, TyCtxt, TyKind},
@@ -72,7 +72,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                 let mutable = place_ty.ty.is_mutable_ptr();
                 if mutable {
                     let focus1 = focus.clone();
-                    focus = Focus::new(move |is| focus.call(is).field("current"));
+                    focus = Focus::new(move |is| focus.call(is).field("current".into()));
                     constructor = Box::new(move |is, t| {
                         let record = Box::new(focus1.call(is));
                         constructor(is, RecUp {
@@ -118,18 +118,15 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     let focus1 = focus.clone();
 
                     focus = Focus::new(move |is| {
-                        focus.call(is).field(&lower.names.field(def.did(), subst, *ix).as_ident())
+                        focus.call(is).field(lower.names.field(def.did(), subst, *ix))
                     });
 
                     constructor = Box::new(move |is, t| {
-                        let updates = Box::new([(
-                            lower.names.field(def.did(), subst, *ix).as_ident().to_string(),
-                            t,
-                        )]);
+                        let updates = Box::new([(lower.names.field(def.did(), subst, *ix), t)]);
                         if def.all_fields().count() == 1 {
                             constructor(is, Exp::Record { fields: updates })
                         } else {
-                            let record = Box::new(focus1.call(is));
+                            let record = focus1.call(is).boxed();
                             constructor(is, Exp::RecUp { record, updates })
                         }
                     })
@@ -143,8 +140,8 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                         pat[ix.as_usize()] = VarP(var.clone());
                         Let {
                             pattern: TupleP(pat.clone()),
-                            arg: Box::new(focus.call(is)),
-                            body: Box::new(Exp::var(var)),
+                            arg: focus.call(is).boxed(),
+                            body: Exp::var(var).boxed(),
                         }
                     });
 
@@ -161,8 +158,8 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
 
                         let tuple = Let {
                             pattern: TupleP(field_pats),
-                            arg: Box::new(focus1.call(is)),
-                            body: Box::new(Exp::Tuple(varexps)),
+                            arg: focus1.call(is).boxed(),
+                            body: Exp::Tuple(varexps).boxed(),
                         };
 
                         constructor(is, tuple)
@@ -172,19 +169,16 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     let focus1 = focus.clone();
 
                     focus = Focus::new(move |is| {
-                        focus.call(is).field(&lower.names.field(*id, subst, *ix).as_ident())
+                        focus.call(is).field(lower.names.field(*id, subst, *ix))
                     });
 
                     constructor = Box::new(move |is, t| {
-                        let updates = Box::new([(
-                            lower.names.field(*id, subst, *ix).as_ident().to_string(),
-                            t,
-                        )]);
+                        let updates = Box::new([(lower.names.field(*id, subst, *ix), t)]);
 
                         if subst.as_closure().upvar_tys().len() == 1 {
                             constructor(is, Exp::Record { fields: updates })
                         } else {
-                            let record = Box::new(focus1.call(is));
+                            let record = focus1.call(is).boxed();
                             constructor(is, Exp::RecUp { record, updates })
                         }
                     });
@@ -206,7 +200,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     let foc = focus.call(is);
                     is.push(IntermediateStmt::Call(
                         Box::new([Param::Term(result.clone(), elt_ty1.clone())]),
-                        lower.names.from_prelude(PreludeModule::Slice, "get"),
+                        lower.names.in_pre(PreMod::Slice, "get"),
                         Box::new([Arg::Ty(elt_ty1), Arg::Term(foc), Arg::Term(ix_exp1)]),
                     ));
 
@@ -220,7 +214,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
 
                     is.push(IntermediateStmt::Call(
                         Box::new([Param::Term(out.clone(), ty)]),
-                        lower.names.from_prelude(PreludeModule::Slice, "set"),
+                        lower.names.in_pre(PreMod::Slice, "set"),
                         Box::new([
                             Arg::Ty(elt_ty),
                             Arg::Term(foc),

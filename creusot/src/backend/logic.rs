@@ -220,7 +220,7 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
     let mut condition = sig.contract.requires_implies(postcondition);
 
     let func_call = function_call(sig);
-    let trigger = sig.trigger.clone().into_iter().collect();
+    let trigger = sig.trigger.clone().into_iter();
     condition.subst(&mut [("result".into(), func_call.clone())].into_iter().collect());
     let args: Box<[(_, _)]> = sig
         .args
@@ -230,8 +230,7 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
         .filter(|arg| &*arg.0 != "_")
         .collect();
 
-    let axiom =
-        if args.is_empty() { condition } else { Exp::forall_trig(args, trigger, condition) };
+    let axiom = Exp::forall_trig(args, trigger, condition);
 
     Axiom { name: format!("{}_spec", &*sig.name).into(), rewrite: false, axiom }
 }
@@ -250,16 +249,15 @@ pub fn function_call(sig: &Signature) -> Exp {
 
 fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
     let call = function_call(sig);
-    let trigger = sig.trigger.clone().into_iter().collect();
+    let trigger = sig.trigger.clone().into_iter();
 
     let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
     let condition = sig.contract.requires_implies(equation);
 
     let args: Box<[_]> = sig.args.clone().into_iter().flat_map(|b| b.var_type_pairs()).collect();
 
-    let axiom =
-        if args.is_empty() { condition } else { Exp::forall_trig(args, trigger, condition) };
+    let axiom = Exp::forall_trig(args, trigger, condition);
 
-    let name = format!("{}_{suffix}", &*sig.name);
-    Axiom { name: name.into(), rewrite: false, axiom }
+    let name = format!("{}_{suffix}", &*sig.name).into();
+    Axiom { name, rewrite: false, axiom }
 }
