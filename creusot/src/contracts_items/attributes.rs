@@ -65,10 +65,6 @@ pub fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {
         .map(|a| a.value_str().map_or("expl:loop invariant".to_string(), |s| s.to_string()))
 }
 
-pub(crate) fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
-    is_no_translate(tcx, def_id) || is_predicate(tcx, def_id) || is_logic(tcx, def_id)
-}
-
 pub(crate) fn is_pearlite(tcx: TyCtxt, def_id: DefId) -> bool {
     is_predicate(tcx, def_id)
         || is_spec(tcx, def_id)

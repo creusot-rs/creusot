@@ -1,4 +1,4 @@
-use crate::contracts_items::{is_no_translate, is_snapshot_closure, no_mir};
+use crate::contracts_items::{is_logic, is_no_translate, is_predicate, is_snapshot_closure};
 use indexmap::IndexSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::{Idx, IndexVec};
@@ -19,7 +19,7 @@ use rustc_middle::{
 pub(crate) fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body: &mut Body<'tcx>) {
     trace!("cleanup_spec_closures: {:?}", def_id);
 
-    if no_mir(tcx, def_id) {
+    if is_no_translate(tcx, def_id) || is_predicate(tcx, def_id) || is_logic(tcx, def_id) {
         trace!("replacing function body");
         *body.basic_blocks_mut() = make_loop(tcx);
     } else {
