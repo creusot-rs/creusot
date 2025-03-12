@@ -16,7 +16,7 @@ use creusot_args::CREUSOT_RUSTC_ARGS;
 use options::CreusotArgs;
 use rustc_driver::run_compiler;
 use rustc_session::{EarlyDiagCtxt, config::ErrorOutputType};
-use std::{env, panic, process::Command};
+use std::{env, panic};
 
 const BUG_REPORT_URL: &str = "https://github.com/creusot-rs/creusot/issues/new";
 
@@ -62,9 +62,6 @@ fn setup_plugin() {
     let has_contracts =
         args.iter().any(|arg| arg == "creusot_contracts" || arg.contains("creusot_contracts="));
 
-    let sysroot = sysroot_path();
-    args.push(format!("--sysroot={}", sysroot));
-
     match creusot {
         Some(creusot) if has_contracts => {
             for &arg in CREUSOT_RUSTC_ARGS {
@@ -83,20 +80,4 @@ fn setup_plugin() {
             run_compiler(&args, &mut DefaultCallbacks)
         }
     }
-}
-
-fn sysroot_path() -> String {
-    let toolchain: toml::Value = toml::from_str(include_str!("../../rust-toolchain")).unwrap();
-    let channel = toolchain["toolchain"]["channel"].as_str().unwrap();
-
-    let output = Command::new("rustup")
-        .arg("run")
-        .arg(channel)
-        .arg("rustc")
-        .arg("--print")
-        .arg("sysroot")
-        .output()
-        .unwrap();
-
-    String::from_utf8(output.stdout).unwrap().trim().to_owned()
 }
