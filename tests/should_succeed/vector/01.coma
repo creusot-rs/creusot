@@ -64,10 +64,6 @@ module M_01__all_zero [#"01.rs" 7 0 7 33]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  predicate inv'2 (_1 : t_Vec'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Vec'0 [inv'2 x] . inv'2 x = true
-  
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function view'2 (self : t_Vec'0) : Seq.seq UInt32.t
@@ -77,17 +73,12 @@ module M_01__all_zero [#"01.rs" 7 0 7 33]
   function view'3 (self : t_Vec'0) : Seq.seq UInt32.t =
     [%#smodel25] view'2 self
   
-  let rec len'0 (self:t_Vec'0) (return'  (ret:UInt64.t))= {[@expl:len 'self' type invariant] inv'2 self}
-    any
+  let rec len'0 (self:t_Vec'0) (return'  (ret:UInt64.t))= any
     [ return' (result:UInt64.t)-> {[%#svec11] UInt64.t'int result = Seq.length (view'3 self)} (! return' {result}) ]
   
   
   type t_Range'0  =
     { t_Range__start'0: UInt64.t; t_Range__end'0: UInt64.t }
-  
-  predicate inv'0 (_1 : t_Range'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Range'0 [inv'0 x] . inv'0 x = true
   
   predicate into_iter_pre'0 (self : t_Range'0) =
     [%#siter26] true
@@ -95,9 +86,8 @@ module M_01__all_zero [#"01.rs" 7 0 7 33]
   predicate into_iter_post'0 (self : t_Range'0) (res : t_Range'0) =
     [%#siter27] self = res
   
-  let rec into_iter'0 (self:t_Range'0) (return'  (ret:t_Range'0))= {[@expl:into_iter 'self' type invariant] inv'0 self}
-    {[@expl:into_iter requires] [%#siter12] into_iter_pre'0 self}
-    any [ return' (result:t_Range'0)-> {inv'0 result} {[%#siter13] into_iter_post'0 self result} (! return' {result}) ] 
+  let rec into_iter'0 (self:t_Range'0) (return'  (ret:t_Range'0))= {[@expl:into_iter requires] [%#siter12] into_iter_pre'0 self}
+    any [ return' (result:t_Range'0)-> {[%#siter13] into_iter_post'0 self result} (! return' {result}) ] 
   
   function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : UInt32.t =
     [%#sindex14] Seq.get (view'2 self) ix
@@ -132,6 +122,10 @@ module M_01__all_zero [#"01.rs" 7 0 7 33]
   
   axiom produces_refl'0_spec : forall self : t_Range'0 . [%#srange28] produces'0 self (Seq.empty : Seq.seq UInt64.t) self
   
+  predicate inv'0 (_1 : t_Range'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Range'0 [inv'0 x] . inv'0 x = true
+  
   predicate inv'1 (_1 : Seq.seq UInt64.t)
   
   axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq UInt64.t [inv'1 x] . inv'1 x = true
@@ -140,14 +134,6 @@ module M_01__all_zero [#"01.rs" 7 0 7 33]
     | C_None'0
     | C_Some'0 UInt64.t
   
-  predicate inv'3 (_1 : MutBorrow.t t_Range'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : MutBorrow.t t_Range'0 [inv'3 x] . inv'3 x = true
-  
-  predicate inv'4 (_1 : t_Option'0)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
-  
   predicate resolve'3 (self : MutBorrow.t t_Range'0) =
     [%#sresolve34] self.final = self.current
   
@@ -155,10 +141,8 @@ module M_01__all_zero [#"01.rs" 7 0 7 33]
     [%#srange33] resolve'3 self
     /\ deep_model'0 (self.current).t_Range__start'0 >= deep_model'0 (self.current).t_Range__end'0
   
-  let rec next'0 (self:MutBorrow.t t_Range'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'3 self}
-    any
-    [ return' (result:t_Option'0)-> {inv'4 result}
-      {[%#siter18] match result with
+  let rec next'0 (self:MutBorrow.t t_Range'0) (return'  (ret:t_Option'0))= any
+    [ return' (result:t_Option'0)-> {[%#siter18] match result with
         | C_None'0 -> completed'0 self
         | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
         end}
@@ -173,20 +157,8 @@ module M_01__all_zero [#"01.rs" 7 0 7 33]
     | bad -> {forall field_0 : UInt64.t [C_Some'0 field_0 : t_Option'0] . C_Some'0 field_0 <> input} (! {false} any) ]
   
   
-  predicate inv'5 (_1 : MutBorrow.t t_Vec'0)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'5 x] . inv'5 x = true
-  
-  predicate inv'6 (_1 : UInt64.t)
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : UInt64.t [inv'6 x] . inv'6 x = true
-  
   predicate in_bounds'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq UInt32.t) =
     [%#sslice35] UInt64.t'int self < Seq.length seq
-  
-  predicate inv'7 (_1 : MutBorrow.t UInt32.t)
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : MutBorrow.t UInt32.t [inv'7 x] . inv'7 x = true
   
   predicate has_value'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq UInt32.t) (out : UInt32.t) =
     [%#sslice36] Seq.get seq (UInt64.t'int self) = out
@@ -195,12 +167,9 @@ module M_01__all_zero [#"01.rs" 7 0 7 33]
     [%#sslice37] forall i : int . 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
   
-  let rec index_mut'0 (self:MutBorrow.t t_Vec'0) (index:UInt64.t) (return'  (ret:MutBorrow.t UInt32.t))= {[@expl:index_mut 'self' type invariant] inv'5 self}
-    {[@expl:index_mut 'index' type invariant] inv'6 index}
-    {[@expl:index_mut requires] [%#svec19] in_bounds'0 index (view'0 self)}
+  let rec index_mut'0 (self:MutBorrow.t t_Vec'0) (index:UInt64.t) (return'  (ret:MutBorrow.t UInt32.t))= {[@expl:index_mut requires] [%#svec19] in_bounds'0 index (view'0 self)}
     any
-    [ return' (result:MutBorrow.t UInt32.t)-> {inv'7 result}
-      {[%#svec20] has_value'0 index (view'0 self) result.current}
+    [ return' (result:MutBorrow.t UInt32.t)-> {[%#svec20] has_value'0 index (view'0 self) result.current}
       {[%#svec21] has_value'0 index (view'2 self.final) result.final}
       {[%#svec22] resolve_elswhere'0 index (view'0 self) (view'2 self.final)}
       {[%#svec23] Seq.length (view'2 self.final) = Seq.length (view'0 self)}

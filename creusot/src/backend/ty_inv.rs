@@ -105,26 +105,18 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
 
         match resolve_user_inv(self.ctx.tcx, ty, self.typing_env) {
             TraitResolved::Instance(uinv_did, uinv_subst) => {
-                rhs = rhs.conj(Term::call(
-                    self.ctx.tcx,
-                    self.typing_env,
-                    uinv_did,
-                    uinv_subst,
-                    [subject.clone()],
-                ))
+                rhs = rhs.conj(Term::call(self.ctx.tcx, self.typing_env, uinv_did, uinv_subst, [
+                    subject.clone(),
+                ]))
             }
             TraitResolved::UnknownNotFound if !for_deps => use_imples = true,
             TraitResolved::NoInstance => (),
             _ => {
                 let trait_item_did = get_invariant_method(self.ctx.tcx);
                 let subst = self.ctx.tcx.mk_args(&[GenericArg::from(ty)]);
-                rhs = rhs.conj(Term::call(
-                    self.ctx.tcx,
-                    self.typing_env,
-                    trait_item_did,
-                    subst,
-                    [subject.clone()],
-                ))
+                rhs = rhs.conj(Term::call(self.ctx.tcx, self.typing_env, trait_item_did, subst, [
+                    subject.clone(),
+                ]))
             }
         }
 
@@ -172,7 +164,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                         acc.conj(self.mk_inv_call(Term::var(id, ty)))
                     }),
                 );
-                let pattern = Pattern::Tuple(ids.into_iter().map(Pattern::Binder).collect());
+                let pattern = Pattern::Tuple(ids.into_iter().map(Pattern::Binder).collect(), tys);
                 Term {
                     kind: TermKind::Let { pattern, arg: Box::new(term), body },
                     ty: self.ctx.types.bool,

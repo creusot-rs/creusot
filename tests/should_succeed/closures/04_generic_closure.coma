@@ -36,7 +36,7 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
   
   predicate inv'4 (_1 : t_A'0)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : t_A'0 [inv'4 x] . inv'4 x = (let (x0) = x in inv'1 x0)
+  axiom inv_axiom'1 [@rewrite] : forall x : t_A'0 [inv'4 x] . inv'4 x = (let x0 = x in inv'1 x0)
   
   predicate precondition'0 (self : t_F'0) (args : t_A'0)
   
@@ -91,9 +91,7 @@ module M_04_generic_closure__generic_closure [#"04_generic_closure.rs" 5 0 5 56]
   let rec generic_closure'0[#"04_generic_closure.rs" 5 0 5 56] (f:t_F'0) (a:t_A'0) (return'  (ret:t_B'0))= {[@expl:generic_closure 'f' type invariant] [%#s04_generic_closure0] inv'0 f}
     {[@expl:generic_closure 'a' type invariant] [%#s04_generic_closure1] inv'1 a}
     (! bb0
-    [ bb0 = s0
-      [ s0 =  [ &_4 <- (a) ] s1 | s1 = call'0 {f} {_4} (fun (_ret':t_B'0) ->  [ &_0 <- _ret' ] s2) | s2 = bb1 ]
-    
+    [ bb0 = s0 [ s0 =  [ &_4 <- a ] s1 | s1 = call'0 {f} {_4} (fun (_ret':t_B'0) ->  [ &_0 <- _ret' ] s2) | s2 = bb1 ] 
     | bb1 = s0 [ s0 = {[@expl:type invariant] inv'0 f} s1 | s1 = -{resolve'0 f}- s2 | s2 = bb2 ] 
     | bb2 = bb3
     | bb3 = bb4
@@ -106,9 +104,7 @@ end
 module M_04_generic_closure__mapper [#"04_generic_closure.rs" 9 0 9 22]
   let%span s04_generic_closure0 = "04_generic_closure.rs" 9 17 9 18
   let%span s04_generic_closure1 = "04_generic_closure.rs" 10 29 10 31
-  let%span s04_generic_closure2 = "04_generic_closure.rs" 5 40 5 41
-  let%span s04_generic_closure3 = "04_generic_closure.rs" 5 46 5 47
-  let%span s04_generic_closure4 = "04_generic_closure.rs" 5 55 5 56
+  let%span s04_generic_closure2 = "04_generic_closure.rs" 5 46 5 47
   
   use creusot.prelude.Any
   
@@ -123,17 +119,8 @@ module M_04_generic_closure__mapper [#"04_generic_closure.rs" 9 0 9 22]
     | bb1 = return' {_0} ]
      [ & _0 : () = Any.any_l () | & _a : t_A'0 = _a ]  [ return' (result:())-> return' {result} ] 
   
-  predicate inv'1 (_1 : ())
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : () [inv'1 x] . inv'1 x = true
-  
-  predicate inv'2 (_1 : ())
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : () [inv'2 x] . inv'2 x = true
-  
-  let rec generic_closure'0 (f:()) (a:t_A'0) (return'  (ret:()))= {[@expl:generic_closure 'f' type invariant] [%#s04_generic_closure2] inv'1 f}
-    {[@expl:generic_closure 'a' type invariant] [%#s04_generic_closure3] inv'0 a}
-    any [ return' (result:())-> {[%#s04_generic_closure4] inv'2 result} (! return' {result}) ] 
+  let rec generic_closure'0 (f:()) (a:t_A'0) (return'  (ret:()))= {[@expl:generic_closure 'a' type invariant] [%#s04_generic_closure2] inv'0 a}
+    any [ return' (result:())-> (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   

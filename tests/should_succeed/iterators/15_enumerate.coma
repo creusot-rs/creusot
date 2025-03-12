@@ -60,21 +60,24 @@ module M_15_enumerate__qyi3289565171142109185__produces_refl [#"15_enumerate.rs"
   
   axiom produces_refl'1_spec : forall self : t_I'0 . [%#scommon3] produces'1 self (Seq.empty : Seq.seq t_Item'0) self
   
-  predicate produces'0 [#"15_enumerate.rs" 29 4 29 64] (self : t_Enumerate'0) (visited : Seq.seq (UInt64.t, t_Item'0)) (o : t_Enumerate'0)
+  type tuple'0  =
+    { _0'0: UInt64.t; _1'0: t_Item'0 }
+  
+  predicate produces'0 [#"15_enumerate.rs" 29 4 29 64] (self : t_Enumerate'0) (visited : Seq.seq tuple'0) (o : t_Enumerate'0)
   
    =
     [%#s15_enumerate2] Seq.length visited = UInt64.t'int o.t_Enumerate__count'0 - UInt64.t'int self.t_Enumerate__count'0
     /\ (exists s : Seq.seq t_Item'0 . produces'1 self.t_Enumerate__iter'0 s o.t_Enumerate__iter'0
     /\ Seq.length visited = Seq.length s
     /\ (forall i : int . 0 <= i /\ i < Seq.length s
-     -> UInt64.t'int (let (a, _) = Seq.get visited i in a) = UInt64.t'int self.t_Enumerate__count'0 + i
-    /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
+     -> UInt64.t'int (Seq.get visited i)._0'0 = UInt64.t'int self.t_Enumerate__count'0 + i
+    /\ (Seq.get visited i)._1'0 = Seq.get s i))
   
   constant self  : t_Enumerate'0
   
   function produces_refl'0 [#"15_enumerate.rs" 42 4 42 26] (self : t_Enumerate'0) : ()
   
-  goal vc_produces_refl'0 : [%#s15_enumerate0] produces'0 self (Seq.empty : Seq.seq (UInt64.t, t_Item'0)) self
+  goal vc_produces_refl'0 : [%#s15_enumerate0] produces'0 self (Seq.empty : Seq.seq tuple'0) self
 end
 module M_15_enumerate__qyi3289565171142109185__produces_trans [#"15_enumerate.rs" 49 4 49 90] (* <Enumerate<I> as common::Iterator> *)
   let%span s15_enumerate0 = "15_enumerate.rs" 46 15 46 32
@@ -110,27 +113,30 @@ module M_15_enumerate__qyi3289565171142109185__produces_trans [#"15_enumerate.rs
   
   axiom produces_refl'0_spec : forall self : t_I'0 . [%#scommon5] produces'1 self (Seq.empty : Seq.seq t_Item'0) self
   
-  predicate produces'0 [#"15_enumerate.rs" 29 4 29 64] (self : t_Enumerate'0) (visited : Seq.seq (UInt64.t, t_Item'0)) (o : t_Enumerate'0)
+  type tuple'0  =
+    { _0'0: UInt64.t; _1'0: t_Item'0 }
+  
+  predicate produces'0 [#"15_enumerate.rs" 29 4 29 64] (self : t_Enumerate'0) (visited : Seq.seq tuple'0) (o : t_Enumerate'0)
   
    =
     [%#s15_enumerate4] Seq.length visited = UInt64.t'int o.t_Enumerate__count'0 - UInt64.t'int self.t_Enumerate__count'0
     /\ (exists s : Seq.seq t_Item'0 . produces'1 self.t_Enumerate__iter'0 s o.t_Enumerate__iter'0
     /\ Seq.length visited = Seq.length s
     /\ (forall i : int . 0 <= i /\ i < Seq.length s
-     -> UInt64.t'int (let (a, _) = Seq.get visited i in a) = UInt64.t'int self.t_Enumerate__count'0 + i
-    /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
+     -> UInt64.t'int (Seq.get visited i)._0'0 = UInt64.t'int self.t_Enumerate__count'0 + i
+    /\ (Seq.get visited i)._1'0 = Seq.get s i))
   
   constant a  : t_Enumerate'0
   
-  constant ab  : Seq.seq (UInt64.t, t_Item'0)
+  constant ab  : Seq.seq tuple'0
   
   constant b  : t_Enumerate'0
   
-  constant bc  : Seq.seq (UInt64.t, t_Item'0)
+  constant bc  : Seq.seq tuple'0
   
   constant c  : t_Enumerate'0
   
-  function produces_trans'0 [#"15_enumerate.rs" 49 4 49 90] (a : t_Enumerate'0) (ab : Seq.seq (UInt64.t, t_Item'0)) (b : t_Enumerate'0) (bc : Seq.seq (UInt64.t, t_Item'0)) (c : t_Enumerate'0) : ()
+  function produces_trans'0 [#"15_enumerate.rs" 49 4 49 90] (a : t_Enumerate'0) (ab : Seq.seq tuple'0) (b : t_Enumerate'0) (bc : Seq.seq tuple'0) (c : t_Enumerate'0) : ()
   
   
   goal vc_produces_trans'0 : ([%#s15_enumerate0] produces'0 a ab b)
@@ -247,13 +253,16 @@ module M_15_enumerate__qyi3289565171142109185__next [#"15_enumerate.rs" 55 4 55 
   predicate resolve'0 (_1 : MutBorrow.t t_Enumerate'0) =
     resolve'1 _1
   
+  type tuple'0  =
+    { _0'0: UInt64.t; _1'0: t_Item'0 }
+  
   type t_Option'1  =
     | C_None'1
-    | C_Some'1 (UInt64.t, t_Item'0)
+    | C_Some'1 tuple'0
   
-  predicate inv'5 (_1 : (UInt64.t, t_Item'0))
+  predicate inv'5 (_1 : tuple'0)
   
-  axiom inv_axiom'4 [@rewrite] : forall x : (UInt64.t, t_Item'0) [inv'5 x] . inv'5 x = (let (x0, x1) = x in inv'6 x1)
+  axiom inv_axiom'4 [@rewrite] : forall x : tuple'0 [inv'5 x] . inv'5 x = (let {_0'0 = x0 ; _1'0 = x1} = x in inv'6 x1)
   
   predicate inv'2 (_1 : t_Option'1)
   
@@ -270,15 +279,15 @@ module M_15_enumerate__qyi3289565171142109185__next [#"15_enumerate.rs" 55 4 55 
     [%#s15_enumerate7] completed'1 (MutBorrow.borrow_logic (self.current).t_Enumerate__iter'0 (self.final).t_Enumerate__iter'0 (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
     /\ resolve'2 (MutBorrow.borrow_logic (self.current).t_Enumerate__count'0 (self.final).t_Enumerate__count'0 (MutBorrow.inherit_id (MutBorrow.get_id self) 2))
   
-  predicate produces'0 [#"15_enumerate.rs" 29 4 29 64] (self : t_Enumerate'0) (visited : Seq.seq (UInt64.t, t_Item'0)) (o : t_Enumerate'0)
+  predicate produces'0 [#"15_enumerate.rs" 29 4 29 64] (self : t_Enumerate'0) (visited : Seq.seq tuple'0) (o : t_Enumerate'0)
   
    =
     [%#s15_enumerate8] Seq.length visited = UInt64.t'int o.t_Enumerate__count'0 - UInt64.t'int self.t_Enumerate__count'0
     /\ (exists s : Seq.seq t_Item'0 . produces'1 self.t_Enumerate__iter'0 s o.t_Enumerate__iter'0
     /\ Seq.length visited = Seq.length s
     /\ (forall i : int . 0 <= i /\ i < Seq.length s
-     -> UInt64.t'int (let (a, _) = Seq.get visited i in a) = UInt64.t'int self.t_Enumerate__count'0 + i
-    /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
+     -> UInt64.t'int (Seq.get visited i)._0'0 = UInt64.t'int self.t_Enumerate__count'0 + i
+    /\ (Seq.get visited i)._1'0 = Seq.get s i))
   
   meta "compute_max_steps" 1000000
   
@@ -308,7 +317,7 @@ module M_15_enumerate__qyi3289565171142109185__next [#"15_enumerate.rs" 55 4 55 
             s3)
       | s3 = {[@expl:type invariant] inv'1 self} s4
       | s4 = -{resolve'0 self}- s5
-      | s5 =  [ &_8 <- (n, x) ] s6
+      | s5 =  [ &_8 <- { _0'0 = n; _1'0 = x } ] s6
       | s6 = bb6 ]
     
     | bb6 = s0 [ s0 =  [ &_0 <- C_Some'1 _8 ] s1 | s1 = bb7 ] 
@@ -325,7 +334,7 @@ module M_15_enumerate__qyi3289565171142109185__next [#"15_enumerate.rs" 55 4 55 
     | & _4 : MutBorrow.t t_I'0 = Any.any_l ()
     | & x : t_Item'0 = Any.any_l ()
     | & n : UInt64.t = Any.any_l ()
-    | & _8 : (UInt64.t, t_Item'0) = Any.any_l () ]
+    | & _8 : tuple'0 = Any.any_l () ]
     
     [ return' (result:t_Option'1)-> {[@expl:next result type invariant] [%#s15_enumerate2] inv'2 result}
       {[@expl:next ensures] [%#s15_enumerate3] match result with
@@ -553,9 +562,12 @@ module M_15_enumerate__qyi3289565171142109185__next__refines [#"15_enumerate.rs"
   
   axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_Enumerate'0 [inv'0 x] . inv'0 x = invariant'0 x
   
+  type tuple'0  =
+    { _0'0: UInt64.t; _1'0: t_Item'0 }
+  
   type t_Option'0  =
     | C_None'0
-    | C_Some'0 (UInt64.t, t_Item'0)
+    | C_Some'0 tuple'0
   
   predicate resolve'0 (self : MutBorrow.t UInt64.t) =
     [%#sresolve3] self.final = self.current
@@ -564,21 +576,21 @@ module M_15_enumerate__qyi3289565171142109185__next__refines [#"15_enumerate.rs"
     [%#s15_enumerate1] completed'1 (MutBorrow.borrow_logic (self.current).t_Enumerate__iter'0 (self.final).t_Enumerate__iter'0 (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
     /\ resolve'0 (MutBorrow.borrow_logic (self.current).t_Enumerate__count'0 (self.final).t_Enumerate__count'0 (MutBorrow.inherit_id (MutBorrow.get_id self) 2))
   
-  predicate produces'0 [#"15_enumerate.rs" 29 4 29 64] (self : t_Enumerate'0) (visited : Seq.seq (UInt64.t, t_Item'0)) (o : t_Enumerate'0)
+  predicate produces'0 [#"15_enumerate.rs" 29 4 29 64] (self : t_Enumerate'0) (visited : Seq.seq tuple'0) (o : t_Enumerate'0)
   
    =
     [%#s15_enumerate2] Seq.length visited = UInt64.t'int o.t_Enumerate__count'0 - UInt64.t'int self.t_Enumerate__count'0
     /\ (exists s : Seq.seq t_Item'0 . produces'1 self.t_Enumerate__iter'0 s o.t_Enumerate__iter'0
     /\ Seq.length visited = Seq.length s
     /\ (forall i : int . 0 <= i /\ i < Seq.length s
-     -> UInt64.t'int (let (a, _) = Seq.get visited i in a) = UInt64.t'int self.t_Enumerate__count'0 + i
-    /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
+     -> UInt64.t'int (Seq.get visited i)._0'0 = UInt64.t'int self.t_Enumerate__count'0 + i
+    /\ (Seq.get visited i)._1'0 = Seq.get s i))
   
   predicate inv'4 (_1 : t_Item'0)
   
-  predicate inv'2 (_1 : (UInt64.t, t_Item'0))
+  predicate inv'2 (_1 : tuple'0)
   
-  axiom inv_axiom'2 [@rewrite] : forall x : (UInt64.t, t_Item'0) [inv'2 x] . inv'2 x = (let (x0, x1) = x in inv'4 x1)
+  axiom inv_axiom'2 [@rewrite] : forall x : tuple'0 [inv'2 x] . inv'2 x = (let {_0'0 = x0 ; _1'0 = x1} = x in inv'4 x1)
   
   predicate inv'1 (_1 : t_Option'0)
   
@@ -632,17 +644,20 @@ module M_15_enumerate__qyi3289565171142109185__produces_trans__refines [#"15_enu
   
   axiom produces_refl'0_spec : forall self : t_I'0 . [%#scommon2] produces'1 self (Seq.empty : Seq.seq t_Item'0) self
   
-  predicate produces'0 [#"15_enumerate.rs" 29 4 29 64] (self : t_Enumerate'0) (visited : Seq.seq (UInt64.t, t_Item'0)) (o : t_Enumerate'0)
+  type tuple'0  =
+    { _0'0: UInt64.t; _1'0: t_Item'0 }
+  
+  predicate produces'0 [#"15_enumerate.rs" 29 4 29 64] (self : t_Enumerate'0) (visited : Seq.seq tuple'0) (o : t_Enumerate'0)
   
    =
     [%#s15_enumerate1] Seq.length visited = UInt64.t'int o.t_Enumerate__count'0 - UInt64.t'int self.t_Enumerate__count'0
     /\ (exists s : Seq.seq t_Item'0 . produces'1 self.t_Enumerate__iter'0 s o.t_Enumerate__iter'0
     /\ Seq.length visited = Seq.length s
     /\ (forall i : int . 0 <= i /\ i < Seq.length s
-     -> UInt64.t'int (let (a, _) = Seq.get visited i in a) = UInt64.t'int self.t_Enumerate__count'0 + i
-    /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
+     -> UInt64.t'int (Seq.get visited i)._0'0 = UInt64.t'int self.t_Enumerate__count'0 + i
+    /\ (Seq.get visited i)._1'0 = Seq.get s i))
   
-  goal refines : [%#s15_enumerate0] forall a : t_Enumerate'0 . forall ab : Seq.seq (UInt64.t, t_Item'0) . forall b : t_Enumerate'0 . forall bc : Seq.seq (UInt64.t, t_Item'0) . forall c : t_Enumerate'0 . produces'0 b bc c
+  goal refines : [%#s15_enumerate0] forall a : t_Enumerate'0 . forall ab : Seq.seq tuple'0 . forall b : t_Enumerate'0 . forall bc : Seq.seq tuple'0 . forall c : t_Enumerate'0 . produces'0 b bc c
   /\ produces'0 a ab b
    -> produces'0 b bc c
   /\ produces'0 a ab b /\ (forall result : () . produces'0 a (Seq.(++) ab bc) c  -> produces'0 a (Seq.(++) ab bc) c)
@@ -678,16 +693,19 @@ module M_15_enumerate__qyi3289565171142109185__produces_refl__refines [#"15_enum
   
   axiom produces_refl'1_spec : forall self : t_I'0 . [%#scommon2] produces'1 self (Seq.empty : Seq.seq t_Item'0) self
   
-  predicate produces'0 [#"15_enumerate.rs" 29 4 29 64] (self : t_Enumerate'0) (visited : Seq.seq (UInt64.t, t_Item'0)) (o : t_Enumerate'0)
+  type tuple'0  =
+    { _0'0: UInt64.t; _1'0: t_Item'0 }
+  
+  predicate produces'0 [#"15_enumerate.rs" 29 4 29 64] (self : t_Enumerate'0) (visited : Seq.seq tuple'0) (o : t_Enumerate'0)
   
    =
     [%#s15_enumerate1] Seq.length visited = UInt64.t'int o.t_Enumerate__count'0 - UInt64.t'int self.t_Enumerate__count'0
     /\ (exists s : Seq.seq t_Item'0 . produces'1 self.t_Enumerate__iter'0 s o.t_Enumerate__iter'0
     /\ Seq.length visited = Seq.length s
     /\ (forall i : int . 0 <= i /\ i < Seq.length s
-     -> UInt64.t'int (let (a, _) = Seq.get visited i in a) = UInt64.t'int self.t_Enumerate__count'0 + i
-    /\ (let (_, a) = Seq.get visited i in a) = Seq.get s i))
+     -> UInt64.t'int (Seq.get visited i)._0'0 = UInt64.t'int self.t_Enumerate__count'0 + i
+    /\ (Seq.get visited i)._1'0 = Seq.get s i))
   
-  goal refines : [%#s15_enumerate0] forall self : t_Enumerate'0 . forall result : () . produces'0 self (Seq.empty : Seq.seq (UInt64.t, t_Item'0)) self
-   -> produces'0 self (Seq.empty : Seq.seq (UInt64.t, t_Item'0)) self
+  goal refines : [%#s15_enumerate0] forall self : t_Enumerate'0 . forall result : () . produces'0 self (Seq.empty : Seq.seq tuple'0) self
+   -> produces'0 self (Seq.empty : Seq.seq tuple'0) self
 end

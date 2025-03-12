@@ -59,14 +59,6 @@ module M_874__can_extend [#"874.rs" 4 0 4 19]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  predicate inv'0 (_1 : Slice64.slice Int32.t)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : Slice64.slice Int32.t [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : t_Vec'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Vec'0 [inv'1 x] . inv'1 x = true
-  
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function view'0 (self : t_Vec'0) : Seq.seq Int32.t
@@ -82,12 +74,9 @@ module M_874__can_extend [#"874.rs" 4 0 4 19]
   function view'1 (self : Slice64.slice Int32.t) : Seq.seq Int32.t =
     [%#sboxed17] view'3 self
   
-  let rec into_vec'0 (self:Slice64.slice Int32.t) (return'  (ret:t_Vec'0))= {[@expl:into_vec 'self' type invariant] inv'0 self}
-    any [ return' (result:t_Vec'0)-> {inv'1 result} {[%#sslice13] view'0 result = view'1 self} (! return' {result}) ] 
+  let rec into_vec'0 (self:Slice64.slice Int32.t) (return'  (ret:t_Vec'0))= any
+    [ return' (result:t_Vec'0)-> {[%#sslice13] view'0 result = view'1 self} (! return' {result}) ]
   
-  predicate inv'2 (_1 : MutBorrow.t t_Vec'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'2 x] . inv'2 x = true
   
   predicate into_iter_pre'0 (self : t_Vec'0) =
     [%#svec18] true
@@ -106,17 +95,17 @@ module M_874__can_extend [#"874.rs" 4 0 4 19]
       t_IntoIter__ptr'0: t_NonNull'0;
       t_IntoIter__end'0: Opaque.ptr }
   
-  predicate inv'3 (_1 : t_IntoIter'0)
+  predicate inv'0 (_1 : t_IntoIter'0)
   
-  axiom inv_axiom'3 [@rewrite] : forall x : t_IntoIter'0 [inv'3 x] . inv'3 x = true
+  axiom inv_axiom'0 [@rewrite] : forall x : t_IntoIter'0 [inv'0 x] . inv'0 x = true
   
-  predicate inv'4 (_1 : MutBorrow.t t_IntoIter'0)
+  predicate inv'1 (_1 : MutBorrow.t t_IntoIter'0)
   
-  axiom inv_axiom'4 [@rewrite] : forall x : MutBorrow.t t_IntoIter'0 [inv'4 x] . inv'4 x = true
+  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t t_IntoIter'0 [inv'1 x] . inv'1 x = true
   
-  predicate inv'5 (_1 : Seq.seq Int32.t)
+  predicate inv'2 (_1 : Seq.seq Int32.t)
   
-  axiom inv_axiom'5 [@rewrite] : forall x : Seq.seq Int32.t [inv'5 x] . inv'5 x = true
+  axiom inv_axiom'2 [@rewrite] : forall x : Seq.seq Int32.t [inv'2 x] . inv'2 x = true
   
   function view'4 (self : t_IntoIter'0) : Seq.seq Int32.t
   
@@ -151,13 +140,11 @@ module M_874__can_extend [#"874.rs" 4 0 4 19]
   function view'2 (self : MutBorrow.t t_Vec'0) : Seq.seq Int32.t =
     [%#smodel22] view'0 self.current
   
-  let rec extend'0 (self:MutBorrow.t t_Vec'0) (iter:t_Vec'0) (return'  (ret:()))= {[@expl:extend 'self' type invariant] inv'2 self}
-    {[@expl:extend 'iter' type invariant] inv'1 iter}
-    {[@expl:extend requires] [%#svec14] into_iter_pre'0 iter}
+  let rec extend'0 (self:MutBorrow.t t_Vec'0) (iter:t_Vec'0) (return'  (ret:()))= {[@expl:extend requires] [%#svec14] into_iter_pre'0 iter}
     any
-    [ return' (result:())-> {[%#svec15] exists start_ : t_IntoIter'0, done' : MutBorrow.t t_IntoIter'0, prod : Seq.seq Int32.t . inv'3 start_
-      /\ inv'4 done'
-      /\ inv'5 prod
+    [ return' (result:())-> {[%#svec15] exists start_ : t_IntoIter'0, done' : MutBorrow.t t_IntoIter'0, prod : Seq.seq Int32.t . inv'0 start_
+      /\ inv'1 done'
+      /\ inv'2 prod
       /\ into_iter_post'0 iter start_
       /\ completed'0 done' /\ produces'0 start_ prod done'.current /\ view'0 self.final = Seq.(++) (view'2 self) prod}
       (! return' {result}) ]

@@ -4,14 +4,11 @@ use rustc_middle::{
     ty::{Ty, TyCtxt, TyKind},
 };
 use rustc_span::Symbol;
-use std::{cell::RefCell, iter::repeat_n, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 use why3::{
     Ident,
     coma::{Arg, Param},
-    exp::{
-        Exp::{self, *},
-        Pattern::*,
-    },
+    exp::Exp,
 };
 
 use super::program::{IntermediateStmt, LoweringState};
@@ -75,14 +72,14 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     focus = Focus::new(move |is| focus.call(is).field("current".into()));
                     constructor = Box::new(move |is, t| {
                         let record = Box::new(focus1.call(is));
-                        constructor(is, RecUp {
+                        constructor(is, Exp::RecUp {
                             record,
                             updates: Box::new([("current".into(), t)]),
                         })
                     });
                 }
             }
-            Field(ix, _) => match place_ty.ty.kind() {
+            &Field(ix, _) => match place_ty.ty.kind() {
                 TyKind::Adt(def, subst) if def.is_enum() => {
                     let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
                     let variant = &def.variants()[variant_id];
@@ -118,11 +115,11 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     let focus1 = focus.clone();
 
                     focus = Focus::new(move |is| {
-                        focus.call(is).field(lower.names.field(def.did(), subst, *ix))
+                        focus.call(is).field(lower.names.field(def.did(), subst, ix))
                     });
 
                     constructor = Box::new(move |is, t| {
-                        let updates = Box::new([(lower.names.field(def.did(), subst, *ix), t)]);
+                        let updates = Box::new([(lower.names.field(def.did(), subst, ix), t)]);
                         if def.all_fields().count() == 1 {
                             constructor(is, Exp::Record { fields: updates })
                         } else {
@@ -131,50 +128,29 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                         }
                     })
                 }
-                TyKind::Tuple(fields) => {
+                TyKind::Tuple(args) if args.len() == 1 => {}
+                TyKind::Tuple(args) => {
                     let focus1 = focus.clone();
 
                     focus = Focus::new(move |is| {
-                        let var = lower.fresh_from("r");
-                        let mut pat: Box<[_]> = repeat_n(Wildcard, fields.len()).collect();
-                        pat[ix.as_usize()] = VarP(var.clone());
-                        Let {
-                            pattern: TupleP(pat.clone()),
-                            arg: focus.call(is).boxed(),
-                            body: Exp::var(var).boxed(),
-                        }
+                        focus.call(is).field(lower.names.tuple_field(args, ix))
                     });
 
                     constructor = Box::new(move |is, t| {
-                        let var_names: Vec<_> =
-                            fields.iter().map(|_| lower.fresh_from("r")).collect();
-
-                        let mut field_pats =
-                            var_names.clone().into_iter().map(VarP).collect::<Box<[_]>>();
-                        field_pats[ix.as_usize()] = Wildcard;
-
-                        let mut varexps = var_names.into_iter().map(Exp::var).collect::<Box<[_]>>();
-                        varexps[ix.as_usize()] = t;
-
-                        let tuple = Let {
-                            pattern: TupleP(field_pats),
-                            arg: focus1.call(is).boxed(),
-                            body: Exp::Tuple(varexps).boxed(),
-                        };
-
-                        constructor(is, tuple)
+                        let updates = Box::new([(lower.names.tuple_field(args, ix), t)]);
+                        let record = focus1.call(is).boxed();
+                        constructor(is, Exp::RecUp { record, updates })
                     });
                 }
                 TyKind::Closure(id, subst) => {
                     let focus1 = focus.clone();
 
                     focus = Focus::new(move |is| {
-                        focus.call(is).field(lower.names.field(*id, subst, *ix))
+                        focus.call(is).field(lower.names.field(*id, subst, ix))
                     });
 
                     constructor = Box::new(move |is, t| {
-                        let updates = Box::new([(lower.names.field(*id, subst, *ix), t)]);
-
+                        let updates = Box::new([(lower.names.field(*id, subst, ix), t)]);
                         if subst.as_closure().upvar_tys().len() == 1 {
                             constructor(is, Exp::Record { fields: updates })
                         } else {

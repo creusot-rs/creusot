@@ -36,14 +36,6 @@ module M_878__test [#"878.rs" 5 0 5 13]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  predicate inv'0 (_1 : Slice64.slice Int32.t)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : Slice64.slice Int32.t [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : t_Vec'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Vec'0 [inv'1 x] . inv'1 x = true
-  
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function view'0 (self : t_Vec'0) : Seq.seq Int32.t
@@ -59,8 +51,9 @@ module M_878__test [#"878.rs" 5 0 5 13]
   function view'1 (self : Slice64.slice Int32.t) : Seq.seq Int32.t =
     [%#sboxed7] view'2 self
   
-  let rec into_vec'0 (self:Slice64.slice Int32.t) (return'  (ret:t_Vec'0))= {[@expl:into_vec 'self' type invariant] inv'0 self}
-    any [ return' (result:t_Vec'0)-> {inv'1 result} {[%#sslice5] view'0 result = view'1 self} (! return' {result}) ] 
+  let rec into_vec'0 (self:Slice64.slice Int32.t) (return'  (ret:t_Vec'0))= any
+    [ return' (result:t_Vec'0)-> {[%#sslice5] view'0 result = view'1 self} (! return' {result}) ]
+  
   
   meta "compute_max_steps" 1000000
   

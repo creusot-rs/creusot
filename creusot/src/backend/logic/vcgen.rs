@@ -8,7 +8,7 @@ use crate::{
     backend::{
         Namer as _, Why3Generator,
         logic::Dependencies,
-        signature::sig_to_why3,
+        signature::lower_sig,
         term::{binop_to_binop, lower_literal, lower_pure},
         ty::{constructor, is_int, ity_to_prelude, translate_ty, uty_to_prelude},
     },
@@ -320,7 +320,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     .map(|(nm, res)| (ident_of(nm.0), res.clone()))
                     .collect();
                 let variant = pre_sig.contract.variant.clone();
-                let mut sig = sig_to_why3(self.ctx, self.names, "".into(), pre_sig, *id);
+                let mut sig = lower_sig(self.ctx, self.names, "".into(), pre_sig, *id);
 
                 let variant = if *id == self.self_id {
                     let subst = self.ctx.normalize_erasing_regions(self.typing_env, *subst);
@@ -409,7 +409,21 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 Ok(exists_pre.log_and(k(exists_pure)?))
             }
             // VC((T...), Q) = VC(T[0], |t0| ... VC(T[N], |tn| Q(t0..tn))))
-            TermKind::Tuple { fields } => self.build_wp_slice(fields, &|flds| k(Exp::Tuple(flds))),
+            TermKind::Tuple { fields } => {
+                let ty = self.ctx.normalize_erasing_regions(self.typing_env, t.ty);
+                let TyKind::Tuple(args) = ty.kind() else { unreachable!() };
+                self.build_wp_slice(fields, &|flds| match flds.len() {
+                    0 => k(Exp::unit()),
+                    1 => k(flds.into_iter().next().unwrap()),
+                    _ => k(Exp::Record {
+                        fields: flds
+                            .into_iter()
+                            .enumerate()
+                            .map(|(idx, fld)| (self.names.tuple_field(args, idx.into()), fld))
+                            .collect(),
+                    }),
+                })
+            }
             // Same as for tuples
             TermKind::Constructor { variant, fields, .. } => {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, t.ty);
@@ -463,22 +477,13 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 })
             }),
             // VC(A.f, Q) = VC(A, |a| Q(a.f))
-            TermKind::Projection { lhs, name } => {
+            TermKind::Projection { lhs, idx } => {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, lhs.ty);
                 let field = match ty.kind() {
-                    TyKind::Closure(did, substs) => self.names.field(*did, substs, *name),
-                    TyKind::Adt(def, substs) => self.names.field(def.did(), substs, *name),
-                    TyKind::Tuple(f) => {
-                        let mut fields: Box<_> = repeat_n(WPattern::Wildcard, f.len()).collect();
-                        fields[name.as_usize()] = WPattern::VarP("a".into());
-                        return self.build_wp(lhs, &|lhs| {
-                            k(Exp::Let {
-                                pattern: WPattern::TupleP(fields.clone()),
-                                arg: lhs.boxed(),
-                                body: Exp::var("a").boxed(),
-                            })
-                        });
-                    }
+                    TyKind::Closure(did, substs) => self.names.field(*did, substs, *idx),
+                    TyKind::Adt(def, substs) => self.names.field(def.did(), substs, *idx),
+                    TyKind::Tuple(tys) if tys.len() == 1 => return self.build_wp(lhs, k),
+                    TyKind::Tuple(tys) => self.names.tuple_field(tys, *idx),
                     k => unreachable!("Projection from {k:?}"),
                 };
 
@@ -506,6 +511,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         r
     }
 
+    // FIXME: this is a duplicate with term::lower_pat
+    // The only difference is the `bounds` parameter
     fn build_pattern_inner(
         &self,
         bounds: &mut HashMap<Ident, Exp>,
@@ -513,22 +520,19 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
     ) -> WPattern {
         match pat {
             Pattern::Constructor { variant, fields, substs } => {
-                let fields =
-                    fields.iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect();
+                let flds = fields.iter().map(|pat| self.build_pattern_inner(bounds, pat));
                 let substs = self.ctx.normalize_erasing_regions(self.typing_env, *substs);
                 if self.ctx.def_kind(variant) == DefKind::Variant {
-                    WPattern::ConsP(self.names.constructor(*variant, substs), fields)
+                    WPattern::ConsP(self.names.constructor(*variant, substs), flds.collect())
                 } else if fields.is_empty() {
                     WPattern::TupleP(Box::new([]))
                 } else {
-                    WPattern::RecP(
-                        fields
-                            .into_iter()
-                            .enumerate()
-                            .map(|(i, f)| (self.names.field(*variant, substs, i.into()), f))
-                            .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
-                            .collect(),
-                    )
+                    let flds: Box<[_]> = flds
+                        .enumerate()
+                        .map(|(i, f)| (self.names.field(*variant, substs, i.into()), f))
+                        .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
+                        .collect();
+                    if flds.len() == 0 { WPattern::Wildcard } else { WPattern::RecP(flds) }
                 }
             }
             Pattern::Wildcard => WPattern::Wildcard,
@@ -538,16 +542,26 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 bounds.insert(name_id, Exp::var(new.clone()));
                 WPattern::VarP(new)
             }
-            Pattern::Boolean(b) => {
-                if *b {
-                    WPattern::mk_true()
-                } else {
-                    WPattern::mk_false()
-                }
+            Pattern::Boolean(true) => WPattern::mk_true(),
+            Pattern::Boolean(false) => WPattern::mk_false(),
+            Pattern::Tuple(pats, _) if pats.is_empty() => WPattern::TupleP(Box::new([])),
+            Pattern::Tuple(pats, _) if pats.len() == 1 => {
+                self.build_pattern_inner(bounds, &pats[0])
             }
-            Pattern::Tuple(pats) => WPattern::TupleP(
-                pats.iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect(),
-            ),
+            Pattern::Tuple(pats, tys) => {
+                let flds: Box<[_]> = pats
+                    .into_iter()
+                    .enumerate()
+                    .map(|(idx, pat)| {
+                        (
+                            self.names.tuple_field(*tys, idx.into()),
+                            self.build_pattern_inner(bounds, pat),
+                        )
+                    })
+                    .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
+                    .collect();
+                if flds.len() == 0 { WPattern::Wildcard } else { WPattern::RecP(flds) }
+            }
             Pattern::Deref { pointee, kind } => match kind {
                 PointerKind::Box | PointerKind::Shr => self.build_pattern_inner(bounds, pointee),
                 PointerKind::Mut => WPattern::RecP(Box::new([(

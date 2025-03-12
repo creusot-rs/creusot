@@ -78,10 +78,6 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  predicate inv'3 (_1 : t_Vec'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Vec'0 [inv'3 x] . inv'3 x = true
-  
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function view'1 (self : t_Vec'0) : Seq.seq UInt8.t
@@ -91,21 +87,12 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   function view'0 (self : t_Vec'0) : Seq.seq UInt8.t =
     [%#smodel23] view'1 self
   
-  let rec len'0 (self:t_Vec'0) (return'  (ret:UInt64.t))= {[@expl:len 'self' type invariant] inv'3 self}
-    any
+  let rec len'0 (self:t_Vec'0) (return'  (ret:UInt64.t))= any
     [ return' (result:UInt64.t)-> {[%#svec16] UInt64.t'int result = Seq.length (view'0 self)} (! return' {result}) ]
   
   
   type t_RangeInclusive'0  =
     { t_RangeInclusive__start'0: UInt64.t; t_RangeInclusive__end'0: UInt64.t; t_RangeInclusive__exhausted'0: bool }
-  
-  predicate inv'4 (_1 : UInt64.t)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : UInt64.t [inv'4 x] . inv'4 x = true
-  
-  predicate inv'0 (_1 : t_RangeInclusive'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_RangeInclusive'0 [inv'0 x] . inv'0 x = true
   
   function start_log'0 (self : t_RangeInclusive'0) : UInt64.t
   
@@ -119,11 +106,8 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   axiom is_empty_log'0_spec : forall self : t_RangeInclusive'0 . [%#sops30] not is_empty_log'0 self
    -> deep_model'0 (start_log'0 self) <= deep_model'0 (end_log'0 self)
   
-  let rec new'0 (start:UInt64.t) (end':UInt64.t) (return'  (ret:t_RangeInclusive'0))= {[@expl:new 'start' type invariant] inv'4 start}
-    {[@expl:new 'end' type invariant] inv'4 end'}
-    any
-    [ return' (result:t_RangeInclusive'0)-> {inv'0 result}
-      {[%#sops17] start_log'0 result = start}
+  let rec new'0 (start:UInt64.t) (end':UInt64.t) (return'  (ret:t_RangeInclusive'0))= any
+    [ return' (result:t_RangeInclusive'0)-> {[%#sops17] start_log'0 result = start}
       {[%#sops18] end_log'0 result = end'}
       {[%#sops19] deep_model'0 start <= deep_model'0 end'  -> not is_empty_log'0 result}
       (! return' {result}) ]
@@ -135,13 +119,8 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   predicate into_iter_post'0 (self : t_RangeInclusive'0) (res : t_RangeInclusive'0) =
     [%#siter32] self = res
   
-  let rec into_iter'0 (self:t_RangeInclusive'0) (return'  (ret:t_RangeInclusive'0))= {[@expl:into_iter 'self' type invariant] inv'0 self}
-    {[@expl:into_iter requires] [%#siter20] into_iter_pre'0 self}
-    any
-    [ return' (result:t_RangeInclusive'0)-> {inv'0 result}
-      {[%#siter21] into_iter_post'0 self result}
-      (! return' {result}) ]
-  
+  let rec into_iter'0 (self:t_RangeInclusive'0) (return'  (ret:t_RangeInclusive'0))= {[@expl:into_iter requires] [%#siter20] into_iter_pre'0 self}
+    any [ return' (result:t_RangeInclusive'0)-> {[%#siter21] into_iter_post'0 self result} (! return' {result}) ] 
   
   function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : UInt8.t =
     [%#sindex33] Seq.get (view'1 self) ix
@@ -177,6 +156,10 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   
   axiom produces_refl'0_spec : forall self : t_RangeInclusive'0 . [%#srange35] produces'0 self (Seq.empty : Seq.seq UInt64.t) self
   
+  predicate inv'0 (_1 : t_RangeInclusive'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_RangeInclusive'0 [inv'0 x] . inv'0 x = true
+  
   predicate inv'1 (_1 : Seq.seq UInt64.t)
   
   axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq UInt64.t [inv'1 x] . inv'1 x = true
@@ -185,21 +168,11 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
     | C_None'0
     | C_Some'0 UInt64.t
   
-  predicate inv'5 (_1 : MutBorrow.t t_RangeInclusive'0)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : MutBorrow.t t_RangeInclusive'0 [inv'5 x] . inv'5 x = true
-  
-  predicate inv'6 (_1 : t_Option'0)
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : t_Option'0 [inv'6 x] . inv'6 x = true
-  
   predicate completed'0 (self : MutBorrow.t t_RangeInclusive'0) =
     [%#srange43] is_empty_log'0 self.current /\ is_empty_log'0 self.final
   
-  let rec next'0 (self:MutBorrow.t t_RangeInclusive'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'5 self}
-    any
-    [ return' (result:t_Option'0)-> {inv'6 result}
-      {[%#siter25] match result with
+  let rec next'0 (self:MutBorrow.t t_RangeInclusive'0) (return'  (ret:t_Option'0))= any
+    [ return' (result:t_Option'0)-> {[%#siter25] match result with
         | C_None'0 -> completed'0 self
         | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
         end}
@@ -220,19 +193,14 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   type t_Range'0  =
     { t_Range__start'0: UInt64.t; t_Range__end'0: UInt64.t }
   
-  predicate inv'2 (_1 : t_Range'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Range'0 [inv'2 x] . inv'2 x = true
-  
   predicate into_iter_pre'1 (self : t_Range'0) =
     [%#siter31] true
   
   predicate into_iter_post'1 (self : t_Range'0) (res : t_Range'0) =
     [%#siter32] self = res
   
-  let rec into_iter'1 (self:t_Range'0) (return'  (ret:t_Range'0))= {[@expl:into_iter 'self' type invariant] inv'2 self}
-    {[@expl:into_iter requires] [%#siter20] into_iter_pre'1 self}
-    any [ return' (result:t_Range'0)-> {inv'2 result} {[%#siter21] into_iter_post'1 self result} (! return' {result}) ] 
+  let rec into_iter'1 (self:t_Range'0) (return'  (ret:t_Range'0))= {[@expl:into_iter requires] [%#siter20] into_iter_pre'1 self}
+    any [ return' (result:t_Range'0)-> {[%#siter21] into_iter_post'1 self result} (! return' {result}) ] 
   
   predicate produces'1 (self : t_Range'0) (visited : Seq.seq UInt64.t) (o : t_Range'0) =
     [%#srange26] self.t_Range__end'0 = o.t_Range__end'0
@@ -252,9 +220,9 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   
   axiom produces_refl'1_spec : forall self : t_Range'0 . [%#srange45] produces'1 self (Seq.empty : Seq.seq UInt64.t) self
   
-  predicate inv'7 (_1 : MutBorrow.t t_Range'0)
+  predicate inv'2 (_1 : t_Range'0)
   
-  axiom inv_axiom'7 [@rewrite] : forall x : MutBorrow.t t_Range'0 [inv'7 x] . inv'7 x = true
+  axiom inv_axiom'2 [@rewrite] : forall x : t_Range'0 [inv'2 x] . inv'2 x = true
   
   predicate resolve'3 (self : MutBorrow.t t_Range'0) =
     [%#sresolve44] self.final = self.current
@@ -263,10 +231,8 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
     [%#srange49] resolve'3 self
     /\ deep_model'0 (self.current).t_Range__start'0 >= deep_model'0 (self.current).t_Range__end'0
   
-  let rec next'1 (self:MutBorrow.t t_Range'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'7 self}
-    any
-    [ return' (result:t_Option'0)-> {inv'6 result}
-      {[%#siter25] match result with
+  let rec next'1 (self:MutBorrow.t t_Range'0) (return'  (ret:t_Option'0))= any
+    [ return' (result:t_Option'0)-> {[%#siter25] match result with
         | C_None'0 -> completed'1 self
         | C_Some'0 v -> produces'1 self.current (Seq.singleton v) self.final
         end}
@@ -279,21 +245,11 @@ module M_08_haystack__search [#"08_haystack.rs" 21 0 21 60]
   predicate in_bounds'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq UInt8.t) =
     [%#sslice50] UInt64.t'int self < Seq.length seq
   
-  predicate inv'8 (_1 : UInt8.t)
-  
-  axiom inv_axiom'8 [@rewrite] : forall x : UInt8.t [inv'8 x] . inv'8 x = true
-  
   predicate has_value'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq UInt8.t) (out : UInt8.t) =
     [%#sslice51] Seq.get seq (UInt64.t'int self) = out
   
-  let rec index'0 (self:t_Vec'0) (index:UInt64.t) (return'  (ret:UInt8.t))= {[@expl:index 'self' type invariant] inv'3 self}
-    {[@expl:index 'index' type invariant] inv'4 index}
-    {[@expl:index requires] [%#svec27] in_bounds'0 index (view'0 self)}
-    any
-    [ return' (result:UInt8.t)-> {inv'8 result}
-      {[%#svec28] has_value'0 index (view'0 self) result}
-      (! return' {result}) ]
-  
+  let rec index'0 (self:t_Vec'0) (index:UInt64.t) (return'  (ret:UInt8.t))= {[@expl:index requires] [%#svec27] in_bounds'0 index (view'0 self)}
+    any [ return' (result:UInt8.t)-> {[%#svec28] has_value'0 index (view'0 self) result} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   

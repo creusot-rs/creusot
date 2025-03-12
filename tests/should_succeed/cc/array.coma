@@ -70,22 +70,15 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   type t_Iter'0  =
     { t_Iter__ptr'0: t_NonNull'0; t_Iter__end_or_len'0: Opaque.ptr; t_Iter__qy95zmarker'0: () }
   
-  predicate inv'0 (_1 : Slice64.slice Int32.t)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : Slice64.slice Int32.t [inv'0 x] . inv'0 x = true
-  
   function view'0 (self : t_Iter'0) : Slice64.slice Int32.t
   
-  let rec iter'0 (self:Slice64.slice Int32.t) (return'  (ret:t_Iter'0))= {[@expl:iter 'self' type invariant] inv'0 self}
-    any [ return' (result:t_Iter'0)-> {[%#sslice3] view'0 result = self} (! return' {result}) ] 
+  let rec iter'0 (self:Slice64.slice Int32.t) (return'  (ret:t_Iter'0))= any
+    [ return' (result:t_Iter'0)-> {[%#sslice3] view'0 result = self} (! return' {result}) ]
+  
   
   type t_Option'0  =
     | C_None'0
     | C_Some'0 Int32.t
-  
-  predicate inv'1 (_1 : t_Option'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x = true
   
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
@@ -134,8 +127,7 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
     [%#sslice11] resolve'0 self /\ view'1 (view'2 self) = (Seq.empty : Seq.seq Int32.t)
   
   let rec next'0 (self:MutBorrow.t t_Iter'0) (return'  (ret:t_Option'0))= any
-    [ return' (result:t_Option'0)-> {inv'1 result}
-      {[%#siter4] match result with
+    [ return' (result:t_Option'0)-> {[%#siter4] match result with
         | C_None'0 -> completed'0 self
         | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
         end}
@@ -150,9 +142,8 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
     [ return' (result:t_Option'0)-> return' {result} ]
   
   
-  predicate inv'2 (_1 : t_Option'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
+  type tuple'0  =
+    { _0'0: t_Option'0; _1'0: t_Option'0 }
   
   type t_Option'2  =
     | C_None'2
@@ -173,9 +164,7 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   function deep_model'0 (self : t_Option'0) : t_Option'2 =
     [%#smodel13] deep_model'2 self
   
-  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'2 self}
-    {[@expl:eq 'other' type invariant] inv'2 other}
-    any
+  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= any
     [ return' (result:bool)-> {[%#soption6] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ]
   
   
@@ -205,39 +194,20 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   type t_IntoIter'0  =
     { t_IntoIter__data'0: Slice64.array t_MaybeUninit'0; t_IntoIter__alive'0: t_IndexRange'0 }
   
-  predicate inv'3 (_1 : Slice64.array Int32.t)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : Slice64.array Int32.t [inv'3 x] . inv'3 x = true
-  
   predicate into_iter_pre'0 (self : Slice64.array Int32.t) =
     [%#sarray14] true
-  
-  predicate inv'4 (_1 : t_IntoIter'0)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_IntoIter'0 [inv'4 x] . inv'4 x = true
   
   function view'3 (self : t_IntoIter'0) : Seq.seq Int32.t
   
   predicate into_iter_post'0 (self : Slice64.array Int32.t) (res : t_IntoIter'0) =
     [%#sarray15] Slice64.id self = view'3 res
   
-  let rec into_iter'0 (self:Slice64.array Int32.t) (return'  (ret:t_IntoIter'0))= {[@expl:into_iter 'self' type invariant] inv'3 self}
-    {[@expl:into_iter requires] [%#siter8] into_iter_pre'0 self}
-    any
-    [ return' (result:t_IntoIter'0)-> {inv'4 result} {[%#siter9] into_iter_post'0 self result} (! return' {result}) ]
-  
+  let rec into_iter'0 (self:Slice64.array Int32.t) (return'  (ret:t_IntoIter'0))= {[@expl:into_iter requires] [%#siter8] into_iter_pre'0 self}
+    any [ return' (result:t_IntoIter'0)-> {[%#siter9] into_iter_post'0 self result} (! return' {result}) ] 
   
   type t_Option'1  =
     | C_None'1
     | C_Some'1 Int32.t
-  
-  predicate inv'5 (_1 : MutBorrow.t t_IntoIter'0)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : MutBorrow.t t_IntoIter'0 [inv'5 x] . inv'5 x = true
-  
-  predicate inv'6 (_1 : t_Option'1)
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : t_Option'1 [inv'6 x] . inv'6 x = true
   
   predicate produces'1 (self : t_IntoIter'0) (visited : Seq.seq Int32.t) (o : t_IntoIter'0) =
     [%#sarray17] view'3 self = Seq.(++) visited (view'3 o)
@@ -264,10 +234,8 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   predicate completed'1 (self : MutBorrow.t t_IntoIter'0) =
     [%#sarray16] resolve'1 self /\ view'4 self = (Seq.empty : Seq.seq Int32.t)
   
-  let rec next'1 (self:MutBorrow.t t_IntoIter'0) (return'  (ret:t_Option'1))= {[@expl:next 'self' type invariant] inv'5 self}
-    any
-    [ return' (result:t_Option'1)-> {inv'6 result}
-      {[%#siter4] match result with
+  let rec next'1 (self:MutBorrow.t t_IntoIter'0) (return'  (ret:t_Option'1))= any
+    [ return' (result:t_Option'1)-> {[%#siter4] match result with
         | C_None'1 -> completed'1 self
         | C_Some'1 v -> produces'1 self.current (Seq.singleton v) self.final
         end}
@@ -282,9 +250,8 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
     [ return' (result:t_Option'1)-> return' {result} ]
   
   
-  predicate inv'7 (_1 : t_Option'1)
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : t_Option'1 [inv'7 x] . inv'7 x = true
+  type tuple'1  =
+    { _0'1: t_Option'1; _1'1: t_Option'1 }
   
   function deep_model'3 (self : t_Option'1) : t_Option'2 =
     [%#soption30] match self with
@@ -295,9 +262,7 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
   function deep_model'1 (self : t_Option'1) : t_Option'2 =
     [%#smodel13] deep_model'3 self
   
-  let rec eq'1 (self:t_Option'1) (other:t_Option'1) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'7 self}
-    {[@expl:eq 'other' type invariant] inv'7 other}
-    any
+  let rec eq'1 (self:t_Option'1) (other:t_Option'1) (return'  (ret:bool))= any
     [ return' (result:bool)-> {[%#soption6] result = (deep_model'1 self = deep_model'1 other)} (! return' {result}) ]
   
   
@@ -328,9 +293,9 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
     
     | bb2 = s0
       [ s0 = promoted4__test_array'0 (fun (pr4:t_Option'0) ->  [ &_120 <- pr4 ] s1)
-      | s1 =  [ &_6 <- (_8, _120) ] s2
-      | s2 =  [ &left_val <- let (r'0, _) = _6 in r'0 ] s3
-      | s3 =  [ &right_val <- let (_, r'1) = _6 in r'1 ] s4
+      | s1 =  [ &_6 <- { _0'0 = _8; _1'0 = _120 } ] s2
+      | s2 =  [ &left_val <- _6._0'0 ] s3
+      | s3 =  [ &right_val <- _6._1'0 ] s4
       | s4 = eq'0 {left_val} {right_val} (fun (_ret':bool) ->  [ &_16 <- _ret' ] s5)
       | s5 = bb3 ]
     
@@ -343,9 +308,9 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
     
     | bb6 = s0
       [ s0 = promoted3__test_array'0 (fun (pr3:t_Option'0) ->  [ &_119 <- pr3 ] s1)
-      | s1 =  [ &_29 <- (_31, _119) ] s2
-      | s2 =  [ &left_val1 <- let (r'0, _) = _29 in r'0 ] s3
-      | s3 =  [ &right_val1 <- let (_, r'1) = _29 in r'1 ] s4
+      | s1 =  [ &_29 <- { _0'0 = _31; _1'0 = _119 } ] s2
+      | s2 =  [ &left_val1 <- _29._0'0 ] s3
+      | s3 =  [ &right_val1 <- _29._1'0 ] s4
       | s4 = eq'0 {left_val1} {right_val1} (fun (_ret':bool) ->  [ &_39 <- _ret' ] s5)
       | s5 = bb7 ]
     
@@ -358,9 +323,9 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
     
     | bb10 = s0
       [ s0 = promoted2__test_array'0 (fun (pr2:t_Option'0) ->  [ &_118 <- pr2 ] s1)
-      | s1 =  [ &_52 <- (_54, _118) ] s2
-      | s2 =  [ &left_val2 <- let (r'0, _) = _52 in r'0 ] s3
-      | s3 =  [ &right_val2 <- let (_, r'1) = _52 in r'1 ] s4
+      | s1 =  [ &_52 <- { _0'0 = _54; _1'0 = _118 } ] s2
+      | s2 =  [ &left_val2 <- _52._0'0 ] s3
+      | s3 =  [ &right_val2 <- _52._1'0 ] s4
       | s4 = eq'0 {left_val2} {right_val2} (fun (_ret':bool) ->  [ &_60 <- _ret' ] s5)
       | s5 = bb11 ]
     
@@ -383,9 +348,9 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
     
     | bb15 = s0
       [ s0 = promoted1__test_array'0 (fun (pr1:t_Option'1) ->  [ &_117 <- pr1 ] s1)
-      | s1 =  [ &_75 <- (_77, _117) ] s2
-      | s2 =  [ &left_val3 <- let (r'0, _) = _75 in r'0 ] s3
-      | s3 =  [ &right_val3 <- let (_, r'1) = _75 in r'1 ] s4
+      | s1 =  [ &_75 <- { _0'1 = _77; _1'1 = _117 } ] s2
+      | s2 =  [ &left_val3 <- _75._0'1 ] s3
+      | s3 =  [ &right_val3 <- _75._1'1 ] s4
       | s4 = eq'1 {left_val3} {right_val3} (fun (_ret':bool) ->  [ &_83 <- _ret' ] s5)
       | s5 = bb16 ]
     
@@ -398,9 +363,9 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
     
     | bb19 = s0
       [ s0 = promoted0__test_array'0 (fun (pr0:t_Option'1) ->  [ &_116 <- pr0 ] s1)
-      | s1 =  [ &_96 <- (_98, _116) ] s2
-      | s2 =  [ &left_val4 <- let (r'0, _) = _96 in r'0 ] s3
-      | s3 =  [ &right_val4 <- let (_, r'1) = _96 in r'1 ] s4
+      | s1 =  [ &_96 <- { _0'1 = _98; _1'1 = _116 } ] s2
+      | s2 =  [ &left_val4 <- _96._0'1 ] s3
+      | s3 =  [ &right_val4 <- _96._1'1 ] s4
       | s4 = eq'1 {left_val4} {right_val4} (fun (_ret':bool) ->  [ &_104 <- _ret' ] s5)
       | s5 = bb20 ]
     
@@ -440,7 +405,7 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
     )
     [ & _0 : () = Any.any_l ()
     | & a : t_Iter'0 = Any.any_l ()
-    | & _6 : (t_Option'0, t_Option'0) = Any.any_l ()
+    | & _6 : tuple'0 = Any.any_l ()
     | & _8 : t_Option'0 = Any.any_l ()
     | & _9 : MutBorrow.t t_Iter'0 = Any.any_l ()
     | & left_val : t_Option'0 = Any.any_l ()
@@ -449,7 +414,7 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
     | & kind : t_AssertKind'0 = Any.any_l ()
     | & _24 : t_Option'0 = Any.any_l ()
     | & _26 : t_Option'0 = Any.any_l ()
-    | & _29 : (t_Option'0, t_Option'0) = Any.any_l ()
+    | & _29 : tuple'0 = Any.any_l ()
     | & _31 : t_Option'0 = Any.any_l ()
     | & _32 : MutBorrow.t t_Iter'0 = Any.any_l ()
     | & left_val1 : t_Option'0 = Any.any_l ()
@@ -458,7 +423,7 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
     | & kind1 : t_AssertKind'0 = Any.any_l ()
     | & _47 : t_Option'0 = Any.any_l ()
     | & _49 : t_Option'0 = Any.any_l ()
-    | & _52 : (t_Option'0, t_Option'0) = Any.any_l ()
+    | & _52 : tuple'0 = Any.any_l ()
     | & _54 : t_Option'0 = Any.any_l ()
     | & _55 : MutBorrow.t t_Iter'0 = Any.any_l ()
     | & left_val2 : t_Option'0 = Any.any_l ()
@@ -469,7 +434,7 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
     | & _70 : t_Option'0 = Any.any_l ()
     | & b : t_IntoIter'0 = Any.any_l ()
     | & _73 : Slice64.array Int32.t = Any.any_l ()
-    | & _75 : (t_Option'1, t_Option'1) = Any.any_l ()
+    | & _75 : tuple'1 = Any.any_l ()
     | & _77 : t_Option'1 = Any.any_l ()
     | & _78 : MutBorrow.t t_IntoIter'0 = Any.any_l ()
     | & left_val3 : t_Option'1 = Any.any_l ()
@@ -478,7 +443,7 @@ module M_array__test_array [#"array.rs" 3 0 3 19]
     | & kind3 : t_AssertKind'0 = Any.any_l ()
     | & _91 : t_Option'1 = Any.any_l ()
     | & _93 : t_Option'1 = Any.any_l ()
-    | & _96 : (t_Option'1, t_Option'1) = Any.any_l ()
+    | & _96 : tuple'1 = Any.any_l ()
     | & _98 : t_Option'1 = Any.any_l ()
     | & _99 : MutBorrow.t t_IntoIter'0 = Any.any_l ()
     | & left_val4 : t_Option'1 = Any.any_l ()

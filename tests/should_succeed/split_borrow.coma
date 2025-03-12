@@ -23,12 +23,15 @@ module M_split_borrow__f [#"split_borrow.rs" 9 0 9 10]
   type t_MyInt'0  =
     { t_MyInt__0'0: UInt64.t }
   
+  type tuple'0  =
+    { _0'0: t_MyInt'0; _1'0: t_MyInt'0 }
+  
   let rec z'0 (return'  (ret:bool))= any [ return' (result:bool)-> (! return' {result}) ] 
   
-  predicate resolve'1 (self : MutBorrow.t (t_MyInt'0, t_MyInt'0)) =
+  predicate resolve'1 (self : MutBorrow.t tuple'0) =
     [%#sresolve4] self.final = self.current
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_MyInt'0, t_MyInt'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t tuple'0) =
     resolve'1 _1
   
   meta "compute_max_steps" 1000000
@@ -37,30 +40,30 @@ module M_split_borrow__f [#"split_borrow.rs" 9 0 9 10]
     [ bb0 = s0
       [ s0 =  [ &_2 <- { t_MyInt__0'0 = ([%#ssplit_borrow0] (1 : UInt64.t)) } ] s1
       | s1 =  [ &_3 <- { t_MyInt__0'0 = ([%#ssplit_borrow1] (2 : UInt64.t)) } ] s2
-      | s2 =  [ &x <- (_2, _3) ] s3
-      | s3 = MutBorrow.borrow_mut <(t_MyInt'0, t_MyInt'0)> {x}
-          (fun (_ret':MutBorrow.t (t_MyInt'0, t_MyInt'0)) ->  [ &y <- _ret' ]  [ &x <- _ret'.final ] s4)
+      | s2 =  [ &x <- { _0'0 = _2; _1'0 = _3 } ] s3
+      | s3 = MutBorrow.borrow_mut <tuple'0> {x}
+          (fun (_ret':MutBorrow.t tuple'0) ->  [ &y <- _ret' ]  [ &x <- _ret'.final ] s4)
       | s4 = z'0 (fun (_ret':bool) ->  [ &_6 <- _ret' ] s5)
       | s5 = bb1 ]
     
     | bb1 = any [ br0 -> {_6 = false} (! bb3) | br1 -> {_6} (! bb2) ] 
     | bb2 = s0
       [ s0 =  [ &_7 <- { t_MyInt__0'0 = ([%#ssplit_borrow2] (4 : UInt64.t)) } ] s1
-      | s1 =  [ &y <- { y with current = (let (r'0, _) = y.current in (r'0, _7)) } ] s2
+      | s1 =  [ &y <- { y with current = { y.current with _1'0 = _7 } } ] s2
       | s2 = bb4 ]
     
     | bb3 = s0
       [ s0 =  [ &_8 <- { t_MyInt__0'0 = ([%#ssplit_borrow3] (10 : UInt64.t)) } ] s1
-      | s1 =  [ &y <- { y with current = (let (_, r'1) = y.current in (_8, r'1)) } ] s2
+      | s1 =  [ &y <- { y with current = { y.current with _0'0 = _8 } } ] s2
       | s2 = bb4 ]
     
     | bb4 = s0 [ s0 = -{resolve'0 y}- s1 | s1 = return' {_0} ]  ]
     )
     [ & _0 : () = Any.any_l ()
-    | & x : (t_MyInt'0, t_MyInt'0) = Any.any_l ()
+    | & x : tuple'0 = Any.any_l ()
     | & _2 : t_MyInt'0 = Any.any_l ()
     | & _3 : t_MyInt'0 = Any.any_l ()
-    | & y : MutBorrow.t (t_MyInt'0, t_MyInt'0) = Any.any_l ()
+    | & y : MutBorrow.t tuple'0 = Any.any_l ()
     | & _6 : bool = Any.any_l ()
     | & _7 : t_MyInt'0 = Any.any_l ()
     | & _8 : t_MyInt'0 = Any.any_l () ]
@@ -79,16 +82,19 @@ module M_split_borrow__g [#"split_borrow.rs" 23 0 23 10]
   type t_MyInt'0  =
     { t_MyInt__0'0: UInt64.t }
   
+  type tuple'0  =
+    { _0'0: t_MyInt'0; _1'0: t_MyInt'0 }
+  
   predicate resolve'2 (self : MutBorrow.t t_MyInt'0) =
     [%#sresolve3] self.final = self.current
   
   predicate resolve'0 (_1 : MutBorrow.t t_MyInt'0) =
     resolve'2 _1
   
-  predicate resolve'3 (self : MutBorrow.t (t_MyInt'0, t_MyInt'0)) =
+  predicate resolve'3 (self : MutBorrow.t tuple'0) =
     [%#sresolve3] self.final = self.current
   
-  predicate resolve'1 (_1 : MutBorrow.t (t_MyInt'0, t_MyInt'0)) =
+  predicate resolve'1 (_1 : MutBorrow.t tuple'0) =
     resolve'3 _1
   
   meta "compute_max_steps" 1000000
@@ -97,29 +103,26 @@ module M_split_borrow__g [#"split_borrow.rs" 23 0 23 10]
     [ bb0 = s0
       [ s0 =  [ &_2 <- { t_MyInt__0'0 = ([%#ssplit_borrow0] (1 : UInt64.t)) } ] s1
       | s1 =  [ &_3 <- { t_MyInt__0'0 = ([%#ssplit_borrow1] (2 : UInt64.t)) } ] s2
-      | s2 =  [ &a <- (_2, _3) ] s3
-      | s3 = MutBorrow.borrow_mut <(t_MyInt'0, t_MyInt'0)> {a}
-          (fun (_ret':MutBorrow.t (t_MyInt'0, t_MyInt'0)) ->  [ &x <- _ret' ]  [ &a <- _ret'.final ] s4)
-      | s4 = MutBorrow.borrow_final
-          <t_MyInt'0>
-          {let (_, r'0) = x.current in r'0}
-          {MutBorrow.inherit_id (MutBorrow.get_id x) 2}
+      | s2 =  [ &a <- { _0'0 = _2; _1'0 = _3 } ] s3
+      | s3 = MutBorrow.borrow_mut <tuple'0> {a}
+          (fun (_ret':MutBorrow.t tuple'0) ->  [ &x <- _ret' ]  [ &a <- _ret'.final ] s4)
+      | s4 = MutBorrow.borrow_final <t_MyInt'0> {(x.current)._1'0} {MutBorrow.inherit_id (MutBorrow.get_id x) 2}
           (fun (_ret':MutBorrow.t t_MyInt'0) ->
              [ &_z <- _ret' ] 
-             [ &x <- { x with current = (let (r'1, _) = x.current in (r'1, _ret'.final)) } ] 
+             [ &x <- { x with current = { x.current with _1'0 = _ret'.final } } ] 
             s5)
       | s5 = -{resolve'0 _z}- s6
       | s6 =  [ &_6 <- { t_MyInt__0'0 = ([%#ssplit_borrow2] (3 : UInt64.t)) } ] s7
-      | s7 =  [ &x <- { x with current = (let (_, r'4) = x.current in (_6, r'4)) } ] s8
+      | s7 =  [ &x <- { x with current = { x.current with _0'0 = _6 } } ] s8
       | s8 = -{resolve'1 x}- s9
       | s9 = return' {_0} ]
      ]
     )
     [ & _0 : () = Any.any_l ()
-    | & a : (t_MyInt'0, t_MyInt'0) = Any.any_l ()
+    | & a : tuple'0 = Any.any_l ()
     | & _2 : t_MyInt'0 = Any.any_l ()
     | & _3 : t_MyInt'0 = Any.any_l ()
-    | & x : MutBorrow.t (t_MyInt'0, t_MyInt'0) = Any.any_l ()
+    | & x : MutBorrow.t tuple'0 = Any.any_l ()
     | & _z : MutBorrow.t t_MyInt'0 = Any.any_l ()
     | & _6 : t_MyInt'0 = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 

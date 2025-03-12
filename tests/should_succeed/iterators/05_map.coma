@@ -345,7 +345,7 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   
   predicate next_precondition'0 [#"05_map.rs" 77 4 77 50] (iter : t_I'0) (func : t_F'0) =
     [%#s05_map26] forall e : t_Item'0, i : t_I'0 [produces'0 iter (Seq.singleton e) i] . produces'0 iter (Seq.singleton e) i
-     -> precondition'0 func (e)
+     -> precondition'0 func e
   
   predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
   
@@ -375,9 +375,9 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
    -> ([%#sops31] unnest'0 self res_state)
   
   predicate preservation'0 [#"05_map.rs" 87 4 87 45] (iter : t_I'0) (func : t_F'0) =
-    [%#s05_map25] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : MutBorrow.t t_F'0, b : t_B'0, i : t_I'0 [produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1) f.final b] . unnest'0 func f.current
+    [%#s05_map25] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : MutBorrow.t t_F'0, b : t_B'0, i : t_I'0 [produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current e1 f.final b] . unnest'0 func f.current
      -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 f.current (e1)  -> postcondition_mut'0 f.current (e1) f.final b  -> precondition'0 f.final (e2)
+     -> precondition'0 f.current e1  -> postcondition_mut'0 f.current e1 f.final b  -> precondition'0 f.final e2
   
   predicate reinitialize'0 [#"05_map.rs" 100 4 100 29]  =
     [%#s05_map29] forall iter : MutBorrow.t t_I'0, func : t_F'0 . completed'1 iter
@@ -395,7 +395,7 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   axiom produces_one_invariant'0_spec : forall self : t_Map'0, e : t_Item'0, r : t_B'0, f : MutBorrow.t t_F'0, iter : t_I'0 . ([%#s05_map8] invariant'0 self)
    -> ([%#s05_map9] produces'0 self.t_Map__iter'0 (Seq.singleton e) iter)
    -> ([%#s05_map10] f.current = self.t_Map__func'0)
-   -> ([%#s05_map11] postcondition_mut'0 f.current (e) f.final r)
+   -> ([%#s05_map11] postcondition_mut'0 f.current e f.final r)
    -> ([%#s05_map12] preservation'0 iter f.final) && ([%#s05_map13] next_precondition'0 iter f.final)
   
   predicate inv'1 (_1 : t_F'0)
@@ -409,7 +409,7 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
   
   predicate inv'7 (_1 : t_Item'0)
   
-  axiom inv_axiom'5 [@rewrite] : forall x : t_Item'0 [inv'7 x] . inv'7 x = (let (x0) = x in inv'9 x0)
+  axiom inv_axiom'5 [@rewrite] : forall x : t_Item'0 [inv'7 x] . inv'7 x = (let x0 = x in inv'9 x0)
   
   predicate inv'8 (_1 : t_B'0)
   
@@ -479,11 +479,11 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
     /\ postcondition_mut'0 (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
   
   predicate produces_one'0 [#"05_map.rs" 125 4 125 57] (self : t_Map'0) (visited : t_B'0) (succ : t_Map'0) =
-    [%#s05_map19] exists f : MutBorrow.t t_F'0, e : t_Item'0 [postcondition_mut'0 f.current (e) f.final visited] . f.current
+    [%#s05_map19] exists f : MutBorrow.t t_F'0, e : t_Item'0 [postcondition_mut'0 f.current e f.final visited] . f.current
     = self.t_Map__func'0
     /\ f.final = succ.t_Map__func'0
     /\ produces'0 self.t_Map__iter'0 (Seq.singleton e) succ.t_Map__iter'0
-    /\ precondition'0 f.current (e) /\ postcondition_mut'0 f.current (e) f.final visited
+    /\ precondition'0 f.current e /\ postcondition_mut'0 f.current e f.final visited
   
   axiom produces_one'0_spec : forall self : t_Map'0, visited : t_B'0, succ : t_Map'0 . [%#s05_map18] produces_one'0 self visited succ
   = produces'1 self (Seq.singleton visited) succ
@@ -507,7 +507,7 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
     | bb3 = bb5
     | bb5 = s0
       [ s0 = v_Some'0 {_3} (fun (r0'0:t_Item'0) ->  [ &v <- r0'0 ] s1)
-      | s1 = {[@expl:assertion] [%#s05_map0] precondition'0 (self.current).t_Map__func'0 (v)} s2
+      | s1 = {[@expl:assertion] [%#s05_map0] precondition'0 (self.current).t_Map__func'0 v} s2
       | s2 = bb6 ]
     
     | bb6 = s0 [ s0 =  [ &_9 <- [%#s05_map1] () ] s1 | s1 = bb7 ] 
@@ -519,7 +519,7 @@ module M_05_map__qyi14378821460689001001__next [#"05_map.rs" 63 4 63 44] (* <Map
             -{inv'1 _ret'.final}-
              [ &self <- { self with current = { self.current with t_Map__func'0 = _ret'.final } } ] 
             s1)
-      | s1 =  [ &_13 <- (v) ] s2
+      | s1 =  [ &_13 <- v ] s2
       | s2 = call_mut'0 {_12} {_13} (fun (_ret':t_B'0) ->  [ &_11 <- _ret' ] s3)
       | s3 = bb8 ]
     
@@ -611,7 +611,7 @@ module M_05_map__qyi11590646246877942156__produces_one_invariant [#"05_map.rs" 1
   
   predicate next_precondition'0 [#"05_map.rs" 77 4 77 50] (iter : t_I'0) (func : t_F'0) =
     [%#s05_map10] forall e : t_Item'0, i : t_I'0 [produces'0 iter (Seq.singleton e) i] . produces'0 iter (Seq.singleton e) i
-     -> precondition'0 func (e)
+     -> precondition'0 func e
   
   predicate postcondition_once'0 (self : t_F'0) (args : t_Item'0) (result : t_B'0)
   
@@ -641,9 +641,9 @@ module M_05_map__qyi11590646246877942156__produces_one_invariant [#"05_map.rs" 1
    -> ([%#sops17] unnest'0 self res_state)
   
   predicate preservation'0 [#"05_map.rs" 87 4 87 45] (iter : t_I'0) (func : t_F'0) =
-    [%#s05_map9] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : MutBorrow.t t_F'0, b : t_B'0, i : t_I'0 [produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1) f.final b] . unnest'0 func f.current
+    [%#s05_map9] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : MutBorrow.t t_F'0, b : t_B'0, i : t_I'0 [produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current e1 f.final b] . unnest'0 func f.current
      -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 f.current (e1)  -> postcondition_mut'0 f.current (e1) f.final b  -> precondition'0 f.final (e2)
+     -> precondition'0 f.current e1  -> postcondition_mut'0 f.current e1 f.final b  -> precondition'0 f.final e2
   
   predicate reinitialize'0 [#"05_map.rs" 100 4 100 29]  =
     [%#s05_map15] forall iter : MutBorrow.t t_I'0, func : t_F'0 . completed'0 iter
@@ -669,7 +669,7 @@ module M_05_map__qyi11590646246877942156__produces_one_invariant [#"05_map.rs" 1
   goal vc_produces_one_invariant'0 : ([%#s05_map0] invariant'0 self)
    -> ([%#s05_map1] produces'0 self.t_Map__iter'0 (Seq.singleton e) iter)
    -> ([%#s05_map2] f.current = self.t_Map__func'0)
-   -> ([%#s05_map3] postcondition_mut'0 f.current (e) f.final r)
+   -> ([%#s05_map3] postcondition_mut'0 f.current e f.final r)
    -> ([%#s05_map6] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, i : t_I'0 . produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
    -> produces'0 self.t_Map__iter'0 (Seq.snoc (Seq.snoc (Seq.(++) (Seq.singleton e) s) e1) e2) i)
   && (let _ = () in ([%#s05_map4] preservation'0 iter f.final) && ([%#s05_map5] next_precondition'0 iter f.final))
@@ -792,11 +792,11 @@ module M_05_map__qyi11590646246877942156__produces_one [#"05_map.rs" 125 4 125 5
   
   predicate produces_one'0 [#"05_map.rs" 125 4 125 57] (self : t_Map'0) (visited : t_B'0) (succ : t_Map'0)
   
-  goal vc_produces_one'0 : [%#s05_map0] ([%#s05_map1] exists f : MutBorrow.t t_F'0, e : t_Item'0 [postcondition_mut'0 f.current (e) f.final visited] . f.current
+  goal vc_produces_one'0 : [%#s05_map0] ([%#s05_map1] exists f : MutBorrow.t t_F'0, e : t_Item'0 [postcondition_mut'0 f.current e f.final visited] . f.current
   = self.t_Map__func'0
   /\ f.final = succ.t_Map__func'0
   /\ produces'1 self.t_Map__iter'0 (Seq.singleton e) succ.t_Map__iter'0
-  /\ precondition'0 f.current (e) /\ postcondition_mut'0 f.current (e) f.final visited)
+  /\ precondition'0 f.current e /\ postcondition_mut'0 f.current e f.final visited)
   = produces'0 self (Seq.singleton visited) succ
 end
 module M_05_map__map [#"05_map.rs" 155 0 155 81]
@@ -858,7 +858,7 @@ module M_05_map__map [#"05_map.rs" 155 0 155 81]
   
   predicate next_precondition'0 [#"05_map.rs" 77 4 77 50] (iter : t_I'0) (func : t_F'0) =
     [%#s05_map13] forall e : t_Item'0, i : t_I'0 [produces'0 iter (Seq.singleton e) i] . produces'0 iter (Seq.singleton e) i
-     -> precondition'0 func (e)
+     -> precondition'0 func e
   
   type t_B'0
   
@@ -890,9 +890,9 @@ module M_05_map__map [#"05_map.rs" 155 0 155 81]
    -> ([%#sops15] unnest'0 self res_state)
   
   predicate preservation'0 [#"05_map.rs" 87 4 87 45] (iter : t_I'0) (func : t_F'0) =
-    [%#s05_map8] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : MutBorrow.t t_F'0, b : t_B'0, i : t_I'0 [produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1) f.final b] . unnest'0 func f.current
+    [%#s05_map8] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : MutBorrow.t t_F'0, b : t_B'0, i : t_I'0 [produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current e1 f.final b] . unnest'0 func f.current
      -> produces'0 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 f.current (e1)  -> postcondition_mut'0 f.current (e1) f.final b  -> precondition'0 f.final (e2)
+     -> precondition'0 f.current e1  -> postcondition_mut'0 f.current e1 f.final b  -> precondition'0 f.final e2
   
   predicate reinitialize'0 [#"05_map.rs" 100 4 100 29]  =
     [%#s05_map7] forall iter : MutBorrow.t t_I'0, func : t_F'0 . completed'0 iter
@@ -915,7 +915,7 @@ module M_05_map__map [#"05_map.rs" 155 0 155 81]
   let rec map'0[#"05_map.rs" 155 0 155 81] (iter:t_I'0) (func:t_F'0) (return'  (ret:t_Map'0))= {[@expl:map 'iter' type invariant] [%#s05_map0] inv'0 iter}
     {[@expl:map 'func' type invariant] [%#s05_map1] inv'1 func}
     {[@expl:map requires #0] [%#s05_map2] forall e : t_Item'0, i2 : t_I'0 . produces'0 iter (Seq.singleton e) i2
-     -> precondition'0 func (e)}
+     -> precondition'0 func e}
     {[@expl:map requires #1] [%#s05_map3] reinitialize'0}
     {[@expl:map requires #2] [%#s05_map4] preservation'0 iter func}
     (! bb0
@@ -1032,7 +1032,7 @@ module M_05_map__qyi14378821460689001001__next__refines [#"05_map.rs" 63 4 63 44
   
   predicate next_precondition'0 [#"05_map.rs" 77 4 77 50] (iter : t_I'0) (func : t_F'0) =
     [%#s05_map20] forall e : t_Item'0, i : t_I'0 [produces'1 iter (Seq.singleton e) i] . produces'1 iter (Seq.singleton e) i
-     -> precondition'0 func (e)
+     -> precondition'0 func e
   
   type t_B'0
   
@@ -1064,9 +1064,9 @@ module M_05_map__qyi14378821460689001001__next__refines [#"05_map.rs" 63 4 63 44
    -> ([%#sops11] unnest'0 self res_state)
   
   predicate preservation'0 [#"05_map.rs" 87 4 87 45] (iter : t_I'0) (func : t_F'0) =
-    [%#s05_map19] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : MutBorrow.t t_F'0, b : t_B'0, i : t_I'0 [produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current (e1) f.final b] . unnest'0 func f.current
+    [%#s05_map19] forall s : Seq.seq t_Item'0, e1 : t_Item'0, e2 : t_Item'0, f : MutBorrow.t t_F'0, b : t_B'0, i : t_I'0 [produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut'0 f.current e1 f.final b] . unnest'0 func f.current
      -> produces'1 iter (Seq.snoc (Seq.snoc s e1) e2) i
-     -> precondition'0 f.current (e1)  -> postcondition_mut'0 f.current (e1) f.final b  -> precondition'0 f.final (e2)
+     -> precondition'0 f.current e1  -> postcondition_mut'0 f.current e1 f.final b  -> precondition'0 f.final e2
   
   predicate reinitialize'0 [#"05_map.rs" 100 4 100 29]  =
     [%#s05_map18] forall iter : MutBorrow.t t_I'0, func : t_F'0 . completed'1 iter
@@ -1123,11 +1123,11 @@ module M_05_map__qyi14378821460689001001__next__refines [#"05_map.rs" 63 4 63 44
     /\ postcondition_mut'0 (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
   
   predicate produces_one'0 [#"05_map.rs" 125 4 125 57] (self : t_Map'0) (visited : t_B'0) (succ : t_Map'0) =
-    [%#s05_map3] exists f : MutBorrow.t t_F'0, e : t_Item'0 [postcondition_mut'0 f.current (e) f.final visited] . f.current
+    [%#s05_map3] exists f : MutBorrow.t t_F'0, e : t_Item'0 [postcondition_mut'0 f.current e f.final visited] . f.current
     = self.t_Map__func'0
     /\ f.final = succ.t_Map__func'0
     /\ produces'1 self.t_Map__iter'0 (Seq.singleton e) succ.t_Map__iter'0
-    /\ precondition'0 f.current (e) /\ postcondition_mut'0 f.current (e) f.final visited
+    /\ precondition'0 f.current e /\ postcondition_mut'0 f.current e f.final visited
   
   axiom produces_one'0_spec : forall self : t_Map'0, visited : t_B'0, succ : t_Map'0 . [%#s05_map2] produces_one'0 self visited succ
   = produces'0 self (Seq.singleton visited) succ

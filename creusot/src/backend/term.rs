@@ -7,15 +7,16 @@ use crate::{
     ctx::*,
     naming::ident_of,
     pearlite::{BinOp, Literal, Pattern, PointerKind, Term, TermKind, UnOp},
+    specification::Condition,
     translation::pearlite::{QuantKind, Trigger, zip_binder},
 };
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind};
 use rustc_span::DUMMY_SP;
 use rustc_type_ir::{IntTy, UintTy};
-use std::iter::repeat_n;
 use why3::{
     Ident,
+    declaration::Condition as WCondition,
     exp::{
         BinOp as WBinOp, Binder, Constant, Exp, Pattern as WPattern, Trigger as WTrigger,
         UnOp as WUnOp,
@@ -32,6 +33,14 @@ pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
     let mut term = Lower { ctx, names }.lower_term(term);
     term.reassociate();
     if let Some(attr) = names.span(span) { term.with_attr(attr) } else { term }
+}
+
+pub(crate) fn lower_condition<'tcx, N: Namer<'tcx>>(
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
+    cond: Condition<'tcx>,
+) -> WCondition {
+    WCondition { exp: lower_pure(ctx, names, &cond.term), expl: cond.expl }
 }
 
 pub(crate) fn lower_pat<'tcx, N: Namer<'tcx>>(
@@ -227,29 +236,30 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 arg: self.lower_term(arg).boxed(),
                 body: self.lower_term(body).boxed(),
             },
+            TermKind::Tuple { fields } if fields.is_empty() => Exp::Tuple(Box::new([])),
+            TermKind::Tuple { fields } if fields.len() == 1 => self.lower_term(&fields[0]),
             TermKind::Tuple { fields } => {
-                Exp::Tuple(fields.into_iter().map(|f| self.lower_term(f)).collect())
+                let TyKind::Tuple(tys) = term.ty.kind() else { unreachable!() };
+                Exp::Record {
+                    fields: fields
+                        .into_iter()
+                        .enumerate()
+                        .map(|(ix, f)| (self.names.tuple_field(tys, ix.into()), self.lower_term(f)))
+                        .collect(),
+                }
             }
-            TermKind::Projection { box lhs, name } => {
+            TermKind::Projection { box lhs, idx } => {
                 let lhs_low = self.lower_term(lhs);
 
                 match lhs.ty.kind() {
                     TyKind::Closure(did, substs) => {
-                        lhs_low.field(self.names.field(*did, substs, *name))
+                        lhs_low.field(self.names.field(*did, substs, *idx))
                     }
                     TyKind::Adt(def, substs) => {
-                        lhs_low.field(self.names.field(def.did(), substs, *name))
+                        lhs_low.field(self.names.field(def.did(), substs, *idx))
                     }
-                    TyKind::Tuple(f) => {
-                        let mut fields: Box<_> = repeat_n(WPattern::Wildcard, f.len()).collect();
-                        fields[name.as_usize()] = WPattern::VarP("a".into());
-
-                        return Exp::Let {
-                            pattern: WPattern::TupleP(fields),
-                            arg: lhs_low.boxed(),
-                            body: Exp::var("a").boxed(),
-                        };
-                    }
+                    TyKind::Tuple(tys) if tys.len() == 1 => lhs_low,
+                    TyKind::Tuple(tys) => lhs_low.field(self.names.tuple_field(tys, *idx)),
                     k => unreachable!("Projection from {k:?}"),
                 }
             }
@@ -308,36 +318,39 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         }
     }
 
+    // FIXME: this is a duplicate with vcgen::build_pattern_inner
+    // The only difference is the `bounds` parameter
     fn lower_pat(&self, pat: &Pattern<'tcx>) -> WPattern {
         match pat {
             Pattern::Constructor { variant, fields, substs } => {
-                let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
+                let flds = fields.iter().map(|pat| self.lower_pat(pat));
                 if self.ctx.def_kind(variant) == DefKind::Variant {
-                    WPattern::ConsP(self.names.constructor(*variant, *substs), fields)
+                    WPattern::ConsP(self.names.constructor(*variant, *substs), flds.collect())
                 } else if fields.len() == 0 {
                     WPattern::TupleP(Box::new([]))
                 } else {
-                    WPattern::RecP(
-                        fields
-                            .into_iter()
-                            .enumerate()
-                            .map(|(i, f)| (self.names.field(*variant, substs, i.into()), f))
-                            .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
-                            .collect(),
-                    )
+                    let flds: Box<[_]> = flds
+                        .enumerate()
+                        .map(|(i, f)| (self.names.field(*variant, substs, i.into()), f))
+                        .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
+                        .collect();
+                    if flds.len() == 0 { WPattern::Wildcard } else { WPattern::RecP(flds) }
                 }
             }
             Pattern::Wildcard => WPattern::Wildcard,
             Pattern::Binder(name) => WPattern::VarP(name.to_string().into()),
-            Pattern::Boolean(b) => {
-                if *b {
-                    WPattern::mk_true()
-                } else {
-                    WPattern::mk_false()
-                }
-            }
-            Pattern::Tuple(pats) => {
-                WPattern::TupleP(pats.into_iter().map(|pat| self.lower_pat(pat)).collect())
+            Pattern::Boolean(true) => WPattern::mk_true(),
+            Pattern::Boolean(false) => WPattern::mk_false(),
+            Pattern::Tuple(pats, _) if pats.is_empty() => WPattern::TupleP(Box::new([])),
+            Pattern::Tuple(pats, _) if pats.len() == 1 => self.lower_pat(&pats[0]),
+            Pattern::Tuple(pats, tys) => {
+                let flds: Box<_> = pats
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, pat)| (self.names.tuple_field(tys, i.into()), self.lower_pat(pat)))
+                    .filter(|(_, pat)| !matches!(pat, WPattern::Wildcard))
+                    .collect();
+                if flds.len() == 0 { WPattern::Wildcard } else { WPattern::RecP(flds) }
             }
             Pattern::Deref { pointee, kind } => match kind {
                 PointerKind::Box | PointerKind::Shr => self.lower_pat(pointee),

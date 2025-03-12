@@ -35,7 +35,7 @@ use rustc_middle::{
         AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
     },
     ty::{
-        CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind,
+        CanonicalUserType, GenericArg, GenericArgs, GenericArgsRef, List, Ty, TyCtxt, TyKind,
         TypeFoldable, TypeVisitable, TypeVisitableExt, TypingEnv, UserTypeKind, int_ty, uint_ty,
     },
 };
@@ -166,7 +166,7 @@ pub enum TermKind<'tcx> {
     /// It corresponds strictly to the syntactic projection f.x
     Projection {
         lhs: Box<Term<'tcx>>,
-        name: FieldIdx,
+        idx: FieldIdx,
     },
     Old {
         term: Box<Term<'tcx>>,
@@ -300,7 +300,7 @@ pub enum Pattern<'tcx> {
         pointee: Box<Pattern<'tcx>>,
         kind: PointerKind,
     },
-    Tuple(Box<[Pattern<'tcx>]>),
+    Tuple(Box<[Pattern<'tcx>]>, &'tcx List<Ty<'tcx>>),
     Wildcard,
     Binder(Symbol),
     Boolean(bool),
@@ -841,9 +841,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     .collect::<Result<_, Error>>()?;
                 fields.sort_by_key(|f| f.0);
 
-                if matches!(pat.ty.kind(), TyKind::Tuple(_)) {
+                if let TyKind::Tuple(tys) = pat.ty.kind() {
                     let fields = fields.into_iter().map(|a| a.1).collect();
-                    Ok(Pattern::Tuple(fields))
+                    Ok(Pattern::Tuple(fields, tys))
                 } else {
                     let (adt_def, substs) = if let TyKind::Adt(def, substs) = pat.ty.kind() {
                         (def, substs)
@@ -1131,29 +1131,23 @@ fn is_ghost_ty_deref<'tcx>(
     }
 }
 
-pub(crate) fn mk_projection(lhs: Term, name: FieldIdx) -> TermKind {
-    TermKind::Projection { lhs: Box::new(lhs), name }
+pub(crate) fn mk_projection(lhs: Term, idx: FieldIdx) -> TermKind {
+    TermKind::Projection { lhs: Box::new(lhs), idx }
 }
 
 pub(crate) fn type_invariant_term<'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    env_did: DefId,
+    typing_env: TypingEnv<'tcx>,
     name: Symbol,
     span: Span,
     ty: Ty<'tcx>,
 ) -> Option<Term<'tcx>> {
-    // assert!(!name.as_str().is_empty(), "name has len 0, env={env_did:?}, ty={ty:?}");
-    let arg = Term { ty, span, kind: TermKind::Var(name) };
-
-    let (inv_fn_did, inv_fn_substs) =
-        ctx.type_invariant(TypingEnv::non_body_analysis(ctx.tcx, env_did), ty)?;
-    let inv_fn_ty = ctx.type_of(inv_fn_did).instantiate(ctx.tcx, inv_fn_substs);
-    assert!(matches!(inv_fn_ty.kind(), TyKind::FnDef(id, _) if id == &inv_fn_did));
-
+    let args = Box::new([Term { ty, span, kind: TermKind::Var(name) }]);
+    let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(typing_env, ty)?;
     Some(Term {
-        ty: ctx.fn_sig(inv_fn_did).skip_binder().output().skip_binder(),
+        ty: ctx.types.bool,
         span,
-        kind: TermKind::Call { id: inv_fn_did, subst: inv_fn_substs, args: Box::new([arg]) },
+        kind: TermKind::Call { id: inv_fn_did, subst: inv_fn_substs, args },
     })
 }
 
@@ -1233,7 +1227,7 @@ impl<'tcx> Pattern<'tcx> {
     pub(crate) fn binds(&self, binders: &mut HashSet<Symbol>) {
         match self {
             Pattern::Constructor { fields, .. } => fields.iter().for_each(|f| f.binds(binders)),
-            Pattern::Tuple(fields) => fields.iter().for_each(|f| f.binds(binders)),
+            Pattern::Tuple(fields, _) => fields.iter().for_each(|f| f.binds(binders)),
             Pattern::Wildcard => {}
             Pattern::Binder(s) => {
                 binders.insert(*s);
@@ -1284,7 +1278,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
             visitor.visit_term(arg);
             visitor.visit_term(body)
         }
-        TermKind::Projection { lhs, name: _ } => visitor.visit_term(lhs),
+        TermKind::Projection { lhs, idx: _ } => visitor.visit_term(lhs),
         TermKind::Old { term } => visitor.visit_term(term),
         TermKind::Closure { body, .. } => visitor.visit_term(body),
         TermKind::Reborrow { cur, fin, inner, projection } => {
@@ -1345,7 +1339,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
             visitor.visit_mut_term(&mut *arg);
             visitor.visit_mut_term(&mut *body)
         }
-        TermKind::Projection { lhs, name: _ } => visitor.visit_mut_term(&mut *lhs),
+        TermKind::Projection { lhs, idx: _ } => visitor.visit_mut_term(&mut *lhs),
         TermKind::Old { term } => visitor.visit_mut_term(&mut *term),
         TermKind::Closure { body, .. } => visitor.visit_mut_term(&mut *body),
         TermKind::Reborrow { cur, fin, inner, projection } => {
@@ -1380,7 +1374,7 @@ impl<'tcx> Term<'tcx> {
         args: impl IntoIterator<Item = Term<'tcx>>,
     ) -> Self {
         let ty = tcx.type_of(def_id).instantiate(tcx, subst);
-        let result = ty.fn_sig(tcx).skip_binder().output();
+        let result = tcx.instantiate_bound_regions_with_erased(ty.fn_sig(tcx).output());
         let args = args.into_iter().collect();
         Term { ty: result, span: DUMMY_SP, kind: TermKind::Call { id: def_id, subst, args } }
     }

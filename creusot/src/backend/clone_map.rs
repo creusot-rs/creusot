@@ -1,3 +1,4 @@
+use core::panic;
 use std::cell::RefCell;
 
 use crate::{
@@ -19,7 +20,9 @@ use rustc_hir::{
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::Promoted,
-    ty::{self, GenericArgsRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv},
+    ty::{
+        self, GenericArgsRef, List, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitableExt, TypingEnv,
+    },
 };
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::{FieldIdx, VariantIdx};
@@ -60,7 +63,7 @@ pub(crate) trait Namer<'tcx> {
         self.dependency(node).qname()
     }
 
-    fn ty(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
+    fn def_ty(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
         let ty = match self.tcx().def_kind(def_id) {
             DefKind::Enum | DefKind::Struct | DefKind::Union => {
                 Ty::new_adt(self.tcx(), self.tcx().adt_def(def_id), subst)
@@ -70,18 +73,16 @@ pub(crate) trait Namer<'tcx> {
             DefKind::OpaqueTy => Ty::new_opaque(self.tcx(), def_id, subst),
             k => unreachable!("{k:?}"),
         };
-
-        self.dependency(Dependency::Type(ty)).qname()
+        self.ty(ty)
     }
 
-    fn ty_param(&self, ty: Ty<'tcx>) -> QName {
-        assert!(matches!(ty.kind(), TyKind::Param(_)));
+    fn ty(&self, ty: Ty<'tcx>) -> QName {
+        assert!(!ty.has_escaping_bound_vars());
         self.dependency(Dependency::Type(ty)).qname()
     }
 
     fn constructor(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
-        let node = Dependency::Item(def_id, subst);
-        self.dependency(node).qname()
+        self.dependency(Dependency::Item(def_id, subst)).qname()
     }
 
     fn ty_inv(&self, ty: Ty<'tcx>) -> QName {
@@ -97,7 +98,10 @@ pub(crate) trait Namer<'tcx> {
     /// * `ix` - The field in that constructor being accessed.
     fn field(&self, def_id: DefId, subst: GenericArgsRef<'tcx>, ix: FieldIdx) -> QName {
         let node = match self.tcx().def_kind(def_id) {
-            DefKind::Closure => Dependency::ClosureAccessor(def_id, subst, ix.as_u32()),
+            DefKind::Closure => {
+                self.def_ty(def_id, subst);
+                Dependency::ClosureAccessor(def_id, subst, ix.as_u32())
+            }
             DefKind::Struct | DefKind::Union => {
                 let field_did =
                     self.tcx().adt_def(def_id).variants()[VariantIdx::ZERO].fields[ix].did;
@@ -107,6 +111,12 @@ pub(crate) trait Namer<'tcx> {
         };
 
         self.dependency(node).qname()
+    }
+
+    fn tuple_field(&self, args: &'tcx List<Ty<'tcx>>, idx: FieldIdx) -> QName {
+        assert!(args.len() > 1);
+        self.ty(Ty::new_tup(self.tcx(), args));
+        self.dependency(Dependency::TupleField(args, idx)).qname()
     }
 
     fn eliminator(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> QName {
@@ -120,11 +130,11 @@ pub(crate) trait Namer<'tcx> {
     fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, ctx: &TranslationCtx<'tcx>, ty: T) -> T;
 
     fn import_prelude_module(&self, module: PreMod) {
-        self.dependency(Dependency::Builtin(module));
+        self.dependency(Dependency::PreMod(module));
     }
 
     fn prelude_module_name(&self, module: PreMod) -> Box<[Ident]> {
-        self.dependency(Dependency::Builtin(module));
+        self.dependency(Dependency::PreMod(module));
         let qname: QName = match (module, self.bitwise_mode()) {
             (PreMod::Float32, _) => "creusot.float.Float32.".into(),
             (PreMod::Float64, _) => "creusot.float.Float64.".into(),
@@ -409,17 +419,31 @@ impl<'tcx> Dependencies<'tcx> {
 
             for scc in petgraph::algo::tarjan_scc(&subgraph).into_iter() {
                 if scc.len() > 1
-                    && scc.iter().any(|node| {
-                        node.did().is_none_or(|(did, _)| {
-                            !matches!(
-                                self.tcx.def_kind(did),
-                                DefKind::Struct
-                                    | DefKind::Enum
-                                    | DefKind::Union
-                                    | DefKind::Variant
-                                    | DefKind::Field
-                            ) || get_builtin(self.tcx, did).is_some()
-                        })
+                    && !scc.iter().all(|node| {
+                        if let Some((did, _)) = node.did()
+                            && get_builtin(self.tcx, did).is_some()
+                        {
+                            return false;
+                        } else {
+                            match node {
+                                Dependency::TupleField(..)
+                                | Dependency::ClosureAccessor(..)
+                                | Dependency::Eliminator(..) => true,
+                                Dependency::Type(ty) => matches!(
+                                    ty.kind(),
+                                    TyKind::Adt(..) | TyKind::Tuple(_) | TyKind::Closure(..)
+                                ),
+                                Dependency::Item(did, _) => matches!(
+                                    self.tcx.def_kind(did),
+                                    DefKind::Struct
+                                        | DefKind::Enum
+                                        | DefKind::Union
+                                        | DefKind::Variant
+                                        | DefKind::Field
+                                ),
+                                _ => false,
+                            }
+                        }
                     })
                 {
                     ctx.crash_and_error(

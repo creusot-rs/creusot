@@ -6,7 +6,7 @@ use crate::{
     ctx::*,
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::{AliasTy, AliasTyKind, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv};
+use rustc_middle::ty::{AliasTyKind, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv};
 use rustc_span::{DUMMY_SP, Span};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{FloatTy, IntTy, TyKind::*, UintTy};
@@ -28,6 +28,8 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
     match ty.kind() {
         Bool => MlT::TConstructor("bool".into()),
         Char => MlT::TConstructor(names.in_pre(PreMod::Char, "t")),
+        Tuple(args) if args.is_empty() => MlT::unit(),
+        Tuple(args) if args.len() == 1 => translate_ty(ctx, names, span, args[0]),
         Int(ity) => MlT::TConstructor(names.in_pre(ity_to_prelude(ctx.tcx, *ity), "t")),
         Uint(uty) => MlT::TConstructor(names.in_pre(uty_to_prelude(ctx.tcx, *uty), "t")),
         Float(flty) => MlT::TConstructor(names.in_pre(floatty_to_prelude(*flty), "t")),
@@ -35,21 +37,15 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         Adt(def, s) if is_snap_ty(ctx.tcx, def.did()) => {
             // Make sure we create a cycle of dependency if we create a type which is recursive through Snapshot
             // See test should_fail/bug/436_2.rs, and #436
-            names.ty(def.did(), s);
+            names.ty(ty);
             translate_ty(ctx, names, span, s[0].expect_ty())
         }
         Adt(def, s) if get_builtin(ctx.tcx, def.did()).is_some() => {
-            let cons = MlT::TConstructor(names.ty(def.did(), s));
+            let cons = MlT::TConstructor(names.ty(ty));
             cons.tapp(s.types().map(|t| translate_ty(ctx, names, span, t)))
         }
         Adt(def, _) if def.is_struct() && def.variant(VariantIdx::ZERO).fields.is_empty() => {
             MlT::unit()
-        }
-        Adt(def, s) => MlT::TConstructor(names.ty(def.did(), s)),
-        Tuple(args) => MlT::Tuple(args.iter().map(|t| translate_ty(ctx, names, span, t)).collect()),
-        Param(_) => MlT::TConstructor(names.ty_param(ty)),
-        Alias(AliasTyKind::Opaque | AliasTyKind::Projection, AliasTy { args, def_id, .. }) => {
-            MlT::TConstructor(names.ty(*def_id, args))
         }
         Ref(_, ty, borkind) => {
             use rustc_ast::Mutability::*;
@@ -66,18 +62,23 @@ pub(crate) fn translate_ty<'tcx, N: Namer<'tcx>>(
         Str => MlT::TConstructor("string".into()),
         Never => MlT::unit(),
         RawPtr(_, _) => MlT::TConstructor(names.in_pre(PreMod::Opaque, "ptr")),
-        Closure(id, subst) => {
-            if is_logic(ctx.tcx, *id) || subst.as_closure().upvar_tys().len() == 0 {
-                MlT::unit()
-            } else {
-                MlT::TConstructor(names.ty(*id, subst))
-            }
+        Closure(id, subst)
+            if is_logic(ctx.tcx, *id) || subst.as_closure().upvar_tys().len() == 0 =>
+        {
+            MlT::unit()
         }
         FnDef(_, _) => MlT::unit(), /* FnDef types are effectively singleton types, so it is sound to translate to unit. */
         FnPtr(..) => MlT::TConstructor(names.in_pre(PreMod::Opaque, "ptr")),
         Dynamic(_, _, _) => MlT::TConstructor(names.in_pre(PreMod::Opaque, "dyn")),
         Foreign(_) => MlT::TConstructor(names.in_pre(PreMod::Opaque, "foreign")),
         Error(_) => MlT::unit(),
+        Closure(..)
+        | Adt(..)
+        | Tuple(_)
+        | Param(_)
+        | Alias(AliasTyKind::Opaque | AliasTyKind::Projection, _) => {
+            MlT::TConstructor(names.ty(ty))
+        }
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
     }
 }
@@ -87,8 +88,8 @@ pub(crate) fn translate_closure_ty<'tcx, N: Namer<'tcx>>(
     names: &N,
     did: DefId,
     subst: GenericArgsRef<'tcx>,
-) -> Option<TyDecl> {
-    let ty_name = names.ty(did, subst).as_ident();
+) -> Vec<Decl> {
+    let ty_name = names.def_ty(did, subst).as_ident();
     let closure_subst = subst.as_closure();
     let fields: Box<[_]> = closure_subst
         .upvar_tys()
@@ -101,16 +102,41 @@ pub(crate) fn translate_closure_ty<'tcx, N: Namer<'tcx>>(
         .collect();
 
     if fields.len() == 0 {
-        return None;
+        return vec![];
     }
 
-    Some(TyDecl::Adt {
+    vec![Decl::TyDecl(TyDecl::Adt {
         tys: Box::new([AdtDecl {
             ty_name,
             ty_params: Box::new([]),
             sumrecord: SumRecord::Record(fields),
         }]),
-    })
+    })]
+}
+
+pub(crate) fn translate_tuple_ty<'tcx, N: Namer<'tcx>>(
+    ctx: &Why3Generator<'tcx>,
+    names: &N,
+    ty: Ty<'tcx>,
+) -> Vec<Decl> {
+    let TyKind::Tuple(args) = ty.kind() else { unreachable!() };
+    assert!(args.len() > 1);
+    let fields: Box<[_]> = args
+        .iter()
+        .enumerate()
+        .map(|(ix, ty)| FieldDecl {
+            ty: translate_ty(ctx, names, DUMMY_SP, ty),
+            name: names.tuple_field(args, ix.into()).as_ident(),
+        })
+        .collect();
+
+    vec![Decl::TyDecl(TyDecl::Adt {
+        tys: Box::new([AdtDecl {
+            ty_name: names.ty(ty).as_ident(),
+            ty_params: Box::new([]),
+            sumrecord: SumRecord::Record(fields),
+        }]),
+    })]
 }
 
 // Translate a Rust type declation to an ML one
@@ -126,12 +152,12 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
 ) -> Vec<Decl> {
     // Trusted types (opaque)
     if is_trusted(ctx.tcx, did) {
-        let ty_name = names.ty(did, subst).as_ident();
+        let ty_name = names.def_ty(did, subst).as_ident();
         return vec![Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: Box::new([]) })];
     }
 
     let adt = ctx.tcx.adt_def(did);
-    let ty_name = names.ty(did, subst).as_ident();
+    let ty_name = names.def_ty(did, subst).as_ident();
 
     let sumrecord = if adt.is_enum() {
         SumRecord::Sum(
@@ -276,7 +302,7 @@ pub fn is_int(tcx: TyCtxt, ty: Ty) -> bool {
 
 pub fn int_ty<'tcx, N: Namer<'tcx>>(ctx: &Why3Generator<'tcx>, names: &N) -> MlT {
     let int_id = get_int_ty(ctx.tcx);
-    let ty = ctx.type_of(int_id).skip_binder();
+    let ty = ctx.type_of(int_id).no_bound_vars().unwrap();
     translate_ty(ctx, names, DUMMY_SP, ty)
 }
 

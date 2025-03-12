@@ -13,7 +13,6 @@ use crate::{
     ctx::TranslationCtx,
     error::CannotFetchThir,
     pearlite::{Stub, pearlite_stub},
-    specification::contract_of,
     traits::TraitResolved,
     validate::is_overloaded_item,
 };
@@ -43,7 +42,7 @@ impl Purity {
         } else if is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id) || is_snapshot {
             Purity::Logic { prophetic: false }
         } else {
-            let contract = contract_of(ctx, def_id);
+            let contract = &ctx.sig(def_id).contract;
             let terminates = contract.terminates;
             let no_panic = contract.no_panic;
             Purity::Program { terminates, no_panic }
@@ -145,7 +144,7 @@ impl PurityVisitor<'_, '_> {
         {
             Purity::Ghost
         } else {
-            let contract = contract_of(self.ctx, func_did);
+            let contract = &self.ctx.sig(func_did).contract;
             let terminates = contract.terminates;
             let no_panic = contract.no_panic;
             Purity::Program { terminates, no_panic }

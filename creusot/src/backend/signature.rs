@@ -1,19 +1,24 @@
 use rustc_hir::def_id::DefId;
 use why3::{
     Ident,
-    declaration::{Condition as WCondition, Contract, Signature},
+    declaration::{Contract, Signature},
     exp::{Binder, Trigger},
 };
 
 use crate::{
-    backend::{Namer, Why3Generator, logic::function_call, term::lower_pure, ty::translate_ty},
+    backend::{
+        Namer, Why3Generator,
+        logic::function_call,
+        term::{lower_condition, lower_pure},
+        ty::translate_ty,
+    },
     contracts_items::{should_replace_trigger, why3_attrs},
     naming::ident_of,
-    specification::{Condition, PreSignature},
+    specification::PreSignature,
 };
 
 // This should be given a normalized pre_sig!
-pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
+pub(crate) fn lower_sig<'tcx, N: Namer<'tcx>>(
     ctx: &Why3Generator<'tcx>,
     names: &N,
     name: Ident,
@@ -26,10 +31,7 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
     let args: Box<[Binder]> = pre_sig
         .inputs
         .iter()
-        .map(|(id, span, ty)| {
-            let ty = translate_ty(ctx, names, *span, *ty);
-            Binder::typed(ident_of(*id), ty)
-        })
+        .map(|(id, span, ty)| Binder::typed(ident_of(*id), translate_ty(ctx, names, *span, *ty)))
         .collect();
 
     let mut attrs = why3_attrs(ctx.tcx, def_id);
@@ -62,12 +64,4 @@ pub(crate) fn sig_to_why3<'tcx, N: Namer<'tcx>>(
         sig.trigger = Some(Trigger::single(function_call(&sig)))
     };
     sig
-}
-
-fn lower_condition<'tcx, N: Namer<'tcx>>(
-    ctx: &Why3Generator<'tcx>,
-    names: &N,
-    cond: Condition<'tcx>,
-) -> WCondition {
-    WCondition { exp: lower_pure(ctx, names, &cond.term), expl: cond.expl }
 }

@@ -5,9 +5,10 @@ use rustc_hir::{
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::Promoted,
-    ty::{GenericArgsRef, Ty, TyCtxt, TyKind},
+    ty::{GenericArgsRef, List, Ty, TyCtxt, TyKind},
 };
 use rustc_span::Symbol;
+use rustc_target::abi::FieldIdx;
 use rustc_type_ir::AliasTyKind;
 
 use crate::{
@@ -27,7 +28,8 @@ pub(crate) enum Dependency<'tcx> {
     Item(DefId, GenericArgsRef<'tcx>),
     TyInvAxiom(Ty<'tcx>),
     ClosureAccessor(DefId, GenericArgsRef<'tcx>, u32),
-    Builtin(PreMod),
+    TupleField(&'tcx List<Ty<'tcx>>, FieldIdx),
+    PreMod(PreMod),
     Eliminator(DefId, GenericArgsRef<'tcx>),
     Promoted(LocalDefId, Promoted),
 }
@@ -73,6 +75,7 @@ impl<'tcx> Dependency<'tcx> {
                 TyKind::Param(p) => {
                     Some(Symbol::intern(&type_name(&p.name.as_str().replace(" ", "_"))))
                 }
+                TyKind::Tuple(_) => Some(Symbol::intern("tuple")),
                 _ => None,
             },
             Dependency::Item(did, _) => match tcx.def_kind(did) {
@@ -94,7 +97,8 @@ impl<'tcx> Dependency<'tcx> {
                     Some(Symbol::intern(&value_name(&translate_name(tcx.item_name(did).as_str()))))
                 }
             },
-            Dependency::ClosureAccessor(_, _, ix) => Some(Symbol::intern(&format!("field_{ix}"))),
+            Dependency::ClosureAccessor(_, _, ix) => Some(Symbol::intern(&format!("_{ix}"))),
+            Dependency::TupleField(_, ix) => Some(Symbol::intern(&format!("_{}", ix.as_u32()))),
             Dependency::TyInvAxiom(..) => Some(Symbol::intern("inv_axiom")),
             Dependency::Eliminator(did, _) => {
                 Some(Symbol::intern(&value_name(&translate_name(tcx.item_name(did).as_str()))))
@@ -108,7 +112,7 @@ impl<'tcx> Dependency<'tcx> {
                         .unwrap_or_else(|| tcx.def_path_str(did.to_def_id()))
                 ))
             ))),
-            Dependency::Builtin(_) => None,
+            Dependency::PreMod(_) => None,
         }
     }
 }

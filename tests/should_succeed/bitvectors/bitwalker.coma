@@ -132,18 +132,6 @@ module M_bitwalker__peek_bit_array8 [#"bitwalker.rs" 15 0 15 52]
     | C_None'0
     | C_Some'0 UInt8.t
   
-  predicate inv'0 (_1 : Slice64.slice UInt8.t)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : Slice64.slice UInt8.t [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : UInt64.t)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : UInt64.t [inv'1 x] . inv'1 x = true
-  
-  predicate inv'2 (_1 : t_Option'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
-  
   predicate in_bounds'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq UInt8.t) =
     [%#sslice12] UInt64.t'int self < Seq.length seq
   
@@ -161,11 +149,8 @@ module M_bitwalker__peek_bit_array8 [#"bitwalker.rs" 15 0 15 52]
   predicate has_value'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq UInt8.t) (out : UInt8.t) =
     [%#sslice13] Seq.get seq (UInt64.t'int self) = out
   
-  let rec get'0 (self:Slice64.slice UInt8.t) (index:UInt64.t) (return'  (ret:t_Option'0))= {[@expl:get 'self' type invariant] inv'0 self}
-    {[@expl:get 'index' type invariant] inv'1 index}
-    any
-    [ return' (result:t_Option'0)-> {inv'2 result}
-      {[%#sslice8] in_bounds'0 index (view'0 self)
+  let rec get'0 (self:Slice64.slice UInt8.t) (index:UInt64.t) (return'  (ret:t_Option'0))= any
+    [ return' (result:t_Option'0)-> {[%#sslice8] in_bounds'0 index (view'0 self)
        -> (exists r : UInt8.t . result = C_Some'0 r /\ has_value'0 index (view'0 self) r)}
       {[%#sslice9] in_bounds'0 index (view'0 self) \/ result = C_None'0}
       (! return' {result}) ]
@@ -401,10 +386,6 @@ module M_bitwalker__peek [#"bitwalker.rs" 44 0 44 56]
   use mach.int.Int
   use creusot.prelude.Any
   
-  predicate inv'0 (_1 : Slice64.slice UInt8.t)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : Slice64.slice UInt8.t [inv'0 x] . inv'0 x = true
-  
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function view'1 (self : Slice64.slice UInt8.t) : Seq.seq UInt8.t
@@ -416,8 +397,7 @@ module M_bitwalker__peek [#"bitwalker.rs" 44 0 44 56]
   function view'0 (self : Slice64.slice UInt8.t) : Seq.seq UInt8.t =
     [%#smodel11] view'1 self
   
-  let rec len'0 (self:Slice64.slice UInt8.t) (return'  (ret:UInt64.t))= {[@expl:len 'self' type invariant] inv'0 self}
-    any
+  let rec len'0 (self:Slice64.slice UInt8.t) (return'  (ret:UInt64.t))= any
     [ return' (result:UInt64.t)-> {[%#sslice8] Seq.length (view'0 self) = UInt64.t'int result} (! return' {result}) ]
   
   
@@ -953,10 +933,6 @@ module M_bitwalker__poke [#"bitwalker.rs" 90 0 90 71]
   use creusot.int.Int8
   use creusot.prelude.Any
   
-  predicate inv'0 (_1 : Slice64.slice UInt8.t)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : Slice64.slice UInt8.t [inv'0 x] . inv'0 x = true
-  
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function view'1 (self : Slice64.slice UInt8.t) : Seq.seq UInt8.t
@@ -968,8 +944,7 @@ module M_bitwalker__poke [#"bitwalker.rs" 90 0 90 71]
   function view'2 (self : Slice64.slice UInt8.t) : Seq.seq UInt8.t =
     [%#smodel24] view'1 self
   
-  let rec len'0 (self:Slice64.slice UInt8.t) (return'  (ret:UInt64.t))= {[@expl:len 'self' type invariant] inv'0 self}
-    any
+  let rec len'0 (self:Slice64.slice UInt8.t) (return'  (ret:UInt64.t))= any
     [ return' (result:UInt64.t)-> {[%#sslice17] Seq.length (view'2 self) = UInt64.t'int result} (! return' {result}) ]
   
   

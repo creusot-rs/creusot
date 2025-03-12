@@ -50,14 +50,6 @@ module M_02_std__binary_search [#"02_std.rs" 8 0 8 40]
     | C_Ok'0 UInt64.t
     | C_Err'0 UInt64.t
   
-  predicate inv'0 (_1 : Slice64.slice UInt32.t)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : Slice64.slice UInt32.t [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : UInt32.t)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : UInt32.t [inv'1 x] . inv'1 x = true
-  
   predicate sorted_range'0 (self : Seq.seq int) (start : int) (end' : int) =
     [%#sseq19] forall i : int, j : int . start <= i /\ i <= j /\ j < end'  -> Seq.get self i <= Seq.get self j
   
@@ -142,9 +134,7 @@ module M_02_std__binary_search [#"02_std.rs" 8 0 8 40]
   axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord21] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
-  let rec binary_search'1 (self:Slice64.slice UInt32.t) (x:UInt32.t) (return'  (ret:t_Result'0))= {[@expl:binary_search 'self' type invariant] inv'0 self}
-    {[@expl:binary_search 'x' type invariant] inv'1 x}
-    {[@expl:binary_search requires] [%#sslice4] sorted'0 (deep_model'0 self)}
+  let rec binary_search'1 (self:Slice64.slice UInt32.t) (x:UInt32.t) (return'  (ret:t_Result'0))= {[@expl:binary_search requires] [%#sslice4] sorted'0 (deep_model'0 self)}
     any
     [ return' (result:t_Result'0)-> {[%#sslice5] forall i : UInt64.t . result = C_Ok'0 i
        -> UInt64.t'int i < Seq.length (view'0 self) /\ Seq.get (deep_model'1 self) (UInt64.t'int i) = deep_model'2 x}
@@ -159,17 +149,9 @@ module M_02_std__binary_search [#"02_std.rs" 8 0 8 40]
       (! return' {result}) ]
   
   
-  predicate inv'2 (_1 : t_Result'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Result'0 [inv'2 x] . inv'2 x = true
-  
-  predicate inv'3 (_1 : UInt64.t)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : UInt64.t [inv'3 x] . inv'3 x = true
-  
-  let rec unwrap'0 (self:t_Result'0) (return'  (ret:UInt64.t))= {[@expl:unwrap 'self' type invariant] inv'2 self}
-    {[@expl:unwrap requires] [%#sresult9] exists t : UInt64.t . self = C_Ok'0 t}
-    any [ return' (result:UInt64.t)-> {inv'3 result} {[%#sresult10] C_Ok'0 result = self} (! return' {result}) ] 
+  let rec unwrap'0 (self:t_Result'0) (return'  (ret:UInt64.t))= {[@expl:unwrap requires] [%#sresult9] exists t : UInt64.t . self
+    = C_Ok'0 t}
+    any [ return' (result:UInt64.t)-> {[%#sresult10] C_Ok'0 result = self} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   

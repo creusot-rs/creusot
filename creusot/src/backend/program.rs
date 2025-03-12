@@ -6,7 +6,7 @@ use crate::{
         is_trusted_item,
         optimization::{gather_usage, infer_proph_invariants, simplify_fmir},
         place::{Focus, create_assign_inner, projections_to_expr, rplace_to_expr},
-        signature::sig_to_why3,
+        signature::lower_sig,
         term::{lower_pat, lower_pure},
         ty::{
             constructor, floatty_to_prelude, int_ty, ity_to_prelude, translate_ty, uty_to_prelude,
@@ -158,11 +158,12 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         })
         .collect();
 
-    // Remove the invariant from the contract here??
     let mut sig = if body_id.promoted.is_none() {
         let def_id = body_id.def_id();
-        let pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, ctx.typing_env(def_id));
-        sig_to_why3(ctx, names, name, pre_sig, def_id)
+        let typing_env = ctx.typing_env(def_id);
+        let mut pre_sig = ctx.sig(def_id).clone().normalize(ctx.tcx, typing_env);
+        pre_sig.add_type_invariant_spec(ctx, def_id, typing_env);
+        lower_sig(ctx, names, name, pre_sig, def_id)
     } else {
         let ret = ret.unwrap();
         Signature {
@@ -182,9 +183,9 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         && !ctx.sig(body_id.def_id()).contract.has_user_contract;
 
     // We remove the barrier around the definition in the following edge cases:
-    let open_body = false
+    let open_body =
         // a closure with no contract
-        || inferred_closure_spec
+        inferred_closure_spec
         // a promoted item
         || body_id.promoted.is_some();
 
@@ -448,8 +449,21 @@ impl<'tcx> RValue<'tcx> {
                 let args = args.into_iter().map(|a| a.to_why(lower, istmts)).collect();
                 constructor(lower.names, args, id, subst)
             }
-            RValue::Tuple(f) => {
-                Exp::Tuple(f.into_iter().map(|f| f.to_why(lower, istmts)).collect())
+            RValue::Tuple(flds) if flds.is_empty() => Exp::unit(),
+            RValue::Tuple(flds) if flds.len() == 1 => {
+                flds.into_iter().next().unwrap().to_why(lower, istmts)
+            }
+            RValue::Tuple(flds) => {
+                let TyKind::Tuple(tys) = ty.kind() else { unreachable!() };
+                Exp::Record {
+                    fields: flds
+                        .into_iter()
+                        .enumerate()
+                        .map(|(ix, f)| {
+                            (lower.names.tuple_field(tys, ix.into()), f.to_why(lower, istmts))
+                        })
+                        .collect(),
+                }
             }
             RValue::Cast(e, source, target) => {
                 match source.kind() {
@@ -1151,7 +1165,7 @@ fn pattern_of_place<'tcx>(
                 TyKind::Tuple(tys) => {
                     let mut fields: Box<_> = repeat_n(Pattern::Wildcard, tys.len()).collect();
                     fields[fidx.as_usize()] = pat;
-                    pat = Pattern::Tuple(fields)
+                    pat = Pattern::Tuple(fields, tys)
                 }
                 TyKind::Closure(did, substs) => {
                     let mut fields: Box<_> =
@@ -1195,12 +1209,13 @@ fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
         let real_sig = lower.ctx.signature_unclosure(subst.as_closure().sig(), Safety::Safe);
 
         once(Arg::Term(arg.to_why(lower, istmts)))
-            .chain(real_sig.inputs().skip_binder().iter().enumerate().map(|(ix, inp)| {
+            .chain(real_sig.inputs().iter().enumerate().map(|(ix, inp)| {
+                let inp = lower.ctx.instantiate_bound_regions_with_erased(inp.map_bound(|&x| x));
                 let projection = pl
                     .projection
                     .iter()
                     .copied()
-                    .chain([ProjectionElem::Field(ix.into(), *inp)])
+                    .chain([ProjectionElem::Field(ix.into(), inp)])
                     .collect();
                 Arg::Term(Operand::Move(Place { projection, ..pl }).to_why(lower, istmts))
             }))

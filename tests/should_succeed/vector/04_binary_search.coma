@@ -78,10 +78,6 @@ module M_04_binary_search__binary_search [#"04_binary_search.rs" 26 0 26 71]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  predicate inv'0 (_1 : t_Vec'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
-  
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function view'1 (self : t_Vec'0) : Seq.seq UInt32.t
@@ -91,8 +87,7 @@ module M_04_binary_search__binary_search [#"04_binary_search.rs" 26 0 26 71]
   function view'0 (self : t_Vec'0) : Seq.seq UInt32.t =
     [%#smodel16] view'1 self
   
-  let rec len'0 (self:t_Vec'0) (return'  (ret:UInt64.t))= {[@expl:len 'self' type invariant] inv'0 self}
-    any
+  let rec len'0 (self:t_Vec'0) (return'  (ret:UInt64.t))= any
     [ return' (result:UInt64.t)-> {[%#svec15] UInt64.t'int result = Seq.length (view'0 self)} (! return' {result}) ]
   
   
@@ -194,28 +189,14 @@ module M_04_binary_search__binary_search [#"04_binary_search.rs" 26 0 26 71]
   axiom cmp_le_log'1_spec : forall x : UInt64.t, y : UInt64.t . [%#sord35] UInt64.le x y
   = (cmp_log'1 x y <> C_Greater'0)
   
-  predicate inv'1 (_1 : UInt64.t)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : UInt64.t [inv'1 x] . inv'1 x = true
-  
   predicate in_bounds'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq UInt32.t) =
     [%#sslice48] UInt64.t'int self < Seq.length seq
-  
-  predicate inv'2 (_1 : UInt32.t)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : UInt32.t [inv'2 x] . inv'2 x = true
   
   predicate has_value'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq UInt32.t) (out : UInt32.t) =
     [%#sslice49] Seq.get seq (UInt64.t'int self) = out
   
-  let rec index'0 (self:t_Vec'0) (index:UInt64.t) (return'  (ret:UInt32.t))= {[@expl:index 'self' type invariant] inv'0 self}
-    {[@expl:index 'index' type invariant] inv'1 index}
-    {[@expl:index requires] [%#svec18] in_bounds'0 index (view'0 self)}
-    any
-    [ return' (result:UInt32.t)-> {inv'2 result}
-      {[%#svec19] has_value'0 index (view'0 self) result}
-      (! return' {result}) ]
-  
+  let rec index'0 (self:t_Vec'0) (index:UInt64.t) (return'  (ret:UInt32.t))= {[@expl:index requires] [%#svec18] in_bounds'0 index (view'0 self)}
+    any [ return' (result:UInt32.t)-> {[%#svec19] has_value'0 index (view'0 self) result} (! return' {result}) ] 
   
   predicate sorted_range'0 [#"04_binary_search.rs" 8 0 8 52] (s : Seq.seq UInt32.t) (l : int) (u : int) =
     [%#s04_binary_search50] forall i : int, j : int . l <= i /\ i < j /\ j < u  -> UInt32.le (Seq.get s i) (Seq.get s j)

@@ -19,25 +19,27 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
   
   type t_T'0
   
-  type t_List'0  =
+  type tuple'0  =
+    { _0'0: t_T'0; _1'0: t_List'0 }
+  with t_List'0  =
     | C_Nil'0
-    | C_Cons'0 (t_T'0, t_List'0)
+    | C_Cons'0 tuple'0
   
   predicate inv'4 (_1 : t_T'0)
   
-  predicate inv'3 (_1 : (t_T'0, t_List'0))
+  predicate inv'3 (_1 : tuple'0)
   
   predicate inv'0 (_1 : t_List'0)
   
-  axiom inv_axiom'3 [@rewrite] : forall x : (t_T'0, t_List'0) [inv'3 x] . inv'3 x
-  = (let (x0, x1) = x in inv'4 x0 /\ inv'0 x1)
+  axiom inv_axiom'3 [@rewrite] : forall x : tuple'0 [inv'3 x] . inv'3 x
+  = (let {_0'0 = x0 ; _1'0 = x1} = x in inv'4 x0 /\ inv'0 x1)
   
-  predicate invariant'0 (self : (t_T'0, t_List'0)) =
+  predicate invariant'0 (self : tuple'0) =
     [%#sboxed11] inv'3 self
   
-  predicate inv'1 (_1 : (t_T'0, t_List'0))
+  predicate inv'1 (_1 : tuple'0)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : (t_T'0, t_List'0) [inv'1 x] . inv'1 x = invariant'0 x
+  axiom inv_axiom'1 [@rewrite] : forall x : tuple'0 [inv'1 x] . inv'1 x = invariant'0 x
   
   axiom inv_axiom'0 [@rewrite] : forall x : t_List'0 [inv'0 x] . inv'0 x
   = match x with
@@ -64,14 +66,12 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
   function rev_append'0 [#"inplace_list_reversal.rs" 16 0 16 55] (n : t_List'0) (o : t_List'0) : t_List'0 =
     [%#sinplace_list_reversal8] match n with
       | C_Nil'0 -> o
-      | C_Cons'0 (hd, tl) -> rev_append'0 tl (C_Cons'0 (hd, o))
+      | C_Cons'0 {_0'0 = hd ; _1'0 = tl} -> rev_append'0 tl (C_Cons'0 { _0'0 = hd; _1'0 = o })
       end
   
-  let rec v_Cons'0 (input:t_List'0) (ret  (field_0:(t_T'0, t_List'0)))= any
-    [ good (field_0:(t_T'0, t_List'0))-> {C_Cons'0 field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0 : (t_T'0, t_List'0) [C_Cons'0 field_0 : t_List'0] . C_Cons'0 field_0 <> input}
-      (! {false}
-      any) ]
+  let rec v_Cons'0 (input:t_List'0) (ret  (field_0:tuple'0))= any
+    [ good (field_0:tuple'0)-> {C_Cons'0 field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0 : tuple'0 [C_Cons'0 field_0 : t_List'0] . C_Cons'0 field_0 <> input} (! {false} any) ]
   
   
   predicate resolve'6 (_1 : t_T'0)
@@ -79,16 +79,16 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
   predicate resolve'7 (_1 : t_List'0) =
     true
   
-  predicate resolve'5 (self : (t_T'0, t_List'0)) =
-    [%#sresolve13] resolve'6 (let (a, _) = self in a) /\ resolve'7 (let (_, a) = self in a)
+  predicate resolve'5 (self : tuple'0) =
+    [%#sresolve13] resolve'6 self._0'0 /\ resolve'7 self._1'0
   
-  predicate resolve'4 (_1 : (t_T'0, t_List'0)) =
+  predicate resolve'4 (_1 : tuple'0) =
     resolve'5 _1
   
-  predicate resolve'2 (self : (t_T'0, t_List'0)) =
+  predicate resolve'2 (self : tuple'0) =
     [%#sresolve9] resolve'4 self
   
-  predicate resolve'0 (_1 : (t_T'0, t_List'0)) =
+  predicate resolve'0 (_1 : tuple'0) =
     resolve'2 _1
   
   predicate resolve'3 (self : MutBorrow.t t_List'0) =
@@ -125,14 +125,14 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
         [ bb4 = bb5
         | bb5 = bb6
         | bb6 = bb7
-        | bb7 = any [ br0 -> {head = C_Nil'0} (! bb21) | br1 (x0:(t_T'0, t_List'0))-> {head = C_Cons'0 x0} (! bb8) ] 
+        | bb7 = any [ br0 -> {head = C_Nil'0} (! bb21) | br1 (x0:tuple'0)-> {head = C_Cons'0 x0} (! bb8) ] 
         | bb8 = bb9
         | bb9 = s0
-          [ s0 = v_Cons'0 {head} (fun (r0'0:(t_T'0, t_List'0)) ->  [ &curr <- r0'0 ] s1)
-          | s1 =  [ &next <- let (_, r'0) = curr in r'0 ] s2
+          [ s0 = v_Cons'0 {head} (fun (r0'0:tuple'0) ->  [ &curr <- r0'0 ] s1)
+          | s1 =  [ &next <- curr._1'0 ] s2
           | s2 = bb10 ]
         
-        | bb10 = s0 [ s0 =  [ &curr <- let (r'0, _) = curr in (r'0, prev) ] s1 | s1 = bb12 ] 
+        | bb10 = s0 [ s0 =  [ &curr <- { curr with _1'0 = prev } ] s1 | s1 = bb12 ] 
         | bb12 = s0 [ s0 =  [ &_19 <- C_Cons'0 curr ] s1 | s1 = bb13 ] 
         | bb13 = bb14
         | bb14 = s0 [ s0 =  [ &prev <- _19 ] s1 | s1 = bb16 ] 
@@ -178,7 +178,7 @@ module M_inplace_list_reversal__rev [#"inplace_list_reversal.rs" 24 0 24 30]
     | & head : t_List'0 = Any.any_l ()
     | & _7 : MutBorrow.t t_List'0 = Any.any_l ()
     | & _8 : t_List'0 = Any.any_l ()
-    | & curr : (t_T'0, t_List'0) = Any.any_l ()
+    | & curr : tuple'0 = Any.any_l ()
     | & next : t_List'0 = Any.any_l ()
     | & _19 : t_List'0 = Any.any_l () ]
     

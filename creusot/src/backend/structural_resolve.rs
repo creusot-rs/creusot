@@ -75,7 +75,7 @@ pub fn structural_resolve<'tcx>(
                 ty: ctx.types.bool,
                 kind: TermKind::Match {
                     scrutinee: Box::new(subject),
-                    arms: Box::new([(Pattern::Tuple(fields.into()), body)]),
+                    arms: Box::new([(Pattern::Tuple(fields.into(), tys), body)]),
                 },
                 span: DUMMY_SP,
             })

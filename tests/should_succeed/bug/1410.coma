@@ -42,19 +42,14 @@ module M_1410__bar [#"1410.rs" 6 0 6 32]
   type t_Range'0  =
     { t_Range__start'0: Int32.t; t_Range__end'0: Int32.t }
   
-  predicate inv'1 (_1 : t_Range'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Range'0 [inv'1 x] . inv'1 x = true
-  
   predicate into_iter_pre'0 (self : t_Range'0) =
     [%#siter16] true
   
   predicate into_iter_post'0 (self : t_Range'0) (res : t_Range'0) =
     [%#siter17] self = res
   
-  let rec into_iter'0 (self:t_Range'0) (return'  (ret:t_Range'0))= {[@expl:into_iter 'self' type invariant] inv'1 self}
-    {[@expl:into_iter requires] [%#siter10] into_iter_pre'0 self}
-    any [ return' (result:t_Range'0)-> {inv'1 result} {[%#siter11] into_iter_post'0 self result} (! return' {result}) ] 
+  let rec into_iter'0 (self:t_Range'0) (return'  (ret:t_Range'0))= {[@expl:into_iter requires] [%#siter10] into_iter_pre'0 self}
+    any [ return' (result:t_Range'0)-> {[%#siter11] into_iter_post'0 self result} (! return' {result}) ] 
   
   type t_F'0
   
@@ -83,6 +78,10 @@ module M_1410__bar [#"1410.rs" 6 0 6 32]
   
   axiom produces_refl'0_spec : forall self : t_Range'0 . [%#srange18] produces'0 self (Seq.empty : Seq.seq Int32.t) self
   
+  predicate inv'1 (_1 : t_Range'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Range'0 [inv'1 x] . inv'1 x = true
+  
   predicate inv'2 (_1 : Seq.seq Int32.t)
   
   axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq Int32.t [inv'2 x] . inv'2 x = true
@@ -91,14 +90,6 @@ module M_1410__bar [#"1410.rs" 6 0 6 32]
     | C_None'0
     | C_Some'0 Int32.t
   
-  predicate inv'3 (_1 : MutBorrow.t t_Range'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_Range'0 [inv'3 x] . inv'3 x = true
-  
-  predicate inv'4 (_1 : t_Option'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
-  
   predicate resolve'2 (self : MutBorrow.t t_Range'0) =
     [%#sresolve24] self.final = self.current
   
@@ -106,10 +97,8 @@ module M_1410__bar [#"1410.rs" 6 0 6 32]
     [%#srange23] resolve'2 self
     /\ deep_model'0 (self.current).t_Range__start'0 >= deep_model'0 (self.current).t_Range__end'0
   
-  let rec next'0 (self:MutBorrow.t t_Range'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'3 self}
-    any
-    [ return' (result:t_Option'0)-> {inv'4 result}
-      {[%#siter13] match result with
+  let rec next'0 (self:MutBorrow.t t_Range'0) (return'  (ret:t_Option'0))= any
+    [ return' (result:t_Option'0)-> {[%#siter13] match result with
         | C_None'0 -> completed'0 self
         | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
         end}
@@ -127,13 +116,9 @@ module M_1410__bar [#"1410.rs" 6 0 6 32]
   predicate invariant'0 (self : MutBorrow.t t_F'0) =
     [%#sinvariant32] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'5 (_1 : MutBorrow.t t_F'0)
+  predicate inv'3 (_1 : MutBorrow.t t_F'0)
   
-  axiom inv_axiom'4 [@rewrite] : forall x : MutBorrow.t t_F'0 [inv'5 x] . inv'5 x = invariant'0 x
-  
-  predicate inv'6 (_1 : ())
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : () [inv'6 x] . inv'6 x = true
+  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_F'0 [inv'3 x] . inv'3 x = invariant'0 x
   
   predicate postcondition_once'0 (self : t_F'0) (args : ()) (result : ())
   
@@ -162,13 +147,10 @@ module M_1410__bar [#"1410.rs" 6 0 6 32]
   axiom postcondition_mut_unnest'0_spec : forall self : t_F'0, args : (), res_state : t_F'0, res : () . ([%#sops25] postcondition_mut'0 self args res_state res)
    -> ([%#sops26] unnest'0 self res_state)
   
-  let rec call_mut'0 (self:MutBorrow.t t_F'0) (args:()) (return'  (ret:()))= {[@expl:call_mut 'self' type invariant] inv'5 self}
-    {[@expl:call_mut 'args' type invariant] inv'6 args}
+  let rec call_mut'0 (self:MutBorrow.t t_F'0) (args:()) (return'  (ret:()))= {[@expl:call_mut 'self' type invariant] inv'3 self}
     {[@expl:call_mut requires] [%#sops14] precondition'0 self.current args}
     any
-    [ return' (result:())-> {inv'6 result}
-      {[%#sops15] postcondition_mut'0 self.current args self.final result}
-      (! return' {result}) ]
+    [ return' (result:())-> {[%#sops15] postcondition_mut'0 self.current args self.final result} (! return' {result}) ]
   
   
   meta "compute_max_steps" 1000000

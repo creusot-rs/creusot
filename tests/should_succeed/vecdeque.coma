@@ -72,18 +72,14 @@ module M_vecdeque__test_deque [#"vecdeque.rs" 5 0 5 19]
     [ return' (result:t_VecDeque'0)-> {[%#sdeque15] Seq.length (view'0 result) = 0} (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_VecDeque'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_VecDeque'0 [inv'0 x] . inv'0 x = true
-  
   function view'1 (self : t_VecDeque'0) : Seq.seq UInt32.t =
     [%#smodel29] view'0 self
   
-  let rec is_empty'0 (self:t_VecDeque'0) (return'  (ret:bool))= {[@expl:is_empty 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#sdeque16] result = (Seq.length (view'1 self) = 0)} (! return' {result}) ] 
+  let rec is_empty'0 (self:t_VecDeque'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#sdeque16] result = (Seq.length (view'1 self) = 0)} (! return' {result}) ]
   
-  let rec len'0 (self:t_VecDeque'0) (return'  (ret:UInt64.t))= {[@expl:len 'self' type invariant] inv'0 self}
-    any
+  
+  let rec len'0 (self:t_VecDeque'0) (return'  (ret:UInt64.t))= any
     [ return' (result:UInt64.t)-> {[%#sdeque17] UInt64.t'int result = Seq.length (view'1 self)} (! return' {result}) ]
   
   
@@ -95,24 +91,14 @@ module M_vecdeque__test_deque [#"vecdeque.rs" 5 0 5 19]
     | C_None'0
     | C_Some'0 UInt32.t
   
-  predicate inv'1 (_1 : MutBorrow.t t_VecDeque'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t t_VecDeque'0 [inv'1 x] . inv'1 x = true
-  
-  predicate inv'2 (_1 : t_Option'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
-  
   function view'2 (self : MutBorrow.t t_VecDeque'0) : Seq.seq UInt32.t =
     [%#smodel30] view'0 self.current
   
   function push_front'1 [@inline:trivial] (self : Seq.seq UInt32.t) (x : UInt32.t) : Seq.seq UInt32.t =
     [%#sseq31] Seq.cons x self
   
-  let rec pop_front'0 (self:MutBorrow.t t_VecDeque'0) (return'  (ret:t_Option'0))= {[@expl:pop_front 'self' type invariant] inv'1 self}
-    any
-    [ return' (result:t_Option'0)-> {inv'2 result}
-      {[%#sdeque19] match result with
+  let rec pop_front'0 (self:MutBorrow.t t_VecDeque'0) (return'  (ret:t_Option'0))= any
+    [ return' (result:t_Option'0)-> {[%#sdeque19] match result with
         | C_Some'0 t -> view'0 self.final = Seq.([..]) (view'2 self) 1 (Seq.length (view'2 self))
         /\ view'2 self = push_front'1 (view'0 self.final) t
         | C_None'0 -> self.current = self.final /\ Seq.length (view'2 self) = 0
@@ -125,10 +111,6 @@ module M_vecdeque__test_deque [#"vecdeque.rs" 5 0 5 19]
      [ & _0 : t_Option'0 = Any.any_l () | & _1 : t_Option'0 = Any.any_l () ] 
     [ return' (result:t_Option'0)-> return' {result} ]
   
-  
-  predicate inv'3 (_1 : t_Option'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
   
   type t_Option'1  =
     | C_None'1
@@ -146,16 +128,12 @@ module M_vecdeque__test_deque [#"vecdeque.rs" 5 0 5 19]
   function deep_model'0 (self : t_Option'0) : t_Option'1 =
     [%#smodel32] deep_model'1 self
   
-  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'3 self}
-    {[@expl:eq 'other' type invariant] inv'3 other}
-    any
+  let rec eq'0 (self:t_Option'0) (other:t_Option'0) (return'  (ret:bool))= any
     [ return' (result:bool)-> {[%#soption20] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ]
   
   
-  let rec pop_back'0 (self:MutBorrow.t t_VecDeque'0) (return'  (ret:t_Option'0))= {[@expl:pop_back 'self' type invariant] inv'1 self}
-    any
-    [ return' (result:t_Option'0)-> {inv'2 result}
-      {[%#sdeque21] match result with
+  let rec pop_back'0 (self:MutBorrow.t t_VecDeque'0) (return'  (ret:t_Option'0))= any
+    [ return' (result:t_Option'0)-> {[%#sdeque21] match result with
         | C_Some'0 t -> view'0 self.final = Seq.([..]) (view'2 self) 0 (Seq.length (view'2 self) - 1)
         /\ view'2 self = Seq.snoc (view'0 self.final) t
         | C_None'0 -> self.current = self.final /\ Seq.length (view'2 self) = 0
@@ -169,21 +147,15 @@ module M_vecdeque__test_deque [#"vecdeque.rs" 5 0 5 19]
     [ return' (result:t_Option'0)-> return' {result} ]
   
   
-  predicate inv'4 (_1 : UInt32.t)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : UInt32.t [inv'4 x] . inv'4 x = true
-  
-  let rec push_front'0 (self:MutBorrow.t t_VecDeque'0) (value:UInt32.t) (return'  (ret:()))= {[@expl:push_front 'self' type invariant] inv'1 self}
-    {[@expl:push_front 'value' type invariant] inv'4 value}
-    any
+  let rec push_front'0 (self:MutBorrow.t t_VecDeque'0) (value:UInt32.t) (return'  (ret:()))= any
     [ return' (result:())-> {[%#sdeque22] Seq.length (view'0 self.final) = Seq.length (view'2 self) + 1}
       {[%#sdeque23] view'0 self.final = push_front'1 (view'2 self) value}
       (! return' {result}) ]
   
   
-  let rec push_back'0 (self:MutBorrow.t t_VecDeque'0) (value:UInt32.t) (return'  (ret:()))= {[@expl:push_back 'self' type invariant] inv'1 self}
-    {[@expl:push_back 'value' type invariant] inv'4 value}
-    any [ return' (result:())-> {[%#sdeque24] view'0 self.final = Seq.snoc (view'2 self) value} (! return' {result}) ] 
+  let rec push_back'0 (self:MutBorrow.t t_VecDeque'0) (value:UInt32.t) (return'  (ret:()))= any
+    [ return' (result:())-> {[%#sdeque24] view'0 self.final = Seq.snoc (view'2 self) value} (! return' {result}) ]
+  
   
   let rec promoted1__test_deque'0 (return'  (ret:t_Option'0))= bb0
     [ bb0 = s0
@@ -201,8 +173,9 @@ module M_vecdeque__test_deque [#"vecdeque.rs" 5 0 5 19]
     [ return' (result:t_Option'0)-> return' {result} ]
   
   
-  let rec clear'0 (self:MutBorrow.t t_VecDeque'0) (return'  (ret:()))= {[@expl:clear 'self' type invariant] inv'1 self}
-    any [ return' (result:())-> {[%#sdeque27] Seq.length (view'0 self.final) = 0} (! return' {result}) ] 
+  let rec clear'0 (self:MutBorrow.t t_VecDeque'0) (return'  (ret:()))= any
+    [ return' (result:())-> {[%#sdeque27] Seq.length (view'0 self.final) = 0} (! return' {result}) ]
+  
   
   meta "compute_max_steps" 1000000
   
