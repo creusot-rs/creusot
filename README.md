@@ -6,7 +6,7 @@
 
 **Creusot** is a *deductive verifier* for Rust code. It verifies your code is safe from panics, overflows, and assertion failures. By adding annotations you can take it further and verify your code does the *correct* thing.
 
-Creusot works by translating Rust code to [Coma](https://coma-ivl.codeberg.page/), an intermediate verification language of the [Why3 Platform](https://www.why3.org). Users can then leverage the full power of Why3 to (semi)-automatically discharge the verification conditions!
+Creusot works by translating Rust code to [Coma](https://coma.paulpatault.fr/), an intermediate verification language of the [Why3 Platform](https://www.why3.org). Users can then leverage the full power of Why3 to (semi)-automatically discharge the verification conditions!
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for technical details.
 
