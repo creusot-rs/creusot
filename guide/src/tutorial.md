@@ -15,7 +15,7 @@ Follow the [README](https://github.com/creusot-rs/creusot) to install Why3 and C
 Create a new project with this command:
 
 ```
-cargo creusot new creusot-tutorial --creusot-contracts /PATH/TO/CREUSOT/creusot-contracts
+cargo creusot new creusot-tutorial
 ```
 
 This generates a directory `creusot-tutorial` containing the following files:
@@ -26,9 +26,6 @@ rust-toolchain
 why3find.json
 src/lib.rs
 ```
-
-**Remark** The path `/PATH/TO/CREUSOT` should be either absolute, or relative to the `creusot-tutorial` directory to be created by that command,
-not relative to the current directory.
 
 The first three files contain package-level configuration settings. You may already be familiar with
 `Cargo.toml` and `rust-toolchain`, generic files for Rust projects. The file `why3find.json` is
