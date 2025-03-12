@@ -6,13 +6,18 @@
 
 **Creusot** is a *deductive verifier* for Rust code. It verifies your code is safe from panics, overflows, and assertion failures. By adding annotations you can take it further and verify your code does the *correct* thing.
 
-Creusot works by translating Rust code to WhyML, the verification and specification language of [Why3](https://www.why3.org). Users can then leverage the full power of Why3 to (semi)-automatically discharge the verification conditions!
+Creusot works by translating Rust code to [Coma](https://coma-ivl.codeberg.page/), an intermediate verification language of the [Why3 Platform](https://www.why3.org). Users can then leverage the full power of Why3 to (semi)-automatically discharge the verification conditions!
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for technical details.
 
 ## Help and Discussions
 
 If you need help using Creusot or would like to discuss, you can post on the [discussions forum](https://github.com/creusot-rs/creusot/discussions) or join our [Zulip chat](https://why3.zulipchat.com/#narrow/stream/341707-creusot)!
+
+## Documentation
+
+- To learn how to write code with Creusot: [guide](https://creusot-rs.github.io/creusot/guide)
+- To see the API of `creusot_contracts` (Creusot's "standard library"): [`creusot_contracts` API](https://creusot-rs.github.io/creusot/doc/creusot_contracts)
 
 ## Citing Creusot
 
@@ -75,7 +80,7 @@ echo "--external z3" > INSTALL.opts
 ./INSTALL
 ```
 
-# Upgrading Creusot
+## Upgrading Creusot
 
 1. Enter the cloned Creusot git repository used previously to install Creusot
 2. Update Creusot's sources:
@@ -90,11 +95,6 @@ echo "--external z3" > INSTALL.opts
    ```
    $ ./INSTALL
    ```
-
-# Verifying with Creusot and Why3
-
-- To learn how to write code with creusot: [guide](https://creusot-rs.github.io/creusot/guide)
-- To see the API of `creusot_contracts` (creusot's "standard library"): [creusot_contracts API](https://creusot-rs.github.io/creusot/doc/creusot_contracts)
 
 # Hacking on Creusot
 
