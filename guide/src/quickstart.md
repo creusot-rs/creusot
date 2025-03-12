@@ -9,27 +9,10 @@ Install Creusot and why3 as described in the [README](https://github.com/creusot
 Create a new project with this command:
 
 ```
-cargo creusot new project-name --creusot-contracts /PATH/TO/CREUSOT/creusot-contracts
+cargo creusot new project-name
 ```
 
-**Remark** The path `/PATH/TO/CREUSOT` should be either absolute, or relative to the `package-name` directory to be created by that command,
-not relative to the current directory.
-
-That command creates a directory `package-name` containing the basic elements of a Rust project verified with Creusot.
-The command-line option `--creusot-contracts /PATH/TO/CREUSOT/creusot-contracts` sets the dependency path in the package manifest `Cargo.toml`:
-
-```toml
-# Cargo.toml
-[package]
-name = "project-name"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-creusot-contracts = { path = "/PATH/TO/CREUSOT/creusot-contracts" }
-```
-
-The project is initialized with an example function annotated with a contract:
+That command creates a directory `package-name` containing the basic elements of a Rust project verified with Creusot. The file `src/lib.rs` is initialized with an example function annotated with a contract:
 
 ```rust
 // src/lib.rs
