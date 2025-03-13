@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{logic::Mapping, *};
 use ::std::cmp::Ordering;
 pub use ::std::option::*;
 
@@ -726,4 +726,21 @@ impl<T> Iterator for IterMut<'_, T> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
+
+pub trait OptionExt<T> {
+    /// Same as [`Option::and_then`], but in logic.
+    #[logic]
+    pub fn and_then_logic<U>(self, f: Mapping<T, Option<U>>) -> Option<U>;
+}
+
+impl<T> OptionExt<T> for Option<T> {
+    #[logic]
+    #[open]
+    fn and_then_logic<U>(self, f: Mapping<T, Option<U>>) -> Option<U> {
+        match self {
+            None => None,
+            Some(x) => f.get(x),
+        }
+    }
 }
