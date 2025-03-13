@@ -102,6 +102,14 @@ impl<T: View> View for Ghost<T> {
     }
 }
 
+impl<T> Invariant for Ghost<T> {
+    #[predicate(prophetic)]
+    #[open]
+    fn invariant(self) -> bool {
+        inv(self.inner_logic())
+    }
+}
+
 impl<T> Resolve for Ghost<T> {
     #[open]
     #[predicate(prophetic)]
