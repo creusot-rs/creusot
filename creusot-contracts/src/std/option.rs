@@ -1,4 +1,5 @@
 use crate::*;
+use crate::logic::Mapping;
 use ::std::cmp::Ordering;
 pub use ::std::option::*;
 
@@ -746,6 +747,22 @@ impl<T> IntoIterator for &'_ mut Option<T> {
         pearlite! {
             (*self == None ==> res@ == None && ^self == None) &&
             (*self == None || exists<r: &mut T> res@ == Some(r) && *self == Some(*r) && ^self == Some(^r))
+        }
+    }
+}
+
+pub trait OptionExt<T> {
+    #[logic]
+    pub fn and_then_logic<U>(self, f: Mapping<T, Option<U>>) -> Option<U>;
+}
+
+impl<T> OptionExt<T> for Option<T> {
+    #[logic]
+    #[open]
+    fn and_then_logic<U>(self, f: Mapping<T, Option<U>>) -> Option<U> {
+        match self {
+            None => None,
+            Some(x) => f.get(x),
         }
     }
 }
