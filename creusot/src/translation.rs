@@ -8,7 +8,7 @@ pub(crate) mod specification;
 pub(crate) mod traits;
 
 use crate::{
-    backend::{Why3Generator, is_trusted_function},
+    backend::{Why3Generator, is_trusted_item},
     contracts_items::{
         AreContractsLoaded, are_contracts_loaded, is_logic, is_no_translate, is_predicate, is_spec,
     },
@@ -65,7 +65,7 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn st
 
         let def_id = def_id.to_def_id();
         if (is_spec(ctx.tcx, def_id) || is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
-            && !is_trusted_function(ctx.tcx, def_id)
+            && !is_trusted_item(ctx.tcx, def_id)
         {
             // OK to ignore this error, because we abort after the loop.
             let _ = ctx.term(def_id);

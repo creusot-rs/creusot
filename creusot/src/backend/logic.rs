@@ -1,7 +1,7 @@
 use crate::{
     backend::{
-        CannotFetchThir, Why3Generator, is_trusted_function, logic::vcgen::wp,
-        signature::sig_to_why3, term::lower_pure, ty::translate_ty,
+        CannotFetchThir, Why3Generator, is_trusted_item, logic::vcgen::wp, signature::sig_to_why3,
+        term::lower_pure, ty::translate_ty,
     },
     contracts_items::get_builtin,
     ctx::*,
@@ -37,7 +37,7 @@ pub(crate) fn translate_logic_or_predicate(
         );
     }
 
-    if !def_id.is_local() || is_trusted_function(ctx.tcx, def_id) || !ctx.has_body(def_id) {
+    if !def_id.is_local() || is_trusted_item(ctx.tcx, def_id) || !ctx.has_body(def_id) {
         return Ok(None);
     }
 
