@@ -15,9 +15,10 @@ use crate::{
     contracts_items::get_builtin,
     ctx::PreMod,
     naming::ident_of,
-    pearlite::{Literal, Pattern, PointerKind, Term, TermVisitor, super_visit_term},
+    pearlite::{Literal, Pattern, PatternKind, Term, TermVisitor, super_visit_term},
     util::erased_identity_for_item,
 };
+use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind, TypingEnv};
 use rustc_span::{Span, Symbol};
@@ -518,43 +519,50 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         bounds: &mut HashMap<Ident, Exp>,
         pat: &Pattern<'tcx>,
     ) -> WPattern {
-        match pat {
-            Pattern::Constructor { variant, fields, substs } => {
+        match &pat.kind {
+            PatternKind::Constructor(variant, fields) => {
+                let ty = self.names.normalize(self.ctx, pat.ty);
+                let (var_did, subst) = match ty.kind() {
+                    &TyKind::Adt(def, subst) => (def.variant(*variant).def_id, subst),
+                    &TyKind::Closure(did, subst) => (did, subst),
+                    _ => unreachable!(),
+                };
                 let flds = fields.iter().map(|pat| self.build_pattern_inner(bounds, pat));
-                let substs = self.ctx.normalize_erasing_regions(self.typing_env, *substs);
-                if self.ctx.def_kind(variant) == DefKind::Variant {
-                    WPattern::ConsP(self.names.constructor(*variant, substs), flds.collect())
+                if self.ctx.def_kind(var_did) == DefKind::Variant {
+                    WPattern::ConsP(self.names.constructor(var_did, subst), flds.collect())
                 } else if fields.is_empty() {
                     WPattern::TupleP(Box::new([]))
                 } else {
                     let flds: Box<[_]> = flds
                         .enumerate()
-                        .map(|(i, f)| (self.names.field(*variant, substs, i.into()), f))
+                        .map(|(i, f)| (self.names.field(var_did, subst, i.into()), f))
                         .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                         .collect();
                     if flds.len() == 0 { WPattern::Wildcard } else { WPattern::RecP(flds) }
                 }
             }
-            Pattern::Wildcard => WPattern::Wildcard,
-            Pattern::Binder(name) => {
+            PatternKind::Wildcard => WPattern::Wildcard,
+            PatternKind::Binder(name) => {
                 let name_id = name.as_str().into();
                 let new = self.uniq_occ(&name_id);
                 bounds.insert(name_id, Exp::var(new.clone()));
                 WPattern::VarP(new)
             }
-            Pattern::Boolean(true) => WPattern::mk_true(),
-            Pattern::Boolean(false) => WPattern::mk_false(),
-            Pattern::Tuple(pats, _) if pats.is_empty() => WPattern::TupleP(Box::new([])),
-            Pattern::Tuple(pats, _) if pats.len() == 1 => {
+            PatternKind::Bool(true) => WPattern::mk_true(),
+            PatternKind::Bool(false) => WPattern::mk_false(),
+            PatternKind::Tuple(pats) if pats.is_empty() => WPattern::TupleP(Box::new([])),
+            PatternKind::Tuple(pats) if pats.len() == 1 => {
                 self.build_pattern_inner(bounds, &pats[0])
             }
-            Pattern::Tuple(pats, tys) => {
+            PatternKind::Tuple(pats) => {
+                let ty = self.names.normalize(self.ctx, pat.ty);
+                let TyKind::Tuple(tys) = ty.kind() else { unreachable!() };
                 let flds: Box<[_]> = pats
-                    .into_iter()
+                    .iter()
                     .enumerate()
                     .map(|(idx, pat)| {
                         (
-                            self.names.tuple_field(*tys, idx.into()),
+                            self.names.tuple_field(tys, idx.into()),
                             self.build_pattern_inner(bounds, pat),
                         )
                     })
@@ -562,13 +570,20 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     .collect();
                 if flds.len() == 0 { WPattern::Wildcard } else { WPattern::RecP(flds) }
             }
-            Pattern::Deref { pointee, kind } => match kind {
-                PointerKind::Box | PointerKind::Shr => self.build_pattern_inner(bounds, pointee),
-                PointerKind::Mut => WPattern::RecP(Box::new([(
-                    "current".into(),
-                    self.build_pattern_inner(bounds, pointee),
-                )])),
-            },
+            PatternKind::Deref(pointee) => {
+                let ty = self.names.normalize(self.ctx, pat.ty);
+                match ty.kind() {
+                    TyKind::Adt(def, _) if def.is_box() => {
+                        self.build_pattern_inner(bounds, pointee)
+                    }
+                    TyKind::Ref(_, _, Mutability::Not) => self.build_pattern_inner(bounds, pointee),
+                    TyKind::Ref(_, _, Mutability::Mut) => WPattern::RecP(Box::new([(
+                        "current".into(),
+                        self.build_pattern_inner(bounds, pointee),
+                    )])),
+                    _ => unreachable!(),
+                }
+            }
         }
     }
 

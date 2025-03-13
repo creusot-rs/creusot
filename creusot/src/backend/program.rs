@@ -16,13 +16,12 @@ use crate::{
     ctx::{BodyId, Dependencies},
     fmir::{Body, BorrowKind, Operand, TrivialInv},
     naming::ident_of,
-    pearlite::{Pattern, PointerKind},
+    pearlite::Pattern,
     translated_item::FileModule,
     translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
 };
 
 use petgraph::graphmap::DiGraphMap;
-use rustc_ast::Mutability;
 use rustc_hir::{
     Safety,
     def::DefKind,
@@ -35,11 +34,7 @@ use rustc_middle::{
 use rustc_span::{DUMMY_SP, Symbol};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{IntTy, UintTy};
-use std::{
-    cell::RefCell,
-    fmt::Debug,
-    iter::{once, repeat_n},
-};
+use std::{cell::RefCell, fmt::Debug, iter::once};
 use why3::{
     Ident, QName,
     coma::{Arg, Defn, Expr, IsRef, Param, Term, Var},
@@ -995,7 +990,7 @@ impl<'tcx> Statement<'tcx> {
                             rhs_local_ty,
                             Focus::new(|_| Exp::var(ident_of(rhs.local))),
                             Box::new(|_, x| x),
-                            &rhs.projection[..deref_index],
+                            &rhs.projections[..deref_index],
                         );
                     let (_, foc, constr) = projections_to_expr(
                         lower,
@@ -1003,7 +998,7 @@ impl<'tcx> Statement<'tcx> {
                         original_borrow_ty,
                         original_borrow.clone(),
                         original_borrow_constr,
-                        &rhs.projection[deref_index..],
+                        &rhs.projections[deref_index..],
                     );
                     rhs_rplace = foc.call(&mut istmts);
                     rhs_constr = constr;
@@ -1011,7 +1006,7 @@ impl<'tcx> Statement<'tcx> {
                     let borrow_id = borrow_generated_id(
                         lower.names,
                         original_borrow.call(&mut istmts),
-                        &rhs.projection[deref_index + 1..],
+                        &rhs.projections[deref_index + 1..],
                         |sym| {
                             Exp::qvar(
                                 lower
@@ -1030,7 +1025,7 @@ impl<'tcx> Statement<'tcx> {
                         rhs_local_ty,
                         Focus::new(|_| Exp::var(ident_of(rhs.local))),
                         Box::new(|_, x| x),
-                        &rhs.projection,
+                        &rhs.projections,
                     );
                     rhs_rplace = foc.call(&mut istmts);
                     rhs_constr = constr;
@@ -1132,56 +1127,43 @@ fn pattern_of_place<'tcx>(
     pl: Place<'tcx>,
     binder: Symbol,
 ) -> Pattern<'tcx> {
-    let mut pat = Pattern::Binder(binder);
-
+    let mut pat = Pattern::binder(binder, pl.ty(tcx, locals));
     for (pl, el) in pl.iter_projections().rev() {
         let ty = pl.ty(tcx, locals);
         match el {
-            ProjectionElem::Deref => match ty.ty.kind() {
-                TyKind::Ref(_, _, mutbl) => match mutbl {
-                    Mutability::Not => {
-                        pat = Pattern::Deref { pointee: Box::new(pat), kind: PointerKind::Shr }
-                    }
-                    Mutability::Mut => {
-                        pat = Pattern::Deref { pointee: Box::new(pat), kind: PointerKind::Mut }
-                    }
-                },
-                _ if ty.ty.is_box() => {
-                    pat = Pattern::Deref { pointee: Box::new(pat), kind: PointerKind::Box }
-                }
-                _ => {
-                    unreachable!("unsupported type of deref pattern: {:?}", ty.ty);
-                }
-            },
+            ProjectionElem::Deref => pat = pat.deref(ty.ty),
             ProjectionElem::Field(fidx, _) => match ty.ty.kind() {
                 TyKind::Adt(adt, substs) => {
-                    let variant_def = &adt.variants()[ty.variant_index.unwrap_or(VariantIdx::ZERO)];
-                    let fields_len = variant_def.fields.len();
-                    let variant = variant_def.def_id;
-                    let mut fields: Box<_> = repeat_n(Pattern::Wildcard, fields_len).collect();
+                    let variant = ty.variant_index.unwrap_or(VariantIdx::ZERO);
+                    let mut fields: Box<[_]> = adt.variants()[variant]
+                        .fields
+                        .iter()
+                        .map(|f| Pattern::wildcard(f.ty(tcx, substs)))
+                        .collect();
                     fields[fidx.as_usize()] = pat;
-                    pat = Pattern::Constructor { variant, substs, fields }
+                    pat = Pattern::constructor(variant, fields, ty.ty)
                 }
                 TyKind::Tuple(tys) => {
-                    let mut fields: Box<_> = repeat_n(Pattern::Wildcard, tys.len()).collect();
+                    let mut fields: Box<[_]> = tys.iter().map(|ty| Pattern::wildcard(ty)).collect();
                     fields[fidx.as_usize()] = pat;
-                    pat = Pattern::Tuple(fields, tys)
+                    pat = Pattern::tuple(fields, ty.ty)
                 }
-                TyKind::Closure(did, substs) => {
-                    let mut fields: Box<_> =
-                        repeat_n(Pattern::Wildcard, substs.as_closure().upvar_tys().len())
-                            .collect();
+                TyKind::Closure(_, substs) => {
+                    let mut fields: Box<[_]> = substs
+                        .as_closure()
+                        .upvar_tys()
+                        .into_iter()
+                        .map(|ty| Pattern::wildcard(ty))
+                        .collect();
                     fields[fidx.as_usize()] = pat;
-                    pat = Pattern::Constructor { variant: *did, substs, fields }
+                    pat = Pattern::constructor(VariantIdx::ZERO, fields, ty.ty)
                 }
                 _ => unreachable!(),
             },
             ProjectionElem::Downcast(_, _) => {}
-
             ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. } => {
                 todo!("Array and slice patterns are currently not supported")
             }
-
             ProjectionElem::Index(_)
             | ProjectionElem::OpaqueCast(_)
             | ProjectionElem::Subtype(_) => {
@@ -1212,12 +1194,14 @@ fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
             .chain(real_sig.inputs().iter().enumerate().map(|(ix, inp)| {
                 let inp = lower.ctx.instantiate_bound_regions_with_erased(inp.map_bound(|&x| x));
                 let projection = pl
-                    .projection
+                    .projections
                     .iter()
                     .copied()
                     .chain([ProjectionElem::Field(ix.into(), inp)])
                     .collect();
-                Arg::Term(Operand::Move(Place { projection, ..pl }).to_why(lower, istmts))
+                Arg::Term(
+                    Operand::Move(Place { projections: projection, ..pl }).to_why(lower, istmts),
+                )
             }))
             .collect()
     } else {

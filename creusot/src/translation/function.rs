@@ -13,7 +13,7 @@ use crate::{
     pearlite::{Term, normalize},
     resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
     translation::{
-        pearlite::{self, TermKind, TermVisitorMut, super_visit_mut_term},
+        pearlite::{Pattern, TermKind, TermVisitorMut, super_visit_mut_term},
         specification::{contract_of, inv_subst},
         traits,
     },
@@ -693,7 +693,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 mir::ProjectionElem::Subtype(ty) => mir::ProjectionElem::Subtype(ty),
             })
             .collect();
-        fmir::Place { local: self.locals[&pl.local], projection }
+        fmir::Place { local: self.locals[&pl.local], projections: projection }
     }
 
     fn check_use_in_logic(&mut self, term: &Term<'tcx>, location: Location) {
@@ -808,18 +808,13 @@ impl<'tcx> TranslationCtx<'tcx> {
 
         let span = self.def_span(def_id);
 
-        let (args_nms, args_tys): (Vec<_>, Vec<_>) =
-            self.sig(def_id).inputs.iter().skip(1).map(|&(nm, _, ref ty)| (nm, ty.clone())).unzip();
+        let args = self.sig(def_id).inputs.iter().skip(1);
 
-        let arg_ty = Ty::new_tup(self.tcx, &args_tys);
-        let &TyKind::Tuple(args_tys) = arg_ty.kind() else { unreachable!() };
-
+        let arg_ty = Ty::new_tup_from_iter(self.tcx, args.clone().map(|(_, _, ty)| ty.clone()));
         let arg_tuple = Term::var(Symbol::intern("args"), arg_ty);
 
-        let arg_pat = pearlite::Pattern::Tuple(
-            args_nms.iter().copied().map(pearlite::Pattern::Binder).collect(),
-            args_tys,
-        );
+        let arg_pat =
+            Pattern::tuple(args.clone().map(|(nm, _, ty)| Pattern::binder(*nm, *ty)), arg_ty);
 
         let env_ty = self.closure_env_ty(
             self.type_of(def_id).instantiate_identity(),
@@ -827,8 +822,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             self.lifetimes.re_erased,
         );
         let self_ = Term::var(Symbol::intern("self"), env_ty);
-        let params: Vec<_> =
-            args_nms.iter().cloned().zip(args_tys).map(|(nm, ty)| Term::var(nm, ty)).collect();
+        let params: Vec<_> = args.map(|(nm, _, ty)| Term::var(*nm, *ty)).collect();
 
         let mut precondition = if contract.is_empty() {
             self.inferred_precondition_term(
@@ -865,7 +859,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 contract.ensures_conj(self.tcx)
             };
 
-            Some(pearlite::Term {
+            Some(Term {
                 span: postcondition.span,
                 kind: TermKind::Let {
                     pattern: arg_pat.clone(),
@@ -876,7 +870,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             })
         };
 
-        precondition = pearlite::Term {
+        precondition = Term {
             span: precondition.span,
             kind: TermKind::Let {
                 pattern: arg_pat.clone(),

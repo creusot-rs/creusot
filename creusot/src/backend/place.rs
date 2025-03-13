@@ -226,7 +226,7 @@ pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
         place_ty,
         Focus::new(|_| Exp::var(ident_of(pl.local))),
         Box::new(|_, _| unreachable!()),
-        &pl.projection,
+        &pl.projections,
     );
     rhs.call(istmts)
 }
@@ -244,7 +244,7 @@ fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
         place_ty,
         Focus::new(|_| Exp::var(ident_of(pl.local))),
         Box::new(|_, x| x),
-        &pl.projection,
+        &pl.projections,
     );
 
     constructor(istmts, rhs)

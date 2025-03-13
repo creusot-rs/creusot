@@ -81,7 +81,7 @@ pub fn infer_proph_invariants<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut fmir:
                     panic!()
                 }
                 prev_block.stmts.push(Statement::Assignment(
-                    Place { local, projection: Box::new([]) },
+                    Place { local, projections: Box::new([]) },
                     RValue::Snapshot(pterm.clone().coerce(ty)),
                     DUMMY_SP,
                 ));
@@ -106,7 +106,7 @@ fn place_to_term<'tcx>(
     let mut t = Term::var(p.local, locals[&p.local].ty);
     let mut pty = PlaceTy::from_ty(locals[&p.local].ty);
 
-    for proj in &p.projection {
+    for proj in &p.projections {
         let res_ty = projection_ty(pty, tcx, *proj);
         match proj {
             ProjectionElem::Deref => {
@@ -196,7 +196,7 @@ fn borrow_prophecy_analysis_inner<'a, 'tcx>(
                         continue 'active_borrows;
                     }
 
-                    p.projection = if let Some((_, tl)) = p.projection.split_last() {
+                    p.projections = if let Some((_, tl)) = p.projections.split_last() {
                         tl.iter().cloned().collect()
                     } else {
                         break;
@@ -228,8 +228,8 @@ impl<'a, 'tcx> BorrowProph<'a, 'tcx> {
 
         let mut bty = PlaceTy::from_ty(self.locals[&pl.local].ty);
         let mut proj = vec![];
-        for &pr in &pl.projection {
-            let b = Place { projection: proj.clone().into(), ..*pl };
+        for &pr in &pl.projections {
+            let b = Place { projections: proj.clone().into(), ..*pl };
             if matches!(pr, ProjectionElem::Deref) && bty.ty.is_ref() && bty.ty.is_mutable_ptr() {
                 self.active_borrows.insert(b.clone());
             }
