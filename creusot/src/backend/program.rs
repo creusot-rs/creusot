@@ -3,7 +3,7 @@ use crate::{
         NameSupply, Namer, Why3Generator,
         clone_map::PreludeModule,
         dependency::Dependency,
-        is_trusted_function,
+        is_trusted_item,
         optimization::{gather_usage, infer_proph_invariants, simplify_fmir},
         place::{Focus, create_assign_inner, projections_to_expr, rplace_to_expr},
         signature::sig_to_why3,
@@ -56,7 +56,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
 ) -> Option<FileModule> {
     let mut names = Dependencies::new(ctx, def_id);
 
-    if !def_id.is_local() || !ctx.has_body(def_id) || is_trusted_function(ctx.tcx, def_id) {
+    if !def_id.is_local() || !ctx.has_body(def_id) || is_trusted_item(ctx.tcx, def_id) {
         return None;
     }
 

@@ -172,7 +172,7 @@ fn display_impl_subject(i: &rustc_middle::ty::ImplSubject<'_>) -> String {
     }
 }
 
-pub fn is_trusted_function(tcx: TyCtxt, mut def_id: DefId) -> bool {
+pub fn is_trusted_item(tcx: TyCtxt, mut def_id: DefId) -> bool {
     if is_spec(tcx, def_id) {
         return false;
     }

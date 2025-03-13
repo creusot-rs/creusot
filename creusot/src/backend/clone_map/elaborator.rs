@@ -7,7 +7,7 @@ use crate::{
     backend::{
         Namer, TranslationCtx, Why3Generator,
         clone_map::{CloneNames, Dependency, Kind},
-        is_trusted_function,
+        is_trusted_item,
         logic::{lower_logical_defn, spec_axiom},
         program,
         signature::sig_to_why3,
@@ -189,7 +189,7 @@ impl DepElab for LogicElab {
             trait_resol,
             Some(traits::TraitResolved::UnknownFound | traits::TraitResolved::UnknownNotFound)
         ) || !ctx.is_transparent_from(def_id, elab.self_key.did().unwrap().0)
-            || is_trusted_function(ctx.tcx, def_id);
+            || is_trusted_item(ctx.tcx, def_id);
 
         let mut names = elab.namer(dep);
         let name = names.dependency(dep).ident();
@@ -401,7 +401,7 @@ fn expand_laws<'tcx>(
     // TODO: Push out of graph expansion
     // If the function we are cloning into is `#[trusted]` there is no need for laws.
     // Similarily, if it has no body, there will be no proofs.
-    if is_trusted_function(ctx.tcx, self_did) || !ctx.has_body(self_did) {
+    if is_trusted_item(ctx.tcx, self_did) || !ctx.has_body(self_did) {
         return;
     }
 

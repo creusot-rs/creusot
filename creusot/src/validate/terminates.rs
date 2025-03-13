@@ -31,7 +31,7 @@
 //! [`ImplDefaultTransparent`] for more details.
 
 use crate::{
-    backend::is_trusted_function,
+    backend::is_trusted_item,
     contracts_items::{has_variant_clause, is_no_translate, is_pearlite},
     ctx::TranslationCtx,
     error::CannotFetchThir,
@@ -540,7 +540,7 @@ impl CallGraph {
 
         for local_id in ctx.hir().body_owners() {
             let def_id = local_id.to_def_id();
-            if is_trusted_function(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {
+            if is_trusted_item(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {
                 continue;
             }
             let (thir, expr) = ctx.thir_body(local_id).unwrap();
@@ -566,7 +566,7 @@ impl CallGraph {
             let def_id = local_id.to_def_id();
             let node = build_call_graph.insert_function(ctx.tcx, GraphNode::Function(def_id));
 
-            if is_trusted_function(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {
+            if is_trusted_item(ctx.tcx, def_id) || is_no_translate(ctx.tcx, def_id) {
                 // Cut all arcs from this function.
                 continue;
             }

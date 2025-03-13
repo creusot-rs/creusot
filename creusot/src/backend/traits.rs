@@ -1,5 +1,5 @@
 use crate::{
-    backend::{Why3Generator, clone_map::Dependencies, term::lower_pure},
+    backend::{Why3Generator, clone_map::Dependencies, is_trusted_item, term::lower_pure},
     contracts_items::is_snapshot_deref,
     ctx::FileModule,
 };
@@ -7,6 +7,10 @@ use rustc_hir::def_id::DefId;
 use why3::declaration::{Decl, Goal, Module};
 
 pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<FileModule> {
+    if is_trusted_item(ctx.tcx, def_id) {
+        return vec![];
+    }
+
     let data = ctx.trait_impl(def_id).clone();
     let mut res = vec![];
 

@@ -5,7 +5,7 @@ use rustc_middle::{
 };
 
 use crate::{
-    backend::is_trusted_function,
+    backend::is_trusted_item,
     contracts_items::{
         get_builtin, is_ghost_deref, is_ghost_deref_mut, is_ghost_into_inner, is_ghost_new,
         is_logic, is_no_translate, is_predicate, is_prophetic, is_snapshot_closure, is_spec,
@@ -15,9 +15,8 @@ use crate::{
     pearlite::{Stub, pearlite_stub},
     specification::contract_of,
     traits::TraitResolved,
+    validate::is_overloaded_item,
 };
-
-use super::is_overloaded_item;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Purity {
@@ -101,7 +100,7 @@ pub(crate) fn validate_purity(
     let def_id = def_id.to_def_id();
     let purity = Purity::of_def_id(ctx, def_id);
     if matches!(purity, Purity::Program { .. })
-        && (is_no_translate(ctx.tcx, def_id) || is_trusted_function(ctx.tcx, def_id))
+        && (is_no_translate(ctx.tcx, def_id) || is_trusted_item(ctx.tcx, def_id))
     {
         return Ok(());
     }
