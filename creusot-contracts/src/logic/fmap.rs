@@ -80,6 +80,57 @@ impl<K, V: ?Sized> FMap<K, V> {
         dead
     }
 
+
+
+    #[trusted]
+    #[logic]
+    #[ensures(
+        match result {
+            None => {
+              exists<k: K, x: V, y: V>
+                self.get(k) == Some(x) && m.get(k) == Some(y) &&
+                f[(x, y)] == None
+            },
+            Some(res) => {
+              forall<k: K>
+                match (self.get(k), m.get(k)) {
+                  (None, y) => { res.get(k) == y },
+                  (x, None) => { res.get(k) == x },
+                  (Some(x), Some(y)) => {
+                    exists<z: V> f[(x, y)] == Some(z) && res.get(k) == Some(z)
+                  }
+                }
+            }
+        }
+    )]
+    pub fn merge_common(
+        self,
+        m: FMap<K, V>,
+        f: Mapping<(V, V), Option<V>>
+    ) ->
+        Option<FMap<K, V>>
+    where
+        V: Sized // XXX
+    {
+        dead
+    }
+
+    #[trusted]
+    #[logic]
+    #[ensures(
+        forall<k: K>
+          result.get(k) ==
+          match self.get(k) {
+              None => None,
+              Some(x) => f[(k, x)],
+          }
+    )]
+    pub fn fmapi<U>(self, f: Mapping<(K, V), Option<U>>) -> FMap<K, U>
+        where V: Sized
+    {
+        dead
+    }
+
     /// Get the value associated with key `k` in the map.
     ///
     /// If no value is present, returns [`None`].
