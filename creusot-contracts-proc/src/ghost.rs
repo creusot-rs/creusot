@@ -25,7 +25,7 @@ pub(crate) fn ghost_preprocess(tokens: TokenStream) -> TokenStream {
                     lit.set_span(span);
                     let mut group = Group::new(
                         Delimiter::None,
-                        quote_spanned!(span => ::creusot_contracts::GhostBox::into_inner(::creusot_contracts::Int::new(#lit))).into(),
+                        quote_spanned!(span => ::creusot_contracts::Ghost::into_inner(::creusot_contracts::Int::new(#lit))).into(),
                     );
                     group.set_span(literal.span());
                     TokenTree::Group(group)

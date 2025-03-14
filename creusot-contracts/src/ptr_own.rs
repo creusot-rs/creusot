@@ -11,7 +11,7 @@ pub type RawPtr<T> = *const T;
 /// exists in the ghost world, but can be used in combination with a
 /// corresponding [`RawPtr`] to access and modify memory.
 ///
-/// A warning regarding memory leaks: dropping a `GhostBox<PtrOwn<T>>` (we only
+/// A warning regarding memory leaks: dropping a `Ghost<PtrOwn<T>>` (we only
 /// ever handle ghost `PtrOwn` values) cannot deallocate the memory
 /// corresponding to the pointer because it is a ghost value. One must thus
 /// remember to explicitly call [`drop`] in order to free the memory tracked by a
@@ -56,7 +56,7 @@ impl<T> PtrOwn<T> {
     /// Creates a new `PtrOwn` and associated [`RawPtr`] by allocating a new memory
     /// cell initialized with `v`.
     #[ensures(result.1.ptr() == result.0 && *result.1.val() == v)]
-    pub fn new(v: T) -> (RawPtr<T>, GhostBox<PtrOwn<T>>) {
+    pub fn new(v: T) -> (RawPtr<T>, Ghost<PtrOwn<T>>) {
         Self::from_box(Box::new(v))
     }
 }
@@ -65,9 +65,9 @@ impl<T: ?Sized> PtrOwn<T> {
     /// Creates a ghost `PtrOwn` and associated [`RawPtr`] from an existing [`Box`].
     #[trusted]
     #[ensures(result.1.ptr() == result.0 && *result.1.val() == *val)]
-    pub fn from_box(val: Box<T>) -> (RawPtr<T>, GhostBox<PtrOwn<T>>) {
+    pub fn from_box(val: Box<T>) -> (RawPtr<T>, Ghost<PtrOwn<T>>) {
         assert!(core::mem::size_of_val::<T>(&*val) > 0, "PtrOwn doesn't support ZSTs");
-        (Box::into_raw(val), GhostBox::conjure())
+        (Box::into_raw(val), Ghost::conjure())
     }
 
     /// Immutably borrows the underlying `T`.
@@ -82,7 +82,7 @@ impl<T: ?Sized> PtrOwn<T> {
     #[requires(ptr == own.ptr())]
     #[ensures(*result == *own.val())]
     #[allow(unused_variables)]
-    pub unsafe fn as_ref(ptr: RawPtr<T>, own: GhostBox<&PtrOwn<T>>) -> &T {
+    pub unsafe fn as_ref(ptr: RawPtr<T>, own: Ghost<&PtrOwn<T>>) -> &T {
         unsafe { &*ptr }
     }
 
@@ -101,7 +101,7 @@ impl<T: ?Sized> PtrOwn<T> {
     // Currently .inner_logic() is needed instead of *; see issue #1257
     #[ensures((^own.inner_logic()).ptr() == own.ptr())]
     #[ensures(*(^own.inner_logic()).val() == ^result)]
-    pub unsafe fn as_mut(ptr: RawPtr<T>, own: GhostBox<&mut PtrOwn<T>>) -> &mut T {
+    pub unsafe fn as_mut(ptr: RawPtr<T>, own: Ghost<&mut PtrOwn<T>>) -> &mut T {
         unsafe { &mut *(ptr as *mut _) }
     }
 
@@ -117,7 +117,7 @@ impl<T: ?Sized> PtrOwn<T> {
     #[requires(ptr == own.ptr())]
     #[ensures(*result == *own.val())]
     #[allow(unused_variables)]
-    pub unsafe fn to_box(ptr: RawPtr<T>, own: GhostBox<PtrOwn<T>>) -> Box<T> {
+    pub unsafe fn to_box(ptr: RawPtr<T>, own: Ghost<PtrOwn<T>>) -> Box<T> {
         unsafe { Box::from_raw(ptr as *mut _) }
     }
 
@@ -130,7 +130,7 @@ impl<T: ?Sized> PtrOwn<T> {
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](PtrOwn).
     #[requires(ptr == own.ptr())]
-    pub unsafe fn drop(ptr: RawPtr<T>, own: GhostBox<PtrOwn<T>>) {
+    pub unsafe fn drop(ptr: RawPtr<T>, own: Ghost<PtrOwn<T>>) {
         let _ = Self::to_box(ptr, own);
     }
 

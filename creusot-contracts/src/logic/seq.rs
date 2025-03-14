@@ -411,7 +411,7 @@ impl<T> IndexLogic<Int> for Seq<T> {
 impl<T> Seq<T> {
     /// Constructs a new, empty `Seq<T>`.
     ///
-    /// This is allocated on the ghost heap, and as such is wrapped in [`GhostBox`].
+    /// This can only be manipulated in the ghost world, and as such is wrapped in [`Ghost`].
     ///
     /// # Example
     ///
@@ -424,8 +424,8 @@ impl<T> Seq<T> {
     #[pure]
     #[ensures(*result == Self::EMPTY)]
     #[allow(unreachable_code)]
-    pub fn new() -> GhostBox<Self> {
-        ghost!(panic!())
+    pub fn new() -> Ghost<Self> {
+        Ghost::conjure()
     }
 
     /// Returns the number of elements in the sequence, also referred to as its 'length'.

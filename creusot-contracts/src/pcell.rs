@@ -6,7 +6,7 @@
 #[cfg(creusot)]
 use crate::util::SizedW;
 
-use crate::{GhostBox, *};
+use crate::{Ghost, *};
 use ::std::{cell::UnsafeCell, marker::PhantomData};
 
 /// A "permission" cell allowing interior mutability via a ghost token.
@@ -92,9 +92,9 @@ impl<T> PCell<T> {
     #[trusted]
     #[ensures(result.0.id() == result.1.id())]
     #[ensures((*result.1)@ == value)]
-    pub fn new(value: T) -> (Self, GhostBox<PCellOwn<T>>) {
+    pub fn new(value: T) -> (Self, Ghost<PCellOwn<T>>) {
         let this = Self(UnsafeCell::new(value));
-        let perm = GhostBox::conjure();
+        let perm = Ghost::conjure();
         (this, perm)
     }
 
@@ -112,7 +112,7 @@ impl<T> PCell<T> {
     #[ensures(val == (^perm.inner_logic())@)]
     #[ensures(resolve(&(*perm.inner_logic())@))]
     #[ensures(self.id() == (^perm.inner_logic()).id())]
-    pub unsafe fn set(&self, perm: GhostBox<&mut PCellOwn<T>>, val: T) {
+    pub unsafe fn set(&self, perm: Ghost<&mut PCellOwn<T>>, val: T) {
         let _ = perm;
         unsafe {
             *self.0.get() = val;
@@ -133,7 +133,7 @@ impl<T> PCell<T> {
     #[ensures(val == (^perm.inner_logic())@)]
     #[ensures(result == (*perm.inner_logic())@)]
     #[ensures(self.id() == (^perm.inner_logic()).id())]
-    pub unsafe fn replace(&self, perm: GhostBox<&mut PCellOwn<T>>, val: T) -> T {
+    pub unsafe fn replace(&self, perm: Ghost<&mut PCellOwn<T>>, val: T) -> T {
         let _ = perm;
         unsafe { std::ptr::replace(self.0.get(), val) }
     }
@@ -142,7 +142,7 @@ impl<T> PCell<T> {
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(result == perm@)]
-    pub fn into_inner(self, perm: GhostBox<PCellOwn<T>>) -> T {
+    pub fn into_inner(self, perm: Ghost<PCellOwn<T>>) -> T {
         let _ = perm;
         self.0.into_inner()
     }
@@ -162,7 +162,7 @@ impl<T> PCell<T> {
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(*result == perm@)]
-    pub unsafe fn borrow<'a>(&'a self, perm: GhostBox<&'a PCellOwn<T>>) -> &'a T {
+    pub unsafe fn borrow<'a>(&'a self, perm: Ghost<&'a PCellOwn<T>>) -> &'a T {
         let _ = perm;
         unsafe { &*self.0.get() }
     }
@@ -184,7 +184,7 @@ impl<T> PCell<T> {
     #[ensures(self.id() == (^perm.inner_logic()).id())]
     #[ensures(*result == (*perm.inner_logic())@)]
     #[ensures(^result == (^perm.inner_logic())@)]
-    pub unsafe fn borrow_mut<'a>(&'a self, perm: GhostBox<&'a mut PCellOwn<T>>) -> &'a mut T {
+    pub unsafe fn borrow_mut<'a>(&'a self, perm: Ghost<&'a mut PCellOwn<T>>) -> &'a mut T {
         let _ = perm;
         unsafe { &mut *self.0.get() }
     }
@@ -206,7 +206,7 @@ where
     #[trusted]
     #[requires(self.id() == perm.id())]
     #[ensures(result == (**perm)@)]
-    pub unsafe fn get(&self, perm: GhostBox<&PCellOwn<T>>) -> T {
+    pub unsafe fn get(&self, perm: Ghost<&PCellOwn<T>>) -> T {
         let _ = perm;
         unsafe { *self.0.get() }
     }
@@ -234,11 +234,11 @@ impl<T> PCell<T> {
     #[ensures(result.0.id() == result.1.inner_logic().id())]
     #[ensures(^t == (^result.1.inner_logic())@)]
     #[ensures(*t == (*result.1.inner_logic())@)]
-    pub fn from_mut(t: &mut T) -> (&PCell<T>, GhostBox<&mut PCellOwn<T>>) {
+    pub fn from_mut(t: &mut T) -> (&PCell<T>, Ghost<&mut PCellOwn<T>>) {
         // SAFETY: `PCell` is layout-compatible with `Cell` and `T` because it is `repr(transparent)`.
         // SAFETY: `&mut` ensures unique access
         let cell: &PCell<T> = unsafe { &*(t as *mut T as *const Self) };
-        let perm = GhostBox::conjure();
+        let perm = Ghost::conjure();
         (cell, perm)
     }
 }
@@ -260,7 +260,7 @@ where
     #[ensures(self.id() == (^perm.inner_logic()).id())]
     #[ensures(result == (*perm.inner_logic())@)]
     #[ensures((^perm.inner_logic())@.is_default())]
-    pub unsafe fn take(&self, perm: GhostBox<&mut PCellOwn<T>>) -> T {
+    pub unsafe fn take(&self, perm: Ghost<&mut PCellOwn<T>>) -> T {
         unsafe { self.replace(perm, T::default()) }
     }
 }

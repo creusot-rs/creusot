@@ -125,11 +125,10 @@ pub mod macros {
     /// - They may not contain code that crashes or runs indefinitely. In other words,
     ///   they can only call [`pure`] functions.
     /// - All variables that are read in the ghost block must either be [`Copy`], or a
-    ///   [`GhostBox`](crate::ghost::GhostBox).
-    /// - All variables that are modified in the ghost block must be
-    ///   [`GhostBox`](crate::ghost::GhostBox)s.
+    ///   [`Ghost`].
+    /// - All variables that are modified in the ghost block must be [`Ghost`]s.
     /// - The variable returned by the ghost block will automatically be wrapped in a
-    ///   [`GhostBox`](crate::ghost::GhostBox).
+    ///   [`Ghost`].
     ///
     /// # Example
     ///
@@ -141,6 +140,8 @@ pub mod macros {
     ///     g.push_back_ghost(x);
     /// };
     /// ```
+    ///
+    /// [`Ghost`]: crate::ghost::Ghost
     pub use base_macros::ghost;
 
     /// Indicate that the function terminates: fulfilling the `requires` clauses
@@ -400,7 +401,7 @@ pub mod well_founded;
 // We add some common things at the root of the creusot-contracts library
 mod base_prelude {
     pub use crate::{
-        ghost::GhostBox,
+        ghost::Ghost,
         logic::{Int, OrdLogic, Seq, ops::IndexLogic as _},
         model::{DeepModel, View},
         resolve::*,

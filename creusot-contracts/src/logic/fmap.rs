@@ -237,8 +237,8 @@ impl<K, V: ?Sized> FMap<K, V> {
     #[pure]
     #[ensures(result.is_empty())]
     #[allow(unreachable_code)]
-    pub fn new() -> GhostBox<Self> {
-        GhostBox::conjure()
+    pub fn new() -> Ghost<Self> {
+        Ghost::conjure()
     }
 
     /// Returns the number of elements in the map.

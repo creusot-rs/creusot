@@ -21,7 +21,7 @@ use crate::{
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Purity {
     /// Same as `Program { terminates: true, no_panic: true }`, but can also call the few
-    /// ghost-only functions (e.g. `GhostBox::new`).
+    /// ghost-only functions (e.g. `Ghost::new`).
     Ghost,
     Program {
         terminates: bool,

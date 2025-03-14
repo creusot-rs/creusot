@@ -444,7 +444,7 @@ pub fn ghost(body: TS1) -> TS1 {
         {
             #[creusot::ghost_block]
             {
-                ::creusot_contracts::ghost::GhostBox::new({ #body })
+                ::creusot_contracts::ghost::Ghost::new({ #body })
             }
         }
     })

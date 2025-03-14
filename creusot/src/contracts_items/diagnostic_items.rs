@@ -83,15 +83,15 @@ contracts_items! {{
         is_snap_from_fn                 get_snap_from_fn
     fn Snapshot::deref                   ["snapshot_deref"]
         is_snapshot_deref               get_snapshot_deref
-    fn GhostBox::new                     ["ghost_box_new"]
+    fn Ghost::new                        ["ghost_new"]
         is_ghost_new                    get_ghost_new
-    fn GhostBox::into_inner              ["ghost_box_into_inner"]
+    fn Ghost::into_inner                 ["ghost_into_inner"]
         is_ghost_into_inner             get_ghost_into_inner
-    fn GhostBox::inner_logic             ["ghost_box_inner_logic"]
+    fn Ghost::inner_logic                ["ghost_inner_logic"]
         is_ghost_inner_logic            get_ghost_inner_logic
-    fn GhostBox::deref                   ["ghost_box_deref"]
+    fn Ghost::deref                      ["ghost_deref"]
         is_ghost_deref                  get_ghost_deref
-    fn GhostBox::deref_mut               ["ghost_box_deref_mut"]
+    fn Ghost::deref_mut                  ["ghost_deref_mut"]
         is_ghost_deref_mut              get_ghost_deref_mut
     fn IndexLogic::index_logic           ["creusot_index_logic_method"]
         is_index_logic                  get_index_logic
@@ -102,14 +102,14 @@ contracts_items! {{
     fn FnMutExt::postcondition_mut       ["fn_mut_impl_postcond"]
         is_fn_mut_impl_postcond         get_fn_mut_impl_postcond
     fn FnMutExt::unnest                  ["fn_mut_impl_unnest"]
-        is_fn_mut_impl_unnest          get_fn_mut_impl_unnest
+        is_fn_mut_impl_unnest           get_fn_mut_impl_unnest
     fn Fn::postcondition                 ["fn_impl_postcond"]
-        is_fn_impl_postcond            get_fn_impl_postcond
+        is_fn_impl_postcond             get_fn_impl_postcond
     type Int                             ["creusot_int"]
         is_int_ty                       get_int_ty
     type Snapshot                        ["snapshot_ty"]
         is_snap_ty                      get_snap_ty
-    type GhostBox                        ["ghost_box"]
+    type Ghost                           ["ghost_ty"]
         is_ghost_ty                     get_ghost_ty
 }}
 

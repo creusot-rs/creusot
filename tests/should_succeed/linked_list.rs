@@ -15,7 +15,7 @@ pub struct List<T> {
     first: RawPtr<Cell<T>>,
     last: RawPtr<Cell<T>>,
     // ghost
-    seq: GhostBox<Seq<PtrOwn<Cell<T>>>>,
+    seq: Ghost<Seq<PtrOwn<Cell<T>>>>,
 }
 
 impl<T> Invariant for List<T> {
