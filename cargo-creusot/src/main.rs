@@ -3,7 +3,7 @@ use creusot_args::{CREUSOT_RUSTC_ARGS, options::*};
 use creusot_setup as setup;
 use std::{
     env,
-    io::Write,
+    io::{IsTerminal as _, Write},
     path::{Display, PathBuf},
     process::{Command, exit},
 };
@@ -263,8 +263,14 @@ fn clean(options: CleanArgs) -> Result<()> {
 /// Print a warning if there are dangling files in `verif/`
 fn warn_if_dangling() -> Result<()> {
     let dangling = find_dangling(&PathBuf::from(OUTPUT_PREFIX))?;
+    let is_tty = std::io::stdout().is_terminal();
     if !dangling.is_empty() {
-        eprintln!("Warning: found dangling files and directories:");
+        if is_tty {
+            eprint!("\x1b[33mWarning\x1b[0m");
+        } else {
+            eprint!("Warning");
+        }
+        eprintln!(": found dangling files and directories:");
         for path in dangling {
             eprintln!("  {}", path.display());
         }
