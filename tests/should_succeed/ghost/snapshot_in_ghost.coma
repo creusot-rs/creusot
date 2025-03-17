@@ -1,27 +1,37 @@
 module M_snapshot_in_ghost__foo [#"snapshot_in_ghost.rs" 5 0 5 12]
   let%span ssnapshot_in_ghost0 = "snapshot_in_ghost.rs" 7 16 7 28
   let%span ssnapshot_in_ghost1 = "snapshot_in_ghost.rs" 8 22 8 29
-  let%span sghost2 = "../../../creusot-contracts/src/ghost.rs" 185 15 185 16
-  let%span sghost3 = "../../../creusot-contracts/src/ghost.rs" 185 4 185 28
-  let%span sghost4 = "../../../creusot-contracts/src/ghost.rs" 183 14 183 28
+  let%span sghost2 = "../../../creusot-contracts/src/ghost.rs" 191 15 191 16
+  let%span sghost3 = "../../../creusot-contracts/src/ghost.rs" 191 4 191 28
+  let%span sghost4 = "../../../creusot-contracts/src/ghost.rs" 189 14 189 26
+  let%span sghost5 = "../../../creusot-contracts/src/ghost.rs" 109 8 109 31
   
   use creusot.prelude.Any
   
-  type t_GhostBox'0  =
-    { t_GhostBox__0'0: () }
+  type t_Ghost'0  =
+    { t_Ghost__0'0: () }
   
   predicate inv'0 (_1 : ())
   
   axiom inv_axiom'0 [@rewrite] : forall x : () [inv'0 x] . inv'0 x = true
   
-  predicate inv'1 (_1 : t_GhostBox'0)
+  function inner_logic'0 (self : t_Ghost'0) : ()
   
-  axiom inv_axiom'1 [@rewrite] : forall x : t_GhostBox'0 [inv'1 x] . inv'1 x = true
+  predicate invariant'0 (self : t_Ghost'0) =
+    [%#sghost5] inv'0 (inner_logic'0 self)
   
-  let rec new'0 (x:()) (return'  (ret:t_GhostBox'0))= {[@expl:new 'x' type invariant] [%#sghost2] inv'0 x}
+  predicate inv'1 (_1 : t_Ghost'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Ghost'0 [inv'1 x] . inv'1 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_Ghost__0'0 = a_0} -> true
+    end)
+  
+  let rec new'0 (x:()) (return'  (ret:t_Ghost'0))= {[@expl:new 'x' type invariant] [%#sghost2] inv'0 x}
     any
-    [ return' (result:t_GhostBox'0)-> {[%#sghost3] inv'1 result}
-      {[%#sghost4] result.t_GhostBox__0'0 = x}
+    [ return' (result:t_Ghost'0)-> {[%#sghost3] inv'1 result}
+      {[%#sghost4] inner_logic'0 result = x}
       (! return' {result}) ]
   
   
@@ -31,16 +41,12 @@ module M_snapshot_in_ghost__foo [#"snapshot_in_ghost.rs" 5 0 5 12]
     [ bb0 = s0 [ s0 =  [ &x <- [%#ssnapshot_in_ghost0] 1 ] s1 | s1 = bb1 ] 
     | bb1 = s0
       [ s0 = {[@expl:assertion] [%#ssnapshot_in_ghost1] x = 1} s1
-      | s1 = new'0 {_2} (fun (_ret':t_GhostBox'0) ->  [ &_1 <- _ret' ] s2)
+      | s1 = new'0 {_2} (fun (_ret':t_Ghost'0) ->  [ &_1 <- _ret' ] s2)
       | s2 = bb2 ]
     
-    | bb2 = bb3
-    | bb3 = return' {_0} ]
+    | bb2 = return' {_0} ]
     )
-    [ & _0 : () = Any.any_l ()
-    | & _1 : t_GhostBox'0 = Any.any_l ()
-    | & _2 : () = Any.any_l ()
-    | & x : int = Any.any_l () ]
+    [ & _0 : () = Any.any_l () | & _1 : t_Ghost'0 = Any.any_l () | & _2 : () = Any.any_l () | & x : int = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
 end
 module M_snapshot_in_ghost__is_pure [#"snapshot_in_ghost.rs" 14 0 14 16]
@@ -60,28 +66,38 @@ module M_snapshot_in_ghost__bar [#"snapshot_in_ghost.rs" 21 0 21 12]
   let%span ssnapshot_in_ghost0 = "snapshot_in_ghost.rs" 22 21 22 25
   let%span ssnapshot_in_ghost1 = "snapshot_in_ghost.rs" 24 16 24 28
   let%span ssnapshot_in_ghost2 = "snapshot_in_ghost.rs" 25 22 25 55
-  let%span sghost3 = "../../../creusot-contracts/src/ghost.rs" 185 15 185 16
-  let%span sghost4 = "../../../creusot-contracts/src/ghost.rs" 185 4 185 28
-  let%span sghost5 = "../../../creusot-contracts/src/ghost.rs" 183 14 183 28
+  let%span sghost3 = "../../../creusot-contracts/src/ghost.rs" 191 15 191 16
+  let%span sghost4 = "../../../creusot-contracts/src/ghost.rs" 191 4 191 28
+  let%span sghost5 = "../../../creusot-contracts/src/ghost.rs" 189 14 189 26
+  let%span sghost6 = "../../../creusot-contracts/src/ghost.rs" 109 8 109 31
   
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  type t_GhostBox'0  =
-    { t_GhostBox__0'0: () }
+  type t_Ghost'0  =
+    { t_Ghost__0'0: () }
   
   predicate inv'0 (_1 : ())
   
   axiom inv_axiom'0 [@rewrite] : forall x : () [inv'0 x] . inv'0 x = true
   
-  predicate inv'1 (_1 : t_GhostBox'0)
+  function inner_logic'0 (self : t_Ghost'0) : ()
   
-  axiom inv_axiom'1 [@rewrite] : forall x : t_GhostBox'0 [inv'1 x] . inv'1 x = true
+  predicate invariant'0 (self : t_Ghost'0) =
+    [%#sghost6] inv'0 (inner_logic'0 self)
   
-  let rec new'0 (x:()) (return'  (ret:t_GhostBox'0))= {[@expl:new 'x' type invariant] [%#sghost3] inv'0 x}
+  predicate inv'1 (_1 : t_Ghost'0)
+  
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Ghost'0 [inv'1 x] . inv'1 x
+  = (invariant'0 x
+  /\ match x with
+    | {t_Ghost__0'0 = a_0} -> true
+    end)
+  
+  let rec new'0 (x:()) (return'  (ret:t_Ghost'0))= {[@expl:new 'x' type invariant] [%#sghost3] inv'0 x}
     any
-    [ return' (result:t_GhostBox'0)-> {[%#sghost4] inv'1 result}
-      {[%#sghost5] result.t_GhostBox__0'0 = x}
+    [ return' (result:t_Ghost'0)-> {[%#sghost4] inv'1 result}
+      {[%#sghost5] inner_logic'0 result = x}
       (! return' {result}) ]
   
   
@@ -91,14 +107,13 @@ module M_snapshot_in_ghost__bar [#"snapshot_in_ghost.rs" 21 0 21 12]
     [ bb0 = s0 [ s0 =  [ &x <- [%#ssnapshot_in_ghost0] (1 : Int32.t) ] s1 | s1 = bb1 ] 
     | bb1 = s0 [ s0 =  [ &_4 <- [%#ssnapshot_in_ghost1] x ] s1 | s1 = bb2 ] 
     | bb2 = s0 [ s0 = {[@expl:assertion] [%#ssnapshot_in_ghost2] exists y : Int32.t . x = y} s1 | s1 = bb3 ] 
-    | bb3 = s0 [ s0 = new'0 {_3} (fun (_ret':t_GhostBox'0) ->  [ &_2 <- _ret' ] s1) | s1 = bb4 ] 
+    | bb3 = s0 [ s0 = new'0 {_3} (fun (_ret':t_Ghost'0) ->  [ &_2 <- _ret' ] s1) | s1 = bb4 ] 
     | bb4 = bb5
-    | bb5 = bb6
-    | bb6 = return' {_0} ]
+    | bb5 = return' {_0} ]
     )
     [ & _0 : () = Any.any_l ()
     | & x : Int32.t = Any.any_l ()
-    | & _2 : t_GhostBox'0 = Any.any_l ()
+    | & _2 : t_Ghost'0 = Any.any_l ()
     | & _3 : () = Any.any_l ()
     | & _4 : Int32.t = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 

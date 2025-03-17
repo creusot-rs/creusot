@@ -39,14 +39,14 @@ impl Copy for Int {}
 impl Int {
     /// Create a new `Int` value
     ///
-    /// The result is wrapped in a [`GhostBox`], so that it can only be access inside a
+    /// The result is wrapped in a [`Ghost`], so that it can only be access inside a
     /// [`ghost!`] block.
     ///
     /// You should not have to use this method directly: instead, use the `int` suffix
     /// inside of a `ghost` block:
     /// ```
     /// # use creusot_contracts::*;
-    /// let x: GhostBox<Int> = ghost!(1int);
+    /// let x: Ghost<Int> = ghost!(1int);
     /// ghost! {
     ///     let y: Int = 2int;
     /// };
@@ -56,8 +56,8 @@ impl Int {
     #[ensures(*result == value@)]
     #[allow(unreachable_code)]
     #[allow(unused_variables)]
-    pub fn new(value: i128) -> GhostBox<Self> {
-        ghost!(panic!())
+    pub fn new(value: i128) -> Ghost<Self> {
+        Ghost::conjure()
     }
 
     /// Compute `self^p`.

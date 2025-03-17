@@ -44,7 +44,7 @@ pub fn snapshot(_: TS1) -> TS1 {
 #[proc_macro]
 pub fn ghost(body: TS1) -> TS1 {
     let body = proc_macro2::TokenStream::from(ghost::ghost_preprocess(body));
-    quote::quote! { ::creusot_contracts::ghost::GhostBox::from_fn(|| { #body }) }.into()
+    quote::quote! { ::creusot_contracts::ghost::Ghost::from_fn(|| { #body }) }.into()
 }
 
 #[proc_macro_attribute]
