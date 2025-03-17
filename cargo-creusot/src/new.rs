@@ -115,10 +115,20 @@ pub fn init(args: InitArgs) -> Result<()> {
     create_project(name, args.args)
 }
 
+/// Only remember the version string at compile-time
+const QUOTED_VERSION: &str = {
+    use const_str::{format, split};
+    format!(
+        "\"{}\"",
+        split!(split!(include_str!("../../creusot-contracts/Cargo.toml"), "version = \"")[1], "\"")
+            [0]
+    )
+};
+
 pub fn create_project(name: String, args: NewInitArgs) -> Result<()> {
     let contract_dep = match args.creusot_contracts {
         Some(path) => format!(r#"{{ path = "{}" }}"#, path),
-        None => r#""*""#.to_string(),
+        None => QUOTED_VERSION.into(),
     };
     write("Cargo.toml", &cargo_template(&name, &contract_dep));
     if args.tests {
