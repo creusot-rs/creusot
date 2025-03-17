@@ -12,11 +12,12 @@ module M_hashmap__qyi13807168849605512546__resolve_coherence [#"hashmap.rs" 62 4
   
   type t_V'0
   
+  type tuple'0  =
+    { _0'0: t_K'0; _1'0: t_V'0 }
+  
   type t_List'0  =
     | C_Nil'0
-    | C_Cons'0 (t_K'0, t_V'0) t_List'0
-  
-  type t_DeepModelTy'0
+    | C_Cons'0 tuple'0 t_List'0
   
   type t_Option'0  =
     | C_None'0
@@ -33,12 +34,14 @@ module M_hashmap__qyi13807168849605512546__resolve_coherence [#"hashmap.rs" 62 4
   predicate resolve'3 (_1 : t_Option'0) =
     resolve'6 _1
   
+  type t_DeepModelTy'0
+  
   function deep_model'0 (self : t_K'0) : t_DeepModelTy'0
   
   function get'0 [#"hashmap.rs" 28 4 28 56] (self : t_List'0) (index : t_DeepModelTy'0) : t_Option'0 =
     [%#shashmap4] match self with
       | C_Nil'0 -> C_None'0
-      | C_Cons'0 (k, v) tl -> if deep_model'0 k = index then C_Some'0 v else get'0 tl index
+      | C_Cons'0 {_0'0 = k ; _1'0 = v} tl -> if deep_model'0 k = index then C_Some'0 v else get'0 tl index
       end
   
   predicate resolve'0 [#"hashmap.rs" 51 4 51 28] (self : t_List'0) =
@@ -55,10 +58,10 @@ module M_hashmap__qyi13807168849605512546__resolve_coherence [#"hashmap.rs" 62 4
   
   predicate resolve'8 (_1 : t_K'0)
   
-  predicate resolve'5 (self : (t_K'0, t_V'0)) =
-    [%#sresolve6] resolve'8 (let (a, _) = self in a) /\ resolve'9 (let (_, a) = self in a)
+  predicate resolve'5 (self : tuple'0) =
+    [%#sresolve6] resolve'8 self._0'0 /\ resolve'9 self._1'0
   
-  predicate resolve'2 (_1 : (t_K'0, t_V'0)) =
+  predicate resolve'2 (_1 : tuple'0) =
     resolve'5 _1
   
   predicate structural_resolve'0 (_1 : t_List'0) =
@@ -159,9 +162,12 @@ module M_hashmap__qyi1307405214416629806__resolve_coherence [#"hashmap.rs" 115 4
   
   type t_V'0
   
+  type tuple'0  =
+    { _0'0: t_K'0; _1'0: t_V'0 }
+  
   type t_List'0  =
     | C_Nil'0
-    | C_Cons'0 (t_K'0, t_V'0) t_List'0
+    | C_Cons'0 tuple'0 t_List'0
   
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
@@ -180,7 +186,7 @@ module M_hashmap__qyi1307405214416629806__resolve_coherence [#"hashmap.rs" 115 4
   function get'0 [#"hashmap.rs" 28 4 28 56] (self : t_List'0) (index : t_DeepModelTy'0) : t_Option'0 =
     [%#shashmap9] match self with
       | C_Nil'0 -> C_None'0
-      | C_Cons'0 (k, v) tl -> if deep_model'0 k = index then C_Some'0 v else get'0 tl index
+      | C_Cons'0 {_0'0 = k ; _1'0 = v} tl -> if deep_model'0 k = index then C_Some'0 v else get'0 tl index
       end
   
   function hash_log'0 [#"hashmap.rs" 71 4 71 45] (_1 : t_DeepModelTy'0) : int
@@ -197,7 +203,7 @@ module M_hashmap__qyi1307405214416629806__resolve_coherence [#"hashmap.rs" 115 4
   predicate no_double_binding'0 [#"hashmap.rs" 38 4 38 38] (self : t_List'0) =
     [%#shashmap17] match self with
       | C_Nil'0 -> true
-      | C_Cons'0 (k, _) tl -> get'0 tl (deep_model'0 k) = C_None'0 /\ no_double_binding'0 tl
+      | C_Cons'0 {_0'0 = k} tl -> get'0 tl (deep_model'0 k) = C_None'0 /\ no_double_binding'0 tl
       end
   
   predicate invariant'1 [#"hashmap.rs" 140 4 140 30] (self : t_MyHashMap'0) =
@@ -210,10 +216,10 @@ module M_hashmap__qyi1307405214416629806__resolve_coherence [#"hashmap.rs" 115 4
   
   predicate inv'8 (_1 : t_V'0)
   
-  predicate inv'6 (_1 : (t_K'0, t_V'0))
+  predicate inv'6 (_1 : tuple'0)
   
-  axiom inv_axiom'6 [@rewrite] : forall x : (t_K'0, t_V'0) [inv'6 x] . inv'6 x
-  = (let (x0, x1) = x in inv'7 x0 /\ inv'8 x1)
+  axiom inv_axiom'6 [@rewrite] : forall x : tuple'0 [inv'6 x] . inv'6 x
+  = (let {_0'0 = x0 ; _1'0 = x1} = x in inv'7 x0 /\ inv'8 x1)
   
   predicate inv'5 (_1 : t_List'0)
   
@@ -334,9 +340,12 @@ module M_hashmap__qyi9690720112976707081__new [#"hashmap.rs" 151 4 151 46] (* My
   
   type t_V'0
   
+  type tuple'0  =
+    { _0'0: t_K'0; _1'0: t_V'0 }
+  
   type t_List'0  =
     | C_Nil'0
-    | C_Cons'0 (t_K'0, t_V'0) t_List'0
+    | C_Cons'0 tuple'0 t_List'0
   
   type t_NonNull'0  =
     { t_NonNull__pointer'0: Opaque.ptr }
@@ -360,10 +369,10 @@ module M_hashmap__qyi9690720112976707081__new [#"hashmap.rs" 151 4 151 46] (* My
   
   predicate inv'7 (_1 : t_V'0)
   
-  predicate inv'3 (_1 : (t_K'0, t_V'0))
+  predicate inv'3 (_1 : tuple'0)
   
-  axiom inv_axiom'3 [@rewrite] : forall x : (t_K'0, t_V'0) [inv'3 x] . inv'3 x
-  = (let (x0, x1) = x in inv'6 x0 /\ inv'7 x1)
+  axiom inv_axiom'3 [@rewrite] : forall x : tuple'0 [inv'3 x] . inv'3 x
+  = (let {_0'0 = x0 ; _1'0 = x1} = x in inv'6 x0 /\ inv'7 x1)
   
   predicate inv'1 (_1 : t_List'0)
   
@@ -425,7 +434,7 @@ module M_hashmap__qyi9690720112976707081__new [#"hashmap.rs" 151 4 151 46] (* My
   function get'0 [#"hashmap.rs" 28 4 28 56] (self : t_List'0) (index : t_DeepModelTy'0) : t_Option'0 =
     [%#shashmap8] match self with
       | C_Nil'0 -> C_None'0
-      | C_Cons'0 (k, v) tl -> if deep_model'0 k = index then C_Some'0 v else get'0 tl index
+      | C_Cons'0 {_0'0 = k ; _1'0 = v} tl -> if deep_model'0 k = index then C_Some'0 v else get'0 tl index
       end
   
   function hash_log'0 [#"hashmap.rs" 71 4 71 45] (_1 : t_DeepModelTy'0) : int
@@ -439,7 +448,7 @@ module M_hashmap__qyi9690720112976707081__new [#"hashmap.rs" 151 4 151 46] (* My
   predicate no_double_binding'0 [#"hashmap.rs" 38 4 38 38] (self : t_List'0) =
     [%#shashmap14] match self with
       | C_Nil'0 -> true
-      | C_Cons'0 (k, _) tl -> get'0 tl (deep_model'0 k) = C_None'0 /\ no_double_binding'0 tl
+      | C_Cons'0 {_0'0 = k} tl -> get'0 tl (deep_model'0 k) = C_None'0 /\ no_double_binding'0 tl
       end
   
   predicate invariant'0 [#"hashmap.rs" 140 4 140 30] (self : t_MyHashMap'0) =
@@ -569,18 +578,21 @@ module M_hashmap__qyi9690720112976707081__add [#"hashmap.rs" 157 4 157 41] (* My
   
   type t_V'0
   
+  type tuple'0  =
+    { _0'0: t_K'0; _1'0: t_V'0 }
+  
   type t_List'0  =
     | C_Nil'0
-    | C_Cons'0 (t_K'0, t_V'0) t_List'0
+    | C_Cons'0 tuple'0 t_List'0
   
   predicate inv'3 (_1 : t_K'0)
   
   predicate inv'4 (_1 : t_V'0)
   
-  predicate inv'14 (_1 : (t_K'0, t_V'0))
+  predicate inv'13 (_1 : tuple'0)
   
-  axiom inv_axiom'12 [@rewrite] : forall x : (t_K'0, t_V'0) [inv'14 x] . inv'14 x
-  = (let (x0, x1) = x in inv'3 x0 /\ inv'4 x1)
+  axiom inv_axiom'11 [@rewrite] : forall x : tuple'0 [inv'13 x] . inv'13 x
+  = (let {_0'0 = x0 ; _1'0 = x1} = x in inv'3 x0 /\ inv'4 x1)
   
   predicate inv'1 (_1 : t_List'0)
   
@@ -589,7 +601,7 @@ module M_hashmap__qyi9690720112976707081__add [#"hashmap.rs" 157 4 157 41] (* My
   axiom inv_axiom'1 [@rewrite] : forall x : t_List'0 [inv'1 x] . inv'1 x
   = match x with
     | C_Nil'0 -> true
-    | C_Cons'0 a_0 a_1 -> inv'14 a_0 /\ inv'5 a_1
+    | C_Cons'0 a_0 a_1 -> inv'13 a_0 /\ inv'5 a_1
     end
   
   predicate invariant'2 (self : t_List'0) =
@@ -600,9 +612,9 @@ module M_hashmap__qyi9690720112976707081__add [#"hashmap.rs" 157 4 157 41] (* My
   predicate invariant'10 (self : Seq.seq t_List'0) =
     [%#sseq44] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'5 (Seq.get self i)
   
-  predicate inv'15 (_1 : Seq.seq t_List'0)
+  predicate inv'14 (_1 : Seq.seq t_List'0)
   
-  axiom inv_axiom'13 [@rewrite] : forall x : Seq.seq t_List'0 [inv'15 x] . inv'15 x = invariant'10 x
+  axiom inv_axiom'12 [@rewrite] : forall x : Seq.seq t_List'0 [inv'14 x] . inv'14 x = invariant'10 x
   
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
@@ -611,7 +623,7 @@ module M_hashmap__qyi9690720112976707081__add [#"hashmap.rs" 157 4 157 41] (* My
   axiom view'4_spec : forall self : t_Vec'0 . [%#svec32] Seq.length (view'4 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
   predicate invariant'0 (self : t_Vec'0) =
-    [%#svec38] inv'15 (view'4 self)
+    [%#svec38] inv'14 (view'4 self)
   
   predicate inv'0 (_1 : t_Vec'0)
   
@@ -661,10 +673,6 @@ module M_hashmap__qyi9690720112976707081__add [#"hashmap.rs" 157 4 157 41] (* My
   
   axiom inv_axiom'10 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'12 x] . inv'12 x = invariant'9 x
   
-  predicate inv'13 (_1 : UInt64.t)
-  
-  axiom inv_axiom'11 [@rewrite] : forall x : UInt64.t [inv'13 x] . inv'13 x = true
-  
   predicate in_bounds'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq t_List'0) =
     [%#sslice30] UInt64.t'int self < Seq.length seq
   
@@ -686,7 +694,6 @@ module M_hashmap__qyi9690720112976707081__add [#"hashmap.rs" 157 4 157 41] (* My
      -> Seq.get old' i = Seq.get fin i
   
   let rec index_mut'0 (self:MutBorrow.t t_Vec'0) (index:UInt64.t) (return'  (ret:MutBorrow.t t_List'0))= {[@expl:index_mut 'self' type invariant] inv'12 self}
-    {[@expl:index_mut 'index' type invariant] inv'13 index}
     {[@expl:index_mut requires] [%#svec17] in_bounds'0 index (view'3 self)}
     any
     [ return' (result:MutBorrow.t t_List'0)-> {inv'2 result}
@@ -710,13 +717,13 @@ module M_hashmap__qyi9690720112976707081__add [#"hashmap.rs" 157 4 157 41] (* My
   function get'0 [#"hashmap.rs" 28 4 28 56] (self : t_List'0) (index : t_DeepModelTy'0) : t_Option'0 =
     [%#shashmap22] match self with
       | C_Nil'0 -> C_None'0
-      | C_Cons'0 (k, v) tl -> if deep_model'0 k = index then C_Some'0 v else get'0 tl index
+      | C_Cons'0 {_0'0 = k ; _1'0 = v} tl -> if deep_model'0 k = index then C_Some'0 v else get'0 tl index
       end
   
   predicate no_double_binding'0 [#"hashmap.rs" 38 4 38 38] (self : t_List'0) =
     [%#shashmap23] match self with
       | C_Nil'0 -> true
-      | C_Cons'0 (k, _) tl -> get'0 tl (deep_model'0 k) = C_None'0 /\ no_double_binding'0 tl
+      | C_Cons'0 {_0'0 = k} tl -> get'0 tl (deep_model'0 k) = C_None'0 /\ no_double_binding'0 tl
       end
   
   function bucket_ix'0 [#"hashmap.rs" 125 4 125 48] (self : t_MyHashMap'0) (k : t_DeepModelTy'0) : int =
@@ -725,9 +732,9 @@ module M_hashmap__qyi9690720112976707081__add [#"hashmap.rs" 157 4 157 41] (* My
   predicate good_bucket'0 [#"hashmap.rs" 130 4 130 57] (self : t_MyHashMap'0) (l : t_List'0) (h : int) =
     [%#shashmap24] forall k : t_DeepModelTy'0, v : t_V'0 . get'0 l k = C_Some'0 v  -> bucket_ix'0 self k = h
   
-  let rec v_Cons'0 (input:t_List'0) (ret  (field_0:(t_K'0, t_V'0)) (field_1:t_List'0))= any
-    [ good (field_0:(t_K'0, t_V'0)) (field_1:t_List'0)-> {C_Cons'0 field_0 field_1 = input} (! ret {field_0} {field_1})
-    | bad -> {forall field_0 : (t_K'0, t_V'0), field_1 : t_List'0 [C_Cons'0 field_0 field_1 : t_List'0] . C_Cons'0 field_0 field_1
+  let rec v_Cons'0 (input:t_List'0) (ret  (field_0:tuple'0) (field_1:t_List'0))= any
+    [ good (field_0:tuple'0) (field_1:t_List'0)-> {C_Cons'0 field_0 field_1 = input} (! ret {field_0} {field_1})
+    | bad -> {forall field_0 : tuple'0, field_1 : t_List'0 [C_Cons'0 field_0 field_1 : t_List'0] . C_Cons'0 field_0 field_1
       <> input}
       (! {false}
       any) ]
@@ -802,16 +809,16 @@ module M_hashmap__qyi9690720112976707081__add [#"hashmap.rs" 157 4 157 41] (* My
      -> good_bucket'0 self (index_logic'0 self.t_MyHashMap__buckets'0 i) i
     /\ no_double_binding'0 (index_logic'0 self.t_MyHashMap__buckets'0 i))
   
-  predicate inv'16 (_1 : t_MyHashMap'0)
+  predicate inv'15 (_1 : t_MyHashMap'0)
   
-  axiom inv_axiom'14 [@rewrite] : forall x : t_MyHashMap'0 [inv'16 x] . inv'16 x
+  axiom inv_axiom'13 [@rewrite] : forall x : t_MyHashMap'0 [inv'15 x] . inv'15 x
   = (invariant'11 x
   /\ match x with
     | {t_MyHashMap__buckets'0 = buckets} -> inv'0 buckets
     end)
   
   predicate invariant'6 (self : MutBorrow.t t_MyHashMap'0) =
-    [%#sinvariant39] inv'16 self.current /\ inv'16 self.final
+    [%#sinvariant39] inv'15 self.current /\ inv'15 self.final
   
   predicate inv'9 (_1 : MutBorrow.t t_MyHashMap'0)
   
@@ -903,36 +910,36 @@ module M_hashmap__qyi9690720112976707081__add [#"hashmap.rs" 157 4 157 41] (* My
         (! s0) [ s0 = bb8 ] 
         [ bb8 = any
           [ br0 -> {l.current = C_Nil'0} (! bb14)
-          | br1 (x0:(t_K'0, t_V'0)) (x1:t_List'0)-> {l.current = C_Cons'0 x0 x1} (! bb9) ]
+          | br1 (x0:tuple'0) (x1:t_List'0)-> {l.current = C_Cons'0 x0 x1} (! bb9) ]
         
         | bb9 = bb10
         | bb10 = s0
           [ s0 = v_Cons'0 {l.current}
-              (fun (r0'0:(t_K'0, t_V'0)) (r1'0:t_List'0) ->
-                {inv'3 (let (r'0, _) = r0'0 in r'0)}
+              (fun (r0'0:tuple'0) (r1'0:t_List'0) ->
+                {inv'3 r0'0._0'0}
                 MutBorrow.borrow_final
                   <t_K'0>
-                  {let (r'0, _) = r0'0 in r'0}
+                  {r0'0._0'0}
                   {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id l) 1) 1}
                   (fun (_ret':MutBorrow.t t_K'0) ->
                      [ &k <- _ret' ] 
                     -{inv'3 _ret'.final}-
-                     [ &l <- { l with current = C_Cons'0 (let (_, r'2) = r0'0 in (_ret'.final, r'2)) r1'0 } ] 
+                     [ &l <- { l with current = C_Cons'0 ({ r0'0 with _0'0 = _ret'.final }) r1'0 } ] 
                     s1))
           | s1 = v_Cons'0 {l.current}
-              (fun (r0'1:(t_K'0, t_V'0)) (r1'1:t_List'0) ->
-                {inv'4 (let (_, r'3) = r0'1 in r'3)}
+              (fun (r0'1:tuple'0) (r1'1:t_List'0) ->
+                {inv'4 r0'1._1'0}
                 MutBorrow.borrow_final
                   <t_V'0>
-                  {let (_, r'3) = r0'1 in r'3}
+                  {r0'1._1'0}
                   {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id l) 1) 2}
                   (fun (_ret':MutBorrow.t t_V'0) ->
                      [ &v <- _ret' ] 
                     -{inv'4 _ret'.final}-
-                     [ &l <- { l with current = C_Cons'0 (let (r'4, _) = r0'1 in (r'4, _ret'.final)) r1'1 } ] 
+                     [ &l <- { l with current = C_Cons'0 ({ r0'1 with _1'0 = _ret'.final }) r1'1 } ] 
                     s2))
           | s2 = v_Cons'0 {l.current}
-              (fun (r0'2:(t_K'0, t_V'0)) (r1'2:t_List'0) ->
+              (fun (r0'2:tuple'0) (r1'2:t_List'0) ->
                 {inv'5 r1'2}
                 MutBorrow.borrow_final <t_List'0> {r1'2} {MutBorrow.inherit_id (MutBorrow.get_id l) 2}
                   (fun (_ret':MutBorrow.t t_List'0) ->
@@ -977,7 +984,7 @@ module M_hashmap__qyi9690720112976707081__add [#"hashmap.rs" 157 4 157 41] (* My
          ]
        ]
     
-    | bb14 = s0 [ s0 =  [ &_47 <- (key, val') ] s1 | s1 =  [ &_51 <- C_Nil'0 ] s2 | s2 = bb15 ] 
+    | bb14 = s0 [ s0 =  [ &_47 <- { _0'0 = key; _1'0 = val' } ] s1 | s1 =  [ &_51 <- C_Nil'0 ] s2 | s2 = bb15 ] 
     | bb15 = s0 [ s0 =  [ &_46 <- C_Cons'0 _47 _51 ] s1 | s1 = bb16 ] 
     | bb16 = bb17
     | bb17 = s0
@@ -1041,7 +1048,7 @@ module M_hashmap__qyi9690720112976707081__add [#"hashmap.rs" 157 4 157 41] (* My
     | & _43 : MutBorrow.t t_List'0 = Any.any_l ()
     | & _44 : MutBorrow.t t_List'0 = Any.any_l ()
     | & _46 : t_List'0 = Any.any_l ()
-    | & _47 : (t_K'0, t_V'0) = Any.any_l ()
+    | & _47 : tuple'0 = Any.any_l ()
     | & _51 : t_List'0 = Any.any_l () ]
     
     [ return' (result:())-> {[@expl:add ensures] [%#shashmap13] forall i : t_DeepModelTy'0 . Map.get (view'0 self.final) i
@@ -1138,38 +1145,41 @@ module M_hashmap__qyi9690720112976707081__get [#"hashmap.rs" 189 4 189 43] (* My
   
   type t_V'0
   
+  type tuple'0  =
+    { _0'0: t_K'0; _1'0: t_V'0 }
+  
   type t_List'0  =
     | C_Nil'0
-    | C_Cons'0 (t_K'0, t_V'0) t_List'0
+    | C_Cons'0 tuple'0 t_List'0
   
-  predicate inv'13 (_1 : t_V'0)
+  predicate inv'12 (_1 : t_V'0)
   
-  predicate inv'11 (_1 : (t_K'0, t_V'0))
+  predicate inv'10 (_1 : tuple'0)
   
-  axiom inv_axiom'10 [@rewrite] : forall x : (t_K'0, t_V'0) [inv'11 x] . inv'11 x
-  = (let (x0, x1) = x in inv'2 x0 /\ inv'13 x1)
+  axiom inv_axiom'9 [@rewrite] : forall x : tuple'0 [inv'10 x] . inv'10 x
+  = (let {_0'0 = x0 ; _1'0 = x1} = x in inv'2 x0 /\ inv'12 x1)
   
-  predicate inv'8 (_1 : t_List'0)
+  predicate inv'7 (_1 : t_List'0)
   
-  predicate inv'12 (_1 : t_List'0)
+  predicate inv'11 (_1 : t_List'0)
   
-  axiom inv_axiom'7 [@rewrite] : forall x : t_List'0 [inv'8 x] . inv'8 x
+  axiom inv_axiom'6 [@rewrite] : forall x : t_List'0 [inv'7 x] . inv'7 x
   = match x with
     | C_Nil'0 -> true
-    | C_Cons'0 a_0 a_1 -> inv'11 a_0 /\ inv'12 a_1
+    | C_Cons'0 a_0 a_1 -> inv'10 a_0 /\ inv'11 a_1
     end
   
   predicate invariant'7 (self : t_List'0) =
-    [%#sboxed28] inv'8 self
+    [%#sboxed28] inv'7 self
   
-  axiom inv_axiom'11 [@rewrite] : forall x : t_List'0 [inv'12 x] . inv'12 x = invariant'7 x
+  axiom inv_axiom'10 [@rewrite] : forall x : t_List'0 [inv'11 x] . inv'11 x = invariant'7 x
   
   predicate invariant'8 (self : Seq.seq t_List'0) =
-    [%#sseq29] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'12 (Seq.get self i)
+    [%#sseq29] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'11 (Seq.get self i)
   
-  predicate inv'14 (_1 : Seq.seq t_List'0)
+  predicate inv'13 (_1 : Seq.seq t_List'0)
   
-  axiom inv_axiom'12 [@rewrite] : forall x : Seq.seq t_List'0 [inv'14 x] . inv'14 x = invariant'8 x
+  axiom inv_axiom'11 [@rewrite] : forall x : Seq.seq t_List'0 [inv'13 x] . inv'13 x = invariant'8 x
   
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
@@ -1178,14 +1188,14 @@ module M_hashmap__qyi9690720112976707081__get [#"hashmap.rs" 189 4 189 43] (* My
   axiom view'3_spec : forall self : t_Vec'0 . [%#svec22] Seq.length (view'3 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
   predicate invariant'6 (self : t_Vec'0) =
-    [%#svec25] inv'14 (view'3 self)
+    [%#svec25] inv'13 (view'3 self)
   
-  predicate inv'10 (_1 : t_Vec'0)
+  predicate inv'9 (_1 : t_Vec'0)
   
-  axiom inv_axiom'9 [@rewrite] : forall x : t_Vec'0 [inv'10 x] . inv'10 x = invariant'6 x
+  axiom inv_axiom'8 [@rewrite] : forall x : t_Vec'0 [inv'9 x] . inv'9 x = invariant'6 x
   
   predicate invariant'3 (self : t_Vec'0) =
-    [%#sinvariant23] inv'10 self
+    [%#sinvariant23] inv'9 self
   
   predicate inv'5 (_1 : t_Vec'0)
   
@@ -1197,15 +1207,11 @@ module M_hashmap__qyi9690720112976707081__get [#"hashmap.rs" 189 4 189 43] (* My
   let rec len'0 (self:t_Vec'0) (return'  (ret:UInt64.t))= {[@expl:len 'self' type invariant] inv'5 self}
     any [ return' (result:UInt64.t)-> {[%#svec9] UInt64.t'int result = Seq.length (view'1 self)} (! return' {result}) ] 
   
-  predicate inv'6 (_1 : UInt64.t)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : UInt64.t [inv'6 x] . inv'6 x = true
-  
   predicate in_bounds'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq t_List'0) =
     [%#sslice17] UInt64.t'int self < Seq.length seq
   
   predicate invariant'0 (self : t_List'0) =
-    [%#sinvariant23] inv'8 self
+    [%#sinvariant23] inv'7 self
   
   predicate inv'0 (_1 : t_List'0)
   
@@ -1215,7 +1221,6 @@ module M_hashmap__qyi9690720112976707081__get [#"hashmap.rs" 189 4 189 43] (* My
     [%#sslice18] Seq.get seq (UInt64.t'int self) = out
   
   let rec index'0 (self:t_Vec'0) (index:UInt64.t) (return'  (ret:t_List'0))= {[@expl:index 'self' type invariant] inv'5 self}
-    {[@expl:index 'index' type invariant] inv'6 index}
     {[@expl:index requires] [%#svec10] in_bounds'0 index (view'1 self)}
     any
     [ return' (result:t_List'0)-> {inv'0 result}
@@ -1230,7 +1235,7 @@ module M_hashmap__qyi9690720112976707081__get [#"hashmap.rs" 189 4 189 43] (* My
   function get'1 [#"hashmap.rs" 28 4 28 56] (self : t_List'0) (index : t_DeepModelTy'0) : t_Option'1 =
     [%#shashmap12] match self with
       | C_Nil'0 -> C_None'1
-      | C_Cons'0 (k, v) tl -> if deep_model'0 k = index then C_Some'1 v else get'1 tl index
+      | C_Cons'0 {_0'0 = k ; _1'0 = v} tl -> if deep_model'0 k = index then C_Some'1 v else get'1 tl index
       end
   
   function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : t_List'0 =
@@ -1242,9 +1247,9 @@ module M_hashmap__qyi9690720112976707081__get [#"hashmap.rs" 189 4 189 43] (* My
   function bucket'0 [#"hashmap.rs" 120 4 120 54] (self : t_MyHashMap'0) (k : t_DeepModelTy'0) : t_List'0 =
     [%#shashmap13] index_logic'0 self.t_MyHashMap__buckets'0 (bucket_ix'0 self k)
   
-  let rec v_Cons'0 (input:t_List'0) (ret  (field_0:(t_K'0, t_V'0)) (field_1:t_List'0))= any
-    [ good (field_0:(t_K'0, t_V'0)) (field_1:t_List'0)-> {C_Cons'0 field_0 field_1 = input} (! ret {field_0} {field_1})
-    | bad -> {forall field_0 : (t_K'0, t_V'0), field_1 : t_List'0 [C_Cons'0 field_0 field_1 : t_List'0] . C_Cons'0 field_0 field_1
+  let rec v_Cons'0 (input:t_List'0) (ret  (field_0:tuple'0) (field_1:t_List'0))= any
+    [ good (field_0:tuple'0) (field_1:t_List'0)-> {C_Cons'0 field_0 field_1 = input} (! ret {field_0} {field_1})
+    | bad -> {forall field_0 : tuple'0, field_1 : t_List'0 [C_Cons'0 field_0 field_1 : t_List'0] . C_Cons'0 field_0 field_1
       <> input}
       (! {false}
       any) ]
@@ -1264,7 +1269,7 @@ module M_hashmap__qyi9690720112976707081__get [#"hashmap.rs" 189 4 189 43] (* My
   predicate no_double_binding'0 [#"hashmap.rs" 38 4 38 38] (self : t_List'0) =
     [%#shashmap27] match self with
       | C_Nil'0 -> true
-      | C_Cons'0 (k, _) tl -> get'1 tl (deep_model'0 k) = C_None'1 /\ no_double_binding'0 tl
+      | C_Cons'0 {_0'0 = k} tl -> get'1 tl (deep_model'0 k) = C_None'1 /\ no_double_binding'0 tl
       end
   
   predicate invariant'5 [#"hashmap.rs" 140 4 140 30] (self : t_MyHashMap'0) =
@@ -1273,34 +1278,34 @@ module M_hashmap__qyi9690720112976707081__get [#"hashmap.rs" 189 4 189 43] (* My
      -> good_bucket'0 self (index_logic'0 self.t_MyHashMap__buckets'0 i) i
     /\ no_double_binding'0 (index_logic'0 self.t_MyHashMap__buckets'0 i))
   
-  predicate inv'9 (_1 : t_MyHashMap'0)
+  predicate inv'8 (_1 : t_MyHashMap'0)
   
-  axiom inv_axiom'8 [@rewrite] : forall x : t_MyHashMap'0 [inv'9 x] . inv'9 x
+  axiom inv_axiom'7 [@rewrite] : forall x : t_MyHashMap'0 [inv'8 x] . inv'8 x
   = (invariant'5 x
   /\ match x with
-    | {t_MyHashMap__buckets'0 = buckets} -> inv'10 buckets
+    | {t_MyHashMap__buckets'0 = buckets} -> inv'9 buckets
     end)
   
   predicate invariant'1 (self : t_MyHashMap'0) =
-    [%#sinvariant23] inv'9 self
+    [%#sinvariant23] inv'8 self
   
   predicate inv'1 (_1 : t_MyHashMap'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_MyHashMap'0 [inv'1 x] . inv'1 x = invariant'1 x
   
   predicate invariant'4 (self : t_V'0) =
-    [%#sinvariant23] inv'13 self
+    [%#sinvariant23] inv'12 self
   
-  predicate inv'7 (_1 : t_V'0)
+  predicate inv'6 (_1 : t_V'0)
   
-  axiom inv_axiom'6 [@rewrite] : forall x : t_V'0 [inv'7 x] . inv'7 x = invariant'4 x
+  axiom inv_axiom'5 [@rewrite] : forall x : t_V'0 [inv'6 x] . inv'6 x = invariant'4 x
   
   predicate inv'3 (_1 : t_Option'0)
   
   axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x
   = match x with
     | C_None'0 -> true
-    | C_Some'0 a_0 -> inv'7 a_0
+    | C_Some'0 a_0 -> inv'6 a_0
     end
   
   function view'2 [#"hashmap.rs" 95 4 95 33] (self : t_MyHashMap'0) : Map.map t_DeepModelTy'0 t_Option'1 =
@@ -1336,14 +1341,12 @@ module M_hashmap__qyi9690720112976707081__get [#"hashmap.rs" 189 4 189 43] (* My
         {[@expl:loop invariant #1] [%#shashmap1] get'1 (bucket'0 self (deep_model'0 key)) (deep_model'0 key)
         = get'1 l (deep_model'0 key)}
         (! s0) [ s0 = bb6 ] 
-        [ bb6 = any
-          [ br0 -> {l = C_Nil'0} (! bb12) | br1 (x0:(t_K'0, t_V'0)) (x1:t_List'0)-> {l = C_Cons'0 x0 x1} (! bb7) ]
-        
+        [ bb6 = any [ br0 -> {l = C_Nil'0} (! bb12) | br1 (x0:tuple'0) (x1:t_List'0)-> {l = C_Cons'0 x0 x1} (! bb7) ] 
         | bb7 = bb8
         | bb8 = s0
-          [ s0 = v_Cons'0 {l} (fun (r0'0:(t_K'0, t_V'0)) (r1'0:t_List'0) ->  [ &k <- let (r'0, _) = r0'0 in r'0 ] s1)
-          | s1 = v_Cons'0 {l} (fun (r0'1:(t_K'0, t_V'0)) (r1'1:t_List'0) ->  [ &v <- let (_, r'1) = r0'1 in r'1 ] s2)
-          | s2 = v_Cons'0 {l} (fun (r0'2:(t_K'0, t_V'0)) (r1'2:t_List'0) ->  [ &tl <- r1'2 ] s3)
+          [ s0 = v_Cons'0 {l} (fun (r0'0:tuple'0) (r1'0:t_List'0) ->  [ &k <- r0'0._0'0 ] s1)
+          | s1 = v_Cons'0 {l} (fun (r0'1:tuple'0) (r1'1:t_List'0) ->  [ &v <- r0'1._1'0 ] s2)
+          | s2 = v_Cons'0 {l} (fun (r0'2:tuple'0) (r1'2:t_List'0) ->  [ &tl <- r1'2 ] s3)
           | s3 = eq'0 {k} {key} (fun (_ret':bool) ->  [ &_26 <- _ret' ] s4)
           | s4 = bb9 ]
         
@@ -1476,40 +1479,43 @@ module M_hashmap__qyi9690720112976707081__resize [#"hashmap.rs" 208 4 208 24] (*
   
   type t_V'0
   
+  type tuple'0  =
+    { _0'0: t_K'0; _1'0: t_V'0 }
+  
   type t_List'0  =
     | C_Nil'0
-    | C_Cons'0 (t_K'0, t_V'0) t_List'0
+    | C_Cons'0 tuple'0 t_List'0
   
-  predicate inv'8 (_1 : t_K'0)
+  predicate inv'7 (_1 : t_K'0)
   
-  predicate inv'9 (_1 : t_V'0)
+  predicate inv'8 (_1 : t_V'0)
   
-  predicate inv'10 (_1 : (t_K'0, t_V'0))
+  predicate inv'9 (_1 : tuple'0)
   
-  axiom inv_axiom'8 [@rewrite] : forall x : (t_K'0, t_V'0) [inv'10 x] . inv'10 x
-  = (let (x0, x1) = x in inv'8 x0 /\ inv'9 x1)
+  axiom inv_axiom'7 [@rewrite] : forall x : tuple'0 [inv'9 x] . inv'9 x
+  = (let {_0'0 = x0 ; _1'0 = x1} = x in inv'7 x0 /\ inv'8 x1)
   
   predicate inv'3 (_1 : t_List'0)
   
-  predicate inv'11 (_1 : t_List'0)
+  predicate inv'10 (_1 : t_List'0)
   
   axiom inv_axiom'3 [@rewrite] : forall x : t_List'0 [inv'3 x] . inv'3 x
   = match x with
     | C_Nil'0 -> true
-    | C_Cons'0 a_0 a_1 -> inv'10 a_0 /\ inv'11 a_1
+    | C_Cons'0 a_0 a_1 -> inv'9 a_0 /\ inv'10 a_1
     end
   
   predicate invariant'6 (self : t_List'0) =
     [%#sboxed59] inv'3 self
   
-  axiom inv_axiom'9 [@rewrite] : forall x : t_List'0 [inv'11 x] . inv'11 x = invariant'6 x
+  axiom inv_axiom'8 [@rewrite] : forall x : t_List'0 [inv'10 x] . inv'10 x = invariant'6 x
   
   predicate invariant'7 (self : Seq.seq t_List'0) =
-    [%#sseq60] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'11 (Seq.get self i)
+    [%#sseq60] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'10 (Seq.get self i)
   
-  predicate inv'12 (_1 : Seq.seq t_List'0)
+  predicate inv'11 (_1 : Seq.seq t_List'0)
   
-  axiom inv_axiom'10 [@rewrite] : forall x : Seq.seq t_List'0 [inv'12 x] . inv'12 x = invariant'7 x
+  axiom inv_axiom'9 [@rewrite] : forall x : Seq.seq t_List'0 [inv'11 x] . inv'11 x = invariant'7 x
   
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
@@ -1518,7 +1524,7 @@ module M_hashmap__qyi9690720112976707081__resize [#"hashmap.rs" 208 4 208 24] (*
   axiom view'0_spec : forall self : t_Vec'0 . [%#svec26] Seq.length (view'0 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
   predicate invariant'2 (self : t_Vec'0) =
-    [%#svec56] inv'12 (view'0 self)
+    [%#svec56] inv'11 (view'0 self)
   
   predicate inv'2 (_1 : t_Vec'0)
   
@@ -1550,7 +1556,7 @@ module M_hashmap__qyi9690720112976707081__resize [#"hashmap.rs" 208 4 208 24] (*
   function get'0 [#"hashmap.rs" 28 4 28 56] (self : t_List'0) (index : t_DeepModelTy'0) : t_Option'0 =
     [%#shashmap40] match self with
       | C_Nil'0 -> C_None'0
-      | C_Cons'0 (k, v) tl -> if deep_model'0 k = index then C_Some'0 v else get'0 tl index
+      | C_Cons'0 {_0'0 = k ; _1'0 = v} tl -> if deep_model'0 k = index then C_Some'0 v else get'0 tl index
       end
   
   function hash_log'0 [#"hashmap.rs" 71 4 71 45] (_1 : t_DeepModelTy'0) : int
@@ -1567,7 +1573,7 @@ module M_hashmap__qyi9690720112976707081__resize [#"hashmap.rs" 208 4 208 24] (*
   predicate no_double_binding'0 [#"hashmap.rs" 38 4 38 38] (self : t_List'0) =
     [%#shashmap39] match self with
       | C_Nil'0 -> true
-      | C_Cons'0 (k, _) tl -> get'0 tl (deep_model'0 k) = C_None'0 /\ no_double_binding'0 tl
+      | C_Cons'0 {_0'0 = k} tl -> get'0 tl (deep_model'0 k) = C_None'0 /\ no_double_binding'0 tl
       end
   
   predicate invariant'0 [#"hashmap.rs" 140 4 140 30] (self : t_MyHashMap'0) =
@@ -1621,10 +1627,6 @@ module M_hashmap__qyi9690720112976707081__resize [#"hashmap.rs" 208 4 208 24] (*
   
   axiom inv_axiom'6 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'6 x] . inv'6 x = invariant'5 x
   
-  predicate inv'7 (_1 : UInt64.t)
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : UInt64.t [inv'7 x] . inv'7 x = true
-  
   predicate in_bounds'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq t_List'0) =
     [%#sslice48] UInt64.t'int self < Seq.length seq
   
@@ -1646,7 +1648,6 @@ module M_hashmap__qyi9690720112976707081__resize [#"hashmap.rs" 208 4 208 24] (*
      -> Seq.get old' i = Seq.get fin i
   
   let rec index_mut'0 (self:MutBorrow.t t_Vec'0) (index:UInt64.t) (return'  (ret:MutBorrow.t t_List'0))= {[@expl:index_mut 'self' type invariant] inv'6 self}
-    {[@expl:index_mut 'index' type invariant] inv'7 index}
     {[@expl:index_mut requires] [%#svec31] in_bounds'0 index (view'6 self)}
     any
     [ return' (result:MutBorrow.t t_List'0)-> {inv'4 result}
@@ -1672,17 +1673,17 @@ module M_hashmap__qyi9690720112976707081__resize [#"hashmap.rs" 208 4 208 24] (*
   predicate resolve'0 (_1 : MutBorrow.t t_List'0) =
     resolve'4 _1
   
-  let rec v_Cons'0 (input:t_List'0) (ret  (field_0:(t_K'0, t_V'0)) (field_1:t_List'0))= any
-    [ good (field_0:(t_K'0, t_V'0)) (field_1:t_List'0)-> {C_Cons'0 field_0 field_1 = input} (! ret {field_0} {field_1})
-    | bad -> {forall field_0 : (t_K'0, t_V'0), field_1 : t_List'0 [C_Cons'0 field_0 field_1 : t_List'0] . C_Cons'0 field_0 field_1
+  let rec v_Cons'0 (input:t_List'0) (ret  (field_0:tuple'0) (field_1:t_List'0))= any
+    [ good (field_0:tuple'0) (field_1:t_List'0)-> {C_Cons'0 field_0 field_1 = input} (! ret {field_0} {field_1})
+    | bad -> {forall field_0 : tuple'0, field_1 : t_List'0 [C_Cons'0 field_0 field_1 : t_List'0] . C_Cons'0 field_0 field_1
       <> input}
       (! {false}
       any) ]
   
   
   let rec add'0 (self:MutBorrow.t t_MyHashMap'0) (key:t_K'0) (val':t_V'0) (return'  (ret:()))= {[@expl:add 'self' type invariant] [%#shashmap41] inv'1 self}
-    {[@expl:add 'key' type invariant] [%#shashmap42] inv'8 key}
-    {[@expl:add 'val' type invariant] [%#shashmap43] inv'9 val'}
+    {[@expl:add 'key' type invariant] [%#shashmap42] inv'7 key}
+    {[@expl:add 'val' type invariant] [%#shashmap43] inv'8 val'}
     any
     [ return' (result:())-> {[%#shashmap44] forall i : t_DeepModelTy'0 . Map.get (view'1 self.final) i
       = (if i = deep_model'0 key then C_Some'0 val' else Map.get (view'3 self) i)}
@@ -1826,15 +1827,13 @@ module M_hashmap__qyi9690720112976707081__resize [#"hashmap.rs" 208 4 208 24] (*
             | bb19 = bb20
             | bb20 = bb21
             | bb21 = any
-              [ br0 -> {l = C_Nil'0} (! bb28) | br1 (x0:(t_K'0, t_V'0)) (x1:t_List'0)-> {l = C_Cons'0 x0 x1} (! bb22) ]
+              [ br0 -> {l = C_Nil'0} (! bb28) | br1 (x0:tuple'0) (x1:t_List'0)-> {l = C_Cons'0 x0 x1} (! bb22) ]
             
             | bb22 = bb23
             | bb23 = s0
-              [ s0 = v_Cons'0 {l}
-                  (fun (r0'0:(t_K'0, t_V'0)) (r1'0:t_List'0) ->  [ &k <- let (r'0, _) = r0'0 in r'0 ] s1)
-              | s1 = v_Cons'0 {l}
-                  (fun (r0'1:(t_K'0, t_V'0)) (r1'1:t_List'0) ->  [ &v <- let (_, r'1) = r0'1 in r'1 ] s2)
-              | s2 = v_Cons'0 {l} (fun (r0'2:(t_K'0, t_V'0)) (r1'2:t_List'0) ->  [ &tl <- r1'2 ] s3)
+              [ s0 = v_Cons'0 {l} (fun (r0'0:tuple'0) (r1'0:t_List'0) ->  [ &k <- r0'0._0'0 ] s1)
+              | s1 = v_Cons'0 {l} (fun (r0'1:tuple'0) (r1'1:t_List'0) ->  [ &v <- r0'1._1'0 ] s2)
+              | s2 = v_Cons'0 {l} (fun (r0'2:tuple'0) (r1'2:t_List'0) ->  [ &tl <- r1'2 ] s3)
               | s3 = {inv'0 new}
                 MutBorrow.borrow_mut <t_MyHashMap'0> {new}
                   (fun (_ret':MutBorrow.t t_MyHashMap'0) ->
@@ -1936,28 +1935,24 @@ module M_hashmap__main [#"hashmap.rs" 248 0 248 13]
   let%span shashmap19 = "hashmap.rs" 151 31 151 46
   let%span shashmap20 = "hashmap.rs" 150 14 150 62
   let%span shashmap21 = "hashmap.rs" 189 16 189 20
-  let%span shashmap22 = "hashmap.rs" 189 22 189 25
-  let%span shashmap23 = "hashmap.rs" 189 33 189 43
-  let%span shashmap24 = "hashmap.rs" 185 14 188 5
-  let%span shashmap25 = "hashmap.rs" 157 20 157 24
-  let%span shashmap26 = "hashmap.rs" 157 26 157 29
-  let%span shashmap27 = "hashmap.rs" 157 34 157 37
-  let%span shashmap28 = "hashmap.rs" 156 14 156 122
-  let%span shashmap29 = "hashmap.rs" 96 8 96 33
-  let%span smodel30 = "../../creusot-contracts/src/model.rs" 54 8 54 22
-  let%span snum31 = "../../creusot-contracts/src/std/num.rs" 25 28 25 33
-  let%span smodel32 = "../../creusot-contracts/src/model.rs" 72 8 72 22
-  let%span shashmap33 = "hashmap.rs" 30 12 33 13
-  let%span shashmap34 = "hashmap.rs" 121 8 121 53
-  let%span shashmap35 = "hashmap.rs" 142 12 143 139
-  let%span sindex36 = "../../creusot-contracts/src/logic/ops/index.rs" 29 8 29 31
-  let%span shashmap37 = "hashmap.rs" 126 20 126 66
-  let%span sinvariant38 = "../../creusot-contracts/src/invariant.rs" 25 8 25 18
-  let%span svec39 = "../../creusot-contracts/src/std/vec.rs" 21 14 21 41
-  let%span shashmap40 = "hashmap.rs" 132 12 132 91
-  let%span shashmap41 = "hashmap.rs" 40 12 43 13
-  let%span sinvariant42 = "../../creusot-contracts/src/invariant.rs" 35 20 35 44
-  let%span shashmap43 = "hashmap.rs" 82 20 82 21
+  let%span shashmap22 = "hashmap.rs" 185 14 188 5
+  let%span shashmap23 = "hashmap.rs" 157 20 157 24
+  let%span shashmap24 = "hashmap.rs" 156 14 156 122
+  let%span shashmap25 = "hashmap.rs" 96 8 96 33
+  let%span smodel26 = "../../creusot-contracts/src/model.rs" 54 8 54 22
+  let%span snum27 = "../../creusot-contracts/src/std/num.rs" 25 28 25 33
+  let%span smodel28 = "../../creusot-contracts/src/model.rs" 72 8 72 22
+  let%span shashmap29 = "hashmap.rs" 30 12 33 13
+  let%span shashmap30 = "hashmap.rs" 121 8 121 53
+  let%span shashmap31 = "hashmap.rs" 142 12 143 139
+  let%span sindex32 = "../../creusot-contracts/src/logic/ops/index.rs" 29 8 29 31
+  let%span shashmap33 = "hashmap.rs" 126 20 126 66
+  let%span sinvariant34 = "../../creusot-contracts/src/invariant.rs" 25 8 25 18
+  let%span svec35 = "../../creusot-contracts/src/std/vec.rs" 21 14 21 41
+  let%span shashmap36 = "hashmap.rs" 132 12 132 91
+  let%span shashmap37 = "hashmap.rs" 40 12 43 13
+  let%span sinvariant38 = "../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  let%span shashmap39 = "hashmap.rs" 82 20 82 21
   
   use creusot.int.UInt64
   use creusot.prelude.Opaque
@@ -1990,49 +1985,52 @@ module M_hashmap__main [#"hashmap.rs" 248 0 248 13]
   type t_MyHashMap'0  =
     { t_MyHashMap__buckets'0: t_Vec'0 }
   
+  type tuple'0  =
+    { _0'0: UInt64.t; _1'0: Int64.t }
+  
   type t_List'0  =
     | C_Nil'0
-    | C_Cons'0 (UInt64.t, Int64.t) t_List'0
+    | C_Cons'0 tuple'0 t_List'0
   
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function view'3 (self : t_Vec'0) : Seq.seq t_List'0
   
-  axiom view'3_spec : forall self : t_Vec'0 . [%#svec39] Seq.length (view'3 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
+  axiom view'3_spec : forall self : t_Vec'0 . [%#svec35] Seq.length (view'3 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
   type t_Option'1  =
     | C_None'0
     | C_Some'1 Int64.t
   
   function deep_model'0 (self : UInt64.t) : int =
-    [%#snum31] UInt64.t'int self
+    [%#snum27] UInt64.t'int self
   
   function get'1 [#"hashmap.rs" 28 4 28 56] (self : t_List'0) (index : int) : t_Option'1 =
-    [%#shashmap33] match self with
+    [%#shashmap29] match self with
       | C_Nil'0 -> C_None'0
-      | C_Cons'0 (k, v) tl -> if deep_model'0 k = index then C_Some'1 v else get'1 tl index
+      | C_Cons'0 {_0'0 = k ; _1'0 = v} tl -> if deep_model'0 k = index then C_Some'1 v else get'1 tl index
       end
   
   function hash_log'0 [#"hashmap.rs" 81 4 81 30] (x : int) : int =
-    [%#shashmap43] x
+    [%#shashmap39] x
   
   function bucket_ix'0 [#"hashmap.rs" 125 4 125 48] (self : t_MyHashMap'0) (k : int) : int =
-    [%#shashmap37] EuclideanDivision.mod (hash_log'0 k) (Seq.length (view'3 self.t_MyHashMap__buckets'0))
+    [%#shashmap33] EuclideanDivision.mod (hash_log'0 k) (Seq.length (view'3 self.t_MyHashMap__buckets'0))
   
   predicate good_bucket'0 [#"hashmap.rs" 130 4 130 57] (self : t_MyHashMap'0) (l : t_List'0) (h : int) =
-    [%#shashmap40] forall k : int, v : Int64.t . get'1 l k = C_Some'1 v  -> bucket_ix'0 self k = h
+    [%#shashmap36] forall k : int, v : Int64.t . get'1 l k = C_Some'1 v  -> bucket_ix'0 self k = h
   
   function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : t_List'0 =
-    [%#sindex36] Seq.get (view'3 self) ix
+    [%#sindex32] Seq.get (view'3 self) ix
   
   predicate no_double_binding'0 [#"hashmap.rs" 38 4 38 38] (self : t_List'0) =
-    [%#shashmap41] match self with
+    [%#shashmap37] match self with
       | C_Nil'0 -> true
-      | C_Cons'0 (k, _) tl -> get'1 tl (deep_model'0 k) = C_None'0 /\ no_double_binding'0 tl
+      | C_Cons'0 {_0'0 = k} tl -> get'1 tl (deep_model'0 k) = C_None'0 /\ no_double_binding'0 tl
       end
   
   predicate invariant'0 [#"hashmap.rs" 140 4 140 30] (self : t_MyHashMap'0) =
-    [%#shashmap35] 0 < Seq.length (view'3 self.t_MyHashMap__buckets'0)
+    [%#shashmap31] 0 < Seq.length (view'3 self.t_MyHashMap__buckets'0)
     /\ (forall i : int . 0 <= i /\ i < Seq.length (view'3 self.t_MyHashMap__buckets'0)
      -> good_bucket'0 self (index_logic'0 self.t_MyHashMap__buckets'0 i) i
     /\ no_double_binding'0 (index_logic'0 self.t_MyHashMap__buckets'0 i))
@@ -2046,10 +2044,10 @@ module M_hashmap__main [#"hashmap.rs" 248 0 248 13]
     end)
   
   function bucket'0 [#"hashmap.rs" 120 4 120 54] (self : t_MyHashMap'0) (k : int) : t_List'0 =
-    [%#shashmap34] index_logic'0 self.t_MyHashMap__buckets'0 (bucket_ix'0 self k)
+    [%#shashmap30] index_logic'0 self.t_MyHashMap__buckets'0 (bucket_ix'0 self k)
   
   function view'0 [#"hashmap.rs" 95 4 95 33] (self : t_MyHashMap'0) : Map.map int t_Option'1 =
-    [%#shashmap29] fun (k : int) -> get'1 (bucket'0 self k) k
+    [%#shashmap25] fun (k : int) -> get'1 (bucket'0 self k) k
   
   let rec new'0 (size:UInt64.t) (return'  (ret:t_MyHashMap'0))= {[@expl:new requires] [%#shashmap18] 0
     < UInt64.t'int size}
@@ -2064,28 +2062,18 @@ module M_hashmap__main [#"hashmap.rs" 248 0 248 13]
     | C_Some'0 Int64.t
   
   predicate invariant'1 (self : t_MyHashMap'0) =
-    [%#sinvariant38] inv'0 self
+    [%#sinvariant34] inv'0 self
   
   predicate inv'1 (_1 : t_MyHashMap'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : t_MyHashMap'0 [inv'1 x] . inv'1 x = invariant'1 x
   
-  predicate inv'2 (_1 : UInt64.t)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : UInt64.t [inv'2 x] . inv'2 x = true
-  
-  predicate inv'3 (_1 : t_Option'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
-  
   function view'1 (self : t_MyHashMap'0) : Map.map int t_Option'1 =
-    [%#smodel30] view'0 self
+    [%#smodel26] view'0 self
   
   let rec get'0 (self:t_MyHashMap'0) (key:UInt64.t) (return'  (ret:t_Option'0))= {[@expl:get 'self' type invariant] [%#shashmap21] inv'1 self}
-    {[@expl:get 'key' type invariant] [%#shashmap22] inv'2 key}
     any
-    [ return' (result:t_Option'0)-> {[%#shashmap23] inv'3 result}
-      {[%#shashmap24] match result with
+    [ return' (result:t_Option'0)-> {[%#shashmap22] match result with
         | C_Some'0 v -> Map.get (view'1 self) (deep_model'0 key) = C_Some'1 v
         | C_None'1 -> Map.get (view'1 self) (deep_model'0 key) = C_None'0
         end}
@@ -2093,24 +2081,18 @@ module M_hashmap__main [#"hashmap.rs" 248 0 248 13]
   
   
   predicate invariant'2 (self : MutBorrow.t t_MyHashMap'0) =
-    [%#sinvariant42] inv'0 self.current /\ inv'0 self.final
+    [%#sinvariant38] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'4 (_1 : MutBorrow.t t_MyHashMap'0)
+  predicate inv'2 (_1 : MutBorrow.t t_MyHashMap'0)
   
-  axiom inv_axiom'4 [@rewrite] : forall x : MutBorrow.t t_MyHashMap'0 [inv'4 x] . inv'4 x = invariant'2 x
-  
-  predicate inv'5 (_1 : Int64.t)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : Int64.t [inv'5 x] . inv'5 x = true
+  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_MyHashMap'0 [inv'2 x] . inv'2 x = invariant'2 x
   
   function view'2 (self : MutBorrow.t t_MyHashMap'0) : Map.map int t_Option'1 =
-    [%#smodel32] view'0 self.current
+    [%#smodel28] view'0 self.current
   
-  let rec add'0 (self:MutBorrow.t t_MyHashMap'0) (key:UInt64.t) (val':Int64.t) (return'  (ret:()))= {[@expl:add 'self' type invariant] [%#shashmap25] inv'4 self}
-    {[@expl:add 'key' type invariant] [%#shashmap26] inv'2 key}
-    {[@expl:add 'val' type invariant] [%#shashmap27] inv'5 val'}
+  let rec add'0 (self:MutBorrow.t t_MyHashMap'0) (key:UInt64.t) (val':Int64.t) (return'  (ret:()))= {[@expl:add 'self' type invariant] [%#shashmap23] inv'2 self}
     any
-    [ return' (result:())-> {[%#shashmap28] forall i : int . Map.get (view'0 self.final) i
+    [ return' (result:())-> {[%#shashmap24] forall i : int . Map.get (view'0 self.final) i
       = (if i = deep_model'0 key then C_Some'1 val' else Map.get (view'2 self) i)}
       (! return' {result}) ]
   
@@ -2266,11 +2248,12 @@ module M_hashmap__qyi13807168849605512546__resolve_coherence__refines [#"hashmap
   
   type t_V'0
   
+  type tuple'0  =
+    { _0'0: t_K'0; _1'0: t_V'0 }
+  
   type t_List'0  =
     | C_Nil'0
-    | C_Cons'0 (t_K'0, t_V'0) t_List'0
-  
-  type t_DeepModelTy'0
+    | C_Cons'0 tuple'0 t_List'0
   
   type t_Option'0  =
     | C_None'0
@@ -2287,12 +2270,14 @@ module M_hashmap__qyi13807168849605512546__resolve_coherence__refines [#"hashmap
   predicate resolve'3 (_1 : t_Option'0) =
     resolve'6 _1
   
+  type t_DeepModelTy'0
+  
   function deep_model'0 (self : t_K'0) : t_DeepModelTy'0
   
   function get'0 [#"hashmap.rs" 28 4 28 56] (self : t_List'0) (index : t_DeepModelTy'0) : t_Option'0 =
     [%#shashmap2] match self with
       | C_Nil'0 -> C_None'0
-      | C_Cons'0 (k, v) tl -> if deep_model'0 k = index then C_Some'0 v else get'0 tl index
+      | C_Cons'0 {_0'0 = k ; _1'0 = v} tl -> if deep_model'0 k = index then C_Some'0 v else get'0 tl index
       end
   
   predicate resolve'0 [#"hashmap.rs" 51 4 51 28] (self : t_List'0) =
@@ -2309,10 +2294,10 @@ module M_hashmap__qyi13807168849605512546__resolve_coherence__refines [#"hashmap
   
   predicate resolve'8 (_1 : t_K'0)
   
-  predicate resolve'5 (self : (t_K'0, t_V'0)) =
-    [%#sresolve4] resolve'8 (let (a, _) = self in a) /\ resolve'9 (let (_, a) = self in a)
+  predicate resolve'5 (self : tuple'0) =
+    [%#sresolve4] resolve'8 self._0'0 /\ resolve'9 self._1'0
   
-  predicate resolve'2 (_1 : (t_K'0, t_V'0)) =
+  predicate resolve'2 (_1 : tuple'0) =
     resolve'5 _1
   
   predicate structural_resolve'0 (_1 : t_List'0) =
@@ -2325,10 +2310,10 @@ module M_hashmap__qyi13807168849605512546__resolve_coherence__refines [#"hashmap
   
   predicate inv'5 (_1 : t_V'0)
   
-  predicate inv'2 (_1 : (t_K'0, t_V'0))
+  predicate inv'2 (_1 : tuple'0)
   
-  axiom inv_axiom'2 [@rewrite] : forall x : (t_K'0, t_V'0) [inv'2 x] . inv'2 x
-  = (let (x0, x1) = x in inv'4 x0 /\ inv'5 x1)
+  axiom inv_axiom'2 [@rewrite] : forall x : tuple'0 [inv'2 x] . inv'2 x
+  = (let {_0'0 = x0 ; _1'0 = x1} = x in inv'4 x0 /\ inv'5 x1)
   
   predicate inv'1 (_1 : t_List'0)
   
@@ -2407,17 +2392,18 @@ module M_hashmap__qyi1307405214416629806__resolve_coherence__refines [#"hashmap.
   
   type t_V'0
   
+  type tuple'0  =
+    { _0'0: t_K'0; _1'0: t_V'0 }
+  
   type t_List'0  =
     | C_Nil'0
-    | C_Cons'0 (t_K'0, t_V'0) t_List'0
+    | C_Cons'0 tuple'0 t_List'0
   
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function view'1 (self : t_Vec'0) : Seq.seq t_List'0
   
   axiom view'1_spec : forall self : t_Vec'0 . [%#svec8] Seq.length (view'1 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
-  
-  type t_DeepModelTy'0
   
   type t_Option'0  =
     | C_None'0
@@ -2434,12 +2420,14 @@ module M_hashmap__qyi1307405214416629806__resolve_coherence__refines [#"hashmap.
   predicate resolve'2 (_1 : t_Option'0) =
     resolve'4 _1
   
+  type t_DeepModelTy'0
+  
   function deep_model'0 (self : t_K'0) : t_DeepModelTy'0
   
   function get'0 [#"hashmap.rs" 28 4 28 56] (self : t_List'0) (index : t_DeepModelTy'0) : t_Option'0 =
     [%#shashmap6] match self with
       | C_Nil'0 -> C_None'0
-      | C_Cons'0 (k, v) tl -> if deep_model'0 k = index then C_Some'0 v else get'0 tl index
+      | C_Cons'0 {_0'0 = k ; _1'0 = v} tl -> if deep_model'0 k = index then C_Some'0 v else get'0 tl index
       end
   
   predicate resolve'7 [#"hashmap.rs" 51 4 51 28] (self : t_List'0) =
@@ -2473,7 +2461,7 @@ module M_hashmap__qyi1307405214416629806__resolve_coherence__refines [#"hashmap.
   predicate no_double_binding'0 [#"hashmap.rs" 38 4 38 38] (self : t_List'0) =
     [%#shashmap14] match self with
       | C_Nil'0 -> true
-      | C_Cons'0 (k, _) tl -> get'0 tl (deep_model'0 k) = C_None'0 /\ no_double_binding'0 tl
+      | C_Cons'0 {_0'0 = k} tl -> get'0 tl (deep_model'0 k) = C_None'0 /\ no_double_binding'0 tl
       end
   
   predicate invariant'1 [#"hashmap.rs" 140 4 140 30] (self : t_MyHashMap'0) =
@@ -2486,10 +2474,10 @@ module M_hashmap__qyi1307405214416629806__resolve_coherence__refines [#"hashmap.
   
   predicate inv'8 (_1 : t_V'0)
   
-  predicate inv'6 (_1 : (t_K'0, t_V'0))
+  predicate inv'6 (_1 : tuple'0)
   
-  axiom inv_axiom'6 [@rewrite] : forall x : (t_K'0, t_V'0) [inv'6 x] . inv'6 x
-  = (let (x0, x1) = x in inv'7 x0 /\ inv'8 x1)
+  axiom inv_axiom'6 [@rewrite] : forall x : tuple'0 [inv'6 x] . inv'6 x
+  = (let {_0'0 = x0 ; _1'0 = x1} = x in inv'7 x0 /\ inv'8 x1)
   
   predicate inv'5 (_1 : t_List'0)
   
@@ -2555,10 +2543,6 @@ module M_hashmap__qyi9060063638777358169__hash__refines [#"hashmap.rs" 76 4 76 2
   
   use creusot.int.UInt64
   
-  predicate inv'0 (_1 : UInt64.t)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : UInt64.t [inv'0 x] . inv'0 x = true
-  
   function hash_log'0 [#"hashmap.rs" 81 4 81 30] (x : int) : int =
     [%#shashmap1] x
   
@@ -2568,7 +2552,6 @@ module M_hashmap__qyi9060063638777358169__hash__refines [#"hashmap.rs" 76 4 76 2
   function deep_model'0 (self : UInt64.t) : int =
     [%#smodel2] deep_model'1 self
   
-  goal refines : [%#shashmap0] forall self : UInt64.t . inv'0 self
-   -> (forall result : UInt64.t . UInt64.t'int result = hash_log'0 (deep_model'0 self)
-   -> UInt64.t'int result = hash_log'0 (deep_model'0 self))
+  goal refines : [%#shashmap0] forall self : UInt64.t . forall result : UInt64.t . UInt64.t'int result
+  = hash_log'0 (deep_model'0 self)  -> UInt64.t'int result = hash_log'0 (deep_model'0 self)
 end

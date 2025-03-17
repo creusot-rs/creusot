@@ -9,7 +9,7 @@ use crate::{
     error::{CannotFetchThir, CreusotResult, Error},
     metadata::{BinaryMetadata, Metadata},
     options::Options,
-    specification::{PreSignature, pre_sig_of},
+    specification::{PreSignature, inherited_extern_spec, pre_sig_of},
     translation::{
         self,
         external::{ExternSpec, extract_extern_specs_from_item},
@@ -402,7 +402,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn param_env(&self, def_id: DefId) -> ParamEnv<'tcx> {
-        let (id, subst) = crate::specification::inherited_extern_spec(self, def_id)
+        let (id, subst) = inherited_extern_spec(self, def_id)
             .unwrap_or_else(|| (def_id, erased_identity_for_item(self.tcx, def_id)));
         if let Some(es) = self.extern_spec(id) {
             let base_predicates =

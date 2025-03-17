@@ -187,56 +187,27 @@ module M_filter_positive__m [#"filter_positive.rs" 82 0 82 33]
   
   axiom view'0_spec : forall self : t_Vec'0 . [%#svec20] Seq.length (view'0 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
-  predicate inv'0 (_1 : t_Vec'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
-  
   function view'1 (self : t_Vec'0) : Seq.seq Int32.t =
     [%#smodel39] view'0 self
   
-  let rec len'0 (self:t_Vec'0) (return'  (ret:UInt64.t))= {[@expl:len 'self' type invariant] inv'0 self}
-    any
+  let rec len'0 (self:t_Vec'0) (return'  (ret:UInt64.t))= any
     [ return' (result:UInt64.t)-> {[%#svec21] UInt64.t'int result = Seq.length (view'1 self)} (! return' {result}) ]
   
-  
-  predicate inv'1 (_1 : UInt64.t)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : UInt64.t [inv'1 x] . inv'1 x = true
   
   predicate in_bounds'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq Int32.t) =
     [%#sslice40] UInt64.t'int self < Seq.length seq
   
-  predicate inv'2 (_1 : Int32.t)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : Int32.t [inv'2 x] . inv'2 x = true
-  
   predicate has_value'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq Int32.t) (out : Int32.t) =
     [%#sslice41] Seq.get seq (UInt64.t'int self) = out
   
-  let rec index'0 (self:t_Vec'0) (index:UInt64.t) (return'  (ret:Int32.t))= {[@expl:index 'self' type invariant] inv'0 self}
-    {[@expl:index 'index' type invariant] inv'1 index}
-    {[@expl:index requires] [%#svec22] in_bounds'0 index (view'1 self)}
-    any
-    [ return' (result:Int32.t)-> {inv'2 result}
-      {[%#svec23] has_value'0 index (view'1 self) result}
-      (! return' {result}) ]
-  
-  
-  predicate inv'3 (_1 : Int32.t)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : Int32.t [inv'3 x] . inv'3 x = true
-  
-  predicate inv'4 (_1 : t_Vec'0)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Vec'0 [inv'4 x] . inv'4 x = true
+  let rec index'0 (self:t_Vec'0) (index:UInt64.t) (return'  (ret:Int32.t))= {[@expl:index requires] [%#svec22] in_bounds'0 index (view'1 self)}
+    any [ return' (result:Int32.t)-> {[%#svec23] has_value'0 index (view'1 self) result} (! return' {result}) ] 
   
   function index_logic'0 [@inline:trivial] (self : t_Vec'0) (ix : int) : Int32.t =
     [%#sindex42] Seq.get (view'0 self) ix
   
-  let rec from_elem'0 (elem:Int32.t) (n:UInt64.t) (return'  (ret:t_Vec'0))= {[@expl:from_elem 'elem' type invariant] inv'3 elem}
-    any
-    [ return' (result:t_Vec'0)-> {inv'4 result}
-      {[%#svec24] Seq.length (view'0 result) = UInt64.t'int n}
+  let rec from_elem'0 (elem:Int32.t) (n:UInt64.t) (return'  (ret:t_Vec'0))= any
+    [ return' (result:t_Vec'0)-> {[%#svec24] Seq.length (view'0 result) = UInt64.t'int n}
       {[%#svec25] forall i : int . 0 <= i /\ i < UInt64.t'int n  -> index_logic'0 result i = elem}
       (! return' {result}) ]
   
@@ -263,27 +234,16 @@ module M_filter_positive__m [#"filter_positive.rs" 82 0 82 33]
   axiom lemma_num_of_pos_increasing'0_spec : forall i : int, j : int, k : int, t : Seq.seq Int32.t . ([%#sfilter_positive30] j
   <= k)  -> ([%#sfilter_positive31] num_of_pos'0 i j t <= num_of_pos'0 i k t)
   
-  predicate inv'5 (_1 : MutBorrow.t t_Vec'0)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'5 x] . inv'5 x = true
-  
   function view'2 (self : MutBorrow.t t_Vec'0) : Seq.seq Int32.t =
     [%#smodel43] view'0 self.current
-  
-  predicate inv'6 (_1 : MutBorrow.t Int32.t)
-  
-  axiom inv_axiom'6 [@rewrite] : forall x : MutBorrow.t Int32.t [inv'6 x] . inv'6 x = true
   
   predicate resolve_elswhere'0 [@inline:trivial] (self : UInt64.t) (old' : Seq.seq Int32.t) (fin : Seq.seq Int32.t) =
     [%#sslice44] forall i : int . 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old'
      -> Seq.get old' i = Seq.get fin i
   
-  let rec index_mut'0 (self:MutBorrow.t t_Vec'0) (index:UInt64.t) (return'  (ret:MutBorrow.t Int32.t))= {[@expl:index_mut 'self' type invariant] inv'5 self}
-    {[@expl:index_mut 'index' type invariant] inv'1 index}
-    {[@expl:index_mut requires] [%#svec34] in_bounds'0 index (view'2 self)}
+  let rec index_mut'0 (self:MutBorrow.t t_Vec'0) (index:UInt64.t) (return'  (ret:MutBorrow.t Int32.t))= {[@expl:index_mut requires] [%#svec34] in_bounds'0 index (view'2 self)}
     any
-    [ return' (result:MutBorrow.t Int32.t)-> {inv'6 result}
-      {[%#svec35] has_value'0 index (view'2 self) result.current}
+    [ return' (result:MutBorrow.t Int32.t)-> {[%#svec35] has_value'0 index (view'2 self) result.current}
       {[%#svec36] has_value'0 index (view'0 self.final) result.final}
       {[%#svec37] resolve_elswhere'0 index (view'2 self) (view'0 self.final)}
       {[%#svec38] Seq.length (view'0 self.final) = Seq.length (view'2 self)}

@@ -636,21 +636,17 @@ module M_01_range__qyi16572111325853806140__next__refines [#"01_range.rs" 57 4 5
   let%span sord16 = "../../../creusot-contracts/src/logic/ord.rs" 173 39 173 84
   let%span sord17 = "../../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
   
-  use creusot.prelude.MutBorrow
   use creusot.int.Int64
+  use creusot.prelude.MutBorrow
   use seq.Seq
   use mach.int.Int
-  
-  type t_Range'0  =
-    { t_Range__start'0: Int64.t; t_Range__end'0: Int64.t }
-  
-  predicate inv'0 (_1 : MutBorrow.t t_Range'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_Range'0 [inv'0 x] . inv'0 x = true
   
   type t_Option'0  =
     | C_None'0
     | C_Some'0 Int64.t
+  
+  type t_Range'0  =
+    { t_Range__start'0: Int64.t; t_Range__end'0: Int64.t }
   
   predicate resolve'0 (self : MutBorrow.t t_Range'0) =
     [%#sresolve3] self.final = self.current
@@ -713,12 +709,7 @@ module M_01_range__qyi16572111325853806140__next__refines [#"01_range.rs" 57 4 5
     /\ (forall i : int . 0 <= i /\ i < Seq.length visited
      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.t_Range__start'0 + i)
   
-  predicate inv'1 (_1 : t_Option'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x = true
-  
-  goal refines : [%#s01_range0] forall self : MutBorrow.t t_Range'0 . inv'0 self
-   -> (forall result : t_Option'0 . match result with
+  goal refines : [%#s01_range0] forall self : MutBorrow.t t_Range'0 . forall result : t_Option'0 . match result with
     | C_None'0 -> completed'0 self
     | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
     end
@@ -726,7 +717,6 @@ module M_01_range__qyi16572111325853806140__next__refines [#"01_range.rs" 57 4 5
     | C_None'0 -> completed'0 self
     | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
     end
-  /\ inv'1 result)
 end
 module M_01_range__qyi16572111325853806140__produces_refl__refines [#"01_range.rs" 44 4 44 26] (* <Range as common::Iterator> *)
   let%span s01_range0 = "01_range.rs" 44 4 44 26

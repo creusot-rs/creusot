@@ -24,6 +24,9 @@ pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<
 
         let mut names = Dependencies::new(ctx, impl_did);
         let goal = lower_pure(ctx, &mut names, &refn.refn.clone());
+        if goal.is_true() {
+            continue;
+        }
         let mut decls = names.provide_deps(ctx);
         decls.push(Decl::Goal(Goal { name: "refines".into(), goal }));
 

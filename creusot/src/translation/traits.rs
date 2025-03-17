@@ -1,6 +1,6 @@
 use super::pearlite::{Term, TermKind};
 use crate::{
-    contracts_items::{is_law, is_spec},
+    contracts_items::{is_law, is_pearlite, is_spec},
     ctx::*,
     util::erased_identity_for_item,
     very_stable_hash::get_very_stable_hash,
@@ -56,7 +56,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     pub(crate) fn translate_impl(&self, impl_id: DefId) -> TraitImpl<'tcx> {
         assert!(self.trait_id_of_impl(impl_id).is_some(), "{impl_id:?} is not a trait impl");
-        let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
+        let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap().instantiate_identity();
 
         let mut laws = Vec::new();
         let implementor_map = self.tcx.impl_item_implementor_ids(impl_id);
@@ -79,13 +79,9 @@ impl<'tcx> TranslationCtx<'tcx> {
 
             let subst = erased_identity_for_item(self.tcx, impl_item);
 
-            let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.skip_binder().args);
+            let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.args);
 
-            // If there is no contract to refine, skip this item
-            if !self.tcx.def_kind(trait_item).is_fn_like()
-                || (self.sig(trait_item).contract.is_empty()
-                    && self.sig(impl_item).contract.requires.is_empty())
-            {
+            if !self.tcx.def_kind(trait_item).is_fn_like() {
                 continue;
             }
 
@@ -109,11 +105,11 @@ impl<'tcx> TranslationCtx<'tcx> {
                 self.crash_and_error(rustc_span::DUMMY_SP, "error above");
             }
 
-            let axiom = logic_refinement_term(self, impl_item, trait_item, refn_subst);
+            let refn = logic_refinement_term(self, impl_item, trait_item, refn_subst);
             refinements.push(Refinement {
                 trait_: (trait_item, refn_subst),
                 impl_: (impl_item, subst),
-                refn: axiom,
+                refn,
             });
         }
 
@@ -127,14 +123,19 @@ fn logic_refinement_term<'tcx>(
     trait_item_id: DefId,
     refn_subst: GenericArgsRef<'tcx>,
 ) -> Term<'tcx> {
-    // Get the contract of the trait version
-    let trait_sig = {
-        let pre_sig = ctx.sig(trait_item_id).clone();
-        let typing_env = ctx.typing_env(impl_item_id);
-        EarlyBinder::bind(pre_sig).instantiate(ctx.tcx, refn_subst).normalize(ctx.tcx, typing_env)
-    };
+    let typing_env = TypingEnv::non_body_analysis(ctx.tcx, impl_item_id);
 
-    let impl_sig = ctx.sig(impl_item_id).clone();
+    // Get the contract of the trait version
+    let mut trait_sig = EarlyBinder::bind(ctx.sig(trait_item_id).clone())
+        .instantiate(ctx.tcx, refn_subst)
+        .normalize(ctx.tcx, typing_env);
+
+    let mut impl_sig = ctx.sig(impl_item_id).clone();
+
+    if !is_pearlite(ctx.tcx, impl_item_id) {
+        trait_sig.add_type_invariant_spec(ctx, trait_item_id, typing_env);
+        impl_sig.add_type_invariant_spec(ctx, impl_item_id, typing_env);
+    }
 
     let span = ctx.tcx.def_span(impl_item_id);
     let mut args = Vec::new();
@@ -160,11 +161,7 @@ fn logic_refinement_term<'tcx>(
         .span(span);
 
     let mut refn = trait_precond.implies(impl_precond.conj(post_refn));
-    refn = if args.is_empty() {
-        refn
-    } else {
-        args.into_iter().rfold(refn, |acc, r| acc.forall(ctx.tcx, r).span(span))
-    };
+    refn = args.into_iter().rfold(refn, |acc, r| acc.forall(ctx.tcx, r).span(span));
 
     refn
 }

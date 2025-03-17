@@ -57,16 +57,16 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   predicate invariant'6 (self : t_T'0) =
     [%#sboxed24] inv'3 self
   
-  predicate inv'8 (_1 : t_T'0)
+  predicate inv'7 (_1 : t_T'0)
   
-  axiom inv_axiom'7 [@rewrite] : forall x : t_T'0 [inv'8 x] . inv'8 x = invariant'6 x
+  axiom inv_axiom'6 [@rewrite] : forall x : t_T'0 [inv'7 x] . inv'7 x = invariant'6 x
   
   predicate invariant'5 (self : Seq.seq t_T'0) =
-    [%#sseq23] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'8 (Seq.get self i)
+    [%#sseq23] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'7 (Seq.get self i)
   
-  predicate inv'7 (_1 : Seq.seq t_T'0)
+  predicate inv'6 (_1 : Seq.seq t_T'0)
   
-  axiom inv_axiom'6 [@rewrite] : forall x : Seq.seq t_T'0 [inv'7 x] . inv'7 x = invariant'5 x
+  axiom inv_axiom'5 [@rewrite] : forall x : Seq.seq t_T'0 [inv'6 x] . inv'6 x = invariant'5 x
   
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
@@ -75,7 +75,7 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   axiom view'1_spec : forall self : t_Vec'0 . [%#svec15] Seq.length (view'1 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
   predicate invariant'0 (self : t_Vec'0) =
-    [%#svec20] inv'7 (view'1 self)
+    [%#svec20] inv'6 (view'1 self)
   
   predicate inv'0 (_1 : t_Vec'0)
   
@@ -87,10 +87,6 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   predicate inv'2 (_1 : MutBorrow.t t_Vec'0)
   
   axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'2 x] . inv'2 x = invariant'2 x
-  
-  predicate inv'4 (_1 : UInt64.t)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : UInt64.t [inv'4 x] . inv'4 x = true
   
   predicate in_bounds'0 [@inline:trivial] (self : UInt64.t) (seq : Seq.seq t_T'0) =
     [%#sslice13] UInt64.t'int self < Seq.length seq
@@ -113,7 +109,6 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
      -> Seq.get old' i = Seq.get fin i
   
   let rec index_mut'0 (self:MutBorrow.t t_Vec'0) (index:UInt64.t) (return'  (ret:MutBorrow.t t_T'0))= {[@expl:index_mut 'self' type invariant] inv'2 self}
-    {[@expl:index_mut 'index' type invariant] inv'4 index}
     {[@expl:index_mut requires] [%#svec4] in_bounds'0 index (view'0 self)}
     any
     [ return' (result:MutBorrow.t t_T'0)-> {inv'1 result}
@@ -133,9 +128,9 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   predicate invariant'3 (self : t_Vec'0) =
     [%#sinvariant22] inv'0 self
   
-  predicate inv'5 (_1 : t_Vec'0)
+  predicate inv'4 (_1 : t_Vec'0)
   
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Vec'0 [inv'5 x] . inv'5 x = invariant'3 x
+  axiom inv_axiom'3 [@rewrite] : forall x : t_Vec'0 [inv'4 x] . inv'4 x = invariant'3 x
   
   function view'2 (self : t_Vec'0) : Seq.seq t_T'0 =
     [%#smodel18] view'1 self
@@ -143,15 +138,14 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   predicate invariant'4 (self : t_T'0) =
     [%#sinvariant22] inv'3 self
   
-  predicate inv'6 (_1 : t_T'0)
+  predicate inv'5 (_1 : t_T'0)
   
-  axiom inv_axiom'5 [@rewrite] : forall x : t_T'0 [inv'6 x] . inv'6 x = invariant'4 x
+  axiom inv_axiom'4 [@rewrite] : forall x : t_T'0 [inv'5 x] . inv'5 x = invariant'4 x
   
-  let rec index'0 (self:t_Vec'0) (index:UInt64.t) (return'  (ret:t_T'0))= {[@expl:index 'self' type invariant] inv'5 self}
-    {[@expl:index 'index' type invariant] inv'4 index}
+  let rec index'0 (self:t_Vec'0) (index:UInt64.t) (return'  (ret:t_T'0))= {[@expl:index 'self' type invariant] inv'4 self}
     {[@expl:index requires] [%#svec9] in_bounds'0 index (view'2 self)}
     any
-    [ return' (result:t_T'0)-> {inv'6 result} {[%#svec10] has_value'0 index (view'2 self) result} (! return' {result}) ]
+    [ return' (result:t_T'0)-> {inv'5 result} {[%#svec10] has_value'0 index (view'2 self) result} (! return' {result}) ]
   
   
   type t_DeepModelTy'0
@@ -161,8 +155,8 @@ module M_07_read_write__read_write [#"07_read_write.rs" 6 0 6 75]
   function deep_model'0 (self : t_T'0) : t_DeepModelTy'0 =
     [%#smodel19] deep_model'1 self
   
-  let rec eq'0 (self:t_T'0) (other:t_T'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'6 self}
-    {[@expl:eq 'other' type invariant] inv'6 other}
+  let rec eq'0 (self:t_T'0) (other:t_T'0) (return'  (ret:bool))= {[@expl:eq 'self' type invariant] inv'5 self}
+    {[@expl:eq 'other' type invariant] inv'5 other}
     any [ return' (result:bool)-> {[%#scmp11] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ] 
   
   predicate resolve'3 (self : MutBorrow.t t_Vec'0) =

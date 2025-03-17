@@ -40,9 +40,11 @@ module M_constrained_types__uses_concrete_instance [#"constrained_types.rs" 14 0
   use mach.int.Int
   use creusot.prelude.Any
   
-  predicate inv'0 (_1 : (UInt32.t, UInt32.t))
+  type tuple'0  =
+    { _0'0: UInt32.t; _1'0: UInt32.t }
   
-  axiom inv_axiom'0 [@rewrite] : forall x : (UInt32.t, UInt32.t) [inv'0 x] . inv'0 x = true
+  type tuple'1  =
+    { _0'1: int; _1'1: int }
   
   type t_Ordering'0  =
     | C_Less'0
@@ -91,91 +93,79 @@ module M_constrained_types__uses_concrete_instance [#"constrained_types.rs" 14 0
   
   axiom cmp_le_log'1_spec : forall x : int, y : int . [%#sord23] (x <= y) = (cmp_log'1 x y <> C_Greater'0)
   
-  function cmp_log'0 (self : (int, int)) (o : (int, int)) : t_Ordering'0 =
-    [%#sord18] let r = cmp_log'1 (let (a, _) = self in a) (let (a, _) = o in a) in if r = C_Equal'0 then
-      cmp_log'1 (let (_, a) = self in a) (let (_, a) = o in a)
-    else
-      r
+  function cmp_log'0 (self : tuple'1) (o : tuple'1) : t_Ordering'0 =
+    [%#sord18] let r = cmp_log'1 self._0'1 o._0'1 in if r = C_Equal'0 then cmp_log'1 self._1'1 o._1'1 else r
   
+  function eq_cmp'0 (x : tuple'1) (y : tuple'1) : ()
   
-  function eq_cmp'0 (x : (int, int)) (y : (int, int)) : ()
+  axiom eq_cmp'0_spec : forall x : tuple'1, y : tuple'1 . [%#sord15] (x = y) = (cmp_log'0 x y = C_Equal'0)
   
-  axiom eq_cmp'0_spec : forall x : (int, int), y : (int, int) . [%#sord15] (x = y) = (cmp_log'0 x y = C_Equal'0)
+  function antisym2'0 (x : tuple'1) (y : tuple'1) : ()
   
-  function antisym2'0 (x : (int, int)) (y : (int, int)) : ()
-  
-  axiom antisym2'0_spec : forall x : (int, int), y : (int, int) . ([%#sord13] cmp_log'0 x y = C_Greater'0)
+  axiom antisym2'0_spec : forall x : tuple'1, y : tuple'1 . ([%#sord13] cmp_log'0 x y = C_Greater'0)
    -> ([%#sord14] cmp_log'0 y x = C_Less'0)
   
-  function antisym1'0 (x : (int, int)) (y : (int, int)) : ()
+  function antisym1'0 (x : tuple'1) (y : tuple'1) : ()
   
-  axiom antisym1'0_spec : forall x : (int, int), y : (int, int) . ([%#sord11] cmp_log'0 x y = C_Less'0)
+  axiom antisym1'0_spec : forall x : tuple'1, y : tuple'1 . ([%#sord11] cmp_log'0 x y = C_Less'0)
    -> ([%#sord12] cmp_log'0 y x = C_Greater'0)
   
-  function trans'0 (x : (int, int)) (y : (int, int)) (z : (int, int)) (o : t_Ordering'0) : ()
+  function trans'0 (x : tuple'1) (y : tuple'1) (z : tuple'1) (o : t_Ordering'0) : ()
   
-  axiom trans'0_spec : forall x : (int, int), y : (int, int), z : (int, int), o : t_Ordering'0 . ([%#sord8] cmp_log'0 x y
-  = o)  -> ([%#sord9] cmp_log'0 y z = o)  -> ([%#sord10] cmp_log'0 x z = o)
+  axiom trans'0_spec : forall x : tuple'1, y : tuple'1, z : tuple'1, o : t_Ordering'0 . ([%#sord8] cmp_log'0 x y = o)
+   -> ([%#sord9] cmp_log'0 y z = o)  -> ([%#sord10] cmp_log'0 x z = o)
   
-  function refl'0 (x : (int, int)) : ()
+  function refl'0 (x : tuple'1) : ()
   
-  axiom refl'0_spec : forall x : (int, int) . [%#sord7] cmp_log'0 x x = C_Equal'0
+  axiom refl'0_spec : forall x : tuple'1 . [%#sord7] cmp_log'0 x x = C_Equal'0
   
-  predicate gt_log'0 (self : (int, int)) (o : (int, int)) =
-    [%#sord20] (let (a, _) = self in a) = (let (a, _) = o in a) /\ (let (_, a) = self in a) > (let (_, a) = o in a)
-    \/ (let (a, _) = self in a) > (let (a, _) = o in a)
+  predicate gt_log'0 (self : tuple'1) (o : tuple'1) =
+    [%#sord20] self._0'1 = o._0'1 /\ self._1'1 > o._1'1 \/ self._0'1 > o._0'1
   
-  function cmp_gt_log'0 (x : (int, int)) (y : (int, int)) : ()
+  function cmp_gt_log'0 (x : tuple'1) (y : tuple'1) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : (int, int), y : (int, int) . [%#sord6] gt_log'0 x y
-  = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : tuple'1, y : tuple'1 . [%#sord6] gt_log'0 x y = (cmp_log'0 x y = C_Greater'0)
   
-  predicate ge_log'0 (self : (int, int)) (o : (int, int)) =
-    [%#sord19] (let (a, _) = self in a) = (let (a, _) = o in a) /\ (let (_, a) = self in a) >= (let (_, a) = o in a)
-    \/ (let (a, _) = self in a) > (let (a, _) = o in a)
+  predicate ge_log'0 (self : tuple'1) (o : tuple'1) =
+    [%#sord19] self._0'1 = o._0'1 /\ self._1'1 >= o._1'1 \/ self._0'1 > o._0'1
   
-  function cmp_ge_log'0 (x : (int, int)) (y : (int, int)) : ()
+  function cmp_ge_log'0 (x : tuple'1) (y : tuple'1) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : (int, int), y : (int, int) . [%#sord5] ge_log'0 x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : tuple'1, y : tuple'1 . [%#sord5] ge_log'0 x y = (cmp_log'0 x y <> C_Less'0)
   
-  predicate lt_log'0 (self : (int, int)) (o : (int, int)) =
-    [%#sord1] (let (a, _) = self in a) = (let (a, _) = o in a) /\ (let (_, a) = self in a) < (let (_, a) = o in a)
-    \/ (let (a, _) = self in a) < (let (a, _) = o in a)
+  predicate lt_log'0 (self : tuple'1) (o : tuple'1) =
+    [%#sord1] self._0'1 = o._0'1 /\ self._1'1 < o._1'1 \/ self._0'1 < o._0'1
   
-  function cmp_lt_log'0 (x : (int, int)) (y : (int, int)) : ()
+  function cmp_lt_log'0 (x : tuple'1) (y : tuple'1) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : (int, int), y : (int, int) . [%#sord4] lt_log'0 x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : tuple'1, y : tuple'1 . [%#sord4] lt_log'0 x y = (cmp_log'0 x y = C_Less'0)
   
-  predicate le_log'0 (self : (int, int)) (o : (int, int)) =
-    [%#sord17] (let (a, _) = self in a) = (let (a, _) = o in a) /\ (let (_, a) = self in a) <= (let (_, a) = o in a)
-    \/ (let (a, _) = self in a) < (let (a, _) = o in a)
+  predicate le_log'0 (self : tuple'1) (o : tuple'1) =
+    [%#sord17] self._0'1 = o._0'1 /\ self._1'1 <= o._1'1 \/ self._0'1 < o._0'1
   
-  function cmp_le_log'0 (x : (int, int)) (y : (int, int)) : ()
+  function cmp_le_log'0 (x : tuple'1) (y : tuple'1) : ()
   
-  axiom cmp_le_log'0_spec : forall x : (int, int), y : (int, int) . [%#sord3] le_log'0 x y
-  = (cmp_log'0 x y <> C_Greater'0)
+  axiom cmp_le_log'0_spec : forall x : tuple'1, y : tuple'1 . [%#sord3] le_log'0 x y = (cmp_log'0 x y <> C_Greater'0)
   
   function deep_model'2 (self : UInt32.t) : int =
     [%#snum21] UInt32.t'int self
   
-  function deep_model'1 (self : (UInt32.t, UInt32.t)) : (int, int) =
-    [%#stuples16] (deep_model'2 (let (a, _) = self in a), deep_model'2 (let (_, a) = self in a))
+  function deep_model'1 (self : tuple'0) : tuple'1 =
+    [%#stuples16] { _0'1 = deep_model'2 self._0'0; _1'1 = deep_model'2 self._1'0 }
   
-  function deep_model'0 (self : (UInt32.t, UInt32.t)) : (int, int) =
+  function deep_model'0 (self : tuple'0) : tuple'1 =
     [%#smodel2] deep_model'1 self
   
-  let rec lt'0 (self:(UInt32.t, UInt32.t)) (other:(UInt32.t, UInt32.t)) (return'  (ret:bool))= {[@expl:lt 'self' type invariant] inv'0 self}
-    {[@expl:lt 'other' type invariant] inv'0 other}
-    any
+  let rec lt'0 (self:tuple'0) (other:tuple'0) (return'  (ret:bool))= any
     [ return' (result:bool)-> {[%#sconstrained_types0] result = lt_log'0 (deep_model'0 self) (deep_model'0 other)}
       (! return' {result}) ]
   
   
   meta "compute_max_steps" 1000000
   
-  let rec uses_concrete_instance'0[#"constrained_types.rs" 14 0 14 67] (x:(UInt32.t, UInt32.t)) (y:(UInt32.t, UInt32.t)) (return'  (ret:bool))= (! bb0
+  let rec uses_concrete_instance'0[#"constrained_types.rs" 14 0 14 67] (x:tuple'0) (y:tuple'0) (return'  (ret:bool))= (! bb0
     [ bb0 = s0 [ s0 = lt'0 {x} {y} (fun (_ret':bool) ->  [ &_0 <- _ret' ] s1) | s1 = bb1 ]  | bb1 = return' {_0} ]
-    ) [ & _0 : bool = Any.any_l () | & x : (UInt32.t, UInt32.t) = x | & y : (UInt32.t, UInt32.t) = y ] 
+    ) [ & _0 : bool = Any.any_l () | & x : tuple'0 = x | & y : tuple'0 = y ] 
     [ return' (result:bool)-> (! return' {result}) ]
 
 end

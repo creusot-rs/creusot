@@ -135,12 +135,32 @@ impl Defn {
 }
 
 impl Expr {
+    pub fn boxed(self) -> Box<Self> {
+        Box::new(self)
+    }
+
     pub fn app(self, args: impl IntoIterator<Item = Arg>) -> Self {
         args.into_iter().fold(self, |acc, a| Expr::App(Box::new(acc), Box::new(a)))
     }
 
     pub fn assign(self, lhs: Ident, rhs: Term) -> Self {
         Expr::Assign(Box::new(self), Box::new([(lhs, rhs)]))
+    }
+
+    pub fn assert(cond: Term, k: Expr) -> Self {
+        Expr::Assert(Box::new(cond), Box::new(k))
+    }
+
+    pub fn assume(cond: Term, k: Expr) -> Self {
+        Expr::Assume(Box::new(cond), Box::new(k))
+    }
+
+    pub fn black_box(self) -> Self {
+        Expr::BlackBox(Box::new(self))
+    }
+
+    pub fn let_(self, vars: impl IntoIterator<Item = Var>) -> Self {
+        Expr::Let(Box::new(self), vars.into_iter().collect())
     }
 
     /// Adds a set of mutually recursive where bindings around `self`

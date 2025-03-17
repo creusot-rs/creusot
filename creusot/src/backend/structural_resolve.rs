@@ -28,27 +28,20 @@ pub fn structural_resolve<'tcx>(
         TyKind::Adt(adt, args) => {
             let arms = adt
                 .variants()
-                .into_iter()
-                .map(|var| {
+                .iter_enumerated()
+                .map(|(varidx, var)| {
                     let (fields, exps): (Vec<_>, Vec<_>) = var
                         .fields
                         .iter_enumerated()
                         .map(|(ix, f)| {
                             let sym = Symbol::intern(&format!("x{}", ix.as_usize()));
-                            let var = Term::var(sym, f.ty(ctx.tcx, args));
-                            (Pattern::Binder(sym), resolve_of(ctx, var))
+                            let fty = f.ty(ctx.tcx, args);
+                            (Pattern::binder(sym, fty), resolve_of(ctx, Term::var(sym, fty)))
                         })
                         .unzip();
 
                     let body = exps.into_iter().rfold(Term::mk_true(ctx.tcx), Term::conj);
-                    (
-                        Pattern::Constructor {
-                            variant: var.def_id,
-                            substs: args,
-                            fields: fields.into(),
-                        },
-                        body,
-                    )
+                    (Pattern::constructor(varidx, fields, ty), body)
                 })
                 .collect();
 
@@ -64,8 +57,7 @@ pub fn structural_resolve<'tcx>(
                 .enumerate()
                 .map(|(i, ty)| {
                     let sym = Symbol::intern(&format!("x{i}"));
-                    let var = Term::var(sym, ty);
-                    (Pattern::Binder(sym), resolve_of(ctx, var))
+                    (Pattern::binder(sym, ty), resolve_of(ctx, Term::var(sym, ty)))
                 })
                 .unzip();
 
@@ -75,7 +67,7 @@ pub fn structural_resolve<'tcx>(
                 ty: ctx.types.bool,
                 kind: TermKind::Match {
                     scrutinee: Box::new(subject),
-                    arms: Box::new([(Pattern::Tuple(fields.into()), body)]),
+                    arms: Box::new([(Pattern::tuple(fields, ty), body)]),
                 },
                 span: DUMMY_SP,
             })
@@ -92,5 +84,5 @@ fn resolve_of<'tcx>(ctx: &Why3Generator<'tcx>, term: Term<'tcx>) -> Term<'tcx> {
     let trait_meth_id = get_resolve_function(ctx.tcx);
     let substs = ctx.mk_args(&[GenericArg::from(term.ty)]);
 
-    Term::call_no_normalize(ctx.tcx, trait_meth_id, substs, Box::new([term]))
+    Term::call_no_normalize(ctx.tcx, trait_meth_id, substs, [term])
 }

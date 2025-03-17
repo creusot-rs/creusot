@@ -259,31 +259,22 @@ module M_06_fn_specs__fn_once_user [#"06_fn_specs.rs" 26 0 26 43]
   
   predicate inv'0 (_1 : t_F'0)
   
-  predicate inv'1 (_1 : UInt64.t)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : UInt64.t [inv'1 x] . inv'1 x = true
-  
   predicate precondition'0 (self : t_F'0) (args : UInt64.t)
-  
-  predicate inv'2 (_1 : ())
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : () [inv'2 x] . inv'2 x = true
   
   predicate postcondition_once'0 (self : t_F'0) (args : UInt64.t) (result : ())
   
   let rec call_once'0 (self:t_F'0) (args:UInt64.t) (return'  (ret:()))= {[@expl:call_once 'self' type invariant] inv'0 self}
-    {[@expl:call_once 'args' type invariant] inv'1 args}
     {[@expl:call_once requires] [%#sops3] precondition'0 self args}
-    any [ return' (result:())-> {inv'2 result} {[%#sops4] postcondition_once'0 self args result} (! return' {result}) ] 
+    any [ return' (result:())-> {[%#sops4] postcondition_once'0 self args result} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
   let rec fn_once_user'0[#"06_fn_specs.rs" 26 0 26 43] (f:t_F'0) (return'  (ret:()))= {[@expl:fn_once_user 'f' type invariant] [%#s06_fn_specs1] inv'0 f}
-    {[@expl:fn_once_user requires] [%#s06_fn_specs2] precondition'0 f ((0 : UInt64.t))}
+    {[@expl:fn_once_user requires] [%#s06_fn_specs2] precondition'0 f (0 : UInt64.t)}
     (! bb0
     [ bb0 = bb1
     | bb1 = s0
-      [ s0 =  [ &_4 <- (([%#s06_fn_specs0] (0 : UInt64.t))) ] s1
+      [ s0 =  [ &_4 <- [%#s06_fn_specs0] (0 : UInt64.t) ] s1
       | s1 = call_once'0 {f} {_4} (fun (_ret':()) ->  [ &_0 <- _ret' ] s2)
       | s2 = bb2 ]
     
@@ -294,9 +285,8 @@ module M_06_fn_specs__fn_once_user [#"06_fn_specs.rs" 26 0 26 43]
 
 end
 module M_06_fn_specs__caller [#"06_fn_specs.rs" 30 0 30 15]
-  let%span s06_fn_specs0 = "06_fn_specs.rs" 26 38 26 39
-  let%span s06_fn_specs1 = "06_fn_specs.rs" 25 11 25 36
-  let%span s06_fn_specs2 = "06_fn_specs.rs" 31 17 31 20
+  let%span s06_fn_specs0 = "06_fn_specs.rs" 25 11 25 36
+  let%span s06_fn_specs1 = "06_fn_specs.rs" 31 17 31 20
   
   use creusot.prelude.Any
   use creusot.int.UInt64
@@ -305,15 +295,10 @@ module M_06_fn_specs__caller [#"06_fn_specs.rs" 30 0 30 15]
     [ bb0 = return' {_0} ]
      [ & _0 : () = Any.any_l () ]  [ return' (result:())-> return' {result} ] 
   
-  predicate inv'0 (_1 : ())
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : () [inv'0 x] . inv'0 x = true
-  
   predicate precondition'0 (self : ()) (args : UInt64.t) =
-    [%#s06_fn_specs2] let (_2) = args in closure0'0'pre self _2
+    [%#s06_fn_specs1] let _2 = args in closure0'0'pre self _2
   
-  let rec fn_once_user'0 (f:()) (return'  (ret:()))= {[@expl:fn_once_user 'f' type invariant] [%#s06_fn_specs0] inv'0 f}
-    {[@expl:fn_once_user requires] [%#s06_fn_specs1] precondition'0 f ((0 : UInt64.t))}
+  let rec fn_once_user'0 (f:()) (return'  (ret:()))= {[@expl:fn_once_user requires] [%#s06_fn_specs0] precondition'0 f (0 : UInt64.t)}
     any [ return' (result:())-> (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000

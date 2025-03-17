@@ -33,10 +33,6 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   type t_Vec'0  =
     { t_Vec__buf'0: t_RawVec'0; t_Vec__len'0: UInt64.t }
   
-  predicate inv'0 (_1 : t_Vec'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Vec'0 [inv'0 x] . inv'0 x = true
-  
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function view'2 (self : t_Vec'0) : Seq.seq UInt64.t
@@ -46,23 +42,16 @@ module M_two_phase__test [#"two_phase.rs" 6 0 6 31]
   function view'1 (self : t_Vec'0) : Seq.seq UInt64.t =
     [%#smodel5] view'2 self
   
-  let rec len'0 (self:t_Vec'0) (return'  (ret:UInt64.t))= {[@expl:len 'self' type invariant] inv'0 self}
-    any [ return' (result:UInt64.t)-> {[%#svec1] UInt64.t'int result = Seq.length (view'1 self)} (! return' {result}) ] 
+  let rec len'0 (self:t_Vec'0) (return'  (ret:UInt64.t))= any
+    [ return' (result:UInt64.t)-> {[%#svec1] UInt64.t'int result = Seq.length (view'1 self)} (! return' {result}) ]
   
-  predicate inv'1 (_1 : MutBorrow.t t_Vec'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t t_Vec'0 [inv'1 x] . inv'1 x = true
-  
-  predicate inv'2 (_1 : UInt64.t)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : UInt64.t [inv'2 x] . inv'2 x = true
   
   function view'0 (self : MutBorrow.t t_Vec'0) : Seq.seq UInt64.t =
     [%#smodel4] view'2 self.current
   
-  let rec push'0 (self:MutBorrow.t t_Vec'0) (value:UInt64.t) (return'  (ret:()))= {[@expl:push 'self' type invariant] inv'1 self}
-    {[@expl:push 'value' type invariant] inv'2 value}
-    any [ return' (result:())-> {[%#svec2] view'2 self.final = Seq.snoc (view'0 self) value} (! return' {result}) ] 
+  let rec push'0 (self:MutBorrow.t t_Vec'0) (value:UInt64.t) (return'  (ret:()))= any
+    [ return' (result:())-> {[%#svec2] view'2 self.final = Seq.snoc (view'0 self) value} (! return' {result}) ]
+  
   
   predicate resolve'1 (self : MutBorrow.t t_Vec'0) =
     [%#sresolve7] self.final = self.current

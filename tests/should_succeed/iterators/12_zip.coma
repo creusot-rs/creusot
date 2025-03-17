@@ -74,19 +74,21 @@ module M_12_zip__qyi5005316258240146725__produces_refl [#"12_zip.rs" 43 4 43 26]
   
   axiom produces_refl'2_spec : forall self : t_B'0 . [%#scommon3] produces'2 self (Seq.empty : Seq.seq t_Item'1) self
   
-  predicate produces'0 [#"12_zip.rs" 30 4 30 65] (self : t_Zip'0) (visited : Seq.seq (t_Item'0, t_Item'1)) (tl : t_Zip'0)
+  type tuple'0  =
+    { _0'0: t_Item'0; _1'0: t_Item'1 }
   
-   =
+  predicate produces'0 [#"12_zip.rs" 30 4 30 65] (self : t_Zip'0) (visited : Seq.seq tuple'0) (tl : t_Zip'0) =
     [%#s12_zip2] exists p1 : Seq.seq t_Item'0, p2 : Seq.seq t_Item'1 . Seq.length p1 = Seq.length p2
     /\ Seq.length p2 = Seq.length visited
-    /\ (forall i : int . 0 <= i /\ i < Seq.length visited  -> Seq.get visited i = (Seq.get p1 i, Seq.get p2 i))
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> Seq.get visited i = { _0'0 = Seq.get p1 i; _1'0 = Seq.get p2 i })
     /\ produces'1 self.t_Zip__a'0 p1 tl.t_Zip__a'0 /\ produces'2 self.t_Zip__b'0 p2 tl.t_Zip__b'0
   
   constant self  : t_Zip'0
   
   function produces_refl'0 [#"12_zip.rs" 43 4 43 26] (self : t_Zip'0) : ()
   
-  goal vc_produces_refl'0 : [%#s12_zip0] produces'0 self (Seq.empty : Seq.seq (t_Item'0, t_Item'1)) self
+  goal vc_produces_refl'0 : [%#s12_zip0] produces'0 self (Seq.empty : Seq.seq tuple'0) self
 end
 module M_12_zip__qyi5005316258240146725__produces_trans [#"12_zip.rs" 50 4 50 90] (* <Zip<A, B> as common::Iterator> *)
   let%span s12_zip0 = "12_zip.rs" 47 15 47 32
@@ -137,25 +139,27 @@ module M_12_zip__qyi5005316258240146725__produces_trans [#"12_zip.rs" 50 4 50 90
   
   axiom produces_refl'1_spec : forall self : t_B'0 . [%#scommon5] produces'2 self (Seq.empty : Seq.seq t_Item'1) self
   
-  predicate produces'0 [#"12_zip.rs" 30 4 30 65] (self : t_Zip'0) (visited : Seq.seq (t_Item'0, t_Item'1)) (tl : t_Zip'0)
+  type tuple'0  =
+    { _0'0: t_Item'0; _1'0: t_Item'1 }
   
-   =
+  predicate produces'0 [#"12_zip.rs" 30 4 30 65] (self : t_Zip'0) (visited : Seq.seq tuple'0) (tl : t_Zip'0) =
     [%#s12_zip4] exists p1 : Seq.seq t_Item'0, p2 : Seq.seq t_Item'1 . Seq.length p1 = Seq.length p2
     /\ Seq.length p2 = Seq.length visited
-    /\ (forall i : int . 0 <= i /\ i < Seq.length visited  -> Seq.get visited i = (Seq.get p1 i, Seq.get p2 i))
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> Seq.get visited i = { _0'0 = Seq.get p1 i; _1'0 = Seq.get p2 i })
     /\ produces'1 self.t_Zip__a'0 p1 tl.t_Zip__a'0 /\ produces'2 self.t_Zip__b'0 p2 tl.t_Zip__b'0
   
   constant a  : t_Zip'0
   
-  constant ab  : Seq.seq (t_Item'0, t_Item'1)
+  constant ab  : Seq.seq tuple'0
   
   constant b  : t_Zip'0
   
-  constant bc  : Seq.seq (t_Item'0, t_Item'1)
+  constant bc  : Seq.seq tuple'0
   
   constant c  : t_Zip'0
   
-  function produces_trans'0 [#"12_zip.rs" 50 4 50 90] (a : t_Zip'0) (ab : Seq.seq (t_Item'0, t_Item'1)) (b : t_Zip'0) (bc : Seq.seq (t_Item'0, t_Item'1)) (c : t_Zip'0) : ()
+  function produces_trans'0 [#"12_zip.rs" 50 4 50 90] (a : t_Zip'0) (ab : Seq.seq tuple'0) (b : t_Zip'0) (bc : Seq.seq tuple'0) (c : t_Zip'0) : ()
   
   
   goal vc_produces_trans'0 : ([%#s12_zip0] produces'0 a ab b)
@@ -317,16 +321,19 @@ module M_12_zip__qyi5005316258240146725__next [#"12_zip.rs" 56 4 56 44] (* <Zip<
     | bad -> {forall field_0 : t_Item'1 [C_Some'1 field_0 : t_Option'1] . C_Some'1 field_0 <> input} (! {false} any) ]
   
   
+  type tuple'0  =
+    { _0'0: t_Item'0; _1'0: t_Item'1 }
+  
   type t_Option'2  =
     | C_None'2
-    | C_Some'2 (t_Item'0, t_Item'1)
+    | C_Some'2 tuple'0
   
   predicate resolve'1 (_1 : t_Item'0)
   
-  predicate inv'9 (_1 : (t_Item'0, t_Item'1))
+  predicate inv'9 (_1 : tuple'0)
   
-  axiom inv_axiom'6 [@rewrite] : forall x : (t_Item'0, t_Item'1) [inv'9 x] . inv'9 x
-  = (let (x0, x1) = x in inv'3 x0 /\ inv'10 x1)
+  axiom inv_axiom'6 [@rewrite] : forall x : tuple'0 [inv'9 x] . inv'9 x
+  = (let {_0'0 = x0 ; _1'0 = x1} = x in inv'3 x0 /\ inv'10 x1)
   
   predicate inv'4 (_1 : t_Option'2)
   
@@ -343,12 +350,11 @@ module M_12_zip__qyi5005316258240146725__next [#"12_zip.rs" 56 4 56 44] (* <Zip<
     /\ resolve'1 x
     /\ completed'2 (MutBorrow.borrow_logic (self.current).t_Zip__b'0 (self.final).t_Zip__b'0 (MutBorrow.inherit_id (MutBorrow.get_id self) 2)))
   
-  predicate produces'0 [#"12_zip.rs" 30 4 30 65] (self : t_Zip'0) (visited : Seq.seq (t_Item'0, t_Item'1)) (tl : t_Zip'0)
-  
-   =
+  predicate produces'0 [#"12_zip.rs" 30 4 30 65] (self : t_Zip'0) (visited : Seq.seq tuple'0) (tl : t_Zip'0) =
     [%#s12_zip7] exists p1 : Seq.seq t_Item'0, p2 : Seq.seq t_Item'1 . Seq.length p1 = Seq.length p2
     /\ Seq.length p2 = Seq.length visited
-    /\ (forall i : int . 0 <= i /\ i < Seq.length visited  -> Seq.get visited i = (Seq.get p1 i, Seq.get p2 i))
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> Seq.get visited i = { _0'0 = Seq.get p1 i; _1'0 = Seq.get p2 i })
     /\ produces'1 self.t_Zip__a'0 p1 tl.t_Zip__a'0 /\ produces'2 self.t_Zip__b'0 p2 tl.t_Zip__b'0
   
   meta "compute_max_steps" 1000000
@@ -389,7 +395,7 @@ module M_12_zip__qyi5005316258240146725__next [#"12_zip.rs" 56 4 56 44] (* <Zip<
       [ s0 = v_Some'1 {_10} (fun (r0'0:t_Item'1) ->  [ &y1 <- r0'0 ] s1) | s1 =  [ &y <- y1 ] s2 | s2 = bb13 ]
     
     | bb13 = bb14
-    | bb14 = s0 [ s0 =  [ &_15 <- (x, y) ] s1 | s1 = bb15 ] 
+    | bb14 = s0 [ s0 =  [ &_15 <- { _0'0 = x; _1'0 = y } ] s1 | s1 = bb15 ] 
     | bb15 = bb16
     | bb16 = s0 [ s0 =  [ &_0 <- C_Some'2 _15 ] s1 | s1 = bb17 ] 
     | bb17 = bb18
@@ -414,7 +420,7 @@ module M_12_zip__qyi5005316258240146725__next [#"12_zip.rs" 56 4 56 44] (* <Zip<
     | & _10 : t_Option'1 = Any.any_l ()
     | & _11 : MutBorrow.t t_B'0 = Any.any_l ()
     | & y1 : t_Item'1 = Any.any_l ()
-    | & _15 : (t_Item'0, t_Item'1) = Any.any_l () ]
+    | & _15 : tuple'0 = Any.any_l () ]
     
     [ return' (result:t_Option'2)-> {[@expl:next result type invariant] [%#s12_zip1] inv'4 result}
       {[@expl:next ensures] [%#s12_zip2] match result with
@@ -536,9 +542,12 @@ module M_12_zip__qyi5005316258240146725__next__refines [#"12_zip.rs" 56 4 56 44]
   
   axiom produces_refl'1_spec : forall self : t_B'0 . [%#scommon4] produces'2 self (Seq.empty : Seq.seq t_Item'1) self
   
+  type tuple'0  =
+    { _0'0: t_Item'0; _1'0: t_Item'1 }
+  
   type t_Option'0  =
     | C_None'0
-    | C_Some'0 (t_Item'0, t_Item'1)
+    | C_Some'0 tuple'0
   
   predicate completed'1 [#"common.rs" 11 4 11 36] (self : MutBorrow.t t_A'0)
   
@@ -553,22 +562,21 @@ module M_12_zip__qyi5005316258240146725__next__refines [#"12_zip.rs" 56 4 56 44]
     /\ resolve'0 x
     /\ completed'2 (MutBorrow.borrow_logic (self.current).t_Zip__b'0 (self.final).t_Zip__b'0 (MutBorrow.inherit_id (MutBorrow.get_id self) 2)))
   
-  predicate produces'0 [#"12_zip.rs" 30 4 30 65] (self : t_Zip'0) (visited : Seq.seq (t_Item'0, t_Item'1)) (tl : t_Zip'0)
-  
-   =
+  predicate produces'0 [#"12_zip.rs" 30 4 30 65] (self : t_Zip'0) (visited : Seq.seq tuple'0) (tl : t_Zip'0) =
     [%#s12_zip2] exists p1 : Seq.seq t_Item'0, p2 : Seq.seq t_Item'1 . Seq.length p1 = Seq.length p2
     /\ Seq.length p2 = Seq.length visited
-    /\ (forall i : int . 0 <= i /\ i < Seq.length visited  -> Seq.get visited i = (Seq.get p1 i, Seq.get p2 i))
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> Seq.get visited i = { _0'0 = Seq.get p1 i; _1'0 = Seq.get p2 i })
     /\ produces'1 self.t_Zip__a'0 p1 tl.t_Zip__a'0 /\ produces'2 self.t_Zip__b'0 p2 tl.t_Zip__b'0
   
   predicate inv'4 (_1 : t_Item'0)
   
   predicate inv'5 (_1 : t_Item'1)
   
-  predicate inv'2 (_1 : (t_Item'0, t_Item'1))
+  predicate inv'2 (_1 : tuple'0)
   
-  axiom inv_axiom'2 [@rewrite] : forall x : (t_Item'0, t_Item'1) [inv'2 x] . inv'2 x
-  = (let (x0, x1) = x in inv'4 x0 /\ inv'5 x1)
+  axiom inv_axiom'2 [@rewrite] : forall x : tuple'0 [inv'2 x] . inv'2 x
+  = (let {_0'0 = x0 ; _1'0 = x1} = x in inv'4 x0 /\ inv'5 x1)
   
   predicate inv'1 (_1 : t_Option'0)
   
@@ -637,15 +645,17 @@ module M_12_zip__qyi5005316258240146725__produces_trans__refines [#"12_zip.rs" 5
   
   axiom produces_refl'1_spec : forall self : t_B'0 . [%#scommon2] produces'2 self (Seq.empty : Seq.seq t_Item'1) self
   
-  predicate produces'0 [#"12_zip.rs" 30 4 30 65] (self : t_Zip'0) (visited : Seq.seq (t_Item'0, t_Item'1)) (tl : t_Zip'0)
+  type tuple'0  =
+    { _0'0: t_Item'0; _1'0: t_Item'1 }
   
-   =
+  predicate produces'0 [#"12_zip.rs" 30 4 30 65] (self : t_Zip'0) (visited : Seq.seq tuple'0) (tl : t_Zip'0) =
     [%#s12_zip1] exists p1 : Seq.seq t_Item'0, p2 : Seq.seq t_Item'1 . Seq.length p1 = Seq.length p2
     /\ Seq.length p2 = Seq.length visited
-    /\ (forall i : int . 0 <= i /\ i < Seq.length visited  -> Seq.get visited i = (Seq.get p1 i, Seq.get p2 i))
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> Seq.get visited i = { _0'0 = Seq.get p1 i; _1'0 = Seq.get p2 i })
     /\ produces'1 self.t_Zip__a'0 p1 tl.t_Zip__a'0 /\ produces'2 self.t_Zip__b'0 p2 tl.t_Zip__b'0
   
-  goal refines : [%#s12_zip0] forall a : t_Zip'0 . forall ab : Seq.seq (t_Item'0, t_Item'1) . forall b : t_Zip'0 . forall bc : Seq.seq (t_Item'0, t_Item'1) . forall c : t_Zip'0 . produces'0 b bc c
+  goal refines : [%#s12_zip0] forall a : t_Zip'0 . forall ab : Seq.seq tuple'0 . forall b : t_Zip'0 . forall bc : Seq.seq tuple'0 . forall c : t_Zip'0 . produces'0 b bc c
   /\ produces'0 a ab b
    -> produces'0 b bc c
   /\ produces'0 a ab b /\ (forall result : () . produces'0 a (Seq.(++) ab bc) c  -> produces'0 a (Seq.(++) ab bc) c)
@@ -696,14 +706,16 @@ module M_12_zip__qyi5005316258240146725__produces_refl__refines [#"12_zip.rs" 43
   
   axiom produces_refl'2_spec : forall self : t_B'0 . [%#scommon2] produces'2 self (Seq.empty : Seq.seq t_Item'1) self
   
-  predicate produces'0 [#"12_zip.rs" 30 4 30 65] (self : t_Zip'0) (visited : Seq.seq (t_Item'0, t_Item'1)) (tl : t_Zip'0)
+  type tuple'0  =
+    { _0'0: t_Item'0; _1'0: t_Item'1 }
   
-   =
+  predicate produces'0 [#"12_zip.rs" 30 4 30 65] (self : t_Zip'0) (visited : Seq.seq tuple'0) (tl : t_Zip'0) =
     [%#s12_zip1] exists p1 : Seq.seq t_Item'0, p2 : Seq.seq t_Item'1 . Seq.length p1 = Seq.length p2
     /\ Seq.length p2 = Seq.length visited
-    /\ (forall i : int . 0 <= i /\ i < Seq.length visited  -> Seq.get visited i = (Seq.get p1 i, Seq.get p2 i))
+    /\ (forall i : int . 0 <= i /\ i < Seq.length visited
+     -> Seq.get visited i = { _0'0 = Seq.get p1 i; _1'0 = Seq.get p2 i })
     /\ produces'1 self.t_Zip__a'0 p1 tl.t_Zip__a'0 /\ produces'2 self.t_Zip__b'0 p2 tl.t_Zip__b'0
   
-  goal refines : [%#s12_zip0] forall self : t_Zip'0 . forall result : () . produces'0 self (Seq.empty : Seq.seq (t_Item'0, t_Item'1)) self
-   -> produces'0 self (Seq.empty : Seq.seq (t_Item'0, t_Item'1)) self
+  goal refines : [%#s12_zip0] forall self : t_Zip'0 . forall result : () . produces'0 self (Seq.empty : Seq.seq tuple'0) self
+   -> produces'0 self (Seq.empty : Seq.seq tuple'0) self
 end

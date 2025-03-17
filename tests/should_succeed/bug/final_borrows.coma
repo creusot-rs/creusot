@@ -178,6 +178,9 @@ module M_final_borrows__reborrow_field [#"final_borrows.rs" 15 0 15 50]
   
   predicate inv'0 (_1 : t_T'0)
   
+  type tuple'0  =
+    { _0'0: t_T'0; _1'0: t_T'0 }
+  
   predicate invariant'0 (self : MutBorrow.t t_T'0) =
     [%#sinvariant4] inv'0 self.current /\ inv'0 self.final
   
@@ -191,35 +194,35 @@ module M_final_borrows__reborrow_field [#"final_borrows.rs" 15 0 15 50]
   predicate resolve'0 (_1 : MutBorrow.t t_T'0) =
     resolve'2 _1
   
-  predicate inv'3 (_1 : (t_T'0, t_T'0))
+  predicate inv'3 (_1 : tuple'0)
   
-  axiom inv_axiom'2 [@rewrite] : forall x : (t_T'0, t_T'0) [inv'3 x] . inv'3 x
-  = (let (x0, x1) = x in inv'0 x0 /\ inv'0 x1)
+  axiom inv_axiom'2 [@rewrite] : forall x : tuple'0 [inv'3 x] . inv'3 x
+  = (let {_0'0 = x0 ; _1'0 = x1} = x in inv'0 x0 /\ inv'0 x1)
   
-  predicate invariant'1 (self : MutBorrow.t (t_T'0, t_T'0)) =
+  predicate invariant'1 (self : MutBorrow.t tuple'0) =
     [%#sinvariant4] inv'3 self.current /\ inv'3 self.final
   
-  predicate inv'2 (_1 : MutBorrow.t (t_T'0, t_T'0))
+  predicate inv'2 (_1 : MutBorrow.t tuple'0)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t (t_T'0, t_T'0) [inv'2 x] . inv'2 x = invariant'1 x
+  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t tuple'0 [inv'2 x] . inv'2 x = invariant'1 x
   
-  predicate resolve'3 (self : MutBorrow.t (t_T'0, t_T'0)) =
+  predicate resolve'3 (self : MutBorrow.t tuple'0) =
     [%#sresolve3] self.final = self.current
   
-  predicate resolve'1 (_1 : MutBorrow.t (t_T'0, t_T'0)) =
+  predicate resolve'1 (_1 : MutBorrow.t tuple'0) =
     resolve'3 _1
   
   meta "compute_max_steps" 1000000
   
-  let rec reborrow_field'0[#"final_borrows.rs" 15 0 15 50] (r:MutBorrow.t (t_T'0, t_T'0)) (return'  (ret:MutBorrow.t t_T'0))= {[@expl:reborrow_field 'r' type invariant] [%#sfinal_borrows0] inv'2 r}
+  let rec reborrow_field'0[#"final_borrows.rs" 15 0 15 50] (r:MutBorrow.t tuple'0) (return'  (ret:MutBorrow.t t_T'0))= {[@expl:reborrow_field 'r' type invariant] [%#sfinal_borrows0] inv'2 r}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'0 (let (r'0, _) = r.current in r'0)}
-        MutBorrow.borrow_final <t_T'0> {let (r'0, _) = r.current in r'0} {MutBorrow.inherit_id (MutBorrow.get_id r) 1}
+      [ s0 = {inv'0 (r.current)._0'0}
+        MutBorrow.borrow_final <t_T'0> {(r.current)._0'0} {MutBorrow.inherit_id (MutBorrow.get_id r) 1}
           (fun (_ret':MutBorrow.t t_T'0) ->
              [ &_4 <- _ret' ] 
             -{inv'0 _ret'.final}-
-             [ &r <- { r with current = (let (_, r'2) = r.current in (_ret'.final, r'2)) } ] 
+             [ &r <- { r with current = { r.current with _0'0 = _ret'.final } } ] 
             s1)
       | s1 = {inv'0 _4.current}
         MutBorrow.borrow_final <t_T'0> {_4.current} {MutBorrow.get_id _4}
@@ -245,13 +248,13 @@ module M_final_borrows__reborrow_field [#"final_borrows.rs" 15 0 15 50]
      ]
     )
     [ & _0 : MutBorrow.t t_T'0 = Any.any_l ()
-    | & r : MutBorrow.t (t_T'0, t_T'0) = r
+    | & r : MutBorrow.t tuple'0 = r
     | & _2 : MutBorrow.t t_T'0 = Any.any_l ()
     | & _4 : MutBorrow.t t_T'0 = Any.any_l () ]
     
     [ return' (result:MutBorrow.t t_T'0)-> {[@expl:reborrow_field result type invariant] [%#sfinal_borrows1] inv'1 result}
       {[@expl:reborrow_field ensures] [%#sfinal_borrows2] result
-      = MutBorrow.borrow_logic (let (a, _) = r.current in a) (let (a, _) = r.final in a) (MutBorrow.inherit_id (MutBorrow.get_id r) 1)}
+      = MutBorrow.borrow_logic (r.current)._0'0 (r.final)._0'0 (MutBorrow.inherit_id (MutBorrow.get_id r) 1)}
       (! return' {result}) ]
 
 end
@@ -270,6 +273,12 @@ module M_final_borrows__disjoint_fields [#"final_borrows.rs" 21 0 21 61]
   
   predicate inv'0 (_1 : t_T'0)
   
+  type tuple'0  =
+    { _0'0: t_T'0; _1'0: t_T'0 }
+  
+  type tuple'1  =
+    { _0'1: MutBorrow.t t_T'0; _1'1: MutBorrow.t t_T'0 }
+  
   predicate invariant'0 (self : MutBorrow.t t_T'0) =
     [%#sinvariant5] inv'0 self.current /\ inv'0 self.final
   
@@ -283,47 +292,47 @@ module M_final_borrows__disjoint_fields [#"final_borrows.rs" 21 0 21 61]
   predicate resolve'0 (_1 : MutBorrow.t t_T'0) =
     resolve'2 _1
   
-  predicate inv'4 (_1 : (t_T'0, t_T'0))
+  predicate inv'4 (_1 : tuple'0)
   
-  axiom inv_axiom'3 [@rewrite] : forall x : (t_T'0, t_T'0) [inv'4 x] . inv'4 x
-  = (let (x0, x1) = x in inv'0 x0 /\ inv'0 x1)
+  axiom inv_axiom'3 [@rewrite] : forall x : tuple'0 [inv'4 x] . inv'4 x
+  = (let {_0'0 = x0 ; _1'0 = x1} = x in inv'0 x0 /\ inv'0 x1)
   
-  predicate invariant'1 (self : MutBorrow.t (t_T'0, t_T'0)) =
+  predicate invariant'1 (self : MutBorrow.t tuple'0) =
     [%#sinvariant5] inv'4 self.current /\ inv'4 self.final
   
-  predicate inv'2 (_1 : MutBorrow.t (t_T'0, t_T'0))
+  predicate inv'2 (_1 : MutBorrow.t tuple'0)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t (t_T'0, t_T'0) [inv'2 x] . inv'2 x = invariant'1 x
+  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t tuple'0 [inv'2 x] . inv'2 x = invariant'1 x
   
-  predicate resolve'3 (self : MutBorrow.t (t_T'0, t_T'0)) =
+  predicate resolve'3 (self : MutBorrow.t tuple'0) =
     [%#sresolve4] self.final = self.current
   
-  predicate resolve'1 (_1 : MutBorrow.t (t_T'0, t_T'0)) =
+  predicate resolve'1 (_1 : MutBorrow.t tuple'0) =
     resolve'3 _1
   
-  predicate inv'3 (_1 : (MutBorrow.t t_T'0, MutBorrow.t t_T'0))
+  predicate inv'3 (_1 : tuple'1)
   
-  axiom inv_axiom'2 [@rewrite] : forall x : (MutBorrow.t t_T'0, MutBorrow.t t_T'0) [inv'3 x] . inv'3 x
-  = (let (x0, x1) = x in inv'1 x0 /\ inv'1 x1)
+  axiom inv_axiom'2 [@rewrite] : forall x : tuple'1 [inv'3 x] . inv'3 x
+  = (let {_0'1 = x0 ; _1'1 = x1} = x in inv'1 x0 /\ inv'1 x1)
   
   meta "compute_max_steps" 1000000
   
-  let rec disjoint_fields'0[#"final_borrows.rs" 21 0 21 61] (r:MutBorrow.t (t_T'0, t_T'0)) (return'  (ret:(MutBorrow.t t_T'0, MutBorrow.t t_T'0)))= {[@expl:disjoint_fields 'r' type invariant] [%#sfinal_borrows0] inv'2 r}
+  let rec disjoint_fields'0[#"final_borrows.rs" 21 0 21 61] (r:MutBorrow.t tuple'0) (return'  (ret:tuple'1))= {[@expl:disjoint_fields 'r' type invariant] [%#sfinal_borrows0] inv'2 r}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'0 (let (r'0, _) = r.current in r'0)}
-        MutBorrow.borrow_final <t_T'0> {let (r'0, _) = r.current in r'0} {MutBorrow.inherit_id (MutBorrow.get_id r) 1}
+      [ s0 = {inv'0 (r.current)._0'0}
+        MutBorrow.borrow_final <t_T'0> {(r.current)._0'0} {MutBorrow.inherit_id (MutBorrow.get_id r) 1}
           (fun (_ret':MutBorrow.t t_T'0) ->
              [ &r0 <- _ret' ] 
             -{inv'0 _ret'.final}-
-             [ &r <- { r with current = (let (_, r'2) = r.current in (_ret'.final, r'2)) } ] 
+             [ &r <- { r with current = { r.current with _0'0 = _ret'.final } } ] 
             s1)
-      | s1 = {inv'0 (let (_, r'3) = r.current in r'3)}
-        MutBorrow.borrow_final <t_T'0> {let (_, r'3) = r.current in r'3} {MutBorrow.inherit_id (MutBorrow.get_id r) 2}
+      | s1 = {inv'0 (r.current)._1'0}
+        MutBorrow.borrow_final <t_T'0> {(r.current)._1'0} {MutBorrow.inherit_id (MutBorrow.get_id r) 2}
           (fun (_ret':MutBorrow.t t_T'0) ->
              [ &r1 <- _ret' ] 
             -{inv'0 _ret'.final}-
-             [ &r <- { r with current = (let (r'4, _) = r.current in (r'4, _ret'.final)) } ] 
+             [ &r <- { r with current = { r.current with _1'0 = _ret'.final } } ] 
             s2)
       | s2 = {inv'0 r0.current}
         MutBorrow.borrow_final <t_T'0> {r0.current} {MutBorrow.get_id r0}
@@ -339,7 +348,7 @@ module M_final_borrows__disjoint_fields [#"final_borrows.rs" 21 0 21 61]
             -{inv'0 _ret'.final}-
              [ &r1 <- { r1 with current = _ret'.final } ] 
             s4)
-      | s4 =  [ &_0 <- (_6, _7) ] s5
+      | s4 =  [ &_0 <- { _0'1 = _6; _1'1 = _7 } ] s5
       | s5 = {[@expl:type invariant] inv'1 r1} s6
       | s6 = -{resolve'0 r1}- s7
       | s7 = {[@expl:type invariant] inv'1 r0} s8
@@ -349,18 +358,18 @@ module M_final_borrows__disjoint_fields [#"final_borrows.rs" 21 0 21 61]
       | s11 = return' {_0} ]
      ]
     )
-    [ & _0 : (MutBorrow.t t_T'0, MutBorrow.t t_T'0) = Any.any_l ()
-    | & r : MutBorrow.t (t_T'0, t_T'0) = r
+    [ & _0 : tuple'1 = Any.any_l ()
+    | & r : MutBorrow.t tuple'0 = r
     | & r0 : MutBorrow.t t_T'0 = Any.any_l ()
     | & r1 : MutBorrow.t t_T'0 = Any.any_l ()
     | & _6 : MutBorrow.t t_T'0 = Any.any_l ()
     | & _7 : MutBorrow.t t_T'0 = Any.any_l () ]
     
-    [ return' (result:(MutBorrow.t t_T'0, MutBorrow.t t_T'0))-> {[@expl:disjoint_fields result type invariant] [%#sfinal_borrows1] inv'3 result}
-      {[@expl:disjoint_fields ensures #0] [%#sfinal_borrows2] (let (a, _) = result in a)
-      = MutBorrow.borrow_logic (let (a, _) = r.current in a) (let (a, _) = r.final in a) (MutBorrow.inherit_id (MutBorrow.get_id r) 1)}
-      {[@expl:disjoint_fields ensures #1] [%#sfinal_borrows3] (let (_, a) = result in a)
-      = MutBorrow.borrow_logic (let (_, a) = r.current in a) (let (_, a) = r.final in a) (MutBorrow.inherit_id (MutBorrow.get_id r) 2)}
+    [ return' (result:tuple'1)-> {[@expl:disjoint_fields result type invariant] [%#sfinal_borrows1] inv'3 result}
+      {[@expl:disjoint_fields ensures #0] [%#sfinal_borrows2] result._0'1
+      = MutBorrow.borrow_logic (r.current)._0'0 (r.final)._0'0 (MutBorrow.inherit_id (MutBorrow.get_id r) 1)}
+      {[@expl:disjoint_fields ensures #1] [%#sfinal_borrows3] result._1'1
+      = MutBorrow.borrow_logic (r.current)._1'0 (r.final)._1'0 (MutBorrow.inherit_id (MutBorrow.get_id r) 2)}
       (! return' {result}) ]
 
 end
@@ -376,24 +385,30 @@ module M_final_borrows__nested_fields [#"final_borrows.rs" 28 0 28 54]
   
   type t_T'0
   
+  type tuple'0  =
+    { _0'1: t_T'0; _1'0: t_T'0 }
+  
   predicate inv'1 (_1 : t_T'0)
   
-  predicate inv'0 (_1 : (t_T'0, t_T'0))
+  predicate inv'0 (_1 : tuple'0)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : (t_T'0, t_T'0) [inv'0 x] . inv'0 x
-  = (let (x0, x1) = x in inv'1 x0 /\ inv'1 x1)
+  axiom inv_axiom'0 [@rewrite] : forall x : tuple'0 [inv'0 x] . inv'0 x
+  = (let {_0'1 = x0 ; _1'0 = x1} = x in inv'1 x0 /\ inv'1 x1)
   
-  predicate invariant'0 (self : MutBorrow.t (t_T'0, t_T'0)) =
+  type tuple'1  =
+    { _0'0: tuple'0; _1'1: t_T'0 }
+  
+  predicate invariant'0 (self : MutBorrow.t tuple'0) =
     [%#sinvariant4] inv'0 self.current /\ inv'0 self.final
   
-  predicate inv'2 (_1 : MutBorrow.t (t_T'0, t_T'0))
+  predicate inv'2 (_1 : MutBorrow.t tuple'0)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t (t_T'0, t_T'0) [inv'2 x] . inv'2 x = invariant'0 x
+  axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t tuple'0 [inv'2 x] . inv'2 x = invariant'0 x
   
-  predicate resolve'3 (self : MutBorrow.t (t_T'0, t_T'0)) =
+  predicate resolve'3 (self : MutBorrow.t tuple'0) =
     [%#sresolve3] self.final = self.current
   
-  predicate resolve'0 (_1 : MutBorrow.t (t_T'0, t_T'0)) =
+  predicate resolve'0 (_1 : MutBorrow.t tuple'0) =
     resolve'3 _1
   
   predicate invariant'1 (self : MutBorrow.t t_T'0) =
@@ -409,48 +424,42 @@ module M_final_borrows__nested_fields [#"final_borrows.rs" 28 0 28 54]
   predicate resolve'1 (_1 : MutBorrow.t t_T'0) =
     resolve'4 _1
   
-  predicate inv'5 (_1 : ((t_T'0, t_T'0), t_T'0))
+  predicate inv'5 (_1 : tuple'1)
   
-  axiom inv_axiom'4 [@rewrite] : forall x : ((t_T'0, t_T'0), t_T'0) [inv'5 x] . inv'5 x
-  = (let (x0, x1) = x in inv'0 x0 /\ inv'1 x1)
+  axiom inv_axiom'4 [@rewrite] : forall x : tuple'1 [inv'5 x] . inv'5 x
+  = (let {_0'0 = x0 ; _1'1 = x1} = x in inv'0 x0 /\ inv'1 x1)
   
-  predicate invariant'2 (self : MutBorrow.t ((t_T'0, t_T'0), t_T'0)) =
+  predicate invariant'2 (self : MutBorrow.t tuple'1) =
     [%#sinvariant4] inv'5 self.current /\ inv'5 self.final
   
-  predicate inv'4 (_1 : MutBorrow.t ((t_T'0, t_T'0), t_T'0))
+  predicate inv'4 (_1 : MutBorrow.t tuple'1)
   
-  axiom inv_axiom'3 [@rewrite] : forall x : MutBorrow.t ((t_T'0, t_T'0), t_T'0) [inv'4 x] . inv'4 x = invariant'2 x
+  axiom inv_axiom'3 [@rewrite] : forall x : MutBorrow.t tuple'1 [inv'4 x] . inv'4 x = invariant'2 x
   
-  predicate resolve'5 (self : MutBorrow.t ((t_T'0, t_T'0), t_T'0)) =
+  predicate resolve'5 (self : MutBorrow.t tuple'1) =
     [%#sresolve3] self.final = self.current
   
-  predicate resolve'2 (_1 : MutBorrow.t ((t_T'0, t_T'0), t_T'0)) =
+  predicate resolve'2 (_1 : MutBorrow.t tuple'1) =
     resolve'5 _1
   
   meta "compute_max_steps" 1000000
   
-  let rec nested_fields'0[#"final_borrows.rs" 28 0 28 54] (r:MutBorrow.t ((t_T'0, t_T'0), t_T'0)) (return'  (ret:MutBorrow.t t_T'0))= {[@expl:nested_fields 'r' type invariant] [%#sfinal_borrows0] inv'4 r}
+  let rec nested_fields'0[#"final_borrows.rs" 28 0 28 54] (r:MutBorrow.t tuple'1) (return'  (ret:MutBorrow.t t_T'0))= {[@expl:nested_fields 'r' type invariant] [%#sfinal_borrows0] inv'4 r}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'0 (let (r'0, _) = r.current in r'0)}
-        MutBorrow.borrow_final
-          <(t_T'0, t_T'0)>
-          {let (r'0, _) = r.current in r'0}
-          {MutBorrow.inherit_id (MutBorrow.get_id r) 1}
-          (fun (_ret':MutBorrow.t (t_T'0, t_T'0)) ->
+      [ s0 = {inv'0 (r.current)._0'0}
+        MutBorrow.borrow_final <tuple'0> {(r.current)._0'0} {MutBorrow.inherit_id (MutBorrow.get_id r) 1}
+          (fun (_ret':MutBorrow.t tuple'0) ->
              [ &borrow1 <- _ret' ] 
             -{inv'0 _ret'.final}-
-             [ &r <- { r with current = (let (_, r'2) = r.current in (_ret'.final, r'2)) } ] 
+             [ &r <- { r with current = { r.current with _0'0 = _ret'.final } } ] 
             s1)
-      | s1 = {inv'1 (let (_, r'3) = borrow1.current in r'3)}
-        MutBorrow.borrow_final
-          <t_T'0>
-          {let (_, r'3) = borrow1.current in r'3}
-          {MutBorrow.inherit_id (MutBorrow.get_id borrow1) 2}
+      | s1 = {inv'1 (borrow1.current)._1'0}
+        MutBorrow.borrow_final <t_T'0> {(borrow1.current)._1'0} {MutBorrow.inherit_id (MutBorrow.get_id borrow1) 2}
           (fun (_ret':MutBorrow.t t_T'0) ->
              [ &_5 <- _ret' ] 
             -{inv'1 _ret'.final}-
-             [ &borrow1 <- { borrow1 with current = (let (r'4, _) = borrow1.current in (r'4, _ret'.final)) } ] 
+             [ &borrow1 <- { borrow1 with current = { borrow1.current with _1'0 = _ret'.final } } ] 
             s2)
       | s2 = {inv'1 _5.current}
         MutBorrow.borrow_final <t_T'0> {_5.current} {MutBorrow.get_id _5}
@@ -478,14 +487,14 @@ module M_final_borrows__nested_fields [#"final_borrows.rs" 28 0 28 54]
      ]
     )
     [ & _0 : MutBorrow.t t_T'0 = Any.any_l ()
-    | & r : MutBorrow.t ((t_T'0, t_T'0), t_T'0) = r
+    | & r : MutBorrow.t tuple'1 = r
     | & _2 : MutBorrow.t t_T'0 = Any.any_l ()
-    | & borrow1 : MutBorrow.t (t_T'0, t_T'0) = Any.any_l ()
+    | & borrow1 : MutBorrow.t tuple'0 = Any.any_l ()
     | & _5 : MutBorrow.t t_T'0 = Any.any_l () ]
     
     [ return' (result:MutBorrow.t t_T'0)-> {[@expl:nested_fields result type invariant] [%#sfinal_borrows1] inv'3 result}
       {[@expl:nested_fields ensures] [%#sfinal_borrows2] result
-      = MutBorrow.borrow_logic (let (_, a) = let (a, _) = r.current in a in a) (let (_, a) = let (a, _) = r.final in a in a) (MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id r) 1) 2)}
+      = MutBorrow.borrow_logic ((r.current)._0'0)._1'0 ((r.final)._0'0)._1'0 (MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id r) 1) 2)}
       (! return' {result}) ]
 
 end
@@ -504,6 +513,12 @@ module M_final_borrows__really_nested_fields [#"final_borrows.rs" 34 0 34 61]
   
   predicate inv'0 (_1 : t_T'0)
   
+  type tuple'1  =
+    { _0'1: t_T'0; _1'0: t_T'0 }
+  
+  type tuple'0  =
+    { _0'0: MutBorrow.t tuple'1; _1'1: t_T'0 }
+  
   predicate invariant'0 (self : MutBorrow.t t_T'0) =
     [%#sinvariant5] inv'0 self.current /\ inv'0 self.final
   
@@ -517,54 +532,49 @@ module M_final_borrows__really_nested_fields [#"final_borrows.rs" 34 0 34 61]
   predicate resolve'0 (_1 : MutBorrow.t t_T'0) =
     resolve'2 _1
   
-  predicate inv'4 (_1 : (t_T'0, t_T'0))
+  predicate inv'4 (_1 : tuple'1)
   
-  axiom inv_axiom'3 [@rewrite] : forall x : (t_T'0, t_T'0) [inv'4 x] . inv'4 x
-  = (let (x0, x1) = x in inv'0 x0 /\ inv'0 x1)
+  axiom inv_axiom'3 [@rewrite] : forall x : tuple'1 [inv'4 x] . inv'4 x
+  = (let {_0'1 = x0 ; _1'0 = x1} = x in inv'0 x0 /\ inv'0 x1)
   
-  predicate invariant'1 (self : MutBorrow.t (t_T'0, t_T'0)) =
+  predicate invariant'1 (self : MutBorrow.t tuple'1) =
     [%#sinvariant5] inv'4 self.current /\ inv'4 self.final
   
-  predicate inv'3 (_1 : MutBorrow.t (t_T'0, t_T'0))
+  predicate inv'3 (_1 : MutBorrow.t tuple'1)
   
-  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t (t_T'0, t_T'0) [inv'3 x] . inv'3 x = invariant'1 x
+  axiom inv_axiom'2 [@rewrite] : forall x : MutBorrow.t tuple'1 [inv'3 x] . inv'3 x = invariant'1 x
   
-  predicate inv'2 (_1 : (MutBorrow.t (t_T'0, t_T'0), t_T'0))
+  predicate inv'2 (_1 : tuple'0)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : (MutBorrow.t (t_T'0, t_T'0), t_T'0) [inv'2 x] . inv'2 x
-  = (let (x0, x1) = x in inv'3 x0 /\ inv'0 x1)
+  axiom inv_axiom'1 [@rewrite] : forall x : tuple'0 [inv'2 x] . inv'2 x
+  = (let {_0'0 = x0 ; _1'1 = x1} = x in inv'3 x0 /\ inv'0 x1)
   
-  predicate resolve'6 (self : MutBorrow.t (t_T'0, t_T'0)) =
+  predicate resolve'6 (self : MutBorrow.t tuple'1) =
     [%#sresolve3] self.final = self.current
   
-  predicate resolve'4 (_1 : MutBorrow.t (t_T'0, t_T'0)) =
+  predicate resolve'4 (_1 : MutBorrow.t tuple'1) =
     resolve'6 _1
   
   predicate resolve'5 (_1 : t_T'0)
   
-  predicate resolve'3 (self : (MutBorrow.t (t_T'0, t_T'0), t_T'0)) =
-    [%#sresolve4] resolve'4 (let (a, _) = self in a) /\ resolve'5 (let (_, a) = self in a)
+  predicate resolve'3 (self : tuple'0) =
+    [%#sresolve4] resolve'4 self._0'0 /\ resolve'5 self._1'1
   
-  predicate resolve'1 (_1 : (MutBorrow.t (t_T'0, t_T'0), t_T'0)) =
+  predicate resolve'1 (_1 : tuple'0) =
     resolve'3 _1
   
   meta "compute_max_steps" 1000000
   
-  let rec really_nested_fields'0[#"final_borrows.rs" 34 0 34 61] (x:(MutBorrow.t (t_T'0, t_T'0), t_T'0)) (return'  (ret:MutBorrow.t t_T'0))= {[@expl:really_nested_fields 'x' type invariant] [%#sfinal_borrows0] inv'2 x}
+  let rec really_nested_fields'0[#"final_borrows.rs" 34 0 34 61] (x:tuple'0) (return'  (ret:MutBorrow.t t_T'0))= {[@expl:really_nested_fields 'x' type invariant] [%#sfinal_borrows0] inv'2 x}
     (! bb0
     [ bb0 = bb1
     | bb1 = s0
-      [ s0 = {inv'0 (let (_, r'0) = (let (r'1, _) = x in r'1).current in r'0)}
-        MutBorrow.borrow_final
-          <t_T'0>
-          {let (_, r'0) = (let (r'1, _) = x in r'1).current in r'0}
-          {MutBorrow.inherit_id (MutBorrow.get_id (let (r'1, _) = x in r'1)) 2}
+      [ s0 = {inv'0 ((x._0'0).current)._1'0}
+        MutBorrow.borrow_final <t_T'0> {((x._0'0).current)._1'0} {MutBorrow.inherit_id (MutBorrow.get_id x._0'0) 2}
           (fun (_ret':MutBorrow.t t_T'0) ->
              [ &borrow <- _ret' ] 
             -{inv'0 _ret'.final}-
-            
-            [ &x <- let (_, r'5) = x in ({ (let (r'1, _) = x in r'1) with current = (let (r'2, _) = (let (r'1, _) = x in r'1).current in (r'2, _ret'.final)) }, r'5) ]
-            
+             [ &x <- { x with _0'0 = { x._0'0 with current = { (x._0'0).current with _1'0 = _ret'.final } } } ] 
             s1)
       | s1 = {inv'0 borrow.current}
         MutBorrow.borrow_final <t_T'0> {borrow.current} {MutBorrow.get_id borrow}
@@ -591,13 +601,13 @@ module M_final_borrows__really_nested_fields [#"final_borrows.rs" 34 0 34 61]
     | bb2 = return' {_0} ]
     )
     [ & _0 : MutBorrow.t t_T'0 = Any.any_l ()
-    | & x : (MutBorrow.t (t_T'0, t_T'0), t_T'0) = x
+    | & x : tuple'0 = x
     | & _2 : MutBorrow.t t_T'0 = Any.any_l ()
     | & borrow : MutBorrow.t t_T'0 = Any.any_l () ]
     
     [ return' (result:MutBorrow.t t_T'0)-> {[@expl:really_nested_fields result type invariant] [%#sfinal_borrows1] inv'1 result}
       {[@expl:really_nested_fields ensures] [%#sfinal_borrows2] result
-      = MutBorrow.borrow_logic (let (_, a) = (let (a, _) = x in a).current in a) (let (_, a) = (let (a, _) = x in a).final in a) (MutBorrow.inherit_id (MutBorrow.get_id (let (a, _) = x in a)) 2)}
+      = MutBorrow.borrow_logic ((x._0'0).current)._1'0 ((x._0'0).final)._1'0 (MutBorrow.inherit_id (MutBorrow.get_id x._0'0) 2)}
       (! return' {result}) ]
 
 end
@@ -626,6 +636,9 @@ module M_final_borrows__select_field [#"final_borrows.rs" 43 0 43 56]
     | C_None'0 -> true
     | C_Some'0 a_0 -> inv'1 a_0
     end
+  
+  type tuple'0  =
+    { _0'0: t_Option'0; _1'0: t_T'0 }
   
   let rec v_Some'0 (input:t_Option'0) (ret  (field_0:t_T'0))= any
     [ good (field_0:t_T'0)-> {C_Some'0 field_0 = input} (! ret {field_0})
@@ -658,38 +671,35 @@ module M_final_borrows__select_field [#"final_borrows.rs" 43 0 43 56]
   predicate resolve'1 (_1 : MutBorrow.t t_Option'0) =
     resolve'4 _1
   
-  predicate inv'5 (_1 : (t_Option'0, t_T'0))
+  predicate inv'5 (_1 : tuple'0)
   
-  axiom inv_axiom'4 [@rewrite] : forall x : (t_Option'0, t_T'0) [inv'5 x] . inv'5 x
-  = (let (x0, x1) = x in inv'0 x0 /\ inv'1 x1)
+  axiom inv_axiom'4 [@rewrite] : forall x : tuple'0 [inv'5 x] . inv'5 x
+  = (let {_0'0 = x0 ; _1'0 = x1} = x in inv'0 x0 /\ inv'1 x1)
   
-  predicate invariant'2 (self : MutBorrow.t (t_Option'0, t_T'0)) =
+  predicate invariant'2 (self : MutBorrow.t tuple'0) =
     [%#sinvariant4] inv'5 self.current /\ inv'5 self.final
   
-  predicate inv'4 (_1 : MutBorrow.t (t_Option'0, t_T'0))
+  predicate inv'4 (_1 : MutBorrow.t tuple'0)
   
-  axiom inv_axiom'3 [@rewrite] : forall x : MutBorrow.t (t_Option'0, t_T'0) [inv'4 x] . inv'4 x = invariant'2 x
+  axiom inv_axiom'3 [@rewrite] : forall x : MutBorrow.t tuple'0 [inv'4 x] . inv'4 x = invariant'2 x
   
-  predicate resolve'5 (self : MutBorrow.t (t_Option'0, t_T'0)) =
+  predicate resolve'5 (self : MutBorrow.t tuple'0) =
     [%#sresolve3] self.final = self.current
   
-  predicate resolve'2 (_1 : MutBorrow.t (t_Option'0, t_T'0)) =
+  predicate resolve'2 (_1 : MutBorrow.t tuple'0) =
     resolve'5 _1
   
   meta "compute_max_steps" 1000000
   
-  let rec select_field'0[#"final_borrows.rs" 43 0 43 56] (x:MutBorrow.t (t_Option'0, t_T'0)) (return'  (ret:MutBorrow.t t_T'0))= {[@expl:select_field 'x' type invariant] [%#sfinal_borrows0] inv'4 x}
+  let rec select_field'0[#"final_borrows.rs" 43 0 43 56] (x:MutBorrow.t tuple'0) (return'  (ret:MutBorrow.t t_T'0))= {[@expl:select_field 'x' type invariant] [%#sfinal_borrows0] inv'4 x}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'0 (let (r'0, _) = x.current in r'0)}
-        MutBorrow.borrow_final
-          <t_Option'0>
-          {let (r'0, _) = x.current in r'0}
-          {MutBorrow.inherit_id (MutBorrow.get_id x) 1}
+      [ s0 = {inv'0 (x.current)._0'0}
+        MutBorrow.borrow_final <t_Option'0> {(x.current)._0'0} {MutBorrow.inherit_id (MutBorrow.get_id x) 1}
           (fun (_ret':MutBorrow.t t_Option'0) ->
              [ &_4 <- _ret' ] 
             -{inv'0 _ret'.final}-
-             [ &x <- { x with current = (let (_, r'2) = x.current in (_ret'.final, r'2)) } ] 
+             [ &x <- { x with current = { x.current with _0'0 = _ret'.final } } ] 
             s1)
       | s1 = any [ br0 -> {_4.current = C_None'0} (! bb2) | br1 (x0:t_T'0)-> {_4.current = C_Some'0 x0} (! bb3) ]  ]
     
@@ -718,12 +728,12 @@ module M_final_borrows__select_field [#"final_borrows.rs" 43 0 43 56]
     
     | bb2 = s0 [ s0 = {[@expl:type invariant] inv'3 _4} s1 | s1 = -{resolve'1 _4}- s2 | s2 = bb4 ] 
     | bb4 = s0
-      [ s0 = {inv'1 (let (_, r'0) = x.current in r'0)}
-        MutBorrow.borrow_final <t_T'0> {let (_, r'0) = x.current in r'0} {MutBorrow.inherit_id (MutBorrow.get_id x) 2}
+      [ s0 = {inv'1 (x.current)._1'0}
+        MutBorrow.borrow_final <t_T'0> {(x.current)._1'0} {MutBorrow.inherit_id (MutBorrow.get_id x) 2}
           (fun (_ret':MutBorrow.t t_T'0) ->
              [ &_8 <- _ret' ] 
             -{inv'1 _ret'.final}-
-             [ &x <- { x with current = (let (r'1, _) = x.current in (r'1, _ret'.final)) } ] 
+             [ &x <- { x with current = { x.current with _1'0 = _ret'.final } } ] 
             s1)
       | s1 = {inv'1 _8.current}
         MutBorrow.borrow_final <t_T'0> {_8.current} {MutBorrow.get_id _8}
@@ -739,17 +749,17 @@ module M_final_borrows__select_field [#"final_borrows.rs" 43 0 43 56]
     | bb5 = s0 [ s0 = {[@expl:type invariant] inv'4 x} s1 | s1 = -{resolve'2 x}- s2 | s2 = return' {_0} ]  ]
     )
     [ & _0 : MutBorrow.t t_T'0 = Any.any_l ()
-    | & x : MutBorrow.t (t_Option'0, t_T'0) = x
+    | & x : MutBorrow.t tuple'0 = x
     | & _4 : MutBorrow.t t_Option'0 = Any.any_l ()
     | & r : MutBorrow.t t_T'0 = Any.any_l ()
     | & _8 : MutBorrow.t t_T'0 = Any.any_l () ]
     
     [ return' (result:MutBorrow.t t_T'0)-> {[@expl:select_field result type invariant] [%#sfinal_borrows1] inv'2 result}
-      {[@expl:select_field ensures] [%#sfinal_borrows2] match let (a, _) = x.current in a with
+      {[@expl:select_field ensures] [%#sfinal_borrows2] match (x.current)._0'0 with
         | C_None'0 -> result
-        = MutBorrow.borrow_logic (let (_, a) = x.current in a) (let (_, a) = x.final in a) (MutBorrow.inherit_id (MutBorrow.get_id x) 2)
+        = MutBorrow.borrow_logic (x.current)._1'0 (x.final)._1'0 (MutBorrow.inherit_id (MutBorrow.get_id x) 2)
         | C_Some'0 _ -> exists r : MutBorrow.t t_T'0 . result = r
-        /\ (let (a, _) = x.current in a) = C_Some'0 (r.current) /\ (let (a, _) = x.final in a) = C_Some'0 (r.final)
+        /\ (x.current)._0'0 = C_Some'0 (r.current) /\ (x.final)._0'0 = C_Some'0 (r.final)
         end}
       (! return' {result}) ]
 
@@ -1306,30 +1316,31 @@ module M_final_borrows__box_reborrow_in_struct [#"final_borrows.rs" 126 0 126 66
   use creusot.int.Int32
   use creusot.prelude.Any
   
+  type tuple'0  =
+    { _0'0: Int32.t; _1'0: MutBorrow.t Int32.t }
+  
   predicate resolve'2 (self : MutBorrow.t Int32.t) =
     [%#sresolve2] self.final = self.current
   
   predicate resolve'0 (_1 : MutBorrow.t Int32.t) =
     resolve'2 _1
   
-  predicate resolve'3 (self : MutBorrow.t (Int32.t, MutBorrow.t Int32.t)) =
+  predicate resolve'3 (self : MutBorrow.t tuple'0) =
     [%#sresolve2] self.final = self.current
   
-  predicate resolve'1 (_1 : MutBorrow.t (Int32.t, MutBorrow.t Int32.t)) =
+  predicate resolve'1 (_1 : MutBorrow.t tuple'0) =
     resolve'3 _1
   
   meta "compute_max_steps" 1000000
   
-  let rec box_reborrow_in_struct'0[#"final_borrows.rs" 126 0 126 66] (x:MutBorrow.t (Int32.t, MutBorrow.t Int32.t)) (return'  (ret:Int32.t))= {[@expl:box_reborrow_in_struct requires] [%#sfinal_borrows0] Int32.to_int (let (_, a) = x.current in a).current
+  let rec box_reborrow_in_struct'0[#"final_borrows.rs" 126 0 126 66] (x:MutBorrow.t tuple'0) (return'  (ret:Int32.t))= {[@expl:box_reborrow_in_struct requires] [%#sfinal_borrows0] Int32.to_int ((x.current)._1'0).current
     = 3}
     (! bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_mut <Int32.t> {(let (_, r'0) = x.current in r'0).current}
+      [ s0 = MutBorrow.borrow_mut <Int32.t> {((x.current)._1'0).current}
           (fun (_ret':MutBorrow.t Int32.t) ->
              [ &_5 <- _ret' ] 
-            
-            [ &x <- { x with current = (let (r'1, _) = x.current in (r'1, { (let (_, r'0) = x.current in r'0) with current = _ret'.final })) } ]
-            
+             [ &x <- { x with current = { x.current with _1'0 = { (x.current)._1'0 with current = _ret'.final } } } ] 
             s1)
       | s1 = MutBorrow.borrow_final <Int32.t> {_5.current} {MutBorrow.get_id _5}
           (fun (_ret':MutBorrow.t Int32.t) ->  [ &borrow <- _ret' ]  [ &_5 <- { _5 with current = _ret'.final } ] s2)
@@ -1341,7 +1352,7 @@ module M_final_borrows__box_reborrow_in_struct [#"final_borrows.rs" 126 0 126 66
      ]
     )
     [ & _0 : Int32.t = Any.any_l ()
-    | & x : MutBorrow.t (Int32.t, MutBorrow.t Int32.t) = x
+    | & x : MutBorrow.t tuple'0 = x
     | & borrow : MutBorrow.t Int32.t = Any.any_l ()
     | & _5 : MutBorrow.t Int32.t = Any.any_l () ]
     
@@ -1448,6 +1459,9 @@ module M_final_borrows__borrow_in_box_tuple_1 [#"final_borrows.rs" 138 0 138 60]
   use creusot.int.Int32
   use creusot.prelude.Any
   
+  type tuple'0  =
+    { _0'0: Int32.t; _1'0: MutBorrow.t Int32.t }
+  
   predicate resolve'2 (self : MutBorrow.t Int32.t) =
     [%#sresolve2] self.final = self.current
   
@@ -1457,32 +1471,29 @@ module M_final_borrows__borrow_in_box_tuple_1 [#"final_borrows.rs" 138 0 138 60]
   predicate resolve'6 (_1 : Int32.t) =
     true
   
-  predicate resolve'5 (self : (Int32.t, MutBorrow.t Int32.t)) =
-    [%#sresolve4] resolve'6 (let (a, _) = self in a) /\ resolve'0 (let (_, a) = self in a)
+  predicate resolve'5 (self : tuple'0) =
+    [%#sresolve4] resolve'6 self._0'0 /\ resolve'0 self._1'0
   
-  predicate resolve'4 (_1 : (Int32.t, MutBorrow.t Int32.t)) =
+  predicate resolve'4 (_1 : tuple'0) =
     resolve'5 _1
   
-  predicate resolve'3 (self : (Int32.t, MutBorrow.t Int32.t)) =
+  predicate resolve'3 (self : tuple'0) =
     [%#sresolve3] resolve'4 self
   
-  predicate resolve'1 (_1 : (Int32.t, MutBorrow.t Int32.t)) =
+  predicate resolve'1 (_1 : tuple'0) =
     resolve'3 _1
   
   meta "compute_max_steps" 1000000
   
-  let rec borrow_in_box_tuple_1'0[#"final_borrows.rs" 138 0 138 60] (x:(Int32.t, MutBorrow.t Int32.t)) (return'  (ret:Int32.t))= {[@expl:borrow_in_box_tuple_1 requires] [%#sfinal_borrows0] Int32.to_int (let (_, a) = x in a).current
+  let rec borrow_in_box_tuple_1'0[#"final_borrows.rs" 138 0 138 60] (x:tuple'0) (return'  (ret:Int32.t))= {[@expl:borrow_in_box_tuple_1 requires] [%#sfinal_borrows0] Int32.to_int (x._1'0).current
     = 2}
     (! bb0
     [ bb0 = bb1
     | bb1 = s0
-      [ s0 = MutBorrow.borrow_final
-          <Int32.t>
-          {(let (_, r'0) = x in r'0).current}
-          {MutBorrow.get_id (let (_, r'0) = x in r'0)}
+      [ s0 = MutBorrow.borrow_final <Int32.t> {(x._1'0).current} {MutBorrow.get_id x._1'0}
           (fun (_ret':MutBorrow.t Int32.t) ->
              [ &_5 <- _ret' ] 
-             [ &x <- let (r'1, _) = x in (r'1, { (let (_, r'0) = x in r'0) with current = _ret'.final }) ] 
+             [ &x <- { x with _1'0 = { x._1'0 with current = _ret'.final } } ] 
             s1)
       | s1 = MutBorrow.borrow_final <Int32.t> {_5.current} {MutBorrow.get_id _5}
           (fun (_ret':MutBorrow.t Int32.t) ->  [ &borrow <- _ret' ]  [ &_5 <- { _5 with current = _ret'.final } ] s2)
@@ -1495,7 +1506,7 @@ module M_final_borrows__borrow_in_box_tuple_1 [#"final_borrows.rs" 138 0 138 60]
     | bb2 = return' {_0} ]
     )
     [ & _0 : Int32.t = Any.any_l ()
-    | & x : (Int32.t, MutBorrow.t Int32.t) = x
+    | & x : tuple'0 = x
     | & borrow : MutBorrow.t Int32.t = Any.any_l ()
     | & _5 : MutBorrow.t Int32.t = Any.any_l () ]
     
@@ -1514,6 +1525,9 @@ module M_final_borrows__borrow_in_box_tuple_2 [#"final_borrows.rs" 145 0 145 60]
   use creusot.int.Int32
   use creusot.prelude.Any
   
+  type tuple'0  =
+    { _0'0: Int32.t; _1'0: MutBorrow.t Int32.t }
+  
   predicate resolve'2 (self : MutBorrow.t Int32.t) =
     [%#sresolve2] self.final = self.current
   
@@ -1529,26 +1543,23 @@ module M_final_borrows__borrow_in_box_tuple_2 [#"final_borrows.rs" 145 0 145 60]
   predicate resolve'5 (_1 : MutBorrow.t Int32.t) =
     resolve'6 _1
   
-  predicate resolve'3 (self : (Int32.t, MutBorrow.t Int32.t)) =
-    [%#sresolve3] resolve'4 (let (a, _) = self in a) /\ resolve'5 (let (_, a) = self in a)
+  predicate resolve'3 (self : tuple'0) =
+    [%#sresolve3] resolve'4 self._0'0 /\ resolve'5 self._1'0
   
-  predicate resolve'1 (_1 : (Int32.t, MutBorrow.t Int32.t)) =
+  predicate resolve'1 (_1 : tuple'0) =
     resolve'3 _1
   
   meta "compute_max_steps" 1000000
   
-  let rec borrow_in_box_tuple_2'0[#"final_borrows.rs" 145 0 145 60] (x:(Int32.t, MutBorrow.t Int32.t)) (return'  (ret:Int32.t))= {[@expl:borrow_in_box_tuple_2 requires] [%#sfinal_borrows0] Int32.to_int (let (_, a) = x in a).current
+  let rec borrow_in_box_tuple_2'0[#"final_borrows.rs" 145 0 145 60] (x:tuple'0) (return'  (ret:Int32.t))= {[@expl:borrow_in_box_tuple_2 requires] [%#sfinal_borrows0] Int32.to_int (x._1'0).current
     = 2}
     (! bb0
     [ bb0 = bb1
     | bb1 = s0
-      [ s0 = MutBorrow.borrow_final
-          <Int32.t>
-          {(let (_, r'0) = x in r'0).current}
-          {MutBorrow.get_id (let (_, r'0) = x in r'0)}
+      [ s0 = MutBorrow.borrow_final <Int32.t> {(x._1'0).current} {MutBorrow.get_id x._1'0}
           (fun (_ret':MutBorrow.t Int32.t) ->
              [ &_5 <- _ret' ] 
-             [ &x <- let (r'1, _) = x in (r'1, { (let (_, r'0) = x in r'0) with current = _ret'.final }) ] 
+             [ &x <- { x with _1'0 = { x._1'0 with current = _ret'.final } } ] 
             s1)
       | s1 = MutBorrow.borrow_final <Int32.t> {_5.current} {MutBorrow.get_id _5}
           (fun (_ret':MutBorrow.t Int32.t) ->  [ &borrow <- _ret' ]  [ &_5 <- { _5 with current = _ret'.final } ] s2)
@@ -1561,7 +1572,7 @@ module M_final_borrows__borrow_in_box_tuple_2 [#"final_borrows.rs" 145 0 145 60]
     | bb2 = return' {_0} ]
     )
     [ & _0 : Int32.t = Any.any_l ()
-    | & x : (Int32.t, MutBorrow.t Int32.t) = x
+    | & x : tuple'0 = x
     | & borrow : MutBorrow.t Int32.t = Any.any_l ()
     | & _5 : MutBorrow.t Int32.t = Any.any_l () ]
     

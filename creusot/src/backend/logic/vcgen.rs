@@ -8,16 +8,17 @@ use crate::{
     backend::{
         Namer as _, Why3Generator,
         logic::Dependencies,
-        signature::sig_to_why3,
+        signature::lower_sig,
         term::{binop_to_binop, lower_literal, lower_pure},
         ty::{constructor, is_int, ity_to_prelude, translate_ty, uty_to_prelude},
     },
     contracts_items::get_builtin,
-    ctx::PreludeModule,
+    ctx::PreMod,
     naming::ident_of,
-    pearlite::{Literal, Pattern, PointerKind, Term, TermVisitor, super_visit_term},
+    pearlite::{Literal, Pattern, PatternKind, Term, TermVisitor, super_visit_term},
     util::erased_identity_for_item,
 };
+use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind, TypingEnv};
 use rustc_span::{Span, Symbol};
@@ -243,13 +244,13 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     let (fct_name, prelude_kind) = match t.ty.kind() {
                         TyKind::Int(ity) => ("of_bool", ity_to_prelude(self.ctx.tcx, *ity)),
                         TyKind::Uint(uty) => ("of_bool", uty_to_prelude(self.ctx.tcx, *uty)),
-                        _ if is_int(self.ctx.tcx, t.ty) => ("to_int", PreludeModule::Bool),
+                        _ if is_int(self.ctx.tcx, t.ty) => ("to_int", PreMod::Bool),
                         _ => self.ctx.crash_and_error(
                             t.span,
                             "bool cast to non integral casts are currently unsupported",
                         ),
                     };
-                    k(Exp::qvar(self.names.from_prelude(prelude_kind, fct_name)).app([arg]))
+                    k(Exp::qvar(self.names.in_pre(prelude_kind, fct_name)).app([arg]))
                 }),
                 TyKind::Int(_) | TyKind::Uint(_) => {
                     // to
@@ -281,8 +282,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     };
 
                     self.build_wp(arg, &|arg| {
-                        let to_qname = self.names.from_prelude(to_prelude, to_fct_name);
-                        let of_qname = self.names.from_prelude(of_prelude, of_fct_name);
+                        let to_qname = self.names.in_pre(to_prelude, to_fct_name);
+                        let of_qname = self.names.in_pre(of_prelude, of_fct_name);
                         k(Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([arg])]))
                     })
                 }
@@ -320,7 +321,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     .map(|(nm, res)| (ident_of(nm.0), res.clone()))
                     .collect();
                 let variant = pre_sig.contract.variant.clone();
-                let mut sig = sig_to_why3(self.ctx, self.names, "".into(), pre_sig, *id);
+                let mut sig = lower_sig(self.ctx, self.names, "".into(), pre_sig, *id);
 
                 let variant = if *id == self.self_id {
                     let subst = self.ctx.normalize_erasing_regions(self.typing_env, *subst);
@@ -371,7 +372,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 }),
                 _ => self.build_wp(lhs, &|lhs| {
                     self.build_wp(rhs, &|rhs| {
-                        k(Exp::BinaryOp(binop_to_binop(*op), Box::new(lhs.clone()), Box::new(rhs)))
+                        k(Exp::BinaryOp(binop_to_binop(*op), lhs.clone().boxed(), rhs.boxed()))
                     })
                 }),
             },
@@ -382,7 +383,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     UnOp::Neg => WUnOp::Neg,
                 };
 
-                k(Exp::UnaryOp(op, Box::new(arg)))
+                k(Exp::UnaryOp(op, arg.boxed()))
             }),
             // // the dual rule should be the one below but that seems weird...
             // // VC(forall<x> P(x), Q) => (exists<x> VC(P, false)) \/ Q(forall<x>P(x))
@@ -391,7 +392,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let forall_pre = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
 
                 let forall_pre = Exp::forall(
-                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.ty(t))).collect(),
+                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.ty(t))),
                     forall_pre,
                 );
                 let forall_pure = self.lower_pure(t);
@@ -402,14 +403,28 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let exists_pre = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
 
                 let exists_pre = Exp::forall(
-                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.ty(t))).collect(),
+                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.ty(t))),
                     exists_pre,
                 );
                 let exists_pure = self.lower_pure(t);
                 Ok(exists_pre.log_and(k(exists_pure)?))
             }
             // VC((T...), Q) = VC(T[0], |t0| ... VC(T[N], |tn| Q(t0..tn))))
-            TermKind::Tuple { fields } => self.build_wp_slice(fields, &|flds| k(Exp::Tuple(flds))),
+            TermKind::Tuple { fields } => {
+                let ty = self.ctx.normalize_erasing_regions(self.typing_env, t.ty);
+                let TyKind::Tuple(args) = ty.kind() else { unreachable!() };
+                self.build_wp_slice(fields, &|flds| match flds.len() {
+                    0 => k(Exp::unit()),
+                    1 => k(flds.into_iter().next().unwrap()),
+                    _ => k(Exp::Record {
+                        fields: flds
+                            .into_iter()
+                            .enumerate()
+                            .map(|(idx, fld)| (self.names.tuple_field(args, idx.into()), fld))
+                            .collect(),
+                    }),
+                })
+            }
             // Same as for tuples
             TermKind::Constructor { variant, fields, .. } => {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, t.ty);
@@ -420,9 +435,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 })
             }
             // VC( * T, Q) = VC(T, |t| Q(*t))
-            TermKind::Cur { term } => self.build_wp(term, &|term| k(term.field("current"))),
+            TermKind::Cur { term } => self.build_wp(term, &|term| k(term.field("current".into()))),
             // VC( ^ T, Q) = VC(T, |t| Q(^t))
-            TermKind::Fin { term } => self.build_wp(term, &|term| k(term.field("final"))),
+            TermKind::Fin { term } => self.build_wp(term, &|term| k(term.field("final".into()))),
             // VC(A -> B, Q) = VC(A, VC(B, Q(A -> B)))
             TermKind::Impl { lhs, rhs } => self.build_wp(lhs, &|lhs| {
                 Ok(Exp::if_(lhs, self.build_wp(rhs, k)?, k(Exp::mk_true())?))
@@ -453,40 +468,27 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     })
                     .collect::<Result<Box<[_]>, _>>()?;
 
-                Ok(Exp::Match(Box::new(scrut), arms))
+                Ok(scrut.match_(arms))
             }),
             // VC(let P = A in B, Q) = VC(A, |a| let P = a in VC(B, Q))
             TermKind::Let { pattern, arg, body } => self.build_wp(arg, &|arg| {
                 self.build_pattern(pattern, &|pattern| {
-                    let body = self.build_wp(body, k)?;
-                    Ok(Exp::Let { pattern, arg: Box::new(arg.clone()), body: Box::new(body) })
+                    let body = self.build_wp(body, k)?.boxed();
+                    Ok(Exp::Let { pattern, arg: arg.clone().boxed(), body })
                 })
             }),
             // VC(A.f, Q) = VC(A, |a| Q(a.f))
-            TermKind::Projection { lhs, name } => {
+            TermKind::Projection { lhs, idx } => {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, lhs.ty);
                 let field = match ty.kind() {
-                    TyKind::Closure(did, substs) => {
-                        self.names.field(*did, substs, *name).as_ident()
-                    }
-                    TyKind::Adt(def, substs) => {
-                        self.names.field(def.did(), substs, *name).as_ident()
-                    }
-                    TyKind::Tuple(f) => {
-                        let mut fields: Box<_> = repeat_n(WPattern::Wildcard, f.len()).collect();
-                        fields[name.as_usize()] = WPattern::VarP("a".into());
-                        return self.build_wp(lhs, &|lhs| {
-                            k(Exp::Let {
-                                pattern: WPattern::TupleP(fields.clone()),
-                                arg: Box::new(lhs),
-                                body: Box::new(Exp::var("a")),
-                            })
-                        });
-                    }
+                    TyKind::Closure(did, substs) => self.names.field(*did, substs, *idx),
+                    TyKind::Adt(def, substs) => self.names.field(def.did(), substs, *idx),
+                    TyKind::Tuple(tys) if tys.len() == 1 => return self.build_wp(lhs, k),
+                    TyKind::Tuple(tys) => self.names.tuple_field(tys, *idx),
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                self.build_wp(lhs, &|lhs| k(lhs.field(&field)))
+                self.build_wp(lhs, &|lhs| k(lhs.field(field.clone())))
             }
             TermKind::Old { .. } => Err(VCError::OldInLemma(t.span)),
             TermKind::Closure { .. } => Err(VCError::UnimplementedClosure(t.span)),
@@ -510,57 +512,78 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         r
     }
 
+    // FIXME: this is a duplicate with term::lower_pat
+    // The only difference is the `bounds` parameter
     fn build_pattern_inner(
         &self,
         bounds: &mut HashMap<Ident, Exp>,
         pat: &Pattern<'tcx>,
     ) -> WPattern {
-        match pat {
-            Pattern::Constructor { variant, fields, substs } => {
-                let fields =
-                    fields.iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect();
-                let substs = self.ctx.normalize_erasing_regions(self.typing_env, *substs);
-                if self.ctx.def_kind(variant) == DefKind::Variant {
-                    WPattern::ConsP(self.names.constructor(*variant, substs), fields)
+        match &pat.kind {
+            PatternKind::Constructor(variant, fields) => {
+                let ty = self.names.normalize(self.ctx, pat.ty);
+                let (var_did, subst) = match ty.kind() {
+                    &TyKind::Adt(def, subst) => (def.variant(*variant).def_id, subst),
+                    &TyKind::Closure(did, subst) => (did, subst),
+                    _ => unreachable!(),
+                };
+                let flds = fields.iter().map(|pat| self.build_pattern_inner(bounds, pat));
+                if self.ctx.def_kind(var_did) == DefKind::Variant {
+                    WPattern::ConsP(self.names.constructor(var_did, subst), flds.collect())
                 } else if fields.is_empty() {
                     WPattern::TupleP(Box::new([]))
                 } else {
-                    WPattern::RecP(
-                        fields
-                            .into_iter()
-                            .enumerate()
-                            .map(|(i, f)| {
-                                (self.names.field(*variant, substs, i.into()).as_ident(), f)
-                            })
-                            .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
-                            .collect(),
-                    )
+                    let flds: Box<[_]> = flds
+                        .enumerate()
+                        .map(|(i, f)| (self.names.field(var_did, subst, i.into()), f))
+                        .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
+                        .collect();
+                    if flds.len() == 0 { WPattern::Wildcard } else { WPattern::RecP(flds) }
                 }
             }
-            Pattern::Wildcard => WPattern::Wildcard,
-            Pattern::Binder(name) => {
+            PatternKind::Wildcard => WPattern::Wildcard,
+            PatternKind::Binder(name) => {
                 let name_id = name.as_str().into();
                 let new = self.uniq_occ(&name_id);
                 bounds.insert(name_id, Exp::var(new.clone()));
                 WPattern::VarP(new)
             }
-            Pattern::Boolean(b) => {
-                if *b {
-                    WPattern::mk_true()
-                } else {
-                    WPattern::mk_false()
+            PatternKind::Bool(true) => WPattern::mk_true(),
+            PatternKind::Bool(false) => WPattern::mk_false(),
+            PatternKind::Tuple(pats) if pats.is_empty() => WPattern::TupleP(Box::new([])),
+            PatternKind::Tuple(pats) if pats.len() == 1 => {
+                self.build_pattern_inner(bounds, &pats[0])
+            }
+            PatternKind::Tuple(pats) => {
+                let ty = self.names.normalize(self.ctx, pat.ty);
+                let TyKind::Tuple(tys) = ty.kind() else { unreachable!() };
+                let flds: Box<[_]> = pats
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, pat)| {
+                        (
+                            self.names.tuple_field(tys, idx.into()),
+                            self.build_pattern_inner(bounds, pat),
+                        )
+                    })
+                    .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
+                    .collect();
+                if flds.len() == 0 { WPattern::Wildcard } else { WPattern::RecP(flds) }
+            }
+            PatternKind::Deref(pointee) => {
+                let ty = self.names.normalize(self.ctx, pat.ty);
+                match ty.kind() {
+                    TyKind::Adt(def, _) if def.is_box() => {
+                        self.build_pattern_inner(bounds, pointee)
+                    }
+                    TyKind::Ref(_, _, Mutability::Not) => self.build_pattern_inner(bounds, pointee),
+                    TyKind::Ref(_, _, Mutability::Mut) => WPattern::RecP(Box::new([(
+                        "current".into(),
+                        self.build_pattern_inner(bounds, pointee),
+                    )])),
+                    _ => unreachable!(),
                 }
             }
-            Pattern::Tuple(pats) => WPattern::TupleP(
-                pats.iter().map(|pat| self.build_pattern_inner(bounds, pat)).collect(),
-            ),
-            Pattern::Deref { pointee, kind } => match kind {
-                PointerKind::Box | PointerKind::Shr => self.build_pattern_inner(bounds, pointee),
-                PointerKind::Mut => WPattern::RecP(Box::new([(
-                    "current".into(),
-                    self.build_pattern_inner(bounds, pointee),
-                )])),
-            },
         }
     }
 
@@ -617,9 +640,10 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         let mut rec_var_exp = orig_variant.clone();
         rec_var_exp.subst(&mut subst);
         if is_int(self.ctx.tcx, variant_ty) {
-            self.names.import_prelude_module(PreludeModule::Int);
-            Ok(Exp::BinaryOp(BinOp::Le, Box::new(Exp::int(0)), Box::new(orig_variant.clone()))
-                .log_and(Exp::BinaryOp(BinOp::Lt, Box::new(rec_var_exp), Box::new(orig_variant))))
+            self.names.import_prelude_module(PreMod::Int);
+            let orig_variant = orig_variant.boxed();
+            Ok(Exp::BinaryOp(BinOp::Le, Exp::int(0).boxed(), orig_variant.clone())
+                .log_and(Exp::BinaryOp(BinOp::Lt, rec_var_exp.boxed(), orig_variant)))
         } else {
             Err(VCError::UnsupportedVariant(variant_ty, span))
         }

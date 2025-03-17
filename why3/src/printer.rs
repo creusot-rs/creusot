@@ -460,9 +460,9 @@ impl Print for Exp {
                 .append(body.pretty(alloc)),
             Exp::Var(v) => v.pretty(alloc),
             Exp::QVar(v) => v.pretty(alloc),
-            Exp::RecField { record, label } => {
-                parens!(alloc, self.precedence().next(), record).append(".").append(label)
-            }
+            Exp::RecField { record, label } => parens!(alloc, self.precedence().next(), record)
+                .append(".")
+                .append(label.pretty(alloc)),
 
             Exp::Tuple(args) => alloc
                 .intersperse(args.iter().map(|a| parens!(alloc, Precedence::Cast, a)), ", ")
@@ -504,7 +504,7 @@ impl Print for Exp {
             }
 
             Exp::Attr(attr, e) => attr.pretty(alloc).append(alloc.space()).append(e.pretty(alloc)),
-            Exp::Abs(binders, body) => alloc
+            Exp::Lam(binders, body) => alloc
                 .text("fun ")
                 .append(alloc.intersperse(binders.iter().map(|b| b.pretty(alloc)), alloc.space()))
                 .append(" -> ")
@@ -598,7 +598,7 @@ impl Print for Exp {
                     alloc
                         .intersperse(
                             updates.iter().map(|(nm, a)| {
-                                alloc.text(nm).append(" = ").append(parens!(
+                                nm.pretty(alloc).append(" = ").append(parens!(
                                     alloc,
                                     Precedence::Attr.next(),
                                     a
@@ -617,7 +617,7 @@ impl Print for Exp {
                     alloc
                         .intersperse(
                             fields.iter().map(|(nm, a)| {
-                                alloc.text(nm).append(" = ").append(parens!(
+                                nm.pretty(alloc).append(" = ").append(parens!(
                                     alloc,
                                     Precedence::Attr.next(),
                                     a

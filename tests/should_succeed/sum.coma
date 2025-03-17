@@ -39,14 +39,6 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
   type t_RangeInclusive'0  =
     { t_RangeInclusive__start'0: UInt32.t; t_RangeInclusive__end'0: UInt32.t; t_RangeInclusive__exhausted'0: bool }
   
-  predicate inv'2 (_1 : UInt32.t)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : UInt32.t [inv'2 x] . inv'2 x = true
-  
-  predicate inv'0 (_1 : t_RangeInclusive'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_RangeInclusive'0 [inv'0 x] . inv'0 x = true
-  
   function start_log'0 (self : t_RangeInclusive'0) : UInt32.t
   
   function end_log'0 (self : t_RangeInclusive'0) : UInt32.t
@@ -59,11 +51,8 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
   axiom is_empty_log'0_spec : forall self : t_RangeInclusive'0 . [%#sops17] not is_empty_log'0 self
    -> deep_model'0 (start_log'0 self) <= deep_model'0 (end_log'0 self)
   
-  let rec new'0 (start:UInt32.t) (end':UInt32.t) (return'  (ret:t_RangeInclusive'0))= {[@expl:new 'start' type invariant] inv'2 start}
-    {[@expl:new 'end' type invariant] inv'2 end'}
-    any
-    [ return' (result:t_RangeInclusive'0)-> {inv'0 result}
-      {[%#sops9] start_log'0 result = start}
+  let rec new'0 (start:UInt32.t) (end':UInt32.t) (return'  (ret:t_RangeInclusive'0))= any
+    [ return' (result:t_RangeInclusive'0)-> {[%#sops9] start_log'0 result = start}
       {[%#sops10] end_log'0 result = end'}
       {[%#sops11] deep_model'0 start <= deep_model'0 end'  -> not is_empty_log'0 result}
       (! return' {result}) ]
@@ -75,13 +64,8 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
   predicate into_iter_post'0 (self : t_RangeInclusive'0) (res : t_RangeInclusive'0) =
     [%#siter19] self = res
   
-  let rec into_iter'0 (self:t_RangeInclusive'0) (return'  (ret:t_RangeInclusive'0))= {[@expl:into_iter 'self' type invariant] inv'0 self}
-    {[@expl:into_iter requires] [%#siter12] into_iter_pre'0 self}
-    any
-    [ return' (result:t_RangeInclusive'0)-> {inv'0 result}
-      {[%#siter13] into_iter_post'0 self result}
-      (! return' {result}) ]
-  
+  let rec into_iter'0 (self:t_RangeInclusive'0) (return'  (ret:t_RangeInclusive'0))= {[@expl:into_iter requires] [%#siter12] into_iter_pre'0 self}
+    any [ return' (result:t_RangeInclusive'0)-> {[%#siter13] into_iter_post'0 self result} (! return' {result}) ] 
   
   function range_inclusive_len'0 (r : t_RangeInclusive'0) : int =
     [%#srange27] if is_empty_log'0 r then 0 else deep_model'0 (end_log'0 r) - deep_model'0 (start_log'0 r) + 1
@@ -109,6 +93,10 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
   
   axiom produces_refl'0_spec : forall self : t_RangeInclusive'0 . [%#srange20] produces'0 self (Seq.empty : Seq.seq UInt32.t) self
   
+  predicate inv'0 (_1 : t_RangeInclusive'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_RangeInclusive'0 [inv'0 x] . inv'0 x = true
+  
   predicate inv'1 (_1 : Seq.seq UInt32.t)
   
   axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq UInt32.t [inv'1 x] . inv'1 x = true
@@ -117,21 +105,11 @@ module M_sum__sum_first_n [#"sum.rs" 6 0 6 33]
     | C_None'0
     | C_Some'0 UInt32.t
   
-  predicate inv'3 (_1 : MutBorrow.t t_RangeInclusive'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : MutBorrow.t t_RangeInclusive'0 [inv'3 x] . inv'3 x = true
-  
-  predicate inv'4 (_1 : t_Option'0)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Option'0 [inv'4 x] . inv'4 x = true
-  
   predicate completed'0 (self : MutBorrow.t t_RangeInclusive'0) =
     [%#srange28] is_empty_log'0 self.current /\ is_empty_log'0 self.final
   
-  let rec next'0 (self:MutBorrow.t t_RangeInclusive'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'3 self}
-    any
-    [ return' (result:t_Option'0)-> {inv'4 result}
-      {[%#siter15] match result with
+  let rec next'0 (self:MutBorrow.t t_RangeInclusive'0) (return'  (ret:t_Option'0))= any
+    [ return' (result:t_Option'0)-> {[%#siter15] match result with
         | C_None'0 -> completed'0 self
         | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
         end}

@@ -36,7 +36,6 @@ use crate::{
     ctx::TranslationCtx,
     error::CannotFetchThir,
     pearlite::{TermKind, TermVisitor},
-    specification::contract_of,
     traits::TraitResolved,
     util::erased_identity_for_item,
 };
@@ -558,7 +557,7 @@ impl CallGraph {
 
         for local_id in ctx.hir().body_owners() {
             if !(is_pearlite(ctx.tcx, local_id.to_def_id())
-                || contract_of(ctx, local_id.to_def_id()).terminates)
+                || ctx.sig(local_id.to_def_id()).contract.terminates)
             {
                 // Only consider functions marked with `terminates`: we already ensured that a `terminates` functions only calls other `terminates` functions.
                 continue;

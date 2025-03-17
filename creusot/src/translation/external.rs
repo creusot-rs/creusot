@@ -1,7 +1,11 @@
 use crate::{
     ctx::*,
     error::CreusotResult,
-    translation::{pearlite::Term, specification::ContractClauses, traits},
+    translation::{
+        pearlite::Term,
+        specification::{ContractClauses, contract_clauses_of},
+        traits::TraitResolved,
+    },
     util::erased_identity_for_item,
 };
 use indexmap::IndexSet;
@@ -50,7 +54,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let (id, subst) = visit.items.pop().unwrap();
 
     let (id, _) = if ctx.trait_of_item(id).is_some() {
-        traits::TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id.to_def_id()), id, subst).to_opt(id, subst).unwrap_or_else(|| {
+        TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id.to_def_id()), id, subst).to_opt(id, subst).unwrap_or_else(|| {
             let mut err = ctx.fatal_error(
                 ctx.def_span(def_id.to_def_id()),
                 "could not derive original instance from external specification",
@@ -142,7 +146,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 
     let subst = ctx.mk_args(&subst);
 
-    let contract = crate::specification::contract_clauses_of(ctx, def_id.to_def_id()).unwrap();
+    let contract = contract_clauses_of(ctx, def_id.to_def_id()).unwrap();
 
     let additional_predicates = ctx
         .predicates_of(def_id)
@@ -155,8 +159,11 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let arg_subst = ctx
         .fn_arg_names(def_id)
         .iter()
-        .zip(ctx.fn_arg_names(id).iter().zip(ctx.fn_sig(id).skip_binder().inputs().skip_binder()))
-        .map(|(i, (i2, ty))| (i.name, Term::var(i2.name, *ty)))
+        .zip(ctx.fn_arg_names(id).iter().zip(ctx.fn_sig(id).instantiate_identity().inputs().iter()))
+        .map(|(i, (i2, ty))| {
+            let ty = ctx.tcx.instantiate_bound_regions_with_erased(ty.map_bound(|&ty| ty));
+            (i.name, Term::var(i2.name, ty))
+        })
         .collect();
     Ok((id, ExternSpec { contract, additional_predicates, subst, arg_subst }))
 }

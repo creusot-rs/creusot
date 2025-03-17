@@ -3,6 +3,7 @@ use rustc_hir::def::DefKind;
 use crate::{
     contracts_items::{is_law, is_open_inv_result, is_trusted},
     ctx::TranslationCtx,
+    validate::is_overloaded_item,
 };
 
 /// Validate that laws have no additional generic parameters.
@@ -72,6 +73,10 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
         let implementors =
             ctx.with_stable_hashing_context(|hcx| implementors.to_sorted(&hcx, true));
         for (&trait_item, &impl_item) in implementors {
+            if !ctx.def_kind(trait_item).is_fn_like() {
+                continue;
+            }
+
             if let Some(open_inv_trait) = ctx.params_open_inv(trait_item) {
                 let open_inv_impl = ctx.params_open_inv(impl_item).unwrap();
                 for &i in open_inv_trait {
@@ -97,7 +102,7 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                 ).emit();
             }
 
-            if super::is_overloaded_item(ctx.tcx, trait_item) {
+            if is_overloaded_item(ctx.tcx, trait_item) {
                 continue;
             };
 
@@ -114,8 +119,8 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
                 )
                 .emit();
             } else {
-                let item_contract = crate::specification::contract_of(ctx, impl_item);
-                let trait_contract = crate::specification::contract_of(ctx, trait_item);
+                let item_contract = &ctx.sig(impl_item).contract;
+                let trait_contract = &ctx.sig(trait_item).contract;
                 if trait_contract.no_panic && !item_contract.no_panic {
                     ctx.error(
                         ctx.def_span(impl_item),

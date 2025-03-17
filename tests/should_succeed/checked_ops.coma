@@ -65,24 +65,12 @@ module M_checked_ops__test_u8_add_example [#"checked_ops.rs" 5 0 5 28]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:UInt8.t))= {[@expl:unwrap requires] [%#soption35] self <> C_None'0}
+    any [ return' (result:UInt8.t)-> {[%#soption36] C_Some'0 result = self} (! return' {result}) ] 
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption37] result = (self = C_None'0)} (! return' {result}) ]
   
-  predicate inv'1 (_1 : UInt8.t)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : UInt8.t [inv'1 x] . inv'1 x = true
-  
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:UInt8.t))= {[@expl:unwrap 'self' type invariant] inv'0 self}
-    {[@expl:unwrap requires] [%#soption35] self <> C_None'0}
-    any [ return' (result:UInt8.t)-> {inv'1 result} {[%#soption36] C_Some'0 result = self} (! return' {result}) ] 
-  
-  predicate inv'2 (_1 : t_Option'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'2 self}
-    any [ return' (result:bool)-> {[%#soption37] result = (self = C_None'0)} (! return' {result}) ] 
   
   let rec wrapping_add'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:UInt8.t))= any
     [ return' (result:UInt8.t)-> {[%#snum38] result = UInt8.add self rhs} (! return' {result}) ]
@@ -99,15 +87,17 @@ module M_checked_ops__test_u8_add_example [#"checked_ops.rs" 5 0 5 28]
       (! return' {result}) ]
   
   
-  let rec overflowing_add'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:(UInt8.t, bool)))= any
-    [ return' (result:(UInt8.t, bool))-> {[%#snum42] UInt8.t'int self + UInt8.t'int rhs
-      >= UInt8.t'int (v_MIN'0 : UInt8.t)
+  type tuple'0  =
+    { _0'0: UInt8.t; _1'0: bool }
+  
+  let rec overflowing_add'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum42] UInt8.t'int self + UInt8.t'int rhs >= UInt8.t'int (v_MIN'0 : UInt8.t)
       /\ UInt8.t'int self + UInt8.t'int rhs <= UInt8.t'int (v_MAX'0 : UInt8.t)
-       -> UInt8.t'int (let (a, _) = result in a) = UInt8.t'int self + UInt8.t'int rhs}
-      {[%#snum43] exists k : int . UInt8.t'int (let (a, _) = result in a)
+       -> UInt8.t'int result._0'0 = UInt8.t'int self + UInt8.t'int rhs}
+      {[%#snum43] exists k : int . UInt8.t'int result._0'0
       = UInt8.t'int self + UInt8.t'int rhs
       + k * (UInt8.t'int (v_MAX'0 : UInt8.t) - UInt8.t'int (v_MIN'0 : UInt8.t) + 1)}
-      {[%#snum44] (let (_, a) = result in a)
+      {[%#snum44] result._1'0
       = (UInt8.t'int self + UInt8.t'int rhs < UInt8.t'int (v_MIN'0 : UInt8.t)
       \/ UInt8.t'int self + UInt8.t'int rhs > UInt8.t'int (v_MAX'0 : UInt8.t))}
       (! return' {result}) ]
@@ -171,29 +161,28 @@ module M_checked_ops__test_u8_add_example [#"checked_ops.rs" 5 0 5 28]
     
     | bb19 = s0
       [ s0 = overflowing_add'0 {[%#schecked_ops17] (5 : UInt8.t)} {[%#schecked_ops18] (10 : UInt8.t)}
-          (fun (_ret':(UInt8.t, bool)) ->  [ &res <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res <- _ret' ] s1)
       | s1 = bb21 ]
     
     | bb21 = s0
-      [ s0 =  [ &_29 <- (let (r'0, _) = res in r'0) = ([%#schecked_ops19] (15 : UInt8.t)) ] s1
+      [ s0 =  [ &_29 <- res._0'0 = ([%#schecked_ops19] (15 : UInt8.t)) ] s1
       | s1 = any [ br0 -> {_29 = false} (! bb25) | br1 -> {_29} (! bb22) ]  ]
     
     | bb22 = s0
-      [ s0 =  [ &_31 <- (let (_, r'0) = res in r'0) = ([%#schecked_ops20] false) ] s1
+      [ s0 =  [ &_31 <- res._1'0 = ([%#schecked_ops20] false) ] s1
       | s1 = any [ br0 -> {_31 = false} (! bb24) | br1 -> {_31} (! bb23) ]  ]
     
     | bb23 = s0
       [ s0 = overflowing_add'0 {[%#schecked_ops21] (250 : UInt8.t)} {[%#schecked_ops22] (10 : UInt8.t)}
-          (fun (_ret':(UInt8.t, bool)) ->  [ &res1 <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res1 <- _ret' ] s1)
       | s1 = bb27 ]
     
     | bb27 = s0
-      [ s0 =  [ &_36 <- (let (r'0, _) = res1 in r'0) = ([%#schecked_ops23] (4 : UInt8.t)) ] s1
+      [ s0 =  [ &_36 <- res1._0'0 = ([%#schecked_ops23] (4 : UInt8.t)) ] s1
       | s1 = any [ br0 -> {_36 = false} (! bb31) | br1 -> {_36} (! bb28) ]  ]
     
     | bb28 = s0
-      [ s0 =  [ &_38 <- let (_, r'0) = res1 in r'0 ] s1
-      | s1 = any [ br0 -> {_38 = false} (! bb30) | br1 -> {_38} (! bb29) ]  ]
+      [ s0 =  [ &_38 <- res1._1'0 ] s1 | s1 = any [ br0 -> {_38 = false} (! bb30) | br1 -> {_38} (! bb29) ]  ]
     
     | bb29 = return' {_0}
     | bb30 = bb32
@@ -223,10 +212,10 @@ module M_checked_ops__test_u8_add_example [#"checked_ops.rs" 5 0 5 28]
     | & _21 : UInt8.t = Any.any_l ()
     | & _24 : bool = Any.any_l ()
     | & _25 : UInt8.t = Any.any_l ()
-    | & res : (UInt8.t, bool) = Any.any_l ()
+    | & res : tuple'0 = Any.any_l ()
     | & _29 : bool = Any.any_l ()
     | & _31 : bool = Any.any_l ()
-    | & res1 : (UInt8.t, bool) = Any.any_l ()
+    | & res1 : tuple'0 = Any.any_l ()
     | & _36 : bool = Any.any_l ()
     | & _38 : bool = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
@@ -276,12 +265,9 @@ module M_checked_ops__test_u8_add_overflow [#"checked_ops.rs" 23 0 23 34]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption15] result = (self = C_None'0)} (! return' {result}) ]
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#soption15] result = (self = C_None'0)} (! return' {result}) ] 
   
   let rec wrapping_add'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:UInt8.t))= any
     [ return' (result:UInt8.t)-> {[%#snum16] result = UInt8.add self rhs} (! return' {result}) ]
@@ -298,15 +284,17 @@ module M_checked_ops__test_u8_add_overflow [#"checked_ops.rs" 23 0 23 34]
       (! return' {result}) ]
   
   
-  let rec overflowing_add'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:(UInt8.t, bool)))= any
-    [ return' (result:(UInt8.t, bool))-> {[%#snum20] UInt8.t'int self + UInt8.t'int rhs
-      >= UInt8.t'int (v_MIN'0 : UInt8.t)
+  type tuple'0  =
+    { _0'0: UInt8.t; _1'0: bool }
+  
+  let rec overflowing_add'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum20] UInt8.t'int self + UInt8.t'int rhs >= UInt8.t'int (v_MIN'0 : UInt8.t)
       /\ UInt8.t'int self + UInt8.t'int rhs <= UInt8.t'int (v_MAX'0 : UInt8.t)
-       -> UInt8.t'int (let (a, _) = result in a) = UInt8.t'int self + UInt8.t'int rhs}
-      {[%#snum21] exists k : int . UInt8.t'int (let (a, _) = result in a)
+       -> UInt8.t'int result._0'0 = UInt8.t'int self + UInt8.t'int rhs}
+      {[%#snum21] exists k : int . UInt8.t'int result._0'0
       = UInt8.t'int self + UInt8.t'int rhs
       + k * (UInt8.t'int (v_MAX'0 : UInt8.t) - UInt8.t'int (v_MIN'0 : UInt8.t) + 1)}
-      {[%#snum22] (let (_, a) = result in a)
+      {[%#snum22] result._1'0
       = (UInt8.t'int self + UInt8.t'int rhs < UInt8.t'int (v_MIN'0 : UInt8.t)
       \/ UInt8.t'int self + UInt8.t'int rhs > UInt8.t'int (v_MAX'0 : UInt8.t))}
       (! return' {result}) ]
@@ -341,19 +329,15 @@ module M_checked_ops__test_u8_add_overflow [#"checked_ops.rs" 23 0 23 34]
       | s1 = any [ br0 -> {_17 = false} (! bb10) | br1 -> {_17} (! bb9) ]  ]
     
     | bb9 = s0
-      [ s0 = overflowing_add'0 {[%#schecked_ops5] (255 : UInt8.t)} {a}
-          (fun (_ret':(UInt8.t, bool)) ->  [ &res <- _ret' ] s1)
+      [ s0 = overflowing_add'0 {[%#schecked_ops5] (255 : UInt8.t)} {a} (fun (_ret':tuple'0) ->  [ &res <- _ret' ] s1)
       | s1 = bb11 ]
     
     | bb11 = s0
       [ s0 = UInt8.sub {a} {[%#schecked_ops6] (1 : UInt8.t)} (fun (_ret':UInt8.t) ->  [ &_26 <- _ret' ] s1)
-      | s1 =  [ &_24 <- (let (r'0, _) = res in r'0) = _26 ] s2
+      | s1 =  [ &_24 <- res._0'0 = _26 ] s2
       | s2 = any [ br0 -> {_24 = false} (! bb15) | br1 -> {_24} (! bb12) ]  ]
     
-    | bb12 = s0
-      [ s0 =  [ &_28 <- let (_, r'0) = res in r'0 ] s1
-      | s1 = any [ br0 -> {_28 = false} (! bb14) | br1 -> {_28} (! bb13) ]  ]
-    
+    | bb12 = s0 [ s0 =  [ &_28 <- res._1'0 ] s1 | s1 = any [ br0 -> {_28 = false} (! bb14) | br1 -> {_28} (! bb13) ]  ] 
     | bb13 = return' {_0}
     | bb14 = bb16
     | bb15 = bb16
@@ -371,7 +355,7 @@ module M_checked_ops__test_u8_add_overflow [#"checked_ops.rs" 23 0 23 34]
     | & _13 : UInt8.t = Any.any_l ()
     | & _17 : bool = Any.any_l ()
     | & _18 : UInt8.t = Any.any_l ()
-    | & res : (UInt8.t, bool) = Any.any_l ()
+    | & res : tuple'0 = Any.any_l ()
     | & _24 : bool = Any.any_l ()
     | & _26 : UInt8.t = Any.any_l ()
     | & _28 : bool = Any.any_l () ]
@@ -416,19 +400,21 @@ module M_checked_ops__test_u8_overflowing_add [#"checked_ops.rs" 39 0 39 44]
   use mach.int.Int
   use creusot.prelude.Any
   
+  type tuple'0  =
+    { _0'0: UInt8.t; _1'0: bool }
+  
   constant v_MIN'0 : UInt8.t = (0 : UInt8.t)
   
   constant v_MAX'0 : UInt8.t = (255 : UInt8.t)
   
-  let rec overflowing_add'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:(UInt8.t, bool)))= any
-    [ return' (result:(UInt8.t, bool))-> {[%#snum2] UInt8.t'int self + UInt8.t'int rhs
-      >= UInt8.t'int (v_MIN'0 : UInt8.t)
+  let rec overflowing_add'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum2] UInt8.t'int self + UInt8.t'int rhs >= UInt8.t'int (v_MIN'0 : UInt8.t)
       /\ UInt8.t'int self + UInt8.t'int rhs <= UInt8.t'int (v_MAX'0 : UInt8.t)
-       -> UInt8.t'int (let (a, _) = result in a) = UInt8.t'int self + UInt8.t'int rhs}
-      {[%#snum3] exists k : int . UInt8.t'int (let (a, _) = result in a)
+       -> UInt8.t'int result._0'0 = UInt8.t'int self + UInt8.t'int rhs}
+      {[%#snum3] exists k : int . UInt8.t'int result._0'0
       = UInt8.t'int self + UInt8.t'int rhs
       + k * (UInt8.t'int (v_MAX'0 : UInt8.t) - UInt8.t'int (v_MIN'0 : UInt8.t) + 1)}
-      {[%#snum4] (let (_, a) = result in a)
+      {[%#snum4] result._1'0
       = (UInt8.t'int self + UInt8.t'int rhs < UInt8.t'int (v_MIN'0 : UInt8.t)
       \/ UInt8.t'int self + UInt8.t'int rhs > UInt8.t'int (v_MAX'0 : UInt8.t))}
       (! return' {result}) ]
@@ -450,28 +436,21 @@ module M_checked_ops__test_u8_overflowing_add [#"checked_ops.rs" 39 0 39 44]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption8] result = (self = C_None'0)} (! return' {result}) ]
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#soption8] result = (self = C_None'0)} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
   let rec test_u8_overflowing_add'0[#"checked_ops.rs" 39 0 39 44] (a:UInt8.t) (b:UInt8.t) (return'  (ret:()))= (! bb0
-    [ bb0 = s0 [ s0 = overflowing_add'0 {a} {b} (fun (_ret':(UInt8.t, bool)) ->  [ &_6 <- _ret' ] s1) | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 = overflowing_add'0 {a} {b} (fun (_ret':tuple'0) ->  [ &_6 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0 [ s0 = wrapping_add'0 {a} {b} (fun (_ret':UInt8.t) ->  [ &_9 <- _ret' ] s1) | s1 = bb2 ] 
-    | bb2 = s0
-      [ s0 =  [ &_4 <- (let (r'0, _) = _6 in r'0) = _9 ] s1
-      | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]  ]
-    
-    | bb3 = s0 [ s0 = overflowing_add'0 {a} {b} (fun (_ret':(UInt8.t, bool)) ->  [ &_16 <- _ret' ] s1) | s1 = bb5 ] 
+    | bb2 = s0 [ s0 =  [ &_4 <- _6._0'0 = _9 ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]  ] 
+    | bb3 = s0 [ s0 = overflowing_add'0 {a} {b} (fun (_ret':tuple'0) ->  [ &_16 <- _ret' ] s1) | s1 = bb5 ] 
     | bb5 = s0 [ s0 = checked_add'0 {a} {b} (fun (_ret':t_Option'0) ->  [ &_21 <- _ret' ] s1) | s1 = bb6 ] 
     | bb6 = s0 [ s0 = is_none'0 {_21} (fun (_ret':bool) ->  [ &_19 <- _ret' ] s1) | s1 = bb7 ] 
     | bb7 = s0
-      [ s0 =  [ &_14 <- (let (_, r'0) = _16 in r'0) = _19 ] s1
-      | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ]  ]
+      [ s0 =  [ &_14 <- _16._1'0 = _19 ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ]  ]
     
     | bb8 = return' {_0}
     | bb9 = {[%#schecked_ops0] false} any
@@ -481,10 +460,10 @@ module M_checked_ops__test_u8_overflowing_add [#"checked_ops.rs" 39 0 39 44]
     | & a : UInt8.t = a
     | & b : UInt8.t = b
     | & _4 : bool = Any.any_l ()
-    | & _6 : (UInt8.t, bool) = Any.any_l ()
+    | & _6 : tuple'0 = Any.any_l ()
     | & _9 : UInt8.t = Any.any_l ()
     | & _14 : bool = Any.any_l ()
-    | & _16 : (UInt8.t, bool) = Any.any_l ()
+    | & _16 : tuple'0 = Any.any_l ()
     | & _19 : bool = Any.any_l ()
     | & _21 : t_Option'0 = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
@@ -556,24 +535,12 @@ module M_checked_ops__test_u8_sub_example [#"checked_ops.rs" 45 0 45 28]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption35] result = (self = C_None'0)} (! return' {result}) ]
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#soption35] result = (self = C_None'0)} (! return' {result}) ] 
-  
-  predicate inv'1 (_1 : t_Option'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x = true
-  
-  predicate inv'2 (_1 : UInt8.t)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : UInt8.t [inv'2 x] . inv'2 x = true
-  
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:UInt8.t))= {[@expl:unwrap 'self' type invariant] inv'1 self}
-    {[@expl:unwrap requires] [%#soption36] self <> C_None'0}
-    any [ return' (result:UInt8.t)-> {inv'2 result} {[%#soption37] C_Some'0 result = self} (! return' {result}) ] 
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:UInt8.t))= {[@expl:unwrap requires] [%#soption36] self <> C_None'0}
+    any [ return' (result:UInt8.t)-> {[%#soption37] C_Some'0 result = self} (! return' {result}) ] 
   
   let rec wrapping_sub'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:UInt8.t))= any
     [ return' (result:UInt8.t)-> {[%#snum38] result = UInt8.sub self rhs} (! return' {result}) ]
@@ -590,15 +557,17 @@ module M_checked_ops__test_u8_sub_example [#"checked_ops.rs" 45 0 45 28]
       (! return' {result}) ]
   
   
-  let rec overflowing_sub'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:(UInt8.t, bool)))= any
-    [ return' (result:(UInt8.t, bool))-> {[%#snum42] UInt8.t'int self - UInt8.t'int rhs
-      >= UInt8.t'int (v_MIN'0 : UInt8.t)
+  type tuple'0  =
+    { _0'0: UInt8.t; _1'0: bool }
+  
+  let rec overflowing_sub'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum42] UInt8.t'int self - UInt8.t'int rhs >= UInt8.t'int (v_MIN'0 : UInt8.t)
       /\ UInt8.t'int self - UInt8.t'int rhs <= UInt8.t'int (v_MAX'0 : UInt8.t)
-       -> UInt8.t'int (let (a, _) = result in a) = UInt8.t'int self - UInt8.t'int rhs}
-      {[%#snum43] exists k : int . UInt8.t'int (let (a, _) = result in a)
+       -> UInt8.t'int result._0'0 = UInt8.t'int self - UInt8.t'int rhs}
+      {[%#snum43] exists k : int . UInt8.t'int result._0'0
       = UInt8.t'int self - UInt8.t'int rhs
       + k * (UInt8.t'int (v_MAX'0 : UInt8.t) - UInt8.t'int (v_MIN'0 : UInt8.t) + 1)}
-      {[%#snum44] (let (_, a) = result in a)
+      {[%#snum44] result._1'0
       = (UInt8.t'int self - UInt8.t'int rhs < UInt8.t'int (v_MIN'0 : UInt8.t)
       \/ UInt8.t'int self - UInt8.t'int rhs > UInt8.t'int (v_MAX'0 : UInt8.t))}
       (! return' {result}) ]
@@ -662,28 +631,25 @@ module M_checked_ops__test_u8_sub_example [#"checked_ops.rs" 45 0 45 28]
     
     | bb19 = s0
       [ s0 = overflowing_sub'0 {[%#schecked_ops17] (5 : UInt8.t)} {[%#schecked_ops18] (10 : UInt8.t)}
-          (fun (_ret':(UInt8.t, bool)) ->  [ &res <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res <- _ret' ] s1)
       | s1 = bb21 ]
     
     | bb21 = s0
-      [ s0 =  [ &_29 <- (let (r'0, _) = res in r'0) = ([%#schecked_ops19] (251 : UInt8.t)) ] s1
+      [ s0 =  [ &_29 <- res._0'0 = ([%#schecked_ops19] (251 : UInt8.t)) ] s1
       | s1 = any [ br0 -> {_29 = false} (! bb25) | br1 -> {_29} (! bb22) ]  ]
     
-    | bb22 = s0
-      [ s0 =  [ &_31 <- let (_, r'0) = res in r'0 ] s1
-      | s1 = any [ br0 -> {_31 = false} (! bb24) | br1 -> {_31} (! bb23) ]  ]
-    
+    | bb22 = s0 [ s0 =  [ &_31 <- res._1'0 ] s1 | s1 = any [ br0 -> {_31 = false} (! bb24) | br1 -> {_31} (! bb23) ]  ] 
     | bb23 = s0
       [ s0 = overflowing_sub'0 {[%#schecked_ops21] (250 : UInt8.t)} {[%#schecked_ops22] (10 : UInt8.t)}
-          (fun (_ret':(UInt8.t, bool)) ->  [ &res1 <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res1 <- _ret' ] s1)
       | s1 = bb27 ]
     
     | bb27 = s0
-      [ s0 =  [ &_36 <- (let (r'0, _) = res1 in r'0) = ([%#schecked_ops23] (240 : UInt8.t)) ] s1
+      [ s0 =  [ &_36 <- res1._0'0 = ([%#schecked_ops23] (240 : UInt8.t)) ] s1
       | s1 = any [ br0 -> {_36 = false} (! bb31) | br1 -> {_36} (! bb28) ]  ]
     
     | bb28 = s0
-      [ s0 =  [ &_38 <- (let (_, r'0) = res1 in r'0) = ([%#schecked_ops24] false) ] s1
+      [ s0 =  [ &_38 <- res1._1'0 = ([%#schecked_ops24] false) ] s1
       | s1 = any [ br0 -> {_38 = false} (! bb30) | br1 -> {_38} (! bb29) ]  ]
     
     | bb29 = return' {_0}
@@ -714,10 +680,10 @@ module M_checked_ops__test_u8_sub_example [#"checked_ops.rs" 45 0 45 28]
     | & _21 : UInt8.t = Any.any_l ()
     | & _24 : bool = Any.any_l ()
     | & _25 : UInt8.t = Any.any_l ()
-    | & res : (UInt8.t, bool) = Any.any_l ()
+    | & res : tuple'0 = Any.any_l ()
     | & _29 : bool = Any.any_l ()
     | & _31 : bool = Any.any_l ()
-    | & res1 : (UInt8.t, bool) = Any.any_l ()
+    | & res1 : tuple'0 = Any.any_l ()
     | & _36 : bool = Any.any_l ()
     | & _38 : bool = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
@@ -769,12 +735,9 @@ module M_checked_ops__test_u8_sub_overflow [#"checked_ops.rs" 63 0 63 34]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption17] result = (self = C_None'0)} (! return' {result}) ]
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#soption17] result = (self = C_None'0)} (! return' {result}) ] 
   
   let rec wrapping_sub'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:UInt8.t))= any
     [ return' (result:UInt8.t)-> {[%#snum18] result = UInt8.sub self rhs} (! return' {result}) ]
@@ -791,15 +754,17 @@ module M_checked_ops__test_u8_sub_overflow [#"checked_ops.rs" 63 0 63 34]
       (! return' {result}) ]
   
   
-  let rec overflowing_sub'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:(UInt8.t, bool)))= any
-    [ return' (result:(UInt8.t, bool))-> {[%#snum22] UInt8.t'int self - UInt8.t'int rhs
-      >= UInt8.t'int (v_MIN'0 : UInt8.t)
+  type tuple'0  =
+    { _0'0: UInt8.t; _1'0: bool }
+  
+  let rec overflowing_sub'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum22] UInt8.t'int self - UInt8.t'int rhs >= UInt8.t'int (v_MIN'0 : UInt8.t)
       /\ UInt8.t'int self - UInt8.t'int rhs <= UInt8.t'int (v_MAX'0 : UInt8.t)
-       -> UInt8.t'int (let (a, _) = result in a) = UInt8.t'int self - UInt8.t'int rhs}
-      {[%#snum23] exists k : int . UInt8.t'int (let (a, _) = result in a)
+       -> UInt8.t'int result._0'0 = UInt8.t'int self - UInt8.t'int rhs}
+      {[%#snum23] exists k : int . UInt8.t'int result._0'0
       = UInt8.t'int self - UInt8.t'int rhs
       + k * (UInt8.t'int (v_MAX'0 : UInt8.t) - UInt8.t'int (v_MIN'0 : UInt8.t) + 1)}
-      {[%#snum24] (let (_, a) = result in a)
+      {[%#snum24] result._1'0
       = (UInt8.t'int self - UInt8.t'int rhs < UInt8.t'int (v_MIN'0 : UInt8.t)
       \/ UInt8.t'int self - UInt8.t'int rhs > UInt8.t'int (v_MAX'0 : UInt8.t))}
       (! return' {result}) ]
@@ -835,20 +800,16 @@ module M_checked_ops__test_u8_sub_overflow [#"checked_ops.rs" 63 0 63 34]
       | s1 = any [ br0 -> {_18 = false} (! bb10) | br1 -> {_18} (! bb9) ]  ]
     
     | bb9 = s0
-      [ s0 = overflowing_sub'0 {[%#schecked_ops6] (0 : UInt8.t)} {a}
-          (fun (_ret':(UInt8.t, bool)) ->  [ &res <- _ret' ] s1)
+      [ s0 = overflowing_sub'0 {[%#schecked_ops6] (0 : UInt8.t)} {a} (fun (_ret':tuple'0) ->  [ &res <- _ret' ] s1)
       | s1 = bb11 ]
     
     | bb11 = s0
       [ s0 = UInt8.sub {[%#schecked_ops7] (255 : UInt8.t)} {a} (fun (_ret':UInt8.t) ->  [ &_28 <- _ret' ] s1)
       | s1 = UInt8.add {_28} {[%#schecked_ops8] (1 : UInt8.t)} (fun (_ret':UInt8.t) ->  [ &_27 <- _ret' ] s2)
-      | s2 =  [ &_25 <- (let (r'0, _) = res in r'0) = _27 ] s3
+      | s2 =  [ &_25 <- res._0'0 = _27 ] s3
       | s3 = any [ br0 -> {_25 = false} (! bb15) | br1 -> {_25} (! bb12) ]  ]
     
-    | bb12 = s0
-      [ s0 =  [ &_30 <- let (_, r'0) = res in r'0 ] s1
-      | s1 = any [ br0 -> {_30 = false} (! bb14) | br1 -> {_30} (! bb13) ]  ]
-    
+    | bb12 = s0 [ s0 =  [ &_30 <- res._1'0 ] s1 | s1 = any [ br0 -> {_30 = false} (! bb14) | br1 -> {_30} (! bb13) ]  ] 
     | bb13 = return' {_0}
     | bb14 = bb16
     | bb15 = bb16
@@ -867,7 +828,7 @@ module M_checked_ops__test_u8_sub_overflow [#"checked_ops.rs" 63 0 63 34]
     | & _14 : UInt8.t = Any.any_l ()
     | & _18 : bool = Any.any_l ()
     | & _19 : UInt8.t = Any.any_l ()
-    | & res : (UInt8.t, bool) = Any.any_l ()
+    | & res : tuple'0 = Any.any_l ()
     | & _25 : bool = Any.any_l ()
     | & _27 : UInt8.t = Any.any_l ()
     | & _28 : UInt8.t = Any.any_l ()
@@ -913,19 +874,21 @@ module M_checked_ops__test_u8_overflowing_sub [#"checked_ops.rs" 79 0 79 44]
   use mach.int.Int
   use creusot.prelude.Any
   
+  type tuple'0  =
+    { _0'0: UInt8.t; _1'0: bool }
+  
   constant v_MIN'0 : UInt8.t = (0 : UInt8.t)
   
   constant v_MAX'0 : UInt8.t = (255 : UInt8.t)
   
-  let rec overflowing_sub'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:(UInt8.t, bool)))= any
-    [ return' (result:(UInt8.t, bool))-> {[%#snum2] UInt8.t'int self - UInt8.t'int rhs
-      >= UInt8.t'int (v_MIN'0 : UInt8.t)
+  let rec overflowing_sub'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum2] UInt8.t'int self - UInt8.t'int rhs >= UInt8.t'int (v_MIN'0 : UInt8.t)
       /\ UInt8.t'int self - UInt8.t'int rhs <= UInt8.t'int (v_MAX'0 : UInt8.t)
-       -> UInt8.t'int (let (a, _) = result in a) = UInt8.t'int self - UInt8.t'int rhs}
-      {[%#snum3] exists k : int . UInt8.t'int (let (a, _) = result in a)
+       -> UInt8.t'int result._0'0 = UInt8.t'int self - UInt8.t'int rhs}
+      {[%#snum3] exists k : int . UInt8.t'int result._0'0
       = UInt8.t'int self - UInt8.t'int rhs
       + k * (UInt8.t'int (v_MAX'0 : UInt8.t) - UInt8.t'int (v_MIN'0 : UInt8.t) + 1)}
-      {[%#snum4] (let (_, a) = result in a)
+      {[%#snum4] result._1'0
       = (UInt8.t'int self - UInt8.t'int rhs < UInt8.t'int (v_MIN'0 : UInt8.t)
       \/ UInt8.t'int self - UInt8.t'int rhs > UInt8.t'int (v_MAX'0 : UInt8.t))}
       (! return' {result}) ]
@@ -947,28 +910,21 @@ module M_checked_ops__test_u8_overflowing_sub [#"checked_ops.rs" 79 0 79 44]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption8] result = (self = C_None'0)} (! return' {result}) ]
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#soption8] result = (self = C_None'0)} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
   let rec test_u8_overflowing_sub'0[#"checked_ops.rs" 79 0 79 44] (a:UInt8.t) (b:UInt8.t) (return'  (ret:()))= (! bb0
-    [ bb0 = s0 [ s0 = overflowing_sub'0 {a} {b} (fun (_ret':(UInt8.t, bool)) ->  [ &_6 <- _ret' ] s1) | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 = overflowing_sub'0 {a} {b} (fun (_ret':tuple'0) ->  [ &_6 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0 [ s0 = wrapping_sub'0 {a} {b} (fun (_ret':UInt8.t) ->  [ &_9 <- _ret' ] s1) | s1 = bb2 ] 
-    | bb2 = s0
-      [ s0 =  [ &_4 <- (let (r'0, _) = _6 in r'0) = _9 ] s1
-      | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]  ]
-    
-    | bb3 = s0 [ s0 = overflowing_sub'0 {a} {b} (fun (_ret':(UInt8.t, bool)) ->  [ &_16 <- _ret' ] s1) | s1 = bb5 ] 
+    | bb2 = s0 [ s0 =  [ &_4 <- _6._0'0 = _9 ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]  ] 
+    | bb3 = s0 [ s0 = overflowing_sub'0 {a} {b} (fun (_ret':tuple'0) ->  [ &_16 <- _ret' ] s1) | s1 = bb5 ] 
     | bb5 = s0 [ s0 = checked_sub'0 {a} {b} (fun (_ret':t_Option'0) ->  [ &_21 <- _ret' ] s1) | s1 = bb6 ] 
     | bb6 = s0 [ s0 = is_none'0 {_21} (fun (_ret':bool) ->  [ &_19 <- _ret' ] s1) | s1 = bb7 ] 
     | bb7 = s0
-      [ s0 =  [ &_14 <- (let (_, r'0) = _16 in r'0) = _19 ] s1
-      | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ]  ]
+      [ s0 =  [ &_14 <- _16._1'0 = _19 ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ]  ]
     
     | bb8 = return' {_0}
     | bb9 = {[%#schecked_ops0] false} any
@@ -978,10 +934,10 @@ module M_checked_ops__test_u8_overflowing_sub [#"checked_ops.rs" 79 0 79 44]
     | & a : UInt8.t = a
     | & b : UInt8.t = b
     | & _4 : bool = Any.any_l ()
-    | & _6 : (UInt8.t, bool) = Any.any_l ()
+    | & _6 : tuple'0 = Any.any_l ()
     | & _9 : UInt8.t = Any.any_l ()
     | & _14 : bool = Any.any_l ()
-    | & _16 : (UInt8.t, bool) = Any.any_l ()
+    | & _16 : tuple'0 = Any.any_l ()
     | & _19 : bool = Any.any_l ()
     | & _21 : t_Option'0 = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
@@ -1053,24 +1009,12 @@ module M_checked_ops__test_u8_mul_example [#"checked_ops.rs" 85 0 85 28]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:UInt8.t))= {[@expl:unwrap requires] [%#soption35] self <> C_None'0}
+    any [ return' (result:UInt8.t)-> {[%#soption36] C_Some'0 result = self} (! return' {result}) ] 
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption37] result = (self = C_None'0)} (! return' {result}) ]
   
-  predicate inv'1 (_1 : UInt8.t)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : UInt8.t [inv'1 x] . inv'1 x = true
-  
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:UInt8.t))= {[@expl:unwrap 'self' type invariant] inv'0 self}
-    {[@expl:unwrap requires] [%#soption35] self <> C_None'0}
-    any [ return' (result:UInt8.t)-> {inv'1 result} {[%#soption36] C_Some'0 result = self} (! return' {result}) ] 
-  
-  predicate inv'2 (_1 : t_Option'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'2 self}
-    any [ return' (result:bool)-> {[%#soption37] result = (self = C_None'0)} (! return' {result}) ] 
   
   let rec wrapping_mul'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:UInt8.t))= any
     [ return' (result:UInt8.t)-> {[%#snum38] result = UInt8.mul self rhs} (! return' {result}) ]
@@ -1087,15 +1031,17 @@ module M_checked_ops__test_u8_mul_example [#"checked_ops.rs" 85 0 85 28]
       (! return' {result}) ]
   
   
-  let rec overflowing_mul'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:(UInt8.t, bool)))= any
-    [ return' (result:(UInt8.t, bool))-> {[%#snum42] UInt8.t'int self * UInt8.t'int rhs
-      >= UInt8.t'int (v_MIN'0 : UInt8.t)
+  type tuple'0  =
+    { _0'0: UInt8.t; _1'0: bool }
+  
+  let rec overflowing_mul'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum42] UInt8.t'int self * UInt8.t'int rhs >= UInt8.t'int (v_MIN'0 : UInt8.t)
       /\ UInt8.t'int self * UInt8.t'int rhs <= UInt8.t'int (v_MAX'0 : UInt8.t)
-       -> UInt8.t'int (let (a, _) = result in a) = UInt8.t'int self * UInt8.t'int rhs}
-      {[%#snum43] exists k : int . UInt8.t'int (let (a, _) = result in a)
+       -> UInt8.t'int result._0'0 = UInt8.t'int self * UInt8.t'int rhs}
+      {[%#snum43] exists k : int . UInt8.t'int result._0'0
       = UInt8.t'int self * UInt8.t'int rhs
       + k * (UInt8.t'int (v_MAX'0 : UInt8.t) - UInt8.t'int (v_MIN'0 : UInt8.t) + 1)}
-      {[%#snum44] (let (_, a) = result in a)
+      {[%#snum44] result._1'0
       = (UInt8.t'int self * UInt8.t'int rhs < UInt8.t'int (v_MIN'0 : UInt8.t)
       \/ UInt8.t'int self * UInt8.t'int rhs > UInt8.t'int (v_MAX'0 : UInt8.t))}
       (! return' {result}) ]
@@ -1159,29 +1105,28 @@ module M_checked_ops__test_u8_mul_example [#"checked_ops.rs" 85 0 85 28]
     
     | bb19 = s0
       [ s0 = overflowing_mul'0 {[%#schecked_ops17] (5 : UInt8.t)} {[%#schecked_ops18] (10 : UInt8.t)}
-          (fun (_ret':(UInt8.t, bool)) ->  [ &res <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res <- _ret' ] s1)
       | s1 = bb21 ]
     
     | bb21 = s0
-      [ s0 =  [ &_29 <- (let (r'0, _) = res in r'0) = ([%#schecked_ops19] (50 : UInt8.t)) ] s1
+      [ s0 =  [ &_29 <- res._0'0 = ([%#schecked_ops19] (50 : UInt8.t)) ] s1
       | s1 = any [ br0 -> {_29 = false} (! bb25) | br1 -> {_29} (! bb22) ]  ]
     
     | bb22 = s0
-      [ s0 =  [ &_31 <- (let (_, r'0) = res in r'0) = ([%#schecked_ops20] false) ] s1
+      [ s0 =  [ &_31 <- res._1'0 = ([%#schecked_ops20] false) ] s1
       | s1 = any [ br0 -> {_31 = false} (! bb24) | br1 -> {_31} (! bb23) ]  ]
     
     | bb23 = s0
       [ s0 = overflowing_mul'0 {[%#schecked_ops21] (50 : UInt8.t)} {[%#schecked_ops22] (10 : UInt8.t)}
-          (fun (_ret':(UInt8.t, bool)) ->  [ &res1 <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res1 <- _ret' ] s1)
       | s1 = bb27 ]
     
     | bb27 = s0
-      [ s0 =  [ &_36 <- (let (r'0, _) = res1 in r'0) = ([%#schecked_ops23] (244 : UInt8.t)) ] s1
+      [ s0 =  [ &_36 <- res1._0'0 = ([%#schecked_ops23] (244 : UInt8.t)) ] s1
       | s1 = any [ br0 -> {_36 = false} (! bb31) | br1 -> {_36} (! bb28) ]  ]
     
     | bb28 = s0
-      [ s0 =  [ &_38 <- let (_, r'0) = res1 in r'0 ] s1
-      | s1 = any [ br0 -> {_38 = false} (! bb30) | br1 -> {_38} (! bb29) ]  ]
+      [ s0 =  [ &_38 <- res1._1'0 ] s1 | s1 = any [ br0 -> {_38 = false} (! bb30) | br1 -> {_38} (! bb29) ]  ]
     
     | bb29 = return' {_0}
     | bb30 = bb32
@@ -1211,10 +1156,10 @@ module M_checked_ops__test_u8_mul_example [#"checked_ops.rs" 85 0 85 28]
     | & _21 : UInt8.t = Any.any_l ()
     | & _24 : bool = Any.any_l ()
     | & _25 : UInt8.t = Any.any_l ()
-    | & res : (UInt8.t, bool) = Any.any_l ()
+    | & res : tuple'0 = Any.any_l ()
     | & _29 : bool = Any.any_l ()
     | & _31 : bool = Any.any_l ()
-    | & res1 : (UInt8.t, bool) = Any.any_l ()
+    | & res1 : tuple'0 = Any.any_l ()
     | & _36 : bool = Any.any_l ()
     | & _38 : bool = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
@@ -1265,17 +1210,8 @@ module M_checked_ops__test_u8_mul_zero [#"checked_ops.rs" 102 0 102 30]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : UInt8.t)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : UInt8.t [inv'1 x] . inv'1 x = true
-  
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:UInt8.t))= {[@expl:unwrap 'self' type invariant] inv'0 self}
-    {[@expl:unwrap requires] [%#soption15] self <> C_None'0}
-    any [ return' (result:UInt8.t)-> {inv'1 result} {[%#soption16] C_Some'0 result = self} (! return' {result}) ] 
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:UInt8.t))= {[@expl:unwrap requires] [%#soption15] self <> C_None'0}
+    any [ return' (result:UInt8.t)-> {[%#soption16] C_Some'0 result = self} (! return' {result}) ] 
   
   let rec wrapping_mul'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:UInt8.t))= any
     [ return' (result:UInt8.t)-> {[%#snum17] result = UInt8.mul self rhs} (! return' {result}) ]
@@ -1292,15 +1228,17 @@ module M_checked_ops__test_u8_mul_zero [#"checked_ops.rs" 102 0 102 30]
       (! return' {result}) ]
   
   
-  let rec overflowing_mul'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:(UInt8.t, bool)))= any
-    [ return' (result:(UInt8.t, bool))-> {[%#snum21] UInt8.t'int self * UInt8.t'int rhs
-      >= UInt8.t'int (v_MIN'0 : UInt8.t)
+  type tuple'0  =
+    { _0'0: UInt8.t; _1'0: bool }
+  
+  let rec overflowing_mul'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum21] UInt8.t'int self * UInt8.t'int rhs >= UInt8.t'int (v_MIN'0 : UInt8.t)
       /\ UInt8.t'int self * UInt8.t'int rhs <= UInt8.t'int (v_MAX'0 : UInt8.t)
-       -> UInt8.t'int (let (a, _) = result in a) = UInt8.t'int self * UInt8.t'int rhs}
-      {[%#snum22] exists k : int . UInt8.t'int (let (a, _) = result in a)
+       -> UInt8.t'int result._0'0 = UInt8.t'int self * UInt8.t'int rhs}
+      {[%#snum22] exists k : int . UInt8.t'int result._0'0
       = UInt8.t'int self * UInt8.t'int rhs
       + k * (UInt8.t'int (v_MAX'0 : UInt8.t) - UInt8.t'int (v_MIN'0 : UInt8.t) + 1)}
-      {[%#snum23] (let (_, a) = result in a)
+      {[%#snum23] result._1'0
       = (UInt8.t'int self * UInt8.t'int rhs < UInt8.t'int (v_MIN'0 : UInt8.t)
       \/ UInt8.t'int self * UInt8.t'int rhs > UInt8.t'int (v_MAX'0 : UInt8.t))}
       (! return' {result}) ]
@@ -1335,16 +1273,15 @@ module M_checked_ops__test_u8_mul_zero [#"checked_ops.rs" 102 0 102 30]
       | s1 = any [ br0 -> {_14 = false} (! bb10) | br1 -> {_14} (! bb9) ]  ]
     
     | bb9 = s0
-      [ s0 = overflowing_mul'0 {[%#schecked_ops6] (0 : UInt8.t)} {a}
-          (fun (_ret':(UInt8.t, bool)) ->  [ &res <- _ret' ] s1)
+      [ s0 = overflowing_mul'0 {[%#schecked_ops6] (0 : UInt8.t)} {a} (fun (_ret':tuple'0) ->  [ &res <- _ret' ] s1)
       | s1 = bb11 ]
     
     | bb11 = s0
-      [ s0 =  [ &_21 <- (let (r'0, _) = res in r'0) = ([%#schecked_ops7] (0 : UInt8.t)) ] s1
+      [ s0 =  [ &_21 <- res._0'0 = ([%#schecked_ops7] (0 : UInt8.t)) ] s1
       | s1 = any [ br0 -> {_21 = false} (! bb15) | br1 -> {_21} (! bb12) ]  ]
     
     | bb12 = s0
-      [ s0 =  [ &_23 <- (let (_, r'0) = res in r'0) = ([%#schecked_ops8] false) ] s1
+      [ s0 =  [ &_23 <- res._1'0 = ([%#schecked_ops8] false) ] s1
       | s1 = any [ br0 -> {_23 = false} (! bb14) | br1 -> {_23} (! bb13) ]  ]
     
     | bb13 = return' {_0}
@@ -1364,7 +1301,7 @@ module M_checked_ops__test_u8_mul_zero [#"checked_ops.rs" 102 0 102 30]
     | & _10 : UInt8.t = Any.any_l ()
     | & _14 : bool = Any.any_l ()
     | & _15 : UInt8.t = Any.any_l ()
-    | & res : (UInt8.t, bool) = Any.any_l ()
+    | & res : tuple'0 = Any.any_l ()
     | & _21 : bool = Any.any_l ()
     | & _23 : bool = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
@@ -1384,19 +1321,21 @@ module M_checked_ops__test_u8_overflowing_mul [#"checked_ops.rs" 111 0 111 44]
   use mach.int.Int
   use creusot.prelude.Any
   
+  type tuple'0  =
+    { _0'0: UInt8.t; _1'0: bool }
+  
   constant v_MIN'0 : UInt8.t = (0 : UInt8.t)
   
   constant v_MAX'0 : UInt8.t = (255 : UInt8.t)
   
-  let rec overflowing_mul'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:(UInt8.t, bool)))= any
-    [ return' (result:(UInt8.t, bool))-> {[%#snum2] UInt8.t'int self * UInt8.t'int rhs
-      >= UInt8.t'int (v_MIN'0 : UInt8.t)
+  let rec overflowing_mul'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum2] UInt8.t'int self * UInt8.t'int rhs >= UInt8.t'int (v_MIN'0 : UInt8.t)
       /\ UInt8.t'int self * UInt8.t'int rhs <= UInt8.t'int (v_MAX'0 : UInt8.t)
-       -> UInt8.t'int (let (a, _) = result in a) = UInt8.t'int self * UInt8.t'int rhs}
-      {[%#snum3] exists k : int . UInt8.t'int (let (a, _) = result in a)
+       -> UInt8.t'int result._0'0 = UInt8.t'int self * UInt8.t'int rhs}
+      {[%#snum3] exists k : int . UInt8.t'int result._0'0
       = UInt8.t'int self * UInt8.t'int rhs
       + k * (UInt8.t'int (v_MAX'0 : UInt8.t) - UInt8.t'int (v_MIN'0 : UInt8.t) + 1)}
-      {[%#snum4] (let (_, a) = result in a)
+      {[%#snum4] result._1'0
       = (UInt8.t'int self * UInt8.t'int rhs < UInt8.t'int (v_MIN'0 : UInt8.t)
       \/ UInt8.t'int self * UInt8.t'int rhs > UInt8.t'int (v_MAX'0 : UInt8.t))}
       (! return' {result}) ]
@@ -1418,28 +1357,21 @@ module M_checked_ops__test_u8_overflowing_mul [#"checked_ops.rs" 111 0 111 44]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption8] result = (self = C_None'0)} (! return' {result}) ]
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#soption8] result = (self = C_None'0)} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
   let rec test_u8_overflowing_mul'0[#"checked_ops.rs" 111 0 111 44] (a:UInt8.t) (b:UInt8.t) (return'  (ret:()))= (! bb0
-    [ bb0 = s0 [ s0 = overflowing_mul'0 {a} {b} (fun (_ret':(UInt8.t, bool)) ->  [ &_6 <- _ret' ] s1) | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 = overflowing_mul'0 {a} {b} (fun (_ret':tuple'0) ->  [ &_6 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0 [ s0 = wrapping_mul'0 {a} {b} (fun (_ret':UInt8.t) ->  [ &_9 <- _ret' ] s1) | s1 = bb2 ] 
-    | bb2 = s0
-      [ s0 =  [ &_4 <- (let (r'0, _) = _6 in r'0) = _9 ] s1
-      | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]  ]
-    
-    | bb3 = s0 [ s0 = overflowing_mul'0 {a} {b} (fun (_ret':(UInt8.t, bool)) ->  [ &_16 <- _ret' ] s1) | s1 = bb5 ] 
+    | bb2 = s0 [ s0 =  [ &_4 <- _6._0'0 = _9 ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]  ] 
+    | bb3 = s0 [ s0 = overflowing_mul'0 {a} {b} (fun (_ret':tuple'0) ->  [ &_16 <- _ret' ] s1) | s1 = bb5 ] 
     | bb5 = s0 [ s0 = checked_mul'0 {a} {b} (fun (_ret':t_Option'0) ->  [ &_21 <- _ret' ] s1) | s1 = bb6 ] 
     | bb6 = s0 [ s0 = is_none'0 {_21} (fun (_ret':bool) ->  [ &_19 <- _ret' ] s1) | s1 = bb7 ] 
     | bb7 = s0
-      [ s0 =  [ &_14 <- (let (_, r'0) = _16 in r'0) = _19 ] s1
-      | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ]  ]
+      [ s0 =  [ &_14 <- _16._1'0 = _19 ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ]  ]
     
     | bb8 = return' {_0}
     | bb9 = {[%#schecked_ops0] false} any
@@ -1449,10 +1381,10 @@ module M_checked_ops__test_u8_overflowing_mul [#"checked_ops.rs" 111 0 111 44]
     | & a : UInt8.t = a
     | & b : UInt8.t = b
     | & _4 : bool = Any.any_l ()
-    | & _6 : (UInt8.t, bool) = Any.any_l ()
+    | & _6 : tuple'0 = Any.any_l ()
     | & _9 : UInt8.t = Any.any_l ()
     | & _14 : bool = Any.any_l ()
-    | & _16 : (UInt8.t, bool) = Any.any_l ()
+    | & _16 : tuple'0 = Any.any_l ()
     | & _19 : bool = Any.any_l ()
     | & _21 : t_Option'0 = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
@@ -1512,24 +1444,12 @@ module M_checked_ops__test_u8_div_example [#"checked_ops.rs" 117 0 117 28]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption22] result = (self = C_None'0)} (! return' {result}) ]
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#soption22] result = (self = C_None'0)} (! return' {result}) ] 
-  
-  predicate inv'1 (_1 : t_Option'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x = true
-  
-  predicate inv'2 (_1 : UInt8.t)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : UInt8.t [inv'2 x] . inv'2 x = true
-  
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:UInt8.t))= {[@expl:unwrap 'self' type invariant] inv'1 self}
-    {[@expl:unwrap requires] [%#soption23] self <> C_None'0}
-    any [ return' (result:UInt8.t)-> {inv'2 result} {[%#soption24] C_Some'0 result = self} (! return' {result}) ] 
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:UInt8.t))= {[@expl:unwrap requires] [%#soption23] self <> C_None'0}
+    any [ return' (result:UInt8.t)-> {[%#soption24] C_Some'0 result = self} (! return' {result}) ] 
   
   let rec wrapping_div'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:UInt8.t))= {[@expl:wrapping_div requires] [%#snum25] UInt8.t'int rhs
     <> 0}
@@ -1551,15 +1471,17 @@ module M_checked_ops__test_u8_div_example [#"checked_ops.rs" 117 0 117 28]
       (! return' {result}) ]
   
   
-  let rec overflowing_div'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:(UInt8.t, bool)))= {[@expl:overflowing_div requires] [%#snum31] UInt8.t'int rhs
+  type tuple'0  =
+    { _0'0: UInt8.t; _1'0: bool }
+  
+  let rec overflowing_div'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:tuple'0))= {[@expl:overflowing_div requires] [%#snum31] UInt8.t'int rhs
     <> 0}
     any
-    [ return' (result:(UInt8.t, bool))-> {[%#snum32] UInt8.t'int self = UInt8.t'int (v_MIN'0 : UInt8.t)
-      /\ UInt8.t'int rhs = - 1  -> UInt8.t'int (let (a, _) = result in a) = UInt8.t'int self}
+    [ return' (result:tuple'0)-> {[%#snum32] UInt8.t'int self = UInt8.t'int (v_MIN'0 : UInt8.t) /\ UInt8.t'int rhs = - 1
+       -> UInt8.t'int result._0'0 = UInt8.t'int self}
       {[%#snum33] UInt8.t'int self = UInt8.t'int (v_MIN'0 : UInt8.t) /\ UInt8.t'int rhs = - 1
-      \/ UInt8.t'int (let (a, _) = result in a) = Int.div (UInt8.t'int self) (UInt8.t'int rhs)}
-      {[%#snum34] (let (_, a) = result in a)
-      = (UInt8.t'int self = UInt8.t'int (v_MIN'0 : UInt8.t) /\ UInt8.t'int rhs = - 1)}
+      \/ UInt8.t'int result._0'0 = Int.div (UInt8.t'int self) (UInt8.t'int rhs)}
+      {[%#snum34] result._1'0 = (UInt8.t'int self = UInt8.t'int (v_MIN'0 : UInt8.t) /\ UInt8.t'int rhs = - 1)}
       (! return' {result}) ]
   
   
@@ -1603,15 +1525,15 @@ module M_checked_ops__test_u8_div_example [#"checked_ops.rs" 117 0 117 28]
     
     | bb13 = s0
       [ s0 = overflowing_div'0 {[%#schecked_ops11] (5 : UInt8.t)} {[%#schecked_ops12] (2 : UInt8.t)}
-          (fun (_ret':(UInt8.t, bool)) ->  [ &res <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res <- _ret' ] s1)
       | s1 = bb15 ]
     
     | bb15 = s0
-      [ s0 =  [ &_21 <- (let (r'0, _) = res in r'0) = ([%#schecked_ops13] (2 : UInt8.t)) ] s1
+      [ s0 =  [ &_21 <- res._0'0 = ([%#schecked_ops13] (2 : UInt8.t)) ] s1
       | s1 = any [ br0 -> {_21 = false} (! bb19) | br1 -> {_21} (! bb16) ]  ]
     
     | bb16 = s0
-      [ s0 =  [ &_23 <- (let (_, r'0) = res in r'0) = ([%#schecked_ops14] false) ] s1
+      [ s0 =  [ &_23 <- res._1'0 = ([%#schecked_ops14] false) ] s1
       | s1 = any [ br0 -> {_23 = false} (! bb18) | br1 -> {_23} (! bb17) ]  ]
     
     | bb17 = return' {_0}
@@ -1633,7 +1555,7 @@ module M_checked_ops__test_u8_div_example [#"checked_ops.rs" 117 0 117 28]
     | & _13 : UInt8.t = Any.any_l ()
     | & _16 : bool = Any.any_l ()
     | & _17 : UInt8.t = Any.any_l ()
-    | & res : (UInt8.t, bool) = Any.any_l ()
+    | & res : tuple'0 = Any.any_l ()
     | & _21 : bool = Any.any_l ()
     | & _23 : bool = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
@@ -1682,17 +1604,8 @@ module M_checked_ops__test_u8_div_no_overflow [#"checked_ops.rs" 128 0 128 44]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : UInt8.t)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : UInt8.t [inv'1 x] . inv'1 x = true
-  
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:UInt8.t))= {[@expl:unwrap 'self' type invariant] inv'0 self}
-    {[@expl:unwrap requires] [%#soption12] self <> C_None'0}
-    any [ return' (result:UInt8.t)-> {inv'1 result} {[%#soption13] C_Some'0 result = self} (! return' {result}) ] 
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:UInt8.t))= {[@expl:unwrap requires] [%#soption12] self <> C_None'0}
+    any [ return' (result:UInt8.t)-> {[%#soption13] C_Some'0 result = self} (! return' {result}) ] 
   
   let rec wrapping_div'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:UInt8.t))= {[@expl:wrapping_div requires] [%#snum14] UInt8.t'int rhs
     <> 0}
@@ -1714,15 +1627,17 @@ module M_checked_ops__test_u8_div_no_overflow [#"checked_ops.rs" 128 0 128 44]
       (! return' {result}) ]
   
   
-  let rec overflowing_div'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:(UInt8.t, bool)))= {[@expl:overflowing_div requires] [%#snum20] UInt8.t'int rhs
+  type tuple'0  =
+    { _0'0: UInt8.t; _1'0: bool }
+  
+  let rec overflowing_div'0 (self:UInt8.t) (rhs:UInt8.t) (return'  (ret:tuple'0))= {[@expl:overflowing_div requires] [%#snum20] UInt8.t'int rhs
     <> 0}
     any
-    [ return' (result:(UInt8.t, bool))-> {[%#snum21] UInt8.t'int self = UInt8.t'int (v_MIN'0 : UInt8.t)
-      /\ UInt8.t'int rhs = - 1  -> UInt8.t'int (let (a, _) = result in a) = UInt8.t'int self}
+    [ return' (result:tuple'0)-> {[%#snum21] UInt8.t'int self = UInt8.t'int (v_MIN'0 : UInt8.t) /\ UInt8.t'int rhs = - 1
+       -> UInt8.t'int result._0'0 = UInt8.t'int self}
       {[%#snum22] UInt8.t'int self = UInt8.t'int (v_MIN'0 : UInt8.t) /\ UInt8.t'int rhs = - 1
-      \/ UInt8.t'int (let (a, _) = result in a) = Int.div (UInt8.t'int self) (UInt8.t'int rhs)}
-      {[%#snum23] (let (_, a) = result in a)
-      = (UInt8.t'int self = UInt8.t'int (v_MIN'0 : UInt8.t) /\ UInt8.t'int rhs = - 1)}
+      \/ UInt8.t'int result._0'0 = Int.div (UInt8.t'int self) (UInt8.t'int rhs)}
+      {[%#snum23] result._1'0 = (UInt8.t'int self = UInt8.t'int (v_MIN'0 : UInt8.t) /\ UInt8.t'int rhs = - 1)}
       (! return' {result}) ]
   
   
@@ -1768,7 +1683,7 @@ module M_checked_ops__test_u8_div_no_overflow [#"checked_ops.rs" 128 0 128 44]
       | s1 =  [ &_26 <- _27 = _30 ] s2
       | s2 = any [ br0 -> {_26 = false} (! bb13) | br1 -> {_26} (! bb12) ]  ]
     
-    | bb12 = s0 [ s0 = overflowing_div'0 {a} {b} (fun (_ret':(UInt8.t, bool)) ->  [ &res <- _ret' ] s1) | s1 = bb14 ] 
+    | bb12 = s0 [ s0 = overflowing_div'0 {a} {b} (fun (_ret':tuple'0) ->  [ &res <- _ret' ] s1) | s1 = bb14 ] 
     | bb14 = s0
       [ s0 =  [ &_43 <- b ] s1
       | s1 =  [ &_44 <- _43 = ([%#schecked_ops3] (0 : UInt8.t)) ] s2
@@ -1777,11 +1692,11 @@ module M_checked_ops__test_u8_div_no_overflow [#"checked_ops.rs" 128 0 128 44]
     
     | bb15 = s0
       [ s0 = UInt8.div {a} {_43} (fun (_ret':UInt8.t) ->  [ &_41 <- _ret' ] s1)
-      | s1 =  [ &_39 <- (let (r'0, _) = res in r'0) = _41 ] s2
+      | s1 =  [ &_39 <- res._0'0 = _41 ] s2
       | s2 = any [ br0 -> {_39 = false} (! bb19) | br1 -> {_39} (! bb16) ]  ]
     
     | bb16 = s0
-      [ s0 =  [ &_45 <- (let (_, r'0) = res in r'0) = ([%#schecked_ops4] false) ] s1
+      [ s0 =  [ &_45 <- res._1'0 = ([%#schecked_ops4] false) ] s1
       | s1 = any [ br0 -> {_45 = false} (! bb18) | br1 -> {_45} (! bb17) ]  ]
     
     | bb17 = return' {_0}
@@ -1811,7 +1726,7 @@ module M_checked_ops__test_u8_div_no_overflow [#"checked_ops.rs" 128 0 128 44]
     | & _30 : UInt8.t = Any.any_l ()
     | & _32 : UInt8.t = Any.any_l ()
     | & _33 : bool = Any.any_l ()
-    | & res : (UInt8.t, bool) = Any.any_l ()
+    | & res : tuple'0 = Any.any_l ()
     | & _39 : bool = Any.any_l ()
     | & _41 : UInt8.t = Any.any_l ()
     | & _43 : UInt8.t = Any.any_l ()
@@ -1844,12 +1759,9 @@ module M_checked_ops__test_u8_div_zero [#"checked_ops.rs" 137 0 137 30]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption4] result = (self = C_None'0)} (! return' {result}) ]
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#soption4] result = (self = C_None'0)} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
@@ -1949,24 +1861,12 @@ module M_checked_ops__test_i8_add_example [#"checked_ops.rs" 142 0 142 28]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:Int8.t))= {[@expl:unwrap requires] [%#soption51] self <> C_None'0}
+    any [ return' (result:Int8.t)-> {[%#soption52] C_Some'0 result = self} (! return' {result}) ] 
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption53] result = (self = C_None'0)} (! return' {result}) ]
   
-  predicate inv'1 (_1 : Int8.t)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Int8.t [inv'1 x] . inv'1 x = true
-  
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:Int8.t))= {[@expl:unwrap 'self' type invariant] inv'0 self}
-    {[@expl:unwrap requires] [%#soption51] self <> C_None'0}
-    any [ return' (result:Int8.t)-> {inv'1 result} {[%#soption52] C_Some'0 result = self} (! return' {result}) ] 
-  
-  predicate inv'2 (_1 : t_Option'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'2 self}
-    any [ return' (result:bool)-> {[%#soption53] result = (self = C_None'0)} (! return' {result}) ] 
   
   let rec wrapping_add'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:Int8.t))= any
     [ return' (result:Int8.t)-> {[%#snum54] result = Int8.add self rhs} (! return' {result}) ]
@@ -1983,13 +1883,16 @@ module M_checked_ops__test_i8_add_example [#"checked_ops.rs" 142 0 142 28]
       (! return' {result}) ]
   
   
-  let rec overflowing_add'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:(Int8.t, bool)))= any
-    [ return' (result:(Int8.t, bool))-> {[%#snum58] Int8.to_int self + Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
+  type tuple'0  =
+    { _0'0: Int8.t; _1'0: bool }
+  
+  let rec overflowing_add'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum58] Int8.to_int self + Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
       /\ Int8.to_int self + Int8.to_int rhs <= Int8.to_int (v_MAX'0 : Int8.t)
-       -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self + Int8.to_int rhs}
-      {[%#snum59] exists k : int . Int8.to_int (let (a, _) = result in a)
+       -> Int8.to_int result._0'0 = Int8.to_int self + Int8.to_int rhs}
+      {[%#snum59] exists k : int . Int8.to_int result._0'0
       = Int8.to_int self + Int8.to_int rhs + k * (Int8.to_int (v_MAX'0 : Int8.t) - Int8.to_int (v_MIN'0 : Int8.t) + 1)}
-      {[%#snum60] (let (_, a) = result in a)
+      {[%#snum60] result._1'0
       = (Int8.to_int self + Int8.to_int rhs < Int8.to_int (v_MIN'0 : Int8.t)
       \/ Int8.to_int self + Int8.to_int rhs > Int8.to_int (v_MAX'0 : Int8.t))}
       (! return' {result}) ]
@@ -2078,42 +1981,40 @@ module M_checked_ops__test_i8_add_example [#"checked_ops.rs" 142 0 142 28]
     
     | bb29 = s0
       [ s0 = overflowing_add'0 {[%#schecked_ops25] (5 : Int8.t)} {[%#schecked_ops26] (10 : Int8.t)}
-          (fun (_ret':(Int8.t, bool)) ->  [ &res <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res <- _ret' ] s1)
       | s1 = bb31 ]
     
     | bb31 = s0
-      [ s0 =  [ &_42 <- (let (r'0, _) = res in r'0) = ([%#schecked_ops27] (15 : Int8.t)) ] s1
+      [ s0 =  [ &_42 <- res._0'0 = ([%#schecked_ops27] (15 : Int8.t)) ] s1
       | s1 = any [ br0 -> {_42 = false} (! bb35) | br1 -> {_42} (! bb32) ]  ]
     
     | bb32 = s0
-      [ s0 =  [ &_44 <- (let (_, r'0) = res in r'0) = ([%#schecked_ops28] false) ] s1
+      [ s0 =  [ &_44 <- res._1'0 = ([%#schecked_ops28] false) ] s1
       | s1 = any [ br0 -> {_44 = false} (! bb34) | br1 -> {_44} (! bb33) ]  ]
     
     | bb33 = s0
       [ s0 = overflowing_add'0 {[%#schecked_ops29] (120 : Int8.t)} {[%#schecked_ops30] (10 : Int8.t)}
-          (fun (_ret':(Int8.t, bool)) ->  [ &res1 <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res1 <- _ret' ] s1)
       | s1 = bb37 ]
     
     | bb37 = s0
-      [ s0 =  [ &_49 <- (let (r'0, _) = res1 in r'0) = ([%#schecked_ops31] (-126 : Int8.t)) ] s1
+      [ s0 =  [ &_49 <- res1._0'0 = ([%#schecked_ops31] (-126 : Int8.t)) ] s1
       | s1 = any [ br0 -> {_49 = false} (! bb41) | br1 -> {_49} (! bb38) ]  ]
     
     | bb38 = s0
-      [ s0 =  [ &_51 <- let (_, r'0) = res1 in r'0 ] s1
-      | s1 = any [ br0 -> {_51 = false} (! bb40) | br1 -> {_51} (! bb39) ]  ]
+      [ s0 =  [ &_51 <- res1._1'0 ] s1 | s1 = any [ br0 -> {_51 = false} (! bb40) | br1 -> {_51} (! bb39) ]  ]
     
     | bb39 = s0
       [ s0 = overflowing_add'0 {[%#schecked_ops33] (-120 : Int8.t)} {[%#schecked_ops34] (-10 : Int8.t)}
-          (fun (_ret':(Int8.t, bool)) ->  [ &res2 <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res2 <- _ret' ] s1)
       | s1 = bb43 ]
     
     | bb43 = s0
-      [ s0 =  [ &_56 <- (let (r'0, _) = res2 in r'0) = ([%#schecked_ops35] (126 : Int8.t)) ] s1
+      [ s0 =  [ &_56 <- res2._0'0 = ([%#schecked_ops35] (126 : Int8.t)) ] s1
       | s1 = any [ br0 -> {_56 = false} (! bb47) | br1 -> {_56} (! bb44) ]  ]
     
     | bb44 = s0
-      [ s0 =  [ &_58 <- let (_, r'0) = res2 in r'0 ] s1
-      | s1 = any [ br0 -> {_58 = false} (! bb46) | br1 -> {_58} (! bb45) ]  ]
+      [ s0 =  [ &_58 <- res2._1'0 ] s1 | s1 = any [ br0 -> {_58 = false} (! bb46) | br1 -> {_58} (! bb45) ]  ]
     
     | bb45 = return' {_0}
     | bb46 = bb48
@@ -2155,13 +2056,13 @@ module M_checked_ops__test_i8_add_example [#"checked_ops.rs" 142 0 142 28]
     | & _34 : Int8.t = Any.any_l ()
     | & _37 : bool = Any.any_l ()
     | & _38 : Int8.t = Any.any_l ()
-    | & res : (Int8.t, bool) = Any.any_l ()
+    | & res : tuple'0 = Any.any_l ()
     | & _42 : bool = Any.any_l ()
     | & _44 : bool = Any.any_l ()
-    | & res1 : (Int8.t, bool) = Any.any_l ()
+    | & res1 : tuple'0 = Any.any_l ()
     | & _49 : bool = Any.any_l ()
     | & _51 : bool = Any.any_l ()
-    | & res2 : (Int8.t, bool) = Any.any_l ()
+    | & res2 : tuple'0 = Any.any_l ()
     | & _56 : bool = Any.any_l ()
     | & _58 : bool = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
@@ -2213,12 +2114,9 @@ module M_checked_ops__test_i8_add_overflow_pos [#"checked_ops.rs" 165 0 165 38]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption17] result = (self = C_None'0)} (! return' {result}) ]
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#soption17] result = (self = C_None'0)} (! return' {result}) ] 
   
   let rec wrapping_add'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:Int8.t))= any
     [ return' (result:Int8.t)-> {[%#snum18] result = Int8.add self rhs} (! return' {result}) ]
@@ -2235,13 +2133,16 @@ module M_checked_ops__test_i8_add_overflow_pos [#"checked_ops.rs" 165 0 165 38]
       (! return' {result}) ]
   
   
-  let rec overflowing_add'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:(Int8.t, bool)))= any
-    [ return' (result:(Int8.t, bool))-> {[%#snum22] Int8.to_int self + Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
+  type tuple'0  =
+    { _0'0: Int8.t; _1'0: bool }
+  
+  let rec overflowing_add'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum22] Int8.to_int self + Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
       /\ Int8.to_int self + Int8.to_int rhs <= Int8.to_int (v_MAX'0 : Int8.t)
-       -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self + Int8.to_int rhs}
-      {[%#snum23] exists k : int . Int8.to_int (let (a, _) = result in a)
+       -> Int8.to_int result._0'0 = Int8.to_int self + Int8.to_int rhs}
+      {[%#snum23] exists k : int . Int8.to_int result._0'0
       = Int8.to_int self + Int8.to_int rhs + k * (Int8.to_int (v_MAX'0 : Int8.t) - Int8.to_int (v_MIN'0 : Int8.t) + 1)}
-      {[%#snum24] (let (_, a) = result in a)
+      {[%#snum24] result._1'0
       = (Int8.to_int self + Int8.to_int rhs < Int8.to_int (v_MIN'0 : Int8.t)
       \/ Int8.to_int self + Int8.to_int rhs > Int8.to_int (v_MAX'0 : Int8.t))}
       (! return' {result}) ]
@@ -2277,20 +2178,16 @@ module M_checked_ops__test_i8_add_overflow_pos [#"checked_ops.rs" 165 0 165 38]
       | s1 = any [ br0 -> {_18 = false} (! bb10) | br1 -> {_18} (! bb9) ]  ]
     
     | bb9 = s0
-      [ s0 = overflowing_add'0 {[%#schecked_ops6] (127 : Int8.t)} {a}
-          (fun (_ret':(Int8.t, bool)) ->  [ &res <- _ret' ] s1)
+      [ s0 = overflowing_add'0 {[%#schecked_ops6] (127 : Int8.t)} {a} (fun (_ret':tuple'0) ->  [ &res <- _ret' ] s1)
       | s1 = bb11 ]
     
     | bb11 = s0
       [ s0 = Int8.sub {a} {[%#schecked_ops7] (127 : Int8.t)} (fun (_ret':Int8.t) ->  [ &_28 <- _ret' ] s1)
       | s1 = Int8.sub {_28} {[%#schecked_ops8] (2 : Int8.t)} (fun (_ret':Int8.t) ->  [ &_27 <- _ret' ] s2)
-      | s2 =  [ &_25 <- (let (r'0, _) = res in r'0) = _27 ] s3
+      | s2 =  [ &_25 <- res._0'0 = _27 ] s3
       | s3 = any [ br0 -> {_25 = false} (! bb15) | br1 -> {_25} (! bb12) ]  ]
     
-    | bb12 = s0
-      [ s0 =  [ &_30 <- let (_, r'0) = res in r'0 ] s1
-      | s1 = any [ br0 -> {_30 = false} (! bb14) | br1 -> {_30} (! bb13) ]  ]
-    
+    | bb12 = s0 [ s0 =  [ &_30 <- res._1'0 ] s1 | s1 = any [ br0 -> {_30 = false} (! bb14) | br1 -> {_30} (! bb13) ]  ] 
     | bb13 = return' {_0}
     | bb14 = bb16
     | bb15 = bb16
@@ -2309,7 +2206,7 @@ module M_checked_ops__test_i8_add_overflow_pos [#"checked_ops.rs" 165 0 165 38]
     | & _14 : Int8.t = Any.any_l ()
     | & _18 : bool = Any.any_l ()
     | & _19 : Int8.t = Any.any_l ()
-    | & res : (Int8.t, bool) = Any.any_l ()
+    | & res : tuple'0 = Any.any_l ()
     | & _25 : bool = Any.any_l ()
     | & _27 : Int8.t = Any.any_l ()
     | & _28 : Int8.t = Any.any_l ()
@@ -2363,12 +2260,9 @@ module M_checked_ops__test_i8_add_overflow_neg [#"checked_ops.rs" 175 0 175 38]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption17] result = (self = C_None'0)} (! return' {result}) ]
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#soption17] result = (self = C_None'0)} (! return' {result}) ] 
   
   let rec wrapping_add'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:Int8.t))= any
     [ return' (result:Int8.t)-> {[%#snum18] result = Int8.add self rhs} (! return' {result}) ]
@@ -2385,13 +2279,16 @@ module M_checked_ops__test_i8_add_overflow_neg [#"checked_ops.rs" 175 0 175 38]
       (! return' {result}) ]
   
   
-  let rec overflowing_add'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:(Int8.t, bool)))= any
-    [ return' (result:(Int8.t, bool))-> {[%#snum22] Int8.to_int self + Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
+  type tuple'0  =
+    { _0'0: Int8.t; _1'0: bool }
+  
+  let rec overflowing_add'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum22] Int8.to_int self + Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
       /\ Int8.to_int self + Int8.to_int rhs <= Int8.to_int (v_MAX'0 : Int8.t)
-       -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self + Int8.to_int rhs}
-      {[%#snum23] exists k : int . Int8.to_int (let (a, _) = result in a)
+       -> Int8.to_int result._0'0 = Int8.to_int self + Int8.to_int rhs}
+      {[%#snum23] exists k : int . Int8.to_int result._0'0
       = Int8.to_int self + Int8.to_int rhs + k * (Int8.to_int (v_MAX'0 : Int8.t) - Int8.to_int (v_MIN'0 : Int8.t) + 1)}
-      {[%#snum24] (let (_, a) = result in a)
+      {[%#snum24] result._1'0
       = (Int8.to_int self + Int8.to_int rhs < Int8.to_int (v_MIN'0 : Int8.t)
       \/ Int8.to_int self + Int8.to_int rhs > Int8.to_int (v_MAX'0 : Int8.t))}
       (! return' {result}) ]
@@ -2427,20 +2324,16 @@ module M_checked_ops__test_i8_add_overflow_neg [#"checked_ops.rs" 175 0 175 38]
       | s1 = any [ br0 -> {_18 = false} (! bb10) | br1 -> {_18} (! bb9) ]  ]
     
     | bb9 = s0
-      [ s0 = overflowing_add'0 {[%#schecked_ops6] (-128 : Int8.t)} {a}
-          (fun (_ret':(Int8.t, bool)) ->  [ &res <- _ret' ] s1)
+      [ s0 = overflowing_add'0 {[%#schecked_ops6] (-128 : Int8.t)} {a} (fun (_ret':tuple'0) ->  [ &res <- _ret' ] s1)
       | s1 = bb11 ]
     
     | bb11 = s0
       [ s0 = Int8.add {a} {[%#schecked_ops7] (127 : Int8.t)} (fun (_ret':Int8.t) ->  [ &_28 <- _ret' ] s1)
       | s1 = Int8.add {_28} {[%#schecked_ops8] (1 : Int8.t)} (fun (_ret':Int8.t) ->  [ &_27 <- _ret' ] s2)
-      | s2 =  [ &_25 <- (let (r'0, _) = res in r'0) = _27 ] s3
+      | s2 =  [ &_25 <- res._0'0 = _27 ] s3
       | s3 = any [ br0 -> {_25 = false} (! bb15) | br1 -> {_25} (! bb12) ]  ]
     
-    | bb12 = s0
-      [ s0 =  [ &_30 <- let (_, r'0) = res in r'0 ] s1
-      | s1 = any [ br0 -> {_30 = false} (! bb14) | br1 -> {_30} (! bb13) ]  ]
-    
+    | bb12 = s0 [ s0 =  [ &_30 <- res._1'0 ] s1 | s1 = any [ br0 -> {_30 = false} (! bb14) | br1 -> {_30} (! bb13) ]  ] 
     | bb13 = return' {_0}
     | bb14 = bb16
     | bb15 = bb16
@@ -2459,7 +2352,7 @@ module M_checked_ops__test_i8_add_overflow_neg [#"checked_ops.rs" 175 0 175 38]
     | & _14 : Int8.t = Any.any_l ()
     | & _18 : bool = Any.any_l ()
     | & _19 : Int8.t = Any.any_l ()
-    | & res : (Int8.t, bool) = Any.any_l ()
+    | & res : tuple'0 = Any.any_l ()
     | & _25 : bool = Any.any_l ()
     | & _27 : Int8.t = Any.any_l ()
     | & _28 : Int8.t = Any.any_l ()
@@ -2506,17 +2399,20 @@ module M_checked_ops__test_i8_overflowing_add [#"checked_ops.rs" 191 0 191 44]
   use mach.int.Int
   use creusot.prelude.Any
   
+  type tuple'0  =
+    { _0'0: Int8.t; _1'0: bool }
+  
   constant v_MIN'0 : Int8.t = (-128 : Int8.t)
   
   constant v_MAX'0 : Int8.t = (127 : Int8.t)
   
-  let rec overflowing_add'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:(Int8.t, bool)))= any
-    [ return' (result:(Int8.t, bool))-> {[%#snum2] Int8.to_int self + Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
+  let rec overflowing_add'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum2] Int8.to_int self + Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
       /\ Int8.to_int self + Int8.to_int rhs <= Int8.to_int (v_MAX'0 : Int8.t)
-       -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self + Int8.to_int rhs}
-      {[%#snum3] exists k : int . Int8.to_int (let (a, _) = result in a)
+       -> Int8.to_int result._0'0 = Int8.to_int self + Int8.to_int rhs}
+      {[%#snum3] exists k : int . Int8.to_int result._0'0
       = Int8.to_int self + Int8.to_int rhs + k * (Int8.to_int (v_MAX'0 : Int8.t) - Int8.to_int (v_MIN'0 : Int8.t) + 1)}
-      {[%#snum4] (let (_, a) = result in a)
+      {[%#snum4] result._1'0
       = (Int8.to_int self + Int8.to_int rhs < Int8.to_int (v_MIN'0 : Int8.t)
       \/ Int8.to_int self + Int8.to_int rhs > Int8.to_int (v_MAX'0 : Int8.t))}
       (! return' {result}) ]
@@ -2538,28 +2434,21 @@ module M_checked_ops__test_i8_overflowing_add [#"checked_ops.rs" 191 0 191 44]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption8] result = (self = C_None'0)} (! return' {result}) ]
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#soption8] result = (self = C_None'0)} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
   let rec test_i8_overflowing_add'0[#"checked_ops.rs" 191 0 191 44] (a:Int8.t) (b:Int8.t) (return'  (ret:()))= (! bb0
-    [ bb0 = s0 [ s0 = overflowing_add'0 {a} {b} (fun (_ret':(Int8.t, bool)) ->  [ &_6 <- _ret' ] s1) | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 = overflowing_add'0 {a} {b} (fun (_ret':tuple'0) ->  [ &_6 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0 [ s0 = wrapping_add'0 {a} {b} (fun (_ret':Int8.t) ->  [ &_9 <- _ret' ] s1) | s1 = bb2 ] 
-    | bb2 = s0
-      [ s0 =  [ &_4 <- (let (r'0, _) = _6 in r'0) = _9 ] s1
-      | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]  ]
-    
-    | bb3 = s0 [ s0 = overflowing_add'0 {a} {b} (fun (_ret':(Int8.t, bool)) ->  [ &_16 <- _ret' ] s1) | s1 = bb5 ] 
+    | bb2 = s0 [ s0 =  [ &_4 <- _6._0'0 = _9 ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]  ] 
+    | bb3 = s0 [ s0 = overflowing_add'0 {a} {b} (fun (_ret':tuple'0) ->  [ &_16 <- _ret' ] s1) | s1 = bb5 ] 
     | bb5 = s0 [ s0 = checked_add'0 {a} {b} (fun (_ret':t_Option'0) ->  [ &_21 <- _ret' ] s1) | s1 = bb6 ] 
     | bb6 = s0 [ s0 = is_none'0 {_21} (fun (_ret':bool) ->  [ &_19 <- _ret' ] s1) | s1 = bb7 ] 
     | bb7 = s0
-      [ s0 =  [ &_14 <- (let (_, r'0) = _16 in r'0) = _19 ] s1
-      | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ]  ]
+      [ s0 =  [ &_14 <- _16._1'0 = _19 ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ]  ]
     
     | bb8 = return' {_0}
     | bb9 = {[%#schecked_ops0] false} any
@@ -2569,10 +2458,10 @@ module M_checked_ops__test_i8_overflowing_add [#"checked_ops.rs" 191 0 191 44]
     | & a : Int8.t = a
     | & b : Int8.t = b
     | & _4 : bool = Any.any_l ()
-    | & _6 : (Int8.t, bool) = Any.any_l ()
+    | & _6 : tuple'0 = Any.any_l ()
     | & _9 : Int8.t = Any.any_l ()
     | & _14 : bool = Any.any_l ()
-    | & _16 : (Int8.t, bool) = Any.any_l ()
+    | & _16 : tuple'0 = Any.any_l ()
     | & _19 : bool = Any.any_l ()
     | & _21 : t_Option'0 = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
@@ -2661,24 +2550,12 @@ module M_checked_ops__test_i8_sub_example [#"checked_ops.rs" 197 0 197 28]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:Int8.t))= {[@expl:unwrap requires] [%#soption52] self <> C_None'0}
+    any [ return' (result:Int8.t)-> {[%#soption53] C_Some'0 result = self} (! return' {result}) ] 
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption54] result = (self = C_None'0)} (! return' {result}) ]
   
-  predicate inv'1 (_1 : Int8.t)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Int8.t [inv'1 x] . inv'1 x = true
-  
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:Int8.t))= {[@expl:unwrap 'self' type invariant] inv'0 self}
-    {[@expl:unwrap requires] [%#soption52] self <> C_None'0}
-    any [ return' (result:Int8.t)-> {inv'1 result} {[%#soption53] C_Some'0 result = self} (! return' {result}) ] 
-  
-  predicate inv'2 (_1 : t_Option'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'2 self}
-    any [ return' (result:bool)-> {[%#soption54] result = (self = C_None'0)} (! return' {result}) ] 
   
   let rec wrapping_sub'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:Int8.t))= any
     [ return' (result:Int8.t)-> {[%#snum55] result = Int8.sub self rhs} (! return' {result}) ]
@@ -2695,13 +2572,16 @@ module M_checked_ops__test_i8_sub_example [#"checked_ops.rs" 197 0 197 28]
       (! return' {result}) ]
   
   
-  let rec overflowing_sub'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:(Int8.t, bool)))= any
-    [ return' (result:(Int8.t, bool))-> {[%#snum59] Int8.to_int self - Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
+  type tuple'0  =
+    { _0'0: Int8.t; _1'0: bool }
+  
+  let rec overflowing_sub'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum59] Int8.to_int self - Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
       /\ Int8.to_int self - Int8.to_int rhs <= Int8.to_int (v_MAX'0 : Int8.t)
-       -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self - Int8.to_int rhs}
-      {[%#snum60] exists k : int . Int8.to_int (let (a, _) = result in a)
+       -> Int8.to_int result._0'0 = Int8.to_int self - Int8.to_int rhs}
+      {[%#snum60] exists k : int . Int8.to_int result._0'0
       = Int8.to_int self - Int8.to_int rhs + k * (Int8.to_int (v_MAX'0 : Int8.t) - Int8.to_int (v_MIN'0 : Int8.t) + 1)}
-      {[%#snum61] (let (_, a) = result in a)
+      {[%#snum61] result._1'0
       = (Int8.to_int self - Int8.to_int rhs < Int8.to_int (v_MIN'0 : Int8.t)
       \/ Int8.to_int self - Int8.to_int rhs > Int8.to_int (v_MAX'0 : Int8.t))}
       (! return' {result}) ]
@@ -2793,42 +2673,41 @@ module M_checked_ops__test_i8_sub_example [#"checked_ops.rs" 197 0 197 28]
     
     | bb29 = s0
       [ s0 = overflowing_sub'0 {[%#schecked_ops26] (5 : Int8.t)} {[%#schecked_ops27] (10 : Int8.t)}
-          (fun (_ret':(Int8.t, bool)) ->  [ &res <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res <- _ret' ] s1)
       | s1 = bb31 ]
     
     | bb31 = s0
-      [ s0 =  [ &_42 <- (let (r'0, _) = res in r'0) = ([%#schecked_ops28] (-5 : Int8.t)) ] s1
+      [ s0 =  [ &_42 <- res._0'0 = ([%#schecked_ops28] (-5 : Int8.t)) ] s1
       | s1 = any [ br0 -> {_42 = false} (! bb35) | br1 -> {_42} (! bb32) ]  ]
     
     | bb32 = s0
-      [ s0 =  [ &_44 <- (let (_, r'0) = res in r'0) = ([%#schecked_ops29] false) ] s1
+      [ s0 =  [ &_44 <- res._1'0 = ([%#schecked_ops29] false) ] s1
       | s1 = any [ br0 -> {_44 = false} (! bb34) | br1 -> {_44} (! bb33) ]  ]
     
     | bb33 = s0
       [ s0 = overflowing_sub'0 {[%#schecked_ops30] (120 : Int8.t)} {[%#schecked_ops31] (10 : Int8.t)}
-          (fun (_ret':(Int8.t, bool)) ->  [ &res1 <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res1 <- _ret' ] s1)
       | s1 = bb37 ]
     
     | bb37 = s0
-      [ s0 =  [ &_49 <- (let (r'0, _) = res1 in r'0) = ([%#schecked_ops32] (110 : Int8.t)) ] s1
+      [ s0 =  [ &_49 <- res1._0'0 = ([%#schecked_ops32] (110 : Int8.t)) ] s1
       | s1 = any [ br0 -> {_49 = false} (! bb41) | br1 -> {_49} (! bb38) ]  ]
     
     | bb38 = s0
-      [ s0 =  [ &_51 <- (let (_, r'0) = res1 in r'0) = ([%#schecked_ops33] false) ] s1
+      [ s0 =  [ &_51 <- res1._1'0 = ([%#schecked_ops33] false) ] s1
       | s1 = any [ br0 -> {_51 = false} (! bb40) | br1 -> {_51} (! bb39) ]  ]
     
     | bb39 = s0
       [ s0 = overflowing_sub'0 {[%#schecked_ops34] (-120 : Int8.t)} {[%#schecked_ops35] (10 : Int8.t)}
-          (fun (_ret':(Int8.t, bool)) ->  [ &res2 <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res2 <- _ret' ] s1)
       | s1 = bb43 ]
     
     | bb43 = s0
-      [ s0 =  [ &_56 <- (let (r'0, _) = res2 in r'0) = ([%#schecked_ops36] (126 : Int8.t)) ] s1
+      [ s0 =  [ &_56 <- res2._0'0 = ([%#schecked_ops36] (126 : Int8.t)) ] s1
       | s1 = any [ br0 -> {_56 = false} (! bb47) | br1 -> {_56} (! bb44) ]  ]
     
     | bb44 = s0
-      [ s0 =  [ &_58 <- let (_, r'0) = res2 in r'0 ] s1
-      | s1 = any [ br0 -> {_58 = false} (! bb46) | br1 -> {_58} (! bb45) ]  ]
+      [ s0 =  [ &_58 <- res2._1'0 ] s1 | s1 = any [ br0 -> {_58 = false} (! bb46) | br1 -> {_58} (! bb45) ]  ]
     
     | bb45 = return' {_0}
     | bb46 = bb48
@@ -2871,13 +2750,13 @@ module M_checked_ops__test_i8_sub_example [#"checked_ops.rs" 197 0 197 28]
     | & _34 : Int8.t = Any.any_l ()
     | & _37 : bool = Any.any_l ()
     | & _38 : Int8.t = Any.any_l ()
-    | & res : (Int8.t, bool) = Any.any_l ()
+    | & res : tuple'0 = Any.any_l ()
     | & _42 : bool = Any.any_l ()
     | & _44 : bool = Any.any_l ()
-    | & res1 : (Int8.t, bool) = Any.any_l ()
+    | & res1 : tuple'0 = Any.any_l ()
     | & _49 : bool = Any.any_l ()
     | & _51 : bool = Any.any_l ()
-    | & res2 : (Int8.t, bool) = Any.any_l ()
+    | & res2 : tuple'0 = Any.any_l ()
     | & _56 : bool = Any.any_l ()
     | & _58 : bool = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
@@ -2929,12 +2808,9 @@ module M_checked_ops__test_i8_sub_overflow_pos [#"checked_ops.rs" 220 0 220 38]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption17] result = (self = C_None'0)} (! return' {result}) ]
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#soption17] result = (self = C_None'0)} (! return' {result}) ] 
   
   let rec wrapping_sub'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:Int8.t))= any
     [ return' (result:Int8.t)-> {[%#snum18] result = Int8.sub self rhs} (! return' {result}) ]
@@ -2951,13 +2827,16 @@ module M_checked_ops__test_i8_sub_overflow_pos [#"checked_ops.rs" 220 0 220 38]
       (! return' {result}) ]
   
   
-  let rec overflowing_sub'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:(Int8.t, bool)))= any
-    [ return' (result:(Int8.t, bool))-> {[%#snum22] Int8.to_int self - Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
+  type tuple'0  =
+    { _0'0: Int8.t; _1'0: bool }
+  
+  let rec overflowing_sub'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum22] Int8.to_int self - Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
       /\ Int8.to_int self - Int8.to_int rhs <= Int8.to_int (v_MAX'0 : Int8.t)
-       -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self - Int8.to_int rhs}
-      {[%#snum23] exists k : int . Int8.to_int (let (a, _) = result in a)
+       -> Int8.to_int result._0'0 = Int8.to_int self - Int8.to_int rhs}
+      {[%#snum23] exists k : int . Int8.to_int result._0'0
       = Int8.to_int self - Int8.to_int rhs + k * (Int8.to_int (v_MAX'0 : Int8.t) - Int8.to_int (v_MIN'0 : Int8.t) + 1)}
-      {[%#snum24] (let (_, a) = result in a)
+      {[%#snum24] result._1'0
       = (Int8.to_int self - Int8.to_int rhs < Int8.to_int (v_MIN'0 : Int8.t)
       \/ Int8.to_int self - Int8.to_int rhs > Int8.to_int (v_MAX'0 : Int8.t))}
       (! return' {result}) ]
@@ -2993,20 +2872,16 @@ module M_checked_ops__test_i8_sub_overflow_pos [#"checked_ops.rs" 220 0 220 38]
       | s1 = any [ br0 -> {_18 = false} (! bb10) | br1 -> {_18} (! bb9) ]  ]
     
     | bb9 = s0
-      [ s0 = overflowing_sub'0 {[%#schecked_ops6] (-128 : Int8.t)} {a}
-          (fun (_ret':(Int8.t, bool)) ->  [ &res <- _ret' ] s1)
+      [ s0 = overflowing_sub'0 {[%#schecked_ops6] (-128 : Int8.t)} {a} (fun (_ret':tuple'0) ->  [ &res <- _ret' ] s1)
       | s1 = bb11 ]
     
     | bb11 = s0
       [ s0 = Int8.sub {[%#schecked_ops7] (127 : Int8.t)} {a} (fun (_ret':Int8.t) ->  [ &_28 <- _ret' ] s1)
       | s1 = Int8.add {_28} {[%#schecked_ops8] (1 : Int8.t)} (fun (_ret':Int8.t) ->  [ &_27 <- _ret' ] s2)
-      | s2 =  [ &_25 <- (let (r'0, _) = res in r'0) = _27 ] s3
+      | s2 =  [ &_25 <- res._0'0 = _27 ] s3
       | s3 = any [ br0 -> {_25 = false} (! bb15) | br1 -> {_25} (! bb12) ]  ]
     
-    | bb12 = s0
-      [ s0 =  [ &_30 <- let (_, r'0) = res in r'0 ] s1
-      | s1 = any [ br0 -> {_30 = false} (! bb14) | br1 -> {_30} (! bb13) ]  ]
-    
+    | bb12 = s0 [ s0 =  [ &_30 <- res._1'0 ] s1 | s1 = any [ br0 -> {_30 = false} (! bb14) | br1 -> {_30} (! bb13) ]  ] 
     | bb13 = return' {_0}
     | bb14 = bb16
     | bb15 = bb16
@@ -3025,7 +2900,7 @@ module M_checked_ops__test_i8_sub_overflow_pos [#"checked_ops.rs" 220 0 220 38]
     | & _14 : Int8.t = Any.any_l ()
     | & _18 : bool = Any.any_l ()
     | & _19 : Int8.t = Any.any_l ()
-    | & res : (Int8.t, bool) = Any.any_l ()
+    | & res : tuple'0 = Any.any_l ()
     | & _25 : bool = Any.any_l ()
     | & _27 : Int8.t = Any.any_l ()
     | & _28 : Int8.t = Any.any_l ()
@@ -3079,12 +2954,9 @@ module M_checked_ops__test_i8_sub_overflow_neg [#"checked_ops.rs" 230 0 230 38]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption17] result = (self = C_None'0)} (! return' {result}) ]
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#soption17] result = (self = C_None'0)} (! return' {result}) ] 
   
   let rec wrapping_sub'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:Int8.t))= any
     [ return' (result:Int8.t)-> {[%#snum18] result = Int8.sub self rhs} (! return' {result}) ]
@@ -3101,13 +2973,16 @@ module M_checked_ops__test_i8_sub_overflow_neg [#"checked_ops.rs" 230 0 230 38]
       (! return' {result}) ]
   
   
-  let rec overflowing_sub'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:(Int8.t, bool)))= any
-    [ return' (result:(Int8.t, bool))-> {[%#snum22] Int8.to_int self - Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
+  type tuple'0  =
+    { _0'0: Int8.t; _1'0: bool }
+  
+  let rec overflowing_sub'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum22] Int8.to_int self - Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
       /\ Int8.to_int self - Int8.to_int rhs <= Int8.to_int (v_MAX'0 : Int8.t)
-       -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self - Int8.to_int rhs}
-      {[%#snum23] exists k : int . Int8.to_int (let (a, _) = result in a)
+       -> Int8.to_int result._0'0 = Int8.to_int self - Int8.to_int rhs}
+      {[%#snum23] exists k : int . Int8.to_int result._0'0
       = Int8.to_int self - Int8.to_int rhs + k * (Int8.to_int (v_MAX'0 : Int8.t) - Int8.to_int (v_MIN'0 : Int8.t) + 1)}
-      {[%#snum24] (let (_, a) = result in a)
+      {[%#snum24] result._1'0
       = (Int8.to_int self - Int8.to_int rhs < Int8.to_int (v_MIN'0 : Int8.t)
       \/ Int8.to_int self - Int8.to_int rhs > Int8.to_int (v_MAX'0 : Int8.t))}
       (! return' {result}) ]
@@ -3144,21 +3019,17 @@ module M_checked_ops__test_i8_sub_overflow_neg [#"checked_ops.rs" 230 0 230 38]
       | s1 = any [ br0 -> {_19 = false} (! bb10) | br1 -> {_19} (! bb9) ]  ]
     
     | bb9 = s0
-      [ s0 = overflowing_sub'0 {[%#schecked_ops6] (127 : Int8.t)} {a}
-          (fun (_ret':(Int8.t, bool)) ->  [ &res <- _ret' ] s1)
+      [ s0 = overflowing_sub'0 {[%#schecked_ops6] (127 : Int8.t)} {a} (fun (_ret':tuple'0) ->  [ &res <- _ret' ] s1)
       | s1 = bb11 ]
     
     | bb11 = s0
       [ s0 = Int8.add {[%#schecked_ops7] (2 : Int8.t)} {a} (fun (_ret':Int8.t) ->  [ &_30 <- _ret' ] s1)
       | s1 = Int8.neg {_30} (fun (_ret:Int8.t) ->  [ &_29 <- _ret ] s2)
       | s2 = Int8.sub {_29} {[%#schecked_ops8] (127 : Int8.t)} (fun (_ret':Int8.t) ->  [ &_28 <- _ret' ] s3)
-      | s3 =  [ &_26 <- (let (r'0, _) = res in r'0) = _28 ] s4
+      | s3 =  [ &_26 <- res._0'0 = _28 ] s4
       | s4 = any [ br0 -> {_26 = false} (! bb15) | br1 -> {_26} (! bb12) ]  ]
     
-    | bb12 = s0
-      [ s0 =  [ &_32 <- let (_, r'0) = res in r'0 ] s1
-      | s1 = any [ br0 -> {_32 = false} (! bb14) | br1 -> {_32} (! bb13) ]  ]
-    
+    | bb12 = s0 [ s0 =  [ &_32 <- res._1'0 ] s1 | s1 = any [ br0 -> {_32 = false} (! bb14) | br1 -> {_32} (! bb13) ]  ] 
     | bb13 = return' {_0}
     | bb14 = bb16
     | bb15 = bb16
@@ -3178,7 +3049,7 @@ module M_checked_ops__test_i8_sub_overflow_neg [#"checked_ops.rs" 230 0 230 38]
     | & _15 : Int8.t = Any.any_l ()
     | & _19 : bool = Any.any_l ()
     | & _20 : Int8.t = Any.any_l ()
-    | & res : (Int8.t, bool) = Any.any_l ()
+    | & res : tuple'0 = Any.any_l ()
     | & _26 : bool = Any.any_l ()
     | & _28 : Int8.t = Any.any_l ()
     | & _29 : Int8.t = Any.any_l ()
@@ -3226,17 +3097,20 @@ module M_checked_ops__test_i8_overflowing_sub [#"checked_ops.rs" 246 0 246 44]
   use mach.int.Int
   use creusot.prelude.Any
   
+  type tuple'0  =
+    { _0'0: Int8.t; _1'0: bool }
+  
   constant v_MIN'0 : Int8.t = (-128 : Int8.t)
   
   constant v_MAX'0 : Int8.t = (127 : Int8.t)
   
-  let rec overflowing_sub'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:(Int8.t, bool)))= any
-    [ return' (result:(Int8.t, bool))-> {[%#snum2] Int8.to_int self - Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
+  let rec overflowing_sub'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum2] Int8.to_int self - Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
       /\ Int8.to_int self - Int8.to_int rhs <= Int8.to_int (v_MAX'0 : Int8.t)
-       -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self - Int8.to_int rhs}
-      {[%#snum3] exists k : int . Int8.to_int (let (a, _) = result in a)
+       -> Int8.to_int result._0'0 = Int8.to_int self - Int8.to_int rhs}
+      {[%#snum3] exists k : int . Int8.to_int result._0'0
       = Int8.to_int self - Int8.to_int rhs + k * (Int8.to_int (v_MAX'0 : Int8.t) - Int8.to_int (v_MIN'0 : Int8.t) + 1)}
-      {[%#snum4] (let (_, a) = result in a)
+      {[%#snum4] result._1'0
       = (Int8.to_int self - Int8.to_int rhs < Int8.to_int (v_MIN'0 : Int8.t)
       \/ Int8.to_int self - Int8.to_int rhs > Int8.to_int (v_MAX'0 : Int8.t))}
       (! return' {result}) ]
@@ -3258,28 +3132,21 @@ module M_checked_ops__test_i8_overflowing_sub [#"checked_ops.rs" 246 0 246 44]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption8] result = (self = C_None'0)} (! return' {result}) ]
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#soption8] result = (self = C_None'0)} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
   let rec test_i8_overflowing_sub'0[#"checked_ops.rs" 246 0 246 44] (a:Int8.t) (b:Int8.t) (return'  (ret:()))= (! bb0
-    [ bb0 = s0 [ s0 = overflowing_sub'0 {a} {b} (fun (_ret':(Int8.t, bool)) ->  [ &_6 <- _ret' ] s1) | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 = overflowing_sub'0 {a} {b} (fun (_ret':tuple'0) ->  [ &_6 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0 [ s0 = wrapping_sub'0 {a} {b} (fun (_ret':Int8.t) ->  [ &_9 <- _ret' ] s1) | s1 = bb2 ] 
-    | bb2 = s0
-      [ s0 =  [ &_4 <- (let (r'0, _) = _6 in r'0) = _9 ] s1
-      | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]  ]
-    
-    | bb3 = s0 [ s0 = overflowing_sub'0 {a} {b} (fun (_ret':(Int8.t, bool)) ->  [ &_16 <- _ret' ] s1) | s1 = bb5 ] 
+    | bb2 = s0 [ s0 =  [ &_4 <- _6._0'0 = _9 ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]  ] 
+    | bb3 = s0 [ s0 = overflowing_sub'0 {a} {b} (fun (_ret':tuple'0) ->  [ &_16 <- _ret' ] s1) | s1 = bb5 ] 
     | bb5 = s0 [ s0 = checked_sub'0 {a} {b} (fun (_ret':t_Option'0) ->  [ &_21 <- _ret' ] s1) | s1 = bb6 ] 
     | bb6 = s0 [ s0 = is_none'0 {_21} (fun (_ret':bool) ->  [ &_19 <- _ret' ] s1) | s1 = bb7 ] 
     | bb7 = s0
-      [ s0 =  [ &_14 <- (let (_, r'0) = _16 in r'0) = _19 ] s1
-      | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ]  ]
+      [ s0 =  [ &_14 <- _16._1'0 = _19 ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ]  ]
     
     | bb8 = return' {_0}
     | bb9 = {[%#schecked_ops0] false} any
@@ -3289,10 +3156,10 @@ module M_checked_ops__test_i8_overflowing_sub [#"checked_ops.rs" 246 0 246 44]
     | & a : Int8.t = a
     | & b : Int8.t = b
     | & _4 : bool = Any.any_l ()
-    | & _6 : (Int8.t, bool) = Any.any_l ()
+    | & _6 : tuple'0 = Any.any_l ()
     | & _9 : Int8.t = Any.any_l ()
     | & _14 : bool = Any.any_l ()
-    | & _16 : (Int8.t, bool) = Any.any_l ()
+    | & _16 : tuple'0 = Any.any_l ()
     | & _19 : bool = Any.any_l ()
     | & _21 : t_Option'0 = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
@@ -3380,24 +3247,12 @@ module M_checked_ops__test_i8_mul_example [#"checked_ops.rs" 252 0 252 28]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:Int8.t))= {[@expl:unwrap requires] [%#soption51] self <> C_None'0}
+    any [ return' (result:Int8.t)-> {[%#soption52] C_Some'0 result = self} (! return' {result}) ] 
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption53] result = (self = C_None'0)} (! return' {result}) ]
   
-  predicate inv'1 (_1 : Int8.t)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Int8.t [inv'1 x] . inv'1 x = true
-  
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:Int8.t))= {[@expl:unwrap 'self' type invariant] inv'0 self}
-    {[@expl:unwrap requires] [%#soption51] self <> C_None'0}
-    any [ return' (result:Int8.t)-> {inv'1 result} {[%#soption52] C_Some'0 result = self} (! return' {result}) ] 
-  
-  predicate inv'2 (_1 : t_Option'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'2 self}
-    any [ return' (result:bool)-> {[%#soption53] result = (self = C_None'0)} (! return' {result}) ] 
   
   let rec wrapping_mul'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:Int8.t))= any
     [ return' (result:Int8.t)-> {[%#snum54] result = Int8.mul self rhs} (! return' {result}) ]
@@ -3414,13 +3269,16 @@ module M_checked_ops__test_i8_mul_example [#"checked_ops.rs" 252 0 252 28]
       (! return' {result}) ]
   
   
-  let rec overflowing_mul'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:(Int8.t, bool)))= any
-    [ return' (result:(Int8.t, bool))-> {[%#snum58] Int8.to_int self * Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
+  type tuple'0  =
+    { _0'0: Int8.t; _1'0: bool }
+  
+  let rec overflowing_mul'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum58] Int8.to_int self * Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
       /\ Int8.to_int self * Int8.to_int rhs <= Int8.to_int (v_MAX'0 : Int8.t)
-       -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self * Int8.to_int rhs}
-      {[%#snum59] exists k : int . Int8.to_int (let (a, _) = result in a)
+       -> Int8.to_int result._0'0 = Int8.to_int self * Int8.to_int rhs}
+      {[%#snum59] exists k : int . Int8.to_int result._0'0
       = Int8.to_int self * Int8.to_int rhs + k * (Int8.to_int (v_MAX'0 : Int8.t) - Int8.to_int (v_MIN'0 : Int8.t) + 1)}
-      {[%#snum60] (let (_, a) = result in a)
+      {[%#snum60] result._1'0
       = (Int8.to_int self * Int8.to_int rhs < Int8.to_int (v_MIN'0 : Int8.t)
       \/ Int8.to_int self * Int8.to_int rhs > Int8.to_int (v_MAX'0 : Int8.t))}
       (! return' {result}) ]
@@ -3509,42 +3367,40 @@ module M_checked_ops__test_i8_mul_example [#"checked_ops.rs" 252 0 252 28]
     
     | bb29 = s0
       [ s0 = overflowing_mul'0 {[%#schecked_ops25] (5 : Int8.t)} {[%#schecked_ops26] (10 : Int8.t)}
-          (fun (_ret':(Int8.t, bool)) ->  [ &res <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res <- _ret' ] s1)
       | s1 = bb31 ]
     
     | bb31 = s0
-      [ s0 =  [ &_42 <- (let (r'0, _) = res in r'0) = ([%#schecked_ops27] (50 : Int8.t)) ] s1
+      [ s0 =  [ &_42 <- res._0'0 = ([%#schecked_ops27] (50 : Int8.t)) ] s1
       | s1 = any [ br0 -> {_42 = false} (! bb35) | br1 -> {_42} (! bb32) ]  ]
     
     | bb32 = s0
-      [ s0 =  [ &_44 <- (let (_, r'0) = res in r'0) = ([%#schecked_ops28] false) ] s1
+      [ s0 =  [ &_44 <- res._1'0 = ([%#schecked_ops28] false) ] s1
       | s1 = any [ br0 -> {_44 = false} (! bb34) | br1 -> {_44} (! bb33) ]  ]
     
     | bb33 = s0
       [ s0 = overflowing_mul'0 {[%#schecked_ops29] (50 : Int8.t)} {[%#schecked_ops30] (10 : Int8.t)}
-          (fun (_ret':(Int8.t, bool)) ->  [ &res1 <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res1 <- _ret' ] s1)
       | s1 = bb37 ]
     
     | bb37 = s0
-      [ s0 =  [ &_49 <- (let (r'0, _) = res1 in r'0) = ([%#schecked_ops31] (-12 : Int8.t)) ] s1
+      [ s0 =  [ &_49 <- res1._0'0 = ([%#schecked_ops31] (-12 : Int8.t)) ] s1
       | s1 = any [ br0 -> {_49 = false} (! bb41) | br1 -> {_49} (! bb38) ]  ]
     
     | bb38 = s0
-      [ s0 =  [ &_51 <- let (_, r'0) = res1 in r'0 ] s1
-      | s1 = any [ br0 -> {_51 = false} (! bb40) | br1 -> {_51} (! bb39) ]  ]
+      [ s0 =  [ &_51 <- res1._1'0 ] s1 | s1 = any [ br0 -> {_51 = false} (! bb40) | br1 -> {_51} (! bb39) ]  ]
     
     | bb39 = s0
       [ s0 = overflowing_mul'0 {[%#schecked_ops33] (50 : Int8.t)} {[%#schecked_ops34] (-10 : Int8.t)}
-          (fun (_ret':(Int8.t, bool)) ->  [ &res2 <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res2 <- _ret' ] s1)
       | s1 = bb43 ]
     
     | bb43 = s0
-      [ s0 =  [ &_56 <- (let (r'0, _) = res2 in r'0) = ([%#schecked_ops35] (12 : Int8.t)) ] s1
+      [ s0 =  [ &_56 <- res2._0'0 = ([%#schecked_ops35] (12 : Int8.t)) ] s1
       | s1 = any [ br0 -> {_56 = false} (! bb47) | br1 -> {_56} (! bb44) ]  ]
     
     | bb44 = s0
-      [ s0 =  [ &_58 <- let (_, r'0) = res2 in r'0 ] s1
-      | s1 = any [ br0 -> {_58 = false} (! bb46) | br1 -> {_58} (! bb45) ]  ]
+      [ s0 =  [ &_58 <- res2._1'0 ] s1 | s1 = any [ br0 -> {_58 = false} (! bb46) | br1 -> {_58} (! bb45) ]  ]
     
     | bb45 = return' {_0}
     | bb46 = bb48
@@ -3586,13 +3442,13 @@ module M_checked_ops__test_i8_mul_example [#"checked_ops.rs" 252 0 252 28]
     | & _34 : Int8.t = Any.any_l ()
     | & _37 : bool = Any.any_l ()
     | & _38 : Int8.t = Any.any_l ()
-    | & res : (Int8.t, bool) = Any.any_l ()
+    | & res : tuple'0 = Any.any_l ()
     | & _42 : bool = Any.any_l ()
     | & _44 : bool = Any.any_l ()
-    | & res1 : (Int8.t, bool) = Any.any_l ()
+    | & res1 : tuple'0 = Any.any_l ()
     | & _49 : bool = Any.any_l ()
     | & _51 : bool = Any.any_l ()
-    | & res2 : (Int8.t, bool) = Any.any_l ()
+    | & res2 : tuple'0 = Any.any_l ()
     | & _56 : bool = Any.any_l ()
     | & _58 : bool = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
@@ -3643,17 +3499,8 @@ module M_checked_ops__test_i8_mul_zero [#"checked_ops.rs" 274 0 274 30]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : Int8.t)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Int8.t [inv'1 x] . inv'1 x = true
-  
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:Int8.t))= {[@expl:unwrap 'self' type invariant] inv'0 self}
-    {[@expl:unwrap requires] [%#soption15] self <> C_None'0}
-    any [ return' (result:Int8.t)-> {inv'1 result} {[%#soption16] C_Some'0 result = self} (! return' {result}) ] 
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:Int8.t))= {[@expl:unwrap requires] [%#soption15] self <> C_None'0}
+    any [ return' (result:Int8.t)-> {[%#soption16] C_Some'0 result = self} (! return' {result}) ] 
   
   let rec wrapping_mul'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:Int8.t))= any
     [ return' (result:Int8.t)-> {[%#snum17] result = Int8.mul self rhs} (! return' {result}) ]
@@ -3670,13 +3517,16 @@ module M_checked_ops__test_i8_mul_zero [#"checked_ops.rs" 274 0 274 30]
       (! return' {result}) ]
   
   
-  let rec overflowing_mul'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:(Int8.t, bool)))= any
-    [ return' (result:(Int8.t, bool))-> {[%#snum21] Int8.to_int self * Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
+  type tuple'0  =
+    { _0'0: Int8.t; _1'0: bool }
+  
+  let rec overflowing_mul'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum21] Int8.to_int self * Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
       /\ Int8.to_int self * Int8.to_int rhs <= Int8.to_int (v_MAX'0 : Int8.t)
-       -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self * Int8.to_int rhs}
-      {[%#snum22] exists k : int . Int8.to_int (let (a, _) = result in a)
+       -> Int8.to_int result._0'0 = Int8.to_int self * Int8.to_int rhs}
+      {[%#snum22] exists k : int . Int8.to_int result._0'0
       = Int8.to_int self * Int8.to_int rhs + k * (Int8.to_int (v_MAX'0 : Int8.t) - Int8.to_int (v_MIN'0 : Int8.t) + 1)}
-      {[%#snum23] (let (_, a) = result in a)
+      {[%#snum23] result._1'0
       = (Int8.to_int self * Int8.to_int rhs < Int8.to_int (v_MIN'0 : Int8.t)
       \/ Int8.to_int self * Int8.to_int rhs > Int8.to_int (v_MAX'0 : Int8.t))}
       (! return' {result}) ]
@@ -3711,16 +3561,15 @@ module M_checked_ops__test_i8_mul_zero [#"checked_ops.rs" 274 0 274 30]
       | s1 = any [ br0 -> {_14 = false} (! bb10) | br1 -> {_14} (! bb9) ]  ]
     
     | bb9 = s0
-      [ s0 = overflowing_mul'0 {[%#schecked_ops6] (0 : Int8.t)} {a}
-          (fun (_ret':(Int8.t, bool)) ->  [ &res <- _ret' ] s1)
+      [ s0 = overflowing_mul'0 {[%#schecked_ops6] (0 : Int8.t)} {a} (fun (_ret':tuple'0) ->  [ &res <- _ret' ] s1)
       | s1 = bb11 ]
     
     | bb11 = s0
-      [ s0 =  [ &_21 <- (let (r'0, _) = res in r'0) = ([%#schecked_ops7] (0 : Int8.t)) ] s1
+      [ s0 =  [ &_21 <- res._0'0 = ([%#schecked_ops7] (0 : Int8.t)) ] s1
       | s1 = any [ br0 -> {_21 = false} (! bb15) | br1 -> {_21} (! bb12) ]  ]
     
     | bb12 = s0
-      [ s0 =  [ &_23 <- (let (_, r'0) = res in r'0) = ([%#schecked_ops8] false) ] s1
+      [ s0 =  [ &_23 <- res._1'0 = ([%#schecked_ops8] false) ] s1
       | s1 = any [ br0 -> {_23 = false} (! bb14) | br1 -> {_23} (! bb13) ]  ]
     
     | bb13 = return' {_0}
@@ -3740,7 +3589,7 @@ module M_checked_ops__test_i8_mul_zero [#"checked_ops.rs" 274 0 274 30]
     | & _10 : Int8.t = Any.any_l ()
     | & _14 : bool = Any.any_l ()
     | & _15 : Int8.t = Any.any_l ()
-    | & res : (Int8.t, bool) = Any.any_l ()
+    | & res : tuple'0 = Any.any_l ()
     | & _21 : bool = Any.any_l ()
     | & _23 : bool = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
@@ -3760,17 +3609,20 @@ module M_checked_ops__test_i8_overflowing_mul [#"checked_ops.rs" 283 0 283 44]
   use mach.int.Int
   use creusot.prelude.Any
   
+  type tuple'0  =
+    { _0'0: Int8.t; _1'0: bool }
+  
   constant v_MIN'0 : Int8.t = (-128 : Int8.t)
   
   constant v_MAX'0 : Int8.t = (127 : Int8.t)
   
-  let rec overflowing_mul'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:(Int8.t, bool)))= any
-    [ return' (result:(Int8.t, bool))-> {[%#snum2] Int8.to_int self * Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
+  let rec overflowing_mul'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:tuple'0))= any
+    [ return' (result:tuple'0)-> {[%#snum2] Int8.to_int self * Int8.to_int rhs >= Int8.to_int (v_MIN'0 : Int8.t)
       /\ Int8.to_int self * Int8.to_int rhs <= Int8.to_int (v_MAX'0 : Int8.t)
-       -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self * Int8.to_int rhs}
-      {[%#snum3] exists k : int . Int8.to_int (let (a, _) = result in a)
+       -> Int8.to_int result._0'0 = Int8.to_int self * Int8.to_int rhs}
+      {[%#snum3] exists k : int . Int8.to_int result._0'0
       = Int8.to_int self * Int8.to_int rhs + k * (Int8.to_int (v_MAX'0 : Int8.t) - Int8.to_int (v_MIN'0 : Int8.t) + 1)}
-      {[%#snum4] (let (_, a) = result in a)
+      {[%#snum4] result._1'0
       = (Int8.to_int self * Int8.to_int rhs < Int8.to_int (v_MIN'0 : Int8.t)
       \/ Int8.to_int self * Int8.to_int rhs > Int8.to_int (v_MAX'0 : Int8.t))}
       (! return' {result}) ]
@@ -3792,28 +3644,21 @@ module M_checked_ops__test_i8_overflowing_mul [#"checked_ops.rs" 283 0 283 44]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption8] result = (self = C_None'0)} (! return' {result}) ]
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#soption8] result = (self = C_None'0)} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   
   let rec test_i8_overflowing_mul'0[#"checked_ops.rs" 283 0 283 44] (a:Int8.t) (b:Int8.t) (return'  (ret:()))= (! bb0
-    [ bb0 = s0 [ s0 = overflowing_mul'0 {a} {b} (fun (_ret':(Int8.t, bool)) ->  [ &_6 <- _ret' ] s1) | s1 = bb1 ] 
+    [ bb0 = s0 [ s0 = overflowing_mul'0 {a} {b} (fun (_ret':tuple'0) ->  [ &_6 <- _ret' ] s1) | s1 = bb1 ] 
     | bb1 = s0 [ s0 = wrapping_mul'0 {a} {b} (fun (_ret':Int8.t) ->  [ &_9 <- _ret' ] s1) | s1 = bb2 ] 
-    | bb2 = s0
-      [ s0 =  [ &_4 <- (let (r'0, _) = _6 in r'0) = _9 ] s1
-      | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]  ]
-    
-    | bb3 = s0 [ s0 = overflowing_mul'0 {a} {b} (fun (_ret':(Int8.t, bool)) ->  [ &_16 <- _ret' ] s1) | s1 = bb5 ] 
+    | bb2 = s0 [ s0 =  [ &_4 <- _6._0'0 = _9 ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]  ] 
+    | bb3 = s0 [ s0 = overflowing_mul'0 {a} {b} (fun (_ret':tuple'0) ->  [ &_16 <- _ret' ] s1) | s1 = bb5 ] 
     | bb5 = s0 [ s0 = checked_mul'0 {a} {b} (fun (_ret':t_Option'0) ->  [ &_21 <- _ret' ] s1) | s1 = bb6 ] 
     | bb6 = s0 [ s0 = is_none'0 {_21} (fun (_ret':bool) ->  [ &_19 <- _ret' ] s1) | s1 = bb7 ] 
     | bb7 = s0
-      [ s0 =  [ &_14 <- (let (_, r'0) = _16 in r'0) = _19 ] s1
-      | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ]  ]
+      [ s0 =  [ &_14 <- _16._1'0 = _19 ] s1 | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ]  ]
     
     | bb8 = return' {_0}
     | bb9 = {[%#schecked_ops0] false} any
@@ -3823,10 +3668,10 @@ module M_checked_ops__test_i8_overflowing_mul [#"checked_ops.rs" 283 0 283 44]
     | & a : Int8.t = a
     | & b : Int8.t = b
     | & _4 : bool = Any.any_l ()
-    | & _6 : (Int8.t, bool) = Any.any_l ()
+    | & _6 : tuple'0 = Any.any_l ()
     | & _9 : Int8.t = Any.any_l ()
     | & _14 : bool = Any.any_l ()
-    | & _16 : (Int8.t, bool) = Any.any_l ()
+    | & _16 : tuple'0 = Any.any_l ()
     | & _19 : bool = Any.any_l ()
     | & _21 : t_Option'0 = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
@@ -3919,24 +3764,12 @@ module M_checked_ops__test_i8_div_example [#"checked_ops.rs" 289 0 289 28]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption55] result = (self = C_None'0)} (! return' {result}) ]
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
   
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#soption55] result = (self = C_None'0)} (! return' {result}) ] 
-  
-  predicate inv'1 (_1 : t_Option'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x = true
-  
-  predicate inv'2 (_1 : Int8.t)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : Int8.t [inv'2 x] . inv'2 x = true
-  
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:Int8.t))= {[@expl:unwrap 'self' type invariant] inv'1 self}
-    {[@expl:unwrap requires] [%#soption56] self <> C_None'0}
-    any [ return' (result:Int8.t)-> {inv'2 result} {[%#soption57] C_Some'0 result = self} (! return' {result}) ] 
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:Int8.t))= {[@expl:unwrap requires] [%#soption56] self <> C_None'0}
+    any [ return' (result:Int8.t)-> {[%#soption57] C_Some'0 result = self} (! return' {result}) ] 
   
   let rec wrapping_div'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:Int8.t))= {[@expl:wrapping_div requires] [%#snum58] Int8.to_int rhs
     <> 0}
@@ -3958,15 +3791,17 @@ module M_checked_ops__test_i8_div_example [#"checked_ops.rs" 289 0 289 28]
       (! return' {result}) ]
   
   
-  let rec overflowing_div'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:(Int8.t, bool)))= {[@expl:overflowing_div requires] [%#snum64] Int8.to_int rhs
+  type tuple'0  =
+    { _0'0: Int8.t; _1'0: bool }
+  
+  let rec overflowing_div'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:tuple'0))= {[@expl:overflowing_div requires] [%#snum64] Int8.to_int rhs
     <> 0}
     any
-    [ return' (result:(Int8.t, bool))-> {[%#snum65] Int8.to_int self = Int8.to_int (v_MIN'0 : Int8.t)
-      /\ Int8.to_int rhs = - 1  -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self}
+    [ return' (result:tuple'0)-> {[%#snum65] Int8.to_int self = Int8.to_int (v_MIN'0 : Int8.t) /\ Int8.to_int rhs = - 1
+       -> Int8.to_int result._0'0 = Int8.to_int self}
       {[%#snum66] Int8.to_int self = Int8.to_int (v_MIN'0 : Int8.t) /\ Int8.to_int rhs = - 1
-      \/ Int8.to_int (let (a, _) = result in a) = Int.div (Int8.to_int self) (Int8.to_int rhs)}
-      {[%#snum67] (let (_, a) = result in a)
-      = (Int8.to_int self = Int8.to_int (v_MIN'0 : Int8.t) /\ Int8.to_int rhs = - 1)}
+      \/ Int8.to_int result._0'0 = Int.div (Int8.to_int self) (Int8.to_int rhs)}
+      {[%#snum67] result._1'0 = (Int8.to_int self = Int8.to_int (v_MIN'0 : Int8.t) /\ Int8.to_int rhs = - 1)}
       (! return' {result}) ]
   
   
@@ -4063,42 +3898,41 @@ module M_checked_ops__test_i8_div_example [#"checked_ops.rs" 289 0 289 28]
     
     | bb33 = s0
       [ s0 = overflowing_div'0 {[%#schecked_ops28] (5 : Int8.t)} {[%#schecked_ops29] (2 : Int8.t)}
-          (fun (_ret':(Int8.t, bool)) ->  [ &res <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res <- _ret' ] s1)
       | s1 = bb35 ]
     
     | bb35 = s0
-      [ s0 =  [ &_47 <- (let (r'0, _) = res in r'0) = ([%#schecked_ops30] (2 : Int8.t)) ] s1
+      [ s0 =  [ &_47 <- res._0'0 = ([%#schecked_ops30] (2 : Int8.t)) ] s1
       | s1 = any [ br0 -> {_47 = false} (! bb39) | br1 -> {_47} (! bb36) ]  ]
     
     | bb36 = s0
-      [ s0 =  [ &_49 <- (let (_, r'0) = res in r'0) = ([%#schecked_ops31] false) ] s1
+      [ s0 =  [ &_49 <- res._1'0 = ([%#schecked_ops31] false) ] s1
       | s1 = any [ br0 -> {_49 = false} (! bb38) | br1 -> {_49} (! bb37) ]  ]
     
     | bb37 = s0
       [ s0 = overflowing_div'0 {[%#schecked_ops32] (5 : Int8.t)} {[%#schecked_ops33] (-2 : Int8.t)}
-          (fun (_ret':(Int8.t, bool)) ->  [ &res1 <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res1 <- _ret' ] s1)
       | s1 = bb41 ]
     
     | bb41 = s0
-      [ s0 =  [ &_54 <- (let (r'0, _) = res1 in r'0) = ([%#schecked_ops34] (-2 : Int8.t)) ] s1
+      [ s0 =  [ &_54 <- res1._0'0 = ([%#schecked_ops34] (-2 : Int8.t)) ] s1
       | s1 = any [ br0 -> {_54 = false} (! bb45) | br1 -> {_54} (! bb42) ]  ]
     
     | bb42 = s0
-      [ s0 =  [ &_56 <- (let (_, r'0) = res1 in r'0) = ([%#schecked_ops35] false) ] s1
+      [ s0 =  [ &_56 <- res1._1'0 = ([%#schecked_ops35] false) ] s1
       | s1 = any [ br0 -> {_56 = false} (! bb44) | br1 -> {_56} (! bb43) ]  ]
     
     | bb43 = s0
       [ s0 = overflowing_div'0 {[%#schecked_ops36] (-128 : Int8.t)} {[%#schecked_ops37] (-1 : Int8.t)}
-          (fun (_ret':(Int8.t, bool)) ->  [ &res2 <- _ret' ] s1)
+          (fun (_ret':tuple'0) ->  [ &res2 <- _ret' ] s1)
       | s1 = bb47 ]
     
     | bb47 = s0
-      [ s0 =  [ &_61 <- (let (r'0, _) = res2 in r'0) = ([%#schecked_ops38] (-128 : Int8.t)) ] s1
+      [ s0 =  [ &_61 <- res2._0'0 = ([%#schecked_ops38] (-128 : Int8.t)) ] s1
       | s1 = any [ br0 -> {_61 = false} (! bb51) | br1 -> {_61} (! bb48) ]  ]
     
     | bb48 = s0
-      [ s0 =  [ &_63 <- let (_, r'0) = res2 in r'0 ] s1
-      | s1 = any [ br0 -> {_63 = false} (! bb50) | br1 -> {_63} (! bb49) ]  ]
+      [ s0 =  [ &_63 <- res2._1'0 ] s1 | s1 = any [ br0 -> {_63 = false} (! bb50) | br1 -> {_63} (! bb49) ]  ]
     
     | bb49 = return' {_0}
     | bb50 = bb52
@@ -4144,13 +3978,13 @@ module M_checked_ops__test_i8_div_example [#"checked_ops.rs" 289 0 289 28]
     | & _39 : Int8.t = Any.any_l ()
     | & _42 : bool = Any.any_l ()
     | & _43 : Int8.t = Any.any_l ()
-    | & res : (Int8.t, bool) = Any.any_l ()
+    | & res : tuple'0 = Any.any_l ()
     | & _47 : bool = Any.any_l ()
     | & _49 : bool = Any.any_l ()
-    | & res1 : (Int8.t, bool) = Any.any_l ()
+    | & res1 : tuple'0 = Any.any_l ()
     | & _54 : bool = Any.any_l ()
     | & _56 : bool = Any.any_l ()
-    | & res2 : (Int8.t, bool) = Any.any_l ()
+    | & res2 : tuple'0 = Any.any_l ()
     | & _61 : bool = Any.any_l ()
     | & _63 : bool = Any.any_l () ]
      [ return' (result:())-> (! return' {result}) ] 
@@ -4200,17 +4034,8 @@ module M_checked_ops__test_i8_div_no_overflow [#"checked_ops.rs" 313 0 313 44]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : Int8.t)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : Int8.t [inv'1 x] . inv'1 x = true
-  
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:Int8.t))= {[@expl:unwrap 'self' type invariant] inv'0 self}
-    {[@expl:unwrap requires] [%#soption12] self <> C_None'0}
-    any [ return' (result:Int8.t)-> {inv'1 result} {[%#soption13] C_Some'0 result = self} (! return' {result}) ] 
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:Int8.t))= {[@expl:unwrap requires] [%#soption12] self <> C_None'0}
+    any [ return' (result:Int8.t)-> {[%#soption13] C_Some'0 result = self} (! return' {result}) ] 
   
   let rec wrapping_div'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:Int8.t))= {[@expl:wrapping_div requires] [%#snum14] Int8.to_int rhs
     <> 0}
@@ -4232,15 +4057,17 @@ module M_checked_ops__test_i8_div_no_overflow [#"checked_ops.rs" 313 0 313 44]
       (! return' {result}) ]
   
   
-  let rec overflowing_div'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:(Int8.t, bool)))= {[@expl:overflowing_div requires] [%#snum20] Int8.to_int rhs
+  type tuple'0  =
+    { _0'0: Int8.t; _1'0: bool }
+  
+  let rec overflowing_div'0 (self:Int8.t) (rhs:Int8.t) (return'  (ret:tuple'0))= {[@expl:overflowing_div requires] [%#snum20] Int8.to_int rhs
     <> 0}
     any
-    [ return' (result:(Int8.t, bool))-> {[%#snum21] Int8.to_int self = Int8.to_int (v_MIN'0 : Int8.t)
-      /\ Int8.to_int rhs = - 1  -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self}
+    [ return' (result:tuple'0)-> {[%#snum21] Int8.to_int self = Int8.to_int (v_MIN'0 : Int8.t) /\ Int8.to_int rhs = - 1
+       -> Int8.to_int result._0'0 = Int8.to_int self}
       {[%#snum22] Int8.to_int self = Int8.to_int (v_MIN'0 : Int8.t) /\ Int8.to_int rhs = - 1
-      \/ Int8.to_int (let (a, _) = result in a) = Int.div (Int8.to_int self) (Int8.to_int rhs)}
-      {[%#snum23] (let (_, a) = result in a)
-      = (Int8.to_int self = Int8.to_int (v_MIN'0 : Int8.t) /\ Int8.to_int rhs = - 1)}
+      \/ Int8.to_int result._0'0 = Int.div (Int8.to_int self) (Int8.to_int rhs)}
+      {[%#snum23] result._1'0 = (Int8.to_int self = Int8.to_int (v_MIN'0 : Int8.t) /\ Int8.to_int rhs = - 1)}
       (! return' {result}) ]
   
   
@@ -4311,7 +4138,7 @@ module M_checked_ops__test_i8_div_no_overflow [#"checked_ops.rs" 313 0 313 44]
       | s1 =  [ &_32 <- _33 = _36 ] s2
       | s2 = any [ br0 -> {_32 = false} (! bb16) | br1 -> {_32} (! bb15) ]  ]
     
-    | bb15 = s0 [ s0 = overflowing_div'0 {a} {b} (fun (_ret':(Int8.t, bool)) ->  [ &res <- _ret' ] s1) | s1 = bb17 ] 
+    | bb15 = s0 [ s0 = overflowing_div'0 {a} {b} (fun (_ret':tuple'0) ->  [ &res <- _ret' ] s1) | s1 = bb17 ] 
     | bb17 = s0
       [ s0 =  [ &_51 <- a ] s1
       | s1 =  [ &_52 <- b ] s2
@@ -4328,11 +4155,11 @@ module M_checked_ops__test_i8_div_no_overflow [#"checked_ops.rs" 313 0 313 44]
     
     | bb19 = s0
       [ s0 = Int8.div {_51} {_52} (fun (_ret':Int8.t) ->  [ &_50 <- _ret' ] s1)
-      | s1 =  [ &_48 <- (let (r'0, _) = res in r'0) = _50 ] s2
+      | s1 =  [ &_48 <- res._0'0 = _50 ] s2
       | s2 = any [ br0 -> {_48 = false} (! bb23) | br1 -> {_48} (! bb20) ]  ]
     
     | bb20 = s0
-      [ s0 =  [ &_57 <- (let (_, r'0) = res in r'0) = ([%#schecked_ops4] false) ] s1
+      [ s0 =  [ &_57 <- res._1'0 = ([%#schecked_ops4] false) ] s1
       | s1 = any [ br0 -> {_57 = false} (! bb22) | br1 -> {_57} (! bb21) ]  ]
     
     | bb21 = return' {_0}
@@ -4374,7 +4201,7 @@ module M_checked_ops__test_i8_div_no_overflow [#"checked_ops.rs" 313 0 313 44]
     | & _40 : bool = Any.any_l ()
     | & _41 : bool = Any.any_l ()
     | & _42 : bool = Any.any_l ()
-    | & res : (Int8.t, bool) = Any.any_l ()
+    | & res : tuple'0 = Any.any_l ()
     | & _48 : bool = Any.any_l ()
     | & _50 : Int8.t = Any.any_l ()
     | & _51 : Int8.t = Any.any_l ()
@@ -4411,12 +4238,9 @@ module M_checked_ops__test_i8_div_zero [#"checked_ops.rs" 322 0 322 30]
       (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Option'0)
+  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption4] result = (self = C_None'0)} (! return' {result}) ]
   
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Option'0 [inv'0 x] . inv'0 x = true
-  
-  let rec is_none'0 (self:t_Option'0) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'0 self}
-    any [ return' (result:bool)-> {[%#soption4] result = (self = C_None'0)} (! return' {result}) ] 
   
   meta "compute_max_steps" 1000000
   

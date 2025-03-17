@@ -133,19 +133,13 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
     [ return' (result:t_Duration'0)-> {[%#stime21] view'1 result >= 0} (! return' {result}) ]
   
   
-  predicate inv'0 (_1 : t_Duration'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Duration'0 [inv'0 x] . inv'0 x = true
-  
   function deep_model'3 (self : t_Duration'0) : int =
     [%#stime53] view'1 self
   
   function deep_model'0 (self : t_Duration'0) : int =
     [%#smodel48] deep_model'3 self
   
-  let rec ge'0 (self:t_Duration'0) (other:t_Duration'0) (return'  (ret:bool))= {[@expl:ge 'self' type invariant] inv'0 self}
-    {[@expl:ge 'other' type invariant] inv'0 other}
-    any
+  let rec ge'0 (self:t_Duration'0) (other:t_Duration'0) (return'  (ret:bool))= any
     [ return' (result:bool)-> {[%#scmp22] result = (deep_model'0 self >= deep_model'0 other)} (! return' {result}) ]
   
   
@@ -173,6 +167,9 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
     | C_Less'0
     | C_Equal'0
     | C_Greater'0
+  
+  type tuple'0  =
+    { _0'0: t_Option'2; _1'0: t_Option'2 }
   
   function cmp_log'1 (self : int) (o : int) : t_Ordering'0 =
     [%#sord71] if self < o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
@@ -217,11 +214,11 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
   axiom cmp_le_log'1_spec : forall x : int, y : int . [%#sord72] (x <= y) = (cmp_log'1 x y <> C_Greater'0)
   
   function cmp_log'0 (self : t_Option'2) (o : t_Option'2) : t_Ordering'0 =
-    [%#soption68] match (self, o) with
-      | (C_None'2, C_None'2) -> C_Equal'0
-      | (C_None'2, C_Some'0 _) -> C_Less'0
-      | (C_Some'0 _, C_None'2) -> C_Greater'0
-      | (C_Some'0 x, C_Some'0 y) -> cmp_log'1 x y
+    [%#soption68] match { _0'0 = self; _1'0 = o } with
+      | {_0'0 = C_None'2 ; _1'0 = C_None'2} -> C_Equal'0
+      | {_0'0 = C_None'2 ; _1'0 = C_Some'0 _} -> C_Less'0
+      | {_0'0 = C_Some'0 _ ; _1'0 = C_None'2} -> C_Greater'0
+      | {_0'0 = C_Some'0 x ; _1'0 = C_Some'0 y} -> cmp_log'1 x y
       end
   
   function eq_cmp'0 (x : t_Option'2) (y : t_Option'2) : ()
@@ -285,17 +282,9 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
       (! return' {result}) ]
   
   
-  predicate inv'1 (_1 : t_Option'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Option'0 [inv'1 x] . inv'1 x = true
-  
-  predicate inv'2 (_1 : t_Instant'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Instant'0 [inv'2 x] . inv'2 x = true
-  
-  let rec unwrap'0 (self:t_Option'0) (return'  (ret:t_Instant'0))= {[@expl:unwrap 'self' type invariant] inv'1 self}
-    {[@expl:unwrap requires] [%#soption25] self <> C_None'0}
-    any [ return' (result:t_Instant'0)-> {inv'2 result} {[%#soption26] C_Some'1 result = self} (! return' {result}) ] 
+  let rec unwrap'0 (self:t_Option'0) (return'  (ret:t_Instant'0))= {[@expl:unwrap requires] [%#soption25] self
+    <> C_None'0}
+    any [ return' (result:t_Instant'0)-> {[%#soption26] C_Some'1 result = self} (! return' {result}) ] 
   
   function deep_model'2 (self : t_Instant'0) : int =
     [%#smodel48] deep_model'4 self
@@ -333,9 +322,9 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
     [ return' (result:bool)-> {[%#scmp27] result = (deep_model'0 self = deep_model'0 other)} (! return' {result}) ]
   
   
-  let rec gt'0 (self:t_Duration'0) (other:t_Duration'0) (return'  (ret:bool))= {[@expl:gt 'self' type invariant] inv'0 self}
-    {[@expl:gt 'other' type invariant] inv'0 other}
-    any [ return' (result:bool)-> {[%#scmp37] result = (deep_model'0 self > deep_model'0 other)} (! return' {result}) ] 
+  let rec gt'0 (self:t_Duration'0) (other:t_Duration'0) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#scmp37] result = (deep_model'0 self > deep_model'0 other)} (! return' {result}) ]
+  
   
   let rec duration_since'0 (self:t_Instant'0) (earlier:t_Instant'0) (return'  (ret:t_Duration'0))= any
     [ return' (result:t_Duration'0)-> {[%#stime38] view'2 self > view'0 earlier  -> view'1 result > 0}
@@ -353,15 +342,13 @@ module M_instant__test_instant [#"instant.rs" 7 0 7 21]
       (! return' {result}) ]
   
   
-  predicate inv'3 (_1 : t_Option'1)
+  let rec is_some'0 (self:t_Option'1) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption42] result = (self <> C_None'1)} (! return' {result}) ]
   
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'1 [inv'3 x] . inv'3 x = true
   
-  let rec is_some'0 (self:t_Option'1) (return'  (ret:bool))= {[@expl:is_some 'self' type invariant] inv'3 self}
-    any [ return' (result:bool)-> {[%#soption42] result = (self <> C_None'1)} (! return' {result}) ] 
+  let rec is_none'0 (self:t_Option'1) (return'  (ret:bool))= any
+    [ return' (result:bool)-> {[%#soption43] result = (self = C_None'1)} (! return' {result}) ]
   
-  let rec is_none'0 (self:t_Option'1) (return'  (ret:bool))= {[@expl:is_none 'self' type invariant] inv'3 self}
-    any [ return' (result:bool)-> {[%#soption43] result = (self = C_None'1)} (! return' {result}) ] 
   
   let rec saturating_duration_since'0 (self:t_Instant'0) (earlier:t_Instant'0) (return'  (ret:t_Duration'0))= any
     [ return' (result:t_Duration'0)-> {[%#stime44] view'2 self > view'0 earlier  -> view'1 result > 0}

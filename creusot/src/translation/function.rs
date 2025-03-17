@@ -13,7 +13,7 @@ use crate::{
     pearlite::{Term, normalize},
     resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
     translation::{
-        pearlite::{self, TermKind, TermVisitorMut, super_visit_mut_term},
+        pearlite::{Pattern, TermKind, TermVisitorMut, super_visit_mut_term},
         specification::{contract_of, inv_subst},
         traits,
     },
@@ -693,7 +693,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 mir::ProjectionElem::Subtype(ty) => mir::ProjectionElem::Subtype(ty),
             })
             .collect();
-        fmir::Place { local: self.locals[&pl.local], projection }
+        fmir::Place { local: self.locals[&pl.local], projections: projection }
     }
 
     fn check_use_in_logic(&mut self, term: &Term<'tcx>, location: Location) {
@@ -808,16 +808,13 @@ impl<'tcx> TranslationCtx<'tcx> {
 
         let span = self.def_span(def_id);
 
-        let (args_nms, args_tys): (Vec<_>, Vec<_>) =
-            self.sig(def_id).inputs.iter().skip(1).map(|&(nm, _, ref ty)| (nm, ty.clone())).unzip();
+        let args = self.sig(def_id).inputs.iter().skip(1);
 
-        let arg_ty = Ty::new_tup(self.tcx, &args_tys);
-
+        let arg_ty = Ty::new_tup_from_iter(self.tcx, args.clone().map(|(_, _, ty)| ty.clone()));
         let arg_tuple = Term::var(Symbol::intern("args"), arg_ty);
 
-        let arg_pat = pearlite::Pattern::Tuple(
-            args_nms.iter().copied().map(pearlite::Pattern::Binder).collect(),
-        );
+        let arg_pat =
+            Pattern::tuple(args.clone().map(|(nm, _, ty)| Pattern::binder(*nm, *ty)), arg_ty);
 
         let env_ty = self.closure_env_ty(
             self.type_of(def_id).instantiate_identity(),
@@ -825,8 +822,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             self.lifetimes.re_erased,
         );
         let self_ = Term::var(Symbol::intern("self"), env_ty);
-        let params: Vec<_> =
-            args_nms.iter().cloned().zip(args_tys).map(|(nm, ty)| Term::var(nm, ty)).collect();
+        let params: Vec<_> = args.map(|(nm, _, ty)| Term::var(*nm, *ty)).collect();
 
         let mut precondition = if contract.is_empty() {
             self.inferred_precondition_term(
@@ -863,7 +859,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 contract.ensures_conj(self.tcx)
             };
 
-            Some(pearlite::Term {
+            Some(Term {
                 span: postcondition.span,
                 kind: TermKind::Let {
                     pattern: arg_pat.clone(),
@@ -874,7 +870,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             })
         };
 
-        precondition = pearlite::Term {
+        precondition = Term {
             span: precondition.span,
             kind: TermKind::Let {
                 pattern: arg_pat.clone(),
@@ -938,7 +934,10 @@ impl<'tcx> TranslationCtx<'tcx> {
             if let Some(mut postcondition) = postcond(ClosureKind::FnMut) {
                 csubst.visit_mut_term(&mut postcondition);
 
-                let args = subst.as_closure().sig().inputs().skip_binder()[0];
+                let args = self.tcx.instantiate_bound_regions_with_erased(
+                    subst.as_closure().sig().inputs().map_bound(|l| l[0]),
+                );
+
                 let unnest_subst =
                     self.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty)]);
 
@@ -949,7 +948,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                     self.tcx,
                     unnest_id,
                     unnest_subst,
-                    Box::new([self_, result_state]),
+                    [self_, result_state],
                 ));
 
                 postcondition = normalize(self.tcx, self.typing_env(def_id), postcondition);
@@ -1071,12 +1070,12 @@ pub(crate) fn closure_resolve<'tcx>(
     for (ix, ty) in csubst.upvar_tys().iter().enumerate() {
         let proj = Term {
             ty,
-            kind: TermKind::Projection { lhs: Box::new(self_.clone()), name: ix.into() },
+            kind: TermKind::Projection { lhs: Box::new(self_.clone()), idx: ix.into() },
             span: DUMMY_SP,
         };
 
         if let Some((id, subst)) = resolve_predicate_of(ctx, typing_env, ty) {
-            resolve = Term::call(ctx.tcx, typing_env, id, subst, Box::new([proj])).conj(resolve);
+            resolve = Term::call(ctx.tcx, typing_env, id, subst, [proj]).conj(resolve);
         }
     }
 
@@ -1106,7 +1105,7 @@ fn closure_unnest<'tcx>(
             UpvarCapture::ByRef(is_mut) => {
                 let acc = |lhs: Term<'tcx>| Term {
                     ty,
-                    kind: TermKind::Projection { lhs: Box::new(lhs), name: ix.into() },
+                    kind: TermKind::Projection { lhs: Box::new(lhs), idx: ix.into() },
                     span: DUMMY_SP,
                 };
                 let cur = self_.clone();
@@ -1142,11 +1141,11 @@ pub(crate) struct ClosureSubst<'a, 'tcx> {
 impl<'a, 'tcx> ClosureSubst<'a, 'tcx> {
     // TODO: Simplify this logic.
     fn var(&mut self, x: Symbol, span: Span) -> Option<Term<'tcx>> {
-        let (ck, ty, ix) = *self.map.get(&x)?;
+        let (ck, ty, idx) = *self.map.get(&x)?;
 
         let proj = Term {
             ty,
-            kind: TermKind::Projection { lhs: Box::new(self.self_.clone()), name: ix },
+            kind: TermKind::Projection { lhs: Box::new(self.self_.clone()), idx },
             span: DUMMY_SP,
         };
 
@@ -1167,7 +1166,7 @@ impl<'a, 'tcx> ClosureSubst<'a, 'tcx> {
     }
 
     fn old(&self, x: Symbol, span: Span) -> Option<Term<'tcx>> {
-        let (ck, ty, ix) = *self.map.get(&x)?;
+        let (ck, ty, idx) = *self.map.get(&x)?;
 
         let old_self = self.old_self.clone().unwrap_or_else(|| {
             self.ctx.fatal_error(span, "Cannot use `old` in a precondition.").emit()
@@ -1175,7 +1174,7 @@ impl<'a, 'tcx> ClosureSubst<'a, 'tcx> {
 
         let proj = Term {
             ty,
-            kind: TermKind::Projection { lhs: Box::new(old_self), name: ix },
+            kind: TermKind::Projection { lhs: Box::new(old_self), idx },
             span: DUMMY_SP,
         };
 

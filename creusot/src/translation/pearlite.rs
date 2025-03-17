@@ -166,7 +166,7 @@ pub enum TermKind<'tcx> {
     /// It corresponds strictly to the syntactic projection f.x
     Projection {
         lhs: Box<Term<'tcx>>,
-        name: FieldIdx,
+        idx: FieldIdx,
     },
     Old {
         term: Box<Term<'tcx>>,
@@ -289,29 +289,76 @@ pub enum Literal<'tcx> {
 }
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
-pub enum Pattern<'tcx> {
-    Constructor {
-        variant: DefId,
-        substs: GenericArgsRef<'tcx>,
-        fields: Box<[Pattern<'tcx>]>,
-    },
-    /// Matches the pointed element of a pointer, so for `Box<T>` it matches `T`, for mutable borrows it matches the *current* value
-    Deref {
-        pointee: Box<Pattern<'tcx>>,
-        kind: PointerKind,
-    },
+pub struct Pattern<'tcx> {
+    pub ty: Ty<'tcx>,
+    pub kind: PatternKind<'tcx>,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
+pub enum PatternKind<'tcx> {
+    Constructor(VariantIdx, Box<[Pattern<'tcx>]>),
+    /// Matches the pointed element of a pointer, so for `Box<T>` it matches `T`,
+    /// for mutable borrows it matches the *current* value
+    Deref(Box<Pattern<'tcx>>),
     Tuple(Box<[Pattern<'tcx>]>),
     Wildcard,
     Binder(Symbol),
-    Boolean(bool),
+    Bool(bool),
 }
 
-// TODO: Pattern should store a type directly
-#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
-pub enum PointerKind {
-    Box,
-    Shr,
-    Mut,
+impl<'tcx> Pattern<'tcx> {
+    pub(crate) fn bool(tcx: TyCtxt<'tcx>, b: bool) -> Self {
+        Pattern { ty: tcx.types.bool, kind: PatternKind::Bool(b), span: DUMMY_SP }
+    }
+
+    pub(crate) fn wildcard(ty: Ty<'tcx>) -> Self {
+        Pattern { ty, kind: PatternKind::Wildcard, span: DUMMY_SP }
+    }
+
+    pub(crate) fn binder(x: Symbol, ty: Ty<'tcx>) -> Self {
+        Pattern { ty, kind: PatternKind::Binder(x), span: DUMMY_SP }
+    }
+
+    pub(crate) fn deref(self, ty: Ty<'tcx>) -> Self {
+        Pattern { ty, kind: PatternKind::Deref(Box::new(self)), span: DUMMY_SP }
+    }
+
+    pub(crate) fn constructor(
+        variant: VariantIdx,
+        fields: impl IntoIterator<Item = Pattern<'tcx>>,
+        ty: Ty<'tcx>,
+    ) -> Self {
+        Pattern {
+            ty,
+            kind: PatternKind::Constructor(variant, fields.into_iter().collect()),
+            span: DUMMY_SP,
+        }
+    }
+
+    pub(crate) fn tuple(fields: impl IntoIterator<Item = Pattern<'tcx>>, ty: Ty<'tcx>) -> Self {
+        Pattern { ty, kind: PatternKind::Tuple(fields.into_iter().collect()), span: DUMMY_SP }
+    }
+
+    pub(crate) fn get_bool(&self) -> Option<bool> {
+        match self.kind {
+            PatternKind::Bool(b) => Some(b),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn binds(&self, binders: &mut HashSet<Symbol>) {
+        match &self.kind {
+            PatternKind::Constructor(_, fields) => fields.iter().for_each(|f| f.binds(binders)),
+            PatternKind::Tuple(fields) => fields.iter().for_each(|f| f.binds(binders)),
+            PatternKind::Wildcard => {}
+            PatternKind::Binder(s) => {
+                binders.insert(*s);
+            }
+            PatternKind::Bool(_) => {}
+            PatternKind::Deref(pointee) => pointee.binds(binders),
+        }
+    }
 }
 
 const TRIGGER_ERROR: &str = "Triggers can only be used inside quantifiers";
@@ -366,10 +413,10 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             .iter()
             .enumerate()
             .filter_map(|(idx, param)| {
-                Some(Self::pattern_term(param.pat.as_ref()?, true).map(|pat| (idx, param.ty, pat)))
+                Some(self.pattern_term(param.pat.as_ref()?, true).map(|pat| (idx, param.ty, pat)))
             })
-            .fold_ok(body, |body, (idx, ty, pattern)| match pattern {
-                Pattern::Binder(_) | Pattern::Wildcard => body,
+            .fold_ok(body, |body, (idx, ty, pattern)| match pattern.kind {
+                PatternKind::Binder(_) | PatternKind::Wildcard => body,
                 _ => {
                     let arg = Box::new(Term::var(anonymous_param_symbol(idx), ty));
                     Term {
@@ -730,8 +777,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     kind: TermKind::Match {
                         scrutinee: Box::new(cond),
                         arms: Box::new([
-                            (Pattern::Boolean(true), then),
-                            (Pattern::Boolean(false), els),
+                            (Pattern::bool(self.ctx.tcx, true), then),
+                            (Pattern::bool(self.ctx.tcx, false), els),
                         ]),
                     },
                 })
@@ -791,16 +838,18 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             return Err(Error::msg(arm.span, "match guards are unsupported"));
         }
 
-        let pattern = Self::pattern_term(&arm.pattern, false)?;
+        let pattern = self.pattern_term(&arm.pattern, false)?;
         let body = self.expr_term(arm.body)?;
 
         Ok((pattern, body))
     }
 
-    fn pattern_term(pat: &Pat<'tcx>, mut_allowed: bool) -> CreusotResult<Pattern<'tcx>> {
+    fn pattern_term(&self, pat: &Pat<'tcx>, mut_allowed: bool) -> CreusotResult<Pattern<'tcx>> {
         trace!("{:?}", pat);
         match &pat.kind {
-            PatKind::Wild => Ok(Pattern::Wildcard),
+            PatKind::Wild => {
+                Ok(Pattern { ty: pat.ty, span: pat.span, kind: PatternKind::Wildcard })
+            }
             PatKind::Binding { name, mode, .. } => {
                 if mode.0 == ByRef::Yes(Mutability::Mut) {
                     return Err(Error::msg(
@@ -811,39 +860,41 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 if !mut_allowed && mode.1 == Mutability::Mut {
                     return Err(Error::msg(pat.span, "mut binders are not supported in pearlite"));
                 }
-                Ok(Pattern::Binder(*name))
+                Ok(Pattern { ty: pat.ty, span: pat.span, kind: PatternKind::Binder(*name) })
             }
             PatKind::Variant { subpatterns, adt_def, variant_index, args, .. } => {
                 let mut fields: Vec<_> = subpatterns
                     .iter()
-                    .map(|pat| Ok((pat.field, Self::pattern_term(&pat.pattern, mut_allowed)?)))
+                    .map(|pat| Ok((pat.field, self.pattern_term(&pat.pattern, mut_allowed)?)))
                     .collect::<Result<_, Error>>()?;
                 fields.sort_by_key(|f| f.0);
 
-                let field_count = adt_def.variants()[*variant_index].fields.len();
-                let defaults = (0usize..field_count).map(|i| (i.into(), Pattern::Wildcard));
+                let defaults = adt_def.variants()[*variant_index]
+                    .fields
+                    .iter_enumerated()
+                    .map(|(idx, f)| (idx, Pattern::wildcard(f.ty(self.ctx.tcx, args))));
 
                 let fields = defaults
                     .merge_join_by(fields, |i: &(FieldIdx, _), j: &(FieldIdx, _)| i.0.cmp(&j.0))
                     .map(|el| el.reduce(|_, a| a).1)
                     .collect();
 
-                Ok(Pattern::Constructor {
-                    variant: adt_def.variants()[*variant_index].def_id,
-                    substs: args,
-                    fields,
+                Ok(Pattern {
+                    ty: pat.ty,
+                    span: pat.span,
+                    kind: PatternKind::Constructor(*variant_index, fields),
                 })
             }
             PatKind::Leaf { subpatterns } => {
                 let mut fields: Vec<_> = subpatterns
                     .iter()
-                    .map(|pat| Ok((pat.field, Self::pattern_term(&pat.pattern, mut_allowed)?)))
+                    .map(|pat| Ok((pat.field, self.pattern_term(&pat.pattern, mut_allowed)?)))
                     .collect::<Result<_, Error>>()?;
                 fields.sort_by_key(|f| f.0);
 
-                if matches!(pat.ty.kind(), TyKind::Tuple(_)) {
+                if let TyKind::Tuple(_) = pat.ty.kind() {
                     let fields = fields.into_iter().map(|a| a.1).collect();
-                    Ok(Pattern::Tuple(fields))
+                    Ok(Pattern { ty: pat.ty, span: pat.span, kind: PatternKind::Tuple(fields) })
                 } else {
                     let (adt_def, substs) = if let TyKind::Adt(def, substs) = pat.ty.kind() {
                         (def, substs)
@@ -851,30 +902,27 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         unreachable!()
                     };
 
-                    let field_count = adt_def.variants()[0usize.into()].fields.len();
-                    let defaults = (0..field_count).map(|i| (i.into(), Pattern::Wildcard));
+                    let defaults = adt_def.variants()[0usize.into()]
+                        .fields
+                        .iter_enumerated()
+                        .map(|(idx, f)| (idx, Pattern::wildcard(f.ty(self.ctx.tcx, &substs))));
 
                     let fields = defaults
                         .merge_join_by(fields, |i: &(FieldIdx, _), j: &(FieldIdx, _)| i.0.cmp(&j.0))
                         .map(|el| el.reduce(|_, a| a).1)
                         .collect();
-                    Ok(Pattern::Constructor {
-                        variant: adt_def.variants()[0usize.into()].def_id,
-                        substs,
-                        fields,
+                    Ok(Pattern {
+                        ty: pat.ty,
+                        span: pat.span,
+                        kind: PatternKind::Constructor(VariantIdx::ZERO, fields),
                     })
                 }
             }
-            PatKind::Deref { subpattern } => {
-                if !(pat.ty.is_box() || pat.ty.ref_mutability() == Some(Not)) {
-                    return Err(Error::msg(
-                        pat.span,
-                        "only deref patterns for box and & are supported",
-                    ));
-                }
-
-                Self::pattern_term(subpattern, mut_allowed)
-            }
+            PatKind::Deref { subpattern } => Ok(Pattern {
+                ty: pat.ty,
+                span: pat.span,
+                kind: PatternKind::Deref(Box::new(self.pattern_term(subpattern, mut_allowed)?)),
+            }),
             PatKind::Constant { value } => {
                 if !pat.ty.is_bool() {
                     return Err(Error::msg(
@@ -882,11 +930,15 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         "non-boolean constant patterns are unsupported",
                     ));
                 }
-                Ok(Pattern::Boolean(value.try_to_bool().unwrap()))
+                Ok(Pattern {
+                    ty: pat.ty,
+                    span: pat.span,
+                    kind: PatternKind::Bool(value.try_to_bool().unwrap()),
+                })
             }
             // TODO: this simply ignores type annotations, maybe we should actually support them
             PatKind::AscribeUserType { ascription: _, subpattern } => {
-                Self::pattern_term(subpattern, mut_allowed)
+                self.pattern_term(subpattern, mut_allowed)
             }
             ref pk => todo!("lower_pattern: unsupported pattern kind {:?}", pk),
         }
@@ -907,14 +959,14 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     ty: inner.ty,
                     span,
                     kind: TermKind::Let {
-                        pattern: Pattern::Wildcard,
+                        pattern: Pattern::wildcard(arg.ty),
                         arg: Box::new(arg),
                         body: Box::new(inner),
                     },
                 })
             }
             StmtKind::Let { pattern, initializer, init_scope, .. } => {
-                let pattern = Self::pattern_term(pattern, false)?;
+                let pattern = self.pattern_term(pattern, false)?;
                 if let Some(initializer) = initializer {
                     let initializer = self.expr_term(*initializer)?;
                     let span =
@@ -1004,7 +1056,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 assert!(stmts.is_empty());
                 self.logical_reborrow_inner(expr.unwrap())
             }
-            ExprKind::Field { lhs, variant_index: _, name } => {
+            ExprKind::Field { lhs, name, .. } => {
                 let (cur, fin, inner, mut proj) = self.logical_reborrow_inner(*lhs)?;
                 proj.push(ProjectionElem::Field(*name, ty));
                 Ok((
@@ -1083,18 +1135,13 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         self.ctx.mk_args(&[GenericArg::from(cur.ty), GenericArg::from(index.ty)]);
 
                     Ok((
-                        Term::call_no_normalize(
-                            self.ctx.tcx,
-                            index_logic_method,
-                            subst,
-                            Box::new([cur, index.clone()]),
-                        ),
-                        Term::call_no_normalize(
-                            self.ctx.tcx,
-                            index_logic_method,
-                            subst,
-                            Box::new([fin, index]),
-                        ),
+                        Term::call_no_normalize(self.ctx.tcx, index_logic_method, subst, [
+                            cur,
+                            index.clone(),
+                        ]),
+                        Term::call_no_normalize(self.ctx.tcx, index_logic_method, subst, [
+                            fin, index,
+                        ]),
                         inner,
                         proj,
                     ))
@@ -1136,29 +1183,23 @@ fn is_ghost_ty_deref<'tcx>(
     }
 }
 
-pub(crate) fn mk_projection(lhs: Term, name: FieldIdx) -> TermKind {
-    TermKind::Projection { lhs: Box::new(lhs), name }
+pub(crate) fn mk_projection(lhs: Term, idx: FieldIdx) -> TermKind {
+    TermKind::Projection { lhs: Box::new(lhs), idx }
 }
 
 pub(crate) fn type_invariant_term<'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    env_did: DefId,
+    typing_env: TypingEnv<'tcx>,
     name: Symbol,
     span: Span,
     ty: Ty<'tcx>,
 ) -> Option<Term<'tcx>> {
-    // assert!(!name.as_str().is_empty(), "name has len 0, env={env_did:?}, ty={ty:?}");
-    let arg = Term { ty, span, kind: TermKind::Var(name) };
-
-    let (inv_fn_did, inv_fn_substs) =
-        ctx.type_invariant(TypingEnv::non_body_analysis(ctx.tcx, env_did), ty)?;
-    let inv_fn_ty = ctx.type_of(inv_fn_did).instantiate(ctx.tcx, inv_fn_substs);
-    assert!(matches!(inv_fn_ty.kind(), TyKind::FnDef(id, _) if id == &inv_fn_did));
-
+    let args = Box::new([Term { ty, span, kind: TermKind::Var(name) }]);
+    let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(typing_env, ty)?;
     Some(Term {
-        ty: ctx.fn_sig(inv_fn_did).skip_binder().output().skip_binder(),
+        ty: ctx.types.bool,
         span,
-        kind: TermKind::Call { id: inv_fn_did, subst: inv_fn_substs, args: Box::new([arg]) },
+        kind: TermKind::Call { id: inv_fn_did, subst: inv_fn_substs, args },
     })
 }
 
@@ -1227,29 +1268,6 @@ pub fn zip_binder<'a, 'tcx>(
     binder.0.iter().map(|x| x.name).zip(binder.1.tuple_fields())
 }
 
-impl<'tcx> Pattern<'tcx> {
-    pub(crate) fn get_bool(&self) -> Option<bool> {
-        match self {
-            Pattern::Boolean(b) => Some(*b),
-            _ => None,
-        }
-    }
-
-    pub(crate) fn binds(&self, binders: &mut HashSet<Symbol>) {
-        match self {
-            Pattern::Constructor { fields, .. } => fields.iter().for_each(|f| f.binds(binders)),
-            Pattern::Tuple(fields) => fields.iter().for_each(|f| f.binds(binders)),
-            Pattern::Wildcard => {}
-            Pattern::Binder(s) => {
-                binders.insert(*s);
-            }
-
-            Pattern::Boolean(_) => {}
-            Pattern::Deref { pointee, .. } => pointee.binds(binders),
-        }
-    }
-}
-
 pub trait TermVisitor<'tcx> {
     fn visit_term(&mut self, term: &Term<'tcx>);
 }
@@ -1289,7 +1307,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
             visitor.visit_term(arg);
             visitor.visit_term(body)
         }
-        TermKind::Projection { lhs, name: _ } => visitor.visit_term(lhs),
+        TermKind::Projection { lhs, idx: _ } => visitor.visit_term(lhs),
         TermKind::Old { term } => visitor.visit_term(term),
         TermKind::Closure { body, .. } => visitor.visit_term(body),
         TermKind::Reborrow { cur, fin, inner, projection } => {
@@ -1350,7 +1368,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
             visitor.visit_mut_term(&mut *arg);
             visitor.visit_mut_term(&mut *body)
         }
-        TermKind::Projection { lhs, name: _ } => visitor.visit_mut_term(&mut *lhs),
+        TermKind::Projection { lhs, idx: _ } => visitor.visit_mut_term(&mut *lhs),
         TermKind::Old { term } => visitor.visit_mut_term(&mut *term),
         TermKind::Closure { body, .. } => visitor.visit_mut_term(&mut *body),
         TermKind::Reborrow { cur, fin, inner, projection } => {
@@ -1382,10 +1400,11 @@ impl<'tcx> Term<'tcx> {
         tcx: TyCtxt<'tcx>,
         def_id: DefId,
         subst: GenericArgsRef<'tcx>,
-        args: Box<[Term<'tcx>]>,
+        args: impl IntoIterator<Item = Term<'tcx>>,
     ) -> Self {
         let ty = tcx.type_of(def_id).instantiate(tcx, subst);
-        let result = ty.fn_sig(tcx).skip_binder().output();
+        let result = tcx.instantiate_bound_regions_with_erased(ty.fn_sig(tcx).output());
+        let args = args.into_iter().collect();
         Term { ty: result, span: DUMMY_SP, kind: TermKind::Call { id: def_id, subst, args } }
     }
 
@@ -1394,7 +1413,7 @@ impl<'tcx> Term<'tcx> {
         typing_env: TypingEnv<'tcx>,
         def_id: DefId,
         subst: GenericArgsRef<'tcx>,
-        args: Box<[Term<'tcx>]>,
+        args: impl IntoIterator<Item = Term<'tcx>>,
     ) -> Self {
         let mut res = Self::call_no_normalize(tcx, def_id, subst, args);
         res.ty = tcx.normalize_erasing_regions(typing_env, res.ty);

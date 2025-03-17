@@ -153,16 +153,16 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
     }
 
     fn read_place(&mut self, p: &Place<'tcx>) {
-        self.read(p.local, p.projection.is_empty());
-        p.projection.iter().for_each(|p| match p {
+        self.read(p.local, p.projections.is_empty());
+        p.projections.iter().for_each(|p| match p {
             mir::ProjectionElem::Index(l) => self.read(*l, true),
             _ => {}
         })
     }
 
     fn write_place(&mut self, p: &Place<'tcx>) {
-        self.write(p.local, p.projection.is_empty());
-        p.projection.iter().for_each(|p| match p {
+        self.write(p.local, p.projections.is_empty());
+        p.projections.iter().for_each(|p| match p {
             mir::ProjectionElem::Index(l) => self.read(*l, true),
             _ => {}
         })

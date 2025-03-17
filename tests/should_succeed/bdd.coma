@@ -17,6 +17,11 @@ module M_bdd__hashmap__qyi1953663170559623169__hash [#"bdd.rs" 79 8 79 29] (* <(
   
   type t_U'0
   
+  type t_V'0
+  
+  type tuple'0  =
+    { _0'0: t_U'0; _1'0: t_V'0 }
+  
   predicate inv'4 (_1 : t_U'0)
   
   predicate invariant'1 (self : t_U'0) =
@@ -40,8 +45,6 @@ module M_bdd__hashmap__qyi1953663170559623169__hash [#"bdd.rs" 79 8 79 29] (* <(
     [ return' (result:UInt64.t)-> {[%#sbdd4] UInt64.t'int result = hash_log'1 (deep_model'1 self)}
       (! return' {result}) ]
   
-  
-  type t_V'0
   
   predicate inv'5 (_1 : t_V'0)
   
@@ -75,36 +78,38 @@ module M_bdd__hashmap__qyi1953663170559623169__hash [#"bdd.rs" 79 8 79 29] (* <(
     [ return' (result:UInt64.t)-> {[%#snum6] result = UInt64.add self rhs} (! return' {result}) ]
   
   
-  predicate inv'3 (_1 : (t_U'0, t_V'0))
+  predicate inv'3 (_1 : tuple'0)
   
-  axiom inv_axiom'3 [@rewrite] : forall x : (t_U'0, t_V'0) [inv'3 x] . inv'3 x
-  = (let (x0, x1) = x in inv'4 x0 /\ inv'5 x1)
+  axiom inv_axiom'3 [@rewrite] : forall x : tuple'0 [inv'3 x] . inv'3 x
+  = (let {_0'0 = x0 ; _1'0 = x1} = x in inv'4 x0 /\ inv'5 x1)
   
-  predicate invariant'0 (self : (t_U'0, t_V'0)) =
+  predicate invariant'0 (self : tuple'0) =
     [%#sinvariant10] inv'3 self
   
-  predicate inv'0 (_1 : (t_U'0, t_V'0))
+  predicate inv'0 (_1 : tuple'0)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : (t_U'0, t_V'0) [inv'0 x] . inv'0 x = invariant'0 x
+  axiom inv_axiom'0 [@rewrite] : forall x : tuple'0 [inv'0 x] . inv'0 x = invariant'0 x
+  
+  type tuple'1  =
+    { _0'1: t_DeepModelTy'0; _1'1: t_DeepModelTy'1 }
   
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
-  function hash_log'0 [#"bdd.rs" 85 8 85 48] (x : (t_DeepModelTy'0, t_DeepModelTy'1)) : int =
-    [%#sbdd7] Int.mod (hash_log'1 (let (a, _) = x in a)
-    + hash_log'2 (let (_, a) = x in a) * 17) (UInt64.t'int (v_MAX'0 : UInt64.t) + 1)
+  function hash_log'0 [#"bdd.rs" 85 8 85 48] (x : tuple'1) : int =
+    [%#sbdd7] Int.mod (hash_log'1 x._0'1 + hash_log'2 x._1'1 * 17) (UInt64.t'int (v_MAX'0 : UInt64.t) + 1)
   
-  function deep_model'3 (self : (t_U'0, t_V'0)) : (t_DeepModelTy'0, t_DeepModelTy'1) =
-    [%#stuples9] (deep_model'4 (let (a, _) = self in a), deep_model'5 (let (_, a) = self in a))
+  function deep_model'3 (self : tuple'0) : tuple'1 =
+    [%#stuples9] { _0'1 = deep_model'4 self._0'0; _1'1 = deep_model'5 self._1'0 }
   
-  function deep_model'0 (self : (t_U'0, t_V'0)) : (t_DeepModelTy'0, t_DeepModelTy'1) =
+  function deep_model'0 (self : tuple'0) : tuple'1 =
     [%#smodel8] deep_model'3 self
   
   meta "compute_max_steps" 1000000
   
-  let rec hash'0[#"bdd.rs" 79 8 79 29] (self:(t_U'0, t_V'0)) (return'  (ret:UInt64.t))= {[@expl:hash 'self' type invariant] [%#sbdd1] inv'0 self}
+  let rec hash'0[#"bdd.rs" 79 8 79 29] (self:tuple'0) (return'  (ret:UInt64.t))= {[@expl:hash 'self' type invariant] [%#sbdd1] inv'0 self}
     (! bb0
-    [ bb0 = s0 [ s0 = hash'1 {let (r'0, _) = self in r'0} (fun (_ret':UInt64.t) ->  [ &_3 <- _ret' ] s1) | s1 = bb1 ] 
-    | bb1 = s0 [ s0 = hash'2 {let (_, r'0) = self in r'0} (fun (_ret':UInt64.t) ->  [ &_6 <- _ret' ] s1) | s1 = bb2 ] 
+    [ bb0 = s0 [ s0 = hash'1 {self._0'0} (fun (_ret':UInt64.t) ->  [ &_3 <- _ret' ] s1) | s1 = bb1 ] 
+    | bb1 = s0 [ s0 = hash'2 {self._1'0} (fun (_ret':UInt64.t) ->  [ &_6 <- _ret' ] s1) | s1 = bb2 ] 
     | bb2 = s0
       [ s0 = wrapping_mul'0 {_6} {[%#sbdd0] (17 : UInt64.t)} (fun (_ret':UInt64.t) ->  [ &_5 <- _ret' ] s1) | s1 = bb3 ]
     
@@ -112,7 +117,7 @@ module M_bdd__hashmap__qyi1953663170559623169__hash [#"bdd.rs" 79 8 79 29] (* <(
     | bb4 = return' {_0} ]
     )
     [ & _0 : UInt64.t = Any.any_l ()
-    | & self : (t_U'0, t_V'0) = self
+    | & self : tuple'0 = self
     | & _3 : UInt64.t = Any.any_l ()
     | & _5 : UInt64.t = Any.any_l ()
     | & _6 : UInt64.t = Any.any_l () ]
@@ -158,6 +163,9 @@ module M_bdd__qyi4854841669736991510__eq [#"bdd.rs" 93 13 93 22] (* <Node<'arena
     | C_False'0
     | C_True'0
     | C_If'0 UInt64.t t_Bdd'0 t_Bdd'0
+  
+  type tuple'0  =
+    { _0'0: t_Node'0; _1'0: t_Node'0 }
   
   let rec v_If'0 (input:t_Node'0) (ret  (v:UInt64.t) (childt:t_Bdd'0) (childf:t_Bdd'0))= any
     [ good (v:UInt64.t) (childt:t_Bdd'0) (childf:t_Bdd'0)-> {C_If'0 v childt childf = input}
@@ -210,32 +218,30 @@ module M_bdd__qyi4854841669736991510__eq [#"bdd.rs" 93 13 93 22] (* <Node<'arena
   
   let rec eq'0[#"bdd.rs" 93 13 93 22] (self:t_Node'0) (rhs:t_Node'0) (return'  (ret:bool))= (! bb0
     [ bb0 = s0
-      [ s0 =  [ &_4 <- (self, rhs) ] s1
+      [ s0 =  [ &_4 <- { _0'0 = self; _1'0 = rhs } ] s1
       | s1 = any
-        [ br0 -> {(let (r'0, _) = _4 in r'0) = C_False'0} (! bb2)
-        | br1 -> {(let (r'0, _) = _4 in r'0) = C_True'0} (! bb4)
-        | br2 (x0:UInt64.t) (x1:t_Bdd'0) (x2:t_Bdd'0)-> {(let (r'0, _) = _4 in r'0) = C_If'0 x0 x1 x2} (! bb6) ]
+        [ br0 -> {_4._0'0 = C_False'0} (! bb2)
+        | br1 -> {_4._0'0 = C_True'0} (! bb4)
+        | br2 (x0:UInt64.t) (x1:t_Bdd'0) (x2:t_Bdd'0)-> {_4._0'0 = C_If'0 x0 x1 x2} (! bb6) ]
        ]
     
     | bb6 = any
-      [ br0 -> {(let (_, r'0) = _4 in r'0) = C_False'0} (! bb25)
-      | br1 -> {(let (_, r'0) = _4 in r'0) = C_True'0} (! bb25)
-      | br2 (x0:UInt64.t) (x1:t_Bdd'0) (x2:t_Bdd'0)-> {(let (_, r'0) = _4 in r'0) = C_If'0 x0 x1 x2} (! bb7) ]
+      [ br0 -> {_4._1'0 = C_False'0} (! bb25)
+      | br1 -> {_4._1'0 = C_True'0} (! bb25)
+      | br2 (x0:UInt64.t) (x1:t_Bdd'0) (x2:t_Bdd'0)-> {_4._1'0 = C_If'0 x0 x1 x2} (! bb7) ]
     
     | bb25 = bb1
     | bb7 = bb8
     | bb8 = s0
-      [ s0 = v_If'0 {let (r'0, _) = _4 in r'0}
-          (fun (rv'0:UInt64.t) (rchildt'0:t_Bdd'0) (rchildf'0:t_Bdd'0) ->  [ &v_1 <- rv'0 ] s1)
-      | s1 = v_If'0 {let (r'1, _) = _4 in r'1}
+      [ s0 = v_If'0 {_4._0'0} (fun (rv'0:UInt64.t) (rchildt'0:t_Bdd'0) (rchildf'0:t_Bdd'0) ->  [ &v_1 <- rv'0 ] s1)
+      | s1 = v_If'0 {_4._0'0}
           (fun (rv'1:UInt64.t) (rchildt'1:t_Bdd'0) (rchildf'1:t_Bdd'0) ->  [ &childt_1 <- rchildt'1 ] s2)
-      | s2 = v_If'0 {let (r'2, _) = _4 in r'2}
+      | s2 = v_If'0 {_4._0'0}
           (fun (rv'2:UInt64.t) (rchildt'2:t_Bdd'0) (rchildf'2:t_Bdd'0) ->  [ &childf_1 <- rchildf'2 ] s3)
-      | s3 = v_If'0 {let (_, r'3) = _4 in r'3}
-          (fun (rv'3:UInt64.t) (rchildt'3:t_Bdd'0) (rchildf'3:t_Bdd'0) ->  [ &v_2 <- rv'3 ] s4)
-      | s4 = v_If'0 {let (_, r'4) = _4 in r'4}
+      | s3 = v_If'0 {_4._1'0} (fun (rv'3:UInt64.t) (rchildt'3:t_Bdd'0) (rchildf'3:t_Bdd'0) ->  [ &v_2 <- rv'3 ] s4)
+      | s4 = v_If'0 {_4._1'0}
           (fun (rv'4:UInt64.t) (rchildt'4:t_Bdd'0) (rchildf'4:t_Bdd'0) ->  [ &childt_2 <- rchildt'4 ] s5)
-      | s5 = v_If'0 {let (_, r'5) = _4 in r'5}
+      | s5 = v_If'0 {_4._1'0}
           (fun (rv'5:UInt64.t) (rchildt'5:t_Bdd'0) (rchildf'5:t_Bdd'0) ->  [ &childf_2 <- rchildf'5 ] s6)
       | s6 = eq'1 {childf_1} {childf_2} (fun (_ret':bool) ->  [ &_17 <- _ret' ] s7)
       | s7 = bb11 ]
@@ -252,16 +258,16 @@ module M_bdd__qyi4854841669736991510__eq [#"bdd.rs" 93 13 93 22] (* <Node<'arena
     | bb20 = s0 [ s0 =  [ &_0 <- [%#sbdd0] false ] s1 | s1 = bb21 ] 
     | bb21 = bb22
     | bb4 = any
-      [ br0 -> {(let (_, r'0) = _4 in r'0) = C_False'0} (! bb1)
-      | br1 -> {(let (_, r'0) = _4 in r'0) = C_True'0} (! bb5)
-      | br2 (x0:UInt64.t) (x1:t_Bdd'0) (x2:t_Bdd'0)-> {(let (_, r'0) = _4 in r'0) = C_If'0 x0 x1 x2} (! bb1) ]
+      [ br0 -> {_4._1'0 = C_False'0} (! bb1)
+      | br1 -> {_4._1'0 = C_True'0} (! bb5)
+      | br2 (x0:UInt64.t) (x1:t_Bdd'0) (x2:t_Bdd'0)-> {_4._1'0 = C_If'0 x0 x1 x2} (! bb1) ]
     
     | bb5 = bb9
     | bb9 = s0 [ s0 =  [ &_0 <- [%#sbdd0] true ] s1 | s1 = bb22 ] 
     | bb2 = any
-      [ br0 -> {(let (_, r'0) = _4 in r'0) = C_False'0} (! bb3)
-      | br1 -> {(let (_, r'0) = _4 in r'0) = C_True'0} (! bb1)
-      | br2 (x0:UInt64.t) (x1:t_Bdd'0) (x2:t_Bdd'0)-> {(let (_, r'0) = _4 in r'0) = C_If'0 x0 x1 x2} (! bb1) ]
+      [ br0 -> {_4._1'0 = C_False'0} (! bb3)
+      | br1 -> {_4._1'0 = C_True'0} (! bb1)
+      | br2 (x0:UInt64.t) (x1:t_Bdd'0) (x2:t_Bdd'0)-> {_4._1'0 = C_If'0 x0 x1 x2} (! bb1) ]
     
     | bb1 = s0 [ s0 =  [ &_0 <- [%#sbdd0] false ] s1 | s1 = bb22 ] 
     | bb3 = bb10
@@ -271,7 +277,7 @@ module M_bdd__qyi4854841669736991510__eq [#"bdd.rs" 93 13 93 22] (* <Node<'arena
     [ & _0 : bool = Any.any_l ()
     | & self : t_Node'0 = self
     | & rhs : t_Node'0 = rhs
-    | & _4 : (t_Node'0, t_Node'0) = Any.any_l ()
+    | & _4 : tuple'0 = Any.any_l ()
     | & v_1 : UInt64.t = Any.any_l ()
     | & childt_1 : t_Bdd'0 = Any.any_l ()
     | & childf_1 : t_Bdd'0 = Any.any_l ()
@@ -646,14 +652,14 @@ module M_bdd__qyi11078426090797403070__grows_is_valid_bdd [#"bdd.rs" 339 4 339 5
       t_Context__and_memo'0: t_MyHashMap'2;
       t_Context__cnt'0: UInt64.t }
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_Bdd'0
+  
   type t_NodeLog'0  =
     | C_False'1
     | C_True'1
     | C_If'1 UInt64.t UInt64.t UInt64.t
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_Bdd'0
   
   function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'0
   
@@ -724,14 +730,14 @@ module M_bdd__qyi11078426090797403070__grows_trans [#"bdd.rs" 348 4 348 62] (* C
       t_Context__and_memo'0: t_MyHashMap'2;
       t_Context__cnt'0: UInt64.t }
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_Bdd'0
+  
   type t_NodeLog'0  =
     | C_False'1
     | C_True'1
     | C_If'1 UInt64.t UInt64.t UInt64.t
-  
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_Bdd'0
   
   function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'0
   
@@ -810,14 +816,16 @@ module M_bdd__qyi11078426090797403070__set_irrelevent_var [#"bdd.rs" 355 4 355 8
       t_Context__and_memo'0: t_MyHashMap'2;
       t_Context__cnt'0: UInt64.t }
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_Bdd'0
+  
   type t_NodeLog'0  =
     | C_False'1
     | C_True'1
     | C_If'1 UInt64.t UInt64.t UInt64.t
   
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_Bdd'0
+  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'0
   
   function deep_model'0 [#"bdd.rs" 161 4 161 44] (self : t_Node'0) : t_NodeLog'0 =
     [%#sbdd12] match self with
@@ -831,8 +839,6 @@ module M_bdd__qyi11078426090797403070__set_irrelevent_var [#"bdd.rs" 355 4 355 8
   
   function view'1 (self : t_Node'0) : t_NodeLog'0 =
     [%#smodel8] view'3 self
-  
-  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'0
   
   predicate is_valid_bdd'0 [#"bdd.rs" 312 4 312 53] (self : t_Context'0) (b : t_Bdd'0) =
     [%#sbdd5] Map.get (view'0 self.t_Context__hashcons'0) (view'1 b.t_Bdd__0'0) = C_Some'0 b
@@ -906,6 +912,8 @@ module M_bdd__qyi11078426090797403070__set_irrelevent_var [#"bdd.rs" 355 4 355 8
   axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord13] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
+  function view'4 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map UInt64.t t_Option'0
+  
   function interp'0 [#"bdd.rs" 212 4 212 53] (self : t_Bdd'0) (vars : Map.map UInt64.t bool) : bool =
     [%#sbdd7] match self with
       | {t_Bdd__0'0 = C_True'0} -> true
@@ -913,9 +921,10 @@ module M_bdd__qyi11078426090797403070__set_irrelevent_var [#"bdd.rs" 355 4 355 8
       | {t_Bdd__0'0 = C_If'0 v childt childf} -> if Map.get vars v then interp'0 childt vars else interp'0 childf vars
       end
   
-  function view'4 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map UInt64.t t_Option'0
+  type tuple'0  =
+    { _0'0: UInt64.t; _1'0: UInt64.t }
   
-  function view'5 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map (UInt64.t, UInt64.t) t_Option'0
+  function view'5 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map tuple'0 t_Option'0
   
   predicate invariant'0 [#"bdd.rs" 265 4 265 30] (self : t_Context'0) =
     [%#sbdd9] (forall n : t_NodeLog'0 . match Map.get (view'0 self.t_Context__hashcons'0) n with
@@ -932,11 +941,11 @@ module M_bdd__qyi11078426090797403070__set_irrelevent_var [#"bdd.rs" 355 4 355 8
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (not interp'0 b v)) /\ leastvar'0 b <= leastvar'0 n
       end)
-    /\ (forall abm : (UInt64.t, UInt64.t) . match Map.get (view'5 self.t_Context__and_memo'0) abm with
+    /\ (forall abm : tuple'0 . match Map.get (view'5 self.t_Context__and_memo'0) abm with
       | C_None'0 -> true
-      | C_Some'0 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (a, _) = abm in a);
-                                t_Bdd__1'0 = (let (a, _) = abm in a) } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (_, a) = abm in a);
-                                                                                    t_Bdd__1'0 = (let (_, a) = abm in a) } in is_valid_bdd'0 self n
+      | C_Some'0 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._0'0;
+                                t_Bdd__1'0 = abm._0'0 } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._1'0;
+                                                                     t_Bdd__1'0 = abm._1'0 } in is_valid_bdd'0 self n
       /\ is_valid_bdd'0 self a
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (interp'0 a v /\ interp'0 b v))
@@ -1044,14 +1053,16 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 375 4 375 82] 
       t_Context__and_memo'0: t_MyHashMap'2;
       t_Context__cnt'0: UInt64.t }
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_Bdd'0
+  
   type t_NodeLog'0  =
     | C_False'1
     | C_True'1
     | C_If'1 UInt64.t UInt64.t UInt64.t
   
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_Bdd'0
+  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'0
   
   function deep_model'0 [#"bdd.rs" 161 4 161 44] (self : t_Node'0) : t_NodeLog'0 =
     [%#sbdd21] match self with
@@ -1065,8 +1076,6 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 375 4 375 82] 
   
   function view'1 (self : t_Node'0) : t_NodeLog'0 =
     [%#smodel17] view'3 self
-  
-  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'0
   
   predicate is_valid_bdd'0 [#"bdd.rs" 312 4 312 53] (self : t_Context'0) (b : t_Bdd'0) =
     [%#sbdd7] Map.get (view'0 self.t_Context__hashcons'0) (view'1 b.t_Bdd__0'0) = C_Some'0 b
@@ -1140,6 +1149,8 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 375 4 375 82] 
   axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord22] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
+  function view'4 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map UInt64.t t_Option'0
+  
   function interp'0 [#"bdd.rs" 212 4 212 53] (self : t_Bdd'0) (vars : Map.map UInt64.t bool) : bool =
     [%#sbdd8] match self with
       | {t_Bdd__0'0 = C_True'0} -> true
@@ -1147,9 +1158,10 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 375 4 375 82] 
       | {t_Bdd__0'0 = C_If'0 v childt childf} -> if Map.get vars v then interp'0 childt vars else interp'0 childf vars
       end
   
-  function view'4 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map UInt64.t t_Option'0
+  type tuple'0  =
+    { _0'0: UInt64.t; _1'0: UInt64.t }
   
-  function view'5 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map (UInt64.t, UInt64.t) t_Option'0
+  function view'5 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map tuple'0 t_Option'0
   
   predicate invariant'0 [#"bdd.rs" 265 4 265 30] (self : t_Context'0) =
     [%#sbdd18] (forall n : t_NodeLog'0 . match Map.get (view'0 self.t_Context__hashcons'0) n with
@@ -1166,11 +1178,11 @@ module M_bdd__qyi11078426090797403070__discr_valuation [#"bdd.rs" 375 4 375 82] 
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (not interp'0 b v)) /\ leastvar'0 b <= leastvar'0 n
       end)
-    /\ (forall abm : (UInt64.t, UInt64.t) . match Map.get (view'5 self.t_Context__and_memo'0) abm with
+    /\ (forall abm : tuple'0 . match Map.get (view'5 self.t_Context__and_memo'0) abm with
       | C_None'0 -> true
-      | C_Some'0 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (a, _) = abm in a);
-                                t_Bdd__1'0 = (let (a, _) = abm in a) } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (_, a) = abm in a);
-                                                                                    t_Bdd__1'0 = (let (_, a) = abm in a) } in is_valid_bdd'0 self n
+      | C_Some'0 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._0'0;
+                                t_Bdd__1'0 = abm._0'0 } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._1'0;
+                                                                     t_Bdd__1'0 = abm._1'0 } in is_valid_bdd'0 self n
       /\ is_valid_bdd'0 self a
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (interp'0 a v /\ interp'0 b v))
@@ -1377,14 +1389,16 @@ module M_bdd__qyi11078426090797403070__bdd_canonical [#"bdd.rs" 424 4 424 62] (*
       t_Context__and_memo'0: t_MyHashMap'2;
       t_Context__cnt'0: UInt64.t }
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_Bdd'0
+  
   type t_NodeLog'0  =
     | C_False'1
     | C_True'1
     | C_If'1 UInt64.t UInt64.t UInt64.t
   
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_Bdd'0
+  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'0
   
   function deep_model'0 [#"bdd.rs" 161 4 161 44] (self : t_Node'0) : t_NodeLog'0 =
     [%#sbdd27] match self with
@@ -1398,8 +1412,6 @@ module M_bdd__qyi11078426090797403070__bdd_canonical [#"bdd.rs" 424 4 424 62] (*
   
   function view'1 (self : t_Node'0) : t_NodeLog'0 =
     [%#smodel15] view'2 self
-  
-  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'0
   
   predicate is_valid_bdd'0 [#"bdd.rs" 312 4 312 53] (self : t_Context'0) (b : t_Bdd'0) =
     [%#sbdd6] Map.get (view'0 self.t_Context__hashcons'0) (view'1 b.t_Bdd__0'0) = C_Some'0 b
@@ -1473,6 +1485,8 @@ module M_bdd__qyi11078426090797403070__bdd_canonical [#"bdd.rs" 424 4 424 62] (*
   axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord28] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
+  function view'4 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map UInt64.t t_Option'0
+  
   function interp'0 [#"bdd.rs" 212 4 212 53] (self : t_Bdd'0) (vars : Map.map UInt64.t bool) : bool =
     [%#sbdd7] match self with
       | {t_Bdd__0'0 = C_True'0} -> true
@@ -1480,9 +1494,10 @@ module M_bdd__qyi11078426090797403070__bdd_canonical [#"bdd.rs" 424 4 424 62] (*
       | {t_Bdd__0'0 = C_If'0 v childt childf} -> if Map.get vars v then interp'0 childt vars else interp'0 childf vars
       end
   
-  function view'4 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map UInt64.t t_Option'0
+  type tuple'0  =
+    { _0'0: UInt64.t; _1'0: UInt64.t }
   
-  function view'5 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map (UInt64.t, UInt64.t) t_Option'0
+  function view'5 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map tuple'0 t_Option'0
   
   predicate invariant'0 [#"bdd.rs" 265 4 265 30] (self : t_Context'0) =
     [%#sbdd24] (forall n : t_NodeLog'0 . match Map.get (view'0 self.t_Context__hashcons'0) n with
@@ -1499,11 +1514,11 @@ module M_bdd__qyi11078426090797403070__bdd_canonical [#"bdd.rs" 424 4 424 62] (*
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (not interp'0 b v)) /\ leastvar'0 b <= leastvar'0 n
       end)
-    /\ (forall abm : (UInt64.t, UInt64.t) . match Map.get (view'5 self.t_Context__and_memo'0) abm with
+    /\ (forall abm : tuple'0 . match Map.get (view'5 self.t_Context__and_memo'0) abm with
       | C_None'0 -> true
-      | C_Some'0 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (a, _) = abm in a);
-                                t_Bdd__1'0 = (let (a, _) = abm in a) } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (_, a) = abm in a);
-                                                                                    t_Bdd__1'0 = (let (_, a) = abm in a) } in is_valid_bdd'0 self n
+      | C_Some'0 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._0'0;
+                                t_Bdd__1'0 = abm._0'0 } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._1'0;
+                                                                     t_Bdd__1'0 = abm._1'0 } in is_valid_bdd'0 self n
       /\ is_valid_bdd'0 self a
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (interp'0 a v /\ interp'0 b v))
@@ -1675,7 +1690,10 @@ module M_bdd__qyi11078426090797403070__new [#"bdd.rs" 430 4 430 52] (* Context<'
   
   type t_MyHashMap'2
   
-  function view'2 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map (UInt64.t, UInt64.t) t_Option'0
+  type tuple'0  =
+    { _0'0: UInt64.t; _1'0: UInt64.t }
+  
+  function view'2 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map tuple'0 t_Option'0
   
   let rec new'3 (return'  (ret:t_MyHashMap'2))= any
     [ return' (result:t_MyHashMap'2)-> {[%#sbdd3] view'2 result = Const.const (C_None'0)} (! return' {result}) ]
@@ -1796,11 +1814,11 @@ module M_bdd__qyi11078426090797403070__new [#"bdd.rs" 430 4 430 52] (* Context<'
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (not interp'0 b v)) /\ leastvar'0 b <= leastvar'0 n
       end)
-    /\ (forall abm : (UInt64.t, UInt64.t) . match Map.get (view'2 self.t_Context__and_memo'0) abm with
+    /\ (forall abm : tuple'0 . match Map.get (view'2 self.t_Context__and_memo'0) abm with
       | C_None'0 -> true
-      | C_Some'0 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (a, _) = abm in a);
-                                t_Bdd__1'0 = (let (a, _) = abm in a) } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (_, a) = abm in a);
-                                                                                    t_Bdd__1'0 = (let (_, a) = abm in a) } in is_valid_bdd'0 self n
+      | C_Some'0 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._0'0;
+                                t_Bdd__1'0 = abm._0'0 } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._1'0;
+                                                                     t_Bdd__1'0 = abm._1'0 } in is_valid_bdd'0 self n
       /\ is_valid_bdd'0 self a
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (interp'0 a v /\ interp'0 b v))
@@ -1861,42 +1879,36 @@ module M_bdd__qyi11078426090797403070__hashcons [#"bdd.rs" 446 4 446 58] (* Cont
   let%span sbdd7 = "bdd.rs" 443 14 443 28
   let%span sbdd8 = "bdd.rs" 444 14 444 26
   let%span sbdd9 = "bdd.rs" 445 14 445 42
-  let%span sbdd10 = "bdd.rs" 66 37 66 40
-  let%span sbdd11 = "bdd.rs" 66 52 66 65
-  let%span sbdd12 = "bdd.rs" 61 18 64 9
-  let%span sbdd13 = "bdd.rs" 22 31 22 34
-  let%span sbdd14 = "bdd.rs" 22 42 22 48
-  let%span sbdd15 = "bdd.rs" 21 18 21 32
-  let%span sbdd16 = "bdd.rs" 57 30 57 33
-  let%span sbdd17 = "bdd.rs" 57 38 57 41
-  let%span sbdd18 = "bdd.rs" 55 18 55 126
-  let%span smodel19 = "../../creusot-contracts/src/model.rs" 54 8 54 22
-  let%span sbdd20 = "bdd.rs" 179 20 179 37
-  let%span sbdd21 = "bdd.rs" 321 12 330 13
-  let%span sbdd22 = "bdd.rs" 301 12 306 17
-  let%span sbdd23 = "bdd.rs" 314 12 314 47
-  let%span smodel24 = "../../creusot-contracts/src/model.rs" 45 8 45 28
-  let%span sresolve25 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
-  let%span sbdd26 = "bdd.rs" 163 12 167 13
-  let%span smodel27 = "../../creusot-contracts/src/model.rs" 72 8 72 22
-  let%span sbdd28 = "bdd.rs" 244 12 248 13
-  let%span sinvariant29 = "../../creusot-contracts/src/invariant.rs" 35 20 35 44
-  let%span sbdd30 = "bdd.rs" 267 12 291 19
-  let%span sbdd31 = "bdd.rs" 214 12 221 13
-  let%span sord32 = "../../creusot-contracts/src/logic/ord.rs" 129 39 129 89
-  let%span sord33 = "../../creusot-contracts/src/logic/ord.rs" 134 39 134 86
-  let%span sord34 = "../../creusot-contracts/src/logic/ord.rs" 139 39 139 86
-  let%span sord35 = "../../creusot-contracts/src/logic/ord.rs" 144 39 144 89
-  let%span sord36 = "../../creusot-contracts/src/logic/ord.rs" 149 39 149 70
-  let%span sord37 = "../../creusot-contracts/src/logic/ord.rs" 154 40 154 57
-  let%span sord38 = "../../creusot-contracts/src/logic/ord.rs" 155 40 155 57
-  let%span sord39 = "../../creusot-contracts/src/logic/ord.rs" 156 39 156 56
-  let%span sord40 = "../../creusot-contracts/src/logic/ord.rs" 161 40 161 70
-  let%span sord41 = "../../creusot-contracts/src/logic/ord.rs" 162 39 162 72
-  let%span sord42 = "../../creusot-contracts/src/logic/ord.rs" 167 40 167 73
-  let%span sord43 = "../../creusot-contracts/src/logic/ord.rs" 168 39 168 69
-  let%span sord44 = "../../creusot-contracts/src/logic/ord.rs" 173 39 173 84
-  let%span sord45 = "../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
+  let%span sbdd10 = "bdd.rs" 61 18 64 9
+  let%span sbdd11 = "bdd.rs" 21 18 21 32
+  let%span sbdd12 = "bdd.rs" 55 18 55 126
+  let%span smodel13 = "../../creusot-contracts/src/model.rs" 54 8 54 22
+  let%span sbdd14 = "bdd.rs" 179 20 179 37
+  let%span sbdd15 = "bdd.rs" 321 12 330 13
+  let%span sbdd16 = "bdd.rs" 301 12 306 17
+  let%span sbdd17 = "bdd.rs" 314 12 314 47
+  let%span smodel18 = "../../creusot-contracts/src/model.rs" 45 8 45 28
+  let%span sresolve19 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span sbdd20 = "bdd.rs" 163 12 167 13
+  let%span smodel21 = "../../creusot-contracts/src/model.rs" 72 8 72 22
+  let%span sbdd22 = "bdd.rs" 244 12 248 13
+  let%span sinvariant23 = "../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  let%span sbdd24 = "bdd.rs" 267 12 291 19
+  let%span sbdd25 = "bdd.rs" 214 12 221 13
+  let%span sord26 = "../../creusot-contracts/src/logic/ord.rs" 129 39 129 89
+  let%span sord27 = "../../creusot-contracts/src/logic/ord.rs" 134 39 134 86
+  let%span sord28 = "../../creusot-contracts/src/logic/ord.rs" 139 39 139 86
+  let%span sord29 = "../../creusot-contracts/src/logic/ord.rs" 144 39 144 89
+  let%span sord30 = "../../creusot-contracts/src/logic/ord.rs" 149 39 149 70
+  let%span sord31 = "../../creusot-contracts/src/logic/ord.rs" 154 40 154 57
+  let%span sord32 = "../../creusot-contracts/src/logic/ord.rs" 155 40 155 57
+  let%span sord33 = "../../creusot-contracts/src/logic/ord.rs" 156 39 156 56
+  let%span sord34 = "../../creusot-contracts/src/logic/ord.rs" 161 40 161 70
+  let%span sord35 = "../../creusot-contracts/src/logic/ord.rs" 162 39 162 72
+  let%span sord36 = "../../creusot-contracts/src/logic/ord.rs" 167 40 167 73
+  let%span sord37 = "../../creusot-contracts/src/logic/ord.rs" 168 39 168 69
+  let%span sord38 = "../../creusot-contracts/src/logic/ord.rs" 173 39 173 84
+  let%span sord39 = "../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
   
   use creusot.int.UInt64
   use map.Map
@@ -1929,14 +1941,6 @@ module M_bdd__qyi11078426090797403070__hashcons [#"bdd.rs" 446 4 446 58] (* Cont
     | C_None'0
     | C_Some'0 t_Bdd'0
   
-  predicate inv'1 (_1 : t_Node'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Node'0 [inv'1 x] . inv'1 x = true
-  
-  predicate inv'2 (_1 : t_Option'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Option'0 [inv'2 x] . inv'2 x = true
-  
   type t_NodeLog'0  =
     | C_False'1
     | C_True'1
@@ -1949,87 +1953,68 @@ module M_bdd__qyi11078426090797403070__hashcons [#"bdd.rs" 446 4 446 58] (* Cont
   function view'3 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'1
   
   function view'2 (self : t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'1 =
-    [%#smodel19] view'3 self
+    [%#smodel13] view'3 self
   
   function deep_model'1 [#"bdd.rs" 161 4 161 44] (self : t_Node'0) : t_NodeLog'0 =
-    [%#sbdd26] match self with
+    [%#sbdd20] match self with
       | C_False'0 -> C_False'1
       | C_True'0 -> C_True'1
       | C_If'0 v childt childf -> C_If'1 v (childt.t_Bdd__1'0) (childf.t_Bdd__1'0)
       end
   
   function deep_model'0 (self : t_Node'0) : t_NodeLog'0 =
-    [%#smodel24] deep_model'1 self
+    [%#smodel18] deep_model'1 self
   
-  let rec get'0 (self:t_MyHashMap'0) (key:t_Node'0) (return'  (ret:t_Option'0))= {[@expl:get 'key' type invariant] [%#sbdd10] inv'1 key}
-    any
-    [ return' (result:t_Option'0)-> {[%#sbdd11] inv'2 result}
-      {[%#sbdd12] match result with
+  let rec get'0 (self:t_MyHashMap'0) (key:t_Node'0) (return'  (ret:t_Option'0))= any
+    [ return' (result:t_Option'0)-> {[%#sbdd10] match result with
         | C_Some'0 v -> Map.get (view'2 self) (deep_model'0 key) = C_Some'1 v
         | C_None'0 -> Map.get (view'2 self) (deep_model'0 key) = C_None'1
         end}
       (! return' {result}) ]
   
   
-  predicate inv'3 (_1 : t_Node'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Node'0 [inv'3 x] . inv'3 x = true
-  
-  predicate inv'4 (_1 : MutBorrow.t t_Node'0)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : MutBorrow.t t_Node'0 [inv'4 x] . inv'4 x = true
-  
-  let rec alloc'0 (self:()) (val':t_Node'0) (return'  (ret:MutBorrow.t t_Node'0))= {[@expl:alloc 'val' type invariant] [%#sbdd13] inv'3 val'}
-    any
-    [ return' (result:MutBorrow.t t_Node'0)-> {[%#sbdd14] inv'4 result}
-      {[%#sbdd15] result.current = val'}
-      (! return' {result}) ]
+  let rec alloc'0 (self:()) (val':t_Node'0) (return'  (ret:MutBorrow.t t_Node'0))= any
+    [ return' (result:MutBorrow.t t_Node'0)-> {[%#sbdd11] result.current = val'} (! return' {result}) ]
   
   
   predicate resolve'2 (self : MutBorrow.t t_Node'0) =
-    [%#sresolve25] self.final = self.current
+    [%#sresolve19] self.final = self.current
   
   predicate resolve'0 (_1 : MutBorrow.t t_Node'0) =
     resolve'2 _1
   
-  predicate inv'5 (_1 : t_Bdd'0)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t_Bdd'0 [inv'5 x] . inv'5 x = true
-  
   function view'4 (self : MutBorrow.t t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'1 =
-    [%#smodel27] view'3 self.current
+    [%#smodel21] view'3 self.current
   
-  let rec add'0 (self:MutBorrow.t t_MyHashMap'0) (key:t_Node'0) (val':t_Bdd'0) (return'  (ret:()))= {[@expl:add 'key' type invariant] [%#sbdd16] inv'3 key}
-    {[@expl:add 'val' type invariant] [%#sbdd17] inv'5 val'}
-    any
-    [ return' (result:())-> {[%#sbdd18] forall i : t_NodeLog'0 . Map.get (view'3 self.final) i
+  let rec add'0 (self:MutBorrow.t t_MyHashMap'0) (key:t_Node'0) (val':t_Bdd'0) (return'  (ret:()))= any
+    [ return' (result:())-> {[%#sbdd12] forall i : t_NodeLog'0 . Map.get (view'3 self.final) i
       = (if i = deep_model'1 key then C_Some'1 val' else Map.get (view'4 self) i)}
       (! return' {result}) ]
   
   
   function view'1 [#"bdd.rs" 178 4 178 33] (self : t_Node'0) : t_NodeLog'0 =
-    [%#sbdd20] deep_model'1 self
+    [%#sbdd14] deep_model'1 self
   
   function view'0 (self : t_Node'0) : t_NodeLog'0 =
-    [%#smodel19] view'1 self
+    [%#smodel13] view'1 self
   
   predicate is_valid_bdd'0 [#"bdd.rs" 312 4 312 53] (self : t_Context'0) (b : t_Bdd'0) =
-    [%#sbdd23] Map.get (view'3 self.t_Context__hashcons'0) (view'0 b.t_Bdd__0'0) = C_Some'1 b
+    [%#sbdd17] Map.get (view'3 self.t_Context__hashcons'0) (view'0 b.t_Bdd__0'0) = C_Some'1 b
   
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function view'5 (self : UInt64.t) : int =
-    [%#smodel19] UInt64.t'int self
+    [%#smodel13] UInt64.t'int self
   
   function leastvar'0 [#"bdd.rs" 242 4 242 28] (self : t_Bdd'0) : int =
-    [%#sbdd28] match self with
+    [%#sbdd22] match self with
       | {t_Bdd__0'0 = C_True'0} -> UInt64.t'int (v_MAX'0 : UInt64.t) + 1
       | {t_Bdd__0'0 = C_False'0} -> UInt64.t'int (v_MAX'0 : UInt64.t) + 1
       | {t_Bdd__0'0 = C_If'0 v _ _} -> view'5 v
       end
   
   predicate is_valid_node'0 [#"bdd.rs" 319 4 319 51] (self : t_Context'0) (n : t_Node'0) =
-    [%#sbdd21] match n with
+    [%#sbdd15] match n with
       | C_True'0 -> true
       | C_False'0 -> true
       | C_If'0 v childt childf -> childt.t_Bdd__0'0 <> childf.t_Bdd__0'0
@@ -2043,61 +2028,64 @@ module M_bdd__qyi11078426090797403070__hashcons [#"bdd.rs" 446 4 446 58] (* Cont
     | C_Greater'0
   
   function cmp_log'0 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
-    [%#sord45] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord39] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom eq_cmp'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord44] (x = y) = (cmp_log'0 x y = C_Equal'0)
+  axiom eq_cmp'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord38] (x = y) = (cmp_log'0 x y = C_Equal'0)
   
   function antisym2'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom antisym2'0_spec : forall x : UInt64.t, y : UInt64.t . ([%#sord42] cmp_log'0 x y = C_Greater'0)
-   -> ([%#sord43] cmp_log'0 y x = C_Less'0)
+  axiom antisym2'0_spec : forall x : UInt64.t, y : UInt64.t . ([%#sord36] cmp_log'0 x y = C_Greater'0)
+   -> ([%#sord37] cmp_log'0 y x = C_Less'0)
   
   function antisym1'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom antisym1'0_spec : forall x : UInt64.t, y : UInt64.t . ([%#sord40] cmp_log'0 x y = C_Less'0)
-   -> ([%#sord41] cmp_log'0 y x = C_Greater'0)
+  axiom antisym1'0_spec : forall x : UInt64.t, y : UInt64.t . ([%#sord34] cmp_log'0 x y = C_Less'0)
+   -> ([%#sord35] cmp_log'0 y x = C_Greater'0)
   
   function trans'0 (x : UInt64.t) (y : UInt64.t) (z : UInt64.t) (o : t_Ordering'0) : ()
   
-  axiom trans'0_spec : forall x : UInt64.t, y : UInt64.t, z : UInt64.t, o : t_Ordering'0 . ([%#sord37] cmp_log'0 x y
-  = o)  -> ([%#sord38] cmp_log'0 y z = o)  -> ([%#sord39] cmp_log'0 x z = o)
+  axiom trans'0_spec : forall x : UInt64.t, y : UInt64.t, z : UInt64.t, o : t_Ordering'0 . ([%#sord31] cmp_log'0 x y
+  = o)  -> ([%#sord32] cmp_log'0 y z = o)  -> ([%#sord33] cmp_log'0 x z = o)
   
   function refl'0 (x : UInt64.t) : ()
   
-  axiom refl'0_spec : forall x : UInt64.t . [%#sord36] cmp_log'0 x x = C_Equal'0
+  axiom refl'0_spec : forall x : UInt64.t . [%#sord30] cmp_log'0 x x = C_Equal'0
   
   function cmp_gt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord35] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord29] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   function cmp_ge_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord34] UInt64.ge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord28] UInt64.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord33] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord27] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
   
   function cmp_le_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord32] UInt64.le x y
+  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord26] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
+  function view'6 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map UInt64.t t_Option'1
+  
   function interp'0 [#"bdd.rs" 212 4 212 53] (self : t_Bdd'0) (vars : Map.map UInt64.t bool) : bool =
-    [%#sbdd31] match self with
+    [%#sbdd25] match self with
       | {t_Bdd__0'0 = C_True'0} -> true
       | {t_Bdd__0'0 = C_False'0} -> false
       | {t_Bdd__0'0 = C_If'0 v childt childf} -> if Map.get vars v then interp'0 childt vars else interp'0 childf vars
       end
   
-  function view'6 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map UInt64.t t_Option'1
+  type tuple'0  =
+    { _0'0: UInt64.t; _1'0: UInt64.t }
   
-  function view'7 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map (UInt64.t, UInt64.t) t_Option'1
+  function view'7 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map tuple'0 t_Option'1
   
   predicate invariant'1 [#"bdd.rs" 265 4 265 30] (self : t_Context'0) =
-    [%#sbdd30] (forall n : t_NodeLog'0 . match Map.get (view'3 self.t_Context__hashcons'0) n with
+    [%#sbdd24] (forall n : t_NodeLog'0 . match Map.get (view'3 self.t_Context__hashcons'0) n with
       | C_Some'1 b -> view'0 b.t_Bdd__0'0 = n
       /\ is_valid_node'0 self b.t_Bdd__0'0
       /\ UInt64.lt b.t_Bdd__1'0 self.t_Context__cnt'0
@@ -2111,34 +2099,34 @@ module M_bdd__qyi11078426090797403070__hashcons [#"bdd.rs" 446 4 446 58] (* Cont
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (not interp'0 b v)) /\ leastvar'0 b <= leastvar'0 n
       end)
-    /\ (forall abm : (UInt64.t, UInt64.t) . match Map.get (view'7 self.t_Context__and_memo'0) abm with
+    /\ (forall abm : tuple'0 . match Map.get (view'7 self.t_Context__and_memo'0) abm with
       | C_None'1 -> true
-      | C_Some'1 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (a, _) = abm in a);
-                                t_Bdd__1'0 = (let (a, _) = abm in a) } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (_, a) = abm in a);
-                                                                                    t_Bdd__1'0 = (let (_, a) = abm in a) } in is_valid_bdd'0 self n
+      | C_Some'1 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._0'0;
+                                t_Bdd__1'0 = abm._0'0 } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._1'0;
+                                                                     t_Bdd__1'0 = abm._1'0 } in is_valid_bdd'0 self n
       /\ is_valid_bdd'0 self a
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (interp'0 a v /\ interp'0 b v))
       /\ (leastvar'0 a <= leastvar'0 n \/ leastvar'0 b <= leastvar'0 n)
       end)
   
-  predicate inv'6 (_1 : t_Context'0)
+  predicate inv'1 (_1 : t_Context'0)
   
-  axiom inv_axiom'6 [@rewrite] : forall x : t_Context'0 [inv'6 x] . inv'6 x
+  axiom inv_axiom'1 [@rewrite] : forall x : t_Context'0 [inv'1 x] . inv'1 x
   = (invariant'1 x
   /\ match x with
     | {t_Context__alloc'0 = alloc ; t_Context__hashcons'0 = hashcons ; t_Context__hashcons_ghost'0 = hashcons_ghost ; t_Context__not_memo'0 = not_memo ; t_Context__and_memo'0 = and_memo ; t_Context__cnt'0 = cnt} -> true
     end)
   
   predicate invariant'0 (self : MutBorrow.t t_Context'0) =
-    [%#sinvariant29] inv'6 self.current /\ inv'6 self.final
+    [%#sinvariant23] inv'1 self.current /\ inv'1 self.final
   
   predicate inv'0 (_1 : MutBorrow.t t_Context'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_Context'0 [inv'0 x] . inv'0 x = invariant'0 x
   
   predicate resolve'3 (self : MutBorrow.t t_Context'0) =
-    [%#sresolve25] self.final = self.current
+    [%#sresolve19] self.final = self.current
   
   predicate resolve'1 (_1 : MutBorrow.t t_Context'0) =
     resolve'3 _1
@@ -2149,7 +2137,7 @@ module M_bdd__qyi11078426090797403070__hashcons [#"bdd.rs" 446 4 446 58] (* Cont
   
   
   predicate grows'0 [#"bdd.rs" 299 4 299 35] (self : MutBorrow.t t_Context'0) =
-    [%#sbdd22] UInt64.t'int (self.current).t_Context__cnt'0 <= UInt64.t'int (self.final).t_Context__cnt'0
+    [%#sbdd16] UInt64.t'int (self.current).t_Context__cnt'0 <= UInt64.t'int (self.final).t_Context__cnt'0
     /\ (forall n : t_NodeLog'0 . match Map.get (view'3 (self.current).t_Context__hashcons'0) n with
       | C_Some'1 b -> Map.get (view'3 (self.final).t_Context__hashcons'0) n = C_Some'1 b
       | C_None'1 -> true
@@ -2333,14 +2321,16 @@ module M_bdd__qyi11078426090797403070__node [#"bdd.rs" 471 4 471 87] (* Context<
       t_Context__and_memo'0: t_MyHashMap'2;
       t_Context__cnt'0: UInt64.t }
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_Bdd'0
+  
   type t_NodeLog'0  =
     | C_False'1
     | C_True'1
     | C_If'1 UInt64.t UInt64.t UInt64.t
   
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_Bdd'0
+  function view'1 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'0
   
   function deep_model'1 [#"bdd.rs" 161 4 161 44] (self : t_Node'0) : t_NodeLog'0 =
     [%#sbdd26] match self with
@@ -2354,8 +2344,6 @@ module M_bdd__qyi11078426090797403070__node [#"bdd.rs" 471 4 471 87] (* Context<
   
   function view'2 (self : t_Node'0) : t_NodeLog'0 =
     [%#smodel18] view'5 self
-  
-  function view'1 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'0
   
   predicate is_valid_bdd'0 [#"bdd.rs" 312 4 312 53] (self : t_Context'0) (b : t_Bdd'0) =
     [%#sbdd14] Map.get (view'1 self.t_Context__hashcons'0) (view'2 b.t_Bdd__0'0) = C_Some'0 b
@@ -2429,6 +2417,8 @@ module M_bdd__qyi11078426090797403070__node [#"bdd.rs" 471 4 471 87] (* Context<
   axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord27] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
+  function view'6 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map UInt64.t t_Option'0
+  
   function interp'0 [#"bdd.rs" 212 4 212 53] (self : t_Bdd'0) (vars : Map.map UInt64.t bool) : bool =
     [%#sbdd17] match self with
       | {t_Bdd__0'0 = C_True'0} -> true
@@ -2436,9 +2426,10 @@ module M_bdd__qyi11078426090797403070__node [#"bdd.rs" 471 4 471 87] (* Context<
       | {t_Bdd__0'0 = C_If'0 v childt childf} -> if Map.get vars v then interp'0 childt vars else interp'0 childf vars
       end
   
-  function view'6 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map UInt64.t t_Option'0
+  type tuple'0  =
+    { _0'0: UInt64.t; _1'0: UInt64.t }
   
-  function view'7 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map (UInt64.t, UInt64.t) t_Option'0
+  function view'7 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map tuple'0 t_Option'0
   
   predicate invariant'1 [#"bdd.rs" 265 4 265 30] (self : t_Context'0) =
     [%#sbdd23] (forall n : t_NodeLog'0 . match Map.get (view'1 self.t_Context__hashcons'0) n with
@@ -2455,11 +2446,11 @@ module M_bdd__qyi11078426090797403070__node [#"bdd.rs" 471 4 471 87] (* Context<
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (not interp'0 b v)) /\ leastvar'0 b <= leastvar'0 n
       end)
-    /\ (forall abm : (UInt64.t, UInt64.t) . match Map.get (view'7 self.t_Context__and_memo'0) abm with
+    /\ (forall abm : tuple'0 . match Map.get (view'7 self.t_Context__and_memo'0) abm with
       | C_None'0 -> true
-      | C_Some'0 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (a, _) = abm in a);
-                                t_Bdd__1'0 = (let (a, _) = abm in a) } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (_, a) = abm in a);
-                                                                                    t_Bdd__1'0 = (let (_, a) = abm in a) } in is_valid_bdd'0 self n
+      | C_Some'0 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._0'0;
+                                t_Bdd__1'0 = abm._0'0 } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._1'0;
+                                                                     t_Bdd__1'0 = abm._1'0 } in is_valid_bdd'0 self n
       /\ is_valid_bdd'0 self a
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (interp'0 a v /\ interp'0 b v))
@@ -2614,14 +2605,16 @@ module M_bdd__qyi11078426090797403070__trueqy95z [#"bdd.rs" 482 4 482 42] (* Con
       t_Context__and_memo'0: t_MyHashMap'2;
       t_Context__cnt'0: UInt64.t }
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_Bdd'0
+  
   type t_NodeLog'0  =
     | C_False'1
     | C_True'1
     | C_If'1 UInt64.t UInt64.t UInt64.t
   
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_Bdd'0
+  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'0
   
   function deep_model'0 [#"bdd.rs" 161 4 161 44] (self : t_Node'0) : t_NodeLog'0 =
     [%#sbdd20] match self with
@@ -2635,8 +2628,6 @@ module M_bdd__qyi11078426090797403070__trueqy95z [#"bdd.rs" 482 4 482 42] (* Con
   
   function view'1 (self : t_Node'0) : t_NodeLog'0 =
     [%#smodel16] view'3 self
-  
-  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'0
   
   predicate is_valid_bdd'0 [#"bdd.rs" 312 4 312 53] (self : t_Context'0) (b : t_Bdd'0) =
     [%#sbdd11] Map.get (view'0 self.t_Context__hashcons'0) (view'1 b.t_Bdd__0'0) = C_Some'0 b
@@ -2710,6 +2701,8 @@ module M_bdd__qyi11078426090797403070__trueqy95z [#"bdd.rs" 482 4 482 42] (* Con
   axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord21] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
+  function view'4 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map UInt64.t t_Option'0
+  
   function interp'0 [#"bdd.rs" 212 4 212 53] (self : t_Bdd'0) (vars : Map.map UInt64.t bool) : bool =
     [%#sbdd12] match self with
       | {t_Bdd__0'0 = C_True'0} -> true
@@ -2717,9 +2710,10 @@ module M_bdd__qyi11078426090797403070__trueqy95z [#"bdd.rs" 482 4 482 42] (* Con
       | {t_Bdd__0'0 = C_If'0 v childt childf} -> if Map.get vars v then interp'0 childt vars else interp'0 childf vars
       end
   
-  function view'4 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map UInt64.t t_Option'0
+  type tuple'0  =
+    { _0'0: UInt64.t; _1'0: UInt64.t }
   
-  function view'5 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map (UInt64.t, UInt64.t) t_Option'0
+  function view'5 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map tuple'0 t_Option'0
   
   predicate invariant'0 [#"bdd.rs" 265 4 265 30] (self : t_Context'0) =
     [%#sbdd17] (forall n : t_NodeLog'0 . match Map.get (view'0 self.t_Context__hashcons'0) n with
@@ -2736,11 +2730,11 @@ module M_bdd__qyi11078426090797403070__trueqy95z [#"bdd.rs" 482 4 482 42] (* Con
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (not interp'0 b v)) /\ leastvar'0 b <= leastvar'0 n
       end)
-    /\ (forall abm : (UInt64.t, UInt64.t) . match Map.get (view'5 self.t_Context__and_memo'0) abm with
+    /\ (forall abm : tuple'0 . match Map.get (view'5 self.t_Context__and_memo'0) abm with
       | C_None'0 -> true
-      | C_Some'0 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (a, _) = abm in a);
-                                t_Bdd__1'0 = (let (a, _) = abm in a) } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (_, a) = abm in a);
-                                                                                    t_Bdd__1'0 = (let (_, a) = abm in a) } in is_valid_bdd'0 self n
+      | C_Some'0 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._0'0;
+                                t_Bdd__1'0 = abm._0'0 } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._1'0;
+                                                                     t_Bdd__1'0 = abm._1'0 } in is_valid_bdd'0 self n
       /\ is_valid_bdd'0 self a
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (interp'0 a v /\ interp'0 b v))
@@ -2878,14 +2872,16 @@ module M_bdd__qyi11078426090797403070__falseqy95z [#"bdd.rs" 490 4 490 43] (* Co
       t_Context__and_memo'0: t_MyHashMap'2;
       t_Context__cnt'0: UInt64.t }
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_Bdd'0
+  
   type t_NodeLog'0  =
     | C_False'1
     | C_True'1
     | C_If'1 UInt64.t UInt64.t UInt64.t
   
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_Bdd'0
+  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'0
   
   function deep_model'0 [#"bdd.rs" 161 4 161 44] (self : t_Node'0) : t_NodeLog'0 =
     [%#sbdd20] match self with
@@ -2899,8 +2895,6 @@ module M_bdd__qyi11078426090797403070__falseqy95z [#"bdd.rs" 490 4 490 43] (* Co
   
   function view'1 (self : t_Node'0) : t_NodeLog'0 =
     [%#smodel16] view'3 self
-  
-  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'0
   
   predicate is_valid_bdd'0 [#"bdd.rs" 312 4 312 53] (self : t_Context'0) (b : t_Bdd'0) =
     [%#sbdd11] Map.get (view'0 self.t_Context__hashcons'0) (view'1 b.t_Bdd__0'0) = C_Some'0 b
@@ -2974,6 +2968,8 @@ module M_bdd__qyi11078426090797403070__falseqy95z [#"bdd.rs" 490 4 490 43] (* Co
   axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord21] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
+  function view'4 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map UInt64.t t_Option'0
+  
   function interp'0 [#"bdd.rs" 212 4 212 53] (self : t_Bdd'0) (vars : Map.map UInt64.t bool) : bool =
     [%#sbdd12] match self with
       | {t_Bdd__0'0 = C_True'0} -> true
@@ -2981,9 +2977,10 @@ module M_bdd__qyi11078426090797403070__falseqy95z [#"bdd.rs" 490 4 490 43] (* Co
       | {t_Bdd__0'0 = C_If'0 v childt childf} -> if Map.get vars v then interp'0 childt vars else interp'0 childf vars
       end
   
-  function view'4 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map UInt64.t t_Option'0
+  type tuple'0  =
+    { _0'0: UInt64.t; _1'0: UInt64.t }
   
-  function view'5 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map (UInt64.t, UInt64.t) t_Option'0
+  function view'5 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map tuple'0 t_Option'0
   
   predicate invariant'0 [#"bdd.rs" 265 4 265 30] (self : t_Context'0) =
     [%#sbdd17] (forall n : t_NodeLog'0 . match Map.get (view'0 self.t_Context__hashcons'0) n with
@@ -3000,11 +2997,11 @@ module M_bdd__qyi11078426090797403070__falseqy95z [#"bdd.rs" 490 4 490 43] (* Co
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (not interp'0 b v)) /\ leastvar'0 b <= leastvar'0 n
       end)
-    /\ (forall abm : (UInt64.t, UInt64.t) . match Map.get (view'5 self.t_Context__and_memo'0) abm with
+    /\ (forall abm : tuple'0 . match Map.get (view'5 self.t_Context__and_memo'0) abm with
       | C_None'0 -> true
-      | C_Some'0 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (a, _) = abm in a);
-                                t_Bdd__1'0 = (let (a, _) = abm in a) } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (_, a) = abm in a);
-                                                                                    t_Bdd__1'0 = (let (_, a) = abm in a) } in is_valid_bdd'0 self n
+      | C_Some'0 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._0'0;
+                                t_Bdd__1'0 = abm._0'0 } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._1'0;
+                                                                     t_Bdd__1'0 = abm._1'0 } in is_valid_bdd'0 self n
       /\ is_valid_bdd'0 self a
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (interp'0 a v /\ interp'0 b v))
@@ -3154,14 +3151,16 @@ module M_bdd__qyi11078426090797403070__v [#"bdd.rs" 497 4 497 46] (* Context<'ar
       t_Context__and_memo'0: t_MyHashMap'2;
       t_Context__cnt'0: UInt64.t }
   
+  type t_Option'0  =
+    | C_None'0
+    | C_Some'0 t_Bdd'0
+  
   type t_NodeLog'0  =
     | C_False'1
     | C_True'1
     | C_If'1 UInt64.t UInt64.t UInt64.t
   
-  type t_Option'0  =
-    | C_None'0
-    | C_Some'0 t_Bdd'0
+  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'0
   
   function deep_model'0 [#"bdd.rs" 161 4 161 44] (self : t_Node'0) : t_NodeLog'0 =
     [%#sbdd32] match self with
@@ -3175,8 +3174,6 @@ module M_bdd__qyi11078426090797403070__v [#"bdd.rs" 497 4 497 46] (* Context<'ar
   
   function view'1 (self : t_Node'0) : t_NodeLog'0 =
     [%#smodel27] view'3 self
-  
-  function view'0 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map t_NodeLog'0 t_Option'0
   
   predicate is_valid_bdd'0 [#"bdd.rs" 312 4 312 53] (self : t_Context'0) (b : t_Bdd'0) =
     [%#sbdd23] Map.get (view'0 self.t_Context__hashcons'0) (view'1 b.t_Bdd__0'0) = C_Some'0 b
@@ -3250,6 +3247,8 @@ module M_bdd__qyi11078426090797403070__v [#"bdd.rs" 497 4 497 46] (* Context<'ar
   axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord33] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
+  function view'4 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map UInt64.t t_Option'0
+  
   function interp'0 [#"bdd.rs" 212 4 212 53] (self : t_Bdd'0) (vars : Map.map UInt64.t bool) : bool =
     [%#sbdd24] match self with
       | {t_Bdd__0'0 = C_True'0} -> true
@@ -3257,9 +3256,10 @@ module M_bdd__qyi11078426090797403070__v [#"bdd.rs" 497 4 497 46] (* Context<'ar
       | {t_Bdd__0'0 = C_If'0 v childt childf} -> if Map.get vars v then interp'0 childt vars else interp'0 childf vars
       end
   
-  function view'4 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map UInt64.t t_Option'0
+  type tuple'0  =
+    { _0'0: UInt64.t; _1'0: UInt64.t }
   
-  function view'5 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map (UInt64.t, UInt64.t) t_Option'0
+  function view'5 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map tuple'0 t_Option'0
   
   predicate invariant'0 [#"bdd.rs" 265 4 265 30] (self : t_Context'0) =
     [%#sbdd28] (forall n : t_NodeLog'0 . match Map.get (view'0 self.t_Context__hashcons'0) n with
@@ -3276,11 +3276,11 @@ module M_bdd__qyi11078426090797403070__v [#"bdd.rs" 497 4 497 46] (* Context<'ar
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (not interp'0 b v)) /\ leastvar'0 b <= leastvar'0 n
       end)
-    /\ (forall abm : (UInt64.t, UInt64.t) . match Map.get (view'5 self.t_Context__and_memo'0) abm with
+    /\ (forall abm : tuple'0 . match Map.get (view'5 self.t_Context__and_memo'0) abm with
       | C_None'0 -> true
-      | C_Some'0 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (a, _) = abm in a);
-                                t_Bdd__1'0 = (let (a, _) = abm in a) } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (_, a) = abm in a);
-                                                                                    t_Bdd__1'0 = (let (_, a) = abm in a) } in is_valid_bdd'0 self n
+      | C_Some'0 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._0'0;
+                                t_Bdd__1'0 = abm._0'0 } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._1'0;
+                                                                     t_Bdd__1'0 = abm._1'0 } in is_valid_bdd'0 self n
       /\ is_valid_bdd'0 self a
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (interp'0 a v /\ interp'0 b v))
@@ -3408,60 +3408,56 @@ module M_bdd__qyi11078426090797403070__not [#"bdd.rs" 509 4 509 56] (* Context<'
   let%span sbdd4 = "bdd.rs" 506 14 506 58
   let%span sbdd5 = "bdd.rs" 507 14 507 47
   let%span sbdd6 = "bdd.rs" 508 14 508 22
-  let%span sbdd7 = "bdd.rs" 66 37 66 40
-  let%span sbdd8 = "bdd.rs" 66 52 66 65
-  let%span sbdd9 = "bdd.rs" 61 18 64 9
-  let%span sbdd10 = "bdd.rs" 471 17 471 21
-  let%span sbdd11 = "bdd.rs" 464 15 464 40
-  let%span sbdd12 = "bdd.rs" 465 15 465 40
-  let%span sbdd13 = "bdd.rs" 466 15 466 63
-  let%span sbdd14 = "bdd.rs" 467 14 467 26
-  let%span sbdd15 = "bdd.rs" 468 14 468 42
-  let%span sbdd16 = "bdd.rs" 469 14 469 104
-  let%span sbdd17 = "bdd.rs" 470 14 470 37
-  let%span sbdd18 = "bdd.rs" 490 23 490 27
-  let%span sbdd19 = "bdd.rs" 486 14 486 26
-  let%span sbdd20 = "bdd.rs" 487 14 487 42
-  let%span sbdd21 = "bdd.rs" 488 14 488 43
-  let%span sbdd22 = "bdd.rs" 489 14 489 46
-  let%span sbdd23 = "bdd.rs" 482 22 482 26
-  let%span sbdd24 = "bdd.rs" 478 14 478 26
-  let%span sbdd25 = "bdd.rs" 479 14 479 42
-  let%span sbdd26 = "bdd.rs" 480 14 480 42
-  let%span sbdd27 = "bdd.rs" 481 14 481 46
-  let%span sbdd28 = "bdd.rs" 57 30 57 33
-  let%span sbdd29 = "bdd.rs" 57 38 57 41
-  let%span sbdd30 = "bdd.rs" 55 18 55 126
-  let%span sbdd31 = "bdd.rs" 314 12 314 47
-  let%span sbdd32 = "bdd.rs" 301 12 306 17
-  let%span sbdd33 = "bdd.rs" 214 12 221 13
-  let%span sbdd34 = "bdd.rs" 244 12 248 13
-  let%span sbdd35 = "bdd.rs" 226 14 226 25
-  let%span sbdd36 = "bdd.rs" 229 12 237 13
-  let%span smodel37 = "../../creusot-contracts/src/model.rs" 54 8 54 22
-  let%span smodel38 = "../../creusot-contracts/src/model.rs" 45 8 45 28
-  let%span sbdd39 = "bdd.rs" 189 20 189 26
-  let%span smodel40 = "../../creusot-contracts/src/model.rs" 72 8 72 22
-  let%span sresolve41 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
-  let%span sbdd42 = "bdd.rs" 267 12 291 19
-  let%span sinvariant43 = "../../creusot-contracts/src/invariant.rs" 35 20 35 44
-  let%span sbdd44 = "bdd.rs" 179 20 179 37
-  let%span sbdd45 = "bdd.rs" 321 12 330 13
-  let%span sbdd46 = "bdd.rs" 163 12 167 13
-  let%span sord47 = "../../creusot-contracts/src/logic/ord.rs" 129 39 129 89
-  let%span sord48 = "../../creusot-contracts/src/logic/ord.rs" 134 39 134 86
-  let%span sord49 = "../../creusot-contracts/src/logic/ord.rs" 139 39 139 86
-  let%span sord50 = "../../creusot-contracts/src/logic/ord.rs" 144 39 144 89
-  let%span sord51 = "../../creusot-contracts/src/logic/ord.rs" 149 39 149 70
-  let%span sord52 = "../../creusot-contracts/src/logic/ord.rs" 154 40 154 57
-  let%span sord53 = "../../creusot-contracts/src/logic/ord.rs" 155 40 155 57
-  let%span sord54 = "../../creusot-contracts/src/logic/ord.rs" 156 39 156 56
-  let%span sord55 = "../../creusot-contracts/src/logic/ord.rs" 161 40 161 70
-  let%span sord56 = "../../creusot-contracts/src/logic/ord.rs" 162 39 162 72
-  let%span sord57 = "../../creusot-contracts/src/logic/ord.rs" 167 40 167 73
-  let%span sord58 = "../../creusot-contracts/src/logic/ord.rs" 168 39 168 69
-  let%span sord59 = "../../creusot-contracts/src/logic/ord.rs" 173 39 173 84
-  let%span sord60 = "../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
+  let%span sbdd7 = "bdd.rs" 61 18 64 9
+  let%span sbdd8 = "bdd.rs" 471 17 471 21
+  let%span sbdd9 = "bdd.rs" 464 15 464 40
+  let%span sbdd10 = "bdd.rs" 465 15 465 40
+  let%span sbdd11 = "bdd.rs" 466 15 466 63
+  let%span sbdd12 = "bdd.rs" 467 14 467 26
+  let%span sbdd13 = "bdd.rs" 468 14 468 42
+  let%span sbdd14 = "bdd.rs" 469 14 469 104
+  let%span sbdd15 = "bdd.rs" 470 14 470 37
+  let%span sbdd16 = "bdd.rs" 490 23 490 27
+  let%span sbdd17 = "bdd.rs" 486 14 486 26
+  let%span sbdd18 = "bdd.rs" 487 14 487 42
+  let%span sbdd19 = "bdd.rs" 488 14 488 43
+  let%span sbdd20 = "bdd.rs" 489 14 489 46
+  let%span sbdd21 = "bdd.rs" 482 22 482 26
+  let%span sbdd22 = "bdd.rs" 478 14 478 26
+  let%span sbdd23 = "bdd.rs" 479 14 479 42
+  let%span sbdd24 = "bdd.rs" 480 14 480 42
+  let%span sbdd25 = "bdd.rs" 481 14 481 46
+  let%span sbdd26 = "bdd.rs" 55 18 55 126
+  let%span sbdd27 = "bdd.rs" 314 12 314 47
+  let%span sbdd28 = "bdd.rs" 301 12 306 17
+  let%span sbdd29 = "bdd.rs" 214 12 221 13
+  let%span sbdd30 = "bdd.rs" 244 12 248 13
+  let%span sbdd31 = "bdd.rs" 226 14 226 25
+  let%span sbdd32 = "bdd.rs" 229 12 237 13
+  let%span smodel33 = "../../creusot-contracts/src/model.rs" 54 8 54 22
+  let%span smodel34 = "../../creusot-contracts/src/model.rs" 45 8 45 28
+  let%span sbdd35 = "bdd.rs" 189 20 189 26
+  let%span smodel36 = "../../creusot-contracts/src/model.rs" 72 8 72 22
+  let%span sresolve37 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span sbdd38 = "bdd.rs" 267 12 291 19
+  let%span sinvariant39 = "../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  let%span sbdd40 = "bdd.rs" 179 20 179 37
+  let%span sbdd41 = "bdd.rs" 321 12 330 13
+  let%span sbdd42 = "bdd.rs" 163 12 167 13
+  let%span sord43 = "../../creusot-contracts/src/logic/ord.rs" 129 39 129 89
+  let%span sord44 = "../../creusot-contracts/src/logic/ord.rs" 134 39 134 86
+  let%span sord45 = "../../creusot-contracts/src/logic/ord.rs" 139 39 139 86
+  let%span sord46 = "../../creusot-contracts/src/logic/ord.rs" 144 39 144 89
+  let%span sord47 = "../../creusot-contracts/src/logic/ord.rs" 149 39 149 70
+  let%span sord48 = "../../creusot-contracts/src/logic/ord.rs" 154 40 154 57
+  let%span sord49 = "../../creusot-contracts/src/logic/ord.rs" 155 40 155 57
+  let%span sord50 = "../../creusot-contracts/src/logic/ord.rs" 156 39 156 56
+  let%span sord51 = "../../creusot-contracts/src/logic/ord.rs" 161 40 161 70
+  let%span sord52 = "../../creusot-contracts/src/logic/ord.rs" 162 39 162 72
+  let%span sord53 = "../../creusot-contracts/src/logic/ord.rs" 167 40 167 73
+  let%span sord54 = "../../creusot-contracts/src/logic/ord.rs" 168 39 168 69
+  let%span sord55 = "../../creusot-contracts/src/logic/ord.rs" 173 39 173 84
+  let%span sord56 = "../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
   
   use creusot.int.UInt64
   use map.Map
@@ -3494,14 +3490,6 @@ module M_bdd__qyi11078426090797403070__not [#"bdd.rs" 509 4 509 56] (* Context<'
     | C_None'0
     | C_Some'0 t_Bdd'0
   
-  predicate inv'2 (_1 : t_Bdd'0)
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : t_Bdd'0 [inv'2 x] . inv'2 x = true
-  
-  predicate inv'3 (_1 : t_Option'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
-  
   type t_Option'1  =
     | C_None'1
     | C_Some'1 t_Bdd'0
@@ -3509,18 +3497,16 @@ module M_bdd__qyi11078426090797403070__not [#"bdd.rs" 509 4 509 56] (* Context<'
   function view'1 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map UInt64.t t_Option'1
   
   function view'0 (self : t_MyHashMap'0) : Map.map UInt64.t t_Option'1 =
-    [%#smodel37] view'1 self
+    [%#smodel33] view'1 self
   
   function deep_model'1 [#"bdd.rs" 188 4 188 44] (self : t_Bdd'0) : UInt64.t =
-    [%#sbdd39] self.t_Bdd__1'0
+    [%#sbdd35] self.t_Bdd__1'0
   
   function deep_model'0 (self : t_Bdd'0) : UInt64.t =
-    [%#smodel38] deep_model'1 self
+    [%#smodel34] deep_model'1 self
   
-  let rec get'0 (self:t_MyHashMap'0) (key:t_Bdd'0) (return'  (ret:t_Option'0))= {[@expl:get 'key' type invariant] [%#sbdd7] inv'2 key}
-    any
-    [ return' (result:t_Option'0)-> {[%#sbdd8] inv'3 result}
-      {[%#sbdd9] match result with
+  let rec get'0 (self:t_MyHashMap'0) (key:t_Bdd'0) (return'  (ret:t_Option'0))= any
+    [ return' (result:t_Option'0)-> {[%#sbdd7] match result with
         | C_Some'0 v -> Map.get (view'0 self) (deep_model'0 key) = C_Some'1 v
         | C_None'0 -> Map.get (view'0 self) (deep_model'0 key) = C_None'1
         end}
@@ -3541,38 +3527,38 @@ module M_bdd__qyi11078426090797403070__not [#"bdd.rs" 509 4 509 56] (* Context<'
     | C_True'1
     | C_If'1 UInt64.t UInt64.t UInt64.t
   
+  function view'3 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map t_NodeLog'0 t_Option'1
+  
   function deep_model'2 [#"bdd.rs" 161 4 161 44] (self : t_Node'0) : t_NodeLog'0 =
-    [%#sbdd46] match self with
+    [%#sbdd42] match self with
       | C_False'0 -> C_False'1
       | C_True'0 -> C_True'1
       | C_If'0 v childt childf -> C_If'1 v (childt.t_Bdd__1'0) (childf.t_Bdd__1'0)
       end
   
   function view'6 [#"bdd.rs" 178 4 178 33] (self : t_Node'0) : t_NodeLog'0 =
-    [%#sbdd44] deep_model'2 self
+    [%#sbdd40] deep_model'2 self
   
   function view'4 (self : t_Node'0) : t_NodeLog'0 =
-    [%#smodel37] view'6 self
-  
-  function view'3 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map t_NodeLog'0 t_Option'1
+    [%#smodel33] view'6 self
   
   predicate is_valid_bdd'0 [#"bdd.rs" 312 4 312 53] (self : t_Context'0) (b : t_Bdd'0) =
-    [%#sbdd31] Map.get (view'3 self.t_Context__hashcons'0) (view'4 b.t_Bdd__0'0) = C_Some'1 b
+    [%#sbdd27] Map.get (view'3 self.t_Context__hashcons'0) (view'4 b.t_Bdd__0'0) = C_Some'1 b
   
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function view'5 (self : UInt64.t) : int =
-    [%#smodel37] UInt64.t'int self
+    [%#smodel33] UInt64.t'int self
   
   function leastvar'0 [#"bdd.rs" 242 4 242 28] (self : t_Bdd'0) : int =
-    [%#sbdd34] match self with
+    [%#sbdd30] match self with
       | {t_Bdd__0'0 = C_True'0} -> UInt64.t'int (v_MAX'0 : UInt64.t) + 1
       | {t_Bdd__0'0 = C_False'0} -> UInt64.t'int (v_MAX'0 : UInt64.t) + 1
       | {t_Bdd__0'0 = C_If'0 v _ _} -> view'5 v
       end
   
   predicate is_valid_node'0 [#"bdd.rs" 319 4 319 51] (self : t_Context'0) (n : t_Node'0) =
-    [%#sbdd45] match n with
+    [%#sbdd41] match n with
       | C_True'0 -> true
       | C_False'0 -> true
       | C_If'0 v childt childf -> childt.t_Bdd__0'0 <> childf.t_Bdd__0'0
@@ -3586,59 +3572,62 @@ module M_bdd__qyi11078426090797403070__not [#"bdd.rs" 509 4 509 56] (* Context<'
     | C_Greater'0
   
   function cmp_log'0 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
-    [%#sord60] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord56] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom eq_cmp'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord59] (x = y) = (cmp_log'0 x y = C_Equal'0)
+  axiom eq_cmp'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord55] (x = y) = (cmp_log'0 x y = C_Equal'0)
   
   function antisym2'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom antisym2'0_spec : forall x : UInt64.t, y : UInt64.t . ([%#sord57] cmp_log'0 x y = C_Greater'0)
-   -> ([%#sord58] cmp_log'0 y x = C_Less'0)
+  axiom antisym2'0_spec : forall x : UInt64.t, y : UInt64.t . ([%#sord53] cmp_log'0 x y = C_Greater'0)
+   -> ([%#sord54] cmp_log'0 y x = C_Less'0)
   
   function antisym1'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom antisym1'0_spec : forall x : UInt64.t, y : UInt64.t . ([%#sord55] cmp_log'0 x y = C_Less'0)
-   -> ([%#sord56] cmp_log'0 y x = C_Greater'0)
+  axiom antisym1'0_spec : forall x : UInt64.t, y : UInt64.t . ([%#sord51] cmp_log'0 x y = C_Less'0)
+   -> ([%#sord52] cmp_log'0 y x = C_Greater'0)
   
   function trans'0 (x : UInt64.t) (y : UInt64.t) (z : UInt64.t) (o : t_Ordering'0) : ()
   
-  axiom trans'0_spec : forall x : UInt64.t, y : UInt64.t, z : UInt64.t, o : t_Ordering'0 . ([%#sord52] cmp_log'0 x y
-  = o)  -> ([%#sord53] cmp_log'0 y z = o)  -> ([%#sord54] cmp_log'0 x z = o)
+  axiom trans'0_spec : forall x : UInt64.t, y : UInt64.t, z : UInt64.t, o : t_Ordering'0 . ([%#sord48] cmp_log'0 x y
+  = o)  -> ([%#sord49] cmp_log'0 y z = o)  -> ([%#sord50] cmp_log'0 x z = o)
   
   function refl'0 (x : UInt64.t) : ()
   
-  axiom refl'0_spec : forall x : UInt64.t . [%#sord51] cmp_log'0 x x = C_Equal'0
+  axiom refl'0_spec : forall x : UInt64.t . [%#sord47] cmp_log'0 x x = C_Equal'0
   
   function cmp_gt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord50] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord46] UInt64.gt x y = (cmp_log'0 x y = C_Greater'0)
   
   function cmp_ge_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord49] UInt64.ge x y = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord45] UInt64.ge x y = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord48] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord44] UInt64.lt x y = (cmp_log'0 x y = C_Less'0)
   
   function cmp_le_log'0 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord47] UInt64.le x y
+  axiom cmp_le_log'0_spec : forall x : UInt64.t, y : UInt64.t . [%#sord43] UInt64.le x y
   = (cmp_log'0 x y <> C_Greater'0)
   
   function interp'0 [#"bdd.rs" 212 4 212 53] (self : t_Bdd'0) (vars : Map.map UInt64.t bool) : bool =
-    [%#sbdd33] match self with
+    [%#sbdd29] match self with
       | {t_Bdd__0'0 = C_True'0} -> true
       | {t_Bdd__0'0 = C_False'0} -> false
       | {t_Bdd__0'0 = C_If'0 v childt childf} -> if Map.get vars v then interp'0 childt vars else interp'0 childf vars
       end
   
-  function view'7 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map (UInt64.t, UInt64.t) t_Option'1
+  type tuple'0  =
+    { _0'0: UInt64.t; _1'0: UInt64.t }
+  
+  function view'7 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map tuple'0 t_Option'1
   
   predicate invariant'0 [#"bdd.rs" 265 4 265 30] (self : t_Context'0) =
-    [%#sbdd42] (forall n : t_NodeLog'0 . match Map.get (view'3 self.t_Context__hashcons'0) n with
+    [%#sbdd38] (forall n : t_NodeLog'0 . match Map.get (view'3 self.t_Context__hashcons'0) n with
       | C_Some'1 b -> view'4 b.t_Bdd__0'0 = n
       /\ is_valid_node'0 self b.t_Bdd__0'0
       /\ UInt64.lt b.t_Bdd__1'0 self.t_Context__cnt'0
@@ -3652,11 +3641,11 @@ module M_bdd__qyi11078426090797403070__not [#"bdd.rs" 509 4 509 56] (* Context<'
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (not interp'0 b v)) /\ leastvar'0 b <= leastvar'0 n
       end)
-    /\ (forall abm : (UInt64.t, UInt64.t) . match Map.get (view'7 self.t_Context__and_memo'0) abm with
+    /\ (forall abm : tuple'0 . match Map.get (view'7 self.t_Context__and_memo'0) abm with
       | C_None'1 -> true
-      | C_Some'1 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (a, _) = abm in a);
-                                t_Bdd__1'0 = (let (a, _) = abm in a) } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (_, a) = abm in a);
-                                                                                    t_Bdd__1'0 = (let (_, a) = abm in a) } in is_valid_bdd'0 self n
+      | C_Some'1 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._0'0;
+                                t_Bdd__1'0 = abm._0'0 } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._1'0;
+                                                                     t_Bdd__1'0 = abm._1'0 } in is_valid_bdd'0 self n
       /\ is_valid_bdd'0 self a
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (interp'0 a v /\ interp'0 b v))
@@ -3672,67 +3661,61 @@ module M_bdd__qyi11078426090797403070__not [#"bdd.rs" 509 4 509 56] (* Context<'
     end)
   
   predicate invariant'1 (self : MutBorrow.t t_Context'0) =
-    [%#sinvariant43] inv'0 self.current /\ inv'0 self.final
+    [%#sinvariant39] inv'0 self.current /\ inv'0 self.final
   
   predicate inv'1 (_1 : MutBorrow.t t_Context'0)
   
   axiom inv_axiom'1 [@rewrite] : forall x : MutBorrow.t t_Context'0 [inv'1 x] . inv'1 x = invariant'1 x
   
   predicate grows'0 [#"bdd.rs" 299 4 299 35] (self : MutBorrow.t t_Context'0) =
-    [%#sbdd32] UInt64.t'int (self.current).t_Context__cnt'0 <= UInt64.t'int (self.final).t_Context__cnt'0
+    [%#sbdd28] UInt64.t'int (self.current).t_Context__cnt'0 <= UInt64.t'int (self.final).t_Context__cnt'0
     /\ (forall n : t_NodeLog'0 . match Map.get (view'3 (self.current).t_Context__hashcons'0) n with
       | C_Some'1 b -> Map.get (view'3 (self.final).t_Context__hashcons'0) n = C_Some'1 b
       | C_None'1 -> true
       end)
   
-  let rec node'0 (self:MutBorrow.t t_Context'0) (x:UInt64.t) (childt:t_Bdd'0) (childf:t_Bdd'0) (return'  (ret:t_Bdd'0))= {[@expl:node 'self' type invariant] [%#sbdd10] inv'1 self}
-    {[@expl:node requires #0] [%#sbdd11] is_valid_bdd'0 self.current childt}
-    {[@expl:node requires #1] [%#sbdd12] is_valid_bdd'0 self.current childf}
-    {[@expl:node requires #2] [%#sbdd13] UInt64.t'int x < leastvar'0 childt /\ UInt64.t'int x < leastvar'0 childf}
+  let rec node'0 (self:MutBorrow.t t_Context'0) (x:UInt64.t) (childt:t_Bdd'0) (childf:t_Bdd'0) (return'  (ret:t_Bdd'0))= {[@expl:node 'self' type invariant] [%#sbdd8] inv'1 self}
+    {[@expl:node requires #0] [%#sbdd9] is_valid_bdd'0 self.current childt}
+    {[@expl:node requires #1] [%#sbdd10] is_valid_bdd'0 self.current childf}
+    {[@expl:node requires #2] [%#sbdd11] UInt64.t'int x < leastvar'0 childt /\ UInt64.t'int x < leastvar'0 childf}
     any
-    [ return' (result:t_Bdd'0)-> {[%#sbdd14] grows'0 self}
-      {[%#sbdd15] is_valid_bdd'0 self.final result}
-      {[%#sbdd16] forall v : Map.map UInt64.t bool . interp'0 result v
+    [ return' (result:t_Bdd'0)-> {[%#sbdd12] grows'0 self}
+      {[%#sbdd13] is_valid_bdd'0 self.final result}
+      {[%#sbdd14] forall v : Map.map UInt64.t bool . interp'0 result v
       = (if Map.get v x then interp'0 childt v else interp'0 childf v)}
-      {[%#sbdd17] UInt64.t'int x <= leastvar'0 result}
+      {[%#sbdd15] UInt64.t'int x <= leastvar'0 result}
       (! return' {result}) ]
   
   
-  let rec falseqy95z'0 (self:MutBorrow.t t_Context'0) (return'  (ret:t_Bdd'0))= {[@expl:false_ 'self' type invariant] [%#sbdd18] inv'1 self}
+  let rec falseqy95z'0 (self:MutBorrow.t t_Context'0) (return'  (ret:t_Bdd'0))= {[@expl:false_ 'self' type invariant] [%#sbdd16] inv'1 self}
     any
-    [ return' (result:t_Bdd'0)-> {[%#sbdd19] grows'0 self}
-      {[%#sbdd20] is_valid_bdd'0 self.final result}
-      {[%#sbdd21] forall v : Map.map UInt64.t bool . not interp'0 result v}
-      {[%#sbdd22] UInt64.t'int (v_MAX'0 : UInt64.t) + 1 = leastvar'0 result}
+    [ return' (result:t_Bdd'0)-> {[%#sbdd17] grows'0 self}
+      {[%#sbdd18] is_valid_bdd'0 self.final result}
+      {[%#sbdd19] forall v : Map.map UInt64.t bool . not interp'0 result v}
+      {[%#sbdd20] UInt64.t'int (v_MAX'0 : UInt64.t) + 1 = leastvar'0 result}
       (! return' {result}) ]
   
   
-  let rec trueqy95z'0 (self:MutBorrow.t t_Context'0) (return'  (ret:t_Bdd'0))= {[@expl:true_ 'self' type invariant] [%#sbdd23] inv'1 self}
+  let rec trueqy95z'0 (self:MutBorrow.t t_Context'0) (return'  (ret:t_Bdd'0))= {[@expl:true_ 'self' type invariant] [%#sbdd21] inv'1 self}
     any
-    [ return' (result:t_Bdd'0)-> {[%#sbdd24] grows'0 self}
-      {[%#sbdd25] is_valid_bdd'0 self.final result}
-      {[%#sbdd26] forall v : Map.map UInt64.t bool . interp'0 result v}
-      {[%#sbdd27] UInt64.t'int (v_MAX'0 : UInt64.t) + 1 = leastvar'0 result}
+    [ return' (result:t_Bdd'0)-> {[%#sbdd22] grows'0 self}
+      {[%#sbdd23] is_valid_bdd'0 self.final result}
+      {[%#sbdd24] forall v : Map.map UInt64.t bool . interp'0 result v}
+      {[%#sbdd25] UInt64.t'int (v_MAX'0 : UInt64.t) + 1 = leastvar'0 result}
       (! return' {result}) ]
   
-  
-  predicate inv'4 (_1 : t_Bdd'0)
-  
-  axiom inv_axiom'4 [@rewrite] : forall x : t_Bdd'0 [inv'4 x] . inv'4 x = true
   
   function view'2 (self : MutBorrow.t t_MyHashMap'0) : Map.map UInt64.t t_Option'1 =
-    [%#smodel40] view'1 self.current
+    [%#smodel36] view'1 self.current
   
-  let rec add'0 (self:MutBorrow.t t_MyHashMap'0) (key:t_Bdd'0) (val':t_Bdd'0) (return'  (ret:()))= {[@expl:add 'key' type invariant] [%#sbdd28] inv'4 key}
-    {[@expl:add 'val' type invariant] [%#sbdd29] inv'4 val'}
-    any
-    [ return' (result:())-> {[%#sbdd30] forall i : UInt64.t . Map.get (view'1 self.final) i
+  let rec add'0 (self:MutBorrow.t t_MyHashMap'0) (key:t_Bdd'0) (val':t_Bdd'0) (return'  (ret:()))= any
+    [ return' (result:())-> {[%#sbdd26] forall i : UInt64.t . Map.get (view'1 self.final) i
       = (if i = deep_model'1 key then C_Some'1 val' else Map.get (view'2 self) i)}
       (! return' {result}) ]
   
   
   predicate resolve'1 (self : MutBorrow.t t_Context'0) =
-    [%#sresolve41] self.final = self.current
+    [%#sresolve37] self.final = self.current
   
   predicate resolve'0 (_1 : MutBorrow.t t_Context'0) =
     resolve'1 _1
@@ -3743,13 +3726,13 @@ module M_bdd__qyi11078426090797403070__not [#"bdd.rs" 509 4 509 56] (* Context<'
   
   
   function size'0 [#"bdd.rs" 227 4 227 24] (self : t_Bdd'0) : int =
-    [%#sbdd36] match self with
+    [%#sbdd32] match self with
       | {t_Bdd__0'0 = C_True'0} -> 0
       | {t_Bdd__0'0 = C_False'0} -> 0
       | {t_Bdd__0'0 = C_If'0 _ childt childf} -> let ht = size'0 childt in let hf = size'0 childf in 1 + ht + hf
       end
   
-  axiom size'0_spec : forall self : t_Bdd'0 . [%#sbdd35] size'0 self >= 0
+  axiom size'0_spec : forall self : t_Bdd'0 . [%#sbdd31] size'0 self >= 0
   
   meta "compute_max_steps" 1000000
   
@@ -3894,72 +3877,68 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
   let%span sbdd6 = "bdd.rs" 530 14 530 74
   let%span sbdd7 = "bdd.rs" 531 14 531 84
   let%span sbdd8 = "bdd.rs" 532 14 532 33
-  let%span sbdd9 = "bdd.rs" 66 37 66 40
-  let%span sbdd10 = "bdd.rs" 66 52 66 65
-  let%span sbdd11 = "bdd.rs" 61 18 64 9
-  let%span scmp12 = "../../creusot-contracts/src/std/cmp.rs" 72 26 72 85
-  let%span sbdd13 = "bdd.rs" 471 17 471 21
-  let%span sbdd14 = "bdd.rs" 464 15 464 40
-  let%span sbdd15 = "bdd.rs" 465 15 465 40
-  let%span sbdd16 = "bdd.rs" 466 15 466 63
-  let%span sbdd17 = "bdd.rs" 467 14 467 26
-  let%span sbdd18 = "bdd.rs" 468 14 468 42
-  let%span sbdd19 = "bdd.rs" 469 14 469 104
-  let%span sbdd20 = "bdd.rs" 470 14 470 37
-  let%span sbdd21 = "bdd.rs" 490 23 490 27
-  let%span sbdd22 = "bdd.rs" 486 14 486 26
-  let%span sbdd23 = "bdd.rs" 487 14 487 42
-  let%span sbdd24 = "bdd.rs" 488 14 488 43
-  let%span sbdd25 = "bdd.rs" 489 14 489 46
-  let%span sbdd26 = "bdd.rs" 57 30 57 33
-  let%span sbdd27 = "bdd.rs" 57 38 57 41
-  let%span sbdd28 = "bdd.rs" 55 18 55 126
-  let%span sbdd29 = "bdd.rs" 314 12 314 47
-  let%span sbdd30 = "bdd.rs" 301 12 306 17
-  let%span sbdd31 = "bdd.rs" 214 12 221 13
-  let%span sbdd32 = "bdd.rs" 244 12 248 13
-  let%span sbdd33 = "bdd.rs" 226 14 226 25
-  let%span sbdd34 = "bdd.rs" 229 12 237 13
-  let%span smodel35 = "../../creusot-contracts/src/model.rs" 54 8 54 22
-  let%span smodel36 = "../../creusot-contracts/src/model.rs" 45 8 45 28
-  let%span sresolve37 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
-  let%span sord38 = "../../creusot-contracts/src/logic/ord.rs" 184 8 190 9
-  let%span snum39 = "../../creusot-contracts/src/std/num.rs" 25 28 25 33
-  let%span stuples40 = "../../creusot-contracts/src/std/tuples.rs" 29 28 29 57
-  let%span smodel41 = "../../creusot-contracts/src/model.rs" 72 8 72 22
-  let%span sinvariant42 = "../../creusot-contracts/src/invariant.rs" 35 20 35 44
-  let%span sord43 = "../../creusot-contracts/src/logic/ord.rs" 129 39 129 89
-  let%span sord44 = "../../creusot-contracts/src/logic/ord.rs" 134 39 134 86
-  let%span sord45 = "../../creusot-contracts/src/logic/ord.rs" 139 39 139 86
-  let%span sord46 = "../../creusot-contracts/src/logic/ord.rs" 144 39 144 89
-  let%span sord47 = "../../creusot-contracts/src/logic/ord.rs" 149 39 149 70
-  let%span sord48 = "../../creusot-contracts/src/logic/ord.rs" 154 40 154 57
-  let%span sord49 = "../../creusot-contracts/src/logic/ord.rs" 155 40 155 57
-  let%span sord50 = "../../creusot-contracts/src/logic/ord.rs" 156 39 156 56
-  let%span sord51 = "../../creusot-contracts/src/logic/ord.rs" 161 40 161 70
-  let%span sord52 = "../../creusot-contracts/src/logic/ord.rs" 162 39 162 72
-  let%span sord53 = "../../creusot-contracts/src/logic/ord.rs" 167 40 167 73
-  let%span sord54 = "../../creusot-contracts/src/logic/ord.rs" 168 39 168 69
-  let%span sord55 = "../../creusot-contracts/src/logic/ord.rs" 173 39 173 84
-  let%span sbdd56 = "bdd.rs" 267 12 291 19
-  let%span sbdd57 = "bdd.rs" 189 20 189 26
-  let%span sbdd58 = "bdd.rs" 179 20 179 37
-  let%span sbdd59 = "bdd.rs" 321 12 330 13
-  let%span sbdd60 = "bdd.rs" 163 12 167 13
-  let%span sord61 = "../../creusot-contracts/src/logic/ord.rs" 129 39 129 89
-  let%span sord62 = "../../creusot-contracts/src/logic/ord.rs" 134 39 134 86
-  let%span sord63 = "../../creusot-contracts/src/logic/ord.rs" 139 39 139 86
-  let%span sord64 = "../../creusot-contracts/src/logic/ord.rs" 144 39 144 89
-  let%span sord65 = "../../creusot-contracts/src/logic/ord.rs" 149 39 149 70
-  let%span sord66 = "../../creusot-contracts/src/logic/ord.rs" 154 40 154 57
-  let%span sord67 = "../../creusot-contracts/src/logic/ord.rs" 155 40 155 57
-  let%span sord68 = "../../creusot-contracts/src/logic/ord.rs" 156 39 156 56
-  let%span sord69 = "../../creusot-contracts/src/logic/ord.rs" 161 40 161 70
-  let%span sord70 = "../../creusot-contracts/src/logic/ord.rs" 162 39 162 72
-  let%span sord71 = "../../creusot-contracts/src/logic/ord.rs" 167 40 167 73
-  let%span sord72 = "../../creusot-contracts/src/logic/ord.rs" 168 39 168 69
-  let%span sord73 = "../../creusot-contracts/src/logic/ord.rs" 173 39 173 84
-  let%span sord74 = "../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
+  let%span sbdd9 = "bdd.rs" 61 18 64 9
+  let%span scmp10 = "../../creusot-contracts/src/std/cmp.rs" 72 26 72 85
+  let%span sbdd11 = "bdd.rs" 471 17 471 21
+  let%span sbdd12 = "bdd.rs" 464 15 464 40
+  let%span sbdd13 = "bdd.rs" 465 15 465 40
+  let%span sbdd14 = "bdd.rs" 466 15 466 63
+  let%span sbdd15 = "bdd.rs" 467 14 467 26
+  let%span sbdd16 = "bdd.rs" 468 14 468 42
+  let%span sbdd17 = "bdd.rs" 469 14 469 104
+  let%span sbdd18 = "bdd.rs" 470 14 470 37
+  let%span sbdd19 = "bdd.rs" 490 23 490 27
+  let%span sbdd20 = "bdd.rs" 486 14 486 26
+  let%span sbdd21 = "bdd.rs" 487 14 487 42
+  let%span sbdd22 = "bdd.rs" 488 14 488 43
+  let%span sbdd23 = "bdd.rs" 489 14 489 46
+  let%span sbdd24 = "bdd.rs" 55 18 55 126
+  let%span sbdd25 = "bdd.rs" 314 12 314 47
+  let%span sbdd26 = "bdd.rs" 301 12 306 17
+  let%span sbdd27 = "bdd.rs" 214 12 221 13
+  let%span sbdd28 = "bdd.rs" 244 12 248 13
+  let%span sbdd29 = "bdd.rs" 226 14 226 25
+  let%span sbdd30 = "bdd.rs" 229 12 237 13
+  let%span smodel31 = "../../creusot-contracts/src/model.rs" 54 8 54 22
+  let%span smodel32 = "../../creusot-contracts/src/model.rs" 45 8 45 28
+  let%span sresolve33 = "../../creusot-contracts/src/resolve.rs" 54 20 54 34
+  let%span sord34 = "../../creusot-contracts/src/logic/ord.rs" 184 8 190 9
+  let%span snum35 = "../../creusot-contracts/src/std/num.rs" 25 28 25 33
+  let%span stuples36 = "../../creusot-contracts/src/std/tuples.rs" 29 28 29 57
+  let%span smodel37 = "../../creusot-contracts/src/model.rs" 72 8 72 22
+  let%span sinvariant38 = "../../creusot-contracts/src/invariant.rs" 35 20 35 44
+  let%span sord39 = "../../creusot-contracts/src/logic/ord.rs" 129 39 129 89
+  let%span sord40 = "../../creusot-contracts/src/logic/ord.rs" 134 39 134 86
+  let%span sord41 = "../../creusot-contracts/src/logic/ord.rs" 139 39 139 86
+  let%span sord42 = "../../creusot-contracts/src/logic/ord.rs" 144 39 144 89
+  let%span sord43 = "../../creusot-contracts/src/logic/ord.rs" 149 39 149 70
+  let%span sord44 = "../../creusot-contracts/src/logic/ord.rs" 154 40 154 57
+  let%span sord45 = "../../creusot-contracts/src/logic/ord.rs" 155 40 155 57
+  let%span sord46 = "../../creusot-contracts/src/logic/ord.rs" 156 39 156 56
+  let%span sord47 = "../../creusot-contracts/src/logic/ord.rs" 161 40 161 70
+  let%span sord48 = "../../creusot-contracts/src/logic/ord.rs" 162 39 162 72
+  let%span sord49 = "../../creusot-contracts/src/logic/ord.rs" 167 40 167 73
+  let%span sord50 = "../../creusot-contracts/src/logic/ord.rs" 168 39 168 69
+  let%span sord51 = "../../creusot-contracts/src/logic/ord.rs" 173 39 173 84
+  let%span sbdd52 = "bdd.rs" 267 12 291 19
+  let%span sbdd53 = "bdd.rs" 189 20 189 26
+  let%span sbdd54 = "bdd.rs" 179 20 179 37
+  let%span sbdd55 = "bdd.rs" 321 12 330 13
+  let%span sbdd56 = "bdd.rs" 163 12 167 13
+  let%span sord57 = "../../creusot-contracts/src/logic/ord.rs" 129 39 129 89
+  let%span sord58 = "../../creusot-contracts/src/logic/ord.rs" 134 39 134 86
+  let%span sord59 = "../../creusot-contracts/src/logic/ord.rs" 139 39 139 86
+  let%span sord60 = "../../creusot-contracts/src/logic/ord.rs" 144 39 144 89
+  let%span sord61 = "../../creusot-contracts/src/logic/ord.rs" 149 39 149 70
+  let%span sord62 = "../../creusot-contracts/src/logic/ord.rs" 154 40 154 57
+  let%span sord63 = "../../creusot-contracts/src/logic/ord.rs" 155 40 155 57
+  let%span sord64 = "../../creusot-contracts/src/logic/ord.rs" 156 39 156 56
+  let%span sord65 = "../../creusot-contracts/src/logic/ord.rs" 161 40 161 70
+  let%span sord66 = "../../creusot-contracts/src/logic/ord.rs" 162 39 162 72
+  let%span sord67 = "../../creusot-contracts/src/logic/ord.rs" 167 40 167 73
+  let%span sord68 = "../../creusot-contracts/src/logic/ord.rs" 168 39 168 69
+  let%span sord69 = "../../creusot-contracts/src/logic/ord.rs" 173 39 173 84
+  let%span sord70 = "../../creusot-contracts/src/logic/ord.rs" 230 16 236 17
   
   use creusot.int.UInt64
   use map.Map
@@ -3967,14 +3946,17 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_MyHashMap'1
-  
-  type t_Bdd'0  =
-    { t_Bdd__0'0: t_Node'0; t_Bdd__1'0: UInt64.t }
-  with t_Node'0  =
+  type t_Node'0  =
     | C_False'0
     | C_True'0
     | C_If'0 UInt64.t t_Bdd'0 t_Bdd'0
+  with t_Bdd'0  =
+    { t_Bdd__0'0: t_Node'0; t_Bdd__1'0: UInt64.t }
+  
+  type tuple'0  =
+    { _0'0: t_Bdd'0; _1'0: t_Bdd'0 }
+  
+  type t_MyHashMap'1
   
   type t_MyHashMap'2
   
@@ -3992,79 +3974,75 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
     | C_None'0
     | C_Some'0 t_Bdd'0
   
-  predicate inv'2 (_1 : (t_Bdd'0, t_Bdd'0))
-  
-  axiom inv_axiom'2 [@rewrite] : forall x : (t_Bdd'0, t_Bdd'0) [inv'2 x] . inv'2 x = true
-  
-  predicate inv'3 (_1 : t_Option'0)
-  
-  axiom inv_axiom'3 [@rewrite] : forall x : t_Option'0 [inv'3 x] . inv'3 x = true
+  type tuple'2  =
+    { _0'2: UInt64.t; _1'2: UInt64.t }
   
   type t_Option'1  =
     | C_None'1
     | C_Some'1 t_Bdd'0
   
-  function view'1 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map (UInt64.t, UInt64.t) t_Option'1
+  function view'1 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'0) : Map.map tuple'2 t_Option'1
   
-  function view'0 (self : t_MyHashMap'0) : Map.map (UInt64.t, UInt64.t) t_Option'1 =
-    [%#smodel35] view'1 self
+  function view'0 (self : t_MyHashMap'0) : Map.map tuple'2 t_Option'1 =
+    [%#smodel31] view'1 self
   
   function deep_model'3 [#"bdd.rs" 188 4 188 44] (self : t_Bdd'0) : UInt64.t =
-    [%#sbdd57] self.t_Bdd__1'0
+    [%#sbdd53] self.t_Bdd__1'0
   
-  function deep_model'2 (self : (t_Bdd'0, t_Bdd'0)) : (UInt64.t, UInt64.t) =
-    [%#stuples40] (deep_model'3 (let (a, _) = self in a), deep_model'3 (let (_, a) = self in a))
+  function deep_model'2 (self : tuple'0) : tuple'2 =
+    [%#stuples36] { _0'2 = deep_model'3 self._0'0; _1'2 = deep_model'3 self._1'0 }
   
-  function deep_model'0 (self : (t_Bdd'0, t_Bdd'0)) : (UInt64.t, UInt64.t) =
-    [%#smodel36] deep_model'2 self
+  function deep_model'0 (self : tuple'0) : tuple'2 =
+    [%#smodel32] deep_model'2 self
   
-  let rec get'0 (self:t_MyHashMap'0) (key:(t_Bdd'0, t_Bdd'0)) (return'  (ret:t_Option'0))= {[@expl:get 'key' type invariant] [%#sbdd9] inv'2 key}
-    any
-    [ return' (result:t_Option'0)-> {[%#sbdd10] inv'3 result}
-      {[%#sbdd11] match result with
+  let rec get'0 (self:t_MyHashMap'0) (key:tuple'0) (return'  (ret:t_Option'0))= any
+    [ return' (result:t_Option'0)-> {[%#sbdd9] match result with
         | C_Some'0 v -> Map.get (view'0 self) (deep_model'0 key) = C_Some'1 v
         | C_None'0 -> Map.get (view'0 self) (deep_model'0 key) = C_None'1
         end}
       (! return' {result}) ]
   
   
+  type tuple'1  =
+    { _0'1: t_Node'0; _1'1: t_Node'0 }
+  
   type t_NodeLog'0  =
     | C_False'1
     | C_True'1
     | C_If'1 UInt64.t UInt64.t UInt64.t
   
+  function view'3 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map t_NodeLog'0 t_Option'1
+  
   function deep_model'4 [#"bdd.rs" 161 4 161 44] (self : t_Node'0) : t_NodeLog'0 =
-    [%#sbdd60] match self with
+    [%#sbdd56] match self with
       | C_False'0 -> C_False'1
       | C_True'0 -> C_True'1
       | C_If'0 v childt childf -> C_If'1 v (childt.t_Bdd__1'0) (childf.t_Bdd__1'0)
       end
   
   function view'6 [#"bdd.rs" 178 4 178 33] (self : t_Node'0) : t_NodeLog'0 =
-    [%#sbdd58] deep_model'4 self
+    [%#sbdd54] deep_model'4 self
   
   function view'4 (self : t_Node'0) : t_NodeLog'0 =
-    [%#smodel35] view'6 self
-  
-  function view'3 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'1) : Map.map t_NodeLog'0 t_Option'1
+    [%#smodel31] view'6 self
   
   predicate is_valid_bdd'0 [#"bdd.rs" 312 4 312 53] (self : t_Context'0) (b : t_Bdd'0) =
-    [%#sbdd29] Map.get (view'3 self.t_Context__hashcons'0) (view'4 b.t_Bdd__0'0) = C_Some'1 b
+    [%#sbdd25] Map.get (view'3 self.t_Context__hashcons'0) (view'4 b.t_Bdd__0'0) = C_Some'1 b
   
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function view'5 (self : UInt64.t) : int =
-    [%#smodel35] UInt64.t'int self
+    [%#smodel31] UInt64.t'int self
   
   function leastvar'0 [#"bdd.rs" 242 4 242 28] (self : t_Bdd'0) : int =
-    [%#sbdd32] match self with
+    [%#sbdd28] match self with
       | {t_Bdd__0'0 = C_True'0} -> UInt64.t'int (v_MAX'0 : UInt64.t) + 1
       | {t_Bdd__0'0 = C_False'0} -> UInt64.t'int (v_MAX'0 : UInt64.t) + 1
       | {t_Bdd__0'0 = C_If'0 v _ _} -> view'5 v
       end
   
   predicate is_valid_node'0 [#"bdd.rs" 319 4 319 51] (self : t_Context'0) (n : t_Node'0) =
-    [%#sbdd59] match n with
+    [%#sbdd55] match n with
       | C_True'0 -> true
       | C_False'0 -> true
       | C_If'0 v childt childf -> childt.t_Bdd__0'0 <> childf.t_Bdd__0'0
@@ -4078,59 +4056,59 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
     | C_Greater'0
   
   function cmp_log'1 (self : UInt64.t) (o : UInt64.t) : t_Ordering'0 =
-    [%#sord74] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord70] if UInt64.lt self o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'1 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom eq_cmp'1_spec : forall x : UInt64.t, y : UInt64.t . [%#sord73] (x = y) = (cmp_log'1 x y = C_Equal'0)
+  axiom eq_cmp'1_spec : forall x : UInt64.t, y : UInt64.t . [%#sord69] (x = y) = (cmp_log'1 x y = C_Equal'0)
   
   function antisym2'1 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom antisym2'1_spec : forall x : UInt64.t, y : UInt64.t . ([%#sord71] cmp_log'1 x y = C_Greater'0)
-   -> ([%#sord72] cmp_log'1 y x = C_Less'0)
+  axiom antisym2'1_spec : forall x : UInt64.t, y : UInt64.t . ([%#sord67] cmp_log'1 x y = C_Greater'0)
+   -> ([%#sord68] cmp_log'1 y x = C_Less'0)
   
   function antisym1'1 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom antisym1'1_spec : forall x : UInt64.t, y : UInt64.t . ([%#sord69] cmp_log'1 x y = C_Less'0)
-   -> ([%#sord70] cmp_log'1 y x = C_Greater'0)
+  axiom antisym1'1_spec : forall x : UInt64.t, y : UInt64.t . ([%#sord65] cmp_log'1 x y = C_Less'0)
+   -> ([%#sord66] cmp_log'1 y x = C_Greater'0)
   
   function trans'1 (x : UInt64.t) (y : UInt64.t) (z : UInt64.t) (o : t_Ordering'0) : ()
   
-  axiom trans'1_spec : forall x : UInt64.t, y : UInt64.t, z : UInt64.t, o : t_Ordering'0 . ([%#sord66] cmp_log'1 x y
-  = o)  -> ([%#sord67] cmp_log'1 y z = o)  -> ([%#sord68] cmp_log'1 x z = o)
+  axiom trans'1_spec : forall x : UInt64.t, y : UInt64.t, z : UInt64.t, o : t_Ordering'0 . ([%#sord62] cmp_log'1 x y
+  = o)  -> ([%#sord63] cmp_log'1 y z = o)  -> ([%#sord64] cmp_log'1 x z = o)
   
   function refl'1 (x : UInt64.t) : ()
   
-  axiom refl'1_spec : forall x : UInt64.t . [%#sord65] cmp_log'1 x x = C_Equal'0
+  axiom refl'1_spec : forall x : UInt64.t . [%#sord61] cmp_log'1 x x = C_Equal'0
   
   function cmp_gt_log'1 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_gt_log'1_spec : forall x : UInt64.t, y : UInt64.t . [%#sord64] UInt64.gt x y = (cmp_log'1 x y = C_Greater'0)
+  axiom cmp_gt_log'1_spec : forall x : UInt64.t, y : UInt64.t . [%#sord60] UInt64.gt x y = (cmp_log'1 x y = C_Greater'0)
   
   function cmp_ge_log'1 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_ge_log'1_spec : forall x : UInt64.t, y : UInt64.t . [%#sord63] UInt64.ge x y = (cmp_log'1 x y <> C_Less'0)
+  axiom cmp_ge_log'1_spec : forall x : UInt64.t, y : UInt64.t . [%#sord59] UInt64.ge x y = (cmp_log'1 x y <> C_Less'0)
   
   function cmp_lt_log'1 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_lt_log'1_spec : forall x : UInt64.t, y : UInt64.t . [%#sord62] UInt64.lt x y = (cmp_log'1 x y = C_Less'0)
+  axiom cmp_lt_log'1_spec : forall x : UInt64.t, y : UInt64.t . [%#sord58] UInt64.lt x y = (cmp_log'1 x y = C_Less'0)
   
   function cmp_le_log'1 (x : UInt64.t) (y : UInt64.t) : ()
   
-  axiom cmp_le_log'1_spec : forall x : UInt64.t, y : UInt64.t . [%#sord61] UInt64.le x y
+  axiom cmp_le_log'1_spec : forall x : UInt64.t, y : UInt64.t . [%#sord57] UInt64.le x y
   = (cmp_log'1 x y <> C_Greater'0)
   
+  function view'7 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map UInt64.t t_Option'1
+  
   function interp'0 [#"bdd.rs" 212 4 212 53] (self : t_Bdd'0) (vars : Map.map UInt64.t bool) : bool =
-    [%#sbdd31] match self with
+    [%#sbdd27] match self with
       | {t_Bdd__0'0 = C_True'0} -> true
       | {t_Bdd__0'0 = C_False'0} -> false
       | {t_Bdd__0'0 = C_If'0 v childt childf} -> if Map.get vars v then interp'0 childt vars else interp'0 childf vars
       end
   
-  function view'7 [#"bdd.rs" 49 8 49 37] (self : t_MyHashMap'2) : Map.map UInt64.t t_Option'1
-  
   predicate invariant'1 [#"bdd.rs" 265 4 265 30] (self : t_Context'0) =
-    [%#sbdd56] (forall n : t_NodeLog'0 . match Map.get (view'3 self.t_Context__hashcons'0) n with
+    [%#sbdd52] (forall n : t_NodeLog'0 . match Map.get (view'3 self.t_Context__hashcons'0) n with
       | C_Some'1 b -> view'4 b.t_Bdd__0'0 = n
       /\ is_valid_node'0 self b.t_Bdd__0'0
       /\ UInt64.lt b.t_Bdd__1'0 self.t_Context__cnt'0
@@ -4144,11 +4122,11 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (not interp'0 b v)) /\ leastvar'0 b <= leastvar'0 n
       end)
-    /\ (forall abm : (UInt64.t, UInt64.t) . match Map.get (view'1 self.t_Context__and_memo'0) abm with
+    /\ (forall abm : tuple'2 . match Map.get (view'1 self.t_Context__and_memo'0) abm with
       | C_None'1 -> true
-      | C_Some'1 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (a, _) = abm in a);
-                                t_Bdd__1'0 = (let (a, _) = abm in a) } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 (let (_, a) = abm in a);
-                                                                                    t_Bdd__1'0 = (let (_, a) = abm in a) } in is_valid_bdd'0 self n
+      | C_Some'1 n -> let a = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._0'2;
+                                t_Bdd__1'0 = abm._0'2 } in let b = { t_Bdd__0'0 = Map.get self.t_Context__hashcons_ghost'0 abm._1'2;
+                                                                     t_Bdd__1'0 = abm._1'2 } in is_valid_bdd'0 self n
       /\ is_valid_bdd'0 self a
       /\ is_valid_bdd'0 self b
       /\ (forall v : Map.map UInt64.t bool . interp'0 n v = (interp'0 a v /\ interp'0 b v))
@@ -4164,14 +4142,14 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
     end)
   
   predicate invariant'0 (self : MutBorrow.t t_Context'0) =
-    [%#sinvariant42] inv'1 self.current /\ inv'1 self.final
+    [%#sinvariant38] inv'1 self.current /\ inv'1 self.final
   
   predicate inv'0 (_1 : MutBorrow.t t_Context'0)
   
   axiom inv_axiom'0 [@rewrite] : forall x : MutBorrow.t t_Context'0 [inv'0 x] . inv'0 x = invariant'0 x
   
   predicate resolve'1 (self : MutBorrow.t t_Context'0) =
-    [%#sresolve37] self.final = self.current
+    [%#sresolve33] self.final = self.current
   
   predicate resolve'0 (_1 : MutBorrow.t t_Context'0) =
     resolve'1 _1
@@ -4186,99 +4164,89 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
   
   
   function cmp_log'0 (self : int) (o : int) : t_Ordering'0 =
-    [%#sord38] if self < o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
+    [%#sord34] if self < o then C_Less'0 else if self = o then C_Equal'0 else C_Greater'0
   
   function eq_cmp'0 (x : int) (y : int) : ()
   
-  axiom eq_cmp'0_spec : forall x : int, y : int . [%#sord55] (x = y) = (cmp_log'0 x y = C_Equal'0)
+  axiom eq_cmp'0_spec : forall x : int, y : int . [%#sord51] (x = y) = (cmp_log'0 x y = C_Equal'0)
   
   function antisym2'0 (x : int) (y : int) : ()
   
-  axiom antisym2'0_spec : forall x : int, y : int . ([%#sord53] cmp_log'0 x y = C_Greater'0)
-   -> ([%#sord54] cmp_log'0 y x = C_Less'0)
+  axiom antisym2'0_spec : forall x : int, y : int . ([%#sord49] cmp_log'0 x y = C_Greater'0)
+   -> ([%#sord50] cmp_log'0 y x = C_Less'0)
   
   function antisym1'0 (x : int) (y : int) : ()
   
-  axiom antisym1'0_spec : forall x : int, y : int . ([%#sord51] cmp_log'0 x y = C_Less'0)
-   -> ([%#sord52] cmp_log'0 y x = C_Greater'0)
+  axiom antisym1'0_spec : forall x : int, y : int . ([%#sord47] cmp_log'0 x y = C_Less'0)
+   -> ([%#sord48] cmp_log'0 y x = C_Greater'0)
   
   function trans'0 (x : int) (y : int) (z : int) (o : t_Ordering'0) : ()
   
-  axiom trans'0_spec : forall x : int, y : int, z : int, o : t_Ordering'0 . ([%#sord48] cmp_log'0 x y = o)
-   -> ([%#sord49] cmp_log'0 y z = o)  -> ([%#sord50] cmp_log'0 x z = o)
+  axiom trans'0_spec : forall x : int, y : int, z : int, o : t_Ordering'0 . ([%#sord44] cmp_log'0 x y = o)
+   -> ([%#sord45] cmp_log'0 y z = o)  -> ([%#sord46] cmp_log'0 x z = o)
   
   function refl'0 (x : int) : ()
   
-  axiom refl'0_spec : forall x : int . [%#sord47] cmp_log'0 x x = C_Equal'0
+  axiom refl'0_spec : forall x : int . [%#sord43] cmp_log'0 x x = C_Equal'0
   
   function cmp_gt_log'0 (x : int) (y : int) : ()
   
-  axiom cmp_gt_log'0_spec : forall x : int, y : int . [%#sord46] (x > y) = (cmp_log'0 x y = C_Greater'0)
+  axiom cmp_gt_log'0_spec : forall x : int, y : int . [%#sord42] (x > y) = (cmp_log'0 x y = C_Greater'0)
   
   function cmp_ge_log'0 (x : int) (y : int) : ()
   
-  axiom cmp_ge_log'0_spec : forall x : int, y : int . [%#sord45] (x >= y) = (cmp_log'0 x y <> C_Less'0)
+  axiom cmp_ge_log'0_spec : forall x : int, y : int . [%#sord41] (x >= y) = (cmp_log'0 x y <> C_Less'0)
   
   function cmp_lt_log'0 (x : int) (y : int) : ()
   
-  axiom cmp_lt_log'0_spec : forall x : int, y : int . [%#sord44] (x < y) = (cmp_log'0 x y = C_Less'0)
+  axiom cmp_lt_log'0_spec : forall x : int, y : int . [%#sord40] (x < y) = (cmp_log'0 x y = C_Less'0)
   
   function cmp_le_log'0 (x : int) (y : int) : ()
   
-  axiom cmp_le_log'0_spec : forall x : int, y : int . [%#sord43] (x <= y) = (cmp_log'0 x y <> C_Greater'0)
+  axiom cmp_le_log'0_spec : forall x : int, y : int . [%#sord39] (x <= y) = (cmp_log'0 x y <> C_Greater'0)
   
   function deep_model'1 (self : UInt64.t) : int =
-    [%#snum39] UInt64.t'int self
+    [%#snum35] UInt64.t'int self
   
   let rec cmp'0 (self:UInt64.t) (other:UInt64.t) (return'  (ret:t_Ordering'0))= any
-    [ return' (result:t_Ordering'0)-> {[%#scmp12] result = cmp_log'0 (deep_model'1 self) (deep_model'1 other)}
+    [ return' (result:t_Ordering'0)-> {[%#scmp10] result = cmp_log'0 (deep_model'1 self) (deep_model'1 other)}
       (! return' {result}) ]
   
   
   predicate grows'0 [#"bdd.rs" 299 4 299 35] (self : MutBorrow.t t_Context'0) =
-    [%#sbdd30] UInt64.t'int (self.current).t_Context__cnt'0 <= UInt64.t'int (self.final).t_Context__cnt'0
+    [%#sbdd26] UInt64.t'int (self.current).t_Context__cnt'0 <= UInt64.t'int (self.final).t_Context__cnt'0
     /\ (forall n : t_NodeLog'0 . match Map.get (view'3 (self.current).t_Context__hashcons'0) n with
       | C_Some'1 b -> Map.get (view'3 (self.final).t_Context__hashcons'0) n = C_Some'1 b
       | C_None'1 -> true
       end)
   
-  let rec node'0 (self:MutBorrow.t t_Context'0) (x:UInt64.t) (childt:t_Bdd'0) (childf:t_Bdd'0) (return'  (ret:t_Bdd'0))= {[@expl:node 'self' type invariant] [%#sbdd13] inv'0 self}
-    {[@expl:node requires #0] [%#sbdd14] is_valid_bdd'0 self.current childt}
-    {[@expl:node requires #1] [%#sbdd15] is_valid_bdd'0 self.current childf}
-    {[@expl:node requires #2] [%#sbdd16] UInt64.t'int x < leastvar'0 childt /\ UInt64.t'int x < leastvar'0 childf}
+  let rec node'0 (self:MutBorrow.t t_Context'0) (x:UInt64.t) (childt:t_Bdd'0) (childf:t_Bdd'0) (return'  (ret:t_Bdd'0))= {[@expl:node 'self' type invariant] [%#sbdd11] inv'0 self}
+    {[@expl:node requires #0] [%#sbdd12] is_valid_bdd'0 self.current childt}
+    {[@expl:node requires #1] [%#sbdd13] is_valid_bdd'0 self.current childf}
+    {[@expl:node requires #2] [%#sbdd14] UInt64.t'int x < leastvar'0 childt /\ UInt64.t'int x < leastvar'0 childf}
     any
-    [ return' (result:t_Bdd'0)-> {[%#sbdd17] grows'0 self}
-      {[%#sbdd18] is_valid_bdd'0 self.final result}
-      {[%#sbdd19] forall v : Map.map UInt64.t bool . interp'0 result v
+    [ return' (result:t_Bdd'0)-> {[%#sbdd15] grows'0 self}
+      {[%#sbdd16] is_valid_bdd'0 self.final result}
+      {[%#sbdd17] forall v : Map.map UInt64.t bool . interp'0 result v
       = (if Map.get v x then interp'0 childt v else interp'0 childf v)}
-      {[%#sbdd20] UInt64.t'int x <= leastvar'0 result}
+      {[%#sbdd18] UInt64.t'int x <= leastvar'0 result}
       (! return' {result}) ]
   
   
-  let rec falseqy95z'0 (self:MutBorrow.t t_Context'0) (return'  (ret:t_Bdd'0))= {[@expl:false_ 'self' type invariant] [%#sbdd21] inv'0 self}
+  let rec falseqy95z'0 (self:MutBorrow.t t_Context'0) (return'  (ret:t_Bdd'0))= {[@expl:false_ 'self' type invariant] [%#sbdd19] inv'0 self}
     any
-    [ return' (result:t_Bdd'0)-> {[%#sbdd22] grows'0 self}
-      {[%#sbdd23] is_valid_bdd'0 self.final result}
-      {[%#sbdd24] forall v : Map.map UInt64.t bool . not interp'0 result v}
-      {[%#sbdd25] UInt64.t'int (v_MAX'0 : UInt64.t) + 1 = leastvar'0 result}
+    [ return' (result:t_Bdd'0)-> {[%#sbdd20] grows'0 self}
+      {[%#sbdd21] is_valid_bdd'0 self.final result}
+      {[%#sbdd22] forall v : Map.map UInt64.t bool . not interp'0 result v}
+      {[%#sbdd23] UInt64.t'int (v_MAX'0 : UInt64.t) + 1 = leastvar'0 result}
       (! return' {result}) ]
   
   
-  predicate inv'4 (_1 : (t_Bdd'0, t_Bdd'0))
+  function view'2 (self : MutBorrow.t t_MyHashMap'0) : Map.map tuple'2 t_Option'1 =
+    [%#smodel37] view'1 self.current
   
-  axiom inv_axiom'4 [@rewrite] : forall x : (t_Bdd'0, t_Bdd'0) [inv'4 x] . inv'4 x = true
-  
-  predicate inv'5 (_1 : t_Bdd'0)
-  
-  axiom inv_axiom'5 [@rewrite] : forall x : t_Bdd'0 [inv'5 x] . inv'5 x = true
-  
-  function view'2 (self : MutBorrow.t t_MyHashMap'0) : Map.map (UInt64.t, UInt64.t) t_Option'1 =
-    [%#smodel41] view'1 self.current
-  
-  let rec add'0 (self:MutBorrow.t t_MyHashMap'0) (key:(t_Bdd'0, t_Bdd'0)) (val':t_Bdd'0) (return'  (ret:()))= {[@expl:add 'key' type invariant] [%#sbdd26] inv'4 key}
-    {[@expl:add 'val' type invariant] [%#sbdd27] inv'5 val'}
-    any
-    [ return' (result:())-> {[%#sbdd28] forall i : (UInt64.t, UInt64.t) . Map.get (view'1 self.final) i
+  let rec add'0 (self:MutBorrow.t t_MyHashMap'0) (key:tuple'0) (val':t_Bdd'0) (return'  (ret:()))= any
+    [ return' (result:())-> {[%#sbdd24] forall i : tuple'2 . Map.get (view'1 self.final) i
       = (if i = deep_model'2 key then C_Some'1 val' else Map.get (view'2 self) i)}
       (! return' {result}) ]
   
@@ -4289,13 +4257,13 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
   
   
   function size'0 [#"bdd.rs" 227 4 227 24] (self : t_Bdd'0) : int =
-    [%#sbdd34] match self with
+    [%#sbdd30] match self with
       | {t_Bdd__0'0 = C_True'0} -> 0
       | {t_Bdd__0'0 = C_False'0} -> 0
       | {t_Bdd__0'0 = C_If'0 _ childt childf} -> let ht = size'0 childt in let hf = size'0 childf in 1 + ht + hf
       end
   
-  axiom size'0_spec : forall self : t_Bdd'0 . [%#sbdd33] size'0 self >= 0
+  axiom size'0_spec : forall self : t_Bdd'0 . [%#sbdd29] size'0 self >= 0
   
   meta "compute_max_steps" 1000000
   
@@ -4304,55 +4272,53 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
     {[@expl:and requires #1] [%#sbdd3] is_valid_bdd'0 self.current b}
     (! bb0
     [ bb0 = s0
-      [ s0 =  [ &_16 <- (a, b) ] s1
+      [ s0 =  [ &_16 <- { _0'0 = a; _1'0 = b } ] s1
       | s1 =  [ &_15 <- _16 ] s2
       | s2 = get'0 {(self.current).t_Context__and_memo'0} {_15} (fun (_ret':t_Option'0) ->  [ &_12 <- _ret' ] s3)
       | s3 = bb1 ]
     
     | bb1 = any [ br0 -> {_12 = C_None'0} (! bb4) | br1 (x0:t_Bdd'0)-> {_12 = C_Some'0 x0} (! bb2) ] 
     | bb4 = s0
-      [ s0 =  [ &_23 <- (a.t_Bdd__0'0, b.t_Bdd__0'0) ] s1
+      [ s0 =  [ &_23 <- { _0'1 = a.t_Bdd__0'0; _1'1 = b.t_Bdd__0'0 } ] s1
       | s1 = any
-        [ br0 -> {(let (r'0, _) = _23 in r'0) = C_False'0} (! bb5)
-        | br1 -> {(let (r'0, _) = _23 in r'0) = C_True'0} (! bb6)
-        | br2 (x0:UInt64.t) (x1:t_Bdd'0) (x2:t_Bdd'0)-> {(let (r'0, _) = _23 in r'0) = C_If'0 x0 x1 x2} (! bb5) ]
+        [ br0 -> {_23._0'1 = C_False'0} (! bb5)
+        | br1 -> {_23._0'1 = C_True'0} (! bb6)
+        | br2 (x0:UInt64.t) (x1:t_Bdd'0) (x2:t_Bdd'0)-> {_23._0'1 = C_If'0 x0 x1 x2} (! bb5) ]
        ]
     
     | bb5 = any
-      [ br0 -> {(let (_, r'0) = _23 in r'0) = C_False'0} (! bb7)
-      | br1 -> {(let (_, r'0) = _23 in r'0) = C_True'0} (! bb8)
-      | br2 (x0:UInt64.t) (x1:t_Bdd'0) (x2:t_Bdd'0)-> {(let (_, r'0) = _23 in r'0) = C_If'0 x0 x1 x2} (! bb7) ]
+      [ br0 -> {_23._1'1 = C_False'0} (! bb7)
+      | br1 -> {_23._1'1 = C_True'0} (! bb8)
+      | br2 (x0:UInt64.t) (x1:t_Bdd'0) (x2:t_Bdd'0)-> {_23._1'1 = C_If'0 x0 x1 x2} (! bb7) ]
     
     | bb7 = any
-      [ br0 -> {(let (r'0, _) = _23 in r'0) = C_False'0} (! bb13)
-      | br1 -> {(let (r'0, _) = _23 in r'0) = C_True'0} (! bb9)
-      | br2 (x0:UInt64.t) (x1:t_Bdd'0) (x2:t_Bdd'0)-> {(let (r'0, _) = _23 in r'0) = C_If'0 x0 x1 x2} (! bb9) ]
+      [ br0 -> {_23._0'1 = C_False'0} (! bb13)
+      | br1 -> {_23._0'1 = C_True'0} (! bb9)
+      | br2 (x0:UInt64.t) (x1:t_Bdd'0) (x2:t_Bdd'0)-> {_23._0'1 = C_If'0 x0 x1 x2} (! bb9) ]
     
     | bb9 = any
-      [ br0 -> {(let (_, r'0) = _23 in r'0) = C_False'0} (! bb13)
-      | br1 -> {(let (_, r'0) = _23 in r'0) = C_True'0} (! bb10)
-      | br2 (x0:UInt64.t) (x1:t_Bdd'0) (x2:t_Bdd'0)-> {(let (_, r'0) = _23 in r'0) = C_If'0 x0 x1 x2} (! bb11) ]
+      [ br0 -> {_23._1'1 = C_False'0} (! bb13)
+      | br1 -> {_23._1'1 = C_True'0} (! bb10)
+      | br2 (x0:UInt64.t) (x1:t_Bdd'0) (x2:t_Bdd'0)-> {_23._1'1 = C_If'0 x0 x1 x2} (! bb11) ]
     
     | bb11 = any
-      [ br0 -> {(let (r'0, _) = _23 in r'0) = C_False'0} (! bb10)
-      | br1 -> {(let (r'0, _) = _23 in r'0) = C_True'0} (! bb10)
-      | br2 (x0:UInt64.t) (x1:t_Bdd'0) (x2:t_Bdd'0)-> {(let (r'0, _) = _23 in r'0) = C_If'0 x0 x1 x2} (! bb12) ]
+      [ br0 -> {_23._0'1 = C_False'0} (! bb10)
+      | br1 -> {_23._0'1 = C_True'0} (! bb10)
+      | br2 (x0:UInt64.t) (x1:t_Bdd'0) (x2:t_Bdd'0)-> {_23._0'1 = C_If'0 x0 x1 x2} (! bb12) ]
     
     | bb10 = s0
       [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = {[%#sbdd0] false} any ]
     
     | bb12 = s0
-      [ s0 = v_If'0 {let (r'0, _) = _23 in r'0}
-          (fun (rv'0:UInt64.t) (rchildt'0:t_Bdd'0) (rchildf'0:t_Bdd'0) ->  [ &va <- rv'0 ] s1)
-      | s1 = v_If'0 {let (r'1, _) = _23 in r'1}
+      [ s0 = v_If'0 {_23._0'1} (fun (rv'0:UInt64.t) (rchildt'0:t_Bdd'0) (rchildf'0:t_Bdd'0) ->  [ &va <- rv'0 ] s1)
+      | s1 = v_If'0 {_23._0'1}
           (fun (rv'1:UInt64.t) (rchildt'1:t_Bdd'0) (rchildf'1:t_Bdd'0) ->  [ &childta <- rchildt'1 ] s2)
-      | s2 = v_If'0 {let (r'2, _) = _23 in r'2}
+      | s2 = v_If'0 {_23._0'1}
           (fun (rv'2:UInt64.t) (rchildt'2:t_Bdd'0) (rchildf'2:t_Bdd'0) ->  [ &childfa <- rchildf'2 ] s3)
-      | s3 = v_If'0 {let (_, r'3) = _23 in r'3}
-          (fun (rv'3:UInt64.t) (rchildt'3:t_Bdd'0) (rchildf'3:t_Bdd'0) ->  [ &vb <- rv'3 ] s4)
-      | s4 = v_If'0 {let (_, r'4) = _23 in r'4}
+      | s3 = v_If'0 {_23._1'1} (fun (rv'3:UInt64.t) (rchildt'3:t_Bdd'0) (rchildf'3:t_Bdd'0) ->  [ &vb <- rv'3 ] s4)
+      | s4 = v_If'0 {_23._1'1}
           (fun (rv'4:UInt64.t) (rchildt'4:t_Bdd'0) (rchildf'4:t_Bdd'0) ->  [ &childtb <- rchildt'4 ] s5)
-      | s5 = v_If'0 {let (_, r'5) = _23 in r'5}
+      | s5 = v_If'0 {_23._1'1}
           (fun (rv'5:UInt64.t) (rchildt'5:t_Bdd'0) (rchildf'5:t_Bdd'0) ->  [ &childfb <- rchildf'5 ] s6)
       | s6 =  [ &_45 <- vb ] s7
       | s7 = cmp'0 {va} {_45} (fun (_ret':t_Ordering'0) ->  [ &_42 <- _ret' ] s8)
@@ -4476,7 +4442,7 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
              [ &_79 <- _ret' ] 
              [ &self <- { self with current = { self.current with t_Context__and_memo'0 = _ret'.final } } ] 
             s1)
-      | s1 =  [ &_80 <- (a, b) ] s2
+      | s1 =  [ &_80 <- { _0'0 = a; _1'0 = b } ] s2
       | s2 = add'0 {_79} {_80} {r1} (fun (_ret':()) ->  [ &_78 <- _ret' ] s3)
       | s3 = bb34 ]
     
@@ -4498,11 +4464,11 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
     | & a : t_Bdd'0 = a
     | & b : t_Bdd'0 = b
     | & _12 : t_Option'0 = Any.any_l ()
-    | & _15 : (t_Bdd'0, t_Bdd'0) = Any.any_l ()
-    | & _16 : (t_Bdd'0, t_Bdd'0) = Any.any_l ()
+    | & _15 : tuple'0 = Any.any_l ()
+    | & _16 : tuple'0 = Any.any_l ()
     | & r : t_Bdd'0 = Any.any_l ()
     | & r1 : t_Bdd'0 = Any.any_l ()
-    | & _23 : (t_Node'0, t_Node'0) = Any.any_l ()
+    | & _23 : tuple'1 = Any.any_l ()
     | & _31 : MutBorrow.t t_Context'0 = Any.any_l ()
     | & va : UInt64.t = Any.any_l ()
     | & childta : t_Bdd'0 = Any.any_l ()
@@ -4530,7 +4496,7 @@ module M_bdd__qyi11078426090797403070__and [#"bdd.rs" 533 4 533 72] (* Context<'
     | & _74 : MutBorrow.t t_Context'0 = Any.any_l ()
     | & _78 : () = Any.any_l ()
     | & _79 : MutBorrow.t t_MyHashMap'0 = Any.any_l ()
-    | & _80 : (t_Bdd'0, t_Bdd'0) = Any.any_l () ]
+    | & _80 : tuple'0 = Any.any_l () ]
     
     [ return' (result:t_Bdd'0)-> {[@expl:and ensures #0] [%#sbdd4] grows'0 self}
       {[@expl:and ensures #1] [%#sbdd5] is_valid_bdd'0 self.final result}
@@ -4554,25 +4520,31 @@ module M_bdd__hashmap__qyi1953663170559623169__hash__refines [#"bdd.rs" 79 8 79 
   
   type t_V'0
   
+  type tuple'0  =
+    { _0'1: t_U'0; _1'1: t_V'0 }
+  
   predicate inv'2 (_1 : t_U'0)
   
   predicate inv'3 (_1 : t_V'0)
   
-  predicate inv'1 (_1 : (t_U'0, t_V'0))
+  predicate inv'1 (_1 : tuple'0)
   
-  axiom inv_axiom'1 [@rewrite] : forall x : (t_U'0, t_V'0) [inv'1 x] . inv'1 x
-  = (let (x0, x1) = x in inv'2 x0 /\ inv'3 x1)
+  axiom inv_axiom'1 [@rewrite] : forall x : tuple'0 [inv'1 x] . inv'1 x
+  = (let {_0'1 = x0 ; _1'1 = x1} = x in inv'2 x0 /\ inv'3 x1)
   
-  predicate invariant'0 (self : (t_U'0, t_V'0)) =
+  predicate invariant'0 (self : tuple'0) =
     [%#sinvariant4] inv'1 self
   
-  predicate inv'0 (_1 : (t_U'0, t_V'0))
+  predicate inv'0 (_1 : tuple'0)
   
-  axiom inv_axiom'0 [@rewrite] : forall x : (t_U'0, t_V'0) [inv'0 x] . inv'0 x = invariant'0 x
+  axiom inv_axiom'0 [@rewrite] : forall x : tuple'0 [inv'0 x] . inv'0 x = invariant'0 x
   
   type t_DeepModelTy'0
   
   type t_DeepModelTy'1
+  
+  type tuple'1  =
+    { _0'0: t_DeepModelTy'0; _1'0: t_DeepModelTy'1 }
   
   function hash_log'1 [#"bdd.rs" 38 8 38 49] (_1 : t_DeepModelTy'0) : int
   
@@ -4580,21 +4552,20 @@ module M_bdd__hashmap__qyi1953663170559623169__hash__refines [#"bdd.rs" 79 8 79 
   
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
-  function hash_log'0 [#"bdd.rs" 85 8 85 48] (x : (t_DeepModelTy'0, t_DeepModelTy'1)) : int =
-    [%#sbdd1] Int.mod (hash_log'1 (let (a, _) = x in a)
-    + hash_log'2 (let (_, a) = x in a) * 17) (UInt64.t'int (v_MAX'0 : UInt64.t) + 1)
+  function hash_log'0 [#"bdd.rs" 85 8 85 48] (x : tuple'1) : int =
+    [%#sbdd1] Int.mod (hash_log'1 x._0'0 + hash_log'2 x._1'0 * 17) (UInt64.t'int (v_MAX'0 : UInt64.t) + 1)
   
   function deep_model'2 (self : t_U'0) : t_DeepModelTy'0
   
   function deep_model'3 (self : t_V'0) : t_DeepModelTy'1
   
-  function deep_model'1 (self : (t_U'0, t_V'0)) : (t_DeepModelTy'0, t_DeepModelTy'1) =
-    [%#stuples3] (deep_model'2 (let (a, _) = self in a), deep_model'3 (let (_, a) = self in a))
+  function deep_model'1 (self : tuple'0) : tuple'1 =
+    [%#stuples3] { _0'0 = deep_model'2 self._0'1; _1'0 = deep_model'3 self._1'1 }
   
-  function deep_model'0 (self : (t_U'0, t_V'0)) : (t_DeepModelTy'0, t_DeepModelTy'1) =
+  function deep_model'0 (self : tuple'0) : tuple'1 =
     [%#smodel2] deep_model'1 self
   
-  goal refines : [%#sbdd0] forall self : (t_U'0, t_V'0) . inv'0 self
+  goal refines : [%#sbdd0] forall self : tuple'0 . inv'0 self
    -> inv'0 self
   /\ (forall result : UInt64.t . UInt64.t'int result = hash_log'0 (deep_model'0 self)
    -> UInt64.t'int result = hash_log'0 (deep_model'0 self))
@@ -4610,37 +4581,33 @@ module M_bdd__qyi699402059438633899__hash__refines [#"bdd.rs" 119 4 119 25] (* <
   use creusot.int.UInt64
   use mach.int.Int
   
-  type t_Bdd'0  =
-    { t_Bdd__0'0: t_Node'0; t_Bdd__1'0: UInt64.t }
-  with t_Node'0  =
+  type t_NodeLog'0  =
     | C_False'0
     | C_True'0
-    | C_If'0 UInt64.t t_Bdd'0 t_Bdd'0
-  
-  predicate inv'0 (_1 : t_Node'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Node'0 [inv'0 x] . inv'0 x = true
-  
-  type t_NodeLog'0  =
-    | C_False'1
-    | C_True'1
-    | C_If'1 UInt64.t UInt64.t UInt64.t
+    | C_If'0 UInt64.t UInt64.t UInt64.t
   
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
   function hash_log'0 [#"bdd.rs" 131 4 131 44] (x : t_NodeLog'0) : int =
     [%#sbdd1] match x with
-      | C_False'1 -> 1
-      | C_True'1 -> 2
-      | C_If'1 v childt childf -> Int.mod (UInt64.t'int v + UInt64.t'int childt * 5
+      | C_False'0 -> 1
+      | C_True'0 -> 2
+      | C_If'0 v childt childf -> Int.mod (UInt64.t'int v + UInt64.t'int childt * 5
       + UInt64.t'int childf * 7) (UInt64.t'int (v_MAX'0 : UInt64.t) + 1)
       end
   
+  type t_Bdd'0  =
+    { t_Bdd__0'0: t_Node'0; t_Bdd__1'0: UInt64.t }
+  with t_Node'0  =
+    | C_False'1
+    | C_True'1
+    | C_If'1 UInt64.t t_Bdd'0 t_Bdd'0
+  
   function deep_model'1 [#"bdd.rs" 161 4 161 44] (self : t_Node'0) : t_NodeLog'0 =
     [%#sbdd5] match self with
-      | C_False'0 -> C_False'1
-      | C_True'0 -> C_True'1
-      | C_If'0 v childt childf -> C_If'1 v (childt.t_Bdd__1'0) (childf.t_Bdd__1'0)
+      | C_False'1 -> C_False'0
+      | C_True'1 -> C_True'0
+      | C_If'1 v childt childf -> C_If'0 v (childt.t_Bdd__1'0) (childf.t_Bdd__1'0)
       end
   
   function view'1 [#"bdd.rs" 178 4 178 33] (self : t_Node'0) : t_NodeLog'0 =
@@ -4652,9 +4619,8 @@ module M_bdd__qyi699402059438633899__hash__refines [#"bdd.rs" 119 4 119 25] (* <
   function deep_model'0 (self : t_Node'0) : t_NodeLog'0 =
     [%#smodel3] deep_model'1 self
   
-  goal refines : [%#sbdd0] forall self : t_Node'0 . inv'0 self
-   -> (forall result : UInt64.t . UInt64.t'int result = hash_log'0 (view'0 self)
-   -> UInt64.t'int result = hash_log'0 (deep_model'0 self))
+  goal refines : [%#sbdd0] forall self : t_Node'0 . forall result : UInt64.t . UInt64.t'int result
+  = hash_log'0 (view'0 self)  -> UInt64.t'int result = hash_log'0 (deep_model'0 self)
 end
 module M_bdd__qyi14323183011761258016__hash__refines [#"bdd.rs" 145 4 145 25] (* <Bdd<'arena> as hashmap::Hash> *)
   let%span sbdd0 = "bdd.rs" 145 4 145 25
@@ -4666,19 +4632,15 @@ module M_bdd__qyi14323183011761258016__hash__refines [#"bdd.rs" 145 4 145 25] (*
   
   use creusot.int.UInt64
   
+  function hash_log'0 [#"bdd.rs" 151 4 151 44] (x : UInt64.t) : int =
+    [%#sbdd1] UInt64.t'int x
+  
   type t_Node'0  =
     | C_False'0
     | C_True'0
     | C_If'0 UInt64.t t_Bdd'0 t_Bdd'0
   with t_Bdd'0  =
     { t_Bdd__0'0: t_Node'0; t_Bdd__1'0: UInt64.t }
-  
-  predicate inv'0 (_1 : t_Bdd'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Bdd'0 [inv'0 x] . inv'0 x = true
-  
-  function hash_log'0 [#"bdd.rs" 151 4 151 44] (x : UInt64.t) : int =
-    [%#sbdd1] UInt64.t'int x
   
   function deep_model'1 [#"bdd.rs" 188 4 188 44] (self : t_Bdd'0) : UInt64.t =
     [%#sbdd5] self.t_Bdd__1'0
@@ -4692,19 +4654,8 @@ module M_bdd__qyi14323183011761258016__hash__refines [#"bdd.rs" 145 4 145 25] (*
   function deep_model'0 (self : t_Bdd'0) : UInt64.t =
     [%#smodel3] deep_model'1 self
   
-  goal refines : [%#sbdd0] forall self : t_Bdd'0 . inv'0 self
-   -> (forall result : UInt64.t . UInt64.t'int result = hash_log'0 (view'0 self)
-   -> UInt64.t'int result = hash_log'0 (deep_model'0 self))
-end
-module M_bdd__qyi2024536649982164874__assert_receiver_is_total_eq__refines [#"bdd.rs" 93 9 93 11] (* <Node<'arena> as std::cmp::Eq> *)
-  let%span sbdd0 = "bdd.rs" 93 9 93 11
-  
-  goal refines : [%#sbdd0] true
-end
-module M_bdd__qyi1284786238026687571__assert_receiver_is_total_eq__refines [#"bdd.rs" 107 15 107 17] (* <Bdd<'arena> as std::cmp::Eq> *)
-  let%span sbdd0 = "bdd.rs" 107 15 107 17
-  
-  goal refines : [%#sbdd0] true
+  goal refines : [%#sbdd0] forall self : t_Bdd'0 . forall result : UInt64.t . UInt64.t'int result
+  = hash_log'0 (view'0 self)  -> UInt64.t'int result = hash_log'0 (deep_model'0 self)
 end
 module M_bdd__qyi4854841669736991510__eq__refines [#"bdd.rs" 93 13 93 22] (* <Node<'arena> as creusot_contracts::PartialEq> *)
   let%span sbdd0 = "bdd.rs" 93 13 93 22
@@ -4719,10 +4670,6 @@ module M_bdd__qyi4854841669736991510__eq__refines [#"bdd.rs" 93 13 93 22] (* <No
     | C_False'0
     | C_True'0
     | C_If'0 UInt64.t t_Bdd'0 t_Bdd'0
-  
-  predicate inv'0 (_1 : t_Node'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Node'0 [inv'0 x] . inv'0 x = true
   
   type t_NodeLog'0  =
     | C_False'1
@@ -4739,9 +4686,8 @@ module M_bdd__qyi4854841669736991510__eq__refines [#"bdd.rs" 93 13 93 22] (* <No
   function deep_model'0 (self : t_Node'0) : t_NodeLog'0 =
     [%#smodel1] deep_model'1 self
   
-  goal refines : [%#sbdd0] forall self : t_Node'0 . forall other : t_Node'0 . inv'0 other /\ inv'0 self
-   -> (forall result : bool . result = (deep_model'0 self = deep_model'0 other)
-   -> result = (deep_model'0 self = deep_model'0 other))
+  goal refines : [%#sbdd0] forall self : t_Node'0 . forall other : t_Node'0 . forall result : bool . result
+  = (deep_model'0 self = deep_model'0 other)  -> result = (deep_model'0 self = deep_model'0 other)
 end
 module M_bdd__qyi2581120635339165136__eq__refines [#"bdd.rs" 205 4 205 34] (* <Bdd<'arena> as creusot_contracts::PartialEq> *)
   let%span sbdd0 = "bdd.rs" 205 4 205 34
@@ -4759,10 +4705,6 @@ module M_bdd__qyi2581120635339165136__eq__refines [#"bdd.rs" 205 4 205 34] (* <B
   with t_Bdd'0  =
     { t_Bdd__0'0: t_Node'0; t_Bdd__1'0: UInt64.t }
   
-  predicate inv'0 (_1 : t_Bdd'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Bdd'0 [inv'0 x] . inv'0 x = true
-  
   function deep_model'1 [#"bdd.rs" 188 4 188 44] (self : t_Bdd'0) : UInt64.t =
     [%#sbdd4] self.t_Bdd__1'0
   
@@ -4775,9 +4717,8 @@ module M_bdd__qyi2581120635339165136__eq__refines [#"bdd.rs" 205 4 205 34] (* <B
   function deep_model'0 (self : t_Bdd'0) : UInt64.t =
     [%#smodel2] deep_model'1 self
   
-  goal refines : [%#sbdd0] forall self : t_Bdd'0 . forall other : t_Bdd'0 . inv'0 other /\ inv'0 self
-   -> (forall result : bool . result = (view'0 self = view'0 other)
-   -> result = (deep_model'0 self = deep_model'0 other))
+  goal refines : [%#sbdd0] forall self : t_Bdd'0 . forall other : t_Bdd'0 . forall result : bool . result
+  = (view'0 self = view'0 other)  -> result = (deep_model'0 self = deep_model'0 other)
 end
 module M_bdd__qyi17981791245757283426__clone__refines [#"bdd.rs" 93 24 93 29] (* <Node<'arena> as creusot_contracts::Clone> *)
   let%span sbdd0 = "bdd.rs" 93 24 93 29
@@ -4791,16 +4732,7 @@ module M_bdd__qyi17981791245757283426__clone__refines [#"bdd.rs" 93 24 93 29] (*
     | C_True'0
     | C_If'0 UInt64.t t_Bdd'0 t_Bdd'0
   
-  predicate inv'0 (_1 : t_Node'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Node'0 [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : t_Node'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Node'0 [inv'1 x] . inv'1 x = true
-  
-  goal refines : [%#sbdd0] forall self : t_Node'0 . inv'0 self
-   -> (forall result : t_Node'0 . result = self  -> result = self /\ inv'1 result)
+  goal refines : [%#sbdd0] forall self : t_Node'0 . forall result : t_Node'0 . result = self  -> result = self
 end
 module M_bdd__qyi2820858787824331484__clone__refines [#"bdd.rs" 112 4 112 27] (* <Bdd<'arena> as creusot_contracts::Clone> *)
   let%span sbdd0 = "bdd.rs" 112 4 112 27
@@ -4814,14 +4746,5 @@ module M_bdd__qyi2820858787824331484__clone__refines [#"bdd.rs" 112 4 112 27] (*
   with t_Bdd'0  =
     { t_Bdd__0'0: t_Node'0; t_Bdd__1'0: UInt64.t }
   
-  predicate inv'0 (_1 : t_Bdd'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Bdd'0 [inv'0 x] . inv'0 x = true
-  
-  predicate inv'1 (_1 : t_Bdd'0)
-  
-  axiom inv_axiom'1 [@rewrite] : forall x : t_Bdd'0 [inv'1 x] . inv'1 x = true
-  
-  goal refines : [%#sbdd0] forall self : t_Bdd'0 . inv'0 self
-   -> (forall result : t_Bdd'0 . result = self  -> result = self /\ inv'1 result)
+  goal refines : [%#sbdd0] forall self : t_Bdd'0 . forall result : t_Bdd'0 . result = self  -> result = self
 end

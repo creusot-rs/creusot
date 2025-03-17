@@ -74,21 +74,21 @@ module M_03_knuth_shuffle__knuth_shuffle [#"03_knuth_shuffle.rs" 13 0 13 39]
   
   type t_T'0
   
-  predicate inv'11 (_1 : t_T'0)
+  predicate inv'9 (_1 : t_T'0)
   
   predicate invariant'6 (self : t_T'0) =
-    [%#sboxed44] inv'11 self
+    [%#sboxed44] inv'9 self
   
-  predicate inv'10 (_1 : t_T'0)
+  predicate inv'8 (_1 : t_T'0)
   
-  axiom inv_axiom'10 [@rewrite] : forall x : t_T'0 [inv'10 x] . inv'10 x = invariant'6 x
+  axiom inv_axiom'8 [@rewrite] : forall x : t_T'0 [inv'8 x] . inv'8 x = invariant'6 x
   
   predicate invariant'5 (self : Seq.seq t_T'0) =
-    [%#sseq43] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'10 (Seq.get self i)
+    [%#sseq43] forall i : int . 0 <= i /\ i < Seq.length self  -> inv'8 (Seq.get self i)
   
-  predicate inv'9 (_1 : Seq.seq t_T'0)
+  predicate inv'7 (_1 : Seq.seq t_T'0)
   
-  axiom inv_axiom'9 [@rewrite] : forall x : Seq.seq t_T'0 [inv'9 x] . inv'9 x = invariant'5 x
+  axiom inv_axiom'7 [@rewrite] : forall x : Seq.seq t_T'0 [inv'7 x] . inv'7 x = invariant'5 x
   
   constant v_MAX'0 : UInt64.t = (18446744073709551615 : UInt64.t)
   
@@ -97,7 +97,7 @@ module M_03_knuth_shuffle__knuth_shuffle [#"03_knuth_shuffle.rs" 13 0 13 39]
   axiom view'2_spec : forall self : t_Vec'0 . [%#svec26] Seq.length (view'2 self) <= UInt64.t'int (v_MAX'0 : UInt64.t)
   
   predicate invariant'0 (self : t_Vec'0) =
-    [%#svec39] inv'9 (view'2 self)
+    [%#svec39] inv'7 (view'2 self)
   
   predicate inv'2 (_1 : t_Vec'0)
   
@@ -121,19 +121,14 @@ module M_03_knuth_shuffle__knuth_shuffle [#"03_knuth_shuffle.rs" 13 0 13 39]
   type t_Range'0  =
     { t_Range__start'0: UInt64.t; t_Range__end'0: UInt64.t }
   
-  predicate inv'0 (_1 : t_Range'0)
-  
-  axiom inv_axiom'0 [@rewrite] : forall x : t_Range'0 [inv'0 x] . inv'0 x = true
-  
   predicate into_iter_pre'0 (self : t_Range'0) =
     [%#siter28] true
   
   predicate into_iter_post'0 (self : t_Range'0) (res : t_Range'0) =
     [%#siter29] self = res
   
-  let rec into_iter'0 (self:t_Range'0) (return'  (ret:t_Range'0))= {[@expl:into_iter 'self' type invariant] inv'0 self}
-    {[@expl:into_iter requires] [%#siter12] into_iter_pre'0 self}
-    any [ return' (result:t_Range'0)-> {inv'0 result} {[%#siter13] into_iter_post'0 self result} (! return' {result}) ] 
+  let rec into_iter'0 (self:t_Range'0) (return'  (ret:t_Range'0))= {[@expl:into_iter requires] [%#siter12] into_iter_pre'0 self}
+    any [ return' (result:t_Range'0)-> {[%#siter13] into_iter_post'0 self result} (! return' {result}) ] 
   
   predicate permutation_of'0 (self : Seq.seq t_T'0) (other : Seq.seq t_T'0) =
     [%#sseq14] Permut.permut self other 0 (Seq.length self)
@@ -168,6 +163,10 @@ module M_03_knuth_shuffle__knuth_shuffle [#"03_knuth_shuffle.rs" 13 0 13 39]
   
   axiom produces_refl'0_spec : forall self : t_Range'0 . [%#srange30] produces'0 self (Seq.empty : Seq.seq UInt64.t) self
   
+  predicate inv'0 (_1 : t_Range'0)
+  
+  axiom inv_axiom'0 [@rewrite] : forall x : t_Range'0 [inv'0 x] . inv'0 x = true
+  
   predicate inv'1 (_1 : Seq.seq UInt64.t)
   
   axiom inv_axiom'1 [@rewrite] : forall x : Seq.seq UInt64.t [inv'1 x] . inv'1 x = true
@@ -176,14 +175,6 @@ module M_03_knuth_shuffle__knuth_shuffle [#"03_knuth_shuffle.rs" 13 0 13 39]
     | C_None'0
     | C_Some'0 UInt64.t
   
-  predicate inv'7 (_1 : MutBorrow.t t_Range'0)
-  
-  axiom inv_axiom'7 [@rewrite] : forall x : MutBorrow.t t_Range'0 [inv'7 x] . inv'7 x = true
-  
-  predicate inv'8 (_1 : t_Option'0)
-  
-  axiom inv_axiom'8 [@rewrite] : forall x : t_Option'0 [inv'8 x] . inv'8 x = true
-  
   predicate resolve'3 (self : MutBorrow.t t_Range'0) =
     [%#sresolve36] self.final = self.current
   
@@ -191,10 +182,8 @@ module M_03_knuth_shuffle__knuth_shuffle [#"03_knuth_shuffle.rs" 13 0 13 39]
     [%#srange35] resolve'3 self
     /\ deep_model'0 (self.current).t_Range__start'0 >= deep_model'0 (self.current).t_Range__end'0
   
-  let rec next'0 (self:MutBorrow.t t_Range'0) (return'  (ret:t_Option'0))= {[@expl:next 'self' type invariant] inv'7 self}
-    any
-    [ return' (result:t_Option'0)-> {inv'8 result}
-      {[%#siter18] match result with
+  let rec next'0 (self:MutBorrow.t t_Range'0) (return'  (ret:t_Option'0))= any
+    [ return' (result:t_Option'0)-> {[%#siter18] match result with
         | C_None'0 -> completed'0 self
         | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
         end}
@@ -231,7 +220,7 @@ module M_03_knuth_shuffle__knuth_shuffle [#"03_knuth_shuffle.rs" 13 0 13 39]
   && ([%#sslice38] view'6 self = Slice64.id self)
   
   predicate invariant'1 (self : Slice64.slice t_T'0) =
-    [%#sslice40] inv'9 (view'6 self)
+    [%#sslice40] inv'7 (view'6 self)
   
   predicate inv'3 (_1 : Slice64.slice t_T'0)
   
