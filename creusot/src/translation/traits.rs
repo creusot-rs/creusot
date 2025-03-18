@@ -15,7 +15,7 @@ use rustc_middle::ty::{
     ParamTy, Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypingEnv,
     TypingMode,
 };
-use rustc_span::{DUMMY_SP, Span, Symbol};
+use rustc_span::{Ident, Span, DUMMY_SP};
 use rustc_trait_selection::{
     error_reporting::InferCtxtErrorExt,
     traits::{FulfillmentError, ImplSource, InCrate, TraitEngineExt, orphan_check_trait_ref},
@@ -140,7 +140,7 @@ fn logic_refinement_term<'tcx>(
     let span = ctx.tcx.def_span(impl_item_id);
     let mut args = Vec::new();
     let mut subst = HashMap::new();
-    for ((id, _, _), (id2, _, ty)) in trait_sig.inputs.iter().zip(impl_sig.inputs.iter()) {
+    for ((id, _), (id2, ty)) in trait_sig.inputs.iter().zip(impl_sig.inputs.iter()) {
         args.push((*id, *ty));
         subst.insert(*id2, Term { ty: *ty, kind: TermKind::Var(*id), span });
     }
@@ -157,11 +157,11 @@ fn logic_refinement_term<'tcx>(
 
     let post_refn = impl_postcond
         .implies(trait_postcond)
-        .forall(ctx.tcx, (Symbol::intern("result"), retty))
+        .forall((Ident::from_str("result"), retty))
         .span(span);
 
     let mut refn = trait_precond.implies(impl_precond.conj(post_refn));
-    refn = args.into_iter().rfold(refn, |acc, r| acc.forall(ctx.tcx, r).span(span));
+    refn = args.into_iter().rfold(refn, |acc, r| acc.forall(r).span(span));
 
     refn
 }

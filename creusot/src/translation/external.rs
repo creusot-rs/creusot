@@ -15,7 +15,7 @@ use rustc_middle::{
     thir::{self, Expr, ExprKind, Thir, visit::Visitor},
     ty::{Clause, EarlyBinder, GenericArgKind, GenericArgsRef, Predicate, TyCtxt, TyKind},
 };
-use rustc_span::Symbol;
+use rustc_span::Ident;
 use rustc_type_ir::ConstKind;
 
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
@@ -23,7 +23,7 @@ pub(crate) struct ExternSpec<'tcx> {
     // The contract we are attaching
     pub contract: ContractClauses,
     pub subst: GenericArgsRef<'tcx>,
-    pub arg_subst: Vec<(Symbol, Term<'tcx>)>,
+    pub arg_subst: Vec<(Ident, Term<'tcx>)>,
     // Additional predicates we must verify to call this function
     pub additional_predicates: Vec<Predicate<'tcx>>,
 }
@@ -162,7 +162,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         .zip(ctx.fn_arg_names(id).iter().zip(ctx.fn_sig(id).instantiate_identity().inputs().iter()))
         .map(|(i, (i2, ty))| {
             let ty = ctx.tcx.instantiate_bound_regions_with_erased(ty.map_bound(|&ty| ty));
-            (i.name, Term::var(i2.name, ty))
+            (*i, Term::var(*i2, ty))
         })
         .collect();
     Ok((id, ExternSpec { contract, additional_predicates, subst, arg_subst }))

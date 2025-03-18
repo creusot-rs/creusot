@@ -17,7 +17,6 @@ use crate::{
         is_spec,
     },
     error::{CannotFetchThir, CreusotResult, Error},
-    naming::anonymous_param_symbol,
     translation::TranslationCtx,
 };
 use itertools::Itertools;
@@ -40,7 +39,7 @@ use rustc_middle::{
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
-use rustc_span::{DUMMY_SP, Span, Symbol, symbol::Ident};
+use rustc_span::{DUMMY_SP, Ident, Span};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
 
@@ -94,13 +93,13 @@ pub enum QuantKind {
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub struct Trigger<'tcx>(pub(crate) Box<[Term<'tcx>]>);
 
-pub type QuantBinder<'tcx> = (Box<[Ident]>, Ty<'tcx>);
+pub type QuantBinder<'tcx> = Box<[(Ident, Ty<'tcx>)]>;
 
 pub type Projections<V, T> = Box<[ProjectionElem<V, T>]>;
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum TermKind<'tcx> {
-    Var(Symbol),
+    Var(Ident),
     Lit(Literal<'tcx>),
     Cast {
         arg: Box<Term<'tcx>>,
@@ -172,7 +171,7 @@ pub enum TermKind<'tcx> {
         term: Box<Term<'tcx>>,
     },
     Closure {
-        bound: Box<[Symbol]>,
+        bound: Box<[Ident]>,
         body: Box<Term<'tcx>>,
     },
     Reborrow {
@@ -303,7 +302,7 @@ pub enum PatternKind<'tcx> {
     Deref(Box<Pattern<'tcx>>),
     Tuple(Box<[Pattern<'tcx>]>),
     Wildcard,
-    Binder(Symbol),
+    Binder(Ident),
     Bool(bool),
 }
 
@@ -316,8 +315,8 @@ impl<'tcx> Pattern<'tcx> {
         Pattern { ty, kind: PatternKind::Wildcard, span: DUMMY_SP }
     }
 
-    pub(crate) fn binder(x: Symbol, ty: Ty<'tcx>) -> Self {
-        Pattern { ty, kind: PatternKind::Binder(x), span: DUMMY_SP }
+    pub(crate) fn binder(x: Ident, ty: Ty<'tcx>) -> Self {
+        Pattern { ty, kind: PatternKind::Binder(x), span: x.span }
     }
 
     pub(crate) fn deref(self, ty: Ty<'tcx>) -> Self {
@@ -347,7 +346,7 @@ impl<'tcx> Pattern<'tcx> {
         }
     }
 
-    pub(crate) fn binds(&self, binders: &mut HashSet<Symbol>) {
+    pub(crate) fn binds(&self, binders: &mut HashSet<Ident>) {
         match &self.kind {
             PatternKind::Constructor(_, fields) => fields.iter().for_each(|f| f.binds(binders)),
             PatternKind::Tuple(fields) => fields.iter().for_each(|f| f.binds(binders)),
@@ -418,7 +417,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             .fold_ok(body, |body, (idx, ty, pattern)| match pattern.kind {
                 PatternKind::Binder(_) | PatternKind::Wildcard => body,
                 _ => {
-                    let arg = Box::new(Term::var(anonymous_param_symbol(idx), ty));
+                    let ident = Ident::from_str(&format!("__{}", idx));
+                    let arg = Box::new(Term::var(ident, ty));
                     Term {
                         ty: body.ty,
                         span: body.span,
@@ -537,15 +537,14 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             }
             ExprKind::VarRef { id } => {
                 let map = self.ctx.hir();
-                let name = map.name(id.0);
-                Ok(Term { ty, span, kind: TermKind::Var(name) })
+                let ident = map.ident(id.0);
+                Ok(Term { ty, span, kind: TermKind::Var(ident) })
             }
             // TODO: confirm this works
             ExprKind::UpvarRef { var_hir_id: id, .. } => {
                 let map = self.ctx.hir();
-                let name = map.name(id.0);
-
-                Ok(Term { ty, span, kind: TermKind::Var(name) })
+                let ident = map.ident(id.0);
+                Ok(Term { ty, span, kind: TermKind::Var(ident) })
             }
             ExprKind::Literal { lit, neg } => {
                 let lit = match lit.node {
@@ -581,12 +580,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                             if let Forall = s { QuantKind::Forall } else { QuantKind::Exists };
                         let (binder, (trigger, body)) = self.quant_term(args[0])?;
                         let arg_tuple_ty = if let TyKind::FnDef(_, subst) = f_ty.kind() {
-                            subst[0].as_type().unwrap()
+                            subst[0].as_type().unwrap().tuple_fields()
                         } else {
                             unreachable!()
                         };
-                        let binder = (binder, arg_tuple_ty);
-
+                        let binder = binder.into_iter().zip(arg_tuple_ty).collect();
                         Ok(body.quant(kind, binder, trigger).span(span))
                     }
                     Some(Fin) => {
@@ -818,7 +816,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 if is_assertion(self.ctx.tcx, closure_id.to_def_id()) {
                     Ok(Term { ty, span, kind: TermKind::Assert { cond: Box::new(term) } })
                 } else {
-                    let bound = self.ctx.fn_arg_names(closure_id).iter().map(|i| i.name).collect();
+                    let bound = self.ctx.fn_arg_names(closure_id).into();
                     Ok(Term { ty, span, kind: TermKind::Closure { bound, body: Box::new(term) } })
                 }
             }
@@ -850,7 +848,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             PatKind::Wild => {
                 Ok(Pattern { ty: pat.ty, span: pat.span, kind: PatternKind::Wildcard })
             }
-            PatKind::Binding { name, mode, .. } => {
+            PatKind::Binding { mode, var, .. } => {
                 if mode.0 == ByRef::Yes(Mutability::Mut) {
                     return Err(Error::msg(
                         pat.span,
@@ -860,7 +858,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 if !mut_allowed && mode.1 == Mutability::Mut {
                     return Err(Error::msg(pat.span, "mut binders are not supported in pearlite"));
                 }
-                Ok(Pattern { ty: pat.ty, span: pat.span, kind: PatternKind::Binder(*name) })
+                let ident = self.ctx.hir().ident(var.0);
+                Ok(Pattern { ty: pat.ty, span: pat.span, kind: PatternKind::Binder(ident) })
             }
             PatKind::Variant { subpatterns, adt_def, variant_index, args, .. } => {
                 let mut fields: Vec<_> = subpatterns
@@ -1190,11 +1189,11 @@ pub(crate) fn mk_projection(lhs: Term, idx: FieldIdx) -> TermKind {
 pub(crate) fn type_invariant_term<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
-    name: Symbol,
-    span: Span,
+    ident: Ident,
+    span: Span, // TODO remove this?
     ty: Ty<'tcx>,
 ) -> Option<Term<'tcx>> {
-    let args = Box::new([Term { ty, span, kind: TermKind::Var(name) }]);
+    let args = Box::new([Term { ty, span, kind: TermKind::Var(ident) }]);
     let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(typing_env, ty)?;
     Some(Term {
         ty: ctx.types.bool,
@@ -1260,12 +1259,6 @@ fn not_spec_expr(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: ExprId) -> bool {
         }
         _ => true,
     }
-}
-
-pub fn zip_binder<'a, 'tcx>(
-    binder: &'a QuantBinder<'tcx>,
-) -> impl Iterator<Item = (Symbol, Ty<'tcx>)> + 'a {
-    binder.0.iter().map(|x| x.name).zip(binder.1.tuple_fields())
 }
 
 pub trait TermVisitor<'tcx> {
@@ -1420,8 +1413,8 @@ impl<'tcx> Term<'tcx> {
         res
     }
 
-    pub(crate) fn var(sym: Symbol, ty: Ty<'tcx>) -> Self {
-        Term { ty, kind: TermKind::Var(sym), span: DUMMY_SP }
+    pub(crate) fn var(ident: Ident, ty: Ty<'tcx>) -> Self {
+        Term { ty, kind: TermKind::Var(ident), span: DUMMY_SP }
     }
 
     pub(crate) fn cur(self) -> Self {
@@ -1503,24 +1496,20 @@ impl<'tcx> Term<'tcx> {
 
     pub(crate) fn forall_trig(
         self,
-        tcx: TyCtxt<'tcx>,
-        binder: (Symbol, Ty<'tcx>),
+        binder: (Ident, Ty<'tcx>),
         trigger: Box<[Trigger<'tcx>]>,
     ) -> Self {
-        let ty = Ty::new_tup(tcx, &[binder.1]);
-        self.quant(QuantKind::Forall, (Box::new([Ident::new(binder.0, DUMMY_SP)]), ty), trigger)
+        self.quant(QuantKind::Forall, Box::new([binder]), trigger)
     }
 
-    pub(crate) fn forall(self, tcx: TyCtxt<'tcx>, binder: (Symbol, Ty<'tcx>)) -> Self {
-        self.forall_trig(tcx, binder, Box::new([]))
+    pub(crate) fn forall(self, binder: (Ident, Ty<'tcx>)) -> Self {
+        self.forall_trig(binder, Box::new([]))
     }
 
-    pub(crate) fn exists(self, tcx: TyCtxt<'tcx>, binder: (Symbol, Ty<'tcx>)) -> Self {
-        let ty = Ty::new_tup(tcx, &[binder.1]);
-
+    pub(crate) fn exists(self, binder: (Ident, Ty<'tcx>)) -> Self {
         self.quant(
             QuantKind::Exists,
-            (Box::new([Ident::new(binder.0, DUMMY_SP)]), ty),
+            Box::new([binder]),
             Box::new([]),
         )
     }
@@ -1563,17 +1552,17 @@ impl<'tcx> Term<'tcx> {
     /// If `inv_subst` containts `("x", 5)`:
     /// - If `self` is `x == 1`, `self.subst(inv_subst)` is `5 + 1`
     /// - If `self` is `forall<x: Int> x == 1`, `self.subst(inv_subst)` is still `forall<x: Int> x == 1`
-    pub(crate) fn subst(&mut self, inv_subst: &std::collections::HashMap<Symbol, Term<'tcx>>) {
+    pub(crate) fn subst(&mut self, inv_subst: &std::collections::HashMap<Ident, Term<'tcx>>) {
         self.subst_with(|k| inv_subst.get(&k).cloned());
     }
 
-    pub(crate) fn subst_with<F: FnMut(Symbol) -> Option<Term<'tcx>>>(&mut self, mut f: F) {
+    pub(crate) fn subst_with<F: FnMut(Ident) -> Option<Term<'tcx>>>(&mut self, mut f: F) {
         self.subst_with_inner(&HashSet::new(), &mut f)
     }
 
-    fn subst_with_inner<F: FnMut(Symbol) -> Option<Term<'tcx>>>(
+    fn subst_with_inner<F: FnMut(Ident) -> Option<Term<'tcx>>>(
         &mut self,
-        bound: &HashSet<Symbol>,
+        bound: &HashSet<Ident>,
         inv_subst: &mut F,
     ) {
         match &mut self.kind {
@@ -1596,8 +1585,8 @@ impl<'tcx> Term<'tcx> {
             TermKind::Unary { arg, .. } => arg.subst_with_inner(bound, inv_subst),
             TermKind::Quant { binder, body, .. } => {
                 let mut bound = bound.clone();
-                for name in &binder.0 {
-                    bound.insert(name.name);
+                for (ident, _) in binder {
+                    bound.insert(*ident);
                 }
 
                 body.subst_with_inner(&bound, inv_subst);
@@ -1655,13 +1644,13 @@ impl<'tcx> Term<'tcx> {
         }
     }
 
-    pub(crate) fn free_vars(&self) -> HashSet<Symbol> {
+    pub(crate) fn free_vars(&self) -> HashSet<Ident> {
         let mut free = HashSet::new();
         self.free_vars_inner(&HashSet::new(), &mut free);
         free
     }
 
-    fn free_vars_inner(&self, bound: &HashSet<Symbol>, free: &mut HashSet<Symbol>) {
+    fn free_vars_inner(&self, bound: &HashSet<Ident>, free: &mut HashSet<Ident>) {
         match &self.kind {
             TermKind::Var(v) => {
                 if !bound.contains(v) {
@@ -1679,8 +1668,8 @@ impl<'tcx> Term<'tcx> {
             TermKind::Unary { arg, .. } => arg.free_vars_inner(bound, free),
             TermKind::Quant { binder, body, .. } => {
                 let mut bound = bound.clone();
-                for name in &binder.0 {
-                    bound.insert(name.name);
+                for (ident, _) in binder {
+                    bound.insert(*ident);
                 }
 
                 body.free_vars_inner(&bound, free);

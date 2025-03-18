@@ -27,7 +27,8 @@ pub type Term = crate::Exp;
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Expr {
     /// Variables eg: `x`
-    Symbol(QName),
+    Variable(Ident),
+    Constant(QName),
     /// Generic application for type lambdas, terms, references and continuations
     /// e <ty>... t... | e...
     App(Box<Expr>, Box<Arg>),
@@ -130,8 +131,8 @@ pub enum Decl {
 pub struct Module(pub Box<[Decl]>);
 
 impl Defn {
-    pub fn simple(name: impl Into<Ident>, body: Expr) -> Self {
-        Defn { name: name.into(), attrs: vec![], params: Box::new([]), body }
+    pub fn simple(name: Ident, body: Expr) -> Self {
+        Defn { name: name, attrs: vec![], params: Box::new([]), body }
     }
 }
 
@@ -148,28 +149,12 @@ impl Expr {
         Expr::Assign(Box::new(self), Box::new([(lhs, rhs)]))
     }
 
-    pub fn assert(cond: Term, k: Expr) -> Self {
-        Expr::Assert(Box::new(cond), Box::new(k))
-    }
-
-    pub fn assume(cond: Term, k: Expr) -> Self {
-        Expr::Assume(Box::new(cond), Box::new(k))
-    }
-
-    pub fn black_box(self) -> Self {
-        Expr::BlackBox(Box::new(self))
-    }
-
-    pub fn let_(self, vars: impl IntoIterator<Item = Var>) -> Self {
-        Expr::Let(Box::new(self), vars.into_iter().collect())
-    }
-
     /// Adds a set of mutually recursive where bindings around `self`
     pub fn where_(self, defs: Box<[Defn]>) -> Self {
         // If we have `x [ x = z ]` replace this by `z`
         if defs.len() == 1
-            && !defs[0].body.occurs_cont(&defs[0].name)
-            && self.as_symbol().is_some_and(|qn| qn.is_ident(&defs[0].name))
+            && !defs[0].body.occurs(&defs[0].name)
+            && self.as_variable().is_some_and(|qn| qn == &defs[0].name)
         {
             let [d] = *defs.into_array::<1>().unwrap();
             d.body
@@ -178,8 +163,8 @@ impl Expr {
         }
     }
 
-    pub fn as_symbol(&self) -> Option<&QName> {
-        if let Expr::Symbol(nm) = self { Some(nm) } else { None }
+    pub fn as_variable(&self) -> Option<&Ident> {
+        if let Expr::Variable(nm) = self { Some(nm) } else { None }
     }
 
     /// Checks whether the expression is protected by a black box.
@@ -195,40 +180,41 @@ impl Expr {
     }
 
     /// Checks whether a symbol of name `cont` occurs in `self`
-    pub fn occurs_cont(&self, cont: &Ident) -> bool {
-        match self {
-            Expr::Symbol(v) => v.is_ident(cont),
-            Expr::App(e, arg) => {
-                let arg = if let Arg::Cont(e) = &**arg { e.occurs_cont(cont) } else { false };
-                arg || e.occurs_cont(cont)
-            }
-            Expr::Lambda(params, body) => {
-                let in_params = params
-                    .iter()
-                    .filter_map(|p| if let Param::Cont(n, _, _) = p { Some(n) } else { None })
-                    .any(|n| n == cont);
-                !in_params && body.occurs_cont(cont)
-            }
-            Expr::Defn(e, _, defs) => {
-                e.occurs_cont(cont)
-                    || defs.iter().any(|d| {
-                        let in_params = d
-                            .params
-                            .iter()
-                            .filter_map(
-                                |p| if let Param::Cont(n, _, _) = p { Some(n) } else { None },
-                            )
-                            .any(|n| n == cont);
-                        !in_params && d.body.occurs_cont(cont)
-                    })
-            }
-            Expr::Assign(e, _) => e.occurs_cont(cont),
-            Expr::Let(e, _) => e.occurs_cont(cont),
-            Expr::Assert(_, e) | Expr::Assume(_, e) => e.occurs_cont(cont),
-            Expr::BlackBox(e) | Expr::WhiteBox(e) => e.occurs_cont(cont),
-            Expr::Any => false,
+    pub fn occurs(&self, cont: &Ident) -> bool {
+    match self {
+        Expr::Variable(v) => v == cont,
+        Expr::Constant(_) => false,
+        Expr::App(e, arg) => {
+            let arg = if let Arg::Cont(e) = &**arg { e.occurs(cont) } else { false };
+            arg || e.occurs(cont)
         }
+        Expr::Lambda(params, body) => {
+            let in_params = params
+                .iter()
+                .filter_map(|p| if let Param::Cont(n, _, _) = &*p { Some(n) } else { None })
+                .any(|n| n == cont);
+            !in_params && body.occurs(cont)
+        }
+        Expr::Defn(e, _, defs) => {
+            e.occurs(cont)
+                || defs.iter().any(|d| {
+                    let in_params = d
+                        .params
+                        .iter()
+                        .filter_map(
+                            |p| if let Param::Cont(n, _, _) = &*p { Some(n) } else { None },
+                        )
+                        .any(|n| n == cont);
+                    !in_params && d.body.occurs(cont)
+                })
+        }
+        Expr::Assign(e, _) => e.occurs(cont),
+        Expr::Let(e, _) => e.occurs(cont),
+        Expr::Assert(_, e) | Expr::Assume(_, e) => e.occurs(cont),
+        Expr::BlackBox(e) | Expr::WhiteBox(e) => e.occurs(cont),
+        Expr::Any => false,
     }
+}
 }
 
 impl Print for Param {
@@ -303,7 +289,8 @@ impl Print for Expr {
         A::Doc: Clone,
     {
         match self {
-            Expr::Symbol(id) => id.pretty(alloc),
+            Expr::Variable(id) => id.pretty(alloc),
+            Expr::Constant(name) => name.pretty(alloc),
             Expr::App(e, arg) => {
                 let mut args = vec![arg];
 
@@ -320,7 +307,7 @@ impl Print for Expr {
 
                 let needs_paren = !matches!(
                     &**e,
-                    Expr::App(_, _) | Expr::Symbol(_) | Expr::Any | Expr::Lambda(_, _)
+                    Expr::App(_, _) | Expr::Variable(_) | Expr::Constant(_) | Expr::Any | Expr::Lambda(_, _)
                 );
 
                 let doc = e.pretty(alloc);

@@ -3,61 +3,111 @@ use indexmap::Equivalent;
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
 use std::{
-    borrow::Cow,
     fmt::{Display, Write},
-    ops::Deref,
+    sync::{atomic::AtomicU64, LazyLock, RwLock},
 };
+use string_interner::{DefaultStringInterner, DefaultSymbol};
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct Ident(pub(crate) String);
+static FRESH_COUNTER: AtomicU64 = AtomicU64::new(1);
+static INTERNER: LazyLock<RwLock<DefaultStringInterner>> = LazyLock::new(|| RwLock::new(DefaultStringInterner::new()));
 
-impl Ident {
-    /// Constructs a valid why3 identifier representing a given string
-    pub fn build(name: &str) -> Self {
-        if RESERVED.contains(&name) {
-            return Ident(format!("{}'", name));
-        }
-        // TODO: ensure that all characters are valid
-        Ident(name.into())
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct IdentString(DefaultSymbol);
+
+impl IdentString {
+    pub fn as_str(self) -> String {
+        String::from(self)
     }
+}
 
-    pub fn from_string(mut name: String) -> Self {
+#[cfg(feature = "serialize")]
+impl Serialize for IdentString {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        todo!{}
+    }
+}
+
+#[cfg(feature = "serialize")]
+impl<'d> Deserialize<'d> for IdentString {
+    fn deserialize<D: serde::Deserializer<'d>>(deserializer: D) -> Result<Self, D::Error> {
+        todo!{}
+    }
+}
+
+impl From<IdentString> for String {
+    fn from(id: IdentString) -> Self {
+        INTERNER.read().unwrap().resolve(id.0).unwrap().to_string()
+    }
+}
+
+impl From<String> for IdentString {
+    fn from(mut name: String) -> Self {
+        // TODO: ensure that all characters are valid
         if RESERVED.contains(&&*name) {
             name.write_str("'").unwrap();
         }
-        Ident(name)
+        let s = INTERNER.write().unwrap().get_or_intern(name);
+        IdentString(s)
+    }
+}
+
+impl From<&str> for IdentString {
+    fn from(name: &str) -> Self {
+        IdentString::from(name.to_string())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct Ident {
+    name: IdentString,
+    id: u64, // 0 for "bound" identifiers, >0 for "fresh" identifiers
+}
+
+impl Ident {
+    /// Every call to `fresh` returns a new unique identifier.
+    /// Use this for translating source identifiers and for generated identifiers.
+    pub fn fresh(name: impl Into<String>) -> Self {
+        Ident {
+            name: IdentString::from(name.into()),
+            id: FRESH_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+        }
     }
 
-    pub fn as_str(&self) -> &str {
-        &self.0
+    /// All `bound` names from the same string are equal.
+    /// Use this for fixed identifiers (result, ret)
+    pub fn bound(name: impl Into<String>) -> Self {
+        Ident {
+            name: IdentString::from(name.into()),
+            id: 0,
+        }
     }
 
-    pub fn decapitalize(&mut self) {
-        self.0[..1].make_ascii_lowercase();
+    // TODO: remove this
+    pub fn as_str(&self) -> String {
+        self.name.into()
     }
 
-    pub fn capitalize(&mut self) {
-        self.0[..1].make_ascii_uppercase();
+    pub fn refresh(&self) -> Self {
+        Ident {
+            name: self.name,
+            id: FRESH_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+        }
     }
 }
 
 impl Display for Ident {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str(&self.0)
+        f.write_str(&self.name.as_str())?;
+        f.write_str("'")?;
+        f.write_str(&self.id.to_string())
     }
 }
 
-// TODO: Make this `parse` and test for validity
-impl From<&str> for Ident {
-    fn from(nm: &str) -> Self {
-        Ident::build(nm)
-    }
-}
-
-impl From<String> for Ident {
-    fn from(nm: String) -> Self {
-        Ident::build(&nm)
+impl From<Ident> for IdentString {
+    fn from(id: Ident) -> Self {
+        id.name
     }
 }
 
@@ -67,6 +117,7 @@ impl From<QName> for Exp {
     }
 }
 
+/*
 impl<'a> From<&'a Ident> for Cow<'a, str> {
     fn from(id: &'a Ident) -> Cow<'a, str> {
         (&id.0).into()
@@ -80,10 +131,11 @@ impl Deref for Ident {
         &self.0
     }
 }
+ */
 
 impl Equivalent<QName> for Ident {
     fn equivalent(&self, key: &QName) -> bool {
-        key.is_ident(self)
+        key.is_ident(&self.name)
     }
 }
 
@@ -91,24 +143,34 @@ impl Equivalent<QName> for Ident {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct QName {
-    pub module: Box<[Ident]>,
-    pub name: Ident,
+    pub module: Box<[IdentString]>,
+    pub name: IdentString,
 }
 
 impl QName {
-    pub fn is_ident(&self, id: &Ident) -> bool {
+    pub fn is_ident(&self, id: &IdentString) -> bool {
         self.module.is_empty() && &self.name == id
     }
 
-    pub fn as_ident(&self) -> Ident {
+    pub fn as_ident(&self) -> IdentString {
         assert!(self.module.is_empty());
         self.name.clone()
     }
 
     pub fn without_search_path(mut self) -> QName {
         self.module =
-            self.module.into_iter().skip_while(|s| s.starts_with(char::is_lowercase)).collect();
+            self.module.into_iter().skip_while(|s| s.as_str().starts_with(char::is_lowercase)).collect();
         self
+    }
+
+    pub fn to_string(&self) -> String {
+        let mut s = String::new();
+        for i in self.module.iter() {
+            s.push_str(&i.as_str());
+            s.push('.');
+        }
+        s.push_str(&self.name.as_str());
+        s
     }
 }
 
@@ -121,8 +183,8 @@ impl From<&str> for QName {
                 '(' => in_paren = false,
                 '.' => {
                     if !in_paren {
-                        let name = s[i + 1..].into();
-                        let module = s[..i].split('.').map(|s| s.into()).collect();
+                        let name = IdentString::from(&s[i + 1..]);
+                        let module = s[..i].split('.').map(|s| IdentString::from(s)).collect();
                         return QName { module, name };
                     }
                 }
@@ -137,12 +199,6 @@ impl From<&str> for QName {
 impl From<String> for QName {
     fn from(s: String) -> Self {
         s.as_str().into()
-    }
-}
-
-impl From<Ident> for QName {
-    fn from(name: Ident) -> Self {
-        QName { module: Box::new([]), name }
     }
 }
 
@@ -219,6 +275,6 @@ mod tests {
     use super::*;
     #[test]
     fn reserved_idents_made_valid() {
-        assert_eq!(Ident::build("clone").0, "clone'")
+        assert_eq!(IdentString::from("clone").as_str(), "clone'")
     }
 }
