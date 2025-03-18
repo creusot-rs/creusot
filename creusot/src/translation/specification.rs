@@ -6,7 +6,6 @@ use crate::{
     },
     ctx::*,
     function::closure_capture_subst,
-    naming::anonymous_param_symbol,
     pearlite::TermVisitorMut,
     translation::pearlite::{Literal, Term, TermKind, normalize, type_invariant_term},
     util::erased_identity_for_item,
@@ -17,7 +16,7 @@ use rustc_middle::{
     mir::{self, Body, Local, OUTERMOST_SOURCE_SCOPE, SourceInfo, SourceScope},
     ty::{EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv},
 };
-use rustc_span::{Span, Symbol, symbol::Ident};
+use rustc_span::{Span, symbol::Ident};
 use rustc_type_ir::ClosureKind;
 use std::{
     collections::{HashMap, HashSet},
@@ -45,7 +44,7 @@ pub struct PreContract<'tcx> {
 }
 
 impl<'tcx> PreContract<'tcx> {
-    pub(crate) fn subst(&mut self, subst: &HashMap<Symbol, Term<'tcx>>) {
+    pub(crate) fn subst(&mut self, subst: &HashMap<Ident, Term<'tcx>>) {
         for term in self.terms_mut() {
             term.subst(subst);
         }
@@ -177,7 +176,7 @@ impl ContractClauses {
 
 #[derive(Debug)]
 struct ScopeTree<'tcx>(
-    HashMap<SourceScope, (HashSet<(Symbol, mir::Place<'tcx>)>, Option<SourceScope>)>,
+    HashMap<SourceScope, (HashSet<(Ident, mir::Place<'tcx>)>, Option<SourceScope>)>,
 );
 
 impl<'tcx> ScopeTree<'tcx> {
@@ -200,8 +199,8 @@ impl<'tcx> ScopeTree<'tcx> {
 
             let entry = scope_tree.entry(scope).or_default();
 
-            let name = var_info.name;
-            entry.0.insert((name, p));
+            let ident = Ident { name: var_info.name, span: var_info.source_info.span };
+            entry.0.insert((ident, p));
 
             if let Some(parent) = scope_data.parent_scope {
                 entry.1 = Some(parent);
@@ -223,7 +222,7 @@ impl<'tcx> ScopeTree<'tcx> {
         ScopeTree(scope_tree)
     }
 
-    fn visible_places(&self, scope: SourceScope) -> HashMap<Symbol, mir::Place<'tcx>> {
+    fn visible_places(&self, scope: SourceScope) -> HashMap<Ident, mir::Place<'tcx>> {
         let mut locals = HashMap::new();
         let mut to_visit = Some(scope);
 
@@ -243,9 +242,9 @@ impl<'tcx> ScopeTree<'tcx> {
 pub(crate) fn inv_subst<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &Body<'tcx>,
-    locals: &HashMap<Local, Symbol>,
+    locals: &HashMap<Local, Ident>,
     info: SourceInfo,
-) -> HashMap<Symbol, Term<'tcx>> {
+) -> HashMap<Ident, Term<'tcx>> {
     let mut args = HashMap::new();
 
     let tree = ScopeTree::build(body);
@@ -267,7 +266,7 @@ pub(crate) fn inv_subst<'tcx>(
 fn place_to_term<'tcx>(
     tcx: TyCtxt<'tcx>,
     p: mir::Place<'tcx>,
-    locals: &HashMap<Local, Symbol>,
+    locals: &HashMap<Local, Ident>,
     body: &Body<'tcx>,
 ) -> Term<'tcx> {
     let ty = p.ty(&body.local_decls, tcx).ty;
@@ -412,7 +411,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
 
 #[derive(TypeVisitable, TypeFoldable, Debug, Clone)]
 pub struct PreSignature<'tcx> {
-    pub(crate) inputs: Vec<(Symbol, Span, Ty<'tcx>)>,
+    pub(crate) inputs: Vec<(Ident, Ty<'tcx>)>,
     pub(crate) output: Ty<'tcx>,
     pub(crate) contract: PreContract<'tcx>,
 }
@@ -443,11 +442,11 @@ impl<'tcx> PreSignature<'tcx> {
             .map(|&i| if ctx.tcx.is_closure_like(def_id) { i + 1 } else { i })
             .collect();
 
-        let new_requires = self.inputs.iter().enumerate().filter_map(|(i, (name, span, ty))| {
+        let new_requires = self.inputs.iter().enumerate().filter_map(|(i, (ident, ty))| {
             if !params_open_inv.contains(&i)
-                && let Some(term) = type_invariant_term(ctx, typing_env, *name, *span, *ty)
+                && let Some(term) = type_invariant_term(ctx, typing_env, *ident, ident.span, *ty)
             {
-                let expl = format!("expl:{} '{}' type invariant", fn_name, name);
+                let expl = format!("expl:{} '{}' type invariant", fn_name, ident.name);
                 Some(Condition { term, expl })
             } else {
                 None
@@ -455,13 +454,14 @@ impl<'tcx> PreSignature<'tcx> {
         });
         self.contract.requires.splice(0..0, new_requires);
 
+        let result_ident = Ident::from_str("result");
         let ret_ty_span: Option<Span> =
             try { ctx.tcx.hir().get_fn_output(def_id.as_local()?)?.span() };
         if !is_open_inv_result(ctx.tcx, def_id)
             && let Some(term) = type_invariant_term(
                 ctx,
                 typing_env,
-                Symbol::intern("result"),
+                result_ident,
                 ret_ty_span.unwrap_or_else(|| ctx.tcx.def_span(def_id)),
                 self.output,
             )
@@ -480,7 +480,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
     let fn_ty = ctx.tcx.type_of(def_id).instantiate_identity();
 
     if let TyKind::Closure(_, subst) = fn_ty.kind() {
-        let self_ = Symbol::intern("_1");
+        let self_ = Ident::from_str("_1");
         let kind = subst.as_closure().kind();
         let env_ty = ctx.closure_env_ty(fn_ty, kind, ctx.lifetimes.re_erased);
 
@@ -553,12 +553,12 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
                 ctx.crash_and_error(ident.span, "`result` is not allowed as a parameter name")
             }
 
-            let name = if ident.name.as_str().is_empty() {
-                anonymous_param_symbol(idx)
+            let ident = if ident.name.as_str().is_empty() {
+                Ident::from_str(&format!{"_{}", idx})
             } else {
-                ident.name
+                ident
             };
-            (name, ident.span, ty)
+            (ident, ty)
         })
         .collect();
 
