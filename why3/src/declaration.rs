@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Module {
-    pub name: Ident,
+    pub name: IdentString,
     pub decls: Box<[Decl]>,
     pub attrs: Vec<Attribute>,
     // Meta data stored in comments
@@ -40,7 +40,7 @@ pub enum Decl {
     LogicDefn(LogicDefn),
     TyDecl(TyDecl),
     PredDecl(Predicate),
-    UseDecls(Box<[Use]>),
+    UseDecl(Use),
     Axiom(Axiom),
     Goal(Goal),
     ConstantDecl(Constant),
@@ -95,6 +95,10 @@ pub struct Contract {
 }
 
 impl Contract {
+    pub fn is_empty(&self) -> bool {
+        self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_none()
+    }
+
     pub fn ensures_conj(&self) -> Exp {
         let mut ensures = self.ensures.iter().map(|cond| cond.exp.clone());
         let Some(mut postcond) = ensures.next() else { return Exp::mk_true() };
@@ -128,9 +132,8 @@ impl Contract {
     }
 
     pub fn requires_implies(&self, conclusion: Exp) -> Exp {
-        self.requires
-            .iter()
-            .rfold(conclusion, |acc, cond| cond.clone().unlabelled_exp().implies(acc))
+        let requires = self.requires.iter().map(|cond| cond.exp.clone());
+        requires.rfold(conclusion, |acc, arg| arg.implies(acc))
     }
 
     pub fn subst(&mut self, subst: &HashMap<Ident, Exp>) {
@@ -268,10 +271,10 @@ pub struct LogicDecl {
     pub sig: Signature,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Use {
-    pub name: Box<[Ident]>,
+    pub name: Box<[IdentString]>,
     pub as_: Option<Ident>,
     pub export: bool,
 }

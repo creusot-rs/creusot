@@ -1,6 +1,6 @@
-use crate::{backend::Namer, ctx::PreMod, fmir::Place, naming::ident_of};
+use crate::{backend::Namer, ctx::PreMod, fmir::{ProjectionElem, Place}, naming::ident_of};
 use rustc_middle::{
-    mir::{self, ProjectionElem, tcx::PlaceTy},
+    mir::{self, tcx::PlaceTy},
     ty::{Ty, TyCtxt, TyKind},
 };
 use rustc_span::Symbol;
@@ -253,7 +253,7 @@ fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
 pub fn projection_ty<'tcx>(
     pty: PlaceTy<'tcx>,
     tcx: TyCtxt<'tcx>,
-    elem: ProjectionElem<Symbol, Ty<'tcx>>,
+    elem: ProjectionElem<'tcx>,
 ) -> PlaceTy<'tcx> {
     pty.projection_ty_core(tcx, &elem, |_, _, ty| ty, |_, ty| ty)
 }

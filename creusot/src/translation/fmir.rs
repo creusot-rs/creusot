@@ -1,23 +1,25 @@
-use crate::{backend::place::projection_ty, naming::ident_of, pearlite::Term};
+use crate::{backend::place::projection_ty, pearlite::Term};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{BasicBlock, BinOp, Local, ProjectionElem, Promoted, UnOp, tcx::PlaceTy},
+    mir::{BasicBlock, BinOp, Promoted, UnOp, tcx::PlaceTy},
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt},
 };
-use rustc_span::{Span, Symbol};
+use rustc_span::{Ident, Span};
 use rustc_target::abi::VariantIdx;
+
+type ProjectionElem<'tcx> = rustc_middle::mir::ProjectionElem<Ident, Ty<'tcx>>;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Place<'tcx> {
-    pub(crate) local: Symbol,
-    pub(crate) projections: Box<[ProjectionElem<Symbol, Ty<'tcx>>]>,
+    pub(crate) local: Ident,
+    pub(crate) projections: Box<[ProjectionElem<'tcx>]>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct PlaceRef<'a, 'tcx> {
-    pub local: Symbol,
-    pub projection: &'a [ProjectionElem<Symbol, Ty<'tcx>>],
+    pub local: Ident,
+    pub projection: &'a [ProjectionElem<'tcx>],
 }
 
 impl<'tcx> Place<'tcx> {
@@ -31,13 +33,13 @@ impl<'tcx> Place<'tcx> {
         ty.ty
     }
 
-    pub(crate) fn as_symbol(&self) -> Option<Symbol> {
+    pub(crate) fn as_symbol(&self) -> Option<Ident> {
         if self.projections.is_empty() { Some(self.local) } else { None }
     }
 
     pub(crate) fn iter_projections(
         &self,
-    ) -> impl Iterator<Item = (PlaceRef<'_, 'tcx>, ProjectionElem<Symbol, Ty<'tcx>>)>
+    ) -> impl Iterator<Item = (PlaceRef<'_, 'tcx>, ProjectionElem<'tcx>)>
     + DoubleEndedIterator
     + '_ {
         self.projections.iter().enumerate().map(move |(i, proj)| {
@@ -48,7 +50,7 @@ impl<'tcx> Place<'tcx> {
 
     pub fn last_projection(
         &self,
-    ) -> Option<(PlaceRef<'_, 'tcx>, ProjectionElem<Symbol, Ty<'tcx>>)> {
+    ) -> Option<(PlaceRef<'_, 'tcx>, ProjectionElem<'tcx>)> {
         if let &[ref proj_base @ .., elem] = &self.projections[..] {
             Some((PlaceRef { local: self.local, projection: proj_base }, elem))
         } else {
@@ -256,31 +258,7 @@ pub struct Block<'tcx> {
     pub(crate) terminator: Terminator<'tcx>,
 }
 
-/// A MIR local along with an optional human-readable name
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) enum LocalIdent {
-    Anon(Local),
-    User(Symbol),
-}
-
-impl LocalIdent {
-    pub(crate) fn anon(loc: Local) -> Self {
-        LocalIdent::Anon(loc)
-    }
-
-    pub(crate) fn user(_: Local, name: Symbol) -> Self {
-        LocalIdent::User(name)
-    }
-
-    pub(crate) fn symbol(&self) -> Symbol {
-        match &self {
-            LocalIdent::User(id) => Symbol::intern(&format!("{}", &*ident_of(*id))),
-            LocalIdent::Anon(loc) => Symbol::intern(&format!("_{}", loc.index())),
-        }
-    }
-}
-
-pub type LocalDecls<'tcx> = IndexMap<Symbol, LocalDecl<'tcx>>;
+pub type LocalDecls<'tcx> = IndexMap<Ident, LocalDecl<'tcx>>;
 
 #[derive(Clone, Debug)]
 pub struct LocalDecl<'tcx> {
