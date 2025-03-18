@@ -72,9 +72,11 @@ impl<'tcx> Dependency<'tcx> {
                     "closure{}",
                     tcx.def_path(*def_id).data.last().unwrap().disambiguator
                 ))),
-                TyKind::Param(p) => {
-                    Some(Symbol::intern(&type_name(&p.name.as_str().replace(" ", "_"))))
-                }
+                TyKind::Param(p) => Some(Symbol::intern(&type_name(
+                    &p.name
+                        .as_str()
+                        .replace(|c: char| !(c.is_ascii_alphanumeric() || c == '\''), "_"),
+                ))),
                 TyKind::Tuple(_) => Some(Symbol::intern("tuple")),
                 _ => None,
             },

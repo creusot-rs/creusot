@@ -365,6 +365,22 @@ extern_spec! {
         #[ensures(ix.has_value(self@, *result))]
         fn index(&self, ix: I) -> &<[T] as Index<I>>::Output;
     }
+
+    mod std {
+        mod slice {
+            #[pure]
+            #[ensures(result@.len() == 1)]
+            #[ensures(result@[0] == *s)]
+            fn from_ref<T>(s: &T) -> &[T];
+
+            #[pure]
+            #[ensures(result@.len() == 1)]
+            #[ensures(result@[0] == *s)]
+            #[ensures((^result)@.len() == 1)]
+            #[ensures((^result)@[0] == ^s)]
+            fn from_mut<T>(s: &mut T) -> &mut [T];
+        }
+    }
 }
 
 impl<T> IntoIterator for &[T] {

@@ -21,20 +21,30 @@ extern_spec! {
             impl<T : PartialEq + DeepModel> PartialEq for Option<T> {
                 #[allow(unstable_name_collisions)]
                 #[ensures(result == (self.deep_model() == rhs.deep_model()))]
-                fn eq(&self, rhs: &Self) -> bool;
+                fn eq(&self, rhs: &Self) -> bool {
+                    match (self, rhs) {
+                        (None, None) => true,
+                        (Some(x), Some(y)) => x == y,
+                        _ => false,
+                    }
+                }
             }
         }
     }
 }
 
-// FIXME: add a body where we can
 extern_spec! {
     mod std {
         mod option {
             impl<T> Option<T> {
                 #[pure]
                 #[ensures(result == (*self != None))]
-                fn is_some(&self) -> bool;
+                fn is_some(&self) -> bool {
+                    match self {
+                        None => false,
+                        Some(_) => true,
+                    }
+                }
 
                 #[requires(match self {
                     None => true,
@@ -42,21 +52,35 @@ extern_spec! {
                 })]
                 #[ensures(match self {
                     None => result == false,
-                    Some(t) => resolve(&t) && f.postcondition_once((t,), result),
+                    Some(t) => f.postcondition_once((t,), result),
                 })]
-                // FIXME: we cannot attach a body to this extern spec, because creusot mistranslates `impl trait`.
-                fn is_some_and(self, f: impl FnOnce(T) -> bool) -> bool;
+                fn is_some_and(self, f: impl FnOnce(T) -> bool) -> bool {
+                    match self {
+                        None => false,
+                        Some(t) => f(t),
+                    }
+                }
 
                 #[pure]
                 #[ensures(result == (*self == None))]
-                fn is_none(&self) -> bool;
+                fn is_none(&self) -> bool {
+                    match self {
+                        None => true,
+                        Some(_) => false,
+                    }
+                }
 
                 #[pure]
                 #[ensures(*self == None ==> result == None)]
                 #[ensures(
                     *self == None || exists<r: &T> result == Some(r) && *self == Some(*r)
                 )]
-                fn as_ref(&self) -> Option<&T>;
+                fn as_ref(&self) -> Option<&T> {
+                    match *self {
+                        None => None,
+                        Some(ref t) => Some(t),
+                    }
+                }
 
                 #[pure]
                 #[ensures(*self == None ==> result == None && ^self == None)]
@@ -64,36 +88,69 @@ extern_spec! {
                     *self == None
                     || exists<r: &mut T> result == Some(r) && *self == Some(*r) && ^self == Some(^r)
                 )]
-                fn as_mut(&mut self) -> Option<&mut T>;
+                fn as_mut(&mut self) -> Option<&mut T> {
+                    match *self {
+                        None => None,
+                        Some(ref mut t) => Some(t),
+                    }
+                }
 
                 #[pure]
                 #[ensures(match *self {
                     None => result@.len() == 0,
                     Some(t) => result@.len() == 1 && result@[0] == t
                 })]
-                fn as_slice(&self) -> &[T];
+                fn as_slice(&self) -> &[T] {
+                    match self {
+                        None => &[],
+                        Some(t) => std::slice::from_ref(t),
+                    }
+                }
 
                 #[pure]
                 #[ensures(match *self {
                     None => result@.len() == 0,
-                    Some(_) => exists<b:&mut T> *self == Some(*b) && ^self == Some(^b) && (*result)@[0] == *b && (^result)@[0] == ^b,
+                    Some(_) => exists<b:&mut T>
+                        *self == Some(*b) && ^self == Some(^b) &&
+                        (*result)@[0] == *b && (^result)@[0] == ^b &&
+                        (*result)@.len() == 1 && (^result)@.len() == 1,
                 })]
-                fn as_mut_slice(&mut self) -> &mut [T];
+                fn as_mut_slice(&mut self) -> &mut [T] {
+                    match self {
+                        None => &mut [],
+                        Some(t) => std::slice::from_mut(t),
+                    }
+                }
 
                 #[pure]
                 #[requires(self != None)]
                 #[ensures(Some(result) == self)]
-                fn expect(self, msg: &str) -> T;
+                fn expect(self, msg: &str) -> T {
+                    match self {
+                        None => panic!(),
+                        Some(t) => t,
+                    }
+                }
 
                 #[pure]
                 #[requires(self != None)]
                 #[ensures(Some(result) == self)]
-                fn unwrap(self) -> T;
+                fn unwrap(self) -> T {
+                    match self {
+                        None => panic!(),
+                        Some(t) => t,
+                    }
+                }
 
                 #[pure]
                 #[ensures(self == None ==> result == default)]
-                #[ensures(self == None || self == Some(result))]
-                fn unwrap_or(self, default: T) -> T;
+                #[ensures(self == None || (self == Some(result) && resolve(&default)))]
+                fn unwrap_or(self, default: T) -> T {
+                    match self {
+                        None => default,
+                        Some(t) => t,
+                    }
+                }
 
                 #[requires(self == None ==> f.precondition(()))]
                 #[ensures(match self {
@@ -113,12 +170,22 @@ extern_spec! {
                 #[ensures(self == None || self == Some(result))]
                 fn unwrap_or_default(self) -> T
                 where
-                    T: Default;
+                    T: Default {
+                    match self {
+                        None => T::default(),
+                        Some(t) => t,
+                    }
+                }
 
                 #[pure]
                 #[requires(self != None)]
                 #[ensures(Some(result) == self)]
-                unsafe fn unwrap_unchecked(self) -> T;
+                unsafe fn unwrap_unchecked(self) -> T {
+                    match self {
+                        None => panic!(),
+                        Some(t) => t,
+                    }
+                }
 
                 #[requires(match self {
                     None => true,
@@ -190,11 +257,17 @@ extern_spec! {
                     }
                 }
 
+                #[pure]
                 #[ensures(match self {
                     None => result == Err(err),
-                    Some(t) => result == Ok(t),
+                    Some(t) => result == Ok(t) && resolve(&err),
                 })]
-                fn ok_or<E>(self, err: E) -> Result<T, E>;
+                fn ok_or<E>(self, err: E) -> Result<T, E> {
+                    match self {
+                        None => Err(err),
+                        Some(t) => Ok(t),
+                    }
+                }
 
                 #[requires(self == None ==> err.precondition(()))]
                 #[ensures(match self {
@@ -210,18 +283,15 @@ extern_spec! {
                     }
                 }
 
-                #[ensures(match *self {
-                    None => result == None,
-                    Some(t) => result == Some(&t.deref()),
-                })]
-                fn as_deref(&self) -> Option<&<T as ::std::ops::Deref>::Target>
-                where
-                    T: ::std::ops::Deref;
-
                 #[pure]
-                #[ensures(self == None ==> result == None)]
+                #[ensures(self == None ==> result == None && optb.resolve())]
                 #[ensures(self == None || (result == optb && self.resolve()))]
-                fn and<U>(self, optb: Option<U>) -> Option<U>;
+                fn and<U>(self, optb: Option<U>) -> Option<U> {
+                    match self {
+                        None => None,
+                        Some(_) => optb,
+                    }
+                }
 
                 #[requires(match self {
                     None => true,
@@ -263,7 +333,12 @@ extern_spec! {
                 #[pure]
                 #[ensures(self == None ==> result == optb)]
                 #[ensures(self == None || (result == self && optb.resolve()))]
-                fn or(self, optb: Option<T>) -> Option<T>;
+                fn or(self, optb: Option<T>) -> Option<T> {
+                    match self {
+                        None => optb,
+                        Some(t) => Some(t),
+                    }
+                }
 
                 #[requires(self == None ==> f.precondition(()))]
                 #[ensures(match self {
@@ -286,7 +361,12 @@ extern_spec! {
                     (Some(t), None)      => result == Some(t),
                     (None, Some(t))      => result == Some(t),
                 })]
-                fn xor(self, optb: Option<T>) -> Option<T>;
+                fn xor(self, optb: Option<T>) -> Option<T> {
+                    match (self, optb) {
+                        (Some(t), None) | (None, Some(t)) => Some(t),
+                        _ => None,
+                    }
+                }
 
                 #[pure]
                 #[ensures(match *self {
@@ -294,14 +374,29 @@ extern_spec! {
                     None => true,
                 })]
                 #[ensures(*result == value && ^self == Some(^result))]
-                fn insert(&mut self, value: T) -> &mut T;
+                fn insert(&mut self, value: T) -> &mut T {
+                    *self = Some(value);
+                    match self {
+                        None => unreachable!(),
+                        Some(v) => v,
+                    }
+                }
 
                 #[pure]
                 #[ensures(match *self {
                     None => *result == value && ^self == Some(^result),
                     Some(_) => *self == Some(*result) && ^self == Some(^result) && resolve(&value),
                 })]
-                fn get_or_insert(&mut self, value: T) -> &mut T;
+                fn get_or_insert(&mut self, value: T) -> &mut T {
+                    match self {
+                        None => *self = Some(value),
+                        Some(_) => {}
+                    }
+                    match self {
+                        None => unreachable!(),
+                        Some(v) => v,
+                    }
+                }
 
                 #[requires(*self == None ==> f.precondition(()))]
                 #[ensures(match *self {
@@ -319,7 +414,9 @@ extern_spec! {
 
                 #[pure]
                 #[ensures(result == *self && ^self == None)]
-                fn take(&mut self) -> Option<T>;
+                fn take(&mut self) -> Option<T> {
+                    std::mem::replace(self, None)
+                }
 
                 #[requires(match *self {
                     None => true,
@@ -346,7 +443,9 @@ extern_spec! {
 
                 #[pure]
                 #[ensures(result == *self && ^self == Some(value))]
-                fn replace(&mut self, value: T) -> Option<T>;
+                fn replace(&mut self, value: T) -> Option<T> {
+                    std::mem::replace(self, Some(value))
+                }
 
                 #[pure]
                 #[ensures(match (self, other) {
@@ -354,7 +453,12 @@ extern_spec! {
                     (_, None)          => result == None && self.resolve(),
                     (Some(t), Some(u)) => result == Some((t, u)),
                 })]
-                fn zip<U>(self, other: Option<U>) -> Option<(T, U)>;
+                fn zip<U>(self, other: Option<U>) -> Option<(T, U)> {
+                    match (self, other) {
+                        (Some(t), Some(u)) => Some((t, u)),
+                        _ => None,
+                    }
+                }
             }
 
             impl<T, U> Option<(T, U)> {
@@ -363,7 +467,12 @@ extern_spec! {
                     None => result == (None, None),
                     Some((t, u)) => result == (Some(t), Some(u)),
                 })]
-                fn unzip(self) -> (Option<T>, Option<U>);
+                fn unzip(self) -> (Option<T>, Option<U>) {
+                    match self {
+                        Some((t, u)) => (Some(t), Some(u)),
+                        None => (None, None),
+                    }
+                }
             }
 
             impl<T> Option<&T> {
@@ -372,13 +481,23 @@ extern_spec! {
                 #[ensures(self == None || exists<t: &T> self == Some(t) && result == Some(*t))]
                 fn copied(self) -> Option<T>
                 where
-                    T: Copy;
+                    T: Copy {
+                    match self {
+                        None => None,
+                        Some(t) => Some(*t),
+                    }
+                }
 
                 #[ensures(self == None ==> result == None)]
                 #[ensures(self == None || exists<t: &T> self == Some(t) && result == Some(*t))]
                 fn cloned(self) -> Option<T>
                 where
-                    T: Clone;
+                    T: Clone {
+                    match self {
+                        None => None,
+                        Some(t) => Some(t.clone()),
+                    }
+                }
             }
 
             impl<T> Option<&mut T> {
@@ -390,7 +509,12 @@ extern_spec! {
                 )]
                 fn copied(self) -> Option<T>
                 where
-                    T: Copy;
+                    T: Copy {
+                    match self {
+                        None => None,
+                        Some(t) => Some(*t),
+                    }
+                }
 
                 #[ensures(self == None ==> result == None)]
                 #[ensures(
@@ -399,7 +523,12 @@ extern_spec! {
                 )]
                 fn cloned(self) -> Option<T>
                 where
-                    T: Clone;
+                    T: Clone {
+                    match self {
+                        None => None,
+                        Some(t) => Some(t.clone()),
+                    }
+                }
             }
 
             impl<T, E> Option<Result<T, E>> {
@@ -409,14 +538,25 @@ extern_spec! {
                     Some(Ok(ok)) => result == Ok(Some(ok)),
                     Some(Err(err)) => result == Err(err),
                 })]
-                fn transpose(self) -> Result<Option<T>, E>;
+                fn transpose(self) -> Result<Option<T>, E> {
+                    match self {
+                        None => Ok(None),
+                        Some(Ok(ok)) => Ok(Some(ok)),
+                        Some(Err(err)) => Err(err),
+                    }
+                }
             }
 
             impl<T> Option<Option<T>> {
                 #[pure]
                 #[ensures(self == None ==> result == None)]
                 #[ensures(self == None || self == Some(result))]
-                fn flatten(self) -> Option<T>;
+                fn flatten(self) -> Option<T> {
+                    match self {
+                        None => None,
+                        Some(opt) => opt,
+                    }
+                }
             }
         }
     }
@@ -508,7 +648,7 @@ impl<'a, T> View for Iter<'a, T> {
     }
 }
 
-impl<'a, T> Iterator for Iter<'a, T> {
+impl<T> Iterator for Iter<'_, T> {
     #[predicate(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
@@ -537,7 +677,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-impl<'a, T> IntoIterator for &'a Option<T> {
+impl<T> IntoIterator for &'_ Option<T> {
     #[predicate]
     #[open]
     fn into_iter_pre(self) -> bool {
@@ -564,7 +704,7 @@ impl<'a, T> View for IterMut<'a, T> {
     }
 }
 
-impl<'a, T> Iterator for IterMut<'a, T> {
+impl<T> Iterator for IterMut<'_, T> {
     #[predicate(prophetic)]
     #[open]
     fn completed(&mut self) -> bool {
@@ -593,7 +733,7 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-impl<'a, T> IntoIterator for &'a mut Option<T> {
+impl<T> IntoIterator for &'_ mut Option<T> {
     #[predicate]
     #[open]
     fn into_iter_pre(self) -> bool {

@@ -43,7 +43,7 @@ fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
     // These methods are allowed to cheat the purity restrictions because they are lang items we cannot redefine
     if let Some(name) = tcx.get_diagnostic_name(def_id) {
         match name.as_str() {
-            "box_new" | "deref_method" | "deref_mut_method" => true,
+            "box_new" => true,
             _ => {
                 is_snapshot_deref(tcx, def_id)
                     || is_ghost_deref(tcx, def_id)
