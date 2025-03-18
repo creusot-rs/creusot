@@ -1,5 +1,3 @@
-#![allow(unreachable_code)]
-
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
@@ -11,7 +9,6 @@ pub fn is_some_none() {
     assert!(!some.is_none() && none.is_none());
 }
 
-#[allow(warnings, creusot)]
 pub fn unwrap() {
     let none: Option<i32> = None;
     let some: Option<i32> = Some(1);
@@ -25,18 +22,8 @@ pub fn unwrap() {
     assert!(some.unwrap_or_default() == 1);
     assert!(none.unwrap_or_default() == 0);
 
-    assert!(
-        some.unwrap_or_else(
-            #[requires(false)]
-            || panic!()
-        ) == 1
-    );
-    assert!(
-        none.unwrap_or_else(
-            #[ensures(result == 3i32)]
-            || 3
-        ) == 3
-    );
+    assert!(some.unwrap_or_else(|| panic!()) == 1);
+    assert!(none.unwrap_or_else(|| 3) == 3);
 
     assert!(unsafe { some.unwrap_unchecked() } == 1);
 }
@@ -45,43 +32,17 @@ pub fn map() {
     let none: Option<i32> = None;
     let some: Option<i32> = Some(1);
 
-    assert!(
-        none.map(
-            #[requires(false)]
-            |_| panic!()
-        ) == None
-    );
-    assert!(
-        some.map(
-            #[ensures(result == 3i32)]
-            |_| 3
-        ) == Some(3)
-    );
-    assert!(
-        some.map(
-            #[requires(x < i32::MAX)]
-            #[ensures(result@ == x@ + 1)]
-            |x| x + 1
-        ) == Some(2)
-    );
+    assert!(none.map(|_| panic!()) == None);
+    assert!(some.map(|_| 3) == Some(3));
+    assert!(some.map(|x| x + 1) == Some(2));
 }
 
 pub fn inspect() {
     let none: Option<i32> = None;
     let some: Option<i32> = Some(1);
 
-    assert!(
-        none.inspect(
-            #[requires(false)]
-            |_| panic!()
-        ) == None
-    );
-    assert!(
-        some.inspect(
-            #[ensures(true)]
-            |_| {}
-        ) == Some(1)
-    );
+    assert!(none.inspect(|_| panic!()) == None);
+    assert!(some.inspect(|_| {}) == Some(1));
 }
 
 pub fn map_or() {
@@ -89,47 +50,13 @@ pub fn map_or() {
     let some: Option<i32> = Some(1);
 
     // map_or
-    assert!(
-        none.map_or(
-            2,
-            #[requires(false)]
-            |_| panic!()
-        ) == 2
-    );
-    assert!(
-        some.map_or(
-            -1,
-            #[ensures(result == 3i32)]
-            |_| 3
-        ) == 3
-    );
-    assert!(
-        some.map_or(
-            -1,
-            #[requires(x < i32::MAX)]
-            #[ensures(result@ == x@ + 1)]
-            |x| x + 1
-        ) == 2
-    );
+    assert!(none.map_or(2, |_| panic!()) == 2);
+    assert!(some.map_or(-1, |_| 3) == 3);
+    assert!(some.map_or(-1, |x| x + 1) == 2);
 
     // map_or_else
-    assert!(
-        none.map_or_else(
-            #[ensures(result == 2i32)]
-            || 2,
-            #[requires(false)]
-            |_| panic!()
-        ) == 2
-    );
-    assert!(
-        some.map_or_else(
-            #[requires(false)]
-            || panic!(),
-            #[requires(x < i32::MAX)]
-            #[ensures(result@ == x@ + 1)]
-            |x| x + 1
-        ) == 2
-    );
+    assert!(none.map_or_else(|| 2, |_| panic!()) == 2);
+    assert!(some.map_or_else(|| panic!(), |x| x + 1) == 2);
 }
 
 pub fn ok_or() {
@@ -141,15 +68,9 @@ pub fn ok_or() {
     let ok = some.ok_or(false);
     proof_assert!(ok == Ok(1i32));
 
-    let err = none.ok_or_else(
-        #[ensures(result)]
-        || true,
-    );
+    let err = none.ok_or_else(|| true);
     proof_assert!(err == Err(true));
-    let ok = some.ok_or_else(
-        #[requires(false)]
-        || false,
-    );
+    let ok = some.ok_or_else(|| false);
     proof_assert!(ok == Ok(1i32));
 }
 
@@ -210,17 +131,11 @@ pub fn and_then() {
     let some1: Option<i32> = Some(1);
     let some2: Option<i32> = Some(3);
 
-    assert!(
-        none.and_then(
-            #[requires(false)]
-            |_| -> Option<i32> { panic!() }
-        ) == None
-    );
-    let clos = #[ensures(if x@ == 1 {
-        exists<r:i32> result == Some(r) && r@ == x@ + 1
-    } else {
-        result == None
-    })]
+    assert!(none.and_then(|_| -> Option<i32> { panic!() }) == None);
+    let clos = #[ensures(
+        (x@ == 1 && exists<y: i32> result == Some(y) && y@ == x@ + 1)
+        || (x@ != 1 && result == None)
+    )]
     |x| {
         if x == 1 { Some(x + 1) } else { None }
     };
@@ -232,24 +147,9 @@ pub fn filter() {
     let none: Option<i32> = None;
     let some: Option<i32> = Some(1);
 
-    assert!(
-        none.filter(
-            #[requires(false)]
-            |_| panic!()
-        ) == None
-    );
-    assert!(
-        some.filter(
-            #[ensures(result == (x@ == 1))]
-            |x| *x == 1
-        ) == Some(1i32)
-    );
-    assert!(
-        some.filter(
-            #[ensures(result == (x@ == 2))]
-            |x| *x == 2
-        ) == None
-    );
+    assert!(none.filter(|_| panic!()) == None);
+    assert!(some.filter(|x| *x == 1) == Some(1i32));
+    assert!(some.filter(|x| *x == 2) == None);
 }
 
 pub fn is_some_and() {
@@ -257,42 +157,18 @@ pub fn is_some_and() {
     let some1: Option<i32> = Some(1);
     let some2: Option<i32> = Some(2);
 
-    assert!(some1.is_some_and(
-        #[ensures(result == (x == 1i32))]
-        |x| x == 1
-    ));
-    assert!(!some2.is_some_and(
-        #[ensures(result == (x == 1i32))]
-        |x| x == 1
-    ));
-    assert!(!none.is_some_and(
-        #[ensures(result)]
-        |_| true
-    ));
+    assert!(some1.is_some_and(|x| x == 1));
+    assert!(!some2.is_some_and(|x| x == 1));
+    assert!(!none.is_some_and(|_| true));
 }
 
 pub fn or_else() {
     let none: Option<i32> = None;
     let some: Option<i32> = Some(1);
 
-    assert!(
-        none.or_else(
-            #[ensures(result == Some(2i32))]
-            || Some(2)
-        ) == Some(2)
-    );
-    assert!(
-        none.or_else(
-            #[ensures(result == None)]
-            || None
-        ) == None
-    );
-    assert!(
-        some.or_else(
-            #[requires(false)]
-            || panic!()
-        ) == Some(1)
-    );
+    assert!(none.or_else(|| Some(2)) == Some(2));
+    assert!(none.or_else(|| None) == None);
+    assert!(some.or_else(|| panic!()) == Some(1));
 }
 
 pub fn insert() {
@@ -327,17 +203,11 @@ pub fn get_or_insert() {
     some = Some(1);
 
     // Test `get_or_insert_with`
-    let i1 = none.get_or_insert_with(
-        #[ensures(result == 2i32)]
-        || 2,
-    );
+    let i1 = none.get_or_insert_with(|| 2);
     assert!(*i1 == 2);
     *i1 = 3;
     assert!(none == Some(3));
-    let i2 = some.get_or_insert_with(
-        #[requires(false)]
-        || panic!(),
-    );
+    let i2 = some.get_or_insert_with(|| panic!());
     assert!(*i2 == 1);
     *i2 = 5;
     assert!(some == Some(5));
@@ -357,30 +227,15 @@ pub fn take_if() {
     let mut none: Option<i32> = None;
     let mut some: Option<i32> = Some(1);
 
-    assert!(
-        none.take_if(
-            #[requires(false)]
-            |_| panic!()
-        ) == None
-    );
-    assert!(
-        some.take_if(
-            #[ensures(result == (*x == 2i32))]
-            #[ensures(*x == ^x)]
-            |x| *x == 2
-        ) == None
-    );
+    assert!(none.take_if(|_| panic!()) == None);
+    assert!(some.take_if(|x| *x == 2) == None);
     assert!(some == Some(1));
     assert!(
-        some.take_if(
-            #[ensures(result == (*x == 1i32))]
-            #[ensures(^x == 3i32)]
-            |x| {
-                let res = *x == 1;
-                *x = 3;
-                res
-            }
-        ) == Some(3)
+        some.take_if(|x| {
+            let res = *x == 1;
+            *x = 3;
+            res
+        }) == Some(3)
     );
     assert!(some == None);
 }
@@ -446,10 +301,7 @@ pub fn resolve() {
     // is_some_and
     let mut x = 1;
     let opt = Some(&mut x);
-    assert!(opt.is_some_and(
-        #[ensures(result)]
-        |_| true
-    ));
+    assert!(opt.is_some_and(|_| true));
     assert!(x == 1);
 
     // and/or
@@ -466,10 +318,7 @@ pub fn resolve() {
     // filter
     let mut x = 1;
     let opt = Some(&mut x);
-    let _ = opt.filter(
-        #[ensures(!result)]
-        |_| false,
-    );
+    let _ = opt.filter(|_| false);
     assert!(x == 1);
     // xor
     let mut x = 1;
