@@ -97,9 +97,9 @@ struct BodyTranslator<'a, 'tcx> {
     vars: LocalDecls<'tcx>,
 }
 
-impl<'a, 'tcx> HasMoveData<'tcx> for BodyTranslator<'a, 'tcx> {
+impl<'tcx> HasMoveData<'tcx> for BodyTranslator<'_, 'tcx> {
     fn move_data(&self) -> &MoveData<'tcx> {
-        &self.move_data
+        self.move_data
     }
 }
 
@@ -128,13 +128,10 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     &body_with_facts.region_inference_context,
                     &move_data,
                 ));
-                // eprintln!("--------------- {:?}", body_id);
-                // eprintln!("{:?}", move_data);
-                // resolver.debug();
                 borrows = Some(&body_with_facts.borrow_set)
             }
             Some(promoted) => {
-                body = &body_with_facts.promoted.get(promoted).unwrap();
+                body = body_with_facts.promoted.get(promoted).unwrap();
                 move_data = MoveData::gather_moves(body, tcx, |_| true);
                 resolver = None;
                 borrows = None;
@@ -143,8 +140,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         let typing_env = ctx.typing_env(body.source.def_id());
 
-        let invariants = corrected_invariant_names_and_locations(ctx, &body);
-        let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, &body);
+        let invariants = corrected_invariant_names_and_locations(ctx, body);
+        let SpecClosures { assertions, snapshots } = SpecClosures::collect(ctx, body);
         let mut erased_locals = MixedBitSet::new_empty(body.local_decls.len());
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
@@ -155,7 +152,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             }
         });
 
-        let (vars, locals) = translate_vars(&body, &erased_locals);
+        let (vars, locals) = translate_vars(body, &erased_locals);
 
         f(BodyTranslator {
             body,
@@ -248,10 +245,10 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             self.translate_terminator(bbd.terminator(), loc);
 
             let block = fmir::Block {
-                invariants: invariants.into(),
+                invariants,
                 variant,
                 stmts: std::mem::take(&mut self.current_block.0),
-                terminator: std::mem::replace(&mut self.current_block.1, None).unwrap(),
+                terminator: self.current_block.1.take().unwrap(),
             };
 
             self.past_blocks.insert(bb, block);
@@ -521,7 +518,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 variant: None,
                 invariants: vec![],
                 stmts: std::mem::take(&mut self.current_block.0),
-                terminator: std::mem::replace(&mut self.current_block.1, None).unwrap(),
+                terminator: self.current_block.1.take().unwrap(),
             };
 
             let resolve_block_id = self.fresh_block_id();
@@ -547,13 +544,13 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let mut to_resolve_full = to_resolve.clone();
         for mp in to_resolve.iter() {
             let mut all_children = true;
-            on_all_children_bits(&self.move_data(), mp, |imp| {
+            on_all_children_bits(self.move_data(), mp, |imp| {
                 if !to_resolve.contains(imp) && !resolved.contains(imp) {
                     all_children = false
                 }
             });
             if all_children {
-                on_all_children_bits(&self.move_data(), mp, |imp| {
+                on_all_children_bits(self.move_data(), mp, |imp| {
                     if mp != imp {
                         to_resolve_full.remove(imp);
                     }
@@ -566,7 +563,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let mut to_resolve_partial = to_resolve;
         let mut v = vec![];
         for mp in to_resolve_full.iter() {
-            on_all_children_bits(&self.move_data(), mp, |imp| {
+            on_all_children_bits(self.move_data(), mp, |imp| {
                 to_resolve_partial.remove(imp);
             });
 
@@ -677,7 +674,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     fn translate_place(&self, pl: PlaceRef<'tcx>) -> fmir::Place<'tcx> {
         let projection = pl
             .projection
-            .into_iter()
+            .iter()
             .map(|p| match *p {
                 mir::ProjectionElem::Deref => mir::ProjectionElem::Deref,
                 mir::ProjectionElem::Field(ix, ty) => mir::ProjectionElem::Field(ix, ty),
@@ -810,7 +807,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
         let args = self.sig(def_id).inputs.iter().skip(1);
 
-        let arg_ty = Ty::new_tup_from_iter(self.tcx, args.clone().map(|(_, _, ty)| ty.clone()));
+        let arg_ty = Ty::new_tup_from_iter(self.tcx, args.clone().map(|(_, _, ty)| *ty));
         let arg_tuple = Term::var(Symbol::intern("args"), arg_ty);
 
         let arg_pat =
@@ -843,23 +840,20 @@ impl<'tcx> TranslationCtx<'tcx> {
                 let mut ret_params = params.clone();
                 ret_params.push(Term::var(Symbol::intern("result"), retty));
 
-                if target_kind == kind {
-                    self.inferred_postcondition_term(
-                        def_id,
-                        subst,
-                        kind,
-                        self_.clone(),
-                        ret_params,
-                        span,
-                    )
-                } else {
-                    return None;
-                }
+                self.inferred_postcondition_term(
+                    def_id,
+                    subst,
+                    kind,
+                    target_kind,
+                    self_.clone(),
+                    ret_params,
+                    span,
+                )
             } else {
                 contract.ensures_conj(self.tcx)
             };
 
-            Some(Term {
+            Term {
                 span: postcondition.span,
                 kind: TermKind::Let {
                     pattern: arg_pat.clone(),
@@ -867,7 +861,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                     body: Box::new(postcondition),
                 },
                 ty: self.types.bool,
-            })
+            }
         };
 
         precondition = Term {
@@ -912,11 +906,10 @@ impl<'tcx> TranslationCtx<'tcx> {
             let self_ = Term::var(Symbol::intern("self"), env_ty);
             let mut csubst =
                 closure_capture_subst(self, def_id, subst, false, Some(self_.clone()), self_);
-            if let Some(mut postcondition) = postcond(ClosureKind::Fn) {
-                csubst.visit_mut_term(&mut postcondition);
+            let mut postcondition = postcond(ClosureKind::Fn);
+            csubst.visit_mut_term(&mut postcondition);
 
-                contracts.postcond = Some(postcondition);
-            }
+            contracts.postcond = Some(postcondition);
         }
 
         if kind.extends(ClosureKind::FnMut) {
@@ -931,29 +924,26 @@ impl<'tcx> TranslationCtx<'tcx> {
                 result_state.clone(),
             );
 
-            if let Some(mut postcondition) = postcond(ClosureKind::FnMut) {
-                csubst.visit_mut_term(&mut postcondition);
+            let mut postcondition = postcond(ClosureKind::FnMut);
+            csubst.visit_mut_term(&mut postcondition);
 
-                let args = self.tcx.instantiate_bound_regions_with_erased(
-                    subst.as_closure().sig().inputs().map_bound(|l| l[0]),
-                );
+            let args = self.tcx.instantiate_bound_regions_with_erased(
+                subst.as_closure().sig().inputs().map_bound(|l| l[0]),
+            );
 
-                let unnest_subst =
-                    self.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty)]);
+            let unnest_subst = self.mk_args(&[GenericArg::from(args), GenericArg::from(env_ty)]);
 
-                let unnest_id = get_fn_mut_impl_unnest(self.tcx);
+            let unnest_id = get_fn_mut_impl_unnest(self.tcx);
 
-                let mut postcondition: Term<'tcx> = postcondition;
-                postcondition = postcondition.conj(Term::call_no_normalize(
-                    self.tcx,
-                    unnest_id,
-                    unnest_subst,
-                    [self_, result_state],
-                ));
+            let mut postcondition: Term<'tcx> = postcondition;
+            postcondition =
+                postcondition.conj(Term::call_no_normalize(self.tcx, unnest_id, unnest_subst, [
+                    self_,
+                    result_state,
+                ]));
 
-                postcondition = normalize(self.tcx, self.typing_env(def_id), postcondition);
-                contracts.postcond_mut = Some(postcondition);
-            }
+            postcondition = normalize(self.tcx, self.typing_env(def_id), postcondition);
+            contracts.postcond_mut = Some(postcondition);
 
             let mut unnest = closure_unnest(self.tcx, def_id, subst);
             unnest = normalize(self.tcx, self.typing_env(def_id), unnest);
@@ -966,10 +956,9 @@ impl<'tcx> TranslationCtx<'tcx> {
         let mut csubst =
             closure_capture_subst(self, def_id, subst, true, Some(self_.clone()), self_);
 
-        if let Some(mut postcondition) = postcond(ClosureKind::FnOnce) {
-            csubst.visit_mut_term(&mut postcondition);
-            contracts.postcond_once = Some(postcondition);
-        }
+        let mut postcondition = postcond(ClosureKind::FnOnce);
+        csubst.visit_mut_term(&mut postcondition);
+        contracts.postcond_once = Some(postcondition);
 
         contracts
     }
@@ -1019,6 +1008,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         item: DefId,
         args: GenericArgsRef<'tcx>,
         closure_kind: ClosureKind,
+        postcond_kind: ClosureKind,
         closure_env: Term<'tcx>,
         mut closure_args: Vec<Term<'tcx>>,
         span: Span,
@@ -1028,30 +1018,32 @@ impl<'tcx> TranslationCtx<'tcx> {
         match closure_kind {
             ClosureKind::Fn | ClosureKind::FnOnce => {
                 closure_args.insert(0, closure_env.clone());
-                let base = Term {
+                Term {
                     kind: TermKind::Postcondition { item, args, params: closure_args.into() },
                     ty: self.types.bool,
                     span,
-                };
-                base
+                }
             }
             ClosureKind::FnMut => {
                 let bor_self = Term::var(Symbol::intern("__bor_self"), env_ty);
                 closure_args.insert(0, bor_self.clone());
 
-                let base = Term {
+                let mut base = Term {
                     kind: TermKind::Postcondition { item, args, params: closure_args.into() },
                     ty: self.types.bool,
                     span,
                 };
 
-                base.conj(bor_self.clone().cur().eq(self.tcx, closure_env))
-                    .conj(
+                base = base.conj(bor_self.clone().cur().eq(self.tcx, closure_env));
+                if postcond_kind == ClosureKind::FnMut {
+                    base = base.conj(
                         bor_self
                             .fin()
                             .eq(self.tcx, Term::var(Symbol::intern("result_state"), env_ty)),
                     )
-                    .exists(self.tcx, (Symbol::intern("__bor_self"), env_ty))
+                }
+
+                base.exists(self.tcx, (Symbol::intern("__bor_self"), env_ty))
             }
         }
     }
@@ -1138,7 +1130,7 @@ pub(crate) struct ClosureSubst<'a, 'tcx> {
     pub use_of_consumed_var_error: Option<Span>,
 }
 
-impl<'a, 'tcx> ClosureSubst<'a, 'tcx> {
+impl<'tcx> ClosureSubst<'_, 'tcx> {
     // TODO: Simplify this logic.
     fn var(&mut self, x: Symbol, span: Span) -> Option<Term<'tcx>> {
         let (ck, ty, idx) = *self.map.get(&x)?;
@@ -1185,19 +1177,18 @@ impl<'a, 'tcx> ClosureSubst<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> TermVisitorMut<'tcx> for ClosureSubst<'a, 'tcx> {
+impl<'tcx> TermVisitorMut<'tcx> for ClosureSubst<'_, 'tcx> {
     fn visit_mut_term(&mut self, term: &mut Term<'tcx>) {
         match &mut term.kind {
             TermKind::Old { term: box Term { kind: TermKind::Var(x), .. }, .. } => {
-                if !self.bound.contains(&x) {
+                if !self.bound.contains(x) {
                     if let Some(v) = self.old(*x, term.span) {
                         *term = v;
                     }
-                    return;
                 }
             }
             TermKind::Var(x) => {
-                if !self.bound.contains(&x) {
+                if !self.bound.contains(x) {
                     if let Some(v) = self.var(*x, term.span) {
                         *term = v;
                     }
