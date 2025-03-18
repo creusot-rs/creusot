@@ -34,11 +34,10 @@ impl<T: ?Sized> Deref for Snapshot<T> {
     type Target = T;
 
     #[trusted]
-    #[logic]
     #[rustc_diagnostic_item = "snapshot_deref"]
     #[creusot::builtins = "identity"]
     fn deref(&self) -> &Self::Target {
-        dead
+        panic!()
     }
 }
 

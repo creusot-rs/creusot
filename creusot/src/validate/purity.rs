@@ -8,7 +8,8 @@ use crate::{
     backend::is_trusted_item,
     contracts_items::{
         get_builtin, is_ghost_deref, is_ghost_deref_mut, is_ghost_into_inner, is_ghost_new,
-        is_logic, is_no_translate, is_predicate, is_prophetic, is_snapshot_closure, is_spec,
+        is_logic, is_no_translate, is_predicate, is_prophetic, is_snapshot_closure,
+        is_snapshot_deref, is_spec,
     },
     ctx::TranslationCtx,
     error::CannotFetchThir,
@@ -135,6 +136,7 @@ impl PurityVisitor<'_, '_> {
             || is_logic(tcx, func_did)
             || get_builtin(tcx, func_did).is_some()
             || stub.is_some()
+            || is_snapshot_deref(tcx, func_did)
         {
             Purity::Logic { prophetic: false }
         } else if is_ghost_into_inner(tcx, func_did)
