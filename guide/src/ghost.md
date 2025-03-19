@@ -20,8 +20,8 @@ In `ghost!` block, you may write any kind of Rust code, with the following restr
 
 - ghost code must terminate (see [termination](termination.md) for details)
 - all functions called must have the `#[pure]` attribute
-- When reading an outer variable, the variable must be a `Ghost<T>`, or implement `Copy`
-- When writing an outer variable, the variable must be a `Ghost<T>`
+- When reading an outer variable, the variable must be of type `Ghost<T>`, or implement `Copy`
+- When writing an outer variable, the variable must be of type `Ghost<T>` or `Snapshot<T>`
 - The output of the `ghost!` block will automatically be wrapped in `Ghost::new`
 
 Those restriction exists to ensure that ghost code is **erasable**: its presence or absence does not affect the semantics of the actual running program, only the proofs.
