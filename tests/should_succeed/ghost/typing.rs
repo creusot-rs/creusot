@@ -26,6 +26,21 @@ pub fn ghost_enter_ghost() {
     proof_assert!(g_mut@ == 4);
 }
 
+pub fn snapshot_enter_ghost() {
+    let g_read = snapshot!(NonCopy(1i32));
+    let mut g_mut;
+
+    ghost! {
+        let _ = g_read;
+        g_mut = snapshot!(NonCopy(3i32));
+        proof_assert!(g_mut@ == 3);
+        g_mut = snapshot!(NonCopy(4i32));
+    };
+
+    proof_assert!(g_read@ == 1);
+    proof_assert!(g_mut@ == 4);
+}
+
 pub fn copy_enter_ghost() {
     let x = 2i32;
     let unit = ();
