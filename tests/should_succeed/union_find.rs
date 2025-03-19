@@ -185,11 +185,11 @@ mod implementation {
                     Some(other_perm) => PtrOwn::disjoint_lemma(other_perm, &perm),
                 }
                 self.map.insert_ghost(element.addr(), perm);
+                self.domain = snapshot!(self.domain.insert(element));
+                self.values = snapshot!(self.values.set(element, *value_snap));
+                self.distance = snapshot!(self.distance.set(element, 0));
+                self.root_of = snapshot!(self.root_of.set(element, element));
             };
-            self.domain = snapshot!(self.domain.insert(element));
-            self.values = snapshot!(self.values.set(element, *value_snap));
-            self.distance = snapshot!(self.distance.set(element, 0));
-            self.root_of = snapshot!(self.root_of.set(element, element));
             element
         }
 

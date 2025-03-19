@@ -7,7 +7,7 @@ use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_span::Span;
 use std::collections::HashSet;
 
-use crate::contracts_items::is_ghost_ty;
+use crate::contracts_items::{is_ghost_ty, is_snap_ty};
 
 pub struct GhostValidate {}
 
@@ -131,6 +131,7 @@ impl<'tcx> GhostValidatePlaces<'tcx> {
         match ty.kind() {
             rustc_type_ir::TyKind::Adt(containing_type, _) => {
                 is_ghost_ty(self.tcx, containing_type.did())
+                    || is_snap_ty(self.tcx, containing_type.did())
             }
             _ => false,
         }
