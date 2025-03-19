@@ -132,7 +132,7 @@ fn install_why3(cfg: &CfgPaths) -> anyhow::Result<()> {
         // Upgrade existing switch
         fs::copy(PathBuf::from("creusot-deps.opam"), switch_dir.join("creusot-deps.opam"))?;
         let mut cmd = Command::new("opam");
-        cmd.args(["install", "creusot-deps", "-y", "--switch"]).arg(switch_dir);
+        cmd.args(["install", "-y", "--switch"]).arg(&switch_dir).arg(switch_dir);
         if !cmd.status()?.success() {
             bail!("Failed to upgrade why3 and why3find")
         }
