@@ -37,9 +37,9 @@ use rustc_middle::ty::{
     Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypingEnv,
     UnevaluatedConst,
 };
-use rustc_span::{DUMMY_SP, Span, Symbol};
+use rustc_span::{Ident as RustIdent, Span, DUMMY_SP};
 use rustc_type_ir::{ConstKind, EarlyBinder};
-use why3::declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use};
+use why3::{declaration::{Attribute, Axiom, Decl, DeclKind, LogicDecl, Signature, TyDecl, Use}, Ident};
 
 /// Weak dependencies are allowed to form cycles in the graph, but strong ones cannot,
 /// weak dependencies are used to perform an initial stratification of the dependency graph.
@@ -166,14 +166,14 @@ impl DepElab for LogicElab {
 
         if get_builtin(ctx.tcx, def_id).is_some() {
             match elab.namer.dependency(dep) {
-                Kind::Named(_) => return vec![],
-                Kind::UsedBuiltin(qname) => {
+                Kind::UsedBuiltin(qname) if !qname.module.is_empty() => {
                     return vec![Decl::UseDecls(Box::new([Use {
                         name: qname.module.clone(),
                         as_: None,
                         export: false,
                     }]))];
                 }
+                Kind::UsedBuiltin(_) | Kind::Named(_) => return vec![],
                 Kind::Unnamed => unreachable!(),
             }
         }
@@ -238,13 +238,13 @@ impl DepElab for TyElab {
         let mut names = elab.namer(dep);
         match ty.kind() {
             TyKind::Param(_) => vec![Decl::TyDecl(TyDecl::Opaque {
-                ty_name: names.ty(ty).as_ident(),
+                ty_name: Ident::bound(names.ty(ty).name),
                 ty_params: Box::new([]),
             })],
             TyKind::Alias(AliasTyKind::Opaque | AliasTyKind::Projection, _) => {
                 let (def_id, subst) = dep.did().unwrap();
                 vec![Decl::TyDecl(TyDecl::Opaque {
-                    ty_name: names.def_ty(def_id, subst).as_ident(),
+                    ty_name: Ident::bound(names.def_ty(def_id, subst).name),
                     ty_params: Box::new([]),
                 })]
             }
@@ -254,11 +254,15 @@ impl DepElab for TyElab {
                     translate_ty(ctx, &mut names, DUMMY_SP, ty);
                 }
                 if let Kind::UsedBuiltin(qname) = names.dependency(dep) {
-                    vec![Decl::UseDecls(Box::new([Use {
-                        as_: None,
-                        name: qname.module.clone(),
-                        export: false,
-                    }]))]
+                    if qname.module.is_empty() {
+                        vec![]
+                    } else {
+                        vec![Decl::UseDecls(Box::new([Use {
+                            as_: None,
+                            name: qname.module.clone(),
+                            export: false,
+                        }]))]
+                    }
                 } else {
                     vec![]
                 }
@@ -446,7 +450,7 @@ fn resolve_term<'tcx>(
     let mut pre_sig = EarlyBinder::bind(sig).instantiate(ctx.tcx, subst);
     pre_sig = pre_sig.normalize(ctx.tcx, typing_env);
 
-    let arg = Term::var(pre_sig.inputs[0].0, pre_sig.inputs[0].2);
+    let arg = Term::var(pre_sig.inputs[0].0, pre_sig.inputs[0].1);
 
     if let &TyKind::Closure(def_id, subst) = subst[0].as_type().unwrap().kind() {
         Some(closure_resolve(ctx, def_id, subst))
@@ -475,14 +479,14 @@ fn fn_once_postcond_term<'tcx>(
 ) -> Option<Term<'tcx>> {
     let tcx = ctx.tcx;
     let ty_self = subst.type_at(1);
-    let self_ = Term::var(Symbol::intern("self"), ty_self);
-    let args = Term::var(Symbol::intern("args"), subst.type_at(0));
+    let self_ = Term::var(RustIdent::from_str("self"), ty_self);
+    let args = Term::var(RustIdent::from_str("args"), subst.type_at(0));
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.sig(get_fn_once_impl_postcond(tcx)).inputs[2].2),
+        EarlyBinder::bind(ctx.sig(get_fn_once_impl_postcond(tcx)).inputs[2].1),
     );
-    let res = Term::var(Symbol::intern("result"), ty_res);
+    let res = Term::var(RustIdent::from_str("result"), ty_res);
     match ty_self.kind() {
         TyKind::Closure(did, _) => ctx.closure_contract(*did).postcond_once.clone(),
         TyKind::Ref(_, cl, Mutability::Mut) => {
@@ -517,15 +521,15 @@ fn fn_mut_postcond_term<'tcx>(
 ) -> Option<Term<'tcx>> {
     let tcx = ctx.tcx;
     let ty_self = subst.type_at(1);
-    let self_ = Term::var(Symbol::intern("self"), ty_self);
-    let args = Term::var(Symbol::intern("args"), subst.type_at(0));
-    let result_state = Term::var(Symbol::intern("result_state"), ty_self);
+    let self_ = Term::var(RustIdent::from_str("self"), ty_self);
+    let args = Term::var(RustIdent::from_str("args"), subst.type_at(0));
+    let result_state = Term::var(RustIdent::from_str("result_state"), ty_self);
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.sig(get_fn_mut_impl_postcond(tcx)).inputs[3].2),
+        EarlyBinder::bind(ctx.sig(get_fn_mut_impl_postcond(tcx)).inputs[3].1),
     );
-    let res = Term::var(Symbol::intern("result"), ty_res);
+    let res = Term::var(RustIdent::from_str("result"), ty_res);
     match ty_self.kind() {
         TyKind::Closure(did, _) => ctx.closure_contract(*did).postcond_mut.clone(),
         TyKind::Ref(_, cl, Mutability::Mut) => {
@@ -566,14 +570,14 @@ fn fn_postcond_term<'tcx>(
 ) -> Option<Term<'tcx>> {
     let tcx = ctx.tcx;
     let ty_self = subst.type_at(1);
-    let self_ = Term::var(Symbol::intern("self"), ty_self);
-    let args = Term::var(Symbol::intern("args"), subst.type_at(0));
+    let self_ = Term::var(RustIdent::from_str("self"), ty_self);
+    let args = Term::var(RustIdent::from_str("args"), subst.type_at(0));
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.sig(get_fn_impl_postcond(tcx)).inputs[2].2),
+        EarlyBinder::bind(ctx.sig(get_fn_impl_postcond(tcx)).inputs[2].1),
     );
-    let res = Term::var(Symbol::intern("result"), ty_res);
+    let res = Term::var(RustIdent::from_str("result"), ty_res);
     match ty_self.kind() {
         TyKind::Closure(did, _) => ctx.closure_contract(*did).postcond.clone(),
         TyKind::Ref(_, cl, Mutability::Not) => {
