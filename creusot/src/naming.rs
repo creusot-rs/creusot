@@ -51,19 +51,6 @@ pub(crate) fn item_symb(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Symbol {
     }
 }
 
-pub(crate) fn ident_of(sym: Symbol) -> Ident {
-    let mut id = sym.to_string();
-
-    id[..1].make_ascii_lowercase();
-
-    if sym.as_str() == id {
-        Ident::build(&id)
-    } else {
-        id += &"'";
-        Ident::build(&id)
-    }
-}
-
 // Translate a name to be a valid fragment of a Why3 identifier
 // Escape initial and final underscores, double underscores, non-ascii characters,
 // and "qy" sequences (because "qy" is the escape sequence).
@@ -131,7 +118,7 @@ impl ModulePath {
             path += "__";
         }
         path += self.basename.as_str();
-        Ident::from_string(path)
+        Ident::bound(path)
     }
 
     // `prefix/krate/modl/M_f.coma`
