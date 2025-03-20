@@ -157,7 +157,7 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
     }
 
     let adt = ctx.tcx.adt_def(did);
-    let ty_name = names.def_ty(did, subst).as_ident();
+    let ty_name = Ident::bound(names.def_ty(did, subst).name);
 
     let sumrecord = if adt.is_enum() {
         SumRecord::Sum(
@@ -255,18 +255,18 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
             [Trigger::single(cons_test.clone().ascribe(ty.clone()))],
             cons_test.neq(Exp::Var(input_ident)),
         );
-        Some(Defn::simple("bad", Expr::assert(negative_assertion, fail)))
+        Some(Defn::simple(bad_ident, Expr::assert(negative_assertion, fail)))
     } else {
         None
     };
 
-    let ret_cont = Param::Cont("ret".into(), Box::new([]), field_args);
+    let ret_cont = Param::Cont(ret_ident, Box::new([]), field_args);
 
-    let input = Param::Term("input".into(), ty);
+    let input = Param::Term(input_ident, ty);
 
     let branches = once(good_branch).chain(bad_branch).collect();
     Decl::Coma(Defn {
-        name: names.eliminator(variant_id, subst).as_ident(),
+        name: Ident::bound(names.eliminator(variant_id, subst).name),
         params: Box::new([input, ret_cont]),
         body: Expr::Defn(Box::new(Expr::Any), false, branches),
         attrs: vec![],
