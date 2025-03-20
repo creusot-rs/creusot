@@ -279,14 +279,6 @@ impl<'a, 'tcx, N: Namer<'tcx>> LoweringState<'a, 'tcx, N> {
     fn assignment(&self, lhs: &Place<'tcx>, rhs: Term, istmts: &mut Vec<IntermediateStmt>) {
         create_assign_inner(self, lhs, rhs, istmts)
     }
-
-    pub(super) fn fresh_sym_from(&self, base: impl AsRef<str>) -> Symbol {
-        self.name_supply.borrow_mut().freshen(Symbol::intern(base.as_ref()))
-    }
-
-    pub(super) fn fresh_from(&self, base: impl AsRef<str>) -> Ident {
-        self.fresh_sym_from(base).to_string().into()
-    }
 }
 
 impl<'tcx> Operand<'tcx> {
