@@ -13,7 +13,6 @@ use crate::{
         ty::translate_ty,
     },
     contracts_items::{should_replace_trigger, why3_attrs},
-    naming::ident_of,
     specification::PreSignature,
 };
 
@@ -31,7 +30,7 @@ pub(crate) fn lower_sig<'tcx, N: Namer<'tcx>>(
     let args: Box<[Binder]> = pre_sig
         .inputs
         .iter()
-        .map(|(id, span, ty)| Binder::typed(ident_of(*id), translate_ty(ctx, names, *span, *ty)))
+        .map(|(id, ty)| Binder::typed(ctx.rename(*id), translate_ty(ctx, names, id.span, *ty)))
         .collect();
 
     let mut attrs = why3_attrs(ctx.tcx, def_id);
