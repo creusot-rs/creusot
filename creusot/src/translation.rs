@@ -28,9 +28,7 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::DUMMY_SP;
 use std::{fs::File, io::Write, path::PathBuf, time::Instant};
 use why3::{
-    Ident,
-    declaration::{Attribute, Decl, Module},
-    printer::{self, Print, pretty_blocks},
+    declaration::{Attribute, Decl, Module}, printer::{self, pretty_blocks, Print}, IdentString
 };
 
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn std::error::Error>> {
@@ -158,7 +156,7 @@ pub(crate) fn after_analysis(ctx: TranslationCtx) -> Result<(), Box<dyn std::err
 }
 
 pub enum OutputHandle {
-    Directory(PathBuf, Vec<Ident>), // One file per Coma module, second component is a prefix for all files
+    Directory(PathBuf, Vec<IdentString>), // One file per Coma module, second component is a prefix for all files
     File(Box<dyn Write>),           // Monolithic output
 }
 
@@ -224,7 +222,7 @@ fn remove_coma_files(dir: &PathBuf) -> std::io::Result<()> {
 
 fn print_crate<I: Iterator<Item = FileModule>>(
     output_target: Output,
-    prefix: Vec<Ident>,
+    prefix: Vec<IdentString>,
     modules: I,
 ) -> std::io::Result<Option<PathBuf>> {
     let (root, mut output) = match output_target {
