@@ -95,6 +95,10 @@ impl Ident {
             id: FRESH_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
         }
     }
+
+    pub fn unique_str(&self) -> String {
+        format!("{}_{}", self.name.as_str(), self.id)
+    }
 }
 
 impl Display for Ident {
