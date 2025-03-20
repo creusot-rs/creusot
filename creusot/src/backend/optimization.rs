@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use rustc_middle::mir::{self};
-use rustc_span::Symbol;
+use rustc_span::Ident;
 use std::collections::HashSet;
 
 use crate::translation::{
@@ -15,7 +15,7 @@ pub use invariants::*;
 
 pub(crate) struct LocalUsage<'a, 'tcx> {
     locals: &'a LocalDecls<'tcx>,
-    pub(crate) usages: HashMap<Symbol, Usage>,
+    pub(crate) usages: HashMap<Ident, Usage>,
 }
 
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
@@ -53,7 +53,7 @@ pub(crate) struct Usage {
     is_move_chain: bool,
 }
 
-pub(crate) fn gather_usage(b: &Body) -> HashMap<Symbol, Usage> {
+pub(crate) fn gather_usage(b: &Body) -> HashMap<Ident, Usage> {
     let mut usage = LocalUsage { locals: &b.locals, usages: HashMap::new() };
 
     usage.visit_body(b);
@@ -76,8 +76,8 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
         match t {
             Terminator::Switch(e, _) => self.visit_operand(e),
             Terminator::Return => {
-                self.read(Symbol::intern("_0"), true);
-                self.read(Symbol::intern("_0"), true);
+                self.read(Ident::from_str("_0"), true);
+                self.read(Ident::from_str("_0"), true);
             }
             _ => {}
         }
@@ -168,19 +168,19 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
         })
     }
 
-    fn move_chain(&mut self, local: Symbol) {
+    fn move_chain(&mut self, local: Ident) {
         if let Some(usage) = self.get(local) {
             usage.is_move_chain = true;
         }
     }
 
-    fn read(&mut self, local: Symbol, whole: bool) {
+    fn read(&mut self, local: Ident, whole: bool) {
         if let Some(usage) = self.get(local) {
             usage.read.inc(if whole { Whole::Whole } else { Whole::Part })
         };
     }
 
-    fn get(&mut self, local: Symbol) -> Option<&mut Usage> {
+    fn get(&mut self, local: Ident) -> Option<&mut Usage> {
         if !self.locals.contains_key(&local) {
             return None;
         }
@@ -192,13 +192,13 @@ impl<'a, 'tcx> LocalUsage<'a, 'tcx> {
             }),
         )
     }
-    fn write(&mut self, local: Symbol, whole: bool) {
+    fn write(&mut self, local: Ident, whole: bool) {
         if let Some(usage) = self.get(local) {
             usage.write.inc(if whole { Whole::Whole } else { Whole::Part })
         };
     }
 
-    fn pure(&mut self, local: Symbol) {
+    fn pure(&mut self, local: Ident) {
         if let Some(usage) = self.get(local) {
             usage.used_in_pure_ctx = true
         };
@@ -219,12 +219,12 @@ impl<'a, 'tcx> TermVisitor<'tcx> for LocalUsage<'a, 'tcx> {
 
 struct SimplePropagator<'tcx> {
     /// Tracks how many reads and writes each variable has
-    usage: HashMap<Symbol, Usage>,
-    prop: HashMap<Symbol, Operand<'tcx>>,
-    dead: HashSet<Symbol>,
+    usage: HashMap<Ident, Usage>,
+    prop: HashMap<Ident, Operand<'tcx>>,
+    dead: HashSet<Ident>,
 }
 
-pub(crate) fn simplify_fmir<'tcx>(usage: HashMap<Symbol, Usage>, body: &mut Body) {
+pub(crate) fn simplify_fmir<'tcx>(usage: HashMap<Ident, Usage>, body: &mut Body) {
     SimplePropagator { usage, prop: HashMap::new(), dead: HashSet::new() }.visit_body(body);
 }
 impl<'tcx> SimplePropagator<'tcx> {
@@ -338,7 +338,7 @@ impl<'tcx> SimplePropagator<'tcx> {
         //   })
     }
 
-    fn should_propagate(&self, l: Symbol) -> bool {
+    fn should_propagate(&self, l: Ident) -> bool {
         self.usage
             .get(&l)
             .map(|u| {
@@ -350,7 +350,7 @@ impl<'tcx> SimplePropagator<'tcx> {
             .unwrap_or(false)
     }
 
-    fn should_erase(&self, l: Symbol) -> bool {
+    fn should_erase(&self, l: Ident) -> bool {
         self.usage
             .get(&l)
             .map(|u| {
