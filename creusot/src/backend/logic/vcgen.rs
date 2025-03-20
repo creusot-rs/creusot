@@ -14,7 +14,6 @@ use crate::{
     },
     contracts_items::get_builtin,
     ctx::PreMod,
-    naming::ident_of,
     pearlite::{Literal, Pattern, PatternKind, Term, TermVisitor, super_visit_term},
     util::erased_identity_for_item,
 };
@@ -232,7 +231,8 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         match &t.kind {
             // VC(v, Q) = Q(v)
             TermKind::Var(v) => {
-                let exp = self.subst.borrow().get(&id).unwrap_or(Exp::Var(id));
+                let v = self.ctx.rename(*v);
+                let exp = self.subst.borrow().get(&v).unwrap_or(Exp::Var(v));
                 k(exp)
             }
             // VC(l, Q) = Q(l)
@@ -316,10 +316,10 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     .inputs
                     .iter()
                     .zip(&args)
-                    .map(|(nm, res)| (ident_of(nm.0), res.clone()))
+                    .map(|((nm, _), res)| (self.ctx.rename(*nm), res.clone()))
                     .collect();
                 let variant = pre_sig.contract.variant.clone();
-                let mut sig = lower_sig(self.ctx, self.names, "".into(), pre_sig, *id);
+                let mut sig = lower_sig(self.ctx, self.names, Ident::fresh(""), pre_sig, *id);
 
                 let variant = if *id == self.self_id {
                     let subst = self.ctx.normalize_erasing_regions(self.typing_env, *subst);
@@ -341,7 +341,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
 
                 let fun = Exp::qvar(self.names.item(*id, subst));
                 let call = fun.app(args);
-                sig.contract.subst(&[("result".into(), call.clone())].into_iter().collect());
+                sig.contract.subst(&[(Ident::bound("result"), call.clone())].into_iter().collect());
 
                 let post = sig
                     .contract
@@ -363,10 +363,10 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_wp(rhs, k)?))
                 }),
                 BinOp::Div => self.build_wp(lhs, &|lhs| {
-                    self.build_wp(rhs, &|rhs| k(Exp::Var("div").app([lhs.clone(), rhs])))
+                    self.build_wp(rhs, &|rhs| k(Exp::QVar("div".into()).app([lhs.clone(), rhs])))
                 }),
                 BinOp::Rem => self.build_wp(lhs, &|lhs| {
-                    self.build_wp(rhs, &|rhs| k(Exp::Var("mod").app([lhs.clone(), rhs])))
+                    self.build_wp(rhs, &|rhs| k(Exp::QVar("mod".into()).app([lhs.clone(), rhs])))
                 }),
                 _ => self.build_wp(lhs, &|lhs| {
                     self.build_wp(rhs, &|rhs| {
@@ -390,7 +390,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let forall_pre = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
 
                 let forall_pre = Exp::forall(
-                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.ty(t))),
+                    binder.iter().map(|(s, t)| (self.ctx.rename(*s), self.ty(*t))),
                     forall_pre,
                 );
                 let forall_pure = self.lower_pure(t);
@@ -401,7 +401,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let exists_pre = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
 
                 let exists_pre = Exp::forall(
-                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.ty(t))),
+                    binder.iter().map(|(s, t)| (self.ctx.rename(*s), self.ty(*t))),
                     exists_pre,
                 );
                 let exists_pure = self.lower_pure(t);
@@ -418,7 +418,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                         fields: flds
                             .into_iter()
                             .enumerate()
-                            .map(|(idx, fld)| (self.names.tuple_field(args, idx.into()), fld))
+                            .map(|(idx, fld)| (self.names.tuple_field(args, idx.into()).name, fld))
                             .collect(),
                     }),
                 })
@@ -486,7 +486,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                self.build_wp(lhs, &|lhs| k(lhs.field(field.clone())))
+                self.build_wp(lhs, &|lhs| k(lhs.field(field.name)))
             }
             TermKind::Old { .. } => Err(VCError::OldInLemma(t.span)),
             TermKind::Closure { .. } => Err(VCError::UnimplementedClosure(t.span)),
@@ -533,7 +533,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 } else {
                     let flds: Box<[_]> = flds
                         .enumerate()
-                        .map(|(i, f)| (self.names.field(var_did, subst, i.into()), f))
+                        .map(|(i, f)| (Ident::bound(self.names.field(var_did, subst, i.into()).name), f))
                         .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                         .collect();
                     if flds.len() == 0 { WPattern::Wildcard } else { WPattern::RecP(flds) }
@@ -541,9 +541,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             }
             PatternKind::Wildcard => WPattern::Wildcard,
             PatternKind::Binder(name) => {
-                let name_id = name.as_str().into();
-                let new = self.uniq_occ(&name_id);
-                bounds.insert(name_id, Exp::Var(new.clone()));
+                let name = self.ctx.rename(*name);
+                let new = name.refresh();
+                bounds.insert(name, Exp::Var(new.clone()));
                 WPattern::VarP(new)
             }
             PatternKind::Bool(true) => WPattern::mk_true(),
@@ -560,7 +560,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     .enumerate()
                     .map(|(idx, pat)| {
                         (
-                            self.names.tuple_field(tys, idx.into()),
+                            Ident::bound(self.names.tuple_field(tys, idx.into()).name),
                             self.build_pattern_inner(bounds, pat),
                         )
                     })
@@ -576,18 +576,13 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     }
                     TyKind::Ref(_, _, Mutability::Not) => self.build_pattern_inner(bounds, pointee),
                     TyKind::Ref(_, _, Mutability::Mut) => WPattern::RecP(Box::new([(
-                        "current".into(),
+                        Ident::bound("current"),
                         self.build_pattern_inner(bounds, pointee),
                     )])),
                     _ => unreachable!(),
                 }
             }
         }
-    }
-
-    fn uniq_occ(&self, id: &Ident) -> Ident {
-        let occ = self.subst.borrow().occ(id);
-        if occ == 0 { id.clone() } else { Ident::from_string(format!("{}_{occ}", &**id)) }
     }
 
     fn build_wp_slice(

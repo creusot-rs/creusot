@@ -513,7 +513,7 @@ impl Exp {
     /// Builds a quantifier
     ///
     /// Simplfies ∀ x, True into True
-    pub fn forall(bound: Box<[(Ident, Type)]>, body: Exp) -> Self {
+    pub fn forall(bound: impl IntoIterator<Item = (Ident, Type)>, body: Exp) -> Self {
         Exp::forall_trig(bound, [], body)
     }
 
@@ -526,7 +526,7 @@ impl Exp {
         if body.is_false() || bound.peek().is_none() { body } else { Exp::Exists(bound.collect(), trigger.into_iter().collect(), Box::new(body)) }
     }
 
-    pub fn exists(bound: Box<[(Ident, Type)]>, body: Exp) -> Self {
+    pub fn exists(bound: impl IntoIterator<Item = (Ident, Type)>, body: Exp) -> Self {
         Exp::exists_trig(bound, [], body)
     }
 
