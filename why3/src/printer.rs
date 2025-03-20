@@ -112,7 +112,9 @@ impl Print for Decl {
             Decl::PredDecl(p) => p.pretty(alloc),
             Decl::TyDecl(t) => t.pretty(alloc),
             Decl::LogicDecl(v) => v.pretty(alloc),
-            Decl::UseDecl(u) => u.pretty(alloc),
+            Decl::UseDecls(uses) => {
+                alloc.intersperse(uses.iter().map(|u| u.pretty(alloc)), alloc.hardline())
+            }
             Decl::Axiom(a) => a.pretty(alloc),
             Decl::Goal(g) => g.pretty(alloc),
             Decl::ConstantDecl(c) => c.pretty(alloc),
@@ -501,7 +503,7 @@ impl Print for Exp {
             }
 
             Exp::Attr(attr, e) => attr.pretty(alloc).append(alloc.space()).append(e.pretty(alloc)),
-            Exp::Abs(binders, body) => alloc
+            Exp::Lam(binders, body) => alloc
                 .text("fun ")
                 .append(alloc.intersperse(binders.iter().map(|b| b.pretty(alloc)), alloc.space()))
                 .append(" -> ")

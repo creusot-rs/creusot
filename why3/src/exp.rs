@@ -138,8 +138,7 @@ pub enum Exp {
     UnaryOp(UnOp, Box<Exp>),
     Call(Box<Exp>, Box<[Exp]>),
     Attr(Attribute, Box<Exp>),
-    /// Lambda abstraction
-    Abs(Box<[Binder]>, Box<Exp>),
+    Lam(Box<[Binder]>, Box<Exp>),
 
     Match(Box<Exp>, Box<[(Pattern, Exp)]>),
     IfThenElse(Box<Exp>, Box<Exp>, Box<Exp>),
@@ -186,7 +185,7 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
             f.visit_mut(func);
             args.iter_mut().for_each(|e| f.visit_mut(e))
         }
-        Exp::Abs(_, e) => f.visit_mut(e),
+        Exp::Lam(_, e) => f.visit_mut(e),
         Exp::Match(scrut, arms) => {
             f.visit_mut(scrut);
             arms.iter_mut().for_each(|(_, e)| f.visit_mut(e))
@@ -227,7 +226,7 @@ impl ExpMutVisitor for &'_ HashMap<Ident, Exp> {
                     *exp = e.clone()
                 }
             }
-            Exp::Abs(binders, body) => {
+            Exp::Lam(binders, body) => {
                 let mut subst = self.clone();
 
                 for binder in binders {
@@ -350,7 +349,7 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
             f.visit(func);
             args.iter().for_each(|e| f.visit(e))
         }
-        Exp::Abs(_, e) => f.visit(e),
+        Exp::Lam(_, e) => f.visit(e),
         Exp::Match(scrut, arms) => {
             f.visit(scrut);
             arms.iter().for_each(|(_, e)| f.visit(e))
@@ -419,8 +418,12 @@ impl Exp {
         if args.is_empty() { self } else { Exp::Call(Box::new(self), args) }
     }
 
-    pub fn field(self, field: &str) -> Self {
-        Self::RecField { record: Box::new(self), label: field.into() }
+    pub fn field(self, label: IdentString) -> Self {
+        Self::RecField { record: Box::new(self), label }
+    }
+
+    pub fn match_(self, branches: impl IntoIterator<Item = (Pattern, Exp)>) -> Self {
+        Exp::Match(Box::new(self), branches.into_iter().collect())
     }
 
     pub fn lazy_and(self, other: Self) -> Self {
@@ -500,7 +503,7 @@ impl Exp {
     }
 
     pub fn exists_trig(bound: Box<[(Ident, Type)]>, trigger: Box<[Trigger]>, body: Exp) -> Self {
-        Exp::Exists(bound, trigger, Box::new(body))
+        if body.is_false() || bound.is_empty () { body } else { Exp::Exists(bound, trigger, Box::new(body)) }
     }
 
     pub fn exists(bound: Box<[(Ident, Type)]>, body: Exp) -> Self {
@@ -723,7 +726,7 @@ impl Exp {
 
         match self {
             Exp::Let { .. } => IfLet,
-            Exp::Abs(_, _) => Abs,
+            Exp::Lam(_, _) => Abs,
             Exp::Var(_) => Atom,
             Exp::QVar(_) => Atom,
             Exp::RecUp { .. } => App,
@@ -901,7 +904,7 @@ impl ExpMutVisitor for Environment {
                     *exp = e.clone()
                 }
             }
-            Exp::Abs(binders, body) => {
+            Exp::Lam(binders, body) => {
                 let mut bound_here = HashMap::default();
 
                 for binder in binders {

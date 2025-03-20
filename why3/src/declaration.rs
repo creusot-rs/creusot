@@ -40,7 +40,7 @@ pub enum Decl {
     LogicDefn(LogicDefn),
     TyDecl(TyDecl),
     PredDecl(Predicate),
-    UseDecl(Use),
+    UseDecls(Box<[Use]>),
     Axiom(Axiom),
     Goal(Goal),
     ConstantDecl(Constant),
