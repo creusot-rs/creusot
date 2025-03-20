@@ -767,7 +767,7 @@ impl<'tcx> Branches<'tcx> {
 }
 
 fn mk_goto(bb: BasicBlock) -> Expr {
-    Expr::Variable(&format!("bb{}", bb.as_u32()).into())
+    Expr::Variable(Ident::bound(&format!("bb{}", bb.as_u32())))
 }
 
 fn mk_adt_switch<'tcx, N: Namer<'tcx>>(
