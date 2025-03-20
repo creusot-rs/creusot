@@ -64,7 +64,7 @@ pub(super) fn wp<'tcx>(
     post: Exp,
 ) -> Result<Exp, VCError<'tcx>> {
     let structurally_recursive = is_structurally_recursive(ctx, self_id, &t);
-    let bounds = args_names.iter().map(|arg| (arg.clone(), Exp::var(arg.clone()))).collect();
+    let bounds = args_names.iter().map(|arg| (arg.clone(), Exp::Var(arg.clone()))).collect();
     let vcgen = VCGen {
         typing_env: ctx.typing_env(self_id),
         ctx,
@@ -234,7 +234,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             // VC(v, Q) = Q(v)
             TermKind::Var(v) => {
                 let id = ident_of(*v);
-                let exp = self.subst.borrow().get(&id).unwrap_or(Exp::var(id));
+                let exp = self.subst.borrow().get(&id).unwrap_or(Exp::Var(id));
                 k(exp)
             }
             // VC(l, Q) = Q(l)
@@ -365,10 +365,10 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_wp(rhs, k)?))
                 }),
                 BinOp::Div => self.build_wp(lhs, &|lhs| {
-                    self.build_wp(rhs, &|rhs| k(Exp::var("div").app([lhs.clone(), rhs])))
+                    self.build_wp(rhs, &|rhs| k(Exp::Var("div").app([lhs.clone(), rhs])))
                 }),
                 BinOp::Rem => self.build_wp(lhs, &|lhs| {
-                    self.build_wp(rhs, &|rhs| k(Exp::var("mod").app([lhs.clone(), rhs])))
+                    self.build_wp(rhs, &|rhs| k(Exp::Var("mod").app([lhs.clone(), rhs])))
                 }),
                 _ => self.build_wp(lhs, &|lhs| {
                     self.build_wp(rhs, &|rhs| {
@@ -545,7 +545,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
             PatternKind::Binder(name) => {
                 let name_id = name.as_str().into();
                 let new = self.uniq_occ(&name_id);
-                bounds.insert(name_id, Exp::var(new.clone()));
+                bounds.insert(name_id, Exp::Var(new.clone()));
                 WPattern::VarP(new)
             }
             PatternKind::Bool(true) => WPattern::mk_true(),
