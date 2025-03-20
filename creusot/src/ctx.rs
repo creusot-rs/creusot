@@ -42,8 +42,9 @@ use rustc_middle::{
         TypingEnv, TypingMode, Visibility,
     },
 };
-use rustc_span::{Span, Symbol};
+use rustc_span::{Ident as RustIdent, Span, Symbol};
 use rustc_trait_selection::traits::normalize_param_env_or_error;
+use why3::Ident;
 use std::{collections::HashMap, ops::Deref};
 
 pub(crate) use crate::{backend::clone_map::*, translated_item::*};
@@ -154,6 +155,7 @@ pub struct TranslationCtx<'tcx> {
     bodies: OnceMap<LocalDefId, Box<BodyWithBorrowckFacts<'tcx>>>,
     opacity: OnceMap<DefId, Box<Opacity>>,
     closure_contract: OnceMap<DefId, Box<ClosureContract<'tcx>>>,
+    renamer: HashMap<RustIdent, Ident>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -212,6 +214,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             opacity: Default::default(),
             closure_contract: Default::default(),
             params_open_inv,
+            renamer: Default::default(),
         }
     }
 
@@ -523,5 +526,12 @@ impl<'tcx> TranslationCtx<'tcx> {
             DefKind::Variant => ItemType::Variant,
             dk => ItemType::Unsupported(dk),
         }
+    }
+
+    pub(crate) fn rename(&self, ident: RustIdent) -> Ident {
+        self.renamer
+            .entry(ident)
+            .or_insert_with(|| Ident::fresh(&ident.to_string()))
+            .clone()
     }
 }
