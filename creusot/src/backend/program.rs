@@ -30,7 +30,7 @@ use rustc_middle::{
     mir::{BasicBlock, BinOp, ProjectionElem, START_BLOCK, UnOp, tcx::PlaceTy},
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt, TyKind},
 };
-use rustc_span::{DUMMY_SP, Symbol};
+use rustc_span::{DUMMY_SP, Ident as RustIdent};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{IntTy, UintTy};
 use std::{cell::RefCell, fmt::Debug, iter::once};
@@ -847,15 +847,15 @@ impl<'tcx> Block<'tcx> {
 
             let body = assemble_intermediates(
                 stmt.into_iter(),
-                Expr::Symbol(format!("s{}", ix + 1).into()),
+                Expr::Variable(Ident::bound(&format!("s{}", ix + 1))),
             );
-            statements.push(Defn::simple(format!("s{}", ix), body));
+            statements.push(Defn::simple(Ident::bound(&format!("s{}", ix)), body));
         }
 
         let body = assemble_intermediates(istmts.into_iter(), terminator);
-        statements.push(Defn::simple(format!("s{}", statements.len()), body));
+        statements.push(Defn::simple(Ident::bound(&format!("s{}", statements.len())), body));
 
-        let mut body = Expr::Symbol("s0".into());
+        let mut body = Expr::Variable(Ident::bound("s0"));
         if !self.invariants.is_empty() {
             body = body.black_box();
         }
@@ -869,7 +869,7 @@ impl<'tcx> Block<'tcx> {
 
         body = body.where_(statements.into());
 
-        Defn::simple(format!("bb{}", id.as_usize()), body)
+        Defn::simple(Ident::bound(&format!("bb{}", id.as_usize())), body)
     }
 }
 
@@ -880,7 +880,7 @@ where
 {
     istmts.rfold(exp, |tail, stmt| match stmt {
         IntermediateStmt::Assign(id, exp) => tail.assign(id, exp),
-        IntermediateStmt::Call(params, fun, args) => Expr::Symbol(fun)
+        IntermediateStmt::Call(params, fun, args) => Expr::Constant(fun)
             .app(args.into_iter().chain([Arg::Cont(Expr::Lambda(params, tail.boxed()))])),
         IntermediateStmt::Assume(e) => Expr::assume(e, tail),
         IntermediateStmt::Assert(e) => Expr::assert(e, tail),
@@ -888,7 +888,7 @@ where
             Expr::Any.boxed(),
             false,
             Box::new([Defn {
-                name: "any_".into(),
+                name: Ident::bound("any_"),
                 attrs: vec![],
                 params: Box::new([Param::Term(id, ty)]),
                 body: tail.black_box(),
@@ -986,7 +986,7 @@ impl<'tcx> Statement<'tcx> {
                             lower,
                             &mut istmts,
                             rhs_local_ty,
-                            Focus::new(|_| Exp::Var(ident_of(rhs.local))),
+                            Focus::new(|_| Exp::Var(lower.ctx.rename(rhs.local))),
                             Box::new(|_, x| x),
                             &rhs.projections[..deref_index],
                         );
@@ -1011,7 +1011,7 @@ impl<'tcx> Statement<'tcx> {
                                     .names
                                     .in_pre(uty_to_prelude(lower.ctx.tcx, UintTy::Usize), "t'int"),
                             )
-                            .app([Exp::Var(ident_of(*sym))])
+                            .app([Exp::Var(lower.ctx.rename(*sym))])
                         },
                     );
 
@@ -1021,7 +1021,7 @@ impl<'tcx> Statement<'tcx> {
                         &lower,
                         &mut istmts,
                         rhs_local_ty,
-                        Focus::new(|_| Exp::Var(ident_of(rhs.local))),
+                        Focus::new(|_| Exp::Var(lower.ctx.rename(rhs.local))),
                         Box::new(|_, x| x),
                         &rhs.projections,
                     );
@@ -1038,19 +1038,19 @@ impl<'tcx> Statement<'tcx> {
 
                 let args =
                     [Arg::Ty(rhs_ty_low), Arg::Term(rhs_rplace)].into_iter().chain(bor_id_arg);
-
-                let borrow_call = IntermediateStmt::call("_ret'".into(), lhs_ty_low, func, args);
+                let ret_ident = Ident::fresh("_ret");
+                let borrow_call = IntermediateStmt::call(ret_ident, lhs_ty_low, func, args);
                 istmts.push(borrow_call);
-                lower.assignment(&lhs, Exp::Var("_ret'"), &mut istmts);
+                lower.assignment(&lhs, Exp::Var(ret_ident), &mut istmts);
 
-                let reassign = Exp::Var("_ret'").field("final".into());
+                let reassign = Exp::Var(ret_ident).field("final".into());
 
                 if let Some(rhs_inv_fun) = rhs_inv_fun {
                     istmts.push(IntermediateStmt::Assume(rhs_inv_fun.app([reassign.clone()])));
                 }
 
                 let new_rhs = rhs_constr(&mut istmts, reassign);
-                istmts.push(IntermediateStmt::Assign(Ident::build(rhs.local.as_str()), new_rhs));
+                istmts.push(IntermediateStmt::Assign(lower.ctx.rename(rhs.local), new_rhs));
             }
             Statement::Assignment(lhs, e, _span) => {
                 let rhs = e.to_why(lower, lhs.ty(lower.ctx.tcx, lower.locals), &mut istmts);
@@ -1060,24 +1060,21 @@ impl<'tcx> Statement<'tcx> {
                 let (fun_qname, args) = func_call_to_why3(lower, fun_id, subst, args, &mut istmts);
                 let ty = dest.ty(lower.ctx.tcx, lower.locals);
                 let ty = lower.ty(ty);
-
-                istmts.push(IntermediateStmt::call("_ret'".into(), ty, fun_qname, args));
-                lower.assignment(&dest, Exp::Var("_ret'"), &mut istmts);
+                let ret_ident = Ident::fresh("_ret");
+                istmts.push(IntermediateStmt::call(ret_ident, ty, fun_qname, args));
+                lower.assignment(&dest, Exp::Var(ret_ident), &mut istmts);
             }
             Statement::Resolve { did, subst, pl } => {
                 let rp = Exp::qvar(lower.names.item(did, subst));
                 let loc = pl.local;
-
-                let bound = lower.fresh_sym_from("x");
-
+                let bound = RustIdent::from_str("x"); // TODO freshen
                 let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
-
                 let pat = lower_pat(lower.ctx, lower.names, &pat);
                 let exp = if let WPattern::VarP(_) = pat {
-                    rp.app([Exp::Var(ident_of(loc))])
+                    rp.app([Exp::Var(lower.ctx.rename(loc))])
                 } else {
-                    Exp::Var(ident_of(loc)).match_([
-                        (pat, rp.app([Exp::Var(bound.as_str())])),
+                    Exp::Var(lower.ctx.rename(loc)).match_([
+                        (pat, rp.app([Exp::Var(lower.ctx.rename(bound))])),
                         (WPattern::Wildcard, Exp::mk_true()),
                     ])
                 };
@@ -1095,16 +1092,14 @@ impl<'tcx> Statement<'tcx> {
             Statement::AssertTyInv { pl } => {
                 let inv_fun = Exp::qvar(lower.names.ty_inv(pl.ty(lower.ctx.tcx, lower.locals)));
                 let loc = pl.local;
-
-                let bound = lower.fresh_sym_from("x");
-
+                let bound = RustIdent::from_str("x"); // TODO freshen
                 let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
                 let pat = lower_pat(lower.ctx, lower.names, &pat);
                 let exp = if let WPattern::VarP(_) = pat {
-                    inv_fun.app([Exp::Var(ident_of(loc))])
+                    inv_fun.app([Exp::Var(lower.ctx.rename(loc))])
                 } else {
-                    Exp::Var(ident_of(loc)).match_([
-                        (pat, inv_fun.app([Exp::Var(bound.as_str())])),
+                    Exp::Var(lower.ctx.rename(loc)).match_([
+                        (pat, inv_fun.app([Exp::Var(lower.ctx.rename(bound))])),
                         (WPattern::Wildcard, Exp::mk_true()),
                     ])
                 };
@@ -1123,7 +1118,7 @@ fn pattern_of_place<'tcx>(
     tcx: TyCtxt<'tcx>,
     locals: &LocalDecls<'tcx>,
     pl: Place<'tcx>,
-    binder: Symbol,
+    binder: RustIdent,
 ) -> Pattern<'tcx> {
     let mut pat = Pattern::binder(binder, pl.ty(tcx, locals));
     for (pl, el) in pl.iter_projections().rev() {
