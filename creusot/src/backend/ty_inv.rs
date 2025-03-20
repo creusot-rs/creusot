@@ -12,7 +12,7 @@ use crate::{
     },
 };
 use rustc_middle::ty::{GenericArg, Ty, TyCtxt, TyKind, TypingEnv};
-use rustc_span::{DUMMY_SP, Symbol};
+use rustc_span::{Ident, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
 use std::collections::HashSet;
 
@@ -85,7 +85,8 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
     }
 
     pub(crate) fn elaborate_inv(&mut self, ty: Ty<'tcx>, for_deps: bool) -> Option<Term<'tcx>> {
-        let subject = Term::var(Symbol::intern("x"), ty);
+        let x_ident = Ident::from_str("x");
+        let subject = Term::var(x_ident, ty);
         let inv_id = get_inv_function(self.ctx.tcx);
         let subst = self.ctx.mk_args(&[GenericArg::from(subject.ty)]);
         let lhs = Term::call(self.ctx.tcx, self.typing_env, inv_id, subst, [subject.clone()]);
@@ -94,8 +95,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
         if is_tyinv_trivial(self.ctx.tcx, self.typing_env, ty) {
             self.rewrite = true;
             return Some(lhs.eq(self.ctx.tcx, Term::mk_true(self.ctx.tcx)).forall_trig(
-                self.ctx.tcx,
-                (Symbol::intern("x"), ty),
+                (x_ident, ty),
                 trig,
             ));
         }
@@ -137,7 +137,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
             lhs.eq(self.ctx.tcx, rhs)
         };
 
-        Some(term.forall_trig(self.ctx.tcx, (Symbol::intern("x"), ty), trig))
+        Some(term.forall_trig((x_ident, ty), trig))
     }
 
     fn structural_invariant(&mut self, term: Term<'tcx>, ty: Ty<'tcx>) -> Term<'tcx> {
@@ -161,7 +161,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                 let idsty: Vec<_> = tys
                     .iter()
                     .enumerate()
-                    .map(|(i, ty)| (Symbol::intern(&format!("x{i}")), ty))
+                    .map(|(i, ty)| (Ident::from_str(&format!("x{i}")), ty))
                     .collect();
                 let body =
                     Box::new(idsty.iter().fold(Term::mk_true(self.ctx.tcx), |acc, &(id, ty)| {
@@ -181,7 +181,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                 let idsty: Vec<_> = tys
                     .iter()
                     .enumerate()
-                    .map(|(i, ty)| (Symbol::intern(&format!("x{i}")), ty))
+                    .map(|(i, ty)| (Ident::from_str(&format!("x{i}")), ty))
                     .collect();
 
                 let body =
@@ -224,10 +224,10 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
 
                 let mut exp = Some(Term::mk_true(self.ctx.tcx));
                 let fields = var_def.fields.iter().enumerate().map(|(field_idx, field_def)| {
-                    let field_name: Symbol = if tuple_var {
-                        Symbol::intern(&format!("a_{field_idx}"))
+                    let field_name = if tuple_var {
+                        Ident::from_str(&format!("a_{field_idx}"))
                     } else {
-                        field_def.name
+                        field_def.ident(self.ctx.tcx)
                     };
 
                     let field_ty = field_def.ty(self.ctx.tcx, substs);
