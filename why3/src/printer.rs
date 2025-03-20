@@ -219,7 +219,7 @@ impl Print for Attribute {
     {
         match &self {
             Attribute::Attr(s) => alloc.text("@").append(s),
-            Attribute::NamedSpan(s) => alloc.text("%#").append(s),
+            Attribute::NamedSpan(s) => alloc.text("%#").append(s.pretty(alloc)),
             Attribute::Span(f, ls, cs, le, ce) => alloc
                 .text("#")
                 .append(alloc.text(f).double_quotes())

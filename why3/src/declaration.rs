@@ -182,7 +182,7 @@ impl Contract {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Attribute {
     Attr(String),
-    NamedSpan(String),
+    NamedSpan(Ident),
     Span(String, usize, usize, usize, usize), // file, start line, start col, end line, end col
 }
 
