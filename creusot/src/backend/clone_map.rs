@@ -9,7 +9,7 @@ use crate::{
     util::{erased_identity_for_item, path_of_span},
 };
 use elaborator::Strength;
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexSet;
 use itertools::{Either, Itertools};
 use once_map::unsync::OnceMap;
 use petgraph::prelude::DiGraphMap;
@@ -24,7 +24,7 @@ use rustc_middle::{
         self, GenericArgsRef, List, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitableExt, TypingEnv,
     },
 };
-use rustc_span::{Span, Symbol};
+use rustc_span::Span;
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use why3::{
     Ident, QName,
@@ -223,7 +223,7 @@ impl<'tcx> CloneNames<'tcx> {
             }
             Box::new(
                 key.base_ident(tcx).map_or(Kind::Unnamed, |base| {
-                    Kind::Named(self.counts.borrow_mut().freshen(base))
+                    Kind::Named(Ident::fresh(base.as_str()))
                 }),
             )
         })
@@ -269,11 +269,6 @@ pub(crate) struct Dependencies<'tcx> {
     pub(crate) self_subst: GenericArgsRef<'tcx>,
 }
 
-#[derive(Default, Clone)]
-pub(crate) struct NameSupply {
-    name_counts: IndexMap<Symbol, usize>,
-}
-
 pub(crate) struct CloneNames<'tcx> {
     tcx: TyCtxt<'tcx>,
     // To normalize during dependency stuff (deprecated)
@@ -282,9 +277,6 @@ pub(crate) struct CloneNames<'tcx> {
     span_mode: SpanMode,
     // Should we use the BW version of the machine integer prelude?
     bitwise_mode: bool,
-
-    /// Freshens a symbol by appending a number to the end
-    counts: RefCell<NameSupply>,
     /// Tracks the name given to each dependency
     names: OnceMap<Dependency<'tcx>, Box<Kind>>,
     /// Maps spans to a unique name
@@ -303,23 +295,9 @@ impl<'tcx> CloneNames<'tcx> {
             typing_env,
             span_mode,
             bitwise_mode,
-            counts: Default::default(),
             names: Default::default(),
             spans: Default::default(),
         }
-    }
-}
-
-impl NameSupply {
-    pub(crate) fn freshen(&mut self, sym: Symbol) -> Symbol {
-        let count: usize = *self.name_counts.entry(sym).and_modify(|c| *c += 1).or_insert(0);
-        // FIXME: if we don't do use the initial ident when count == 0, then the ident clashes
-        // with local variables
-        /*if count == 0 {
-            sym
-        } else {*/
-        Symbol::intern(&format!("{sym}'{count}"))
-        /*}*/
     }
 }
 
@@ -328,7 +306,7 @@ pub enum Kind {
     /// This does not corresponds to a defined symbol
     Unnamed,
     /// This symbol is locally defined
-    Named(Symbol),
+    Named(Ident),
     /// Used, UsedBuiltin: the symbols in the last argument must be acompanied by a `use` statement in Why3
     UsedBuiltin(QName),
 }

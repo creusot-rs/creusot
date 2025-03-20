@@ -1,6 +1,6 @@
 use crate::{
     backend::{
-        NameSupply, Namer, Why3Generator,
+        Namer, Why3Generator,
         clone_map::PreMod,
         dependency::Dependency,
         is_trusted_item,
@@ -33,7 +33,7 @@ use rustc_middle::{
 use rustc_span::{DUMMY_SP, Ident as RustIdent};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{IntTy, UintTy};
-use std::{cell::RefCell, fmt::Debug, iter::once};
+use std::{fmt::Debug, iter::once};
 use why3::{
     Ident, QName,
     coma::{Arg, Defn, Expr, IsRef, Param, Term, Var},
@@ -241,7 +241,7 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
     c: Component<BasicBlock>,
 ) -> Defn {
     let mut lower =
-        LoweringState { ctx, names, locals: &body.locals, name_supply: Default::default(), def_id };
+        LoweringState { ctx, names, locals: &body.locals, def_id };
     let (head, tl) = match c {
         Component::Vertex(v) => {
             let block = body.blocks.shift_remove(&v).unwrap();
@@ -272,7 +272,6 @@ pub(crate) struct LoweringState<'a, 'tcx, N: Namer<'tcx>> {
     pub(super) ctx: &'a Why3Generator<'tcx>,
     pub(super) names: &'a N,
     pub(super) locals: &'a LocalDecls<'tcx>,
-    pub(super) name_supply: RefCell<NameSupply>,
     pub(super) def_id: LocalDefId,
 }
 
