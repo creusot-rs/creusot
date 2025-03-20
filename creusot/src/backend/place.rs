@@ -31,7 +31,7 @@ pub(crate) fn create_assign_inner<'tcx, N: Namer<'tcx>>(
     istmts: &mut Vec<IntermediateStmt>,
 ) {
     let rhs = lplace_to_expr(lower, lhs, rhs, istmts);
-    istmts.push(IntermediateStmt::Assign(Ident::build(lhs.local.as_str()), rhs));
+    istmts.push(IntermediateStmt::Assign(lower.ctx.rename(lhs.local), rhs));
 }
 
 #[derive(Clone)]
@@ -59,7 +59,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
     // The term holding the currently 'focused' portion of the place
     mut focus: Focus<'a>,
     mut constructor: Constructor<'a>,
-    proj: &'a [mir::ProjectionElem<Symbol, Ty<'tcx>>],
+    proj: &'a [ProjectionElem<'tcx>],
 ) -> (PlaceTy<'tcx>, Focus<'a>, Constructor<'a>) {
     for elem in proj {
         use rustc_middle::mir::ProjectionElem::*;
@@ -88,7 +88,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                         .iter()
                         .map(|f| {
                             Param::Term(
-                                lower.fresh_from(format!("r{}", f.name)),
+                                Ident::fresh(&format!("r{}", f.name)),
                                 lower.ty(f.ty(lower.ctx.tcx, subst)),
                             )
                         })
@@ -115,11 +115,11 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     let focus1 = focus.clone();
 
                     focus = Focus::new(move |is| {
-                        focus.call(is).field(lower.names.field(def.did(), subst, ix))
+                        focus.call(is).field(lower.names.field(def.did(), subst, ix).name)
                     });
 
                     constructor = Box::new(move |is, t| {
-                        let updates = Box::new([(lower.names.field(def.did(), subst, ix), t)]);
+                        let updates = Box::new([(lower.names.field(def.did(), subst, ix).name, t)]);
                         if def.all_fields().count() == 1 {
                             constructor(is, Exp::Record { fields: updates })
                         } else {
@@ -133,11 +133,11 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     let focus1 = focus.clone();
 
                     focus = Focus::new(move |is| {
-                        focus.call(is).field(lower.names.tuple_field(args, ix))
+                        focus.call(is).field(lower.names.tuple_field(args, ix).name)
                     });
 
                     constructor = Box::new(move |is, t| {
-                        let updates = Box::new([(lower.names.tuple_field(args, ix), t)]);
+                        let updates = Box::new([(lower.names.tuple_field(args, ix).name, t)]);
                         let record = focus1.call(is).boxed();
                         constructor(is, Exp::RecUp { record, updates })
                     });
@@ -146,11 +146,11 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     let focus1 = focus.clone();
 
                     focus = Focus::new(move |is| {
-                        focus.call(is).field(lower.names.field(*id, subst, ix))
+                        focus.call(is).field(lower.names.field(*id, subst, ix).name)
                     });
 
                     constructor = Box::new(move |is, t| {
-                        let updates = Box::new([(lower.names.field(*id, subst, ix), t)]);
+                        let updates = Box::new([(lower.names.field(*id, subst, ix).name, t)]);
                         if subst.as_closure().upvar_tys().len() == 1 {
                             constructor(is, Exp::Record { fields: updates })
                         } else {
@@ -166,25 +166,24 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                 let elt_ty = lower.ty(elt_ty.ty);
                 let ty = lower.ty(place_ty.ty);
                 // TODO: Use [_] syntax
-                let ix_exp = Exp::Var(Ident::build(ix.as_str()));
+                let ix_exp = Exp::Var(lower.ctx.rename(*ix));
 
                 let focus1 = focus.clone();
                 let elt_ty1 = elt_ty.clone();
                 let ix_exp1 = ix_exp.clone();
                 focus = Focus::new(move |is| {
-                    let result = lower.fresh_from("r");
+                    let result = Ident::fresh("r");
                     let foc = focus.call(is);
                     is.push(IntermediateStmt::Call(
                         Box::new([Param::Term(result.clone(), elt_ty1.clone())]),
                         lower.names.in_pre(PreMod::Slice, "get"),
                         Box::new([Arg::Ty(elt_ty1), Arg::Term(foc), Arg::Term(ix_exp1)]),
                     ));
-
-                    Exp::qvar(result.into())
+                    Exp::Var(result)
                 });
 
                 constructor = Box::new(move |is, t| {
-                    let out = lower.fresh_from("r");
+                    let out = Ident::fresh("r");
                     let rhs = t;
                     let foc = focus1.call(is);
 
@@ -198,7 +197,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                             Arg::Term(rhs),
                         ]),
                     ));
-                    constructor(is, Exp::qvar(out.into()))
+                    constructor(is, Exp::Var(out))
                 });
             }
             Downcast(_, _) => {}
@@ -224,7 +223,7 @@ pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
         lower,
         istmts,
         place_ty,
-        Focus::new(|_| Exp::Var(ident_of(pl.local))),
+        Focus::new(|_| Exp::Var(lower.ctx.rename(pl.local))),
         Box::new(|_, _| unreachable!()),
         &pl.projections,
     );
@@ -242,7 +241,7 @@ fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
         lower,
         istmts,
         place_ty,
-        Focus::new(|_| Exp::Var(ident_of(pl.local))),
+        Focus::new(|_| Exp::Var(lower.ctx.rename(pl.local))),
         Box::new(|_, x| x),
         &pl.projections,
     );
