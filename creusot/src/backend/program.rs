@@ -85,7 +85,7 @@ pub fn val(sig: Signature) -> Decl {
     let requires = sig.contract.requires.into_iter().map(Condition::labelled_exp);
     let body = requires.rfold(Expr::Any, |acc, cond| Expr::assert(cond, acc));
 
-    let mut postcond = Expr::Symbol("return".into()).app([Arg::Term(Exp::var("result"))]);
+    let mut postcond = Expr::Symbol("return".into()).app([Arg::Term(Exp::Var("result"))]);
     postcond = postcond.black_box();
     let ensures = sig.contract.ensures.into_iter().map(Condition::unlabelled_exp);
     postcond = ensures.rfold(postcond, |acc, cond| Expr::assert(cond, acc));
@@ -143,7 +143,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
             let ty = translate_ty(ctx, names, decl.span, decl.ty);
 
             let init = if decl.arg {
-                Exp::var(Ident::build(id.as_str()))
+                Exp::Var(Ident::build(id.as_str()))
             } else {
                 Exp::qvar(names.in_pre(PreMod::Any, "any_l")).app([Exp::unit()])
             };
@@ -170,7 +170,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
     };
     let mut body = Expr::Defn(Expr::Symbol("bb0".into()).boxed(), true, blocks);
 
-    let mut postcond = Expr::Symbol("return".into()).app([Arg::Term(Exp::var("result"))]);
+    let mut postcond = Expr::Symbol("return".into()).app([Arg::Term(Exp::Var("result"))]);
 
     let inferred_closure_spec = ctx.is_closure_like(body_id.def_id())
         && !ctx.sig(body_id.def_id()).contract.has_user_contract;
@@ -306,7 +306,7 @@ impl<'tcx> Operand<'tcx> {
                     [],
                 ));
 
-                Exp::var(var)
+                Exp::Var(var)
             }
         }
     }
@@ -402,7 +402,7 @@ impl<'tcx> RValue<'tcx> {
                         fname,
                         args.map(Arg::Term),
                     ));
-                    Exp::var("_ret'")
+                    Exp::Var("_ret'")
                 }
             }
             RValue::UnaryOp(UnOp::Not, arg) => {
@@ -434,7 +434,7 @@ impl<'tcx> RValue<'tcx> {
                 let arg = Arg::Term(arg.to_why(lower, istmts));
                 istmts.push(IntermediateStmt::call(id.clone(), lower.ty(ty), neg, [arg]));
 
-                Exp::var(id)
+                Exp::Var(id)
             }
             RValue::Constructor(id, subst, args) => {
                 if lower.ctx.def_kind(id) == DefKind::Closure {
@@ -524,7 +524,7 @@ impl<'tcx> RValue<'tcx> {
                             of_fname,
                             [Arg::Term(to_exp)],
                         ));
-                        Exp::var(of_ret_id)
+                        Exp::Var(of_ret_id)
                     }
                 }
             }
@@ -536,7 +536,7 @@ impl<'tcx> RValue<'tcx> {
 
                 let len = fields.len();
 
-                let arr_var = Exp::var(id.clone());
+                let arr_var = Exp::Var(id.clone());
                 let arr_elts =
                     Exp::RecField { record: arr_var.clone().boxed(), label: "elts".into() };
 
@@ -557,7 +557,7 @@ impl<'tcx> RValue<'tcx> {
                 assumptions.reassociate();
 
                 istmts.push(IntermediateStmt::Assume(assumptions));
-                Exp::var(id)
+                Exp::Var(id)
             }
             RValue::Repeat(e, len) => {
                 let args = [
@@ -576,7 +576,7 @@ impl<'tcx> RValue<'tcx> {
                     args,
                 ));
 
-                Exp::var("_res")
+                Exp::Var("_res")
             }
             RValue::Snapshot(t) => lower_pure(lower.ctx, lower.names, &t),
             RValue::Borrow(_, _, _) => unreachable!(), // Handled in Statement::to_why
@@ -614,7 +614,7 @@ impl<'tcx> RValue<'tcx> {
                     istmts.push(IntermediateStmt::Assume(lhs.eq(rhs)));
                 }
 
-                Exp::var("_ptr")
+                Exp::Var("_ptr")
             }
         }
     }
@@ -686,7 +686,7 @@ impl<'tcx> Terminator<'tcx> {
                 (istmts, branches.to_why(lower.ctx, lower.names, discr, &ty))
             }
             Terminator::Return => {
-                (istmts, Expr::Symbol("return".into()).app([Arg::Term(Exp::var("_0"))]))
+                (istmts, Expr::Symbol("return".into()).app([Arg::Term(Exp::Var("_0"))]))
             }
             Terminator::Abort(span) => {
                 let mut exp = Exp::mk_false();
@@ -805,7 +805,7 @@ fn mk_adt_switch<'tcx, N: Namer<'tcx>>(
                             id.clone(),
                             translate_ty(ctx, names, DUMMY_SP, field.ty(ctx.tcx, subst)),
                         ),
-                        Exp::var(id),
+                        Exp::Var(id),
                     )
                 })
                 .unzip();
@@ -988,7 +988,7 @@ impl<'tcx> Statement<'tcx> {
                             lower,
                             &mut istmts,
                             rhs_local_ty,
-                            Focus::new(|_| Exp::var(ident_of(rhs.local))),
+                            Focus::new(|_| Exp::Var(ident_of(rhs.local))),
                             Box::new(|_, x| x),
                             &rhs.projections[..deref_index],
                         );
@@ -1013,7 +1013,7 @@ impl<'tcx> Statement<'tcx> {
                                     .names
                                     .in_pre(uty_to_prelude(lower.ctx.tcx, UintTy::Usize), "t'int"),
                             )
-                            .app([Exp::var(ident_of(*sym))])
+                            .app([Exp::Var(ident_of(*sym))])
                         },
                     );
 
@@ -1023,7 +1023,7 @@ impl<'tcx> Statement<'tcx> {
                         lower,
                         &mut istmts,
                         rhs_local_ty,
-                        Focus::new(|_| Exp::var(ident_of(rhs.local))),
+                        Focus::new(|_| Exp::Var(ident_of(rhs.local))),
                         Box::new(|_, x| x),
                         &rhs.projections,
                     );
@@ -1043,9 +1043,9 @@ impl<'tcx> Statement<'tcx> {
 
                 let borrow_call = IntermediateStmt::call("_ret'".into(), lhs_ty_low, func, args);
                 istmts.push(borrow_call);
-                lower.assignment(&lhs, Exp::var("_ret'"), &mut istmts);
+                lower.assignment(&lhs, Exp::Var("_ret'"), &mut istmts);
 
-                let reassign = Exp::var("_ret'").field("final".into());
+                let reassign = Exp::Var("_ret'").field("final".into());
 
                 if let Some(rhs_inv_fun) = rhs_inv_fun {
                     istmts.push(IntermediateStmt::Assume(rhs_inv_fun.app([reassign.clone()])));
@@ -1064,7 +1064,7 @@ impl<'tcx> Statement<'tcx> {
                 let ty = lower.ty(ty);
 
                 istmts.push(IntermediateStmt::call("_ret'".into(), ty, fun_qname, args));
-                lower.assignment(&dest, Exp::var("_ret'"), &mut istmts);
+                lower.assignment(&dest, Exp::Var("_ret'"), &mut istmts);
             }
             Statement::Resolve { did, subst, pl } => {
                 let rp = Exp::qvar(lower.names.item(did, subst));
@@ -1076,10 +1076,10 @@ impl<'tcx> Statement<'tcx> {
 
                 let pat = lower_pat(lower.ctx, lower.names, &pat);
                 let exp = if let WPattern::VarP(_) = pat {
-                    rp.app([Exp::var(ident_of(loc))])
+                    rp.app([Exp::Var(ident_of(loc))])
                 } else {
-                    Exp::var(ident_of(loc)).match_([
-                        (pat, rp.app([Exp::var(bound.as_str())])),
+                    Exp::Var(ident_of(loc)).match_([
+                        (pat, rp.app([Exp::Var(bound.as_str())])),
                         (WPattern::Wildcard, Exp::mk_true()),
                     ])
                 };
@@ -1103,10 +1103,10 @@ impl<'tcx> Statement<'tcx> {
                 let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
                 let pat = lower_pat(lower.ctx, lower.names, &pat);
                 let exp = if let WPattern::VarP(_) = pat {
-                    inv_fun.app([Exp::var(ident_of(loc))])
+                    inv_fun.app([Exp::Var(ident_of(loc))])
                 } else {
-                    Exp::var(ident_of(loc)).match_([
-                        (pat, inv_fun.app([Exp::var(bound.as_str())])),
+                    Exp::Var(ident_of(loc)).match_([
+                        (pat, inv_fun.app([Exp::Var(bound.as_str())])),
                         (WPattern::Wildcard, Exp::mk_true()),
                     ])
                 };

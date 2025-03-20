@@ -98,13 +98,13 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                     let args = Box::new([Arg::Term(focus.call(istmts))]);
                     istmts.push(IntermediateStmt::Call(fields.clone(), acc_name, args));
 
-                    let foc = Exp::var(fields[ix.as_usize()].as_term().0.clone());
+                    let foc = Exp::Var(fields[ix.as_usize()].as_term().0.clone());
                     focus = Focus::new(|_| foc);
 
                     constructor = Box::new(move |is, t| {
                         let constr = Exp::qvar(lower.names.constructor(variant.def_id, subst));
                         let mut fields: Box<[_]> =
-                            fields.into_iter().map(|f| Exp::var(f.as_term().0.clone())).collect();
+                            fields.into_iter().map(|f| Exp::Var(f.as_term().0.clone())).collect();
                         fields[ix.as_usize()] = t;
                         constructor(is, constr.app(fields))
                     });
@@ -166,7 +166,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                 let elt_ty = lower.ty(elt_ty.ty);
                 let ty = lower.ty(place_ty.ty);
                 // TODO: Use [_] syntax
-                let ix_exp = Exp::var(Ident::build(ix.as_str()));
+                let ix_exp = Exp::Var(Ident::build(ix.as_str()));
 
                 let focus1 = focus.clone();
                 let elt_ty1 = elt_ty.clone();
@@ -224,7 +224,7 @@ pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
         lower,
         istmts,
         place_ty,
-        Focus::new(|_| Exp::var(ident_of(pl.local))),
+        Focus::new(|_| Exp::Var(ident_of(pl.local))),
         Box::new(|_, _| unreachable!()),
         &pl.projections,
     );
@@ -242,7 +242,7 @@ fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
         lower,
         istmts,
         place_ty,
-        Focus::new(|_| Exp::var(ident_of(pl.local))),
+        Focus::new(|_| Exp::Var(ident_of(pl.local))),
         Box::new(|_, x| x),
         &pl.projections,
     );

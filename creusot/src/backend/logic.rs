@@ -181,7 +181,7 @@ fn subst_qname(body: &mut Exp, name: &Ident, lim_name: &Ident) {
     impl<'a> ExpMutVisitor for QNameSubst<'a> {
         fn visit_mut(&mut self, exp: &mut Exp) {
             match exp {
-                Exp::QVar(qname) if qname.is_ident(self.0) => *exp = Exp::var(self.1.clone()),
+                Exp::QVar(qname) if qname.is_ident(self.0) => *exp = Exp::Var(self.1.clone()),
                 _ => super_visit_mut(self, exp),
             }
         }
@@ -242,9 +242,9 @@ pub fn function_call(sig: &Signature) -> Exp {
         .cloned()
         .flat_map(|b| b.var_type_pairs())
         .filter(|arg| &*arg.0 != "_")
-        .map(|arg| Exp::var(arg.0));
+        .map(|arg| Exp::Var(arg.0));
 
-    Exp::var(sig.name.clone()).app(args)
+    Exp::Var(sig.name.clone()).app(args)
 }
 
 fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
