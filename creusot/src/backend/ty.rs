@@ -89,7 +89,7 @@ pub(crate) fn translate_closure_ty<'tcx, N: Namer<'tcx>>(
     did: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Vec<Decl> {
-    let ty_name = names.def_ty(did, subst).as_ident();
+    let ty_name = Ident::bound(names.def_ty(did, subst).name);
     let closure_subst = subst.as_closure();
     let fields: Box<[_]> = closure_subst
         .upvar_tys()
@@ -97,7 +97,7 @@ pub(crate) fn translate_closure_ty<'tcx, N: Namer<'tcx>>(
         .enumerate()
         .map(|(ix, uv)| FieldDecl {
             ty: translate_ty(ctx, names, DUMMY_SP, uv),
-            name: names.field(did, subst, ix.into()).as_ident(),
+            name: Ident::bound(names.field(did, subst, ix.into()).name),
         })
         .collect();
 
@@ -126,13 +126,13 @@ pub(crate) fn translate_tuple_ty<'tcx, N: Namer<'tcx>>(
         .enumerate()
         .map(|(ix, ty)| FieldDecl {
             ty: translate_ty(ctx, names, DUMMY_SP, ty),
-            name: names.tuple_field(args, ix.into()).as_ident(),
+            name: Ident::bound(names.tuple_field(args, ix.into()).name),
         })
         .collect();
 
     vec![Decl::TyDecl(TyDecl::Adt {
         tys: Box::new([AdtDecl {
-            ty_name: names.ty(ty).as_ident(),
+            ty_name: Ident::bound(names.ty(ty).name),
             ty_params: Box::new([]),
             sumrecord: SumRecord::Record(fields),
         }]),
@@ -152,7 +152,7 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
 ) -> Vec<Decl> {
     // Trusted types (opaque)
     if is_trusted(ctx.tcx, did) {
-        let ty_name = names.def_ty(did, subst).as_ident();
+        let ty_name = Ident::bound(names.def_ty(did, subst).name);
         return vec![Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: Box::new([]) })];
     }
 
@@ -164,7 +164,7 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
             adt.variants()
                 .iter()
                 .map(|var_def| ConstructorDecl {
-                    name: names.constructor(var_def.def_id, subst).as_ident(),
+                    name: Ident::bound(names.constructor(var_def.def_id, subst).name),
                     fields: var_def
                         .fields
                         .iter()
@@ -184,7 +184,7 @@ pub(crate) fn translate_tydecl<'tcx, N: Namer<'tcx>>(
             .fields
             .iter_enumerated()
             .map(|(ix, f)| {
-                let name = names.field(did, subst, ix).as_ident();
+                let name = Ident::bound(names.field(did, subst, ix).name);
                 let ty = f.ty(ctx.tcx, subst);
                 let ty = ctx.normalize_erasing_regions(typing_env, ty);
                 let ty = translate_ty(ctx, names, ctx.def_span(f.did), ty);
@@ -215,9 +215,9 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
         .iter()
         .map(|fld| {
             let id = if fld.name.as_str().as_bytes()[0].is_ascii_digit() {
-                Ident::build(&format!("field_{}", fld.name))
+                Ident::bound(&format!("field_{}", fld.name))
             } else {
-                Ident::build(fld.name.as_str())
+                Ident::bound(fld.name.as_str())
             };
             let ty =
                 translate_ty(ctx, names, DUMMY_SP, names.normalize(ctx, fld.ty(ctx.tcx, subst)));
@@ -231,14 +231,18 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
     let constr = names.constructor(variant_id, subst);
     let cons_test = Exp::qvar(constr).app(fields.iter().map(|(nm, _)| Exp::Var(nm.clone())));
 
-    let ret = Expr::Symbol("ret".into())
+    let ret_ident = Ident::bound("ret");
+    let good_ident = Ident::bound("good");
+    let bad_ident = Ident::bound("bad");
+    let input_ident = Ident::bound("input");
+    let ret = Expr::Variable(ret_ident)
         .app(fields.iter().map(|(nm, _)| Arg::Term(Exp::Var(nm.clone()))));
 
     let good_branch: Defn = Defn {
-        name: format!("good").into(),
+        name: good_ident,
         attrs: vec![],
         params: field_args.clone(),
-        body: Expr::assert(cons_test.clone().eq(Exp::Var("input")), ret.black_box()),
+        body: Expr::assert(cons_test.clone().eq(Exp::Var(input_ident)), ret.black_box()),
     };
 
     let ty = translate_ty(ctx, names, DUMMY_SP, Ty::new_adt(ctx.tcx, adt, subst));
@@ -249,7 +253,7 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
         let negative_assertion = Exp::forall_trig(
             fields.clone(),
             [Trigger::single(cons_test.clone().ascribe(ty.clone()))],
-            cons_test.neq(Exp::Var("input")),
+            cons_test.neq(Exp::Var(input_ident)),
         );
         Some(Defn::simple("bad", Expr::assert(negative_assertion, fail)))
     } else {
@@ -287,7 +291,7 @@ pub(crate) fn constructor<'tcx, N: Namer<'tcx>>(
                 let fields = fields
                     .into_iter()
                     .enumerate()
-                    .map(|(ix, f)| (names.field(did, subst, ix.into()), f))
+                    .map(|(ix, f)| (names.field(did, subst, ix.into()).name, f))
                     .collect();
                 Exp::Record { fields }
             }
