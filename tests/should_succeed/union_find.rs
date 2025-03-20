@@ -6,6 +6,7 @@ mod implementation {
     use creusot_contracts::{
         Clone,
         logic::{FMap, FSet, Mapping},
+        peano::PeanoInt,
         ptr_own::PtrOwn,
         *,
     };
@@ -36,7 +37,7 @@ mod implementation {
     }
 
     enum Content<T> {
-        Root { rank: usize, value: T },
+        Root { rank: PeanoInt, value: T },
         Link(Element<T>),
     }
 
@@ -68,14 +69,6 @@ mod implementation {
         // `rep` in the why3 proof
         root_of: Snapshot<Mapping<Element<T>, Element<T>>>,
         max_depth: Snapshot<Int>,
-    }
-
-    // Ignore overflows for now
-    #[trusted]
-    #[requires(true)]
-    #[ensures(result@ == x@ + y@)]
-    fn add_no_overflow(x: usize, y: usize) -> usize {
-        x + y
     }
 
     impl<T> Invariant for UnionFind<T> {
@@ -176,7 +169,7 @@ mod implementation {
         #[ensures((^self).values() == (*self).values().set(result, value))]
         pub fn make(&mut self, value: T) -> Element<T> {
             let value_snap = snapshot!(value);
-            let (ptr, perm) = PtrOwn::new(Content::Root { rank: 0, value });
+            let (ptr, perm) = PtrOwn::new(Content::Root { rank: PeanoInt::new(), value });
             let element = Element(ptr);
             ghost! {
                 let perm = perm.into_inner();
@@ -286,11 +279,11 @@ mod implementation {
             let perm_x = ghost!(self.map.get_ghost(&x.addr()).unwrap());
             let perm_y = ghost!(self.map.get_ghost(&y.addr()).unwrap());
             let (rx, vx) = match unsafe { PtrOwn::as_ref(x.0, perm_x) } {
-                Content::Root { rank, value } => (*rank, value),
+                Content::Root { rank, value } => (rank.to_u64(), value),
                 _ => unreachable!(),
             };
             let (ry, vy) = match unsafe { PtrOwn::as_ref(y.0, perm_y) } {
-                Content::Root { rank, value } => (*rank, value),
+                Content::Root { rank, value } => (rank.to_u64(), value),
                 _ => unreachable!(),
             };
             if rx < ry {
@@ -310,7 +303,7 @@ mod implementation {
                 if rx == ry {
                     let perm_mut_x = ghost!(self.map.get_mut_ghost(&x.addr()).unwrap());
                     match unsafe { PtrOwn::as_mut(x.0, perm_mut_x) } {
-                        Content::Root { rank, value: _ } => *rank = add_no_overflow(rx, 1),
+                        Content::Root { rank, value: _ } => rank.incr(),
                         _ => {}
                     }
                 }

@@ -392,6 +392,7 @@ pub mod invariant;
 pub mod logic;
 pub mod model;
 pub mod pcell;
+pub mod peano;
 pub mod ptr_own;
 pub mod resolve;
 pub mod snapshot;
