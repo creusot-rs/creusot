@@ -201,14 +201,8 @@ impl<'tcx> Namer<'tcx> for CloneNames<'tcx> {
 
     fn span(&self, span: Span) -> Option<Attribute> {
         let path = path_of_span(self.tcx, span, &self.span_mode)?;
-        let cnt = self.spans.len();
-        let name = self.spans.insert(span, |_| {
-            Box::new((
-                Symbol::intern(&format!("s{}{cnt}", path.file_stem().unwrap().to_str().unwrap())),
-                cnt,
-            ))
-        });
-        Some(Attribute::NamedSpan(name.0.to_string()))
+        let ident = self.spans.insert(span, |_| Box::new(Ident::fresh(&format!("s{}", path.file_stem().unwrap().to_str().unwrap()))));
+        Some(Attribute::NamedSpan(*ident))
     }
 
     fn bitwise_mode(&self) -> bool {
@@ -294,7 +288,7 @@ pub(crate) struct CloneNames<'tcx> {
     /// Tracks the name given to each dependency
     names: OnceMap<Dependency<'tcx>, Box<Kind>>,
     /// Maps spans to a unique name
-    spans: OnceMap<Span, Box<(Symbol, usize)>>,
+    spans: OnceMap<Span, Box<Ident>>,
 }
 
 impl<'tcx> CloneNames<'tcx> {
@@ -495,16 +489,15 @@ impl<'tcx> Dependencies<'tcx> {
             .names
             .spans
             .into_iter()
-            .sorted_by_key(|(_, b)| b.1)
-            .filter_map(|(sp, b)| {
+            .sorted_by_key(|(_, b)| **b)
+            .filter_map(|(sp, name)| {
                 let (path, start_line, start_column, end_line, end_column) =
                     if let Some(Attribute::Span(path, l1, c1, l2, c2)) = ctx.span_attr(sp) {
                         (path, l1, c1, l2, c2)
                     } else {
                         return None;
                     };
-                let name = b.0.as_str().into();
-                Some(WSpan { name, path, start_line, start_column, end_line, end_column })
+                Some(WSpan { name: *name, path, start_line, start_column, end_line, end_column })
             })
             .collect();
 
