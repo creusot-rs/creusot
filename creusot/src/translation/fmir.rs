@@ -8,7 +8,7 @@ use rustc_middle::{
 use rustc_span::{Ident, Span};
 use rustc_target::abi::VariantIdx;
 
-type ProjectionElem<'tcx> = rustc_middle::mir::ProjectionElem<Ident, Ty<'tcx>>;
+pub(crate) type ProjectionElem<'tcx> = rustc_middle::mir::ProjectionElem<Ident, Ty<'tcx>>;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Place<'tcx> {
