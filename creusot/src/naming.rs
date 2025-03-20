@@ -110,7 +110,7 @@ impl ModulePath {
     }
 
     // `M_krate__modl__f`
-    // Note: each fragment doesn't need to go through Ident (unlike why3_qname and file_name)
+    // Note: each fragment doesn't need to go through IdentString (unlike file_name)
     pub fn why3_ident(&self) -> Ident {
         let mut path = "M_".to_owned();
         for m in &self.path {
@@ -122,15 +122,14 @@ impl ModulePath {
     }
 
     // `prefix/krate/modl/M_f.coma`
-    // Note: pass each fragment through Ident::build() to filter out coma keywords
-    // so that this produces the same names as `why3_qname()`.
+    // Note: pass each fragment through IdentString::from() to filter out coma keywords.
     pub fn file_name(&self, prefix: &Vec<IdentString>) -> PathBuf {
         let mut path = PathBuf::new();
         for m in prefix {
             path.push(m.as_str());
         }
         for m in &self.path {
-            path.push(m.as_str());
+            path.push(IdentString::from(m.as_str()).as_str());
         }
         path.push(format!("M_{}.coma", self.basename));
         path
