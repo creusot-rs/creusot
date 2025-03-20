@@ -1,6 +1,6 @@
 use rustc_ast::Mutability;
 use rustc_middle::ty::{GenericArg, Ty};
-use rustc_span::{DUMMY_SP, Symbol};
+use rustc_span::{DUMMY_SP, Ident};
 use rustc_type_ir::TyKind;
 
 use crate::{
@@ -12,7 +12,7 @@ use super::Why3Generator;
 
 pub fn structural_resolve<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    subject: Symbol,
+    subject: Ident,
     ty: Ty<'tcx>,
 ) -> Option<Term<'tcx>> {
     let subject = Term::var(subject, ty);
@@ -34,7 +34,7 @@ pub fn structural_resolve<'tcx>(
                         .fields
                         .iter_enumerated()
                         .map(|(ix, f)| {
-                            let sym = Symbol::intern(&format!("x{}", ix.as_usize()));
+                            let sym = Ident::from_str(&format!("x{}", ix.as_usize()));
                             let fty = f.ty(ctx.tcx, args);
                             (Pattern::binder(sym, fty), resolve_of(ctx, Term::var(sym, fty)))
                         })
@@ -56,7 +56,7 @@ pub fn structural_resolve<'tcx>(
                 .iter()
                 .enumerate()
                 .map(|(i, ty)| {
-                    let sym = Symbol::intern(&format!("x{i}"));
+                    let sym = Ident::from_str(&format!("x{i}"));
                     (Pattern::binder(sym, ty), resolve_of(ctx, Term::var(sym, ty)))
                 })
                 .unzip();

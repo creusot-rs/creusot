@@ -133,7 +133,7 @@ pub(crate) trait Namer<'tcx> {
         self.dependency(Dependency::PreMod(module));
     }
 
-    fn prelude_module_name(&self, module: PreMod) -> Box<[Ident]> {
+    fn prelude_module_name(&self, module: PreMod) -> Box<[why3::IdentString]> {
         self.dependency(Dependency::PreMod(module));
         let qname: QName = match (module, self.bitwise_mode()) {
             (PreMod::Float32, _) => "creusot.float.Float32.".into(),
@@ -225,11 +225,7 @@ impl<'tcx> CloneNames<'tcx> {
                 let why3_modl =
                     why3_modl.as_str().replace("$BW$", if self.bitwise_mode { "BW" } else { "" });
                 let qname = QName::from(why3_modl);
-                if qname.module.is_empty() {
-                    return Box::new(Kind::Named(Symbol::intern(&qname.name)));
-                } else {
-                    return Box::new(Kind::UsedBuiltin(qname));
-                }
+                return Box::new(Kind::UsedBuiltin(qname));
             }
             Box::new(
                 key.base_ident(tcx).map_or(Kind::Unnamed, |base| {
@@ -347,7 +343,7 @@ impl Kind {
     fn ident(&self) -> Ident {
         match self {
             Kind::Unnamed => panic!("Unnamed item"),
-            Kind::Named(nm) => nm.as_str().into(),
+            Kind::Named(nm) => Ident::bound(nm.as_str()),
             Kind::UsedBuiltin(_) => {
                 panic!("cannot get ident of used module {self:?}")
             }
