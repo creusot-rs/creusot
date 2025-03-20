@@ -10,7 +10,7 @@ use crate::exp::Exp;
 static FRESH_COUNTER: AtomicU64 = AtomicU64::new(1);
 static INTERNER: LazyLock<RwLock<DefaultStringInterner>> = LazyLock::new(|| RwLock::new(DefaultStringInterner::new()));
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IdentString(DefaultSymbol);
 
 impl IdentString {
@@ -54,7 +54,7 @@ impl From<&str> for IdentString {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Ident {
     name: IdentString,
