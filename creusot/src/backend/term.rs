@@ -135,7 +135,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     item
                 }
             }
-            TermKind::Var(v) => Exp::var(ident_of(*v)),
+            TermKind::Var(v) => Exp::Var(ident_of(*v)),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);

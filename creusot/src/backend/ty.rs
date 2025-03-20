@@ -229,16 +229,16 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
         fields.iter().cloned().map(|(nm, ty)| Param::Term(nm, ty)).collect();
 
     let constr = names.constructor(variant_id, subst);
-    let cons_test = Exp::qvar(constr).app(fields.iter().map(|(nm, _)| Exp::var(nm.clone())));
+    let cons_test = Exp::qvar(constr).app(fields.iter().map(|(nm, _)| Exp::Var(nm.clone())));
 
     let ret = Expr::Symbol("ret".into())
-        .app(fields.iter().map(|(nm, _)| Arg::Term(Exp::var(nm.clone()))));
+        .app(fields.iter().map(|(nm, _)| Arg::Term(Exp::Var(nm.clone()))));
 
     let good_branch: Defn = Defn {
         name: format!("good").into(),
         attrs: vec![],
         params: field_args.clone(),
-        body: Expr::assert(cons_test.clone().eq(Exp::var("input")), ret.black_box()),
+        body: Expr::assert(cons_test.clone().eq(Exp::Var("input")), ret.black_box()),
     };
 
     let ty = translate_ty(ctx, names, DUMMY_SP, Ty::new_adt(ctx.tcx, adt, subst));
@@ -249,7 +249,7 @@ pub(crate) fn eliminator<'tcx, N: Namer<'tcx>>(
         let negative_assertion = Exp::forall_trig(
             fields.clone(),
             [Trigger::single(cons_test.clone().ascribe(ty.clone()))],
-            cons_test.neq(Exp::var("input")),
+            cons_test.neq(Exp::Var("input")),
         );
         Some(Defn::simple("bad", Expr::assert(negative_assertion, fail)))
     } else {
