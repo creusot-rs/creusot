@@ -5,10 +5,9 @@ use crate::{
         ty::{constructor, floatty_to_prelude, ity_to_prelude, translate_ty, uty_to_prelude},
     },
     ctx::*,
-    naming::ident_of,
     pearlite::{BinOp, Literal, Pattern, PatternKind, Term, TermKind, UnOp},
     specification::Condition,
-    translation::pearlite::{QuantKind, Trigger, zip_binder},
+    translation::pearlite::{QuantKind, Trigger},
 };
 use rustc_ast::Mutability;
 use rustc_hir::def::DefKind;
@@ -135,7 +134,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     item
                 }
             }
-            TermKind::Var(v) => Exp::Var(ident_of(*v)),
+            TermKind::Var(v) => Exp::Var(self.ctx.rename(*v)),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -186,8 +185,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Call { id, subst, args, .. } => Exp::qvar(self.names.item(*id, *subst))
                 .app(args.into_iter().map(|arg| self.lower_term(arg))),
             TermKind::Quant { kind, binder, box body, trigger } => {
-                let bound =
-                    zip_binder(binder).map(|(s, t)| (s.to_string().into(), self.lower_ty(t)));
+                let bound = binder.iter().map(|(s, t)| (self.ctx.rename(*s), self.lower_ty(*t)));
                 let body = self.lower_term(body);
                 let trigger = self.lower_trigger(trigger);
                 match kind {
@@ -242,7 +240,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     fields: fields
                         .into_iter()
                         .enumerate()
-                        .map(|(ix, f)| (self.names.tuple_field(tys, ix.into()), self.lower_term(f)))
+                        .map(|(ix, f)| (self.names.tuple_field(tys, ix.into()).name, self.lower_term(f)))
                         .collect(),
                 }
             }
@@ -251,13 +249,13 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                 match lhs.ty.kind() {
                     TyKind::Closure(did, substs) => {
-                        lhs_low.field(self.names.field(*did, substs, *idx))
+                        lhs_low.field(self.names.field(*did, substs, *idx).name)
                     }
                     TyKind::Adt(def, substs) => {
-                        lhs_low.field(self.names.field(def.did(), substs, *idx))
+                        lhs_low.field(self.names.field(def.did(), substs, *idx).name)
                     }
                     TyKind::Tuple(tys) if tys.len() == 1 => lhs_low,
-                    TyKind::Tuple(tys) => lhs_low.field(self.names.tuple_field(tys, *idx)),
+                    TyKind::Tuple(tys) => lhs_low.field(self.names.tuple_field(tys, *idx).name),
                     k => unreachable!("Projection from {k:?}"),
                 }
             }
@@ -271,11 +269,11 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let sig = EarlyBinder::bind(sig).instantiate(self.ctx.tcx, subst);
                 let binders = sig
                     .inputs
-                    .iter()
+                    .into_iter()
                     .skip(1)
-                    .map(|arg| {
-                        let nm = Ident::build(&arg.0.to_string());
-                        let ty = self.names.normalize(self.ctx, arg.2);
+                    .map(|(ident, ty)| {
+                        let nm = self.ctx.rename(ident);
+                        let ty = self.names.normalize(self.ctx, ty);
                         Binder::typed(nm, self.lower_ty(ty))
                     })
                     .collect();
@@ -304,13 +302,13 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Precondition { item, args, params } => {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
                 let mut sym = self.names.item(*item, args);
-                sym.name = format!("{}'pre", &*sym.name).into();
+                sym.name = format!("{}'pre", sym.name.as_str()).into();
                 Exp::qvar(sym).app(params)
             }
             TermKind::Postcondition { item, args, params } => {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
                 let mut sym = self.names.item(*item, args);
-                sym.name = format!("{}'post'return'", &*sym.name).into();
+                sym.name = format!("{}'post'return'", sym.name.as_str()).into();
                 Exp::qvar(sym).app(params)
             }
         }
@@ -335,14 +333,14 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 } else {
                     let flds: Box<[_]> = flds
                         .enumerate()
-                        .map(|(i, f)| (self.names.field(var_did, subst, i.into()), f))
+                        .map(|(i, f)| (Ident::bound(self.names.field(var_did, subst, i.into()).name), f))
                         .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                         .collect();
                     if flds.len() == 0 { WPattern::Wildcard } else { WPattern::RecP(flds) }
                 }
             }
             PatternKind::Wildcard => WPattern::Wildcard,
-            PatternKind::Binder(name) => WPattern::VarP(name.to_string().into()),
+            PatternKind::Binder(name) => WPattern::VarP(self.ctx.rename(*name)),
             PatternKind::Bool(true) => WPattern::mk_true(),
             PatternKind::Bool(false) => WPattern::mk_false(),
             PatternKind::Tuple(pats) if pats.is_empty() => WPattern::TupleP(Box::new([])),
@@ -354,7 +352,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     .iter()
                     .enumerate()
                     .map(|(idx, pat)| {
-                        (self.names.tuple_field(tys, idx.into()), self.lower_pat(pat))
+                        (Ident::bound(self.names.tuple_field(tys, idx.into()).name), self.lower_pat(pat))
                     })
                     .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                     .collect();
@@ -366,7 +364,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     TyKind::Adt(def, _) if def.is_box() => self.lower_pat(pointee),
                     TyKind::Ref(_, _, Mutability::Not) => self.lower_pat(pointee),
                     TyKind::Ref(_, _, Mutability::Mut) => {
-                        WPattern::RecP(Box::new([("current".into(), self.lower_pat(pointee))]))
+                        WPattern::RecP(Box::new([(Ident::bound("current"), self.lower_pat(pointee))]))
                     }
                     _ => unreachable!(),
                 }
