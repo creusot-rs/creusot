@@ -315,7 +315,7 @@ impl Kind {
     fn ident(&self) -> Ident {
         match self {
             Kind::Unnamed => panic!("Unnamed item"),
-            Kind::Named(nm) => Ident::bound(nm.as_str()),
+            Kind::Named(nm) => *nm,
             Kind::UsedBuiltin(_) => {
                 panic!("cannot get ident of used module {self:?}")
             }
