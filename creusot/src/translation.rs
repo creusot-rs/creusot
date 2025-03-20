@@ -177,7 +177,7 @@ fn module_output(modl: &FileModule, output: &mut OutputHandle) -> std::io::Resul
 fn show_attribute(attr: &Attribute) -> String {
     match attr {
         Attribute::Attr(contents) => format!("@{}", contents),
-        Attribute::NamedSpan(name) => format!("%#{}", name),
+        Attribute::NamedSpan(name) => format!("%#{}", &name.unique_str()),
         Attribute::Span(file, sline, scol, eline, ecol) => {
             format!("#\"{}\" {} {} {} {}", file, sline, scol, eline, ecol)
         }
