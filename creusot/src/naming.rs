@@ -6,7 +6,7 @@ use rustc_hir::{
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
 use std::{iter::once, path::PathBuf};
-use why3::Ident;
+use why3::{Ident, IdentString};
 
 use crate::very_stable_hash::get_very_stable_hash;
 
@@ -137,13 +137,13 @@ impl ModulePath {
     // `prefix/krate/modl/M_f.coma`
     // Note: pass each fragment through Ident::build() to filter out coma keywords
     // so that this produces the same names as `why3_qname()`.
-    pub fn file_name(&self, prefix: &Vec<Ident>) -> PathBuf {
+    pub fn file_name(&self, prefix: &Vec<IdentString>) -> PathBuf {
         let mut path = PathBuf::new();
         for m in prefix {
             path.push(m.as_str());
         }
         for m in &self.path {
-            path.push(Ident::build(m.as_str()).as_str());
+            path.push(m.as_str());
         }
         path.push(format!("M_{}.coma", self.basename));
         path
