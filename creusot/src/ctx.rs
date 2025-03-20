@@ -45,7 +45,7 @@ use rustc_middle::{
 use rustc_span::{Ident as RustIdent, Span, Symbol};
 use rustc_trait_selection::traits::normalize_param_env_or_error;
 use why3::Ident;
-use std::{collections::HashMap, ops::Deref};
+use std::{cell::RefCell, collections::HashMap, ops::Deref};
 
 pub(crate) use crate::{backend::clone_map::*, translated_item::*};
 
@@ -155,7 +155,7 @@ pub struct TranslationCtx<'tcx> {
     bodies: OnceMap<LocalDefId, Box<BodyWithBorrowckFacts<'tcx>>>,
     opacity: OnceMap<DefId, Box<Opacity>>,
     closure_contract: OnceMap<DefId, Box<ClosureContract<'tcx>>>,
-    renamer: HashMap<RustIdent, Ident>,
+    renamer: RefCell<HashMap<RustIdent, Ident>>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -530,6 +530,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     pub(crate) fn rename(&self, ident: RustIdent) -> Ident {
         self.renamer
+            .borrow_mut()
             .entry(ident)
             .or_insert_with(|| Ident::fresh(&ident.to_string()))
             .clone()
