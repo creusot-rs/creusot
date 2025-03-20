@@ -271,7 +271,7 @@ pub struct LogicDecl {
     pub sig: Signature,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Use {
     pub name: Box<[IdentString]>,
