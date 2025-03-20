@@ -16,12 +16,14 @@ use rustc_middle::{
     mir::{self, Body, Local, OUTERMOST_SOURCE_SCOPE, SourceInfo, SourceScope},
     ty::{EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv},
 };
-use rustc_span::{Span, symbol::Ident};
+use rustc_span::Span;
 use rustc_type_ir::ClosureKind;
 use std::{
     collections::{HashMap, HashSet},
     iter::{once, repeat},
 };
+
+use super::fmir::FmirIdent;
 
 /// A term with an "expl:" label (includes the "expl:" prefix)
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
@@ -176,7 +178,7 @@ impl ContractClauses {
 
 #[derive(Debug)]
 struct ScopeTree<'tcx>(
-    HashMap<SourceScope, (HashSet<(Ident, mir::Place<'tcx>)>, Option<SourceScope>)>,
+    HashMap<SourceScope, (HashSet<(FmirIdent, mir::Place<'tcx>)>, Option<SourceScope>)>,
 );
 
 impl<'tcx> ScopeTree<'tcx> {
@@ -242,7 +244,7 @@ impl<'tcx> ScopeTree<'tcx> {
 pub(crate) fn inv_subst<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &Body<'tcx>,
-    locals: &HashMap<Local, Ident>,
+    locals: &HashMap<Local, FmirIdent>,
     info: SourceInfo,
 ) -> HashMap<Ident, Term<'tcx>> {
     let mut args = HashMap::new();

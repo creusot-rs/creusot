@@ -2,11 +2,11 @@ use crate::{backend::place::projection_ty, pearlite::Term};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{BasicBlock, BinOp, Promoted, UnOp, tcx::PlaceTy},
-    ty::{AdtDef, GenericArgsRef, Ty, TyCtxt},
+    mir::{tcx::PlaceTy, BasicBlock, BinOp, Promoted, UnOp}, ty::{AdtDef, GenericArgsRef, Ty, TyCtxt}
 };
-use rustc_span::{Ident, Span};
+use rustc_span::Span;
 use rustc_target::abi::VariantIdx;
+use why3::Ident;
 
 pub(crate) type ProjectionElem<'tcx> = rustc_middle::mir::ProjectionElem<Ident, Ty<'tcx>>;
 
