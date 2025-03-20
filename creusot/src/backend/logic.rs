@@ -222,7 +222,7 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
     let mut condition = sig.contract.requires_implies(postcondition);
 
     let func_call = function_call(sig);
-    let trigger = sig.trigger.clone().into_iter().collect();
+    let trigger = sig.trigger.clone();
     let result_ident = Ident::bound("result");
     condition.subst(&mut [(result_ident, func_call.clone())].into_iter().collect());
     let args: Box<[(_, _)]> = sig
@@ -252,7 +252,7 @@ pub fn function_call(sig: &Signature) -> Exp {
 
 fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
     let call = function_call(sig);
-    let trigger = sig.trigger.clone().into_iter().collect();
+    let trigger = sig.trigger.clone();
 
     let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
     let condition = sig.contract.requires_implies(equation);
