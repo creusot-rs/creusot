@@ -1,9 +1,8 @@
-use crate::{backend::Namer, ctx::PreMod, fmir::{ProjectionElem, Place}, naming::ident_of};
+use crate::{backend::Namer, ctx::PreMod, fmir::{ProjectionElem, Place}};
 use rustc_middle::{
-    mir::{self, tcx::PlaceTy},
-    ty::{Ty, TyCtxt, TyKind},
+    mir::tcx::PlaceTy,
+    ty::{TyCtxt, TyKind},
 };
-use rustc_span::Symbol;
 use std::{cell::RefCell, rc::Rc};
 use why3::{
     Ident,
