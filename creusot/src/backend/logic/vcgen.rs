@@ -21,7 +21,7 @@ use crate::{
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind, TypingEnv};
-use rustc_span::{Span, Symbol};
+use rustc_span::{Span, Ident as RustIdent};
 use why3::{
     Exp, Ident,
     exp::{BinOp, Environment, Pattern as WPattern, UnOp as WUnOp},
@@ -93,12 +93,11 @@ pub(super) fn wp<'tcx>(
 /// This check can be extended in the future
 fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'_>) -> bool {
     struct StructuralRecursion {
-        smaller_than: HashMap<Symbol, Symbol>,
+        smaller_than: HashMap<RustIdent, RustIdent>,
         self_id: DefId,
         /// Index of the decreasing argument
-        decreasing_args: HashSet<Symbol>,
-
-        orig_args: Vec<Symbol>,
+        decreasing_args: HashSet<RustIdent>,
+        orig_args: Vec<RustIdent>,
     }
     use crate::pearlite::TermKind;
 
@@ -108,7 +107,7 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
         }
 
         /// Is `t` smaller than the argument `nm`?
-        fn is_smaller_than(&self, t: &Term, nm: Symbol) -> bool {
+        fn is_smaller_than(&self, t: &Term, nm: RustIdent) -> bool {
             match &t.kind {
                 TermKind::Var(s) => self.smaller_than.get(s) == Some(&nm),
                 TermKind::Coerce { arg } => self.is_smaller_than(arg, nm),
@@ -118,7 +117,7 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
 
         // TODO: could make this a `pattern` to term comparison to make it more powerful
         /// Mark `sym` as smaller than `term`. Currently, this only updates the relation if `term` is a variable.
-        fn smaller_than(&mut self, sym: Symbol, term: &Term<'_>) {
+        fn smaller_than(&mut self, sym: RustIdent, term: &Term<'_>) {
             match &term.kind {
                 TermKind::Var(var) => {
                     let parent = self.smaller_than.get(var).unwrap_or(var);
@@ -142,8 +141,8 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
                 }
                 TermKind::Quant { binder, body, .. } => {
                     let old_smaller = self.smaller_than.clone();
-                    for name in &binder.0 {
-                        self.smaller_than.remove(&name.name);
+                    for (name, _) in binder {
+                        self.smaller_than.remove(name);
                     }
                     self.visit_term(body);
                     self.smaller_than = old_smaller;
@@ -233,7 +232,6 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         match &t.kind {
             // VC(v, Q) = Q(v)
             TermKind::Var(v) => {
-                let id = ident_of(*v);
                 let exp = self.subst.borrow().get(&id).unwrap_or(Exp::Var(id));
                 k(exp)
             }
