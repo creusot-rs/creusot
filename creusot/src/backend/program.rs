@@ -15,7 +15,6 @@ use crate::{
     },
     ctx::{BodyId, Dependencies},
     fmir::{Body, BorrowKind, Operand, TrivialInv},
-    naming::ident_of,
     pearlite::Pattern,
     translated_item::FileModule,
     translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
@@ -55,7 +54,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
         return None;
     }
 
-    let name = names.item(names.self_id, names.self_subst).as_ident();
+    let name = Ident::bound(names.item(names.self_id, names.self_subst).name);
     let body = Decl::Coma(to_why(ctx, &mut names, name, BodyId::new(def_id.expect_local(), None)));
 
     let mut decls = names.provide_deps(ctx);
@@ -68,27 +67,30 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     let attrs = ctx.span_attr(ctx.def_span(def_id)).into_iter().collect();
     let meta = ctx.display_impl_of(def_id);
     let path = ctx.module_path(def_id);
-    let name = path.why3_ident();
+    let name = path.why3_ident().name;
     Some(FileModule { path, modl: Module { name, decls: decls.into(), attrs, meta } })
 }
 
 pub fn val<'tcx>(_: &Why3Generator<'tcx>, sig: Signature) -> Decl {
+    let return_ident = Ident::bound("return");
+    let ret_ident = Ident::bound("ret");
+    let result_ident = Ident::bound("result");
     let params = sig
         .args
         .into_iter()
         .flat_map(|b| b.var_type_pairs())
         .map(|(v, ty)| Param::Term(v, ty))
         .chain([Param::Cont(
-            "return".into(),
+            return_ident,
             Box::new([]),
-            Box::new([Param::Term("ret".into(), sig.retty.clone().unwrap())]),
+            Box::new([Param::Term(ret_ident, sig.retty.clone().unwrap())]),
         )])
         .collect();
 
     let requires = sig.contract.requires.into_iter().map(Condition::labelled_exp);
     let body = requires.rfold(Expr::Any, |acc, cond| Expr::assert(cond, acc));
 
-    let mut postcond = Expr::Symbol("return".into()).app([Arg::Term(Exp::Var("result"))]);
+    let mut postcond = Expr::Variable(return_ident).app([Arg::Term(Exp::Var(result_ident))]);
     postcond = postcond.black_box();
     let ensures = sig.contract.ensures.into_iter().map(Condition::unlabelled_exp);
     postcond = ensures.rfold(postcond, |acc, cond| Expr::assert(cond, acc));
@@ -97,9 +99,9 @@ pub fn val<'tcx>(_: &Why3Generator<'tcx>, sig: Signature) -> Decl {
         body.boxed(),
         false,
         Box::new([Defn {
-            name: "return".into(),
+            name: return_ident,
             attrs: vec![],
-            params: Box::new([Param::Term("result".into(), sig.retty.clone().unwrap())]),
+            params: Box::new([Param::Term(result_ident, sig.retty.clone().unwrap())]),
             body: postcond,
         }]),
     );
@@ -143,13 +145,13 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         .into_iter()
         .map(|(id, decl)| {
             let ty = translate_ty(ctx, names, decl.span, decl.ty);
-
+            let id = ctx.rename(id);
             let init = if decl.arg {
-                Exp::Var(Ident::build(id.as_str()))
+                Exp::Var(id)
             } else {
                 Exp::qvar(names.in_pre(PreMod::Any, "any_l")).app([Exp::unit()])
             };
-            Var(Ident::build(id.as_str()), ty.clone(), init, IsRef::Ref)
+            Var(id, ty.clone(), init, IsRef::Ref)
         })
         .collect();
 
@@ -170,9 +172,13 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
             contract: Contract::default(),
         }
     };
-    let mut body = Expr::Defn(Expr::Symbol("bb0".into()).boxed(), true, blocks);
+    let bb0 = Ident::fresh("bb0");
+    let result_ident = Ident::bound("result");
+    let ret_ident = Ident::bound("ret");
+    let return_ident = Ident::bound("return");
+    let mut body = Expr::Defn(Expr::Variable(bb0).boxed(), true, blocks);
 
-    let mut postcond = Expr::Symbol("return".into()).app([Arg::Term(Exp::Var("result"))]);
+    let mut postcond = Expr::Variable(return_ident).app([Arg::Term(Exp::Var(result_ident))]);
 
     let inferred_closure_spec = ctx.is_closure_like(body_id.def_id())
         && !ctx.sig(body_id.def_id()).contract.has_user_contract;
@@ -203,9 +209,9 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         body.boxed(),
         false,
         Box::new([Defn {
-            name: "return".into(),
+            name: return_ident,
             attrs: vec![],
-            params: Box::new([Param::Term("result".into(), sig.retty.clone().unwrap())]),
+            params: Box::new([Param::Term(result_ident, sig.retty.clone().unwrap())]),
             body: postcond,
         }]),
     );
@@ -220,9 +226,9 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         .flat_map(|b| b.var_type_pairs())
         .map(|(v, ty)| Param::Term(v, ty))
         .chain([Param::Cont(
-            "return".into(),
+            return_ident,
             Box::new([]),
-            Box::new([Param::Term("ret".into(), sig.retty.unwrap())]),
+            Box::new([Param::Term(ret_ident, sig.retty.unwrap())]),
         )])
         .collect();
     Defn { name: sig.name, attrs: sig.attrs, params, body }
@@ -256,7 +262,7 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
 
     let inner = Expr::Defn(block.body.boxed(), true, defns);
     block.body = Expr::Defn(
-        Expr::Symbol(block.name.clone().into()).boxed(),
+        Expr::Variable(block.name.clone().into()).boxed(),
         true,
         Box::new([Defn::simple(block.name.clone(), inner)]),
     );
@@ -291,14 +297,13 @@ impl<'tcx> Operand<'tcx> {
             Operand::Move(pl) | Operand::Copy(pl) => rplace_to_expr(lower, &pl, istmts),
             Operand::Constant(c) => lower_pure(lower.ctx, lower.names, &c),
             Operand::Promoted(pid, ty) => {
-                let var = Ident::build(&format!("pr{}", pid.as_usize()));
+                let var = Ident::fresh(&format!("pr{}", pid.as_usize()));
                 istmts.push(IntermediateStmt::call(
-                    var.clone(),
+                    var,
                     lower.ty(ty),
                     lower.names.promoted(lower.def_id, pid),
                     [],
                 ));
-
                 Exp::Var(var)
             }
         }
