@@ -5,7 +5,6 @@ use crate::{
     },
     contracts_items::get_builtin,
     ctx::*,
-    naming::ident_of,
     translated_item::FileModule,
     translation::pearlite::Term,
 };
@@ -45,16 +44,17 @@ pub(crate) fn translate_logic_or_predicate(
 
     let args = pre_sig.inputs.clone();
 
-    let name = names.item(names.self_id, names.self_subst).as_ident();
+    let name = Ident::bound(names.item(names.self_id, names.self_subst).name);
     let sig = lower_sig(ctx, &mut names, name, pre_sig, def_id);
     let (param_decls, args_names): (Vec<_>, Vec<_>) = args
         .into_iter()
-        .map(|(nm, span, ty)| {
-            let name = ident_of(nm);
+        .map(|(name, ty)| {
+            let span = name.span;
+            let name = ctx.rename(name);
             let decl = Decl::LogicDecl(LogicDecl {
                 kind: Some(DeclKind::Constant),
                 sig: Signature {
-                    name: name.clone(),
+                    name,
                     trigger: None,
                     attrs: vec![],
                     retty: Some(translate_ty(ctx, &names, span, ty)),
@@ -85,6 +85,7 @@ pub(crate) fn translate_logic_or_predicate(
 
     let postcondition = sig.contract.ensures_conj();
 
+    let result_ident = Ident::bound("result");
     let term = ctx.ctx.term(def_id)?.unwrap().clone();
     let wp = wp(
         ctx,
@@ -93,7 +94,7 @@ pub(crate) fn translate_logic_or_predicate(
         args_names,
         sig.contract.variant.clone(),
         term,
-        "result".into(),
+        result_ident,
         postcondition.clone(),
     )
     .unwrap_or_else(|e| {
@@ -102,7 +103,8 @@ pub(crate) fn translate_logic_or_predicate(
 
     let goal = sig.contract.requires_implies(wp);
 
-    body_decls.extend([Decl::Goal(Goal { name: format!("vc_{}", (&*sig.name)).into(), goal })]);
+    let vc_ident = Ident::fresh(&format!("vc_{}", sig.name.as_str()));
+    body_decls.extend([Decl::Goal(Goal { name: vc_ident, goal })]);
 
     let mut decls = names.provide_deps(ctx);
     decls.extend(body_decls);
@@ -110,7 +112,7 @@ pub(crate) fn translate_logic_or_predicate(
     let attrs = ctx.span_attr(ctx.def_span(def_id)).into_iter().collect();
     let meta = ctx.display_impl_of(def_id);
     let path = ctx.module_path(def_id);
-    let name = path.why3_ident();
+    let name = path.why3_ident().name;
     Ok(Some(FileModule { path, modl: Module { name, decls: decls.into(), attrs, meta } }))
 }
 
@@ -159,7 +161,7 @@ pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
 
     if !sig.contract.ensures.is_empty() {
         if sig.uses_simple_triggers() && !sig.contract.variant.is_none() {
-            let lim_name = Ident::from_string(format!("{}_lim", &*sig.name));
+            let lim_name = Ident::bound(format!("{}_lim", sig.name.as_str()));
             let mut lim_sig = sig;
             lim_sig.name = lim_name;
             lim_sig.trigger = Some(Trigger::single(function_call(&lim_sig)));
@@ -181,7 +183,7 @@ fn subst_qname(body: &mut Exp, name: &Ident, lim_name: &Ident) {
     impl<'a> ExpMutVisitor for QNameSubst<'a> {
         fn visit_mut(&mut self, exp: &mut Exp) {
             match exp {
-                Exp::QVar(qname) if qname.is_ident(self.0) => *exp = Exp::Var(self.1.clone()),
+                Exp::QVar(qname) if qname.is_ident(&self.0.name) => *exp = Exp::Var(self.1.clone()),
                 _ => super_visit_mut(self, exp),
             }
         }
@@ -198,7 +200,7 @@ fn subst_qname(body: &mut Exp, name: &Ident, lim_name: &Ident) {
 // solve return "unknown" instead of relying on a timeout, and give it a chance to apply map
 // extensionality axioms.
 fn limited_function_encode(decls: &mut Vec<Decl>, sig: &Signature, mut body: Exp, kind: DeclKind) {
-    let lim_name = Ident::from_string(format!("{}_lim", &*sig.name));
+    let lim_name = Ident::bound(format!("{}_lim", &sig.name.as_str()));
     subst_qname(&mut body, &sig.name, &lim_name);
     let mut lim_sig = Signature {
         name: lim_name,
@@ -220,19 +222,20 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
     let mut condition = sig.contract.requires_implies(postcondition);
 
     let func_call = function_call(sig);
-    let trigger = sig.trigger.clone().into_iter();
-    condition.subst(&mut [("result".into(), func_call.clone())].into_iter().collect());
+    let trigger = sig.trigger.clone().into_iter().collect();
+    let result_ident = Ident::bound("result");
+    condition.subst(&mut [(result_ident, func_call.clone())].into_iter().collect());
     let args: Box<[(_, _)]> = sig
         .args
         .iter()
         .cloned()
         .flat_map(|b| b.var_type_pairs())
-        .filter(|arg| &*arg.0 != "_")
+        // .filter(|arg| arg.0 != "_") // TODO Wat
         .collect();
 
     let axiom = Exp::forall_trig(args, trigger, condition);
-
-    Axiom { name: format!("{}_spec", &*sig.name).into(), rewrite: false, axiom }
+    let spec_ident = Ident::fresh(&format!("{}_spec", sig.name.as_str()));
+    Axiom { name: spec_ident, rewrite: false, axiom }
 }
 
 pub fn function_call(sig: &Signature) -> Exp {
@@ -241,7 +244,7 @@ pub fn function_call(sig: &Signature) -> Exp {
         .iter()
         .cloned()
         .flat_map(|b| b.var_type_pairs())
-        .filter(|arg| &*arg.0 != "_")
+        // .filter(|arg| &*arg.0 != "_") // TODO Wat
         .map(|arg| Exp::Var(arg.0));
 
     Exp::Var(sig.name.clone()).app(args)
@@ -249,7 +252,7 @@ pub fn function_call(sig: &Signature) -> Exp {
 
 fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
     let call = function_call(sig);
-    let trigger = sig.trigger.clone().into_iter();
+    let trigger = sig.trigger.clone().into_iter().collect();
 
     let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
     let condition = sig.contract.requires_implies(equation);
@@ -258,6 +261,6 @@ fn definition_axiom(sig: &Signature, body: Exp, suffix: &str) -> Axiom {
 
     let axiom = Exp::forall_trig(args, trigger, condition);
 
-    let name = format!("{}_{suffix}", &*sig.name).into();
+    let name = Ident::fresh(&format!("{}_{suffix}", &sig.name.as_str()));
     Axiom { name, rewrite: false, axiom }
 }
