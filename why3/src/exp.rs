@@ -506,12 +506,17 @@ impl Exp {
         Exp::forall_trig(bound, [], body)
     }
 
-    pub fn exists_trig(bound: Box<[(Ident, Type)]>, trigger: Box<[Trigger]>, body: Exp) -> Self {
-        if body.is_false() || bound.is_empty () { body } else { Exp::Exists(bound, trigger, Box::new(body)) }
+    pub fn exists_trig(
+        bound: impl IntoIterator<Item = (Ident, Type)>,
+        trigger: impl IntoIterator<Item = Trigger>,
+        body: Exp
+    ) -> Self {
+        let mut bound = bound.into_iter().peekable();
+        if body.is_false() || bound.peek().is_none() { body } else { Exp::Exists(bound.collect(), trigger.into_iter().collect(), Box::new(body)) }
     }
 
     pub fn exists(bound: Box<[(Ident, Type)]>, body: Exp) -> Self {
-        Exp::exists_trig(bound, Box::new([]), body)
+        Exp::exists_trig(bound, [], body)
     }
 
     pub fn with_attr(self, attr: Attribute) -> Self {
