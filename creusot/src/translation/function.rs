@@ -18,6 +18,7 @@ use crate::{
         traits,
     },
 };
+use why3::Ident;
 use indexmap::IndexMap;
 use rustc_borrowck::consumers::BorrowSet;
 use rustc_hir::def_id::DefId;
@@ -37,7 +38,7 @@ use rustc_mir_dataflow::{
     move_paths::{HasMoveData, LookupResult, MoveData, MovePathIndex},
     on_all_children_bits,
 };
-use rustc_span::{Ident, Span, DUMMY_SP};
+use rustc_span::{Span, DUMMY_SP};
 use rustc_target::abi::{FieldIdx, VariantIdx};
 use std::{
     collections::{HashMap, HashSet},
@@ -737,14 +738,14 @@ fn translate_vars<'tcx>(
             continue;
         }
         let ident = if !d.is_user_variable() {
-            Ident::from_str(&format!("_{}", loc.index()))
+            Ident::fresh(&format!("_{}", loc.index()))
         } else {
             let x = body.var_debug_info.iter().find(|var_info| match var_info.value {
                 Place(p) => p.as_local().map(|l| l == loc).unwrap_or(false),
                 _ => false,
             });
             let debug_info = x.expect("expected user variable to have name");
-            Ident { name: debug_info.name, span: debug_info.source_info.span }
+            Ident::fresh(debug_info.name.as_str())
         };
         locals.insert(loc, ident);
         let is_arg = 0 < loc.index() && loc.index() <= body.arg_count;
@@ -783,9 +784,9 @@ impl<'tcx> TranslationCtx<'tcx> {
 
         let span = self.def_span(def_id);
 
-        let args_ident = Ident::from_str("args");
-        let self_ident = Ident::from_str("self");
-        let result_ident = Ident::from_str("result");
+        let args_ident = Ident::bound("args");
+        let self_ident = Ident::bound("self");
+        let result_ident = Ident::bound("result");
         let args = self.sig(def_id).inputs.iter().skip(1);
 
         let arg_ty = Ty::new_tup_from_iter(self.tcx, args.clone().map(|(_, ty)| *ty));
