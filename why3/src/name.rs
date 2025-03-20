@@ -61,7 +61,7 @@ impl From<&str> for IdentString {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Ident {
-    name: IdentString,
+    pub name: IdentString,
     id: u64, // 0 for "bound" identifiers, >0 for "fresh" identifiers
 }
 
