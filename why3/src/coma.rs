@@ -136,6 +136,10 @@ impl Defn {
 }
 
 impl Expr {
+    pub fn boxed(self) -> Box<Self> {
+        Box::new(self)
+    }
+
     pub fn app(self, args: impl IntoIterator<Item = Arg>) -> Self {
         args.into_iter().fold(self, |acc, a| Expr::App(Box::new(acc), Box::new(a)))
     }

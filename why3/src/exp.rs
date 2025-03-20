@@ -394,6 +394,10 @@ pub fn super_visit_trigger<T: ExpVisitor>(f: &mut T, trigger: &Trigger) {
 }
 
 impl Exp {
+    pub fn boxed(self) -> Box<Self> {
+        Box::new(self)
+    }
+
     pub fn unit() -> Self {
         Exp::Tuple(Box::new([]))
     }
