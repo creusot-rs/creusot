@@ -134,7 +134,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     item
                 }
             }
-            TermKind::Var(v) => Exp::Var(self.ctx.rename(*v)),
+            TermKind::Var(v) => Exp::Var(v.0),
             TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -185,7 +185,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Call { id, subst, args, .. } => Exp::qvar(self.names.item(*id, *subst))
                 .app(args.into_iter().map(|arg| self.lower_term(arg))),
             TermKind::Quant { kind, binder, box body, trigger } => {
-                let bound = binder.iter().map(|(s, t)| (self.ctx.rename(*s), self.lower_ty(*t)));
+                let bound = binder.iter().map(|(s, t)| (s.0, self.lower_ty(*t)));
                 let body = self.lower_term(body);
                 let trigger = self.lower_trigger(trigger);
                 match kind {
@@ -271,10 +271,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     .inputs
                     .into_iter()
                     .skip(1)
-                    .map(|(ident, ty)| {
-                        let nm = self.ctx.rename(ident);
+                    .map(|(ident, _, ty)| {
                         let ty = self.names.normalize(self.ctx, ty);
-                        Binder::typed(nm, self.lower_ty(ty))
+                        Binder::typed(ident.0, self.lower_ty(ty))
                     })
                     .collect();
 
@@ -340,7 +339,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
             }
             PatternKind::Wildcard => WPattern::Wildcard,
-            PatternKind::Binder(name) => WPattern::VarP(self.ctx.rename(*name)),
+            PatternKind::Binder(name) => WPattern::VarP(name.0),
             PatternKind::Bool(true) => WPattern::mk_true(),
             PatternKind::Bool(false) => WPattern::mk_false(),
             PatternKind::Tuple(pats) if pats.is_empty() => WPattern::TupleP(Box::new([])),
