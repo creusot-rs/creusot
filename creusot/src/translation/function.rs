@@ -10,7 +10,7 @@ use crate::{
     extended_location::ExtendedLocation,
     fmir::{self, LocalDecl, LocalDecls, RValue, TrivialInv},
     gather_spec_closures::{LoopSpecKind, SpecClosures, corrected_invariant_names_and_locations},
-    pearlite::{Term, normalize},
+    pearlite::{PIdent as Ident, Term, normalize},
     resolve::{HasMoveDataExt, Resolver, place_contains_borrow_deref},
     translation::{
         pearlite::{Pattern, TermKind, TermVisitorMut, super_visit_mut_term},
@@ -18,7 +18,6 @@ use crate::{
         traits,
     },
 };
-use why3::Ident;
 use indexmap::IndexMap;
 use rustc_borrowck::consumers::BorrowSet;
 use rustc_hir::def_id::DefId;
