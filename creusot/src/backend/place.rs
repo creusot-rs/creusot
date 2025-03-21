@@ -30,7 +30,7 @@ pub(crate) fn create_assign_inner<'tcx, N: Namer<'tcx>>(
     istmts: &mut Vec<IntermediateStmt>,
 ) {
     let rhs = lplace_to_expr(lower, lhs, rhs, istmts);
-    istmts.push(IntermediateStmt::Assign(lower.ctx.rename(lhs.local), rhs));
+    istmts.push(IntermediateStmt::Assign(lhs.local.0, rhs));
 }
 
 #[derive(Clone)]
@@ -165,7 +165,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
                 let elt_ty = lower.ty(elt_ty.ty);
                 let ty = lower.ty(place_ty.ty);
                 // TODO: Use [_] syntax
-                let ix_exp = Exp::Var(lower.ctx.rename(*ix));
+                let ix_exp = Exp::Var(ix.0);
 
                 let focus1 = focus.clone();
                 let elt_ty1 = elt_ty.clone();
@@ -222,7 +222,7 @@ pub(crate) fn rplace_to_expr<'tcx, N: Namer<'tcx>>(
         lower,
         istmts,
         place_ty,
-        Focus::new(|_| Exp::Var(lower.ctx.rename(pl.local))),
+        Focus::new(|_| Exp::Var(pl.local.0)),
         Box::new(|_, _| unreachable!()),
         &pl.projections,
     );
@@ -240,7 +240,7 @@ fn lplace_to_expr<'tcx, N: Namer<'tcx>>(
         lower,
         istmts,
         place_ty,
-        Focus::new(|_| Exp::Var(lower.ctx.rename(pl.local))),
+        Focus::new(|_| Exp::Var(pl.local.0)),
         Box::new(|_, x| x),
         &pl.projections,
     );
