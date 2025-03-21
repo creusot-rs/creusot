@@ -16,11 +16,11 @@ use rustc_middle::{
     mir::{self, Body, Local, OUTERMOST_SOURCE_SCOPE, SourceInfo, SourceScope},
     ty::{EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv},
 };
-use rustc_span::Span;
+use rustc_span::{Span, DUMMY_SP};
 use rustc_type_ir::ClosureKind;
 use std::{
     collections::{HashMap, HashSet},
-    iter::{once, repeat},
+    iter::once,
 };
 
 /// A term with an "expl:" label (includes the "expl:" prefix)
@@ -199,7 +199,7 @@ impl<'tcx> ScopeTree<'tcx> {
 
             let entry = scope_tree.entry(scope).or_default();
 
-            let ident = Ident::fresh(var_info.name);
+            let ident = Ident::fresh(var_info.name.as_str());
             entry.0.insert((ident, p));
 
             if let Some(parent) = scope_data.parent_scope {
@@ -481,7 +481,7 @@ impl<'tcx> PreSignature<'tcx> {
 
 pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> PreSignature<'tcx> {
     let mut presig = contract_of(ctx, def_id);
-    let mut contract = &mut presig.contract;
+    let contract = &mut presig.contract;
 
     let fn_ty = ctx.tcx.type_of(def_id).instantiate_identity();
 
@@ -546,7 +546,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
         assert!(contract.variant.is_none());
     }
 
-    for (input, _) in presig.inputs {
+    for (input, _, _) in &presig.inputs {
         if input.0.name.as_str() == "result"
                 && !is_fn_impl_postcond(ctx.tcx, def_id)
                 && !is_fn_mut_impl_postcond(ctx.tcx, def_id)
@@ -554,7 +554,8 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
                 && !is_fn_mut_impl_unnest(ctx.tcx, def_id)
                 && !is_fn_once_impl_precond(ctx.tcx, def_id)
         {
-            ctx.crash_and_error(input.span, "`result` is not allowed as a parameter name")
+            let span = ctx.tcx.def_span(def_id);
+            ctx.crash_and_error(span, "`result` is not allowed as a parameter name")
         }
     }
 
@@ -563,16 +564,16 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
 
 fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (Box<[(Ident, Span, Ty)]>, Ty) {
     let ty = tcx.type_of(def_id).instantiate_identity();
-    let (inputs, output): (Box<[(rustc_span::symbol::Ident, _)]>, _) = match ty
-        .kind()
+    match ty.kind()
     {
         TyKind::FnDef(..) => {
             let gen_sig = tcx
                 .instantiate_bound_regions_with_erased(tcx.fn_sig(def_id).instantiate_identity());
             let sig =
                 tcx.normalize_erasing_regions(TypingEnv::non_body_analysis(tcx, def_id), gen_sig);
-            let iter = tcx.fn_arg_names(def_id).iter().cloned().zip(sig.inputs().iter().cloned());
-            (Box::new(iter), sig.output())
+            let inputs = tcx.fn_arg_names(def_id).iter().cloned().zip(sig.inputs().iter().cloned()).map(
+                |(ident, ty)| (Ident::fresh(ident.name.as_str()), DUMMY_SP, ty)).collect();
+            (inputs, sig.output())
         }
         TyKind::Closure(_, subst) => {
             let sig = tcx.instantiate_bound_regions_with_erased(
@@ -581,14 +582,12 @@ fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (Box<[(Ident, Span, Ty)]>, T
             let sig = tcx.normalize_erasing_regions(TypingEnv::non_body_analysis(tcx, def_id), sig);
             let env_ty = tcx.closure_env_ty(ty, subst.as_closure().kind(), tcx.lifetimes.re_erased);
 
-            let closure_env = (Ident::bound("_1"), env_ty);
-            let names = tcx.fn_arg_names(def_id).iter().cloned().chain(repeat(Ident::empty()));
-            (
-                Box::new(once(closure_env).chain(names.zip(sig.inputs().iter().cloned()))),
-                sig.output(),
-            )
+            let closure_env = (Ident::bound("_1"), DUMMY_SP, env_ty);
+            let inputs = tcx.fn_arg_names(def_id).iter().cloned().zip(sig.inputs().iter().cloned()).map(
+                |(ident, ty)| (Ident::fresh(ident.name.as_str()), DUMMY_SP, ty));
+            let inputs = once(closure_env).chain(inputs).collect();
+            (inputs, sig.output())
         }
-        _ => (Box::new([].into_iter()), tcx.type_of(def_id).instantiate_identity()),
-    };
-    (inputs, output)
+        _ => (Box::new([]), tcx.type_of(def_id).instantiate_identity()),
+    }
 }
