@@ -49,6 +49,8 @@ mod statement;
 mod terminator;
 use terminator::discriminator_for_switch;
 
+use super::specification::PreSignature;
+
 /// Translate a function from rustc's MIR to fMIR.
 pub(crate) fn fmir<'tcx>(ctx: &TranslationCtx<'tcx>, body_id: BodyId) -> fmir::Body<'tcx> {
     BodyTranslator::with_context(ctx, body_id, |func_translator| func_translator.translate())
@@ -779,7 +781,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
         let kind = subst.as_closure().kind();
 
-        let contract = contract_of(self, def_id);
+        let PreSignature { contract, inputs, output } = contract_of(self, def_id);
 
         let span = self.def_span(def_id);
 
@@ -788,11 +790,11 @@ impl<'tcx> TranslationCtx<'tcx> {
         let result_ident = Ident::bound("result");
         let args = self.sig(def_id).inputs.iter().skip(1);
 
-        let arg_ty = Ty::new_tup_from_iter(self.tcx, args.clone().map(|(_, ty)| *ty));
+        let arg_ty = Ty::new_tup_from_iter(self.tcx, args.clone().map(|&(_, _, ty)| ty));
         let arg_tuple = Term::var(args_ident, arg_ty);
 
         let arg_pat =
-            Pattern::tuple(args.clone().map(|(nm, ty)| Pattern::binder(*nm, *ty)), arg_ty);
+            Pattern::tuple(args.clone().map(|&(nm, span, ty)| Pattern::binder(nm, span, ty)), arg_ty);
 
         let env_ty = self.closure_env_ty(
             self.type_of(def_id).instantiate_identity(),
@@ -800,7 +802,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             self.lifetimes.re_erased,
         );
         let self_ = Term::var(self_ident, env_ty);
-        let params: Vec<_> = args.map(|(nm, ty)| Term::var(*nm, *ty)).collect();
+        let params: Vec<_> = args.map(|&(nm, span, ty)| Term::var(nm, ty)).collect();
 
         let mut precondition = if contract.is_empty() {
             self.inferred_precondition_term(
@@ -815,11 +817,10 @@ impl<'tcx> TranslationCtx<'tcx> {
             contract.requires_conj(self.tcx)
         };
 
-        let retty = self.sig(def_id).output;
         let postcond = |target_kind| {
             let postcondition = if contract.is_empty() {
                 let mut ret_params = params.clone();
-                ret_params.push(Term::var(result_ident, retty));
+                ret_params.push(Term::var(result_ident, output));
 
                 self.inferred_postcondition_term(
                     def_id,
