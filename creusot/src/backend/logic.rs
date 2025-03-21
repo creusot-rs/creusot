@@ -48,9 +48,8 @@ pub(crate) fn translate_logic_or_predicate(
     let sig = lower_sig(ctx, &mut names, name, pre_sig, def_id);
     let (param_decls, args_names): (Vec<_>, Vec<_>) = args
         .into_iter()
-        .map(|(name, ty)| {
-            let span = name.span;
-            let name = ctx.rename(name);
+        .map(|(name, span, ty)| {
+            let name = name.0;
             let decl = Decl::LogicDecl(LogicDecl {
                 kind: Some(DeclKind::Constant),
                 sig: Signature {
