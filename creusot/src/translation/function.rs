@@ -707,7 +707,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     .and_then(|l| self.locals.get(&l))
                     && free_vars.contains(l)
                 {
-                    let msg = format!("Use of borrowed or uninitialized variable {}", l);
+                    let msg = format!("Use of borrowed or uninitialized variable {:?}", l);
                     self.ctx.crash_and_error(term.span, &msg);
                 }
             }
@@ -884,7 +884,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         };
 
         if kind.extends(ClosureKind::Fn) {
-            let self_ident = Ident::from_str("self");
+            let self_ident = Ident::bound("self");
             let self_ = Term::var(self_ident, env_ty);
             let mut csubst =
                 closure_capture_subst(self, def_id, subst, false, Some(self_.clone()), self_);
@@ -893,10 +893,10 @@ impl<'tcx> TranslationCtx<'tcx> {
 
             contracts.postcond = Some(postcondition);
         }
-        let self_ident = Ident::from_str("self");
+        let self_ident = Ident::bound("self");
 
         if kind.extends(ClosureKind::FnMut) {
-            let result_state_ident = Ident::from_str("result_state");
+            let result_state_ident = Ident::bound("result_state");
             let self_ = Term::var(self_ident, env_ty);
             let result_state = Term::var(result_state_ident, env_ty);
             let mut csubst = closure_capture_subst(
@@ -957,7 +957,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         span: Span,
     ) -> Term<'tcx> {
         let env_ty = closure_env.ty;
-        let bor_self_ident = Ident::from_str("__bor_self");
+        let bor_self_ident = Ident::bound("__bor_self");
 
         let bor_self = Term::var(
             bor_self_ident,
@@ -1010,8 +1010,8 @@ impl<'tcx> TranslationCtx<'tcx> {
                 }
             }
             ClosureKind::FnMut => {
-                let bor_self_ident = Ident::from_str("__bor_self");
-                let result_state_ident = Ident::from_str("result_state");
+                let bor_self_ident = Ident::bound("__bor_self");
+                let result_state_ident = Ident::bound("result_state");
                 let bor_self = Term::var(bor_self_ident, env_ty);
                 closure_args.insert(0, bor_self.clone());
 
@@ -1042,7 +1042,7 @@ pub(crate) fn closure_resolve<'tcx>(
     subst: GenericArgsRef<'tcx>,
 ) -> Term<'tcx> {
     let mut resolve = Term::mk_true(ctx.tcx);
-    let _1_ident = Ident::from_str("_1");
+    let _1_ident = Ident::bound("_1");
 
     let self_ = Term::var(_1_ident, ctx.type_of(def_id).instantiate_identity());
     let csubst = subst.as_closure();
@@ -1071,8 +1071,8 @@ fn closure_unnest<'tcx>(
     let kind = subst.as_closure().kind();
     let env_ty = tcx.closure_env_ty(ty, kind, tcx.lifetimes.re_erased).peel_refs();
 
-    let self_ident = Ident::from_str("self");
-    let _2_ident = Ident::from_str("_2");
+    let self_ident = Ident::bound("self");
+    let _2_ident = Ident::bound("_2");
     let self_ = Term::var(self_ident, env_ty);
 
     let captures =
@@ -1238,7 +1238,7 @@ pub(crate) fn closure_capture_subst<'a, 'tcx>(
 
     let map = zip(captures, cs.as_closure().upvar_tys())
         .enumerate()
-        .map(|(ix, (cap, ty))| (Ident::from_str(cap.to_symbol().as_str()), (cap.info.capture_kind, ty, ix.into())))
+        .map(|(ix, (cap, ty))| (Ident::bound(cap.to_symbol().as_str()), (cap.info.capture_kind, ty, ix.into())))
         .collect();
 
     ClosureSubst {
