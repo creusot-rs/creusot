@@ -111,11 +111,11 @@ impl PIdent {
 }
 
 impl<I: Interner> TypeVisitable<I> for PIdent {
-    fn visit_with<V>(&self, _: &mut V) -> <V as rustc_middle::ty::TypeVisitor<I>>::Result where V: rustc_middle::ty::TypeVisitor<I> { todo!() }
+    fn visit_with<V>(&self, _: &mut V) -> <V as rustc_middle::ty::TypeVisitor<I>>::Result where V: rustc_middle::ty::TypeVisitor<I> { V::Result::output() }
 }
 
 impl<I: Interner> TypeFoldable<I> for PIdent {
-    fn try_fold_with<F>(self, _: &mut F) -> Result<Self, <F as rustc_middle::ty::FallibleTypeFolder<I>>::Error> where F: rustc_middle::ty::FallibleTypeFolder<I> { todo!() }
+    fn try_fold_with<F>(self, _: &mut F) -> Result<Self, <F as rustc_middle::ty::FallibleTypeFolder<I>>::Error> where F: rustc_middle::ty::FallibleTypeFolder<I> { Ok(self) }
 }
 
 impl<T: Decoder> Decodable<T> for PIdent {
@@ -451,19 +451,23 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             .zip(bound.iter())
             .rev()
             .try_fold(body, |body, (param, arg_id)| -> CreusotResult<_> {
-                let ty = param.ty;
-                let pat = param.pat.as_ref().unwrap_or_else(|| panic!{"implicit parameters are unsupported"});
-                let pattern = self.pattern_term(&pat, true)?;
-                match pattern.kind {
-                    PatternKind::Binder(_) | PatternKind::Wildcard => Ok(body),
-                    _ => {
-                        let arg = Box::new(Term::var(*arg_id, ty));
-                        Ok(Term {
-                            ty: body.ty,
-                            span: body.span,
-                            kind: TermKind::Let { pattern, arg, body: Box::new(body) },
-                        })
+                match &param.pat {
+                    Some(box pat) => {
+                        let ty = param.ty;
+                        let pattern = self.pattern_term(&pat, true)?;
+                        match pattern.kind {
+                            PatternKind::Binder(_) | PatternKind::Wildcard => Ok(body),
+                            _ => {
+                                let arg = Box::new(Term::var(*arg_id, ty));
+                                Ok(Term {
+                                    ty: body.ty,
+                                    span: body.span,
+                                    kind: TermKind::Let { pattern, arg, body: Box::new(body) },
+                                })
+                            }
+                        }
                     }
+                    None => Ok(body)
                 }
             })?;
         Ok((bound, triggers.into(), res))
