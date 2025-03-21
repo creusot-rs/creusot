@@ -13,8 +13,9 @@ use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
     thir::{self, visit::Visitor, Expr, ExprKind, Pat, PatKind, Thir},
-    ty::{Clause, EarlyBinder, GenericArgKind, GenericArgsRef, Predicate, TyCtxt, TyKind},
+    ty::{Clause, EarlyBinder, GenericArgKind, GenericArgsRef, Predicate, Ty, TyCtxt, TyKind},
 };
+use rustc_span::Span;
 use rustc_type_ir::ConstKind;
 
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
@@ -22,7 +23,7 @@ pub(crate) struct ExternSpec<'tcx> {
     // The contract we are attaching
     pub contract: ContractClauses,
     pub subst: GenericArgsRef<'tcx>,
-    pub args: Box<[Ident]>,
+    pub args: Box<[(Ident, Span, Ty<'tcx>)]>,
     // Additional predicates we must verify to call this function
     pub additional_predicates: Vec<Predicate<'tcx>>,
 }
@@ -42,6 +43,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     def_id: LocalDefId,
 ) -> CreusotResult<(DefId, ExternSpec<'tcx>)> {
+    let span = ctx.def_span(def_id.to_def_id());
     // Handle error gracefully
     let (thir, expr) = ctx.fetch_thir(def_id)?;
     let thir = thir.borrow();
@@ -95,7 +97,6 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let mut subst = Vec::new();
     let mut errors = Vec::new();
     for i in 0..outer_subst.len() {
-        let span = ctx.def_span(def_id.to_def_id());
         match (inner_subst[i + extra_parameters].unpack(), outer_subst[i].unpack()) {
             (GenericArgKind::Type(t1), GenericArgKind::Type(t2)) => match (t1.kind(), t2.kind()) {
                 (TyKind::Param(param1), TyKind::Param(param2))
@@ -156,9 +157,15 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         .collect();
 
     let args = thir.params.iter().enumerate().map(|(idx, param)|
-        match param.pat {
-            Some(box Pat { kind: PatKind::Binding { var, .. }, .. }) => Ident(ctx.rename(var)),
-            _ => Ident::fresh(&format!{"__{}", idx})
+        match &param.pat {
+            Some(box Pat { kind, span, ty }) => {
+                let ident = match kind {
+                    PatKind::Binding { var, .. } => Ident(ctx.rename(*var)),
+                    _ => Ident::fresh(&format!{"__{}", idx}),
+                };
+                (ident, *span, ty.clone())
+            }
+            None => ctx.fatal_error(span, "implicit parameters are unsupported").emit(),
         }).collect();
     Ok((id, ExternSpec { contract, additional_predicates, subst, args }))
 }
