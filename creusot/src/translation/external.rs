@@ -2,7 +2,7 @@ use crate::{
     ctx::*,
     error::CreusotResult,
     translation::{
-        pearlite::Term,
+        pearlite::PIdent as Ident,
         specification::{ContractClauses, contract_clauses_of},
         traits::TraitResolved,
     },
@@ -12,10 +12,9 @@ use indexmap::IndexSet;
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
-    thir::{self, Expr, ExprKind, Thir, visit::Visitor},
+    thir::{self, visit::Visitor, Expr, ExprKind, Pat, PatKind, Thir},
     ty::{Clause, EarlyBinder, GenericArgKind, GenericArgsRef, Predicate, TyCtxt, TyKind},
 };
-use rustc_span::Ident;
 use rustc_type_ir::ConstKind;
 
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
@@ -23,7 +22,7 @@ pub(crate) struct ExternSpec<'tcx> {
     // The contract we are attaching
     pub contract: ContractClauses,
     pub subst: GenericArgsRef<'tcx>,
-    pub arg_subst: Vec<(Ident, Term<'tcx>)>,
+    pub args: Box<[Ident]>,
     // Additional predicates we must verify to call this function
     pub additional_predicates: Vec<Predicate<'tcx>>,
 }
@@ -156,16 +155,12 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         .map(Clause::as_predicate)
         .collect();
 
-    let arg_subst = ctx
-        .fn_arg_names(def_id)
-        .iter()
-        .zip(ctx.fn_arg_names(id).iter().zip(ctx.fn_sig(id).instantiate_identity().inputs().iter()))
-        .map(|(i, (i2, ty))| {
-            let ty = ctx.tcx.instantiate_bound_regions_with_erased(ty.map_bound(|&ty| ty));
-            (*i, Term::var(*i2, ty))
-        })
-        .collect();
-    Ok((id, ExternSpec { contract, additional_predicates, subst, arg_subst }))
+    let args = thir.params.iter().enumerate().map(|(idx, param)|
+        match param.pat {
+            Some(box Pat { kind: PatKind::Binding { var, .. }, .. }) => Ident(ctx.rename(var)),
+            _ => Ident::fresh(&format!{"__{}", idx})
+        }).collect();
+    Ok((id, ExternSpec { contract, additional_predicates, subst, args }))
 }
 
 // We shouldn't need a full visitor... or an index set, there should be a single item per extern spec method.
