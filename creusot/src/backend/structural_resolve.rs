@@ -5,14 +5,14 @@ use rustc_type_ir::TyKind;
 
 use crate::{
     contracts_items::{get_builtin, get_resolve_function, is_snap_ty, is_trusted},
-    pearlite::{Pattern, Term, TermKind},
+    pearlite::{PIdent, Pattern, Term, TermKind},
 };
 
 use super::Why3Generator;
 
 pub fn structural_resolve<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    subject: Ident,
+    subject: PIdent,
     ty: Ty<'tcx>,
 ) -> Option<Term<'tcx>> {
     let subject = Term::var(subject, ty);
