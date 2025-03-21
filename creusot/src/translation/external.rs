@@ -23,7 +23,8 @@ pub(crate) struct ExternSpec<'tcx> {
     // The contract we are attaching
     pub contract: ContractClauses,
     pub subst: GenericArgsRef<'tcx>,
-    pub args: Box<[(Ident, Span, Ty<'tcx>)]>,
+    pub inputs: Box<[(Ident, Span, Ty<'tcx>)]>,
+    pub output: Ty<'tcx>,
     // Additional predicates we must verify to call this function
     pub additional_predicates: Vec<Predicate<'tcx>>,
 }
@@ -167,7 +168,13 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
             }
             None => ctx.fatal_error(span, "implicit parameters are unsupported").emit(),
         }).collect();
-    Ok((id, ExternSpec { contract, additional_predicates, subst, args }))
+    let output_ty = match thir.body_type {
+        thir::BodyTy::Const(_) => panic!{"don't put an extern_spec on a const"},
+        thir::BodyTy::Fn(fn_sig) => {
+            ctx.normalize_erasing_regions(rustc_middle::ty::TypingEnv::non_body_analysis(ctx.tcx, def_id), fn_sig.output())
+        }
+    };
+    Ok((id, ExternSpec { contract, additional_predicates, subst, inputs: args, output: output_ty }))
 }
 
 // We shouldn't need a full visitor... or an index set, there should be a single item per extern spec method.
