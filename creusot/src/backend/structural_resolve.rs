@@ -36,7 +36,7 @@ pub fn structural_resolve<'tcx>(
                         .map(|(ix, f)| {
                             let sym = PIdent::bound(&format!("x{}", ix.as_usize()));
                             let fty = f.ty(ctx.tcx, args);
-                            (Pattern::binder(sym, DUMMY_SP, fty), resolve_of(ctx, Term::var(sym, fty)))
+                            (Pattern::binder(sym, fty), resolve_of(ctx, Term::var(sym, fty)))
                         })
                         .unzip();
 
@@ -57,7 +57,7 @@ pub fn structural_resolve<'tcx>(
                 .enumerate()
                 .map(|(i, ty)| {
                     let sym = PIdent::bound(&format!("x{i}"));
-                    (Pattern::binder(sym, DUMMY_SP, ty), resolve_of(ctx, Term::var(sym, ty)))
+                    (Pattern::binder(sym, ty), resolve_of(ctx, Term::var(sym, ty)))
                 })
                 .unzip();
 
