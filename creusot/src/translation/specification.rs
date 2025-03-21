@@ -371,12 +371,12 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         Some(fn_name) => fn_name.as_str(),
         None => "closure",
     };
-    if let Some(extern_spec) = ctx.extern_spec(def_id).cloned() {
+    if let Some(spec) = ctx.extern_spec(def_id).cloned() {
         // We do NOT normalize the contract here. See below.
-        let contract = extern_spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, extern_spec.subst);
+        let contract = spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, spec.subst);
         PreSignature {
-            inputs: _,
-            output: _,
+            inputs: spec.inputs,
+            output: spec.output,
             contract,
         }
     } else if let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id) {
@@ -387,8 +387,8 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         // of a specific call).
         let contract = spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, subst);
         PreSignature {
-            inputs: _,
-            output: _,
+            inputs: spec.inputs,
+            output: spec.output,
             contract,
         }
     } else {
@@ -418,7 +418,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
 
 #[derive(TypeVisitable, TypeFoldable, Debug, Clone)]
 pub struct PreSignature<'tcx> {
-    pub(crate) inputs: Vec<(Ident, Span, Ty<'tcx>)>,
+    pub(crate) inputs: Box<[(Ident, Span, Ty<'tcx>)]>,
     pub(crate) output: Ty<'tcx>,
     pub(crate) contract: PreContract<'tcx>,
 }
