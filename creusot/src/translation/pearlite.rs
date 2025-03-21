@@ -344,7 +344,11 @@ impl<'tcx> Pattern<'tcx> {
         Pattern { ty, kind: PatternKind::Wildcard, span: DUMMY_SP }
     }
 
-    pub(crate) fn binder(x: PIdent, span: Span, ty: Ty<'tcx>) -> Self {
+    pub(crate) fn binder(x: PIdent, ty: Ty<'tcx>) -> Self {
+        Pattern { ty, kind: PatternKind::Binder(x), span: DUMMY_SP }
+    }
+
+    pub(crate) fn binder_sp(x: PIdent, span: Span, ty: Ty<'tcx>) -> Self {
         Pattern { ty, kind: PatternKind::Binder(x), span }
     }
 
