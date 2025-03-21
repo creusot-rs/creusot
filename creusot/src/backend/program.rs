@@ -15,7 +15,7 @@ use crate::{
     },
     ctx::{BodyId, Dependencies},
     fmir::{Body, BorrowKind, Operand, TrivialInv},
-    pearlite::Pattern,
+    pearlite::{Pattern, PIdent},
     translated_item::FileModule,
     translation::fmir::{Block, Branches, LocalDecls, Place, RValue, Statement, Terminator},
 };
@@ -30,7 +30,7 @@ use rustc_middle::{
     mir::{BasicBlock, BinOp, ProjectionElem, START_BLOCK, UnOp, tcx::PlaceTy},
     ty::{AdtDef, GenericArgsRef, Ty, TyCtxt, TyKind},
 };
-use rustc_span::{DUMMY_SP, Ident as RustIdent};
+use rustc_span::DUMMY_SP;
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{IntTy, UintTy};
 use std::{fmt::Debug, iter::once};
@@ -143,7 +143,7 @@ pub fn to_why<'tcx, N: Namer<'tcx>>(
         .into_iter()
         .map(|(id, decl)| {
             let ty = translate_ty(ctx, names, decl.span, decl.ty);
-            let id = ctx.rename(id);
+            let id = id.0;
             let init = if decl.arg {
                 Exp::Var(id)
             } else {
@@ -985,7 +985,7 @@ impl<'tcx> Statement<'tcx> {
                             lower,
                             &mut istmts,
                             rhs_local_ty,
-                            Focus::new(|_| Exp::Var(lower.ctx.rename(rhs.local))),
+                            Focus::new(|_| Exp::Var(rhs.local.0)),
                             Box::new(|_, x| x),
                             &rhs.projections[..deref_index],
                         );
@@ -1010,7 +1010,7 @@ impl<'tcx> Statement<'tcx> {
                                     .names
                                     .in_pre(uty_to_prelude(lower.ctx.tcx, UintTy::Usize), "t'int"),
                             )
-                            .app([Exp::Var(lower.ctx.rename(*sym))])
+                            .app([Exp::Var(sym.0)])
                         },
                     );
 
@@ -1020,7 +1020,7 @@ impl<'tcx> Statement<'tcx> {
                         lower,
                         &mut istmts,
                         rhs_local_ty,
-                        Focus::new(|_| Exp::Var(lower.ctx.rename(rhs.local))),
+                        Focus::new(|_| Exp::Var(rhs.local.0)),
                         Box::new(|_, x| x),
                         &rhs.projections,
                     );
@@ -1049,7 +1049,7 @@ impl<'tcx> Statement<'tcx> {
                 }
 
                 let new_rhs = rhs_constr(&mut istmts, reassign);
-                istmts.push(IntermediateStmt::Assign(lower.ctx.rename(rhs.local), new_rhs));
+                istmts.push(IntermediateStmt::Assign(rhs.local.0, new_rhs));
             }
             Statement::Assignment(lhs, e, _span) => {
                 let rhs = e.to_why(lower, lhs.ty(lower.ctx.tcx, lower.locals), &mut istmts);
@@ -1066,14 +1066,14 @@ impl<'tcx> Statement<'tcx> {
             Statement::Resolve { did, subst, pl } => {
                 let rp = Exp::qvar(lower.names.item(did, subst));
                 let loc = pl.local;
-                let bound = RustIdent::from_str("x"); // TODO freshen
+                let bound = PIdent::bound("x"); // TODO freshen
                 let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
                 let pat = lower_pat(lower.ctx, lower.names, &pat);
                 let exp = if let WPattern::VarP(_) = pat {
-                    rp.app([Exp::Var(lower.ctx.rename(loc))])
+                    rp.app([Exp::Var(loc.0)])
                 } else {
-                    Exp::Var(lower.ctx.rename(loc)).match_([
-                        (pat, rp.app([Exp::Var(lower.ctx.rename(bound))])),
+                    Exp::Var(loc.0).match_([
+                        (pat, rp.app([Exp::Var(bound.0)])),
                         (WPattern::Wildcard, Exp::mk_true()),
                     ])
                 };
@@ -1091,14 +1091,14 @@ impl<'tcx> Statement<'tcx> {
             Statement::AssertTyInv { pl } => {
                 let inv_fun = Exp::qvar(lower.names.ty_inv(pl.ty(lower.ctx.tcx, lower.locals)));
                 let loc = pl.local;
-                let bound = RustIdent::from_str("x"); // TODO freshen
+                let bound = PIdent::bound("x"); // TODO freshen
                 let pat = pattern_of_place(lower.ctx.tcx, lower.locals, pl, bound);
                 let pat = lower_pat(lower.ctx, lower.names, &pat);
                 let exp = if let WPattern::VarP(_) = pat {
-                    inv_fun.app([Exp::Var(lower.ctx.rename(loc))])
+                    inv_fun.app([Exp::Var(loc.0)])
                 } else {
-                    Exp::Var(lower.ctx.rename(loc)).match_([
-                        (pat, inv_fun.app([Exp::Var(lower.ctx.rename(bound))])),
+                    Exp::Var(loc.0).match_([
+                        (pat, inv_fun.app([Exp::Var(bound.0)])),
                         (WPattern::Wildcard, Exp::mk_true()),
                     ])
                 };
@@ -1117,9 +1117,9 @@ fn pattern_of_place<'tcx>(
     tcx: TyCtxt<'tcx>,
     locals: &LocalDecls<'tcx>,
     pl: Place<'tcx>,
-    binder: RustIdent,
+    binder: PIdent,
 ) -> Pattern<'tcx> {
-    let mut pat = Pattern::binder(binder, pl.ty(tcx, locals));
+    let mut pat = Pattern::binder(binder, DUMMY_SP, pl.ty(tcx, locals));
     for (pl, el) in pl.iter_projections().rev() {
         let ty = pl.ty(tcx, locals);
         match el {
