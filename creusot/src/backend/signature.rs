@@ -30,7 +30,7 @@ pub(crate) fn lower_sig<'tcx, N: Namer<'tcx>>(
     let args: Box<[Binder]> = pre_sig
         .inputs
         .iter()
-        .map(|(id, ty)| Binder::typed(ctx.rename(*id), translate_ty(ctx, names, id.span, *ty)))
+        .map(|&(id, span, ty)| Binder::typed(id.0, translate_ty(ctx, names, span, ty)))
         .collect();
 
     let mut attrs = why3_attrs(ctx.tcx, def_id);
