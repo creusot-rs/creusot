@@ -365,7 +365,7 @@ pub(crate) fn inherited_extern_spec<'tcx>(
     }
 }
 
-pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> PreContract<'tcx> {
+pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> PreSignature<'tcx> {
     let fn_name = ctx.opt_item_name(def_id);
     let fn_name = match &fn_name {
         Some(fn_name) => fn_name.as_str(),
@@ -373,14 +373,24 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
     };
     if let Some(extern_spec) = ctx.extern_spec(def_id).cloned() {
         // We do NOT normalize the contract here. See below.
-        extern_spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, extern_spec.subst)
+        let contract = extern_spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, extern_spec.subst);
+        PreSignature {
+            inputs: _,
+            output: _,
+            contract,
+        }
     } else if let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id) {
         let spec = ctx.extern_spec(parent_id).cloned().unwrap();
         // We do NOT normalize the contract here: indeed, we do not have a valid non-redundant param
         // env for doing this. This is still valid because this contract is going to be substituted
         // and normalized in the caller context (such extern specs are only evaluated in the context
         // of a specific call).
-        spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, subst)
+        let contract = spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, subst);
+        PreSignature {
+            inputs: _,
+            output: _,
+            contract,
+        }
     } else {
         let subst = erased_identity_for_item(ctx.tcx, def_id);
         let mut contract = contract_clauses_of(ctx, def_id)
@@ -400,13 +410,15 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
             });
         }
 
-        contract.normalize(ctx.tcx, ctx.typing_env(def_id))
+        let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
+        let contract = contract.normalize(ctx.tcx, ctx.typing_env(def_id));
+        PreSignature { inputs, output, contract }
     }
 }
 
 #[derive(TypeVisitable, TypeFoldable, Debug, Clone)]
 pub struct PreSignature<'tcx> {
-    pub(crate) inputs: Vec<(Ident, Ty<'tcx>)>,
+    pub(crate) inputs: Vec<(Ident, Span, Ty<'tcx>)>,
     pub(crate) output: Ty<'tcx>,
     pub(crate) contract: PreContract<'tcx>,
 }
@@ -437,11 +449,11 @@ impl<'tcx> PreSignature<'tcx> {
             .map(|&i| if ctx.tcx.is_closure_like(def_id) { i + 1 } else { i })
             .collect();
 
-        let new_requires = self.inputs.iter().enumerate().filter_map(|(i, (ident, ty))| {
+        let new_requires = self.inputs.iter().enumerate().filter_map(|(i, (ident, span, ty))| {
             if !params_open_inv.contains(&i)
-                && let Some(term) = type_invariant_term(ctx, typing_env, *ident, ident.span, *ty)
+                && let Some(term) = type_invariant_term(ctx, typing_env, *ident, *span, *ty)
             {
-                let expl = format!("expl:{} '{}' type invariant", fn_name, ident.name);
+                let expl = format!("expl:{} '{}' type invariant", fn_name, ident.0.name.as_str());
                 Some(Condition { term, expl })
             } else {
                 None
@@ -449,7 +461,7 @@ impl<'tcx> PreSignature<'tcx> {
         });
         self.contract.requires.splice(0..0, new_requires);
 
-        let result_ident = Ident::from_str("result");
+        let result_ident = Ident::bound("result");
         let ret_ty_span: Option<Span> =
             try { ctx.tcx.hir().get_fn_output(def_id.as_local()?)?.span() };
         if !is_open_inv_result(ctx.tcx, def_id)
@@ -468,14 +480,13 @@ impl<'tcx> PreSignature<'tcx> {
 }
 
 pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> PreSignature<'tcx> {
-    let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
-
-    let mut contract = contract_of(ctx, def_id);
+    let mut presig = contract_of(ctx, def_id);
+    let mut contract = &mut presig.contract;
 
     let fn_ty = ctx.tcx.type_of(def_id).instantiate_identity();
 
     if let TyKind::Closure(_, subst) = fn_ty.kind() {
-        let self_ = Ident::from_str("_1");
+        let self_ = Ident::bound("_1");
         let kind = subst.as_closure().kind();
         let env_ty = ctx.closure_env_ty(fn_ty, kind, ctx.lifetimes.re_erased);
 
@@ -535,34 +546,24 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
         assert!(contract.variant.is_none());
     }
 
-    let inputs: Vec<_> = inputs
-        .enumerate()
-        .map(|(idx, (ident, ty))| {
-            if ident.name.as_str() == "result"
+    for (input, _) in presig.inputs {
+        if input.0.name.as_str() == "result"
                 && !is_fn_impl_postcond(ctx.tcx, def_id)
                 && !is_fn_mut_impl_postcond(ctx.tcx, def_id)
                 && !is_fn_once_impl_postcond(ctx.tcx, def_id)
                 && !is_fn_mut_impl_unnest(ctx.tcx, def_id)
                 && !is_fn_once_impl_precond(ctx.tcx, def_id)
-            {
-                ctx.crash_and_error(ident.span, "`result` is not allowed as a parameter name")
-            }
+        {
+            ctx.crash_and_error(input.span, "`result` is not allowed as a parameter name")
+        }
+    }
 
-            let ident = if ident.name.as_str().is_empty() {
-                Ident::from_str(&format!{"_{}", idx})
-            } else {
-                ident
-            };
-            (ident, ty)
-        })
-        .collect();
-
-    PreSignature { inputs, output, contract }
+    presig
 }
 
-fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (impl Iterator<Item = (Ident, Ty)>, Ty) {
+fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (Box<[(Ident, Span, Ty)]>, Ty) {
     let ty = tcx.type_of(def_id).instantiate_identity();
-    let (inputs, output): (Box<dyn Iterator<Item = (rustc_span::symbol::Ident, _)>>, _) = match ty
+    let (inputs, output): (Box<[(rustc_span::symbol::Ident, _)]>, _) = match ty
         .kind()
     {
         TyKind::FnDef(..) => {
