@@ -6,7 +6,7 @@ use crate::{
     },
     ctx::*,
     function::closure_capture_subst,
-    pearlite::TermVisitorMut,
+    pearlite::{PIdent as Ident, TermVisitorMut},
     translation::pearlite::{Literal, Term, TermKind, normalize, type_invariant_term},
     util::erased_identity_for_item,
 };
@@ -22,8 +22,6 @@ use std::{
     collections::{HashMap, HashSet},
     iter::{once, repeat},
 };
-
-use super::fmir::FmirIdent;
 
 /// A term with an "expl:" label (includes the "expl:" prefix)
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
@@ -178,7 +176,7 @@ impl ContractClauses {
 
 #[derive(Debug)]
 struct ScopeTree<'tcx>(
-    HashMap<SourceScope, (HashSet<(FmirIdent, mir::Place<'tcx>)>, Option<SourceScope>)>,
+    HashMap<SourceScope, (HashSet<(Ident, mir::Place<'tcx>)>, Option<SourceScope>)>,
 );
 
 impl<'tcx> ScopeTree<'tcx> {
@@ -201,7 +199,7 @@ impl<'tcx> ScopeTree<'tcx> {
 
             let entry = scope_tree.entry(scope).or_default();
 
-            let ident = Ident { name: var_info.name, span: var_info.source_info.span };
+            let ident = Ident::fresh(var_info.name);
             entry.0.insert((ident, p));
 
             if let Some(parent) = scope_data.parent_scope {
@@ -244,7 +242,7 @@ impl<'tcx> ScopeTree<'tcx> {
 pub(crate) fn inv_subst<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &Body<'tcx>,
-    locals: &HashMap<Local, FmirIdent>,
+    locals: &HashMap<Local, Ident>,
     info: SourceInfo,
 ) -> HashMap<Ident, Term<'tcx>> {
     let mut args = HashMap::new();
@@ -374,20 +372,15 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         None => "closure",
     };
     if let Some(extern_spec) = ctx.extern_spec(def_id).cloned() {
-        let mut contract =
-            extern_spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, extern_spec.subst);
-        contract.subst(&extern_spec.arg_subst.iter().cloned().collect());
         // We do NOT normalize the contract here. See below.
-        contract
+        extern_spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, extern_spec.subst)
     } else if let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id) {
         let spec = ctx.extern_spec(parent_id).cloned().unwrap();
-        let mut contract = spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, subst);
-        contract.subst(&spec.arg_subst.iter().cloned().collect());
         // We do NOT normalize the contract here: indeed, we do not have a valid non-redundant param
         // env for doing this. This is still valid because this contract is going to be substituted
         // and normalized in the caller context (such extern specs are only evaluated in the context
         // of a specific call).
-        contract
+        spec.contract.get_pre(ctx, fn_name).instantiate(ctx.tcx, subst)
     } else {
         let subst = erased_identity_for_item(ctx.tcx, def_id);
         let mut contract = contract_clauses_of(ctx, def_id)
@@ -587,7 +580,7 @@ fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (impl Iterator<Item = (Ident
             let sig = tcx.normalize_erasing_regions(TypingEnv::non_body_analysis(tcx, def_id), sig);
             let env_ty = tcx.closure_env_ty(ty, subst.as_closure().kind(), tcx.lifetimes.re_erased);
 
-            let closure_env = (Ident::from_str("_1"), env_ty);
+            let closure_env = (Ident::bound("_1"), env_ty);
             let names = tcx.fn_arg_names(def_id).iter().cloned().chain(repeat(Ident::empty()));
             (
                 Box::new(once(closure_env).chain(names.zip(sig.inputs().iter().cloned()))),
