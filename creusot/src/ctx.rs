@@ -36,13 +36,13 @@ use rustc_infer::traits::ObligationCause;
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{Promoted, TerminatorKind},
-    thir,
+    thir::{self, LocalVarId},
     ty::{
         Clause, GenericArg, GenericArgsRef, ParamEnv, Predicate, ResolverAstLowering, Ty, TyCtxt,
         TypingEnv, TypingMode, Visibility,
     },
 };
-use rustc_span::{Ident as RustIdent, Span, Symbol};
+use rustc_span::{Span, Symbol};
 use rustc_trait_selection::traits::normalize_param_env_or_error;
 use why3::Ident;
 use std::{cell::RefCell, collections::HashMap, ops::Deref};
@@ -155,7 +155,7 @@ pub struct TranslationCtx<'tcx> {
     bodies: OnceMap<LocalDefId, Box<BodyWithBorrowckFacts<'tcx>>>,
     opacity: OnceMap<DefId, Box<Opacity>>,
     closure_contract: OnceMap<DefId, Box<ClosureContract<'tcx>>>,
-    renamer: RefCell<HashMap<RustIdent, Ident>>,
+    renamer: RefCell<HashMap<LocalVarId, Ident>>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -262,7 +262,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.terms
             .try_insert(def_id, |_| {
                 if self.tcx.hir().maybe_body_owned_by(local_id).is_some() {
-                    let term = match pearlite::pearlite(self, local_id) {
+                    let (bound, term) = match pearlite::pearlite(self, local_id) {
                         Ok(t) => t,
                         Err(Error::MustPrint(msg)) => msg.emit(self.tcx),
                         Err(Error::TypeCheck(thir)) => return Err(thir),
@@ -528,11 +528,11 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
     }
 
-    pub(crate) fn rename(&self, ident: RustIdent) -> Ident {
+    pub(crate) fn rename(&self, ident: LocalVarId) -> Ident {
         self.renamer
             .borrow_mut()
             .entry(ident)
-            .or_insert_with(|| Ident::fresh(&ident.to_string()))
+            .or_insert_with(|| Ident::fresh(self.hir().name(ident.0).as_str()))
             .clone()
     }
 }

@@ -98,8 +98,24 @@ pub type QuantBinder<'tcx> = Box<[(PIdent, Ty<'tcx>)]>;
 pub type Projections<V, T> = Box<[ProjectionElem<V, T>]>;
 
 /// Pearlite Ident
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct PIdent(pub Ident);
+
+impl<I: Interner> TypeVisitable<I> for PIdent {
+    fn visit_with<V>(&self, _: &mut V) -> <V as rustc_middle::ty::TypeVisitor<I>>::Result where V: rustc_middle::ty::TypeVisitor<I> { todo!() }
+}
+
+impl<I: Interner> TypeFoldable<I> for PIdent {
+    fn try_fold_with<F>(self, _: &mut F) -> Result<Self, <F as rustc_middle::ty::FallibleTypeFolder<I>>::Error> where F: rustc_middle::ty::FallibleTypeFolder<I> { todo!() }
+}
+
+impl<T: Decoder> Decodable<T> for PIdent {
+    fn decode(_: &mut T) -> Self { todo!() }
+}
+
+impl<T: Encoder> Encodable<T> for PIdent {
+    fn encode(&self, _: &mut T) { todo!() }
+}
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum TermKind<'tcx> {
@@ -368,15 +384,15 @@ const TRIGGER_ERROR: &str = "Triggers can only be used inside quantifiers";
 pub(crate) fn pearlite<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
-) -> CreusotResult<Term<'tcx>> {
-    let (triggers, term) = pearlite_with_triggers(ctx, id)?;
-    if !triggers.is_empty() { Err(Error::msg(ctx.def_span(id), TRIGGER_ERROR)) } else { Ok(term) }
+) -> CreusotResult<(Box<[PIdent]>, Term<'tcx>)> {
+    let (bound, triggers, term) = pearlite_with_triggers(ctx, id)?;
+    if !triggers.is_empty() { Err(Error::msg(ctx.def_span(id), TRIGGER_ERROR)) } else { Ok((bound, term)) }
 }
 
 pub(crate) fn pearlite_with_triggers<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
-) -> CreusotResult<(Box<[Trigger<'tcx>]>, Term<'tcx>)> {
+) -> CreusotResult<(Box<[PIdent]>, Box<[Trigger<'tcx>]>, Term<'tcx>)> {
     let (thir, expr) = ctx.fetch_thir(id)?;
     let thir = thir.borrow();
     if thir.exprs.is_empty() {
@@ -397,7 +413,7 @@ struct ThirTerm<'a, 'tcx> {
 // TODO: Ensure that types are correct during this translation, in particular
 // - Box, & and &mut
 impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
-    fn body_term(&self, expr: ExprId) -> CreusotResult<(Box<[Trigger<'tcx>]>, Term<'tcx>)> {
+    fn body_term(&self, expr: ExprId) -> CreusotResult<(Box<[PIdent]>, Box<[Trigger<'tcx>]>, Term<'tcx>)> {
         let mut triggers = vec![];
         let expr = self.collect_triggers(expr, &mut triggers)?;
         let body = self.expr_term(expr)?;
@@ -411,26 +427,33 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
         let (thir, _) = self.ctx.fetch_thir(owner_id)?;
         let thir: &Thir = &thir.borrow();
+        let bound: Box<[PIdent]> = thir.params.iter().enumerate().map(|(idx, param)|
+            match param.pat {
+                Some(box Pat { kind: PatKind::Binding { var, .. }, .. }) => self.local_var_id(var),
+                _ => PIdent(Ident::fresh(&format!("__{}", idx)))
+            }).collect();
         let res = thir
             .params
             .iter()
-            .enumerate()
-            .filter_map(|(idx, param)| {
-                Some(self.pattern_term(param.pat.as_ref()?, true).map(|pat| (idx, param.ty, pat)))
-            })
-            .fold_ok(body, |body, (idx, ty, pattern)| match pattern.kind {
-                PatternKind::Binder(_) | PatternKind::Wildcard => body,
-                _ => {
-                    let ident = PIdent(Ident::bound(&format!("__{}", idx)));
-                    let arg = Box::new(Term::var(ident, ty));
-                    Term {
-                        ty: body.ty,
-                        span: body.span,
-                        kind: TermKind::Let { pattern, arg, body: Box::new(body) },
+            .zip(bound.iter())
+            .rev()
+            .try_fold(body, |body, (param, arg_id)| -> CreusotResult<_> {
+                let ty = param.ty;
+                let pat = param.pat.as_ref().unwrap_or_else(|| panic!{"implicit parameters are unsupported"});
+                let pattern = self.pattern_term(&pat, true)?;
+                match pattern.kind {
+                    PatternKind::Binder(_) | PatternKind::Wildcard => Ok(body),
+                    _ => {
+                        let arg = Box::new(Term::var(*arg_id, ty));
+                        Ok(Term {
+                            ty: body.ty,
+                            span: body.span,
+                            kind: TermKind::Let { pattern, arg, body: Box::new(body) },
+                        })
                     }
                 }
             })?;
-        Ok((triggers.into(), res))
+        Ok((bound, triggers.into(), res))
     }
 
     fn collect_triggers(
@@ -466,7 +489,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     }
 
     fn local_var_id(&self, id: LocalVarId) -> PIdent {
-        todo!{}
+        PIdent(self.ctx.rename(id))
     }
 
     fn expr_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
@@ -577,7 +600,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     Some(s @ (Forall | Exists)) => {
                         let kind =
                             if let Forall = s { QuantKind::Forall } else { QuantKind::Exists };
-                        let (binder, (trigger, body)) = self.quant_term(args[0])?;
+                        let (binder, trigger, body) = self.quant_term(args[0])?;
                         let arg_tuple_ty = if let TyKind::FnDef(_, subst) = f_ty.kind() {
                             subst[0].as_type().unwrap().tuple_fields()
                         } else {
@@ -810,12 +833,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 _ => Ok(Term { ty, span, kind: TermKind::Lit(Literal::ZST) }),
             },
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
-                let term = pearlite(self.ctx, closure_id)?;
+                let (bound, term) = pearlite(self.ctx, closure_id)?;
 
                 if is_assertion(self.ctx.tcx, closure_id.to_def_id()) {
                     Ok(Term { ty, span, kind: TermKind::Assert { cond: Box::new(term) } })
                 } else {
-                    let bound = self.ctx.fn_arg_names(closure_id).into();
                     Ok(Term { ty, span, kind: TermKind::Closure { bound, body: Box::new(term) } })
                 }
             }
@@ -857,7 +879,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 if !mut_allowed && mode.1 == Mutability::Mut {
                     return Err(Error::msg(pat.span, "mut binders are not supported in pearlite"));
                 }
-                let ident = self.ctx.hir().ident(var.0);
+                let ident = self.local_var_id(*var);
                 Ok(Pattern { ty: pat.ty, span: pat.span, kind: PatternKind::Binder(ident) })
             }
             PatKind::Variant { subpatterns, adt_def, variant_index, args, .. } => {
@@ -992,14 +1014,12 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     fn quant_term(
         &self,
         body: ExprId,
-    ) -> Result<(Box<[PIdent]>, (Box<[Trigger<'tcx>]>, Term<'tcx>)), Error> {
+    ) -> Result<(Box<[PIdent]>, Box<[Trigger<'tcx>]>, Term<'tcx>), Error> {
         trace!("{:?}", self.thir[body].kind);
         match self.thir[body].kind {
             ExprKind::Scope { value, .. } => self.quant_term(value),
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
-                let names = self.ctx.fn_arg_names(closure_id);
-
-                Ok((names.into(), pearlite_with_triggers(self.ctx, closure_id)?))
+                pearlite_with_triggers(self.ctx, closure_id)
             }
             _ => Err(Error::msg(self.thir[body].span, "unexpected error in quantifier")),
         }
