@@ -4,7 +4,7 @@ use crate::{
         get_inv_function, get_invariant_method, is_ignore_structural_inv, is_trusted,
         is_tyinv_trivial_if_param_trivial,
     },
-    pearlite::Trigger,
+    pearlite::{PIdent as Ident, Trigger},
     traits::TraitResolved,
     translation::{
         pearlite::{Pattern, Term, TermKind},
@@ -12,7 +12,7 @@ use crate::{
     },
 };
 use rustc_middle::ty::{GenericArg, Ty, TyCtxt, TyKind, TypingEnv};
-use rustc_span::{Ident, DUMMY_SP};
+use rustc_span::DUMMY_SP;
 use rustc_target::abi::VariantIdx;
 use std::collections::HashSet;
 
@@ -85,7 +85,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
     }
 
     pub(crate) fn elaborate_inv(&mut self, ty: Ty<'tcx>, for_deps: bool) -> Option<Term<'tcx>> {
-        let x_ident = Ident::from_str("x");
+        let x_ident = Ident::bound("x");
         let subject = Term::var(x_ident, ty);
         let inv_id = get_inv_function(self.ctx.tcx);
         let subst = self.ctx.mk_args(&[GenericArg::from(subject.ty)]);
@@ -161,7 +161,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                 let idsty: Vec<_> = tys
                     .iter()
                     .enumerate()
-                    .map(|(i, ty)| (Ident::from_str(&format!("x{i}")), ty))
+                    .map(|(i, ty)| (Ident::bound(&format!("x{i}")), ty))
                     .collect();
                 let body =
                     Box::new(idsty.iter().fold(Term::mk_true(self.ctx.tcx), |acc, &(id, ty)| {
@@ -181,7 +181,7 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                 let idsty: Vec<_> = tys
                     .iter()
                     .enumerate()
-                    .map(|(i, ty)| (Ident::from_str(&format!("x{i}")), ty))
+                    .map(|(i, ty)| (Ident::bound(&format!("x{i}")), ty))
                     .collect();
 
                 let body =
@@ -225,9 +225,9 @@ impl<'a, 'tcx> InvariantElaborator<'a, 'tcx> {
                 let mut exp = Some(Term::mk_true(self.ctx.tcx));
                 let fields = var_def.fields.iter().enumerate().map(|(field_idx, field_def)| {
                     let field_name = if tuple_var {
-                        Ident::from_str(&format!("a_{field_idx}"))
+                        Ident::bound(&format!("a_{field_idx}"))
                     } else {
-                        field_def.ident(self.ctx.tcx)
+                        Ident::bound(field_def.ident(self.ctx.tcx).name.as_str())
                     };
 
                     let field_ty = field_def.ty(self.ctx.tcx, substs);

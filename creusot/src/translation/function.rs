@@ -794,7 +794,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         let arg_tuple = Term::var(args_ident, arg_ty);
 
         let arg_pat =
-            Pattern::tuple(args.clone().map(|&(nm, span, ty)| Pattern::binder(nm, span, ty)), arg_ty);
+            Pattern::tuple(args.clone().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)), arg_ty);
 
         let env_ty = self.closure_env_ty(
             self.type_of(def_id).instantiate_identity(),

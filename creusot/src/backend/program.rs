@@ -1119,7 +1119,7 @@ fn pattern_of_place<'tcx>(
     pl: Place<'tcx>,
     binder: PIdent,
 ) -> Pattern<'tcx> {
-    let mut pat = Pattern::binder(binder, DUMMY_SP, pl.ty(tcx, locals));
+    let mut pat = Pattern::binder(binder, pl.ty(tcx, locals));
     for (pl, el) in pl.iter_projections().rev() {
         let ty = pl.ty(tcx, locals);
         match el {
