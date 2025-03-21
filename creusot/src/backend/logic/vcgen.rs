@@ -14,13 +14,13 @@ use crate::{
     },
     contracts_items::get_builtin,
     ctx::PreMod,
-    pearlite::{Literal, Pattern, PatternKind, Term, TermVisitor, super_visit_term},
+    pearlite::{Literal, Pattern, PatternKind, PIdent, Term, TermVisitor, super_visit_term},
     util::erased_identity_for_item,
 };
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{EarlyBinder, Ty, TyKind, TypingEnv};
-use rustc_span::{Span, Ident as RustIdent};
+use rustc_span::Span;
 use why3::{
     Exp, Ident,
     exp::{BinOp, Environment, Pattern as WPattern, UnOp as WUnOp},
@@ -92,11 +92,11 @@ pub(super) fn wp<'tcx>(
 /// This check can be extended in the future
 fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'_>) -> bool {
     struct StructuralRecursion {
-        smaller_than: HashMap<RustIdent, RustIdent>,
+        smaller_than: HashMap<PIdent, PIdent>,
         self_id: DefId,
         /// Index of the decreasing argument
-        decreasing_args: HashSet<RustIdent>,
-        orig_args: Vec<RustIdent>,
+        decreasing_args: HashSet<PIdent>,
+        orig_args: Vec<PIdent>,
     }
     use crate::pearlite::TermKind;
 
@@ -106,7 +106,7 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
         }
 
         /// Is `t` smaller than the argument `nm`?
-        fn is_smaller_than(&self, t: &Term, nm: RustIdent) -> bool {
+        fn is_smaller_than(&self, t: &Term, nm: PIdent) -> bool {
             match &t.kind {
                 TermKind::Var(s) => self.smaller_than.get(s) == Some(&nm),
                 TermKind::Coerce { arg } => self.is_smaller_than(arg, nm),
@@ -116,7 +116,7 @@ fn is_structurally_recursive(ctx: &Why3Generator<'_>, self_id: DefId, t: &Term<'
 
         // TODO: could make this a `pattern` to term comparison to make it more powerful
         /// Mark `sym` as smaller than `term`. Currently, this only updates the relation if `term` is a variable.
-        fn smaller_than(&mut self, sym: RustIdent, term: &Term<'_>) {
+        fn smaller_than(&mut self, sym: PIdent, term: &Term<'_>) {
             match &term.kind {
                 TermKind::Var(var) => {
                     let parent = self.smaller_than.get(var).unwrap_or(var);
@@ -231,8 +231,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
         match &t.kind {
             // VC(v, Q) = Q(v)
             TermKind::Var(v) => {
-                let v = self.ctx.rename(*v);
-                let exp = self.subst.borrow().get(&v).unwrap_or(Exp::Var(v));
+                let exp = self.subst.borrow().get(&v.0).unwrap_or(Exp::Var(v.0));
                 k(exp)
             }
             // VC(l, Q) = Q(l)
@@ -316,7 +315,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                     .inputs
                     .iter()
                     .zip(&args)
-                    .map(|((nm, _), res)| (self.ctx.rename(*nm), res.clone()))
+                    .map(|((nm, _, _), res)| (nm.0, res.clone()))
                     .collect();
                 let variant = pre_sig.contract.variant.clone();
                 let mut sig = lower_sig(self.ctx, self.names, Ident::fresh(""), pre_sig, *id);
@@ -390,7 +389,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let forall_pre = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
 
                 let forall_pre = Exp::forall(
-                    binder.iter().map(|(s, t)| (self.ctx.rename(*s), self.ty(*t))),
+                    binder.iter().map(|(s, t)| (s.0, self.ty(*t))),
                     forall_pre,
                 );
                 let forall_pure = self.lower_pure(t);
@@ -401,7 +400,7 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 let exists_pre = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
 
                 let exists_pre = Exp::forall(
-                    binder.iter().map(|(s, t)| (self.ctx.rename(*s), self.ty(*t))),
+                    binder.iter().map(|(s, t)| (s.0, self.ty(*t))),
                     exists_pre,
                 );
                 let exists_pure = self.lower_pure(t);
@@ -540,10 +539,9 @@ impl<'a, 'tcx> VCGen<'a, 'tcx> {
                 }
             }
             PatternKind::Wildcard => WPattern::Wildcard,
-            PatternKind::Binder(name) => {
-                let name = self.ctx.rename(*name);
+            PatternKind::Binder(PIdent(name)) => {
                 let new = name.refresh();
-                bounds.insert(name, Exp::Var(new.clone()));
+                bounds.insert(*name, Exp::Var(new.clone()));
                 WPattern::VarP(new)
             }
             PatternKind::Bool(true) => WPattern::mk_true(),
