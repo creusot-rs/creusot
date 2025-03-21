@@ -101,6 +101,15 @@ pub type Projections<V, T> = Box<[ProjectionElem<V, T>]>;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct PIdent(pub Ident);
 
+impl PIdent {
+    pub fn bound(name: &str) -> Self {
+        PIdent(Ident::bound(name))
+    }
+    pub fn fresh(name: &str) -> Self {
+        PIdent(Ident::fresh(name))
+    }
+}
+
 impl<I: Interner> TypeVisitable<I> for PIdent {
     fn visit_with<V>(&self, _: &mut V) -> <V as rustc_middle::ty::TypeVisitor<I>>::Result where V: rustc_middle::ty::TypeVisitor<I> { todo!() }
 }

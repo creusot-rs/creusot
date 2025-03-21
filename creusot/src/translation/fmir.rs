@@ -1,4 +1,4 @@
-use crate::{backend::place::projection_ty, pearlite::Term};
+use crate::{backend::place::projection_ty, pearlite::{PIdent as Ident, Term}};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
@@ -6,7 +6,6 @@ use rustc_middle::{
 };
 use rustc_span::Span;
 use rustc_target::abi::VariantIdx;
-use why3::Ident;
 
 pub(crate) type ProjectionElem<'tcx> = rustc_middle::mir::ProjectionElem<Ident, Ty<'tcx>>;
 

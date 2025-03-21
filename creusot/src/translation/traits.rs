@@ -1,4 +1,4 @@
-use super::pearlite::{Term, TermKind};
+use super::pearlite::{PIdent, Term, TermKind};
 use crate::{
     contracts_items::{is_law, is_pearlite, is_spec},
     ctx::*,
@@ -15,7 +15,7 @@ use rustc_middle::ty::{
     ParamTy, Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypingEnv,
     TypingMode,
 };
-use rustc_span::{Ident, Span, DUMMY_SP};
+use rustc_span::{Span, DUMMY_SP};
 use rustc_trait_selection::{
     error_reporting::InferCtxtErrorExt,
     traits::{FulfillmentError, ImplSource, InCrate, TraitEngineExt, orphan_check_trait_ref},
@@ -157,7 +157,7 @@ fn logic_refinement_term<'tcx>(
 
     let post_refn = impl_postcond
         .implies(trait_postcond)
-        .forall((Ident::from_str("result"), retty))
+        .forall((PIdent::bound("result"), retty))
         .span(span);
 
     let mut refn = trait_precond.implies(impl_precond.conj(post_refn));
